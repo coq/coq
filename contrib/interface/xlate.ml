@@ -334,7 +334,7 @@ and
   | a::l -> CT_match_pattern_ne_list(xlate_match_pattern a, 
                                      List.map xlate_match_pattern l)
 and  translate_one_equation = function
-    (_,[lp], a) -> CT_eqn (xlate_match_pattern_ne_list lp, xlate_formula a)
+    (_,[_,lp], a) -> CT_eqn (xlate_match_pattern_ne_list lp, xlate_formula a)
   | _ -> xlate_error "TODO: disjunctive multiple patterns"
 and 
   xlate_binder_ne_list = function
