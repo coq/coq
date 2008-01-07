@@ -89,6 +89,7 @@ Ltac trans y := do_setoid_trans y.
 Ltac setoid_refl :=
   match goal with
     | [ |- @equiv ?A ?R ?s ?X _ ] => apply (equiv_refl (A:=A) (R:=R) (s:=s) X)
+    | [ H : ?X =!= ?X |- _ ] => elim H ; setoid_refl
     | [ |- ?R ?X _ ] => apply (equiv_refl (R:=R) X)
     | [ |- ?R ?A ?X _ ] => apply (equiv_refl (R:=R A) X)
     | [ |- ?R ?A ?B ?X _ ] => apply (equiv_refl (R:=R A B) X)
@@ -128,22 +129,31 @@ Qed.
 
 Open Scope type_scope.
 
+(** Need to fix fresh to not fail if some arguments are not identifiers. *)
+(* Ltac setoid_sat ::= *)
+(*   match goal with *)
+(*     | [ H : ?x == ?y |- _ ] => let name:=fresh "Heq" y x in add_hypothesis name (equiv_sym H) *)
+(*     | [ H : ?x =!= ?y |- _ ] => let name:=fresh "Hneq" y x in add_hypothesis name (nequiv_sym H) *)
+(*     | [ H : ?x == ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Heq" x z in add_hypothesis name (equiv_trans H H') *)
+(*     | [ H : ?x == ?y, H' : ?y =!= ?z |- _ ] => let name:=fresh "Hneq" x z in add_hypothesis name (equiv_nequiv H H') *)
+(*     | [ H : ?x =!= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" x z in add_hypothesis name (nequiv_equiv H H') *)
+(*   end. *)
+
 Ltac setoid_sat :=
-  let add H t := let name := fresh H in add_hypothesis name t in
-    match goal with
-      | [ H : ?x == ?y |- _ ] => let name:=fresh "Heq" y x in add name (equiv_sym H)
-      | [ H : ?x =!= ?y |- _ ] => let name:=fresh "Hneq" y x in add name (nequiv_sym H)
-      | [ H : ?x == ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Heq" x z in add name (equiv_trans H H')
-      | [ H : ?x == ?y, H' : ?y =!= ?z |- _ ] => let name:=fresh "Hneq" x z in add name (equiv_nequiv H H')
-      | [ H : ?x =!= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" x z in add name (nequiv_equiv H H')
-    end.
+  match goal with
+    | [ H : ?x == ?y |- _ ] => let name:=fresh "Heq" in add_hypothesis name (equiv_sym H)
+    | [ H : ?x =!= ?y |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_sym H)
+    | [ H : ?x == ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Heq" in add_hypothesis name (equiv_trans H H')
+    | [ H : ?x == ?y, H' : ?y =!= ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (equiv_nequiv H H')
+    | [ H : ?x =!= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_equiv H H')
+  end.
 
 Ltac setoid_saturate := repeat setoid_sat.
 
 Ltac setoidify_tac :=
   match goal with
     | [ s : Setoid ?A ?R, H : ?R ?x ?y |- _ ] => change R with (@equiv A R s) in H
-    | [ s : Setoid ?A ?R |- ?R ?x ?y ] => change R with (@equiv A R s)
+    | [ s : Setoid ?A ?R |- ?R ?x ?y ] => change (R x y) with (@equiv A R s x y)
   end.
 
 Ltac setoidify := repeat setoidify_tac.

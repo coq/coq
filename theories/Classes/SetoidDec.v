@@ -20,13 +20,13 @@ Unset Strict Implicit.
 Require Import Coq.Classes.SetoidClass.
 
 Class [ Setoid A R ] => EqDec :=
-  equiv_dec : forall x y : A, { R x y } + { ~ R x y }.
+  equiv_dec : forall x y : A, { x == y } + { x =!= y }.
 
 Infix "==" := equiv_dec (no associativity, at level 70).
 
 Require Import Coq.Program.Program.
 
-Program Definition nequiv_dec [ EqDec A R ] (x y : A) : { ~ R x y } + { R x y } :=
+Program Definition nequiv_dec [ EqDec A R ] (x y : A) : { x =!= y } + { x == y } :=
   if x == y then right else left.
 
 Infix "<>" := nequiv_dec (no associativity, at level 70).
@@ -72,7 +72,7 @@ Program Instance [ EqDec A eq, EqDec B eq ] => prod_eqdec : EqDec (prod A B) eq 
       else right
     else right.
 
-Solve Obligations using program_simpl ; red ; intro ; autoinjections ; discriminates.
+Solve Obligations using unfold equiv ; program_simpl ; try red ; intros ; autoinjections ; discriminates.
 
 Program Instance [ EqDec A eq ] => bool_function_eqdec : EqDec (bool -> A) eq :=
   equiv_dec f g := 
@@ -81,16 +81,20 @@ Program Instance [ EqDec A eq ] => bool_function_eqdec : EqDec (bool -> A) eq :=
       else right
     else right.
 
+Solve Obligations using unfold equiv ; program_simpl.
+
 Require Import Coq.Program.FunctionalExtensionality.
 
 Next Obligation.
 Proof.
+  unfold equiv.
   extensionality x.
   destruct x ; auto.
 Qed.
 
 Next Obligation.
 Proof.
+  unfold equiv in *.
   red ; intro ; subst.
   discriminates.
 Qed.
