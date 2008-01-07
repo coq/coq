@@ -2322,6 +2322,16 @@ Glib.Utf8.from_unichar 0x2200;;
   missing character.
     
 
+\Question{How to get rid of annoying unwanted automatic templates?}
+
+Some users may experiment problems with unwanted automatic
+templates while using Coqide. This is due to a change in the
+modifiers keys available through GTK. The straightest way to get
+rid of the problem is to edit by hand your .coqiderc (either
+\verb|/home/<user>/.coqiderc| under Linux, or \\
+\verb|C:\Documents and Settings\<user>\.coqiderc| under Windows) 
+    and replace any occurence of \texttt{MOD4} by \texttt{MOD1}.
+
 
 
 \section{Extraction}
