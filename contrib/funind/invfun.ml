@@ -59,13 +59,13 @@ let observennl strm =
 
 
 let do_observe_tac s tac g =
- try    let goal = begin try (Printer.pr_goal (sig_it g)) with _ -> assert false end in
- let v = tac g in msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
- with e ->
-   let goal = begin try (Printer.pr_goal (sig_it g)) with _ -> assert false end in
-   msgnl (str "observation "++ s++str " raised exception " ++ 
-	    Cerrors.explain_exn e ++ str " on goal " ++ goal ); 
-   raise e;;
+  let goal = begin try (Printer.pr_goal (sig_it g)) with _ -> assert false end in
+  try    
+    let v = tac g in msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
+  with e ->
+    msgnl (str "observation "++ s++str " raised exception " ++ 
+	     Cerrors.explain_exn e ++ str " on goal " ++ goal ); 
+    raise e;;
 
 
 let observe_tac s tac g =
@@ -461,14 +461,14 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       ]
       g
 
-(* [generalize_depedent_of x hyp g] 
+(* [generalize_dependent_of x hyp g] 
    generalize every hypothesis which depends of [x] but [hyp] 
 *)
-let generalize_depedent_of x hyp g = 
+let generalize_dependent_of x hyp g = 
   tclMAP 
     (function 
        | (id,None,t) when not (id = hyp) && 
-	   (Termops.occur_var (pf_env g) x t) -> h_generalize [mkVar id]
+	   (Termops.occur_var (pf_env g) x t) -> tclTHEN (h_generalize [mkVar id]) (thin [id])
        | _ -> tclIDTAC
     )
     (pf_hyps g)
@@ -490,12 +490,17 @@ and intros_with_rewrite_aux : tactic =
 	  | Prod(_,t,t') -> 
 	      begin 
 		match kind_of_term t with 
-		  | App(eq,args) when (eq_constr eq eq_ind) -> 
-		      if isVar args.(1)
+		  | App(eq,args) when (eq_constr eq eq_ind)  -> 
+ 		      if Reductionops.is_conv (pf_env g) (project g) args.(1) args.(2)
+		      then
+			let id = pf_get_new_id (id_of_string "y") g  in
+			tclTHENSEQ [ h_intro id; thin [id]; intros_with_rewrite ] g
+
+		      else if isVar args.(1)
 		      then 			
 			let id = pf_get_new_id (id_of_string "y") g  in 
 			tclTHENSEQ [ h_intro id;
-				     generalize_depedent_of (destVar args.(1)) id; 
+				     generalize_dependent_of (destVar args.(1)) id; 
 				     tclTRY (Equality.rewriteLR (mkVar id));
 				     intros_with_rewrite
 				   ] 
@@ -706,7 +711,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(* we expand the definition of the function *)
         observe_tac "rewrite_tac" (rewrite_tac this_ind_number this_branche_ids);
 	(* introduce hypothesis with some rewrite *)
-        (intros_with_rewrite);
+        observe_tac "intros_with_rewrite" intros_with_rewrite;
 	(* The proof is (almost) complete *)
         observe_tac "reflexivity" (reflexivity_with_destruct_cases)
       ]
