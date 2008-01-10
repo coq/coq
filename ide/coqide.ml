@@ -2208,13 +2208,15 @@ let main files =
 			  ~packing: (find_box#attach ~left:1 ~top:1 ~expand:`X)
 			  ()
 			in
-			let _ = 
+			(* let _ = 
 			  GButton.check_button
 			    ~label:"case sensitive"
 			    ~active:true
 			    ~packing: (find_box#attach ~left:1 ~top:2)
 			    ()
-			in
+			
+                        in
+			*)
 			  (*
 			    let find_backwards_check = 
 			    GButton.check_button
