@@ -215,7 +215,7 @@ let connect writefun readfun com =
   let pid = 
     let ch_to' = Unix.descr_of_in_channel ch_to_in in
     let ch_from' = Unix.descr_of_out_channel ch_from_out in
-    try Unix.create_process com [||] ch_to' ch_from' Unix.stdout
+    try Unix.create_process com [|com|] ch_to' ch_from' Unix.stdout
     with Unix.Unix_error (err,_,_) ->
       close_in ch_to_in; close_in ch_from_in; close_out ch_from_out;
       unlink tmp_from; unlink tmp_to;
