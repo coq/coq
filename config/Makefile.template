@@ -133,6 +133,11 @@ HASCOQIDE=COQIDEOPT
 # Defining REVISION
 CHECKEDOUT=CHECKEDOUTSOURCETREE
 
+# Defining options to generate dependencies graphs
+DOT=dot
+DOTOPTS=-Tps
+ODOCDOTOPTS=-dot -dot-reduce
+
 # make or sed are bogus and believe lines not terminating by a return
 # are inexistent
 

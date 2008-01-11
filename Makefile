@@ -107,7 +107,7 @@ else
 stage1 $(STAGE1_TARGETS): always
 	$(call stage-template,1)
 
-CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa
+CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.dep.ps %.dot
 ifdef CM_STAGE1
 $(CAML_OBJECT_PATTERNS): always
 	$(call stage-template,1)
@@ -134,9 +134,9 @@ endif #GOTO_STAGE
 # Cleaning
 ###########################################################################
 
-.PHONY: clean objclean cruftclean indepclean archclean ml4clean clean-ide ml4depclean depclean distclean cleanconfig cleantheories docclean
+.PHONY: clean objclean cruftclean indepclean archclean ml4clean clean-ide ml4depclean depclean distclean cleanconfig cleantheories docclean devdocclean
 
-clean: objclean cruftclean depclean docclean
+clean: objclean cruftclean depclean docclean devdocclean
 
 objclean: archclean indepclean
 
@@ -193,6 +193,9 @@ distclean: clean cleanconfig
 cleantheories:
 	rm -f states/*.coq
 	find theories -name '*.vo' -or -name '*.glob' | xargs rm -f
+
+devdocclean:
+	find . -name '*.dep.ps' -o -name '*.dot' -exec rm -f {} \;
 
 ###########################################################################
 # Emacs tags

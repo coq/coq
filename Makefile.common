@@ -793,6 +793,24 @@ PCOQMANPAGES:=man/coq-interface.1 man/parser.1
 RECTYPESML:=kernel/term.ml library/nametab.ml proofs/tacexpr.ml \
   parsing/pptactic.ml 
 
+
+#########################################################
+# .mli files by directory (used for dependencies graphs #
+#########################################################
+
+# We use wildcard to get rid of .cmo that do not have a .mli 
+KERNELMLI:=$(wildcard $(KERNEL:.cmo=.mli))
+INTERPMLI:=$(wildcard $(INTERP:.cmo=.mli))
+PRETYPINGMLI:=$(wildcard $(PRETYPING:.cmo=.mli))
+TOPLEVELMLI:=$(wildcard $(TOPLEVEL:.cmo=.mli))
+PROOFSMLI:=$(wildcard $(PROOFS:.cmo=.mli))
+LIBRARYMLI:=$(wildcard $(LIBRARY:.cmo=.mli))
+PARSINGMLI:=$(wildcard $(PARSING:.cmo=.mli) $(HIGHPARSING:.cmo=.mli))
+TACTICSMLI:=$(wildcard $(TACTICS:.cmo=.mli) $(HIGHTACTICS:.cmo=.mli))
+COQMLI:=$(KERNELMLI) $(INTERPMLI) $(PRETYPINGMLI) $(TOPLEVELMLI) $(PROOFSMLI) \
+	$(LIBRARYMLI) $(PARSINGMLI) $(TACTICSMLI)
+
+
 ###########################################################################
 # Miscellaneous
 ###########################################################################

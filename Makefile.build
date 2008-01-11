@@ -882,6 +882,44 @@ devel: $(DEBUGPRINTERS)
 
 ###########################################################################
 
+
+%.dot: %.mli
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $< 
+
+%.types.dot: %.mli
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $< 
+
+%.dep.ps: %.dot
+	$(DOT) $(DOTOPTS) -o $@ $<
+
+kernel/kernel.dot: $(KERNELMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(KERNELMLI)
+
+interp/interp.dot: $(INTERPMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(INTERPMLI)
+
+pretyping/pretyping.dot: $(PRETYPINGMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(PRETYPINGMLI)
+
+library/library.dot: $(LIBRARYMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(LIBRARYMLI)
+
+parsing/parsing.dot: $(PARSINGMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(PARSINGMLI)
+
+tactics/tactics.dot: $(TACTICSMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(TACTICSMLI)
+
+proofs/proofs.dot: $(PROOFSMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(PROOFSMLI)
+
+toplevel/toplevel.dot: $(TOPLEVELMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(TOPLEVELMLI)
+
+coq.dot: $(COQMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(COQMLI)
+
+
 # For emacs: 
 # Local Variables: 
 # mode: makefile 
