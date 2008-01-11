@@ -1,9 +1,9 @@
 %!PS-Adobe-2.0
-%%Creator: dot version 2.2 (Wed Jan 19 21:09:25 UTC 2005)
-%%For: (herbelin) Hugo Herbelin
+%%Creator: Graphviz version 2.12 (Tue Oct 23 13:46:12 UTC 2007)
+%%For: (notin) Jean-Marc Notin,,,
 %%Title: G
 %%Pages: (atend)
-%%BoundingBox: 35 35 577 136
+%%BoundingBox: (atend)
 %%EndComments
 save
 %%BeginProlog
@@ -16,57 +16,7 @@ mark
  EncodingVector 0
 
 ISOLatin1Encoding 0 255 getinterval putinterval
-
-EncodingVector
-  dup 306 /AE
-  dup 301 /Aacute
-  dup 302 /Acircumflex
-  dup 304 /Adieresis
-  dup 300 /Agrave
-  dup 305 /Aring
-  dup 303 /Atilde
-  dup 307 /Ccedilla
-  dup 311 /Eacute
-  dup 312 /Ecircumflex
-  dup 313 /Edieresis
-  dup 310 /Egrave
-  dup 315 /Iacute
-  dup 316 /Icircumflex
-  dup 317 /Idieresis
-  dup 314 /Igrave
-  dup 334 /Udieresis
-  dup 335 /Yacute
-  dup 376 /thorn
-  dup 337 /germandbls
-  dup 341 /aacute
-  dup 342 /acircumflex
-  dup 344 /adieresis
-  dup 346 /ae
-  dup 340 /agrave
-  dup 345 /aring
-  dup 347 /ccedilla
-  dup 351 /eacute
-  dup 352 /ecircumflex
-  dup 353 /edieresis
-  dup 350 /egrave
-  dup 355 /iacute
-  dup 356 /icircumflex
-  dup 357 /idieresis
-  dup 354 /igrave
-  dup 360 /dcroat
-  dup 361 /ntilde
-  dup 363 /oacute
-  dup 364 /ocircumflex
-  dup 366 /odieresis
-  dup 362 /ograve
-  dup 365 /otilde
-  dup 370 /oslash
-  dup 372 /uacute
-  dup 373 /ucircumflex
-  dup 374 /udieresis
-  dup 371 /ugrave
-  dup 375 /yacute
-  dup 377 /ydieresis  
+EncodingVector 45 /hyphen put
 
 % Set up ISO Latin 1 character encoding
 /starnetISO {
@@ -98,8 +48,8 @@ cleartomark
 
 /InvScaleFactor 1.0 def
 /set_scale {
-	dup 1 exch div /InvScaleFactor exch def
-	dup scale
+       dup 1 exch div /InvScaleFactor exch def
+       scale
 } bind def
 
 % styles
@@ -229,403 +179,463 @@ def
 } if
 
 %%EndSetup
+setupLatin1
 %%Page: 1 1
-%%PageBoundingBox: 36 36 577 136
-%%PageOrientation: Portrait
+%%PageBoundingBox: 36 36 576 753
+%%PageOrientation: Landscape
 gsave
-35 35 542 101 boxprim clip newpath
-36 36 translate
+36 36 576 753 boxprim clip newpath
 0 0 1 beginpage
-0.6923 set_scale
-0 0 translate 0 rotate
-0.000 0.000 0.000 graphcolor
+0.870968 0.870968 set_scale 90 rotate 45.3333 -657.333 translate
+0.000 0.000 1.000 graphcolor
+newpath -4 -4 moveto
+-4 616 lineto
+819 616 lineto
+819 -4 lineto
+closepath fill
+0.870968 setlinewidth
+0.000 0.000 1.000 graphcolor
+newpath -4 -4 moveto
+-4 616 lineto
+819 616 lineto
+819 -4 lineto
+closepath stroke
+% Clenvtac
+gsave
+0.502 1.000 0.820 nodecolor
+451 522 37.1753 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+451 522 37.1753 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
 14.00 /Times-Roman set_font
-
-%	Tactic_debug
-gsave 10 dict begin
-163 72 51 18 ellipse_path
+451 517 moveto 49 -0.5 (Clenvtac) alignedtext
+grestore
+% Evar_refiner
+gsave
+0.502 1.000 0.820 nodecolor
+439 450 49.1777 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+439 450 49.1777 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+439 445 moveto 72 -0.5 (Evar_refiner) alignedtext
+grestore
+% Clenvtac->Evar_refiner
+gsave
+0.870968 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 448 504 moveto
+447 496 445 487 444 478 curveto
 stroke
-gsave 10 dict begin
-125 67 moveto
-(Tactic_debug)
-[7.44 6.24 6.24 3.84 3.84 6.24 6.96 6.96 6.24 6.96 6.96 6.96]
-xshow
-end grestore
-end grestore
-
-%	Refiner
-gsave 10 dict begin
-287 72 34 18 ellipse_path
-stroke
-gsave 10 dict begin
-266 67 moveto
-(Refiner)
-[9.12 6.24 4.8 3.84 6.96 6.24 4.56]
-xshow
-end grestore
-end grestore
-
-%	Tactic_debug -> Refiner
-newpath 214 72 moveto
-223 72 233 72 243 72 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 447.393 477.119 moveto
+442 468 lineto
+440.529 478.492 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 243 76 moveto
-253 72 lineto
-243 69 lineto
-closepath
-fill
+newpath 447.393 477.119 moveto
+442 468 lineto
+440.529 478.492 lineto
+closepath stroke
+grestore
+% Tacmach
+gsave
+0.502 1.000 0.820 nodecolor
+711 450 38.1754 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+711 450 38.1754 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+711 445 moveto 51 -0.5 (Tacmach) alignedtext
+grestore
+% Clenvtac->Tacmach
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 243 76 moveto
-253 72 lineto
-243 69 lineto
-closepath
+newpath 483 513 moveto
+530 500 616 476 668 462 curveto
 stroke
-end grestore
-
-%	Logic
-gsave 10 dict begin
-390 72 30 18 ellipse_path
-stroke
-gsave 10 dict begin
-373 67 moveto
-(Logic)
-[8.4 6.96 6.96 3.84 6.24]
-xshow
-end grestore
-end grestore
-
-%	Refiner -> Logic
-newpath 321 72 moveto
-330 72 340 72 350 72 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 669.427 465.226 moveto
+678 459 lineto
+667.416 458.521 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 350 76 moveto
-360 72 lineto
-350 69 lineto
-closepath
-fill
+newpath 669.427 465.226 moveto
+678 459 lineto
+667.416 458.521 lineto
+closepath stroke
+grestore
+% Refiner
+gsave
+0.502 1.000 0.820 nodecolor
+439 378 34.1777 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+439 378 34.1777 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+439 373 moveto 42 -0.5 (Refiner) alignedtext
+grestore
+% Evar_refiner->Refiner
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 350 76 moveto
-360 72 lineto
-350 69 lineto
-closepath
+newpath 439 432 moveto
+439 424 439 415 439 406 curveto
 stroke
-end grestore
-
-%	Tacmach
-gsave 10 dict begin
-163 126 38 18 ellipse_path
-stroke
-gsave 10 dict begin
-137 121 moveto
-(Tacmach)
-[7.44 6.24 6.24 10.8 6.24 6 6.96]
-xshow
-end grestore
-end grestore
-
-%	Tacmach -> Refiner
-newpath 191 114 moveto
-209 106 232 96 251 88 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 442.5 406 moveto
+439 396 lineto
+435.5 406 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 253 91 moveto
-261 84 lineto
-250 84 lineto
-closepath
-fill
+newpath 442.5 406 moveto
+439 396 lineto
+435.5 406 lineto
+closepath stroke
+grestore
+% Tacmach->Refiner
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 253 91 moveto
-261 84 lineto
-250 84 lineto
-closepath
+newpath 678 441 moveto
+628 428 533 403 480 389 curveto
 stroke
-end grestore
-
-%	Redexpr
-gsave 10 dict begin
-287 126 36 18 ellipse_path
-stroke
-gsave 10 dict begin
-263 121 moveto
-(Redexpr)
-[9.12 6.24 6.96 5.76 6.96 6.96 4.56]
-xshow
-end grestore
-end grestore
-
-%	Tacmach -> Redexpr
-newpath 202 126 moveto
-214 126 227 126 240 126 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 480.584 385.521 moveto
+470 386 lineto
+478.573 392.226 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 240 130 moveto
-250 126 lineto
-240 123 lineto
-closepath
-fill
+newpath 480.584 385.521 moveto
+470 386 lineto
+478.573 392.226 lineto
+closepath stroke
+grestore
+% Redexpr
+gsave
+0.502 1.000 0.820 nodecolor
+711 378 36.1752 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+711 378 36.1752 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+711 373 moveto 47 -0.5 (Redexpr) alignedtext
+grestore
+% Tacmach->Redexpr
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 240 130 moveto
-250 126 lineto
-240 123 lineto
-closepath
+newpath 711 432 moveto
+711 424 711 415 711 406 curveto
 stroke
-end grestore
-
-%	Proof_trees
-gsave 10 dict begin
-502 72 45 18 ellipse_path
-stroke
-gsave 10 dict begin
-469 67 moveto
-(Proof_trees)
-[7.68 4.56 6.96 6.96 4.56 6.96 3.84 4.56 6.24 6.24 5.52]
-xshow
-end grestore
-end grestore
-
-%	Logic -> Proof_trees
-newpath 420 72 moveto
-428 72 437 72 446 72 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 714.5 406 moveto
+711 396 lineto
+707.5 406 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 446 76 moveto
-456 72 lineto
-446 69 lineto
-closepath
-fill
+newpath 714.5 406 moveto
+711 396 lineto
+707.5 406 lineto
+closepath stroke
+grestore
+% Decl_mode
+gsave
+0.502 1.000 0.820 nodecolor
+698 594 45.1777 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+698 594 45.1777 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+698 589 moveto 64 -0.5 (Decl_mode) alignedtext
+grestore
+% Pfedit
+gsave
+0.502 1.000 0.820 nodecolor
+698 522 30.1777 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+698 522 30.1777 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+698 517 moveto 34 -0.5 (Pfedit) alignedtext
+grestore
+% Decl_mode->Pfedit
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 446 76 moveto
-456 72 lineto
-446 69 lineto
-closepath
+newpath 698 576 moveto
+698 568 698 559 698 550 curveto
 stroke
-end grestore
-
-%	Proof_type
-gsave 10 dict begin
-628 72 44 18 ellipse_path
-stroke
-gsave 10 dict begin
-597 67 moveto
-(Proof_type)
-[7.68 4.56 6.96 6.96 4.56 6.96 3.84 6.96 6.96 6.24]
-xshow
-end grestore
-end grestore
-
-%	Tacexpr
-gsave 10 dict begin
-744 72 35 18 ellipse_path
-stroke
-gsave 10 dict begin
-721 67 moveto
-(Tacexpr)
-[7.44 6.24 6.24 5.76 6.96 6.96 4.56]
-xshow
-end grestore
-end grestore
-
-%	Proof_type -> Tacexpr
-newpath 672 72 moveto
-680 72 689 72 698 72 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 701.5 550 moveto
+698 540 lineto
+694.5 550 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 698 76 moveto
-708 72 lineto
-698 69 lineto
-closepath
-fill
+newpath 701.5 550 moveto
+698 540 lineto
+694.5 550 lineto
+closepath stroke
+grestore
+% Pfedit->Evar_refiner
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 698 76 moveto
-708 72 lineto
-698 69 lineto
-closepath
+newpath 671 514 moveto
+628 503 543 479 488 464 curveto
 stroke
-end grestore
-
-%	Proof_trees -> Proof_type
-newpath 548 72 moveto
-557 72 565 72 574 72 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 488.584 460.521 moveto
+478 461 lineto
+486.573 467.226 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 574 76 moveto
-584 72 lineto
-574 69 lineto
-closepath
-fill
+newpath 488.584 460.521 moveto
+478 461 lineto
+486.573 467.226 lineto
+closepath stroke
+grestore
+% Pfedit->Tacmach
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 574 76 moveto
-584 72 lineto
-574 69 lineto
-closepath
+newpath 701 504 moveto
+702 496 704 487 706 478 curveto
 stroke
-end grestore
-
-%	Pfedit
-gsave 10 dict begin
-38 112 29 18 ellipse_path
-stroke
-gsave 10 dict begin
-21 107 moveto
-(Pfedit)
-[7.68 4.08 6.24 6.96 3.84 3.84]
-xshow
-end grestore
-end grestore
-
-%	Pfedit -> Tacmach
-newpath 67 115 moveto
-81 117 99 118 115 120 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 709.471 478.492 moveto
+708 468 lineto
+702.607 477.119 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 115 123 moveto
-125 122 lineto
-116 117 lineto
-closepath
-fill
+newpath 709.471 478.492 moveto
+708 468 lineto
+702.607 477.119 lineto
+closepath stroke
+grestore
+% Logic
+gsave
+0.502 1.000 0.820 nodecolor
+439 306 29.1747 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+439 306 29.1747 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+439 301 moveto 33 -0.5 (Logic) alignedtext
+grestore
+% Refiner->Logic
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 115 123 moveto
-125 122 lineto
-116 117 lineto
-closepath
+newpath 439 360 moveto
+439 352 439 343 439 334 curveto
 stroke
-end grestore
-
-%	Evar_refiner
-gsave 10 dict begin
-163 18 49 18 ellipse_path
-stroke
-gsave 10 dict begin
-127 13 moveto
-(Evar_refiner)
-[8.4 6.72 6.24 4.56 6.96 4.56 6.24 4.8 3.84 6.96 6.24 4.56]
-xshow
-end grestore
-end grestore
-
-%	Pfedit -> Evar_refiner
-newpath 53 96 moveto
-67 82 90 60 112 45 curveto
-116 42 120 40 124 37 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 442.5 334 moveto
+439 324 lineto
+435.5 334 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 126 40 moveto
-133 32 lineto
-123 34 lineto
-closepath
-fill
+newpath 442.5 334 moveto
+439 324 lineto
+435.5 334 lineto
+closepath stroke
+grestore
+% Proof_trees
+gsave
+0.502 1.000 0.820 nodecolor
+439 234 45.1757 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+439 234 45.1757 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+439 229 moveto 65 -0.5 (Proof_trees) alignedtext
+grestore
+% Logic->Proof_trees
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 126 40 moveto
-133 32 lineto
-123 34 lineto
-closepath
+newpath 439 288 moveto
+439 280 439 271 439 262 curveto
 stroke
-end grestore
-
-%	Evar_refiner -> Refiner
-newpath 195 32 moveto
-212 40 233 49 251 57 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 442.5 262 moveto
+439 252 lineto
+435.5 262 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 249 60 moveto
-260 61 lineto
-252 54 lineto
-closepath
-fill
+newpath 442.5 262 moveto
+439 252 lineto
+435.5 262 lineto
+closepath stroke
+grestore
+% Proof_type
+gsave
+0.502 1.000 0.820 nodecolor
+439 162 44.1757 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+439 162 44.1757 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+439 157 moveto 63 -0.5 (Proof_type) alignedtext
+grestore
+% Proof_trees->Proof_type
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 249 60 moveto
-260 61 lineto
-252 54 lineto
-closepath
+newpath 439 216 moveto
+439 208 439 199 439 190 curveto
 stroke
-end grestore
-
-%	Clenvtac
-gsave 10 dict begin
-38 45 38 18 ellipse_path
-stroke
-gsave 10 dict begin
-13 40 moveto
-(Clenvtac)
-[9.36 3.84 6.24 6.48 6.96 4.08 6.24 6.24]
-xshow
-end grestore
-end grestore
-
-%	Clenvtac -> Tacmach
-newpath 58 61 moveto
-73 72 93 87 112 99 curveto
-117 102 123 105 128 108 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 442.5 190 moveto
+439 180 lineto
+435.5 190 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 127 111 moveto
-137 113 lineto
-130 105 lineto
-closepath
-fill
+newpath 442.5 190 moveto
+439 180 lineto
+435.5 190 lineto
+closepath stroke
+grestore
+% Decl_expr
+gsave
+0.502 1.000 0.820 nodecolor
+439 90 42.1777 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+439 90 42.1777 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+439 85 moveto 58 -0.5 (Decl_expr) alignedtext
+grestore
+% Proof_type->Decl_expr
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 127 111 moveto
-137 113 lineto
-130 105 lineto
-closepath
+newpath 439 144 moveto
+439 136 439 127 439 118 curveto
 stroke
-end grestore
-
-%	Clenvtac -> Evar_refiner
-newpath 73 37 moveto
-85 35 98 32 110 29 curveto
-stroke
-gsave 10 dict begin
+0.000 0.000 0.000 edgecolor
+newpath 442.5 118 moveto
+439 108 lineto
+435.5 118 lineto
+closepath fill
+0.870968 setlinewidth
 solid
-1 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 111 32 moveto
-120 27 lineto
-110 26 lineto
-closepath
-fill
+newpath 442.5 118 moveto
+439 108 lineto
+435.5 118 lineto
+closepath stroke
+grestore
+% Tacexpr
+gsave
+0.502 1.000 0.820 nodecolor
+439 18 36.1777 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+439 18 36.1777 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+439 13 moveto 46 -0.5 (Tacexpr) alignedtext
+grestore
+% Decl_expr->Tacexpr
+gsave
+0.870968 setlinewidth
 0.000 0.000 0.000 edgecolor
-newpath 111 32 moveto
-120 27 lineto
-110 26 lineto
-closepath
+newpath 439 72 moveto
+439 64 439 55 439 46 curveto
 stroke
-end grestore
+0.000 0.000 0.000 edgecolor
+newpath 442.5 46 moveto
+439 36 lineto
+435.5 46 lineto
+closepath fill
+0.870968 setlinewidth
+solid
+0.000 0.000 0.000 edgecolor
+newpath 442.5 46 moveto
+439 36 lineto
+435.5 46 lineto
+closepath stroke
+grestore
+% Tactic_debug
+gsave
+0.502 1.000 0.820 nodecolor
+133 450 51.1777 18 ellipse_path fill
+0.870968 setlinewidth
+filled
+0.502 1.000 0.820 nodecolor
+133 450 51.1777 18 ellipse_path stroke
+0.000 0.000 0.000 nodecolor
+14.00 /Times-Roman set_font
+133 445 moveto 76 -0.5 (Tactic_debug) alignedtext
+grestore
+% Tactic_debug->Refiner
+gsave
+0.870968 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 176 440 moveto
+234 426 339 401 398 387 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 398.881 390.393 moveto
+408 385 lineto
+397.508 383.529 lineto
+closepath fill
+0.870968 setlinewidth
+solid
+0.000 0.000 0.000 edgecolor
+newpath 398.881 390.393 moveto
+408 385 lineto
+397.508 383.529 lineto
+closepath stroke
+grestore
 endpage
 showpage
 grestore
@@ -633,6 +643,7 @@ grestore
 %%EndPage: 1
 %%Trailer
 %%Pages: 1
+%%BoundingBox: 36 36 576 753
 end
 restore
 %%EOF

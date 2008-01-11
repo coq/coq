@@ -1,5 +1,20 @@
+include ../../config/Makefile
 
-# Makefile for doc/
+LOCALINCLUDES=-I ../../config -I ../../tools -I ../../tools/coqdoc \
+	      -I ../../scripts -I ../../lib -I ../../kernel -I ../../kernel/byterun -I ../../library \
+              -I ../../proofs -I ../../tactics -I ../../pretyping \
+              -I ../../interp -I ../../toplevel -I ../../parsing -I ../../ide/utils -I ../../ide \
+              -I ../../contrib/omega -I ../../contrib/romega \
+	      -I ../../contrib/ring -I ../../contrib/dp -I ../../contrib/setoid_ring \
+              -I ../../contrib/xml -I ../../contrib/extraction \
+              -I ../../contrib/interface -I ../../contrib/fourier \
+	      -I ../../contrib/jprover -I ../../contrib/cc \
+	      -I ../../contrib/funind -I ../../contrib/first-order \
+              -I ../../contrib/field -I ../../contrib/subtac -I ../../contrib/rtauto \
+              -I ../../contrib/recdef
+
+MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
+
 
 all:: newparse coq.ps minicop.ps
 #newsyntax.dvi minicoq.dvi
@@ -55,8 +70,8 @@ coq.tex::
 depend:: kernel.dep.ps library.dep.ps pretyping.dep.ps parsing.dep.ps \
          proofs.dep.ps tactics.dep.ps toplevel.dep.ps interp.dep.ps
 
-%.dot: ../%
-	(cd ../$*; ocamldep *.ml *.mli) | ocamldot -lr > $@
+%.dot: ../../%
+	ocamldoc -rectypes $(MLINCLUDES) -t $* -dot -dot-reduce ../../$*/*.ml ../../$*/*.mli -o $@
 
 %.dep.ps: %.dot
 	dot -Tps $< -o $@
