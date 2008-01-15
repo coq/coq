@@ -111,13 +111,29 @@ let refine defs env check_type step gl =
 (*** Other tactics ***)
 
 (* Implements the clear tactics *)
-let clear indents defs gl =
+let clear idents defs gl =
   let rdefs = ref defs in
+  let info = content (Evd.evars_of defs) gl in
+  let cleared_info = Evarutil.clear_hyps_in_evi rdefs info idents in
+  let cleared_env = Environ.reset_with_named_context (Evd.evar_hyps cleared_info) 
+                                                     Environ.empty_env in
+  let cleared_concl = Evd.evar_concl cleared_info in
+  let clearing_constr = Evarutil.e_new_evar rdefs cleared_env cleared_concl in
+  let cleared_evar = match kind_of_term clearing_constr with
+                     | Evar (e,_) -> e
+		     | _ -> Util.anomaly "Goal.clear: e_new_evar failure"
+  in
+  let cleared_goal = build cleared_evar in
+  let new_defs = Evd.evar_define gl.content clearing_constr !rdefs in
+  { subgoals = [cleared_goal] ;
+    new_defs = new_defs
+  }
+
+(* arnaud Evarutil ou Reductionops ou Pretype_errors ? *)
   
 (* arnaud: remplacer par un "print goal" I guess suppose. 
 (* This function returns a new goal where the evars have been
    instantiated according to an evar_map *)
-(* arnaud Evarutil ou Reductionops ou Pretype_errors ? *)
 let instantiate em gl =
   (* note: goals don't have an evar_body *)
   let content = gl.content in

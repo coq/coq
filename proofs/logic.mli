@@ -11,9 +11,27 @@
 (*i*)
 open Names
 open Term
-open Sign
+(* open Sign
 open Evd
-open Environ
+open Environ *)
+
+type simpl_tactics =
+  | Intro of identifier
+  | Intro_replacing of identifier
+  | Cut of bool * identifier * types
+  | FixRule of identifier * int * (identifier * int * constr) list
+  | Cofix of identifier * (identifier * constr) list
+  | Refine of constr (*arnaud: rawconstr sans doute *)
+  | Convert_concl of types * cast_kind 
+  | Convert_hyp of named_declaration
+  | Thin of identifier list
+  | ThinBody of identifier list
+  | Move of bool * identifier * identifier
+  | Rename of identifier * identifier
+  | Change_evars
+
+
+(*
 (*i*)
 
 (* This suppresses check done in [prim_refiner] for the tactic given in
@@ -62,3 +80,4 @@ type refiner_error =
 exception RefinerError of refiner_error
 
 val catchable_exception : exn -> bool
+*)

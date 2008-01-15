@@ -34,6 +34,10 @@ type refinement = { subgoals: goal list ;
 val refine : Evd.evar_defs -> Environ.env -> bool -> Rawterm.rawconstr -> goal -> refinement
 
 
+(*arnaud: commenter plus sans doute. Pareil dans le .ml *)
+(* Implements the clear tactics *)
+val clear : Names.identifier list -> Evd.evar_defs -> goal -> refinement
+
 (* arnaud: à remplacer par un print 
 (* This function returns a new goal where the evars have been
    instantiated according to an evar_map *)

@@ -525,6 +525,7 @@ let rec whd_evar sigma c =
     | Sort s when is_sort_variable sigma s -> whd_sort_variable sigma c
     | _ -> collapse_appl c
 
+(*arnaud: ne faire que la fonction avec le caching. *)
 let nf_evar sigma =
   local_strong (whd_evar sigma)
 

@@ -8,23 +8,40 @@
 
 (* $Id$ *)
 
-open Pp
-open Util
+(*arnaud: cleanup *)
+(*open Pp
+open Util *)
 open Names
-open Nameops
-open Evd
+(*open Nameops
+open Evd *)
 open Term
-open Termops
+(*open Termops
 open Sign
 open Environ
-open Reductionops
+open Reductionops 
 open Inductive
 open Inductiveops
 open Typing
 open Typeops
 open Type_errors
 open Retyping
-open Evarutil
+open Evarutil*)
+
+
+type simple_tactics =
+  | Intro of identifier
+  | Intro_replacing of identifier
+  | Cut of bool * identifier * types
+  | FixRule of identifier * int * (identifier * int * constr) list
+  | Cofix of identifier * (identifier * constr) list
+  | Refine of Rawterm.rawconstr
+  | Convert_concl of types * cast_kind
+  | Convert_hyp of named_declaration
+  | Thin of identifier list
+  | ThinBody of identifier list
+  | Move of bool * identifier * identifier
+  | Rename of identifier * identifier
+  | Change_evars
  
 type refiner_error =
 
@@ -46,7 +63,7 @@ open Pretype_errors
 
 let rec catchable_exception = function
   | Stdpp.Exc_located(_,e) -> catchable_exception e
-  | Util.UserError _ | TypeError _ 
+  | Util.UserError _ | Type_errors.TypeError _ 
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
   (* unification errors *)
@@ -54,6 +71,11 @@ let rec catchable_exception = function
       CannotUnifyBindingType _|NotClean _)) -> true
   | _ -> false
 
+
+(* arnaud: on va faire les règles une par une, puis on fait l'interpréteur *)
+
+
+(*
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
 let check = ref false
@@ -677,3 +699,4 @@ let prim_extractor subfun vl pft =
 
       | None-> error "prim_extractor handed incomplete proof"
 	  
+*)
