@@ -282,10 +282,10 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
   exception Found of fixpoint
 
-  (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
+  (* [pretype_intern tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [evdref] and *)
   (* the type constraint tycon *)
-  let rec pretype (tycon : type_constraint) env evdref lvar = function
+  let rec pretype_intern (tycon : type_constraint) env evdref lvar = function
     | RRef (loc,ref) ->
 	inh_conv_coerce_to_tycon loc env evdref
 	  (pretype_ref evdref env ref)
@@ -322,19 +322,19 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let rec type_bl env ctxt = function
             [] -> ctxt
           | (na,None,ty)::bl ->
-              let ty' = pretype_type empty_valcon env evdref lvar ty in
+              let ty' = pretype_type_intern empty_valcon env evdref lvar ty in
               let dcl = (na,None,ty'.utj_val) in
 		type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl
           | (na,Some bd,ty)::bl ->
-              let ty' = pretype_type empty_valcon env evdref lvar ty in
-              let bd' = pretype (mk_tycon ty'.utj_val) env evdref lvar ty in
+              let ty' = pretype_type_intern empty_valcon env evdref lvar ty in
+              let bd' = pretype_intern (mk_tycon ty'.utj_val) env evdref lvar ty in
               let dcl = (na,Some bd'.uj_val,ty'.utj_val) in
 		type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl in
 	let ctxtv = Array.map (type_bl env empty_rel_context) bl in
 	let larj =
           array_map2
             (fun e ar ->
-               pretype_type empty_valcon (push_rel_context e env) evdref lvar ar)
+               pretype_type_intern empty_valcon (push_rel_context e env) evdref lvar ar)
             ctxtv lar in
 	let lara = Array.map (fun a -> a.utj_val) larj in
 	let ftys = array_map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
@@ -351,7 +351,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		 decompose_prod_n_assum (rel_context_length ctxt)
                    (lift nbfix ftys.(i)) in
                let nenv = push_rel_context ctxt newenv in
-               let j = pretype (mk_tycon ty) nenv evdref lvar def in
+               let j = pretype_intern (mk_tycon ty) nenv evdref lvar def in
 		 { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
 		   uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
             ctxtv vdef in
@@ -383,7 +383,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	inh_conv_coerce_to_tycon loc env evdref (pretype_sort s) tycon
 
     | RApp (loc,f,args) -> 
-	let fj = pretype empty_tycon env evdref lvar f in
+	let fj = pretype_intern empty_tycon env evdref lvar f in
  	let floc = loc_of_rawconstr f in
         (* arnaud: le [n] n'est pas utilisé, à rapporter *)
 	let rec apply_rec env n resj = function
@@ -394,7 +394,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
               let resty = whd_betadeltaiota env (evars_of !evdref) resj.uj_type in
       		match kind_of_term resty with
 		  | Prod (na,c1,c2) ->
-		      let hj = pretype (mk_tycon c1) env evdref lvar c in
+		      let hj = pretype_intern (mk_tycon c1) env evdref lvar c in
 		      (* arnaud: value et typ sont séparés... virer
 			 le couple inutile. *)
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
@@ -403,7 +403,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 			    uj_type = typ }
 			  rest
 		  | _ ->
-		      let hj = pretype empty_tycon env evdref lvar c in
+		      let hj = pretype_intern empty_tycon env evdref lvar c in
 			error_cant_apply_not_functional_loc 
 			  (join_loc floc argloc) env (evars_of !evdref)
 	      		  resj [hj]
@@ -427,32 +427,32 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RLambda(loc,name,c1,c2)      ->
 	let (name',dom,rng) = evd_comb1 (split_tycon loc env) evdref tycon in
 	let dom_valcon = valcon_of_tycon dom in
-	let j = pretype_type dom_valcon env evdref lvar c1 in
+	let j = pretype_type_intern dom_valcon env evdref lvar c1 in
 	let var = (name,None,j.utj_val) in
-	let j' = pretype rng (push_rel var env) evdref lvar c2 in 
+	let j' = pretype_intern rng (push_rel var env) evdref lvar c2 in 
 	  judge_of_abstraction env (orelse_name name name') j j'
 
     | RProd(loc,name,c1,c2)        ->
-	let j = pretype_type empty_valcon env evdref lvar c1 in
+	let j = pretype_type_intern empty_valcon env evdref lvar c1 in
 	let var = (name,j.utj_val) in
 	let env' = push_rel_assum var env in
-	let j' = pretype_type empty_valcon env' evdref lvar c2 in
+	let j' = pretype_type_intern empty_valcon env' evdref lvar c2 in
 	let resj =
 	  try judge_of_product env name j j'
 	  with TypeError _ as e -> Stdpp.raise_with_loc loc e in
 	  inh_conv_coerce_to_tycon loc env evdref resj tycon
 	    
     | RLetIn(loc,name,c1,c2)      ->
-	let j = pretype empty_tycon env evdref lvar c1 in
+	let j = pretype_intern empty_tycon env evdref lvar c1 in
 	let t = refresh_universes j.uj_type in
 	let var = (name,Some j.uj_val,t) in
         let tycon = lift_tycon 1 tycon in
-	let j' = pretype tycon (push_rel var env) evdref lvar c2 in
+	let j' = pretype_intern tycon (push_rel var env) evdref lvar c2 in
 	  { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	    uj_type = subst1 j.uj_val j'.uj_type }
 
     | RLetTuple (loc,nal,(na,po),c,d) ->
-	let cj = pretype empty_tycon env evdref lvar c in
+	let cj = pretype_intern empty_tycon env evdref lvar c in
 	let (IndType (indf,realargs)) = 
 	  try find_rectype env (evars_of !evdref) cj.uj_type
 	  with Not_found ->
@@ -480,7 +480,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	      (match po with
 		 | Some p ->
 		     let env_p = push_rels psign env in
-		     let pj = pretype_type empty_valcon env_p evdref lvar p in
+		     let pj = pretype_type_intern empty_valcon env_p evdref lvar p in
 		     let ccl = nf_isevar !evdref pj.utj_val in
 		     let psign = make_arity_signature env true indf in (* with names *)
 		     let p = it_mkLambda_or_LetIn ccl psign in
@@ -489,7 +489,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		       @[build_dependent_constructor cs] in
 		     let lp = lift cs.cs_nargs p in
 		     let fty = hnf_lam_applist env (evars_of !evdref) lp inst in
-		     let fj = pretype (mk_tycon fty) env_f evdref lvar d in
+		     let fj = pretype_intern (mk_tycon fty) env_f evdref lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 		     let v =
 		       let mis,_ = dest_ind_family indf in
@@ -499,7 +499,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
 		 | None -> 
 		     let tycon = lift_tycon cs.cs_nargs tycon in
-		     let fj = pretype tycon env_f evdref lvar d in
+		     let fj = pretype_intern tycon env_f evdref lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 		     let ccl = nf_isevar !evdref fj.uj_type in
 		     let ccl =
@@ -518,7 +518,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		       { uj_val = v; uj_type = ccl })
 
     | RIf (loc,c,(na,po),b1,b2) ->
-	let cj = pretype empty_tycon env evdref lvar c in
+	let cj = pretype_intern empty_tycon env evdref lvar c in
 	let (IndType (indf,realargs)) = 
 	  try find_rectype env (evars_of !evdref) cj.uj_type
 	  with Not_found ->
@@ -541,7 +541,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  let pred,p = match po with
 	    | Some p ->
 		let env_p = push_rels psign env in
-		let pj = pretype_type empty_valcon env_p evdref lvar p in
+		let pj = pretype_type_intern empty_valcon env_p evdref lvar p in
 		let ccl = nf_evar (evars_of !evdref) pj.utj_val in
 		let pred = it_mkLambda_or_LetIn ccl psign in
 		let typ = lift (- nar) (beta_applist (pred,[cj.uj_val])) in
@@ -576,7 +576,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	    in
 	    let env_c = push_rels csgn env in 
 (* 	      msgnl (str "Pi is: " ++ Termops.print_constr_env env_c pi); *)
-	    let bj = pretype (mk_tycon pi) env_c evdref lvar b in
+	    let bj = pretype_intern (mk_tycon pi) env_c evdref lvar b in
 	      it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
 	  let b1 = f cstrs.(0) b1 in
 	  let b2 = f cstrs.(1) b2 in
@@ -589,18 +589,18 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
     | RCases (loc,po,tml,eqns) ->
 	Cases.compile_cases loc
-	  ((fun vtyc env -> pretype vtyc env evdref lvar),evdref)
+	  ((fun vtyc env -> pretype_intern vtyc env evdref lvar),evdref)
 	  tycon env (* loc *) (po,tml,eqns) (* arnaud: à nettoyer, plus d'un an ici aussi *)
 
     | RCast (loc,c,k) ->
 	let cj =
 	  match k with
 	      CastCoerce ->
-		let cj = pretype empty_tycon env evdref lvar c in
+		let cj = pretype_intern empty_tycon env evdref lvar c in
 		  evd_comb1 (Coercion.inh_coerce_to_base loc env) evdref cj
 	    | CastConv (k,t) ->
-		let tj = pretype_type empty_valcon env evdref lvar t in
-		let cj = pretype (mk_tycon tj.utj_val) env evdref lvar c in
+		let tj = pretype_type_intern empty_valcon env evdref lvar t in
+		let cj = pretype_intern (mk_tycon tj.utj_val) env evdref lvar c in
 		  (* User Casts are for helping pretyping, experimentally not to be kept*)
 		  (* ... except for Correctness *)
 		let v = mkCast (cj.uj_val, k, tj.utj_val) in
@@ -619,7 +619,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  user_err_loc (loc,"pretype",(str "Not a constr tagged Dynamic"))
 
   (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
-  and pretype_type valcon env evdref lvar = function
+  and pretype_type_intern valcon env evdref lvar = function
     | RHole loc ->
 	(match valcon with
 	   | Some v ->
@@ -639,7 +639,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		 { utj_val = e_new_evar evdref env ~src:loc (mkSort s);
 		   utj_type = s})
     | c ->
-	let j = pretype empty_tycon env evdref lvar c in
+	let j = pretype_intern empty_tycon env evdref lvar c in
 	let loc = loc_of_rawconstr c in
 	let tj = evd_comb1 (Coercion.inh_coerce_to_sort loc env) evdref j in
 	  match valcon with
@@ -651,6 +651,16 @@ module Pretyping_F (Coercion : Coercion.S) = struct
                     (loc_of_rawconstr c) env (evars_of !evdref) tj.utj_val v
 (*arnaud:qu'est-ce que lvar ?? *)
 (*arnaud:uniquement utilisé dans une contrib (subtac)... hautement douteux. *)
+
+(* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
+  (* in environment [env], with existential variables [evdref] and *)
+  (* the type constraint tycon *)
+  let pretype (tycon : type_constraint) env evdref lvar = pretype_intern tycon env evdref lvar
+  (*arnaud: à mettre à jour*)
+
+  (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
+  let pretype_type valcon env evdref lvar =  pretype_type_intern valcon env evdref lvar
+  (*arnaud: à mettre aussi à jour *)
 
   let pretype_gen evdref env lvar kind c =
     let c' = match kind with

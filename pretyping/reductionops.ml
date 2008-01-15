@@ -516,6 +516,7 @@ let whd_eta c = app_stack (local_whd_state_gen eta (c,empty_stack))
 (****************************************************************************)
 
 (* Replacing defined evars for error messages *)
+(* arnaud: cette fonction ne semble pas optimale... *)
 let rec whd_evar sigma c =
   match kind_of_term c with
     | Evar (ev,args)
