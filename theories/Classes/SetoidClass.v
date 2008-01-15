@@ -90,10 +90,6 @@ Ltac setoid_refl :=
   match goal with
     | [ |- @equiv ?A ?R ?s ?X _ ] => apply (equiv_refl (A:=A) (R:=R) (s:=s) X)
     | [ H : ?X =!= ?X |- _ ] => elim H ; setoid_refl
-    | [ |- ?R ?X _ ] => apply (equiv_refl (R:=R) X)
-    | [ |- ?R ?A ?X _ ] => apply (equiv_refl (R:=R A) X)
-    | [ |- ?R ?A ?B ?X _ ] => apply (equiv_refl (R:=R A B) X)
-    | [ |- ?R ?A ?B ?C ?X _ ] => apply (equiv_refl (R:=R A B C) X)
   end.
 
 Ltac setoid_sym := 
@@ -161,7 +157,7 @@ Ltac setoidify := repeat setoidify_tac.
 Definition respectful [ sa : Setoid a eqa, sb : Setoid b eqb ] (m : a -> b) : Prop :=
   forall x y, eqa x y -> eqb (m x) (m y).
 
-Class [ Setoid a eqa, Setoid b eqb ] => Morphism (m : a -> b) :=
+Class [ sa : Setoid a eqa, sb : Setoid b eqb ] => Morphism (m : a -> b) :=
   respect : respectful m.
 
 (** Here we build a setoid instance for functions which relates respectful ones only. *)
@@ -209,7 +205,7 @@ Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc, sd : Setoid d e
 Program Instance iff_setoid : Setoid Prop iff :=
   equiv_prf := @Build_equivalence _ _ iff_refl iff_trans iff_sym.
 
-(* Program Instance not_morphism : Morphism Prop iff Prop iff not. *)
+Program Instance not_morphism : Morphism Prop iff Prop iff not.
 
 Program Instance and_morphism : ? BinaryMorphism iff_setoid iff_setoid iff_setoid and.
 
@@ -272,13 +268,13 @@ Proof.
 Qed.
 
 Program Instance [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc,
-  ? Morphism sb sc g, ? Morphism sa sb f ] => 
+  mg : ? Morphism sb sc g, mf : ? Morphism sa sb f ] => 
   compose_morphism : ? Morphism sa sc (fun x => g (f x)).
 
 Next Obligation.
 Proof.
-  apply (respect (m0:=m)).
-  apply (respect (m0:=m0)).
+  apply (respect (m0:=mg)).
+  apply (respect (m0:=mf)).
   assumption.
 Qed.
 

@@ -25,16 +25,8 @@ open Typeclasses
 open Typeclasses_errors
 (*i*)
 
-(* Auxilliary functions for the inference of implicitly quantified variables. *)    
-
-let free_vars_of_constr_expr c ?(bound=Idset.empty) l = 
-  let found id bdvars l = if Idset.mem id bdvars then l else if List.mem id l then l else id :: l in
-  let rec aux bdvars l c = match c with
-    | CRef (Ident (_,id)) -> found id bdvars l
-    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id))) :: _) when not (Idset.mem id bdvars) ->
-	fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
-    | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
-  in aux bound l c
+let ids_of_list l = 
+  List.fold_right Idset.add l Idset.empty
 
 
 let locate_reference qid =
@@ -59,6 +51,39 @@ let is_freevar ids env x =
       with _ -> not (is_global x)
   with _ -> true
 
+(* Auxilliary functions for the inference of implicitly quantified variables. *)    
+
+let free_vars_of_constr_expr c ?(bound=Idset.empty) l = 
+  let found id bdvars l = 
+    if List.mem id l then l 
+    else if not (is_freevar bdvars (Global.env ()) id)
+    then l else id :: l 
+  in
+  let rec aux bdvars l c = match c with
+    | CRef (Ident (_,id)) -> found id bdvars l
+    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id))) :: _) when not (Idset.mem id bdvars) ->
+	fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
+    | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
+  in aux bound l c
+
+let ids_of_names l = 
+  List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
+
+let free_vars_of_binders ?(bound=Idset.empty) l (binders : local_binder list) = 
+  let rec aux bdvars l c = match c with
+      ((LocalRawAssum (n, _, c)) :: tl) ->
+	let bound = ids_of_names n in
+	let l' = bound @ free_vars_of_constr_expr c ~bound:bdvars l in
+	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
+
+    | ((LocalRawDef (n, c)) :: tl) -> 
+	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
+	let l' = bound @ free_vars_of_constr_expr c ~bound:bdvars l in
+	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
+	
+    | [] -> bdvars, l
+  in aux bound l binders
+
 let rec make_fresh ids env x =
   if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_ident x)
 
@@ -82,7 +107,10 @@ let compute_constrs_freevars env constrs =
 
 let compute_constrs_freevars_binders env constrs =
   let elts = compute_constrs_freevars env constrs in
-    List.map (fun id -> (dummy_loc, id), CHole dummy_loc) elts
+    List.map (fun id -> (dummy_loc, id), CHole (dummy_loc, None)) elts
+
+let binder_list_of_ids ids =
+  List.map (fun id -> LocalRawAssum ([dummy_loc, Name id], Default Implicit, CHole (dummy_loc, None))) ids
       
 let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
 (*   let rec name_rec id = *)
@@ -139,9 +167,6 @@ let destClassAppExpl cl =
     | CApp (loc, (None,CRef (Ident f)), l) -> f, l
     | _ -> raise Not_found
 
-let ids_of_list l = 
-  List.fold_right Idset.add l Idset.empty
-
 let full_class_binders env l = 
   let avoid = Idset.union env (ids_of_list (compute_context_vars env l)) in
   let l', avoid =
@@ -184,7 +209,7 @@ let resolve_class_binders env l =
   let ctx = full_class_binders env l in
   let fv_ctx = 
     let elts = compute_context_freevars env ctx in
-      List.map (fun id -> (dummy_loc, id), CHole dummy_loc) elts
+      List.map (fun id -> (dummy_loc, id), CHole (dummy_loc, None)) elts
   in
     fv_ctx, ctx
 

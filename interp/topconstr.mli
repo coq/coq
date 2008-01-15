@@ -125,7 +125,7 @@ type constr_expr =
       constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
       * constr_expr * constr_expr
-  | CHole of loc
+  | CHole of loc * Evd.hole_kind option
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key * constr_expr list option
   | CSort of loc * rawsort
@@ -146,6 +146,7 @@ and recursion_order_expr =
   | CWfRec of constr_expr
   | CMeasureRec of constr_expr
 
+(** Anonymous defs allowed ?? *)
 and local_binder =
   | LocalRawDef of name located * constr_expr
   | LocalRawAssum of name located list * binder_kind * constr_expr

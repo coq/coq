@@ -33,7 +33,7 @@ type typeclass = {
   cl_name : identifier;
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : (identifier option * named_declaration) list; 
+  cl_context : ((identifier * bool) option * named_declaration) list; 
 
   cl_params: int;
 
@@ -298,13 +298,14 @@ let resolve_typeclasses ?(check=true) env sigma evd =
   in sat evd
 
 let class_of_constr c = 
-  match kind_of_term c with
-      App (c, _) -> 
-	(match kind_of_term c with
-	    Ind ind -> (try Some (class_of_inductive ind) with Not_found -> None)
-	  | _ -> None)
-    | _ -> None
-
+  let extract_ind c =
+    match kind_of_term c with
+	Ind ind -> (try Some (class_of_inductive ind) with Not_found -> None)
+      | _ -> None
+  in
+    match kind_of_term c with
+	App (c, _) -> extract_ind c
+      | _ -> extract_ind c
 
 type substitution = (identifier * constr) list
 

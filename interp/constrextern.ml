@@ -651,13 +651,13 @@ let rec extern inctx scopes vars r =
 
   | RVar (loc,id) -> CRef (Ident (loc,id))
 
-  | REvar (loc,n,None) when !print_meta_as_hole -> CHole loc
+  | REvar (loc,n,None) when !print_meta_as_hole -> CHole (loc, None)
 
   | REvar (loc,n,l) ->
       extern_evar loc n (Option.map (List.map (extern false scopes vars)) l)
 
   | RPatVar (loc,n) ->
-      if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
+      if !print_meta_as_hole then CHole (loc, None) else CPatVar (loc,n)
 
   | RApp (loc,f,args) ->
       (match f with
@@ -756,7 +756,7 @@ let rec extern inctx scopes vars r =
 
   | RSort (loc,s) -> CSort (loc,extern_rawsort s)
 
-  | RHole (loc,e) -> CHole loc
+  | RHole (loc,e) -> CHole (loc, Some e)
 
   | RCast (loc,c, CastConv (k,t)) ->
       CCast (loc,sub_extern true scopes vars c, CastConv (k,extern_typ scopes vars t))

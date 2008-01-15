@@ -40,7 +40,7 @@ val new_class : identifier located ->
   binder_list -> unit
 
 val new_instance : 
-  typeclass_context ->
+  local_binder list ->
   typeclass_constraint ->
   binder_def_list ->
   unit
@@ -63,3 +63,11 @@ val solve_by_tac :     env ->
   evar_info ->
   Proof_type.tactic ->
     Evd.evar_defs * bool
+
+val decompose_named_assum : types -> named_context * types
+
+val push_named_context : named_context -> env -> env
+
+val name_typeclass_binders : Idset.t ->
+    Topconstr.local_binder list ->
+    Topconstr.local_binder list * Idset.t

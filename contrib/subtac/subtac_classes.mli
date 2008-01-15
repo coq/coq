@@ -33,7 +33,7 @@ val type_ctx_instance :     Evd.evar_defs ref ->
     (Names.identifier * Term.constr option * Term.constr) list
 
 val new_instance : 
-  typeclass_context ->
+  Topconstr.local_binder list ->
   typeclass_constraint ->
   binder_def_list ->
   unit

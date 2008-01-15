@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -30,17 +31,6 @@ Proof.
   auto.
 Qed.
 
-(** Eta expansion *)
-
-Axiom eta_expansion_dep : forall A (B : A -> Type) (f : forall x : A, B x), 
-  f = fun x => f x.
-
-Lemma eta_expansion : forall A B (f : A -> B), 
-  f = fun x => f x.
-Proof.
-  intros ; apply eta_expansion_dep.
-Qed.
-
 (** Statements of functional equality for simple and dependent functions. *)
 
 Axiom fun_extensionality_dep : forall A, forall B : (A -> Type), 
@@ -62,6 +52,22 @@ Tactic Notation "extensionality" ident(x) :=
   match goal with
     [ |- ?X = ?Y ] => apply (@fun_extensionality _ _ X Y) || apply (@fun_extensionality_dep _ _ X Y) ; intro x
   end.
+
+(** Eta expansion follows from extensionality. *)
+
+Lemma eta_expansion_dep : forall A (B : A -> Type) (f : forall x : A, B x), 
+  f = fun x => f x.
+Proof.
+  intros.
+  extensionality x.
+  reflexivity.
+Qed.
+  
+Lemma eta_expansion : forall A B (f : A -> B), 
+  f = fun x => f x.
+Proof.
+  intros ; apply eta_expansion_dep.
+Qed.
 
 (** The two following lemmas allow to unfold a well-founded fixpoint definition without
    restriction using the functional extensionality axiom. *)

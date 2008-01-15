@@ -286,7 +286,7 @@ GEXTEND Gram
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c 
-      | -> CHole loc ] ]
+      | -> CHole (loc, None) ] ]
   ;
   (* Inductive schemes *)
   scheme:
@@ -314,7 +314,7 @@ GEXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
-    [ [ id = name -> (false,AssumExpr(id,CHole loc))
+    [ [ id = name -> (false,AssumExpr(id,CHole (loc, None)))
       | id = name; oc = of_type_with_opt_coercion; t = lconstr ->
          (oc,AssumExpr (id,t))
       | id = name; oc = of_type_with_opt_coercion;
@@ -339,7 +339,7 @@ GEXTEND Gram
         coe = of_type_with_opt_coercion; c = lconstr ->
 	  (coe,(id,mkCProdN loc l c))
       | id = identref; l = LIST0 binder_let ->
-	  (false,(id,mkCProdN loc l (CHole loc))) ] ]
+	  (false,(id,mkCProdN loc l (CHole (loc, None)))) ] ]
   ;
   of_type_with_opt_coercion:
     [ [ ":>" -> true
@@ -479,7 +479,7 @@ GEXTEND Gram
 	   VernacClass (qid, pars, s, [], props)
 
       (* Type classes *)
-      | IDENT "Class"; sup = OPT [ l = binders_let; "=>" -> l ];
+      | IDENT "Class"; sup = OPT [ l = delimited_binders_let; "=>" -> l ];
 	 qid = identref; pars = binders_let;
 	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
 	 props = typeclass_field_types ->
@@ -488,7 +488,7 @@ GEXTEND Gram
       | IDENT "Context"; c = typeclass_context -> 
 	  VernacContext c
 
-      | IDENT "Instance"; sup = OPT [ l = typeclass_context ; "=>" -> l ];
+      | IDENT "Instance"; sup = OPT [ l = delimited_binders_let ; "=>" -> l ];
 	 is = typeclass_constraint ; props = typeclass_field_defs ->
 	   let sup = match sup with None -> [] | Some l -> l in
 	     VernacInstance (sup, is, props)
@@ -525,7 +525,7 @@ GEXTEND Gram
   ;
 (*   typeclass_param_type: *)
 (*     [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t  *)
-(*     | id = identref -> id, CHole loc ] ] *)
+(*     | id = identref -> id, CHole (loc, None) ] ] *)
 (*   ; *)
   typeclass_field_type:
     [ [ id = identref; ":"; t = lconstr -> id, t ] ]

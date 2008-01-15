@@ -55,7 +55,7 @@ let mk_fixb (id,bl,ann,body,(loc,tyc)) =
   let n,ro = index_and_rec_order_of_annot (fst id) bl ann in
   let ty = match tyc with
       Some ty -> ty
-    | None -> CHole loc in
+    | None -> CHole (loc, None) in
   (snd id,(n,ro),bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
@@ -65,7 +65,7 @@ let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
        Pp.str"Annotation forbidden in cofix expression")) (fst ann) in
   let ty = match tyc with
       Some ty -> ty
-    | None -> CHole loc in
+    | None -> CHole (loc, None) in
   (snd id,bl,ty,body)
 
 let mk_fix(loc,kw,id,dcls) =
@@ -102,7 +102,7 @@ let lpar_id_coloneq =
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
   constr_pattern lconstr_pattern Constr.ident
-  binder binder_let binders_let typeclass_constraint pattern;
+  binder binder_let binders_let delimited_binder_let delimited_binders_let typeclass_constraint pattern;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
@@ -222,7 +222,7 @@ GEXTEND Gram
       | s=sort -> CSort (loc,s)
       | n=INT -> CPrim (loc, Numeral (Bigint.of_string n))
       | s=string -> CPrim (loc, String s)
-      | "_" -> CHole loc
+      | "_" -> CHole (loc, None)
       | id=pattern_ident -> CPatVar(loc,(false,id)) ] ]
   ;
   fix_constr:
@@ -311,33 +311,59 @@ GEXTEND Gram
   ;
   binder_list:
     [ [ idl=LIST1 name; bl=LIST0 binder_let -> 
-          LocalRawAssum (idl,Default Explicit,CHole loc)::bl
+          LocalRawAssum (idl,Default Explicit,CHole (loc, Some (Evd.BinderType (snd (List.hd idl)))))::bl
       | idl=LIST1 name; ":"; c=lconstr -> 
           [LocalRawAssum (idl,Default Explicit,c)]
       | cl = binders_let -> cl
     ] ]
   ;
+  delimited_binders_let: 
+    [ [ "["; ctx = LIST1 typeclass_constraint_binder SEP ","; "]"; bl=binders_let -> 
+	  ctx @ bl
+    | b = delimited_binder_let; cl = LIST0 binder_let -> b :: cl
+    | -> [] ] ]
+  ;
   binders_let: 
     [ [ "["; ctx = LIST1 typeclass_constraint_binder SEP ","; "]"; bl=binders_let -> 
 	  ctx @ bl
-    | cl = LIST0 binder_let -> cl
-    ] ]
+    | cl = LIST0 binder_let -> cl ] ]
   ;
   binder_let:
     [ [ id=name ->
-          LocalRawAssum ([id],Default Explicit,CHole loc)
+          LocalRawAssum ([id],Default Explicit,CHole (loc, None))
       | "("; id=name; idl=LIST1 name; ":"; c=lconstr; ")" -> 
           LocalRawAssum (id::idl,Default Explicit,c)
       | "("; id=name; ":"; c=lconstr; ")" -> 
           LocalRawAssum ([id],Default Explicit,c)
       | "`"; id=name; "`" ->
-          LocalRawAssum ([id],Default Implicit,CHole loc)
+          LocalRawAssum ([id],Default Implicit,CHole (loc, None))
       | "`"; id=name; idl=LIST1 name; ":"; c=lconstr; "`" -> 
           LocalRawAssum (id::idl,Default Implicit,c)
       | "`"; id=name; ":"; c=lconstr; "`" -> 
           LocalRawAssum ([id],Default Implicit,c)
       | "`"; id=name; idl=LIST1 name; "`" -> 
-          LocalRawAssum (id::idl,Default Implicit,CHole loc)
+          LocalRawAssum (id::idl,Default Implicit,CHole (loc, None))
+      | "("; id=name; ":="; c=lconstr; ")" ->
+          LocalRawDef (id,c)
+      | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" -> 
+          LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv (DEFAULTcast,t)))
+      | "["; tc = typeclass_constraint_binder; "]" -> tc
+    ] ]
+(*     | b = delimited_binder_let -> b ] ] *)
+  ;
+  delimited_binder_let:
+    [ [ "("; id=name; idl=LIST1 name; ":"; c=lconstr; ")" -> 
+          LocalRawAssum (id::idl,Default Explicit,c)
+      | "("; id=name; ":"; c=lconstr; ")" -> 
+          LocalRawAssum ([id],Default Explicit,c)
+      | "`"; id=name; "`" ->
+          LocalRawAssum ([id],Default Implicit,CHole (loc, None))
+      | "`"; id=name; idl=LIST1 name; ":"; c=lconstr; "`" -> 
+          LocalRawAssum (id::idl,Default Implicit,c)
+      | "`"; id=name; ":"; c=lconstr; "`" -> 
+          LocalRawAssum ([id],Default Implicit,c)
+      | "`"; id=name; idl=LIST1 name; "`" -> 
+          LocalRawAssum (id::idl,Default Implicit,CHole (loc, None))
       | "("; id=name; ":="; c=lconstr; ")" ->
           LocalRawDef (id,c)
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" -> 
@@ -346,7 +372,7 @@ GEXTEND Gram
     ] ]
   ;
   binder:
-    [ [ id=name -> ([id],Default Explicit,CHole loc)
+    [ [ id=name -> ([id],Default Explicit,CHole (loc, None))
       | "("; idl=LIST1 name; ":"; c=lconstr; ")" -> (idl,Default Explicit,c) 
       | "`"; idl=LIST1 name; ":"; c=lconstr; "`" -> (idl,Default Implicit,c) 
     ] ]
@@ -358,11 +384,11 @@ GEXTEND Gram
     ] ]
   ;
   typeclass_constraint:
-    [ [ id=identref ; cl = LIST1 typeclass_param -> 
+    [ [ id=identref ; cl = LIST0 typeclass_param -> 
       (loc, Anonymous), Explicit, CApp (loc, (None, mkIdentC (snd id)), cl)
-    | "?" ; id=identref ; cl = LIST1 typeclass_param -> 
+    | "?" ; id=identref ; cl = LIST0 typeclass_param -> 
 	(loc, Anonymous), Implicit, CApp (loc, (None, mkIdentC (snd id)), cl)
-    | iid=identref ; ":" ; id=typeclass_name ; cl = LIST1 typeclass_param -> 
+    | iid=identref ; ":" ; id=typeclass_name ; cl = LIST0 typeclass_param -> 
 	(fst iid, Name (snd iid)), (fst id), CApp (loc, (None, mkIdentC (snd (snd id))), cl)
     ] ]
   ;

@@ -233,7 +233,7 @@ type vernac_expr =
 	(lident * constr_expr) list (* props *)
 	
   | VernacInstance of
-      typeclass_context * (* super *)
+      local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	(lident * lident list * constr_expr) list (* props *)
 

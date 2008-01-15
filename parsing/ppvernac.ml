@@ -263,7 +263,7 @@ let rec pr_module_expr = function
       hov 1 (str"(" ++ pr_module_expr me2 ++ str")")
 
 let pr_type_option pr_c = function
-  | CHole loc -> mt()
+  | CHole (loc, k) -> mt()
   | _ as c -> brk(0,2) ++ str":" ++ pr_c c
 
 let pr_decl_notation prc =
@@ -399,12 +399,6 @@ let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
 let pr_lname_lident_constr (oi,bk,a) = 
   (match snd oi with Anonymous -> mt () | Name id -> pr_lident (fst oi, id) ++ spc () ++ str":" ++ spc ()) 
   ++ pr_lconstr a in
-let pr_typeclass_context l = 
-  match l with
-      [] -> mt ()
-    | _ -> str"[" ++ spc () ++ prlist_with_sep (fun () -> str"," ++ spc()) pr_lname_lident_constr l
-	++ spc () ++ str"]" ++ spc ()
-in
 let pr_instance_def sep (i,l,c) = pr_lident i ++ prlist_with_sep spc pr_lident l 
   ++ sep ++ pr_constrarg c in
 
@@ -706,7 +700,7 @@ let rec pr_vernac = function
  | VernacInstance (sup, (instid, bk, cl), props) -> 
      hov 1 (
        str"Instance" ++ spc () ++ 
-	 pr_typeclass_context sup ++
+	 pr_and_type_binders_arg sup ++
 	 str"=>" ++ spc () ++ 
 	 (match snd instid with Name id -> pr_lident (fst instid, id) ++ spc () ++ str":" ++ spc () | Anonymous -> mt ()) ++
 	 pr_constr_expr cl ++ spc () ++

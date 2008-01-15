@@ -26,8 +26,9 @@ type typeclass = {
   (* Name of the class. FIXME: should not necessarily be globally unique. *)
   cl_name : identifier;
 
-  (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : (identifier option * named_declaration) list; 
+  (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. The boolean indicates if the 
+     typeclass argument is a direct superclass. *)
+  cl_context : ((identifier * bool) option * named_declaration) list; 
 
   cl_params : int; (* This is the length of the suffix of the context which should be considered explicit parameters. *)
 
