@@ -19,3 +19,4 @@ val app_repl : 'a t -> ('a -> 'a) -> unit
 val pop : 'a t -> unit
 val top : 'a t -> 'a
 val depth : 'a t -> int
+val size : 'a t -> int

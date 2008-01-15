@@ -12,13 +12,21 @@
 
 open Util
 
+(* - size  is the count of elements actually in the queue
+   - depth is the the amount of elements pushed in the queue (and not popped)
+   in particular, depth >= size always and depth > size if the queue overflowed
+   (and forgot older elements)
+ *)
+
 type 'a t = {mutable pos : int;
              mutable size : int;
+             mutable depth : int;
              stack : 'a array}
 
 let create depth e =
   {pos = 0;
    size = 1;
+   depth = 1;
    stack = Array.create depth e}
 
 (*
@@ -37,14 +45,16 @@ let decr_pos bs =
 let push bs e =
   incr_pos bs;
   incr_size bs;
+  bs.depth <- bs.depth + 1;
   bs.stack.(bs.pos) <- e
 	  
 let pop bs =
   if bs.size > 1 then begin
     bs.size <- bs.size - 1; 
+    bs.depth <- bs.depth - 1;
     let oldpos = bs.pos in
     decr_pos bs;
-    (* Release the memory at oldpos, by coyping what is at new pos *)
+    (* Release the memory at oldpos, by copying what is at new pos *)
     bs.stack.(oldpos) <- bs.stack.(bs.pos)
   end
 
@@ -60,4 +70,6 @@ let app_repl bs f =
   if bs.size = 0 then error "Nothing on the stack"
   else bs.stack.(bs.pos) <- f (bs.stack.(bs.pos))
 
-let depth bs = bs.size
+let depth bs = bs.depth
+
+let size bs = bs.size
