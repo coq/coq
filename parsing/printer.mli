@@ -20,7 +20,6 @@ open Pattern
 open Nametab
 open Termops
 open Evd
-open Proof_type
 open Rawterm
 (*i*)
 
@@ -93,15 +92,16 @@ val pr_context_of          : env -> std_ppcmds
 
 (* Proofs *)
 
-val pr_goal                : goal -> std_ppcmds
-val pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds
-val pr_subgoal             : int -> goal list -> std_ppcmds
+val pr_goal                : Evd.evar_map -> Goal.goal -> std_ppcmds
+val pr_subgoals            : string option -> evar_map -> Goal.goal list -> std_ppcmds
+val pr_subgoal             : int -> evar_map -> Goal.goal list -> std_ppcmds
 
 val pr_open_subgoals       : unit -> std_ppcmds
 val pr_nth_open_subgoal    : int -> std_ppcmds
 val pr_evars_int           : int -> (evar * evar_info) list -> std_ppcmds
 
-val pr_prim_rule           : prim_rule -> std_ppcmds
+(* arnaud: restaurer
+val pr_prim_rule           : prim_rule -> std_ppcmds *)
 
 (* Emacs/proof general support *)
 (* (emacs_str s alts) outputs 
@@ -120,9 +120,9 @@ val pr_assumptionset : env -> Environ.AssumptionSet.t -> std_ppcmds
 
 
 type printer_pr = {
- pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
- pr_subgoal             : int -> goal list -> std_ppcmds;
- pr_goal                : goal -> std_ppcmds;
+ pr_subgoals            : string option -> evar_map -> Goal.goal list -> std_ppcmds;
+ pr_subgoal             : int -> evar_map -> Goal.goal list -> std_ppcmds;
+ pr_goal                : evar_map -> Goal.goal -> std_ppcmds;
 };;
 
 val set_printer_pr : printer_pr -> unit

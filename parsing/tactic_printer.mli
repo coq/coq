@@ -13,14 +13,17 @@ open Pp
 open Sign
 open Evd
 open Tacexpr
-open Proof_type
 (*i*)
+(* arnaud: trucs factices *)
+type proof_tree
+type rule
+(* arnaud: /trucs factices *)
 
 (* These are the entry points for tactics, proof trees, ... *)
 
 val print_proof : evar_map -> named_context -> proof_tree -> std_ppcmds
 val pr_rule     : rule -> std_ppcmds
-val pr_tactic   : tactic_expr -> std_ppcmds
+val pr_tactic   : Pptactic.Proof_type.tactic_expr -> std_ppcmds
 val print_script :
   bool -> evar_map -> proof_tree -> std_ppcmds
 val print_treescript :

@@ -22,17 +22,10 @@ open Reductionops
 open Environ
 open Libnames
 open Evd
-open Pfedit
 open Tacred
 open Rawterm
-open Tacmach
-open Proof_trees
-open Proof_type
 open Logic
-open Evar_refiner
 open Clenv
-open Clenvtac
-open Refiner
 open Tacticals
 open Hipattern
 open Coqlib
@@ -43,6 +36,49 @@ open Decl_kinds
 open Evarutil
 open Indrec
 open Pretype_errors
+
+
+
+(* arnaud: trucs factices *)
+type hyp_location
+module Tacmach = 
+  struct
+    let introduction _ = Util.anomaly "Tactics.Tacmach.introduction: fantome"
+    let intro_replacing _ = Util.anomaly "Tactics.Tacmach.intro_replacing: fantome"
+    let internal_cut _ = Util.anomaly "Tactics.Tacmach.internal_cut: fantome"
+    let internal_cut_rev _ = Util.anomaly "Tactics.Tacmach.internal_cut_rev: fantome"
+    let refine _ = Util.anomaly "Tactics.Tacmach.refine: fantome"
+    let convert_concl _ = Util.anomaly "Tactics.Tacmach.convert_concl: fantome"
+    let convert_hyp _ = Util.anomaly "Tactics.Tacmach.convert_hyp: fantome"
+    let thin _ = Util.anomaly "Tactics.Tacmach.thin: fantome"
+    let thin_body _ = Util.anomaly "Tactics.Tacmach.thin_body: fantome"
+    let move_hyp _ = Util.anomaly "Tactics.Tacmach.move_hyp: fantome"
+    let rename_hyp _ = Util.anomaly "Tactics.Tacmach.rename_hyp: fantome"
+    let mutual_fix _ = Util.anomaly "Tactics.Tacmach.mutual_fix: fantome"
+    let mutual_cofix _ = Util.anomaly "Tactics.Tacmach.mutual_cofix: fantome"
+  end 
+module Pfedit =
+  struct
+    let get_current_proof_name _ = Util.anomaly "Tactics.Pfedit.get_current_proof_name: fantome"
+  end
+
+let convert_concl_no_check _ = Util.anomaly "Tactics.convert_concl_no_check: fantome"
+let pf_reduce _ = Util.anomaly "Tactics.pf_reduce: fantome"
+let pf_concl _ = Util.anomaly "Tactics.pf_concl: fantome"
+let pf_get_hyp _ = Util.anomaly "Tactics.pf_get_hyp: fantome"
+let convert_hyp_no_check _ = Util.anomaly "Tactics.convert_hyp_no_check: fantome"
+let with_check _ = Util.anomaly "Tactics.with_check: fantome"
+let pf_ids_of_hyps _ = Util.anomaly "Tactics.pf_ids_of_hyps: fantome"
+let pf_env _ = Util.anomaly "Tactics.pf_env: fantome"
+let pf_lookup_index_as_renamed _ = Util.anomaly "Tactics.pf_lookup_index_as_renamed: fantome" 
+let pf_lookup_name_as_renamed _ = Util.anomaly "Tactics.pf_lookup_name_as_renamed: fantome" 
+let project _ = Util.anomaly "Tactics.project: fantome"
+let pf_hyps _ = Util.anomaly "Tactics.pf_hyps: fantome"
+
+
+type anything = IntroNeedsProduct
+exception RefinerError of anything
+(* arnaud: /trucs factices *)
 
 exception Bound
 

@@ -13,11 +13,8 @@ open Names
 open Term
 open Environ
 open Sign
-open Tacmach
-open Proof_type
 open Reduction
 open Evd
-open Evar_refiner
 open Clenv
 open Redexpr
 open Tacticals
@@ -27,6 +24,10 @@ open Tacexpr
 open Nametab
 open Rawterm
 (*i*)
+
+(* arnaud: trucs factices *)
+type hyp_location
+(* arnaud: /trucs factices *)
 
 val inj_open : constr -> open_constr
 val inj_red_expr : red_expr -> (open_constr, evaluable_global_reference) red_expr_gen

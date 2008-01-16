@@ -13,6 +13,30 @@ open Term
 open Evd
 open Util
 
+(*arnaud: trucs factices *)
+type pftreestate
+module Proof_type =
+struct
+  type goal = Evd.evar_info
+end
+module Refiner =
+struct
+  let top_goal_of_pftreestate _ = Util.anomaly ("")
+  let nth_goal_of_pftreestate _ = Util.anomaly ("")
+  let up_until_matching_rule _ = Util.anomaly ("")
+end
+module Pfedit =
+struct
+  let get_pftreestate _ = Util.anomaly ("")
+end
+module Proof_trees =
+struct
+  let is_proof_instr _ = Util.anomaly ("")
+
+end
+
+(*arnaud: /types factices *)
+
 let daimon_flag = ref false
 
 let set_daimon_flag () = daimon_flag:=true 

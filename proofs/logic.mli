@@ -15,13 +15,13 @@ open Term
 open Evd
 open Environ *)
 
-type simpl_tactics =
+type simple_tactic =
   | Intro of identifier
   | Intro_replacing of identifier
   | Cut of bool * identifier * types
   | FixRule of identifier * int * (identifier * int * constr) list
   | Cofix of identifier * (identifier * constr) list
-  | Refine of constr (*arnaud: rawconstr sans doute *)
+  | Refine of Rawterm.rawconstr
   | Convert_concl of types * cast_kind 
   | Convert_hyp of named_declaration
   | Thin of identifier list

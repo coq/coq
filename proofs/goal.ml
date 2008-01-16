@@ -64,8 +64,8 @@ let evar_map_filter f evm =
            Evd.empty
 
 
-(* arnaud: à commenter un brin  *)
-let refine defs env check_type step gl =
+(* arnaud: à commenter un brin plus *)
+let refine env check_type step defs gl =
   (* retrieving the current [evar_info] associated to [gl] *)
   let info = content (Evd.evars_of defs) gl in
   (* building an environement containing [env] and the hypotheses of [gl] *)
@@ -110,7 +110,18 @@ let refine defs env check_type step gl =
 
 (*** Other tactics ***)
 
-(* Implements the clear tactics *)
+(* arnaud: faut franchement nettoyer tout ça. Ça mérite une réflexion de fond
+   mais ya du nettoyage à faire *)
+
+(* arnaud: c'est évidemment faux. Evarutil.clear_hyps_in_evi change toutes
+   les evars en les instanciant, ce qui crée des bugs dans les dépendances.
+   Dès les phases où ça doit devenir crédible il faudra repenser sérieusement
+   la sémantique de ce truc.
+   L'idée serait de ne pas instancier les vieilles evars avec de nouveau
+   trucs, mais de faire de nouveau trucs instanciés par les vieilles evars.
+   Ou bien de demander à l'autre but de suivre l'instanciation du clear.
+   Je pense. *)
+(* Implements the clear tactic *)
 let clear idents defs gl =
   let rdefs = ref defs in
   let info = content (Evd.evars_of defs) gl in
@@ -129,7 +140,89 @@ let clear idents defs gl =
     new_defs = new_defs
   }
 
-(* arnaud Evarutil ou Reductionops ou Pretype_errors ? *)
+(* arnaud: générer les erreurs en deux temps sans doute ? *)
+(* arnaud: qu'est-ce qui doit être failure, et qu'est-ce qui doit juste
+   failer de progresser ?*)
+(* the four following functions implement the clearbody tactic *)
+let apply_to_hyp_and_dependent_on sign id f g =
+  try Environ.apply_to_hyp_and_dependent_on sign id f g 
+  with Environ.Hyp_not_found -> 
+    (*arnaud: if !check then*) Util.error "No such assumption" (*arnaud: error ou pas ?*)
+    (*arnaud: ça va avec le !check d'au dessus: else sign*)
+
+let check_typability env sigma c =
+  (*arnaud:if !check then*) let _ = Typing.type_of env sigma c in () 
+
+(* arnaud: est-il intéressant de rajouter un no-check flag ? *)
+let recheck_typability (what,id) env sigma t =
+  try check_typability env sigma t
+  with _ ->
+    let s = match what with
+      | None -> "the conclusion"
+      | Some id -> "hypothesis "^(Names.string_of_id id) in
+    Util.error (*arnaud: error ou pas ?*)
+      ("The correctness of "^s^" relies on the body of "^(Names.string_of_id id))
+
+let remove_hyp_body env sigma id =
+  let sign =
+    apply_to_hyp_and_dependent_on (Environ.named_context_val env) id
+      (fun (_,c,t) _ ->
+	match c with
+	| None -> Util.error ((Names.string_of_id id)^" is not a local definition") (*arnaud: erroor ou pas ?*)
+	| Some c ->(id,None,t))
+      (fun (id',c,t as d) sign ->
+	((* arnaud: if !check then*)
+	  begin 
+	    let env = Environ.reset_with_named_context sign env in
+	    match c with
+	    | None ->  recheck_typability (Some id',id) env sigma t
+	    | Some b ->
+		let b' = mkCast (b,DEFAULTcast, t) in
+		recheck_typability (Some id',id) env sigma b'
+	  end;d))
+  in
+  Environ.reset_with_named_context sign env 
+
+(* arnaud: on fait autant de passe qu'il y a d'hypothèses, ça permet un 
+   message d'erreur plus fin, mais c'est un peu lourdingue...*)
+let clear_body env idents defs gl =
+  let info = content (Evd.evars_of defs) gl in
+  let full_env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
+  let aux env id = 
+     let env' = remove_hyp_body env (Evd.evars_of defs) id in
+       (*arnaud: if !check then*) recheck_typability (None,id) env' (Evd.evars_of defs) (Evd.evar_concl info);
+       env'
+  in
+  let new_env = 
+    List.fold_left aux full_env idents
+  in
+  let concl = Evd.evar_concl info in
+  let (defs',new_constr) = Evarutil.new_evar defs new_env concl in
+  let new_evar = match kind_of_term new_constr with
+                     | Evar (e,_) -> e
+		     | _ -> Util.anomaly "Goal.clear: e_new_evar failure"
+  in
+  let new_goal = build new_evar in
+  let new_defs = Evd.evar_define gl.content new_constr defs' in
+  { subgoals = [new_goal] ;
+    new_defs = new_defs
+  }
+
+(* arnaud Evarutil ou Reductionops ou Pretype_errors .nf_evar? *)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
 (* arnaud: remplacer par un "print goal" I guess suppose. 
 (* This function returns a new goal where the evars have been

@@ -15,7 +15,12 @@ open Term
 open Sign
 open Evd
 open Pattern
-open Proof_trees
+
+(* arnaud: truc factices *)
+type goal
+type 'a sigma
+(* arnaud: /truc factices *)
+
 (*i*)
 
 (*s Given a term with second-order variables in it,
@@ -116,8 +121,6 @@ val is_matching_sigma : constr -> bool
 val match_eqdec : constr -> bool * constr * constr * constr * constr
 
 (* Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
-open Proof_type
-open Tacmach
 val dest_nf_eq : goal sigma -> constr -> (constr * constr * constr)
 
 (* Match a negation *)

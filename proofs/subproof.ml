@@ -43,6 +43,10 @@ let rec init = function
 			         | Term.Evar (e,_) -> e
 				 | _ -> Util.anomaly 
 				     "Subproof.init: new_evar failure"
+				       (* arnaud:faire un nouveau new_evar 
+					  ad hoc.
+				          Chercher le pattern dans 
+				          goal.ml aussi.*)
 				       (* the above error would mean
 					  that [Evarutil.new_evar]
 					  outputed a non-evar constr,

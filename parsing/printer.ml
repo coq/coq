@@ -22,10 +22,7 @@ open Libnames
 open Nametab
 open Ppconstr
 open Evd
-open Proof_type
 open Decl_mode
-open Refiner
-open Pfedit
 open Ppconstr
 open Constrextern
 
@@ -252,7 +249,9 @@ let pr_subgoal_metas metas env=
     hv 0 (prlist_with_sep mt pr_one metas)
 
 (* display complete goal *)
-let default_pr_goal g =
+(* arnaud: à reprendre calmement *)
+let default_pr_goal sigma gl =
+  let g = Goal.content sigma gl in
   let env = evar_env g in
   let preamb,thesis,penv,pc =
     if g.evar_extra = None then
@@ -295,18 +294,19 @@ let rec pr_evars_int i = function
               str (string_of_existential ev)  ++ str " : " ++ pegl)) ++ 
       fnl () ++ pei
 
-let default_pr_subgoal n =
+let default_pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> error "No such goal"
     | g::rest ->
        	if p = 1 then
-          let pg = default_pr_goal g in
+          let pg = default_pr_goal sigma g in
           v 0 (str "subgoal " ++ int n ++ str " is:" ++ cut () ++ pg)
        	else 
 	  prrec (p-1) rest
   in 
-  prrec n
+  prrec n 
 
+(* arnaud: à reprendre calmement *)
 (* Print open subgoals. Checks for uninstantiated existential variables *)
 let default_pr_subgoals close_cmd sigma = function 
   | [] -> 
@@ -315,7 +315,7 @@ let default_pr_subgoals close_cmd sigma = function
 	  Some cmd ->
 	    (str "Subproof completed, now type " ++ str cmd ++ 
 	       str "." ++ fnl ())
-	| None ->
+	| None -> (* arnaud: ce morceau devrait disparaître *)
 	    let exl = Evarutil.non_instantiated sigma in 
 	      if exl = [] then 
 		(str"Proof completed."  ++ fnl ())
@@ -325,17 +325,18 @@ let default_pr_subgoals close_cmd sigma = function
 		     str "variables :"  ++fnl () ++ (hov 0 pei))
       end
   | [g] ->
-      let pg = default_pr_goal g in
+      let pg = default_pr_goal sigma g in
       v 0 (str ("1 "^"subgoal") ++cut () ++ pg)
   | g1::rest ->
       let rec pr_rec n = function
         | [] -> (mt ())
-        | g::rest ->
+        | gl::rest ->
+	    let g = Goal.content sigma gl in
             let pc = pr_concl n g in
             let prest = pr_rec (n+1) rest in
             (cut () ++ pc ++ prest) 
       in
-      let pg1 = default_pr_goal g1 in
+      let pg1 = default_pr_goal sigma g1 in
       let prest = pr_rec 2 rest in
       v 0 (int(List.length rest+1) ++ str" subgoals" ++ cut () 
 	   ++ pg1 ++ prest ++ fnl ())
@@ -346,9 +347,9 @@ let default_pr_subgoals close_cmd sigma = function
 
 
 type printer_pr = {
- pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
- pr_subgoal             : int -> goal list -> std_ppcmds;
- pr_goal                : goal -> std_ppcmds;
+ pr_subgoals            : string option -> evar_map -> Goal.goal list -> std_ppcmds;
+ pr_subgoal             : int -> evar_map -> Goal.goal list -> std_ppcmds;
+ pr_goal                : evar_map -> Goal.goal -> std_ppcmds;
 }
 
 let default_printer_pr = {
@@ -369,12 +370,15 @@ let pr_goal     x = !printer_pr.pr_goal     x
 (**********************************************************************)
 
 let pr_subgoals_of_pfts pfts =
+  Util.anomaly ("")(*arnaud: restaurer: 
   let close_cmd = Decl_mode.get_end_command pfts in
   let gls = fst (Refiner.frontier (proof_of_pftreestate pfts)) in 
   let sigma = (top_goal_of_pftreestate pfts).sigma in
     pr_subgoals close_cmd sigma gls
+		   *)
       
 let pr_open_subgoals () =
+  Util.anomaly ("")(*arnaud: restaurer: 
   let pfts = get_pftreestate () in
   match focus() with
     | 0 -> 
@@ -389,14 +393,17 @@ let pr_open_subgoals () =
 	  (* LEM TODO: this way of saying how many subgoals has to be abstracted out*)
 	  v 0 (int(List.length gls) ++ str" subgoals" ++ cut () ++
 	  pr_subgoal n gls)
+		   *)
 
 let pr_nth_open_subgoal n =
+  Util.anomaly ("")(*arnaud: restaurer: 
   let pf = proof_of_pftreestate (get_pftreestate ()) in
   pr_subgoal n (fst (frontier pf))
+		   *)
 
 (* Elementary tactics *)
 
-let pr_prim_rule = function
+let pr_prim_rule = fun _ -> Util.anomaly ("")(*arnaud: restaurer: function
   | Intro id -> 
       str"intro " ++ pr_id id
 	
@@ -461,7 +468,7 @@ let pr_prim_rule = function
          Function pr_rule_dot below is used when we want to hide
          Change_evars *)
       str "Evar change"
-
+					     *)
 
 (* Backwards compatibility *)
 

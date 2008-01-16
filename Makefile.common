@@ -122,8 +122,7 @@ INTERP:=\
 PROOFS:=\
   proofs/tacexpr.cmo proofs/redexpr.cmo \
   proofs/logic.cmo \
-  proofs/evar_refiner.cmo proofs/tacmach.cmo \
-  proofs/tactic_debug.cmo \
+  proofs/goal.cmo proofs/subproof.cmo proofs/proof.cmo \
   proofs/decl_mode.cmo
 
 PARSING:=\

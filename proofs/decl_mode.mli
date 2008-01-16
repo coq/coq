@@ -11,7 +11,15 @@
 open Names
 open Term
 open Evd
-open Tacmach
+
+(*arnaud: types factices *)
+type pftreestate
+module Proof_type :
+sig
+  type goal
+end
+
+(*arnaud: /types factices *)
 
 val set_daimon_flag : unit -> unit
 val clear_daimon_flag : unit -> unit

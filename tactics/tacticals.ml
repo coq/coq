@@ -19,15 +19,31 @@ open Inductive
 open Reduction
 open Environ
 open Libnames
-open Refiner
-open Tacmach
 open Clenv
-open Clenvtac
 open Pattern
 open Matching
-open Evar_refiner
 open Genarg
 open Tacexpr
+
+
+(* arnaud: trucs factices *)
+type 'a sigma = 'a Evd.sigma
+type goal
+type tactic = goal sigma -> goal sigma
+type proof_tree
+
+let pf_hyps _ = Util.anomaly ""
+let pf_ids_of_hyps _ = Util.anomaly ""
+let pf_concl _ = Util.anomaly ""
+let pf_get_hyp_typ _ = Util.anomaly ""
+let pf_env _ = Util.anomaly ""
+let project _ = Util.anomaly ""
+let hnf_type_of _ = Util.anomaly ""
+let pf_type_of _ = Util.anomaly ""
+let pf_reduce_to_quantified_ind _ = Util.anomaly ""
+let elim_res_pf_THEN_i _ = Util.anomaly ""
+(* arnaud: /trucs factices *)
+
 
 (******************************************)
 (*         Basic Tacticals                *)
@@ -37,40 +53,40 @@ open Tacexpr
 (* Tacticals re-exported from the Refiner module.*)
 (*************************************************)
 
-let tclIDTAC         = tclIDTAC
-let tclIDTAC_MESSAGE = tclIDTAC_MESSAGE
-let tclORELSE        = tclORELSE
-let tclTHEN          = tclTHEN
-let tclTHENLIST      = tclTHENLIST
-let tclTHEN_i        = tclTHEN_i
-let tclTHENFIRST     = tclTHENFIRST
-let tclTHENLAST      = tclTHENLAST
-let tclTHENS         = tclTHENS
-let tclTHENSV        = Refiner.tclTHENSV
-let tclTHENSFIRSTn   = Refiner.tclTHENSFIRSTn
-let tclTHENSLASTn    = Refiner.tclTHENSLASTn
-let tclTHENFIRSTn    = Refiner.tclTHENFIRSTn
-let tclTHENLASTn     = Refiner.tclTHENLASTn
-let tclREPEAT        = Refiner.tclREPEAT
-let tclREPEAT_MAIN   = tclREPEAT_MAIN
-let tclFIRST         = Refiner.tclFIRST
-let tclSOLVE         = Refiner.tclSOLVE
-let tclTRY           = Refiner.tclTRY
-let tclINFO          = Refiner.tclINFO
-let tclCOMPLETE      = Refiner.tclCOMPLETE
-let tclAT_LEAST_ONCE = Refiner.tclAT_LEAST_ONCE
-let tclFAIL          = Refiner.tclFAIL
-let tclDO            = Refiner.tclDO
-let tclPROGRESS      = Refiner.tclPROGRESS
-let tclWEAK_PROGRESS = Refiner.tclWEAK_PROGRESS
-let tclNOTSAMEGOAL   = Refiner.tclNOTSAMEGOAL
-let tclTHENTRY       = tclTHENTRY
-let tclIFTHENELSE    = tclIFTHENELSE
-let tclIFTHENSELSE   = tclIFTHENSELSE
-let tclIFTHENSVELSE   = tclIFTHENSVELSE
-let tclIFTHENTRYELSEMUST = tclIFTHENTRYELSEMUST
+let tclIDTAC         = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIDTAC*)
+let tclIDTAC_MESSAGE = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIDTAC_MESSAGE*)
+let tclORELSE        = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclORELSE*)
+let tclTHEN          = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHEN*)
+let tclTHENLIST      = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENLIST*)
+let tclTHEN_i        = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHEN_i*)
+let tclTHENFIRST     = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENFIRST*)
+let tclTHENLAST      = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENLAST*)
+let tclTHENS         = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENS*)
+let tclTHENSV        = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENSV*)
+let tclTHENSFIRSTn   = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENSFIRSTn*)
+let tclTHENSLASTn    = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENSLASTn*)
+let tclTHENFIRSTn    = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENFIRSTn*)
+let tclTHENLASTn     = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENLASTn*)
+let tclREPEAT        = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclREPEAT*)
+let tclREPEAT_MAIN   = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclREPEAT_MAIN*)
+let tclFIRST         = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclFIRST*)
+let tclSOLVE         = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclSOLVE*)
+let tclTRY           = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTRY*)
+let tclINFO          = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclINFO*)
+let tclCOMPLETE      = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclCOMPLETE*)
+let tclAT_LEAST_ONCE = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclAT_LEAST_ONCE*)
+let tclFAIL          = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclFAIL*)
+let tclDO            = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclDO*)
+let tclPROGRESS      = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclPROGRESS *)
+let tclWEAK_PROGRESS = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclWEAK_PROGRESS *)
+let tclNOTSAMEGOAL   = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclNOTSAMEGOAL *)
+let tclTHENTRY       = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENTRY *)
+let tclIFTHENELSE    = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIFTHENELSE *)
+let tclIFTHENSELSE   = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIFTHENSELSE *)
+let tclIFTHENSVELSE   = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIFTHENSVELSE *)
+let tclIFTHENTRYELSEMUST = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIFTHENTRYELSEMUST *)
 
-let unTAC            = unTAC
+let unTAC            = fun _ -> Util.anomaly "" (* arnaud: restaurer: unTAC*)
 
 (* [rclTHENSEQ [t1;..;tn] is equivalent to t1;..;tn *)
 let tclTHENSEQ = List.fold_left tclTHEN tclIDTAC
@@ -321,6 +337,7 @@ let last_arg c = match kind_of_term c with
 
 let general_elim_then_using 
   elim isrec allnames tac predicate (indbindings,elimbindings) c gl =
+  Util.anomaly "general_elim_then_using: todo" (* arnaud: à restaurer
   let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   (* applying elimination_scheme just a little modified *)
   let indclause  = mk_clenv_from gl (c,t) in
@@ -371,7 +388,7 @@ let general_elim_then_using
            clenv_unify true Reduction.CONV (mkMeta pmv) p elimclause'
   in 
   elim_res_pf_THEN_i elimclause' branchtacs gl
-
+					       *)
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
   let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in

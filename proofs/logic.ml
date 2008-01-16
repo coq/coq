@@ -28,7 +28,7 @@ open Retyping
 open Evarutil*)
 
 
-type simple_tactics =
+type simple_tactic =
   | Intro of identifier
   | Intro_replacing of identifier
   | Cut of bool * identifier * types
@@ -73,6 +73,16 @@ let rec catchable_exception = function
 
 
 (* arnaud: on va faire les règles une par une, puis on fait l'interpréteur *)
+
+let interprete_simple_tactic_as_single_tactics env = function
+  | Intro id -> (* arnaud: vérifier que "id" n'apparaît pas.*)
+               Goal.refine env true (
+                   Rawterm.RLambda (Util.dummy_loc, Name id,
+			    Rawterm.RHole (Util.dummy_loc, Evd.InternalHole),
+		            Rawterm.RHole (Util.dummy_loc, Evd.InternalHole)
+			    )
+	       )
+  | _ -> Util.anomaly "fonction à rebrancher" (*arnaud: ... *)
 
 
 (*

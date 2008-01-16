@@ -12,12 +12,22 @@ open Pp
 open Genarg
 open Tacexpr
 open Pretyping
-open Proof_type
 open Topconstr
 open Rawterm
 open Ppextend
 open Environ
 open Evd
+
+(* arnaud: trucs factices *)
+module Proof_type :
+  sig
+    type tactic_expr = (Evd.open_constr, Pattern.constr_pattern,
+			Names.evaluable_global_reference, Names.inductive,
+			Nametab.ltac_constant, Names.identifier, 
+			Tacexpr.glob_tactic_expr) Tacexpr.gen_tactic_expr
+  end 
+
+(* arnaud: /trucs factices *)
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
 val pr_or_metaid : ('a -> std_ppcmds) -> 'a or_metaid -> std_ppcmds

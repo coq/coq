@@ -20,12 +20,18 @@ open Reductionops
 open Inductiveops
 open Evd
 open Environ
-open Proof_trees
 open Clenv
 open Pattern
 open Matching
 open Coqlib
 open Declarations
+
+(* arnaud: truc factices *)
+type goal = Tacticals.goal
+type 'a sigma = 'a Tacticals.sigma
+
+let  pf_whd_betadeltaiota _ = Util.anomaly "Hipattern.pf_whd_betadeltaiota: fantome"
+(* arnaud: /truc factices *)
 
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
@@ -259,7 +265,6 @@ let equalities =
 let find_eq_data_decompose eqn = (* fails with PatternMatchingFailure *)
   first_match (match_eq eqn) equalities
 
-open Tacmach
 open Tacticals
 
 let match_eq_nf gls eqn eq_pat =

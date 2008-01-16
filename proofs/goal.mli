@@ -13,10 +13,16 @@
 
 type goal
 
-val build : ?name:string -> Evd.evar -> goal
+(*arnaud: virer build quand on aura trouvé une meilleure primitive
+          pour Subproof.init. *)
+val build : ?name:string -> Evd.evar -> goal 
 
 val is_defined : Evd.evar_map -> goal -> bool
 
+
+(* arnaud: mieux commenter *)
+(* invariant : [e] must exist in [em] *)
+val content : Evd.evar_map -> goal -> Evd.evar_info
 
 (*** Refine tactic ***)
 
@@ -31,7 +37,7 @@ type refinement = { subgoals: goal list ;
 
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)
-val refine : Evd.evar_defs -> Environ.env -> bool -> Rawterm.rawconstr -> goal -> refinement
+val refine : Environ.env -> bool -> Rawterm.rawconstr -> Evd.evar_defs -> goal -> refinement
 
 
 (*arnaud: commenter plus sans doute. Pareil dans le .ml *)

@@ -13,14 +13,19 @@ open Pp
 open Names
 open Term
 open Sign
-open Tacmach
-open Proof_type
 open Clenv
 open Reduction
 open Pattern
 open Genarg
 open Tacexpr
 (*i*)
+
+(* arnaud: trucs factices *)
+type 'a sigma = 'a Evd.sigma
+type goal
+type tactic = goal sigma -> goal sigma
+type proof_tree
+(* arnaud: /trucs factices *)
 
 (* Tacticals i.e. functions from tactics to tactics. *)
 
