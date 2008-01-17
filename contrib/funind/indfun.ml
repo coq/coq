@@ -601,6 +601,9 @@ let rec add_args id new_args b =
 		add_args id new_args b2
 	       )
 		
+  | CLetPattern(loc,p,b,c) ->
+      CLetPattern(loc,p,add_args id new_args b,add_args id new_args c)
+
   | CIf(loc,b1,(na,b_option),b2,b3) -> 
       CIf(loc,add_args id new_args b1, 
 	  (na,Option.map (add_args id new_args) b_option),

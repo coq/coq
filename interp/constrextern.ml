@@ -722,6 +722,15 @@ let rec extern inctx scopes vars r =
         sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
 
+  | RLetPattern (loc,(tm,_), eqn) ->
+      let p, c = 
+	match extern_eqn false scopes vars eqn with
+	    (loc,[loc',[p]], c) -> p,c
+	  | _ -> assert false
+      in
+      let t = extern inctx scopes vars tm in
+	CLetPattern(loc, p, t, c)
+
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
         (Option.map (fun _ -> na) typopt,

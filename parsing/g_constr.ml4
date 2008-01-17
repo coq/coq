@@ -201,11 +201,15 @@ GEXTEND Gram
 	  ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
           CLetTuple (loc,List.map snd lb,po,c1,c2)
-      | "dest"; c1 = operconstr LEVEL "200"; "as"; p=pattern;
+      | "let"; "|"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
-	 let loc' = cases_pattern_expr_loc p in
-         CCases (loc, None, [(c1, (None, None))],
-                 [loc, [loc',[p]], c2])
+	    CLetPattern (loc, p, c1, c2)
+      | "dest"; c1 = operconstr LEVEL "200";
+	  "as"; p=pattern; 
+          "in"; c2 = operconstr LEVEL "200" ->
+	    let loc' = cases_pattern_expr_loc p in
+              CCases (loc, None, [(c1, (None, None))],
+                     [loc, [loc',[p]], c2])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->

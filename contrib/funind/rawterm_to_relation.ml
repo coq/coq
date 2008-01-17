@@ -689,7 +689,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	build_entry_lc env funnames  avoid b
     | RDynamic _ -> error "Not handled RDynamic"
 and build_entry_lc_from_case env funname make_discr
-    (el:tomatch_tuple)
+    (el:tomatch_tuples)
     (brl:Rawterm.cases_clauses) avoid : 
     rawconstr build_entry_return = 
   match el with 

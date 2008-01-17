@@ -30,7 +30,8 @@ Qed.
 
 Implicit Arguments setoideq_eq [[a] [eqa] [sa]].
 
-Ltac setoideq :=
+(** Application of the extensionality principle for setoids. *)
+Ltac setoideq_ext :=
   match goal with
     [ |- @eq ?A ?X ?Y ] => apply (setoideq_eq (a:=A) X Y)
   end.

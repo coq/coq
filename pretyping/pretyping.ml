@@ -583,6 +583,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  in
 	    { uj_val = v; uj_type = p }
 
+    | RLetPattern (loc, c, p) ->
+	(* Just use cases typing *)
+	let j = 
+	  pretype tycon env evdref lvar 
+	    (RCases (loc, None, [c], [p]))
+	in j
+	
     | RCases (loc,po,tml,eqns) ->
 	Cases.compile_cases loc
 	  ((fun vtyc env -> pretype vtyc env evdref lvar),evdref)

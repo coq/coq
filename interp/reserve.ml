@@ -64,6 +64,8 @@ let rec unloc = function
         List.map (fun (_,idl,p,c) -> (dummy_loc,idl,p,unloc c)) pl)
   | RLetTuple (_,nal,(na,po),b,c) ->
       RLetTuple (dummy_loc,nal,(na,Option.map unloc po),unloc b,unloc c)
+  | RLetPattern (_,(tm,x),(_,idl,p,c)) -> 
+      RLetPattern (dummy_loc,(unloc tm,x),(dummy_loc,idl,p,unloc c))
   | RIf (_,c,(na,po),b1,b2) ->
       RIf (dummy_loc,unloc c,(na,Option.map unloc po),unloc b1,unloc b2)
   | RRec (_,fk,idl,bl,tyl,bv) ->

@@ -22,7 +22,7 @@ val mkRApp  : rawconstr*(rawconstr list) -> rawconstr
 val mkRLambda : Names.name*rawconstr*rawconstr -> rawconstr
 val mkRProd : Names.name*rawconstr*rawconstr -> rawconstr
 val mkRLetIn : Names.name*rawconstr*rawconstr -> rawconstr
-val mkRCases : rawconstr option * tomatch_tuple * cases_clauses -> rawconstr
+val mkRCases : rawconstr option * tomatch_tuples * cases_clauses -> rawconstr
 val mkRSort : rawsort -> rawconstr 
 val mkRHole : unit -> rawconstr (* we only build Evd.BinderType Anonymous holes *)
 val mkRCast : rawconstr* rawconstr -> rawconstr 

@@ -123,6 +123,7 @@ type constr_expr =
       (loc * cases_pattern_expr list located list * constr_expr) list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
+  | CLetPattern of loc * cases_pattern_expr * constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
       * constr_expr * constr_expr
   | CHole of loc * Evd.hole_kind option

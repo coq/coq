@@ -616,7 +616,29 @@ let rec subst_rawconstr subst raw =
       and c' = subst_rawconstr subst c in
 	if po' == po && b' == b && c' == c then raw else
           RLetTuple (loc,nal,(na,po'),b',c')
-      
+
+  | RLetPattern (loc, (a,x as c), (loc',idl,cpl,r as branch)) ->
+      let c' = 
+	let a' = subst_rawconstr subst a in
+        let (n,topt) = x in 
+        let topt' = Option.smartmap
+          (fun (loc,(sp,i),x,y as t) ->
+            let sp' = subst_kn subst sp in
+              if sp == sp' then t else (loc,(sp',i),x,y))
+	  topt 
+	in
+          if a == a' && topt == topt' then c else (a',(n,topt'))
+      in
+      let p' = 
+	let cpl' =
+	  list_smartmap (subst_cases_pattern subst) cpl
+	and r' = subst_rawconstr subst r in
+	  if cpl' == cpl && r' == r then branch else
+	    (loc',idl,cpl',r')
+      in 
+	if c' == c && p' == branch then raw else
+	  RLetPattern (loc, c', p')
+	        
   | RIf (loc,c,(na,po),b1,b2) ->
       let po' = Option.smartmap (subst_rawconstr subst) po
       and b1' = subst_rawconstr subst b1 

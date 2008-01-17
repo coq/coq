@@ -62,9 +62,10 @@ type rawconstr =
   | RLambda of loc * name * binding_kind * rawconstr * rawconstr
   | RProd of loc * name * binding_kind * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * rawconstr option * tomatch_tuple * cases_clauses
+  | RCases of loc * rawconstr option * tomatch_tuples * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
+  | RLetPattern of loc * tomatch_tuple * cases_clause
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
   | RRec of loc * fix_kind * identifier array * rawdecl list array *
       rawconstr array * rawconstr array
@@ -84,10 +85,13 @@ and fix_kind =
 and predicate_pattern =
     name * (loc * inductive * int * name list) option
 
-and tomatch_tuple = (rawconstr * predicate_pattern) list
+and tomatch_tuple = (rawconstr * predicate_pattern)
 
-and cases_clauses =
-    (loc * identifier list * cases_pattern list * rawconstr) list
+and tomatch_tuples = tomatch_tuple list
+
+and cases_clause = (loc * identifier list * cases_pattern list * rawconstr)
+
+and cases_clauses = cases_clause list
 
 let cases_predicate_names tml =
   List.flatten (List.map (function
@@ -117,6 +121,8 @@ let map_rawconstr f = function
         List.map (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl)
   | RLetTuple (loc,nal,(na,po),b,c) ->
       RLetTuple (loc,nal,(na,Option.map f po),f b,f c)
+  | RLetPattern (loc,(b,x),(loc',idl,p,c)) ->
+      RLetPattern (loc,(f b,x),(loc',idl,p,f c))
   | RIf (loc,c,(na,po),b1,b2) ->
       RIf (loc,f c,(na,Option.map f po),f b1,f b2)
   | RRec (loc,fk,idl,bl,tyl,bv) ->
@@ -178,6 +184,7 @@ let occur_rawconstr id =
     | RLetTuple (loc,nal,rtntyp,b,c) -> 
 	occur_return_type rtntyp id
         or (occur b) or (not (List.mem (Name id) nal) & (occur c))
+    | RLetPattern (loc, (b, _), p) -> (occur b) or (occur_pattern p)
     | RIf (loc,c,rtntyp,b1,b2) -> 
 	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
     | RRec (loc,fk,idl,bl,tyl,bv) ->
@@ -226,6 +233,7 @@ let free_rawvars  =
 	let vs2 = vars bounded vs1 b in 
 	let bounded' = List.fold_left add_name_to_ids bounded nal in
 	vars bounded' vs2 c
+    | RLetPattern (loc, (c, _), p) -> vars_pattern bounded (vars bounded vs c) p
     | RIf (loc,c,rtntyp,b1,b2) -> 
 	let vs1 = vars_return_type bounded vs rtntyp in 
 	let vs2 = vars bounded vs1 c in 
@@ -277,6 +285,7 @@ let loc_of_rawconstr = function
   | RLambda (loc,_,_,_,_) -> loc
   | RProd (loc,_,_,_,_) -> loc
   | RLetIn (loc,_,_,_) -> loc
+  | RLetPattern (loc,_,_) -> loc
   | RCases (loc,_,_,_) -> loc
   | RLetTuple (loc,_,_,_,_) -> loc
   | RIf (loc,_,_,_,_) -> loc

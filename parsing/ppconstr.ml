@@ -36,6 +36,7 @@ let lprod = 200
 let llambda = 200
 let lif = 200
 let lletin = 200
+let lletpattern = 200
 let lfix = 200
 let larrow = 90
 let lcast = 100
@@ -570,6 +571,11 @@ let rec pr sep inherited a =
                pr spc ltop c ++ str " in") ++
         pr spc ltop b),
       lletin
+  | CLetPattern (_, p, c, b) ->
+      hv 0 (
+	str "let| " ++ 
+	hov 0 (pr_patt ltop p ++ str " :=" ++ pr spc ltop c ++ str " in") ++
+	pr spc ltop b), lletpattern
   | CIf (_,c,(na,po),b1,b2) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)

@@ -138,9 +138,9 @@ let compare_rawconstr f t1 t2 = match t1,t2 with
   | RHole _, RHole _ -> true
   | RSort (_,s1), RSort (_,s2) -> s1 = s2
   | (RLetIn _ | RCases _ | RRec _ | RDynamic _
-    | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _),_
+    | RPatVar _ | REvar _ | RLetTuple _ | RLetPattern _ | RIf _ | RCast _),_
   | _,(RLetIn _ | RCases _ | RRec _ | RDynamic _
-      | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _)
+      | RPatVar _ | REvar _ | RLetTuple _ | RLetPattern _ | RIf _ | RCast _)
       -> error "Unsupported construction in recursive notations"
   | (RRef _ | RVar _ | RApp _ | RLambda _ | RProd _ | RHole _ | RSort _), _
       -> false
@@ -196,6 +196,7 @@ let aconstr_and_vars_of_rawconstr a =
       add_name found na;
       List.iter (add_name found) nal;
       ALetTuple (nal,(na,Option.map aux po),aux b,aux c)
+  | RLetPattern (loc, c, p) -> error "TODO: aconstr of letpattern"
   | RIf (loc,c,(na,po),b1,b2) ->
       add_name found na;
       AIf (aux c,(na,Option.map aux po),aux b1,aux b2)
@@ -563,6 +564,7 @@ type constr_expr =
       (loc * cases_pattern_expr list located list * constr_expr) list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
+  | CLetPattern of loc * cases_pattern_expr * constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
       * constr_expr * constr_expr
   | CHole of loc * Evd.hole_kind option
@@ -632,6 +634,7 @@ let constr_loc = function
   | CApp (loc,_,_) -> loc
   | CCases (loc,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
+  | CLetPattern (loc,_,_,_) -> loc
   | CIf (loc,_,_,_,_) -> loc
   | CHole (loc, _) -> loc
   | CPatVar (loc,_) -> loc
@@ -733,6 +736,10 @@ let fold_constr_expr_with_binders g f n acc = function
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let n' = List.fold_right (name_fold g) nal n in
       f (Option.fold_right (name_fold g) ona n') (f n acc b) c
+  | CLetPattern (loc,p,b,c) ->
+      let acc = f n acc b in
+      let ids = cases_pattern_fold_names Idset.add Idset.empty p in
+	f (Idset.fold g ids n) acc c
   | CIf (_,c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
       Option.fold_left (f (Option.fold_right (name_fold g) ona n)) acc po
@@ -844,6 +851,9 @@ let map_constr_expr_with_binders g f e = function
       let e' = List.fold_right (name_fold g) nal e in
       let e'' = Option.fold_right (name_fold g) ona e in
       CLetTuple (loc,nal,(ona,Option.map (f e'') po),f e b,f e' c)
+  | CLetPattern (loc, p, b, c) -> 
+      (* TODO: apply g on the binding variables in pat... *)
+      CLetPattern (loc, p, f e b,f e c)
   | CIf (loc,c,(ona,po),b1,b2) ->
       let e' = Option.fold_right (name_fold g) ona e in
       CIf (loc,f e c,(ona,Option.map (f e') po),f e b1,f e b2)

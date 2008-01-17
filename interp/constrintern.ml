@@ -917,6 +917,11 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let p' = Option.map (intern_type env'') po in
         RLetTuple (loc, nal, (na', p'), b',
                    intern (List.fold_left (push_name_env lvar) env nal) c)
+    | CLetPattern (loc, p, c, b) ->
+	let loc' = cases_pattern_expr_loc p in
+	let (tm,ind), nal = intern_case_item env (c,(None,None)) in
+	let eqn' = intern_eqn 1 env (loc, [loc',[p]], b) in
+	RLetPattern (loc, (tm,ind), List.hd eqn')
     | CIf (loc, c, (na,po), b1, b2) ->
 	let env' = reset_tmp_scope env in
         let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in

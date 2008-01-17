@@ -7,6 +7,10 @@ Language
   all arguments are tried successively (from left to right) until one is 
   found that satisfies the structural decreasing condition.
 - Improved inference of implicit arguments.
+- New experimental typeclass system giving ad-hoc polymorphism and overloading based on 
+  dependent records and implicit arguments.
+- New syntax "let| pat := b in c" for binding using irrefutable patterns.
+- New syntax "forall `A`, T" for specifying maximally inserted implicit arguments in terms.
 
 Commands
 
@@ -16,6 +20,8 @@ Commands
   generation of elimination schemes.
 - Modification of the Scheme command so you can ask for the name to be
   automatically computed (e.g. Scheme Induction for nat Sort Set).
+- New command "Combined Scheme" to build combined mutual induction
+  principles from existing mutual induction principles.
 - Source of universe inconsistencies now printed when option 
   "Set Printing Universes" is activated,
 - Support for option "[id1 ... idn]", and "-[id1 ... idn]", for the "compute" 
@@ -63,8 +69,9 @@ Notations and implicit arguments
 - New options "Set Maximal Implicit Insertion", "Set Reversible Pattern
   Implicit", "Set Strongly Strict Implicit" and "Set Printing Implicit
   Defensive" for controlling inference and use of implicit arguments.
-- New modifier in "Implicit Arguments" to force an implicit argument to
-  be maximally inserted.
+- New modifiers in "Implicit Arguments" to force an implicit argument to
+  be maximally inserted and/or forced if it is not seen as inferable.
+- New modifier of "Implicit Arguments" to enrich the set of implicit arguments.
 - Level "constr" moved from 9 to 8.
 - Structure/Record now printed as Record (unless option Printing All is set).
 
@@ -82,6 +89,7 @@ Tactic Language
 - Names to be used as actual identifiers (like f in "apply f_equal f:=t")
   must not be used elsewhere as variables in the same ltac expression
   (possible source of incompatibility).
+- New syntax "Ltac tac ::= ..." to rebind a tactic to a new expression.
 
 Tactics
 
@@ -106,6 +114,31 @@ Tactics
 - New intro pattern "{A,B,C}" synonym to "(A,(B,C))"
 - New syntax "rewrite A,B" for "rewrite A; rewrite B"
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
+- New tactic "dependent induction H [ generalizing id_1 .. id_n ]" to do 
+  induction-inversion on instantiated inductive families à la BasicElim.
+
+Type Classes
+
+- New "Class", "Instance" and "Program Instance" commands to define
+  classes and instances documented in the reference manual.  
+- New binding construct " [ Class_1 param_1 .. param_n, Class_2 ... ] " 
+  for binding type classes usable everywhere.  
+- New command " Print Classes " and " Print Instances some_class " to
+  print tables for typeclasses.  
+- New default eauto hint database "typeclass_instances" used by the default
+  typeclass instance search tactic.  
+- New command " Instanciation Tactic := tac " to customize the typeclass
+  instance search tactic.
+- New theories directory "theories/Classes"
+
+Program
+
+- Moved useful tactics in theories/Program and documented them.
+- More robust obligation handling, dependent pattern-matching and
+  well-founded definitions.
+- New syntax " dest term as pat in term " for destructing objects using
+  an irrefutable pattern while keeping equalities (use this instead of 
+  "let" in Programs).
 
 Miscellaneous
 

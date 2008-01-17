@@ -69,7 +69,7 @@ module type S = sig
     (type_constraint -> env -> rawconstr -> unsafe_judgment) *
       Evd.evar_defs ref ->
     type_constraint -> 
-    env -> rawconstr option * tomatch_tuple * cases_clauses ->
+    env -> rawconstr option * tomatch_tuples * cases_clauses ->
     unsafe_judgment
 end
 
