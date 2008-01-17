@@ -189,7 +189,7 @@ let print_treescript nochange sigma pf =
     | Some(r,spfl) ->
         let indent = if List.length spfl >= 2 then 1 else 0 in
         (if nochange then mt () else (pr_change pf.goal ++ fnl ())) ++
-        hv indent (pr_rule_dot r ++ prlist_with_sep fnl aux spfl)
+        hv indent (pr_rule_dot r ++ fnl () ++ prlist_with_sep fnl aux spfl)
   in hov 0 (aux pf)
 
 let rec print_info_script sigma osign pf =

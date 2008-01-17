@@ -155,7 +155,7 @@ let rec pr_bare_proof_instr _then _thus env = function
   | Pcast (id,typ) -> 
       str "reconsider" ++ spc () ++ 
 	pr_or_thesis (fun _ -> pr_id) env id ++ spc () ++ 
-	str "as" ++ (pr_constr env typ)  
+	str "as" ++ spc () ++ (pr_constr env typ)  
   | Psuppose hyps -> 
       str "suppose" ++ 
 	print_hyps pr_constr _I env false false "we have" hyps
