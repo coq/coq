@@ -17,6 +17,16 @@ open Extraargs
 open Mod_subst
 open Names
 
+(* arnaud:trucs factices *)
+type tactic = Tacticals.tactic
+
+module Refiner =
+  struct
+   let abstract_extended_tactic _ = Util.anomaly "Extratactics.abstract_extended_tactic: fantom" 
+  end 
+let refine _ = Util.anomaly "Extratactics.refine: fantom"
+(* arnaud: /trucs factices *)
+
 (* Equality *)
 open Equality
 

@@ -8,11 +8,14 @@
 
 (*i*)
 open Term
-open Proof_type
 open Tacexpr
 open Auto
 open Topconstr
 (*i*)
+
+(* arnaud: trucs factices *)
+type tactics = Tacticals.tactic
+(* arnaud: /trucs factices *)
 
 val rawwit_hintbases : hint_db_name list option raw_abstract_argument_type
 

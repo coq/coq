@@ -14,11 +14,18 @@ open Hipattern
 open Names
 open Libnames
 open Pp
-open Proof_type
 open Tacticals
 open Tacinterp
 open Tactics
 open Util
+
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+    exception FailError of int list list list
+    let abstract_extended_tactic _ = Util.anomaly "Tauto.abstract_extended_tactic: fantome"
+  end
+(* arnaud: trucs factices *)
 
 let assoc_last ist =
   match List.assoc (Names.id_of_string "X1") ist.lfun with

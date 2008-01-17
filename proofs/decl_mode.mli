@@ -16,7 +16,7 @@ open Evd
 type pftreestate
 module Proof_type :
 sig
-  type goal
+  type goal = Evd.evar_info
 end
 
 (*arnaud: /types factices *)

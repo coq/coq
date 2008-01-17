@@ -10,14 +10,22 @@
 
 open Util
 open Term
-open Proof_type
 open Hipattern
-open Tacmach
 open Tacticals
 open Tactics
 open Coqlib
 open Reductionops
 open Rawterm
+
+(*arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+let pf_env _ = Util.anomaly "Contradiction.pf_env: fantome"
+let project _ = Util.anomaly "Contradiction.project: fantome"
+let pf_nth_hyp_id _ = Util.anomaly "Contradiction.pf_nth_hyp_id: fantome"
+let pf_hyps _ = Util.anomaly "Contradiction.pf_hyps: fantome"
+let pf_conv_x_leq _ = Util.anomaly "Contradiction.pf_conv_x_leq: fantome"
+let pf_type_of _ = Util.anomaly "Contradiction.pf_type_of: fantome"
+(*arnaud: /trucs factices *)
 
 (* Absurd *)
 

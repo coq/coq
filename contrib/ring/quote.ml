@@ -109,11 +109,15 @@ open Names
 open Term
 open Pattern
 open Matching
-open Tacmach
 open Tactics
-open Proof_trees
 open Tacexpr
 (*i*)
+
+(* arnaud: trucs factices *)
+let pf_conv_x _ = Util.anomaly "Quote.pf_conv_x: fantome"
+let pf_global _ = Util.anomaly "Quote.pf_global: fantome"
+let pf_concl _ = Util.anomaly "Quote.pf_concl: fantome"
+(* arnaud: /trucs factices *)
 
 (*s First, we need to access some Coq constants
   We do that lazily, because this code can be linked before

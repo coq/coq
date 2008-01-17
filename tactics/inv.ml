@@ -21,9 +21,6 @@ open Inductiveops
 open Printer
 open Reductionops
 open Retyping
-open Tacmach
-open Proof_type
-open Evar_refiner
 open Clenv
 open Tactics
 open Tacticals
@@ -36,6 +33,18 @@ open Matching
 open Rawterm
 open Genarg
 open Tacexpr
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+let pf_env _ = Util.anomaly "Inv.pf_env: fantome"
+let pf_concl _ = Util.anomaly "Inv.pf_concl: fantome"
+let pf_hyps _ = Util.anomaly "Inv.pf_hyps: fantome"
+let pf_get_hyp _ = Util.anomaly "Inv.pf_get_hyp: fantome"
+let pf_get_hyp_typ _ = Util.anomaly "Inv.pf_get_hyp_typ: fantome"
+let project _ = Util.anomaly "Inv.project: fantome"
+let pf_whd_betadeltaiota  _ = Util.anomaly "Inv.pf_whd_betadeltaiota: fantome"
+let pf_type_of _ = Util.anomaly "Inv.pf_type_of: fantome"
+(* arnaud: /trucs factices *)
 
 let collect_meta_variables c = 
   let rec collrec acc c = match kind_of_term c with

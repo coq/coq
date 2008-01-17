@@ -18,7 +18,25 @@
 (* $Id$ *)
 
 open Coq_omega
-open Refiner
+
+(* arnaud: trucs factices *)
+let tclTHEN _ = Util.anomaly "G_omega.tclTHEN: fantome"
+let tclREPEAT _ = Util.anomaly "G_omega.tclREPEAT: fantome"
+let tclPROGRESS _ = Util.anomaly "G_omega.tclPROGRESS: fantome"
+let tclTHENLIST _ = Util.anomaly "G_omega.tclTHENLIST: fantome"
+
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "G_omega.abstract_extended_tactic: fantome"
+
+  end
+
+module Tacmach =
+  struct
+    type 'a sigma = 'a Tacticals.sigma
+  end
+
+(* arnaud: /trucs factices *)
 
 let omega_tactic l = 
   let tacs = List.map 

@@ -29,10 +29,18 @@ open Auto
 open Pattern
 open Matching
 open Hipattern
-open Proof_trees
-open Proof_type
-open Tacmach
 open Coqlib
+
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "Eqdecide.abstract_extended_tactic: fantome"
+  end
+let pf_ids_of_hyps _ = Util.anomaly "Eqdecide.pf_ids_of_hyps: fantome"
+let pf_type_of _ = Util.anomaly "Eqdecide.pf_type_of: fantome"
+let pf_concl _ = Util.anomaly "Eqdecide.pf_concl: fantome"
+let pf_compute _ = Util.anomaly "Eqdecide.pf_compute: fantome"
+(* arnaud: /trucs factices *)
 
 (* This file containts the implementation of the tactics ``Decide
    Equality'' and ``Compare''. They can be used to decide the

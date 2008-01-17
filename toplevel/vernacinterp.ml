@@ -13,7 +13,6 @@ open Util
 open Names
 open Libnames
 open Himsg
-open Proof_type
 open Tacinterp
 open Vernacexpr
 

@@ -30,6 +30,26 @@ type simple_tactic =
   | Rename of identifier * identifier
   | Change_evars
 
+(*s Refiner errors. *)
+
+type refiner_error =
+
+  (*i Errors raised by the refiner i*)
+  | BadType of constr * constr * constr
+  | OccurMeta of constr
+  | OccurMetaGoal of constr
+  | CannotApply of constr * constr
+  | NotWellTyped of constr
+  | NonLinearProof of constr
+
+  (*i Errors raised by the tactics i*)
+  | IntroNeedsProduct
+  | DoesNotOccurIn of constr * identifier
+
+exception RefinerError of refiner_error
+
+(* arnaud: à commenter éventuellement*)
+val catchable_exception : exn -> bool
 
 (*
 (*i*)

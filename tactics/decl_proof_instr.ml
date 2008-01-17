@@ -12,10 +12,6 @@ open Util
 open Pp
 open Evd
 
-open Refiner
-open Proof_type
-open Proof_trees
-open Tacmach
 open Tacinterp
 open Decl_expr
 open Decl_mode
@@ -31,6 +27,48 @@ open Termops
 open Reductionops
 open Goptions
 
+
+(* arnaud: trucs factices *)
+let pf_env _ = Util.anomaly "Decl_proof_instr.pf_env: fantome"
+module Proof_trees =
+  struct
+    let is_complete_proof _ = Util.anomaly "Decl_proof_instr.Proof_trees.is_complete_proof: fantome"
+  end 
+let proof_of_pftreestate _ = Util.anomaly "Decl_proof_instr.proof_of_pftreestate: fantome"
+let pf_hyps _ = Util.anomaly "Decl_proof_instr.pf_hyps: fantome"
+
+module Pfedit =
+  struct
+    let mutate _ = Util.anomaly "Decl_proof_instr.Pfedit.mutate: fantome"
+  end 
+let nth_unproven _ = Util.anomaly "Decl_proof_instr.nth_unproven: fantome"
+let solve_pftreestate  _ = Util.anomaly "Decl_proof_instr.solve_pftreestate: fantome"
+let map_pftreestate _ = Util.anomaly "Decl_proof_instr.map_pftreestate: fantome"
+let frontier_mapi _ = Util.anomaly "Decl_proof_instr.frontier_mapi: fantome"
+let traverse _ = Util.anomaly "Decl_proof_instr.traverse: fantome"
+let up_until_matching_rule  _ = Util.anomaly "Decl_proof_instr.up_until_matching_rule: fantome" 
+let is_focussing_command _ = Util.anomaly "Decl_proof_instr.is_focussing_command: fantome" 
+let top_of_tree _ = Util.anomaly "Decl_proof_instr.top_of_tree: fantome" 
+let pf_get_new_id _ = Util.anomaly "Decl_proof_instr.pf_get_new_id: fantome" 
+let pf_concl _ = Util.anomaly "Decl_proof_instr.pf_concl: fantome" 
+let internal_cut _ = Util.anomaly "Decl_proof_instr.internal_cut: fantome" 
+let pf_get_hyp_typ _ = Util.anomaly "Decl_proof_instr.pf_get_hyp_typ: fantome"
+let pf_type_of _ = Util.anomaly "Decl_proof_instr.pf_type_of: fantome"
+let pf_get_hyp _ = Util.anomaly "Decl_proof_instr.pf_get_hyp: fantome"
+let  extract_open_pftreestate _ = Util.anomaly "Decl_proof_instr.extract_open_pftreestate: fantome"
+let goal_of_proof _ = Util.anomaly "Decl_proof_instr.goal_of_proof: fantome"
+let nth_goal_of_pftreestate _ = Util.anomaly "Decl_proof_instr.nth_goal_of_pftreestate: fantome"
+let project _ = Util.anomaly "Decl_proof_instr.project: fantome"
+let solve_nth_pftreestate _ = Util.anomaly "Decl_proof_instr.solve_nth_pftreestate: fantome"
+let  abstract_operation _ = Util.anomaly "Decl_proof_instr.abstract_operation: fantome"
+
+type proof_tree = Tacticals.proof_tree
+type tactic = Tacticals.tactic
+type 'a sigma = 'a Tacticals.sigma
+type goal = Tacticals.goal
+
+open Logic
+(* arnaud: /trucs factices *)
 
 (* Strictness option *)
 

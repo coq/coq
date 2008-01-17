@@ -19,6 +19,14 @@ open Vernacexpr
 open Vernacinterp
 open Ppvernac
 
+(* arnaud:trucs factices *)
+module Pfedit =
+  struct
+    let get_all_proof_names _ = Util.anomaly "Vernac.get_all_proof_names: fantome"
+    let get_current_proof_name _ = Util.anomaly "Vernac.get_current_proof_names: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 (* The functions in this module may raise (unexplainable!) exceptions.
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)

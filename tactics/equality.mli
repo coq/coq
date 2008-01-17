@@ -14,8 +14,6 @@ open Term
 open Sign
 open Evd
 open Environ
-open Proof_type
-open Tacmach
 open Hipattern
 open Pattern
 open Tacticals

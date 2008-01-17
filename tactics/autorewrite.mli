@@ -9,8 +9,11 @@
 (*i $Id$ i*)
 
 (*i*)
-open Tacmach
 (*i*)
+
+(*arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices *)
 
 (* Rewriting rules before tactic interpretation *)
 type raw_rew_rule = Term.constr * bool * Tacexpr.raw_tactic_expr

@@ -26,11 +26,6 @@ open Names
 open Nameops
 open Libnames
 open Nametab
-open Pfedit
-open Proof_type
-open Refiner
-open Tacmach
-open Tactic_debug
 open Topconstr
 open Term
 open Termops
@@ -47,6 +42,64 @@ open Syntax_def
 open Pretyping
 open Pretyping.Default
 open Pcoq
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+type 'a sigma = 'a Tacticals.sigma
+type goal = Tacticals.goal
+type validation = Tacticals.validation
+
+module Pfedit =
+  struct
+    let get_current_goal_context _ = Util.anomaly "Tacinterp.Pfedit.get_current_goal_context: fantome"
+  end
+let pf_apply _ = Util.anomaly "Tacinterp.pf_apply: fantome"
+let pf_conv_x _ = Util.anomaly "Tacinterp.pf_conv_x: fantome"
+let db_hyp_pattern_failure _ = Util.anomaly "Tacinterp.db_hyp_pattern_failure: fantome"
+let explain_logic_error = ref (fun _ -> Util.anomaly "Tacinterp.explain_logic_error: fantome")
+let explain_logic_error_no_anomaly = ref (fun _ -> Util.anomaly "Tacinterp.explain_logic_error_no_anomaly: fantome")
+let pf_env _ = Util.anomaly "Tacinterp.pf_env: fantome"
+let start_proof _ = Util.anomaly "Tacinterp.start_proof: fantome"
+let by _ = Util.anomaly "Tacinterp.by: fantome"
+let tclCOMPLETE _ = Util.anomaly "Tacinterp.tclCOMPLETE: fantome"
+let cook_proof  _ = Util.anomaly "Tacinterp.cook_proof: fantome"
+let delete_current_proof _ = Util.anomaly "Tacinterp.delete_current_proof: fantome"
+let db_constr _ = Util.anomaly "Tacinterp.db_constr: fantome"
+let pf_concl _ = Util.anomaly "Tacinterp.pf_concl: fantome"
+let project _ = Util.anomaly "Tacinterp.project: fantome"
+let pf_reduction_of_red_expr _ = Util.anomaly "Tacinterp.pf_reduction_of_red_expr: fantome"
+let pf_type_of _ = Util.anomaly "Tacinterp.pf_type_of: fantome"
+let debug_prompt _ = Util.anomaly "Tacinterp.debug_prompt: fantome"
+let tclIDTAC_MESSAGE _ = Util.anomaly "Tacinterp.tclIDTAC_MESSAGE: fantome"
+let tclFAIL _ = Util.anomaly "Tacinterp.tclFAIL: fantome"
+let tclPROGRESS _ = Util.anomaly "Tacinterp.tclPROGRESS: fantome"
+let tclTHENS3PARTS _ = Util.anomaly "Tacinterp.tclTHENS3PARTS: fantome"
+let tclTHENS _ = Util.anomaly "Tacinterp.tclTHENS: fantome"
+let tclDO _ = Util.anomaly "Tacinterp.tclDO: fantome"
+let tclTRY  _ = Util.anomaly "Tacinterp.tclTRY: fantome"
+let tclINFO _ = Util.anomaly "Tacinterp.tclINFO: fantome"
+let tclREPEAT _ = Util.anomaly "Tacinterp.tclREPEAT: fantome"
+let tclORELSE _ = Util.anomaly "Tacinterp.tclORELSE: fantome"
+let tclFIRST _ = Util.anomaly "Tacinterp.tclFIRST: fantome"
+let tclSOLVE _ = Util.anomaly "Tacinterp.tclSOLVE: fantome"
+let delete_proof _ = Util.anomaly "Tacinterp.delete_proof: fantome"
+let db_pattern_rule _ = Util.anomaly "Tacinterp.db_pattern_rule: fantome"
+let db_mc_pattern_success  _ = Util.anomaly "Tacinterp.db_mc_pattern_success: fantome"
+let pf_hyps _ = Util.anomaly "Tacinterp.pf_hyps: fantome"
+let db_matched_concl _ = Util.anomaly "Tacinterp.db_matched_concl: fantome"
+let db_matching_failure _ = Util.anomaly "Tacinterp.db_matching_failure: fantome"
+let db_eval_failure _ = Util.anomaly "Tacinterp.db_eval_failure: fantome"
+let db_logic_failure _ = Util.anomaly "Tacinterp.db_logic_failure: fantome"
+let db_matched_hyp _ = Util.anomaly "Tacinterp.db_matched_hyp: fantome"
+let abstract_tactic  _ = Util.anomaly "Tacinterp.abstract_tactic: fantome"
+let abstract_extended_tactic _ = Util.anomaly "Tacinterp.abstract_extended_tactic: fantome"
+let abstract_tactic_expr _ = Util.anomaly "Tacinterp.abstract_tactic_expr: fantome"
+let tclTHEN _ = Util.anomaly "Tacinterp.tclTHEN: fantome"
+
+type debug_info = DebugOff
+		| DebugOn of int
+exception FailError of (int * Pp.std_ppcmds)
+(* arnaud: /trucs factices *)
 
 let safe_msgnl s =
     try msgnl s with e -> 

@@ -22,11 +22,7 @@ open Reduction
 open Typing
 open Pattern
 open Matching
-open Tacmach
-open Proof_type
-open Pfedit
 open Rawterm
-open Evar_refiner
 open Tacred
 open Tactics
 open Tacticals
@@ -40,6 +36,28 @@ open Printer
 open Declarations
 open Tacexpr
 open Mod_subst
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+type goal = Evd.evar_info
+
+let get_pftreestate _ = Util.anomaly "Auto.get_pftreestate: fantome"
+let nth_goal_of_pftreestate _ = Util.anomaly "Auto.nth_goal_of_pftreestate: fantome"
+let pf_concl _ = Util.anomaly "Auto.pf_concl: fantome"
+let pf_hyps _ = Util.anomaly "Auto.pf_hyps: fantome"
+let pf_apply _ = Util.anomaly "Auto.pf_apply: fantome"
+let pf_env _ = Util.anomaly "Auto.pf_env: fantome"
+let project _ = Util.anomaly "Auto.project: fantome"
+let pf_last_hyp _ = Util.anomaly "Auto.pf_last_hyp: fantome"
+
+module Refiner =
+  struct
+    let abstract_tactic _ = Util.anomaly "Auto.abstract_tactic: fantome"
+  end
+
+let pf_type_of _ = Util.anomaly "Auto.pf_type_of: fantome"
+let pf_ids_of_hyps _ = Util.anomaly "Auto.pf_ids_of_hyps: fantome"
+(* arnaud: /trucs factices *)
 
 (****************************************************************************)
 (*            The Type of Constructions Autotactic Hints                    *)

@@ -117,10 +117,7 @@ open Names
 open Term
 open Environ
 open Reduction
-open Proof_type
 open Rawterm
-open Tacmach
-open Refiner
 open Tactics
 open Clenv
 open Tactics
@@ -132,6 +129,15 @@ open Matching
 open Pcoq
 open Tacexpr
 open Libnames
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+let pf_ids_of_hyps _ = Util.anomaly "Dhyp.pf_ids_of_hyps: fantome"
+let pf_get_hyp_typ _ = Util.anomaly "Dhyp.pf_get_hyp_typ: fantome"
+let pf_concl _ = Util.anomaly "Dhyp.pf_concl: fantome"
+let pf_type_of _ = Util.anomaly "Dhyp.pf_type_of: fantome"
+let abstract_tactic _ = Util.anomaly "Dhyp.abstract_tactic: fantome"
+(* arnaud: /trucs factices*)
 
 (* two patterns - one for the type, and one for the type of the type *)
 type destructor_pattern = {

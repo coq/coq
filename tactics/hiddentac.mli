@@ -11,14 +11,17 @@
 (*i*)
 open Names
 open Term
-open Proof_type
-open Tacmach
 open Genarg
 open Tacexpr
 open Rawterm
 open Evd
 open Clenv
 (*i*)
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+
+(* arnaud: /trucs factices *)
 
 (* Tactics for the interpreter. They left a trace in the proof tree
    when they are called. *)

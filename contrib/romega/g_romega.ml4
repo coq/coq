@@ -9,7 +9,17 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Refl_omega
-open Refiner
+
+(* arnaud: trucs factices *)
+let tclTHEN _ = Util.anomaly "G_romega.tclTHEN: fantome"
+let tclREPEAT _ = Util.anomaly "G_romega.tclREPEAT: fantome"
+let tclPROGRESS _ = Util.anomaly "G_romega.tclPROGRESS: fantome"
+let tclTHENLIST _ = Util.anomaly "G_romega.tclTHENLIST: fantome"
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "G_romega.abstract_extended_tactic: fantome"
+  end 
+(* arnaud: /trucs factices *)
 
 let romega_tactic l = 
   let tacs = List.map 

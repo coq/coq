@@ -17,9 +17,6 @@ open Names
 open Entries
 open Nameops
 open Term
-open Pfedit
-open Tacmach
-open Proof_trees
 open Decl_mode
 open Constrintern
 open Prettyp
@@ -36,6 +33,59 @@ open Topconstr
 open Pretyping
 open Redexpr
 open Syntax_def
+
+(* arnaud: trucs factices *)
+let get_pftreestate _ = Util.anomaly "Vernacentries.get_pftreestate: fantome"
+let cursor_of_pftreestate _ = Util.anomaly "Vernacentries.cursor_of_pftreestate: fantome"
+let evc_of_pftreestate _ = Util.anomaly "Vernacentries.evc_of_pftreestate: fantome"
+let extract_open_pftreestate _ = Util.anomaly "Vernacentries.extract_open_pftreestate: fantome"
+let proof_of_pftreestate _ = Util.anomaly "Vernacentries.proof_of_pftreestate: fantome"
+let goal_of_proof _ = Util.anomaly "Vernacentries.goal_of_proof: fantome"
+let top_goal_of_pftreestate _ = Util.anomaly "Vernacentries.top_goal_of_pftreestate: fantome"
+let project _ = Util.anomaly "Vernacentries.project: fantome"
+let nth_goal_of_pftreestate _ = Util.anomaly "Vernacentries.nth_goal_of_pftreestate: fantome"
+let pf_concl _ = Util.anomaly "Vernacentries.pf_concl: fantome"
+let refining _ = Util.anomaly "Vernacentries.refining: fantome"
+let  top_of_tree _ = Util.anomaly "Vernacentries.top_of_tree: fantome"
+let is_leaf_proof _ = Util.anomaly "Vernacentries.is_leaf_proof: fantome"
+let by _ = Util.anomaly "Vernacentries.by: fantome"
+let check_no_pending_proofs _ = Util.anomaly "Vernacentries.check_no_pending_proofs: fantome"
+let solve_nth _ = Util.anomaly "Vernacentries.solve_nth: fantome"
+let get_end_tac _ = Util.anomaly "Vernacentries.get_end_tac: fantome"
+let subtree_solved  _ = Util.anomaly "Vernacentries.subtree_solved: fantome"
+let make_focus _ = Util.anomaly "Vernacentries.make_focus: fantome"
+let reset_top_of_script  _ = Util.anomaly "Vernacentries.reset_top_of_script: fantome"
+let instantiate_nth_evar_com  _ = Util.anomaly "Vernacentries.instantiate_nth_evar_com: fantome"
+let  set_end_tac _ = Util.anomaly "Vernacentries.set_end_tac: fantome"
+let tree_solved _ = Util.anomaly "Vernacentries.tree_solved: fantome"
+module Pfedit =
+  struct
+    let refining _ = Util.anomaly "Vernacentries.Pfedit.refining: fantome"
+    let get_undo _ = Util.anomaly "Vernacentries.Pfedit.get_undo: fantome"
+    let set_undo _ = Util.anomaly "Vernacentries.Pfedit.set_undo: fantome"
+    let traverse _ = Util.anomaly "Vernacentries.traverse: fantome"
+    let reset_top_of_tree _ = Util.anomaly "Vernacentries.reset_top_of_tree: fantome"
+    let traverse_next_unproven _ = Util.anomaly "Vernacentries.traverse_next_unproven: fantome"
+    let traverse_prev_unproven _ = Util.anomaly "Vernacentries.traverse_prev_unproven: fantome"
+    let get_all_proof_names _ = Util.anomaly "Vernacentries.get_all_proof_names: fantome"
+  end
+let delete_all_proofs _ = Util.anomaly "Vernacentries.delete_all_proofs: fantome"
+let get_goal_context _ = Util.anomaly "Vernacentries.get_goal_context: fantome"
+let delete_current_proof _ = Util.anomaly "Vernacentries.delete_current_proof: fantome"
+let delete_proof _ = Util.anomaly "Vernacentries.delete_proof: fantome"
+let restart_proof _ = Util.anomaly "Vernacentries.restart_proof: fantome"
+let suspend_proof _ = Util.anomaly "Vernacentries.suspend_proof: fantome"
+let resume_last_proof _ = Util.anomaly "Vernacentries.resume_last_proof: fantome"
+let resume_proof _ = Util.anomaly "Vernacentries.resume_proof: fantome"
+let undo _ = Util.anomaly "Vernacentries.undo: fantome"
+let undo_todepth _ = Util.anomaly "Vernacentries.undo_todepth: fantome"
+let traverse_nth_goal _ = Util.anomaly "Vernacentries.traverse_nth_goal: fantome"
+module Tacmach =
+  struct
+    let traverse _ = Util.anomaly "Vernacentries.Tacmach.traverse: fantome"
+  end 
+
+(* arnaud: /trucs factices *)
 
 (* Pcoq hooks *)
 
@@ -78,6 +128,7 @@ let show_proof () =
     ++ str"Proof: " ++ pr_lconstr (Evarutil.nf_evar evc pfterm))
 
 let show_node () =
+  Util.anomaly "Vernacentries.show_node: à restaurer" (* arnaud: à restaurer
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and cursor = cursor_of_pftreestate pts in
@@ -90,6 +141,7 @@ let show_node () =
 		 str"  " ++
 		   hov 0 (prlist_with_sep pr_fnl pr_goal
 			    (List.map goal_of_proof spfl)))))
+		  *)
     
 let show_script () =
   let pts = get_pftreestate () in
@@ -841,14 +893,14 @@ let _ =
       optwrite=(fun b -> Constrextern.print_universes:=b) }
 
 let vernac_debug b =
-  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
+  set_debug (if b then (*arnaud:Tactic_debug.*)DebugOn 0 else (*arnaud:Tactic_debug.*)DebugOff)
 
 let _ =
   declare_bool_option
     { optsync=false;
       optkey=SecondaryTable("Ltac","Debug");
       optname="Ltac debug";
-      optread=(fun () -> get_debug () <> Tactic_debug.DebugOff);
+      optread=(fun () -> get_debug () <> (*arnaud:Tactic_debug.*)DebugOff);
       optwrite=vernac_debug }
 
 let vernac_set_opacity opaq r =

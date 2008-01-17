@@ -26,6 +26,13 @@ open Topconstr
 open Decl_kinds
 open Tacinterp
 
+(* arnaud: trucs factices *)
+module Pfedit =
+  struct
+    let get_end_tac _ = Util.anomaly "Ppvernac.get_end_tac: fantome"
+  end 
+(* arnaud: /trucs factices *)
+
 let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
 let pr_lident (loc,id) =

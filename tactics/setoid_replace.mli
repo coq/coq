@@ -9,9 +9,12 @@
 (*i $Id$ i*)
 
 open Term
-open Proof_type
 open Topconstr
 open Names
+
+(* arnaud: trucs factices*)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices *)
 
 type relation =
    { rel_a: constr ;

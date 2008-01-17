@@ -18,18 +18,42 @@ open Term
 open Termops
 open Sign
 open Reduction
-open Proof_type
-open Proof_trees
 open Declarations
 open Tacticals
-open Tacmach
-open Evar_refiner
 open Tactics
 open Pattern
 open Clenv
 open Auto
 open Rawterm
 open Hiddentac
+
+(* arnaud: trucs factices *)
+type tactics = Tacticals.tactic
+
+let pf_type_of _ = Util.anomaly "Eauto.pf_type_of: fantome"
+let pf_concl _ = Util.anomaly "Eauto.pf_concl: fantome"
+
+module Clenvtac =
+  struct
+    let unify  _ = Util.anomaly "Eauto.unify: fantome"
+  end
+
+let pf_ids_of_hyps _ = Util.anomaly "Eauto.pf_ids_of_hyps: fantome"
+
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "Eauto.abstract_extended_tactic: fantome"
+  end
+let pf_reduce_to_quantified_ind _ = Util.anomaly "Eauto.pf_reduce_to_quantified_ind: fantome"
+let convert_concl_no_check _ = Util.anomaly "Eauto.convert_concl_no_check: fantome"
+let pf_last_hyp _ = Util.anomaly "Eauto.pf_last_hyp: fantome"
+let pf_env _ = Util.anomaly "Eauto.pf_env: fantome"
+let project _ = Util.anomaly "Eauto.project: fantome"
+let apply_tac_list _ = Util.anomaly "Eauto.apply_tac_list: fantome"
+let first_goal _ = Util.anomaly "Eauto.first_goal: fantome"
+let sig_it _ = Util.anomaly "Eauto.sig_it: fantome"
+
+(* arnaud: /trucs factices *)
 
 let e_give_exact c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
   if occur_existential t1 or occur_existential t2 then 

@@ -40,7 +40,7 @@ open Pretype_errors
 
 
 (* arnaud: trucs factices *)
-type hyp_location
+type hyp_location =  (int list list list * Names.identifier) * Tacexpr.hyp_location_flag
 module Tacmach = 
   struct
     let introduction _ = Util.anomaly "Tactics.Tacmach.introduction: fantome"
@@ -61,6 +61,7 @@ module Pfedit =
   struct
     let get_current_proof_name _ = Util.anomaly "Tactics.Pfedit.get_current_proof_name: fantome"
   end
+open Pfedit
 
 let convert_concl_no_check _ = Util.anomaly "Tactics.convert_concl_no_check: fantome"
 let pf_reduce _ = Util.anomaly "Tactics.pf_reduce: fantome"
@@ -75,8 +76,39 @@ let pf_lookup_name_as_renamed _ = Util.anomaly "Tactics.pf_lookup_name_as_rename
 let project _ = Util.anomaly "Tactics.project: fantome"
 let pf_hyps _ = Util.anomaly "Tactics.pf_hyps: fantome"
 
+module Refiner =
+  struct
+    let tclIDTAC _ = Util.anomaly "Tactics.Refiner.tclIDTAC: fantome"
+  end
 
-type anything = IntroNeedsProduct
+let refine_no_check _ = Util.anomaly "Tactics.refine_no_check: fantome"
+let hnf_type_of _ = Util.anomaly "Tactics.hnf_type_of: fantome"
+let tclEVARS _ = Util.anomaly "Tactics.tclEVARS: fantome"
+let pf_type_of _ = Util.anomaly "Tactics.pf_type_of: fantome"
+
+module Clenvtac =
+  struct
+    let res_pf _ = Util.anomaly "Tactics.Clevntac.res_pf: fantome"
+  end
+open Clenvtac
+
+let catchable_exception _ = Util.anomaly "Tactics.catchable_exception: fantome"
+let pf_get_hyp_typ _ = Util.anomaly "Tactics.pf_get_hyp_typ: fantome"
+let pf_hnf_constr _ = Util.anomaly "Tactics.pf_hnf_constr: fantome"
+let pf_conv_x_leq _ = Util.anomaly "Tactics.pf_conv_x_leq: fantome"
+let pf_reduce_to_quantified_ind _ = Util.anomaly "Tactics.pf_reduce_to_quantified_ind: fantome"
+let pf_apply _ = Util.anomaly "Tactics.pf_apply: fantome"
+let clenv_refine _ = Util.anomaly "Tactics.clenv_refine: fantome"
+let pf_reduce_to_atomic_ind _ = Util.anomaly "Tactics.pf_reduce_to_atomic_ind: fantome"
+let pf_parse_const _ = Util.anomaly "Tactics.pf_parse_const: fantome"
+let pf_start_proof _ = Util.anomaly "Tactics.pf_start_proof: fantome"
+let start_proof _ = Util.anomaly "Tactics.start_proof: fantome"
+let by _ = Util.anomaly "Tactics.by: fantome"
+let cook_proof _ = Util.anomaly "Tactics.cook_proof: fantome"
+let delete_current_proof _ = Util.anomaly "delete_current_proof"
+
+type anything = IntroNeedsProduct 
+		| DoesNotOccurIn of (Term.constr * Names.identifier)
 exception RefinerError of anything
 (* arnaud: /trucs factices *)
 

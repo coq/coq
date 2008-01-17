@@ -11,10 +11,13 @@
 (*i*)
 open Names
 open Term
-open Proof_type
 open Rawterm
 open Genarg
 (*i*)
+
+(*arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(*arnaud: /trucs factices *)
 
 val absurd                      : constr -> tactic
 val contradiction               : constr with_ebindings option -> tactic

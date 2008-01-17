@@ -16,6 +16,15 @@ open Vernac
 open Pcoq
 open Protectedtoplevel
 
+(* arnaud:trucs factices *)
+module Pfedit =
+  struct
+    let get_all_proof_names _ = Util.anomaly "Toplevel.get_all_proof_names: fantome"
+    let get_current_proof_name _ = Util.anomaly "Toplevel.get_current_proof_names: fantome"
+    let current_proof_depth _ = Util.anomaly "Toplevel.current_proof_depth: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 (* A buffer for the character read from a channel. We store the command
  * entered to be able to report errors without pretty-printing. *)
 

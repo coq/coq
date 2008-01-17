@@ -8,15 +8,14 @@
 
 (*i $Id$ i*)
 
-open Tacmach
 open Names
 open Tacexpr
 
 val instantiate : int -> Rawterm.rawconstr -> 
-  (identifier * hyp_location_flag, unit) location -> tactic
+  (identifier * hyp_location_flag, unit) location -> Tacticals.tactic
 
 (*i
 val instantiate_tac : tactic_arg list -> tactic
 i*)
 
-val let_evar : name -> Term.types -> tactic
+val let_evar : name -> Term.types -> Tacticals.tactic

@@ -11,11 +11,14 @@
 (*i*)
 open Names
 open Term
-open Tacmach
 open Genarg
 open Tacexpr
 open Rawterm
 (*i*)
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices *)
 
 type inversion_status = Dep of constr option | NoDep
 

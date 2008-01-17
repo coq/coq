@@ -22,9 +22,22 @@ open Tacexpr
 
 (* arnaud: trucs factices *)
 type 'a sigma = 'a Evd.sigma
-type goal
-type tactic = goal sigma -> goal sigma
-type proof_tree
+type goal = Evd.evar_info
+type proof_instr = Decl_expr.proof_instr
+type tactic_expr
+type compound_rule=  
+  | Tactic of tactic_expr * bool
+  | Proof_instr of bool*proof_instr
+type rule =
+  | Prim of Logic.simple_tactic
+  | Nested of compound_rule * proof_tree 
+  | Decl_proof of bool
+  | Daimon
+
+and proof_tree = { goal: goal; ref: (rule * proof_tree list) option;
+		    open_subgoals: int}
+type validation = (proof_tree list -> proof_tree)
+type tactic = goal sigma -> goal list sigma * validation
 (* arnaud: /trucs factices *)
 
 (* Tacticals i.e. functions from tactics to tactics. *)

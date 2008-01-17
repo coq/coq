@@ -46,6 +46,7 @@
  *     à partir d'une preuve incomplète.
  *)
 
+(* arnaud: à virer, sans doute
 open Pp
 open Util
 open Names
@@ -373,3 +374,4 @@ let refine oc gl =
      complicated to update meta types when passing through a binder *)
   let th = compute_metamap (pf_env gl) sigma c in
   tclTHEN (Refiner.tclEVARS sigma) (tcc_aux [] th) gl
+*)

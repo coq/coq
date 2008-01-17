@@ -22,11 +22,6 @@ open Declarations
 open Entries
 open Inductiveops
 open Environ
-open Tacmach
-open Proof_trees
-open Proof_type
-open Pfedit
-open Evar_refiner
 open Clenv
 open Declare
 open Tacticals
@@ -35,6 +30,26 @@ open Inv
 open Vernacexpr
 open Safe_typing
 open Decl_kinds
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+
+let mk_pftreestate _ = Util.anomaly "Leminv.mk_pftreestate: fantome"
+let mk_goal _ = Util.anomaly "Leminv.mk_goal: fantome"
+let solve_pftreestate _ = Util.anomaly "Leminv.solve_pftreestate: fantome"
+let extract_open_pftreestate _ = Util.anomaly "Leminv.extract_open_pftreestate: fantome"
+let get_pftreestate _ = Util.anomaly "Leminv.get_pftreestate: fantome"
+let nth_goal_of_pftreestate _ = Util.anomaly "Leminv.nth_goal_of_pftreestate: fantome"
+let pf_get_hyp_typ _ = Util.anomaly "Leminv.pf_get_hyp_typ: fantome"
+let pf_env _ = Util.anomaly "Leminv.pf_env: fantome"
+let project _ = Util.anomaly "Leminv.project: fantome"
+module Clenvtac = 
+  struct
+    let res_pf _ = Util.anomaly "Leminv.res_pf: fantome"
+  end
+let pf_get_hyp _ = Util.anomaly "Leminv.pf_get_hyp: fantome"
+let pf_concl _ = Util.anomaly "Leminv.pf_concl: fantome"
+(* arnaud: /trucs factices *)
 
 let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"
 

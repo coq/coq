@@ -12,7 +12,6 @@ open Equality
 open Hipattern
 open Names
 open Pp
-open Proof_type
 open Tacticals
 open Tacinterp
 open Tactics
@@ -21,6 +20,19 @@ open Util
 open Vernacinterp
 open Tacexpr
 open Mod_subst
+
+(*arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+module Tacmach = 
+  struct
+    let pf_get_hyp _ = Util.anomaly "Autorewrite.Tacmach.pf_get_hyp: fantome"
+    let pf_ids_of_hyps _ = Util.anomaly "Autorewrite.Tacmach.pf_ids_of_hyps: fantome"
+  end
+module Refiner =
+  struct
+    let tclIDTAC _ = Util.anomaly "Autorewrite.Refiner.tclIDTAC: fantome"
+  end 
+(* arnaud: /trucs factices *)
 
 (* Rewriting rules *)
 (* the type is the statement of the lemma constr. Used to elim duplicates. *)

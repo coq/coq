@@ -20,8 +20,6 @@ open Nameops
 open Reductionops
 open Tacticals
 open Tacexpr
-open Tacmach
-open Proof_trees
 open Printer
 open Equality
 open Vernacinterp
@@ -35,6 +33,13 @@ open Hiddentac
 open Nametab
 open Quote
 open Mod_subst
+
+(* arnaud: trucs factices *)
+let pf_reduce _ = Util.anomaly "Ring.pf_reduce: fantome"
+let pf_env _ = Util.anomaly "Ring.pf_env: fantome"
+let project _ = Util.anomaly "Ring.project: fantome"
+let pf_type_of _ = Util.anomaly "Ring.pf_type_of: fantome"
+(* arnaud: /trucs factices *)
 
 let mt_evd = Evd.empty
 let constr_of c = Constrintern.interp_constr mt_evd (Global.env()) c

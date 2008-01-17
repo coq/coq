@@ -17,15 +17,23 @@ open Environ
 open Libnames
 open Reduction
 open Inductiveops
-open Proof_type
 open Clenv
 open Hipattern
-open Tacmach
 open Tacticals
 open Tactics
 open Hiddentac
 open Genarg
 open Tacexpr
+
+(* arnaud: trucs factices *)
+let pf_type_of _ = Util.anomaly "Elim.pf_type_of: fantome"
+let pf_env _ = Util.anomaly "Elim.pf_env: fantome"
+let project _ = Util.anomaly "Elim.project: fantome"
+module Refiner =
+  struct
+    let abstract_tactic _ = Util.anomaly "Elim.Refiner.abstract_tactic: fantome"
+  end 
+(* arnaud: /trucs factices *)
 
 let introElimAssumsThen tac ba =
   let nassums = 

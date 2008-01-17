@@ -13,9 +13,6 @@ open Dyn
 open Pp
 open Util
 open Names
-open Proof_type
-open Tacmach
-open Tactic_debug
 open Term
 open Tacexpr
 open Genarg
@@ -23,6 +20,15 @@ open Topconstr
 open Mod_subst
 open Redexpr
 (*i*)
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+type 'a sigma = 'a Tacticals.sigma
+type goal = Tacticals.goal
+type validation = Tacticals.validation
+type debug_info = DebugOff
+		| DebugOn of int
+(* arnaud: /trucs factices *)
 
 (* Values for interpretation *)
 type value =

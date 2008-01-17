@@ -13,8 +13,6 @@ open Util
 open Names
 open Term
 open Sign
-open Proof_type
-open Tacmach
 open Clenv
 open Pattern
 open Environ
@@ -23,6 +21,11 @@ open Libnames
 open Vernacexpr
 open Mod_subst
 (*i*)
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+type goal = Evd.evar_info
+(* arnaud: /trucs factices *)
   
 type auto_tactic = 
   | Res_pf     of constr * clausenv    (* Hint Apply *)

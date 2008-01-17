@@ -11,6 +11,15 @@ open Const_omega
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
 
+(* arnaud: trucs factices *)
+module Tacmach =
+  struct
+    let pr_gls _ = Util.anomaly "Refl_omega.pr_gls: fantome"
+    let pf_concl _ = Util.anomaly "Refl_omega.pf_concl: fantome"
+    let pf_hyps_types _ = Util.anomaly "Refl_omega.pf_hyps_types: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 (* \section{Useful functions and flags} *)
 (* Especially useful debugging functions *)
 let debug = ref false

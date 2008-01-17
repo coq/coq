@@ -8,11 +8,16 @@
 
 (* $Id:$ *)
 
-open Refiner
 open Names
 open Term
-open Tacmach
 open Decl_mode
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+type 'a sigma = 'a Tacticals.sigma
+type goal = Tacticals.goal
+type proof_tree = Tacticals.proof_tree
+(* arnaud: /trucs factices *)
 
 val go_to_proof_mode: unit -> unit
 val return_from_tactic_mode: unit -> unit
@@ -23,23 +28,23 @@ val automation_tac : tactic
 
 val daimon_subtree: pftreestate -> pftreestate
 
-val concl_refiner: Termops.metamap -> constr -> Proof_type.goal sigma -> constr
+val concl_refiner: Termops.metamap -> constr -> goal sigma -> constr
 
 val do_instr: Decl_expr.raw_proof_instr -> pftreestate -> pftreestate
 val proof_instr: Decl_expr.raw_proof_instr -> unit
 
 val tcl_change_info : Decl_mode.pm_info -> tactic
 
-val mark_proof_tree_as_done : Proof_type.proof_tree -> Proof_type.proof_tree
+val mark_proof_tree_as_done : proof_tree -> proof_tree
 
 val mark_as_done : pftreestate -> pftreestate
 
 val execute_cases :
     Names.name ->
     Decl_mode.per_info ->
-    (Term.constr -> Proof_type.tactic) ->
+    (Term.constr -> tactic) ->
     (Names.Idset.elt * (Term.constr option * Term.constr list) list) list ->
-    Term.constr list -> int -> Decl_mode.split_tree -> Proof_type.tactic
+    Term.constr list -> int -> Decl_mode.split_tree -> tactic
 
 val tree_of_pats : 
   identifier * int -> (Rawterm.cases_pattern*recpath) list list ->
@@ -62,7 +67,7 @@ val build_dep_clause :   Term.types Decl_expr.statement list ->
     Decl_expr.proof_pattern ->
     Decl_mode.per_info ->
     (Term.types Decl_expr.statement, Term.types Decl_expr.or_thesis)
-    Decl_expr.hyp list -> Proof_type.goal Tacmach.sigma -> Term.types
+    Decl_expr.hyp list -> goal sigma -> Term.types
 
 val register_dep_subcase :    
     Names.identifier * int ->
@@ -96,7 +101,7 @@ val push_arg : Term.constr ->
 
 val hrec_for: 
     Names.identifier ->
-    Decl_mode.per_info -> Proof_type.goal Tacmach.sigma -> 
+    Decl_mode.per_info -> goal sigma -> 
     Names.identifier -> Term.constr
 
 val consider_match :
@@ -104,7 +109,7 @@ val consider_match :
     (Names.Idset.elt*bool) list ->
     Names.Idset.elt list ->
     (Term.types Decl_expr.statement, Term.types) Decl_expr.hyp list ->
-    Proof_type.tactic
+    tactic
 
 val init_tree:
     Names.Idset.t ->

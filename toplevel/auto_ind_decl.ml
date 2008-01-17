@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Tacmach
 open Util
 open Flags
 open Decl_kinds
@@ -25,6 +24,16 @@ open Inductiveops
 open Tactics
 open Tacticals
 open Ind_tables
+
+(* arnaud:trucs factices *)
+let pf_type_of _ = Util.anomaly "Auto_ind_decl.pf_type_of: fantome"
+let top_goal_of_pftreestate _ = Util.anomaly "Auto_ind_decl.top_goal_of_pftreestate: fantome"
+module Pfedit =
+  struct
+    let get_pftreestate _ = Util.anomaly "Auto_ind_decl.Pfedit.get_pftreestate: fantome"
+    let by _ = Util.anomaly "Auto_ind_decl.Pfedit.by: fantome"
+  end 
+(* arnaud: /trucs factices *)
 
 (* boolean equality *)
 (* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k

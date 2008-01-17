@@ -10,9 +10,12 @@
 
 (*i*)
 open Names
-open Tacmach
 open Tacexpr
 (*i*)
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices*)
 
 (* Programmable destruction of hypotheses and conclusions. *)
 

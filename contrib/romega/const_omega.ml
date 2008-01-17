@@ -6,6 +6,19 @@
 
  *************************************************************************)
 
+(* arnaud: trucs factices *)
+module Tacmach =
+  struct
+    type 'a sigma = 'a Tacticals.sigma
+    let pf_nf _ = Util.anomaly "Const_omega.pf_nf: fantome"
+    let pr_gls _ = Util.anomaly "Const_omega.pr_gls: fantome"
+  end
+module Proof_type =
+  struct
+    type goal = Tacticals.goal
+  end 
+(* arnaud: /trucs factices *)
+
 let module_refl_name = "ReflOmegaCore"
 let module_refl_path = ["Coq"; "romega"; module_refl_name]
 

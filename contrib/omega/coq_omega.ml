@@ -18,7 +18,6 @@
 open Util
 open Pp
 open Reduction
-open Proof_type
 open Names
 open Nameops
 open Term
@@ -28,14 +27,26 @@ open Environ
 open Sign
 open Inductive
 open Tacticals
-open Tacmach
-open Evar_refiner
 open Tactics
 open Clenv
 open Logic
 open Libnames
 open Nametab
 open Contradiction
+
+(* arnaud: trucs factices *)
+let pf_global _ = Util.anomaly "Coq_omega.pf_global: fantome"
+let pf_nf  _ = Util.anomaly "Coq_omega.pf_nf: fantome"
+let pf_concl _ = Util.anomaly "Coq_omega.pf_concl: fantome"
+let convert_concl_no_check _ = Util.anomaly "Coq_omega.convert_concl_no_check: fantome"
+let pf_hyps_types _ = Util.anomaly "Coq_omega.pf_hyps_types: fantome"
+let pf_conv_x _ = Util.anomaly "Coq_omega.pf_conv_x: fantome"
+let pf_type_of _ = Util.anomaly "Coq_omega.pf_type_of: fantome"
+let convert_hyp_no_check  _ = Util.anomaly "Coq_omega.convert_hyp_no_check: fantome"
+let pf_hyps _ = Util.anomaly "Coq_omega.pf_hyps: fantome"
+
+
+(* arnaud: /trucs factices *)
 
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver

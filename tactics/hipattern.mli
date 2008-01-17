@@ -17,8 +17,8 @@ open Evd
 open Pattern
 
 (* arnaud: truc factices *)
-type goal
-type 'a sigma
+type goal = Tacticals.goal
+type 'a sigma = 'a Tacticals.sigma
 (* arnaud: /truc factices *)
 
 (*i*)

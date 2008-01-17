@@ -11,7 +11,6 @@
 open Tacexpr
 open Term
 open Names
-open Proof_type
 open Topconstr
 open Rawterm
 

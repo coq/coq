@@ -8,8 +8,6 @@
 
 (* $Id$ *)
 
-open Tacmach
-open Proof_type
 open Libobject
 open Reductionops
 open Term
@@ -32,6 +30,22 @@ open Nametab
 open Decl_kinds
 open Constrintern
 open Mod_subst
+
+(* arnaud: trucs factices*)
+type tactic = Tacticals.tactic
+module Tacmach =
+  struct
+    let pf_type_of _ = Util.anomaly "Setoid_replace.Tacmach.pf_type_of: fantome"
+    let pf_conv_x _ = Util.anomaly "Setoid_replace.Tacmach.pf_conv_x: fantome"
+    let pf_env _ = Util.anomaly "Setoid_replace.Tacmach.pf_env: fantome"
+  end 
+open Tacmach
+module Pfedit =
+  struct
+    let start_proof _ = Util.anomaly "Setoid_replace.Pfedit.start_proof: fantome"
+  end 
+let pf_concl _ = Util.anomaly "Setoid_replace.Tacmach.pf_concl: fantome"
+(* arnaud: /trucs factices *)
 
 let replace = ref (fun _ _ _ -> assert false)
 let register_replace f = replace := f

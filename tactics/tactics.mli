@@ -26,7 +26,7 @@ open Rawterm
 (*i*)
 
 (* arnaud: trucs factices *)
-type hyp_location
+type hyp_location = (int list list list * Names.identifier) * Tacexpr.hyp_location_flag
 (* arnaud: /trucs factices *)
 
 val inj_open : constr -> open_constr

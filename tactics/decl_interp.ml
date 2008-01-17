@@ -12,7 +12,6 @@ open Util
 open Names
 open Topconstr
 open Tacinterp
-open Tacmach
 open Decl_expr
 open Decl_mode
 open Pretyping.Default

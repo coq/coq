@@ -25,10 +25,16 @@ open Detyping
 open Constrintern
 open Dischargedhypsmap
 open Command
-open Pfedit
-open Refiner
-open Tacmach
 open Syntax_def
+
+(* arnaud: trucs factices *)
+let nth_goal_of_pftreestate _ = Util.anomaly "Whelp.nth_goal_of_pftreestate: fantome"
+let get_pftreestate _ = Util.anomaly "Whelp.get_pftreestate: fantome"
+let pf_concl _ = Util.anomaly "Whelp.pf_concl: fantome"
+let pf_hyps _ = Util.anomaly "Whelp.pf_hyps: fantome"
+
+
+(* arnaud: /trucs factices *)
 
 (* Coq interface to the Whelp query engine developed at 
    the University of Bologna *)

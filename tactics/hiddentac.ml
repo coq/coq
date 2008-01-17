@@ -9,15 +9,20 @@
 (* $Id$ *)
 
 open Term
-open Proof_type
-open Tacmach
 
 open Rawterm
-open Refiner
 open Genarg
 open Tacexpr
 open Tactics
 open Util
+
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+
+let abstract_tactic _ = Util.anomaly "Hiddentac.abstract_tactic: fantome"
+(* arnaud: /trucs factices *)
+
 
 let inj_id id = (dummy_loc,id)
 let inj_open c = (Evd.empty,c)

@@ -8,6 +8,9 @@
 
 (*i $Id$ i*)
 
+(* arnaud: à virer 
+
 open Tacmach
 
 val refine : Evd.open_constr -> tactic
+*)

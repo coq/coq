@@ -10,13 +10,21 @@
 
 open Term
 open Util
-open Evar_refiner
-open Tacmach
 open Tacexpr
-open Proof_type
 open Evd
 open Sign
 open Termops
+
+(*arnaud: trucs factices*)
+let w_refine _ = Util.anomaly "Evar_tactics.w_refine: fantome"
+module Refiner = 
+  struct
+    let tclEVARS _ = Util.anomaly "Evar_tactics.Refiner.tclEVARS: fantome"
+    let tclTHEN _ = Util.anomaly "Evar_tactics.Refiner.tclTHEN: fantome"
+  end 
+
+let pf_env _ = Util.anomaly "Evar_tactics.pf_env: fantome"
+(*arnaud: /trucs factices*)
 
 (* The instantiate tactic *)
 

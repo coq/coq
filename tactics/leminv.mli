@@ -2,8 +2,11 @@ open Util
 open Names
 open Term
 open Rawterm
-open Proof_type
 open Topconstr
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices *)
 
 val lemInv_gen : quantified_hypothesis -> constr -> tactic
 val lemInvIn_gen : quantified_hypothesis -> constr -> identifier list -> tactic

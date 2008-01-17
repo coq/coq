@@ -23,10 +23,7 @@ open Reductionops
 open Typeops
 open Typing
 open Retyping
-open Tacmach
-open Proof_type
 open Logic
-open Evar_refiner
 open Pattern
 open Matching
 open Hipattern
@@ -40,6 +37,21 @@ open Vernacexpr
 open Setoid_replace
 open Declarations
 open Indrec
+
+(* arnaud: trucs factices *)
+let pf_apply _ = Util.anomaly "Equality.pf_apply: fantome"
+let pf_env _ = Util.anomaly "Equality.pf_env: fantome"
+let project _ = Util.anomaly "Equality.project: fantome"
+let pf_global _ = Util.anomaly "Equality.pf_global: fantome"
+let pf_ids_of_hyps _ = Util.anomaly "Equality.pf_ids_of_hyps: fantome"
+let pf_conv_x _ = Util.anomaly "Equality.pf_conv_x: fantome"
+let pf_concl _ = Util.anomaly "Equality.pf_concl: fantome"
+let pf_whd_betadeltaiota _ = Util.anomaly "Equality.pf_whd_betadeltaiota: fantome"
+let pf_get_hyp_typ _ = Util.anomaly "Equality.pf_get_hyp_typ: fantome"
+let pf_hyps _ = Util.anomaly "Equality.pf_hyps: fantome"
+let pf_get_hyp _ = Util.anomaly "Equality.pf_get_hyp: fantome"
+let pf_hyps_types _ = Util.anomaly "Equality.pf_hyp_types: fantome"
+(* arnaud: /trucs factices *)
 
 (* Rewriting tactics *)
 

@@ -8,8 +8,11 @@
 
 (*i $Id$ i*)
 
-open Proof_type
 open Rawterm
+
+(* arnaud:trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices *)
 
 val h_discrHyp : quantified_hypothesis -> tactic
 val h_injHyp : quantified_hypothesis -> tactic
