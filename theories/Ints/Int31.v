@@ -311,7 +311,7 @@ Definition sqrt312 (ih il:int31) :=
      let closer_to_upper (r upper lower:int31) :=
 	let (quo,_) := (upper-r)/Twon in
 	match quo ?= On with
-        | Eq => match r ?= upper with | Lt => r+quo | _ => r end
+        | Eq => upper
         | _ => r+quo
        end
      in
