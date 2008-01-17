@@ -7,7 +7,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Certified Haskell Prelude.
+(* Tactics for typeclass-based setoids.
+ *
  * Author: Matthieu Sozeau
  * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
  *              91405 Orsay, France *)
@@ -21,7 +22,8 @@ Unset Strict Implicit.
 
 Require Export Coq.Classes.SetoidClass.
 
-Ltac rew H := clrewrite H.
+(* Application of the extensionality axiom to turn a goal on leibinz equality to 
+   a setoid equivalence. *)
 
 Lemma setoideq_eq [ sa : Setoid a eqa ] : forall x y, eqa x y -> x = y.
 Proof.
@@ -31,6 +33,7 @@ Qed.
 Implicit Arguments setoideq_eq [[a] [eqa] [sa]].
 
 (** Application of the extensionality principle for setoids. *)
+
 Ltac setoideq_ext :=
   match goal with
     [ |- @eq ?A ?X ?Y ] => apply (setoideq_eq (a:=A) X Y)

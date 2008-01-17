@@ -7,7 +7,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Certified Haskell Prelude.
+(* Decidable setoid equality theory.
+ *
  * Author: Matthieu Sozeau
  * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
  *              91405 Orsay, France *)
@@ -19,17 +20,31 @@ Unset Strict Implicit.
 
 Require Import Coq.Classes.SetoidClass.
 
+
+(** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
+
 Class [ Setoid A R ] => EqDec :=
   equiv_dec : forall x y : A, { x == y } + { x =!= y }.
 
+(** We define the [==] overloaded notation for deciding equality. It does not take precedence
+   of [==] defined in the type scope, hence we can have both at the same time. *)
+
 Infix "==" := equiv_dec (no associativity, at level 70).
 
+(** Use program to solve some obligations. *)
+
 Require Import Coq.Program.Program.
+
+(** Invert the branches. *)
 
 Program Definition nequiv_dec [ EqDec A R ] (x y : A) : { x =!= y } + { x == y } :=
   if x == y then right else left.
 
-Infix "<>" := nequiv_dec (no associativity, at level 70).
+(** Overloaded notation for inequality. *)
+
+Infix "=!=" := nequiv_dec (no associativity, at level 70).
+
+(** Define boolean versions, losing the logical information. *)
 
 Definition equiv_decb [ EqDec A R ] (x y : A) : bool :=
   if x == y then true else false.
@@ -57,11 +72,11 @@ Program Instance bool_eqdec : EqDec bool eq :=
 Program Instance unit_eqdec : EqDec unit eq :=
   equiv_dec x y := left.
 
-Next Obligation.
-Proof.
-  destruct x ; destruct y.
-  reflexivity.
-Qed.
+  Next Obligation.
+  Proof.
+    destruct x ; destruct y.
+    reflexivity.
+  Qed.
 
 Program Instance [ EqDec A eq, EqDec B eq ] => prod_eqdec : EqDec (prod A B) eq :=
   equiv_dec x y := 
@@ -72,7 +87,11 @@ Program Instance [ EqDec A eq, EqDec B eq ] => prod_eqdec : EqDec (prod A B) eq 
       else right
     else right.
 
-Solve Obligations using unfold equiv ; program_simpl ; try red ; intros ; autoinjections ; discriminates.
+  Solve Obligations using unfold equiv ; program_simpl ; try red ; intros ; autoinjections ; discriminates.
+
+(** Objects of function spaces with countable domains like bool have decidable equality. *)
+
+Require Import Coq.Program.FunctionalExtensionality.
 
 Program Instance [ EqDec A eq ] => bool_function_eqdec : EqDec (bool -> A) eq :=
   equiv_dec f g := 
@@ -81,20 +100,18 @@ Program Instance [ EqDec A eq ] => bool_function_eqdec : EqDec (bool -> A) eq :=
       else right
     else right.
 
-Solve Obligations using unfold equiv ; program_simpl.
+  Solve Obligations using unfold equiv ; program_simpl.
 
-Require Import Coq.Program.FunctionalExtensionality.
-
-Next Obligation.
-Proof.
-  unfold equiv.
-  extensionality x.
-  destruct x ; auto.
-Qed.
-
-Next Obligation.
-Proof.
-  unfold equiv in *.
-  red ; intro ; subst.
-  discriminates.
-Qed.
+  Next Obligation.
+  Proof.
+    unfold equiv.
+    extensionality x.
+    destruct x ; auto.
+  Qed.
+  
+  Next Obligation.
+  Proof.
+    unfold equiv in *.
+    red ; intro ; subst.
+    discriminates.
+  Qed.
