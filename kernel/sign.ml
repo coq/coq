@@ -181,7 +181,9 @@ let decompose_prod_n_assum n =
   prodec_rec empty_rel_context n
 
 (* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T 
-   into the pair ([(xn,Tn);...;(x1,T1)],T) *)
+   into the pair ([(xn,Tn);...;(x1,T1)],T)
+   Lets in between are not expanded but turn into local definitions,
+   but n is the actual number of destructurated lambdas.  *)
 let decompose_lam_n_assum n =
   if n < 0 then
     error "decompose_lam_n_assum: integer parameter must be positive";
@@ -189,7 +191,7 @@ let decompose_lam_n_assum n =
     if n=0 then l,c 
     else match kind_of_term c with 
     | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) (n-1) c
-    | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
+    | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) n c
     | Cast (c,_,_)      -> lamdec_rec l n c
     | c -> error "decompose_lam_n_assum: not enough abstractions"
   in 
