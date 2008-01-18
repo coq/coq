@@ -117,7 +117,7 @@ let make_inv_predicate env sigma indf realargs id status concl =
 	  (* We lift to make room for the equations *)
 	  (hyps,lift nrealargs bodypred)
   in
-  let nhyps = List.length hyps in
+  let nhyps = rel_context_length hyps in
   let env' = push_rel_context hyps env in
   let realargs' = List.map (lift nhyps) realargs in
   let pairs = list_map_i (compute_eqn env' sigma nhyps) 0 realargs' in

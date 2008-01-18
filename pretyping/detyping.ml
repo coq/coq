@@ -260,8 +260,8 @@ and contract_branch isgoal e (cn,mkpat,b) =
 
 let is_nondep_branch c n =
   try
-    let _,ccl = decompose_lam_n_assum n c in
-    noccur_between 1 n ccl
+    let sign,ccl = decompose_lam_n_assum n c in
+    noccur_between 1 (rel_context_length sign) ccl
   with _ -> (* Not eta-expanded or not reduced *)
     false
 
