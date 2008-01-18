@@ -175,4 +175,6 @@ Ltac program_simplify :=
   simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; try autoinjection ; try discriminates ;
     try (solve [ red ; intros ; destruct_conjs ; try autoinjection ; discriminates ]).
 
-Ltac program_simpl := program_simplify ; auto with *.
+Ltac default_program_simpl := program_simplify ; auto with *.
+
+Ltac program_simpl := default_program_simpl.

@@ -599,14 +599,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let ise_pretype_gen fail_evar sigma env lvar kind c =
     let isevars = ref (Evd.create_evar_defs sigma) in
     let c = pretype_gen isevars env lvar kind c in
-(*     let evd,_ = consider_remaining_unif_problems env !isevars in *)
-(*     let evd = nf_evar_defs evd in *)
-(*     let c = nf_evar (evars_of evd) c in *)
-(*     let evd = undefined_evars evd in *)
-(*     let evd = Typeclasses.resolve_typeclasses env sigma evd in *)
-(*     let c = nf_evar (evars_of evd) c in *)
     let evd = !isevars in
-      if fail_evar then check_evars env (Evd.evars_of evd) evd c;
+      if fail_evar then check_evars env Evd.empty evd c;
       evd, c
 	
   (** Entry points of the high-level type synthesis algorithm *)
@@ -625,13 +619,6 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
       
   let understand_tcc_evars evdref env kind c =
     pretype_gen evdref env ([],[]) kind c 
-
-(*     evdref := nf_evar_defs !evdref; *)
-(*     let c = nf_evar (evars_of !evdref) c in *)
-(*     let evd = undefined_evars !evdref in *)
-(*     let evd = Typeclasses.resolve_typeclasses env (evars_of evd) !evdref in *)
-(*       evdref := evd; *)
-(*       nf_evar (evars_of evd) c       *)
 
   let understand_tcc sigma env ?expected_type:exptyp c =
     let ev, t = ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c in

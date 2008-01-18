@@ -166,25 +166,25 @@ Class [ sa : Setoid a eqa, sb : Setoid b eqb ] => Morphism (m : a -> b) :=
 
 Definition respecting [ Setoid a R, Setoid b R' ] : Type := { morph : a -> b | respectful morph }.
 
-Obligations Tactic := try red ; program_simpl ; unfold equiv in * ; try tauto.
+Ltac program_simpl ::= try red ; default_program_simpl ; try tauto.
 
 Program Instance [ sa : Setoid a R, sb : Setoid b R' ] => arrow_setoid : 
   Setoid ({ morph : a -> b | respectful morph })
   (fun (f g : respecting) => forall (x y : a), R x y -> R' (`f x) (`g y)) :=
   equiv_prf := Build_equivalence _ _ _ _ _.
 
-Next Obligation.
-Proof.
-  trans (y x0) ; eauto.
-  apply H.
-  refl.
-Qed.
+  Next Obligation.
+  Proof.
+    trans (y x0) ; eauto.
+    apply H.
+    refl.
+  Qed.
 
-Next Obligation.
-Proof.
-  sym ; apply H.
-  sym ; auto.
-Qed.
+  Next Obligation.
+  Proof.
+    sym ; apply H.
+    sym ; auto.
+  Qed.
 
 (** We redefine respect for binary and ternary morphims because we cannot get a satisfying instance of [Setoid (a -> b)] from 
    some arbitrary domain and codomain setoids. We can define it on respectful Coq functions though, see [arrow_setoid] above. *)
@@ -322,3 +322,7 @@ Program Instance [ sa : Setoid a R, sb : Setoid b R' ] => arrow_setoid :
   (fun f g => forall (x y : a), R x y -> R' (f x) (g y)) :=
   equiv_prf := Build_equivalence _ _ _ _ _.
 *)
+
+(** Reset the default Program tactic. *)
+
+Ltac program_simpl ::= default_program_simpl.

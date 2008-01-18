@@ -106,18 +106,12 @@ Program Instance [ EqDec A eq ] => bool_function_eqdec : EqDec (bool -> A) eq :=
       else right
     else right.
 
-  Solve Obligations using unfold equiv ; program_simpl.
+  Solve Obligations using try red ; unfold equiv ; program_simpl.
 
   Next Obligation.
   Proof.
-    unfold equiv.
+    red.
     extensionality x.
     destruct x ; auto.
   Qed.
-  
-  Next Obligation.
-  Proof.
-    unfold equiv in *.
-    red ; intro ; subst.
-    discriminates.
-  Qed.
+

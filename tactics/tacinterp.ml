@@ -1331,13 +1331,13 @@ let solve_remaining_evars env initial_sigma evd c =
       | Evar (ev,args as k) when not (Evd.mem initial_sigma ev) ->
             let (loc,src) = evar_source ev !evdref in
 	    let sigma = evars_of !evdref in
+	    let evi = Evd.find sigma ev in
 	    (try 
-	      let evi = Evd.find sigma ev in
 	      let c = solvable_by_tactic env evi k src in
 	      evdref := Evd.evar_define ev c !evdref;
 	      c
 	    with Exit ->
-	      Pretype_errors.error_unsolvable_implicit loc env sigma src)
+	      Pretype_errors.error_unsolvable_implicit loc env sigma evi src)
       | _ -> map_constr proc_rec c      
   in
   proc_rec c

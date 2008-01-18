@@ -343,8 +343,25 @@ let explain_not_clean env ev t k =
   str "with a term using variable " ++ var ++ spc () ++
   str "which is not in its scope."
 
-let explain_unsolvable_implicit env k =
-  str "Cannot infer " ++ explain_hole_kind env k ++ str "."
+let pr_ne_context_of header footer env =
+  if Environ.rel_context env = empty_rel_context &
+    Environ.named_context env = empty_named_context  then footer
+  else pr_ne_context_of header env
+
+let explain_typeclass_resolution env evi k =
+  match k with
+      InternalHole | ImplicitArg _ ->
+	(match Typeclasses.class_of_constr evi.evar_concl with
+	  | Some c -> 
+	      let env = Evd.evar_env evi in
+		str"." ++ fnl () ++ str "Could not find an instance for " ++ 
+		  pr_lconstr_env env evi.evar_concl ++ 
+		  pr_ne_context_of (str " in environment:"++ fnl ()) (str ".") env
+	  | None -> str ".")
+    | _ -> str "."
+
+let explain_unsolvable_implicit env evi k =
+  str "Cannot infer " ++ explain_hole_kind env k ++ explain_typeclass_resolution env evi k
 
 let explain_var_not_found env id =
   str "The variable" ++ spc () ++ pr_id id ++
@@ -432,7 +449,7 @@ let explain_pretype_error env err =
   | CantFindCaseType c -> explain_cant_find_case_type env c
   | OccurCheck (n,c) -> explain_occur_check env n c
   | NotClean (n,c,k) -> explain_not_clean env n c k
-  | UnsolvableImplicit k -> explain_unsolvable_implicit env k
+  | UnsolvableImplicit (evi,k) -> explain_unsolvable_implicit env evi k
   | VarNotFound id -> explain_var_not_found env id
   | UnexpectedType (actual,expect) -> explain_unexpected_type env actual expect
   | NotProduct c -> explain_not_product env c

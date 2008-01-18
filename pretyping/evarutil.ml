@@ -1004,7 +1004,8 @@ let check_evars env initial_sigma evd c =
           assert (Evd.mem sigma evk);
 	  if not (Evd.mem initial_sigma evk) then
             let (loc,k) = evar_source evk evd in
-	    error_unsolvable_implicit loc env sigma k
+	    let evi = nf_evar_info sigma (Evd.find sigma evk) in
+	    error_unsolvable_implicit loc env sigma evi k
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
