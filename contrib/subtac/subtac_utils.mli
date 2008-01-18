@@ -12,6 +12,17 @@ open Evarutil
 open Names
 open Sign
 
+(* arnaud: trucs factices *)
+module Proof_type :
+  sig
+    type tactic = Tacticals.tactic
+  end
+module Tacmach :
+  sig
+    type tactic = Tacticals.tactic
+  end
+(* arnaud: /trucs factices *)
+
 val ($) : ('a -> 'b) -> 'a -> 'b
 val contrib_name : string
 val subtac_dir : string list

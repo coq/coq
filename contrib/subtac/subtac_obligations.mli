@@ -1,6 +1,13 @@
 open Names
 open Util
 
+(* arnaud: trucs factices *)
+module Proof_type :
+  sig
+    type tactic = Tacticals.tactic
+  end
+(* arnaud:/trucs factices*)
+
 type obligation_info = (Names.identifier * Term.types * bool * Intset.t) array
     (* ident, type, opaque or transparent, dependencies *)
 

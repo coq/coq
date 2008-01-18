@@ -14,7 +14,6 @@
 open Util
 open Pp
 open Term
-open Tacmach
 open Tactics
 open Tacticals
 open Fol
@@ -26,6 +25,16 @@ open Hipattern
 open Libnames
 open Declarations
 open Dp_why
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+let pf_env _ = Util.anomaly "Dp.pf_env: fantome"
+let pf_hyps_types _ = Util.anomaly "Dp.pf_hyps_types: fantome"
+let pf_concl _ = Util.anomaly "Dp.pf_concl: fantome"
+let project _ = Util.anomaly "Dp.project: fantome"
+let pf_type_of _ = Util.anomaly "Dp.pf_type_of: fantome"
+(* arnaud: /trucs factices *)
+
 
 let debug = ref false
 let set_debug b = debug := b

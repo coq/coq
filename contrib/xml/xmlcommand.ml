@@ -12,6 +12,30 @@
 (*                       http://helm.cs.unibo.it                        *)
 (************************************************************************)
 
+
+(* arnaud: trucs factices *)
+module Proof_type =
+  struct
+    type proof_tree
+    type anything = Intro
+  end
+module Tacmach =
+  struct
+    let proof_of_pftreestate _ = Util.anomaly "Xmlcommand.proof_of_pftreestate: fantome"
+    let evc_of_pftreestate _ = Util.anomaly "Xmlcommand.evc_of_pftreestate: fantome"
+  end
+module Proof_trees =
+  struct
+    let goal_of_proof _ = Util.anomaly "Xmlcommand.goal_of_proof: fantome"
+  end
+module Pfedit =
+  struct
+    let get_pftreestate _ = Util.anomaly "Xmlcommand.get_pftreestate: fantome"
+    let current_proof_statement _ = Util.anomaly "Xmlcommand.current_proof_statement: fantome"
+    let set_xml_cook_proof  _ = Util.anomaly "Xmlcommand.set_xml_cook_proof: fantome"
+  end
+(* arnaud:/trucs factices *)
+
 (* CONFIGURATION PARAMETERS *)
 
 let verbose = ref false;;

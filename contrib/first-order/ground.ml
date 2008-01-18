@@ -13,10 +13,19 @@ open Sequent
 open Rules
 open Instances
 open Term
-open Tacmach
 open Tactics
 open Tacticals
 open Libnames
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+type goal = Tacticals.goal
+type 'a sigma = 'a Tacticals.sigma
+
+let sig_it _ = Util.anomaly "Ground.sig_it: fantome"
+(* arnaud: /trucs factices *)
+
+
 
 (*
 let old_search=ref !Auto.searchtable 
@@ -58,6 +67,7 @@ let update_flags ()=
       (Names.Idpred.full,Names.Cpred.complement !predref)
 
 let ground_tac solver startseq gl=
+  Util.anomaly "Ground.ground_tac: à restaurer" (* arnaud: à restaurer
   update_flags ();
   let rec toptac skipped seq gl=
     if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
@@ -150,3 +160,4 @@ let ground_tac solver startseq gl=
       end gl in
     wrap (List.length (pf_hyps gl)) true (toptac []) (startseq gl) gl
       
+						*)

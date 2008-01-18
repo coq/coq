@@ -1,6 +1,13 @@
 open Names
 open Term
 
+(* arnaud: trucs factices *)
+module Tacmach :
+  sig
+    type tactic = Tacticals.tactic
+  end
+(* arnaud:/trucs factices *)
+
 val prove_princ_for_struct :
   bool ->
   int -> constant array -> constr array -> int -> Tacmach.tactic

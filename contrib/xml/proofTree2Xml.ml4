@@ -81,24 +81,25 @@ let first_word s =
 ;;
 
 let string_of_prim_rule x = match x with
-  | Proof_type.Intro _-> "Intro"
-  | Proof_type.Intro_replacing _-> "Intro_replacing"
-  | Proof_type.Cut (_,_,_) -> "Cut"
-  | Proof_type.FixRule (_,_,_) -> "FixRule"
-  | Proof_type.Cofix (_,_)-> "Cofix"
-  | Proof_type.Refine _ -> "Refine"
-  | Proof_type.Convert_concl _ -> "Convert_concl"
-  | Proof_type.Convert_hyp _->"Convert_hyp"
-  | Proof_type.Thin _ -> "Thin"
-  | Proof_type.ThinBody _-> "ThinBody"
-  | Proof_type.Move (_,_,_) -> "Move"
-  | Proof_type.Rename (_,_) -> "Rename"
-  | Proof_type.Change_evars -> "Change_evars"
+  | Logic.Intro _-> "Intro"
+  | Logic.Intro_replacing _-> "Intro_replacing"
+  | Logic.Cut (_,_,_) -> "Cut"
+  | Logic.FixRule (_,_,_) -> "FixRule"
+  | Logic.Cofix (_,_)-> "Cofix"
+  | Logic.Refine _ -> "Refine"
+  | Logic.Convert_concl _ -> "Convert_concl"
+  | Logic.Convert_hyp _->"Convert_hyp"
+  | Logic.Thin _ -> "Thin"
+  | Logic.ThinBody _-> "ThinBody"
+  | Logic.Move (_,_,_) -> "Move"
+  | Logic.Rename (_,_) -> "Rename"
+  | Logic.Change_evars -> "Change_evars"
 
 let
  print_proof_tree curi sigma pf proof_tree_to_constr
   proof_tree_to_flattened_proof_tree constr_to_ids
 =
+ Util.anomaly "ProofTree2Xml.print_proof_tree: à restaurer" (* arnaud: à restaurer
  let module PT = Proof_type in
  let module L = Logic in
  let module X = Xml in
@@ -203,7 +204,7 @@ Pp.ppnl (Pp.(++) (Pp.str
       X.xml_nempty "ProofTree" ["of",curi] (aux pf [])
    >]
 ;;
-
+ *)
 
 (* Hook registration *)
 (* CSC: debranched since it is bugged

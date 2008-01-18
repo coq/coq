@@ -15,9 +15,23 @@ open Libnames
 open Tacticals
 open Tactics
 open Indfun_common
-open Tacmach
 open Sign
 open Hiddentac
+
+(* arnaud: trucs factices *)
+let sig_it _ = Util.anomaly "Invfun.sig_it: fantome"
+let pf_concl _ = Util.anomaly "Invfun.pf_concl: fantome"
+let pf_ids_of_hyps _ = Util.anomaly "Invfun.pf_ids_of_hyps: fantome"
+let pf_hyps _ = Util.anomaly "Invfun.pf_hyps: fantome"
+let pf_type_of _ = Util.anomaly "Invfun.pf_type_of: fantome"
+let pf_env _ = Util.anomaly "Invfun.pf_env: fantome"
+let pf_get_new_id _ = Util.anomaly "Invfun.pf_get_new_id: fantome"
+let project _ = Util.anomaly "Invfun.project: fantome"
+module Pfedit =
+  struct
+    let by _ = Util.anomaly "Invfun.by: fantome"
+  end
+(* arnaud: /trucs factices *)
 
 (* Some pretty printing function for debugging purpose *)
 
@@ -59,6 +73,7 @@ let observennl strm =
 
 
 let do_observe_tac s tac g =
+ Util.anomaly "Invfun.do_observe_tac: à restaurer" (*arnaud: à restaurer
  try    let goal = begin try (Printer.pr_goal (sig_it g)) with _ -> assert false end in
  let v = tac g in msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
  with e ->
@@ -66,7 +81,7 @@ let do_observe_tac s tac g =
    msgnl (str "observation "++ s++str " raised exception " ++ 
 	    Cerrors.explain_exn e ++ str " on goal " ++ goal ); 
    raise e;;
-
+						   *)
 
 let observe_tac s tac g =
   if do_observe ()

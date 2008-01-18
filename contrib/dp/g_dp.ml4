@@ -12,6 +12,13 @@
 
 open Dp
 
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "G_dp.abstract_extended_tactic: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 TACTIC EXTEND Simplify
   [ "simplify" ] -> [ simplify ]
 END

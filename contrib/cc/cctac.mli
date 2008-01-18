@@ -9,9 +9,12 @@
 (* $Id$ *)
 
 open Term 
-open Proof_type
 
-val proof_tac: Ccproof.proof -> Proof_type.tactic
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices *)
+
+val proof_tac: Ccproof.proof -> tactic
 
 val cc_tactic : int -> constr list -> tactic
 

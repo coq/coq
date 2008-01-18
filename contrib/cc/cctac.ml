@@ -13,7 +13,6 @@
 (* This file is the interface between the c-c algorithm and Coq *)
 
 open Evd
-open Proof_type
 open Names
 open Libnames
 open Nameops
@@ -21,7 +20,6 @@ open Inductiveops
 open Declarations
 open Term
 open Termops
-open Tacmach
 open Tactics
 open Tacticals
 open Ccalgo
@@ -30,6 +28,14 @@ open Ccproof
 open Pp
 open Util
 open Format
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+let pf_env _ = Util.anomaly "Cctac.pf_env: fantome"
+let pf_get_new_id _ = Util.anomaly "Cctac.pf_get_new_id: fantome"
+let pf_type_of  _ = Util.anomaly "Cctac.pf_type_of: fantome"
+let pf_concl _ = Util.anomaly "Cctac.pf_concl: fantome"
+(* arnaud: /trucs factices *)
 
 let constant dir s = lazy (Coqlib.gen_constant "CC" dir s)
 

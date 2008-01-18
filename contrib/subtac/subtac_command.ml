@@ -15,11 +15,6 @@ open Names
 open Nameops
 open Libnames
 open Nametab
-open Pfedit
-open Proof_type
-open Refiner
-open Tacmach
-open Tactic_debug
 open Topconstr
 open Term
 open Termops
@@ -39,6 +34,13 @@ open Tacticals
 open Tacinterp
 open Vernacexpr
 open Notation
+
+(* arnaud: trucs factices *)
+module Pfedit =
+  struct
+    let get_all_proof_names _ = Util.anomaly "Subtac_command.get_all_proof_names: fantome"
+  end 
+(*arnaud: /trucs factices *)
 
 module SPretyping = Subtac_pretyping.Pretyping
 open Subtac_utils

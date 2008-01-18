@@ -12,6 +12,21 @@ open Decl_kinds
 open Util
 open Evd
 
+(* arnaud: trucs factices *)
+module Proof_type =
+  struct
+    type tactic = Tacticals.tactic
+  end
+module Refiner =
+  struct
+    let tclIDTAC _ = Util.anomaly "Subtac_obligations.tclIDTAC: fantome"
+  end
+module Pfedit = 
+  struct
+    let by _ = Util.anomaly "Subtac_obligations.by: fantome"
+  end
+(* arnaud:/trucs factices*)
+
 let pperror cmd = Util.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 

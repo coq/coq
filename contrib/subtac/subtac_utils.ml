@@ -5,6 +5,24 @@ open Term
 open Names
 open Util
 
+(* arnaud: trucs factices *)
+module Proof_type =
+  struct
+    type tactic = Tacticals.tactic
+  end
+module Tacmach =
+  struct
+    type tactic = Tacticals.tactic
+  end
+module Pfedit =
+  struct
+    let by _ = Util.anomaly "Subtac_utils.by: fantome"
+    let start_proof _ = Util.anomaly "Subtac_utils.start_proof: fantome"
+    let cook_proof _ = Util.anomaly "Subtac_utils.cook_proof: fantome"
+    let delete_current_proof _ = Util.anomaly "Subtac_utils.delete_current_proof: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 let ($) f x = f x
 
 (****************************************************************************)
@@ -249,7 +267,6 @@ let build_dependent_sum l =
     | [] -> raise (Invalid_argument "build_dependent_sum")
   in aux [] id id (List.rev l)       
 	  
-open Proof_type
 open Tacexpr
 
 let mkProj1 a b c = 

@@ -13,6 +13,10 @@ open Pp
 open Util
 open Subtac_utils
 
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud:/trucs factices *)
+
 let trace s = 
   if !Flags.debug then (msgnl s; msgerr s)
   else ()

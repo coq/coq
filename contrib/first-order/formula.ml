@@ -13,11 +13,23 @@ open Names
 open Term
 open Termops
 open Reductionops
-open Tacmach
 open Util
 open Declarations
 open Libnames
 open Inductiveops
+
+
+(* arnaud: trucs factices *)
+module Tacmach =
+  struct
+    type 'a sigma = 'a Tacticals.sigma
+  end
+module Proof_type =
+  struct
+    type goal = Tacticals.goal
+  end
+let pf_env _ = Util.anomaly "Formula.pf_env: fantome"
+(* arnaud: /trucs factices *)
 
 let qflag=ref true
 

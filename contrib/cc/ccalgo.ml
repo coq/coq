@@ -16,9 +16,20 @@ open Pp
 open Goptions
 open Names
 open Term
-open Tacmach
 open Evd
-open Proof_type
+
+(* arnaud: trucs factices *)
+module Tacmach =
+  struct
+    type 'a sigma = 'a Tacticals.sigma
+  end
+module Proof_type =
+  struct
+    type goal = Tacticals.goal
+  end
+let pf_type_of _ = Util.anomaly "Ccalgo.pf_type_of: fantome"
+let pf_get_new_id _ = Util.anomaly "Ccalgo.pf_get_new_id: fantome"
+(* arnaud:/trucs factices *)
 
 let init_size=5
 

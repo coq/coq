@@ -15,8 +15,23 @@ open Term
 open Termops
 open Names
 open Evd
-open Tacmach
 open Proof_search
+
+(* arnaud: trucs factices *)
+module Tacmach =
+  struct
+    type 'a sigma = 'a Tacticals.sigma
+
+    let project _ = Util.anomaly "Refl_tauto.project: factice"
+  end
+module Proof_type =
+  struct
+    type goal = Tacticals.goal
+    type tactic = Tacticals.tactic
+  end
+let pf_env _ = Util.anomaly "Refl_tauto.pf_env: fantome"
+(* arnaud:/trucs factices *)
+
 
 let force count lazc = incr count;Lazy.force lazc 
 
@@ -278,7 +293,7 @@ let rtauto_tac gls=
   let formula=
     List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in  
   let search_fun = 
-    if Tacinterp.get_debug()=Tactic_debug.DebugOn 0 then
+    if Tacinterp.get_debug()=(*arnaud:Tactic_debug.*)Tacinterp.DebugOn 0 then
       Search.debug_depth_first
     else 
       Search.depth_first in

@@ -9,9 +9,12 @@
 (* $Id$ *)
 
 open Term
-open Tacmach
 open Names
 open Libnames
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices *)
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 

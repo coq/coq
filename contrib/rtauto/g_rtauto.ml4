@@ -10,6 +10,13 @@
 
 (*i camlp4deps: "parsing/grammar.cma"  i*)
 
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "G_rtauto.abstract_extended_tactic: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 TACTIC EXTEND rtauto
   [ "rtauto" ] -> [ Refl_tauto.rtauto_tac ]
 END

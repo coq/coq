@@ -8,12 +8,37 @@ open Pp
 open Entries
 open Hiddentac
 open Evd
-open Tacmach
-open Proof_type
 open Tacticals
 open Tactics
 open Indfun_common
 open Libnames
+
+(* arnaud: trucs factices *)
+module Tacmach =
+  struct
+    type tactic = Tacticals.tactic
+    let refine_no_check _ = Util.anomaly "Functional_principles_proofs.refine_no_check: fantome"
+    let thin_no_check _ = Util.anomaly "Functional_principles_proofs.thin_no_check: fantome"
+    let introduction_no_check _ = Util.anomaly "Functional_principles_proofs.introduction_no_check: fantome"
+  end
+open Tacmach
+module Pfedit =
+  struct
+    let by _ = Util.anomaly "Functional_principles_proofs.by: fantome"
+  end
+let pf_get_new_id _ = Util.anomaly "Functional_principles_proofs.pf_get_new_id: fantome"
+let pf_ids_of_hyps _ = Util.anomaly "Functional_principles_proofs.pf_ids_of_hyps: fantome"
+let pf_concl _ = Util.anomaly "Functional_principles_proofs.pf_concl: fantome"
+let pf_env _ = Util.anomaly "Functional_principles_proofs.pf_env: fantome"
+let project _ = Util.anomaly "Functional_principles_proofs.project: fantome"
+let pf_type_of _ = Util.anomaly "Functional_principles_proofs.pf_type_of: fantome"
+let pr_gls _ = Util.anomaly "Functional_principles_proofs.pr_gls: fantome"
+let pf_nf_betaiota _ = Util.anomaly "Functional_principles_proofs.pf_nf_betaiota: fantome"
+let pf_last_hyp  _ = Util.anomaly "Functional_principles_proofs.pf_last_hyp: fantome"
+let pf_nth_hyp_id _ = Util.anomaly "Functional_principles_proofs.pf_nth_hyp_id: fantome"
+
+
+(* arnaud:/trucs factices *)
 
 let msgnl = Pp.msgnl
   
@@ -32,12 +57,14 @@ let observennl strm =
 
 
 let do_observe_tac s tac g =
+ Util.anomaly "functional_principles_proofs: do_observer_tac: à restaurer" (* arnaud: à restaurer
  try let v = tac g in (* msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); *) v
  with e ->
    let goal = begin try (Printer.pr_goal (sig_it g)) with _ -> assert false end in
    msgnl (str "observation "++ s++str " raised exception " ++ 
 	    Cerrors.explain_exn e ++ str " on goal " ++ goal ); 
    raise e;;
+									   *)
 
 let observe_tac_stream s tac g = 
   if do_observe ()

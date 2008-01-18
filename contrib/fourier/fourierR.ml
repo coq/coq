@@ -20,9 +20,17 @@ open Clenv
 open Names
 open Libnames
 open Tacticals
-open Tacmach
 open Fourier
 open Contradiction
+
+(* arnaud: trucs factices *)
+let pf_concl _ = Util.anomaly "FourierR.pf_concl: fantome"
+let pf_hyps _ = Util.anomaly "FourierR.pf_hyps: fantome"
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "FourierR.abstract_extended_tactic: fantome"
+  end
+(* arnaud: /trucs factices *)
 
 (******************************************************************************
 Opérations sur les combinaisons linéaires affines.

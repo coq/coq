@@ -16,6 +16,22 @@ open Genarg
 open Pcoq
 open Tacticals
 
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+   let  abstract_extended_tactic _ = Util.anomaly "Indfun_main.abstract_extended_tactic: fantome"
+  end
+module Tacmach =
+  struct
+    let pf_concl _ = Util.anomaly "Indfun_main.pf_concl: fantome"
+    let pf_type_of _ = Util.anomaly "Indfun_main.pf_type_of: fantome"
+  end
+module Proof_type =
+  struct
+   type tactic = Tacticals.tactic
+  end
+(* /arnaud: trucs factices *)
+
 let pr_binding prc = function
   | loc, Rawterm.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
   | loc, Rawterm.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)

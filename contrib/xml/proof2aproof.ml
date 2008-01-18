@@ -62,6 +62,7 @@ let nf_evar sigma ~preserve =
 (* Unshares a proof-tree.                                                  *)
 (* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
 let rec unshare_proof_tree =
+ Util.anomaly "Proof2aproof.unshare_proof_tree: à restaurer" (* arnaud: à restaurer
  let module PT = Proof_type in
   function {PT.open_subgoals = status ; 
 	    PT.goal = goal ; 
@@ -82,11 +83,11 @@ let rec unshare_proof_tree =
      PT.goal = goal ; 
      PT.ref = unshared_ref}
 ;;
-
+							     *)
 module ProofTreeHash =
  Hashtbl.Make
   (struct
-    type t = Proof_type.proof_tree
+    type t (* arnaud: à restaurer = Proof_type.proof_tree *)
     let equal = (==)
     let hash = Hashtbl.hash
    end)
@@ -94,6 +95,7 @@ module ProofTreeHash =
 
 
 let extract_open_proof sigma pf =
+ Util.anomaly "Proof2aproof.extract_open_proof: à restaurer" (* arnaud: à restaurer
  let module PT = Proof_type in
  let module L = Logic in
   let evd = ref (Evd.create_evar_defs sigma) in
@@ -169,8 +171,11 @@ if ProofTreeHash.mem proof_tree_to_constr node then
    (pfterm, Evd.evars_of !evd, proof_tree_to_constr, proof_tree_to_flattened_proof_tree,
     unshared_pf)
 ;;
+							     *)
 
 let extract_open_pftreestate pts =
+ Util.anomaly "Proof2aproof.extract_open_pftreestate: à restaurer" (* arnaud: à restaurer
   extract_open_proof (Refiner.evc_of_pftreestate pts)
    (Tacmach.proof_of_pftreestate pts)
 ;;
+							     *)

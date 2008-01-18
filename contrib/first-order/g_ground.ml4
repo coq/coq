@@ -22,6 +22,13 @@ open Names
 open Util
 open Libnames
 
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "G_ground.abstract_extended_tactic: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 (* declaring search depth as a global option *)
 
 let ground_depth=ref 3

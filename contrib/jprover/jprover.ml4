@@ -6,9 +6,7 @@ module JA = Jall
 module JT = Jterm
 module T = Tactics
 module TCL = Tacticals
-module TM = Tacmach
 module N = Names
-module PT = Proof_type
 module HT = Hiddentac
 module PA = Pattern
 module HP = Hipattern
@@ -29,6 +27,19 @@ module ID = Inductiveops
 module CV = Clenv
 module RF = Refiner
 i*)
+
+(* arnaud:trucs factices *)
+module TM = 
+  struct
+    let pf_get_hyp_typ _ = Util.anomaly "Jprover.pf_get_hyp_typ: fantome"
+    let pf_concl _ = Util.anomaly "Jprover.pf_concl: fantome"
+    let pf_hyps_types _ = Util.anomaly "Jprover.pf_hyps_types: fantome"
+  end
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "Jprover.abstract_extended_tactic: fantome"
+  end
+(* arnaus: /trucs factices *)
 
 (* Interface to JProver: *)
 (* type JLogic.inf_step = rule * (string * Jterm.term) * (string * Jterm.term) *)

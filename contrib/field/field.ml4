@@ -12,9 +12,7 @@
 
 open Names
 open Pp
-open Proof_type
 open Tacinterp
-open Tacmach
 open Term
 open Typing
 open Util
@@ -23,6 +21,12 @@ open Vernacexpr
 open Tacexpr
 open Mod_subst
 open Coqlib
+
+(* arnaud: trucs factices *)
+let pf_concl _ = Util.anomaly "Field.pf_concl: fantome"
+let pf_env _ = Util.anomaly "Field.pf_env: fantome"
+let project _ = Util.anomaly "Field.project: fantome"
+(* arnaud:/trucs factices *)
 
 (* Interpretation of constr's *)
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c

@@ -14,6 +14,14 @@
 
 (*i $Id$ i*)
 
+(* arnaud: trucs factices *)
+module Proof_type :
+  sig
+    type proof_tree
+  end
+(* arnaud:/trucs factices *)
+
+
 (* print_global qid fn                                                    *)
 (*  where qid  is a long name denoting a definition/theorem or            *)
 (*             an inductive definition                                    *)

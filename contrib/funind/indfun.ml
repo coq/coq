@@ -7,6 +7,15 @@ open Libnames
 open Rawterm
 open Declarations
 
+(* arnaud: trucs factices *)
+module Tacmach =
+  struct
+    type tactic = Tacticals.tactic
+    let pf_type_of _ = Util.anomaly "Indfunc.pf_type_of: fantome"
+    let pf_ids_of_hyps _ = Util.anomaly "Indfunc.pf_ids_of_hyps: fantome"
+  end 
+(* arnaud: /trucs factices *)
+
 let is_rec_info scheme_info = 
   let test_branche min acc (_,_,br) = 
     acc || (

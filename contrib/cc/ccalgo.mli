@@ -12,6 +12,17 @@ open Util
 open Term
 open Names
 
+(* arnaud: trucs factices *)
+module Tacmach :
+  sig
+    type 'a sigma = 'a Tacticals.sigma
+  end
+module Proof_type :
+  sig
+    type goal = Tacticals.goal
+  end
+(* arnaud:/trucs factices *)
+
 type cinfo =
     {ci_constr: constructor; (* inductive type *)
      ci_arity: int;     (* # args *)

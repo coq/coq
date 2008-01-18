@@ -156,6 +156,7 @@ coqlight: theories-light tools coqbinaries
 
 states:: states/initial.coq
 
+#arnaud: un hack pour voir
 $(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@

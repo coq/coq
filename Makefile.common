@@ -121,8 +121,9 @@ INTERP:=\
 
 PROOFS:=\
   proofs/tacexpr.cmo proofs/redexpr.cmo \
-  proofs/logic.cmo \
+  proofs/permutation.cmo \
   proofs/goal.cmo proofs/subproof.cmo proofs/proof.cmo \
+  proofs/logic.cmo \
   proofs/decl_mode.cmo
 
 PARSING:=\

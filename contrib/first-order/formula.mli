@@ -12,6 +12,17 @@ open Term
 open Names
 open Libnames
 
+(* arnaud: trucs factices *)
+module Tacmach :
+  sig
+    type 'a sigma = 'a Tacticals.sigma
+  end
+module Proof_type :
+  sig
+    type goal = Tacticals.goal
+  end
+(* arnaud: /trucs factices *)
+
 val qflag : bool ref
 
 val red_flags: Closure.RedFlags.reds ref

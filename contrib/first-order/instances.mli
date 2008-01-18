@@ -9,7 +9,6 @@
 (*i $Id$ i*)
 
 open Term
-open Tacmach
 open Names
 open Libnames
 open Rules

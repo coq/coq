@@ -8,12 +8,23 @@ open Pp
 open Entries
 open Hiddentac
 open Evd
-open Tacmach
-open Proof_type
 open Tacticals
 open Tactics
 open Indfun_common
 open Functional_principles_proofs
+
+(* arnaud: trucs factices *)
+module Tacmach =
+  struct
+    type tactic = Tacticals.tactic
+  end
+module Pfedit =
+  struct
+    let by _ = Util.anomaly "Functional_principles_types.by: fantome"
+    let get_current_proof_name _ = Util.anomaly "Functional_principles_types.get_current_proof_name: fantome"
+    let delete_current_proof _ = Util.anomaly "Functional_principles_types.delete_current_proof: fantome"
+  end
+(* arnaud:/trucs factices *)
 
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved

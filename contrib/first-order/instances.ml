@@ -15,7 +15,6 @@ open Rules
 open Util
 open Term
 open Rawterm
-open Tacmach
 open Tactics
 open Tacticals
 open Termops
@@ -25,6 +24,19 @@ open Formula
 open Sequent
 open Names
 open Libnames
+
+(* arnaud: trucs factices *)
+let pf_env _ = Util.anomaly "Instances.pf_env: fantome"
+let pf_type_of _ = Util.anomaly "Instances.pf_type_of: fantome"
+module Refiner =
+  struct
+    let project _ = Util.anomaly "Instances.project: fantome"
+  end
+module Tacmach =
+  struct
+    let pf_nth_hyp_id _ = Util.anomaly "Instancespf_nth_hyp_id: fantome"
+  end
+(*arnaud:/trucs factices *)
 
 let compare_instance inst1 inst2=
 	match inst1,inst2 with

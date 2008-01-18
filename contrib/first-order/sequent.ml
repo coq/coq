@@ -17,6 +17,10 @@ open Names
 open Libnames
 open Pp
 
+(* arnaud: trucs factices *)
+let pf_type_of _ = Util.anomaly "Sequent.pf_type_of: fantome"
+(* arnaud: trucs factices *)
+
 let newcnt ()=
   let cnt=ref (-1) in
     fun b->if b then incr cnt;!cnt

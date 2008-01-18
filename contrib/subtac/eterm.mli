@@ -8,11 +8,14 @@
 
 (*i $Id$ i*)
 open Environ
-open Tacmach
 open Term
 open Evd
 open Names
 open Util
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud:/trucs factices *)
 
 val mkMetas : int -> constr list
 

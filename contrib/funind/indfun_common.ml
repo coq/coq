@@ -1,6 +1,22 @@
 open Names
 open Pp
 
+(* arnaud: trucs factices *)
+module Pfedit =
+  struct
+    let delete_current_proof _ = Util.anomaly "Indfun_common.delete_current_proof: fantome"
+    let get_pftreestate _ = Util.anomaly "Indufun_common.get_pftreestate: fantome"
+    let current_proof_statement _ = Util.anomaly "Indufun_common.current_proof_statement: fantome"
+  end
+module Refiner =
+  struct
+    let extract_open_pftreestate _ = Util.anomaly "Indfun_common.extract_open_pftreestate: fantome"
+    let evc_of_pftreestate _ = Util.anomaly "Indfun_common.evc_of_pftreestate: fantome"
+    let proof_of_pftreestate _ = Util.anomaly "Indfun_common.proof_of_pftreestate: fantome" 
+  end
+
+(* arnaud:/trucs factices *)
+
 open Libnames
 
 let mk_prefix pre id = id_of_string (pre^(string_of_id id))
@@ -191,7 +207,7 @@ let extract_pftreestate pts =
         str "Attempt to save an incomplete proof"
       else
         str "Attempt to save a proof with existential variables still non-instantiated");
-  let env = Global.env_of_context (Refiner.proof_of_pftreestate pts).Proof_type.goal.Evd.evar_hyps in
+  let env = Global.env_of_context (Refiner.proof_of_pftreestate pts).(*arnaud:Proof_type*)Tacticals.goal.Evd.evar_hyps in
   env,tpfsigma,pfterm
 
 

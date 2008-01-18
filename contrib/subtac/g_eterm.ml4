@@ -17,6 +17,18 @@
 
 (* $Id$ *)
 
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "G_eterm.abstract_extended_tactic: fantome"
+  end
+module Tacmach =
+  struct
+    let project _ = Util.anomaly "G_eterm.project: fantome"
+    let pf_concl _ = Util.anomaly "G_eterm.pf_concl: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 open Eterm
 
 TACTIC EXTEND eterm

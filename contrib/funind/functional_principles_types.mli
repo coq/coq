@@ -1,6 +1,12 @@
 open Names
 open Term
 
+(* arnaud: trucs factices *)
+module Tacmach :
+  sig
+    type tactic = Tacticals.tactic
+  end
+(* arnaud:/trucs factices *)
 
 val generate_functional_principle : 
   (* do we accept interactive proving *)

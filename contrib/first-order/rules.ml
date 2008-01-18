@@ -11,7 +11,6 @@
 open Util
 open Names
 open Term
-open Tacmach
 open Tactics
 open Tacticals
 open Termops
@@ -19,6 +18,15 @@ open Declarations
 open Formula
 open Sequent
 open Libnames
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+
+let pf_hyps _ = Util.anomaly "Rules.pf_hyps: fantome"
+let pf_env _ = Util.anomaly "Rules.pf_env: fantome"
+let pf_concl _ = Util.anomaly "Rules.pf_concl: fantome"
+let pf_nth_hyp_id _ = Util.anomaly "Rules.pf_nth_hyp_id: fantome"
+(* arnaud: /trucs factices *)
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 

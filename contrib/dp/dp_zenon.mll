@@ -5,10 +5,18 @@
   open Pp
   open Util
   open Names
-  open Tacmach
   open Dp_why
   open Tactics
   open Tacticals
+
+(* arnaud: trucs factices *)
+  module Proof_type =
+    struct
+      type tactic = Tacticals.tactic
+    end
+  let project _ = Util.anomaly "Dp_zenon.project: fantome"
+  let pf_env _ = Util.anomaly "Dp_zenon.pf_env: fantome"
+(* arnaud: /trucs factices *)
 
   let debug = ref false
   let set_debug b = debug := b

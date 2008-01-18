@@ -9,6 +9,18 @@
 
 (* raises Not_found if no proof is found *)
 
+(* arnaud: trucs factices *)
+module Tacmach :
+  sig
+    type 'a sigma = 'a Tacticals.sigma
+  end
+module Proof_type :
+  sig
+    type goal = Tacticals.goal
+    type tactic = Tacticals.tactic
+  end
+(* arnaud:/trucs factices *)
+
 type atom_env=
     {mutable next:int;
      mutable env:(Term.constr*int) list}

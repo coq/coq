@@ -24,15 +24,12 @@ open Closure
 open RedFlags
 open Tacticals
 open Typing
-open Tacmach
 open Tactics
 open Nametab
 open Declare
 open Decl_kinds
 open Tacred
-open Proof_type
 open Vernacinterp
-open Pfedit
 open Topconstr
 open Rawterm
 open Pretyping
@@ -47,6 +44,22 @@ open Eauto
 
 open Genarg
 
+
+(* arnaud: trucs factices *)
+let pf_env _ = Util.anomaly "Recdef.pf_env: fantome"
+let pf_type_of _ = Util.anomaly "Recdef.pf_type_of: fantome"
+let pf_ids_of_hyps _ = Util.anomaly "Recdef.pf_ids_of_hyps: fantome"
+let sig_it _ = Util.anomaly "Recdef.sig_it: fantome"
+let pf_concl _ = Util.anomaly "Recdef.pf_concl: fantome"
+let pf_hyps _ = Util.anomaly "Recdef.pf_hyps: fantome"
+let get_pftreestate _ = Util.anomaly "Recdef.get_pftreestate: fantome"
+let extract_open_pftreestate _ = Util.anomaly "Recdef.extract_open_pftreestate: fantome"
+let get_current_proof_name  _ = Util.anomaly "Recdef.get_current_proof_name: fantome"
+let start_proof _ = Util.anomaly "Recdef.start_proof: fantome"
+let by _ = Util.anomaly "Recdef.by: fantome"
+
+
+(* arnaud: /trucs factices *)
 
 let compute_renamed_type gls c = 
   rename_bound_var (pf_env gls) [] (pf_type_of gls c)
@@ -68,6 +81,7 @@ let h_intros l =
   tclMAP h_intro l
 
 let do_observe_tac s tac g =
+  Util.anomaly "Recdef.do_observe: à restaurer" (* arnaud: à restaurer
   let goal = begin (Printer.pr_goal (sig_it g)) end in
  try let v = tac g in msgnl (goal ++ fnl () ++ (str "recdef ") ++
     (str s)++(str " ")++(str "finished")); v
@@ -75,10 +89,10 @@ let do_observe_tac s tac g =
    msgnl (str "observation "++str s++str " raised exception " ++ 
 	    Cerrors.explain_exn e ++ str " on goal " ++ goal ); 
    raise e;;
-
+*)
 
 let observe_tac s tac g = 
-  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
+  if Tacinterp.get_debug () <> (*arnaud:Tactic_debug.*)Tacinterp.DebugOff
   then do_observe_tac s tac g
   else tac g
 
@@ -327,6 +341,7 @@ let mkDestructEq :
 
 let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
     cont_function (eqs:constr list) nb_lam (expr:constr) g =
+  Util.anomaly "Recdef.mk_intros_and_continue: à restaurer" (* arnaud: à restaurer
   let finalize () =  	if extra_eqn then
 	  let teq = pf_get_new_id teq_id g in
 	    tclTHENLIST
@@ -371,6 +386,8 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
       | _ -> 
 	  assert false 
 (* 	  finalize () *)
+*)
+
 let const_of_ref = function
     ConstRef kn -> kn
   | _ -> anomaly "ConstRef expected"
@@ -1361,7 +1378,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       try com_eqn equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type)
       with e -> 
 	begin 
-	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
+	  if Tacinterp.get_debug () <> (*arnaud:Tactic_debug.*)Tacinterp.DebugOff
 	  then pperrnl (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e)
 	  else anomaly "Cannot create equation Lemma"
 	  ;

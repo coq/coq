@@ -1,6 +1,9 @@
 
 open Libnames
-open Proof_type
+
+(* arnaud: trucs factices *)
+type tactic = Tacticals.tactic
+(* arnaud: /trucs factices *)
 
 val simplify : tactic
 val ergo : tactic

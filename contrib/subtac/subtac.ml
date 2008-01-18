@@ -39,6 +39,14 @@ open Printer
 open Subtac_errors
 open Eterm
 
+(* arnaud: trucs factices *)
+module Pfedit =
+  struct
+    let get_all_proof_names _ = Util.anomaly "Subtac.get_all_proof_names: fantome"
+    let refining _ = Util.anomaly "Subtac.refining: fantome"
+  end 
+(*arnaud: /trucs factices *)
+
 let require_library dirpath =
   let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string dirpath)) in
     Library.require_library [qualid] None
