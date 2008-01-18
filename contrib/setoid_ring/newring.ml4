@@ -25,9 +25,7 @@ open Pcoq
 open Tactic
 open Constr
 open Setoid_replace
-open Proof_type
 open Coqlib
-open Tacmach
 open Mod_subst
 open Tacinterp
 open Libobject
@@ -35,6 +33,19 @@ open Printer
 open Declare
 open Decl_kinds
 open Entries
+
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "Newring.abstract_extended_tactic: fantome"
+  end
+let pf_env _ = Util.anomaly "Newring.pf_env: fantome"
+let project _ = Util.anomaly "Newring.project: fantome"
+
+
+(* arnaud: /trucs factices *)
+
+
 
 (****************************************************************************)
 (* controlled reduction *)

@@ -14,6 +14,13 @@ open Quote
 open Ring
 open Tacticals
 
+(* arnaud: trucs factices *)
+module Refiner =
+  struct
+    let abstract_extended_tactic _ = Util.anomaly "G_ring.abstract_extended_tactic: fantome"
+  end
+(* arnaud: /trucs factices *)
+
 TACTIC EXTEND ring
 | [ "legacy" "ring" constr_list(l) ] -> [ polynom l ]
 END
