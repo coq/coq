@@ -33,15 +33,17 @@ Class Setoid (carrier : Type) (equiv : relation carrier) :=
 
 Definition equiv [ Setoid A R ] : _ := R.
 
-Infix "==" := equiv (at level 70, no associativity) : type_scope.
+(** Subset objects will be first coerced to their underlying type. *)
 
-Notation " x =!= y " := (~ x == y) (at level 70, no associativity).
+Notation " x == y " := (equiv (x :>) (y :>)) (at level 70, no associativity) : type_scope.
+
+Notation " x =/= y " := (~ x == y) (at level 70, no associativity) : type_scope.
 
 Definition equiv_refl [ s : Setoid A R ] : forall x : A, R x x := equiv_refl _ _ equiv_prf.
 Definition equiv_sym [ s : Setoid A R ] : forall x y : A, R x y -> R y x := equiv_sym _ _ equiv_prf.
 Definition equiv_trans [ s : Setoid A R ] : forall x y z : A, R x y -> R y z -> R x z := equiv_trans _ _ equiv_prf.
 
-Lemma nequiv_sym : forall [ s : Setoid A R ] (x y : A), x =!= y -> y =!= x.
+Lemma nequiv_sym : forall [ s : Setoid A R ] (x y : A), x =/= y -> y =/= x.
 Proof.
   intros ; red ; intros.
   apply equiv_sym in H0...
@@ -89,13 +91,13 @@ Ltac trans y := do_setoid_trans y.
 Ltac setoid_refl :=
   match goal with
     | [ |- @equiv ?A ?R ?s ?X _ ] => apply (equiv_refl (A:=A) (R:=R) (s:=s) X)
-    | [ H : ?X =!= ?X |- _ ] => elim H ; setoid_refl
+    | [ H : ?X =/= ?X |- _ ] => elim H ; setoid_refl
   end.
 
 Ltac setoid_sym := 
   match goal with
     | [ H : ?X == ?Y |- ?Y == ?X ] => apply (equiv_sym (x:=X) (y:=Y) H)
-    | [ H : ?X =!= ?Y |- ?Y =!= ?X ] => apply (nequiv_sym (x:=X) (y:=Y) H)
+    | [ H : ?X =/= ?Y |- ?Y =/= ?X ] => apply (nequiv_sym (x:=X) (y:=Y) H)
   end.
 
 Ltac setoid_trans := 
@@ -107,7 +109,7 @@ Ltac setoid_trans :=
 
 Ltac setoid_tac := setoid_refl || setoid_sym || setoid_trans.
 
-Lemma nequiv_equiv : forall [ Setoid A ] (x y z : A), x =!= y -> y == z -> x =!= z.
+Lemma nequiv_equiv : forall [ Setoid A ] (x y z : A), x =/= y -> y == z -> x =/= z.
 Proof.
   intros; intro. 
   assert(z == y) by setoid_sym.
@@ -115,7 +117,7 @@ Proof.
   contradiction.
 Qed.
 
-Lemma equiv_nequiv : forall [ Setoid A ] (x y z : A), x == y -> y =!= z -> x =!= z.
+Lemma equiv_nequiv : forall [ Setoid A ] (x y z : A), x == y -> y =/= z -> x =/= z.
 Proof.
   intros; intro. 
   assert(y == x) by setoid_sym.
@@ -129,19 +131,19 @@ Open Scope type_scope.
 (* Ltac setoid_sat ::= *)
 (*   match goal with *)
 (*     | [ H : ?x == ?y |- _ ] => let name:=fresh "Heq" y x in add_hypothesis name (equiv_sym H) *)
-(*     | [ H : ?x =!= ?y |- _ ] => let name:=fresh "Hneq" y x in add_hypothesis name (nequiv_sym H) *)
+(*     | [ H : ?x =/= ?y |- _ ] => let name:=fresh "Hneq" y x in add_hypothesis name (nequiv_sym H) *)
 (*     | [ H : ?x == ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Heq" x z in add_hypothesis name (equiv_trans H H') *)
-(*     | [ H : ?x == ?y, H' : ?y =!= ?z |- _ ] => let name:=fresh "Hneq" x z in add_hypothesis name (equiv_nequiv H H') *)
-(*     | [ H : ?x =!= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" x z in add_hypothesis name (nequiv_equiv H H') *)
+(*     | [ H : ?x == ?y, H' : ?y =/= ?z |- _ ] => let name:=fresh "Hneq" x z in add_hypothesis name (equiv_nequiv H H') *)
+(*     | [ H : ?x =/= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" x z in add_hypothesis name (nequiv_equiv H H') *)
 (*   end. *)
 
 Ltac setoid_sat :=
   match goal with
     | [ H : ?x == ?y |- _ ] => let name:=fresh "Heq" in add_hypothesis name (equiv_sym H)
-    | [ H : ?x =!= ?y |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_sym H)
+    | [ H : ?x =/= ?y |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_sym H)
     | [ H : ?x == ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Heq" in add_hypothesis name (equiv_trans H H')
-    | [ H : ?x == ?y, H' : ?y =!= ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (equiv_nequiv H H')
-    | [ H : ?x =!= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_equiv H H')
+    | [ H : ?x == ?y, H' : ?y =/= ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (equiv_nequiv H H')
+    | [ H : ?x =/= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_equiv H H')
   end.
 
 Ltac setoid_saturate := repeat setoid_sat.

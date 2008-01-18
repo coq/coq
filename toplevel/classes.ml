@@ -476,74 +476,18 @@ let context l =
       Command.declare_one_assumption false (Local (* global *), Definitional) t false (* inline *) (dummy_loc, id))
       (List.rev fullctx)
 
-(* let init     () = hints := [] *)
-(* let freeze   () = !hints *)
-(* let unfreeze fs = hints := fs *)
-
-(* let _ = Summary.declare_summary "hints db" *)
-(* 	  { Summary.freeze_function   = freeze; *)
-(* 	    Summary.unfreeze_function = unfreeze; *)
-(* 	    Summary.init_function     = init; *)
-(* 	    Summary.survive_module = false; *)
-(* 	    Summary.survive_section   = true } *)
-
 open Libobject
 
-(* let cache (_, db) := hints := db *)
-
-(* let (input,output) =  *)
-(*   declare_object *)
-(*     { (default_object "hints db") with *)
-(*       cache_function = cache; *)
-(*       load_function = (fun _ -> cache); *)
-(*       open_function = (fun _ -> cache); *)
-(*       classify_function = (fun (_,x) -> Keep x); *)
-(*       export_function = (fun x -> Some x) } *)
-
-let tactic = ref Tacticals.tclIDTAC
-let tactic_expr = ref (Obj.magic ())
-
-let set_instantiation_tactic t = 
-  tactic := Tacinterp.interp t; tactic_expr := t
-
-let freeze () = !tactic_expr
-let unfreeze t = set_instantiation_tactic t
-let init () =  
-  set_instantiation_tactic (Tacexpr.TacId[]) 
-
-let cache (_, tac) =
-  set_instantiation_tactic tac
-
-let _ = 
-  Summary.declare_summary "typeclasses instantiation tactic"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = true;
-      Summary.survive_section = true }
-
-let (input,output) = 
-  declare_object
-    { (default_object "type classes instantiation tactic state") with
-      cache_function = cache;
-      load_function = (fun _ -> cache);
-      open_function = (fun _ -> cache);
-      classify_function = (fun (_,x) -> Keep x);
-      export_function = (fun x -> Some x) }
-
-let set_instantiation_tactic t = 
-  Lib.add_anonymous_leaf (input t)
+let module_qualid = qualid_of_dirpath (dirpath_of_string "Coq.Classes.Init")
+let tactic_qualid = make_qualid (dirpath_of_string "Coq.Classes.Init") (id_of_string "typeclass_instantiation")
   
+let tactic_expr = Tacexpr.TacArg (Tacexpr.Reference (Qualid (dummy_loc, tactic_qualid)))
+let tactic = lazy (Library.require_library [(dummy_loc, module_qualid)] None;
+		   Tacinterp.interp tactic_expr)
 
-let initialize () =
-  if !tactic_expr = Tacexpr.TacId [] then
-    let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string "Coq.Classes.Init")) in
-      Library.require_library [qualid] None
-    
 let _ =
   Typeclasses.solve_instanciation_problem :=
-    (fun env -> initialize ();
-      fun evd ev evi -> 
-	solve_by_tac env evd ev evi !tactic)
+    (fun env evd ev evi -> 
+	solve_by_tac env evd ev evi (Lazy.force tactic))
       
     

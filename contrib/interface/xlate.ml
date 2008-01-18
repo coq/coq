@@ -360,6 +360,8 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CLambdaN(_,ll,b)-> CT_lambdac(xlate_binder_ne_list ll, xlate_formula b)
    | CLetIn(_, v, a, b) -> 
        CT_letin(CT_def(xlate_id_opt v, xlate_formula a), xlate_formula b)
+   | CLetPattern(_, v, a, b) -> 
+       error "TODO: xlate_formula let | pattern"
    | CAppExpl(_, (Some n, r), l) -> 
        let l', last = decompose_last l in
 	 CT_proj(xlate_formula last,
@@ -2081,7 +2083,7 @@ let rec xlate_vernac =
         xlate_class id2, xlate_class id3)
 
     (* TypeClasses *) 
-   | VernacSetInstantiationTactic _|VernacDeclareInstance _|VernacContext _|
+   | VernacDeclareInstance _|VernacContext _|
 	 VernacInstance (_, _, _)|VernacClass (_, _, _, _, _) ->
 	   xlate_error "TODO: Type Classes commands"
 

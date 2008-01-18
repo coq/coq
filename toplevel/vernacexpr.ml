@@ -242,8 +242,6 @@ type vernac_expr =
   | VernacDeclareInstance of
       lident (* instance name *)
 
-  | VernacSetInstantiationTactic of raw_tactic_expr
-
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident * 
       module_binder list * (module_type_ast * bool)

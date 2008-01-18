@@ -717,9 +717,6 @@ let rec pr_vernac = function
  | VernacDeclareInstance id ->
      hov 1 (str"Instance" ++ spc () ++ pr_lident id)
        
- | VernacSetInstantiationTactic tac ->
-     hov 1 (str"Instantiation Tactic :=" ++ spc () ++ pr_raw_tactic tac)
-
   (* Modules and Module Types *)
   | VernacDefineModule (export,m,bl,ty,bd) ->
       let b = pr_module_binders_list bl pr_lconstr in 

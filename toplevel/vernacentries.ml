@@ -535,10 +535,6 @@ let vernac_context l =
 let vernac_declare_instance id =
   Classes.declare_instance id
 
-(* Default tactics for solving evars management. *)
-let vernac_set_instantiation_tac tac =
-  Classes.set_instantiation_tactic tac
-
 (***********)
 (* Solving *)
 let vernac_solve n tcom b =
@@ -1221,8 +1217,6 @@ let interp c = match c with
   | VernacInstance (sup, inst, props) -> vernac_instance sup inst props
   | VernacContext sup -> vernac_context sup
   | VernacDeclareInstance id -> vernac_declare_instance id
-
-  | VernacSetInstantiationTactic (tac) -> vernac_set_instantiation_tac tac
 
   (* Solving *)
   | VernacSolve (n,tac,b) -> vernac_solve n tac b

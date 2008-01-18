@@ -495,9 +495,6 @@ GEXTEND Gram
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 
-      | IDENT "Instantiation"; IDENT "Tactic"; ":="; tac = Tactic.tactic -> 
-	  VernacSetInstantiationTactic tac
-
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; enrich = [ IDENT "Enriching" -> true | -> false ];
 	 (local,qid,pos) = 

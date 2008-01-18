@@ -2593,6 +2593,7 @@ let load_md i ((sp,kn),defs) =
 	    Nametab.push_tactic (Until i) sp kn;
 	    add (kn,t)
       | UpdateTac kn ->
+	  mactab := Gmap.remove kn !mactab;
 	  add (kn,t)) defs
     
 let open_md i((sp,kn),defs) =
@@ -2604,12 +2605,20 @@ let open_md i((sp,kn),defs) =
 	  let sp = Libnames.make_path dp id in
 	  let kn = Names.make_kn mp dir (label_of_id id) in
 	    Nametab.push_tactic (Exactly i) sp kn
-      | UpdateTac kn -> ()) defs
+      | UpdateTac kn -> 
+	  let (path, id) = decode_kn kn in
+	  let sp = Libnames.make_path path id in
+	  Nametab.push_tactic (Exactly i) sp kn) defs
 
 let cache_md x = load_md 1 x
 
+let subst_kind subst id = 
+  match id with
+    | NewTac _ -> id
+    | UpdateTac kn -> UpdateTac (Mod_subst.subst_kn subst kn)
+
 let subst_md (_,subst,defs) =
-  List.map (fun (id,t) -> (id,subst_tactic subst t)) defs
+  List.map (fun (id,t) -> (subst_kind subst id,subst_tactic subst t)) defs
 
 let (inMD,outMD) =
   declare_object {(default_object "TAC-DEFINITION") with

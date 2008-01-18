@@ -18,31 +18,37 @@
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Require Import Coq.Classes.SetoidClass.
+(** Export notations. *)
 
+Require Export Coq.Classes.SetoidClass.
 
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
 Class [ Setoid A R ] => EqDec :=
-  equiv_dec : forall x y : A, { x == y } + { x =!= y }.
+  equiv_dec : forall x y : A, { x == y } + { x =/= y }.
 
 (** We define the [==] overloaded notation for deciding equality. It does not take precedence
    of [==] defined in the type scope, hence we can have both at the same time. *)
 
-Infix "==" := equiv_dec (no associativity, at level 70).
+Notation " x == y " := (equiv_dec (x :>) (y :>)) (no associativity, at level 70).
 
 (** Use program to solve some obligations. *)
+
+Definition swap_sumbool `A B` (x : { A } + { B }) : { B } + { A } :=
+  match x with
+    | left H => right _ H 
+    | right H => left _ H 
+  end.
 
 Require Import Coq.Program.Program.
 
 (** Invert the branches. *)
 
-Program Definition nequiv_dec [ EqDec A R ] (x y : A) : { x =!= y } + { x == y } :=
-  if x == y then right else left.
+Program Definition nequiv_dec [ EqDec A R ] (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
 
 (** Overloaded notation for inequality. *)
 
-Infix "=!=" := nequiv_dec (no associativity, at level 70).
+Infix "=/=" := nequiv_dec (no associativity, at level 70).
 
 (** Define boolean versions, losing the logical information. *)
 

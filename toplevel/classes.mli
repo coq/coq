@@ -51,8 +51,6 @@ val add_instance_hint : identifier -> unit
 
 val declare_instance : identifier located -> unit
 
-val set_instantiation_tactic : Tacexpr.raw_tactic_expr -> unit
-
 val mismatched_params : env -> constr_expr list -> named_context -> 'a
 
 val mismatched_props : env -> constr_expr list -> named_context -> 'a
