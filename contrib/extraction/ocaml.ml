@@ -142,10 +142,15 @@ let rec pp_type par vl t =
     de Bruijn variables. [args] is the list of collected arguments
     (already pretty-printed). *)
 
+let is_ifthenelse = function 
+  | [|(r1,[],_);(r2,[],_)|] -> 
+       (find_custom r1 = "true") && (find_custom r2 = "false") 
+  | _ -> false
+
 let expr_needs_par = function
   | MLlam _  -> true
   | MLcase (_,_,[|_|]) -> false 
-  | MLcase _ -> true
+  | MLcase (_,_,pv) -> not (is_ifthenelse pv)
   | _        -> false 
 
 
@@ -238,11 +243,13 @@ let rec pp_expr par env args =
 			(hov 2 (str "let " ++ s1 ++ str " =" ++ spc () ++ expr) 
 			 ++ spc () ++ str "in") ++ 
 		      spc () ++ hov 0 s2)))
-	   else
-	     apply
+	   else 
+ 	     apply
       	       (pp_par par' 
-      		  (v 0 (str "match " ++ expr ++ str " with" ++
-			fnl () ++ str "  | " ++ pp_pat env (i,factors) pv))))
+		  (try pp_ifthenelse par' env expr pv 
+		   with Not_found -> 
+		     v 0 (str "match " ++ expr ++ str " with" ++ fnl () ++
+			  str "  | " ++ pp_pat env (i,factors) pv))))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -263,6 +270,17 @@ and pp_record_pat (projs, args) =
      (fun (r,a) -> pp_global Term r ++ str " =" ++ spc () ++ a)
      (List.combine projs args) ++
    str " }"
+
+and pp_ifthenelse par env expr pv = match pv with 
+  | [|(tru,[],the);(fal,[],els)|] when 
+      (find_custom tru = "true") && (find_custom fal = "false")
+      -> 
+      hv 0 (hov 2 (str "if " ++ expr) ++ spc () ++ 
+            hov 2 (str "then " ++
+		   hov 2 (pp_expr (expr_needs_par the) env [] the)) ++ spc () ++ 
+	    hov 2 (str "else " ++
+	           hov 2 (pp_expr (expr_needs_par els) env [] els)))
+  | _ -> raise Not_found
 
 and pp_one_pat env i (r,ids,t) = 
   let ids,env' = push_vars (List.rev ids) env in
