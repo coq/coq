@@ -124,7 +124,7 @@ PROOFS:=\
   proofs/permutation.cmo \
   proofs/goal.cmo proofs/subproof.cmo proofs/proof.cmo \
   proofs/logic.cmo \
-  proofs/decl_mode.cmo
+  proofs/decl_mode.cmo proofs/tactic_debug.cmo
 
 PARSING:=\
   parsing/extend.cmo \

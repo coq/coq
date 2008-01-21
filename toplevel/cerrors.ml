@@ -20,11 +20,6 @@ module Refiner =
   struct
     exception FailError of (int* Pp.std_ppcmds)
   end 
-module Tactic_debug =
-  struct
-    let explain_logic_error = ref (fun _ -> Util.anomaly "Cerrors.Tactic_debug.explain_logic_error: fantome")
-    let explain_logic_error_no_anomaly = ref (fun _ -> Util.anomaly "Cerrors.Tactic_debug.explain_logic_error_no_anomaly: fantome")
-  end 
 (* arnaud: /trucs factices *)
 
 let print_loc loc =

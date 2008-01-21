@@ -893,14 +893,14 @@ let _ =
       optwrite=(fun b -> Constrextern.print_universes:=b) }
 
 let vernac_debug b =
-  set_debug (if b then (*arnaud:Tactic_debug.*)DebugOn 0 else (*arnaud:Tactic_debug.*)DebugOff)
+  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
 
 let _ =
   declare_bool_option
     { optsync=false;
       optkey=SecondaryTable("Ltac","Debug");
       optname="Ltac debug";
-      optread=(fun () -> get_debug () <> (*arnaud:Tactic_debug.*)DebugOff);
+      optread=(fun () -> get_debug () <> Tactic_debug.DebugOff);
       optwrite=vernac_debug }
 
 let vernac_set_opacity opaq r =

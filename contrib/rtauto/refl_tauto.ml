@@ -293,7 +293,7 @@ let rtauto_tac gls=
   let formula=
     List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in  
   let search_fun = 
-    if Tacinterp.get_debug()=(*arnaud:Tactic_debug.*)Tacinterp.DebugOn 0 then
+    if Tacinterp.get_debug()=Tactic_debug.DebugOn 0 then
       Search.debug_depth_first
     else 
       Search.depth_first in

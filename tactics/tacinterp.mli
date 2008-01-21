@@ -26,8 +26,7 @@ type tactic = Tacticals.tactic
 type 'a sigma = 'a Tacticals.sigma
 type goal = Tacticals.goal
 type validation = Tacticals.validation
-type debug_info = DebugOff
-		| DebugOn of int
+type debug_info = Tactic_debug.debug_info
 (* arnaud: /trucs factices *)
 
 (* Values for interpretation *)

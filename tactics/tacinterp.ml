@@ -96,8 +96,8 @@ let abstract_extended_tactic _ = Util.anomaly "Tacinterp.abstract_extended_tacti
 let abstract_tactic_expr _ = Util.anomaly "Tacinterp.abstract_tactic_expr: fantome"
 let tclTHEN _ = Util.anomaly "Tacinterp.tclTHEN: fantome"
 
-type debug_info = DebugOff
-		| DebugOn of int
+type debug_info = Tactic_debug.debug_info
+open Tactic_debug
 exception FailError of (int * Pp.std_ppcmds)
 (* arnaud: /trucs factices *)
 

@@ -92,7 +92,7 @@ let do_observe_tac s tac g =
 *)
 
 let observe_tac s tac g = 
-  if Tacinterp.get_debug () <> (*arnaud:Tactic_debug.*)Tacinterp.DebugOff
+  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
   then do_observe_tac s tac g
   else tac g
 
@@ -1378,7 +1378,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       try com_eqn equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type)
       with e -> 
 	begin 
-	  if Tacinterp.get_debug () <> (*arnaud:Tactic_debug.*)Tacinterp.DebugOff
+	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
 	  then pperrnl (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e)
 	  else anomaly "Cannot create equation Lemma"
 	  ;

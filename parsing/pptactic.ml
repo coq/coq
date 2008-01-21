@@ -31,14 +31,6 @@ module Proof_type =
 			Nametab.ltac_constant, Names.identifier, 
 			Tacexpr.glob_tactic_expr) Tacexpr.gen_tactic_expr
   end 
-
-module Tactic_debug =
-  struct
-    let set_tactic_printer _ = Util.anomaly ""
-    let set_match_pattern_printer _ = Util.anomaly ""
-    let set_match_rule_printer _ = Util.anomaly ""
-  end
-
 (* arnaud: /trucs factices *)
 
 let pr_global x = Nametab.pr_global_env Idset.empty x

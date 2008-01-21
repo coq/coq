@@ -28,9 +28,9 @@ type rule = Prim of Logic.simple_tactic
 and strange =  Tactic of (Pptactic.Proof_type.tactic_expr *bool)
 		|Proof_instr of (float array*Decl_expr.proof_instr)
 
-let pr_prim_rule _ = Util.anomaly ""
-let is_tactic_proof _ = Util.anomaly ""
-let subproof_of_proof _ = Util.anomaly ""
+let pr_prim_rule _ = Util.anomaly "Tactic_printer.pr_prim_rule: fantome"
+let is_tactic_proof _ = Util.anomaly "Tactic_printer.is_tactic_proof: fantome"
+let subproof_of_proof _ = Util.anomaly "Tactic_printer.subproof_of_proof: fantome"
 (* arnaud: /trucs factices *)
 
 let pr_tactic = function
@@ -77,7 +77,7 @@ let thin_sign osign sign =
     sign ~init:Environ.empty_named_context_val
 
 let rec print_proof sigma osign pf =
-  Util.anomaly "" (* arnaud: à restaurer
+  Util.anomaly "Tactic_printer.print_proof: à restaurer" (* arnaud: à restaurer
   let hyps = Environ.named_context_of_val pf.goal.evar_hyps in
   let hyps' = thin_sign osign hyps in
   match pf.ref with
@@ -97,7 +97,7 @@ let pr_change gl =
   pr_lconstr_env (Global.env_of_context gl.evar_hyps) gl.evar_concl ++ str"."
 
 let rec print_decl_script tac_printer nochange sigma pf =
-  Util.anomaly "" (* arnaud: à restaurer
+  Util.anomaly "Tactic_printer.print_decl_script: à restaurer" (* arnaud: à restaurer
   match pf.ref with
     | None ->
 	(if nochange then 
@@ -147,7 +147,7 @@ let rec print_decl_script tac_printer nochange sigma pf =
 		  *)
 
 let rec print_script nochange sigma pf =
-  Util.anomaly "" (* arnaud: à restaurer
+  Util.anomaly "Tactic_printer.print_script: à restaurer" (* arnaud: à restaurer
   match pf.ref with
     | None ->
         (if nochange then 
@@ -182,7 +182,7 @@ let rec print_script nochange sigma pf =
 (* printed by Show Script command *)
 
 let print_treescript nochange sigma pf =
-  Util.anomaly "" (* arnaud: à restaurer
+  Util.anomaly "Tactic_printer.print_treescript: à restaurer" (* arnaud: à restaurer
   let rec aux pf =
     match pf.ref with
     | None ->
@@ -215,7 +215,7 @@ let print_treescript nochange sigma pf =
 		  *)
 
 let rec print_info_script sigma osign pf =
-  Util.anomaly "" (* arnaud: à restaurer
+  Util.anomaly "Tactic_printer.print_info_script: à restaurer" (* arnaud: à restaurer
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
     | None -> (mt ())
@@ -239,7 +239,7 @@ let format_print_info_script sigma osign pf =
   hov 0 (print_info_script sigma osign pf)
     
 let print_subscript sigma sign pf = 
-  Util.anomaly "" (* arnaud: à restaurer
+  Util.anomaly "Tactic_printer.print_subscript: à restaurer" (* arnaud: à restaurer
   if is_tactic_proof pf then 
     format_print_info_script sigma sign (subproof_of_proof pf)
   else 

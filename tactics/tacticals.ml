@@ -45,16 +45,16 @@ and proof_tree = { goal: goal; ref: (rule * proof_tree list) option;
 type validation = (proof_tree list -> proof_tree)
 type tactic = goal sigma -> goal list sigma * validation
 
-let pf_hyps _ = Util.anomaly ""
-let pf_ids_of_hyps _ = Util.anomaly ""
-let pf_concl _ = Util.anomaly ""
-let pf_get_hyp_typ _ = Util.anomaly ""
-let pf_env _ = Util.anomaly ""
-let project _ = Util.anomaly ""
-let hnf_type_of _ = Util.anomaly ""
-let pf_type_of _ = Util.anomaly ""
-let pf_reduce_to_quantified_ind _ = Util.anomaly ""
-let elim_res_pf_THEN_i _ = Util.anomaly ""
+let pf_hyps _ = Util.anomaly "Tacticals.pf_hyps: fantome"
+let pf_ids_of_hyps _ = Util.anomaly "Tacticals.pf_ids_of_hyps: fantome"
+let pf_concl _ = Util.anomaly "Tacticals.pf_concl: fantome"
+let pf_get_hyp_typ _ = Util.anomaly "Tacticals.pf_get_hyp_typ: fantome"
+let pf_env _ = Util.anomaly "Tacticals.pf_env: fantome"
+let project _ = Util.anomaly "Tacticals.project: fantome"
+let hnf_type_of _ = Util.anomaly "Tacticals.hnf_type_of: fantome"
+let pf_type_of _ = Util.anomaly "Tacticasl.pf_type_of: fantome"
+let pf_reduce_to_quantified_ind _ = Util.anomaly "Tacticals.pf_reduce_to_quantified_ind: fantome"
+let elim_res_pf_THEN_i _ = Util.anomaly "Tacticals.elim_res_pf_THEN_i: fantome"
 (* arnaud: /trucs factices *)
 
 
@@ -66,40 +66,40 @@ let elim_res_pf_THEN_i _ = Util.anomaly ""
 (* Tacticals re-exported from the Refiner module.*)
 (*************************************************)
 
-let tclIDTAC         = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIDTAC*)
-let tclIDTAC_MESSAGE = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIDTAC_MESSAGE*)
-let tclORELSE        = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclORELSE*)
-let tclTHEN          = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHEN*)
-let tclTHENLIST      = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENLIST*)
-let tclTHEN_i        = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHEN_i*)
-let tclTHENFIRST     = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENFIRST*)
-let tclTHENLAST      = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENLAST*)
-let tclTHENS         = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENS*)
-let tclTHENSV        = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENSV*)
-let tclTHENSFIRSTn   = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENSFIRSTn*)
-let tclTHENSLASTn    = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENSLASTn*)
-let tclTHENFIRSTn    = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENFIRSTn*)
-let tclTHENLASTn     = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTHENLASTn*)
-let tclREPEAT        = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclREPEAT*)
-let tclREPEAT_MAIN   = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclREPEAT_MAIN*)
-let tclFIRST         = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclFIRST*)
-let tclSOLVE         = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclSOLVE*)
-let tclTRY           = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclTRY*)
-let tclINFO          = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclINFO*)
-let tclCOMPLETE      = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclCOMPLETE*)
-let tclAT_LEAST_ONCE = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclAT_LEAST_ONCE*)
-let tclFAIL          = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclFAIL*)
-let tclDO            = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclDO*)
-let tclPROGRESS      = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclPROGRESS *)
-let tclWEAK_PROGRESS = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclWEAK_PROGRESS *)
-let tclNOTSAMEGOAL   = fun _ -> Util.anomaly "" (* arnaud: restaurer: Refiner.tclNOTSAMEGOAL *)
-let tclTHENTRY       = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclTHENTRY *)
-let tclIFTHENELSE    = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIFTHENELSE *)
-let tclIFTHENSELSE   = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIFTHENSELSE *)
-let tclIFTHENSVELSE   = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIFTHENSVELSE *)
-let tclIFTHENTRYELSEMUST = fun _ -> Util.anomaly "" (* arnaud: restaurer: tclIFTHENTRYELSEMUST *)
+let tclIDTAC         = fun _ -> Util.anomaly "Tacticals.tclIDTAC" (* arnaud: restaurer: tclIDTAC*)
+let tclIDTAC_MESSAGE = fun _ -> Util.anomaly "Tacticals.tclIDTAC_MESSAGE: à restaurer" (* arnaud: restaurer: tclIDTAC_MESSAGE*)
+let tclORELSE        = fun _ -> Util.anomaly "Tacticals.tclORELSE: à restaurer" (* arnaud: restaurer: tclORELSE*)
+let tclTHEN          = fun _ -> Util.anomaly "Tacticals.tclTHEN: à restaurer" (* arnaud: restaurer: tclTHEN*)
+let tclTHENLIST      = fun _ -> Util.anomaly "Tacticals.tclTHENLIST: à restaurer" (* arnaud: restaurer: tclTHENLIST*)
+let tclTHEN_i        = fun _ -> Util.anomaly "Tacticals.tclTHEN_i: à restaurer" (* arnaud: restaurer: tclTHEN_i*)
+let tclTHENFIRST     = fun _ -> Util.anomaly "Tacticals.tclTHENFIRST: à restaurer" (* arnaud: restaurer: tclTHENFIRST*)
+let tclTHENLAST      = fun _ -> Util.anomaly "Tacticals.tclTHENLAST: à restaurer" (* arnaud: restaurer: tclTHENLAST*)
+let tclTHENS         = fun _ -> Util.anomaly "Tacticals.tclTHENS: à restaurer" (* arnaud: restaurer: tclTHENS*)
+let tclTHENSV        = fun _ -> Util.anomaly "Tacticals.tclTHENSV: à restaurer" (* arnaud: restaurer: Refiner.tclTHENSV*)
+let tclTHENSFIRSTn   = fun _ -> Util.anomaly "Tacticals.tclTHENSFIRSTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENSFIRSTn*)
+let tclTHENSLASTn    = fun _ -> Util.anomaly "Tacticals.tclTHENSLASTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENSLASTn*)
+let tclTHENFIRSTn    = fun _ -> Util.anomaly "Tacticals.tclTHENFIRSTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENFIRSTn*)
+let tclTHENLASTn     = fun _ -> Util.anomaly "Tacticals.tclTHENLASTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENLASTn*)
+let tclREPEAT        = fun _ -> Util.anomaly "Tacticals.tclREPEAT: à restaurer" (* arnaud: restaurer: Refiner.tclREPEAT*)
+let tclREPEAT_MAIN   = fun _ -> Util.anomaly "Tacticals.tclREPEAT_MAIN: à restaurer" (* arnaud: restaurer: tclREPEAT_MAIN*)
+let tclFIRST         = fun _ -> Util.anomaly "Tacticals.tclFIRST: à restaurer" (* arnaud: restaurer: Refiner.tclFIRST*)
+let tclSOLVE         = fun _ -> Util.anomaly "Tacticals.tclSOLVE: à restaurer" (* arnaud: restaurer: Refiner.tclSOLVE*)
+let tclTRY           = fun _ -> Util.anomaly "Tacticals.tclTRY: à restaurer" (* arnaud: restaurer: Refiner.tclTRY*)
+let tclINFO          = fun _ -> Util.anomaly "Tacticals.tclINFO: à restaurer" (* arnaud: restaurer: Refiner.tclINFO*)
+let tclCOMPLETE      = fun _ -> Util.anomaly "Tacticals.tclCOMPLETE: à restaurer" (* arnaud: restaurer: Refiner.tclCOMPLETE*)
+let tclAT_LEAST_ONCE = fun _ -> Util.anomaly "Tacticals.tclAT_LEAST_ONCE: à restaurer" (* arnaud: restaurer: Refiner.tclAT_LEAST_ONCE*)
+let tclFAIL          = fun _ -> Util.anomaly "Tacticals.tclFAIL: à restaurer" (* arnaud: restaurer: Refiner.tclFAIL*)
+let tclDO            = fun _ -> Util.anomaly "Tacticals.tclDO: à restaurer" (* arnaud: restaurer: Refiner.tclDO*)
+let tclPROGRESS      = fun _ -> Util.anomaly "Tacticals. tclPROGRESS: à restaurer" (* arnaud: restaurer: Refiner.tclPROGRESS *)
+let tclWEAK_PROGRESS = fun _ -> Util.anomaly "Tacticals.tclWEAK_PROGRESS: à restaurer" (* arnaud: restaurer: Refiner.tclWEAK_PROGRESS *)
+let tclNOTSAMEGOAL   = fun _ -> Util.anomaly "Tacticals.tclNOTSAMEGOAL: à restaurer" (* arnaud: restaurer: Refiner.tclNOTSAMEGOAL *)
+let tclTHENTRY       = fun _ -> Util.anomaly "Tacticals.tclTHENTRY: à restaurer" (* arnaud: restaurer: tclTHENTRY *)
+let tclIFTHENELSE    = fun _ -> Util.anomaly "Tacticals.tclIFTHENELSE: à restaurer" (* arnaud: restaurer: tclIFTHENELSE *)
+let tclIFTHENSELSE   = fun _ -> Util.anomaly "Tacticals.tclIFTHENSELSE: à restaurer" (* arnaud: restaurer: tclIFTHENSELSE *)
+let tclIFTHENSVELSE   = fun _ -> Util.anomaly "Tacticals.tclIFTHENSVELSE: à restaurer" (* arnaud: restaurer: tclIFTHENSVELSE *)
+let tclIFTHENTRYELSEMUST = fun _ -> Util.anomaly "Tacticals.tclIFTHENTRYELSEMUST: à restaurer" (* arnaud: restaurer: tclIFTHENTRYELSEMUST *)
 
-let unTAC            = fun _ -> Util.anomaly "" (* arnaud: restaurer: unTAC*)
+let unTAC            = fun _ -> Util.anomaly "Tacticals.unTAC: à restaurer" (* arnaud: restaurer: unTAC*)
 
 (* [rclTHENSEQ [t1;..;tn] is equivalent to t1;..;tn *)
 let tclTHENSEQ = List.fold_left tclTHEN tclIDTAC
