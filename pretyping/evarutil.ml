@@ -330,6 +330,14 @@ let do_restrict_hyps env k evd ev args =
 	
 
 exception Dependency_error of identifier
+
+module EvkOrd = 
+struct
+  type t = Term.existential_key
+  let compare = Pervasives.compare
+end
+
+module EvkSet = Set.Make(EvkOrd)
 	
 let rec check_and_clear_in_constr evd c ids hist =
   (* returns a new constr where all the evars have been 'cleaned'
@@ -347,7 +355,7 @@ let rec check_and_clear_in_constr evd c ids hist =
       | Var id' ->  
 	  check id'; mkVar id'
       | Evar (e,l) -> 
-	  if (List.mem e hist) then
+	  if (EvkSet.mem e hist) then
 	    c
 	  else
 	    begin
@@ -362,7 +370,7 @@ let rec check_and_clear_in_constr evd c ids hist =
 		   corresponding to e where hypotheses of ids have been
 		   removed *)
 		let evi = Evd.find (evars_of !evd) e in
-		let nconcl = check_and_clear_in_constr evd (evar_concl evi) ids (e::hist) in
+		let nconcl = check_and_clear_in_constr evd (evar_concl evi) ids (EvkSet.add e hist) in
 		let (nhyps,nargs) = 
 		  List.fold_right2 
 		    (fun (id,ob,c) i (hy,ar) ->
@@ -372,9 +380,9 @@ let rec check_and_clear_in_constr evd c ids hist =
 			let d' = (id,
 				 (match ob with 
 				     None -> None
-				   | Some b -> Some (check_and_clear_in_constr evd b ids (e::hist))),
-				 check_and_clear_in_constr evd c ids (e::hist)) in
-			let i' = check_and_clear_in_constr evd i ids (e::hist) in
+				   | Some b -> Some (check_and_clear_in_constr evd b ids (EvkSet.add e hist))),
+				 check_and_clear_in_constr evd c ids (EvkSet.add e hist)) in
+			let i' = check_and_clear_in_constr evd i ids (EvkSet.add e hist) in
 			  (d'::hy, i'::ar)
 		    ) 	      
 		    (evar_context evi) (Array.to_list l) ([],[]) in
@@ -390,7 +398,7 @@ and clear_hyps_in_evi evd evi ids =
   (* clear_evar_hyps erases hypotheses ids in evi, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occuring in evi *)
-  let nconcl = try check_and_clear_in_constr evd (evar_concl evi) ids []
+  let nconcl = try check_and_clear_in_constr evd (evar_concl evi) ids EvkSet.empty
     with Dependency_error id' -> error (string_of_id id' ^ " is used in conclusion") in
   let (nhyps,_) = 
     let aux (id,ob,c) = 
@@ -398,8 +406,8 @@ and clear_hyps_in_evi evd evi ids =
 	(id,
 	(match ob with 
 	    None -> None
-	  | Some b -> Some (check_and_clear_in_constr evd b ids [])),
-	check_and_clear_in_constr evd c ids [])
+	  | Some b -> Some (check_and_clear_in_constr evd b ids EvkSet.empty)),
+	check_and_clear_in_constr evd c ids EvkSet.empty)
       with Dependency_error id' -> error (string_of_id id' ^ " is used in hypothesis "
 					   ^ string_of_id id)
     in
