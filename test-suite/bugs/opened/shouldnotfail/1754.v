@@ -20,5 +20,5 @@ Proof.
   3:intros h'' Hp''; econstructor; apply Hp''.
   3:intros h'' Hp''; apply Hp''.
   2:apply Hp'.
-  try clear H.
+  clear H.
 Admitted.

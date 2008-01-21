@@ -443,7 +443,15 @@ let do_restrict_hyps evd evk filter =
 
 exception Dependency_error of identifier
 
-let rec check_and_clear_in_constr evdref c ids =
+module EvkOrd = 
+struct
+  type t = Term.existential_key
+  let compare = Pervasives.compare
+end
+
+module EvkSet = Set.Make(EvkOrd)
+
+let rec check_and_clear_in_constr evdref c ids hist =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
      evars *)
@@ -453,24 +461,36 @@ let rec check_and_clear_in_constr evdref c ids =
   in 
     match kind_of_term c with
       | ( Rel _ | Meta _ | Sort _ ) -> c
+
       | ( Const _ | Ind _ | Construct _ ) -> 
 	  let vars = Environ.vars_of_global (Global.env()) c in
 	    List.iter check vars; c
+
       | Var id' ->  
 	  check id'; mkVar id'
+
       | Evar (evk,l as ev) -> 
 	  if Evd.is_defined_evar !evdref ev then
 	    (* If evk is already defined we replace it by its definition *)
 	    let nc = nf_evar (evars_of !evdref) c in 
-	      (check_and_clear_in_constr evdref nc ids)
-	  else
+	      (check_and_clear_in_constr evdref nc ids hist)
+	  else if EvkSet.mem evk hist then
+	    (* Loop detection => do nothing *)
+	    c
+	  else 
 	    (* We check for dependencies to elements of ids in the
 	       evar_info corresponding to e and in the instance of
 	       arguments. Concurrently, we build a new evar
 	       corresponding to e where hypotheses of ids have been
 	       removed *)
 	    let evi = Evd.find (evars_of !evdref) evk in
-	    let nconcl = check_and_clear_in_constr evdref (evar_concl evi) ids in
+	    let nconcl = check_and_clear_in_constr evdref (evar_concl evi) ids (EvkSet.add evk hist) in
+	    let ctxt,_ = List.fold_right 
+	      (fun b (hd,tl) ->
+		match tl with
+		  | [] -> assert false
+		  | x::tl' -> if b then (x::hd, tl') else (hd,tl'))
+	      (Evd.evar_filter evi) ([], List.rev (Evd.evar_context evi)) in
 	    let (nhyps,nargs) = 
 	      List.fold_right2 
 		(fun (id,ob,c) i (hy,ar) ->
@@ -478,26 +498,25 @@ let rec check_and_clear_in_constr evdref c ids =
 		    (hy,ar)
 		  else
 		    let d' = (id,
-			     (match ob with 
-				 None -> None
-			       | Some b -> Some (check_and_clear_in_constr evdref b ids)),
-			     check_and_clear_in_constr evdref c ids) in
-		    let i' = check_and_clear_in_constr evdref i ids in
+			     Option.map (fun b -> check_and_clear_in_constr evdref b ids (EvkSet.add evk hist)) ob,
+			     check_and_clear_in_constr evdref c ids (EvkSet.add evk hist)) in
+		    let i' = check_and_clear_in_constr evdref i ids (EvkSet.add evk hist) in
 		      (d'::hy, i'::ar)
 		) 	      
-		(evar_context evi) (Array.to_list l) ([],[]) in
+		ctxt (Array.to_list l) ([],[]) in
 	    let env = Sign.fold_named_context push_named nhyps ~init:(empty_env) in
 	    let ev'= e_new_evar evdref env ~src:(evar_source evk !evdref) nconcl in
 	      evdref := Evd.evar_define evk ev' !evdref;
 	      let (evk',_) = destEvar ev' in
 		mkEvar(evk', Array.of_list nargs)
-      | _ -> map_constr (fun c -> check_and_clear_in_constr evdref c ids) c
+
+      | _ -> map_constr (fun c -> check_and_clear_in_constr evdref c ids hist) c
 
 and clear_hyps_in_evi evdref evi ids =
   (* clear_evar_hyps erases hypotheses ids in evi, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occuring in evi *)
-  let nconcl = try check_and_clear_in_constr evdref (evar_concl evi) ids 
+  let nconcl = try check_and_clear_in_constr evdref (evar_concl evi) ids EvkSet.empty
     with Dependency_error id' -> error (string_of_id id' ^ " is used in conclusion") in
   let (nhyps,_) = 
     let check_context (id,ob,c) = 
@@ -505,8 +524,8 @@ and clear_hyps_in_evi evdref evi ids =
 	(id,
 	(match ob with 
 	    None -> None
-	  | Some b -> Some (check_and_clear_in_constr evdref b ids)),
-	check_and_clear_in_constr evdref c ids)
+	  | Some b -> Some (check_and_clear_in_constr evdref b ids EvkSet.empty)),
+	check_and_clear_in_constr evdref c ids EvkSet.empty)
       with Dependency_error id' -> error (string_of_id id' ^ " is used in hypothesis "
 					   ^ string_of_id id) 
     in
