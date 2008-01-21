@@ -370,7 +370,7 @@ let pr_goal     x = !printer_pr.pr_goal     x
 (**********************************************************************)
 
 let pr_subgoals_of_pfts pfts =
-  Util.anomaly ("")(*arnaud: restaurer: 
+  Util.anomaly "Printer.pr_subgoals_of_pfts: à restaurer"(*arnaud: restaurer: 
   let close_cmd = Decl_mode.get_end_command pfts in
   let gls = fst (Refiner.frontier (proof_of_pftreestate pfts)) in 
   let sigma = (top_goal_of_pftreestate pfts).sigma in
@@ -378,7 +378,8 @@ let pr_subgoals_of_pfts pfts =
 		   *)
       
 let pr_open_subgoals () =
-  Util.anomaly ("")(*arnaud: restaurer: 
+  Proof.pr_subgoals pr_subgoals
+  (*arnaud: restaurer: 
   let pfts = get_pftreestate () in
   match focus() with
     | 0 -> 
@@ -396,14 +397,14 @@ let pr_open_subgoals () =
 		   *)
 
 let pr_nth_open_subgoal n =
-  Util.anomaly ("")(*arnaud: restaurer: 
+  Util.anomaly "Printer.pr_nth_open_subgoal: à restaurer" (*arnaud: restaurer: 
   let pf = proof_of_pftreestate (get_pftreestate ()) in
   pr_subgoal n (fst (frontier pf))
 		   *)
 
 (* Elementary tactics *)
 
-let pr_prim_rule = fun _ -> Util.anomaly ("")(*arnaud: restaurer: function
+let pr_prim_rule = fun _ -> Util.anomaly "Printer.pr_prim_rule: à restaurer" (*arnaud: restaurer: function
   | Intro id -> 
       str"intro " ++ pr_id id
 	

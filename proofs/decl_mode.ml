@@ -21,17 +21,17 @@ struct
 end
 module Refiner =
 struct
-  let top_goal_of_pftreestate _ = Util.anomaly ("")
-  let nth_goal_of_pftreestate _ = Util.anomaly ("")
-  let up_until_matching_rule _ = Util.anomaly ("")
+  let top_goal_of_pftreestate _ = Util.anomaly "Decl_mode.top_goal_of_pftreestate: fantome"
+  let nth_goal_of_pftreestate _ = Util.anomaly "Decl_mode.nth_goal_of_pftreestate: fantome"
+  let up_until_matching_rule _ = Util.anomaly "Decl_mode.up_until_matching_rule: fantome"
 end
 module Pfedit =
 struct
-  let get_pftreestate _ = Util.anomaly ("")
+  let get_pftreestate _ = Util.anomaly "Decl_mode.get_pftreestate: fantome"
 end
 module Proof_trees =
 struct
-  let is_proof_instr _ = Util.anomaly ("")
+  let is_proof_instr _ = Util.anomaly "Decl_mode.is_proof_instr: fantome"
 
 end
 

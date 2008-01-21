@@ -23,7 +23,7 @@ open Util
 module Refiner =
   struct
     exception FailError of int list list list
-    let abstract_extended_tactic _ = Util.anomaly "Tauto.abstract_extended_tactic: fantome"
+    let abstract_extended_tactic = Tacticals.abstract_extended_tactic
   end
 (* arnaud: trucs factices *)
 

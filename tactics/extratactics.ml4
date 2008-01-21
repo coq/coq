@@ -22,7 +22,7 @@ type tactic = Tacticals.tactic
 
 module Refiner =
   struct
-   let abstract_extended_tactic _ = Util.anomaly "Extratactics.abstract_extended_tactic: fantom" 
+   let abstract_extended_tactic = Tacticals.abstract_extended_tactic
   end 
 let refine _ = Util.anomaly "Extratactics.refine: fantom"
 (* arnaud: /trucs factices *)

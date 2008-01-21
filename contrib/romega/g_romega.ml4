@@ -11,13 +11,13 @@
 open Refl_omega
 
 (* arnaud: trucs factices *)
-let tclTHEN _ = Util.anomaly "G_romega.tclTHEN: fantome"
-let tclREPEAT _ = Util.anomaly "G_romega.tclREPEAT: fantome"
-let tclPROGRESS _ = Util.anomaly "G_romega.tclPROGRESS: fantome"
-let tclTHENLIST _ = Util.anomaly "G_romega.tclTHENLIST: fantome"
+let tclTHEN = Tacticals.tclTHEN
+let tclREPEAT = Tacticals.tclREPEAT
+let tclPROGRESS = Tacticals.tclPROGRESS
+let tclTHENLIST = Tacticals.tclTHENLIST
 module Refiner =
   struct
-    let abstract_extended_tactic _ = Util.anomaly "G_romega.abstract_extended_tactic: fantome"
+    let abstract_extended_tactic = Tacticals.abstract_extended_tactic
   end 
 (* arnaud: /trucs factices *)
 

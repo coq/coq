@@ -43,7 +43,7 @@ module Pfedit =
   end 
 let nth_unproven _ = Util.anomaly "Decl_proof_instr.nth_unproven: fantome"
 let solve_pftreestate  _ = Util.anomaly "Decl_proof_instr.solve_pftreestate: fantome"
-let map_pftreestate _ = Util.anomaly "Decl_proof_instr.map_pftreestate: fantome"
+let map_pftreestate _ _ = Util.anomaly "Decl_proof_instr.map_pftreestate: fantome"
 let frontier_mapi _ = Util.anomaly "Decl_proof_instr.frontier_mapi: fantome"
 let traverse _ = Util.anomaly "Decl_proof_instr.traverse: fantome"
 let up_until_matching_rule  _ = Util.anomaly "Decl_proof_instr.up_until_matching_rule: fantome" 

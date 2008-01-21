@@ -231,3 +231,10 @@ let reorder p sp =
                   (Permutation.permute p 
 		  (Array.of_list sp.comb)) 
   }
+
+
+
+(*** **)
+(* arnaud: hack pour debugging *)
+let pr_subgoals sp pr_fun =
+  pr_fun None (Evd.evars_of sp.solution) sp.comb

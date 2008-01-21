@@ -20,14 +20,14 @@
 open Coq_omega
 
 (* arnaud: trucs factices *)
-let tclTHEN _ = Util.anomaly "G_omega.tclTHEN: fantome"
-let tclREPEAT _ = Util.anomaly "G_omega.tclREPEAT: fantome"
-let tclPROGRESS _ = Util.anomaly "G_omega.tclPROGRESS: fantome"
-let tclTHENLIST _ = Util.anomaly "G_omega.tclTHENLIST: fantome"
+let tclTHEN = Tacticals.tclTHEN
+let tclREPEAT = Tacticals.tclREPEAT
+let tclPROGRESS = Tacticals.tclPROGRESS
+let tclTHENLIST = Tacticals.tclTHENLIST
 
 module Refiner =
   struct
-    let abstract_extended_tactic _ = Util.anomaly "G_omega.abstract_extended_tactic: fantome"
+    let abstract_extended_tactic = Tacticals.abstract_extended_tactic
 
   end
 

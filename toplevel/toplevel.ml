@@ -19,9 +19,9 @@ open Protectedtoplevel
 (* arnaud:trucs factices *)
 module Pfedit =
   struct
-    let get_all_proof_names _ = Util.anomaly "Toplevel.get_all_proof_names: fantome"
+    let get_all_proof_names () = []
     let get_current_proof_name _ = Util.anomaly "Toplevel.get_current_proof_names: fantome"
-    let current_proof_depth _ = Util.anomaly "Toplevel.current_proof_depth: fantome"
+    let current_proof_depth () = -1
   end
 (* arnaud: /trucs factices *)
 

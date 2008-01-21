@@ -32,7 +32,7 @@ module Pfedit =
   struct
     let get_pftreestate _ = Util.anomaly "Xmlcommand.get_pftreestate: fantome"
     let current_proof_statement _ = Util.anomaly "Xmlcommand.current_proof_statement: fantome"
-    let set_xml_cook_proof  _ = Util.anomaly "Xmlcommand.set_xml_cook_proof: fantome"
+    let set_xml_cook_proof  _ _ = Util.anomaly "Xmlcommand.set_xml_cook_proof: fantome"
   end
 (* arnaud:/trucs factices *)
 

@@ -62,8 +62,7 @@ let nf_evar sigma ~preserve =
 (* Unshares a proof-tree.                                                  *)
 (* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
 let rec unshare_proof_tree =
- Util.anomaly "Proof2aproof.unshare_proof_tree: à restaurer" (* arnaud: à restaurer
- let module PT = Proof_type in
+ let module PT = Tacticals(*arnaud:Proof_type*) in
   function {PT.open_subgoals = status ; 
 	    PT.goal = goal ; 
 	    PT.ref = ref} ->
@@ -83,7 +82,7 @@ let rec unshare_proof_tree =
      PT.goal = goal ; 
      PT.ref = unshared_ref}
 ;;
-							     *)
+
 module ProofTreeHash =
  Hashtbl.Make
   (struct

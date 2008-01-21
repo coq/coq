@@ -68,7 +68,7 @@ CONFIG:=\
 LIBREP:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
   lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/flags.cmo \
-  lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
+  lib/bstack.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
   lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo
 # Rem: Cygwin already uses variable LIB 

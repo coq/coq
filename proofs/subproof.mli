@@ -100,3 +100,9 @@ val tac_then : tactic -> tactic -> tactic
 (* Reorders the open goals of the given pointer, according to the 
    permutation *)
 val reorder : Permutation.permutation -> tactic
+
+
+
+(*** **)
+(* arnaud: hack pour debugging *)
+val pr_subgoals : subproof -> (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds

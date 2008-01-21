@@ -20,7 +20,7 @@ open Util
 (* arnaud: trucs factices *)
 type tactic = Tacticals.tactic
 
-let abstract_tactic _ = Util.anomaly "Hiddentac.abstract_tactic: fantome"
+let abstract_tactic = Tacticals.abstract_tactic
 (* arnaud: /trucs factices *)
 
 

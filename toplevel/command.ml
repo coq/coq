@@ -48,10 +48,10 @@ open Evd
 module Pfedit =
   struct
     let refining _ = Util.anomaly "Command.Pfedit.refining: fantome"
-    let start_proof _ = Util.anomaly "Command.Pfedit.start_proof: fantome"
+    let start_proof = Proof.start_proof
     let delete_current_proof _ = Util.anomaly "Command.Pfedit.delete_current_proof: fantome"
     let cook_proof _ = Util.anomaly "Command.Pfedit.cook_proof: fantome"
-    let get_all_proof_names _ = Util.anomaly "Command.Pfedit.get_all_proof_names: fantome"
+    let get_all_proof_names () = []
     let current_proof_statement _ = Util.anomaly "Command.Pfedit.current_proof_statement: fantome"
     let get_current_goal_context _ = Util.anomaly "Command.Pfedit.get_current_goal_context: fantome"
 

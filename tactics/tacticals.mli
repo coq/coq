@@ -24,7 +24,15 @@ open Tacexpr
 type 'a sigma = 'a Evd.sigma
 type goal = Evd.evar_info
 type proof_instr = Decl_expr.proof_instr
-type tactic_expr
+type tactic_expr =
+  (Evd.open_constr,
+   constr_pattern,
+   evaluable_global_reference,
+   inductive,
+   (*ltac_constant,*) int list array list,
+   identifier,
+   glob_tactic_expr)
+     Tacexpr.gen_atomic_tactic_expr
 type compound_rule=  
   | Tactic of tactic_expr * bool
   | Proof_instr of bool*proof_instr
@@ -38,6 +46,10 @@ and proof_tree = { goal: goal; ref: (rule * proof_tree list) option;
 		    open_subgoals: int}
 type validation = (proof_tree list -> proof_tree)
 type tactic = goal sigma -> goal list sigma * validation
+
+val abstract_tactic: ?dflt:bool -> tactic_expr -> tactic -> tactic
+val abstract_extended_tactic :
+  ?dflt:bool -> string -> typed_generic_argument list -> tactic -> tactic
 (* arnaud: /trucs factices *)
 
 (* Tacticals i.e. functions from tactics to tactics. *)

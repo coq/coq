@@ -39,27 +39,12 @@ val unfocus : 'a proof -> unit
 
 val run_tactic : Subproof.tactic -> 'a proof -> unit
 
-(* arnaud: kill death kill, sauf run_tactic qui est juste à modifier 
+(*** **)
+(* arnaud: hack pour debugging *)
+val start_proof : 
+  Names.identifier -> 'a (*goal_kind*) -> Environ.named_context_val -> constr
+    -> 'b (*declaration_hook*) -> unit
 
-(* Exception which represents a failure in a tactic.
-   May be caught by the "try" tactical for instance. *)
-exception TacticFailure of Pp.std_ppcmds
+val pr_subgoals : (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
 
-(* Function to raise a [TacticFailure]. *)
-val fail : Pp.std_ppcmds -> 'a
-
-
-(* Type of the tactics *)
-(* arnaud: compléter les commentaires *)
-type tactic
-
-(* Executes a tactic on a proof *)
-val run_tactic : tactic -> 'a proof -> unit
-
-
-(* Internalizes a subproof-level tactic *)
-val internalize : Subproof.tactic -> tactic 
-
-(* Interpretes the ";" (semicolon) from the tactic scripts *)
-val tac_then : tactic -> tactic -> tactic
-*)
+val db_run_tactic_on : int -> Subproof.tactic -> unit

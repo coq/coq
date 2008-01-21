@@ -148,45 +148,23 @@ let run_tactic tac ( { subproof = sp } as pr ) =
     restore_state starting_point pr;
     raise e
 
-(* arnaud: kill death kill, sauf run_tactic qui est juste à modifier 
-(*** The following functions define the tactic machinery. They 
-     transform a tactical expression into a sequence of actions. ***)
+(*** **)
+(* arnaud: hack pour debugging *)
+let current_proof = ref None
+
+let start_proof _i gk _ c _decl = 
+  let new_subproof = Subproof.start (Global.env ()) [c] in
+  let new_proof = { subproof = new_subproof; undo_stack = []; focus_stack = []; return = fun _ -> () } in
+  current_proof := Some new_proof
+
+let pr_subgoals pr_fun =
+  match !current_proof with
+  | None -> Pp.str ""
+  | Some {subproof = sp} -> Subproof.pr_subgoals sp pr_fun
 
 
-(* Gives the type of a proof action *)
-(* arnaud: compléter les commentaires *)
-type _tactic = { tactic:'a.'a proof -> unit }
-type tactic = _tactic Sequence.sequence
-
-(* Not exported: used to build an primitive tactic (i.e. a tactic from
-   OCaml code) *)
-let primitive = Sequence.element
-
-(* Interpretes the ";" (semicolon) from the tactic scripts *)
-let tac_then = Sequence.append
-
-(* Executes a tactic on a proof *)
-let run_tactic tac pr =  
-  let starting_point = save_state pr in
-  try 
-    Sequence.iter (fun {tactic=primtac} -> primtac pr) tac;
-    unfocus_until_sound pr;
-    push_undo starting_point pr
-  with e -> (* arnaud: traitement particulier de Failure ? *)
-    restore_state starting_point pr;
-    raise e
-
-(* Internalizes a subproof-level tactic *)
-let internalize t = 
-  primitive { tactic = fun pr -> 
-		pr.subproof <- Subproof.apply t pr.subproof 
-	    }
-*)
-
-  
-
-(* arnaud: ? *)
-(* apply_one *)
-(* apply_all *)
-(* apply_array *)
-(* apply_extend *)
+let db_run_tactic_on n tac =
+  match ! current_proof with
+  | None -> ()
+  | Some cur ->(focus n cur;
+               run_tactic tac cur)

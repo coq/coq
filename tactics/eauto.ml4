@@ -42,7 +42,7 @@ let pf_ids_of_hyps _ = Util.anomaly "Eauto.pf_ids_of_hyps: fantome"
 
 module Refiner =
   struct
-    let abstract_extended_tactic _ = Util.anomaly "Eauto.abstract_extended_tactic: fantome"
+    let abstract_extended_tactic = Tacticals.abstract_extended_tactic
   end
 let pf_reduce_to_quantified_ind _ = Util.anomaly "Eauto.pf_reduce_to_quantified_ind: fantome"
 let convert_concl_no_check _ = Util.anomaly "Eauto.convert_concl_no_check: fantome"

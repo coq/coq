@@ -27,7 +27,6 @@ open Type_errors
 open Retyping
 open Evarutil*)
 
-
 type simple_tactic =
   | Intro of identifier
   | Intro_replacing of identifier

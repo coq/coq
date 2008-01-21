@@ -28,7 +28,7 @@ let pf_concl _ = Util.anomaly "FourierR.pf_concl: fantome"
 let pf_hyps _ = Util.anomaly "FourierR.pf_hyps: fantome"
 module Refiner =
   struct
-    let abstract_extended_tactic _ = Util.anomaly "FourierR.abstract_extended_tactic: fantome"
+    let abstract_extended_tactic = Tacticals.abstract_extended_tactic
   end
 (* arnaud: /trucs factices *)
 
