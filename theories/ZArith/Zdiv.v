@@ -486,6 +486,7 @@ Proof.
   auto with zarith.
 Qed.
 
+
 (** A division of a small number by a bigger one yields zero. *)
 
 Theorem Zdiv_small: forall a b, 0 <= a < b -> a/b = 0.
@@ -602,6 +603,22 @@ Proof.
   pattern a at 1; rewrite (Z_div_mod_eq a b); auto with zarith.
   rewrite Zmult_plus_distr_l; rewrite (Zmult_comm b); case (Z_mod_lt a b);
    auto with zarith.
+Qed.
+
+
+(** A division of respect opposite monotonicity for the divisor *)
+
+Lemma Zdiv_le_compat_l: forall p q r, 0 <= p -> 0 < q < r ->
+    p / r <= p / q.
+Proof.
+  intros p q r H H1. 
+  apply Zdiv_le_lower_bound; auto with zarith.
+  rewrite Zmult_comm.
+  pattern p at 2; rewrite (Z_div_mod_eq p r); auto with zarith.
+  apply Zle_trans with (r * (p / r)); auto with zarith.
+  apply Zmult_le_compat_r; auto with zarith.
+  apply Zdiv_le_lower_bound; auto with zarith.
+  case (Z_mod_lt p r); auto with zarith.
 Qed.
 
 Theorem Zdiv_sgn: forall a b, 

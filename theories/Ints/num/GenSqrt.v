@@ -1116,16 +1116,6 @@ intros x; case x; simpl ww_is_even.
   simpl ww_to_Z.
   assert (V4 := spec_ww_to_Z w_digits w_to_Z spec_to_Z x);auto with zarith.
   Qed. 
-
-  Lemma Zdiv_le_monotone: forall p q r, 0 <= p -> 0 < q < r ->
-    p / r <= p / q.
-  intros p q r H H1.
-  apply Zdiv_le_lower_bound; auto with zarith.
-  rewrite Zmult_comm.
-  pattern p at 2; rewrite (Z_div_mod_eq p r); auto with zarith.
-  apply Zle_trans with (r * (p / r)); auto with zarith.
-  case (Z_mod_lt p r); auto with zarith.
-  Qed.
   
   Lemma wwB_4_2: 2 * (wwB / 4) = wwB/ 2. 
   pattern wwB at 1; rewrite wwB_wBwB; rewrite Zpower_2.
@@ -1151,10 +1141,10 @@ intros x; case x; simpl ww_is_even.
   generalize (spec_ww_head0 x H2); case (ww_head0 x);  autorewrite with rm10.
   intros (H3, H4); split; auto with zarith.
   apply Zle_trans with (2 := H3).
-  apply Zdiv_le_monotone; auto with zarith.
+  apply Zdiv_le_compat_l; auto with zarith.
   intros xh xl (H3, H4); split; auto with zarith.
   apply Zle_trans with (2 := H3).
-  apply Zdiv_le_monotone; auto with zarith.
+  apply Zdiv_le_compat_l; auto with zarith.
   intros H1.
   case (spec_to_w_Z (ww_head0 x)); intros Hv1 Hv2.
   assert (Hp0: 0 < [[ww_head0 x]]).
