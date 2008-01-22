@@ -583,8 +583,8 @@ let vernac_solve n tcom b =
   Decl_mode.check_not_proof_mode "Unknown proof instruction";
   begin
     if b then 
-      solve_nth n (Tacinterp.hide_interp tcom (get_end_tac ()))
-    else solve_nth n (Tacinterp.hide_interp tcom None)
+      solve_nth n (Proof.hide_interp Ltacinterp.hide_interp tcom (get_end_tac ()))
+    else solve_nth n (Proof.hide_interp Ltacinterp.hide_interp tcom None)
   end;
   (* in case a strict subtree was completed, 
      go back to the top of the prooftree *) 

@@ -48,3 +48,8 @@ val start_proof :
 val pr_subgoals : (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
 
 val db_run_tactic_on : int -> Subproof.tactic -> unit
+
+val hide_interp : (unit proof -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic) -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic
+
+(* arnaud:fonction très temporaire*)
+val subproof_of : 'a proof -> Subproof.subproof

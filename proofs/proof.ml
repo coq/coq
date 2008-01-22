@@ -167,4 +167,12 @@ let db_run_tactic_on n tac =
   match ! current_proof with
   | None -> ()
   | Some cur ->(focus n cur;
-               run_tactic tac cur)
+               run_tactic tac cur;
+	       unfocus cur)
+
+let hide_interp f t ot =
+  match !current_proof with
+    | None -> Util.anomaly "Proof.hide_interp: seulement quand on prouve quelque chose"
+    | Some cur -> f cur t ot
+
+let subproof_of { subproof = sp } = sp

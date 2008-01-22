@@ -37,8 +37,8 @@ type value =
   | VVoid
   | VInteger of int
   | VIntroPattern of intro_pattern_expr
-  | VConstr of constr
-  | VConstr_context of constr
+  | VConstr of constr (* arnaud: constr ou rawconstr ? *)
+  | VConstr_context of constr (* arnaud: contrs ou rawconstr ? *)
   | VList of value list
   | VRec of value ref
 
@@ -146,7 +146,7 @@ val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr
 
 (* Hides interpretation for pretty-print *)
 
-val hide_interp : raw_tactic_expr -> Subproof.tactic option -> Subproof.tactic
+val hide_interp : raw_tactic_expr -> tactic option -> tactic
 
 (* Declare the default tactic to fill implicit arguments *)
 val declare_implicit_tactic : tactic -> unit

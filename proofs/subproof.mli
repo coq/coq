@@ -106,3 +106,5 @@ val reorder : Permutation.permutation -> tactic
 (*** **)
 (* arnaud: hack pour debugging *)
 val pr_subgoals : subproof -> (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
+
+val defs_of : subproof -> Evd.evar_defs

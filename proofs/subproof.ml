@@ -238,3 +238,5 @@ let reorder p sp =
 (* arnaud: hack pour debugging *)
 let pr_subgoals sp pr_fun =
   pr_fun None (Evd.evars_of sp.solution) sp.comb
+
+let defs_of sp = sp.solution

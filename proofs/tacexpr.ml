@@ -8,6 +8,8 @@
 
 (*i $Id$ i*)
 
+(* arnaud: faire un mli à ce truc *)
+
 open Names
 open Topconstr
 open Libnames
@@ -20,7 +22,9 @@ open Pattern
 type 'a or_metaid = AI of 'a | MetaId of loc * string
 
 type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
+(* arnaud: lazy_flag est pour le match ? si oui il disparaît sûrement *)
 type lazy_flag = bool      (* true = lazy             false = eager *)
+(* arnaud: evars_flag devrait disparaître *)
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 
 type raw_red_flag =

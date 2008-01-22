@@ -122,7 +122,8 @@ INTERP:=\
 PROOFS:=\
   proofs/tacexpr.cmo proofs/redexpr.cmo \
   proofs/permutation.cmo \
-  proofs/goal.cmo proofs/subproof.cmo proofs/proof.cmo \
+  proofs/goal.cmo proofs/subproof.cmo \
+  proofs/proof.cmo \
   proofs/logic.cmo \
   proofs/decl_mode.cmo proofs/tactic_debug.cmo
 
@@ -150,6 +151,7 @@ TACTICS:=\
   toplevel/ind_tables.cmo \
   tactics/setoid_replace.cmo tactics/equality.cmo \
   tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
+  tactics/ltacinterp.cmo \
   tactics/tacinterp.cmo tactics/autorewrite.cmo \
   tactics/decl_interp.cmo tactics/decl_proof_instr.cmo
 

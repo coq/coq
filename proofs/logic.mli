@@ -30,6 +30,8 @@ type simple_tactic =
   | Rename of identifier * identifier
   | Change_evars
 
+val interprete_simple_tactic_as_single_tactic : Environ.env -> simple_tactic -> (Evd.evar_defs -> Goal.goal -> Goal.refinement) (* arnaud: type à changer *)
+
 (*s Refiner errors. *)
 
 type refiner_error =
@@ -50,6 +52,11 @@ exception RefinerError of refiner_error
 
 (* arnaud: à commenter éventuellement*)
 val catchable_exception : exn -> bool
+
+
+(*** ***)
+(* arnaud: trucs pour débugger *)
+
 
 (*
 (*i*)
