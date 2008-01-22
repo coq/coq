@@ -144,7 +144,8 @@ let rec pp_type par vl t =
 
 let is_ifthenelse = function 
   | [|(r1,[],_);(r2,[],_)|] -> 
-       (find_custom r1 = "true") && (find_custom r2 = "false") 
+      (try (find_custom r1 = "true") && (find_custom r2 = "false") 
+       with Not_found -> false)
   | _ -> false
 
 let expr_needs_par = function
