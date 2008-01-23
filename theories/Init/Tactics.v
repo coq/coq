@@ -58,7 +58,7 @@ Ltac swap H :=
 (* to contradict an hypothesis without copying its type. *)
 
 Ltac absurd_hyp h := 
-  idtac "contradict is OBSOLETE: use contradict instead.";
+  idtac "absurd_hyp is OBSOLETE: use contradict instead.";
   let T := type of h in 
   absurd T.
 
