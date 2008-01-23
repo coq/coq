@@ -80,29 +80,35 @@ exception IndexOutOfRange
 (*arnaud: commenter*)
 let list_goto i = 
   let rec aux acc index = function
+    | l when index = 0-> (acc,l)
     | [] -> raise IndexOutOfRange
-    | a::q when index < i -> aux (a::acc) (index+1) q
-    | l -> (acc,l)
+    | a::q -> aux (a::acc) (index-1) q
   in
-  fun l ->
+  fun l -> (* arnaud: descendre i ici probablement*)
     if i < 0 then
       raise IndexOutOfRange
     else
-      aux [] 0 l
+      aux [] i l
 
 type focus_context = Goal.goal list * Goal.goal list
 
+(* arnaud: is de NegativeIndex *)
+(* arnaud: préciser "between two indices". Et tout le reste qui est
+   probablement pas correct. *)
+(* arnaud : [list_goto i] et [list_chop i] renvoient tous les deux une 
+   paire (l,r) avec [List.length l = i].
+   On va dire que [focus_sublist] focus sur les buts [i] à [j] inclus.
+   Donc on doit rajouter plein de +1, sachant que les buts sont numérotés
+   à partir de 1. *)
 (* This (internal) function extracts a sublist between two indices, and
    returns this sublist together with its context :
    if it returns [(a,(b,c))] then [a] is the sublist and (rev b)@a@c is the
    original list.
-   [focus_sublist i j l] raises [IndexOutOfRange(i, length l)] if
-   [i >= length l], and [IndexOutOfRange(j,length l)] if 
-   [j >= length l > i]. 
+   [focus_sublist i j l] raises [IndexOutOfRange] if
+   [i > length l], or if [j > length l]. 
    It can also raise [NegativeIndex] if either [i] or [j-i] are negative. *)
-(* arnaud: préciser "between to indices". *)
 let focus_sublist i j l =
-  let (left,sub_right) = list_goto i l in
+  let (left,sub_right) = list_goto (i-1) l in
   let (sub, right) = Util.list_chop (j-i+1) sub_right in
   (sub, (left,right))
 
