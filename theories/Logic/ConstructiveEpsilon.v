@@ -49,7 +49,7 @@ numbers we try. Namely, [y] is [R]-less then [x] if we try [y] after
 infinite [R]-descending chain from 0 is equivalent to the termination
 of our searching algorithm. *)
 
-Definition R (x y : nat) : Prop := x = S y /\ ~ P y.
+Let R (x y : nat) : Prop := x = S y /\ ~ P y.
 
 Notation Local "'acc' x" := (Acc R x) (at level 10).
 
