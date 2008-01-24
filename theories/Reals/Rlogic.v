@@ -62,12 +62,12 @@ set (f:=fun n => (if HP n then (1/2)^n else 0)%R).
  clear X.
  exists N.
  intros n m Hn Hm.
- replace e with (e/2 + e/2)%R by fourier.
+ replace e with (e/2 + e/2)%R by field.
  set (g:=(fun n0 : nat => 1 * (1 / 2) ^ n0)) in *.
  assert (R_dist (sum_f_R0 g n) (sum_f_R0 g m) < e / 2 + e / 2).
   apply Rle_lt_trans with (R_dist (sum_f_R0 g n) 2+R_dist 2 (sum_f_R0 g m))%R.
    apply R_dist_tri.
-  replace (/(1 - 1/2)) with 2 in HN by fourier.
+  replace (/(1 - 1/2)) with 2 in HN by field.
   cut (forall n, (n >= N)%nat -> R_dist (sum_f_R0 g n) 2 < e/2)%R.
    intros Z.
    apply Rplus_lt_compat.
