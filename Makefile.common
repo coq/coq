@@ -643,7 +643,7 @@ REALS_all=\
  theories/Reals/Rpower.vo       theories/Reals/Ranalysis.vo \
  theories/Reals/NewtonInt.vo    theories/Reals/RiemannInt_SF.vo \
  theories/Reals/RiemannInt.vo   theories/Reals/Integration.vo \
- theories/Reals/Reals.vo
+ theories/Reals/Rlogic.vo	theories/Reals/Reals.vo
 
 REALSVO:=$(REALSBASEVO) $(REALS_$(REALS))
 
