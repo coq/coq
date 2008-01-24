@@ -14,7 +14,7 @@ Require Import Zcomplements.
 Require Export Zpower.
 Require Import Zdiv.
 Require Import Znumtheory.
-Open Scope Z_scope.
+Open Local Scope Z_scope.
 
 Lemma Zpower_pos_1_r: forall x, Zpower_pos x 1 = x.
 Proof.
