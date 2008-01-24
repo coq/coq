@@ -65,12 +65,13 @@ type tactic
 (* Applies a tactic to the current subproof. *)
 val apply : tactic -> subproof -> subproof
 
+(* arnaud: à recommenter *)
 (* Transforms a function of type 
    [Evd.evar_defs -> Goal.goal -> Goal.refinement] (i.e.
    a tactic that operates on a single goal) into an actual tactic.
    It operates by iterating the single-tactic from the last goal to 
    the first one. *)
-val single_tactic : (Evd.evar_defs -> Goal.goal -> Goal.refinement) -> tactic
+val tactic_of_goal_tactic : Goal.tactic -> tactic
 
 
 (* Focuses a tactic at a single subgoal, found by it's index. *)

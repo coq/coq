@@ -163,17 +163,18 @@ let fail msg = raise (TacticFailure msg)
 let apply t sp = t sp
 
 
+(* arnaud: à recommenter *)
 (* Transforms a function of type 
    [Evd.evar_defs -> Goal.goal -> Goal.refinement] (i.e.
    a tactic that operates on a single goal) into an actual tactic.
    It operates by iterating the single-tactic from the last goal to 
    the first one. *)
-let single_tactic f sp =
+let tactic_of_goal_tactic f sp =
   let wrap g ((defs, partial_list) as partial_res) = 
     if Goal.is_defined (Evd.evars_of defs) g then 
       partial_res
     else
-      let { Goal.new_defs = d' ; Goal.subgoals = sg } = f defs g in
+      let { Goal.new_defs = d' ; Goal.subgoals = sg } = Goal.run f defs g in
       (d',sg::partial_list)
   in
   let ( new_defs , combed_subgoals ) = 

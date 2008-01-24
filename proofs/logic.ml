@@ -81,6 +81,7 @@ let interprete_simple_tactic_as_single_tactic env = function
 		            Rawterm.RHole (Util.dummy_loc, Evd.InternalHole)
 			    )
 	       )
+  | Refine t -> Goal.refine env true t
   | _ -> Util.anomaly "fonction à rebrancher" (*arnaud: ... *)
 
 

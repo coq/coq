@@ -39,17 +39,42 @@ let build ?name e =
 let is_defined evars { content = e } = Evd.is_defined evars e
 
 
-(*** Refine tactic ***)
+
+(*** Goal tactics ***)
 
 
-(* return type of the Goal.refine function *)
-(* it contains the new subgoals to produce, a function to reconstruct
-   the proof to the current goal knowing the result of the subgoals,
-   the type and constraint information about the evars of the proof
-   (which has been extended with new ones), and the definitions of
+
+(* return type of the excution of goal tactics *)
+(* it contains the new subgoals to produce, and the definitions of
    the evars to instantiate *)
 type refinement = { subgoals: goal list ;
                     new_defs: Evd.evar_defs }
+
+
+
+(* type of the base elements of the goal API.*)
+(* it has an extra evar_info with respect to what would be expected,
+   it is supposed to be the evar_info of the goal in the evar_defs.
+   The idea is that it is computed by the [run] function as an 
+   optimisation, since it will generaly not change during the 
+   evaluation. As a matter of fact it should only change as far
+   as caching is concerned, which is of no concern for the tactics
+   themselves. *)
+type 'a expression = Evd.evar_defs -> goal -> Evd.evar_info -> 'a
+
+
+(* type of the goal tactics*)
+type tactic = refinement expression
+
+
+(* runs a goal tactic on a given goal (knowing the current evar_defs). *)
+(* the evar_info corresponding to the goal is computed at once
+   as an optimisation (it usually won't change during the evaluation). 
+   As a matter of fact it should only change as far as caching is 
+   concerned, which is of no concern for the tactics themselves. *)
+let run t defs gl =
+  t defs gl (content (Evd.evars_of defs) gl)
+
 
 (* a pessimistic (i.e : there won't be many positive answers) filter
    over evar_maps *)
@@ -65,9 +90,7 @@ let evar_map_filter f evm =
 
 
 (* arnaud: à commenter un brin plus *)
-let refine env check_type step defs gl =
-  (* retrieving the current [evar_info] associated to [gl] *)
-  let info = content (Evd.evars_of defs) gl in
+let refine env check_type step defs gl info =
   (* building an environement containing [env] and the hypotheses of [gl] *)
   let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
   (* if [check_type] is true, then creates a type constraint for the 
@@ -107,9 +130,6 @@ let refine env check_type step defs gl =
   }
 
 
-
-(*** Other tactics ***)
-
 (* arnaud: faut franchement nettoyer tout ça. Ça mérite une réflexion de fond
    mais ya du nettoyage à faire *)
 
@@ -122,9 +142,8 @@ let refine env check_type step defs gl =
    Ou bien de demander à l'autre but de suivre l'instanciation du clear.
    Je pense. *)
 (* Implements the clear tactic *)
-let clear idents defs gl =
+let clear idents defs gl info =
   let rdefs = ref defs in
-  let info = content (Evd.evars_of defs) gl in
   let cleared_info = Evarutil.clear_hyps_in_evi rdefs info idents in
   let cleared_env = Environ.reset_with_named_context (Evd.evar_hyps cleared_info) 
                                                      Environ.empty_env in
@@ -139,6 +158,7 @@ let clear idents defs gl =
   { subgoals = [cleared_goal] ;
     new_defs = new_defs
   }
+
 
 (* arnaud: générer les erreurs en deux temps sans doute ? *)
 (* arnaud: qu'est-ce qui doit être failure, et qu'est-ce qui doit juste
@@ -213,13 +233,23 @@ let clear_body env idents defs gl =
 
 
 
+(*** Expressions & Tacticals ***)
 
 
+(* if then else on expressions *)
+let cond b ~thn ~els defs goal info =
+  if b defs goal info then
+    thn defs goal info
+  else 
+    els defs goal info
+
+(* monadic bind on expressions *)
+let bind e f defs goal info =
+  f (e defs goal info) defs goal info
 
 
-
-
-
+(* monadic return on expressions *)
+let return v _ _ _ = v
 
 
 
