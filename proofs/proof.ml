@@ -137,10 +137,10 @@ let unfocus  =
 (*** ***)
 (* arnaud: cette section, si courte qu'elle est, mérite probablement un titre *)
 
-let run_tactic tac ( { subproof = sp } as pr ) =
+let run_tactic tac env ( { subproof = sp } as pr ) =
   let starting_point = save_state pr in
   try
-    let tacticced_subproof = Subproof.apply tac sp in
+    let tacticced_subproof = Subproof.apply env tac sp in
     pr.subproof <- tacticced_subproof;
     unfocus_until_sound pr;
     push_undo starting_point pr
@@ -163,11 +163,11 @@ let pr_subgoals pr_fun =
   | Some {subproof = sp} -> Subproof.pr_subgoals sp pr_fun
 
 
-let db_run_tactic_on n tac =
+let db_run_tactic_on env n tac =
   match ! current_proof with
   | None -> ()
   | Some cur ->(focus n cur;
-               run_tactic tac cur;
+               run_tactic env tac cur;
 	       unfocus cur)
 
 let hide_interp f t ot =

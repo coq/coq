@@ -39,11 +39,11 @@ type 'a expression
 (* type of the goal tactics*)
 type tactic = refinement expression
 
-val run : tactic -> Evd.evar_defs -> goal -> refinement
+val run : tactic -> Environ.env -> Evd.evar_defs -> goal -> refinement
 
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)
-val refine : Environ.env -> bool -> Rawterm.rawconstr -> tactic
+val refine : bool -> Rawterm.rawconstr -> tactic
 
 
 (*arnaud: commenter plus sans doute. Pareil dans le .ml *)
@@ -67,14 +67,34 @@ val clear : Names.identifier list -> tactic
 
 
 (* if then else on expressions *)
-val cond : bool expression -> ~thn:'a expression -> 
-                              ~els:'a expression ->  'a expression
+val cond : bool expression -> thn:'a expression -> 
+                              els:'a expression ->  'a expression
 
 (* monadic bind on expressions *)
 val bind : 'a expression -> ('a -> 'b expression) -> 'b expression
 
 (* monadic return on expressions *)
 val return : 'a -> 'a expression
+
+(* arnaud : à virer ? (ainsi que dans le .ml) 
+(* map combinator which may usefully complete [bind] *)
+val map : ('a -> 'b) -> 'a expression -> 'b expression
+
+(* binary map combinator *)
+val map2 : ('a -> 'b -> 'c) -> 'a expression -> 'b expression -> 'c expression
+*)
+
+(* [concl] is the conclusion of the current goal *)
+val concl : Term.constr expression
+
+(* [hyps] is the [named_context_val] representing the hypotheses
+   of the current goal *)
+val hyps : Environ.named_context_val expression
+
+(* [env] is the current [Environ.env] containing both the 
+   environment in which the proof is ran, and the goal hypotheses *)
+val env : Environ.env expression
+
 
 (* arnaud: à remplacer par un print 
 (* This function returns a new goal where the evars have been

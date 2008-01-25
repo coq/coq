@@ -60,7 +60,7 @@ type refinement = { subgoals: goal list ;
    evaluation. As a matter of fact it should only change as far
    as caching is concerned, which is of no concern for the tactics
    themselves. *)
-type 'a expression = Evd.evar_defs -> goal -> Evd.evar_info -> 'a
+type 'a expression = Environ.env -> Evd.evar_defs -> goal -> Evd.evar_info -> 'a
 
 
 (* type of the goal tactics*)
@@ -72,8 +72,10 @@ type tactic = refinement expression
    as an optimisation (it usually won't change during the evaluation). 
    As a matter of fact it should only change as far as caching is 
    concerned, which is of no concern for the tactics themselves. *)
-let run t defs gl =
-  t defs gl (content (Evd.evars_of defs) gl)
+let run t env defs gl =
+  let info = content (Evd.evars_of defs) gl in
+  let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
+  t env defs gl info
 
 
 (* a pessimistic (i.e : there won't be many positive answers) filter
@@ -90,9 +92,7 @@ let evar_map_filter f evm =
 
 
 (* arnaud: à commenter un brin plus *)
-let refine env check_type step defs gl info =
-  (* building an environement containing [env] and the hypotheses of [gl] *)
-  let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
+let refine check_type step env defs gl info =
   (* if [check_type] is true, then creates a type constraint for the 
      proof-to-be *)
   let tycon = Pretyping.OfType (Option.init check_type (Evd.evar_concl info)) in
@@ -142,7 +142,7 @@ let refine env check_type step defs gl info =
    Ou bien de demander à l'autre but de suivre l'instanciation du clear.
    Je pense. *)
 (* Implements the clear tactic *)
-let clear idents defs gl info =
+let clear idents _ defs gl info =
   let rdefs = ref defs in
   let cleared_info = Evarutil.clear_hyps_in_evi rdefs info idents in
   let cleared_env = Environ.reset_with_named_context (Evd.evar_hyps cleared_info) 
@@ -188,7 +188,7 @@ let remove_hyp_body env sigma id =
     apply_to_hyp_and_dependent_on (Environ.named_context_val env) id
       (fun (_,c,t) _ ->
 	match c with
-	| None -> Util.error ((Names.string_of_id id)^" is not a local definition") (*arnaud: erroor ou pas ?*)
+	| None -> Util.error ((Names.string_of_id id)^" is not a local definition") (*arnaud: error ou pas ?*)
 	| Some c ->(id,None,t))
       (fun (id',c,t as d) sign ->
 	((* arnaud: if !check then*)
@@ -237,22 +237,40 @@ let clear_body env idents defs gl =
 
 
 (* if then else on expressions *)
-let cond b ~thn ~els defs goal info =
-  if b defs goal info then
-    thn defs goal info
+let cond b ~thn ~els env defs goal info =
+  if b env defs goal info then
+    thn env defs goal info
   else 
-    els defs goal info
+    els env defs goal info
 
 (* monadic bind on expressions *)
-let bind e f defs goal info =
-  f (e defs goal info) defs goal info
-
+let bind e f env defs goal info =
+  f (e env defs goal info) env defs goal info
 
 (* monadic return on expressions *)
-let return v _ _ _ = v
+let return v _ _ _ _ = v
+
+(* map combinator which may usefully complete [bind] *)
+let map f e env defs goal info =
+  f (e env defs goal info)
+
+(* binary map combinator *)
+let map2 f e1 e2 env defs goal info =
+  f (e1 env defs goal info) (e2 env defs goal info)
 
 
+(* [concl] is the conclusion of the current goal *)
+let concl _ _ _ info =
+  Evd.evar_concl info
 
+(* [hyps] is the [named_context_val] representing the hypotheses
+   of the current goal *)
+let hyps _ _ _ info =
+  Evd.evar_hyps info
+
+(* [env] is the current [Environ.env] containing both the 
+   environment in which the proof is ran, and the goal hypotheses *)
+let env env _ _ _ = env
   
 (* arnaud: remplacer par un "print goal" I guess suppose. 
 (* This function returns a new goal where the evars have been

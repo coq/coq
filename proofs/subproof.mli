@@ -63,7 +63,7 @@ type tactic
 
 
 (* Applies a tactic to the current subproof. *)
-val apply : tactic -> subproof -> subproof
+val apply : tactic -> Environ.env -> subproof -> subproof
 
 (* arnaud: à recommenter *)
 (* Transforms a function of type 
@@ -96,6 +96,9 @@ val extend_list_of_tactics : tactic list -> tactic -> tactic list -> tactic
 
 (* Interpetes the ";" (semicolon) of Ltac. *)
 val tac_then : tactic -> tactic -> tactic
+
+(* Interpretes the "solve" tactical. *)
+val tac_solve : tactic -> tactic
 
 
 (* Reorders the open goals of the given pointer, according to the 

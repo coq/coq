@@ -140,6 +140,28 @@ type interp_sign =
       last_loc : Util.loc }
 
 
+
+type interp_genarg_type =
+  (glob_sign -> raw_generic_argument -> glob_generic_argument) *
+  (interp_sign -> glob_generic_argument -> 
+    typed_generic_argument) *
+  (Mod_subst.substitution -> glob_generic_argument -> glob_generic_argument)
+
+let extragenargtab =
+  ref (Gmap.empty : (string,interp_genarg_type) Gmap.t)
+let add_interp_genarg id f =
+  extragenargtab := Gmap.add id f !extragenargtab
+let lookup_genarg id = 
+  try Gmap.find id !extragenargtab
+  with Not_found -> failwith ("No interpretation function found for entry "^id)
+
+let lookup_genarg_glob   id = let (f,_,_) = lookup_genarg id in f
+let lookup_interp_genarg id = let (_,f,_) = lookup_genarg id in f
+let lookup_genarg_subst  id = let (_,_,f) = lookup_genarg id in f
+
+
+
+
 (*****************)
 (* Globalization *)
 (*****************)
@@ -880,6 +902,10 @@ let try_interp_ltac_var coerce ist env (loc,id) =
   let v = List.assoc id ist.lfun in
   try coerce v with CannotCoerceTo s -> error_ltac_variable loc id env v s
 
+let interp_ltac_var coerce ist env locid =
+  try try_interp_ltac_var coerce ist env locid
+  with Not_found -> Util.anomaly "Detected as ltac var at interning time"
+
 (* arnaud: commenter ? *)
 let coerce_to_intro_pattern env = function
   | VIntroPattern ipat -> ipat
@@ -910,24 +936,25 @@ let unintro_pattern = function
 
 (* arnaud: très temporary function *)
 let do_intro = function
-  [x] -> Logic.interprete_simple_tactic_as_single_tactic (Global.env ()) (* arnaud: changer ça probablement *)
-                                                          (Logic.Intro x)
+  [x] -> Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro x)
   | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples (bis)"
 
 let interp_atomic ist = function
   (* Basic tactics *)
   | TacIntroPattern l ->
-         Subproof.single_tactic (do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)))
+         Subproof.tactic_of_goal_tactic (do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)))
   | TacIntrosUntil hyp -> Util.anomaly "Ltacinterp.interp_atomic: todo: TacIntrosUntil"
   | TacIntroMove (ido,ido') ->
+      begin
       match ido with
       | None -> Util.anomaly "Ltacinterp.inter_atomic: todo: TacIntroMove: None"
       | Some id ->
-	  Subproof.single_tactic (Logic.interprete_simple_tactic_as_single_tactic (Global.env () (* arnaud: changer ça probablement *)) (Logic.Intro id))
+	  Subproof.tactic_of_goal_tactic (Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro id))
       (* arnaud:
       h_intro_move (Option.map (interp_fresh_ident ist gl) ido)
       (Option.map (interp_hyp ist gl) ido')
       *)
+      end
   | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: à déplacer ?*)
@@ -940,6 +967,150 @@ let tactic_of_value vle =
   | VTactic (loc,tac) -> tac (* arnaud:remettre les infos de location ?*)
   | VFun _ -> Util.error "A fully applied tactic is expected"
   | _ -> raise NotTactic
+
+let is_variable env id =
+  List.mem id (Termops.ids_of_named_context (Environ.named_context env))
+
+(* Interprets an identifier which must be fresh *)
+let coerce_to_ident fresh env = function
+  | VIntroPattern (IntroIdentifier id) -> id
+  | VConstr c when Term.isVar c & not (fresh & is_variable env (Term.destVar c)) ->
+      (* We need it fresh for intro e.g. in "Tac H = clear H; intro H" *)
+      Term.destVar c
+  | v -> raise (CannotCoerceTo "a fresh identifier")
+
+let interp_ident_gen fresh ist id =
+  let (>>=) = Goal.bind in (* arnaud: déplacer ? *)
+  Goal.env >>= fun env ->
+  Goal.return (
+    try try_interp_ltac_var (coerce_to_ident fresh env) ist (Some env) (Util.dummy_loc,id)
+  with Not_found -> id
+  )
+
+let interp_ident = interp_ident_gen false 
+let interp_fresh_ident = interp_ident_gen true
+
+
+let coerce_to_int = function
+  | VInteger n -> n
+  | v -> raise (CannotCoerceTo "an integer")
+
+let interp_int ist locid =
+  try try_interp_ltac_var coerce_to_int ist None locid
+  with Not_found -> Util.user_err_loc(fst locid,"interp_int",str "Unbound variable")
+
+let interp_int_or_var ist = function
+  | ArgVar locid -> interp_int ist locid
+  | ArgArg n -> n
+
+let coerce_to_hyp env = function
+  | VConstr c when Term.isVar c -> Term.destVar c
+  | VIntroPattern (IntroIdentifier id) when is_variable env id -> id
+  | _ -> raise (CannotCoerceTo "a variable")
+
+(* Interprets a bound variable (especially an existing hypothesis) *)
+let interp_hyp ist (loc,id as locid) =
+  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
+  Goal.env >>= fun env ->
+  Goal.return (
+    (* Look first in lfun for a value coercible to a variable *)
+    try try_interp_ltac_var (coerce_to_hyp env) ist (Some env) locid
+    with Not_found -> 
+      (* Then look if bound in the proof context at calling time *)
+      if is_variable env id then id
+      else Util.user_err_loc (loc,"eval_variable",Nameops.pr_id id ++ str " not found")
+  )
+
+(* Interprets a qualified name *)
+let coerce_to_reference env v =
+  try match v with
+  | VConstr c -> global_of_constr c (* may raise Not_found *)
+  | _ -> raise Not_found
+  with Not_found -> raise (CannotCoerceTo "a reference")
+
+let interp_reference ist env = function
+  | ArgArg (_,r) -> r
+  | ArgVar locid -> 
+      interp_ltac_var (coerce_to_reference env) ist (Some env) locid
+
+let pf_interp_reference ist ov = (* arnaud: renommer avec "goal" à la place de "proof" ?*)
+  let (>>=) = Goal.bind in (* arnaud: à déplacer comme d'hab ?*)
+  Goal.env >>= fun env ->
+  Goal.return (interp_reference ist env ov)
+
+(* arnaud: peut-être ne faut-il pas toujours renvoyer un Goal.expression,
+   certaines tactiques ne dépendente pas des buts, ce qui change largement
+   l'interprétation des arguments. Donc peut-être faut il un type de retourn
+   somme, où seuls les trucs qui sont nécessairement des Goal.expression 
+   typent ainsi. *)
+let rec interp_genarg ist x =
+  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
+  match genarg_tag x with
+  | BoolArgType -> Goal.return (in_gen wit_bool (out_gen globwit_bool x))
+  | IntArgType -> Goal. return (in_gen wit_int (out_gen globwit_int x))
+  | IntOrVarArgType ->
+      Goal.return (
+	in_gen wit_int_or_var
+          (ArgArg (interp_int_or_var ist (out_gen globwit_int_or_var x)))
+      )
+  | StringArgType ->
+      Goal.return (in_gen wit_string (out_gen globwit_string x))
+  | PreIdentArgType ->
+      Goal.return (in_gen wit_pre_ident (out_gen globwit_pre_ident x))
+  | IntroPatternArgType ->
+      Goal.return (
+	in_gen wit_intro_pattern
+          (interp_intro_pattern ist (out_gen globwit_intro_pattern x))
+      )
+  | IdentArgType ->
+      interp_fresh_ident ist (out_gen globwit_ident x) >>= fun id ->
+      Goal.return (in_gen wit_ident id)
+  | VarArgType ->
+      interp_hyp ist (out_gen globwit_var x) >>= fun hyp ->
+      Goal.return (in_gen wit_var hyp)
+  | RefArgType ->
+      pf_interp_reference ist (out_gen globwit_ref x) >>= fun r ->
+      Goal.return (in_gen wit_ref r)
+  | SortArgType ->
+      in_gen wit_sort
+        (destSort 
+	  (pf_interp_constr ist 
+	    (RSort (dloc,out_gen globwit_sort x), None)))
+  | ConstrArgType ->
+      in_gen wit_constr (pf_interp_constr ist (out_gen globwit_constr x))
+  | ConstrMayEvalArgType ->
+      in_gen wit_constr_may_eval (interp_constr_may_eval ist (out_gen globwit_constr_may_eval x))
+  | QuantHypArgType ->
+      in_gen wit_quant_hyp
+        (interp_declared_or_quantified_hypothesis ist 
+          (out_gen globwit_quant_hyp x))
+  | RedExprArgType ->
+      in_gen wit_red_expr (pf_interp_red_expr ist (out_gen globwit_red_expr x))
+  | OpenConstrArgType casted ->
+      in_gen (wit_open_constr_gen casted) 
+        (pf_interp_open_constr casted ist 
+          (snd (out_gen (globwit_open_constr_gen casted) x)))
+  | ConstrWithBindingsArgType ->
+      in_gen wit_constr_with_bindings
+        (interp_constr_with_bindings ist (out_gen globwit_constr_with_bindings x))
+  | BindingsArgType ->
+      in_gen wit_bindings
+        (interp_bindings ist (out_gen globwit_bindings x))
+  | List0ArgType ConstrArgType -> interp_genarg_constr_list0 ist x
+  | List1ArgType ConstrArgType -> interp_genarg_constr_list1 ist x
+  | List0ArgType VarArgType -> interp_genarg_var_list0 ist  x
+  | List1ArgType VarArgType -> interp_genarg_var_list1 ist  x
+  | List0ArgType _ -> app_list0 (interp_genarg ist ) x
+  | List1ArgType _ -> app_list1 (interp_genarg ist ) x
+  | OptArgType _ -> app_opt (interp_genarg ist ) x
+  | PairArgType _ -> app_pair (interp_genarg ist ) (interp_genarg ist ) x
+  | ExtraArgType s -> 
+      match tactic_genarg_level s with
+      | Some n -> 
+          (* Special treatment of tactic arguments *)
+          in_gen (wit_tactic n) (out_gen (globwit_tactic n) x)
+      | None -> 
+          lookup_interp_genarg s ist gl x
 
 (* arnaud: commenter et renommer *)
 let other_eval_tactic ist = function

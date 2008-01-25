@@ -37,7 +37,7 @@ val unfocus : 'a proof -> unit
 (*** ***)
 (* arnaud: cette section, si courte qu'elle est, mérite probablement un titre *)
 
-val run_tactic : Subproof.tactic -> 'a proof -> unit
+val run_tactic : Environ.env -> Subproof.tactic -> 'a proof -> unit
 
 (*** **)
 (* arnaud: hack pour debugging *)
@@ -47,7 +47,7 @@ val start_proof :
 
 val pr_subgoals : (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
 
-val db_run_tactic_on : int -> Subproof.tactic -> unit
+val db_run_tactic_on : Environ.env -> int -> Subproof.tactic -> unit
 
 val hide_interp : (unit proof -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic) -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic
 

@@ -73,15 +73,15 @@ let rec catchable_exception = function
 
 (* arnaud: on va faire les règles une par une, puis on fait l'interpréteur *)
 
-let interprete_simple_tactic_as_single_tactic env = function
+let interprete_simple_tactic_as_single_tactic = function
   | Intro id -> (* arnaud: vérifier que "id" n'apparaît pas.*)
-               Goal.refine env true (
+               Goal.refine true (
                    Rawterm.RLambda (Util.dummy_loc, Name id,
 			    Rawterm.RHole (Util.dummy_loc, Evd.InternalHole),
 		            Rawterm.RHole (Util.dummy_loc, Evd.InternalHole)
 			    )
 	       )
-  | Refine t -> Goal.refine env true t
+  | Refine t -> Goal.refine true t
   | _ -> Util.anomaly "fonction à rebrancher" (*arnaud: ... *)
 
 
