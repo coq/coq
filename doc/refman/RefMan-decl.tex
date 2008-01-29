@@ -1,0 +1,809 @@
+\newcommand{\DPL}{Mathematical Proof Language}
+
+\chapter{The \DPL\label{DPL}\index{DPL}}
+
+\section{Introduction}
+
+\subsection{Foreword}
+
+In this chapter, we describe an alternative language that may be used
+to do proofs using the Coq proof assistant.  The language described
+here uses the same objects (proof-terms) as Coq, but it differs in the
+way proofs are described. This language was created by Pierre
+Corbineau at the Radboud University of Nijmegen, The Netherlands.
+
+The intent is to provide language where proofs are less formalism-{}
+and implementation-{}sensitive, and in the process to ease a bit the
+learning of computer-{}aided proof verification.
+
+\subsection{What is a declarative proof ?{}}
+In vanilla Coq, proofs are written in the imperative style: the user
+issues commands that transform a so called proof state until it
+reaches a state where the proof is completed. In the process, the user
+mostly described the transitions of this system rather than the
+intermediate states it goes through.
+
+The purpose of a declarative proof language is to take the opposite
+approach where intermediate states are always given by the user, but
+the transitions of the system are automated as much as possible.
+
+\subsection{Well-formedness and Completeness}
+
+The \DPL{} introduces a notion of well-formed
+proofs which are weaker than correct (and complete)
+proofs. Well-formed proofs are actually proof script where only the
+reasoning is incomplete. All the other aspects of the proof are
+correct:
+\begin{itemize}
+\item All objects refered to exist where they are used
+\item Conclusion steps actually prove something related to the
+  conclusion of the theorem (the {\tt thesis}.
+\item Hypothesis introduction steps are done when the goal is an
+  implication with a corresponding assumption.
+\item Sub-objects in the elimination steps for tuples are correct
+  sub-objects of the tuple being decomposed.
+\item Patterns in case analysis are type-correct, and induction is well guarded.
+\end{itemize}
+
+\subsection{Note for tactics users}
+
+This section explain what differences the casual Coq user will
+experience using the \DPL .
+\begin{enumerate}
+\item The focussing mechanism is constrained so that only one goal at
+  a time is visible.
+\item Giving a statement that Coq cannot prove does not produce an
+  error, only a warning: this allows to go on with the proof and fill
+  the gap later.
+\item Tactics can still be used for justifications and after
+{\texttt{escape}}.
+\end{enumerate}
+
+\subsection{Compatibility}
+
+The \DPL{} is available for all Coq interfaces that use
+text-based interaction, including:
+\begin{itemize}
+\item the command-{}line toplevel {\texttt{coqtop}}
+\item the native GUI {\texttt{coqide}}
+\item the Proof-{}General emacs mode
+\item Cezary Kaliszyk'{}s Web interface
+\item L.E. Mamane'{}s tmEgg TeXmacs plugin
+\end{itemize}
+
+However it is not supported by structured editors such as PCoq.
+
+
+
+\section{Syntax}
+
+Here is a complete formal description of the syntax for DPL commands.
+
+\begin{figure}[htbp]
+\begin{centerframe}
+\begin{tabular}{lcl@{\qquad}r}
+  instruction & ::= & {\tt proof} \\ 
+  &  $|$ & {\tt assume } \nelist{statement}{\tt and}
+  \zeroone{[{\tt and } \{{\tt we have}\}-clause]} \\
+  &  $|$ & \{{\tt let},{\tt be}\}-clause \\
+  &  $|$ & \{{\tt given}\}-clause \\
+  &  $|$ & \{{\tt consider}\}-clause {\tt  from} term \\
+  &  $|$ & ({\tt have} $|$ {\tt then} $|$ {\tt thus} $|$ {\tt hence}]) statement
+  justification \\
+  &  $|$ &  \zeroone{\tt thus} ($\sim${\tt =}|{\tt =}$\sim$) \zeroone{\ident{\tt :}}\term\relax justification \\  &  $|$ & {\tt suffices} (\{{\tt to have}\}-clause $|$
+  \nelist{statement}{\tt and } \zeroone{{\tt and} \{{\tt to have}\}-clause})\\
+  & & {\tt to show} statement justification \\ 
+  &  $|$ & ({\tt claim} $|$ {\tt focus on}) statement \\
+  &  $|$ & {\tt take} \term \\
+  &  $|$ & {\tt define} \ident \sequence{var}{,}  {\tt  as} \term\\
+  &  $|$ & {\tt reconsider} (\ident $|$ {\tt thesis}) {\tt  as} type\\
+  &  $|$ & 
+  {\tt per} ({\tt cases}$|${\tt induction}) {\tt on} \term \\
+  &  $|$ & {\tt per cases of} type justification \\
+  &  $|$ & {\tt suppose} \zeroone{\nelist{ident}{,} {\tt and}}~
+  {\tt is is }pattern\\
+  &          & \zeroone{{\tt such that} \nelist{statement} {\tt and} \zeroone{{\tt and} \{{\tt we have}\}-clause}} \\
+  &  $|$ & {\tt end} 
+  ({\tt proof} $|$ {\tt claim} $|$ {\tt focus} $|$ {\tt cases} $|$ {\tt induction}) \\
+  & $|$ & {\tt escape} \\
+  & $|$ & {\tt return} \medskip \\
+  \{$\alpha,\beta$\}-clause & ::=& $\alpha$ \nelist{var}{,}~
+  $\beta$ {\tt such that} \nelist{statement}{\tt and } \\
+  & & \zeroone{{\tt and } \{$\alpha,\beta$\}-clause} \medskip\\
+  statement   & ::= & \zeroone{\ident {\tt :}} type  \\
+  & $|$ & {\tt thesis} \\
+  & $|$ & {\tt thesis for} \ident \medskip \\
+  var    & ::= & \ident \zeroone{{\tt :} type} \medskip \\
+  justification & ::= & 
+  \zeroone{{\tt by} ({\tt *} | \nelist{\term}{,})}
+  ~\zeroone{{\tt using} tactic} \\
+\end{tabular}
+\end{centerframe}
+\caption{Syntax of mathematical proof commands}
+\end{figure}
+
+The lexical conventions used here follows those of section \ref{lexical}.
+
+
+Conventions:\begin{itemize}
+
+ \item {\texttt{<{}tactic>{}}} stands for an Coq tactic.
+
+ \end{itemize}
+
+\subsection{Temporary names}
+
+In proof commands where an optional name is asked for, ommiting the
+name will trigger the creation of a fresh temporary name (e.g. for a
+hypothesis). Temporary names always start with an undescore '\_'
+character (e.g. {\tt \_hyp0}). Temporary names have a lifespan of one
+command: they get erased after the next command. They can however be safely in the step after their creation.
+
+\section{Language description}
+
+\subsection{Starting and Ending a mathematical proof}
+
+
+ The standard way to use the \DPL is to first state a {\texttt{Lemma/Theorem/Definition}} and then use the {\texttt{proof}} command to switch the current subgoal to mathematical mode.  After the proof is completed, the {\texttt{end proof}} command will close the mathematical proof. If any subgoal remains to be proven, they will be displayed using the usual Coq display.
+
+\begin{coq_example}
+Theorem this_is_trivial: True.
+proof.
+  thus thesis.
+end proof.
+Qed.
+\end{coq_example}
+
+The {\texttt{proof}} command only applies to \emph{one subgoal}, thus
+if several sub-goals are already present, the {\texttt{proof .. end
+    proof}} sequence has to be used several times.
+
+\begin{coq_eval}
+Theorem T: (True /\ True) /\ True.
+  split. split.
+\end{coq_eval}
+\begin{coq_example}
+  Show.
+  proof. (* first subgoal *)
+    thus thesis.
+  end proof.
+  trivial. (* second subgoal *)
+  proof. (* third subgoal *)
+    thus thesis.
+  end proof.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+As with all other block structures, the {\texttt{end proof}} command
+assumes that your proof is complete. If not, executing it will be
+equivalent to admitting that tehe statement is proven: A warning will
+be issued and you will not be able to run the {\texttt{Qed}}
+command. Instead, you can run {\texttt{Admitted}} if you wish to start
+another theorem and come back
+later.
+
+\begin{coq_example}
+Theorem this_is_not_so_trivial: False.
+proof.
+end proof. (* here a warning is issued *)
+Qed. (* fails : the proof in incomplete *)
+Admitted. (* Oops! *)
+\end{coq_example}
+\begin{coq_eval}
+Reset this_is_not_so_trivial.   
+\end{coq_eval}
+
+\subsection{Switching modes}
+
+When writing a mathematical proof, you may wish to use procedural
+tactics at some point. One way to do so is to write a using-{}phrase
+in a deduction step (see section~\ref{justifications}). The other way
+is to use an {\texttt{escape...return}} block.
+
+\begin{coq_eval}  
+Theorem T: True.
+proof.
+\end{coq_eval}
+\begin{coq_example}
+ Show.
+ escape.
+ auto.
+ return.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+The return statement expects all subgoals to be closed, otherwise a
+warning is issued and the proof cannot be saved anymore.
+
+It is possible to use the {\texttt{proof}} command inside an
+{\texttt{escape...return}} block, thus nesting a mathematical proof
+inside a procedural proof inside a mathematical proof ...
+
+\subsection{Computation steps}
+
+The {\tt reconsider ... as} command allows to change the type of a hypothesis or of {\tt thesis} to a convertible one.
+
+\begin{coq_eval}
+Theorem T: let a:=false in let b:= true in ( if a then True else False -> if b then True else False).
+intros a b.
+proof.
+assume H:(if a then True else False).
+\end{coq_eval}
+\begin{coq_example}
+ Show.
+ reconsider H as False.
+ reconsider thesis as True.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+
+\subsection{Deduction steps}
+
+The most common instruction in a mathematical proof is the deduction step:
+ it asserts a new statement (a formula/type of the \CIC) and tries to prove it using a user-provided indication : the justification. The asserted statement is then added as a hypothesis to the proof context.
+
+\begin{coq_eval}
+Theorem T: forall x, x=2 -> 2+x=4.
+proof.
+let x be such that H:(x=2).
+\end{coq_eval} 
+\begin{coq_example}
+ Show.
+ have H':(2+x=2+2) by H.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+It is very often the case that the justifications uses the last hypothesis introduced in the context, so the {\tt then} keyword can be used as a shortcut, e.g. if we want to do the same as the last example :
+ 
+\begin{coq_eval}
+Theorem T: forall x, x=2 -> 2+x=4.
+proof.
+let x be such that H:(x=2).
+\end{coq_eval} 
+\begin{coq_example}
+ Show.
+ then (2+x=2+2).
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+In this example, you can also see the creation of a temporary name {\tt \_hyp}.
+
+\subsection{Iterated equalities}
+
+A common proof pattern when doing a chain of deductions, is to do
+multiple rewriting steps over the same term, thus proving the
+corresponding equalities. The iterated equalities are a syntactic
+support for this kind of reasoning:
+
+\begin{coq_eval}
+Theorem T: forall x, x=2 -> x + x = x * x.
+proof.
+let x be such that H:(x=2).
+\end{coq_eval} 
+\begin{coq_example}
+ Show.
+ have (4 = 4).
+        ~= (2 * 2).
+        ~= (x * x) by H.
+        =~ (2 + 2).
+        =~ H':(x + x) by H.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Notice that here we use temporary names heavily.
+
+\subsection{Subproofs}
+
+When an intermediate step in a proof gets too complicated or involves a well contained set of intermediate deductions, it can be useful to insert its proof as a subproof of the current proof. this is done by using the {\tt claim ... end claim} pair of commands. 
+
+\begin{coq_eval}
+Theorem T: forall x, x + x = x * x -> x = 0 \/ x = 2.
+proof.
+let x be such that H:(x + x = x * x).
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+claim H':((x - 2) * x = 0).
+\end{coq_example}
+
+A few steps later ...
+
+\begin{coq_example}
+thus thesis. 
+end claim.
+\end{coq_example}
+
+Now the rest of the proof can happen.
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsection{Conclusion steps}
+
+The commands described above have a conclusion counterpart, where the
+new hypothesis is used to refine the conclusion.
+
+\begin{figure}[b]
+ \centering
+\begin{tabular}{c|c|c|c|c|}
+        X       & \,simple\, & \,with previous step\, & 
+               \,opens sub-proof\, & \,iterated equality\, \\
+\hline
+intermediate step & {\tt have} & {\tt then} & 
+               {\tt claim} & {\tt $\sim$=/=$\sim$}\\ 
+conclusion step & {\tt thus} & {\tt hence} & 
+                {\tt focus on} & {\tt thus $\sim$=/=$\sim$}\\ 
+\hline
+\end{tabular}
+\caption{Correspondance between basic forward steps and conclusion steps}
+\end{figure}
+
+Let us begin with simple examples :
+
+\begin{coq_eval}
+Theorem T: forall (A B:Prop), A -> B -> A /\ B.
+intros A B HA HB.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+hence B.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+In the next example, we have to use {\tt thus} because {\tt HB} is no longer
+the last hypothesis.
+
+\begin{coq_eval}
+Theorem T: forall (A B C:Prop), A -> B -> C -> A /\ B /\ C.
+intros A B C HA HB HC.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+thus B by HB.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+The command fails the refinement process cannot find a place to fit
+the object in a proof of the conclusion.
+
+
+\begin{coq_eval}
+Theorem T: forall (A B C:Prop), A -> B -> C -> A /\ B.
+intros A B C HA HB HC.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+hence C. (* fails *)
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+The refinement process may induce non
+reversible choices, e.g. when proving a disjunction it may {\it
+  choose} one side of the disjunction.
+
+\begin{coq_eval}
+Theorem T: forall (A B:Prop), B -> A \/ B.
+intros A B HB.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+hence B.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+In this example you can see that the right branch was chosen since {\tt D} remains to be proved.
+
+\begin{coq_eval}
+Theorem T: forall (A B C D:Prop), C -> D -> (A /\ B) \/ (C /\ D).
+intros A B C D HC HD.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+thus C by HC.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Now for existential statements, we can use the {\tt take} command to
+choose {\tt 2} as an explicit witness of existence.
+
+\begin{coq_eval}
+Theorem T: forall (P:nat -> Prop), P 2 -> exists x,P x.
+intros P HP.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+take 2.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+It is also possible to prove the existence directly.
+
+\begin{coq_eval}
+Theorem T: forall (P:nat -> Prop), P 2 -> exists x,P x.
+intros P HP.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+hence (P 2).
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Here a more involved exmaple where the choice of {\tt P 2} propagates
+the choice of {\tt 2} to another part of the formula.
+
+\begin{coq_eval}
+Theorem T: forall (P:nat -> Prop) (R:nat -> nat -> Prop), P 2 -> R 0 2 -> exists x, exists y, P y /\ R x y.
+intros P R HP HR.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+thus (P 2) by HP.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Now, an example with the {\tt suffices} command. {\tt suffices}
+is a sort of dual for {\tt have}: it allows to replace the conclusion
+(or part of it) by a sufficient condition. 
+
+\begin{coq_eval}
+Theorem T: forall (A B:Prop) (P:nat -> Prop), (forall x, P x -> B) -> A -> A /\ B.
+intros A B P HP HA.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+suffices to have x such that HP':(P x) to show B by HP,HP'.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Finally, an example where {\tt focus} is handy : local assumptions.  
+
+\begin{coq_eval}
+Theorem T: forall (A:Prop) (P:nat -> Prop), P 2 -> A -> A /\ (forall x, x = 2 -> P x).
+intros A P HP HA.
+proof.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+focus on (forall x, x = 2 -> P x).
+let x be such that (x = 2).
+hence thesis by HP.
+end focus.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsection{Declaring an Abbreviation}
+
+In order to shorten long expressions, it is possible to use the {\tt
+  define ... as ...} command to give a name to recurring expressions.
+
+\begin{coq_eval}
+Theorem T: forall x, x = 0 -> x + x = x * x .
+proof.
+let x be such that H:(x = 0).
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+define sqr x as (x * x).
+reconsider thesis as (x + x = sqr x).
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsection{Introduction steps}
+
+When the {\tt thesis} consists of a hypothestical formula (implication
+or universal quantification (e.g. \verb+A -> B+) , it is possible to
+assume the hypotetical part {\tt A} and then prove {\tt B}. In the
+\DPL{}, this comes in two syntactic flavours that are semantically
+equivalent : {\tt let} and {\tt assume}. Their syntax is designed so that {\tt let} works better for universal quantifiers and {\tt assume} for implications.
+
+\begin{coq_eval}
+Theorem T: forall (P:nat -> Prop), forall x, P x -> P x.
+proof.
+let P:(nat -> Prop).
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+let x:nat.
+assume HP:(P x).
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+In the {\tt let} variant, the type of the assumed objet is optional
+provided it can be deduced from the command. The objects introduced by
+let can be followed by assumptions using {\tt such that}.
+
+\begin{coq_eval}
+Theorem T: forall (P:nat -> Prop), forall x, P x -> P x.
+proof.
+let P:(nat -> Prop).
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+let x. (* fails because x's type is not clear *) 
+let x be such that HP:(P x). (* here x's type is inferred from (P x) *)
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+In the {\tt assume } variant, the type of the assumed objet is mandatory but the name is optional :
+
+\begin{coq_eval}
+Theorem T: forall (P:nat -> Prop), forall x, P x -> P x -> P x.
+proof.
+let P:(nat -> Prop).
+let x:nat.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+assume (P x). (* temporary name created *)
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+After {\tt such that}, it is also the case :
+
+\begin{coq_eval}
+Theorem T: forall (P:nat -> Prop), forall x, P x -> P x.
+proof.
+let P:(nat -> Prop).
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+let x be such that (P x). (* temporary name created *)
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsection{Tuple elimination steps}
+
+In the \CIC, many objects dealt with in simple proofs are tuples :
+pairs , records, existentially quantified formulae. These are so
+comman that the \DPL{} provides a mechanism to extract members of
+those tuples, and also objects in tuples within tuples within
+tuples...
+
+\begin{coq_eval}
+Theorem T: forall (P:nat -> Prop) (A:Prop), (exists x, (P x /\ A)) -> A.
+proof.
+let P:(nat -> Prop),A:Prop be such that H:(exists x, P x /\ A) .
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+consider x such that HP:(P x) and HA:A from H.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Here is an example with pairs:
+
+\begin{coq_eval}
+Theorem T: forall p:(nat * nat)%type, (fst p >= snd p) \/ (fst p < snd p).
+proof.
+let p:(nat * nat)%type.
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+consider x:nat,y:nat from p.
+reconsider thesis as (x >= y \/ x < y). 
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+It is sometimes desirable to combine assumption and tuple
+decomposition. This can be done using the {\tt given} command.
+
+\begin{coq_eval}
+Theorem T: forall P:(nat -> Prop), (forall n , P n -> P (n - 1)) -> 
+(exists m, P m) -> P 0.
+proof.
+let P:(nat -> Prop) be such that HP:(forall n , P n -> P (n - 1)).
+\end{coq_eval} 
+\begin{coq_example}
+Show.
+given m such that Hm:(P m).  
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+ 
+\subsection{Disjunctive reasoning}
+
+In some proofs (most of them usually) one has to consider several
+cases and prove that the {\tt thesis} holds in all the cases. This is
+done by first specifying which object will be subject to case
+distinction (usually a disjunction) using {\tt per cases}, and then specifying which case is being proved by using {\tt suppose}.
+
+
+\begin{coq_eval}
+Theorem T: forall (A B C:Prop), (A -> C) -> (B -> C) -> (A \/ B) -> C.
+proof.
+let A:Prop,B:Prop,C:Prop be such that HAC:(A -> C) and HBC:(B -> C).
+assume HAB:(A \/ B).
+\end{coq_eval} 
+\begin{coq_example}
+per cases on HAB.
+suppose A.
+  hence thesis by HAC.
+suppose HB:B.
+  thus thesis by HB,HBC.
+end cases.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+The proof is well formed (but incomplete) even if you type {\tt end
+ cases} or the next {\tt suppose} before the previous case is proved.
+
+If the disjunction is derived from a more general principle, e.g. the
+excluded middle axiom), it is desirable to just specify which instance
+of it is being used :
+
+\begin{coq_eval}
+Section Coq.
+\end{coq_eval}
+\begin{coq_example}
+Hypothesis EM : forall P:Prop, P \/ ~ P.
+\end{coq_example} 
+\begin{coq_eval}
+Theorem T: forall (A C:Prop), (A -> C) -> (~A -> C) -> C.
+proof.
+let A:Prop,C:Prop be such that HAC:(A -> C) and HNAC:(~A -> C).
+\end{coq_eval} 
+\begin{coq_example}
+per cases of (A \/ ~A) by EM.
+suppose (~A).
+  hence thesis by HNAC.
+suppose A.
+  hence thesis by HAC.
+end cases.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsection{Proofs per cases}
+
+If the case analysis is to be made on a particular object, the script
+is very similar: it starts with {\tt per cases on }\emph{object} instead.
+
+\begin{coq_eval}
+Theorem T: forall (A C:Prop), (A -> C) -> (~A -> C) -> C.
+proof.
+let A:Prop,C:Prop be such that HAC:(A -> C) and HNAC:(~A -> C).
+\end{coq_eval} 
+\begin{coq_example}
+per cases on (EM A).
+suppose (~A).
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+End Coq.
+\end{coq_eval}
+
+If the object on which a case analysis occurs in the statement to be
+proved, the command {\tt suppose it is }\emph{pattern} is better
+suited than {\tt suppose}. \emph{pattern} may contain nested patterns
+with {\tt as} clauses. A detailled description of patterns is to be
+found in figure \ref{term-syntax-aux}. here is an example.
+
+\begin{coq_eval}
+Theorem T: forall (A B:Prop) (x:bool), (if x then A else B) -> A \/ B.
+proof.
+let A:Prop,B:Prop,x:bool.
+\end{coq_eval} 
+\begin{coq_example}
+per cases on x.
+suppose it is true.
+  assume A.
+  hence A.
+suppose it is false.
+  assume B.
+  hence B.
+end cases.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsection{Proofs by induction} 
+
+Proofs by induction are very similar to proofs per cases: they start
+with {\tt per induction on }{\tt object} and proceed with {\tt suppose
+  it is }\emph{pattern}{\tt and }\emph{induction hypothesis}. The
+induction hypothesis can be given explicitly or identified by the
+sub-object $m$ it refers to using {\tt thesis for }\emph{m}. 
+
+\begin{coq_eval}
+Theorem T: forall (n:nat), n + 0 = n.
+proof.
+let n:nat.
+\end{coq_eval} 
+\begin{coq_example}
+per induction on n.
+suppose it is 0.
+  thus (0 + 0 = 0).
+suppose it is (S m) and H:thesis for m.
+  then (S (m + 0) = S m).
+  thus =~ (S m + 0).
+end induction.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsection{Justifications}\label{justifications}
+
+
+Intuitively, justifications are hints for the system to understand how
+to prove the statements the user types in. In the case of this
+language justifications are made of two components:
+
+Justification objects : {\texttt{by}} followed by a comma-{}separated
+list of objects that will be used by a selected tactic to prove the
+statement. This defaults to the empty list (the statement should then
+be tautological). The * wildcard provides the usual tactics behaviour:
+use all statements in local context. However, this wildcard should be
+avoided since it reduces the robustness of the script.
+
+Justification tactic : {\texttt{using}} followed by a Coq tactic that
+is executed to prove the statement. The default is a solver for
+(intuitionistic) first-{}order with equality.
+
+\section{More details and Formal Semantics}
+
+I suggest the users looking for more information have a look at the
+paper \cite{corbinea08types}. They will find in that paper a formal
+semantics of the proof state transition induces by mathematical
+commands.
