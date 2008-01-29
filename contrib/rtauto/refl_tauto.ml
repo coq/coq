@@ -292,7 +292,7 @@ let rtauto_tac gls=
   let prf = 
     try project (search_fun (init_state [] formula)) 
     with Not_found ->
-      errorlabstrm "rtauto" (Pp.str "rtauto could'nt find any proof") in
+      errorlabstrm "rtauto" (Pp.str "rtauto couldn't find any proof") in
   let search_end_time = System.get_time () in
   let _ = if !verbose then
     begin
