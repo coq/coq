@@ -23,12 +23,12 @@ open Typeclasses
 open Implicit_quantifiers
 (*i*)
 
-type binder_list = (identifier located * constr_expr) list
+type binder_list = (identifier located * bool * constr_expr) list
 type binder_def_list = (identifier located * identifier located list * constr_expr) list
  
 val binders_of_lidents : identifier located list -> local_binder list
 
-val declare_implicit_proj : typeclass -> constant -> Impargs.manual_explicitation list -> unit
+val declare_implicit_proj : typeclass -> constant -> Impargs.manual_explicitation list -> bool -> unit
 
 val infer_super_instances : env -> constr list ->
   named_context -> named_context -> types list * identifier list * named_context

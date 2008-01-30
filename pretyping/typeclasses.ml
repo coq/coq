@@ -219,6 +219,7 @@ let solve_instanciation_problem = ref (fun _ _ _ _ -> assert false)
 
 let resolve_typeclass env ev evi (evd, defined as acc) =
   try
+    assert(evi.evar_body = Evar_empty);
     !solve_instanciation_problem env evd ev evi
   with Exit -> acc
 
@@ -269,16 +270,22 @@ let is_implicit_arg k =
     | InternalHole -> true
     | _ -> false
 
+let destClassApp c = 
+  match kind_of_term c with
+    | App (ki, args) when isInd ki -> 
+	Some (destInd ki, args)
+    | _ when isInd c -> Some (destInd c, [||])
+    | _ -> None
+
 let resolve_typeclasses ?(check=true) env sigma evd =
   let evm = Evd.evars_of evd in
   let tc_evars = 
     let f ev evi acc =
       let (l, k) = Evd.evar_source ev evd in
 	if not check || is_implicit_arg k then
-	  match kind_of_term evi.evar_concl with
-	    | App(ki, args) when isInd ki -> 
-		if is_class (destInd ki) then Evd.add acc ev evi
-		else acc
+	  match destClassApp evi.evar_concl with
+	    | Some (i, args) when is_class i -> 
+		Evd.add acc ev evi
 	    | _ -> acc
 	else acc
     in Evd.fold f evm Evd.empty

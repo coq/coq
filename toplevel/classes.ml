@@ -28,11 +28,22 @@ open Rawterm
 open Topconstr
 (*i*)
 
+open Decl_kinds
+open Entries
+
+let hint_db = "typeclass_instances"
+
+let add_instance_hint inst = 
+  Auto.add_hints false [hint_db] (Vernacexpr.HintsResolve [CRef (Ident (dummy_loc, inst))])
+
+let declare_instance (_,id) =
+  add_instance_hint id
+
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 (* let mismatched_defs env n m = mismatched_ctx_inst env Definitions n m *)
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
-type binder_list = (identifier located * constr_expr) list
+type binder_list = (identifier located * bool * constr_expr) list
 
 let interp_binders_evars isevars env avoid l =
   List.fold_left
@@ -84,7 +95,7 @@ let rec unfold n f acc =
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 open Topconstr
 
-let declare_implicit_proj c proj imps =
+let declare_implicit_proj c proj imps sub =
   let len = List.length c.cl_context in
   let (ctx, _) = decompose_prod_n (len + 1) (Typeops.type_of_constant (Global.env()) proj) in
   let expls =
@@ -98,16 +109,17 @@ let declare_implicit_proj c proj imps =
       aux 1 [] ctx
   in 
   let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
+    if sub then add_instance_hint (id_of_label (con_label proj));
     Impargs.declare_manual_implicits true (ConstRef proj) true expls
       
-let declare_implicits impls cl =
+let declare_implicits impls subs cl =
   let projs = Recordops.lookup_projections cl.cl_impl in
-    List.iter2 
-      (fun c imps -> 
+    Util.list_iter3
+      (fun c imps sub -> 
 	match c with 
 	  | None -> assert(false)
-	  | Some p -> declare_implicit_proj cl p imps)
-      projs impls;
+	  | Some p -> declare_implicit_proj cl p imps sub)
+      projs impls subs;
     let len = List.length cl.cl_context in
     let indimps = 
       list_fold_left_i 
@@ -173,7 +185,7 @@ let mk_interning_data env na impls typ =
     
 let interp_fields_evars isevars env avoid l =
   List.fold_left
-    (fun (env, uimpls, ids, params, impls) ((loc, i), t) -> 
+    (fun (env, uimpls, ids, params, impls) ((loc, i), _, t) -> 
       let impl, t' = interp_type_evars isevars env ~impls t in
       let data = mk_interning_data env i impl t' in
       let d = (i,None,t') in
@@ -240,7 +252,7 @@ let new_class id par ar sup props =
   let env_props, prop_impls, bound, ctx_props, _ = 
     interp_fields_evars isevars env_params bound props 
   in
-    
+  let subs = List.map (fun ((loc, id), b, _) -> b) props in
   (* Instantiate evars and check all are resolved *)
   let isevars,_ = Evarconv.consider_remaining_unif_problems env_props !isevars in
   let sigma = Evd.evars_of isevars in
@@ -269,20 +281,9 @@ let new_class id par ar sup props =
       cl_props = ctx_props;
       cl_impl = kn }
   in
-    declare_implicits (List.rev prop_impls) k;
+    declare_implicits (List.rev prop_impls) subs k;
     add_class k
     
-open Decl_kinds
-open Entries
-
-let hint_db = "typeclass_instances"
-
-let add_instance_hint inst = 
-  Auto.add_hints false [hint_db] (Vernacexpr.HintsResolve [CRef (Ident (dummy_loc, inst))])
-
-let declare_instance (_,id) =
-  add_instance_hint id
-
 type binder_def_list = (identifier located * identifier located list * constr_expr) list
 
 let binders_of_lidents l =
@@ -394,7 +395,9 @@ let new_instance ctx (instid, bk, cl) props =
 	  App (c, args) -> 
 	    let cl = Option.get (class_of_constr c) in
 	      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
-	| _ -> assert false)
+	| _ -> 
+	    let cl = Option.get (class_of_constr c) in
+	      cl, ctx, [])
   in
   let env' = push_named_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
@@ -482,12 +485,10 @@ let module_qualid = qualid_of_dirpath (dirpath_of_string "Coq.Classes.Init")
 let tactic_qualid = make_qualid (dirpath_of_string "Coq.Classes.Init") (id_of_string "typeclass_instantiation")
   
 let tactic_expr = Tacexpr.TacArg (Tacexpr.Reference (Qualid (dummy_loc, tactic_qualid)))
-let tactic = lazy (Library.require_library [(dummy_loc, module_qualid)] None;
-		   Tacinterp.interp tactic_expr)
+let tactic = lazy (Tacinterp.interp tactic_expr)
 
 let _ =
   Typeclasses.solve_instanciation_problem :=
     (fun env evd ev evi -> 
-	solve_by_tac env evd ev evi (Lazy.force tactic))
-      
-    
+      Library.require_library [(dummy_loc, module_qualid)] None; (* may be inefficient *)
+      solve_by_tac env evd ev evi (Lazy.force tactic))
