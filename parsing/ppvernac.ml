@@ -694,8 +694,8 @@ let rec pr_vernac = function
 	  pr_and_type_binders_arg par ++
 	  spc () ++ str":" ++ spc() ++ pr_rawsort (snd ar) ++
 	  spc () ++ str"where" ++ spc () ++
-	  prlist_with_sep (fun () -> str";" ++ spc()) (pr_lident_constr (spc () ++ str":" ++ spc())) props )
-	  
+	  prlist_with_sep (fun () -> str";" ++ spc()) 
+	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props )
 	
  | VernacInstance (sup, (instid, bk, cl), props) -> 
      hov 1 (

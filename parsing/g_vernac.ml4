@@ -47,6 +47,7 @@ let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
 let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
+let of_type_with_opt_coercion = Gram.Entry.create "vernac:of_type_with_opt_coercion"
 
 let get_command_entry () =
   match Decl_mode.get_current_mode () with
@@ -117,7 +118,8 @@ let no_coercion loc (c,x) =
 
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext thm_token def_body typeclass_context typeclass_constraint;
+  GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
+    typeclass_context typeclass_constraint;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -525,7 +527,7 @@ GEXTEND Gram
 (*     | id = identref -> id, CHole (loc, None) ] ] *)
 (*   ; *)
   typeclass_field_type:
-    [ [ id = identref; ":"; t = lconstr -> id, t ] ]
+    [ [ id = identref; oc = of_type_with_opt_coercion; t = lconstr -> id, oc, t ] ]
   ;
   typeclass_field_def:
     [ [ id = identref; params = LIST0 identref; ":="; t = lconstr -> id, params, t ] ]

@@ -230,7 +230,7 @@ type vernac_expr =
 	local_binder list * (* params *)
 	sort_expr located * (* arity *)
 	local_binder list * (* constraints *)
-	(lident * constr_expr) list (* props *)
+	(lident * bool * constr_expr) list (* props, with substructure hints *)
 	
   | VernacInstance of
       local_binder list * (* super *)
