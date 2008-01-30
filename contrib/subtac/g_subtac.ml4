@@ -139,7 +139,9 @@ VERNAC COMMAND EXTEND Subtac_Admit_Obligations
     END
 
 VERNAC COMMAND EXTEND Subtac_Set_Solver
-| [ "Obligations" "Tactic" ":=" tactic(t) ] -> [ Tacinterp.add_tacdef false [((dummy_loc, id_of_string "program_simpl"), true, t)] ]
+| [ "Obligations" "Tactic" ":=" tactic(t) ] -> [ 
+    Subtac.require_library "Coq.Program.Tactics";
+    Tacinterp.add_tacdef false [((dummy_loc, id_of_string "obligations_tactic"), true, t)] ]
 END
 
 VERNAC COMMAND EXTEND Subtac_Show_Obligations
