@@ -262,6 +262,14 @@ let rec list_fold_right_and_left f l hd =
     | a::l -> let hd = aux (a::tl) l in f hd a tl
    in aux [] l
 
+let list_iter3 f l1 l2 l3 =
+  let rec iter = function
+    | ([], [], []) -> ()
+    | ((h1::t1), (h2::t2), (h3::t3)) -> f h1 h2 h3; iter (t1,t2,t3)
+    | (_, _, _) -> invalid_arg "map3"
+  in 
+  iter (l1,l2,l3)
+
 let list_iter_i f l = list_fold_left_i (fun i _ x -> f i x) 0 () l
 
 let list_for_all_i p = 

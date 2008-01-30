@@ -111,6 +111,7 @@ val list_index : 'a -> 'a list -> int
 val list_unique_index : 'a -> 'a list -> int 
 (* [list_index0] behaves as [list_index] except that it starts counting at 0 *)
 val list_index0 : 'a -> 'a list -> int
+val list_iter3 : ('a -> 'b -> 'c -> unit) -> 'a list -> 'b list -> 'c list -> unit
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_fold_right_and_left :
