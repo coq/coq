@@ -31,9 +31,9 @@ let build_table l =
 
 let is_keyword = 
   build_table
-    [ "AddPath"; "Axiom"; "Chapter"; "CoFixpoint";
-      "CoInductive"; "Defined"; "Definition"; 
-      "End"; "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
+    [ "AddPath"; "Axiom"; "Chapter"; "Check"; "CoFixpoint";
+      "CoInductive"; "Defined"; "Definition"; "End"; "Eval"; "Example"; 
+      "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses"; 
       "Immediate"; "Implicit"; "Import"; "Inductive"; 
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac"; 
@@ -48,7 +48,7 @@ let is_keyword =
       "Arguments";
       "Instance"; "Class"; "where"; "Instantiation";
       (* Program *)
-      "Program Definition"; "Program Fixpoint"; "Program Lemma";
+      "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
       "Program Instance";
       (*i (* correctness *)
