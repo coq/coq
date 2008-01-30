@@ -33,6 +33,17 @@ ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 | [ ] -> [ true ]
 END
 
+let pr_occurences _prc _prlc _prt l =
+  let rec aux = function
+    | i :: l -> Pp.int i ++ Pp.spc () ++ aux l
+    | [] -> Pp.mt()
+  in aux l
+
+ARGUMENT EXTEND occurences TYPED AS int list PRINTED BY pr_occurences
+| [ integer(i) occurences(l) ] -> [ i :: l ]
+| [ ] -> [ [] ]
+END
+
 (* For Setoid rewrite *)
 let pr_morphism_signature _ _ _ s =
   spc () ++ Setoid_replace.pr_morphism_signature s
