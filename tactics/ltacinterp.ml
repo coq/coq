@@ -60,6 +60,12 @@ let skip_metaid = function
 
 let tac_tab = Hashtbl.create 17
 
+let add_tactic s t =
+  if Hashtbl.mem tac_tab s then
+    Util.errorlabstrm ("Refiner.add_tactic: ") 
+      (str ("Cannot redeclare tactic "^s));
+  Hashtbl.add tac_tab s t
+
 let lookup_tactic s =
   try 
     Hashtbl.find tac_tab s
@@ -929,33 +935,7 @@ let rec interp_intro_pattern ist = function
 and interp_case_intro_pattern ist =
   List.map (List.map (interp_intro_pattern ist))
 
-(*arnaud: très temporary function *)
-let unintro_pattern = function
-  | IntroIdentifier id -> id
-  | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples"
 
-(* arnaud: très temporary function *)
-let do_intro = function
-  [x] -> Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro x)
-  | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples (bis)"
-
-let interp_atomic ist = function
-  (* Basic tactics *)
-  | TacIntroPattern l ->
-         Subproof.tactic_of_goal_tactic (do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)))
-  | TacIntrosUntil hyp -> Util.anomaly "Ltacinterp.interp_atomic: todo: TacIntrosUntil"
-  | TacIntroMove (ido,ido') ->
-      begin
-      match ido with
-      | None -> Util.anomaly "Ltacinterp.inter_atomic: todo: TacIntroMove: None"
-      | Some id ->
-	  Subproof.tactic_of_goal_tactic (Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro id))
-      (* arnaud:
-      h_intro_move (Option.map (interp_fresh_ident ist gl) ido)
-      (Option.map (interp_hyp ist gl) ido')
-      *)
-      end
-  | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: à déplacer ?*)
 (* For tactic_of_value *)
@@ -1003,6 +983,19 @@ let interp_int_or_var ist = function
   | ArgVar locid -> interp_int ist locid
   | ArgArg n -> n
 
+let int_or_var_list_of_VList = function
+  | VList l -> List.map (fun n -> ArgArg (coerce_to_int n)) l
+  | _ -> raise Not_found
+
+let interp_int_or_var_as_list ist = function
+  | ArgVar (_,id as locid) -> 
+      (try int_or_var_list_of_VList (List.assoc id ist.lfun)
+       with Not_found | CannotCoerceTo _ -> [ArgArg (interp_int ist locid)])
+  | ArgArg n as x -> [x]
+
+let interp_int_or_var_list ist l =
+  List.flatten (List.map (interp_int_or_var_as_list ist) l)
+
 let coerce_to_hyp env = function
   | VConstr c when Term.isVar c -> Term.destVar c
   | VIntroPattern (IntroIdentifier id) when is_variable env id -> id
@@ -1038,6 +1031,88 @@ let pf_interp_reference ist ov = (* arnaud: renommer avec "goal" à la place de 
   Goal.env >>= fun env ->
   Goal.return (interp_reference ist env ov)
 
+
+(* Quantified named or numbered hypothesis or hypothesis in context *)
+(* (as in Inversion) *)
+let coerce_to_decl_or_quant_hyp env = function
+  | VInteger n -> AnonHyp n
+  | v -> 
+      try NamedHyp (coerce_to_hyp env v)
+      with CannotCoerceTo _ -> 
+	raise (CannotCoerceTo "a declared or quantified hypothesis")
+
+let interp_declared_or_quantified_hypothesis ist = 
+  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
+    function
+  | AnonHyp n -> Goal.return (AnonHyp n)
+  | NamedHyp id ->
+      (* arnaud:let env = pf_env gl in *)
+      Goal.env >>= fun env ->
+      Goal.return (
+	try try_interp_ltac_var 
+	  (coerce_to_decl_or_quant_hyp env) ist (Some env) (Util.dummy_loc,id)
+	with Not_found -> NamedHyp id
+      )
+
+let coerce_to_evaluable_ref env v =
+  let ev = match v with
+    | VConstr c when Term.isConst c -> EvalConstRef (Term.destConst c)
+    | VConstr c when Term.isVar c -> EvalVarRef (Term.destVar c)
+    | VIntroPattern (IntroIdentifier id) when List.mem id (Termops.ids_of_context env) 
+	-> EvalVarRef id
+    | _ -> raise (CannotCoerceTo "an evaluable reference")
+  in
+  if not (Tacred.is_evaluable env ev) then
+    raise (CannotCoerceTo "an evaluable reference")
+  else
+    ev
+
+let interp_evaluable ist env = function
+  | ArgArg (r,Some (loc,id)) ->
+      (* Maybe [id] has been introduced by Intro-like tactics *)
+      (try match Environ.lookup_named id env with
+       | (_,Some _,_) -> EvalVarRef id
+       | _ -> error_not_evaluable (Nameops.pr_id id)
+       with Not_found ->
+       match r with
+       | EvalConstRef _ -> r
+       | _ -> Pretype_errors.error_var_not_found_loc loc id)
+  | ArgArg (r,None) -> r
+  | ArgVar locid -> 
+      interp_ltac_var (coerce_to_evaluable_ref env) ist (Some env) locid
+
+
+(* Interprets a reduction expression *)
+let interp_unfold ist env (l,qid) =
+  (interp_int_or_var_list ist l,interp_evaluable ist env qid)
+
+let interp_flag ist env red =
+  { red with rConst = List.map (interp_evaluable ist env) red.rConst }
+
+let interp_pattern ist sigma env (l,c) = 
+  Util.anomaly "Ltacinterp.interp_pattern: à restaurer"
+  (*arnaud: à restaurer 
+  (interp_int_or_var_list ist l, interp_constr ist sigma env c)
+  *)
+
+let interp_red_expr ist sigma env = function
+  | Unfold l -> Unfold (List.map (interp_unfold ist env) l)
+  | Fold l -> Util.anomaly "Ltacinterp.interp_red_expr: Fold: à restaurer"(*arnaud:à restaurer: Fold (List.map (interp_constr ist sigma env) l)*)
+  | Cbv f -> Cbv (interp_flag ist env f)
+  | Lazy f -> Lazy (interp_flag ist env f)
+  | Pattern l -> Pattern (List.map (interp_pattern ist sigma env) l)
+  | Simpl o -> Simpl (Option.map (interp_pattern ist sigma env) o)
+  | (Red _ |  Hnf | ExtraRedExpr _ | CbvVm as r) -> r
+
+let pf_interp_red_expr ist re = 
+  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  Goal.return (interp_red_expr ist (Evd.evars_of defs) env re)
+
+
+
+
 (* arnaud: peut-être ne faut-il pas toujours renvoyer un Goal.expression,
    certaines tactiques ne dépendente pas des buts, ce qui change largement
    l'interprétation des arguments. Donc peut-être faut il un type de retourn
@@ -1071,46 +1146,95 @@ let rec interp_genarg ist x =
   | RefArgType ->
       pf_interp_reference ist (out_gen globwit_ref x) >>= fun r ->
       Goal.return (in_gen wit_ref r)
-  | SortArgType ->
+(* arnaud: il faut passer à rawconstr un moment où un autre *)
+  | SortArgType -> Util.anomaly "Ltacinterp.interp_genarg: SortArgType: à restaurer"(*arnaud: à restaurer:
       in_gen wit_sort
-        (destSort 
+        (Term.destSort 
 	  (pf_interp_constr ist 
-	    (RSort (dloc,out_gen globwit_sort x), None)))
-  | ConstrArgType ->
+	    (RSort (dloc,out_gen globwit_sort x), None)))*)
+  | ConstrArgType -> Util.anomaly "Ltacinterp.interp_genarg: ConstrArgType: à restaurer"(*arnaud: à restaurer:
       in_gen wit_constr (pf_interp_constr ist (out_gen globwit_constr x))
-  | ConstrMayEvalArgType ->
+		     *)
+  | ConstrMayEvalArgType ->Util.anomaly "Ltacinterp.interp_genarg: ConstrMayEvalArgType: à restaurer"(*arnaud: à restaurer:
       in_gen wit_constr_may_eval (interp_constr_may_eval ist (out_gen globwit_constr_may_eval x))
+*)
   | QuantHypArgType ->
-      in_gen wit_quant_hyp
-        (interp_declared_or_quantified_hypothesis ist 
-          (out_gen globwit_quant_hyp x))
+      interp_declared_or_quantified_hypothesis ist 
+	(out_gen globwit_quant_hyp x) >>= fun qhyp ->
+      Goal.return (in_gen wit_quant_hyp qhyp)
   | RedExprArgType ->
-      in_gen wit_red_expr (pf_interp_red_expr ist (out_gen globwit_red_expr x))
-  | OpenConstrArgType casted ->
+      pf_interp_red_expr ist (out_gen globwit_red_expr x) >>= fun red ->
+      Goal.return (in_gen wit_red_expr red)
+  | OpenConstrArgType casted -> Util.anomaly "Ltacinterp.interp gen_arg: OpenConstrArgType: à restaurer" (* arnaud: à restaurer:
       in_gen (wit_open_constr_gen casted) 
         (pf_interp_open_constr casted ist 
           (snd (out_gen (globwit_open_constr_gen casted) x)))
-  | ConstrWithBindingsArgType ->
+				*)
+  | ConstrWithBindingsArgType -> Util.anomaly "Ltacinterp.interp gen_arg: ConstrWithBindingArgType: à restaurer" (* arnaud: à restaurer:
       in_gen wit_constr_with_bindings
         (interp_constr_with_bindings ist (out_gen globwit_constr_with_bindings x))
-  | BindingsArgType ->
+													  *)
+  | BindingsArgType -> Util.anomaly "Ltacinterp.interp gen_arg: BindingsArgType: à restaurer" (* arnaud: à restaurer:
       in_gen wit_bindings
         (interp_bindings ist (out_gen globwit_bindings x))
-  | List0ArgType ConstrArgType -> interp_genarg_constr_list0 ist x
-  | List1ArgType ConstrArgType -> interp_genarg_constr_list1 ist x
-  | List0ArgType VarArgType -> interp_genarg_var_list0 ist  x
-  | List1ArgType VarArgType -> interp_genarg_var_list1 ist  x
-  | List0ArgType _ -> app_list0 (interp_genarg ist ) x
-  | List1ArgType _ -> app_list1 (interp_genarg ist ) x
-  | OptArgType _ -> app_opt (interp_genarg ist ) x
-  | PairArgType _ -> app_pair (interp_genarg ist ) (interp_genarg ist ) x
+												      *)
+  | List0ArgType ConstrArgType ->  Util.anomaly "Ltacinterp.interp gen_arg: List0ArgType ConstrArgType: à restaurer" (* arnaud: à restaurer: interp_genarg_constr_list0 ist x*)
+  | List1ArgType ConstrArgType ->  Util.anomaly "Ltacinterp.interp gen_arg: List1ArgType ConstrArgType: à restaurer" (* arnaud: à restaurer: interp_genarg_constr_list1 ist x*)
+  | List0ArgType VarArgType -> Goal.return (interp_genarg_var_list0 ist  x)
+  | List1ArgType VarArgType -> Goal.return (interp_genarg_var_list1 ist  x)
+  | List0ArgType _ -> Util.anomaly "Ltacinterp.interp gen_arg: List0ArgType _: à restaurer" (* arnaud: à restaurer:Goal.return (app_list0 (interp_genarg ist ) x)*)
+  | List1ArgType _ -> Util.anomaly "Ltacinterp.interp gen_arg: List1ArgType _: à restaurer" (* arnaud: à restaurer:Goal.return (app_list1 (interp_genarg ist ) x)*)
+  | OptArgType _ -> Util.anomaly "Ltacinterp.interp gen_arg: OptArgType: à restaurer" (* arnaud: à restaurer:Goal.return (app_opt (interp_genarg ist ) x)*)
+  | PairArgType _ -> Util.anomaly "Ltacinterp.interp gen_arg: PairArgType: à restaurer" (* arnaud: à restaurer:Goal.return (app_pair (interp_genarg ist ) (interp_genarg ist ) x)*)
   | ExtraArgType s -> 
-      match tactic_genarg_level s with
-      | Some n -> 
-          (* Special treatment of tactic arguments *)
-          in_gen (wit_tactic n) (out_gen (globwit_tactic n) x)
-      | None -> 
-          lookup_interp_genarg s ist gl x
+      Goal.return (
+	match Pcoq.tactic_genarg_level s with
+        | Some n -> 
+            (* Special treatment of tactic arguments *)
+            in_gen (Pcoq.wit_tactic n) (out_gen (Pcoq.globwit_tactic n) x)
+	| None -> 
+            lookup_interp_genarg s ist x
+      )
+
+and interp_genarg_var_list0 ist x = Util.anomaly "" (*arnaud:
+  let lc = out_gen (wit_list0 globwit_var) x in
+  let lc = interp_hyp_list ist lc in
+  in_gen (wit_list0 wit_var) lc *)
+
+and interp_genarg_var_list1 ist x = Util.anomaly "" (*arnaud:
+  let lc = out_gen (wit_list1 globwit_var) x in
+  let lc = interp_hyp_list ist lc in
+  in_gen (wit_list1 wit_var) lc*)(*arnaud: très temporary function *)
+let unintro_pattern = function
+  | IntroIdentifier id -> id
+  | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples"
+
+(* arnaud: très temporary function *)
+let do_intro = function
+  [x] -> Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro x)
+  | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples (bis)"
+
+let interp_atomic ist = function
+  (* Basic tactics *)
+  | TacIntroPattern l ->
+         Subproof.tactic_of_goal_tactic (do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)))
+  | TacIntrosUntil hyp -> Util.anomaly "Ltacinterp.interp_atomic: todo: TacIntrosUntil"
+  | TacIntroMove (ido,ido') ->
+      begin
+      match ido with
+      | None -> Util.anomaly "Ltacinterp.inter_atomic: todo: TacIntroMove: None"
+      | Some id ->
+	  Subproof.tactic_of_goal_tactic (Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro id))
+      (* arnaud:
+      h_intro_move (Option.map (interp_fresh_ident ist gl) ido)
+      (Option.map (interp_hyp ist gl) ido')
+      *)
+      end
+  | TacExtend (loc,opn,l) ->
+      let tac = lookup_tactic opn in
+      let args = List.map (interp_genarg ist) l in
+      tac args
+  | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: commenter et renommer *)
 let other_eval_tactic ist = function

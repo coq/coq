@@ -95,6 +95,9 @@ val hyps : Environ.named_context_val expression
    environment in which the proof is ran, and the goal hypotheses *)
 val env : Environ.env expression
 
+(* [defs] is the [Evd.evar_defs] at the current evaluation point *)
+val defs : Evd.evar_defs expression
+
 
 (* arnaud: à remplacer par un print 
 (* This function returns a new goal where the evars have been

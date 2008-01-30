@@ -167,7 +167,7 @@ let declare_tactic loc s cl =
       open Pcoq;
       declare $list:hidden$ end;
       try
-        let _=Tacinterp.add_tactic $se$ (fun [ $list:make_clauses s cl$ ]) in
+        let _=Ltacinterp.add_tactic $se$ (fun [ $list:make_clauses s cl$ ]) in
         List.iter
           (fun s -> Tacinterp.add_primitive_tactic s
               (Tacexpr.TacAtom($default_loc$,

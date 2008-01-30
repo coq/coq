@@ -271,6 +271,10 @@ let hyps _ _ _ info =
 (* [env] is the current [Environ.env] containing both the 
    environment in which the proof is ran, and the goal hypotheses *)
 let env env _ _ _ = env
+
+(* [defs] is the [Evd.evar_defs] at the current evaluation point *)
+let defs _ defs _ _ =
+  defs
   
 (* arnaud: remplacer par un "print goal" I guess suppose. 
 (* This function returns a new goal where the evars have been
