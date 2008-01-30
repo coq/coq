@@ -7,10 +7,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Certified Haskell Prelude.
- * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
- *              91405 Orsay, France *)
+(* Typeclass-based setoids, tactics and standard instances.
+   TODO: explain clrewrite, clsubstitute and so on.
+ 
+   Author: Matthieu Sozeau
+   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
+   91405 Orsay, France *)
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
@@ -33,9 +35,10 @@ Class Setoid (carrier : Type) (equiv : relation carrier) :=
 
 Definition equiv [ Setoid A R ] : _ := R.
 
-(** Subset objects will be first coerced to their underlying type. *)
+(** Subset objects should be first coerced to their underlying type, but that notation doesn't work in the standard case then. *)
 
-Notation " x == y " := (equiv (x :>) (y :>)) (at level 70, no associativity) : type_scope.
+(* Notation " x == y " := (equiv (x :>) (y :>)) (at level 70, no associativity) : type_scope. *)
+Notation " x == y " := (equiv x y) (at level 70, no associativity) : type_scope.
 
 Notation " x =/= y " := (~ x == y) (at level 70, no associativity) : type_scope.
 
@@ -85,6 +88,23 @@ Ltac do_setoid_trans Y :=
   end.
 
 Ltac trans y := do_setoid_trans y.
+
+(** Use the [clsubstitute] command which substitutes an equality in every hypothesis. *)
+
+Ltac clsubst H := 
+  match type of H with
+    ?x == ?y => clsubstitute H ; clear H x
+  end.
+
+Ltac clsubst_nofail :=
+  match goal with
+    | [ H : ?x == ?y |- _ ] => clsubst H ; clsubst_nofail
+    | _ => idtac
+  end.
+  
+(** [subst*] will try its best at substituting every equality in the goal. *)
+
+Tactic Notation "clsubst" "*" := clsubst_nofail.
 
 (** Tactics to immediately solve the goal without user help. *)
 
@@ -146,30 +166,44 @@ Ltac setoid_sat :=
     | [ H : ?x =/= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_equiv H H')
   end.
 
+Ltac setoid_simplify_one :=
+  match goal with
+    | [ H : ?x == ?x |- _ ] => clear H
+    | [ H : ?x == ?y |- _ ] => clsubst H
+    | [ |- ?x =/= ?y ] => let name:=fresh "Hneq" in intro name
+  end.
+
+Ltac setoid_simplify := repeat setoid_simplify_one.
+
 Ltac setoid_saturate := repeat setoid_sat.
 
 Ltac setoidify_tac :=
   match goal with
     | [ s : Setoid ?A ?R, H : ?R ?x ?y |- _ ] => change R with (@equiv A R s) in H
-    | [ s : Setoid ?A ?R |- ?R ?x ?y ] => change (R x y) with (@equiv A R s x y)
+    | [ s : Setoid ?A ?R |- context C [ ?R ?x ?y ] ] => change (R x y) with (@equiv A R s x y)
   end.
 
 Ltac setoidify := repeat setoidify_tac.
 
-Definition respectful [ sa : Setoid a eqa, sb : Setoid b eqb ] (m : a -> b) : Prop :=
+Definition respectful [ sa : Setoid a eqa, sb : Setoid b eqb ] 
+  (m : a -> b) : Prop :=
   forall x y, eqa x y -> eqb (m x) (m y).
 
-Class [ sa : Setoid a eqa, sb : Setoid b eqb ] => Morphism (m : a -> b) :=
+Class [ sa : Setoid a eqa, sb : Setoid b eqb ] => 
+  Morphism (m : a -> b) :=
   respect : respectful m.
 
 (** Here we build a setoid instance for functions which relates respectful ones only. *)
 
-Definition respecting [ Setoid a R, Setoid b R' ] : Type := { morph : a -> b | respectful morph }.
+Definition respecting [ Setoid a R, Setoid b R' ] : Type := 
+  { morph : a -> b | respectful morph }.
 
-Ltac program_simpl ::= try red ; default_program_simpl ; try tauto.
+Ltac obligations_tactic ::= try red ; program_simpl ; try tauto.
 
-Program Instance [ sa : Setoid a R, sb : Setoid b R' ] => arrow_setoid : 
+Program Instance [ sa : Setoid a R, sb : Setoid b R' ] => 
+  arrow_setoid : 
   Setoid ({ morph : a -> b | respectful morph })
+
   (fun (f g : respecting) => forall (x y : a), R x y -> R' (`f x) (`g y)) :=
   equiv_prf := Build_equivalence _ _ _ _ _.
 
@@ -325,4 +359,4 @@ Program Instance [ sa : Setoid a R, sb : Setoid b R' ] => arrow_setoid :
 
 (** Reset the default Program tactic. *)
 
-Ltac program_simpl ::= default_program_simpl.
+Ltac obligations_tactic ::= program_simpl.

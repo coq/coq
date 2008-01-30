@@ -22,6 +22,14 @@ Unset Strict Implicit.
 
 Require Export Coq.Classes.SetoidClass.
 
+(** The [DecidableSetoid] class asserts decidability of a [Setoid]. It can be useful in proofs to reason more 
+   classically. *)
+
+Require Import Coq.Logic.Decidable.
+
+Class [ Setoid A R ] => DecidableSetoid :=
+  setoid_decidable : forall x y : A, decidable (x == y).
+
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
 Class [ Setoid A R ] => EqDec :=

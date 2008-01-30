@@ -83,7 +83,7 @@ let resolve_morphism_evd env evd app =
   let evm' = Evd.evars_of evd' in
     match Evd.evar_body (Evd.find evm' (fst (destEvar ev))) with
 	Evd.Evar_empty -> raise Not_found
-      | Evd.Evar_defined c -> evd := Evarutil.nf_evar_defs evd'; c
+      | Evd.Evar_defined c -> evd := Evarutil.nf_evar_defs evd'; Evarutil.nf_isevar !evd c
 
 let is_equiv env sigma t = 
   isConst t && Reductionops.is_conv env sigma (Lazy.force setoid_equiv) t
@@ -136,7 +136,6 @@ let resolve_morphism env sigma direction oldt m args args' =
   evars := Evarutil.nf_evar_defs !evars;
   let evm = Evd.evars_of !evars in
   let ctxargs = List.map (Reductionops.nf_evar evm) subst in
-(*   let ctx, sup = Util.list_chop len ctxargs in *)
   let m' = Reductionops.nf_evar evm m' in
   let appproj = applistc (mkConst proj) (ctxargs @ [m' ; morph_instance]) in
   let projargs, respars, typeargs = 
@@ -159,26 +158,41 @@ let resolve_morphism env sigma direction oldt m args args' =
 	[ a ; r ; s ] -> (proof, (a, r, s, oldt, newt))
       | _ -> assert(false)
       
-let build_new gl env setoid direction origt newt hyp hypinfo concl =
-  let rec aux t = 
+let build_new gl env setoid direction occs origt newt hyp hypinfo concl =
+  let is_occ occ = occs = [] || List.mem occ occs in
+  let rec aux t occ = 
     match kind_of_term t with
       | _ when eq_constr t origt -> 
-	  Some (hyp, hypinfo)
+	  if is_occ occ then
+	    Some (hyp, hypinfo), succ occ
+	  else None, succ occ
+
       | App (m, args) ->
-	  let args' = Array.map aux args in
-	    if array_for_all (fun x -> x = None) args' then None
+	  let args', occ = 
+	    Array.fold_left 
+	      (fun (acc, occ) arg -> let res, occ = aux arg occ in (res :: acc, occ))
+	      ([], occ) args
+	  in
+	  let res = 
+	    if List.for_all (fun x -> x = None) args' then None
 	    else 
-	      (try Some (resolve_morphism env (project gl) direction t m args args')
-		with Not_found -> None)
+	      let args' = Array.of_list (List.rev args') in
+		(try Some (resolve_morphism env (project gl) direction t m args args')
+		  with Not_found -> None)
+	  in res, occ
+
       | Prod (_, x, b) -> 
-	  let x', b' = aux x, aux b in
+	  let x', occ = aux x occ in
+	  let b', occ = aux b occ in
+	  let res = 
 	    if x' = None && b' = None then None
 	    else 
 	      (try Some (resolve_morphism env (project gl) direction t (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |])
 		with Not_found -> None)
-		
-      | _ -> None
-  in aux concl
+	  in res, occ
+
+      | _ -> None, occ
+  in aux concl 1
 
 let decompose_setoid_eqhyp env sigma c dir t = 
   match kind_of_term t with
@@ -194,29 +208,53 @@ let decompose_setoid_eqhyp env sigma c dir t =
 	  with Not_found -> error "Not a (declared) setoid equality")
     | _ -> error "Not a setoid equality"
 
-let cl_rewrite c left2right gl =
+let cl_rewrite_clause c left2right occs clause gl =
   let env = pf_env gl in
   let sigma = project gl in
   let hyp = pf_type_of gl c in
   let hypt, (typ, rel, setoid, origt, newt as hypinfo) = decompose_setoid_eqhyp env sigma c left2right hyp in
-  let concl = pf_concl gl in
-  let _concltyp = pf_type_of gl concl in
-  let eq = build_new gl env setoid left2right origt newt hypt hypinfo concl in
+  let concl, is_hyp = 
+    match clause with
+	Some ((_, id), _) -> pf_get_hyp_typ gl id, Some id
+      | None -> pf_concl gl, None
+  in
+  let eq, _ = build_new gl env setoid left2right occs origt newt hypt hypinfo concl in
     match eq with  
 	Some (p, (_, _, _, _, t)) -> 
 	  let proj = 
 	    if left2right then 
-	      applistc (Lazy.force coq_proj2)
-		[ mkProd (Anonymous, concl, t) ; mkProd (Anonymous, t, concl) ; p ] 
+	      let proj = if is_hyp <> None then coq_proj1 else coq_proj2 in
+		applistc (Lazy.force proj)
+		  [ mkProd (Anonymous, concl, t) ; mkProd (Anonymous, t, concl) ; p ] 
 	    else 
-	      applistc (Lazy.force coq_proj1)
-		[ mkProd (Anonymous, t, concl) ; mkProd (Anonymous, concl, t) ; p ] 
+	      let proj = if is_hyp <> None then coq_proj2 else coq_proj1 in
+		applistc (Lazy.force proj)
+		  [ mkProd (Anonymous, t, concl) ; mkProd (Anonymous, concl, t) ; p ] 
 	  in
-	    (Tactics.apply proj) gl
+	    (match is_hyp with
+	      | Some id -> Tactics.apply_in true id [proj,NoBindings]
+	      | None -> Tactics.apply proj) gl
       | None -> tclIDTAC gl
 	  
 open Extraargs
 
+
+
 TACTIC EXTEND class_rewrite
-| [ "clrewrite" orient(o) constr(c) ] -> [ cl_rewrite c o ]
+| [ "clrewrite" orient(o) constr(c) "at" occurences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o [] (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) constr(c) "at" occurences(occ) ] -> [ cl_rewrite_clause c o occ None ]
+| [ "clrewrite" orient(o) constr(c) ] -> [ cl_rewrite_clause c o [] None ]
+END
+
+let clsubstitute o c =
+  let is_tac id = match kind_of_term c with Var id' when id' = id -> true | _ -> false in
+    Tacticals.onAllClauses 
+      (fun cl -> 
+	match cl with
+	  | Some ((_,id),_) when is_tac id -> tclIDTAC
+	  | _ -> cl_rewrite_clause c o [] cl)
+
+TACTIC EXTEND map_tac
+| [ "clsubstitute" orient(o) constr(c) ] -> [ clsubstitute o c ]
 END
