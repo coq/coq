@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-emacs-U") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -12,6 +13,8 @@
 
 Require Export ProofIrrelevance.
 Require Export JMeq.
+
+Require Import Coq.Program.Tactics.
 
 (** Notation for heterogenous equality. *)
 
@@ -170,27 +173,36 @@ Ltac simplify_eqs :=
   simpl ; simpl_eqs ; clear_eq_ctx ; clear_refl_eqs ;  
     try subst ; simpl ; repeat simpl_uip ; rewrite_refl_id.
 
-(** A tactic to remove trivial equality guards in hypotheses. *)
+(** A tactic that tries to remove trivial equality guards in induction hypotheses coming
+   from [dependent induction]/[generalize_eqs] invocations. *)
 
 Ltac simpl_IH_eq H :=
-  let tac H' := clear H ; rename H' into H in
-  let H' := fresh "H" in
-    match type of H with
-      | JMeq _ _ -> _ =>
-        assert (H' := H (JMeq_refl _)) ; tac H'
-      | _ = _ -> _ =>
-        assert (H' := H (refl_equal _)) ; tac H'
-    end.
+  match type of H with
+    | JMeq _ _ -> _ =>
+      refine_hyp (H (JMeq_refl _))
+    | ?x = _ -> _ =>
+      refine_hyp (H (refl_equal x))
+    | _ -> ?x = _ -> _ =>
+      refine_hyp (H _ (refl_equal x))
+    | _ -> _ -> ?x = _ -> _ =>
+      refine_hyp (H _ _ (refl_equal x))
+    | _ -> _ -> _ -> ?x = _ -> _ =>
+      refine_hyp (H _ _ _ (refl_equal x))
+    | _ -> _ -> _ -> _ -> ?x = _ -> _ =>
+      refine_hyp (H _ _ _ _ (refl_equal x))
+    | _ -> _ -> _ -> _ -> _ -> ?x = _ -> _ =>
+      refine_hyp (H _ _ _ _ _ (refl_equal x))
+  end.
 
 Ltac simpl_IH_eqs H := repeat simpl_IH_eq H.
 
-Ltac simpl_IHs_eqs := 
+Ltac do_simpl_IHs_eqs := 
   match goal with
-    | [ H : JMeq _ _ -> _ |- _ ] => simpl_IH_eqs H
-    | [ H : _ = _ -> _ |- _ ] => simpl_IH_eqs H
+    | [ H : context [ JMeq _ _ -> _ ] |- _ ] => progress (simpl_IH_eqs H)
+    | [ H : context [ _ = _ -> _ ] |- _ ] => progress (simpl_IH_eqs H)
   end.
 
-Require Import Coq.Program.Tactics.
+Ltac simpl_IHs_eqs := repeat do_simpl_IHs_eqs.
 
 (** The following tactics allow to do induction on an already instantiated inductive predicate
    by first generalizing it and adding the proper equalities to the context, in a maner similar to 
@@ -198,10 +210,10 @@ Require Import Coq.Program.Tactics.
 
 Tactic Notation "dependent" "induction" ident(H) := 
   generalize_eqs H ; clear H ; (intros until 1 || intros until H) ; 
-    induction H ; intros ; subst* ; try discriminates ; try simpl_IHs_eqs.
+    induction H ; intros ; subst* ; try discriminates ; simpl_IHs_eqs.
 
 (** This tactic also generalizes the goal by the given variables before the induction. *)
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) := 
   generalize_eqs H ; clear H ; (intros until 1 || intros until H) ; 
-    generalize l ; clear l ; induction H ; intros ; subst* ; try discriminates ; try simpl_IHs_eqs.
+    generalize l ; clear l ; induction H ; intros ; subst* ; try discriminates ; simpl_IHs_eqs.

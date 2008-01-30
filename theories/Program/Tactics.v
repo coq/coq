@@ -8,7 +8,8 @@
 
 (*i $Id$ i*)
 
-(** This module implements various tactics used to simplify the goals produced by Program. *)
+(** This module implements various tactics used to simplify the goals produced by Program,
+   which are also generally useful. *)
 
 (** Destructs one pair, without care regarding naming. *)
 
@@ -166,6 +167,23 @@ Ltac add_hypothesis H' p :=
     end
   end.
 
+Tactic Notation "pose" constr(c) "as" ident(H) := assert(H:=c).
+
+(** A tactic to refine an hypothesis by supplying some of its arguments. *)
+
+Ltac refine_hyp c :=
+  let H' := fresh "H" in
+  let tac H := assert(H' := c) ; clear H ; rename H' into H in
+    match c with
+      | ?H _ => tac H
+      | ?H _ _ => tac H
+      | ?H _ _ _ => tac H
+      | ?H _ _ _ _ => tac H
+      | ?H _ _ _ _ _ => tac H
+      | ?H _ _ _ _ _ _ => tac H
+      | ?H _ _ _ _ _ _ _ => tac H
+      | ?H _ _ _ _ _ _ _ _ => tac H
+    end.
 
 (** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto with *]
    is overkill and slows things down, better rebind using [Obligations Tactic := tac] in this case, 
@@ -175,6 +193,6 @@ Ltac program_simplify :=
   simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; try autoinjection ; try discriminates ;
     try (solve [ red ; intros ; destruct_conjs ; try autoinjection ; discriminates ]).
 
-Ltac default_program_simpl := program_simplify ; auto with *.
+Ltac program_simpl := program_simplify ; auto with *.
 
-Ltac program_simpl := default_program_simpl.
+Ltac obligations_tactic := program_simpl.

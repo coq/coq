@@ -327,11 +327,4 @@ val tclABSTRACT : identifier option -> tactic -> tactic
 
 val admit_as_an_axiom : tactic
 
-val make_abstract_generalize :     'a ->
-    Names.identifier ->
-    Term.constr ->
-    Sign.rel_context ->
-    Term.types ->
-    Term.types list ->
-    Term.constr list -> Term.constr list -> Term.constr -> Term.constr
 val abstract_generalize : identifier -> tactic

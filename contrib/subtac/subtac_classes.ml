@@ -147,7 +147,9 @@ let new_instance ctx (instid, bk, cl) props =
 	  App (c, args) -> 
 	    let cl = Option.get (class_of_constr c) in
 	      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
-	| _ -> assert false)
+	| _ -> 
+	    let cl = Option.get (class_of_constr c) in
+	      cl, ctx, [])
   in
   let env' = Classes.push_named_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
