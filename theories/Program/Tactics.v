@@ -69,6 +69,22 @@ Ltac revert_last :=
 
 Ltac reverse := repeat revert_last.
 
+(** Clear duplicated hypotheses *)
+
+Ltac clear_dup :=
+  match goal with 
+    | [ H : ?X |- _ ] => 
+      match goal with
+        | [ H' : X |- _ ] =>
+          match H' with
+            | H => fail 2 
+            | _ => clear H' || clear H
+          end
+      end
+  end.
+
+Ltac clear_dups := repeat clear_dup.
+
 (** A non-failing subst that substitutes as much as possible. *)
 
 Tactic Notation "subst" "*" :=
@@ -122,7 +138,7 @@ Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) := destruc
 (** Try to inject any potential constructor equality hypothesis. *)
 
 Ltac autoinjection :=
-  let tac H := inversion H ; subst ; clear H in
+  let tac H := progress (inversion H ; subst ; clear_dups) ; clear H in
     match goal with
       | [ H : ?f ?a = ?f' ?a' |- _ ] => tac H
       | [ H : ?f ?a ?b = ?f' ?a' ?b'  |- _ ] => tac H
@@ -169,11 +185,16 @@ Ltac add_hypothesis H' p :=
 
 Tactic Notation "pose" constr(c) "as" ident(H) := assert(H:=c).
 
+(** A tactic to replace an hypothesis by another term. *)
+
+Ltac replace_hyp H c :=
+  let H' := fresh "H" in
+    assert(H' := c) ; clear H ; rename H' into H.
+
 (** A tactic to refine an hypothesis by supplying some of its arguments. *)
 
 Ltac refine_hyp c :=
-  let H' := fresh "H" in
-  let tac H := assert(H' := c) ; clear H ; rename H' into H in
+  let tac H := replace_hyp H c in
     match c with
       | ?H _ => tac H
       | ?H _ _ => tac H
@@ -190,8 +211,8 @@ Ltac refine_hyp c :=
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
 Ltac program_simplify :=
-  simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; try autoinjection ; try discriminates ;
-    try (solve [ red ; intros ; destruct_conjs ; try autoinjection ; discriminates ]).
+  simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; autoinjections ; try discriminates ;
+    try (solve [ red ; intros ; destruct_conjs ; autoinjections ; discriminates ]).
 
 Ltac program_simpl := program_simplify ; auto with *.
 

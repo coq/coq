@@ -65,22 +65,6 @@ Ltac pi_subset_proof := on_subset_proof pi_subset_proof_hyp.
 
 Ltac pi_subset_proofs := repeat pi_subset_proof.
 
-(** Clear duplicated hypotheses *)
-
-Ltac clear_dup :=
-  match goal with 
-    | [ H : ?X |- _ ] => 
-      match goal with
-        | [ H' : X |- _ ] =>
-          match H' with
-            | H => fail 2 
-            | _ => clear H' || clear H
-          end
-      end
-  end.
-
-Ltac clear_dups := repeat clear_dup.
-
 (** The two preceding tactics in sequence. *)
 
 Ltac clear_subset_proofs :=

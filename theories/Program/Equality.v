@@ -30,9 +30,7 @@ Ltac on_JMeq tac :=
 (** Try to apply [JMeq_eq] to get back a regular equality when the two types are equal. *)
 
 Ltac simpl_one_JMeq :=
-  on_JMeq 
-  ltac:(fun H => let H' := fresh "H" in 
-    assert (H' := JMeq_eq H) ; clear H ; rename H' into H).
+  on_JMeq ltac:(fun H => replace_hyp H (JMeq_eq H)).
 
 (** Repeat it for every possible hypothesis. *)
 
@@ -176,10 +174,21 @@ Ltac simplify_eqs :=
 (** A tactic that tries to remove trivial equality guards in induction hypotheses coming
    from [dependent induction]/[generalize_eqs] invocations. *)
 
+
 Ltac simpl_IH_eq H :=
   match type of H with
-    | JMeq _ _ -> _ =>
-      refine_hyp (H (JMeq_refl _))
+    | @JMeq _ ?x _ _ -> _ =>
+      refine_hyp (H (JMeq_refl x))
+    | _ -> @JMeq _ ?x _ _ -> _ =>
+      refine_hyp (H _ (JMeq_refl x))
+    | _ -> _ -> @JMeq _ ?x _ _ -> _ =>
+      refine_hyp (H _ _ (JMeq_refl x))
+    | _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
+      refine_hyp (H _ _ _ (JMeq_refl x))
+    | _ -> _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
+      refine_hyp (H _ _ _ _ (JMeq_refl x))
+    | _ -> _ -> _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
+      refine_hyp (H _ _ _ _ _ (JMeq_refl x))
     | ?x = _ -> _ =>
       refine_hyp (H (refl_equal x))
     | _ -> ?x = _ -> _ =>
@@ -198,22 +207,49 @@ Ltac simpl_IH_eqs H := repeat simpl_IH_eq H.
 
 Ltac do_simpl_IHs_eqs := 
   match goal with
-    | [ H : context [ JMeq _ _ -> _ ] |- _ ] => progress (simpl_IH_eqs H)
+    | [ H : context [ @JMeq _ _ _ _ -> _ ] |- _ ] => progress (simpl_IH_eqs H)
     | [ H : context [ _ = _ -> _ ] |- _ ] => progress (simpl_IH_eqs H)
   end.
 
 Ltac simpl_IHs_eqs := repeat do_simpl_IHs_eqs.
 
+Ltac simpl_depind := subst* ; autoinjections ; try discriminates ; simpl_JMeq ; simpl_IHs_eqs.
+
 (** The following tactics allow to do induction on an already instantiated inductive predicate
    by first generalizing it and adding the proper equalities to the context, in a maner similar to 
    the BasicElim tactic of "Elimination with a motive" by Conor McBride. *)
 
+(** First a tactic to prepare for a dependent induction on an hypothesis [H]. *)
+
+Ltac prepare_depind H :=
+  let oldH := fresh "old" H in
+    generalize_eqs H ; rename H into oldH ; (intros until H || intros until 1) ; 
+      generalize dependent oldH ;
+        try (intros _ _) (* If the goal is not dependent on the hyp, we can prove a stronger statement *).
+
+(** The [do_depind] higher-order tactic takes an induction tactic as argument and an hypothesis 
+   and starts a dependent induction using this tactic. *)
+
+Ltac do_depind tac H :=
+  prepare_depind H ; tac H ; simpl_depind.
+
+(** Calls [destruct] on the generalized hypothesis, results should be similar to inversion. *)
+
+Tactic Notation "dependent" "destruction" ident(H) := 
+  do_depind ltac:(fun H => destruct H ; intros) H ; subst*.
+
+(** Then we have wrappers for usual calls to induction. One can customize the induction tactic by 
+   writting another wrapper calling do_depind. *)
+
 Tactic Notation "dependent" "induction" ident(H) := 
-  generalize_eqs H ; clear H ; (intros until 1 || intros until H) ; 
-    induction H ; intros ; subst* ; try discriminates ; simpl_IHs_eqs.
+  do_depind ltac:(fun H => induction H ; intros) H.
 
 (** This tactic also generalizes the goal by the given variables before the induction. *)
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) := 
-  generalize_eqs H ; clear H ; (intros until 1 || intros until H) ; 
-    generalize l ; clear l ; induction H ; intros ; subst* ; try discriminates ; simpl_IHs_eqs.
+  do_depind ltac:(fun H => generalize l ; clear l ; induction H ; intros) H.
+
+(** This tactic also generalizes the goal by the given variables before the induction. *)
+
+Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
+  do_depind ltac:(fun H => generalize l ; clear l ; induction H using c ; intros) H.

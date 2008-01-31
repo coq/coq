@@ -223,17 +223,21 @@ Program Instance [ sa : Setoid a R, sb : Setoid b R' ] =>
 (** We redefine respect for binary and ternary morphims because we cannot get a satisfying instance of [Setoid (a -> b)] from 
    some arbitrary domain and codomain setoids. We can define it on respectful Coq functions though, see [arrow_setoid] above. *)
 
-Definition binary_respectful [ sa : Setoid a eqa, sb : Setoid b eqb, Setoid c eqc ] (m : a -> b -> c) : Prop :=
+Definition binary_respectful [ sa : Setoid a eqa, sb : Setoid b eqb, Setoid c eqc ]
+  (m : a -> b -> c) : Prop :=
   forall x y, eqa x y -> 
     forall z w, eqb z w -> eqc (m x z) (m y w).
 
-Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc ] => BinaryMorphism (m : a -> b -> c) :=
+Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc ] => 
+  BinaryMorphism (m : a -> b -> c) :=
   respect2 : binary_respectful m.
 
-Definition ternary_respectful [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc, Setoid d eqd ] (m : a -> b -> c -> d) : Prop :=
+Definition ternary_respectful [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc, Setoid d eqd ]
+  (m : a -> b -> c -> d) : Prop :=
   forall x y, eqa x y -> forall z w, eqb z w -> forall u v, eqc u v -> eqd (m x z u) (m y w v).
 
-Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc, sd : Setoid d eqd ] => TernaryMorphism (m : a -> b -> c -> d) :=
+Class [ sa : Setoid a eqa, sb : Setoid b eqb, sc : Setoid c eqc, sd : Setoid d eqd ] => 
+  TernaryMorphism (m : a -> b -> c -> d) :=
   respect3 : ternary_respectful m.
 
 (** Definition of the usual morphisms in [Prop]. *)

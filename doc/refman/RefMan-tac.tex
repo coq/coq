@@ -1547,6 +1547,86 @@ non dependent} premises of the goal. More generally, any combination of an
 
 \end{Variant}
 
+\subsection{\tt dependent induction \ident
+  \tacindex{dependent induction}
+  \label{DepInduction}}
+
+The \emph{experimental} tactic \texttt{dependent induction} performs
+induction-inversion on an instantiated inductive predicate.
+One needs to first require the {\tt Coq.Program.Equality} module to use
+this tactic. The tactic is based on the BasicElim tactic by Conor
+McBride \cite{DBLP:conf/types/McBride00} and the work of Cristina Cornes
+around inversion \cite{DBLP:conf/types/CornesT95}. From an instantiated
+inductive predicate and a goal it generates an equivalent goal where the
+hypothesis has been generalised over its indices which are then
+constrained by equalities to be the right instances. This permits to
+state lemmas without resorting to manually adding these equalities and
+still get enough information in the proofs. 
+A simple example is the following:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Lemma le_minus : forall n:nat, n < 1 -> n = 0.
+intros n H ; induction H.
+\end{coq_example}
+
+Here we didn't get any information on the indices to help fullfill this
+proof. The problem is that when we use the \texttt{induction} tactic
+we lose information on the hypothesis instance, notably that the second
+argument is \texttt{1} here. Dependent induction solves this problem by
+adding the corresponding equality to the context.
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Require Import Coq.Program.Equality.
+Lemma le_minus : forall n:nat, n < 1 -> n = 0.
+intros n H ; dependent induction H.
+\end{coq_example}
+
+The subgoal is cleaned up as the tactic tries to automatically
+simplify the subgoals with respect to the generated equalities.
+In this enriched context it becomes possible to solve this subgoal.
+\begin{coq_example}
+reflexivity.
+\end{coq_example}
+
+Now we are in a contradictory context and the proof can be solved.
+\begin{coq_example}
+inversion H.
+\end{coq_example}
+
+This technique works with any inductive predicate.
+In fact, the \texttt{dependent induction} tactic is just a wrapper around
+the \texttt{induction} tactic. One can make its own variant by just
+writing a new tactic based on the definition found in
+\texttt{Coq.Program.Equality}. Common useful variants are the following,
+defined in the same file:
+
+\begin{Variants}
+\item {\tt dependent induction {\ident} generalizing {\ident$_1$} \dots
+    {\ident$_n$}}\tacindex{dependent induction ... generalizing}
+  
+  Does dependent induction on the hypothesis {\ident} but first
+  generalizes the goal by the given variables so that they are
+  universally quantified in the goal. This is generally what one wants
+  to do with the variables that are inside some constructors in the
+  induction hypothesis. The other ones need not be further generalized.
+
+\item {\tt dependent destruction}\tacindex{dependent destruction}
+  
+  Does the generalization of the instance but uses {\tt destruct}
+  instead of {\tt induction} on the generalized hypothesis. This gives
+  results equivalent to {\tt inversion} or {\tt dependent inversion} if
+  the hypothesis is dependent.
+\end{Variants}
+
+A larger example of dependent induction and an explanation of the
+underlying technique are developed in section~\ref{dependent-induction-example}.
+
 \subsection{\tt decompose [ {\qualid$_1$} \dots\ {\qualid$_n$} ] \term
 \label{decompose}
 \tacindex{decompose}}

@@ -276,7 +276,8 @@ Scheme tree_forest_ind := Induction for tree Sort Prop
   with forest_tree_ind := Induction for forest Sort Prop.
 \end{coq_example}
 
-Then we can build the combined induction principle:
+Then we can build the combined induction principle which gives the
+conjunction of the conclusions of each individual principle:
 \begin{coq_example}
 Combined Scheme tree_forest_mutind from tree_forest_ind, forest_tree_ind.
 \end{coq_example}
@@ -585,6 +586,247 @@ inversion H using leminv.
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
+
+\section[\tt dependent induction]{\tt dependent induction\label{dependent-induction-example}}
+\def\depind{{\tt dependent induction}~}
+\def\depdestr{{\tt dependent destruction}~}
+
+The tactics \depind and \depdestr are another solution for inverting
+inductive predicate instances and potentially doing induction at the
+same time. It is based on the Basic Elim tactic of Conor McBride which
+work by abstracting each argument of an inductive instance by a variable
+and constraining it by equalities afterwards. This way, the usual 
+{\tt induction} and {\tt destruct} tactics can be applied to the
+abstracted instance and after simplification of the equalities we get
+the expected goals.
+
+The abstracting tactic is called {\tt generalize\_eqs} and it takes as
+argument an hypothesis to generalize. It uses the {\tt JMeq} datatype
+defined in {\tt Coq.Logic.JMeq}, hence we need to require it before.
+For example, revisiting the first example of the inversion documentation above:
+
+\begin{coq_example*}
+Require Import Coq.Logic.JMeq.
+\end{coq_example*}
+
+\begin{coq_eval}
+Inductive Le : nat -> nat -> Set :=
+  | LeO : forall n:nat, Le 0 n
+  | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
+Variable P : nat -> nat -> Prop.
+Variable Q : forall n m:nat, Le n m -> Prop.
+\end{coq_eval}
+
+\begin{coq_example*}
+Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+intros n m H.
+\end{coq_example*}
+\begin{coq_example}
+generalize_eqs H.
+\end{coq_example}
+
+The index {\tt S n} gets abstracted by a variable here, but a
+corresponding equality is added under the abstract instance so that no
+information is actually lost. The goal is now ammenable to do induction
+or case analysis. Note that the abstract instance is also related to the
+original one using an heterogeneous equality that will become a regular
+one once the equalities are substituted. In the non-dependent case where
+the hypothesis does not appear in the goal, this equality is actually
+not needed and we can make it disappear, along with the original
+hypothesis:
+
+\begin{coq_example}
+intros gen_x gen_H _ ; clear H.
+\end{coq_example}
+
+One drawback is that in the branches one will have to
+substitute the equalities back into the instance to get the right
+assumptions. Sometimes injection of constructors will also be needed to
+recover the needed equalities. Also, some subgoals should be directly
+solved because of inconsistent contexts arising from the constraints on 
+ indices. The nice thing is that we can make a tactic based on
+discriminate and injection to automatically do such simplifications in
+any context. This is what the {\tt simpl\_depind} tactic from
+{\tt Coq.Program.Equality} does. For example, compare:
+\begin{coq_example*}
+Require Import Coq.Program.Equality.
+\end{coq_example*}
+\begin{coq_example}
+destruct gen_H.
+\end{coq_example}
+and
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+\begin{coq_example}
+destruct gen_H ; intros ; simpl_depind.
+\end{coq_example}
+
+The higher-order tactic {\tt do\_depind} defined in {\tt
+  Coq.Program.Equality} takes a tactic and combines the
+building blocks we've seen with it: generalizing by equalities, cleaning
+the goal if it's not dependent, calling the given tactic with the
+generalized induction hypothesis as argument and cleaning the subgoals
+with respect to equalities. Its most important instantiations are
+\depind and \depdestr that do induction or simply case analysis on the
+generalized hypothesis. For example we can redo what we've done manually
+with \depdestr:
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+Require Import Coq.Program.Equality.
+Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+intros n m H.
+\end{coq_example*}
+\begin{coq_example}
+dependent destruction H.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+This gives essentially the same result as inversion. Now if the
+destructed hypothesis actually appeared in the goal, the tactic would
+still be able to invert it, contrary to {\tt dependent
+ inversion}. Consider the following example on vectors:
+
+\begin{coq_example*}
+Require Import Coq.Program.Equality.
+Set Implicit Arguments.
+Variable A : Set.
+Inductive vector : nat -> Type := 
+| vnil : vector 0 
+| vcons : A -> forall n, vector n -> vector (S n).
+Goal forall n, forall v : vector (S n), 
+  exists v' : vector n, exists a : A, v = vcons a v'.
+  intros n v.
+\end{coq_example*}
+\begin{coq_example}
+  dependent destruction v.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+In this case, the {\tt v} variable can be replaced in the goal by the
+generalized hypothesis only when it has a type of the form {\tt vector
+ (S n)}, that is only in the second case of the {\tt destruct}. The
+first one is dismissed because {\tt S n <> 0}.
+
+This technique also works with {\tt induction} on inductive
+predicates. We will now develop an example application to the
+theory of simply-typed lambda-calculus in a dependently-typed style:
+
+\begin{coq_example*}
+Inductive type : Type :=
+| base : type
+| arrow : type -> type -> type.
+Notation " t --> t' " := (arrow t t') (at level 20, t' at next level).
+Inductive ctx : Type :=
+| empty : ctx
+| snoc : ctx -> type -> ctx.
+Notation " G , tau " := (snoc G tau) (at level 20, t at next level).
+Fixpoint conc (G D : ctx) : ctx :=
+  match D with
+    | empty => G
+    | snoc D' x => snoc (conc G D') x
+  end.
+Notation " G ; D " := (conc G D) (at level 20).
+Inductive term : ctx -> type -> Type :=
+| ax : forall G tau, term (G, tau) tau
+| weak : forall G tau, 
+  term G tau -> forall tau', term (G, tau') tau
+| abs : forall G tau tau', 
+  term (G , tau) tau' -> term G (tau --> tau')
+| app : forall G tau tau', 
+  term G (tau --> tau') -> term G tau -> term G tau'.
+\end{coq_example*}
+
+We have defined types and contexts which are snoc-lists of types. We
+also have a {\tt conc} operation that concatenates two contexts.
+The {\tt term} datatype represents in fact the possible typing
+derivations of the calculus, which are isomorphic to the well-typed
+terms, hence the name. A term is either an application of:
+\begin{itemize}
+\item the axiom rule to type a reference to the first variable in a context,
+\item the weakening rule to type an object in a larger context
+\item the abstraction or lambda rule to type a function
+\item the application to type an application of a function to an argument
+\end{itemize}
+
+Once we have this datatype we want to do proofs on it, like weakening:
+
+\begin{coq_example*}
+Lemma weakening : forall G D tau, term (G ; D) tau -> 
+  forall tau', term (G , tau' ; D) tau.
+\end{coq_example*}
+\begin{coq_eval}
+  Abort.
+\end{coq_eval}
+
+The problem here is that we can't just use {\tt induction} on the typing
+derivation because it will forget about the {\tt G ; D} constraint
+appearing in the instance. A solution would be to rewrite the goal as:
+\begin{coq_example*}
+Lemma weakening' : forall G' tau, term G' tau -> 
+  forall G D, (G ; D) = G' ->
+  forall tau', term (G, tau' ; D) tau.
+\end{coq_example*}
+\begin{coq_eval}
+  Abort.
+\end{coq_eval}
+
+With this proper separation of the index from the instance and the right
+induction loading (putting {\tt G} and {\tt D} after the inducted-on
+hypothesis), the proof will go through, but it is a very tedious
+process. One is also forced to make a wrapper lemma to get back the
+more natural statement. The \depind tactic aleviates this trouble by
+doing all of this plumbing of generalizing and substituting back automatically.
+Indeed we can simply write:
+
+\begin{coq_example*}
+Require Import Coq.Program.Tactics.
+Lemma weakening : forall G D tau, term (G ; D) tau -> 
+  forall tau', term (G , tau' ; D) tau.
+Proof with simpl in * ; simpl_depind ; auto.
+  intros G D tau H.
+  dependent induction H generalizing G D.
+\end{coq_example*}
+
+This call to \depind has an additional arguments which is a list of
+variables appearing in the instance that should be generalized in the
+goal, so that they can vary in the induction hypotheses. Generally, all
+variables appearing inside constructors of the instantiated hypothesis
+should be generalized. 
+
+\begin{coq_example}
+  Show.
+\end{coq_example}
+
+The {\tt simpl\_depind} tactic includes an automatic tactic that tries
+to simplify equalities appearing at the beginning of induction
+hypotheses, generally using trivial applications of
+reflexiviy. In some cases though, one must help the automation by giving
+some arguments first, using the {\tt narrow} tactic from  
+{\tt Coq.Init.Tactics}.
+
+\begin{coq_example*}
+destruct D... apply weak ; apply ax. apply ax.
+destruct D...
+\end{coq_example*}
+\begin{coq_example}
+Show.
+\end{coq_example}
+\begin{coq_example}
+  narrow IHterm with G empty.
+\end{coq_example}
+
+Then the automation can find that the needed equality {\tt G = G} to
+narrow the induction hypothesis further. This concludes our example.
+
+\SeeAlso The induction \ref{elim}, case \ref{case} and inversion \ref{inversion} tactics.
 
 \section[\tt autorewrite]{\tt autorewrite\label{autorewrite-example}}
 
