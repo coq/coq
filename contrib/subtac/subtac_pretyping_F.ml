@@ -493,7 +493,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let j = 
 	  pretype tycon env isevars lvar 
 	    (RCases (loc, None, [c], [p]))
-	(* Change case info *)
+	in
+	  (* Change case info *)
 	let j' = match kind_of_term j.uj_val with
 	    Case (ci, po, c, br) ->
 	      let pp_info = { ci.ci_pp_info with style = LetPatternStyle } in
