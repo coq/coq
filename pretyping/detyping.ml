@@ -321,6 +321,8 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
     try 
       if !Flags.raw_print then
         RegularStyle
+      else if st = LetPatternStyle then 
+	st
       else if PrintingLet.active (indsp,consnargsl) then
 	LetStyle
       else if PrintingIf.active (indsp,consnargsl) then 
@@ -334,6 +336,8 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       let bl' = Array.map detype bl in
       let (nal,d) = it_destRLambda_or_LetIn_names consnargsl.(0) bl'.(0) in
       RLetTuple (dl,nal,(alias,pred),tomatch,d)
+  | LetPatternStyle when List.length eqnl = 1 -> (* If irrefutable due to some inversion, print as match *) 
+      RLetPattern (dl,(tomatch,(alias,aliastyp)),List.hd eqnl)
   | IfStyle when aliastyp = None ->
       let bl' = Array.map detype bl in
       let nondepbrs =

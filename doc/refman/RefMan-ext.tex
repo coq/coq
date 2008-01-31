@@ -285,17 +285,18 @@ Check (fun x (H:{x=0}+{x<>0}) =>
 Notice that the printing uses the {\tt if} syntax because {\tt sumbool} is
 declared as such (see Section~\ref{printing-options}).
 
-\subsection{Irrefutable patterns: the destructuring {\tt let}
+\subsection{Irrefutable patterns: the destructuring {\tt let} variants 
 \index{let in@{\tt let ... in}}
 \label{Letin}}
-
-
 
 Closed terms (that is not relying on any axiom or variable) in an
 inductive type having only one constructor, say {\tt foo}, have
 necessarily the form \texttt{(foo ...)}. In this case, the {\tt match}
 construction can be written with a syntax close to the {\tt let ... in
-...}  construction. Expression {\tt let
+...}  construction. 
+
+\subsubsection{Destructuring {\tt let}}
+Expression {\tt let
 (}~{\ident$_1$},\ldots,{\ident$_n$}~{\tt ) :=}~{\term$_0$}~{\tt
 in}~{\term$_1$} performs case analysis on {\term$_0$} which must be in
 an inductive type with one constructor with $n$ arguments. Variables
@@ -330,6 +331,35 @@ The general equivalence for an inductive type with one constructors {\tt C} is
 {\tt let ({\ident}$_1$,\ldots,{\ident}$_n$) \zeroone{\ifitem} := {\term} in {\term}'} \\
 $\equiv$~
 {\tt match {\term} \zeroone{\ifitem} with C {\ident}$_1$ {\ldots} {\ident}$_n$ \verb!=>! {\term}' end}
+
+
+\subsubsection{{\tt let} pattern}
+
+Another destructuring {\tt let} syntax is available for inductives with
+one constructor by giving an arbitrary pattern instead of just a tuple
+for all the arguments. For example, the preceding example can be written:
+\begin{coq_eval}
+Reset fst.
+\end{coq_eval}
+\begin{coq_example}
+Definition fst (A B:Set) (p:A * B) := let| pair x _ := p in x.
+\end{coq_example}
+
+This is useful to match deeper inside tuples and also to use notations
+for the pattern, as the syntax {\tt let| p := t in b} allows arbitrary
+patterns to do the deconstruction. For example:
+
+\begin{coq_example}
+Definition deep_tuple (A : Set) (x : (A * A) * (A * A)) : A * A * A * A :=
+  let| ((a,b), (c, d)) := x in (a,b,c,d).
+Notation " x 'with' p " := (exist _ x p) (at level 20).
+Definition proj1_sig' (A :Set) (P : A -> Prop) (t:{ x : A | P x }) : A :=
+  let| x with p := t in x.
+\end{coq_example}
+
+When printing definitions which are written using this construct it
+takes precedence over {\tt let} printing directives for the datatype
+under consideration (see Section~\ref{printing-options}).
 
 \subsection{Controlling pretty-printing of {\tt match} expressions
 \label{printing-options}}
@@ -1432,6 +1462,5 @@ The constraints on the internal level of the occurrences of {\Type}
 
 %%% Local Variables: 
 %%% mode: latex
-%%% TeX-master: "Reference-Manual"
 %%% TeX-master: "Reference-Manual"
 %%% End: 
