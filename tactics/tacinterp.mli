@@ -35,7 +35,7 @@ type value =
   | VConstr of constr
   | VConstr_context of constr
   | VList of value list
-  | VRec of value ref
+  | VRec of (identifier*value) list ref * glob_tactic_expr
 
 (* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =

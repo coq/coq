@@ -90,6 +90,11 @@ Tactic Language
   must not be used elsewhere as variables in the same ltac expression
   (possible source of incompatibility).
 - New syntax "Ltac tac ::= ..." to rebind a tactic to a new expression.
+- "let rec ... in ... " now supports for expressions without explicit
+  parameters; interpretation is lazy to the contrary of "let ... in ...";
+  hence, the "rec" keyword can be used to turn the argument of a
+  "let ... in ..." into a lazy one.
+
 
 Tactics
 
