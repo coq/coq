@@ -27,13 +27,12 @@ open Entries
 (* This local type is used to subtype a constant with a constructor or
    an inductive type. It can also be useful to allow reorderings in
    inductive types *)
-
 type namedobject = 
   | Constant of constant_body
   | IndType of inductive * mutual_inductive_body
   | IndConstr of constructor * mutual_inductive_body
-  | Module of module_specification_body
-  | Modtype of module_type_body
+  | Module of module_body
+  | Modtype of struct_expr_body
 
 (* adds above information about one mutual inductive: all types and
    constructors *)
@@ -59,11 +58,11 @@ let make_label_map mp list =
   let add_one (l,e) map = 
    let add_map obj = Labmap.add l obj map in
    match e with
-    | SPBconst cb -> add_map (Constant cb)
-    | SPBmind mib ->
+    | SFBconst cb -> add_map (Constant cb)
+    | SFBmind mib ->
        add_nameobjects_of_mib (make_kn mp empty_dirpath l) mib map
-    | SPBmodule mb -> add_map (Module mb)
-    | SPBmodtype mtb -> add_map (Modtype mtb)
+    | SFBmodule mb -> add_map (Module mb)
+    | SFBmodtype mtb -> add_map (Modtype mtb)
   in
     List.fold_right add_one list Labmap.empty
 
@@ -290,10 +289,10 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
 	      
 let rec check_modules cst env msid1 l msb1 msb2 =
   let mp = (MPdot(MPself msid1,l)) in
-  let mty1 = strengthen env msb1.msb_modtype mp in
-  let cst = check_modtypes cst env mty1 msb2.msb_modtype false in
-  begin
-    match msb1.msb_equiv, msb2.msb_equiv with
+  let mty1 = strengthen env (type_of_mb env msb1) mp in
+  let cst = check_modtypes cst env mty1 (type_of_mb env msb2) false in
+    begin
+    match msb1.mod_equiv, msb2.mod_equiv with
       | _, None -> ()
       | None, Some mp2 -> 
 	  check_modpath_equiv env mp mp2
@@ -316,18 +315,18 @@ and check_signatures cst env (msid1,sig1) (msid2,sig2') =
 	  Not_found -> error_no_such_label_sub l (string_of_msid msid1) (string_of_msid msid2)
     in
       match spec2 with
-	| SPBconst cb2 ->
+	| SFBconst cb2 ->
 	    check_constant cst env msid1 l info1 cb2 spec2
-	| SPBmind mib2 -> 
+	| SFBmind mib2 -> 
 	    check_inductive cst env msid1 l info1 mib2 spec2
-	| SPBmodule msb2 -> 
+	| SFBmodule msb2 -> 
 	    let msb1 = 
 	      match info1 with
 		| Module msb -> msb
 		| _ -> error_not_match l spec2
 	    in
 	      check_modules cst env msid1 l msb1 msb2
-	| SPBmodtype mtb2 ->
+	| SFBmodtype mtb2 ->
 	    let mtb1 = 
 	      match info1 with
 		| Modtype mtb -> mtb
@@ -339,19 +338,19 @@ and check_signatures cst env (msid1,sig1) (msid2,sig2') =
     
 and check_modtypes cst env mtb1 mtb2 equiv = 
   if mtb1==mtb2 then cst else (* just in case  :) *)
-  let mtb1' = scrape_modtype env mtb1 in
-  let mtb2' = scrape_modtype env mtb2 in
+  let mtb1' = eval_struct env mtb1 in
+  let mtb2' = eval_struct env mtb2 in
     if mtb1'==mtb2' then cst else
     match mtb1', mtb2' with
-      | MTBsig (msid1,list1), 
-	MTBsig (msid2,list2) -> 
+      | SEBstruct (msid1,list1), 
+	SEBstruct (msid2,list2) -> 
 	  let cst = check_signatures cst env (msid1,list1) (msid2,list2) in
 	  if equiv then
 	    check_signatures cst env (msid2,list2) (msid1,list1) 
 	  else
 	    cst
-      | MTBfunsig (arg_id1,arg_t1,body_t1), 
-	MTBfunsig (arg_id2,arg_t2,body_t2) ->
+      | SEBfunctor (arg_id1,arg_t1,body_t1), 
+	SEBfunctor (arg_id2,arg_t2,body_t2) ->
 	  let cst = check_modtypes cst env arg_t2 arg_t1 equiv in 
 	    (* contravariant *)
 	  let env = 
@@ -365,8 +364,6 @@ and check_modtypes cst env mtb1 mtb2 equiv =
 	      body_t1
 	  in
 	  check_modtypes cst env body_t1' body_t2 equiv
-      | MTBident _ , _ -> anomaly "Subtyping: scrape failed"
-      | _ , MTBident _ -> anomaly "Subtyping: scrape failed"
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
 	  
 let check_subtypes env sup super = 

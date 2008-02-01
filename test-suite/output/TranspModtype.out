@@ -1,7 +1,7 @@
-TrM.A = M.A
+TrM.A = N.A
      : Set
-OpM.A = M.A
+OpM.A = N.A
      : Set
-TrM.B = M.B
+TrM.B = N.B
      : Set
 *** [ OpM.B : Set ]

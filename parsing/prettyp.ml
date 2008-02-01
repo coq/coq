@@ -39,7 +39,7 @@ type object_pr = {
   print_section_variable    : variable -> std_ppcmds;
   print_syntactic_def       : kernel_name -> std_ppcmds;
   print_module              : bool -> Names.module_path -> std_ppcmds;
-  print_modtype             : kernel_name -> std_ppcmds;
+  print_modtype             : module_path -> std_ppcmds;
   print_named_decl          : identifier * constr option * types -> std_ppcmds;
   print_leaf_entry          : bool -> Libnames.object_name * Libobject.obj -> Pp.std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
@@ -175,7 +175,7 @@ type logical_name =
   | Term of global_reference
   | Dir of global_dir_reference
   | Syntactic of kernel_name
-  | ModuleType of qualid * kernel_name
+  | ModuleType of qualid * module_path
   | Undefined of qualid
 
 let locate_any_name ref =
@@ -421,7 +421,8 @@ let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
 	  let (mp,_,l) = repr_kn kn in 
 	    Some (print_module with_values (MPdot (mp,l)))
       | (_,"MODULE TYPE") ->
-	  Some (print_modtype kn)
+	  let (mp,_,l) = repr_kn kn in 
+	  Some (print_modtype (MPdot (mp,l)))
       | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
 	    "COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
       (* To deal with forgotten cases... *)
@@ -560,7 +561,9 @@ let print_full_pure_context () =
 	  print_module true (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | "MODULE TYPE" ->
 	  (* TODO: make it reparsable *)
-	  print_modtype kn ++ str "." ++ fnl () ++ fnl ()
+	  (* TODO: make it reparsable *)
+	  let (mp,_,l) = repr_kn kn in
+	  print_modtype (MPdot (mp,l)) ++ str "." ++ fnl () ++ fnl ()
       | _ -> mt () in
       prec rest ++ pp
   | _::rest -> prec rest

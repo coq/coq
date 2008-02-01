@@ -12,13 +12,17 @@
 open Declarations
 open Environ
 open Entries
+open Util
+open Libnames
+open Names
 open Topconstr
 (*i*)
 
 (* Module expressions and module types are interpreted relatively to 
    eventual functor or funsig arguments. *)
 
-val interp_modtype : env -> module_type_ast -> module_type_entry
+val interp_modtype : env -> module_type_ast -> module_struct_entry
 
-val interp_modexpr : env -> module_ast -> module_expr
+val interp_modexpr : env -> module_ast -> module_struct_entry
 
+val lookup_module : qualid located -> module_path

@@ -98,11 +98,15 @@ let library_dp () =
    module path and relative section path *)
 let path_prefix = ref initial_prefix
 
-
 let cwd () = fst !path_prefix
 
 let make_path id = Libnames.make_path (cwd ()) id
 
+let path_of_include () =
+  let dir = Names.repr_dirpath (cwd ()) in
+  let new_dir = List.tl dir in
+  let id = List.hd dir in
+    Libnames.make_path (Names.make_dirpath new_dir) id
 
 let current_prefix () = snd !path_prefix
 
@@ -236,11 +240,24 @@ let add_frozen_state () =
 
 (* Modules. *)
 
+
 let is_something_opened = function 
     (_,OpenedSection _) -> true 
   | (_,OpenedModule _) -> true
   | (_,OpenedModtype _) -> true
   | _ -> false
+
+
+let current_mod_id () = 
+  try match find_entry_p is_something_opened with
+    | oname,OpenedModule (_,_,nametab) -> 
+	basename (fst oname)
+    | oname,OpenedModtype (_,nametab) -> 
+	basename (fst oname)
+    | _ -> error "you are not in a module"
+  with Not_found ->
+    error "no opened modules"
+
 
 let start_module export id mp nametab = 
   let dir = extend_dirpath (fst !path_prefix) id in
@@ -586,7 +603,8 @@ let reset_name (loc,id) =
 let is_mod_node = function 
   | OpenedModule _ | OpenedModtype _ | OpenedSection _ 
   | ClosedModule _ | ClosedModtype _ | ClosedSection _  -> true 
-  | Leaf o -> let t = object_tag o in t = "MODULE" || t = "MODULE TYPE"
+  | Leaf o -> let t = object_tag o in t = "MODULE" || t = "MODULE TYPE" 
+	|| t = "MODULE ALIAS"
   | _ -> false
 
 (* Reset on a module or section name in order to bypass constants with 

@@ -289,6 +289,7 @@ let modfstlev_rename l =
     else
       (add_modfstlev id []; s)
 
+
 (*s Creating renaming for a [module_path] *)
 
 let rec mp_create_renaming mp = 
@@ -358,14 +359,14 @@ let create_modular_renamings struc =
   (* 3) determines the potential clashes *)
   let needs_qualify k r = 
     let mp = modpath_of_r r in 
-    if (is_modfile mp) && mp <> current_module && 
-      (clash (ext_mpmem k) mp (List.hd (get_renaming r)) opened_modules)
-    then add_static_clash r
+      if (is_modfile mp) && mp <> current_module && 
+	(clash (ext_mpmem k) mp (List.hd (get_renaming r)) opened_modules)
+      then add_static_clash r
   in
-  Refset.iter (needs_qualify Type) ty;
-  Refset.iter (needs_qualify Term) tr;
-  Refset.iter (needs_qualify Cons) co;
-  List.rev opened_modules
+    Refset.iter (needs_qualify Type) ty;
+    Refset.iter (needs_qualify Term) tr;
+    Refset.iter (needs_qualify Cons) co;
+    List.rev opened_modules
 
 (*s Initial renamings creation, for monolithic extraction. *)
 
@@ -479,3 +480,16 @@ let pp_module mp =
 	    error_module_clash base_s
 	  else dottify ls
 
+
+(*i 
+  (* DO NOT REMOVE: used when making names resolution *)
+  let cout = open_out (f^".ren") in 
+  let ft = Pp_control.with_output_to cout in
+  Hashtbl.iter 
+    (fun r id -> 
+       if short_module r = !current_module then 
+	 msgnl_with ft (pr_id id ++ str " " ++ pr_sp (sp_of_r r)))
+    renamings;
+  pp_flush_with ft ();
+  close_out cout;
+i*)    

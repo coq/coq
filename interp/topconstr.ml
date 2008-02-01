@@ -887,10 +887,16 @@ type with_declaration_ast =
   | CWith_Module of identifier list located * qualid located
   | CWith_Definition of identifier list located * constr_expr
 
-type module_type_ast = 
-  | CMTEident of qualid located
-  | CMTEwith of module_type_ast * with_declaration_ast
 
 type module_ast = 
   | CMEident of qualid located
   | CMEapply of module_ast * module_ast
+
+type module_type_ast = 
+  | CMTEident of qualid located
+  | CMTEapply of module_type_ast * module_ast
+  | CMTEwith of module_type_ast * with_declaration_ast
+
+type include_ast =
+  | CIMTE of module_type_ast
+  | CIME of module_ast

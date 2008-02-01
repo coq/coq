@@ -31,16 +31,17 @@ let toplevel_env () =
     | (_,kn), Lib.Leaf o ->
 	let mp,_,l = repr_kn kn in 
 	let seb = match Libobject.object_tag o with
-	  | "CONSTANT" -> SEBconst (Global.lookup_constant (constant_of_kn kn))
-	  | "INDUCTIVE" -> SEBmind (Global.lookup_mind kn) 
-	  | "MODULE" -> SEBmodule (Global.lookup_module (MPdot (mp,l)))
-	  | "MODULE TYPE" -> SEBmodtype (Global.lookup_modtype kn)
+	  | "CONSTANT" -> SFBconst (Global.lookup_constant (constant_of_kn kn))
+	  | "INDUCTIVE" -> SFBmind (Global.lookup_mind kn) 
+	  | "MODULE" -> SFBmodule (Global.lookup_module (MPdot (mp,l)))
+	  | "MODULE TYPE" -> 
+	      SFBmodtype (fst (Global.lookup_modtype (MPdot (mp,l))))
 	  | _ -> failwith "caught"
 	in l,seb
     | _ -> failwith "caught"
   in 
   match current_toplevel () with 
-    | MPself msid -> MEBstruct (msid, List.rev (map_succeed get_reference seg))
+    | MPself msid -> SEBstruct (msid, List.rev (map_succeed get_reference seg))
     | _ -> assert false
 
 let environment_until dir_opt = 
@@ -132,7 +133,7 @@ let factor_fix env l cb msb =
     list_iter_i 
       (fun j -> 
 	 function 
-	   | (l,SEBconst cb') -> 
+	   | (l,SFBconst cb') -> 
 	       if check <> check_fix env cb' (j+1) then raise Impossible; 
 	       labels.(j+1) <- l; 
 	   | _ -> raise Impossible) msb'; 
@@ -141,7 +142,7 @@ let factor_fix env l cb msb =
 
 let rec extract_msig env mp = function 
   | [] -> [] 
-  | (l,SPBconst cb) :: msig -> 
+  | (l,SFBconst cb) :: msig -> 
       let kn = make_con mp empty_dirpath l in 
       let s = extract_constant_spec env kn cb in 
       if logical_spec s then extract_msig env mp msig
@@ -149,7 +150,7 @@ let rec extract_msig env mp = function
 	Visit.add_spec_deps s;
 	(l,Spec s) :: (extract_msig env mp msig)
       end
-  | (l,SPBmind cb) :: msig -> 
+  | (l,SFBmind cb) :: msig -> 
       let kn = make_kn mp empty_dirpath l in 
       let s = Sind (kn, extract_inductive env kn) in 
       if logical_spec s then extract_msig env mp msig
@@ -157,26 +158,42 @@ let rec extract_msig env mp = function
 	Visit.add_spec_deps s;
 	(l,Spec s) :: (extract_msig env mp msig)
       end
-  | (l,SPBmodule {msb_modtype=mtb}) :: msig -> 
-      (l,Smodule (extract_mtb env mtb)) :: (extract_msig env mp msig)
-  | (l,SPBmodtype mtb) :: msig -> 
+  | (l,SFBmodule mb) :: msig -> 
+      (l,Smodule (extract_mtb env (Modops.type_of_mb env mb))) :: 
+	(extract_msig env mp msig)
+  | (l,SFBmodtype mtb) :: msig -> 
       (l,Smodtype (extract_mtb env mtb)) :: (extract_msig env mp msig)
 
-and extract_mtb env = function 
-  | MTBident kn -> Visit.add_kn kn; MTident kn 
-  | MTBfunsig (mbid, mtb, mtb') -> 
+
+and extract_mtb env = function
+  | SEBident kn -> Visit.add_mp kn; MTident kn 
+  | SEBwith(mtb',With_definition_body(idl,cb))->
+      begin
+	let mtb''= extract_mtb env mtb' in
+	    match extract_with_type env cb with (* cb peut contenir des kn  *)
+		None ->  mtb''
+	      | Some (vl,typ) -> MTwith(mtb'',ML_With_type(idl,vl,typ))
+      end
+  | SEBwith(mtb',With_module_body(idl,mp,_))-> 
+      Visit.add_mp mp;
+      MTwith(extract_mtb env mtb',ML_With_module(idl,mp))
+  | SEBfunctor (mbid, mtb, mtb') -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
-      MTfunsig (mbid, extract_mtb env mtb, 
-		extract_mtb env' mtb') 
-  | MTBsig (msid, msig) -> 
+	MTfunsig (mbid, extract_mtb env mtb, 
+		  extract_mtb env' mtb') 
+  | SEBstruct (msid, msig) -> 
       let mp = MPself msid in 
       let env' = Modops.add_signature mp msig env in 
-      MTsig (msid, extract_msig env' mp msig) 
+	MTsig (msid, extract_msig env' mp msig) 
+  | mtb  -> 
+      let mtb' = Modops.eval_struct env mtb in 
+	extract_mtb env mtb'
+
 
 let rec extract_msb env mp all = function 
   | [] -> [] 
-  | (l,SEBconst cb) :: msb -> 
+  | (l,SFBconst cb) :: msb -> 
       (try 
 	 let vl,recd,msb = factor_fix env l cb msb in 
 	 let vc = Array.map (make_con mp empty_dirpath) vl in
@@ -196,7 +213,7 @@ let rec extract_msb env mp all = function
 	   if (not b) && (logical_decl d) then ms 
 	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
 	 else ms)
-  | (l,SEBmind mib) :: msb ->
+  | (l,SFBmind mib) :: msb ->
       let ms = extract_msb env mp all msb in
       let kn = make_kn mp empty_dirpath l in 
       let b = Visit.needed_kn kn in
@@ -205,49 +222,51 @@ let rec extract_msb env mp all = function
 	if (not b) && (logical_decl d) then ms 
 	else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms
-  | (l,SEBmodule mb) :: msb -> 
+  | (l,SFBmodule mb) :: msb -> 
       let ms = extract_msb env mp all msb in
       let mp = MPdot (mp,l) in 
       if all || Visit.needed_mp mp then 
 	(l,SEmodule (extract_module env mp true mb)) :: ms
       else ms
-  | (l,SEBmodtype mtb) :: msb ->
+  | (l,SFBmodtype mtb) :: msb ->
       let ms = extract_msb env mp all msb in
-      let kn = make_kn mp empty_dirpath l in
-      if all || Visit.needed_kn kn then 
+      let mp = MPdot (mp,l) in
+       if all || Visit.needed_mp mp then 
 	(l,SEmodtype (extract_mtb env mtb)) :: ms
       else ms
 
 and extract_meb env mpo all = function 
-  | MEBident mp -> 
+  | SEBident mp ->  
       if is_modfile mp && not (modular ()) then error_MPfile_as_mod mp false; 
       Visit.add_mp mp; MEident mp 
-  | MEBapply (meb, meb',_) -> 
+  | SEBapply (meb, meb',_) -> 
       MEapply (extract_meb env None true meb, 
 	       extract_meb env None true meb')
-  | MEBfunctor (mbid, mtb, meb) -> 
+  | SEBfunctor (mbid, mtb, meb) -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
       MEfunctor (mbid, extract_mtb env mtb, 
 		 extract_meb env' None true meb)
-  | MEBstruct (msid, msb) -> 
+  | SEBstruct (msid, msb) -> 
       let mp,msb = match mpo with 
 	| None -> MPself msid, msb 
 	| Some mp -> mp, subst_msb (map_msid msid mp) msb
       in 
       let env' = add_structure mp msb env in 
       MEstruct (msid, extract_msb env' mp all msb) 
+  | SEBwith (_,_) -> anomaly "Not avaible yet"
 
 and extract_module env mp all mb = 
   (* [mb.mod_expr <> None ], since we look at modules from outside. *)
   (* Example of module with empty [mod_expr] is X inside a Module F [X:SIG]. *)
   let meb = Option.get mb.mod_expr in
-  let mtb = match mb.mod_user_type with None -> mb.mod_type | Some mt -> mt in
+  let mtb = match mb.mod_type with None -> (Modops.type_of_mb env mb) | Some mt -> mt in
   (* Because of the "with" construct, the module type can be [MTBsig] with *)
   (* a msid different from the one of the module. Here is the patch. *)
-  let mtb = replicate_msid meb mtb in
+  let mtb = replicate_msid meb mtb in 
   { ml_mod_expr = extract_meb env (Some mp) all meb;
     ml_mod_type = extract_mtb env mtb }
+
 
 let unpack = function MEstruct (_,sel) -> sel | _ -> assert false 
 
@@ -446,8 +465,3 @@ let extraction_library is_rec m =
   in 
   print struc; 
   reset ()
-
-
-
-
-

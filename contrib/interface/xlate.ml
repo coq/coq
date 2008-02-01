@@ -1574,7 +1574,9 @@ let rec xlate_module_type = function
 	   | CWith_Module((_, idl), (_, qid)) ->
 	       CT_module_type_with_mod(mty1,
 				       CT_id_list (List.map xlate_ident idl), 
-				       CT_ident (xlate_qualid qid)));;
+				       CT_ident (xlate_qualid qid)))
+  | CMTEapply (_,_) -> xlate_error "TODO: Funsig application";;
+
 
 let xlate_module_binder_list (l:module_binder list) =
   CT_module_binder_list
@@ -1967,7 +1969,8 @@ let rec xlate_vernac =
    | VernacSyntacticDefinition (id, c, true, _) ->
        xlate_error "TODO: Local abbreviations"
   (* Modules and Module Types *)
-  | VernacDeclareModuleType((_, id), bl, mty_o)  -> 
+   | VernacInclude (_) -> xlate_error "TODO : Include "
+   | VernacDeclareModuleType((_, id), bl, mty_o)  -> 
       CT_module_type_decl(xlate_ident id,
 			  xlate_module_binder_list bl,
 			  match mty_o with

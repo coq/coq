@@ -14,4 +14,4 @@ val printable_body : dir_path -> bool
 
 val print_module : bool -> module_path -> std_ppcmds
 
-val print_modtype : kernel_name -> std_ppcmds
+val print_modtype : module_path -> std_ppcmds

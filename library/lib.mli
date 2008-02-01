@@ -88,6 +88,7 @@ val contents_after : object_name option -> library_segment
 (* User-side names *)
 val cwd : unit -> dir_path
 val make_path : identifier -> section_path
+val path_of_include : unit -> section_path
 
 (* Kernel-side names *)
 val current_prefix : unit -> module_path * dir_path
@@ -101,7 +102,7 @@ val sections_depth : unit -> int
 (* Are we inside an opened module type *)
 val is_modtype : unit -> bool
 val is_module : unit -> bool
-
+val current_mod_id : unit -> module_ident
 
 (* Returns the most recent OpenedThing node *)
 val what_is_opened : unit -> object_name * node

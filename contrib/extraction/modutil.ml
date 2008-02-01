@@ -28,49 +28,52 @@ let add_structure mp msb env =
     let kn = make_kn mp empty_dirpath l in 
     let con = make_con mp empty_dirpath l in 
     match elem with 
-      | SEBconst cb -> Environ.add_constant con cb env 
-      | SEBmind mib -> Environ.add_mind kn mib env 
-      | SEBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
-      | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
+      | SFBconst cb -> Environ.add_constant con cb env 
+      | SFBmind mib -> Environ.add_mind kn mib env 
+      | SFBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
+      | SFBmodtype mtb -> Environ.add_modtype (MPdot (mp,l)) (mtb,None) env  
   in List.fold_left add_one env msb
 
 (*s Apply a module path substitution on a module.
    Build on the [Modops.subst_modtype] model. *)
 
 let rec subst_module sub mb =
-  let mtb' = Modops.subst_modtype sub mb.mod_type
+  let mtb' = Option.smartmap (Modops.subst_modtype sub) mb.mod_type
   and meb' = Option.smartmap (subst_meb sub) mb.mod_expr
-  and mtb'' = Option.smartmap (Modops.subst_modtype sub) mb.mod_user_type
   and mpo' = Option.smartmap (subst_mp sub) mb.mod_equiv in
-  if (mtb'==mb.mod_type) && (meb'==mb.mod_expr) && 
-    (mtb''==mb.mod_user_type) && (mpo'==mb.mod_equiv)
+  if (mtb'==mb.mod_type) && (meb'==mb.mod_expr) && (mpo'==mb.mod_equiv)
   then mb
   else { mod_expr= meb'; 
 	 mod_type=mtb'; 
-	 mod_user_type=mtb''; 
 	 mod_equiv=mpo'; 
 	 mod_constraints=mb.mod_constraints;
          mod_retroknowledge=[] } (* spiwack: since I'm lazy and it's unused at 
 				    this point. I forget about retroknowledge, 
-				    this may need a change later *)
+				    this may need a change later *) 
 
 and subst_meb sub = function 
-  | MEBident mp -> MEBident (subst_mp sub mp) 
-  | MEBfunctor (mbid, mtb, meb) -> 
+  | SEBident mp -> SEBident (subst_mp sub mp) 
+  | SEBfunctor (mbid, mtb, meb) -> 
       assert (not (occur_mbid mbid sub)); 
-      MEBfunctor (mbid, Modops.subst_modtype sub mtb, subst_meb sub meb)
-  | MEBstruct (msid, msb) -> 
+      SEBfunctor (mbid, Modops.subst_modtype sub mtb, subst_meb sub meb)
+  | SEBstruct (msid, msb) -> 
       assert (not (occur_msid msid sub));
-      MEBstruct (msid, subst_msb sub msb)
-  | MEBapply (meb, meb', c) -> 
-      MEBapply (subst_meb sub meb, subst_meb sub meb', c)
+      SEBstruct (msid, subst_msb sub msb)
+  | SEBapply (meb, meb', c) -> 
+      SEBapply (subst_meb sub meb, subst_meb sub meb', c)
+  | SEBwith (meb,With_module_body(id,mp,cst))->
+	SEBwith(subst_meb sub meb,
+		With_module_body(id,Mod_subst.subst_mp sub mp,cst))
+  | SEBwith (meb,With_definition_body(id,cb))->
+      SEBwith(subst_meb sub meb,
+	      With_definition_body(id,Declarations.subst_const_body sub cb))
 
 and subst_msb sub msb = 
   let subst_body = function
-    | SEBconst cb -> SEBconst (subst_const_body sub cb)
-    | SEBmind mib -> SEBmind (subst_mind sub mib)
-    | SEBmodule mb -> SEBmodule (subst_module sub mb)
-    | SEBmodtype mtb -> SEBmodtype (Modops.subst_modtype sub mtb)
+    | SFBconst cb -> SFBconst (subst_const_body sub cb)
+    | SFBmind mib -> SFBmind (subst_mind sub mib)
+    | SFBmodule mb -> SFBmodule (subst_module sub mb)
+    | SFBmodtype mtb -> SFBmodtype (Modops.subst_modtype sub mtb)
   in List.map (fun (l,b) -> (l,subst_body b)) msb
 
 (*s Change a msid in a module type, to follow a module expr. 
@@ -78,16 +81,29 @@ and subst_msb sub msb =
   [MTBsig] with a msid different from the one of the module. *)
 
 let rec replicate_msid meb mtb = match meb,mtb with 
-  | MEBfunctor (_, _, meb), MTBfunsig (mbid, mtb1, mtb2) -> 
+  | SEBfunctor (_, _, meb), SEBfunctor (mbid, mtb1, mtb2) -> 
       let mtb' = replicate_msid meb mtb2 in 
-      if mtb' == mtb2 then mtb else MTBfunsig (mbid, mtb1, mtb')
-  | MEBstruct (msid, _), MTBsig (msid1, msig) when msid <> msid1 -> 
+      if mtb' == mtb2 then mtb else SEBfunctor (mbid, mtb1, mtb')
+  | SEBstruct (msid, _), SEBstruct (msid1, msig) when msid <> msid1 -> 
       let msig' = Modops.subst_signature_msid msid1 (MPself msid) msig in
-      if msig' == msig then MTBsig (msid, msig) else MTBsig (msid, msig')
+      if msig' == msig then SEBstruct (msid, msig) else SEBstruct (msid, msig')
   | _ -> mtb
 
 (*S Functions upon ML modules. *)
-
+let rec  msid_of_mt = function
+  | MTident mp -> begin
+      match Modops.eval_struct (Global.env()) (SEBident mp) with
+	| SEBstruct(msid,_) -> MPself msid
+	| _ -> anomaly "Extraction:the With can'tbe applied to a funsig"
+    end
+  | MTwith(mt,_)-> msid_of_mt mt
+  | _ -> anomaly "Extraction:the With operator isn't applied to a name"
+      
+let  make_mp_with mp idl =
+  let idl_rev = List.rev idl in
+  let idl' = List.rev (List.tl idl_rev) in
+    (List.fold_left (fun mp id -> MPdot(mp,label_of_id id))
+       mp idl')
 (*s Apply some functions upon all [ml_decl] and [ml_spec] found in a 
    [ml_structure]. *) 
 
@@ -95,6 +111,16 @@ let struct_iter do_decl do_spec s =
   let rec mt_iter = function 
     | MTident _ -> () 
     | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
+    | MTwith (mt,ML_With_type(idl,l,t))->
+	let mp_mt = msid_of_mt mt in
+      let mp = make_mp_with mp_mt idl in
+      let gr = ConstRef (
+	(make_con mp empty_dirpath
+	  (label_of_id ( 
+	    List.hd (List.rev idl))))) in
+	mt_iter mt;do_decl 
+	  (Dtype(gr,l,t))
+    | MTwith (mt,_)->mt_iter mt
     | MTsig (_, sign) -> List.iter spec_iter sign
   and spec_iter = function 
     | (_,Spec s) -> do_spec s

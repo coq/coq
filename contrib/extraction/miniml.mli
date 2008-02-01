@@ -126,9 +126,14 @@ type ml_specif =
   | Smodtype of ml_module_type
 
 and ml_module_type = 
-  | MTident of kernel_name
+  | MTident of module_path
   | MTfunsig of mod_bound_id * ml_module_type * ml_module_type
   | MTsig of mod_self_id * ml_module_sig
+  | MTwith of ml_module_type * ml_with_declaration
+
+and ml_with_declaration =  
+  | ML_With_type of identifier list * identifier list * ml_type
+  | ML_With_module of identifier list * module_path
 
 and ml_module_sig = (label * ml_specif) list
 

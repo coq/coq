@@ -64,7 +64,6 @@ let lookup_qualid (modtype:bool) qid =
    If found, returns the module_path/kernel_name created from the dirpath
    and the basename. Searches Nametab otherwise.
 *)
-
 let lookup_module (loc,qid) =
   try
     Nametab.locate_module qid
@@ -84,20 +83,23 @@ let transl_with_decl env = function
   | CWith_Definition ((_,fqid),c) ->
       With_Definition (fqid,interp_constr Evd.empty env c)
 
-let rec interp_modtype env = function 
-  | CMTEident qid ->
-      MTEident (lookup_modtype qid)
-  | CMTEwith (mty,decl) ->
-      let mty = interp_modtype env mty in
-      let decl = transl_with_decl env decl in
-	MTEwith(mty,decl)
- 
-
 let rec interp_modexpr env = function 
   | CMEident qid ->
-      MEident (lookup_module qid)
+      MSEident (lookup_module qid)
   | CMEapply (me1,me2) ->
       let me1 = interp_modexpr env me1 in
       let me2 = interp_modexpr env me2 in
-	MEapply(me1,me2)
+	MSEapply(me1,me2)
+
+let rec interp_modtype env = function 
+  | CMTEident qid ->
+      MSEident (lookup_modtype qid)
+  | CMTEapply (mty1,me) -> 
+      let mty' = interp_modtype env mty1 in
+      let me' = interp_modexpr env me in
+	MSEapply(mty',me')
+  | CMTEwith (mty,decl) ->
+      let mty = interp_modtype env mty in
+      let decl = transl_with_decl env decl in
+	MSEwith(mty,decl)
 

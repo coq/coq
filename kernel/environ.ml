@@ -160,7 +160,7 @@ let add_constant kn cs env =
 (* constant_type gives the type of a constant *)
 let constant_type env kn =
   let cb = lookup_constant kn env in
-  cb.const_type  
+    cb.const_type  
 
 type const_evaluation_result = NoBody | Opaque
 
@@ -273,7 +273,7 @@ let keep_hyps env needed =
 (* Modules *)
 
 let add_modtype ln mtb env = 
-  let new_modtypes = KNmap.add ln mtb env.env_globals.env_modtypes in
+  let new_modtypes = MPmap.add ln mtb env.env_globals.env_modtypes in
   let new_globals = 
     { env.env_globals with 
 	env_modtypes = new_modtypes } in
@@ -290,7 +290,8 @@ let lookup_module mp env =
   MPmap.find mp env.env_globals.env_modules
 
 let lookup_modtype ln env = 
-  KNmap.find ln env.env_globals.env_modtypes
+  MPmap.find ln env.env_globals.env_modtypes
+
 
 (*s Judgments. *)
 

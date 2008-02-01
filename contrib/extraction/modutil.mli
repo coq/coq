@@ -20,18 +20,18 @@ open Mod_subst
 (* Add _all_ direct subobjects of a module, not only those exported. 
    Build on the [Modops.add_signature] model. *)
 
-val add_structure : module_path -> module_structure_body -> env -> env 
+val add_structure : module_path -> structure_body -> env -> env 
 
 (* Apply a module path substitution on a module.
    Build on the [Modops.subst_modtype] model. *)
 
 val subst_module : substitution -> module_body -> module_body 
-val subst_meb : substitution -> module_expr_body -> module_expr_body
-val subst_msb : substitution -> module_structure_body -> module_structure_body
+val subst_meb : substitution -> struct_expr_body -> struct_expr_body
+val subst_msb : substitution -> structure_body -> structure_body
 
 (* Change a msid in a module type, to follow a module expr. *)
 
-val replicate_msid : module_expr_body -> module_type_body -> module_type_body
+val replicate_msid : struct_expr_body -> struct_expr_body -> struct_expr_body
 
 (*s Functions upon ML modules. *)
 

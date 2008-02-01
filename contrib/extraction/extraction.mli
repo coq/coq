@@ -21,6 +21,8 @@ val extract_constant : env -> constant -> constant_body -> ml_decl
 
 val extract_constant_spec : env -> constant -> constant_body -> ml_spec
 
+val extract_with_type : env -> constant_body -> ( identifier list * ml_type ) option
+
 val extract_fixpoint : 
   env -> constant array -> (constr, types) prec_declaration -> ml_decl 
 

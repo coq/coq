@@ -247,44 +247,31 @@ let subst_mind sub mib =
 (*s Modules: signature component specifications, module types, and
   module declarations *)
 
-type specification_body = 
-  | SPBconst of constant_body
-  | SPBmind of mutual_inductive_body
-  | SPBmodule of module_specification_body
-  | SPBmodtype of module_type_body
+type structure_field_body = 
+  | SFBconst of constant_body
+  | SFBmind of mutual_inductive_body
+  | SFBmodule of module_body
+  | SFBmodtype of struct_expr_body
 
-and module_signature_body = (label * specification_body) list
+and structure_body = (label * structure_field_body) list
 
-and module_type_body = 
-  | MTBident of kernel_name
-  | MTBfunsig of mod_bound_id * module_type_body * module_type_body
-  | MTBsig of mod_self_id * module_signature_body
-
-and module_specification_body = 
-    { msb_modtype : module_type_body;
-      msb_equiv : module_path option; 
-      msb_constraints : constraints }
-
-type structure_elem_body = 
-  | SEBconst of constant_body
-  | SEBmind of mutual_inductive_body
-  | SEBmodule of module_body
-  | SEBmodtype of module_type_body
-
-and module_structure_body = (label * structure_elem_body) list
-
-and module_expr_body =
-  | MEBident of module_path
-  | MEBfunctor of mod_bound_id * module_type_body * module_expr_body 
-  | MEBstruct of mod_self_id * module_structure_body
-  | MEBapply of module_expr_body * module_expr_body
+and struct_expr_body =
+  | SEBident of module_path
+  | SEBfunctor of mod_bound_id * struct_expr_body * struct_expr_body 
+  | SEBstruct of mod_self_id * structure_body
+  | SEBapply of struct_expr_body * struct_expr_body
       * constraints
+  | SEBwith of struct_expr_body * with_declaration_body
 
+and with_declaration_body =
+    With_module_body of identifier list * module_path * constraints
+  | With_definition_body of  identifier list * constant_body
+        
 and module_body = 
-    { mod_expr : module_expr_body option;
-      mod_user_type : module_type_body option;
-      mod_type : module_type_body;
+    { mod_expr : struct_expr_body option;
+      mod_type : struct_expr_body option;
       mod_equiv : module_path option;
       mod_constraints : constraints;
       mod_retroknowledge : Retroknowledge.action list}
 
+type module_type_body = struct_expr_body * module_path option

@@ -74,28 +74,22 @@ type specification_entry =
     SPEconst of constant_entry
   | SPEmind of mutual_inductive_entry
   | SPEmodule of module_entry
-  | SPEmodtype of module_type_entry
+  | SPEmodtype of module_struct_entry
 
-and module_type_entry = 
-    MTEident of kernel_name
-  | MTEfunsig of mod_bound_id * module_type_entry * module_type_entry
-  | MTEwith of module_type_entry * with_declaration
-
-and module_signature_entry = (label * specification_entry) list
+and module_struct_entry = 
+    MSEident of module_path
+  | MSEfunctor of mod_bound_id * module_struct_entry * module_struct_entry
+  | MSEwith of module_struct_entry * with_declaration
+  | MSEapply of module_struct_entry * module_struct_entry
 
 and with_declaration = 
     With_Module of identifier list * module_path
   | With_Definition of identifier list * constr
 
-and module_expr = 
-    MEident of module_path
-  | MEfunctor of mod_bound_id * module_type_entry * module_expr
-  | MEapply of module_expr * module_expr
-
 and module_structure = (label * specification_entry) list
 
-
 and module_entry = 
-    { mod_entry_type : module_type_entry option;
-      mod_entry_expr : module_expr option}
+    { mod_entry_type : module_struct_entry option;
+      mod_entry_expr : module_struct_entry option}
+
 

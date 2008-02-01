@@ -263,8 +263,10 @@ type ccitab = extended_global_reference SpTab.t
 let the_ccitab = ref (SpTab.empty : ccitab)
 
 type kntab = kernel_name SpTab.t
-let the_modtypetab = ref (SpTab.empty : kntab)
 let the_tactictab = ref (SpTab.empty : kntab)
+
+type mptab = module_path SpTab.t
+let the_modtypetab = ref (SpTab.empty : mptab)
 
 type objtab = unit SpTab.t
 let the_objtab = ref (SpTab.empty : objtab)
@@ -299,8 +301,10 @@ let the_globrevtab = ref (Globrevtab.empty : globrevtab)
 type mprevtab = dir_path MPmap.t
 let the_modrevtab = ref (MPmap.empty : mprevtab)
 
+type mptrevtab = section_path MPmap.t
+let the_modtyperevtab = ref (MPmap.empty : mptrevtab)
+
 type knrevtab = section_path KNmap.t
-let the_modtyperevtab = ref (KNmap.empty : knrevtab)
 let the_tacticrevtab = ref (KNmap.empty : knrevtab)
 
 
@@ -328,7 +332,7 @@ let push = push_cci
 
 let push_modtype vis sp kn = 
   the_modtypetab := SpTab.push vis sp kn !the_modtypetab;
-  the_modtyperevtab := KNmap.add kn sp !the_modtyperevtab
+  the_modtyperevtab := MPmap.add kn sp !the_modtyperevtab
 
 (* This is for tactic definition names *)
 
@@ -483,7 +487,7 @@ let shortest_qualid_of_module mp =
     DirTab.shortest_qualid Idset.empty dir !the_dirtab
 
 let shortest_qualid_of_modtype kn =
-  let sp = KNmap.find kn !the_modtyperevtab in
+  let sp = MPmap.find kn !the_modtyperevtab in
     SpTab.shortest_qualid Idset.empty sp !the_modtypetab
 
 let shortest_qualid_of_tactic kn =
@@ -504,6 +508,7 @@ let inductive_of_reference r =
       user_err_loc (loc_of_reference r,"global_inductive",
         pr_reference r ++ spc () ++ str "is not an inductive type")
 
+
 (********************************************************************)
 
 (********************************************************************)
@@ -520,8 +525,9 @@ let init () =
   the_tactictab := SpTab.empty;
   the_globrevtab := Globrevtab.empty;
   the_modrevtab := MPmap.empty;
-  the_modtyperevtab := KNmap.empty;
+  the_modtyperevtab := MPmap.empty;
   the_tacticrevtab := KNmap.empty
+
 
 
 let freeze () =

@@ -470,10 +470,17 @@ let vernac_end_modtype id =
   if_verbose message 
     ("Module Type "^ string_of_id id ^" is defined")
 
-
+let vernac_include = function
+  | CIMTE mty_ast ->
+      Declaremods.declare_include Modintern.interp_modtype mty_ast false
+  | CIME mexpr_ast ->
+      Declaremods.declare_include Modintern.interp_modexpr mexpr_ast true
+	  
+	  
+	  
 (**********************)
 (* Gallina extensions *)
-
+	  
 let vernac_record struc binders sort nameopt cfs =
   let const = match nameopt with 
     | None -> add_prefix "Build_" (snd (snd struc))
@@ -1198,7 +1205,8 @@ let interp c = match c with
       vernac_define_module export id bl mtyo mexpro
   | VernacDeclareModuleType ((_,id),bl,mtyo) -> 
       vernac_declare_module_type id bl mtyo
-
+  | VernacInclude (in_ast) ->
+      vernac_include in_ast
   (* Gallina extensions *)
   | VernacBeginSection (_,id) -> vernac_begin_section id
 

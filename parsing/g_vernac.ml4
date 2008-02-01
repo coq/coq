@@ -384,7 +384,9 @@ GEXTEND Gram
         filename = ne_string -> 
 	  VernacRequireFrom (export, specif, filename)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
-      | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl) ] ]
+      | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl) 
+      | IDENT "Include"; expr = module_expr -> VernacInclude(CIME(expr))
+      | IDENT "Include"; IDENT "Type"; expr = module_type -> VernacInclude(CIMTE(expr)) ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> Some false
@@ -415,11 +417,12 @@ GEXTEND Gram
 
   (* Module expressions *)
   module_expr:
-    [ [ qid = qualid -> CMEident qid
-      | me1 = module_expr; me2 = module_expr -> CMEapply (me1,me2)
-      | "("; me = module_expr; ")" -> me
-(* ... *)
+    [ [ me = module_expr_atom -> me
+      | me1 = module_expr; me2 = module_expr_atom -> CMEapply (me1,me2)
       ] ]
+  ;
+  module_expr_atom:
+    [ [ qid = qualid -> CMEident qid | "("; me = module_expr; ")" -> me ] ]
   ;
   with_declaration:
     [ [ "Definition"; fqid = fullyqualid; ":="; c = Constr.lconstr ->
@@ -431,8 +434,9 @@ GEXTEND Gram
   module_type:
     [ [ qid = qualid -> CMTEident qid
 (* ... *)
-      | mty = module_type; "with"; decl = with_declaration -> 
-	  CMTEwith (mty,decl) ] ]
+      | mty = module_type; me = module_expr_atom -> CMTEapply (mty,me) 
+      | mty = module_type; "with"; decl = with_declaration -> CMTEwith (mty,decl)
+      ] ]
   ;
 END
 

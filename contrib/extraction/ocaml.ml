@@ -20,6 +20,26 @@ open Miniml
 open Mlutil
 open Modutil
 open Common
+open Declarations
+
+
+(*s Some utility functions. *)
+
+let rec  msid_of_mt = function
+  | MTident mp -> begin
+      match Modops.eval_struct (Global.env()) (SEBident mp) with
+	| SEBstruct(msid,_) -> MPself msid
+	| _ -> anomaly "Extraction:the With can'tbe applied to a funsig"
+    end
+  | MTwith(mt,_)-> msid_of_mt mt
+  | _ -> anomaly "Extraction:the With operator isn't applied to a name"
+
+let  make_mp_with mp idl =
+  let idl_rev = List.rev idl in
+  let idl' = List.rev (List.tl idl_rev) in
+    (List.fold_left (fun mp id -> MPdot(mp,label_of_id id))
+       mp idl')
+
 
 let pp_tvar id = 
   let s = string_of_id id in 
@@ -585,7 +605,7 @@ let rec pp_specif = function
 
 and pp_module_type ol = function 
   | MTident kn -> 
-      let mp,_,l = repr_kn kn in pp_modname (MPdot (mp,l))
+      pp_modname kn
   | MTfunsig (mbid, mt, mt') -> 
       let name = pp_modname (MPbound mbid) in 
       let typ = pp_module_type None mt in 
@@ -600,10 +620,41 @@ and pp_module_type ol = function
       pop_visible (); 
       str "sig " ++ fnl () ++ 
       v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
-      fnl () ++ str "end"
-
+	fnl () ++ str "end"
+  | MTwith(mt,ML_With_type(idl,vl,typ)) ->
+      let l = rename_tvars keywords vl in 
+      let ids = pp_parameters l in 
+      let mp_mt = msid_of_mt mt in
+      let mp = make_mp_with mp_mt idl in
+      let gr = ConstRef (
+	(make_con mp empty_dirpath
+	  (label_of_id ( 
+	    List.hd (List.rev idl))))) in
+	push_visible mp_mt;
+	let s = pp_module_type None mt ++
+	  str " with type " ++
+	  pp_global Type gr ++
+	  ids in
+	  pop_visible();
+	  s ++ str "=" ++ spc () ++
+	  pp_type false  vl typ
+  | MTwith(mt,ML_With_module(idl,mp)) ->
+      let mp_mt=msid_of_mt mt in
+	push_visible mp_mt;
+	let s = 
+	  pp_module_type None mt ++
+	    str " with module " ++
+	    (pp_modname
+	       (List.fold_left (fun mp id -> MPdot(mp,label_of_id id))
+		  mp_mt idl))
+	  ++ str " = "  
+	in
+	  pop_visible ();
+	  s ++ (pp_modname mp)
+	    
+	    
 let is_short = function MEident _ | MEapply _ -> true | _ -> false
-
+  
 let rec pp_structure_elem = function 
   | (l,SEdecl d) -> 
        (try 

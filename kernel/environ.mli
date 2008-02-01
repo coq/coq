@@ -146,13 +146,13 @@ val scrape_mind : env -> mutual_inductive -> mutual_inductive
 
 (************************************************************************)
 (*s Modules *)
-val add_modtype : kernel_name -> module_type_body -> env -> env
+val add_modtype : module_path -> module_type_body -> env -> env
 
 (* [shallow_add_module] does not add module components *)
 val shallow_add_module : module_path -> module_body -> env -> env
 
 val lookup_module : module_path -> env -> module_body
-val lookup_modtype : kernel_name -> env -> module_type_body
+val lookup_modtype : module_path -> env -> module_type_body
 
 (************************************************************************)
 (*s Universe constraints *)
