@@ -82,7 +82,7 @@ type value =
   | VConstr of constr   (* includes idents known to be bound and references *)
   | VConstr_context of constr
   | VList of value list
-  | VRec of value ref
+  | VRec of (identifier*value) list ref * glob_tactic_expr
 
 let locate_tactic_call loc = function
   | VTactic (_,t) -> VTactic (loc,t)
@@ -308,7 +308,6 @@ let lookup_genarg_subst  id = let (_,_,f) = lookup_genarg id in f
 
 (* Dynamically check that an argument is a tactic, possibly unboxing VRec *)
 let coerce_to_tactic loc id = function
-  | VRec v -> !v
   | VTactic _ | VFun _ | VRTactic _ as a -> a
   | _ -> user_err_loc 
   (loc, "", str "variable " ++  pr_id id ++ str " should be bound to a tactic")
@@ -617,18 +616,9 @@ let rec intern_match_context_hyps sigma env lfun = function
   | [] -> lfun, [], []
 
 (* Utilities *)
-let extract_names lrc =
-  List.fold_right 
-    (fun ((loc,name),_) l ->
-      if List.mem name l then
-	user_err_loc
-	  (loc, "intern_tactic", str "This variable is bound several times");
-      name::l)
-    lrc []
-
 let extract_let_names lrc =
   List.fold_right 
-    (fun ((loc,name),_,_) l ->
+    (fun ((loc,name),_) l ->
       if List.mem name l then
 	user_err_loc
 	  (loc, "glob_tactic", str "This variable is bound several times");
@@ -777,19 +767,12 @@ and intern_tactic_seq ist = function
       let t = intern_atomic lf ist t in
       !lf, TacAtom (adjust_loc loc, t)
   | TacFun tacfun -> ist.ltacvars, TacFun (intern_tactic_fun ist tacfun)
-  | TacLetRecIn (lrc,u) ->
-      let names = extract_names lrc in
+  | TacLetIn (isrec,l,u) ->
       let (l1,l2) = ist.ltacvars in
-      let ist = { ist with ltacvars = (names@l1,l2) } in
-      let lrc = List.map (fun (n,b) -> (n,intern_tactic_fun ist b)) lrc in
-      ist.ltacvars, TacLetRecIn (lrc,intern_tactic ist u)
-  | TacLetIn (l,u) ->
-      let l = List.map
-        (fun (n,c,b) ->
-          (n,Option.map (intern_tactic ist) c, intern_tacarg !strict_check ist b)) l in
-      let (l1,l2) = ist.ltacvars in
-      let ist' = { ist with ltacvars = ((extract_let_names l)@l1,l2) } in
-      ist.ltacvars, TacLetIn (l,intern_tactic ist' u)
+      let ist' = { ist with ltacvars = (extract_let_names l @ l1, l2) } in
+      let l = List.map (fun (n,b) -> 
+	  (n,intern_tacarg !strict_check (if isrec then ist' else ist) b)) l in
+      ist.ltacvars, TacLetIn (isrec,l,intern_tactic ist' u)
   | TacMatchContext (lz,lr,lmr) ->
       ist.ltacvars, TacMatchContext(lz,lr, intern_match_rule ist lmr)
   | TacMatch (lz,c,lmr) ->
@@ -1584,10 +1567,8 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
   let value_interp ist = match tac with
   (* Immediate evaluation *)
   | TacFun (it,body) -> VFun (ist.lfun,it,body)
-  | TacLetRecIn (lrc,u) -> letrec_interp ist gl lrc u
-  | TacLetIn (l,u) ->
-      let addlfun = interp_letin ist gl l in
-      val_interp { ist with lfun=addlfun@ist.lfun } gl u
+  | TacLetIn (true,l,u) -> interp_letrec ist gl l u
+  | TacLetIn (false,l,u) -> interp_letin ist gl l u
   | TacMatchContext (lz,lr,lmr) -> interp_match_context ist gl lz lr lmr 
   | TacMatch (lz,c,lmr) -> interp_match ist gl lz c lmr
   | TacArg a -> interp_tacarg ist gl a
@@ -1602,7 +1583,7 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
 
 and eval_tactic ist = function
   | TacAtom (loc,t) -> fun gl -> catch_error loc (interp_atomic ist gl t) gl
-  | TacFun _ | TacLetRecIn _ | TacLetIn _ -> assert false
+  | TacFun _ | TacLetIn _ -> assert false
   | TacMatchContext _ | TacMatch _ -> assert false
   | TacId s -> tclIDTAC_MESSAGE (interp_message_nl ist s)
   | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) (interp_message ist s)
@@ -1623,9 +1604,14 @@ and eval_tactic ist = function
   | TacComplete tac -> tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> assert false
 
+and force_vrec ist gl = function
+  | VRec (lfun,body) -> val_interp {ist with lfun = !lfun} gl body
+  | v -> v
+
 and interp_ltac_reference isapplied mustbetac ist gl = function
   | ArgVar (loc,id) ->
       let v = List.assoc id ist.lfun in
+      let v = force_vrec ist gl v in
       if mustbetac then coerce_to_tactic loc id v else v
   | ArgArg (loc,r) ->
       let ids = extract_ids [] ist.lfun in
@@ -1714,47 +1700,20 @@ and eval_with_fail ist is_lazy goal tac =
     | FailError (lvl,s) ->
 	raise (FailError (lvl - 1, s))
 
-(* Interprets recursive expressions *)
-and letrec_interp ist gl lrc u =
-  let lref = Array.to_list (Array.make (List.length lrc) (ref VVoid)) in
-  let lenv =
-    List.fold_right2 (fun ((loc,name),_) vref l -> (name,VRec vref)::l)
-      lrc lref [] in
-  let lve = List.map (fun ((loc,name),(var,body)) ->
-                          (name,VFun(lenv@ist.lfun,var,body))) lrc in
-  begin
-    List.iter2 (fun vref (_,ve) -> vref:=ve) lref lve;
-    val_interp { ist with lfun=lve@ist.lfun } gl u
-  end
+(* Interprets the clauses of a recursive LetIn *)
+and interp_letrec ist gl llc u =
+  let lref = ref ist.lfun in
+  let lve = list_map_left (fun ((_,id),b) -> (id,VRec (lref,TacArg b))) llc in
+  lref := lve@ist.lfun;
+  let ist = { ist with lfun = lve@ist.lfun } in
+  val_interp ist gl u
 
 (* Interprets the clauses of a LetIn *)
-and interp_letin ist gl = function
-  | [] -> []
-  | ((loc,id),None,t)::tl -> 
-      let v = interp_tacarg ist gl t in
-      check_is_value v;
-      (id,v):: (interp_letin ist gl tl)
-  | ((loc,id),Some com,tce)::tl ->
-    let env = pf_env gl in
-    let typ = constr_of_value env (val_interp ist gl com)
-    and v = interp_tacarg ist gl tce in
-    let csr = 
-      try
-	constr_of_value env v
-      with Not_found ->
-      try
-	let t = tactic_of_value v in
-	let ndc = Environ.named_context_val env in
-	start_proof id (Local,Proof Lemma) ndc typ (fun _ _ -> ());
-	by t;
-	let (_,({const_entry_body = pft},_,_)) = cook_proof () in
-	delete_proof (dloc,id);
-        pft
-      with | NotTactic ->
-	delete_proof (dloc,id);
-	errorlabstrm "Tacinterp.interp_letin"
-          (str "Term or fully applied tactic expected in Let")
-    in (id,VConstr (mkCast (csr,DEFAULTcast, typ)))::(interp_letin ist gl tl)
+and interp_letin ist gl llc u =
+  let lve = list_map_left (fun ((_,id),body) ->
+    let v = interp_tacarg ist gl body in check_is_value v; (id,v)) llc in
+  let ist = { ist with lfun = lve@ist.lfun } in
+  val_interp ist gl u
 
 (* Interprets the Match Context expressions *)
 and interp_match_context ist g lz lr lmr =
@@ -2460,12 +2419,9 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacAtom (_loc,t) -> TacAtom (dloc, subst_atomic subst t)
   | TacFun tacfun -> TacFun (subst_tactic_fun subst tacfun)
-  | TacLetRecIn (lrc,u) ->
-      let lrc = List.map (fun (n,b) -> (n,subst_tactic_fun subst b)) lrc in
-      TacLetRecIn (lrc,(subst_tactic subst u:glob_tactic_expr))
-  | TacLetIn (l,u) ->
-      let l = List.map (fun (n,c,b) -> (n,Option.map (subst_tactic subst) c,subst_tacarg subst b)) l in
-      TacLetIn (l,subst_tactic subst u)
+  | TacLetIn (r,l,u) ->
+      let l = List.map (fun (n,b) -> (n,subst_tacarg subst b)) l in
+      TacLetIn (r,l,subst_tactic subst u)
   | TacMatchContext (lz,lr,lmr) ->
       TacMatchContext(lz,lr, subst_match_rule subst lmr)
   | TacMatch (lz,c,lmr) ->

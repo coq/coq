@@ -18,7 +18,7 @@ problems.
 \def\tacexprinf{\textrm{\textsl{tacexpr$_2$}}}
 \def\tacexprpref{\textrm{\textsl{tacexpr$_3$}}}
 \def\atom{\textrm{\textsl{atom}}}
-\def\recclause{\textrm{\textsl{rec\_clause}}}
+%%\def\recclause{\textrm{\textsl{rec\_clause}}}
 \def\letclause{\textrm{\textsl{let\_clause}}}
 \def\matchrule{\textrm{\textsl{match\_rule}}}
 \def\contextrule{\textrm{\textsl{context\_rule}}}
@@ -109,11 +109,8 @@ is understood as
 {\tacexprlow} & ::= &
 {\tt fun} \nelist{\name}{} {\tt =>} {\atom}\\
 & | &
-{\tt let} \nelist{\letclause}{\tt with} {\tt in}
+{\tt let} \zeroone{\tt rec} \nelist{\letclause}{\tt with} {\tt in}
 {\atom}\\
-& | &
-{\tt let rec} \nelist{\recclause}{\tt with} {\tt in}
-{\tacexpr}\\
 & | &
 {\tt match goal with} \nelist{\contextrule}{\tt |} {\tt end}\\
 & | &
@@ -168,8 +165,6 @@ is understood as
 \\
 \letclause & ::= & {\ident} \sequence{\name}{} {\tt :=} {\tacexpr}\\
 \\
-\recclause & ::= & {\ident} \nelist{\name}{} {\tt :=} {\tacexpr}\\
-\\
 \contextrule & ::= &
   \nelist{\contexthyps}{\tt ,} {\tt |-}{\cpattern} {\tt =>} {\tacexpr}\\
 & $|$ & {\tt |-} {\cpattern} {\tt =>} {\tacexpr}\\
@@ -215,7 +210,7 @@ which is then applied to the current goal.
 
 There is a special case for {\tt match goal} expressions of which
 the clauses evaluate to tactics. Such expressions can only be used as
-end result of a tactic expression (never as argument of a local
+end result of a tactic expression (never as argument of a non recursive local
 definition or of an application).
 
 The rest of this section explains the semantics of every construction
@@ -444,8 +439,9 @@ for $i=1,...,n$. There is no dependencies between the {\tacexpr}$_i$
 and the {\ident}$_i$.
 
 Local definitions can be recursive by using {\tt let rec} instead of
-{\tt let}. Only functions can be defined by recursion, so at least one
-argument is required.
+{\tt let}. In this latter case, the definitions are evaluated lazily
+so that the {\tt rec} keyword can be used also in non recursive cases
+so as to avoid the eager evaluation of local definitions.
 
 \subsubsection{Application}
 

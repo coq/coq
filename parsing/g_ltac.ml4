@@ -20,18 +20,7 @@ open Pcoq
 open Prim
 open Tactic
 
-type let_clause_kind =
-  | LETTOPCLAUSE of Names.identifier * constr_expr
-  | LETCLAUSE of
-      (Names.identifier Util.located * raw_tactic_expr option * raw_tactic_arg)
-
 let fail_default_value = ArgArg 0
-
-let out_letin_clause loc = function
-  | LETTOPCLAUSE _ -> user_err_loc (loc, "", (str "Syntax Error"))
-  | LETCLAUSE (id,c,d) -> (id,c,d)
-
-let make_letin_clause loc = List.map (out_letin_clause loc)
 
 let arg_of_expr = function
     TacArg a -> a
@@ -122,10 +111,9 @@ GEXTEND Gram
     [ RIGHTA
       [ "fun"; it = LIST1 input_fun ; "=>"; body = tactic_expr LEVEL "5" ->
           TacFun (it,body)
-      | "let"; IDENT "rec"; rcl = LIST1 rec_clause SEP "with"; "in";
-          body = tactic_expr LEVEL "5" -> TacLetRecIn (rcl,body)
-      | "let"; llc = LIST1 let_clause SEP "with"; "in";
-          u = tactic_expr LEVEL "5" -> TacLetIn (make_letin_clause loc llc,u)
+      | "let"; isrec = [IDENT "rec" -> true | -> false]; 
+          llc = LIST1 let_clause SEP "with"; "in";
+          body = tactic_expr LEVEL "5" -> TacLetIn (isrec,llc,body)
       | IDENT "info"; tc = tactic_expr LEVEL "5" -> TacInfo tc ] ]
   ;
   (* Tactic arguments *)
@@ -173,12 +161,12 @@ GEXTEND Gram
   ;
   let_clause:
     [ [ id = identref; ":="; te = tactic_expr ->
-          LETCLAUSE (id, None, arg_of_expr te)
+         (id, arg_of_expr te)
       | id = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
-          LETCLAUSE (id, None, arg_of_expr (TacFun(args,te))) ] ]
+         (id, arg_of_expr (TacFun(args,te))) ] ]
   ;
   rec_clause:
-    [ [ name = identref; it = LIST1 input_fun; ":="; body = tactic_expr ->
+    [ [ name = identref; it = LIST0 input_fun; ":="; body = tactic_expr ->
           (name,(it,body)) ] ]
   ;
   match_pattern:

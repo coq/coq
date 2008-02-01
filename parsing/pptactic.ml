@@ -473,28 +473,15 @@ let pr_funvar = function
   | None -> spc () ++ str "_"
   | Some id -> spc () ++ pr_id id
 
-let pr_let_clause k pr = function
-  | (id,None,t) ->
-      hov 0 (str k ++ pr_lident id ++ str " :=" ++ brk (1,1) ++
-             pr (TacArg t))
-  | (id,Some c,t) ->
-      hv 0 (str k ++ pr_lident id ++ str" :" ++ brk(1,2) ++
-      pr c ++
-      str " :=" ++ brk (1,1) ++ pr (TacArg t))
+let pr_let_clause k pr (id,t) =
+  hov 0 (str k ++ pr_lident id ++ str " :=" ++ brk (1,1) ++ pr (TacArg t))
 
-let pr_let_clauses pr = function
+let pr_let_clauses recflag pr = function
   | hd::tl ->
       hv 0
-        (pr_let_clause "let " pr hd ++
+        (pr_let_clause (if recflag then "let rec " else "let ") pr hd ++
          prlist (fun t -> spc () ++ pr_let_clause "with " pr t) tl)
   | [] -> anomaly "LetIn must declare at least one binding"
-
-let pr_rec_clause pr (id,(l,t)) =
-  hov 0
-    (pr_lident id ++ prlist pr_funvar l ++ str " :=") ++ spc () ++ pr t
-
-let pr_rec_clauses pr l = 
-  prlist_with_sep (fun () -> fnl () ++ str "with ") (pr_rec_clause pr) l
 
 let pr_seq_body pr tl =
   hv 0 (str "[ " ++
@@ -858,15 +845,9 @@ let rec pr_tac inherited tac =
        (str "abstract (" ++ pr_tac (labstract,L) t ++ str")" ++ spc () ++
         str "using " ++ pr_id s),
       labstract
-  | TacLetRecIn (l,t) -> 
-      hv 0
-        (str "let rec " ++ pr_rec_clauses (pr_tac ltop) l ++ str " in" ++
-         fnl () ++ pr_tac (llet,E) t),
-      llet
-  | TacLetIn (llc,u) ->
+  | TacLetIn (recflag,llc,u) ->
       v 0
-       (hv 0 (pr_let_clauses (pr_tac ltop) llc
-       ++ str " in") ++
+       (hv 0 (pr_let_clauses recflag (pr_tac ltop) llc ++ str " in") ++
        fnl () ++ pr_tac (llet,E) u),
       llet
   | TacMatch (lz,t,lrul) ->

@@ -771,7 +771,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
   let posttac = Tacexp(TacFun([None],e.ring_post_tac)) in
   Tacinterp.eval_tactic
     (TacLetIn
-      ([(dummy_loc,id_of_string"f"),None,Tacexp f],
+      (false,[(dummy_loc,id_of_string"f"),Tacexp f],
        ltac_lcall "f"
          [req;sth;ext;morph;th;cst_tac;pow_tac;
           lemma1;lemma2;pretac;posttac;lH;rl])) gl
@@ -1112,7 +1112,7 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
   let posttac = Tacexp(TacFun([None],e.field_post_tac)) in
   Tacinterp.eval_tactic
     (TacLetIn
-      ([(dummy_loc,id_of_string"f"),None,Tacexp f],
+      (false,[(dummy_loc,id_of_string"f"),Tacexp f],
        ltac_lcall "f"
         [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
          field_simpl_eq_in_ok;cond_ok;pretac;posttac;lH;rl])) gl

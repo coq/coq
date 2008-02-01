@@ -300,7 +300,7 @@ let applyDestructor cls discard dd gls =
         | Some ((_,id),_), (Some x, tac) -> 
 	    let arg =
               ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
-            TacLetIn ([(dummy_loc, x), None, arg], tac)
+            TacLetIn (false, [(dummy_loc, x), arg], tac)
         | None, (None, tac) -> tac
         | _, (Some _,_) -> error "Destructor expects an hypothesis"
         | _, (None,_) -> error "Destructor is for conclusion")

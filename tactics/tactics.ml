@@ -167,7 +167,7 @@ let reduct_in_concl (redfun,sty) gl =
 
 let reduct_in_hyp redfun ((_,id),where) gl =
   let (_,c, ty) = pf_get_hyp gl id in
-  let redfun' = (*under_casts*) (pf_reduce redfun gl) in
+  let redfun' = pf_reduce redfun gl in
   match c with
   | None -> 
       if where = InHypValueOnly then

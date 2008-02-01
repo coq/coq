@@ -448,13 +448,12 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
   | Tacexpr.TacRec (id,(idl,t)) -> TacRec (loc,(id,(idl,f t)))
   | Tacexpr.TacRecIn (l,t) -> TacRecIn(loc,List.map (fun (id,t) -> (id,f t)) l,f t)
 *)
-  | Tacexpr.TacLetIn (l,t) ->
+  | Tacexpr.TacLetIn (isrec,l,t) ->
       let f =
-	mlexpr_of_triple
+	mlexpr_of_pair
 	  (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_ident)
-	  (mlexpr_of_option mlexpr_of_tactic)
 	  mlexpr_of_tactic_arg in
-      <:expr< Tacexpr.TacLetIn $mlexpr_of_list f l$ $mlexpr_of_tactic t$ >>
+      <:expr< Tacexpr.TacLetIn $mlexpr_of_bool isrec$ $mlexpr_of_list f l$ $mlexpr_of_tactic t$ >>
   | Tacexpr.TacMatch (lz,t,l) ->
       <:expr< Tacexpr.TacMatch
         $mlexpr_of_bool lz$

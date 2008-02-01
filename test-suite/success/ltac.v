@@ -198,3 +198,14 @@ Goal forall x : nat, x = 1 -> x + x + x = 3.
 intros x H.
 test x 2.
 Abort.
+
+(* Utilisation de let rec sans arguments *)
+
+Ltac is := 
+  let rec i := match goal with |- ?A -> ?B => intro; i | _ => idtac end in
+  i.
+
+Goal True -> True -> True.
+is.
+exact I.
+Abort.

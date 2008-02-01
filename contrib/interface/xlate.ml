@@ -775,11 +775,12 @@ and xlate_red_tactic =
 and xlate_local_rec_tac = function 
  (* TODO LATER: local recursive tactics and global ones should be handled in
     the same manner *)
-  | ((_,x),(argl,tac)) ->
+  | ((_,x),Tacexp (TacFun (argl,tac))) ->
       let fst, rest = xlate_largs_to_id_opt argl in
 	CT_rec_tactic_fun(xlate_ident x,
 			  CT_id_opt_ne_list(fst, rest),
 			  xlate_tactic tac)
+  | _ -> xlate_error "TODO: more general argument of 'let rec in'"
 
 and xlate_tactic =
  function
@@ -837,36 +838,31 @@ and xlate_tactic =
    | TacMatchContext (false,true,rule1::rules) ->
          CT_match_context_reverse(xlate_context_rule rule1,
                           List.map xlate_context_rule rules)
-   | TacLetIn (l, t) ->
+   | TacLetIn (false, l, t) ->
        let cvt_clause =
          function
-             ((_,s),None,ConstrMayEval v) ->
+             ((_,s),ConstrMayEval v) ->
                  CT_let_clause(xlate_ident s,
 			       CT_coerce_NONE_to_TACTIC_OPT CT_none,
                                CT_coerce_DEF_BODY_to_LET_VALUE
                                (formula_to_def_body v))
-           | ((_,s),None,Tacexp t) -> 
+           | ((_,s),Tacexp t) -> 
                  CT_let_clause(xlate_ident s,
 			       CT_coerce_NONE_to_TACTIC_OPT CT_none,
                                CT_coerce_TACTIC_COM_to_LET_VALUE
                                (xlate_tactic t))
-           | ((_,s),None,t) -> 
+           | ((_,s),t) -> 
                  CT_let_clause(xlate_ident s,
 			       CT_coerce_NONE_to_TACTIC_OPT CT_none,
                                CT_coerce_TACTIC_COM_to_LET_VALUE
-                               (xlate_call_or_tacarg t))
-           | ((_,s),Some c,t) -> 
-	       CT_let_clause(xlate_ident s,
-			     CT_coerce_TACTIC_COM_to_TACTIC_OPT(xlate_tactic c),
-                               CT_coerce_TACTIC_COM_to_LET_VALUE
-				 (xlate_call_or_tacarg t)) in
+                               (xlate_call_or_tacarg t)) in
          let cl_l = List.map cvt_clause l in
          (match cl_l with
             | [] -> assert false 
             | fst::others ->
                 CT_let_ltac (CT_let_clauses(fst, others), mk_let_value t))
-   | TacLetRecIn([], _) -> xlate_error "recursive definition with no definition"
-   | TacLetRecIn(f1::l, t) -> 
+   | TacLetIn(true, [], _) -> xlate_error "recursive definition with no definition"
+   | TacLetIn(true, f1::l, t) -> 
        let tl =  CT_rec_tactic_fun_list
 		   (xlate_local_rec_tac f1, List.map xlate_local_rec_tac l) in
        CT_rec_tactic_in(tl, xlate_tactic t)
