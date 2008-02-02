@@ -571,7 +571,8 @@ FSETSBASEVO:=\
  theories/FSets/FMapWeakFacts.vo \
  theories/FSets/FMapWeakInterface.vo theories/FSets/FMapWeakList.vo \
  theories/FSets/FMapWeak.vo          theories/FSets/FMapPositive.vo \
- theories/FSets/FMapIntMap.vo        theories/FSets/FSetToFiniteSet.vo
+ theories/FSets/FMapIntMap.vo        theories/FSets/FSetToFiniteSet.vo \
+ theories/FSets/FSetDecide.vo        theories/FSets/FSetWeakEqProperties.vo
 
 FSETS_basic:=
 

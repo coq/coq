@@ -10,9 +10,6 @@
 
 (** * Finite sets library *)
 
-(** NB: this file is a clone of [FSetProperties] for weak sets
-     and should remain so until we find a way to share the two. *)
-
 (** This functor derives additional properties from [FSetWeakInterface.S].
     Contrary to the functor in [FSetWeakEqProperties] it uses 
     predicates over sets instead of sets operations, i.e.
@@ -20,7 +17,7 @@
     [Equal s s'] instead of [equal s s'=true], etc. *)
 
 Require Export FSetWeakInterface. 
-Require Import FSetWeakFacts.
+Require Import FSetWeakFacts FSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -31,418 +28,247 @@ Module Properties
  (M:FSetWeakInterface.S)
  (D:DecidableType with Definition t:=M.E.t 
                   with Definition eq:=M.E.eq).
+  Module Import FM := Facts M D.
+  Module Import Dec := FSetDecide.WeakDecide M D.
   Import M.E.
   Import M.
-  Module FM := Facts M D.
-  Import FM.
-  Import Logic. (* to unmask [eq] *)  
-  Import Peano. (* to unmask [lt] *)
-
-  (** Results about lists without duplicates *)
-
-  Definition Add x s s' := forall y, In y s' <-> E.eq x y \/ In y s.
 
   Lemma In_dec : forall x s, {In x s} + {~ In x s}.
   Proof.
   intros; generalize (mem_iff s x); case (mem x s); intuition.
   Qed.
 
+  Definition Add x s s' := forall y, In y s' <-> E.eq x y \/ In y s.
+
+  Lemma Add_Equal : forall x s s', Add x s s' <-> s' [=] add x s.
+  Proof.
+  unfold Add.
+  split; intros.
+  red; intros.
+  rewrite H; clear H.
+  fsetdec.
+  fsetdec.
+  Qed.
+  
+  Ltac expAdd := repeat rewrite Add_Equal.
+
   Section BasicProperties.
-
-  (** properties of [Equal] *)
-
-  Lemma equal_refl : forall s, s[=]s.
-  Proof.
-  exact eq_refl.
-  Qed.
-
-  Lemma equal_sym : forall s s', s[=]s' -> s'[=]s.
-  Proof.
-  exact eq_sym.
-  Qed.
-
-  Lemma equal_trans : forall s1 s2 s3, s1[=]s2 -> s2[=]s3 -> s1[=]s3.
-  Proof.
-  exact eq_trans.
-  Qed.
-
-  Hint Immediate equal_refl equal_sym : set.
 
   Variable s s' s'' s1 s2 s3 : t.
   Variable x x' : elt.
 
-  (** properties of [Subset] *)
-  
+  Lemma equal_refl : s[=]s.
+  Proof. fsetdec. Qed.
+
+  Lemma equal_sym : s[=]s' -> s'[=]s.
+  Proof. fsetdec. Qed.
+
+  Lemma equal_trans : s1[=]s2 -> s2[=]s3 -> s1[=]s3.
+  Proof. fsetdec. Qed.
+
   Lemma subset_refl : s[<=]s. 
-  Proof.
-  apply Subset_refl.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma subset_trans : s1[<=]s2 -> s2[<=]s3 -> s1[<=]s3.
-  Proof.
-  apply Subset_trans.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma subset_antisym : s[<=]s' -> s'[<=]s -> s[=]s'.
-  Proof.
-  unfold Subset, Equal; intuition.
-  Qed.
-
-  Hint Immediate subset_refl : set.
+  Proof. fsetdec. Qed.
 
   Lemma subset_equal : s[=]s' -> s[<=]s'.
-  Proof.
-  unfold Subset, Equal; intros; rewrite <- H; auto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma subset_empty : empty[<=]s.
-  Proof.
-  unfold Subset; intros a; set_iff; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma subset_remove_3 : s1[<=]s2 -> remove x s1 [<=] s2.
-  Proof.
-  unfold Subset; intros H a; set_iff; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma subset_diff : s1[<=]s3 -> diff s1 s2 [<=] s3.
-  Proof.
-  unfold Subset; intros H a; set_iff; intuition.
-  Qed.
-
+  Proof. fsetdec. Qed.
+ 
   Lemma subset_add_3 : In x s2 -> s1[<=]s2 -> add x s1 [<=] s2.
-  Proof.
-  unfold Subset; intros H H0 a; set_iff; intuition.
-  rewrite <- H2; auto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma subset_add_2 : s1[<=]s2 -> s1[<=] add x s2.
-  Proof.
-  unfold Subset; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma in_subset : In x s1 -> s1[<=]s2 -> In x s2.
-  Proof.
-  intros; rewrite <- H0; auto.
-  Qed.
+  Proof. fsetdec. Qed.
  
   Lemma double_inclusion : s1[=]s2 <-> s1[<=]s2 /\ s2[<=]s1.
-  Proof.
-  unfold Subset, Equal; split; intros; intuition; generalize (H a); intuition.
-  Qed.
-
-  (** properties of [empty] *)
+  Proof. intuition fsetdec. Qed.
 
   Lemma empty_is_empty_1 : Empty s -> s[=]empty.
-  Proof.
-  unfold Empty, Equal; intros; generalize (H a); set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma empty_is_empty_2 : s[=]empty -> Empty s.
-  Proof.
-  unfold Empty, Equal; intros; generalize (H a); set_iff; tauto.
-  Qed.
-
-  (** properties of [add] *)
+  Proof. fsetdec. Qed.
 
   Lemma add_equal : In x s -> add x s [=] s.
-  Proof.
-  unfold Equal; intros; set_iff; intuition.
-  rewrite <- H1; auto.
-  Qed.
+  Proof. fsetdec. Qed.
  
   Lemma add_add : add x (add x' s) [=] add x' (add x s).
-  Proof. 
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
-
-  (** properties of [remove] *)
+  Proof. fsetdec. Qed.
 
   Lemma remove_equal : ~ In x s -> remove x s [=] s.
-  Proof.
-  unfold Equal; intros; set_iff; intuition.
-  rewrite H1 in H; auto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma Equal_remove : s[=]s' -> remove x s [=] remove x s'.
-  Proof.
-  intros; rewrite H; apply equal_refl.
-  Qed.
-
-  (** properties of [add] and [remove] *)
+  Proof. fsetdec. Qed.
 
   Lemma add_remove : In x s -> add x (remove x s) [=] s.
-  Proof.
-  unfold Equal; intros; set_iff; elim (eq_dec x a); intuition.
-  rewrite <- H1; auto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma remove_add : ~In x s -> remove x (add x s) [=] s.
-  Proof.
-  unfold Equal; intros; set_iff; elim (eq_dec x a); intuition.
-  rewrite H1 in H; auto.
-  Qed.
-
-  (** properties of [singleton] *)
+  Proof. fsetdec. Qed.
 
   Lemma singleton_equal_add : singleton x [=] add x empty.
-  Proof.
-  unfold Equal; intros; set_iff; intuition.
-  Qed.
-
-  (** properties of [union] *)
+  Proof. fsetdec. Qed.
 
   Lemma union_sym : union s s' [=] union s' s.
-  Proof.
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_subset_equal : s[<=]s' -> union s s' [=] s'.
-  Proof.
-  unfold Subset, Equal; intros; set_iff; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_equal_1 : s[=]s' -> union s s'' [=] union s' s''.
-  Proof.
-  intros; rewrite H; apply equal_refl.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_equal_2 : s'[=]s'' -> union s s' [=] union s s''.
-  Proof.
-  intros; rewrite H; apply equal_refl.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_assoc : union (union s s') s'' [=] union s (union s' s'').
-  Proof.
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma add_union_singleton : add x s [=] union (singleton x) s.
-  Proof.
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_add : union (add x s) s' [=] add x (union s s').
-  Proof.
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_remove_add_1 : 
    union (remove x s) (add x s') [=] union (add x s) (remove x s').
-  Proof.
-  unfold Equal; intros; set_iff.
-  destruct (eq_dec x a); intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_remove_add_2 : In x s -> 
    union (remove x s) (add x s') [=] union s s'.
-  Proof.
-  unfold Equal; intros; set_iff.
-  destruct (eq_dec x a); intuition.
-  left; eauto with set.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_subset_1 : s [<=] union s s'.
-  Proof.
-  unfold Subset; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_subset_2 : s' [<=] union s s'.
-  Proof.
-  unfold Subset; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_subset_3 : s[<=]s'' -> s'[<=]s'' -> union s s' [<=] s''.
-  Proof.
-  unfold Subset; intros H H0 a; set_iff; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_subset_4 : s[<=]s' -> union s s'' [<=] union s' s''.
-  Proof. 
-  unfold Subset; intros H a; set_iff; intuition.
-  Qed.
+  Proof. fsetdec. Qed. 
 
   Lemma union_subset_5 : s[<=]s' -> union s'' s [<=] union s'' s'.
-  Proof. 
-  unfold Subset; intros H a; set_iff; intuition.
-  Qed.
+  Proof. fsetdec. Qed. 
 
   Lemma empty_union_1 : Empty s -> union s s' [=] s'.
-  Proof.
-  unfold Equal, Empty; intros; set_iff; firstorder.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma empty_union_2 : Empty s -> union s' s [=] s'.
-  Proof.
-  unfold Equal, Empty; intros; set_iff; firstorder.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma not_in_union : ~In x s -> ~In x s' -> ~In x (union s s'). 
-  Proof.
-  intros; set_iff; intuition. 
-  Qed.  
-
-  (** properties of [inter] *)
+  Proof. fsetdec. Qed.
 
   Lemma inter_sym : inter s s' [=] inter s' s.
-  Proof.
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_subset_equal : s[<=]s' -> inter s s' [=] s.
-  Proof.
-  unfold Equal; intros; set_iff; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_equal_1 : s[=]s' -> inter s s'' [=] inter s' s''.
-  Proof.
-  intros; rewrite H; apply equal_refl.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_equal_2 : s'[=]s'' -> inter s s' [=] inter s s''.
-  Proof.
-  intros; rewrite H; apply equal_refl.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_assoc : inter (inter s s') s'' [=] inter s (inter s' s'').
-  Proof.
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_inter_1 : inter (union s s') s'' [=] union (inter s s'') (inter s' s'').
-  Proof.
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma union_inter_2 : union (inter s s') s'' [=] inter (union s s'') (union s' s'').
-  Proof.
-  unfold Equal; intros; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_add_1 : In x s' -> inter (add x s) s' [=] add x (inter s s').
-  Proof.
-  unfold Equal; intros; set_iff; intuition.
-  rewrite <- H1; auto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_add_2 : ~ In x s' -> inter (add x s) s' [=] inter s s'.
-  Proof.
-  unfold Equal; intros; set_iff; intuition.
-  destruct H; rewrite H0; auto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma empty_inter_1 : Empty s -> Empty (inter s s').
-  Proof.
-  unfold Empty; intros; set_iff; firstorder.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma empty_inter_2 : Empty s' -> Empty (inter s s').
-  Proof.
-  unfold Empty; intros; set_iff; firstorder.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_subset_1 : inter s s' [<=] s.
-  Proof.
-  unfold Subset; intro a; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_subset_2 : inter s s' [<=] s'.
-  Proof.
-  unfold Subset; intro a; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma inter_subset_3 :
    s''[<=]s -> s''[<=]s' -> s''[<=] inter s s'.
-  Proof.
-  unfold Subset; intros H H' a; set_iff; intuition.
-  Qed.
-
-  (** properties of [diff] *)
+  Proof. fsetdec. Qed.
 
   Lemma empty_diff_1 : Empty s -> Empty (diff s s'). 
-  Proof.
-  unfold Empty, Equal; intros; set_iff; firstorder.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma empty_diff_2 : Empty s -> diff s' s [=] s'.
-  Proof.
-  unfold Empty, Equal; intros; set_iff; firstorder.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma diff_subset : diff s s' [<=] s.
-  Proof.
-  unfold Subset; intros a; set_iff; tauto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma diff_subset_equal : s[<=]s' -> diff s s' [=] empty.
-  Proof.
-  unfold Subset, Equal; intros; set_iff; intuition; absurd (In a empty); auto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma remove_diff_singleton :
    remove x s [=] diff s (singleton x).
-  Proof.
-  unfold Equal; intros; set_iff; intuition.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma diff_inter_empty : inter (diff s s') (inter s s') [=] empty. 
-  Proof.
-  unfold Equal; intros; set_iff; intuition; absurd (In a empty); auto.
-  Qed.
+  Proof. fsetdec. Qed.
 
   Lemma diff_inter_all : union (diff s s') (inter s s') [=] s.
-  Proof.
-  unfold Equal; intros; set_iff; intuition.
-  elim (In_dec a s'); auto.
-  Qed.
-
-  (** properties of [Add] *)
+  Proof. fsetdec. Qed.
 
   Lemma Add_add : Add x s (add x s).
-  Proof.
-   unfold Add; intros; set_iff; intuition.
-  Qed.
+  Proof. expAdd; fsetdec. Qed.
 
   Lemma Add_remove : In x s -> Add x (remove x s) s. 
-  Proof. 
-    unfold Add; intros; set_iff; intuition.
-    elim (eq_dec x y); auto.
-    rewrite <- H1; auto.
-  Qed.
+  Proof. expAdd; fsetdec. Qed.
 
   Lemma union_Add : Add x s s' -> Add x (union s s'') (union s' s'').
-  Proof. 
-  unfold Add; intros; set_iff; rewrite H; tauto.
-  Qed.
+  Proof. expAdd; fsetdec. Qed. 
 
   Lemma inter_Add :
    In x s'' -> Add x s s' -> Add x (inter s s'') (inter s' s'').
-  Proof. 
-  unfold Add; intros; set_iff; rewrite H0; intuition.
-  rewrite <- H2; auto.
-  Qed.  
+  Proof. expAdd; fsetdec. Qed. 
 
   Lemma union_Equal :
    In x s'' -> Add x s s' -> union s s'' [=] union s' s''.
-  Proof. 
-  unfold Add, Equal; intros; set_iff; rewrite H0; intuition. 
-  rewrite <- H1; auto.
-  Qed.  
+  Proof. expAdd; fsetdec. Qed. 
 
   Lemma inter_Add_2 :
    ~In x s'' -> Add x s s' -> inter s s'' [=] inter s' s''.
-  Proof.
-  unfold Add, Equal; intros; set_iff; rewrite H0; intuition.
-  destruct H; rewrite H1; auto.
-  Qed.
+  Proof. expAdd; fsetdec. Qed.
 
   End BasicProperties.
 
-  Hint Immediate equal_sym: set.
-  Hint Resolve equal_refl equal_trans : set.
-
-  Hint Immediate add_remove remove_add union_sym inter_sym: set.
-  Hint Resolve subset_refl subset_equal subset_antisym 
+  Hint Immediate equal_sym add_remove remove_add union_sym inter_sym: set.
+  Hint Resolve equal_refl equal_trans subset_refl subset_equal subset_antisym 
     subset_trans subset_empty subset_remove_3 subset_diff subset_add_3 
     subset_add_2 in_subset empty_is_empty_1 empty_is_empty_2 add_equal
     remove_equal singleton_equal_add union_subset_equal union_equal_1 
@@ -454,6 +280,26 @@ Module Properties
     inter_subset_1 inter_subset_2 inter_subset_3 diff_subset diff_subset_equal 
     remove_diff_singleton diff_inter_empty diff_inter_all Add_add Add_remove
     Equal_remove add_add : set.
+
+  (** * Properties of elements *)
+
+  Lemma elements_Empty : forall s, Empty s <-> elements s = nil.
+  Proof.
+  intros.
+  unfold Empty.
+  split; intros.
+  assert (forall a, ~ List.In a (elements s)).
+   red; intros.
+   apply (H a).
+   rewrite elements_iff.
+   rewrite InA_alt; exists a; auto.
+  destruct (elements s); auto.
+  elim (H0 e); simpl; auto.
+  red; intros.
+  rewrite elements_iff in H0.
+  rewrite InA_alt in H0; destruct H0.
+  rewrite H in H0; destruct H0 as (_,H0); inversion H0.
+  Qed.
 
   (** * Alternative (weaker) specifications for [fold] *)
 
@@ -516,6 +362,18 @@ Module Properties
    rewrite (H2 a); intuition.
   Qed.
 
+  (** In fact, [fold] on empty sets is more than equivalent to 
+      the initial element, it is Leibniz-equal to it. *)
+
+  Lemma fold_1b :
+   forall s (A : Set)(i : A) (f : elt -> A -> A),
+   Empty s -> (fold f s i) = i.
+  Proof.
+  intros.
+  rewrite M.fold_1.
+  rewrite elements_Empty in H; rewrite H; simpl; auto.
+  Qed.
+
   (** Similar specifications for [cardinal]. *)
 
   Lemma cardinal_fold : forall s, cardinal s = fold (fun _ => S) s 0.
@@ -550,51 +408,46 @@ Module Properties
 
   (** * Induction principle over sets *)
 
+  Lemma cardinal_Empty : forall s, Empty s <-> cardinal s = 0.
+  Proof.
+  intros.
+  rewrite elements_Empty, M.cardinal_1.
+  destruct (elements s); intuition; discriminate.
+  Qed.
+
   Lemma cardinal_inv_1 : forall s, cardinal s = 0 -> Empty s. 
-  Proof. 
-    intros s; rewrite M.cardinal_1; intros H a; red.
-    rewrite elements_iff.
-    destruct (elements s); simpl in *; discriminate || inversion 1.
+  Proof.
+  intros; rewrite cardinal_Empty; auto. 
   Qed.
   Hint Resolve cardinal_inv_1.
  
   Lemma cardinal_inv_2 :
    forall s n, cardinal s = S n -> { x : elt | In x s }.
   Proof. 
-    intros; rewrite M.cardinal_1 in H.
-    generalize (elements_2 (s:=s)).
-    destruct (elements s); try discriminate. 
-    exists e; auto.
+  intros; rewrite M.cardinal_1 in H.
+  generalize (elements_2 (s:=s)).
+  destruct (elements s); try discriminate. 
+  exists e; auto.
   Qed.
 
   Lemma cardinal_inv_2b :
    forall s, cardinal s <> 0 -> { x : elt | In x s }.
   Proof.
-    intros; rewrite M.cardinal_1 in H.
-    generalize (elements_2 (s:=s)).
-    destruct (elements s); simpl in H.
-    elim H; auto.
-    exists e; auto.
-  Qed.
-
-  Lemma Equal_cardinal_aux :
-   forall n s s', cardinal s = n -> s[=]s' -> cardinal s = cardinal s'.
-  Proof.
-     simple induction n; intros.
-     rewrite H; symmetry .
-     apply cardinal_1.
-     rewrite <- H0; auto.
-     destruct (cardinal_inv_2 H0) as (x,H2).
-     revert H0.
-     rewrite (cardinal_2 (s:=remove x s) (s':=s) (x:=x)); auto with set.
-     rewrite (cardinal_2 (s:=remove x s') (s':=s') (x:=x)); auto with set.
-     rewrite H1 in H2; auto with set.
+  intro; generalize (@cardinal_inv_2 s); destruct cardinal; 
+   [intuition|eauto].
   Qed.
 
   Lemma Equal_cardinal : forall s s', s[=]s' -> cardinal s = cardinal s'.
   Proof. 
-    intros; apply Equal_cardinal_aux with (cardinal s); auto.
-  Qed.
+  symmetry.
+  remember (cardinal s) as n; symmetry in Heqn; revert s s' Heqn H.
+  induction n; intros.
+  apply cardinal_1; rewrite <- H; auto.
+  destruct (cardinal_inv_2 Heqn) as (x,H2).
+  revert Heqn.
+  rewrite (cardinal_2 (s:=remove x s) (s':=s) (x:=x)); auto with set.
+  rewrite (cardinal_2 (s:=remove x s') (s':=s') (x:=x)); eauto with set.
+  Qed.    
 
   Add Morphism cardinal : cardinal_m.
   Proof.
@@ -603,27 +456,20 @@ Module Properties
 
   Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal.
 
-  Lemma cardinal_induction :
-   forall P : t -> Type,
-   (forall s, Empty s -> P s) ->
-   (forall s s', P s -> forall x, ~In x s -> Add x s s' -> P s') ->
-   forall n s, cardinal s = n -> P s.
-  Proof.
-  simple induction n; intros; auto.
-  destruct (cardinal_inv_2 H) as (x,H0). 
-  apply X0 with (remove x s) x; auto with set.
-  apply X1; auto with set.
-  rewrite (cardinal_2 (x:=x)(s:=remove x s)(s':=s)) in H; auto with set.
-  Qed.
-
   Lemma set_induction :
    forall P : t -> Type,
    (forall s : t, Empty s -> P s) ->
    (forall s s' : t, P s -> forall x : elt, ~In x s -> Add x s s' -> P s') ->
    forall s : t, P s.
   Proof.
-  intros; apply cardinal_induction with (cardinal s); auto.
-  Qed.  
+  intros; remember (cardinal s) as n; revert s Heqn; induction n; intros; auto.
+  destruct (cardinal_inv_2 (sym_eq Heqn)) as (x,H0). 
+  apply X0 with (remove x s) x; auto with set.
+  apply IHn; auto.
+  assert (S n = S (cardinal (remove x s))).
+    rewrite Heqn; apply cardinal_2 with x; auto with set.
+  inversion H; auto.
+  Qed.
 
   (** Other properties of [fold]. *)
 
@@ -634,9 +480,9 @@ Module Properties
   Section Fold_1. 
   Variable i i':A.
 
-  Lemma fold_empty : eqA (fold f empty i) i.
+  Lemma fold_empty : (fold f empty i) = i.
   Proof. 
-  apply fold_1; auto with set.
+  apply fold_1b; auto with set.
   Qed.
 
   Lemma fold_equal : 
@@ -790,8 +636,8 @@ Module Properties
    forall s p, fold (fun _ => S) s p = fold (fun _ => S) s 0 + p.
   Proof.
   assert (st := gen_st nat).
-  assert (fe : compat_op E.eq (@eq _) (fun _ => S)) by (unfold compat_op; auto). 
-  assert (fp : transpose (@eq _) (fun _:elt => S)) by (unfold transpose; auto).
+  assert (fe : compat_op E.eq (@Logic.eq _) (fun _ => S)) by (unfold compat_op; auto). 
+  assert (fp : transpose (@Logic.eq _) (fun _:elt => S)) by (unfold transpose; auto).
   intros s p; pattern s; apply set_induction; clear s; intros.
   rewrite (fold_1 st p (fun _ => S) H).
   rewrite (fold_1 st 0 (fun _ => S) H); trivial.
@@ -804,7 +650,7 @@ Module Properties
   simpl; auto.
   Qed.
 
-  (** properties of [cardinal] *)
+  (** more properties of [cardinal] *)
 
   Lemma empty_cardinal : cardinal empty = 0.
   Proof.
@@ -828,7 +674,7 @@ Module Properties
   Proof.
   intros; do 3 rewrite cardinal_fold.
   rewrite <- fold_plus.
-  apply fold_diff_inter with (eqA:=@eq nat); auto.
+  apply fold_diff_inter with (eqA:=@Logic.eq nat); auto.
   Qed.
 
   Lemma union_cardinal: 
@@ -871,7 +717,7 @@ Module Properties
   intros.
   do 4 rewrite cardinal_fold.
   do 2 rewrite <- fold_plus.
-  apply fold_union_inter with (eqA:=@eq nat); auto.
+  apply fold_union_inter with (eqA:=@Logic.eq nat); auto.
   Qed.
 
   Lemma union_cardinal_inter : 
@@ -902,7 +748,7 @@ Module Properties
   intros.
   do 2 rewrite cardinal_fold.
   change S with ((fun _ => S) x);
-   apply fold_add with (eqA:=@eq nat); auto.
+   apply fold_add with (eqA:=@Logic.eq nat); auto.
   Qed.
 
   Lemma remove_cardinal_1 :
@@ -911,7 +757,7 @@ Module Properties
   intros.
   do 2 rewrite cardinal_fold.
   change S with ((fun _ =>S) x).
-  apply remove_fold_1 with (eqA:=@eq nat); auto.
+  apply remove_fold_1 with (eqA:=@Logic.eq nat); auto.
   Qed.
 
   Lemma remove_cardinal_2 : 
