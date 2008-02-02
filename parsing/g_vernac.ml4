@@ -386,7 +386,7 @@ GEXTEND Gram
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl) 
       | IDENT "Include"; expr = module_expr -> VernacInclude(CIME(expr))
-      | IDENT "Include"; IDENT "Type"; expr = module_type -> VernacInclude(CIMTE(expr)) ] ]
+      | IDENT "Include"; "Type"; expr = module_type -> VernacInclude(CIMTE(expr)) ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> Some false
