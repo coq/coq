@@ -25,12 +25,12 @@ Require Export Coq.Classes.SetoidClass.
 (* Application of the extensionality axiom to turn a goal on leibinz equality to 
    a setoid equivalence. *)
 
-Lemma setoideq_eq [ sa : Setoid a eqa ] : forall x y, eqa x y -> x = y.
+Lemma setoideq_eq [ sa : Setoid a ] : forall x y : a, x == y -> x = y.
 Proof.
   admit.
 Qed.
 
-Implicit Arguments setoideq_eq [[a] [eqa] [sa]].
+Implicit Arguments setoideq_eq [[a] [sa]].
 
 (** Application of the extensionality principle for setoids. *)
 
@@ -65,5 +65,25 @@ Ltac setoid_tactic :=
     | [ H : not (@equiv ?A ?R ?s ?X ?X) |- _ ] => elim H ; refl
     | [ H : not (@equiv ?A ?R ?s ?X ?Y), H' : @equiv ?A ?R ?s ?Y ?X |- _ ] => elim H ; sym ; apply H
     | [ H : not (@equiv ?A ?R ?s ?X ?Y), H' : ?R ?Y ?X |- _ ] => elim H ; sym ; apply H
-    | [ H : not (@equiv ?A ?R ?s ?X ?Y) |- False ] => elim H ; clear H ; setoid_tac
+    | [ H : not (@equiv ?A ?R ?s ?X ?Y) |- False ] => elim H ; clear H ; setoid_tactic
   end.
+(** Need to fix fresh to not fail if some arguments are not identifiers. *)
+(* Ltac setoid_sat ::= *)
+(*   match goal with *)
+(*     | [ H : ?x == ?y |- _ ] => let name:=fresh "Heq" y x in add_hypothesis name (equiv_sym H) *)
+(*     | [ H : ?x =/= ?y |- _ ] => let name:=fresh "Hneq" y x in add_hypothesis name (nequiv_sym H) *)
+(*     | [ H : ?x == ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Heq" x z in add_hypothesis name (equiv_trans H H') *)
+(*     | [ H : ?x == ?y, H' : ?y =/= ?z |- _ ] => let name:=fresh "Hneq" x z in add_hypothesis name (equiv_nequiv H H') *)
+(*     | [ H : ?x =/= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" x z in add_hypothesis name (nequiv_equiv H H') *)
+(*   end. *)
+
+Ltac setoid_sat :=
+  match goal with
+    | [ H : ?x == ?y |- _ ] => let name:=fresh "Heq" in add_hypothesis name (equiv_sym H)
+    | [ H : ?x =/= ?y |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_sym H)
+    | [ H : ?x == ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Heq" in add_hypothesis name (equiv_trans H H')
+    | [ H : ?x == ?y, H' : ?y =/= ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (equiv_nequiv H H')
+    | [ H : ?x =/= ?y, H' : ?y == ?z |- _ ] => let name:=fresh "Hneq" in add_hypothesis name (nequiv_equiv H H')
+  end.
+Ltac setoid_saturate := repeat setoid_sat.
+

@@ -1608,7 +1608,7 @@ defined in the same file:
 
 \begin{Variants}
 \item {\tt dependent induction {\ident} generalizing {\ident$_1$} \dots
-    {\ident$_n$}}\tacindex{dependent induction ... generalizing}
+    {\ident$_n$}}\tacindex{dependent induction \dots\ generalizing}
   
   Does dependent induction on the hypothesis {\ident} but first
   generalizes the goal by the given variables so that they are
@@ -1616,9 +1616,9 @@ defined in the same file:
   to do with the variables that are inside some constructors in the
   induction hypothesis. The other ones need not be further generalized.
 
-\item {\tt dependent destruction}\tacindex{dependent destruction}
+\item {\tt dependent destruction {\ident}}\tacindex{dependent destruction}
   
-  Does the generalization of the instance but uses {\tt destruct}
+  Does the generalization of the instance {\ident} but uses {\tt destruct}
   instead of {\tt induction} on the generalized hypothesis. This gives
   results equivalent to {\tt inversion} or {\tt dependent inversion} if
   the hypothesis is dependent.

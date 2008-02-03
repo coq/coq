@@ -708,8 +708,8 @@ SETOIDSVO:= theories/Setoids/Setoid_tac.vo theories/Setoids/Setoid_Prop.vo theor
 
 UNICODEVO:= theories/Unicode/Utf8.vo
 
-CLASSESVO:= theories/Classes/Init.vo theories/Classes/SetoidClass.vo theories/Classes/SetoidTactics.vo \
-	theories/Classes/SetoidDec.vo
+CLASSESVO:= theories/Classes/Init.vo theories/Classes/Relations.vo theories/Classes/SetoidClass.vo \
+	 theories/Classes/SetoidTactics.vo theories/Classes/SetoidDec.vo
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
@@ -766,7 +766,7 @@ DPVO:=contrib/dp/Dp.vo
 
 SUBTACVO:=theories/Program/Tactics.vo theories/Program/Equality.vo theories/Program/Subset.vo \
 	theories/Program/Utils.vo theories/Program/Wf.vo theories/Program/Program.vo \
-	theories/Program/FunctionalExtensionality.vo
+	theories/Program/FunctionalExtensionality.vo theories/Program/Basics.vo
 
 RTAUTOVO:= \
  contrib/rtauto/Bintree.vo contrib/rtauto/Rtauto.vo
