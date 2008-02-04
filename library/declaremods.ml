@@ -964,11 +964,7 @@ let load_include  i (oname,((me,is_mod),substobjs,substituted)) =
   let prefix = (dir,(mp1,empty_dirpath)) in
     match substituted with
 	Some seg -> 
-	  if is_mod then
-	    load_objects i prefix seg
-	  else 
-	    if i = 1 then
-	      load_objects i prefix seg
+	  load_objects i prefix seg
       | None ->  ()
 
 let open_include i (oname,((me,is_mod),substobjs,substituted)) =
