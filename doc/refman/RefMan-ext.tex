@@ -401,14 +401,14 @@ to print wildcard for useless variables.
 \comindex{Test Printing Synth}}
 
 In most of the cases, the type of the result of a matched term is
-mechanically synthesisable. Especially, if the result type does not
+mechanically synthesizable. Especially, if the result type does not
 depend of the matched term.
 
 \begin{quote}
 {\tt Set Printing Synth.}
 \end{quote}
 The result type is not printed when {\Coq} knows that it can
-re-synthesise it.
+re-synthesize it.
 
 \begin{quote}
 {\tt Unset Printing Synth.}
@@ -418,8 +418,8 @@ This forces the result type to be always printed.
 \begin{quote}
 {\tt Test Printing Synth.}
 \end{quote}
-This tells if the non-printing of synthesisable types is on or off.
-The default is to not print synthesisable types.
+This tells if the non-printing of synthesizable types is on or off.
+The default is to not print synthesizable types.
 
 \subsubsection{Printing matching on irrefutable pattern
 \comindex{Add Printing Let {\ident}}
@@ -754,7 +754,7 @@ subgoals belonging to a Lemma {\ident}{\tt\_tcc}. % These subgoals are independe
 \index{Sections}
 \label{Section}}
 
-The sectioning mechanism allows to organise a proof in structured
+The sectioning mechanism allows to organize a proof in structured
 sections. Then local declarations become available (see
 Section~\ref{Simpl-definitions}). 
 
@@ -775,7 +775,7 @@ This command is used to open a section named {\ident}.
 This command closes the section named {\ident}. When a section is
 closed, all local declarations (variables and local definitions) are
 {\em discharged}. This means that all global objects defined in the
-section are generalised with respect to all variables and local
+section are generalized with respect to all variables and local
 definitions it depends on in the section.  None of the local
 declarations (considered as autonomous declarations) survive the end
 of the section.
@@ -801,7 +801,7 @@ inside section {\tt s1} and outside.
 
 \begin{Remarks}
 \item Most commands, like {\tt Hint}, {\tt Notation}, option management, ...
-which appear inside a section are cancelled when the
+which appear inside a section are canceled when the
 section is closed.
 % see Section~\ref{LongNames}
 %\item Usually all identifiers must be distinct. 
@@ -825,7 +825,7 @@ section is closed.
 \paragraph{Libraries}
 
 The theories developed in {\Coq} are stored in {\em libraries}.  A
-library is characterised by a name called {\it root} of the
+library is characterized by a name called {\it root} of the
 library. The standard library of {\Coq} has root name {\tt Coq} and is
 known by default when a {\Coq} session starts.
 
@@ -994,12 +994,12 @@ For instance, the first argument of
 in module {\tt List.v} is strict because {\tt list} is an inductive
 type and {\tt A} will always be inferable from the type {\tt
 list A} of the third argument of {\tt cons}.
-On the opposite, the second argument of a term of type 
+On the contrary, the second argument of a term of type 
 \begin{quote}
 \verb|forall P:nat->Prop, forall n:nat, P n -> ex nat P|
 \end{quote}
 is implicit but not strict, since it can only be inferred from the
-type {\tt P n} of the the third argument and if {\tt P} is e.g. {\tt
+type {\tt P n} of the third argument and if {\tt P} is e.g. {\tt
 fun \_ => True}, it reduces to an expression where {\tt n} does not
 occur any longer. The first argument {\tt P} is implicit but not
 strict either because it can only be inferred from {\tt P n} and {\tt
@@ -1007,7 +1007,7 @@ P} is not canonically inferable from an arbitrary {\tt n} and the
 normal form of {\tt P n} (consider e.g. that {\tt n} is {\tt 0} and
 the third argument has type {\tt True}, then any {\tt P} of the form
 {\tt fun n => match n with 0 => True | \_ => \mbox{\em anything} end} would
-be a solution of the inference problem.
+be a solution of the inference problem).
 
 \paragraph{Contextual Implicit Arguments.} 
 An implicit argument can be {\em contextual} or not. An implicit
@@ -1176,7 +1176,7 @@ Conversely, use command {\tt Unset Contextual Implicit} to
 unset the contextual implicit mode.
 
 \subsection{Explicit applications
-\index{Explicitation of implicit arguments}
+\index{Explicitly given implicit arguments}
 \label{Implicits-explicitation}
 \index{qualid@{\qualid}}}
 
@@ -1185,7 +1185,7 @@ partial applications, the synthesis of implicit arguments may fail, so
 one may have to give explicitly certain implicit arguments of an
 application. The syntax for this is {\tt (\ident:=\term)} where {\ident}
 is the name of the implicit argument and {\term} is its corresponding
-explicit term. Alternatively, one can locally deactivate the hidding of
+explicit term. Alternatively, one can locally deactivate the hiding of
 implicit arguments of a function by using the notation
 {\tt @{\qualid}~{\term}$_1$..{\term}$_n$}. This syntax extension is
 given Figure~\ref{fig:explicitations}.
@@ -1200,7 +1200,7 @@ given Figure~\ref{fig:explicitations}.
 & $|$ & {\tt ({\ident}:={\term})}\\
 \end{tabular}
 \end{centerframe}
-\caption{Syntax for explicitations of implicit arguments}
+\caption{Syntax for explicitly giving implicit arguments}
 \label{fig:explicitations}
 \end{figure}
 
@@ -1219,7 +1219,7 @@ To display the implicit arguments associated to an object use command
 \tt Print Implicit {\qualid}.
 \end{quote}
 
-\subsection{Explicitation of implicit arguments for pretty-printing
+\subsection{Explicit displaying of implicit arguments for pretty-printing
 \comindex{Set Printing Implicit}
 \comindex{Unset Printing Implicit}}
 
@@ -1229,7 +1229,7 @@ use command
 \begin{quote}
 {\tt Set Printing Implicit.}
 \end{quote}
-Conversely, to restore the hidding of implicit arguments, use command
+Conversely, to restore the hiding of implicit arguments, use command
 \begin{quote}
 {\tt Unset Printing Implicit.}
 \end{quote}
@@ -1291,7 +1291,7 @@ Canonical Structure nat_setoid.
 \end{coq_example*}
 
 Thanks to \texttt{nat\_setoid} declared as canonical, the implicit
-arguments {\tt A} and {\tt B} can be synthesised in the next statement.
+arguments {\tt A} and {\tt B} can be synthesized in the next statement.
 \begin{coq_example}
 Lemma is_law_S : is_law S.
 \end{coq_example}
