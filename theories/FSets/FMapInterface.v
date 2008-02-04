@@ -10,25 +10,45 @@
 
 (** * Finite map library *)  
 
-(** This file proposes an interface for finite maps *)
+(** This file proposes interfaces for finite maps *)
 
-Require Export Bool OrderedType.
+Require Export Bool DecidableType OrderedType.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** When compared with Ocaml Map, this signature has been split in two: 
-   - The first part [S] contains the usual operators (add, find, ...)
-     It only requires a ordered key type, the data type can be arbitrary. 
-     The only function that asks more is [equal], whose first argument should 
-     be an equality on data. 
-   - Then, [Sord] extends [S] with a complete comparison function. For 
-     that, the data type should have a decidable total ordering. 
+(** When compared with Ocaml Map, this signature has been split in 
+    several parts : 
+
+   - The first parts [WSfun] and [WS] propose signatures for weak
+     maps, which are maps with no ordering on the key type nor the
+     data type.  [WSfun] and [WS] are almost identical, apart from the
+     fact that [WSfun] is expressed in a functorial way whereas [WS]
+     is self-contained. For obtaining an instance of such signatures,
+     a decidable equality on keys in enough (see for instance
+     [FMapWeakList]). These signatures contain the usual operators
+     (add, find, ...). The only function that asks for more is
+     [equal], whose first argument should be a comparison on data.
+ 
+   - Then comes [Sfun] and [S], that extend [WSfun] and [WS] to the 
+     case where the key type is ordered. The main addition states that 
+     [elements] produces sorted lists.
+
+   - Finally, [Sord] extends [S] with a complete comparison function. For 
+     that, the data type should have a decidable total ordering as well. 
 *)
 
 
-Module Type S.
 
-  Declare Module E : OrderedType.
+(** ** Weak Signature for maps
+   
+    No requirements for an ordering on elements, only decidability 
+    of equality. First, a functorial signature: *)
+
+Module Type WSfun (E : EqualityType).
+
+  (** The module E of base objects is meant to be a DecidableType
+     (and used to be so). But requiring only an EqualityType here
+     allows subtyping between FMap and FMapWeak *)
 
   Definition key := E.t.
 
@@ -125,8 +145,6 @@ Module Type S.
       Definition eq_key_elt (p p':key*elt) := 
           E.eq (fst p) (fst p') /\ (snd p) = (snd p').
 
-      Definition lt_key (p p':key*elt) := E.lt (fst p) (fst p').
-
     (** Specification of [MapsTo] *)
       Parameter MapsTo_1 : E.eq x y -> MapsTo x e m -> MapsTo y e m.
       
@@ -160,9 +178,8 @@ Module Type S.
         MapsTo x e m -> InA eq_key_elt (x,e) (elements m).
       Parameter elements_2 : 
         InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
-      Parameter elements_3 : sort lt_key (elements m).  
-      (* We add artificially elements_3w, a weaker version of 
-         elements_3, for allowing FMapWeak < FMap subtyping. *)
+      (** When compared with ordered FMap, here comes the only 
+         property that is really weaker: *)
       Parameter elements_3w : NoDupA eq_key (elements m).  
 
     (** Specification of [fold] *)  
@@ -206,7 +223,7 @@ Module Type S.
 	(x:key)(f:option elt->option elt'->option elt''), 
         In x (map2 f m m') -> In x m \/ In x m'.
 
-  Hint Immediate MapsTo_1 mem_2 is_empty_2 
+  Hint Immediate MapsTo_1 mem_2 is_empty_2
     map_2 mapi_2 add_3 remove_3 find_2
     : map.
   Hint Resolve mem_1 is_empty_1 is_empty_2 add_1 add_2 remove_1
@@ -215,11 +232,40 @@ Module Type S.
   (** for compatibility with earlier hints *)
   Hint Resolve map_2 mapi_2 add_3 remove_3 find_2 : oldmap.
 
+End WSfun.
+
+(** ** Main signature [WS] for Weak Maps 
+
+    Similar to [WSfun] but expressed in a self-contained way. *)
+
+Module Type WS. 
+  Declare Module E : EqualityType.
+  Include Type WSfun E.
+End WS.
+
+(** ** Maps on ordered keys, functorial signature *)
+
+Module Type Sfun (E : OrderedType).
+  Include Type WSfun E.
+  Section elt.
+  Variable elt:Set.
+   Definition lt_key (p p':key*elt) := E.lt (fst p) (fst p').
+   (* Additionnal specification of [elements] *)
+   Parameter elements_3 : forall m, sort lt_key (elements m).
+  End elt.
+End Sfun.
+
+(** ** Maps on ordered keys, self-contained signature *)
+
+Module Type S. 
+  Declare Module E : OrderedType.
+  Include Type Sfun E.
 End S.
 
+(** ** Maps with ordering both on keys and datas *)
 
 Module Type Sord.
- 
+
   Declare Module Data : OrderedType.   
   Declare Module MapS : S. 
   Import MapS.

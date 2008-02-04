@@ -14,7 +14,6 @@
  [FMapInterface.S] using lists of pairs ordered (increasing) with respect to
  left projection. *)
 
-Require Import FSetInterface. 
 Require Import FMapInterface.
 
 Set Implicit Arguments.
@@ -23,10 +22,8 @@ Unset Strict Implicit.
 Module Raw (X:OrderedType).
 
 Module E := X.
-Module MX := OrderedTypeFacts X.
-Module PX := KeyOrderedType X.
-Import MX. 
-Import PX. 
+Module Import MX := OrderedTypeFacts X.
+Module Import PX := KeyOrderedType X.
 
 Definition key := X.t.
 Definition t (elt:Set) := list (X.t * elt).

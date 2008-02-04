@@ -11,21 +11,16 @@
 (** * Finite map library *)  
 
 (** This file proposes an implementation of the non-dependant interface
- [FMapInterface.S] using lists of pairs,  unordered but without redundancy. *)
+ [FMapInterface.WS] using lists of pairs,  unordered but without redundancy. *)
 
-Require Import FSetInterface. 
-Require Import FSetWeakInterface.
-Require Import FMapWeakInterface.
+Require Import FMapInterface.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Arguments Scope list [type_scope].
-
 Module Raw (X:DecidableType).
 
-Module PX := KeyDecidableType X.
-Import PX.
+Module Import PX := KeyDecidableType X.
 
 Definition key := X.t.
 Definition t (elt:Set) := list (X.t * elt).
@@ -873,7 +868,7 @@ End Elt3.
 End Raw.
 
 
-Module Make (X: DecidableType) <: S with Module E:=X.
+Module Make (X: DecidableType) <: WS with Module E:=X.
  Module Raw := Raw X. 
 
  Module E := X.

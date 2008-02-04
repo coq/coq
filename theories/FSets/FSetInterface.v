@@ -12,18 +12,28 @@
 
 (** Set interfaces *)
 
-Require Export Bool OrderedType.
+Require Export Bool OrderedType DecidableType.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** * Non-dependent signature
+(** * Non-dependent signatures
 
-    Signature [S] presents sets as purely informative programs 
-    together with axioms *)
+    The following signatures presents sets as purely informative 
+    programs together with axioms *)
 
-Module Type S.
 
-  Declare Module E : OrderedType.
+
+(** ** Functorial signature for weak sets
+
+    Weak sets are sets without ordering on base elements, only 
+    a decidable equality. *)
+
+Module Type WSfun (E : EqualityType).
+
+  (** The module E of base objects is meant to be a DecidableType
+     (and used to be so). But requiring only an EqualityType here
+     allows subtyping between FSet and FSetWeak *)
+
   Definition elt := E.t.
 
   Parameter t : Set. (** the abstract type of sets *)
@@ -69,10 +79,10 @@ Module Type S.
   (** Set difference. *)
 
   Definition eq : t -> t -> Prop := Equal.
-  Parameter lt : t -> t -> Prop.
-  Parameter compare : forall s s' : t, Compare lt eq s s'.
-  (** Total ordering between sets. Can be used as the ordering function
-  for doing sets of sets. *)
+  (** EqualityType is a subset of this interface, but not 
+  DecidableType, in order to have FSetWeak < FSet. 
+  Hence no weak sets of weak sets in general, but it works 
+  at least with FSetWeakList.make that provides an eq_dec. *)
 
   Parameter equal : t -> t -> bool.
   (** [equal s1 s2] tests whether the sets [s1] and [s2] are
@@ -90,7 +100,9 @@ Module Type S.
 
   Parameter fold : forall A : Type, (elt -> A -> A) -> t -> A -> A.
   (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
-  where [x1 ... xN] are the elements of [s], in increasing order. *)
+  where [x1 ... xN] are the elements of [s].
+  The order in which elements of [s] are presented to [f] is
+  unspecified. *)
 
   Parameter for_all : (elt -> bool) -> t -> bool.
   (** [for_all p s] checks if all elements of the set
@@ -115,56 +127,38 @@ Module Type S.
   (** Coq comment: nat instead of int ... *)
 
   Parameter elements : t -> list elt.
-  (** Return the list of all elements of the given set.
-  The returned list is sorted in increasing order with respect
-  to the ordering [Ord.compare], where [Ord] is the argument
-  given to {!Set.Make}. *)
-
-  Parameter min_elt : t -> option elt.
-  (** Return the smallest element of the given set
-  (with respect to the [Ord.compare] ordering), or raise
-  [Not_found] if the set is empty. *)
-  (** Coq comment: [Not_found] is represented by the option type *)
-
-  Parameter max_elt : t -> option elt.
-  (** Same as {!Set.S.min_elt}, but returns the largest element of the
-  given set. *)
-  (** Coq comment: [Not_found] is represented by the option type *)
+  (** Return the list of all elements of the given set, in any order. *)
 
   Parameter choose : t -> option elt.
   (** Return one element of the given set, or raise [Not_found] if
-  the set is empty. Which element is chosen is unspecified,
-  but equal elements will be chosen for equal sets. *)
+  the set is empty. Which element is chosen is unspecified.
+  Equal sets could return different elements. *)
   (** Coq comment: [Not_found] is represented by the option type *)
 
   Section Spec. 
 
-  Variable s s' s'' : t.
+  Variable s s' s'': t.
   Variable x y : elt.
 
   (** Specification of [In] *)
   Parameter In_1 : E.eq x y -> In x s -> In y s.
- 
+
   (** Specification of [eq] *)
   Parameter eq_refl : eq s s. 
   Parameter eq_sym : eq s s' -> eq s' s.
   Parameter eq_trans : eq s s' -> eq s' s'' -> eq s s''.
- 
-  (** Specification of [lt] *)
-  Parameter lt_trans : lt s s' -> lt s' s'' -> lt s s''.
-  Parameter lt_not_eq : lt s s' -> ~ eq s s'.
 
   (** Specification of [mem] *)
   Parameter mem_1 : In x s -> mem x s = true.
   Parameter mem_2 : mem x s = true -> In x s. 
  
   (** Specification of [equal] *) 
-  Parameter equal_1 : s[=]s' -> equal s s' = true.
-  Parameter equal_2 : equal s s' = true ->s[=]s'.
+  Parameter equal_1 : Equal s s' -> equal s s' = true.
+  Parameter equal_2 : equal s s' = true -> Equal s s'.
 
   (** Specification of [subset] *)
-  Parameter subset_1 : s[<=]s' -> subset s s' = true.
-  Parameter subset_2 : subset s s' = true -> s[<=]s'.
+  Parameter subset_1 : Subset s s' -> subset s s' = true.
+  Parameter subset_2 : subset s s' = true -> Subset s s'.
 
   (** Specification of [empty] *)
   Parameter empty_1 : Empty empty.
@@ -236,20 +230,89 @@ Module Type S.
       exists_ f s = true -> Exists (fun x => f x = true) s.
 
   (** Specification of [partition] *)
-  Parameter partition_1 : compat_bool E.eq f -> 
-      fst (partition f s) [=] filter f s.
-  Parameter partition_2 : compat_bool E.eq f -> 
-      snd (partition f s) [=] filter (fun x => negb (f x)) s.
+  Parameter partition_1 :
+      compat_bool E.eq f -> Equal (fst (partition f s)) (filter f s).
+  Parameter partition_2 :
+      compat_bool E.eq f ->
+      Equal (snd (partition f s)) (filter (fun x => negb (f x)) s).
 
   End Filter.
 
   (** Specification of [elements] *)
   Parameter elements_1 : In x s -> InA E.eq x (elements s).
   Parameter elements_2 : InA E.eq x (elements s) -> In x s.
-  Parameter elements_3 : sort E.lt (elements s).  
-  (* We add artificially elements_3w, a weaker version of 
-     elements_3, for allowing FSetWeak < FSet subtyping. *)
+  (** When compared with ordered FSet, here comes the only 
+      property that is really weaker: *)
   Parameter elements_3w : NoDupA E.eq (elements s).
+
+  (** Specification of [choose] *)
+  Parameter choose_1 : choose s = Some x -> In x s.
+  Parameter choose_2 : choose s = None -> Empty s.
+
+  End Spec.
+
+  Hint Resolve mem_1 equal_1 subset_1 empty_1
+    is_empty_1 choose_1 choose_2 add_1 add_2 remove_1
+    remove_2 singleton_2 union_1 union_2 union_3
+    inter_3 diff_3 fold_1 filter_3 for_all_1 exists_1
+    partition_1 partition_2 elements_1 elements_3w 
+    : set.
+  Hint Immediate In_1 mem_2 equal_2 subset_2 is_empty_2 add_3
+    remove_3 singleton_1 inter_1 inter_2 diff_1 diff_2
+    filter_1 filter_2 for_all_2 exists_2 elements_2 
+    : set.
+
+End WSfun.
+
+
+
+(** ** Static signature for weak sets
+
+    Similar to the functorial signature [SW], except that the 
+    module [E] of base elements is incorporated in the signature. *)
+
+Module Type WS.
+  Declare Module E : EqualityType.
+  Include Type WSfun E.
+End WS.
+
+
+
+(** ** Functorial signature for full sets
+
+    Based on [WSfun], plus ordering on sets and [min_elt] and [max_elt]
+    and some stronger specifications for other functions. *)
+
+Module Type Sfun (E : OrderedType).
+  Include Type WSfun E.
+
+  Parameter lt : t -> t -> Prop.
+  Parameter compare : forall s s' : t, Compare lt eq s s'.
+  (** Total ordering between sets. Can be used as the ordering function
+  for doing sets of sets. *)
+
+  Parameter min_elt : t -> option elt.
+  (** Return the smallest element of the given set
+  (with respect to the [Ord.compare] ordering), or raise
+  [Not_found] if the set is empty. *)
+  (** Coq comment: [Not_found] is represented by the option type *)
+
+  Parameter max_elt : t -> option elt.
+  (** Same as {!Set.S.min_elt}, but returns the largest element of the
+  given set. *)
+  (** Coq comment: [Not_found] is represented by the option type *)
+
+  Section Spec. 
+
+  Variable s s' s'' : t.
+  Variable x y : elt.
+ 
+  (** Specification of [lt] *)
+  Parameter lt_trans : lt s s' -> lt s' s'' -> lt s s''.
+  Parameter lt_not_eq : lt s s' -> ~ eq s s'.
+
+  (** Additionnal specification of [elements] *)
+  Parameter elements_3 : sort E.lt (elements s).  
 
   (** Specification of [min_elt] *)
   Parameter min_elt_1 : min_elt s = Some x -> In x s. 
@@ -261,9 +324,7 @@ Module Type S.
   Parameter max_elt_2 : max_elt s = Some x -> In y s -> ~ E.lt x y. 
   Parameter max_elt_3 : max_elt s = None -> Empty s.
 
-  (** Specification of [choose] *)
-  Parameter choose_1 : choose s = Some x -> In x s.
-  Parameter choose_2 : choose s = None -> Empty s.
+  (** Additionnal specification of [choose] *)
   Parameter choose_equal: (equal s s')=true -> 
      match choose s, choose s' with  
       | Some x, Some x' => E.eq x x'
@@ -273,31 +334,42 @@ Module Type S.
 
   End Spec.
 
-  Hint Resolve mem_1 equal_1 subset_1 empty_1
-    is_empty_1 choose_1 choose_2 add_1 add_2 remove_1
-    remove_2 singleton_2 union_1 union_2 union_3
-    inter_3 diff_3 fold_1 filter_3 for_all_1 exists_1
-    partition_1 partition_2 elements_1 elements_3
-    : set.
-  Hint Immediate In_1 mem_2 equal_2 subset_2 is_empty_2 add_3
-    remove_3 singleton_1 inter_1 inter_2 diff_1 diff_2
-    filter_1 filter_2 for_all_2 exists_2 elements_2
-    min_elt_1 min_elt_2 min_elt_3 max_elt_1 max_elt_2 max_elt_3
-    : set.
-  (** for compatibility with earlier hints *)
-  Hint Resolve mem_2 equal_2 subset_2 is_empty_2 add_3
-    remove_3 singleton_1 inter_1 inter_2 diff_1 diff_2
-    filter_1 filter_2 for_all_2 exists_2 elements_2
-    min_elt_1 min_elt_2 min_elt_3 max_elt_1 max_elt_2 max_elt_3
-    : oldset.
-  
- 
+  Hint Resolve elements_3 : set.
+  Hint Immediate 
+    min_elt_1 min_elt_2 min_elt_3 max_elt_1 max_elt_2 max_elt_3 : set.
 
+End Sfun.
+
+
+(** ** Static signature for full sets
+
+    Similar to the functorial signature [Sfun], except that the 
+    module [E] of base elements is incorporated in the signature. *)
+
+Module Type S.
+  Declare Module E : OrderedType.
+  Include Type Sfun E.
 End S.
+
+
+(** ** Some subtyping tests
+
+WSfun ---> WS
+ |         |
+ |         |
+ V         V
+Sfun  ---> S 
+
+Module S_WS (M : S) <: SW := M.
+Module Sfun_WSfun (E:OrderedType)(M : Sfun E) <: WSfun E := M.
+Module S_Sfun (E:OrderedType)(M : S with Module E:=E) <: Sfun E := M.
+Module WS_WSfun (E:EqualityType)(M : WS with Module E:=E) <: WSfun E := M.
+*)
+
 
 (** * Dependent signature 
 
-    Signature [Sdep] presents sets using dependent types *)
+    Signature [Sdep] presents full sets using dependent types *)
 
 Module Type Sdep.
 
@@ -427,7 +499,8 @@ Module Type Sdep.
      match choose s, choose s' with 
        | inleft (exist x _), inleft (exist x' _) => E.eq x x'
        | inright _, inright _  => True
-       | _, _                        => False
+       | _, _  => False
      end.
 
 End Sdep.
+

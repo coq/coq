@@ -14,13 +14,13 @@
 (* $Id$ *)
 
 Require Import Ensembles Finite_sets.
-Require Import FSetInterface FSetProperties OrderedTypeEx.
+Require Import FSetInterface FSetProperties OrderedTypeEx DecidableTypeEx.
 
 (** * Going from [FSets] with usual equality 
     to the old [Ensembles] and [Finite_sets] theory. *)
 
-Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
- Module MP:= Properties(M).
+Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
+ Module MP:= WProperties U M.
  Import M MP FM Ensembles Finite_sets.
 
  Definition mkEns : M.t -> Ensemble M.elt := 
@@ -82,7 +82,7 @@ Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
  Lemma add_Add : forall x s, !!(add x s) === Add _ (!!s) x.
  Proof.
  unfold Same_set, Included, mkEns, In.
- split; intro; set_iff; inversion 1; unfold E.eq; auto with sets.
+ split; intro; set_iff; inversion 1; auto with sets.
  inversion H0.
  constructor 2; constructor.
  constructor 1; auto.
@@ -97,7 +97,7 @@ Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
  inversion H0.
  constructor 2; constructor.
  constructor 1; auto.
- red in H; rewrite H; unfold E.eq in *.
+ red in H; rewrite H.
  inversion H0; auto.
  inversion H1; auto.
  Qed.
@@ -105,7 +105,7 @@ Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
  Lemma remove_Subtract : forall x s, !!(remove x s) === Subtract _ (!!s) x.
  Proof.
  unfold Same_set, Included, mkEns, In.
- split; intro; set_iff; inversion 1; unfold E.eq in *; auto with sets.
+ split; intro; set_iff; inversion 1; auto with sets.
  split; auto.
  contradict H1.
  inversion H1; auto.
@@ -136,4 +136,10 @@ Module S_to_Finite_set (U:UsualOrderedType)(M:S with Module E := U).
  apply Add_Add; auto.
  Qed.
 
+End WS_to_Finite_set.
+
+
+Module S_to_Finite_set (U:UsualOrderedType)(M: Sfun U).
+  Module D := OT_as_DT U.
+  Include WS_to_Finite_set D M.
 End S_to_Finite_set.

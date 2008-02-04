@@ -13,7 +13,7 @@
 (** This file proposes an implementation of the non-dependant 
     interface [FSetWeakInterface.S] using lists without redundancy. *)
 
-Require Import FSetWeakInterface.
+Require Import FSetInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -804,7 +804,7 @@ End Raw.
    Now, in order to really provide a functor implementing [S], we 
    need to encapsulate everything into a type of lists without redundancy. *)
 
-Module Make (X: DecidableType) <: S with Module E := X.
+Module Make (X: DecidableType) <: WS with Module E := X.
 
  Module Raw := Raw X. 
  Module E := X.

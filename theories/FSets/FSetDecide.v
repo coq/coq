@@ -17,11 +17,11 @@
 (** This file implements a decision procedure for a certain
     class of propositions involving finite sets.  *)
 
-Require Import Decidable DecidableTypeEx FSetWeakFacts.
+Require Import Decidable DecidableTypeEx FSetFacts.
 
-Module WeakDecide 
- (Import M : FSetWeakInterface.S)
- (D:DecidableType with Definition t:=M.E.t with Definition eq:=M.E.eq).
+(** First, a version for Weak Sets *)
+
+Module WDecide (E : DecidableType)(Import M : WSfun E).
 
 (** * Overview
     This functor defines the tactic [fsetdec], which will
@@ -566,7 +566,7 @@ the above form:
         the predicates [In] and [E.eq] applied only to
         variables.  We are going to use them with [autorewrite].
         *)
-    Module F := FSetWeakFacts.Facts M D.
+    Module F := FSetFacts.WFacts E M.
     Hint Rewrite
       F.empty_iff F.singleton_iff F.add_iff F.remove_iff
       F.union_iff F.inter_iff F.diff_iff
@@ -585,7 +585,7 @@ the above form:
     Lemma dec_eq : forall (x y : E.t),
       decidable (E.eq x y).
     Proof.
-      red; intros x y; destruct (D.eq_dec x y); auto.
+      red; intros x y; destruct (E.eq_dec x y); auto.
     Qed.
 
     (** The hint database [FSet_decidability] will be given to
@@ -930,12 +930,15 @@ the above form:
 
   End FSetDecideTestCases.
 
-End WeakDecide.
+End WDecide.
 
 Require Import FSetInterface.
 
-Module Decide (M : FSetInterface.S).
+(** Now comes a special version dedicated to full sets. For this 
+    one, only one argument [(M:S)] is necessary. *)
+
+Module Decide (M : S).
   Module D:=OT_as_DT M.E.
-  Module WD := WeakDecide M D.
+  Module WD := WDecide D M.
   Ltac fsetdec := WD.fsetdec.
 End Decide.

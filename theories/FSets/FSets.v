@@ -11,8 +11,11 @@
 Require Export OrderedType.
 Require Export OrderedTypeEx.
 Require Export OrderedTypeAlt.
+Require Export DecidableType.
+Require Export DecidableTypeEx.
 Require Export FSetInterface.
 Require Export FSetBridge.
 Require Export FSetProperties.
 Require Export FSetEqProperties.
+Require Export FSetWeakList.
 Require Export FSetList.
