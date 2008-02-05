@@ -545,7 +545,7 @@ let rec get_modtype_substobjs env = function
 		 Modops.resolver_of_environment farg_id farg_b mp env in
 		 (* application outside the kernel, only for substitutive
                     objects (that are all non-logical objects) *)
-		 (add_mbid mbid mp (Some resolve) subst, mbids, msid, objs)
+		 (join subst (add_mbid mbid mp (Some resolve) empty_subst), mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
 	       | _ -> error "Application of a functor with too few arguments")
@@ -849,7 +849,7 @@ let rec get_module_substobjs env = function
                Modops.resolver_of_environment farg_id farg_b mp env in
                (* application outside the kernel, only for substitutive
                   objects (that are all non-logical objects) *)
-	       (add_mbid mbid mp (Some resolve) subst, mbids, msid, objs)
+	       (join subst (add_mbid mbid mp (Some resolve) empty_subst), mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
 	       | _ -> error "Application of a functor with too few arguments")
