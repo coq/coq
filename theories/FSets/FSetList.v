@@ -25,7 +25,6 @@ Unset Strict Implicit.
 
 Module Raw (X: OrderedType).
  
-  Module E := X.
   Module MX := OrderedTypeFacts X.
   Import MX.
 
@@ -649,7 +648,7 @@ Module Raw (X: OrderedType).
   unfold elements; auto.
   Qed.
 
-  Lemma elements_3w : forall (s : t) (Hs : Sort s), NoDupA E.eq (elements s).  
+  Lemma elements_3w : forall (s : t) (Hs : Sort s), NoDupA X.eq (elements s).  
   Proof. 
   unfold elements; auto.
   Qed.

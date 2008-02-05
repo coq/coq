@@ -21,7 +21,6 @@ Unset Strict Implicit.
 
 Module Raw (X:OrderedType).
 
-Module E := X.
 Module Import MX := OrderedTypeFacts X.
 Module Import PX := KeyOrderedType X.
 

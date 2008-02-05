@@ -24,8 +24,6 @@ Unset Strict Implicit.
    And the functions returning sets are proved to preserve this invariant. *)
 
 Module Raw (X: DecidableType).
- 
-  Module E := X.
 
   Definition elt := X.t.
   Definition t := list elt.

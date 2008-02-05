@@ -32,7 +32,6 @@ Module II:=MoreInt(I).
 Import II.
 Open Local Scope Int_scope.
 
-Module E := X.
 Module MX := OrderedTypeFacts X.
 Module PX := KeyOrderedType X.
 Module L := FMapList.Raw X.

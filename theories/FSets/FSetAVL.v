@@ -30,7 +30,6 @@ Module II:=MoreInt(I).
 Import II.
 Open Local Scope Int_scope.
 
-Module E := X.
 Module MX := OrderedTypeFacts X.
 
 Definition elt := X.t.
@@ -1647,7 +1646,7 @@ Fixpoint for_all (s:t) : bool := match s with
   | Node l x r _ => f x && for_all l && for_all r
 end.
 
-Lemma for_all_1 : forall s, compat_bool E.eq f ->
+Lemma for_all_1 : forall s, compat_bool X.eq f ->
  For_all (fun x => f x = true) s -> for_all s = true.
 Proof.
  induction s; simpl; auto.
@@ -1658,7 +1657,7 @@ Proof.
  destruct (f t); simpl; auto.
 Qed.
 
-Lemma for_all_2 : forall s, compat_bool E.eq f ->
+Lemma for_all_2 : forall s, compat_bool X.eq f ->
  for_all s = true -> For_all (fun x => f x = true) s.
 Proof.
  induction s; simpl; auto; intros; red; intros; inv In.
@@ -1676,7 +1675,7 @@ Fixpoint exists_ (s:t) : bool := match s with
   | Node l x r _ => f x || exists_ l || exists_ r
 end.  
 
-Lemma exists_1 : forall s, compat_bool E.eq f ->
+Lemma exists_1 : forall s, compat_bool X.eq f ->
  Exists (fun x => f x = true) s -> exists_ s = true.
 Proof.
  induction s; simpl; destruct 2 as (x,(U,V)); inv In.
@@ -1686,7 +1685,7 @@ Proof.
  apply orb_true_intro; right; apply IHs2; firstorder.
 Qed.
 
-Lemma exists_2 : forall s, compat_bool E.eq f ->
+Lemma exists_2 : forall s, compat_bool X.eq f ->
  exists_ s = true -> Exists (fun x => f x = true) s.
 Proof. 
  induction s; simpl; intros.
