@@ -121,3 +121,19 @@ cut (Qfloor (-y) <= Qfloor (-x))%Z; auto with *.
 Qed.
 
 Hint Resolve Qceiling_resp_le : qarith.
+
+Add Morphism Qfloor with signature Qeq ==> eq as Qfloor_comp.
+Proof.
+intros x y H.
+apply Zle_antisym.
+ auto with *.
+symmetry in H; auto with *.
+Qed.
+
+Add Morphism Qceiling with signature Qeq ==> eq as Qceiling_comp.
+Proof.
+intros x y H.
+apply Zle_antisym.
+ auto with *.
+symmetry in H; auto with *.
+Qed.
