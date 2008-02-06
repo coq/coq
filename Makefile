@@ -78,9 +78,9 @@ define stage-template
 endef
 endif
 
-UNSAVED_FILES:=$(shell find . -name '.\#*')
+UNSAVED_FILES:=$(shell find . -name '.\#*v' -o -name '.\#*.ml' -o -name '.\#*.mli' -o -name '.\#*.ml4')
 ifdef UNSAVED_FILES
-$(error You have unsaved changes in your editor (emacs?); cancel them or save before proceeding. \
+$(error You have unsaved changes in your editor (emacs?) [$(UNSAVED_FILES)]; cancel them or save before proceeding. \
 Or your editor crashed. Then, you may want to consider whether you want to restore the autosaves)
 #If you try to simply remove this explicit test, the compilation may
 #fail later. In particular, if a .#*.v file exists, coqdep fails to
