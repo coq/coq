@@ -75,6 +75,9 @@ Require Import Coq.Arith.Arith.
 
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
+Program Instance eq_setoid : Setoid A :=
+  equiv := eq ; setoid_equiv := eq_equivalence.
+
 Program Instance nat_eq_eqdec : ? EqDec (@eq_setoid nat) :=
   equiv_dec := eq_nat_dec.
 
@@ -102,6 +105,8 @@ Program Instance [ ? EqDec (@eq_setoid A), ? EqDec (@eq_setoid B) ] =>
       else right
     else right.
 
+  Solve Obligations using unfold complement ; program_simpl.
+
 (** Objects of function spaces with countable domains like bool have decidable equality. *)
 
 Require Import Coq.Program.FunctionalExtensionality.
@@ -113,11 +118,10 @@ Program Instance [ ? EqDec (@eq_setoid A) ] => bool_function_eqdec : ? EqDec (@e
       else right
     else right.
 
-  Solve Obligations using try red ; unfold equiv ; program_simpl.
+  Solve Obligations using try red ; unfold equiv, complement ; program_simpl.
 
   Next Obligation.
   Proof.
     extensionality x.
     destruct x ; auto.
   Qed.
-
