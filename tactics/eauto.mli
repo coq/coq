@@ -12,6 +12,8 @@ open Proof_type
 open Tacexpr
 open Auto
 open Topconstr
+open Evd
+open Environ
 (*i*)
 
 val rawwit_hintbases : hint_db_name list option raw_abstract_argument_type
@@ -23,6 +25,11 @@ val e_assumption : tactic
 val registered_e_assumption : tactic
 
 val e_give_exact_constr : constr -> tactic
+
+val full_eauto_gls : bool -> bool * int -> constr list -> goal list sigma * validation -> 
+  goal list sigma * validation
+
+val resolve_all_evars : env -> (constr -> bool) -> evar_defs -> evar_defs
 
 val gen_eauto : bool -> bool * int -> constr list -> 
   hint_db_name list option -> tactic

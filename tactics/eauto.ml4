@@ -281,7 +281,8 @@ module SearchProblem = struct
 	     let hintl = 
 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
 	     in
-             let ldb = Hint_db.add_list hintl (List.hd s.localdb) in
+	       
+             let ldb = Hint_db.add_list hintl (match s.localdb with [] -> assert false | hd :: _ -> hd) in
 	     { depth = s.depth; tacres = res; 
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb })
@@ -289,8 +290,7 @@ module SearchProblem = struct
       in
       let rec_tacs = 
 	let l = 
-	  filter_tactics s.tacres
-	    (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
+	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
 	in
 	List.map 
 	  (fun ((lgls,_) as res, pp) -> 
@@ -302,7 +302,7 @@ module SearchProblem = struct
 	       { depth = pred s.depth; tacres = res; 
 		 dblist = s.dblist; last_tactic = pp;
 		 localdb = 
-		   list_addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb })
+		   list_addn (nbgl'-nbgl) (match s.localdb with [] -> assert false | hd :: _ -> hd) s.localdb })
 	  l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
@@ -322,10 +322,26 @@ let make_initial_state n gl dblist localdb =
     SearchProblem.dblist = dblist;
     SearchProblem.localdb = [localdb] }
 
+let make_initial_state_gls n gls dblist localdb =
+  { SearchProblem.depth = n;
+    SearchProblem.tacres = gls;
+    SearchProblem.last_tactic = (mt ());
+    SearchProblem.dblist = dblist;
+    SearchProblem.localdb = [localdb] }
+
+let debug_depth_first = Search.debug_depth_first
+
 let e_depth_search debug p db_list local_db gl =
   try
     let tac = if debug then Search.debug_depth_first else Search.depth_first in
     let s = tac (make_initial_state p gl db_list local_db) in
+    s.SearchProblem.tacres
+  with Not_found -> error "EAuto: depth first search failed"
+
+let e_depth_search_gls debug p db_list local_db gls =
+  try
+    let tac = if debug then Search.debug_depth_first else Search.depth_first in
+    let s = tac (make_initial_state_gls p gls db_list local_db) in
     s.SearchProblem.tacres
   with Not_found -> error "EAuto: depth first search failed"
 
@@ -338,12 +354,31 @@ let e_breadth_search debug n db_list local_db gl =
     s.SearchProblem.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
+let e_breadth_search_gls debug n db_list local_db gls =
+  try
+    let tac = 
+      if debug then Search.debug_breadth_first else Search.breadth_first 
+    in
+    let s = tac (make_initial_state_gls n gls db_list local_db) in
+    s.SearchProblem.tacres
+  with Not_found -> error "EAuto: breadth first search failed"
+
 let e_search_auto debug (in_depth,p) lems db_list gl = 
   let local_db = make_local_hint_db lems gl in 
   if in_depth then 
     e_depth_search debug p db_list local_db gl
   else 
     e_breadth_search debug p db_list local_db gl
+
+open Evd
+
+let e_search_auto_gls debug (in_depth,p) lems db_list gls = 
+  let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
+  let local_db = make_local_hint_db lems ({it = List.hd gls'; sigma = sigma}) in
+  if in_depth then 
+    e_depth_search_gls debug p db_list local_db gls
+  else
+    e_breadth_search_gls debug p db_list local_db gls
 
 let eauto debug np lems dbnames =
   let db_list =
@@ -360,6 +395,12 @@ let full_eauto debug n lems gl =
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
   tclTRY (e_search_auto debug n lems db_list) gl
+
+let full_eauto_gls debug n lems gls = 
+  let dbnames = current_db_names () in
+  let dbnames =  list_subtract dbnames ["v62"] in
+  let db_list = List.map searchtable_map dbnames in
+    e_search_auto_gls debug n lems db_list gls
 
 let gen_eauto d np lems = function
   | None -> full_eauto d np lems
@@ -412,3 +453,50 @@ TACTIC EXTEND eauto
     hintbases(db) ] ->
     [ gen_eauto false (make_dimension n p) lems db ]
 END
+
+TACTIC EXTEND debug_eauto
+| [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems) 
+    hintbases(db) ] ->
+    [ gen_eauto true (make_dimension n p) lems db ]
+END
+
+TACTIC EXTEND dfs_eauto
+| [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems) 
+      hintbases(db) ] ->
+    [ gen_eauto false (true, make_depth p) lems db ]
+END
+
+open Evd
+
+exception Found of evar_defs
+
+let resolve_all_evars env p evd =
+  let evm = Evd.evars_of evd in
+  let goals, sigma = 
+    Evd.fold
+      (fun ev evi (gls, sigma) ->
+	if p evi.evar_concl then
+	  (evi :: gls, sigma)
+	else (gls, Evd.add sigma ev evi))
+      evm ([], Evd.empty)
+  in
+  let gls = { it = List.rev goals; sigma = sigma } in
+  let res_sigma = ref sigma in
+  let valid l = 
+    let evd' =
+      Evd.fold
+	(fun ev evi (gls, sigma) ->
+	  if p evi.evar_concl then
+	    match gls with
+		hd :: tl -> 
+		  let cstr, obls = Refiner.extract_open_proof !res_sigma hd in
+		  (tl, Evd.evar_define ev cstr sigma)
+	      | [] -> assert(false)
+	  else (gls, sigma))
+	evm (l, evd)
+    in raise (Found (snd evd'))
+  in
+  let gls', valid' = full_eauto_gls true (false, 10) [] (gls, valid) in
+    res_sigma := sig_sig gls';
+    try ignore(valid' []); assert(false) with Found evd' -> evd'
+    
