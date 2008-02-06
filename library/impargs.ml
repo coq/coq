@@ -237,7 +237,8 @@ let rec prepare_implicits f = function
 
 let compute_implicits_flags env f all t = 
   compute_implicits_gen 
-    f.strict f.strongly_strict f.reversible_pattern f.contextual all env t
+    (f.strict or f.strongly_strict) f.strongly_strict
+    f.reversible_pattern f.contextual all env t
     
 let compute_implicits_auto env f t =
   let l = compute_implicits_flags env f false t in
