@@ -64,6 +64,7 @@ val resolve_typeclass : env -> evar -> evar_info -> evar_defs * bool -> evar_def
 val resolve_typeclasses : ?check:bool -> env -> evar_map -> evar_defs -> evar_defs
 
 val solve_instanciation_problem : (env -> evar_defs -> existential_key -> evar_info -> evar_defs * bool) ref
+val solve_instanciations_problem : (env -> evar_defs -> evar_defs) ref
 
 type substitution = (identifier * constr) list
 

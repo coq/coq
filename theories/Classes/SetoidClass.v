@@ -23,12 +23,17 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 
 Require Export Coq.Classes.Relations.
+Require Export Coq.Classes.Morphisms.
 
 (** A setoid wraps an equivalence. *)
 
 Class Setoid A :=
   equiv : relation A ;
   setoid_equiv :> Equivalence A equiv.
+
+Program Instance [ eqa : Equivalence A (eqA : relation A) ] => 
+  equivalence_setoid : Setoid A :=
+  equiv := eqA ; setoid_equiv := eqa.
 
 (** Shortcuts to make proof search easier. *)
 
@@ -43,8 +48,8 @@ Proof. eauto with typeclass_instances. Qed.
 
 (** Standard setoids. *)
 
-Program Instance eq_setoid : Setoid A :=
-  equiv := eq ; setoid_equiv := eq_equivalence.
+(* Program Instance eq_setoid : Setoid A := *)
+(*   equiv := eq ; setoid_equiv := eq_equivalence. *)
 
 Program Instance iff_setoid : Setoid Prop :=
   equiv := iff ; setoid_equiv := iff_equivalence.
@@ -56,14 +61,7 @@ Program Instance iff_setoid : Setoid Prop :=
 
 Notation " x == y " := (equiv x y) (at level 70, no associativity) : type_scope.
 
-Notation " x =/= y " := (~ x == y) (at level 70, no associativity) : type_scope.
-
-Lemma nequiv_sym : forall [ s : Setoid A ] (x y : A), x =/= y -> y =/= x.
-Proof with auto.
-  intros ; red ; intros.
-  apply H.
-  sym...
-Qed.
+Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) : type_scope.
 
 (** Use the [clsubstitute] command which substitutes an equality in every hypothesis. *)
 
@@ -82,15 +80,15 @@ Ltac clsubst_nofail :=
 
 Tactic Notation "clsubst" "*" := clsubst_nofail.
 
-Lemma nequiv_equiv : forall [ Setoid A ] (x y z : A), x =/= y -> y == z -> x =/= z.
-Proof.
-  intros; intro. 
+Lemma nequiv_equiv_trans : forall [ Setoid A ] (x y z : A), x =/= y -> y == z -> x =/= z.
+Proof with auto.
+  intros; intro.
   assert(z == y) by relation_sym.
   assert(x == y) by relation_trans.
   contradiction.
 Qed.
 
-Lemma equiv_nequiv : forall [ Setoid A ] (x y z : A), x == y -> y =/= z -> x =/= z.
+Lemma equiv_nequiv_trans : forall [ Setoid A ] (x y z : A), x == y -> y =/= z -> x =/= z.
 Proof.
   intros; intro. 
   assert(y == x) by relation_sym.

@@ -139,5 +139,3 @@ Tactic Notation "exist" constr(x) := exists x.
 Tactic Notation "exist" constr(x) constr(y) := exists x ; exists y.
 Tactic Notation "exist" constr(x) constr(y) constr(z) := exists x ; exists y ; exists z.
 Tactic Notation "exist" constr(x) constr(y) constr(z) constr(w) := exists x ; exists y ; exists z ; exists w.
-
-Notation " ! A " := (notT A) (at level 200, A at level 100) : type_scope.

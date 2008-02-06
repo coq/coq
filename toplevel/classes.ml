@@ -492,3 +492,60 @@ let _ =
     (fun env evd ev evi -> 
       Library.require_library [(dummy_loc, module_qualid)] None; (* may be inefficient *)
       solve_by_tac env evd ev evi (Lazy.force tactic))
+
+let prod = lazy (Coqlib.build_prod ())
+
+let build_conjunction evm =
+  List.fold_left
+    (fun (acc, evs) (ev, evi)  ->
+      if class_of_constr evi.evar_concl <> None then
+	mkApp ((Lazy.force prod).Coqlib.typ, [|evi.evar_concl; acc |]), evs
+      else acc, Evd.add evs ev evi)
+    (Coqlib.build_coq_True (), Evd.empty) evm
+
+let destruct_conjunction evm_list evm evm' term =
+  let _, evm =
+    List.fold_right
+      (fun (ev, evi) (term, evs) ->
+	if class_of_constr evi.evar_concl <> None then
+	  match kind_of_term term with
+	    | App (x, [| _ ; _ ; proof ; term |]) ->
+		let evs' = Evd.define evs ev proof in
+		  (term, evs')
+	    | _ -> assert(false)
+	else
+	  match (Evd.find evm' ev).evar_body with
+	      Evar_empty -> raise Not_found
+	    | Evar_defined c ->
+		let evs' = Evd.define evs ev c in
+		  (term, evs'))
+      evm_list (term, evm)
+  in evm
+ 
+(* let solve_by_tac env evd evar evi t = *)
+(*   let goal = {it = evi; sigma = (Evd.evars_of evd) } in *)
+(*   let (res, valid) = t goal in *)
+(*     if res.it = [] then *)
+(*       let prooftree = valid [] in *)
+(*       let proofterm, obls = Refiner.extract_open_proof res.sigma prooftree in *)
+(* 	if obls = [] then *)
+(* 	  let evd' = evars_reset_evd res.sigma evd in *)
+(* 	  let evd' = evar_define evar proofterm evd' in *)
+(* 	    evd', true *)
+(* 	else evd, false *)
+(*     else evd, false *)
+
+let resolve_all_typeclasses env evd =
+  let evm = Evd.evars_of evd in
+  let evm_list = Evd.to_list evm in
+  let goal, typesevm = build_conjunction evm_list in
+  let evars = ref (Evd.create_evar_defs typesevm) in
+  let term = resolve_one_typeclass_evd env evars goal in
+  let evm' = destruct_conjunction evm_list evm (Evd.evars_of !evars) term in
+    Evd.create_evar_defs evm'
+
+let _ =
+  Typeclasses.solve_instanciations_problem :=
+    (fun env evd -> 
+      Library.require_library [(dummy_loc, module_qualid)] None; (* may be inefficient *)
+      resolve_all_typeclasses env evd)

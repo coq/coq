@@ -69,3 +69,5 @@ val push_named_context : named_context -> env -> env
 val name_typeclass_binders : Idset.t ->
     Topconstr.local_binder list ->
     Topconstr.local_binder list * Idset.t
+
+val resolve_all_typeclasses : env -> evar_defs -> evar_defs

@@ -54,6 +54,7 @@ let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 let iff = lazy (gen_constant ["Init"; "Logic"] "iff")
 let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
 let arrow = lazy (gen_constant ["Program"; "Basics"] "arrow")
+let coq_id = lazy (gen_constant ["Program"; "Basics"] "id")
 
 let reflexive_type = lazy (gen_constant ["Classes"; "Relations"] "Reflexive")
 let reflexive_proof = lazy (gen_constant ["Classes"; "Relations"] "reflexive")
@@ -66,8 +67,8 @@ let transitive_proof = lazy (gen_constant ["Classes"; "Relations"] "transitive")
 
 let inverse = lazy (gen_constant ["Classes"; "Relations"] "inverse")
 
-let respectful_dep = lazy (gen_constant ["Classes"; "Relations"] "respectful_dep")
-let respectful = lazy (gen_constant ["Classes"; "Relations"] "respectful")
+let respectful_dep = lazy (gen_constant ["Classes"; "Morphisms"] "respectful_dep")
+let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
 
 let iff_equiv = lazy (gen_constant ["Classes"; "Relations"] "iff_equivalence")
 let eq_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "eq_equivalence")
@@ -100,7 +101,7 @@ exception Found of (constr * constr * (types * types) list * constr * constr arr
 
 let resolve_morphism_evd env evd app = 
   let ev = Evarutil.e_new_evar evd env app in
-  let evd' = resolve_typeclasses ~check:false env (Evd.evars_of !evd) !evd in
+  let evd' = resolve_typeclasses ~check:true env (Evd.evars_of !evd) !evd in
   let evm' = Evd.evars_of evd' in
     match Evd.evar_body (Evd.find evm' (fst (destEvar ev))) with
 	Evd.Evar_empty -> raise Not_found
@@ -141,17 +142,18 @@ let build_signature isevars env m cstrs finalcstr =
       | _, _ -> assert false
   in aux m cstrs
 
-let reflexivity_proof env carrier relation x =
-  let goal = 
+let reflexivity_proof env evars carrier relation x =
+  let goal =
     mkApp (Lazy.force reflexive_type, [| carrier ; relation |])
   in
-    try let inst = resolve_one_typeclass env goal in
-	  mkApp (Lazy.force reflexive_proof, [| carrier ; relation ; inst ; x |])
-    with Not_found ->
-      let meta = Evarutil.new_meta() in
-	mkCast (mkMeta meta, DEFAULTcast, mkApp (relation, [| x; x |]))
+  let inst = Evarutil.e_new_evar evars env goal in
+    (* try resolve_one_typeclass env goal *)
+  mkApp (Lazy.force reflexive_proof, [| carrier ; relation ; inst ; x |])
+    (*     with Not_found -> *)
+(*       let meta = Evarutil.new_meta() in *)
+(* 	mkCast (mkMeta meta, DEFAULTcast, mkApp (relation, [| x; x |])) *)
 	  
-let resolve_morphism env sigma direction oldt m args args' cstr = 
+let resolve_morphism env sigma oldt m args args' cstr evars =
   let (morphism_cl, morphism_proj) = Lazy.force morphism_class in
   let morph_instance, proj, sigargs, m', args, args' = 
 (*     if is_equiv env sigma m then  *)
@@ -165,45 +167,38 @@ let resolve_morphism env sigma direction oldt m args args' cstr =
 (*       let m' = mkApp (m, [| a; r; s |]) in *)
 (* 	inst, proj, ctxargs, m', rest, rest' *)
 (*     else *)
-    let evars = ref (Evd.create_evar_defs Evd.empty) in
-    let pars =
-	match Array.length args with
-	    1 -> [1]
-	  | 2 -> [2;1]
-	  | 3 -> [3;2;1]
-	  | _ -> [4;3;2;1]
-      in
-	try 
-	  List.iter (fun n ->
-	    evars := Evd.create_evar_defs Evd.empty;
-	    let morphargs, morphobjs = array_chop (Array.length args - n) args in
-	    let morphargs', morphobjs' = array_chop (Array.length args - n) args' in
-	    let appm = mkApp(m, morphargs) in
-	    let appmtype = Typing.type_of env sigma appm in
-	    let signature, sigargs = build_signature evars env appmtype (Array.to_list morphobjs') cstr in
-	    let cl_args = [| appmtype ; signature ; appm |] in
-	    let app = mkApp (mkInd morphism_cl.cl_impl, cl_args) in
-	      try 
-		let morph = resolve_morphism_evd env evars app in
-		let evm = Evd.evars_of !evars in
-		let sigargs = List.map 
-		  (fun x, y -> Reductionops.nf_evar evm x, Reductionops.nf_evar evm y) 
-		  sigargs 
-		in
-		let appm = Reductionops.nf_evar evm appm in
-		let cl_args = Array.map (Reductionops.nf_evar evm) cl_args in
-		let proj = 
-		  mkApp (mkConst morphism_proj, 
-			Array.append cl_args [|morph|])
-		in
-		  raise (Found (morph, proj, sigargs, appm, morphobjs, morphobjs'))
-	      with Not_found -> ()
-		| Reduction.NotConvertible -> ()
-		| Stdpp.Exc_located (_, Pretype_errors.PretypeError _) 
-		| Pretype_errors.PretypeError _ -> ())
-	    pars;
-	  raise Not_found
-	with Found x -> x
+    let first = 
+      let first = ref (-1) in
+	for i = 0 to Array.length args' - 1 do
+	  if !first = -1 && args'.(i) <> None then first := i
+	done;
+	!first
+    in
+(*       try  *)
+	let morphargs, morphobjs = array_chop first args in
+	let morphargs', morphobjs' = array_chop first args' in
+	let appm = mkApp(m, morphargs) in
+	let appmtype = Typing.type_of env sigma appm in
+	let signature, sigargs = build_signature evars env appmtype (Array.to_list morphobjs') cstr in
+	let cl_args = [| appmtype ; signature ; appm |] in
+	let app = mkApp (mkInd morphism_cl.cl_impl, cl_args) in
+(* 	let morph = resolve_morphism_evd env evars app in *)
+	let morph = Evarutil.e_new_evar evars env app in
+(* 	let evm = Evd.evars_of !evars in *)
+(* 	let sigargs = List.map  *)
+(* 	  (fun x, y -> Reductionops.nf_evar evm x, Reductionops.nf_evar evm y)  *)
+(* 	  sigargs  *)
+(* 	in *)
+(* 	let appm = Reductionops.nf_evar evm appm in *)
+(* 	let cl_args = Array.map (Reductionops.nf_evar evm) cl_args in *)
+	let proj = 
+	  mkApp (mkConst morphism_proj, 
+		Array.append cl_args [|morph|])
+	in
+	  morph, proj, sigargs, appm, morphobjs, morphobjs'
+(*       with Reduction.NotConvertible *)
+(* 	| Stdpp.Exc_located (_, Pretype_errors.PretypeError _)  *)
+(* 	| Pretype_errors.PretypeError _ -> raise Not_found *)
   in 
   let projargs, respars, typeargs = 
     array_fold_left2 
@@ -211,7 +206,7 @@ let resolve_morphism env sigma direction oldt m args args' cstr =
 	let (carrier, relation), sigargs = split_head sigargs in
 	  match y with
 	      None ->
-		let refl_proof = reflexivity_proof env carrier relation x in
+		let refl_proof = reflexivity_proof env evars carrier relation x in
 		  [ refl_proof ; x ; x ] @ acc, sigargs, x :: typeargs'
 	    | Some (p, (_, _, _, t')) ->
 		[ p ; t'; x ] @ acc, sigargs, t' :: typeargs')
@@ -223,13 +218,24 @@ let resolve_morphism env sigma direction oldt m args args' cstr =
 	[ a, r ] -> (proof, (a, r, oldt, newt))
       | _ -> assert(false)
 
-let build_new gl env sigma direction occs origt newt hyp hypinfo concl cstr =
+let build_new gl env sigma occs origt newt hyp hypinfo concl cstr evars =
   let is_occ occ = occs = [] || List.mem occ occs in
   let rec aux t occ cstr =
     match kind_of_term t with
       | _ when eq_constr t origt -> 
 	  if is_occ occ then
-	    Some (hyp, hypinfo), succ occ
+	    match cstr with
+		None -> Some (hyp, hypinfo), succ occ
+	      | Some _ ->
+		  let (car, r, orig, dest) = hypinfo in
+		  let res = 
+		    try 
+		      Some (resolve_morphism env sigma t 
+			       (mkLambda (Name (id_of_string "x"), car, mkRel 1))
+			       (* (mkApp (Lazy.force coq_id, [| car |])) *)
+			       [| origt |] [| Some (hyp, hypinfo) |] cstr evars)
+		    with Not_found -> None
+		  in res, succ occ
 	  else None, succ occ
 
       | App (m, args) ->
@@ -242,7 +248,7 @@ let build_new gl env sigma direction occs origt newt hyp hypinfo concl cstr =
 	    if List.for_all (fun x -> x = None) args' then None
 	    else 
 	      let args' = Array.of_list (List.rev args') in
-		(try Some (resolve_morphism env sigma direction t m args args' cstr)
+		(try Some (resolve_morphism env sigma t m args args' cstr evars)
 		  with Not_found -> None)
 	  in res, occ
 
@@ -252,9 +258,9 @@ let build_new gl env sigma direction occs origt newt hyp hypinfo concl cstr =
 	  let res = 
 	    if x' = None && b' = None then None
 	    else 
-	      (try Some (resolve_morphism env sigma direction t
+	      (try Some (resolve_morphism env sigma t
 			    (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |]
-			    cstr)
+			    cstr evars)
 		with Not_found -> None)
 	  in res, occ
 
@@ -287,6 +293,13 @@ let decompose_setoid_eqhyp gl env sigma c left2right t =
     if left2right then res
     else (c, (car, mkApp (Lazy.force inverse, [| car ; rel |]), y, x))
 
+let resolve_all_typeclasses env evd = 
+  Eauto.resolve_all_evars env (fun x -> Typeclasses.class_of_constr x <> None) evd
+    
+(* let _ =  *)
+(*   Typeclasses.solve_instanciation_problem := *)
+(*     (fun env evd ev evi -> resolve_all_typeclasses env evd, true) *)
+
 let cl_rewrite_clause c left2right occs clause gl =
   let env = pf_env gl in
   let sigma = project gl in
@@ -302,10 +315,19 @@ let cl_rewrite_clause c left2right occs clause gl =
 	None -> (mkProp, mkApp (Lazy.force inverse, [| mkProp; Lazy.force impl |]))
       | Some _ -> (mkProp, Lazy.force impl)
   in
-  let eq, _ = build_new gl env sigma left2right occs origt newt hypt hypinfo concl (Some cstr) in
+  let evars = ref (Evd.create_evar_defs Evd.empty) in
+  let eq, _ = build_new gl env sigma occs origt newt hypt hypinfo concl (Some cstr) evars in
     match eq with  
 	Some (p, (_, _, oldt, newt)) -> 
-	  (match is_hyp with
+(* 	  evars := Typeclasses.resolve_typeclasses ~check:false env (Evd.evars_of !evars) !evars; *)
+	  evars := Classes.resolve_all_typeclasses env !evars;
+(* 	  evars := resolve_all_typeclasses env !evars; *)
+	  evars := Evarutil.nf_evar_defs !evars;
+	  let p = Evarutil.nf_isevar !evars p in
+	  let newt = Evarutil.nf_isevar !evars newt in
+	  let undef = Evd.undefined_evars !evars in
+	    tclTHEN (Refiner.tclEVARS (Evd.evars_of undef))
+	      (match is_hyp with
 	    | Some id -> Tactics.apply_in true id [p,NoBindings]
 	    | None -> 
 		let meta = Evarutil.new_meta() in
