@@ -731,7 +731,8 @@ let rec intern_atomic lf ist x =
       TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
   | TacChange (occl,c,cl) ->
       TacChange (Option.map (intern_constr_occurrence ist) occl,
-        (if occl = None then intern_type ist c else intern_constr ist c),
+        (if occl = None & cl.onhyps = None & cl.concl_occs = []
+         then intern_type ist c else intern_constr ist c),
 	clause_app (intern_hyp_location ist) cl)
 
   (* Equivalence relations *)
