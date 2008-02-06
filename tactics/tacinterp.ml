@@ -2091,7 +2091,8 @@ and interp_atomic ist gl = function
       h_reduce (pf_interp_red_expr ist gl r) (interp_clause ist gl cl)
   | TacChange (occl,c,cl) ->
       h_change (Option.map (pf_interp_pattern ist gl) occl)
-        (if occl = None then pf_interp_type ist gl c 
+        (if occl = None & cl.onhyps = None & cl.concl_occs = []
+	 then pf_interp_type ist gl c 
 	 else pf_interp_constr ist gl c)
         (interp_clause ist gl cl)
 
