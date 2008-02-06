@@ -398,6 +398,11 @@ case $ARCH in
 if [ "$camlp5dir" != "" ]; then
     CAMLP4=camlp5
     CAMLP4LIB=$camlp5dir
+    if [ ! -f $camlp5dir/camlp5.cma ]; then
+        echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)"
+        echo "Configuration script failed!"
+        exit 1
+    fi
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
 elif [ "$CAMLTAG" = "OCAML310" ]; then
     if [ -x "${CAMLLIB}/camlp5" ]; then 
