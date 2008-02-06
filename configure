@@ -399,7 +399,7 @@ esac
 # Very basic for the moment: if camlp5 exists, we use it...
 
 if [ "$camlp5dir" != "" ]; then
-    CAMLP4=$camlp5dir
+    CAMLP4=camlp5
     CAMLP4LIB=$camlp5dir
     if [ ! -f $camlp5dir/camlp5.cma ]; then
 	echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)"
@@ -409,19 +409,19 @@ if [ "$camlp5dir" != "" ]; then
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
 elif [ "$CAMLTAG" = "OCAML310" ]; then
     if [ -x "${CAMLLIB}/camlp5" ]; then 
-	CAMLP4=camlp5
+        CAMLP4LIB=+camlp5
     elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then 
-	CAMLP4=site-lib/camlp5
+        CAMLP4LIB=+site-lib/camlp5
     else
 	echo "Objective Caml 3.10 found but no Camlp5 installed."
 	echo "Configuration script failed!"
 	exit 1
     fi
-    CAMLP4LIB=+$CAMLP4
+    CAMLP4=camlp5
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
 else 
     CAMLP4=camlp4
-    CAMLP4LIB=+$CAMLP4
+    CAMLP4LIB=+camlp4
 fi
 
 if [ "$CAMLP4" = "camlp5" ] && `$camlp4oexec -v 2>&1 | grep -q 5.00`; then
