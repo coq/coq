@@ -18,6 +18,7 @@ open Evd
 open Evarutil
 open Mod_subst
 open Rawterm
+open Unification
 (*i*)
 
 (***************************************************************)
@@ -69,16 +70,16 @@ val clenv_fchain :
 
 (* Unifies two terms in a clenv. The boolean is [allow_K] (see [Unification]) *)
 val clenv_unify : 
-  bool -> conv_pb -> constr -> constr -> clausenv -> clausenv
+  bool -> ?flags:unify_flags -> conv_pb -> constr -> constr -> clausenv -> clausenv
 
 (* unifies the concl of the goal with the type of the clenv *)
 val clenv_unique_resolver :
-  bool -> clausenv -> evar_info sigma -> clausenv
+  bool -> ?flags:unify_flags -> clausenv -> evar_info sigma -> clausenv
 
 (* same as above ([allow_K=false]) but replaces remaining metas
    with fresh evars if [evars_flag] is [true] *)
 val evar_clenv_unique_resolver :
-  bool -> clausenv -> evar_info sigma -> clausenv
+  bool -> ?flags:unify_flags -> clausenv -> evar_info sigma -> clausenv
 
 val clenv_pose_dependent_evars : clausenv -> clausenv
 
@@ -98,7 +99,7 @@ val clenv_constrain_last_binding : constr -> clausenv -> clausenv
 (* defines metas corresponding to the name of the bindings *)
 val clenv_match_args : arg_bindings -> clausenv -> clausenv
 
-val clenv_unify_meta_types : clausenv -> clausenv
+val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 
 (* start with a clenv to refine with a given term with bindings *)
 

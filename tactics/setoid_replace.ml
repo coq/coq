@@ -210,7 +210,9 @@ let coq_impl = lazy(constant ["Setoid_tac"] "impl")
 (************************* Table of declared relations **********************)
 
 
-(* Relations are stored in a table which is synchronised with the Reset mechanism. *)
+(* Relations are stored in a table which is synchronised with the
+   Reset mechanism. The table maps the term denoting the relation to
+   the data of type relation that characterises the relation *)
 
 let relation_table = ref Gmap.empty
 
@@ -1464,12 +1466,9 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
                           (MApp (func,mor,a,output_direction)))
 			  output_directions @ res
                     ) [] a'
-              | (he::tl) as a->
+              | (he::tl) ->
                  let typnf = Reduction.whd_betadeltaiota env typ in
                   match kind_of_term typnf with
-                    Cast (typ,_,_) ->
-                     find_non_dependent_function env c c_args_rev typ
-                      f_args_rev a_rev a
                   | Prod (name,s,t) ->
                      let env' = push_rel (name,None,s) env in
                      let he =
@@ -1564,12 +1563,12 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
   match res' with
      [] when res = [] ->
       errorlabstrm "Setoid_rewrite"
-       (str "Either the term " ++ pr_lconstr t ++ str " that must be " ++
-        str "rewritten occurs in a covariant position or the goal is not " ++
-        str "made of morphism applications only. You can replace only " ++
-        str "occurrences that are in a contravariant position and such that " ++
-        str "the context obtained by abstracting them is made of morphism " ++
-        str "applications only.")
+       (strbrk "Either the term " ++ pr_lconstr t ++ strbrk " that must be " ++
+        strbrk "rewritten occurs in a covariant position or the goal is not" ++
+        strbrk " made of morphism applications only. You can replace only " ++
+        strbrk "occurrences that are in a contravariant position and such " ++
+        strbrk "that the context obtained by abstracting them is made of " ++
+        strbrk "morphism applications only.")
    | [] ->
       errorlabstrm "Setoid_rewrite"
        (str "No generated set of side conditions is a superset of those " ++
@@ -1732,18 +1731,22 @@ let check_evar_map_of_evars_defs evd =
 (* [unification_rewrite] searchs a match for [c1] in [but] and then 
    returns the modified objects (in particular [c1] and [c2]) *)  
 
+let rewrite_unif_flags = { modulo_delta = false; use_metas_eagerly = true }
+let rewrite2_unif_flags = { modulo_delta = true; use_metas_eagerly = true }
+
 let unification_rewrite c1 c2 cl but gl = 
   let (env',c1) =
     try
-      (* ~mod_delta:false to allow to mark occurences that must not be
+      (* ~flags:(false,true) to allow to mark occurences that must not be
          rewritten simply by replacing them with let-defined definitions
          in the context *)
-      w_unify_to_subterm ~mod_delta:false (pf_env gl) (c1,but) cl.evd
+      w_unify_to_subterm ~flags:rewrite_unif_flags (pf_env gl) (c1,but) cl.evd
     with
 	Pretype_errors.PretypeError _ ->
-	  (* ~mod_delta:true to make Ring work (since it really
+	  (* ~flags:(true,true) to make Ring work (since it really
              exploits conversion) *)
-	  w_unify_to_subterm ~mod_delta:true (pf_env gl) (c1,but) cl.evd
+	  w_unify_to_subterm ~flags:rewrite2_unif_flags
+	    (pf_env gl) (c1,but) cl.evd
   in
   let cl' = {cl with evd = env' } in
   let c2 = Clenv.clenv_nf_meta cl' c2 in

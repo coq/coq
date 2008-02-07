@@ -241,18 +241,19 @@ let clenv_missing ce = clenv_dependent true ce
 
 (******************************************************************)
 
-let clenv_unify allow_K cv_pb t1 t2 clenv =
-  { clenv with evd = w_unify allow_K clenv.env cv_pb t1 t2 clenv.evd }
+let clenv_unify allow_K ?(flags=default_unify_flags) cv_pb t1 t2 clenv =
+  { clenv with
+      evd = w_unify allow_K ~flags:flags clenv.env cv_pb t1 t2 clenv.evd }
 
-let clenv_unify_meta_types clenv =
-  { clenv with evd = w_unify_meta_types clenv.env clenv.evd }
+let clenv_unify_meta_types ?(flags=default_unify_flags) clenv =
+  { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
 
-let clenv_unique_resolver allow_K clenv gl =
+let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
   if isMeta (fst (whd_stack clenv.templtyp.rebus)) then
-    clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl)
-      (clenv_unify_meta_types clenv)
+    clenv_unify allow_K CUMUL ~flags:flags (clenv_type clenv) (pf_concl gl)
+      (clenv_unify_meta_types ~flags:flags clenv)
   else
-    clenv_unify allow_K CUMUL 
+    clenv_unify allow_K CUMUL ~flags:flags
       (meta_reducible_instance clenv.evd clenv.templtyp) (pf_concl gl) clenv
 
 (* [clenv_pose_dependent_evars clenv]

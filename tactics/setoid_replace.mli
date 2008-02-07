@@ -79,3 +79,5 @@ val new_named_morphism :
 
 val relation_table_find : constr -> relation
 val relation_table_mem : constr -> bool
+
+val prrelation : relation -> Pp.std_ppcmds

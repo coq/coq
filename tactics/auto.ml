@@ -556,12 +556,18 @@ let print_searchtable () =
 
 let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
 
+(* tell auto not to reuse already instantiated metas in unification (for
+   compatibility, since otherwise, apply succeeds oftener) *)
+
+open Unification
+
+let auto_unif_flags = { modulo_delta = true; use_metas_eagerly = false }
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
 let unify_resolve (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
-  let _ = clenv_unique_resolver false clenv' gls in  
+  let _ = clenv_unique_resolver false ~flags:auto_unif_flags clenv' gls in  
   h_simplest_apply c gls
 
 (* builds a hint database from a constr signature *)
