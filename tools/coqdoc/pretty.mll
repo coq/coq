@@ -229,6 +229,8 @@ let decl_token =
 
 let gallina_ext =
   "Module" 
+  | "Include" space+ "Type"
+  | "Include"
   | "Declare" space+ "Module"
   | "Transparent"
   | "Opaque"
