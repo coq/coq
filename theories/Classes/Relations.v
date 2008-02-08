@@ -77,7 +77,7 @@ Program Instance [ Irreflexive A R ] => flip_irreflexive : Irreflexive A (flip R
 
 Program Instance [ Symmetric A R ] => flip_symmetric : Symmetric A (flip R).
 
-  Solve Obligations using unfold flip ; program_simpl ; eapply symmetric ; eauto.
+  Solve Obligations using unfold flip ; program_simpl ; apply symmetric ; eauto.
 
 Program Instance [ Asymmetric A R ] => flip_asymmetric : Asymmetric A (flip R).
   
@@ -320,12 +320,12 @@ Class [ Equivalence A eqA ] => Antisymmetric (R : relationT A) :=
 Program Instance [ eq : Equivalence A eqA, ? Antisymmetric eq R ] => 
   flip_antisymmetric : ? Antisymmetric eq (flip R).
 
-  Solve Obligations using unfold flip ; program_simpl ; eapply antisymmetric ; eauto.
+  Solve Obligations using unfold inverse, flip ; program_simpl ; eapply @antisymmetric ; eauto.
 
 Program Instance [ eq : Equivalence A eqA, ? Antisymmetric eq (R : relation A) ] => 
   inverse_antisymmetric : ? Antisymmetric eq (inverse R).
 
-  Solve Obligations using unfold inverse, flip ; program_simpl ; eapply antisymmetric ; eauto.
+  Solve Obligations using unfold inverse, flip ; program_simpl ; eapply @antisymmetric ; eauto.
 
 (** Leibinz equality [eq] is an equivalence relation. *)
 

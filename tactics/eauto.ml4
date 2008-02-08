@@ -214,8 +214,9 @@ and e_trivial_resolve db_list local_db gl =
   with Bound | Not_found -> []
 
 let e_possible_resolve db_list local_db gl =
-  try List.map snd (e_my_find_search db_list local_db 
-		      (List.hd (head_constr_bound gl [])) gl)
+  try List.map snd 
+    (e_my_find_search db_list local_db 
+	(List.hd (head_constr_bound gl [])) gl)
   with Bound | Not_found -> []
 
 let assumption_tac_list id = apply_tac_list (e_give_exact_constr (mkVar id))
@@ -226,15 +227,18 @@ let find_first_goal gls =
 (*s The following module [SearchProblem] is used to instantiate the generic
     exploration functor [Explore.Make]. *)
       
-module SearchProblem = struct
 
-  type state = { 
-    depth : int; (*r depth of search before failing *)
-    tacres : goal list sigma * validation;
-    last_tactic : std_ppcmds;
-    dblist : Auto.Hint_db.t list;
-    localdb :  Auto.Hint_db.t list }
-		 
+type search_state = { 
+  depth : int; (*r depth of search before failing *)
+  tacres : goal list sigma * validation;
+  last_tactic : std_ppcmds;
+  dblist : Auto.Hint_db.t list;
+  localdb :  Auto.Hint_db.t list }
+    
+module SearchProblem = struct
+    
+  type state = search_state
+
   let success s = (sig_it (fst s.tacres)) = []
 
   let rec filter_tactics (glls,v) = function
@@ -316,18 +320,18 @@ end
 module Search = Explore.Make(SearchProblem)
 
 let make_initial_state n gl dblist localdb =
-  { SearchProblem.depth = n;
-    SearchProblem.tacres = tclIDTAC gl;
-    SearchProblem.last_tactic = (mt ());
-    SearchProblem.dblist = dblist;
-    SearchProblem.localdb = [localdb] }
+  { depth = n;
+    tacres = tclIDTAC gl;
+    last_tactic = (mt ());
+    dblist = dblist;
+    localdb = [localdb] }
 
-let make_initial_state_gls n gls dblist localdb =
-  { SearchProblem.depth = n;
-    SearchProblem.tacres = gls;
-    SearchProblem.last_tactic = (mt ());
-    SearchProblem.dblist = dblist;
-    SearchProblem.localdb = [localdb] }
+let make_initial_state_gls n gls dblist localdbs =
+  { depth = n;
+    tacres = gls;
+    last_tactic = (mt ());
+    dblist = dblist;
+    localdb = localdbs }
 
 let debug_depth_first = Search.debug_depth_first
 
@@ -335,14 +339,14 @@ let e_depth_search debug p db_list local_db gl =
   try
     let tac = if debug then Search.debug_depth_first else Search.depth_first in
     let s = tac (make_initial_state p gl db_list local_db) in
-    s.SearchProblem.tacres
+    s.tacres
   with Not_found -> error "EAuto: depth first search failed"
 
-let e_depth_search_gls debug p db_list local_db gls =
+let e_depth_search_gls debug p db_list local_dbs gls =
   try
     let tac = if debug then Search.debug_depth_first else Search.depth_first in
-    let s = tac (make_initial_state_gls p gls db_list local_db) in
-    s.SearchProblem.tacres
+    let s = tac (make_initial_state_gls p gls db_list local_dbs) in
+    s.tacres
   with Not_found -> error "EAuto: depth first search failed"
 
 let e_breadth_search debug n db_list local_db gl =
@@ -351,16 +355,16 @@ let e_breadth_search debug n db_list local_db gl =
       if debug then Search.debug_breadth_first else Search.breadth_first 
     in
     let s = tac (make_initial_state n gl db_list local_db) in
-    s.SearchProblem.tacres
+    s.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
-let e_breadth_search_gls debug n db_list local_db gls =
+let e_breadth_search_gls debug n db_list local_dbs gls =
   try
     let tac = 
       if debug then Search.debug_breadth_first else Search.breadth_first 
     in
-    let s = tac (make_initial_state_gls n gls db_list local_db) in
-    s.SearchProblem.tacres
+    let s = tac (make_initial_state_gls n gls db_list local_dbs) in
+    s.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
 let e_search_auto debug (in_depth,p) lems db_list gl = 
@@ -374,11 +378,11 @@ open Evd
 
 let e_search_auto_gls debug (in_depth,p) lems db_list gls = 
   let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
-  let local_db = make_local_hint_db lems ({it = List.hd gls'; sigma = sigma}) in
+  let local_dbs = List.map (fun gl -> make_local_hint_db lems ({it = gl; sigma = sigma})) gls' in
   if in_depth then 
-    e_depth_search_gls debug p db_list local_db gls
+    e_depth_search_gls debug p db_list local_dbs gls
   else
-    e_breadth_search_gls debug p db_list local_db gls
+    e_breadth_search_gls debug p db_list local_dbs gls
 
 let eauto debug np lems dbnames =
   let db_list =
@@ -470,33 +474,42 @@ open Evd
 
 exception Found of evar_defs
 
-let resolve_all_evars env p evd =
-  let evm = Evd.evars_of evd in
-  let goals, sigma = 
+let valid evm p res_sigma l = 
+  let evd' =
     Evd.fold
       (fun ev evi (gls, sigma) ->
-	if p evi.evar_concl then
-	  (evi :: gls, sigma)
-	else (gls, Evd.add sigma ev evi))
-      evm ([], Evd.empty)
-  in
-  let gls = { it = List.rev goals; sigma = sigma } in
-  let res_sigma = ref sigma in
-  let valid l = 
-    let evd' =
-      Evd.fold
-	(fun ev evi (gls, sigma) ->
-	  if p evi.evar_concl then
-	    match gls with
-		hd :: tl -> 
+	if not (Evd.is_evar evm ev) then
+	  match gls with
+	      hd :: tl -> 
+		if evi.evar_body = Evar_empty then
 		  let cstr, obls = Refiner.extract_open_proof !res_sigma hd in
-		  (tl, Evd.evar_define ev cstr sigma)
-	      | [] -> assert(false)
-	  else (gls, sigma))
-	evm (l, evd)
-    in raise (Found (snd evd'))
-  in
-  let gls', valid' = full_eauto_gls true (false, 10) [] (gls, valid) in
-    res_sigma := sig_sig gls';
-    try ignore(valid' []); assert(false) with Found evd' -> evd'
+		    (tl, Evd.evar_define ev cstr sigma)
+		else (tl, sigma)
+	    | [] -> ([], sigma)
+	else if not (Evd.is_defined evm ev) && p ev evi then
+	  match gls with
+	      hd :: tl -> 
+		if evi.evar_body = Evar_empty then
+		  let cstr, obls = Refiner.extract_open_proof !res_sigma hd in
+		    (tl, Evd.evar_define ev cstr sigma)
+		else (tl, sigma)
+	    | [] -> assert(false)
+	else (gls, sigma))
+      !res_sigma (l, Evd.create_evar_defs !res_sigma)
+  in raise (Found (snd evd'))
     
+let resolve_all_evars debug (mode, depth) env p evd =
+  let evm = Evd.evars_of evd in
+  let goals = 
+    Evd.fold
+      (fun ev evi gls ->
+	if evi.evar_body = Evar_empty && p ev evi then
+	  (evi :: gls)
+	else gls)
+      evm []
+  in
+  let gls = { it = List.rev goals; sigma = evm } in
+  let res_sigma = ref evm in
+  let gls', valid' = full_eauto_gls debug (mode, depth) [] (gls, valid evm p res_sigma) in
+    res_sigma := Evarutil.nf_evars (sig_sig gls');
+    try ignore(valid' []); assert(false) with Found evd' -> Evarutil.nf_evar_defs evd'

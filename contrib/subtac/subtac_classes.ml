@@ -86,12 +86,12 @@ let type_class_instance_params isevars env id n ctx inst subst =
     (fun (subst, instctx) (na, _, t) ce ->
       let t' = replace_vars subst t in
       let c = 
-	if ce = superclass_ce then
-	  (* Control over the evars which are direct superclasses to avoid partial instanciations
-	     in instance search. *)
-	  Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (VarRef id, (n, Some na))) t'
-	else
-	  interp_casted_constr_evars isevars env ce t' 
+(* 	if ce = superclass_ce then *)
+	(* 	  (\* Control over the evars which are direct superclasses to avoid partial instanciations *)
+	(* 	     in instance search. *\) *)
+	(* 	  Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (VarRef id, (n, Some na))) t' *)
+	(* 	else *)
+	interp_casted_constr_evars isevars env ce t' 
       in
       let d = na, Some c, t' in
 	(na, c) :: subst, d :: instctx)
@@ -154,7 +154,7 @@ let new_instance ctx (instid, bk, cl) props =
   let env' = Classes.push_named_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
-  isevars := resolve_typeclasses env' sigma !isevars;
+  isevars := resolve_typeclasses ~onlyargs:false ~all:true env' sigma !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = Typeclasses.nf_substitution sigma subst in
   let subst, _propsctx = 

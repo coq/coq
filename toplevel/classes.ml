@@ -256,8 +256,8 @@ let new_class id par ar sup props =
   (* Instantiate evars and check all are resolved *)
   let isevars,_ = Evarconv.consider_remaining_unif_problems env_props !isevars in
   let sigma = Evd.evars_of isevars in
-  let ctx_params = Implicit_quantifiers.nf_named_context sigma ctx_params in
-  let ctx_props = Implicit_quantifiers.nf_named_context sigma ctx_props in
+  let ctx_params = Evarutil.nf_named_context_evar sigma ctx_params in
+  let ctx_props = Evarutil.nf_named_context_evar sigma ctx_props in
   let arity = Reductionops.nf_evar sigma arity in
   let ce t = Evarutil.check_evars env0 Evd.empty isevars t in
   let kn = 
@@ -404,7 +404,7 @@ let new_instance ctx (instid, bk, cl) props =
   let sigma = Evd.evars_of !isevars in
   isevars := resolve_typeclasses env sigma !isevars;
   let sigma = Evd.evars_of !isevars in
-  let env' = Implicit_quantifiers.nf_env sigma env' in
+  let env' = Evarutil.nf_env_evar sigma env' in
   let substctx = Typeclasses.nf_substitution sigma subst in
   let subst, propsctx = 
     let props = 
@@ -474,7 +474,7 @@ let context l =
   let env', avoid, l = interp_typeclass_context_evars isevars env' avoid l in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
-  let fullctx = Implicit_quantifiers.nf_named_context sigma (l @ ctx) in
+  let fullctx = Evarutil.nf_named_context_evar sigma (l @ ctx) in
     List.iter (function (id,_,t) -> 
       Command.declare_one_assumption false (Local (* global *), Definitional) t false (* inline *) (dummy_loc, id))
       (List.rev fullctx)
@@ -493,34 +493,34 @@ let _ =
       Library.require_library [(dummy_loc, module_qualid)] None; (* may be inefficient *)
       solve_by_tac env evd ev evi (Lazy.force tactic))
 
-let prod = lazy (Coqlib.build_prod ())
+(* let prod = lazy_fun Coqlib.build_prod *)
 
-let build_conjunction evm =
-  List.fold_left
-    (fun (acc, evs) (ev, evi)  ->
-      if class_of_constr evi.evar_concl <> None then
-	mkApp ((Lazy.force prod).Coqlib.typ, [|evi.evar_concl; acc |]), evs
-      else acc, Evd.add evs ev evi)
-    (Coqlib.build_coq_True (), Evd.empty) evm
+(* let build_conjunction evm = *)
+(*   List.fold_left *)
+(*     (fun (acc, evs) (ev, evi)  -> *)
+(*       if class_of_constr evi.evar_concl <> None then *)
+(* 	mkApp ((Lazy.force prod).Coqlib.typ, [|evi.evar_concl; acc |]), evs *)
+(*       else acc, Evd.add evs ev evi) *)
+(*     (Coqlib.build_coq_True (), Evd.empty) evm *)
 
-let destruct_conjunction evm_list evm evm' term =
-  let _, evm =
-    List.fold_right
-      (fun (ev, evi) (term, evs) ->
-	if class_of_constr evi.evar_concl <> None then
-	  match kind_of_term term with
-	    | App (x, [| _ ; _ ; proof ; term |]) ->
-		let evs' = Evd.define evs ev proof in
-		  (term, evs')
-	    | _ -> assert(false)
-	else
-	  match (Evd.find evm' ev).evar_body with
-	      Evar_empty -> raise Not_found
-	    | Evar_defined c ->
-		let evs' = Evd.define evs ev c in
-		  (term, evs'))
-      evm_list (term, evm)
-  in evm
+(* let destruct_conjunction evm_list evm evm' term = *)
+(*   let _, evm = *)
+(*     List.fold_right *)
+(*       (fun (ev, evi) (term, evs) -> *)
+(* 	if class_of_constr evi.evar_concl <> None then *)
+(* 	  match kind_of_term term with *)
+(* 	    | App (x, [| _ ; _ ; proof ; term |]) -> *)
+(* 		let evs' = Evd.define evs ev proof in *)
+(* 		  (term, evs') *)
+(* 	    | _ -> assert(false) *)
+(* 	else *)
+(* 	  match (Evd.find evm' ev).evar_body with *)
+(* 	      Evar_empty -> raise Not_found *)
+(* 	    | Evar_defined c -> *)
+(* 		let evs' = Evd.define evs ev c in *)
+(* 		  (term, evs')) *)
+(*       evm_list (term, evm) *)
+(*   in evm *)
  
 (* let solve_by_tac env evd evar evi t = *)
 (*   let goal = {it = evi; sigma = (Evd.evars_of evd) } in *)
@@ -535,17 +535,32 @@ let destruct_conjunction evm_list evm evm' term =
 (* 	else evd, false *)
 (*     else evd, false *)
 
-let resolve_all_typeclasses env evd =
-  let evm = Evd.evars_of evd in
-  let evm_list = Evd.to_list evm in
-  let goal, typesevm = build_conjunction evm_list in
-  let evars = ref (Evd.create_evar_defs typesevm) in
-  let term = resolve_one_typeclass_evd env evars goal in
-  let evm' = destruct_conjunction evm_list evm (Evd.evars_of !evars) term in
-    Evd.create_evar_defs evm'
+(* let resolve_all_typeclasses env evd = *)
+(*   let evm = Evd.evars_of evd in *)
+(*   let evm_list = Evd.to_list evm in *)
+(*   let goal, typesevm = build_conjunction evm_list in *)
+(*   let evars = ref (Evd.create_evar_defs typesevm) in *)
+(*   let term = resolve_one_typeclass_evd env evars goal in *)
+(*   let evm' = destruct_conjunction evm_list evm (Evd.evars_of !evars) term in *)
+(*     Evd.create_evar_defs evm' *)
 
-let _ =
-  Typeclasses.solve_instanciations_problem :=
-    (fun env evd -> 
-      Library.require_library [(dummy_loc, module_qualid)] None; (* may be inefficient *)
-      resolve_all_typeclasses env evd)
+(* let _ = *)
+(*   Typeclasses.solve_instanciations_problem := *)
+(*     (fun env evd ->  *)
+(*       Library.require_library [(dummy_loc, module_qualid)] None; (\* may be inefficient *\) *)
+(*       resolve_all_typeclasses env evd) *)
+
+let solve_evars_by_tac env evd t =
+  let ev = make_evar empty_named_context_val mkProp in
+  let goal = {it = ev; sigma = (Evd.evars_of evd) } in
+  let (res, valid) = t goal in 
+  let evd' = evars_reset_evd res.sigma evd in
+    evd'
+(*       Library.require_library [(dummy_loc, module_qualid)] None (a\* may be inefficient *\); *)
+
+(* let _ = *)
+(*   Typeclasses.solve_instanciations_problem := *)
+(*     (fun env evd ->  *)
+(*       Eauto.resolve_all_evars false (true, 15) env  *)
+(* 	(fun ev evi -> is_implicit_arg (snd (evar_source ev evd)) *)
+(* 	  && class_of_constr evi.evar_concl <> None) evd) *)

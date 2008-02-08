@@ -61,10 +61,10 @@ val is_class : inductive -> bool
 val class_of_constr : constr -> typeclass option
 
 val resolve_typeclass : env -> evar -> evar_info -> evar_defs * bool -> evar_defs * bool
-val resolve_typeclasses : ?check:bool -> env -> evar_map -> evar_defs -> evar_defs
+val resolve_typeclasses : ?onlyargs:bool -> ?all:bool -> env -> evar_map -> evar_defs -> evar_defs
 
 val solve_instanciation_problem : (env -> evar_defs -> existential_key -> evar_info -> evar_defs * bool) ref
-val solve_instanciations_problem : (env -> evar_defs -> evar_defs) ref
+val solve_instanciations_problem : (env -> evar_defs -> bool -> bool -> evar_defs) ref
 
 type substitution = (identifier * constr) list
 
@@ -73,3 +73,5 @@ val substitution_of_named_context :
   substitution -> named_context -> substitution
 
 val nf_substitution : evar_map -> substitution -> substitution
+
+val is_implicit_arg : hole_kind -> bool

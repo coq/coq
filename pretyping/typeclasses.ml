@@ -216,7 +216,7 @@ let instances r =
     with Not_found -> unbound_class (Global.env()) (loc_of_reference r, id)
 
 let solve_instanciation_problem = ref (fun _ _ _ _ -> assert false)
-let solve_instanciations_problem = ref (fun _ _ -> assert false)
+let solve_instanciations_problem = ref (fun _ _ _ _ -> assert false)
 
 let resolve_typeclass env ev evi (evd, defined as acc) =
   try
@@ -278,34 +278,43 @@ let destClassApp c =
     | _ when isInd c -> Some (destInd c, [||])
     | _ -> None
 
-let resolve_typeclasses ?(check=true) env sigma evd =
+let is_independent evm ev = 
+  Evd.fold (fun ev' evi indep -> indep && 
+    (ev = ev' || 
+	evi.evar_body <> Evar_empty ||
+	not (Termops.occur_evar ev evi.evar_concl)))
+    evm true
+    
+
 (*   try !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) *)
 (*   with _ -> *)
-  let evm = Evd.evars_of evd in
-  let tc_evars = 
-    let f ev evi acc =
-      let (l, k) = Evd.evar_source ev evd in
-	if not check || is_implicit_arg k then
-	  match destClassApp evi.evar_concl with
-	    | Some (i, args) when is_class i -> 
-		Evd.add acc ev evi
-	    | _ -> acc
-	else acc
-    in Evd.fold f evm Evd.empty
-  in
-  let rec sat evars =
-    let (evars', progress) = 
-      Evd.fold 
-	(fun ev evi acc -> 
-	  if (Evd.mem tc_evars ev || not (Evd.mem evm ev)) && evi.evar_body = Evar_empty then
-	    resolve_typeclass env ev evi acc 
-	  else acc)
-	(Evd.evars_of evars) (evars, false) 
-    in
-      if not progress then evars'
-      else
-	sat (Evarutil.nf_evar_defs evars')
-  in sat (Evarutil.nf_evar_defs evd)
+(*   let evm = Evd.evars_of evd in *)
+(*   let tc_evars =  *)
+(*     let f ev evi acc = *)
+(*       let (l, k) = Evd.evar_source ev evd in *)
+(* 	if not check || is_implicit_arg k then *)
+(* 	  match destClassApp evi.evar_concl with *)
+(* 	    | Some (i, args) when is_class i ->  *)
+(* 		Evd.add acc ev evi *)
+(* 	    | _ -> acc *)
+(* 	else acc *)
+(*     in Evd.fold f evm Evd.empty *)
+(*   in *)
+(*   let rec sat evars = *)
+(*     let evm = Evd.evars_of evars in *)
+(*     let (evars', progress) =  *)
+(*       Evd.fold  *)
+(* 	(fun ev evi acc ->  *)
+(* 	  if (Evd.mem tc_evars ev || not (Evd.mem evm ev))  *)
+(* 	    && evi.evar_body = Evar_empty then *)
+(* 	    resolve_typeclass env ev evi acc  *)
+(* 	  else acc) *)
+(* 	evm (evars, false)  *)
+(*     in *)
+(*       if not progress then evars' *)
+(*       else *)
+(* 	sat (Evarutil.nf_evar_defs evars') *)
+(*   in sat (Evarutil.nf_evar_defs evd) *)
   
 let class_of_constr c = 
   let extract_ind c =
@@ -316,6 +325,16 @@ let class_of_constr c =
     match kind_of_term c with
 	App (c, _) -> extract_ind c
       | _ -> extract_ind c
+
+let has_typeclasses evd =
+  Evd.fold (fun ev evi has -> has || 
+    (evi.evar_body = Evar_empty && class_of_constr evi.evar_concl <> None))
+    evd false
+
+let resolve_typeclasses ?(onlyargs=false) ?(all=true) env sigma evd =
+  if not (has_typeclasses sigma) then evd
+  else
+    !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) onlyargs all
 
 type substitution = (identifier * constr) list
 

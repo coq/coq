@@ -99,14 +99,6 @@ let morphism_class = lazy (Lazy.force morphism_class, Lazy.force respect_proj)
 exception Found of (constr * constr * (types * types) list * constr * constr array *
 		       (constr * (constr * constr * constr * constr)) option array)
 
-let resolve_morphism_evd env evd app = 
-  let ev = Evarutil.e_new_evar evd env app in
-  let evd' = resolve_typeclasses ~check:true env (Evd.evars_of !evd) !evd in
-  let evm' = Evd.evars_of evd' in
-    match Evd.evar_body (Evd.find evm' (fst (destEvar ev))) with
-	Evd.Evar_empty -> raise Not_found
-      | Evd.Evar_defined c -> evd := Evarutil.nf_evar_defs evd'; Evarutil.nf_isevar !evd c
-
 let is_equiv env sigma t = 
   isConst t && Reductionops.is_conv env sigma (Lazy.force setoid_equiv) t
 
@@ -139,7 +131,6 @@ let build_signature isevars env m cstrs finalcstr =
 		let rel = mk_relty t None in 
 		  rel, [t, rel]
 	    | Some (t, rel) -> rel, [t, rel])
-      | _, _ -> assert false
   in aux m cstrs
 
 let reflexivity_proof env evars carrier relation x =
@@ -174,31 +165,19 @@ let resolve_morphism env sigma oldt m args args' cstr evars =
 	done;
 	!first
     in
-(*       try  *)
-	let morphargs, morphobjs = array_chop first args in
-	let morphargs', morphobjs' = array_chop first args' in
-	let appm = mkApp(m, morphargs) in
-	let appmtype = Typing.type_of env sigma appm in
-	let signature, sigargs = build_signature evars env appmtype (Array.to_list morphobjs') cstr in
-	let cl_args = [| appmtype ; signature ; appm |] in
-	let app = mkApp (mkInd morphism_cl.cl_impl, cl_args) in
-(* 	let morph = resolve_morphism_evd env evars app in *)
-	let morph = Evarutil.e_new_evar evars env app in
-(* 	let evm = Evd.evars_of !evars in *)
-(* 	let sigargs = List.map  *)
-(* 	  (fun x, y -> Reductionops.nf_evar evm x, Reductionops.nf_evar evm y)  *)
-(* 	  sigargs  *)
-(* 	in *)
-(* 	let appm = Reductionops.nf_evar evm appm in *)
-(* 	let cl_args = Array.map (Reductionops.nf_evar evm) cl_args in *)
-	let proj = 
-	  mkApp (mkConst morphism_proj, 
-		Array.append cl_args [|morph|])
-	in
-	  morph, proj, sigargs, appm, morphobjs, morphobjs'
-(*       with Reduction.NotConvertible *)
-(* 	| Stdpp.Exc_located (_, Pretype_errors.PretypeError _)  *)
-(* 	| Pretype_errors.PretypeError _ -> raise Not_found *)
+    let morphargs, morphobjs = array_chop first args in
+    let morphargs', morphobjs' = array_chop first args' in
+    let appm = mkApp(m, morphargs) in
+    let appmtype = Typing.type_of env sigma appm in
+    let signature, sigargs = build_signature evars env appmtype (Array.to_list morphobjs') cstr in
+    let cl_args = [| appmtype ; signature ; appm |] in
+    let app = mkApp (mkInd morphism_cl.cl_impl, cl_args) in
+    let morph = Evarutil.e_new_evar evars env app in
+    let proj = 
+      mkApp (mkConst morphism_proj, 
+	    Array.append cl_args [|morph|])
+    in
+      morph, proj, sigargs, appm, morphobjs, morphobjs'
   in 
   let projargs, respars, typeargs = 
     array_fold_left2 
@@ -294,7 +273,7 @@ let decompose_setoid_eqhyp gl env sigma c left2right t =
     else (c, (car, mkApp (Lazy.force inverse, [| car ; rel |]), y, x))
 
 let resolve_all_typeclasses env evd = 
-  Eauto.resolve_all_evars env (fun x -> Typeclasses.class_of_constr x <> None) evd
+  Eauto.resolve_all_evars false (true, 15) env (fun ev evi -> Typeclasses.class_of_constr evi.Evd.evar_concl <> None) evd
     
 (* let _ =  *)
 (*   Typeclasses.solve_instanciation_problem := *)
@@ -319,9 +298,7 @@ let cl_rewrite_clause c left2right occs clause gl =
   let eq, _ = build_new gl env sigma occs origt newt hypt hypinfo concl (Some cstr) evars in
     match eq with  
 	Some (p, (_, _, oldt, newt)) -> 
-(* 	  evars := Typeclasses.resolve_typeclasses ~check:false env (Evd.evars_of !evars) !evars; *)
-	  evars := Classes.resolve_all_typeclasses env !evars;
-(* 	  evars := resolve_all_typeclasses env !evars; *)
+	  evars := Typeclasses.resolve_typeclasses env (Evd.evars_of !evars) !evars;
 	  evars := Evarutil.nf_evar_defs !evars;
 	  let p = Evarutil.nf_isevar !evars p in
 	  let newt = Evarutil.nf_isevar !evars newt in
@@ -335,11 +312,11 @@ let cl_rewrite_clause c left2right occs clause gl =
 		  refine term) gl
       | None -> tclIDTAC gl
 	  
+open Genarg
 open Extraargs
 
-
-
 TACTIC EXTEND class_rewrite
+| [ "clrewrite" orient(o) constr(c) "in" hyp(id) "at" occurences(occ) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
 | [ "clrewrite" orient(o) constr(c) "at" occurences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
 | [ "clrewrite" orient(o) constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o [] (Some (([],id), [])) ]
 | [ "clrewrite" orient(o) constr(c) "at" occurences(occ) ] -> [ cl_rewrite_clause c o occ None ]
@@ -358,16 +335,68 @@ TACTIC EXTEND map_tac
 | [ "clsubstitute" orient(o) constr(c) ] -> [ clsubstitute o c ]
 END
 
+let pr_debug _prc _prlc _prt b =
+  if b then Pp.str "debug" else Pp.mt()
 
-(* 
-	  let proj = 
-	    if left2right then 
-	      let proj = if is_hyp <> None then coq_proj1 else coq_proj2 in
-		applistc (Lazy.force proj)
-		  [ mkProd (Anonymous, concl, t) ; mkProd (Anonymous, t, concl) ; p ] 
-	    else 
-	      let proj = if is_hyp <> None then coq_proj2 else coq_proj1 in
-		applistc (Lazy.force proj)
-		  [ mkProd (Anonymous, t, concl) ; mkProd (Anonymous, concl, t) ; p ] 
-	  in
-*)
+ARGUMENT EXTEND debug TYPED AS bool PRINTED BY pr_debug
+| [ "debug" ] -> [ true ]
+| [ ] -> [ false ]
+END
+
+let pr_mode _prc _prlc _prt m =
+  match m with
+      Some b ->
+	if b then Pp.str "depth-first" else Pp.str "breadth-fist" 
+    | None -> Pp.mt()
+	
+ARGUMENT EXTEND search_mode TYPED AS bool option PRINTED BY pr_mode
+| [ "dfs" ] -> [ Some true ]
+| [ "bfs" ] -> [ Some false ]
+| [] -> [ None ]
+END
+
+let pr_depth _prc _prlc _prt = function
+    Some i -> Util.pr_int i
+  | None -> Pp.mt()
+	
+ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
+| [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
+END
+
+let resolve_argument_typeclasses d p env evd onlyargs all =
+  let pred = 
+    if onlyargs then 
+      (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
+	class_of_constr evi.Evd.evar_concl <> None)
+    else
+      (fun ev evi -> class_of_constr evi.Evd.evar_concl <> None)
+  in
+    try 
+      Eauto.resolve_all_evars d p env pred evd
+    with e -> 
+      if all then raise e else evd
+	
+VERNAC COMMAND EXTEND Typeclasses_Settings
+| [ "Typeclasses" "eauto" ":=" debug(d) search_mode(s) depth(depth) ] -> [ 
+    let mode = match s with Some t -> t | None -> true in
+    let depth = match depth with Some i -> i | None -> 15 in
+      Typeclasses.solve_instanciations_problem :=
+	resolve_argument_typeclasses d (mode, depth) ]
+END
+
+let _ = 
+  Typeclasses.solve_instanciations_problem :=
+    resolve_argument_typeclasses false (true, 15)
+      
+TACTIC EXTEND typeclasses_eauto
+| [ "typeclasses" "eauto" debug(d) search_mode(s) depth(depth) ] -> [ fun gl ->
+    let env = pf_env gl in
+    let sigma = project gl in
+      if Evd.dom sigma = [] then Refiner.tclIDTAC gl
+      else
+	let evd = Evd.create_evar_defs sigma in
+	let mode = match s with Some t -> t | None -> true in
+	let depth = match depth with Some i -> i | None -> 15 in
+	let evd' = resolve_argument_typeclasses d (mode, depth) env evd false false in
+	  Refiner.tclEVARS (Evd.evars_of evd') gl ]
+END

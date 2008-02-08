@@ -72,8 +72,8 @@ let interp env isevars c tycon =
   let j = pretype tycon env isevars ([],[]) c in
   let _ = isevars := Evarutil.nf_evar_defs !isevars in
   let evd,_ = consider_remaining_unif_problems env !isevars in
-  let unevd = undefined_evars evd in
-  let unevd' = Typeclasses.resolve_typeclasses env (Evd.evars_of unevd) evd in
+(*   let unevd = undefined_evars evd in *)
+  let unevd' = Typeclasses.resolve_typeclasses ~onlyargs:true ~all:false env (Evd.evars_of evd) evd in
   let evm = evars_of unevd' in
     isevars := unevd';
     nf_evar evm j.uj_val, nf_evar evm j.uj_type

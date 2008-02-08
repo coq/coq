@@ -62,6 +62,11 @@ val solve_by_tac :     env ->
   Proof_type.tactic ->
     Evd.evar_defs * bool
 
+val solve_evars_by_tac :     env ->
+    Evd.evar_defs ->
+  Proof_type.tactic ->
+  Evd.evar_defs
+
 val decompose_named_assum : types -> named_context * types
 
 val push_named_context : named_context -> env -> env
@@ -69,5 +74,3 @@ val push_named_context : named_context -> env -> env
 val name_typeclass_binders : Idset.t ->
     Topconstr.local_binder list ->
     Topconstr.local_binder list * Idset.t
-
-val resolve_all_typeclasses : env -> evar_defs -> evar_defs
