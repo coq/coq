@@ -264,14 +264,3 @@ let implicits_of_rawterm l =
       | RLetIn (loc, na, t, b) -> aux i b
       | _ -> []
   in aux 1 l
-
-let nf_named_context sigma ctx = 
-  Sign.map_named_context (Reductionops.nf_evar sigma) ctx
-
-let nf_rel_context sigma ctx = 
-  Sign.map_rel_context (Reductionops.nf_evar sigma) ctx
-    
-let nf_env sigma env = 
-  let nc' = nf_named_context sigma (Environ.named_context env) in
-  let rel' = nf_rel_context sigma (Environ.rel_context env) in
-    push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)

@@ -54,10 +54,6 @@ val implicits_of_binders : local_binder list -> (Topconstr.explicitation * (bool
 
 val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool)) list
 
-val nf_named_context : evar_map -> named_context -> named_context
-val nf_rel_context : evar_map -> rel_context -> rel_context
-val nf_env : evar_map -> env -> env
-
 val combine_params : Names.Idset.t ->
   (Names.Idset.t -> (Names.identifier * bool) option * (Names.identifier * Term.constr option * Term.types) ->
     Topconstr.constr_expr * Names.Idset.t) ->

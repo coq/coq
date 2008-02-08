@@ -56,6 +56,17 @@ let jl_nf_evar = Pretype_errors.jl_nf_evar
 let jv_nf_evar = Pretype_errors.jv_nf_evar
 let tj_nf_evar = Pretype_errors.tj_nf_evar
 
+let nf_named_context_evar sigma ctx = 
+  Sign.map_named_context (Reductionops.nf_evar sigma) ctx
+
+let nf_rel_context_evar sigma ctx = 
+  Sign.map_rel_context (Reductionops.nf_evar sigma) ctx
+    
+let nf_env_evar sigma env = 
+  let nc' = nf_named_context_evar sigma (Environ.named_context env) in
+  let rel' = nf_rel_context_evar sigma (Environ.rel_context env) in
+    push_rel_context rel' (reset_with_named_context (val_of_named_context nc') env)
+
 let nf_evar_info evc info =
   { info with 
     evar_concl = Reductionops.nf_evar evc info.evar_concl;

@@ -134,6 +134,10 @@ val tj_nf_evar :
 val nf_evar_info : evar_map -> evar_info -> evar_info
 val nf_evars : evar_map -> evar_map
 
+val nf_named_context_evar : evar_map -> named_context -> named_context
+val nf_rel_context_evar : evar_map -> rel_context -> rel_context
+val nf_env_evar : evar_map -> env -> env
+
 (* Same for evar defs *)
 val nf_isevar :  evar_defs -> constr -> constr
 val j_nf_isevar :  evar_defs -> unsafe_judgment -> unsafe_judgment
