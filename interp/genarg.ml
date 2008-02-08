@@ -8,8 +8,6 @@
 
 (* $Id$ *)
 
-(* arnaud: experimental *)
-
 open Pp
 open Util
 open Names
@@ -45,21 +43,6 @@ type argument_type =
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
-  (* wildcard type *)
-  | AnyArgType
-
-exception DynamicTypeError
-
-let rec matching p t =
-  match p,t with
-  | AnyArgType, _ -> [t]
-  | _, AnyArgType -> raise DynamicTypeError
-  | List0ArgType p', List0ArgType t' 
-  | List1ArgType p', List1ArgType t'
-  | OptArgType p', OptArgType t' -> matching p' t'
-  | PairArgType (pl,pr) , PairArgType (tl,tr) -> 
-      (matching pl tl)@(matching pr tr)
-  | _,_ -> if p=t then [] else raise DynamicTypeError
 
 type 'a and_short_name = 'a * identifier located option
 type 'a or_by_notation = AN of 'a | ByNotation of loc * string
@@ -76,38 +59,9 @@ type 'a generic_argument = argument_type * Obj.t
 
 let dyntab = ref ([] : string list)
 
-type raw = <constr:constr_expr; 
-            reference:Libnames.reference;
-	    sort:rawsort;
-	    may_eval:(constr_expr,Libnames.reference or_by_notation) may_eval;
-	    open_constr:open_constr_expr;
-	    with_bindings:constr_expr with_bindings;
-	    bindings:constr_expr bindings;
-	    red_expr:(constr_expr,Libnames.reference or_by_notation) red_expr_gen>
-type glob = <constr:rawconstr_and_expr; 
-             reference:Libnames.global_reference located or_var;
-	     sort:rawsort;
-	     may_eval:(rawconstr_and_expr,evaluable_global_reference and_short_name or_var) may_eval;
-	     open_constr:open_rawconstr;
-	     with_bindings:rawconstr_and_expr with_bindings;
-	     bindings:rawconstr_and_expr bindings;
-	     red_expr:(rawconstr_and_expr,evaluable_global_reference and_short_name or_var) red_expr_gen>
-type typed = <constr:open_constr; 
-	      reference:Libnames.global_reference;
-	      sort:sorts;
-	      may_eval:constr;
-	      open_constr:open_constr;
-	      with_bindings:constr with_ebindings;
-	      bindings:open_constr bindings;
-	      red_expr:(constr,evaluable_global_reference) red_expr_gen>
-
-type 'a level = 'a -> 'a
-
-(* spoof stuff for level introduction*)
-
-let rlevel = fun x -> x
-let glevel = fun x -> x
-let tlevel = fun x -> x
+type rlevel = constr_expr
+type glevel = rawconstr_and_expr
+type tlevel = open_constr
 
 type ('a,'b) abstract_argument_type = argument_type
 
@@ -143,48 +97,81 @@ and pr_case_intro_pattern = function
       hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
       ++ str "]"
 
-type something (* meant to be {t:Type & t}  in Coq syntax. i.e. : any object
-		  which has a type *)
+let rawwit_bool = BoolArgType
+let globwit_bool = BoolArgType
+let wit_bool = BoolArgType
 
-let wit_any _ = AnyArgType
+let rawwit_int = IntArgType
+let globwit_int = IntArgType
+let wit_int = IntArgType
 
-let wit_bool _ = BoolArgType
+let rawwit_int_or_var = IntOrVarArgType
+let globwit_int_or_var = IntOrVarArgType
+let wit_int_or_var = IntOrVarArgType
 
-let wit_int _ = IntArgType
+let rawwit_string = StringArgType
+let globwit_string = StringArgType
+let wit_string = StringArgType
 
-let wit_int_or_var _ = IntOrVarArgType
+let rawwit_pre_ident = PreIdentArgType
+let globwit_pre_ident = PreIdentArgType
+let wit_pre_ident = PreIdentArgType
 
-let wit_string _ = StringArgType
+let rawwit_intro_pattern = IntroPatternArgType
+let globwit_intro_pattern = IntroPatternArgType
+let wit_intro_pattern = IntroPatternArgType
 
-let wit_pre_ident _ = PreIdentArgType
+let rawwit_ident = IdentArgType
+let globwit_ident = IdentArgType
+let wit_ident = IdentArgType
 
-let wit_intro_pattern _ = IntroPatternArgType
+let rawwit_var = VarArgType
+let globwit_var = VarArgType
+let wit_var = VarArgType
 
-let wit_ident _ = IdentArgType
+let rawwit_ref = RefArgType
+let globwit_ref = RefArgType
+let wit_ref = RefArgType
 
-let wit_var _ = VarArgType
+let rawwit_quant_hyp = QuantHypArgType
+let globwit_quant_hyp = QuantHypArgType
+let wit_quant_hyp = QuantHypArgType
 
-let wit_ref _ = RefArgType
+let rawwit_sort = SortArgType
+let globwit_sort = SortArgType
+let wit_sort = SortArgType
 
-let wit_quant_hyp _ = QuantHypArgType
+let rawwit_constr = ConstrArgType
+let globwit_constr = ConstrArgType
+let wit_constr = ConstrArgType
 
-let wit_sort _ = SortArgType
+let rawwit_constr_may_eval = ConstrMayEvalArgType
+let globwit_constr_may_eval = ConstrMayEvalArgType
+let wit_constr_may_eval = ConstrMayEvalArgType
 
-let wit_constr _ = ConstrArgType
+let rawwit_open_constr_gen b = OpenConstrArgType b
+let globwit_open_constr_gen b = OpenConstrArgType b 
+let wit_open_constr_gen b = OpenConstrArgType b
 
-let wit_constr_may_eval _ = ConstrMayEvalArgType
+let rawwit_open_constr = rawwit_open_constr_gen false
+let globwit_open_constr = globwit_open_constr_gen false
+let wit_open_constr = wit_open_constr_gen false
 
-let wit_open_constr_gen _ b = OpenConstrArgType b
+let rawwit_casted_open_constr = rawwit_open_constr_gen true
+let globwit_casted_open_constr = globwit_open_constr_gen true
+let wit_casted_open_constr = wit_open_constr_gen true
 
-let wit_open_constr l = wit_open_constr_gen l false
+let rawwit_constr_with_bindings = ConstrWithBindingsArgType
+let globwit_constr_with_bindings = ConstrWithBindingsArgType
+let wit_constr_with_bindings = ConstrWithBindingsArgType
 
-let wit_casted_open_constr l = wit_open_constr_gen l true
+let rawwit_bindings = BindingsArgType
+let globwit_bindings = BindingsArgType
+let wit_bindings = BindingsArgType
 
-let wit_constr_with_bindings _ = ConstrWithBindingsArgType
-
-let wit_bindings _ = BindingsArgType
-
-let wit_red_expr _ = RedExprArgType
+let rawwit_red_expr = RedExprArgType
+let globwit_red_expr = RedExprArgType
+let wit_red_expr = RedExprArgType
 
 let wit_list0 t = List0ArgType t
 
@@ -195,16 +182,13 @@ let wit_opt t = OptArgType t
 let wit_pair t1 t2 = PairArgType (t1,t2)
 
 let in_gen t o = (t,Obj.repr o)
-let out_gen t (t',o) = let _ = matching t t' in Obj.magic o(* arnaud: essai if t = t' then Obj.magic o else failwith "out_gen"*)
+let out_gen t (t',o) = if t = t' then Obj.magic o else failwith "out_gen"
 let genarg_tag (s,_) = s
 
-let fold_list0 f g =
-f g  
-
-(*arnaud: essaifunction
+let fold_list0 f = function
   | (List0ArgType t, l) ->
       List.fold_right (fun x -> f (in_gen t x)) (Obj.magic l)
-  | _ -> failwith "Genarg: not a list0" *)
+  | _ -> failwith "Genarg: not a list0"
 
 let fold_list1 f = function
   | (List1ArgType t, l) ->
