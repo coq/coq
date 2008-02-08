@@ -309,7 +309,8 @@ through the <tt>Require Import</tt> command.</p>
     
 
   <dt> <b>IntMap</b>:
-    An implementation of finite sets/maps as trees indexed by addresses
+    An implementation of finite sets/maps as trees indexed by
+    addresses (obsolete, supersided by FSets/FMap)
   </dt>
   <dd> 
     theories/IntMap/Adalloc.v
@@ -328,7 +329,8 @@ through the <tt>Require Import</tt> command.</p>
   </dd>
     
   <dt> <b>FSets</b>:
-    Modular implementation of finite sets/maps using lists
+    Modular implementation of finite sets/maps using lists or
+    efficient trees
   </dt>
   <dd>
     theories/FSets/OrderedType.v
@@ -336,18 +338,14 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/OrderedTypeEx.v
     theories/FSets/FSetInterface.v
     theories/FSets/FSetBridge.v
+    theories/FSets/FSetFacts.v
     theories/FSets/FSetProperties.v
     theories/FSets/FSetEqProperties.v
     theories/FSets/FSetList.v
+    theories/FSets/FSetWeakList.v
     (theories/FSets/FSets.v)
-    theories/FSets/FSetFacts.v
     theories/FSets/FSetAVL.v
     theories/FSets/FSetToFiniteSet.v
-    theories/FSets/FSetWeakProperties.v
-    theories/FSets/FSetWeakInterface.v
-    theories/FSets/FSetWeakFacts.v
-    theories/FSets/FSetWeakList.v
-    theories/FSets/FSetWeak.v
     theories/FSets/FMapInterface.v
     theories/FSets/FMapList.v
     theories/FSets/FMapPositive.v
@@ -355,10 +353,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/FMapFacts.v
     (theories/FSets/FMaps.v)
     theories/FSets/FMapAVL.v
-    theories/FSets/FMapWeakInterface.v
-    theories/FSets/FMapWeakList.v
-    theories/FSets/FMapWeak.v
-    theories/FSets/FMapWeakFacts.v
   </dd>
 
 <!--  <dt> <b>Strings</b>
