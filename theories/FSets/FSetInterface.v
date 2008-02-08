@@ -10,7 +10,23 @@
 
 (** * Finite set library *)
 
-(** Set interfaces *)
+(** Set interfaces, inspired by the one of Ocaml. When compared with 
+    Ocaml, the main differences are: 
+    - the lack of [iter] function, useless since Coq is purely functional
+    - the use of [option] types instead of [Not_found] exceptions
+    - the use of [nat] instead of [int] for the [cardinal] function 
+
+    Several variants of the set interfaces are available: 
+    - [WSfun] : functorial signature for weak sets, non-dependent style
+    - [WS]    : self-contained version of [WSfun]
+    - [Sfun]  : functorial signature for ordered sets, non-dependent style
+    - [S]     : self-contained version of [Sfun]
+    - [Sdep]  : analog of [S] written using dependent style
+
+    If unsure, [S] is probably what you're looking for: other signatures
+    are subsets of it, apart from [Sdep] which is isomorphic to [S] (see 
+    [FSetBridge]).
+*)
 
 Require Export Bool OrderedType DecidableType.
 Set Implicit Arguments.
@@ -30,9 +46,9 @@ Unset Strict Implicit.
 
 Module Type WSfun (E : EqualityType).
 
-  (** The module E of base objects is meant to be a DecidableType
-     (and used to be so). But requiring only an EqualityType here
-     allows subtyping between FSet and FSetWeak *)
+  (** The module E of base objects is meant to be a [DecidableType]
+     (and used to be so). But requiring only an [EqualityType] here
+     allows subtyping between weak and ordered sets *)
 
   Definition elt := E.t.
 
@@ -79,10 +95,12 @@ Module Type WSfun (E : EqualityType).
   (** Set difference. *)
 
   Definition eq : t -> t -> Prop := Equal.
-  (** EqualityType is a subset of this interface, but not 
-  DecidableType, in order to have FSetWeak < FSet. 
-  Hence no weak sets of weak sets in general, but it works 
-  at least with FSetWeakList.make that provides an eq_dec. *)
+  (** In order to have the subtyping WS < S between weak and ordered 
+   sets, we do not require here an [eq_dec]. This interface is hence 
+   not compatible with [DecidableType], but only with [EqualityType],
+   so in general it may not possible to form weak sets of weak sets.
+   Some particular implementations may allow this nonetheless, in 
+   particular [FSetWeakList.Make]. *)
 
   Parameter equal : t -> t -> bool.
   (** [equal s1 s2] tests whether the sets [s1] and [s2] are
@@ -91,12 +109,6 @@ Module Type WSfun (E : EqualityType).
   Parameter subset : t -> t -> bool.
   (** [subset s1 s2] tests whether the set [s1] is a subset of
   the set [s2]. *)
-
-  (** Coq comment: [iter] is useless in a purely functional world *)
-  (**  iter: (elt -> unit) -> set -> unit. i*)
-  (** [iter f s] applies [f] in turn to all elements of [s].
-  The order in which the elements of [s] are presented to [f]
-  is unspecified. *)
 
   Parameter fold : forall A : Type, (elt -> A -> A) -> t -> A -> A.
   (** [fold f s a] computes [(f xN ... (f x2 (f x1 a))...)],
@@ -124,16 +136,14 @@ Module Type WSfun (E : EqualityType).
 
   Parameter cardinal : t -> nat.
   (** Return the number of elements of a set. *)
-  (** Coq comment: nat instead of int ... *)
 
   Parameter elements : t -> list elt.
   (** Return the list of all elements of the given set, in any order. *)
 
   Parameter choose : t -> option elt.
-  (** Return one element of the given set, or raise [Not_found] if
+  (** Return one element of the given set, or [None] if
   the set is empty. Which element is chosen is unspecified.
   Equal sets could return different elements. *)
-  (** Coq comment: [Not_found] is represented by the option type *)
 
   Section Spec. 
 
@@ -241,7 +251,7 @@ Module Type WSfun (E : EqualityType).
   (** Specification of [elements] *)
   Parameter elements_1 : In x s -> InA E.eq x (elements s).
   Parameter elements_2 : InA E.eq x (elements s) -> In x s.
-  (** When compared with ordered FSet, here comes the only 
+  (** When compared with ordered sets, here comes the only 
       property that is really weaker: *)
   Parameter elements_3w : NoDupA E.eq (elements s).
 
@@ -278,7 +288,7 @@ End WS.
 
 
 
-(** ** Functorial signature for full sets
+(** ** Functorial signature for sets on ordered elements
 
     Based on [WSfun], plus ordering on sets and [min_elt] and [max_elt]
     and some stronger specifications for other functions. *)
@@ -293,14 +303,12 @@ Module Type Sfun (E : OrderedType).
 
   Parameter min_elt : t -> option elt.
   (** Return the smallest element of the given set
-  (with respect to the [Ord.compare] ordering), or raise
-  [Not_found] if the set is empty. *)
-  (** Coq comment: [Not_found] is represented by the option type *)
+  (with respect to the [E.compare] ordering), 
+  or [None] if the set is empty. *)
 
   Parameter max_elt : t -> option elt.
-  (** Same as {!Set.S.min_elt}, but returns the largest element of the
+  (** Same as [min_elt], but returns the largest element of the
   given set. *)
-  (** Coq comment: [Not_found] is represented by the option type *)
 
   Section Spec. 
 
@@ -311,8 +319,13 @@ Module Type Sfun (E : OrderedType).
   Parameter lt_trans : lt s s' -> lt s' s'' -> lt s s''.
   Parameter lt_not_eq : lt s s' -> ~ eq s s'.
 
-  (** Additionnal specification of [elements] *)
+  (** Additional specification of [elements] *)
   Parameter elements_3 : sort E.lt (elements s).  
+
+  (** Remark: since [fold] is specified via [elements], this stronger
+   specification of [elements] has an indirect impact on [fold], 
+   which can now be proved to receive elements in increasing order.
+  *)
 
   (** Specification of [min_elt] *)
   Parameter min_elt_1 : min_elt s = Some x -> In x s. 
@@ -324,7 +337,7 @@ Module Type Sfun (E : OrderedType).
   Parameter max_elt_2 : max_elt s = Some x -> In y s -> ~ E.lt x y. 
   Parameter max_elt_3 : max_elt s = None -> Empty s.
 
-  (** Additionnal specification of [choose] *)
+  (** Additional specification of [choose] *)
   Parameter choose_equal: (equal s s')=true -> 
      match choose s, choose s' with  
       | Some x, Some x' => E.eq x x'
@@ -341,7 +354,7 @@ Module Type Sfun (E : OrderedType).
 End Sfun.
 
 
-(** ** Static signature for full sets
+(** ** Static signature for sets on ordered elements
 
     Similar to the functorial signature [Sfun], except that the 
     module [E] of base elements is incorporated in the signature. *)
@@ -353,23 +366,24 @@ End S.
 
 
 (** ** Some subtyping tests
-
+<<
 WSfun ---> WS
  |         |
  |         |
  V         V
 Sfun  ---> S 
 
+
 Module S_WS (M : S) <: SW := M.
 Module Sfun_WSfun (E:OrderedType)(M : Sfun E) <: WSfun E := M.
 Module S_Sfun (E:OrderedType)(M : S with Module E:=E) <: Sfun E := M.
 Module WS_WSfun (E:EqualityType)(M : WS with Module E:=E) <: WSfun E := M.
+>>
 *)
-
 
 (** * Dependent signature 
 
-    Signature [Sdep] presents full sets using dependent types *)
+    Signature [Sdep] presents ordered sets using dependent types *)
 
 Module Type Sdep.
 
