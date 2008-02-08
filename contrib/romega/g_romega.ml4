@@ -40,10 +40,11 @@ let romega_tactic l =
        Tactics.intros 
        total_reflexive_omega_tactic)
 
-
+(* arnaud: à restaurer
 TACTIC EXTEND romega
 |  [ "romega" ] -> [ Util.anomaly "G_romega.romega: à restaurer" (* arnaud: romega_tactic [] *)]
 END
+*)
 
 TACTIC EXTEND romega'
 | [ "romega" "with" ne_ident_list(l) ] -> 

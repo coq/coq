@@ -18,7 +18,7 @@ module Refiner =
     let abstract_extended_tactic = Tacticals.abstract_extended_tactic
   end
 (* arnaud: /trucs factices *)
-
+(* arnaud: à restaurer
 TACTIC EXTEND Simplify
   [ "simplify" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: simplify  *) ]
 END
@@ -68,3 +68,4 @@ VERNAC COMMAND EXTEND Dp_trace
 | [ "Dp_trace" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: set_trace true *) ]
 END
 
+*)

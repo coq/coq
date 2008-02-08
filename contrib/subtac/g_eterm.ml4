@@ -31,9 +31,11 @@ module Tacmach =
 
 open Eterm
 
+(* arnaud: à restaurer
 TACTIC EXTEND eterm
   [ "eterm" ] -> [  Util.anomaly "G_eterm.eterm: à restaurer" (* arnaud: 
     (fun gl ->
        let evm = Tacmach.project gl and t = Tacmach.pf_concl gl in
          Eterm.etermtac (evm, t) gl) *) ]
 END
+*)

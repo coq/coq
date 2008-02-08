@@ -161,6 +161,7 @@ let refine_tac = h_refine
 
 open Setoid_replace
 
+(* arnaud: à restaurer:
 TACTIC EXTEND setoid_replace
    [ "setoid_replace" constr(c1) "with" constr(c2) by_arg_tac(tac)] ->
      [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer: setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:[] *) ]
@@ -179,6 +180,8 @@ TACTIC EXTEND setoid_replace
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] ->
      [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer:setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:l *) ]
 END
+*)
+
 
 TACTIC EXTEND setoid_rewrite
    [ "setoid_rewrite" orient(b) constr(c) ]
@@ -230,6 +233,7 @@ TACTIC EXTEND setoid_symmetry
  | [ "setoid_symmetry" "in" hyp(n) ] -> [ Util.anomaly "Extratactics.setoid_symmetry: à restaurer" (* arnaud: à restaurer: setoid_symmetry_in n *) ]
 END
 
+(* arnaud: à restaurer
 TACTIC EXTEND setoid_reflexivity
    [ "setoid_reflexivity" ] -> [ Util.anomaly "Extratactics.setoid_reflexivity: à restaurer" (* arnaud: à restaurer: setoid_reflexivity *) ]
 END
@@ -237,6 +241,7 @@ END
 TACTIC EXTEND setoid_transitivity
    [ "setoid_transitivity" constr(t) ] -> [ Util.anomaly "Extratactics.setoid_transitivity: à restaurer" (* arnaud: à restaurer: setoid_transitivity t *) ]
 END
+*)
 
 (* Inversion lemmas (Leminv) *)
 

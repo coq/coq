@@ -52,10 +52,11 @@ let omega_tactic l =
     (tclREPEAT (tclPROGRESS (tclTHENLIST tacs)))
     omega_solver
 
-
+(* arnaud: à restaurer:
 TACTIC EXTEND omega
 |  [ "omega" ] -> [ Util.anomaly "G_omega.omega: à restaurer" (* arnaud: omega_tactic [] *) ]
 END
+*)
 
 TACTIC EXTEND omega'
 | [ "omega" "with" ne_ident_list(l) ] -> 

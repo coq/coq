@@ -65,9 +65,11 @@ let assumption id = e_give_exact (mkVar id)
 let e_assumption gl = 
   tclFIRST (List.map assumption (pf_ids_of_hyps gl)) gl
 
+(* arnaud: à restaurer
 TACTIC EXTEND eassumption
 | [ "eassumption" ] -> [ Util.anomaly "Eauto.eassuptiom: à restaurer" (* arnaud: e_assumption *)]
 END
+*)
 
 TACTIC EXTEND eexact
 | [ "eexact" constr(c) ] -> [ Util.anomaly "Eauto.eexact: à restaurer" (* arnaud: e_give_exact c *)]
