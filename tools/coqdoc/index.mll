@@ -129,15 +129,6 @@ let find_module m =
   else
     Unknown
 
-let ref_module loc s =
-  try
-    let n = String.length s in
-    let i = String.rindex s ' ' in 
-    let id = String.sub s (i+1) (n-i-1) in
-      add_mod !current_library (loc+i+1) (Hashtbl.find modules id) id
-  with Not_found -> 
-    ()
-
 (* Building indexes *)
 
 type 'a index = { 
@@ -251,8 +242,8 @@ rule traverse = parse
   | "Variable" 's'? space
       { current_type := Variable; index_idents lexbuf; traverse lexbuf }
 ***i*)
-  | "Require" (space+ ("Export"|"Import"))? space+ ident
-      { ref_module (lexeme_start lexbuf) (lexeme lexbuf); traverse lexbuf }
+  | "Require" (space+ ("Export"|"Import"))? 
+      { module_refs lexbuf; traverse lexbuf }
   | "End" space+ 
       { end_ident lexbuf; traverse lexbuf }
   | begin_hide 
@@ -377,6 +368,24 @@ and module_ident = parse
   | eof
       { () }
   | _
+      { () }
+
+(*s parse module names *)
+
+and module_refs = parse
+  | space+ 
+      { module_refs lexbuf }
+  | ident  
+      { let id =  lexeme lexbuf in
+	  (try
+	      add_mod !current_library (lexeme_start lexbuf) (Hashtbl.find modules id) id
+	    with
+		Not_found -> ()
+	  ); 
+	module_refs lexbuf }
+  | eof    
+      { () }
+  | _      
       { () }
 
 {
