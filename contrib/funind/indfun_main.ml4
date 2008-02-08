@@ -84,7 +84,7 @@ END
 TACTIC EXTEND newfuninv
    [ "functional" "inversion"  quantified_hypothesis(hyp) reference_opt(fname) ] -> 
      [
-       Invfun.invfun hyp fname
+       Util.anomaly "Indfun_main.newfunind: à restaurer" (* Invfun.invfun hyp fname *)
      ]
 END
 
@@ -105,7 +105,7 @@ END
 
 TACTIC EXTEND newfunind
    ["functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] -> 
-     [ 
+     [ Util.anomaly "Indfun_main.newfunind(2): à restaurer" (* arnaud:
        let pat = 
 	 match pat with 
 	   | None -> IntroAnonymous
@@ -116,12 +116,12 @@ TACTIC EXTEND newfunind
 	 | [c] -> c 
 	 | c::cl -> applist(c,cl)
        in 
-       functional_induction true c  princl pat ]
+       functional_induction true c  princl pat *) ]
 END
 (***** debug only ***)
 TACTIC EXTEND snewfunind
    ["soft" "functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] -> 
-     [ 
+     [ Util.anomaly "Indfun_main.newfunind(2): à restaurer" (* arnaud:
        let pat = 
 	 match pat with 
 	   | None -> IntroAnonymous
@@ -132,7 +132,7 @@ TACTIC EXTEND snewfunind
 	 | [c] -> c 
 	 | c::cl -> applist(c,cl)
        in 
-       functional_induction false c princl pat ]
+       functional_induction false c princl pat *) ]
 END
 
 
@@ -442,12 +442,12 @@ let chose_heuristic (oi:int option) : fapp_info list -> fapp_info list =
 
 TACTIC EXTEND finduction
     ["finduction" ident(id) natural_opt(oi)] -> 
-      [ 
+      [ Util.anomaly "Indfun_main.finduction: à restaurer" (* arnaud:
 	match oi with
 	  | Some(n) when n<=0 -> Util.error "numerical argument must be > 0"
 	  | _ -> 
 	      let heuristic = chose_heuristic oi in
-	      finduction (Some id) heuristic tclIDTAC
+	      finduction (Some id) heuristic tclIDTAC *)
       ]
 END
 
@@ -455,15 +455,15 @@ END
 
 TACTIC EXTEND fauto
     [ "fauto" tactic(tac)] -> 
-      [
+      [ Util.anomaly "Indfun_main.fauto: à restaurer" (* arnaud:
 	let heuristic = chose_heuristic None in
-	finduction None heuristic (snd tac)
+	finduction None heuristic (snd tac) *)
       ]
   |
     [ "fauto" ] -> 
-      [
+      [Util.anomaly "Indfun_main.fauto(2): à restaurer" (* arnaud:
 	let heuristic = chose_heuristic None in
-	finduction None heuristic tclIDTAC
+	finduction None heuristic tclIDTAC *)
       ]
 
 END
@@ -471,7 +471,7 @@ END
 
 TACTIC EXTEND poseq
   [ "poseq" ident(x) constr(c) ] -> 
-      [ poseq x c ]
+      [ Util.anomaly "Indfun_main.poseq: à restaurer" (* arnaud: poseq x c *)]
 END
 
 VERNAC COMMAND EXTEND Showindinfo

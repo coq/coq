@@ -18,6 +18,6 @@ module Refiner =
 (* arnaud: /trucs factices *)
 
 TACTIC EXTEND rtauto
-  [ "rtauto" ] -> [ Refl_tauto.rtauto_tac ]
+  [ "rtauto" ] -> [ Util.anomaly "G_rtauto.rtauto: à restaurer" (* arnaud: Refl_tauto.rtauto_tac *) ]
 END
 
