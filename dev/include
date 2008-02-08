@@ -6,6 +6,8 @@
 #cd ".";;
 #use "base_include";;
 
+#install_printer  (* pp_stdcmds *) pppp;;
+
 #install_printer  (* pattern *) pppattern;;
 #install_printer  (* rawconstr *) pprawconstr;;
 
