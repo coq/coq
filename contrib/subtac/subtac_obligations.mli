@@ -19,11 +19,14 @@ val add_definition : Names.identifier ->  Term.constr -> Term.types ->
   ?kind:Decl_kinds.definition_object_kind ->
   ?hook:definition_hook -> obligation_info -> progress
 
+type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) list
+
 val add_mutual_definitions : 
-  (Names.identifier * Term.constr * Term.types * obligation_info) list -> 
-  ?implicits:(Topconstr.explicitation * (bool * bool)) list ->
+  (Names.identifier * Term.constr * Term.types *
+      (Topconstr.explicitation * (bool * bool)) list * obligation_info) list -> 
   ?kind:Decl_kinds.definition_object_kind ->
-  int array -> unit
+  notations ->
+  Command.fixpoint_kind -> unit
 
 val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr option -> unit
 
@@ -39,6 +42,8 @@ val try_solve_obligation : int -> Names.identifier option -> Proof_type.tactic -
 val try_solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
 
 val show_obligations : ?msg:bool -> Names.identifier option -> unit
+
+val show_term : Names.identifier option -> unit
 
 val admit_obligations : Names.identifier option -> unit
 

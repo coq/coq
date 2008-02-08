@@ -1,6 +1,7 @@
 open Printf
 open Pp
 open Subtac_utils
+open Command
 
 open Term
 open Names
@@ -35,14 +36,17 @@ type obligation =
 
 type obligations = (obligation array * int)
 
+type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) list
+
 type program_info = {
   prg_name: identifier;
   prg_body: constr;
   prg_type: constr;
   prg_obligations: obligations;
   prg_deps : identifier list;
-  prg_nvrec : int array;
+  prg_fixkind : Command.fixpoint_kind option ;
   prg_implicits : (Topconstr.explicitation * (bool * bool)) list;
+  prg_notations : notations ;
   prg_kind : definition_object_kind;
   prg_hook : definition_hook;
 }
@@ -159,39 +163,50 @@ let declare_definition prg =
 open Pp
 open Ppconstr
 
+let compute_possible_guardness_evidences (n,_) fixtype =
+  match n with 
+  | Some n -> [n] 
+  | None -> 
+      (* If recursive argument was not given by user, we try all args.
+	 An earlier approach was to look only for inductive arguments,
+	 but doing it properly involves delta-reduction, and it finally 
+         doesn't seem to worth the effort (except for huge mutual 
+	 fixpoints ?) *)
+      let m = Term.nb_prod fixtype in
+      let ctx = fst (Sign.decompose_prod_n_assum m fixtype) in
+	list_map_i (fun i _ -> i) 0 ctx
+
 let declare_mutual_definition l =
   let len = List.length l in
-  let namerec = Array.of_list (List.map (fun x -> x.prg_name) l) in
-(*   let arrec =  *)
-(*     Array.of_list (List.map (fun x -> snd (decompose_prod_n len x.prg_type)) l) *)
-(*   in *)
-  let recvec, arrec = 
-    let l, l' = 
-      List.split
-	(List.map (fun x -> 
-	  let subs, typ = (subst_body x) in
-	    snd (decompose_lam_n len subs), 
-	  snd (decompose_prod_n len typ)) l)
-    in
-      Array.of_list l, Array.of_list l'
+  let fixdefs, fixtypes, fiximps = 
+    list_split3
+      (List.map (fun x -> 
+	let subs, typ = (subst_body x) in
+	  snd (decompose_lam_n len subs), snd (decompose_prod_n len typ), x.prg_implicits) l)
   in
-  let nvrec = (List.hd l).prg_nvrec in
-  let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in
-  let rec declare i fi =
-    (try trace (str "Declaring: " ++ pr_id fi ++ spc () ++
-		  my_print_constr (Global.env()) (recvec.(i)));
-     with _ -> ());
-    let ce = 
-      { const_entry_body = mkFix ((nvrec,i),recdecls); 
-        const_entry_type = Some arrec.(i);
-        const_entry_opaque = false;
-        const_entry_boxed = true} in
-      Declare.declare_constant fi (DefinitionEntry ce,IsDefinition Fixpoint)
-  in
-  let lrefrec = Array.mapi declare namerec in
-    print_message (recursive_message lrefrec);
-    lrefrec.(0)    
-         
+  let fixkind = Option.get (List.hd l).prg_fixkind in
+  let arrrec, recvec = Array.of_list fixtypes, Array.of_list fixdefs in
+  let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
+  let boxed = true (* TODO *) in
+  let fixnames = (List.hd l).prg_deps in
+  let kind = if fixkind <> IsCoFixpoint then Fixpoint else CoFixpoint in
+  let indexes, fixdecls =
+    match fixkind with
+      | IsFixpoint wfl ->
+	  let possible_indexes =
+	    List.map2 compute_possible_guardness_evidences wfl fixtypes in
+	  let indexes = Pretyping.search_guard dummy_loc (Global.env ()) possible_indexes fixdecls in
+	    Some indexes, list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 l
+      | IsCoFixpoint ->
+	  None, list_map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 l
+  in      
+  (* Declare the recursive definitions *)
+  let kns = list_map4 (declare_fix boxed kind) fixnames fixdecls fixtypes fiximps in
+    (* Declare notations *)
+    List.iter (Command.declare_interning_data ([],[])) (List.hd l).prg_notations;
+    Flags.if_verbose ppnl (Command.recursive_message kind indexes fixnames);
+    (match List.hd kns with ConstRef kn -> kn | _ -> assert false)
+      
 let declare_obligation obl body =
   let ce = 
     { const_entry_body = body;
@@ -220,7 +235,7 @@ let try_tactics obls =
         
 let red = Reductionops.nf_betaiota
 
-let init_prog_info n b t deps nvrec obls impls kind hook =
+let init_prog_info n b t deps fixkind notations obls impls kind hook =
   let obls' = 
     Array.mapi
       (fun i (n, t, o, d) ->
@@ -231,7 +246,8 @@ let init_prog_info n b t deps nvrec obls impls kind hook =
       obls
   in
     { prg_name = n ; prg_body = b; prg_type = red t; prg_obligations = (obls', Array.length obls');
-      prg_deps = deps; prg_nvrec = nvrec; prg_implicits = impls; prg_kind = kind; prg_hook = hook; }
+      prg_deps = deps; prg_fixkind = fixkind ; prg_notations = notations ;
+      prg_implicits = impls; prg_kind = kind; prg_hook = hook; }
     
 let get_prog name =
   let prg_infos = !from_prg in
@@ -422,9 +438,15 @@ let show_obligations ?(msg=true) n =
 		    | Some _ -> ())
       obls
 
+let show_term n =
+  let prg = get_prog_err n in
+  let n = prg.prg_name in
+    msgnl (str (string_of_id n) ++ spc () ++ str":" ++ spc () ++ my_print_constr (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
+	    ++ my_print_constr (Global.env ()) prg.prg_body)
+
 let add_definition n b t ?(implicits=[]) ?(kind=Definition) ?(hook=fun x -> ()) obls =
   Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
-  let prg = init_prog_info n b t [] (Array.make 0 0) obls implicits kind hook in
+  let prg = init_prog_info n b t [] None [] obls implicits kind hook in
   let obls,_ = prg.prg_obligations in
   if Array.length obls = 0 then (
     Flags.if_verbose ppnl (str ".");    
@@ -440,12 +462,12 @@ let add_definition n b t ?(implicits=[]) ?(kind=Definition) ?(hook=fun x -> ()) 
 	  | Remain rem when rem < 5 -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	  | _ -> res)
 	
-let add_mutual_definitions l ?(implicits=[]) ?(kind=Definition) nvrec =
-  let deps = List.map (fun (n, b, t, obls) -> n) l in
+let add_mutual_definitions l ?(kind=Definition) notations fixkind =
+  let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
   let upd = List.fold_left
-      (fun acc (n, b, t, obls) ->
-	 let prg = init_prog_info n b t deps nvrec obls implicits kind (fun x -> ()) in
-	   ProgMap.add n prg acc)
+      (fun acc (n, b, t, imps, obls) ->
+	let prg = init_prog_info n b t deps (Some fixkind) notations obls imps kind (fun x -> ()) in
+	  ProgMap.add n prg acc)
       !from_prg l
   in
     from_prg := upd;

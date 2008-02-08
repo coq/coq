@@ -20,12 +20,12 @@ val interp_gen :
 val interp_constr :
   evar_defs ref ->
   env -> constr_expr -> constr
-val interp_type :
+val interp_type_evars :
   evar_defs ref ->
   env ->
   ?impls:full_implicits_env ->
   constr_expr -> constr
-val interp_casted_constr :
+val interp_casted_constr_evars :
   evar_defs ref ->
   env ->
   ?impls:full_implicits_env ->
@@ -38,5 +38,12 @@ val interp_constr_judgment :
   constr_expr -> unsafe_judgment
 val list_chop_hd : int -> 'a list -> 'a list * 'a * 'a list
 
+val interp_binder :     Evd.evar_defs ref ->
+    Environ.env -> Names.name -> Topconstr.constr_expr -> Term.constr
+
+
 val build_recursive :
   (fixpoint_expr * decl_notation) list -> bool -> unit
+
+val build_corecursive :
+  (cofixpoint_expr * decl_notation) list -> bool -> unit

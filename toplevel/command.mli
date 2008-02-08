@@ -43,6 +43,10 @@ val declare_assumption : identifier located list ->
   coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> bool 
   ->unit
 
+val declare_interning_data : 'a * Constrintern.implicits_env ->
+    string * Topconstr.constr_expr * Topconstr.scope_name option -> unit
+
+
 val compute_interning_datas :  Environ.env ->
     'a list ->
     'b list ->
@@ -58,9 +62,26 @@ val build_mutual : (inductive_expr * decl_notation) list -> bool -> unit
 val declare_mutual_with_eliminations :
   bool -> Entries.mutual_inductive_entry -> mutual_inductive
 
-val build_recursive : (fixpoint_expr * decl_notation) list -> bool -> unit
+type fixpoint_kind =
+  | IsFixpoint of (int option * recursion_order_expr) list
+  | IsCoFixpoint
 
-val build_corecursive : (cofixpoint_expr * decl_notation) list -> bool -> unit
+type fixpoint_expr = {
+  fix_name : identifier;
+  fix_binders : local_binder list;
+  fix_body : constr_expr;
+  fix_type : constr_expr
+}
+
+val recursive_message : Decl_kinds.definition_object_kind ->
+  int array option -> Names.identifier list -> Pp.std_ppcmds
+  
+val declare_fix : bool -> Decl_kinds.definition_object_kind -> identifier ->
+  constr -> types -> Impargs.manual_explicitation list -> global_reference
+
+val build_recursive : (Topconstr.fixpoint_expr * decl_notation) list -> bool -> unit
+
+val build_corecursive : (Topconstr.cofixpoint_expr * decl_notation) list -> bool -> unit
 
 val build_scheme : (identifier located option * scheme ) list -> unit
 

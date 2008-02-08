@@ -151,9 +151,9 @@ let subtac (loc, command) =
       | VernacInstance (sup, is, props) ->
 	  Subtac_classes.new_instance sup is props
 
-(*       | VernacCoFixpoint (l, b) ->  *)
-(* 	  let _ = trace (str "Building cofixpoint") in *)
-(* 	    ignore(Subtac_command.build_recursive l b) *)
+      | VernacCoFixpoint (l, b) ->
+	  let _ = trace (str "Building cofixpoint") in
+	    ignore(Subtac_command.build_corecursive l b)
 
       (*| VernacEndProof e -> 
 	  subtac_end_proof e*)

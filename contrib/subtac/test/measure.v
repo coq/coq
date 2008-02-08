@@ -2,7 +2,7 @@ Notation "( x & y )" := (@existS _ _ x y) : core_scope.
 Unset Printing All.
 Require Import Coq.Arith.Compare_dec.
 
-Require Import Coq.subtac.Utils.
+Require Import Coq.Program.Program.
 
 Fixpoint size (a : nat) : nat :=
   match a with
@@ -10,15 +10,11 @@ Fixpoint size (a : nat) : nat :=
   | S n => S (size n)
   end.
 
-Program Fixpoint test_measure (a : nat) {measure a size}  : nat :=
+Program Fixpoint test_measure (a : nat) {measure size a}  : nat :=
   match a with
   | S (S n) => S (test_measure n)
-  | x => x
+  | 0 | S 0 => a
   end.
-subst.
-unfold n0.
-auto with arith.
-Qed.
 
 Check test_measure.
 Print test_measure.
