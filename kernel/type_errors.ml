@@ -56,7 +56,7 @@ type type_error =
   | CantApplyBadType of
       (int * constr * constr) * unsafe_judgment * unsafe_judgment array
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment array
-  | IllFormedRecBody of guard_error * name array * int
+  | IllFormedRecBody of guard_error * name array * int * env * unsafe_judgment array
   | IllTypedRecBody of
       int * name array * unsafe_judgment array * types array
 
@@ -105,8 +105,8 @@ let error_cant_apply_not_functional env rator randl =
 let error_cant_apply_bad_type env t rator randl =
   raise (TypeError (env, CantApplyBadType (t,rator,randl)))
 
-let error_ill_formed_rec_body env why lna i =
-  raise (TypeError (env, IllFormedRecBody (why,lna,i)))
+let error_ill_formed_rec_body env why lna i fixenv vdefj =
+  raise (TypeError (env, IllFormedRecBody (why,lna,i,fixenv,vdefj)))
 
 let error_ill_typed_rec_body env i lna vdefj vargs =
   raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))

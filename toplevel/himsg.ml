@@ -214,7 +214,7 @@ let explain_not_product env c =
 
 (* TODO: use the names *)
 (* (co)fixpoints *)
-let explain_ill_formed_rec_body env err names i =
+let explain_ill_formed_rec_body env err names i fixenv vdefj =
   let prt_name i =
     match names.(i) with
         Name id -> str "Recursive definition of " ++ pr_id id
@@ -286,9 +286,11 @@ let explain_ill_formed_rec_body env err names i =
       strbrk " not in guarded form (should be a constructor," ++
       strbrk " an abstraction, a match, a cofix or a recursive call)"
   in
+  let pvd, pvdt = pr_ljudge_env fixenv vdefj.(i) in
   prt_name i ++ str " is ill-formed." ++ fnl () ++
   pr_ne_context_of (str "In environment") env ++
-  st ++ str "."
+  st ++ str "." ++ fnl () ++
+  str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
 
 let explain_ill_typed_rec_body env i names vdefj vargs =
   let env = make_all_name_different env in
@@ -436,8 +438,8 @@ let explain_type_error env err =
       explain_cant_apply_bad_type env t rator randl
   | CantApplyNonFunctional (rator, randl) ->
       explain_cant_apply_not_functional env rator randl
-  | IllFormedRecBody (err, lna, i) ->
-      explain_ill_formed_rec_body env err lna i
+  | IllFormedRecBody (err, lna, i, fixenv, vdefj) ->
+      explain_ill_formed_rec_body env err lna i fixenv vdefj
   | IllTypedRecBody (i, lna, vdefj, vargs) ->
      explain_ill_typed_rec_body env i lna vdefj vargs
   | WrongCaseInfo (ind,ci) ->

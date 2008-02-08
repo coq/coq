@@ -1471,7 +1471,7 @@ let rec postprocess pts instr =
 	      goto_current_focus_or_top (mark_as_done pts)
  	    with 
 		Type_errors.TypeError(env,
-				      Type_errors.IllFormedRecBody(_,_,_)) ->
+				      Type_errors.IllFormedRecBody(_,_,_,_,_)) ->
 		  anomaly "\"end induction\" generated an ill-formed fixpoint"
 	end
     | Pend _ -> 

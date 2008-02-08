@@ -777,6 +777,8 @@ let check_one_fix renv recpos def =
   in
   check_rec_call renv def
 
+let judgment_of_fixpoint (_, types, bodies) =
+  array_map2 (fun typ body -> { uj_val = body ; uj_type = typ }) types bodies
 
 let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   let nbfix = Array.length bodies in 
@@ -788,8 +790,9 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
     or bodynum >= nbfix
   then anomaly "Ill-formed fix term";
   let fixenv = push_rec_types recdef env in
+  let vdefj = judgment_of_fixpoint recdef in
   let raise_err env i err =
-    error_ill_formed_rec_body env err names i in
+    error_ill_formed_rec_body env err names i fixenv vdefj in
   (* Check the i-th definition with recarg k *)
   let find_ind i k def = 
     (* check fi does not appear in the k+1 first abstractions, 
@@ -815,14 +818,15 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   (Array.map fst rv, Array.map snd rv)
 
 
-let check_fix env ((nvect,_),(names,_,bodies as _recdef) as fix) =
+let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
   let (minds, rdef) = inductive_of_mutfix env fix in
   for i = 0 to Array.length bodies - 1 do
     let (fenv,body) = rdef.(i) in
     let renv = make_renv fenv minds nvect.(i) minds.(i) in
     try check_one_fix renv nvect body
     with FixGuardError (fixenv,err) ->
-      error_ill_formed_rec_body fixenv err names i
+      error_ill_formed_rec_body fixenv err names i 
+	(push_rec_types recdef env) (judgment_of_fixpoint recdef)
   done
 
 (*
@@ -933,5 +937,6 @@ let check_cofix env (bodynum,(names,types,bodies as recdef)) =
     let fixenv = push_rec_types recdef env in
     try check_one_cofix fixenv nbfix bodies.(i) types.(i)
     with CoFixGuardError (errenv,err) -> 
-      error_ill_formed_rec_body errenv err names i
+      error_ill_formed_rec_body errenv err names i 
+	fixenv (judgment_of_fixpoint recdef)
   done
