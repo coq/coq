@@ -222,6 +222,8 @@ tactic is replaced by the default one if not specified.
   one (useful for mutually recursive definitions).
 \item {\tt Admit Obligations [of \ident]} Admits all
   obligations (does not work with structurally recursive programs).
+\item {\tt Preterm [of \ident]} Shows the term that will be fed to
+  the kernel once the obligations are solved. Useful for debugging.
 \end{itemize}
 
 The module {\tt Coq.Program.Tactics} defines the default tactic for solving
@@ -254,10 +256,11 @@ Program Fixpoint f (x : A | P) { measure size } :=
   You will then just have to prove that the measure decreases at each recursive
   call. There are three drawbacks though: 
   \begin{enumerate}
-  \item You have to define size yourself;
+  \item You have to define the measure yourself;
   \item The reduction is a little more involved, although it works
     using lazy evaluation;
-  \item Mutual recursion isn't possible anymore. What would it mean ?
+  \item Mutual recursion on the underlying inductive type isn't possible
+    anymore, but nested mutual recursion is always possible.
   \end{enumerate}
 \end{itemize}
 
