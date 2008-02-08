@@ -24,42 +24,53 @@ Unset Strict Implicit.
      data type.  [WSfun] and [WS] are almost identical, apart from the
      fact that [WSfun] is expressed in a functorial way whereas [WS]
      is self-contained. For obtaining an instance of such signatures,
-     a decidable equality on keys in enough (see for instance
+     a decidable equality on keys in enough (see for example
      [FMapWeakList]). These signatures contain the usual operators
      (add, find, ...). The only function that asks for more is
      [equal], whose first argument should be a comparison on data.
- 
+
    - Then comes [Sfun] and [S], that extend [WSfun] and [WS] to the 
-     case where the key type is ordered. The main addition states that 
-     [elements] produces sorted lists.
+     case where the key type is ordered. The main novelty is that 
+     [elements] is required to produce sorted lists.
 
    - Finally, [Sord] extends [S] with a complete comparison function. For 
      that, the data type should have a decidable total ordering as well. 
+
+   If unsure, what you're looking for is probably [S]: apart from [Sord],
+   all other signatures are subsets of [S]. 
+
+   Some additional differences with Ocaml: 
+    
+    - no [iter] function, useless since Coq is purely functional
+    - [option] types are used instead of [Not_found] exceptions
+    - more functions are provided: [elements] and [map2]
+
 *)
 
 
 
-(** ** Weak Signature for maps
+(** ** Weak signature for maps
    
-    No requirements for an ordering on elements, only decidability 
-    of equality. First, a functorial signature: *)
+    No requirements for an ordering on keys nor elements, only decidability
+    of equality on keys. First, a functorial signature: *)
 
 Module Type WSfun (E : EqualityType).
 
-  (** The module E of base objects is meant to be a DecidableType
-     (and used to be so). But requiring only an EqualityType here
-     allows subtyping between FMap and FMapWeak *)
+  (** The module E of base objects is meant to be a [DecidableType]
+     (and used to be so). But requiring only an [EqualityType] here
+     allows subtyping between weak and ordered maps. *)
 
   Definition key := E.t.
 
-  Parameter t : Set -> Set. (** the abstract type of maps *)
+  Parameter t : Set -> Set. 
+  (** the abstract type of maps *)
  
   Section Types. 
 
     Variable elt:Set.
 
     Parameter empty : t elt.
-      (** The empty map. *)
+    (** The empty map. *)
 
     Parameter is_empty : t elt -> bool.
     (** Test whether a map is empty or not. *)
@@ -71,8 +82,7 @@ Module Type WSfun (E : EqualityType).
 
     Parameter find : key -> t elt -> option elt. 
     (** [find x m] returns the current binding of [x] in [m], 
-	or raises [Not_found] if no such binding exists.
-	NB: in Coq, the exception mechanism becomes a option type. *)
+	or [None] if no such binding exists. *)
 
     Parameter remove : key -> t elt -> t elt.
     (** [remove x m] returns a map containing the same bindings as [m], 
@@ -82,45 +92,34 @@ Module Type WSfun (E : EqualityType).
     (** [mem x m] returns [true] if [m] contains a binding for [x], 
 	and [false] otherwise. *)
 
-    (** Coq comment: [iter] is useless in a purely functional world *)
-    (** val iter : (key -> 'a -> unit) -> 'a t -> unit *)
-    (** iter f m applies f to all bindings in map m. f receives the key as 
-	first argument, and the associated value as second argument. 
-	The bindings are passed to f in increasing order with respect to the 
-	ordering over the type of the keys. Only current bindings are 
-	presented to f: bindings hidden by more recent bindings are not 
-	passed to f. *)
-
     Variable elt' : Set. 
     Variable elt'': Set.
 
     Parameter map : (elt -> elt') -> t elt -> t elt'.
     (** [map f m] returns a map with same domain as [m], where the associated 
 	value a of all bindings of [m] has been replaced by the result of the
-	application of [f] to [a]. The bindings are passed to [f] in 
-	increasing order with respect to the ordering over the type of the 
-	keys. *)
+	application of [f] to [a]. Since Coq is purely functional, the order
+        in which the bindings are passed to [f] is irrelevant. *)
 
     Parameter mapi : (key -> elt -> elt') -> t elt -> t elt'.
-    (** Same as [S.map], but the function receives as arguments both the 
+    (** Same as [map], but the function receives as arguments both the 
 	key and the associated value for each binding of the map. *)
 
-    Parameter map2 : (option elt -> option elt' -> option elt'') -> t elt -> t elt' ->  t elt''.
-    (** Not present in Ocaml. 
-         [map f m m'] creates a new map whose bindings belong to the ones of either 
-         [m] or [m']. The presence and value for a key [k] is determined by [f e e'] 
-         where [e] and [e'] are the (optional) bindings of [k] in [m] and [m']. *)
+    Parameter map2 : 
+     (option elt -> option elt' -> option elt'') -> t elt -> t elt' ->  t elt''.
+    (** [map2 f m m'] creates a new map whose bindings belong to the ones 
+        of either [m] or [m']. The presence and value for a key [k] is 
+        determined by [f e e'] where [e] and [e'] are the (optional) bindings 
+        of [k] in [m] and [m']. *)
 
     Parameter elements : t elt -> list (key*elt).
-    (** Not present in Ocaml. 
-         [elements m] returns an assoc list corresponding to the bindings of [m].
-         Elements of this list are sorted with respect to their first components. 
-         Useful to specify [fold] ... *)
+    (** [elements m] returns an assoc list corresponding to the bindings 
+        of [m], in any order. *)
 
     Parameter fold : forall A: Type, (key -> elt -> A -> A) -> t elt -> A -> A.
     (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)], 
 	where [k1] ... [kN] are the keys of all bindings in [m] 
-	(in increasing order), and [d1] ... [dN] are the associated data. *)
+	(in any order), and [d1] ... [dN] are the associated data. *)
 
     Parameter equal : (elt -> elt -> bool) -> t elt -> t elt -> bool.
     (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are equal, 
@@ -178,7 +177,7 @@ Module Type WSfun (E : EqualityType).
         MapsTo x e m -> InA eq_key_elt (x,e) (elements m).
       Parameter elements_2 : 
         InA eq_key_elt (x,e) (elements m) -> MapsTo x e m.
-      (** When compared with ordered FMap, here comes the only 
+      (** When compared with ordered maps, here comes the only 
          property that is really weaker: *)
       Parameter elements_3w : NoDupA eq_key (elements m).  
 
@@ -229,12 +228,11 @@ Module Type WSfun (E : EqualityType).
   Hint Resolve mem_1 is_empty_1 is_empty_2 add_1 add_2 remove_1
     remove_2 find_1 fold_1 map_1 mapi_1 mapi_2
     : map.
-  (** for compatibility with earlier hints *)
-  Hint Resolve map_2 mapi_2 add_3 remove_3 find_2 : oldmap.
 
 End WSfun.
 
-(** ** Main signature [WS] for Weak Maps 
+
+(** ** Static signature for Weak Maps 
 
     Similar to [WSfun] but expressed in a self-contained way. *)
 
@@ -243,6 +241,8 @@ Module Type WS.
   Include Type WSfun E.
 End WS.
 
+
+
 (** ** Maps on ordered keys, functorial signature *)
 
 Module Type Sfun (E : OrderedType).
@@ -250,10 +250,15 @@ Module Type Sfun (E : OrderedType).
   Section elt.
   Variable elt:Set.
    Definition lt_key (p p':key*elt) := E.lt (fst p) (fst p').
-   (* Additionnal specification of [elements] *)
+   (* Additional specification of [elements] *)
    Parameter elements_3 : forall m, sort lt_key (elements m).
+   (** Remark: since [fold] is specified via [elements], this stronger
+   specification of [elements] has an indirect impact on [fold],
+   which can now be proved to receive elements in increasing order. *) 
   End elt.
 End Sfun.
+
+
 
 (** ** Maps on ordered keys, self-contained signature *)
 
@@ -261,6 +266,8 @@ Module Type S.
   Declare Module E : OrderedType.
   Include Type Sfun E.
 End S.
+
+
 
 (** ** Maps with ordering both on keys and datas *)
 
@@ -287,8 +294,7 @@ Module Type Sord.
   Parameter eq_2 : forall m m', eq m m' -> Equal cmp m m'.
 
   Parameter compare : forall m1 m2, Compare lt eq m1 m2.
-  (** Total ordering between maps. The first argument (in Coq: Data.compare) 
-      is a total ordering used to compare data associated with equal keys 
-      in the two maps. *)
+  (** Total ordering between maps. [Data.compare] is a total ordering 
+      used to compare data associated with equal keys in the two maps. *)
 
 End Sord.
