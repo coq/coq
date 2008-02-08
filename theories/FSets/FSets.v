@@ -15,6 +15,8 @@ Require Export DecidableType.
 Require Export DecidableTypeEx.
 Require Export FSetInterface.
 Require Export FSetBridge.
+Require Export FSetFacts.
+Require Export FSetDecide.
 Require Export FSetProperties.
 Require Export FSetEqProperties.
 Require Export FSetWeakList.
