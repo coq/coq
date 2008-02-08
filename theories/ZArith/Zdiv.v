@@ -1033,6 +1033,11 @@ Proof.
   intros; apply Z_div_same_full; auto with zarith.
 Qed.
 
+Lemma Z_div_plus : forall a b c:Z, c > 0 -> (a + b * c) / c = a / c + b.
+Proof.
+  intros; apply Z_div_plus_full; auto with zarith.
+Qed.
+
 Lemma Z_div_mult : forall a b:Z, b > 0 -> (a*b)/b = a.
 Proof.
   intros; apply Z_div_mult_full; auto with zarith.
