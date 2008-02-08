@@ -192,10 +192,10 @@ let compare c1 c2 g =
 (* User syntax *)
 
 TACTIC EXTEND decide_equality
-  [ "decide" "equality" constr(c1) constr(c2) ] -> [ decideEquality c1 c2 ]
-| [ "decide" "equality" ] -> [ decideEqualityGoal ]
+  [ "decide" "equality" constr(c1) constr(c2) ] -> [ Util.anomaly "Eqdecide.decide_equality: à restaurer" (* arnaud: decideEquality c1 c2 *) ]
+| [ "decide" "equality" ] -> [ Util.anomaly "Eqdecide.decide_equality: à restaurer" (* arnaud: decideEqualityGoal *) ]
 END
 
 TACTIC EXTEND compare
-| [ "compare" constr(c1) constr(c2) ] -> [ compare c1 c2 ]
+| [ "compare" constr(c1) constr(c2) ] -> [ Util.anomaly "Eqdecide.compare: à restaurer" (* arnaud: compare c1 c2 *) ]
 END

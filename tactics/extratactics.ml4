@@ -33,78 +33,79 @@ open Equality
 
 TACTIC EXTEND replace 
    ["replace" constr(c1) "with" constr(c2) in_arg_hyp(in_hyp) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp) (Option.map Tacinterp.eval_tactic tac) ]
+-> [ Util.anomaly "Extratactics.replace: à restaurer" (*arnaud: à restaurer: replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp) (Option.map Tacinterp.eval_tactic tac) *)]
 END
 
 TACTIC EXTEND replace_term_left
   [ "replace"  "->" constr(c) in_arg_hyp(in_hyp) ]
-  -> [ replace_multi_term (Some true) c (glob_in_arg_hyp_to_clause in_hyp)]
+  -> [ Util.anomaly "Extratactics.replace_term_left: à restaurer" (* arnaud: à restaurer: replace_multi_term (Some true) c (glob_in_arg_hyp_to_clause in_hyp) *)]
 END
 
 TACTIC EXTEND replace_term_right
   [ "replace"  "<-" constr(c) in_arg_hyp(in_hyp) ]
-  -> [replace_multi_term (Some false) c (glob_in_arg_hyp_to_clause in_hyp)]
+  -> [Util.anomaly "Extratactics.replace_term_right: à restaurer" (* arnaud: à restaurer: replace_multi_term (Some false) c (glob_in_arg_hyp_to_clause in_hyp) *)]
 END
 
 TACTIC EXTEND replace_term
   [ "replace" constr(c) in_arg_hyp(in_hyp) ]
-  -> [ replace_multi_term None c (glob_in_arg_hyp_to_clause in_hyp) ]
+  -> [ Util.anomaly "Extratactics.replace_term: à restaurer" (* arnaud: à restaurer: replace_multi_term None c (glob_in_arg_hyp_to_clause in_hyp) *)]
 END
 
 TACTIC EXTEND simplify_eq
-  [ "simplify_eq" quantified_hypothesis_opt(h) ] -> [ dEq h ]
+  [ "simplify_eq" quantified_hypothesis_opt(h) ] -> [ Util.anomaly "Extratactics.simplify_eq: à restaurer" (* arnaud: à restaurer: dEq h*) ]
 END
 
 TACTIC EXTEND discriminate
-  [ "discriminate" quantified_hypothesis_opt(h) ] -> [ discr_tac h ]
+  [ "discriminate" quantified_hypothesis_opt(h) ] -> [ Util.anomaly "Extratactics.discriminate: à restaurer" (* arnaud: à restaurer: discr_tac h *) ]
 END
 
 let h_discrHyp id = h_discriminate (Some id)
 
 TACTIC EXTEND injection
-  [ "injection" quantified_hypothesis_opt(h) ] -> [ injClause [] h ]
+  [ "injection" quantified_hypothesis_opt(h) ] -> [ Util.anomaly "Extratactics.injection: à restaurer" (* arnaud: à restaurer: injClause [] h*) ]
 END 
 TACTIC EXTEND injection_as
   [ "injection" quantified_hypothesis_opt(h) 
-    "as" simple_intropattern_list(ipat)] -> [ injClause ipat h ]
+    "as" simple_intropattern_list(ipat)] -> [ Util.anomaly "Extratactics.injection_as: à restaurer" (* arnaud: à restaurer: injClause ipat h*) ]
 END
 
 let h_injHyp id = h_injection (Some id)
 
 TACTIC EXTEND conditional_rewrite
 | [ "conditional" tactic(tac) "rewrite" orient(b) constr_with_bindings(c) ]
-    -> [ conditional_rewrite b (snd tac) c ]
+    -> [ Util.anomaly "Extratactics.conditional_rewrite: à restaurer" (* arnaud: à restaurer: conditional_rewrite b (snd tac) c *) ]
 | [ "conditional" tactic(tac) "rewrite" orient(b) constr_with_bindings(c)
     "in" hyp(h) ]
-    -> [ conditional_rewrite_in b h (snd tac) c ]
+    -> [ Util.anomaly "Extratactics.conditional_rewrite(2): à restaurer" (* arnaud: à restaurer: conditional_rewrite_in b h (snd tac) c *) ]
 END
 
 TACTIC EXTEND dependent_rewrite
-| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
+| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ Util.anomaly "Extratactics.dependent_rewrite: à restaurer" (* arnaud: à restaurer: rewriteInConcl b c *) ]
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
-    -> [ rewriteInHyp b c id ]
+    -> [ Util.anomaly "Extratactics.dependent_rewrite(2): à restaurer" (* arnaud: à restaurer: rewriteInHyp b c id *) ]
 END
 
 TACTIC EXTEND cut_rewrite
-| [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]
+| [ "cutrewrite" orient(b) constr(eqn) ] -> [ Util.anomaly "Extratactics.cut_rewrite: à restaurer" (* arnaud: à restaurer: cutRewriteInConcl b eqn *) ]
 | [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
-    -> [ cutRewriteInHyp b eqn id ]
+    -> [ Util.anomaly "Extratactics.cut_rewrite(2): à restaurer" (* arnaud: à restaurer: cutRewriteInHyp b eqn id *) ]
 END
 
 (* Contradiction *)
 open Contradiction
 
 TACTIC EXTEND absurd
- [ "absurd" constr(c) ] -> [ absurd c ]
+ [ "absurd" constr(c) ] -> [ Util.anomaly "Extratactics.absurd: à restaurer" (* arnaud: à restaurer: absurd c *) ]
 END
 
 TACTIC EXTEND contradiction
- [ "contradiction" constr_with_bindings_opt(c) ] -> [ contradiction c ]
+ [ "contradiction" constr_with_bindings_opt(c) ] -> [ Util.anomaly "Extratactics.contradiction: à restaurer" (* arnaud: à restaurer: contradiction c *) ]
 END
 
 (* AutoRewrite *)
 
 open Autorewrite
+(* arnaud: à dégager ? *)
 (* J.F : old version 
 TACTIC EXTEND autorewrite
   [ "autorewrite" "with" ne_preident_list(l) ] ->
@@ -120,11 +121,11 @@ END
 
 TACTIC EXTEND autorewrite
 | [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
-    [ auto_multi_rewrite  l (glob_in_arg_hyp_to_clause  cl) ]
+    [ Util.anomaly "Extratactics.autorewrite: à restaurer" (* arnaud: à restaurer: auto_multi_rewrite  l (glob_in_arg_hyp_to_clause  cl) *) ]
 | [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) "using" tactic(t) ] ->
     [ 
-      let cl =  glob_in_arg_hyp_to_clause cl in 
-      auto_multi_rewrite_with (snd t) l cl
+      Util.anomaly "Extratactics.autorewrite(2): à restaurer" (* arnaud: à restaurer: let cl =  glob_in_arg_hyp_to_clause cl in 
+      auto_multi_rewrite_with (snd t) l cl *)
 
     ]
 END
@@ -162,32 +163,32 @@ open Setoid_replace
 
 TACTIC EXTEND setoid_replace
    [ "setoid_replace" constr(c1) "with" constr(c2) by_arg_tac(tac)] ->
-     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:[] ]
+     [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer: setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:[] *) ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) by_arg_tac(tac)] ->
-     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:[] ]
+     [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer:setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:[] *) ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac) ] ->
-     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:l ]
+     [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer:setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:l *) ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac) ] ->
-     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:l ]
+     [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer:setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:l *) ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) by_arg_tac(tac) ] ->
-     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:[] ]
+     [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer:setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:[] *) ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:[] ]
+     [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer:setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:[] *) ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:l ]
+     [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer:setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:l *) ]
  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:l ]
+     [ Util.anomaly "Extratactics.setoid_replace: à restaurer" (* arnaud: à restaurer:setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:l *) ]
 END
 
 TACTIC EXTEND setoid_rewrite
    [ "setoid_rewrite" orient(b) constr(c) ]
-   -> [ general_s_rewrite b c ~new_goals:[] ]
+   -> [ Util.anomaly "Extratactics.setoid_rewrite: à restaurer" (* arnaud: à restaurer: general_s_rewrite b c ~new_goals:[] *) ]
  | [ "setoid_rewrite" orient(b) constr(c) "generate" "side" "conditions" constr_list(l) ]
-   -> [ general_s_rewrite b c ~new_goals:l ]
+   -> [ Util.anomaly "Extratactics.setoid_rewrite: à restaurer" (* arnaud: à restaurer: general_s_rewrite b c ~new_goals:l *)  ]
  | [ "setoid_rewrite" orient(b) constr(c) "in" hyp(h) ] ->
-      [ general_s_rewrite_in h b c ~new_goals:[] ]
+      [ Util.anomaly "Extratactics.setoid_rewrite: à restaurer" (* arnaud: à restaurer: general_s_rewrite_in h b c ~new_goals:[] *) ]
  | [ "setoid_rewrite" orient(b) constr(c) "in" hyp(h) "generate" "side" "conditions" constr_list(l) ] ->
-      [ general_s_rewrite_in h b c ~new_goals:l ]
+      [ Util.anomaly "Extratactics.setoid_rewrite: à restaurer" (* arnaud: à restaurer: general_s_rewrite_in h b c ~new_goals:l *) ]
 END
 
 VERNAC COMMAND EXTEND AddSetoid1
@@ -225,16 +226,16 @@ VERNAC COMMAND EXTEND AddRelation3
 END
 
 TACTIC EXTEND setoid_symmetry
-   [ "setoid_symmetry" ] -> [ setoid_symmetry ]
- | [ "setoid_symmetry" "in" hyp(n) ] -> [ setoid_symmetry_in n ]
+   [ "setoid_symmetry" ] -> [ Util.anomaly "Extratactics.setoid_symmetry: à restaurer" (* arnaud: à restaurer: setoid_symmetry *) ]
+ | [ "setoid_symmetry" "in" hyp(n) ] -> [ Util.anomaly "Extratactics.setoid_symmetry: à restaurer" (* arnaud: à restaurer: setoid_symmetry_in n *) ]
 END
 
 TACTIC EXTEND setoid_reflexivity
-   [ "setoid_reflexivity" ] -> [ setoid_reflexivity ]
+   [ "setoid_reflexivity" ] -> [ Util.anomaly "Extratactics.setoid_reflexivity: à restaurer" (* arnaud: à restaurer: setoid_reflexivity *) ]
 END
 
 TACTIC EXTEND setoid_transitivity
-   [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
+   [ "setoid_transitivity" constr(t) ] -> [ Util.anomaly "Extratactics.setoid_transitivity: à restaurer" (* arnaud: à restaurer: setoid_transitivity t *) ]
 END
 
 (* Inversion lemmas (Leminv) *)
@@ -286,8 +287,8 @@ END
 (* Subst *)
 
 TACTIC EXTEND subst
-| [ "subst" ne_var_list(l) ] -> [ subst l ]
-| [ "subst" ] -> [ subst_all ]
+| [ "subst" ne_var_list(l) ] -> [ Util.anomaly "Extratactics.subst: à restaurer" (* arnaud: à restaurer: subst l *) ]
+| [ "subst" ] -> [ Util.anomaly "Extratactics.subst: à restaurer" (* arnaud: à restaurer: subst_all *) ]
 END
 
 open Evar_tactics
@@ -295,15 +296,15 @@ open Evar_tactics
 (* evar creation *)
 
 TACTIC EXTEND evar
-  [ "evar" "(" ident(id) ":" lconstr(typ) ")" ] -> [ let_evar (Name id) typ ]
-| [ "evar" constr(typ) ] -> [ let_evar Anonymous typ ]
+  [ "evar" "(" ident(id) ":" lconstr(typ) ")" ] -> [ Util.anomaly "Extratactics.evar: à restaurer" (* arnaud: à restaurer: let_evar (Name id) typ *) ]
+| [ "evar" constr(typ) ] -> [ Util.anomaly "Extratactics.evar(2): à restaurer" (* arnaud: à restaurer: let_evar Anonymous typ *)]
 END
 
 open Tacexpr
 
 TACTIC EXTEND instantiate
   [ "instantiate" "(" integer(i) ":=" raw(c) ")" hloc(hl) ] ->
-    [instantiate i c hl  ]
+    [Util.anomaly "Extratactics.instantiate: à restaurer" (* arnaud: à restaurer: instantiate i c hl *) ]
 END
 
 
@@ -386,13 +387,13 @@ let add_transitivity_lemma left lem =
 (* Vernacular syntax *)
 
 TACTIC EXTEND stepl
-| ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (snd tac) ]
-| ["stepl" constr(c) ] -> [ step true c tclIDTAC ]
+| ["stepl" constr(c) "by" tactic(tac) ] -> [ Util.anomaly "Extratactics.stepl: à restaurer" (* arnaud: à restaurer: step true c (snd tac) *) ]
+| ["stepl" constr(c) ] -> [  Util.anomaly "Extratactics.stepl: à restaurer" (* arnaud: à restaurer: step true c tclIDTAC *) ]
 END
 
 TACTIC EXTEND stepr
-| ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (snd tac) ]
-| ["stepr" constr(c) ] -> [ step false c tclIDTAC ]
+| ["stepr" constr(c) "by" tactic(tac) ] -> [  Util.anomaly "Extratactics.stepr: à restaurer" (* arnaud: à restaurer: step false c (snd tac) *) ]
+| ["stepr" constr(c) ] -> [  Util.anomaly "Extratactics.stepr(2): à restaurer" (* arnaud: à restaurer: step false c tclIDTAC *) ]
 END
 
 VERNAC COMMAND EXTEND AddStepl
@@ -422,41 +423,26 @@ VERNAC COMMAND EXTEND RetroknowledgeRegister
              Global.register f tc tb ]
 END
 
-(* spiwack : Vernac commands for developement *)
-
-(* arnaud : comment out/clear ? *)
-VERNAC COMMAND EXTEND InternalRepresentation (* Prints internal representation of the argument *)
-| [ "Internal" "Representation" "of" constr(t) ] -> 
-    [ let t' = Constrintern.interp_constr Evd.empty (Global.env ()) t in
-      pp (str (string_of_constr t'))]
-END
-
-VERNAC COMMAND EXTEND Bytecode (* Prints Bytecode representation of the argument *)
-| [ "Bytecode" "of" constr(t) ] -> 
-    [ let t' = Constrintern.interp_constr Evd.empty (Global.env ()) t in
-      let (bc,_,_) = Cbytegen.compile (Environ.pre_env (Global.env ())) t' in
-      pp (str (Cbytecodes.string_of_instr bc))]
-END
 
 (* /spiwack *)
 
 
 TACTIC EXTEND apply_in
-| ["apply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in false id [c] ]
+| ["apply" constr_with_bindings(c) "in" hyp(id) ] -> [ Util.anomaly "Extratactics.apply_in: à restaurer" (* arnaud: à restaurer: apply_in false id [c] *) ]
 | ["apply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
-   "in" hyp(id) ] -> [ apply_in false id (c::cl) ]
+   "in" hyp(id) ] -> [ Util.anomaly "Extratactics.apply_in: à restaurer" (* arnaud: à restaurer: apply_in false id (c::cl) *) ]
 END
 
 
 TACTIC EXTEND eapply_in
-| ["eapply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in true id [c] ]
+| ["eapply" constr_with_bindings(c) "in" hyp(id) ] -> [  Util.anomaly "Extratactics.eapply_in: à restaurer" (* arnaud: à restaurer: apply_in true id [c] *) ]
 | ["epply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
-   "in" hyp(id) ] -> [ apply_in true id (c::cl) ]
+   "in" hyp(id) ] -> [ Util.anomaly "Extratactics.eapply_in: à restaurer" (* arnaud: à restaurer: apply_in true id (c::cl) *) ]
 END
 
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as 
   defined by Conor McBride *)
 TACTIC EXTEND generalize_eqs
-| ["generalize_eqs" hyp(id) ] -> [ abstract_generalize id ]
+| ["generalize_eqs" hyp(id) ] -> [ Util.anomaly "Extratactics.generalize_eqs: à restaurer" (* arnaud: à restaurer: abstract_generalize id *) ]
 END
 

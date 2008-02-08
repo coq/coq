@@ -22,7 +22,7 @@ module Refiner =
 (* arnaud: /trucs factices *)
 
 TACTIC EXTEND ring
-| [ "legacy" "ring" constr_list(l) ] -> [ polynom l ]
+| [ "legacy" "ring" constr_list(l) ] -> [ Util.anomaly "G_ring.ring: à restaurer" (* arnaud: polynom l *)]
 END
 
 (* The vernac commands "Add Ring" and co *)

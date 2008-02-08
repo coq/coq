@@ -13,5 +13,5 @@
 open FourierR
 
 TACTIC EXTEND fourier
-  [ "fourierz" ] -> [ fourier ]
+  [ "fourierz" ] -> [ Util.anomaly "Fourier.fourier: à restaurer" (* arnaud: fourier *) ]
 END

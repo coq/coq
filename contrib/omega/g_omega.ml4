@@ -54,12 +54,12 @@ let omega_tactic l =
 
 
 TACTIC EXTEND omega
-|  [ "omega" ] -> [ omega_tactic [] ]
+|  [ "omega" ] -> [ Util.anomaly "G_omega.omega: à restaurer" (* arnaud: omega_tactic [] *) ]
 END
 
 TACTIC EXTEND omega'
 | [ "omega" "with" ne_ident_list(l) ] -> 
-    [ omega_tactic (List.map Names.string_of_id l) ]
-| [ "omega" "with" "*" ] -> [ omega_tactic ["nat";"positive";"N";"Z"] ]
+    [ Util.anomaly "G_omega.omega': à restaurer" (* arnaud: omega_tactic (List.map Names.string_of_id l)*) ]
+| [ "omega" "with" "*" ] -> [ Util.anomaly "G_omega.omega': à restaurer" (* arnaud: omega_tactic ["nat";"positive";"N";"Z"] *)]
 END
 

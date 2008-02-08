@@ -555,7 +555,7 @@ let jpn n gls =
                          (jp n)) gls
 
 TACTIC EXTEND jprover
-  [ "jp" natural_opt(n) ] -> [ jpn n ]
+  [ "jp" natural_opt(n) ] -> [ Util.anomaly "Jprover.jprover: à restaurer" (* arnaud: jpn n *) ]
 END
 
 (*

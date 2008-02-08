@@ -177,10 +177,10 @@ let tauto g =
 let default_intuition_tac = interp <:tactic< auto with * >>
 
 TACTIC EXTEND tauto
-| [ "tauto" ] -> [ tauto ]
+| [ "tauto" ] -> [ Util.anomaly "Tauto.tauto: à restaurer" (* arnaud: tauto *) ]
 END
 
 TACTIC EXTEND intuition
-| [ "intuition" ] -> [ intuition_gen default_intuition_tac ]
-| [ "intuition" tactic(t) ] -> [ intuition_gen (snd t) ]
+| [ "intuition" ] -> [ Util.anomaly "Tauto.intuition: à restaurer" (* arnaud: intuition_gen default_intuition_tac *) ]
+| [ "intuition" tactic(t) ] -> [ Util.anomaly "Tauto.intuition: à restaurer" (* arnaud: intuition_gen (snd t) *) ]
 END

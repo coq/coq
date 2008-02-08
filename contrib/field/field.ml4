@@ -192,6 +192,6 @@ let field_term l g =
 (* Declaration of Field *)
 
 TACTIC EXTEND legacy_field
-| [ "legacy" "field" ] -> [ field ]
-| [ "legacy" "field" ne_constr_list(l) ] -> [ field_term l ]
+| [ "legacy" "field" ] -> [ Util.anomaly "Field.legacy_field: à restaurer" (* arnaud: field *) ]
+| [ "legacy" "field" ne_constr_list(l) ] -> [ Util.anomaly "Field.legacy_field: à restaurer" (* arnaud: field_term l *) ]
 END

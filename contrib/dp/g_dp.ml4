@@ -20,51 +20,51 @@ module Refiner =
 (* arnaud: /trucs factices *)
 
 TACTIC EXTEND Simplify
-  [ "simplify" ] -> [ simplify ]
+  [ "simplify" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: simplify  *) ]
 END
 
 TACTIC EXTEND Ergo
-  [ "ergo" ] -> [ ergo ]
+  [ "ergo" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: ergo *) ]
 END
 
 TACTIC EXTEND Yices
-  [ "yices" ] -> [ yices ]
+  [ "yices" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: yices *) ]
 END
 
 TACTIC EXTEND CVCLite
-  [ "cvcl" ] -> [ cvc_lite ]
+  [ "cvcl" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: cvc_lite *) ]
 END
 
 TACTIC EXTEND Harvey
-  [ "harvey" ] -> [ harvey ]
+  [ "harvey" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: harvey *) ]
 END
 
 TACTIC EXTEND Zenon
-  [ "zenon" ] -> [ zenon ]
+  [ "zenon" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: zenon *) ]
 END
 
 TACTIC EXTEND Gwhy
-  [ "gwhy" ] -> [ gwhy ]
+  [ "gwhy" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: gwhy *) ]
 END
 
 (* should be part of basic tactics syntax *)
 TACTIC EXTEND admit
-  [ "admit"    ] -> [ Tactics.admit_as_an_axiom ]
+  [ "admit"    ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: Tactics.admit_as_an_axiom *) ]
 END
 
 VERNAC COMMAND EXTEND Dp_hint 
-  [ "Dp_hint" ne_global_list(l) ] -> [ dp_hint l ]
+  [ "Dp_hint" ne_global_list(l) ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: dp_hint l *) ]
 END
 
 VERNAC COMMAND EXTEND Dp_timeout
-| [ "Dp_timeout" natural(n) ] -> [ set_timeout n ]
+| [ "Dp_timeout" natural(n) ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: set_timeout n *) ]
 END
 
 VERNAC COMMAND EXTEND Dp_debug
-| [ "Dp_debug" ] -> [ set_debug true; Dp_zenon.set_debug true ]
+| [ "Dp_debug" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: set_debug true; Dp_zenon.set_debug true *) ]
 END
 
 VERNAC COMMAND EXTEND Dp_trace
-| [ "Dp_trace" ] -> [ set_trace true ]
+| [ "Dp_trace" ] -> [ Util.anomaly "Dp.[...]: à restaurer" (* arnaud: set_trace true *) ]
 END
 

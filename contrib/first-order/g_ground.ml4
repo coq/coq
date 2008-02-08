@@ -103,6 +103,8 @@ let normalize_evaluables=
 	   unfold_in_hyp (Lazy.force defined_connectives) 
 	   (Tacexpr.InHypType id)) *)
 
+
+(* arnaud: à restaurer
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) "using" ne_reference_list(l) ] -> 
       [ gen_ground_tac true (Option.map eval_tactic t) (Ids l) ]
@@ -116,7 +118,7 @@ TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
      [ gen_ground_tac false (Option.map eval_tactic t) Void ]
 END
-
+*)
 
 let default_declarative_automation gls = 
   tclORELSE

@@ -1182,6 +1182,7 @@ let rec interp_genarg ist x =
   | List1ArgType ConstrArgType ->  Util.anomaly "Ltacinterp.interp gen_arg: List1ArgType ConstrArgType: à restaurer" (* arnaud: à restaurer: interp_genarg_constr_list1 ist x*)
   | List0ArgType VarArgType -> Goal.return (interp_genarg_var_list0 ist  x)
   | List1ArgType VarArgType -> Goal.return (interp_genarg_var_list1 ist  x)
+  (* arnaud:binder "intern_genarg" fonctionnera très bien. *)
   | List0ArgType _ -> Util.anomaly "Ltacinterp.interp gen_arg: List0ArgType _: à restaurer" (* arnaud: à restaurer:Goal.return (app_list0 (interp_genarg ist ) x)*)
   | List1ArgType _ -> Util.anomaly "Ltacinterp.interp gen_arg: List1ArgType _: à restaurer" (* arnaud: à restaurer:Goal.return (app_list1 (interp_genarg ist ) x)*)
   | OptArgType _ -> Util.anomaly "Ltacinterp.interp gen_arg: OptArgType: à restaurer" (* arnaud: à restaurer:Goal.return (app_opt (interp_genarg ist ) x)*)
@@ -1214,7 +1215,9 @@ let do_intro = function
   [x] -> Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro x)
   | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples (bis)"
 
-let interp_atomic ist = function
+let interp_atomic ist = 
+  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
+  function
   (* Basic tactics *)
   | TacIntroPattern l ->
          Subproof.tactic_of_goal_tactic (do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)))
@@ -1232,8 +1235,10 @@ let interp_atomic ist = function
       end
   | TacExtend (loc,opn,l) ->
       let tac = lookup_tactic opn in
-      let args = List.map (interp_genarg ist) l in
-      tac args
+      Subproof.tactic_of_goal_tactic (
+	Goal.expr_of_list (List.map (interp_genarg ist) l) >>= fun args ->
+	tac args
+      )
   | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: commenter et renommer *)

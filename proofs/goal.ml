@@ -140,7 +140,15 @@ let refine check_type step env defs gl info =
    L'idée serait de ne pas instancier les vieilles evars avec de nouveau
    trucs, mais de faire de nouveau trucs instanciés par les vieilles evars.
    Ou bien de demander à l'autre but de suivre l'instanciation du clear.
-   Je pense. *)
+   Je pense.
+   - A la réflexion, si un but fait référence à l'evar ?x et qu'on prétend
+   (sémantique de clear) qu'on peut le résoudre sans y, alors on prétend aussi
+   que y n'a pas d'importance dans ?x. Cependant, on peut enlever ?x avant si
+   il faut. Le défaut de ce procédé c'est qu'on modifie des buts auquels on
+   n'a censément pas accès à ce moment de l'exécution de cette tactique.
+   Il faut donc un moyen de les faire "avancer", (car sinon il vont 
+   disparaître). Peut-être une info dans l'evar_info, il est là pour ça
+   après tout. *)
 (* Implements the clear tactic *)
 let clear idents _ defs gl info =
   let rdefs = ref defs in
@@ -249,6 +257,10 @@ let bind e f env defs goal info =
 
 (* monadic return on expressions *)
 let return v _ _ _ _ = v
+
+(* changes a list of expressions into an list expression *)
+let expr_of_list l env defs goal info = 
+  List.map (fun x -> x env defs goal info) l
 
 (* map combinator which may usefully complete [bind] *)
 let map f e env defs goal info =

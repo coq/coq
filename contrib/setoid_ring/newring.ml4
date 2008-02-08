@@ -120,9 +120,9 @@ let protect_tac_in map id =
 
 TACTIC EXTEND protect_fv
   [ "protect_fv" string(map) "in" ident(id) ] -> 
-    [ protect_tac_in map id ]
+    [ Util.anomaly "Newring.protect_fv: à restaurer" (* arnaud: protect_tac_in map id *) ]
 | [ "protect_fv" string(map) ] -> 
-    [ protect_tac map ]
+    [ Util.anomaly "Newring.protect_fv: à restaurer" (* arnaud: protect_tac map *) ]
 END;;
 
 (****************************************************************************)
@@ -135,13 +135,13 @@ let closed_term t l =
 
 TACTIC EXTEND closed_term
   [ "closed_term" constr(t) "[" ne_reference_list(l) "]" ] ->
-    [ closed_term t l ]
+    [ Util.anomaly "Newring.closed_term: à restaurer" (* arnaud: closed_term t l *) ]
 END
 ;;
 
 TACTIC EXTEND echo 
 | [ "echo" constr(t) ] -> 
-  [ Pp.msg (Termops.print_constr t);  Tacinterp.eval_tactic (TacId []) ]
+  [ Util.anomaly "Newring.echo: à restaurer" (* arnaud: Pp.msg (Termops.print_constr t);  Tacinterp.eval_tactic (TacId []) *)]
 END;;
 
 (*
@@ -790,7 +790,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(lr)
       "[" constr(t) "]" ] ->
-          [ring_lookup (fst f) lH lr t]
+          [Util.anomaly "Newring.ring_lookup: à restaurer" (* arnaud: ring_lookup (fst f) lH lr t *)]
 END
 
 
@@ -1131,5 +1131,5 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
 TACTIC EXTEND field_lookup
 | [ "field_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(l) 
      "[" constr(t) "]" ] -> 
-      [ field_lookup (fst f) lH l t ]
+      [ Util.anomaly "Newring.field_lookup: à restaurer" (* arnaud: field_lookup (fst f) lH l t *)]
 END

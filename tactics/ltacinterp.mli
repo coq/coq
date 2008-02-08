@@ -35,8 +35,8 @@ type value =
 
 (* Tactic extensions *)
 val add_tactic :
-  string -> (Tacexpr.typed_generic_argument Goal.expression list 
-	     -> Subproof.tactic) -> unit
+  string -> (Tacexpr.typed_generic_argument list 
+	     -> Goal.tactic) -> unit
 
 
 (*** ***)

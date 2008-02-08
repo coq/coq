@@ -42,11 +42,11 @@ let romega_tactic l =
 
 
 TACTIC EXTEND romega
-|  [ "romega" ] -> [ romega_tactic [] ]
+|  [ "romega" ] -> [ Util.anomaly "G_romega.romega: à restaurer" (* arnaud: romega_tactic [] *)]
 END
 
 TACTIC EXTEND romega'
 | [ "romega" "with" ne_ident_list(l) ] -> 
-    [ romega_tactic (List.map Names.string_of_id l) ]
-| [ "romega" "with" "*" ] -> [ romega_tactic ["nat";"positive";"N";"Z"] ]
+    [ Util.anomaly "G_romega.romega': à restaurer" (* arnaud: romega_tactic (List.map Names.string_of_id l) *)]
+| [ "romega" "with" "*" ] -> [ Util.anomaly "G_romega.romega': à restaurer" (* arnaud: romega_tactic ["nat";"positive";"N";"Z"] *)]
 END

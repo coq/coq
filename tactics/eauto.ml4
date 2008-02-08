@@ -66,11 +66,11 @@ let e_assumption gl =
   tclFIRST (List.map assumption (pf_ids_of_hyps gl)) gl
 
 TACTIC EXTEND eassumption
-| [ "eassumption" ] -> [ e_assumption ]
+| [ "eassumption" ] -> [ Util.anomaly "Eauto.eassuptiom: à restaurer" (* arnaud: e_assumption *)]
 END
 
 TACTIC EXTEND eexact
-| [ "eexact" constr(c) ] -> [ e_give_exact c ]
+| [ "eexact" constr(c) ] -> [ Util.anomaly "Eauto.eexact: à restaurer" (* arnaud: e_give_exact c *)]
 END
 
 let e_give_exact_constr = h_eexact
@@ -116,29 +116,29 @@ let e_split = e_constructor_tac (Some 1) 1
 
 (* This automatically define h_econstructor (among other things) *)
 TACTIC EXTEND econstructor
-  [ "econstructor" integer(n) "with" bindings(c) ] -> [ e_constructor_tac None n c ]
-| [ "econstructor" integer(n) ] -> [ e_constructor_tac None n NoBindings ]
-| [ "econstructor" tactic_opt(t) ] -> [ e_any_constructor (Option.map Tacinterp.eval_tactic t) ] 
+  [ "econstructor" integer(n) "with" bindings(c) ] -> [ Util.anomaly "Eauto.econstructor: à restaurer" (* arnaud: e_constructor_tac None n c *) ]
+| [ "econstructor" integer(n) ] -> [ Util.anomaly "Eauto.econstructor: à restaurer" (* arnaud: e_constructor_tac None n NoBindings *) ]
+| [ "econstructor" tactic_opt(t) ] -> [ Util.anomaly "Eauto.econstructor: à restaurer" (* arnaud: e_any_constructor (Option.map Tacinterp.eval_tactic t) *) ] 
       END
 
 TACTIC EXTEND eleft
-  [ "eleft" "with" bindings(l) ] -> [e_left l]
-| [ "eleft"] -> [e_left NoBindings]
+  [ "eleft" "with" bindings(l) ] -> [Util.anomaly "Eauto.eleft: à restaurer" (* arnaud: e_left l*)]
+| [ "eleft"] -> [Util.anomaly "Eauto.eleft: à restaurer" (* arnaud: e_left NoBindings*)]
 END
 
 TACTIC EXTEND eright
-  [ "eright" "with" bindings(l) ] -> [e_right l]
-| [ "eright" ] -> [e_right NoBindings]
+  [ "eright" "with" bindings(l) ] -> [Util.anomaly "Eauto.eright: à restaurer" (* arnaud: e_right l*)]
+| [ "eright" ] -> [Util.anomaly "Eauto.eright: à restaurer" (* arnaud: e_right NoBindings*)]
 END
 
 TACTIC EXTEND esplit
-  [ "esplit" "with" bindings(l) ] -> [e_split l]
-| [ "esplit"] -> [e_split NoBindings]
+  [ "esplit" "with" bindings(l) ] -> [Util.anomaly "Eauto.esplit: à restaurer" (* arnaud: e_split l *) ]
+| [ "esplit"] -> [Util.anomaly "Eauto.esplit: à restaurer" (* arnaud: e_split NoBindings *)]
 END
 
 
 TACTIC EXTEND eexists
-  [ "eexists" bindings(l) ] -> [e_split l]
+  [ "eexists" bindings(l) ] -> [Util.anomaly "Eauto.eexists: à restaurer" (* arnaud: e_split l*)]
 END
 
 
@@ -168,7 +168,7 @@ let prolog_tac l n gl =
     errorlabstrm "Prolog.prolog" (str "Prolog failed")
 
 TACTIC EXTEND prolog
-| [ "prolog" "[" constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
+| [ "prolog" "[" constr_list(l) "]" int_or_var(n) ] -> [ Util.anomaly "Eauto.prolog: à restaurer" (* prolog_tac l n *) ]
 END
 
 open Auto
@@ -434,5 +434,5 @@ END
 TACTIC EXTEND eauto
 | [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems) 
     hintbases(db) ] ->
-    [ gen_eauto false (make_dimension n p) lems db ]
+    [ Util.anomaly "Eauto.eauto: à restaurer" (* arnaud: gen_eauto false (make_dimension n p) lems db *) ]
 END

@@ -76,6 +76,9 @@ val bind : 'a expression -> ('a -> 'b expression) -> 'b expression
 (* monadic return on expressions *)
 val return : 'a -> 'a expression
 
+(* changes a list of expressions into an list expression *)
+val expr_of_list : 'a expression list -> 'a list expression
+
 (* arnaud : à virer ? (ainsi que dans le .ml) 
 (* map combinator which may usefully complete [bind] *)
 val map : ('a -> 'b) -> 'a expression -> 'b expression

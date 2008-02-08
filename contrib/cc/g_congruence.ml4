@@ -16,6 +16,7 @@ open Tacticals
 
 (* Tactic registration *)
       
+(* arnaud: à restaurer
 TACTIC EXTEND cc
  [ "congruence" ] -> [ congruence_tac 1000 [] ]
  |[ "congruence" integer(n) ] -> [ congruence_tac n [] ]
@@ -23,3 +24,4 @@ TACTIC EXTEND cc
  |[ "congruence" integer(n) "with" ne_constr_list(l) ] -> 
    [ congruence_tac n l ]
 END
+*)

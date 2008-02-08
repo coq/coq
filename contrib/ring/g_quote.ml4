@@ -13,6 +13,6 @@
 open Quote
 
 TACTIC EXTEND quote
-  [ "quote" ident(f) ] -> [ quote f [] ]
-| [ "quote" ident(f) "[" ne_ident_list(lc) "]"] -> [ quote f lc ]
+  [ "quote" ident(f) ] -> [ Util.anomaly "G_quote.quote: à restaurer" (* arnaud: quote f [] *) ]
+| [ "quote" ident(f) "[" ne_ident_list(lc) "]"] -> [ Util.anomaly "G_quote.quote: à restaurer" (* arnaud: quote f lc *) ]
 END
