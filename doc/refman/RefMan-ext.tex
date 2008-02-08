@@ -1125,8 +1125,35 @@ possible, the correct argument will be automatically generated.
 
 In case one wants that some arguments of a given object (constant,
 inductive types, constructors, assumptions, local or not) are always
-inferred by Coq, one may declare once for all which are the expected
-implicit arguments of this object. The syntax is
+inferred by Coq, one may declare once and for all which are the expected
+implicit arguments of this object. There are two ways to do this,
+a-priori and a-posteriori. 
+
+\subsubsection{Implicit Argument Binders}
+
+In the first setting, one wants to explicitely give the implicit
+arguments of a constant as part of its definition. To do this, one has
+to surround the bindings of implicit arguments by backquotes:
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Definition id `A : Type` (x : A) : A := x.
+\end{coq_example}
+
+This automatically declares the argument {\tt A} of {\tt id} as a
+maximally inserted implicit argument. One can then do as-if the argument
+was absent in every situation but still be able to specify it if needed:
+\begin{coq_example}
+Definition compose `A B C` (g : B -> C) (f : A -> B) := 
+  fun x => g (f x).
+Goal forall A, compose id id = id (A:=A).
+\end{coq_example}
+
+\subsubsection{The Implicit Arguments Vernacular Command}
+
+To set implicit arguments for a constant a-posteriori, one can use the
+command:
 \begin{quote}
 \tt Implicit Arguments {\qualid} [ \nelist{\possiblybracketedident}{} ]
 \end{quote}
@@ -1162,8 +1189,10 @@ Implicit Arguments length [[A]]. (* A has to be maximally inserted *)
 Check (fun l:list (list nat) => map length l).
 \end{coq_example}
 
-\Rem To know which are the implicit arguments of an object, use command
+\Rem To know which are the implicit arguments of an object, use the command
 {\tt Print Implicit} (see \ref{PrintImplicit}).
+
+\Rem 
 
 \Rem If the list of arguments is empty, the command removes the
 implicit arguments of {\qualid}.

@@ -7,10 +7,11 @@ Language
   all arguments are tried successively (from left to right) until one is 
   found that satisfies the structural decreasing condition.
 - Improved inference of implicit arguments.
-- New experimental typeclass system giving ad-hoc polymorphism and overloading based on 
-  dependent records and implicit arguments.
-- New syntax "let| pat := b in c" for binding using irrefutable patterns.
-- New syntax "forall `A`, T" for specifying maximally inserted implicit arguments in terms.
+- New experimental typeclass system giving ad-hoc polymorphism and 
+  overloading based on dependent records and implicit arguments.
+- New syntax "let| pat := b in c" for let-binding using irrefutable patterns.
+- New syntax "forall `A`, T" for specifying maximally inserted implicit 
+  arguments in terms.
 
 Commands
 
@@ -127,24 +128,35 @@ Type Classes
 - New "Class", "Instance" and "Program Instance" commands to define
   classes and instances documented in the reference manual.  
 - New binding construct " [ Class_1 param_1 .. param_n, Class_2 ... ] " 
-  for binding type classes usable everywhere.  
+  for binding type classes, usable everywhere.  
 - New command " Print Classes " and " Print Instances some_class " to
   print tables for typeclasses.  
 - New default eauto hint database "typeclass_instances" used by the default
   typeclass instance search tactic.  
-- New command " Instanciation Tactic := tac " to customize the typeclass
-  instance search tactic.
-- New theories directory "theories/Classes"
-
+- New theories directory "theories/Classes" for standard typeclasses 
+  declarations. Module Classes.Relations is a typeclass port of 
+  Relation_Definitions.
+- New experimental "setoid" rewriting tactic "clrewrite" based on typeclasses.
+  Classes.Morphisms declares standard morphisms, Classes.SetoidClasses declares 
+  the new Setoid typeclass.  
+  
 Program
 
 - Moved useful tactics in theories/Program and documented them.
+- Add Program.Basics which contains standard definitions for functional 
+  programming (id, apply, flip...)
 - More robust obligation handling, dependent pattern-matching and
   well-founded definitions.
 - New syntax " dest term as pat in term " for destructing objects using
   an irrefutable pattern while keeping equalities (use this instead of 
   "let" in Programs).
-
+- Program CoFixpoint is accepted, Program Fixpoint uses the new way to infer 
+  which argument decreases structurally.
+- Program Lemma, Axiom etc... now permit to have obligations in the statement iff 
+  they can be automatically solved by the default tactic.
+- New command "Preterm [ of id ]" to see the actual term fed to Coq for
+  debugging purposes.
+  
 Miscellaneous
 
 - Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into
