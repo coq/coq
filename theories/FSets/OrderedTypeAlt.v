@@ -17,8 +17,8 @@ Require Import OrderedType.
 
 (** * An alternative (but equivalent) presentation for an Ordered Type inferface. *)
 
-(** NB: [comparison], defined in [theories/Init/datatypes.v] is [Eq|Lt|Gt]
-whereas [compare], defined in [theories/FSets/OrderedType.v] is [EQ _ | LT _ | GT _ ] 
+(** NB: [comparison], defined in [Datatypes.v] is [Eq|Lt|Gt]
+whereas [compare], defined in [OrderedType.v] is [EQ _ | LT _ | GT _ ] 
 *)
 
 Module Type OrderedTypeAlt.
@@ -103,24 +103,16 @@ Module OrderedType_to_Alt (O:OrderedType) <: OrderedTypeAlt.
  Lemma compare_sym : 
    forall x y, (y?=x) = CompOpp (x?=y).
  Proof.
- intros x y.
- unfold compare.
- destruct (O.compare y x); elim_comp; simpl; auto.
+ intros x y; unfold compare.
+ destruct O.compare; elim_comp; simpl; auto.
  Qed.
  
  Lemma compare_trans : 
    forall c x y z, (x?=y) = c -> (y?=z) = c -> (x?=z) = c.
  Proof.
  intros c x y z.
- destruct c; unfold compare.
- destruct (O.compare x y); intros; try discriminate.
- destruct (O.compare y z); intros; try discriminate.
- elim_comp; auto.
- destruct (O.compare x y); intros; try discriminate.
- destruct (O.compare y z); intros; try discriminate.
- elim_comp; auto.
- destruct (O.compare x y); intros; try discriminate.
- destruct (O.compare y z); intros; try discriminate.
+ destruct c; unfold compare; 
+ do 2 (destruct O.compare; intros; try discriminate); 
  elim_comp; auto.
  Qed.
 

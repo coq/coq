@@ -16,8 +16,8 @@
 Require Import Ensembles Finite_sets.
 Require Import FSetInterface FSetProperties OrderedTypeEx DecidableTypeEx.
 
-(** * Going from [FSets] with usual equality 
-    to the old [Ensembles] and [Finite_sets] theory. *)
+(** * Going from [FSets] with usual Leibniz equality 
+    to the good old [Ensembles] and [Finite_sets] theory. *)
 
 Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  Module MP:= WProperties U M.
@@ -136,6 +136,22 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
  apply Add_Add; auto.
  Qed.
 
+ (** we can even build a function from Finite Ensemble to FSet 
+     ... at least in Prop. *)
+
+ Lemma Ens_to_FSet : forall e : Ensemble M.elt, Finite _ e -> 
+   exists s:M.t, !!s === e.
+ Proof.
+ induction 1.
+ exists M.empty.
+ apply empty_Empty_Set.
+ destruct IHFinite as (s,Hs).
+ exists (M.add x s).
+ apply Extensionality_Ensembles in Hs. 
+ rewrite <- Hs.
+ apply add_Add.
+ Qed.
+
 End WS_to_Finite_set.
 
 
@@ -143,3 +159,5 @@ Module S_to_Finite_set (U:UsualOrderedType)(M: Sfun U).
   Module D := OT_as_DT U.
   Include WS_to_Finite_set D M.
 End S_to_Finite_set.
+
+
