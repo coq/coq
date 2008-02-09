@@ -308,6 +308,12 @@ Hint Resolve orb_comm orb_assoc: bool v62.
 (** * Properties of [andb]     *)
 (*******************************)
 
+Lemma andb_true_iff : 
+  forall b1 b2:bool, b1 && b2 = true <-> b1 = true /\ b2 = true.
+Proof.
+ destruct b1; destruct b2; intuition.
+Qed.
+
 Lemma andb_true_eq :
   forall a b:bool, true = a && b -> true = a /\ true = b.
 Proof.
