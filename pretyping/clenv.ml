@@ -151,9 +151,6 @@ let mk_clenv_from_n gls n (c,cty) =
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
-let mk_clenv_rename_from gls (c,t) = 
-  mk_clenv_from gls (c,rename_bound_var (pf_env gls) [] t)
-
 let mk_clenv_rename_from_n gls n (c,t) = 
   mk_clenv_from_n gls n (c,rename_bound_var (pf_env gls) [] t)
 

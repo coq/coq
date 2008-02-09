@@ -136,7 +136,6 @@ val rename_hyp_no_check       : (identifier*identifier) list -> tactic
 val mutual_fix      :
   identifier -> int -> (identifier * int * constr) list -> tactic
 val mutual_cofix    : identifier -> (identifier * constr) list -> tactic
-val rename_bound_var_goal : tactic
 
 (*s The most primitive tactics with consistency and type checking *)
 

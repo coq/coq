@@ -113,7 +113,7 @@ Section ZMORPHISM.
  Section ALMOST_RING.
  Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
    Add Morphism rsub : rsub_ext3. exact (ARsub_ext Rsth Reqe ARth). Qed.
-   Ltac norm := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
+   Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
  
  Lemma same_gen : forall x, gen_phiPOS1 x == gen_phiPOS x.
@@ -161,7 +161,7 @@ Section ZMORPHISM.
  Variable Rth : ring_theory 0 1 radd rmul rsub ropp req.
  Let ARth := Rth_ARth Rsth Reqe Rth.
    Add Morphism rsub : rsub_ext4. exact (ARsub_ext Rsth Reqe ARth). Qed.
-   Ltac norm := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
+   Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
   
 (*morphisms are extensionaly equal*)
@@ -317,8 +317,8 @@ Section NMORPHISM.
    Add Morphism rmul : rmul_ext4.  exact (Rmul_ext Reqe). Qed.
    Add Morphism ropp : ropp_ext4.  exact (Ropp_ext Reqe). Qed.
    Add Morphism rsub : rsub_ext5.  exact (ARsub_ext Rsth Reqe ARth). Qed.
-   Ltac norm := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
-  
+   Ltac norm := gen_srewrite Rsth Reqe ARth.
+
  Definition gen_phiN1 x :=
   match x with
   | N0 => 0
@@ -433,7 +433,7 @@ Section NWORDMORPHISM.
 
  Variable ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
    Add Morphism rsub : rsub_ext7. exact (ARsub_ext Rsth Reqe ARth). Qed.
-   Ltac norm := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
+   Ltac norm := gen_srewrite Rsth Reqe ARth.
    Ltac add_push := gen_add_push radd Rsth Reqe ARth.
 
  Fixpoint gen_phiNword (w : Nword) : R :=
@@ -611,7 +611,7 @@ Section GEN_DIV.
   Add Morphism rmul : rmul_ext.  exact (Rmul_ext Reqe). Qed.
   Add Morphism ropp : ropp_ext.  exact (Ropp_ext Reqe). Qed.
   Add Morphism rsub : rsub_ext. exact (ARsub_ext Rsth Reqe ARth). Qed.
- Ltac rsimpl := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
+ Ltac rsimpl := gen_srewrite Rsth Reqe ARth.
 
  Definition triv_div x y :=  
    if ceqb x y then (cI, cO)

@@ -66,7 +66,7 @@ Section MakeRingPol.
   Add Morphism rmul : rmul_ext.  exact (Rmul_ext Reqe). Qed.
   Add Morphism ropp : ropp_ext.  exact (Ropp_ext Reqe). Qed.
   Add Morphism rsub : rsub_ext. exact (ARsub_ext Rsth Reqe ARth). Qed.
- Ltac rsimpl := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
+ Ltac rsimpl := gen_srewrite Rsth Reqe ARth.
  Ltac add_push := gen_add_push radd Rsth Reqe ARth.
  Ltac mul_push := gen_mul_push rmul Rsth Reqe ARth.
 
@@ -599,16 +599,22 @@ Section MakeRingPol.
  Ltac Esimpl :=
   repeat (progress (
    match goal with
-   | |- context [P0@?l] => rewrite (Pphi0 l)
-   | |- context [P1@?l] => rewrite (Pphi1 l)
-   | |- context [(mkPinj ?j ?P)@?l] => rewrite (mkPinj_ok j l P)
-   | |- context [(mkPX ?P ?i ?Q)@?l] => rewrite (mkPX_ok l P i Q)
-   | |- context [[cO]] => rewrite (morph0 CRmorph)
-   | |- context [[cI]] => rewrite (morph1 CRmorph)
-   | |- context [[?x +! ?y]] => rewrite ((morph_add CRmorph) x y)
-   | |- context [[?x *! ?y]] => rewrite ((morph_mul CRmorph) x y)
-   | |- context [[?x -! ?y]] => rewrite ((morph_sub CRmorph) x y)
-   | |- context [[-! ?x]] => rewrite ((morph_opp CRmorph) x)
+   | |- context [?P@?l] =>
+       match P with
+       | P0 => rewrite (Pphi0 l)
+       | P1 => rewrite (Pphi1 l)
+       | (mkPinj ?j ?P) => rewrite (mkPinj_ok j l P)
+       | (mkPX ?P ?i ?Q) => rewrite (mkPX_ok l P i Q)
+       end
+   | |- context [[?c]] =>
+       match c with
+       | cO => rewrite (morph0 CRmorph)
+       | cI => rewrite (morph1 CRmorph)
+       | ?x +! ?y => rewrite ((morph_add CRmorph) x y)
+       | ?x *! ?y => rewrite ((morph_mul CRmorph) x y)
+       | ?x -! ?y => rewrite ((morph_sub CRmorph) x y)
+       | -! ?x => rewrite ((morph_opp CRmorph) x)
+       end
    end));
   rsimpl; simpl. 
  

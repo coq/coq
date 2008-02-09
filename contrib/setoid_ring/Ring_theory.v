@@ -572,7 +572,7 @@ End AddRing.
 (** Some simplification tactics*)
 Ltac gen_reflexivity Rsth := apply (Seq_refl _ _ Rsth).
 
-Ltac gen_srewrite O I add mul sub opp eq Rsth Reqe ARth :=
+Ltac gen_srewrite Rsth Reqe ARth :=
   repeat first
      [ gen_reflexivity Rsth
      | progress rewrite (ARopp_zero Rsth Reqe ARth)

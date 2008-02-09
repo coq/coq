@@ -217,14 +217,6 @@ let mutual_fix f n others gl =
 let mutual_cofix f others gl = 
   with_check (refiner (Prim (Cofix (f,others)))) gl
     
-let rename_bound_var_goal gls =
-  let { evar_hyps = sign; evar_concl = cl } = sig_it gls in 
-  let ids = ids_of_named_context (named_context_of_val sign) in
-  convert_concl_no_check 
-    (rename_bound_var (Global.env()) ids cl) DEFAULTcast gls 
-
-
-
 (* Versions with consistency checks *)
 
 let introduction id    = with_check (introduction_no_check id) 

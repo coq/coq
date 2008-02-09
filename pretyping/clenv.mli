@@ -53,9 +53,6 @@ val clenv_meta_type : clausenv -> metavariable -> types
 val mk_clenv_from : evar_info sigma -> constr * types -> clausenv
 val mk_clenv_from_n :
   evar_info sigma -> int option -> constr * types -> clausenv
-val mk_clenv_rename_from : evar_info sigma -> constr * types -> clausenv
-val mk_clenv_rename_from_n :
-  evar_info sigma -> int option -> constr * types -> clausenv
 val mk_clenv_type_of : evar_info sigma -> constr -> clausenv
 
 (***************************************************************)
