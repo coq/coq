@@ -29,23 +29,16 @@ Unset Strict Implicit.
 
 (** Respectful morphisms. *)
 
-Definition respectful_depT (A : Type) (R : relationT A) 
-  (B : A -> Type) (R' : forall x y, B x -> B y -> Type) : relationT (forall x : A, B x) := 
+Definition respectful_dep (A : Type) (R : relation A) 
+  (B : A -> Type) (R' : forall x y, B x -> B y -> Prop) : relation (forall x : A, B x) := 
   fun f g => forall x y : A, R x y -> R' x y (f x) (g y).
-
-Definition respectfulT A (eqa : relationT A) B (eqb : relationT B) : relationT (A -> B) :=
-  Eval compute in (respectful_depT eqa (fun _ _ => eqb)).
 
 Definition respectful A (R : relation A) B (R' : relation B) : relation (A -> B) :=
   fun f g => forall x y : A, R x y -> R' (f x) (g y).
 
-(** Notations reminiscent of the old syntax for declaring morphisms.
-   We use three + or - for type morphisms, and two for [Prop] ones.
-   *)
+(** Notations reminiscent of the old syntax for declaring morphisms. *)
 
-Notation " R +++> R' " := (@respectfulT _ R _ R') (right associativity, at level 20).
-Notation " R ---> R' " := (@respectfulT _ (flip R) _ R') (right associativity, at level 20).
-
+Notation " R ==> R' " := (@respectful _ R _ R') (right associativity, at level 20).
 Notation " R ++> R' " := (@respectful _ R _ R') (right associativity, at level 20).
 Notation " R --> R' " := (@respectful _ (inverse R) _ R') (right associativity, at level 20).
 
@@ -53,7 +46,7 @@ Notation " R --> R' " := (@respectful _ (inverse R) _ R') (right associativity, 
    The relation [R] will be instantiated by [respectful] and [A] by an arrow type 
    for usual morphisms. *)
 
-Class Morphism A (R : relationT A) (m : A) :=
+Class Morphism A (R : relation A) (m : A) :=
   respect : R m m.
 
 (** Here we build an equivalence instance for functions which relates respectful ones only. *)
@@ -63,7 +56,7 @@ Definition respecting [ Equivalence A (R : relation A), Equivalence B (R' : rela
 
 Ltac obligations_tactic ::= program_simpl.
 
-Program Instance [ Equivalence A (R : relation A), Equivalence B (R' : relation B) ] => 
+Program Instance [ Equivalence A R, Equivalence B R' ] => 
   respecting_equiv : Equivalence respecting
   (fun (f g : respecting) => forall (x y : A), R x y -> R' (`f x) (`g y)).
 
@@ -92,12 +85,6 @@ Program Instance [ Equivalence A (R : relation A), Equivalence B (R' : relation 
 (** Can't use the definition [notT] as it gives a universe inconsistency. *)
 
 Ltac obligations_tactic ::= program_simpl ; simpl_relation.
-
-Program Instance notT_arrow_morphism : 
-  Morphism (Type -> Type) (arrow ---> arrow) (fun X : Type => X -> False).
-
-Program Instance not_iso_morphism : 
-  Morphism (Type -> Type) (iso +++> iso) (fun X : Type => X -> False).
 
 Program Instance not_impl_morphism :
   Morphism (Prop -> Prop) (impl --> impl) not.
@@ -134,7 +121,7 @@ Program Instance `A` (R : relation A) `B` (R' : relation B)
     destruct respect with x y x0 y0 ; auto.
   Qed.
 
-Program Instance `A` (R : relation A) `B` (R' : relation B)
+Program Instance (A : Type) (R : relation A) `B` (R' : relation B)
   [ ? Morphism (R ++> R' ++> iff) m ] =>
   iff_inverse_impl_binary_morphism : ? Morphism (R ++> R' ++> inverse impl) m.
 
@@ -171,7 +158,7 @@ Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] =>
 (* Definition respectful' A (R : relation A) B (R' : relation B) (f : A -> B) : relation A := *)
 (*   fun x y => R x y -> R' (f x) (f y). *)
 
-(* Definition morphism_respectful' A (R : relation A) B (R' : relation B) (f : A -> B) *)
+(* Definition morphism_respectful' A R B (R' : relation B) (f : A -> B) *)
 (*   [ ? Morphism (R ++> R') f ] (x y : A) : respectful' R R' f x y. *)
 (* intros. *)
 (* destruct H. *)
@@ -182,7 +169,7 @@ Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] =>
 
 (* Existing Instance morphism_respectful'. *)
 
-(* Goal forall A [ Equivalence A (eqA : relation A) ] (R : relation A) [ ? Morphism (eqA ++> iff) m ] (x y : A)  *)
+(* Goal forall A [ Equivalence A (eqA : relation A) ] R [ ? Morphism (eqA ++> iff) m ] (x y : A)  *)
 (*   [ ? Morphism (eqA ++> eqA) m' ] (m' : A -> A), eqA x y -> True. *)
 (*   intros. *)
 (*   cut (relation A) ; intros R'. *)
@@ -210,7 +197,7 @@ Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] =>
 
 (** A proof of [R x x] is available. *)
 
-(* Program Instance (A : Type) (R : relation A) B (R' : relation B) *)
+(* Program Instance (A : Type) R B (R' : relation B) *)
 (*   [ ? Morphism (R ++> R') m ] [ ? Morphism R x ] => *)
 (*   morphism_partial_app_morphism : ? Morphism R' (m x). *)
 
@@ -223,7 +210,7 @@ Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] =>
 
 (** Morpshism declarations for partial applications. *)
 
-Program Instance [ Transitive A (R : relation A) ] (x : A) =>
+Program Instance [ Transitive A R ] (x : A) =>
   trans_contra_inv_impl_morphism : ? Morphism (R --> inverse impl) (R x).
 
   Next Obligation.
@@ -231,7 +218,7 @@ Program Instance [ Transitive A (R : relation A) ] (x : A) =>
     trans y...
   Qed.
 
-Program Instance [ Transitive A (R : relation A) ] (x : A) =>
+Program Instance [ Transitive A R ] (x : A) =>
   trans_co_impl_morphism : ? Morphism (R ++> impl) (R x).
 
   Next Obligation.
@@ -239,7 +226,7 @@ Program Instance [ Transitive A (R : relation A) ] (x : A) =>
     trans x0...
   Qed.
 
-Program Instance [ Transitive A (R : relation A), Symmetric A R ] (x : A) =>
+Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
   trans_sym_co_inv_impl_morphism : ? Morphism (R ++> inverse impl) (R x).
 
   Next Obligation.
@@ -248,7 +235,7 @@ Program Instance [ Transitive A (R : relation A), Symmetric A R ] (x : A) =>
     sym...
   Qed.
 
-Program Instance [ Transitive A (R : relation A), Symmetric A R ] (x : A) =>
+Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
   trans_sym_contra_impl_morphism : ? Morphism (R --> impl) (R x).
 
   Next Obligation.
@@ -257,7 +244,7 @@ Program Instance [ Transitive A (R : relation A), Symmetric A R ] (x : A) =>
     sym...
   Qed.
 
-Program Instance [ Equivalence A (R : relation A) ] (x : A) =>
+Program Instance [ Equivalence A R ] (x : A) =>
   equivalence_partial_app_morphism : ? Morphism (R ++> iff) (R x).
 
   Next Obligation.
@@ -270,7 +257,7 @@ Program Instance [ Equivalence A (R : relation A) ] (x : A) =>
 
 (** With symmetric relations, variance is no issue ! *)
 
-Program Instance [ Symmetric A (R : relation A) ] B (R' : relation B) 
+Program Instance [ Symmetric A R ] B (R' : relation B) 
   [ Morphism _ (R ++> R') m ] => 
   sym_contra_morphism : ? Morphism (R --> R') m.
 
@@ -282,7 +269,7 @@ Program Instance [ Symmetric A (R : relation A) ] B (R' : relation B)
 
 (** [R] is reflexive, hence we can build the needed proof. *)
 
-Program Instance [ Reflexive A (R : relation A) ] B (R' : relation B)
+Program Instance [ Reflexive A R ] B (R' : relation B)
   [ ? Morphism (R ++> R') m ] (x : A) =>
   reflexive_partial_app_morphism : ? Morphism R' (m x).
 
@@ -295,7 +282,7 @@ Program Instance [ Reflexive A (R : relation A) ] B (R' : relation B)
 
 (** Every symmetric and transitive relation gives rise to an equivariant morphism. *)
 
-Program Instance [ Transitive A (R : relation A), Symmetric A R ] => 
+Program Instance [ Transitive A R, Symmetric A R ] => 
   trans_sym_morphism : ? Morphism (R ++> R ++> iff) R.
 
   Next Obligation.
@@ -306,7 +293,7 @@ Program Instance [ Transitive A (R : relation A), Symmetric A R ] =>
     trans y... trans y0... sym...
   Qed.
 
-Program Instance [ Equivalence A (R : relation A) ] => 
+Program Instance [ Equivalence A R ] => 
   equiv_morphism : ? Morphism (R ++> R ++> iff) R.
 
   Next Obligation.
@@ -335,16 +322,16 @@ Program Instance inverse_iff_impl_id :
 
 (** Logical conjunction. *)
 
-(* Program Instance and_impl_iff_morphism : ? Morphism (impl ++> iff ++> impl) and. *)
+Program Instance and_impl_iff_morphism : ? Morphism (impl ++> iff ++> impl) and.
 
-(* Program Instance and_iff_impl_morphism : ? Morphism (iff ++> impl ++> impl) and. *)
+Program Instance and_iff_impl_morphism : ? Morphism (iff ++> impl ++> impl) and.
 
 Program Instance and_iff_morphism : ? Morphism (iff ++> iff ++> iff) and.
 
 (** Logical disjunction. *)
 
-(* Program Instance or_impl_iff_morphism : ? Morphism (impl ++> iff ++> impl) or. *)
+Program Instance or_impl_iff_morphism : ? Morphism (impl ++> iff ++> impl) or.
 
-(* Program Instance or_iff_impl_morphism : ? Morphism (iff ++> impl ++> impl) or. *)
+Program Instance or_iff_impl_morphism : ? Morphism (iff ++> impl ++> impl) or.
 
 Program Instance or_iff_morphism : ? Morphism (iff ++> iff ++> iff) or.

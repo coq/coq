@@ -22,41 +22,35 @@ Require Import Coq.Classes.Init.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Definition relationT A := A -> A -> Type.
-Definition relation A := A -> A -> Prop.
+Notation "'relation' A " := (A -> A -> Prop) (at level 0).
 
 Definition inverse A (R : relation A) : relation A := fun x y => R y x.
 
 Lemma inverse_inverse : forall A (R : relation A), inverse (inverse R) = R.
 Proof. intros ; unfold inverse. apply (flip_flip R). Qed.
 
-Definition complementT A (R : relationT A) := fun x y => notT (R x y).
-
 Definition complement A (R : relation A) := fun x y => R x y -> False.
 
 (** These are convertible. *)
-
-Lemma complementT_flip : forall A (R : relationT A), complementT (flip R) = flip (complementT R).
-Proof. reflexivity. Qed.
 
 Lemma complement_inverse : forall A (R : relation A), complement (inverse R) = inverse (complement R).
 Proof. reflexivity. Qed.
 
 (** We rebind relations in separate classes to be able to overload each proof. *)
 
-Class Reflexive A (R : relationT A) :=
+Class Reflexive A (R : relation A) :=
   reflexive : forall x, R x x.
 
-Class Irreflexive A (R : relationT A) := 
+Class Irreflexive A (R : relation A) := 
   irreflexive : forall x, R x x -> False.
 
-Class Symmetric A (R : relationT A) := 
+Class Symmetric A (R : relation A) := 
   symmetric : forall x y, R x y -> R y x.
 
-Class Asymmetric A (R : relationT A) := 
+Class Asymmetric A (R : relation A) := 
   asymmetric : forall x y, R x y -> R y x -> False.
 
-Class Transitive A (R : relationT A) := 
+Class Transitive A (R : relation A) := 
   transitive : forall x y z, R x y -> R y z -> R x z.
 
 Implicit Arguments Reflexive [A].
@@ -141,23 +135,6 @@ Ltac simpl_relation :=
 
 Ltac obligations_tactic ::= simpl_relation.
 
-(** The arrow is a reflexive and transitive relation on types. *)
-
-Program Instance arrow_refl : ? Reflexive arrow := 
-  reflexive X := id.
-
-Program Instance arrow_trans : ? Transitive arrow := 
-  transitive X Y Z f g := g o f.
-
-(** Isomorphism. *)
-
-Definition iso (A B : Type) := 
-  A -> B * B -> A.
-
-Program Instance iso_refl : ? Reflexive iso.
-Program Instance iso_sym : ? Symmetric iso.
-Program Instance iso_trans : ? Transitive iso.
-
 (** Logical implication. *)
 
 Program Instance impl_refl : ? Reflexive impl.
@@ -180,7 +157,7 @@ Program Instance eq_trans : ? Transitive (@eq A).
    - a tactic to immediately solve a goal without user intervention
    - a tactic taking input from the user to make progress on a goal *)
 
-Definition relate A (R : relationT A) : relationT A := R.
+Definition relate A (R : relation A) : relation A := R.
 
 Ltac relationify_relation R R' :=
   match goal with
@@ -287,7 +264,7 @@ Ltac relation_tac := relation_refl || relation_sym || relation_trans.
 
 (** The [PER] typeclass. *)
 
-Class PER (carrier : Type) (pequiv : relationT carrier) :=
+Class PER (carrier : Type) (pequiv : relation carrier) :=
   per_sym :> Symmetric pequiv ;
   per_trans :> Transitive pequiv.
 
@@ -307,14 +284,14 @@ Program Instance [ PER A (R : relation A), PER B (R' : relation B) ] =>
 
 (** The [Equivalence] typeclass. *)
 
-Class Equivalence (carrier : Type) (equiv : relationT carrier) :=
+Class Equivalence (carrier : Type) (equiv : relation carrier) :=
   equiv_refl :> Reflexive equiv ;
   equiv_sym :> Symmetric equiv ;
   equiv_trans :> Transitive equiv.
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 
-Class [ Equivalence A eqA ] => Antisymmetric (R : relationT A) := 
+Class [ Equivalence A eqA ] => Antisymmetric (R : relation A) := 
   antisymmetric : forall x y, R x y -> R y x -> eqA x y.
 
 Program Instance [ eq : Equivalence A eqA, ? Antisymmetric eq R ] => 

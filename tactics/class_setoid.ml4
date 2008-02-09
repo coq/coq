@@ -74,7 +74,8 @@ let iff_equiv = lazy (gen_constant ["Classes"; "Relations"] "iff_equivalence")
 let eq_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "eq_equivalence")
 
 (* let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation") *)
-let coq_relation = lazy (gen_constant ["Classes";"Relations"] "relation")
+(* let coq_relation = lazy (gen_constant ["Classes";"Relations"] "relation") *)
+let coq_relation a = mkProd (Anonymous, a, mkProd (Anonymous, a, mkProp))
 let coq_relationT = lazy (gen_constant ["Classes";"Relations"] "relationT")
 
 let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv_refl")
@@ -112,7 +113,7 @@ let build_signature isevars env m cstrs finalcstr =
       (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
   in
   let mk_relty ty obj =
-    let relty = mkApp (Lazy.force coq_relation, [| ty |]) in
+    let relty = coq_relation ty in
       match obj with
 	| None -> new_evar isevars env relty
 	| Some (p, (a, r, oldt, newt)) -> r
@@ -256,17 +257,13 @@ let decompose_setoid_eqhyp gl env sigma c left2right t =
 	  let relargs, args = array_chop (Array.length args - 2) args in
 	  let rel = mkApp (r, relargs) in
 	  let typ = pf_type_of gl rel in
-	    (match kind_of_term typ with
-	      | App (relation, [| carrier |]) when eq_constr relation (Lazy.force coq_relation) 
-		    || eq_constr relation (Lazy.force coq_relationT) ->
-		  (c, (carrier, rel, args.(0), args.(1)))
-	      | _ when isArity typ ->
-		  let (ctx, ar) = destArity typ in
-		    (match ctx with
-			[ (_, None, sx) ; (_, None, sy) ] when eq_constr sx sy -> 
-			  (c, (sx, rel, args.(0), args.(1)))
-		      | _ -> error "Only binary relations are supported")
-	      | _ -> error "Not a relation")
+	    (if isArity typ then
+	      let (ctx, ar) = destArity typ in
+		(match ctx with
+		    [ (_, None, sx) ; (_, None, sy) ] when eq_constr sx sy -> 
+		      (c, (sx, rel, args.(0), args.(1)))
+		  | _ -> error "Only binary relations are supported")
+	      else error "Not a relation")
       | _ -> error "Not a relation"
   in
     if left2right then res

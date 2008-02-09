@@ -31,9 +31,10 @@ Class Setoid A :=
   equiv : relation A ;
   setoid_equiv :> Equivalence A equiv.
 
-Program Instance [ eqa : Equivalence A (eqA : relation A) ] => 
-  equivalence_setoid : Setoid A :=
-  equiv := eqA ; setoid_equiv := eqa.
+(* Too dangerous instance *)
+(* Program Instance [ eqa : Equivalence A eqA ] =>  *)
+(*   equivalence_setoid : Setoid A := *)
+(*   equiv := eqA ; setoid_equiv := eqa. *)
 
 (** Shortcuts to make proof search easier. *)
 
@@ -45,6 +46,10 @@ Proof. eauto with typeclass_instances. Qed.
 
 Definition setoid_trans [ sa : Setoid A ] : Transitive equiv.
 Proof. eauto with typeclass_instances. Qed.
+
+Existing Instance setoid_refl.
+Existing Instance setoid_sym.
+Existing Instance setoid_trans.
 
 (** Standard setoids. *)
 
@@ -142,11 +147,10 @@ Ltac obligations_tactic ::= morphism_tac.
 
 Program Instance iff_impl_id_morphism : ? Morphism (iff ++> impl) id.
 
-Program Instance eq_arrow_id_morphism : ? Morphism (eq +++> arrow) id.
+(* Program Instance eq_arrow_id_morphism : ? Morphism (eq +++> arrow) id. *)
 
 (* Definition compose_respect (A B C : Type) (R : relation (A -> B)) (R' : relation (B -> C)) *)
 (*   (x y : A -> C) : Prop := forall (f : A -> B) (g : B -> C), R f f -> R' g g. *)
-    
 
 (* Program Instance (A B C : Type) (R : relation (A -> B)) (R' : relation (B -> C)) *)
 (*   [ mg : ? Morphism R' g ] [ mf : ? Morphism R f ] =>  *)

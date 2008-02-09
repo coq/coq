@@ -61,6 +61,9 @@ end
 val full_eauto_gls : bool -> bool * int -> constr list -> goal list sigma * validation -> 
   goal list sigma * validation
 
+val resolve_all_evars_once : bool -> bool * int -> env -> (evar -> evar_info -> bool) -> evar_defs ->
+  evar_defs
+
 val resolve_all_evars : bool -> bool * int -> env -> (evar -> evar_info -> bool) -> evar_defs ->
   evar_defs
 

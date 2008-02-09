@@ -241,15 +241,19 @@ module SearchProblem = struct
 
   let success s = (sig_it (fst s.tacres)) = []
 
-  let rec filter_tactics (glls,v) = function
-    | [] -> []
-    | (tac,pptac) :: tacl -> 
-	try 
-	  let (lgls,ptl) = apply_tac_list tac glls in 
-	  let v' p = v (ptl p) in
-	  ((lgls,v'),pptac) :: filter_tactics (glls,v) tacl
-	with e when Logic.catchable_exception e ->
-	  filter_tactics (glls,v) tacl
+  let filter_tactics (glls,v) l =
+(*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
+    let rec aux = function
+      | [] -> []
+      | (tac,pptac) :: tacl -> 
+	  try 
+	    let (lgls,ptl) = apply_tac_list tac glls in 
+	    let v' p = v (ptl p) in
+(* 	      msg (hov 0 (pptac ++ str"\n")); *)
+	      ((lgls,v'),pptac) :: aux tacl
+	  with e when Logic.catchable_exception e ->
+	    aux tacl
+    in aux l
 
   (* Ordering of states is lexicographic on depth (greatest first) then
      number of remaining goals. *)
@@ -498,7 +502,7 @@ let valid evm p res_sigma l =
       !res_sigma (l, Evd.create_evar_defs !res_sigma)
   in raise (Found (snd evd'))
     
-let resolve_all_evars debug (mode, depth) env p evd =
+let resolve_all_evars_once debug (mode, depth) env p evd =
   let evm = Evd.evars_of evd in
   let goals = 
     Evd.fold
@@ -513,3 +517,16 @@ let resolve_all_evars debug (mode, depth) env p evd =
   let gls', valid' = full_eauto_gls debug (mode, depth) [] (gls, valid evm p res_sigma) in
     res_sigma := Evarutil.nf_evars (sig_sig gls');
     try ignore(valid' []); assert(false) with Found evd' -> Evarutil.nf_evar_defs evd'
+
+let has_undefined p evd =
+  Evd.fold (fun ev evi has -> has ||
+    (evi.evar_body = Evar_empty && p ev evi))
+    (Evd.evars_of evd) false
+    
+let rec resolve_all_evars debug m env p evd =
+  let rec aux n evd = 
+    if has_undefined p evd && n > 0 then
+      let evd' = resolve_all_evars_once debug m env p evd in
+	aux (pred n) evd'
+    else evd
+  in aux 3 evd

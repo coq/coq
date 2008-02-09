@@ -34,7 +34,8 @@ open Entries
 let hint_db = "typeclass_instances"
 
 let add_instance_hint inst = 
-  Auto.add_hints false [hint_db] (Vernacexpr.HintsResolve [CRef (Ident (dummy_loc, inst))])
+  Auto.add_hints false [hint_db] 
+    (Vernacexpr.HintsResolve [CAppExpl (dummy_loc, (None, Ident (dummy_loc, inst)), [])])
 
 let declare_instance (_,id) =
   add_instance_hint id
