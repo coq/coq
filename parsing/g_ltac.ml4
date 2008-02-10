@@ -165,10 +165,6 @@ GEXTEND Gram
       | id = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
          (id, arg_of_expr (TacFun(args,te))) ] ]
   ;
-  rec_clause:
-    [ [ name = identref; it = LIST0 input_fun; ":="; body = tactic_expr ->
-          (name,(it,body)) ] ]
-  ;
   match_pattern:
     [ [ IDENT "context";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
