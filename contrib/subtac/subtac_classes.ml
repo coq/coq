@@ -151,6 +151,17 @@ let new_instance ctx (instid, bk, cl) props =
 	    let cl = Option.get (class_of_constr c) in
 	      cl, ctx, [])
   in
+  let id = 
+    match snd instid with
+	Name id -> 
+	  let sp = Lib.make_path id in
+	    if Nametab.exists_cci sp then
+	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists");
+	    id
+      | Anonymous -> 
+	  let i = Nameops.add_suffix k.cl_name "_instance_0" in
+	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
+  in
   let env' = Classes.push_named_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
@@ -192,13 +203,6 @@ let new_instance ctx (instid, bk, cl) props =
       Evarutil.nf_isevar !isevars t
   in
   isevars := undefined_evars !isevars;
-  let id =
-    match snd instid with
-	Name id -> id
-      | Anonymous -> 
-	  let i = Nameops.add_suffix k.cl_name "_instance_" in
-	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
-  in
   let imps = 
     Util.list_map_i 
       (fun i (na, b, t) -> ExplByPos (i, Some na), (true, true))

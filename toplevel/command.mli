@@ -30,6 +30,8 @@ open Redexpr
    functions of [Declare]; they return an absolute reference to the
    defined object *)
 
+val definition_message : identifier -> unit
+
 val declare_definition : identifier -> definition_kind ->
   local_binder list -> red_expr option -> constr_expr ->
   constr_expr option -> declaration_hook -> unit

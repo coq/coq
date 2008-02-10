@@ -397,3 +397,6 @@ TACTIC EXTEND typeclasses_eauto
 	let evd' = resolve_argument_typeclasses d (mode, depth) env evd false false in
 	  Refiner.tclEVARS (Evd.evars_of evd') gl ]
 END
+
+let _ = 
+  Classes.refine_ref := Refine.refine

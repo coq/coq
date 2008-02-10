@@ -130,6 +130,11 @@ Program Definition setoid_morphism [ sa : Setoid A ] : Morphism (equiv ++> equiv
 Implicit Arguments setoid_morphism [[!sa]].
 Existing Instance setoid_morphism.
 
+Program Definition setoid_partial_app_morphism [ sa : Setoid A ] (x : A) : Morphism (equiv ++> iff) (equiv x) :=
+  reflexive_partial_app_morphism.
+
+Existing Instance setoid_partial_app_morphism.
+
 Definition type_eq : relation Type :=
   fun x y => x = y.
 

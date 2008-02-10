@@ -356,10 +356,17 @@ let destClassApp cl =
     | CApp (loc, (None,CRef (Ident f)), l) -> f, List.map fst l
     | _ -> raise Not_found
 
+let refine_ref = ref (fun _ -> assert(false))
+
+open Pp
+
+let ($$) g f = fun x -> g (f x)
+
 let new_instance ctx (instid, bk, cl) props =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
-
+  let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
+  let bound, fvs = Implicit_quantifiers.free_vars_of_binders ~bound [] ctx in
   let tclass = 
     match bk with
       | Explicit ->
@@ -388,8 +395,14 @@ let new_instance ctx (instid, bk, cl) props =
 
       | Implicit -> cl
   in
+  let ctx_bound = Idset.union bound (Implicit_quantifiers.ids_of_list fvs) in
+  let gen_ids = Implicit_quantifiers.free_vars_of_constr_expr ~bound:ctx_bound tclass [] in
+  let bound = Idset.union (Implicit_quantifiers.ids_of_list gen_ids) ctx_bound in
+  let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
+  let ctx, avoid = name_typeclass_binders bound ctx in
+  let ctx = List.rev_append gen_ctx ctx in
   let k, ctx', subst = 
-    let c = abstract_constr_expr tclass ctx in
+    let c = Command.generalize_constr_expr tclass ctx in
     let _imps, c' = interp_type_evars isevars env c in
     let ctx, c = decompose_named_assum c' in
       (match kind_of_term c with 
@@ -400,22 +413,45 @@ let new_instance ctx (instid, bk, cl) props =
 	    let cl = Option.get (class_of_constr c) in
 	      cl, ctx, [])
   in
+  let id = 
+    match snd instid with
+	Name id -> 
+	  let sp = Lib.make_path id in
+	    if Nametab.exists_cci sp then
+	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists");
+	    id
+      | Anonymous -> 
+	  let i = Nameops.add_suffix k.cl_name "_instance_0" in
+	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
+  in
   let env' = push_named_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
   isevars := resolve_typeclasses env sigma !isevars;
   let sigma = Evd.evars_of !isevars in
-  let env' = Evarutil.nf_env_evar sigma env' in
   let substctx = Typeclasses.nf_substitution sigma subst in
-  let subst, propsctx = 
+  let subst, _propsctx = 
     let props = 
       List.map (fun (x, l, d) -> 
-	Topconstr.abstract_constr_expr d (binders_of_lidents l))
+	x, Topconstr.abstract_constr_expr d (binders_of_lidents l))
 	props
     in
-      if List.length props <> List.length k.cl_props then 
-	mismatched_props env' props k.cl_props;
-      type_ctx_instance isevars env' k.cl_props props substctx
+      if List.length props > List.length k.cl_props then 
+	mismatched_props env' (List.map snd props) k.cl_props;
+      let props, rest = 
+	List.fold_left
+	  (fun (props, rest) (id,_,_) -> 
+	    try 
+	      let (_, c) = List.find (fun ((_,id'), c) -> id' = id) rest in
+	      let rest' = List.filter (fun ((_,id'), c) -> id' <> id) rest in
+		c :: props, rest'
+	    with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
+	  ([], props) k.cl_props
+      in
+	if rest <> [] then 
+	  unbound_method env' k.cl_name (fst (List.hd rest))
+	else
+	  type_ctx_instance isevars env' k.cl_props props substctx
   in
   let app = 
     applistc (mkConstruct (k.cl_impl, 1)) (List.rev_map snd subst)
@@ -423,33 +459,49 @@ let new_instance ctx (instid, bk, cl) props =
   let term = Termops.it_mkNamedLambda_or_LetIn app ctx' in
   isevars := Evarutil.nf_evar_defs !isevars;
   let term = Evarutil.nf_isevar !isevars term in
-  let cdecl = 
-    let kind = IsDefinition Instance in
-    let entry = 
-      { const_entry_body   = term;
-	const_entry_type   = None;
-	const_entry_opaque = false;
-	const_entry_boxed  = false }
-    in DefinitionEntry entry, kind
+  let termtype = 
+    let app = applistc (mkInd (k.cl_impl)) (List.rev_map snd substctx) in
+    let t = it_mkNamedProd_or_LetIn app ctx' in
+      Evarutil.nf_isevar !isevars t
   in
-  let id, cst =
-    let instid = 
-      match snd instid with
-	  Name id -> id
-	| Anonymous -> 
-	    let i = Nameops.add_suffix k.cl_name "_instance_" in
-	      Termops.next_global_ident_away false i (Termops.ids_of_context env)
+  let imps = 
+    Util.list_map_i 
+      (fun i (na, b, t) -> ExplByPos (i, Some na), (true, true))
+      1 ctx'
+  in
+  let hook cst = 
+    let inst = 
+      { is_class = k;
+	is_name = id;
+	is_impl = cst;
+      }
     in
-      instid, Declare.declare_constant instid cdecl
-  in 
-  let inst = 
-    { is_class = k;
-      is_name = id;
-      is_impl = cst;
-    }
+      add_instance_hint id;
+      Impargs.declare_manual_implicits false (ConstRef cst) false imps;
+      Typeclasses.add_instance inst
   in
-    add_instance_hint id;
-    add_instance inst
+  let evm = Evd.evars_of (undefined_evars !isevars) in
+    if evm = Evd.empty then
+      let cdecl = 
+	let kind = IsDefinition Instance in
+	let entry = 
+	  { const_entry_body   = term;
+	    const_entry_type   = Some termtype;
+	    const_entry_opaque = false;
+	    const_entry_boxed  = false }
+	in DefinitionEntry entry, kind
+      in
+      let kn = Declare.declare_constant id cdecl in
+	Flags.if_verbose Command.definition_message id;
+	hook kn
+    else
+      let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+	Command.start_proof id kind termtype (fun _ -> function ConstRef cst -> hook cst | _ -> assert false);
+	Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !isevars)) *)
+	  (!refine_ref (evm, term));
+	Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ()
+
+    
      
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
 

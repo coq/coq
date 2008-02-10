@@ -156,7 +156,7 @@ let declare_definition prg =
   let gr = ConstRef c in
     if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
       Impargs.declare_manual_implicits false gr (Impargs.is_implicit_args ()) prg.prg_implicits;
-    print_message (definition_message c);
+    print_message (Subtac_utils.definition_message c);
     prg.prg_hook c;
     c
 
@@ -217,7 +217,7 @@ let declare_obligation obl body =
   let constant = Declare.declare_constant obl.obl_name 
     (DefinitionEntry ce,IsProof Property)
   in
-    print_message (definition_message constant);
+    print_message (Subtac_utils.definition_message constant);
     { obl with obl_body = Some (mkConst constant) }
       
 let try_tactics obls = 

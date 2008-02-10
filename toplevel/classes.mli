@@ -67,6 +67,8 @@ val solve_evars_by_tac :     env ->
   Proof_type.tactic ->
   Evd.evar_defs
 
+val refine_ref : (open_constr -> Proof_type.tactic) ref
+
 val decompose_named_assum : types -> named_context * types
 
 val push_named_context : named_context -> env -> env
