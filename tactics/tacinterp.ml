@@ -1589,7 +1589,9 @@ and eval_tactic ist = function
   | TacId s -> tclIDTAC_MESSAGE (interp_message_nl ist s)
   | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) (interp_message ist s)
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
-  | TacAbstract (tac,s) -> Tactics.tclABSTRACT s (interp_tactic ist tac)
+  | TacAbstract (tac,ido) ->
+      fun gl -> Tactics.tclABSTRACT
+        (Option.map (interp_ident ist gl) ido) (interp_tactic ist tac) gl
   | TacThen (t1,tf,t,tl) -> 
       tclTHENS3PARTS (interp_tactic ist t1)
 	(Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
