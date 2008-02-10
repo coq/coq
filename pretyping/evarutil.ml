@@ -860,8 +860,6 @@ let rec invert_instance env evd (evk,_ as ev) subst rhs =
  *)
 
 and evar_define env (evk,argsv as ev) rhs evd =
-  if occur_evar evk rhs
-  then error_occur_check env (evars_of evd) evk rhs;
   let evi = Evd.find (evars_of evd) evk in
   (* the bindings to invert *)
   let subst = make_projectable_subst (evars_of evd) evi argsv in
@@ -869,6 +867,8 @@ and evar_define env (evk,argsv as ev) rhs evd =
     let (evd',body) = invert_instance env evd ev subst rhs in
     if occur_meta body then error "Meta cannot occur in evar body"
     else
+      if occur_evar evk body
+      then error_occur_check env (evars_of evd) evk body;
       (* needed only if an inferred type *)
       let body = refresh_universes body in
 (* Cannot strictly type instantiations since the unification algorithm
@@ -941,6 +941,8 @@ let solve_pattern_eqn env l1 c =
       | Var id -> let (id,_,t) = lookup_named id env in mkNamedLambda id t c'
       | _ -> assert false) 
     l1 c in
+  (* Warning: we may miss some opportunity to eta-reduce more since c'
+     is not in normal form *)
   whd_eta c'
 
 (* This code (i.e. solve_pb, etc.) takes a unification
