@@ -148,7 +148,7 @@ Defined.
 Definition Ndouble_plus_one x :=
 match x with
 | N0 => Npos 1
-| Npos p => Npos (xI p)
+| Npos p => Npos p~1
 end.
 
 (** Operation x -> 2 * x *)
@@ -156,7 +156,7 @@ end.
 Definition Ndouble n :=
 match n with
 | N0 => N0
-| Npos p => Npos (xO p)
+| Npos p => Npos p~0
 end.
 
 (** convenient induction principles *)
@@ -193,8 +193,8 @@ Definition Ndiv2 (n:N) :=
   match n with
   | N0 => N0
   | Npos 1 => N0
-  | Npos (xO p) => Npos p
-  | Npos (xI p) => Npos p
+  | Npos p~0 => Npos p
+  | Npos p~1 => Npos p
   end.
 
 Lemma Ndouble_div2 : forall n:N, Ndiv2 (Ndouble n) = n.

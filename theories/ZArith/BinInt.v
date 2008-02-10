@@ -40,36 +40,40 @@ Arguments Scope Zneg [positive_scope].
 Definition Zdouble_plus_one (x:Z) :=
   match x with
     | Z0 => Zpos 1
-    | Zpos p => Zpos (xI p)
+    | Zpos p => Zpos p~1
     | Zneg p => Zneg (Pdouble_minus_one p)
   end.
 
 Definition Zdouble_minus_one (x:Z) :=
   match x with
     | Z0 => Zneg 1
-    | Zneg p => Zneg (xI p)
+    | Zneg p => Zneg p~1
     | Zpos p => Zpos (Pdouble_minus_one p)
   end.
 
 Definition Zdouble (x:Z) :=
   match x with
     | Z0 => Z0
-    | Zpos p => Zpos (xO p)
-    | Zneg p => Zneg (xO p)
+    | Zpos p => Zpos p~0
+    | Zneg p => Zneg p~0
   end.
+
+Open Local Scope positive_scope.
 
 Fixpoint ZPminus (x y:positive) {struct y} : Z :=
   match x, y with
-    | xI x', xI y' => Zdouble (ZPminus x' y')
-    | xI x', xO y' => Zdouble_plus_one (ZPminus x' y')
-    | xI x', xH => Zpos (xO x')
-    | xO x', xI y' => Zdouble_minus_one (ZPminus x' y')
-    | xO x', xO y' => Zdouble (ZPminus x' y')
-    | xO x', xH => Zpos (Pdouble_minus_one x')
-    | xH, xI y' => Zneg (xO y')
-    | xH, xO y' => Zneg (Pdouble_minus_one y')
-    | xH, xH => Z0
+    | p~1, q~1 => Zdouble (ZPminus p q)
+    | p~1, q~0 => Zdouble_plus_one (ZPminus p q)
+    | p~1, 1 => Zpos p~0
+    | p~0, q~1 => Zdouble_minus_one (ZPminus p q)
+    | p~0, q~0 => Zdouble (ZPminus p q)
+    | p~0, 1 => Zpos (Pdouble_minus_one p)
+    | 1, q~1 => Zneg q~0
+    | 1, q~0 => Zneg (Pdouble_minus_one q)
+    | 1, 1 => Z0
   end.
+
+Close Local Scope positive_scope.
 
 (** ** Addition on integers *)
 
@@ -1035,22 +1039,22 @@ Proof.
   split; [apply Zpos_eq|apply Zpos_eq_rev].
 Qed.
 
-Lemma Zpos_xI : forall p:positive, Zpos (xI p) = Zpos 2 * Zpos p + Zpos 1.
+Lemma Zpos_xI : forall p:positive, Zpos p~1 = Zpos 2 * Zpos p + Zpos 1.
 Proof.
   intro; apply refl_equal.
 Qed.
 
-Lemma Zpos_xO : forall p:positive, Zpos (xO p) = Zpos 2 * Zpos p.
+Lemma Zpos_xO : forall p:positive, Zpos p~0 = Zpos 2 * Zpos p.
 Proof.
   intro; apply refl_equal.
 Qed.
 
-Lemma Zneg_xI : forall p:positive, Zneg (xI p) = Zpos 2 * Zneg p - Zpos 1.
+Lemma Zneg_xI : forall p:positive, Zneg p~1 = Zpos 2 * Zneg p - Zpos 1.
 Proof.
   intro; apply refl_equal.
 Qed.
 
-Lemma Zneg_xO : forall p:positive, Zneg (xO p) = Zpos 2 * Zneg p.
+Lemma Zneg_xO : forall p:positive, Zneg p~0 = Zpos 2 * Zneg p.
 Proof.
   reflexivity.
 Qed.

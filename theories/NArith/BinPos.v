@@ -30,13 +30,29 @@ Bind Scope positive_scope with positive.
 Arguments Scope xO [positive_scope].
 Arguments Scope xI [positive_scope].
 
+(** Postfix notation for positive numbers, allowing to mimic 
+    the position of bits in a big-endian representation. 
+    For instance, we can write 1~1~0 instead of (xO (xI xH)) 
+    for the number 6 (which is 110 in binary).
+
+    NB: in the current file, only xH~1~0 is possible, since 
+    the interpretation of constants isn't available yet.
+*) 
+
+Notation "p ~1" := (xI p) 
+ (at level 7, left associativity, format "p '~1'") : positive_scope.
+Notation "p ~0" := (xO p) 
+ (at level 7, left associativity, format "p '~0'") : positive_scope.
+
+Open Local Scope positive_scope.
+
 (** Successor *)
 
 Fixpoint Psucc (x:positive) : positive :=
   match x with
-    | xI x' => xO (Psucc x')
-    | xO x' => xI x'
-    | xH => xO xH
+    | p~1 => (Psucc p)~0
+    | p~0 => p~1
+    | xH => xH~0
   end.
 
 (** Addition *)
@@ -45,42 +61,40 @@ Set Boxed Definitions.
 
 Fixpoint Pplus (x y:positive) {struct x} : positive :=
   match x, y with
-    | xI x', xI y' => xO (Pplus_carry x' y')
-    | xI x', xO y' => xI (Pplus x' y')
-    | xI x', xH => xO (Psucc x')
-    | xO x', xI y' => xI (Pplus x' y')
-    | xO x', xO y' => xO (Pplus x' y')
-    | xO x', xH => xI x'
-    | xH, xI y' => xO (Psucc y')
-    | xH, xO y' => xI y'
-    | xH, xH => xO xH
+    | p~1, q~1 => (Pplus_carry p q)~0
+    | p~1, q~0 => (Pplus p q)~1
+    | p~1, xH => (Psucc p)~0
+    | p~0, q~1 => (Pplus p q)~1
+    | p~0, q~0 => (Pplus p q)~0
+    | p~0, xH => p~1
+    | xH, q~1 => (Psucc q)~0
+    | xH, q~0 => q~1
+    | xH, xH => xH~0
   end
   
 with Pplus_carry (x y:positive) {struct x} : positive :=
   match x, y with
-    | xI x', xI y' => xI (Pplus_carry x' y')
-    | xI x', xO y' => xO (Pplus_carry x' y')
-    | xI x', xH => xI (Psucc x')
-    | xO x', xI y' => xO (Pplus_carry x' y')
-    | xO x', xO y' => xI (Pplus x' y')
-    | xO x', xH => xO (Psucc x')
-    | xH, xI y' => xI (Psucc y')
-    | xH, xO y' => xO (Psucc y')
-    | xH, xH => xI xH
+    | p~1, q~1 => (Pplus_carry p q)~1
+    | p~1, q~0 => (Pplus_carry p q)~0
+    | p~1, xH => (Psucc p)~1
+    | p~0, q~1 => (Pplus_carry p q)~0
+    | p~0, q~0 => (Pplus p q)~1
+    | p~0, xH => (Psucc p)~0
+    | xH, q~1 => (Psucc q)~1
+    | xH, q~0 => (Psucc q)~0
+    | xH, xH => xH~1
   end.
 
 Unset Boxed Definitions.
 
 Infix "+" := Pplus : positive_scope.
 
-Open Local Scope positive_scope.
-
 (** From binary positive numbers to Peano natural numbers *)
 
 Fixpoint Pmult_nat (x:positive) (pow2:nat) {struct x} : nat :=
   match x with
-    | xI x' => (pow2 + Pmult_nat x' (pow2 + pow2))%nat
-    | xO x' => Pmult_nat x' (pow2 + pow2)%nat
+    | p~1 => (pow2 + Pmult_nat p (pow2 + pow2))%nat
+    | p~0 => Pmult_nat p (pow2 + pow2)%nat
     | xH => pow2
   end.
 
@@ -91,15 +105,15 @@ Definition nat_of_P (x:positive) := Pmult_nat x 1.
 Fixpoint P_of_succ_nat (n:nat) : positive :=
   match n with
     | O => xH
-    | S x' => Psucc (P_of_succ_nat x')
+    | S x => Psucc (P_of_succ_nat x)
   end.
 
 (** Operation x -> 2*x-1 *)
 
 Fixpoint Pdouble_minus_one (x:positive) : positive :=
   match x with
-    | xI x' => xI (xO x')
-    | xO x' => xI (Pdouble_minus_one x')
+    | p~1 => p~0~1
+    | p~0 => (Pdouble_minus_one p)~1
     | xH => xH
   end.
 
@@ -107,8 +121,8 @@ Fixpoint Pdouble_minus_one (x:positive) : positive :=
 
 Definition Ppred (x:positive) :=
   match x with
-    | xI x' => xO x'
-    | xO x' => Pdouble_minus_one x'
+    | p~1 => p~0
+    | p~0 => Pdouble_minus_one p
     | xH => xH
   end.
 
@@ -125,7 +139,7 @@ Definition Pdouble_plus_one_mask (x:positive_mask) :=
   match x with
     | IsNul => IsPos xH
     | IsNeg => IsNeg
-    | IsPos p => IsPos (xI p)
+    | IsPos p => IsPos p~1
   end.
 
 (** Operation x -> 2*x *)
@@ -134,15 +148,15 @@ Definition Pdouble_mask (x:positive_mask) :=
   match x with
     | IsNul => IsNul
     | IsNeg => IsNeg
-    | IsPos p => IsPos (xO p)
+    | IsPos p => IsPos p~0
   end.
 
 (** Operation x -> 2*x-2 *)
 
 Definition Pdouble_minus_two (x:positive) :=
   match x with
-    | xI x' => IsPos (xO (xO x'))
-    | xO x' => IsPos (xO (Pdouble_minus_one x'))
+    | p~1 => IsPos p~0~0
+    | p~0 => IsPos (Pdouble_minus_one p)~0
     | xH => IsNul
   end.
 
@@ -150,24 +164,24 @@ Definition Pdouble_minus_two (x:positive) :=
 
 Fixpoint Pminus_mask (x y:positive) {struct y} : positive_mask :=
   match x, y with
-    | xI x', xI y' => Pdouble_mask (Pminus_mask x' y')
-    | xI x', xO y' => Pdouble_plus_one_mask (Pminus_mask x' y')
-    | xI x', xH => IsPos (xO x')
-    | xO x', xI y' => Pdouble_plus_one_mask (Pminus_mask_carry x' y')
-    | xO x', xO y' => Pdouble_mask (Pminus_mask x' y')
-    | xO x', xH => IsPos (Pdouble_minus_one x')
+    | p~1, q~1 => Pdouble_mask (Pminus_mask p q)
+    | p~1, q~0 => Pdouble_plus_one_mask (Pminus_mask p q)
+    | p~1, xH => IsPos p~0
+    | p~0, q~1 => Pdouble_plus_one_mask (Pminus_mask_carry p q)
+    | p~0, q~0 => Pdouble_mask (Pminus_mask p q)
+    | p~0, xH => IsPos (Pdouble_minus_one p)
     | xH, xH => IsNul
     | xH, _ => IsNeg
   end
   
 with Pminus_mask_carry (x y:positive) {struct y} : positive_mask :=
   match x, y with
-    | xI x', xI y' => Pdouble_plus_one_mask (Pminus_mask_carry x' y')
-    | xI x', xO y' => Pdouble_mask (Pminus_mask x' y')
-    | xI x', xH => IsPos (Pdouble_minus_one x')
-    | xO x', xI y' => Pdouble_mask (Pminus_mask_carry x' y')
-    | xO x', xO y' => Pdouble_plus_one_mask (Pminus_mask_carry x' y')
-    | xO x', xH => Pdouble_minus_two x'
+    | p~1, q~1 => Pdouble_plus_one_mask (Pminus_mask_carry p q)
+    | p~1, q~0 => Pdouble_mask (Pminus_mask p q)
+    | p~1, xH => IsPos (Pdouble_minus_one p)
+    | p~0, q~1 => Pdouble_mask (Pminus_mask_carry p q)
+    | p~0, q~0 => Pdouble_plus_one_mask (Pminus_mask_carry p q)
+    | p~0, xH => Pdouble_minus_two p
     | xH, _ => IsNeg
   end.
 
@@ -185,8 +199,8 @@ Infix "-" := Pminus : positive_scope.
 
 Fixpoint Pmult (x y:positive) {struct x} : positive :=
   match x with
-    | xI x' => y + xO (Pmult x' y)
-    | xO x' => xO (Pmult x' y)
+    | p~1 => y + (Pmult p y)~0
+    | p~0 => (Pmult p y)~0
     | xH => y
   end.
 
@@ -197,8 +211,8 @@ Infix "*" := Pmult : positive_scope.
 Definition Pdiv2 (z:positive) :=
   match z with
     | xH => xH
-    | xO p => p
-    | xI p => p
+    | p~0 => p
+    | p~1 => p
   end.
 
 Infix "/" := Pdiv2 : positive_scope.
@@ -207,14 +221,14 @@ Infix "/" := Pdiv2 : positive_scope.
 
 Fixpoint Pcompare (x y:positive) (r:comparison) {struct y} : comparison :=
   match x, y with
-    | xI x', xI y' => Pcompare x' y' r
-    | xI x', xO y' => Pcompare x' y' Gt
-    | xI x', xH => Gt
-    | xO x', xI y' => Pcompare x' y' Lt
-    | xO x', xO y' => Pcompare x' y' r
-    | xO x', xH => Gt
-    | xH, xI y' => Lt
-    | xH, xO y' => Lt
+    | p~1, q~1 => Pcompare p q r
+    | p~1, q~0 => Pcompare p q Gt
+    | p~1, xH => Gt
+    | p~0, q~1 => Pcompare p q Lt
+    | p~0, q~0 => Pcompare p q r
+    | p~0, xH => Gt
+    | xH, q~1 => Lt
+    | xH, q~0 => Lt
     | xH, xH => r
   end.
 
@@ -259,7 +273,7 @@ Qed.
 
 (** Specification of [xI] in term of [Psucc] and [xO] *)
 
-Lemma xI_succ_xO : forall p:positive, xI p = Psucc (xO p).
+Lemma xI_succ_xO : forall p:positive, p~1 = Psucc p~0.
 Proof.
   reflexivity.
 Qed.
@@ -272,27 +286,27 @@ Qed.
 (** Successor and double *)
 
 Lemma Psucc_o_double_minus_one_eq_xO :
-  forall p:positive, Psucc (Pdouble_minus_one p) = xO p.
+  forall p:positive, Psucc (Pdouble_minus_one p) = p~0.
 Proof.
   intro x; induction x as [x IHx| x| ]; simpl in |- *; try rewrite IHx;
     reflexivity.
 Qed.
 
 Lemma Pdouble_minus_one_o_succ_eq_xI :
-  forall p:positive, Pdouble_minus_one (Psucc p) = xI p.
+  forall p:positive, Pdouble_minus_one (Psucc p) = p~1.
 Proof.
   intro x; induction x as [x IHx| x| ]; simpl in |- *; try rewrite IHx;
     reflexivity.
 Qed.
 
 Lemma xO_succ_permute :
-  forall p:positive, xO (Psucc p) = Psucc (Psucc (xO p)).
+  forall p:positive, (Psucc p)~0 = Psucc (Psucc p~0).
 Proof.
   intro y; induction  y as [y Hrecy| y Hrecy| ]; simpl in |- *; auto.
 Qed.
 
 Lemma double_moins_un_xO_discr :
-  forall p:positive, Pdouble_minus_one p <> xO p.
+  forall p:positive, Pdouble_minus_one p <> p~0.
 Proof.
   intro x; destruct x as [p| p| ]; discriminate.
 Qed.
@@ -498,22 +512,22 @@ Qed.
 
 (** Commutation of addition with the double of a positive number *)
 
-Lemma Pplus_xO : forall m n : positive, xO (m + n) = xO m + xO n.
+Lemma Pplus_xO : forall m n : positive, (m + n)~0 = m~0 + n~0.
 Proof.
   destruct n; destruct m; simpl; auto.
 Qed.
 
 Lemma Pplus_xI_double_minus_one :
-  forall p q:positive, xO (p + q) = xI p + Pdouble_minus_one q.
+  forall p q:positive, (p + q)~0 = p~1 + Pdouble_minus_one q.
 Proof.
-  intros; change (xI p) with (xO p + xH) in |- *.
+  intros; change (p~1) with (p~0 + xH) in |- *.
   rewrite <- Pplus_assoc; rewrite <- Pplus_one_succ_l;
     rewrite Psucc_o_double_minus_one_eq_xO.
   reflexivity.
 Qed.
 
 Lemma Pplus_xO_double_minus_one :
-  forall p q:positive, Pdouble_minus_one (p + q) = xO p + Pdouble_minus_one q.
+  forall p q:positive, Pdouble_minus_one (p + q) = p~0 + Pdouble_minus_one q.
 Proof.
   induction p as [p IHp| p IHp| ]; destruct q as [q| q| ]; simpl in |- *;
     try rewrite Pplus_carry_spec; try rewrite Pdouble_minus_one_o_succ_eq_xI;
@@ -525,7 +539,7 @@ Qed.
 
 (** Misc *)
 
-Lemma Pplus_diag : forall p:positive, p + p = xO p.
+Lemma Pplus_diag : forall p:positive, p + p = p~0.
 Proof.
   intro x; induction x; simpl in |- *; try rewrite Pplus_carry_spec;
     try rewrite IHx; reflexivity.
@@ -539,14 +553,14 @@ Inductive PeanoView : positive -> Type :=
 | PeanoOne : PeanoView xH
 | PeanoSucc : forall p, PeanoView p -> PeanoView (Psucc p).
 
-Fixpoint peanoView_xO p (q:PeanoView p) {struct q} : PeanoView (xO p) :=
-  match q in PeanoView x return PeanoView (xO x) with
+Fixpoint peanoView_xO p (q:PeanoView p) {struct q} : PeanoView (p~0) :=
+  match q in PeanoView x return PeanoView (x~0) with
     | PeanoOne => PeanoSucc _ PeanoOne
     | PeanoSucc _ q => PeanoSucc _ (PeanoSucc _ (peanoView_xO _ q))
   end.
 
-Fixpoint peanoView_xI p (q:PeanoView p) {struct q} : PeanoView (xI p) :=
-  match q in PeanoView x return PeanoView (xI x) with
+Fixpoint peanoView_xI p (q:PeanoView p) {struct q} : PeanoView (p~1) :=
+  match q in PeanoView x return PeanoView (x~1) with
     | PeanoOne => PeanoSucc _ (PeanoSucc _ PeanoOne)
     | PeanoSucc _ q => PeanoSucc _ (PeanoSucc _ (peanoView_xI _ q))
   end.
@@ -554,8 +568,8 @@ Fixpoint peanoView_xI p (q:PeanoView p) {struct q} : PeanoView (xI p) :=
 Fixpoint peanoView p : PeanoView p :=
   match p return PeanoView p with
     | xH => PeanoOne
-    | xO p => peanoView_xO p (peanoView p)
-    | xI p => peanoView_xI p (peanoView p)
+    | p~0 => peanoView_xO p (peanoView p)
+    | p~1 => peanoView_xI p (peanoView p)
   end.
 
 Definition PeanoView_iter (P:positive->Type) 
@@ -655,7 +669,7 @@ Qed.
 
 (** Right reduction properties for multiplication *)
 
-Lemma Pmult_xO_permute_r : forall p q:positive, p * xO q = xO (p * q).
+Lemma Pmult_xO_permute_r : forall p q:positive, p * q~0 = (p * q)~0.
 Proof.
   intros x y; induction x; simpl in |- *.
   rewrite IHx; reflexivity.
@@ -663,7 +677,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Pmult_xI_permute_r : forall p q:positive, p * xI q = p + xO (p * q).
+Lemma Pmult_xI_permute_r : forall p q:positive, p * q~1 = p + (p * q)~0.
 Proof.
   intros x y; induction x; simpl in |- *.
   rewrite IHx; do 2 rewrite Pplus_assoc; rewrite Pplus_comm with (p := y);
@@ -688,10 +702,10 @@ Theorem Pmult_plus_distr_l :
   forall p q r:positive, p * (q + r) = p * q + p * r.
 Proof.
   intros x y z; induction x; simpl in |- *.
-  rewrite IHx; rewrite <- Pplus_assoc with (q := xO (x * y));
-    rewrite Pplus_assoc with (p := xO (x * y));
-      rewrite Pplus_comm with (p := xO (x * y));
-        rewrite <- Pplus_assoc with (q := xO (x * y));
+  rewrite IHx; rewrite <- Pplus_assoc with (q := (x * y)~0);
+    rewrite Pplus_assoc with (p := (x * y)~0);
+      rewrite Pplus_comm with (p := (x * y)~0);
+        rewrite <- Pplus_assoc with (q := (x * y)~0);
           rewrite Pplus_assoc with (q := z); reflexivity.
   rewrite IHx; reflexivity.
   reflexivity.
@@ -715,7 +729,7 @@ Qed.
 
 (** Parity properties of multiplication *)
 
-Lemma Pmult_xI_mult_xO_discr : forall p q r:positive, xI p * r <> xO q * r.
+Lemma Pmult_xI_mult_xO_discr : forall p q r:positive, p~1 * r <> q~0 * r.
 Proof.
   intros x y z; induction z as [| z IHz| ]; try discriminate.
   intro H; apply IHz; clear IHz.
@@ -723,7 +737,7 @@ Proof.
   injection H; clear H; intro H; exact H.
 Qed.
 
-Lemma Pmult_xO_discr : forall p q:positive, xO p * q <> q.
+Lemma Pmult_xO_discr : forall p q:positive, p~0 * q <> q.
 Proof.
   intros x y; induction y; try discriminate.
   rewrite Pmult_xO_permute_r; injection; assumption.
@@ -735,12 +749,12 @@ Theorem Pmult_reg_r : forall p q r:positive, p * r = q * r -> p = q.
 Proof.
   intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
     intros z H; reflexivity || apply (f_equal (A:=positive)) || apply False_ind.
-  simpl in H; apply IHp with (xO z); simpl in |- *;
+  simpl in H; apply IHp with (z~0); simpl in |- *;
     do 2 rewrite Pmult_xO_permute_r; apply Pplus_reg_l with (1 := H).
   apply Pmult_xI_mult_xO_discr with (1 := H).
   simpl in H; rewrite Pplus_comm in H; apply Pplus_no_neutral with (1 := H).
   symmetry  in H; apply Pmult_xI_mult_xO_discr with (1 := H).
-  apply IHp with (xO z); simpl in |- *; do 2 rewrite Pmult_xO_permute_r;
+  apply IHp with (z~0); simpl in |- *; do 2 rewrite Pmult_xO_permute_r;
     assumption.
   apply Pmult_xO_discr with (1 := H).
   simpl in H; symmetry  in H; rewrite Pplus_comm in H;
@@ -935,7 +949,7 @@ Proof.
   intros p q; split.
   generalize p q; clear p q.
   induction p as [p' IH | p' IH |]; destruct q as [q' | q' |]; simpl; intro H.
-  assert (T : xI p' = xI q' <-> p' = q').
+  assert (T : p'~1 = q'~1 <-> p' = q').
   split; intro HH; [inversion HH; trivial | rewrite HH; reflexivity].
   cut ((p' ?= q') Eq = Lt \/ p' = q'). firstorder.
   apply IH. apply Pcompare_Gt_Lt; assumption.
@@ -944,7 +958,7 @@ Proof.
   apply IH in H. left.
   destruct H as [H | H]; [elim (Pcompare_Lt_eq_Lt p' q'); auto; left; assumption |
     rewrite H; apply Pcompare_refl_id].
-  assert (T : xO p' = xO q' <-> p' = q').
+  assert (T : p'~0 = q'~0 <-> p' = q').
   split; intro HH; [inversion HH; trivial | rewrite HH; reflexivity].
   cut ((p' ?= q') Eq = Lt \/ p' = q'); [firstorder | ].
   elim (Pcompare_Lt_eq_Lt p' q'); auto.
@@ -1129,7 +1143,7 @@ Lemma Pminus_mask_Gt :
 Proof.
   intro x; induction x as [p| p| ]; intro y; destruct y as [q| q| ];
     simpl in |- *; intro H; try discriminate H.
-  destruct (IHp q H) as [z [H4 [H6 H7]]]; exists (xO z); split.
+  destruct (IHp q H) as [z [H4 [H6 H7]]]; exists (z~0); split.
   rewrite H4; reflexivity.
   split.
   simpl in |- *; rewrite H6; reflexivity.
@@ -1141,17 +1155,17 @@ Proof.
           | rewrite H9; clear H9; destruct z as [p0| p0| ];
             [ reflexivity | reflexivity | absurd (xH = xH); trivial ] ] ].
   case Pcompare_Gt_Gt with (1 := H);
-  [ intros H3; elim (IHp q H3); intros z H4; exists (xI z); elim H4;
+  [ intros H3; elim (IHp q H3); intros z H4; exists (z~1); elim H4;
     intros H5 H6; elim H6; intros H7 H8; split;
       [ simpl in |- *; rewrite H5; auto
         | split;
           [ simpl in |- *; rewrite H7; trivial
             | right;
-              change (Pdouble_mask (Pminus_mask p q) = IsPos (Ppred (xI z)))
+              change (Pdouble_mask (Pminus_mask p q) = IsPos (Ppred (z~1)))
                 in |- *; rewrite H5; auto ] ]
     | intros H3; exists xH; rewrite H3; split;
       [ simpl in |- *; rewrite Pminus_mask_diag; auto | split; auto ] ].
-  exists (xO p); auto.
+  exists (p~0); auto.
   destruct (IHp q) as [z [H4 [H6 H7]]].
   apply Pcompare_Lt_Gt; assumption.
   destruct (ZL11 z) as [vZ| ];
@@ -1161,7 +1175,7 @@ Proof.
           [ simpl in |- *; rewrite Pplus_one_succ_r; rewrite <- vZ;
             rewrite H6; trivial
             | auto ] ]
-      | exists (xI (Ppred z)); destruct H7 as [| H8];
+      | exists ((Ppred z)~1); destruct H7 as [| H8];
         [ absurd (z = xH); assumption
           | split;
             [ rewrite H8; trivial
@@ -1170,7 +1184,7 @@ Proof.
                   [ rewrite H6; trivial | assumption ]
                   | right; rewrite H8; reflexivity ] ] ] ].
   destruct (IHp q H) as [z [H4 [H6 H7]]].
-  exists (xO z); split;
+  exists (z~0); split;
     [ rewrite H4; auto
       | split;
         [ simpl in |- *; rewrite H6; reflexivity
@@ -1231,8 +1245,8 @@ Qed.
 Fixpoint Psize (p:positive) : nat := 
   match p with 
     | xH => 1%nat
-    | xI p => S (Psize p) 
-    | xO p => S (Psize p)
+    | p~1 => S (Psize p) 
+    | p~0 => S (Psize p)
   end.
 
 Lemma Psize_monotone : forall p q, (p?=q) Eq = Lt -> (Psize p <= Psize q)%nat.
