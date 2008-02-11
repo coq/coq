@@ -153,8 +153,13 @@ let declare_tactic loc s cl =
     let e = 
       make_fun
         <:expr<
+	  Util.anomaly "Tacextend: Hide tactic deprecated ?"
+        >>
+      (* arnaud:
+        <:expr<
           Refiner.abstract_extended_tactic $mlexpr_of_string s$ $make_args p$ $make_eval_tactic e p$
         >>
+	*)	
       p in
     <:str_item< value $lid:stac$ = $e$ >>
   in

@@ -149,10 +149,11 @@ END
 
 (* Refine *)
 
+(* arnaud: à supprimer tantôt *)
 open Refine
 
 TACTIC EXTEND refine
-  [ "refine" casted_open_constr(c) ] -> [ refine c ]
+  [ "refine" casted_open_constr(c) ] -> [ Logic.refine c ]
 END
 
 let refine_tac = h_refine

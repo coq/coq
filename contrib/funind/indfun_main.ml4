@@ -51,7 +51,7 @@ let pr_with_bindings prc prlc (c,bl) =
 let pr_fun_ind_using  prc prlc _ opt_c = 
   match opt_c with
     | None -> mt ()
-    | Some (p,b) -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings prc prlc (p,b))
+    | Some p_b -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings prc prlc p_b)
 
 (* Duplication of printing functions because "'a with_bindings" is
    (internally) not uniform in 'a: indeed constr_with_bindings at the
@@ -61,12 +61,12 @@ let pr_fun_ind_using  prc prlc _ opt_c =
 
 let pr_with_bindings_typed prc prlc (c,bl) =
   prc c ++ 
-  hv 0 (pr_bindings (fun c -> prc (snd c)) (fun c -> prlc (snd c))  bl)
+  hv 0 (pr_bindings (fun c -> prc (Evd.get_constr c)) (fun c -> prlc (Evd.get_constr c))  bl)
 
 let pr_fun_ind_using_typed prc prlc _ opt_c = 
   match opt_c with
     | None -> mt ()
-    | Some (p,b) -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc (p,b))
+    | Some p_b -> spc () ++ hov 2 (str "using" ++ spc () ++ pr_with_bindings_typed prc prlc p_b)
 
 
 ARGUMENT EXTEND fun_ind_using

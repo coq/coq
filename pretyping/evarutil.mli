@@ -160,4 +160,11 @@ val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
 
 (**********************************)
 (* Removing hyps in evars'context *)
+type evi_loc = | Hyp of identifier | Concl
+exception Dependency_error of evi_loc * identifier
+
+val clear_in_evi : evar_defs ref -> evar_info -> identifier list -> evar_info
+
+(* arnaud: original
 val clear_hyps_in_evi : evar_defs ref -> evar_info -> identifier list -> evar_info
+*)

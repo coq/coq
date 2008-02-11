@@ -301,9 +301,6 @@ let existential_opt_value (sigma,_) = existential_opt_value sigma
 let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
 
 (*******************************************************************)
-type open_constr = evar_map * constr
-
-(*******************************************************************)
 (* The type constructor ['a sigma] adds an evar map to an object of
   type ['a] *)
 type 'a sigma = {
@@ -482,6 +479,29 @@ let extract_all_conv_pbs evd =
 
 let evar_merge evd evars =
   { evd with evars = merge evd.evars evars }
+
+(*******************************************************************)
+type weak_open_constr = evar_map * constr
+
+type open_constr = { oc: constr;
+		     context: evar_defs;
+		     my_evars: evar list} (* [my_evars] should be in the
+					     domain of [context] *)
+
+let get_constr oc = oc.oc
+let get_defs oc = oc.context
+let get_map oc = evars_of oc.context
+let get_my_evars oc = oc.my_evars
+
+(* open_of_weak might create a wrong [my_evars] list, it is provided mostly
+   for compatibility reasons. *)
+let open_of_weak (s,c) = 
+  {oc = c ; context = create_evar_defs s ; my_evars = [] }
+let open_of_constr c = open_of_weak (empty,c)
+
+let evolve oc c = { oc with oc = c  }
+let make_open_constr ~me ~global_defs ~my_evars =
+  { oc = me ; context = global_defs ; my_evars = my_evars }
 
 (**********************************************************)
 (* Sort variables *)

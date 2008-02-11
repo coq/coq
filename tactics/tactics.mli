@@ -29,7 +29,6 @@ open Rawterm
 type hyp_location = (int list list list * Names.identifier) * Tacexpr.hyp_location_flag
 (* arnaud: /trucs factices *)
 
-val inj_open : constr -> open_constr
 val inj_red_expr : red_expr -> (open_constr, evaluable_global_reference) red_expr_gen
 val inj_ebindings : constr bindings -> open_constr bindings
 

@@ -41,9 +41,11 @@ type tactic = refinement expression
 
 val run : tactic -> Environ.env -> Evd.evar_defs -> goal -> refinement
 
+(*arnaud: à commenter/déplacer tout ça *)
+val open_constr_of_raw : bool -> Rawterm.rawconstr -> Evd.open_constr expression
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)
-val refine : bool -> Rawterm.rawconstr -> tactic
+val refine : Evd.open_constr -> tactic
 
 
 (*arnaud: commenter plus sans doute. Pareil dans le .ml *)

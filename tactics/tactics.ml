@@ -123,22 +123,20 @@ let rec nb_prod x =
       | _ -> n
   in count 0 x
 
-let inj_open c = (Evd.empty,c)
-
-let inj_occ (occ,c) = (occ,inj_open c)
+let inj_occ (occ,c) = (occ,Evd.open_of_constr c)
 
 let inj_red_expr = function
   | Simpl lo -> Simpl (Option.map inj_occ lo)
-  | Fold l -> Fold (List.map inj_open l)
+  | Fold l -> Fold (List.map Evd.open_of_constr l)
   | Pattern l -> Pattern (List.map inj_occ l)
   | (ExtraRedExpr _ | CbvVm | Red _ | Hnf | Cbv _ | Lazy _ | Unfold _ as c)
     -> c
 
 let inj_ebindings = function
   | NoBindings -> NoBindings
-  | ImplicitBindings l -> ImplicitBindings (List.map inj_open l)
+  | ImplicitBindings l -> ImplicitBindings (List.map Evd.open_of_constr l)
   | ExplicitBindings l -> 
-      ExplicitBindings (List.map (fun (l,id,c) -> (l,id,inj_open c)) l)
+      ExplicitBindings (List.map (fun (l,id,c) -> (l,id,Evd.open_of_constr c)) l)
 
 (*********************************************)
 (*                 Tactics                   *)

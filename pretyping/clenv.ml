@@ -392,7 +392,9 @@ let clenv_unify_similar_types clenv c t u =
     let evd,c = w_coerce (cl_env clenv) c t u clenv.evd in
     TypeProcessed, { clenv with evd = evd }, c
 
-let clenv_assign_binding clenv k (sigma,c) =
+let clenv_assign_binding clenv k oc = (*arnaud: original (sigma,c) =*)
+  let sigma = Evd.get_map oc in
+  let c = Evd.get_constr oc in
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
   let c_typ = nf_betaiota (clenv_get_type_of clenv' c) in
@@ -408,13 +410,16 @@ let clenv_match_args bl clenv =
     let mvs = clenv_independent clenv in
     check_bindings bl;
     List.fold_left
-      (fun clenv (loc,b,(sigma,c as sc)) ->
+      (* arnaud: original :
+      (fun clenv (loc,b,(sigma,c as sc)) -> *)
+      (fun clenv (loc,b,oc) ->
+	let c = Evd.get_constr oc in
 	let k = meta_of_binder clenv loc mvs b in
         if meta_defined clenv.evd k then
           if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then clenv
           else error_already_defined b
         else
-	  clenv_assign_binding clenv k sc)
+	  clenv_assign_binding clenv k oc)
       clenv bl
 
 let clenv_constrain_last_binding c clenv =
@@ -422,7 +427,7 @@ let clenv_constrain_last_binding c clenv =
   let k =
     try list_last all_mvs 
     with Failure _ -> error "clenv_constrain_with_bindings" in
-  clenv_assign_binding clenv k (Evd.empty,c)
+  clenv_assign_binding clenv k (Evd.open_of_constr c)(* arnaud: original (Evd.empty,c)*)
 
 let clenv_constrain_dep_args hyps_only bl clenv =
   if bl = [] then

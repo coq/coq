@@ -103,7 +103,9 @@ let push_dependent_evars sigma emap =
 
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
-let evars_to_metas sigma (emap, c) =
+let evars_to_metas sigma oc = (*(emap, c) =*)
+  Util.anomaly "Evarutil.evars_to_meta: deprecated?"
+  (* arnaud: est-ce toujours d'actualité ?
   let emap = nf_evars emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let change_exist evar =
@@ -115,6 +117,7 @@ let evars_to_metas sigma (emap, c) =
       | Evar (evk,_ as ev) when Evd.mem emap' evk -> change_exist ev
       | _ -> map_constr replace c in
   (sigma', replace c)
+  *)
 
 (* The list of non-instantiated existential declarations *)
 
@@ -441,6 +444,89 @@ let do_restrict_hyps evd evk filter =
     let evk',_ = destEvar nc in
     evd,evk'
 
+type evi_loc = | Hyp of identifier | Concl
+exception Dependency_error of evi_loc * identifier
+
+(* returns a new constr where all the evar do not depend
+   on [ids] (a list of ids) anymore. *)
+let rec clear_in_constr evdref c ids =
+  let check id' =
+    if List.mem id' ids then
+      raise (Dependency_error (Concl, id'))
+  in
+  match kind_of_term c with
+  | ( Const _ | Ind _ | Construct _ ) -> 
+      let vars = Environ.vars_of_global (Global.env()) c in
+	List.iter check vars; c
+  | Var id' -> check id'; mkVar id'
+  | Evar (evk,_ as ev) ->
+      (* if the evar already has a value, then we unfold it *)
+      if Evd.is_defined_evar !evdref ev then
+	let nc = nf_evar (evars_of !evdref) c in
+        clear_in_constr evdref nc ids
+      else
+	let evi = Evd.find (evars_of !evdref) evk in
+	let new_evi =
+          begin try
+	    clear_in_evi evdref evi ids
+	  with Dependency_error (_, id') -> 
+	    raise (Dependency_error (Concl,id'))
+	  end
+	in
+	let env =
+	  (* starts from empty env, since in [evar_info]-s, all the
+	     rel context is pushed to the name context. Constants do 
+	     not matter for [(e_)new_evar] *)
+	  Sign.fold_named_context 
+	    push_named 
+	    (named_context_of_val (evar_hyps new_evi)) 
+	    ~init:(empty_env) 
+	in
+	let ev'= 
+	  e_new_evar evdref 
+	    env 
+	    ~src:(evar_source evk !evdref) 
+	    (evar_concl new_evi)
+	in
+	evdref := Evd.evar_define evk ev' !evdref;
+	c (* [c] = [Evar ev] is now instantiated by the new things *)
+  | _ -> map_constr (fun c -> clear_in_constr evdref c ids) c
+
+(* returns a new evi cleared from all dependency on [ids].
+   Essentially, it maps [clear_in_constr] on all hypotheses and on
+   the conclusion. *)
+and clear_in_evi evdref evi ids =
+  let nconcl = clear_in_constr evdref (evar_concl evi) ids
+  in
+  let clear_in_hyp (id,ob,c) =
+    try
+      (id,
+       Option.map (fun b -> clear_in_constr evdref b ids) ob,
+       clear_in_constr evdref c ids)
+    with Dependency_error (_,id') ->
+      raise (Dependency_error (Hyp id, id'))
+  in
+  (* spiwack: remainder: values = compiled stuff for the vm *)
+  let clean_value vk =
+    match !vk with
+    | VKnone -> vk
+    | VKvalue (v,d) ->
+	if (List.for_all (fun e -> not (Idset.mem e d)) ids) then
+	  (* v does depend on any of ids, it's ok *)
+	  vk
+	else
+	  (* v depends on one of the cleared hyps: we forget the computed 
+	     value *)
+	  ref VKnone
+  in
+  let (nhyps,_ ) = remove_hyps ids clear_in_hyp clean_value (evar_hyps evi)
+  in
+  { evi with
+      evar_concl = nconcl ;
+      evar_hyps = nhyps }
+
+
+(* arnaud: original
 exception Dependency_error of identifier
 
 let rec check_and_clear_in_constr evdref c ids =
@@ -524,6 +610,8 @@ let clear_hyps_in_evi evdref evi ids =
     { evi with
 	evar_concl = nconcl;
 	evar_hyps  = nhyps}
+
+*)
 
 let rec expand_var env x = match kind_of_term x with
   | Rel n ->

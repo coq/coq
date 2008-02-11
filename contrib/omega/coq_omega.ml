@@ -15,6 +15,10 @@
 
 (* $Id$ *)
 
+(* arnaud: trucs sûrement factices *)
+open Logic
+(* arnaud: /trucs sûrement factices *)
+
 open Util
 open Pp
 open Reduction
@@ -29,7 +33,6 @@ open Inductive
 open Tacticals
 open Tactics
 open Clenv
-open Logic
 open Libnames
 open Nametab
 open Contradiction
@@ -92,13 +95,22 @@ let _ =
       optread  = read old_style_flag;
       optwrite = write old_style_flag }
 
+(* arnaud: temporaire : *)
+let all_time        x = timing "Omega     " x
+let solver_time     x = timing "Solver    " x
+let exact_time      x = timing "Rewrites  " x
+let elim_time       x = timing "Elim      " x
+let simpl_time      x = timing "Simpl     " x
+let generalize_time x = timing "Generalize" x
 
+(* arnaud:remettre comme ça
 let all_time        = timing "Omega     "
 let solver_time     = timing "Solver    "
 let exact_time      = timing "Rewrites  "
 let elim_time       = timing "Elim      "
 let simpl_time      = timing "Simpl     "
 let generalize_time = timing "Generalize"
+*)
 
 let new_identifier = 
   let cpt = ref 0 in 
@@ -1010,6 +1022,7 @@ let rec clear_zero p = function
   | t -> [],t
 
 let replay_history tactic_normalisation = 
+  Util.anomaly "Coq_omega.replay_history: à restaurer" (* arnaud: à restaurer:
   let aux  = id_of_string "auxiliary" in
   let aux1 = id_of_string "auxiliary_1" in
   let aux2 = id_of_string "auxiliary_2" in
@@ -1236,7 +1249,7 @@ let replay_history tactic_normalisation =
 	      (clear [aux]);
 	      (intros_using [id]);
 	      (loop l) ];
-            tclTHEN (exists_tac (inj_open eq1)) reflexivity ]
+            tclTHEN (exists_tac (Evd.open_of_constr eq1)) reflexivity ]
       | SPLIT_INEQ(e,(e1,act1),(e2,act2)) :: l ->
 	  let id1 = new_identifier () 
 	  and id2 = new_identifier () in
@@ -1318,6 +1331,7 @@ let replay_history tactic_normalisation =
       | _ -> tclIDTAC 
   in
   loop
+						       *)
 
 let normalize p_initial t =
   let (tac,t') = transform p_initial t in
@@ -1768,6 +1782,7 @@ let destructure_hyps gl =
   loop (pf_hyps gl) gl
 
 let destructure_goal gl =
+  Util.anomaly "Coq_omega.destructure_goal: à restaurer" (* arnaud: à restaurer
   let concl = pf_concl gl in
   let rec loop t =
     match destructurate_prop t with
@@ -1787,8 +1802,14 @@ let destructure_goal gl =
 	     (destructure_hyps)) 
   in
   (loop concl) gl
+						 *)
+	
+(* arnaud: temporaire *)
+let destructure_goal x = all_time (destructure_goal) x
 
+(* arnaud: à remettre comme ça:
 let destructure_goal = all_time (destructure_goal)
+*)
 
 let omega_solver gl =
   Coqlib.check_required_library ["Coq";"omega";"Omega"];

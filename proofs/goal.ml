@@ -60,7 +60,7 @@ type refinement = { subgoals: goal list ;
    evaluation. As a matter of fact it should only change as far
    as caching is concerned, which is of no concern for the tactics
    themselves. *)
-type 'a expression = Environ.env -> Evd.evar_defs -> goal -> Evd.evar_info -> 'a
+type 'a expression = Environ.env -> Evd.evar_defs ref -> goal -> Evd.evar_info -> 'a
 
 
 (* type of the goal tactics*)
@@ -75,7 +75,8 @@ type tactic = refinement expression
 let run t env defs gl =
   let info = content (Evd.evars_of defs) gl in
   let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
-  t env defs gl info
+  let rdefs = ref defs in
+  t env rdefs gl info
 
 
 (* a pessimistic (i.e : there won't be many positive answers) filter
@@ -90,18 +91,15 @@ let evar_map_filter f evm =
            evm 
            Evd.empty
 
-
-(* arnaud: à commenter un brin plus *)
-let refine check_type step env defs gl info =
+(*arnaud: à déplacer ou du moins à paramètrer. Peut-être à construire
+          dans la monade. *)
+let open_constr_of_raw check_type rawc env rdefs gl info =
   (* if [check_type] is true, then creates a type constraint for the 
      proof-to-be *)
   let tycon = Pretyping.OfType (Option.init check_type (Evd.evar_concl info)) in
-  (* the [defs] must be passed as a reference, [rdefs] will be modified by
-     the [understand_...] procedure *)
-  let rdefs = ref defs in
   (* call to [understand_tcc_evars] returns a constr with undefined evars
      these evars will be our new goals *)
-  let refine_step = Pretyping.Default.understand_tcc_evars rdefs env tycon step
+  let open_constr = Pretyping.Default.understand_tcc_evars rdefs env tycon rawc
   in
   (* [!rdefs] contains the evar_defs outputed by  [understand_...] *)
   let post_defs = !rdefs in
@@ -113,18 +111,25 @@ let refine check_type step env defs gl info =
   let delta_evars = evar_map_filter (fun ev evi ->
                                       evi.Evd.evar_body = Evd.Evar_empty &&
                                       (* arnaud: factoriser la map ?*)
-                                      not (Evd.mem (Evd.evars_of defs) ev)
+                                      not (Evd.mem (Evd.evars_of !rdefs) ev)
 				   )
                                    (Evd.evars_of post_defs)
   in
-  (* [delta_evars] in the shape of a list *)
-  let subst_list = Evd.to_list delta_evars in
+  (* [delta_evars] in the shape of a list of [evar]-s*)
+  let delta_list = List.map fst (Evd.to_list delta_evars) in
+  Evd.make_open_constr ~global_defs: post_defs
+                       ~my_evars: delta_list
+                       ~me: open_constr
+
+(* arnaud: à commenter un brin plus *)
+let refine step env rdefs gl info =
   (* subgoals to return *)
   (* arnaud: et les noms? *)
-  let subgoals = List.map (fun (e, _) -> build e) subst_list in
+  let subgoals = List.map build (Evd.get_my_evars step) in
   (* creates the new [evar_defs] by defining the evar of the current goal
      as being [refine_step]. *)
-  let new_defs = Evd.evar_define gl.content refine_step post_defs in
+  let new_defs = Evd.evar_define gl.content (Evd.get_constr step) !rdefs in
+  rdefs := new_defs; 
   { subgoals = subgoals ;
     new_defs = new_defs ;
   }
@@ -148,11 +153,13 @@ let refine check_type step env defs gl info =
    n'a censément pas accès à ce moment de l'exécution de cette tactique.
    Il faut donc un moyen de les faire "avancer", (car sinon il vont 
    disparaître). Peut-être une info dans l'evar_info, il est là pour ça
-   après tout. *)
+   après tout.
+   *)
 (* Implements the clear tactic *)
-let clear idents _ defs gl info =
-  let rdefs = ref defs in
-  let cleared_info = Evarutil.clear_hyps_in_evi rdefs info idents in
+(* arnaud: wrapper les erreurs autour de [clear_in_evi] dans une tactic
+   failure, avec une output stream inspirée de l'ancien clear_in_evi *)
+let clear idents _ rdefs gl info =
+  let cleared_info = Evarutil.clear_in_evi rdefs info idents in
   let cleared_env = Environ.reset_with_named_context (Evd.evar_hyps cleared_info) 
                                                      Environ.empty_env in
   let cleared_concl = Evd.evar_concl cleared_info in
@@ -162,9 +169,9 @@ let clear idents _ defs gl info =
 		     | _ -> Util.anomaly "Goal.clear: e_new_evar failure"
   in
   let cleared_goal = build cleared_evar in
-  let new_defs = Evd.evar_define gl.content clearing_constr !rdefs in
+  rdefs := Evd.evar_define gl.content clearing_constr !rdefs;
   { subgoals = [cleared_goal] ;
-    new_defs = new_defs
+    new_defs = !rdefs
   }
 
 
@@ -213,27 +220,27 @@ let remove_hyp_body env sigma id =
 
 (* arnaud: on fait autant de passe qu'il y a d'hypothèses, ça permet un 
    message d'erreur plus fin, mais c'est un peu lourdingue...*)
-let clear_body env idents defs gl =
-  let info = content (Evd.evars_of defs) gl in
+let clear_body env idents rdefs gl =
+  let info = content (Evd.evars_of !rdefs) gl in
   let full_env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
   let aux env id = 
-     let env' = remove_hyp_body env (Evd.evars_of defs) id in
-       (*arnaud: if !check then*) recheck_typability (None,id) env' (Evd.evars_of defs) (Evd.evar_concl info);
+     let env' = remove_hyp_body env (Evd.evars_of !rdefs) id in
+       (*arnaud: if !check then*) recheck_typability (None,id) env' (Evd.evars_of !rdefs) (Evd.evar_concl info);
        env'
   in
   let new_env = 
     List.fold_left aux full_env idents
   in
   let concl = Evd.evar_concl info in
-  let (defs',new_constr) = Evarutil.new_evar defs new_env concl in
+  let (defs',new_constr) = Evarutil.new_evar !rdefs new_env concl in
   let new_evar = match kind_of_term new_constr with
                      | Evar (e,_) -> e
 		     | _ -> Util.anomaly "Goal.clear: e_new_evar failure"
   in
   let new_goal = build new_evar in
-  let new_defs = Evd.evar_define gl.content new_constr defs' in
+  rdefs := Evd.evar_define gl.content new_constr defs';
   { subgoals = [new_goal] ;
-    new_defs = new_defs
+    new_defs = !rdefs
   }
 
 (* arnaud Evarutil ou Reductionops ou Pretype_errors .nf_evar? *)
@@ -245,30 +252,30 @@ let clear_body env idents defs gl =
 
 
 (* if then else on expressions *)
-let cond b ~thn ~els env defs goal info =
-  if b env defs goal info then
-    thn env defs goal info
+let cond b ~thn ~els env rdefs goal info =
+  if b env rdefs goal info then
+    thn env rdefs goal info
   else 
-    els env defs goal info
+    els env rdefs goal info
 
 (* monadic bind on expressions *)
-let bind e f env defs goal info =
-  f (e env defs goal info) env defs goal info
+let bind e f env rdefs goal info =
+  f (e env rdefs goal info) env rdefs goal info
 
 (* monadic return on expressions *)
 let return v _ _ _ _ = v
 
 (* changes a list of expressions into an list expression *)
-let expr_of_list l env defs goal info = 
-  List.map (fun x -> x env defs goal info) l
+let expr_of_list l env rdefs goal info = 
+  List.map (fun x -> x env rdefs goal info) l
 
 (* map combinator which may usefully complete [bind] *)
-let map f e env defs goal info =
-  f (e env defs goal info)
+let map f e env rdefs goal info =
+  f (e env rdefs goal info)
 
 (* binary map combinator *)
-let map2 f e1 e2 env defs goal info =
-  f (e1 env defs goal info) (e2 env defs goal info)
+let map2 f e1 e2 env rdefs goal info =
+  f (e1 env rdefs goal info) (e2 env rdefs goal info)
 
 
 (* [concl] is the conclusion of the current goal *)
@@ -285,8 +292,8 @@ let hyps _ _ _ info =
 let env env _ _ _ = env
 
 (* [defs] is the [Evd.evar_defs] at the current evaluation point *)
-let defs _ defs _ _ =
-  defs
+let defs _ rdefs _ _ =
+  !rdefs
   
 (* arnaud: remplacer par un "print goal" I guess suppose. 
 (* This function returns a new goal where the evars have been

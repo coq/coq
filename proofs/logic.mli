@@ -15,13 +15,20 @@ open Term
 open Evd
 open Environ *)
 
+(* [refine] tactic *)
+val refine : Evd.open_constr -> Goal.tactic
+(* [clear] tactic *)
+val clear : identifier list -> Goal.tactic
+(* [intro] tactic *)
+val intro : identifier -> Goal.tactic
+
 type simple_tactic =
   | Intro of identifier
   | Intro_replacing of identifier
   | Cut of bool * identifier * types
   | FixRule of identifier * int * (identifier * int * constr) list
   | Cofix of identifier * (identifier * constr) list
-  | Refine of Rawterm.rawconstr
+  | Refine of Evd.open_constr
   | Convert_concl of types * cast_kind 
   | Convert_hyp of named_declaration
   | Thin of identifier list

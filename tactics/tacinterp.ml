@@ -1451,7 +1451,7 @@ let pf_interp_constr_list_as_list ist gl (c,_ as x) =
 let pf_interp_constr_list ist gl l =
   List.flatten (List.map (pf_interp_constr_list_as_list ist gl) l)
 
-let inj_open c = (Evd.empty,c)
+let inj_open c = Util.anomaly "Tacinterp.inj_open: deprecated"(* arnaud: (Evd.empty,c)*)
 
 let pf_interp_open_constr_list_as_list ist gl (c,_ as x) =
   match c with
@@ -1926,15 +1926,21 @@ and interp_genarg ist gl x =
   | RedExprArgType ->
       in_gen wit_red_expr (pf_interp_red_expr ist gl (out_gen globwit_red_expr x))
   | OpenConstrArgType casted ->
+      Util.anomaly "Tacinterp.interp_genarg: OpenConstrArgType: obsolete"
+      (* arnaud: obsolète:
       in_gen (wit_open_constr_gen casted) 
         (pf_interp_open_constr casted ist gl 
-          (snd (out_gen (globwit_open_constr_gen casted) x)))
+          (snd (out_gen (globwit_open_constr_gen casted) x))) *)
   | ConstrWithBindingsArgType ->
+      Util.anomaly "Tacinterp.interp_genarg: WithBindingsArgType: obsolete"
+      (* arnaud: obsolète:
       in_gen wit_constr_with_bindings
-        (interp_constr_with_bindings ist gl (out_gen globwit_constr_with_bindings x))
+        (interp_constr_with_bindings ist gl (out_gen globwit_constr_with_bindings x)) *)
   | BindingsArgType ->
+      Util.anomaly "Tacinterp.interp_genarg: BindingsArgType: obsolete"
+      (* arnaud: obsolète:
       in_gen wit_bindings
-        (interp_bindings ist gl (out_gen globwit_bindings x))
+        (interp_bindings ist gl (out_gen globwit_bindings x)) *)
   | List0ArgType ConstrArgType -> interp_genarg_constr_list0 ist gl x
   | List1ArgType ConstrArgType -> interp_genarg_constr_list1 ist gl x
   | List0ArgType VarArgType -> interp_genarg_var_list0 ist gl x
@@ -2091,12 +2097,12 @@ and interp_atomic ist gl = function
   | TacExact c -> h_exact (pf_interp_casted_constr ist gl c)
   | TacExactNoCheck c -> h_exact_no_check (pf_interp_constr ist gl c)
   | TacVmCastNoCheck c -> h_vm_cast_no_check (pf_interp_constr ist gl c)
-  | TacApply (ev,cb) -> h_apply ev (interp_constr_with_bindings ist gl cb)
+  | TacApply (ev,cb) -> Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète: h_apply ev (interp_constr_with_bindings ist gl cb)*)
   | TacElim (ev,cb,cbo) ->
-      h_elim ev (interp_constr_with_bindings ist gl cb)
-                (Option.map (interp_constr_with_bindings ist gl) cbo)
+      Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète: h_elim ev (interp_constr_with_bindings ist gl cb)
+                (Option.map (interp_constr_with_bindings ist gl) cbo) *)
   | TacElimType c -> h_elim_type (pf_interp_type ist gl c)
-  | TacCase (ev,cb) -> h_case ev (interp_constr_with_bindings ist gl cb)
+  | TacCase (ev,cb) -> Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète: h_case ev (interp_constr_with_bindings ist gl cb)*)
   | TacCaseType c -> h_case_type (pf_interp_type ist gl c)
   | TacFix (idopt,n) -> h_fix (Option.map (interp_fresh_ident ist gl) idopt) n
   | TacMutualFix (id,n,l) ->
@@ -2138,15 +2144,16 @@ and interp_atomic ist gl = function
   | TacSimpleInduction h ->
       h_simple_induction (interp_quantified_hypothesis ist h)
   | TacNewInduction (ev,lc,cbo,ids) ->
-      h_new_induction ev (List.map (interp_induction_arg ist gl) lc)
+      Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète          h_new_induction ev (List.map (interp_induction_arg ist gl) lc)
         (Option.map (interp_constr_with_bindings ist gl) cbo)
-        (interp_intro_pattern ist gl ids)
+        (interp_intro_pattern ist gl ids) *)
   | TacSimpleDestruct h ->
       h_simple_destruct (interp_quantified_hypothesis ist h)
   | TacNewDestruct (ev,c,cbo,ids) -> 
+      Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète
       h_new_destruct ev (List.map (interp_induction_arg ist gl) c)
         (Option.map (interp_constr_with_bindings ist gl) cbo)
-        (interp_intro_pattern ist gl ids)
+        (interp_intro_pattern ist gl ids) *)
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in
       let h2 = interp_quantified_hypothesis ist h2 in
@@ -2157,7 +2164,7 @@ and interp_atomic ist gl = function
       let l = List.map (interp_inductive ist) l in
       Elim.h_decompose l (pf_interp_constr ist gl c)
   | TacSpecialize (n,l) ->
-      h_specialize n (interp_constr_with_bindings ist gl l)
+      Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète          h_specialize n (interp_constr_with_bindings ist gl l) *)
   | TacLApply c -> h_lapply (pf_interp_constr ist gl c)
 
   (* Context management *)
@@ -2171,14 +2178,14 @@ and interp_atomic ist gl = function
 			    interp_fresh_ident ist gl (snd id2)) l)
 
   (* Constructors *)
-  | TacLeft bl -> h_left (interp_bindings ist gl bl)
-  | TacRight bl -> h_right (interp_bindings ist gl bl)
-  | TacSplit (_,bl) -> h_split (interp_bindings ist gl bl)
+  | TacLeft bl -> Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète h_left (interp_bindings ist gl bl) *)
+  | TacRight bl -> Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète h_right (interp_bindings ist gl bl) *)
+  | TacSplit (_,bl) -> Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète h_split (interp_bindings ist gl bl) *)
   | TacAnyConstructor t ->
       abstract_tactic (TacAnyConstructor t)
         (Tactics.any_constructor (Option.map (interp_tactic ist) t))
   | TacConstructor (n,bl) ->
-      h_constructor (skip_metaid n) (interp_bindings ist gl bl)
+      Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète h_constructor (skip_metaid n) (interp_bindings ist gl bl) *)
 
   (* Conversion *)
   | TacReduce (r,cl) ->
@@ -2195,10 +2202,10 @@ and interp_atomic ist gl = function
   | TacTransitivity c -> h_transitivity (pf_interp_constr ist gl c)
 
   (* Equality and inversion *)
-  | TacRewrite (ev,l,cl) -> 
+  | TacRewrite (ev,l,cl) -> Util.anomaly "Tacinterp.interp_atomic: deprecated" (* arnaud: obsolète 
       Equality.general_multi_multi_rewrite ev
 	(List.map (fun (b,c) -> (b, interp_constr_with_bindings ist gl c)) l)
-	(interp_clause ist gl cl)
+	(interp_clause ist gl cl) *)
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       Inv.dinv k (Option.map (pf_interp_constr ist gl) c)
         (interp_intro_pattern ist gl ids)

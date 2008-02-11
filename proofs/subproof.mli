@@ -95,10 +95,10 @@ val extend_list_of_tactics : tactic list -> tactic -> tactic list -> tactic
 
 
 (* Interpetes the ";" (semicolon) of Ltac. *)
-val tac_then : tactic -> tactic -> tactic
+val tcl_then : tactic -> tactic -> tactic
 
 (* Interpretes the "solve" tactical. *)
-val tac_solve : tactic -> tactic
+val tcl_solve : tactic -> tactic
 
 
 (* Reorders the open goals of the given pointer, according to the 

@@ -1111,6 +1111,55 @@ let pf_interp_red_expr ist re =
   Goal.return (interp_red_expr ist (Evd.evars_of defs) env re)
 
 
+(* arnaud: il faut sans doute revoir le mécanisme de with check/no check.
+           A terme il a des chances d'être enfermé dans la monade, ce
+           qui sera plus simple *)
+
+(* Interprets an open constr *)
+let interp_open_constr check_type ist cc =
+  (* arnaud: à quoi sert "ist" déjà ? *)
+  (* arnaud: cette fonction va changer de place... peut-être sera-t-elle
+     simplement ici ? *)
+  Goal.open_constr_of_raw check_type cc
+
+
+
+
+let coerce_to_hyp env = function
+  | VConstr c when Term.isVar c -> Term.destVar c
+  | VIntroPattern (IntroIdentifier id) when is_variable env id -> id
+  | _ -> raise (CannotCoerceTo "a variable")
+
+(* Interprets a bound variable (especially an existing hypothesis) *)
+let interp_hyp ist (loc,id as locid) =
+  let (>>=) = Goal.bind in  (* arnaud: à déplacer en haut ? *)
+  Goal.env >>= fun env ->
+  Goal.return (
+    (* Look first in lfun for a value coercible to a variable *)
+    try try_interp_ltac_var (coerce_to_hyp env) ist (Some env) locid
+    with Not_found -> 
+      (* Then look if bound in the proof context at calling time *)
+      if is_variable env id then id
+      else Util.user_err_loc (loc,"eval_variable",Nameops.pr_id id ++ str " not found")
+  )
+
+let hyp_list_of_VList env = function
+  | VList l -> List.map (coerce_to_hyp env) l
+  | _ -> raise Not_found
+
+let interp_hyp_list_as_list ist (loc,id as x) =
+  let (>>=) = Goal.bind in  (* arnaud: à déplacer en haut ? *)
+  Goal.env >>= fun env ->
+  try Goal.return (hyp_list_of_VList env (List.assoc id ist.lfun))
+  with Not_found | CannotCoerceTo _ -> 
+    interp_hyp ist x >>= fun hyp_x ->
+    Goal.return [hyp_x]
+
+let interp_hyp_list ist l =
+  let (>>=) = Goal.bind in  (* arnaud: à déplacer en haut ? *)
+  Goal.expr_of_list (List.map (interp_hyp_list_as_list ist) l) >>= fun hyps ->
+  Goal.return (List.flatten hyps) 
+
 
 
 (* arnaud: peut-être ne faut-il pas toujours renvoyer un Goal.expression,
@@ -1146,7 +1195,6 @@ let rec interp_genarg ist x =
   | RefArgType ->
       pf_interp_reference ist (out_gen globwit_ref x) >>= fun r ->
       Goal.return (in_gen wit_ref r)
-(* arnaud: il faut passer à rawconstr un moment où un autre *)
   | SortArgType -> Util.anomaly "Ltacinterp.interp_genarg: SortArgType: à restaurer"(*arnaud: à restaurer:
       in_gen wit_sort
         (Term.destSort 
@@ -1165,11 +1213,10 @@ let rec interp_genarg ist x =
   | RedExprArgType ->
       pf_interp_red_expr ist (out_gen globwit_red_expr x) >>= fun red ->
       Goal.return (in_gen wit_red_expr red)
-  | OpenConstrArgType casted -> Util.anomaly "Ltacinterp.interp gen_arg: OpenConstrArgType: à restaurer" (* arnaud: à restaurer:
-      in_gen (wit_open_constr_gen casted) 
-        (pf_interp_open_constr casted ist 
-          (snd (out_gen (globwit_open_constr_gen casted) x)))
-				*)
+  | OpenConstrArgType casted -> 
+      (interp_open_constr casted ist 
+         (fst (snd (out_gen (globwit_open_constr_gen casted) x)))) >>= fun oc ->
+      Goal.return (in_gen (wit_open_constr_gen casted) oc)
   | ConstrWithBindingsArgType -> Util.anomaly "Ltacinterp.interp gen_arg: ConstrWithBindingArgType: à restaurer" (* arnaud: à restaurer:
       in_gen wit_constr_with_bindings
         (interp_constr_with_bindings ist (out_gen globwit_constr_with_bindings x))
@@ -1212,7 +1259,7 @@ let unintro_pattern = function
 
 (* arnaud: très temporary function *)
 let do_intro = function
-  [x] -> Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro x)
+  [x] -> Logic.intro x
   | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples (bis)"
 
 let interp_atomic ist = 
@@ -1227,12 +1274,22 @@ let interp_atomic ist =
       match ido with
       | None -> Util.anomaly "Ltacinterp.inter_atomic: todo: TacIntroMove: None"
       | Some id ->
-	  Subproof.tactic_of_goal_tactic (Logic.interprete_simple_tactic_as_single_tactic (Logic.Intro id))
+	  Subproof.tactic_of_goal_tactic (Logic.intro id)
       (* arnaud:
       h_intro_move (Option.map (interp_fresh_ident ist gl) ido)
       (Option.map (interp_hyp ist gl) ido')
       *)
       end
+  | TacClear (b,l) -> 
+      if b then
+	Util.anomaly "Ltacinterp.interp_atomic: TacClear: \"clear -\": à restaurer"
+      else
+	let goal_me =
+	  (interp_hyp_list ist l) >>= fun hyps ->
+	  let l = List.map snd l in
+	  Logic.clear l
+	in
+	Subproof.tactic_of_goal_tactic  goal_me
   | TacExtend (loc,opn,l) ->
       let tac = lookup_tactic opn in
       Subproof.tactic_of_goal_tactic (

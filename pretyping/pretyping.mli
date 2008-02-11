@@ -41,7 +41,7 @@ sig
      these evars. Work as [understand_gen] for the rest. *)
   
   val understand_tcc :
-    evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
+    evar_map -> env -> ?expected_type:types -> rawconstr -> weak_open_constr
     
   val understand_tcc_evars :
     evar_defs ref -> env -> typing_constraint -> rawconstr -> constr

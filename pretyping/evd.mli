@@ -82,10 +82,6 @@ val existential_type : evar_map -> existential -> types
 val existential_opt_value : evar_map -> existential -> constr option
 
 (*********************************************************************)
-(* constr with holes *)
-type open_constr = evar_map * constr
-
-(*********************************************************************)
 (* The type constructor ['a sigma] adds an evar map to an object of
   type ['a] *)
 type 'a sigma = {
@@ -198,6 +194,29 @@ type metabinding = metavariable * constr * instance_status
 
 val retract_coercible_metas : evar_defs -> metabinding list * evar_defs
 val subst_defined_metas : metabinding list -> constr -> constr option
+
+(*********************************************************************)
+(* constr with holes *)
+(* arnaud: documenter *)
+type weak_open_constr = evar_map * constr
+
+type open_constr
+
+val get_constr : open_constr -> constr
+val get_defs : open_constr -> evar_defs
+val get_map : open_constr -> evar_map
+val get_my_evars : open_constr -> evar list
+
+val open_of_constr : constr -> open_constr
+val open_of_weak : weak_open_constr -> open_constr
+
+(* [Evd.evolve oc c] where [c] was optained by manipulating
+   [Evd.get_constr oc] returns the open_constr corresponding
+   to [c]. *)
+val evolve : open_constr -> constr -> open_constr
+val make_open_constr : me:constr -> 
+                       global_defs:evar_defs -> 
+                       my_evars:evar list    -> open_constr
 
 (**********************************************************)
 (* Sort variables *)

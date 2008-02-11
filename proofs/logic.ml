@@ -33,7 +33,7 @@ type simple_tactic =
   | Cut of bool * identifier * types
   | FixRule of identifier * int * (identifier * int * constr) list
   | Cofix of identifier * (identifier * constr) list
-  | Refine of Rawterm.rawconstr
+  | Refine of Evd.open_constr
   | Convert_concl of types * cast_kind
   | Convert_hyp of named_declaration
   | Thin of identifier list
@@ -73,15 +73,28 @@ let rec catchable_exception = function
 
 (* arnaud: on va faire les règles une par une, puis on fait l'interpréteur *)
 
+let (>>=) = Goal.bind
+
+let std_refine check_type raw_step =
+  (Goal.open_constr_of_raw check_type raw_step) >>= Goal.refine
+
+(* [refine] tactic *)
+let refine = Goal.refine
+(* [clear] tactic *)
+let clear = Goal.clear
+(* [intro] tactic *)
+let intro id = 
+  (* arnaud: vérifier que "id" n'apparaît pas.*)
+  std_refine true (
+    Rawterm.RLambda (Util.dummy_loc, Name id,
+		     Rawterm.RHole (Util.dummy_loc, Evd.InternalHole),
+		     Rawterm.RHole (Util.dummy_loc, Evd.InternalHole)
+		    )
+  )
+
 let interprete_simple_tactic_as_single_tactic = function
-  | Intro id -> (* arnaud: vérifier que "id" n'apparaît pas.*)
-               Goal.refine true (
-                   Rawterm.RLambda (Util.dummy_loc, Name id,
-			    Rawterm.RHole (Util.dummy_loc, Evd.InternalHole),
-		            Rawterm.RHole (Util.dummy_loc, Evd.InternalHole)
-			    )
-	       )
-  | Refine t -> Goal.refine true t
+  | Intro id -> intro id
+  | Refine t -> refine t
   | _ -> Util.anomaly "fonction à rebrancher" (*arnaud: ... *)
 
 

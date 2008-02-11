@@ -8,6 +8,10 @@
 
 (* $Id:$ *)
 
+(* arnaud: trucs factices *)
+open Logic
+(* arnaud: /trucs factices *)
+
 open Util
 open Pp
 open Evd
@@ -66,8 +70,6 @@ type proof_tree = Tacticals.proof_tree
 type tactic = Tacticals.tactic
 type 'a sigma = 'a Tacticals.sigma
 type goal = Tacticals.goal
-
-open Logic
 (* arnaud: /trucs factices *)
 
 (* Strictness option *)
@@ -136,6 +138,8 @@ let tmp_ids gls =
       | _::q -> List.filter is_tmp (ids_of_named_context q) 
 
 let clean_tmp gls = 
+  Util.anomaly "Decl_proof_instr.clean_tmp: à restaurer"
+  (* arnaud: à restaurer
   let clean_id id0 gls0 = 
       tclTRY (clear [id0]) gls0 in
   let rec clean_all = function
@@ -143,6 +147,7 @@ let clean_tmp gls =
     | id :: rest -> tclTHEN (clean_id id) (clean_all rest)
   in
     clean_all (tmp_ids gls) gls
+  *)
 
 (* start a proof *)
 
@@ -1261,7 +1266,9 @@ let hrec_for fix_id per_info gls obj_id =
   let hd2 = applist (mkVar fix_id,args@[obj]) in 
     compose_lam rc (whd_beta hd2)
 
-let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
+let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =  
+  Util.anomaly "Decl_proof_instr.execute_cases: à restaurer"
+  (* arnaud: à restaurer:
   match tree, objs  with
       Close_patt t,_ ->  
 	let args0 = pop_stacks args in	
@@ -1351,12 +1358,14 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	anomaly "execute_cases : Nothing to skip"
     | End_patt (_,_) , _ :: _  -> 
 	anomaly "execute_cases : End of branch with garbage left"
-
+  *)
 
 
 (* end focus/claim *)
 		
 let end_tac et2 gls =
+  Util.anomaly "Decl_proof_instr.end_tac: à restaurer"
+  (* arnaud: à restaurer
   let info = get_its_info gls in
   let et1,pi,ek,clauses = 
     match info.pm_stack with
@@ -1423,6 +1432,7 @@ let end_tac et2 gls =
 			     [mkVar c_id]  0 tree] gls0
 		  end	
       end gls
+  *)
 
 (* escape *)
 

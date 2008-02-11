@@ -193,4 +193,4 @@ let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
      
 (* open Tacmach *)
 
-let etermtac (evm, t) = assert(false) (*eterm evm t None *)
+let etermtac ot (*(evm, t)*) = assert(false) (*eterm evm t None *)

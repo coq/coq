@@ -228,11 +228,11 @@ let rec extend_list_of_tactics begin_tac_list repeat_tac end_tac_list env sp =
   }
 
 (* Interpretes the ";" (semicolon) of Ltac. *)
-let tac_then t1 t2 env sp = t2 env (t1 env sp)  
+let tcl_then t1 t2 env sp = t2 env (t1 env sp)  
 
 
 (* Interpretes the "solve" tactical. *)
-let tac_solve t env sp =
+let tcl_solve t env sp =
   let new_sp = t env sp in
   if finished new_sp then
     new_sp

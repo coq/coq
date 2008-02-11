@@ -166,9 +166,7 @@ let pr_subgoals pr_fun =
 let db_run_tactic_on env n tac =
   match ! current_proof with
   | None -> ()
-  | Some cur ->(focus n cur;
-               run_tactic env tac cur;
-	       unfocus cur)
+  | Some cur -> run_tactic env (Subproof.choose_one n tac) cur
 
 let hide_interp f t ot =
   match !current_proof with

@@ -421,7 +421,7 @@ i*)
      | Negl -> dyn_negl s1
      | Allr -> dyn_allr (JT.dest_var t2)
      | Alll -> dyn_alll s1 s2 (constr_of_jterm t2)
-     | Exr  -> dyn_exr (Tactics.inj_open (constr_of_jterm t2))
+     | Exr  -> dyn_exr (Evd.open_of_constr (constr_of_jterm t2))
      | Exl  -> dyn_exl s1 s2 (JT.dest_var t2)
      | Ax -> T.assumption (*i TCL.tclIDTAC i*)
      | Truer -> dyn_truer

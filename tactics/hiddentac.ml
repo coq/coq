@@ -25,8 +25,8 @@ let abstract_tactic = Tacticals.abstract_tactic
 
 
 let inj_id id = (dummy_loc,id)
-let inj_open c = (Evd.empty,c)
-let inj_open_wb (c,b) = ((Evd.empty,c),b)
+let inj_open c = Util.anomaly "Hiddentac.inj_open: deprecated" (* arnaud:*)
+let inj_open_wb (c,b) = ((Evd.open_of_constr c),b)
 let inj_ia = function
   | ElimOnConstr c -> ElimOnConstr (inj_open_wb c)
   | ElimOnIdent id -> ElimOnIdent id

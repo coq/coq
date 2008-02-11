@@ -145,9 +145,14 @@ let rec pr_message_token prid = function
 let pr_fresh_ids = prlist (fun s -> spc() ++ pr_or_var qs s)
 
 let out_bindings = function
+  | ImplicitBindings l -> ImplicitBindings (List.map Evd.get_constr l)
+  | ExplicitBindings l -> ExplicitBindings (List.map (fun (loc,id,c) -> (loc,id,Evd.get_constr c)) l)
+  | NoBindings -> NoBindings
+(*arnaud: original
   | ImplicitBindings l -> ImplicitBindings (List.map snd l)
   | ExplicitBindings l -> ExplicitBindings (List.map (fun (loc,id,c) -> (loc,id,snd c)) l)
   | NoBindings -> NoBindings
+*)
 
 let rec pr_raw_generic prc prlc prtac prref (x:Genarg.rlevel Genarg.generic_argument) =
   match Genarg.genarg_tag x with
@@ -259,7 +264,7 @@ let rec pr_generic prc prlc prtac x =
   | RedExprArgType ->
       pr_arg (pr_red_expr (prc,prlc,pr_evaluable_reference)) 
         (out_gen wit_red_expr x)
-  | OpenConstrArgType b -> pr_arg prc (snd (out_gen (wit_open_constr_gen b) x))
+  | OpenConstrArgType b -> pr_arg prc (Evd.get_constr (out_gen (wit_open_constr_gen b) x))
   | ConstrWithBindingsArgType ->
       let (c,b) = out_gen wit_constr_with_bindings x in
       pr_arg (pr_with_bindings prc prlc) (c,out_bindings b)
@@ -301,7 +306,7 @@ let pr_raw_extend prc prlc prtac =
 let pr_glob_extend prc prlc prtac =
   pr_extend_gen (pr_glob_generic prc prlc prtac)
 let pr_extend prc prlc prtac =
-  pr_extend_gen (pr_generic (fun c -> prc (Evd.empty,c)) (fun c -> prlc (Evd.empty,c)) prtac)
+  pr_extend_gen (pr_generic (fun c -> prc (Evd.open_of_constr c)) (fun c -> prlc (Evd.open_of_constr c)) prtac)
 
 (**********************************************************************)
 (* The tactic printer                                                 *)
@@ -994,12 +999,13 @@ let strip_prod_binders_rawterm n (ty,_) =
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
-let strip_prod_binders_constr n (sigma,ty) =
+let strip_prod_binders_constr n oty =
+  let ty = Evd.get_constr oty in
   let rec strip_ty acc n ty =
-    if n=0 then (List.rev acc, (sigma,ty)) else
+    if n=0 then (List.rev acc, oty) else
       match Term.kind_of_term ty with
           Term.Prod(na,a,b) ->
-            strip_ty (([dummy_loc,na],(sigma,a))::acc) (n-1) b
+            strip_ty (([dummy_loc,na],(Evd.evolve oty a))::acc) (n-1) b
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 

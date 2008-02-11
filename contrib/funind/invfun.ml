@@ -440,7 +440,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Nameops.next_ident_away (Nameops.out_name x) avoid in
-	     (dummy_loc,Rawterm.NamedHyp id,inj_open p)::bindings,id::avoid
+	     (dummy_loc,Rawterm.NamedHyp id,Evd.open_of_constr p)::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
 	  princ_infos.params
@@ -450,7 +450,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Nameops.next_ident_away (Nameops.out_name x) avoid in 
-	     (dummy_loc,Rawterm.NamedHyp id,inj_open (nf_zeta p))::bindings,id::avoid)
+	     (dummy_loc,Rawterm.NamedHyp id,Evd.open_of_constr (nf_zeta p))::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))
@@ -466,8 +466,9 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	tclTHEN_i
 	  (observe_tac "functional_induction" (
 	     fun g -> 
-	       observe
-		 (pr_constr_with_binding (Printer.pr_lconstr_env (pf_env g))  (mkVar principle_id,bindings));
+	       Util.anomaly "Invfun.prove_fun_correct: à restaurer"
+	       (* arnaud: à restaurer: observe
+		    (pr_constr_with_binding (Printer.pr_lconstr_env (pf_env g))  (mkVar principle_id,bindings))*);
 	       functional_induction  false (applist(funs_constr.(i),List.map mkVar args_names))
 		 (Some (mkVar principle_id,bindings))
 		 pat g
