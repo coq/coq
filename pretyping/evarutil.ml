@@ -370,23 +370,17 @@ let rec check_and_clear_in_constr evd c ids hist =
 		   corresponding to e where hypotheses of ids have been
 		   removed *)
 		let evi = Evd.find (evars_of !evd) e in
-		let nconcl = check_and_clear_in_constr evd (evar_concl evi) ids (EvkSet.add e hist) in
-		let (nhyps,nargs) = 
-		  List.fold_right2 
-		    (fun (id,ob,c) i (hy,ar) ->
-		      if List.mem id ids then
-			(hy,ar)
-		      else
-			let d' = (id,
-				 (match ob with 
-				     None -> None
-				   | Some b -> Some (check_and_clear_in_constr evd b ids (EvkSet.add e hist))),
-				 check_and_clear_in_constr evd c ids (EvkSet.add e hist)) in
-			let i' = check_and_clear_in_constr evd i ids (EvkSet.add e hist) in
-			  (d'::hy, i'::ar)
-		    ) 	      
-		    (evar_context evi) (Array.to_list l) ([],[]) in
-		let env = Sign.fold_named_context push_named nhyps ~init:(empty_env) in
+ 		let (nhyps,nargs,rids) = 
+  		  List.fold_right2 
+ 		    (fun (rid,ob,c as h) a (hy,ar,ri) ->
+ 		      match kind_of_term a with
+ 			| Var id -> if List.mem id ids then (hy,ar,id::ri) else (h::hy,a::ar,ri)
+ 			| _ -> (h::hy,a::ar,ri)
+  		    ) 	      
+ 		    (Evd.evar_context evi) (Array.to_list l) ([],[],[]) in
+ 		  (* nconcl must be computed ids (non instanciated hyps) *)
+ 		let nconcl = check_and_clear_in_constr evd (evar_concl evi) rids (EvkSet.add e hist) in
+ 		let env = Sign.fold_named_context push_named nhyps ~init:(empty_env) in
 		let ev'= e_new_evar evd env ~src:(evar_source e !evd) nconcl in
 		  evd := Evd.evar_define e ev' !evd;
 		  let (e',_) = destEvar ev' in
