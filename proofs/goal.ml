@@ -177,11 +177,15 @@ let clear idents _ rdefs gl info =
   }
 
 
+
+
+
+(* arnaud: est-il possible de faire plus propre ? *)
 (* arnaud: générer les erreurs en deux temps sans doute ? *)
 (* arnaud: qu'est-ce qui doit être failure, et qu'est-ce qui doit juste
    failer de progresser ?*)
 (* the four following functions implement the clearbody tactic *)
-let apply_to_hyp_and_dependent_on sign id f g =
+let wrap_apply_to_hyp_and_dependent_on sign id f g =
   try Environ.apply_to_hyp_and_dependent_on sign id f g 
   with Environ.Hyp_not_found -> 
     (*arnaud: if !check then*) Util.error "No such assumption" (*arnaud: error ou pas ?*)
@@ -202,7 +206,7 @@ let recheck_typability (what,id) env sigma t =
 
 let remove_hyp_body env sigma id =
   let sign =
-    apply_to_hyp_and_dependent_on (Environ.named_context_val env) id
+    wrap_apply_to_hyp_and_dependent_on (Environ.named_context_val env) id
       (fun (_,c,t) _ ->
 	match c with
 	| None -> Util.error ((Names.string_of_id id)^" is not a local definition") (*arnaud: error ou pas ?*)
@@ -222,7 +226,7 @@ let remove_hyp_body env sigma id =
 
 (* arnaud: on fait autant de passe qu'il y a d'hypothèses, ça permet un 
    message d'erreur plus fin, mais c'est un peu lourdingue...*)
-let clear_body env idents rdefs gl =
+let clear_body idents env rdefs gl info =
   let info = content (Evd.evars_of !rdefs) gl in
   let full_env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
   let aux env id = 
@@ -244,6 +248,12 @@ let clear_body env idents rdefs gl =
   { subgoals = [new_goal] ;
     new_defs = !rdefs
   }
+
+
+
+
+
+
 
 (* arnaud Evarutil ou Reductionops ou Pretype_errors .nf_evar? *)
 

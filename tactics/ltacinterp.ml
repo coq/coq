@@ -1286,10 +1286,14 @@ let interp_atomic ist =
       else
 	let goal_me =
 	  (interp_hyp_list ist l) >>= fun hyps ->
-	  let l = List.map snd l in
-	  Logic.clear l
+	  (*let l = List.map snd l in *)
+	  Logic.clear hyps
 	in
 	Subproof.tactic_of_goal_tactic  goal_me
+  | TacClearBody l ->
+      Subproof.tactic_of_goal_tactic
+	(interp_hyp_list ist l >>= fun hyps ->
+	 Logic.clear_body hyps)
   | TacExtend (loc,opn,l) ->
       let tac = lookup_tactic opn in
       Subproof.tactic_of_goal_tactic (

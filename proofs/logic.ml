@@ -82,6 +82,8 @@ let std_refine check_type raw_step =
 let refine = Goal.refine
 (* [clear] tactic *)
 let clear = Goal.clear
+(* [clearbody] tactic *)
+let clear_body = Goal.clear_body
 (* [intro] tactic *)
 let intro id = 
   (* arnaud: vérifier que "id" n'apparaît pas.*)

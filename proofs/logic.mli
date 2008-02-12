@@ -19,6 +19,8 @@ open Environ *)
 val refine : Evd.open_constr -> Goal.tactic
 (* [clear] tactic *)
 val clear : identifier list -> Goal.tactic
+(* [clearbody] tactic *)
+val clear_body : identifier list -> Goal.tactic
 (* [intro] tactic *)
 val intro : identifier -> Goal.tactic
 

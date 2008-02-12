@@ -53,6 +53,10 @@ val refine : Evd.open_constr -> tactic
 val clear : Names.identifier list -> tactic
 
 
+(*arnaud: quelques mots ne feront pas de mal*)
+(* Implements the clearbody tactic *)
+val clear_body : Names.identifier list -> tactic
+
 (*** Expressions & Tacticals ***)
 
 
@@ -70,7 +74,7 @@ val clear : Names.identifier list -> tactic
 
 (* if then else on expressions *)
 val cond : bool expression -> thn:'a expression -> 
-                              els:'a expression ->  'a expression
+  els:'a expression ->  'a expression
 
 (* monadic bind on expressions *)
 val bind : 'a expression -> ('a -> 'b expression) -> 'b expression
@@ -83,10 +87,10 @@ val expr_of_list : 'a expression list -> 'a list expression
 
 (* arnaud : à virer ? (ainsi que dans le .ml) 
 (* map combinator which may usefully complete [bind] *)
-val map : ('a -> 'b) -> 'a expression -> 'b expression
+   val map : ('a -> 'b) -> 'a expression -> 'b expression
 
 (* binary map combinator *)
-val map2 : ('a -> 'b -> 'c) -> 'a expression -> 'b expression -> 'c expression
+   val map2 : ('a -> 'b -> 'c) -> 'a expression -> 'b expression -> 'c expression
 *)
 
 (* [concl] is the conclusion of the current goal *)
