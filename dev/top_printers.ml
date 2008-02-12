@@ -16,11 +16,11 @@ open Libnames
 open Nameops
 open Sign
 open Univ
-open Proof_trees
+(*open Proof_trees*)
 open Environ
 open Printer
 open Tactic_printer
-open Refiner
+(*arnaud: open Refiner*)
 open Term
 open Termops
 open Clenv
@@ -90,7 +90,7 @@ let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map evd)
 let ppevd evd = pp(pr_evar_defs evd)
 let ppclenv clenv = pp(pr_clenv clenv)
-let ppgoal g = pp(db_pr_goal g)
+(* arnaud: à restaurer: let ppgoal g = pp(db_pr_goal g) 
 
 let pr_gls gls =
   hov 0 (pr_evar_map (sig_sig gls) ++ fnl () ++ db_pr_goal (sig_it gls))
@@ -99,18 +99,29 @@ let pr_glls glls =
   hov 0 (pr_evar_map (sig_sig glls) ++ fnl () ++
          prlist_with_sep pr_fnl db_pr_goal (sig_it glls))
 
-let ppsigmagoal g = pp(pr_goal (sig_it g))
+let ppsigmagoal g = pp(pr_goal (sig_it g)) 
 let prgls gls = pp(pr_gls gls)
-let prglls glls = pp(pr_glls glls)
+let prglls glls = pp(pr_glls glls) *)
 let pproof p = pp(print_proof Evd.empty empty_named_context p)
 
 let ppuni u = pp(pr_uni u)
 
 let ppuniverses u = pp (str"[" ++ pr_universes u ++ str"]")
 
+(* arnaud: temporaire, imprime si la table des mind est vide ou pas *)
+let ppenv e = 
+  let pe = pre_env e in
+  let gc = pe.Pre_env.env_globals in
+  let mind = gc.Pre_env.env_inductives in
+  let is_empty = KNmap.is_empty mind in
+  pp
+    (if is_empty then str "Empty mind table" else str "Non-empty mind table")
+
+(* arnaud: à reswitcher
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e (rel_context e) ++ str "]")
+*)
 
 let pptac = (fun x -> pp(Pptactic.pr_glob_tactic (Global.env()) x))
 
@@ -351,11 +362,14 @@ let pp_generic_argument arg =
 (**********************************************************************)
 (* Vernac-level debugging commands                                    *)
 
+(* arnaud: à restaurer ?
 let in_current_context f c =
   let (evmap,sign) = 
     try Pfedit.get_current_goal_context ()
     with e when Logic.catchable_exception e -> (Evd.empty, Global.env()) in
   f (Constrintern.interp_constr evmap sign c)
+
+*)
 
 (* We expand the result of preprocessing to be independent of camlp4
 
@@ -370,7 +384,7 @@ END
 open Pcoq
 open Genarg
 open Egrammar
-
+(*
 let _ =
   try
     Vernacinterp.vinterp_add "PrintConstr"
@@ -381,6 +395,7 @@ let _ =
        | _ -> failwith "Vernac extension: cannot occur")
   with
     e -> Pp.pp (Cerrors.explain_exn e)
+
 let _ =
   extend_vernac_command_grammar "PrintConstr"
     [[TacTerm "PrintConstr";
@@ -408,3 +423,4 @@ let _ =
          (Gramext.Snterm (Pcoq.Gram.Entry.obj Constr.constr),
           ConstrArgType),
          Some "c")]]
+*)

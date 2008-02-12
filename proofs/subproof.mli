@@ -63,7 +63,7 @@ type tactic
 
 
 (* Applies a tactic to the current subproof. *)
-val apply : tactic -> Environ.env -> subproof -> subproof
+val apply : Environ.env -> tactic -> subproof -> subproof
 
 (* arnaud: à recommenter *)
 (* Transforms a function of type 

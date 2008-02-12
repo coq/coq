@@ -426,9 +426,10 @@ PRINTERSCMO:=\
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
   library/impargs.cmo\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
-  proofs/logic.cmo \
+  proofs/permutation.cmo proofs/goal.cmo proofs/subproof.cmo \
+  proofs/proof.cmo proofs/logic.cmo \
   proofs/tacexpr.cmo \
-  proofs/evar_refiner.cmo proofs/tactic_debug.cmo \
+  proofs/tactic_debug.cmo \
   proofs/decl_mode.cmo \
   parsing/ppconstr.cmo parsing/extend.cmo parsing/pcoq.cmo \
   parsing/printer.cmo parsing/pptactic.cmo \

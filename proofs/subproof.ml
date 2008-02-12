@@ -160,7 +160,7 @@ let fail msg = raise (TacticFailure msg)
 
 
 (* Applies a tactic to the current subproof. *)
-let apply t env sp  = t env sp
+let apply env t sp  = t env sp
 
 
 (* arnaud: à recommenter *)
@@ -169,6 +169,8 @@ let apply t env sp  = t env sp
    a tactic that operates on a single goal) into an actual tactic.
    It operates by iterating the single-tactic from the last goal to 
    the first one. *)
+(* arnaud: avancer dans les termes modifiés par effet de bord peut se faire
+   en mutuel-recursant wrap et [tactic_of...]*)
 let tactic_of_goal_tactic f env sp =
   let wrap g ((defs, partial_list) as partial_res) = 
     if Goal.is_defined (Evd.evars_of defs) g then 
@@ -189,7 +191,7 @@ let tactic_of_goal_tactic f env sp =
 (* arnaud: bug if 0 goals ! *)
 let choose_one i t env sp =
   let (single,context) = focus i i sp in
-  unfocus context (apply t env single)
+  unfocus context (apply env t single)
 
 (* Makes a list of tactic into a tactic (interpretes the [ | ] construct).
    It applies the tactics from the last one to the first one.
@@ -220,7 +222,7 @@ let rec extend_list_of_tactics begin_tac_list repeat_tac end_tac_list env sp =
   let end_sp = { sp with comb = e } in
   let intermediate_end_sp = list_of_tactics end_tac_list env end_sp in
   let middle_sp = { intermediate_end_sp with comb = m } in
-  let intermediate_middle_sp = apply repeat_tac env middle_sp in
+  let intermediate_middle_sp = apply env repeat_tac middle_sp in
   let begin_sp = { intermediate_middle_sp with comb = b } in
   let almost = list_of_tactics begin_tac_list env begin_sp in
   { almost with comb = almost.comb@(intermediate_middle_sp.comb

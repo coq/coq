@@ -94,6 +94,8 @@ let evar_map_filter f evm =
 (*arnaud: à déplacer ou du moins à paramètrer. Peut-être à construire
           dans la monade. *)
 let open_constr_of_raw check_type rawc env rdefs gl info =
+  (* We need to keep trace of what [rdefs] was originally*)
+  let init_defs = !rdefs in
   (* if [check_type] is true, then creates a type constraint for the 
      proof-to-be *)
   let tycon = Pretyping.OfType (Option.init check_type (Evd.evar_concl info)) in
@@ -111,7 +113,7 @@ let open_constr_of_raw check_type rawc env rdefs gl info =
   let delta_evars = evar_map_filter (fun ev evi ->
                                       evi.Evd.evar_body = Evd.Evar_empty &&
                                       (* arnaud: factoriser la map ?*)
-                                      not (Evd.mem (Evd.evars_of !rdefs) ev)
+                                      not (Evd.mem (Evd.evars_of init_defs) ev)
 				   )
                                    (Evd.evars_of post_defs)
   in

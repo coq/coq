@@ -137,7 +137,7 @@ let unfocus  =
 (*** ***)
 (* arnaud: cette section, si courte qu'elle est, mérite probablement un titre *)
 
-let run_tactic tac env ( { subproof = sp } as pr ) =
+let run_tactic env tac ( { subproof = sp } as pr ) =
   let starting_point = save_state pr in
   try
     let tacticced_subproof = Subproof.apply env tac sp in
