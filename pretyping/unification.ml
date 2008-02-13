@@ -87,8 +87,10 @@ let rec subst_meta_instances bl c =
 let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
   match kind_of_term f with
     | Meta k -> 
-	let pb = (ConvUpToEta (Array.length l),TypeNotProcessed) in
-	(k,solve_pattern_eqn env (Array.to_list l) c,pb)::metasubst,evarsubst
+	let c = solve_pattern_eqn env (Array.to_list l) c in
+	let n = Array.length l - List.length (fst (decompose_lam c)) in
+	let pb = (ConvUpToEta n,TypeNotProcessed) in
+	(k,c,pb)::metasubst,evarsubst
     | Evar ev ->
       (* Currently unused: incompatible with eauto/eassumption backtracking *)
 	metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
