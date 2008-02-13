@@ -112,10 +112,10 @@ ifdef CM_STAGE1
 $(CAML_OBJECT_PATTERNS): always
 	$(call stage-template,1)
 
-%.ml4.preprocessed: stage1
+%.ml4-preprocessed: stage1
 	$(call stage-template,2)
 else
-$(CAML_OBJECT_PATTERNS) %.ml4.preprocessed: stage1
+$(CAML_OBJECT_PATTERNS) %.ml4-preprocessed: stage1
 	$(call stage-template,2)
 endif
 
@@ -177,7 +177,7 @@ clean-ide:
 	rm -f ide/utf8_convert.ml
 
 ml4clean:
-	rm -f $(ML4FILESML) $(ML4FILESML:.ml=.ml4.preprocessed)
+	rm -f $(ML4FILESML) $(ML4FILESML:.ml=.ml4-preprocessed)
 
 ml4depclean:
 	find . -name '*.ml4.d' | xargs rm -f

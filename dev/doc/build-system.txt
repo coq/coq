@@ -90,6 +90,13 @@ save precious time:
    still created, but it is not updated every time the source file
    (e.g. .ml) is changes.
 
+General speed improvements:
+
+ - When building both the native and bytecode versions, the
+   KEEP_ML4_PREPROCESSED=1 option may reduce global compilation time
+   by running camp4o only once on every .ml4 file, at the expense of
+   readability of compilation error messages for .ml4 files.
+
 Dependencies
 ------------
 
@@ -126,9 +133,9 @@ Targets for cleaning various parts:
 .ml4 files
 ----------
 
-The camlp4-preprocessed version of FOO.ml4 is FOO.ml4.preprocessed and
+The camlp4-preprocessed version of FOO.ml4 is FOO.ml4-preprocessed and
 can be obtained with:
- make FOO.ml4.preprocessed
+ make FOO.ml4-preprocessed
 
 If a .ml4 file uses a grammar extension from Coq (such as grammar.cma
 or q_constr.cmo), it must contain a line like:
@@ -141,6 +148,25 @@ It can naturally contain both a camlp4deps and a camlp4use line. Both
 are used for preprocessing. It is thus _not_ necessary to add a
 specific rule for a .ml4 file in the Makefile.build just because it
 uses grammar extensions.
+
+By default, the build system is geared towards development that may
+use the Coq grammar extensions, but not development of Coq's grammar
+extensions themselves. This means that .ml4 files are compiled
+directly (using ocamlc/opt's -pp option), without use of an
+intermediary .ml (or .ml4-preprocessed) file. This is so that if a
+compilation error occurs, the location in the error message is a
+location in the .ml4 file. If you are modifying the grammar
+extensions, you may be more interested in the location of the error in
+the .ml4-preprocessed file, so that you can see what your new grammar
+extension made wrong. In that case, use the KEEP_ML4_PREPROCESSED=1
+option. This will make compilation of a .ml4 file a two-stage process:
+
+1) create the .ml4-preprocessed file with camlp4o
+2) compile it with straight ocamlc/opt without preprocessor
+
+and will instruct make not to delete .ml4-preprocessed files
+automatically just because they are intermediary files, so that you
+can inspect them.
 
 If you add a _new_ grammar extension to Coq:
 

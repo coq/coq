@@ -721,11 +721,11 @@ toplevel/mltop.optml: toplevel/mltop.ml4 # no camlp4deps here
 
 define rectypes-rules-template
 $(1:.ml=.cmo): $(1) | $(1).d
-	$(SHOW)'OCAMLC    -rectypes $$<' 
+	$(SHOW)'OCAMLC   -rectypes $$<' 
 	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $$<
 
 $(1:.ml=.cmx): $(1) | $(1).d
-	$(SHOW)'OCAMLOPT  -rectypes $$<'
+	$(SHOW)'OCAMLOPT -rectypes $$<'
 	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $$<
 
 endef
@@ -776,9 +776,24 @@ endif
 	$(SHOW)'CC        $<'
 	$(HIDE)$(CC) -o $@ $(CFLAGS) $(CINCLUDES)  -c $<
 
+ifdef KEEP_ML4_PREPROCESSED
+.PRECIOUS: %.ml4-preprocessed
+%.cmo: %.ml4-preprocessed | %.ml4.ml.d
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c -impl $<
+
+%.cmx: %.ml4-preprocessed | %.ml4.ml.d
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c -impl $<
+else
 %.cmo: %.ml4 | %.ml4.ml.d %.ml4.d
 	$(SHOW)'OCAMLC4   $<'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+
+%.cmx: %.ml4 | %.ml4.ml.d %.ml4.d
+	$(SHOW)'OCAMLOPT4 $<'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+endif
 
 %.cmo: %.ml | %.ml.d
 	$(SHOW)'OCAMLC    $<'
@@ -787,10 +802,6 @@ endif
 %.cmi: %.mli | %.mli.d
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c $<
-
-%.cmx: %.ml4 | %.ml4.ml.d %.ml4.d
-	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
 
 %.cmx: %.ml | %.ml.d
 	$(SHOW)'OCAMLOPT  $<'
@@ -804,8 +815,8 @@ endif
 	$(SHOW)'OCAMLYACC $<'
 	$(HIDE)$(OCAMLYACC) $<
 
-%.ml4.preprocessed: %.ml4 | %.ml4.d
-	$(SHOW)'CAMLP4O $<'
+%.ml4-preprocessed: %.ml4 | %.ml4.d
+	$(SHOW)'CAMLP4O   $<'
 	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
@@ -827,7 +838,7 @@ else
 endif
 %.ml4.d: $(D_DEPEND_BEFORE_SRC) %.ml4
 	$(SHOW)'CAMLP4DEPS $<'
-	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d: $(SEP)' && $(CAMLP4DEPS) "$<" ) > "$@" \
+	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d $*.ml4-preprocessed: $(SEP)' && $(CAMLP4DEPS) "$<" ) > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.ml4.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml4 $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILES:.ml4=.ml) %.ml4.d
