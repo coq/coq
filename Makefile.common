@@ -168,7 +168,7 @@ TOPLEVEL:=\
 
 HIGHTACTICS:=\
   tactics/refine.cmo tactics/extraargs.cmo \
-  tactics/extratactics.cmo tactics/eauto.cmo tactics/class_setoid.cmo
+  tactics/extratactics.cmo tactics/eauto.cmo tactics/class_tactics.cmo
 
 SPECTAC:= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC:= $(SPECTAC)
