@@ -421,28 +421,33 @@ let gen_mult_files l =
     end 
       (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)
 
+let read_glob = function
+  | Vernac_file (f,m) ->   
+      let glob = (Filename.chop_extension f) ^ ".glob" in
+	(try
+	  Index.read_glob glob
+	with 
+	    _ -> eprintf "Warning: file %s cannot be opened; links will not be available\n" glob)
+  | Latex_file _ -> ()
 
-let glob_filename f =
-  (Filename.chop_extension f) ^ ".glob"
-    
 let index_module = function
   | Vernac_file (f,m) ->   
-      Index.read_glob (glob_filename f);
       Index.add_module m
   | Latex_file _ -> ()
       
 let produce_document l =
-  List.iter index_module l;
   (if !target_language=HTML then
     let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.css") in
     let dst = if !output_dir <> "" then Filename.concat !output_dir "coqdoc.css" else "coqdoc.css" in
-      copy src dst);
+      copy src dst;
+      List.iter read_glob l);
   (if !target_language=LaTeX then
     let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.sty") in
     let dst = if !output_dir <> "" then 
       Filename.concat !output_dir "coqdoc.sty" 
     else "coqdoc.sty" in
       copy src dst);
+  List.iter index_module l;
   match !out_to with
     | StdOut -> 
 	Cdglobals.out_channel := stdout;
