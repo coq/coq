@@ -75,6 +75,12 @@ let rec catchable_exception = function
 
 let (>>=) = Goal.bind
 
+(* Raises Typing.type_of to the Goal monad *)
+let type_of c =
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  Goal.return (Typing.type_of env (Evd.evars_of defs) c)
+
 let std_refine check_type raw_step =
   (Goal.open_constr_of_raw check_type raw_step) >>= Goal.refine
 
@@ -93,6 +99,50 @@ let intro id =
 		     Rawterm.RHole (Util.dummy_loc, Evd.InternalHole)
 		    )
   )
+
+
+(*** arnaud: remettre dans tactics.ml ? ***)
+
+
+(* implements apply and eapply functions  *)
+let apply_with_ebindings_gen with_evars (c,lbind) = 
+  (* The actual type of the theorem. It will be matched against the
+  goal. If this fails, then the head constant will be unfolded step by
+  step. *)
+  type_of c >>= fun ity ->
+  let thm_ty0 = Reduction.nf_betaiota ity in
+  Goal.concl >>= fun concl ->
+  let concl_nprod = nb_prod concl in
+  let try_apply thm_ty nprod =
+    let n = nb_prod thm_ty - nprod in
+    if n<0 then Util.error "Apply: theorem has not enough premisses.";
+    Clenv.make_clenv_binding_apply (Some n) (c,thm_ty) lbind >>= fun clause ->
+    (* arnaud: on en est là, Clenvtac est plus dans la branche, mais 
+       il faut comprendre ce que res_pf fait *)
+    Clenvtac.res_pf clause ~with_evars:with_evars gl 
+  in
+  try try_apply thm_ty0 concl_nprod
+  with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
+    let rec try_red_apply thm_ty =
+      try 
+        (* Try to head-reduce the conclusion of the theorem *)
+        let red_thm = try_red_product (pf_env gl) (project gl) thm_ty in
+        try try_apply red_thm concl_nprod
+        with PretypeError _|RefinerError _|UserError _|Failure _ ->
+          try_red_apply red_thm
+      with Redelimination -> 
+        (* Last chance: if the head is a variable, apply may try
+	   second order unification *)
+        if concl_nprod <> 0 then try_apply thm_ty 0
+          (* Reraise the initial error message *)
+        else raise exn in
+    Goal.return (try_red_apply thm_ty0)
+
+let apply_with_ebindings = apply_with_ebindings_gen false
+let eapply_with_ebindings = apply_with_ebindings_gen true
+
+(*** arnaud: /remettre dans tactics.ml ? ***)
+
 
 let interprete_simple_tactic_as_single_tactic = function
   | Intro id -> intro id

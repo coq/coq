@@ -141,23 +141,51 @@ let clenv_conv_leq env sigma t c bound =
   check_evars env sigma evars (applist (c,args));
   args
 
-let mk_clenv_from_n gls n (c,cty) =
+(*arnaud: sans doute à déplacer :*)
+let (>>=) = Goal.bind
+
+(* arnaud: ça a l'air de construire une clause fraiche... *)
+let mk_clenv_from_n n (c,cty) =
+  Goal.defs >>= fun defs ->
+  Goal.hyps >>= fun hyps ->
+  let (env,args,concl) = clenv_environments defs n cty in
+  Goal.return
+    { templval = mk_freelisted (match args with 
+				| [] -> c 
+				| _ -> applist (c,args)
+			       );
+      templtyp = mk_freelisted concl;
+      evd = env;
+      env = Global.env_of_context hyps }
+(* arnaud: original 
   let evd = create_goal_evar_defs gls.sigma in
   let (env,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
     templtyp = mk_freelisted concl;
     evd = env;
     env = Global.env_of_context gls.it.evar_hyps }
+*)
 
-let mk_clenv_from gls = mk_clenv_from_n gls None
+let mk_clenv_from = mk_clenv_from_n None
 
-let mk_clenv_rename_from gls (c,t) = 
-  mk_clenv_from gls (c,rename_bound_var (pf_env gls) [] t)
+let mk_clenv_rename_from (c,t) = 
+  Goal.env >>= fun env -> 
+  mk_clenv_from (c,rename_bound_var env [] t)
 
-let mk_clenv_rename_from_n gls n (c,t) = 
-  mk_clenv_from_n gls n (c,rename_bound_var (pf_env gls) [] t)
+let mk_clenv_rename_from_n n (c,t) = 
+  Goal.env >>= fun env ->
+  mk_clenv_from_n n (c,rename_bound_var env [] t)
 
-let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
+let mk_clenv_type_of t = 
+  (* spiwack: duplication of Logic.type_of to avoid inconvenient
+     dependencies, should be removed in the final version *)
+  let type_of c =
+    Goal.env >>= fun env ->
+      Goal.defs >>= fun defs ->
+	Goal.return (Typing.type_of env (Evd.evars_of defs) c)
+  in
+  type_of t >>= fun ty ->
+  mk_clenv_from (t,ty)
 
 (******************************************************************)
 
@@ -443,17 +471,17 @@ let clenv_constrain_dep_args hyps_only bl clenv =
 (****************************************************************)
 (* Clausal environment for an application *)
 
-let make_clenv_binding_gen hyps_only n gls (c,t) = function
+let make_clenv_binding_gen hyps_only n (c,t) = function
   | ImplicitBindings largs ->
-      let clause = mk_clenv_from_n gls n (c,t) in
-      clenv_constrain_dep_args hyps_only largs clause
+      mk_clenv_from_n n (c,t) >>= fun clause ->
+      Goal.return (clenv_constrain_dep_args hyps_only largs clause)
   | ExplicitBindings lbind ->
-      let clause = mk_clenv_rename_from_n gls n (c,t) in
-      clenv_match_args lbind clause
+      mk_clenv_rename_from_n n (c,t) >>= fun clause ->
+      Goal.return (clenv_match_args lbind clause)
   | NoBindings ->
-      mk_clenv_from_n gls n (c,t)
+      mk_clenv_from_n n (c,t)
 
-let make_clenv_binding_apply gls n = make_clenv_binding_gen true n gls
+let make_clenv_binding_apply n = make_clenv_binding_gen true n 
 let make_clenv_binding = make_clenv_binding_gen false None
 
 (****************************************************************)

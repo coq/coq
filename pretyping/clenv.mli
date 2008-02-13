@@ -49,13 +49,24 @@ val clenv_nf_meta   : clausenv -> constr -> constr
 (* type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
+
+val mk_clenv_from : constr * types -> clausenv Goal.expression
+val mk_clenv_from_n : int option -> constr * types -> clausenv Goal.expression
+
+val mk_clenv_rename_from : constr * types -> clausenv Goal.expression
+val mk_clenv_rename_from_n : int option -> constr * types -> clausenv Goal.expression
+val mk_clenv_type_of : constr -> clausenv Goal.expression
+(* arnaud:original 
 val mk_clenv_from : evar_info sigma -> constr * types -> clausenv
 val mk_clenv_from_n :
   evar_info sigma -> int option -> constr * types -> clausenv
+
 val mk_clenv_rename_from : evar_info sigma -> constr * types -> clausenv
 val mk_clenv_rename_from_n :
   evar_info sigma -> int option -> constr * types -> clausenv
 val mk_clenv_type_of : evar_info sigma -> constr -> clausenv
+*)
+
 
 (***************************************************************)
 (* linking of clenvs *)
@@ -105,11 +116,13 @@ val clenv_unify_meta_types : clausenv -> clausenv
 (* the arity of the lemma is fixed *)
 (* the optional int tells how many prods of the lemma have to be used *)
 (* use all of them if None *)
+(* arnaud: en cas de problème les originaux sont au même endroit dans le
+   trunk *)
 val make_clenv_binding_apply :
-  evar_info sigma -> int option -> constr * constr -> open_constr bindings ->
-   clausenv
+  int option -> constr * constr -> open_constr bindings ->
+   clausenv Goal.expression
 val make_clenv_binding :
-  evar_info sigma -> constr * constr -> open_constr bindings -> clausenv
+  constr * constr -> open_constr bindings -> clausenv Goal.expression
 
 (* [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
    [lmetas] is a list of metas to be applied to a proof of [t] so that

@@ -15,6 +15,11 @@ open Term
 open Evd
 open Environ *)
 
+(*** [Goal.expression]-s: tool-kit for the tactic builder ***)
+(* Raises Typing.type_of to the Goal monad *)
+val type_of : constr -> types Goal.expression
+
+(*** tactics ***)
 (* [refine] tactic *)
 val refine : Evd.open_constr -> Goal.tactic
 (* [clear] tactic *)
