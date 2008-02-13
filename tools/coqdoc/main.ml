@@ -51,7 +51,6 @@ let usage () =
   prerr_endline "  --files-from <file> read file names to process in <file>";
   prerr_endline "  --quiet             quiet mode (default)";
   prerr_endline "  --verbose           verbose mode";  
-  prerr_endline "  --glob-from <file>  read Coq globalizations from file <file>";
   prerr_endline "  --no-externals      no links to Coq standard library";
   prerr_endline "  --coqlib <url>      set URL for Coq standard library";
   prerr_endline "                      (default is http://coq.inria.fr/library/)";
@@ -63,6 +62,9 @@ let usage () =
   prerr_endline "  --inputenc <string> set LaTeX input encoding";
   prerr_endline "";
   exit 1
+
+let obsolete s =
+  eprintf "Warning: option %s is now obsolete; please update your scripts\n" s
 
 (*s \textbf{Banner.} Always printed. Notice that it is printed on error
     output, so that when the output of [coqdoc] is redirected this header
@@ -311,7 +313,7 @@ let parse () =
     | "-R" :: ([] | [_]) ->
 	usage ()
     | ("-glob-from" | "--glob-from") :: f :: rem ->
-	Index.read_glob f; parse_rec rem
+	obsolete "glob-from"; parse_rec rem
     | ("-glob-from" | "--glob-from") :: [] ->
 	usage ()
     | ("--no-externals" | "-no-externals" | "-noexternals") :: rem ->
@@ -372,7 +374,7 @@ let copy src dst =
 
 
 (*s Functions for generating output files *)
-	
+
 let gen_one_file l =
   let file = function
     | Vernac_file (f,m) -> 
@@ -420,8 +422,13 @@ let gen_mult_files l =
       (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)
 
 
+let glob_filename f =
+  (Filename.chop_extension f) ^ ".glob"
+    
 let index_module = function
-  | Vernac_file (_,m) -> Index.add_module m
+  | Vernac_file (f,m) ->   
+      Index.read_glob (glob_filename f);
+      Index.add_module m
   | Latex_file _ -> ()
       
 let produce_document l =

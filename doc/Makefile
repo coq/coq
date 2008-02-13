@@ -214,8 +214,6 @@ faq/html/index.html: faq/FAQ.v.html
 # Standard library
 ######################################################################
 
-GLOBDUMP=$(COQSRC)/glob.dump
-
 LIBDIRS= Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Program
 # We avoid Strings as String.v contains unicode caracters that make latex fail
 
@@ -229,14 +227,11 @@ ALLTHEORIES_GLOB = $(ALLTHEORIES_V:%.v=%.glob)
 
 ### Standard library (browsable html format)
 
-$(GLOBDUMP): $(ALLTHEORIES_GLOB)
-	$(MAKE) -C .. $(@:../%=%)
-
-stdlib/index-body.html: $(GLOBDUMP) $(ALLTHEORIES_V)
+stdlib/index-body.html: $(ALLTHEORIES_V)
 	- rm -rf stdlib/html
 	mkdir stdlib/html
 	(cd stdlib/html;\
-	 $(COQDOC) -q --multi-index --html --glob-from $(GLOBDUMP)\
+	 $(COQDOC) -q --multi-index --html \
 	  -R $(COQSRC)/theories Coq $(ALLTHEORIES_V))
 	mv stdlib/html/index.html stdlib/index-body.html
 
