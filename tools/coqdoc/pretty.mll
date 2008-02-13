@@ -163,6 +163,7 @@
 
 let space = [' ' '\t']
 let space_nl = [' ' '\t' '\n' '\r']
+let nl = "\r\n" | '\n'
 
 let firstchar = 
   ['A'-'Z' 'a'-'z' '_' 
@@ -294,10 +295,10 @@ let section = "*" | "**" | "***" | "****"
 
 let item_space = "    "
 
-let begin_hide = "(*" space* "begin" space+ "hide" space* "*)" space* '\n'
-let end_hide = "(*" space* "end" space+ "hide" space* "*)" space* '\n'
-let begin_show = "(*" space* "begin" space+ "show" space* "*)" space* '\n'
-let end_show = "(*" space* "end" space+ "show" space* "*)" space* '\n'
+let begin_hide = "(*" space* "begin" space+ "hide" space* "*)" space* nl
+let end_hide = "(*" space* "end" space+ "hide" space* "*)" space* nl
+let begin_show = "(*" space* "begin" space+ "show" space* "*)" space* nl
+let end_show = "(*" space* "end" space+ "show" space* "*)" space* nl
 (*
 let begin_verb = "(*" space* "begin" space+ "verb" space* "*)"
 let end_verb = "(*" space* "end" space+ "verb" space* "*)"
@@ -308,7 +309,7 @@ let end_verb = "(*" space* "end" space+ "verb" space* "*)"
 (*s Scanning Coq, at beginning of line *)
 
 rule coq_bol = parse
-  | space* '\n'+
+  | space* nl+
       { empty_line_of_code (); coq_bol lexbuf }
   | space* "(**" space_nl
       { end_coq (); start_doc (); 
@@ -381,7 +382,7 @@ rule coq_bol = parse
 (*s Scanning Coq elsewhere *)
 
 and coq = parse
-  | "\n" 
+  | nl 
       { line_break(); coq_bol lexbuf }
   | "(**" space_nl
       { end_coq (); start_doc (); 
@@ -393,7 +394,7 @@ and coq = parse
 	  if eol then begin line_break(); coq_bol lexbuf end 
           else coq lexbuf
       }
-  | '\n'+ space* "]]"
+  | nl+ space* "]]"
       { if not !formatted then begin symbol (lexeme lexbuf); coq lexbuf end }
   | eof 
       { () }
@@ -449,19 +450,19 @@ and doc_bol = parse
 (*s Scanning documentation elsewhere *)
 
 and doc = parse
-  | "\n"
+  | nl
       { char '\n'; doc_bol lexbuf }
   | "["
       { brackets := 1; 
 	start_inline_coq (); escaped_coq lexbuf; end_inline_coq ();
 	doc lexbuf }
-  | "[[" '\n' space*
+  | "[[" nl space*
       { formatted := true; line_break (); start_inline_coq ();
 	indentation (count_spaces (lexeme lexbuf)); 
 	let eol = body_bol lexbuf in 
 	  end_inline_coq (); formatted := false;
 	  if eol then doc_bol lexbuf else doc lexbuf}
-  | '*'* "*)" space* '\n'
+  | '*'* "*)" space* nl
       { true }
   | '*'* "*)"
       { false }
@@ -504,7 +505,7 @@ and escaped_html = parse
   | _   { html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
 and verbatim = parse
-  | "\n>>" { verbatim_char '\n'; stop_verbatim () }
+  | "nl>>" { verbatim_char '\n'; stop_verbatim () }
   | eof { stop_verbatim () }
   | _ { verbatim_char (lexeme_char lexbuf 0); verbatim lexbuf }
 
@@ -570,12 +571,13 @@ and body_bol = parse
   | _ { backtrack lexbuf; body lexbuf }
 
 and body = parse
-  | '\n' {line_break(); body_bol lexbuf}
-  | '\n'+ space* "]]"
+  | nl {line_break(); body_bol lexbuf}
+  | nl+ space* "]]"
       { if not !formatted then begin symbol (lexeme lexbuf); body lexbuf end else true }
   | eof { false }
-  | '.' space* '\n' | '.' space* eof { char '.'; line_break(); true }      
+  | '.' space* nl | '.' space* eof { char '.'; line_break(); true }      
   | '.' space+ { char '.'; char ' '; false }
+  | '"' { char '"'; notation lexbuf; body lexbuf }
   | "(*" { let eol = comment lexbuf in 
 	     if eol then begin line_break(); body_bol lexbuf end else body lexbuf }
   | identifier 
@@ -588,6 +590,18 @@ and body = parse
   | _ { let c = lexeme_char lexbuf 0 in 
 	  char c; 
           body lexbuf }
+
+and notation_bol = parse
+  | space+
+      { indentation (count_spaces (lexeme lexbuf)); notation lexbuf }
+  | _ { backtrack lexbuf; notation lexbuf }
+
+and notation = parse
+  | nl { line_break(); notation_bol lexbuf }
+  | '"' { char '"'; false }
+  | _ { let c = lexeme_char lexbuf 0 in 
+	  char c; 
+          notation lexbuf }
 
 and skip_hide = parse
   | eof | end_hide { () }
