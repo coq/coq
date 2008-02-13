@@ -561,7 +561,11 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
 
 open Unification
 
-let auto_unif_flags = { modulo_delta = true; use_metas_eagerly = false }
+let auto_unif_flags = {
+  modulo_conv_on_closed_terms = true; 
+  use_metas_eagerly = false;
+  modulo_conv = false; 
+}
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 

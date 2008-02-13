@@ -43,6 +43,7 @@ open Decl_kinds
 open Evarutil
 open Indrec
 open Pretype_errors
+open Unification
 
 exception Bound
 
@@ -822,7 +823,13 @@ let last_arg c = match kind_of_term c with
   | App (f,cl) ->  
       array_last cl
   | _ -> anomaly "last_arg"
-	
+
+let elim_flags = {
+  modulo_conv_on_closed_terms = true; 
+  use_metas_eagerly = true;
+  modulo_conv = false
+}
+
 let elimination_clause_scheme with_evars allow_K elimclause indclause gl = 
   let indmv = 
     (match kind_of_term (last_arg elimclause.templval.rebus) with
@@ -831,7 +838,8 @@ let elimination_clause_scheme with_evars allow_K elimclause indclause gl =
              (str "The type of elimination clause is not well-formed")) 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause in 
-  res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K gl
+  res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K ~flags:elim_flags
+    gl
 
 (* cast added otherwise tactics Case (n1,n2) generates (?f x y) and 
  * refine fails *)

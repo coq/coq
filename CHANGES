@@ -96,7 +96,6 @@ Tactic Language
   hence, the "rec" keyword can be used to turn the argument of a
   "let ... in ..." into a lazy one.
 
-
 Tactics
 
 - New tactics [apply -> term], [apply <- term], [apply -> term in
@@ -122,6 +121,9 @@ Tactics
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
 - New tactic "dependent induction H [ generalizing id_1 .. id_n ]" to do 
   induction-inversion on instantiated inductive families à la BasicElim.
+- Tactic apply now able to reason modulo unfolding of constants
+  (possible source of incompatibility in situations where apply may fail, 
+   e.g.  as argument of a try or a repeat and in a ltac function).
 
 Type Classes
 

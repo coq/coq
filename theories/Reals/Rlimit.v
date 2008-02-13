@@ -560,9 +560,9 @@ Proof.
       | apply Rlt_le_trans with (Rmin delta1 delta2);
         [ assumption | apply Rmin_l ] ].
   change (0 < eps * (Rsqr l / 2)) in |- *; unfold Rdiv in |- *;
-    repeat rewrite Rmult_assoc; repeat apply Rmult_lt_0_compat.
+    repeat rewrite Rmult_assoc; apply Rmult_lt_0_compat.
   assumption.
-  apply Rsqr_pos_lt; assumption.
+  apply Rmult_lt_0_compat. apply Rsqr_pos_lt; assumption.
   apply Rinv_0_lt_compat; cut (0%nat <> 2%nat);
     [ intro H3; generalize (lt_INR_0 2 (neq_O_lt 2 H3)); unfold INR in |- *;
       intro; assumption

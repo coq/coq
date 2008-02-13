@@ -96,6 +96,13 @@ let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
 	metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 
+let expand_constant env c = 
+  let (ids,csts) = Conv_oracle.freeze() in
+  match kind_of_term c with
+  | Const cst when Cpred.mem cst csts -> constant_opt_value env cst
+  | Var id when Idpred.mem id ids -> named_body id env
+  | _ -> None
+
 (*******************************)
 
 (* Unification à l'ordre 0 de m et n: [unify_0 env sigma cv_pb m n]
@@ -116,20 +123,28 @@ let unify_r2l x = x
 let sort_eqns = unify_r2l
 *)
 
-type unify_flags = { modulo_delta : bool; use_metas_eagerly : bool }
+type unify_flags = { 
+  modulo_conv_on_closed_terms : bool; 
+  use_metas_eagerly : bool;
+  modulo_conv : bool
+}
 
-let default_unify_flags = { modulo_delta = true; use_metas_eagerly = true }
+let default_unify_flags = {
+  modulo_conv_on_closed_terms = true;
+  use_metas_eagerly = true;
+  modulo_conv = true 
+}
 
-let unify_0_with_initial_metas metas env sigma cv_pb flags m n =
+let unify_0_with_initial_metas metas is_subterm env sigma cv_pb flags m n =
   let nb = nb_rel env in
-  let trivial_unify pb (metasubst,_ as substn) m n =
-    let metas = if flags.use_metas_eagerly then metasubst else metas in
+  let trivial_unify pb (metasubst,_) m n =
     match subst_defined_metas metas m with
-      | Some m when
-	  (if flags.modulo_delta then is_fconv (conv_pb_of pb) env sigma m n
-	  else eq_constr m n) -> substn
-      | _ -> error_cannot_unify env sigma (m,n) in
-  let rec unirec_rec curenv pb ((metasubst,evarsubst) as substn) curm curn =
+    | Some m ->
+	if flags.modulo_conv_on_closed_terms 
+	then is_fconv (conv_pb_of pb) env sigma m n
+	else eq_constr m n
+    | _ -> false in
+  let rec unirec_rec curenv pb b ((metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_castappevar sigma curm
     and cN = Evarutil.whd_castappevar sigma curn in 
       match (kind_of_term cM,kind_of_term cN) with
@@ -152,14 +167,19 @@ let unify_0_with_initial_metas metas env sigma cv_pb flags m n =
 	| Evar ev, _ -> metasubst,((ev,cN)::evarsubst)
 	| _, Evar ev -> metasubst,((ev,cM)::evarsubst)
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
-	    unirec_rec (push_rel_assum (na,t1) curenv) topconv
-	      (unirec_rec curenv topconv substn t1 t2) c1 c2
+	    unirec_rec (push_rel_assum (na,t1) curenv) topconv true
+	      (unirec_rec curenv topconv true substn t1 t2) c1 c2
 	| Prod (na,t1,c1), Prod (_,t2,c2) ->
-	    unirec_rec (push_rel_assum (na,t1) curenv) (prod_pb pb)
-	      (unirec_rec curenv topconv substn t1 t2) c1 c2
-	| LetIn (_,b,_,c), _ -> unirec_rec curenv pb substn (subst1 b c) cN
-	| _, LetIn (_,b,_,c) -> unirec_rec curenv pb substn cM (subst1 b c)
+	    unirec_rec (push_rel_assum (na,t1) curenv) (prod_pb pb) true
+	      (unirec_rec curenv topconv true substn t1 t2) c1 c2
+	| LetIn (_,a,_,c), _ -> unirec_rec curenv pb b substn (subst1 a c) cN
+	| _, LetIn (_,a,_,c) -> unirec_rec curenv pb b substn cM (subst1 a c)
 	    
+	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
+            array_fold_left2 (unirec_rec curenv topconv true)
+	      (unirec_rec curenv topconv true
+		  (unirec_rec curenv topconv true substn p1 p2) c1 c2) cl1 cl2
+
 	| App (f1,l1), _ when
 	    isMeta f1 & is_unification_pattern f1 l1 & not (dependent f1 cN) ->
 	      solve_pattern_eqn_array curenv f1 l1 cN substn
@@ -171,36 +191,53 @@ let unify_0_with_initial_metas metas env sigma cv_pb flags m n =
 	| App (f1,l1), App (f2,l2) ->
 	      let len1 = Array.length l1
 	      and len2 = Array.length l2 in
-              let (f1,l1,f2,l2) =
-		if len1 = len2 then (f1,l1,f2,l2)
-		else if len1 < len2 then
-		  let extras,restl2 = array_chop (len2-len1) l2 in 
-		    (f1, l1, appvect (f2,extras), restl2)
-		else 
-		  let extras,restl1 = array_chop (len1-len2) l1 in 
-		    (appvect (f1,extras), restl1, f2, l2) in
-	      let pb = ConvUnderApp (len1,len2) in
-		(try
-		    array_fold_left2 (unirec_rec curenv topconv)
-		      (unirec_rec curenv pb substn f1 f2) l1 l2
+	      (try
+		  let (f1,l1,f2,l2) =
+		    if len1 = len2 then (f1,l1,f2,l2)
+		    else if len1 < len2 then
+		      let extras,restl2 = array_chop (len2-len1) l2 in 
+		      (f1, l1, appvect (f2,extras), restl2)
+		    else 
+		      let extras,restl1 = array_chop (len1-len2) l1 in 
+		      (appvect (f1,extras), restl1, f2, l2) in
+		  let pb = ConvUnderApp (len1,len2) in
+		  array_fold_left2 (unirec_rec curenv topconv true)
+		    (unirec_rec curenv pb true substn f1 f2) l1 l2
 		  with ex when precatchable_exception ex ->
-		    trivial_unify pb substn cM cN)
-	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-            array_fold_left2 (unirec_rec curenv topconv)
-	      (unirec_rec curenv topconv
-		  (unirec_rec curenv topconv substn p1 p2) c1 c2) cl1 cl2
-	| _ -> trivial_unify pb substn cM cN
+		    expand curenv pb b substn cM f1 l1 cN f2 l2)
+
+	| _ -> 
+	    let (f1,l1) = 
+	      match kind_of_term cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in
+	    let (f2,l2) =
+	      match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
+	    expand curenv pb b substn cM f1 l1 cN f2 l2
+
+  and expand curenv pb b substn cM f1 l1 cN f2 l2 =
+    if trivial_unify pb substn cM cN then substn
+    else if b & flags.modulo_conv then
+      match expand_constant curenv f1 with
+      | Some c ->
+	  unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
+      | None ->
+      match expand_constant curenv f2 with
+      | Some c ->
+	  unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
+      | None ->
+      error_cannot_unify env sigma (cM,cN)
+    else
+      error_cannot_unify env sigma (cM,cN)
+
   in
     if (not(occur_meta m)) &&
-      (if flags.modulo_delta then is_fconv (conv_pb_of cv_pb) env sigma m n
+      (if flags.modulo_conv then is_fconv (conv_pb_of cv_pb) env sigma m n
        else eq_constr m n)
     then 
       (metas,[])
     else 
-      let (mc,ec) = unirec_rec env cv_pb (metas,[]) m n in
-	((*sort_eqns*) mc, (*sort_eqns*) ec)
+      unirec_rec env cv_pb is_subterm (metas,[]) m n
 
-let unify_0 = unify_0_with_initial_metas []
+let unify_0 = unify_0_with_initial_metas [] true
 
 let left = true
 let right = false
@@ -482,7 +519,7 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
 let w_unify_core_0 env with_types cv_pb flags m n evd =
   let (mc1,evd') = retract_coercible_metas evd in
   let (mc2,ec) = 
-    unify_0_with_initial_metas mc1 env (evars_of evd') cv_pb flags m n
+    unify_0_with_initial_metas mc1 false env (evars_of evd') cv_pb flags m n
   in 
   w_merge env with_types flags mc2 ec evd'
 

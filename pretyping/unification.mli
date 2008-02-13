@@ -14,7 +14,11 @@ open Environ
 open Evd
 (*i*)
 
-type unify_flags = { modulo_delta : bool; use_metas_eagerly : bool }
+type unify_flags = { 
+  modulo_conv_on_closed_terms : bool; 
+  use_metas_eagerly : bool;
+  modulo_conv : bool
+}
 
 val default_unify_flags : unify_flags
 
