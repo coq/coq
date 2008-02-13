@@ -88,9 +88,12 @@ let setoid_morphism = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_morp
 let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv_refl")
   
 let arrow_morphism a b = 
-  mkLambda (Name (id_of_string "A"), a, 
-	   mkLambda (Name (id_of_string "B"), b, 
-		    mkProd (Anonymous, mkRel 2, mkRel 2)))
+  if isprop a && isprop b then
+    Lazy.force impl
+  else
+    mkLambda (Name (id_of_string "A"), a, 
+	     mkLambda (Name (id_of_string "B"), b, 
+		      mkProd (Anonymous, mkRel 2, mkRel 2)))
     
 let setoid_refl pars x = 
   applistc (Lazy.force setoid_refl_proj) (pars @ [x])

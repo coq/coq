@@ -184,6 +184,12 @@ Ltac relation_refl :=
 
     | [ |- ?R ?A ?B ?C ?D ?X ?X ] => apply (reflexive (R:=R A B C D) X)
     | [ H : ?R ?A ?B ?C ?D ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D) H)
+
+    | [ |- ?R ?A ?B ?C ?D ?E ?X ?X ] => apply (reflexive (R:=R A B C D E) X)
+    | [ H : ?R ?A ?B ?C ?D ?E ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E) H)
+
+    | [ |- ?R ?A ?B ?C ?D ?E ?F ?X ?X ] => apply (reflexive (R:=R A B C D E F) X)
+    | [ H : ?R ?A ?B ?C ?D ?E ?F ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E F) H)
   end.
 
 Ltac refl := relation_refl.
@@ -200,6 +206,9 @@ Ltac relation_sym :=
 
     | [ H : ?R ?A ?B ?C ?D ?X ?Y |- ?R ?A ?B ?C ?D ?Y ?X ] => apply (symmetric (R:=R A B C D) (x:=X) (y:=Y) H)
 
+    | [ H : ?R ?A ?B ?C ?D ?E ?X ?Y |- ?R ?A ?B ?C ?D ?E ?Y ?X ] => apply (symmetric (R:=R A B C D E) (x:=X) (y:=Y) H)
+
+    | [ H : ?R ?A ?B ?C ?D ?E ?F ?X ?Y |- ?R ?A ?B ?C ?D ?E ?F ?Y ?X ] => apply (symmetric (R:=R A B C D E F) (x:=X) (y:=Y) H)
   end.
 
 Ltac relation_symmetric := 
@@ -213,6 +222,10 @@ Ltac relation_symmetric :=
     | [ |- ?R ?A ?B ?C ?Y ?X ] => apply (symmetric (R:=R A B C) (x:=X) (y:=Y))
 
     | [ |- ?R ?A ?B ?C ?D ?Y ?X ] => apply (symmetric (R:=R A B C D) (x:=X) (y:=Y))
+
+    | [ |- ?R ?A ?B ?C ?D ?E ?Y ?X ] => apply (symmetric (R:=R A B C D E) (x:=X) (y:=Y))
+
+    | [ |- ?R ?A ?B ?C ?D ?E ?F ?Y ?X ] => apply (symmetric (R:=R A B C D E F) (x:=X) (y:=Y))
   end.
 
 Ltac sym := relation_symmetric.
@@ -236,6 +249,9 @@ Ltac relation_trans :=
 
     | [ H : ?R ?A ?B ?C ?D ?E ?X ?Y, H' : ?R ?A ?B ?C ?D ?E ?Y ?Z |- ?R ?A ?B ?C ?D ?E ?X ?Z ] => 
       apply (transitive (R:=R A B C D E) (x:=X) (y:=Y) (z:=Z) H H')
+
+    | [ H : ?R ?A ?B ?C ?D ?E ?F ?X ?Y, H' : ?R ?A ?B ?C ?D ?E ?F ?Y ?Z |- ?R ?A ?B ?C ?D ?E ?F ?X ?Z ] => 
+      apply (transitive (R:=R A B C D E F) (x:=X) (y:=Y) (z:=Z) H H')
   end.
 
 Ltac relation_transitive Y := 
@@ -254,6 +270,12 @@ Ltac relation_transitive Y :=
 
     | [ |- ?R ?A ?B ?C ?D ?X ?Z ] => 
       apply (transitive (R:=R A B C D) (x:=X) (y:=Y) (z:=Z))
+
+    | [ |- ?R ?A ?B ?C ?D ?E ?X ?Z ] => 
+      apply (transitive (R:=R A B C D E) (x:=X) (y:=Y) (z:=Z))
+
+    | [ |- ?R ?A ?B ?C ?D ?E ?F ?X ?Z ] => 
+      apply (transitive (R:=R A B C D E F) (x:=X) (y:=Y) (z:=Z))
   end.
 
 Ltac trans Y := relation_transitive Y.

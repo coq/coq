@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -9,7 +8,7 @@
 
 (* Standard functions and proofs about them.
  * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - Universit�copyright Paris Sud
+ * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
  *              91405 Orsay, France *)
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
@@ -19,28 +18,26 @@ Unset Strict Implicit.
 
 Require Export Coq.Program.FunctionalExtensionality.
 
-Definition compose `A B C` (g : B -> C) (f : A -> B) := fun x : A => g (f x).
-
-Definition arrow (A B : Type) := A -> B.
-
-Definition impl (A B : Prop) : Prop := A -> B.
-
-Definition id `A` := fun x : A => x.
-
-Hint Unfold compose.
-
-Notation " g 'o' f " := (compose g f)  (at level 50, left associativity) : program_scope.
+Notation  "'λ' x : T , y" := (fun x:T => y) (at level 1, x,T,y at level 10) : program_scope.
 
 Open Scope program_scope.
 
-Lemma compose_id_left : forall A B (f : A -> B), id o f = f.
+Definition id `A` := λ x : A, x.
+
+Definition compose `A B C` (g : B -> C) (f : A -> B) := λ x : A , g (f x).
+
+Hint Unfold compose.
+
+Notation " g ∘ f " := (compose g f)  (at level 50, left associativity) : program_scope.
+
+Lemma compose_id_left : forall A B (f : A -> B), id ∘ f = f.
 Proof.
   intros.
   unfold id, compose.
   symmetry ; apply eta_expansion.
 Qed.
 
-Lemma compose_id_right : forall A B (f : A -> B), f o id = f.
+Lemma compose_id_right : forall A B (f : A -> B), f ∘ id = f.
 Proof.
   intros.
   unfold id, compose.
@@ -48,12 +45,17 @@ Proof.
 Qed.
 
 Lemma compose_assoc : forall A B C D (f : A -> B) (g : B -> C) (h : C -> D), 
-  h o (g o f) = h o g o f.
+  h ∘ (g ∘ f) = h ∘ g ∘ f.
 Proof.
+  intros.
   reflexivity.
 Qed.
 
 Hint Rewrite @compose_id_left @compose_id_right @compose_assoc : core.
+
+Definition arrow (A B : Type) := A -> B.
+
+Definition impl (A B : Prop) : Prop := A -> B.
 
 Notation " f '#' x " := (f x) (at level 100, x at level 200, only parsing).
 
@@ -126,13 +128,13 @@ Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..).
 
 (** n-ary exists ! *)
 
-Notation "'exists' x y , p" := (ex (fun x => (ex (fun y => p))))
+Notation " 'exists' x y , p" := (ex (fun x => (ex (fun y => p))))
   (at level 200, x ident, y ident, right associativity) : type_scope.
 
-Notation "'exists' x y z , p" := (ex (fun x => (ex (fun y => (ex (fun z => p))))))
+Notation " 'exists' x y z , p" := (ex (fun x => (ex (fun y => (ex (fun z => p))))))
   (at level 200, x ident, y ident, z ident, right associativity) : type_scope.
 
-Notation "'exists' x y z w , p" := (ex (fun x => (ex (fun y => (ex (fun z => (ex (fun w => p))))))))
+Notation " 'exists' x y z w , p" := (ex (fun x => (ex (fun y => (ex (fun z => (ex (fun w => p))))))))
   (at level 200, x ident, y ident, z ident, w ident, right associativity) : type_scope.
 
 Tactic Notation "exist" constr(x) := exists x.

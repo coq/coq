@@ -241,15 +241,24 @@ module SearchProblem = struct
 
   let success s = (sig_it (fst s.tacres)) = []
 
+  let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl)
+    
+  let pr_goals gls =
+    let evars = Evarutil.nf_evars (Refiner.project gls) in
+      prlist (pr_ev evars) (sig_it gls)
+	
   let filter_tactics (glls,v) l =
 (*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
+(*     let evars = Evarutil.nf_evars (Refiner.project glls) in *)
+(*     msg (str"Goal:" ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
     let rec aux = function
       | [] -> []
       | (tac,pptac) :: tacl -> 
 	  try 
 	    let (lgls,ptl) = apply_tac_list tac glls in 
 	    let v' p = v (ptl p) in
-(* 	      msg (hov 0 (pptac ++ str"\n")); *)
+(* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
+(* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
 	      ((lgls,v'),pptac) :: aux tacl
 	  with e when Logic.catchable_exception e ->
 	    aux tacl
