@@ -84,6 +84,12 @@ save precious time:
    build system dares to), use GOTO_STAGE=n. This will jump into stage
    n and try to do the targets you gave in that stage.
 
+ - To disable all dependency recalculation, use the NO_RECALC_DEPS=1
+   option. It disables REcalculation of dependencies, not calculation
+   of dependencies. In other words, if a .d file does not exist, it is
+   still created, but it is not updated every time the source file
+   (e.g. .ml) is changes.
+
 Dependencies
 ------------
 

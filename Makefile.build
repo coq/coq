@@ -116,6 +116,14 @@ else
  VO_TOOLS_STRICT:=$(VO_TOOLS_DEP)
 endif
 
+ifdef NO_RECALC_DEPS
+  D_DEPEND_BEFORE_SRC:=|
+  D_DEPEND_AFTER_SRC:=
+else
+  D_DEPEND_BEFORE_SRC:=
+  D_DEPEND_AFTER_SRC:=|
+endif
+
 ###########################################################################
 # Compilation option for .c files 
 ###########################################################################
@@ -817,12 +825,12 @@ ifdef NO_RECOMPILE_ML4
 else
   SEP:=
 endif
-%.ml4.d: %.ml4
+%.ml4.d: $(D_DEPEND_BEFORE_SRC) %.ml4
 	$(SHOW)'CAMLP4DEPS $<'
 	$(HIDE)( echo -n '$*.cmo $*.cmx $*.ml4.ml.d: $(SEP)' && $(CAMLP4DEPS) "$<" ) > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
-%.ml4.ml.d: %.ml4 | $(GENFILES) $(ML4FILES:.ml4=.ml) %.ml4.d
+%.ml4.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml4 $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILES:.ml4=.ml) %.ml4.d
 #Critical section:
 # Nobody (in a make -j) should touch the .ml file here.
 	$(SHOW)'OCAMLDEP4 $<'
@@ -832,11 +840,11 @@ endif
 	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $*.ml
 #End critical section
 
-%.ml.d: %.ml | $(GENFILES) $(ML4FILES:.ml4=.ml)
+%.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILES:.ml4=.ml)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $< > "$@"
 
-%.mli.d: %.mli | $(GENFILES) $(ML4FILES:.ml4=.ml)
+%.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILES:.ml4=.ml)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $< > "$@"
 
@@ -857,7 +865,7 @@ endif
 # We could also make a complex shell script with ERR trapping and all
 # that, but more complex and fragile than this.
 # make will delete .raw files because they are intermediate.
-%.v.d.raw: %.v | $(COQDEP)
+%.v.d.raw: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP)
 	$(SHOW)'COQDEP    $<'
 	$(HIDE)$(COQDEP) -slash -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
@@ -866,7 +874,7 @@ endif
 	$(HIDE)sed 's/\(.*\)\.vo[[:space:]]*:/\1.vo \1.glob:/' < "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
-%.c.d: %.c | $(GENHFILES)
+%.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) -isystem $(CAMLHLIB) $< > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
