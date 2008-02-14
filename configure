@@ -35,7 +35,8 @@ usage () {
     echo "-bindir"
     echo "-libdir"
     echo "-mandir"
-    echo -e "\tSpecifies where to install bin/lib/man files resp.\n"
+    echo "-docdir"
+    echo -e "\tSpecifies where to install bin/lib/man/doc files resp.\n"
     echo "-emacslib"
     echo "-emacs"
     echo -e "\tSpecifies where emacs files are to be installed\n"
@@ -101,6 +102,7 @@ prefix_spec=no
 bindir_spec=no
 libdir_spec=no
 mandir_spec=no
+docdir_spec=no
 emacslib_spec=no
 emacs_spec=no
 camldir_spec=no
@@ -140,6 +142,9 @@ while : ; do
 		      shift;;
     -mandir|--mandir) mandir_spec=yes
                       mandir="$2"
+		      shift;;
+    -docdir|--mandir) docdir_spec=yes
+                      docdir="$2"
 		      shift;;
     -emacslib|--emacslib) emacslib_spec=yes
                           emacslib="$2"
@@ -540,7 +545,7 @@ esac
 #esac
 
 ###########################################
-# bindir, libdir, mandir, etc.
+# bindir, libdir, mandir, docdir, etc.
 
 case $src_spec in
   no) COQTOP=${COQSRC}
@@ -556,14 +561,16 @@ case $ARCH in
 	 bindir_def='C:\coq\bin'
 	 libdir_def='C:\coq\lib'
 	 mandir_def='C:\coq\man'
+	 docdir_def='C:\coq\doc'
 	 emacslib_def='C:\coq\emacs'
          coqdocdir_def='C:\coq\latex';;
   *)
 	 bindir_def=/usr/local/bin
 	 libdir_def=/usr/local/lib/coq
 	 mandir_def=/usr/local/man
-	 emacslib_def=/usr/share/emacs/site-lisp
-         coqdocdir_def=/usr/share/texmf/tex/latex/misc;;
+	 docdir_def=/usr/local/share/doc
+	 emacslib_def=/usr/local/share/emacs/site-lisp
+         coqdocdir_def=/usr/local/share/texmf/tex/latex/misc;;
 esac
 
 emacs_def=emacs
@@ -604,6 +611,18 @@ case $mandir_spec/$prefix_spec/$local in
         read MANDIR
 	case $MANDIR in
 	    "") MANDIR=$mandir_def;;
+	    *) true;;
+	esac;;
+esac
+
+case $docdir_spec/$prefix_spec/$local in
+    yes/*/*) DOCDIR=$docdir;;
+    */yes/*) DOCDIR=$prefix/share/doc ;;
+    */*/true) DOCDIR=$COQTOP/man ;;
+    *)  echo "Where should I install the Coq documentation [$docdir_def] ?"
+        read DOCDIR
+	case $DOCDIR in
+	    "") DOCDIR=$docdir_def;;
 	    *) true;;
 	esac;;
 esac
@@ -694,10 +713,11 @@ echo "  CoqIde                            : $COQIDE"
 echo ""
 
 echo "  Paths for true installation:"
-echo "    binaries   will be copied in $BINDIR"
-echo "    library    will be copied in $LIBDIR"
-echo "    man pages  will be copied in $MANDIR"
-echo "    emacs mode will be copied in $EMACSLIB"
+echo "    binaries      will be copied in $BINDIR"
+echo "    library       will be copied in $LIBDIR"
+echo "    man pages     will be copied in $MANDIR"
+echo "    documentation will be copied in $MANDIR"
+echo "    emacs mode    will be copied in $EMACSLIB"
 echo ""
 
 #####################################################
@@ -720,6 +740,7 @@ case $ARCH in
 	ESCCAMLDIR=`echo $CAMLBIN |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
   	ESCMANDIR=`echo $MANDIR |sed -e 's|\\\|\\\\\\\|g'`
+  	ESCDOCDIR=`echo $DOCDIR |sed -e 's|\\\|\\\\\\\|g'`
    	ESCEMACSLIB=`echo $EMACSLIB |sed -e 's|\\\|\\\\\\\|g'`
    	ESCCOQDOCDIR=`echo $COQDOCDIR |sed -e 's|\\\|\\\\\\\|g'`
    	ESCCAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|\\\\\\\|g'`
@@ -733,6 +754,7 @@ case $ARCH in
 	ESCCAMLDIR="$CAMLBIN"
 	ESCCAMLLIB="$CAMLLIB"
   	ESCMANDIR="$MANDIR"
+  	ESCDOCDIR="$DOCDIR"
    	ESCEMACSLIB="$EMACSLIB"
    	ESCCOQDOCDIR="$COQDOCDIR"
    	ESCCAMLP4BIN="$CAMLP4BIN"
@@ -797,6 +819,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|BINDIRDIRECTORY|$ESCBINDIR|" \
     -e "s|COQLIBDIRECTORY|$ESCLIBDIR|" \
     -e "s|MANDIRDIRECTORY|$ESCMANDIR|" \
+    -e "s|DOCDIRDIRECTORY|$ESCDOCDIR|" \
     -e "s|EMACSLIBDIRECTORY|$ESCEMACSLIB|" \
     -e "s|EMACSCOMMAND|$EMACS|" \
     -e "s|COQDOCDIRECTORY|$ESCCOQDOCDIR|" \

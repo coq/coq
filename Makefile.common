@@ -53,6 +53,46 @@ TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
       $(COQWC) $(COQDOC)
 
 ###########################################################################
+# Documentation
+###########################################################################
+
+LATEX:=latex
+BIBTEX:=bibtex -min-crossrefs=10
+MAKEINDEX:=makeindex
+PDFLATEX:=pdflatex
+HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
+export TEXINPUTS:=$(COQSRC)/doc:$(HEVEALIB):
+COQTEXOPTS:=-n 72 -image $(COQSRC)/$(COQTOP) -v -sl -small
+
+REFMANCOQTEXFILES:=\
+  doc/refman/RefMan-gal.v.tex doc/refman/RefMan-ext.v.tex \
+  doc/refman/RefMan-mod.v.tex doc/refman/RefMan-tac.v.tex \
+  doc/refman/RefMan-cic.v.tex doc/refman/RefMan-lib.v.tex \
+  doc/refman/RefMan-tacex.v.tex doc/refman/RefMan-syn.v.tex \
+  doc/refman/RefMan-oth.v.tex doc/refman/RefMan-ltac.v.tex \
+  doc/refman/RefMan-decl.v.tex \
+  doc/refman/Cases.v.tex doc/refman/Coercion.v.tex doc/refman/Extraction.v.tex \
+  doc/refman/Program.v.tex doc/refman/Omega.v.tex doc/refman/Polynom.v.tex \
+  doc/refman/Setoid.v.tex doc/refman/Helm.tex # doc/refman/Natural.v.tex
+
+REFMANTEXFILES:=\
+  doc/refman/headers.sty \
+  doc/refman/Reference-Manual.tex doc/refman/RefMan-pre.tex \
+  doc/refman/RefMan-int.tex doc/refman/RefMan-pro.tex \
+  doc/refman/RefMan-com.tex \
+  doc/refman/RefMan-uti.tex doc/refman/RefMan-ide.tex \
+  doc/refman/RefMan-add.tex doc/refman/RefMan-modr.tex \
+  $(REFMANCOQTEXFILES) \
+
+REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps
+
+REFMANFILES:=$(REFMANTEXFILES) $(COMMON) $(REFMANEPSFILES) doc/refman/biblio.bib
+
+REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
+
+
+
+###########################################################################
 # Object and Source files 
 ###########################################################################
 
@@ -831,9 +871,10 @@ VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   setoids sorting natural integer rational numbers noreal \
   omega ring setoid_ring dp xml extraction field fourier jprover \
   funind cc subtac rtauto
+DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq rectutorial
 STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \
   coqlight states pcoq-files check init theories theories-light contrib \
-  doc glob.dump $(VO_TARGETS)
+  $(DOC_TARGETS) $(VO_TARGETS)
 
 
 # For emacs: 

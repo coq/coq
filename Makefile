@@ -156,11 +156,21 @@ indepclean:
 	rm -f revision
 
 docclean:
-ifdef COQ_CONFIGURED
-	$(MAKE) -C doc clean
-else
-	$(warning Clean of documentation requires "./configure" to be run; not done.)
-endif
+	rm -f doc/*/*.dvi doc/*/*.aux doc/*/*.log doc/*/*.bbl doc/*/*.blg doc/*/*.toc \
+	doc/*/*.idx doc/*/*~ doc/*/*.ilg doc/*/*.ind doc/*/*.dvi.gz doc/*/*.ps.gz doc/*/*.pdf.gz\
+	doc/*/*.???idx doc/*/*.???ind doc/*/*.v.tex doc/*/*.atoc doc/*/*.lof\
+	doc/*/*.hatoc doc/*/*.haux doc/*/*.hcomind doc/*/*.herrind doc/*/*.hidx doc/*/*.hind \
+	doc/*/*.htacind doc/*/*.htoc doc/*/*.v.html
+	rm -f doc/stdlib/index-list.html doc/stdlib/index-body.html \
+	  doc/stdlib/Library.coqdoc.tex doc/stdlib/library.files \
+	  doc/stdlib/library.files.ls
+	rm -f doc/*/*.ps doc/*/*.pdf 
+	rm -rf doc/refman/html doc/stdlib/html doc/faq/html doc/tutorial/tutorial.v.html
+	rm -f doc/stdlib/html/*.html
+	rm -f doc/refman/euclid.ml{,i} doc/refman/heapsort.ml{,i}
+	rm -f doc/common/version.tex
+	rm -f doc/refman/*.eps doc/refman/Reference-Manual.html
+	rm -f doc/coq.tex
 
 archclean: clean-ide cleantheories
 	rm -f $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
