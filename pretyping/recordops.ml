@@ -115,12 +115,13 @@ that maps the pair (Li,ci) to the following data
 
 type obj_typ = {
   o_DEF : constr;
+  o_INJ : int;      (* position of trivial argument (negative= none) *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
   o_TCOMPS : constr list } (* ordered *)
 
 let object_table =
-  (ref [] : ((global_reference * global_reference) * obj_typ) list ref)
+  (ref [] : ((global_reference * global_reference option) * obj_typ) list ref)
 
 let canonical_projections () = !object_table
 
@@ -128,14 +129,15 @@ let keep_true_projections projs kinds =
   map_succeed (function (p,true) -> p | _ -> failwith "")
     (List.combine projs kinds)
 
-(* Intended to always success *)
+(* Intended to always succeed *)
 let compute_canonical_projections (con,ind) =
   let v = mkConst con in
   let c = Environ.constant_value (Global.env()) con in
   let lt,t = Reductionops.splay_lambda (Global.env()) Evd.empty c in
   let lt = List.rev (List.map snd lt) in
   let args = snd (decompose_app t) in
-  let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } = lookup_structure ind in
+  let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } = 
+    lookup_structure ind in
   let params, projs = list_chop p args in
   let lpj = keep_true_projections lpj kl in
   let lps = List.combine lpj projs in
@@ -145,12 +147,22 @@ let compute_canonical_projections (con,ind) =
 	 match spopt with
            | Some proji_sp ->
 	       let c, args = decompose_app t in
-	       (try (ConstRef proji_sp, global_of_constr c, args) :: l
-                with Not_found -> l)
+		 begin
+		   try 
+		     let ogc,oinj = 
+		       try  Some (global_of_constr c) , -1  
+		       with _ -> 
+			 try  
+			   None,pred (destRel c) 
+			 with _ -> raise Not_found 
+		     in
+   		       ((ConstRef proji_sp, ogc,oinj , args) :: l)
+                   with Not_found -> l 
+		 end
 	   | _ -> l)
       [] lps in
-  List.map (fun (refi,c,argj) ->
-    (refi,c),{o_DEF=v; o_TABS=lt; o_TPARAMS=params; o_TCOMPS=argj})
+  List.map (fun (refi,c,inj,argj) ->
+    (refi,c),{o_DEF=v; o_INJ=inj; o_TABS=lt; o_TPARAMS=params; o_TCOMPS=argj})
     comp
 
 let open_canonical_structure i (_,o) =

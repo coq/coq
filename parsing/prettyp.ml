@@ -744,7 +744,9 @@ let print_path_between cls clt =
 
 let print_canonical_projections () =
   prlist_with_sep pr_fnl (fun ((r1,r2),o) -> 
-    pr_global r2 ++ str " <- " ++ pr_global r1 ++ str " ( " ++ pr_lconstr o.o_DEF ++ str " )")
+  (match r2 with Some sr2 -> pr_global sr2 | None -> str " _") ++ 
+    str " <- " ++ 
+    pr_global r1 ++ str " ( " ++ pr_lconstr o.o_DEF ++ str " )")
     (canonical_projections ())
 
 (*************************************************************************)

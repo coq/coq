@@ -115,15 +115,22 @@ let apprec_nohdbeta env evd c =
 let check_conv_record (t1,l1) (t2,l2) =
   try
     let proji = global_of_constr t1 in
-    let cstr = global_of_constr t2 in
-    let { o_DEF = c; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } = 
-      lookup_canonical_conversion (proji, cstr) in
+    let canon_s = 
+      begin    
+	try 
+	  let cstr = global_of_constr t2 in
+	    lookup_canonical_conversion (proji, Some cstr)
+	with _ -> lookup_canonical_conversion (proji,None)
+      end in
+    let { o_DEF = c; o_INJ=n; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } = 
+      canon_s in
     let params1, c1, extra_args1 =
       match list_chop (List.length params) l1 with 
 	| params1, c1::extra_args1 -> params1, c1, extra_args1
 	| _ -> assert false in
     let us2,extra_args2 = list_chop (List.length us) l2 in
-    c,bs,(params,params1),(us,us2),(extra_args1,extra_args2),c1
+    c,bs,(params,params1),(us,us2),(extra_args1,extra_args2),c1,
+    (n,applist(t2,l2))
   with _ -> 
     raise Not_found
 
@@ -466,14 +473,15 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| (Rel _ | Var _ | Const _ | Evar _), _ -> assert false
 	| _, (Rel _ | Var _ | Const _ | Evar _) -> assert false
 
-and conv_record env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1) = 
-  let (evd',ks) =
+and conv_record env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) = 
+  let (evd',ks,_) =
     List.fold_left
-      (fun (i,ks) b ->
+      (fun (i,ks,m) b ->
+	 if m=0 then (i,t2::ks, n-1) else
 	 let dloc = (dummy_loc,InternalHole) in
          let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
-	 (i', ev :: ks))
-      (evd,[]) bs
+	 (i', ev :: ks, n - 1))
+      (evd,[],n) bs
   in
   ise_and evd'
     [(fun i ->
