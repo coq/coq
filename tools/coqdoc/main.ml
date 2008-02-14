@@ -94,7 +94,14 @@ let check_if_file_exists f =
     
 let paths = ref []
   
-let add_path m l = paths := (m,l) :: !paths
+let add_path dir name = 
+  (* if dir is relative we add both the relative and absolute name *)
+  if (Filename.is_relative dir) 
+  then 
+    let abs = Filename.concat (Sys.getcwd ()) dir in 
+      paths := (abs,name) :: (dir,name) :: !paths
+  else
+    paths := (dir,name) :: !paths
   
 let exists_dir dir =
   try let _ = Unix.opendir dir in true with Unix.Unix_error _ -> false
@@ -139,36 +146,22 @@ let coq_module file =
   let f = chop_extension file in
     (* remove leading ./ and any number of slashes after *)
   let f = Str.replace_first (Str.regexp "^\\./+") "" f in
-    if (Str.string_before f 1) = "/" then
-      (* f is an absolute path. Prefixes must be matched with the beginning of f,
-       * not prepended
-       *)
-      let rec trypath = function
-	| [] -> make_path f
-	| (p, lg) :: r ->
-            (* make sure p ends with a single '/'
-             * This guarantees that we don't match a file whose name is
-             * of the form p ^ "foo". It means we may miss p itself,
-             * but this does not matter: coqdoc doesn't do anything
-             * of a directory anyway. *)
-            let p = (Str.replace_first (Str.regexp "/*$") "/" p) in
-            let p_quoted = (Str.quote p) in
-              if (Str.string_match (Str.regexp p_quoted) f 0) then
-		make_path (Filename.concat lg (Str.replace_first (Str.regexp (p_quoted ^ "/*")) "" f))
-              else
-		trypath r
-      in trypath !paths
-    else (* f is a relative path *)
-      let rec trypath = function
-	| [] -> 
-	    make_path f
-	| (p,lg) :: r ->
-	    let p_file = Filename.concat p file in
-	      if Sys.file_exists p_file then
-		make_path (Filename.concat lg f)
-	      else
-		trypath r
-      in trypath !paths;;
+  let rec trypath = (function
+    | [] -> make_path f
+    | (p, lg) :: r ->
+        (* make sure p ends with a single '/'
+         * This guarantees that we don't match a file whose name is
+         * of the form p ^ "foo". It means we may miss p itself,
+         * but this does not matter: coqdoc doesn't do anything
+         * of a directory anyway. *)
+        let p = (Str.replace_first (Str.regexp "/*$") "/" p) in
+        let p_quoted = (Str.quote p) in
+          if (Str.string_match (Str.regexp p_quoted) f 0) then
+	    make_path (Filename.concat lg (Str.replace_first (Str.regexp (p_quoted ^ "/*")) "" f))
+          else
+	    trypath r)
+  in
+    trypath !paths 
 
 let what_file f =
   check_if_file_exists f;
