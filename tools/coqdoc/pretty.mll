@@ -599,6 +599,9 @@ and notation_bol = parse
 and notation = parse
   | nl { line_break(); notation_bol lexbuf }
   | '"' { char '"'; false }
+  | token
+      { let s = lexeme lexbuf in
+	  symbol s; notation lexbuf }
   | _ { let c = lexeme_char lexbuf 0 in 
 	  char c; 
           notation lexbuf }
