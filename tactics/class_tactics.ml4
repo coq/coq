@@ -289,8 +289,8 @@ let resolve_all_evars_once debug (mode, depth) env p evd =
   in
   let gls = { it = List.rev goals; sigma = evm } in
   let res_sigma = ref evm in
-    res_sigma := Evarutil.nf_evars (sig_sig gls');
   let gls', valid' = full_eauto debug (mode, depth) [] (gls, valid evm p res_sigma) in
+    res_sigma := Evarutil.nf_evars (sig_sig gls');
     try ignore(valid' []); assert(false) with Found evd' -> Evarutil.nf_evar_defs evd'
 
 exception FoundTerm of constr
