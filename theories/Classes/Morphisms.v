@@ -16,7 +16,6 @@
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
 Require Import Coq.Program.Program.
-Require Import Coq.Classes.Init.
 Require Export Coq.Classes.Relations.
 
 Set Implicit Arguments.
@@ -129,6 +128,10 @@ Program Instance (A : Type) (R : relation A) `B` (R' : relation B)
   Proof.
     destruct respect with x y x0 y0 ; auto.
   Qed.
+
+(** Logical implication [impl] is a morphism for logical equivalence. *)
+
+Program Instance iff_iff_iff_impl_morphism : ? Morphism (iff ++> iff ++> iff) impl.
 
 (** The complement of a relation conserves its morphisms. *)
 
@@ -257,20 +260,20 @@ Program Instance [ Equivalence A R ] (x : A) =>
 
 (** With symmetric relations, variance is no issue ! *)
 
-Program Instance [ Symmetric A R ] B (R' : relation B) 
-  [ Morphism _ (R ++> R') m ] => 
-  sym_contra_morphism : ? Morphism (R --> R') m.
+(* Program Instance (A B : Type) (R : relation A) (R' : relation B) *)
+(*   [ Morphism _ (R ++> R') m ] [ Symmetric A R ] =>  *)
+(*   sym_contra_morphism : ? Morphism (R --> R') m. *)
 
-  Next Obligation.
-  Proof with auto.
-    repeat (red ; intros). apply respect.
-    sym...
-  Qed.
+(*   Next Obligation. *)
+(*   Proof with auto. *)
+(*     repeat (red ; intros). apply respect. *)
+(*     sym... *)
+(*   Qed. *)
 
 (** [R] is reflexive, hence we can build the needed proof. *)
 
-Program Instance [ Reflexive A R ] B (R' : relation B)
-  [ ? Morphism (R ++> R') m ] (x : A) =>
+Program Instance (A B : Type) (R : relation A) (R' : relation B)
+  [ ? Morphism (R ++> R') m ] [ Reflexive A R ] (x : A) =>
   reflexive_partial_app_morphism : ? Morphism R' (m x).
 
   Next Obligation.
@@ -278,6 +281,27 @@ Program Instance [ Reflexive A R ] B (R' : relation B)
     intros.
     apply (respect (m:=m))...
     refl.
+  Qed.
+
+(** Every transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof
+   to get an [R y z] goal. *)
+
+Program Instance [ Transitive A R ] => 
+  trans_co_eq_inv_impl_morphism : ? Morphism (R ++> eq ++> inverse impl) R.
+
+  Next Obligation.
+  Proof with auto.
+    trans y...
+    subst x0...
+  Qed.
+
+Program Instance [ Transitive A R ] => 
+  trans_contra_eq_inv_impl_morphism : ? Morphism (R --> eq ++> impl) R.
+
+  Next Obligation.
+  Proof with auto.
+    trans x...
+    subst x0...
   Qed.
 
 (** Every symmetric and transitive relation gives rise to an equivariant morphism. *)
@@ -326,6 +350,12 @@ Program Instance and_impl_iff_morphism : ? Morphism (impl ++> iff ++> impl) and.
 
 Program Instance and_iff_impl_morphism : ? Morphism (iff ++> impl ++> impl) and.
 
+Program Instance and_inverse_impl_iff_morphism : 
+  ? Morphism (inverse impl ++> iff ++> inverse impl) and.
+
+Program Instance and_iff_inverse_impl_morphism : 
+  ? Morphism (iff ++> inverse impl ++> inverse impl) and.
+
 Program Instance and_iff_morphism : ? Morphism (iff ++> iff ++> iff) and.
 
 (** Logical disjunction. *)
@@ -333,5 +363,11 @@ Program Instance and_iff_morphism : ? Morphism (iff ++> iff ++> iff) and.
 Program Instance or_impl_iff_morphism : ? Morphism (impl ++> iff ++> impl) or.
 
 Program Instance or_iff_impl_morphism : ? Morphism (iff ++> impl ++> impl) or.
+
+Program Instance or_inverse_impl_iff_morphism :
+  ? Morphism (inverse impl ++> iff ++> inverse impl) or.
+
+Program Instance or_iff_inverse_impl_morphism : 
+  ? Morphism (iff ++> inverse impl ++> inverse impl) or.
 
 Program Instance or_iff_morphism : ? Morphism (iff ++> iff ++> iff) or.

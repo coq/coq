@@ -226,7 +226,6 @@ let find_first_goal gls =
 
 (*s The following module [SearchProblem] is used to instantiate the generic
     exploration functor [Explore.Make]. *)
-      
 
 type search_state = { 
   depth : int; (*r depth of search before failing *)
@@ -339,26 +338,12 @@ let make_initial_state n gl dblist localdb =
     dblist = dblist;
     localdb = [localdb] }
 
-let make_initial_state_gls n gls dblist localdbs =
-  { depth = n;
-    tacres = gls;
-    last_tactic = (mt ());
-    dblist = dblist;
-    localdb = localdbs }
-
 let debug_depth_first = Search.debug_depth_first
 
 let e_depth_search debug p db_list local_db gl =
   try
     let tac = if debug then Search.debug_depth_first else Search.depth_first in
     let s = tac (make_initial_state p gl db_list local_db) in
-    s.tacres
-  with Not_found -> error "EAuto: depth first search failed"
-
-let e_depth_search_gls debug p db_list local_dbs gls =
-  try
-    let tac = if debug then Search.debug_depth_first else Search.depth_first in
-    let s = tac (make_initial_state_gls p gls db_list local_dbs) in
     s.tacres
   with Not_found -> error "EAuto: depth first search failed"
 
@@ -371,15 +356,6 @@ let e_breadth_search debug n db_list local_db gl =
     s.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
-let e_breadth_search_gls debug n db_list local_dbs gls =
-  try
-    let tac = 
-      if debug then Search.debug_breadth_first else Search.breadth_first 
-    in
-    let s = tac (make_initial_state_gls n gls db_list local_dbs) in
-    s.tacres
-  with Not_found -> error "EAuto: breadth first search failed"
-
 let e_search_auto debug (in_depth,p) lems db_list gl = 
   let local_db = make_local_hint_db lems gl in 
   if in_depth then 
@@ -388,14 +364,6 @@ let e_search_auto debug (in_depth,p) lems db_list gl =
     e_breadth_search debug p db_list local_db gl
 
 open Evd
-
-let e_search_auto_gls debug (in_depth,p) lems db_list gls = 
-  let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
-  let local_dbs = List.map (fun gl -> make_local_hint_db lems ({it = gl; sigma = sigma})) gls' in
-  if in_depth then 
-    e_depth_search_gls debug p db_list local_dbs gls
-  else
-    e_breadth_search_gls debug p db_list local_dbs gls
 
 let eauto debug np lems dbnames =
   let db_list =
@@ -412,12 +380,6 @@ let full_eauto debug n lems gl =
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
   tclTRY (e_search_auto debug n lems db_list) gl
-
-let full_eauto_gls debug n lems gls = 
-  let dbnames = current_db_names () in
-  let dbnames =  list_subtract dbnames ["v62"] in
-  let db_list = List.map searchtable_map dbnames in
-    e_search_auto_gls debug n lems db_list gls
 
 let gen_eauto d np lems = function
   | None -> full_eauto d np lems
@@ -482,60 +444,3 @@ TACTIC EXTEND dfs_eauto
       hintbases(db) ] ->
     [ gen_eauto false (true, make_depth p) lems db ]
 END
-
-open Evd
-
-exception Found of evar_defs
-
-let valid evm p res_sigma l = 
-  let evd' =
-    Evd.fold
-      (fun ev evi (gls, sigma) ->
-	if not (Evd.is_evar evm ev) then
-	  match gls with
-	      hd :: tl -> 
-		if evi.evar_body = Evar_empty then
-		  let cstr, obls = Refiner.extract_open_proof !res_sigma hd in
-		    (tl, Evd.evar_define ev cstr sigma)
-		else (tl, sigma)
-	    | [] -> ([], sigma)
-	else if not (Evd.is_defined evm ev) && p ev evi then
-	  match gls with
-	      hd :: tl -> 
-		if evi.evar_body = Evar_empty then
-		  let cstr, obls = Refiner.extract_open_proof !res_sigma hd in
-		    (tl, Evd.evar_define ev cstr sigma)
-		else (tl, sigma)
-	    | [] -> assert(false)
-	else (gls, sigma))
-      !res_sigma (l, Evd.create_evar_defs !res_sigma)
-  in raise (Found (snd evd'))
-    
-let resolve_all_evars_once debug (mode, depth) env p evd =
-  let evm = Evd.evars_of evd in
-  let goals = 
-    Evd.fold
-      (fun ev evi gls ->
-	if evi.evar_body = Evar_empty && p ev evi then
-	  (evi :: gls)
-	else gls)
-      evm []
-  in
-  let gls = { it = List.rev goals; sigma = evm } in
-  let res_sigma = ref evm in
-  let gls', valid' = full_eauto_gls debug (mode, depth) [] (gls, valid evm p res_sigma) in
-    res_sigma := Evarutil.nf_evars (sig_sig gls');
-    try ignore(valid' []); assert(false) with Found evd' -> Evarutil.nf_evar_defs evd'
-
-let has_undefined p evd =
-  Evd.fold (fun ev evi has -> has ||
-    (evi.evar_body = Evar_empty && p ev evi))
-    (Evd.evars_of evd) false
-    
-let rec resolve_all_evars debug m env p evd =
-  let rec aux n evd = 
-    if has_undefined p evd && n > 0 then
-      let evd' = resolve_all_evars_once debug m env p evd in
-	aux (pred n) evd'
-    else evd
-  in aux 3 evd
