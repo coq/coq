@@ -363,7 +363,7 @@ let end_module l restype senv =
     List.fold_left
       (fun env (mp,mb) -> full_add_module mp mb env) 
       newenv
-      senv.loads
+      (List.rev senv.loads)
   in
   let newenv = 
     full_add_module mp mb newenv
@@ -534,7 +534,7 @@ let end_modtype l senv =
     List.fold_left
       (fun env (mp,mb) -> full_add_module mp mb env) 
       newenv
-      senv.loads
+      (List.rev senv.loads)
   in
   let newenv = 
     add_modtype_constraints newenv mtb 
