@@ -7,8 +7,6 @@
 # Pdf: pdflatex
 # Html: hevea (http://hevea.inria.fr) >= 1.05
 
-include Makefile.common
-
 ######################################################################
 ### General rules
 ######################################################################
@@ -207,34 +205,29 @@ doc/RecTutorial/RecTutorial.v.html: doc/RecTutorial/RecTutorial.v.tex
 # Install all documentation files
 ######################################################################
 
-HTMLINSTALLDIR=$(DOCDIR)/html
-PRINTABLEINSTALLDIR=$(DOCDIR)/ps
-
 install-doc: install-doc-meta install-doc-html install-doc-printable
 
 install-doc-meta:
 	mkdir $(DOCDIR)
 	cp doc/LICENCE $(DOCDIR)/LICENCE.doc
-#	cp $(COQSRC)/doc/LICENCE $(COQTOP)/doc/CREDITS $(COQSRC)/doc/COPYRIGHT $(DOCDIR)
-#	cp $(COQSRC)/doc/README $(COQSRC)/doc/CHANGES $(DOCDIR)
 
 install-doc-html: doc-html
-	mkdir $(HTMLINSTALLDIR)
-	cp -r doc/refman/html $(HTMLINSTALLDIR)/refman
-	cp -r doc/stdlib/html $(HTMLINSTALLDIR)/stdlib
-	cp -r doc/tutorial/tutorial.html $(HTMLINSTALLDIR)/
-	cp -r doc/RecTutorial/RecTutorial.html $(HTMLINSTALLDIR)/
-	cp -r doc/faq/html $(HTMLINSTALLDIR)/faq
+	mkdir $(DOCDIR)/html
+	cp -r doc/refman/html $(DOCDIR)/html/refman 
+	cp -r doc/stdlib/html $(DOCDIR)/html/stdlib 
+	cp -r doc/RecTutorial/RecTutorial.html $(DOCDIR)/html/
+	cp -r doc/faq/html $(DOCDIR)/html/faq
+	cp -r doc/tutorial/tutorial.html doc/RecTutorial/RecTutorial.html $(DOCDIR)/html/
 
 install-doc-printable: doc-pdf doc-ps
-	mkdir $(PRINTABLEINSTALLDIR)
-	cp -r doc/refman/Reference-manual.pdf $(PRINTABLEINSTALLDIR)
-	cp -r doc/stdlib/Library.pdf $(PRINTABLEINSTALLDIR)
-	cp -r doc/tutorial/Tutorial.v.pdf $(PRINTABLEINSTALLDIR)/Tutorial.pdf
-	cp -r doc/RecTutorial/RecTutorial.v.pdf $(PRINTABLEINSTALLDIR)/RecTutorial.pdf
-	cp -r doc/faq/FAQ.v.pdf $(PRINTABLEINSTALLDIR)/FAQ.pdf
-	cp -r doc/refman/Reference-manual.ps $(PRINTABLEINSTALLDIR)
-	cp -r doc/stdlib/Library.ps $(PRINTABLEINSTALLDIR)
-	cp -r doc/tutorial/Tutorial.v.ps $(PRINTABLEINSTALLDIR)/Tutorial.ps
-	cp -r doc/RecTutorial/RecTutorial.v.ps $(PRINTABLEINSTALLDIR)/RecTutorial.ps
-	cp -r doc/faq/FAQ.v.ps $(PRINTABLEINSTALLDIR)/FAQ.ps
+	mkdir $(DOCDIR)/ps
+	cp -r doc/refman/Reference-manual.pdf \
+		doc/stdlib/Library.pdf \
+		doc/refman/Reference-manual.ps \
+		doc/stdlib/Library.ps $(DOCDIR)/ps
+	cp -r doc/tutorial/Tutorial.v.pdf $(DOCDIR)/ps/Tutorial.pdf
+	cp -r doc/RecTutorial/RecTutorial.v.pdf $(DOCDIR)/ps/RecTutorial.pdf
+	cp -r doc/faq/FAQ.v.pdf $(DOCDIR)/ps/FAQ.pdf
+	cp -r doc/tutorial/Tutorial.v.ps $(DOCDIR)/ps/Tutorial.ps
+	cp -r doc/RecTutorial/RecTutorial.v.ps $(DOCDIR)/ps/RecTutorial.ps
+	cp -r doc/faq/FAQ.v.ps $(DOCDIR)/ps/FAQ.ps
