@@ -861,7 +861,7 @@ destruct n.
      (Zpos p1 - Zpos p6 = Zpos p1 - Zpos p4 + (Zpos p4 - Zpos p6))%Z.
  change  ((Zpos p1 - Zpos p6)%Z = (Zpos p1 + (- Zpos p4) + (Zpos p4 +(- Zpos p6)))%Z).
  rewrite <- Zplus_assoc. rewrite (Zplus_assoc  (- Zpos p4)).
- simpl. rewrite Pcompare_refl. reflexivity.
+ simpl. rewrite Pcompare_refl. simpl. reflexivity.
  unfold Zminus, Zopp in H0. simpl in H0.
   rewrite H2 in H0;rewrite H4 in H0;rewrite H in H0. inversion H0;trivial.
  simpl. repeat rewrite pow_th.(rpow_pow_N). 
