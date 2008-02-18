@@ -203,6 +203,14 @@ let lookup_utf8_tail c cs =
     | x when 0x2900 <= x & x <= 0x297F -> Utf8Symbol
     (* utf-8 mathematical operators U2A00-2AFF *)
     | x when 0x2A00 <= x & x <= 0x2AFF -> Utf8Symbol
+    (* utf-8 bold symbols U2768-U2775 *)
+    | x when 0x2768 <= x & x <= 0x2775 -> Utf8Symbol
+    (* utf-8 arrows and brackets U27E0-U27FF *)
+    | x when 0x27E0 <= x & x <= 0x27FF -> Utf8Symbol
+    (* utf-8 brackets, braces and parentheses *)
+    | x when 0x2980 <= x & x <= 0x299F -> Utf8Symbol
+    (* utf-8 miscellaneous including double-plus U29F0-U29FF *)
+    | x when 0x29F0 <= x & x <= 0x29FF -> Utf8Symbol
     | _ -> error_unsupported_unicode_character n cs
     end
     | _ ->
