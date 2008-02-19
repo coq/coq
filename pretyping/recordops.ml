@@ -120,14 +120,36 @@ type obj_typ = {
   o_TPARAMS : constr list; (* ordered *)
   o_TCOMPS : constr list } (* ordered *)
 
+type cs_pattern =
+    Const_cs of global_reference
+  | Prod_cs
+  | Sort_cs of sorts_family
+  | Default_cs
+
 let object_table =
-  (ref [] : ((global_reference * global_reference option) * obj_typ) list ref)
+  (ref [] : ((global_reference * cs_pattern) * obj_typ) list ref)
 
 let canonical_projections () = !object_table
 
 let keep_true_projections projs kinds =
   map_succeed (function (p,true) -> p | _ -> failwith "")
     (List.combine projs kinds)
+
+let cs_pattern_of_constr t =
+  match kind_of_term t with
+      App (f,vargs) -> 
+	begin 
+	  try  Const_cs (global_of_constr f) , -1, Array.to_list vargs with
+	      _ -> raise Not_found 
+	end 
+    | Rel n -> Default_cs, pred n, []
+    | Prod (_,a,b) when not (dependent (mkRel 1) b) -> Prod_cs, -1, [a;pop b]
+    | Sort s -> Sort_cs (family_of_sort s), -1, []
+    | _ -> 
+	begin 
+	  try  Const_cs (global_of_constr t) , -1, [] with
+	      _ -> raise Not_found 
+	end 
 
 (* Intended to always succeed *)
 let compute_canonical_projections (con,ind) =
@@ -146,19 +168,12 @@ let compute_canonical_projections (con,ind) =
       (fun l (spopt,t) -> (* comp=components *)
 	 match spopt with
            | Some proji_sp ->
-	       let c, args = decompose_app t in
-		 begin
-		   try 
-		     let ogc,oinj = 
-		       try  Some (global_of_constr c) , -1  
-		       with _ -> 
-			 try  
-			   None,pred (destRel c) 
-			 with _ -> raise Not_found 
-		     in
-   		       ((ConstRef proji_sp, ogc,oinj , args) :: l)
-                   with Not_found -> l 
-		 end
+	       begin
+		 try 
+		   let patt, n , args = cs_pattern_of_constr t in
+		     ((ConstRef proji_sp, patt, n, args) :: l)
+		 with Not_found -> l 
+	       end
 	   | _ -> l)
       [] lps in
   List.map (fun (refi,c,inj,argj) ->

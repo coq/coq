@@ -36,14 +36,22 @@ val find_projection_nparams : global_reference -> int
 (*  the effective components of a structure and the projections of the  *)
 (*  structure *)
 
+type cs_pattern =
+    Const_cs of global_reference
+  | Prod_cs 
+  | Sort_cs of sorts_family
+  | Default_cs
+
 type obj_typ = {
   o_DEF : constr;
   o_INJ : int;      (* position of trivial argument *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
   o_TCOMPS : constr list } (* ordered *)
-               
-val lookup_canonical_conversion : (global_reference * global_reference option) -> obj_typ
+
+val cs_pattern_of_constr : constr -> cs_pattern * int * constr list
+ 
+val lookup_canonical_conversion : (global_reference * cs_pattern) -> obj_typ
 val declare_canonical_structure : global_reference -> unit
 val canonical_projections : unit -> 
-  ((global_reference * global_reference option) * obj_typ) list
+  ((global_reference * cs_pattern) * obj_typ) list

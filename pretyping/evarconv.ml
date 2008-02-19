@@ -115,20 +115,28 @@ let apprec_nohdbeta env evd c =
 let check_conv_record (t1,l1) (t2,l2) =
   try
     let proji = global_of_constr t1 in
-    let canon_s = 
-      begin    
-	try 
-	  let cstr = global_of_constr t2 in
-	    lookup_canonical_conversion (proji, Some cstr)
-	with _ -> lookup_canonical_conversion (proji,None)
-      end in
-    let { o_DEF = c; o_INJ=n; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } = 
-      canon_s in
+    let canon_s,l2_effective = 
+      try
+	match kind_of_term t2 with
+	    Prod (_,a,b) -> (* assert (l2=[]); *)
+      	      if dependent (mkRel 1) b then raise Not_found
+	      else lookup_canonical_conversion (proji, Prod_cs),[a;pop b]
+	  | Sort s -> 
+	      lookup_canonical_conversion 
+		(proji, Sort_cs (family_of_sort s)),[]
+	  | _ -> 
+	      let c2 = try global_of_constr t2 with _ -> raise Not_found in
+		lookup_canonical_conversion (proji, Const_cs c2),l2
+      with Not_found -> 
+	lookup_canonical_conversion (proji,Default_cs),[]
+    in
+    let { o_DEF = c; o_INJ=n; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } 
+	= canon_s in
     let params1, c1, extra_args1 =
       match list_chop (List.length params) l1 with 
 	| params1, c1::extra_args1 -> params1, c1, extra_args1
 	| _ -> assert false in
-    let us2,extra_args2 = list_chop (List.length us) l2 in
+    let us2,extra_args2 = list_chop (List.length us) l2_effective in
     c,bs,(params,params1),(us,us2),(extra_args1,extra_args2),c1,
     (n,applist(t2,l2))
   with _ -> 
