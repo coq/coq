@@ -32,7 +32,7 @@ let pr_justification_items env = function
 let pr_justification_method env = function
     None -> mt ()
   | Some tac -> 
-      spc () ++ str "using" ++  pr_tac env tac
+      spc () ++ str "using" ++ spc () ++ pr_tac env tac
 
 let pr_statement pr_it env st = 
   pr_label st.st_label ++ pr_it env st.st_it
