@@ -64,6 +64,8 @@ HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 export TEXINPUTS:=$(COQSRC)/doc:$(HEVEALIB):
 COQTEXOPTS:=-n 72 -image $(COQSRC)/$(COQTOP) -v -sl -small
 
+DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex 
+
 REFMANCOQTEXFILES:=\
   doc/refman/RefMan-gal.v.tex doc/refman/RefMan-ext.v.tex \
   doc/refman/RefMan-mod.v.tex doc/refman/RefMan-tac.v.tex \

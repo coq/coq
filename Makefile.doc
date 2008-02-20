@@ -25,7 +25,7 @@ doc-pdf:\
 
 doc-ps:\
   doc/tutorial/Tutorial.v.ps doc/refman/Reference-Manual.ps \
-  doc/faq/FAQ.v.ps stdlib/Library.ps doc/RecTutorial/RecTutorial.v.ps
+  doc/faq/FAQ.v.ps doc/stdlib/Library.ps doc/RecTutorial/RecTutorial.v.ps
 
 refman:\
   doc/refman/html/index.html doc/refman/Reference-Manual.ps doc/refman/Reference-Manual.pdf
@@ -41,7 +41,7 @@ faq:\
 
 rectutorial:\
   doc/RecTutorial/RecTutorial.v.html \
-  doc/RecTutorial/RecTutorial.v.ps RecTutorial/RecTutorial.v.pdf
+  doc/RecTutorial/RecTutorial.v.ps doc/RecTutorial/RecTutorial.v.pdf
 
 ######################################################################
 ### Implicit rules
@@ -60,8 +60,6 @@ rectutorial:\
 # Common
 ######################################################################
 
-COMMON=doc/common/version.tex doc/common/title.tex doc/common/macros.tex 
-
 ### Version
 
 doc/common/version.tex: config/Makefile
@@ -76,7 +74,7 @@ doc/common/version.tex: config/Makefile
 
 # The second LATEX compilation is necessary otherwise the pages of the index
 # are not correct (don't know why...) - BB
-doc/refman/Reference-Manual.dvi: $(REFMANFILES)
+doc/refman/Reference-Manual.dvi: $(DOCCOMMON) $(REFMANFILES)
 	(cd doc/refman;\
 	$(LATEX) Reference-Manual;\
 	$(BIBTEX) Reference-Manual;\
@@ -115,13 +113,13 @@ doc/refman-quick:
 # Tutorial
 ######################################################################
 
-doc/tutorial/Tutorial.v.dvi: doc/common/version.tex doc/common/title.tex doc/tutorial/Tutorial.v.tex
+doc/tutorial/Tutorial.v.dvi: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 	(cd doc/tutorial; $(LATEX) Tutorial.v)
 
 doc/tutorial/Tutorial.v.pdf: doc/common/version.tex doc/common/title.tex doc/tutorial/Tutorial.v.dvi
 	(cd doc/tutorial; $(PDFLATEX) Tutorial.v.tex)
 
-doc/tutorial/Tutorial.v.html: tutorial/Tutorial.v.tex
+doc/tutorial/Tutorial.v.html: doc/tutorial/Tutorial.v.tex
 	(cd doc/tutorial; hevea -exec xxdate.exe Tutorial.v)
 
 
@@ -130,14 +128,14 @@ doc/tutorial/Tutorial.v.html: tutorial/Tutorial.v.tex
 ######################################################################
 
 doc/faq/FAQ.v.dvi: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.tex
-	(cd faq;\
+	(cd doc/faq;\
 	$(LATEX) FAQ.v;\
 	$(BIBTEX) FAQ.v;\
 	$(LATEX) FAQ.v;\
 	$(LATEX) FAQ.v)
 
-doc/faq/FAQ.v.pdf: common/version.tex common/title.tex faq/FAQ.v.dvi faq/axioms.png
-	(cd faq; $(PDFLATEX) FAQ.v.tex)
+doc/faq/FAQ.v.pdf: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.dvi doc/faq/axioms.png
+	(cd doc/faq; $(PDFLATEX) FAQ.v.tex)
 
 doc/faq/FAQ.v.html: doc/faq/FAQ.v.dvi # to ensure FAQ.v.bbl
 	(cd doc/faq; hevea -fix FAQ.v.tex)
@@ -175,12 +173,12 @@ doc/stdlib/Library.coqdoc.tex: $(THEORIESLIGHTVO:.vo=.glob)
 	$(COQSRC)/$(COQDOC) -q --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 
-doc/stdlib/Library.dvi: $(COMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
+doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
 	(cd doc/stdlib;\
 	$(LATEX) Library;\
 	$(LATEX) Library)
 
-doc/stdlib/Library.pdf: $(COMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.dvi
+doc/stdlib/Library.pdf: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.dvi
 	(cd doc/stdlib; $(PDFLATEX) Library)
 
 ######################################################################
@@ -188,7 +186,7 @@ doc/stdlib/Library.pdf: $(COMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Libra
 ######################################################################
 
 doc/RecTutorial/RecTutorial.v.dvi: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.v.tex
-	(cd RecTutorial;\
+	(cd doc/RecTutorial;\
 	 $(LATEX) RecTutorial.v;\
 	 $(BIBTEX) RecTutorial.v;\
 	 $(LATEX) RecTutorial.v;\
