@@ -78,6 +78,14 @@ intros.
  congruence.
 Qed.
 
+(* example with implications *)
+
+Theorem arrow : forall (A B: Prop) (C D:Set) , A=B -> C=D  -> 
+(A -> C) = (B -> D).
+congruence.
+Qed.
+
+
 Set Implicit Arguments.
 
 Parameter elt: Set.
@@ -94,5 +102,6 @@ Proof.
   auto.
 Qed.
             
+
             
             

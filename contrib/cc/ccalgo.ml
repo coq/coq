@@ -100,6 +100,7 @@ type cinfo=
 
 type term=
     Symb of constr
+  | Product of sorts_family * sorts_family
   | Eps of identifier
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
@@ -319,8 +320,17 @@ let new_representative typ =
     
 (* rebuild a constr from an applicative term *)
     
+let _A_ = Name (id_of_string "A")
+let _B_ = Name (id_of_string "A")
+let _body_ =  mkProd(Anonymous,mkRel 2,mkRel 2)
+
+let cc_product s1 s2 = 
+  mkLambda(_A_,mkSort(Termops.new_sort_in_family s1),
+	   mkLambda(_B_,mkSort(Termops.new_sort_in_family s2),_body_))
+
 let rec constr_of_term = function
     Symb s->s
+  | Product(s1,s2) -> cc_product s1 s2
   | Eps id -> mkVar id
   | Constructor cinfo -> mkConstruct cinfo.ci_constr 
   | Appli (s1,s2)->
@@ -358,7 +368,7 @@ let rec add_term state t=
 	  let typ = pf_type_of state.gls (constr_of_term t) in
 	  let new_node=
 	    match t with
-		Symb s ->
+		Symb _ | Product (_,_) ->
 		  let paf =
 		    {fsym=b;
 		     fnargs=0} in
