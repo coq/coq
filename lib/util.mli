@@ -159,6 +159,7 @@ val list_cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
 (* list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
 val list_combinations : 'a list list -> 'a list list
 
+val list_union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 
 (*s Arrays. *)
 
@@ -201,6 +202,7 @@ val array_fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
 val array_fold_map2' :
   ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
 val array_distinct : 'a array -> bool
+val array_union_map : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 
 (*s Matrices *)
 

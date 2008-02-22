@@ -2691,7 +2691,7 @@ let abstract_subproof name tac gl =
       let _,(const,kind,_) =
 	try
 	  by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 
-	  let r = cook_proof () in 
+	  let r = cook_proof ignore in 
 	    delete_current_proof (); r
 	with 
 	    e ->

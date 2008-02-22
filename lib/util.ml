@@ -486,6 +486,18 @@ let list_fold_map' f l e =
 
 let list_map_assoc f = List.map (fun (x,a) -> (x,f a))
 
+(* Specification:
+   - =p= is set equality (double inclusion)
+   - f such that \forall l acc, (f l acc) =p= append (f l []) acc
+   - let g = fun x -> f x [] in
+   - union_map f l acc =p= append (flatten (map g l)) acc
+ *)
+let list_union_map f l acc =
+  List.fold_left
+    (fun x y -> f y x)
+    acc
+    l
+
 (* A generic cartesian product: for any operator (**), 
    [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]], 
    and so on if there are more elements in the lists. *)
@@ -760,6 +772,12 @@ let array_distinct v =
     true
   with Exit ->
     false
+
+let array_union_map f a acc =
+  Array.fold_left
+    (fun x y -> f y x)
+    acc
+    a
 
 (* Matrices *)
 

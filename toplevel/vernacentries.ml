@@ -1251,6 +1251,7 @@ let interp c = match c with
   | VernacRestoreState s -> vernac_restore_state s
 
   (* Resetting *)
+  | VernacRemoveName id -> Lib.remove_name id
   | VernacResetName id -> vernac_reset_name id
   | VernacResetInitial -> vernac_reset_initial ()
   | VernacBack n -> vernac_back n
@@ -1285,6 +1286,7 @@ let interp c = match c with
   | VernacSuspend -> vernac_suspend ()
   | VernacResume id -> vernac_resume id
   | VernacUndo n -> vernac_undo n
+  | VernacUndoTo n -> undo_todepth n
   | VernacBacktrack (snum,pnum,naborts) -> vernac_backtrack snum pnum naborts
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()

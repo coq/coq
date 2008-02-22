@@ -1300,7 +1300,7 @@ let solvable_by_tactic env evi (ev,args) src =
       begin
 	try
 	  by (tclCOMPLETE tac);
-	  let _,(const,_,_) = cook_proof () in 
+	  let _,(const,_,_) = cook_proof ignore in 
 	  delete_current_proof (); const.const_entry_body
 	with e when Logic.catchable_exception e -> 
 	  delete_current_proof();

@@ -108,13 +108,23 @@ let rec frontier p =
 		  open_subgoals = and_status (List.map pf_status pfl');
 		  ref = Some(r,pfl')}))
 
+(* TODO LEM: I might have to make sure that these hooks are called
+   only when called from solve_nth_pftreestate; I can build the hook
+   call into the "f", then.
+ *)
+let solve_hook = ref ignore
+let set_solve_hook = (:=) solve_hook
 
 let rec frontier_map_rec f n p =
   if n < 1 || n > p.open_subgoals then p else
   match p.ref with
     | None -> 
         let p' = f p in
-        if Evd.eq_evar_info p'.goal p.goal then p'
+        if Evd.eq_evar_info p'.goal p.goal then
+	  begin
+	    !solve_hook p';
+	    p'
+	  end
         else 
 	  errorlabstrm "Refiner.frontier_map"
             (str"frontier_map was handed back a ill-formed proof.")
@@ -140,7 +150,11 @@ let rec frontier_mapi_rec f i p =
   match p.ref with
     | None -> 
         let p' = f i p in
-        if Evd.eq_evar_info p'.goal p.goal then p'
+        if Evd.eq_evar_info p'.goal p.goal then
+	  begin
+	    !solve_hook p';
+	    p'
+	  end
         else 
 	  errorlabstrm "Refiner.frontier_mapi"
             (str"frontier_mapi was handed back a ill-formed proof.")
@@ -849,6 +863,7 @@ let prev_unproven pts =
 let rec top_of_tree pts = 
   if is_top_pftreestate pts then pts else top_of_tree(traverse 0 pts)
 
+(* FIXME: cette fonction n'est (as of October 2007) appelée nulle part *)
 let change_rule f pts =
   let mark_top _ pt =
     match pt.ref with

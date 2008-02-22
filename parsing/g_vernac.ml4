@@ -749,6 +749,7 @@ GEXTEND Gram
 
 (* Resetting *)
       | IDENT "Reset"; id = identref -> VernacResetName id
+      | IDENT "Delete"; id = identref -> VernacRemoveName id
       | IDENT "Reset"; IDENT "Initial" -> VernacResetInitial
       | IDENT "Back" -> VernacBack 1
       | IDENT "Back"; n = natural -> VernacBack n

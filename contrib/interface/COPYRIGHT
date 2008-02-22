@@ -1,9 +1,9 @@
 (*****************************************************************************)
 (*                                                                           *)
-(*            Coq support for the Pcoq Graphical Interface of Coq            *)
+(*      Coq support for the Pcoq and tmEgg Graphical Interfaces of Coq       *)
 (*                                                                           *)
 (*        Copyright (C) 1999-2004 INRIA Sophia-Antipolis (Lemme team)        *)
-(*        Copyright (C) 2006 Lionel Elie Mamane                              *)
+(*        Copyright (C) 2006,2007 Lionel Elie Mamane                         *)
 (*                                                                           *)
 (*****************************************************************************)
 

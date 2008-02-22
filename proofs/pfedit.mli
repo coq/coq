@@ -103,7 +103,7 @@ val suspend_proof : unit -> unit
     a constant with its name, kind and possible hook (see [start_proof]);
     it fails if there is no current proof of if it is not completed *)
 
-val cook_proof : unit -> 
+val cook_proof : (Refiner.pftreestate -> unit) -> 
   identifier * (Entries.definition_entry * goal_kind * declaration_hook)
 
 (* To export completed proofs to xml *)

@@ -143,6 +143,7 @@ val close_section : identifier -> unit
 
 val reset_to : object_name -> unit
 val reset_name : identifier located -> unit
+val remove_name : identifier located -> unit
 val reset_mod : identifier located -> unit
 
 (* [back n] resets to the place corresponding to the $n$-th call of 

@@ -353,7 +353,8 @@ INTERFACE:=\
   contrib/interface/history.cmo \
   contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
   contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
-  contrib/interface/blast.cmo contrib/interface/centaur.cmo
+  contrib/interface/blast.cmo contrib/interface/depends.cmo \
+  contrib/interface/centaur.cmo
 
 INTERFACECMX:=$(INTERFACE:.cmo=.cmx)
 

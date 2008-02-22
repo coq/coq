@@ -446,7 +446,7 @@ let rec pattern_to_term_and_type env typ  = function
       let patl_as_term =
 	List.map2 (pattern_to_term_and_type env)  (List.rev cs_args_types)  patternl
       in
-      mkRApp(mkRRef(Libnames.ConstructRef constr),
+      mkRApp(mkRRef(ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
 

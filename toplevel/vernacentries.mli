@@ -47,7 +47,7 @@ type pcoq_hook = {
 
 val set_pcoq_hook : pcoq_hook -> unit
 
-(* This function makes sure that the function given is argument is preceded
+(* This function makes sure that the function given in argument is preceded
    by a command aborting all proofs if necessary.
    It is used in pcoq. *)
 val abort_refine : ('a -> unit) -> 'a -> unit;;

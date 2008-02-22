@@ -30,6 +30,8 @@ open Redexpr
    functions of [Declare]; they return an absolute reference to the
    defined object *)
 
+val set_declare_definition_hook : (Entries.definition_entry -> unit) -> unit
+
 val definition_message : identifier -> unit
 
 val declare_definition : identifier -> definition_kind ->
@@ -40,6 +42,8 @@ val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit
 
 val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types -> bool
   -> Names.variable located  -> unit
+
+val set_declare_assumption_hook : (types -> unit) -> unit
 
 val declare_assumption : identifier located list ->
   coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> bool 
@@ -93,11 +97,17 @@ val generalize_constr_expr : constr_expr -> local_binder list -> constr_expr
 
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 
-val start_proof : identifier -> goal_kind -> constr ->
+(* A hook start_proof calls on the type of the definition being started *)
+val set_start_hook : (types -> unit) -> unit
+
+val start_proof : identifier -> goal_kind -> types ->
   declaration_hook -> unit
 
 val start_proof_com : identifier option -> goal_kind -> 
   (local_binder list * constr_expr) -> declaration_hook -> unit
+
+(* A hook the next three functions pass to cook_proof *)
+val set_save_hook : (Refiner.pftreestate -> unit) -> unit
 
 (*s [save_named b] saves the current completed proof under the name it
 was started; boolean [b] tells if the theorem is declared opaque; it

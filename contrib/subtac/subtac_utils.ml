@@ -362,7 +362,7 @@ let solve_by_tac evi t =
     Pfedit.start_proof id goal_kind evi.evar_hyps evi.evar_concl
     (fun _ _ -> ());
     Pfedit.by (tclCOMPLETE t);
-    let _,(const,_,_) = Pfedit.cook_proof () in
+    let _,(const,_,_) = Pfedit.cook_proof ignore in
       Pfedit.delete_current_proof (); const.Entries.const_entry_body
   with e ->
     Pfedit.delete_current_proof();

@@ -15,6 +15,7 @@ open Nameops
 open Term
 open Mod_subst
 
+(*s Global reference is a kernel side type for all references together *)
 type global_reference =
   | VarRef of variable
   | ConstRef of constant

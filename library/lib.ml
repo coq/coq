@@ -577,19 +577,43 @@ let recache_context ctx =
 
 let is_frozen_state = function (_,FrozenState _) -> true | _ -> false
 
-let reset_to_gen test =
-  let (_,_,before) = split_lib_gen test in
-  lib_stk := before;
+let set_lib_stk new_lib_stk =
+  lib_stk := new_lib_stk;
   recalc_path_prefix ();
   let spf = match find_entry_p is_frozen_state with
     | (sp, FrozenState f) -> unfreeze_summaries f; sp
     | _ -> assert false
   in
   let (after,_,_) = split_lib spf in
-  let res = recache_context after in
-  res
+  try
+    recache_context after
+  with
+    | Not_found -> error "Tried to set environment to an incoherent state."
+
+let reset_to_gen test =
+  let (_,_,before) = split_lib_gen test in
+  set_lib_stk before
 
 let reset_to sp = reset_to_gen (fun x -> (fst x) = sp)
+
+(* LEM: TODO
+ * We will need to muck with frozen states in after, too!
+ * Not only FrozenState, but also those embedded in Opened(Section|Module|Modtype)
+ *)
+let delete_gen test =
+  let (after,equal,before) = split_lib_gen test in
+  let rec chop_at_dot = function
+    | [] as l -> l
+    | (_, Leaf o)::t when object_tag o = "DOT" -> t
+    | _::t -> chop_at_dot t
+  and chop_before_dot = function
+    | [] as l -> l
+    | (_, Leaf o)::t as l when object_tag o = "DOT" -> l
+    | _::t -> chop_before_dot t
+ in
+  set_lib_stk (List.rev_append (chop_at_dot after) (chop_before_dot before))
+
+let delete sp = delete_gen (fun x -> (fst x) = sp)
 
 let reset_name (loc,id) =
   let (sp,_) = 
@@ -599,6 +623,15 @@ let reset_name (loc,id) =
       user_err_loc (loc,"reset_name",pr_id id ++ str ": no such entry")
   in
   reset_to sp
+
+let remove_name (loc,id) =
+  let (sp,_) =
+    try
+      find_entry_p (fun (sp,_) -> let (_,spi) = repr_path (fst sp) in id = spi)
+    with Not_found ->
+      user_err_loc (loc,"remove_name",pr_id id ++ str ": no such entry")
+  in
+    delete sp
 
 let is_mod_node = function 
   | OpenedModule _ | OpenedModtype _ | OpenedSection _ 
@@ -619,15 +652,7 @@ let reset_mod (loc,id) =
     with Not_found ->
       user_err_loc (loc,"reset_mod",pr_id id ++ str ": no such entry")
   in
-  lib_stk := before;
-  recalc_path_prefix ();
-  let spf = match find_entry_p is_frozen_state with
-    | (sp, FrozenState f) -> unfreeze_summaries f; sp
-    | _ -> assert false
-  in
-  let (after,_,_) = split_lib spf in
-  recache_context after
-
+  set_lib_stk before
 
 let mark_end_of_command, current_command_label, set_command_label =
   let n = ref 0 in

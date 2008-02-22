@@ -146,9 +146,13 @@ let declare_global_definition ident ce local imps =
     definition_message ident;
     gr
 
+let declare_definition_hook = ref ignore
+let set_declare_definition_hook = (:=) declare_definition_hook
+
 let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
   let imps, ce = constant_entry_of_com (bl,c,typopt,false,boxed) in
   let ce' = red_constant_entry bl ce red_option in
+  !declare_definition_hook ce';
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let c =
@@ -194,10 +198,14 @@ let declare_one_assumption is_coe (local,kind) c nl (_,ident) =
         ConstRef kn in
   if is_coe then Class.try_add_new_coercion r local
 
+let declare_assumption_hook = ref ignore
+let set_declare_assumption_hook = (:=) declare_assumption_hook
+
 let declare_assumption idl is_coe k bl c nl=
   if not (Pfedit.refining ()) then 
     let c = generalize_constr_expr c bl in
     let c = interp_type Evd.empty (Global.env()) c in
+      !declare_assumption_hook c;
       List.iter (declare_one_assumption is_coe k c nl) idl
   else
     errorlabstrm "Command.Assumption"
@@ -334,10 +342,14 @@ let (inDec,outDec) =
                     subst_function = Auto_ind_decl.subst_in_constr;
                     export_function = Ind_tables.export_dec_proof }
 
+let start_hook = ref ignore
+let set_start_hook = (:=) start_hook
+
 let start_proof id kind c hook =
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
-  Pfedit.start_proof id kind sign c hook
+    !start_hook c;
+    Pfedit.start_proof id kind sign c hook
 
 let save id const (locality,kind) hook =
   let {const_entry_body = pft;
@@ -361,8 +373,11 @@ let save id const (locality,kind) hook =
   definition_message id;
   hook l r
 
+let save_hook = ref ignore
+let set_save_hook f = save_hook := f
+
 let save_named opacity =
-  let id,(const,persistence,hook) = Pfedit.cook_proof () in
+  let id,(const,persistence,hook) = Pfedit.cook_proof !save_hook in
   let const = { const with const_entry_opaque = opacity } in
   save id const persistence hook
 
@@ -1023,13 +1038,13 @@ let check_anonymity id save_ident =
 *)
 
 let save_anonymous opacity save_ident =
-  let id,(const,persistence,hook) = Pfedit.cook_proof () in
+  let id,(const,persistence,hook) = Pfedit.cook_proof !save_hook in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
   save save_ident const persistence hook
 
 let save_anonymous_with_strength kind opacity save_ident =
-  let id,(const,_,hook) = Pfedit.cook_proof () in
+  let id,(const,_,hook) = Pfedit.cook_proof !save_hook in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)

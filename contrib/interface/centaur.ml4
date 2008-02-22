@@ -8,6 +8,11 @@
  * - Add the backtracking information to the status message.
  * in the following time period
  * - May-November 2006
+ * and
+ * - Make use of new Command.save_hook to generate dependencies at
+ *   save-time.
+ * in
+ *  - June 2007
  *)
 
 (*Toplevel loop for the communication between Coq and Centaur *)
@@ -129,7 +134,7 @@ let print_tree t =
 (*Message functions, the text of these messages is recognized by the protocols *)
 (*of CtCoq                                                                     *)
 let ctf_header message_name request_id =
- fnl () ++ str "message" ++ fnl() ++ str message_name ++ fnl() ++
+ str "message" ++ fnl() ++ str message_name ++ fnl() ++
  int request_id ++ fnl();;
 
 let ctf_acknowledge_command request_id command_count opt_exn =
@@ -749,6 +754,44 @@ let start_default_objects () =
   set_object_pr default_object_pr;
   set_printer_pr default_printer_pr
 
+let full_name_of_ref r =
+  (match r with
+     | VarRef _ -> str "VAR"
+     | ConstRef _ -> str "CST"
+     | IndRef _ -> str "IND"
+     | ConstructRef _ -> str "CSR")
+  ++ str " " ++ (pr_sp (Nametab.sp_of_global r))
+    (* LEM TODO: Cleanly separate path from id (see Libnames.string_of_path) *)
+
+let string_of_ref =
+  (*LEM TODO: Will I need the Var/Const/Ind/Construct info?*)
+  Depends.o Libnames.string_of_path Nametab.sp_of_global
+
+let print_depends compute_depends ptree =
+  output_results (List.fold_left (fun x y -> x ++ (full_name_of_ref y) ++ fnl())
+		    (str "This object depends on:" ++ fnl())
+		    (compute_depends ptree))
+                 None
+
+let output_depends compute_depends ptree =
+  (* Using an ident list for that is arguably stretching it, but less effort than touching the vtp types *)
+  output_results (ctf_header "depends" !global_request_id ++
+		    print_tree (P_ids (CT_id_list (List.map
+						     (fun x -> CT_ident (string_of_ref x))
+						     (compute_depends ptree)))))
+                 None
+
+let gen_start_depends_dumps print_depends print_depends' print_depends'' print_depends''' =
+  Command.set_declare_definition_hook (print_depends' (Depends.depends_of_definition_entry ~acc:[]));
+  Command.set_declare_assumption_hook (print_depends  (fun (c:types) -> Depends.depends_of_constr c []));
+  Command.set_start_hook (print_depends    (fun c -> Depends.depends_of_constr c []));
+  Command.set_save_hook  (print_depends''  (Depends.depends_of_pftreestate Depends.depends_of_pftree));
+  Refiner.set_solve_hook (print_depends''' (fun pt -> Depends.depends_of_pftree_head pt []))
+
+let start_depends_dumps () = gen_start_depends_dumps output_depends output_depends output_depends output_depends
+
+let start_depends_dumps_debug () = gen_start_depends_dumps print_depends print_depends print_depends print_depends
+
 TACTIC EXTEND pbp
 | [ "pbp" ident_opt(idopt) natural_list(nl) ] -> 
     [ if_pcoq pbp_tac_pcoq idopt nl ]
@@ -827,6 +870,10 @@ END
 
 VERNAC COMMAND EXTEND StartDefaultObjects
 | [ "Start" "Default" "Objects" ] -> [ start_default_objects () ]
+END
+
+VERNAC COMMAND EXTEND StartDependencyDumps
+| [ "Start" "Dependency" "Dumps" ] -> [ start_depends_dumps () ]
 END
 
 VERNAC COMMAND EXTEND StopPcoqHistory

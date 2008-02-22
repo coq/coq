@@ -48,6 +48,8 @@ val list_pf : proof_tree -> goal list
 val unTAC : tactic -> goal sigma -> proof_tree sigma
 
 
+(* Install a hook frontier_map and frontier_mapi call on the new node they create *)
+val set_solve_hook : (Proof_type.proof_tree -> unit) -> unit
 (* [frontier_map f n p] applies f on the n-th open subgoal of p and
    rebuilds proof-tree.
    n=1 for first goal, n negative counts from the right *)

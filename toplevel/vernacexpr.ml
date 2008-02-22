@@ -276,6 +276,7 @@ type vernac_expr =
   | VernacRestoreState of lstring
 
   (* Resetting *)
+  | VernacRemoveName of lident
   | VernacResetName of lident
   | VernacResetInitial
   | VernacBack of int
@@ -313,6 +314,7 @@ type vernac_expr =
   | VernacSuspend
   | VernacResume of lident option
   | VernacUndo of int
+  | VernacUndoTo of int
   | VernacBacktrack of int*int*int
   | VernacFocus of int option
   | VernacUnfocus

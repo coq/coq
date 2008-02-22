@@ -417,6 +417,7 @@ let rec pr_vernac = function
   | VernacAbort id -> str"Abort" ++ pr_opt pr_lident id
   | VernacResume id -> str"Resume" ++ pr_opt pr_lident id
   | VernacUndo i -> if i=1 then str"Undo" else str"Undo" ++ pr_intarg i
+  | VernacUndoTo i -> str"Undo" ++ spc() ++ str"To" ++ pr_intarg i
   | VernacBacktrack (i,j,k) -> 
       str "Backtrack" ++  spc() ++ prlist_with_sep sep int [i;j;k]
   | VernacFocus i -> str"Focus" ++ pr_opt int i
@@ -446,6 +447,7 @@ let rec pr_vernac = function
   | VernacCheckGuard -> str"Guarded"
 
   (* Resetting *)
+  | VernacRemoveName id -> str"Remove" ++ spc() ++ pr_lident id
   | VernacResetName id -> str"Reset" ++ spc() ++ pr_lident id
   | VernacResetInitial -> str"Reset Initial"
   | VernacBack i -> if i=1 then str"Back" else str"Back" ++ pr_intarg i

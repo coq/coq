@@ -62,6 +62,7 @@ GEXTEND Gram
       | IDENT "Proof"; c = lconstr -> VernacExactProof c
       | IDENT "Undo" -> VernacUndo 1
       | IDENT "Undo"; n = natural -> VernacUndo n
+      | IDENT "Undo"; IDENT "To"; n = natural -> VernacUndoTo n
       | IDENT "Focus" -> VernacFocus None
       | IDENT "Focus"; n = natural -> VernacFocus (Some n)
       | IDENT "Unfocus" -> VernacUnfocus
