@@ -22,10 +22,10 @@
   let count_spaces s =
     let n = String.length s in
     let rec count c i = 
-      if i == n then c else match s.[i] with
+      if i == n then c,i else match s.[i] with
 	| '\t' -> count (c + (8 - (c mod 8))) (i + 1)
 	| ' ' -> count (c + 1) (i + 1)
-	| _ -> c
+	| _ -> c,i
     in
     count 0 0
 
@@ -331,19 +331,19 @@ rule coq_bol = parse
 	      skip_to_dot lexbuf; 
 	      coq_bol lexbuf 
 	    end else begin
-		let nbsp = count_spaces s in
+		let nbsp,isp = count_spaces s in
 		  indentation nbsp; 
-		  let s = String.sub s nbsp (String.length s - nbsp) in
-		    ident s (lexeme_start lexbuf + nbsp); 
+		  let s = String.sub s isp (String.length s - isp) in
+		    ident s (lexeme_start lexbuf + isp); 
 		    let eol= body lexbuf in 
 		      if eol then coq_bol lexbuf else coq lexbuf
 	      end }
   | space* gallina_kw
       { let s = lexeme lexbuf in 
-        let nbsp = count_spaces s in
-	let s = String.sub s nbsp (String.length s - nbsp)  in
+        let nbsp,isp = count_spaces s in
+	let s = String.sub s isp (String.length s - isp)  in
 	  indentation nbsp;
-	  ident s (lexeme_start lexbuf + nbsp); 
+	  ident s (lexeme_start lexbuf + isp); 
 	  let eol= body lexbuf in
 	    if eol then coq_bol lexbuf else coq lexbuf }
   | space* "(**" space+ "printing" space+ (identifier | token) space+
@@ -458,7 +458,7 @@ and doc = parse
 	doc lexbuf }
   | "[[" nl space*
       { formatted := true; line_break (); start_inline_coq ();
-	indentation (count_spaces (lexeme lexbuf)); 
+	indentation (fst (count_spaces (lexeme lexbuf))); 
 	let eol = body_bol lexbuf in 
 	  end_inline_coq (); formatted := false;
 	  if eol then doc_bol lexbuf else doc lexbuf}
@@ -567,7 +567,7 @@ and skip_to_dot = parse
 
 and body_bol = parse
   | space+
-      { indentation (count_spaces (lexeme lexbuf)); body lexbuf }
+      { indentation (fst (count_spaces (lexeme lexbuf))); body lexbuf }
   | _ { backtrack lexbuf; body lexbuf }
 
 and body = parse
@@ -593,7 +593,7 @@ and body = parse
 
 and notation_bol = parse
   | space+
-      { indentation (count_spaces (lexeme lexbuf)); notation lexbuf }
+      { indentation (fst (count_spaces (lexeme lexbuf))); notation lexbuf }
   | _ { backtrack lexbuf; notation lexbuf }
 
 and notation = parse
