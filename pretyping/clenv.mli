@@ -104,11 +104,11 @@ type arg_bindings = Goal.open_constr explicit_bindings
 val clenv_independent : clausenv -> metavariable list
 val clenv_missing : clausenv -> metavariable list
 
-val clenv_constrain_last_binding : constr -> clausenv -> clausenv
+val clenv_constrain_last_binding : constr -> clausenv -> clausenv Goal.expression
 
 (* arnaud: on se satisfairait d'un clausenv expression most likely *) 
 (* defines metas corresponding to the name of the bindings *)
-val clenv_match_args : arg_bindings -> clausenv -> clausenv
+val clenv_match_args : arg_bindings -> clausenv -> clausenv Goal.expression
 
 val clenv_unify_meta_types : clausenv -> clausenv
 

@@ -14,17 +14,25 @@ open Environ
 open Evd
 (*i*)
 
+type unify_flags = { 
+  modulo_conv_on_closed_terms : bool; 
+  use_metas_eagerly : bool;
+  modulo_conv : bool
+}
+
+val default_unify_flags : unify_flags
+
 (* The "unique" unification fonction *)
 val w_unify :
-  bool -> env -> conv_pb -> ?mod_delta:bool -> constr -> constr -> evar_defs -> evar_defs
+  bool -> env -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_defs -> evar_defs
 
 (* [w_unify_to_subterm env (c,t) m] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched
    subterm of [t] is also returned. *)
 val w_unify_to_subterm :
-  env -> ?mod_delta:bool -> constr * constr -> evar_defs -> evar_defs * constr
+  env -> ?flags:unify_flags -> constr * constr -> evar_defs -> evar_defs * constr
 
-val w_unify_meta_types : env -> evar_defs -> evar_defs
+val w_unify_meta_types : env -> ?flags:unify_flags -> evar_defs -> evar_defs
 
 (*i This should be in another module i*)
 

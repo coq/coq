@@ -426,21 +426,21 @@ let clenv_unify_similar_types clenv c t u =
 let clenv_assign_binding clenv k oc = (*arnaud: original (sigma,c) =*)
   let (>>=) = Goal.bind in (* arnaud: à déplacer *)
   Goal.defs >>= fun defs ->
-  let sigma = Evd.evars_of in
-  (* arnaud: est-ce que c'est vriament ça qu'on veut faire...
-     cela dit on peut rester conservatifs *)
-  let c = Evd.get_constr oc in
+  let sigma = Evd.evars_of defs in
+  let c = Goal.constr_of_open_constr oc in
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
   let c_typ = nf_betaiota (clenv_get_type_of clenv' c) in
   let c_typ = clenv_hnf_constr clenv' c_typ in
   let status,clenv'',c = clenv_unify_similar_types clenv' c c_typ k_typ in
 (*  let evd,c' = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in*)
+  Goal.return
   { clenv'' with evd = meta_assign k (c,(UserGiven,status)) clenv''.evd }
 
 let clenv_match_args bl clenv =
+  let (>>=) = Goal.bind in (* arnaud: move ailleurs plus haut et tout *)
   if bl = [] then
-    clenv
+    Goal.return clenv
   else
     let mvs = clenv_independent clenv in
     check_bindings bl;
@@ -448,29 +448,46 @@ let clenv_match_args bl clenv =
       (* arnaud: original :
       (fun clenv (loc,b,(sigma,c as sc)) -> *)
       (fun clenv (loc,b,oc) ->
-	let c = Evd.get_constr oc in
+        clenv >>= fun clenv -> 
+	let c = Goal.constr_of_open_constr oc in
 	let k = meta_of_binder clenv loc mvs b in
         if meta_defined clenv.evd k then
-          if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then clenv
-          else error_already_defined b
+          if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then 
+	    Goal.return clenv 
+          else 
+	    error_already_defined b
         else
 	  clenv_assign_binding clenv k oc)
-      clenv bl
+      (Goal.return clenv) bl
 
 let clenv_constrain_last_binding c clenv =
   let all_mvs = collect_metas clenv.templval.rebus in
   let k =
     try list_last all_mvs 
     with Failure _ -> error "clenv_constrain_with_bindings" in
-  clenv_assign_binding clenv k (Evd.open_of_constr c)(* arnaud: original (Evd.empty,c)*)
+  clenv_assign_binding clenv k (Goal.open_of_closed c)(* arnaud: original (Evd.empty,c)*)
 
 let clenv_constrain_dep_args hyps_only bl clenv =
+  let (>>=) = Goal.bind in (* arnaud: à mettre en haut *)
   if bl = [] then
-    clenv
+    Goal.return clenv
   else
     let occlist = clenv_dependent hyps_only clenv in
     if List.length occlist = List.length bl then
+      List.fold_left2 (fun ce m oc -> 
+			 ce >>= fun clenv -> 
+			 clenv_assign_binding clenv m oc)
+	              (Goal.return clenv)
+	              occlist
+	              bl
+      (* arnaud: mauvaise idée
+      (* arnaud: sortir de là pour éviter la création inutile de clôture
+	 peut-être ? *)
+      let monadic_fold_left2 
+      *)
+      (* arnaud: original:
       List.fold_left2 clenv_assign_binding clenv occlist bl
+      *)
     else 
       error ("Not the right number of missing arguments (expected "
 	     ^(string_of_int (List.length occlist))^")")
@@ -481,10 +498,10 @@ let clenv_constrain_dep_args hyps_only bl clenv =
 let make_clenv_binding_gen hyps_only n (c,t) = function
   | ImplicitBindings largs ->
       mk_clenv_from_n n (c,t) >>= fun clause ->
-      Goal.return (clenv_constrain_dep_args hyps_only largs clause)
+      clenv_constrain_dep_args hyps_only largs clause
   | ExplicitBindings lbind ->
       mk_clenv_rename_from_n n (c,t) >>= fun clause ->
-      Goal.return (clenv_match_args lbind clause)
+      clenv_match_args lbind clause
   | NoBindings ->
       mk_clenv_from_n n (c,t)
 

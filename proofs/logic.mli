@@ -21,7 +21,7 @@ val type_of : constr -> types Goal.expression
 
 (*** tactics ***)
 (* [refine] tactic *)
-val refine : Evd.open_constr -> Goal.tactic
+val refine : Goal.open_constr -> Goal.tactic
 (* [clear] tactic *)
 val clear : identifier list -> Goal.tactic
 (* [clearbody] tactic *)
@@ -35,7 +35,7 @@ type simple_tactic =
   | Cut of bool * identifier * types
   | FixRule of identifier * int * (identifier * int * constr) list
   | Cofix of identifier * (identifier * constr) list
-  | Refine of Evd.open_constr
+  | Refine of Goal.open_constr
   | Convert_concl of types * cast_kind 
   | Convert_hyp of named_declaration
   | Thin of identifier list
