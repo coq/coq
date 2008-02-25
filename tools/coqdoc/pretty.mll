@@ -395,9 +395,7 @@ rule coq_bol = parse
 	coq_bol lexbuf }
   | space* "(*"
       { let eol = comment lexbuf in
-	  if eol 
-	  then begin line_break(); coq_bol lexbuf end 
-	  else coq lexbuf }
+	  if eol then coq_bol lexbuf else coq lexbuf }
   | eof 
       { () }
   | _
