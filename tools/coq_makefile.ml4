@@ -170,7 +170,6 @@ let variables l =
   section "Variables definitions.";
   print "CAMLP4LIB:=$(shell camlp5 -where 2> /dev/null || camlp4 -where)\n";
   print "CAMLP4:=$(notdir $(CAMLP4LIB))\n"; 
-(*  print "MAKE=make \"COQBIN=$(COQBIN)\" \"OPT=$(OPT)\"\n"; *)
   print "COQSRC:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
@@ -182,11 +181,11 @@ let variables l =
   -I $(COQTOP)/contrib/omega -I $(COQTOP)/contrib/romega \\
   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \\
   -I $(CAMLP4LIB)\n";
-  print "ZFLAGS=$(OCAMLLIBS) $(COQSRC)\n";
+  print "ZFLAGS:=$(OCAMLLIBS) $(COQSRC)\n";
   if !opt = "-byte" then 
-    print "override OPT=-byte\n"
+    print "override OPT:=-byte\n"
   else
-    print "OPT=\n";
+    print "OPT:=\n";
   if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
   print "COQFLAGS:=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
   print "COQC:=$(COQBIN)coqc\n";
@@ -304,13 +303,13 @@ let all_target l =
       | [] -> []
   in
     section "Definition of the \"all\" target.";
-    print "VFILES="; print_list "\\\n  " (vfiles l); print "\n";
-    print "VOFILES=$(VFILES:.v=.vo)\n";
-    print "GLOBFILES=$(VFILES:.v=.glob)\n";
-    print "VIFILES=$(VFILES:.v=.vi)\n";
-    print "GFILES=$(VFILES:.v=.g)\n";
-    print "HTMLFILES=$(VFILES:.v=.html)\n";
-    print "GHTMLFILES=$(VFILES:.v=.g.html)\n";
+    print "VFILES:="; print_list "\\\n  " (vfiles l); print "\n";
+    print "VOFILES:=$(VFILES:.v=.vo)\n";
+    print "GLOBFILES:=$(VFILES:.v=.glob)\n";
+    print "VIFILES:=$(VFILES:.v=.vi)\n";
+    print "GFILES:=$(VFILES:.v=.g)\n";
+    print "HTMLFILES:=$(VFILES:.v=.html)\n";
+    print "GHTMLFILES:=$(VFILES:.v=.g.html)\n";
     print "\n";
     print "all: "; print_list "\\\n  " (fnames l);
     print "\n\n";
