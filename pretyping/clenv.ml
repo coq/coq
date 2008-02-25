@@ -275,13 +275,16 @@ let clenv_unify allow_K cv_pb t1 t2 clenv =
 let clenv_unify_meta_types clenv =
   { clenv with evd = w_unify_meta_types clenv.env clenv.evd }
 
-let clenv_unique_resolver allow_K clenv gl =
+let clenv_unique_resolver allow_K clenv =
+  let (>>=) = Goal.bind in (* arnaud: déplacer tout ça*)
   if isMeta (fst (whd_stack clenv.templtyp.rebus)) then
-    clenv_unify allow_K CUMUL (clenv_type clenv) (pf_concl gl)
-      (clenv_unify_meta_types clenv)
+    Goal.concl >>= fun concl ->
+    Goal.return (clenv_unify allow_K CUMUL (clenv_type clenv) concl
+		   (clenv_unify_meta_types clenv))
   else
-    clenv_unify allow_K CUMUL 
-      (meta_reducible_instance clenv.evd clenv.templtyp) (pf_concl gl) clenv
+    Goal.concl >>= fun concl ->
+    Goal.return (clenv_unify allow_K CUMUL 
+		   (meta_reducible_instance clenv.evd clenv.templtyp) concl clenv)
 
 (* [clenv_pose_dependent_evars clenv]
  * For each dependent evar in the clause-env which does not have a value,

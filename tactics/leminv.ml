@@ -305,6 +305,8 @@ let add_inversion_lemma_exn na com comsort bool tac =
 (* ================================= *)
 
 let lemInv id c gls =
+  Util.anomaly "Leminv.lemInv: à restaurer"
+  (*arnaud: à restaurer
   try
     let clause = mk_clenv_type_of gls c in
     let clause = clenv_constrain_last_binding (mkVar id) clause in
@@ -314,6 +316,7 @@ let lemInv id c gls =
 	 errorlabstrm "LemInv" 
 	   (str "Cannot refine current goal with the lemma " ++ 
 	      pr_lconstr_env (Global.env()) c) 
+  *)
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
 

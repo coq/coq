@@ -45,15 +45,15 @@ let pr_lconstr_env_at_top env = pr_lconstr_core true env
 let pr_lconstr_env env = pr_lconstr_core false env
 let pr_constr_env env = pr_constr_core false env
 
-let pr_open_lconstr_env env oc = let c = Evd.get_constr oc in pr_lconstr_env env c
-let pr_open_constr_env env oc = let c = Evd.get_constr oc in pr_constr_env env c
+let pr_open_lconstr_env env oc = let c = Goal.constr_of_open_constr oc in pr_lconstr_env env c
+let pr_open_constr_env env oc = let c = Goal.constr_of_open_constr oc in pr_constr_env env c
 
   (* NB do not remove the eta-redexes! Global.env() has side-effects... *)
 let pr_lconstr t = pr_lconstr_env (Global.env()) t
 let pr_constr t = pr_constr_env (Global.env()) t
 
-let pr_open_lconstr oc = let c = Evd.get_constr oc in pr_lconstr c
-let pr_open_constr oc = let c = Evd.get_constr oc in pr_constr c
+let pr_open_lconstr oc = let c = Goal.constr_of_open_constr oc in pr_lconstr c
+let pr_open_constr oc = let c = Goal.constr_of_open_constr oc in pr_constr c
 
 let pr_type_core at_top env t =
   pr_constr_expr (extern_type at_top env t)

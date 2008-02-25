@@ -31,7 +31,7 @@ type 'a sigma = 'a Evd.sigma
 type goal = Evd.evar_info
 type proof_instr = Decl_expr.proof_instr
 type tactic_expr =
-  (Evd.open_constr,
+  (Goal.open_constr,
    constr_pattern,
    evaluable_global_reference,
    inductive,

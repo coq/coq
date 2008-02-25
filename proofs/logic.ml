@@ -170,9 +170,9 @@ let clenv_refine with_evars clenv =
 let dft = Unification.default_unify_flags
 
 let res_pf ?(with_evars=false) ?(allow_K=false) ?(flags=dft) clenv =
-  clenv_refine with_evars
-    (* arnaud: il faut passer clenv_unique_resolver dans la monade expression *)
-    (Clenv.clenv_unique_resolver allow_K (* arnaud: restaurer ~flags:flags *) clenv) 
+  Clenv.clenv_unique_resolver allow_K (* arnaud: restaurer ~flags:flags *) clenv
+    >>= fun resolved_clenv ->
+  clenv_refine with_evars resolved_clenv
 
 (* implements apply and eapply functions  *)
 let apply_with_ebindings_gen with_evars (c,lbind) = 
@@ -187,26 +187,26 @@ let apply_with_ebindings_gen with_evars (c,lbind) =
     let n = nb_prod thm_ty - nprod in
     if n<0 then Util.error "Apply: theorem has not enough premisses.";
     Clenv.make_clenv_binding_apply (Some n) (c,thm_ty) lbind >>= fun clause ->
-    (* arnaud: on en est là, Clenvtac est plus dans la branche, mais 
-       il faut comprendre ce que res_pf fait *)
-    Clenvtac.res_pf clause ~with_evars:with_evars gl 
+    res_pf clause ~with_evars:with_evars
   in
   try try_apply thm_ty0 concl_nprod
-  with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
-    let rec try_red_apply thm_ty =
+  with (* arnaud: restaurer les bons types d'erreurs ?PretypeError _|RefinerError _|UserError _|Failure _ as exn ->*) exn ->
+      let rec try_red_apply thm_ty =
       try 
         (* Try to head-reduce the conclusion of the theorem *)
-        let red_thm = try_red_product (pf_env gl) (project gl) thm_ty in
+	Goal.env >>= fun env ->
+        Goal.defs >>= fun defs ->
+        let red_thm = Tacred.try_red_product env (Evd.evars_of defs) thm_ty in
         try try_apply red_thm concl_nprod
-        with PretypeError _|RefinerError _|UserError _|Failure _ ->
+        with (* arnaud: restaurer les bons types d'erreur ? PretypeError _|RefinerError _|UserError _|Failure _ ->*) _ ->
           try_red_apply red_thm
-      with Redelimination -> 
+      with Tacred.Redelimination -> 
         (* Last chance: if the head is a variable, apply may try
 	   second order unification *)
         if concl_nprod <> 0 then try_apply thm_ty 0
           (* Reraise the initial error message *)
         else raise exn in
-    Goal.return (try_red_apply thm_ty0)
+    try_red_apply thm_ty0
 
 let apply_with_ebindings = apply_with_ebindings_gen false
 let eapply_with_ebindings = apply_with_ebindings_gen true

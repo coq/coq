@@ -26,7 +26,7 @@ open Printer
 (* arnaud: trucs factices *)
 module Proof_type =
   struct
-    type tactic_expr = (Evd.open_constr, Pattern.constr_pattern,
+    type tactic_expr = (Goal.open_constr, Pattern.constr_pattern,
 			Names.evaluable_global_reference, Names.inductive,
 			Nametab.ltac_constant, Names.identifier, 
 			Tacexpr.glob_tactic_expr) Tacexpr.gen_tactic_expr
@@ -145,8 +145,8 @@ let rec pr_message_token prid = function
 let pr_fresh_ids = prlist (fun s -> spc() ++ pr_or_var qs s)
 
 let out_bindings = function
-  | ImplicitBindings l -> ImplicitBindings (List.map Evd.get_constr l)
-  | ExplicitBindings l -> ExplicitBindings (List.map (fun (loc,id,c) -> (loc,id,Evd.get_constr c)) l)
+  | ImplicitBindings l -> ImplicitBindings (List.map Goal.constr_of_open_constr l)
+  | ExplicitBindings l -> ExplicitBindings (List.map (fun (loc,id,c) -> (loc,id,Goal.constr_of_open_constr c)) l)
   | NoBindings -> NoBindings
 (*arnaud: original
   | ImplicitBindings l -> ImplicitBindings (List.map snd l)
@@ -264,7 +264,7 @@ let rec pr_generic prc prlc prtac x =
   | RedExprArgType ->
       pr_arg (pr_red_expr (prc,prlc,pr_evaluable_reference)) 
         (out_gen wit_red_expr x)
-  | OpenConstrArgType b -> pr_arg prc (Evd.get_constr (out_gen (wit_open_constr_gen b) x))
+  | OpenConstrArgType b -> pr_arg prc (Goal.constr_of_open_constr (out_gen (wit_open_constr_gen b) x))
   | ConstrWithBindingsArgType ->
       let (c,b) = out_gen wit_constr_with_bindings x in
       pr_arg (pr_with_bindings prc prlc) (c,out_bindings b)
@@ -306,7 +306,10 @@ let pr_raw_extend prc prlc prtac =
 let pr_glob_extend prc prlc prtac =
   pr_extend_gen (pr_glob_generic prc prlc prtac)
 let pr_extend prc prlc prtac =
-  pr_extend_gen (pr_generic (fun c -> prc (Evd.open_of_constr c)) (fun c -> prlc (Evd.open_of_constr c)) prtac)
+  pr_extend_gen (pr_generic (fun c -> prc (Goal.open_of_closed c)) (fun c -> prlc (Goal.open_of_closed c)) prtac)
+(* arnaud: why ?
+  pr_extend_gen (pr_generic (fun c -> prc ((* arnaud: ?: Goal.constr_of_open_constr*) c)) (fun c -> prlc ((*arnaud: ?: Goal.constr_of_open_constr*) c)) prtac)
+*)
 
 (**********************************************************************)
 (* The tactic printer                                                 *)
@@ -1000,12 +1003,15 @@ let strip_prod_binders_rawterm n (ty,_) =
   strip_ty [] n ty
 
 let strip_prod_binders_constr n oty =
-  let ty = Evd.get_constr oty in
+  let ty = Goal.constr_of_open_constr oty in
   let rec strip_ty acc n ty =
     if n=0 then (List.rev acc, oty) else
       match Term.kind_of_term ty with
           Term.Prod(na,a,b) ->
-            strip_ty (([dummy_loc,na],(Evd.evolve oty a))::acc) (n-1) b
+	    (* arnaud: je ne suis pas sûr de la conséquence de foutre
+	       ce [Goal.open_of_closed] ici. Je comprends pas bien à 
+	       quoi ça sert *)
+            strip_ty (([dummy_loc,na],Goal.open_of_closed a (*arnaud: ?(Evd.evolve oty a)*))::acc) (n-1) b
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 

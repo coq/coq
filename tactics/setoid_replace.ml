@@ -1747,6 +1747,8 @@ let check_evar_map_of_evars_defs evd =
    returns the modified objects (in particular [c1] and [c2]) *)  
 
 let unification_rewrite c1 c2 cl but gl = 
+  Util.anomaly "Setoid_replace.unification_rewrite: à restaurer"
+  (*arnaud: à restaurer
   let (env',c1) =
     try
       (* ~mod_delta:false to allow to mark occurences that must not be
@@ -1763,6 +1765,7 @@ let unification_rewrite c1 c2 cl but gl =
   let c2 = Clenv.clenv_nf_meta cl' c2 in
   check_evar_map_of_evars_defs env' ;
   env',Clenv.clenv_value cl', c1, c2
+  *)
 
 (* no unification is performed in this function. [sigma] is the 
  substitution obtained from an earlier unification. *)
@@ -1815,6 +1818,8 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
  relation_rewrite_no_unif c1 c2 (input_direction,cl) ~new_goals sigma gl 
 
 let analyse_hypothesis gl c =
+  Util.anomaly "Setoid_replace.analyes_hypothesis: à restaurer"
+ (*arnaud: à restaurer
  let ctype = pf_type_of gl c in
  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
@@ -1825,6 +1830,7 @@ let analyse_hypothesis gl c =
    | _ -> error "The term provided is not an equivalence" in
  let others,(c1,c2) = split_last_two args in
   eqclause,mkApp (equiv, Array.of_list others),c1,c2
+ *)
 
 let general_s_rewrite lft2rgt c ~new_goals gl =
   let eqclause,_,c1,c2 = analyse_hypothesis gl c in

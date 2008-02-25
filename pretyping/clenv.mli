@@ -84,12 +84,14 @@ val clenv_unify :
 
 (* unifies the concl of the goal with the type of the clenv *)
 val clenv_unique_resolver :
-  bool -> clausenv -> evar_info sigma -> clausenv
+  bool -> clausenv -> clausenv Goal.expression
 
+(* arnaud: si ça sert à rien, alors virer simplement
 (* same as above ([allow_K=false]) but replaces remaining metas
    with fresh evars if [evars_flag] is [true] *)
 val evar_clenv_unique_resolver :
-  bool -> clausenv -> evar_info sigma -> clausenv
+  bool -> clausenv -> clausenv Goal.expression
+*)
 
 val clenv_pose_dependent_evars : clausenv -> clausenv * evar list
 

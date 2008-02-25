@@ -17,5 +17,5 @@ type tactic = Tacticals.tactic
 val h_discrHyp : quantified_hypothesis -> tactic
 val h_injHyp : quantified_hypothesis -> tactic
 
-val refine_tac : Evd.open_constr -> tactic
+val refine_tac : Goal.open_constr -> tactic
 

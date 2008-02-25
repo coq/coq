@@ -214,6 +214,8 @@ let dummy_goal =
    sigma = empty}
 
 let make_apply_entry env sigma (eapply,verbose) (c,cty) =
+  Util.anomaly "Auto.make_appy_entry: à restaurer"
+  (*arnaud: à restaurer
   let cty = hnf_constr env sigma cty in
   match kind_of_term cty with
     | Prod _ ->
@@ -238,6 +240,7 @@ let make_apply_entry env sigma (eapply,verbose) (c,cty) =
              pat = Some pat;
              code = Res_pf(c,{ce with env=empty_env}) })
     | _ -> failwith "make_apply_entry"
+  *)
  
 (* eap is (e,v) with e=true if eapply and v=true if verbose 
    c is a constr
@@ -280,12 +283,15 @@ let make_extern pri pat tacast =
      code= Extern tacast })
 
 let make_trivial env sigma c =
+  Util.anomaly "Auto.make_trivial: à restaurer"
+  (*arnaud: à restaurer
   let t = hnf_constr env sigma (type_of env sigma c) in
   let hd = head_of_constr_reference (List.hd (head_constr t)) in
   let ce = mk_clenv_from dummy_goal (c,t) in
   (hd, { pri=1;
          pat = Some (Pattern.pattern_of_constr (clenv_type ce));
          code=Res_pf_THEN_trivial_fail(c,{ce with env=empty_env}) })
+  *)
 
 open Vernacexpr
 
@@ -578,9 +584,12 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
 (* Try unification with the precompiled clause, then use registered Apply *)
 
 let unify_resolve (c,clenv) gls = 
+  Util.anomaly "Auto.unify_resolve: à restaurer"
+  (*arnaud: à restaurer
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false clenv' gls in  
   h_simplest_apply c gls
+  *)
 
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)

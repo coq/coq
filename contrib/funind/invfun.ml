@@ -440,7 +440,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Nameops.next_ident_away (Nameops.out_name x) avoid in
-	     (dummy_loc,Rawterm.NamedHyp id,Evd.open_of_constr p)::bindings,id::avoid
+	     (dummy_loc,Rawterm.NamedHyp id,Goal.open_of_closed p)::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
 	  princ_infos.params
@@ -450,7 +450,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Nameops.next_ident_away (Nameops.out_name x) avoid in 
-	     (dummy_loc,Rawterm.NamedHyp id,Evd.open_of_constr (nf_zeta p))::bindings,id::avoid)
+	     (dummy_loc,Rawterm.NamedHyp id,Goal.open_of_closed (nf_zeta p))::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))

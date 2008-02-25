@@ -602,6 +602,8 @@ let find_sigma_data s = build_sigma_type ()
  *)
 
 let make_tuple env sigma (rterm,rty) lind =
+  Util.anomaly "Equality.make_tuple: à restaurer"
+  (* arnaud: à restaurer
   assert (dependent (mkRel lind) rty);
   let {intro = exist_term; typ = sig_term} =
     find_sigma_data (get_sort_of env sigma rty) in
@@ -613,6 +615,7 @@ let make_tuple env sigma (rterm,rty) lind =
   let p = mkLambda (na, a, rty) in
   (applist(exist_term,[a;p;(mkRel lind);rterm]),
    applist(sig_term,[a;p]))
+  *)
 
 (* check that the free-references of the type of [c] are contained in
    the free-references of the normal-form of that type. Strictly
@@ -667,6 +670,8 @@ let minimal_free_rels env sigma (c,cty) =
  *)
 
 let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
+  Util.anomaly "Equality.sig_clause_form: à restaurer"
+  (* arnaud: à restaurer:
   let { intro = exist_term } = find_sigma_data sort_of_ty in 
   let evdref = ref (Evd.create_goal_evar_defs sigma) in
   let rec sigrec_clausal_form siglen p_i =
@@ -694,6 +699,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   in
   let scf = sigrec_clausal_form siglen ty in
   Evarutil.nf_evar (Evd.evars_of !evdref) scf
+  *)
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors
@@ -765,7 +771,10 @@ let make_iterated_tuple env sigma dflt (z,zty) =
   let dfltval = sig_clausal_form env sigma sort_of_zty n tuplety dflt in
   (tuple,tuplety,dfltval)
 
-let rec build_injrec sigma env dflt c = function
+let rec build_injrec sigma env dflt c = 
+  Util.anomaly "Equality.build_injrec: à restaurer"
+(*arnaud: à restaurer
+function
   | [] -> make_iterated_tuple env sigma dflt (c,type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
@@ -773,6 +782,7 @@ let rec build_injrec sigma env dflt c = function
       let (subval,tuplety,dfltval) = build_injrec sigma cnum_env dflt newc l in
       (kont subval (dfltval,tuplety),
        tuplety,dfltval)
+*)
 
 let build_injector sigma env dflt c cpath =
   let (injcode,resty,_) = build_injrec sigma env dflt c cpath in
@@ -825,6 +835,8 @@ exception Not_dep_pair
 
 
 let injEq ipats (eq,(t,t1,t2)) id gls =
+  Util.anomaly "Equality.injEq: à restaurer"
+  (*arnaud: à restaurer:
   let sigma = project gls in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
@@ -878,6 +890,7 @@ let injEq ipats (eq,(t,t1,t2)) id gls =
 	  (intros_pattern None ipats)
 	  gls
         )
+  *)
 
 let inj ipats = onEquality (injEq ipats)
 

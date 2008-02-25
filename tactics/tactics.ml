@@ -123,20 +123,20 @@ let rec nb_prod x =
       | _ -> n
   in count 0 x
 
-let inj_occ (occ,c) = (occ,Evd.open_of_constr c)
+let inj_occ (occ,c) = (occ,Goal.open_of_closed c)
 
 let inj_red_expr = function
   | Simpl lo -> Simpl (Option.map inj_occ lo)
-  | Fold l -> Fold (List.map Evd.open_of_constr l)
+  | Fold l -> Fold (List.map Goal.open_of_closed l)
   | Pattern l -> Pattern (List.map inj_occ l)
   | (ExtraRedExpr _ | CbvVm | Red _ | Hnf | Cbv _ | Lazy _ | Unfold _ as c)
     -> c
 
 let inj_ebindings = function
   | NoBindings -> NoBindings
-  | ImplicitBindings l -> ImplicitBindings (List.map Evd.open_of_constr l)
+  | ImplicitBindings l -> ImplicitBindings (List.map Goal.open_of_closed l)
   | ExplicitBindings l -> 
-      ExplicitBindings (List.map (fun (l,id,c) -> (l,id,Evd.open_of_constr c)) l)
+      ExplicitBindings (List.map (fun (l,id,c) -> (l,id,Goal.open_of_closed c)) l)
 
 (*********************************************)
 (*                 Tactics                   *)
@@ -593,6 +593,8 @@ let error_uninstantiated_metas t clenv =
   in errorlabstrm "" (str "cannot find an instance for " ++ pr_id id)
 
 let clenv_refine_in with_evars id clenv gl =
+  Util.anomaly "Tactics.clenv_refine_in: à réfléchir"
+  (* arnaud: à réfléchir
   let clenv = if with_evars then clenv_pose_dependent_evars clenv else clenv in
   let new_hyp_typ  = clenv_type clenv in
   if not with_evars & occur_meta new_hyp_typ then 
@@ -602,6 +604,7 @@ let clenv_refine_in with_evars id clenv gl =
     (tclEVARS (evars_of clenv.evd))
     (cut_replacing id new_hyp_typ
       (fun x gl -> refine_no_check new_hyp_prf gl)) gl
+  *)
 
 
 (****************************************************)
@@ -611,6 +614,8 @@ let clenv_refine_in with_evars id clenv gl =
 (* Resolution with missing arguments *)
 
 let apply_with_ebindings_gen with_evars (c,lbind) gl = 
+  Util.anomaly "Tactics.apply_with_ebindings_gen: à remplacer"
+  (* arnaud: à remplacer
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -637,6 +642,7 @@ let apply_with_ebindings_gen with_evars (c,lbind) gl =
           (* Reraise the initial error message *)
         else raise exn in
     try_red_apply thm_ty0
+  *)
 
 let apply_with_ebindings = apply_with_ebindings_gen false
 let eapply_with_ebindings = apply_with_ebindings_gen true
@@ -657,8 +663,11 @@ let apply_list = function
 (* Resolution with no reduction on the type *)
 
 let apply_without_reduce c gl = 
+  Util.anomaly "Tactics.apply_without_reduce: à restaurer"
+  (* arnaud: à restaurer (sans doute)
   let clause = mk_clenv_type_of gl c in 
   res_pf clause gl
+  *)
 
 (* [apply_in hyp c] replaces
 
@@ -686,6 +695,8 @@ let progress_with_clause innerclause clause =
   with Failure _ -> error "Unable to unify"
 
 let apply_in_once gl innerclause (d,lbind) =
+  Util.anomaly "Tactics.apply_in_once: à restaurer"
+  (* arnaud: à restaurer
   let thm = nf_betaiota (pf_type_of gl d) in
   let rec aux clause =
     try progress_with_clause innerclause clause
@@ -693,12 +704,16 @@ let apply_in_once gl innerclause (d,lbind) =
     try aux (clenv_push_prod clause)
     with NotExtensibleClause -> raise err
   in aux (make_clenv_binding gl (d,thm) lbind)
+  *)
 
 let apply_in with_evars id lemmas gl =
+  Util.anomaly "Tactics.apply_in: à restaurer"
+    (* arnaud: à restaurer
   let t' = pf_get_hyp_typ gl id in
   let innermostclause = mk_clenv_from_n gl (Some 0) (mkVar id,t') in
   let clause = List.fold_left (apply_in_once gl) innermostclause lemmas in
   clenv_refine_in with_evars id clause gl
+    *)
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
    |- B -> C and |- A
@@ -793,6 +808,8 @@ let rec intros_clearing = function
 (* Adding new hypotheses  *)
 
 let new_hyp mopt (c,lbind) g =
+  Util.anomaly "Tactics.new_hyp: à restaurer"
+  (*arnaud: à restaurer
   let clause  = make_clenv_binding g (c,pf_type_of g c) lbind in
   let clause = clenv_unify_meta_types clause in
   let (thd,tstack) = whd_stack (clenv_value clause) in
@@ -809,6 +826,7 @@ let new_hyp mopt (c,lbind) g =
   (tclTHENLAST (tclTHEN (tclEVARS (evars_of clause.evd))
                (cut (pf_type_of g cut_pf)))
      ((tclORELSE (apply cut_pf) (exact_no_check cut_pf)))) g
+  *)
 
 (* Keeping only a few hypotheses *)
 
@@ -903,7 +921,10 @@ let elimination_clause_scheme with_evars allow_K elimclause indclause gl =
  * refine fails *)
 
 let type_clenv_binding wc (c,t) lbind = 
+  Util.anomaly "Tactics.type_clenv_binding: à restaurer"
+  (* arnaud: à restaurer
   clenv_type (make_clenv_binding wc (c,t) lbind)
+  *)
 
 (* 
  * Elimination tactic with bindings and using an arbitrary 
@@ -914,12 +935,15 @@ let type_clenv_binding wc (c,t) lbind =
  *)
 
 let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) gl =
+  Util.anomaly "Tactics.general_elim_clause: à restaurer"
+  (* arnaud: à restaurer
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let indclause  = make_clenv_binding gl (c,t) lbindc  in
   let elimt      = pf_type_of gl elimc in
   let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
     elimtac elimclause indclause gl
+  *)
 
 let general_elim with_evars c e ?(allow_K=true) =
   general_elim_clause (elimination_clause_scheme with_evars allow_K) c e
@@ -960,6 +984,8 @@ let simplest_elim c = default_elim false (c,NoBindings)
 *)
 
 let elimination_in_clause_scheme with_evars id elimclause indclause gl =
+  Util.anomaly "Tactics.elimination_in_clause_scheme: à restaurer"
+  (*arnaud: à restaurer
   let (hypmv,indmv) = 
     match clenv_independent elimclause with
         [k1;k2] -> (k1,k2)
@@ -975,6 +1001,7 @@ let elimination_in_clause_scheme with_evars id elimclause indclause gl =
     errorlabstrm "general_rewrite_in" 
       (str "Nothing to rewrite in " ++ pr_id id);
   clenv_refine_in with_evars id elimclause'' gl
+  *)
 
 let general_elim_in with_evars id =
   general_elim_clause (elimination_in_clause_scheme with_evars id)
@@ -1682,6 +1709,8 @@ let empty_scheme =
 (* Unification between ((elimc:elimt) ?i ?j ?k ?l ... ?m) and the
    hypothesis on which the induction is made *)
 let induction_tac with_evars (varname,lbind) typ scheme gl =
+  Util.anomaly "Tactics.induction_tac: à restaurer"
+  (* arnaud: à restaurer
   let elimc,lbindelimc = 
     match scheme.elimc with | Some x -> x | None -> error "No definition of the principle" in
   let elimt = scheme.elimt in
@@ -1690,6 +1719,7 @@ let induction_tac with_evars (varname,lbind) typ scheme gl =
     make_clenv_binding gl 
       (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc in
   elimination_clause_scheme with_evars true elimclause indclause gl
+  *)
 
 let make_base n id =
   if n=0 or n=1 then id
@@ -2170,6 +2200,8 @@ let mapi f l =
    of lid are parameters (first ones), the other are
    arguments. Returns the clause obtained.  *)
 let recolle_clenv scheme lid elimclause gl = 
+  Util.anomaly "Tactics.recolle_clenv: à restaurer"
+  (* arnaud:
   let _,arr = destApp elimclause.templval.rebus in
   let lindmv = 
     Array.map
@@ -2208,6 +2240,7 @@ let recolle_clenv scheme lid elimclause gl =
       elimclause')
     (List.rev clauses)
     elimclause
+  *)
 
 
 
@@ -2216,6 +2249,8 @@ let recolle_clenv scheme lid elimclause gl =
     produce new ones). Then refine with the resulting term with holes.
 *)
 let induction_tac_felim with_evars indvars (* (elimc,lbindelimc) elimt *) scheme gl = 
+  Util.anomaly "Tactics.induction_tac_felim: à restaurer"
+  (* arnaud: à restaurer:
   let elimt = scheme.elimt in
   let elimc,lbindelimc = 
     match scheme.elimc with | Some x -> x | None -> error "No definition of the principle" in
@@ -2227,6 +2262,7 @@ let induction_tac_felim with_evars indvars (* (elimc,lbindelimc) elimt *) scheme
   (* one last resolution (useless?) *)
   let resolved = clenv_unique_resolver true elimclause' gl in
   clenv_refine with_evars resolved gl
+  *)
 
 (* Induction with several induction arguments, main differences with
    induction_from_context is that there is no main induction argument,
@@ -2509,6 +2545,8 @@ let simple_destruct = function
  *)
 
 let elim_scheme_type elim t gl =
+  Util.anomaly "Tactics.elim_scheme_type: à restaurer"
+  (*arnaud: à restaurer
   let clause = mk_clenv_type_of gl elim in
   match kind_of_term (last_arg clause.templval.rebus) with
     | Meta mv ->
@@ -2518,11 +2556,15 @@ let elim_scheme_type elim t gl =
             (clenv_meta_type clause mv) clause in
 	res_pf clause' ~allow_K:true gl
     | _ -> anomaly "elim_scheme_type"
+  *)
 
 let elim_type t gl =
+  Util.anomaly "Tactics.elim_type: à restaurer"
+    (* arnaud: à restaurer
   let (ind,t) = pf_reduce_to_atomic_ind gl t in
   let elimc = lookup_eliminator ind (elimination_sort_of_goal gl) in
   elim_scheme_type elimc t gl
+    *)
 
 let case_type t gl =
   let (ind,t) = pf_reduce_to_atomic_ind gl t in

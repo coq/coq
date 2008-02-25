@@ -27,4 +27,4 @@ val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> con
   (identifier * types * bool * Intset.t) array * constr
     (* Obl. name, type as product, opacity (true = opaque) and dependencies as indexes into the array *)
 
-val etermtac : open_constr -> tactic
+val etermtac : Goal.open_constr -> tactic

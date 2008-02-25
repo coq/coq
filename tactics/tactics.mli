@@ -29,15 +29,15 @@ open Rawterm
 type hyp_location = (int list list list * Names.identifier) * Tacexpr.hyp_location_flag
 (* arnaud: /trucs factices *)
 
-val inj_red_expr : red_expr -> (open_constr, evaluable_global_reference) red_expr_gen
-val inj_ebindings : constr bindings -> open_constr bindings
+val inj_red_expr : red_expr -> (Goal.open_constr, evaluable_global_reference) red_expr_gen
+val inj_ebindings : constr bindings -> Goal.open_constr bindings
 
 (* Main tactics. *)
 
 (*s General functions. *)
 
 val type_clenv_binding : goal sigma ->
-  constr * constr -> open_constr bindings  -> constr
+  constr * constr -> Goal.open_constr bindings  -> constr
 
 val string_of_inductive : constr -> string
 val head_constr       : constr -> constr list
@@ -273,17 +273,17 @@ val dorE : bool -> clause ->tactic
 (*s Introduction tactics. *)
 
 val constructor_tac            : int option -> int -> 
-                                 open_constr bindings  -> tactic
-val one_constructor            : int -> open_constr bindings  -> tactic
+                                 Goal.open_constr bindings  -> tactic
+val one_constructor            : int -> Goal.open_constr bindings  -> tactic
 val any_constructor            : tactic option -> tactic
 
 val left                       : constr bindings -> tactic
 val right                      : constr bindings -> tactic
 val split                      : constr bindings -> tactic
 
-val left_with_ebindings        : open_constr bindings -> tactic
-val right_with_ebindings       : open_constr bindings -> tactic
-val split_with_ebindings       : open_constr bindings -> tactic
+val left_with_ebindings        : Goal.open_constr bindings -> tactic
+val right_with_ebindings       : Goal.open_constr bindings -> tactic
+val split_with_ebindings       : Goal.open_constr bindings -> tactic
 
 val simplest_left              : tactic
 val simplest_right             : tactic

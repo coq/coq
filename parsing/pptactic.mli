@@ -21,7 +21,7 @@ open Evd
 (* arnaud: trucs factices *)
 module Proof_type :
   sig
-    type tactic_expr = (Evd.open_constr, Pattern.constr_pattern,
+    type tactic_expr = (Goal.open_constr, Pattern.constr_pattern,
 			Names.evaluable_global_reference, Names.inductive,
 			Nametab.ltac_constant, Names.identifier, 
 			Tacexpr.glob_tactic_expr) Tacexpr.gen_tactic_expr
@@ -84,7 +84,7 @@ val pr_glob_extend:
     string -> glob_generic_argument list -> std_ppcmds
 
 val pr_extend :
-  (open_constr -> std_ppcmds) -> (open_constr -> std_ppcmds) ->
+  (Goal.open_constr -> std_ppcmds) -> (Goal.open_constr -> std_ppcmds) ->
   (tolerability -> glob_tactic_expr -> std_ppcmds) -> int ->
     string -> typed_generic_argument list -> std_ppcmds
 

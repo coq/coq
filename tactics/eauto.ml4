@@ -180,9 +180,12 @@ open Auto
 (***************************************************************************)
 
 let unify_e_resolve  (c,clenv) gls = 
+  Util.anomaly "Eauto.unify_e_resolve: à restaurer"
+  (*arnaud: à restaurer
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false clenv' gls in
   h_simplest_eapply c gls
+  *)
 
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl = 

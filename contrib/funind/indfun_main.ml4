@@ -61,7 +61,7 @@ let pr_fun_ind_using  prc prlc _ opt_c =
 
 let pr_with_bindings_typed prc prlc (c,bl) =
   prc c ++ 
-  hv 0 (pr_bindings (fun c -> prc (Evd.get_constr c)) (fun c -> prlc (Evd.get_constr c))  bl)
+  hv 0 (pr_bindings (fun c -> prc (Goal.constr_of_open_constr c)) (fun c -> prlc (Goal.constr_of_open_constr c))  bl)
 
 let pr_fun_ind_using_typed prc prlc _ opt_c = 
   match opt_c with

@@ -454,6 +454,8 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
 
 
 let raw_inversion inv_kind id status names gl =
+  Util.anomaly "Inv.raw_inversion: à restaurer"
+  (*arnaud: à restaurer:
   let env = pf_env gl and sigma = project gl in
   let c = mkVar id in
   let t = strong_prodspine (pf_whd_betadeltaiota gl) (pf_type_of gl c) in
@@ -488,6 +490,7 @@ let raw_inversion inv_kind id status names gl =
                  (list_tabulate (fun _ -> Evarutil.mk_new_meta()) neqns))
               reflexivity))])
   gl
+  *)
 
 (* Error messages of the inversion tactics *)
 let not_found_message ids =
