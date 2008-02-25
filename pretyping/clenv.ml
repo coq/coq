@@ -288,15 +288,18 @@ let clenv_unique_resolver allow_K clenv gl =
  * pose a value for it by constructing a fresh evar.  We do this in
  * left-to-right order, so that every evar's type is always closed w.r.t.
  * metas. *)
+(* spiwack: we return, additionally the list of evars so-introduced.
+   which will be needed by eapply. *)
 let clenv_pose_dependent_evars clenv =
   let dep_mvs = clenv_dependent false clenv in
   List.fold_left
-    (fun clenv mv ->
+    (fun (clenv,my_evars) mv ->
       let ty = clenv_meta_type clenv mv in
       let (evd,evar) = 
 	new_evar clenv.evd (cl_env clenv) ~src:(dummy_loc,GoalEvar) ty in
-      clenv_assign mv evar {clenv with evd=evd})
-    clenv
+      let (e,_) = destEvar evar in
+      (clenv_assign mv evar {clenv with evd=evd}, e::my_evars))
+    (clenv,[])
     dep_mvs
 
 let evar_clenv_unique_resolver = clenv_unique_resolver
@@ -354,7 +357,7 @@ let clenv_fchain ?(allow_K=true) mv clenv nextclenv =
 (***************************************************************)
 (* Bindings *)
 
-type arg_bindings = open_constr explicit_bindings
+type arg_bindings = Goal.open_constr explicit_bindings
 
 (* [clenv_independent clenv]
  * returns a list of metavariables which appear in the term cval,
@@ -421,7 +424,11 @@ let clenv_unify_similar_types clenv c t u =
     TypeProcessed, { clenv with evd = evd }, c
 
 let clenv_assign_binding clenv k oc = (*arnaud: original (sigma,c) =*)
-  let sigma = Evd.get_map oc in
+  let (>>=) = Goal.bind in (* arnaud: à déplacer *)
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of in
+  (* arnaud: est-ce que c'est vriament ça qu'on veut faire...
+     cela dit on peut rester conservatifs *)
   let c = Evd.get_constr oc in
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in

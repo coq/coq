@@ -66,6 +66,11 @@ type 'a expression = Environ.env -> Evd.evar_defs ref -> goal -> Evd.evar_info -
 (* type of the goal tactics*)
 type tactic = refinement expression
 
+(* type of constr with holes manipulated by the API *)
+type open_constr = {
+  me: constr;
+  my_evars: Evd.evar list
+}
 
 (* runs a goal tactic on a given goal (knowing the current evar_defs). *)
 (* the evar_info corresponding to the goal is computed at once
@@ -119,18 +124,21 @@ let open_constr_of_raw check_type rawc env rdefs gl info =
   in
   (* [delta_evars] in the shape of a list of [evar]-s*)
   let delta_list = List.map fst (Evd.to_list delta_evars) in
+  (* arnaud: à restaurer: probablement proposer une helper fonction ?
   Evd.make_open_constr ~global_defs: post_defs
                        ~my_evars: delta_list
                        ~me: open_constr
+  *)
+  Util.anomaly "Goal.open_constr_of_raw: à restaurer"
 
 (* arnaud: à commenter un brin plus *)
 let refine step env rdefs gl info =
   (* subgoals to return *)
   (* arnaud: et les noms? *)
-  let subgoals = List.map build (Evd.get_my_evars step) in
+  let subgoals = List.map build (step.my_evars) in
   (* creates the new [evar_defs] by defining the evar of the current goal
      as being [refine_step]. *)
-  let new_defs = Evd.evar_define gl.content (Evd.get_constr step) !rdefs in
+  let new_defs = Evd.evar_define gl.content (step.me) !rdefs in
   rdefs := new_defs; 
   { subgoals = subgoals ;
     new_defs = new_defs ;
@@ -251,6 +259,7 @@ let clear_body idents env rdefs gl info =
 
 
 
+(*** Implementation of the "apply" tactic ***)
 
 
 

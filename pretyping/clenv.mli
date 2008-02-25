@@ -91,12 +91,12 @@ val clenv_unique_resolver :
 val evar_clenv_unique_resolver :
   bool -> clausenv -> evar_info sigma -> clausenv
 
-val clenv_pose_dependent_evars : clausenv -> clausenv
+val clenv_pose_dependent_evars : clausenv -> clausenv * evar list
 
 (***************************************************************)
 (* Bindings *)
 
-type arg_bindings = open_constr explicit_bindings
+type arg_bindings = Goal.open_constr explicit_bindings
 
 (* bindings where the key is the position in the template of the
    clenv (dependent or not). Positions can be negative meaning to
@@ -106,6 +106,7 @@ val clenv_missing : clausenv -> metavariable list
 
 val clenv_constrain_last_binding : constr -> clausenv -> clausenv
 
+(* arnaud: on se satisfairait d'un clausenv expression most likely *) 
 (* defines metas corresponding to the name of the bindings *)
 val clenv_match_args : arg_bindings -> clausenv -> clausenv
 
@@ -119,10 +120,10 @@ val clenv_unify_meta_types : clausenv -> clausenv
 (* arnaud: en cas de problème les originaux sont au même endroit dans le
    trunk *)
 val make_clenv_binding_apply :
-  int option -> constr * constr -> open_constr bindings ->
+  int option -> constr * constr -> Goal.open_constr bindings ->
    clausenv Goal.expression
 val make_clenv_binding :
-  constr * constr -> open_constr bindings -> clausenv Goal.expression
+  constr * constr -> Goal.open_constr bindings -> clausenv Goal.expression
 
 (* [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
    [lmetas] is a list of metas to be applied to a proof of [t] so that

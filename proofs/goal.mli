@@ -39,13 +39,16 @@ type 'a expression
 (* type of the goal tactics*)
 type tactic = refinement expression
 
+(* type of constr with holes manipulated by the API *)
+type open_constr
+
 val run : tactic -> Environ.env -> Evd.evar_defs -> goal -> refinement
 
 (*arnaud: à commenter/déplacer tout ça *)
-val open_constr_of_raw : bool -> Rawterm.rawconstr -> Evd.open_constr expression
+val open_constr_of_raw : bool -> Rawterm.rawconstr -> open_constr expression
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)
-val refine : Evd.open_constr -> tactic
+val refine : open_constr -> tactic
 
 
 (*arnaud: commenter plus sans doute. Pareil dans le .ml *)

@@ -483,6 +483,7 @@ let evar_merge evd evars =
 (*******************************************************************)
 type weak_open_constr = evar_map * constr
 
+(* arnaud: à supprimer
 type open_constr = { oc: constr;
 		     context: evar_defs;
 		     my_evars: evar list} (* [my_evars] should be in the
@@ -493,6 +494,7 @@ let get_defs oc = oc.context
 let get_map oc = evars_of oc.context
 let get_my_evars oc = oc.my_evars
 
+
 (* open_of_weak might create a wrong [my_evars] list, it is provided mostly
    for compatibility reasons. *)
 let open_of_weak (s,c) = 
@@ -502,6 +504,7 @@ let open_of_constr c = open_of_weak (empty,c)
 let evolve oc c = { oc with oc = c  }
 let make_open_constr ~me ~global_defs ~my_evars =
   { oc = me ; context = global_defs ; my_evars = my_evars }
+*)
 
 (**********************************************************)
 (* Sort variables *)

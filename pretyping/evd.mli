@@ -200,6 +200,7 @@ val subst_defined_metas : metabinding list -> constr -> constr option
 (* arnaud: documenter *)
 type weak_open_constr = evar_map * constr
 
+(* arnaud: à supprimer
 type open_constr
 
 val get_constr : open_constr -> constr
@@ -217,6 +218,7 @@ val evolve : open_constr -> constr -> open_constr
 val make_open_constr : me:constr -> 
                        global_defs:evar_defs -> 
                        my_evars:evar list    -> open_constr
+*)
 
 (**********************************************************)
 (* Sort variables *)

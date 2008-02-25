@@ -104,6 +104,176 @@ let intro id =
 (*** arnaud: remettre dans tactics.ml ? ***)
 
 
+
+(*** Apply and Eapply and their technicities ***)
+
+
+
+(* arnaud: checker ce qui doit rester ici et ce qui ferait mieux de partir *)
+
+(* This function put casts around metavariables whose type cannot be
+ * infered by the meta-inferer, that is head of applications, predicates and
+ * subject of Cases.
+ * Does check that the casted type is closed. Anyway, the refiner would
+ * fail in this case... *)
+
+(* arnaud: circular dependency with Clenv... mover there je suppose *)
+
+let clenv_cast_meta clenv = 
+  let rec crec u =
+    match kind_of_term u with
+      | App _ | Case _ -> crec_hd u
+      | Cast (c,_,_) when isMeta c -> u
+      | _  -> map_constr crec u
+	    
+  and crec_hd u =
+    match kind_of_term (strip_outer_cast u) with
+      | Meta mv ->
+	  (try 
+            let b = Typing.meta_type clenv.Clenv.evd mv in
+	    if occur_meta b then u
+            else mkCast (mkMeta mv, DEFAULTcast, b)
+	  with Not_found -> u)
+      | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
+      | Case(ci,p,c,br) ->
+	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
+      | _ -> u
+  in 
+  crec
+
+(* Will only be used on terms given to the apply rule which have meta 
+variables only in Application and Case *)
+let collect_meta_variables c = 
+  let rec collrec acc c = match kind_of_term c with
+    | Meta mv -> mv::acc
+    | Cast(c,_,_) -> collrec acc c
+    | (App _| Case _) -> fold_constr collrec acc c
+    | _ -> acc
+  in 
+  List.rev(collrec [] c)
+
+
+(* arnaud: ça va prendre un peu plus de temps que prévu à implémenter 
+(* arnaud: open_term -> open_term *)
+(* arnaud: open terms should really be part of the expression monad *)
+let instantiate_metas ot =
+let rec mk_refgoals sigma goal goalacc conclty trm =
+  let env = evar_env goal in
+  let hyps = goal.evar_hyps in
+  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
+(*
+   if  not (occur_meta trm) then
+    let t'ty = (unsafe_machine env sigma trm).uj_type in 	
+    let _ = conv_leq_goal env sigma trm t'ty conclty in
+      (goalacc,t'ty)
+  else
+*)
+  match kind_of_term trm with
+    | Meta _ ->
+	if occur_meta conclty then
+          raise (RefinerError (OccurMetaGoal conclty));
+	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
+
+    | Cast (t,_, ty) ->
+	check_typability env sigma ty;
+	check_conv_leq_goal env sigma trm ty conclty;
+	mk_refgoals sigma goal goalacc ty t
+
+    | App (f,l) ->
+	let (acc',hdty) =
+	  match kind_of_term f with
+	    | (Ind _ (* needed if defs in Type are polymorphic: | Const _*))
+		when not (array_exists occur_meta l) (* we could be finer *) ->
+		(* Sort-polymorphism of definition and inductive types *)
+		goalacc, 
+		type_of_global_reference_knowing_parameters env sigma f l
+	    | _ -> 
+		mk_hdgoals sigma goal goalacc f
+	in
+	let (acc'',conclty') =
+	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
+	check_conv_leq_goal env sigma trm conclty' conclty;
+        (acc'',conclty')
+
+    | Case (_,p,c,lf) ->
+	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
+	check_conv_leq_goal env sigma trm conclty' conclty;
+	let acc'' = 
+	  array_fold_left2
+            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
+            acc' lbrty lf 
+	in
+	(acc'',conclty')
+
+    | _ -> 
+	if occur_meta trm then raise (RefinerError (OccurMeta trm));
+      	let t'ty = goal_type_of env sigma trm in
+	check_conv_leq_goal env sigma trm t'ty conclty;
+        (goalacc,t'ty)
+
+(* Same as mkREFGOALS but without knowing te type of the term. Therefore,
+ * Metas should be casted. *)
+
+and mk_hdgoals sigma goal goalacc trm =
+  let env = evar_env goal in
+  let hyps = goal.evar_hyps in
+  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
+  match kind_of_term trm with
+    | Cast (c,_, ty) when isMeta c ->
+	check_typability env sigma ty;
+	(mk_goal hyps (nf_betaiota ty))::goalacc,ty
+
+    | Cast (t,_, ty) ->
+	check_typability env sigma ty;
+	mk_refgoals sigma goal goalacc ty t
+
+    | App (f,l) ->
+	let (acc',hdty) = 
+	  if isInd f or isConst f 
+	     & not (array_exists occur_meta l) (* we could be finer *)
+	  then
+	    (goalacc,type_of_global_reference_knowing_parameters env sigma f l)
+	  else mk_hdgoals sigma goal goalacc f
+	in
+	mk_arggoals sigma goal acc' hdty (Array.to_list l)
+
+    | Case (_,p,c,lf) ->
+	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
+	let acc'' = 
+	  array_fold_left2
+            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
+            acc' lbrty lf 
+	in
+	(acc'',conclty')
+
+    | _ -> goalacc, goal_type_of env sigma trm
+
+and mk_arggoals sigma goal goalacc funty = function
+  | [] -> goalacc,funty
+  | harg::tlargs as allargs ->
+      let t = whd_betadeltaiota (evar_env goal) sigma funty in
+      match kind_of_term t with
+	| Prod (_,c1,b) ->
+	    let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
+	    mk_arggoals sigma goal acc' (subst1 harg b) tlargs
+	| LetIn (_,c1,_,b) ->
+	    mk_arggoals sigma goal goalacc (subst1 c1 b) allargs
+	| _ -> raise (RefinerError (CannotApply (t,harg)))
+
+and mk_casegoals sigma goal goalacc p c =
+  let env = evar_env goal in
+  let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
+  let (acc'',pt) = mk_hdgoals sigma goal acc' p in
+  let pj = {uj_val=p; uj_type=pt} in 
+  let indspec =
+    try find_mrectype env sigma ct
+    with Not_found -> anomaly "mk_casegoals" in
+  let (lbrty,conclty) =
+    type_case_branches_with_names env indspec pj c in
+  (acc'',lbrty,conclty)
+
+*)
+
 (* implements apply and eapply functions  *)
 let apply_with_ebindings_gen with_evars (c,lbind) = 
   (* The actual type of the theorem. It will be matched against the

@@ -51,7 +51,7 @@ type rawconstr_and_expr = rawconstr * constr_expr option
 type open_constr_expr = unit * constr_expr
 type open_rawconstr = unit * rawconstr_and_expr
 
-type 'a with_ebindings = 'a * open_constr bindings
+type 'a with_ebindings = 'a * Goal.open_constr bindings
 
 (* Dynamics but tagged by a type expression *)
 
@@ -61,7 +61,7 @@ let dyntab = ref ([] : string list)
 
 type rlevel = constr_expr
 type glevel = rawconstr_and_expr
-type tlevel = open_constr
+type tlevel = Goal.open_constr
 
 type ('a,'b) abstract_argument_type = argument_type
 
