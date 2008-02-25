@@ -104,9 +104,9 @@ let make_fullid id =
 let split_sp s = 
   try
     let i = String.rindex s '.' in
-    String.sub s 0 i, String.sub s (i + 1) (String.length s - i - 1)
-  with Not_found -> 
-    "", s
+      String.sub s 0 i, String.sub s (i + 1) (String.length s - i - 1)
+  with 
+      Not_found -> "", s
 
 let modules = Hashtbl.create 97
 let local_modules = Hashtbl.create 97

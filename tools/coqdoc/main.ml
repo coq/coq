@@ -435,11 +435,11 @@ let produce_document l =
       copy src dst;
       List.iter read_glob l);
   (if !target_language=LaTeX then
-    let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.sty") in
-    let dst = if !output_dir <> "" then 
-      Filename.concat !output_dir "coqdoc.sty" 
-    else "coqdoc.sty" in
-      copy src dst);
+      let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.sty") in
+      let dst = if !output_dir <> "" then 
+	  Filename.concat !output_dir "coqdoc.sty" 
+	else "coqdoc.sty" in
+	copy src dst);
   List.iter index_module l;
   match !out_to with
     | StdOut -> 
