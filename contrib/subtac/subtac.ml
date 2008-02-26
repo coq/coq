@@ -100,7 +100,7 @@ let declare_assumption env isevars idl is_coe k bl c nl =
       Subtac_pretyping.subtac_process env isevars id [] (Command.generalize_constr_expr c bl) None 
     in
     let c = solve_tccs_in_type env id isevars evm c typ in
-      List.iter (Command.declare_one_assumption is_coe k c nl) idl
+      List.iter (Command.declare_one_assumption is_coe k c imps nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")
@@ -149,7 +149,7 @@ let subtac (loc, command) =
 	  vernac_assumption env isevars stre l nl
 
       | VernacInstance (sup, is, props) ->
-	  Subtac_classes.new_instance sup is props
+	  ignore(Subtac_classes.new_instance sup is props)
 
       | VernacCoFixpoint (l, b) ->
 	  let _ = trace (str "Building cofixpoint") in

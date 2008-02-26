@@ -221,4 +221,5 @@ let new_instance ctx (instid, bk, cl) props =
   in
   let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
   let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
-    ignore (Subtac_obligations.add_definition id constr typ ~kind:Instance ~hook obls)
+    ignore(Subtac_obligations.add_definition id constr typ ~kind:Instance ~hook obls);
+    id

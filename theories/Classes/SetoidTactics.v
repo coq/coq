@@ -25,17 +25,12 @@ Require Export Coq.Classes.SetoidClass.
 (* Application of the extensionality axiom to turn a goal on leibinz equality to 
    a setoid equivalence. *)
 
-Lemma setoideq_eq [ sa : Setoid a ] : forall x y : a, x == y -> x = y.
-Proof.
-  admit.
-Qed.
-
-Implicit Arguments setoideq_eq [[a] [sa]].
+Axiom setoideq_eq : forall [ sa : Setoid a ] (x y : a), x == y -> x = y.
 
 (** Application of the extensionality principle for setoids. *)
 
-Ltac setoideq_ext :=
+Ltac setoid_extensionality :=
   match goal with
-    [ |- @eq ?A ?X ?Y ] => apply (setoideq_eq (a:=A) X Y)
+    [ |- @eq ?A ?X ?Y ] => apply (setoideq_eq (a:=A) (x:=X) (y:=Y))
   end.
 

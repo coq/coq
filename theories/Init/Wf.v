@@ -157,7 +157,7 @@ Section Well_founded_2.
    P x x' :=
     F
       (fun (y:A) (y':B) (h:R (y, y') (x, x')) =>
-         Acc_iter_2 (x:=y) (x':=y') (Acc_inv a (y, y') h)).
+         Acc_iter_2 (x:=y) (x':=y') (Acc_inv a h)).
   End Acc_iter_2.
 
   Hypothesis Rwf : well_founded R.

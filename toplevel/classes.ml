@@ -493,13 +493,15 @@ let new_instance ctx (instid, bk, cl) props =
       in
       let kn = Declare.declare_constant id cdecl in
 	Flags.if_verbose Command.definition_message id;
-	hook kn
+	hook kn;
+	Some id
     else
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	Command.start_proof id kind termtype (fun _ -> function ConstRef cst -> hook cst | _ -> assert false);
 	Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !isevars)) *)
 	  (!refine_ref (evm, term));
-	Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ()
+	Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
+	None
 
     
      
@@ -529,7 +531,8 @@ let context l =
   let sigma = Evd.evars_of !isevars in
   let fullctx = Evarutil.nf_named_context_evar sigma (l @ ctx) in
     List.iter (function (id,_,t) -> 
-      Command.declare_one_assumption false (Local (* global *), Definitional) t false (* inline *) (dummy_loc, id))
+      Command.declare_one_assumption false (Local (* global *), Definitional) t
+	[] false (* inline *) (dummy_loc, id))
       (List.rev fullctx)
 
 open Libobject

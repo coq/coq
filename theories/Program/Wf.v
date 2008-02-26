@@ -17,7 +17,7 @@ Section Well_founded.
     
     Fixpoint Fix_F_sub (x : A) (r : Acc R x) {struct r} : P x :=
       F_sub x (fun y: { y : A | R y x}  => Fix_F_sub (proj1_sig y) 
-        (Acc_inv r (proj1_sig y) (proj2_sig y))).
+        (Acc_inv r (proj2_sig y))).
     
     Definition Fix_sub (x : A) := Fix_F_sub x (Rwf x).
   End Acc.
@@ -38,7 +38,7 @@ Section Well_founded.
 
     Lemma Fix_F_eq :
       forall (x:A) (r:Acc R x),
-        F_sub x (fun (y:A|R y x) => Fix_F (`y) (Acc_inv r (proj1_sig y) (proj2_sig y))) = Fix_F x r.
+        F_sub x (fun (y:A|R y x) => Fix_F (`y) (Acc_inv r (proj2_sig y))) = Fix_F x r.
     Proof. 
       destruct r using Acc_inv_dep; auto.
     Qed.
@@ -89,7 +89,7 @@ Section Well_founded_measure.
     
     Fixpoint Fix_measure_F_sub (x : A) (r : Acc lt (m x)) {struct r} : P x :=
       F_sub x (fun y: { y : A | m y < m x}  => Fix_measure_F_sub (proj1_sig y) 
-        (Acc_inv r (m (proj1_sig y)) (proj2_sig y))).
+        (@Acc_inv _ _ _ r (m (proj1_sig y)) (proj2_sig y))).
     
     Definition Fix_measure_sub (x : A) := Fix_measure_F_sub x (lt_wf (m x)).
   
@@ -111,7 +111,7 @@ Section Well_founded_measure.
 
     Lemma Fix_measure_F_eq :
       forall (x:A) (r:Acc lt (m x)),
-        F_sub x (fun (y:{y:A|m y < m x}) => Fix_F (`y) (Acc_inv r (m (proj1_sig y)) (proj2_sig y))) = Fix_F x r.
+        F_sub x (fun (y:{y:A|m y < m x}) => Fix_F (`y) (Acc_inv r (proj2_sig y))) = Fix_F x r.
     Proof.
       intros x.
       set (y := m x).

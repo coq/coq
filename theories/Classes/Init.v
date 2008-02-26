@@ -16,3 +16,6 @@
 (* $Id: Init.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
 (* Ltac typeclass_instantiation := typeclasses eauto || eauto. *)
+
+Tactic Notation "clapply" ident(c) :=
+  eapply @c ; eauto with typeclass_instances.

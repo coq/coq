@@ -1,3 +1,4 @@
+(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -18,7 +19,7 @@ Unset Strict Implicit.
 
 Require Export Coq.Program.FunctionalExtensionality.
 
-Notation  "'λ' x : T , y" := (fun x:T => y) (at level 1, x,T,y at level 10) : program_scope.
+Notation  " 'λ' x : T , y " := (fun x:T => y) (at level 100, x,T,y at level 10, no associativity) : program_scope.
 
 Open Scope program_scope.
 
@@ -45,7 +46,7 @@ Proof.
 Qed.
 
 Lemma compose_assoc : forall A B C D (f : A -> B) (g : B -> C) (h : C -> D), 
-  h ∘ (g ∘ f) = h ∘ g ∘ f.
+  h ∘ g ∘ f = h ∘ (g ∘ f).
 Proof.
   intros.
   reflexivity.
@@ -117,7 +118,7 @@ Qed.
 
 (** Useful implicits and notations for lists. *)
 
-Require Export Coq.Lists.List.
+Require Import Coq.Lists.List.
 
 Implicit Arguments nil [[A]].
 Implicit Arguments cons [[A]].
@@ -141,3 +142,9 @@ Tactic Notation "exist" constr(x) := exists x.
 Tactic Notation "exist" constr(x) constr(y) := exists x ; exists y.
 Tactic Notation "exist" constr(x) constr(y) constr(z) := exists x ; exists y ; exists z.
 Tactic Notation "exist" constr(x) constr(y) constr(z) constr(w) := exists x ; exists y ; exists z ; exists w.
+
+(* Notation " 'Σ' x : T , p" := (sigT (fun x : T => p)) *)
+(*   (at level 200, x ident, y ident, right associativity) : program_scope. *)
+
+(* Notation " 'Π' x : T , p " := (forall x : T, p) *)
+(*   (at level 200, x ident, right associativity) : program_scope. *)

@@ -276,16 +276,21 @@ let valid evm p res_sigma l =
 	else (gls, sigma))
       !res_sigma (l, Evd.create_evar_defs !res_sigma)
   in raise (Found (snd evd'))
+
+let refresh_evi evi = 
+  { evi with 
+(*     evar_hyps = Environ.map_named_val Termops.refresh_universes evi.evar_hyps ; *)
+    evar_concl = Termops.refresh_universes evi.evar_concl }
     
 let resolve_all_evars_once debug (mode, depth) env p evd =
   let evm = Evd.evars_of evd in
-  let goals = 
+  let goals, evm = 
     Evd.fold
-      (fun ev evi gls ->
-	if evi.evar_body = Evar_empty && p ev evi then
-	  (evi :: gls)
-	else gls)
-      evm []
+      (fun ev evi (gls, evm) ->
+	let evi = refresh_evi evi in
+	  (if evi.evar_body = Evar_empty && p ev evi then evi :: gls else gls), 
+	Evd.add evm ev evi)
+      evm ([], Evd.empty)
   in
   let gls = { it = List.rev goals; sigma = evm } in
   let res_sigma = ref evm in
@@ -691,3 +696,22 @@ END
 
 let _ = 
   Classes.refine_ref := Refine.refine
+
+open Pretype_errors
+
+let typeclass_error e = 
+  match e with
+    | UnsolvableImplicit (evi, (InternalHole | ImplicitArg _)) ->
+	(match class_of_constr evi.evar_concl with
+	    Some c -> true
+	  | None -> false)
+    | _ -> false
+	
+let class_apply c = 
+  try Tactics.apply_with_ebindings c
+  with PretypeError (env, e) when typeclass_error e -> 
+    tclFAIL 1 (str"typeclass resolution failed")
+
+TACTIC EXTEND class_apply
+| [ "class_apply" constr_with_bindings(t) ] -> [ class_apply t ]
+END

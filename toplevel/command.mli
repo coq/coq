@@ -40,8 +40,8 @@ val declare_definition : identifier -> definition_kind ->
 
 val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit
 
-val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types -> bool
-  -> Names.variable located  -> unit
+val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types ->
+  Impargs.manual_explicitation list -> bool -> Names.variable located  -> unit
 
 val set_declare_assumption_hook : (types -> unit) -> unit
 

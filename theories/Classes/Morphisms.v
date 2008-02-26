@@ -133,6 +133,13 @@ Program Instance (A : Type) (R : relation A) `B` (R' : relation B)
 
 Program Instance iff_iff_iff_impl_morphism : ? Morphism (iff ++> iff ++> iff) impl.
 
+Lemma reflexive_impl_iff [ Symmetric A R, ? Morphism (R ++> impl) m ] : Morphism (R ==> iff) m.
+Proof.
+  intros.
+  constructor ; simpl_relation.
+  split ; clapply respect ; [ idtac | sym ] ; auto.
+Qed.
+
 (** The complement of a relation conserves its morphisms. *)
 
 Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] => 
@@ -155,6 +162,15 @@ Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] =>
   Next Obligation.
   Proof.
     unfold inverse ; unfold flip.
+    apply respect ; auto.
+  Qed.
+
+Program Instance (A B C : Type) [ ? Morphism (RA ++> RB ++> RC) (f : A -> B -> C) ] => 
+  flip_morphism : ? Morphism (RB ++> RA ++> RC) (flip f).
+
+  Next Obligation.
+  Proof.
+    unfold flip. 
     apply respect ; auto.
   Qed.
 

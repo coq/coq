@@ -534,7 +534,7 @@ let vernac_class id par ar sup props =
   Classes.new_class id par ar sup props
 
 let vernac_instance sup inst props =
-  Classes.new_instance sup inst props
+  ignore(Classes.new_instance sup inst props)
 
 let vernac_context l =
   Classes.context l

@@ -177,7 +177,7 @@ let syntax_definition ident c local onlyparse =
 let assumption_message id =
   if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_one_assumption is_coe (local,kind) c nl (_,ident) =
+let declare_one_assumption is_coe (local,kind) c imps nl (_,ident) =
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let _ = 
@@ -191,11 +191,14 @@ let declare_one_assumption is_coe (local,kind) c nl (_,ident) =
     | (Global|Local) ->
         let kn =
           declare_constant ident (ParameterEntry (c,nl), IsAssumption kind) in
+	let gr = ConstRef kn in
+	  if Impargs.is_implicit_args () || imps <> [] then
+	    declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
         assumption_message ident;
         if local=Local & Flags.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
           str" because it is at a global level");
-        ConstRef kn in
+        gr in
   if is_coe then Class.try_add_new_coercion r local
 
 let declare_assumption_hook = ref ignore
@@ -204,9 +207,12 @@ let set_declare_assumption_hook = (:=) declare_assumption_hook
 let declare_assumption idl is_coe k bl c nl=
   if not (Pfedit.refining ()) then 
     let c = generalize_constr_expr c bl in
-    let c = interp_type Evd.empty (Global.env()) c in
-      !declare_assumption_hook c;
-      List.iter (declare_one_assumption is_coe k c nl) idl
+    let sigma = Evd.empty and env = Global.env () in
+    let ic = intern_type sigma env c in
+    let imps = Implicit_quantifiers.implicits_of_rawterm ic in
+    let j = Default.understand_judgment sigma env ic in
+      !declare_assumption_hook j.uj_val;
+      List.iter (declare_one_assumption is_coe k j.uj_val imps nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")
@@ -1026,9 +1032,16 @@ let start_proof_com sopt kind (bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let env = Global.env () in
-  let c = interp_type Evd.empty env (generalize_constr_expr t bl) in
-  let _ = Typeops.infer_type env c in
-  start_proof id kind c hook
+  let sigma = Evd.empty in
+  let b = generalize_constr_expr t bl in
+  let ib = intern_type sigma env b in
+  let imps = Implicit_quantifiers.implicits_of_rawterm ib in
+  let j = Default.understand_judgment sigma env ib in
+    start_proof id kind j.uj_val
+      (fun str cst -> 
+	if Impargs.is_implicit_args () || imps <> [] then
+	  declare_manual_implicits false cst (Impargs.is_implicit_args ()) imps;
+	hook str cst)
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then

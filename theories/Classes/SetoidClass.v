@@ -24,6 +24,7 @@ Unset Strict Implicit.
 
 Require Export Coq.Classes.Relations.
 Require Export Coq.Classes.Morphisms.
+Require Export Coq.Classes.Functions.
 
 (** A setoid wraps an equivalence. *)
 

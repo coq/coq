@@ -17,7 +17,7 @@
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
 Require Import Coq.Program.Program.
-Require Import Coq.Classes.Init.
+Require Export Coq.Classes.Init.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -71,15 +71,15 @@ Program Instance [ Irreflexive A R ] => flip_irreflexive : Irreflexive A (flip R
 
 Program Instance [ Symmetric A R ] => flip_symmetric : Symmetric A (flip R).
 
-  Solve Obligations using unfold flip ; program_simpl ; apply symmetric ; eauto.
+  Solve Obligations using unfold flip ; program_simpl ; clapply symmetric.
 
 Program Instance [ Asymmetric A R ] => flip_asymmetric : Asymmetric A (flip R).
   
-  Solve Obligations using program_simpl ; unfold flip in * ; intros ; eapply asymmetric ; eauto.
+  Solve Obligations using program_simpl ; unfold flip in * ; intros ; clapply asymmetric.
 
 Program Instance [ Transitive A R ] => flip_transitive : Transitive A (flip R).
 
-  Solve Obligations using unfold flip ; program_simpl ; eapply transitive ; eauto.
+  Solve Obligations using unfold flip ; program_simpl ; clapply transitive.
 
 (** Have to do it again for Prop. *)
 
@@ -91,15 +91,15 @@ Program Instance [ Irreflexive A (R : relation A) ] => inverse_irreflexive : Irr
 
 Program Instance [ Symmetric A (R : relation A) ] => inverse_symmetric : Symmetric A (inverse R).
 
-  Solve Obligations using unfold inverse, flip ; program_simpl ; eapply symmetric ; eauto.
+  Solve Obligations using unfold inverse, flip ; program_simpl ; clapply symmetric.
 
 Program Instance [ Asymmetric A (R : relation A) ] => inverse_asymmetric : Asymmetric A (inverse R).
   
-  Solve Obligations using program_simpl ; unfold inverse, flip in * ; intros ; eapply asymmetric ; eauto.
+  Solve Obligations using program_simpl ; unfold inverse, flip in * ; intros ; clapply asymmetric.
 
 Program Instance [ Transitive A (R : relation A) ] => inverse_transitive : Transitive A (inverse R).
 
-  Solve Obligations using unfold inverse, flip ; program_simpl ; eapply transitive ; eauto.
+  Solve Obligations using unfold inverse, flip ; program_simpl ; clapply transitive.
 
 Program Instance [ Reflexive A (R : relation A) ] => 
   reflexive_complement_irreflexive : Irreflexive A (complement R).
@@ -190,6 +190,12 @@ Ltac relation_refl :=
 
     | [ |- ?R ?A ?B ?C ?D ?E ?F ?X ?X ] => apply (reflexive (R:=R A B C D E F) X)
     | [ H : ?R ?A ?B ?C ?D ?E ?F ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E F) H)
+
+    | [ |- ?R ?A ?B ?C ?D ?E ?F ?G ?X ?X ] => apply (reflexive (R:=R A B C D E F G) X)
+    | [ H : ?R ?A ?B ?C ?D ?E ?F ?G ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E F G) H)
+
+    | [ |- ?R ?A ?B ?C ?D ?E ?F ?G ?H ?X ?X ] => apply (reflexive (R:=R A B C D E F G H) X)
+    | [ H : ?R ?A ?B ?C ?D ?E ?F ?G ?H ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E F G H) H)
   end.
 
 Ltac refl := relation_refl.
@@ -284,6 +290,12 @@ Ltac trans Y := relation_transitive Y.
 
 Ltac relation_tac := relation_refl || relation_sym || relation_trans.
 
+(** Various combinations of reflexivity, symmetry and transitivity. *)
+
+Class PreOrder A (R : relation A) :=
+  preorder_refl :> Reflexive R ;
+  preorder_trans :> Transitive R.
+
 (** The [PER] typeclass. *)
 
 Class PER (carrier : Type) (pequiv : relation carrier) :=
@@ -340,3 +352,4 @@ Program Instance [ sa : Equivalence a R, sb : Equivalence b R' ] => equiv_setoid
   Equivalence (a -> b)
   (fun f g => forall (x y : a), R x y -> R' (f x) (g y)).
 *)
+
