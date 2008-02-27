@@ -34,6 +34,12 @@ type index_entry =
   | Ref of coq_module * string
   | Mod of coq_module * string
 
+let string_of_index_entry ie = 
+  match ie with
+    | Def (s, t) -> "Def ("^s^", _)"
+    | Ref (m, s) -> "Ref (_, "^s^")"
+    | Mod (m, s) -> "Mod (_, "^s^")"
+
 let current_type = ref Library
 let current_library = ref ""
   (** referes to the file being parsed *)
@@ -99,6 +105,7 @@ let make_fullid id =
     else 
       id
 
+
 (* Coq modules *)
 
 let split_sp s = 
@@ -118,8 +125,7 @@ let add_module m =
 
 type module_kind = Local | Coqlib | Unknown
 
-let coq_module m =
-  String.length m >= 4 && String.sub m 0 4 = "Coq."
+let coq_module m = String.length m >= 4 && String.sub m 0 4 = "Coq."
 
 let find_module m =
   if Hashtbl.mem local_modules m then 
@@ -128,6 +134,7 @@ let find_module m =
     Coqlib
   else
     Unknown
+
 
 (* Building indexes *)
 

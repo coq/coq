@@ -344,14 +344,15 @@ module Html = struct
 	raw_ident s
     i*)
 
-  let ident_ref m fid s = match find_module m with
-    | Local ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s; printf "</a>"
-    | Coqlib when !externals ->
-	let m = Filename.concat !coqlib m in
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s; printf "</a>"
-    | Coqlib | Unknown ->
-	raw_ident s
+  let ident_ref m fid s = 
+    match find_module m with
+      | Local ->
+	  printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s; printf "</a>"
+      | Coqlib when !externals ->
+	  let m = Filename.concat !coqlib m in
+	    printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s; printf "</a>"
+      | Coqlib | Unknown ->
+	  raw_ident s
 
   let ident s loc = 
     if is_keyword s then begin

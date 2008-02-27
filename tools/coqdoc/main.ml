@@ -21,7 +21,6 @@
 open Cdglobals
 open Filename
 open Printf
-open Output
 open Pretty
 
 (*s \textbf{Usage.} Printed on error output. *)
@@ -91,77 +90,61 @@ let check_if_file_exists f =
     eprintf "\ncoqdoc: %s: no such file\n" f;
     exit 1
   end
-    
+
+
+(*s Manipulations of paths and path aliases *) 
+
+let normalize_path p =
+  (* We use the Unix subsystem to normalize a physical path (relative
+     or absolute) and get rid of symbolic links, relative links (like
+     ./ or ../ in the middle of the path; it's tricky but it
+     works... *)
+  (* Rq: Sys.getcwd () returns paths without '/' at the end *)
+  let orig = Sys.getcwd () in
+    Sys.chdir p;
+    let res = Sys.getcwd () in
+      Sys.chdir orig; 
+      res
+
+let normalize_filename f =
+  let basename = Filename.basename f in
+  let dirname = Filename.dirname f in
+    Filename.concat (normalize_path dirname) basename
+
+(* [paths] maps a physical path to a name *)
 let paths = ref []
   
 let add_path dir name = 
   (* if dir is relative we add both the relative and absolute name *)
-  if (Filename.is_relative dir) 
-  then 
-    let abs = Filename.concat (Sys.getcwd ()) dir in 
-      paths := (abs,name) :: (dir,name) :: !paths
-  else
-    paths := (dir,name) :: !paths
+  let p = normalize_path dir in
+    paths := (p,name) :: !paths
   
-let exists_dir dir =
-  try let _ = Unix.opendir dir in true with Unix.Unix_error _ -> false
-
-let add_rec_path f l =
-  let rec traverse abs rel =
-    add_path abs rel;
-    let dirh = Unix.opendir abs in
-      try
-	while true do
-	  let f = Unix.readdir dirh in
-	    if f <> "" && f.[0] <> '.' && f <> "CVS" then
-	      let abs' = Filename.concat abs f in
-		try 
-		  if exists_dir abs' then  traverse abs' (rel ^ "." ^ f)
-		with Unix.Unix_error _ -> 
-		  ()
-	done
-      with End_of_file ->
-	Unix.closedir dirh
-  in
-    if exists_dir f then traverse f l
-
 (* turn A/B/C into A.B.C *)
-let make_path = Str.global_replace (Str.regexp "/") ".";;
+let name_of_path = Str.global_replace (Str.regexp "/") ".";;
 
-let coq_module file = 
-  (* TODO
-   * LEM:
-   * We should also remove things like "/./" in the middle of the filename,
-   * rewrite "/foo/../bar" to "/bar", recognise different paths that lead
-   * to the same file / directory (via symlinks), etc. The best way to do
-   * all this would be to use the libc function realpath() on _both_ p and
-   * file / f before comparing them.
-   *
-   * The semantics of realpath() on file symlinks might not be what we
-   * want... (But it is what we want on directory symlinks.) So, we would
-   * have to cook up our own version of realpath()?
-   *
-   * Do all target platforms have realpath()?
-   *)
-  let f = chop_extension file in
-    (* remove leading ./ and any number of slashes after *)
-  let f = Str.replace_first (Str.regexp "^\\./+") "" f in
-  let rec trypath = (function
-    | [] -> make_path f
-    | (p, lg) :: r ->
-        (* make sure p ends with a single '/'
-         * This guarantees that we don't match a file whose name is
-         * of the form p ^ "foo". It means we may miss p itself,
-         * but this does not matter: coqdoc doesn't do anything
-         * of a directory anyway. *)
-        let p = (Str.replace_first (Str.regexp "/*$") "/" p) in
-        let p_quoted = (Str.quote p) in
-          if (Str.string_match (Str.regexp p_quoted) f 0) then
-	    make_path (Filename.concat lg (Str.replace_first (Str.regexp (p_quoted ^ "/*")) "" f))
-          else
-	    trypath r)
+let coq_module filename = 
+  let bfname = chop_extension filename in
+  let nfname = normalize_filename bfname in
+  let rec change_prefix map f = 
+    match map with
+      | [] -> 
+	  (* There is no prefix alias; 
+	     we just cut the name wrt current working directory *)
+	  let cwd = Sys.getcwd () in
+	  let exp = Str.regexp (Str.quote (cwd ^ "/")) in
+	    if (Str.string_match exp f 0) then
+	      name_of_path (Str.replace_first exp "" f)
+	    else
+	      name_of_path f
+      | (p, name) :: rem ->
+          let expp = Str.regexp (Str.quote p) in
+	    if (Str.string_match expp f 0) then
+	      let newp = Str.replace_first expp name f in
+		name_of_path newp
+            else
+	      change_prefix rem f
   in
-    trypath !paths 
+    change_prefix !paths nfname
 
 let what_file f =
   check_if_file_exists f;
@@ -169,10 +152,8 @@ let what_file f =
     Vernac_file (f, coq_module f)
   else if check_suffix f ".tex" then
     Latex_file f
-  else begin
-    eprintf "\ncoqdoc: don't know what to do with %s\n" f;
-    exit 1
-  end
+  else 
+     (eprintf "\ncoqdoc: don't know what to do with %s\n" f; exit 1)
     
 (*s \textbf{Reading file names from a file.} 
  *  File names may be given
@@ -223,7 +204,7 @@ let parse () =
       |  "-bodyonly"   | "--bodyonly"   | "--body-only") :: rem ->
 	header_trailer := false; parse_rec rem
     | ("-p" | "--preamble") :: s :: rem ->
-	push_in_preamble s; parse_rec rem
+	Output.push_in_preamble s; parse_rec rem
     | ("-p" | "--preamble") :: [] ->
 	usage ()
     | ("-noindex" | "--noindex" | "--no-index") :: rem ->
@@ -371,45 +352,45 @@ let copy src dst =
 let gen_one_file l =
   let file = function
     | Vernac_file (f,m) -> 
-	set_module m; coq_file f m
+	Output.set_module m; coq_file f m
     | Latex_file _ -> ()
   in
-    if (!header_trailer) then header ();
-    if !toc then make_toc ();
+    if (!header_trailer) then Output.header ();
+    if !toc then Output.make_toc ();
     List.iter file l;
-    if !index then make_index();
-    if (!header_trailer) then trailer ()
+    if !index then Output.make_index();
+    if (!header_trailer) then Output.trailer ()
       
 let gen_mult_files l =
   let file = function
     | Vernac_file (f,m) -> 
-	set_module m;
+	Output.set_module m;
 	let hf = target_full_name m in
 	  open_out_file hf;
-	  if (!header_trailer) then header (); 
-	  if !toc then make_toc ();
+	  if (!header_trailer) then Output.header (); 
+	  if !toc then Output.make_toc ();
 	  coq_file f m; 
-	  if (!header_trailer) then trailer ();
+	  if (!header_trailer) then Output.trailer ();
 	  close_out_file()
     | Latex_file _ -> ()
   in
     List.iter file l;
     if (!index && !target_language=HTML) then begin
-      if (!multi_index) then make_multi_index (); 
+      if (!multi_index) then Output.make_multi_index (); 
       open_out_file "index.html"; 
       page_title := (if !title <> "" then !title else "Index");
-      if (!header_trailer) then header (); 
-      make_index (); 
-      if (!header_trailer) then trailer ();
+      if (!header_trailer) then Output.header (); 
+      Output.make_index (); 
+      if (!header_trailer) then Output.trailer ();
       close_out_file()
     end;
     if (!toc && !target_language=HTML) then begin
       open_out_file "toc.html"; 
       page_title := (if !title <> "" then !title else "Table of contents");
-      if (!header_trailer) then header ();
+      if (!header_trailer) then Output.header ();
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
-      make_toc (); 
-      if (!header_trailer) then trailer ();
+      Output.make_toc (); 
+      if (!header_trailer) then Output.trailer ();
       close_out_file()
     end 
       (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)
