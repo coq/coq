@@ -480,16 +480,3 @@ let pp_module mp =
 	    error_module_clash base_s
 	  else dottify ls
 
-
-(*i 
-  (* DO NOT REMOVE: used when making names resolution *)
-  let cout = open_out (f^".ren") in 
-  let ft = Pp_control.with_output_to cout in
-  Hashtbl.iter 
-    (fun r id -> 
-       if short_module r = !current_module then 
-	 msgnl_with ft (pr_id id ++ str " " ++ pr_sp (sp_of_r r)))
-    renamings;
-  pp_flush_with ft ();
-  close_out cout;
-i*)    
