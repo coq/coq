@@ -30,6 +30,7 @@ val content : Evd.evar_map -> goal -> Evd.evar_info
 (* return type of the execution of goal tactics *)
 (* it contains the new subgoals to produce, and the definitions of
    the evars to instantiate *)
+(* arnaud: réfléchir à le faire "private" *)
 type refinement = { subgoals: goal list ;
                     new_defs: Evd.evar_defs}
 

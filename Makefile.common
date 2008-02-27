@@ -106,7 +106,7 @@ PRETYPING:=\
   pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
   pretyping/tacred.cmo pretyping/evarutil.cmo pretyping/evarconv.cmo \
   pretyping/classops.cmo pretyping/coercion.cmo \
-  pretyping/unification.cmo pretyping/clenv.cmo \
+  pretyping/unification.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
   pretyping/detyping.cmo  pretyping/indrec.cmo\
   pretyping/cases.cmo pretyping/pretyping.cmo pretyping/matching.cmo
@@ -124,7 +124,7 @@ PROOFS:=\
   proofs/permutation.cmo \
   proofs/goal.cmo proofs/subproof.cmo \
   proofs/proof.cmo \
-  proofs/logic.cmo \
+  proofs/clenv.cmo proofs/logic.cmo \
   proofs/decl_mode.cmo proofs/tactic_debug.cmo
 
 PARSING:=\
@@ -421,13 +421,13 @@ PRINTERSCMO:=\
   pretyping/tacred.cmo pretyping/classops.cmo pretyping/detyping.cmo	    \
   pretyping/indrec.cmo pretyping/coercion.cmo \
   pretyping/unification.cmo pretyping/cases.cmo \
-  pretyping/pretyping.cmo pretyping/clenv.cmo pretyping/pattern.cmo \
+  pretyping/pretyping.cmo pretyping/pattern.cmo \
   parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
   library/impargs.cmo\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
   proofs/permutation.cmo proofs/goal.cmo proofs/subproof.cmo \
-  proofs/proof.cmo proofs/logic.cmo \
+  proofs/proof.cmo proofs/clenv.cmo proofs/logic.cmo \
   proofs/tacexpr.cmo \
   proofs/tactic_debug.cmo \
   proofs/decl_mode.cmo \

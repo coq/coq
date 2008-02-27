@@ -74,6 +74,14 @@ type open_constr = {
 let constr_of_open_constr { me=c } = c
 let open_of_closed c = { me = c; my_evars = []}
 let make_open_constr c el = { me = c ; my_evars = el }
+(* arnaud: pas bonne idée, le defs doit changer..
+   au pire je peux le faire dans la monade expression, 
+   mais ça me paraît casse-gueule
+let open_of_weak (sigma,c) = 
+  let sigma_list = List.map fst (Evd.to_list sigma) in
+  { me = c ; my_evars = List.rev sigma_list }
+*)
+
 
 (* runs a goal tactic on a given goal (knowing the current evar_defs). *)
 (* the evar_info corresponding to the goal is computed at once

@@ -21,6 +21,9 @@ open Libnames (* arnaud: probablement garder comme ça et enlever les Libnames. 
 open Rawterm (* arnaud: probablement garder comme ça et enlever les Rawterm. *)
 open Pp
 
+(* Infix notation for Goal.bind *)
+let (>>=) = Goal.bind
+
 (* arnaud: à commenter un peu plus dans le sens de ce que c'est vraiment. A savoir les valeurs qui peuvent être dans des variables de tactique *)
 (* Values for interpretation *)
 type value =
@@ -960,7 +963,6 @@ let coerce_to_ident fresh env = function
   | v -> raise (CannotCoerceTo "a fresh identifier")
 
 let interp_ident_gen fresh ist id =
-  let (>>=) = Goal.bind in (* arnaud: déplacer ? *)
   Goal.env >>= fun env ->
   Goal.return (
     try try_interp_ltac_var (coerce_to_ident fresh env) ist (Some env) (Util.dummy_loc,id)
@@ -1003,7 +1005,6 @@ let coerce_to_hyp env = function
 
 (* Interprets a bound variable (especially an existing hypothesis) *)
 let interp_hyp ist (loc,id as locid) =
-  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
   Goal.env >>= fun env ->
   Goal.return (
     (* Look first in lfun for a value coercible to a variable *)
@@ -1027,7 +1028,6 @@ let interp_reference ist env = function
       interp_ltac_var (coerce_to_reference env) ist (Some env) locid
 
 let pf_interp_reference ist ov = (* arnaud: renommer avec "goal" à la place de "proof" ?*)
-  let (>>=) = Goal.bind in (* arnaud: à déplacer comme d'hab ?*)
   Goal.env >>= fun env ->
   Goal.return (interp_reference ist env ov)
 
@@ -1042,7 +1042,6 @@ let coerce_to_decl_or_quant_hyp env = function
 	raise (CannotCoerceTo "a declared or quantified hypothesis")
 
 let interp_declared_or_quantified_hypothesis ist = 
-  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
     function
   | AnonHyp n -> Goal.return (AnonHyp n)
   | NamedHyp id ->
@@ -1089,6 +1088,206 @@ let interp_unfold ist env (l,qid) =
 let interp_flag ist env red =
   { red with rConst = List.map (interp_evaluable ist env) red.rConst }
 
+
+
+let implicit_tactic = ref None
+
+let declare_implicit_tactic tac = implicit_tactic := Some tac
+
+
+
+let solvable_by_tactic env evi (ev,args) src = 
+  match (!implicit_tactic, src) with
+  | Some tac, (Evd.ImplicitArg _ | Evd.QuestionMark _)
+      when 
+	Environ.named_context_of_val evi.Evd.evar_hyps = 
+	Environ.named_context env ->
+      let id = id_of_string "H" in
+	Util.anomaly "Ltacinterp.solvable_by_tactic: à restaurer"
+	(* arnaud: à restaurer ?
+      start_proof id (Local,Proof Lemma) evi.evar_hyps evi.evar_concl
+	(fun _ _ -> ());
+      begin
+	try
+	  by (tclCOMPLETE tac);
+	  let _,(const,_,_) = cook_proof () in 
+	  delete_current_proof (); const.const_entry_body
+	with e when Logic.catchable_exception e -> 
+	  delete_current_proof();
+	  raise Exit
+      end
+	*)
+  | _ -> raise Exit
+
+let solve_remaining_evars env initial_sigma evd c =
+  let evdref = ref evd in
+  let rec proc_rec c =
+    match Term.kind_of_term (Reductionops.whd_evar (Evd.evars_of !evdref) c) with
+      | Term.Evar (ev,args as k) when not (Evd.mem initial_sigma ev) ->
+            let (loc,src) = Evd.evar_source ev !evdref in
+	    let sigma = Evd.evars_of !evdref in
+	    (try 
+	      let evi = Evd.find sigma ev in
+	      let c = solvable_by_tactic env evi k src in
+	      evdref := Evd.evar_define ev c !evdref;
+	      c
+	    with Exit ->
+	      Pretype_errors.error_unsolvable_implicit loc env sigma src)
+      | _ -> Term.map_constr proc_rec c      
+  in
+  proc_rec c
+
+(* Transforms an id into a constr if possible, or fails *)
+let constr_of_id env id = 
+  Constrintern.construct_reference (Environ.named_context env) id
+
+let constr_of_value env = function
+  | VConstr csr -> csr
+  | VIntroPattern (IntroIdentifier id) -> constr_of_id env id
+  | _ -> raise Not_found
+
+(* Interpretation of constructions *)
+
+(* Extract the constr list from lfun *)
+let rec constr_list_aux env = function
+  | (id,v)::tl -> 
+      let (l1,l2) = constr_list_aux env tl in
+      (try ((id,constr_of_value env v)::l1,l2)
+       with Not_found -> 
+	 let ido = match v with
+	   | VIntroPattern (IntroIdentifier id0) -> Some id0
+	   | _ -> None in
+	 (l1,(id,ido)::l2))
+  | [] -> ([],[])
+
+let constr_list ist env = constr_list_aux env ist.lfun
+
+(* To retype a list of key*constr with undefined key *)
+let retype_list sigma env lst =
+  List.fold_right (fun (x,csr) a ->
+    try (x,Retyping.get_judgment_of env sigma csr)::a with
+    | Util.Anomaly _ -> a) lst []
+
+let interp_gen kind ist sigma env (c,ce) =
+  let (ltacvars,unbndltacvars) = constr_list ist env in
+  let typs = retype_list sigma env ltacvars in
+  let c = match ce with
+  | None -> c
+    (* If at toplevel (ce<>None), the error can be due to an incorrect
+       context at globalization time: we retype with the now known
+       intros/lettac/inversion hypothesis names *)
+  | Some c ->
+      let ltacdata = (List.map fst ltacvars,unbndltacvars) in
+      Constrintern.intern_gen (kind = Pretyping.IsType) ~ltacvars:ltacdata sigma env c in
+  Pretyping.Default.understand_ltac sigma env (typs,unbndltacvars) kind c
+
+(* Interprets a constr and solve remaining evars with default tactic *)
+let interp_econstr kind ist sigma env cc =
+  let evars,c = interp_gen kind ist sigma env cc in
+  let csr = solve_remaining_evars env sigma evars c in
+  Tactic_debug.db_constr ist.debug env csr;
+  csr
+
+
+
+(* arnaud: il faut sans doute revoir le mécanisme de with check/no check.
+           A terme il a des chances d'être enfermé dans la monade, ce
+           qui sera plus simple *)
+
+(* Interprets an open constr *)
+let interp_open_constr check_type ist cc =
+  (* arnaud: à quoi sert "ist" déjà ? *)
+  (* arnaud: cette fonction va changer de place... peut-être sera-t-elle
+     simplement ici ? *)
+  Goal.open_constr_of_raw check_type cc
+
+(* arnaud: à nettoyer 
+(* Interprets an open constr *)
+let interp_open_constr ccl ist sigma env cc =
+  let evd,c = interp_gen (Pretyping.OfType ccl) ist sigma env cc in
+  (Evd.evars_of evd,c)
+*)
+
+let interp_constr = interp_econstr (Pretyping.OfType None)
+
+let interp_type = interp_econstr Pretyping.IsType
+
+(* Interprets a constr expression casted by the current goal *)
+let pf_interp_casted_constr ist cc =
+
+  Goal.concl >>= fun concl ->
+  Goal.defs >>= fun defs ->
+  Goal.env >>= fun env ->
+  Goal.return (
+    interp_econstr (Pretyping.OfType (Some concl)) ist (Evd.evars_of defs) env cc
+  )
+
+(* Interprets an open constr expression *)
+let pf_interp_open_constr casted ist cc =
+  interp_open_constr casted ist cc
+(* arnaud: à nettoyer...
+  Goal.concl >>= fun concl ->
+  Goal.defs >>= fun defs ->
+  Goal.env >>= fun env ->
+  Goal.return (
+    let cl = if casted then Some concl else None in
+    interp_open_constr cl ist (Evd.evars_of defs) env cc
+  )
+*)
+
+(* Interprets a constr expression *)
+let pf_interp_constr ist c =
+  Goal.defs >>= fun defs ->
+  Goal.env >>= fun env ->
+  Goal.return (interp_constr ist (Evd.evars_of defs) env c)
+
+let constr_list_of_VList env = function
+  | VList l -> List.map (constr_of_value env) l
+  | _ -> raise Not_found
+      
+let pf_interp_constr_list_as_list ist (c,_ as x) =
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  match c with
+    | RVar (_,id) ->
+	Goal.return (
+          try 
+	    constr_list_of_VList env (List.assoc id ist.lfun)
+          with Not_found -> 
+	    [interp_constr ist (Evd.evars_of defs) env x]
+	)
+    | _ -> 
+	Goal.return 
+	  [interp_constr ist (Evd.evars_of defs) env x]
+
+let pf_interp_constr_list ist l =
+  Goal.expr_of_list (List.map (pf_interp_constr_list_as_list ist) l) 
+    >>= fun l ->
+  Goal.return (List.flatten l)
+
+let inj_open c = Util.anomaly "Tacinterp.inj_open: deprecated"(* arnaud: (Evd.empty,c)*)
+
+let pf_interp_open_constr_list_as_list ist (c,_) =
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of defs in
+  Goal.expr_of_list (
+    match c with
+    | RVar (_,id) ->
+	(try List.map inj_open 
+	   (constr_list_of_VList env (List.assoc id ist.lfun))
+	 with Not_found ->
+	   [interp_open_constr false ist c])
+    | _ ->
+	[interp_open_constr false ist c]
+  )
+
+let pf_interp_open_constr_list ist l =
+  Goal.expr_of_list (List.map (pf_interp_open_constr_list_as_list ist) l) 
+    >>= fun l ->
+  Goal.return (List.flatten l)
+
+
 let interp_pattern ist sigma env (l,c) = 
   Util.anomaly "Ltacinterp.interp_pattern: à restaurer"
   (*arnaud: à restaurer 
@@ -1105,22 +1304,9 @@ let interp_red_expr ist sigma env = function
   | (Red _ |  Hnf | ExtraRedExpr _ | CbvVm as r) -> r
 
 let pf_interp_red_expr ist re = 
-  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
   Goal.env >>= fun env ->
   Goal.defs >>= fun defs ->
   Goal.return (interp_red_expr ist (Evd.evars_of defs) env re)
-
-
-(* arnaud: il faut sans doute revoir le mécanisme de with check/no check.
-           A terme il a des chances d'être enfermé dans la monade, ce
-           qui sera plus simple *)
-
-(* Interprets an open constr *)
-let interp_open_constr check_type ist cc =
-  (* arnaud: à quoi sert "ist" déjà ? *)
-  (* arnaud: cette fonction va changer de place... peut-être sera-t-elle
-     simplement ici ? *)
-  Goal.open_constr_of_raw check_type cc
 
 
 
@@ -1132,7 +1318,6 @@ let coerce_to_hyp env = function
 
 (* Interprets a bound variable (especially an existing hypothesis) *)
 let interp_hyp ist (loc,id as locid) =
-  let (>>=) = Goal.bind in  (* arnaud: à déplacer en haut ? *)
   Goal.env >>= fun env ->
   Goal.return (
     (* Look first in lfun for a value coercible to a variable *)
@@ -1148,7 +1333,6 @@ let hyp_list_of_VList env = function
   | _ -> raise Not_found
 
 let interp_hyp_list_as_list ist (loc,id as x) =
-  let (>>=) = Goal.bind in  (* arnaud: à déplacer en haut ? *)
   Goal.env >>= fun env ->
   try Goal.return (hyp_list_of_VList env (List.assoc id ist.lfun))
   with Not_found | CannotCoerceTo _ -> 
@@ -1156,11 +1340,84 @@ let interp_hyp_list_as_list ist (loc,id as x) =
     Goal.return [hyp_x]
 
 let interp_hyp_list ist l =
-  let (>>=) = Goal.bind in  (* arnaud: à déplacer en haut ? *)
   Goal.expr_of_list (List.map (interp_hyp_list_as_list ist) l) >>= fun hyps ->
   Goal.return (List.flatten hyps) 
 
 
+(* Quantified named or numbered hypothesis or hypothesis in context *)
+(* (as in Inversion) *)
+let coerce_to_quantified_hypothesis = function
+  | VInteger n -> AnonHyp n
+  | VIntroPattern (IntroIdentifier id) -> NamedHyp id
+  | v -> raise (CannotCoerceTo "a quantified hypothesis")
+
+let interp_quantified_hypothesis ist = function
+  | AnonHyp n -> AnonHyp n
+  | NamedHyp id ->
+      try 
+	try_interp_ltac_var coerce_to_quantified_hypothesis 
+	                    ist 
+	                    None
+	                    (Util.dummy_loc,id)
+      with Not_found -> 
+	NamedHyp id
+
+let interp_binding_name ist = function
+  | AnonHyp n -> AnonHyp n
+  | NamedHyp id ->
+      (* If a name is bound, it has to be a quantified hypothesis *)
+      (* user has to use other names for variables if these ones clash with *)
+      (* a name intented to be used as a (non-variable) identifier *)
+      try 
+	try_interp_ltac_var coerce_to_quantified_hypothesis 
+	                    ist 
+	                    None
+	                    (Util.dummy_loc,id)
+      with Not_found -> 
+	NamedHyp id
+
+(* Quantified named or numbered hypothesis or hypothesis in context *)
+(* (as in Inversion) *)
+let coerce_to_decl_or_quant_hyp env = function
+  | VInteger n -> AnonHyp n
+  | v -> 
+      try NamedHyp (coerce_to_hyp env v)
+      with CannotCoerceTo _ -> 
+	raise (CannotCoerceTo "a declared or quantified hypothesis")
+
+let interp_declared_or_quantified_hypothesis ist = function
+  | AnonHyp n -> Goal.return (AnonHyp n)
+  | NamedHyp id ->
+      Goal.env >>= fun env ->
+      Goal.return (
+	try try_interp_ltac_var 
+	  (coerce_to_decl_or_quant_hyp env) ist (Some env) (Util.dummy_loc,id)
+	with Not_found -> NamedHyp id
+      )
+
+let interp_binding ist (loc,b,c) =
+  pf_interp_open_constr false ist c >>= fun ioconstr ->
+  Goal.return (loc,interp_binding_name ist b,ioconstr)
+
+let interp_bindings ist = function
+| NoBindings -> Goal.return NoBindings
+| ImplicitBindings l -> 
+    pf_interp_open_constr_list ist l >>= fun cl ->
+    Goal.return (ImplicitBindings cl)
+| ExplicitBindings l ->
+    let interp_binding ist (l,qh,(c,_)) = interp_binding ist (l,qh,c) in
+    Goal.expr_of_list (List.map (interp_binding ist) l) >>= fun bindings ->
+    Goal.return (ExplicitBindings bindings)
+
+let interp_constr_with_bindings ist (c,bl) =
+  pf_interp_constr ist c >>= fun iconstr ->
+  interp_bindings ist bl >>= fun ibindings ->
+  Goal.return (iconstr, ibindings)
+
+let interp_open_constr_with_bindings ist (c,bl) =
+  pf_interp_open_constr false ist c >>= fun ioconstr ->
+  interp_bindings ist bl >>= fun ibindings ->
+  Goal.return (ioconstr, ibindings)
 
 (* arnaud: peut-être ne faut-il pas toujours renvoyer un Goal.expression,
    certaines tactiques ne dépendente pas des buts, ce qui change largement
@@ -1168,7 +1425,6 @@ let interp_hyp_list ist l =
    somme, où seuls les trucs qui sont nécessairement des Goal.expression 
    typent ainsi. *)
 let rec interp_genarg ist x =
-  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
   match genarg_tag x with
   | BoolArgType -> Goal.return (in_gen wit_bool (out_gen globwit_bool x))
   | IntArgType -> Goal. return (in_gen wit_int (out_gen globwit_int x))
@@ -1262,9 +1518,7 @@ let do_intro = function
   [x] -> Logic.intro x
   | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples (bis)"
 
-let interp_atomic ist = 
-  let (>>=) = Goal.bind in (* arnaud: déplacer ?*)
-  function
+let interp_atomic ist = function
   (* Basic tactics *)
   | TacIntroPattern l ->
          Subproof.tactic_of_goal_tactic (do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)))
@@ -1294,6 +1548,10 @@ let interp_atomic ist =
       Subproof.tactic_of_goal_tactic
 	(interp_hyp_list ist l >>= fun hyps ->
 	 Logic.clear_body hyps)
+  | TacApply (ev,cb) ->
+      Subproof.tactic_of_goal_tactic
+	(interp_constr_with_bindings ist cb >>= fun oc ->
+	 Logic.apply_with_ebindings_gen ev oc)
   | TacExtend (loc,opn,l) ->
       let tac = lookup_tactic opn in
       Subproof.tactic_of_goal_tactic (

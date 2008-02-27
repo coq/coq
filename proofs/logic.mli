@@ -28,6 +28,15 @@ val clear : identifier list -> Goal.tactic
 val clear_body : identifier list -> Goal.tactic
 (* [intro] tactic *)
 val intro : identifier -> Goal.tactic
+(* [apply] tactic *)
+val apply_with_ebindings : 
+          Term.constr * Goal.open_constr Rawterm.bindings -> Goal.tactic
+(* [eapply] tactic *)
+val eapply_with_ebindings : 
+          Term.constr * Goal.open_constr Rawterm.bindings -> Goal.tactic
+(* [false] -> [apply], [true] -> [eapply] *)
+val apply_with_ebindings_gen : 
+     bool -> Term.constr * Goal.open_constr Rawterm.bindings -> Goal.tactic
 
 type simple_tactic =
   | Intro of identifier
