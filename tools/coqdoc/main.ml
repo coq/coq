@@ -19,9 +19,7 @@
  *)
 
 open Cdglobals
-open Filename
 open Printf
-open Pretty
 
 (*s \textbf{Usage.} Printed on error output. *)
 
@@ -76,7 +74,7 @@ let banner () =
   flush stderr
     
 let target_full_name f = 
-  match !target_language with
+  match !Cdglobals.target_language with
     | HTML -> f ^ ".html"
     | _ -> f ^ ".tex"
 	
@@ -123,7 +121,7 @@ let add_path dir name =
 let name_of_path = Str.global_replace (Str.regexp "/") ".";;
 
 let coq_module filename = 
-  let bfname = chop_extension filename in
+  let bfname = Filename.chop_extension filename in
   let nfname = normalize_filename bfname in
   let rec change_prefix map f = 
     match map with
@@ -148,9 +146,9 @@ let coq_module filename =
 
 let what_file f =
   check_if_file_exists f;
-  if check_suffix f ".v" || check_suffix f ".g" then
+  if Filename.check_suffix f ".v" || Filename.check_suffix f ".g" then
     Vernac_file (f, coq_module f)
-  else if check_suffix f ".tex" then
+  else if Filename.check_suffix f ".tex" then
     Latex_file f
   else 
      (eprintf "\ncoqdoc: don't know what to do with %s\n" f; exit 1)
@@ -324,6 +322,7 @@ let clean_temp_files basefile =
     remove (basefile ^ ".tex");
     remove (basefile ^ ".log");
     remove (basefile ^ ".aux");
+    remove (basefile ^ ".toc");
     remove (basefile ^ ".dvi");
     remove (basefile ^ ".ps");
     remove (basefile ^ ".haux");
@@ -352,7 +351,7 @@ let copy src dst =
 let gen_one_file l =
   let file = function
     | Vernac_file (f,m) -> 
-	Output.set_module m; coq_file f m
+	Output.set_module m; Pretty.coq_file f m
     | Latex_file _ -> ()
   in
     if (!header_trailer) then Output.header ();
@@ -368,8 +367,7 @@ let gen_mult_files l =
 	let hf = target_full_name m in
 	  open_out_file hf;
 	  if (!header_trailer) then Output.header (); 
-	  if !toc then Output.make_toc ();
-	  coq_file f m; 
+	  Pretty.coq_file f m; 
 	  if (!header_trailer) then Output.trailer ();
 	  close_out_file()
     | Latex_file _ -> ()
@@ -434,52 +432,54 @@ let produce_document l =
 	gen_mult_files l
 	  
 let produce_output fl =
-  if not (!dvi || !ps) then begin
+  if not (!dvi || !ps) then 
     produce_document fl
-  end else begin
-    let texfile = Filename.temp_file "coqdoc" ".tex" in
-    let basefile = chop_suffix texfile ".tex" in
-    let final_out_to = !out_to in
-      out_to := File texfile;
-      produce_document fl;
-      let command = 
-	let file = basename texfile in
-	let file = 
-	  if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file 
+  else 
+    begin
+      let texfile = Filename.temp_file "coqdoc" ".tex" in
+      let basefile = Filename.chop_suffix texfile ".tex" in
+      let final_out_to = !out_to in
+	out_to := File texfile;
+	output_dir := (Filename.dirname texfile);
+	produce_document fl;
+	let latexcmd = 
+	  let file = Filename.basename texfile in
+	  let file = 
+	    if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file 
+	  in
+	    sprintf "latex %s && latex %s 1>&2 %s" file file (if !quiet then "> /dev/null" else "")
 	in
-	  sprintf "(latex %s && latex %s) 1>&2 %s" file file
-	    (if !quiet then "> /dev/null" else "")
-      in
-      let res = locally (dirname texfile) Sys.command command in
-	if res <> 0 then begin
-	  eprintf "Couldn't run LaTeX successfully\n"; 
-	  clean_and_exit basefile res
-	end;
-	let dvifile = basefile ^ ".dvi" in
-	  if !dvi then 
-	    begin
-	      match final_out_to with
-		| MultFiles | StdOut -> cat dvifile
-		| File f -> copy dvifile f
+	let res = locally (Filename.dirname texfile) Sys.command latexcmd in
+	  if res <> 0 then begin
+	      eprintf "Couldn't run LaTeX successfully\n"; 
+	      clean_and_exit basefile res
 	    end;
-	  if !ps then begin
-	    let psfile = basefile ^ ".ps" 
-	    in
-	    let command = 
-	      sprintf "dvips %s -o %s %s" dvifile psfile 
-		(if !quiet then "> /dev/null 2>&1" else "")
-	    in
-	    let res = Sys.command command in
-	      if res <> 0 then begin
-		eprintf "Couldn't run dvips successfully\n"; 
-		clean_and_exit basefile res
+	  
+	  let dvifile = basefile ^ ".dvi" in
+	    if !dvi then 
+	      begin
+		match final_out_to with
+		  | MultFiles | StdOut -> cat dvifile
+		  | File f -> copy dvifile f
 	      end;
-	      match final_out_to with
-		| MultFiles | StdOut -> cat psfile
-		| File f -> copy psfile f
-	  end;
-	  clean_temp_files basefile
-  end
+	    if !ps then begin
+		let psfile = basefile ^ ".ps" 
+		in
+		let command = 
+		  sprintf "dvips %s -o %s %s" dvifile psfile 
+		    (if !quiet then "> /dev/null 2>&1" else "")
+		in
+		let res = Sys.command command in
+		  if res <> 0 then begin
+		      eprintf "Couldn't run dvips successfully\n"; 
+		      clean_and_exit basefile res
+		    end;
+		  match final_out_to with
+		    | MultFiles | StdOut -> cat psfile
+		    | File f -> copy psfile f
+	      end;
+	    clean_temp_files basefile
+    end
 
 
 (*s \textbf{Main program.} Print the banner, parse the command line,

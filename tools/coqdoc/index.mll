@@ -34,12 +34,6 @@ type index_entry =
   | Ref of coq_module * string
   | Mod of coq_module * string
 
-let string_of_index_entry ie = 
-  match ie with
-    | Def (s, t) -> "Def ("^s^", _)"
-    | Ref (m, s) -> "Ref (_, "^s^")"
-    | Mod (m, s) -> "Mod (_, "^s^")"
-
 let current_type = ref Library
 let current_library = ref ""
   (** referes to the file being parsed *)

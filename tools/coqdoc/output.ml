@@ -301,7 +301,7 @@ module Html = struct
 
   let start_module () = 
     if not !short then begin
-      (* add_toc_entry (Toc_library !current_module); *)
+      add_toc_entry (Toc_library !current_module);
       printf "<h1 class=\"libtitle\">Library %s</h1>\n\n" !current_module
     end
 
@@ -555,8 +555,8 @@ module Html = struct
 	  item n; 
 	  printf "<a href=\"%s\">" r; f (); printf "</a>\n"
     in
-    Queue.iter make_toc_entry toc_q;
-    stop_item ();
+      Queue.iter make_toc_entry toc_q;
+      stop_item ();
 
 end
 
