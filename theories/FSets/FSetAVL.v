@@ -19,6 +19,9 @@
 
 Require Import Recdef FSetInterface FSetList ZArith Int.
 
+Set Implicit Arguments.
+Unset Strict Implicit.
+
 Module Raw (Import I:Int)(X:OrderedType).
 Module Import II:=MoreInt(I).
 Open Scope Int_scope.
@@ -494,7 +497,7 @@ Qed.
 
 Ltac omega_bal := match goal with 
   | H:avl ?l, H':avl ?r |- context [ bal ?l ?x ?r ] => 
-     generalize (bal_height_1 l x r H H') (bal_height_2 l x r H H'); 
+     generalize (bal_height_1 x H H') (bal_height_2 x H H'); 
      omega_max
   end. 
 
@@ -533,7 +536,7 @@ Qed.
 
 Lemma add_avl : forall s x, avl s -> avl (add x s).
 Proof.
- intros; generalize (add_avl_1 s x H); intuition.
+ intros; destruct (@add_avl_1 s x H); auto.
 Qed.
 Hint Resolve add_avl.
 
@@ -563,14 +566,14 @@ Proof.
  (* lt_tree -> lt_tree (add ...) *)
  red; red in H4.
  intros.
- rewrite (add_in l x y0 H) in H0.
+ rewrite (add_in x y0 H) in H0.
  intuition.
  eauto.
  inv bst; inv avl; apply bal_bst; auto.
  (* gt_tree -> gt_tree (add ...) *)
  red; red in H4.
  intros.
- rewrite (add_in r x y0 H5) in H0.
+ rewrite (add_in x y0 H5) in H0.
  intuition.
  apply MX.lt_eq with x; auto.
 Qed.
@@ -627,11 +630,11 @@ Proof.
  join_tac.
 
  split; simpl; auto. 
- destruct (add_avl_1 r x H0).
+ destruct (add_avl_1 x H0).
  avl_nns; omega_max.
  split; auto.
  set (l:=Node ll lx lr lh) in *.
- destruct (add_avl_1 l x H).
+ destruct (add_avl_1 x H).
  simpl (height Leaf).
  avl_nns; omega_max.
 
@@ -670,7 +673,7 @@ Qed.
 
 Lemma join_avl : forall l x r, avl l -> avl r -> avl (join l x r).
 Proof.
- intros; generalize (join_avl_1 l x r H H0); intuition.
+ intros; destruct (@join_avl_1 l x r H H0); auto.
 Qed.
 Hint Resolve join_avl.
 
@@ -705,7 +708,7 @@ Proof.
  apply bal_bst; auto.
  clear Hrl Hlr H13 H14 H16 H17 z; intro; intros.
  set (r:=Node rl rx rr rh) in *; clearbody r.
- rewrite (join_in lr x r y) in H13; auto.
+ rewrite (@join_in lr x r y) in H13; auto.
  intuition.
  apply MX.lt_eq with x; eauto.
  eauto.
@@ -714,7 +717,7 @@ Proof.
  apply bal_bst; auto.
  clear Hrl Hlr H13 H14 H16 H17 z; intro; intros.
  set (l:=Node ll lx lr lh) in *; clearbody l.
- rewrite (join_in l x rl y) in H13; auto.
+ rewrite (@join_in l x rl y) in H13; auto.
  intuition.
  apply MX.eq_lt with x; eauto.
  eauto.
@@ -772,7 +775,7 @@ Qed.
 Lemma remove_min_avl : forall l x r h, avl (Node l x r h) -> 
     avl (remove_min l x r)#1. 
 Proof.
- intros; generalize (remove_min_avl_1 l x r h H); intuition.
+ intros; destruct (@remove_min_avl_1 l x r h H); auto.
 Qed.
 
 Lemma remove_min_in : forall l x r h y, avl (Node l x r h) -> 
@@ -783,7 +786,7 @@ Proof.
  intuition_in.
  (* l = Node *)
  inversion_clear H.
- generalize (remove_min_avl ll lx lr lh H0).
+ generalize (remove_min_avl H0).
  rewrite e0; simpl; intros.
  rewrite bal_in; auto.
  rewrite e0 in IHp;generalize (IHp lh y H0).
@@ -801,7 +804,7 @@ Proof.
  apply bal_bst; auto.
  apply (IHp lh); auto.
  intro; intros.
- generalize (remove_min_in ll lx lr lh y H).
+ generalize (remove_min_in y H).
  rewrite e0; simpl.
  destruct 1.
  apply H3; intuition.
@@ -816,10 +819,9 @@ Proof.
  inversion_clear H; inversion_clear H0.
  intro; intro.
  generalize (IHp lh H1 H); clear H6 H7 IHp.
- generalize (remove_min_avl ll lx lr lh H).
- generalize (remove_min_in ll lx lr lh m H).
+ generalize (remove_min_in m H)(remove_min_avl H).
  rewrite e0; simpl; intros.
- rewrite (bal_in l' x r y H7 H5) in H0.
+ rewrite (bal_in x y H7 H5) in H0.
  assert (In m (Node ll lx lr lh)) by (rewrite H6; auto); clear H6.
  assert (X.lt m x) by order.
  decompose [or] H0; order.
@@ -850,7 +852,7 @@ Proof.
  split; auto; avl_nns; omega_max.
  split; auto; avl_nns; simpl in *; omega_max.
  destruct s1;try contradiction;clear y.
- generalize (remove_min_avl_1 l2 x2 r2 h2 H0).
+ generalize (remove_min_avl_1 H0).
  rewrite e1; simpl; destruct 1.
  split.
  apply bal_avl; auto.
@@ -861,7 +863,7 @@ Qed.
 Lemma merge_avl : forall s1 s2, avl s1 -> avl s2 -> 
   -(2) <= height s1 - height s2 <= 2 -> avl (merge s1 s2).
 Proof. 
- intros; generalize (merge_avl_1 s1 s2 H H0 H1); intuition.
+ intros; destruct (@merge_avl_1 s1 s2 H H0 H1); auto.
 Qed.
 
 Lemma merge_in : forall s1 s2 y, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
@@ -873,8 +875,8 @@ Proof.
  destruct s1;try contradiction;clear y.
  replace s2' with ((remove_min l2 x2 r2)#1); [|rewrite e1; auto].
  rewrite bal_in; auto.
- generalize (remove_min_avl l2 x2 r2 h2); rewrite e1; simpl; auto.
- generalize (remove_min_in l2 x2 r2 h2 y0); rewrite e1; simpl; intro.
+ generalize (remove_min_avl H2); rewrite e1; simpl; auto.
+ generalize (remove_min_in y0 H2); rewrite e1; simpl; intro.
  rewrite H3 ; intuition.
 Qed.
 
@@ -885,11 +887,11 @@ Proof.
  intros s1 s2; functional induction (merge s1 s2); subst;simpl in *; intros; auto.
  destruct s1;try contradiction;clear y.
  apply bal_bst; auto.
- generalize (remove_min_bst l2 x2 r2 h2); rewrite e1; simpl in *; auto.
+ generalize (remove_min_bst H1 H2); rewrite e1; simpl in *; auto.
  intro; intro.
  apply H3; auto.
- generalize (remove_min_in l2 x2 r2 h2 m); rewrite e1; simpl; intuition.
- generalize (remove_min_gt_tree l2 x2 r2 h2); rewrite e1; simpl; auto.
+ generalize (remove_min_in m H2); rewrite e1; simpl; intuition.
+ generalize (remove_min_gt_tree H1 H2); rewrite e1; simpl; auto.
 Qed. 
 
 
@@ -920,7 +922,7 @@ Proof.
  omega_bal.
  (* EQ *)
  inv avl. 
- generalize (merge_avl_1 l r H0 H1 H2).
+ generalize (merge_avl_1 H0 H1 H2).
  intuition omega_max.
  (* GT *)
  inv avl.
@@ -933,7 +935,7 @@ Qed.
 
 Lemma remove_avl : forall s x, avl s -> avl (remove x s).
 Proof. 
- intros; generalize (remove_avl_1 s x H); intuition.
+ intros; destruct (@remove_avl_1 s x H); auto.
 Qed.
 Hint Resolve remove_avl.
 
@@ -964,7 +966,7 @@ Proof.
  inv avl; inv bst.
  apply bal_bst; auto.
  intro; intro.
- rewrite (remove_in l x y0) in H; auto.
+ rewrite (remove_in x y0 H0) in H; auto.
  destruct H; eauto.
  (* EQ *)
  inv avl; inv bst.
@@ -973,7 +975,7 @@ Proof.
  inv avl; inv bst.
  apply bal_bst; auto.
  intro; intro.
- rewrite (remove_in r x y0) in H; auto.
+ rewrite (remove_in x y0 H5) in H; auto.
  destruct H; eauto.
 Qed.
 
@@ -1107,7 +1109,7 @@ Proof.
  intros s1 s2; functional induction (concat s1 s2); subst;auto.
  destruct s1;try contradiction;clear y.
  intros; apply join_avl; auto.
- generalize (remove_min_avl l2 x2 r2 h2 H0); rewrite e1; simpl; auto.
+ generalize (remove_min_avl H0); rewrite e1; simpl; auto.
 Qed.
  
 Lemma concat_bst :   forall s1 s2, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
@@ -1117,11 +1119,11 @@ Proof.
  intros s1 s2; functional induction (concat s1 s2); subst ;auto.
  destruct s1;try contradiction;clear y. 
  intros;  apply join_bst; auto.
- generalize (remove_min_bst l2 x2 r2 h2 H1 H2); rewrite e1; simpl; auto.
- generalize (remove_min_avl l2 x2 r2 h2 H2); rewrite e1; simpl; auto.
- generalize (remove_min_in l2 x2 r2 h2 m H2); rewrite e1; simpl; auto.
+ generalize (remove_min_bst H1 H2); rewrite e1; simpl; auto.
+ generalize (remove_min_avl H2); rewrite e1; simpl; auto.
+ generalize (remove_min_in m H2); rewrite e1; simpl; auto.
  destruct 1; intuition.
- generalize (remove_min_gt_tree l2 x2 r2 h2 H1 H2); rewrite e1; simpl; auto.
+ generalize (remove_min_gt_tree H1 H2); rewrite e1; simpl; auto.
 Qed.
 
 Lemma concat_in : forall s1 s2 y, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
@@ -1134,9 +1136,9 @@ Proof.
  destruct s1;try contradiction;clear y;intuition.
  inversion_clear H5.
  destruct s1;try contradiction;clear y; intros. 
- rewrite (join_in  (Node s1_1 t s1_2 i) m s2' y H0).
- generalize (remove_min_avl l2 x2 r2 h2 H2); rewrite e1; simpl; auto.
- generalize (remove_min_in l2 x2 r2 h2 y H2); rewrite e1; simpl.
+ rewrite (@join_in _ m s2' y H0).
+ generalize (remove_min_avl H2); rewrite e1; simpl; auto.
+ generalize (remove_min_in y H2); rewrite e1; simpl.
  intro EQ; rewrite EQ; intuition.
 Qed.
 
@@ -1194,7 +1196,7 @@ Proof.
  (* GT *)
  rewrite e1 in IHp;simpl in *; inversion_clear 1; inversion_clear 1; clear H7 H6.
  rewrite join_in; auto.
- generalize (split_avl r x H5); rewrite e1; simpl; intuition.
+ generalize (split_avl x H5); rewrite e1; simpl; intuition.
  rewrite (IHp y0 H1 H5); clear e1.
  intuition; [ eauto | eauto | intuition_in ].
 Qed.
@@ -1207,7 +1209,7 @@ Proof.
  (* LT *)
  rewrite e1 in IHp; simpl in *; inversion_clear 1; inversion_clear 1; clear H7 H6.
   rewrite join_in; auto.
- generalize (split_avl l x H4); rewrite e1; simpl; intuition.
+ generalize (split_avl x H4); rewrite e1; simpl; intuition.
  rewrite (IHp y0 H0 H4); clear IHp e0.
  intuition; [ order | order | intuition_in ].
  (* EQ *)
@@ -1245,18 +1247,18 @@ Proof.
  rewrite e1 in IHp; simpl in *; inversion_clear 1; inversion_clear 1.
  intuition.
  apply join_bst; auto.
- generalize (split_avl l x H4); rewrite e1; simpl; intuition.
+ generalize (split_avl x H4); rewrite e1; simpl; intuition.
  intro; intro.
- generalize (split_in_2 l x y0 H0 H4); rewrite e1; simpl; intuition.
+ generalize (split_in_2 x y0 H0 H4); rewrite e1; simpl; intuition.
  (* EQ *)
  simpl in *; inversion_clear 1; inversion_clear 1; intuition.
  (* GT *)
  rewrite e1 in IHp; simpl in *; inversion_clear 1; inversion_clear 1.
  intuition.
  apply join_bst; auto.
- generalize (split_avl r x H5); rewrite e1; simpl; intuition.
+ generalize (split_avl x H5); rewrite e1; simpl; intuition.
  intro; intro.
- generalize (split_in_1 r x y0 H1 H5); rewrite e1; simpl; intuition.
+ generalize (split_in_1 x y0 H1 H5); rewrite e1; simpl; intuition.
 Qed.
 
 Lemma split_cardinal_1 : forall x s, 
@@ -1267,7 +1269,7 @@ Proof.
  romega with *.
  romega with *.
  rewrite e1 in IHp; simpl in *.
- generalize (join_cardinal l y rl); romega with *.
+ generalize (@join_cardinal l y rl); romega with *.
 Qed.
 
 Lemma split_cardinal_2 : forall x s, 
@@ -1275,7 +1277,7 @@ Lemma split_cardinal_2 : forall x s,
 Proof.
  intros x s; functional induction split x s; simpl; auto.
  rewrite e1 in IHp; simpl in *.
- generalize (join_cardinal rl y r); romega with *.
+ generalize (@join_cardinal rl y r); romega with *.
  romega with *.
  rewrite e1 in IHp; simpl in *; romega with *.
 Qed.
@@ -1297,7 +1299,7 @@ Function inter (s1 s2 : t) { struct s1 } : t := match s1, s2 with
 Lemma inter_avl : forall s1 s2, avl s1 -> avl s2 -> avl (inter s1 s2). 
 Proof.
  intros s1 s2; functional induction inter s1 s2; auto; intros A1 A2;
- generalize (split_avl _ x1 A2); rewrite e1; simpl; destruct 1; 
+ generalize (split_avl x1 A2); rewrite e1; simpl; destruct 1; 
  inv avl; auto.
 Qed.
 Hint Resolve inter_avl.
@@ -1308,13 +1310,13 @@ Proof.
  intros s1 s2; functional induction inter s1 s2; intros B1 A1 B2 A2; 
  [intuition_in|intuition_in | | ]; 
  set (r:=Node l2 x2 r2 h2) in *; 
- generalize (split_avl _ x1 A2)(split_bst _ x1 B2 A2); 
+ generalize (split_avl x1 A2)(split_bst x1 B2 A2); 
   rewrite e1; simpl; destruct 1; destruct 1; 
  inv avl; inv bst; 
  destruct IHt as (IHb1,IHi1); auto; 
  destruct IHt0 as (IHb2,IHi2); auto; 
- destruct (distr_pair _ _ _ _ _ e1); clear e1; 
- destruct (distr_pair _ _ _ _ _ H12); clear H12; split.
+ destruct (distr_pair e1); clear e1; 
+ destruct (distr_pair H12); clear H12; split.
  (* bst join *)
  apply join_bst; auto; intro y; [rewrite IHi1|rewrite IHi2]; intuition.
  (* In join *)
@@ -1338,13 +1340,13 @@ Qed.
 Lemma inter_bst : forall s1 s2, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  bst (inter s1 s2). 
 Proof. 
- intros s1 s2 B1 A1 B2 A2; destruct (inter_bst_in s1 s2 B1 A1 B2 A2); auto.
+ intros s1 s2 B1 A1 B2 A2; destruct (inter_bst_in B1 A1 B2 A2); auto.
 Qed.
 
 Lemma inter_in : forall s1 s2 y, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  (In y (inter s1 s2) <-> In y s1 /\ In y s2).
 Proof. 
- intros s1 s2 y B1 A1 B2 A2; destruct (inter_bst_in s1 s2 B1 A1 B2 A2); auto.
+ intros s1 s2 y B1 A1 B2 A2; destruct (inter_bst_in B1 A1 B2 A2); auto.
 Qed.
 
 
@@ -1364,7 +1366,7 @@ end.
 Lemma diff_avl : forall s1 s2, avl s1 -> avl s2 -> avl (diff s1 s2). 
 Proof. 
  intros s1 s2; functional induction diff s1 s2; auto; intros A1 A2;
- generalize (split_avl _ x1 A2); rewrite e1; simpl; destruct 1; 
+ generalize (split_avl x1 A2); rewrite e1; simpl; destruct 1; 
  inv avl; auto.
 Qed.
 Hint Resolve diff_avl.
@@ -1375,13 +1377,13 @@ Proof.
  intros s1 s2; functional induction diff s1 s2; intros B1 A1 B2 A2; 
  [intuition_in|intuition_in | | ]; 
  set (r:=Node l2 x2 r2 h2) in *; 
- generalize (split_avl _ x1 A2)(split_bst _ x1 B2 A2); 
+ generalize (split_avl x1 A2)(split_bst x1 B2 A2); 
   rewrite e1; simpl; destruct 1; destruct 1; 
  inv avl; inv bst; 
  destruct IHt as (IHb1,IHi1); auto; 
  destruct IHt0 as (IHb2,IHi2); auto; 
- destruct (distr_pair _ _ _ _ _ e1); clear e1; 
- destruct (distr_pair _ _ _ _ _ H12); clear H12; split.
+ destruct (distr_pair e1); clear e1; 
+ destruct (distr_pair H12); clear H12; split.
  (* bst concat *)
  apply concat_bst; auto; intros y1 y2; rewrite IHi1, IHi2; intuition; order.
  (* In concat *)
@@ -1406,13 +1408,13 @@ Qed.
 Lemma diff_bst : forall s1 s2, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  bst (diff s1 s2). 
 Proof. 
- intros s1 s2 B1 A1 B2 A2; destruct (diff_bst_in s1 s2 B1 A1 B2 A2); auto.
+ intros s1 s2 B1 A1 B2 A2; destruct (diff_bst_in B1 A1 B2 A2); auto.
 Qed.
 
 Lemma diff_in : forall s1 s2 y, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
  (In y (diff s1 s2) <-> In y s1 /\ ~In y s2).
 Proof. 
- intros s1 s2 y B1 A1 B2 A2; destruct (diff_bst_in s1 s2 B1 A1 B2 A2); auto.
+ intros s1 s2 y B1 A1 B2 A2; destruct (diff_bst_in B1 A1 B2 A2); auto.
 Qed.
 
 
@@ -1455,9 +1457,9 @@ Lemma union_avl : forall s,
 Proof.
  intros s; functional induction union s; 
   simpl fst in *; simpl snd in *; auto.
- intros A1 A2; generalize (split_avl _ x1 A2); rewrite e2; simpl.
+ intros A1 A2; generalize (split_avl x1 A2); rewrite e2; simpl.
  inv avl; destruct 1; auto.
- intros A1 A2; generalize (split_avl _ x2 A1); rewrite e2; simpl.
+ intros A1 A2; generalize (split_avl x2 A1); rewrite e2; simpl.
  inv avl; destruct 1; auto.
 Qed.
 Hint Resolve union_avl.
@@ -1473,13 +1475,13 @@ Proof.
  intuition_in.
  (* add x2 s#1 *)
  inv avl.
- rewrite (height_0 _ H); [ | avl_nn l2; omega_max].
- rewrite (height_0 _ H0); [ | avl_nn r2; omega_max].
+ rewrite (height_0 H); [ | avl_nn l2; omega_max].
+ rewrite (height_0 H0); [ | avl_nn r2; omega_max].
  rewrite add_in; auto; intuition_in.
  (* join (union (l1,l2')) x1 (union (r1,r2'#2)) *)
  generalize 
-  (split_avl _ x1 A2) (split_bst _ x1 B2 A2)
-  (split_in_1 _ x1 y B2 A2) (split_in_2 _ x1 y B2 A2).
+  (split_avl x1 A2) (split_bst x1 B2 A2)
+  (split_in_1 x1 y B2 A2) (split_in_2 x1 y B2 A2).
  rewrite e2; simpl.
  destruct 1; destruct 1; inv avl; inv bst.
  rewrite join_in; auto.
@@ -1489,13 +1491,13 @@ Proof.
  case (X.compare y x1); intuition_in.
  (* add x1 s#2 *)
  inv avl.
- rewrite (height_0 _ H3); [ | avl_nn l1; omega_max].
- rewrite (height_0 _ H4); [ | avl_nn r1; omega_max].
+ rewrite (height_0 H3); [ | avl_nn l1; omega_max].
+ rewrite (height_0 H4); [ | avl_nn r1; omega_max].
  rewrite add_in; auto; intuition_in.
  (* join (union (l1',l2)) x1 (union (r1'#2,r2)) *)
  generalize 
-  (split_avl _ x2 A1) (split_bst _ x2 B1 A1)
-  (split_in_1 _ x2 y B1 A1) (split_in_2 _ x2 y B1 A1).
+  (split_avl x2 A1) (split_bst x2 B1 A1)
+  (split_in_1 x2 y B1 A1) (split_in_2 x2 y B1 A1).
  rewrite e2; simpl.
  destruct 1; destruct 1; inv avl; inv bst.
  rewrite join_in; auto.
@@ -1512,10 +1514,10 @@ Proof.
   simpl fst in *; simpl snd in *; try clear e0 e1; 
   try apply add_bst; auto.
  (* join (union (l1,l2')) x1 (union (r1,r2'#2)) *)
- generalize (split_avl _ x1 A2) (split_bst _ x1 B2 A2).
+ generalize (split_avl x1 A2) (split_bst x1 B2 A2).
  rewrite e2; simpl.
  destruct 1; destruct 1.
- destruct (distr_pair _ _ _ _ _ e2) as (L,R); clear e2.
+ destruct (distr_pair e2) as (L,R); clear e2.
  inv bst; inv avl.
  apply join_bst; auto.
  intro y; rewrite union_in; auto; simpl.
@@ -1523,10 +1525,10 @@ Proof.
  intro y; rewrite union_in; auto; simpl.
  rewrite <- R, split_in_2; auto; intuition_in.
  (* join (union (l1',l2)) x1 (union (r1'#2,r2)) *)
- generalize (split_avl _ x2 A1) (split_bst _ x2 B1 A1).
+ generalize (split_avl x2 A1) (split_bst x2 B1 A1).
  rewrite e2; simpl.
  destruct 1; destruct 1.
- destruct (distr_pair _ _ _ _ _ e2) as (L,R); clear e2.
+ destruct (distr_pair e2) as (L,R); clear e2.
  inv bst; inv avl.
  apply join_bst; auto.
  intro y; rewrite union_in; auto; simpl.
@@ -1919,7 +1921,7 @@ Module L := FSetList.Raw X.
 Fixpoint fold (A : Type) (f : elt -> A -> A)(s : tree) {struct s} : A -> A := 
  fun a => match s with
   | Leaf => a
-  | Node l x r _ => fold A f r (f x (fold A f l a))
+  | Node l x r _ => fold f r (f x (fold f l a))
  end.
 Implicit Arguments fold [A].
 
@@ -2239,7 +2241,7 @@ Proof.
  apply l_eq_cons; auto.
  inversion H; subst; clear H.
  inversion H0; subst; clear H0.
- destruct (cons_1 r1 e1); destruct (cons_1 r2 e2); auto.
+ destruct (@cons_1 r1 e1); destruct (@cons_1 r2 e2); auto.
  rewrite <- H0; rewrite <- H3; auto.
 Qed.
 
@@ -2252,7 +2254,7 @@ Proof.
  apply L.lt_cons_eq; auto.
  inversion H; subst; clear H.
  inversion H0; subst; clear H0.
- destruct (cons_1 r1 e1); destruct (cons_1 r2 e2); auto.
+ destruct (@cons_1 r1 e1); destruct (@cons_1 r2 e2); auto.
  rewrite <- H0; rewrite <- H3; auto.
 Qed.
 
@@ -2265,7 +2267,7 @@ Proof.
  apply L.lt_cons_eq; auto.
  inversion H; subst; clear H.
  inversion H0; subst; clear H0.
- destruct (cons_1 r1 e1); destruct (cons_1 r2 e2); auto.
+ destruct (@cons_1 r1 e1); destruct (@cons_1 r2 e2); auto.
  rewrite <- H0; rewrite <- H3; auto.
 Qed.
 
@@ -2273,33 +2275,33 @@ Lemma compare_Eq : forall s1 s2, bst s1 -> bst s2 ->
  compare s1 s2 = Eq -> Equal s1 s2.
 Proof.
  unfold compare; intros.
- destruct (cons_1 s1 End) as (S1,E1); auto; try inversion 2.
- destruct (cons_1 s2 End) as (S2,E2); auto; try inversion 2.
+ destruct (@cons_1 s1 End) as (S1,E1); auto; try inversion 2.
+ destruct (@cons_1 s2 End) as (S2,E2); auto; try inversion 2.
  simpl in *; rewrite <- app_nil_end in *.
  apply L_eq_eq; rewrite <-E1, <-E2.
- apply (compare_aux_Eq (cons s1 End, cons s2 End)); simpl; auto.
+ apply (@compare_aux_Eq (cons s1 End, cons s2 End)); simpl; auto.
 Qed.
 
 Lemma compare_Lt : forall s1 s2, bst s1 -> bst s2 -> 
  compare s1 s2 = Lt -> lt s1 s2.
 Proof.
  unfold compare; intros.
- destruct (cons_1 s1 End) as (S1,E1); auto; try inversion 2.
- destruct (cons_1 s2 End) as (S2,E2); auto; try inversion 2.
+ destruct (@cons_1 s1 End) as (S1,E1); auto; try inversion 2.
+ destruct (@cons_1 s2 End) as (S2,E2); auto; try inversion 2.
  simpl in *; rewrite <- app_nil_end in *.
  red; rewrite <- E1, <- E2.
- apply (compare_aux_Lt (cons s1 End, cons s2 End)); simpl; auto.
+ apply (@compare_aux_Lt (cons s1 End, cons s2 End)); simpl; auto.
 Qed.
 
 Lemma compare_Gt : forall s1 s2, bst s1 -> bst s2 ->
  compare s1 s2 = Gt -> lt s2 s1.
 Proof.
  unfold compare; intros.
- destruct (cons_1 s1 End) as (S1,E1); auto; try inversion 2.
- destruct (cons_1 s2 End) as (S2,E2); auto; try inversion 2.
+ destruct (@cons_1 s1 End) as (S1,E1); auto; try inversion 2.
+ destruct (@cons_1 s2 End) as (S2,E2); auto; try inversion 2.
  simpl in *; rewrite <- app_nil_end in *.
  red; rewrite <- E1, <- E2.
- apply (compare_aux_Gt (cons s1 End, cons s2 End)); simpl; auto.
+ apply (@compare_aux_Gt (cons s1 End, cons s2 End)); simpl; auto.
 Qed.
 
 Close Scope nat_scope.
@@ -2316,17 +2318,17 @@ Lemma equal_1 : forall s1 s2, bst s1 -> bst s2 ->
  Equal s1 s2 -> equal s1 s2 = true.
 Proof.
 unfold equal; intros s1 s2 B1 B2 E.
-generalize (compare_Lt _ _ B1 B2)(compare_Gt _ _ B1 B2).
+generalize (compare_Lt B1 B2)(compare_Gt B1 B2).
 destruct (compare s1 s2); auto; intros.
-elim (lt_not_eq _ _ B1 B2 (H (refl_equal Lt)) E); auto.
-elim (lt_not_eq _ _ B2 B1 (H0 (refl_equal Gt)) (eq_sym _ _ E)); auto.
+elim (lt_not_eq B1 B2 (H (refl_equal Lt)) E); auto.
+elim (lt_not_eq B2 B1 (H0 (refl_equal Gt)) (eq_sym E)); auto.
 Qed.
 
 Lemma equal_2 : forall s1 s2, bst s1 -> bst s2 ->   
  equal s1 s2 = true -> Equal s1 s2.
 Proof.
 unfold equal; intros s1 s2 B1 B2 E.
-generalize (compare_Eq _ _ B1 B2); 
+generalize (compare_Eq B1 B2); 
  destruct compare; auto; discriminate.
 Qed.
 
@@ -2376,7 +2378,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Module Raw := Raw I X. 
 
  Record bbst : Set := Bbst {this :> Raw.t; is_bst : Raw.bst this; is_avl: Raw.avl this}.
- Definition t := bbst. 
+ Definition t := bbst.
  Definition elt := E.t.
  
  Definition In (x : elt) (s : t) : Prop := Raw.In x s.
@@ -2387,29 +2389,29 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition Exists (P : elt -> Prop) (s:t) : Prop := exists x, In x s /\ P x.
   
  Lemma In_1 : forall (s:t)(x y:elt), E.eq x y -> In x s -> In y s. 
- Proof. intro s; exact (Raw.In_1 s). Qed.
+ Proof. intro s; exact (@Raw.In_1 s). Qed.
  
  Definition mem (x:elt)(s:t) : bool := Raw.mem x s.
 
- Definition empty : t := Bbst _ Raw.empty_bst Raw.empty_avl.
+ Definition empty : t := Bbst Raw.empty_bst Raw.empty_avl.
  Definition is_empty (s:t) : bool := Raw.is_empty s.
- Definition singleton (x:elt) : t := Bbst _ (Raw.singleton_bst x) (Raw.singleton_avl x).
+ Definition singleton (x:elt) : t := Bbst (Raw.singleton_bst x) (Raw.singleton_avl x).
  Definition add (x:elt)(s:t) : t := 
-   Bbst _ (Raw.add_bst s x (is_bst s) (is_avl s)) 
-          (Raw.add_avl s x (is_avl s)). 
+   Bbst (Raw.add_bst x (is_bst s) (is_avl s)) 
+        (Raw.add_avl x (is_avl s)). 
  Definition remove (x:elt)(s:t) : t := 
-   Bbst _ (Raw.remove_bst s x (is_bst s) (is_avl s)) 
-          (Raw.remove_avl s x (is_avl s)). 
+   Bbst (Raw.remove_bst x (is_bst s) (is_avl s)) 
+        (Raw.remove_avl x (is_avl s)). 
  Definition inter (s s':t) : t := 
-   Bbst _ (Raw.inter_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
-          (Raw.inter_avl _ _ (is_avl s) (is_avl s')).
+   Bbst (Raw.inter_bst (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
+        (Raw.inter_avl (is_avl s) (is_avl s')).
  Definition union (s s':t) : t := 
    let (s,b,a) := s in let (s',b',a') := s' in 
-   Bbst _ (Raw.union_bst (s,s') b a b' a')  
-          (Raw.union_avl (s,s') a a').
+   Bbst (@Raw.union_bst (s,s') b a b' a')  
+        (@Raw.union_avl (s,s') a a').
  Definition diff (s s':t) : t := 
-   Bbst _ (Raw.diff_bst _ _ (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
-          (Raw.diff_avl _ _ (is_avl s) (is_avl s')).
+   Bbst (Raw.diff_bst (is_bst s) (is_avl s) (is_bst s') (is_avl s'))  
+        (Raw.diff_avl (is_avl s) (is_avl s')).
  Definition elements (s:t) : list elt := Raw.elements s.
  Definition min_elt (s:t) : option elt := Raw.min_elt s.
  Definition max_elt (s:t) : option elt := Raw.max_elt s.
@@ -2417,16 +2419,16 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition fold (B : Type) (f : elt -> B -> B) (s:t) : B -> B := Raw.fold f s. 
  Definition cardinal (s:t) : nat := Raw.cardinal s.
  Definition filter (f : elt -> bool) (s:t) : t := 
-   Bbst _ (Raw.filter_bst f _ (is_bst s) (is_avl s))
-          (Raw.filter_avl f _ (is_avl s)). 
+   Bbst (Raw.filter_bst f (is_bst s) (is_avl s))
+        (Raw.filter_avl f (is_avl s)). 
  Definition for_all (f : elt -> bool) (s:t) : bool := Raw.for_all f s.
  Definition exists_ (f : elt -> bool) (s:t) : bool := Raw.exists_ f s.
  Definition partition (f : elt -> bool) (s:t) : t * t :=
    let p := Raw.partition f s in
-   (Bbst (fst p) (Raw.partition_bst_1 f _ (is_bst s) (is_avl s)) 
-                 (Raw.partition_avl_1 f _ (is_avl s)),
-    Bbst (snd p) (Raw.partition_bst_2 f _ (is_bst s) (is_avl s)) 
-                 (Raw.partition_avl_2 f _ (is_avl s))).
+   (@Bbst (fst p) (Raw.partition_bst_1 f (is_bst s) (is_avl s)) 
+                  (Raw.partition_avl_1 f (is_avl s)),
+    @Bbst (snd p) (Raw.partition_bst_2 f (is_bst s) (is_avl s)) 
+                  (Raw.partition_avl_2 f (is_avl s))).
 
  Definition equal (s s':t) : bool := Raw.equal s s'.
  Definition subset (s s':t) : bool := Raw.subset (s.(this),s'.(this)).
@@ -2437,8 +2439,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition compare (s s':t) : Compare lt eq s s'.
  Proof. 
   intros (s,b,a) (s',b',a').
-  generalize (Raw.compare_Eq _ _ b b') (Raw.compare_Lt _ _ b b') 
-   (Raw.compare_Gt _ _ b b').
+  generalize (Raw.compare_Eq b b') (Raw.compare_Lt b b') (Raw.compare_Gt b b').
   destruct Raw.compare; intros; [apply EQ|apply LT|apply GT]; red; auto.
  Defined.
 
@@ -2450,14 +2451,14 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Hint Resolve is_bst is_avl.
  
  Lemma mem_1 : In x s -> mem x s = true. 
- Proof. exact (Raw.mem_1 s x (is_bst s)). Qed.
+ Proof. exact (Raw.mem_1 (is_bst s)). Qed.
  Lemma mem_2 : mem x s = true -> In x s.
- Proof. exact (Raw.mem_2 s x). Qed.
+ Proof. exact (@Raw.mem_2 s x). Qed.
 
  Lemma equal_1 : Equal s s' -> equal s s' = true.
- Proof. exact (Raw.equal_1 s s' (is_bst s) (is_bst s')). Qed.
+ Proof. exact (Raw.equal_1 (is_bst s) (is_bst s')). Qed.
  Lemma equal_2 : equal s s' = true -> Equal s s'.
- Proof. exact (Raw.equal_2 s s' (is_bst s) (is_bst s')). Qed.
+ Proof. exact (Raw.equal_2 (is_bst s) (is_bst s')). Qed.
 
  Lemma subset_1 : Subset s s' -> subset s s' = true.
  Proof. 
@@ -2473,9 +2474,9 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Proof. exact Raw.empty_1. Qed.
 
  Lemma is_empty_1 : Empty s -> is_empty s = true.
- Proof. exact (Raw.is_empty_1 s). Qed.
+ Proof. exact (@Raw.is_empty_1 s). Qed.
  Lemma is_empty_2 : is_empty s = true -> Empty s. 
- Proof. exact (Raw.is_empty_2 s). Qed.
+ Proof. exact (@Raw.is_empty_2 s). Qed.
  
  Lemma add_1 : E.eq x y -> In y (add x s).
  Proof. 
@@ -2509,9 +2510,9 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Qed.
 
  Lemma singleton_1 : In y (singleton x) -> E.eq x y. 
- Proof. exact (Raw.singleton_1 x y). Qed.
+ Proof. exact (@Raw.singleton_1 x y). Qed.
  Lemma singleton_2 : E.eq x y -> In y (singleton x). 
- Proof. exact (Raw.singleton_2 x y). Qed.
+ Proof. exact (@Raw.singleton_2 x y). Qed.
 
  Lemma union_1 : In x (union s s') -> In x s \/ In x s'.
  Proof.
@@ -2562,7 +2563,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Qed.
  
  Lemma fold_1 : forall (A : Type) (i : A) (f : elt -> A -> A),
-      fold A f s i = fold_left (fun a e => f e a) (elements s) i.
+      fold f s i = fold_left (fun a e => f e a) (elements s) i.
  Proof. 
  unfold fold, elements; intros; apply Raw.fold_1; auto.
  Qed.
@@ -2591,14 +2592,14 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Qed.
 
  Lemma for_all_1 : compat_bool E.eq f -> For_all (fun x => f x = true) s -> for_all f s = true.
- Proof. exact (Raw.for_all_1 f s). Qed.
+ Proof. exact (@Raw.for_all_1 f s). Qed.
  Lemma for_all_2 : compat_bool E.eq f -> for_all f s = true -> For_all (fun x => f x = true) s.
- Proof. exact (Raw.for_all_2 f s). Qed.
+ Proof. exact (@Raw.for_all_2 f s). Qed.
 
  Lemma exists_1 : compat_bool E.eq f -> Exists (fun x => f x = true) s -> exists_ f s = true.
- Proof. exact (Raw.exists_1 f s). Qed.
+ Proof. exact (@Raw.exists_1 f s). Qed.
  Lemma exists_2 : compat_bool E.eq f -> exists_ f s = true -> Exists (fun x => f x = true) s.
- Proof. exact (Raw.exists_2 f s). Qed.
+ Proof. exact (@Raw.exists_2 f s). Qed.
 
  Lemma partition_1 : compat_bool E.eq f -> 
   Equal (fst (partition f s)) (filter f s).
@@ -2633,29 +2634,29 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Qed.
 
  Lemma elements_3 : sort E.lt (elements s).
- Proof. exact (Raw.elements_sort _ (is_bst s)). Qed.
+ Proof. exact (Raw.elements_sort (is_bst s)). Qed.
 
  Lemma elements_3w : NoDupA E.eq (elements s).
- Proof. exact (Raw.elements_nodup _ (is_bst s)). Qed.
+ Proof. exact (Raw.elements_nodup (is_bst s)). Qed.
 
  Lemma min_elt_1 : min_elt s = Some x -> In x s. 
- Proof. exact (Raw.min_elt_1 s x). Qed.
+ Proof. exact (@Raw.min_elt_1 s x). Qed.
  Lemma min_elt_2 : min_elt s = Some x -> In y s -> ~ E.lt y x.
- Proof. exact (Raw.min_elt_2 s x y (is_bst s)). Qed.
+ Proof. exact (@Raw.min_elt_2 s x y (is_bst s)). Qed.
  Lemma min_elt_3 : min_elt s = None -> Empty s.
- Proof. exact (Raw.min_elt_3 s). Qed.
+ Proof. exact (@Raw.min_elt_3 s). Qed.
 
  Lemma max_elt_1 : max_elt s = Some x -> In x s. 
- Proof. exact (Raw.max_elt_1 s x). Qed.
+ Proof. exact (@Raw.max_elt_1 s x). Qed.
  Lemma max_elt_2 : max_elt s = Some x -> In y s -> ~ E.lt x y.
- Proof. exact (Raw.max_elt_2 s x y (is_bst s)). Qed.
+ Proof. exact (@Raw.max_elt_2 s x y (is_bst s)). Qed.
  Lemma max_elt_3 : max_elt s = None -> Empty s.
- Proof. exact (Raw.max_elt_3 s). Qed.
+ Proof. exact (@Raw.max_elt_3 s). Qed.
 
  Lemma choose_1 : choose s = Some x -> In x s.
- Proof. exact (Raw.choose_1 s x). Qed.
+ Proof. exact (@Raw.choose_1 s x). Qed.
  Lemma choose_2 : choose s = None -> Empty s.
- Proof. exact (Raw.choose_2 s). Qed.
+ Proof. exact (@Raw.choose_2 s). Qed.
 
  Lemma  choose_equal: (equal s s')=true -> 
      match choose s, choose s' with  
@@ -2673,14 +2674,14 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma eq_refl : eq s s. 
  Proof. exact (Raw.eq_refl s). Qed.
  Lemma eq_sym : eq s s' -> eq s' s.
- Proof. exact (Raw.eq_sym s s'). Qed.
+ Proof. exact (@Raw.eq_sym s s'). Qed.
  Lemma eq_trans : eq s s' -> eq s' s'' -> eq s s''.
- Proof. exact (Raw.eq_trans s s' s''). Qed.
+ Proof. exact (@Raw.eq_trans s s' s''). Qed.
   
  Lemma lt_trans : lt s s' -> lt s' s'' -> lt s s''.
- Proof. exact (Raw.lt_trans s s' s''). Qed.
+ Proof. exact (@Raw.lt_trans s s' s''). Qed.
  Lemma lt_not_eq : lt s s' -> ~eq s s'.
- Proof. exact (Raw.lt_not_eq _ _ (is_bst s) (is_bst s')). Qed.
+ Proof. exact (@Raw.lt_not_eq _ _ (is_bst s) (is_bst s')). Qed.
 
  End Specs.
 End IntMake.
