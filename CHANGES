@@ -53,7 +53,8 @@ Libraries
   as "Immediate". A compatibility "oldset" database retains these expensive
   hints, so using "(e)auto with set oldset" should help porting scripts. 
   Same for FSetWeakInterface and FMap(Weak)Interface. 
-- Few changes in Reals (lemmas on prod_f_SO now on prod_f_R0).
+- Few changes in Reals (lemmas on prod_f_SO now on prod_f_R0, useless
+  assumption in Rpower_O removed).
 - Slight restructuration of the Logic library regarding choice and classical
   logic. Addition of files providing intuitionistic axiomatizations of
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v

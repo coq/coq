@@ -418,9 +418,9 @@ Proof.
   ring.
 Qed.
 
-Theorem Rpower_O : forall x:R, 0 < x -> x ^R 0 = 1.
+Theorem Rpower_O : forall x:R, x ^R 0 = 1.
 Proof.
-  intros x H; unfold Rpower in |- *.
+  intros x; unfold Rpower in |- *.
   rewrite Rmult_0_l; apply exp_0.
 Qed.
 
