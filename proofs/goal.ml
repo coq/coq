@@ -47,7 +47,7 @@ let is_defined evars { content = e } = Evd.is_defined evars e
 (* return type of the excution of goal tactics *)
 (* it contains the new subgoals to produce, and the definitions of
    the evars to instantiate *)
-type refinement = { subgoals: goal list ;
+type proof_step = { subgoals: goal list ;
                     new_defs: Evd.evar_defs }
 
 
@@ -64,7 +64,7 @@ type 'a expression = Environ.env -> Evd.evar_defs ref -> goal -> Evd.evar_info -
 
 
 (* type of the goal tactics*)
-type tactic = refinement expression
+type tactic = proof_step expression
 
 (* type of constr with holes manipulated by the API *)
 type open_constr = {
@@ -93,6 +93,14 @@ let run t env defs gl =
   let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
   let rdefs = ref defs in
   t env rdefs gl info
+
+(* This is a tactic which does nothing. It's main purpose
+   is to enforce a full duality betweens [Subproof.tactic]-s
+   and [Goal.tactic]-s.
+   Indeed, given this [null] tactic, [Subproof] will know
+   how to transform its tactics to [Goal.tactic].*)
+let null _ rdefs gl _ =
+  { subgoals = [gl] ; new_defs = !rdefs }
 
 
 (* a pessimistic (i.e : there won't be many positive answers) filter

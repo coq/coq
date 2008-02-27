@@ -72,7 +72,8 @@ let rec catchable_exception = function
 
 
 (* arnaud: on va faire les règles une par une, puis on fait l'interpréteur *)
-
+(* arnaud: j'ai dû faire plein de fois un reset_with_named_context sur 
+   Goal.env, et ça sert à rien !! *)
 let (>>=) = Goal.bind
 
 (* Raises Typing.type_of to the Goal monad *)
@@ -104,6 +105,45 @@ let intro id =
 (*** arnaud: remettre dans tactics.ml ? ***)
 
 
+(* [exact] tactic *)
+(* arnaud: comme le check est pas fait là, ça fait aussi exact_no_check... *)
+let exact c =
+  Goal.refine (Goal.open_of_closed c)
+
+(* [assumption] tactic *)
+let assumption =
+  Goal.concl >>= fun concl ->
+  Goal.env >>= fun env ->
+  Goal.hyps >>= fun hyps ->
+  let hyps = Environ.named_context_of_val hyps in
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of defs in
+  let rec arec only_eq = function
+    | [] -> 
+        if only_eq then arec false hyps else Subproof.fail (Pp.str "No such assumption")
+    | (id,c,t)::rest -> 
+	if (only_eq & eq_constr t concl) 
+          or (not only_eq & Reductionops.is_conv_leq env sigma t concl)
+        then exact (mkVar id)
+	else arec only_eq rest
+  in
+  arec true hyps
+
+(* arnaud: à nettoyer ??
+(* type of [c] (in the expression monad) *)
+let get_type_of c =
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  Retyping.get_type_of env (Evd.evars_of defs) c
+
+(* head normal form of the type of [c] (in the expression monad) *)
+let hnf_type_of c =
+  get_type_of c >>= fun ty ->
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  Reductionops.whd_betadeltaiota env (Evd.evars_of defs) ty
+*)
+      
 
 (*** Apply and Eapply and their technicities ***)
 

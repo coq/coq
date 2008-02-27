@@ -61,6 +61,11 @@ val unfocus : focus_context -> subproof -> subproof
 
 type tactic 
 
+(* exception which represent a failure in a command *)
+exception TacticFailure of Pp.std_ppcmds
+
+(* [fail s] raises [TacticFailure s].  *)
+val fail : Pp.std_ppcmds -> 'a
 
 (* Applies a tactic to the current subproof. *)
 val apply : Environ.env -> tactic -> subproof -> subproof
@@ -72,6 +77,9 @@ val apply : Environ.env -> tactic -> subproof -> subproof
    It operates by iterating the single-tactic from the last goal to 
    the first one. *)
 val tactic_of_goal_tactic : Goal.tactic -> tactic
+
+(* arnaud: à commenter, ainsi que dans le .ml *)
+val goal_tactic_of_tactic : tactic -> Goal.tactic
 
 
 (* Focuses a tactic at a single subgoal, found by it's index. *)

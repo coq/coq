@@ -28,6 +28,13 @@ val clear : identifier list -> Goal.tactic
 val clear_body : identifier list -> Goal.tactic
 (* [intro] tactic *)
 val intro : identifier -> Goal.tactic
+
+
+(*** remettre dans [tactics] ?***)
+(* [assumption] tactic *)
+val assumption : Goal.tactic
+(* [exact] tactic *)
+val exact : Term.constr -> Goal.tactic
 (* [apply] tactic *)
 val apply_with_ebindings : 
           Term.constr * Goal.open_constr Rawterm.bindings -> Goal.tactic

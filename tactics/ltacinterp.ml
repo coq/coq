@@ -1548,16 +1548,53 @@ let interp_atomic ist = function
       Subproof.tactic_of_goal_tactic
 	(interp_hyp_list ist l >>= fun hyps ->
 	 Logic.clear_body hyps)
-  | TacApply (ev,cb) ->
-      Subproof.tactic_of_goal_tactic
-	(interp_constr_with_bindings ist cb >>= fun oc ->
-	 Logic.apply_with_ebindings_gen ev oc)
   | TacExtend (loc,opn,l) ->
       let tac = lookup_tactic opn in
       Subproof.tactic_of_goal_tactic (
 	Goal.expr_of_list (List.map (interp_genarg ist) l) >>= fun args ->
 	tac args
       )
+  | TacAssumption -> 
+      Subproof.tactic_of_goal_tactic (
+	Logic.assumption
+      )
+  | TacExact c ->
+      Subproof.tactic_of_goal_tactic (
+        pf_interp_casted_constr ist c >>= fun cc ->
+	Logic.exact cc
+      )
+  | TacExactNoCheck c -> 
+      Util.anomaly "Ltacinterp.interp_atomic: ExactNoCheck: à restaurer"
+  | TacVmCastNoCheck c ->
+      Util.anomaly "Ltacinterp.interp_atomic: VmCastNoCheck: à restaurer"
+  | TacApply (ev,cb) ->
+      Subproof.tactic_of_goal_tactic
+	(interp_constr_with_bindings ist cb >>= fun oc ->
+	 Logic.apply_with_ebindings_gen ev oc)
+  | TacElim (ev,cb,cbo) ->
+      Util.anomaly "Ltacinterp.interp_atomic: Elim: à restaurer"
+  | TacElimType c ->
+      Util.anomaly "Ltacinterp.interp_atomic: ElimType: à restaurer"
+  | TacCase (ev,cb) ->
+      Util.anomaly "Ltacinterp.interp_atomic: Case: à restaurer"
+  | TacCaseType c -> 
+      Util.anomaly "Ltacinterp.interp_atomic: Case: à restaurer"
+  | TacFix (idot,n) ->
+      Util.anomaly "Ltacinterp.interp_atomic: Fix: à virer ?"
+  | TacMutualFix (id,n,l) ->
+      Util.anomaly "Ltacinterp.interp_atomic: MutualFix: à virer ?"
+  | TacCofix idopt ->
+      Util.anomaly "Ltacinterp.interp_atomic: Cofix: à virer ?"
+  | TacMutualCofix (id,l) ->
+       Util.anomaly "Ltacinterp.interp_atomic: MutualCofix: à virer ?"
+  | TacCut c ->
+      Util.anomaly "Ltacinterp.interp_atomic: Cut: à faire en ltac"
+  | TacAssert (t,ipat,c) ->
+      Util.anomaly "Ltacinterp.interp_atomic: Assert: à faire en ltac"
+  | TacGeneralize cl ->
+      Util.anomaly "Ltacinterp.interp_atomic:Generalize: à restaurer"
+  |  TacGeneralizeDep c -> 
+        Util.anomaly "Ltacinterp.interp_atomic:GeneralizeARestaurer: à restaurer"
   | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: commenter et renommer *)

@@ -129,6 +129,18 @@ let focus i j sp =
 let unfocus c sp =
   { sp with comb = unfocus_sublist c sp.comb }
 
+
+(* arnaud : à virer ? utile pour "choose_one" mais "choose_one"
+   devrait probablement dégager, si je ne dis pas de bêtise *)
+let focus_proof_step i j ps =
+  let (new_subgoals, context) = focus_sublist i j ps.Goal.subgoals in
+  ( { ps with Goal.subgoals = new_subgoals } , context )
+
+(* arnaud: à virer pareil ? *)
+let unfocus_proof_step c ps =
+  { ps with Goal.subgoals = unfocus_sublist c ps.Goal.subgoals }
+  
+
 (* Returns the open goals of the subproof *)
 let goals { comb = comb } = comb
 
@@ -150,7 +162,7 @@ let goals { comb = comb } = comb
 
 (* type of tactics *)
 
-type tactic = Environ.env -> subproof -> subproof
+type tactic = Environ.env -> Goal.proof_step -> Goal.proof_step
 
 (* exception which represent a failure in a command *)
 exception TacticFailure of Pp.std_ppcmds
@@ -160,7 +172,13 @@ let fail msg = raise (TacticFailure msg)
 
 
 (* Applies a tactic to the current subproof. *)
-let apply env t sp  = t env sp
+let apply env t sp  = 
+  let start = { Goal.subgoals = sp.comb ; Goal.new_defs = sp.solution } in
+  let next = t env start in
+  {sp with
+     solution = next.Goal.new_defs ;
+     comb = next.Goal.subgoals
+  }
 
 
 (* arnaud: à recommenter *)
@@ -171,7 +189,7 @@ let apply env t sp  = t env sp
    the first one. *)
 (* arnaud: avancer dans les termes modifiés par effet de bord peut se faire
    en mutuel-recursant wrap et [tactic_of...]*)
-let tactic_of_goal_tactic f env sp =
+let tactic_of_goal_tactic f env ps =
   let wrap g ((defs, partial_list) as partial_res) = 
     if Goal.is_defined (Evd.evars_of defs) g then 
       partial_res
@@ -180,31 +198,37 @@ let tactic_of_goal_tactic f env sp =
       (d',sg::partial_list)
   in
   let ( new_defs , combed_subgoals ) = 
-    List.fold_right wrap sp.comb (sp.solution,[])
+    List.fold_right wrap ps.Goal.subgoals (ps.Goal.new_defs,[])
   in
-  { sp with solution = new_defs;
-            comb = List.flatten combed_subgoals }
+  { Goal.new_defs = new_defs;
+    Goal.subgoals = List.flatten combed_subgoals }
+
+let goal_tactic_of_tactic t =
+  let (>>=) = Goal.bind in (* arnaud: peut-être à déplacer, peut-être pas*)
+  Goal.env >>= fun env ->
+  Goal.null >>= fun ps ->
+  Goal.return (t env ps)
 
 
 (* Focuses a tactic at a single subgoal, found by it's index. *)
 (* There could easily be such a tactical for a range of goals. *)
 (* arnaud: bug if 0 goals ! *)
 let choose_one i t env sp =
-  let (single,context) = focus i i sp in
-  unfocus context (apply env t single)
+  let (single,context) = focus_proof_step i i sp in
+  unfocus_proof_step context (t env single)
 
 (* Makes a list of tactic into a tactic (interpretes the [ | ] construct).
    It applies the tactics from the last one to the first one.
    Fails on the proofs with a number of subgoals not matching the length
    of the list.*)
-let rec list_of_tactics tac_list env sp =
-  match tac_list, sp.comb with
-  | tac::list,goal::comb -> let rec_sp = { sp with comb = comb } in
-                            let intermediate = list_of_tactics list env rec_sp in
-		            let this_sp = { intermediate with comb = [goal] } in
-			    let almost = tac env this_sp in
-			    { almost with comb = almost.comb@intermediate.comb }
-  | [],[] -> sp
+let rec list_of_tactics tac_list env ps =
+  match tac_list, ps.Goal.subgoals with
+  | tac::list,goal::sgoals -> let rec_ps = { ps with Goal.subgoals = sgoals } in
+                            let intermediate = list_of_tactics list env rec_ps in
+		            let this_ps = { intermediate with Goal.subgoals = [goal] } in
+			    let almost = tac env this_ps in
+			    { almost with Goal.subgoals = almost.Goal.subgoals@intermediate.Goal.subgoals }
+  | [],[] -> ps
   | _,_ -> fail (Pp.str "Not the right number of subgoals.")
 
 (* arnaud: syntax de la construction ? *)
@@ -215,18 +239,19 @@ let rec list_of_tactics tac_list env sp =
    of tactics and a tactic to be repeated.
    As in the other constructions, the tactics are applied from the last
    goal to the first. *)
-let rec extend_list_of_tactics begin_tac_list repeat_tac end_tac_list env sp =
-  let comb = sp.comb in
-  let (b,m_e) = Util.list_chop (List.length begin_tac_list) comb in
+let rec extend_list_of_tactics begin_tac_list repeat_tac end_tac_list env ps =
+  let subgoals = ps.Goal.subgoals in
+  let (b,m_e) = Util.list_chop (List.length begin_tac_list) subgoals in
   let (m,e) = Util.list_chop (List.length m_e - List.length end_tac_list) m_e in
-  let end_sp = { sp with comb = e } in
-  let intermediate_end_sp = list_of_tactics end_tac_list env end_sp in
-  let middle_sp = { intermediate_end_sp with comb = m } in
-  let intermediate_middle_sp = apply env repeat_tac middle_sp in
-  let begin_sp = { intermediate_middle_sp with comb = b } in
-  let almost = list_of_tactics begin_tac_list env begin_sp in
-  { almost with comb = almost.comb@(intermediate_middle_sp.comb
-				  @ intermediate_end_sp.comb)
+  let end_ps = { ps with Goal.subgoals = e } in
+  let intermediate_end_ps = list_of_tactics end_tac_list env end_ps in
+  let middle_ps = { intermediate_end_ps with Goal.subgoals = m } in
+  let intermediate_middle_ps = repeat_tac env middle_ps in
+  let begin_ps = { intermediate_middle_ps with Goal.subgoals = b } in
+  let almost = list_of_tactics begin_tac_list env begin_ps in
+  { almost with Goal.subgoals  = almost.Goal.subgoals
+                                  @(intermediate_middle_ps.Goal.subgoals
+				  @ intermediate_end_ps.Goal.subgoals)
   }
 
 (* Interpretes the ";" (semicolon) of Ltac. *)
@@ -235,18 +260,17 @@ let tcl_then t1 t2 env sp = t2 env (t1 env sp)
 
 (* Interpretes the "solve" tactical. *)
 let tcl_solve t env sp =
-  let new_sp = t env sp in
-  if finished new_sp then
-    new_sp
-  else
-    fail (Pp.str "")
+  let new_ps = t env sp in
+  match new_ps.Goal.subgoals with
+  | [] -> new_ps
+  | _ -> fail (Pp.str "") (* arnaud: améliorer le message d'erreur sans doute :D*)
 
 
 (* Reoders the goals on the comb according to a permutation *)
-let reorder p _ sp =
-  { sp with comb = Array.to_list 
-                  (Permutation.permute p 
-		  (Array.of_list sp.comb)) 
+let reorder p _ ps =
+  { ps with Goal.subgoals = Array.to_list 
+                             (Permutation.permute p 
+				(Array.of_list ps.Goal.subgoals)) 
   }
 
 

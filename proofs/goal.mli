@@ -31,14 +31,17 @@ val content : Evd.evar_map -> goal -> Evd.evar_info
 (* it contains the new subgoals to produce, and the definitions of
    the evars to instantiate *)
 (* arnaud: réfléchir à le faire "private" *)
-type refinement = { subgoals: goal list ;
+(* arnaud: private ne marche probablement pas, puisqu'on va en construire
+   avec Subproof.*)
+(* arnaud: probablement commenter pourquoi c'est là. *)
+type proof_step = { subgoals: goal list ;
                     new_defs: Evd.evar_defs}
 
 (* type of the base elements of the goal API.*)
 type 'a expression
 
 (* type of the goal tactics*)
-type tactic = refinement expression
+type tactic = proof_step expression
 
 (* type of constr with holes manipulated by the API *)
 type open_constr
@@ -46,7 +49,14 @@ type open_constr
 val constr_of_open_constr: open_constr -> Term.constr
 val open_of_closed : Term.constr -> open_constr
 
-val run : tactic -> Environ.env -> Evd.evar_defs -> goal -> refinement
+val run : tactic -> Environ.env -> Evd.evar_defs -> goal -> proof_step
+
+(* This is a tactic which does nothing. It's main purpose
+   is to enforce a full duality betweens [Subproof.tactic]-s
+   and [Goal.tactic]-s.
+   Indeed, given this [null] tactic, [Subproof] will know
+   how to transform its tactics to [Goal.tactic].*)
+val null : tactic
 
 (*arnaud: à commenter/déplacer tout ça *)
 val open_constr_of_raw : bool -> Rawterm.rawconstr -> open_constr expression
