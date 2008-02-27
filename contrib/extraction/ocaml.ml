@@ -29,7 +29,7 @@ let rec  msid_of_mt = function
   | MTident mp -> begin
       match Modops.eval_struct (Global.env()) (SEBident mp) with
 	| SEBstruct(msid,_) -> MPself msid
-	| _ -> anomaly "Extraction:the With can'tbe applied to a funsig"
+	| _ -> anomaly "Extraction:the With can't be applied to a funsig"
     end
   | MTwith(mt,_)-> msid_of_mt mt
   | _ -> anomaly "Extraction:the With operator isn't applied to a name"
