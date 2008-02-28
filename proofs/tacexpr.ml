@@ -311,7 +311,7 @@ type glob_generic_argument = rawconstr_and_expr generic_argument
 type glob_red_expr =
     (rawconstr_and_expr, evaluable_global_reference or_var) red_expr_gen
 
-type typed_generic_argument = Goal.open_constr generic_argument
+type typed_generic_argument = tlevel generic_argument
 
 type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 

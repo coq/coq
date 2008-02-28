@@ -76,6 +76,10 @@ let lookup_tactic s =
     Util.errorlabstrm "Refiner.lookup_tactic"
       (str"The tactic " ++ str s ++ str" is not installed")
 
+let out_gen_expr tag ge = 
+  ge >>= fun g ->
+  Goal.return (Genarg.out_gen tag g)
+
 (* arnaud: plutôt "contexte de généralisation je suppose" *)
 (* Interpretation of extra generic arguments *)
 type glob_sign = { 
@@ -1521,56 +1525,45 @@ let do_intro = function
 let interp_atomic ist = function
   (* Basic tactics *)
   | TacIntroPattern l ->
-         Subproof.tactic_of_goal_tactic (do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)))
+      do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l))
   | TacIntrosUntil hyp -> Util.anomaly "Ltacinterp.interp_atomic: todo: TacIntrosUntil"
   | TacIntroMove (ido,ido') ->
       begin
       match ido with
       | None -> Util.anomaly "Ltacinterp.inter_atomic: todo: TacIntroMove: None"
-      | Some id ->
-	  Subproof.tactic_of_goal_tactic (Logic.intro id)
-      (* arnaud:
-      h_intro_move (Option.map (interp_fresh_ident ist gl) ido)
-      (Option.map (interp_hyp ist gl) ido')
-      *)
+      | Some id -> Logic.intro id
       end
   | TacClear (b,l) -> 
       if b then
 	Util.anomaly "Ltacinterp.interp_atomic: TacClear: \"clear -\": à restaurer"
       else
-	let goal_me =
-	  (interp_hyp_list ist l) >>= fun hyps ->
-	  (*let l = List.map snd l in *)
-	  Logic.clear hyps
-	in
-	Subproof.tactic_of_goal_tactic  goal_me
+	Logic.clear (interp_hyp_list ist l)
   | TacClearBody l ->
-      Subproof.tactic_of_goal_tactic
-	(interp_hyp_list ist l >>= fun hyps ->
-	 Logic.clear_body hyps)
+	 Logic.clear_body (interp_hyp_list ist l)
   | TacExtend (loc,opn,l) ->
+      (* arnaud: peut-être bouger ?*)
+      let interp_and_tag ist g =
+	Genarg.genarg_tag g , interp_genarg ist g
+      in
+      let tac = lookup_tactic opn in
+      tac (List.map (interp_and_tag ist) l)
+      (* arnaud: à nettoyer dès que ça marche :)
       let tac = lookup_tactic opn in
       Subproof.tactic_of_goal_tactic (
 	Goal.expr_of_list (List.map (interp_genarg ist) l) >>= fun args ->
 	tac args
       )
+      *)
   | TacAssumption -> 
-      Subproof.tactic_of_goal_tactic (
 	Logic.assumption
-      )
   | TacExact c ->
-      Subproof.tactic_of_goal_tactic (
-        pf_interp_casted_constr ist c >>= fun cc ->
-	Logic.exact cc
-      )
+	Logic.exact (pf_interp_casted_constr ist c)
   | TacExactNoCheck c -> 
       Util.anomaly "Ltacinterp.interp_atomic: ExactNoCheck: à restaurer"
   | TacVmCastNoCheck c ->
       Util.anomaly "Ltacinterp.interp_atomic: VmCastNoCheck: à restaurer"
   | TacApply (ev,cb) ->
-      Subproof.tactic_of_goal_tactic
-	(interp_constr_with_bindings ist cb >>= fun oc ->
-	 Logic.apply_with_ebindings_gen ev oc)
+      Logic.apply_with_ebindings_gen ev (interp_constr_with_bindings ist cb)
   | TacElim (ev,cb,cbo) ->
       Util.anomaly "Ltacinterp.interp_atomic: Elim: à restaurer"
   | TacElimType c ->

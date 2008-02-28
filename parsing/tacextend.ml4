@@ -21,14 +21,15 @@ let default_loc = <:expr< Util.dummy_loc >>
 
 type grammar_tactic_production_expr =
   | TacTerm of string
-  | TacNonTerm of Util.loc * Genarg.argument_type * MLast.expr * string option
+  | TacNonTerm of Util.loc * Genarg.argument_type * MLast.expr * (string*string) option
 
 let rec make_patt = function
   | [] -> <:patt< [] >>
-  | TacNonTerm(loc',_,_,Some p)::l ->
-      <:patt< [ $lid:p$ :: $make_patt l$ ] >>
+  | TacNonTerm(loc',_,_,Some (p,p_tag))::l ->
+      <:patt< [ ($lid:p_tag$,$lid:p$) :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
+(* arnaud: à nettoyer
 let rec make_when loc = function
   | [] -> <:expr< True >>
   | TacNonTerm(loc',t,_,Some p)::l ->
@@ -37,13 +38,22 @@ let rec make_when loc = function
       let t = mlexpr_of_argtype loc' t in
       <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
   | _::l -> make_when loc l
+*)
+let rec make_when loc = function
+  | [] -> <:expr< True >>
+  | TacNonTerm(loc',t,_,Some (_,p_tag))::l ->
+      let l = make_when loc l in
+      let loc = join_loc loc' loc in
+      let t = mlexpr_of_argtype loc' t in
+      <:expr< $lid:p_tag$ = $t$ && $l$ >>
+  | _::l -> make_when loc l
 
 let rec make_let e = function
   | [] -> e
-  | TacNonTerm(loc,t,_,Some p)::l ->
+  | TacNonTerm(loc,t,_,Some (p,_))::l ->
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_let e l in
-      let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
+      let v = <:expr< Ltacinterp.out_gen_expr $make_wit loc t$ $lid:p$ >> in
       let v = 
         (* Special case for tactics which must be stored in algebraic
            form to avoid marshalling closures and to be reprinted *)
@@ -78,13 +88,13 @@ let make_clauses s l =
 
 let rec make_args = function
   | [] -> <:expr< [] >>
-  | TacNonTerm(loc,t,_,Some p)::l ->
+  | TacNonTerm(loc,t,_,Some (p,_))::l ->
       <:expr< [ Genarg.in_gen $make_wit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
 
 let rec make_eval_tactic e = function
   | [] -> e
-  | TacNonTerm(loc,tag,_,Some p)::l when Pcoq.is_tactic_genarg tag ->
+  | TacNonTerm(loc,tag,_,Some (p,_))::l when Pcoq.is_tactic_genarg tag ->
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_eval_tactic e l in
         (* Special case for tactics which must be stored in algebraic
@@ -94,7 +104,7 @@ let rec make_eval_tactic e = function
 
 let rec make_fun e = function
   | [] -> e
-  | TacNonTerm(loc,_,_,Some p)::l -> 
+  | TacNonTerm(loc,_,_,Some (p,_))::l -> 
       <:expr< fun $lid:p$ -> $make_fun e l$ >>
   | _::l -> make_fun e l
 
@@ -102,6 +112,8 @@ let mlexpr_of_grammar_production = function
   | TacTerm s ->
       <:expr< Egrammar.TacTerm $mlexpr_of_string s$ >>
   | TacNonTerm (loc,nt,g,sopt) ->
+      (* gets rid of the name of the tag argument *)
+      let sopt = Option.map fst sopt in
       <:expr< Egrammar.TacNonTerm $default_loc$ ($g$,$mlexpr_of_argtype loc nt$) $mlexpr_of_option mlexpr_of_string sopt$ >>
 
 let mlexpr_terminals_of_grammar_production = function
@@ -113,7 +125,7 @@ let mlexpr_of_clause =
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
-  | TacNonTerm(loc',t,_,Some p)::l ->
+  | TacNonTerm(loc',t,_,Some (p,_))::l ->
       let l = make_tags loc l in
       let loc = join_loc loc' loc in
       let t = mlexpr_of_argtype loc' t in
@@ -186,6 +198,9 @@ let declare_tactic loc s cl =
 
 open Pcaml
 
+(* This function produces the name of the tag argument*)
+let tag_ident s = s^"___tag"
+
 EXTEND
   GLOBAL: str_item;
   str_item:
@@ -206,10 +221,12 @@ EXTEND
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let t, g = Q_util.interp_entry_name loc e "" in
-        TacNonTerm (loc, t, g, Some s)
+	let s_tag = tag_ident s in
+        TacNonTerm (loc, t, g, Some (s,s_tag))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let t, g = Q_util.interp_entry_name loc e sep in
-        TacNonTerm (loc, t, g, Some s)
+	let s_tag = tag_ident s in
+        TacNonTerm (loc, t, g, Some (s,s_tag))
       | s = STRING ->
 	if s = "" then Util.user_err_loc (loc,"",Pp.str "Empty terminal");
         TacTerm s

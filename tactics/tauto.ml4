@@ -182,7 +182,9 @@ TACTIC EXTEND tauto
 END
 *)
 
+(* arnaud: problème avec l'argument "tactic"
 TACTIC EXTEND intuition
 | [ "intuition" ] -> [ Util.anomaly "Tauto.intuition: à restaurer" (* arnaud: intuition_gen default_intuition_tac *) ]
 | [ "intuition" tactic(t) ] -> [ Util.anomaly "Tauto.intuition: à restaurer" (* arnaud: intuition_gen (snd t) *) ]
 END
+*)

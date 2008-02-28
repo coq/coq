@@ -35,8 +35,12 @@ type value =
 
 (* Tactic extensions *)
 val add_tactic :
-  string -> (Tacexpr.typed_generic_argument list 
-	     -> Goal.tactic) -> unit
+  string -> ((Genarg.argument_type *
+	      Tacexpr.typed_generic_argument Goal.expression) list 
+	     -> Subproof.tactic) -> unit
+val out_gen_expr : ('a,'l) Genarg.abstract_argument_type 
+                      -> 'l Genarg.generic_argument Goal.expression
+                      -> 'a Goal.expression
 
 
 (*** ***)

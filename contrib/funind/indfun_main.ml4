@@ -453,6 +453,7 @@ END
 
 
 
+(* arnaud: problème avec l'argument "tactic"
 TACTIC EXTEND fauto
     [ "fauto" tactic(tac)] -> 
       [ Util.anomaly "Indfun_main.fauto: à restaurer" (* arnaud:
@@ -467,6 +468,7 @@ TACTIC EXTEND fauto
       ]
 
 END
+*)
 
 
 TACTIC EXTEND poseq

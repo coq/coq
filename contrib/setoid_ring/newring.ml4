@@ -787,12 +787,13 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
          [req;sth;ext;morph;th;cst_tac;pow_tac;
           lemma1;lemma2;pretac;posttac;lH;rl])) gl
 
+(* arnaud: problème avec l'argument "tactic"
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(lr)
       "[" constr(t) "]" ] ->
           [Util.anomaly "Newring.ring_lookup: à restaurer" (* arnaud: ring_lookup (fst f) lH lr t *)]
 END
-
+*)
 
  
 (***********************************************************************)
@@ -1128,8 +1129,10 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
         [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
          field_simpl_eq_in_ok;cond_ok;pretac;posttac;lH;rl])) gl
 
+(* arnaud: problème avec l'argument "tactic"
 TACTIC EXTEND field_lookup
 | [ "field_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(l) 
      "[" constr(t) "]" ] -> 
       [ Util.anomaly "Newring.field_lookup: à restaurer" (* arnaud: field_lookup (fst f) lH l t *)]
 END
+*)

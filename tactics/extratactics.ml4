@@ -71,6 +71,7 @@ END
 
 let h_injHyp id = h_injection (Some id)
 
+(* arnaud: un problem avec l'argument "tactic" apparemment... à creuser
 TACTIC EXTEND conditional_rewrite
 | [ "conditional" tactic(tac) "rewrite" orient(b) constr_with_bindings(c) ]
     -> [ Util.anomaly "Extratactics.conditional_rewrite: à restaurer" (* arnaud: à restaurer: conditional_rewrite b (snd tac) c *) ]
@@ -78,6 +79,7 @@ TACTIC EXTEND conditional_rewrite
     "in" hyp(h) ]
     -> [ Util.anomaly "Extratactics.conditional_rewrite(2): à restaurer" (* arnaud: à restaurer: conditional_rewrite_in b h (snd tac) c *) ]
 END
+*)
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ Util.anomaly "Extratactics.dependent_rewrite: à restaurer" (* arnaud: à restaurer: rewriteInConcl b c *) ]
@@ -119,6 +121,7 @@ TACTIC EXTEND autorewrite
 END
 *)
 
+(* arnaud: problème avec l'argument "tactic" (using...)
 TACTIC EXTEND autorewrite
 | [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
     [ Util.anomaly "Extratactics.autorewrite: à restaurer" (* arnaud: à restaurer: auto_multi_rewrite  l (glob_in_arg_hyp_to_clause  cl) *) ]
@@ -129,7 +132,7 @@ TACTIC EXTEND autorewrite
 
     ]
 END
-
+*)
 
 
 
@@ -392,6 +395,7 @@ let add_transitivity_lemma left lem =
 
 (* Vernacular syntax *)
 
+(* arnaud: problème avec les arguments "tactic" 
 TACTIC EXTEND stepl
 | ["stepl" constr(c) "by" tactic(tac) ] -> [ Util.anomaly "Extratactics.stepl: à restaurer" (* arnaud: à restaurer: step true c (snd tac) *) ]
 | ["stepl" constr(c) ] -> [  Util.anomaly "Extratactics.stepl: à restaurer" (* arnaud: à restaurer: step true c tclIDTAC *) ]
@@ -401,6 +405,7 @@ TACTIC EXTEND stepr
 | ["stepr" constr(c) "by" tactic(tac) ] -> [  Util.anomaly "Extratactics.stepr: à restaurer" (* arnaud: à restaurer: step false c (snd tac) *) ]
 | ["stepr" constr(c) ] -> [  Util.anomaly "Extratactics.stepr(2): à restaurer" (* arnaud: à restaurer: step false c tclIDTAC *) ]
 END
+*)
 
 VERNAC COMMAND EXTEND AddStepl
 | [ "Declare" "Left" "Step" constr(t) ] ->

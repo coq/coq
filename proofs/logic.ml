@@ -86,19 +86,30 @@ let std_refine check_type raw_step =
   (Goal.open_constr_of_raw check_type raw_step) >>= Goal.refine
 
 (* [refine] tactic *)
-let refine = Goal.refine
+let refine oc = 
+  Subproof.tactic_of_goal_tactic (
+    oc >>= Goal.refine
+  )
 (* [clear] tactic *)
-let clear = Goal.clear
+let clear l = 
+  Subproof.tactic_of_goal_tactic (
+    l >>= Goal.clear
+  )
 (* [clearbody] tactic *)
-let clear_body = Goal.clear_body
+let clear_body l = 
+  Subproof.tactic_of_goal_tactic (
+    l >>= Goal.clear_body
+  )
 (* [intro] tactic *)
 let intro id = 
-  (* arnaud: vérifier que "id" n'apparaît pas.*)
-  std_refine true (
-    Rawterm.RLambda (Util.dummy_loc, Name id,
-		     Rawterm.RHole (Util.dummy_loc, Evd.InternalHole),
-		     Rawterm.RHole (Util.dummy_loc, Evd.InternalHole)
-		    )
+  Subproof.tactic_of_goal_tactic (
+    (* arnaud: vérifier que "id" n'apparaît pas.*)
+    std_refine true (
+      Rawterm.RLambda (Util.dummy_loc, Name id,
+		       Rawterm.RHole (Util.dummy_loc, Evd.InternalHole),
+		       Rawterm.RHole (Util.dummy_loc, Evd.InternalHole)
+		      )
+    )
   )
 
 
@@ -108,26 +119,31 @@ let intro id =
 (* [exact] tactic *)
 (* arnaud: comme le check est pas fait là, ça fait aussi exact_no_check... *)
 let exact c =
-  Goal.refine (Goal.open_of_closed c)
+  Subproof.tactic_of_goal_tactic (
+    c >>= fun c ->
+    Goal.refine (Goal.open_of_closed c)
+  )
 
 (* [assumption] tactic *)
 let assumption =
-  Goal.concl >>= fun concl ->
-  Goal.env >>= fun env ->
-  Goal.hyps >>= fun hyps ->
-  let hyps = Environ.named_context_of_val hyps in
-  Goal.defs >>= fun defs ->
-  let sigma = Evd.evars_of defs in
-  let rec arec only_eq = function
-    | [] -> 
-        if only_eq then arec false hyps else Subproof.fail (Pp.str "No such assumption")
-    | (id,c,t)::rest -> 
-	if (only_eq & eq_constr t concl) 
-          or (not only_eq & Reductionops.is_conv_leq env sigma t concl)
-        then exact (mkVar id)
-	else arec only_eq rest
-  in
-  arec true hyps
+  Subproof.tactic_of_goal_tactic (
+    Goal.concl >>= fun concl ->
+    Goal.env >>= fun env ->
+    Goal.hyps >>= fun hyps ->
+    let hyps = Environ.named_context_of_val hyps in
+    Goal.defs >>= fun defs ->
+    let sigma = Evd.evars_of defs in
+    let rec arec only_eq = function
+      | [] -> 
+          if only_eq then arec false hyps else Subproof.fail (Pp.str "No such assumption")
+      | (id,c,t)::rest -> 
+	  if (only_eq & eq_constr t concl) 
+            or (not only_eq & Reductionops.is_conv_leq env sigma t concl)
+          then exact (Goal.return (mkVar id))
+	  else arec only_eq rest
+    in
+    Subproof.goal_tactic_of_tactic (arec true hyps)
+  )
 
 (* arnaud: à nettoyer ??
 (* type of [c] (in the expression monad) *)
@@ -215,7 +231,7 @@ let res_pf ?(with_evars=false) ?(allow_K=false) ?(flags=dft) clenv =
   clenv_refine with_evars resolved_clenv
 
 (* implements apply and eapply functions  *)
-let apply_with_ebindings_gen with_evars (c,lbind) = 
+let goal_apply_with_ebindings_gen with_evars (c,lbind) = 
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -247,6 +263,10 @@ let apply_with_ebindings_gen with_evars (c,lbind) =
           (* Reraise the initial error message *)
         else raise exn in
     try_red_apply thm_ty0
+let apply_with_ebindings_gen with_evars c_and_lbind =
+  Subproof.tactic_of_goal_tactic (
+    c_and_lbind >>= (goal_apply_with_ebindings_gen with_evars)
+  )
 
 let apply_with_ebindings = apply_with_ebindings_gen false
 let eapply_with_ebindings = apply_with_ebindings_gen true
@@ -254,11 +274,12 @@ let eapply_with_ebindings = apply_with_ebindings_gen true
 (*** arnaud: /remettre dans tactics.ml ? ***)
 
 
+(*
 let interprete_simple_tactic_as_single_tactic = function
   | Intro id -> intro id
   | Refine t -> refine t
   | _ -> Util.anomaly "fonction à rebrancher" (*arnaud: ... *)
-
+*)
 
 
 (*** ***)

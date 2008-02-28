@@ -21,29 +21,34 @@ val type_of : constr -> types Goal.expression
 
 (*** tactics ***)
 (* [refine] tactic *)
-val refine : Goal.open_constr -> Goal.tactic
+val refine : Goal.open_constr Goal.expression -> Subproof.tactic
 (* [clear] tactic *)
-val clear : identifier list -> Goal.tactic
+val clear : identifier list Goal.expression -> Subproof.tactic
 (* [clearbody] tactic *)
-val clear_body : identifier list -> Goal.tactic
+val clear_body : identifier list Goal.expression -> Subproof.tactic
 (* [intro] tactic *)
-val intro : identifier -> Goal.tactic
+(* arnaud: je suppose que pour pouvoir faire des "fresh" il faudra que ce
+   soit une expression... à voir à terme *)
+val intro : identifier -> Subproof.tactic
 
 
 (*** remettre dans [tactics] ?***)
 (* [assumption] tactic *)
-val assumption : Goal.tactic
+val assumption : Subproof.tactic
 (* [exact] tactic *)
-val exact : Term.constr -> Goal.tactic
+val exact : Term.constr Goal.expression -> Subproof.tactic
 (* [apply] tactic *)
 val apply_with_ebindings : 
-          Term.constr * Goal.open_constr Rawterm.bindings -> Goal.tactic
+          (Term.constr * Goal.open_constr Rawterm.bindings) Goal.expression
+                  -> Subproof.tactic
 (* [eapply] tactic *)
 val eapply_with_ebindings : 
-          Term.constr * Goal.open_constr Rawterm.bindings -> Goal.tactic
-(* [false] -> [apply], [true] -> [eapply] *)
+          (Term.constr * Goal.open_constr Rawterm.bindings) Goal.expression 
+                  -> Subproof.tactic
+(* [false] --> [apply] , [true] --> [eapply] *)
 val apply_with_ebindings_gen : 
-     bool -> Term.constr * Goal.open_constr Rawterm.bindings -> Goal.tactic
+     bool -> (Term.constr * Goal.open_constr Rawterm.bindings) Goal.expression 
+          -> Subproof.tactic
 
 type simple_tactic =
   | Intro of identifier
@@ -60,7 +65,9 @@ type simple_tactic =
   | Rename of identifier * identifier
   | Change_evars
 
+(* arnaud: à virer sans doute ?
 val interprete_simple_tactic_as_single_tactic : simple_tactic -> Goal.tactic (* arnaud: type à changer *)
+*)
 
 (*s Refiner errors. *)
 
