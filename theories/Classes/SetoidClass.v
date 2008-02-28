@@ -102,13 +102,11 @@ Proof.
   contradiction.
 Qed.
 
-Open Scope type_scope.
-
 Ltac setoid_simplify_one :=
   match goal with
-    | [ H : ?x == ?x |- _ ] => clear H
-    | [ H : ?x == ?y |- _ ] => clsubst H
-    | [ |- ?x =/= ?y ] => let name:=fresh "Hneq" in intro name
+    | [ H : (?x == ?x)%type |- _ ] => clear H
+    | [ H : (?x == ?y)%type |- _ ] => clsubst H
+    | [ |- (?x =/= ?y)%type ] => let name:=fresh "Hneq" in intro name
   end.
 
 Ltac setoid_simplify := repeat setoid_simplify_one.

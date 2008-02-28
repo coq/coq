@@ -16,8 +16,8 @@
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
-Require Import Coq.Program.Program.
 Require Export Coq.Classes.Init.
+Require Import Coq.Program.Program.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -292,9 +292,13 @@ Ltac relation_tac := relation_refl || relation_sym || relation_trans.
 
 (** Various combinations of reflexivity, symmetry and transitivity. *)
 
+(** A [PreOrder] is both reflexive and transitive. *)
+
 Class PreOrder A (R : relation A) :=
   preorder_refl :> Reflexive R ;
   preorder_trans :> Transitive R.
+
+(** A [PreOrder] is both reflexive and transitive. *)
 
 (** The [PER] typeclass. *)
 
