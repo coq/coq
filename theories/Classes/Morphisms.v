@@ -136,8 +136,8 @@ Program Instance iff_iff_iff_impl_morphism : ? Morphism (iff ++> iff ++> iff) im
 Lemma reflexive_impl_iff [ Symmetric A R, ? Morphism (R ++> impl) m ] : Morphism (R ==> iff) m.
 Proof.
   intros.
-  constructor ; simpl_relation.
-  split ; clapply respect ; [ idtac | sym ] ; auto.
+  constructor. red ; intros. 
+  split ; apply respect ; [ idtac | sym ] ; auto.
 Qed.
 
 (** The complement of a relation conserves its morphisms. *)
