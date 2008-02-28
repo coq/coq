@@ -123,7 +123,7 @@ let standard sds sps =
   print "\n\n"
 
 let includes () =
-  if !some_vfile then print "include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n"
+  if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n"
 
 let implicit () =
   let ml_rules () =
@@ -168,8 +168,8 @@ let variables l =
     | _ :: r -> var_aux r
   in
   section "Variables definitions.";
-  print "CAMLP4LIB:=$(shell camlp5 -where 2> /dev/null || camlp4 -where)\n";
-  print "CAMLP4:=$(notdir $(CAMLP4LIB))\n"; 
+  printf "CAMLP4LIB:=%s\n" Coq_config.camlp4lib;
+  printf "CAMLP4:=%s\n" (Filename.concat Coq_config.camldir Coq_config.camlp4); 
   print "COQSRC:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
@@ -187,15 +187,17 @@ let variables l =
   else
     print "OPT:=\n";
   if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
+  (* Coq executables and relative variables *)
   print "COQFLAGS:=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
   print "COQC:=$(COQBIN)coqc\n";
+  print "COQDEP:=$(COQBIN)coqdep -c\n";
   print "GALLINA:=$(COQBIN)gallina\n";
   print "COQDOC:=$(COQBIN)coqdoc\n";
-  print "CAMLC:=ocamlc -rectypes -c\n";
-  print "CAMLOPTC:=ocamlopt -c\n";
-  print "CAMLLINK:=ocamlc\n";
-  print "CAMLOPTLINK:=ocamlopt\n";
-  print "COQDEP:=$(COQBIN)coqdep -c\n";
+  (* Caml executables and relative variables *)
+  printf "CAMLC:=%s/ocamlc -rectypes -c\n" Coq_config.camldir;
+  printf "CAMLOPTC:=%s/ocamlopt -c\n" Coq_config.camldir;
+  printf "CAMLLINK:=%s/ocamlc\n" Coq_config.camldir;
+  printf "CAMLOPTLINK:=%s/ocamlopt\n" Coq_config.camldir;
   print "GRAMMARS:=grammar.cma\n";
   print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
   print "PP:=-pp \"$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
