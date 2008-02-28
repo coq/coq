@@ -294,23 +294,17 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
        | _, _                        => False
      end.
   Proof.
-    intros.
-    generalize (M.choose_equal (M.equal_1 H)); clear H; intros Heq.
-    generalize (choose_ok1 s) (choose_ok2 s) (choose_ok1 s') (choose_ok2 s').
-    destruct (choose s) as [(x,Hx)|Hx]; destruct (choose s') as [(x',Hx')|Hx']; auto.
- 
-   intros H _ H' _; generalize (H x) (H' x'); clear H H'; intros H H'.
-   destruct H as (_,H); rewrite H in Heq; simpl in Heq; [|exists Hx]; auto.
-   destruct H' as (_,H'); rewrite H' in Heq; simpl in Heq; [|exists Hx']; auto.
-   
-   intros H _ _ H'; generalize (H x); clear H; intros H.
-   destruct H as (_,H); rewrite H in Heq; simpl in Heq; [|exists Hx]; auto.
-   destruct H' as (_,H'); rewrite H' in Heq; simpl in Heq;[|exists Hx']; auto.
-
-   intros _ H H' _; generalize (H' x'); clear H'; intros H'.
-   destruct H as (_,H); rewrite H in Heq; simpl in Heq; [|exists Hx]; auto.
-   destruct H' as (_,H'); rewrite H' in Heq; simpl in Heq; [|exists Hx']; auto.
-  Qed. 
+   intros.
+   generalize (@M.choose_1 s)(@M.choose_2 s)
+              (@M.choose_1 s')(@M.choose_2 s')(@M.choose_3 s s')
+              (choose_ok1 s)(choose_ok2 s)(choose_ok1 s')(choose_ok2 s').
+   destruct (choose s) as [(x,Hx)|Hx]; destruct (choose s') as [(x',Hx')|Hx']; auto; intros.
+   apply H4; auto.
+   rewrite H5; exists Hx; auto.
+   rewrite H7; exists Hx'; auto.
+   apply Hx' with x; unfold Equal in H; rewrite <-H; auto.
+   apply Hx with x'; unfold Equal in H; rewrite H; auto.
+  Qed.
 
   Definition min_elt :
     forall s : t,
@@ -449,17 +443,13 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
     simple destruct s0; intros; discriminate H.
   Qed.
  
-  Lemma choose_equal: forall s s', (equal s s')=true -> 
-     match choose s, choose s' with  
-      | Some x, Some x' => E.eq x x'
-      | None, None => True
-      | _, _ => False
-     end.
+  Lemma choose_3 : forall s s' x x', 
+   choose s = Some x -> choose s' = Some x' -> Equal s s' -> E.eq x x'.
   Proof.
   unfold choose; intros.
-  generalize (M.choose_equal (equal_2 H)); clear H.
-  destruct (M.choose s) as [(x,Hx)|Hx]; destruct (M.choose s') as [(x',Hx')|Hx']; 
-   simpl; auto.
+  generalize (M.choose_equal H1); clear H1.
+  destruct (M.choose s) as [(?,?)|?]; destruct (M.choose s') as [(?,?)|?]; 
+   simpl; auto; congruence.
   Qed.
 
   Definition elements (s : t) : list elt := let (l, _) := elements s in l. 

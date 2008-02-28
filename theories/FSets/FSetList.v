@@ -722,36 +722,18 @@ Module Raw (X: OrderedType).
 
   Definition choose_2 : forall s : t, choose s = None -> Empty s := min_elt_3.
 
-  Lemma choose_equal: forall s s', Sort s -> Sort s' -> (equal s s')=true -> 
-     match choose s, choose s' with  
-      | Some x, Some x' => X.eq x x'
-      | None, None => True
-      | _, _ => False
-     end.
+  Lemma choose_3: forall s s', Sort s -> Sort s' -> forall x x',
+   choose s = Some x -> choose s' = Some x' -> Equal s s' -> X.eq x x'.
   Proof.
-   unfold choose; intros s s' Hs Hs' H.
-   generalize (equal_2 H); clear H; intros.
-   generalize (@min_elt_1 s) (@min_elt_2 _ Hs) (@min_elt_3 s).
-   generalize (@min_elt_1 s') (@min_elt_2 _ Hs') (@min_elt_3 s').
-   destruct (min_elt s) as [x|]; destruct (min_elt s') as [x'|]; auto.
-   
-   intros H1 H2 _ H1' H2' _.
-   destruct (X.compare x x'); auto.
-   assert (In x s) by auto.
-   rewrite (H x) in H0.
-   destruct (H2 x' x); auto.
-   assert (In x' s') by auto.
-   rewrite <- (H x') in H0.
-   destruct (H2' x x'); auto.
-
-   intros _ _ H3 H1' _ _.
-   destruct (H3 (refl_equal _) x).
-   rewrite <- (H x); auto.
-   
-   intros H1 _ _ _ _ H3'.
-   destruct (H3' (refl_equal _) x').
-   rewrite (H x'); auto.
-  Qed.   
+   unfold choose, Equal; intros s s' Hs Hs' x x' Hx Hx' H.
+   assert (~X.lt x x').
+    apply min_elt_2 with s'; auto.
+    rewrite <-H; auto using min_elt_1.
+   assert (~X.lt x' x).
+    apply min_elt_2 with s; auto.
+    rewrite H; auto using min_elt_1.
+   destruct (X.compare x x'); intuition.
+  Qed.
    
   Lemma fold_1 :
    forall (s : t) (Hs : Sort s) (A : Type) (i : A) (f : elt -> A -> A),
@@ -1258,13 +1240,9 @@ Module Make (X: OrderedType) <: S with Module E := X.
   Proof. exact (fun H => Raw.choose_1 H). Qed.
   Lemma choose_2 : choose s = None -> Empty s.
   Proof. exact (fun H => Raw.choose_2 H). Qed.
-  Lemma choose_equal : (equal s s')=true -> 
-     match choose s, choose s' with  
-      | Some x, Some x' => E.eq x x'
-      | None, None => True
-      | _, _ => False
-     end. 
-  Proof. exact (Raw.choose_equal s.(sorted) s'.(sorted)). Qed.
+  Lemma choose_3 : choose s = Some x -> choose s' = Some y -> 
+   Equal s s' -> E.eq x y.
+  Proof. exact (@Raw.choose_3 _ _ s.(sorted) s'.(sorted) x y). Qed.
 
   Lemma eq_refl : eq s s.
   Proof. exact (Raw.eq_refl s). Qed.

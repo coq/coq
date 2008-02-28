@@ -789,7 +789,7 @@ Module OrdProperties (M:S).
   Import M.E.
   Import M.
 
-  (* First, a specialized version of SortA_equivlistA_eqlistA: *)
+  (** First, a specialized version of SortA_equivlistA_eqlistA: *)
   Lemma sort_equivlistA_eqlistA : forall l l' : list elt,
    sort E.lt l -> sort E.lt l' -> equivlistA E.eq l l' -> eqlistA E.eq l l'.
   Proof.
@@ -1041,5 +1041,22 @@ Module OrdProperties (M:S).
   Qed.
 
   End FoldOpt.
+
+  (** An alternative version of [choose_3] *)
+
+  Lemma choose_equal : forall s s', Equal s s' -> 
+    match choose s, choose s' with  
+      | Some x, Some x' => E.eq x x'
+      | None, None => True
+      | _, _ => False
+     end.
+  Proof.
+  intros s s' H; 
+  generalize (@choose_1 s)(@choose_2 s)
+             (@choose_1 s')(@choose_2 s')(@choose_3 s s'); 
+  destruct (choose s); destruct (choose s'); simpl; intuition.
+  apply H5 with e; rewrite <-H; auto.
+  apply H5 with e; rewrite H; auto.
+  Qed.
 
 End OrdProperties.

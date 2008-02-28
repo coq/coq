@@ -338,12 +338,8 @@ Module Type Sfun (E : OrderedType).
   Parameter max_elt_3 : max_elt s = None -> Empty s.
 
   (** Additional specification of [choose] *)
-  Parameter choose_equal: (equal s s')=true -> 
-     match choose s, choose s' with  
-      | Some x, Some x' => E.eq x x'
-      | None, None => True
-      | _, _ => False
-     end.
+  Parameter choose_3 : choose s = Some x -> choose s' = Some y -> 
+    Equal s s' -> E.eq x y.
 
   End Spec.
 
@@ -507,7 +503,7 @@ Module Type Sdep.
 
   Parameter choose : forall s : t, {x : elt | In x s} + {Empty s}.
 
-  (** The [choose_equal] specification of [S] cannot be packed 
+  (** The [choose_3] specification of [S] cannot be packed 
         in the dependent version of [choose], so we leave it separate. *)
   Parameter choose_equal : forall s s', Equal s s' -> 
      match choose s, choose s' with 

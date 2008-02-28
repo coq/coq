@@ -497,8 +497,9 @@ End WFacts.
 (** Now comes a special version dedicated to full sets. For this 
     one, only one argument [(M:S)] is necessary. *)
 
-Module Facts (M:S).
+Module Facts (Import M:S).
   Module D:=OT_as_DT M.E.
   Include WFacts D M.
+
 End Facts.
 
