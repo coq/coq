@@ -324,9 +324,11 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   Lemma cardinal_1 : forall m, cardinal m = length (elements m).
   Proof. exact (@MapCard_as_length _). Qed.
 
-  Definition Equal cmp m m' := 
-         (forall k, In k m <-> In k m') /\ 
-         (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
+  Definition Equal m m' := forall y, find y m = find y m'.
+  Definition Equiv (eq_elt:A->A->Prop) m m' := 
+    (forall k, In k m <-> In k m') /\ 
+    (forall k e e', MapsTo k e m -> MapsTo k e' m' -> eq_elt e e').  
+  Definition Equivb (cmp: A->A->bool) := Equiv (Cmp cmp).
 
   (** unfortunately, the [MapFold] of [IntMap] isn't compatible with 
    the FMap interface. We use a naive version for now : *)
@@ -600,14 +602,14 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   
   Lemma equal_1 : 
     forall (A:Set)(m: t A)(m': t A)(cmp: A -> A -> bool), 
-    Equal cmp m m' -> equal cmp m m' = true. 
+    Equivb cmp m m' -> equal cmp m m' = true. 
   Proof.
-  unfold equal, Equal.
+  unfold equal, Equivb, Equiv, Cmp.
   intros.
   apply L.equal_1.
   apply elements_3.
   apply elements_3.
-  unfold L.Equal.
+  unfold L.Equivb.
   destruct H.
   split; intros.
   do 2 rewrite elements_in; auto.
@@ -618,9 +620,9 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
 
   Lemma equal_2 : 
     forall (A:Set)(m: t A)(m': t A)(cmp: A -> A -> bool), 
-    equal cmp m m' = true -> Equal cmp m m'.
+    equal cmp m m' = true -> Equivb cmp m m'.
   Proof.
-  unfold equal, Equal.
+  unfold equal, Equivb, Equiv, Cmp.
   intros.
   destruct (L.equal_2 (elements_3 m) (elements_3 m') H); clear H.
   split.

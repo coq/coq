@@ -1167,7 +1167,7 @@ Qed.
 
 (** * Comparison *)
 
-Definition Equal (cmp:elt->elt->bool) m m' := 
+Definition Equivb (cmp:elt->elt->bool) m m' := 
   (forall k, In k m <-> In k m') /\ 
   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
 
@@ -1346,7 +1346,7 @@ Defined.
 Definition equal (cmp: elt -> elt -> bool) s s' := 
  equal_aux cmp (cons s End, cons s' End).
 
-Lemma equal_aux_Equal : forall cmp e, sorted_e e#1 -> sorted_e e#2 ->
+Lemma equal_aux_Equivb : forall cmp e, sorted_e e#1 -> sorted_e e#2 ->
  (equal_aux cmp e = L.equal cmp (flatten_e e#1) (flatten_e e#2)).
 Proof.
  intros cmp e; functional induction equal_aux cmp e; intros; clearf;
@@ -1359,10 +1359,10 @@ Proof.
  rewrite <- H11, <- H13; auto.
 Qed.
 
-Lemma Equal_elements : forall cmp s s', 
- Equal cmp s s' <-> L.Equal cmp (elements s) (elements s').
+Lemma Equivb_elements : forall cmp s s', 
+ Equivb cmp s s' <-> L.Equivb cmp (elements s) (elements s').
 Proof.
-unfold Equal, L.Equal; split; split; intros.
+unfold Equivb, L.Equivb; split; split; intros.
 do 2 rewrite elements_in; firstorder.
 destruct H.
 apply (H2 k); rewrite <- elements_mapsto; auto.
@@ -1371,16 +1371,16 @@ destruct H.
 apply (H2 k); unfold L.PX.MapsTo; rewrite elements_mapsto; auto.
 Qed.
 
-Lemma equal_Equal : forall cmp s s', bst s -> bst s' -> 
- (equal cmp s s' = true <-> Equal cmp s s').
+Lemma equal_Equivb : forall cmp s s', bst s -> bst s' -> 
+ (equal cmp s s' = true <-> Equivb cmp s s').
 Proof.
  intros; unfold equal.
  destruct (@cons_1 s End); auto.
  inversion 2.
  destruct (@cons_1 s' End); auto.
  inversion 2.
- rewrite equal_aux_Equal; simpl; auto.
- rewrite Equal_elements.
+ rewrite equal_aux_Equivb; simpl; auto.
+ rewrite Equivb_elements.
  rewrite H2, H4.
  simpl; do 2 rewrite <- app_nil_end.
  split; [apply L.equal_2|apply L.equal_1]; auto.
@@ -1783,31 +1783,33 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma cardinal_1 : forall m, cardinal m = length (elements m).
  Proof. intro m; exact (@Raw.elements_cardinal elt m.(this)). Qed.
 
- Definition Equal cmp m m' := 
+ Definition Equal m m' := forall y, find y m = find y m'.
+ Definition Equiv (eq_elt:elt->elt->Prop) m m' := 
    (forall k, In k m <-> In k m') /\ 
-   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
+   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> eq_elt e e').
+ Definition Equivb cmp := Equiv (Cmp cmp).
 
- Lemma Equal_Equal : forall cmp m m', Equal cmp m m' <-> Raw.Equal cmp m m'.
+ Lemma Equivb_Equivb : forall cmp m m', Equivb cmp m m' <-> Raw.Equivb cmp m m'.
  Proof. 
- intros; unfold Equal, Raw.Equal, In; intuition.
+ intros; unfold Equivb, Equiv, Raw.Equivb, In; intuition.
  generalize (H0 k); do 2 rewrite Raw.In_alt; intuition.
  generalize (H0 k); do 2 rewrite Raw.In_alt; intuition.
  generalize (H0 k); do 2 rewrite <- Raw.In_alt; intuition.
  generalize (H0 k); do 2 rewrite <- Raw.In_alt; intuition.
- Qed. 
+ Qed.
 
  Lemma equal_1 : forall m m' cmp, 
-   Equal cmp m m' -> equal cmp m m' = true. 
+   Equivb cmp m m' -> equal cmp m m' = true. 
  Proof. 
- unfold equal; intros (m,b,a) (m',b',a') cmp; rewrite Equal_Equal; 
-  intros; simpl in *; rewrite Raw.equal_Equal; auto.
+ unfold equal; intros (m,b,a) (m',b',a') cmp; rewrite Equivb_Equivb; 
+  intros; simpl in *; rewrite Raw.equal_Equivb; auto.
  Qed. 
 
  Lemma equal_2 : forall m m' cmp, 
-   equal cmp m m' = true -> Equal cmp m m'.
+   equal cmp m m' = true -> Equivb cmp m m'.
  Proof. 
- unfold equal; intros (m,b,a) (m',b',a') cmp; rewrite Equal_Equal; 
-  intros; simpl in *; rewrite <-Raw.equal_Equal; auto.
+ unfold equal; intros (m,b,a) (m',b',a') cmp; rewrite Equivb_Equivb; 
+  intros; simpl in *; rewrite <-Raw.equal_Equivb; auto.
  Qed.  
 
  End Elt.
@@ -1965,23 +1967,23 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
     rewrite H0, H2, <-app_nil_end, <-app_nil_end in *; auto.
   Defined.
 
-  Lemma eq_1 : forall m m', Equal cmp m m' -> eq m m'.
+  Lemma eq_1 : forall m m', Equivb cmp m m' -> eq m m'.
   Proof.
   intros m m'.
   unfold eq.
-  rewrite Equal_Equal.
-  rewrite Raw.Equal_elements.
+  rewrite Equivb_Equivb.
+  rewrite Raw.Equivb_elements.
   intros.
   apply LO.eq_1.
   auto.
   Qed.
 
-  Lemma eq_2 : forall m m', eq m m' -> Equal cmp m m'.
+  Lemma eq_2 : forall m m', eq m m' -> Equivb cmp m m'.
   Proof.
   intros m m'.
   unfold eq.
-  rewrite Equal_Equal.
-  rewrite Raw.Equal_elements.
+  rewrite Equivb_Equivb.
+  rewrite Raw.Equivb_elements.
   intros.
   generalize (LO.eq_2 H).
   auto.

@@ -372,7 +372,7 @@ Definition Submap cmp m m' :=
   (forall k, In k m -> In k m') /\ 
   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
 
-Definition Equal cmp m m' := 
+Definition Equivb cmp m m' := 
   (forall k, In k m <-> In k m') /\ 
   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
 
@@ -439,17 +439,17 @@ Qed.
 (** Specification of [equal] *)
 
 Lemma equal_1 : forall m (Hm:NoDupA m) m' (Hm': NoDupA m') cmp, 
-  Equal cmp m m' -> equal cmp m m' = true. 
+  Equivb cmp m m' -> equal cmp m m' = true. 
 Proof. 
- unfold Equal, equal.
+ unfold Equivb, equal.
  intuition.
  apply andb_true_intro; split; apply submap_1; unfold Submap; firstorder.
 Qed.
 
 Lemma equal_2 : forall m (Hm:NoDupA m) m' (Hm':NoDupA m') cmp, 
-  equal cmp m m' = true -> Equal cmp m m'.
+  equal cmp m m' = true -> Equivb cmp m m'.
 Proof.
- unfold Equal, equal.
+ unfold Equivb, equal.
  intros.
  destruct (andb_prop _ _ H); clear H.
  generalize (submap_2 Hm Hm' H0).
@@ -899,11 +899,15 @@ Section Elt.
  Definition cardinal m := length m.(this).
  Definition fold (A:Type)(f:key->elt->A->A) m (i:A) : A := @Raw.fold elt A f m.(this) i.
  Definition equal cmp m m' : bool := @Raw.equal elt cmp m.(this) m'.(this).
-
  Definition MapsTo x e m : Prop := Raw.PX.MapsTo x e m.(this).
  Definition In x m : Prop := Raw.PX.In x m.(this).
  Definition Empty m : Prop := Raw.Empty m.(this).
- Definition Equal cmp m m' : Prop := @Raw.Equal elt cmp m.(this) m'.(this).
+
+ Definition Equal m m' := forall y, find y m = find y m'.
+ Definition Equiv (eq_elt:elt->elt->Prop) m m' := 
+         (forall k, In k m <-> In k m') /\ 
+         (forall k e e', MapsTo k e m -> MapsTo k e' m' -> eq_elt e e').  
+ Definition Equivb cmp m m' : Prop := @Raw.Equivb elt cmp m.(this) m'.(this).
 
  Definition eq_key : (key*elt) -> (key*elt) -> Prop := @Raw.PX.eqk elt.
  Definition eq_key_elt : (key*elt) -> (key*elt) -> Prop:= @Raw.PX.eqke elt.
@@ -957,9 +961,9 @@ Section Elt.
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
  Proof. intros m; exact (@Raw.fold_1 elt m.(this)). Qed.
 
- Lemma equal_1 : forall m m' cmp, Equal cmp m m' -> equal cmp m m' = true. 
+ Lemma equal_1 : forall m m' cmp, Equivb cmp m m' -> equal cmp m m' = true. 
  Proof. intros m m'; exact (@Raw.equal_1 elt m.(this) m.(NoDup) m'.(this) m'.(NoDup)). Qed.
- Lemma equal_2 : forall m m' cmp, equal cmp m m' = true -> Equal cmp m m'.
+ Lemma equal_2 : forall m m' cmp, equal cmp m m' = true -> Equivb cmp m m'.
  Proof. intros m m'; exact (@Raw.equal_2 elt m.(this) m.(NoDup) m'.(this) m'.(NoDup)). Qed.
 
  End Elt.

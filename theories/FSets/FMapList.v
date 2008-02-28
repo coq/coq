@@ -377,29 +377,24 @@ Function equal (cmp:elt->elt->bool)(m m' : t elt) { struct m } : bool :=
    | _, _ => false 
   end.
 
-Definition Equal cmp m m' := 
+Definition Equivb cmp m m' := 
   (forall k, In k m <-> In k m') /\ 
   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
 
 Lemma equal_1 : forall m (Hm:Sort m) m' (Hm': Sort m') cmp, 
-  Equal cmp m m' -> equal cmp m m' = true. 
+  Equivb cmp m m' -> equal cmp m m' = true. 
 Proof. 
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
- functional induction (equal cmp m m'); simpl; subst;auto; unfold Equal;
- intuition; subst;   match goal with 
-     | [H: X.compare _ _ = _ |- _ ] => clear H
-     | _ => idtac
-   end.
-
-
-
+ functional induction (equal cmp m m'); simpl; subst;auto; unfold Equivb;
+ intuition; subst.
+ match goal with H: X.compare _ _ = _ |- _ => clear H end.
  assert (cmp_e_e':cmp e e' = true).
   apply H1 with x; auto.
  rewrite cmp_e_e'; simpl.
  apply IHb; auto.
  inversion_clear Hm; auto.
  inversion_clear Hm'; auto.
- unfold Equal; intuition.
+ unfold Equivb; intuition.
  destruct (H0 k).
  assert (In k ((x,e) ::l)).
   destruct H as (e'', hyp); exists e''; auto.
@@ -462,14 +457,12 @@ Qed.
 
 
 Lemma equal_2 : forall m (Hm:Sort m) m' (Hm:Sort m') cmp, 
-  equal cmp m m' = true -> Equal cmp m m'.
+  equal cmp m m' = true -> Equivb cmp m m'.
 Proof.
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
- functional induction (equal cmp m m'); simpl; subst;auto; unfold Equal; 
-  intuition; try discriminate; subst; match goal with 
-     | [H: X.compare _ _ = _ |- _ ] => clear H
-     | _ => idtac
-   end. 
+ functional induction (equal cmp m m'); simpl; subst;auto; unfold Equivb; 
+  intuition; try discriminate; subst; 
+  try match goal with H: X.compare _ _ = _ |- _ => clear H end.
 
  inversion H0.
 
@@ -505,13 +498,13 @@ Proof.
  elim (Sort_Inf_NotIn H2 H3).
  exists e0; apply MapsTo_eq with k; auto; order.
  apply H8 with k; auto.
-Qed. 
+Qed.
 
-(** This lemma isn't part of the spec of [Equal], but is used in [FMapAVL] *)
+(** This lemma isn't part of the spec of [Equivb], but is used in [FMapAVL] *)
 
 Lemma equal_cons : forall cmp l1 l2 x y, Sort (x::l1) -> Sort (y::l2) ->
   eqk x y -> cmp (snd x) (snd y) = true -> 
-  (Equal cmp l1 l2 <-> Equal cmp (x :: l1) (y :: l2)).
+  (Equivb cmp l1 l2 <-> Equivb cmp (x :: l1) (y :: l2)).
 Proof.
  intros.
  inversion H; subst.
@@ -1070,7 +1063,12 @@ Section Elt.
  Definition MapsTo x e m : Prop := Raw.PX.MapsTo x e m.(this).
  Definition In x m : Prop := Raw.PX.In x m.(this).
  Definition Empty m : Prop := Raw.Empty m.(this).
- Definition Equal cmp m m' : Prop := @Raw.Equal elt cmp m.(this) m'.(this).
+
+ Definition Equal m m' := forall y, find y m = find y m'.
+ Definition Equiv (eq_elt:elt->elt->Prop) m m' := 
+         (forall k, In k m <-> In k m') /\ 
+         (forall k e e', MapsTo k e m -> MapsTo k e' m' -> eq_elt e e').  
+ Definition Equivb cmp m m' : Prop := @Raw.Equivb elt cmp m.(this) m'.(this).
 
  Definition eq_key : (key*elt) -> (key*elt) -> Prop := @Raw.PX.eqk elt.
  Definition eq_key_elt : (key*elt) -> (key*elt) -> Prop:= @Raw.PX.eqke elt.
@@ -1127,9 +1125,9 @@ Section Elt.
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
  Proof. intros m; exact (@Raw.fold_1 elt m.(this)). Qed.
 
- Lemma equal_1 : forall m m' cmp, Equal cmp m m' -> equal cmp m m' = true. 
+ Lemma equal_1 : forall m m' cmp, Equivb cmp m m' -> equal cmp m m' = true. 
  Proof. intros m m'; exact (@Raw.equal_1 elt m.(this) m.(sorted) m'.(this) m'.(sorted)). Qed.
- Lemma equal_2 : forall m m' cmp, equal cmp m m' = true -> Equal cmp m m'.
+ Lemma equal_2 : forall m m' cmp, equal cmp m m' = true -> Equivb cmp m m'.
  Proof. intros m m'; exact (@Raw.equal_2 elt m.(this) m.(sorted) m'.(this) m'.(sorted)). Qed.
 
  End Elt.
@@ -1238,7 +1236,7 @@ Proof.
  unfold equal, eq in H6; simpl in H6; auto.
 Qed.
 
-Lemma eq_1 : forall m m', Equal cmp m m' -> eq m m'.
+Lemma eq_1 : forall m m', Equivb cmp m m' -> eq m m'.
 Proof.
  intros.
  generalize (@equal_1 D.t m m' cmp).
@@ -1246,7 +1244,7 @@ Proof.
  intuition.
 Qed.
 
-Lemma eq_2 : forall m m', eq m m' -> Equal cmp m m'.
+Lemma eq_2 : forall m m', eq m m' -> Equivb cmp m m'.
 Proof.
  intros.
  generalize (@equal_2 D.t m m' cmp).

@@ -1006,12 +1006,15 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
            && equal cmp l1 l2 && equal cmp r1 r2
      end.
 
-  Definition Equal (A:Set)(cmp:A->A->bool)(m m':t A) := 
+  Definition Equal (A:Set)(m m':t A) := 
+    forall y, find y m = find y m'.
+  Definition Equiv (A:Set)(eq_elt:A->A->Prop) m m' := 
     (forall k, In k m <-> In k m') /\ 
-    (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
+    (forall k e e', MapsTo k e m -> MapsTo k e' m' -> eq_elt e e').  
+  Definition Equivb (A:Set)(cmp: A->A->bool) := Equiv (Cmp cmp).
 
   Lemma equal_1 : forall (A:Set)(m m':t A)(cmp:A->A->bool), 
-    Equal cmp m m' -> equal cmp m m' = true. 
+    Equivb cmp m m' -> equal cmp m m' = true. 
   Proof. 
   induction m.
   (* m = Leaf *)
@@ -1045,11 +1048,11 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   destruct H2; red in H2; simpl in H2; discriminate.
   (* m' = Node *)
   destruct 1.
-  assert (Equal cmp m1 m'1).
+  assert (Equivb cmp m1 m'1).
     split.
     intros k; generalize (H (xO k)); unfold In, MapsTo; simpl; auto.
     intros k e e'; generalize (H0 (xO k) e e'); unfold In, MapsTo; simpl; auto.
-  assert (Equal cmp m2 m'2).
+  assert (Equivb cmp m2 m'2).
     split.
     intros k; generalize (H (xI k)); unfold In, MapsTo; simpl; auto.
     intros k e e'; generalize (H0 (xI k) e e'); unfold In, MapsTo; simpl; auto.
@@ -1065,7 +1068,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Qed.
 
   Lemma equal_2 : forall (A:Set)(m m':t A)(cmp:A->A->bool), 
-    equal cmp m m' = true -> Equal cmp m m'. 
+    equal cmp m m' = true -> Equivb cmp m m'. 
   Proof. 
   induction m.
   (* m = Leaf *)

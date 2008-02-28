@@ -48,6 +48,7 @@ Unset Strict Implicit.
 *)
 
 
+Definition Cmp (elt:Set)(cmp:elt->elt->bool) e1 e2 := cmp e1 e2 = true.
 
 (** ** Weak signature for maps
    
@@ -191,19 +192,37 @@ Module Type WSfun (E : EqualityType).
       Parameter fold_1 :
 	forall (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
+
+    (** Equality of maps *)
  
-   Definition Equal cmp m m' := 
+    (** Caveat: there are at least three distinct equality predicates on maps.
+      - The simpliest (and maybe most natural) way is to consider keys up to 
+        their equivalence [E.eq], but elements up to Leibniz equality, in 
+        the spirit of [eq_key_elt] above. This leads to predicate [Equal].
+      - Unfortunately, this [Equal] predicate can't be used to describe
+        the [equal] function, since this function (for compatibility with 
+        ocaml) expects a boolean comparison [cmp] that may identify more 
+        elements than Leibniz. So logical specification of [equal] is done 
+        via another predicate [Equivb]
+      - This predicate [Equivb] is quite ad-hoc with its boolean [cmp],
+        it can be generalized in a [Equiv] expecting a more general
+        (possibly non-decidable) equality predicate on elements *)
+
+     Definition Equal m m' := forall y, find y m = find y m'.
+     Definition Equiv (eq_elt:elt->elt->Prop) m m' := 
          (forall k, In k m <-> In k m') /\ 
-         (forall k e e', MapsTo k e m -> MapsTo k e' m' -> cmp e e' = true).  
+         (forall k e e', MapsTo k e m -> MapsTo k e' m' -> eq_elt e e').  
+     Definition Equivb (cmp: elt->elt->bool) := Equiv (Cmp cmp).
 
-   Variable cmp : elt -> elt -> bool. 
+     (** Specification of [equal] *)
 
-   (** Specification of [equal] *)
-     Parameter equal_1 : Equal cmp m m' -> equal cmp m m' = true. 
-     Parameter equal_2 : equal cmp m m' = true -> Equal cmp m m'.
+     Variable cmp : elt -> elt -> bool. 
 
-    End Spec. 
-   End Types. 
+     Parameter equal_1 : Equivb cmp m m' -> equal cmp m m' = true.
+     Parameter equal_2 : equal cmp m m' = true -> Equivb cmp m m'.
+
+    End Spec.
+   End Types.
 
     (** Specification of [map] *)
       Parameter map_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
@@ -296,8 +315,8 @@ Module Type Sord.
 
   Definition cmp e e' := match Data.compare e e' with EQ _ => true | _ => false end.	
 
-  Parameter eq_1 : forall m m', Equal cmp m m' -> eq m m'.
-  Parameter eq_2 : forall m m', eq m m' -> Equal cmp m m'.
+  Parameter eq_1 : forall m m', Equivb cmp m m' -> eq m m'.
+  Parameter eq_2 : forall m m', eq m m' -> Equivb cmp m m'.
 
   Parameter compare : forall m1 m2, Compare lt eq m1 m2.
   (** Total ordering between maps. [Data.compare] is a total ordering 
