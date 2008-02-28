@@ -1063,6 +1063,7 @@ Section Elt.
  Definition map2 f m (m':t elt') : t elt'' := 
    Build_slist (Raw.map2_sorted f m.(sorted) m'.(sorted)).
  Definition elements m : list (key*elt) := @Raw.elements elt m.(this).
+ Definition cardinal m := length m.(this).
  Definition fold (A:Type)(f:key->elt->A->A) m (i:A) : A := @Raw.fold elt A f m.(this) i.
  Definition equal cmp m m' : bool := @Raw.equal elt cmp m.(this) m'.(this).
 
@@ -1118,6 +1119,9 @@ Section Elt.
  Proof. intros m; exact (@Raw.elements_3 elt m.(this) m.(sorted)). Qed.
  Lemma elements_3w : forall m, NoDupA eq_key (elements m).  
  Proof. intros m; exact (@Raw.elements_3w elt m.(this) m.(sorted)). Qed.
+
+ Lemma cardinal_1 : forall m, cardinal m = length (elements m).
+ Proof. intros; reflexivity. Qed.
 
  Lemma fold_1 : forall m (A : Type) (i : A) (f : key -> elt -> A -> A),
         fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.

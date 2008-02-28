@@ -43,7 +43,7 @@ Unset Strict Implicit.
     
     - no [iter] function, useless since Coq is purely functional
     - [option] types are used instead of [Not_found] exceptions
-    - more functions are provided: [elements] and [map2]
+    - more functions are provided: [elements] and [cardinal] and [map2]
 
 *)
 
@@ -116,6 +116,9 @@ Module Type WSfun (E : EqualityType).
     (** [elements m] returns an assoc list corresponding to the bindings 
         of [m], in any order. *)
 
+    Parameter cardinal : t elt -> nat. 
+    (** [cardinal m] returns the number of bindings in [m]. *)
+
     Parameter fold : forall A: Type, (key -> elt -> A -> A) -> t elt -> A -> A.
     (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)], 
 	where [k1] ... [kN] are the keys of all bindings in [m] 
@@ -180,6 +183,9 @@ Module Type WSfun (E : EqualityType).
       (** When compared with ordered maps, here comes the only 
          property that is really weaker: *)
       Parameter elements_3w : NoDupA eq_key (elements m).  
+
+    (** Specification of [cardinal] *)
+      Parameter cardinal_1 : cardinal m = length (elements m).
 
     (** Specification of [fold] *)  
       Parameter fold_1 :

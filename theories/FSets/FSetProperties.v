@@ -301,6 +301,11 @@ Module WProperties (Import E : DecidableType)(M : WSfun E).
   rewrite H in H0; destruct H0 as (_,H0); inversion H0.
   Qed.
 
+  Lemma elements_empty : elements empty = nil.
+  Proof.
+  rewrite <-elements_Empty; auto with set.
+  Qed.
+
   (** * Alternative (weaker) specifications for [fold] *)
 
   Section Old_Spec_Now_Properties. 

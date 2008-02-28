@@ -571,8 +571,6 @@ Module WProperties (E:DecidableType)(M:WSfun E).
  Section Elt. 
   Variable elt:Set.
 
-  Definition cardinal (m:t elt) := length (elements m).
-
   Definition Equal (m m':t elt) := forall y, find y m = find y m'.
   Definition Add x (e:elt) m m' := forall y, find y m' = find y (add x e m).
 
@@ -596,6 +594,11 @@ Module WProperties (E:DecidableType)(M:WSfun E).
   rewrite elements_mapsto_iff in H0.
   rewrite InA_alt in H0; destruct H0.
   rewrite H in H0; destruct H0 as (_,H0); inversion H0.
+  Qed.
+
+  Lemma elements_empty : elements (@empty elt) = nil.
+  Proof.
+  rewrite <-elements_Empty; apply empty_1.
   Qed.
 
   Lemma fold_Empty : forall m (A:Set)(f:key->elt->A->A)(i:A),
@@ -680,17 +683,18 @@ Module WProperties (E:DecidableType)(M:WSfun E).
   elim n; auto.
   Qed.
 
-  Lemma cardinal_fold : forall m, cardinal m = fold (fun _ _ => S) m 0.
+  Lemma cardinal_fold : forall m : t elt, 
+   cardinal m = fold (fun _ _ => S) m 0.
   Proof.
-  intros; unfold cardinal; rewrite fold_1.
+  intros; rewrite cardinal_1, fold_1.
   symmetry; apply fold_left_length; auto.
   Qed.
 
-  Lemma cardinal_Empty : forall m, Empty m <-> cardinal m = 0.
+  Lemma cardinal_Empty : forall m : t elt, 
+   Empty m <-> cardinal m = 0.
   Proof.
   intros.
-  rewrite elements_Empty.
-  unfold cardinal.
+  rewrite cardinal_1, elements_Empty.
   destruct (elements m); intuition; discriminate.
   Qed.
  
@@ -703,7 +707,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
   red; auto.
   Qed.
 
-  Lemma cardinal_1 : forall m, Empty m -> cardinal m = 0.
+  Lemma cardinal_1 : forall m : t elt, Empty m -> cardinal m = 0.
   Proof.
   intros; rewrite <- cardinal_Empty; auto.
   Qed.
@@ -719,7 +723,8 @@ Module WProperties (E:DecidableType)(M:WSfun E).
   red; simpl; auto.
   Qed.
 
-  Lemma cardinal_inv_1 : forall m, cardinal m = 0 -> Empty m. 
+  Lemma cardinal_inv_1 : forall m : t elt, 
+   cardinal m = 0 -> Empty m.
   Proof.
   intros; rewrite cardinal_Empty; auto. 
   Qed.
@@ -728,7 +733,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
   Lemma cardinal_inv_2 :
    forall m n, cardinal m = S n -> { p : key*elt | MapsTo (fst p) (snd p) m }.
   Proof. 
-  unfold cardinal; intros.
+  intros; rewrite M.cardinal_1 in *.
   generalize (elements_mapsto_iff m).
   destruct (elements m); try discriminate. 
   exists p; auto.

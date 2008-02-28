@@ -1103,6 +1103,19 @@ Proof.
  intros; apply PX.Sort_NoDupA; auto.
 Qed.
 
+Lemma elements_aux_cardinal :
+ forall m acc, (length acc + cardinal m)%nat = length (elements_aux acc m).
+Proof.
+ simple induction m; simpl; intuition.
+ rewrite <- H; simpl.
+ rewrite <- H0; omega.
+Qed.
+
+Lemma elements_cardinal : forall m, cardinal m = length (elements m).
+Proof.
+ exact (fun m => elements_aux_cardinal m nil).
+Qed.
+
 
 
 (** * Fold *)
@@ -1687,6 +1700,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition map2 f m (m':t elt') : t elt'' := 
   Bbst (Raw.map2_bst f m m') (Raw.map2_avl f m m').
  Definition elements m : list (key*elt) := Raw.elements m.(this).
+ Definition cardinal m := Raw.cardinal m.(this).
  Definition fold (A:Type) (f:key->elt->A->A) m i := Raw.fold (A:=A) f m.(this) i.
  Definition equal cmp m m' : bool := Raw.equal cmp m.(this) m'.(this).
 
@@ -1765,6 +1779,9 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Lemma elements_3w : forall m, NoDupA eq_key (elements m).  
  Proof. intros m; exact (@Raw.elements_nodup elt m.(this) m.(is_bst)). Qed.
+
+ Lemma cardinal_1 : forall m, cardinal m = length (elements m).
+ Proof. intro m; exact (@Raw.elements_cardinal elt m.(this)). Qed.
 
  Definition Equal cmp m m' := 
    (forall k, In k m <-> In k m') /\ 

@@ -276,6 +276,15 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   Definition elements (m : t A) := xelements m xH.
 
+  (** [cardinal] *)
+
+  Fixpoint cardinal (m : t A) : nat :=
+    match m with 
+      | Leaf => 0%nat 
+      | Node l None r => (cardinal l + cardinal r)%nat
+      | Node l (Some _) r => S (cardinal l + cardinal r)
+    end.
+
   Section CompcertSpec.
 
   Theorem gempty:
@@ -554,6 +563,16 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
     unfold elements in H.
     rewrite find_xfind_h.
     exact (xelements_complete i xH m v H).
+  Qed.
+
+  Lemma cardinal_1 : 
+   forall (m: t A), cardinal m = length (elements m).
+  Proof.
+   unfold elements.
+   intros m; set (p:=1); clearbody p; revert m p.
+   induction m; simpl; auto; intros.
+   rewrite (IHm1 (append p 2)), (IHm2 (append p 3)); auto.
+   destruct o; rewrite app_length; simpl; omega.
   Qed.
 
   End CompcertSpec.

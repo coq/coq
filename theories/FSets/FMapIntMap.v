@@ -98,6 +98,8 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
 
   Definition elements (m : t A) : list (N*A) := alist_of_Map _ m.
 
+  Definition cardinal (m : t A) : nat := MapCard _ m.
+
   Definition MapsTo (x:key)(v:A)(m:t A) := find x m = Some v.
 
   Definition In (x:key)(m:t A) := exists e:A, MapsTo x e m.
@@ -318,6 +320,9 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   apply H4; auto.
   inversion H; auto.
   Qed.
+
+  Lemma cardinal_1 : forall m, cardinal m = length (elements m).
+  Proof. exact (@MapCard_as_length _). Qed.
 
   Definition Equal cmp m m' := 
          (forall k, In k m <-> In k m') /\ 
