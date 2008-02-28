@@ -220,23 +220,23 @@ let is_included dir = function
   | _ -> false
 
 let include_dirs l =
-  let include_aux' includeR =
-    let rec include_aux = function
-      | [] -> []
-      | Include x :: r -> ("-I " ^ x) :: (include_aux r)
-      | RInclude (p,l) :: r when includeR ->
-          let l' = if l = "" then "\"\"" else l in
-            ("-R " ^ p ^ " " ^ l') :: (include_aux r)
-      | _ :: r -> include_aux r
-    in
-      include_aux
+  let rec parse_includes l = 
+    match l with
+      | [] -> [],[]
+      | Include x :: r -> let ri, rr = parse_includes r in
+			    ("-I " ^ x) :: ri, rr
+      | RInclude (p,l) :: r ->
+          let ri, rr = parse_includes r in
+	  let l' = if l = "" then "\"\"" else l in
+            ri, ("-R " ^ p ^ " " ^ l') :: rr
+      | _ :: r -> parse_includes r
   in
   let l' = if List.exists (is_included ".") l then l else Include "." :: l in
-  let i_ocaml = "-I ." :: (include_aux' false l) in
-  let i_coq   = include_aux' true l' in
+  let inc_i, inc_r = parse_includes l' in
     section "Libraries definition.";
-    print "OCAMLLIBS:="; print_list "\\\n  " i_ocaml; print "\n";
-    print "COQLIBS:=";   print_list "\\\n  " i_coq; print "\n\n"
+    print "OCAMLLIBS:="; print_list "\\\n  " inc_i; print "\n";
+    print "COQLIBS:="; print_list "\\\n  " inc_i; print_list "\\\n  " inc_r; print "\n";
+    print "COQDOCLIBS:=";   print_list "\\\n  " inc_r; print "\n\n"
 
 let rec special = function
   | [] -> []
@@ -318,14 +318,14 @@ let all_target l =
 	print "gallina: $(GFILES)\n\n";
 	print "html: $(GLOBFILES) $(VFILES)\n";
 	print "\t- mkdir html\n"; 
-	print "\t$(COQDOC) -toc -html $(COQLIBS) -d html $(VFILES)\n\n";
+	print "\t$(COQDOC) -toc -html $(COQDOCLIBS) -d html $(VFILES)\n\n";
 	print "gallinahtml: $(GLOBFILES) $(VFILES)\n";
 	print "\t- mkdir html\n"; 
-	print "\t$(COQDOC) -toc -html -g $(COQLIBS) -d html $(VFILES)\n\n";
+	print "\t$(COQDOC) -toc -html -g $(COQDOCLIBS) -d html $(VFILES)\n\n";
 	print "all.ps: $(VFILES)\n";
-	print "\t$(COQDOC) -toc -ps -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+	print "\t$(COQDOC) -toc -ps $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
 	print "all-gal.ps: $(VFILES)\n";
-	print "\t$(COQDOC) -toc -ps -g -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+	print "\t$(COQDOC) -toc -ps -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
 	print "\n\n"
       end
       
