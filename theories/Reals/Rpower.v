@@ -403,6 +403,9 @@ Infix Local "^R" := Rpower (at level 30, right associativity) : R_scope.
 (** *                     Properties of  Rpower                   *)
 (******************************************************************)
 
+(** Note: Because [ln] is artificially prolongated to 1 on negative
+    reals, no side condition is needed to state "x ^R 0 = 1" *)
+
 Theorem Rpower_plus : forall x y z:R, z ^R (x + y) = z ^R x * z ^R y.
 Proof.
   intros x y z; unfold Rpower in |- *.
