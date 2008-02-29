@@ -61,9 +61,13 @@ val null : tactic
 (*arnaud: à commenter/déplacer tout ça *)
 val open_constr_of_raw : bool -> Rawterm.rawconstr -> open_constr expression
 (*arnaud: ça aussi *)
-val process_metas : open_constr -> Term.types -> open_constr expression
+val process_apply_case_metas : open_constr -> Term.types -> open_constr expression
 (*arnaud: à commenter ? idéalement à virer *)
 val make_open_constr : Term.constr -> Evd.evar list ->  open_constr
+(* This function takes an [constr] with metas, and introduces
+   a evar for each meta. The metas must be casted and 
+   pairwise distinct. *)
+val process_typed_metas : Term.constr -> open_constr expression
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)
 val refine : open_constr -> tactic

@@ -1525,13 +1525,15 @@ let do_intro = function
 let interp_atomic ist = function
   (* Basic tactics *)
   | TacIntroPattern l ->
-      do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l))
+      Util.anomaly "Ltacinterp.interp_atomic:TacIntroPattern: à restaurer"
+      (* arnaud: à faire proprement cette fois
+      do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)) *)
   | TacIntrosUntil hyp -> Util.anomaly "Ltacinterp.interp_atomic: todo: TacIntrosUntil"
   | TacIntroMove (ido,ido') ->
       begin
       match ido with
       | None -> Util.anomaly "Ltacinterp.inter_atomic: todo: TacIntroMove: None"
-      | Some id -> Logic.intro id
+      | Some id -> Logic.intro (Goal.return id)
       end
   | TacClear (b,l) -> 
       if b then
@@ -1581,7 +1583,7 @@ let interp_atomic ist = function
   | TacMutualCofix (id,l) ->
        Util.anomaly "Ltacinterp.interp_atomic: MutualCofix: à virer ?"
   | TacCut c ->
-      Util.anomaly "Ltacinterp.interp_atomic: Cut: à faire en ltac"
+      Logic.cut (pf_interp_constr ist c)
   | TacAssert (t,ipat,c) ->
       Util.anomaly "Ltacinterp.interp_atomic: Assert: à faire en ltac"
   | TacGeneralize cl ->

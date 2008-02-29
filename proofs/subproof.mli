@@ -61,6 +61,7 @@ val unfocus : focus_context -> subproof -> subproof
 
 type tactic 
 
+(* arnaud: exportée pour Proof. *)
 (* exception which represent a failure in a command *)
 exception TacticFailure of Pp.std_ppcmds
 
@@ -102,17 +103,31 @@ val list_of_tactics : tactic list -> tactic
 val extend_list_of_tactics : tactic list -> tactic -> tactic list -> tactic
 
 
+
+(*** tacticals ***)
+
 (* Interpetes the ";" (semicolon) of Ltac. *)
-val tcl_then : tactic -> tactic -> tactic
+val tclTHEN : tactic -> tactic -> tactic
 
 (* Interpretes the "solve" tactical. *)
-val tcl_solve : tactic -> tactic
+val tclSOLVE : tactic -> tactic
 
+
+(* Interpretes the or-else tactical. (denoted "||") *)
+val tclORELSE : tactic -> tactic -> tactic
+
+(* Interpretes the repeat tactical *)
+val tclREPEAT : tactic -> tactic
+
+
+(*** tactics ***)
 
 (* Reorders the open goals of the given pointer, according to the 
    permutation *)
 val reorder : Permutation.permutation -> tactic
 
+(* [idtac] tactic *)
+val idtac : string option -> tactic
 
 
 (*** **)

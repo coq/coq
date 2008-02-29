@@ -254,17 +254,42 @@ let rec extend_list_of_tactics begin_tac_list repeat_tac end_tac_list env ps =
 				  @ intermediate_end_ps.Goal.subgoals)
   }
 
+
+(*** tacticals ***)
+
 (* Interpretes the ";" (semicolon) of Ltac. *)
-let tcl_then t1 t2 env sp = t2 env (t1 env sp)  
+let tclTHEN t1 t2 env ps = t2 env (t1 env ps)  
 
 
 (* Interpretes the "solve" tactical. *)
-let tcl_solve t env sp =
-  let new_ps = t env sp in
+let tclSOLVE t env ps =
+  let new_ps = t env ps in
   match new_ps.Goal.subgoals with
   | [] -> new_ps
   | _ -> fail (Pp.str "") (* arnaud: améliorer le message d'erreur sans doute :D*)
 
+(* Interpretes the or-else tactical. (denoted "||") *)
+(* arnaud: penser à transmettre les info comme le message de l'idtac *)
+let tclORELSE t1 t2 env ps =
+  try
+    t1 env ps
+  with TacticFailure _ ->
+    t2 env ps
+
+(* [idtac] tactic *)
+(* it is out of the "tactics" section because it is needed for tclREPEAT *)
+(* arnaud: rajouter le message *)
+let idtac msg _ (ps:Goal.proof_step) =
+  ps
+
+(* Interpretes the repeat tactical *)
+(* despite what it looks like, tclREPEAT cannot be defined
+   out of Subproof. This is left as an exercise to the reader ;) .*)
+let rec tclREPEAT tac env ps =
+  tclORELSE (tclTHEN tac (tclREPEAT tac)) (idtac None) env ps
+
+
+(*** tactics ***)
 
 (* Reoders the goals on the comb according to a permutation *)
 let reorder p _ ps =

@@ -19,6 +19,22 @@ open Environ *)
 (* Raises Typing.type_of to the Goal monad *)
 val type_of : constr -> types Goal.expression
 
+(* type of [c] (in the expression monad), c must be well typed *)
+val get_type_of : constr -> types Goal.expression
+
+(*** tacticals ***)
+
+(* [do n] tactical *)
+val tclDO : int -> Subproof.tactic -> Subproof.tactic
+(* [try] tactical *)
+val tclTRY : Subproof.tactic -> Subproof.tactic
+
+(* [onLastHyp itac] applies [itac] to the name of the last
+   hypothesis of the context *)
+(* arnaud: statut ?*)
+val onLastHyp : (identifier Goal.expression -> Subproof.tactic) 
+                      -> Subproof.tactic
+
 (*** tactics ***)
 (* [refine] tactic *)
 val refine : Goal.open_constr Goal.expression -> Subproof.tactic
@@ -27,9 +43,7 @@ val clear : identifier list Goal.expression -> Subproof.tactic
 (* [clearbody] tactic *)
 val clear_body : identifier list Goal.expression -> Subproof.tactic
 (* [intro] tactic *)
-(* arnaud: je suppose que pour pouvoir faire des "fresh" il faudra que ce
-   soit une expression... à voir à terme *)
-val intro : identifier -> Subproof.tactic
+val intro : identifier Goal.expression -> Subproof.tactic
 
 
 (*** remettre dans [tactics] ?***)
@@ -49,6 +63,8 @@ val eapply_with_ebindings :
 val apply_with_ebindings_gen : 
      bool -> (Term.constr * Goal.open_constr Rawterm.bindings) Goal.expression 
           -> Subproof.tactic
+(* [cut] tactic *)
+val cut : Term.constr Goal.expression -> Subproof.tactic
 
 type simple_tactic =
   | Intro of identifier

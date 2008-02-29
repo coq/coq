@@ -8,6 +8,10 @@
 
 (* $Id$ *)
 
+(* arnaud: enlever cet open*)
+open Logic
+
+
 open Pp
 open Util
 open Names
@@ -23,7 +27,6 @@ open Reductionops
 open Typeops
 open Typing
 open Retyping
-open Logic
 open Pattern
 open Matching
 open Hipattern

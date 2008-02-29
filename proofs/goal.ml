@@ -343,9 +343,61 @@ let defs _ rdefs _ _ =
   !rdefs
 
 
-
-
-
+(* This function takes an [constr] with metas, and introduces
+   a evar for each meta. The metas must be casted and 
+   pairwise distinct. *)
+let process_typed_metas t env rdefs goal info =
+  (* uses an external reference as an accumulator to be able to use
+     the [map_constr] idiom *)
+  let acc = ref [] in
+  let rec process_typed_metas t env =
+    match kind_of_term t with
+    | Meta _ -> 
+	Util.anomaly "Goal.process_typed_metas: fed with an uncasted meta"
+    | Cast (c, k, t) when isMeta c ->
+	let new_c = Evarutil.e_new_evar rdefs env t in
+	let (e,_) = destEvar new_c in
+	acc := e::!acc;
+	mkCast (c, k, t)
+    | Prod (n, t, c) -> 
+	let deep_env = match n with
+	               | Names.Anonymous -> env
+		       | Names.Name i -> Environ.push_named (i,None,t) env
+	in
+	mkProd (n, process_typed_metas t env, process_typed_metas c deep_env)
+    | Lambda (n, t, c) ->
+	let deep_env = match n with
+	               | Names.Anonymous -> env
+		       | Names.Name i -> Environ.push_named (i,None,t) env
+	in
+	mkLambda (n, process_typed_metas t env, process_typed_metas c deep_env)
+    | LetIn (n,b,t,e) ->
+        let new_b = process_typed_metas b env in
+	let deep_env = match n with
+	               | Names.Anonymous -> env
+		       | Names.Name i -> Environ.push_named (i,Some new_b,t) env
+	in
+	mkLetIn (n, b, process_typed_metas t env, 
+		    process_typed_metas e deep_env)
+    (* arnaud: do Fix, CoFix, and case!*)
+    | Fix _ | CoFix _ -> Util.anomaly "Goal.process_typed_metas:Fix/CoFix:todo"
+    (* arnaud: ordre non spécifié = danger ? *)
+    | _ -> map_constr (fun t -> process_typed_metas t env) t
+  in
+    (* arnaud: nettoyer
+  let pr_list = 
+    let rec aux = function
+      | [] -> ""
+      | a::r -> ", "^(string_of_int a)^(aux r)
+    in
+      function [] -> Format.printf "[]" 
+	| a::q -> Format.printf "[%i%s]" a (aux q)
+  in
+    *)
+  let me = process_typed_metas t env in
+  { me = me;
+    my_evars = !acc
+  }
 
 (*** Stuff for the apply tactics ***)
 
@@ -356,9 +408,11 @@ let defs _ rdefs _ _ =
    evars to be able to use it in [refine]. *)
 (* These functions expectingly respect the invariant that 
    the evars in [my_evars] are given in decreasing order. *)
-let rec process_metas ot ty env rdefs goal info =
-  fst (main_process_metas ot ty env rdefs goal info)
-and main_process_metas ot ty env rdefs goal info =
+(* arnaud: repasser sur les cas "cast" pour éviter de casser
+   des vm_cast. *)
+let rec process_apply_case_metas ot ty env rdefs goal info =
+  fst (main_process_apply_case_metas ot ty env rdefs goal info)
+and main_process_apply_case_metas ot ty env rdefs goal info =
   let hyps = info.Evd.evar_hyps in
   match kind_of_term ot.me with
   | Meta _ ->
@@ -382,7 +436,7 @@ and main_process_metas ot ty env rdefs goal info =
       if not (Reductionops.is_conv_leq env sigma ty ty') then
 	Util.anomaly "Goal.main_process_metas: mettre une vrai erreur(2)"
       else
-	main_process_metas { ot with me=t } ty' env rdefs goal info
+	main_process_apply_case_metas { ot with me=t } ty' env rdefs goal info
   | App (f,l) ->
       let (ot',hdty) =
 	match kind_of_term f with
@@ -461,7 +515,7 @@ and process_head_metas ot env rdefs goal info =
     | Cast (t,_, ty) ->
 	let sigma = Evd.evars_of !rdefs in
 	check_typability env sigma ty;
-	main_process_metas { ot with me=t } ty env rdefs goal info
+	main_process_apply_case_metas { ot with me=t } ty env rdefs goal info
 
     | App (f,l) ->
 	let (ot',hdty) = 
@@ -513,7 +567,8 @@ and process_arg_metas l acc funty env rdefs goal info =
       let t = Reductionops.whd_betadeltaiota env sigma funty in
       match kind_of_term t with
 	| Prod (_,c1,b) ->
-	    let (ot',hargty) = main_process_metas { me = harg; my_evars = acc }
+	    let (ot',hargty) = main_process_apply_case_metas 
+	                                          { me = harg; my_evars = acc }
 	                                          c1
 						  env rdefs goal info
 	    in

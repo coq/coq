@@ -76,12 +76,53 @@ let rec catchable_exception = function
    Goal.env, et ça sert à rien !! *)
 let (>>=) = Goal.bind
 
+
+(*** [Goal.expression]-s: tool-kit for the tactic builder ***)
+
+
 (* Raises Typing.type_of to the Goal monad *)
 let type_of c =
   Goal.env >>= fun env ->
   Goal.defs >>= fun defs ->
   Goal.return (Typing.type_of env (Evd.evars_of defs) c)
 
+
+(* type of [c] (in the expression monad), c must be well typed *)
+let get_type_of c =
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  Goal.return (Retyping.get_type_of env (Evd.evars_of defs) c)
+
+(* Create a singleton clause list with the last hypothesis from then context *)
+(* arnaud: exporter ? *)
+let  lastHyp = 
+  Goal.hyps >>= fun hyps ->
+  let ids = Termops.ids_of_named_context (Environ.named_context_of_val hyps) in
+  match ids with
+  | [] -> Util.anomaly "Logic.lastHyp: does not apply to empty-context-goals"
+  | a::_ -> Goal.return a
+
+(*** tacticals ***)
+
+(* [do n] tactical *)
+let rec tclDO n tac =
+  match n with
+  | 0 -> Subproof.idtac None
+  | n when n>0 -> Subproof.tclTHEN tac (tclDO (n-1) tac)
+  | _ -> Util.anomaly "Logic.tclDO: fed with a negative number"
+  
+(* [try] tactical *)
+let tclTRY tac =
+  Subproof.tclORELSE tac (Subproof.idtac None)
+
+(* arnaud: à remettre dans "tacticals" ? *)
+ let onLastHyp tac = 
+   tac lastHyp
+
+
+(*** tactics ***)
+
+(* arnaud: vraiment utile ? *)
 let std_refine check_type raw_step =
   (Goal.open_constr_of_raw check_type raw_step) >>= Goal.refine
 
@@ -104,6 +145,7 @@ let clear_body l =
 let intro id = 
   Subproof.tactic_of_goal_tactic (
     (* arnaud: vérifier que "id" n'apparaît pas.*)
+    id >>= fun id ->
     std_refine true (
       Rawterm.RLambda (Util.dummy_loc, Name id,
 		       Rawterm.RHole (Util.dummy_loc, Evd.InternalHole),
@@ -145,21 +187,42 @@ let assumption =
     Subproof.goal_tactic_of_tactic (arec true hyps)
   )
 
-(* arnaud: à nettoyer ??
-(* type of [c] (in the expression monad) *)
-let get_type_of c =
-  Goal.env >>= fun env ->
-  Goal.defs >>= fun defs ->
-  Retyping.get_type_of env (Evd.evars_of defs) c
 
 (* head normal form of the type of [c] (in the expression monad) *)
+(* arnaud: à exposer ? probablement pas *)
 let hnf_type_of c =
   get_type_of c >>= fun ty ->
   Goal.env >>= fun env ->
   Goal.defs >>= fun defs ->
-  Reductionops.whd_betadeltaiota env (Evd.evars_of defs) ty
-*)
-      
+  Goal.return (Reductionops.whd_betadeltaiota env (Evd.evars_of defs) ty)
+
+(* creates a meta cast to the given type.*)
+let mkCastMeta t = 
+  mkCast (Evarutil.mk_new_meta (), DEFAULTcast, t)
+
+(* [cut] tactic *)
+let cut c = 
+  Subproof.tactic_of_goal_tactic (
+    c >>= fun c ->
+    hnf_type_of c >>= fun ty ->
+    Goal.hyps >>= fun hyps ->
+    let ids = Termops.ids_of_named_context (Environ.named_context_of_val hyps) 
+    in
+    Goal.concl >>= fun concl ->
+    match kind_of_term ty with
+    | Sort _ ->
+	let id = Nameops.next_name_away_with_default "H" Anonymous ids in
+	let cut_term = 
+	  mkApp (
+	    mkLambda (Names.Name id,c, mkCastMeta concl) ,
+	    [| mkCastMeta c |]
+	  )
+	in
+	Goal.process_typed_metas cut_term >>= Goal.refine
+    | _ -> Subproof.fail (Pp.str"Not a proposition or a type")
+  )
+
+
 
 (*** Apply and Eapply and their technicities ***)
 
@@ -220,7 +283,7 @@ let clenv_refine with_evars clenv =
                                  d_evars 
   in
   Goal.concl >>= fun concl ->
-  Goal.process_metas ot concl >>=
+  Goal.process_apply_case_metas ot concl >>=
   Goal.refine
 
 let dft = Unification.default_unify_flags
