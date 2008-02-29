@@ -192,11 +192,24 @@ let lookup_index_as_renamed env t n =
     | Prod (name,_,c') ->
 	  (match concrete_name (Some true) [] empty_names_context name c' with
                (Name _,_) -> lookup n (d+1) c'
-             | (Anonymous,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
+             | (Anonymous,_) -> 
+		 if n=0 then
+		   Some (d-1)
+		 else if n=1 then 
+		   Some d 
+		 else 
+		   lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
 	  (match concrete_name (Some true) [] empty_names_context name c' with
              | (Name _,_) -> lookup n (d+1) c'
-             | (Anonymous,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
+             | (Anonymous,_) -> 
+		 if n=0 then 
+		   Some (d-1) 
+		 else if n=1 then 
+		   Some d 
+		 else 
+		   lookup (n-1) (d+1) c'
+	  )
     | Cast (c,_,_) -> lookup n d c
     | _ -> None
   in lookup n 1 t
