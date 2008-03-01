@@ -403,8 +403,15 @@ Infix Local "^R" := Rpower (at level 30, right associativity) : R_scope.
 (** *                     Properties of  Rpower                   *)
 (******************************************************************)
 
-(** Note: Because [ln] is artificially prolongated to 1 on negative
-    reals, no side condition is needed to state "x ^R 0 = 1" *)
+(** Note: [Rpower] is prolongated to [1] on negative real numbers and
+    it thus does not extend integer power. The next two lemmas, which
+    hold for integer power, accidentally hold on negative real numbers
+    as a side effect of the default value taken on negative real
+    numbers. Contrastingly, the lemmas that do not hold for the
+    integer power of a negative number are stated for [Rpower] on the
+    positive numbers only (even if they accidentally hold due to the
+    default value of [Rpower] on the negative side, as it is the case
+    for [Rpower_O]). *)
 
 Theorem Rpower_plus : forall x y z:R, z ^R (x + y) = z ^R x * z ^R y.
 Proof.
@@ -421,9 +428,9 @@ Proof.
   ring.
 Qed.
 
-Theorem Rpower_O : forall x:R, x ^R 0 = 1.
+Theorem Rpower_O : forall x:R, 0 < x -> x ^R 0 = 1.
 Proof.
-  intros x; unfold Rpower in |- *.
+  intros x _; unfold Rpower in |- *.
   rewrite Rmult_0_l; apply exp_0.
 Qed.
 
