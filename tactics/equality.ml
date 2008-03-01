@@ -166,11 +166,21 @@ let general_multi_rewrite l2r with_evars c cl =
 	      (general_rewrite_ebindings l2r c with_evars)
 	      do_hyps
 
-let rec general_multi_multi_rewrite with_evars l cl = match l with 
-  | [] -> tclIDTAC
-  | (l2r,c)::l -> 
-      tclTHEN (general_multi_rewrite l2r with_evars c cl)
-	(general_multi_multi_rewrite with_evars l cl)
+let general_multi_multi_rewrite with_evars l cl = 
+  let do1 l2r c = general_multi_rewrite l2r with_evars c cl in
+  let rec doN l2r c = function 
+    | Precisely n when n <= 0 -> tclIDTAC
+    | Precisely 1 -> do1 l2r c
+    | Precisely n -> tclTHENFIRST (do1 l2r c) (doN l2r c (Precisely (n-1)))
+    | RepeatStar -> tclREPEAT_MAIN (do1 l2r c)
+    | RepeatPlus -> tclTHENFIRST (do1 l2r c) (doN l2r c RepeatStar)
+    | UpTo n when n<=0 -> tclIDTAC
+    | UpTo n -> tclTHENFIRST (tclTRY (do1 l2r c)) (doN l2r c (UpTo (n-1)))
+  in 
+  let rec loop = function
+    | [] -> tclIDTAC
+    | (l2r,m,c)::l -> tclTHENFIRST (doN l2r c m) (loop l)
+  in loop l
 
 (* Conditional rewriting, the success of a rewriting is related 
    to the resolution of the conditions by a given tactic *)

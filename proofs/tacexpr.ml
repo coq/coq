@@ -99,6 +99,12 @@ let simple_clause_of = function
   | { onhyps = Some []; onconcl = true; concl_occs=[] } -> None
   | _ -> error "not a simple clause (one hypothesis or conclusion)"
 
+type multi = 
+  | Precisely of int
+  | UpTo of int
+  | RepeatStar
+  | RepeatPlus
+
 type pattern_expr = constr_expr
 
 (* Type of patterns *)
@@ -187,7 +193,8 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacTransitivity of 'constr 
 
   (* Equality and inversion *)
-  | TacRewrite of evars_flag * (bool * 'constr with_bindings) list * 'id gclause
+  | TacRewrite of 
+      evars_flag * (bool * multi * 'constr with_bindings) list * 'id gclause
   | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
       
   (* For ML extensions *)

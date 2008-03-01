@@ -288,8 +288,10 @@ GEXTEND Gram
   orient: 
     [ [ "->" -> true 
       | "<-" -> false
+      | "+" -> true
+      | "-" -> false
       | -> true ]]
-  ; 
+  ;
   fixdecl:
     [ [ "("; id = ident; bl=LIST0 Constr.binder; ann=fixannot;
         ":"; ty=lconstr; ")" -> (loc,id,bl,ann,ty) ] ]
@@ -319,9 +321,25 @@ GEXTEND Gram
   ;
   rename : 
     [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
-  ; 
+  ;
   rewriter : 
-    [ [ b = orient; c = constr_with_bindings -> (b,c) ] ]
+    [ [ c = constr_with_bindings -> (Precisely 1, c)
+      | "!"; c = constr_with_bindings -> (RepeatPlus,c)
+      |	"?"; c = constr_with_bindings -> (RepeatStar,c)
+      | n = natural; "!"; c = constr_with_bindings -> (Precisely n,c)
+      |	n = natural; "?"; c = constr_with_bindings -> (UpTo n,c)
+    (* hack for allowing "rewrite ?t" and "rewrite NN?t" that normally 
+       produce a pattern_ident *)
+      | c = pattern_ident -> 
+	  let c = (CRef (Libnames.Ident (dummy_loc,c)), NoBindings) in  
+	  (RepeatStar, c)
+      | n = natural; c = pattern_ident -> 
+	  let c = (CRef (Libnames.Ident (dummy_loc,c)), NoBindings) in  
+	  (UpTo n, c)
+      ] ]
+  ;
+  oriented_rewriter : 
+    [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ; 
   simple_tactic:
     [ [ 
@@ -451,9 +469,9 @@ GEXTEND Gram
       | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)
-      | IDENT "rewrite"; l = LIST1 rewriter SEP ","; cl = clause -> 
+      | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ","; cl = clause ->
 	  TacRewrite (false,l,cl)
-      | IDENT "erewrite"; l = LIST1 rewriter SEP ","; cl = clause ->
+      | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ","; cl = clause ->
 	  TacRewrite (true,l,cl)
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion

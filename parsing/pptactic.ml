@@ -428,6 +428,13 @@ let pr_clause_pattern pr_id = function
 
 let pr_orient b = if b then mt () else str " <-"
 
+let pr_multi = function 
+  | Precisely 1 -> mt ()
+  | Precisely n -> pr_int n ++ str "!"
+  | UpTo n -> pr_int n ++ str "?"
+  | RepeatStar -> str "?"
+  | RepeatPlus -> str "!"
+
 let pr_induction_arg prlc prc = function
   | ElimOnConstr c -> pr_with_bindings prlc prc c
   | ElimOnIdent (loc,id) -> pr_with_comments loc (pr_id id)
@@ -818,7 +825,8 @@ and pr_atom1 = function
       hov 1 (str (if ev then "erewrite" else "rewrite") ++ 
 	     prlist_with_sep
 	     (fun () -> str ","++spc())
-	     (fun (b,c) -> pr_orient b ++ spc() ++ pr_with_bindings c)
+	     (fun (b,m,c) -> 
+		pr_orient b ++ spc() ++ pr_multi m ++ pr_with_bindings c)
 	     l
 	     ++ pr_clauses pr_ident cl) 
   | TacInversion (DepInversion (k,c,ids),hyp) ->

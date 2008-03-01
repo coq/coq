@@ -363,7 +363,7 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacTransitivity c -> depends_of_'constr c acc
 
     (* Equality and inversion *)
-    | TacRewrite (_,cbl,_) -> list_union_map (o depends_of_'constr_with_bindings snd) cbl acc
+    | TacRewrite (_,cbl,_) -> list_union_map (o depends_of_'constr_with_bindings (fun (_,_,x)->x)) cbl acc
     | TacInversion (is, _)  -> depends_of_'a_'b_inversion_strength depends_of_'constr is acc
 
     (* For ML extensions *)

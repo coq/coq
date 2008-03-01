@@ -1011,7 +1011,7 @@ and xlate_tac =
 		CT_coerce_TACTIC_COM_to_TACTIC_OPT tac
 	in 
 	CT_replace_with (c1, c2,cl,tac_opt)
-    | TacRewrite(false,[b,cbindl],cl) -> 
+    | TacRewrite(false,[b,Precisely 1,cbindl],cl) -> 
      let cl = xlate_clause cl 
      and c = xlate_formula (fst cbindl) 
      and bindl = xlate_bindings (snd cbindl) in
