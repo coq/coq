@@ -673,7 +673,7 @@ rewrite (In_iff m Hk), in_find_iff, in_find_iff, Hm; intuition.
 Qed.
 
 Add Morphism MapsTo 
- with signature E.eq ==> Logic.eq ==> Equal ==> iff as MapsTo_m.
+ with signature E.eq ==> @Logic.eq ==> Equal ==> iff as MapsTo_m.
 Proof.
 unfold Equal; intros elt k k' Hk e m m' Hm.
 rewrite (MapsTo_iff m e Hk), find_mapsto_iff, find_mapsto_iff, Hm; 
@@ -687,19 +687,19 @@ rewrite <-Hm in H0; eauto.
 rewrite Hm in H0; eauto.
 Qed.
 
-Add Morphism is_empty with signature Equal ==> Logic.eq as is_empty_m.
+Add Morphism is_empty with signature Equal ==> @Logic.eq as is_empty_m.
 Proof.
 intros elt m m' Hm.
 rewrite eq_bool_alt, <-is_empty_iff, <-is_empty_iff, Hm; intuition.
 Qed.
 
-Add Morphism mem with signature E.eq ==> Equal ==> Logic.eq as mem_m.
+Add Morphism mem with signature E.eq ==> Equal ==> @Logic.eq as mem_m.
 Proof.
 intros elt k k' Hk m m' Hm.
 rewrite eq_bool_alt, <- mem_in_iff, <-mem_in_iff, Hk, Hm; intuition.
 Qed.
 
-Add Morphism find with signature E.eq ==> Equal ==> Logic.eq as find_m.
+Add Morphism find with signature E.eq ==> Equal ==> @Logic.eq as find_m.
 Proof.
 intros elt k k' Hk m m' Hm.
 generalize (find_mapsto_iff m k)(find_mapsto_iff m' k')
@@ -711,7 +711,7 @@ symmetry; rewrite <- H2, <-Hk, <-Hm, H1; auto.
 Qed.
 
 Add Morphism add with signature 
- E.eq ==> Logic.eq ==> Equal ==> Equal as add_m.
+ E.eq ==> @Logic.eq ==> Equal ==> Equal as add_m.
 Proof.
 intros elt k k' Hk e m m' Hm y.
 rewrite add_o, add_o; do 2 destruct eq_dec; auto.
@@ -728,7 +728,7 @@ elim n; rewrite <-Hk; auto.
 elim n; rewrite Hk; auto.
 Qed.
 
-Add Morphism map with signature Logic.eq ==> Equal ==> Equal as map_m.
+Add Morphism map with signature @Logic.eq ==> Equal ==> Equal as map_m.
 Proof.
 intros elt elt' f m m' Hm y.
 rewrite map_o, map_o, Hm; auto.
@@ -1102,7 +1102,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
 
  End Elt.
 
- Add Morphism cardinal with signature Equal ==> Logic.eq as cardinal_m.
+ Add Morphism cardinal with signature Equal ==> @Logic.eq as cardinal_m.
  Proof. intros; apply Equal_cardinal; auto. Qed.
 
 End WProperties.
