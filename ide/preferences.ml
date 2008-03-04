@@ -110,7 +110,7 @@ let (current:pref ref) =
     global_auto_revert = false;
     global_auto_revert_delay = 10000;
     
-    auto_save = false;
+    auto_save = true;
     auto_save_delay = 10000;
     auto_save_name = "#","#";
     
