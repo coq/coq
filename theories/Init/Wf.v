@@ -142,7 +142,7 @@ End Well_founded.
 
 Section Well_founded_2.
 
-  Variables A B : Set.
+  Variables A B : Type.
   Variable R : A * B -> A * B -> Prop.
 
   Variable P : A -> B -> Type. 
