@@ -21,7 +21,7 @@ Unset Strict Implicit.
     found in [Sorting]. *)
 
 Section Type_with_equality.
-Variable A : Set.
+Variable A : Type.
 Variable eqA : A -> A -> Prop. 
 
 (** Being in a list modulo an equality relation over type [A]. *)
@@ -173,7 +173,7 @@ Hint Constructors lelistA sort.
 Lemma InfA_ltA :
  forall l x y, ltA x y -> InfA y l -> InfA x l.
 Proof.
- intro s; case s; constructor; inversion_clear H0.
+ destruct l; constructor; inversion_clear H0; 
  eapply ltA_trans; eauto.
 Qed.
  
@@ -434,7 +434,7 @@ End Filter.
 
 Section Fold.
 
-Variable B:Set.
+Variable B:Type.
 Variable eqB:B->B->Prop.
 
 (** Compatibility of a two-argument function with respect to two equalities. *)
@@ -613,7 +613,7 @@ Hint Unfold compat_bool compat_nat compat_P.
 Hint Constructors InA NoDupA sort lelistA eqlistA.
 
 Section Find. 
-Variable A B : Set. 
+Variable A B : Type. 
 Variable eqA : A -> A -> Prop. 
 Hypothesis eqA_sym : forall x y, eqA x y -> eqA y x.
 Hypothesis eqA_trans : forall x y z, eqA x y -> eqA y z -> eqA x z.

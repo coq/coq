@@ -24,7 +24,7 @@ Require Import Peano_dec.
 
 Section MapCard.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Lemma MapCard_M0 : MapCard A (M0 A) = 0.
   Proof.
@@ -55,10 +55,10 @@ Section MapCard.
     reflexivity.
     intro H0. rewrite H0 in H. discriminate H.
     intros. elim (sumbool_of_bool (Nbit0 a)). intro H2.
-    rewrite (MapGet_M2_bit_0_1 A a H2 m0 m1) in H1. elim (H0 (Ndiv2 a) y H1). intros n H3.
+    rewrite (MapGet_M2_bit_0_1 A a H2 m0 m1) in H. elim (X0 (Ndiv2 a) y H). intros n H3.
     simpl in |- *. rewrite H3. split with (MapCard A m0 + n).
     rewrite <- (plus_Snm_nSm (MapCard A m0) n). reflexivity.
-    intro H2. rewrite (MapGet_M2_bit_0_0 A a H2 m0 m1) in H1. elim (H (Ndiv2 a) y H1).
+    intro H2. rewrite (MapGet_M2_bit_0_0 A a H2 m0 m1) in H. elim (X (Ndiv2 a) y H).
     intros n H3. simpl in |- *. rewrite H3. split with (n + MapCard A m1). reflexivity.
   Qed.
 
@@ -68,11 +68,11 @@ Section MapCard.
   Proof.
     simple induction m. intro. discriminate H.
     intros a y H. split with a. split with y. apply M1_semantics_1.
-    intros. simpl in H1. elim (plus_is_one (MapCard A m0) (MapCard A m1) H1).
-    intro H2. elim H2. intros. elim (H0 H4). intros a H5. split with (Ndouble_plus_one a).
+    intros. simpl in H. elim (plus_is_one (MapCard A m0) (MapCard A m1) H).
+    intro H2. elim H2. intros H3 H4. elim (X0 H4). intros a H5. split with (Ndouble_plus_one a).
     rewrite (MapGet_M2_bit_0_1 A _ (Ndouble_plus_one_bit0 a) m0 m1).
     rewrite Ndouble_plus_one_div2. exact H5.
-    intro H2. elim H2. intros. elim (H H3). intros a H5. split with (Ndouble a).
+    intro H2. elim H2. intros H3 H4. elim (X H3). intros a H5. split with (Ndouble a).
     rewrite (MapGet_M2_bit_0_0 A _ (Ndouble_bit0 a) m0 m1).
     rewrite Ndouble_div2. exact H5.
   Qed.
@@ -116,7 +116,7 @@ Section MapCard.
   Qed.
 
   Lemma length_as_fold :
-   forall (C:Set) (l:list C),
+   forall (C:Type) (l:list C),
      length l = fold_right (fun (_:C) (n:nat) => S n) 0 l.
   Proof.
     simple induction l. reflexivity.
@@ -182,25 +182,25 @@ Section MapCard.
     rewrite H0. rewrite H1. reflexivity.
     intro H2. rewrite H2 in H. rewrite H in H1. simpl in H1. simpl in H0. left.
     rewrite H0. rewrite H1. reflexivity.
-    intros. simpl in H2. rewrite (MapPut_semantics_3_1 A m0 m1 a y) in H1.
-    elim (sumbool_of_bool (Nbit0 a)). intro H4. rewrite H4 in H1.
+    intros. simpl in H0. rewrite (MapPut_semantics_3_1 A m0 m1 a y) in H.
+    elim (sumbool_of_bool (Nbit0 a)). intro H4. rewrite H4 in H.
     elim
-     (H0 (MapPut A m1 (Ndiv2 a) y) (Ndiv2 a) y (
+     (X0 (MapPut A m1 (Ndiv2 a) y) (Ndiv2 a) y (
         MapCard A m1) (MapCard A (MapPut A m1 (Ndiv2 a) y)) (
         refl_equal _) (refl_equal _) (refl_equal _)).
-    intro H5. rewrite H1 in H3. simpl in H3. rewrite H5 in H3. rewrite <- H2 in H3. left.
+    intro H5. rewrite H in H1. simpl in H1. rewrite H5 in H1. rewrite <- H0 in H1. left.
     assumption.
-    intro H5. rewrite H1 in H3. simpl in H3. rewrite H5 in H3.
-    rewrite <- (plus_Snm_nSm (MapCard A m0) (MapCard A m1)) in H3.
-    simpl in H3. rewrite <- H2 in H3. right. assumption.
-    intro H4. rewrite H4 in H1.
+    intro H5. rewrite H in H1. simpl in H1. rewrite H5 in H1.
+    rewrite <- (plus_Snm_nSm (MapCard A m0) (MapCard A m1)) in H1.
+    simpl in H1. rewrite <- H0 in H1. right. assumption.
+    intro H4. rewrite H4 in H.
     elim
-     (H (MapPut A m0 (Ndiv2 a) y) (Ndiv2 a) y (
+     (X (MapPut A m0 (Ndiv2 a) y) (Ndiv2 a) y (
         MapCard A m0) (MapCard A (MapPut A m0 (Ndiv2 a) y)) (
         refl_equal _) (refl_equal _) (refl_equal _)).
-    intro H5. rewrite H1 in H3. simpl in H3. rewrite H5 in H3. rewrite <- H2 in H3.
+    intro H5. rewrite H in H1. simpl in H1. rewrite H5 in H1. rewrite <- H0 in H1.
     left. assumption.
-    intro H5. rewrite H1 in H3. simpl in H3. rewrite H5 in H3. simpl in H3. rewrite <- H2 in H3.
+    intro H5. rewrite H in H1. simpl in H1. rewrite H5 in H1. simpl in H1. rewrite <- H0 in H1.
     right. assumption.
   Qed.
 
@@ -239,15 +239,15 @@ Section MapCard.
     intros p H1. rewrite H1 in H. rewrite (MapCard_Put1_equals_2 p a a0 y y0) in H.
     discriminate H.
     intro H0. rewrite H0 in H. rewrite (Nxor_eq _ _ H0). split with y. apply M1_semantics_1.
-    intros. rewrite (MapPut_semantics_3_1 A m0 m1 a y) in H1. elim (sumbool_of_bool (Nbit0 a)).
-    intro H2. rewrite H2 in H1. simpl in H1. elim (H0 (Ndiv2 a) y ((fun n m p:nat => plus_reg_l m p n) _ _ _ H1)).
+    intros. rewrite (MapPut_semantics_3_1 A m0 m1 a y) in H. elim (sumbool_of_bool (Nbit0 a)).
+    intro H2. rewrite H2 in H. simpl in H. elim (X0 (Ndiv2 a) y ((fun n m p:nat => plus_reg_l m p n) _ _ _ H)).
     intros y0 H3. split with y0. rewrite <- H3. exact (MapGet_M2_bit_0_1 A a H2 m0 m1).
-    intro H2. rewrite H2 in H1. simpl in H1.
+    intro H2. rewrite H2 in H. simpl in H.
     rewrite
      (plus_comm (MapCard A (MapPut A m0 (Ndiv2 a) y)) (MapCard A m1))
-      in H1.
-    rewrite (plus_comm (MapCard A m0) (MapCard A m1)) in H1.
-    elim (H (Ndiv2 a) y ((fun n m p:nat => plus_reg_l m p n) _ _ _ H1)). intros y0 H3. split with y0.
+      in H.
+    rewrite (plus_comm (MapCard A m0) (MapCard A m1)) in H.
+    elim (X (Ndiv2 a) y ((fun n m p:nat => plus_reg_l m p n) _ _ _ H)). intros y0 H3. split with y0.
     rewrite <- H3. exact (MapGet_M2_bit_0_0 A a H2 m0 m1).
   Qed.
 
@@ -372,27 +372,27 @@ Section MapCard.
     simpl in |- *. intros. elim (sumbool_of_bool (Neqb a a1)). intro H2. rewrite H2 in H.
     rewrite H in H1. simpl in H1. right. rewrite H1. assumption.
     intro H2. rewrite H2 in H. rewrite H in H1. simpl in H1. left. rewrite H1. assumption.
-    intros. simpl in H1. simpl in H2. elim (sumbool_of_bool (Nbit0 a)). intro H4.
-    rewrite H4 in H1. rewrite H1 in H3.
-    rewrite (MapCard_makeM2 m0 (MapRemove A m1 (Ndiv2 a))) in H3.
+    intros. simpl in H1. simpl in H. elim (sumbool_of_bool (Nbit0 a)). intro H4.
+    rewrite H4 in H. rewrite H in H1.
+    rewrite (MapCard_makeM2 m0 (MapRemove A m1 (Ndiv2 a))) in H1.
     elim
-     (H0 (MapRemove A m1 (Ndiv2 a)) (Ndiv2 a) (
+     (X0 (MapRemove A m1 (Ndiv2 a)) (Ndiv2 a) (
         MapCard A m1) (MapCard A (MapRemove A m1 (Ndiv2 a)))
         (refl_equal _) (refl_equal _) (refl_equal _)).
-    intro H5. rewrite H5 in H2. left. rewrite H3. exact H2.
-    intro H5. rewrite H5 in H2.
+    simpl in H0;  intro H5. rewrite H5 in H0. left. rewrite H1. exact H0.
+    simpl in H0; intro H5. rewrite H5 in H0.
     rewrite <-
      (plus_Snm_nSm (MapCard A m0) (MapCard A (MapRemove A m1 (Ndiv2 a))))
-      in H2.
-    right. rewrite H3. exact H2.
-    intro H4. rewrite H4 in H1. rewrite H1 in H3.
-    rewrite (MapCard_makeM2 (MapRemove A m0 (Ndiv2 a)) m1) in H3.
+      in H0.
+    right. rewrite H1. exact H0.
+    intro H4. rewrite H4 in H. rewrite H in H1.
+    rewrite (MapCard_makeM2 (MapRemove A m0 (Ndiv2 a)) m1) in H1.
     elim
-     (H (MapRemove A m0 (Ndiv2 a)) (Ndiv2 a) (
+     (X (MapRemove A m0 (Ndiv2 a)) (Ndiv2 a) (
         MapCard A m0) (MapCard A (MapRemove A m0 (Ndiv2 a)))
         (refl_equal _) (refl_equal _) (refl_equal _)).
-    intro H5. rewrite H5 in H2. left. rewrite H3. exact H2.
-    intro H5. rewrite H5 in H2. right. rewrite H3. exact H2.
+    simpl in H0; intro H5. rewrite H5 in H0. left. rewrite H1. exact H0.
+    simpl in H0; intro H5. rewrite H5 in H0. right. rewrite H1. exact H0.
   Qed.
 
   Lemma MapCard_Remove_ub :
@@ -448,25 +448,25 @@ Section MapCard.
     intros a y a0 H. simpl in H. elim (sumbool_of_bool (Neqb a a0)). intro H0.
     rewrite (Neqb_complete _ _ H0). split with y. exact (M1_semantics_1 A a0 y).
     intro H0. rewrite H0 in H. discriminate H.
-    intros. simpl in H1. elim (sumbool_of_bool (Nbit0 a)). intro H2. rewrite H2 in H1.
-    rewrite (MapCard_makeM2 m0 (MapRemove A m1 (Ndiv2 a))) in H1.
-    rewrite (MapGet_M2_bit_0_1 A a H2 m0 m1). apply H0.
+    intros. simpl in H. elim (sumbool_of_bool (Nbit0 a)). intro H0. rewrite H0 in H.
+    rewrite (MapCard_makeM2 m0 (MapRemove A m1 (Ndiv2 a))) in H.
+    rewrite (MapGet_M2_bit_0_1 A a H0 m0 m1). apply X0.
     change
       (S (MapCard A m0) + MapCard A (MapRemove A m1 (Ndiv2 a)) =
-       MapCard A m0 + MapCard A m1) in H1.
+       MapCard A m0 + MapCard A m1) in H.
     rewrite
      (plus_Snm_nSm (MapCard A m0) (MapCard A (MapRemove A m1 (Ndiv2 a))))
-      in H1.
-    exact ((fun n m p:nat => plus_reg_l m p n) _ _ _ H1).
-    intro H2. rewrite H2 in H1. rewrite (MapGet_M2_bit_0_0 A a H2 m0 m1). apply H.
-    rewrite (MapCard_makeM2 (MapRemove A m0 (Ndiv2 a)) m1) in H1.
+      in H.
+    exact ((fun n m p:nat => plus_reg_l m p n) _ _ _ H).
+    intro H2. rewrite H2 in H. rewrite (MapGet_M2_bit_0_0 A a H2 m0 m1). apply X.
+    rewrite (MapCard_makeM2 (MapRemove A m0 (Ndiv2 a)) m1) in H.
     change
       (S (MapCard A (MapRemove A m0 (Ndiv2 a))) + MapCard A m1 =
-       MapCard A m0 + MapCard A m1) in H1.
+       MapCard A m0 + MapCard A m1) in H.
     rewrite
      (plus_comm (S (MapCard A (MapRemove A m0 (Ndiv2 a)))) (MapCard A m1))
-      in H1.
-    rewrite (plus_comm (MapCard A m0) (MapCard A m1)) in H1. exact ((fun n m p:nat => plus_reg_l m p n) _ _ _ H1).
+      in H.
+    rewrite (plus_comm (MapCard A m0) (MapCard A m1)) in H. exact ((fun n m p:nat => plus_reg_l m p n) _ _ _ H).
   Qed.
 
   Lemma MapCard_Remove_1_conv :
@@ -652,7 +652,7 @@ End MapCard.
 
 Section MapCard2.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Lemma MapSubset_card_eq_1 :
    forall (n:nat) (m:Map A) (m':Map B),
@@ -708,7 +708,7 @@ End MapCard2.
 
 Section MapCard3.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Lemma MapMerge_Card_lb_l :
    forall m m':Map A, MapCard A (MapMerge A m m') >= MapCard A m.

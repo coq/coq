@@ -48,7 +48,7 @@ Unset Strict Implicit.
 *)
 
 
-Definition Cmp (elt:Set)(cmp:elt->elt->bool) e1 e2 := cmp e1 e2 = true.
+Definition Cmp (elt:Type)(cmp:elt->elt->bool) e1 e2 := cmp e1 e2 = true.
 
 (** ** Weak signature for maps
    
@@ -63,12 +63,12 @@ Module Type WSfun (E : EqualityType).
 
   Definition key := E.t.
 
-  Parameter t : Set -> Set. 
+  Parameter t : Type -> Type.
   (** the abstract type of maps *)
  
   Section Types. 
 
-    Variable elt:Set.
+    Variable elt:Type.
 
     Parameter empty : t elt.
     (** The empty map. *)
@@ -93,8 +93,7 @@ Module Type WSfun (E : EqualityType).
     (** [mem x m] returns [true] if [m] contains a binding for [x], 
 	and [false] otherwise. *)
 
-    Variable elt' : Set. 
-    Variable elt'': Set.
+    Variable elt' elt'' : Type.
 
     Parameter map : (elt -> elt') -> t elt -> t elt'.
     (** [map f m] returns a map with same domain as [m], where the associated 
@@ -225,25 +224,25 @@ Module Type WSfun (E : EqualityType).
    End Types.
 
     (** Specification of [map] *)
-      Parameter map_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
+      Parameter map_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
         MapsTo x e m -> MapsTo x (f e) (map f m).
-      Parameter map_2 : forall (elt elt':Set)(m: t elt)(x:key)(f:elt->elt'), 
+      Parameter map_2 : forall (elt elt':Type)(m: t elt)(x:key)(f:elt->elt'), 
         In x (map f m) -> In x m.
  
     (** Specification of [mapi] *)
-      Parameter mapi_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)
+      Parameter mapi_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)
         (f:key->elt->elt'), MapsTo x e m -> 
         exists y, E.eq y x /\ MapsTo x (f y e) (mapi f m).
-      Parameter mapi_2 : forall (elt elt':Set)(m: t elt)(x:key)
+      Parameter mapi_2 : forall (elt elt':Type)(m: t elt)(x:key)
         (f:key->elt->elt'), In x (mapi f m) -> In x m.
 
     (** Specification of [map2] *)
-      Parameter map2_1 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
+      Parameter map2_1 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
 	(x:key)(f:option elt->option elt'->option elt''), 
 	In x m \/ In x m' -> 
         find x (map2 f m m') = f (find x m) (find x m').       
 
-     Parameter map2_2 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
+     Parameter map2_2 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
 	(x:key)(f:option elt->option elt'->option elt''), 
         In x (map2 f m m') -> In x m \/ In x m'.
 
@@ -273,7 +272,7 @@ End WS.
 Module Type Sfun (E : OrderedType).
   Include Type WSfun E.
   Section elt.
-  Variable elt:Set.
+  Variable elt:Type.
    Definition lt_key (p p':key*elt) := E.lt (fst p) (fst p').
    (* Additional specification of [elements] *)
    Parameter elements_3 : forall m, sort lt_key (elements m).

@@ -494,7 +494,7 @@ destruct (mem x s); destruct (mem x s'); intuition.
 Qed.
 
 Section Fold. 
-Variables (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
+Variables (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
 Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f)(Ass:transpose eqA f).
 Variables (i:A).
 Variables (s s':t)(x:elt).
@@ -892,7 +892,7 @@ rewrite filter_iff; auto; set_iff; tauto.
 Qed.
 
 Lemma fold_compat : 
-  forall (A:Set)(eqA:A->A->Prop)(st:(Setoid_Theory _ eqA))
+  forall (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA)
   (f g:elt->A->A),
   (compat_op E.eq eqA f) -> (transpose eqA f) -> 
   (compat_op E.eq eqA g) -> (transpose eqA g) -> 

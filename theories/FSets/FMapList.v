@@ -25,19 +25,10 @@ Module Import MX := OrderedTypeFacts X.
 Module Import PX := KeyOrderedType X.
 
 Definition key := X.t.
-Definition t (elt:Set) := list (X.t * elt).
+Definition t (elt:Type) := list (X.t * elt).
 
 Section Elt.
-Variable elt : Set.
-
-(* Now in KeyOrderedType: 
-Definition eqk (p p':key*elt) := X.eq (fst p) (fst p').
-Definition eqke (p p':key*elt) := 
-        X.eq (fst p) (fst p') /\ (snd p) = (snd p').
-Definition ltk (p p':key*elt) := X.lt (fst p) (fst p').
-Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).
-Definition In k m := exists e:elt, MapsTo k e m.
-*)
+Variable elt : Type.
 
 Notation eqk := (eqk (elt:=elt)).   
 Notation eqke := (eqke (elt:=elt)).
@@ -523,7 +514,7 @@ Proof.
  rewrite H2; simpl; auto.
 Qed.
 
-Variable elt':Set.
+Variable elt':Type.
 
 (** * [map] and [mapi] *)
   
@@ -544,7 +535,7 @@ Section Elt2.
 (* A new section is necessary for previous definitions to work 
    with different [elt], especially [MapsTo]... *)
   
-Variable elt elt' : Set.
+Variable elt elt' : Type.
 
 (** Specification of [map] *)
 
@@ -680,10 +671,10 @@ Section Elt3.
 
 (** * [map2] *)
 
-Variable elt elt' elt'' : Set.
+Variable elt elt' elt'' : Type.
 Variable f : option elt -> option elt' -> option elt''.
 
-Definition option_cons (A:Set)(k:key)(o:option A)(l:list (key*A)) := 
+Definition option_cons (A:Type)(k:key)(o:option A)(l:list (key*A)) := 
   match o with 
    | Some e => (k,e)::l
    | None => l
@@ -735,7 +726,7 @@ Fixpoint combine (m : t elt) : t elt' -> t oee' :=
         end
   end. 
 
-Definition fold_right_pair (A B C:Set)(f: A->B->C->C)(l:list (A*B))(i:C) := 
+Definition fold_right_pair (A B C:Type)(f: A->B->C->C)(l:list (A*B))(i:C) := 
   List.fold_right (fun p => f (fst p) (snd p)) i l.
 
 Definition map2_alt m m' := 
@@ -1034,12 +1025,12 @@ Module E := X.
 
 Definition key := E.t.
 
-Record slist (elt:Set) : Set :=  
+Record slist (elt:Type) :=  
   {this :> Raw.t elt; sorted : sort (@Raw.PX.ltk elt) this}.
-Definition t (elt:Set) : Set := slist elt. 
+Definition t (elt:Type) : Type := slist elt. 
 
 Section Elt. 
- Variable elt elt' elt'':Set. 
+ Variable elt elt' elt'':Type. 
 
  Implicit Types m : t elt.
  Implicit Types x y : key. 
@@ -1132,22 +1123,22 @@ Section Elt.
 
  End Elt.
  
- Lemma map_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
+ Lemma map_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
         MapsTo x e m -> MapsTo x (f e) (map f m).
  Proof. intros elt elt' m; exact (@Raw.map_1 elt elt' m.(this)). Qed.
- Lemma map_2 : forall (elt elt':Set)(m: t elt)(x:key)(f:elt->elt'), 
+ Lemma map_2 : forall (elt elt':Type)(m: t elt)(x:key)(f:elt->elt'), 
         In x (map f m) -> In x m. 
  Proof. intros elt elt' m; exact (@Raw.map_2 elt elt' m.(this)). Qed.
 
- Lemma mapi_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)
+ Lemma mapi_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)
         (f:key->elt->elt'), MapsTo x e m -> 
         exists y, E.eq y x /\ MapsTo x (f y e) (mapi f m).
  Proof. intros elt elt' m; exact (@Raw.mapi_1 elt elt' m.(this)). Qed.
- Lemma mapi_2 : forall (elt elt':Set)(m: t elt)(x:key)
+ Lemma mapi_2 : forall (elt elt':Type)(m: t elt)(x:key)
         (f:key->elt->elt'), In x (mapi f m) -> In x m.
  Proof. intros elt elt' m; exact (@Raw.mapi_2 elt elt' m.(this)). Qed.
 
- Lemma map2_1 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
+ Lemma map2_1 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
 	(x:key)(f:option elt->option elt'->option elt''), 
 	In x m \/ In x m' -> 
         find x (map2 f m m') = f (find x m) (find x m').       
@@ -1155,7 +1146,7 @@ Section Elt.
  intros elt elt' elt'' m m' x f; 
  exact (@Raw.map2_1 elt elt' elt'' f m.(this) m.(sorted) m'.(this) m'.(sorted) x).
  Qed.
- Lemma map2_2 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
+ Lemma map2_2 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
 	(x:key)(f:option elt->option elt'->option elt''), 
         In x (map2 f m m') -> In x m \/ In x m'.
  Proof. 

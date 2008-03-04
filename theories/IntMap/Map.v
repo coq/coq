@@ -25,9 +25,9 @@ Definition ad := N.
 Section MapDefs.
 
 (** We now define maps from ad to A. *)
-  Variable A : Set.  
+  Variable A : Type.  
 
-  Inductive Map : Set :=
+  Inductive Map :=
     | M0 : Map
     | M1 : ad -> A -> Map
     | M2 : Map -> Map -> Map.

@@ -32,7 +32,7 @@ Proof.
  destruct b; destruct b'; intuition.
 Qed.
 
-Lemma MapsTo_fun : forall (elt:Set) m x (e e':elt), 
+Lemma MapsTo_fun : forall (elt:Type) m x (e e':elt), 
   MapsTo x e m -> MapsTo x e' m -> e=e'.
 Proof.
 intros.
@@ -43,7 +43,7 @@ Qed.
 (** ** Specifications written using equivalences *)
 
 Section IffSpec. 
-Variable elt elt' elt'': Set.
+Variable elt elt' elt'': Type.
 Implicit Type m: t elt.
 Implicit Type x y z: key.
 Implicit Type e: elt.
@@ -308,7 +308,7 @@ Ltac map_iff :=
 
 Section BoolSpec.
 
-Lemma mem_find_b : forall (elt:Set)(m:t elt)(x:key), mem x m = if find x m then true else false. 
+Lemma mem_find_b : forall (elt:Type)(m:t elt)(x:key), mem x m = if find x m then true else false. 
 Proof.
 intros.
 generalize (find_mapsto_iff m x)(mem_in_iff m x); unfold In.
@@ -320,7 +320,7 @@ destruct H0 as (e,H0).
 destruct (H e); intuition discriminate.
 Qed.
 
-Variable elt elt' elt'' : Set.
+Variable elt elt' elt'' : Type.
 Implicit Types m : t elt.
 Implicit Types x y z : key.
 Implicit Types e : elt.
@@ -449,7 +449,7 @@ intros; do 2 rewrite mem_find_b; rewrite remove_o; unfold eqb.
 destruct (eq_dec x y); auto.
 Qed.
 
-Definition option_map (A:Set)(B:Set)(f:A->B)(o:option A) : option B := 
+Definition option_map (A B:Type)(f:A->B)(o:option A) : option B := 
  match o with 
   | Some a => Some (f a)
   | None => None
@@ -570,7 +570,7 @@ End BoolSpec.
 
 Section Equalities. 
 
-Variable elt:Set.
+Variable elt:Type.
 
 (** * Relations between [Equal], [Equiv] and [Equivb]. *)
 
@@ -638,18 +638,18 @@ End Equalities.
 
 (** * [Equal] is a setoid equality. *)
 
-Lemma Equal_refl : forall (elt:Set)(m : t elt), Equal m m.
+Lemma Equal_refl : forall (elt:Type)(m : t elt), Equal m m.
 Proof. red; reflexivity. Qed.
 
-Lemma Equal_sym : forall (elt:Set)(m m' : t elt), 
+Lemma Equal_sym : forall (elt:Type)(m m' : t elt), 
  Equal m m' -> Equal m' m.
 Proof. unfold Equal; auto. Qed.
 
-Lemma Equal_trans : forall (elt:Set)(m m' m'' : t elt), 
+Lemma Equal_trans : forall (elt:Type)(m m' m'' : t elt), 
  Equal m m' -> Equal m' m'' -> Equal m m''.
 Proof. unfold Equal; congruence. Qed.
 
-Definition Equal_ST : forall elt:Set, Setoid_Theory (t elt) (@Equal _).
+Definition Equal_ST : forall elt:Type, Setoid_Theory (t elt) (@Equal _).
 Proof. 
 constructor; [apply Equal_refl | apply Equal_sym | apply Equal_trans].
 Qed.
@@ -758,7 +758,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
  Import M.
 
  Section Elt. 
-  Variable elt:Set.
+  Variable elt:Type.
 
   Definition Add x (e:elt) m m' := forall y, find y m' = find y (add x e m).
 
@@ -789,7 +789,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
   rewrite <-elements_Empty; apply empty_1.
   Qed.
 
-  Lemma fold_Empty : forall m (A:Set)(f:key->elt->A->A)(i:A),
+  Lemma fold_Empty : forall m (A:Type)(f:key->elt->A->A)(i:A),
    Empty m -> fold f m i = i.
   Proof.
   intros.
@@ -807,7 +807,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
   exists (a,b); auto.
   Qed.
 
-  Lemma fold_Equal : forall m1 m2 (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+  Lemma fold_Equal : forall m1 m2 (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
    (f:key->elt->A->A)(i:A), 
    compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
    transpose eqA (fun y => f (fst y) (snd y)) -> 
@@ -832,7 +832,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
   rewrite H1; split; auto.
   Qed.
 
-  Lemma fold_Add : forall m1 m2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+  Lemma fold_Add : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
    (f:key->elt->A->A)(i:A), 
    compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
    transpose eqA (fun y =>f (fst y) (snd y)) -> 
@@ -1124,7 +1124,7 @@ Module OrdProperties (M:S).
  Import M.
 
  Section Elt. 
-  Variable elt:Set.
+  Variable elt:Type.
 
   Notation eqke := (@eqke elt).
   Notation eqk := (@eqk elt).
@@ -1509,7 +1509,7 @@ Module OrdProperties (M:S).
   (** The following lemma has already been proved on Weak Maps,
       but with one additionnal hypothesis (some [transpose] fact). *)
 
-  Lemma fold_Equal : forall s1 s2 (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+  Lemma fold_Equal : forall s1 s2 (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
    (f:key->elt->A->A)(i:A), 
    compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
    Equal s1 s2 -> 
@@ -1523,7 +1523,7 @@ Module OrdProperties (M:S).
   apply elements_Equal_eqlistA; auto.
   Qed.
 
-  Lemma fold_Add : forall s1 s2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+  Lemma fold_Add : forall s1 s2 x e (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
    (f:key->elt->A->A)(i:A), 
    compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
    transpose eqA (fun y =>f (fst y) (snd y)) -> 
@@ -1546,7 +1546,7 @@ Module OrdProperties (M:S).
   apply fold_right_commutes with (eqA:=eqke) (eqB:=eqA); auto.
   Qed.
 
-  Lemma fold_Add_Above : forall s1 s2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+  Lemma fold_Add_Above : forall s1 s2 x e (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
    (f:key->elt->A->A)(i:A), 
    compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
    Above x s1 -> Add x e s1 s2 -> 
@@ -1562,7 +1562,7 @@ Module OrdProperties (M:S).
   refl_st.
   Qed.
 
-  Lemma fold_Add_Below : forall s1 s2 x e (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
+  Lemma fold_Add_Below : forall s1 s2 x e (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
    (f:key->elt->A->A)(i:A), 
    compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
    Below x s1 -> Add x e s1 s2 -> 

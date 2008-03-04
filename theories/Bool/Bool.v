@@ -196,7 +196,7 @@ Qed.
 
 
 Lemma if_negb :
-  forall (A:Set) (b:bool) (x y:A),
+  forall (A:Type) (b:bool) (x y:A),
     (if negb b then x else y) = (if b then y else x).
 Proof.
   destruct b; trivial.
@@ -686,14 +686,14 @@ Qed.
 
 (* Rewrite rules about andb, orb and if (used in romega) *)
 
-Lemma andb_if : forall (A:Set)(a a':A)(b b' : bool), 
+Lemma andb_if : forall (A:Type)(a a':A)(b b' : bool), 
   (if b && b' then a else a') = 
   (if b then if b' then a else a' else a').
 Proof.
  destruct b; destruct b'; auto.
 Qed.
 
-Lemma negb_if : forall (A:Set)(a a':A)(b:bool), 
+Lemma negb_if : forall (A:Type)(a a':A)(b:bool), 
  (if negb b then a else a') = 
  (if b then a' else a).
 Proof.

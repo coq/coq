@@ -20,7 +20,7 @@ Require Import Mapiter.
 
 Section MapSubsetDef.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Definition MapSubset (m:Map A) (m':Map B) :=
     forall a:ad, in_dom A a m = true -> in_dom B a m' = true.
@@ -105,7 +105,7 @@ End MapSubsetDef.
 
 Section MapSubsetOrder.
 
-  Variables A B C : Set.
+  Variables A B C : Type.
 
   Lemma MapSubset_refl : forall m:Map A, MapSubset A A m m.
   Proof.
@@ -165,7 +165,7 @@ End FSubsetOrder.
 
 Section MapSubsetExtra.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Lemma MapSubset_Dom_1 :
    forall (m:Map A) (m':Map B),
@@ -303,7 +303,7 @@ Section MapSubsetExtra.
     exact (MapSubset_imp_2 _ _ _ _ H1).
   Qed.
 
-  Variables C D : Set.
+  Variables C D : Type.
 
   Lemma MapSubset_DomRestrTo_mono :
    forall (m:Map A) (m':Map B) (m'':Map C) (m''':Map D),
@@ -338,7 +338,7 @@ End MapSubsetExtra.
 
 Section MapDisjointDef.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Definition MapDisjoint (m:Map A) (m':Map B) :=
     forall a:ad, in_dom A a m = true -> in_dom B a m' = true -> False.
@@ -414,7 +414,7 @@ End MapDisjointDef.
 
 Section MapDisjointExtra.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Lemma MapDisjoint_ext :
    forall (m0 m1:Map A) (m2 m3:Map B),
@@ -549,7 +549,7 @@ Section MapDisjointExtra.
     apply MapDomRestrBy_m_empty.
   Qed.
 
-  Variable C : Set.
+  Variable C : Type.
 
   Lemma MapDomRestr_disjoint :
    forall (m:Map A) (m':Map B) (m'':Map C),
@@ -576,7 +576,7 @@ Section MapDisjointExtra.
     intros. elim (andb_prop _ _ H0). intros. rewrite H1 in H. rewrite H2 in H. discriminate H.
   Qed.
 
-  Variable D : Set.
+  Variable D : Type.
 
   Lemma MapSubset_Disjoint :
    forall (m:Map A) (m':Map B) (m'':Map C) (m''':Map D),

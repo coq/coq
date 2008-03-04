@@ -17,7 +17,7 @@ Require Import Fset.
 
 Section MapAxioms.
 
-  Variables A B C : Set.
+  Variables A B C : Type.
 
   Lemma eqm_sym : forall f f':ad -> option A, eqm A f f' -> eqm A f' f.
   Proof.
@@ -574,7 +574,7 @@ Section MapAxioms.
 End MapAxioms.
 
 Lemma MapDomRestrTo_ext :
- forall (A B:Set) (m1:Map A) (m2:Map B) (m'1:Map A) 
+ forall (A B:Type) (m1:Map A) (m2:Map B) (m'1:Map A) 
    (m'2:Map B),
    eqmap A m1 m'1 ->
    eqmap B m2 m'2 ->
@@ -585,7 +585,7 @@ Proof.
 Qed.
 
 Lemma MapDomRestrTo_ext_l :
- forall (A B:Set) (m1:Map A) (m2:Map B) (m'1:Map A),
+ forall (A B:Type) (m1:Map A) (m2:Map B) (m'1:Map A),
    eqmap A m1 m'1 ->
    eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m'1 m2).
 Proof.
@@ -593,7 +593,7 @@ Proof.
 Qed.
 
 Lemma MapDomRestrTo_ext_r :
- forall (A B:Set) (m1:Map A) (m2 m'2:Map B),
+ forall (A B:Type) (m1:Map A) (m2 m'2:Map B),
    eqmap B m2 m'2 ->
    eqmap A (MapDomRestrTo A B m1 m2) (MapDomRestrTo A B m1 m'2).
 Proof.
@@ -601,7 +601,7 @@ Proof.
 Qed.
 
 Lemma MapDomRestrBy_ext :
- forall (A B:Set) (m1:Map A) (m2:Map B) (m'1:Map A) 
+ forall (A B:Type) (m1:Map A) (m2:Map B) (m'1:Map A) 
    (m'2:Map B),
    eqmap A m1 m'1 ->
    eqmap B m2 m'2 ->
@@ -612,7 +612,7 @@ Proof.
 Qed.
 
 Lemma MapDomRestrBy_ext_l :
- forall (A B:Set) (m1:Map A) (m2:Map B) (m'1:Map A),
+ forall (A B:Type) (m1:Map A) (m2:Map B) (m'1:Map A),
    eqmap A m1 m'1 ->
    eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m'1 m2).
 Proof.
@@ -620,7 +620,7 @@ Proof.
 Qed.
 
 Lemma MapDomRestrBy_ext_r :
- forall (A B:Set) (m1:Map A) (m2 m'2:Map B),
+ forall (A B:Type) (m1:Map A) (m2 m'2:Map B),
    eqmap B m2 m'2 ->
    eqmap A (MapDomRestrBy A B m1 m2) (MapDomRestrBy A B m1 m'2).
 Proof.
@@ -628,7 +628,7 @@ Proof.
 Qed.
 
 Lemma MapDomRestrBy_m_m :
- forall (A:Set) (m:Map A),
+ forall (A:Type) (m:Map A),
    eqmap A (MapDomRestrBy A unit m (MapDom A m)) (M0 A).
 Proof.
   intros. apply eqmap_trans with (m' := MapDomRestrBy A A m m). apply eqmap_sym.

@@ -25,7 +25,7 @@ Section defs.
 
   (** ** Definition of trees over an ordered set *)
 
-  Variable A : Set.
+  Variable A : Type.
   Variable leA : relation A.
   Variable eqA : relation A.
 
@@ -43,7 +43,7 @@ Section defs.
   Let emptyBag := EmptyBag A.
   Let singletonBag := SingletonBag _ eqA_dec.
   
-  Inductive Tree : Set :=
+  Inductive Tree :=
     | Tree_Leaf : Tree
     | Tree_Node : A -> Tree -> Tree -> Tree.
 
@@ -87,6 +87,23 @@ Section defs.
   Qed.
 
   (* This lemma ought to be generated automatically by the Inversion tools *)
+  Lemma is_heap_rect :
+    forall P:Tree -> Type,
+      P Tree_Leaf ->
+      (forall (a:A) (T1 T2:Tree),
+	leA_Tree a T1 ->
+	leA_Tree a T2 ->
+	is_heap T1 -> P T1 -> is_heap T2 -> P T2 -> P (Tree_Node a T1 T2)) ->
+      forall T:Tree, is_heap T -> P T.
+  Proof.
+    simple induction T; auto with datatypes.
+    intros a G PG D PD PN. 
+    elim (invert_heap a G D); auto with datatypes.
+    intros H1 H2; elim H2; intros H3 H4; elim H4; intros.
+    apply X0; auto with datatypes.
+  Qed.
+
+  (* This lemma ought to be generated automatically by the Inversion tools *)
   Lemma is_heap_rec :
     forall P:Tree -> Set,
       P Tree_Leaf ->
@@ -100,7 +117,7 @@ Section defs.
     intros a G PG D PD PN. 
     elim (invert_heap a G D); auto with datatypes.
     intros H1 H2; elim H2; intros H3 H4; elim H4; intros.
-    apply H0; auto with datatypes.
+    apply X; auto with datatypes.
   Qed.
 
   Lemma low_trans :
@@ -136,7 +153,7 @@ Section defs.
 
   (** ** Specification of heap insertion *)
 
-  Inductive insert_spec (a:A) (T:Tree) : Set :=
+  Inductive insert_spec (a:A) (T:Tree) : Type :=
     insert_exist :
     forall T1:Tree,
       is_heap T1 ->
@@ -152,11 +169,11 @@ Section defs.
       auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
     simpl in |- *; unfold meq, munion in |- *; auto using node_is_heap with datatypes.
     elim (leA_dec a a0); intros.
-    elim (H3 a0); intros.
+    elim (X a0); intros.
     apply insert_exist with (Tree_Node a T2 T0);
       auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
     simpl in |- *; apply treesort_twist1; trivial with datatypes. 
-    elim (H3 a); intros T3 HeapT3 ConT3 LeA.
+    elim (X a); intros T3 HeapT3 ConT3 LeA.
     apply insert_exist with (Tree_Node a0 T2 T3); 
       auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
     apply node_is_heap; auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
@@ -169,7 +186,7 @@ Section defs.
 
   (** ** Building a heap from a list *)
 
-  Inductive build_heap (l:list A) : Set :=
+  Inductive build_heap (l:list A) : Type :=
     heap_exist :
     forall T:Tree,
       is_heap T ->
@@ -193,7 +210,7 @@ Section defs.
 
   (** ** Building the sorted list *)
   
-  Inductive flat_spec (T:Tree) : Set :=
+  Inductive flat_spec (T:Tree) : Type :=
     flat_exist :
     forall l:list A,
       sort leA l ->
@@ -204,7 +221,7 @@ Section defs.
   Proof.
     intros T h; elim h; intros.
     apply flat_exist with (nil (A:=A)); auto with datatypes.
-    elim H2; intros l1 s1 i1 m1; elim H4; intros l2 s2 i2 m2.
+    elim X; intros l1 s1 i1 m1; elim X0; intros l2 s2 i2 m2.
     elim (merge _ leA_dec eqA_dec s1 s2); intros.
     apply flat_exist with (a :: l); simpl in |- *; auto with datatypes.
     apply meq_trans with

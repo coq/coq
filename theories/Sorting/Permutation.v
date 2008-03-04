@@ -38,7 +38,7 @@ Section defs.
 
   (** * From lists to multisets *)
 
-  Variable A : Set.
+  Variable A : Type.
   Variable eqA : relation A.
   Hypothesis eqA_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
 

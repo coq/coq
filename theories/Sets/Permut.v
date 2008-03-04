@@ -15,7 +15,7 @@
 
 Section Axiomatisation.
 
-  Variable U : Set.
+  Variable U : Type.
   Variable op : U -> U -> U.
   Variable cong : U -> U -> Prop.
 

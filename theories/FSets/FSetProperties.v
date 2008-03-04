@@ -317,7 +317,7 @@ Module WProperties (Import E : DecidableType)(M : WSfun E).
   *)
 
   Lemma fold_0 : 
-      forall s (A : Set) (i : A) (f : elt -> A -> A),
+      forall s (A : Type) (i : A) (f : elt -> A -> A),
       exists l : list elt,
         NoDup l /\
         (forall x : elt, In x s <-> InA E.eq x l) /\
@@ -338,7 +338,7 @@ Module WProperties (Import E : DecidableType)(M : WSfun E).
       [fold_2]. *)
 
   Lemma fold_1 :
-   forall s (A : Set) (eqA : A -> A -> Prop) 
+   forall s (A : Type) (eqA : A -> A -> Prop) 
      (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
    Empty s -> eqA (fold f s i) i.
   Proof.
@@ -351,7 +351,7 @@ Module WProperties (Import E : DecidableType)(M : WSfun E).
   Qed.
 
   Lemma fold_2 :
-   forall s s' x (A : Set) (eqA : A -> A -> Prop)
+   forall s s' x (A : Type) (eqA : A -> A -> Prop)
      (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
    compat_op E.eq eqA f ->
    transpose eqA f ->
@@ -371,7 +371,7 @@ Module WProperties (Import E : DecidableType)(M : WSfun E).
       the initial element, it is Leibniz-equal to it. *)
 
   Lemma fold_1b :
-   forall s (A : Set)(i : A) (f : elt -> A -> A),
+   forall s (A : Type)(i : A) (f : elt -> A -> A),
    Empty s -> (fold f s i) = i.
   Proof.
   intros.
@@ -479,7 +479,7 @@ Module WProperties (Import E : DecidableType)(M : WSfun E).
   (** Other properties of [fold]. *)
 
   Section Fold. 
-  Variables (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
+  Variables (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
   Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f)(Ass:transpose eqA f).
 
   Section Fold_1. 
@@ -972,7 +972,7 @@ Module OrdProperties (M:S).
   (** More properties of [fold] : behavior with respect to Above/Below *)
 
   Lemma fold_3 :
-   forall s s' x (A : Set) (eqA : A -> A -> Prop)
+   forall s s' x (A : Type) (eqA : A -> A -> Prop)
      (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
    compat_op E.eq eqA f ->
    Above x s -> Add x s s' -> eqA (fold f s' i) (f x (fold f s i)).
@@ -989,7 +989,7 @@ Module OrdProperties (M:S).
   Qed.
 
   Lemma fold_4 :
-   forall s s' x (A : Set) (eqA : A -> A -> Prop)
+   forall s s' x (A : Type) (eqA : A -> A -> Prop)
      (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
    compat_op E.eq eqA f ->
    Below x s -> Add x s s' -> eqA (fold f s' i) (fold f s (f x i)).
@@ -1010,7 +1010,7 @@ Module OrdProperties (M:S).
     no need for [(transpose eqA f)]. *)
 
   Section FoldOpt. 
-  Variables (A:Set)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
+  Variables (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
   Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f).
 
   Lemma fold_equal : 

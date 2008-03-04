@@ -19,7 +19,7 @@ Require Import Mapiter.
 
 Section LSort.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Fixpoint alist_sorted (l:alist A) : bool :=
     match l with
@@ -90,7 +90,7 @@ Section LSort.
   Qed.
 
   Lemma app_length :
-   forall (C:Set) (l l':list C), length (l ++ l') = length l + length l'.
+   forall (C:Type) (l l':list C), length (l ++ l') = length l + length l'.
   Proof.
     simple induction l. trivial.
     intros. simpl in |- *. rewrite (H l'). reflexivity.
@@ -172,7 +172,7 @@ Section LSort.
     simple induction l. intros. elim (le_Sn_O _ H).
     intro r. elim r. intros a y l0 H. simple induction n. simpl in |- *. intro. split with y.
     rewrite (Neqb_correct a). reflexivity.
-    intros. elim (H _ (le_S_n _ _ H1)). intros y0 H2.
+    intros. elim (H _ (le_S_n _ _ H0)). intros y0 H2.
     elim (sumbool_of_bool (Neqb a (alist_nth_ad n0 l0))). intro H3. split with y.
     rewrite (Neqb_complete _ _ H3). simpl in |- *. rewrite (Neqb_correct (alist_nth_ad n0 l0)).
     reflexivity.

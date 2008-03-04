@@ -14,14 +14,14 @@ Unset Strict Implicit.
 
 (** * Ordered types *)
 
-Inductive Compare (X : Set) (lt eq : X -> X -> Prop) (x y : X) : Set :=
+Inductive Compare (X : Type) (lt eq : X -> X -> Prop) (x y : X) : Type :=
   | LT : lt x y -> Compare lt eq x y
   | EQ : eq x y -> Compare lt eq x y
   | GT : lt y x -> Compare lt eq x y.
 
 Module Type OrderedType.
 
-  Parameter Inline t : Set.
+  Parameter Inline t : Type.
 
   Parameter Inline eq : t -> t -> Prop.
   Parameter Inline lt : t -> t -> Prop.
@@ -361,7 +361,7 @@ Module KeyOrderedType(O:OrderedType).
  Import MO.
 
  Section Elt.
- Variable elt : Set.
+ Variable elt : Type.
  Notation key:=t.
 
   Definition eqk (p p':key*elt) := eq (fst p) (fst p').

@@ -22,9 +22,9 @@ Require Import List.
 
 Section MapFoldResults.
 
-  Variable A : Set.
+  Variable A : Type.
 
-  Variable M : Set.
+  Variable M : Type.
   Variable neutral : M.
   Variable op : M -> M -> M.
 
@@ -268,17 +268,17 @@ End MapFoldResults.
 
 Section MapFoldDistr.
 
-  Variable A : Set.
+  Variable A : Type.
 
-  Variable M : Set.
+  Variable M : Type.
   Variable neutral : M.
   Variable op : M -> M -> M.
 
-  Variable M' : Set.
+  Variable M' : Type.
   Variable neutral' : M'.
   Variable op' : M' -> M' -> M'.
 
-  Variable N : Set.
+  Variable N : Type.
 
   Variable times : M -> N -> M'.
 
@@ -309,17 +309,17 @@ End MapFoldDistr.
 
 Section MapFoldDistrL.
 
-  Variable A : Set.
+  Variable A : Type.
 
-  Variable M : Set.
+  Variable M : Type.
   Variable neutral : M.
   Variable op : M -> M -> M.
 
-  Variable M' : Set.
+  Variable M' : Type.
   Variable neutral' : M'.
   Variable op' : M' -> M' -> M'.
 
-  Variable N : Set.
+  Variable N : Type.
 
   Variable times : N -> M -> M'.
 
@@ -341,7 +341,7 @@ End MapFoldDistrL.
 
 Section MapFoldExists.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Lemma MapFold_orb_1 :
    forall (f:ad -> A -> bool) (m:Map A) (pf:ad -> ad),
@@ -373,7 +373,7 @@ End MapFoldExists.
 
 Section DMergeDef.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Definition DMerge :=
     MapFold (Map A) (Map A) (M0 A) (MapMerge A) (fun (_:ad) (m:Map A) => m).

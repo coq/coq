@@ -23,7 +23,7 @@ Set Implicit Arguments.
 
 Section Perm.
 
-Variable A : Set.
+Variable A : Type.
 Variable eqA : relation A.
 Hypothesis eqA_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
 
@@ -198,7 +198,7 @@ Proof.
 Qed.
 
 
-Variable B : Set.
+Variable B : Type.
 Variable eqB : B->B->Prop.
 Variable eqB_dec : forall x y:B, { eqB x y }+{ ~eqB x y }. 
 Variable eqB_trans : forall x y z, eqB x y -> eqB y z -> eqB x z.

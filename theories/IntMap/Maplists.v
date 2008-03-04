@@ -340,7 +340,7 @@ Section MapLists.
 
   Section ListOfDomDef.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Definition ad_list_of_dom :=
     MapFold A (list ad) nil (app (A:=ad)) (fun (a:ad) (_:A) => a :: nil).
@@ -418,7 +418,7 @@ Section MapLists.
   End ListOfDomDef.
 
   Lemma ad_list_of_dom_Dom_1 :
-   forall (A:Set) (m:Map A) (pf:ad -> ad),
+   forall (A:Type) (m:Map A) (pf:ad -> ad),
      MapFold1 A (list ad) nil (app (A:=ad)) (fun (a:ad) (_:A) => a :: nil) pf
        m =
      MapFold1 unit (list ad) nil (app (A:=ad))
@@ -429,7 +429,7 @@ Section MapLists.
   Qed.
 
   Lemma ad_list_of_dom_Dom :
-   forall (A:Set) (m:Map A),
+   forall (A:Type) (m:Map A),
      ad_list_of_dom A m = ad_list_of_dom unit (MapDom A m).
   Proof.
     intros. exact (ad_list_of_dom_Dom_1 A m (fun a0:ad => a0)).

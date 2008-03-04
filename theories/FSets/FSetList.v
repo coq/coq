@@ -1054,7 +1054,7 @@ Module Make (X: OrderedType) <: S with Module E := X.
  Module Raw := Raw X. 
  Module E := X.
 
- Record slist : Set :=  {this :> Raw.t; sorted : sort E.lt this}.
+ Record slist := {this :> Raw.t; sorted : sort E.lt this}.
  Definition t := slist. 
  Definition elt := E.t.
  

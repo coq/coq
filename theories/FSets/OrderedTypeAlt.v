@@ -23,7 +23,7 @@ whereas [compare], defined in [OrderedType.v] is [EQ _ | LT _ | GT _ ]
 
 Module Type OrderedTypeAlt.
 
- Parameter t : Set.
+ Parameter t : Type.
  
  Parameter compare : t -> t -> comparison.
 

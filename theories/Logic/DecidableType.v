@@ -16,7 +16,7 @@ Unset Strict Implicit.
 
 Module Type EqualityType. 
 
-  Parameter Inline t : Set.
+  Parameter Inline t : Type.
 
   Parameter Inline eq : t -> t -> Prop.
 
@@ -33,7 +33,7 @@ End EqualityType.
 
 Module Type DecidableType. 
 
-  Parameter Inline t : Set.
+  Parameter Inline t : Type.
 
   Parameter Inline eq : t -> t -> Prop.
 
@@ -54,7 +54,7 @@ Module KeyDecidableType(D:DecidableType).
  Import D.
 
  Section Elt.
- Variable elt : Set.
+ Variable elt : Type.
  Notation key:=t.
 
   Definition eqk (p p':key*elt) := eq (fst p) (fst p').

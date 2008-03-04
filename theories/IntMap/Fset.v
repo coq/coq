@@ -18,7 +18,7 @@ Require Import Map.
 
 Section Dom.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Fixpoint MapDomRestrTo (m:Map A) : Map B -> Map A :=
     match m with
@@ -229,7 +229,7 @@ End Dom.
 
 Section InDom.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Lemma in_dom_restrto :
    forall (m:Map A) (m':Map B) (a:ad),
@@ -259,7 +259,7 @@ Definition FSet := Map unit.
 
 Section FSetDefs.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Definition in_FSet : ad -> FSet -> bool := in_dom unit.
 

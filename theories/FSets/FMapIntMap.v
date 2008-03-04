@@ -77,7 +77,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   Definition t := Map.
 
   Section A.
-  Variable A:Set.
+  Variable A:Type.
 
   Definition empty : t A := M0 A.
  
@@ -343,7 +343,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
 
   End Spec.
 
-  Variable B : Set.
+  Variable B : Type.
 
   Fixpoint mapi_aux (pf:N->N)(f : N -> A -> B)(m:t A) { struct m }: t B := 
     match m with 
@@ -359,7 +359,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
  
   End A.
 
-  Lemma mapi_aux_1 : forall (elt elt':Set)(m: t elt)(pf:N->N)(x:key)(e:elt)
+  Lemma mapi_aux_1 : forall (elt elt':Type)(m: t elt)(pf:N->N)(x:key)(e:elt)
         (f:key->elt->elt'), MapsTo x e m -> 
         exists y, E.eq y x /\ MapsTo x (f (pf y) e) (mapi_aux pf f m).
   Proof.
@@ -387,14 +387,14 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   rewrite Hy in Hy'; simpl in Hy'; auto.
   Qed.
 
-  Lemma mapi_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)
+  Lemma mapi_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)
         (f:key->elt->elt'), MapsTo x e m -> 
         exists y, E.eq y x /\ MapsTo x (f y e) (mapi f m).
   Proof.
   intros elt elt' m; exact (mapi_aux_1 (fun n => n)).
   Qed.
 
-  Lemma mapi_aux_2 : forall (elt elt':Set)(m: t elt)(pf:N->N)(x:key)
+  Lemma mapi_aux_2 : forall (elt elt':Type)(m: t elt)(pf:N->N)(x:key)
         (f:key->elt->elt'), In x (mapi_aux pf f m) -> In x m.
   Proof.
   unfold In, MapsTo.
@@ -407,20 +407,20 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   destruct x; [|destruct p]; eauto.
   Qed.
 
-  Lemma mapi_2 : forall (elt elt':Set)(m: t elt)(x:key)
+  Lemma mapi_2 : forall (elt elt':Type)(m: t elt)(x:key)
         (f:key->elt->elt'), In x (mapi f m) -> In x m.
   Proof.
   intros elt elt' m; exact (mapi_aux_2 m (fun n => n)).
   Qed.
 
-  Lemma map_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)(f:elt->elt'),
+  Lemma map_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)(f:elt->elt'),
         MapsTo x e m -> MapsTo x (f e) (map f m).
   Proof.
   unfold map; intros.
   destruct (@mapi_1 _ _ m x e (fun _ => f)) as (e',(_,H0)); auto.
   Qed.
 
-  Lemma map_2 : forall (elt elt':Set)(m: t elt)(x:key)(f:elt->elt'), 
+  Lemma map_2 : forall (elt elt':Type)(m: t elt)(x:key)(f:elt->elt'), 
         In x (map f m) -> In x m.
   Proof.
   unfold map; intros.
@@ -433,12 +433,12 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
     Anyway, map2 isn't in Ocaml...
   *)
 
-  Definition anti_elements (A:Set)(l:list (key*A)) := L.fold (@add _) l (empty _).
+  Definition anti_elements (A:Type)(l:list (key*A)) := L.fold (@add _) l (empty _).
 
-  Definition map2 (A B C:Set)(f:option A->option B -> option C)(m:t A)(m':t B) : t C := 
+  Definition map2 (A B C:Type)(f:option A->option B -> option C)(m:t A)(m':t B) : t C := 
     anti_elements (L.map2 f (elements m) (elements m')).
 
-  Lemma add_spec : forall (A:Set)(m:t A) x y e, 
+  Lemma add_spec : forall (A:Type)(m:t A) x y e, 
     find x (add y e m) = if ME.eq_dec x y then Some e else find x m.
   Proof.
   intros.
@@ -457,7 +457,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   apply (@add_3 _ m y x a e); unfold E.eq in *; auto.
   Qed.
   
-  Lemma anti_elements_mapsto_aux : forall (A:Set)(l:list (key*A)) m k e,
+  Lemma anti_elements_mapsto_aux : forall (A:Type)(l:list (key*A)) m k e,
     NoDupA (eq_key (A:=A)) l -> 
     (forall x, L.PX.In x l -> In x m -> False) -> 
     (MapsTo k e (L.fold (@add _) l m) <-> L.PX.MapsTo k e l \/ MapsTo k e m).
@@ -501,7 +501,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   right; apply add_2; unfold E.eq in *; auto.
   Qed.
   
-  Lemma anti_elements_mapsto : forall (A:Set) l k e, NoDupA (eq_key (A:=A)) l ->
+  Lemma anti_elements_mapsto : forall (A:Type) l k e, NoDupA (eq_key (A:=A)) l ->
     (MapsTo k e (anti_elements l) <-> L.PX.MapsTo k e l).
   Proof. 
   intros. 
@@ -513,7 +513,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   inversion H1.
   Qed.
   
-  Lemma find_anti_elements : forall (A:Set)(l: list (key*A)) x, sort (@lt_key _) l -> 
+  Lemma find_anti_elements : forall (A:Type)(l: list (key*A)) x, sort (@lt_key _) l -> 
     find x (anti_elements l) = L.find x l.
   Proof.
   intros.
@@ -530,7 +530,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   apply find_2; auto.
   Qed.
 
-  Lemma find_elements : forall (A:Set)(m: t A) x,  
+  Lemma find_elements : forall (A:Type)(m: t A) x,  
     L.find x (elements m) = find x m.
   Proof. 
   intros.
@@ -546,7 +546,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   apply L.find_2; auto.
   Qed.
   
-  Lemma elements_in : forall (A:Set)(s:t A) x, L.PX.In x (elements s) <-> In x s.
+  Lemma elements_in : forall (A:Type)(s:t A) x, L.PX.In x (elements s) <-> In x s.
   Proof.
    intros.
    unfold L.PX.In, In.
@@ -560,7 +560,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
    rewrite find_elements; auto.
   Qed.
   
-  Lemma map2_1 : forall (A B C:Set)(m: t A)(m': t B)(x:key)
+  Lemma map2_1 : forall (A B C:Type)(m: t A)(m': t B)(x:key)
     (f:option A->option B ->option C), 
     In x m \/ In x m' -> find x (map2 f m m') = f (find x m) (find x m').       
   Proof. 
@@ -577,7 +577,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   apply elements_3; auto.
   Qed.
   
-  Lemma map2_2 : forall (A B C: Set)(m: t A)(m': t B)(x:key)
+  Lemma map2_2 : forall (A B C:Type)(m: t A)(m': t B)(x:key)
       (f:option A->option B ->option C), 
     In x (map2 f m m') -> In x m \/ In x m'.
   Proof.
@@ -597,11 +597,11 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
 
   (** same trick for [equal] *)
 
-  Definition equal (A:Set)(cmp:A -> A -> bool)(m m' : t A) : bool := 
+  Definition equal (A:Type)(cmp:A -> A -> bool)(m m' : t A) : bool := 
     L.equal cmp (elements m) (elements m').
   
   Lemma equal_1 : 
-    forall (A:Set)(m: t A)(m': t A)(cmp: A -> A -> bool), 
+    forall (A:Type)(m: t A)(m': t A)(cmp: A -> A -> bool), 
     Equivb cmp m m' -> equal cmp m m' = true. 
   Proof.
   unfold equal, Equivb, Equiv, Cmp.
@@ -619,7 +619,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   Qed.  
 
   Lemma equal_2 : 
-    forall (A:Set)(m: t A)(m': t A)(cmp: A -> A -> bool), 
+    forall (A:Type)(m: t A)(m': t A)(cmp: A -> A -> bool), 
     equal cmp m m' = true -> Equivb cmp m m'.
   Proof.
   unfold equal, Equivb, Equiv, Cmp.

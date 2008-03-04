@@ -34,7 +34,7 @@ Definition elt := X.t.
 Notation "s #1" := (fst s) (at level 9, format "s '#1'").
 Notation "s #2" := (snd s) (at level 9, format "s '#2'").
 
-Lemma distr_pair : forall (A B:Set)(s:A*B)(a:A)(b:B), s = (a,b) -> 
+Lemma distr_pair : forall (A B:Type)(s:A*B)(a:A)(b:B), s = (a,b) -> 
  s#1 = a /\ s#2 = b.
 Proof.
  destruct s; simpl; injection 1; auto.
@@ -45,7 +45,7 @@ Qed.
 
    The fourth field of [Node] is the height of the tree *)
 
-Inductive tree : Set :=
+Inductive tree :=
   | Leaf : tree
   | Node : tree -> X.t -> tree -> int -> tree.
 
@@ -2092,7 +2092,7 @@ Qed.
 
 (** ** Enumeration of the elements of a tree *)
 
-Inductive enumeration : Set :=
+Inductive enumeration :=
  | End : enumeration
  | More : elt -> tree -> enumeration -> enumeration.
 
@@ -2360,7 +2360,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Module E := X.
  Module Raw := Raw I X. 
 
- Record bbst : Set := Bbst {this :> Raw.t; is_bst : Raw.bst this; is_avl: Raw.avl this}.
+ Record bbst := Bbst {this :> Raw.t; is_bst : Raw.bst this; is_avl: Raw.avl this}.
  Definition t := bbst.
  Definition elt := E.t.
  

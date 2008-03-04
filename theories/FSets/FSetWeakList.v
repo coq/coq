@@ -807,7 +807,7 @@ Module Make (X: DecidableType) <: WS with Module E := X.
  Module Raw := Raw X. 
  Module E := X.
 
- Record slist : Set :=  {this :> Raw.t; unique : NoDupA E.eq this}.
+ Record slist := {this :> Raw.t; unique : NoDupA E.eq this}.
  Definition t := slist. 
  Definition elt := E.t.
  

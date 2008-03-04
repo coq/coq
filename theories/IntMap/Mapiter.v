@@ -19,7 +19,7 @@ Require Import List.
 
 Section MapIter.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Section MapSweepDef.
 
@@ -180,16 +180,16 @@ Section MapIter.
     intro H1. rewrite (M1_semantics_2 _ a a1 a0 H1) in H. discriminate H.
 
     intros. elim (sumbool_of_bool (Nbit0 a)). intro H3.
-    rewrite (MapGet_M2_bit_0_1 _ _ H3 m0 m1) in H1.
-    rewrite <- (Ndiv2_double_plus_one a H3) in H2.
-    elim (H0 (fun a0:ad => pf (Ndouble_plus_one a0)) (Ndiv2 a) y H1 H2). intros a'' H4. elim H4.
+    rewrite (MapGet_M2_bit_0_1 _ _ H3 m0 m1) in H.
+    rewrite <- (Ndiv2_double_plus_one a H3) in H0.
+    elim (X0 (fun a0:ad => pf (Ndouble_plus_one a0)) (Ndiv2 a) y H H0). intros a'' H4. elim H4.
     intros y'' H5. simpl in |- *. elim (option_sum _ (MapSweep1 (fun a:ad => pf (Ndouble a)) m0)).
     intro H6. elim H6. intro r. elim r. intros a''' y''' H7. rewrite H7. split with a'''.
     split with y'''. reflexivity.
     intro H6. rewrite H6. split with a''. split with y''. assumption.
-    intro H3. rewrite (MapGet_M2_bit_0_0 _ _ H3 m0 m1) in H1.
-    rewrite <- (Ndiv2_double a H3) in H2.
-    elim (H (fun a0:ad => pf (Ndouble a0)) (Ndiv2 a) y H1 H2). intros a'' H4. elim H4.
+    intro H3. rewrite (MapGet_M2_bit_0_0 _ _ H3 m0 m1) in H.
+    rewrite <- (Ndiv2_double a H3) in H0.
+    elim (X (fun a0:ad => pf (Ndouble a0)) (Ndiv2 a) y H H0). intros a'' H4. elim H4.
     intros y'' H5. split with a''. split with y''. simpl in |- *. rewrite H5. reflexivity.
   Qed.
 
@@ -203,7 +203,7 @@ Section MapIter.
 
   End MapSweepDef.
 
-  Variable B : Set.
+  Variable B : Type.
 
   Fixpoint MapCollect1 (f:ad -> A -> Map B) (pf:ad -> ad) 
    (m:Map A) {struct m} : Map B :=
@@ -220,7 +220,7 @@ Section MapIter.
 
   Section MapFoldDef.
 
-    Variable M : Set.
+    Variable M : Type.
     Variable neutral : M.
     Variable op : M -> M -> M.
 
@@ -248,7 +248,7 @@ Section MapIter.
       trivial.
     Qed.
 
-    Variable State : Set.
+    Variable State : Type.
     Variable f : State -> ad -> A -> State * M.
 
     Fixpoint MapFold1_state (state:State) (pf:ad -> ad) 
@@ -271,7 +271,7 @@ Section MapIter.
     Definition MapFold_state (state:State) :=
       MapFold1_state state (fun a:ad => a).
 
-    Lemma pair_sp : forall (B C:Set) (x:B * C), x = (fst x, snd x).
+    Lemma pair_sp : forall (B C:Type) (x:B * C), x = (fst x, snd x).
     Proof.
       simple induction x. trivial.
     Qed.
@@ -364,23 +364,23 @@ Section MapIter.
             (fun a0:ad => pf (Ndouble a0)) m0)
          (MapFold1 alist anil aapp (fun (a0:ad) (y:A) => acons (a0, y) anil)
             (fun a0:ad => pf (Ndouble_plus_one a0)) m1)) a = 
-    Some y) in H1.
+    Some y) in H.
     rewrite
      (alist_semantics_app
         (MapFold1 alist anil aapp (fun (a0:ad) (y0:A) => acons (a0, y0) anil)
            (fun a0:ad => pf (Ndouble a0)) m0)
         (MapFold1 alist anil aapp (fun (a0:ad) (y0:A) => acons (a0, y0) anil)
            (fun a0:ad => pf (Ndouble_plus_one a0)) m1) a)
-      in H1.
+      in H.
     elim
      (option_sum A
         (alist_semantics
            (MapFold1 alist anil aapp
               (fun (a0:ad) (y0:A) => acons (a0, y0) anil)
               (fun a0:ad => pf (Ndouble a0)) m0) a)).
-    intro H2. elim H2. intros y0 H3. elim (H (fun a0:ad => pf (Ndouble a0)) a y0 H3). intros a0 H4.
+    intro H2. elim H2. intros y0 H3. elim (X (fun a0:ad => pf (Ndouble a0)) a y0 H3). intros a0 H4.
     split with (Ndouble a0). assumption.
-    intro H2. rewrite H2 in H1. elim (H0 (fun a0:ad => pf (Ndouble_plus_one a0)) a y H1).
+    intro H2. rewrite H2 in H. elim (X0 (fun a0:ad => pf (Ndouble_plus_one a0)) a y H).
     intros a0 H3. split with (Ndouble_plus_one a0). assumption.
   Qed.
 
@@ -516,7 +516,7 @@ Section MapIter.
   Qed.
 
   Lemma fold_right_aapp :
-   forall (M:Set) (neutral:M) (op:M -> M -> M),
+   forall (M:Type) (neutral:M) (op:M -> M -> M),
      (forall a b c:M, op (op a b) c = op a (op b c)) ->
      (forall a:M, op neutral a = a) ->
      forall (f:ad -> A -> M) (l l':alist),
@@ -535,7 +535,7 @@ Section MapIter.
   Qed.
 
   Lemma MapFold_as_fold_1 :
-   forall (M:Set) (neutral:M) (op:M -> M -> M),
+   forall (M:Type) (neutral:M) (op:M -> M -> M),
      (forall a b c:M, op (op a b) c = op a (op b c)) ->
      (forall a:M, op neutral a = a) ->
      (forall a:M, op a neutral = a) ->
@@ -554,7 +554,7 @@ Section MapIter.
   Qed.
 
   Lemma MapFold_as_fold :
-   forall (M:Set) (neutral:M) (op:M -> M -> M),
+   forall (M:Type) (neutral:M) (op:M -> M -> M),
      (forall a b c:M, op (op a b) c = op a (op b c)) ->
      (forall a:M, op neutral a = a) ->
      (forall a:M, op a neutral = a) ->

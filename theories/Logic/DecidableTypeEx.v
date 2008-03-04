@@ -18,7 +18,7 @@ Unset Strict Implicit.
     the equality is the usual one of Coq. *)
 
 Module Type UsualDecidableType.
- Parameter Inline t : Set.
+ Parameter Inline t : Type.
  Definition eq := @eq t.
  Definition eq_refl := @refl_equal t.
  Definition eq_sym := @sym_eq t.
@@ -33,7 +33,7 @@ Module UDT_to_DT (U:UsualDecidableType) <: DecidableType := U.
 (** an shortcut for easily building a UsualDecidableType *)
 
 Module Type MiniDecidableType. 
- Parameter Inline t : Set.
+ Parameter Inline t : Type.
  Parameter eq_dec : forall x y:t, { x=y }+{ x<>y }.
 End MiniDecidableType. 
 

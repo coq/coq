@@ -52,7 +52,7 @@ Module Type WSfun (E : EqualityType).
 
   Definition elt := E.t.
 
-  Parameter t : Set. (** the abstract type of sets *)
+  Parameter t : Type. (** the abstract type of sets *)
 
   (** Logical predicates *)
   Parameter In : elt -> t -> Prop.
@@ -386,7 +386,7 @@ Module Type Sdep.
   Declare Module E : OrderedType.
   Definition elt := E.t.
 
-  Parameter t : Set.
+  Parameter t : Type.
 
   Parameter In : elt -> t -> Prop.
   Definition Equal s s' := forall a : elt, In a s <-> In a s'.

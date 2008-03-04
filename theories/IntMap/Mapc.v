@@ -23,7 +23,7 @@ Require Import Mapcanon.
 
 Section MapC.
 
-  Variables A B C : Set.
+  Variables A B C : Type.
 
   Lemma MapPut_as_Merge_c :
    forall m:Map A,

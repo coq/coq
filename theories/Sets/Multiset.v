@@ -16,11 +16,11 @@ Set Implicit Arguments.
 
 Section multiset_defs.
 
-  Variable A : Set.
+  Variable A : Type.
   Variable eqA : A -> A -> Prop.
   Hypothesis Aeq_dec : forall x y:A, {eqA x y} + {~ eqA x y}.
 
-  Inductive multiset : Set :=
+  Inductive multiset : Type :=
     Bag : (A -> nat) -> multiset.
   
   Definition EmptyBag := Bag (fun a:A => 0).

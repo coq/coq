@@ -33,7 +33,7 @@ Definition key := X.t.
 Notation "s #1" := (fst s) (at level 9, format "s '#1'").
 Notation "s #2" := (snd s) (at level 9, format "s '#2'").
 
-Lemma distr_pair : forall (A B:Set)(s:A*B)(a:A)(b:B), s = (a,b) -> 
+Lemma distr_pair : forall (A B:Type)(s:A*B)(a:A)(b:B), s = (a,b) -> 
  s#1 = a /\ s#2 = b.
 Proof.
  destruct s; simpl; injection 1; auto.
@@ -44,13 +44,13 @@ Qed.
 
 Section Elt.
 
-Variable elt : Set.
+Variable elt : Type.
 
 (** * Trees
 
    The fifth field of [Node] is the height of the tree *)
 
-Inductive tree  : Set :=
+Inductive tree :=
   | Leaf : tree
   | Node : tree -> key -> elt -> tree -> int -> tree.
 
@@ -403,7 +403,7 @@ Qed.
 (** [bal l x e r] acts as [create], but performs one step of
     rebalancing if necessary, i.e. assumes [|height l - height r| <= 3]. *)
 
-Function bal (elt:Set)(l: t elt)(x:key)(e:elt)(r:t elt) : t elt := 
+Function bal (elt:Type)(l: t elt)(x:key)(e:elt)(r:t elt) : t elt := 
   let hl := height l in 
   let hr := height r in
   if gt_le_dec hl (hr+2) then 
@@ -495,7 +495,7 @@ Ltac omega_bal := match goal with
 
 (** * Insertion *)
 
-Function add (elt:Set)(x:key)(e:elt)(s:t elt) { struct s } : t elt := 
+Function add (elt:Type)(x:key)(e:elt)(s:t elt) { struct s } : t elt := 
   match s with 
    | Leaf => Node (Leaf _) x e (Leaf _) 1
    | Node l y e' r h => 
@@ -602,7 +602,7 @@ Qed.
   for [t=Leaf], we pre-unpack [t] (and forget about [h]). 
 *)
  
-Function remove_min (elt:Set)(l:t elt)(x:key)(e:elt)(r:t elt) { struct l } : t elt*(key*elt) := 
+Function remove_min (elt:Type)(l:t elt)(x:key)(e:elt)(r:t elt) { struct l } : t elt*(key*elt) := 
   match l with 
     | Leaf => (r,(x,e))
     | Node ll lx le lr lh => let (l',m) := (remove_min ll lx le lr : t elt*(key*elt)) in (bal l' x e r, m)
@@ -709,7 +709,7 @@ Qed.
   [|height t1 - height t2| <= 2].
 *)
 
-Function merge (elt:Set) (s1 s2 : t elt) : tree elt :=  match s1,s2 with 
+Function merge (elt:Type) (s1 s2 : t elt) : tree elt :=  match s1,s2 with 
   | Leaf, _ => s2 
   | _, Leaf => s1
   | _, Node l2 x2 e2 r2 h2 => 
@@ -793,7 +793,7 @@ Qed.
 
 (** * Deletion *)
 
-Function remove (elt:Set)(x:key)(s:t elt) { struct s } : t elt := match s with 
+Function remove (elt:Type)(x:key)(s:t elt) { struct s } : t elt := match s with 
   | Leaf => Leaf _
   | Node l y e r h =>
       match X.compare x y with
@@ -903,7 +903,7 @@ Qed.
 
 Section Elt2.
 
-Variable elt:Set.
+Variable elt:Type.
 
 Notation eqk := (PX.eqk (elt:= elt)).
 Notation eqke := (PX.eqke (elt:= elt)).
@@ -1173,7 +1173,7 @@ Definition Equivb (cmp:elt->elt->bool) m m' :=
 
 (** ** Enumeration of the elements of a tree *)
 
-Inductive enumeration : Set :=
+Inductive enumeration :=
  | End : enumeration
  | More : key -> elt -> t elt -> enumeration -> enumeration.
 
@@ -1392,7 +1392,7 @@ End Elt2.
 
 Section Elts. 
 
-Variable elt elt' elt'' : Set.
+Variable elt elt' elt'' : Type.
 
 Section Map. 
 Variable f : elt -> elt'. 
@@ -1588,7 +1588,7 @@ Proof.
 unfold map2; intros; apply anti_elements_bst; auto.
 Qed.
 
-Lemma find_elements : forall (elt:Set)(m: t elt) x, bst m -> 
+Lemma find_elements : forall (elt:Type)(m: t elt) x, bst m -> 
   L.find x (elements m) = find x m.
 Proof. 
 intros.
@@ -1672,14 +1672,14 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Module E := X.
  Module Raw := Raw I X. 
 
- Record bbst (elt:Set) : Set := 
+ Record bbst (elt:Type) := 
   Bbst {this :> Raw.tree elt; is_bst : Raw.bst this; is_avl: Raw.avl this}.
  
  Definition t := bbst. 
  Definition key := E.t.
  
  Section Elt. 
- Variable elt elt' elt'': Set.
+ Variable elt elt' elt'': Type.
 
  Implicit Types m : t elt.
  Implicit Types x y : key. 
@@ -1814,27 +1814,27 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  End Elt.
 
- Lemma map_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
+ Lemma map_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)(f:elt->elt'), 
         MapsTo x e m -> MapsTo x (f e) (map f m).
  Proof. intros elt elt' m x e f; exact (@Raw.map_1 elt elt' f m.(this) x e). Qed.
 
- Lemma map_2 : forall (elt elt':Set)(m:t elt)(x:key)(f:elt->elt'), In x (map f m) -> In x m.
+ Lemma map_2 : forall (elt elt':Type)(m:t elt)(x:key)(f:elt->elt'), In x (map f m) -> In x m.
  Proof.
  intros elt elt' m x f; do 2 unfold In in *; do 2 rewrite Raw.In_alt; simpl.
  apply Raw.map_2; auto.
  Qed. 
 
- Lemma mapi_1 : forall (elt elt':Set)(m: t elt)(x:key)(e:elt)
+ Lemma mapi_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)
         (f:key->elt->elt'), MapsTo x e m -> 
         exists y, E.eq y x /\ MapsTo x (f y e) (mapi f m).
  Proof. intros elt elt' m x e f; exact (@Raw.mapi_1 elt elt' f m.(this) x e). Qed.
- Lemma mapi_2 : forall (elt elt':Set)(m: t elt)(x:key)
+ Lemma mapi_2 : forall (elt elt':Type)(m: t elt)(x:key)
         (f:key->elt->elt'), In x (mapi f m) -> In x m.
  Proof.
  intros elt elt' m x f; unfold In in *; do 2 rewrite Raw.In_alt; simpl; apply Raw.mapi_2; auto.
  Qed. 
 
- Lemma map2_1 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
+ Lemma map2_1 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
     (x:key)(f:option elt->option elt'->option elt''), 
     In x m \/ In x m' -> 
     find x (map2 f m m') = f (find x m) (find x m'). 
@@ -1845,7 +1845,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  apply m'.(is_bst).
  Qed.
 
- Lemma map2_2 : forall (elt elt' elt'':Set)(m: t elt)(m': t elt')
+ Lemma map2_2 : forall (elt elt' elt'':Type)(m: t elt)(m': t elt')
      (x:key)(f:option elt->option elt'->option elt''), 
      In x (map2 f m m') -> In x m \/ In x m'.
  Proof. 

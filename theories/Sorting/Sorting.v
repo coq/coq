@@ -17,7 +17,7 @@ Set Implicit Arguments.
 
 Section defs.
 
-  Variable A : Set.
+  Variable A : Type.
   Variable leA : relation A.
   Variable eqA : relation A.
 
@@ -59,6 +59,16 @@ Section defs.
     intros; inversion H; auto with datatypes.
   Qed.
 
+  Lemma sort_rect :
+    forall P:list A -> Type,
+      P nil ->
+      (forall (a:A) (l:list A), sort l -> P l -> lelistA a l -> P (a :: l)) ->
+      forall y:list A, sort y -> P y.
+  Proof.
+    simple induction y; auto with datatypes.
+    intros; elim (sort_inv (a:=a) (l:=l)); auto with datatypes.
+  Qed.
+
   Lemma sort_rec :
     forall P:list A -> Set,
       P nil ->
@@ -71,7 +81,7 @@ Section defs.
 
   (** * Merging two sorted lists *)
 
-  Inductive merge_lem (l1 l2:list A) : Set :=
+  Inductive merge_lem (l1 l2:list A) : Type :=
     merge_exist :
     forall l:list A,
       sort l ->
@@ -85,7 +95,7 @@ Section defs.
   Proof.
     simple induction 1; intros.
     apply merge_exist with l2; auto with datatypes.
-    elim H3; intros.
+    elim H2; intros.
     apply merge_exist with (a :: l); simpl in |- *; auto using cons_sort with datatypes.
     elim (leA_dec a a0); intros.
 
@@ -104,7 +114,7 @@ Section defs.
     apply lelistA_inv with l; trivial with datatypes.
 
     (* 2 (leA a0 a) *)
-    elim H5; simpl in |- *; intros.
+    elim X0; simpl in |- *; intros.
     apply merge_exist with (a0 :: l3); simpl in |- *; 
       auto using cons_sort, cons_leA with datatypes.
     apply meq_trans with

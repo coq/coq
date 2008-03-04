@@ -24,7 +24,7 @@ Require Import Mapcard.
 
 Section MapCanon.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Inductive mapcanon : Map A -> Prop :=
     | M0_canon : mapcanon (M0 A)
@@ -277,7 +277,7 @@ Section MapCanon.
     exact (mapcanon_M2_2 _ _ H4).
   Qed.
 
-  Variable B : Set.
+  Variable B : Type.
 
   Lemma MapDomRestrTo_canon :
    forall m:Map A,
@@ -337,7 +337,7 @@ End MapCanon.
 
 Section FSetCanon.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Lemma MapDom_canon :
    forall m:Map A, mapcanon A m -> mapcanon unit (MapDom A m).
@@ -354,7 +354,7 @@ End FSetCanon.
 
 Section MapFoldCanon.
 
-  Variables A B : Set.
+  Variables A B : Type.
 
   Lemma MapFold_canon_1 :
    forall m0:Map B,

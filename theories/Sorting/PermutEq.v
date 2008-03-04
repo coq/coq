@@ -25,7 +25,7 @@ Set Implicit Arguments.
 
 Section Perm.
   
-  Variable A : Set.
+  Variable A : Type.
   Hypothesis eq_dec : forall x y:A, {x=y} + {~ x=y}.
   
   Notation permutation := (permutation _ eq_dec).
@@ -214,7 +214,7 @@ Section Perm.
     apply permut_remove_hd with a; auto.
   Qed.
 
-  Variable B : Set.
+  Variable B : Type.
   Variable eqB_dec : forall x y:B, { x=y }+{ ~x=y }. 
 
   (** Permutation is compatible with map. *)
