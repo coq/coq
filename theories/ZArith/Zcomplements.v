@@ -160,7 +160,7 @@ Qed.
 
 Require Import List.
 
-Fixpoint Zlength_aux (acc:Z) (A:Set) (l:list A) {struct l} : Z :=
+Fixpoint Zlength_aux (acc:Z) (A:Type) (l:list A) {struct l} : Z :=
   match l with
     | nil => acc
     | _ :: l => Zlength_aux (Zsucc acc) A l
@@ -171,7 +171,7 @@ Implicit Arguments Zlength [A].
 
 Section Zlength_properties.
 
-  Variable A : Set.
+  Variable A : Type.
 
   Implicit Type l : list A.
 
