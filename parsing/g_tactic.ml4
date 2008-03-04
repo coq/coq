@@ -331,10 +331,10 @@ GEXTEND Gram
     (* hack for allowing "rewrite ?t" and "rewrite NN?t" that normally 
        produce a pattern_ident *)
       | c = pattern_ident -> 
-	  let c = (CRef (Libnames.Ident (dummy_loc,c)), NoBindings) in  
+	  let c = (CRef (Libnames.Ident (loc,c)), NoBindings) in  
 	  (RepeatStar, c)
       | n = natural; c = pattern_ident -> 
-	  let c = (CRef (Libnames.Ident (dummy_loc,c)), NoBindings) in  
+	  let c = (CRef (Libnames.Ident (loc,c)), NoBindings) in  
 	  (UpTo n, c)
       ] ]
   ;
