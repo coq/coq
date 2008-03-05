@@ -17,18 +17,6 @@ open Mod_subst
 
 (*s Functions upon modules missing in [Modops]. *) 
 
-(* Add _all_ direct subobjects of a module, not only those exported. 
-   Build on the [Modops.add_signature] model. *)
-
-val add_structure : module_path -> structure_body -> env -> env 
-
-(* Apply a module path substitution on a module.
-   Build on the [Modops.subst_modtype] model. *)
-
-val subst_module : substitution -> module_body -> module_body 
-val subst_meb : substitution -> struct_expr_body -> struct_expr_body
-val subst_msb : substitution -> structure_body -> structure_body
-
 (* Change a msid in a module type, to follow a module expr. *)
 
 val replicate_msid : struct_expr_body -> struct_expr_body -> struct_expr_body

@@ -28,6 +28,7 @@ val destr_functor :
   env -> struct_expr_body -> mod_bound_id * struct_expr_body * struct_expr_body
 
 val subst_modtype : substitution -> struct_expr_body -> struct_expr_body
+val subst_structure : substitution -> structure_body -> structure_body
 
 val subst_signature_msid :
   mod_self_id -> module_path -> 
