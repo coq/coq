@@ -230,7 +230,8 @@ let unify_0_with_initial_metas metas is_subterm env sigma cv_pb flags m n =
 
   in
     if (not(occur_meta m)) &&
-      (if flags.modulo_conv then is_fconv (conv_pb_of cv_pb) env sigma m n
+      (if flags.modulo_conv_on_closed_terms
+       then is_fconv (conv_pb_of cv_pb) env sigma m n
        else eq_constr m n)
     then 
       (metas,[])
