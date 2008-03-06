@@ -125,7 +125,7 @@ Module Raw (X: DecidableType).
   Lemma In_eq :
     forall (s : t) (x y : elt), X.eq x y -> In x s -> In y s.
   Proof.
-  intros s x y; do 2 setoid_rewrite InA_alt; firstorder eauto.
+  intros s x y; setoid_rewrite InA_alt; firstorder eauto.
   Qed.
   Hint Immediate In_eq.
 

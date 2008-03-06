@@ -743,7 +743,7 @@ INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) $(INTEGE
 
 NUMBERSVO:= $(NUMBERSCOMMONVO) $(NATURALVO) $(INTEGERVO) $(NATINTVO)
 
-SETOIDSVO:= theories/Setoids/Setoid_tac.vo theories/Setoids/Setoid_Prop.vo theories/Setoids/Setoid.vo
+SETOIDSVO:= theories/Setoids/Setoid.vo # theories/Setoids/Setoid_tac.vo theories/Setoids/Setoid_Prop.vo
 
 UNICODEVO:= theories/Unicode/Utf8.vo
 

@@ -10,8 +10,8 @@
 
 Set Implicit Arguments.
 
-Require Export Setoid_tac.
-Require Export Setoid_Prop.
+Require Export Coq.Classes.Equivalence.
+Require Export Coq.Relations.Relation_Definitions.
 
 (** For backward compatibility *)
 

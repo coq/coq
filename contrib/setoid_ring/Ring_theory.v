@@ -59,8 +59,7 @@ Section Power.
   induction j;simpl.
   rewrite IHj.
   rewrite (mul_comm x (pow_pos x j *pow_pos x j)).
-  set (w:= x*pow_pos x j);unfold w at 2.
-  rewrite (mul_comm x (pow_pos x j));unfold w.
+  setoid_rewrite (mul_comm x (pow_pos x j)) at 2.
   repeat rewrite mul_assoc. apply (Seq_refl _ _ Rsth).
   repeat rewrite mul_assoc. apply (Seq_refl _ _ Rsth).
   apply (Seq_refl _ _ Rsth).

@@ -143,7 +143,7 @@ Hypothesis A0 : A 0.
 Hypothesis AS : forall n : NZ, A n <-> A (S n). (* Below, we use only -> direction *)
 
 Add Morphism A with signature NZeq ==> iff as A_morph.
-Proof A_wd.
+Proof. apply A_wd. Qed.
 
 Let B (n : Z) := A (Z_to_NZ n).
 

@@ -407,7 +407,7 @@ Variable R : N -> N -> Prop.
 Hypothesis R_wd : relation_wd Neq Neq R.
 
 Add Morphism R with signature Neq ==> Neq ==> iff as R_morph2.
-Proof R_wd.
+Proof. apply R_wd. Qed.
 
 Theorem le_ind_rel :
    (forall m : N, R 0 m) ->

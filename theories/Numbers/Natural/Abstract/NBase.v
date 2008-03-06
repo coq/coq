@@ -81,7 +81,7 @@ function (by recursion) that maps 0 to false and the successor to true *)
 Definition if_zero (A : Set) (a b : A) (n : N) : A :=
   recursion a (fun _ _ => b) n.
 
-Add Morphism if_zero with signature @eq ==> @eq ==> Neq ==> @eq as if_zero_wd.
+Add Morphism (if_zero A) with signature (eq ==> eq ==> Neq ==> eq) as if_zero_wd.
 Proof.
 intros; unfold if_zero. apply recursion_wd with (Aeq := (@eq A)).
 reflexivity. unfold fun2_eq; now intros. assumption.

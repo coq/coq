@@ -2017,7 +2017,3 @@ let setoid_transitivity c gl =
   Optimize -> transitivity_red true c gl
 ;;
 
-Tactics.register_setoid_reflexivity setoid_reflexivity;;
-Tactics.register_setoid_symmetry setoid_symmetry;;
-Tactics.register_setoid_symmetry_in setoid_symmetry_in;;
-Tactics.register_setoid_transitivity setoid_transitivity;;

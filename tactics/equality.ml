@@ -51,10 +51,6 @@ open Indrec
    -- Eduardo (19/8/97)
 *)
 
-let general_s_rewrite_clause = function
-  | None -> general_s_rewrite
-  | Some id -> general_s_rewrite_in id
-
 (* Ad hoc asymmetric general_elim_clause *)
 let general_elim_clause with_evars cls c elim = match cls with
   | None ->
@@ -81,6 +77,13 @@ let elimination_sort_of_clause = function
    else back to the old approach
 *)
 
+let general_s_rewrite_clause = function
+  | None -> general_s_rewrite
+  | Some id -> general_s_rewrite_in id
+
+let general_setoid_rewrite_clause = ref general_s_rewrite_clause
+let register_general_setoid_rewrite_clause = (:=) general_setoid_rewrite_clause
+
 let general_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl =
   let ctype = pf_apply get_type_of gl c in 
   (* A delta-reduction would be here too strong, since it would 
@@ -88,7 +91,7 @@ let general_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl =
   let t = snd (decompose_prod (whd_betaiotazeta ctype)) in 
   let head = if isApp t then fst (destApp t) else t in 
     if relation_table_mem head && l = NoBindings then 
-      general_s_rewrite_clause cls lft2rgt c [] gl
+      !general_setoid_rewrite_clause cls lft2rgt c [] gl
     else 
       (* Original code. In particular, [splay_prod] performs delta-reduction. *)
       let env = pf_env gl in
@@ -97,7 +100,7 @@ let general_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl =
 	match match_with_equation t with
 	  | None -> 
 	      if l = NoBindings
-	      then general_s_rewrite_clause cls lft2rgt c [] gl
+	      then !general_setoid_rewrite_clause cls lft2rgt c [] gl
 	      else error "The term provided does not end with an equation" 
 	  | Some (hdcncl,_) -> 
               let hdcncls = string_of_inductive hdcncl in 
@@ -109,7 +112,13 @@ let general_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl =
 		with Not_found ->
 		  error ("Cannot find rewrite principle "^rwr_thm)
               in 
-		general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
+		try general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
+		with e -> 
+		  let eq = build_coq_eq () in
+		    if not (eq_constr eq head) then
+		      try !general_setoid_rewrite_clause cls lft2rgt c [] gl
+		      with _ -> raise e
+		    else raise e
 
 let general_rewrite_ebindings = 
   general_rewrite_ebindings_clause None

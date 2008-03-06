@@ -148,15 +148,15 @@ intros R1 R2 R3 H1 H2 x y; rewrite H1; apply H2.
 now symmetry.
 Qed.
 
-Add Relation (fun A B : Type => A -> B -> Prop) relations_eq
-  reflexivity proved by (fun A B : Type => proj1 (relations_eq_equiv A B))
-  symmetry proved by (fun A B : Type => proj2 (proj2 (relations_eq_equiv A B)))
-  transitivity proved by (fun A B : Type => proj1 (proj2 (relations_eq_equiv A B)))
+Add Relation (A -> B -> Prop) (@relations_eq A B)
+  reflexivity proved by (proj1 (relations_eq_equiv A B))
+  symmetry proved by (proj2 (proj2 (relations_eq_equiv A B)))
+  transitivity proved by (proj1 (proj2 (relations_eq_equiv A B)))
 as relations_eq_rel.
 
-Add Morphism well_founded with signature relations_eq ==> iff as well_founded_wd.
+Add Morphism (@well_founded A) with signature (@relations_eq A A) ==> iff as well_founded_wd.
 Proof.
-unfold relations_eq, well_founded; intros A R1 R2 H;
+unfold relations_eq, well_founded; intros R1 R2 H;
 split; intros H1 a; induction (H1 a) as [x H2 H3]; constructor;
 intros y H4; apply H3; [now apply <- H | now apply -> H].
 Qed.

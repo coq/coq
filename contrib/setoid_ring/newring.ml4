@@ -201,7 +201,8 @@ let constr_of = function
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];
    ["Coq";"Lists";"List"];
-   ["Coq";"Init";"Datatypes"]
+   ["Coq";"Init";"Datatypes"];
+   ["Coq";"Init";"Logic"];
   ]
 
 let coq_constant c =
@@ -212,6 +213,7 @@ let coq_cons = coq_constant "cons"
 let coq_nil = coq_constant "nil"
 let coq_None = coq_constant "None"
 let coq_Some = coq_constant "Some"
+let coq_eq = coq_constant "eq"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
@@ -448,10 +450,12 @@ let (theory_to_obj, obj_to_theory) =
       export_function = export_th }
 
 
-let setoid_of_relation r =
+let setoid_of_relation env a r =
   lapp coq_mk_Setoid
-    [|r.rel_a; r.rel_aeq;
-      Option.get r.rel_refl; Option.get r.rel_sym; Option.get r.rel_trans |]
+    [|a ; r ; 
+      Class_tactics.reflexive_proof env a r ; 
+      Class_tactics.symmetric_proof env a r ; 
+      Class_tactics.transitive_proof env a r |]
 
 let op_morph r add mul opp req m1 m2 m3 =
   lapp coq_mk_reqe [| r; add; mul; opp; req; m1; m2; m3 |]
@@ -459,63 +463,108 @@ let op_morph r add mul opp req m1 m2 m3 =
 let op_smorph r add mul req m1 m2 =
   lapp coq_mk_seqe [| r; add; mul; req; m1; m2 |]
 
-let default_ring_equality (r,add,mul,opp,req) =
-  let is_setoid = function
-      {rel_refl=Some _; rel_sym=Some _;rel_trans=Some _;rel_aeq=rel} ->
-        eq_constr req rel (* Qu: use conversion ? *)
-    | _ -> false in
-  match default_relation_for_carrier ~filter:is_setoid r with
-      Leibniz _ ->
-        let setoid = lapp coq_eq_setoid [|r|] in
-        let op_morph =
-          match opp with
+(* let default_ring_equality (r,add,mul,opp,req) = *)
+(*   let is_setoid = function *)
+(*       {rel_refl=Some _; rel_sym=Some _;rel_trans=Some _;rel_aeq=rel} -> *)
+(*         eq_constr req rel (\* Qu: use conversion ? *\) *)
+(*     | _ -> false in *)
+(*   match default_relation_for_carrier ~filter:is_setoid r with *)
+(*       Leibniz _ -> *)
+(*         let setoid = lapp coq_eq_setoid [|r|] in *)
+(*         let op_morph = *)
+(*           match opp with *)
+(*               Some opp -> lapp coq_eq_morph [|r;add;mul;opp|] *)
+(*             | None -> lapp coq_eq_smorph [|r;add;mul|] in *)
+(*         (setoid,op_morph) *)
+(*     | Relation rel -> *)
+(*         let setoid = setoid_of_relation rel in *)
+(*         let is_endomorphism = function *)
+(*             { args=args } -> List.for_all *)
+(*                 (function (var,Relation rel) -> *)
+(*                   var=None && eq_constr req rel *)
+(*                   | _ -> false) args in *)
+(*         let add_m = *)
+(*           try default_morphism ~filter:is_endomorphism add *)
+(*           with Not_found -> *)
+(*             error "ring addition should be declared as a morphism" in *)
+(*         let mul_m = *)
+(*           try default_morphism ~filter:is_endomorphism mul *)
+(*           with Not_found -> *)
+(*             error "ring multiplication should be declared as a morphism" in *)
+(*         let op_morph = *)
+(*           match opp with *)
+(*             | Some opp -> *)
+(*             (let opp_m = *)
+(*               try default_morphism ~filter:is_endomorphism opp *)
+(*               with Not_found -> *)
+(*                 error "ring opposite should be declared as a morphism" in *)
+(*              let op_morph = *)
+(*                op_morph r add mul opp req add_m.lem mul_m.lem opp_m.lem in *)
+(*              msgnl *)
+(*                (str"Using setoid \""++pr_constr rel.rel_aeq++str"\""++spc()++   *)
+(*                str"and morphisms \""++pr_constr add_m.morphism_theory++ *)
+(*                str"\","++spc()++ str"\""++pr_constr mul_m.morphism_theory++ *)
+(*                str"\""++spc()++str"and \""++pr_constr opp_m.morphism_theory++ *)
+(*                str"\""); *)
+(*              op_morph) *)
+(*             | None -> *)
+(*             (msgnl *)
+(*               (str"Using setoid \""++pr_constr rel.rel_aeq++str"\"" ++ spc() ++   *)
+(*                str"and morphisms \""++pr_constr add_m.morphism_theory++ *)
+(*                str"\""++spc()++str"and \""++ *)
+(*                pr_constr mul_m.morphism_theory++str"\""); *)
+(*             op_smorph r add mul req add_m.lem mul_m.lem) in *)
+(*         (setoid,op_morph) *)
+
+let ring_equality (r,add,mul,opp,req) =
+  match kind_of_term req with
+    | App (f, [| _ |]) when eq_constr f (Lazy.force coq_eq) ->
+	let setoid = lapp coq_eq_setoid [|r|] in
+	let op_morph =
+	  match opp with
               Some opp -> lapp coq_eq_morph [|r;add;mul;opp|]
             | None -> lapp coq_eq_smorph [|r;add;mul|] in
-        (setoid,op_morph)
-    | Relation rel ->
-        let setoid = setoid_of_relation rel in
-        let is_endomorphism = function
-            { args=args } -> List.for_all
-                (function (var,Relation rel) ->
-                  var=None && eq_constr req rel
-                  | _ -> false) args in
-        let add_m =
-          try default_morphism ~filter:is_endomorphism add
+	  (setoid,op_morph)
+    | _ ->
+	let setoid = setoid_of_relation (Global.env ()) r req in
+	let signature = [Some (r,req);Some (r,req);Some(r,req)] in
+	let add_m, add_m_lem =
+	  try Class_tactics.default_morphism signature add
           with Not_found ->
             error "ring addition should be declared as a morphism" in
-        let mul_m =
-          try default_morphism ~filter:is_endomorphism mul
+	let mul_m, mul_m_lem =
+          try Class_tactics.default_morphism signature mul
           with Not_found ->
             error "ring multiplication should be declared as a morphism" in
         let op_morph =
           match opp with
             | Some opp ->
-            (let opp_m =
-              try default_morphism ~filter:is_endomorphism opp
-              with Not_found ->
-                error "ring opposite should be declared as a morphism" in
-             let op_morph =
-               op_morph r add mul opp req add_m.lem mul_m.lem opp_m.lem in
-             msgnl
-               (str"Using setoid \""++pr_constr rel.rel_aeq++str"\""++spc()++  
-               str"and morphisms \""++pr_constr add_m.morphism_theory++
-               str"\","++spc()++ str"\""++pr_constr mul_m.morphism_theory++
-               str"\""++spc()++str"and \""++pr_constr opp_m.morphism_theory++
-               str"\"");
-             op_morph)
+		(let opp_m,opp_m_lem =
+		  try Class_tactics.default_morphism (List.tl signature) opp
+		  with Not_found ->
+                    error "ring opposite should be declared as a morphism" in
+		let op_morph =
+		  op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
+		  msgnl
+		    (str"Using setoid \""++pr_constr req++str"\""++spc()++  
+			str"and morphisms \""++pr_constr add_m ++
+			str"\","++spc()++ str"\""++pr_constr mul_m++
+			str"\""++spc()++str"and \""++pr_constr opp_m++
+			str"\"");
+		  op_morph)
             | None ->
-            (msgnl
-              (str"Using setoid \""++pr_constr rel.rel_aeq++str"\"" ++ spc() ++  
-               str"and morphisms \""++pr_constr add_m.morphism_theory++
-               str"\""++spc()++str"and \""++
-               pr_constr mul_m.morphism_theory++str"\"");
-            op_smorph r add mul req add_m.lem mul_m.lem) in
-        (setoid,op_morph)
-
+		(msgnl
+		    (str"Using setoid \""++pr_constr req ++str"\"" ++ spc() ++  
+			str"and morphisms \""++pr_constr add_m ++
+			str"\""++spc()++str"and \""++
+			pr_constr mul_m++str"\"");
+		 op_smorph r add mul req add_m_lem mul_m_lem) in
+          (setoid,op_morph)
+	    
 let build_setoid_params r add mul opp req eqth =
   match eqth with
       Some th -> th
-    | None -> default_ring_equality (r,add,mul,opp,req)
+    | None -> ring_equality (r,add,mul,opp,req)
 
 let dest_ring env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
@@ -980,25 +1029,19 @@ let (ftheory_to_obj, obj_to_ftheory) =
       classify_function = (fun (_,x) -> Substitute x);
       export_function = export_th }
 
-let default_field_equality r inv req =
-  let is_setoid = function
-      {rel_refl=Some _; rel_sym=Some _;rel_trans=Some _} -> true
-    | _ -> false in
-  match default_relation_for_carrier ~filter:is_setoid r with
-      Leibniz _ ->
+let field_equality r inv req =
+  match kind_of_term req with
+    | App (f, [| _ |]) when eq_constr f (Lazy.force coq_eq) ->
         mkApp((Coqlib.build_coq_eq_data()).congr,[|r;r;inv|])
-    | Relation rel ->
-        let is_endomorphism = function
-            { args=args } -> List.for_all
-                (function (var,Relation rel) ->
-                  var=None && eq_constr req rel
-                  | _ -> false) args in
-        let inv_m =
-          try default_morphism ~filter:is_endomorphism inv
+    | _ ->
+	let _setoid = setoid_of_relation (Global.env ()) r req in
+	let signature = [Some (r,req);Some(r,req)] in
+	let inv_m, inv_m_lem =
+	  try Class_tactics.default_morphism signature inv
           with Not_found ->
             error "field inverse should be declared as a morphism" in
-        inv_m.lem
-
+	  inv_m_lem
+	    
 let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
   check_required_library (cdir@["Field_tac"]);
   let env = Global.env() in
@@ -1011,7 +1054,7 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odi
   let (pow_tac, pspec) = interp_power env power in 
   let sspec = interp_sign env sign in
   let dspec = interp_div env odiv in
-  let inv_m = default_field_equality r inv req in
+  let inv_m = field_equality r inv req in
   let rk = reflect_coeff morphth in
   let params =
     exec_tactic env 9 (field_ltac"field_lemmas")

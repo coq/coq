@@ -64,7 +64,7 @@ something like this. The same goes for "relation". *)
 Hypothesis A_wd : predicate_wd NZeq A.
 
 Add Morphism A with signature NZeq ==> iff as A_morph.
-Proof A_wd.
+Proof. apply A_wd. Qed.
 
 Theorem NZcentral_induction :
   forall z : NZ, A z ->

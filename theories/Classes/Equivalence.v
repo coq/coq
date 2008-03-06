@@ -101,6 +101,31 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id)
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id)
   "using" "relation" constr(rel) "by" tactic(t) :=
   setoidreplacein (rel x y) id ltac:t.
+
+
+Ltac red_subst_eq_morphism concl :=
+  match concl with
+    | @Logic.eq ?A ==> ?R' => red ; intros ; subst ; red_subst_eq_morphism R'
+    | ?R ==> ?R' => red ; intros ; red_subst_eq_morphism R'
+    | _ => idtac
+  end.
+
+Ltac destruct_morphism :=
+  match goal with
+    | [ |- @Morphism ?A ?R ?m ] => constructor
+  end.
+
+Ltac reverse_arrows x :=
+  match x with
+    | @Logic.eq ?A ==> ?R' => revert_last ; reverse_arrows R'
+    | ?R ==> ?R' => do 3 revert_last ; reverse_arrows R'
+    | _ => idtac
+  end.
+
+Ltac add_morphism_tactic := (try destruct_morphism) ;
+  match goal with
+    | [ |- (?x ==> ?y) _ _ ] => red_subst_eq_morphism (x ==> y) ; reverse_arrows (x ==> y)
+  end.
   
 Lemma nequiv_equiv_trans : forall [ ! Equivalence A ] (x y z : A), x =/= y -> y === z -> x =/= z.
 Proof with auto.

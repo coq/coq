@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Relations.
+Require Import Coq.Relations.Relations.
 Require Import List.
 Require Import Multiset.
 Require Import Arith.

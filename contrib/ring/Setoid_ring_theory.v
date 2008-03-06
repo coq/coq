@@ -245,7 +245,7 @@ Lemma Saux1 : forall a:A, a + a == a -> a == 0.
 intros.
 rewrite <- (plus_zero_left a).
 rewrite (plus_comm 0 a).
-setoid_replace (a + 0) with (a + (a + - a)); auto.
+setoid_replace (a + 0) with (a + (a + - a)) by auto.
 rewrite (plus_assoc a a (- a)).
 rewrite H.
 apply opp_def.

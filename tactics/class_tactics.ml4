@@ -32,6 +32,10 @@ open Rawterm
 open Hiddentac
 open Typeclasses
 open Typeclasses_errors
+open Classes
+open Topconstr
+open Pfedit
+open Command
 
 open Evd
 
@@ -69,9 +73,9 @@ let rec e_trivial_fail_db db_list local_db goal =
 and e_my_find_search db_list local_db hdc concl = 
   let hdc = head_of_constr_reference hdc in
   let hintl =
-    if occur_existential concl then 
+    if occur_existential concl then
       list_map_append (Hint_db.map_all hdc) (local_db::db_list)
-    else 
+    else
       list_map_append (Hint_db.map_auto (hdc,concl)) (local_db::db_list)
   in 
   let tac_of_hint = 
@@ -101,9 +105,9 @@ and e_trivial_resolve db_list local_db gl =
   with Bound | Not_found -> []
 
 let e_possible_resolve db_list local_db gl =
-  try List.map snd
-    (e_my_find_search db_list local_db 
-	(List.hd (head_constr_bound gl [])) gl)
+  try 
+    List.map snd (e_my_find_search db_list local_db 
+		       (List.hd (head_constr_bound gl [])) gl)
   with Bound | Not_found -> []
 
 let find_first_goal gls = 
@@ -120,6 +124,8 @@ type search_state = {
 module SearchProblem = struct
     
   type state = search_state
+
+  let debug = ref false
 
   let success s = (sig_it (fst s.tacres)) = []
 
@@ -139,19 +145,29 @@ module SearchProblem = struct
 	  try 
 	    let (lgls,ptl) = apply_tac_list tac glls in 
 	    let v' p = v (ptl p) in
-(* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
-(* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
+(*               if !debug then *)
+(* 		begin *)
+(* 		  let evars = Evarutil.nf_evars (Refiner.project glls) in *)
+(* 	            msg (str"Goal:" ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
+(* 		    msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")) *)
+(* 		end; *)
 	      ((lgls,v'),pptac) :: aux tacl
 	  with e when Logic.catchable_exception e ->
 	    aux tacl
     in aux l
 
+  let nb_empty_evars s = 
+    Evd.fold (fun ev evi acc -> if evi.evar_body = Evar_empty then succ acc else acc) s 0
+
   (* Ordering of states is lexicographic on depth (greatest first) then
      number of remaining goals. *)
   let compare s s' =
     let d = s'.depth - s.depth in
-    let nbgoals s = List.length (sig_it (fst s.tacres)) in
-    if d <> 0 then d else nbgoals s - nbgoals s'
+    let nbgoals s = 
+      List.length (sig_it (fst s.tacres)) + 
+	nb_empty_evars (sig_sig (fst s.tacres))
+    in
+      if d <> 0 then d else nbgoals s - nbgoals s'
 
   let branching s = 
     if s.depth = 0 then 
@@ -223,7 +239,8 @@ let make_initial_state n gls dblist localdbs =
 
 let e_depth_search debug p db_list local_dbs gls =
   try
-    let tac = if debug then Search.debug_depth_first else Search.depth_first in
+    let tac = if debug then
+      (SearchProblem.debug := true; Search.debug_depth_first) else Search.depth_first in
     let s = tac (make_initial_state p gls db_list local_dbs) in
     s.tacres
   with Not_found -> error "EAuto: depth first search failed"
@@ -350,6 +367,8 @@ let inverse = lazy (gen_constant ["Classes"; "Relations"] "inverse")
 let respectful_dep = lazy (gen_constant ["Classes"; "Morphisms"] "respectful_dep")
 let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
 
+let equivalence = lazy (gen_constant ["Classes"; "Relations"] "Equivalence")
+
 let iff_equiv = lazy (gen_constant ["Classes"; "Relations"] "iff_equivalence")
 let eq_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "eq_equivalence")
 
@@ -378,7 +397,7 @@ let arrow_morphism a b =
 let setoid_refl pars x = 
   applistc (Lazy.force setoid_refl_proj) (pars @ [x])
       
-let morphism_class = lazy (Lazy.force morphism_class, Lazy.force respect_proj)
+let morphism_class_proj = lazy (Lazy.force morphism_class, Lazy.force respect_proj)
 
 exception Found of (constr * constr * (types * types) list * constr * constr array *
 		       (constr * (constr * constr * constr * constr)) option array)
@@ -390,16 +409,17 @@ let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
 
-let build_signature isevars env m cstrs finalcstr =
+let build_signature isevars env m (cstrs : 'a option list) (f : 'a -> constr) =
   let new_evar isevars env t =
     Evarutil.e_new_evar isevars env
       (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
   in
   let mk_relty ty obj =
-    let relty = coq_relation ty in
-      match obj with
-	| None -> new_evar isevars env relty
-	| Some (p, (a, r, oldt, newt)) -> r
+    match obj with
+      | None -> 
+	  let relty = coq_relation ty in
+	    new_evar isevars env relty
+      | Some x -> f x
   in
   let rec aux t l =
     let t = Reductionops.whd_betadelta env (Evd.evars_of !isevars) t in
@@ -409,36 +429,41 @@ let build_signature isevars env m cstrs finalcstr =
 	  let relty = mk_relty ty obj in
 	  let arg' = mkApp (Lazy.force respectful, [| ty ; relty ; b ; arg |]) in
 	    arg', (ty, relty) :: evars
-      | _, _ -> 
+      | _, [finalcstr] -> 
 	  (match finalcstr with
 	      None -> 
 		let rel = mk_relty t None in 
 		  rel, [t, rel]
 	    | Some (t, rel) -> rel, [t, rel])
+      | _, _ -> assert false
   in aux m cstrs
 
-let reflexivity_proof env evars carrier relation x =
+let reflexivity_proof_evar env evars carrier relation x =
   let goal =
     mkApp (Lazy.force reflexive_type, [| carrier ; relation |])
   in
   let inst = Evarutil.e_new_evar evars env goal in
     (* try resolve_one_typeclass env goal *)
-  mkApp (Lazy.force reflexive_proof, [| carrier ; relation ; inst ; x |])
+    mkApp (Lazy.force reflexive_proof, [| carrier ; relation ; inst ; x |])
     (*     with Not_found -> *)
 (*       let meta = Evarutil.new_meta() in *)
 (* 	mkCast (mkMeta meta, DEFAULTcast, mkApp (relation, [| x; x |])) *)
 
-let symmetric_proof env carrier relation =
+let find_class_proof proof_type proof_method env carrier relation =
   let goal =
-    mkApp (Lazy.force symmetric_type, [| carrier ; relation |])
+    mkApp (Lazy.force proof_type, [| carrier ; relation |])
   in
     try 
       let inst = resolve_one_typeclass env goal in
-	mkApp (Lazy.force symmetric_proof, [| carrier ; relation ; inst |])
+	mkApp (Lazy.force proof_method, [| carrier ; relation ; inst |])
     with e when Logic.catchable_exception e -> raise Not_found
 
+let reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
+let symmetric_proof env = find_class_proof symmetric_type symmetric_proof env
+let transitive_proof env = find_class_proof transitive_type transitive_proof env
+
 let resolve_morphism env sigma oldt m args args' cstr evars =
-  let (morphism_cl, morphism_proj) = Lazy.force morphism_class in
+  let (morphism_cl, morphism_proj) = Lazy.force morphism_class_proj in
   let morph_instance, proj, sigargs, m', args, args' = 
 (*     if is_equiv env sigma m then  *)
 (*       let params, rest = array_chop 3 args in *)
@@ -462,7 +487,8 @@ let resolve_morphism env sigma oldt m args args' cstr evars =
     let morphargs', morphobjs' = array_chop first args' in
     let appm = mkApp(m, morphargs) in
     let appmtype = Typing.type_of env sigma appm in
-    let signature, sigargs = build_signature evars env appmtype (Array.to_list morphobjs') cstr in
+    let cstrs = List.map (function None -> None | Some (_, (a, r, _, _)) -> Some (a, r)) (Array.to_list morphobjs') in
+    let signature, sigargs = build_signature evars env appmtype (cstrs @ [cstr]) (fun (a, r) -> r) in
     let cl_args = [| appmtype ; signature ; appm |] in
     let app = mkApp (mkInd morphism_cl.cl_impl, cl_args) in
     let morph = Evarutil.e_new_evar evars env app in
@@ -478,7 +504,7 @@ let resolve_morphism env sigma oldt m args args' cstr evars =
 	let (carrier, relation), sigargs = split_head sigargs in
 	  match y with
 	      None ->
-		let refl_proof = reflexivity_proof env evars carrier relation x in
+		let refl_proof = reflexivity_proof_evar env evars carrier relation x in
 		  [ refl_proof ; x ; x ] @ acc, sigargs, x :: typeargs'
 	    | Some (p, (_, _, _, t')) ->
 		[ p ; t'; x ] @ acc, sigargs, t' :: typeargs')
@@ -490,93 +516,135 @@ let resolve_morphism env sigma oldt m args args' cstr evars =
 	[ a, r ] -> (proof, (a, r, oldt, newt))
       | _ -> assert(false)
 
-let build_new gl env sigma occs origt newt hyp hypinfo concl cstr evars =
+let rewrite_unif_flags = {
+  Unification.modulo_conv_on_closed_terms = false;
+  Unification.use_metas_eagerly = true;
+  Unification.modulo_conv = false
+}
+
+let rewrite2_unif_flags = {
+  Unification.modulo_conv_on_closed_terms = true;
+  Unification.use_metas_eagerly = true;
+  Unification.modulo_conv = false
+ }
+
+(* let unification_rewrite c1 c2 cl but gl =  *)
+(*   let (env',c1) = *)
+(*     try *)
+(*       (\* ~flags:(false,true) to allow to mark occurences that must not be *)
+(*          rewritten simply by replacing them with let-defined definitions *)
+(*          in the context *\) *)
+(*       w_unify_to_subterm ~flags:rewrite_unif_flags (pf_env gl) (c1,but) cl.evd *)
+(*     with *)
+(* 	Pretype_errors.PretypeError _ -> *)
+(* 	  (\* ~flags:(true,true) to make Ring work (since it really *)
+(*              exploits conversion) *\) *)
+(* 	  w_unify_to_subterm ~flags:rewrite2_unif_flags *)
+(* 	    (pf_env gl) (c1,but) cl.evd *)
+(*   in *)
+(*   let cl' = {cl with evd = env' } in *)
+(*   let c2 = Clenv.clenv_nf_meta cl' c2 in *)
+(*   check_evar_map_of_evars_defs env' ; *)
+(*   env',Clenv.clenv_value cl', c1, c2 *)
+
+let allowK = true
+
+let unify_eqn gl (cl, rel, l2r, c1, c2) t = 
+  try 
+    let env' = 
+      try clenv_unify allowK ~flags:rewrite_unif_flags
+	CONV (if l2r then c1 else c2) t cl
+      with Pretype_errors.PretypeError _ -> (* For Ring essentially *)
+	clenv_unify allowK ~flags:rewrite2_unif_flags
+	  CONV (if l2r then c1 else c2) t cl
+    in
+    let c1 = Clenv.clenv_nf_meta env' c1 
+    and c2 = Clenv.clenv_nf_meta env' c2 
+    and typ = Clenv.clenv_type env' in
+    let (rel, args) = destApp typ in
+    let relargs, args = array_chop (Array.length args - 2) args in
+    let rel = mkApp (rel, relargs) in
+    let car = pf_type_of gl c1 in
+    let prf = Clenv.clenv_value env' in
+    let res = 
+      if l2r then (prf, (car, rel, c1, c2))
+      else
+	try (mkApp (symmetric_proof (pf_env gl) car rel, [| c1 ; c2 ; prf |]), (car, rel, c2, c1))
+	with Not_found ->
+	  (prf, (car, mkApp (Lazy.force inverse, [| car ; rel |]), c2, c1))
+    in Some (env', res)
+  with _ -> None
+
+let build_new gl env sigma occs hypinfo concl cstr evars =
   let is_occ occ = occs = [] || List.mem occ occs in
   let rec aux t occ cstr =
-    match kind_of_term t with
-      | _ when eq_constr t origt -> 
-	  if is_occ occ then
+    match unify_eqn gl hypinfo t with
+      | Some (env', (prf, hypinfo as x)) ->
+	  if is_occ occ then (
+	    evars := Evd.evar_merge !evars (Evd.evars_of (Evd.undefined_evars env'.evd));
 	    match cstr with
-		None -> Some (hyp, hypinfo), succ occ
+		None -> Some x, succ occ
 	      | Some _ ->
 		  let (car, r, orig, dest) = hypinfo in
 		  let res = 
 		    try 
 		      Some (resolve_morphism env sigma t 
 			       (mkLambda (Name (id_of_string "x"), car, mkRel 1))
-			       (* (mkApp (Lazy.force coq_id, [| car |])) *)
-			       [| origt |] [| Some (hyp, hypinfo) |] cstr evars)
+			       (* (Termops.refresh_universes (mkApp (Lazy.force coq_id, [| car |]))) *)
+			       [| orig |] [| Some x |] cstr evars)
 		    with Not_found -> None
-		  in res, succ occ
+		  in res, succ occ)
 	  else None, succ occ
-
-      | App (m, args) ->
-	  let args', occ = 
-	    Array.fold_left 
-	      (fun (acc, occ) arg -> let res, occ = aux arg occ None in (res :: acc, occ))
-	      ([], occ) args
-	  in
-	  let res =
-	    if List.for_all (fun x -> x = None) args' then None
-	    else 
-	      let args' = Array.of_list (List.rev args') in
-		(try Some (resolve_morphism env sigma t m args args' cstr evars)
-		  with Not_found -> None)
-	  in res, occ
-
-      | Prod (_, x, b) -> 
-	  let x', occ = aux x occ None in
-	  let b', occ = aux b occ None in
-	  let res = 
-	    if x' = None && b' = None then None
-	    else 
-	      (try Some (resolve_morphism env sigma t
-			    (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |]
-			    cstr evars)
-		with Not_found -> None)
-	  in res, occ
-
-      | _ -> None, occ
+      | None -> 
+	  match kind_of_term t with
+	    | App (m, args) ->
+		let args', occ = 
+		  Array.fold_left 
+		    (fun (acc, occ) arg -> let res, occ = aux arg occ None in (res :: acc, occ))
+		    ([], occ) args
+		in
+		let res =
+		  if List.for_all (fun x -> x = None) args' then None
+		  else 
+		    let args' = Array.of_list (List.rev args') in
+		      (try Some (resolve_morphism env sigma t m args args' cstr evars)
+			with Not_found -> None)
+		in res, occ
+		  
+	    | Prod (_, x, b) -> 
+		let x', occ = aux x occ None in
+		let b', occ = aux b occ None in
+		let res = 
+		  if x' = None && b' = None then None
+		  else 
+		    (try Some (resolve_morphism env sigma t
+				  (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |]
+				  cstr evars)
+		      with Not_found -> None)
+		in res, occ
+		  
+	    | _ -> None, occ
   in aux concl 1 cstr
+    
+(* Adapted from setoid_replace. *)
 
-let decompose_setoid_eqhyp gl env sigma c left2right t = 
-  let (c, (car, rel, x, y) as res) =
-    match kind_of_term t with
-	(*     | App (equiv, [| a; r; s; x; y |]) -> *)
-	(* 	if dir then (c, (a, r, s, x, y)) *)
-	(* 	else (c, (a, r, s, y, x)) *)
-      | App (r, args) when Array.length args >= 2 -> 
-	  let relargs, args = array_chop (Array.length args - 2) args in
-	  let rel = mkApp (r, relargs) in
-	  let typ = pf_type_of gl rel in
-	    (if isArity typ then
-	      let (ctx, ar) = destArity typ in
-		(match ctx with
-		    [ (_, None, sx) ; (_, None, sy) ] when eq_constr sx sy -> 
-		      (c, (sx, rel, args.(0), args.(1)))
-		  | _ -> error "Only binary relations are supported")
-	      else error "Not a relation")
-      | _ -> error "Not a relation"
-  in
-    if left2right then res
-    else
-      try (mkApp (symmetric_proof env car rel, [| x ; y ; c |]), (car, rel, y, x))
-      with Not_found ->
-	(c, (car, mkApp (Lazy.force inverse, [| car ; rel |]), y, x))
+let decompose_setoid_eqhyp gl c left2right =
+  let ctype = pf_type_of gl c in
+  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
+  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
+  let rec split_last_two = function
+    | [c1;c2] -> [],(c1, c2)
+    | x::y::z ->
+	let l,res = split_last_two (y::z) in x::l, res
+    | _ -> error "The term provided is not an applied relation" in
+  let others, (c1,c2) = split_last_two args in
+    eqclause, mkApp (equiv, Array.of_list others), left2right, c1, c2
 
 let resolve_all_typeclasses env evd = 
   resolve_all_evars false (true, 15) env
     (fun ev evi -> Typeclasses.class_of_constr evi.Evd.evar_concl <> None) evd
     
-(* let _ =  *)
-(*   Typeclasses.solve_instanciation_problem := *)
-(*     (fun env evd ev evi -> resolve_all_typeclasses env evd, true) *)
-
-let cl_rewrite_clause c left2right occs clause gl =
-  let env = pf_env gl in
-  let sigma = project gl in
-  let hyp = pf_type_of gl c in
-  let hypt, (typ, rel, origt, newt as hypinfo) = decompose_setoid_eqhyp gl env sigma c left2right hyp in
+let cl_rewrite_clause_aux hypinfo occs clause gl =
   let concl, is_hyp = 
     match clause with
 	Some ((_, id), _) -> pf_get_hyp_typ gl id, Some id
@@ -588,23 +656,48 @@ let cl_rewrite_clause c left2right occs clause gl =
       | Some _ -> (mkProp, Lazy.force impl)
   in
   let evars = ref (Evd.create_evar_defs Evd.empty) in
-  let eq, _ = build_new gl env sigma occs origt newt hypt hypinfo concl (Some cstr) evars in
+  let env = pf_env gl in
+  let sigma = project gl in
+  let eq, _ = build_new gl env sigma occs hypinfo concl (Some cstr) evars in
     match eq with  
 	Some (p, (_, _, oldt, newt)) -> 
-	  evars := Typeclasses.resolve_typeclasses env (Evd.evars_of !evars) !evars;
-	  evars := Evarutil.nf_evar_defs !evars;
-	  let p = Evarutil.nf_isevar !evars p in
-	  let newt = Evarutil.nf_isevar !evars newt in
-	  let undef = Evd.undefined_evars !evars in
-	    tclTHEN (Refiner.tclEVARS (Evd.evars_of undef))
-	      (match is_hyp with
-	    | Some id -> Tactics.apply_in true id [p,NoBindings]
-	    | None -> 
-		let meta = Evarutil.new_meta() in
-		let term = mkApp (p, [| mkCast (mkMeta meta, DEFAULTcast, newt) |]) in
-		  refine term) gl
-      | None -> tclIDTAC gl
+	  (try 
+	      evars := Typeclasses.resolve_typeclasses env (Evd.evars_of !evars) !evars;
+	      let p = Evarutil.nf_isevar !evars p in
+	      let newt = Evarutil.nf_isevar !evars newt in
+	      let undef = Evd.undefined_evars !evars in
+	      let unfoldrefs = List.map (fun s -> [], EvalConstRef s) [destConst (Lazy.force impl)] in
+	      let rewtac, cleantac = 
+		match is_hyp with
+		  | Some id -> 
+(* 		      let meta = Evarutil.new_meta() in *)
+(* 		      let term = mkApp (p, [| mkCast (mkMeta meta, DEFAULTcast, newt) |]) in *)
+(* 		      tclTHEN *)
+(* 			(tclEVARS (evars_of clenv.evd)) *)
+		      cut_replacing id newt (fun x ->
+			refine (mkApp (p, [| mkVar id |]))),
+		      unfold_in_hyp unfoldrefs (([], id), Tacexpr.InHyp)
+		  | None -> 
+		      let meta = Evarutil.new_meta() in
+		      let term = mkApp (p, [| mkCast (mkMeta meta, DEFAULTcast, newt) |]) in
+			refine term, Tactics.unfold_in_concl unfoldrefs
+	      in
+	      let evartac = 
+		let evd = Evd.evars_of undef in
+		  if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
+		  else tclIDTAC
+	      in tclTHENLIST [evartac; rewtac; cleantac] gl
+	    with UserError (env, e) -> 
+	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints") gl)
+      | None -> 
+	  let (_, _, l2r, x, y) = hypinfo in
+	    raise (Pretype_errors.PretypeError (pf_env gl, Pretype_errors.NoOccurrenceFound (if l2r then x else y)))
+	      (* tclFAIL 1 (str"setoid rewrite failed") gl *)
 	  
+let cl_rewrite_clause c left2right occs clause gl =
+  let hypinfo = decompose_setoid_eqhyp gl c left2right in
+    cl_rewrite_clause_aux hypinfo occs clause gl
+
 open Genarg
 open Extraargs
 
@@ -615,6 +708,7 @@ TACTIC EXTEND class_rewrite
 | [ "clrewrite" orient(o) constr(c) "at" occurences(occ) ] -> [ cl_rewrite_clause c o occ None ]
 | [ "clrewrite" orient(o) constr(c) ] -> [ cl_rewrite_clause c o [] None ]
 END
+
 
 let clsubstitute o c =
   let is_tac id = match kind_of_term c with Var id' when id' = id -> true | _ -> false in
@@ -680,7 +774,7 @@ END
 let _ = 
   Typeclasses.solve_instanciations_problem :=
     resolve_argument_typeclasses false (true, 15)
-      
+
 TACTIC EXTEND typeclasses_eauto
 | [ "typeclasses" "eauto" debug(d) search_mode(s) depth(depth) ] -> [ fun gl ->
     let env = pf_env gl in
@@ -697,21 +791,439 @@ END
 let _ = 
   Classes.refine_ref := Refine.refine
 
-open Pretype_errors
-
-let typeclass_error e = 
-  match e with
-    | UnsolvableImplicit (evi, (InternalHole | ImplicitArg _)) ->
-	(match class_of_constr evi.evar_concl with
-	    Some c -> true
-	  | None -> false)
-    | _ -> false
-	
-let class_apply c = 
-  try Tactics.apply_with_ebindings c
-  with PretypeError (env, e) when typeclass_error e -> 
-    tclFAIL 1 (str"typeclass resolution failed")
-
-TACTIC EXTEND class_apply
-| [ "class_apply" constr_with_bindings(t) ] -> [ class_apply t ]
+(* Compatibility with old Setoids *)
+  
+TACTIC EXTEND setoid_rewrite
+   [ "setoid_rewrite" orient(o) constr(c) ]
+   -> [ cl_rewrite_clause c o [] None ]
+ | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) ] ->
+      [ cl_rewrite_clause c o [] (Some (([],id), []))]
+ | [ "setoid_rewrite" orient(o) constr(c) "at" occurences(occ) ] ->
+      [ cl_rewrite_clause c o occ None]
+ | [ "setoid_rewrite" orient(o) constr(c) "at" occurences(occ) "in" hyp(id)] ->
+      [ cl_rewrite_clause c o occ (Some (([],id), []))]
+ | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) "at" occurences(occ)] ->
+      [ cl_rewrite_clause c o occ (Some (([],id), []))]
 END
+
+(* let solve_obligation lemma =  *)
+(*   tclTHEN (Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor None))) *)
+(*     (eapply_with_bindings (Constrintern.interp_constr Evd.empty (Global.env()) lemma, NoBindings)) *)
+    
+let mkappc s l = CAppExpl (dummy_loc,(None,(Libnames.Ident (dummy_loc,id_of_string s))),l)
+
+let declare_instance a aeq n s = ((dummy_loc,Name n),Explicit,
+				  CApp (dummy_loc, (None, mkIdentC (id_of_string s)), 
+					[(a,None);(aeq,None)]))
+
+let anew_instance instance fields = new_instance [] instance fields None (fun _ -> ())
+
+let require_library dirpath =
+  let qualid = (dummy_loc, Libnames.qualid_of_dirpath (Libnames.dirpath_of_string dirpath)) in
+    Library.require_library [qualid] (Some false)
+
+let init_setoid () =
+  require_library "Coq.Setoids.Setoid"
+
+let declare_instance_refl a aeq n lemma = 
+  let instance = declare_instance a aeq (add_suffix n "_refl") "Reflexive" 
+  in anew_instance instance 
+       [((dummy_loc,id_of_string "reflexive"),[],lemma)]
+
+let declare_instance_sym a aeq n lemma = 
+  let instance = declare_instance a aeq (add_suffix n "_sym") "Symmetric" 
+  in anew_instance instance 
+       [((dummy_loc,id_of_string "symmetric"),[],lemma)]
+
+let declare_instance_trans a aeq n lemma = 
+  let instance = declare_instance a aeq (add_suffix n "_trans") "Transitive" 
+  in anew_instance instance 
+       [((dummy_loc,id_of_string "transitive"),[],lemma)]
+
+let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor None)) 
+
+let declare_relation a aeq n refl symm trans = 
+  init_setoid ();
+  match (refl,symm,trans) with 
+      (None, None, None) -> 
+	let instance = declare_instance a aeq n "Equivalence" 
+	in ignore(
+	  Flags.make_silent true;
+	  anew_instance instance 
+	    [((dummy_loc,id_of_string "equiv_refl"), [], CHole(dummy_loc,Some GoalEvar));
+	     ((dummy_loc,id_of_string "equiv_sym"),  [], CHole(dummy_loc,Some GoalEvar));
+	     ((dummy_loc,id_of_string "equiv_trans"),[], CHole(dummy_loc,Some GoalEvar))]);
+	  solve_nth 1 constr_tac; solve_nth 2 constr_tac; solve_nth 3 constr_tac;
+	  Flags.make_silent false; msg (Printer.pr_open_subgoals ())
+    | (Some lemma1, None, None) -> 
+	ignore (declare_instance_refl a aeq n lemma1)
+    | (None, Some lemma2, None) -> 
+	ignore (declare_instance_sym a aeq n lemma2)
+    | (None, None, Some lemma3) -> 
+	ignore (declare_instance_trans a aeq n lemma3)
+    | (Some lemma1, Some lemma2, None) -> 
+	ignore (declare_instance_refl a aeq n lemma1); 
+	ignore (declare_instance_sym a aeq n lemma2)
+    | (Some lemma1, None, Some lemma3) -> 
+	let lemma_refl = declare_instance_refl a aeq n lemma1 in
+	let lemma_trans = declare_instance_trans a aeq n lemma3 in
+	let instance = declare_instance a aeq n "PreOrder" 
+	in ignore(
+	    anew_instance instance 
+	      [((dummy_loc,id_of_string "preorder_refl"), [], mkIdentC lemma_refl);
+	       ((dummy_loc,id_of_string "preorder_trans"),[], mkIdentC lemma_trans)])
+    | (None, Some lemma2, Some lemma3) -> 
+	let lemma_sym = declare_instance_sym a aeq n lemma2 in
+	let lemma_trans = declare_instance_trans a aeq n lemma3 in
+	let instance = declare_instance a aeq n "PER" 
+	in ignore(
+	    anew_instance instance 
+	      [((dummy_loc,id_of_string "per_sym"),  [], mkIdentC lemma_sym);
+	       ((dummy_loc,id_of_string "per_trans"),[], mkIdentC lemma_trans)])
+     | (Some lemma1, Some lemma2, Some lemma3) -> 
+	let lemma_refl = declare_instance_refl a aeq n lemma1 in 
+	let lemma_sym = declare_instance_sym a aeq n lemma2 in
+	let lemma_trans = declare_instance_trans a aeq n lemma3 in
+	let instance = declare_instance a aeq n "Equivalence" 
+	in ignore(
+	    anew_instance instance 
+	      [((dummy_loc,id_of_string "equiv_refl"), [], mkIdentC lemma_refl);
+	       ((dummy_loc,id_of_string "equiv_sym"),  [], mkIdentC lemma_sym);
+	       ((dummy_loc,id_of_string "equiv_trans"),[], mkIdentC lemma_trans)])
+
+VERNAC COMMAND EXTEND AddRelation
+    [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1) 
+	"symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
+      [ declare_relation a aeq n (Some lemma1) (Some lemma2) None ]
+  | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)  
+	"as" ident(n) ] ->
+      [ declare_relation a aeq n (Some lemma1) None None ]
+  | [ "Add" "Relation" constr(a) constr(aeq)  "as" ident(n) ] -> 
+      [ declare_relation a aeq n None None None ]
+END
+
+VERNAC COMMAND EXTEND AddRelation2
+    [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) 
+      "as" ident(n) ] ->
+      [ declare_relation a aeq n None (Some lemma2) None ]
+  | [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
+      [ declare_relation a aeq n None (Some lemma2) (Some lemma3) ]
+END
+
+VERNAC COMMAND EXTEND AddRelation3
+    [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1) 
+      "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
+      [ declare_relation a aeq n (Some lemma1) None (Some lemma3) ]
+  | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1) 
+      "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3) 
+      "as" ident(n) ] ->
+      [ declare_relation a aeq n (Some lemma1) (Some lemma2) (Some lemma3) ] 
+  | [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
+	"as" ident(n) ] ->  
+      [ declare_relation a aeq n None None (Some lemma3) ] 
+END
+
+let mk_qualid s =
+  Libnames.Qualid (dummy_loc, Libnames.qualid_of_string s)
+
+let cHole = CHole (dummy_loc, None)
+
+open Entries
+open Libnames
+
+let respect_projection r ty =
+  let ctx, inst = Sign.decompose_prod_assum ty in
+  let mor, args = destApp inst in
+  let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
+  let app = mkApp (mkConst (Lazy.force respect_proj), 
+		  Array.append args [| instarg |]) in
+    it_mkLambda_or_LetIn app ctx
+      
+let declare_projection n instance_id r =
+  let ty = Global.type_of_global r in
+  let c = constr_of_global r in
+  let term = respect_projection c ty in
+  let typ = Typing.type_of (Global.env ()) Evd.empty term in
+  let typ =
+    let n = 
+      let rec aux t = 
+	match kind_of_term t with
+	    App (f, [| a ; rel; a'; rel' |]) when eq_constr f (Lazy.force respectful) -> 
+	      succ (aux rel')
+	  | _ -> 0
+      in
+      let init = 
+	match kind_of_term typ with
+	    App (f, args) when eq_constr f (Lazy.force respectful) -> 
+	      mkApp (f, fst (array_chop (Array.length args - 2) args))
+	  | _ -> typ
+      in aux init
+    in
+    let ctx,ccl = Reductionops.decomp_n_prod (Global.env()) Evd.empty (3 * n) typ
+    in it_mkProd_or_LetIn ccl ctx 
+  in
+  let cst = 
+    { const_entry_body = term;
+      const_entry_type = Some typ;
+      const_entry_opaque = false;
+      const_entry_boxed = false }
+  in
+    ignore(Declare.declare_constant n (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
+      
+(*   try  *)
+(*     Command.declare_definition n (Decl_kinds.Local, false, Decl_kinds.Definition) [] None  *)
+(*       (CAppExpl (dummy_loc,  *)
+(* 		(None, mk_qualid "Coq.Classes.Morphisms.respect"), *)
+(* 		[ cHole; cHole; cHole; mkIdentC instance_id ])) *)
+(*       None (fun _ _ -> ()) *)
+(*   with _ -> () *)
+    
+let build_morphism_signature m =
+  let env = Global.env () in
+  let m = Constrintern.interp_constr Evd.empty env m in
+  let t = Typing.type_of env Evd.empty m in
+  let isevars = ref (Evd.create_evar_defs Evd.empty) in
+  let cstrs = 
+    let rec aux t = 
+      match kind_of_term t with
+	| Prod (na, a, b) -> 
+	    None :: aux b
+	| _ -> [None]
+    in aux t
+  in
+  let sig_, evars = build_signature isevars env t cstrs snd in
+  let _ = List.iter 
+    (fun (ty, relty) -> 
+      let equiv = mkApp (Lazy.force equivalence, [| ty; relty |]) in
+	ignore(Evarutil.e_new_evar isevars env equiv))
+    evars
+  in
+  let morph = 
+    mkApp (mkInd (Lazy.force morphism_class).cl_impl, [| t; sig_; m |])
+  in
+(*   let morphev = Evarutil.e_new_evar isevars env morph in *)
+  let evd = resolve_all_evars_once false (true, 15) env
+    (fun x evi -> class_of_constr evi.Evd.evar_concl <> None) !isevars in
+    Evarutil.nf_isevar evd morph
+
+let default_morphism sign m =
+  let env = Global.env () in
+  let isevars = ref (Evd.create_evar_defs Evd.empty) in
+  let t = Typing.type_of env Evd.empty m in
+  let sign, evars = 
+    build_signature isevars env t sign (fun (ty, rel) -> rel)
+  in
+  let morph = 
+    mkApp (mkInd (Lazy.force morphism_class).cl_impl, [| t; sign; m |])
+  in
+  let mor = resolve_one_typeclass env morph in
+    mor, respect_projection mor morph
+    	  
+let unfold_respectful = lazy (Tactics.unfold_in_concl [[], EvalConstRef (destConst (Lazy.force respectful))])
+
+let ($) g f = fun x -> g (f x)
+
+VERNAC COMMAND EXTEND AddSetoid1
+   [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
+     [	init_setoid ();
+	let lemma_refl = declare_instance_refl a aeq n (mkappc "Seq_refl" [a;aeq;t]) in 
+	let lemma_sym = declare_instance_sym a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
+	let lemma_trans = declare_instance_trans a aeq n (mkappc "Seq_trans" [a;aeq;t])  in
+	let instance = declare_instance a aeq n "Equivalence"
+	in ignore(
+	    anew_instance instance
+	      [((dummy_loc,id_of_string "equiv_refl"), [], mkIdentC lemma_refl);
+	       ((dummy_loc,id_of_string "equiv_sym"),  [], mkIdentC lemma_sym);
+	       ((dummy_loc,id_of_string "equiv_trans"),[], mkIdentC lemma_trans)])]
+  | [ "Add" "Morphism" constr(m) ":" ident(n) ] ->
+      [ init_setoid ();
+	let instance_id = add_suffix n "_Morphism" in
+	let instance = build_morphism_signature m in
+	  if Lib.is_modtype () then 
+	    let cst = Declare.declare_internal_constant instance_id
+	      (Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
+	    in
+	      add_instance { is_class = Lazy.force morphism_class ; is_pri = None; is_impl = cst };
+	      declare_projection n instance_id (ConstRef cst)
+	  else
+	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+	      Flags.silently 
+		(fun () ->
+		  Command.start_proof instance_id kind instance 
+		    (fun _ -> function
+			Libnames.ConstRef cst -> 
+			  add_instance { is_class = Lazy.force morphism_class ; is_pri = None; is_impl = cst };
+			  declare_projection n instance_id (ConstRef cst)
+		      | _ -> assert false);
+		  Pfedit.by (Tacinterp.interp <:tactic<add_morphism_tactic>>)) ();
+	      Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () ]
+
+  | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
+      [ init_setoid ();
+	let instance_id = add_suffix n "_Morphism" in
+	let instance = 
+	  ((dummy_loc,Name instance_id), Implicit,
+	  CApp (dummy_loc, (None, mkRefC 
+	    (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Classes.Morphisms.Morphism"))), 
+	       [(s,None);(m,None)]))
+	in
+	  if Lib.is_modtype () then (context ~hook:(fun r -> declare_projection n instance_id r) [ instance ])
+	  else (
+	    Flags.silently 
+	      (fun () ->
+		ignore(new_instance [] instance [] None (fun cst -> declare_projection n instance_id (ConstRef cst)));
+		Pfedit.by (Tacinterp.interp <:tactic<add_morphism_tactic>>)) ();
+	    Flags.if_verbose (msg $ Printer.pr_open_subgoals) ())
+      ]
+END
+
+(** Bind to "rewrite" too *)
+
+(** Taken from original setoid_replace, to emulate the old rewrite semantics where
+    lemmas are first instantiated once and then rewrite proceeds. *)
+
+let unification_rewrite l2r c1 c2 cl but gl = 
+  let (env',c') =
+    try
+      (* ~flags:(false,true) to allow to mark occurences that must not be
+         rewritten simply by replacing them with let-defined definitions
+         in the context *)
+      Unification.w_unify_to_subterm ~flags:rewrite_unif_flags (pf_env gl) ((if l2r then c1 else c2),but) cl.evd
+    with
+	Pretype_errors.PretypeError _ ->
+	  (* ~flags:(true,true) to make Ring work (since it really
+             exploits conversion) *)
+	  Unification.w_unify_to_subterm ~flags:rewrite2_unif_flags
+	    (pf_env gl) ((if l2r then c1 else c2),but) cl.evd
+  in
+  let cl' = {cl with evd = env' } in
+  let c1 = Clenv.clenv_nf_meta cl' c1 
+  and c2 = Clenv.clenv_nf_meta cl' c2 in
+    cl', Clenv.clenv_value cl', l2r, c1, c2
+
+let get_hyp gl c clause l2r = 
+  match kind_of_term (pf_type_of gl c) with
+      Prod _ -> 
+	let cl, rel, _, c1, c2 = decompose_setoid_eqhyp gl c l2r in
+	let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
+	  unification_rewrite l2r c1 c2 cl but gl 
+    | _ -> decompose_setoid_eqhyp gl c l2r
+	
+let general_s_rewrite l2r c ~new_goals gl =
+  let hypinfo = get_hyp gl c None l2r in
+    cl_rewrite_clause_aux hypinfo [] None gl
+
+let general_s_rewrite_in id l2r c ~new_goals gl =
+  let hypinfo = get_hyp gl c (Some id) l2r in
+    cl_rewrite_clause_aux hypinfo [] (Some (([],id), [])) gl
+    
+let general_s_rewrite_clause = function
+  | None -> general_s_rewrite
+  | Some id -> general_s_rewrite_in id
+
+let _ = Equality.register_general_setoid_rewrite_clause general_s_rewrite_clause
+
+(* [setoid_]{reflexivity,symmetry,transitivity} tactics *)
+
+let relation_of_constr c = 
+  match kind_of_term c with
+    | App (f, args) when Array.length args >= 2 -> 
+	let relargs, args = array_chop (Array.length args - 2) args in
+	  mkApp (f, relargs), args
+    | _ -> error "Not an applied relation"
+
+let setoid_reflexivity gl =
+  let env = pf_env gl in
+  let rel, args = relation_of_constr (pf_concl gl) in
+    try
+      apply (reflexive_proof env (pf_type_of gl args.(0)) rel) gl
+    with Not_found -> 
+      tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared reflexive relation")
+	gl
+
+let setoid_symmetry gl =
+  let env = pf_env gl in
+  let rel, args = relation_of_constr (pf_concl gl) in
+    try
+      apply (symmetric_proof env (pf_type_of gl args.(0)) rel) gl
+    with Not_found -> 
+      tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared symmetric relation")
+	gl
+	
+let setoid_transitivity c gl =
+  let env = pf_env gl in
+  let rel, args = relation_of_constr (pf_concl gl) in
+    try
+      apply_with_bindings
+	((transitive_proof env (pf_type_of gl args.(0)) rel),
+	Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp (id_of_string "y"), c ]) gl
+    with Not_found -> 
+      tclFAIL 0
+	(str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared transitive relation") gl
+	
+let setoid_symmetry_in id gl =
+  let ctype = pf_type_of gl (mkVar id) in
+  let binders,concl = Sign.decompose_prod_assum ctype in
+  let (equiv, args) = decompose_app concl in
+  let rec split_last_two = function
+    | [c1;c2] -> [],(c1, c2)
+    | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
+    | _ -> error "The term provided is not an equivalence" 
+  in
+  let others,(c1,c2) = split_last_two args in
+  let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
+  let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
+  let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
+    tclTHENS (cut new_hyp)
+      [ intro_replacing id;
+	tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ] ]
+      gl
+
+let _ = Tactics.register_setoid_reflexivity setoid_reflexivity
+let _ = Tactics.register_setoid_symmetry setoid_symmetry
+let _ = Tactics.register_setoid_symmetry_in setoid_symmetry_in
+let _ = Tactics.register_setoid_transitivity setoid_transitivity
+
+TACTIC EXTEND setoid_symmetry
+   [ "setoid_symmetry" ] -> [ setoid_symmetry ]
+ | [ "setoid_symmetry" "in" hyp(n) ] -> [ setoid_symmetry_in n ]
+END
+
+TACTIC EXTEND setoid_reflexivity
+   [ "setoid_reflexivity" ] -> [ setoid_reflexivity ]
+END
+
+TACTIC EXTEND setoid_transitivity
+   [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
+END
+
+(* open Pretype_errors *)
+
+(* let typeclass_error e = *)
+(*   match e with *)
+(*     | UnsolvableImplicit (evi, (InternalHole | ImplicitArg _)) -> *)
+(* 	(match class_of_constr evi.evar_concl with *)
+(* 	    Some c -> true *)
+(* 	  | None -> false) *)
+(*     | _ -> false *)
+	
+(* let class_apply c = *)
+(*   try Tactics.apply_with_ebindings c *)
+(*   with PretypeError (env, e) when typeclass_error e -> *)
+(*     tclFAIL 1 (str"typeclass resolution failed") *)
+
+(* TACTIC EXTEND class_apply *)
+(*     | [ "class_apply" constr_with_bindings(t) ] -> [ class_apply t ] *)
+(* END *)
+
+(* let default_morphism ?(filter=fun _ -> true) m = *)
+(*   match List.filter filter (morphism_table_find m) with *)
+(*       [] -> raise Not_found *)
+(*     | m1::ml -> *)
+(*         if ml <> [] then *)
+(*           Flags.if_warn msg_warning *)
+(*             (strbrk "There are several morphisms associated to \"" ++ *)
+(*             pr_lconstr m ++ strbrk "\". Morphism " ++ prmorphism m m1 ++ *)
+(*             strbrk " is randomly chosen."); *)
+(*         relation_morphism_of_constr_morphism m1 *)
+

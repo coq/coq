@@ -396,7 +396,7 @@ Variable A : NZ -> Prop.
 Hypothesis A_wd : predicate_wd NZeq A.
 
 Add Morphism A with signature NZeq ==> iff as A_morph.
-Proof A_wd.
+Proof. apply A_wd. Qed.
 
 Section Center.
 

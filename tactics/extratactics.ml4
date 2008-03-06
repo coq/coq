@@ -150,82 +150,82 @@ let refine_tac = h_refine
 
 open Setoid_replace
 
-TACTIC EXTEND setoid_replace
-   [ "setoid_replace" constr(c1) "with" constr(c2) by_arg_tac(tac)] ->
-     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:[] ]
- | [ "setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) by_arg_tac(tac)] ->
-     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:[] ]
- | [ "setoid_replace" constr(c1) "with" constr(c2) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac) ] ->
-     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:l ]
- | [ "setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac) ] ->
-     [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:l ]
- | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) by_arg_tac(tac) ] ->
-     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:[] ]
- | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:[] ]
- | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:l ]
- | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] ->
-     [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:l ]
-END
+(* TACTIC EXTEND setoid_replace *)
+(*    [ "setoid_replace" constr(c1) "with" constr(c2) by_arg_tac(tac)] -> *)
+(*      [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:[] ] *)
+(*  | [ "setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) by_arg_tac(tac)] -> *)
+(*      [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:[] ] *)
+(*  | [ "setoid_replace" constr(c1) "with" constr(c2) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac) ] -> *)
+(*      [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) None c1 c2 ~new_goals:l ] *)
+(*  | [ "setoid_replace" constr(c1) "with" constr(c2) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac) ] -> *)
+(*      [ setoid_replace  (Option.map Tacinterp.eval_tactic tac) (Some rel) c1 c2 ~new_goals:l ] *)
+(*  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) by_arg_tac(tac) ] -> *)
+(*      [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:[] ] *)
+(*  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) by_arg_tac(tac)] -> *)
+(*      [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:[] ] *)
+(*  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] -> *)
+(*      [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h None c1 c2 ~new_goals:l ] *)
+(*  | [ "setoid_replace" constr(c1) "with" constr(c2) "in" hyp(h) "using" "relation" constr(rel) "generate" "side" "conditions" constr_list(l) by_arg_tac(tac)] -> *)
+(*      [ setoid_replace_in  (Option.map Tacinterp.eval_tactic tac) h (Some rel) c1 c2 ~new_goals:l ] *)
+(* END *)
 
-TACTIC EXTEND setoid_rewrite
-   [ "setoid_rewrite" orient(b) constr(c) ]
-   -> [ general_s_rewrite b c ~new_goals:[] ]
- | [ "setoid_rewrite" orient(b) constr(c) "generate" "side" "conditions" constr_list(l) ]
-   -> [ general_s_rewrite b c ~new_goals:l ]
- | [ "setoid_rewrite" orient(b) constr(c) "in" hyp(h) ] ->
-      [ general_s_rewrite_in h b c ~new_goals:[] ]
- | [ "setoid_rewrite" orient(b) constr(c) "in" hyp(h) "generate" "side" "conditions" constr_list(l) ] ->
-      [ general_s_rewrite_in h b c ~new_goals:l ]
-END
+(* TACTIC EXTEND setoid_rewrite *)
+(*    [ "setoid_rewrite" orient(b) constr(c) ] *)
+(*    -> [ general_s_rewrite b c ~new_goals:[] ] *)
+(*  | [ "setoid_rewrite" orient(b) constr(c) "generate" "side" "conditions" constr_list(l) ] *)
+(*    -> [ general_s_rewrite b c ~new_goals:l ] *)
+(*  | [ "setoid_rewrite" orient(b) constr(c) "in" hyp(h) ] -> *)
+(*       [ general_s_rewrite_in h b c ~new_goals:[] ] *)
+(*  | [ "setoid_rewrite" orient(b) constr(c) "in" hyp(h) "generate" "side" "conditions" constr_list(l) ] -> *)
+(*       [ general_s_rewrite_in h b c ~new_goals:l ] *)
+(* END *)
 
-VERNAC COMMAND EXTEND AddSetoid1
-  [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-   [ add_setoid n a aeq t ]
-| [ "Add" "Morphism" constr(m) ":" ident(n) ] ->
-   [ new_named_morphism n m None ]
-| [ "Add" "Morphism" constr(m) "with" "signature" morphism_signature(s) "as" ident(n) ] ->
-   [ new_named_morphism n m (Some s)]
-END
+(* VERNAC COMMAND EXTEND AddSetoid1 *)
+(*   [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] -> *)
+(*    [ add_setoid n a aeq t ] *)
+(* | [ "Add" "Morphism" constr(m) ":" ident(n) ] -> *)
+(*    [ new_named_morphism n m None ] *)
+(* | [ "Add" "Morphism" constr(m) "with" "signature" morphism_signature(s) "as" ident(n) ] -> *)
+(*    [ new_named_morphism n m (Some s)] *)
+(* END *)
 
-VERNAC COMMAND EXTEND AddRelation1
-  [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "symmetry" "proved" "by" constr(t') "as" ident(n) ] ->
-   [ add_relation n a aeq (Some t) (Some t') None ]
-| [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t)  "as" ident(n) ] ->
-   [ add_relation n a aeq (Some t) None None ]
-| [ "Add" "Relation" constr(a) constr(aeq)  "as" ident(n) ] ->
-   [ add_relation n a aeq None None None ]
-END
+(* VERNAC COMMAND EXTEND AddRelation1 *)
+(*   [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "symmetry" "proved" "by" constr(t') "as" ident(n) ] -> *)
+(*    [ add_relation n a aeq (Some t) (Some t') None ] *)
+(* | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t)  "as" ident(n) ] -> *)
+(*    [ add_relation n a aeq (Some t) None None ] *)
+(* | [ "Add" "Relation" constr(a) constr(aeq)  "as" ident(n) ] -> *)
+(*    [ add_relation n a aeq None None None ] *)
+(* END *)
 
-VERNAC COMMAND EXTEND AddRelation2
-  [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(t') "as" ident(n) ] ->
-   [ add_relation n a aeq None (Some t') None ]
-| [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(t') "transitivity" "proved" "by" constr(t'')  "as" ident(n) ] ->
-   [ add_relation n a aeq None (Some t') (Some t'') ]
-END
+(* VERNAC COMMAND EXTEND AddRelation2 *)
+(*   [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(t') "as" ident(n) ] -> *)
+(*    [ add_relation n a aeq None (Some t') None ] *)
+(* | [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(t') "transitivity" "proved" "by" constr(t'')  "as" ident(n) ] -> *)
+(*    [ add_relation n a aeq None (Some t') (Some t'') ] *)
+(* END *)
 
-VERNAC COMMAND EXTEND AddRelation3
-  [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "transitivity" "proved" "by" constr(t') "as" ident(n) ] ->
-   [ add_relation n a aeq (Some t) None (Some t') ]
-| [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "symmetry" "proved" "by" constr(t') "transitivity" "proved" "by" constr(t'') "as" ident(n) ] ->
-   [ add_relation n a aeq (Some t) (Some t') (Some t'') ]
-| [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(t) "as" ident(n) ] ->
-   [ add_relation n a aeq None None (Some t) ]
-END
+(* VERNAC COMMAND EXTEND AddRelation3 *)
+(*   [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "transitivity" "proved" "by" constr(t') "as" ident(n) ] -> *)
+(*    [ add_relation n a aeq (Some t) None (Some t') ] *)
+(* | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(t) "symmetry" "proved" "by" constr(t') "transitivity" "proved" "by" constr(t'') "as" ident(n) ] -> *)
+(*    [ add_relation n a aeq (Some t) (Some t') (Some t'') ] *)
+(* | [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(t) "as" ident(n) ] -> *)
+(*    [ add_relation n a aeq None None (Some t) ] *)
+(* END *)
 
-TACTIC EXTEND setoid_symmetry
-   [ "setoid_symmetry" ] -> [ setoid_symmetry ]
- | [ "setoid_symmetry" "in" hyp(n) ] -> [ setoid_symmetry_in n ]
-END
+(* TACTIC EXTEND setoid_symmetry *)
+(*    [ "setoid_symmetry" ] -> [ setoid_symmetry ] *)
+(*  | [ "setoid_symmetry" "in" hyp(n) ] -> [ setoid_symmetry_in n ] *)
+(* END *)
 
-TACTIC EXTEND setoid_reflexivity
-   [ "setoid_reflexivity" ] -> [ setoid_reflexivity ]
-END
+(* TACTIC EXTEND setoid_reflexivity *)
+(*    [ "setoid_reflexivity" ] -> [ setoid_reflexivity ] *)
+(* END *)
 
-TACTIC EXTEND setoid_transitivity
-   [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
-END
+(* TACTIC EXTEND setoid_transitivity *)
+(*    [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ] *)
+(* END *)
 
 (* Inversion lemmas (Leminv) *)
 

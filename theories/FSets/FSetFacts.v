@@ -339,7 +339,7 @@ exact (H1 (refl_equal true) _ Ha).
 Qed.
 
 Add Morphism Empty with signature Equal ==> iff as Empty_m.
-Proof. 
+Proof.
 intros; do 2 rewrite is_empty_iff; rewrite H; intuition.
 Qed.
 
@@ -429,13 +429,13 @@ Add Relation t Subset
    the two previous lemmas, in order to allow conversion of 
    SubsetSetoid coming from separate Facts modules. See bug #1738. *)
 
-Add Morphism In with signature E.eq ==> Subset ++> impl as In_s_m.
+Instance In_s_m : Morphism (E.eq ==> Subset ++> impl) In | 1.
 Proof.
-unfold Subset, impl; intros; eauto with set.
+  do 2 red ; intros. unfold Subset, impl; intros; eauto with set.
 Qed.
 
 Add Morphism Empty with signature Subset --> impl as Empty_s_m.
-Proof. 
+Proof.
 unfold Subset, Empty, impl; firstorder.
 Qed.
 

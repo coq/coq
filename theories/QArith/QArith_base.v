@@ -200,7 +200,7 @@ Proof.
   unfold Qeq, Qopp; simpl.
   Open Scope Z_scope.
   intros.
-  replace (- Qnum x1 * ' Qden x2) with (- (Qnum x1 * ' Qden x2)) by ring.
+  replace (- Qnum x * ' Qden y) with (- (Qnum x * ' Qden y)) by ring.
   rewrite H in |- *;  ring.
   Close Scope Z_scope.
 Qed.

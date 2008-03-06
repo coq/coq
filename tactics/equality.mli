@@ -41,6 +41,10 @@ val rewriteRL   : constr  -> tactic
 
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
+val register_general_setoid_rewrite_clause :
+  (identifier option ->
+    bool -> constr -> new_goals:constr list -> tactic) -> unit
+
 val general_rewrite_bindings_in :
   bool -> identifier -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite_in          :

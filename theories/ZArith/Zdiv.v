@@ -931,7 +931,7 @@ Module EqualityModulo (M:SomeNumber).
 
  Add Morphism Zopp : Zopp_eqm.
  Proof.
-  intros; change (-x1 == -x2) with (0-x1 == 0-x2).
+  intros; change (-x == -y) with (0-x == 0-y).
   rewrite H; red; auto.
  Qed.
 

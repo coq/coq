@@ -107,7 +107,7 @@ intro ne;right;congruence.
 left;reflexivity.
 Defined.
 
-Theorem pos_eq_dec_refl : forall m, pos_eq_dec m m = left (m<>m) (refl_equal m) .
+Theorem pos_eq_dec_refl : forall m, pos_eq_dec m m = left (refl_equal m).
 fix 1;intros [mm|mm|].
 simpl; rewrite  pos_eq_dec_refl; reflexivity.
 simpl; rewrite  pos_eq_dec_refl; reflexivity.
@@ -116,7 +116,7 @@ Qed.
 
 Theorem pos_eq_dec_ex : forall m n,
  pos_eq m n =true -> exists h:m=n,
- pos_eq_dec m n = left (m<>n) h.
+ pos_eq_dec m n = left h.
 fix 1;intros [mm|mm|] [nn|nn|];try (simpl;congruence).
 simpl;intro e.
 elim (pos_eq_dec_ex _ _ e).

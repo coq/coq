@@ -243,7 +243,7 @@ Section ZMORPHISM.
                   Zplus Zmult Zeq_bool gen_phiZ).
    apply mkRmorph;simpl;try rrefl.
    apply gen_phiZ_add.  apply gen_phiZ_mul. apply gen_Zeqb_ok.
-  apply  (Smorph_morph Rsth Reqe Rth Zsth Zth SRmorph gen_phiZ_ext).
+  apply  (Smorph_morph Rsth Reqe Rth Zth SRmorph gen_phiZ_ext).
  Qed.
 
 End ZMORPHISM.

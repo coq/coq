@@ -660,48 +660,50 @@ Add Relation key E.eq
  transitivity proved by E.eq_trans 
  as KeySetoid.
 
-Add Relation t Equal 
- reflexivity proved by Equal_refl
- symmetry proved by Equal_sym
- transitivity proved by Equal_trans
+Implicit Arguments Equal [[elt]].
+
+Add Relation (t elt) Equal  
+ reflexivity proved by (@Equal_refl elt)
+ symmetry proved by (@Equal_sym elt)
+ transitivity proved by (@Equal_trans elt)
  as EqualSetoid.
 
-Add Morphism In with signature E.eq ==> Equal ==> iff as In_m.
+Add Morphism (@In elt) with signature E.eq ==> Equal ==> iff as In_m.
 Proof.
-unfold Equal; intros elt k k' Hk m m' Hm.
+unfold Equal; intros k k' Hk m m' Hm.
 rewrite (In_iff m Hk), in_find_iff, in_find_iff, Hm; intuition.
 Qed.
 
-Add Morphism MapsTo 
- with signature E.eq ==> @Logic.eq ==> Equal ==> iff as MapsTo_m.
+Add Morphism (@MapsTo elt)
+ with signature E.eq ==> Logic.eq ==> Equal ==> iff as MapsTo_m.
 Proof.
-unfold Equal; intros elt k k' Hk e m m' Hm.
+unfold Equal; intros k k' Hk e m m' Hm.
 rewrite (MapsTo_iff m e Hk), find_mapsto_iff, find_mapsto_iff, Hm; 
  intuition.
 Qed.
 
-Add Morphism Empty with signature Equal ==> iff as Empty_m.
+Add Morphism (@Empty elt) with signature Equal ==> iff as Empty_m.
 Proof.
-unfold Empty; intros elt m m' Hm; intuition.
+unfold Empty; intros m m' Hm; intuition.
 rewrite <-Hm in H0; eauto.
 rewrite Hm in H0; eauto.
 Qed.
 
-Add Morphism is_empty with signature Equal ==> @Logic.eq as is_empty_m.
+Add Morphism (@is_empty elt) with signature Equal ==> Logic.eq as is_empty_m.
 Proof.
-intros elt m m' Hm.
+intros m m' Hm.
 rewrite eq_bool_alt, <-is_empty_iff, <-is_empty_iff, Hm; intuition.
 Qed.
 
-Add Morphism mem with signature E.eq ==> Equal ==> @Logic.eq as mem_m.
+Add Morphism (@mem elt) with signature E.eq ==> Equal ==> Logic.eq as mem_m.
 Proof.
-intros elt k k' Hk m m' Hm.
+intros k k' Hk m m' Hm.
 rewrite eq_bool_alt, <- mem_in_iff, <-mem_in_iff, Hk, Hm; intuition.
 Qed.
 
-Add Morphism find with signature E.eq ==> Equal ==> @Logic.eq as find_m.
+Add Morphism (@find elt) with signature E.eq ==> Equal ==> Logic.eq as find_m.
 Proof.
-intros elt k k' Hk m m' Hm.
+intros k k' Hk m m' Hm.
 generalize (find_mapsto_iff m k)(find_mapsto_iff m' k')
  (not_find_in_iff m k)(not_find_in_iff m' k'); 
 do 2 destruct find; auto; intros.
@@ -710,27 +712,27 @@ rewrite <- H1, Hk, Hm, H2; auto.
 symmetry; rewrite <- H2, <-Hk, <-Hm, H1; auto.
 Qed.
 
-Add Morphism add with signature 
- E.eq ==> @Logic.eq ==> Equal ==> Equal as add_m.
+Add Morphism (@add elt) with signature 
+ E.eq ==> Logic.eq ==> Equal ==> Equal as add_m.
 Proof.
-intros elt k k' Hk e m m' Hm y.
+intros k k' Hk e m m' Hm y.
 rewrite add_o, add_o; do 2 destruct eq_dec; auto.
 elim n; rewrite <-Hk; auto.
 elim n; rewrite Hk; auto.
 Qed.
 
-Add Morphism remove with signature
+Add Morphism (@remove elt) with signature
  E.eq ==> Equal ==> Equal as remove_m.
 Proof.
-intros elt k k' Hk m m' Hm y.
+intros k k' Hk m m' Hm y.
 rewrite remove_o, remove_o; do 2 destruct eq_dec; auto.
 elim n; rewrite <-Hk; auto.
 elim n; rewrite Hk; auto.
 Qed.
 
-Add Morphism map with signature @Logic.eq ==> Equal ==> Equal as map_m.
+Add Morphism (@map elt elt') with signature Logic.eq ==> Equal ==> Equal as map_m.
 Proof.
-intros elt elt' f m m' Hm y.
+intros f m m' Hm y.
 rewrite map_o, map_o, Hm; auto.
 Qed.
 
@@ -1102,7 +1104,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
 
  End Elt.
 
- Add Morphism cardinal with signature Equal ==> @Logic.eq as cardinal_m.
+ Add Morphism (@cardinal elt) with signature Equal ==> Logic.eq as cardinal_m.
  Proof. intros; apply Equal_cardinal; auto. Qed.
 
 End WProperties.
