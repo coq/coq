@@ -445,14 +445,12 @@ let w_merge env with_types flags metas evars evd =
     	else begin
           let rhs' = subst_meta_instances metas rhs in
           match kind_of_term rhs with
-	  | App (f,cl) when is_mimick_head f ->
-	      let evd' = solve_simple_evar_eqn env evd ev rhs' in
-	      (try w_merge_rec evd' metas evars' eqns
-	       with ex when precatchable_exception ex ->
-               let evd' = mimick_evar evd flags f (Array.length cl) evn in
-	       w_merge_rec evd' metas evars eqns)
+	  | App (f,cl) when is_mimick_head f & occur_meta rhs' ->
+	      if occur_evar evn rhs' then
+                error_occur_check env (evars_of evd) evn rhs';
+	      let evd' = mimick_evar evd flags f (Array.length cl) evn in
+	      w_merge_rec evd' metas evars eqns
           | _ ->
-              (* ensure tail recursion in non-mimickable case! *)
 	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs') 
 	        metas evars' eqns
 	  end
