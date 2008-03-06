@@ -424,7 +424,8 @@ let order_metas metas =
 
 let solve_simple_evar_eqn env evd ev rhs =
   let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (CONV,ev,rhs) in
-  if b then evd else error_cannot_unify env (evars_of evd) (mkEvar ev,rhs)
+  if b & snd (extract_all_conv_pbs evd) = [] then evd
+  else error_cannot_unify env (evars_of evd) (mkEvar ev,rhs)
 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]
@@ -445,13 +446,11 @@ let w_merge env with_types flags metas evars evd =
           let rhs' = subst_meta_instances metas rhs in
           match kind_of_term rhs with
 	  | App (f,cl) when is_mimick_head f ->
-	      (try 
-		  w_merge_rec (solve_simple_evar_eqn env evd ev rhs')
-                    metas evars' eqns
-		with ex when precatchable_exception ex ->
-                  let evd' =
-                    mimick_evar evd flags f (Array.length cl) evn in
-		  w_merge_rec evd' metas evars eqns)
+	      let evd' = solve_simple_evar_eqn env evd ev rhs' in
+	      (try w_merge_rec evd' metas evars' eqns
+	       with ex when precatchable_exception ex ->
+               let evd' = mimick_evar evd flags f (Array.length cl) evn in
+	       w_merge_rec evd' metas evars eqns)
           | _ ->
               (* ensure tail recursion in non-mimickable case! *)
 	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs') 
