@@ -1727,8 +1727,25 @@ let rec xlate_vernac =
 		      CT_id_ne_list(n1, names), dblist)
 	| HintsExtern (n, c, t) ->
 	    CT_hint_extern(CT_int n, xlate_formula c, xlate_tactic t, dblist)
-        | HintsResolve l | HintsImmediate l -> 
+        | HintsImmediate l -> 
 	 let f1, formulas = match List.map xlate_formula l with
+	     a :: tl -> a, tl
+	   | _  -> failwith "" in
+	 let l' = CT_formula_ne_list(f1, formulas) in
+	   if local then
+             (match h with 
+		  HintsResolve _ ->
+		    CT_local_hints_resolve(l', dblist)
+	       	| HintsImmediate _ ->
+		    CT_local_hints_immediate(l', dblist)
+	       	| _ -> assert false)
+	   else
+	     (match h with
+		  HintsResolve _ -> CT_hints_resolve(l', dblist)
+		| HintsImmediate _ -> CT_hints_immediate(l', dblist)
+		| _ -> assert false)
+        | HintsResolve l -> 
+	 let f1, formulas = match List.map xlate_formula (List.map snd l) with
 	     a :: tl -> a, tl
 	   | _  -> failwith "" in
 	 let l' = CT_formula_ne_list(f1, formulas) in
@@ -2083,7 +2100,7 @@ let rec xlate_vernac =
 
     (* TypeClasses *) 
    | VernacDeclareInstance _|VernacContext _|
-	 VernacInstance (_, _, _)|VernacClass (_, _, _, _, _) ->
+	 VernacInstance (_, _, _, _)|VernacClass (_, _, _, _, _) ->
 	   xlate_error "TODO: Type Classes commands"
 
   | VernacResetName id -> CT_reset (xlate_ident (snd id))

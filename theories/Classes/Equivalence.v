@@ -16,26 +16,27 @@
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
+Require Export Coq.Program.Basics.
 Require Import Coq.Program.Program.
+
 Require Import Coq.Classes.Init.
+Require Export Coq.Classes.Relations.
+Require Export Coq.Classes.Morphisms.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
-
-Require Export Coq.Classes.Relations.
-Require Export Coq.Classes.Morphisms.
 
 Definition equiv [ Equivalence A R ] : relation A := R.
 
 (** Shortcuts to make proof search possible (unification won't unfold equiv). *)
 
-Definition equivalence_refl [ sa : Equivalence A ] : Reflexive equiv.
+Definition equivalence_refl [ sa : ! Equivalence A ] : Reflexive equiv.
 Proof. eauto with typeclass_instances. Qed.
 
-Definition equivalence_sym [ sa : Equivalence A ] : Symmetric equiv.
+Definition equivalence_sym [ sa : ! Equivalence A ] : Symmetric equiv.
 Proof. eauto with typeclass_instances. Qed.
 
-Definition equivalence_trans [ sa : Equivalence A ] : Transitive equiv.
+Definition equivalence_trans [ sa : ! Equivalence A ] : Transitive equiv.
 Proof. eauto with typeclass_instances. Qed.
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
@@ -43,20 +44,22 @@ Proof. eauto with typeclass_instances. Qed.
 (** Subset objects should be first coerced to their underlying type, but that notation doesn't work in the standard case then. *)
 (* Notation " x == y " := (equiv (x :>) (y :>)) (at level 70, no associativity) : type_scope. *)
 
-Notation " x == y " := (equiv x y) (at level 70, no associativity) : type_scope.
+Notation " x === y " := (equiv x y) (at level 70, no associativity) : equiv_scope.
 
-Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) : type_scope.
+Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) : equiv_scope.
+
+Open Local Scope equiv_scope.
 
 (** Use the [clsubstitute] command which substitutes an equality in every hypothesis. *)
 
 Ltac clsubst H := 
   match type of H with
-    ?x == ?y => clsubstitute H ; clear H x
+    ?x === ?y => clsubstitute H ; clear H x
   end.
 
 Ltac clsubst_nofail :=
   match goal with
-    | [ H : ?x == ?y |- _ ] => clsubst H ; clsubst_nofail
+    | [ H : ?x === ?y |- _ ] => clsubst H ; clsubst_nofail
     | _ => idtac
   end.
   
@@ -64,29 +67,62 @@ Ltac clsubst_nofail :=
 
 Tactic Notation "clsubst" "*" := clsubst_nofail.
 
-Lemma nequiv_equiv_trans : forall [ Equivalence A ] (x y z : A), x =/= y -> y == z -> x =/= z.
+Ltac setoidreplace H t :=
+  let Heq := fresh "Heq" in
+    cut(H) ; [ intro Heq ; setoid_rewrite Heq ; clear Heq | unfold equiv ; t ].
+
+Ltac setoidreplacein H H' t :=
+  let Heq := fresh "Heq" in
+    cut(H) ; [ intro Heq ; setoid_rewrite Heq in H' ; clear Heq | unfold equiv ; t ].
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) :=
+  setoidreplace (x === y) idtac.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) :=
+  setoidreplacein (x === y) id idtac.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "by" tactic(t) :=
+  setoidreplace (x === y) ltac:t.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) "by" tactic(t) :=
+  setoidreplacein (x === y) id ltac:t.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "using" "relation" constr(rel) :=
+  setoidreplace (rel x y) idtac.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel) "by" tactic(t) :=
+  setoidreplace (rel x y) ltac:t.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) 
+  "using" "relation" constr(rel) :=
+  setoidreplacein (rel x y) id idtac.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id)
+  "using" "relation" constr(rel) "by" tactic(t) :=
+  setoidreplacein (rel x y) id ltac:t.
+  
+Lemma nequiv_equiv_trans : forall [ ! Equivalence A ] (x y z : A), x =/= y -> y === z -> x =/= z.
 Proof with auto.
   intros; intro.
-  assert(z == y) by relation_sym.
-  assert(x == y) by relation_trans.
+  assert(z === y) by relation_sym.
+  assert(x === y) by relation_trans.
   contradiction.
 Qed.
 
-Lemma equiv_nequiv_trans : forall [ Equivalence A ] (x y z : A), x == y -> y =/= z -> x =/= z.
+Lemma equiv_nequiv_trans : forall [ ! Equivalence A ] (x y z : A), x === y -> y =/= z -> x =/= z.
 Proof.
   intros; intro. 
-  assert(y == x) by relation_sym.
-  assert(y == z) by relation_trans.
+  assert(y === x) by relation_sym.
+  assert(y === z) by relation_trans.
   contradiction.
 Qed.
-
-Open Scope type_scope.
 
 Ltac equiv_simplify_one :=
   match goal with
-    | [ H : ?x == ?x |- _ ] => clear H
-    | [ H : ?x == ?y |- _ ] => clsubst H
-    | [ |- ?x =/= ?y ] => let name:=fresh "Hneq" in intro name
+    | [ H : (?x === ?x)%type |- _ ] => clear H
+    | [ H : (?x === ?y)%type |- _ ] => clsubst H
+    | [ |- (?x =/= ?y)%type ] => let name:=fresh "Hneq" in intro name
   end.
 
 Ltac equiv_simplify := repeat equiv_simplify_one.
@@ -101,13 +137,13 @@ Ltac equivify := repeat equivify_tac.
 
 (** Every equivalence relation gives rise to a morphism, as it is transitive and symmetric. *)
 
-Instance [ sa : Equivalence A ] => equiv_morphism : ? Morphism (equiv ++> equiv ++> iff) equiv :=
+Instance [ sa : ! Equivalence ] => equiv_morphism : Morphism (equiv ++> equiv ++> iff) equiv :=
   respect := respect.
 
 (** The partial application too as it is reflexive. *)
 
-Instance [ sa : Equivalence A ] (x : A) => 
-  equiv_partial_app_morphism : ? Morphism (equiv ++> iff) (equiv x) :=
+Instance [ sa : ! Equivalence A ] (x : A) => 
+  equiv_partial_app_morphism : Morphism (equiv ++> iff) (equiv x) :=
   respect := respect. 
 
 Definition type_eq : relation Type :=
@@ -125,23 +161,10 @@ Ltac obligations_tactic ::= morphism_tac.
    using [iff_impl_id_morphism] if the proof is in [Prop] and
    [eq_arrow_id_morphism] if it is in Type. *)
 
-Program Instance iff_impl_id_morphism : ? Morphism (iff ++> impl) id.
+Program Instance iff_impl_id_morphism : 
+  Morphism (iff ++> impl) id.
 
 (* Program Instance eq_arrow_id_morphism : ? Morphism (eq +++> arrow) id. *)
-
-(* Definition compose_respect (A B C : Type) (R : relation (A -> B)) (R' : relation (B -> C)) *)
-(*   (x y : A -> C) : Prop := forall (f : A -> B) (g : B -> C), R f f -> R' g g. *)
-
-(* Program Instance (A B C : Type) (R : relation (A -> B)) (R' : relation (B -> C)) *)
-(*   [ mg : ? Morphism R' g ] [ mf : ? Morphism R f ] =>  *)
-(*   compose_morphism : ? Morphism (compose_respect R R') (g o f). *)
-
-(* Next Obligation. *)
-(* Proof. *)
-(*   apply (respect (m0:=mg)). *)
-(*   apply (respect (m0:=mf)). *)
-(*   assumption. *)
-(* Qed. *)
 
 (** Partial equivs don't require reflexivity so we can build a partial equiv on the function space. *)
 
@@ -155,3 +178,14 @@ Class PartialEquivalence (carrier : Type) (pequiv : relation carrier) :=
 (** Reset the default Program tactic. *)
 
 Ltac obligations_tactic ::= program_simpl.
+
+(** Default relation on a given support. *)
+
+Class DefaultRelation A := default_relation : relation A.
+
+(** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
+
+Instance [ ! Equivalence A R ] => 
+  equivalence_default : DefaultRelation A | 4 := 
+  default_relation := R.
+

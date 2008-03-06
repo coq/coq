@@ -33,13 +33,27 @@ open Entries
 
 let hint_db = "typeclass_instances"
 
-let add_instance_hint inst = 
-  Auto.add_hints false [hint_db] 
-    (Vernacexpr.HintsResolve [CAppExpl (dummy_loc, (None, Ident (dummy_loc, inst)), [])])
+let _ =
+  Typeclasses.register_add_instance_hint 
+    (fun inst pri ->
+      Auto.add_hints false [hint_db] 
+	(Vernacexpr.HintsResolve [pri, CAppExpl (dummy_loc, (None, inst), [])]))
 
-let declare_instance (_,id) =
-  add_instance_hint id
+let declare_instance_constant con =
+  let instance = Typeops.type_of_constant (Global.env ()) con in
+  let _, r = decompose_prod_assum instance in
+    match class_of_constr r with
+      | Some tc -> add_instance { is_class = tc ; is_pri = None; is_impl = con }
+      | None -> error "Constant does not build instances of a declared type class"
 
+let declare_instance idl =
+  let con = 
+    try (match global (Ident idl) with
+      | ConstRef x -> x
+      | _ -> raise Not_found)
+    with _ -> error "Instance definition not found"
+  in declare_instance_constant con
+	  
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 (* let mismatched_defs env n m = mismatched_ctx_inst env Definitions n m *)
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
@@ -110,7 +124,8 @@ let declare_implicit_proj c proj imps sub =
       aux 1 [] ctx
   in 
   let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
-    if sub then add_instance_hint (id_of_label (con_label proj));
+    if sub then 
+      declare_instance_constant proj;
     Impargs.declare_manual_implicits true (ConstRef proj) true expls
       
 let declare_implicits impls subs cl =
@@ -263,7 +278,7 @@ let new_class id par ar sup props =
   let ce t = Evarutil.check_evars env0 Evd.empty isevars t in
   let kn = 
     let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
-    let params, subst = rel_of_named_context [] ctx_params (*  @ ctx_super @ ctx_super_ctx) *) in
+    let params, subst = rel_of_named_context [] ctx_params in
     let fields, _ = rel_of_named_context subst ctx_props in
       List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
       declare_structure env0 (snd id) idb params arity fields
@@ -362,7 +377,7 @@ open Pp
 
 let ($$) g f = fun x -> g (f x)
 
-let new_instance ctx (instid, bk, cl) props =
+let new_instance ctx (instid, bk, cl) props pri hook =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
@@ -472,13 +487,13 @@ let new_instance ctx (instid, bk, cl) props =
   let hook cst = 
     let inst = 
       { is_class = k;
-	is_name = id;
+	is_pri = pri;
 	is_impl = cst;
       }
     in
-      add_instance_hint id;
       Impargs.declare_manual_implicits false (ConstRef cst) false imps;
-      Typeclasses.add_instance inst
+      Typeclasses.add_instance inst;
+      hook cst
   in
   let evm = Evd.evars_of (undefined_evars !isevars) in
     if evm = Evd.empty then
@@ -518,7 +533,7 @@ let solve_by_tac env evd evar evi t =
 	else evd, false
     else evd, false
 
-let context l =
+let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
@@ -529,8 +544,21 @@ let context l =
   let sigma = Evd.evars_of !isevars in
   let fullctx = Evarutil.nf_named_context_evar sigma (l @ ctx) in
     List.iter (function (id,_,t) -> 
-      Command.declare_one_assumption false (Local (* global *), Definitional) t
-	[] false (* inline *) (dummy_loc, id))
+      if Lib.is_modtype () then 
+	let cst = Declare.declare_internal_constant id
+	  (ParameterEntry (t,false), IsAssumption Logical)
+	in
+	  match class_of_constr t with
+	    | Some tc ->
+		(add_instance { is_class = tc ; is_pri = None; is_impl = cst });
+		hook (ConstRef cst)
+	    | None -> ()
+      else
+	(Command.declare_one_assumption false (Local (* global *), Definitional) t
+	    [] false (* inline *) (dummy_loc, id);
+	 match class_of_constr t with
+	     None -> ()
+	   | Some tc -> hook (VarRef id)))
       (List.rev fullctx)
 
 open Libobject

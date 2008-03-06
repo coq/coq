@@ -191,7 +191,10 @@ let pr_hints local db h pr_c pr_pat =
   let pph =
     match h with
     | HintsResolve l ->
-        str "Resolve " ++ prlist_with_sep sep pr_c l
+        str "Resolve " ++ prlist_with_sep sep 
+	  (fun (pri, c) -> pr_c c ++ 
+	    match pri with Some x -> spc () ++ str"(" ++ int x ++ str")" | None -> mt ())
+	  l
     | HintsImmediate l ->
         str"Immediate" ++ spc() ++ prlist_with_sep sep pr_c l
     | HintsUnfold l ->
@@ -703,7 +706,7 @@ let rec pr_vernac = function
 	  prlist_with_sep (fun () -> str";" ++ spc()) 
 	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props )
 	
- | VernacInstance (sup, (instid, bk, cl), props) -> 
+ | VernacInstance (sup, (instid, bk, cl), props, pri) -> 
      hov 1 (
        str"Instance" ++ spc () ++ 
 	 pr_and_type_binders_arg sup ++

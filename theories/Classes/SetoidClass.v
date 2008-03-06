@@ -149,7 +149,7 @@ Ltac obligations_tactic ::= morphism_tac.
    using [iff_impl_id_morphism] if the proof is in [Prop] and
    [eq_arrow_id_morphism] if it is in Type. *)
 
-Program Instance iff_impl_id_morphism : ? Morphism (iff ++> impl) id.
+Program Instance iff_impl_id_morphism : Morphism (iff ++> impl) id.
 
 (* Program Instance eq_arrow_id_morphism : ? Morphism (eq +++> arrow) id. *)
 

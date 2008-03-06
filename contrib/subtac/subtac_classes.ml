@@ -100,7 +100,7 @@ let type_class_instance_params isevars env id n ctx inst subst =
 let substitution_of_constrs ctx cstrs =
   List.fold_right2 (fun c (na, _, _) acc -> (na, c) :: acc) cstrs ctx []
 
-let new_instance ctx (instid, bk, cl) props =
+let new_instance ctx (instid, bk, cl) props pri =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
@@ -211,11 +211,10 @@ let new_instance ctx (instid, bk, cl) props =
   let hook cst = 
     let inst = 
       { is_class = k;
-	is_name = id;
+	is_pri = pri;
 	is_impl = cst;
       }
     in
-      Classes.add_instance_hint id;
       Impargs.declare_manual_implicits false (ConstRef cst) false imps;
       Typeclasses.add_instance inst
   in

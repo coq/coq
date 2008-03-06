@@ -42,7 +42,7 @@ Notation " x == y " := (equiv_dec (x :>) (y :>)) (no associativity, at level 70)
 
 (** Use program to solve some obligations. *)
 
-Definition swap_sumbool `A B` (x : { A } + { B }) : { B } + { A } :=
+Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
   match x with
     | left H => @right _ _ H 
     | right H => @left _ _ H 
@@ -52,7 +52,7 @@ Require Import Coq.Program.Program.
 
 (** Invert the branches. *)
 
-Program Definition nequiv_dec [ EqDec A ] (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
+Program Definition nequiv_dec [ ! EqDec A ] (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
 
 (** Overloaded notation for inequality. *)
 
@@ -60,10 +60,10 @@ Infix "=/=" := nequiv_dec (no associativity, at level 70).
 
 (** Define boolean versions, losing the logical information. *)
 
-Definition equiv_decb [ EqDec A ] (x y : A) : bool :=
+Definition equiv_decb [ ! EqDec A ] (x y : A) : bool :=
   if x == y then true else false.
 
-Definition nequiv_decb [ EqDec A ] (x y : A) : bool :=
+Definition nequiv_decb [ ! EqDec A ] (x y : A) : bool :=
   negb (equiv_decb x y).
 
 Infix "==b" := equiv_decb (no associativity, at level 70).
@@ -78,15 +78,15 @@ Require Import Coq.Arith.Arith.
 Program Instance eq_setoid : Setoid A :=
   equiv := eq ; setoid_equiv := eq_equivalence.
 
-Program Instance nat_eq_eqdec : ? EqDec (@eq_setoid nat) :=
+Program Instance nat_eq_eqdec : EqDec (@eq_setoid nat) :=
   equiv_dec := eq_nat_dec.
 
 Require Import Coq.Bool.Bool.
 
-Program Instance bool_eqdec : ? EqDec (@eq_setoid bool) :=
+Program Instance bool_eqdec : EqDec (@eq_setoid bool) :=
   equiv_dec := bool_dec.
 
-Program Instance unit_eqdec : ? EqDec (@eq_setoid unit) :=
+Program Instance unit_eqdec : EqDec (@eq_setoid unit) :=
   equiv_dec x y := left.
 
   Next Obligation.
@@ -95,8 +95,8 @@ Program Instance unit_eqdec : ? EqDec (@eq_setoid unit) :=
     reflexivity.
   Qed.
 
-Program Instance [ ? EqDec (@eq_setoid A), ? EqDec (@eq_setoid B) ] => 
-  prod_eqdec : ? EqDec (@eq_setoid (prod A B)) :=
+Program Instance [ EqDec (@eq_setoid A), EqDec (@eq_setoid B) ] => 
+  prod_eqdec : EqDec (@eq_setoid (prod A B)) :=
   equiv_dec x y := 
     dest x as (x1, x2) in 
     dest y as (y1, y2) in 
@@ -111,7 +111,7 @@ Program Instance [ ? EqDec (@eq_setoid A), ? EqDec (@eq_setoid B) ] =>
 
 Require Import Coq.Program.FunctionalExtensionality.
 
-Program Instance [ ? EqDec (@eq_setoid A) ] => bool_function_eqdec : ? EqDec (@eq_setoid (bool -> A)) :=
+Program Instance [ EqDec (@eq_setoid A) ] => bool_function_eqdec : EqDec (@eq_setoid (bool -> A)) :=
   equiv_dec f g := 
     if f true == g true then
       if f false == g false then left

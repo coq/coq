@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Libnames
 open Decl_kinds
 open Term
 open Sign
@@ -48,12 +49,8 @@ type typeclasses = (identifier, typeclass) Gmap.t
 
 type instance = {
   is_class: typeclass;
-  is_name: identifier; (* Name of the instance *)
-(*   is_params: named_context; (\* Context of the parameters, instanciated *\) *)
-(*   is_super: named_context; (\* The corresponding superclasses *\) *)
-(*   is_defs: named_context; (\* Context of the definitions, instanciated *\) *)
+  is_pri: int option;
   is_impl: constant; 
-(*   is_add_hint : unit -> unit; (\* Hook to add an hint for the instance *\) *)
 }
 
 type instances = (identifier, instance list) Gmap.t
@@ -81,19 +78,20 @@ let _ =
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
-      Summary.survive_module = true;
+      Summary.survive_module = false;
       Summary.survive_section = true }
 
 let gmap_merge old ne =
   Gmap.fold (fun k v acc -> Gmap.add k v acc) ne old
 
-let gmap_list_merge old ne =
+let gmap_list_merge old upd ne =
   let ne = 
     Gmap.fold (fun k v acc -> 
       let oldv = try Gmap.find k old with Not_found -> [] in
       let v' = 
 	List.fold_left (fun acc x -> 
-	  if not (List.exists (fun y -> y.is_name = x.is_name) v) then x :: acc else acc)
+	  if not (List.exists (fun y -> y.is_impl = x.is_impl) v) then
+	    (x :: acc) else acc)
 	v oldv
       in Gmap.add k v' acc)
       ne Gmap.empty
@@ -102,15 +100,24 @@ let gmap_list_merge old ne =
       let newv = try Gmap.find k ne with Not_found -> [] in
       let v' = 
 	List.fold_left (fun acc x -> 
-	  if not (List.exists (fun y -> y.is_name = x.is_name) acc) then x :: acc else acc)
+	  if not (List.exists (fun y -> y.is_impl = x.is_impl) acc) then x :: acc else acc)
 	  newv v
       in Gmap.add k v' acc)
       old ne
 
+let add_instance_hint_ref = ref (fun id pri -> assert false)
+let register_add_instance_hint = (:=) add_instance_hint_ref
+let add_instance_hint id = !add_instance_hint_ref id
+
+let qualid_of_con c = 
+  Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
+
 let cache (_, (cl, m, inst)) =
   classes := gmap_merge !classes cl;
   methods := gmap_merge !methods m;
-  instances := gmap_list_merge !instances inst
+  instances := gmap_list_merge !instances 
+    (fun i -> add_instance_hint (qualid_of_con i.is_impl))
+    inst
 
 open Libobject
 
@@ -137,8 +144,11 @@ let subst (_,subst,(cl,m,inst)) =
   in
   let subst_inst classes insts =
     List.map (fun is -> 
-      { is with is_class = Gmap.find is.is_class.cl_name classes; 
-	is_impl = do_subst_con is.is_impl }) insts
+      let is' = 
+	{ is_class = Gmap.find is.is_class.cl_name classes; 
+	  is_pri = is.is_pri;
+	  is_impl = do_subst_con is.is_impl }
+      in if is' = is then is else is') insts
   in
   let classes = Gmap.map subst_class cl in
   let instances = Gmap.map (subst_inst classes) inst in
@@ -149,8 +159,9 @@ let discharge (_,(cl,m,inst)) =
     { cl with cl_impl = Lib.discharge_inductive cl.cl_impl }
   in
   let subst_inst classes insts =
-    List.map (fun is -> { is with is_impl = Lib.discharge_con is.is_impl;
-      is_class = Gmap.find is.is_class.cl_name classes; }) insts
+    List.map (fun is -> { is_impl = Lib.discharge_con is.is_impl;
+			  is_pri = is.is_pri;
+			  is_class = Gmap.find is.is_class.cl_name classes; }) insts
   in
   let classes = Gmap.map subst_class cl in
   let instances = Gmap.map (subst_inst classes) inst in
@@ -202,8 +213,12 @@ let instances_of c =
   try Gmap.find c.cl_name !instances with Not_found -> []
 
 let add_instance i =
-  instances := gmapl_add i.is_class.cl_name i !instances;
-  update ()
+  try
+    let cl = Gmap.find i.is_class.cl_name !classes in
+      instances := gmapl_add cl.cl_name { i with is_class = cl } !instances;
+      add_instance_hint (qualid_of_con i.is_impl) i.is_pri;
+      update ()
+  with Not_found -> unbound_class (Global.env ()) (dummy_loc, i.is_class.cl_name)
 
 open Libnames
       

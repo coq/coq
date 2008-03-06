@@ -256,17 +256,19 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = ident; bl = LIST1 binder_let;
-        annot = rec_annotation; ty = type_cstr; 
+    [ [ id = ident; b = binder_let;
+	bl = binders_let_fixannot;
+        ty = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
+	  let bl, annot = (b :: fst bl, snd bl) in
           let names = List.map snd (names_of_local_assums bl) in
           let ni =
             match fst annot with
-                Some id ->
-                  (try Some (list_index0 (Name id) names)
+                Some (_, id) ->
+                  (try Some (list_index0 id names)
                    with Not_found ->  Util.user_err_loc
                      (loc,"Fixpoint",
-                      Pp.str "No argument named " ++ Nameops.pr_id id))
+                      Pp.str "No argument named " ++ Nameops.pr_name id))
               | None -> 
 		  (* If there is only one argument, it is the recursive one, 
 		     otherwise, we search the recursive index later *)
@@ -278,13 +280,6 @@ GEXTEND Gram
     [ [ id = ident; bl = LIST0 binder_let; ty = type_cstr; ":=";
         def = lconstr; ntn = decl_notation ->
           ((id,bl,ty,def),ntn) ] ]
-  ;
-  rec_annotation:
-    [ [ "{"; IDENT "struct"; id=IDENT; "}" -> (Some (id_of_string id), CStructRec)
-      | "{"; IDENT "wf"; rel=constr; id=OPT IDENT; "}" -> (Option.map id_of_string id, CWfRec rel) 
-      | "{"; IDENT "measure"; rel=constr; id=OPT IDENT; "}" -> (Option.map id_of_string id, CMeasureRec rel) 
-      | ->  (None, CStructRec)
-      ] ]
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c 
@@ -495,9 +490,9 @@ GEXTEND Gram
 	  VernacContext c
 
       | IDENT "Instance"; sup = OPT [ l = delimited_binders_let ; "=>" -> l ];
-	 is = typeclass_constraint ; props = typeclass_field_defs ->
+	 is = typeclass_constraint ; pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
 	   let sup = match sup with None -> [] | Some l -> l in
-	     VernacInstance (sup, is, props)
+	     VernacInstance (sup, is, props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 

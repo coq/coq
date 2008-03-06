@@ -165,6 +165,7 @@ module Constr :
     val binder_let : local_binder Gram.Entry.e
     val delimited_binder_let : local_binder Gram.Entry.e
     val binders_let : local_binder list Gram.Entry.e
+    val binders_let_fixannot : (local_binder list * (name located option * recursion_order_expr)) Gram.Entry.e
     val delimited_binders_let : local_binder list Gram.Entry.e
     val typeclass_constraint : (name located * binding_kind * constr_expr) Gram.Entry.e
   end

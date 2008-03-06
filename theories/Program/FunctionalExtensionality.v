@@ -17,6 +17,7 @@
    
 Require Import Coq.Program.Utils.
 Require Import Coq.Program.Wf.
+Require Import Coq.Program.Equality.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

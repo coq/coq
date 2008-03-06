@@ -148,8 +148,8 @@ let subtac (loc, command) =
       | VernacAssumption (stre,nl,l) -> 
 	  vernac_assumption env isevars stre l nl
 
-      | VernacInstance (sup, is, props) ->
-	  ignore(Subtac_classes.new_instance sup is props)
+      | VernacInstance (sup, is, props, pri) ->
+	  ignore(Subtac_classes.new_instance sup is props pri)
 
       | VernacCoFixpoint (l, b) ->
 	  let _ = trace (str "Building cofixpoint") in

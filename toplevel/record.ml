@@ -138,7 +138,8 @@ let declare_projections indsp coers fields =
   let r = mkInd indsp in
   let rp = applist (r, extended_rel_list 0 paramdecls) in
   let paramargs = extended_rel_list 1 paramdecls in (*def in [[params;x:rp]]*)
-  let x = Termops.named_hd (Global.env()) r Anonymous in
+  let x = Name (next_ident_away mip.mind_typename (ids_of_context (Global.env()))) in
+    (* Termops.named_hd (Global.env()) r Anonymous  *)
   let fields = instantiate_possibly_recursive_type indsp paramdecls fields in
   let lifted_fields = lift_rel_context 1 fields in
   let (_,kinds,sp_projs,_) =

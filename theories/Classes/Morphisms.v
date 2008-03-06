@@ -10,7 +10,7 @@
 (* Typeclass-based morphisms with standard instances for equivalence relations.
  
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - Universit�copyright Paris Sud
+   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
    91405 Orsay, France *)
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
@@ -37,8 +37,8 @@ Definition respectful A (R : relation A) B (R' : relation B) : relation (A -> B)
 
 (** Notations reminiscent of the old syntax for declaring morphisms. *)
 
-Notation " R ==> R' " := (@respectful _ R _ R') (right associativity, at level 20).
 Notation " R ++> R' " := (@respectful _ R _ R') (right associativity, at level 20).
+Notation " R ==> R' " := (@respectful _ R _ R') (right associativity, at level 20).
 Notation " R --> R' " := (@respectful _ (inverse R) _ R') (right associativity, at level 20).
 
 (** A morphism on a relation [R] is an object respecting the relation (in its kernel). 
@@ -106,34 +106,87 @@ Qed.
 
 (* Program Definition arrow_morphism `A B` (m : A -> B) : Morphism (eq ++> eq) m. *)
 
-(** Any binary morphism respecting some relations up to [iff] respects 
+(** Any morphism respecting some relations up to [iff] respects 
    them up to [impl] in each way. Very important instances as we need [impl]
    morphisms at the top level when we rewrite. *)
 
-Program Instance `A` (R : relation A) `B` (R' : relation B)
-  [ ? Morphism (R ++> R' ++> iff) m ] =>
+Class SubRelation A (R S : relation A) :=
+  subrelation :> Morphism (S ==> R) (fun x => x).
 
-  iff_impl_binary_morphism : ? Morphism (R ++> R' ++> impl) m.
+Instance iff_impl_subrelation : SubRelation Prop impl iff.
+Proof.
+  constructor ; red ; intros.
+  tauto.
+Qed.
 
-  Next Obligation.
-  Proof.
-    destruct respect with x y x0 y0 ; auto.
-  Qed.
+Instance iff_inverse_impl_subrelation : SubRelation Prop (inverse impl) iff.
+Proof.
+  constructor ; red ; intros.
+  tauto.
+Qed.
 
-Program Instance (A : Type) (R : relation A) `B` (R' : relation B)
-  [ ? Morphism (R ++> R' ++> iff) m ] =>
-  iff_inverse_impl_binary_morphism : ? Morphism (R ++> R' ++> inverse impl) m.
+Instance [ SubRelation A R₁ R₂ ] =>
+  morphisms_subrelation : SubRelation (B -> A) (R ==> R₁) (R ==> R₂).
+Proof.
+  constructor ; repeat red ; intros.
+  destruct subrelation.
+  red in respect0, H ; unfold id in *.
+  apply respect0.
+  apply H.
+  apply H0.
+Qed.
 
-  Next Obligation.
-  Proof.
-    destruct respect with x y x0 y0 ; auto.
-  Qed.
+(** High priority because it is always applicable and loops. *)
+
+Instance [ SubRelation A R₁ R₂, Morphism R₂ m ] =>
+  subrelation_morphism : Morphism R₁ m | 4.
+Proof.
+  destruct subrelation.
+  red in respect0.
+  unfold id in * ; apply respect0.
+  apply respect.
+Qed.
+
+(* Program Instance `A` (R : relation A) `B` (R' : relation B) *)
+(*   [ ? Morphism (R ==> R' ==> iff) m ] => *)
+(*   iff_impl_binary_morphism : ? Morphism (R ==> R' ==> impl) m. *)
+
+(*   Next Obligation. *)
+(*   Proof. *)
+(*     destruct respect with x y x0 y0 ; auto. *)
+(*   Qed. *)
+
+(* Program Instance `A` (R : relation A) `B` (R' : relation B) *)
+(*   [ ? Morphism (R ==> R' ==> iff) m ] => *)
+(*   iff_inverse_impl_binary_morphism : ? Morphism (R ==> R' ==> inverse impl) m. *)
+
+(*   Next Obligation. *)
+(*   Proof. *)
+(*     destruct respect with x y x0 y0 ; auto. *)
+(*   Qed. *)
+
+
+(* Program Instance [ Morphism (A -> Prop) (R ==> iff) m ] => *)
+(*   iff_impl_morphism : ? Morphism (R ==> impl) m. *)
+
+(*   Next Obligation. *)
+(*   Proof. *)
+(*     destruct respect with x y ; auto. *)
+(*   Qed. *)
+
+(* Program Instance [ Morphism (A -> Prop) (R ==> iff) m ] => *)
+(*   iff_inverse_impl_morphism : ? Morphism (R ==> inverse impl) m. *)
+
+(*   Next Obligation. *)
+(*   Proof. *)
+(*     destruct respect with x y ; auto. *)
+(*   Qed. *)
 
 (** Logical implication [impl] is a morphism for logical equivalence. *)
 
-Program Instance iff_iff_iff_impl_morphism : ? Morphism (iff ++> iff ++> iff) impl.
+Program Instance iff_iff_iff_impl_morphism : Morphism (iff ==> iff ==> iff) impl.
 
-Lemma reflexive_impl_iff [ Symmetric A R, ? Morphism (R ++> impl) m ] : Morphism (R ==> iff) m.
+Lemma reflexive_impl_iff [ ! Symmetric A R, Morphism (R ==> impl) m ] : Morphism (R ==> iff) m.
 Proof.
   intros.
   constructor. red ; intros. 
@@ -142,8 +195,8 @@ Qed.
 
 (** The complement of a relation conserves its morphisms. *)
 
-Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] => 
-  complement_morphism : ? Morphism (RA ++> RA ++> iff) (complement R).
+Program Instance {A} (RA : relation A) [ Morphism (RA ==> RA ==> iff) R ] => 
+  complement_morphism : Morphism (RA ==> RA ==> iff) (complement R).
 
   Next Obligation.
   Proof.
@@ -156,8 +209,8 @@ Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] =>
 
 (** The inverse too. *)
 
-Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] => 
-  inverse_morphism : ? Morphism (RA ++> RA ++> iff) (inverse R).
+Program Instance {A} (RA : relation A) [ Morphism (RA ==> RA ==> iff) R ] => 
+  inverse_morphism : Morphism (RA ==> RA ==> iff) (inverse R).
 
   Next Obligation.
   Proof.
@@ -165,8 +218,8 @@ Program Instance `A` (RA : relation A) [ ? Morphism (RA ++> RA ++> iff) R ] =>
     apply respect ; auto.
   Qed.
 
-Program Instance (A B C : Type) [ ? Morphism (RA ++> RB ++> RC) (f : A -> B -> C) ] => 
-  flip_morphism : ? Morphism (RB ++> RA ++> RC) (flip f).
+Program Instance {A B C : Type} [ Morphism (RA ==> RB ==> RC) (f : A -> B -> C) ] => 
+  flip_morphism : Morphism (RB ==> RA ==> RC) (flip f).
 
   Next Obligation.
   Proof.
@@ -174,51 +227,13 @@ Program Instance (A B C : Type) [ ? Morphism (RA ++> RB ++> RC) (f : A -> B -> C
     apply respect ; auto.
   Qed.
 
-(* Definition respectful' A (R : relation A) B (R' : relation B) (f : A -> B) : relation A := *)
-(*   fun x y => R x y -> R' (f x) (f y). *)
-
-(* Definition morphism_respectful' A R B (R' : relation B) (f : A -> B) *)
-(*   [ ? Morphism (R ++> R') f ] (x y : A) : respectful' R R' f x y. *)
-(* intros. *)
-(* destruct H. *)
-(* red in respect0. *)
-(* red.  *)
-(* apply respect0. *)
-(* Qed. *)
-
-(* Existing Instance morphism_respectful'. *)
-
-(* Goal forall A [ Equivalence A (eqA : relation A) ] R [ ? Morphism (eqA ++> iff) m ] (x y : A)  *)
-(*   [ ? Morphism (eqA ++> eqA) m' ] (m' : A -> A), eqA x y -> True. *)
-(*   intros. *)
-(*   cut (relation A) ; intros R'. *)
-(*   cut ((eqA ++> R') m' m') ; intros. *)
-(*   assert({ R' : relation A & Reflexive R' }). *)
-(*   econstructor. *)
-(*   typeclass_instantiation. *)
-  
-
-(*   assert (exists R' : relation A, Morphism ((fun x y => eqA x y -> R' (m' x) (m' y)) ++> iff) m). *)
-(*   eapply ex_intro. *)
-(*   unfold respectful. *)
-(*   typeclass_instantiation. *)
-  
-
-(*   assert (exists R', Morphism (R' ++> iff) m /\ Morphism (eqA ++> R') m'). *)
-(*   typeclass_instantiation. *)
-(*   Set Printing All. *)
-(*   Show Proof. *)
-  
-  
-(*   apply respect. *)
-
 (** Partial applications are ok when a proof of refl is available. *)
 
 (** A proof of [R x x] is available. *)
 
 (* Program Instance (A : Type) R B (R' : relation B) *)
-(*   [ ? Morphism (R ++> R') m ] [ ? Morphism R x ] => *)
-(*   morphism_partial_app_morphism : ? Morphism R' (m x). *)
+(*   [ Morphism (R ==> R') m ] [ Morphism R x ] => *)
+(*   morphism_partial_app_morphism : Morphism R' (m x). *)
 
 (*   Next Obligation. *)
 (*   Proof with auto. *)
@@ -229,24 +244,24 @@ Program Instance (A B C : Type) [ ? Morphism (RA ++> RB ++> RC) (f : A -> B -> C
 
 (** Morpshism declarations for partial applications. *)
 
-Program Instance [ Transitive A R ] (x : A) =>
-  trans_contra_inv_impl_morphism : ? Morphism (R --> inverse impl) (R x).
+Program Instance [ ! Transitive A R ] (x : A) =>
+  trans_contra_inv_impl_morphism : Morphism (R --> inverse impl) (R x).
 
   Next Obligation.
   Proof with auto.
     trans y...
   Qed.
 
-Program Instance [ Transitive A R ] (x : A) =>
-  trans_co_impl_morphism : ? Morphism (R ++> impl) (R x).
+Program Instance [ ! Transitive A R ] (x : A) =>
+  trans_co_impl_morphism : Morphism (R ==> impl) (R x).
 
   Next Obligation.
   Proof with auto.
     trans x0...
   Qed.
 
-Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
-  trans_sym_co_inv_impl_morphism : ? Morphism (R ++> inverse impl) (R x).
+Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
+  trans_sym_co_inv_impl_morphism : Morphism (R ==> inverse impl) (R x).
 
   Next Obligation.
   Proof with auto.
@@ -254,8 +269,8 @@ Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
     sym...
   Qed.
 
-Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
-  trans_sym_contra_impl_morphism : ? Morphism (R --> impl) (R x).
+Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
+  trans_sym_contra_impl_morphism : Morphism (R --> impl) (R x).
 
   Next Obligation.
   Proof with auto.
@@ -264,7 +279,7 @@ Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
   Qed.
 
 Program Instance [ Equivalence A R ] (x : A) =>
-  equivalence_partial_app_morphism : ? Morphism (R ++> iff) (R x).
+  equivalence_partial_app_morphism : Morphism (R ==> iff) (R x).
 
   Next Obligation.
   Proof with auto.
@@ -277,8 +292,8 @@ Program Instance [ Equivalence A R ] (x : A) =>
 (** With symmetric relations, variance is no issue ! *)
 
 (* Program Instance (A B : Type) (R : relation A) (R' : relation B) *)
-(*   [ Morphism _ (R ++> R') m ] [ Symmetric A R ] =>  *)
-(*   sym_contra_morphism : ? Morphism (R --> R') m. *)
+(*   [ Morphism _ (R ==> R') m ] [ Symmetric A R ] =>  *)
+(*   sym_contra_morphism : Morphism (R --> R') m. *)
 
 (*   Next Obligation. *)
 (*   Proof with auto. *)
@@ -289,8 +304,8 @@ Program Instance [ Equivalence A R ] (x : A) =>
 (** [R] is reflexive, hence we can build the needed proof. *)
 
 Program Instance (A B : Type) (R : relation A) (R' : relation B)
-  [ ? Morphism (R ++> R') m ] [ Reflexive A R ] (x : A) =>
-  reflexive_partial_app_morphism : ? Morphism R' (m x).
+  [ Morphism (R ==> R') m ] [ Reflexive R ] (x : A) =>
+  reflexive_partial_app_morphism : Morphism R' (m x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -302,8 +317,8 @@ Program Instance (A B : Type) (R : relation A) (R' : relation B)
 (** Every transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof
    to get an [R y z] goal. *)
 
-Program Instance [ Transitive A R ] => 
-  trans_co_eq_inv_impl_morphism : ? Morphism (R ++> eq ++> inverse impl) R.
+Program Instance [ ! Transitive A R ] => 
+  trans_co_eq_inv_impl_morphism : Morphism (R ==> eq ==> inverse impl) R.
 
   Next Obligation.
   Proof with auto.
@@ -311,8 +326,8 @@ Program Instance [ Transitive A R ] =>
     subst x0...
   Qed.
 
-Program Instance [ Transitive A R ] => 
-  trans_contra_eq_inv_impl_morphism : ? Morphism (R --> eq ++> impl) R.
+Program Instance [ ! Transitive A R ] => 
+  trans_contra_eq_impl_morphism : Morphism (R --> eq ==> impl) R.
 
   Next Obligation.
   Proof with auto.
@@ -322,8 +337,8 @@ Program Instance [ Transitive A R ] =>
 
 (** Every symmetric and transitive relation gives rise to an equivariant morphism. *)
 
-Program Instance [ Transitive A R, Symmetric A R ] => 
-  trans_sym_morphism : ? Morphism (R ++> R ++> iff) R.
+Program Instance [ ! Transitive A R, Symmetric R ] => 
+  trans_sym_morphism : Morphism (R ==> R ==> iff) R.
 
   Next Obligation.
   Proof with auto.
@@ -334,7 +349,7 @@ Program Instance [ Transitive A R, Symmetric A R ] =>
   Qed.
 
 Program Instance [ Equivalence A R ] => 
-  equiv_morphism : ? Morphism (R ++> R ++> iff) R.
+  equiv_morphism : Morphism (R ==> R ==> iff) R.
 
   Next Obligation.
   Proof with auto.
@@ -346,44 +361,65 @@ Program Instance [ Equivalence A R ] =>
 
 (** In case the rewrite happens at top level. *)
 
-Program Instance iff_inverse_impl_id : 
-  ? Morphism (iff ++> inverse impl) id.
+Program Instance iff_inverse_impl_id :
+  Morphism (iff ==> inverse impl) id.
 
-Program Instance inverse_iff_inverse_impl_id : 
-  ? Morphism (iff --> inverse impl) id.
+Program Instance inverse_iff_inverse_impl_id :
+  Morphism (iff --> inverse impl) id.
   
-Program Instance iff_impl_id : 
-  ? Morphism (iff ++> impl) id.
+Program Instance iff_impl_id :
+  Morphism (iff ==> impl) id.
 
-Program Instance inverse_iff_impl_id : 
-  ? Morphism (iff --> impl) id.
+Program Instance inverse_iff_impl_id :
+  Morphism (iff --> impl) id.
   
 (** Standard instances for [iff] and [impl]. *)
 
 (** Logical conjunction. *)
 
-Program Instance and_impl_iff_morphism : ? Morphism (impl ++> iff ++> impl) and.
+Program Instance and_impl_iff_morphism : 
+  Morphism (impl ==> iff ==> impl) and.
 
-Program Instance and_iff_impl_morphism : ? Morphism (iff ++> impl ++> impl) and.
+Program Instance and_iff_impl_morphism : 
+  Morphism (iff ==> impl ==> impl) and.
 
 Program Instance and_inverse_impl_iff_morphism : 
-  ? Morphism (inverse impl ++> iff ++> inverse impl) and.
+  Morphism (inverse impl ==> iff ==> inverse impl) and.
 
 Program Instance and_iff_inverse_impl_morphism : 
-  ? Morphism (iff ++> inverse impl ++> inverse impl) and.
+  Morphism (iff ==> inverse impl ==> inverse impl) and.
 
-Program Instance and_iff_morphism : ? Morphism (iff ++> iff ++> iff) and.
+Program Instance and_iff_morphism : 
+  Morphism (iff ==> iff ==> iff) and.
 
 (** Logical disjunction. *)
 
-Program Instance or_impl_iff_morphism : ? Morphism (impl ++> iff ++> impl) or.
+Program Instance or_impl_iff_morphism : 
+  Morphism (impl ==> iff ==> impl) or.
 
-Program Instance or_iff_impl_morphism : ? Morphism (iff ++> impl ++> impl) or.
+Program Instance or_iff_impl_morphism : 
+  Morphism (iff ==> impl ==> impl) or.
 
 Program Instance or_inverse_impl_iff_morphism :
-  ? Morphism (inverse impl ++> iff ++> inverse impl) or.
+  Morphism (inverse impl ==> iff ==> inverse impl) or.
 
 Program Instance or_iff_inverse_impl_morphism : 
-  ? Morphism (iff ++> inverse impl ++> inverse impl) or.
+  Morphism (iff ==> inverse impl ==> inverse impl) or.
 
-Program Instance or_iff_morphism : ? Morphism (iff ++> iff ++> iff) or.
+Program Instance or_iff_morphism : 
+  Morphism (iff ==> iff ==> iff) or.
+
+(** Coq functions are morphisms for leibniz equality, 
+   applied only if really needed. *)
+
+Instance {A B : Type} (m : A -> B) =>
+  any_eq_eq_morphism : Morphism (@Logic.eq A ==> @Logic.eq B) m | 4.
+Proof.
+  red ; intros. subst ; reflexivity.
+Qed.
+
+Instance {A : Type} (m : A -> Prop) =>
+  any_eq_iff_morphism : Morphism (@Logic.eq A ==> iff) m | 4.
+Proof.
+  red ; intros. subst ; reflexivity.
+Qed.

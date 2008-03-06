@@ -112,7 +112,7 @@ type comment =
   | CommentInt of int
 
 type hints =
-  | HintsResolve of constr_expr list
+  | HintsResolve of (int option * constr_expr) list
   | HintsImmediate of constr_expr list
   | HintsUnfold of reference list
   | HintsConstructors of reference list
@@ -235,7 +235,8 @@ type vernac_expr =
   | VernacInstance of
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
-	(lident * lident list * constr_expr) list (* props *)
+	(lident * lident list * constr_expr) list * (* props *)
+	int option (* Priority *)
 
   | VernacContext of typeclass_context
 	

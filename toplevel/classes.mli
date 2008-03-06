@@ -43,11 +43,11 @@ val new_instance :
   local_binder list ->
   typeclass_constraint ->
   binder_def_list ->
+  int option ->
+  (constant -> unit) ->
   identifier
-
-val context : typeclass_context -> unit
-
-val add_instance_hint : identifier -> unit
+    
+val context : ?hook:(Libnames.global_reference -> unit) -> typeclass_context -> unit
 
 val declare_instance : identifier located -> unit
 

@@ -33,4 +33,3 @@ Ltac setoid_extensionality :=
   match goal with
     [ |- @eq ?A ?X ?Y ] => apply (setoideq_eq (a:=A) (x:=X) (y:=Y))
   end.
-

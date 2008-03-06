@@ -72,19 +72,19 @@ val print_hint_ref : global_reference -> unit
 
 val print_hint_db_by_name : hint_db_name -> unit
 
-(* [make_exact_entry hint_name (c, ctyp)]. 
+(* [make_exact_entry pri (c, ctyp)]. 
    [c] is the term given as an exact proof to solve the goal;
-   [ctyp] is the type of [hc]. *)
+   [ctyp] is the type of [c]. *)
 
-val make_exact_entry : constr * constr -> global_reference * pri_auto_tactic
+val make_exact_entry : int option -> constr * constr -> global_reference * pri_auto_tactic
 
-(* [make_apply_entry (eapply,verbose) (c,cty)].
+(* [make_apply_entry (eapply,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
    [c] is the term given as an exact proof to solve the goal;
    [cty] is the type of [hc]. *)
 
 val make_apply_entry :
-  env -> evar_map -> bool * bool -> constr * constr
+  env -> evar_map -> bool * bool -> int option -> constr * constr
       -> global_reference * pri_auto_tactic
 
 (* A constr which is Hint'ed will be:
@@ -95,7 +95,7 @@ val make_apply_entry :
        has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool -> constr -> 
+  env -> evar_map -> bool -> int option -> constr -> 
       (global_reference * pri_auto_tactic) list
 
 (* [make_resolve_hyp hname htyp].

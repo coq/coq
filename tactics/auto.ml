@@ -182,20 +182,20 @@ let try_head_pattern c =
   try head_pattern_bound c
   with BoundPattern -> error "Bound head variable"
 
-let make_exact_entry (c,cty) =
+let make_exact_entry pri (c,cty) =
   let cty = strip_outer_cast cty in
   match kind_of_term cty with
     | Prod (_,_,_) -> 
 	failwith "make_exact_entry"
     | _ ->
 	(head_of_constr_reference (List.hd (head_constr cty)),
-	   { pri=0; pat=None; code=Give_exact c })
+	   { pri=(match pri with Some pri -> pri | None -> 0); pat=None; code=Give_exact c })
 
 let dummy_goal = 
   {it = make_evar empty_named_context_val mkProp;
    sigma = empty}
 
-let make_apply_entry env sigma (eapply,verbose) (c,cty) =
+let make_apply_entry env sigma (eapply,verbose) pri (c,cty) =
   let cty = hnf_constr env sigma cty in
   match kind_of_term cty with
     | Prod _ ->
@@ -211,12 +211,12 @@ let make_apply_entry env sigma (eapply,verbose) (c,cty) =
 	    warn (str "the hint: eapply " ++ pr_lconstr c ++
 		  str " will only be used by eauto"); 
           (hd,
-           { pri = nb_hyp cty + nmiss;
+           { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
              pat = Some pat;
              code = ERes_pf(c,{ce with env=empty_env}) })
         end else 
 	  (hd,
-           { pri = nb_hyp cty;
+           { pri = (match pri with None -> nb_hyp cty | Some p -> p);
              pat = Some pat;
              code = Res_pf(c,{ce with env=empty_env}) })
     | _ -> failwith "make_apply_entry"
@@ -225,12 +225,12 @@ let make_apply_entry env sigma (eapply,verbose) (c,cty) =
    c is a constr
    cty is the type of constr *)
 
-let make_resolves env sigma eap c =
+let make_resolves env sigma eap pri c =
   let cty = type_of env sigma c in
   let ents = 
     map_succeed 
       (fun f -> f (c,cty)) 
-      [make_exact_entry; make_apply_entry env sigma (eap,Flags.is_verbose())]
+      [make_exact_entry pri; make_apply_entry env sigma (eap,Flags.is_verbose()) pri]
   in 
   if ents = [] then
     errorlabstrm "Hint" 
@@ -241,8 +241,8 @@ let make_resolves env sigma eap c =
 (* used to add an hypothesis to the local hint database *)
 let make_resolve_hyp env sigma (hname,_,htyp) = 
   try
-    [make_apply_entry env sigma (true, false)
-       (mkVar hname,  htyp)]
+    [make_apply_entry env sigma (true, false) None
+       (mkVar hname, htyp)]
   with 
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
@@ -364,7 +364,7 @@ let add_resolves env sigma clist local dbnames =
        Lib.add_anonymous_leaf
 	 (inAutoHint
 	    (local,dbname,
-     	     List.flatten (List.map (make_resolves env sigma true) clist))))
+     	     List.flatten (List.map (fun (x, y) -> make_resolves env sigma true x y) clist))))
     dbnames
 
 
@@ -408,7 +408,7 @@ let add_hints local dbnames0 h =
   let f = Constrintern.interp_constr sigma env in
   match h with
   | HintsResolve lhints ->	
-      add_resolves env sigma (List.map f lhints) local dbnames
+      add_resolves env sigma (List.map (fun (pri, x) -> pri, f x) lhints) local dbnames
   | HintsImmediate lhints ->
       add_trivials env sigma (List.map f lhints) local dbnames
   | HintsUnfold lhints ->
@@ -430,7 +430,7 @@ let add_hints local dbnames0 h =
         let isp = inductive_of_reference qid in
         let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
         let lcons = list_tabulate
-          (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
+          (fun i -> None, mkConstruct (isp,i+1)) (Array.length consnames) in
         add_resolves env sigma lcons local dbnames in
       List.iter add_one lqid
   | HintsExtern (pri, patcom, tacexp) ->
@@ -580,7 +580,7 @@ let unify_resolve (c,clenv) gls =
 let make_local_hint_db lems g =
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g) sign in
-  let hintlist' = list_map_append (pf_apply make_resolves g true) lems in
+  let hintlist' = list_map_append (pf_apply make_resolves g true None) lems in
   Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty)
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
@@ -741,7 +741,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	 let hintl = 
 	   try 
 	     [make_apply_entry (pf_env g') (project g')
-		(true,false) 
+		(true,false) None
 		(mkVar hid, htyp)]
 	   with Failure _ -> [] 
 	 in
@@ -833,7 +833,7 @@ let make_resolve_any_hyp env sigma (id,_,ty) =
   let ents = 
     map_succeed
       (fun f -> f (mkVar id,ty)) 
-      [make_exact_entry; make_apply_entry env sigma (true,false)]
+      [make_exact_entry None; make_apply_entry env sigma (true,false) None]
   in 
   ents
 

@@ -467,6 +467,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	   try 
 	     [make_apply_entry (pf_env g') (project g')
 		(true,false) 
+		None
 		(mkVar hid,htyp)]
 	   with Failure _ -> [] 
 	 in

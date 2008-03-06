@@ -22,22 +22,22 @@ Require Export Coq.Classes.Morphisms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Class [ m : Morphism (A -> B) (RA ++> RB) f ] => Injective :=
+Class [ m : ! Morphism (A -> B) (RA ++> RB) f ] => Injective :=
   injective : forall x y : A, RB (f x) (f y) -> RA x y.
 
-Class [ m : Morphism (A -> B) (RA ++> RB) f ] => Surjective :=
+Class [ m : ! Morphism (A -> B) (RA ++> RB) f ] => Surjective :=
   surjective : forall y, exists x : A, RB y (f x).
 
-Definition Bijective [ m : Morphism (A -> B) (RA ++> RB) (f : A -> B) ] :=
+Definition Bijective [ m : ! Morphism (A -> B) (RA ++> RB) (f : A -> B) ] :=
   Injective m /\ Surjective m.
 
-Class [ m : Morphism (A -> B) (eqA ++> eqB) ] => MonoMorphism :=
+Class [ m : ! Morphism (A -> B) (eqA ++> eqB) ] => MonoMorphism :=
   monic :> Injective m.
 
-Class [ m : Morphism (A -> B) (eqA ++> eqB) ] => EpiMorphism :=
+Class [ m : ! Morphism (A -> B) (eqA ++> eqB) ] => EpiMorphism :=
   epic :> Surjective m.
 
-Class [ m : Morphism (A -> B) (eqA ++> eqB) ] => IsoMorphism :=
+Class [ m : ! Morphism (A -> B) (eqA ++> eqB) ] => IsoMorphism :=
   monomorphism :> MonoMorphism m ; epimorphism :> EpiMorphism m.
 
-Class [ m : Morphism (A -> A) (eqA ++> eqA), ? IsoMorphism m ] => AutoMorphism.
+Class [ m : ! Morphism (A -> A) (eqA ++> eqA), IsoMorphism m ] => AutoMorphism.

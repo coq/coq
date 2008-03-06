@@ -21,11 +21,11 @@ Require Export Coq.Program.FunctionalExtensionality.
 
 Notation  " 'λ' x : T , y " := (fun x:T => y) (at level 100, x,T,y at level 10, no associativity) : program_scope.
 
-Open Scope program_scope.
+Open Local Scope program_scope.
 
-Definition id `A` := λ x : A, x.
+Definition id {A} := λ x : A, x.
 
-Definition compose `A B C` (g : B -> C) (f : A -> B) := λ x : A , g (f x).
+Definition compose {A B C} (g : B -> C) (f : A -> B) := λ x : A , g (f x).
 
 Hint Unfold compose.
 
@@ -58,11 +58,11 @@ Definition arrow (A B : Type) := A -> B.
 
 Definition impl (A B : Prop) : Prop := A -> B.
 
-Notation " f '#' x " := (f x) (at level 100, x at level 200, only parsing).
+(* Notation " f  x " := (f x) (at level 100, x at level 200, only parsing) : program_scope. *)
 
-Definition const `A B` (a : A) := fun x : B => a.
+Definition const {A B} (a : A) := fun x : B => a.
 
-Definition flip `A B C` (f : A -> B -> C) x y := f y x.
+Definition flip {A B C} (f : A -> B -> C) x y := f y x.
 
 Lemma flip_flip : forall A B C (f : A -> B -> C), flip (flip f) = f.
 Proof.
@@ -72,7 +72,7 @@ Proof.
   reflexivity.
 Qed.
 
-Definition apply `A B` (f : A -> B) (x : A) := f x.
+Definition apply {A B} (f : A -> B) (x : A) := f x.
 
 (** Notations for the unit type and value. *)
 
@@ -94,10 +94,10 @@ Implicit Arguments right [[A] [B]].
 
 (** Curryfication. *)
 
-Definition curry `a b c` (f : a -> b -> c) (p : prod a b) : c :=
+Definition curry {a b c} (f : a -> b -> c) (p : prod a b) : c :=
   let (x, y) := p in f x y.
 
-Definition uncurry `a b c` (f : prod a b -> c) (x : a) (y : b) : c :=
+Definition uncurry {a b c} (f : prod a b -> c) (x : a) (y : b) : c :=
   f (x, y).
 
 Lemma uncurry_curry : forall a b c (f : a -> b -> c), uncurry (curry f) = f.
@@ -115,17 +115,6 @@ Proof.
   extensionality x. 
   destruct x ; simpl ; reflexivity.
 Qed.
-
-(** Useful implicits and notations for lists. *)
-
-Require Import Coq.Lists.List.
-
-Implicit Arguments nil [[A]].
-Implicit Arguments cons [[A]].
-
-Notation " [] " := nil.
-Notation " [ x ] " := (cons x nil).
-Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..).
 
 (** n-ary exists ! *)
 

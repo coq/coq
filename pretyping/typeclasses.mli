@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Libnames
 open Decl_kinds
 open Term
 open Sign
@@ -41,14 +42,17 @@ type typeclass = {
 
 type instance = {
   is_class: typeclass;
-  is_name: identifier; (* Name of the instance *)
-  is_impl: constant; 
+  is_pri : int option;
+  is_impl: constant;
 }
   
 val instances : Libnames.reference -> instance list
 val typeclasses : unit -> typeclass list
 val add_class : typeclass -> unit
 val add_instance : instance -> unit
+
+val register_add_instance_hint : (reference -> int option -> unit) -> unit
+val add_instance_hint : reference -> int option -> unit
 
 val class_info : identifier -> typeclass (* raises Not_found *)
 val class_of_inductive : inductive -> typeclass (* raises Not_found *)
@@ -75,3 +79,10 @@ val substitution_of_named_context :
 val nf_substitution : evar_map -> substitution -> substitution
 
 val is_implicit_arg : hole_kind -> bool
+
+
+val subst :  'a * Mod_subst.substitution *
+    ((Names.identifier, typeclass) Gmap.t * 'b * ('c, instance list) Gmap.t) ->
+    (Names.identifier, typeclass) Gmap.t * 'b * ('c, instance list) Gmap.t
+
+val qualid_of_con : Names.constant -> Libnames.reference
