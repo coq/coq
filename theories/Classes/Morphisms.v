@@ -421,5 +421,5 @@ Qed.
 Instance {A : Type} (m : A -> Prop) =>
   any_eq_iff_morphism : Morphism (@Logic.eq A ==> iff) m | 4.
 Proof.
-  red ; intros. subst ; reflexivity.
+  red ; intros. subst ; split; trivial.
 Qed.
