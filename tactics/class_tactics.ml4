@@ -1073,7 +1073,7 @@ VERNAC COMMAND EXTEND AddSetoid1
 	      (fun () ->
 		ignore(new_instance [] instance [] None (fun cst -> declare_projection n instance_id (ConstRef cst)));
 		Pfedit.by (Tacinterp.interp <:tactic<add_morphism_tactic>>)) ();
-	    Flags.if_verbose (msg $ Printer.pr_open_subgoals) ())
+	    Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) ())
       ]
 END
 
