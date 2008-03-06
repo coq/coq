@@ -96,3 +96,16 @@ Goal (forall x, 0 * x = 0 -> True) -> True.
 intros; eapply H.
 rewrite <- plus_n_Sm. (* should refine ?x with S ?x' *)
 Abort.
+
+(* Check handling of identity equation between evars *)
+(* The example failed to pass until revision 10623 *)
+
+Lemma l6 :
+  (forall y, (forall x, (forall z, y = 0 -> y + z = 0) -> y + x = 0) -> True)
+  -> True.
+intros.
+eapply H.
+intros.
+apply H0. (* Check that equation ?n[H] = ?n[H] is correctly considered true *)
+reflexivity.
+Qed.

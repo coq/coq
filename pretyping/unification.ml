@@ -420,6 +420,12 @@ let order_metas metas =
       else meta :: order latemetas metas
   in order [] metas
 
+(* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
+
+let solve_simple_evar_eqn env evd ev rhs =
+  let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (CONV,ev,rhs) in
+  if b then evd else error_cannot_unify env (evars_of evd) (mkEvar ev,rhs)
+
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]
    is true, unification of types of metas is required *)
@@ -437,11 +443,10 @@ let w_merge env with_types flags metas evars evd =
 	  w_merge_rec evd (metas'@metas) (evars''@evars') eqns
     	else begin
           let rhs' = subst_meta_instances metas rhs in
-	  if occur_evar evn rhs' then error "w_merge: recursive equation";
           match kind_of_term rhs with
 	  | App (f,cl) when is_mimick_head f ->
 	      (try 
-		  w_merge_rec (evar_define env ev rhs' evd)
+		  w_merge_rec (solve_simple_evar_eqn env evd ev rhs')
                     metas evars' eqns
 		with ex when precatchable_exception ex ->
                   let evd' =
@@ -449,7 +454,8 @@ let w_merge env with_types flags metas evars evd =
 		  w_merge_rec evd' metas evars eqns)
           | _ ->
               (* ensure tail recursion in non-mimickable case! *)
-	      w_merge_rec (evar_define env ev rhs' evd) metas evars' eqns
+	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs') 
+	        metas evars' eqns
 	  end
     | [] -> 
 
