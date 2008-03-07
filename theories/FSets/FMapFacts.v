@@ -1214,7 +1214,6 @@ Module OrdProperties (M:S).
   constructor; auto with map.
   apply (@filter_sort _ eqke); auto with map; clean_eauto.
   rewrite (@InfA_alt _ eqke); auto with map; try (clean_eauto; fail).
-  apply (@filter_sort _ eqke); auto with map; clean_eauto.
   intros.
   rewrite filter_InA in H1; auto with map; destruct H1.
   rewrite leb_1 in H2.
@@ -1224,6 +1223,7 @@ Module OrdProperties (M:S).
    contradict H.
    exists e0; apply MapsTo_1 with t0; auto.
   ME.order.
+  apply (@filter_sort _ eqke); auto with map; clean_eauto.
   intros.
   rewrite filter_InA in H1; auto with map; destruct H1.
   rewrite gtb_1 in H3.

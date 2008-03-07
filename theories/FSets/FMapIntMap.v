@@ -410,7 +410,7 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   Lemma mapi_2 : forall (elt elt':Type)(m: t elt)(x:key)
         (f:key->elt->elt'), In x (mapi f m) -> In x m.
   Proof.
-  intros elt elt' m; exact (mapi_aux_2 m (fun n => n)).
+  intros elt elt' m. exact (@mapi_aux_2 _ elt' m (fun n => n)).
   Qed.
 
   Lemma map_1 : forall (elt elt':Type)(m: t elt)(x:key)(e:elt)(f:elt->elt'),
@@ -467,38 +467,37 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   intuition.
   inversion H2.
   simpl; destruct a; intros.
-  rewrite IHl; clear IHl.
-  inversion H; auto.
-  intros.
   inversion_clear H.
-  assert (~E.eq x k).
-   contradict H3.
-   destruct H1.
-   apply InA_eqA with (x,x0); eauto.
-   unfold eq_key, E.eq; eauto.
-   unfold eq_key, E.eq; congruence.
-  apply (H0 x).
-  destruct H1; exists x0; auto.
-  revert H2.
-  unfold In.
-  intros (e',He').
-  exists e'; apply (@add_3 _ m k x e' a); unfold E.eq; auto.
+  rewrite IHl; clear IHl; auto.
   intuition.
-  red in H2.
-  rewrite add_spec in H2; auto.
+  red in H3.
+  rewrite add_spec in H3; auto.
   destruct (ME.eq_dec k0 k).
-  inversion_clear H2; subst; auto.
+  inversion_clear H3; subst; auto.
   right; apply find_2; auto.
-  inversion_clear H2; auto.
-  compute in H1; destruct H1.
+  inversion_clear H3; auto.
+  compute in H; destruct H.
   subst; right; apply add_1; auto.
   red; auto.
-  inversion_clear H.
   destruct (ME.eq_dec k0 k).
   unfold E.eq in *; subst.
   destruct (H0 k); eauto.
   red; eauto.
   right; apply add_2; unfold E.eq in *; auto.
+  (* proof of precondition of IHl *)
+  intros.
+  assert (~E.eq x k).
+   contradict H1.
+   destruct H.
+   apply InA_eqA with (x,x0); eauto.
+   unfold eq_key, E.eq; eauto.
+   unfold eq_key, E.eq; congruence.
+  apply (H0 x).
+  destruct H; exists x0; auto.
+  revert H3.
+  unfold In.
+  intros (e',He').
+  exists e'; apply (@add_3 _ m k x e' a); unfold E.eq; auto.
   Qed.
   
   Lemma anti_elements_mapsto : forall (A:Type) l k e, NoDupA (eq_key (A:=A)) l ->
@@ -507,10 +506,10 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   intros. 
   unfold anti_elements.
   rewrite anti_elements_mapsto_aux; auto; unfold empty; auto.
-  inversion 2.
-  inversion H2.
   intuition.
   inversion H1.
+  inversion 2.
+  inversion H2.
   Qed.
   
   Lemma find_anti_elements : forall (A:Type)(l: list (key*A)) x, sort (@lt_key _) l -> 
@@ -519,15 +518,11 @@ Module MapIntMap <: S with Module E:=NUsualOrderedType.
   intros.
   case_eq (L.find x l); intros.
   apply find_1.
-  rewrite anti_elements_mapsto.
-  apply L.PX.Sort_NoDupA; auto.
-  apply L.find_2; auto.
+  rewrite anti_elements_mapsto; auto using L.PX.Sort_NoDupA, L.find_2.
   case_eq (find x (anti_elements l)); auto; intros.
   rewrite <- H0; symmetry.
   apply L.find_1; auto.
-  rewrite <- anti_elements_mapsto.
-  apply L.PX.Sort_NoDupA; auto.
-  apply find_2; auto.
+  rewrite <- anti_elements_mapsto; auto using L.PX.Sort_NoDupA, find_2.
   Qed.
 
   Lemma find_elements : forall (A:Type)(m: t A) x,  

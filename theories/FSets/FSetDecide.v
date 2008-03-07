@@ -146,57 +146,43 @@ the above form:
         together.
 
         XXX: This tactic and the similar subsequent ones should
-        have been defined using [autorewrite].  However, there
-        is a bug in the order that Coq generates subgoals when
-        rewriting using a setoid.  In order to work around this
-        bug, these tactics had to be written out in an explicit
-        way.  When the bug is fixed these tactics will break!!
-        *)
+        have been defined using [autorewrite]. However, dealing
+        with multiples rewrite sites and side-conditions is 
+        done more cleverly with the following explicit 
+        analysis of goals. *)
+
+    Ltac or_not_l_iff P Q tac := 
+      (rewrite (or_not_l_iff_1 P Q) by tac) || 
+      (rewrite (or_not_l_iff_2 P Q) by tac).
+
+    Ltac or_not_r_iff P Q tac := 
+      (rewrite (or_not_r_iff_1 P Q) by tac) || 
+      (rewrite (or_not_r_iff_2 P Q) by tac).
+
+    Ltac or_not_l_iff_in P Q H tac := 
+      (rewrite (or_not_l_iff_1 P Q) in H by tac) || 
+      (rewrite (or_not_l_iff_2 P Q) in H by tac).
+
+    Ltac or_not_r_iff_in P Q H tac := 
+      (rewrite (or_not_r_iff_1 P Q) in H by tac) || 
+      (rewrite (or_not_r_iff_2 P Q) in H by tac).
 
     Tactic Notation "push" "not" "using" ident(db) :=
+      let dec := solve_decidable using db in 
       unfold not, iff;
       repeat (
         match goal with
-        (** simplification by not_true_iff *)
-        | |- context [True -> False] =>
-          rewrite not_true_iff
-        (** simplification by not_false_iff *)
-        | |- context [False -> False] =>
-          rewrite not_false_iff
-        (** simplification by not_not_iff *)
-        | |- context [(?P -> False) -> False] =>
-          rewrite (not_not_iff P);
-            [ solve_decidable using db | ]
-        (** simplification by contrapositive *)
-        | |- context [(?P -> False) -> (?Q -> False)] =>
-          rewrite (contrapositive P Q);
-            [ solve_decidable using db | ]
-        (** simplification by or_not_l_iff_1/_2 *)
-        | |- context [(?P -> False) \/ ?Q] =>
-          (rewrite (or_not_l_iff_1 P Q);
-            [ solve_decidable using db | ]) ||
-          (rewrite (or_not_l_iff_2 P Q);
-            [ solve_decidable using db | ])
-        (** simplification by or_not_r_iff_1/_2 *)
-        | |- context [?P \/ (?Q -> False)] =>
-          (rewrite (or_not_r_iff_1 P Q);
-            [ solve_decidable using db | ]) ||
-          (rewrite (or_not_r_iff_2 P Q);
-            [ solve_decidable using db | ])
-        (** simplification by imp_not_l *)
-        | |- context [(?P -> False) -> ?Q] =>
-          rewrite (imp_not_l P Q);
-            [ solve_decidable using db | ]
-        (** rewriting by not_or_iff *)
-        | |- context [?P \/ ?Q -> False] =>
-          rewrite (not_or_iff P Q)
-        (** rewriting by not_and_iff *)
-        | |- context [?P /\ ?Q -> False] =>
-          rewrite (not_and_iff P Q)
-        (** rewriting by not_imp_iff *)
-        | |- context [(?P -> ?Q) -> False] =>
-          rewrite (not_imp_iff P Q);
-            [ solve_decidable using db | ]
+        | |- context [True -> False] => rewrite not_true_iff
+        | |- context [False -> False] => rewrite not_false_iff
+        | |- context [(?P -> False) -> False] => rewrite (not_not_iff P) by dec
+        | |- context [(?P -> False) -> (?Q -> False)] => 
+            rewrite (contrapositive P Q) by dec
+        | |- context [(?P -> False) \/ ?Q] => or_not_l_iff P Q dec
+        | |- context [?P \/ (?Q -> False)] => or_not_r_iff P Q dec
+        | |- context [(?P -> False) -> ?Q] => rewrite (imp_not_l P Q) by dec
+        | |- context [?P \/ ?Q -> False] => rewrite (not_or_iff P Q)
+        | |- context [?P /\ ?Q -> False] => rewrite (not_and_iff P Q)
+        | |- context [(?P -> ?Q) -> False] => rewrite (not_imp_iff P Q) by dec
         end);
       fold any not.
 
@@ -205,49 +191,24 @@ the above form:
 
     Tactic Notation
       "push" "not" "in" "*" "|-" "using" ident(db) :=
+      let dec := solve_decidable using db in 
       unfold not, iff in * |-;
       repeat (
         match goal with
-        (** simplification by not_true_iff *)
-        | H: context [True -> False] |- _ =>
-          rewrite not_true_iff in H
-        (** simplification by not_false_iff *)
-        | H: context [False -> False] |- _ =>
-          rewrite not_false_iff in H
-        (** simplification by not_not_iff *)
-        | H: context [(?P -> False) -> False] |- _ =>
-          rewrite (not_not_iff P) in H;
-            [ | solve_decidable using db ]
-        (** simplification by contrapositive *)
+        | H: context [True -> False] |- _ => rewrite not_true_iff in H
+        | H: context [False -> False] |- _ => rewrite not_false_iff in H
+        | H: context [(?P -> False) -> False] |- _ => 
+          rewrite (not_not_iff P) in H by dec
         | H: context [(?P -> False) -> (?Q -> False)] |- _ =>
-          rewrite (contrapositive P Q) in H;
-            [ | solve_decidable using db ]
-        (** simplification by or_not_l_iff_1/_2 *)
-        | H: context [(?P -> False) \/ ?Q] |- _ =>
-          (rewrite (or_not_l_iff_1 P Q) in H;
-            [ | solve_decidable using db ]) ||
-          (rewrite (or_not_l_iff_2 P Q) in H;
-            [ | solve_decidable using db ])
-        (** simplification by or_not_r_iff_1/_2 *)
-        | H: context [?P \/ (?Q -> False)] |- _ =>
-          (rewrite (or_not_r_iff_1 P Q) in H;
-            [ | solve_decidable using db ]) ||
-          (rewrite (or_not_r_iff_2 P Q) in H;
-            [ | solve_decidable using db ])
-        (** simplification by imp_not_l *)
-        | H: context [(?P -> False) -> ?Q] |- _ =>
-          rewrite (imp_not_l P Q) in H;
-            [ | solve_decidable using db ]
-        (** rewriting by not_or_iff *)
-        | H: context [?P \/ ?Q -> False] |- _ =>
-          rewrite (not_or_iff P Q) in H
-        (** rewriting by not_and_iff *)
-        | H: context [?P /\ ?Q -> False] |- _ =>
-          rewrite (not_and_iff P Q) in H
-        (** rewriting by not_imp_iff *)
-        | H: context [(?P -> ?Q) -> False] |- _ =>
-          rewrite (not_imp_iff P Q) in H;
-            [ | solve_decidable using db ]
+          rewrite (contrapositive P Q) in H by dec
+        | H: context [(?P -> False) \/ ?Q] |- _ => or_not_l_iff_in P Q H dec
+        | H: context [?P \/ (?Q -> False)] |- _ => or_not_r_iff_in P Q H dec
+        | H: context [(?P -> False) -> ?Q] |- _ => 
+          rewrite (imp_not_l P Q) in H by dec
+        | H: context [?P \/ ?Q -> False] |- _ => rewrite (not_or_iff P Q) in H
+        | H: context [?P /\ ?Q -> False] |- _ => rewrite (not_and_iff P Q) in H
+        | H: context [(?P -> ?Q) -> False] |- _ => 
+          rewrite (not_imp_iff P Q) in H by dec
         end);
       fold any not.
 
@@ -272,12 +233,14 @@ the above form:
       (R \/ ~ (P /\ Q)) ->
       (~ R \/ (P /\ Q)) ->
       (~ P -> R) ->
-      (~ ((R -> P) \/ (R -> Q))) ->
+      (~ ((R -> P) \/ (Q -> R))) ->
       (~ (P /\ R)) ->
       (~ (P -> R)) ->
       True.
     Proof.
-      intros. push not in *. tauto.
+      intros. push not in *.
+       (* note that ~(R->P) remains (since R isnt decidable) *)
+      tauto.
     Qed.
 
     (** [pull not using db] will pull as many negations as
@@ -289,53 +252,24 @@ the above form:
         the hypotheses and goal together. *)
 
     Tactic Notation "pull" "not" "using" ident(db) :=
+      let dec := solve_decidable using db in 
       unfold not, iff;
       repeat (
         match goal with
-        (** simplification by not_true_iff *)
-        | |- context [True -> False] =>
-          rewrite not_true_iff
-        (** simplification by not_false_iff *)
-        | |- context [False -> False] =>
-          rewrite not_false_iff
-        (** simplification by not_not_iff *)
-        | |- context [(?P -> False) -> False] =>
-          rewrite (not_not_iff P);
-            [ solve_decidable using db | ]
-        (** simplification by contrapositive *)
+        | |- context [True -> False] => rewrite not_true_iff
+        | |- context [False -> False] => rewrite not_false_iff
+        | |- context [(?P -> False) -> False] => rewrite (not_not_iff P) by dec
         | |- context [(?P -> False) -> (?Q -> False)] =>
-          rewrite (contrapositive P Q);
-            [ solve_decidable using db | ]
-        (** simplification by or_not_l_iff_1/_2 *)
-        | |- context [(?P -> False) \/ ?Q] =>
-          (rewrite (or_not_l_iff_1 P Q);
-            [ solve_decidable using db | ]) ||
-          (rewrite (or_not_l_iff_2 P Q);
-            [ solve_decidable using db | ])
-        (** simplification by or_not_r_iff_1/_2 *)
-        | |- context [?P \/ (?Q -> False)] =>
-          (rewrite (or_not_r_iff_1 P Q);
-            [ solve_decidable using db | ]) ||
-          (rewrite (or_not_r_iff_2 P Q);
-            [ solve_decidable using db | ])
-        (** simplification by imp_not_l *)
-        | |- context [(?P -> False) -> ?Q] =>
-          rewrite (imp_not_l P Q);
-            [ solve_decidable using db | ]
-        (** rewriting by not_or_iff *)
+          rewrite (contrapositive P Q) by dec
+        | |- context [(?P -> False) \/ ?Q] => or_not_l_iff P Q dec
+        | |- context [?P \/ (?Q -> False)] => or_not_r_iff P Q dec
+        | |- context [(?P -> False) -> ?Q] => rewrite (imp_not_l P Q) by dec
         | |- context [(?P -> False) /\ (?Q -> False)] =>
           rewrite <- (not_or_iff P Q)
-        (** rewriting by not_and_iff *)
-        | |- context [?P -> ?Q -> False] =>
-          rewrite <- (not_and_iff P Q)
-        (** rewriting by not_imp_iff *)
-        | |- context [?P /\ (?Q -> False)] =>
-          rewrite <- (not_imp_iff P Q);
-            [ solve_decidable using db | ]
-        (** rewriting by not_imp_rev_iff *)
-        | |- context [(?Q -> False) /\ ?P] =>
-          rewrite <- (not_imp_rev_iff P Q);
-            [ solve_decidable using db | ]
+        | |- context [?P -> ?Q -> False] => rewrite <- (not_and_iff P Q)
+        | |- context [?P /\ (?Q -> False)] => rewrite <- (not_imp_iff P Q) by dec
+        | |- context [(?Q -> False) /\ ?P] => 
+          rewrite <- (not_imp_rev_iff P Q) by dec
         end);
       fold any not.
 
@@ -344,53 +278,28 @@ the above form:
 
     Tactic Notation
       "pull" "not" "in" "*" "|-" "using" ident(db) :=
+      let dec := solve_decidable using db in 
       unfold not, iff in * |-;
       repeat (
         match goal with
-        (** simplification by not_true_iff *)
-        | H: context [True -> False] |- _ =>
-          rewrite not_true_iff in H
-        (** simplification by not_false_iff *)
-        | H: context [False -> False] |- _ =>
-          rewrite not_false_iff in H
-        (** simplification by not_not_iff *)
+        | H: context [True -> False] |- _ => rewrite not_true_iff in H
+        | H: context [False -> False] |- _ => rewrite not_false_iff in H
         | H: context [(?P -> False) -> False] |- _ =>
-          rewrite (not_not_iff P) in H;
-            [ | solve_decidable using db ]
-        (** simplification by contrapositive *)
+          rewrite (not_not_iff P) in H by dec
         | H: context [(?P -> False) -> (?Q -> False)] |- _ =>
-          rewrite (contrapositive P Q) in H;
-            [ | solve_decidable using db ]
-        (** simplification by or_not_l_iff_1/_2 *)
-        | H: context [(?P -> False) \/ ?Q] |- _ =>
-          (rewrite (or_not_l_iff_1 P Q) in H;
-            [ | solve_decidable using db ]) ||
-          (rewrite (or_not_l_iff_2 P Q) in H;
-            [ | solve_decidable using db ])
-        (** simplification by or_not_r_iff_1/_2 *)
-        | H: context [?P \/ (?Q -> False)] |- _ =>
-          (rewrite (or_not_r_iff_1 P Q) in H;
-            [ | solve_decidable using db ]) ||
-          (rewrite (or_not_r_iff_2 P Q) in H;
-            [ | solve_decidable using db ])
-        (** simplification by imp_not_l *)
+          rewrite (contrapositive P Q) in H by dec
+        | H: context [(?P -> False) \/ ?Q] |- _ => or_not_l_iff_in P Q H dec
+        | H: context [?P \/ (?Q -> False)] |- _ => or_not_r_iff_in P Q H dec
         | H: context [(?P -> False) -> ?Q] |- _ =>
-          rewrite (imp_not_l P Q) in H;
-            [ | solve_decidable using db ]
-        (** rewriting by not_or_iff *)
+          rewrite (imp_not_l P Q) in H by dec
         | H: context [(?P -> False) /\ (?Q -> False)] |- _ =>
-          rewrite <- (not_or_iff P Q) in H
-        (** rewriting by not_and_iff *)
-        | H: context [?P -> ?Q -> False] |- _ =>
+          rewrite <- (not_or_iff P Q) in H 
+        | H: context [?P -> ?Q -> False] |- _ => 
           rewrite <- (not_and_iff P Q) in H
-        (** rewriting by not_imp_iff *)
         | H: context [?P /\ (?Q -> False)] |- _ =>
-          rewrite <- (not_imp_iff P Q) in H;
-            [ | solve_decidable using db ]
-        (** rewriting by not_imp_rev_iff *)
+          rewrite <- (not_imp_iff P Q) in H by dec
         | H: context [(?Q -> False) /\ ?P] |- _ =>
-          rewrite <- (not_imp_rev_iff P Q) in H;
-            [ | solve_decidable using db ]
+          rewrite <- (not_imp_rev_iff P Q) in H by dec
         end);
       fold any not.
 
@@ -415,7 +324,7 @@ the above form:
       (R \/ ~ (P /\ Q)) ->
       (~ R \/ (P /\ Q)) ->
       (~ P -> R) ->
-      (~ (R -> P) /\ ~ (R -> Q)) ->
+      (~ (R -> P) /\ ~ (Q -> R)) ->
       (~ P \/ ~ R) ->
       (P /\ ~ R) ->
       (~ R /\ P) ->

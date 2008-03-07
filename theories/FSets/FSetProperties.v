@@ -859,8 +859,8 @@ Module OrdProperties (M:S).
   apply (@filter_sort _ E.eq); auto with set; eauto with set.
   constructor; auto.
   apply (@filter_sort _ E.eq); auto with set; eauto with set.
-  rewrite ME.Inf_alt; auto; intros.
-  apply (@filter_sort _ E.eq); auto with set; eauto with set.
+  rewrite ME.Inf_alt by (apply (@filter_sort _ E.eq); eauto with set).
+  intros.
   rewrite filter_InA in H1; auto; destruct H1.
   rewrite leb_1 in H2.
   rewrite <- elements_iff in H1.

@@ -750,11 +750,11 @@ Proof.
  intuition_in.
  destruct s1;try contradiction;clear y.
 (*  rewrite H_eq_2; rewrite H_eq_2 in H_eq_1; clear H_eq_2. *)
- replace s2' with ((remove_min l2 x2 e2 r2)#1); [|rewrite e3; auto].
+ replace s2' with ((remove_min l2 x2 e2 r2)#1) by (rewrite e3; auto).
  rewrite bal_in; auto.
- generalize (remove_min_avl H2); rewrite e3; simpl; auto.
  generalize (remove_min_in y0 H2); rewrite e3; simpl; intro.
  rewrite H3; intuition.
+ generalize (remove_min_avl H2); rewrite e3; simpl; auto.
 Qed.
 
 Lemma merge_mapsto : forall elt (s1 s2:t elt) y e, bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
@@ -766,10 +766,10 @@ Proof.
  destruct s1;try contradiction;clear y.
  replace s2' with ((remove_min l2 x2 e2 r2)#1); [|rewrite e3; auto].
  rewrite bal_mapsto; auto; unfold create.
- generalize (remove_min_avl H2); rewrite e3; simpl; auto.
  generalize (remove_min_mapsto y0 e H2); rewrite e3; simpl; intro.
  rewrite H3; intuition (try subst; auto).
  inversion_clear H3; intuition.
+ generalize (remove_min_avl H2); rewrite e3; simpl; auto.
 Qed.
 
 Lemma merge_bst : forall elt (s1 s2:t elt), bst s1 -> avl s1 -> bst s2 -> avl s2 -> 
@@ -1535,20 +1535,7 @@ simpl; auto.
 intuition.
 inversion H4.
 simpl; destruct a; intros.
-rewrite IHl; clear IHl.
-apply add_bst; auto.
-apply add_avl; auto.
-inversion H1; auto.
-intros.
-inversion_clear H1.
-assert (~X.eq x k).
- contradict H5.
- destruct H3.
- apply InA_eqA with (x,x0); eauto.
-apply (H2 x).
-destruct H3; exists x0; auto.
-revert H4; do 2 rewrite <- In_alt; destruct 1; exists x0; auto.
-eapply add_3; eauto.
+rewrite IHl; clear IHl; auto using add_bst, add_avl.
 intuition.
 assert (find k0 (add k e m) = Some e0).
  apply find_1; auto.
@@ -1565,6 +1552,17 @@ inversion_clear H1.
 destruct (MX.eq_dec k0 k).
 destruct (H2 k); eauto.
 right; apply add_2; auto.
+inversion H1; auto.
+intros.
+inversion_clear H1.
+assert (~X.eq x k).
+ contradict H5.
+ destruct H3.
+ apply InA_eqA with (x,x0); eauto.
+apply (H2 x).
+destruct H3; exists x0; auto.
+revert H4; do 2 rewrite <- In_alt; destruct 1; exists x0; auto.
+eapply add_3; eauto.
 Qed.
 
 Lemma anti_elements_mapsto : forall l k e, NoDupA (PX.eqk (elt:=elt'')) l ->
@@ -1573,9 +1571,9 @@ Proof.
 intros. 
 unfold anti_elements.
 rewrite anti_elements_mapsto_aux; auto; unfold empty; auto.
-inversion 2.
 intuition.
 inversion H1.
+inversion 2.
 Qed.
 
 Lemma map2_avl : forall (m: t elt)(m': t elt'), avl (map2 m m').
@@ -1612,15 +1610,11 @@ intros.
 case_eq (L.find x l); intros.
 apply find_1.
 apply anti_elements_bst; auto.
-rewrite anti_elements_mapsto.
-apply L.PX.Sort_NoDupA; auto.
-apply L.find_2; auto.
+rewrite anti_elements_mapsto; auto using L.PX.Sort_NoDupA, L.find_2.
 case_eq (find x (anti_elements l)); auto; intros.
 rewrite <- H0; symmetry.
 apply L.find_1; auto.
-rewrite <- anti_elements_mapsto.
-apply L.PX.Sort_NoDupA; auto.
-apply find_2; auto.
+rewrite <- anti_elements_mapsto; auto using L.PX.Sort_NoDupA, find_2.
 Qed.
 
 Lemma map2_1 : forall (m: t elt)(m': t elt')(x:key), bst m -> bst m' -> 
