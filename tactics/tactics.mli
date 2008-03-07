@@ -156,10 +156,12 @@ val clear         : identifier list -> tactic
 val clear_body    : identifier list -> tactic
 val keep          : identifier list -> tactic
 
-val new_hyp       : int option -> constr with_ebindings -> tactic
+val specialize    : int option -> constr with_ebindings -> tactic
 
 val move_hyp      : bool -> identifier -> identifier -> tactic
 val rename_hyp    : (identifier * identifier) list -> tactic
+
+val revert        : identifier list -> tactic
 
 (*s Resolution tactics. *)
 

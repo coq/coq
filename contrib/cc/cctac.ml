@@ -430,3 +430,29 @@ let congruence_tac depth l =
   tclORELSE 
     (tclTHEN (tclREPEAT introf) (cc_tactic depth l)) 
     cc_fail
+
+(* The [f_equal] tactic.
+
+   It mimics the use of lemmas [f_equal], [f_equal2], etc.
+   This isn't particularly related with congruence, apart from
+   the fact that congruence is called internally. 
+*)
+
+let f_equal gl = 
+  let cut_eq c1 c2 = 
+    tclTHENTRY
+      (Tactics.cut (mkApp (Lazy.force _eq, [| pf_type_of gl c1; c1; c2|])))
+      reflexivity
+  in 
+  try match kind_of_term (pf_concl gl) with 
+    | App (r,[|_;t;t'|]) when eq_constr r (Lazy.force _eq) -> 
+	begin match kind_of_term t, kind_of_term t' with 
+	  | App (f,v), App (f',v') when Array.length v = Array.length v' ->
+	      let rec cuts i = 
+		if i < 0 then tclTRY (congruence_tac 1000 []) 
+		else tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))
+	      in cuts (Array.length v - 1) gl
+	  | _ -> tclIDTAC gl
+	end
+    | _ -> tclIDTAC gl
+  with Type_errors.TypeError _ -> tclIDTAC gl

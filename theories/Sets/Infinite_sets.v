@@ -162,7 +162,7 @@ Section Infinite_sets.
     generalize (H'3 x).
     intro H'4; lapply H'4; [ intro H'8; try exact H'8; clear H'4 | clear H'4 ];
       auto with sets.
-    specialize  5Im_inv with (U := U) (V := V) (X := A) (f := f) (y := x);
+    specialize Im_inv with (U := U) (V := V) (X := A) (f := f) (y := x);
       intro H'11; lapply H'11; [ intro H'13; elim H'11; clear H'11 | clear H'11 ];
 	auto with sets.
     intros x1 H'4; try assumption.

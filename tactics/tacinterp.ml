@@ -718,6 +718,7 @@ let rec intern_atomic lf ist x =
       TacRename (List.map (fun (id1,id2) -> 
 			     intern_hyp_or_metaid ist id1, 
 			     intern_hyp_or_metaid ist id2) l)
+  | TacRevert l -> TacRevert (List.map (intern_hyp_or_metaid ist) l)
 	
   (* Constructors *)
   | TacLeft bl -> TacLeft (intern_bindings ist bl)
@@ -2079,6 +2080,7 @@ and interp_atomic ist gl = function
       h_rename (List.map (fun (id1,id2) -> 
 			    interp_hyp ist gl id1, 
 			    interp_fresh_ident ist gl (snd id2)) l)
+  | TacRevert l -> h_revert (interp_hyp_list ist gl l)
 
   (* Constructors *)
   | TacLeft bl -> h_left (interp_bindings ist gl bl)
@@ -2386,6 +2388,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacClearBody l as x -> x
   | TacMove (dep,id1,id2) as x -> x
   | TacRename l as x -> x
+  | TacRevert _ as x -> x
 
   (* Constructors *)
   | TacLeft bl -> TacLeft (subst_bindings subst bl)

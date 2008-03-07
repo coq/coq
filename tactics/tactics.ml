@@ -725,25 +725,41 @@ let rec intros_clearing = function
       tclTHENLIST
         [ intro; onLastHyp (fun id -> clear [id]); intros_clearing tl]
 
-(* Adding new hypotheses  *)
+(* Modifying/Adding an hypothesis  *)
 
-let new_hyp mopt (c,lbind) g =
-  let clause  = make_clenv_binding g (c,pf_type_of g c) lbind in
-  let clause = clenv_unify_meta_types clause in
-  let (thd,tstack) = whd_stack (clenv_value clause) in
-  let nargs = List.length tstack in
-  let cut_pf = 
-    applist(thd, 
-            match mopt with
-	      | Some m -> if m < nargs then list_firstn m tstack else tstack
-	      | None   -> tstack)
+let specialize mopt (c,lbind) g =
+  let evars, term = 
+    if lbind = NoBindings then None, c 
+    else 
+      let clause = make_clenv_binding g (c,pf_type_of g c) lbind in
+      let clause = clenv_unify_meta_types clause in
+      let (thd,tstack) = whd_stack (clenv_value clause) in
+      let nargs = List.length tstack in
+      let tstack = match mopt with 
+	| Some m -> 
+	    if m < nargs then list_firstn m tstack else tstack
+	| None -> 
+	    let rec chk = function 
+	      | [] -> []
+	      | t::l -> if occur_meta t then [] else t :: chk l
+	    in chk tstack
+      in 
+      let term = applist(thd,tstack) in 
+      if occur_meta term then
+	errorlabstrm "" (str "Cannot infer an instance for " ++
+          pr_name (meta_name clause.evd (List.hd (collect_metas term))));
+      Some (evars_of clause.evd), term
   in
-  if occur_meta cut_pf then
-    errorlabstrm "" (str "Cannot infer an instance for " ++
-      pr_name (meta_name clause.evd (List.hd (collect_metas cut_pf))));
-  (tclTHENLAST (tclTHEN (tclEVARS (evars_of clause.evd))
-               (cut (pf_type_of g cut_pf)))
-     ((tclORELSE (apply cut_pf) (exact_no_check cut_pf)))) g
+  tclTHEN 
+    (match evars with Some e -> tclEVARS e | _ -> tclIDTAC)
+    (match kind_of_term (fst (decompose_app c)) with 
+       | Var id when List.exists (fun (i,_,_)-> i=id) (pf_hyps g) ->
+	   let id' = fresh_id [] id g in 
+	   tclTHENS (internal_cut id' (pf_type_of g term))
+	     [ exact_no_check term; 
+	       tclTHEN (clear [id]) (rename_hyp [id',id]) ]
+       | _ -> tclTHENLAST (cut (pf_type_of g term)) (exact_no_check term))
+    g
 
 (* Keeping only a few hypotheses *)
 
@@ -1083,6 +1099,9 @@ let generalize_dep c gl =
 let generalize lconstr gl = 
   let newcl = List.fold_right (generalize_goal gl) lconstr (pf_concl gl) in
   apply_type newcl lconstr gl
+
+let revert hyps gl = 
+  tclTHEN (generalize (List.map mkVar hyps)) (clear hyps) gl
 
 (* Faudra-t-il une version avec plusieurs args de generalize_dep ?
 Cela peut-être troublant de faire "Generalize Dependent H n" dans

@@ -387,19 +387,6 @@ the above form:
         end);
       cbv zeta beta in *.
 
-    (** If you have a negated goal and [H] is a negated
-        hypothesis, then [contra H] exchanges your goal and [H],
-        removing the negations.  (Just like [swap] but reuses
-        the same name. *)
-    Ltac contra H :=
-      let J := fresh in
-      unfold not;
-      unfold not in H;
-      intros J;
-      apply H;
-      clear H;
-      rename J into H.
-
     (** [decompose records] calls [decompose record H] on every
         relevant hypothesis [H]. *)
     Tactic Notation "decompose" "records" :=
@@ -704,15 +691,15 @@ the above form:
     unfold not in *;
     match goal with
     | H: (In ?x ?r) -> False |- (In ?x ?s) -> False =>
-      contra H; fsetdec_body
+      contradict H; fsetdec_body
     | H: (In ?x ?r) -> False |- (E.eq ?x ?y) -> False =>
-      contra H; fsetdec_body
+      contradict H; fsetdec_body
     | H: (In ?x ?r) -> False |- (E.eq ?y ?x) -> False =>
-      contra H; fsetdec_body
+      contradict H; fsetdec_body
     | H: ?P -> False |- ?Q -> False =>
       if prop (FSet_elt_Prop P) holds by
         (auto 100 with FSet_Prop)
-      then (contra H; fsetdec_body)
+      then (contradict H; fsetdec_body)
       else fsetdec_body
     | |- _ =>
       fsetdec_body

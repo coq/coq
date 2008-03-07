@@ -175,6 +175,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacClearBody of 'id list
   | TacMove of bool * 'id * 'id
   | TacRename of ('id *'id) list
+  | TacRevert of 'id list
 
   (* Constructors *)
   | TacLeft of 'constr bindings

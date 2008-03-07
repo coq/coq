@@ -23,3 +23,7 @@ TACTIC EXTEND cc
  |[ "congruence" integer(n) "with" ne_constr_list(l) ] -> 
    [ congruence_tac n l ]
 END
+
+TACTIC EXTEND f_equal
+ [ "f_equal" ] -> [ f_equal ]
+END

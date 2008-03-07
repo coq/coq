@@ -11,43 +11,43 @@
 Require Import Notations.
 Require Import Logic.
 
-(** Useful tactics *)
+(** * Useful tactics *)
 
-(* A shorter name for generalize + clear, can be seen as an anti-intro *)
+(** A tactic for proof by contradiction. With contradict H, 
+    -   H:~A |-  B    gives       |-  A
+    -   H:~A |- ~B    gives  H: B |-  A
+    -   H: A |-  B    gives       |- ~A
+    -   H: A |- ~B    gives  H: B |- ~A
+   Moreover, negations may be in unfolded forms, 
+   and A or B may live in Type *)
 
-Tactic Notation "revert" ne_hyp_list(l) := generalize l; clear l.
-
-(**************************************
- A tactic for proof by contradiction
-     with contradict H 
-         H: ~A |-   B      gives           |-   A
-         H: ~A |- ~ B     gives  H: B |-   A
-         H:   A |-   B      gives           |- ~ A
-         H:   A |-   B      gives           |- ~ A
-         H:   A |- ~ B     gives  H: A |- ~ A
-**************************************)
-
-Ltac contradict name := 
-     let term := type of name in (
-     match term with 
-       (~_) => 
-          match goal with 
-            |- ~ _  => let x := fresh in
-                     (intros x; case name; 
-                      generalize x; clear x name;
-                      intro name)
-          | |- _    => case name; clear name
-          end
-     | _ => 
-          match goal with 
-            |- ~ _  => let x := fresh in
-                    (intros x;  absurd term;
-                       [idtac | exact name]; generalize x; clear x name;
-                       intros name)
-          | |- _    => generalize name; absurd term;
-                       [idtac | exact name]; clear name
-          end
-     end).
+Ltac contradict H :=
+  let save tac H := let x:=fresh in intro x; tac H; rename x into H
+  in 
+  let negpos H := case H; clear H 
+  in 
+  let negneg H := save negpos H
+  in
+  let pospos H := 
+    let A := type of H in (elimtype False; revert H; try fold (~A))
+  in
+  let posneg H := save pospos H
+  in 
+  let neg H := match goal with 
+   | |- (~_) => negneg H
+   | |- (_->False) => negneg H
+   | |- _ => negpos H
+  end in 
+  let pos H := match goal with 
+   | |- (~_) => posneg H
+   | |- (_->False) => posneg H
+   | |- _ => pospos H
+  end in
+  match type of H with 
+   | (~_) => neg H
+   | (_->False) => neg H
+   | _ => pos H
+  end.
 
 (* Transforming a negative goal [ H:~A |- ~B ] into a positive one [ B |- A ]*)
 
@@ -55,61 +55,21 @@ Ltac swap H :=
   idtac "swap is OBSOLETE: use contradict instead.";
   intro; apply H; clear H.
 
-(* to contradict an hypothesis without copying its type. *)
+(* To contradict an hypothesis without copying its type. *)
 
-Ltac absurd_hyp h := 
+Ltac absurd_hyp H := 
   idtac "absurd_hyp is OBSOLETE: use contradict instead.";
-  let T := type of h in 
+  let T := type of H in 
   absurd T.
 
-(* A useful complement to contradict. Here t : ~ A where H : A. *)
+(* A useful complement to contradict. Here H : A and G allows to conclude ~A *)
 
-Ltac false_hyp h t := 
-  let T := type of h in absurd T; [ apply t | assumption ].
+Ltac false_hyp H G := 
+  let T := type of H in absurd T; [ apply G | assumption ].
 
 (* A case with no loss of information. *)
 
 Ltac case_eq x := generalize (refl_equal x); pattern x at -1; case x.
-
-(* A tactic for easing the use of lemmas f_equal, f_equal2, ... *)
-
-Ltac f_equal := 
-  let cg := try congruence in
-  let r := try reflexivity in 
-  match goal with 
-   | |- ?f ?a = ?f' ?a' => cut (a=a'); [cg|r]
-   | |- ?f ?a ?b = ?f' ?a' ?b' => 
-      cut (b=b');[cut (a=a');[cg|r]|r]
-   | |- ?f ?a ?b ?c = ?f' ?a' ?b' ?c'=> 
-      cut (c=c');[cut (b=b');[cut (a=a');[cg|r]|r]|r]
-   | |- ?f ?a ?b ?c ?d= ?f' ?a' ?b' ?c' ?d'=> 
-      cut (d=d');[cut (c=c');[cut (b=b');[cut (a=a');[cg|r]|r]|r]|r]
-   | |- ?f ?a ?b ?c ?d ?e= ?f' ?a' ?b' ?c' ?d' ?e'=> 
-      cut (e=e');[cut (d=d');[cut (c=c');[cut (b=b');[cut (a=a');[cg|r]|r]|r]|r]|r]
-   | |- ?f ?a ?b ?c ?d ?e ?g= ?f' ?a' ?b' ?c' ?d' ?e' ?g' => 
-      cut (f=f');[cut (e=e');[cut (d=d');[cut (c=c');[cut (b=b');[cut (a=a');[cg|r]|r]|r]|r]|r]|r]
-   | _ => idtac
-  end.
-
-(* Specializing universal hypothesis. 
-   The word "specialize" is already used for a not-documented-anymore 
-   tactic still used in some users contribs. Any idea for a better name?
-*)
-
-Tactic Notation "narrow" hyp(H) "with" constr(x) := 
- generalize (H x); clear H; intro H.
-Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) := 
- generalize (H x y); clear H; intro H.
-Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z):= 
- generalize (H x y z); clear H; intro H.
-Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t):= 
- generalize (H x y z t); clear H; intro H.
-Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t) constr(u):= 
- generalize (H x y z t u); clear H; intro H.
-Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t) constr(u) constr(v) := 
- generalize (H x y z t u v); clear H; intro H.
-Tactic Notation "narrow" hyp(H) "with" constr(x) constr(y) constr(z) constr(t) constr(u) constr(v) constr(w) := 
- generalize (H x y z t u v w); clear H; intro H.
 
 (* Rewriting in all hypothesis several times everywhere *)
 

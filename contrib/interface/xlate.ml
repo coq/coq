@@ -1187,6 +1187,7 @@ and xlate_tac =
        let idl' = List.map xlate_hyp idl in
        CT_clear (CT_id_ne_list (xlate_hyp id, idl'))
     | TacClear (true,_) -> xlate_error "TODO: 'clear - idl' and 'clear'"
+    | TacRevert _ -> xlate_error "TODO: revert"
     | (*For translating tactics/Inv.v *)
       TacInversion (NonDepInversion (k,idl,l),quant_hyp) ->
 	CT_inversion(compute_INV_TYPE k, xlate_quantified_hypothesis quant_hyp,
@@ -1248,6 +1249,7 @@ and xlate_tac =
 	  (CT_formula_list
 	     (List.map xlate_formula
 		(out_gen (wit_list0 rawwit_constr) args)))
+    | TacExtend (_, "f_equal", _) -> xlate_error "TODO: f_equal"
     | TacExtend (_,id, l) ->
 	print_endline ("Extratactics : "^ id);
      CT_user_tac (CT_ident id, CT_targ_list (List.map coerce_genarg_to_TARG l))

@@ -83,7 +83,7 @@ let h_new_induction ev c e idl =
 let h_new_destruct ev c e idl =
   abstract_tactic (TacNewDestruct (ev,List.map inj_ia c,Option.map inj_open_wb e,idl))
     (new_destruct ev c e idl)
-let h_specialize n d = abstract_tactic (TacSpecialize (n,inj_open_wb d)) (new_hyp n d)
+let h_specialize n d = abstract_tactic (TacSpecialize (n,inj_open_wb d)) (specialize n d)
 let h_lapply c = abstract_tactic (TacLApply (inj_open c)) (cut_and_apply c)
 
 (* Context management *)
@@ -94,6 +94,7 @@ let h_move dep id1 id2 =
   abstract_tactic (TacMove (dep,id1,id2)) (move_hyp dep id1 id2)
 let h_rename l =
   abstract_tactic (TacRename l) (rename_hyp l)
+let h_revert l = abstract_tactic (TacRevert l) (revert l)
 
 (* Constructors *)
 let h_left l    = abstract_tactic (TacLeft l) (left_with_ebindings l)

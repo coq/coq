@@ -386,8 +386,8 @@ second-order pattern-matching problem into a first-order one.
     := {\term$_n$})} 
   
   This also provides {\tt apply} with values for instantiating
-  premises. But variables are referred by names and non dependent
-  products by order (see syntax in Section~\ref{Binding-list}).
+  premises. Here, variables are referred by names and non-dependent
+  products by increasing numbers (see syntax in Section~\ref{Binding-list}).
 
 \item {\tt eapply \term}\tacindex{eapply}\label{eapply}
   
@@ -558,44 +558,37 @@ in the list of subgoals remaining to prove.
 
 \item \texttt{pose proof {\term} as {\ident}}
 
-  This tactic behaves like \texttt{assert ({\ident:T} by exact {\term}} where
+  This tactic behaves like \texttt{assert ({\ident:T}) by exact {\term}} where
   \texttt{T} is the type of {\term}. 
 
-\end{Variants}
+\item {\tt specialize ({\ident} \term$_1$ {\ldots} \term$_n$)} \\
+      {\tt specialize {\ident} with \bindinglist}
 
-% PAS CLAIR;
-% DEVRAIT AU MOINS FAIRE UN INTRO;
-% DEVRAIT ETRE REMPLACE PAR UN LET;
-% MESSAGE D'ERREUR STUPIDE
-% POURQUOI Specialize trans_equal ECHOUE ?
-%\begin{Variants}
-%\item {\tt Specialize \term} 
-%   \tacindex{Specialize} \\
-%   The argument {\tt t} should be a well-typed
-%   term of type {\tt T}.  This tactics is to make a cut of a
-%   proposition when you have already the proof of this proposition
-%   (for example it is a theorem applied to variables of local
-%   context). It is equivalent to {\tt Assert T. exact t}.
-%
-%\item {\tt Specialize {\term} with \vref$_1$ := {\term$_1$} \dots
-%    \vref$_n$ := \term$_n$}
-%  \tacindex{Specialize \dots\ with} \\ 
-%  It is to provide the tactic with some explicit values to instantiate
-%  premises of {\term} (see Section~\ref{Binding-list}).
-%  Some other premises are inferred using type information and
-%  unification. The resulting well-formed 
-%  term being {\tt (\term~\term'$_1$\dots\term'$_k$)}
-%  this tactic behaves as is used as 
-%  {\tt Specialize (\term~\term'$_1$\dots\term'$_k$)} \\ 
-%
-%  \ErrMsg {\tt Metavariable wasn't in the metamap} \\ 
-%  Arises when the information provided in the bindings list is not
-%  sufficient.
-%\item {\tt Specialize {\num} {\term} with \vref$_1$ := {\term$_1$} \dots\ 
-% \vref$_n$:= \term$_n$}\\ 
-%  The behavior is the same as before but only \num\ premises of 
-%  \term\ will be kept.
-%\end{Variants}
+      The tactic {\tt specialize} works on local hypothesis \ident.
+      The premises of this hypothesis (either universal
+      quantifications or non-dependent implications) are instantiated
+      by concrete terms coming either from arguments \term$_1$
+      $\ldots$ \term$n$ or from a bindings list (see
+      Section~\ref{Binding-list} for more about bindings lists). In the
+      second form, all instantiation elements must be given, whereas
+      in the first form the application to \term$_1$ {\ldots}
+      \term$_n$ can be partial. The first form is equivalent to 
+      {\tt assert (\ident':=\ident \term$_1$ {\ldots} \term$_n$);
+           clear \ident; rename \ident' into \ident}. 
+
+      The name {\ident} can also refer to a global lemma or
+      hypothesis. In this case, for compatibility reasons, the
+      behavior of {\tt specialize} is close to the one of {\tt
+        generalize}: the instantiated statement becomes an additional 
+      premise of the goal. 
+
+%% Moreover, the old syntax allows the use of a number after {\tt specialize} 
+%% for controlling the number of premises to instantiate. Giving this 
+%% number should not be mandatory anymore (automatic detection of how
+%% many premises can be eaten without leaving meta-variables). Hence 
+%% no documentation for this integer optional argument of specialize
+
+\end{Variants}
 
 \subsection{{\tt apply {\term} in {\ident}}
 \tacindex{apply {\ldots} in}}
@@ -674,9 +667,11 @@ to $T$.
   This generalizes {\term} but also {\em all} hypotheses which depend
   on {\term}. It clears the generalized hypotheses.
 
-\item {\tt revert \term$_1$ \dots\ \term$_n$}\tacindex{revert}
+\item {\tt revert \ident$_1$ \dots\ \ident$_n$}\tacindex{revert}
  
-  This is equivalent to a {\tt generalize} followed by a {\tt clear}.
+  This is equivalent to a {\tt generalize} followed by a {\tt clear}
+  on the given hypotheses. This tactic can be seem as reciprocal to 
+  {\tt intros}. 
 
 \end{Variants}
 
@@ -795,14 +790,34 @@ the local context.
 
 This tactic applies to any goal. The {\tt contradiction} tactic
 attempts to find in the current context (after all {\tt intros}) one
-which is equivalent to {\tt False}. It permits to prune irrelevant
-cases.  This tactic is a macro for the tactics sequence {\tt intros;
-  elimtype False; assumption}.
+hypothesis which is equivalent to {\tt False}. It permits to prune 
+irrelevant cases. This tactic is a macro for the tactics sequence 
+{\tt intros; elimtype False; assumption}. 
 
 \begin{ErrMsgs}
 \item \errindex{No such assumption}
 \end{ErrMsgs}
 
+\begin{Variants}
+\item {\tt contradiction \ident}
+
+The proof of {\tt False} is searched in the hypothesis named \ident.
+\end{Variants}
+
+\subsection {\tt contradict \ident}
+\label{contradict}
+\tacindex{contradict}
+
+This tactic allows to manipulate negated hypothesis and goals. The
+name \ident\ should correspond to an hypothesis. With 
+{\tt contradict H}, the current goal and context is transformed in
+the following way: 
+\begin{itemize}
+\item  {\tt H:$\neg$A $\vd$  B} \ becomes \ {\tt $\vd$ A}
+\item  {\tt H:$\neg$A $\vd$ $\neg$B} \  becomes \ {\tt H: B $\vd$  A }
+\item  {\tt H: A $\vd$  B} \ becomes \ {\tt $\vd$ $\neg$A}
+\item  {\tt H: A $\vd$ $\neg$B} \ becomes \ {\tt H: B $\vd$ $\neg$A}
+\end{itemize}
 
 \section{Conversion tactics
 \index{Conversion tactics}
@@ -1294,12 +1309,13 @@ and {\tt induction {\term} as {\intropattern}}.
 
   \ErrMsg \errindex{Not the right number of dependent arguments}
 
-\item{\tt elim {\term} with {\vref$_1$} := {\term$_1$} \dots\ {\vref$_n$}
-    := {\term$_n$}} 
+\item{\tt elim {\term} with ({\vref$_1$} := {\term$_1$}) \dots\ ({\vref$_n$}
+    := {\term$_n$}}) 
   
-  Provides also {\tt elim} with values for instantiating premises by
-  associating explicitly variables (or non dependent products) with
-  their intended instance.
+  Also provides {\tt elim} with values for instantiating premises by
+  associating explicitly variables (or non-dependent products) with
+  their intended instance (see \ref{Binding-list} for more details
+  about bindings list). 
 
 \item{\tt elim {\term$_1$} using {\term$_2$}}
 \tacindex{elim \dots\ using} 
@@ -1977,10 +1993,6 @@ a'_1\ \ldots\ a'_n$. Using {\tt f\_equal} on such a goal leads to
 subgoals $f=f'$ and $a_1=a'_1$ and so on up to $a_n=a'_n$. Amongst 
 these subgoals, the simple ones (e.g. provable by
 reflexivity or congruence) are automatically solved by {\tt f\_equal}.
-
-\Rem {\tt f\_equal} currently handles goals with only up to 5 arguments
-(i.e. $n\leq 5$). 
-
 
 
 \section{Equality and inductive sets}

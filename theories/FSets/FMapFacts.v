@@ -584,8 +584,8 @@ Proof.
  rewrite in_find_iff, in_find_iff, H; intuition.
  rewrite find_mapsto_iff in H0,H1; congruence.
  destruct H.
- narrow H with y.
- narrow H0 with y.
+ specialize (H y).
+ specialize (H0 y).
  do 2 rewrite in_find_iff in H.
  generalize (find_mapsto_iff m y)(find_mapsto_iff m' y).
  do 2 destruct find; auto; intros.

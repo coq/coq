@@ -76,7 +76,7 @@ val h_clear           : bool -> identifier list -> tactic
 val h_clear_body      : identifier list -> tactic
 val h_move            : bool -> identifier -> identifier -> tactic
 val h_rename          : (identifier*identifier) list -> tactic
-
+val h_revert          : identifier list -> tactic
 
 (* Constructors *)
 val h_constructor     : int -> open_constr bindings -> tactic

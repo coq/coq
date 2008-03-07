@@ -340,7 +340,8 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacClear     _
     | TacClearBody _
     | TacMove      _
-    | TacRename    _ -> acc
+    | TacRename    _ 
+    | TacRevert    _ -> acc
 
     (* Constructors *)
     | TacLeft        cb

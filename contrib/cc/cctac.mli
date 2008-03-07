@@ -18,3 +18,5 @@ val cc_tactic : int -> constr list -> tactic
 val cc_fail : tactic
 
 val congruence_tac : int -> constr list -> tactic
+
+val f_equal : tactic

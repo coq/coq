@@ -140,10 +140,10 @@ intros U R H' x b H'0; elim H'0.
 intros x0 a H'1; exists a; auto with sets.
 intros x0 y z H'1 H'2 H'3 a H'4.
 red in H'.
-specialize  3H' with (x := x0) (a := a) (b := y); intro H'7; lapply H'7;
+specialize H' with (x := x0) (a := a) (b := y); lapply H'; 
  [ intro H'8; lapply H'8;
-    [ intro H'9; try exact H'9; clear H'8 H'7 | clear H'8 H'7 ]
- | clear H'7 ]; auto with sets.
+    [ intro H'9; try exact H'9; clear H'8 H' | clear H'8 H' ]
+ | clear H' ]; auto with sets.
 elim H'9.
 intros t H'5; elim H'5; intros H'6 H'7; try exact H'6; clear H'5.
 elim (H'3 t); auto with sets.

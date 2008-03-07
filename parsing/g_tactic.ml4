@@ -458,6 +458,7 @@ GEXTEND Gram
       | IDENT "move"; id1 = id_or_meta; IDENT "after"; id2 = id_or_meta -> 
 	  TacMove (true,id1,id2)
       | IDENT "rename"; l = LIST1 rename SEP "," -> TacRename l
+      | IDENT "revert"; l = LIST1 id_or_meta -> TacRevert l
 
       (* Constructors *)
       | IDENT "left"; bl = with_bindings -> TacLeft bl
