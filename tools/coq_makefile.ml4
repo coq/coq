@@ -131,7 +131,7 @@ let implicit () =
     print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
     print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
   and v_rule () =
-    print "%.vo %.glob: %.v\n\t$(COQC) $(COQLIBS) -dump-glob $*.glob $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "%.vo %.glob: %.v\n\t$(COQC) -dump-glob $*.glob $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.g: %.v\n\t$(GALLINA) $<\n\n";
     print "%.tex: %.v\n\t$(COQDOC) -latex $< -o $@\n\n";
@@ -237,7 +237,7 @@ let include_dirs l =
   let inc_i, inc_r = parse_includes l' in
     section "Libraries definition.";
     print "OCAMLLIBS:="; print_list "\\\n  " inc_i; print "\n";
-    print "COQLIBS:="; print_list "\\\n  " inc_i; print_list "\\\n  " inc_r; print "\n";
+    print "COQLIBS:="; print_list "\\\n  " inc_i; print " "; print_list "\\\n  " inc_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " inc_r; print "\n\n"
 
 let rec special = function
@@ -446,8 +446,8 @@ let do_makefile args =
     banner ();
     warning ();
     command_line args;
-    variables l;
     include_dirs l;
+    variables l;
     all_target l;
     let sps = special  l in
       custom sps;
