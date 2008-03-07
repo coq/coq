@@ -11,7 +11,6 @@
 (* arnaud: rajouter le blabla sur la  théorie du module ici. Le undo ! Le undo ! Note importante : une preuve est un record mutable de truc immutables !*)
 
 open Term
-type subproof = Subproof.subproof (* rather than opening Subproof *)
 
 (* arnaud: transactional_stack retiré le 19 decembre 2007, il est trouvable
    dans la révision 10394 *)
@@ -26,7 +25,7 @@ type focus_kind =
    are controled by the undo mechanism *)
 type proof_state = {
   (* Current focused subproof *)
-  subproof: subproof;
+  subproof: Subproof.subproof;
   (* History of the focusings, provides information on how
      to unfocus the proof.
      The list is empty when the proof is fully unfocused. *)

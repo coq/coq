@@ -115,6 +115,7 @@ let cl_of_qualid = function
 (* "Show" commands *)
 
 let show_proof () =
+  Util.anomaly "Vernacentries.show_proof: à restaurer" (* arnaud: à restaurer
   let pts = get_pftreestate () in
   let cursor = cursor_of_pftreestate pts in
   let evc = evc_of_pftreestate pts in
@@ -126,6 +127,7 @@ let show_proof () =
       pr_ltype ty ++ fnl ())
       meta_types
     ++ str"Proof: " ++ pr_lconstr (Evarutil.nf_evar evc pfterm))
+						       *)
 
 let show_node () =
   Util.anomaly "Vernacentries.show_node: à restaurer" (* arnaud: à restaurer
@@ -144,10 +146,12 @@ let show_node () =
 		  *)
     
 let show_script () =
+  Util.anomaly "Vernacentries.show_script: à restaurer?" (* arnaud: à restaurer
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
   msgnl (print_treescript true evc pf)
+							 *)
 
 let show_thesis () =
      msgnl (anomaly "TODO" )
@@ -382,7 +386,9 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
 let vernac_end_proof = function
   | Admitted -> admit ()
   | Proved (is_opaque,idopt) ->
+    (* arnaud: fait le showscript à la fin des preuves, broken pour l'instant:
     if not !Flags.print_emacs then if_verbose show_script ();
+    *)
     match idopt with
     | None -> save_named is_opaque
     | Some ((_,id),None) -> save_anonymous is_opaque id
