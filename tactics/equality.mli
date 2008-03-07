@@ -53,7 +53,8 @@ val general_rewrite_in          :
 val general_multi_rewrite : 
   bool -> evars_flag -> constr with_ebindings -> clause -> tactic
 val general_multi_multi_rewrite : 
-  evars_flag -> (bool * multi * constr with_ebindings) list -> clause -> tactic
+  evars_flag -> (bool * multi * constr with_ebindings) list -> clause -> 
+  tactic option -> tactic
 
 val conditional_rewrite : bool -> tactic -> constr with_ebindings -> tactic
 val conditional_rewrite_in :

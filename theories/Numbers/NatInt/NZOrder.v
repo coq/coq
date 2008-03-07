@@ -140,11 +140,12 @@ setoid_replace (n < n) with False using relation iff by
 now setoid_replace (S n <= n) with False using relation iff by
   (apply -> neg_false; apply NZnle_succ_diag_l).
 intro m. rewrite NZlt_succ_r. rewrite NZle_succ_r.
-rewrite NZsucc_inj_wd. rewrite (NZlt_eq_cases n m).
+rewrite NZsucc_inj_wd.
+rewrite (NZlt_eq_cases n m).
 rewrite or_cancel_r.
+reflexivity.
 intros H1 H2; rewrite H2 in H1; false_hyp H1 NZnle_succ_diag_l.
 apply NZlt_neq.
-reflexivity.
 Qed.
 
 Theorem NZlt_succ_l : forall n m : NZ, S n < m -> n < m.

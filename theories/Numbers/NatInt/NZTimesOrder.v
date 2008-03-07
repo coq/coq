@@ -60,7 +60,7 @@ split; [apply LR |]. intro H2. apply -> NZlt_dne; intro H3.
 apply <- NZle_ngt in H3. le_elim H3.
 apply NZlt_asymm in H2. apply H2. now apply LR.
 rewrite H3 in H2; false_hyp H2 NZlt_irrefl.
-rewrite (NZtimes_lt_pred p (S p)); [reflexivity |].
+rewrite (NZtimes_lt_pred p (S p)) by reflexivity.
 rewrite H; do 2 rewrite NZtimes_0_l; now do 2 rewrite NZplus_0_l.
 Qed.
 
@@ -109,9 +109,9 @@ assert (H4 : p * n < p * m); [now apply -> NZtimes_lt_mono_neg_l |].
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 false_hyp H2 H.
 apply -> NZeq_dne; intro H3. apply -> NZlt_gt_cases in H3. destruct H3 as [H3 | H3].
-assert (H4 : p * n < p * m); [now apply -> NZtimes_lt_mono_pos_l |].
+assert (H4 : p * n < p * m) by (now apply -> NZtimes_lt_mono_pos_l).
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
-assert (H4 : p * m < p * n); [now apply -> NZtimes_lt_mono_pos_l |].
+assert (H4 : p * m < p * n) by (now apply -> NZtimes_lt_mono_pos_l).
 rewrite H1 in H4; false_hyp H4 NZlt_irrefl.
 now rewrite H1.
 Qed.
@@ -135,9 +135,9 @@ Qed.
 Theorem NZtimes_le_mono_pos_l : forall n m p : NZ, 0 < p -> (n <= m <-> p * n <= p * m).
 Proof.
 intros n m p H; do 2 rewrite NZlt_eq_cases.
-rewrite (NZtimes_lt_mono_pos_l p n m); [assumption |].
-now rewrite -> (NZtimes_cancel_l n m p);
-[intro H1; rewrite H1 in H; false_hyp H NZlt_irrefl |].
+rewrite (NZtimes_lt_mono_pos_l p n m) by assumption.
+now rewrite -> (NZtimes_cancel_l n m p) by
+(intro H1; rewrite H1 in H; false_hyp H NZlt_irrefl).
 Qed.
 
 Theorem NZtimes_le_mono_pos_r : forall n m p : NZ, 0 < p -> (n <= m <-> n * p <= m * p).
@@ -149,9 +149,8 @@ Qed.
 Theorem NZtimes_le_mono_neg_l : forall n m p : NZ, p < 0 -> (n <= m <-> p * m <= p * n).
 Proof.
 intros n m p H; do 2 rewrite NZlt_eq_cases.
-rewrite (NZtimes_lt_mono_neg_l p n m); [assumption |].
-rewrite -> (NZtimes_cancel_l m n p);
-[intro H1; rewrite H1 in H; false_hyp H NZlt_irrefl |].
+rewrite (NZtimes_lt_mono_neg_l p n m); [| assumption].
+rewrite -> (NZtimes_cancel_l m n p) by (intro H1; rewrite H1 in H; false_hyp H NZlt_irrefl).
 now setoid_replace (n == m) with (m == n) using relation iff by (split; now intro).
 Qed.
 

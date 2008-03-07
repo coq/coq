@@ -175,8 +175,13 @@ let general_multi_rewrite l2r with_evars c cl =
 	      (general_rewrite_ebindings l2r c with_evars)
 	      do_hyps
 
-let general_multi_multi_rewrite with_evars l cl = 
-  let do1 l2r c = general_multi_rewrite l2r with_evars c cl in
+let general_multi_multi_rewrite with_evars l cl tac = 
+  let do1 l2r c = 
+    match tac with
+	None -> general_multi_rewrite l2r with_evars c cl
+      | Some tac -> tclTHENSFIRSTn (general_multi_rewrite l2r with_evars c cl)
+	  [|tclIDTAC|] (tclCOMPLETE tac)
+  in
   let rec doN l2r c = function 
     | Precisely n when n <= 0 -> tclIDTAC
     | Precisely 1 -> do1 l2r c

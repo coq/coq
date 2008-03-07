@@ -1064,7 +1064,7 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
    rewrite Padd_ok; rewrite PmulC_ok; rsimpl.
  intros i P5 H; rewrite H.
    intros HH H1; injection HH; intros; subst; rsimpl.
-   rewrite Padd_ok; rewrite PmulI_ok. intros;apply Pmul_ok. rewrite H1; rsimpl.
+   rewrite Padd_ok; rewrite PmulI_ok by (intros;apply Pmul_ok). rewrite H1; rsimpl. 
  intros i P5 P6 H1 H2 H3; rewrite H1; rewrite H3.
    assert (P4 = Q1 ++ P3 ** PX i P5 P6).
    injection H2; intros; subst;trivial.
@@ -1258,7 +1258,7 @@ Section POWER.
  
   Lemma Ppow_N_ok : forall l,  (forall P, subst_l P@l == P@l) ->
          forall P n, (Ppow_N P n)@l == (pow_N P1 Pmul P n)@l.
-  Proof.  destruct n;simpl. rrefl. rewrite Ppow_pos_ok. trivial. Esimpl.  Qed.
+  Proof.  destruct n;simpl. rrefl. rewrite Ppow_pos_ok by trivial. Esimpl.  Qed.
     
  End POWER.
 
@@ -1334,7 +1334,7 @@ Section POWER.
    rewrite IHpe1;rewrite IHpe2;rrefl.
    rewrite IHpe1;rewrite IHpe2. rewrite Pmul_ok. rrefl.
    rewrite IHpe;rrefl.
-   rewrite Ppow_N_ok. intros;rrefl.
+   rewrite Ppow_N_ok by (intros;rrefl).
    rewrite pow_th.(rpow_pow_N). destruct n0;Esimpl3.
    induction p;simpl;try rewrite IHp;try rewrite IHpe;repeat rewrite Pms_ok; 
       repeat rewrite Pmul_ok;rrefl.
@@ -1425,7 +1425,7 @@ Section POWER.
    assert (HH:=mon_of_pol_ok (norm_subst 0 nil  p));
      destruct  (mon_of_pol (norm_subst 0 nil p)).  
    split.
-   rewrite <- norm_subst_spec. exact I.
+   rewrite <- norm_subst_spec by exact I.
    destruct lpe;try destruct H;rewrite <- H;
    rewrite (norm_subst_spec 0 nil); try exact I;apply HH;trivial.
    apply IHlpe. destruct lpe;simpl;trivial. destruct H. exact H0.

@@ -10,7 +10,7 @@ Language
 - New experimental typeclass system giving ad-hoc polymorphism and 
   overloading based on dependent records and implicit arguments.
 - New syntax "let| pat := b in c" for let-binding using irrefutable patterns.
-- New syntax "forall `A`, T" for specifying maximally inserted implicit 
+- New syntax "forall {A}, T" for specifying maximally inserted implicit 
   arguments in terms.
 
 Commands
@@ -139,9 +139,9 @@ Type Classes
 - New theories directory "theories/Classes" for standard typeclasses 
   declarations. Module Classes.Relations is a typeclass port of 
   Relation_Definitions.
-- New experimental "setoid" rewriting tactic "clrewrite" based on typeclasses.
-  Classes.Morphisms declares standard morphisms, Classes.SetoidClasses declares 
-  the new Setoid typeclass.  
+- New experimental "setoid" rewriting tactic based on typeclasses.
+  Classes.Morphisms declares standard morphisms, Classes.Equivalence declares 
+  the new Setoid typeclass and some derived tactics.
   
 Program
 

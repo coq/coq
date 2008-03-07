@@ -121,8 +121,8 @@ destruct (Qeq_dec a 0).
  rewrite q.
  repeat rewrite Qpower_positive_0.
  reflexivity.
-rewrite <- (Qdiv_mult_l (Qpower_positive a (n - m)) (Qpower_positive a m)).
- apply Qpower_not_0_positive; assumption.
+rewrite <- (Qdiv_mult_l (Qpower_positive a (n - m)) (Qpower_positive a m)) by
+ (apply Qpower_not_0_positive; assumption).
 apply Qdiv_comp;[|reflexivity].
 rewrite Qmult_comm.
 rewrite <- Qpower_plus_positive.
@@ -150,8 +150,7 @@ Proof.
 intros a n m H.
 destruct (Qeq_dec a 0)as [X|X].
 rewrite X.
-rewrite Qpower_0.
-assumption.
+rewrite Qpower_0 by assumption.
 destruct n; destruct m; try (elim H; reflexivity);
  simpl; repeat rewrite Qpower_positive_0; ring_simplify;
  reflexivity.
@@ -191,9 +190,8 @@ induction n using Pind.
 rewrite Zpos_succ_morphism.
 unfold Zsucc.
 rewrite Zpower_exp; auto with *; try discriminate.
-rewrite Qpower_plus'; try discriminate.
-rewrite <- IHn.
- discriminate.
+rewrite Qpower_plus' by discriminate.
+rewrite <- IHn by discriminate.
 replace (a^'n*a^1)%Z with (a^'n*a)%Z by ring.
 ring_simplify.
 reflexivity.

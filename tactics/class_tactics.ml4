@@ -516,6 +516,33 @@ let resolve_morphism env sigma oldt m args args' cstr evars =
 	[ a, r ] -> (proof, (a, r, oldt, newt))
       | _ -> assert(false)
 
+(* Adapted from setoid_replace. *)
+
+type hypinfo = {
+  cl : clausenv;
+  prf : constr;
+  rel : constr;
+  l2r : bool;
+  c1 : constr;
+  c2 : constr;
+  c  : constr option;
+  abs : (constr * types) option;
+}
+
+let decompose_setoid_eqhyp gl c left2right =
+  let ctype = pf_type_of gl c in
+  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
+  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
+  let rec split_last_two = function
+    | [c1;c2] -> [],(c1, c2)
+    | x::y::z ->
+	let l,res = split_last_two (y::z) in x::l, res
+    | _ -> error "The term provided is not an applied relation" in
+  let others, (c1,c2) = split_last_two args in
+    { cl=eqclause; prf=(Clenv.clenv_value eqclause);
+      rel=mkApp (equiv, Array.of_list others);
+      l2r=left2right; c1=c1; c2=c2; c=Some c; abs=None }
+
 let rewrite_unif_flags = {
   Unification.modulo_conv_on_closed_terms = false;
   Unification.use_metas_eagerly = true;
@@ -549,8 +576,9 @@ let rewrite2_unif_flags = {
 
 let allowK = true
 
-let unify_eqn gl (cl, rel, l2r, c1, c2) t = 
+let unify_eqn gl hypinfo t = 
   try 
+    let {cl=cl; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
     let env' = 
       try clenv_unify allowK ~flags:rewrite_unif_flags
 	CONV (if l2r then c1 else c2) t cl
@@ -559,14 +587,26 @@ let unify_eqn gl (cl, rel, l2r, c1, c2) t =
 	  CONV (if l2r then c1 else c2) t cl
     in
     let c1 = Clenv.clenv_nf_meta env' c1 
-    and c2 = Clenv.clenv_nf_meta env' c2 
-    and typ = Clenv.clenv_type env' in
-    let (rel, args) = destApp typ in
-    let relargs, args = array_chop (Array.length args - 2) args in
-    let rel = mkApp (rel, relargs) in
+    and c2 = Clenv.clenv_nf_meta env' c2
+    and rel = Clenv.clenv_nf_meta env' rel in
     let car = pf_type_of gl c1 in
-    let prf = Clenv.clenv_value env' in
-    let res = 
+    let prf =
+      if abs = None then
+(* 	let (rel, args) = destApp typ in *)
+(* 	let relargs, args = array_chop (Array.length args - 2) args in *)
+(* 	let rel = mkApp (rel, relargs) in *)
+	let prf = Clenv.clenv_value env' in
+	  begin
+	    match c with 
+	      | Some c when occur_meta prf ->
+		  (* Refresh the clausenv to not get the same meta twice in the goal. *)
+		  hypinfo := decompose_setoid_eqhyp gl c l2r;
+	      | _ -> ()
+	  end;
+	  prf
+      else prf
+    in
+    let res =
       if l2r then (prf, (car, rel, c1, c2))
       else
 	try (mkApp (symmetric_proof (pf_env gl) car rel, [| c1 ; c2 ; prf |]), (car, rel, c2, c1))
@@ -626,25 +666,11 @@ let build_new gl env sigma occs hypinfo concl cstr evars =
 	    | _ -> None, occ
   in aux concl 1 cstr
     
-(* Adapted from setoid_replace. *)
-
-let decompose_setoid_eqhyp gl c left2right =
-  let ctype = pf_type_of gl c in
-  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
-  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
-  let rec split_last_two = function
-    | [c1;c2] -> [],(c1, c2)
-    | x::y::z ->
-	let l,res = split_last_two (y::z) in x::l, res
-    | _ -> error "The term provided is not an applied relation" in
-  let others, (c1,c2) = split_last_two args in
-    eqclause, mkApp (equiv, Array.of_list others), left2right, c1, c2
-
 let resolve_all_typeclasses env evd = 
   resolve_all_evars false (true, 15) env
     (fun ev evi -> Typeclasses.class_of_constr evi.Evd.evar_concl <> None) evd
     
-let cl_rewrite_clause_aux hypinfo occs clause gl =
+let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
     match clause with
 	Some ((_, id), _) -> pf_get_hyp_typ gl id, Some id
@@ -670,17 +696,26 @@ let cl_rewrite_clause_aux hypinfo occs clause gl =
 	      let rewtac, cleantac = 
 		match is_hyp with
 		  | Some id -> 
-(* 		      let meta = Evarutil.new_meta() in *)
-(* 		      let term = mkApp (p, [| mkCast (mkMeta meta, DEFAULTcast, newt) |]) in *)
-(* 		      tclTHEN *)
-(* 			(tclEVARS (evars_of clenv.evd)) *)
-		      cut_replacing id newt (fun x ->
-			refine (mkApp (p, [| mkVar id |]))),
+		      let term = 
+			match !hypinfo.abs with
+			    None -> p
+			  | Some (t, ty) -> 
+			      mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
+		      in
+			cut_replacing id newt 
+			  (fun x -> Tactics.refine (mkApp (term, [| mkVar id |]))),
 		      unfold_in_hyp unfoldrefs (([], id), Tacexpr.InHyp)
 		  | None -> 
-		      let meta = Evarutil.new_meta() in
-		      let term = mkApp (p, [| mkCast (mkMeta meta, DEFAULTcast, newt) |]) in
-			refine term, Tactics.unfold_in_concl unfoldrefs
+(* 		      let term = mkApp (p, [| mkCast (mkMeta goal_meta, DEFAULTcast, newt) |]) in *)
+		      let term = match !hypinfo.abs with
+			  None -> mkApp (p, [| mkCast (mkMeta goal_meta, DEFAULTcast, newt) |])
+			| Some (t, ty) -> 
+			    mkApp (mkLambda (Name (id_of_string "newt"), newt,
+					    mkLambda (Name (id_of_string "lemma"), ty,
+						     mkApp (p, [| mkRel 2 |]))),
+				  [| mkMeta goal_meta; t |])
+		      in
+			Tactics.refine term, Tactics.unfold_in_concl unfoldrefs
 	      in
 	      let evartac = 
 		let evd = Evd.evars_of undef in
@@ -690,13 +725,14 @@ let cl_rewrite_clause_aux hypinfo occs clause gl =
 	    with UserError (env, e) -> 
 	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints") gl)
       | None -> 
-	  let (_, _, l2r, x, y) = hypinfo in
+	  let {l2r=l2r; c1=x; c2=y} = !hypinfo in
 	    raise (Pretype_errors.PretypeError (pf_env gl, Pretype_errors.NoOccurrenceFound (if l2r then x else y)))
 	      (* tclFAIL 1 (str"setoid rewrite failed") gl *)
 	  
 let cl_rewrite_clause c left2right occs clause gl =
-  let hypinfo = decompose_setoid_eqhyp gl c left2right in
-    cl_rewrite_clause_aux hypinfo occs clause gl
+  let meta = Evarutil.new_meta() in
+  let hypinfo = ref (decompose_setoid_eqhyp gl c left2right) in
+    cl_rewrite_clause_aux hypinfo meta occs clause gl
 
 open Genarg
 open Extraargs
@@ -1021,8 +1057,6 @@ let default_morphism sign m =
     	  
 let unfold_respectful = lazy (Tactics.unfold_in_concl [[], EvalConstRef (destConst (Lazy.force respectful))])
 
-let ($) g f = fun x -> g (f x)
-
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [	init_setoid ();
@@ -1082,7 +1116,26 @@ END
 (** Taken from original setoid_replace, to emulate the old rewrite semantics where
     lemmas are first instantiated once and then rewrite proceeds. *)
 
-let unification_rewrite l2r c1 c2 cl but gl = 
+let check_evar_map_of_evars_defs evd =
+ let metas = Evd.meta_list evd in
+ let check_freemetas_is_empty rebus =
+  Evd.Metaset.iter
+   (fun m ->
+     if Evd.meta_defined evd m then () else
+      raise (Logic.RefinerError (Logic.OccurMetaGoal rebus)))
+ in
+  List.iter
+   (fun (_,binding) ->
+     match binding with
+        Evd.Cltyp (_,{Evd.rebus=rebus; Evd.freemetas=freemetas}) ->
+         check_freemetas_is_empty rebus freemetas
+      | Evd.Clval (_,({Evd.rebus=rebus1; Evd.freemetas=freemetas1},_),
+                 {Evd.rebus=rebus2; Evd.freemetas=freemetas2}) ->
+         check_freemetas_is_empty rebus1 freemetas1 ;
+         check_freemetas_is_empty rebus2 freemetas2
+   ) metas
+
+let unification_rewrite l2r c1 c2 cl rel but gl = 
   let (env',c') =
     try
       (* ~flags:(false,true) to allow to mark occurences that must not be
@@ -1099,23 +1152,31 @@ let unification_rewrite l2r c1 c2 cl but gl =
   let cl' = {cl with evd = env' } in
   let c1 = Clenv.clenv_nf_meta cl' c1 
   and c2 = Clenv.clenv_nf_meta cl' c2 in
-    cl', Clenv.clenv_value cl', l2r, c1, c2
+  check_evar_map_of_evars_defs env';
+  let prf = Clenv.clenv_value cl' in
+  let prfty = Clenv.clenv_type cl' in
+    if occur_meta prf then
+      {cl=cl'; prf=(mkRel 1); rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
+    else
+      {cl=cl'; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=None}
 
 let get_hyp gl c clause l2r = 
   match kind_of_term (pf_type_of gl c) with
       Prod _ -> 
-	let cl, rel, _, c1, c2 = decompose_setoid_eqhyp gl c l2r in
+	let hi = decompose_setoid_eqhyp gl c l2r in
 	let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
-	  unification_rewrite l2r c1 c2 cl but gl 
+	  unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.rel but gl
     | _ -> decompose_setoid_eqhyp gl c l2r
 	
 let general_s_rewrite l2r c ~new_goals gl =
-  let hypinfo = get_hyp gl c None l2r in
-    cl_rewrite_clause_aux hypinfo [] None gl
+  let meta = Evarutil.new_meta() in
+  let hypinfo = ref (get_hyp gl c None l2r) in
+    cl_rewrite_clause_aux hypinfo meta [] None gl
 
 let general_s_rewrite_in id l2r c ~new_goals gl =
-  let hypinfo = get_hyp gl c (Some id) l2r in
-    cl_rewrite_clause_aux hypinfo [] (Some (([],id), [])) gl
+  let meta = Evarutil.new_meta() in
+  let hypinfo = ref (get_hyp gl c (Some id) l2r) in
+    cl_rewrite_clause_aux hypinfo meta [] (Some (([],id), [])) gl
     
 let general_s_rewrite_clause = function
   | None -> general_s_rewrite
@@ -1215,15 +1276,3 @@ END
 (* TACTIC EXTEND class_apply *)
 (*     | [ "class_apply" constr_with_bindings(t) ] -> [ class_apply t ] *)
 (* END *)
-
-(* let default_morphism ?(filter=fun _ -> true) m = *)
-(*   match List.filter filter (morphism_table_find m) with *)
-(*       [] -> raise Not_found *)
-(*     | m1::ml -> *)
-(*         if ml <> [] then *)
-(*           Flags.if_warn msg_warning *)
-(*             (strbrk "There are several morphisms associated to \"" ++ *)
-(*             pr_lconstr m ++ strbrk "\". Morphism " ++ prmorphism m m1 ++ *)
-(*             strbrk " is randomly chosen."); *)
-(*         relation_morphism_of_constr_morphism m1 *)
-

@@ -506,7 +506,7 @@ Theorem pred_lt_mono : forall n m : N, n ~= 0 -> (n < m <-> P n < P m).
 Proof.
 intros n m H1; split; intro H2.
 assert (m ~= 0). apply <- neq_0_lt_0. now apply lt_lt_0 with n.
-now rewrite <- (succ_pred n) in H2; rewrite <- (succ_pred m) in H2;
+now rewrite <- (succ_pred n) in H2; rewrite <- (succ_pred m) in H2 ;
 [apply <- succ_lt_mono | | |].
 assert (m ~= 0). apply <- neq_0_lt_0. apply lt_lt_0 with (P n).
 apply lt_le_trans with (P m). assumption. apply le_pred_l.
@@ -515,7 +515,7 @@ Qed.
 
 Theorem lt_succ_lt_pred : forall n m : N, S n < m <-> n < P m.
 Proof.
-intros n m. rewrite pred_lt_mono. apply neq_succ_0. now rewrite pred_succ.
+intros n m. rewrite pred_lt_mono by apply neq_succ_0. now rewrite pred_succ.
 Qed.
 
 Theorem le_succ_le_pred : forall n m : N, S n <= m -> n <= P m. (* Converse is false for n == m == 0 *)

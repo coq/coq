@@ -802,7 +802,7 @@ Qed.
 Theorem Pcompare_Eq_eq : forall p q:positive, (p ?= q) Eq = Eq -> p = q.
 Proof.
   intro x; induction x as [p IHp| p IHp| ]; intro y; destruct y as [q| q| ];
-    simpl in |- *; auto; intro H;
+    simpl in |- *; auto; intro H ;
       [ rewrite (IHp q); trivial
         | absurd ((p ?= q) Gt = Eq);
           [ elim (Pcompare_not_Eq p q); auto | assumption ]

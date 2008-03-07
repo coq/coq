@@ -1011,14 +1011,15 @@ and xlate_tac =
 		CT_coerce_TACTIC_COM_to_TACTIC_OPT tac
 	in 
 	CT_replace_with (c1, c2,cl,tac_opt)
-    | TacRewrite(false,[b,Precisely 1,cbindl],cl) -> 
+    | TacRewrite(false,[b,Precisely 1,cbindl],cl,None) -> 
      let cl = xlate_clause cl 
      and c = xlate_formula (fst cbindl) 
      and bindl = xlate_bindings (snd cbindl) in
      if b then CT_rewrite_lr (c, bindl, cl)
      else CT_rewrite_rl (c, bindl, cl)
-    | TacRewrite(false,_,cl) -> xlate_error "TODO: rewrite of several hyps at once"
-    | TacRewrite(true,_,cl) -> xlate_error "TODO: erewrite"
+    | TacRewrite(_,_,_,Some _) -> xlate_error "TODO: rewrite by"
+    | TacRewrite(false,_,cl,_) -> xlate_error "TODO: rewrite of several hyps at once"
+    | TacRewrite(true,_,cl,_) -> xlate_error "TODO: erewrite"
     | TacExtend (_,"conditional_rewrite", [t; b; cbindl]) ->
      let t = out_gen rawwit_main_tactic t in
      let b = out_gen Extraargs.rawwit_orient b in

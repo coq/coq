@@ -51,8 +51,8 @@ Theorem natural_isomorphism_succ :
   forall n : N1, natural_isomorphism (S1 n) == S2 (natural_isomorphism n).
 Proof.
 unfold natural_isomorphism.
-intro n. now rewrite (@NAxiomsMod1.recursion_succ N2 NAxiomsMod2.Neq);
-[| unfold fun2_wd; intros; apply NBasePropMod2.succ_wd |].
+intro n. now rewrite (@NAxiomsMod1.recursion_succ N2 NAxiomsMod2.Neq) ;
+[ | | unfold fun2_wd; intros; apply NBasePropMod2.succ_wd].
 Qed.
 
 Theorem hom_nat_iso : homomorphism natural_isomorphism.

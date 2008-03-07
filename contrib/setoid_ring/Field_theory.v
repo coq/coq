@@ -317,11 +317,12 @@ assert (HH: ~ r5*r6 == 0).
   apply field_is_integral_domain.
     intros H1; case H; rewrite H1; ring.
     intros H1; case H0; rewrite H1; ring.
-rewrite <- rdiv4; auto.
+rewrite <- rdiv4 ; auto.
+  rewrite rdiv_r_r; auto.
+
   apply field_is_integral_domain.
     intros H1; case H; rewrite H1; ring.
     intros H1; case H0; rewrite H1; ring.
-rewrite rdiv_r_r; auto.
 Qed.
 
 
@@ -353,11 +354,11 @@ assert (HH: ~ r5*r6 == 0).
   apply field_is_integral_domain.
     intros H2; case H0; rewrite H2; ring.
     intros H2; case H1; rewrite H2; ring.
-rewrite <- rdiv4; auto.
+rewrite <- rdiv4 ; auto.
+rewrite rdiv_r_r; auto.
   apply field_is_integral_domain.
     intros H2; case H; rewrite H2; ring.
     intros H2; case H0; rewrite H2; ring.
-rewrite rdiv_r_r; auto.
 Qed.
 
 
@@ -379,8 +380,7 @@ transitivity (r1 / r2 * (r4 / r4)).
    rewrite H1 in |- *.
    rewrite (ARmul_comm ARth r2 r4) in |- *.
    rewrite <- rdiv4 in |- *; trivial.
-   rewrite rdiv_r_r in |- *.
-  trivial.
+   rewrite rdiv_r_r in |- * by trivial.
   apply (ARmul_1_r Rsth ARth).
 Qed.
 
@@ -780,7 +780,7 @@ Proof.
   case_eq ((p1 ?= p2)%positive Eq);intros;simpl. 
   repeat rewrite pow_th.(rpow_pow_N);simpl. split. 2:refine (refl_equal _).
   rewrite (Pcompare_Eq_eq _ _ H0).  
-  rewrite H;[trivial | ring [ (morph1 CRmorph)]].
+  rewrite H by trivial. ring [ (morph1 CRmorph)].
   fold (NPEpow e2 (Npos (p2 - p1))).
   rewrite NPEpow_correct;simpl.
   repeat rewrite pow_th.(rpow_pow_N);simpl.
@@ -1048,10 +1048,11 @@ Proof.
  induction p;simpl.
   intro Hp;assert (H1 := @rmul_reg_l _ (pow_pos rmul x p * pow_pos rmul x p) 0 H).
   apply IHp.
-  rewrite (@rmul_reg_l _ (pow_pos rmul x p)  0 IHp). rewrite H1. rewrite Hp;ring. ring.
-  reflexivity. 
+  rewrite (@rmul_reg_l _ (pow_pos rmul x p)  0 IHp). 
+  reflexivity.
+  rewrite H1. ring. rewrite Hp;ring. 
   intro Hp;apply IHp. rewrite (@rmul_reg_l _ (pow_pos rmul x p)  0 IHp).
-  rewrite Hp;ring. reflexivity. trivial.
+  reflexivity. rewrite Hp;ring. trivial.
 Qed.
  
 Theorem Pcond_Fnorm:
@@ -1234,13 +1235,15 @@ generalize (NPEeval l (num (Fnorm e1))) (NPEeval l (denum (Fnorm e1)))
   (Pcond_Fnorm _ _ Hcond).
 intros r r0 Hdiff;induction p;simpl.
 repeat (rewrite <- rdiv4;trivial).
-intro Hp;apply (pow_pos_not_0 Hdiff  p). 
+rewrite IHp. reflexivity.
+apply pow_pos_not_0;trivial.
+apply pow_pos_not_0;trivial.
+intro Hp. apply (pow_pos_not_0 Hdiff  p).
 rewrite  (@rmul_reg_l (pow_pos rmul r0 p) (pow_pos rmul r0 p)  0).
- apply pow_pos_not_0;trivial. ring [Hp]. reflexivity.
+ reflexivity. apply pow_pos_not_0;trivial. ring [Hp]. 
+rewrite <- rdiv4;trivial. 
+rewrite IHp;reflexivity.
 apply pow_pos_not_0;trivial. apply pow_pos_not_0;trivial.
-rewrite IHp;reflexivity.
-rewrite <- rdiv4;trivial. apply pow_pos_not_0;trivial. apply pow_pos_not_0;trivial.
-rewrite IHp;reflexivity.
 reflexivity.
 Qed.
 
@@ -1253,9 +1256,9 @@ Theorem Fnorm_crossproduct:
  PCond l (condition nfe1 ++ condition nfe2) ->
  FEeval l fe1 == FEeval l fe2.
 intros l fe1 fe2 nfe1 nfe2 Hcrossprod Hcond; subst nfe1 nfe2.
-rewrite Fnorm_FEeval_PEeval in |- *.
+rewrite Fnorm_FEeval_PEeval in |- * by
  apply PCond_app_inv_l with (1 := Hcond).
- rewrite Fnorm_FEeval_PEeval in |- *.
+ rewrite Fnorm_FEeval_PEeval in |- * by
   apply PCond_app_inv_r with (1 := Hcond).
   apply cross_product_eq; trivial.
    apply Pcond_Fnorm.
@@ -1473,18 +1476,18 @@ Proof.
  rewrite <- (@AFinv_l AFth (NPEeval l (denum (Fnorm fe2))));trivial.
  ring [Heq]. rewrite (ARth.(ARmul_comm)  (/ NPEeval l (denum (Fnorm fe2)))).
  repeat rewrite <- (ARth.(ARmul_assoc)).
- rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r. trivial.
+ rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r by trivial.
  apply (@rmul_reg_l (/NPEeval l (denum (Fnorm fe1)))).
  intro Heq; apply AFth.(AF_1_neq_0).
  rewrite <- (@AFinv_l AFth (NPEeval l (denum (Fnorm fe1))));trivial.
  ring [Heq]. repeat rewrite (ARth.(ARmul_comm)  (/ NPEeval l (denum (Fnorm fe1)))).
  repeat rewrite <- (ARth.(ARmul_assoc)).
- repeat rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r. trivial.
+ repeat rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r by trivial.
  rewrite (AFth.(AFdiv_def)). ring_simplify. unfold SRopp.
  rewrite  (ARth.(ARmul_comm) (/ NPEeval l (denum (Fnorm fe2)))).
  repeat rewrite <- (AFth.(AFdiv_def)).
- repeat rewrite <- Fnorm_FEeval_PEeval;trivial.
- apply (PCond_app_inv_l _ _ _ H7). apply (PCond_app_inv_r _ _ _ H7).
+ repeat rewrite <- Fnorm_FEeval_PEeval ; trivial.
+ apply (PCond_app_inv_r _ _ _ H7). apply (PCond_app_inv_l _ _ _ H7).
 Qed.
 
 Theorem Field_simplify_eq_in_correct :
@@ -1523,18 +1526,18 @@ Proof.
  rewrite <- (@AFinv_l AFth (NPEeval l (denum (Fnorm fe2))));trivial.
  ring [Heq]. rewrite (ARth.(ARmul_comm)  (/ NPEeval l (denum (Fnorm fe2)))).
  repeat rewrite <- (ARth.(ARmul_assoc)).
- rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r. trivial.
+ rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r by trivial.
  apply (@rmul_reg_l (/NPEeval l (denum (Fnorm fe1)))).
  intro Heq; apply AFth.(AF_1_neq_0).
  rewrite <- (@AFinv_l AFth (NPEeval l (denum (Fnorm fe1))));trivial.
  ring [Heq]. repeat rewrite (ARth.(ARmul_comm)  (/ NPEeval l (denum (Fnorm fe1)))).
  repeat rewrite <- (ARth.(ARmul_assoc)).
- repeat rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r. trivial.
+ repeat rewrite <- (AFth.(AFdiv_def)). rewrite rdiv_r_r by trivial.
  rewrite (AFth.(AFdiv_def)). ring_simplify. unfold SRopp.
  rewrite  (ARth.(ARmul_comm) (/ NPEeval l (denum (Fnorm fe2)))).
  repeat rewrite <- (AFth.(AFdiv_def)).
  repeat rewrite <- Fnorm_FEeval_PEeval;trivial.
- apply (PCond_app_inv_l _ _ _ H7). apply (PCond_app_inv_r _ _ _ H7).
+ apply (PCond_app_inv_r _ _ _ H7). apply (PCond_app_inv_l _ _ _ H7). 
 Qed.
 
 

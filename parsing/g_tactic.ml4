@@ -319,6 +319,10 @@ GEXTEND Gram
     [ [ IDENT "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
       | -> TacId [] ] ]
   ;
+  opt_by_tactic:
+    [ [ IDENT "by"; tac = tactic_expr LEVEL "3" -> Some tac
+    | -> None ] ]
+  ;
   rename : 
     [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
   ;
@@ -471,10 +475,10 @@ GEXTEND Gram
       | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)
-      | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ","; cl = clause ->
-	  TacRewrite (false,l,cl)
-      | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ","; cl = clause ->
-	  TacRewrite (true,l,cl)
+      | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ","; cl = clause; t=opt_by_tactic ->
+	  TacRewrite (false,l,cl,t)
+      | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ","; cl = clause; t=opt_by_tactic ->
+	  TacRewrite (true,l,cl,t)
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion

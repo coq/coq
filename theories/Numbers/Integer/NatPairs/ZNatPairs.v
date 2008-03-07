@@ -210,8 +210,9 @@ destruct n as [n m].
 cut (forall p : N, A (p, 0)); [intro H1 |].
 cut (forall p : N, A (0, p)); [intro H2 |].
 destruct (plus_dichotomy n m) as [[p H] | [p H]].
-rewrite (A_wd (n, m) (0, p)); simpl. rewrite plus_0_l; now rewrite plus_comm. apply H2.
-rewrite (A_wd (n, m) (p, 0)); simpl. now rewrite plus_0_r. apply H1.
+rewrite (A_wd (n, m) (0, p)) by (rewrite plus_0_l; now rewrite plus_comm).
+apply H2.
+rewrite (A_wd (n, m) (p, 0)) by now rewrite plus_0_r. apply H1.
 induct p. assumption. intros p IH.
 apply -> (A_wd (0, p) (1, S p)) in IH; [| now rewrite plus_0_l, plus_1_l].
 now apply <- AS.
@@ -302,13 +303,13 @@ Add Morphism NZmin with signature Zeq ==> Zeq ==> Zeq as NZmin_wd.
 Proof.
 intros n1 m1 H1 n2 m2 H2; unfold NZmin, Zeq; simpl.
 destruct (le_ge_cases (fst n1 + snd n2) (fst n2 + snd n1)) as [H | H].
-rewrite (min_l (fst n1 + snd n2) (fst n2 + snd n1)). assumption.
-rewrite (min_l (fst m1 + snd m2) (fst m2 + snd m1)).
+rewrite (min_l (fst n1 + snd n2) (fst n2 + snd n1)) by assumption.
+rewrite (min_l (fst m1 + snd m2) (fst m2 + snd m1)) by
 now apply -> (NZle_wd n1 m1 H1 n2 m2 H2).
 stepl ((fst n1 + snd m1) + (snd n2 + snd m2)) by ring.
 unfold Zeq in H1. rewrite H1. ring.
-rewrite (min_r (fst n1 + snd n2) (fst n2 + snd n1)). assumption.
-rewrite (min_r (fst m1 + snd m2) (fst m2 + snd m1)).
+rewrite (min_r (fst n1 + snd n2) (fst n2 + snd n1)) by assumption.
+rewrite (min_r (fst m1 + snd m2) (fst m2 + snd m1)) by
 now apply -> (NZle_wd n2 m2 H2 n1 m1 H1).
 stepl ((fst n2 + snd m2) + (snd n1 + snd m1)) by ring.
 unfold Zeq in H2. rewrite H2. ring.
@@ -318,13 +319,13 @@ Add Morphism NZmax with signature Zeq ==> Zeq ==> Zeq as NZmax_wd.
 Proof.
 intros n1 m1 H1 n2 m2 H2; unfold NZmax, Zeq; simpl.
 destruct (le_ge_cases (fst n1 + snd n2) (fst n2 + snd n1)) as [H | H].
-rewrite (max_r (fst n1 + snd n2) (fst n2 + snd n1)). assumption.
-rewrite (max_r (fst m1 + snd m2) (fst m2 + snd m1)).
+rewrite (max_r (fst n1 + snd n2) (fst n2 + snd n1)) by assumption.
+rewrite (max_r (fst m1 + snd m2) (fst m2 + snd m1)) by
 now apply -> (NZle_wd n1 m1 H1 n2 m2 H2).
 stepl ((fst n2 + snd m2) + (snd n1 + snd m1)) by ring.
 unfold Zeq in H2. rewrite H2. ring.
-rewrite (max_l (fst n1 + snd n2) (fst n2 + snd n1)). assumption.
-rewrite (max_l (fst m1 + snd m2) (fst m2 + snd m1)).
+rewrite (max_l (fst n1 + snd n2) (fst n2 + snd n1)) by assumption.
+rewrite (max_l (fst m1 + snd m2) (fst m2 + snd m1)) by
 now apply -> (NZle_wd n2 m2 H2 n1 m1 H1).
 stepl ((fst n1 + snd m1) + (snd n2 + snd m2)) by ring.
 unfold Zeq in H1. rewrite H1. ring.
@@ -350,25 +351,25 @@ Qed.
 Theorem NZmin_l : forall n m : Z, n <= m -> Zmin n m == n.
 Proof.
 unfold Zmin, Zle, Zeq; simpl; intros n m H.
-rewrite min_l. assumption. ring.
+rewrite min_l by assumption. ring.
 Qed.
 
 Theorem NZmin_r : forall n m : Z, m <= n -> Zmin n m == m.
 Proof.
 unfold Zmin, Zle, Zeq; simpl; intros n m H.
-rewrite min_r. assumption. ring.
+rewrite min_r by assumption. ring.
 Qed.
 
 Theorem NZmax_l : forall n m : Z, m <= n -> Zmax n m == n.
 Proof.
 unfold Zmax, Zle, Zeq; simpl; intros n m H.
-rewrite max_l. assumption. ring.
+rewrite max_l by assumption. ring.
 Qed.
 
 Theorem NZmax_r : forall n m : Z, n <= m -> Zmax n m == m.
 Proof.
 unfold Zmax, Zle, Zeq; simpl; intros n m H.
-rewrite max_r. assumption. ring.
+rewrite max_r by assumption. ring.
 Qed.
 
 End NZOrdAxiomsMod.

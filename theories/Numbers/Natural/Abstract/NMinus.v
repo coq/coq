@@ -63,8 +63,8 @@ Proof.
 intros n m p; induct p.
 intro; now do 2 rewrite minus_0_r.
 intros p IH H. do 2 rewrite minus_succ_r.
-rewrite <- IH; [apply lt_le_incl; now apply -> le_succ_l |].
-rewrite plus_pred_r. apply minus_gt. now apply -> le_succ_l.
+rewrite <- IH by (apply lt_le_incl; now apply -> le_succ_l).
+rewrite plus_pred_r by (apply minus_gt; now apply -> le_succ_l).
 reflexivity.
 Qed.
 
@@ -76,13 +76,13 @@ Qed.
 
 Theorem plus_minus : forall n m : N, (n + m) - m == n.
 Proof.
-intros n m. rewrite <- plus_minus_assoc. apply le_refl.
+intros n m. rewrite <- plus_minus_assoc by (apply le_refl).
 rewrite minus_diag; now rewrite plus_0_r.
 Qed.
 
 Theorem minus_plus : forall n m : N, n <= m -> (m - n) + n == m.
 Proof.
-intros n m H. rewrite plus_comm. rewrite plus_minus_assoc; [assumption |].
+intros n m H. rewrite plus_comm. rewrite plus_minus_assoc by assumption.
 rewrite plus_comm. apply plus_minus.
 Qed.
 
@@ -121,7 +121,7 @@ Theorem plus_minus_swap : forall n m p : N, p <= n -> n + m - p == n - p + m.
 Proof.
 intros n m p H.
 rewrite (plus_comm n m).
-rewrite <- plus_minus_assoc; [assumption |].
+rewrite <- plus_minus_assoc by assumption.
 now rewrite (plus_comm m (n - p)).
 Qed.
 
@@ -151,8 +151,8 @@ Proof.
 intros n m; cases m.
 now rewrite pred_0, times_0_r, minus_0_l.
 intro m; rewrite pred_succ, times_succ_r, <- plus_minus_assoc.
-now apply eq_le_incl.
 now rewrite minus_diag, plus_0_r.
+now apply eq_le_incl.
 Qed.
 
 Theorem times_minus_distr_r : forall n m p : N, (n - m) * p == n * p - m * p.
@@ -160,9 +160,9 @@ Proof.
 intros n m p; induct n.
 now rewrite minus_0_l, times_0_l, minus_0_l.
 intros n IH. destruct (le_gt_cases m n) as [H | H].
-rewrite minus_succ_l; [assumption |]. do 2 rewrite times_succ_l.
+rewrite minus_succ_l by assumption. do 2 rewrite times_succ_l.
 rewrite (plus_comm ((n - m) * p) p), (plus_comm (n * p) p).
-rewrite <- (plus_minus_assoc p (n * p) (m * p)); [now apply times_le_mono_r |].
+rewrite <- (plus_minus_assoc p (n * p) (m * p)) by now apply times_le_mono_r.
 now apply <- plus_cancel_l.
 assert (H1 : S n <= m); [now apply <- le_succ_l |].
 setoid_replace (S n - m) with 0 by now apply <- minus_0_le.

@@ -429,8 +429,8 @@ Module Qv.
  Theorem spec_sub x y: wf x -> wf y ->
   ([sub x y] == [x] - [y])%Q.
  intros x y Hx Hy; unfold sub; rewrite spec_add; auto.
- apply wf_opp; auto.
  rewrite spec_opp; ring.
+ apply wf_opp; auto.
  Qed.
 
  Theorem spec_subc x y: wf x -> wf y ->
@@ -450,8 +450,8 @@ Module Qv.
  Theorem spec_sub_norm x y: wf x -> wf y ->
   ([sub_norm x y] == [x] - [y])%Q.
  intros x y Hx Hy; unfold sub_norm; rewrite spec_add_norm; auto.
- apply wf_opp; auto.
  rewrite spec_opp; ring.
+ apply wf_opp; auto.
  Qed.
 
  Theorem spec_sub_normc x y: wf x -> wf y ->
@@ -945,10 +945,10 @@ Module Qv.
  Theorem spec_div x y: wf x -> wf y ->
   ([div x y] == [x] / [y])%Q.
  intros x y Hx Hy; unfold div; rewrite spec_mul; auto.
- apply wf_inv; auto.
  unfold Qdiv; apply Qmult_comp.
  apply Qeq_refl.
  apply spec_inv; auto.
+ apply wf_inv; auto.
  Qed.
 
  Theorem spec_divc x y: wf x -> wf y ->
@@ -969,10 +969,10 @@ Module Qv.
  Theorem spec_div_norm x y: wf x -> wf y ->
   ([div_norm x y] == [x] / [y])%Q.
  intros x y Hx Hy; unfold div_norm; rewrite spec_mul_norm; auto.
- apply wf_inv; auto.
  unfold Qdiv; apply Qmult_comp.
  apply Qeq_refl.
  apply spec_inv; auto.
+ apply wf_inv; auto.
  Qed.
 
  Theorem spec_div_normc x y: wf x -> wf y ->

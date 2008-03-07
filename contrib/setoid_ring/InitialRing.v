@@ -515,12 +515,12 @@ induction x; intros.
 
   simpl Nwadd in |- *.
   repeat rewrite gen_phiNword_cons in |- *.
-  rewrite (fun sreq => gen_phiN_add Rsth sreq (ARth_SRth ARth)) in |- *.
-   destruct Reqe; constructor; trivial.
+  rewrite (fun sreq => gen_phiN_add Rsth sreq (ARth_SRth ARth)) in |- * by
+    (destruct Reqe; constructor; trivial).
 
-   rewrite IHx in |- *.
-   norm.
-   add_push (- gen_phiNword x); reflexivity.
+  rewrite IHx in |- *.
+  norm.
+  add_push (- gen_phiNword x); reflexivity.
 Qed.
 
 Lemma Nwopp_ok : forall x, gen_phiNword (Nwopp x) == - gen_phiNword x.
@@ -537,8 +537,8 @@ induction x; intros.
 
  simpl Nwscal in |- *.
  repeat rewrite gen_phiNword_cons in |- *.
- rewrite (fun sreq => gen_phiN_mult Rsth sreq (ARth_SRth ARth)) in |- *.
-  destruct Reqe; constructor; trivial.
+ rewrite (fun sreq => gen_phiN_mult Rsth sreq (ARth_SRth ARth)) in |- *
+   by (destruct Reqe; constructor; trivial).
 
   rewrite IHx in |- *.
   norm.
