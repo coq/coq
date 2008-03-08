@@ -3511,7 +3511,7 @@ contrib/omega/g_omega.cmx: parsing/grammar.cma lib/util.cmx tactics/tacinterp.cm
     toplevel/cerrors.cmx 
 contrib/omega/omega.cmo: lib/util.cmi kernel/names.cmi 
 contrib/omega/omega.cmx: lib/util.cmx kernel/names.cmx 
-contrib/recdef/recdef.cmo: parsing/grammar.cma toplevel/vernacinterp.cmi \
+contrib/recdef/recdef.cmo: parsing/grammar.cma toplevel/vernacinterp.cmi toplevel/vernacexpr.cmo \
     toplevel/vernacentries.cmi lib/util.cmi pretyping/typing.cmi \
     kernel/typeops.cmi interp/topconstr.cmi pretyping/termops.cmi \
     kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
@@ -3528,7 +3528,7 @@ contrib/recdef/recdef.cmo: parsing/grammar.cma toplevel/vernacinterp.cmi \
     library/decl_kinds.cmo interp/coqlib.cmi interp/constrintern.cmi \
     toplevel/command.cmi kernel/closure.cmi toplevel/cerrors.cmi \
     tactics/auto.cmi 
-contrib/recdef/recdef.cmx: parsing/grammar.cma toplevel/vernacinterp.cmx \
+contrib/recdef/recdef.cmx: parsing/grammar.cma toplevel/vernacinterp.cmx toplevel/vernacexpr.cmx \
     toplevel/vernacentries.cmx lib/util.cmx pretyping/typing.cmx \
     kernel/typeops.cmx interp/topconstr.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
