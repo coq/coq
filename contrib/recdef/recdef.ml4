@@ -858,8 +858,9 @@ let prove_with_tcc lemma _ : tactic =
 	generalize [lemma];
 	h_intro hid;
 	Elim.h_decompose_and (mkVar hid); 
-	gen_eauto(* default_eauto *) false (false,5) [] (Some [])
-	  (* 	      default_auto *)
+(* 	gen_eauto(\* default_eauto *\) false (false,5) [] (Some []) *)
+(* 	  (\* 	      default_auto *\) *)
+	eauto_with_bases false (true,5) [refl_equal ()] [Auto.Hint_db.empty]
       ]
       gls
       

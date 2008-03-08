@@ -361,7 +361,10 @@ let e_search_auto debug (in_depth,p) lems db_list gl =
   else 
     e_breadth_search debug p db_list local_db gl
 
-let eauto debug np lems dbnames =
+let eauto_with_bases debug np lems db_list = 
+  tclTRY (e_search_auto debug np lems db_list)
+
+let eauto debug np lems dbnames = 
   let db_list =
     List.map
       (fun x -> 
@@ -370,7 +373,7 @@ let eauto debug np lems dbnames =
       ("core"::dbnames) 
   in
   tclTRY (e_search_auto debug np lems db_list)
-
+  
 let full_eauto debug n lems gl = 
   let dbnames = current_db_names () in
   let dbnames =  list_subtract dbnames ["v62"] in
