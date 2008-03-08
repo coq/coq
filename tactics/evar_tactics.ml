@@ -13,6 +13,7 @@ open Util
 open Evar_refiner
 open Tacmach
 open Tacexpr
+open Refiner
 open Proof_type
 open Evd
 open Sign
@@ -51,8 +52,11 @@ let instantiate n rawc ido gl =
       error "not enough uninstantiated existential variables";
     if n <= 0 then error "incorrect existential variable index";
     let ev,_ =  destEvar (List.nth evl (n-1)) in
-    let evd' = w_refine ev rawc (create_evar_defs sigma)  in
-    Refiner.tclEVARS (evars_of evd') gl
+    let evd' = w_refine ev rawc (create_goal_evar_defs sigma) in
+      tclTHEN
+        (tclEVARS (evars_of evd'))
+        tclNORMEVAR
+        gl
 	
 (*
 let pfic gls c =
