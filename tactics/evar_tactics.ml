@@ -52,10 +52,10 @@ let instantiate n rawc ido gl =
       error "not enough uninstantiated existential variables";
     if n <= 0 then error "incorrect existential variable index";
     let ev,_ =  destEvar (List.nth evl (n-1)) in
-    let evd' = w_refine ev rawc (create_goal_evar_defs sigma) in
+    let evd' = w_refine ev rawc (create_evar_defs sigma) in
       tclTHEN
         (tclEVARS (evars_of evd'))
-        tclNORMEVAR
+        local_Constraints
         gl
 	
 (*
