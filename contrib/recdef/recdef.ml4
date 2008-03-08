@@ -851,7 +851,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
 let get_current_subgoals_types () = 
   let pts =  get_pftreestate () in 
   let _,subs = extract_open_pftreestate pts in 
-  List.map snd (List.sort (fun (x,_) (y,_) -> x -y )subs )
+  List.map snd ((* List.sort (fun (x,_) (y,_) -> x -y ) *)subs )
 
 let build_and_l l = 
   let and_constr =  Coqlib.build_coq_and () in 
@@ -900,7 +900,7 @@ let build_new_goal_type () =
   res
   
 
-    
+    (*
 let prove_with_tcc lemma _ : tactic = 
   fun gls ->
     let hid = next_global_ident_away true h_id (pf_ids_of_hyps gls) in 
@@ -913,11 +913,11 @@ let prove_with_tcc lemma _ : tactic =
 	  (* 	      default_auto *)
       ]
       gls
-
+    *)
       
 	     
 
-let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal)   = 
+let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   = 
   let current_proof_name = get_current_proof_name () in
   let name = match goal_name with 
     | Some s -> s 
@@ -942,12 +942,9 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_n
 	| _ -> anomaly "equation_lemma: not a constant"
     in
     let lemma = mkConst (Lib.make_con na) in 
-(*     Array.iteri  *)
-(*       (fun i _ ->  *)
-(* 	 by (observe_tac ("reusing lemma "^(string_of_id na)) (prove_with_tcc lemma (nb_goal - i)))) *)
-(*       (Array.make nb_goal ()) *)
-(*     ; *)
-    ref := Some lemma ;
+    ref_ := Some lemma ;
+    let lid = ref [] in 
+    let h_num = ref (-1) in 
     Flags.silently Vernacentries.interp (Vernacexpr.VernacAbort None);
     build_proof 
       (  fun gls ->
@@ -956,9 +953,35 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_n
 	     [
 	       h_generalize [lemma];
 	       h_intro hid;
-	       Elim.h_decompose_and (mkVar hid); 
+	       (fun g -> 
+		  let ids = pf_ids_of_hyps g in 
+		  tclTHEN
+		    (Elim.h_decompose_and (mkVar hid))
+		    (fun g -> 
+		       let ids' = pf_ids_of_hyps g in 
+		       lid := List.rev (list_subtract ids' ids);
+		       if !lid = [] then lid := [hid];
+(* 		       list_iter_i  *)
+(* 			 (fun i v ->  *)
+(* 			    msgnl (str "hyp" ++ int i ++ str " " ++  *)
+(* 				     Nameops.pr_id v ++ fnl () ++ fnl())) *)
+(* 			      !lid; *)
+		       tclIDTAC g
+		    )
+		    g
+	       ); 
 	     ] gls)
-      (gen_eauto(* default_eauto *) false (false,5) [] (Some []));
+      (fun g ->
+	 match kind_of_term (pf_concl g) with
+	   | App(f,_) when eq_constr f (well_founded ()) ->
+	       Auto.h_auto None [] (Some [])  g
+	   | _ ->
+	       incr h_num;
+	       tclTHEN
+		 (eapply_with_bindings (mkVar (List.nth !lid !h_num), NoBindings))
+		 e_assumption
+      		 g)
+;
     Command.save_named opacity;
   in
   start_proof

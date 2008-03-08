@@ -29,3 +29,9 @@ val e_give_exact_constr : constr -> tactic
 
 val gen_eauto : bool -> bool * int -> constr list -> 
   hint_db_name list option -> tactic
+
+
+val eauto_with_bases :
+  bool ->
+  bool * int ->
+  Term.constr list -> Auto.Hint_db.t list -> Proof_type.tactic

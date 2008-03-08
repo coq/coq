@@ -1382,7 +1382,6 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 	    [ tclTHENSEQ 
 		[
 		  keep (tcc_hyps@eqs);
-		  
 		  apply (Lazy.force acc_inv);
 		  (fun g -> 
 		     if is_mes 
@@ -1394,9 +1393,15 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 		    (tclTHENLIST 
 		       [tclTRY(Recdef.list_rewrite false (List.map mkVar eqs));
 			observe_tac "rewrite_eqs_in_eqs" (rewrite_eqs_in_eqs eqs);
-			(observe_tac "finishing"  
-			   (tclCOMPLETE (
-			      Eauto.gen_eauto false (false,5) [] (Some []))
+			 (observe_tac "finishing using"
+			   (
+			    tclCOMPLETE(
+				    Eauto.eauto_with_bases
+				      false
+				      (true,5)
+				      [Lazy.force refl_equal]
+				      [Auto.Hint_db.empty]
+				  )
 			   )
 			)
 		       ]
@@ -1511,16 +1516,16 @@ let prove_principle_for_gen
      | None -> anomaly ( "No tcc proof !!")
      | Some lemma -> lemma
   in
-  let rec list_diff del_list check_list =
-    match del_list with
-         [] ->
-           []
-      | f::r ->
-          if List.mem f check_list then
-               list_diff r check_list
-          else
-               f::(list_diff r check_list)
-  in
+(*   let rec list_diff del_list check_list = *)
+(*     match del_list with *)
+(*          [] -> *)
+(*            [] *)
+(*       | f::r -> *)
+(*           if List.mem f check_list then *)
+(*                list_diff r check_list *)
+(*           else *)
+(*                f::(list_diff r check_list) *)
+(*   in *)
   let tcc_list = ref [] in
   let start_tac gls = 
     let hyps = pf_ids_of_hyps gls in 
@@ -1536,7 +1541,7 @@ let prove_principle_for_gen
 	  Elim.h_decompose_and (mkVar hid);
 	  (fun g -> 
 	     let new_hyps = pf_ids_of_hyps g in 
-	     tcc_list := list_diff new_hyps (hid::hyps);
+	     tcc_list := List.rev (list_subtract new_hyps (hid::hyps));
 	     if !tcc_list = []
 	     then 
 	       begin 
@@ -1602,7 +1607,7 @@ let prove_principle_for_gen
 (* 		  msgnl (str "eqs := "++ prlist_with_sep spc Ppconstr.pr_id  eqs); *)
 
 		  (* observe_tac "new_prove_with_tcc"  *)
-		    (new_prove_with_tcc 
+		    (new_prove_with_tcc  
 		       is_mes acc_inv fix_id  
 		         
 		       (!tcc_list@(List.map 
