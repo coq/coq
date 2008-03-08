@@ -168,8 +168,8 @@ let variables l =
     | _ :: r -> var_aux r
   in
   section "Variables definitions.";
-  printf "CAMLP4LIB:=%s\n" Coq_config.camlp4lib;
-  printf "CAMLP4:=%s\n" (Filename.concat Coq_config.camldir Coq_config.camlp4); 
+  print "CAMLP4LIB:=$(shell $(CAMLBIN)camlp5 -where 2> /dev/null || $(CAMLBIN)camlp4 -where)\n";
+  print "CAMLP4:=$(notdir $(CAMLP4LIB))\n"; 
   print "COQSRC:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
@@ -194,13 +194,13 @@ let variables l =
   print "GALLINA:=$(COQBIN)gallina\n";
   print "COQDOC:=$(COQBIN)coqdoc\n";
   (* Caml executables and relative variables *)
-  printf "CAMLC:=%s/ocamlc -rectypes -c\n" Coq_config.camldir;
-  printf "CAMLOPTC:=%s/ocamlopt -c\n" Coq_config.camldir;
-  printf "CAMLLINK:=%s/ocamlc\n" Coq_config.camldir;
-  printf "CAMLOPTLINK:=%s/ocamlopt\n" Coq_config.camldir;
+  printf "CAMLC:=$(CAMLBIN)ocamlc -rectypes -c\n";
+  printf "CAMLOPTC:=$(CAMLBIN)ocamlopt -c\n";
+  printf "CAMLLINK:=$(CAMLBIN)ocamlc\n";
+  printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt\n";
   print "GRAMMARS:=grammar.cma\n";
   print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
-  print "PP:=-pp \"$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
+  print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
   var_aux l;
   print "\n"
 
