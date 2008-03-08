@@ -304,7 +304,7 @@ let resolve_all_evars_once debug (mode, depth) env p evd =
   let goals, evm = 
     Evd.fold
       (fun ev evi (gls, evm) ->
-	let evi = refresh_evi evi in
+(* 	let evi = refresh_evi evi in *)
 	  (if evi.evar_body = Evar_empty && p ev evi then evi :: gls else gls), 
 	Evd.add evm ev evi)
       evm ([], Evd.empty)
@@ -670,7 +670,36 @@ let build_new gl env sigma occs hypinfo concl cstr evars =
 let resolve_all_typeclasses env evd = 
   resolve_all_evars false (true, 15) env
     (fun ev evi -> Typeclasses.class_of_constr evi.Evd.evar_concl <> None) evd
-    
+
+(* Should be called on non-empty lists only *)
+let split_last l =
+  let rec aux acc = function
+    | [ last ] -> List.rev acc, last
+    | hd :: tl -> aux (hd :: acc) tl
+    | [] -> assert false
+  in aux [] l
+
+let valid_permute valid (pfs : proof_tree list) : proof_tree =
+  match pfs with
+    | lastpf :: pfs -> 
+	let tree = valid (pfs @ [lastpf]) in
+	let ref' = match tree.ref with
+	    Some (r, l) -> 
+	      let pfs, pf = split_last l in
+		Some (r, pf :: pfs)
+	  | None -> None
+	in
+	  { tree with ref = ref' }
+    | _ -> assert false
+
+let permute ((glss : goal list sigma), valid) = 
+  let { it = gls; sigma = evm } = glss in
+  let len = List.length gls in
+    if len <= 1 then (glss, valid)
+    else
+      let gls, last = split_last gls in
+	{ it = last :: gls; sigma = evm }, valid_permute valid
+
 let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
     match clause with
@@ -707,16 +736,20 @@ let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
 			  (fun x -> Tactics.refine (mkApp (term, [| mkVar id |]))),
 		      unfold_in_hyp unfoldrefs (([], id), Tacexpr.InHyp)
 		  | None -> 
-(* 		      let term = mkApp (p, [| mkCast (mkMeta goal_meta, DEFAULTcast, newt) |]) in *)
-		      let term = match !hypinfo.abs with
-			  None -> mkApp (p, [| mkCast (mkMeta goal_meta, DEFAULTcast, newt) |])
+		      let tac = match !hypinfo.abs with
+			  None -> 
+			    let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
+			      tclTHENLAST
+				(Tacmach.internal_cut_no_check name newt)
+				(tclTHEN (Tactics.revert [name]) (Tactics.refine p))
 			| Some (t, ty) -> 
-			    mkApp (mkLambda (Name (id_of_string "newt"), newt,
-					    mkLambda (Name (id_of_string "lemma"), ty,
-						     mkApp (p, [| mkRel 2 |]))),
-				  [| mkMeta goal_meta; t |])
+			    Tactics.refine
+			      (mkApp (mkLambda (Name (id_of_string "newt"), newt,
+					       mkLambda (Name (id_of_string "lemma"), ty,
+							mkApp (p, [| mkRel 2 |]))),
+				     [| mkMeta goal_meta; t |]))
 		      in
-			Tactics.refine term, Tactics.unfold_in_concl unfoldrefs
+			tac, Tactics.unfold_in_concl unfoldrefs
 	      in
 	      let evartac = 
 		let evd = Evd.evars_of undef in
@@ -889,15 +922,8 @@ let declare_relation a aeq n refl symm trans =
   init_setoid ();
   match (refl,symm,trans) with 
       (None, None, None) -> 
-	let instance = declare_instance a aeq n "Equivalence" 
-	in ignore(
-	  Flags.make_silent true;
-	  anew_instance instance 
-	    [((dummy_loc,id_of_string "equiv_refl"), [], CHole(dummy_loc,Some GoalEvar));
-	     ((dummy_loc,id_of_string "equiv_sym"),  [], CHole(dummy_loc,Some GoalEvar));
-	     ((dummy_loc,id_of_string "equiv_trans"),[], CHole(dummy_loc,Some GoalEvar))]);
-	  solve_nth 1 constr_tac; solve_nth 2 constr_tac; solve_nth 3 constr_tac;
-	  Flags.make_silent false; msg (Printer.pr_open_subgoals ())
+	let instance = declare_instance a aeq n "DefaultRelation" 
+	in ignore(anew_instance instance [])
     | (Some lemma1, None, None) -> 
 	ignore (declare_instance_refl a aeq n lemma1)
     | (None, Some lemma2, None) -> 
@@ -1012,15 +1038,7 @@ let declare_projection n instance_id r =
       const_entry_boxed = false }
   in
     ignore(Declare.declare_constant n (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
-      
-(*   try  *)
-(*     Command.declare_definition n (Decl_kinds.Local, false, Decl_kinds.Definition) [] None  *)
-(*       (CAppExpl (dummy_loc,  *)
-(* 		(None, mk_qualid "Coq.Classes.Morphisms.respect"), *)
-(* 		[ cHole; cHole; cHole; mkIdentC instance_id ])) *)
-(*       None (fun _ _ -> ()) *)
-(*   with _ -> () *)
-    
+          
 let build_morphism_signature m =
   let env = Global.env () in
   let m = Constrintern.interp_constr Evd.empty env m in
@@ -1044,7 +1062,6 @@ let build_morphism_signature m =
   let morph = 
     mkApp (mkInd (Lazy.force morphism_class).cl_impl, [| t; sig_; m |])
   in
-(*   let morphev = Evarutil.e_new_evar isevars env morph in *)
   let evd = resolve_all_evars_once false (true, 15) env
     (fun x evi -> class_of_constr evi.Evd.evar_concl <> None) !isevars in
     Evarutil.nf_isevar evd morph
@@ -1264,22 +1281,3 @@ END
 TACTIC EXTEND setoid_transitivity
    [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
 END
-
-(* open Pretype_errors *)
-
-(* let typeclass_error e = *)
-(*   match e with *)
-(*     | UnsolvableImplicit (evi, (InternalHole | ImplicitArg _)) -> *)
-(* 	(match class_of_constr evi.evar_concl with *)
-(* 	    Some c -> true *)
-(* 	  | None -> false) *)
-(*     | _ -> false *)
-	
-(* let class_apply c = *)
-(*   try Tactics.apply_with_ebindings c *)
-(*   with PretypeError (env, e) when typeclass_error e -> *)
-(*     tclFAIL 1 (str"typeclass resolution failed") *)
-
-(* TACTIC EXTEND class_apply *)
-(*     | [ "class_apply" constr_with_bindings(t) ] -> [ class_apply t ] *)
-(* END *)

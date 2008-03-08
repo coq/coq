@@ -110,7 +110,7 @@ Definition id: Set -> Set := fun A => A.
 Definition rel : forall A : Set, relation (id A) := @eq.
 Definition f: forall A : Set, A -> A := fun A x => x.
 
-Instance DefaultRelation (id A) (rel A).
+Add Relation (id A) (rel A) as eq_rel.
 
 Add Morphism (@f A) : f_morph.
 Proof.
