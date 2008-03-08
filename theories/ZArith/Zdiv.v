@@ -21,6 +21,7 @@ Require Import Zbool.
 Require Import Omega.
 Require Import ZArithRing.
 Require Import Zcomplements.
+Require Export Setoid.
 Open Local Scope Z_scope.
 
 (** * Definitions of Euclidian operations *)

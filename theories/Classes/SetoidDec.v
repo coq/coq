@@ -50,6 +50,8 @@ Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
 
 Require Import Coq.Program.Program.
 
+Open Local Scope program_scope.
+
 (** Invert the branches. *)
 
 Program Definition nequiv_dec [ ! EqDec A ] (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
@@ -87,7 +89,7 @@ Program Instance bool_eqdec : EqDec (@eq_setoid bool) :=
   equiv_dec := bool_dec.
 
 Program Instance unit_eqdec : EqDec (@eq_setoid unit) :=
-  equiv_dec x y := left.
+  equiv_dec x y := in_left.
 
   Next Obligation.
   Proof.
@@ -101,9 +103,9 @@ Program Instance [ EqDec (@eq_setoid A), EqDec (@eq_setoid B) ] =>
     dest x as (x1, x2) in 
     dest y as (y1, y2) in 
     if x1 == y1 then 
-      if x2 == y2 then left
-      else right
-    else right.
+      if x2 == y2 then in_left
+      else in_right
+    else in_right.
 
   Solve Obligations using unfold complement ; program_simpl.
 
@@ -114,9 +116,9 @@ Require Import Coq.Program.FunctionalExtensionality.
 Program Instance [ EqDec (@eq_setoid A) ] => bool_function_eqdec : EqDec (@eq_setoid (bool -> A)) :=
   equiv_dec f g := 
     if f true == g true then
-      if f false == g false then left
-      else right
-    else right.
+      if f false == g false then in_left
+      else in_right
+    else in_right.
 
   Solve Obligations using try red ; unfold equiv, complement ; program_simpl.
 

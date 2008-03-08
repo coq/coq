@@ -138,15 +138,15 @@ Proof.
   right; assumption.
   intros l _ r.
   apply (step (A:=L' A l)).
-  exact (inl _ (inl _ r)).
+  exact (inl (inl r)).
   intros l _ r1 _ r2.
   apply (step (A:=L' A l)).
   (* unfold L' in * |- *.
   Check 0. *)
-  exact (inl _ (inr _ (pair r1 r2))).
+  exact (inl (inr (pair r1 r2))).
   intros l _ r.
   apply  (step (A:=L' A l)).
-  exact (inr _ r).
+  exact (inr r).
 Defined.
 
 Definition L'inG: forall A: Set, L' A (true::nil) -> G A.

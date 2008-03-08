@@ -61,16 +61,10 @@ Notation "'dec'" := (sumbool_of_bool) (at level 0).
 
 (** The notations [in_right] and [in_left] construct objects of a dependent disjunction. *)
 
-
-(** These type arguments should be infered from the context. *)
-
-Implicit Arguments left [[A]].
-Implicit Arguments right [[B]].
-
 (** Hide proofs and generates obligations when put in a term. *)
 
-Notation left := (left _ _).
-Notation right := (right _ _).
+Notation "'in_left'" := (@left _ _ _) : program_scope.
+Notation "'in_right'" := (@right _ _ _) : program_scope.
 
 (** Extraction directives *)
 

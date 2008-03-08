@@ -24,6 +24,17 @@ Unset Strict Implicit.
 
 Notation "'relation' A " := (A -> A -> Prop) (at level 0).
 
+(** Default relation on a given support. *)
+
+Class DefaultRelation A (R : relation A).
+
+(** To search for the default relation, just call [default_relation]. *)
+
+Definition default_relation [ DefaultRelation A R ] : relation A := R.
+
+(** A notation for applying the default relation to [x] and [y]. *)
+Notation " x ===def y " := (default_relation x y) (at level 70, no associativity).
+
 Definition inverse A (R : relation A) : relation A := fun x y => R y x.
 
 Lemma inverse_inverse : forall A (R : relation A), inverse (inverse R) = R.

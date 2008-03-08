@@ -16,12 +16,12 @@ open Vernacexpr
 open Topconstr
 (*i*)
 
-(* [declare_projections ref coers params fields] declare projections of
-   record [ref] (if allowed), and put them as coercions accordingly to
-   [coers]; it returns the absolute names of projections *)
+(* [declare_projections ref name coers params fields] declare projections of
+   record [ref] (if allowed) using the given [name] as argument, and put them
+   as coercions accordingly to [coers]; it returns the absolute names of projections *)
 
 val declare_projections :
-  inductive -> bool list -> rel_context -> bool list * constant option list
+  inductive -> ?name:identifier -> bool list -> rel_context -> bool list * constant option list
 
 val definition_structure :
   lident with_coercion * local_binder list *

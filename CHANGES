@@ -159,6 +159,9 @@ Program
   they can be automatically solved by the default tactic.
 - New command "Preterm [ of id ]" to see the actual term fed to Coq for
   debugging purposes.
+- Changed the notations "left" and "right" to "in_left" and "in_right" to hide the 
+  proofs in standard disjunctions, to avoid breaking existing scripts when importing
+  Program. Also, put them in program_scope.
   
 Miscellaneous
 

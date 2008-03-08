@@ -368,6 +368,7 @@ let respectful_dep = lazy (gen_constant ["Classes"; "Morphisms"] "respectful_dep
 let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
 
 let equivalence = lazy (gen_constant ["Classes"; "Relations"] "Equivalence")
+let default_relation = lazy (gen_constant ["Classes"; "Relations"] "DefaultRelation")
 
 let iff_equiv = lazy (gen_constant ["Classes"; "Relations"] "iff_equivalence")
 let eq_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "eq_equivalence")
@@ -858,8 +859,14 @@ let require_library dirpath =
   let qualid = (dummy_loc, Libnames.qualid_of_dirpath (Libnames.dirpath_of_string dirpath)) in
     Library.require_library [qualid] (Some false)
 
+let check_required_library d =
+  let d' = List.map id_of_string d in
+  let dir = make_dirpath (List.rev d') in
+  if not (Library.library_is_opened dir) then
+    error ("Library "^(list_last d)^" has to be required first")
+
 let init_setoid () =
-  require_library "Coq.Setoids.Setoid"
+  check_required_library ["Coq";"Setoids";"Setoid"]
 
 let declare_instance_refl a aeq n lemma = 
   let instance = declare_instance a aeq (add_suffix n "_refl") "Reflexive" 
@@ -1029,9 +1036,9 @@ let build_morphism_signature m =
   in
   let sig_, evars = build_signature isevars env t cstrs snd in
   let _ = List.iter 
-    (fun (ty, relty) -> 
-      let equiv = mkApp (Lazy.force equivalence, [| ty; relty |]) in
-	ignore(Evarutil.e_new_evar isevars env equiv))
+    (fun (ty, rel) -> 
+      let default = mkApp (Lazy.force default_relation, [| ty; rel |]) in
+	ignore(Evarutil.e_new_evar isevars env default))
     evars
   in
   let morph = 

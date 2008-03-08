@@ -2,19 +2,19 @@
      : Z
 fun f : nat -> Z => (f 0%nat + 0)%Z
      : (nat -> Z) -> Z
-fun x : positive => Zpos (xO x)
+fun x : positive => Zpos x~0)
      : positive -> Z
 fun x : positive => (Zpos x + 1)%Z
      : positive -> Z
 fun x : positive => Zpos x
      : positive -> Z
-fun x : positive => Zneg (xO x)
+fun x : positive => Zneg x~0
      : positive -> Z
-fun x : positive => (Zpos (xO x) + 0)%Z
+fun x : positive => (Zpos x~0 + 0)%Z
      : positive -> Z
-fun x : positive => (- Zpos (xO x))%Z
+fun x : positive => (- Zpos x~0)%Z
      : positive -> Z
-fun x : positive => (- Zpos (xO x) + 0)%Z
+fun x : positive => (- Zpos x~0 + 0)%Z
      : positive -> Z
 (Z_of_nat 0 + 1)%Z
      : Z

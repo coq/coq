@@ -15,21 +15,80 @@
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
-Require Import Coq.Program.Program.
+Require Export Coq.Classes.Relations.
+Require Export Coq.Classes.Morphisms.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Require Export Coq.Classes.SetoidClass.
+(** The setoid_replace tactics in Ltac, defined in terms of default relations [===def] and
+   the setoid_rewrite tactic. *)
 
-(* Application of the extensionality axiom to turn a goal on leibinz equality to 
-   a setoid equivalence. *)
+Ltac setoidreplace H t :=
+  let Heq := fresh "Heq" in
+    cut(H) ; unfold default_relation ; [ intro Heq ; setoid_rewrite Heq ; clear Heq | t ].
 
-Axiom setoideq_eq : forall [ sa : Setoid a ] (x y : a), x == y -> x = y.
+Ltac setoidreplacein H H' t :=
+  let Heq := fresh "Heq" in
+    cut(H) ; unfold default_relation ; [ intro Heq ; setoid_rewrite Heq in H' ; clear Heq | t ].
 
-(** Application of the extensionality principle for setoids. *)
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) :=
+  setoidreplace (x ===def y) idtac.
 
-Ltac setoid_extensionality :=
-  match goal with
-    [ |- @eq ?A ?X ?Y ] => apply (setoideq_eq (a:=A) (x:=X) (y:=Y))
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) :=
+  setoidreplacein (x ===def y) id idtac.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "by" tactic(t) :=
+  setoidreplace (x ===def y) ltac:t.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) "by" tactic(t) :=
+  setoidreplacein (x ===def y) id ltac:t.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "using" "relation" constr(rel) :=
+  setoidreplace (rel x y) idtac.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel) "by" tactic(t) :=
+  setoidreplace (rel x y) ltac:t.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) 
+  "using" "relation" constr(rel) :=
+  setoidreplacein (rel x y) id idtac.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id)
+  "using" "relation" constr(rel) "by" tactic(t) :=
+  setoidreplacein (rel x y) id ltac:t.
+
+(** The [add_morphism_tactic] tactic is run at each [Add Morphism] command before giving the hand back
+   to the user to discharge the proof. It essentially amounts to unfold the right amount of [respectful] calls
+   and substitute leibniz equalities. One can redefine it using [Ltac add_morphism_tactic ::= t]. *)
+
+Require Import Coq.Program.Tactics.
+
+Ltac red_subst_eq_morphism concl :=
+  match concl with
+    | @Logic.eq ?A ==> ?R' => red ; intros ; subst ; red_subst_eq_morphism R'
+    | ?R ==> ?R' => red ; intros ; red_subst_eq_morphism R'
+    | _ => idtac
   end.
+
+Ltac destruct_morphism :=
+  match goal with
+    | [ |- @Morphism ?A ?R ?m ] => constructor
+  end.
+
+Ltac reverse_arrows x :=
+  match x with
+    | @Logic.eq ?A ==> ?R' => revert_last ; reverse_arrows R'
+    | ?R ==> ?R' => do 3 revert_last ; reverse_arrows R'
+    | _ => idtac
+  end.
+
+Ltac default_add_morphism_tactic :=
+  (try destruct_morphism) ;
+  match goal with
+    | [ |- (?x ==> ?y) _ _ ] => red_subst_eq_morphism (x ==> y) ; reverse_arrows (x ==> y)
+  end.
+
+Ltac add_morphism_tactic := default_add_morphism_tactic.
+

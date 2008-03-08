@@ -22,6 +22,7 @@ Require Import Coq.Program.Program.
 Require Import Coq.Classes.Init.
 Require Export Coq.Classes.Relations.
 Require Export Coq.Classes.Morphisms.
+Require Export Coq.Classes.SetoidTactics.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -47,7 +48,7 @@ Proof. eauto with typeclass_instances. Qed.
 Notation " x === y " := (equiv x y) (at level 70, no associativity) : equiv_scope.
 
 Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) : equiv_scope.
-
+  
 Open Local Scope equiv_scope.
 
 (** Use the [clsubstitute] command which substitutes an equality in every hypothesis. *)
@@ -67,66 +68,6 @@ Ltac clsubst_nofail :=
 
 Tactic Notation "clsubst" "*" := clsubst_nofail.
 
-Ltac setoidreplace H t :=
-  let Heq := fresh "Heq" in
-    cut(H) ; [ intro Heq ; setoid_rewrite Heq ; clear Heq | unfold equiv ; t ].
-
-Ltac setoidreplacein H H' t :=
-  let Heq := fresh "Heq" in
-    cut(H) ; [ intro Heq ; setoid_rewrite Heq in H' ; clear Heq | unfold equiv ; t ].
-
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) :=
-  setoidreplace (x === y) idtac.
-
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) :=
-  setoidreplacein (x === y) id idtac.
-
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "by" tactic(t) :=
-  setoidreplace (x === y) ltac:t.
-
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) "by" tactic(t) :=
-  setoidreplacein (x === y) id ltac:t.
-
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "using" "relation" constr(rel) :=
-  setoidreplace (rel x y) idtac.
-
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
-  "using" "relation" constr(rel) "by" tactic(t) :=
-  setoidreplace (rel x y) ltac:t.
-
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) 
-  "using" "relation" constr(rel) :=
-  setoidreplacein (rel x y) id idtac.
-
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id)
-  "using" "relation" constr(rel) "by" tactic(t) :=
-  setoidreplacein (rel x y) id ltac:t.
-
-
-Ltac red_subst_eq_morphism concl :=
-  match concl with
-    | @Logic.eq ?A ==> ?R' => red ; intros ; subst ; red_subst_eq_morphism R'
-    | ?R ==> ?R' => red ; intros ; red_subst_eq_morphism R'
-    | _ => idtac
-  end.
-
-Ltac destruct_morphism :=
-  match goal with
-    | [ |- @Morphism ?A ?R ?m ] => constructor
-  end.
-
-Ltac reverse_arrows x :=
-  match x with
-    | @Logic.eq ?A ==> ?R' => revert_last ; reverse_arrows R'
-    | ?R ==> ?R' => do 3 revert_last ; reverse_arrows R'
-    | _ => idtac
-  end.
-
-Ltac add_morphism_tactic := (try destruct_morphism) ;
-  match goal with
-    | [ |- (?x ==> ?y) _ _ ] => red_subst_eq_morphism (x ==> y) ; reverse_arrows (x ==> y)
-  end.
-  
 Lemma nequiv_equiv_trans : forall [ ! Equivalence A ] (x y z : A), x =/= y -> y === z -> x =/= z.
 Proof with auto.
   intros; intro.
@@ -196,21 +137,17 @@ Program Instance iff_impl_id_morphism :
 Class PartialEquivalence (carrier : Type) (pequiv : relation carrier) :=
   pequiv_prf :> PER carrier pequiv.
 
+Definition pequiv [ PartialEquivalence A R ] : relation A := R.
+
 (** Overloaded notation for partial equiv equivalence. *)
 
-(* Infix "=~=" := pequiv (at level 70, no associativity) : type_scope. *)
+Notation " x =~= y " := (pequiv x y) (at level 70, no associativity) : type_scope.
 
 (** Reset the default Program tactic. *)
 
 Ltac obligations_tactic ::= program_simpl.
 
-(** Default relation on a given support. *)
-
-Class DefaultRelation A := default_relation : relation A.
-
 (** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
 
 Instance [ ! Equivalence A R ] => 
-  equivalence_default : DefaultRelation A | 4 := 
-  default_relation := R.
-
+  equivalence_default : DefaultRelation A R | 4.

@@ -185,7 +185,8 @@ let declare_structure env id idbuild params arity fields =
       mind_entry_inds = [mie_ind] } in
   let kn = Command.declare_mutual_with_eliminations true mie in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
-  let kinds,sp_projs = Record.declare_projections rsp (List.map (fun _ -> false) fields) fields in
+  let id = Nameops.next_ident_away id (ids_of_context (Global.env())) in
+  let kinds,sp_projs = Record.declare_projections rsp ~name:id (List.map (fun _ -> false) fields) fields in
   let _build = ConstructRef (rsp,1) in
     Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
     rsp
