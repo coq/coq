@@ -241,8 +241,21 @@ Program Instance {A B C : Type} [ Morphism (RA ==> RB ==> RC) (f : A -> B -> C) 
 (*     apply respect. *)
 (*   Qed. *)
 
+(** Every morphism gives rise to a morphism on the inverse relation. *)
 
-(** Morpshism declarations for partial applications. *)
+Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B)
+  [ Morphism (R ==> R') m ] => morphism_inverse_morphism :
+  Morphism (inverse R ==> inverse R') m.
+
+  Next Obligation.
+  Proof.
+    unfold inverse in *.
+    pose respect.
+    unfold respectful in r.
+    apply r ; auto.
+  Qed.
+
+(** Morphism declarations for partial applications. *)
 
 Program Instance [ ! Transitive A R ] (x : A) =>
   trans_contra_inv_impl_morphism : Morphism (R --> inverse impl) (R x).

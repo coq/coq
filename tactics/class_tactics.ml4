@@ -616,6 +616,12 @@ let unify_eqn gl hypinfo t =
     in Some (env', res)
   with _ -> None
 
+let unfold_impl t = 
+  match kind_of_term t with
+    | App (arrow, [| a; b |]) when eq_constr arrow (Lazy.force impl) -> 
+	mkProd (Anonymous, a, b)
+    | _ -> t
+
 let build_new gl env sigma occs hypinfo concl cstr evars =
   let is_occ occ = occs = [] || List.mem occ occs in
   let rec aux t occ cstr =
@@ -658,9 +664,14 @@ let build_new gl env sigma occs hypinfo concl cstr evars =
 		let res = 
 		  if x' = None && b' = None then None
 		  else 
-		    (try Some (resolve_morphism env sigma t
-				  (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |]
-				  cstr evars)
+		    (try 
+			let (proof, (a, r, oldt, newt)) = 
+			  resolve_morphism env sigma t
+			    (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |]
+			    cstr evars
+			in
+			let newt' = unfold_impl newt in
+			  Some (proof, (a, r, oldt, newt'))
 		      with Not_found -> None)
 		in res, occ
 		  
@@ -755,7 +766,7 @@ let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
 		let evd = Evd.evars_of undef in
 		  if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
 		  else tclIDTAC
-	      in tclTHENLIST [evartac; rewtac; cleantac] gl
+	      in tclTHENLIST [evartac; rewtac(* ; cleantac *)] gl
 	    with UserError (env, e) -> 
 	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints") gl)
       | None -> 
