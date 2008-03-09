@@ -449,7 +449,7 @@ val noccur_with_meta : int -> int -> constr -> bool
 (* [exliftn el c] lifts [c] with lifting [el] *)
 val exliftn : Esubst.lift -> constr -> constr
 
-(* [liftn n k c] lifts by [n] indexes above [k] in [c] *)
+(* [liftn n k c] lifts by [n] indexes above or equal to [k] in [c] *)
 val liftn : int -> int -> constr -> constr
 
 (* [lift n c] lifts by [n] the positive indexes in [c] *)

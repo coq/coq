@@ -173,17 +173,26 @@ module Coercion = struct
 	      let name' = Name (Nameops.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in
 	      let env' = push_rel (name', None, a') env in
 		
+(* 	      let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in *)
+(* 	      let name'' = Name (Nameops.next_ident_away (id_of_string "x'") (Termops.ids_of_context env)) in *)
+(* 	      let env'' = push_rel (name'', Some (app_opt c1 (mkRel 1)), lift 1 a) env' in *)
+(* 	      let c2 = coerce_unify env'' (liftn 1 1 b) (lift 1 b') in *)
+(* 				     mkLetIn (name'', app_opt c1 (mkRel 1), (lift 1 a), *)
+
 	      let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
-	      let c2 = coerce_unify env' b b' in
+		(* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
+	      let coec1 = app_opt c1 (mkRel 1) in
+		(* env, x : a' |- c1[x] : lift 1 a *)
+	      let c2 = coerce_unify env' (subst1 coec1 (liftn 1 2 b)) b' in
+		(* env, x : a' |- c2 : b[c1[x]/x]] > b' *)
 		(match c1, c2 with
 		     None, None -> failwith "subtac.coerce': Should have detected equivalence earlier"
 		   | _, _ ->
 		       Some
 			 (fun f -> 
-			    mkLambda (name', a',
-				      app_opt c2
-					(mkApp (Term.lift 1 f, 
-						[| app_opt c1 (mkRel 1) |])))))
+			   mkLambda (name', a',
+				    app_opt c2
+				      (mkApp (Term.lift 1 f, [| coec1 |])))))
 		  
 	  | App (c, l), App (c', l') ->
 	      (match kind_of_term c, kind_of_term c' with
@@ -515,6 +524,7 @@ module Coercion = struct
 	  (isevars, cj)
 
   let inh_conv_coerces_to loc env isevars t ((abs, t') as _tycon) =
+    isevars
 (*     (try *)
 (*        trace (str "Subtac_coercion.inh_conv_coerces_to called for " ++ *)
 (* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ *)
@@ -522,30 +532,30 @@ module Coercion = struct
 (* 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
 (* 	      Termops.print_env env); *)
 (*      with _ -> ()); *)
-    let nabsinit, nabs = 
-      match abs with
-	  None -> 0, 0
-	| Some (init, cur) -> init, cur
-    in
-      (* a little more effort to get products is needed *) 
-      try let rels, rng = decompose_prod_n nabs t in
-	(* The final range free variables must have been replaced by evars, we accept only that evars
-	   in rng are applied to free vars. *)
-	if noccur_with_meta 0 (succ nabsinit) rng then (
-(* 	  trace (str "No occur between 0 and " ++ int (succ nabsinit)); *)
-	  let env', t, t' = 
-	    let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
-	      env', rng, lift nabs t'
-	  in
-	    try 
-	      pi1 (try inh_conv_coerce_to_fail loc env' isevars None t t'
-		   with NoCoercion ->
-		     coerce_itf loc env' isevars None t t') 
-	    with NoSubtacCoercion ->
-	      let sigma = evars_of isevars in
-		error_cannot_coerce env' sigma (t, t'))
-	else isevars 
-      with _ -> isevars
- (* 	trace (str "decompose_prod_n failed"); *)
- (* 	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to") *)
+(*     let nabsinit, nabs = *)
+(*       match abs with *)
+(* 	  None -> 0, 0 *)
+(* 	| Some (init, cur) -> init, cur *)
+(*     in *)
+(*       (\* a little more effort to get products is needed *\) *)
+(*       try let rels, rng = decompose_prod_n nabs t in *)
+(* 	(\* The final range free variables must have been replaced by evars, we accept only that evars *)
+(* 	   in rng are applied to free vars. *\) *)
+(* 	if noccur_with_meta 0 (succ nabsinit) rng then ( *)
+(* (\* 	  trace (str "No occur between 0 and " ++ int (succ nabsinit)); *\) *)
+(* 	  let env', t, t' = *)
+(* 	    let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in *)
+(* 	      env', rng, lift nabs t' *)
+(* 	  in *)
+(* 	    try *)
+(* 	      pi1 (try inh_conv_coerce_to_fail loc env' isevars None t t' *)
+(* 		   with NoCoercion -> *)
+(* 		     coerce_itf loc env' isevars None t t') *)
+(* 	    with NoSubtacCoercion -> *)
+(* 	      let sigma = evars_of isevars in *)
+(* 		error_cannot_coerce env' sigma (t, t')) *)
+(* 	else isevars *)
+(*       with _ -> isevars *)
+(*  	trace (str "decompose_prod_n failed"); *)
+ 	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to")
 end

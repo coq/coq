@@ -132,7 +132,7 @@ let subtac_process env isevars id bl c tycon =
   let imps = Implicit_quantifiers.implicits_of_rawterm c in
   let coqc, ctyp = interp env isevars c tycon in
   let evm = non_instanciated_map env isevars (evars_of !isevars) in
-    evm, coqc, ctyp, imps
+    evm, coqc, (match tycon with Some (None, c) -> c | _ -> ctyp), imps
 
 open Subtac_obligations
 
