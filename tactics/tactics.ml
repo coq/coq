@@ -1947,7 +1947,7 @@ let compute_elim_sig ?elimc elimt =
     elimc = elimc; elimt = elimt; concl = conclusion;
     predicates = preds; npredicates = List.length preds; 
     branches = branches; nbranches = List.length branches; 
-    farg_in_concl = (try isApp (last_arg ccl) with _ -> false);
+    farg_in_concl = isApp ccl && isApp (last_arg ccl);
     params = params; nparams = nparams; 
     (* all other fields are unsure at this point. Including these:*)
     args = args_indargs; nargs = List.length args_indargs; } in

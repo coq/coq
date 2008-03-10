@@ -929,8 +929,9 @@ let meta_value evd mv =
 let meta_reducible_instance evd b =
   let fm = Metaset.elements b.freemetas in
   let metas = List.fold_left (fun l mv -> 
-    try let g,(_,s) = meta_fvalue evd mv in (mv,(g.rebus,s))::l 
-    with Anomaly _ | Not_found -> l) [] fm in 
+    match (try meta_opt_fvalue evd mv with Not_found -> None) with
+    | Some (g,(_,s)) -> (mv,(g.rebus,s))::l 
+    | None -> l) [] in
   let rec irec u =
     let u = whd_betaiota u in
     match kind_of_term u with

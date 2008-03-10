@@ -512,11 +512,16 @@ let metas_of evd =
     | (n,Cltyp (_,typ))  -> (n,typ.rebus))
     (meta_list evd)
 
+let meta_opt_fvalue evd mv =
+  match Metamap.find mv evd.metas with
+    | Clval(_,b,_) -> Some b
+    | Cltyp _ -> None
+
 let meta_defined evd mv =
   match Metamap.find mv evd.metas with
     | Clval _ -> true
     | Cltyp _ -> false
- 
+
 let meta_fvalue evd mv =
   match Metamap.find mv evd.metas with
     | Clval(_,b,_) -> b
