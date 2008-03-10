@@ -557,5 +557,5 @@ module Coercion = struct
 (* 	else isevars *)
 (*       with _ -> isevars *)
 (*  	trace (str "decompose_prod_n failed"); *)
- 	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to")
+(*  	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to") *)
 end

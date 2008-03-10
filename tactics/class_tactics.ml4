@@ -682,35 +682,6 @@ let resolve_all_typeclasses env evd =
   resolve_all_evars false (true, 15) env
     (fun ev evi -> Typeclasses.class_of_constr evi.Evd.evar_concl <> None) evd
 
-(* Should be called on non-empty lists only *)
-let split_last l =
-  let rec aux acc = function
-    | [ last ] -> List.rev acc, last
-    | hd :: tl -> aux (hd :: acc) tl
-    | [] -> assert false
-  in aux [] l
-
-let valid_permute valid (pfs : proof_tree list) : proof_tree =
-  match pfs with
-    | lastpf :: pfs -> 
-	let tree = valid (pfs @ [lastpf]) in
-	let ref' = match tree.ref with
-	    Some (r, l) -> 
-	      let pfs, pf = split_last l in
-		Some (r, pf :: pfs)
-	  | None -> None
-	in
-	  { tree with ref = ref' }
-    | _ -> assert false
-
-let permute ((glss : goal list sigma), valid) = 
-  let { it = gls; sigma = evm } = glss in
-  let len = List.length gls in
-    if len <= 1 then (glss, valid)
-    else
-      let gls, last = split_last gls in
-	{ it = last :: gls; sigma = evm }, valid_permute valid
-
 let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
     match clause with
@@ -733,8 +704,7 @@ let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
 	      let p = Evarutil.nf_isevar !evars p in
 	      let newt = Evarutil.nf_isevar !evars newt in
 	      let undef = Evd.undefined_evars !evars in
-	      let unfoldrefs = List.map (fun s -> [], EvalConstRef s) [destConst (Lazy.force impl)] in
-	      let rewtac, cleantac = 
+	      let rewtac = 
 		match is_hyp with
 		  | Some id -> 
 		      let term = 
@@ -744,10 +714,9 @@ let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
 			      mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
 		      in
 			cut_replacing id newt 
-			  (fun x -> Tactics.refine (mkApp (term, [| mkVar id |]))),
-		      unfold_in_hyp unfoldrefs (([], id), Tacexpr.InHyp)
+			  (fun x -> Tactics.refine (mkApp (term, [| mkVar id |])))
 		  | None -> 
-		      let tac = match !hypinfo.abs with
+		      (match !hypinfo.abs with
 			  None -> 
 			    let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
 			      tclTHENLAST
@@ -758,15 +727,13 @@ let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
 			      (mkApp (mkLambda (Name (id_of_string "newt"), newt,
 					       mkLambda (Name (id_of_string "lemma"), ty,
 							mkApp (p, [| mkRel 2 |]))),
-				     [| mkMeta goal_meta; t |]))
-		      in
-			tac, Tactics.unfold_in_concl unfoldrefs
+				     [| mkMeta goal_meta; t |])))
 	      in
 	      let evartac = 
 		let evd = Evd.evars_of undef in
 		  if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
 		  else tclIDTAC
-	      in tclTHENLIST [evartac; rewtac(* ; cleantac *)] gl
+	      in tclTHENLIST [evartac; rewtac] gl
 	    with UserError (env, e) -> 
 	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints") gl)
       | None -> 
