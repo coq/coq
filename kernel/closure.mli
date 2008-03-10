@@ -76,6 +76,7 @@ val betadeltaiota      : reds
 val betaiotazeta       : reds
 val betadeltaiotanolet : reds
 
+val unfold_side_red : reds
 val unfold_red : evaluable_global_reference -> reds
 
 (***********************************************************************)

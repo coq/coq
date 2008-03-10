@@ -801,7 +801,17 @@ let fold_one_com com env sigma c =
   let rcom =
     try red_product env sigma com
     with Redelimination -> error "Not reducible" in
-  subst1 com (subst_term rcom c)
+  (* Reason first on the beta-iota-zeta normal form of the constant as
+     unfold produces it, so that the "unfold f; fold f" configuration works
+     to refold fix expressions *)
+  let a = subst_term (clos_norm_flags unfold_side_red env sigma rcom) c in
+  if not (eq_constr a c) then
+    subst1 com a
+  else
+    (* Then reason on the non beta-iota-zeta form for compatibility -
+       even if it is probably a useless configuration *)
+    let a = subst_term rcom c in
+    subst1 com a
 
 let fold_commands cl env sigma c =
   List.fold_right (fun com -> fold_one_com com env sigma) (List.rev cl) c

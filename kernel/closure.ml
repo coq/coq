@@ -165,12 +165,15 @@ let betadeltaiotanolet = mkflags [fBETA;fDELTA;fIOTA]
 let betaiota = mkflags [fBETA;fIOTA]
 let beta = mkflags [fBETA]
 let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
+
+(* Removing fZETA for finer behaviour would break many developments *)
+let unfold_side_flags = [fBETA;fIOTA;fZETA]
+let unfold_side_red = mkflags [fBETA;fIOTA;fZETA]
 let unfold_red kn = 
   let flag = match kn with
     | EvalVarRef id -> fVAR id
-    | EvalConstRef kn -> fCONST kn
-  in (* Remove fZETA for finer behaviour ? *)
-  mkflags [fBETA;flag;fIOTA;fZETA]
+    | EvalConstRef kn -> fCONST kn in
+  mkflags (flag::unfold_side_flags)
 
 (************************* Obsolète
 (* [r_const=(true,cl)] means all constants but those in [cl] *)
