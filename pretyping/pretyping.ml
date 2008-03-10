@@ -299,7 +299,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | REvar (loc, evk, instopt) ->
 	(* Ne faudrait-il pas s'assurer que hyps est bien un
 	   sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
-	let hyps = evar_context (Evd.find (evars_of !evdref) evk) in
+	let hyps = evar_filtered_context (Evd.find (evars_of !evdref) evk) in
 	let args = match instopt with
           | None -> instance_from_named_context hyps
           | Some inst -> failwith "Evar subtitutions not implemented" in

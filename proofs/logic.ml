@@ -69,10 +69,12 @@ let with_check = Flags.with_option check
 (* The Clear tactic: it scans the context for hypotheses to be removed
    (instead of iterating on the list of identifier to be removed, which
    forces the user to give them in order). *)
+
 let clear_hyps sigma ids gl =
   let evdref = ref (Evd.create_goal_evar_defs sigma) in
-  let ngl = Evarutil.clear_hyps_in_evi evdref gl ids in
-    (ngl, evars_of !evdref)
+  let (hyps,concl) =
+    Evarutil.clear_hyps_in_evi evdref gl.evar_hyps gl.evar_concl ids in
+    (mk_goal hyps concl gl.evar_extra, evars_of !evdref)
 
 (* The ClearBody tactic *)
 

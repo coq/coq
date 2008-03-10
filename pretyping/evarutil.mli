@@ -164,4 +164,5 @@ val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
 
 (**********************************)
 (* Removing hyps in evars'context *)
-val clear_hyps_in_evi : evar_defs ref -> evar_info -> identifier list -> evar_info
+val clear_hyps_in_evi : evar_defs ref -> named_context_val -> types ->
+  identifier list -> named_context_val * types

@@ -27,7 +27,8 @@ type pretype_error =
   (* Unification *)
   | OccurCheck of existential_key * constr
   | NotClean of existential_key * constr * Evd.hole_kind
-  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind
+  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind * 
+      Evd.unsolvability_explanation option
   | CannotUnify of constr * constr
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
@@ -93,7 +94,8 @@ val error_not_clean :
   env -> Evd.evar_map -> existential_key -> constr -> loc * Evd.hole_kind -> 'b
 
 val error_unsolvable_implicit :
-  loc -> env -> Evd.evar_map -> Evd.evar_info -> Evd.hole_kind -> 'b
+  loc -> env -> Evd.evar_map -> Evd.evar_info -> Evd.hole_kind -> 
+      Evd.unsolvability_explanation option -> 'b
 
 val error_cannot_unify : env -> Evd.evar_map -> constr * constr -> 'b
 

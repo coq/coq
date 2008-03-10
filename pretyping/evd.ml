@@ -47,7 +47,12 @@ let evar_hyps evi = evi.evar_hyps
 let evar_context evi = named_context_of_val evi.evar_hyps
 let evar_body evi = evi.evar_body
 let evar_filter evi = evi.evar_filter
-let evar_env evd = Global.env_of_context evd.evar_hyps
+let evar_unfiltered_env evi = Global.env_of_context evi.evar_hyps
+let evar_filtered_context evi = 
+  snd (list_filter2 (fun b c -> b) (evar_filter evi,evar_context evi))
+let evar_env evi = 
+  List.fold_right push_named (evar_filtered_context evi)
+    (reset_context (Global.env()))
 
 let eq_evar_info ei1 ei2 =
   ei1 == ei2 || 
@@ -129,16 +134,14 @@ let existential_type sigma (n,args) =
     try find sigma n
     with Not_found ->
       anomaly ("Evar "^(string_of_existential n)^" was not declared") in
-  let hyps = evar_context info in
-  let _,hyps = list_filter2 (fun b c -> b) (evar_filter info,hyps) in
+  let hyps = evar_filtered_context info in
   instantiate_evar hyps info.evar_concl (Array.to_list args)
 
 exception NotInstantiatedEvar
 
 let existential_value sigma (n,args) =
   let info = find sigma n in
-  let hyps = evar_context info in
-  let _,hyps = list_filter2 (fun b c -> b) (evar_filter info,hyps) in
+  let hyps = evar_filtered_context info in
   match evar_body info with
     | Evar_defined c ->
 	instantiate_evar hyps c (Array.to_list args)
@@ -596,6 +599,11 @@ let subst_defined_metas bl c =
     | Meta i -> substrec (list_assoc_in_triple i bl)
     | _ -> map_constr substrec c
   in try Some (substrec c) with Not_found -> None
+
+(**********************************************************)
+(* Failure explanation *)
+
+type unsolvability_explanation = SeveralInstancesFound of int
 
 (**********************************************************)
 (* Pretty-printing *)

@@ -253,7 +253,7 @@ let pr_subgoal_metas metas env=
 
 (* display complete goal *)
 let default_pr_goal g =
-  let env = evar_env g in
+  let env = evar_unfiltered_env g in
   let preamb,thesis,penv,pc =
     if g.evar_extra = None then
           mt (), mt (),
@@ -278,12 +278,17 @@ let pr_concl n g =
     str (emacs_str (String.make 1 (Char.chr 253)) "")  ++
       str "subgoal " ++ int n ++ str " is:" ++ cut () ++ str" "  ++ pc
 
-
 (* display evar type: a context and a type *)
 let pr_evgl_sign gl = 
-  let ps = pr_named_context_of (evar_env gl) in
+  let ps = pr_named_context_of (evar_unfiltered_env gl) in
+  let _,l = list_filter2 (fun b c -> not b) (evar_filter gl,evar_context gl) in
+  let ids = List.rev (List.map pi1 l) in
+  let warn =
+    if ids = [] then mt () else
+      (str "(" ++ prlist_with_sep pr_coma pr_id ids ++ str " cannot be used)")
+  in
   let pc = pr_lconstr gl.evar_concl in
-  hov 0 (str"["  ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]")
+  hov 0 (str"[" ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" ++ spc () ++ warn)
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int i = function

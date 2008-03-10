@@ -1323,7 +1323,7 @@ let solve_remaining_evars env initial_sigma evd c =
 	      evdref := Evd.evar_define ev c !evdref;
 	      c
 	    with Exit ->
-	      Pretype_errors.error_unsolvable_implicit loc env sigma evi src)
+	      Pretype_errors.error_unsolvable_implicit loc env sigma evi src None)
       | _ -> map_constr proc_rec c      
   in
   proc_rec c

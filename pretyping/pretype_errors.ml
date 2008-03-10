@@ -25,7 +25,8 @@ type pretype_error =
   (* Unification *)
   | OccurCheck of existential_key * constr
   | NotClean of existential_key * constr * Evd.hole_kind
-  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind
+  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind * 
+      Evd.unsolvability_explanation option
   | CannotUnify of constr * constr
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
@@ -152,8 +153,9 @@ let error_not_clean env sigma ev c (loc,k) =
   raise_with_loc loc
     (PretypeError (env_ise sigma env,  NotClean (ev,c,k)))
 
-let error_unsolvable_implicit loc env sigma evi e =
-  raise_with_loc loc (PretypeError (env_ise sigma env, UnsolvableImplicit (evi, e)))
+let error_unsolvable_implicit loc env sigma evi e explain =
+  raise_with_loc loc
+    (PretypeError (env_ise sigma env, UnsolvableImplicit (evi, e, explain)))
 
 let error_cannot_unify env sigma (m,n) =
   raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))

@@ -195,7 +195,7 @@ let non_instanciated_map env evd evm =
 	     QuestionMark _ -> Evd.add evm key evi
 	   | _ ->
 	       debug 2 (str " and is an implicit");
-	       Pretype_errors.error_unsolvable_implicit loc env evm (Evarutil.nf_evar_info evm evi) k)
+	       Pretype_errors.error_unsolvable_implicit loc env evm (Evarutil.nf_evar_info evm evi) k None)
     Evd.empty (Evarutil.non_instantiated evm)
     
 let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition

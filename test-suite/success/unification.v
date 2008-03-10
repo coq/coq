@@ -109,3 +109,10 @@ intros.
 apply H0. (* Check that equation ?n[H] = ?n[H] is correctly considered true *)
 reflexivity.
 Qed.
+
+(* An example that failed at some time in early 2008 *)
+(* The "fun t => match ..." used to raise an anomaly instead of an error *)
+
+Ltac f := set (x:=fun t => match t with (f,_) => f 0 end).
+Goal True.
+try f. (* if an error, it is caught *)
