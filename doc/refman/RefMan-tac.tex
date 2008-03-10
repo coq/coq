@@ -556,12 +556,12 @@ in the list of subgoals remaining to prove.
 
    This tactic behaves like \texttt{assert ({\ident} : {\form})}.
 
-\item \texttt{pose proof {\term} as {\ident}}
+\item \texttt{pose proof {\term} as {\ident}\tacindex{pose proof}}
 
   This tactic behaves like \texttt{assert ({\ident:T}) by exact {\term}} where
   \texttt{T} is the type of {\term}. 
 
-\item {\tt specialize ({\ident} \term$_1$ {\ldots} \term$_n$)} \\
+\item {\tt specialize ({\ident} \term$_1$ {\ldots} \term$_n$)\tacindex{specialize}} \\
       {\tt specialize {\ident} with \bindinglist}
 
       The tactic {\tt specialize} works on local hypothesis \ident.
