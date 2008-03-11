@@ -23,6 +23,11 @@ Commands
   automatically computed (e.g. Scheme Induction for nat Sort Set).
 - New command "Combined Scheme" to build combined mutual induction
   principles from existing mutual induction principles.
+- New commad "Scheme Equality" tries to build a decidable (boolean) equality 
+  for simple inductive datatypes and a decision property over this equality.
+  e.g.  Scheme Equality for nat.
+- Added option "Set Equality Scheme" to make automatic the declaration 
+  of the boolean equality when possible.
 - Source of universe inconsistencies now printed when option 
   "Set Printing Universes" is activated,
 - Support for option "[id1 ... idn]", and "-[id1 ... idn]", for the "compute" 
