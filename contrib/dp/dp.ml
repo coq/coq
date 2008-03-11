@@ -37,6 +37,7 @@ let set_timeout n = timeout := n
 let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
   init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
+    @ [["Coq"; "ZArith"; "BinInt"]]
     @ [["Coq"; "omega"; "OmegaLemmas"]]
 
 let constant = gen_constant_in_modules "dp" coq_modules

@@ -5,21 +5,29 @@ Require Import Classical.
 Dp_debug.
 Dp_timeout 3.
 
+(* Coq lists *)
 
-Inductive expr: Set := Some: expr -> expr -> expr | None: expr. 
-Parameter depth: expr -> expr -> nat. 
+Require Export List.
+Parameter nlist: list nat -> Prop.
 
-Fixpoint length (t: expr) : nat :=
-  match t with
-  | None => 0
-  | Some t1 t2 => depth t t1
-  end.
+ Goal forall l,  nlist l -> True.
+ intros. 
+ simplify.
 
-Goal forall e, length e = 0. 
-intros. 
-gwhy.
-ergo.
-Qed.
+(* user lists *)
+
+Inductive list (A:Set) : Set :=
+| nil : list A
+| cons: forall a:A, list A -> list A.
+
+Fixpoint app (A:Set) (l m:list A) {struct l} : list A :=
+match l with
+| nil => m
+| cons a l1 => cons A a (app A l1 m)
+end.
+
+Lemma entail: (nil Z) = app Z (nil Z) (nil Z) -> True. 
+intros; ergo. 
 
 
 (* polymorphism *)

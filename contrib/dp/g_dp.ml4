@@ -40,6 +40,10 @@ TACTIC EXTEND Gwhy
   [ "gwhy" ] -> [ gwhy ]
 END
 
+TACTIC EXTEND Gappa
+  [ "gappa" ] -> [ Dp_gappa.gappa ]
+END
+
 (* should be part of basic tactics syntax *)
 TACTIC EXTEND admit
   [ "admit"    ] -> [ Tactics.admit_as_an_axiom ]
