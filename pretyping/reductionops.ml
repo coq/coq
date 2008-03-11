@@ -931,7 +931,7 @@ let meta_reducible_instance evd b =
   let metas = List.fold_left (fun l mv -> 
     match (try meta_opt_fvalue evd mv with Not_found -> None) with
     | Some (g,(_,s)) -> (mv,(g.rebus,s))::l 
-    | None -> l) [] in
+    | None -> l) [] fm in
   let rec irec u =
     let u = whd_betaiota u in
     match kind_of_term u with
