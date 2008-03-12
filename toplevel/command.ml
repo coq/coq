@@ -299,6 +299,7 @@ let declare_eq_scheme sp =
   let mib = Global.lookup_mind sp in
   let nb_ind = Array.length mib.mind_packets in
   let eq_array = Auto_ind_decl.make_eq_scheme sp in
+  try
     for i=0 to (nb_ind-1) do
     let cpack = Array.get mib.mind_packets i in
     let nam = id_of_string ((string_of_id cpack.mind_typename)^"_beq")
@@ -314,6 +315,9 @@ let declare_eq_scheme sp =
           Lib.add_anonymous_leaf (inScheme ((sp,i),mkConst cst));
           definition_message nam
     done
+  with Not_found -> 
+    error "Your type contains Parameter without a boolean equality"
+
 (* decidability of eq *)
 
 (* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k 
