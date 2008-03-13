@@ -656,7 +656,7 @@ let pr_rank = function
   | 0 -> str "1st"
   | 1 -> str "2nd"
   | 2 -> str "3rd"
-  | n -> str ((string_of_int n)^"th")
+  | n -> str ((string_of_int (n+1))^"th")
 
 let recursive_message indexes = function
   | [] -> anomaly "no recursive definition"
