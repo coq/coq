@@ -1,6 +1,9 @@
 open Names
 open Pp
 
+(* This map is used to deal with debruijn linked indices. *)
+module Link : Map.S with type key = int
+
 (* 
    The mk_?_id function build different name w.r.t. a function 
    Each of their use is justified in the code 

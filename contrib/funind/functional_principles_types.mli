@@ -21,8 +21,11 @@ val generate_functional_principle :
   (constr array -> int -> Tacmach.tactic) -> 
   unit
 
-val compute_new_princ_type_from_rel : constr array -> sorts array -> 
-  types -> types
+(* TODO: hide [rel_to_fun_info] and [compute_new_princ_type_from_rel]. *)
+type rel_to_fun_info = { thefun:constr; theargs: int array }
+
+val compute_new_princ_type_from_rel : (rel_to_fun_info list) Indfun_common.Link.t
+  -> sorts array -> types -> types
 
 
 exception No_graph_found
