@@ -44,7 +44,7 @@ let rec init = function
 				 | _ -> Util.anomaly 
 				     "Subproof.init: new_evar failure"
 				       (* arnaud:faire un nouveau new_evar 
-					  ad hoc.
+					  ad hoc. Ou utiliser destEvar.
 				          Chercher le pattern dans 
 				          goal.ml aussi.*)
 				       (* the above error would mean
@@ -56,10 +56,11 @@ let rec init = function
 			 { initial = econstr::ret;
 			   solution = new_defs ;
 			   comb = gl::comb }
-		    
+
+(* arnaud: plutôt dans proofutils		    
 let rec start env l =
   init (List.map (fun x -> (env,x,None)) l)
-
+*)
 
 (* Returns whether this subproof is finished or not. *)
 let finished = function

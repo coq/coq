@@ -384,6 +384,9 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
   start_proof_and_print sopt (Global, Proof kind) (bl,t) hook
 
 let vernac_end_proof = function
+  (* arnaud: l'idée ici c'est de faire une fonction de dispatch au 
+     *start proof* et de juste passer l'argument à la fonction
+     de dispatch. *)
   | Admitted -> admit ()
   | Proved (is_opaque,idopt) ->
     (* arnaud: fait le showscript à la fin des preuves, broken pour l'instant:
@@ -398,6 +401,8 @@ let vernac_end_proof = function
      the theories [??] *)
 
 let vernac_exact_proof c =
+  Util.anomaly "Vernacentries.vernac_exact_proof: à restaurer ?"
+  (* arnaud à restaurer ?
   let pfs = top_of_tree (get_pftreestate()) in
   let pf = proof_of_pftreestate pfs in
     if (is_leaf_proof pf) then begin
@@ -407,6 +412,8 @@ let vernac_exact_proof c =
       errorlabstrm "Vernacentries.ExactProof"
 	(str "Command 'Proof ...' can only be used at the beginning of the proof")
   	
+  *)
+
 let vernac_assumption kind l nl=
   List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c nl) l
 

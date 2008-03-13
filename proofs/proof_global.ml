@@ -16,8 +16,25 @@
 (*                                                                     *)
 (***********************************************************************)
 
-let current_proof = Proof.proof option ref
+(* arnaud: commenter ce module *)
 
-let is_there_a_proof () = Option.has_some !current_proof
+let current_proof = ref None
 
+let there_is_a_proof () = Option.has_some !current_proof
 
+exception NoCurrentProof
+let give_me_the_proof () = 
+  match !current_proof with
+  | None -> raise NoCurrentProof
+  | Some p -> p
+
+exception ProofInProgress
+let start_a_new_proof l return =
+  if there_is_a_proof () then
+    raise ProofInProgress
+  else
+    current_proof := Some (Proof.start l return)
+
+(* arnaud: possible de discarder quand il n'y a pas de preuve ?
+   ou tracking pour debugging / *)
+let discard () = current_proof := None

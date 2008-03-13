@@ -125,7 +125,8 @@ PROOFS:=\
   proofs/goal.cmo proofs/subproof.cmo \
   proofs/proof.cmo \
   proofs/clenv.cmo proofs/logic.cmo \
-  proofs/decl_mode.cmo proofs/tactic_debug.cmo
+  proofs/decl_mode.cmo proofs/tactic_debug.cmo \
+  proofs/proof_global.cmo proofs/proofutils.cmo
 
 PARSING:=\
   parsing/extend.cmo \

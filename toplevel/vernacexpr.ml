@@ -164,9 +164,12 @@ type grammar_production =
   | VTerm of string
   | VNonTerm of loc * string * Names.identifier option
 
+(* arnaud: bouge vers Decl_kinds, car référé dans proofs. ml
+   ça semblait le bon endroit pour le mettre.
 type proof_end =
   | Admitted
   | Proved of opacity_flag * (lident * theorem_kind option) option
+*)
 
 type scheme =
   | InductionScheme of bool * lreference * sort_expr

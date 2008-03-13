@@ -337,10 +337,12 @@ let (inDec,outDec) =
                     subst_function = Auto_ind_decl.subst_in_constr;
                     export_function = Ind_tables.export_dec_proof }
 
+(* arnaud: original
 let start_proof id kind c hook =
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
   Pfedit.start_proof id kind sign c hook
+*)
 
 let save id const (locality,kind) hook =
   let {const_entry_body = pft;
@@ -368,6 +370,63 @@ let save_named opacity =
   let id,(const,persistence,hook) = Pfedit.cook_proof () in
   let const = { const with const_entry_opaque = opacity } in
   save id const persistence hook
+
+(* 4| Goal declaration *)
+let start_proof_com sopt kind (bl,t) hook =
+  let id = match sopt with
+    | Some id ->
+        (* We check existence here: it's a bit late at Qed time *)
+        if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
+          errorlabstrm "start_proof" (pr_id id ++ str " already exists");
+        id
+    | None ->
+	next_global_ident_away false (id_of_string "Unnamed_thm")
+ 	  (Pfedit.get_all_proof_names ())
+  in
+  let env = Global.env () in
+  let c = interp_type Evd.empty env (generalize_constr_expr t bl) in
+  let _ = Typeops.infer_type env c in
+  start_proof id kind c hook
+
+let check_anonymity id save_ident =
+  if atompart_of_id id <> "Unnamed_thm" then
+    error "This command can only be used for unnamed theorem"
+(*
+    message("Overriding name "^(string_of_id id)^" and using "^save_ident)
+*)
+
+let save_anonymous opacity save_ident =
+  let id,(const,persistence,hook) = Pfedit.cook_proof () in
+  let const = { const with const_entry_opaque = opacity } in
+  check_anonymity id save_ident;
+  save save_ident const persistence hook
+
+let save_anonymous_with_strength kind opacity save_ident =
+  let id,(const,_,hook) = Pfedit.cook_proof () in
+  let const = { const with const_entry_opaque = opacity } in
+  check_anonymity id save_ident;
+  (* we consider that non opaque behaves as local for discharge *)
+  save save_ident const (Global, Proof kind) hook
+
+let admit () =
+  let (id,k,typ,hook) = Pfedit.current_proof_statement () in
+(* Contraire aux besoins d'interactivité...
+  if k <> IsGlobal (Proof Conjecture) then
+    error "Only statements declared as conjecture can be admitted";
+*)
+  let kn =
+    declare_constant id (ParameterEntry (typ,false), IsAssumption Conjectural) in
+  Pfedit.delete_current_proof ();
+  assumption_message id;
+  hook Global (ConstRef kn)
+
+let get_current_context () =
+  try Pfedit.get_current_goal_context ()
+  with e when Logic.catchable_exception e -> 
+    (Evd.empty, Global.env())
+
+
+
 
 let make_eq_decidability ind = 
     (* fetching data *)
@@ -990,59 +1049,4 @@ let build_combined_scheme name schemes =
 	     const_entry_boxed = Flags.boxed_definitions() } in
   let _ = declare_constant (snd name) (DefinitionEntry ce, IsDefinition Scheme) in
     if_verbose ppnl (recursive_message Fixpoint None [snd name])
-
-(* 4| Goal declaration *)
-let start_proof_com sopt kind (bl,t) hook =
-  let id = match sopt with
-    | Some id ->
-        (* We check existence here: it's a bit late at Qed time *)
-        if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
-          errorlabstrm "start_proof" (pr_id id ++ str " already exists");
-        id
-    | None ->
-	next_global_ident_away false (id_of_string "Unnamed_thm")
- 	  (Pfedit.get_all_proof_names ())
-  in
-  let env = Global.env () in
-  let c = interp_type Evd.empty env (generalize_constr_expr t bl) in
-  let _ = Typeops.infer_type env c in
-  start_proof id kind c hook
-
-let check_anonymity id save_ident =
-  if atompart_of_id id <> "Unnamed_thm" then
-    error "This command can only be used for unnamed theorem"
-(*
-    message("Overriding name "^(string_of_id id)^" and using "^save_ident)
-*)
-
-let save_anonymous opacity save_ident =
-  let id,(const,persistence,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  check_anonymity id save_ident;
-  save save_ident const persistence hook
-
-let save_anonymous_with_strength kind opacity save_ident =
-  let id,(const,_,hook) = Pfedit.cook_proof () in
-  let const = { const with const_entry_opaque = opacity } in
-  check_anonymity id save_ident;
-  (* we consider that non opaque behaves as local for discharge *)
-  save save_ident const (Global, Proof kind) hook
-
-let admit () =
-  let (id,k,typ,hook) = Pfedit.current_proof_statement () in
-(* Contraire aux besoins d'interactivité...
-  if k <> IsGlobal (Proof Conjecture) then
-    error "Only statements declared as conjecture can be admitted";
-*)
-  let kn =
-    declare_constant id (ParameterEntry (typ,false), IsAssumption Conjectural) in
-  Pfedit.delete_current_proof ();
-  assumption_message id;
-  hook Global (ConstRef kn)
-
-let get_current_context () =
-  try Pfedit.get_current_goal_context ()
-  with e when Logic.catchable_exception e -> 
-    (Evd.empty, Global.env())
-
 

@@ -17,39 +17,47 @@
 open Term
 
 (* Type of a proof of return type ['a]. *)
-type 'a proof
+type proof
+
+
+(*** Beginning a new proof ***)
+val start : (Environ.env * Term.types * string option) list -> 
+            (constr list -> Decl_kinds.proof_end -> unit) -> 
+            proof 
 
 
 (* Interpretes the Undo command. *)
-val undo : 'a proof -> unit
+val undo : proof -> unit
 
 
 (* focus command (focuses on the [i]th subgoal) *)
 (* there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
-val focus : int -> 'a proof -> unit
+val focus : int -> proof -> unit
 
 (* unfocus command.
    Fails if the proof is not focused. *)
-val unfocus : 'a proof -> unit
+val unfocus : proof -> unit
 
 
 (*** ***)
 (* arnaud: cette section, si courte qu'elle est, mérite probablement un titre *)
 
-val run_tactic : Environ.env -> Subproof.tactic -> 'a proof -> unit
+val run_tactic : Environ.env -> Subproof.tactic -> proof -> unit
 
 (*** **)
 (* arnaud: hack pour debugging *)
+(*arnaud: apu
 val start_proof : 
   Names.identifier -> 'a (*goal_kind*) -> Environ.named_context_val -> constr
     -> 'b (*declaration_hook*) -> unit
+*)
 
 val pr_subgoals : (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
 
 val db_run_tactic_on : Environ.env -> int -> Subproof.tactic -> unit
 
-val hide_interp : (unit proof -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic) -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic
+val hide_interp : (proof -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic) -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic
 
 (* arnaud:fonction très temporaire*)
-val subproof_of : 'a proof -> Subproof.subproof
+val subproof_of : proof -> Subproof.subproof

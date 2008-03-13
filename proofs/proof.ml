@@ -32,14 +32,24 @@ type proof_state = {
   focus_stack: (focus_kind*Subproof.focus_context) list
 }
 
-type 'a proof = { (* current proof_state *)
-                  mutable state : proof_state;
-		  (* The undo stack *)
-		  mutable undo_stack : proof_state list;
-                  (* function executed at QED. *)
-		  return: constr list -> 'a
-		}
+type proof = { (* current proof_state *)
+               mutable state : proof_state;
+               (* The undo stack *)
+               mutable undo_stack : proof_state list;
+	       (* function executed at QED. *)
+	       return : constr list -> Decl_kinds.proof_end -> unit
+             }
 
+
+(*** Beginning a new proof ***)
+
+let start l return = 
+  { state = { subproof = Subproof.init l;
+	      focus_stack = []
+	    };
+    undo_stack = [];
+    return = return
+  }
 
 
 (*** The following functions implement the basic internal mechanisms
@@ -175,12 +185,14 @@ let run_tactic env tac pr =
 (* arnaud: hack pour debugging *)
 let current_proof = ref None
 
+(* arnaud: apu :'(
 let start_proof _i gk _ c _decl = 
   let new_subproof = Subproof.start (Global.env ()) [c] in
   let new_proof = 
     { state = {subproof = new_subproof; focus_stack = []}; undo_stack = []; return = fun _ -> () } 
   in
   current_proof := Some new_proof
+*)
 
 let pr_subgoals pr_fun =
   match !current_proof with

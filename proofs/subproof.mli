@@ -13,11 +13,13 @@ open Term
 
 type subproof 
 
+(* arnaud: plutôt dans proofutils
 (* Starts a subproof in a given environement, with initial subgoals
    whose conclusion type is given by a list.
    The subgoals of the returned subproof are in the same order as
    the list of conclusion. *)
 val start : Environ.env -> Term.types list -> subproof
+*)
 
 (* Initialises a subproof, the argument is a list of environement, 
    conclusion types, and optional names, creating that many initial goals.

@@ -67,4 +67,4 @@ val eval_tactic : Tacexpr.glob_tactic_expr -> Subproof.tactic
 
 
 (* arnaud: fonction très temporaire *)
-val hide_interp : 'a Proof.proof -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic
+val hide_interp : Proof.proof -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic

@@ -10,21 +10,23 @@
 
 (***********************************************************************)
 (*                                                                     *)
-(*      This module defines the global proof environment               *)
-(*      Especially it keeps tracks of whether or not there is          *)
-(*      a proof which is currently being edited.                       *)
+(*      This module proposes a number of methods to access             *)
+(*      and use proofs (from module Proof) or the global proof         *)
+(*      state (given by module Global_proof)                           *)
 (*                                                                     *)
 (***********************************************************************)
 
+(*** Helper functions related to the Proof_global module ***)
 
-val there_is_a_proof : unit -> bool
+val start_new_single_proof : string -> 
+                             Term.types -> 
+                            (Term.constr -> Decl_kinds.proof_end -> unit) ->
+                             unit
 
-exception NoCurrentProof
-val give_me_the_proof : unit -> Proof.proof
+val start_a_new_proof_in_global_env : 
+                              (Term.constr*string option) list -> 
+                              (Term.constr list -> Decl_kinds.proof_end -> unit) -> 
+                               unit
 
-exception ProofInProgress
-val start_a_new_proof : (Environ.env * Term.types * string option) list -> 
-                        (Term.constr list -> Decl_kinds.proof_end -> unit) ->
-                        unit
 
-val discard : unit -> unit
+(*** Helper functions related to the Proof module ***)

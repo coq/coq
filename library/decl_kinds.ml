@@ -55,6 +55,13 @@ type assumption_kind = locality_flag * assumption_object_kind
 
 type definition_kind = locality_flag * boxed_flag * definition_object_kind
 
+(* Kinds of proof enders. *)
+type opacity_flag = bool
+type lident = Names.identifier located
+type proof_end =
+  | Admitted
+  | Proved of opacity_flag * (lident * theorem_kind option) option
+
 (* Kinds used in proofs *)
 
 type goal_object_kind =
