@@ -903,6 +903,8 @@ let revert idl =
     (thin idl)
 
 let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
+Util.anomaly "Functional_principles_proof: à restaurer"
+(* arnaud: à restaurer:
 (*   observe (str "nb_args := " ++ str (string_of_int nb_args)); *)
 (*   observe (str "nb_params := " ++ str (string_of_int nb_params)); *)
 (*   observe (str "rec_args_num := " ++ str (string_of_int (rec_args_num + 1) )); *)
@@ -952,7 +954,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
     (fun _ _ -> ());
   Pfedit.by (prove_replacement);
   Command.save_named false
-
+*)
 
 
   

@@ -36,5 +36,23 @@ let start_a_new_proof l return =
     current_proof := Some (Proof.start l return)
 
 (* arnaud: possible de discarder quand il n'y a pas de preuve ?
-   ou tracking pour debugging / *)
+   ou tracking pour debugging ? *)
 let discard () = current_proof := None
+
+
+
+
+(*** **)
+
+(* arnaud: debbugging ? *)
+let pr_subgoals pr_fun =
+  match !current_proof with
+  | None -> Pp.str ""
+  | Some p -> Proof.pr_subgoals p pr_fun
+
+
+
+let db_run_tactic_on env n tac =
+  match !current_proof with
+  | None -> ()
+  | Some cur -> Proof.run_tactic env (Subproof.choose_one n tac) cur

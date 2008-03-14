@@ -378,7 +378,7 @@ let pr_subgoals_of_pfts pfts =
 		   *)
       
 let pr_open_subgoals () =
-  Proof.pr_subgoals pr_subgoals
+  Proof_global.pr_subgoals pr_subgoals
   (*arnaud: restaurer: 
   let pfts = get_pftreestate () in
   match focus() with

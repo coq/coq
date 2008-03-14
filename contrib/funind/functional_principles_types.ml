@@ -313,6 +313,8 @@ let pp_dur time time' =
 
 (* let qed () = save_named true  *)
 let defined () = 
+  Util.anomaly "Functional_principle_types.defined: à restaurer"
+  (* arnaud: à restaurer
   try 
     Command.save_named false 
   with 
@@ -324,10 +326,12 @@ let defined () =
 	    with _ -> mt ()
 	   ) ++msg)
     | e -> raise e
-
+  *)
 
 
 let build_functional_principle interactive_proof old_princ_type sorts funs i proof_tac hook =
+  Util.anomaly "Functional_principle_type.build_functional_principle: à restaurer"
+  (* arnaud: à restaurer
   (* First we get the type of the old graph principle *)
   let mutr_nparams = (compute_elim_sig old_princ_type).nparams in 
   (*   let time1 = System.get_time ()  in *)
@@ -359,7 +363,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
     (* 	end; *)
     get_proof_clean true 
   end
-
+  *)
 
 
 let generate_functional_principle

@@ -28,3 +28,11 @@ val start_a_new_proof : (Environ.env * Term.types * string option) list ->
                         unit
 
 val discard : unit -> unit
+
+
+
+(*arnaud: debugging ?*)
+val pr_subgoals : (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
+
+
+val db_run_tactic_on : Environ.env -> int -> Subproof.tactic -> unit

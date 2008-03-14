@@ -58,6 +58,8 @@ open Tacinterp
 open Tacexpr
 
 let start_proof_com env isevars sopt kind (bl,t) hook =
+  Util.anomaly "Subtac.start_proof_com: à restaurer"
+  (* arnaud: à restaurer:
   let id = match sopt with
     | Some id ->
         (* We check existence here: it's a bit late at Qed time *)
@@ -83,6 +85,7 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
     else
       let _ = Typeops.infer_type env c in
 	Command.start_proof id kind c hook
+  *)
       
 let print_subgoals () = Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
 

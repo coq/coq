@@ -25,6 +25,19 @@ open Decl_kinds
 open Redexpr
 (*i*)
 
+
+(* Definition functions. As a rule of thumb, use them to 
+   build functions which push things into the context, 
+   rather than equivalent from Declare. *)
+(*arnaud: commenter plus avant *)
+val verbose_declare_variable : variable -> variable_declaration -> object_name
+
+val verbose_declare_constant : identifier -> constant_declaration -> constant
+
+(* Assumption functions. Likewise it's usually preferable
+   to use them to add assumptions to the global context
+   than using functions from Declare. *)
+
 (*s Declaration functions. The following functions take ASTs,
    transform them into [constr] and then call the corresponding
    functions of [Declare]; they return an absolute reference to the
@@ -60,6 +73,7 @@ val generalize_constr_expr : constr_expr -> local_binder list -> constr_expr
 
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 
+(*
 val start_proof : identifier -> goal_kind -> constr ->
   declaration_hook -> unit
 
@@ -86,6 +100,7 @@ val save_anonymous_with_strength : theorem_kind -> bool -> identifier -> unit
 (* [admit ()] aborts the current goal and save it as an assmumption *)
 
 val admit : unit -> unit
+*)
 
 (* [get_current_context ()] returns the evar context and env of the
    current open proof if any, otherwise returns the empty evar context

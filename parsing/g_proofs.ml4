@@ -45,16 +45,16 @@ GEXTEND Gram
       | IDENT "Abort"; id = identref -> VernacAbort (Some id)
       | IDENT "Existential"; n = natural; c = constr_body ->
 	  VernacSolveExistential (n,c)
-      | IDENT "Admitted" -> VernacEndProof Admitted
-      | IDENT "Qed" -> VernacEndProof (Proved (true,None))
-      | IDENT "Save" -> VernacEndProof (Proved (true,None))
+      | IDENT "Admitted" -> VernacEndProof Decl_kinds.Admitted
+      | IDENT "Qed" -> VernacEndProof (Decl_kinds.Proved (true,None))
+      | IDENT "Save" -> VernacEndProof (Decl_kinds.Proved (true,None))
       | IDENT "Save"; tok = thm_token; id = identref ->
-	  VernacEndProof (Proved (true,Some (id,Some tok)))
+	  VernacEndProof (Decl_kinds.Proved (true,Some (id,Some tok)))
       | IDENT "Save"; id = identref ->
-	  VernacEndProof (Proved (true,Some (id,None)))
-      | IDENT "Defined" -> VernacEndProof (Proved (false,None))
+	  VernacEndProof (Decl_kinds.Proved (true,Some (id,None)))
+      | IDENT "Defined" -> VernacEndProof (Decl_kinds.Proved (false,None))
       |	IDENT "Defined"; id=identref -> 
-	  VernacEndProof (Proved (false,Some (id,None)))
+	  VernacEndProof (Decl_kinds.Proved (false,Some (id,None)))
       | IDENT "Suspend" -> VernacSuspend
       | IDENT "Resume" -> VernacResume None
       | IDENT "Resume"; id = identref -> VernacResume (Some id)

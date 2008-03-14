@@ -744,7 +744,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 
 
 
-let do_save () = Command.save_named false
+let do_save () = Util.anomaly "Invfun.do_save: à restaurer" (* à restaurer: Command.save_named false *)
 
 
 (* [derive_correctness make_scheme functional_induction funs graphs] create correctness and completeness 
@@ -755,6 +755,8 @@ let do_save () = Command.save_named false
 *)
    
 let derive_correctness make_scheme functional_induction (funs: constant list) (graphs:inductive list) = 
+  Util.anomaly "Invfun.derive_correctness: à restaurer"
+  (* arnaud: à restaurer
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
   let funs_constr = Array.map mkConst funs  in
   try 
@@ -877,7 +879,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     in
      ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,first_lemma_id) with _ -> ());
     raise e
-	   
+  *)
 		   
 
 

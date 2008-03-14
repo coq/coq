@@ -48,7 +48,7 @@ open Evd
 module Pfedit =
   struct
     let refining _ = Util.anomaly "Command.Pfedit.refining: fantome"
-    let start_proof = Proof.start_proof
+    let start_proof _ = Util.anomaly "Command.Pfedit.start_proof: fantome"
     let delete_current_proof _ = Util.anomaly "Command.Pfedit.delete_current_proof: fantome"
     let cook_proof _ = Util.anomaly "Command.Pfedit.cook_proof: fantome"
     let get_all_proof_names () = []
@@ -111,6 +111,25 @@ let rec complete_conclusion a cs = function
 
 let definition_message id =
   if_verbose message ((string_of_id id) ^ " is defined")
+
+(* arnaud: sans doute nettoyer
+(* spiwack: wrapping around the functions from Declare, 
+   adding the definition message in verbose mode. *)
+let define_variable v d = 
+  (* starts with [declare_variable] in case it might fail *)
+  let vn = declare_variable v d in
+  definition_message v;
+  vn
+
+let define_constant k d =
+  (* starts with [declare_constant] in case it might fail *)
+  let kn = declare_constant k d in
+  definition_message k;
+  kn
+*)
+
+(* arnaud: rippler dans command, je suppose *)
+
 
 let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
   let sigma = Evd.empty in
@@ -175,6 +194,42 @@ let syntax_definition ident c local onlyparse =
 
 let assumption_message id =
   if_verbose message ((string_of_id id) ^ " is assumed")
+
+(* spiwack: wrapping around the functions from Declare, 
+   adding the assumption message in verbose mode. *)
+
+let verbose_declare_variable v ((_,e,_) as d) =
+  let vn = declare_variable v d in
+  let msging = match e with 
+               | SectionLocalDef _ -> definition_message
+	       | SectionLocalAssum _ -> assumption_message
+  in
+  msging v;
+  vn
+
+let verbose_declare_constant k ((e,_) as d) =
+  let kn = declare_constant k d in
+  let msging = match e with 
+               | DefinitionEntry _ -> definition_message
+	       | ParameterEntry _ -> assumption_message
+  in
+  msging k;
+  kn
+
+(* arnaud: sans doute nettoyer 
+let assume_variable v d = 
+  (* starts with [declare_variable] in case it might fail *)
+  let vn = declare_variable v d in
+  assumption_message v;
+  vn
+
+let assume_constant k d =
+  (* starts with [declare_constant] in case it might fail *)
+  let kn = declare_constant k d in
+  assumption_message k;
+  kn
+*)
+(* arnaud: rippler dans command, je suppose *)
 
 let declare_one_assumption is_coe (local,kind) c nl (_,ident) =
   let r = match local with
@@ -342,7 +397,7 @@ let start_proof id kind c hook =
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
   Pfedit.start_proof id kind sign c hook
-*)
+
 
 let save id const (locality,kind) hook =
   let {const_entry_body = pft;
@@ -420,6 +475,8 @@ let admit () =
   assumption_message id;
   hook Global (ConstRef kn)
 
+*)
+
 let get_current_context () =
   try Pfedit.get_current_goal_context ()
   with e when Logic.catchable_exception e -> 
@@ -429,6 +486,12 @@ let get_current_context () =
 
 
 let make_eq_decidability ind = 
+  Util.anomaly "Command.make_eq_decidability: à restaurer"
+    (* arnaud: à restaurer, il y a un start proof suspect...
+       on peut se poser la question de savoir si ceci doit être dans 
+       command... je ne comprends toujours pas l'ordre relatif de command
+       et proofutils, ça dépend sans doute quelle sémantique on veut donner
+       à command...
     (* fetching data *)
     let mib = Global.lookup_mind (fst ind) in
     let nparams = mib.mind_nparams in
@@ -481,6 +544,8 @@ let make_eq_decidability ind =
         (inDec (ind,mkConst (Lib.make_con (id_of_string proof_name))))
 (*      definition_message (id_of_string proof_name) *)
   )
+
+    *)
 
 (* end of automated definition on ind*)
 

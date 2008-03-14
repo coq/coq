@@ -58,14 +58,15 @@ let get_current_proof_name  _ = Util.anomaly "Recdef.get_current_proof_name: fan
 let start_proof _ = Util.anomaly "Recdef.start_proof: fantome"
 let by _ = Util.anomaly "Recdef.by: fantome"
 
+let save_named _ = Util.anomaly "Recdef.Command.save_named: fantome" 
 
 (* arnaud: /trucs factices *)
 
 let compute_renamed_type gls c = 
   rename_bound_var (pf_env gls) [] (pf_type_of gls c)
 
-let qed () = Command.save_named true 
-let defined () = Command.save_named false
+let qed () = (*Command.*)save_named true 
+let defined () = (*Command.*)save_named false
 
 let pf_get_new_ids idl g = 
   let ids = pf_ids_of_hyps g in 
@@ -976,7 +977,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_n
 	       Elim.h_decompose_and (mkVar hid); 
 	     ] gls)
       (gen_eauto(* default_eauto *) false (false,5) [] (Some []));
-    Command.save_named opacity;
+    (*Command.*)save_named opacity;
   in
   start_proof
     na
@@ -1323,7 +1324,7 @@ let (com_eqn : identifier ->
        );
 (*      (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
 (*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
-     Flags.silently (fun () ->Command.save_named opacity) () ;  
+     Flags.silently (fun () ->(*Command.*)save_named opacity) () ;  
 (*      Pp.msgnl (str "eqn finished"); *)
     
     );;

@@ -321,6 +321,8 @@ let obligations_of_evars evars =
   in arr, Array.length arr
 
 let rec solve_obligation prg num =
+  Util.anomaly "Subtac_obligation.solve_obligation: à restaurer"
+  (* arnaud: à restaurer:
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
   let obl = obls.(num) in
@@ -345,6 +347,7 @@ let rec solve_obligation prg num =
 	      Pfedit.by !default_tactic
 	| l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
 			++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))
+  *)
 
 and subtac_obligation (user_num, name, typ) =
   let num = pred user_num in

@@ -306,6 +306,8 @@ let mk_not c =
     mkApp (notc, [| c |])
 
 let and_tac l hook =
+  Util.anomaly "Subtac_utils.and_tac: à restaurer"
+  (* arnaud: à restaurer: utilise Command.start_proof
   let andc = Coqlib.build_coq_and () in      
   let rec aux ((accid, goal, tac, extract) as acc) = function
     | [] -> (* Singleton *) acc
@@ -330,7 +332,7 @@ let and_tac l hook =
     trace (str "Started and proof");
     Pfedit.by and_tac;
     trace (str "Applied and tac")
-      
+  *)
 
 let destruct_ex ext ex = 
   let rec aux c acc = 

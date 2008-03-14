@@ -41,7 +41,7 @@ type proof = { (* current proof_state *)
              }
 
 
-(*** Beginning a new proof ***)
+(*** General proof functions ***)
 
 let start l return = 
   { state = { subproof = Subproof.init l;
@@ -51,6 +51,11 @@ let start l return =
     return = return
   }
 
+let is_done p =
+  Subproof.finished p.state.subproof && p.state.focus_stack = []
+
+let return p =
+  p.return (Subproof.return p.state.subproof)
 
 (*** The following functions implement the basic internal mechanisms
      of proofs, they are not meant to be exported in the .mli ***)
@@ -183,31 +188,15 @@ let run_tactic env tac pr =
 
 (*** **)
 (* arnaud: hack pour debugging *)
-let current_proof = ref None
 
-(* arnaud: apu :'(
-let start_proof _i gk _ c _decl = 
-  let new_subproof = Subproof.start (Global.env ()) [c] in
-  let new_proof = 
-    { state = {subproof = new_subproof; focus_stack = []}; undo_stack = []; return = fun _ -> () } 
-  in
-  current_proof := Some new_proof
-*)
+let pr_subgoals { state = { subproof = sp } } pr_fun =
+   Subproof.pr_subgoals sp pr_fun
 
-let pr_subgoals pr_fun =
-  match !current_proof with
-  | None -> Pp.str ""
-  | Some { state = { subproof = sp } } -> Subproof.pr_subgoals sp pr_fun
-
-
-let db_run_tactic_on env n tac =
-  match ! current_proof with
-  | None -> ()
-  | Some cur -> run_tactic env (Subproof.choose_one n tac) cur
-
+(* arnaud:
 let hide_interp f t ot =
   match !current_proof with
     | None -> Util.anomaly "Proof.hide_interp: seulement quand on prouve quelque chose"
     | Some cur -> f cur t ot
+*)
 
 let subproof_of { state = { subproof = sp } } = sp

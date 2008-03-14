@@ -50,7 +50,7 @@ let  top_of_tree _ = Util.anomaly "Vernacentries.top_of_tree: fantome"
 let is_leaf_proof _ = Util.anomaly "Vernacentries.is_leaf_proof: fantome"
 let by _ = Util.anomaly "Vernacentries.by: fantome"
 let check_no_pending_proofs _ = Util.anomaly "Vernacentries.check_no_pending_proofs: fantome"
-let solve_nth t = Proof.db_run_tactic_on (Global.env ()) t (*arnaud: laisser eta-expandé !!! *)
+let solve_nth t = Proof_global.db_run_tactic_on (Global.env ()) t (*arnaud: laisser eta-expandé !!! *)
 let get_end_tac _ = Util.anomaly "Vernacentries.get_end_tac: fantome"
 let subtree_solved  () = false (* arnaud: on ne peut plus finir les preuves :') *)
 let make_focus _ = Util.anomaly "Vernacentries.make_focus: fantome"
@@ -352,7 +352,8 @@ let vernac_notation = Metasyntax.add_notation
 (* Gallina *)
 
 let start_proof_and_print idopt k t hook =
-  start_proof_com idopt k t hook;
+(*arnaud:  start_proof_com idopt k t hook; *)
+  Proofutils.start_a_new_proof_command idopt k t (*hook*);
   print_subgoals ();
   if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
@@ -383,7 +384,10 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
       (str "Proof editing mode not supported in module types");
   start_proof_and_print sopt (Global, Proof kind) (bl,t) hook
 
-let vernac_end_proof = function
+let vernac_end_proof pe = 
+  Proof.return (Proof_global.give_me_the_proof ()) pe
+
+(* arnaud: original: function
   (* arnaud: l'idée ici c'est de faire une fonction de dispatch au 
      *start proof* et de juste passer l'argument à la fonction
      de dispatch. *)
@@ -396,6 +400,7 @@ let vernac_end_proof = function
     | None -> save_named is_opaque
     | Some ((_,id),None) -> save_anonymous is_opaque id
     | Some ((_,id),Some kind) -> save_anonymous_with_strength kind is_opaque id
+*)
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
      the theories [??] *)
@@ -590,14 +595,15 @@ let vernac_identity_coercion stre id qids qidt =
 
 (***********)
 (* Solving *)
+(* arnaud: stabiliser cette fonction à tout prix*)
 let vernac_solve n tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode";
   Decl_mode.check_not_proof_mode "Unknown proof instruction";
   begin
     if b then 
-      solve_nth n (Proof.hide_interp Ltacinterp.hide_interp tcom (get_end_tac ()))
-    else solve_nth n (Proof.hide_interp Ltacinterp.hide_interp tcom None)
+      solve_nth n (Ltacinterp.hide_interp (Proof_global.give_me_the_proof ()) tcom (get_end_tac ()))
+    else solve_nth n (Ltacinterp.hide_interp (Proof_global.give_me_the_proof ()) tcom None)
   end;
   (* in case a strict subtree was completed, 
      go back to the top of the prooftree *) 
@@ -1085,7 +1091,10 @@ let vernac_locate = function
 (********************)
 (* Proof management *)
 
-let vernac_goal = function
+let vernac_goal = 
+  fun x -> Util.anomaly "Vernacentries.vernac_goal: à restaurer"
+(*arnaud:à restaurer ?
+  function
   | None -> ()
   | Some c ->
       if not (refining()) then begin
@@ -1094,7 +1103,7 @@ let vernac_goal = function
 	print_subgoals ()
       end else 
 	error "repeated Goal not permitted in refining mode"
-
+*)
 let vernac_abort = function
   | None ->
       delete_current_proof ();

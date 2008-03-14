@@ -20,10 +20,17 @@ open Term
 type proof
 
 
-(*** Beginning a new proof ***)
+(*** General proof functions ***)
+
 val start : (Environ.env * Term.types * string option) list -> 
             (constr list -> Decl_kinds.proof_end -> unit) -> 
             proof 
+
+(* arnaud: commenter*)
+val is_done : proof -> bool
+
+(* arnaud: commenter*)
+val return : proof -> Decl_kinds.proof_end -> unit
 
 
 (* Interpretes the Undo command. *)
@@ -47,17 +54,12 @@ val run_tactic : Environ.env -> Subproof.tactic -> proof -> unit
 
 (*** **)
 (* arnaud: hack pour debugging *)
-(*arnaud: apu
-val start_proof : 
-  Names.identifier -> 'a (*goal_kind*) -> Environ.named_context_val -> constr
-    -> 'b (*declaration_hook*) -> unit
-*)
 
-val pr_subgoals : (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
+val pr_subgoals : proof -> (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
 
-val db_run_tactic_on : Environ.env -> int -> Subproof.tactic -> unit
-
+(* arnaud:
 val hide_interp : (proof -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic) -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic
+*)
 
 (* arnaud:fonction très temporaire*)
 val subproof_of : proof -> Subproof.subproof

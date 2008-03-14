@@ -16,23 +16,28 @@
 (*                                                                     *)
 (***********************************************************************)
 
+(*** Helper functions related to the Proof module ***)
+
 (*** Helper functions related to the Proof_global module ***)
 
-let proof_starter_of_type_list typs =
-  List.map (fun x -> (Global.env (), x, None)) typs
+val start_new_single_proof :  
+  Term.types -> 
+  (Term.constr -> Decl_kinds.proof_end -> unit) ->
+  unit
 
-let start_new_single_proof name typ return =
-  let return constrs pe =
-    match constrs with
-    | [c] -> return c pe
-    | _ -> Util.anomaly "Proofutils.start_new_single_proof:
-                         Proofs seems to have grown extra base goals."
-  in
-  Proof_global.start_a_new_proof (proof_starter_of_type_list [typ]) return
+val start_a_new_proof_in_global_env : 
+  (Term.constr*string option) list -> 
+  (Term.constr list -> Decl_kinds.proof_end -> unit) -> 
+  unit
 
-let start_a_new_proof_in_global_env typs_and_tags return =
-  Proof_global.start_a_new_proof
-    (List.map (fun (tp,tg) -> (Global.env (), tp, tg) ) typs_and_tags)
-    return
+val start_a_new_definition_proof : 
+  Names.identifier ->
+  Decl_kinds.goal_kind ->
+  Term.constr ->
+  unit
 
-(*** Helper functions related to the Proof module ***)
+val start_a_new_proof_command :
+  Names.identifier option ->
+  Decl_kinds.goal_kind ->
+  (Topconstr.local_binder list * Topconstr.constr_expr) ->
+  unit
