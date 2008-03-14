@@ -1,0 +1,41 @@
+The Coq proof assistant V7 and V8 includes software developed by the 
+Coq development team inside the LogiCal project, at INRIA, CNRS and
+University Paris Sud. 
+
+Copyright 1999-2004 The Coq development team, 
+INRIA-CNRS, University Paris Sud, All rights reserved.
+
+This version contains modifications by Lionel Elie Mamane
+<lionel@mamane.lu> done while under employment of the Radboud
+University Nijmegen. However, no copyright-assignment-to-employer
+agreement was signed, and copyright of articles and books written on
+work time rest with the employee. By analogy, it is Lionel's opinion
+that copyright on these changes rests with him.
+
+This product includes also software developed by
+	Yves Bertot, Lemme, INRIA Sophia-Antipolis (contrib/interface,
+parsing/search.ml)
+	Pierre Crégut, France Telecom R & D (contrib/omega and contrib/romega)
+	Pierre Courtieu, Lemme (contrib/funind)
+	Loïc Pottier, Lemme, INRIA Sophia-Antipolis (contrib/fourier)
+	Claudio Sacerdoti Coen, HELM, University of Bologna, (contrib/xml)
+
+Coq includes a tactic Jp based on JProver, a theorem prover for
+first-order intuitionistic logic.  Jprover was originally implemented
+by Stephan Schmitt and then integrated into MetaPRL by Aleksey
+Nogin. After this, Huang extracted the necessary ML-codes from MetaPRL
+and then integrated it into Coq.
+	
+The file CREDITS contains a list of past contributors
+The credits section in Reference Manual introduction details
+contributions.
+
+The Coq development Team (march 2004)
+	Bruno Barras (INRIA)
+	Pierre Corbineau (Université Paris Sud)
+	Jean-Christophe Filliâtre (CNRS)
+	Hugo Herbelin (INRIA)
+	Pierre Letouzey (Université Paris Sud)
+	Claude Marché (Université Paris Sud-INRIA)
+	Christine Paulin (Université Paris Sud)	
+	Clément Renard (INRIA)

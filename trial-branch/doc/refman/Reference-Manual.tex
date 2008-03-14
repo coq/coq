@@ -1,0 +1,136 @@
+%\RequirePackage{ifpdf}
+%\ifpdf
+%  \documentclass[11pt,a4paper,pdftex]{book}
+%\else
+  \documentclass[11pt,a4paper]{book}
+%\fi
+
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{times}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{alltt}
+\usepackage{hevea}
+\usepackage{ifpdf}
+\usepackage[headings]{fullpage}
+\usepackage{headers} % in this directory
+
+% for coqide
+\ifpdf   % si on est pas en pdflatex
+  \usepackage[pdftex]{graphicx}
+\else
+  \usepackage[dvips]{graphicx}
+\fi
+
+
+%\includeonly{Setoid}
+
+\input{../common/version.tex}
+\input{../common/macros.tex}% extension .tex pour htmlgen
+\input{../common/title.tex}% extension .tex pour htmlgen
+%\input{headers}
+
+\usepackage[linktocpage,colorlinks,bookmarks=false]{hyperref}
+% The manual advises to load hyperref package last to be able to redefine
+% necessary commands.
+% The above should work for both latex and pdflatex. Even if PDF is produced
+% through DVI and PS using dvips and ps2pdf, hyperlinks should still work.
+% linktocpage option makes page numbers, not section names, to be links in
+% the table of contents.
+% colorlinks option colors the links instead of using boxes.
+\begin{document}
+%BEGIN LATEX
+\sloppy\hbadness=5000
+%END LATEX
+
+%BEGIN LATEX
+\coverpage{Reference Manual}
+{The Coq Development Team}
+{This material may be distributed only subject to the terms and
+conditions set forth in the Open Publication License, v1.0 or later
+(the latest version is presently available at
+\url{http://www.opencontent.org/openpub}).
+Options A and B of the licence are {\em not} elected.}
+%END LATEX
+
+%\defaultheaders
+\include{RefMan-int}% Introduction
+\include{RefMan-pre}% Credits
+
+%BEGIN LATEX
+\tableofcontents
+%END LATEX
+
+\part{The language}
+%BEGIN LATEX
+\defaultheaders
+%END LATEX
+\include{RefMan-gal.v}% Gallina
+\include{RefMan-ext.v}% Gallina extensions
+\include{RefMan-lib.v}% The coq library
+\include{RefMan-cic.v}% The Calculus of Constructions
+\include{RefMan-modr}% The module system
+
+
+\part{The proof engine}
+\include{RefMan-oth.v}% Vernacular commands
+\include{RefMan-pro}% Proof handling
+\include{RefMan-tac.v}% Tactics and tacticals
+\include{RefMan-ltac.v}% Writing tactics
+\include{RefMan-tacex.v}% Detailed Examples of tactics
+
+\part{User extensions}
+\include{RefMan-syn.v}% The Syntax and the Grammad commands
+%%SUPPRIME \include{RefMan-tus.v}% Writing tactics
+
+\part{Practical tools}
+\include{RefMan-com}% The coq commands (coqc coqtop)
+\include{RefMan-uti}% utilities (gallina, do_Makefile, etc)
+\include{RefMan-ide}% Coq IDE
+
+%BEGIN LATEX
+\RefManCutCommand{BEGINADDENDUM=\thepage}
+%END LATEX
+\part{Addendum to the Reference Manual}
+\include{AddRefMan-pre}%
+\include{Cases.v}%
+\include{Coercion.v}%
+%%SUPPRIME \include{Natural.v}%
+\include{Omega.v}%
+%%SUPPRIME \include{Correctness.v}% = preuve de pgms imperatifs
+\include{Extraction.v}%
+\include{Program.v}%
+\include{Polynom.v}%  = Ring
+\include{Setoid.v}% Tactique pour les setoides
+%BEGIN LATEX
+\RefManCutCommand{ENDADDENDUM=\thepage}
+%END LATEX
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{biblio}
+\cutname{biblio.html}
+
+\printindex
+\cutname{general-index.html}
+
+\printindex[tactic]
+\cutname{tactic-index.html}
+
+\printindex[command]
+\cutname{command-index.html}
+
+\printindex[error]
+\cutname{error-index.html}
+
+%BEGIN LATEX
+\listoffigures
+\addcontentsline{toc}{chapter}{\listfigurename}
+%END LATEX
+
+\end{document}
+
+
+% $Id$ 

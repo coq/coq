@@ -1,0 +1,6 @@
+nat + nat + {True}
+     : Set
+{True} + {True} + {True}
+     : Set
+nat + {True} + {True}
+     : Set

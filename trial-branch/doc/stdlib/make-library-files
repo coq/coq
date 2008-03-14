@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Needs COQTOP and GALLINA set
+
+# On garde la liste de tous les *.v avec dates dans library.files.ls
+# Si elle a change depuis la derniere fois ou library.files n'existe pas
+# on fabrique des .g (si besoin) et la liste library.files dans 
+# l'ordre de ls -tr des *.vo
+# Ce dernier trie les fichiers dans l'ordre inverse de leur date de création
+# En supposant que make fait son boulot, ca fait un tri topologique du
+# graphe des dépendances
+
+LIBDIRS="Arith NArith ZArith Reals Logic Bool Lists IntMap Relations Sets Sorting Wellfounded Setoids Program"
+
+rm -f library.files.ls.tmp
+(cd $COQTOP/theories; find $LIBDIR -name "*.v" -ls) > library.files.ls.tmp
+if ! test -e library.files || ! cmp library.files.ls library.files.ls.tmp; then
+  mv -f library.files.ls.tmp library.files.ls
+  rm -f library.files; touch library.files
+  ABSOLUTE=`pwd`/library.files
+  cd $COQTOP/theories
+  echo $LIBDIRS
+  for rep in $LIBDIRS ; do
+    (cd $rep
+     echo $rep/intro.tex >> $ABSOLUTE
+     VOFILES=`ls -tr *.vo`
+     for file in $VOFILES ; do
+       VF=`basename $file \.vo`
+       if [ \( ! -e $VF.g \) -o \( $VF.v -nt $VF.g \) ] ; then
+          $GALLINA $VF.v
+       fi
+       echo $rep/$VF.g >> $ABSOLUTE
+     done
+    )
+  done
+fi

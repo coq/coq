@@ -1,0 +1,1698 @@
+\chapter[Calculus of Inductive Constructions]{Calculus of Inductive Constructions
+\label{Cic}
+\index{Cic@\textsc{CIC}}
+\index{pCic@p\textsc{CIC}}
+\index{Calculus of (Co)Inductive Constructions}}
+
+The underlying formal language of {\Coq} is a {\em Calculus of
+  Constructions} with {\em Inductive Definitions}.  It is presented in
+this chapter.  
+For {\Coq} version V7, this Calculus was known as the
+{\em Calculus of (Co)Inductive Constructions}\index{Calculus of
+  (Co)Inductive Constructions} (\iCIC\ in short).
+The underlying calculus of {\Coq} version V8.0 and up is a weaker
+  calculus where the sort \Set{} satisfies predicative rules. 
+We call this calculus the 
+{\em Predicative Calculus of (Co)Inductive
+  Constructions}\index{Predicative Calculus of
+  (Co)Inductive Constructions} (\pCIC\ in short).
+In Section~\ref{impredicativity} we give the extra-rules for \iCIC. A
+  compiling option of \Coq{} allows to type-check theories in this
+  extended system.
+
+In \CIC\, all objects have a {\em type}. There are types for functions (or
+programs), there are atomic types (especially datatypes)... but also
+types for proofs and types for the types themselves.
+Especially, any object handled in the formalism must belong to a
+type.  For instance, the statement {\it ``for all x, P''} is not
+allowed in type theory; you must say instead: {\it ``for all x
+belonging to T, P''}. The expression {\it ``x belonging to T''} is
+written {\it ``x:T''}. One also says: {\it ``x has type T''}.
+The terms of {\CIC} are detailed in Section~\ref{Terms}.
+
+In \CIC\, there is an internal reduction mechanism. In particular, it
+allows to decide if two programs are {\em intentionally} equal (one
+says {\em convertible}). Convertibility is presented in section 
+\ref{convertibility}.
+
+The remaining sections are concerned with the type-checking of terms.
+The beginner can skip them.
+
+The reader seeking a background on the Calculus of Inductive
+Constructions may read several papers. Giménez and Castéran~\cite{GimCas05} 
+provide
+an introduction to inductive and coinductive definitions in Coq. In
+their book~\cite{CoqArt}, Bertot and Castéran give a precise
+description of the \CIC{} based on numerous practical examples.
+Barras~\cite{Bar99}, Werner~\cite{Wer94} and
+Paulin-Mohring~\cite{Moh97} are the most recent theses dealing with
+Inductive Definitions. Coquand-Huet~\cite{CoHu85a,CoHu85b,CoHu86}
+introduces the Calculus of Constructions. Coquand-Paulin~\cite{CoPa89}
+extended this calculus to inductive definitions. The {\CIC} is a
+formulation of type theory including the possibility of inductive
+constructions, Barendregt~\cite{Bar91} studies the modern form of type
+theory.
+
+\section[The terms]{The terms\label{Terms}}
+
+In most type theories, one usually makes a syntactic distinction
+between types and terms. This is not the case for \CIC\ which defines
+both types and terms in the same syntactical structure. This is
+because the type-theory itself forces terms and types to be defined in
+a mutual recursive way and also because similar constructions can be
+applied to both terms and types and consequently can share the same
+syntactic structure.
+
+Consider for instance the $\ra$ constructor and assume \nat\ is the
+type of natural numbers. Then $\ra$ is used both to denote
+$\nat\ra\nat$ which is the type of functions from \nat\ to \nat, and
+to denote $\nat \ra \Prop$ which is the type of unary predicates over
+the natural numbers. Consider abstraction which builds functions. It
+serves to build ``ordinary'' functions as $\kw{fun}~x:\nat \Ra ({\tt mult} ~x~x)$ (assuming {\tt mult} is already defined) but may build also 
+predicates over the natural numbers. For instance $\kw{fun}~x:\nat \Ra
+(x=x)$ will
+represent a predicate $P$, informally written in mathematics
+$P(x)\equiv x=x$. If $P$ has type $\nat \ra \Prop$, $(P~x)$ is a
+proposition, furthermore $\kw{forall}~x:\nat,(P~x)$ will represent the type of
+functions which associate to each natural number $n$ an object of
+type $(P~n)$ and consequently represent proofs of the formula
+``$\forall x.P(x)$''.
+
+\subsection[Sorts]{Sorts\label{Sorts}
+\index{Sorts}}
+Types are seen as terms of the language and then should belong to
+another type. The type of a type is always a constant of the language
+called a {\em sort}.
+
+The two basic sorts in the language of \CIC\ are \Set\ and \Prop.
+
+The sort \Prop\ intends to be the type of logical propositions.  If
+$M$ is a logical proposition then it denotes a class, namely the class
+of terms representing proofs of $M$. An object $m$ belonging to $M$
+witnesses the fact that $M$ is true.  An object of type \Prop\ is
+called a {\em proposition}.
+
+The sort \Set\ intends to be the type of specifications. This includes
+programs and the usual sets such as booleans, naturals, lists
+etc.
+
+These sorts themselves can be manipulated as ordinary terms.
+Consequently sorts also should be given a type.  Because assuming
+simply that \Set\ has type \Set\ leads to an inconsistent theory, we
+have infinitely many sorts in the language of \CIC. These are, in
+addition to \Set\ and \Prop\, a hierarchy of universes \Type$(i)$
+for any integer $i$.  We call \Sort\ the set of sorts
+which is defined by:
+\[\Sort \equiv \{\Prop,\Set,\Type(i)| i \in \NN\} \]
+\index{Type@{\Type}}
+\index{Prop@{\Prop}}
+\index{Set@{\Set}}
+The sorts enjoy the following properties: {\Prop:\Type(0)}, {\Set:\Type(0)} and
+  {\Type$(i)$:\Type$(i+1)$}.
+
+The user will never mention explicitly the index $i$ when referring to
+the universe \Type$(i)$. One only writes \Type. The
+system itself generates for each instance of \Type\ a new
+index for the universe and checks that the constraints between these
+indexes can be solved. From the user point of view we consequently
+have {\sf Type :Type}.
+
+We shall make precise in the typing rules the constraints between the
+indexes. 
+
+\paragraph{Implementation issues}
+In practice, the {\Type} hierarchy is implemented using algebraic
+universes. An algebraic universe $u$ is either a variable (a qualified
+identifier with a number) or a successor of an algebraic universe (an
+expression $u+1$), or an upper bound of algebraic universes (an
+expression $max(u_1,...,u_n)$), or the base universe (the expression
+$0$) which corresponds, in the arity of sort-polymorphic inductive
+types, to the predicative sort {\Set}. A graph of constraints between
+the universe variables is maintained globally. To ensure the existence
+of a mapping of the universes to the positive integers, the graph of
+constraints must remain acyclic.  Typing expressions that violate the
+acyclicity of the graph of constraints results in a \errindex{Universe
+inconsistency} error (see also Section~\ref{PrintingUniverses}).
+
+\subsection{Constants}
+Besides the sorts, the language also contains constants denoting
+objects in the environment. These constants may denote previously
+defined objects but also objects related to inductive definitions
+(either the type itself or one of its constructors or destructors).
+
+\medskip\noindent {\bf Remark. } In other presentations of \CIC, 
+the inductive objects are not seen as
+external declarations but as first-class terms. Usually the
+definitions are also completely ignored.  This is a nice theoretical
+point of view but not so practical. An inductive definition is
+specified by a possibly huge set of declarations, clearly we want to
+share this specification among the various inductive objects and not
+to duplicate it. So the specification should exist somewhere and the
+various objects should refer to it.  We choose one more level of
+indirection where the objects are just represented as constants and
+the environment gives the information on the kind of object the
+constant refers to.
+
+\medskip
+Our inductive objects will be manipulated as constants declared in the
+environment. This roughly corresponds to the way they are actually
+implemented in the \Coq\ system. It is simple to map this presentation
+in a theory where inductive objects are represented by terms.
+
+\subsection{Terms}
+
+Terms are built from variables, global names, constructors,
+abstraction, application, local declarations bindings (``let-in''
+expressions) and product.
+
+From a syntactic point of view, types cannot be distinguished from terms,
+except that they cannot start by an abstraction, and that if a term is
+a sort or a product, it should be a type.
+
+More precisely the language of the {\em Calculus of Inductive
+  Constructions} is built from the following rules:
+
+\begin{enumerate}
+\item the sorts {\sf Set, Prop, Type} are terms.
+\item names for global constants of the environment are terms.
+\item variables are terms.
+\item if $x$ is a variable and $T$, $U$ are terms then $\forall~x:T,U$
+  ($\kw{forall}~x:T,U$ in \Coq{} concrete syntax) is a term. If $x$
+  occurs in $U$, $\forall~x:T,U$ reads as {\it ``for all x of type T,
+    U''}. As $U$ depends on $x$, one says that $\forall~x:T,U$ is a
+  {\em dependent product}. If $x$ doesn't occurs in $U$ then
+  $\forall~x:T,U$ reads as {\it ``if T then U''}. A non dependent
+  product can be written: $T \rightarrow U$.
+\item if $x$ is a variable and $T$, $U$ are terms then $\lb~x:T \mto U$
+  ($\kw{fun}~x:T\Ra U$ in \Coq{} concrete syntax) is a term. This is a
+  notation for the $\lambda$-abstraction of
+  $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
+  \cite{Bar81}. The term $\lb~x:T \mto U$ is a function which maps
+  elements of $T$ to $U$.
+\item if $T$ and $U$ are terms then $(T\ U)$ is a term  
+ ($T~U$ in \Coq{} concrete syntax).  The term $(T\ 
+  U)$ reads as {\it ``T applied to U''}.
+\item if $x$ is a variable, and $T$, $U$ are terms then
+  $\kw{let}~x:=T~\kw{in}~U$ is a
+  term which denotes the term $U$ where the variable $x$ is locally
+  bound to $T$. This stands for the common ``let-in'' construction of
+  functional programs such as ML or Scheme.
+\end{enumerate}
+
+\paragraph{Notations.} Application associates to the left such that
+$(t~t_1\ldots t_n)$ represents $(\ldots (t~t_1)\ldots t_n)$. The
+products and arrows associate to the right such that $\forall~x:A,B\ra C\ra
+D$ represents $\forall~x:A,(B\ra (C\ra D))$.  One uses sometimes
+$\forall~x~y:A,B$ or
+$\lb~x~y:A\mto B$ to denote the abstraction or product of several variables
+of the same type. The equivalent formulation is $\forall~x:A, \forall y:A,B$ or
+$\lb~x:A \mto \lb y:A \mto B$
+
+\paragraph{Free variables.}
+The notion of free variables is defined as usual.  In the expressions
+$\lb~x:T\mto U$ and $\forall x:T, U$ the occurrences of $x$ in $U$
+are bound.  They are represented by de Bruijn indexes in the internal
+structure of terms.
+
+\paragraph[Substitution.]{Substitution.\index{Substitution}}
+The notion of substituting a term $t$ to free occurrences of a
+variable $x$ in a term $u$ is defined as usual. The resulting term
+is written $\subst{u}{x}{t}$.
+
+
+\section[Typed terms]{Typed terms\label{Typed-terms}}
+
+As objects of type theory, terms are subjected to {\em type
+discipline}. The well typing of a term depends on an environment which
+consists in a global environment (see below) and a local context.
+
+\paragraph{Local context.}
+A {\em local context} (or shortly context) is an ordered list of
+declarations of variables. The declaration of some variable $x$ is
+either an assumption, written $x:T$ ($T$ is a type) or a definition,
+written $x:=t:T$.  We use brackets to write contexts. A
+typical example is $[x:T;y:=u:U;z:V]$.  Notice that the variables
+declared in a context must be distinct. If $\Gamma$ declares some $x$,
+we write $x \in \Gamma$. By writing $(x:T) \in \Gamma$ we mean that
+either $x:T$ is an assumption in $\Gamma$ or that there exists some $t$ such
+that $x:=t:T$ is a definition in $\Gamma$. If $\Gamma$ defines some
+$x:=t:T$, we also write $(x:=t:T) \in \Gamma$.  Contexts must be
+themselves {\em well formed}.  For the rest of the chapter, the
+notation $\Gamma::(y:T)$ (resp. $\Gamma::(y:=t:T)$) denotes the context
+$\Gamma$ enriched with the declaration $y:T$ (resp. $y:=t:T$). The
+notation $[]$ denotes the empty context.  \index{Context}
+
+% Does not seem to be used further...
+% Si dans l'explication WF(E)[Gamma] concernant les constantes
+% definies ds un contexte
+
+We define the inclusion of two contexts $\Gamma$ and $\Delta$ (written
+as $\Gamma \subset \Delta$) as the property, for all variable $x$,
+type $T$ and term $t$, if $(x:T) \in \Gamma$ then $(x:T) \in \Delta$
+and if $(x:=t:T) \in \Gamma$ then $(x:=t:T) \in \Delta$.  
+%We write
+% $|\Delta|$ for the length of the context $\Delta$, that is for the number
+% of declarations (assumptions or definitions) in $\Delta$.
+
+A variable $x$ is said to be free in $\Gamma$ if $\Gamma$ contains a
+declaration $y:T$ such that $x$ is free in $T$.
+
+\paragraph[Environment.]{Environment.\index{Environment}}
+Because we are manipulating global declarations (constants and global
+assumptions), we also need to consider a global environment $E$.
+
+An environment is an ordered list of declarations of global
+names. Declarations are either assumptions or ``standard''
+definitions, that is abbreviations for well-formed terms
+but also definitions of inductive objects. In the latter
+case, an object in the environment will define one or more constants
+(that is types and constructors, see Section~\ref{Cic-inductive-definitions}).
+
+An assumption will be represented in the environment as
+\Assum{\Gamma}{c}{T} which means that $c$ is assumed of some type $T$
+well-defined in some context $\Gamma$. An (ordinary) definition will
+be represented in the environment as \Def{\Gamma}{c}{t}{T} which means
+that $c$ is a constant which is valid in some context $\Gamma$ whose
+value is $t$ and type is $T$.
+
+The rules for inductive definitions (see section
+\ref{Cic-inductive-definitions}) have to be considered as assumption
+rules to which the following definitions apply: if the name $c$ is
+declared in $E$, we write $c \in E$ and if $c:T$ or $c:=t:T$ is
+declared in $E$, we write $(c : T) \in E$.
+
+\paragraph[Typing rules.]{Typing rules.\label{Typing-rules}\index{Typing rules}}
+In the following, we assume $E$ is a valid environment wrt to
+inductive definitions.  We define simultaneously two
+judgments.  The first one \WTEG{t}{T} means the term $t$ is well-typed
+and has type $T$ in the environment $E$ and context $\Gamma$.  The
+second judgment \WFE{\Gamma} means that the environment $E$ is
+well-formed and the context $\Gamma$ is a valid context in this
+environment.  It also means a third property which makes sure that any
+constant in $E$ was defined in an environment which is included in
+$\Gamma$
+\footnote{This requirement could be relaxed if we instead introduced
+  an explicit mechanism for instantiating constants. At the external
+  level, the Coq engine works accordingly to this view that all the
+  definitions in the environment were built in a sub-context of the
+  current context.}.
+
+A term $t$ is well typed in an environment $E$ iff there exists a
+context $\Gamma$ and a term $T$ such that the judgment \WTEG{t}{T} can
+be derived from the following rules.
+\begin{description}
+\item[W-E] \inference{\WF{[]}{[]}}
+\item[W-S]  % Ce n'est pas vrai : x peut apparaitre plusieurs fois dans Gamma
+\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~x \not\in
+      \Gamma           % \cup E
+      }
+      {\WFE{\Gamma::(x:T)}}~~~~~
+    \frac{\WTEG{t}{T}~~~~x \not\in
+      \Gamma           % \cup E
+     }{\WFE{\Gamma::(x:=t:T)}}}
+\item[Def] \inference{\frac{\WTEG{t}{T}~~~c \notin E \cup \Gamma}
+                      {\WF{E;\Def{\Gamma}{c}{t}{T}}{\Gamma}}}
+\item[Assum] \inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~c \notin E \cup \Gamma}
+                      {\WF{E;\Assum{\Gamma}{c}{T}}{\Gamma}}}
+\item[Ax] \index{Typing rules!Ax}
+\inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(p)}}~~~~~
+\frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(q)}}}
+\inference{\frac{\WFE{\Gamma}~~~~i<j}{\WTEG{\Type(i)}{\Type(j)}}}
+\item[Var]\index{Typing rules!Var}
+ \inference{\frac{ \WFE{\Gamma}~~~~~(x:T) \in \Gamma~~\mbox{or}~~(x:=t:T) \in \Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
+\item[Const]  \index{Typing rules!Const}
+\inference{\frac{\WFE{\Gamma}~~~~(c:T) \in E~~\mbox{or}~~(c:=t:T) \in E~\mbox{for some $t$} }{\WTEG{c}{T}}}
+\item[Prod]  \index{Typing rules!Prod}
+\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~
+    \WTE{\Gamma::(x:T)}{U}{\Prop}}
+      { \WTEG{\forall~x:T,U}{\Prop}}} 
+\inference{\frac{\WTEG{T}{s}~~~~s \in\{\Prop, \Set\}~~~~~~
+    \WTE{\Gamma::(x:T)}{U}{\Set}}
+      { \WTEG{\forall~x:T,U}{\Set}}} 
+\inference{\frac{\WTEG{T}{\Type(i)}~~~~i\leq k~~~
+    \WTE{\Gamma::(x:T)}{U}{\Type(j)}~~~j \leq k}
+    {\WTEG{\forall~x:T,U}{\Type(k)}}}
+\item[Lam]\index{Typing rules!Lam} 
+\inference{\frac{\WTEG{\forall~x:T,U}{s}~~~~ \WTE{\Gamma::(x:T)}{t}{U}}
+        {\WTEG{\lb~x:T\mto t}{\forall x:T, U}}}
+\item[App]\index{Typing rules!App}
+ \inference{\frac{\WTEG{t}{\forall~x:U,T}~~~~\WTEG{u}{U}}
+                 {\WTEG{(t\ u)}{\subst{T}{x}{u}}}}
+\item[Let]\index{Typing rules!Let} 
+\inference{\frac{\WTEG{t}{T}~~~~ \WTE{\Gamma::(x:=t:T)}{u}{U}}
+        {\WTEG{\kw{let}~x:=t~\kw{in}~u}{\subst{U}{x}{t}}}}
+\end{description}
+    
+\Rem We may have $\kw{let}~x:=t~\kw{in}~u$
+well-typed without having $((\lb~x:T\mto u)~t)$ well-typed (where
+$T$ is a type of $t$). This is because the value $t$ associated to $x$
+may be used in a conversion rule (see Section~\ref{conv-rules}).
+
+\section[Conversion rules]{Conversion rules\index{Conversion rules}
+\label{conv-rules}}
+\paragraph[$\beta$-reduction.]{$\beta$-reduction.\label{beta}\index{beta-reduction@$\beta$-reduction}}
+
+We want to be able to identify some terms as we can identify the
+application of a function to a given argument with its result. For
+instance the identity function over a given type $T$ can be written
+$\lb~x:T\mto x$. In any environment $E$ and context $\Gamma$, we want to identify any object $a$ (of type $T$) with the
+application $((\lb~x:T\mto x)~a)$. We define for this a {\em reduction} (or a
+{\em conversion}) rule we call $\beta$:
+\[ \WTEGRED{((\lb~x:T\mto
+  t)~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \] 
+We say that $\subst{t}{x}{u}$ is the {\em $\beta$-contraction} of
+$((\lb~x:T\mto t)~u)$ and, conversely, that $((\lb~x:T\mto t)~u)$
+is the {\em $\beta$-expansion} of $\subst{t}{x}{u}$.
+
+According to $\beta$-reduction, terms of the {\em Calculus of
+  Inductive Constructions} enjoy some fundamental properties such as
+confluence, strong normalization, subject reduction. These results are
+theoretically of great importance but we will not detail them here and
+refer the interested reader to \cite{Coq85}.
+
+\paragraph[$\iota$-reduction.]{$\iota$-reduction.\label{iota}\index{iota-reduction@$\iota$-reduction}}
+A specific conversion rule is associated to the inductive objects in
+the environment.  We shall give later on (see Section~\ref{iotared}) the
+precise rules but it just says that a destructor applied to an object
+built from a constructor behaves as expected.  This reduction is
+called $\iota$-reduction and is more precisely studied in
+\cite{Moh93,Wer94}.
+
+
+\paragraph[$\delta$-reduction.]{$\delta$-reduction.\label{delta}\index{delta-reduction@$\delta$-reduction}}
+
+We may have defined variables in contexts or constants in the global
+environment. It is legal to identify such a reference with its value,
+that is to expand (or unfold) it into its value. This
+reduction is called $\delta$-reduction and shows as follows.
+
+$$\WTEGRED{x}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(x:=t:T) \in \Gamma$}~~~~~~~~~\WTEGRED{c}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(c:=t:T) \in E$}$$
+
+
+\paragraph[$\zeta$-reduction.]{$\zeta$-reduction.\label{zeta}\index{zeta-reduction@$\zeta$-reduction}}
+
+Coq allows also to remove local definitions occurring in terms by
+replacing the defined variable by its value. The declaration being
+destroyed, this reduction differs from $\delta$-reduction. It is
+called $\zeta$-reduction and shows as follows.
+
+$$\WTEGRED{\kw{let}~x:=u~\kw{in}~t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
+
+\paragraph[Convertibility.]{Convertibility.\label{convertibility}
+\index{beta-reduction@$\beta$-reduction}\index{iota-reduction@$\iota$-reduction}\index{delta-reduction@$\delta$-reduction}\index{zeta-reduction@$\zeta$-reduction}}
+
+Let us write $\WTEGRED{t}{\triangleright}{u}$ for the contextual closure of the relation $t$ reduces to $u$ in the environment $E$ and context $\Gamma$ with one of the previous reduction $\beta$, $\iota$, $\delta$ or $\zeta$.
+
+We say that two terms $t_1$ and $t_2$ are {\em convertible} (or {\em
+  equivalent)} in the environment $E$ and context $\Gamma$ iff there exists a term $u$ such that $\WTEGRED{t_1}{\triangleright \ldots \triangleright}{u}$
+and $\WTEGRED{t_2}{\triangleright \ldots \triangleright}{u}$.
+We then write $\WTEGCONV{t_1}{t_2}$.
+
+The convertibility relation allows to introduce a new typing rule
+which says that two convertible well-formed types have the same
+inhabitants.
+
+At the moment, we did not take into account one rule between universes
+which says that any term in a universe of index $i$ is also a term in
+the universe of index $i+1$. This property is included into the
+conversion rule by extending the equivalence relation of
+convertibility into an order inductively defined by:
+\begin{enumerate}
+\item if $\WTEGCONV{t}{u}$ then $\WTEGLECONV{t}{u}$,
+\item if $i \leq j$ then $\WTEGLECONV{\Type(i)}{\Type(j)}$,
+\item for any $i$, $\WTEGLECONV{\Prop}{\Type(i)}$,
+\item for any $i$, $\WTEGLECONV{\Set}{\Type(i)}$,
+\item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{\forall~x:T,T'}{\forall~x:U,U'}$.
+\end{enumerate}
+
+The conversion rule is now exactly:
+
+\begin{description}\label{Conv}
+\item[Conv]\index{Typing rules!Conv}
+ \inference{
+      \frac{\WTEG{U}{s}~~~~\WTEG{t}{T}~~~~\WTEGLECONV{T}{U}}{\WTEG{t}{U}}}
+  \end{description}
+
+
+\paragraph{$\eta$-conversion.
+\label{eta}
+\index{eta-conversion@$\eta$-conversion}
+\index{eta-reduction@$\eta$-reduction}}
+
+An other important rule is the $\eta$-conversion. It is to identify
+terms over a dummy abstraction of a variable followed by an
+application of this variable. Let $T$ be a type, $t$ be a term in
+which the variable $x$ doesn't occurs free. We have
+\[ \WTEGRED{\lb~x:T\mto (t\ x)}{\triangleright}{t} \]
+Indeed, as $x$ doesn't occur free in $t$, for any $u$ one
+applies to $\lb~x:T\mto (t\ x)$, it $\beta$-reduces to $(t\ u)$. So
+$\lb~x:T\mto (t\ x)$ and $t$ can be identified.
+
+\Rem The $\eta$-reduction is not taken into account in the
+convertibility rule of \Coq.
+
+\paragraph[Normal form.]{Normal form.\index{Normal form}\label{Normal-form}\label{Head-normal-form}\index{Head normal form}}
+A term which cannot be any more reduced is said to be in {\em normal
+  form}. There are several ways (or strategies) to apply the reduction
+rule. Among them, we have to mention the {\em head reduction} which
+will play an important role (see Chapter~\ref{Tactics}). Any term can
+be written as $\lb~x_1:T_1\mto \ldots \lb x_k:T_k \mto 
+(t_0\ t_1\ldots t_n)$ where
+$t_0$ is not an application. We say then that $t_0$ is the {\em head
+  of $t$}. If we assume that $t_0$ is $\lb~x:T\mto u_0$ then one step of
+$\beta$-head reduction of $t$ is:
+\[\lb~x_1:T_1\mto \ldots \lb x_k:T_k\mto (\lb~x:T\mto u_0\ t_1\ldots t_n) 
+~\triangleright ~ \lb~(x_1:T_1)\ldots(x_k:T_k)\mto 
+(\subst{u_0}{x}{t_1}\ t_2 \ldots t_n)\]
+Iterating the process of head reduction until the head of the reduced
+term is no more an abstraction leads to the {\em $\beta$-head normal
+  form} of $t$:
+\[ t \triangleright \ldots \triangleright
+\lb~x_1:T_1\mto \ldots\lb x_k:T_k\mto (v\ u_1
+\ldots u_m)\]
+where $v$ is not an abstraction (nor an application).  Note that the
+head normal form must not be confused with the normal form since some
+$u_i$ can be reducible.
+
+Similar notions of head-normal forms involving $\delta$, $\iota$ and $\zeta$
+reductions or any combination of those can also be defined.
+
+\section{Derived rules for environments}
+
+From the original rules of the type system, one can derive new rules
+which change the context of definition of objects in the environment.
+Because these rules correspond to elementary operations in the \Coq\ 
+engine used in the discharge mechanism at the end of a section, we
+state them explicitly.
+
+\paragraph{Mechanism of substitution.}
+
+One rule which can be proved valid, is to replace a term $c$ by its
+value in the environment. As we defined the substitution of a term for
+a variable in a term, one can define the substitution of a term for a
+constant. One easily extends this substitution to contexts and
+environments.
+
+\paragraph{Substitution Property:} 
+\inference{\frac{\WF{E;\Def{\Gamma}{c}{t}{T}; F}{\Delta}}
+           {\WF{E; \subst{F}{c}{t}}{\subst{\Delta}{c}{t}}}}
+
+
+\paragraph{Abstraction.}
+
+One can modify the context of definition of a constant $c$ by
+abstracting a constant with respect to the last variable $x$ of its
+defining context. For doing that, we need to check that the constants
+appearing in the body of the declaration do not depend on $x$, we need
+also to modify the reference to the constant $c$ in the environment
+and context by explicitly applying this constant to the variable $x$.
+Because of the rules for building environments and terms we know the
+variable $x$ is available at each stage where $c$ is mentioned.
+
+\paragraph{Abstracting property:} 
+ \inference{\frac{\WF{E; \Def{\Gamma::(x:U)}{c}{t}{T};
+       F}{\Delta}~~~~\WFE{\Gamma}}
+           {\WF{E;\Def{\Gamma}{c}{\lb~x:U\mto t}{\forall~x:U,T};
+  \subst{F}{c}{(c~x)}}{\subst{\Delta}{c}{(c~x)}}}}
+
+\paragraph{Pruning the context.} 
+We said the judgment \WFE{\Gamma} means that the defining contexts of
+constants in $E$ are included in $\Gamma$. If one abstracts or
+substitutes the constants with the above rules then it may happen
+that the context $\Gamma$ is now bigger than the one needed for
+defining the constants in $E$. Because defining contexts are growing
+in $E$, the minimum context needed for defining the constants in $E$
+is the same as the one for the last constant. One can consequently
+derive the following property.
+
+\paragraph{Pruning property:}
+\inference{\frac{\WF{E; \Def{\Delta}{c}{t}{T}}{\Gamma}}
+                {\WF{E;\Def{\Delta}{c}{t}{T}}{\Delta}}}
+
+
+\section[Inductive Definitions]{Inductive Definitions\label{Cic-inductive-definitions}}
+
+A (possibly mutual) inductive definition is specified by giving the
+names and the type of the inductive sets or families to be
+defined and the names and types of the constructors of the inductive
+predicates.  An inductive declaration in the environment can
+consequently be represented with two contexts (one for inductive
+definitions, one for constructors).
+
+Stating the rules for inductive definitions in their general form
+needs quite tedious definitions. We shall try to give a concrete
+understanding of the rules by precising them on running examples.  We
+take as examples the type of natural numbers, the type of
+parameterized lists over a type $A$, the relation which states that
+a list has some given length and the mutual inductive definition of trees and
+forests. 
+
+\subsection{Representing an inductive definition}
+\subsubsection{Inductive definitions without parameters}
+As for constants, inductive definitions can be defined in a non-empty
+context. \\
+We write \NInd{\Gamma}{\Gamma_I}{\Gamma_C} an inductive
+definition valid in a context $\Gamma$, a
+context of definitions $\Gamma_I$ and a context of constructors
+$\Gamma_C$.
+\paragraph{Examples.}
+The inductive declaration for the type of natural numbers will be:
+\[\NInd{}{\nat:\Set}{\nO:\nat,\nS:\nat\ra\nat}\]
+In a context with a variable $A:\Set$, the lists of elements in $A$ is
+represented by:
+\[\NInd{A:\Set}{\List:\Set}{\Nil:\List,\cons : A \ra \List \ra
+  \List}\]
+ Assuming 
+  $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
+  $[c_1:C_1;\ldots;c_n:C_n]$, the general typing rules are, 
+  for $1\leq j\leq k$ and $1\leq i\leq n$:
+
+\bigskip
+\inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E}{(I_j:A_j) \in E}}
+
+\inference{\frac{\NInd{\Gamma}{\Gamma_I}{\Gamma_C} \in E}{(c_i:C_i) \in E}}
+
+\subsubsection{Inductive definitions with parameters}
+
+We have to slightly complicate the representation above in order to handle
+the delicate problem of parameters. 
+Let us explain that on the example of \List. As they were defined
+above, the type \List\ can only be used in an environment where we
+have a variable $A:\Set$. Generally one want to consider lists of
+elements in different types. For constants this is easily done by abstracting
+the value over the parameter. In the case of inductive definitions we
+have to handle the abstraction over several objects.
+
+One possible way to do that would be to define the type \List\
+inductively as being an inductive family of type $\Set\ra\Set$:
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
+  \ra (\List~A) \ra (\List~A)}\]
+There are drawbacks to this point of view. The
+information which says that for any $A$, $(\List~A)$ is an inductively defined
+\Set\ has been lost.
+So we introduce two important definitions.
+
+\paragraph{Inductive parameters, real arguments.}
+An inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
+$r$ inductive parameters if each type of constructors $(c:C)$ in
+$\Gamma_C$ is such that 
+\[C\equiv \forall
+p_1:P_1,\ldots,\forall p_r:P_r,\forall a_1:A_1, \ldots \forall a_n:A_n,
+(I~p_1~\ldots p_r~t_1\ldots t_q)\]
+with $I$ one of the inductive definitions in $\Gamma_I$. 
+We say that $n$ is the number of real arguments of the constructor
+$c$. 
+\paragraph{Context of parameters.}
+If an inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
+$r$ inductive parameters, then there exists a context $\Gamma_P$ of
+size $r$, such that $\Gamma_P=p_1:P_1;\ldots;p_r:P_r$ and 
+if $(t:A) \in \Gamma_I,\Gamma_C$ then $A$ can be written as 
+$\forall p_1:P_1,\ldots \forall p_r:P_r,A'$. 
+We call $\Gamma_P$ the context of parameters of the inductive
+definition and use the notation $\forall \Gamma_P,A'$ for the term $A$.
+\paragraph{Remark.}
+If we have a term $t$ in an instance of an
+inductive definition $I$ which starts with a constructor $c$, then the
+$r$ first arguments of $c$ (the parameters) can be deduced from the
+type $T$ of $t$: these are exactly the $r$ first arguments of $I$ in
+the head normal form of $T$.
+\paragraph{Examples.}
+The \List{} definition has $1$ parameter:
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
+  \ra (\List~A) \ra (\List~A)}\]
+This is also the case for this more complex definition where there is
+a recursive argument on a different instance of \List: 
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
+           \ra (\List~A\ra A) \ra (\List~A)}\]
+But the following definition has $0$ parameters:
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
+           \ra (\List~A) \ra (\List~A*A)}\]
+
+%\footnote{
+%The interested reader may compare the above definition with the two 
+%following ones which have very different logical meaning:\\
+%$\NInd{}{\List:\Set}{\Nil:\List,\cons : (A:\Set)A
+%  \ra \List \ra \List}$ \\
+%$\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
+%  \ra (\List~A\ra A) \ra (\List~A)}$.}
+\paragraph{Concrete syntax.}
+In the Coq system, the context of parameters is given explicitly
+after the name of the inductive definitions and is shared between the
+arities and the type of constructors.
+% The vernacular declaration of polymorphic trees and forests will be:\\
+% \begin{coq_example*}
+% Inductive Tree (A:Set) : Set := 
+%    Node : A -> Forest A -> Tree A
+% with Forest (A : Set) : Set := 
+%    Empty : Forest A
+%  | Cons  : Tree A -> Forest A -> Forest A
+% \end{coq_example*}
+% will correspond in our formalism to:
+% \[\NInd{}{{\tt Tree}:\Set\ra\Set;{\tt Forest}:\Set\ra \Set}
+%   {{\tt Node} : \forall A:\Set, A \ra {\tt Forest}~A \ra {\tt Tree}~A,
+%    {\tt Empty} : \forall A:\Set, {\tt Forest}~A,
+%    {\tt Cons} : \forall A:\Set, {\tt Tree}~A \ra {\tt Forest}~A \ra
+%    {\tt Forest}~A}\]
+We keep track in the syntax of the number of
+parameters. 
+
+Formally the representation of an inductive declaration
+will be 
+\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} for an inductive
+definition valid in a context $\Gamma$ with $p$ parameters, a
+context of definitions $\Gamma_I$ and a context of constructors
+$\Gamma_C$.
+
+The definition \Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} will be
+well-formed exactly when \NInd{\Gamma}{\Gamma_I}{\Gamma_C} is and 
+when $p$ is (less or equal than) the number of parameters in
+\NInd{\Gamma}{\Gamma_I}{\Gamma_C}. 
+
+\paragraph{Examples}
+The declaration for parameterized lists is:
+\[\Ind{}{1}{\List:\Set\ra\Set}{\Nil:\forall A:\Set,\List~A,\cons : \forall
+  A:\Set, A \ra \List~A \ra   \List~A}\]
+
+The declaration for the length of lists is:
+\[\Ind{}{1}{\Length:\forall A:\Set, (\List~A)\ra \nat\ra\Prop}
+      {\LNil:\forall A:\Set, \Length~A~(\Nil~A)~\nO,\\ 
+     \LCons :\forall A:\Set,\forall a:A, \forall l:(\List~A),\forall n:\nat, (\Length~A~l~n)\ra (\Length~A~(\cons~A~a~l)~(\nS~n))}\]
+
+The declaration for a mutual inductive definition of forests and trees is:
+\[\NInd{}{\tree:\Set,\forest:\Set}
+      {\\~~\node:\forest \ra \tree,
+       \emptyf:\forest,\consf:\tree \ra \forest \ra \forest\-}\]
+  
+These representations are the ones obtained as the result of the \Coq\ 
+declaration:
+\begin{coq_example*}
+Inductive nat : Set :=
+  | O : nat
+  | S : nat -> nat.
+Inductive list (A:Set) : Set :=
+  | nil : list A
+  | cons : A -> list A -> list A.
+\end{coq_example*}
+\begin{coq_example*}
+Inductive Length (A:Set) : list A -> nat -> Prop :=
+  | Lnil : Length A (nil A) O
+  | Lcons :
+      forall (a:A) (l:list A) (n:nat),
+        Length A l n -> Length A (cons A a l) (S n).
+Inductive tree : Set :=
+    node : forest -> tree
+with forest : Set :=
+  | emptyf : forest
+  | consf : tree -> forest -> forest.
+\end{coq_example*}
+% The inductive declaration in \Coq\ is slightly different from the one
+% we described theoretically. The difference is that in the type of
+% constructors the inductive definition is explicitly applied to the
+% parameters variables.
+The \Coq\ type-checker verifies that all
+parameters are applied in the correct manner in the conclusion of the
+type of each constructors~:
+
+In particular, the following definition will not be accepted because 
+there is an occurrence of \List\ which is not applied to the parameter
+variable in the conclusion of the type of {\tt cons'}:
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(********* Error: The 1st argument of list' must be A in ... *********)
+\end{coq_eval}
+\begin{coq_example}
+Inductive list' (A:Set) : Set :=
+  | nil' : list' A
+  | cons' : A -> list' A -> list' (A*A).
+\end{coq_example}
+Since \Coq{} version 8.1, there is no restriction about parameters in
+the types of arguments of constructors. The following definition is
+valid:
+\begin{coq_example}
+Inductive list' (A:Set) : Set :=
+  | nil' : list' A
+  | cons' : A -> list' (A->A) -> list' A.
+\end{coq_example}
+
+
+\subsection{Types of inductive objects}
+We have to give the type of constants in an environment $E$ which
+contains an inductive declaration.
+
+\begin{description}
+\item[Ind-Const] Assuming 
+  $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
+  $[c_1:C_1;\ldots;c_n:C_n]$,
+   
+\inference{\frac{\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E
+    ~~j=1\ldots k}{(I_j:A_j) \in E}}
+
+\inference{\frac{\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E
+    ~~~~i=1.. n}
+   {(c_i:C_i) \in E}}
+\end{description}
+
+\paragraph{Example.}
+We have $(\List:\Set \ra \Set), (\cons:\forall~A:\Set,A\ra(\List~A)\ra
+(\List~A))$, \\ 
+$(\Length:\forall~A:\Set, (\List~A)\ra\nat\ra\Prop)$, $\tree:\Set$ and $\forest:\Set$.
+
+From now on, we write $\ListA$ instead of $(\List~A)$ and $\LengthA$
+for $(\Length~A)$.
+
+%\paragraph{Parameters.}
+%%The parameters introduce a distortion between the inside specification
+%%of the inductive declaration where parameters are supposed to be
+%%instantiated (this representation is appropriate for checking the
+%%correctness or deriving the destructor principle) and the outside
+%%typing rules where the inductive objects are seen as objects
+%%abstracted with respect to the parameters.
+
+%In the definition of \List\ or \Length\, $A$ is a parameter because
+%what is effectively inductively defined is $\ListA$ or $\LengthA$ for
+%a given $A$ which is constant in the type of constructors.  But when
+%we define $(\LengthA~l~n)$, $l$ and $n$ are not parameters because the
+%constructors manipulate different instances of this family.
+
+\subsection{Well-formed inductive definitions}
+We cannot accept any inductive declaration because some of them lead
+to inconsistent systems. We restrict ourselves to definitions which
+satisfy a syntactic criterion of positivity. Before giving the formal
+rules, we need a few definitions:
+
+\paragraph[Definitions]{Definitions\index{Positivity}\label{Positivity}}
+
+A type $T$ is an {\em arity of sort $s$}\index{Arity} if it converts
+to the sort $s$ or to a product $\forall~x:T,U$ with $U$ an arity
+of sort $s$. (For instance $A\ra \Set$ or $\forall~A:\Prop,A\ra
+\Prop$ are arities of sort respectively \Set\ and \Prop).  A {\em type
+  of constructor of $I$}\index{Type of constructor} is either a term
+$(I~t_1\ldots ~t_n)$ or $\fa x:T,C$ with $C$ a {\em type of constructor
+  of $I$}.
+
+\smallskip
+
+The type of constructor $T$ will be said to {\em satisfy the positivity
+condition} for a constant $X$ in the following cases:
+
+\begin{itemize}
+\item $T=(X~t_1\ldots ~t_n)$ and $X$ does not occur free in
+any $t_i$
+\item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
+the type $V$ satisfies the positivity condition for $X$
+\end{itemize}
+
+The constant $X$ {\em occurs strictly positively} in $T$ in the
+following cases:
+
+\begin{itemize}
+\item $X$ does not occur in $T$
+\item $T$ converts to $(X~t_1 \ldots ~t_n)$ and $X$ does not occur in
+  any of $t_i$
+\item $T$ converts to $\forall~x:U,V$ and $X$ does not occur in
+  type $U$ but occurs strictly positively in type $V$
+\item $T$ converts to $(I~a_1 \ldots ~a_m ~ t_1 \ldots ~t_p)$ where
+  $I$ is the name of an inductive declaration of the form
+  $\Ind{\Gamma}{m}{I:A}{c_1:\forall p_1:P_1,\ldots \forall
+    p_m:P_m,C_1;\ldots;c_n:\forall p_1:P_1,\ldots \forall
+    p_m:P_m,C_n}$ 
+  (in particular, it is not mutually defined and it has $m$
+  parameters) and $X$ does not occur in any of the $t_i$, and the
+  (instantiated) types of constructor $C_i\{p_j/a_j\}_{j=1\ldots m}$
+  of $I$ satisfy 
+  the nested positivity condition for $X$
+%\item more generally, when $T$ is not a type, $X$ occurs strictly
+%positively in $T[x:U]u$ if $X$ does not occur in $U$ but occurs
+%strictly positively in $u$
+\end{itemize}
+
+The type of constructor $T$ of $I$ {\em satisfies the nested
+positivity condition} for a constant $X$ in the following
+cases:
+
+\begin{itemize}
+\item $T=(I~b_1\ldots b_m~u_1\ldots ~u_{p})$, $I$ is an inductive
+  definition with $m$ parameters and $X$ does not occur in
+any $u_i$
+\item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
+the type $V$ satisfies the nested positivity condition for $X$
+\end{itemize}
+
+\paragraph{Example}
+
+$X$ occurs strictly positively in $A\ra X$ or $X*A$ or $({\tt list}~
+X)$ but not in $X \ra A$ or $(X \ra A)\ra A$ nor $({\tt neg}~A)$
+assuming the notion of product and lists were already defined and {\tt
+  neg} is an inductive definition with declaration \Ind{}{A:\Set}{{\tt
+    neg}:\Set}{{\tt neg}:(A\ra{\tt False}) \ra {\tt neg}}.  Assuming
+$X$ has arity ${\tt nat \ra Prop}$ and {\tt ex} is the inductively
+defined existential quantifier, the occurrence of $X$ in ${\tt (ex~
+  nat~ \lb~n:nat\mto (X~ n))}$ is also strictly positive.
+
+\paragraph{Correctness rules.}
+We shall now describe the rules allowing the introduction of a new
+inductive definition.
+
+\begin{description}
+\item[W-Ind] Let $E$ be an environment and
+  $\Gamma,\Gamma_P,\Gamma_I,\Gamma_C$ are contexts such that
+  $\Gamma_I$ is $[I_1:\forall \Gamma_P,A_1;\ldots;I_k:\forall
+  \Gamma_P,A_k]$ and $\Gamma_C$ is 
+  $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall \Gamma_P,C_n]$. 
+\inference{
+  \frac{
+  (\WTE{\Gamma;\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
+  ~~ (\WTE{\Gamma;\Gamma_I;\Gamma_P}{C_i}{s_{p_i}})_{i=1\ldots  n}
+}
+  {\WF{E;\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
+provided that the following side conditions hold:
+\begin{itemize}
+\item $k>0$, $I_j$, $c_i$ are different names for $j=1\ldots  k$ and $i=1\ldots  n$,
+\item $p$ is the number of parameters of \NInd{\Gamma}{\Gamma_I}{\Gamma_C}
+  and $\Gamma_P$ is the context of parameters, 
+\item for $j=1\ldots  k$ we have $A_j$ is an arity of sort $s_j$ and $I_j
+  \notin \Gamma \cup E$,
+\item for $i=1\ldots  n$ we have $C_i$ is a type of constructor of
+  $I_{p_i}$ which satisfies the positivity condition for $I_1 \ldots  I_k$
+  and $c_i \notin \Gamma \cup E$.
+\end{itemize}
+\end{description}
+One can remark that there is a constraint between the sort of the
+arity of the inductive type and the sort of the type of its
+constructors which will always be satisfied for the impredicative sort
+(\Prop) but may fail to define inductive definition 
+on sort \Set{} and generate constraints between universes for
+inductive definitions in the {\Type} hierarchy.
+
+\paragraph{Examples.}
+It is well known that existential quantifier can be encoded as an
+inductive definition.
+The following declaration introduces the second-order existential
+quantifier $\exists X.P(X)$.
+\begin{coq_example*}
+Inductive exProp (P:Prop->Prop) : Prop 
+  := exP_intro : forall X:Prop, P X -> exProp P.
+\end{coq_example*}
+The same definition on \Set{} is not allowed and fails~:
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(*** Error: Large non-propositional inductive types must be in Type***)
+\end{coq_eval}
+\begin{coq_example}
+Inductive exSet (P:Set->Prop) : Set 
+  := exS_intro : forall X:Set, P X -> exSet P.
+\end{coq_example}
+It is possible to declare the same inductive definition in the
+universe \Type. 
+The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
+\Type_j$ with the constraint that the parameter \texttt{X} of \texttt{exT\_intro} has type $\Type_k$ with $k<j$ and $k\leq i$.
+\begin{coq_example*}
+Inductive exType (P:Type->Prop) : Type
+  := exT_intro : forall X:Type, P X -> exType P.
+\end{coq_example*}
+%We shall assume for the following definitions that, if necessary, we
+%annotated the type of constructors such that we know if the argument
+%is recursive or not.  We shall write the type $(x:_R T)C$ if it is 
+%a recursive argument and $(x:_P T)C$ if the argument is not recursive.
+
+\paragraph[Sort-polymorphism of inductive families.]{Sort-polymorphism of inductive families.\index{Sort-polymorphism of inductive families}}
+
+From {\Coq} version 8.1, inductive families declared in {\Type} are
+polymorphic over their arguments in {\Type}.
+
+If $A$ is an arity and $s$ a sort, we write $A_{/s}$ for the arity
+obtained from $A$ by replacing its sort with $s$. Especially, if $A$
+is well-typed in some environment and context, then $A_{/s}$ is typable
+by typability of all products in the Calculus of Inductive Constructions.
+The following typing rule is added to the theory.
+
+\begin{description}
+\item[Ind-Family] Let $\Gamma_P$ be a context of parameters
+$[p_1:P_1;\ldots;p_{m'}:P_{m'}]$ and $m\leq m'$ be the length of the
+initial prefix of parameters that occur unchanged in the recursive
+occurrences of the constructor types. Assume that $\Gamma_I$ is
+$[I_1:\forall \Gamma_P,A_1;\ldots;I_k:\forall \Gamma_P,A_k]$ and
+$\Gamma_C$ is $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall
+\Gamma_P,C_n]$.
+
+Let $q_1$, \ldots, $q_r$, with $0\leq r\leq m$, be a possibly partial
+instantiation of the parameters in $\Gamma_P$. We have:
+
+\inference{\frac
+{\left\{\begin{array}{l}
+\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E\\
+(E[\Gamma] \vdash q_s : P'_s)_{s=1\ldots r}\\
+(E[\Gamma] \vdash \WTEGLECONV{P'_s}{\subst{P_s}{x_u}{q_u}_{u=1\ldots s-1}})_{s=1\ldots r}\\
+1 \leq j \leq k
+\end{array}
+\right.}
+{(I_j\,q_1\,\ldots\,q_r:\forall \Gamma^{r+1}_p, (A_j)_{/s})}
+}
+
+provided that the following side conditions hold:
+
+\begin{itemize}
+\item $\Gamma_{P'}$ is the context obtained from $\Gamma_P$ by
+replacing, each $P_s$ that is an arity with the
+sort of $P'_s$, as soon as $1\leq s \leq r$ (notice that
+$P_s$ arity implies $P'_s$ arity since $E[\Gamma]
+\vdash \WTEGLECONV{P'_s}{ \subst{P_s}{x_u}{q_u}_{u=1\ldots s-1}}$);
+\item there are sorts $s_i$, for $1 \leq i \leq k$ such that, for
+ $\Gamma_{I'}$ obtained from $\Gamma_I$ by changing each $A_i$ by $(A_i)_{/s_i}$,
+we have $(\WTE{\Gamma;\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{p_i}})_{i=1\ldots  n}$;
+\item the sorts are such that all elimination are allowed (see
+section~\ref{elimdep}).
+\end{itemize}
+\end{description}
+
+Notice that if $I_j\,q_1\,\ldots\,q_r$ is typable using the rules {\bf
+Ind-Const} and {\bf App}, then it is typable using the rule {\bf
+Ind-Family}. Conversely, the extended theory is not stronger than the
+theory without {\bf Ind-Family}. We get an equiconsistency result by
+mapping each $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$ occurring into a
+given derivation into as many fresh inductive types and constructors
+as the number of different (partial) replacements of sorts, needed for
+this derivation, in the parameters that are arities. That is, the
+changes in the types of each partial instance $q_1\,\ldots\,q_r$ can
+be characterized by the ordered sets of arity sorts among the types of
+parameters, and to each signature is associated a new inductive
+definition with fresh names. Conversion is preserved as any (partial)
+instance $I_j\,q_1\,\ldots\,q_r$ or $C_i\,q_1\,\ldots\,q_r$ is mapped
+to the names chosen in the specific instance of
+$\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$.
+
+\newcommand{\Single}{\mbox{\textsf{Set}}}
+
+In practice, the rule is used by {\Coq} only with in case the
+inductive type is declared with an arity of a sort in the $\Type$
+hierarchy, and, then, the polymorphism is over the parameters whose
+type is an arity in the {\Type} hierarchy. The sort $s_j$ are then
+chosen canonically so that each $s_j$ is minimal with respect to the
+hierarchy ${\Prop_u}\subset{\Set_p}\subset\Type$ where $\Set_p$ is
+predicative {\Set}, and ${\Prop_u}$ is the sort of small singleton
+inductive types (i.e. of inductive types with one single constructor
+and that contains either proofs or inhabitants of singleton types
+only). More precisely, a small singleton inductive family is set in
+{\Prop}, a small non singleton inductive family is set in {\Set} (even
+in case {\Set} is impredicative -- see Section~\ref{impredicativity}),
+and otherwise in the {\Type} hierarchy.
+% TODO: clarify the case of a partial application ??
+
+Note that the side-condition about allowed elimination sorts in the
+rule~{\bf Ind-Family} is just to avoid to recompute the allowed
+elimination sorts at each instance of a pattern-matching (see
+section~\ref{elimdep}).
+
+As an example, let us consider the following definition:
+\begin{coq_example*}
+Inductive option (A:Type) : Type := 
+| None : option A 
+| Some : A -> option A.
+\end{coq_example*}
+
+As the definition is set in the {\Type} hierarchy, it is used
+polymorphically over its parameters whose types are arities of a sort
+in the {\Type} hierarchy. Here, the parameter $A$ has this property,
+hence, if \texttt{option} is applied to a type in {\Set}, the result is
+in {\Set}. Note that if \texttt{option} is applied to a type in {\Prop},
+then, the result is not set in \texttt{Prop} but in \texttt{Set}
+still. This is because \texttt{option} is not a singleton type (see
+section~\ref{singleton}) and it would loose the elimination to {\Set} and
+{\Type} if set in {\Prop}.
+
+\begin{coq_example}
+Check (fun A:Set => option A).
+Check (fun A:Prop => option A).
+\end{coq_example}
+
+Here is another example.
+
+\begin{coq_example*}
+Inductive prod (A B:Type) : Type := pair : A -> B -> prod A B.
+\end{coq_example*}
+
+As \texttt{prod} is a singleton type, it will be in {\Prop} if applied
+twice to propositions, in {\Set} if applied twice to at least one type
+in {\Set} and none in {\Type}, and in {\Type} otherwise. In all cases,
+the three kind of eliminations schemes are allowed.
+
+\begin{coq_example}
+Check (fun A:Set => prod A).
+Check (fun A:Prop => prod A A).
+Check (fun (A:Prop) (B:Set) => prod A B).
+Check (fun (A:Type) (B:Prop) => prod A B).
+\end{coq_example}
+
+\subsection{Destructors}
+The specification of inductive definitions with arities and
+constructors is quite natural.  But we still have to say how to use an
+object in an inductive type.
+
+This problem is rather delicate. There are actually several different
+ways to do that. Some of them are logically equivalent but not always
+equivalent from the computational point of view or from the user point
+of view.
+
+From the computational point of view, we want to be able to define a
+function whose domain is an inductively defined type by using a
+combination of case analysis over the possible constructors of the
+object and recursion.
+
+Because we need to keep a consistent theory and also we prefer to keep
+a strongly normalizing reduction, we cannot accept any sort of
+recursion (even terminating). So the basic idea is to restrict
+ourselves to primitive recursive functions and functionals.
+
+For instance, assuming a parameter $A:\Set$ exists in the context, we
+want to build a function \length\ of type $\ListA\ra \nat$ which
+computes the length of the list, so such that $(\length~(\Nil~A)) = \nO$
+and $(\length~(\cons~A~a~l)) = (\nS~(\length~l))$.  We want these
+equalities to be recognized implicitly and taken into account in the
+conversion rule.
+
+From the logical point of view, we have built a type family by giving
+a set of constructors.  We want to capture the fact that we do not
+have any other way to build an object in this type. So when trying to
+prove a property $(P~m)$ for $m$ in an inductive definition it is
+enough to enumerate all the cases where $m$ starts with a different
+constructor.
+
+In case the inductive definition is effectively a recursive one, we
+want to capture the extra property that we have built the smallest
+fixed point of this recursive equation.  This says that we are only
+manipulating finite objects. This analysis provides induction
+principles.
+
+For instance, in order to prove $\forall l:\ListA,(\LengthA~l~(\length~l))$
+it is enough to prove:
+
+\noindent $(\LengthA~(\Nil~A)~(\length~(\Nil~A)))$ and
+
+\smallskip
+$\forall a:A, \forall l:\ListA, (\LengthA~l~(\length~l)) \ra
+(\LengthA~(\cons~A~a~l)~(\length~(\cons~A~a~l)))$.
+\smallskip
+
+\noindent which given the conversion equalities satisfied by \length\ is the
+same as proving:
+$(\LengthA~(\Nil~A)~\nO)$ and $\forall a:A, \forall l:\ListA, 
+(\LengthA~l~(\length~l)) \ra
+(\LengthA~(\cons~A~a~l)~(\nS~(\length~l)))$.
+
+One conceptually simple way to do that, following the basic scheme
+proposed by Martin-L\"of in his Intuitionistic Type Theory, is to
+introduce for each inductive definition an elimination operator. At
+the logical level it is a proof of the usual induction principle and
+at the computational level it implements a generic operator for doing
+primitive recursion over the structure.
+
+But this operator is rather tedious to implement and use. We choose in
+this version of Coq to factorize the operator for primitive recursion
+into two more primitive operations as was first suggested by Th. Coquand
+in~\cite{Coq92}.  One is the definition by pattern-matching. The second one is a definition by guarded fixpoints. 
+
+\subsubsection[The {\tt match\ldots with \ldots end} construction.]{The {\tt match\ldots with \ldots end} construction.\label{Caseexpr}
+\index{match@{\tt match\ldots with\ldots end}}}
+
+The basic idea of this destructor operation is that we have an object
+$m$ in an inductive type $I$ and we want to prove a property $(P~m)$
+which in general depends on $m$. For this, it is enough to prove the
+property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
+
+The \Coq{} term for this proof will be written~:
+\[\kw{match}~m~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
+  (c_n~x_{n1}...x_{np_n}) \Ra f_n~ \kw{end}\]
+In this expression, if
+$m$ is a term built from a constructor $(c_i~u_1\ldots u_{p_i})$ then
+the expression will behave as it is specified with $i$-th branch and
+will reduce to $f_i$ where the $x_{i1}$\ldots $x_{ip_i}$ are replaced
+by the $u_1\ldots u_p$ according to the $\iota$-reduction.
+
+Actually, for type-checking a \kw{match\ldots with\ldots end}
+expression we also need to know the predicate $P$ to be proved by case
+analysis. In the general case where $I$ is an inductively defined
+$n$-ary relation, $P$ is a $n+1$-ary relation: the $n$ first arguments
+correspond to the arguments of $I$ (parameters excluded), and the last
+one corresponds to object $m$. \Coq{} can sometimes infer this
+predicate but sometimes not. The concrete syntax for describing this
+predicate uses the \kw{as\ldots in\ldots return} construction. For
+instance, let us assume that $I$ is an unary predicate with one
+parameter. The predicate is made explicit using the syntax~:
+\[\kw{match}~m~\kw{as}~ x~ \kw{in}~ I~\verb!_!~a~ \kw{return}~ (P~ x)
+ ~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
+  (c_n~x_{n1}...x_{np_n}) \Ra f_n \kw{end}\]
+The \kw{as} part can be omitted if either the result type does not
+depend on $m$ (non-dependent elimination) or $m$ is a variable (in
+this case, the result type can depend on $m$). The \kw{in} part can be
+omitted if the result type does not depend on the arguments of
+$I$. Note that the arguments of $I$ corresponding to parameters
+\emph{must} be \verb!_!, because the result type is not generalized to
+all possible values of the parameters. The expression after \kw{in}
+must be seen as an \emph{inductive type pattern}. As a final remark,
+expansion of implicit arguments and notations apply to this pattern.
+
+For the purpose of presenting the inference rules, we use a more
+compact notation~:
+\[ \Case{(\lb a x \mto P)}{m}{ \lb x_{11}~...~x_{1p_1} \mto f_1 ~|~\ldots~|~
+  \lb x_{n1}...x_{np_n} \mto f_n}\]
+
+%% CP 06/06 Obsolete avec la nouvelle syntaxe et incompatible avec la
+%% presentation theorique qui suit
+% \paragraph{Non-dependent elimination.}
+%
+% When defining a function of codomain $C$ by case analysis over an
+% object in an inductive type $I$, we build an object of type $I
+% \ra C$. The minimality principle on an inductively defined logical
+% predicate $I$ of type $A \ra \Prop$ is often used to prove a property
+% $\forall x:A,(I~x)\ra (C~x)$.  These are particular cases of the dependent
+% principle that we stated before with a predicate which does not depend
+% explicitly on the object in the inductive definition.
+
+% For instance, a function testing whether a list is empty 
+% can be
+% defined as:
+% \[\kw{fun} l:\ListA \Ra \kw{match}~l~\kw{with}~ \Nil \Ra \true~
+% |~(\cons~a~m) \Ra \false \kw{end}\]
+% represented by
+% \[\lb~l:\ListA \mto\Case{\bool}{l}{\true~ |~ \lb a~m,~\false}\]
+%\noindent {\bf Remark. } 
+
+% In the system \Coq\ the expression above, can be
+% written without mentioning
+% the dummy abstraction:
+% \Case{\bool}{l}{\Nil~ \mbox{\tt =>}~\true~ |~ (\cons~a~m)~
+%  \mbox{\tt =>}~ \false}
+
+\paragraph[Allowed elimination sorts.]{Allowed elimination sorts.\index{Elimination sorts}}
+
+An important question for building the typing rule for \kw{match} is
+what can be the type of $P$ with respect to the type of the inductive
+definitions.
+
+We define now a relation \compat{I:A}{B} between an inductive
+definition $I$ of type $A$ and an arity $B$. This relation states that
+an object in the inductive definition $I$ can be eliminated for
+proving a property $P$ of type $B$.
+
+The case of inductive definitions in sorts \Set\ or \Type{} is simple.
+There is no restriction on the sort of the predicate to be
+eliminated. 
+
+\paragraph{Notations.}
+The \compat{I:A}{B} is defined as the smallest relation satisfying the
+following rules:
+We write \compat{I}{B} for \compat{I:A}{B} where $A$ is the type of
+$I$.
+
+\begin{description}
+\item[Prod] \inference{\frac{\compat{(I~x):A'}{B'}}
+                      {\compat{I:(x:A)A'}{(x:A)B'}}}
+\item[\Set \& \Type] \inference{\frac{
+    s_1 \in \{\Set,\Type(j)\}, 
+    s_2 \in \Sort}{\compat{I:s_1}{I\ra s_2}}}
+\end{description}
+
+The case of Inductive definitions of sort \Prop{} is a bit more
+complicated, because of our interpretation of this sort. The only
+harmless allowed elimination, is the one when predicate $P$ is also of
+sort \Prop.
+\begin{description}
+\item[\Prop] \inference{\compat{I:\Prop}{I\ra\Prop}}
+\end{description}
+\Prop{} is the type of logical propositions, the proofs of properties
+$P$ in \Prop{} could not be used for computation and are consequently
+ignored by the extraction mechanism.
+Assume $A$ and $B$ are two propositions, and the logical disjunction
+$A\vee B$ is defined inductively by~:
+\begin{coq_example*}
+Inductive or (A B:Prop) : Prop :=
+  lintro : A -> or A B | rintro : B -> or A B.
+\end{coq_example*}
+The following definition which computes a boolean value by case over
+the proof of \texttt{or A B} is not accepted~:
+\begin{coq_eval}
+(***************************************************************)
+(*** This example should fail with ``Incorrect elimination'' ***)
+\end{coq_eval}
+\begin{coq_example}
+Definition choice (A B: Prop) (x:or A B) := 
+   match x with lintro a => true | rintro b => false end.
+\end{coq_example}
+From the computational point of view, the structure of the proof of
+\texttt{(or A B)} in this term is needed for computing the boolean
+value.
+
+In general, if $I$ has type \Prop\ then $P$ cannot have type $I\ra
+\Set$, because it will mean to build an informative proof of type
+$(P~m)$ doing a case analysis over a non-computational object that
+will disappear in the extracted program.  But the other way is safe
+with respect to our interpretation we can have $I$ a computational
+object and $P$ a non-computational one, it just corresponds to proving
+a logical property of a computational object.
+
+% Also if $I$ is in one of the sorts \{\Prop, \Set\}, one cannot in
+% general allow an elimination over a bigger sort such as \Type.  But
+% this operation is safe whenever $I$ is a {\em small inductive} type,
+% which means that all the types of constructors of
+% $I$ are small with the following definition:\\
+% $(I~t_1\ldots t_s)$ is a {\em small type of constructor} and
+% $\forall~x:T,C$ is a small type of constructor if $C$ is and if $T$
+% has type \Prop\ or \Set.  \index{Small inductive type}
+
+% We call this particular elimination which gives the possibility to
+% compute a type by induction on the structure of a term, a {\em strong
+%   elimination}\index{Strong elimination}.
+
+In the same spirit, elimination on $P$ of type $I\ra
+\Type$ cannot be allowed because it trivially implies the elimination
+on $P$ of type $I\ra \Set$ by cumulativity. It also implies that there
+is two proofs of the same property which are provably different,
+contradicting the proof-irrelevance property which is sometimes a
+useful axiom~:
+\begin{coq_example}
+Axiom proof_irrelevance : forall (P : Prop) (x y : P), x=y.
+\end{coq_example}
+\begin{coq_eval}
+Reset proof_irrelevance.
+\end{coq_eval}
+The elimination of an inductive definition of type \Prop\ on a
+predicate $P$ of type $I\ra \Type$ leads to a paradox when applied to 
+impredicative inductive definition like the second-order existential
+quantifier \texttt{exProp} defined above, because it give access to
+the two projections on this type.
+
+%\paragraph{Warning: strong elimination}
+%\index{Elimination!Strong elimination}
+%In previous versions of Coq, for a small inductive definition, only the
+%non-informative strong elimination on \Type\ was allowed, because
+%strong elimination on \Typeset\ was not compatible with the current
+%extraction procedure. In this version, strong elimination on \Typeset\
+%is accepted but a dummy element is extracted from it and may generate
+%problems if extracted terms are explicitly used such as in the 
+%{\tt Program} tactic or when extracting ML programs.
+
+\paragraph[Empty and singleton elimination]{Empty and singleton elimination\label{singleton}
+\index{Elimination!Singleton elimination}
+\index{Elimination!Empty elimination}}
+
+There are special inductive definitions in \Prop\ for which more
+eliminations are allowed. 
+\begin{description}
+\item[\Prop-extended] 
+\inference{
+   \frac{I \mbox{~is an empty or singleton
+       definition}~~~s \in \Sort}{\compat{I:\Prop}{I\ra s}}
+}
+\end{description}
+
+% A {\em singleton definition} has always an informative content,
+% even if it is a proposition.
+
+A {\em singleton
+definition} has only one constructor and all the arguments of this
+constructor have type \Prop. In that case, there is a canonical
+way to interpret the informative extraction on an object in that type,
+such that the elimination on any sort $s$ is legal.  Typical examples are
+the conjunction of non-informative propositions and the equality. 
+If there is an hypothesis $h:a=b$ in the context, it can be used for
+rewriting not only in logical propositions but also in any type.
+% In that case, the term \verb!eq_rec! which was defined as an axiom, is
+% now a term of the calculus.
+\begin{coq_example}
+Print eq_rec.
+Extraction eq_rec.
+\end{coq_example}
+An empty definition has no constructors, in that case also,
+elimination on any sort is allowed.
+
+\paragraph{Type of branches.}
+Let $c$ be a term of type $C$, we assume $C$ is a type of constructor
+for an inductive definition $I$. Let $P$ be a term that represents the
+property to be proved.
+We assume $r$ is the number of parameters.
+
+We define a new type \CI{c:C}{P} which represents the type of the
+branch corresponding to the $c:C$ constructor.
+\[
+\begin{array}{ll}
+\CI{c:(I_i~p_1\ldots p_r\ t_1 \ldots t_p)}{P} &\equiv (P~t_1\ldots ~t_p~c) \\[2mm]
+\CI{c:\forall~x:T,C}{P} &\equiv \forall~x:T,\CI{(c~x):C}{P} 
+\end{array}
+\]
+We write \CI{c}{P} for \CI{c:C}{P} with $C$ the type of $c$.
+
+\paragraph{Examples.}
+For $\ListA$ the type of $P$ will be $\ListA\ra s$ for $s \in \Sort$. \\ 
+$ \CI{(\cons~A)}{P} \equiv
+\forall a:A, \forall l:\ListA,(P~(\cons~A~a~l))$.
+
+For $\LengthA$, the type of $P$ will be
+$\forall l:\ListA,\forall n:\nat, (\LengthA~l~n)\ra \Prop$ and the expression
+\CI{(\LCons~A)}{P} is defined as:\\ 
+$\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
+h:(\LengthA~l~n), (P~(\cons~A~a~l)~(\nS~n)~(\LCons~A~a~l~n~l))$.\\ 
+If $P$ does not depend on its third argument, we find the more natural
+expression:\\ 
+$\forall a:A, \forall l:\ListA, \forall n:\nat,
+(\LengthA~l~n)\ra(P~(\cons~A~a~l)~(\nS~n))$.
+
+\paragraph{Typing rule.}
+
+Our very general destructor for inductive definition enjoys the
+following typing rule
+% , where we write 
+% \[
+% \Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]g_1\ldots
+%   [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}]g_n}
+% \]
+% for 
+% \[
+% \Case{P}{c}{(c_1~x_{11}~...~x_{1p_1}) \Ra g_1 ~|~\ldots~|~
+% (c_n~x_{n1}...x_{np_n}) \Ra g_n }
+% \]
+
+\begin{description}
+\item[match] \label{elimdep} \index{Typing rules!match}
+\inference{
+\frac{\WTEG{c}{(I~q_1\ldots  q_r~t_1\ldots  t_s)}~~
+  \WTEG{P}{B}~~\compat{(I~q_1\ldots  q_r)}{B}
+ ~~
+(\WTEG{f_i}{\CI{(c_{p_i}~q_1\ldots  q_r)}{P}})_{i=1\ldots  l}}
+{\WTEG{\Case{P}{c}{f_1|\ldots  |f_l}}{(P\ t_1\ldots  t_s\ c)}}}%\\[3mm]
+
+provided $I$ is an inductive type in a declaration
+\Ind{\Delta}{r}{\Gamma_I}{\Gamma_C} with 
+$\Gamma_C = [c_1:C_1;\ldots;c_n:C_n]$ and $c_{p_1}\ldots  c_{p_l}$ are the
+only constructors of $I$.
+\end{description}
+
+\paragraph{Example.}
+For \List\ and \Length\ the typing rules for the {\tt match} expression
+are (writing just $t:M$ instead of \WTEG{t}{M}, the environment and
+context being the same in all the judgments).
+
+\[\frac{l:\ListA~~P:\ListA\ra s~~~f_1:(P~(\Nil~A))~~
+      f_2:\forall a:A, \forall l:\ListA, (P~(\cons~A~a~l))}
+    {\Case{P}{l}{f_1~|~f_2}:(P~l)}\]
+
+\[\frac{
+     \begin{array}[b]{@{}c@{}} 
+H:(\LengthA~L~N) \\ P:\forall l:\ListA, \forall n:\nat, (\LengthA~l~n)\ra
+  \Prop\\
+ f_1:(P~(\Nil~A)~\nO~\LNil) \\
+   f_2:\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
+  h:(\LengthA~l~n), (P~(\cons~A~a~n)~(\nS~n)~(\LCons~A~a~l~n~h)) 
+      \end{array}}
+    {\Case{P}{H}{f_1~|~f_2}:(P~L~N~H)}\]
+
+\paragraph[Definition of $\iota$-reduction.]{Definition of $\iota$-reduction.\label{iotared}
+\index{iota-reduction@$\iota$-reduction}}
+We still have to define the $\iota$-reduction in the general case.
+
+A $\iota$-redex is a term of the following form:
+\[\Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1|\ldots |
+    f_l}\]
+with $c_{p_i}$ the $i$-th constructor of the inductive type $I$ with $r$
+parameters.
+
+The $\iota$-contraction of this term is $(f_i~a_1\ldots a_m)$ leading
+to the general reduction rule:
+\[ \Case{P}{(c_{p_i}~q_1\ldots  q_r~a_1\ldots  a_m)}{f_1|\ldots |
+    f_n} \triangleright_{\iota} (f_i~a_1\ldots a_m) \]
+
+\subsection[Fixpoint definitions]{Fixpoint definitions\label{Fix-term} \index{Fix@{\tt Fix}}}
+The second operator for elimination is fixpoint definition. 
+This fixpoint may involve several mutually recursive definitions.
+The basic concrete syntax for a recursive set of mutually recursive 
+declarations is (with $\Gamma_i$ contexts)~: 
+\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
+(\Gamma_n) :A_n:=t_n\]
+The terms are obtained by projections from this set of declarations
+and are written 
+\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
+(\Gamma_n) :A_n:=t_n~\kw{for}~f_i\]
+In the inference rules, we represent such a
+term by 
+\[\Fix{f_i}{f_1:A_1':=t_1' \ldots f_n:A_n':=t_n'}\]
+with $t_i'$ (resp. $A_i'$) representing the term $t_i$ abstracted
+(resp. generalized) with
+respect to the bindings in the context $\Gamma_i$, namely
+$t_i'=\lb \Gamma_i \mto t_i$ and $A_i'=\forall \Gamma_i, A_i$.
+
+\subsubsection{Typing rule}
+The typing rule is the expected one for a fixpoint.
+
+\begin{description}
+\item[Fix] \index{Typing rules!Fix}
+\inference{\frac{(\WTEG{A_i}{s_i})_{i=1\ldots n}~~~~
+            (\WTE{\Gamma,f_1:A_1,\ldots,f_n:A_n}{t_i}{A_i})_{i=1\ldots n}}
+         {\WTEG{\Fix{f_i}{f_1:A_1:=t_1 \ldots f_n:A_n:=t_n}}{A_i}}}
+\end{description}
+
+Any fixpoint definition cannot be accepted because non-normalizing terms
+will lead to proofs of absurdity.
+
+The basic scheme of recursion that should be allowed is the one needed for 
+defining primitive
+recursive functionals. In that case the fixpoint enjoys a special
+syntactic restriction, namely one of the arguments belongs to an
+inductive type, the function starts with a case analysis and recursive
+calls are done on variables coming from patterns and representing subterms.
+
+For instance in the case of natural numbers, a proof of the induction
+principle of type 
+\[\forall P:\nat\ra\Prop, (P~\nO)\ra(\forall n:\nat, (P~n)\ra(P~(\nS~n)))\ra
+\forall n:\nat, (P~n)\]
+can be represented by the term:
+\[\begin{array}{l}
+\lb P:\nat\ra\Prop\mto\lb f:(P~\nO)\mto \lb g:(\forall n:\nat,
+(P~n)\ra(P~(\nS~n))) \mto\\
+\Fix{h}{h:\forall n:\nat, (P~n):=\lb n:\nat\mto \Case{P}{n}{f~|~\lb
+    p:\nat\mto (g~p~(h~p))}}
+\end{array}
+\]
+
+Before accepting a fixpoint definition as being correctly typed, we
+check that the definition is ``guarded''. A precise analysis of this
+notion can be found in~\cite{Gim94}.
+
+The first stage is to precise on which argument the fixpoint will be
+decreasing. The type of this argument should be an inductive
+definition.
+
+For doing this the syntax of fixpoints is extended and becomes 
+ \[\Fix{f_i}{f_1/k_1:A_1:=t_1 \ldots f_n/k_n:A_n:=t_n}\]
+where $k_i$ are positive integers.
+Each $A_i$ should be a type (reducible to a term) starting with at least
+$k_i$ products $\forall y_1:B_1,\ldots \forall y_{k_i}:B_{k_i}, A'_i$ 
+and $B_{k_i}$
+being an instance of an inductive definition.
+
+Now in the definition $t_i$, if $f_j$ occurs then it should be applied
+to at least $k_j$ arguments and the $k_j$-th argument should be
+syntactically recognized as structurally smaller than $y_{k_i}$
+
+
+The definition of being structurally smaller is a bit technical.
+One needs first to  define the notion of 
+{\em recursive arguments of a constructor}\index{Recursive arguments}.
+For an inductive definition \Ind{\Gamma}{r}{\Gamma_I}{\Gamma_C},
+the type of a constructor $c$ has the form
+$\forall p_1:P_1,\ldots \forall p_r:P_r, 
+\forall x_1:T_1, \ldots \forall x_r:T_r, (I_j~p_1\ldots 
+p_r~t_1\ldots  t_s)$ the recursive arguments will correspond to $T_i$ in
+which one of the $I_l$ occurs.
+
+
+The main rules for being structurally smaller are the following:\\
+Given a variable $y$ of type an inductive
+definition in a declaration 
+\Ind{\Gamma}{r}{\Gamma_I}{\Gamma_C}
+where $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
+  $[c_1:C_1;\ldots;c_n:C_n]$.
+The terms structurally smaller than $y$ are:
+\begin{itemize}
+\item $(t~u), \lb x:u \mto t$ when $t$ is structurally smaller than $y$ .
+\item \Case{P}{c}{f_1\ldots f_n} when each $f_i$ is structurally
+  smaller than $y$. \\
+  If $c$ is $y$ or is structurally smaller than $y$, its type is an inductive
+  definition $I_p$ part of the inductive
+  declaration corresponding to $y$. 
+  Each $f_i$ corresponds to a type of constructor $C_q \equiv
+  \forall p_1:P_1,\ldots,\forall p_r:P_r, \forall y_1:B_1, \ldots \forall y_k:B_k, (I~a_1\ldots a_k)$ 
+  and can consequently be
+  written $\lb y_1:B'_1\mto \ldots \lb y_k:B'_k\mto g_i$.
+  ($B'_i$ is obtained from $B_i$ by substituting parameters variables)
+  the variables $y_j$ occurring
+  in $g_i$ corresponding to recursive arguments $B_i$ (the ones in
+  which one of the $I_l$ occurs) are structurally smaller than $y$.
+\end{itemize}
+The following definitions are correct, we enter them using the
+{\tt Fixpoint} command as described in Section~\ref{Fixpoint} and show
+the internal representation.
+\begin{coq_example}
+Fixpoint plus (n m:nat) {struct n} : nat :=
+  match n with
+  | O => m
+  | S p => S (plus p m)
+  end.
+Print plus.
+Fixpoint lgth (A:Set) (l:list A) {struct l} : nat :=
+  match l with
+  | nil => O
+  | cons a l' => S (lgth A l')
+  end.
+Print lgth.
+Fixpoint sizet (t:tree) : nat := let (f) := t in S (sizef f)
+ with sizef (f:forest) : nat :=
+  match f with
+  | emptyf => O
+  | consf t f => plus (sizet t) (sizef f)
+  end.
+Print sizet.
+\end{coq_example}
+
+
+\subsubsection[Reduction rule]{Reduction rule\index{iota-reduction@$\iota$-reduction}}
+Let $F$ be the set of declarations: $f_1/k_1:A_1:=t_1 \ldots
+f_n/k_n:A_n:=t_n$.
+The reduction for fixpoints is:
+\[ (\Fix{f_i}{F}~a_1\ldots
+a_{k_i}) \triangleright_{\iota} \substs{t_i}{f_k}{\Fix{f_k}{F}}{k=1\ldots n}
+~a_1\ldots a_{k_i}\]
+when $a_{k_i}$ starts with a constructor.
+This last restriction is needed in order to keep strong normalization
+and corresponds to the reduction for primitive recursive operators.
+
+We can illustrate this behavior on examples.
+\begin{coq_example}
+Goal forall n m:nat, plus (S n) m = S (plus n m).
+reflexivity.
+Abort.
+Goal forall f:forest, sizet (node f) = S (sizef f).
+reflexivity.
+Abort.
+\end{coq_example}
+But assuming the definition of a son function from \tree\ to \forest:
+\begin{coq_example}
+Definition sont (t:tree) : forest 
+   := let (f) := t in f.
+\end{coq_example}
+The following is not a conversion but can be proved after a case analysis.
+\begin{coq_eval}
+(******************************************************************)
+(** Error: Impossible to unify ....                              **)
+\end{coq_eval}
+\begin{coq_example}
+Goal forall t:tree, sizet t = S (sizef (sont t)).
+reflexivity. (** this one fails **)
+destruct t.
+reflexivity.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+% La disparition de Program devrait rendre la construction Match obsolete
+% \subsubsection{The {\tt Match \ldots with \ldots end} expression}
+% \label{Matchexpr}
+% %\paragraph{A unary {\tt Match\ldots with \ldots end}.}
+% \index{Match...with...end@{\tt Match \ldots with \ldots end}}
+% The {\tt Match} operator which was a primitive notion in older
+% presentations of the Calculus of Inductive Constructions is now just a
+% macro definition which generates the good combination of {\tt Case}
+% and {\tt Fix} operators in order to generate an operator for primitive
+% recursive definitions. It always considers an inductive definition as 
+% a single inductive definition.
+
+% The following examples illustrates this feature.
+% \begin{coq_example}
+% Definition nat_pr : (C:Set)C->(nat->C->C)->nat->C 
+%   :=[C,x,g,n]Match n with x g end.
+% Print nat_pr.
+% \end{coq_example}
+% \begin{coq_example}
+% Definition forest_pr 
+%   : (C:Set)C->(tree->forest->C->C)->forest->C
+%   := [C,x,g,n]Match n with x g end.
+% \end{coq_example}
+
+% Cet exemple faisait error (HH le 12/12/96), j'ai change pour une
+% version plus simple
+%\begin{coq_example}
+%Definition forest_pr 
+%  : (P:forest->Set)(P emptyf)->((t:tree)(f:forest)(P f)->(P (consf t f)))
+%    ->(f:forest)(P f)
+%  := [C,x,g,n]Match n with x g end.
+%\end{coq_example}
+
+\subsubsection{Mutual induction}
+
+The principles of mutual induction can be automatically generated 
+using the {\tt Scheme} command described in Section~\ref{Scheme}.
+
+\section{Coinductive types}
+The implementation contains also coinductive definitions, which are
+types inhabited by infinite objects. 
+More information on coinductive definitions can be found
+in~\cite{Gimenez95b,Gim98,GimCas05}.
+%They are described in Chapter~\ref{Coinductives}.
+
+\section[\iCIC : the Calculus of Inductive Construction with
+  impredicative \Set]{\iCIC : the Calculus of Inductive Construction with
+  impredicative \Set\label{impredicativity}}
+
+\Coq{} can be used as a type-checker for \iCIC{}, the original 
+Calculus of Inductive Constructions with an impredicative sort \Set{}
+by using the compiler option \texttt{-impredicative-set}.
+
+For example, using the ordinary \texttt{coqtop} command, the following
+is rejected.
+\begin{coq_eval}
+(** This example should fail *******************************
+    Error: The term forall X:Set, X -> X has type Type
+    while it is expected to have type Set
+***)
+\end{coq_eval}
+\begin{coq_example}
+Definition id: Set := forall X:Set,X->X.
+\end{coq_example}
+while it will type-check, if one use instead the \texttt{coqtop
+  -impredicative-set} command.
+
+The major change in the theory concerns the rule for product formation
+in the sort \Set, which is extended to a domain in any sort~:
+\begin{description}
+\item [Prod]  \index{Typing rules!Prod (impredicative Set)}
+\inference{\frac{\WTEG{T}{s}~~~~s \in \Sort~~~~~~
+    \WTE{\Gamma::(x:T)}{U}{\Set}}
+      { \WTEG{\forall~x:T,U}{\Set}}} 
+\end{description}
+This extension has consequences on the inductive definitions which are
+allowed. 
+In the impredicative system, one can build so-called {\em large inductive
+  definitions} like the example of second-order existential
+quantifier (\texttt{exSet}).
+
+There should be restrictions on the eliminations which can be
+performed on such definitions. The eliminations rules in the
+impredicative system for sort \Set{} become~:
+\begin{description}
+\item[\Set] \inference{\frac{s \in
+      \{\Prop, \Set\}}{\compat{I:\Set}{I\ra s}}
+~~~~\frac{I \mbox{~is a small inductive definition}~~~~s \in
+      \{\Type(i)\}}
+         {\compat{I:\Set}{I\ra s}}}
+\end{description}
+     
+
+
+% $Id$ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 
+
+

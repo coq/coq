@@ -1,0 +1,73 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% File title.tex
+% Page formatting commands
+% Macro \coverpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\setlength{\marginparwidth}{0pt}
+%\setlength{\oddsidemargin}{0pt}
+%\setlength{\evensidemargin}{0pt}
+%\setlength{\marginparsep}{0pt}
+%\setlength{\topmargin}{0pt}
+%\setlength{\textwidth}{16.9cm}
+%\setlength{\textheight}{22cm}
+%\usepackage{fullpage}
+
+%\newcommand{\printingdate}{\today}
+%\newcommand{\isdraft}{\Large\bf\today\\[20pt]}
+%\newcommand{\isdraft}{\vspace{20pt}}
+
+\newcommand{\coverpage}[3]{
+\thispagestyle{empty}
+\begin{center}
+\bfseries % for the rest of this page, until \end{center}
+\Huge
+The Coq Proof Assistant\\[12pt]
+#1\\[20pt]
+\Large\today\\[20pt]
+Version \coqversion\footnote[1]{This research was partly supported by IST working group ``Types''}
+
+\vspace{0pt plus .5fill}
+#2
+\par\vfill
+LogiCal Project
+
+\vspace*{15pt}
+\end{center}
+\newpage
+
+\thispagestyle{empty}
+\hbox{}\vfill % without \hbox \vfill does not work at the top of the page
+\begin{flushleft}
+%BEGIN LATEX
+V\coqversion, \today
+\par\vspace{20pt}
+%END LATEX
+\copyright INRIA 1999-2004 ({\Coq} versions 7.x)
+
+\copyright INRIA 2004-2007 ({\Coq} versions 8.x)
+
+#3
+\end{flushleft}
+} % end of \coverpage definition
+
+
+% \newcommand{\shorttitle}[1]{
+% \begin{center}
+% \begin{huge}
+% \begin{bf}
+% The Coq Proof Assistant\\
+% \vspace{10pt}
+%     #1\\
+% \end{bf}
+% \end{huge}
+% \end{center}
+% \vspace{5pt}
+% }
+
+% Local Variables: 
+% mode: LaTeX
+% TeX-master: ""
+% End: 
+
+% $Id$ 

@@ -1,0 +1,1222 @@
+\chapter[Detailed examples of tactics]{Detailed examples of tactics\label{Tactics-examples}}
+
+This chapter presents detailed examples of certain tactics, to
+illustrate their behavior.
+
+\section[\tt refine]{\tt refine\tacindex{refine}
+\label{refine-example}}
+
+This tactic applies to any goal. It behaves like {\tt exact} with a
+big difference : the user can leave some holes (denoted by \texttt{\_} or 
+{\tt (\_:}{\it type}{\tt )}) in the term. 
+{\tt refine} will generate as many
+subgoals as they are holes in the term. The type of holes must be
+either synthesized by the system or declared by an
+explicit cast like \verb|(\_:nat->Prop)|. This low-level
+tactic can be useful to advanced users.
+
+%\firstexample
+\Example
+
+\begin{coq_example*}
+Inductive Option : Set :=
+  | Fail : Option
+  | Ok : bool -> Option.
+\end{coq_example}
+\begin{coq_example}
+Definition get : forall x:Option, x <> Fail -> bool.
+refine
+ (fun x:Option =>
+    match x return x <> Fail -> bool with
+    | Fail => _
+    | Ok b => fun _ => b
+    end).
+intros; absurd (Fail = Fail); trivial.
+\end{coq_example}
+\begin{coq_example*}
+Defined.
+\end{coq_example*}
+
+% \example{Using Refine to build a poor-man's ``Cases'' tactic}
+
+% \texttt{Refine} is actually the only way for the user to do
+% a proof with the same structure as a {\tt Cases} definition. Actually,
+% the tactics \texttt{case} (see \ref{case}) and \texttt{Elim} (see
+% \ref{elim}) only allow one step of elementary induction. 
+
+% \begin{coq_example*}
+% Require Bool.
+% Require Arith.
+% \end{coq_example*}
+% %\begin{coq_eval}
+% %Abort.
+% %\end{coq_eval}
+% \begin{coq_example}
+% Definition one_two_or_five := [x:nat]
+%   Cases x of
+%     (1) => true
+%   | (2) => true
+%   | (5) => true
+%   | _ => false
+%   end.
+% Goal (x:nat)(Is_true (one_two_or_five x)) -> x=(1)\/x=(2)\/x=(5).
+% \end{coq_example}
+
+% A traditional script would be the following:
+
+% \begin{coq_example*}
+% Destruct x.
+% Tauto.
+% Destruct n.
+% Auto.
+% Destruct n0.
+% Auto.
+% Destruct n1.
+% Tauto.
+% Destruct n2.
+% Tauto.
+% Destruct n3.
+% Auto.
+% Intros; Inversion H.
+% \end{coq_example*}
+
+% With the tactic \texttt{Refine}, it becomes quite shorter:
+
+% \begin{coq_example*}
+% Restart.
+% \end{coq_example*}
+% \begin{coq_example}
+% Refine [x:nat]
+%   <[y:nat](Is_true (one_two_or_five y))->(y=(1)\/y=(2)\/y=(5))>
+%   Cases x of
+%     (1) => [H]?
+%   | (2) => [H]?
+%   | (5) => [H]?
+%   | n => [H](False_ind ? H)
+%   end; Auto.
+% \end{coq_example}
+% \begin{coq_eval}
+% Abort.
+% \end{coq_eval}
+
+\section[\tt eapply]{\tt eapply\tacindex{eapply}
+\label{eapply-example}}
+\Example
+Assume we have a relation on {\tt nat} which is transitive:
+
+\begin{coq_example*}
+Variable R : nat -> nat -> Prop.
+Hypothesis Rtrans : forall x y z:nat, R x y -> R y z -> R x z.
+Variables n m p : nat.
+Hypothesis Rnm : R n m.
+Hypothesis Rmp : R m p.
+\end{coq_example*}
+
+Consider the goal {\tt (R n p)} provable using the transitivity of
+{\tt R}:
+
+\begin{coq_example*}
+Goal R n p.
+\end{coq_example*}
+
+The direct application of {\tt Rtrans} with {\tt apply} fails because
+no value for {\tt y} in {\tt Rtrans} is found by {\tt apply}:
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
+\end{coq_eval}
+\begin{coq_example}
+apply Rtrans.
+\end{coq_example}
+
+A solution is to rather apply {\tt (Rtrans n m p)}.
+
+\begin{coq_example}
+apply (Rtrans n m p).
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+More elegantly, {\tt apply Rtrans with (y:=m)} allows to only mention
+the unknown {\tt m}:
+
+\begin{coq_example}
+
+  apply Rtrans with (y := m).
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+Another solution is to mention the proof of {\tt (R x y)} in {\tt
+Rtrans}...
+
+\begin{coq_example}
+
+  apply Rtrans with (1 := Rnm).
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+... or the proof of {\tt (R y z)}:
+
+\begin{coq_example}
+
+  apply Rtrans with (2 := Rmp).
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+On the opposite, one can use {\tt eapply} which postpone the problem
+of finding {\tt m}. Then one can apply the hypotheses {\tt Rnm} and {\tt
+Rmp}. This instantiates the existential variable and completes the proof.
+
+\begin{coq_example}
+eapply Rtrans.
+apply Rnm.
+apply Rmp.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset R.
+\end{coq_eval}
+
+\section[{\tt Scheme}]{{\tt Scheme}\comindex{Scheme}
+\label{Scheme-examples}}
+
+\firstexample
+\example{Induction scheme for \texttt{tree} and \texttt{forest}}
+
+The definition of principle of mutual induction for {\tt tree} and
+{\tt forest} over the sort {\tt Set} is defined by the command:
+
+\begin{coq_eval}
+Reset Initial.
+Variables A B : 
+              Set.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive tree : Set :=
+    node : A -> forest -> tree
+with forest : Set :=
+  | leaf : B -> forest
+  | cons : tree -> forest -> forest.
+
+Scheme tree_forest_rec := Induction for tree Sort Set
+  with forest_tree_rec := Induction for forest Sort Set.
+\end{coq_example*}
+
+You may now look at the type of {\tt tree\_forest\_rec}:
+
+\begin{coq_example}
+Check tree_forest_rec.
+\end{coq_example}
+
+This principle involves two different predicates for {\tt trees} and
+{\tt forests}; it also has three premises each one corresponding to a
+constructor of one of the inductive definitions.
+
+The principle {\tt tree\_forest\_rec} shares exactly the same
+premises, only the conclusion now refers to the property of forests.
+
+\begin{coq_example}
+Check forest_tree_rec.
+\end{coq_example}
+
+\example{Predicates {\tt odd} and {\tt even} on naturals}
+
+Let {\tt odd} and {\tt even} be inductively defined as:
+
+% Reset Initial.
+\begin{coq_eval}
+Open Scope nat_scope.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive odd : nat -> Prop :=
+    oddS : forall n:nat, even n -> odd (S n)
+with even : nat -> Prop :=
+  | evenO : even 0
+  | evenS : forall n:nat, odd n -> even (S n).
+\end{coq_example*}
+
+The following command generates a powerful elimination
+principle:
+
+\begin{coq_example}
+Scheme odd_even := Minimality for   odd Sort Prop
+  with even_odd := Minimality for even Sort Prop.
+\end{coq_example}
+
+The type of {\tt odd\_even} for instance will be:
+
+\begin{coq_example}
+Check odd_even.
+\end{coq_example}
+
+The type of {\tt even\_odd} shares the same premises but the
+conclusion is {\tt (n:nat)(even n)->(Q n)}.
+
+\subsection[{\tt Combined Scheme}]{{\tt Combined Scheme}\comindex{Combined Scheme}
+\label{CombinedScheme-examples}}
+
+We can define the induction principles for trees and forests using:
+\begin{coq_example}
+Scheme tree_forest_ind := Induction for tree Sort Prop
+  with forest_tree_ind := Induction for forest Sort Prop.
+\end{coq_example}
+
+Then we can build the combined induction principle:
+\begin{coq_example}
+Combined Scheme tree_forest_mutind from tree_forest_ind, forest_tree_ind.
+\end{coq_example}
+
+The type of {\tt tree\_forest\_mutrec} will be:
+\begin{coq_example}
+Check tree_forest_mutind.
+\end{coq_example}
+
+\section[{\tt Functional Scheme} and {\tt functional induction}]{{\tt Functional Scheme} and {\tt functional induction}\comindex{Functional Scheme}\tacindex{functional induction}
+\label{FunScheme-examples}}
+
+\firstexample
+\example{Induction scheme for \texttt{div2}}
+
+We define the function \texttt{div2} as follows:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Require Import Arith.
+Fixpoint div2 (n:nat) : nat :=
+  match n with
+  | O => 0
+  | S O => 0
+  | S (S n') => S (div2 n')
+  end.
+\end{coq_example*}
+
+The definition of a principle of induction corresponding to the
+recursive structure of \texttt{div2} is defined by the command:
+
+\begin{coq_example}
+Functional Scheme div2_ind := Induction for div2 Sort Prop.
+\end{coq_example}
+
+You may now look at the type of {\tt div2\_ind}:
+
+\begin{coq_example}
+Check div2_ind.
+\end{coq_example}
+
+We can now prove the following lemma using this principle:
+
+
+\begin{coq_example*}
+Lemma div2_le' : forall n:nat, div2 n <= n.
+intro n.
+ pattern n , (div2 n).
+\end{coq_example*}
+
+
+\begin{coq_example}
+apply div2_ind; intros.
+\end{coq_example}
+
+\begin{coq_example*}
+auto with arith.
+auto with arith.
+simpl; auto with arith.
+Qed.
+\end{coq_example*}
+
+We can use directly the \texttt{functional induction}
+(\ref{FunInduction}) tactic instead of the pattern/apply trick:
+
+\begin{coq_example*}
+Reset div2_le'.
+Lemma div2_le : forall n:nat, div2 n <= n.
+intro n.
+\end{coq_example*}
+
+\begin{coq_example}
+functional induction (div2 n).
+\end{coq_example}
+
+\begin{coq_example*}
+auto with arith.
+auto with arith.
+auto with arith.
+Qed.
+\end{coq_example*}
+
+\Rem There is a difference between obtaining an induction scheme for a
+function by using \texttt{Function} (see Section~\ref{Function}) and by
+using \texttt{Functional Scheme} after a normal definition using
+\texttt{Fixpoint} or \texttt{Definition}. See \ref{Function} for
+details.
+
+
+\example{Induction scheme for \texttt{tree\_size}}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+We define trees by the following mutual inductive type:
+
+\begin{coq_example*}
+Variable A : Set.
+Inductive tree : Set :=
+    node : A -> forest -> tree
+with forest : Set :=
+  | empty : forest
+  | cons : tree -> forest -> forest.
+\end{coq_example*}
+
+We define the function \texttt{tree\_size} that computes the size
+of a tree or a forest. Note that we use \texttt{Function} which
+generally produces better principles.
+
+\begin{coq_example*}                
+Function tree_size (t:tree) : nat :=
+  match t with
+  | node A f => S (forest_size f)
+  end
+ with forest_size (f:forest) : nat :=
+  match f with
+  | empty => 0
+  | cons t f' => (tree_size t + forest_size f')
+  end.
+\end{coq_example*}
+
+Remark: \texttt{Function} generates itself non mutual induction
+principles {\tt tree\_size\_ind} and {\tt forest\_size\_ind}:
+
+\begin{coq_example}
+Check tree_size_ind.
+\end{coq_example}
+
+The definition of mutual induction principles following the recursive
+structure of \texttt{tree\_size} and \texttt{forest\_size} is defined
+by the command:
+
+\begin{coq_example*}
+Functional Scheme tree_size_ind2 := Induction for tree_size Sort Prop
+with forest_size_ind2 := Induction for forest_size Sort Prop.
+\end{coq_example*}
+
+You may now look at the type of {\tt tree\_size\_ind2}:
+
+\begin{coq_example}
+Check tree_size_ind2.
+\end{coq_example}
+
+
+
+
+\section[{\tt inversion}]{{\tt inversion}\tacindex{inversion}
+\label{inversion-examples}}
+
+\subsection*{Generalities about inversion}
+
+When working with (co)inductive predicates, we are very often faced to
+some of these situations:
+\begin{itemize}
+\item we have an inconsistent instance of an inductive predicate in the
+  local context of hypotheses. Thus, the current goal can be trivially
+  proved by absurdity. 
+\item we have a hypothesis that is an instance of an inductive
+  predicate, and the instance has some variables whose constraints we
+  would like to derive.
+\end{itemize}
+
+The inversion tactics are very useful to simplify the work in these
+cases. Inversion tools can be classified in three groups:
+
+\begin{enumerate}
+\item tactics for inverting an instance without stocking the inversion
+  lemma in the context; this includes the tactics
+  (\texttt{dependent})  \texttt{inversion} and
+ (\texttt{dependent}) \texttt{inversion\_clear}.
+\item commands for generating and stocking in the context the inversion
+  lemma corresponding to an instance; this includes \texttt{Derive}
+  (\texttt{Dependent}) \texttt{Inversion} and \texttt{Derive}
+  (\texttt{Dependent}) \texttt{Inversion\_clear}.
+\item tactics for inverting an instance using an already defined
+  inversion lemma; this includes the tactic \texttt{inversion \ldots using}.
+\end{enumerate}
+
+As inversion proofs may be large in size, we recommend the user to
+stock the lemmas whenever the same instance needs to be inverted
+several times.
+
+\firstexample
+\example{Non-dependent inversion}
+
+Let's consider the relation \texttt{Le} over natural numbers and the
+following variables:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive Le : nat -> nat -> Set :=
+  | LeO : forall n:nat, Le 0 n
+  | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
+Variable P : nat -> nat -> Prop.
+Variable Q : forall n m:nat, Le n m -> Prop.
+\end{coq_example*}
+
+For example, consider the goal:
+
+\begin{coq_eval}
+Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+To prove the goal we may need to reason by cases on \texttt{H} and to 
+ derive that \texttt{m}  is necessarily of
+the form $(S~m_0)$ for certain $m_0$ and that $(Le~n~m_0)$.  
+Deriving these conditions corresponds to prove that the
+only possible constructor of \texttt{(Le (S n) m)}  is
+\texttt{LeS} and that we can invert the 
+\texttt{->} in the type  of \texttt{LeS}.  
+This inversion is possible because \texttt{Le} is the smallest set closed by
+the constructors \texttt{LeO} and \texttt{LeS}.
+
+\begin{coq_example}
+inversion_clear H.
+\end{coq_example}
+
+Note that \texttt{m} has been substituted in the goal for \texttt{(S m0)}
+and that the hypothesis \texttt{(Le n m0)} has been added to the
+context.
+
+Sometimes it is
+interesting to have the equality \texttt{m=(S m0)} in the
+context to use it after. In that case we can use \texttt{inversion} that
+does not clear the equalities:
+
+\begin{coq_example*}
+Undo.
+\end{coq_example*}
+
+\begin{coq_example}
+inversion H.
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+\example{Dependent Inversion}
+
+Let us consider the following goal:
+
+\begin{coq_eval}
+Lemma ex_dep : forall (n m:nat) (H:Le (S n) m), Q (S n) m H.
+intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+As \texttt{H} occurs in the goal, we may want to reason by cases on its
+structure and so, we would like  inversion tactics to
+substitute \texttt{H} by the corresponding term in constructor form. 
+Neither \texttt{Inversion} nor  {\tt Inversion\_clear} make such a
+substitution. 
+To have such a behavior we use the dependent inversion tactics:
+
+\begin{coq_example}
+dependent inversion_clear H.
+\end{coq_example}
+
+Note that \texttt{H} has been substituted by \texttt{(LeS n m0 l)} and
+\texttt{m} by \texttt{(S m0)}.
+
+\example{using already defined inversion  lemmas}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+For example, to generate the inversion lemma for the instance
+\texttt{(Le (S n) m)} and the sort \texttt{Prop} we do:
+
+\begin{coq_example*}
+Derive Inversion_clear leminv with (forall n m:nat, Le (S n) m) Sort
+ Prop.
+\end{coq_example*}
+
+\begin{coq_example}
+Check leminv.
+\end{coq_example}
+
+Then we can use the proven inversion lemma:
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+\begin{coq_example}
+inversion H using leminv.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\section[\tt autorewrite]{\tt autorewrite\label{autorewrite-example}}
+
+Here are two examples of {\tt autorewrite} use. The first one ({\em Ackermann
+function}) shows actually a quite basic use where there is no conditional
+rewriting. The second one ({\em Mac Carthy function}) involves conditional
+rewritings and shows how to deal with them using the optional tactic of the
+{\tt Hint~Rewrite} command.
+
+\firstexample
+\example{Ackermann function}
+%Here is a basic use of {\tt AutoRewrite} with the Ackermann function:
+
+\begin{coq_example*}
+Require Import Arith.
+Variable Ack : 
+           nat -> nat -> nat.
+Axiom Ack0 : 
+        forall m:nat, Ack 0 m = S m.
+Axiom Ack1 : forall n:nat, Ack (S n) 0 = Ack n 1.
+Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
+\end{coq_example*}
+
+\begin{coq_example}
+Hint Rewrite Ack0 Ack1 Ack2 : base0.
+Lemma ResAck0 : 
+ Ack 3 2 = 29.
+autorewrite with base0 using try reflexivity.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\example{Mac Carthy function}
+%The Mac Carthy function shows a more complex case:
+
+\begin{coq_example*}
+Require Import Omega.
+Variable g :   
+           nat -> nat -> nat.
+Axiom g0 : 
+        forall m:nat, g 0 m = m.
+Axiom
+  g1 :
+    forall n m:nat,
+      (n > 0) -> (m > 100) -> g n m = g (pred n) (m - 10).
+Axiom
+  g2 :
+    forall n m:nat,
+      (n > 0) -> (m <= 100) -> g n m = g (S n) (m + 11).
+\end{coq_example*}
+
+\begin{coq_example}
+Hint Rewrite g0 g1 g2 using omega : base1.
+Lemma Resg0 : 
+ g 1 110 = 100.
+autorewrite with base1 using reflexivity || simpl.
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\begin{coq_example}
+Lemma Resg1 : g 1 95 = 91.
+autorewrite with base1 using reflexivity || simpl.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\section[\tt quote]{\tt quote\tacindex{quote}
+\label{quote-examples}}
+
+The tactic \texttt{quote} allows to use Barendregt's so-called
+2-level approach without writing any ML code. Suppose you have a
+language \texttt{L} of 
+'abstract terms' and a type \texttt{A} of 'concrete terms' 
+and a function \texttt{f : L -> A}. If \texttt{L} is a simple
+inductive datatype and \texttt{f} a simple fixpoint, \texttt{quote f}
+will replace the head of current goal by a convertible term of the form 
+\texttt{(f t)}. \texttt{L} must have a constructor of type: \texttt{A
+  -> L}. 
+
+Here is an example:
+
+\begin{coq_example}
+Require Import Quote.
+Parameters A B C : Prop.
+Inductive formula : Type :=
+  | f_and : formula -> formula -> formula (* binary constructor *)
+  | f_or : formula -> formula -> formula
+  | f_not : formula -> formula (* unary constructor *)
+  | f_true : formula (* 0-ary constructor *)
+  | f_const : Prop -> formula (* contructor for constants *).
+Fixpoint interp_f (f:
+                   formula) : Prop :=
+  match f with
+  | f_and f1 f2 => interp_f f1 /\ interp_f f2
+  | f_or f1 f2 => interp_f f1 \/ interp_f f2
+  | f_not f1 => ~ interp_f f1
+  | f_true => True
+  | f_const c => c
+  end.
+Goal A /\ (A \/ True) /\ ~ B /\ (A <-> A).
+quote interp_f.
+\end{coq_example}
+
+The algorithm to perform this inversion is: try to match the
+term with right-hand sides expression of \texttt{f}. If there is a
+match, apply the corresponding left-hand side and call yourself
+recursively on sub-terms. If there is no match, we are at a leaf:
+return the corresponding constructor (here \texttt{f\_const}) applied
+to the term. 
+
+\begin{ErrMsgs}
+\item \errindex{quote: not a simple fixpoint} \\
+  Happens when \texttt{quote} is not able to perform inversion properly.
+\end{ErrMsgs}
+
+\subsection{Introducing variables map}
+
+The normal use of \texttt{quote} is to make proofs by reflection: one
+defines a function \texttt{simplify : formula -> formula} and proves a 
+theorem \texttt{simplify\_ok: (f:formula)(interp\_f (simplify f)) ->
+  (interp\_f f)}. Then, one can simplify formulas by doing:
+\begin{verbatim}
+   quote interp_f.
+   apply simplify_ok.
+   compute.
+\end{verbatim}
+But there is a problem with leafs: in the example above one cannot
+write a function that implements, for example, the logical simplifications 
+$A \land A \ra A$ or $A \land \lnot A \ra \texttt{False}$. This is
+because the \Prop{} is impredicative.
+
+It is better to use that type of formulas:
+
+\begin{coq_eval}
+Reset formula.
+\end{coq_eval}
+\begin{coq_example}
+Inductive formula : Set :=
+  | f_and : formula -> formula -> formula
+  | f_or : formula -> formula -> formula
+  | f_not : formula -> formula
+  | f_true : formula
+  | f_atom : index -> formula.
+\end{coq_example*}
+
+\texttt{index} is defined in module \texttt{quote}. Equality on that
+type is decidable so we are able to simplify $A \land A$ into $A$ at
+the abstract level. 
+
+When there are variables, there are bindings, and \texttt{quote}
+provides also a type \texttt{(varmap A)} of bindings from
+\texttt{index} to any set \texttt{A}, and a function
+\texttt{varmap\_find} to search in such maps. The interpretation
+function has now another argument, a variables map:
+
+\begin{coq_example}
+Fixpoint interp_f (vm:
+                    varmap Prop) (f:formula) {struct f} : Prop :=
+  match f with
+  | f_and f1 f2 => interp_f vm f1 /\ interp_f vm f2
+  | f_or f1 f2 => interp_f vm f1 \/ interp_f vm f2
+  | f_not f1 => ~ interp_f vm f1
+  | f_true => True
+  | f_atom i => varmap_find True i vm
+  end.
+\end{coq_example}
+
+\noindent\texttt{quote} handles this second case properly:
+
+\begin{coq_example}
+Goal A /\ (B \/ A) /\ (A \/ ~ B).
+quote interp_f.
+\end{coq_example}
+
+It builds \texttt{vm} and \texttt{t} such that \texttt{(f vm t)} is
+convertible with the conclusion of current goal.
+
+\subsection{Combining variables and constants}
+
+One can have both variables and constants in abstracts terms; that is
+the case, for example, for the \texttt{ring} tactic (chapter
+\ref{ring}). Then one must provide to \texttt{quote} a list of
+\emph{constructors of constants}. For example, if the list is
+\texttt{[O S]} then closed natural numbers will be considered as
+constants and other terms as variables. 
+
+Example: 
+
+\begin{coq_eval}
+Reset formula.
+\end{coq_eval}
+\begin{coq_example*}
+Inductive formula : Type :=
+  | f_and : formula -> formula -> formula
+  | f_or : formula -> formula -> formula
+  | f_not : formula -> formula
+  | f_true : formula
+  | f_const : Prop -> formula (* constructor for constants *)
+  | f_atom : index -> formula.
+Fixpoint interp_f
+ (vm:            (* constructor for variables *)
+  varmap Prop) (f:formula) {struct f} : Prop :=
+  match f with
+  | f_and f1 f2 => interp_f vm f1 /\ interp_f vm f2
+  | f_or f1 f2 => interp_f vm f1 \/ interp_f vm f2
+  | f_not f1 => ~ interp_f vm f1
+  | f_true => True
+  | f_const c => c
+  | f_atom i => varmap_find True i vm
+  end.
+Goal 
+A /\ (A \/ True) /\ ~ B /\ (C <-> C).
+\end{coq_example*}
+
+\begin{coq_example}
+quote interp_f [ A B ].
+Undo.
+  quote interp_f [ B C iff ].
+\end{coq_example}
+
+\Warning Since function inversion
+is undecidable in general case, don't expect miracles from it!
+
+% \SeeAlso file \texttt{theories/DEMOS/DemoQuote.v}
+
+\SeeAlso comments of source file \texttt{tactics/contrib/polynom/quote.ml}
+
+\SeeAlso the \texttt{ring} tactic (Chapter~\ref{ring})
+
+
+
+\section{Using the tactical language}
+
+\subsection{About the cardinality of the set of natural numbers}
+
+A first example which shows how to use the pattern matching over the proof
+contexts is the proof that natural numbers have more than two elements. The
+proof of such a lemma can be done as %shown on Figure~\ref{cnatltac}.
+follows:
+%\begin{figure}
+%\begin{centerframe}
+\begin{coq_eval}
+Reset Initial.
+Require Import Arith.
+Require Import List.
+\end{coq_eval}
+\begin{coq_example*}
+Lemma card_nat :
+ ~ (exists x : nat, exists y : nat, forall z:nat, x = z \/ y = z).
+Proof.
+red; intros (x, (y, Hy)).
+elim (Hy 0); elim (Hy 1); elim (Hy 2); intros;
+ match goal with
+ | [_:(?a = ?b),_:(?a = ?c) |- _ ] =>
+     cut (b = c); [ discriminate | apply trans_equal with a; auto ]
+ end.
+Qed.
+\end{coq_example*}
+%\end{centerframe}
+%\caption{A proof on cardinality of natural numbers}
+%\label{cnatltac}
+%\end{figure}
+
+We can notice that all the (very similar) cases coming from the three
+eliminations (with three distinct natural numbers) are successfully solved by
+a {\tt match goal} structure and, in particular, with only one pattern (use
+of non-linear matching).
+
+\subsection{Permutation on closed lists}
+
+Another more complex example is the problem of permutation on closed lists. The
+aim is to show that a closed list is a permutation of another one.
+
+First, we define the permutation predicate as shown in table~\ref{permutpred}.
+
+\begin{figure}
+\begin{centerframe}
+\begin{coq_example*}
+Section Sort.
+Variable A : Set.
+Inductive permut : list A -> list A -> Prop :=
+  | permut_refl   : forall l, permut l l
+  | permut_cons   :
+      forall a l0 l1, permut l0 l1 -> permut (a :: l0) (a :: l1)
+  | permut_append : forall a l, permut (a :: l) (l ++ a :: nil)
+  | permut_trans  :
+      forall l0 l1 l2, permut l0 l1 -> permut l1 l2 -> permut l0 l2.
+End Sort.
+\end{coq_example*}
+\end{centerframe}
+\caption{Definition of the permutation predicate}
+\label{permutpred}
+\end{figure}
+
+A more complex example is the problem of permutation on closed lists.
+The aim is to show that a closed list is a permutation of another one.
+First, we define the permutation predicate as shown on
+Figure~\ref{permutpred}.
+
+\begin{figure}
+\begin{centerframe}
+\begin{coq_example}
+Ltac Permut n :=
+  match goal with
+  | |- (permut _ ?l ?l) => apply permut_refl
+  | |- (permut _ (?a :: ?l1) (?a :: ?l2)) =>
+      let newn := eval compute in (length l1) in
+      (apply permut_cons; Permut newn)
+  | |- (permut ?A (?a :: ?l1) ?l2) =>
+      match eval compute in n with
+      | 1 => fail
+      | _ =>
+          let l1' := constr:(l1 ++ a :: nil) in
+          (apply (permut_trans A (a :: l1) l1' l2);
+            [ apply permut_append | compute; Permut (pred n) ])
+      end
+  end.
+Ltac PermutProve :=
+  match goal with
+  | |- (permut _ ?l1 ?l2) =>
+      match eval compute in (length l1 = length l2) with
+      | (?n = ?n) => Permut n
+      end
+  end.
+\end{coq_example}
+\end{centerframe}
+\caption{Permutation tactic}
+\label{permutltac}
+\end{figure}
+
+Next, we can write naturally the tactic and the result can be seen on
+Figure~\ref{permutltac}. We can notice that we use two toplevel
+definitions {\tt PermutProve} and {\tt Permut}. The function to be
+called is {\tt PermutProve} which computes the lengths of the two
+lists and calls {\tt Permut} with the length if the two lists have the
+same length. {\tt Permut} works as expected.  If the two lists are
+equal, it concludes. Otherwise, if the lists have identical first
+elements, it applies {\tt Permut} on the tail of the lists.  Finally,
+if the lists have different first elements, it puts the first element
+of one of the lists (here the second one which appears in the {\tt
+  permut} predicate) at the end if that is possible, i.e., if the new
+first element has been at this place previously. To verify that all
+rotations have been done for a list, we use the length of the list as
+an argument for {\tt Permut} and this length is decremented for each
+rotation down to, but not including, 1 because for a list of length
+$n$, we can make exactly $n-1$ rotations to generate at most $n$
+distinct lists. Here, it must be noticed that we use the natural
+numbers of {\Coq} for the rotation counter. On Figure~\ref{ltac}, we
+can see that it is possible to use usual natural numbers but they are
+only used as arguments for primitive tactics and they cannot be
+handled, in particular, we cannot make computations with them. So, a
+natural choice is to use {\Coq} data structures so that {\Coq} makes
+the computations (reductions) by {\tt eval compute in} and we can get
+the terms back by {\tt match}.
+ 
+With {\tt PermutProve}, we can now prove lemmas as 
+% shown on Figure~\ref{permutlem}.
+follows:
+%\begin{figure}
+%\begin{centerframe}
+
+\begin{coq_example*}
+Lemma permut_ex1 :
+  permut nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
+Proof. PermutProve. Qed.
+Lemma permut_ex2 :
+  permut nat
+    (0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: nil)
+    (0 :: 2 :: 4 :: 6 :: 8 :: 9 :: 7 :: 5 :: 3 :: 1 :: nil).
+Proof. PermutProve. Qed.
+\end{coq_example*}
+%\end{centerframe}
+%\caption{Examples of {\tt PermutProve} use}
+%\label{permutlem}
+%\end{figure}
+
+
+\subsection{Deciding intuitionistic propositional logic}
+
+\begin{figure}[b]
+\begin{centerframe}
+\begin{coq_example}
+Ltac Axioms :=
+  match goal with
+  | |- True => trivial
+  | _:False |- _  => elimtype False; assumption
+  | _:?A |- ?A  => auto
+  end.
+\end{coq_example}
+\end{centerframe}
+\caption{Deciding intuitionistic propositions (1)}
+\label{tautoltaca}
+\end{figure}
+
+
+\begin{figure}
+\begin{centerframe}
+\begin{coq_example}
+Ltac DSimplif :=
+  repeat
+   (intros;
+    match goal with
+     | id:(~ _) |- _ => red in id
+     | id:(_ /\ _) |- _ =>
+         elim id; do 2 intro; clear id
+     | id:(_ \/ _) |- _ =>
+         elim id; intro; clear id
+     | id:(?A /\ ?B -> ?C) |- _ =>
+         cut (A -> B -> C);
+          [ intro | intros; apply id; split; assumption ]
+     | id:(?A \/ ?B -> ?C) |- _ =>
+         cut (B -> C);
+          [ cut (A -> C);
+             [ intros; clear id
+             | intro; apply id; left; assumption ]
+          | intro; apply id; right; assumption ]
+     | id0:(?A -> ?B),id1:?A |- _ =>
+         cut B; [ intro; clear id0 | apply id0; assumption ]
+     | |- (_ /\ _) => split
+     | |- (~ _) => red
+     end).
+Ltac TautoProp :=
+  DSimplif;
+   Axioms ||
+     match goal with
+     | id:((?A -> ?B) -> ?C) |- _ =>
+          cut (B -> C);
+          [ intro; cut (A -> B);
+             [ intro; cut C;
+                [ intro; clear id | apply id; assumption ]
+             | clear id ]
+          | intro; apply id; intro; assumption ]; TautoProp
+     | id:(~ ?A -> ?B) |- _ =>
+         cut (False -> B);
+          [ intro; cut (A -> False);
+             [ intro; cut B;
+                [ intro; clear id | apply id; assumption ]
+             | clear id ]
+          | intro; apply id; red; intro; assumption ]; TautoProp
+     | |- (_ \/ _) => (left; TautoProp) || (right; TautoProp)
+     end.
+\end{coq_example}
+\end{centerframe}
+\caption{Deciding intuitionistic propositions (2)}
+\label{tautoltacb}
+\end{figure}
+
+The pattern matching on goals allows a complete and so a powerful
+backtracking when returning tactic values. An interesting application
+is the problem of deciding intuitionistic propositional logic.
+Considering the contraction-free sequent calculi {\tt LJT*} of
+Roy~Dyckhoff (\cite{Dyc92}), it is quite natural to code such a tactic
+using the tactic language as shown on Figures~\ref{tautoltaca}
+and~\ref{tautoltacb}. The tactic {\tt Axioms} tries to conclude using
+usual axioms. The tactic {\tt DSimplif} applies all the reversible
+rules of Dyckhoff's system. Finally, the tactic {\tt TautoProp} (the
+main tactic to be called) simplifies with {\tt DSimplif}, tries to
+conclude with {\tt Axioms} and tries several paths using the
+backtracking rules (one of the four Dyckhoff's rules for the left
+implication to get rid of the contraction and the right or).
+
+For example, with {\tt TautoProp}, we can prove tautologies like
+ those:
+% on Figure~\ref{tautolem}.
+%\begin{figure}[tbp]
+%\begin{centerframe}
+\begin{coq_example*}
+Lemma tauto_ex1 : forall A B:Prop, A /\ B -> A \/ B.
+Proof. TautoProp. Qed.
+Lemma tauto_ex2 :
+   forall A B:Prop, (~ ~ B -> B) -> (A -> B) -> ~ ~ A -> B.
+Proof. TautoProp. Qed.
+\end{coq_example*}
+%\end{centerframe}
+%\caption{Proofs of tautologies with {\tt TautoProp}}
+%\label{tautolem}
+%\end{figure}
+
+\subsection{Deciding type isomorphisms}
+
+A more tricky problem is to decide equalities between types and modulo
+isomorphisms. Here, we choose to use the isomorphisms of the simply typed
+$\lb{}$-calculus with Cartesian product and $unit$ type (see, for example,
+\cite{RC95}). The axioms of this $\lb{}$-calculus are given by
+table~\ref{isosax}.
+
+\begin{figure}
+\begin{centerframe}
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example*}
+Open Scope type_scope.
+Section Iso_axioms.
+Variables A B C : Set.
+Axiom Com : A * B = B * A.
+Axiom Ass : A * (B * C) = A * B * C.
+Axiom Cur : (A * B -> C) = (A -> B -> C).
+Axiom Dis : (A -> B * C) = (A -> B) * (A -> C).
+Axiom P_unit : A * unit = A.
+Axiom AR_unit : (A -> unit) = unit.
+Axiom AL_unit : (unit -> A) = A.
+Lemma Cons : B = C -> A * B = A * C.
+Proof.
+intro Heq; rewrite Heq; apply refl_equal.
+Qed.
+End Iso_axioms.
+\end{coq_example*}
+\end{centerframe}
+\caption{Type isomorphism axioms}
+\label{isosax}
+\end{figure}
+
+A more tricky problem is to decide equalities between types and modulo
+isomorphisms. Here, we choose to use the isomorphisms of the simply typed
+$\lb{}$-calculus with Cartesian product and $unit$ type (see, for example,
+\cite{RC95}). The axioms of this $\lb{}$-calculus are given on
+Figure~\ref{isosax}.
+
+\begin{figure}[ht]
+\begin{centerframe}
+\begin{coq_example}
+Ltac DSimplif trm :=
+  match trm with
+  | (?A * ?B * ?C) =>
+      rewrite <- (Ass A B C); try MainSimplif
+  | (?A * ?B -> ?C) =>
+      rewrite (Cur A B C); try MainSimplif
+  | (?A -> ?B * ?C) =>
+      rewrite (Dis A B C); try MainSimplif
+  | (?A * unit) =>
+      rewrite (P_unit A); try MainSimplif
+  | (unit * ?B) =>
+      rewrite (Com unit B); try MainSimplif
+  | (?A -> unit) =>
+      rewrite (AR_unit A); try MainSimplif
+  | (unit -> ?B) =>
+      rewrite (AL_unit B); try MainSimplif
+  | (?A * ?B) =>
+      (DSimplif A; try MainSimplif) || (DSimplif B; try MainSimplif)
+  | (?A -> ?B) =>
+      (DSimplif A; try MainSimplif) || (DSimplif B; try MainSimplif)
+  end
+ with MainSimplif :=
+  match goal with
+  | |- (?A = ?B) => try DSimplif A; try DSimplif B
+  end.
+Ltac Length trm :=
+  match trm with
+  | (_ * ?B) => let succ := Length B in constr:(S succ)
+  | _ => constr:1
+  end.
+Ltac assoc := repeat rewrite <- Ass.
+\end{coq_example}
+\end{centerframe}
+\caption{Type isomorphism tactic (1)}
+\label{isosltac1}
+\end{figure}
+
+\begin{figure}[ht]
+\begin{centerframe}
+\begin{coq_example}
+Ltac DoCompare n :=
+  match goal with
+  | [ |- (?A = ?A) ] => apply refl_equal
+  | [ |- (?A * ?B = ?A * ?C) ] =>
+      apply Cons; let newn := Length B in
+                  DoCompare newn
+  | [ |- (?A * ?B = ?C) ] =>
+      match eval compute in n with
+      | 1 => fail
+      | _ =>
+          pattern (A * B) at 1; rewrite Com; assoc; DoCompare (pred n)
+      end
+  end.
+Ltac CompareStruct :=
+  match goal with
+  | [ |- (?A = ?B) ] =>
+      let l1 := Length A
+      with l2 := Length B in
+      match eval compute in (l1 = l2) with
+      | (?n = ?n) => DoCompare n
+      end
+  end.
+Ltac IsoProve := MainSimplif; CompareStruct.
+\end{coq_example}
+\end{centerframe}
+\caption{Type isomorphism tactic (2)}
+\label{isosltac2}
+\end{figure}
+
+The tactic to judge equalities modulo this axiomatization can be written as
+shown on Figures~\ref{isosltac1} and~\ref{isosltac2}. The algorithm is quite
+simple. Types are reduced using axioms that can be oriented (this done by {\tt
+MainSimplif}). The normal forms are sequences of Cartesian
+products without Cartesian product in the left component. These normal forms
+are then compared modulo permutation of the components (this is done by {\tt
+CompareStruct}). The main tactic to be called and realizing this algorithm is
+{\tt IsoProve}.
+
+% Figure~\ref{isoslem} gives 
+Here are examples of what can be solved by {\tt IsoProve}.
+%\begin{figure}[ht]
+%\begin{centerframe}
+\begin{coq_example*}
+Lemma isos_ex1 : 
+  forall A B:Set, A * unit * B = B * (unit * A).
+Proof.
+intros; IsoProve.
+Qed.
+
+Lemma isos_ex2 :
+  forall A B C:Set,
+    (A * unit -> B * (C * unit)) =
+    (A * unit -> (C -> unit) * C) * (unit -> A -> B).
+Proof.
+intros; IsoProve.
+Qed.
+\end{coq_example*}
+%\end{centerframe}
+%\caption{Type equalities solved by {\tt IsoProve}}
+%\label{isoslem}
+%\end{figure}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

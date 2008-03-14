@@ -1,0 +1,42 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% File headers.hva
+% Hevea version of headers.sty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Commands for indexes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{index}
+\makeindex
+\newindex{tactic}{tacidx}{tacind}{%
+\protect\addcontentsline{toc}{chapter}{Tactics Index}Tactics Index}
+
+\newindex{command}{comidx}{comind}{%
+\protect\addcontentsline{toc}{chapter}{Vernacular Commands Index}%
+Vernacular Commands Index}
+
+\newindex{error}{erridx}{errind}{%
+\protect\addcontentsline{toc}{chapter}{Index of Error Messages}Index of Error Messages}
+
+\renewindex{default}{idx}{ind}{%
+\protect\addcontentsline{toc}{chapter}{Global Index}%
+Global Index}
+
+\newcommand{\tacindex}[1]{%
+\index{#1@\texttt{#1}}\index[tactic]{#1@\texttt{#1}}}
+\newcommand{\comindex}[1]{%
+\index{#1@\texttt{#1}}\index[command]{#1@\texttt{#1}}}
+\newcommand{\errindex}[1]{\texttt{#1}\index[error]{#1}}
+\newcommand{\errindexbis}[2]{\texttt{#1}\index[error]{#2}}
+\newcommand{\ttindex}[1]{\index{#1@\texttt{#1}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% For the Addendum table of contents
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\aauthor}[1]{{\LARGE \bf #1} \bigskip}  % 3 \bigskip's that were here originally
+						    % may be good for LaTeX but too much for HTML    
+\newcommand{\atableofcontents}{}
+\newcommand{\achapter}[1]{\chapter{#1}}
+\newcommand{\asection}{\section}
+\newcommand{\asubsection}{\subsection}
+\newcommand{\asubsubsection}{\subsubsection}

@@ -1,0 +1,28 @@
+
+TODO
+----
+
+- axiomes pour les prédicats récursifs comme
+
+  Fixpoint even (n:nat) : Prop :=
+  match n with 
+  O => True
+  | S O => False
+  | S (S p) => even p
+  end.
+
+  ou encore In sur les listes du module Coq List.
+
+- discriminate
+
+- inversion (Set et Prop)
+
+
+BUGS
+----
+
+- value = Some : forall A:Set, A -> option A
+
+  -> eta_expanse échoue sur assert false (ligne 147)
+
+

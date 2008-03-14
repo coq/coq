@@ -1,0 +1,286 @@
+
+\documentclass{article}
+
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{fullpage}
+
+\author{B.~Barras}
+\title{An introduction to syntax of Coq V8}
+
+%% Le _ est un caractère normal
+\catcode`\_=13
+\let\subscr=_
+\def_{\ifmmode\sb\else\subscr\fi}
+
+\def\NT#1{\langle\textit{#1}\rangle}
+\def\NTL#1#2{\langle\textit{#1}\rangle_{#2}}
+\def\TERM#1{\textsf{\bf #1}}
+
+\newenvironment{transbox}
+  {\begin{center}\tt\begin{tabular}{l|ll} \hfil\textrm{V7} & \hfil\textrm{V8} \\ \hline}
+  {\end{tabular}\end{center}}
+\def\TRANS#1#2
+  {\begin{tabular}[t]{@{}l@{}}#1\end{tabular} & 
+   \begin{tabular}[t]{@{}l@{}}#2\end{tabular} \\}
+\def\TRANSCOM#1#2#3
+  {\begin{tabular}[t]{@{}l@{}}#1\end{tabular} & 
+   \begin{tabular}[t]{@{}l@{}}#2\end{tabular} & #3 \\}
+
+\begin{document}
+
+\maketitle
+
+The goal of this document is to introduce by example to the new syntax of
+Coq. It is strongly recommended to read first the definition of the new
+syntax, but this document should also be useful for the eager user who wants
+to start with the new syntax quickly.
+
+
+\section{Changes in lexical conventions w.r.t. V7}
+
+\subsection{Identifiers}
+
+The lexical conventions changed: \TERM{_} is not a regular identifier
+anymore. It is used in terms as a placeholder for subterms to be inferred
+at type-checking, and in patterns as a non-binding variable.
+
+Furthermore, only letters (unicode letters), digits, single quotes and
+_ are allowed after the first character.
+
+\subsection{Quoted string}
+
+Quoted strings are used typically to give a filename (which may not
+be a regular identifier). As before they are written between double
+quotes ("). Unlike for V7, there is no escape character: characters
+are written normaly but the double quote which is doubled.
+
+\section{Main changes in terms w.r.t. V7}
+
+
+\subsection{Precedence of application}
+
+In the new syntax, parentheses are not really part of the syntax of
+application. The precedence of application (10) is tighter than all
+prefix and infix notations. It makes it possible to remove parentheses
+in many contexts.
+
+\begin{transbox}
+\TRANS{(A x)->(f x)=(g y)}{A x -> f x = g y}
+\TRANS{(f [x]x)}{f (fun x => x)}
+\end{transbox}
+
+
+\subsection{Arithmetics and scopes}
+
+The specialized notation for \TERM{Z} and \TERM{R} (introduced by
+symbols \TERM{`} and \TERM{``}) have disappeared. They have been
+replaced by the general notion of scope.
+
+\begin{center}
+\begin{tabular}{l|l|l}
+type & scope name & delimiter \\
+\hline
+types & type_scope & \TERM{T} \\
+\TERM{bool} & bool_scope & \\
+\TERM{nat} & nat_scope & \TERM{nat} \\
+\TERM{Z} & Z_scope & \TERM{Z} \\
+\TERM{R} & R_scope & \TERM{R} \\
+\TERM{positive} & positive_scope & \TERM{P}
+\end{tabular}
+\end{center}
+
+In order to use notations of arithmetics on \TERM{Z}, its scope must be opened with command \verb+Open Scope Z_scope.+ Another possibility is using the scope change notation (\TERM{\%}). The latter notation is to be used when notations of several scopes appear in the same expression.
+
+In examples below, scope changes are not needed if the appropriate scope
+has been opened. Scope nat_scope is opened in the initial state of Coq.
+\begin{transbox}
+\TRANSCOM{`0+x=x+0`}{0+x=x+0}{\textrm{Z_scope}}
+\TRANSCOM{``0 + [if b then ``1`` else ``2``]``}{0 + if b then 1 else 2}{\textrm{R_scope}}
+\TRANSCOM{(0)}{0}{\textrm{nat_scope}}
+\end{transbox}
+
+Below is a table that tells which notation is available in which
+scope. The relative precedences and associativity of operators is the
+same as in usual mathematics. See the reference manual for more
+details. However, it is important to remember that unlike V7, the type
+operators for product and sum are left associative, in order not to
+clash with arithmetic operators.
+
+\begin{center}
+\begin{tabular}{l|l}
+scope & notations \\
+\hline
+nat_scope & $+ ~- ~* ~< ~\leq ~> ~\geq$ \\
+Z_scope & $+ ~- ~* ~/ ~\TERM{mod} ~< ~\leq ~> ~\geq ~?=$ \\
+R_scope & $+ ~- ~* ~/ ~< ~\leq ~> ~\geq$ \\
+type_scope & $* ~+$ \\
+bool_scope & $\TERM{\&\&} ~\TERM{$||$} ~\TERM{-}$ \\
+list_scope & $\TERM{::} ~\TERM{++}$
+\end{tabular}
+\end{center}
+(Note: $\leq$ is written \TERM{$<=$})
+
+
+
+\subsection{Notation for implicit arguments}
+
+The explicitation of arguments is closer to the \emph{bindings} notation in
+tactics. Argument positions follow the argument names of the head constant.
+
+\begin{transbox}
+\TRANS{f 1!t1 2!t2}{f (x:=t1) (y:=t2)}
+\TRANS{!f t1 t2}{@f t1 t2}
+\end{transbox}
+
+
+\subsection{Universal quantification}
+
+The universal quantification and dependent product types are now
+materialized with the \TERM{forall} keyword before the binders and a
+comma after the binders.
+
+The syntax of binders also changed significantly. A binder can simply be
+a name when its type can be inferred. In other cases, the name and the type
+of the variable are put between parentheses. When several consecutive
+variables have the same type, they can be grouped. Finally, if all variables
+have the same type parentheses can be omitted.
+
+\begin{transbox}
+\TRANS{(x:A)B}{forall (x:~A), B ~~\textrm{or}~~ forall x:~A, B}
+\TRANS{(x,y:nat)P}{forall (x y :~nat), P ~~\textrm{or}~~ forall x y :~nat, P}
+\TRANS{(x,y:nat;z:A)P}{forall (x y :~nat) (z:A), P}
+\TRANS{(x,y,z,t:?)P}{forall x y z t, P}
+\TRANS{(x,y:nat;z:?)P}{forall (x y :~nat) z, P}
+\end{transbox}
+
+\subsection{Abstraction}
+
+The notation for $\lambda$-abstraction follows that of universal
+quantification. The binders are surrounded by keyword \TERM{fun}
+and $\Rightarrow$ (\verb+=>+ in ascii).
+
+\begin{transbox}
+\TRANS{[x,y:nat; z](f a b c)}{fun (x y:nat) z => f a b c}
+\end{transbox}
+
+
+\subsection{Pattern-matching}
+
+Beside the usage of the keyword pair \TERM{match}/\TERM{with} instead of
+\TERM{Cases}/\TERM{of}, the main change is the notation for the type of
+branches and return type. It is no longer written between \TERM{$<$ $>$} before
+the \TERM{Cases} keyword, but interleaved with the destructured objects.
+
+The idea is that for each destructured object, one may specify a variable
+name to tell how the branches types depend on this destructured objects (case
+of a dependent elimination), and also how they depend on the value of the
+arguments of the inductive type of the destructured objects. The type of
+branches is then given after the keyword \TERM{return}, unless it can be
+inferred.
+
+Moreover, when the destructured object is a variable, one may use this
+variable in the return type.
+
+\begin{transbox}
+\TRANS{Cases n of\\~~ O => O \\| (S k) => (1) end}{match n with\\~~ 0 => 0 \\| (S k) => 1 end}
+\TRANS{Cases m n of \\~~0 0 => t \\| ... end}{match m, n with \\~~0, 0 => t \\| .. end}
+\TRANS{<[n:nat](P n)>Cases T of ... end}{match T as n return P n with ... end}
+\TRANS{<[n:nat][p:(even n)]\~{}(odd n)>Cases p of\\~~ ... \\end}{match p in even n return \~{} odd n with\\~~ ...\\end}
+\end{transbox}
+
+
+\subsection{Fixpoints and cofixpoints}
+
+An easier syntax for non-mutual fixpoints is provided, making it very close
+to the usual notation for non-recursive functions. The decreasing argument
+is now indicated by an annotation between curly braces, regardless of the
+binders grouping. The annotation can be omitted if the binders introduce only
+one variable. The type of the result can be omitted if inferable.
+
+\begin{transbox}
+\TRANS{Fix plus\{plus [n:nat] : nat -> nat :=\\~~ [m]...\}}{fix plus (n m:nat) \{struct n\}: nat := ...}
+\TRANS{Fix fact\{fact [n:nat]: nat :=\\
+~~Cases n of\\~~~~ O => (1) \\~~| (S k) => (mult n (fact k)) end\}}{fix fact
+  (n:nat) :=\\
+~~match n with \\~~~~0 => 1 \\~~| (S k) => n * fact k end}
+\end{transbox}
+
+There is a syntactic sugar for mutual fixpoints associated to a local
+definition:
+
+\begin{transbox}
+\TRANS{let f := Fix f \{f [x:A] : T := M\} in\\(g (f y))}{let fix f (x:A) : T := M in\\g (f x)}
+\end{transbox}
+
+The same applies to cofixpoints, annotations are not allowed in that case.
+
+\subsection{Notation for type cast}
+
+\begin{transbox}
+\TRANS{O :: nat}{0 : nat}
+\end{transbox}
+
+\section{Main changes in tactics w.r.t. V7}
+
+The main change is that all tactic names are lowercase. This also holds for
+Ltac keywords.
+
+\subsection{Ltac}
+
+Definitions of macros are introduced by \TERM{Ltac} instead of
+\TERM{Tactic Definition}, \TERM{Meta Definition} or \TERM{Recursive
+Definition}.
+
+Rules of a match command are not between square brackets anymore.
+
+Context (understand a term with a placeholder) instantiation \TERM{inst}
+became \TERM{context}. Syntax is unified with subterm matching.
+
+\begin{transbox}
+\TRANS{match t with [C[x=y]] => inst C[y=x]}{match t with context C[x=y] => context C[y=x]}
+\end{transbox}
+
+\subsection{Named arguments of theorems}
+
+\begin{transbox}
+\TRANS{Apply thm with x:=t 1:=u}{apply thm with (x:=t) (1:=u)}
+\end{transbox}
+
+
+\subsection{Occurrences}
+
+To avoid ambiguity between a numeric literal and the optionnal
+occurence numbers of this term, the occurence numbers are put after
+the term itself. This applies to tactic \TERM{pattern} and also
+\TERM{unfold}
+\begin{transbox}
+\TRANS{Pattern 1 2 (f x) 3 4 d y z}{pattern (f x at 1 2) (d at 3 4) y z}
+\end{transbox}
+
+\section{Main changes in vernacular commands w.r.t. V7}
+
+
+\subsection{Binders}
+
+The binders of vernacular commands changed in the same way as those of
+fixpoints. This also holds for parameters of inductive definitions.
+
+
+\begin{transbox}
+\TRANS{Definition x [a:A] : T := M}{Definition x (a:A) : T := M}
+\TRANS{Inductive and [A,B:Prop]: Prop := \\~~conj : A->B->(and A B)}%
+      {Inductive and (A B:Prop): Prop := \\~~conj : A -> B -> and A B}
+\end{transbox}
+
+\subsection{Hints}
+
+The syntax of \emph{extern} hints changed: the pattern and the tactic
+to be applied are separated by a \TERM{$\Rightarrow$}.
+\begin{transbox}
+\TRANS{Hint Extern 4 (toto ?) Apply lemma}{Hint Extern 4 (toto _) => apply lemma}
+\end{transbox}
+
+\end{document}

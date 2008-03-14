@@ -1,0 +1,3687 @@
+\documentclass[11pt]{article}
+\title{A Tutorial on [Co-]Inductive Types in Coq}
+\author{Eduardo Gim\'enez\thanks{Eduardo.Gimenez@inria.fr},
+Pierre Cast\'eran\thanks{Pierre.Casteran@labri.fr}}
+\date{May 1998 --- \today}
+
+\usepackage{multirow}
+\usepackage{aeguill}
+%\externaldocument{RefMan-gal.v}
+%\externaldocument{RefMan-ext.v}
+%\externaldocument{RefMan-tac.v}
+%\externaldocument{RefMan-oth}
+%\externaldocument{RefMan-tus.v}
+%\externaldocument{RefMan-syn.v}
+%\externaldocument{Extraction.v}
+\input{recmacros}
+\input{coqartmacros}
+\newcommand{\refmancite}[1]{{}}
+%\newcommand{\refmancite}[1]{\cite{coqrefman}}
+%\newcommand{\refmancite}[1]{\cite[#1] {]{coqrefman}}
+
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{makeidx}
+%\usepackage{multind}
+\usepackage{alltt}   
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{theorem}
+\usepackage[dvips]{epsfig}
+\usepackage{epic}
+\usepackage{eepic}
+\usepackage{ecltree}
+\usepackage{moreverb} 
+\usepackage{color}
+\usepackage{pifont}
+\usepackage{xr}
+\usepackage{url}
+
+\usepackage{alltt}
+\renewcommand{\familydefault}{ptm}
+\renewcommand{\seriesdefault}{m}
+\renewcommand{\shapedefault}{n}
+\newtheorem{exercise}{Exercise}[section]	
+\makeindex
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This document\footnote{The first versions of this document were entirely written by Eduardo Gimenez.
+Pierre Cast\'eran wrote the 2004 and 2006 revisions.} is an introduction to the definition and
+use of inductive and co-inductive  types in the {\coq} proof environment. It explains how types like natural numbers and infinite streams are defined
+in {\coq}, and the kind of proof techniques that can be used to reason
+about them (case analysis, induction, inversion of predicates,
+co-induction, etc).  Each technique is illustrated through an
+executable and self-contained {\coq} script.  
+\end{abstract}
+%\RRkeyword{Proof environments, recursive types.}
+%\makeRT
+
+\addtocontents{toc}{\protect \thispagestyle{empty}}
+\pagenumbering{arabic}
+
+\cleardoublepage
+\tableofcontents
+\clearpage
+
+\section{About this document}
+
+This document is an introduction to the definition and use of
+inductive and co-inductive  types in the {\coq} proof environment.  It was born from the
+notes written for the course about the version V5.10 of {\coq}, given
+by Eduardo Gimenez  at
+the Ecole Normale Sup\'erieure de Lyon in March 1996. This article is
+a revised and improved version of these notes for the version V8.0 of
+the system.
+
+
+We assume that the reader has some familiarity with the
+proofs-as-programs paradigm of Logic \cite{Coquand:metamathematical} and the generalities
+of the {\coq} system \cite{coqrefman}.  You would take a greater advantage of
+this document if you first read the general tutorial about {\coq} and
+{\coq}'s FAQ, both available on \cite{coqsite}.
+A text book \cite{coqart},  accompanied with a lot of
+examples and exercises \cite{Booksite}, presents a detailed description
+of the {\coq} system and its underlying
+formalism: the Calculus of Inductive Construction.
+Finally, the complete description of {\coq}  is given in the reference manual
+\cite{coqrefman}. Most of the tactics and commands we describe have
+several options, which we do not present exhaustively. 
+If some script herein uses a non described feature, please refer to
+the Reference Manual.
+
+
+If you are familiar with other proof environments
+based on type theory and the LCF style ---like PVS, LEGO, Isabelle,
+etc--- then you will find not difficulty to guess the unexplained
+details.
+
+The better way to read this document is to start up the {\coq} system,
+type by yourself the examples and exercises, and observe the
+behavior of the system. All the examples proposed in this tutorial
+can be downloaded from the same site as the present document. 
+
+
+The tutorial is organised as follows. The next section describes how
+inductive types are defined in {\coq}, and introduces some useful ones,
+like natural numbers, the empty type, the propositional equality type,
+and the logical connectives. Section \ref{CaseAnalysis} explains
+definitions by pattern-matching and their connection with the
+principle of case analysis. This principle is the most basic
+elimination rule associated with inductive or co-inductive types
+ and follows a
+general scheme that we illustrate for some of the types introduced in
+Section \ref{Introduction}.  Section \ref{CaseTechniques} illustrates
+the pragmatics of this principle, showing different proof techniques
+based on it. Section \ref{StructuralInduction} introduces definitions
+by structural recursion and proofs by induction. 
+Section~\ref{CaseStudy} presents some elaborate techniques
+about dependent case analysis. Finally, Section
+\ref{CoInduction} is a brief introduction to co-inductive types
+--i.e., types containing infinite objects-- and the principle of
+co-induction.
+
+
+Thanks to  Bruno Barras, Yves Bertot, Hugo Herbelin, Jean-Fran\c{c}ois Monin
+and Michel L\'evy for their help.
+
+\subsection*{Lexical conventions}
+The \texttt{typewriter} font is used to represent text
+input by the user, while the \textit{italic} font is used to represent
+the text output by the system as answers.  
+
+
+Moreover, the mathematical symbols \coqle{}, \coqdiff, \(\exists\),
+\(\forall\), \arrow{}, $\rightarrow{}$ \coqor{}, \coqand{}, and \funarrow{} 
+stand for the character strings \citecoq{<=}, \citecoq{<>},
+\citecoq{exists}, \citecoq{forall}, \citecoq{->}, \citecoq{<-},
+\texttt{\char'134/}, \texttt{/\char'134}, and \citecoq{=>},
+respectively.  For instance, the \coq{} statement
+%V8 A prendre
+% inclusion numero 1
+% traduction numero 1
+\begin{alltt}
+\hide{Open Scope nat_scope. Check (}forall A:Type,(exists x : A, forall (y:A), x <> y) -> 2 = 3\hide{).}
+\end{alltt}
+is written as follows in this tutorial:
+%V8 A prendre
+% inclusion numero 2
+% traduction numero 2
+\begin{alltt}
+\hide{Check (}{\prodsym}A:Type,(\exsym{}x:A, {\prodsym}y:A, x {\coqdiff} y) \arrow{} 2 = 3\hide{).}
+\end{alltt}
+
+When a fragment of \coq{} input text appears in the middle of
+regular text, we often place this fragment between double quotes
+``\dots.''  These double quotes do not belong to the \coq{} syntax.
+
+Finally, any
+string enclosed between \texttt{(*} and \texttt{*)} is a comment and
+is ignored by the \coq{} system.
+
+\section{Introducing Inductive Types} 
+\label{Introduction}
+
+Inductive types are types closed with respect to their introduction
+rules. These rules explain the most basic or \textsl{canonical} ways
+of constructing an element of the type.  In this sense, they
+characterize the recursive type. Different rules must be considered as
+introducing different objects. In order to fix ideas, let us introduce
+in {\coq} the most well-known example of a recursive type: the type of
+natural numbers.
+
+%V8 A prendre
+\begin{alltt}
+Inductive nat : Set := 
+ | O : nat 
+ | S : nat\arrow{}nat.
+\end{alltt}
+
+The definition of a recursive type has two main parts. First, we
+establish what kind of recursive type we will characterize (a set, in
+this case). Second, we present the introduction rules that define the
+type ({\Z} and {\SUCC}), also called its {\sl constructors}. The constructors
+{\Z} and {\SUCC} determine all the elements of this type. In other
+words, if $n\mbox{:}\nat$, then $n$ must have been introduced either
+by the rule {\Z} or by an application of the rule {\SUCC} to a
+previously constructed natural number. In this sense, we can say
+that {\nat} is \emph{closed}. On the contrary, the type
+$\Set$ is an {\it open} type, since we do not know {\it a priori} all
+the possible ways of introducing an object of type \texttt{Set}.
+
+After entering this command, the constants {\nat}, {\Z} and {\SUCC} are
+available in the current context. We can see their types using the
+\texttt{Check} command \refmancite{Section \ref{Check}}:
+
+%V8 A prendre 
+\begin{alltt}
+Check nat.
+\it{}nat : Set
+\tt{}Check O.
+\it{}O : nat
+\tt{}Check S.
+\it{}S : nat {\arrow} nat
+\end{alltt}
+
+Moreover, {\coq} adds to the context three constants named
+ $\natind$, $\natrec$ and $\natrect$, which
+ correspond to different principles of structural induction on
+natural numbers that {\coq} infers automatically from the definition.  We
+will come back to them in Section \ref{StructuralInduction}.
+
+
+In fact, the type of natural numbers as well as several useful
+theorems about them are already defined in the basic library of {\coq},
+so there is no need to introduce them.  Therefore, let us throw away
+our (re)definition of {\nat}, using the command \texttt{Reset}.
+
+%V8 A prendre
+\begin{alltt}
+Reset nat.
+Print nat.
+\it{}Inductive nat : Set :=  O : nat | S : nat \arrow{} nat
+For S: Argument scope is [nat_scope]
+\end{alltt}
+
+Notice that \coq{}'s \emph{interpretation scope} for natural numbers
+(called \texttt{nat\_scope}) 
+allows us to read and write natural numbers in decimal form (see \cite{coqrefman}). For instance, the constructor \texttt{O} can be read or written
+as the digit $0$, and the term ``~\texttt{S (S (S O))}~'' as $3$.
+
+%V8 A prendre
+\begin{alltt}
+Check O.
+\it 0 : nat.
+\tt
+Check (S (S (S O))).
+\it 3 : nat
+\end{alltt}
+
+Let us now take a look to some other
+recursive types contained in the standard library of {\coq}.
+
+\subsection{Lists}
+Lists are defined in library \citecoq{List}\footnote{Notice that in versions of 
+{\coq}
+prior to 8.1, the parameter $A$ had sort \citecoq{Set} instead of \citecoq{Type}; 
+the constant \citecoq{list} was thus of type \citecoq{Set\arrow{} Set}.}
+
+
+\begin{alltt}
+Require Import List.
+Print list.
+\it
+Inductive list (A : Type) : Type:=
+    nil : list A | cons : A {\arrow} list A {\arrow} list A
+For nil: Argument A is implicit
+For cons: Argument A is implicit
+For list: Argument scope is [type_scope]
+For nil: Argument scope is [type_scope]
+For cons: Argument scopes are [type_scope _ _]
+\end{alltt}
+
+In this definition, \citecoq{A} is a \emph{general parameter}, global
+to both constructors.
+This kind of definition allows us to build a whole family of
+inductive types, indexed over the sort \citecoq{Type}.
+This can be observed if we consider the type of identifiers
+\citecoq{list}, \citecoq{cons} and \citecoq{nil}.
+Notice the notation \citecoq{(A := \dots)} which must be used 
+when {\coq}'s type inference algorithm cannot infer the implicit
+parameter \citecoq{A}.
+\begin{alltt}
+Check list.
+\it list
+     : Type {\arrow} Type
+
+\tt Check (nil (A:=nat)).
+\it nil
+     : list nat
+
+\tt Check (nil (A:= nat {\arrow} nat)).
+\it nil
+     : list (nat {\arrow} nat)
+
+\tt Check (fun A: Type {\funarrow} (cons (A:=A))).
+\it fun A : Type {\funarrow} cons (A:=A)
+     : {\prodsym} A : Type, A {\arrow} list A {\arrow} list A
+
+\tt Check (cons 3 (cons 2 nil)).
+\it 3 :: 2 :: nil
+     : list nat
+
+\tt Check (nat :: bool ::nil).
+\it nat :: bool :: nil
+     : list Set
+
+\tt Check ((3<=4) :: True ::nil).
+\it (3<=4) :: True :: nil
+     : list Prop
+
+\tt Check (Prop::Set::nil).
+\it Prop::Set::nil
+     : list Type
+\end{alltt}
+
+\subsection{Vectors.}
+\label{vectors}
+
+Like \texttt{list}, \citecoq{vector} is a polymorphic type:
+if $A$ is a type, and $n$ a natural number, ``~\citecoq{vector $A$ $n$}~''
+is the type of vectors of elements of $A$ and size $n$.
+
+
+\begin{alltt}
+Require Import  Bvector.
+
+Print vector.
+\it
+Inductive vector (A : Type) : nat {\arrow} Type :=
+    Vnil : vector A 0
+  | Vcons : A {\arrow} {\prodsym} n : nat, vector A n {\arrow} vector A (S n)
+For vector: Argument scopes are [type_scope nat_scope]
+For Vnil: Argument scope is [type_scope]
+For Vcons: Argument scopes are [type_scope _ nat_scope _]
+\end{alltt}
+
+
+Remark the difference between the two parameters $A$ and $n$:
+The first one is a \textsl{general parameter}, global to all the
+introduction rules,while the second one is an \textsl{index}, which is
+instantiated differently in the introduction rules.
+Such types parameterized  by regular
+values are called \emph{dependent types}.
+
+\begin{alltt}
+Check (Vnil nat).
+\it Vnil nat
+     : vector nat 0
+
+\tt Check (fun (A:Type)(a:A){\funarrow} Vcons _ a _ (Vnil _)).
+\it fun (A : Type) (a : A) {\funarrow} Vcons A a 0 (Vnil A)
+     : {\prodsym} A : Type, A {\arrow} vector A 1
+
+
+\tt Check (Vcons _ 5 _ (Vcons _ 3 _ (Vnil _))).
+\it Vcons nat 5 1 (Vcons nat 3 0 (Vnil nat))
+     : vector nat 2
+\end{alltt}
+
+\subsection{The contradictory proposition.}
+Another example of an inductive type is the contradictory proposition.
+This type inhabits the universe of propositions, and has no element
+at all.
+%V8 A prendre
+\begin{alltt}
+Print False.
+\it{} Inductive False : Prop :=
+\end{alltt}
+
+\noindent Notice that no constructor is given in this definition.
+
+\subsection{The tautological proposition.}
+Similarly, the
+tautological proposition {\True} is defined as an inductive type
+with only one element {\I}:
+
+%V8 A prendre
+\begin{alltt}
+Print True.
+\it{}Inductive True : Prop :=  I : True
+\end{alltt}
+
+\subsection{Relations as inductive types.}
+Some relations can also be introduced in a smart way as an inductive family
+of propositions. Let us take as example the order $n \leq m$ on natural
+numbers, called \citecoq{le} in {\coq}.
+ This relation is introduced through
+the following definition, quoted from the standard library\footnote{In the interpretation scope
+for Peano arithmetic:
+\citecoq{nat\_scope},  ``~\citecoq{n <= m}~'' is equivalent to 
+``~\citecoq{le n m}~'' .}:
+
+
+
+
+%V8 A prendre
+\begin{alltt}
+Print le. \it
+Inductive le (n:nat) : nat\arrow{}Prop := 
+|  le_n: n {\coqle} n 
+|  le_S: {\prodsym} m, n {\coqle} m \arrow{} n {\coqle} S m.
+\end{alltt}
+
+Notice that in this definition $n$ is a general parameter,
+while the second argument of \citecoq{le} is an index (see section
+~\ref{vectors}).
+ This definition
+introduces the binary relation $n {\leq} m$ as the family of unary predicates
+``\textsl{to be greater or equal than a given $n$}'', parameterized by $n$.
+
+The introduction rules of this type can be seen as a sort of Prolog
+rules for proving that a given integer $n$ is less or equal than another one.
+In fact, an object of type $n{\leq} m$ is nothing but a proof 
+built up using the constructors \textsl{le\_n} and
+\textsl{le\_S} of this type.  As an example, let us construct
+a proof that zero is less or equal than three using {\coq}'s interactive
+proof mode.
+Such an object can be obtained applying three times the second
+introduction rule of \citecoq{le}, to a proof that zero is less or equal
+than itself,
+which is provided by the first constructor of \citecoq{le}:
+
+%V8 A prendre
+\begin{alltt}
+Theorem zero_leq_three: 0 {\coqle} 3.
+Proof.
+\it{} 1 subgoal
+
+============================
+ 0 {\coqle} 3
+
+\tt{}Proof.
+ constructor 2. 
+
+\it{} 1 subgoal
+============================
+  0 {\coqle} 2
+
+\tt{} constructor 2.  
+\it{} 1 subgoal
+============================
+  0 {\coqle} 1
+
+\tt{} constructor 2
+\it{} 1 subgoal
+============================
+  0 {\coqle} 0
+
+\tt{} constructor 1.
+
+\it{}Proof completed
+\tt{}Qed.
+\end{alltt}
+
+\noindent When
+the current goal is an inductive type, the tactic 
+``~\citecoq{constructor $i$}~'' \refmancite{Section \ref{constructor}} applies the $i$-th constructor in the
+definition of the type. We can take a look at the proof constructed
+using the command \texttt{Print}:
+
+%V8 A prendre
+\begin{alltt}
+Print Print zero_leq_three.
+\it{}zero_leq_three = 
+zero_leq_three = le_S 0 2 (le_S 0 1 (le_S 0 0 (le_n 0)))
+     : 0 {\coqle} 3
+\end{alltt}
+
+When the parameter $i$ is not supplied, the tactic \texttt{constructor}
+tries to apply ``~\texttt{constructor $1$}~'', ``~\texttt{constructor $2$}~'',\dots,
+``~\texttt{constructor $n$}~'' where $n$ is the number of constructors
+of the inductive type (2 in our example) of the conclusion of the goal.
+Our little proof can thus be obtained iterating the tactic
+\texttt{constructor} until it fails:
+
+%V8 A prendre
+\begin{alltt}
+Lemma zero_leq_three': 0 {\coqle} 3.
+ repeat constructor.
+Qed.
+\end{alltt}
+
+Notice that the strict order on \texttt{nat}, called \citecoq{lt}
+is not inductively defined: the proposition $n<p$ (notation for \citecoq{lt $n$ $p$})
+is reducible to \citecoq{(S $n$) $\leq$ p}.
+
+\begin{alltt}
+Print lt.
+\it
+lt = fun n m : nat {\funarrow} S n {\coqle} m
+     : nat {\arrow} nat {\arrow} Prop
+\tt
+Lemma zero_lt_three : 0 < 3.
+Proof.
+ repeat constructor. 
+Qed.
+
+Print zero_lt_three.
+\it zero_lt_three = le_S 1 2 (le_S 1 1 (le_n 1))
+     : 0 < 3
+\end{alltt}
+
+
+
+\subsection{About general parameters (\coq{} version $\geq$ 8.1)}
+\label{parameterstuff}
+
+Since version $8.1$, it is possible to write more compact inductive definitions
+than in earlier versions.
+
+Consider the following alternative definition of the relation $\leq$ on 
+type \citecoq{nat}:
+
+\begin{alltt}
+Inductive le'(n:nat):nat -> Prop :=
+ | le'_n : le' n n
+ | le'_S : forall p, le' (S n) p -> le' n p.
+
+Hint Constructors le'.
+\end{alltt}
+
+We notice that the type of the second constructor of \citecoq{le'}
+has an argument whose type is \citecoq{le' (S n) p}. 
+This constrasts with earlier versions 
+of {\coq}, in which a general parameter $a$ of an inductive
+type $I$ had to appear only in applications of the form $I\,\dots\,a$.
+
+Since version $8.1$, if $a$ is a general parameter of an inductive 
+type $I$, the type of an argument of a constructor of $I$ may be
+of the form  $I\,\dots\,t_a$ , where $t_a$ is any term.
+Notice that the final type of the constructors must be of the form
+$I\,\dots\,a$, since these constructors describe how to form 
+inhabitants of type $I\,\dots\,a$ (this is the role of parameter $a$).
+
+Another example of this new feature is {\coq}'s definition of accessibility
+(see Section~\ref{WellFoundedRecursion}), which has a general parameter
+$x$; the constructor for the predicate
+``$x$ is accessible'' takes an  argument of type ``$y$ is accessible''.
+
+
+
+In earlier versions of {\coq}, a relation like \citecoq{le'} would have to be
+defined without $n$ being a general parameter.
+
+\begin{alltt}
+Reset le'.
+
+Inductive le': nat-> nat -> Prop :=
+ | le'_n : forall n, le' n n
+ | le'_S : forall n p, le' (S n) p -> le' n p.
+\end{alltt}
+
+
+
+
+\subsection{The propositional equality type.} \label{equality}
+In {\coq}, the propositional equality between two inhabitants $a$ and
+$b$ of
+the same type $A$ ,
+noted $a=b$, is introduced as a family of recursive predicates
+``~\textsl{to be equal to $a$}~'',  parameterised by both $a$ and its type
+$A$. This family of types has only one introduction rule, which
+corresponds to reflexivity.
+Notice that the syntax ``\citecoq{$a$ = $b$}~'' is an abbreviation  
+for ``\citecoq{eq $a$  $b$}~'', and that the parameter $A$ is \emph{implicit},
+as it can be infered from $a$.
+%V8 A prendre
+\begin{alltt}
+Print eq.
+\it{} Inductive eq (A : Type) (x : A) : A \arrow{} Prop :=  
+    refl_equal : x = x
+For eq: Argument A is implicit
+For refl_equal: Argument A is implicit
+For eq: Argument scopes are [type_scope _ _]
+For refl_equal: Argument scopes are [type_scope _]
+\end{alltt}
+
+Notice also that  the first parameter $A$ of \texttt{eq} has type
+\texttt{Type}. The type system of {\coq} allows us to consider equality between 
+various kinds of terms: elements of a set, proofs, propositions,
+types, and so on.
+Look at \cite{coqrefman, coqart} to get more details on {\coq}'s type
+system, as well as implicit arguments and argument scopes.
+
+
+\begin{alltt}
+Lemma eq_3_3 : 2 + 1 = 3.
+Proof.
+ reflexivity.
+Qed.
+
+Lemma eq_proof_proof : refl_equal (2*6) = refl_equal (3*4).
+Proof.
+ reflexivity.
+Qed.
+
+Print eq_proof_proof.
+\it eq_proof_proof = 
+refl_equal (refl_equal (3 * 4))
+     : refl_equal (2 * 6) = refl_equal (3 * 4)
+\tt
+
+Lemma eq_lt_le : ( 2 < 4) = (3 {\coqle} 4).
+Proof.
+ reflexivity.
+Qed.
+
+Lemma eq_nat_nat : nat = nat.
+Proof.
+ reflexivity.
+Qed.
+
+Lemma eq_Set_Set : Set = Set.
+Proof.
+ reflexivity.
+Qed.
+\end{alltt}
+
+\subsection{Logical connectives.} \label{LogicalConnectives}
+The conjunction and disjunction of two propositions are also examples
+of recursive types:
+
+\begin{alltt}
+Inductive or (A B : Prop) : Prop :=
+    or_introl : A \arrow{} A {\coqor} B | or_intror : B \arrow{} A {\coqor} B
+
+Inductive and (A B : Prop) : Prop :=  
+    conj : A \arrow{} B \arrow{} A {\coqand} B
+
+\end{alltt}
+
+The propositions $A$ and $B$ are general parameters of these
+connectives. Choosing different universes for 
+$A$ and $B$ and for the inductive type itself gives rise to different
+type constructors. For example, the type \textsl{sumbool} is a
+disjunction but with computational contents.
+
+\begin{alltt}
+Inductive sumbool (A B : Prop) : Set :=
+    left : A \arrow{} \{A\} + \{B\} | right : B \arrow{} \{A\} + \{B\}
+\end{alltt}
+
+
+
+This type --noted \texttt{\{$A$\}+\{$B$\}} in {\coq}-- can be used in {\coq}
+programs as a sort of boolean type, to check whether it is $A$ or $B$
+that is true.  The values ``~\citecoq{left $p$}~'' and
+``~\citecoq{right $q$}~'' replace the boolean values \textsl{true} and
+\textsl{false}, respectively. The advantage of this type over
+\textsl{bool} is that it makes available the proofs $p$ of $A$ or $q$
+of $B$, which could be necessary to construct a verification proof
+about the program.
+For instance, let us consider the certified program \citecoq{le\_lt\_dec}
+of the Standard Library.
+
+\begin{alltt}
+Require Import Compare_dec.
+Check le_lt_dec.
+\it
+le_lt_dec
+     : {\prodsym} n m : nat, \{n {\coqle} m\} + \{m < n\}
+
+\end{alltt}
+
+We use \citecoq{le\_lt\_dec} to build a function for computing
+the max of two natural numbers:
+
+\begin{alltt}
+Definition max (n p :nat) := match le_lt_dec n p with 
+                             | left _ {\funarrow} p
+                             | right _ {\funarrow} n
+                             end.
+\end{alltt}
+
+In the following proof, the case analysis on the term
+``~\citecoq{le\_lt\_dec n p}~'' gives us an access to proofs
+of $n\leq p$ in the first case, $p<n$ in the other.
+
+\begin{alltt}
+Theorem le_max : {\prodsym} n p, n {\coqle} p {\arrow} max n p = p.
+Proof.
+ intros n p ; unfold max ; case (le_lt_dec n p); simpl.
+\it
+2 subgoals
+  
+  n : nat
+  p : nat
+  ============================
+   n {\coqle} p {\arrow} n {\coqle} p {\arrow} p = p
+
+subgoal 2 is:
+ p < n {\arrow} n {\coqle} p {\arrow} n = p
+\tt
+ trivial.
+ intros; absurd (p < p); eauto with arith.
+Qed.
+\end{alltt}
+
+
+ Once the program verified, the proofs are
+erased by the extraction procedure:
+
+\begin{alltt}
+Extraction max.
+\it
+(** val max : nat {\arrow} nat {\arrow} nat **)
+
+let max n p =
+  match le_lt_dec n p with
+    | Left {\arrow} p
+    | Right {\arrow} n
+\end{alltt}
+
+Another example of use of \citecoq{sumbool} is given  in Section
+\ref{WellFoundedRecursion}: the theorem \citecoq{eq\_nat\_dec} of
+library \citecoq{Coq.Arith.Peano\_dec} is used in an euclidean division
+algorithm.
+
+\subsection{The existential quantifier.}\label{ex-def}
+The existential quantifier is yet another example of a logical
+connective introduced as an inductive type.
+
+\begin{alltt}
+Inductive ex (A : Type) (P : A \arrow{} Prop) : Prop :=
+    ex_intro : {\prodsym} x : A, P x \arrow{} ex P
+\end{alltt}
+
+Notice that {\coq} uses the abreviation ``~\citecoq{\exsym\,$x$:$A$, $B$}~''
+for \linebreak ``~\citecoq{ex (fun $x$:$A$ \funarrow{} $B$)}~''.
+
+
+\noindent The former quantifier inhabits the universe of propositions.
+As for the conjunction and disjunction connectives, there is also another
+version of existential quantification inhabiting the universes $\Type_i$,
+which is noted \texttt{sig $P$}. The syntax
+``~\citecoq{\{$x$:$A$ | $B$\}}~'' is an abreviation for ``~\citecoq{sig (fun $x$:$A$ {\funarrow} $B$)}~''.
+
+
+
+%\paragraph{The logical connectives.} Conjuction and disjuction are 
+%also introduced as recursive types:
+%\begin{alltt}
+%Print or.
+%\end{alltt}
+%begin{alltt}
+%Print and.
+%\end{alltt}
+
+
+\subsection{Mutually Dependent Definitions}
+\label{MutuallyDependent}
+
+Mutually dependent definitions of recursive types are also allowed in
+{\coq}.  A typical example of these kind of declaration is the
+introduction of the trees of unbounded (but finite) width:
+\label{Forest}
+\begin{alltt} 
+Inductive tree(A:Type)   : Type :=
+    node : A {\arrow} forest A \arrow{} tree A 
+with  forest (A: Set)   : Type := 
+    nochild  : forest A |
+    addchild : tree A \arrow{} forest A \arrow{} forest A.
+\end{alltt}
+\noindent  Yet another example of mutually dependent types are the
+predicates \texttt{even} and \texttt{odd} on natural numbers:
+\label{Even}
+\begin{alltt} 
+Inductive 
+  even    : nat\arrow{}Prop :=
+    evenO : even  O |
+    evenS : {\prodsym} n, odd n \arrow{} even (S n)
+with
+  odd    : nat\arrow{}Prop :=
+    oddS : {\prodsym} n, even n \arrow{} odd (S n).
+\end{alltt}
+
+\begin{alltt}
+Lemma odd_49 : odd (7 * 7).
+ simpl; repeat constructor.
+Qed.
+\end{alltt}
+
+
+
+\section{Case Analysis and Pattern-matching}
+\label{CaseAnalysis}
+\subsection{Non-dependent Case Analysis}
+An \textsl{elimination rule} for the type $A$ is some way to use an
+object $a:A$ in order to define an object in some  type $B$. 
+A natural elimination rule for an inductive type is \emph{case analysis}.
+
+
+For instance, any value of type {\nat} is built using either \texttt{O} or \texttt{S}.
+Thus, a systematic way of building a value of type $B$ from any 
+value of type {\nat} is to associate to \texttt{O} a constant $t_O:B$ and
+to every term of the form ``~\texttt{S $p$}~'' a term $t_S:B$. The following
+construction has type $B$:
+\begin{alltt}
+match \(n\) return \(B\) with O \funarrow \(t\sb{O}\) | S p \funarrow \(t\sb{S}\) end
+\end{alltt}
+
+
+In most of the cases, {\coq} is able to infer the type $B$ of the object
+defined, so the ``\texttt{return $B$}'' part can be omitted.
+
+The computing rules associated with this construct are the expected ones 
+(the notation $t_S\{q/\texttt{p}\}$ stands for the substitution of $p$ by
+$q$ in $t_S$ :)
+
+\begin{eqnarray*}
+\texttt{match $O$ return $b$ with O {\funarrow} $t_O$ | S p {\funarrow} $t_S$ end} &\Longrightarrow& t_O\\
+\texttt{match $S\;q$  return $b$ with O {\funarrow} $t_O$ | S p {\funarrow} $t_S$ end}  &\Longrightarrow& t_S\{q/\texttt{p}\}
+\end{eqnarray*}
+
+
+\subsubsection{Example: the predecessor function.}\label{firstpred}
+An example of a definition by case analysis is the function which
+computes the predecessor of any given natural number:
+\begin{alltt}
+Definition pred (n:nat) := match n with
+                                   | O {\funarrow} O 
+                                   | S m {\funarrow} m 
+                           end.
+
+Eval simpl in pred 56.
+\it{}    = 55
+     : nat
+\tt
+Eval simpl in pred 0.
+\it{}    = 0
+     : nat
+
+\tt{}Eval simpl in fun p {\funarrow} pred (S p).
+\it{}     = fun p : nat {\funarrow} p
+     : nat {\arrow} nat
+\end{alltt}
+
+As in functional programming, tuples and wild-cards can be used in
+patterns \refmancite{Section \ref{ExtensionsOfCases}}. Such
+definitions are automatically compiled by {\coq} into an expression which
+may contain several nested case expressions. For example, the 
+exclusive \emph{or} on booleans can be defined as follows:
+\begin{alltt}
+Definition xorb (b1 b2:bool) :=
+ match b1, b2 with 
+ | false, true {\funarrow} true
+ | true, false {\funarrow} true
+ | _ , _       {\funarrow} false
+ end.
+\end{alltt}
+
+This kind of definition is compiled in {\coq} as follows\footnote{{\coq} uses
+the conditional ``~\citecoq{if $b$ then $a$ else $b$}~'' as an abreviation to
+``~\citecoq{match $b$ with true \funarrow{} $a$ | false \funarrow{} $b$ end}~''.}:
+
+\begin{alltt}
+Print xorb.
+xorb = 
+fun b1 b2 : bool {\funarrow}
+if b1 then if b2 then false else true 
+      else if b2 then true else false
+     : bool {\arrow} bool {\arrow} bool
+\end{alltt}
+
+\subsection{Dependent Case Analysis}
+\label{DependentCase}
+
+For a pattern matching construct of the form
+``~\citecoq{match n with \dots end}~'' a more general typing rule
+is obtained considering that the type of the whole expression
+may also depend on \texttt{n}.
+  For instance, let us consider some function 
+$Q:\texttt{nat}\arrow{}\texttt{Type}$, and $n:\citecoq{nat}$.
+In order to build a term of type $Q\;n$, we can associate
+to the constructor \texttt{O} some term $t_O: Q\;\texttt{O}$ and to
+the pattern ``~\texttt{S p}~''  some term $t_S : Q\;(S\;p)$.
+Notice that the terms $t_O$ and $t_S$ do not have the same type.
+
+The syntax of the \emph{dependent case analysis} and its
+associated typing rule make precise how the resulting
+type depends on the argument of the pattern matching, and
+which constraint holds on the branches of the pattern matching:
+
+\label{Prod-sup-rule}
+\[
+\begin{array}[t]{l}
+Q: \texttt{nat}{\arrow}\texttt{Type}\quad{t_O}:{{Q\;\texttt{O}}}  \quad
+\smalljuge{p:\texttt{nat}}{t_p}{{Q\;(\texttt{S}\;p)}} \quad n:\texttt{nat} \\
+\hline
+{\texttt{match \(n\) as \(n\sb{0}\) return \(Q\;n\sb{0}\) with | O \funarrow \(t\sb{O}\) | S p \funarrow \(t\sb{S}\) end}}:{{Q\;n}}
+\end{array}
+\]
+
+
+The interest of this rule of \textsl{dependent} pattern-matching is
+that it can also be read as the following logical principle (when $Q$ has type \citecoq{nat\arrow{}Prop}
+by \texttt{Prop} in the type of $Q$): in order to prove
+that a property $Q$ holds for all $n$, it is sufficient to prove that
+$Q$ holds for {\Z} and that for all $p:\nat$, $Q$ holds for
+$(\SUCC\;p)$.  The former, non-dependent version of case analysis can
+be obtained from this latter rule just taking $Q$ as a constant
+function on $n$.
+
+Notice that destructuring $n$ into \citecoq{O} or ``~\citecoq{S p}~''
+ doesn't
+make appear in the goal the equalities ``~$n=\citecoq{O}$~''
+ and ``~$n=\citecoq{S p}$~''.
+They are ``internalized'' in the rules above (see section~\ref{inversion}.)
+
+\subsubsection{Example: strong specification of the predecessor function.}
+
+In Section~\ref{firstpred}, the predecessor function was defined directly
+as a function from \texttt{nat} to \texttt{nat}. It remains to prove
+that this function has some desired properties. Another way to proceed
+is to, first introduce a specification of what is the predecessor of a 
+natural number, under the form of a {\coq} type, then build an inhabitant 
+of this type: in other words, a realization of this specification. This way, the correctness
+of this realization is ensured by {\coq}'s type system.
+
+A reasonable specification for $\pred$ is to say that for all $n$
+there exists another $m$ such that either $m=n=0$, or $(\SUCC\;m)$
+is equal to  $n$. The function $\pred$ should be just the way to
+compute such an $m$. 
+
+\begin{alltt}
+Definition pred_spec (n:nat) := 
+   \{m:nat | n=0{\coqand} m=0 {\coqor} n = S m\}.
+  
+Definition  predecessor : {\prodsym} n:nat, pred_spec n.
+ intro n; case n.
+\it{}  
+  n : nat
+  ============================
+   pred_spec 0
+
+\tt{} unfold pred_spec;exists 0;auto.
+\it{}
+ =========================================
+ {\prodsym} n0 : nat, pred_spec (S n0)
+\tt{}
+ unfold pred_spec; intro n0; exists n0; auto.
+Defined.
+\end{alltt}
+
+If we print the term built by {\coq}, we can observe its dependent pattern-matching structure:
+
+\begin{alltt}
+predecessor =  fun n : nat {\funarrow}
+\textbf{match n as n0 return (pred_spec n0) with}
+\textbf{| O {\funarrow}}
+    exist (fun m : nat {\funarrow} 0 = 0 {\coqand} m = 0 {\coqor} 0 = S m) 0
+      (or_introl (0 = 1) 
+                 (conj (refl_equal 0) (refl_equal 0)))
+\textbf{| S n0 {\funarrow}}
+    exist (fun m : nat {\funarrow} S n0 = 0 {\coqand} m = 0 {\coqor} S n0 = S m) n0
+      (or_intror (S n0 = 0 {\coqand} n0 = 0) (refl_equal (S n0)))
+\textbf{end}  : {\prodsym} n : nat, \textbf{pred_spec n}
+\end{alltt}
+
+
+Notice that there are many variants to the pattern ``~\texttt{intros \dots; case \dots}~''. Look at the reference manual and/or the book: tactics
+\texttt{destruct}, ``~\texttt{intro \emph{pattern}}~'', etc.
+
+\noindent The command \texttt{Extraction} \refmancite{Section
+\ref{ExtractionIdent}} can be used to see the computational
+contents associated to the \emph{certified} function \texttt{predecessor}:
+\begin{alltt}
+Extraction predecessor.
+\it
+(** val predecessor : nat {\arrow} pred_spec **)
+
+let predecessor = function
+  | O {\arrow} O
+  | S n0 {\arrow} n0
+\end{alltt}
+
+
+\begin{exercise} \label{expand}
+Prove the following theorem:
+\begin{alltt}
+Theorem nat_expand : {\prodsym} n:nat, 
+      n = match n with 
+                  | 0 {\funarrow} 0 
+                  | S p {\funarrow} S p 
+          end.
+\end{alltt}
+\end{exercise}
+
+\subsection{Some Examples of Case Analysis}
+\label{CaseScheme}
+The reader will find in the Reference manual all details about
+typing case analysis (chapter 4: Calculus of Inductive Constructions,
+and chapter 15: Extended Pattern-Matching).
+
+The following commented examples will show the different situations to consider.
+
+
+%\subsubsection{General Scheme}
+
+%Case analysis is then the most basic elimination rule that {\coq}
+%provides for inductive  types.  This rule follows a general schema,
+%valid for any inductive type $I$. First, if $I$ has type
+%``~$\forall\,(z_1:A_1)\ldots(z_r:A_r),S$~'', with $S$ either $\Set$, $\Prop$ or
+%$\Type$, then a case expression on $p$ of type ``~$R\;a_1\ldots a_r$~''
+% inhabits ``~$Q\;a_1\ldots a_r\;p$~''. The types of the branches of the case expression
+%are obtained from the definition of the type in this way: if the type
+%of the $i$-th constructor $c_i$  of $R$ is 
+%``~$\forall\, (x_1:T_1)\ldots
+%(x_n:T_n),(R\;q_1\ldots q_r)$~'', then the  $i-th$ branch must have the
+%form ``~$c_i\; x_1\; \ldots \;x_n\;  \funarrow{}\; t_i$~'' where
+%$$(x_1:T_1),\ldots, (x_n:T_n) \vdash t_i : Q\;q_1\ldots q_r)$$
+% for non-dependent case
+%analysis, and $$(x_1:T_1)\ldots (x_n:T_n)\vdash t_i :Q\;q_1\ldots
+%q_r\;({c}_i\;x_1\;\ldots x_n)$$ for dependent one. In the
+%following section, we illustrate this general scheme for different
+%recursive types.
+%%\textbf{A vérifier}
+
+\subsubsection{The Empty Type}
+
+In a definition by case analysis, there is one branch for each
+introduction rule of the type. Hence, in a definition by case analysis
+on $p:\False$ there are no cases to be considered. In other words, the
+rule of (non-dependent) case analysis for the type $\False$ is 
+(for $s$ in  \texttt{Prop}, \texttt{Set} or \texttt{Type}):
+
+\begin{center}
+\snregla {\JM{Q}{s}\;\;\;\;\;
+          \JM{p}{\False}}
+         {\JM{\texttt{match $p$ return $Q$ with end}}{Q}}
+\end{center}
+
+As a corollary, if we could construct an object in $\False$, then it
+could be possible to define an object in any type.  The tactic
+\texttt{contradiction} \refmancite{Section \ref{Contradiction}}
+corresponds to the application of the elimination rule above.  It
+searches in the context for an absurd hypothesis (this is, a
+hypothesis whose type is $\False$) and then proves the goal by a case
+analysis of it.
+
+\begin{alltt}
+Theorem fromFalse : False \arrow{} 0=1.
+Proof.
+ intro H. 
+ contradiction.
+Qed.
+\end{alltt}
+
+
+In {\coq} the negation is defined as follows :
+
+\begin{alltt}
+Definition not (P:Prop) := P {\arrow} False
+\end{alltt}
+
+The proposition ``~\citecoq{not $A$}~'' is also written ``~$\neg A$~''.
+
+If $A$ and $B$ are propositions, $a$ is a proof of $A$ and
+$H$ is a proof of $\neg A$,
+the term ``~\citecoq{match $H\;a$ return $B$ with end}~'' is a proof term of
+$B$.
+Thus, if your goal is $B$ and you have some hypothesis $H:\neg A$,
+the tactic ``~\citecoq{case $H$}~'' generates a new subgoal with
+statement $A$, as shown by  the following example\footnote{Notice that
+$a\coqdiff b$ is just an abreviation for ``~\coqnot a= b~''}.
+
+\begin{alltt}
+Fact Nosense : 0 {\coqdiff} 0 {\arrow} 2 = 3.
+Proof.
+  intro H; case H.
+\it
+===========================
+  0 = 0
+\tt
+  reflexivity.
+Qed.
+\end{alltt}
+
+The tactic ``~\texttt{absurd $A$}~'' (where $A$ is any proposition), 
+is based on the same principle, but
+generates two subgoals: $A$ and $\neg A$, for solving $B$.
+
+\subsubsection{The Equality Type}
+
+Let $A:\Type$, $a$, $b$ of type $A$, and $\pi$ a proof of 
+$a=b$. Non dependent case analysis of $\pi$ allows us to
+associate to any proof  of ``~$Q\;a$~'' a proof of ``~$Q\;b$~'',
+where $Q:A\arrow{} s$ (where $s\in\{\Prop, \Set, \Type\}$).
+The following term is a proof  of ``~$Q\;a\, \arrow{}\, Q\;b$~''.
+
+\begin{alltt}
+fun H : Q a {\funarrow}
+  match \(\pi\) in (_ = y) return Q y with
+     refl_equal {\funarrow} H
+  end
+\end{alltt}
+Notice the header of the \texttt{match} construct.
+It expresses how the resulting type ``~\citecoq{Q y}~'' depends on 
+the \emph{type} of \texttt{p}.
+Notice also that in the pattern introduced by the keyword \texttt{in},
+the parameter \texttt{a} in the type ``~\texttt{a = y}~'' must be
+implicit, and replaced by a wildcard '\texttt{\_}'.
+
+
+Therefore, case analysis on a proof of the equality $a=b$
+amounts to replacing all the occurrences of the term $b$ with the term
+$a$ in the goal to be proven. Let us illustrate this through an
+example: the transitivity property of this equality. 
+\begin{alltt}
+Theorem trans : {\prodsym} n m p:nat, n=m \arrow{} m=p \arrow{} n=p.
+Proof.
+ intros n m p eqnm.  
+\it{}  
+  n : nat
+  m : nat
+  p : nat
+  eqnm : n = m
+  ============================
+   m = p {\arrow} n = p
+\tt{} case eqnm.
+\it{}
+  n : nat
+  m : nat
+  p : nat
+  eqnm : n = m
+  ============================
+   n = p {\arrow} n = p
+\tt{} trivial.
+Qed.
+\end{alltt}
+
+%\noindent The case analysis on the hypothesis $H:n=m$ yields the
+%tautological subgoal $n=p\rightarrow n=p$, that is directly proven by
+%the tactic \texttt{Trivial}.
+
+\begin{exercise}
+Prove the symmetry property of  equality.
+\end{exercise}
+
+Instead of using \texttt{case}, we can use the tactic 
+\texttt{rewrite} \refmancite{Section \ref{Rewrite}}.  If $H$ is a proof
+of  $a=b$, then
+``~\citecoq{rewrite $H$}~''
+ performs a case analysis on a proof of $b=a$, obtained by applying a
+symmetry theorem to $H$. This application of symmetry allows us to rewrite
+the equality from left to right, which looks more natural. An optional
+parameter (either \texttt{\arrow{}} or \texttt{$\leftarrow$}) can be used to precise
+in which sense the equality must be rewritten.  By default,
+``~\texttt{rewrite} $H$~'' corresponds to ``~\texttt{rewrite \arrow{}} $H$~''
+\begin{alltt}
+Lemma Rw :  {\prodsym} x y: nat, y = y * x {\arrow} y * x * x = y.
+ intros x y e; do 2 rewrite <- e.
+\it
+1 subgoal
+  
+  x : nat
+  y : nat
+  e : y = y * x
+  ============================
+   y = y
+\tt
+ reflexivity.
+Qed.
+\end{alltt}
+
+Notice that, if $H:a=b$, then the tactic ``~\texttt{rewrite $H$}~''
+ replaces \textsl{all} the
+occurrences of $a$ by $b$. However, in certain situations we could be
+interested in rewriting some of the occurrences, but not all of them.
+This can be done using the tactic \texttt{pattern} \refmancite{Section
+\ref{Pattern}}.  Let us consider yet another example to
+illustrate this.
+
+Let us start with some simple theorems of arithmetic; two of them 
+are already proven in the Standard Library, the last is left as an exercise.
+
+\begin{alltt}
+\it
+mult_1_l
+     : {\prodsym} n : nat, 1 * n = n
+
+mult_plus_distr_r
+     : {\prodsym} n m p : nat, (n + m) * p = n * p + m * p
+
+mult_distr_S : {\prodsym} n p : nat, n * p + p = (S n)* p.
+\end{alltt}
+
+Let us now prove a simple result:
+
+\begin{alltt}
+Lemma four_n : {\prodsym} n:nat, n+n+n+n = 4*n.
+Proof.
+ intro n;rewrite <- (mult_1_l n).
+\it
+  n : nat
+  ============================
+   1 * n + 1 * n + 1 * n + 1 * n = 4 * (1 * n)
+\end{alltt}
+
+We can see that the \texttt{rewrite} tactic call replaced \emph{all}
+the occurrences of \texttt{n} by the term ``~\citecoq{1 * n}~''.
+If we want to do the rewriting ony on the leftmost occurrence of
+\texttt{n}, we can mark this occurrence using the \texttt{pattern}
+tactic:
+
+
+\begin{alltt}
+ Undo.
+ intro n; pattern n at 1.
+ \it
+ n : nat
+  ============================
+ (fun n0 : nat {\funarrow} n0 + n + n + n = 4 * n) n
+\end{alltt}
+Applying the tactic ``~\citecoq{pattern  n at 1}~'' allowed us
+to explicitly abstract the first occurrence of \texttt{n} from the
+goal, putting this goal under the form ``~\citecoq{$Q$ n}~'',
+thus pointing to \texttt{rewrite} the particular predicate on $n$
+that we search to prove. 
+
+
+\begin{alltt}
+ rewrite <- mult_1_l.
+\it
+1 subgoal
+  
+  n : nat
+  ============================
+   1 * n + n + n + n = 4 * n
+\tt
+ repeat rewrite   mult_distr_S.
+\it
+  n : nat
+  ============================
+   4 * n = 4 * n
+\tt
+ trivial.
+Qed.
+\end{alltt}
+
+\subsubsection{The Predicate $n {\leq} m$}
+
+
+The last but one instance of the elimination schema that we will illustrate is
+case analysis for the predicate $n {\leq} m$:
+
+Let $n$ and $p$ be terms of type \citecoq{nat}, and $Q$ a predicate 
+of type $\citecoq{nat}\arrow{}\Prop$.
+If $H$ is a proof of ``~\texttt{n {\coqle} p}~'',
+$H_0$ a proof of ``~\texttt{$Q$  n}~'' and
+$H_S$ a proof of ``~\citecoq{{\prodsym}m:nat, n {\coqle}  m {\arrow} Q (S m)}~'',
+then the term
+\begin{alltt}
+match H in (_ {\coqle} q) return (Q q) with
+    | le_n {\funarrow} H0
+    | le_S m Hm {\funarrow} HS m Hm
+end
+\end{alltt}
+ is a proof term of ``~\citecoq{$Q$ $p$}~''.
+
+
+The two patterns of this \texttt{match} construct describe
+all possible forms of proofs of ``~\citecoq{n {\coqle} m}~'' (notice
+again that the general parameter \texttt{n} is implicit in
+ the ``~\texttt{in \dots}~''
+clause and is absent from the match patterns.
+
+
+Notice that the choice of introducing some of the arguments of the
+predicate as being general parameters in its definition has
+consequences on the rule of case analysis that is derived. In
+particular, the type $Q$ of the object defined by the case expression
+only depends on the indexes of the predicate, and not on the general
+parameters.  In the definition of the predicate $\leq$, the first
+argument of this relation is a general parameter of the
+definition. Hence, the predicate $Q$ to be proven only depends on the
+second argument of the relation. In other words, the integer $n$ is
+also a general parameter of the rule of case analysis.
+
+An example of an application of this rule is the following theorem,
+showing that any integer greater or equal than $1$ is the successor of another
+natural number:
+
+\begin{alltt}
+Lemma predecessor_of_positive : 
+ {\prodsym} n, 1 {\coqle} n {\arrow} {\exsym} p:nat, n = S p.
+Proof.
+ intros n H;case H.
+\it
+  n : nat
+  H : 1 {\coqle} n
+  ============================
+   {\exsym} p : nat, 1 = S p
+\tt
+  exists 0; trivial.
+\it
+
+  n : nat
+  H : 1 {\coqle} n
+  ============================
+   {\prodsym} m : nat, 0 {\coqle} m {\arrow} {\exsym} p : nat, S m = S p
+\tt
+  intros m _  .
+  exists m.
+  trivial.
+Qed.
+\end{alltt}
+
+
+\subsubsection{Vectors}
+
+The \texttt{vector} polymorphic and dependent family of types will
+give an idea of the most general scheme of pattern-matching.
+
+For instance, let us define a function for computing the tail of
+any vector. Notice that we shall build a \emph{total} function,
+by considering that the tail of an empty vector is this vector itself.
+In that sense, it will be slightly different from the \texttt{Vtail}
+function of the Standard Library, which is defined only for vectors
+of type ``~\citecoq{vector $A$ (S $n$)}~''.
+
+The header of the function we want to build is the following:
+
+\begin{verbatim}
+Definition Vtail_total 
+   (A : Type) (n : nat) (v : vector A n) : vector A (pred n):=
+\end{verbatim}
+
+Since the branches will not have the same type
+(depending on the parameter \texttt{n}),
+the body of this function is a dependent pattern matching on 
+\citecoq{v}.
+So we will have :
+\begin{verbatim}
+match v in (vector _ n0) return (vector A (pred n0)) with
+\end{verbatim}
+
+The first branch  deals with the constructor \texttt{Vnil} and must
+return a value in ``~\citecoq{vector A (pred 0)}~'', convertible
+to ``~\citecoq{vector A 0}~''. So, we propose:
+\begin{alltt}
+| Vnil {\funarrow} Vnil A
+\end{alltt}
+
+The second branch considers a vector in ``~\citecoq{vector A (S n0)}~''
+of the form
+``~\citecoq{Vcons A n0 v0}~'', with ``~\citecoq{v0:vector A n0}~'',
+and must return a value of type ``~\citecoq{vector A (pred (S n0))}~'',
+which is convertible to ``~\citecoq{vector A n0}~''.
+This second branch is thus :
+\begin{alltt}
+| Vcons _ n0 v0 {\funarrow} v0
+\end{alltt}
+
+Here is the full definition:
+
+\begin{alltt}
+Definition Vtail_total 
+   (A : Type) (n : nat) (v : vector A n) : vector A (pred n):=
+match v in (vector _ n0) return (vector A (pred n0)) with
+| Vnil {\funarrow} Vnil A
+| Vcons _ n0 v0 {\funarrow} v0
+end.
+\end{alltt}
+
+
+\subsection{Case Analysis and Logical Paradoxes}
+
+In the previous section we have illustrated the general scheme for
+generating the rule of case analysis associated to some recursive type
+from the definition of the type. However, if the logical soundness is
+to be preserved, certain restrictions to this schema are
+necessary. This section provides a brief explanation of these
+restrictions.
+
+
+\subsubsection{The Positivity Condition}
+\label{postypes}
+
+In order to make sense of recursive types as types closed under their
+introduction rules, a constraint has to be imposed on the possible
+forms of such rules. This constraint, known as the
+\textsl{positivity condition}, is necessary to prevent the user from
+naively introducing some recursive types which would open the door to
+logical paradoxes.  An example of such a dangerous type is the
+``inductive type'' \citecoq{Lambda}, whose only constructor is 
+\citecoq{lambda} of type \citecoq{(Lambda\arrow False)\arrow Lambda}.
+ Following the pattern
+given in Section \ref{CaseScheme}, the rule of (non dependent) case
+analysis for \citecoq{Lambda} would be the following:
+
+\begin{center}
+\snregla {\JM{Q}{\Prop}\;\;\;\;\;
+          \JM{p}{\texttt{Lambda}}\;\;\;\;\;
+          {h : {\texttt{Lambda}}\arrow\False\; \vdash\; t\,:\,Q}}
+         {\JM{\citecoq{match $p$ return $Q$ with lambda h {\funarrow} $t$  end}}{Q}}
+\end{center}
+
+In order to avoid paradoxes, it is impossible to construct
+the type \citecoq{Lambda} in {\coq}:
+
+\begin{alltt}
+Inductive Lambda : Set :=
+  lambda : (Lambda {\arrow} False) {\arrow} Lambda. 
+\it
+Error: Non strictly positive occurrence of "Lambda" in
+ "(Lambda {\arrow} False) {\arrow} Lambda"
+\end{alltt}
+
+In order to explain this danger, we
+will declare some constants for simulating the construction of 
+\texttt{Lambda} as an inductive type.
+
+Let us open some section, and declare two variables, the first one for
+\texttt{Lambda}, the other for the constructor \texttt{lambda}.
+
+\begin{alltt}
+Section Paradox.
+Variable Lambda : Set.
+Variable lambda : (Lambda {\arrow} False) {\arrow}Lambda.
+\end{alltt}
+
+Since \texttt{Lambda} is not a truely inductive type, we can't use
+the \texttt{match} construct. Nevertheless, we can simulate it by a
+variable \texttt{matchL} such that the term 
+``~\citecoq{matchL $l$  $Q$ (fun $h$ : Lambda {\arrow} False {\funarrow} $t$)}~''
+should be understood  as 
+``~\citecoq{match $l$ return $Q$ with | lambda h {\funarrow} $t$)}~''
+
+
+\begin{alltt}
+Variable matchL : Lambda {\arrow} 
+                  {\prodsym} Q:Prop, ((Lambda {\arrow}False) {\arrow} Q) {\arrow}
+                  Q.
+\end{alltt}
+
+>From these constants, it is possible to define application by case
+analysis. Then, through auto-application, the well-known looping term
+$(\lambda x.(x\;x)\;\lambda x.(x\;x))$ provides a proof of falsehood.
+
+\begin{alltt}
+Definition application (f x: Lambda) :False :=
+  matchL f False (fun h {\funarrow} h x).
+
+Definition Delta :  Lambda := 
+  lambda (fun x : Lambda {\funarrow} application x x).
+
+Definition loop : False := application Delta Delta.
+
+Theorem two_is_three : 2 = 3.
+Proof.
+ elim loop.
+Qed.
+
+End Paradox.
+\end{alltt}
+
+\noindent This example can be seen as a formulation of Russell's
+paradox in type theory associating $(\textsl{application}\;x\;x)$ to the
+formula $x\not\in x$, and \textsl{Delta} to the set $\{ x \mid
+x\not\in x\}$. If \texttt{matchL} would satisfy the reduction rule
+associated to case analysis, that is, 
+$$ \citecoq{matchL (lambda $f$) $Q$ $h$} \Longrightarrow h\;f$$
+then the term \texttt{loop}
+would compute into itself.  This is not actually surprising, since the
+proof of the logical soundness of {\coq} strongly lays on the property
+that any well-typed term must terminate. Hence, non-termination is
+usually a synonymous of inconsistency.
+
+%\paragraph{} In this case, the construction of a non-terminating
+%program comes from the so-called \textsl{negative occurrence} of
+%$\Lambda$ in the type of the constructor $\lambda$. In order to be
+%admissible for {\coq}, all the occurrences of the recursive type in its
+%own introduction rules must be positive, in the sense on the following
+%definition:
+%
+%\begin{enumerate}
+%\item $R$ is positive in $(R\;\vec{t})$;
+%\item $R$ is positive in $(x: A)C$ if it does not 
+%occur in $A$ and $R$ is positive in $C$; 
+%\item if $P\equiv (\vec{x}:\vec{T})Q$, then $R$ is positive in $(P
+%\rightarrow C)$ if $R$ does not occur in $\vec{T}$, $R$ is positive
+%in $C$, and either
+%\begin{enumerate} 
+%\item $Q\equiv (R\;\vec{q})$ or 
+%\item $Q\equiv (J\;\vec{t})$, \label{relax}
+%      where $J$ is a recursive type, and for any term $t_i$ either : 
+%   \begin{enumerate}
+%      \item $R$ does not occur in $t_i$, or
+%      \item $t_i\equiv (z:\vec{Z})(R\;\vec{q})$, $R$ does not occur
+%       in $\vec{Z}$, $t_i$ instantiates a general
+%       parameter of $J$, and this parameter is positive in the 
+%       arguments of the constructors of $J$. 
+%   \end{enumerate}
+%\end{enumerate}
+%\end{enumerate}
+%\noindent Those types obtained by erasing option (\ref{relax}) in the
+%definition above are called \textsl{strictly positive} types.
+
+
+\subsubsection*{Remark} In this case, the construction of a non-terminating
+program comes from the so-called \textsl{negative occurrence} of
+\texttt{Lambda} in the argument of the constructor \texttt{lambda}. 
+
+The reader will find in the Reference Manual a complete formal 
+definition of the notions of \emph{positivity condition} and
+\emph{strict positivity} that an inductive definition must satisfy.
+
+
+%In order to be
+%admissible for {\coq}, the type $R$ must be positive in the types of the
+%arguments of its own introduction rules, in the sense on the following
+%definition:
+
+%\textbf{La définition du manuel de référence est plus complexe:
+%la recopier ou donner seulement des exemples?
+%}
+%\begin{enumerate}
+%\item $R$ is positive in $T$ if $R$ does not occur in $T$;
+%\item $R$ is positive in $(R\;\vec{t})$ if $R$ does not occur in $\vec{t}$;
+%\item $R$ is positive in $(x:A)C$ if it does not
+%      occur in $A$ and $R$ is positive in $C$; 
+%\item $R$ is positive in $(J\;\vec{t})$, \label{relax}
+%      if $J$ is a recursive type, and for any term $t_i$ either : 
+%   \begin{enumerate}
+%      \item $R$ does not occur in $t_i$, or
+%      \item $R$ is positive in $t_i$,  $t_i$ instantiates a general
+%       parameter of $J$, and this parameter is positive in the 
+%       arguments of the constructors of $J$. 
+%   \end{enumerate}
+%\end{enumerate}
+
+%\noindent When we can show that $R$ is positive without using the item
+%(\ref{relax}) of the definition above, then we say that $R$ is
+%\textsl{strictly positive}.
+
+%\textbf{Changer le discours sur les ordinaux}
+
+Notice that the positivity condition does not forbid us to
+put  functional recursive
+arguments in the constructors. 
+
+For instance, let us consider the type of infinitely branching trees,
+with labels in \texttt{Z}.
+\begin{alltt}
+Require Import ZArith.
+
+Inductive itree : Set :=
+| ileaf : itree
+| inode : Z {\arrow} (nat {\arrow} itree) {\arrow} itree.
+\end{alltt}
+
+In this representation, the $i$-th child of a tree 
+represented by ``~\texttt{inode $z$ $s$}~'' is obtained by applying
+the function $s$ to $i$.
+The following definitions show how to construct a tree with a single 
+node, a tree of height 1 and a tree of height 2:
+
+\begin{alltt}
+Definition isingle l := inode l (fun i {\funarrow} ileaf).
+
+Definition t1 := inode 0 (fun n {\funarrow} isingle (Z_of_nat n)).
+
+Definition t2 := 
+ inode 0 
+      (fun n : nat {\funarrow} 
+                   inode (Z_of_nat n)
+                   (fun p {\funarrow} isingle (Z_of_nat (n*p)))).
+\end{alltt}
+
+
+Let us define a preorder on infinitely branching trees.
+ In order to compare two non-leaf trees,
+it is necessary to compare each of their children 
+ without taking care of the order in which they
+appear:
+
+\begin{alltt}
+Inductive itree_le : itree{\arrow} itree {\arrow} Prop :=
+  | le_leaf : {\prodsym} t, itree_le  ileaf t
+  | le_node : {\prodsym} l l' s s', 
+                Zle l l' {\arrow} 
+                ({\prodsym} i, {\exsym} j:nat, itree_le (s i) (s' j)){\arrow} 
+                itree_le  (inode  l s) (inode  l' s').
+
+\end{alltt}
+
+Notice that a call to the predicate \texttt{itree\_le} appears as
+a general parameter of the inductive type  \texttt{ex} (see Sect.\ref{ex-def}).
+This kind of definition is accepted by {\coq}, but may lead to some
+difficulties, since the induction principle automatically 
+generated by the system
+is not the most appropriate (see chapter 14 of~\cite{coqart} for a detailed
+explanation).
+
+
+The following definition, obtained by 
+skolemising the
+proposition \linebreak $\forall\, i,\exists\, j,(\texttt{itree\_le}\;(s\;i)\;(s'\;j))$ in
+the type of \texttt{itree\_le}, does not present this problem:
+
+
+\begin{alltt} 
+Inductive itree_le' : itree{\arrow} itree {\arrow} Prop :=
+  | le_leaf'  : {\prodsym} t, itree_le'  ileaf t
+  | le_node' : {\prodsym} l l' s s' g, 
+                  Zle l l' {\arrow}  
+                  ({\prodsym} i, itree_le' (s i) (s' (g i))) {\arrow} 
+                  itree_le'  (inode  l s) (inode  l' s').
+
+\end{alltt}
+\iffalse
+\begin{alltt}
+Lemma t1_le'_t2 :  itree_le' t1 t2.
+Proof.
+ unfold t1, t2.
+ constructor 2  with (fun i : nat {\funarrow} 2 * i).
+ auto with zarith.
+ unfold isingle;
+ intro i ; constructor 2 with (fun i :nat {\funarrow} i).
+ auto with zarith.
+ constructor .
+Qed.
+\end{alltt}
+\fi
+
+%In general, strictly positive definitions are preferable to only
+%positive ones. The reason is that it is sometimes difficult to derive
+%structural induction combinators for the latter ones. Such combinators
+%are automatically generated for strictly positive types, but not for
+%the only positive ones. Nevertheless, sometimes non-strictly positive
+%definitions provide a smarter or shorter way of declaring a recursive
+%type.
+
+Another example is the type of trees 
+ of unbounded width, in which a recursive subterm 
+\texttt{(ltree A)} instantiates the type  of polymorphic lists:
+
+\begin{alltt} 
+Require Import List.
+
+Inductive ltree  (A:Set) : Set :=  
+          lnode   : A {\arrow} list (ltree A) {\arrow} ltree A.
+\end{alltt}
+
+This declaration can be transformed  
+adding an extra type to the definition, as was done in Section
+\ref{MutuallyDependent}.
+
+
+\subsubsection{Impredicative Inductive Types}
+
+An inductive type $I$ inhabiting a universe $U$ is \textsl{predicative}
+if the introduction rules of $I$ do not make a universal
+quantification on a universe containing $U$. All the recursive types
+previously introduced are examples of predicative types. An example of
+an impredicative one is the following type:
+%\textsl{exT}, the dependent product
+%of a certain set (or proposition) $x$, and a proof of a property $P$
+%about $x$.
+
+%\begin{alltt} 
+%Print exT.
+%\end{alltt}
+%\textbf{ttention, EXT c'est ex!}
+%\begin{alltt}
+%Check (exists P:Prop, P {\arrow} not P).  
+%\end{alltt}
+
+%This type is useful for expressing existential quantification over
+%types, like ``there exists a proposition $x$ such that $(P\;x)$''
+%---written $(\textsl{EXT}\; x:Prop \mid (P\;x))$ in {\coq}. However,
+
+\begin{alltt}
+Inductive prop : Prop :=
+ prop_intro : Prop {\arrow} prop.
+\end{alltt}
+
+Notice
+that the constructor of this type can be used to inject any
+proposition --even itself!-- into the type. 
+
+\begin{alltt}
+Check (prop_intro prop).\it
+prop_intro prop
+     : prop
+\end{alltt}
+
+A careless use of such a
+self-contained objects may lead to a variant of Burali-Forti's
+paradox. The construction of Burali-Forti's paradox is more
+complicated than Russel's one, so we will not describe it here, and
+point the interested reader to \cite{Bar98,Coq86}.
+
+
+Another example is the second order existential quantifier for propositions:
+
+\begin{alltt}
+Inductive ex_Prop  (P : Prop {\arrow} Prop) : Prop :=
+  exP_intro : {\prodsym} X : Prop, P X {\arrow} ex_Prop P.
+\end{alltt}
+
+%\begin{alltt}
+%(*
+%Check (match prop_inject with (prop_intro p _) {\funarrow} p end).
+
+%Error: Incorrect elimination of "prop_inject" in the inductive type
+% ex
+%The elimination predicate ""fun _ : prop {\funarrow} Prop" has type
+% "prop {\arrow} Type"
+%It should be one of :
+% "Prop"
+
+%Elimination of an inductive object of sort : "Prop"
+%is not allowed on a predicate in sort : "Type"
+%because non-informative objects may not construct informative ones.
+
+%*)
+%Print prop_inject.
+
+%(*
+%prop_inject = 
+%prop_inject = prop_intro prop (fun H : prop {\funarrow} H)
+%     : prop
+%*)
+%\end{alltt}
+
+% \textbf{Et par ça?
+%}
+
+Notice that predicativity on sort \citecoq{Set} forbids us to build
+the following definitions.
+
+
+\begin{alltt}
+Inductive aSet : Set :=
+  aSet_intro: Set {\arrow} aSet.
+
+\it{}User error: Large non-propositional inductive types must be in Type
+\tt 
+Inductive ex_Set  (P : Set {\arrow} Prop) : Set :=
+  exS_intro : {\prodsym} X : Set, P X {\arrow} ex_Set P.
+
+\it{}User error: Large non-propositional inductive types must be in Type
+\end{alltt}
+
+Nevertheless, one can define types like \citecoq{aSet} and \citecoq{ex\_Set}, as inhabitants of \citecoq{Type}.
+
+\begin{alltt}
+Inductive ex_Set  (P : Set {\arrow} Prop) : Type :=
+  exS_intro : {\prodsym} X : Set, P X {\arrow} ex_Set P.
+\end{alltt}
+
+In the following example, the inductive type \texttt{typ} can be defined,
+but the term associated with the interactive Definition of
+\citecoq{typ\_inject} is incompatible with {\coq}'s hierarchy of universes:
+
+
+\begin{alltt}
+Inductive  typ : Type := 
+  typ_intro : Type {\arrow} typ. 
+
+Definition typ_inject: typ.
+ split; exact typ.
+\it Proof completed
+
+\tt{}Defined.
+\it Error: Universe Inconsistency.
+\tt
+Abort.
+\end{alltt}
+
+One possible way of avoiding this new source of paradoxes is to
+restrict the kind of eliminations by case analysis that can be done on
+impredicative types. In particular, projections on those universes
+equal or bigger than the one inhabited by the impredicative type must
+be forbidden \cite{Coq86}. A consequence of this restriction is that it
+is not possible to define the first projection of the type
+``~\citecoq{ex\_Prop $P$}~'':
+\begin{alltt}
+Check (fun (P:Prop{\arrow}Prop)(p: ex_Prop P) {\funarrow}
+      match p with exP_intro X HX {\funarrow} X end).
+\it
+Error:
+Incorrect elimination of "p" in the inductive type  
+"ex_Prop", the return type has sort "Type" while it should be 
+"Prop"
+
+Elimination of an inductive object of sort "Prop"
+is not allowed on a predicate in sort "Type"
+because proofs can be eliminated only to build proofs.
+\end{alltt}
+
+%In order to explain why, let us consider for example the following
+%impredicative type \texttt{ALambda}.
+%\begin{alltt} 
+%Inductive ALambda : Set := 
+%          alambda : (A:Set)(A\arrow{}False)\arrow{}ALambda.
+%
+%Definition Lambda : Set := ALambda.
+%Definition lambda : (ALambda\arrow{}False)\arrow{}ALambda := (alambda ALambda).
+%Lemma CaseAL : (Q:Prop)ALambda\arrow{}((ALambda\arrow{}False)\arrow{}Q)\arrow{}Q.
+%\end{alltt}
+%
+%This type contains all the elements of the dangerous type $\Lambda$
+%described at the beginning of this section.  Try to construct the
+%non-ending term $(\Delta\;\Delta)$ as an object of
+%\texttt{ALambda}. Why is it not possible?
+
+\subsubsection{Extraction Constraints}
+
+There is a final constraint on case analysis that is not motivated by
+the potential introduction of paradoxes, but for compatibility reasons
+with {\coq}'s extraction mechanism \refmancite{Appendix
+\ref{CamlHaskellExtraction}}. This mechanism is based on the
+classification of basic types into the universe $\Set$ of sets and the
+universe $\Prop$ of propositions.  The objects of a type in the
+universe $\Set$ are considered as relevant for computation
+purposes. The objects of a type in $\Prop$ are considered just as
+formalised comments, not necessary for execution. The extraction
+mechanism consists in erasing such formal comments in order to obtain
+an executable program. Hence, in general, it is not possible to define
+an object in a set (that should be kept by the extraction mechanism)
+by case analysis of a proof (which will be thrown away).
+
+Nevertheless, this general rule has an exception which is important in
+practice: if the definition proceeds by case analysis on a proof of a
+\textsl{singleton proposition} or an empty type (\emph{e.g.} \texttt{False}),
+ then it is allowed. A singleton
+proposition is a non-recursive proposition with a single constructor
+$c$, all whose arguments are proofs. For example, the propositional
+equality and the conjunction of two propositions are examples of
+singleton propositions.
+
+%From the point of view of the extraction
+%mechanism, such types are isomorphic to a type containing a single
+%object $c$, so a definition $\Case{x}{c \Rightarrow b}$ is 
+%directly replaced by $b$ as an extra optimisation.
+
+\subsubsection{Strong Case Analysis on Proofs}
+
+One could consider allowing 
+ to define a proposition $Q$ by case
+analysis on the proofs of another recursive proposition $R$. As we
+will see in Section \ref{Discrimination}, this would enable one to prove that
+different introduction rules of $R$ construct different
+objects. However, this property would be in contradiction with the principle
+of excluded middle of classical logic, because this principle entails
+that the proofs of a proposition cannot be distinguished. This
+principle is not provable in {\coq}, but it is frequently introduced by
+the users as an axiom, for reasoning in classical logic. For this
+reason, the definition of propositions by case analysis on proofs is
+ not allowed in {\coq}.
+
+\begin{alltt}
+
+Definition comes_from_the_left (P Q:Prop)(H:P{\coqor}Q): Prop :=
+ match H with
+         |  or_introl p {\funarrow} True 
+         |  or_intror q {\funarrow} False
+ end.
+\it
+Error:
+Incorrect elimination of "H" in the inductive type  
+"or", the return type has sort "Type" while it should be 
+"Prop"
+
+Elimination of an inductive object of sort "Prop"
+is not allowed on a predicate in sort "Type"
+because proofs can be eliminated only to build proofs.
+
+\end{alltt}
+
+On the other hand, if we replace the proposition $P {\coqor} Q$ with
+the informative type $\{P\}+\{Q\}$, the elimination  is accepted:
+
+\begin{alltt}
+Definition comes_from_the_left_sumbool
+            (P Q:Prop)(x:\{P\} + \{Q\}): Prop :=
+  match x with
+         |  left  p {\funarrow} True 
+         |  right q {\funarrow} False
+  end.
+\end{alltt}
+
+
+\subsubsection{Summary of Constraints}
+
+To end with this section, the following table summarizes which
+universe $U_1$ may inhabit an object of type $Q$ defined by case
+analysis on $x:R$, depending on the universe $U_2$ inhabited by the
+inductive types $R$.\footnote{In the box indexed by $U_1=\citecoq{Type}$
+and $U_2=\citecoq{Set}$, the answer ``yes''  takes into account the 
+predicativity of sort \citecoq{Set}. If you are working with the
+option ``impredicative-set'', you must put in this box the
+condition ``if $R$ is predicative''.}
+
+
+\begin{center}
+\renewcommand{\multirowsetup}{\centering} \newlength{\LL}
+\settowidth{\LL}{$x : R : s_1$}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\multirow{5}{\LL}{$x : R : U_2$} &
+\multicolumn{4}{|c|}{$Q : U_1$}\\
+\hline
+&                 &\textsl{Set}      & \textsl{Prop} & \textsl{Type}\\
+\cline{2-5}
+&\textsl{Set}     &  yes             &   yes         &  yes\\
+\cline{2-5}
+&\textsl{Prop}    & if $R$ singleton &   yes         &  no\\
+\cline{2-5}
+&\textsl{Type}    &  yes             &   yes         &  yes\\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Some Proof Techniques Based on Case Analysis}
+\label{CaseTechniques}
+
+In this section we illustrate the use of case analysis as a proof
+principle, explaining the proof techniques behind three very useful
+{\coq} tactics, called \texttt{discriminate}, \texttt{injection} and
+\texttt{inversion}. 
+
+\subsection{Discrimination of introduction rules}
+\label{Discrimination}
+
+In the informal semantics of recursive types described in Section
+\ref{Introduction} it was said that each of the introduction rules of a
+recursive type is considered as being different from all the others. 
+It is possible to capture this fact inside the logical system using
+the propositional equality. We take as example the following theorem,
+stating that \textsl{O} constructs a natural number different 
+from any of those constructed with \texttt{S}. 
+
+\begin{alltt}
+Theorem S_is_not_O : {\prodsym} n, S n {\coqdiff} 0. 
+\end{alltt}
+
+In order to prove this theorem, we first define a proposition by case
+analysis on natural numbers, so that the proposition is true for {\Z}
+and false for any natural number constructed with {\SUCC}. This uses
+the empty and singleton type introduced in Sections \ref{Introduction}.
+
+\begin{alltt}
+Definition Is_zero (x:nat):= match x with 
+                                     | 0 {\funarrow} True  
+                                     | _ {\funarrow} False
+                             end.
+\end{alltt}
+
+\noindent Then, we prove the following lemma:
+
+\begin{alltt}
+Lemma O_is_zero : {\prodsym} m, m = 0 {\arrow} Is_zero m.
+Proof.
+  intros m H; subst m. 
+\it{}
+================
+ Is_zero 0
+\tt{}
+simpl;trivial.
+Qed.
+\end{alltt}
+
+\noindent Finally, the proof of \texttt{S\_is\_not\_O} follows by the
+application of the previous lemma to $S\;n$.
+
+
+\begin{alltt}
+
+ red; intros n Hn.
+ \it{}   
+  n : nat
+  Hn : S n = 0
+  ============================
+   False \tt
+
+ apply O_is_zero with (m := S n).
+ assumption.
+Qed.
+\end{alltt}
+
+
+The tactic \texttt{discriminate} \refmancite{Section \ref{Discriminate}} is
+a special-purpose tactic for proving disequalities between two
+elements of a recursive type introduced by different constructors. It
+generalizes the proof method described here for natural numbers to any
+[co]-inductive type. This tactic is also capable of proving disequalities
+where the difference is not in the constructors at the head of the
+terms, but deeper inside them. For example, it can be used to prove
+the following theorem:
+
+\begin{alltt}
+Theorem disc2 : {\prodsym} n, S (S n) {\coqdiff} 1. 
+Proof.
+ intros n Hn; discriminate.
+Qed.
+\end{alltt}
+
+When there is an assumption $H$ in the context stating a false
+equality $t_1=t_2$, \texttt{discriminate} solves the goal by first
+proving $(t_1\not =t_2)$ and then reasoning by absurdity with respect
+to $H$:
+
+\begin{alltt}
+Theorem disc3 : {\prodsym} n, S (S n) = 0 {\arrow} {\prodsym} Q:Prop, Q.
+Proof.
+ intros n Hn Q.
+ discriminate.
+Qed.
+\end{alltt}
+
+\noindent In this case, the proof proceeds by absurdity with respect
+to the false equality assumed, whose negation is proved by
+discrimination.
+
+\subsection{Injectiveness of introduction rules}
+
+Another useful property about recursive types is the
+\textsl{injectiveness} of introduction rules, i.e., that whenever two
+objects were built using the same introduction rule, then this rule
+should have been applied to the same element. This can be stated
+formally using the propositional equality:
+
+\begin{alltt}
+Theorem inj : {\prodsym} n m, S n = S m {\arrow} n = m.
+Proof.
+\end{alltt}
+
+\noindent This theorem is just a corollary of a lemma about the
+predecessor function:
+
+\begin{alltt}
+ Lemma inj_pred : {\prodsym} n m, n = m {\arrow} pred n = pred m.
+ Proof.
+  intros n m eq_n_m.
+  rewrite eq_n_m.
+  trivial.
+ Qed.
+\end{alltt}
+\noindent Once this lemma is proven, the theorem follows directly
+from it:
+\begin{alltt}
+ intros n m eq_Sn_Sm.
+ apply inj_pred with (n:= S n) (m := S m); assumption.
+Qed.
+\end{alltt}
+
+This proof method is implemented by the tactic \texttt{injection}
+\refmancite{Section \ref{injection}}. This tactic is applied to
+a term $t$ of type ``~$c\;{t_1}\;\dots\;t_n = c\;t'_1\;\dots\;t'_n$~'', where $c$ is some constructor of
+an inductive type. The tactic \texttt{injection} is applied as deep as 
+possible to derive the equality of all pairs of subterms of $t_i$ and $t'_i$
+placed in the same position. All these equalities are put as antecedents 
+of the current goal.
+
+
+
+Like \texttt{discriminate}, the tactic \citecoq{injection} 
+can be also applied if $x$ does not
+occur in a direct sub-term, but somewhere deeper inside it. Its
+application may leave some trivial goals that can be easily solved
+using the tactic \texttt{trivial}.
+
+\begin{alltt}
+
+ Lemma list_inject : {\prodsym} (A:Type)(a b :A)(l l':list A),
+             a :: b :: l = b :: a :: l' {\arrow} a = b {\coqand} l = l'.
+Proof.
+ intros A a b l l' e.
+
+
+\it
+  e : a :: b :: l = b :: a :: l'
+  ============================
+   a = b {\coqand} l = l'
+\tt
+ injection e.
+\it
+  ============================
+   l = l' {\arrow} b = a {\arrow} a = b {\arrow} a = b {\coqand} l = l'
+
+\tt{} auto.
+Qed.
+\end{alltt}
+
+\subsection{Inversion Techniques}\label{inversion}
+
+In section \ref{DependentCase}, we motivated the rule of dependent case
+analysis as a way of internalizing the informal equalities $n=O$ and
+$n=\SUCC\;p$ associated to each case. This internalisation
+consisted in instantiating $n$ with the corresponding term in the type
+of each branch. However, sometimes it could be better to internalise
+these equalities as extra hypotheses --for example, in order to use
+the tactics \texttt{rewrite}, \texttt{discriminate} or
+\texttt{injection} presented in the previous sections. This is
+frequently the case when the element analysed is denoted by a term
+which is not a variable, or when it is an object of a particular
+instance of a recursive family of types. Consider for example the
+following theorem:
+
+\begin{alltt}
+Theorem not_le_Sn_0 : {\prodsym} n:nat, ~ (S n {\coqle} 0).
+\end{alltt}
+
+\noindent Intuitively, this theorem should follow by case analysis on
+the hypothesis $H:(S\;n\;\leq\;\Z)$, because no introduction rule allows
+to instantiate the arguments of \citecoq{le} with respectively a successor
+and zero. However, there
+is no way of capturing this with the typing rule for case analysis
+presented in section \ref{Introduction}, because it does not take into
+account what particular instance of the family the type of $H$ is.
+Let us try it:
+\begin{alltt}
+Proof.
+ red; intros n H; case H.
+\it 2 subgoals
+  
+  n : nat
+  H : S n {\coqle} 0
+  ============================
+   False
+
+subgoal 2 is:
+ {\prodsym} m : nat, S n {\coqle} m {\arrow} False
+\tt
+Undo.
+\end{alltt}
+
+\noindent What is necessary here is to make available the equalities
+``~$\SUCC\;n = \Z$~'' and ``~$\SUCC\;m = \Z$~''
+ as extra hypotheses of the
+branches, so that the goal can be solved using the
+\texttt{Discriminate} tactic. In order to obtain the desired
+equalities as hypotheses, let us prove an auxiliary lemma, that our
+theorem is a corollary of:
+
+\begin{alltt}
+ Lemma not_le_Sn_0_with_constraints :
+  {\prodsym} n p , S n {\coqle} p {\arrow}  p = 0 {\arrow} False.
+  Proof.
+   intros n p H; case H .
+\it
+2 subgoals
+  
+  n : nat
+  p : nat
+  H : S n {\coqle} p
+  ============================
+   S n = 0 {\arrow} False
+
+subgoal 2 is:
+ {\prodsym} m : nat, S n {\coqle} m {\arrow} S m = 0 {\arrow} False
+\tt
+ intros;discriminate.
+ intros;discriminate.
+Qed.
+\end{alltt}
+\noindent Our main theorem can now be solved by an application of this lemma:
+\begin{alltt}
+Show.
+\it
+2 subgoals
+  
+  n : nat
+  p : nat
+  H : S n {\coqle} p
+  ============================
+   S n = 0 {\arrow} False
+
+subgoal 2 is:
+ {\prodsym} m : nat, S n {\coqle} m {\arrow} S m = 0 {\arrow} False
+\tt
+ eapply not_le_Sn_0_with_constraints; eauto.
+Qed.
+\end{alltt}
+
+
+The general method to address such situations consists in changing the
+goal to be proven into an implication, introducing as preconditions
+the equalities needed to eliminate the cases that make no
+sense. This proof technique is implemented by the tactic
+\texttt{inversion} \refmancite{Section \ref{Inversion}}. In order
+to prove a goal $G\;\vec{q}$ from an object of type $R\;\vec{t}$,
+this tactic automatically generates a lemma $\forall, \vec{x}.
+(R\;\vec{x}) \rightarrow \vec{x}=\vec{t}\rightarrow \vec{B}\rightarrow
+(G\;\vec{q})$, where the list of propositions $\vec{B}$ correspond to
+the subgoals that cannot be directly proven using
+\texttt{discriminate}. This lemma can either be saved for later
+use, or generated interactively. In this latter case, the subgoals
+yielded by the tactic are the hypotheses $\vec{B}$ of the lemma. If the
+lemma has been stored, then the tactic \linebreak
+ ``~\citecoq{inversion \dots using \dots}~'' can be
+used to apply it. 
+
+Let us show both techniques on our previous example:
+
+\subsubsection{Interactive mode}
+
+\begin{alltt}
+Theorem not_le_Sn_0' : {\prodsym} n:nat, ~ (S n {\coqle} 0).
+Proof.
+ red; intros n H ; inversion H.
+Qed.
+\end{alltt}
+
+
+\subsubsection{Static mode}
+
+\begin{alltt}
+
+Derive Inversion le_Sn_0_inv with ({\prodsym} n :nat, S n {\coqle}  0).
+Theorem le_Sn_0'' : {\prodsym} n p : nat, ~ S n {\coqle} 0 .
+Proof.
+ intros n p H; 
+ inversion H using le_Sn_0_inv.
+Qed.
+\end{alltt}
+
+
+In the example above, all the cases are solved using discriminate, so
+there remains no subgoal to be proven (i.e. the list $\vec{B}$ is
+empty). Let us present a second example, where this list is not empty:
+
+
+\begin{alltt}
+TTheorem le_reverse_rules : 
+     {\prodsym} n m:nat, n {\coqle} m {\arrow} 
+                     n = m {\coqor}  
+                     {\exsym} p, n {\coqle}  p {\coqand} m = S p.
+Proof.
+ intros n m H; inversion H.
+\it
+2 subgoals
+
+
+
+  
+  n : nat
+  m : nat
+  H : n {\coqle} m
+  H0 : n = m
+  ============================
+   m = m {\coqor} ({\exsym} p : nat, m {\coqle} p {\coqand} m = S p)
+
+subgoal 2 is:
+ n = S m0 {\coqor} ({\exsym} p : nat, n {\coqle} p {\coqand} S m0 = S p)
+\tt
+ left;trivial.
+ right; exists m0; split; trivial.
+\it
+Proof completed
+\end{alltt}
+
+This example shows how this tactic can be used to ``reverse'' the
+introduction rules of a recursive type, deriving the possible premises
+that could lead to prove a given instance of the predicate. This is
+why these tactics are called \texttt{inversion} tactics: they go back
+from conclusions to premises.
+
+The hypotheses corresponding to the propositional equalities are not
+needed in this example, since the tactic does the necessary rewriting
+to solve the subgoals.  When the equalities are no longer needed after
+the inversion, it is better to use the tactic
+\texttt{Inversion\_clear}. This variant of the tactic clears from the
+context all the equalities introduced.
+
+\begin{alltt}
+Restart.
+ intros n m H; inversion_clear H.
+\it
+\it
+  
+  n : nat
+  m : nat
+  ============================
+   m = m {\coqor} ({\exsym} p : nat, m {\coqle} p {\coqand} m = S p)
+\tt
+ left;trivial.
+\it
+  n : nat
+  m : nat
+  m0 : nat
+  H0 : n {\coqle} m0
+  ============================
+   n = S m0 {\coqor} ({\exsym} p : nat, n {\coqle} p {\coqand} S m0 = S p)
+\tt
+ right; exists m0; split; trivial.
+Qed.
+\end{alltt}
+
+
+%This proof technique works in most of the cases, but not always.  In
+%particular, it could not if the list $\vec{t}$ contains a term $t_j$
+%whose type $T$ depends on a previous term $t_i$, with $i<j$. Remark
+%that if this is the case, the propositional equality $x_j=t_j$ is not
+%well-typed, since $x_j:T(x_i)$ but $t_j:T(t_i)$, and both types are
+%not convertible (otherwise, the problem could be solved using the
+%tactic \texttt{Case}).
+
+
+
+\begin{exercise}
+Consider the following language of arithmetic expression, and 
+its operational semantics, described by a set of rewriting rules.
+%\textbf{J'ai enlevé une règle de commutativité de l'addition qui 
+%me paraissait bizarre du point de vue de la sémantique opérationnelle}
+
+\begin{alltt}
+Inductive ArithExp : Set :=
+   | Zero : ArithExp 
+   | Succ : ArithExp {\arrow} ArithExp
+   | Plus : ArithExp {\arrow} ArithExp {\arrow} ArithExp.
+
+Inductive RewriteRel : ArithExp {\arrow} ArithExp {\arrow} Prop :=
+  |  RewSucc  : {\prodsym} e1 e2 :ArithExp,
+                  RewriteRel e1 e2 {\arrow}
+                   RewriteRel (Succ e1) (Succ e2) 
+  |  RewPlus0 : {\prodsym} e:ArithExp,
+                  RewriteRel (Plus Zero e) e 
+  |  RewPlusS : {\prodsym} e1 e2:ArithExp,
+                  RewriteRel e1 e2 {\arrow}
+                  RewriteRel (Plus (Succ e1) e2) 
+                             (Succ (Plus e1 e2)).
+
+\end{alltt}
+\begin{enumerate}
+\item Prove that \texttt{Zero} cannot be rewritten any further.
+\item Prove that an expression of the form ``~$\texttt{Succ}\;e$~'' is always 
+rewritten
+into an expression of the same form.
+\end{enumerate}
+\end{exercise}
+
+%Theorem zeroNotCompute : (e:ArithExp)~(RewriteRel Zero e).
+%Intro e.
+%Red.
+%Intro H.
+%Inversion_clear H.
+%Defined.
+%Theorem evalPlus : 
+%  (e1,e2:ArithExp)
+%    (RewriteRel (Succ e1) e2)\arrow{}(EX e3 : ArithExp | e2=(Succ e3)).
+%Intros e1 e2 H.
+%Inversion_clear H.
+%Exists e3;Reflexivity.
+%Qed.
+
+
+\section{Inductive Types and Structural Induction} 
+\label{StructuralInduction}
+
+Elements of inductive types  are well-founded with
+respect to the structural order induced by the constructors of the
+type. In addition to case analysis, this extra hypothesis about
+well-foundedness justifies a stronger elimination rule for them, called
+\textsl{structural induction}.  This form of elimination consists in
+defining a value ``~$f\;x$~'' from some element $x$ of the inductive type
+$I$, assuming that values have been already associated in the same way
+to the sub-parts of $x$ of type $I$.
+
+
+Definitions by structural induction are expressed through the
+\texttt{Fixpoint} command \refmancite{Section
+\ref{Fixpoint}}. This command is quite close to the
+\texttt{let-rec} construction of functional programming languages.
+For example, the following definition introduces the addition of two
+natural numbers (already defined in the Standard Library:)
+
+\begin{alltt} 
+Fixpoint plus (n p:nat) \{struct n\} : nat :=
+  match n with
+          | 0 {\funarrow} p
+          | S m {\funarrow} S (plus m p)
+ end.
+\end{alltt}
+
+The definition is by structural induction on the first argument of the
+function. This is indicated  by the ``~\citecoq{\{struct n\}}~''
+directive in the function's header\footnote{This directive is optional
+in the case of a function of a single argument}.
+  In
+order to be accepted, the definition must satisfy a syntactical
+condition, called the \textsl{guardedness condition}. Roughly
+speaking, this condition constrains the arguments of a recursive call
+to be pattern variables, issued from a case analysis of the formal
+argument of the function pointed by the \texttt{struct} directive.
+ In the case of the
+function \texttt{plus}, the argument \texttt{m} in the recursive call is a
+pattern variable issued from a case analysis of \texttt{n}. Therefore, the
+definition is accepted.
+
+Notice that we could have defined the addition with structural induction 
+on its second argument:
+\begin{alltt} 
+Fixpoint plus' (n p:nat) \{struct p\} : nat :=
+    match p with
+          | 0 {\funarrow} n
+          | S q {\funarrow} S (plus' n q)
+    end.
+\end{alltt}
+
+%This notation is useful when defining a function whose decreasing
+%argument has a dependent type. As an example, consider the following
+%recursivly defined proof of the theorem
+%$(n,m:\texttt{nat})n<m \rightarrow (S\;n)<(S\;m)$:
+%\begin{alltt} 
+%Fixpoint lt_n_S [n,m:nat;p:(lt n m)] : (lt (S n) (S m)) :=
+% <[n0:nat](lt (S n) (S n0))>
+%     Cases p of
+%       lt_intro1        {\funarrow} (lt_intro1 (S n))
+%    | (lt_intro2 m1 p2) {\funarrow} (lt_intro2 (S n) (S m1) (lt_n_S n m1 p2))
+%     end.
+%\end{alltt}
+
+%The guardedness condition must be satisfied only by the last argument
+%of the enclosed list. For example, the following declaration is an
+%alternative way of defining addition:
+
+%\begin{alltt}
+%Reset add.
+%Fixpoint add [n:nat] : nat\arrow{}nat :=
+%  Cases n of 
+%       O    {\funarrow} [x:nat]x
+%    | (S m) {\funarrow} [x:nat](add m (S x))
+%  end.
+%\end{alltt}
+
+In the following definition of addition, 
+the second argument of \verb@plus''@ grows at each
+recursive call. However, as the first one always decreases, the
+definition is sound.
+\begin{alltt}
+Fixpoint plus'' (n p:nat) \{struct n\} : nat :=
+ match n with
+          | 0 {\funarrow} p
+          | S m {\funarrow} plus'' m (S p)
+ end.
+\end{alltt}
+
+ Moreover, the argument in the recursive call
+could be a deeper component of $n$.  This is the case in the following
+definition of a boolean function determining whether a number is even
+or odd:
+
+\begin{alltt} 
+Fixpoint even_test (n:nat) : bool :=
+  match n 
+  with 0 {\funarrow}  true
+     | 1 {\funarrow}  false
+     | S (S p) {\funarrow} even_test p
+  end.
+\end{alltt}
+
+Mutually dependent definitions by structural induction are also
+allowed. For example, the previous function \textsl{even} could alternatively
+be defined using an auxiliary function \textsl{odd}:
+
+\begin{alltt}
+Reset even_test.
+
+
+
+Fixpoint even_test (n:nat) : bool :=
+  match n 
+  with 
+      | 0 {\funarrow}  true
+      | S p {\funarrow} odd_test p
+  end
+with odd_test (n:nat) : bool :=
+  match n
+  with 
+     | 0 {\funarrow} false
+     | S p {\funarrow} even_test p
+ end.
+\end{alltt}
+
+%\begin{exercise}
+%Define a function by structural induction that computes the number of
+%nodes of a tree structure defined in page \pageref{Forest}.
+%\end{exercise}
+
+Definitions by structural induction are computed 
+ only when they are applied, and the decreasing argument
+is a term having a constructor at the head. We can check this using
+the \texttt{Eval} command, which computes the normal form of a well
+typed term.
+
+\begin{alltt}
+Eval simpl in even_test.
+\it
+    = even_test
+     : nat {\arrow} bool
+\tt 
+Eval simpl in (fun x : nat {\funarrow} even x).
+\it
+     = fun x : nat {\funarrow} even x
+     : nat {\arrow} Prop
+\tt
+Eval simpl in (fun x : nat => plus 5 x).
+\it
+     =  fun x : nat {\funarrow} S (S (S (S (S x))))
+
+\tt
+Eval simpl in (fun x : nat {\funarrow} even_test (plus 5 x)).
+\it
+    = fun x : nat {\funarrow} odd_test x
+     : nat {\arrow} bool
+\tt
+Eval simpl in (fun x : nat {\funarrow} even_test (plus x 5)).
+\it
+    = fun x : nat {\funarrow} even_test (x + 5)
+     : nat {\arrow} bool
+\end{alltt}
+ 
+
+%\begin{exercise}
+%Prove that the second definition of even satisfies the following
+%theorem:
+%\begin{verbatim}
+%Theorem unfold_even : 
+% (x:nat)
+%   (even x)= (Cases x of 
+%                 O        {\funarrow} true
+%              | (S O)     {\funarrow} false 
+%              | (S (S m)) {\funarrow} (even m)
+%              end).
+%\end{verbatim}
+%\end{exercise}
+
+\subsection{Proofs by Structural Induction}
+
+The principle of structural induction can be also used in order to
+define proofs, that is, to prove theorems. Let us call an
+\textsl{elimination combinator} any function that, given a predicate
+$P$, defines a proof of ``~$P\;x$~'' by structural induction on $x$.  In
+{\coq}, the principle of proof by induction on natural numbers is a
+particular case of an elimination combinator. The definition of this
+combinator depends on three general parameters: the predicate to be
+proven, the base case, and the inductive step:
+
+\begin{alltt}
+Section Principle_of_Induction.
+Variable    P               : nat {\arrow} Prop.
+Hypothesis  base_case       : P 0.
+Hypothesis  inductive_step  : {\prodsym} n:nat, P n {\arrow} P (S n).
+Fixpoint nat_ind  (n:nat)   : (P n) := 
+   match n return P n with
+          | 0 {\funarrow} base_case
+          | S m {\funarrow} inductive_step m (nat_ind m)
+   end. 
+
+End Principle_of_Induction.
+\end{alltt}
+
+As this proof principle is used very often, {\coq} automatically generates it
+when an inductive type is introduced.  Similar principles
+\texttt{nat\_rec} and \texttt{nat\_rect} for defining objects in the
+universes $\Set$ and $\Type$ are also automatically generated
+\footnote{In fact, whenever possible, {\coq} generates the
+principle \texttt{$I$\_rect}, then derives from it the
+weaker principles  \texttt{$I$\_ind} and \texttt{$I$\_rec}.
+If some principle has to be defined by hand, the user may try
+to build \texttt{$I$\_rect} (if possible). Thanks to {\coq}'s conversion
+rule, this principle can be used directly to build proofs and/or
+programs.}. The
+command \texttt{Scheme} \refmancite{Section \ref{Scheme}} can be
+used to generate an elimination combinator from certain parameters,
+like the universe that the defined objects must inhabit, whether the
+case analysis in the definitions must be dependent or not, etc. For
+example, it can be used to generate an elimination combinator for
+reasoning on even natural numbers from the mutually dependent
+predicates introduced in page \pageref{Even}. We do not display the
+combinators here by lack of space, but you can see them using the
+\texttt{Print} command.
+
+\begin{alltt}
+Scheme Even_induction := Minimality for even Sort Prop
+with   Odd_induction  := Minimality for odd  Sort Prop.
+\end{alltt}
+
+\begin{alltt}
+Theorem even_plus_four : {\prodsym} n:nat, even n {\arrow} even (4+n).
+Proof.
+ intros n H.
+ elim H using Even_induction with (P0 := fun n {\funarrow} odd (4+n));
+ simpl;repeat constructor;assumption.
+Qed.
+\end{alltt}
+
+Another example of an elimination combinator is the principle 
+of double induction on natural numbers, introduced by the following
+definition:
+
+\begin{alltt}
+Section Principle_of_Double_Induction.
+Variable    P              : nat {\arrow} nat {\arrow}Prop.
+Hypothesis  base_case1     : {\prodsym} m:nat, P 0 m.
+Hypothesis  base_case2     : {\prodsym} n:nat, P (S n) 0.
+Hypothesis  inductive_step : {\prodsym} n m:nat, P n m {\arrow}
+                                       \,\, P (S n) (S m).
+
+Fixpoint nat_double_ind (n m:nat)\{struct n\} : P n m := 
+ match n, m return P n m with 
+ |     0 ,    x   {\funarrow}  base_case1 x 
+ |  (S x),    0   {\funarrow} base_case2 x
+ |  (S x), (S y) {\funarrow} inductive_step x y (nat_double_ind x y)
+ end.
+End Principle_of_Double_Induction.
+\end{alltt}
+
+Changing the type of $P$ into $\nat\rightarrow\nat\rightarrow\Type$,
+another combinator \texttt{nat\_double\_rect} for constructing 
+(certified) programs can be defined in exactly the same way.
+This definition is left as an exercise.\label{natdoublerect}
+
+\iffalse
+\begin{alltt}
+Section Principle_of_Double_Recursion.
+Variable    P               : nat {\arrow} nat {\arrow} Type.
+Hypothesis  base_case1      : {\prodsym} x:nat, P 0 x.
+Hypothesis  base_case2      : {\prodsym} x:nat, P (S x) 0.
+Hypothesis  inductive_step   : {\prodsym} n m:nat, P n m {\arrow} P (S n) (S m).
+Fixpoint nat_double_rect (n m:nat)\{struct n\} : P n m := 
+  match n, m return P n m with 
+            0 ,     x   {\funarrow}  base_case1 x 
+         |  (S x),    0   {\funarrow} base_case2 x
+         |  (S x), (S y) {\funarrow} inductive_step x y (nat_double_rect x y)
+     end.
+End Principle_of_Double_Recursion.
+\end{alltt}
+\fi
+For instance the function computing the minimum of two natural
+numbers can be defined in the following way:
+
+\begin{alltt}
+Definition min : nat {\arrow} nat {\arrow} nat  := 
+  nat_double_rect (fun (x y:nat) {\funarrow} nat)
+                 (fun (x:nat) {\funarrow} 0)
+                 (fun (y:nat) {\funarrow} 0)
+                 (fun (x y r:nat) {\funarrow} S r).
+Eval compute in (min 5 8).
+\it
+= 5 : nat
+\end{alltt}
+
+
+%\begin{exercise}
+%
+%Define the combinator \texttt{nat\_double\_rec}, and apply it
+%to give another definition of \citecoq{le\_lt\_dec} (using the theorems
+%of the \texttt{Arith} library).
+%\end{exercise}
+
+\subsection{Using Elimination Combinators.} 
+The tactic \texttt{apply} can be used to apply one of these proof
+principles during the development of a proof. 
+
+\begin{alltt}
+Lemma not_circular : {\prodsym} n:nat, n {\coqdiff} S n.
+Proof.
+ intro n.
+ apply nat_ind with (P:= fun n {\funarrow} n {\coqdiff} S n).
+\it
+
+
+
+2 subgoals
+  
+  n : nat
+  ============================
+   0 {\coqdiff} 1
+
+
+subgoal 2 is:
+ {\prodsym} n0 : nat, n0 {\coqdiff} S n0 {\arrow} S n0 {\coqdiff} S (S n0)
+
+\tt
+ discriminate.
+ red; intros n0 Hn0 eqn0Sn0;injection eqn0Sn0;trivial.
+Qed.
+\end{alltt}
+
+The tactic \texttt{elim} \refmancite{Section \ref{Elim}} is a
+refinement of \texttt{apply}, specially designed for the application
+of elimination combinators.  If $t$ is an object of an inductive type
+$I$, then ``~\citecoq{elim $t$}~'' tries to find an abstraction $P$ of the
+current goal $G$ such that $(P\;t)\equiv G$. Then it solves the goal
+applying ``~$I\texttt{\_ind}\;P$~'', where $I$\texttt{\_ind} is the
+combinator associated to $I$.  The different cases of the induction
+then appear as subgoals that remain to be solved.
+In the previous proof, the tactic call ``~\citecoq{apply nat\_ind with (P:= fun n {\funarrow} n {\coqdiff} S n)}~'' can simply be replaced with ``~\citecoq{elim n}~''.
+
+The option ``~\citecoq{\texttt{elim} $t$ \texttt{using} $C$}~''
+ allows to use a
+derived combinator $C$ instead of the default one. Consider the
+following theorem, stating that equality is decidable on natural
+numbers:
+
+\label{iseqpage}
+\begin{alltt}
+Lemma eq_nat_dec : {\prodsym} n p:nat, \{n=p\}+\{n {\coqdiff} p\}.
+Proof.
+ intros n p.
+\end{alltt}
+
+Let us prove this theorem using the combinator \texttt{nat\_double\_rect}
+of section~\ref{natdoublerect}. The example also illustrates how
+\texttt{elim} may sometimes fail in finding a suitable abstraction $P$
+of the goal. Note that if ``~\texttt{elim n}~''
+ is used directly on the
+goal, the result is not the expected one.
+
+\vspace{12pt}
+
+%\pagebreak
+\begin{alltt}
+ elim n using nat_double_rect.
+\it
+4 subgoals
+  
+  n : nat
+  p : nat
+  ============================
+   {\prodsym} x : nat, \{x = p\} + \{x {\coqdiff} p\}
+
+subgoal 2 is:
+ nat {\arrow} \{0 = p\} + \{0 {\coqdiff} p\}
+
+subgoal 3 is:
+ nat {\arrow} {\prodsym} m : nat, \{m = p\} + \{m {\coqdiff} p\} {\arrow} \{S m = p\} + \{S m {\coqdiff} p\}
+
+subgoal 4 is:
+ nat
+\end{alltt}
+
+The four sub-goals obtained do not correspond to the premises that
+would be expected for the principle \texttt{nat\_double\_rec}. The
+problem comes from the fact that 
+this principle for eliminating $n$
+has a universally quantified formula as conclusion, which confuses
+\texttt{elim} about the right way of abstracting the goal. 
+
+%In effect, let us consider the type of the goal before the call to
+%\citecoq{elim}: ``~\citecoq{\{n = p\} + \{n {\coqdiff} p\}}~''.
+
+%Among all the abstractions that can be built by ``~\citecoq{elim n}~''
+%let us consider this one
+%$P=$\citecoq{fun n :nat {\funarrow} fun q : nat {\funarrow} {\{q= p\} + \{q {\coqdiff} p\}}}.
+%It is easy to verify that 
+%$P$ has type \citecoq{nat {\arrow} nat {\arrow} Set}, and that, if some 
+%$q:\citecoq{nat}$ is given, then $P\;q\;$ matches the current goal.
+%Then applying \citecoq{nat\_double\_rec} with $P$ generates
+%four goals, corresponding to 
+ 
+
+
+
+Therefore,
+in this case the abstraction must be explicited using the tactic
+\texttt{pattern}. Once the right abstraction is provided, the rest of
+the proof is immediate:
+
+\begin{alltt}
+Undo.
+ pattern p,n.
+\it
+  n : nat
+  p : nat
+  ============================
+   (fun n0 n1 : nat {\funarrow} \{n1 = n0\} + \{n1 {\coqdiff} n0\}) p n
+\tt
+ elim n using nat_double_rec.
+\it
+3 subgoals
+  
+  n : nat
+  p : nat
+  ============================
+   {\prodsym} x : nat, \{x = 0\} + \{x {\coqdiff} 0\}
+
+subgoal 2 is:
+ {\prodsym} x : nat, \{0 = S x\} + \{0 {\coqdiff} S x\}
+subgoal 3 is:
+ {\prodsym} n0 m : nat, \{m = n0\} + \{m {\coqdiff} n0\} {\arrow} \{S m = S n0\} + \{S m {\coqdiff} S n0\}
+
+\tt
+ destruct x; auto.
+ destruct x; auto.
+ intros n0 m H; case H.
+ intro eq; rewrite eq ; auto.
+ intro neg; right; red ; injection 1; auto.
+Defined.
+\end{alltt}
+
+
+Notice that the tactic ``~\texttt{decide equality}~''
+\refmancite{Section\ref{DecideEquality}} generalises the proof
+above to a large class of inductive types.  It can be used for proving
+a proposition of the form 
+$\forall\,(x,y:R),\{x=y\}+\{x{\coqdiff}y\}$, where $R$ is an inductive datatype
+all whose constructors take informative arguments ---like for example
+the type {\nat}:
+
+\begin{alltt}
+Definition eq_nat_dec' : {\prodsym} n p:nat, \{n=p\} + \{n{\coqdiff}p\}.
+ decide equality.
+Defined.
+\end{alltt}
+
+\begin{exercise}
+\begin{enumerate}
+\item Define a recursive  function \emph{nat2itree}
+mapping any natural number $n$ into an infinitely branching
+tree of height $n$.
+\item Provide an elimination combinator for these trees.
+\item Prove that the relation \citecoq{itree\_le} is a preorder 
+(i.e. reflexive and transitive).
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise} \label{zeroton}
+Define the type of lists, and a predicate ``being an ordered list''
+using an inductive family. Then, define the function
+$(from\;n)=0::1\;\ldots\; n::\texttt{nil}$ and prove that it always generates an
+ordered list.
+\end{exercise}
+
+\begin{exercise}
+Prove that \citecoq{le' n p} and \citecoq{n $\leq$ p} are logically equivalent
+for all n and p. (\citecoq{le'} is defined in section \ref{parameterstuff}).
+\end{exercise}
+
+
+\subsection{Well-founded Recursion}
+\label{WellFoundedRecursion}
+
+Structural induction is a strong elimination rule for inductive types.
+This method can be used to define any function whose termination is
+based on the well-foundedness of certain order relation $R$ decreasing
+at each recursive call. What makes this principle so strong is the
+possibility of reasoning by structural induction on the proof that
+certain $R$ is well-founded.  In order to illustrate this we have
+first to introduce the predicate of accessibility.
+
+\begin{alltt}
+Print Acc.
+\it
+Inductive Acc (A : Type) (R : A {\arrow} A {\arrow} Prop) (x:A) : Prop :=
+    Acc_intro : ({\prodsym} y : A, R y x {\arrow} Acc R y) {\arrow} Acc R x
+For Acc: Argument A is implicit
+For Acc_intro: Arguments A, R are implicit
+
+\dots
+\end{alltt}
+
+\noindent This inductive predicate characterizes those elements $x$ of
+$A$ such that any descending $R$-chain $\ldots x_2\;R\;x_1\;R\;x$
+starting from $x$ is finite. A well-founded relation is a relation
+such that all the elements of $A$ are accessible.  
+\emph{Notice the use of parameter $x$ (see Section~\ref{parameterstuff}, page
+\pageref{parameterstuff}).}
+
+Consider now the problem of representing in {\coq} the following ML
+function $\textsl{div}(x,y)$ on natural numbers, which computes
+$\lceil\frac{x}{y}\rceil$ if $y>0$ and yields $x$ otherwise.
+
+\begin{verbatim}
+let rec div x y = 
+  if x = 0 then 0
+  else if y = 0 then x
+       else (div (x-y) y)+1;;
+\end{verbatim}
+
+
+The equality test on natural numbers can be represented as the
+function \textsl{eq\_nat\_dec} defined page \pageref{iseqpage}. Giving $x$ and
+$y$, this function yields either the value $(\textsl{left}\;p)$ if
+there exists a proof $p:x=y$, or the value $(\textsl{right}\;q)$ if
+there exists $q:a\not = b$. The subtraction function is already
+defined in the library \citecoq{Minus}. 
+
+Hence, direct translation of the ML function \textsl{div} would be:
+
+\begin{alltt}
+Require Import Minus.
+
+Fixpoint div (x y:nat)\{struct x\}: nat :=
+ if eq_nat_dec x 0 
+  then 0
+  else if eq_nat_dec y 0
+       then x
+       else S (div (x-y) y).
+
+\it Error:
+Recursive definition of div is ill-formed.
+In environment
+div : nat {\arrow} nat {\arrow} nat
+x : nat
+y : nat
+_ : x {\coqdiff} 0
+_ : y {\coqdiff} 0
+
+Recursive call to div has principal argument equal to
+"x - y"
+instead of a subterm of x
+\end{alltt}
+
+
+The program \texttt{div} is rejected by {\coq} because it does not verify
+the syntactical condition to ensure termination. In particular, the
+argument of the recursive call is not a pattern variable issued from a
+case analysis on $x$. 
+We would have the same problem if we had the directive
+``~\citecoq{\{struct y\}}~'' instead of ``~\citecoq{\{struct x\}}~''.
+However, we know that this program always
+stops. One way to justify its termination is to define it by
+structural induction on a proof that $x$ is accessible trough the
+relation $<$. Notice that any natural number $x$ is accessible
+for this relation. In order to do this, it is first necessary to prove
+some auxiliary lemmas, justifying that the first argument of
+\texttt{div} decreases at each recursive call.
+
+\begin{alltt}
+Lemma minus_smaller_S : {\prodsym} x y:nat, x - y < S x.
+Proof.
+ intros x y; pattern y, x;
+ elim x using nat_double_ind.
+ destruct x0; auto with arith.
+ simpl; auto with arith.
+ simpl; auto with arith.
+Qed.
+
+
+Lemma minus_smaller_positive : 
+ {\prodsym} x y:nat, x {\coqdiff}0 {\arrow} y {\coqdiff} 0 {\arrow}  x - y < x.
+Proof.
+ destruct x; destruct y; 
+ ( simpl;intros; apply minus_smaller || 
+   intros; absurd (0=0); auto).
+Qed.
+\end{alltt}
+
+\noindent The last two lemmas are necessary to prove that for any pair
+of positive natural numbers $x$ and $y$, if $x$ is accessible with
+respect to \citecoq{lt}, then so is $x-y$.
+
+\begin{alltt}
+Definition minus_decrease : {\prodsym} x y:nat, Acc lt x {\arrow} 
+                                         x {\coqdiff} 0 {\arrow} 
+                                         y {\coqdiff} 0 {\arrow}
+                                         Acc lt (x-y).
+Proof.
+ intros x y H; case H.
+ intros Hz posz posy. 
+ apply Hz; apply minus_smaller_positive; assumption.
+Defined.
+\end{alltt}
+
+Let us take a look at the proof of the lemma \textsl{minus\_decrease}, since
+the way in which it has been proven is crucial for what follows.
+\begin{alltt}
+Print minus_decrease.
+\it
+minus_decrease = 
+fun (x y : nat) (H : Acc lt x) {\funarrow}
+match H in (Acc _ y0) return (y0 {\coqdiff} 0 {\arrow} y {\coqdiff} 0 {\arrow} Acc lt (y0 - y)) with
+| Acc_intro z Hz {\funarrow}
+    fun (posz : z {\coqdiff} 0) (posy : y {\coqdiff} 0) {\funarrow}
+    Hz (z - y) (minus_smaller_positive z y posz posy)
+end
+     : {\prodsym} x y : nat, Acc lt x {\arrow} x {\coqdiff} 0 {\arrow} y {\coqdiff} 0 {\arrow} Acc lt (x - y)
+
+\end{alltt}
+\noindent Notice that the function call 
+$(\texttt{minus\_decrease}\;n\;m\;H)$
+indeed yields an accessibility proof that is \textsl{structurally
+smaller} than its argument $H$, because it is (an application of) its
+recursive component $Hz$.  This enables to justify the following
+definition of \textsl{div\_aux}:
+
+\begin{alltt}
+Definition div_aux (x y:nat)(H: Acc lt x):nat.
+ fix 3.
+ intros.
+ refine (if eq_nat_dec x 0 
+         then 0 
+         else if eq_nat_dec y 0 
+              then y
+              else div_aux (x-y) y _).
+\it
+ div_aux : {\prodsym} x : nat, nat {\arrow} Acc lt x {\arrow} nat
+  x : nat
+  y : nat
+  H : Acc lt x
+  _ : x {\coqdiff} 0
+  _0 : y {\coqdiff} 0
+  ============================
+   Acc lt (x - y)
+
+\tt
+ apply (minus_decrease x y H);auto. 
+Defined.
+\end{alltt}
+
+The main division function is easily defined, using the theorem
+\citecoq{lt\_wf} of the library \citecoq{Wf\_nat}. This theorem asserts that
+\citecoq{nat} is well founded w.r.t. \citecoq{lt}, thus any natural number
+is accessible.
+\begin{alltt}
+Definition div x y := div_aux x y (lt_wf x). 
+\end{alltt}
+
+Let us explain the proof above. In the definition of \citecoq{div\_aux},
+what decreases is not $x$ but the \textsl{proof} of the accessibility
+of $x$. The tactic ``~\texttt{fix 3}~'' is used to indicate that the proof
+proceeds by structural induction on the third argument of the theorem
+--that is, on the accessibility proof. It also introduces a new
+hypothesis in the context, named as the current theorem, and with the
+same type as the goal. Then, the proof is refined with an incomplete
+proof term, containing a hole \texttt{\_}.  This hole corresponds to the proof
+of accessibility for $x-y$, and is filled up with the (smaller!)
+accessibility proof provided by the function \texttt{minus\_decrease}. 
+
+
+\noindent Let us take a look to the term \textsl{div\_aux} defined:
+
+\pagebreak
+\begin{alltt}
+Print div_aux.
+\it
+div_aux = 
+(fix div_aux (x y : nat) (H : Acc lt x) \{struct H\} : nat :=
+   match eq_nat_dec x 0 with
+   | left _ {\funarrow} 0
+   | right _ {\funarrow}
+       match eq_nat_dec y 0 with
+       | left _ {\funarrow} y
+       | right _0 {\funarrow} div_aux (x - y) y (minus_decrease x y H _ _0)
+       end
+   end)
+     : {\prodsym} x : nat, nat {\arrow} Acc lt x {\arrow} nat
+
+\end{alltt}
+
+If the non-informative parts from this proof --that is, the
+accessibility proof-- are erased, then we obtain exactly the program
+that we were looking for. 
+\begin{alltt}
+
+Extraction div.
+
+\it
+let div x y =
+  div_aux x y
+\tt
+
+Extraction div_aux.
+
+\it
+let rec div_aux x y =
+  match eq_nat_dec x O with
+    | Left {\arrow} O
+    | Right {\arrow}
+        (match eq_nat_dec y O with
+           | Left {\arrow} y
+           | Right {\arrow} div_aux (minus x y) y)
+\end{alltt}
+
+This methodology enables the representation
+of any program whose termination can be proved in {\coq}. Once the
+expected properties from this program have been verified, the
+justification of its termination can be thrown away, keeping just the
+desired computational behavior for it.
+
+\section{A case study in dependent elimination}\label{CaseStudy}
+
+Dependent types are very expressive, but ignoring some useful
+techniques can cause some problems to the beginner.
+Let us consider again the type of vectors (see section~\ref{vectors}).
+We want to prove a quite trivial property: the only value of type
+``~\citecoq{vector A 0}~'' is ``~\citecoq{Vnil $A$}~''.
+
+Our first naive attempt leads to a \emph{cul-de-sac}.
+\begin{alltt}
+Lemma vector0_is_vnil : 
+  {\prodsym} (A:Type)(v:vector A 0), v = Vnil A.
+Proof.
+ intros A v;inversion v.
+\it
+1 subgoal
+  
+  A : Set
+  v : vector A 0
+  ============================
+   v = Vnil A
+\tt
+Abort.
+\end{alltt}
+
+Another attempt is to do a case analysis on a vector of any length
+$n$, under an explicit hypothesis $n=0$. The tactic 
+\texttt{discriminate} will help us to get rid of the case 
+$n=\texttt{S $p$}$. 
+Unfortunately, even the statement of our lemma is refused!
+
+\begin{alltt}
+ Lemma vector0_is_vnil_aux : 
+ {\prodsym} (A:Type)(n:nat)(v:vector A n), n = 0 {\arrow} v = Vnil A.
+
+\it
+Error: In environment
+A : Type
+n : nat
+v : vector A n
+e : n = 0
+The term "Vnil A" has type "vector A 0" while it is expected to have type
+ "vector A n"
+\end{alltt}
+
+In effect, the equality ``~\citecoq{v = Vnil A}~'' is ill typed,
+because the type ``~\citecoq{vector A n}~'' is not \emph{convertible}
+with ``~\citecoq{vector A 0}~''.
+
+This problem can be solved if we consider the heterogeneous 
+equality \citecoq{JMeq} \cite{conor:motive}
+which allows us to consider terms of different types, even if this
+equality can only be proven for terms in the same type.
+The axiom \citecoq{JMeq\_eq}, from the library \citecoq{JMeq} allows us to convert a
+heterogeneous equality to a standard one.
+
+\begin{alltt}
+Lemma vector0_is_vnil_aux : 
+   {\prodsym} (A:Type)(n:nat)(v:vector A n), 
+      n= 0 {\arrow} JMeq v (Vnil A).
+Proof.
+ destruct v.
+ auto.
+ intro; discriminate.
+Qed.
+\end{alltt}
+
+Our property of vectors of null length can be easily proven:
+
+\begin{alltt}
+Lemma vector0_is_vnil : {\prodsym} (A:Type)(v:vector A 0), v = Vnil A.
+ intros a v;apply JMeq_eq.
+ apply vector0_is_vnil_aux.
+ trivial.
+Qed.
+\end{alltt}
+
+It is interesting to look at another proof of 
+\citecoq{vector0\_is\_vnil}, which illustrates a technique developed
+and used by various people (consult in the \emph{Coq-club} mailing
+list archive the contributions by Yves Bertot, Pierre Letouzey, Laurent Théry,
+Jean Duprat, and Nicolas Magaud, Venanzio Capretta and Conor McBride).
+This technique is also used for unfolding  infinite list definitions
+(see chapter13 of~\cite{coqart}).
+Notice that this definition does not rely on any axiom (\emph{e.g.} \texttt{JMeq\_eq}).
+
+We first give a new definition of the identity on vectors. Before that,
+we make  the use of constructors and selectors lighter thanks to
+the implicit arguments feature:
+
+\begin{alltt}
+Implicit Arguments Vcons [A n].
+Implicit Arguments Vnil [A].
+Implicit Arguments Vhead [A n].
+Implicit Arguments Vtail [A n].
+
+Definition Vid : {\prodsym} (A : Type)(n:nat), vector A n {\arrow} vector A n.
+Proof.
+ destruct n; intro v.
+ exact Vnil.
+ exact (Vcons (Vhead v) (Vtail v)).
+Defined.
+\end{alltt}
+
+
+Then we prove that \citecoq{Vid} is the identity on vectors:
+
+\begin{alltt}
+Lemma Vid_eq : {\prodsym} (n:nat) (A:Type)(v:vector A n), v=(Vid _ n v).
+Proof.
+ destruct v.
+
+\it
+   A : Type
+  ============================
+   Vnil = Vid A 0 Vnil
+
+subgoal 2 is:
+  Vcons a v = Vid A (S n) (Vcons a v)
+\tt
+ reflexivity.
+ reflexivity.
+Defined.
+\end{alltt}
+
+Why defining a new identity function on vectors? The following
+dialogue shows that \citecoq{Vid} has some interesting computational
+properties:
+
+\begin{alltt}
+Eval simpl in (fun (A:Type)(v:vector A 0) {\funarrow} (Vid _ _ v)).
+\it = fun (A : Type) (_ : vector A 0) {\funarrow} Vnil
+     : {\prodsym} A : Type, vector A 0 {\arrow} vector A 0
+
+\end{alltt}
+
+Notice that the plain identity on vectors doesn't convert \citecoq{v}
+into \citecoq{Vnil}.
+\begin{alltt}
+Eval simpl in (fun (A:Type)(v:vector A 0) {\funarrow} v).
+\it = fun (A : Type) (v : vector A 0) {\funarrow} v
+     : {\prodsym} A : Type, vector A 0 {\arrow} vector A 0
+\end{alltt}
+
+Then we prove easily that any vector of length 0 is \citecoq{Vnil}:
+
+\begin{alltt}
+Theorem zero_nil : {\prodsym} A (v:vector A 0), v = Vnil.
+Proof.
+ intros.
+ change (Vnil (A:=A)) with (Vid _ 0 v). 
+\it
+1 subgoal
+  
+  A : Type
+  v : vector A 0
+  ============================
+   v = Vid A 0 v
+\tt
+ apply Vid_eq.
+Defined.
+\end{alltt}
+
+A similar result can be proven about vectors of strictly positive
+length\footnote{As for \citecoq{Vid} and \citecoq{Vid\_eq}, this definition 
+is from Jean Duprat.}.
+
+\begin{alltt}
+
+
+Theorem decomp :
+  {\prodsym} (A : Type) (n : nat) (v : vector A (S n)),
+  v = Vcons (Vhead v) (Vtail v).
+Proof.
+ intros.
+ change (Vcons (Vhead v) (Vtail v)) with (Vid _  (S n) v).
+\it
+ 1 subgoal
+  
+  A : Type
+  n : nat
+  v : vector A (S n)
+  ============================
+   v = Vid A (S n) v
+
+\tt{} apply Vid_eq.
+Defined.
+\end{alltt}
+
+
+Both lemmas: \citecoq{zero\_nil} and \citecoq{decomp},
+can be used to easily derive a double recursion principle
+on vectors of same length:
+
+
+\begin{alltt}
+Definition vector_double_rect : 
+    {\prodsym} (A:Type) (P: {\prodsym} (n:nat),(vector A n){\arrow}(vector A n) {\arrow} Type),
+        P 0 Vnil Vnil {\arrow}
+        ({\prodsym} n (v1 v2 : vector A n) a b, P n v1 v2 {\arrow}
+             P (S n) (Vcons a v1) (Vcons  b v2)) {\arrow}
+        {\prodsym} n (v1 v2 : vector A n), P n v1 v2.
+ induction n.
+ intros; rewrite (zero_nil _ v1); rewrite (zero_nil _ v2).
+ auto.
+ intros v1 v2; rewrite (decomp _ _ v1);rewrite (decomp _ _ v2).
+ apply X0; auto.
+Defined.
+\end{alltt}
+
+Notice that, due to the conversion rule of {\coq}'s type system,
+this function can be used directly with \citecoq{Prop} or \citecoq{Type}
+instead of type (thus it is useless to build 
+\citecoq{vector\_double\_ind} and \citecoq{vector\_double\_rec}) from scratch.
+
+We finish this example with showing how to define the bitwise
+\emph{or} on boolean vectors of the same length, 
+and proving a little property about this
+operation.
+
+\begin{alltt}
+Definition bitwise_or n v1 v2 : vector bool n :=
+   vector_double_rect 
+    bool 
+    (fun n v1 v2 {\funarrow} vector bool n)
+    Vnil
+    (fun n v1 v2 a b r {\funarrow} Vcons (orb a b) r) n v1 v2.
+\end{alltt}
+
+Let us  define recursively the $n$-th element of a vector. Notice
+that it must be a partial function, in case $n$ is greater or equal
+than the length of the vector. Since {\coq} only considers total
+functions, the function returns a value in an \emph{option} type.
+
+\begin{alltt}
+Fixpoint vector_nth (A:Type)(n:nat)(p:nat)(v:vector A p)
+                  \{struct v\}
+                  : option A :=
+  match n,v  with
+    _   , Vnil {\funarrow} None
+  | 0   , Vcons b  _ _ {\funarrow} Some b
+  | S n', Vcons _  p' v' {\funarrow} vector_nth A n'  p' v'
+  end.
+Implicit Arguments vector_nth [A p].
+\end{alltt}
+
+We can now prove --- using the double induction combinator ---
+a simple property relying \citecoq{vector\_nth} and \citecoq{bitwise\_or}:
+
+\begin{alltt}
+Lemma nth_bitwise :
+   {\prodsym} (n:nat) (v1 v2: vector bool n) i  a b,
+      vector_nth i v1 = Some a {\arrow}
+      vector_nth i v2 = Some b {\arrow}
+      vector_nth i (bitwise_or _ v1 v2) = Some (orb a b).
+Proof.
+ intros  n v1 v2; pattern n,v1,v2.
+ apply vector_double_rect.
+ simpl.
+ destruct i; discriminate 1.
+ destruct i; simpl;auto.
+ injection 1; injection 2;intros; subst a; subst b; auto.
+Qed.
+\end{alltt}
+
+
+\section{Co-inductive Types and Non-ending Constructions}
+\label{CoInduction}
+
+The objects of an inductive type are well-founded with respect to
+the constructors of the type. In other words, these objects are built
+by applying \emph{a finite number of times} the constructors of the type.
+Co-inductive types are obtained by relaxing this condition,
+and may contain non-well-founded objects \cite{EG96,EG95a}.  An
+example of a co-inductive type is the type of  infinite
+sequences formed with elements of type $A$, also called streams.  This
+type can be introduced through the following definition:
+
+\begin{alltt}
+ CoInductive Stream (A: Type) :Type   := 
+ | Cons : A\arrow{}Stream A\arrow{}Stream A.
+\end{alltt}
+
+If we are interested in finite or infinite sequences, we consider the type
+of \emph{lazy lists}:
+
+\begin{alltt}
+CoInductive LList (A: Type) : Type :=
+ |  LNil : LList A
+ |  LCons : A {\arrow} LList A {\arrow} LList A.
+\end{alltt}
+
+
+It is also possible to define  co-inductive types for the 
+trees with infinite branches (see Chapter 13 of~\cite{coqart}).
+
+Structural induction is the way of expressing that inductive types
+only contain well-founded objects. Hence, this elimination principle
+is not valid for co-inductive types, and the only elimination rule for
+streams is case analysis.  This principle can be used, for example, to
+define the destructors \textsl{head} and \textsl{tail}.
+
+\begin{alltt}
+ Definition head (A:Type)(s : Stream A) := 
+   match s with Cons a s' {\funarrow} a end.
+
+ Definition tail (A : Type)(s : Stream A) :=
+      match s with Cons a s' {\funarrow} s' end.
+\end{alltt}
+
+Infinite objects are defined by means of (non-ending) methods of
+construction, like in lazy functional programming languages.  Such
+methods can be defined using the \texttt{CoFixpoint} command
+\refmancite{Section \ref{CoFixpoint}}. For example, the following
+definition introduces the infinite list $[a,a,a,\ldots]$:
+
+\begin{alltt}
+ CoFixpoint repeat (A:Type)(a:A) : Stream A := 
+   Cons a (repeat a).
+\end{alltt}
+
+
+However, not every co-recursive definition is an admissible method of
+construction. Similarly to the case of structural induction, the
+definition must verify a \textsl{guardedness} condition to be
+accepted. This condition states that any recursive call in the
+definition must be protected --i.e, be an argument of-- some
+constructor, and only an argument of constructors \cite{EG94a}. The
+following definitions are examples of valid methods of construction:
+
+\begin{alltt}
+CoFixpoint iterate (A: Type)(f: A {\arrow} A)(a : A) : Stream A:=
+    Cons a (iterate f (f a)).
+
+CoFixpoint map 
+  (A B:Type)(f: A {\arrow} B)(s : Stream A) : Stream B:=
+  match s with Cons a tl {\funarrow} Cons (f a) (map f tl) end.
+\end{alltt}
+
+\begin{exercise}
+Define two different methods for constructing the stream which 
+infinitely alternates the values \citecoq{true} and \citecoq{false}.
+\end{exercise}
+\begin{exercise}
+Using the destructors \texttt{head} and \texttt{tail}, define a function
+which takes the n-th element of an infinite stream.
+\end{exercise}
+
+A non-ending method of construction is computed lazily. This means
+that its definition is unfolded only when the object that it
+introduces is eliminated, that is, when it appears as the argument of
+a case expression. We can check this using the command
+\texttt{Eval}.
+
+\begin{alltt}
+Eval simpl in (fun (A:Type)(a:A) {\funarrow} repeat a).
+\it  = fun (A : Type) (a : A) {\funarrow} repeat a
+     : {\prodsym} A : Type, A {\arrow} Stream A
+\tt
+Eval simpl in (fun (A:Type)(a:A) {\funarrow} head (repeat a)).
+\it  = fun (A : Type) (a : A) {\funarrow} a
+     : {\prodsym} A : Type, A {\arrow} A
+\end{alltt}
+
+%\begin{exercise}
+%Prove the following theorem:
+%\begin{verbatim}
+%Theorem expand_repeat : (a:A)(repeat a)=(Cons a (repeat a)). 
+%\end{verbatim}
+%Hint: Prove first the streams version of the lemma in exercise 
+%\ref{expand}.
+%\end{exercise}
+
+\subsection{Extensional Properties}
+
+Case analysis is also a valid proof principle for infinite
+objects. However, this principle is not sufficient to prove
+\textsl{extensional} properties, that is, properties concerning the
+whole infinite object \cite{EG95a}. A typical example of an
+extensional property is the predicate expressing that two streams have
+the same elements. In many cases, the minimal reflexive relation $a=b$
+that is used as equality for inductive types is too small to capture
+equality between streams. Consider for example the streams
+$\texttt{iterate}\;f\;(f\;x)$ and
+$(\texttt{map}\;f\;(\texttt{iterate}\;f\;x))$. Even though these two streams have
+the same elements, no finite expansion of their definitions lead to
+equal terms. In other words, in order to deal with extensional
+properties, it is necessary to construct infinite proofs. The type of
+infinite proofs of equality can be introduced as a co-inductive
+predicate, as follows:
+\begin{alltt}
+CoInductive EqSt (A: Type) : Stream A {\arrow} Stream A {\arrow} Prop :=
+  eqst : {\prodsym} s1 s2: Stream A,
+      head s1 = head s2 {\arrow}
+      EqSt (tail s1) (tail s2) {\arrow}
+      EqSt s1 s2.
+\end{alltt}
+
+It is possible to introduce proof principles for reasoning about
+infinite objects as combinators defined through
+\texttt{CoFixpoint}. However, oppositely to the case of inductive
+types, proof principles associated to co-inductive types are not
+elimination but \textsl{introduction} combinators. An example of such
+a combinator is Park's principle for proving the equality of two
+streams, usually called the \textsl{principle of co-induction}. It
+states that two streams are equal if they satisfy a
+\textit{bisimulation}.  A bisimulation is a binary relation $R$ such
+that any pair of streams $s_1$ ad $s_2$ satisfying $R$ have equal
+heads, and tails also satisfying $R$.  This principle is in fact a
+method for constructing an infinite proof:
+
+\begin{alltt}
+Section Parks_Principle.
+Variable A : Type.
+Variable    R      : Stream A {\arrow} Stream A {\arrow} Prop.
+Hypothesis  bisim1 : {\prodsym} s1 s2:Stream A, 
+                       R s1 s2 {\arrow} head s1 = head s2.
+
+Hypothesis  bisim2 : {\prodsym} s1 s2:Stream A, 
+                       R s1 s2 {\arrow} R (tail s1) (tail s2).
+
+CoFixpoint park_ppl     : 
+ {\prodsym} s1 s2:Stream A, R s1 s2 {\arrow} EqSt s1 s2 :=
+ fun s1 s2 (p : R s1 s2) {\funarrow}
+      eqst s1 s2 (bisim1 s1 s2 p) 
+                 (park_ppl (tail s1) 
+                           (tail s2) 
+                           (bisim2 s1 s2 p)).
+End Parks_Principle.
+\end{alltt}
+
+Let us use the principle of co-induction to prove the extensional
+equality mentioned above. 
+\begin{alltt}
+Theorem map_iterate : {\prodsym} (A:Type)(f:A{\arrow}A)(x:A),
+                       EqSt (iterate f (f x)) 
+                            (map f (iterate f x)).
+Proof.
+ intros A f x.
+ apply park_ppl with
+   (R:= fun s1 s2 {\funarrow}
+       {\exsym} x: A, s1 = iterate f (f x) {\coqand} 
+                s2 = map f (iterate f x)).
+
+ intros s1 s2 (x0,(eqs1,eqs2));
+    rewrite eqs1; rewrite eqs2; reflexivity.
+ intros s1 s2 (x0,(eqs1,eqs2)).
+ exists (f x0);split;
+    [rewrite eqs1|rewrite eqs2]; reflexivity.
+ exists x;split; reflexivity.
+Qed.
+\end{alltt}
+
+The use of Park's principle is sometimes annoying, because it requires
+to find an invariant relation and prove that it is indeed a
+bisimulation.  In many cases, a shorter proof can be obtained trying
+to construct an ad-hoc infinite proof, defined by a guarded
+declaration.  The tactic ``~``\texttt{Cofix $f$}~'' can be used to do
+that. Similarly to the tactic \texttt{fix} indicated in Section
+\ref{WellFoundedRecursion}, this tactic introduces an extra hypothesis
+$f$ into the context, whose type is the same as the current goal. Note
+that the applications of $f$ in the proof \textsl{must be guarded}. In
+order to prevent us from doing unguarded calls, we can define a tactic
+that always apply a constructor before using $f$ \refmancite{Chapter
+\ref{WritingTactics}} :
+
+\begin{alltt}
+Ltac infiniteproof f :=
+  cofix f; 
+  constructor; 
+  [clear f| simpl; try (apply f; clear f)].
+\end{alltt}
+
+
+In the example above, this tactic produces a much simpler proof
+that the former one:
+
+\begin{alltt}
+Theorem map_iterate' : {\prodsym} ((A:Type)f:A{\arrow}A)(x:A),
+                       EqSt (iterate f (f x))
+                            (map f (iterate f x)).
+Proof.
+ infiniteproof map_iterate'.
+ reflexivity.
+Qed.
+\end{alltt}
+
+\begin{exercise}
+Define a co-inductive type $Nat$ containing non-standard 
+natural numbers --this is, verifying 
+
+$$\exists m  \in \mbox{\texttt{Nat}}, \forall\, n \in \mbox{\texttt{Nat}}, n<m$$.
+\end{exercise}
+
+\begin{exercise}
+Prove that the extensional equality of streams is an equivalence relation
+using Park's co-induction principle.
+\end{exercise}
+
+
+\begin{exercise}
+Provide a suitable definition of ``being an ordered list'' for infinite lists
+and define a principle for proving that an infinite list is ordered. Apply
+this method to the list $[0,1,\ldots ]$. Compare the result with 
+exercise \ref{zeroton}.
+\end{exercise}
+
+\subsection{About injection, discriminate, and inversion}
+Since co-inductive types are closed w.r.t. their constructors,
+the techniques shown in Section~\ref{CaseTechniques} work also 
+with these types.
+
+Let us consider the type of lazy lists, introduced on page~\pageref{CoInduction}.
+The following lemmas are straightforward applications
+ of \texttt{discriminate} and \citecoq{injection}:
+
+\begin{alltt}
+Lemma Lnil_not_Lcons : {\prodsym} (A:Type)(a:A)(l:LList A),
+                               LNil {\coqdiff} (LCons a l).
+Proof.
+ intros;discriminate.
+Qed.
+
+Lemma injection_demo : {\prodsym} (A:Type)(a b : A)(l l': LList A),
+                       LCons a (LCons b l) = LCons b (LCons a l') {\arrow}
+                       a = b {\coqand} l = l'.
+Proof.
+ intros A a b l l' e; injection e; auto.
+Qed.
+
+\end{alltt}
+
+In order to show \citecoq{inversion} at work, let us define
+two predicates on lazy lists:
+
+\begin{alltt}
+Inductive Finite (A:Type) : LList A {\arrow} Prop :=
+|  Lnil_fin : Finite (LNil (A:=A))
+|  Lcons_fin : {\prodsym} a l, Finite l {\arrow} Finite (LCons a l).
+
+CoInductive Infinite  (A:Type) : LList A {\arrow} Prop :=
+| LCons_inf : {\prodsym} a l, Infinite l {\arrow} Infinite (LCons a l).
+\end{alltt}
+
+\noindent
+First, two easy theorems:
+\begin{alltt}
+Lemma LNil_not_Infinite : {\prodsym} (A:Type), ~ Infinite (LNil (A:=A)).
+Proof.
+  intros A H;inversion H.
+Qed.
+
+Lemma Finite_not_Infinite : {\prodsym} (A:Type)(l:LList A),
+                                Finite l {\arrow} ~ Infinite l.
+Proof.
+ intros A l H; elim H.
+ apply LNil_not_Infinite.
+ intros a l0 F0 I0' I1.
+ case I0'; inversion_clear I1.
+ trivial.
+Qed.
+\end{alltt}
+
+
+On the other hand, the next proof uses the \citecoq{cofix} tactic. 
+Notice the destructuration of \citecoq{l}, which allows us to
+apply  the constructor \texttt{LCons\_inf}, thus  satisfying
+ the guard condition: 
+\begin{alltt}
+Lemma Not_Finite_Infinite : {\prodsym} (A:Type)(l:LList A),
+                            ~ Finite l {\arrow} Infinite l.
+Proof.
+ cofix H.
+ destruct l.
+ intro; 
+  absurd (Finite (LNil (A:=A)));
+  [auto|constructor].
+\it
+
+
+
+
+1 subgoal
+  
+  H : forall (A : Type) (l : LList A), ~ Finite l -> Infinite l
+  A : Type
+  a : A
+  l : LList A
+  H0 : ~ Finite (LCons a l)
+  ============================
+   Infinite l
+\end{alltt}
+At this point, one must not apply \citecoq{H}! . It would be possible
+to solve the current goal by an inversion of ``~\citecoq{Finite (LCons a l)}~'', but, since the guard condition would be violated, the user
+would get an error message after typing \citecoq{Qed}.
+In order to satisfy the guard condition, we apply the constructor of
+\citecoq{Infinite}, \emph{then} apply \citecoq{H}.
+
+\begin{alltt}
+ constructor.
+ apply H.
+ red; intro H1;case H0.
+ constructor.
+ trivial.
+Qed.
+\end{alltt}
+
+
+
+
+The reader is invited to replay this proof and understand each of its steps.
+
+
+\bibliographystyle{abbrv}
+\bibliography{manbiblio,morebib}
+
+\end{document}
+

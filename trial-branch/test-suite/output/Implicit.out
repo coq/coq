@@ -1,0 +1,13 @@
+compose (C:=nat) S
+     : (nat -> nat) -> nat -> nat
+ex_intro (P:=fun _ : nat => True) (x:=0) I
+     : ex (fun _ : nat => True)
+d2 = fun x : nat => d1 (y:=x)
+     : forall x x0 : nat, x0 = x -> x0 = x
+
+Arguments x, x0 are implicit
+Argument scopes are [nat_scope nat_scope _]
+map id (1 :: nil)
+     : list nat
+map id' (1 :: nil)
+     : list nat

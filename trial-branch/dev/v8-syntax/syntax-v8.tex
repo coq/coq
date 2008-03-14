@@ -1,0 +1,1268 @@
+
+\documentclass{article}
+
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{fullpage}
+
+\author{B.~Barras}
+\title{Syntax of Coq V8}
+
+%% Le _ est un caractère normal
+\catcode`\_=13
+\let\subscr=_
+\def_{\ifmmode\sb\else\subscr\fi}
+
+\def\bfbar{\ensuremath{|\hskip -0.22em{}|\hskip -0.24em{}|}}
+\def\TERMbar{\bfbar}
+\def\TERMbarbar{\bfbar\bfbar}
+\def\notv{\text{_}}
+\def\infx#1{\notv#1\notv}
+
+
+%% Macros pour les grammaires
+\def\GR#1{\text{\large(}#1\text{\large)}}
+\def\NT#1{\langle\textit{#1}\rangle}
+\def\NTL#1#2{\langle\textit{#1}\rangle_{#2}}
+\def\TERM#1{{\bf\textrm{\bf #1}}}
+%\def\TERM#1{{\bf\textsf{#1}}}
+\def\KWD#1{\TERM{#1}}
+\def\ETERM#1{\TERM{#1}}
+\def\CHAR#1{\TERM{#1}}
+
+\def\STAR#1{#1*}
+\def\STARGR#1{\GR{#1}*}
+\def\PLUS#1{#1+}
+\def\PLUSGR#1{\GR{#1}+}
+\def\OPT#1{#1?}
+\def\OPTGR#1{\GR{#1}?}
+%% Tableaux de definition de non-terminaux
+\newenvironment{cadre}
+        {\begin{array}{|c|}\hline\\}
+        {\\\\\hline\end{array}}
+\newenvironment{rulebox}
+        {$$\begin{cadre}\begin{array}{r@{~}c@{~}l@{}l@{}r}}
+        {\end{array}\end{cadre}$$}
+\def\DEFNT#1{\NT{#1} & ::= &}
+\def\EXTNT#1{\NT{#1} & ::= & ... \\&|&}
+\def\RNAME#1{(\textsc{#1})}
+\def\SEPDEF{\\\\}
+\def\nlsep{\\&|&}
+\def\nlcont{\\&&}
+\newenvironment{rules}
+        {\begin{center}\begin{rulebox}}
+        {\end{rulebox}\end{center}}
+
+\begin{document}
+
+\maketitle
+
+\section{Meta notations used in this document}
+
+Non-terminals are printed between angle brackets (e.g. $\NT{non-terminal}$) and
+terminal symbols are printed in bold font (e.g. $\ETERM{terminal}$). Lexemes
+are displayed as non-terminals.
+
+The usual operators on regular expressions:
+\begin{center}
+\begin{tabular}{l|l}
+\hfil notation & \hfil  meaning \\
+\hline
+$\STAR{regexp}$ & repeat $regexp$ 0 or more times \\
+$\PLUS{regexp}$ & repeat $regexp$ 1 or more times \\
+$\OPT{regexp}$ & $regexp$ is optional \\
+$regexp_1~\mid~regexp_2$ & alternative
+\end{tabular}
+\end{center}
+
+Parenthesis are used to group regexps. Beware to distinguish this operator
+$\GR{~}$ from the terminals $\ETERM{( )}$, and $\mid$ from terminal
+\TERMbar.
+
+Rules are optionaly annotated in the right margin with:
+\begin{itemize}
+\item a precedence and associativity (L for left, R for right and N for no associativity), indicating how to solve conflicts;
+  lower levels are tighter;
+\item a rule name.
+\end{itemize}
+In order to solve some conflicts, a non-terminal may be invoked with a
+precedence (notation: $\NTL{entry}{prec}$), meaning that rules with higher
+precedence do not apply.
+
+\section{Lexical conventions}
+
+Lexical categories are:
+\begin{rules}
+\DEFNT{ident}
+     \STARGR{\NT{letter}\mid\CHAR{_}}
+     \STARGR{\NT{letter}\mid \NT{digit} \mid \CHAR{'} \mid \CHAR{_}}
+\SEPDEF
+\DEFNT{field}       \CHAR{.}\NT{ident}
+\SEPDEF
+\DEFNT{meta-ident}  \CHAR{?}\NT{ident}   
+\SEPDEF
+\DEFNT{num}         \PLUS{\NT{digit}}
+\SEPDEF
+\DEFNT{int}         \NT{num} \mid \CHAR{-}\NT{num}
+\SEPDEF
+\DEFNT{digit}       \CHAR{0}-\CHAR{9}
+\SEPDEF
+\DEFNT{letter}      \CHAR{a}-\CHAR{z}\mid\CHAR{A}-\CHAR{Z}
+                    \mid\NT{unicode-letter}
+
+\SEPDEF
+\DEFNT{string}      \CHAR{"}~\STARGR{\CHAR{""}\mid\NT{unicode-char-but-"}}~\CHAR{"}
+\end{rules}
+
+Reserved identifiers for the core syntax are:
+\begin{quote}
+\KWD{as},
+\KWD{cofix},
+\KWD{else},
+\KWD{end},
+\KWD{fix},
+\KWD{for},
+\KWD{forall},
+\KWD{fun},
+\KWD{if},
+\KWD{in},
+\KWD{let},
+\KWD{match}, 
+\KWD{Prop},
+\KWD{return}, 
+\KWD{Set},
+\KWD{then},
+\KWD{Type},
+\KWD{with}  
+\end{quote}
+
+Symbols used in the core syntax:
+$$ \KWD{(}
+~~ \KWD{)}
+~~ \KWD{\{}
+~~ \KWD{\}}
+~~ \KWD{:}
+~~ \KWD{,}
+~~ \Rightarrow
+~~ \rightarrow
+~~ \KWD{:=}
+~~ \KWD{_}
+~~ \TERMbar
+~~ \KWD{@}
+~~ \KWD{\%}
+~~ \KWD{.(}
+$$
+
+Note that \TERM{struct} is not a reserved identifier.
+
+\section{Syntax of terms}
+
+\subsection{Core syntax}
+
+The main entry point of the term grammar is $\NTL{constr}{9}$. When no
+conflict can appear, $\NTL{constr}{200}$ is also used as entry point.
+
+\begin{rules}
+\DEFNT{constr}
+       \NT{binder-constr}                             &200R~~ &\RNAME{binders}
+\nlsep \NT{constr}~\KWD{:}~\NT{constr}                &100R &\RNAME{cast}
+\nlsep \NT{constr}~\KWD{:}~\NT{binder-constr}         &100R &\RNAME{cast'}
+\nlsep \NT{constr}~\KWD{$\rightarrow$}~\NT{constr}    &80R  &\RNAME{arrow}
+\nlsep \NT{constr}~\KWD{$\rightarrow$}~\NT{binder-constr} &80R &\RNAME{arrow'}
+\nlsep \NT{constr}~\PLUS{\NT{appl-arg}}               &10L  &\RNAME{apply}
+\nlsep \KWD{@}~\NT{reference}~\STAR{\NTL{constr}{9}}  &10L  &\RNAME{expl-apply}
+\nlsep \NT{constr}~\KWD{.(}
+       ~\NT{reference}~\STAR{\NT{appl-arg}}~\TERM{)}  &1L & \RNAME{proj}
+\nlsep \NT{constr}~\KWD{.(}~\TERM{@}
+       ~\NT{reference}~\STAR{\NTL{constr}{9}}~\TERM{)} &1L & \RNAME{expl-proj}
+\nlsep \NT{constr} ~ \KWD{\%} ~ \NT{ident}            &1L   &\RNAME{scope-chg}
+\nlsep \NT{atomic-constr}                             &0
+\nlsep \NT{match-expr}                                &0
+\nlsep \KWD{(}~\NT{constr}~\KWD{)}                    &0
+\SEPDEF
+\DEFNT{binder-constr}
+       \KWD{forall}~\NT{binder-list}~\KWD{,}~\NTL{constr}{200} 
+          &&\RNAME{prod}
+\nlsep \KWD{fun} ~\NT{binder-list} ~\KWD{$\Rightarrow$}~\NTL{constr}{200}
+          &&\RNAME{lambda}
+\nlsep \NT{fix-expr}
+\nlsep \KWD{let}~\NT{ident-with-params} ~\KWD{:=}~\NTL{constr}{200}
+       ~\KWD{in}~\NTL{constr}{200}  &&\RNAME{let}
+\nlsep \KWD{let}~\NT{single-fix} ~\KWD{in}~\NTL{constr}{200}
+          &&\RNAME{rec-let}
+\nlsep \KWD{let}~\KWD{(}~\OPT{\NT{let-pattern}}~\KWD{)}~\OPT{\NT{return-type}}
+       ~\KWD{:=}~\NTL{constr}{200}~\KWD{in}~\NTL{constr}{200}
+          &&\RNAME{let-case}
+\nlsep \KWD{if}~\NT{if-item}
+       ~\KWD{then}~\NTL{constr}{200}~\KWD{else}~\NTL{constr}{200}
+          &&\RNAME{if-case}
+\SEPDEF
+\DEFNT{appl-arg}
+       \KWD{(}~\NT{ident}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}
+          &&\RNAME{impl-arg}
+\nlsep \KWD{(}~\NT{num}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}
+          &&\RNAME{impl-arg}
+\nlsep \NTL{constr}{9}
+\SEPDEF
+\DEFNT{atomic-constr}
+       \NT{reference}     && \RNAME{variables}
+\nlsep \NT{sort}          && \RNAME{CIC-sort}
+\nlsep \NT{num}           && \RNAME{number}
+\nlsep \KWD{_}            && \RNAME{hole}
+\nlsep \NT{meta-ident}    && \RNAME{meta/evar}
+\end{rules}
+
+
+
+\begin{rules}
+\DEFNT{ident-with-params}
+       \NT{ident}~\STAR{\NT{binder-let}}~\NT{type-cstr}
+\SEPDEF
+\DEFNT{binder-list}
+       \NT{binder}~\STAR{\NT{binder-let}}
+\nlsep \PLUS{\NT{name}}~\KWD{:}~\NT{constr}
+\SEPDEF
+\DEFNT{binder}
+       \NT{name}      &&\RNAME{infer}
+\nlsep \KWD{(}~\PLUS{\NT{name}}~\KWD{:}~\NT{constr}
+       ~\KWD{)}      &&\RNAME{binder}
+\SEPDEF
+\DEFNT{binder-let}
+       \NT{binder}
+\nlsep \KWD{(}~\NT{name}~\NT{type-cstr}~\KWD{:=}~\NT{constr}~\KWD{)}
+\SEPDEF
+\DEFNT{let-pattern}
+       \NT{name}
+\nlsep \NT{name} ~\KWD{,} ~\NT{let-pattern}
+\SEPDEF
+\DEFNT{type-cstr}
+       \OPTGR{\KWD{:}~\NT{constr}}
+\SEPDEF
+\DEFNT{reference}
+       \NT{ident}                   && \RNAME{short-ident}
+\nlsep \NT{ident}~\PLUS{\NT{field}} && \RNAME{qualid}
+\SEPDEF
+\DEFNT{sort}
+       \KWD{Prop} ~\mid~ \KWD{Set} ~\mid~ \KWD{Type}
+\SEPDEF
+\DEFNT{name}
+       \NT{ident} ~\mid~ \KWD{_}
+\end{rules}
+
+\begin{rules}
+\DEFNT{fix-expr}
+       \NT{single-fix}
+\nlsep \NT{single-fix}~\PLUSGR{\KWD{with}~\NT{fix-decl}}
+      ~\KWD{for}~\NT{ident}
+\SEPDEF
+\DEFNT{single-fix}
+       \NT{fix-kw}~\NT{fix-decl}
+\SEPDEF
+\DEFNT{fix-kw} \KWD{fix} ~\mid~ \KWD{cofix}
+\SEPDEF
+\DEFNT{fix-decl}
+       \NT{ident}~\STAR{\NT{binder-let}}~\OPT{\NT{annot}}~\NT{type-cstr}
+       ~\KWD{:=}~\NTL{constr}{200}
+\SEPDEF
+\DEFNT{annot}
+       \KWD{\{}~\TERM{struct}~\NT{ident}~\KWD{\}}
+\end{rules}
+
+
+\begin{rules}
+\DEFNT{match-expr}
+       \KWD{match}~\NT{match-items}~\OPT{\NT{return-type}}~\KWD{with}
+  ~\OPT{\TERMbar}~\OPT{\NT{branches}}~\KWD{end}        &&\RNAME{match}
+\SEPDEF
+\DEFNT{match-items}
+       \NT{match-item} ~\KWD{,} ~\NT{match-items}
+\nlsep \NT{match-item}
+\SEPDEF
+\DEFNT{match-item}
+       \NTL{constr}{100}~\OPTGR{\KWD{as}~\NT{name}}
+       ~\OPTGR{\KWD{in}~\NTL{constr}{100}}
+\SEPDEF
+\DEFNT{return-type}
+       \KWD{return}~\NTL{constr}{100}
+\SEPDEF
+\DEFNT{if-item}
+       \NT{constr}~\OPTGR{\OPTGR{\KWD{as}~\NT{name}}~\NT{return-type}}
+\SEPDEF
+\DEFNT{branches}
+       \NT{eqn}~\TERMbar~\NT{branches}
+\nlsep \NT{eqn}
+\SEPDEF
+\DEFNT{eqn}
+       \NT{pattern} ~\STARGR{\KWD{,}~\NT{pattern}}
+       ~\KWD{$\Rightarrow$}~\NT{constr}
+\SEPDEF
+\DEFNT{pattern}
+       \NT{reference}~\PLUS{\NT{pattern}}  &1L~~ & \RNAME{constructor}
+\nlsep \NT{pattern}~\KWD{as}~\NT{ident}    &1L & \RNAME{alias}
+\nlsep \NT{pattern}~\KWD{\%}~\NT{ident}    &1L & \RNAME{scope-change}
+\nlsep \NT{reference}                      &0  & \RNAME{pattern-var}
+\nlsep \KWD{_}                             &0  & \RNAME{hole}
+\nlsep \NT{num}                            &0
+\nlsep \KWD{(}~\NT{tuple-pattern}~\KWD{)}
+\SEPDEF
+\DEFNT{tuple-pattern}
+       \NT{pattern}
+\nlsep \NT{tuple-pattern}~\KWD{,}~\NT{pattern} && \RNAME{pair}
+\end{rules}
+
+\subsection{Notations of the prelude (logic and basic arithmetic)}
+
+Reserved notations:
+
+$$
+\begin{array}{l|c}
+\text{Symbol} & \text{precedence} \\
+\hline
+\infx{,}             & 250L \\
+\KWD{IF}~\notv~\KWD{then}~\notv~\KWD{else}~\notv
+                     & 200R \\
+\infx{:}             & 100R \\
+\infx{\leftrightarrow} & 95N \\
+\infx{\rightarrow}   & 90R \\
+\infx{\vee}          & 85R \\
+\infx{\wedge}        & 80R \\
+\tilde{}\notv        & 75R \\
+\begin{array}[c]{@{}l@{}}
+ \infx{=}\quad \infx{=}\KWD{$:>$}\notv \quad \infx{=}=\notv
+ \quad \infx{\neq} \quad  \infx{\neq}\KWD{$:>$}\notv \\
+ \infx{<}\quad\infx{>} \quad \infx{\leq}\quad\infx{\geq}
+ \quad \infx{<}<\notv \quad \infx{<}\leq\notv
+ \quad \infx{\leq}<\notv \quad \infx{\leq}\leq\notv
+\end{array}          & 70N \\
+\infx{+}\quad\infx{-}\quad -\notv   & 50L \\
+\infx{*}\quad\infx{/}\quad /\notv   & 40L \\
+\end{array}
+$$
+
+Existential quantifiers follows the \KWD{forall} notation (with same
+precedence 200), but only one quantified variable is allowed.
+
+\begin{rules}
+\EXTNT{binder-constr}
+       \NT{quantifier-kwd}~\NT{name}~\NT{type-cstr}~\KWD{,}~\NTL{constr}{200} \\
+\SEPDEF
+\DEFNT{quantifier-kwd}
+       \TERM{exists} && \RNAME{ex}
+\nlsep \TERM{exists2} && \RNAME{ex2}
+\end{rules}
+
+$$
+\begin{array}{l|c|l}
+\text{Symbol} & \text{precedence} \\
+\hline
+\notv+\{\notv\}                            & 50 & \RNAME{sumor} \\
+\{\notv:\notv~|~\notv\}                    & 0 & \RNAME{sig} \\
+\{\notv:\notv~|~\notv \& \notv \}          & 0 & \RNAME{sig2} \\
+\{\notv:\notv~\&~\notv \}                  & 0 & \RNAME{sigS} \\
+\{\notv:\notv~\&~\notv \& \notv \}         & 0 & \RNAME{sigS2} \\
+\{\notv\}+\{\notv\}                        & 0 & \RNAME{sumbool} \\
+\end{array}
+$$
+
+%% Strange: nat + {x:nat|x=x} * nat  == ( + ) *
+
+\section{Grammar of tactics}
+
+\def\tacconstr{\NTL{constr}{9}}
+\def\taclconstr{\NTL{constr}{200}}
+
+Additional symbols are:
+$$ \TERM{'}
+~~ \KWD{;}
+~~ \TERM{()}
+~~ \TERMbarbar
+~~ \TERM{$\vdash$}
+~~ \TERM{[}
+~~ \TERM{]}
+~~ \TERM{$\leftarrow$}
+$$
+Additional reserved keywords are:
+$$ \KWD{at}
+~~ \TERM{using}
+$$
+
+\subsection{Basic tactics}
+
+\begin{rules}
+\DEFNT{simple-tactic}
+       \TERM{intros}~\TERM{until}~\NT{quantified-hyp}
+\nlsep \TERM{intros}~\NT{intro-patterns}
+\nlsep \TERM{intro}~\OPT{\NT{ident}}~\OPTGR{\TERM{after}~\NT{ident}}
+%%
+\nlsep \TERM{assumption}
+\nlsep \TERM{exact}~\tacconstr
+%%
+\nlsep \TERM{apply}~\NT{constr-with-bindings}
+\nlsep \TERM{elim}~\NT{constr-with-bindings}~\OPT{\NT{eliminator}}
+\nlsep \TERM{elimtype}~\tacconstr
+\nlsep \TERM{case}~\NT{constr-with-bindings}
+\nlsep \TERM{casetype}~\tacconstr
+\nlsep \KWD{fix}~\OPT{\NT{ident}}~\NT{num}
+\nlsep \KWD{fix}~\NT{ident}~\NT{num}~\KWD{with}~\PLUS{\NT{fix-spec}}
+\nlsep \KWD{cofix}~\OPT{\NT{ident}}
+\nlsep \KWD{cofix}~\NT{ident}~\PLUS{\NT{fix-spec}}
+%%
+\nlsep \TERM{cut}~\tacconstr
+\nlsep \TERM{assert}~\tacconstr
+\nlsep \TERM{assert}~
+  \TERM{(}~\NT{ident}~\KWD{:}~\taclconstr~\TERM{)}
+\nlsep \TERM{assert}~
+  \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}
+\nlsep \TERM{pose}~\tacconstr
+\nlsep \TERM{pose}~
+  \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}
+\nlsep \TERM{generalize}~\PLUS{\tacconstr}
+\nlsep \TERM{generalize}~\TERM{dependent}~\tacconstr
+\nlsep \TERM{set}~\tacconstr~\OPT{\NT{clause}}
+\nlsep \TERM{set}~
+  \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}~\OPT{\NT{clause}}
+\nlsep \TERM{instantiate}~
+  \TERM{(}~\NT{num}~\TERM{:=}~\taclconstr~\TERM{)}~\OPT{\NT{clause}}
+%%
+\nlsep \TERM{specialize}~\OPT{\NT{num}}~\NT{constr-with-bindings}
+\nlsep \TERM{lapply}~\tacconstr
+%%
+\nlsep \TERM{simple}~\TERM{induction}~\NT{quantified-hyp}
+\nlsep \TERM{induction}~\NT{induction-arg}~\OPT{\NT{with-names}}
+       ~\OPT{\NT{eliminator}}
+\nlsep \TERM{double}~\TERM{induction}~\NT{quantified-hyp}~\NT{quantified-hyp}
+\nlsep \TERM{simple}~\TERM{destruct}~\NT{quantified-hyp}
+\nlsep \TERM{destruct}~\NT{induction-arg}~\OPT{\NT{with-names}}
+       ~\OPT{\NT{eliminator}}
+\nlsep \TERM{decompose}~\TERM{record}~\tacconstr
+\nlsep \TERM{decompose}~\TERM{sum}~\tacconstr
+\nlsep \TERM{decompose}~\TERM{[}~\PLUS{\NT{reference}}~\TERM{]}
+       ~\tacconstr
+%%
+\nlsep ...
+\end{rules}
+
+\begin{rules}
+\EXTNT{simple-tactic}
+       \TERM{trivial}~\OPT{\NT{hint-bases}}
+\nlsep \TERM{auto}~\OPT{\NT{num}}~\OPT{\NT{hint-bases}}
+%%
+%%\nlsep \TERM{autotdb}~\OPT{\NT{num}}
+%%\nlsep \TERM{cdhyp}~\NT{ident}
+%%\nlsep \TERM{dhyp}~\NT{ident}
+%%\nlsep \TERM{dconcl}
+%%\nlsep \TERM{superauto}~\NT{auto-args}
+\nlsep \TERM{auto}~\OPT{\NT{num}}~\TERM{decomp}~\OPT{\NT{num}}
+%%
+\nlsep \TERM{clear}~\PLUS{\NT{ident}}
+\nlsep \TERM{clearbody}~\PLUS{\NT{ident}}
+\nlsep \TERM{move}~\NT{ident}~\TERM{after}~\NT{ident}
+\nlsep \TERM{rename}~\NT{ident}~\TERM{into}~\NT{ident}
+%%
+\nlsep \TERM{left}~\OPT{\NT{with-binding-list}}
+\nlsep \TERM{right}~\OPT{\NT{with-binding-list}}
+\nlsep \TERM{split}~\OPT{\NT{with-binding-list}}
+\nlsep \TERM{exists}~\OPT{\NT{binding-list}}
+\nlsep \TERM{constructor}~\NT{num}~\OPT{\NT{with-binding-list}}
+\nlsep \TERM{constructor}~\OPT{\NT{tactic}}
+%%
+\nlsep \TERM{reflexivity}
+\nlsep \TERM{symmetry}~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{transitivity}~\tacconstr
+%%
+\nlsep \NT{inversion-kwd}~\NT{quantified-hyp}~\OPT{\NT{with-names}}~\OPT{\NT{clause}}
+\nlsep \TERM{dependent}~\NT{inversion-kwd}~\NT{quantified-hyp}
+  ~\OPT{\NT{with-names}}~\OPTGR{\KWD{with}~\tacconstr}
+\nlsep \TERM{inversion}~\NT{quantified-hyp}~\TERM{using}~\tacconstr~\OPT{\NT{clause}}
+%%
+\nlsep \NT{red-expr}~\OPT{\NT{clause}}
+\nlsep \TERM{change}~\NT{conversion}~\OPT{\NT{clause}}
+\SEPDEF
+\DEFNT{red-expr}
+       \TERM{red} ~\mid~ \TERM{hnf} ~\mid~ \TERM{compute}
+\nlsep \TERM{simpl}~\OPT{\NT{pattern-occ}}
+\nlsep \TERM{cbv}~\PLUS{\NT{red-flag}}
+\nlsep \TERM{lazy}~\PLUS{\NT{red-flag}}
+\nlsep \TERM{unfold}~\NT{unfold-occ}~\STARGR{\KWD{,}~\NT{unfold-occ}}
+\nlsep \TERM{fold}~\PLUS{\tacconstr}
+\nlsep \TERM{pattern}~\NT{pattern-occ}~\STARGR{\KWD{,}~\NT{pattern-occ}}
+\SEPDEF
+\DEFNT{conversion}
+       \NT{pattern-occ}~\KWD{with}~\tacconstr
+\nlsep \tacconstr
+\SEPDEF
+\DEFNT{inversion-kwd}
+       \TERM{inversion} ~\mid~ \TERM{invesion_clear} ~\mid~
+       \TERM{simple}~\TERM{inversion}
+\end{rules}
+
+Conflicts exists between integers and constrs.
+
+\begin{rules}
+\DEFNT{quantified-hyp}
+       \NT{int}~\mid~\NT{ident}
+\SEPDEF
+\DEFNT{induction-arg}
+       \NT{int}~\mid~\tacconstr
+\SEPDEF
+\DEFNT{fix-spec}
+       \KWD{(}~\NT{ident}~\STAR{\NT{binder}}~\OPT{\NT{annot}}
+       ~\KWD{:}~\taclconstr~\KWD{)}
+\SEPDEF
+\DEFNT{intro-patterns}
+       \STAR{\NT{intro-pattern}}
+\SEPDEF
+\DEFNT{intro-pattern}
+       \NT{name}
+\nlsep \TERM{[}~\NT{intro-patterns}~\STARGR{\TERMbar~\NT{intro-patterns}}
+       ~\TERM{]}
+\nlsep \KWD{(}~\NT{intro-pattern}~\STARGR{\KWD{,}~\NT{intro-pattern}}
+       ~\KWD{)}
+\SEPDEF
+\DEFNT{with-names}
+%       \KWD{as}~\TERM{[}~\STAR{\NT{ident}}~\STARGR{\TERMbar~\STAR{\NT{ident}}}
+%       ~\TERM{]}
+       \KWD{as}~\NT{intro-pattern}
+\SEPDEF
+\DEFNT{eliminator}
+       \TERM{using}~\NT{constr-with-bindings}
+\SEPDEF
+\DEFNT{constr-with-bindings}
+       % dangling ``with'' of ``fix'' can conflict with ``with''
+       \tacconstr~\OPT{\NT{with-binding-list}}
+\SEPDEF
+\DEFNT{with-binding-list}
+       \KWD{with}~\NT{binding-list}
+\SEPDEF
+\DEFNT{binding-list}
+       \PLUS{\tacconstr}
+\nlsep \PLUS{\NT{simple-binding}}
+\SEPDEF
+\DEFNT{simple-binding}
+       \KWD{(}~\NT{quantified-hyp}~\KWD{:=}~\taclconstr~\KWD{)}
+\SEPDEF
+\DEFNT{red-flag}
+       \TERM{beta} ~\mid~ \TERM{iota} ~\mid~ \TERM{zeta}
+       ~\mid~ \TERM{delta} ~\mid~
+       \TERM{delta}~\OPT{\TERM{-}}~\TERM{[}~\PLUS{\NT{reference}}~\TERM{]}
+\SEPDEF
+\DEFNT{clause}
+       \KWD{in}~\TERM{*}
+\nlsep \KWD{in}~\TERM{*}~\KWD{$\vdash$}~\OPT{\NT{concl-occ}}
+\nlsep \KWD{in}~\OPT{\NT{hyp-ident-list}} ~\KWD{$\vdash$} ~\OPT{\NT{concl-occ}}
+\nlsep \KWD{in}~\OPT{\NT{hyp-ident-list}}
+\SEPDEF
+\DEFNT{hyp-ident-list}
+       \NT{hyp-ident}
+\nlsep \NT{hyp-ident}~\KWD{,}~\NT{hyp-ident-list}
+\SEPDEF
+\DEFNT{hyp-ident}
+       \NT{ident}
+\nlsep \KWD{(}~\TERM{type}~\TERM{of}~\NT{ident}~\KWD{)}
+\nlsep \KWD{(}~\TERM{value}~\TERM{of}~\NT{ident}~\KWD{)}
+\SEPDEF
+\DEFNT{concl-occ}
+       \TERM{*} ~\NT{occurrences}
+\SEPDEF
+\DEFNT{pattern-occ}
+       \tacconstr ~\NT{occurrences}
+\SEPDEF
+\DEFNT{unfold-occ}
+       \NT{reference}~\NT{occurrences}
+\SEPDEF
+\DEFNT{occurrences}
+       ~\OPTGR{\KWD{at}~\PLUS{\NT{int}}}
+\SEPDEF
+\DEFNT{hint-bases}
+       \KWD{with}~\TERM{*}
+\nlsep \KWD{with}~\PLUS{\NT{ident}}
+\SEPDEF
+\DEFNT{auto-args}
+       \OPT{\NT{num}}~\OPTGR{\TERM{adding}~\TERM{[}~\PLUS{\NT{reference}}
+       ~\TERM{]}}~\OPT{\TERM{destructuring}}~\OPTGR{\TERM{using}~\TERM{tdb}}
+\end{rules}
+
+\subsection{Ltac}
+
+%% Currently, there are conflicts with keyword \KWD{in}: in the following,
+%% has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
+%% \begin{center}
+%% \texttt{let x := simpl in ...}
+%% \end{center}
+
+
+\begin{rules}
+\DEFNT{tactic}
+       \NT{tactic} ~\KWD{;} ~\NT{tactic}  &5 &\RNAME{Then}
+\nlsep \NT{tactic} ~\KWD{;}~\TERM{[} ~\OPT{\NT{tactic-seq}} ~\TERM{]}
+         &5 &\RNAME{Then-seq}
+%%
+\nlsep \TERM{try} ~\NT{tactic}     &3R &\RNAME{Try}
+\nlsep \TERM{do} ~\NT{int-or-var} ~\NT{tactic}
+\nlsep \TERM{repeat} ~\NT{tactic}
+\nlsep \TERM{progress} ~\NT{tactic}
+\nlsep \TERM{info} ~\NT{tactic}
+\nlsep \TERM{abstract}~\NTL{tactic}{2}~\OPTGR{\TERM{using}~\NT{ident}}
+%%
+\nlsep \NT{tactic} ~\TERMbarbar ~\NT{tactic} &2R &\RNAME{Orelse}
+%%
+\nlsep \KWD{fun} ~\PLUS{\NT{name}} ~\KWD{$\Rightarrow$}
+       ~\NT{tactic}  &1 &\RNAME{Fun-tac}
+\nlsep \KWD{let} ~\NT{let-clauses} ~\KWD{in} ~\NT{tactic}
+\nlsep \KWD{let} ~\TERM{rec} ~\NT{rec-clauses} ~\KWD{in} ~\NT{tactic}
+\nlsep \KWD{match}~\OPT{\TERM{reverse}}~\TERM{goal}~\KWD{with}
+       ~\OPT{\TERMbar}~\OPT{\NT{match-goal-rules}} ~\KWD{end}
+\nlsep \KWD{match} ~\NT{tactic} ~\KWD{with}
+       ~\OPT{\TERMbar}~\OPT{\NT{match-rules}} ~\KWD{end}
+\nlsep \TERM{first}~\TERM{[} ~\NT{tactic-seq} ~\TERM{]}
+\nlsep \TERM{solve}~\TERM{[} ~\NT{tactic-seq} ~\TERM{]}
+\nlsep \TERM{idtac}
+\nlsep \TERM{fail} ~\OPT{\NT{num}} ~\OPT{\NT{string}}
+\nlsep \TERM{constr}~\KWD{:}~\tacconstr
+\nlsep \TERM{ipattern}~\KWD{:}~\NT{intro-pattern}
+\nlsep \NT{term-ltac}
+\nlsep \NT{reference}~\STAR{\NT{tactic-arg}}  &&\RNAME{call-tactic}
+\nlsep \NT{simple-tactic}
+%%
+\nlsep \NT{tactic-atom}  &0 &\RNAME{atomic}
+\nlsep \KWD{(} ~\NT{tactic} ~\KWD{)}
+\SEPDEF
+\DEFNT{tactic-arg}
+       \TERM{ltac}~\KWD{:}~\NTL{tactic}{0}
+\nlsep \TERM{ipattern}~\KWD{:}~\NT{intro-pattern}
+\nlsep \NT{term-ltac}
+\nlsep \NT{tactic-atom}
+\nlsep \tacconstr
+\SEPDEF
+\DEFNT{term-ltac}
+       \TERM{fresh} ~\OPT{\NT{string}}
+\nlsep \TERM{context} ~\NT{ident} ~\TERM{[} ~\taclconstr ~\TERM{]}
+\nlsep \TERM{eval} ~\NT{red-expr} ~\KWD{in} ~\tacconstr
+\nlsep \TERM{type} ~\tacconstr
+\SEPDEF
+\DEFNT{tactic-atom}
+       \NT{reference}
+\nlsep \TERM{()}
+\SEPDEF
+\DEFNT{tactic-seq}
+       \NT{tactic} ~\TERMbar ~\NT{tactic-seq}
+\nlsep \NT{tactic}
+\end{rules}
+
+
+
+\begin{rules}
+\DEFNT{let-clauses}
+       \NT{let-clause} ~\STARGR{\KWD{with}~\NT{let-clause}}
+\SEPDEF
+\DEFNT{let-clause}
+       \NT{ident} ~\STAR{\NT{name}} ~\KWD{:=} ~\NT{tactic}
+\SEPDEF
+\DEFNT{rec-clauses}
+       \NT{rec-clause} ~\KWD{with} ~\NT{rec-clauses}
+\nlsep \NT{rec-clause}
+\SEPDEF
+\DEFNT{rec-clause}
+       \NT{ident} ~\PLUS{\NT{name}} ~\KWD{:=} ~\NT{tactic}
+\SEPDEF
+\DEFNT{match-goal-rules}
+       \NT{match-goal-rule}
+\nlsep \NT{match-goal-rule} ~\TERMbar ~\NT{match-goal-rules}
+\SEPDEF
+\DEFNT{match-goal-rule}
+       \NT{match-hyps-list} ~\TERM{$\vdash$} ~\NT{match-pattern}
+       ~\KWD{$\Rightarrow$} ~\NT{tactic}
+\nlsep \KWD{[}~\NT{match-hyps-list} ~\TERM{$\vdash$} ~\NT{match-pattern}
+       ~\KWD{]}~\KWD{$\Rightarrow$} ~\NT{tactic}
+\nlsep \KWD{_} ~\KWD{$\Rightarrow$} ~\NT{tactic}
+\SEPDEF
+\DEFNT{match-hyps-list}
+       \NT{match-hyps} ~\KWD{,} ~\NT{match-hyps-list}
+\nlsep \NT{match-hyps}
+\SEPDEF
+\DEFNT{match-hyps}
+       \NT{name} ~\KWD{:} ~\NT{match-pattern}
+\SEPDEF
+\DEFNT{match-rules}
+       \NT{match-rule}
+\nlsep \NT{match-rule} ~\TERMbar ~\NT{match-rules}
+\SEPDEF
+\DEFNT{match-rule}
+       \NT{match-pattern} ~\KWD{$\Rightarrow$} ~\NT{tactic}
+\nlsep \KWD{_} ~\KWD{$\Rightarrow$} ~\NT{tactic}
+\SEPDEF
+\DEFNT{match-pattern}
+       \TERM{context}~\OPT{\NT{ident}}
+       ~\TERM{[} ~\NT{constr-pattern} ~\TERM{]}  &&\RNAME{subterm}
+\nlsep \NT{constr-pattern}
+\SEPDEF
+\DEFNT{constr-pattern}
+       \tacconstr
+\end{rules}
+
+\subsection{Other tactics}
+
+\begin{rules}
+\EXTNT{simple-tactic}
+       \TERM{rewrite} ~\NT{orient} ~\NT{constr-with-bindings}
+         ~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{replace} ~\tacconstr ~\KWD{with} ~\tacconstr
+         ~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{replace} ~\OPT{\NT{orient}} ~\tacconstr
+         ~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{symplify_eq} ~\OPT{\NT{quantified-hyp}}
+\nlsep \TERM{discriminate} ~\OPT{\NT{quantified-hyp}}
+\nlsep \TERM{injection} ~\OPT{\NT{quantified-hyp}}
+\nlsep \TERM{conditional}~\NT{tactic}~\TERM{rewrite}~\NT{orient}
+         ~\NT{constr-with-bindings}~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{dependent}~\TERM{rewrite}~\NT{orient}~\NT{ident}
+\nlsep \TERM{cutrewrite}~\NT{orient}~\tacconstr
+         ~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{absurd} ~\tacconstr
+\nlsep \TERM{contradiction}
+\nlsep \TERM{autorewrite}~\NT{hint-bases}~\OPTGR{\KWD{using}~\NT{tactic}}
+\nlsep \TERM{refine}~\tacconstr
+\nlsep \TERM{setoid_replace} ~\tacconstr ~\KWD{with} ~\tacconstr
+\nlsep \TERM{setoid_rewrite} ~\NT{orient} ~\tacconstr
+\nlsep \TERM{subst} ~\STAR{\NT{ident}}
+%% eqdecide.ml4
+\nlsep \TERM{decide}~\TERM{equality} ~\OPTGR{\tacconstr~\tacconstr}
+\nlsep \TERM{compare}~\tacconstr~\tacconstr
+%% eauto
+\nlsep \TERM{eexact}~\tacconstr
+\nlsep \TERM{eapply}~\NT{constr-with-bindings}
+\nlsep \TERM{prolog}~\TERM{[}~\STAR{\tacconstr}~\TERM{]}
+         ~\NT{quantified-hyp}
+\nlsep \TERM{eauto}~\OPT{\NT{quantified-hyp}}~\OPT{\NT{quantified-hyp}}
+         ~\NT{hint-bases}
+\nlsep \TERM{eautod}~\OPT{\NT{quantified-hyp}}~\OPT{\NT{quantified-hyp}}
+         ~\NT{hint-bases}
+%% tauto
+\nlsep \TERM{tauto}
+\nlsep \TERM{simplif}
+\nlsep \TERM{intuition}~\OPT{\NTL{tactic}{0}}
+\nlsep \TERM{linearintuition}~\OPT{\NT{num}}
+%% contrib/cc
+\nlsep \TERM{cc}
+%% contrib/field
+\nlsep \TERM{field}~\STAR{\tacconstr}
+%% contrib/first-order
+\nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}
+\nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}~\KWD{with}~\PLUS{\NT{reference}}
+\nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}~\KWD{using}~\PLUS{\NT{ident}}
+%%\nlsep \TERM{gtauto}
+\nlsep \TERM{gintuition}~\OPT{\NTL{tactic}{0}}
+%% contrib/fourier
+\nlsep \TERM{fourierZ}
+%% contrib/funind
+\nlsep \TERM{functional}~\TERM{induction}~\tacconstr~\PLUS{\tacconstr}
+%% contrib/jprover
+\nlsep \TERM{jp}~\OPT{\NT{num}}
+%% contrib/omega
+\nlsep \TERM{omega}
+%% contrib/ring
+\nlsep \TERM{quote}~\NT{ident}~\OPTGR{\KWD{[}~\PLUS{\NT{ident}}~\KWD{]}}
+\nlsep \TERM{ring}~\STAR{\tacconstr}
+%% contrib/romega
+\nlsep \TERM{romega}
+\SEPDEF
+\DEFNT{orient}
+       \KWD{$\rightarrow$}~\mid~\KWD{$\leftarrow$}
+\end{rules}
+
+\section{Grammar of commands}
+
+New symbols:
+$$ \TERM{.}
+~~ \TERM{..}
+~~ \TERM{\tt >->}
+~~ \TERM{:$>$}
+~~ \TERM{$<$:}
+$$
+
+New keyword:
+$$ \KWD{where}
+$$
+
+\subsection{Classification of commands}
+
+\begin{rules}
+\DEFNT{vernac}
+       \TERM{Time}~\NT{vernac}  &2~~ &\RNAME{Timing}
+%%
+\nlsep \NT{gallina}~\TERM{.}    &1
+\nlsep \NT{command}~\TERM{.}
+\nlsep \NT{syntax}~\TERM{.}
+\nlsep \TERM{[}~\PLUS{\NT{vernac}}~\TERM{]}~\TERM{.}
+%%
+\nlsep \OPTGR{\NT{num}~\KWD{:}}~\NT{subgoal-command}~\TERM{.} ~~~&0
+\SEPDEF
+\DEFNT{subgoal-command}
+       \NT{check-command}
+\nlsep %\OPT{\TERM{By}}~
+   \NT{tactic}~\OPT{\KWD{..}}
+\end{rules}
+
+\subsection{Gallina and extensions}
+
+\begin{rules}
+\DEFNT{gallina}
+       \NT{thm-token}~\NT{ident}~\STAR{\NT{binder-let}}~\KWD{:}~\NT{constr}
+\nlsep \NT{def-token}~\NT{ident}~\NT{def-body}
+\nlsep \NT{assum-token}~\NT{assum-list}
+\nlsep \NT{finite-token}~\NT{inductive-definition}
+      ~\STARGR{\KWD{with}~\NT{inductive-definition}}
+\nlsep \TERM{Fixpoint}~\NT{fix-decl}~\STARGR{\KWD{with}~\NT{fix-decl}}
+\nlsep \TERM{CoFixpoint}~\NT{fix-decl}~\STARGR{\KWD{with}~\NT{fix-decl}}
+\nlsep \TERM{Scheme}~\NT{scheme}~\STARGR{\KWD{with}~\NT{scheme}}
+%% Extension: record
+\nlsep \NT{record-tok}~\OPT{\TERM{$>$}}~\NT{ident}~\STAR{\NT{binder-let}}
+       ~\KWD{:}~\NT{constr}~\KWD{:=}
+       ~\OPT{\NT{ident}}~\KWD{\{}~\NT{field-list}~\KWD{\}}
+\nlsep \TERM{Ltac}~\NT{ltac-def}~\STARGR{~\TERM{with}~\NT{ltac-def}}
+\end{rules}
+
+\begin{rules}
+\DEFNT{thm-token}
+   \TERM{Theorem} ~\mid~ \TERM{Lemma} ~\mid~ \TERM{Fact} ~\mid~ \TERM{Remark}
+\SEPDEF
+\DEFNT{def-token}
+   \TERM{Definition} ~\mid~ \TERM{Let} ~\mid~
+   \OPT{\TERM{Local}}~\TERM{SubClass}
+\SEPDEF
+\DEFNT{assum-token}
+    \TERM{Hypothesis} ~\mid~ \TERM{Variable} ~\mid~ \TERM{Axiom} ~\mid~
+    \TERM{Parameter}
+\SEPDEF
+\DEFNT{finite-token}
+    \TERM{Inductive} ~\mid~ \TERM{CoInductive}
+\SEPDEF
+\DEFNT{record-tok}
+    \TERM{Record} ~\mid~ \TERM{Structure}
+\end{rules}
+
+
+\begin{rules}
+\DEFNT{def-body}
+       \STAR{\NT{binder-let}}~\NT{type-cstr}~\KWD{:=}
+       ~\OPT{\NT{reduce}}~\NT{constr}
+\nlsep \STAR{\NT{binder-let}}~\KWD{:}~\NT{constr}
+\SEPDEF
+\DEFNT{reduce}
+       \TERM{Eval}~\NT{red-expr}~\KWD{in}
+\SEPDEF
+\DEFNT{ltac-def}
+       \NT{ident}~\STAR{\NT{name}}~\KWD{:=}~\NT{tactic}
+\SEPDEF
+\DEFNT{rec-definition}
+       \NT{fix-decl}~\OPT{\NT{decl-notation}}
+\SEPDEF
+\DEFNT{inductive-definition}
+       \OPT{\NT{string}}~\NT{ident}~\STAR{\NT{binder-let}}~\KWD{:}
+       ~\NT{constr}~\KWD{:=}
+       ~\OPT{\TERMbar}~\OPT{\NT{constructor-list}}
+       ~\OPT{\NT{decl-notation}}
+\SEPDEF
+\DEFNT{constructor-list}
+       \NT{constructor}~\TERMbar~\NT{constructor-list}
+\nlsep \NT{constructor}
+\SEPDEF
+\DEFNT{constructor}
+       \NT{ident}~\STAR{\NT{binder-let}}\OPTGR{\NT{coerce-kwd}~\NT{constr}}
+\SEPDEF
+\DEFNT{decl-notation}
+       \TERM{where}~\NT{string}~\TERM{:=}~\NT{constr}
+\SEPDEF
+\DEFNT{field-list}
+       \NT{field}~\KWD{;}~\NT{field-list}
+\nlsep \NT{field}
+\SEPDEF
+\DEFNT{field}
+       \NT{ident}~\OPTGR{\NT{coerce-kwd}~\NT{constr}}
+\nlsep \NT{ident}~\NT{type-cstr-coe}~\KWD{:=}~\NT{constr}
+\SEPDEF
+\DEFNT{assum-list}
+       \PLUS{\GR{\KWD{(}~\NT{simple-assum-coe}~\KWD{)}}}
+\nlsep \NT{simple-assum-coe}
+\SEPDEF
+\DEFNT{simple-assum-coe}
+       \PLUS{\NT{ident}}~\NT{coerce-kwd}~\NT{constr}
+\SEPDEF
+\DEFNT{coerce-kwd} \TERM{:$>$} ~\mid~ \KWD{:}
+\SEPDEF
+\DEFNT{type-cstr-coe} \OPTGR{\NT{coerce-kwd}~\NT{constr}}
+\SEPDEF
+\DEFNT{scheme}
+       \NT{ident}~\KWD{:=}~\NT{dep-scheme}~\KWD{for}~\NT{reference}
+       ~\TERM{Sort}~\NT{sort}
+\SEPDEF
+\DEFNT{dep-scheme}
+       \TERM{Induction}~\mid~\TERM{Minimality}
+\end{rules}
+
+\subsection{Modules and sections}
+
+\begin{rules}
+\DEFNT{gallina}
+       \TERM{Module}~\NT{ident}~\STAR{\NT{mbinder}}~\OPT{\NT{of-mod-type}}
+       ~\OPTGR{\KWD{:=}~\NT{mod-expr}}
+\nlsep \TERM{Module}~\KWD{Type}~\NT{ident}~\STAR{\NT{mbinder}}
+       ~\OPTGR{\KWD{:=}~\NT{mod-type}}
+\nlsep \TERM{Declare}~\TERM{Module}~\NT{ident}~\STAR{\NT{mbinder}}
+       ~\OPT{\NT{of-mod-type}}
+       ~\OPTGR{\KWD{:=}~\NT{mod-expr}}
+\nlsep \TERM{Section}~\NT{ident}
+\nlsep \TERM{Chapter}~\NT{ident}
+\nlsep \TERM{End}~\NT{ident}
+%%
+\nlsep \TERM{Require}~\OPT{\NT{export-token}}~\OPT{\NT{specif-token}}
+       ~\PLUS{\NT{reference}}
+\nlsep \TERM{Require}~\OPT{\NT{export-token}}~\OPT{\NT{specif-token}}
+       ~\NT{string}
+\nlsep \TERM{Import}~\PLUS{\NT{reference}}
+\nlsep \TERM{Export}~\PLUS{\NT{reference}}
+\SEPDEF
+\DEFNT{export-token}
+       \TERM{Import} ~\mid~ \TERM{Export}
+\SEPDEF
+\DEFNT{specif-token}
+       \TERM{Implementation} ~\mid~ \TERM{Specification}
+\SEPDEF
+\DEFNT{mod-expr}
+       \NT{reference}
+\nlsep \NT{mod-expr}~\NT{mod-expr} & L
+\nlsep \KWD{(}~\NT{mod-expr}~\KWD{)}
+\SEPDEF
+\DEFNT{mod-type}
+       \NT{reference}
+\nlsep \NT{mod-type}~\KWD{with}~\NT{with-declaration}
+\SEPDEF
+\DEFNT{with-declaration}
+                                                          %on forcera les ( )
+                                                          %si exceptionnellemt
+                                                          %un fixpoint ici
+       \TERM{Definition}~\NT{ident}~\KWD{:=}~\NTL{constr}{} %{100}
+\nlsep \TERM{Module}~\NT{ident}~\KWD{:=}~\NT{reference}
+\SEPDEF
+\DEFNT{of-mod-type}
+       \KWD{:}~\NT{mod-type}
+\nlsep \TERM{$<$:}~\NT{mod-type}
+\SEPDEF
+\DEFNT{mbinder}
+       \KWD{(}~\PLUS{\NT{ident}}~\KWD{:}~\NT{mod-type}~\KWD{)}
+\end{rules}
+
+\begin{rules}
+\DEFNT{gallina}
+       \TERM{Transparent}~\PLUS{\NT{reference}}
+\nlsep \TERM{Opaque}~\PLUS{\NT{reference}}
+\nlsep \TERM{Canonical}~\TERM{Structure}~\NT{reference}~\OPT{\NT{def-body}}
+\nlsep \TERM{Coercion}~\OPT{\TERM{Local}}~\NT{reference}~\NT{def-body}
+\nlsep \TERM{Coercion}~\OPT{\TERM{Local}}~\NT{reference}~\KWD{:}
+       ~\NT{class-rawexpr}~\TERM{$>->$}~\NT{class-rawexpr}
+\nlsep \TERM{Identity}~\TERM{Coercion}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:}
+       ~\NT{class-rawexpr}~\TERM{$>->$}~\NT{class-rawexpr}
+\nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}~\TERM{[}~\STAR{\NT{num}}~\TERM{]}
+\nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}
+\nlsep \TERM{Implicit}~\KWD{Type}~\PLUS{\NT{ident}}~\KWD{:}~\NT{constr}
+\SEPDEF
+\DEFNT{command}
+       \TERM{Comments}~\STAR{\NT{comment}}
+\nlsep \TERM{Pwd}
+\nlsep \TERM{Cd}~\OPT{\NT{string}}
+\nlsep \TERM{Drop} ~\mid~ \TERM{ProtectedLoop} ~\mid~\TERM{Quit}
+%%
+\nlsep \TERM{Load}~\OPT{\TERM{Verbose}}~\NT{ident}
+\nlsep \TERM{Load}~\OPT{\TERM{Verbose}}~\NT{string}
+\nlsep \TERM{Declare}~\TERM{ML}~\TERM{Module}~\PLUS{\NT{string}}
+\nlsep \TERM{Dump}~\TERM{Universes}~\OPT{\NT{string}}
+\nlsep \TERM{Locate}~\NT{locatable}
+\nlsep \TERM{Add}~\OPT{\TERM{Rec}}~\TERM{LoadPath}~\NT{string}~\OPT{\NT{as-dirpath}}
+\nlsep \TERM{Remove}~\TERM{LoadPath}~\NT{string}
+\nlsep \TERM{Add}~\OPT{\TERM{Rec}}~\TERM{ML}~\TERM{Path}~\NT{string}
+%%
+\nlsep \KWD{Type}~\NT{constr}
+\nlsep \TERM{Print}~\NT{printable}
+\nlsep \TERM{Print}~\NT{reference}
+\nlsep \TERM{Inspect}~\NT{num}
+\nlsep \TERM{About}~\NT{reference}
+%%
+\nlsep \TERM{Search}~\NT{reference}~\OPT{\NT{in-out-modules}}
+\nlsep \TERM{SearchPattern}~\NT{constr-pattern}~\OPT{\NT{in-out-modules}}
+\nlsep \TERM{SearchRewrite}~\NT{constr-pattern}~\OPT{\NT{in-out-modules}}
+\nlsep \TERM{SearchAbout}~\NT{reference}~\OPT{\NT{in-out-modules}}
+\nlsep \TERM{SearchAbout}~\TERM{[}~\STAR{\NT{ref-or-string}}~\TERM{]}\OPT{\NT{in-out-modules}}
+\nlsep \KWD{Set}~\NT{ident}~\OPT{\NT{opt-value}}
+\nlsep \TERM{Unset}~\NT{ident}
+\nlsep \KWD{Set}~\NT{ident}~\NT{ident}~\OPT{\NT{opt-value}}
+\nlsep \KWD{Set}~\NT{ident}~\NT{ident}~\PLUS{\NT{opt-ref-value}}
+\nlsep \TERM{Unset}~\NT{ident}~\NT{ident}~\STAR{\NT{opt-ref-value}}
+%%
+\nlsep \TERM{Print}~\TERM{Table}~\NT{ident}~\NT{ident}
+\nlsep \TERM{Print}~\TERM{Table}~\NT{ident}
+\nlsep \TERM{Add}~\NT{ident}~\OPT{\NT{ident}}~\PLUS{\NT{opt-ref-value}}
+%%
+\nlsep \TERM{Test}~\NT{ident}~\OPT{\NT{ident}}~\STAR{\NT{opt-ref-value}}
+%%
+\nlsep \TERM{Remove}~\NT{ident}~\OPT{\NT{ident}}~\PLUS{\NT{opt-ref-value}}
+\SEPDEF
+\DEFNT{check-command}
+       \TERM{Eval}~\NT{red-expr}~\KWD{in}~\NT{constr}
+\nlsep \TERM{Check}~\NT{constr}
+\SEPDEF
+\DEFNT{ref-or-string}
+       \NT{reference}
+\nlsep \NT{string}
+\end{rules}
+
+\begin{rules}
+\DEFNT{printable}
+       \TERM{Term}~\NT{reference}
+\nlsep \TERM{All}
+\nlsep \TERM{Section}~\NT{reference}
+\nlsep \TERM{Grammar}~\NT{ident}
+\nlsep \TERM{LoadPath}
+\nlsep \TERM{Module}~\OPT{\KWD{Type}}~\NT{reference}
+\nlsep \TERM{Modules}
+\nlsep \TERM{ML}~\TERM{Path}
+\nlsep \TERM{ML}~\TERM{Modules}
+\nlsep \TERM{Graph}
+\nlsep \TERM{Classes}
+\nlsep \TERM{Coercions}
+\nlsep \TERM{Coercion}~\TERM{Paths}~\NT{class-rawexpr}~\NT{class-rawexpr}
+\nlsep \TERM{Tables}
+% \nlsep \TERM{Proof}~\NT{reference}  % Obsolete, useful in V6.3 ??
+\nlsep \TERM{Hint}~\OPT{\NT{reference}}
+\nlsep \TERM{Hint}~\TERM{*}
+\nlsep \TERM{HintDb}~\NT{ident}
+\nlsep \TERM{Scopes}
+\nlsep \TERM{Scope}~\NT{ident}
+\nlsep \TERM{Visibility}~\OPT{\NT{ident}}
+\nlsep \TERM{Implicit}~\NT{reference}
+\SEPDEF
+\DEFNT{class-rawexpr}
+       \TERM{Funclass}~\mid~\TERM{Sortclass}~\mid~\NT{reference}
+\SEPDEF
+\DEFNT{locatable}
+       \NT{reference}
+\nlsep \TERM{File}~\NT{string}
+\nlsep \TERM{Library}~\NT{reference}
+\nlsep \NT{string}
+\SEPDEF
+\DEFNT{opt-value}
+       \NT{ident} ~\mid~ \NT{string}
+\SEPDEF
+\DEFNT{opt-ref-value}
+       \NT{reference} ~\mid~ \NT{string}
+\SEPDEF
+\DEFNT{as-dirpath}
+       \KWD{as}~\NT{reference}
+\SEPDEF
+\DEFNT{in-out-modules}
+       \TERM{inside}~\PLUS{\NT{reference}}
+\nlsep \TERM{outside}~\PLUS{\NT{reference}}
+\SEPDEF
+\DEFNT{comment}
+       \NT{constr}
+\nlsep \NT{string}
+\end{rules}
+
+\subsection{Other commands}
+
+%% TODO: min/maj pas a jour
+\begin{rules}
+\EXTNT{command}
+       \TERM{Debug}~\TERM{On}
+\nlsep \TERM{Debug}~\TERM{Off}
+%% TODO: vernac
+\nlsep \TERM{Add}~\TERM{setoid}~\tacconstr~\tacconstr~\tacconstr
+\nlsep \TERM{Add}~\TERM{morphism}~\tacconstr~\KWD{:}~\NT{ident}
+\nlsep \TERM{Derive}~\TERM{inversion_clear}
+         ~\OPT{\NT{num}}~\NT{ident}~\NT{ident}
+\nlsep \TERM{Derive}~\TERM{inversion_clear}
+         ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
+\nlsep \TERM{Derive}~\TERM{inversion}
+         ~\OPT{\NT{num}}~\NT{ident}~\NT{ident}
+\nlsep \TERM{Derive}~\TERM{inversion}
+         ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
+\nlsep \TERM{Derive}~\TERM{dependent}~\TERM{inversion_clear}
+         ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
+\nlsep \TERM{Derive}~\TERM{dependent}~\TERM{inversion}
+         ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
+%% Correctness: obsolete ?
+%\nlsep Correctness
+%\nlsep Global Variable
+%% TODO: extraction
+\nlsep Extraction ...
+%% field
+\nlsep \TERM{Add}~\TERM{Field}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr~\OPT{\NT{minus-div}}
+%% funind
+\nlsep \TERM{Functional}~\TERM{Scheme}~\NT{ident}~\KWD{:=}
+         ~\TERM{Induction}~\KWD{for}~\tacconstr
+         ~\OPTGR{\KWD{with}~\PLUS{\tacconstr}}
+%% ring
+\nlsep \TERM{Add}~\TERM{Ring}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr~\KWD{[}~\PLUS{\tacconstr}~\KWD{]}
+\nlsep \TERM{Add}~\TERM{Semi}~\TERM{Ring}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\KWD{[}~\PLUS{\tacconstr}~\KWD{]}
+\nlsep \TERM{Add}~\TERM{Abstract}~\TERM{Ring}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr
+\nlsep \TERM{Add}~\TERM{Abstract}~\TERM{Semi}~\TERM{Ring}~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr
+\nlsep \TERM{Add}~\TERM{Setoid}~\TERM{Ring}~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr~\tacconstr~\tacconstr~\tacconstr~\tacconstr
+         ~\tacconstr~\KWD{[}~\PLUS{\tacconstr}~\KWD{]}
+\nlsep \TERM{Add}~\TERM{Setoid}~\TERM{Semi}~\TERM{Ring}~\tacconstr~\tacconstr
+         ~\tacconstr~\tacconstr~\tacconstr~\tacconstr
+\nlcont~~~~\tacconstr~\tacconstr~\tacconstr~\tacconstr~\tacconstr
+         ~\KWD{[}~\PLUS{tacconstr}~\KWD{]}
+\SEPDEF
+\DEFNT{minus-div}
+       \KWD{with}~\NT{minus-arg}~\NT{div-arg}
+\nlsep \KWD{with}~\NT{div-arg}~\NT{minus-arg}
+\SEPDEF
+\DEFNT{minus-arg}
+       \TERM{minus}~\KWD{:=}~\tacconstr
+\SEPDEF
+\DEFNT{div-arg}
+       \TERM{div}~\KWD{:=}~\tacconstr
+\end{rules}
+
+\begin{rules}
+\EXTNT{command}
+       \TERM{Write}~\TERM{State}~\NT{ident}
+\nlsep \TERM{Write}~\TERM{State}~\NT{string}
+\nlsep \TERM{Restore}~\TERM{State}~\NT{ident}
+\nlsep \TERM{Restore}~\TERM{State}~\NT{string}
+\nlsep \TERM{Reset}~\NT{ident}
+\nlsep \TERM{Reset}~\TERM{Initial}
+\nlsep \TERM{Back}~\OPT{\NT{num}}
+\end{rules}
+
+\subsection{Proof-editing commands}
+
+\begin{rules}
+\EXTNT{command}
+       \TERM{Goal}~\NT{constr}
+\nlsep \TERM{Proof}~\OPT{\NT{constr}}
+\nlsep \TERM{Proof}~\KWD{with}~\NT{tactic}
+\nlsep \TERM{Abort}~\OPT{\TERM{All}}
+\nlsep \TERM{Abort}~\NT{ident}
+\nlsep \TERM{Existential}~\NT{num}~\KWD{:=}~\NT{constr-body}
+\nlsep \TERM{Qed}
+\nlsep \TERM{Save}~\OPTGR{\NT{thm-token}~\NT{ident}}
+\nlsep \TERM{Defined}~\OPT{\NT{ident}}
+\nlsep \TERM{Suspend}
+\nlsep \TERM{Resume}~\OPT{\NT{ident}}
+\nlsep \TERM{Restart}
+\nlsep \TERM{Undo}~\OPT{\NT{num}}
+\nlsep \TERM{Focus}~\OPT{\NT{num}}
+\nlsep \TERM{Unfocus}
+\nlsep \TERM{Show}~\OPT{\NT{num}}
+\nlsep \TERM{Show}~\TERM{Implicit}~\TERM{Arguments}~\OPT{\NT{num}}
+\nlsep \TERM{Show}~\TERM{Node}
+\nlsep \TERM{Show}~\TERM{Script}
+\nlsep \TERM{Show}~\TERM{Existentials}
+\nlsep \TERM{Show}~\TERM{Tree}
+\nlsep \TERM{Show}~\TERM{Conjecture}
+\nlsep \TERM{Show}~\TERM{Proof}
+\nlsep \TERM{Show}~\TERM{Intro}
+\nlsep \TERM{Show}~\TERM{Intros}
+%% Correctness: obsolete ?
+%%\nlsep \TERM{Show}~\TERM{Programs}
+\nlsep \TERM{Explain}~\TERM{Proof}~\OPT{\TERM{Tree}}~\STAR{\NT{num}}
+%% Go not documented
+\nlsep \TERM{Hint}~\OPT{\TERM{Local}}~\NT{hint}~\OPT{\NT{inbases}}
+%% PrintConstr not documented
+\end{rules}
+
+
+\begin{rules}
+\DEFNT{constr-body}
+       \NT{type-cstr}~\KWD{:=}~\NT{constr}
+\SEPDEF
+\DEFNT{hint}
+       \TERM{Resolve}~\PLUS{\NTL{constr}{9}}
+\nlsep \TERM{Immediate}~\PLUS{\NTL{constr}{9}}
+\nlsep \TERM{Unfold}~\PLUS{\NT{reference}}
+\nlsep \TERM{Constructors}~\PLUS{\NT{reference}}
+\nlsep \TERM{Extern}~\NT{num}~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
+\nlsep \TERM{Destruct}~\NT{ident}~\KWD{:=}~\NT{num}~\NT{destruct-loc}
+       ~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
+\nlsep \TERM{Rewrite}~\NT{orient}~\PLUS{\NTL{constr}{9}}
+       ~\OPTGR{\KWD{using}~\NT{tactic}}
+\SEPDEF
+\DEFNT{inbases}
+       \KWD{:}~\PLUS{\NT{ident}}
+\SEPDEF
+\DEFNT{destruct-loc}
+       \TERM{Conclusion}
+\nlsep \OPT{\TERM{Discardable}}~\TERM{Hypothesis}
+\end{rules}
+
+
+\subsection{Syntax extensions}
+
+\begin{rules}
+\DEFNT{syntax}
+       \TERM{Open}~\TERM{Scope}~\NT{ident}
+\nlsep \TERM{Close}~\TERM{Scope}~\NT{ident}
+\nlsep \TERM{Delimit}~\TERM{Scope}~\NT{ident}~\KWD{with}~\NT{ident}
+\nlsep \TERM{Bind}~\TERM{Scope}~\NT{ident}~\KWD{with}~\PLUS{\NT{class-rawexpr}}
+\nlsep \TERM{Arguments}~\TERM{Scope}~\NT{reference}
+       ~\TERM{[}~\PLUS{\NT{name}}~\TERM{]}
+\nlsep \TERM{Infix}~\OPT{\TERM{Local}} %%% ~\NT{prec}~\OPT{\NT{num}}
+       ~\NT{string}~\KWD{:=}~\NT{reference}~\OPT{\NT{modifiers}}
+       ~\OPT{\NT{in-scope}}
+\nlsep \TERM{Notation}~\OPT{\TERM{Local}}~\NT{string}~\KWD{:=}~\NT{constr}
+       ~\OPT{\NT{modifiers}}~\OPT{\NT{in-scope}}
+\nlsep \TERM{Notation}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:=}~\NT{constr}
+       ~\OPT{\KWD{(}\TERM{only~\TERM{parsing}\KWD{)}}}
+\nlsep \TERM{Reserved}~\TERM{Notation}~\OPT{\TERM{Local}}~\NT{string}
+       ~\OPT{\NT{modifiers}}
+\nlsep \TERM{Tactic}~\TERM{Notation}~\NT{string}~\STAR{\NT{tac-production}}
+       ~\KWD{:=}~\NT{tactic}
+\SEPDEF
+\DEFNT{modifiers}
+       \KWD{(}~\NT{mod-list}~\KWD{)}
+\SEPDEF
+\DEFNT{mod-list}
+       \NT{modifier}
+\nlsep \NT{modifier}~\KWD{,}~\NT{mod-list}
+\SEPDEF
+\DEFNT{modifier}
+       \NT{ident}~\KWD{at}~\NT{num}
+\nlsep \NT{ident}~\STARGR{\KWD{,}~\NT{ident}}~\KWD{at}~\NT{num}
+\nlsep \KWD{at}~\TERM{next}~\TERM{level}
+\nlsep \KWD{at}~\TERM{level}~\NT{num}
+\nlsep \TERM{left}~\TERM{associativity}
+\nlsep \TERM{right}~\TERM{associativity}
+\nlsep \TERM{no}~\TERM{associativity}
+\nlsep \NT{ident}~\NT{syntax-entry}
+\nlsep \TERM{only}~\TERM{parsing}
+\nlsep \TERM{format}~\NT{string}
+\SEPDEF
+\DEFNT{in-scope}
+       \KWD{:}~\NT{ident}
+\SEPDEF
+\DEFNT{syntax-entry}
+       \TERM{ident}~\mid~\TERM{global}~\mid~\TERM{bigint}
+\SEPDEF
+\DEFNT{tac-production}
+       \NT{string}
+\nlsep \NT{ident}~\TERM{(}~\NT{ident}~\TERM{)}
+%%% \SEPDEF
+%%% \DEFNT{prec}
+%%%       \TERM{LeftA}~\mid~\TERM{RightA}~\mid~\TERM{NonA}
+\end{rules}
+
+\end{document}

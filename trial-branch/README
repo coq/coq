@@ -1,0 +1,79 @@
+
+            		THE COQ V8.1 SYSTEM
+            		===================
+
+INSTALLATION.
+=============
+
+   See the file INSTALL for installation procedure.
+
+
+DOCUMENTATION.
+==============
+
+   The documentation of Coq V8.1 is available by anonymous ftp (see below),
+   in a directory doc/. It is also available on Coq web site at
+   http://coq.inria.fr/doc-eng.html.
+
+
+CHANGES.
+========
+
+   There is a file named CHANGES that explains the differences and the
+   incompatibilities since last versions. If you upgrade Coq, please read
+   it carefully.
+
+
+AVAILABILITY.
+=============
+
+   Coq is available by anonymous FTP on ftp.inria.fr:
+
+	host:	    ftp.inria.fr (192.93.2.54)
+	directory:  INRIA/LogiCal/coq/
+
+THE COQ CLUB.
+=============
+
+   The Coq Club moderated mailing list is meant to be a standard way to
+   discuss questions about the Coq system and related topics. The submission
+   address is:
+
+	coq-club@coq.inria.fr
+
+   The topics to be discussed in the club should include:
+
+     * technical problems;
+
+     * questions about proof developments;
+
+     * suggestions and questions about the implementation;
+
+     * announcements of proofs;
+
+     * theoretical questions about typed lambda-calculi which are
+       closely related to Coq.
+
+   To be added to, or removed from, the mailing list, please write to:
+
+	coq-club-request@coq.inria.fr
+
+   Please use also this address for any questions/suggestions about the
+   Coq Club. It might sometimes take a few days before your messages get
+   forwarded.
+
+
+BUGS REPORT.
+============
+
+   Send your bug reports by filling a form at
+
+        http://coq.inria.fr/bin/coq-bugs
+
+   or by E-mail to
+
+	coq-bugs@coq.inria.fr
+
+   To be effective, bug reports should mention the Caml version used
+   to compile and run Coq, the Coq version (coqtop -v), the configuration
+   used, and include a complete source example leading to the bug.

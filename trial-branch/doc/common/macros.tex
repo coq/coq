@@ -1,0 +1,501 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MACROS FOR THE REFERENCE MANUAL OF COQ %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% For commentaries (define \com as {} for the release manual)
+%\newcommand{\com}[1]{{\it(* #1 *)}}
+%\newcommand{\com}[1]{}
+
+%%OPTIONS for HACHA
+%\renewcommand{\cuttingunit}{section}
+
+
+%BEGIN LATEX
+\newenvironment{centerframe}%
+{\bgroup
+\dimen0=\textwidth
+\advance\dimen0 by -2\fboxrule
+\advance\dimen0 by -2\fboxsep
+\setbox0=\hbox\bgroup
+\begin{minipage}{\dimen0}%
+\begin{center}}%
+{\end{center}%
+\end{minipage}\egroup
+\centerline{\fbox{\box0}}\egroup
+}
+%END LATEX
+%HEVEA \newenvironment{centerframe}{\begin{center}}{\end{center}}
+
+%HEVEA \renewcommand{\vec}[1]{\mathbf{#1}}
+%\renewcommand{\ominus}{-} % Hevea does a good job translating these commands
+%\renewcommand{\oplus}{+}
+%\renewcommand{\otimes}{\times}
+%\newcommand{\land}{\wedge}
+%\newcommand{\lor}{\vee}
+%HEVEA \renewcommand{\k}[1]{#1} % \k{a} is supposed to produce a with a little stroke
+%HEVEA \newcommand{\phantom}[1]{\qquad}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+% Formatting commands %
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\ErrMsg}{\medskip \noindent {\bf Error message: }}
+\newcommand{\ErrMsgx}{\medskip \noindent {\bf Error messages: }}
+\newcommand{\variant}{\medskip \noindent {\bf Variant: }}
+\newcommand{\variants}{\medskip \noindent {\bf Variants: }}
+\newcommand{\SeeAlso}{\medskip \noindent {\bf See also: }}
+\newcommand{\Rem}{\medskip \noindent {\bf Remark: }}
+\newcommand{\Rems}{\medskip \noindent {\bf Remarks: }}
+\newcommand{\Example}{\medskip \noindent {\bf Example: }}
+\newcommand{\Warning}{\medskip \noindent {\bf Warning: }}
+\newcommand{\Warns}{\medskip \noindent {\bf Warnings: }}
+\newcounter{ex}
+\newcommand{\firstexample}{\setcounter{ex}{1}}
+\newcommand{\example}[1]{
+\medskip \noindent \textbf{Example \arabic{ex}: }\textit{#1}
+\addtocounter{ex}{1}}
+
+\newenvironment{Variant}{\variant\begin{enumerate}}{\end{enumerate}}
+\newenvironment{Variants}{\variants\begin{enumerate}}{\end{enumerate}}
+\newenvironment{ErrMsgs}{\ErrMsgx\begin{enumerate}}{\end{enumerate}}
+\newenvironment{Remarks}{\Rems\begin{enumerate}}{\end{enumerate}}
+\newenvironment{Warnings}{\Warns\begin{enumerate}}{\end{enumerate}}
+\newenvironment{Examples}{\medskip\noindent{\bf Examples:}
+\begin{enumerate}}{\end{enumerate}}
+
+%\newcommand{\bd}{\noindent\bf}
+%\newcommand{\sbd}{\vspace{8pt}\noindent\bf}
+%\newcommand{\sdoll}[1]{\begin{small}$ #1~ $\end{small}}
+%\newcommand{\sdollnb}[1]{\begin{small}$ #1 $\end{small}}
+\newcommand{\kw}[1]{\textsf{#1}}
+%\newcommand{\spec}[1]{\{\,#1\,\}}
+
+% Building regular expressions
+\newcommand{\zeroone}[1]{{\sl [}#1{\sl ]}}
+%\newcommand{\zeroonemany}[1]{$\{$#1$\}$*}
+%\newcommand{\onemany}[1]{$\{$#1$\}$+}
+\newcommand{\nelist}[2]{{#1} {\tt #2} {\ldots} {\tt #2} {#1}}
+\newcommand{\sequence}[2]{{\sl [}{#1} {\tt #2} {\ldots} {\tt #2} {#1}{\sl ]}}
+\newcommand{\nelistwithoutblank}[2]{#1{\tt #2}\ldots{\tt #2}#1}
+\newcommand{\sequencewithoutblank}[2]{$[$#1{\tt #2}\ldots{\tt #2}#1$]$}
+
+% Used for RefMan-gal
+%\newcommand{\ml}[1]{\hbox{\tt{#1}}}
+%\newcommand{\op}{\,|\,}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% Trademarks and so on %
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\Coq}{\textsc{Coq}}
+\newcommand{\gallina}{\textsc{Gallina}}
+\newcommand{\Gallina}{\textsc{Gallina}}
+\newcommand{\CoqIDE}{\textsc{CoqIDE}}
+\newcommand{\ocaml}{\textsc{Objective Caml}}
+\newcommand{\camlpppp}{\textsc{Camlp4}}
+\newcommand{\emacs}{\textsc{GNU Emacs}}
+\newcommand{\CIC}{\pCIC}
+\newcommand{\pCIC}{p\textsc{Cic}}
+\newcommand{\iCIC}{\textsc{Cic}}
+\newcommand{\FW}{\ensuremath{F_{\omega}}}
+%\newcommand{\bn}{{\sf BNF}}
+
+%%%%%%%%%%%%%%%%%%%
+% Name of tactics %
+%%%%%%%%%%%%%%%%%%%
+
+%\newcommand{\Natural}{\mbox{\tt Natural}}
+
+%%%%%%%%%%%%%%%%%
+% \rm\sl series %
+%%%%%%%%%%%%%%%%%
+
+\newcommand{\nterm}[1]{\textrm{\textsl{#1}}}
+
+\newcommand{\qstring}{\nterm{string}}
+
+%% New syntax specific entries
+\newcommand{\annotation}{\nterm{annotation}}
+\newcommand{\assums}{\nterm{assums}} % vernac
+\newcommand{\simpleassums}{\nterm{simple\_assums}} % assumptions
+\newcommand{\binder}{\nterm{binder}}
+\newcommand{\binderlet}{\nterm{binderlet}}
+\newcommand{\binderlist}{\nterm{binderlist}}
+\newcommand{\caseitems}{\nterm{match\_items}}
+\newcommand{\caseitem}{\nterm{match\_item}}
+\newcommand{\eqn}{\nterm{equation}}
+\newcommand{\ifitem}{\nterm{dep\_ret\_type}}
+\newcommand{\letclauses}{\nterm{letclauses}}
+\newcommand{\params}{\nterm{params}} % vernac
+\newcommand{\returntype}{\nterm{return\_type}}
+\newcommand{\idparams}{\nterm{ident\_with\_params}}
+\newcommand{\statkwd}{\nterm{statement\_keyword}} % vernac
+\newcommand{\termarg}{\nterm{arg}}
+
+\newcommand{\typecstr}{\zeroone{{\tt :} {\term}}}
+
+
+\newcommand{\Fwterm}{\textrm{\textsl{Fwterm}}}
+\newcommand{\Index}{\textrm{\textsl{index}}}
+\newcommand{\abbrev}{\textrm{\textsl{abbreviation}}}
+\newcommand{\atomictac}{\textrm{\textsl{atomic\_tactic}}}
+\newcommand{\bindinglist}{\textrm{\textsl{bindings\_list}}}
+\newcommand{\cast}{\textrm{\textsl{cast}}}
+\newcommand{\cofixpointbodies}{\textrm{\textsl{cofix\_bodies}}}
+\newcommand{\cofixpointbody}{\textrm{\textsl{cofix\_body}}}
+\newcommand{\commandtac}{\textrm{\textsl{tactic\_invocation}}}
+\newcommand{\constructor}{\textrm{\textsl{constructor}}}
+\newcommand{\convtactic}{\textrm{\textsl{conv\_tactic}}}
+\newcommand{\declarationkeyword}{\textrm{\textsl{declaration\_keyword}}}
+\newcommand{\declaration}{\textrm{\textsl{declaration}}}
+\newcommand{\definition}{\textrm{\textsl{definition}}}
+\newcommand{\digit}{\textrm{\textsl{digit}}}
+\newcommand{\exteqn}{\textrm{\textsl{ext\_eqn}}}
+\newcommand{\field}{\textrm{\textsl{field}}}
+\newcommand{\firstletter}{\textrm{\textsl{first\_letter}}}
+\newcommand{\fixpg}{\textrm{\textsl{fix\_pgm}}}
+\newcommand{\fixpointbodies}{\textrm{\textsl{fix\_bodies}}}
+\newcommand{\fixpointbody}{\textrm{\textsl{fix\_body}}}
+\newcommand{\fixpoint}{\textrm{\textsl{fixpoint}}}
+\newcommand{\flag}{\textrm{\textsl{flag}}}
+\newcommand{\form}{\textrm{\textsl{form}}}
+\newcommand{\entry}{\textrm{\textsl{entry}}} 
+\newcommand{\proditem}{\textrm{\textsl{production\_item}}} 
+\newcommand{\taclevel}{\textrm{\textsl{tactic\_level}}}
+\newcommand{\tacargtype}{\textrm{\textsl{tactic\_argument\_type}}} 
+\newcommand{\scope}{\textrm{\textsl{scope}}} 
+\newcommand{\optscope}{\textrm{\textsl{opt\_scope}}} 
+\newcommand{\declnotation}{\textrm{\textsl{decl\_notation}}} 
+\newcommand{\symbolentry}{\textrm{\textsl{symbol}}}
+\newcommand{\modifiers}{\textrm{\textsl{modifiers}}}
+\newcommand{\localdef}{\textrm{\textsl{local\_def}}}
+\newcommand{\localdecls}{\textrm{\textsl{local\_decls}}}
+\newcommand{\ident}{\textrm{\textsl{ident}}}
+\newcommand{\accessident}{\textrm{\textsl{access\_ident}}}
+\newcommand{\inductivebody}{\textrm{\textsl{ind\_body}}}
+\newcommand{\inductive}{\textrm{\textsl{inductive}}}
+\newcommand{\naturalnumber}{\textrm{\textsl{natural}}}
+\newcommand{\integer}{\textrm{\textsl{integer}}}
+\newcommand{\multpattern}{\textrm{\textsl{mult\_pattern}}}
+\newcommand{\mutualcoinductive}{\textrm{\textsl{mutual\_coinductive}}}
+\newcommand{\mutualinductive}{\textrm{\textsl{mutual\_inductive}}}
+\newcommand{\nestedpattern}{\textrm{\textsl{nested\_pattern}}}
+\newcommand{\name}{\textrm{\textsl{name}}}
+\newcommand{\num}{\textrm{\textsl{num}}}
+\newcommand{\pattern}{\textrm{\textsl{pattern}}}
+\newcommand{\orpattern}{\textrm{\textsl{or\_pattern}}}
+\newcommand{\intropattern}{\textrm{\textsl{intro\_pattern}}}
+\newcommand{\pat}{\textrm{\textsl{pat}}}
+\newcommand{\pgs}{\textrm{\textsl{pgms}}}
+\newcommand{\pg}{\textrm{\textsl{pgm}}}
+%BEGIN LATEX
+\newcommand{\proof}{\textrm{\textsl{proof}}}
+%END LATEX
+%HEVEA \renewcommand{\proof}{\textrm{\textsl{proof}}}
+\newcommand{\record}{\textrm{\textsl{record}}}
+\newcommand{\rewrule}{\textrm{\textsl{rewriting\_rule}}}
+\newcommand{\sentence}{\textrm{\textsl{sentence}}}
+\newcommand{\simplepattern}{\textrm{\textsl{simple\_pattern}}}
+\newcommand{\sort}{\textrm{\textsl{sort}}}
+\newcommand{\specif}{\textrm{\textsl{specif}}}
+\newcommand{\statement}{\textrm{\textsl{statement}}}
+\newcommand{\str}{\textrm{\textsl{string}}}
+\newcommand{\subsequentletter}{\textrm{\textsl{subsequent\_letter}}}
+\newcommand{\switch}{\textrm{\textsl{switch}}}
+\newcommand{\messagetoken}{\textrm{\textsl{message\_token}}}
+\newcommand{\tac}{\textrm{\textsl{tactic}}}
+\newcommand{\terms}{\textrm{\textsl{terms}}}
+\newcommand{\term}{\textrm{\textsl{term}}}
+\newcommand{\module}{\textrm{\textsl{module}}}
+\newcommand{\modexpr}{\textrm{\textsl{module\_expression}}}
+\newcommand{\modtype}{\textrm{\textsl{module\_type}}}
+\newcommand{\onemodbinding}{\textrm{\textsl{module\_binding}}}
+\newcommand{\modbindings}{\textrm{\textsl{module\_bindings}}}
+\newcommand{\qualid}{\textrm{\textsl{qualid}}}
+\newcommand{\class}{\textrm{\textsl{class}}}
+\newcommand{\dirpath}{\textrm{\textsl{dirpath}}}
+\newcommand{\typedidents}{\textrm{\textsl{typed\_idents}}}
+\newcommand{\type}{\textrm{\textsl{type}}}
+\newcommand{\vref}{\textrm{\textsl{ref}}}
+\newcommand{\zarithformula}{\textrm{\textsl{zarith\_formula}}}
+\newcommand{\zarith}{\textrm{\textsl{zarith}}}
+\newcommand{\ltac}{\mbox{${\cal L}_{tac}$}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \mbox{\sf } series for roman text in maths formulas %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\alors}{\mbox{\textsf{then}}}
+\newcommand{\alter}{\mbox{\textsf{alter}}}
+\newcommand{\bool}{\mbox{\textsf{bool}}}
+\newcommand{\conc}{\mbox{\textsf{conc}}}
+\newcommand{\cons}{\mbox{\textsf{cons}}}
+\newcommand{\consf}{\mbox{\textsf{consf}}}
+\newcommand{\emptyf}{\mbox{\textsf{emptyf}}}
+\newcommand{\EqSt}{\mbox{\textsf{EqSt}}}
+\newcommand{\false}{\mbox{\textsf{false}}}
+\newcommand{\filter}{\mbox{\textsf{filter}}}
+\newcommand{\forest}{\mbox{\textsf{forest}}}
+\newcommand{\from}{\mbox{\textsf{from}}}
+\newcommand{\hd}{\mbox{\textsf{hd}}}
+\newcommand{\Length}{\mbox{\textsf{Length}}}
+\newcommand{\length}{\mbox{\textsf{length}}}
+\newcommand{\LengthA}{\mbox {\textsf{Length\_A}}}
+\newcommand{\List}{\mbox{\textsf{List}}}
+\newcommand{\ListA}{\mbox{\textsf{List\_A}}}
+\newcommand{\LNil}{\mbox{\textsf{Lnil}}}
+\newcommand{\LCons}{\mbox{\textsf{Lcons}}}
+\newcommand{\nat}{\mbox{\textsf{nat}}}
+\newcommand{\nO}{\mbox{\textsf{O}}}
+\newcommand{\nS}{\mbox{\textsf{S}}}
+\newcommand{\node}{\mbox{\textsf{node}}}
+\newcommand{\Nil}{\mbox{\textsf{nil}}}
+\newcommand{\Prop}{\mbox{\textsf{Prop}}}
+\newcommand{\Set}{\mbox{\textsf{Set}}}
+\newcommand{\si}{\mbox{\textsf{if}}}
+\newcommand{\sinon}{\mbox{\textsf{else}}}
+\newcommand{\Str}{\mbox{\textsf{Stream}}}
+\newcommand{\tl}{\mbox{\textsf{tl}}}
+\newcommand{\tree}{\mbox{\textsf{tree}}}
+\newcommand{\true}{\mbox{\textsf{true}}}
+\newcommand{\Type}{\mbox{\textsf{Type}}}
+\newcommand{\unfold}{\mbox{\textsf{unfold}}}
+\newcommand{\zeros}{\mbox{\textsf{zeros}}}
+
+%%%%%%%%%
+% Misc. %
+%%%%%%%%%
+\newcommand{\T}{\texttt{T}}
+\newcommand{\U}{\texttt{U}}
+\newcommand{\real}{\textsf{Real}}
+\newcommand{\Spec}{\textit{Spec}}
+\newcommand{\Data}{\textit{Data}}
+\newcommand{\In} {{\textbf{in }}}
+\newcommand{\AND} {{\textbf{and}}}
+\newcommand{\If}{{\textbf{if }}}
+\newcommand{\Else}{{\textbf{else }}}
+\newcommand{\Then} {{\textbf{then }}}
+%\newcommand{\Let}{{\textbf{let }}} % looks like this is never used
+\newcommand{\Where}{{\textbf{where rec }}}
+\newcommand{\Function}{{\textbf{function }}}
+\newcommand{\Rec}{{\textbf{rec }}}
+%\newcommand{\cn}{\centering}
+\newcommand{\nth}{\mbox{$^{\mbox{\scriptsize th}}$}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Math commands and symbols %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\la}{\leftarrow}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\Ra}{\Rightarrow}
+\newcommand{\rt}{\Rightarrow}
+\newcommand{\lla}{\longleftarrow}
+\newcommand{\lra}{\longrightarrow}
+\newcommand{\Llra}{\Longleftrightarrow}
+\newcommand{\mt}{\mapsto}
+\newcommand{\ov}{\overrightarrow}
+\newcommand{\wh}{\widehat}
+\newcommand{\up}{\uparrow}
+\newcommand{\dw}{\downarrow}
+\newcommand{\nr}{\nearrow}
+\newcommand{\se}{\searrow}
+\newcommand{\sw}{\swarrow}
+\newcommand{\nw}{\nwarrow}
+\newcommand{\mto}{,}
+
+\newcommand{\vm}[1]{\vspace{#1em}}
+\newcommand{\vx}[1]{\vspace{#1ex}}
+\newcommand{\hm}[1]{\hspace{#1em}}
+\newcommand{\hx}[1]{\hspace{#1ex}}
+\newcommand{\sm}{\mbox{ }}
+\newcommand{\mx}{\mbox}
+
+%\newcommand{\nq}{\neq}
+%\newcommand{\eq}{\equiv}
+\newcommand{\fa}{\forall}
+%\newcommand{\ex}{\exists}
+\newcommand{\impl}{\rightarrow}
+%\newcommand{\Or}{\vee}
+%\newcommand{\And}{\wedge}
+\newcommand{\ms}{\models}
+\newcommand{\bw}{\bigwedge}
+\newcommand{\ts}{\times}
+\newcommand{\cc}{\circ}
+%\newcommand{\es}{\emptyset}
+%\newcommand{\bs}{\backslash}
+\newcommand{\vd}{\vdash}
+%\newcommand{\lan}{{\langle }}
+%\newcommand{\ran}{{\rangle }}
+
+%\newcommand{\al}{\alpha}
+\newcommand{\bt}{\beta}
+%\newcommand{\io}{\iota}
+\newcommand{\lb}{\lambda}
+%\newcommand{\sg}{\sigma}
+%\newcommand{\sa}{\Sigma}
+%\newcommand{\om}{\Omega}
+%\newcommand{\tu}{\tau}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Custom maths commands %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\sumbool}[2]{\{#1\}+\{#2\}}
+\newcommand{\myifthenelse}[3]{\kw{if} ~ #1 ~\kw{then} ~ #2 ~ \kw{else} ~ #3}
+\newcommand{\fun}[2]{\item[]{\tt {#1}}. \quad\\ #2}
+\newcommand{\WF}[2]{\ensuremath{{\cal W\!F}(#1)[#2]}}
+\newcommand{\WFE}[1]{\WF{E}{#1}}
+\newcommand{\WT}[4]{\ensuremath{#1[#2] \vdash #3 : #4}}
+\newcommand{\WTE}[3]{\WT{E}{#1}{#2}{#3}}
+\newcommand{\WTEG}[2]{\WTE{\Gamma}{#1}{#2}}
+
+\newcommand{\WTM}[3]{\WT{#1}{}{#2}{#3}}
+\newcommand{\WFT}[2]{\ensuremath{#1[] \vdash {\cal W\!F}(#2)}}
+\newcommand{\WS}[3]{\ensuremath{#1[] \vdash #2 <: #3}}
+\newcommand{\WSE}[2]{\WS{E}{#1}{#2}}
+
+\newcommand{\WTRED}[5]{\mbox{$#1[#2] \vdash #3 #4 #5$}}
+\newcommand{\WTERED}[4]{\mbox{$E[#1] \vdash #2 #3 #4$}}
+\newcommand{\WTELECONV}[3]{\WTERED{#1}{#2}{\leconvert}{#3}}
+\newcommand{\WTEGRED}[3]{\WTERED{\Gamma}{#1}{#2}{#3}}
+\newcommand{\WTECONV}[3]{\WTERED{#1}{#2}{\convert}{#3}}
+\newcommand{\WTEGCONV}[2]{\WTERED{\Gamma}{#1}{\convert}{#2}}
+\newcommand{\WTEGLECONV}[2]{\WTERED{\Gamma}{#1}{\leconvert}{#2}}
+
+\newcommand{\lab}[1]{\mathit{labels}(#1)}
+\newcommand{\dom}[1]{\mathit{dom}(#1)}
+
+\newcommand{\CI}[2]{\mbox{$\{#1\}^{#2}$}}
+\newcommand{\CIP}[3]{\mbox{$\{#1\}_{#2}^{#3}$}}
+\newcommand{\CIPV}[1]{\CIP{#1}{I_1.. I_k}{P_1.. P_k}}
+\newcommand{\CIPI}[1]{\CIP{#1}{I}{P}}
+\newcommand{\CIF}[1]{\mbox{$\{#1\}_{f_1.. f_n}$}}
+%BEGIN LATEX
+\newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(\begin{array}[t]{@{}l}#2:=#3
+                                              \,)\end{array}$}}
+\newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](\begin{array}[t]{@{}l@{}}#3:=#4
+                                                 \,)\end{array}$}}
+%END LATEX
+%HEVEA \newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(#2:=#3\,)$}}
+%HEVEA \newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](#3:=#4\,)$}}
+
+\newcommand{\Indp}[5]{\mbox{{\sf Ind}$_{#5}(#1)[#2](\begin{array}[t]{@{}l}#3:=#4
+                                                 \,)\end{array}$}}
+\newcommand{\Def}[4]{\mbox{{\sf Def}$(#1)(#2:=#3:#4)$}}
+\newcommand{\Assum}[3]{\mbox{{\sf Assum}$(#1)(#2:#3)$}}
+\newcommand{\Match}[3]{\mbox{$<\!#1\!>\!{\mbox{\tt Match}}~#2~{\mbox{\tt with}}~#3~{\mbox{\tt end}}$}}
+\newcommand{\Case}[3]{\mbox{$\kw{case}(#2,#1,#3)$}}
+\newcommand{\match}[3]{\mbox{$\kw{match}~ #2 ~\kw{with}~ #3 ~\kw{end}$}}
+\newcommand{\Fix}[2]{\mbox{\tt Fix}~#1\{#2\}}
+\newcommand{\CoFix}[2]{\mbox{\tt CoFix}~#1\{#2\}}
+\newcommand{\With}[2]{\mbox{\tt ~with~}}
+\newcommand{\subst}[3]{#1\{#2/#3\}}
+\newcommand{\substs}[4]{#1\{(#2/#3)_{#4}\}}
+\newcommand{\Sort}{\mbox{$\cal S$}}
+\newcommand{\convert}{=_{\beta\delta\iota\zeta}}
+\newcommand{\leconvert}{\leq_{\beta\delta\iota\zeta}}
+\newcommand{\NN}{\mathbb{N}}
+\newcommand{\inference}[1]{$${#1}$$}
+
+\newcommand{\compat}[2]{\mbox{$[#1|#2]$}}
+\newcommand{\tristackrel}[3]{\mathrel{\mathop{#2}\limits_{#3}^{#1}}}
+
+\newcommand{\Impl}{{\it Impl}}
+\newcommand{\Mod}[3]{{\sf Mod}({#1}:{#2}:={#3})}
+\newcommand{\ModType}[2]{{\sf ModType}({#1}:={#2})}
+\newcommand{\ModS}[2]{{\sf ModS}({#1}:{#2})}
+\newcommand{\ModSEq}[3]{{\sf ModSEq}({#1}:{#2}=={#3})}
+\newcommand{\functor}[3]{\ensuremath{{\sf Functor}(#1:#2)\;#3}}
+\newcommand{\funsig}[3]{\ensuremath{{\sf Funsig}(#1:#2)\;#3}}
+\newcommand{\sig}[1]{\ensuremath{{\sf Sig}~#1~{\sf End}}}
+\newcommand{\struct}[1]{\ensuremath{{\sf Struct}~#1~{\sf End}}}
+
+
+%\newbox\tempa
+%\newbox\tempb
+%\newdimen\tempc
+%\newcommand{\mud}[1]{\hfil $\displaystyle{\mathstrut #1}$\hfil}
+%\newcommand{\rig}[1]{\hfil $\displaystyle{#1}$}
+% \newcommand{\irulehelp}[3]{\setbox\tempa=\hbox{$\displaystyle{\mathstrut #2}$}%
+%                         \setbox\tempb=\vbox{\halign{##\cr
+%         \mud{#1}\cr
+%         \noalign{\vskip\the\lineskip}
+%         \noalign{\hrule height 0pt}
+%         \rig{\vbox to 0pt{\vss\hbox to 0pt{${\; #3}$\hss}\vss}}\cr
+%         \noalign{\hrule}
+%         \noalign{\vskip\the\lineskip}
+%         \mud{\copy\tempa}\cr}}
+%                       \tempc=\wd\tempb
+%                       \advance\tempc by \wd\tempa
+%                       \divide\tempc by 2 }
+% \newcommand{\irule}[3]{{\irulehelp{#1}{#2}{#3}
+%                      \hbox to \wd\tempa{\hss \box\tempb \hss}}}
+
+\newcommand{\sverb}[1]{{\tt #1}}
+\newcommand{\mover}[2]{{#1\over #2}}
+\newcommand{\jd}[2]{#1 \vdash #2}
+\newcommand{\mathline}[1]{\[#1\]}
+\newcommand{\zrule}[2]{#2: #1}
+\newcommand{\orule}[3]{#3: {\mover{#1}{#2}}}
+\newcommand{\trule}[4]{#4: \mover{#1  \qquad #2} {#3}}
+\newcommand{\thrule}[5]{#5: {\mover{#1  \qquad #2 \qquad #3}{#4}}}
+
+
+
+% placement of figures
+
+%BEGIN LATEX
+\renewcommand{\topfraction}{.99}
+\renewcommand{\bottomfraction}{.99}
+\renewcommand{\textfraction}{.01}
+\renewcommand{\floatpagefraction}{.9}
+%END LATEX
+
+% Macros Bruno pour description de la syntaxe
+
+\def\bfbar{\ensuremath{|\hskip -0.22em{}|\hskip -0.24em{}|}}
+\def\TERMbar{\bfbar}
+\def\TERMbarbar{\bfbar\bfbar}
+
+
+%% Macros pour les grammaires
+\def\GR#1{\text{\large(}#1\text{\large)}}
+\def\NT#1{\langle\textit{#1}\rangle}
+\def\NTL#1#2{\langle\textit{#1}\rangle_{#2}}
+\def\TERM#1{{\bf\textrm{\bf #1}}}
+%\def\TERM#1{{\bf\textsf{#1}}}
+\def\KWD#1{\TERM{#1}}
+\def\ETERM#1{\TERM{#1}}
+\def\CHAR#1{\TERM{#1}}
+
+\def\STAR#1{#1*}
+\def\STARGR#1{\GR{#1}*}
+\def\PLUS#1{#1+}
+\def\PLUSGR#1{\GR{#1}+}
+\def\OPT#1{#1?}
+\def\OPTGR#1{\GR{#1}?}
+%% Tableaux de definition de non-terminaux
+\newenvironment{cadre}
+        {\begin{array}{|c|}\hline\\}
+        {\\\\\hline\end{array}}
+\newenvironment{rulebox}
+        {$$\begin{cadre}\begin{array}{r@{~}c@{~}l@{}l@{}r}}
+        {\end{array}\end{cadre}$$}
+\def\DEFNT#1{\NT{#1} & ::= &}
+\def\EXTNT#1{\NT{#1} & ::= & ... \\&|&}
+\def\RNAME#1{(\textsc{#1})}
+\def\SEPDEF{\\\\}
+\def\nlsep{\\&|&}
+\def\nlcont{\\&&}
+\newenvironment{rules}
+        {\begin{center}\begin{rulebox}}
+        {\end{rulebox}\end{center}}
+
+% $Id$ 
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

@@ -1,0 +1,55 @@
+\section{Arith}\label{Arith}
+
+The {\tt Arith} library deals with various arithmetical notions and 
+their properties.
+
+\subsection*{Standard {\tt Arith} library}
+
+The following files are automatically loaded by {\tt Require Arith}.
+
+\begin{itemize}
+
+\item {\tt Le.v} states and proves properties of the large order {\tt le}.
+
+\item {\tt Lt.v} states and proves properties of the strict order {\tt 
+lt} (especially, the relationship with {\tt le}).
+
+\item {\tt Plus.v} states and proves properties on the addition.
+
+\item {\tt Gt.v} states and proves properties on the strict order {\tt gt}.
+
+\item {\tt Minus.v} defines the difference on 
+{\tt nat} and proves properties of it. On {\tt nat}, {\tt (minus n p)} is 
+{\tt O} if {\tt n} $<$ {\tt p}.
+
+\item {\tt Mult.v} states and proves properties on the multiplication.
+
+\item {\tt Between.v} defines modalities on {\tt nat} and proves properties 
+of them.
+
+\end{itemize}
+
+\subsection*{Additional {\tt Arith} library}
+
+\begin{itemize}
+
+\item {\tt Compare.v}, {\tt Compare\_dec.v} and {\tt Peano\_dec.v} state
+and prove various decidability results on {\tt nat}.
+
+\item {\tt Wf\_nat.v} states and proves various induction and recursion 
+principles on {\tt nat}. Especially, recursion for objects measurable by 
+a natural number and recursion on {\tt nat * nat} are provided.
+
+\item {\tt Min.v} defines the minimum of two natural numbers and proves 
+properties of it. 
+
+\item {\tt Eqnat.v} defines a specific equality on {\tt nat} and shows 
+the equivalence with Leibniz' equality.
+
+\item {\tt Euclid.v} proves that the euclidean
+division specification is realisable. Conversely, {\tt Div.v} exhibits
+two different algorithms and semi-automatically reconstruct the proof of
+their correctness. These files emphasize the extraction of program vs
+reconstruction of proofs paradigm.
+
+\end{itemize}

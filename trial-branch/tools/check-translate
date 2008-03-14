@@ -1,0 +1,23 @@
+#!/bin/sh
+
+echo -------------- Producing translated files ---------------------
+rm */*/*.v8 >& /dev/null
+make COQ_XML=-translate theories || { echo ---- Failed to translate; exit 1; }
+if [ -e translated ]; then rm -r translated; fi
+if [ -e successful-translation ]; then rm -r successful-translation; fi
+if [ -e failed-translation ]; then rm -r failed-translation; fi
+mv theories translated
+mkdir theories
+echo -------------------- Upgrading files --------------------------
+cd translated
+for i in */*.v
+do
+  mkdir ../theories/`dirname $i` >& /dev/null
+  mv "$i"8 ../theories/$i
+done
+cd ..
+echo --------------- Recompiling translated files ------------------
+make theories || { echo ---- Failed to recompile; mv theories failed-translation; mv translated theories; exit 1; }
+echo ----------------- Recompilation successful --------------------
+if [ -e successful-translation ]; then rm -r successful-translation; fi
+mv theories successful-translation; mv translated theories

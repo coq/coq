@@ -1,0 +1,40 @@
+load_printer "gramlib.cma"
+load_printer "printers.cma"
+
+install_printer Top_printers.ppid
+install_printer Top_printers.ppidset
+install_printer Top_printers.pplab
+install_printer Top_printers.ppmsid
+install_printer Top_printers.ppmbid
+install_printer Top_printers.ppdir
+install_printer Top_printers.ppmp
+install_printer Top_printers.ppkn
+install_printer Top_printers.ppcon
+install_printer Top_printers.ppsp
+install_printer Top_printers.ppqualid
+install_printer Top_printers.ppbigint
+
+install_printer Top_printers.pppattern
+install_printer Top_printers.pprawconstr
+
+install_printer Top_printers.ppconstr
+install_printer Top_printers.ppuni
+install_printer Top_printers.ppuniverses
+install_printer Top_printers.pptype
+install_printer Top_printers.ppj
+install_printer Top_printers.ppenv
+
+install_printer Top_printers.ppgoal
+install_printer Top_printers.ppsigmagoal
+install_printer Top_printers.pproof
+install_printer Top_printers.ppmetas
+install_printer Top_printers.ppevd
+install_printer Top_printers.ppevm
+install_printer Top_printers.ppclenv
+
+install_printer Top_printers.pptac
+install_printer Top_printers.ppobj
+install_printer Top_printers.pploc
+install_printer Top_printers.prsubst
+                                                  
+

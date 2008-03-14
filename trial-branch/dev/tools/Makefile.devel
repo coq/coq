@@ -1,0 +1,74 @@
+# to be linked to makefile (lowercase - takes precedence over Makefile)
+# in main directory
+# make devel in main directory should do this for you.
+
+TOPDIR=.
+BASEDIR=
+
+SOURCEDIRS=lib kernel library pretyping parsing proofs tactics toplevel
+
+default:	usage noargument
+
+usage::
+	@echo Usage: make \<target\>
+	@echo Targets are:
+
+usage::
+	@echo "  setup-devel	-- set the devel makefile"
+setup-devel:
+	@ln -sfv dev/tools/Makefile.devel makefile
+	@(for i in $(SOURCEDIRS); do \
+	    (cd $(TOPDIR)/$$i; ln -sfv ../dev/tools/Makefile.dir Makefile) \
+	done)
+
+
+usage::
+	@echo "  clean-devel	-- clear all devel files"
+clean-devel:
+	echo rm -f makefile .depend.devel
+	echo rm -f $(foreach dir,$(SOURCEDIRS), $(TOPDIR)/$(dir)/Makefile)
+
+
+usage::
+	@echo "  coqtop	-- make until the bytecode executable, make the link"
+coqtop:	bin/coqtop.byte
+	ln -sf bin/coqtop.byte coqtop
+
+
+usage::
+	@echo "  quick		-- make bytecode executable and states"
+quick: 
+	$(MAKE) states BEST=byte
+
+include Makefile
+
+include $(TOPDIR)/dev/tools/Makefile.common
+
+# this file is better described in dev/tools/Makefile.dir
+include .depend.devel
+
+#if dev/tools/Makefile.local exists, it is included
+ifneq ($(wildcard $(TOPDIR)/dev/tools/Makefile.local),)
+include $(TOPDIR)/dev/tools/Makefile.local
+endif
+
+
+usage::
+	@echo "  total		-- runs coqtop with all theories required"
+total:
+	ledit ./bin/coqtop.byte $(foreach th,$(THEORIESVO),-require $(notdir $(basename $(th))))
+
+
+usage::
+	@echo "  run		-- makes and runs bytecode coqtop using ledit and the history file"
+	@echo "		   if you want to pass arguments to coqtop, use make run ARG=<args>"
+run:	$(TOPDIR)/coqtop
+	ledit -h $(TOPDIR)/dev/debug_history -x $(TOPDIR)/coqtop $(ARG) $(ARGS)
+
+
+usage::
+	@echo "  vars		-- echos commands to set COQTOP and COQBIN variables"
+vars:
+	@(cd $(TOPDIR); \
+	echo export COQTOP=`pwd`/ ; \
+	echo export COQBIN=`pwd`/bin/ )

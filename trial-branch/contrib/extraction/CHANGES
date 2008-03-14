@@ -1,0 +1,409 @@
+7.4 -> 8.0
+
+No revolution this time. Mostly "behind-the-scene" clean-up and bug-fixes, 
+but also a few steps toward a more user-friendly extraction:
+
+* syntax of extraction: 
+- The old   (Recursive) Extraction Module M.
+  is now    (Recursive) Extraction Library M.
+  The old name was misleading since this command only works with M being a 
+  library M.v, and not a module produced by interactive command Module M. 
+- The other commands 
+    Extraction foo.
+    Recursive Extraction foo bar.
+    Extraction "myfile.ml" foo bar. 
+  now accept that foo can be a module name instead of just a constant name. 
+
+* Support of type scheme axioms (i.e. axiom whose type is an arity 
+  (x1:X1)...(xn:Xn)s with s a sort). For example: 
+
+   Axiom myprod : Set -> Set -> Set.
+   Extract Constant myprod "'a" "'b" => "'a * 'b". 
+   Recursive Extraction myprod. 
+   -------> type ('a,'b) myprod = 'a * 'b		
+
+* More flexible support of axioms. When an axiom isn't realized via Extract 
+  Constant before extraction, a warning is produced (instead of an error), 
+  and the extracted code must be completed later by hand. To find what
+  needs to be completed, search for the following string: AXIOM TO BE REALIZED
+
+* Cosmetics: When extraction produces a file, it tells it. 
+
+* (Experimental) It is allowed to extract under a opened interactive module
+  (but still outside sections). Feature to be used with caution. 
+
+* A problem has been identified concerning .v files used as normal interactive 
+  modules, like in 
+    
+    <file A.v>
+    Definition foo :=O.
+    <End file A.v>
+
+    <at toplevel>
+    Require A.
+    Module M:=A
+    Extraction M.
+
+  I might try to support that in the future. In the meanwhile, the
+  current behaviour of extraction is to forbid this.
+
+* bug fixes: 
+- many concerning Records. 
+- a Stack Overflow with mutual inductive (PR#320)
+- some optimizations have been removed since they were not type-safe:
+  For example if e has type:  type 'x a = A
+  Then:       match e with A -> A     -----X---->    e
+  To be investigated further.
+
+
+7.3 -> 7.4
+
+* The two main new features: 
+  - Automatic generation of Obj.magic when the extracted code 
+  in Ocaml is not directly typable.
+  - An experimental extraction of Coq's new modules to Ocaml modules. 
+
+* Concerning those Obj.magic: 
+  - The extraction now computes the expected type of any terms. Then 
+  it compares it with the actual type of the produced code. And when 
+  a mismatch is found, a Obj.magic is inserted. 
+  
+  - As a rule, any extracted development that was compiling out of the box 
+  should not contain any Obj.magic. At the other hand, generation of 
+  Obj.magic is not optimized yet: there might be several of them at a place 
+  were one would have been enough. 
+  
+  - Examples of code needing those Obj.magic: 
+     * contrib/extraction/test_extraction.v in the Coq source
+     * in the users' contributions: 
+	Lannion
+	Lyon/CIRCUITS
+        Rocq/HIGMAN
+ 
+  - As a side-effect of this Obj.magic feature, we now print the types 
+  of the extracted terms, both in .ml files as commented documentation 
+  and in interfaces .mli files
+
+  - This feature hasn't been ported yet to Haskell. We are aware of 
+  some unsafe casting functions like "unsafeCoerce" on some Haskell implems.
+  So it will eventually be done.
+
+* Concerning the extraction of Coq's new modules: 
+  - Taking in account the new Coq's modules system has implied a *huge*
+  rewrite of most of the extraction code.
+
+  - The extraction core (translation from Coq to an abstract mini-ML) 
+  is now complete and fairly stable, and supports modules, modules type 
+  and functors and all that stuff.
+
+  - The ocaml pretty-print part, especially the renaming issue, is 
+  clearly weaker, and certainly still contains bugs. 
+
+  - Nothing done for translating these Coq Modules to Haskell.
+
+  - A temporary drawback of this module extraction implementation is that 
+  efficiency (especially extraction speed) has been somehow neglected.
+  To improve ...
+
+  - As an interesting side-effect, definitions are now printed according to 
+  the user's original order. No more of this "dependency-correct but weird"
+  order. In particular realized axioms via Extract Constant are now at their 
+  right place, and not at the beginning. 
+
+* Other news: 
+  
+  - Records are now printed using the Ocaml record syntax
+ 
+  - Syntax output toward Scheme. Quite funny, but quite experimental and 
+  not documented. I recommend using the bigloo compiler since it contains 
+  natively some pattern matching.
+
+  - the dummy constant "__" have changed. see README
+
+  - a few bug-fixes (#191 and others)
+
+7.2 -> 7.3
+
+* Improved documentation in the Reference Manual.
+
+* Theoretical bad news: 
+- a naughty example (see the end of test_extraction.v)
+forced me to stop eliminating lambdas and arguments corresponding to 
+so-called "arity" in the general case. 
+
+- The dummy constant used in extraction ( let prop = () in ocaml ) 
+may in some cases be applied to arguments. This problem is dealt by 
+generating sufficient abstraction before the (). 
+
+
+* Theoretical good news: 
+- there is now a mechanism that remove useless prop/arity lambdas at the 
+top of function declarations. If your function had signature 
+nat -> prop -> nat in the previous extraction, it will now be nat -> nat. 
+So the extractions of common terms should look very much like the old 
+V6.2 one, except in some particular cases (functions as parameters, partial 
+applications, etc). In particular the bad news above have nearly no 
+impact...
+
+
+* By the way there is no more "let prop = ()" in ocaml. Those () are
+directly inlined. And in Haskell the dummy constant is now __ (two
+underscore) and is defined by 
+__ = Prelude.error "Logical or arity value used"
+This dummy constant should never be evaluated when computing an
+informative value, thanks to the lazy strategy. Hence the error message. 
+
+
+* Syntax changes, see Documentation for details: 
+
+Extraction Language Ocaml.
+Extraction Language Haskell. 
+Extraction Language Toplevel.
+
+That fixes the target language of extraction. Default is Ocaml, even in the 
+coq toplevel: you can now do copy-paste from the coq toplevel without 
+renaming problems. Toplevel language is the ocaml pseudo-language used 
+previously used inside the coq toplevel: coq names are printed with the coq 
+way, i.e. with no renaming. 
+
+So there is no more particular commands for Haskell, like 
+Haskell Extraction "file" id. Just set your favourite language and go... 
+
+
+* Haskell extraction has been tested at last (and corrected...). 
+See specificities in Documentation. 
+
+
+* Extraction of CoInductive in Ocaml language is now correct: it uses the 
+Lazy.force and lazy features of Ocaml. 
+
+
+* Modular extraction in Ocaml is now far more readable: 
+instead of qualifying everywhere (A.foo), there are now some "open" at the 
+beginning of files. Possible clashes are dealt with. 
+
+
+* By default, any recursive function associated with an inductive type 
+(foo_rec and foo_rect when foo is inductive type) will now be inlined 
+in extracted code. 
+
+
+* A few constants are explicitely declared to be inlined in extracted code. 
+For the moment there are: 
+	Wf.Acc_rec
+	Wf.Acc_rect
+	Wf.well_founded_induction
+	Wf.well_founded_induction_type
+Those constants does not match the auto-inlining criterion based on strictness.
+Of course, you can still overide this behaviour via some Extraction NoInline. 
+
+* There is now a web page showing the extraction of all standard theories: 
+http://www.lri.fr/~letouzey/extraction
+
+
+7.1 -> 7.2 :
+
+* Syntax changes, see Documentation for more details: 
+
+Set/Unset Extraction Optimize. 
+
+Default is Set. This control all optimizations made on the ML terms 
+(mostly reduction of dummy beta/iota redexes, but also simplications on 
+Cases, etc). Put this option to Unset if you what a ML term as close as 
+possible to the Coq term.
+
+Set/Unset Extraction AutoInline. 
+
+Default in Set, so by default, the extraction mechanism feels free to 
+inline the bodies of some defined constants, according to some heuristics 
+like size of bodies, useness of some arguments, etc. Those heuristics are 
+not always perfect, you may want to disable this feature, do it by Unset. 
+
+Extraction Inline toto foo. 
+Extraction NoInline titi faa bor. 
+
+In addition to the automatic inline feature, you can now tell precisely to 
+inline some more constants by the Extraction Inline command. Conversely, 
+you can forbid the inlining of some specific constants by automatic inlining. 
+Those two commands enable a precise control of what is inlined and what is not. 
+
+Print Extraction Inline. 
+
+Sum up the current state of the table recording the custom inlings 
+(Extraction (No)Inline). 
+
+Reset Extraction Inline. 
+
+Put the table recording the custom inlings back to empty. 
+
+As a consequence, there is no more need for options inside the commands of 
+extraction: 
+
+Extraction foo. 
+Recursive Extraction foo bar. 
+Extraction "file" foo bar. 
+Extraction Module Mymodule. 
+Recursive Extraction Module Mymodule. 
+
+New: The last syntax extracts the module Mymodule and all the modules 
+it depends on. 
+
+You can also try the Haskell versions (not tested yet): 
+
+Haskell Extraction foo.
+Haskell Recursive Extraction foo bar.
+Haskell Extraction "file" foo bar.
+Haskell Extraction Module Mymodule.
+Haskell Recursive Extraction Module Mymodule.
+
+And there's still the realization syntax: 
+
+Extract Constant coq_bla => "caml_bla".
+Extract Inlined Constant coq_bla => "caml_bla".
+Extract Inductive myinductive => mycamlind [my_caml_constr1 ... ].
+
+Note that now, the Extract Inlined Constant command is sugar for an Extract 
+Constant followed by a Extraction Inline. So be careful with 
+Reset Extraction Inline. 
+
+ 
+
+* Lot of works around optimization of produced code. Should make code more 
+readable. 
+
+- fixpoint definitions : there should be no more stupid printings like 
+
+let foo x = 
+  let rec f x = 
+    .... (f y) ....
+  in f x
+
+but rather 
+
+let rec foo x = 
+  .... (foo y) .... 
+
+- generalized iota (in particular iota and permutation cases/cases):
+
+A generalized iota redex is a "Cases e of ...." where e is ok. 
+And the recursive predicate "ok" is given by:  
+e is ok if e is a Constructor or a Cases where all branches are ok.
+In the case of generalized iota redex, it might be good idea to reduce it, 
+so we do it. 
+Example: 
+
+match (match t with 
+         O -> Left
+       | S n -> match n with 
+                  O -> Right 
+                | S m -> Left) with 
+ Left -> blabla 
+| Right -> bloblo
+
+After simplification, that gives: 
+
+match t with 
+  O -> blabla
+| S n -> match n with 
+          O -> bloblo
+        | S n -> blabla
+
+As shown on the example, code duplication can occur. In practice 
+it seems not to happen frequently. 
+
+- "constant" case:
+In V7.1 we used to simplify cases where all branches are the same. 
+In V7.2 we can simplify in addition terms like 
+	cases e of 
+	  C1 x y -> f (C x y)
+	| C2 z -> f (C2 z) 
+If x y z don't occur in f, we can produce (f e). 
+
+- permutation cases/fun: 
+extracted code has frequenty functions in branches of cases: 
+
+let foo x = match x with 
+   O -> fun _ -> .... 
+ | S y -> fun _ -> .... 
+
+the optimization consist in lifting the common "fun _ ->", and that gives
+ 
+let foo x _ = match x with 
+   O -> .....
+ | S y -> ....
+ 
+
+* Some bug corrections (many thanks in particular to Michel Levy). 
+
+* Testing in coq contributions: 
+If you are interested in extraction, you can look at the extraction tests 
+I'have put in the following coq contributions 
+
+Bordeaux/Additions			computation of fibonacci(2000)
+Bordeaux/EXCEPTIONS			multiplication using exception.
+Bordeaux/SearchTrees			list -> binary tree. maximum.
+Dyade/BDDS				boolean tautology checker.
+Lyon/CIRCUITS				multiplication via a modelization of a circuit.
+Lyon/FIRING-SQUAD			print the states of the firing squad.
+Marseille/CIRCUITS			compares integers via a modelization of a circuit. 
+Nancy/FOUnify				unification of two first-orderde deux termes.
+Rocq/ARITH/Chinese			computation of the chinese remaindering.  
+Rocq/COC				small coc typechecker. (test by B. Barras, not by me)
+Rocq/HIGMAN				run the proof on one example. 
+Rocq/GRAPHS				linear constraints checker in Z. 
+Sophia-Antipolis/Stalmarck		boolean tautology checker.
+Suresnes/BDD				boolean tautology checker.
+
+Just do "make" in those contributions, the extraction test is integrated. 
+More tests will follow on more contributions.
+
+
+
+7.0 -> 7.1 : mostly bug corrections. No theoretical problems dealed with.
+
+* The semantics of Extract Constant changed: If you provide a extraction 
+for p by Extract Constant p => "0", your generated ML file will begin by 
+a let p = 0. The old semantics, which was to replace p everywhere by the
+provided terms, is still available via the Extract Inlined Constant p => 
+"0" syntax.
+
+
+* There are more optimizations applied to the generated code: 
+- identity cases: match e with P x y -> P x y | Q z -> Q z | ...
+is simplified into e. Especially interesting with the sumbool terms: 
+there will be no more match ... with Left -> Left | Right -> Right
+
+- constant cases: match e with P x y -> c | Q z -> c | ...
+is simplified into c as soon as x, y, z do not occur in c.
+So no more match ... with Left -> Left | Right -> Left.
+  
+
+* the extraction at Toplevel (Extraction foo and Recursive Extraction foo),
+which was only a development tool at the beginning, is now closer to 
+the real extraction to a file. In particular optimizations are done, 
+and constants like recursors ( ..._rec ) are expanded. 
+
+
+* the singleton optimization is now protected against circular type.
+( Remind : this optimization is the one that simplify 
+type 'a sig = Exists of 'a  into type 'a sig = 'a and 
+match e with (Exists c) -> d into let c = e in d ) 
+
+
+* Fixed one bug concerning casted code
+
+
+* The inductives generated should now have always correct type-var list 
+('a,'b,'c...)
+
+
+* Code cleanup until three days before release. Messing-up code 
+in the last three days before release.
+
+
+
+
+
+
+
+6.x -> 7.0 : Everything changed. See README

@@ -1,0 +1,37 @@
+% COQ style option, for use with the coq-latex filter.
+
+\typeout{Document Style option `coq-sl' <7 Apr 92>.}
+
+\ifcase\@ptsize
+    \font\sltt = cmsltt10
+\or \font\sltt = cmsltt10 \@halfmag
+\or \font\sltt = cmsltt10 \@magscale1
+\fi
+
+{\catcode`\^^M=\active %
+ \gdef\@coqinputline#1^^M{\tt Coq < #1\par} %
+ \gdef\@coqoutputline#1^^M{\sltt#1\par} } %
+\def\@coqblankline{\medskip}
+\chardef\@coqbackslash="5C
+
+\def\coq{
+  \bgroup
+  \flushleft
+  \parindent 0pt
+  \parskip 0pt
+  \let\do\@makeother\dospecials
+  \catcode`\^^M=\active
+  \catcode`\\=0
+  \catcode`\ \active
+  \frenchspacing
+  \@vobeyspaces
+  \let\?\@coqinputline
+  \let\:\@coqoutputline
+  \let\;\@coqblankline
+  \let\\\@coqbackslash
+}
+
+\def\endcoq{
+  \endflushleft
+  \egroup\noindent
+}

@@ -1,0 +1,73 @@
+			CoqIde FAQ
+
+Q0) What is CoqIde?
+R0: A powerfull graphical interface for Coq. See http://coq.inria.fr. for more informations.
+
+Q1) How to enable Emacs keybindings?
+R1: Insert 
+	gtk-key-theme-name = "Emacs"
+    in your ".coqide-gtk2rc" file. It may be in the current dir
+    or in $HOME dir. This is done by default.
+
+Q2) How to enable antialiased fonts?
+R2) Set the GDK_USE_XFT variable to 1. This is by default with Gtk >= 2.2.
+    If some of your fonts are not available, set GDK_USE_XFT to 0.
+
+Q4) How to use those Forall and Exists pretty symbols?
+R4) Thanks to the Notation features in Coq, you just need to insert these
+	lines in your Coq Buffer :
+======================================================================
+Notation "∀ x : t, P" := (forall x:t, P) (at level 200, x ident).
+Notation "∃ x : t, P" := (exists x:t, P) (at level 200, x ident).
+======================================================================
+Copy/Paste of these lines from this file will not work outside of CoqIde.
+You need to load a file containing these lines or to enter the "∀" 
+using an input method (see Q5). To try it just use "Require utf8" from inside
+CoqIde. 
+To enable these notations automatically start coqide with
+	coqide -l utf8
+In the ide subdir of Coq library, you will find a sample utf8.v with some 
+pretty simple notations.
+
+Q5) How to define an input method for non ASCII symbols?
+R5)-First solution : type "<CONTROL><SHIFT>2200" to enter a forall in the script widow. 
+	2200 is the hexadecimal code for forall in unicode charts and is encoded as "∀"	
+	in UTF-8.
+	2203 is for exists. See http://www.unicode.org for more codes.
+-Second solution : rebind "<AltGr>a" to forall and "<AltGr>e" to exists. 
+	Under X11, you need to use something like
+		xmodmap -e "keycode  24 = a A F13 F13" 
+		xmodmap -e "keycode  26 = e E F14 F14" 
+	and then to add   
+		bind "F13" {"insert-at-cursor" ("∀")}
+		bind "F14" {"insert-at-cursor" ("∃")}
+	to your "binding "text"" section in .coqiderc-gtk2rc.
+	The strange ("∀") argument is the UTF-8 encoding for
+	0x2200. 
+	You can compute these encodings using the lablgtk2 toplevel with 
+		Glib.Utf8.from_unichar 0x2200;;
+	Further symbols can be bound on higher Fxx keys or on even on other keys you
+	do not need .
+
+Q6) How to build a custom CoqIde with user ml code?
+R6) Use 
+	coqmktop -ide -byte m1.cmo...mi.cmo
+    or 
+	coqmktop -ide -opt m1.cmx...mi.cmx
+
+Q7) How to customize the shortcuts for menus?
+R7) Two solutions are offered:
+  - Edit $HOME/.coqide.keys by hand or
+  - Add "gtk-can-change-accels = 1" in your .coqide-gtk2rc file. Then
+    from CoqIde, you may select a menu entry and press the desired 
+    shortcut. 
+
+Q8) What encoding should I use? What is this \x{iiii} in my file?
+R8) The encoding option is related to the way files are saved. 
+ Keep it as UTF-8 until it becomes important for you to exchange files 
+ with non UTF-8 aware applications.
+ If you choose something else than UTF-8, then missing characters will 
+ be encoded by \x{....} or \x{........} where each dot is an hex. digit. 
+ The number between braces is the hexadecimal UNICODE index for the
+  missing character.
+    

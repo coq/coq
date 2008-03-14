@@ -1,0 +1,49 @@
+This directory contains informations and tools to help developing the
+                             Coq system
+                       ======================
+
+
+Debugging and profiling (in current directory - see doc/debugging.txt)
+-----------------------
+
+ocamldebug-coq: to launch ocaml debugger
+
+db:      to install pretty-printers from ocaml debugger
+base_db: to install raw pretty-printers from ocaml debugger
+
+include:      to install pretty-printers from ocaml toplevel
+base_include: to install raw pretty-printers from ocaml toplevel
+
+vm_printers.ml, dev_printers.ml: ML pretty-printers for debugging
+
+
+Miscellaneous informations about the code (directory doc)
+-----------------------------------------
+
+changes.txt:   (partial) per-version summary of the evolutions of Coq ML source
+style.txt:     a few style recommendations for writing Coq ML files
+debugging.txt: help for debugging or profiling
+universes.txt: help to debug universes
+translate.txt: help to use coq translator
+extensions.txt: some help about TACTIC EXTEND
+
+header:        standard header for Coq ML files
+perf-analysis: analysis of perfs measured on the compilation of user contribs
+cic.dtd:       official dtd of the calc. of ind. constr. for im/ex-portation
+
+
+Documentation of ML interfaces using tex (directory ocamlweb-doc)
+----------------------------------------
+
+go in directory and call "make"
+
+
+Other development tools (directory tools)
+-----------------------
+
+univdot: produces a graph of CIC universes
+Makefile.dir: makefile dedicated to intensive work in a given directory
+Makefile.subdir: makefile dedicated to intensive work in a given subdirectory
+Makefile.devel: utilities to automatically launch coq in various states
+Makefile.common: used by other Makefiles
+objects.el: various development utilities at emacs level

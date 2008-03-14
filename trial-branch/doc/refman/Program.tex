@@ -1,0 +1,267 @@
+\def\Program{\textsc{Program}}
+\def\Russell{\textsc{Russell}}
+\def\PVS{\textsc{PVS}}
+
+\achapter{\Program{}}
+\label{Program}
+\aauthor{Matthieu Sozeau}
+\index{Program}
+
+\begin{flushleft}
+  \em The status of \Program\ is experimental.
+\end{flushleft}
+
+We present here the new \Program\ tactic commands, used to build certified
+\Coq\ programs, elaborating them from their algorithmic skeleton and a
+rich specification \cite{Sozeau06}. It can be sought of as a dual of extraction
+(see Chapter~\ref{Extraction}). The goal of \Program~is to program as in a regular
+functional programming language whilst using as rich a specification as 
+desired and proving that the code meets the specification using the whole \Coq{} proof
+apparatus. This is done using a technique originating from the
+``Predicate subtyping'' mechanism of \PVS \cite{Rushby98}, which generates type-checking
+conditions while typing a term constrained to a particular type. 
+Here we insert existential variables in the term, which must be filled
+with proofs to get a complete \Coq\ term. \Program\ replaces the
+\Program\ tactic by Catherine Parent \cite{Parent95b} which had a similar goal but is no longer
+maintained.
+
+The languages available as input are currently restricted to \Coq's term
+language, but may be extended to \ocaml{}, \textsc{Haskell} and others
+in the future. We use the same syntax as \Coq\ and permit to use implicit
+arguments and the existing coercion mechanism.
+Input terms and types are typed in an extended system (\Russell) and
+interpreted into \Coq\ terms. The interpretation process may produce
+some proof obligations which need to be resolved to create the final term.
+
+\asection{Elaborating programs}
+The main difference from \Coq\ is that an object in a type $T : \Set$
+can be considered as an object of type $\{ x : T~|~P\}$ for any
+wellformed $P : \Prop$. 
+If we go from $T$ to the subset of $T$ verifying property $P$, we must
+prove that the object under consideration verifies it. \Russell\ will
+generate an obligation for every such coercion. In the other direction,
+\Russell\ will automatically insert a projection.
+
+Another distinction is the treatment of pattern-matching. Apart from the
+following differences, it is equivalent to the standard {\tt match}
+operation (see Section~\ref{Caseexpr}).
+\begin{itemize}
+\item Generation of equalities. A {\tt match} expression is always
+  generalized by the corresponding equality. As an example,
+  the expression: 
+
+\begin{coq_example*}
+  match x with
+  | 0 => t
+  | S n => u
+  end.
+\end{coq_example*}
+will be first rewrote to:
+\begin{coq_example*}
+  (match x as y return (x = y -> _) with
+  | 0 => fun H : x = 0 -> t
+  | S n => fun H : x = S n -> u
+  end) (refl_equal n).
+\end{coq_example*}
+  
+  This permits to get the proper equalities in the context of proof
+  obligations inside clauses, without which reasoning is very limited.
+
+\item Generation of inequalities. If a pattern intersects with a
+  previous one, an inequality is added in the context of the second
+  branch. See for example the definition of {\tt div2} below, where the second
+  branch is typed in a context where $\forall p, \_ <> S (S p)$.
+  
+\item Coercion. If the object being matched is coercible to an inductive
+  type, the corresponding coercion will be automatically inserted. This also
+  works with the previous mechanism.
+\end{itemize}
+
+If you do specify a {\tt return} or {\tt in} clause the typechecker will
+fall back directly to \Coq's usual typing of dependent pattern-matching.
+
+
+The next two commands are similar to their standard counterparts
+Definition (see Section~\ref{Simpl-definitions}) and Fixpoint (see Section~\ref{Fixpoint}) in that
+they define constants. However, they may require the user to prove some
+goals to construct the final definitions.
+
+\subsection{\tt Program Definition {\ident} := {\term}.
+  \comindex{Program Definition}\label{ProgramDefinition}}
+
+This command types the value {\term} in \Russell\ and generate proof
+obligations. Once solved using the commands shown below, it binds the final
+\Coq\ term to the name {\ident} in the environment.
+
+\begin{ErrMsgs}
+\item \errindex{{\ident} already exists}
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt Program Definition {\ident} {\tt :}{\term$_1$} :=
+    {\term$_2$}.}\\
+  It interprets the type {\term$_1$}, potentially generating proof
+  obligations to be resolved. Once done with them, we have a \Coq\ type
+  {\term$_1'$}. It then checks that the type of the interpretation of
+  {\term$_2$} is coercible to {\term$_1'$}, and registers {\ident} as
+  being of type {\term$_1'$} once the set of obligations generated
+  during the interpretation of {\term$_2$} and the aforementioned
+  coercion derivation are solved.
+\item {\tt Program Definition {\ident} {\binder$_1$}\ldots{\binder$_n$}
+       {\tt :}\term$_1$ {\tt :=} {\term$_2$}.}\\
+  This is equivalent to \\
+   {\tt Program Definition\,{\ident}\,{\tt :\,forall}\,%
+       {\binder$_1$}\ldots{\binder$_n$}{\tt ,}\,\term$_1$\,{\tt :=}}\,%
+       {\tt fun}\,{\binder$_1$}\ldots{\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
+       {\tt .}
+\end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{In environment {\dots} the term: {\term$_2$} does not have type
+    {\term$_1$}}.\\
+    \texttt{Actually, it has type {\term$_3$}}.
+\end{ErrMsgs}
+
+\SeeAlso Sections \ref{Opaque}, \ref{Transparent}, \ref{unfold}
+
+\subsection{\tt Program Fixpoint {\ident} {\params} {\tt \{order\}} : type := \term
+  \comindex{Program Fixpoint}
+  \label{ProgramFixpoint}}
+
+The structural fixpoint operator behaves just like the one of Coq
+(see Section~\ref{Fixpoint}), except it may also generate obligations.
+It works with mutually recursive definitions too.
+
+\begin{coq_example}
+Program Fixpoint div2 (n : nat) : { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
+  match n with
+  | S (S p) => S (div2 p)
+  | _ => O
+  end.
+\end{coq_example}
+
+Here we have one obligation for each branch (branches for \verb:0: and \verb:(S 0): are
+automatically generated by the pattern-matching compilation algorithm):
+\begin{coq_example}
+  Obligations.
+\end{coq_example}
+
+You can use a well-founded order or a measure as termination orders using the syntax:
+\begin{coq_eval}
+Reset Initial.
+Require Import Arith.
+\end{coq_eval}
+\begin{coq_example}
+Definition id (n : nat) := n.
+
+Program Fixpoint div2 (n : nat) {measure id n} : { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
+  match n with
+  | S (S p) => S (div2 p)
+  | _ => O
+  end.
+\end{coq_example}
+
+The \verb|measure| keyword expects a measure function into the naturals, whereas
+\verb|wf| expects a relation.
+
+\paragraph{Caution}
+When defining structurally recursive functions, the
+generated obligations should have the prototype of the currently defined functional
+in their context. In this case, the obligations should be transparent
+(e.g. using Defined) so that the guardedness condition on
+recursive calls can be checked by the
+kernel's type-checker. There is an optimization in the generation of
+obligations which gets rid of the hypothesis corresponding to the
+functionnal when it is not necessary, so that the obligation can be
+declared opaque (e.g. using Qed). However, as soon as it appears in the
+context, the proof of the obligation is \emph{required} to be declared transparent.
+
+No such problems arise when using measures or well-founded recursion.
+
+An important point about well-founded and measure-based functions is the following:
+The recursive prototype of a function of type
+{\binder$_1$}\ldots{\binder$_n$} \{ {\tt measure m \binder$_i$} \}:{\type$_1$}, 
+inside the body is
+\verb|{|{\binder$_i'$ \verb$|$ {\tt m} $x_i'$ < {\tt m} $x_i$}\verb|}|\ldots{\binder$_n$},{\type$_1$}. 
+So any arguments appearing before the recursive one are ignored for the
+recursive calls, hence they are constant.
+
+\subsection{\tt Program Lemma {\ident} : type.
+  \comindex{Program Lemma}
+  \label{ProgramLemma}}
+
+The \Russell\ language can also be used to type statements of logical
+properties. It will generate obligations, try to solve them
+automatically and fail if some unsolved obligations remain. 
+In this case, one can first define the lemma's
+statement using {\tt Program Definition} and use it as the goal afterwards.
+Otherwise the proof will be started with the elobarted version as a goal.
+The {\tt Program} prefix can similarly be used as a prefix for {\tt Variable}, {\tt
+  Hypothesis}, {\tt Axiom} etc...
+
+\subsection{Solving obligations}
+The following commands are available to manipulate obligations. The
+optional identifier is used when multiple functions have unsolved
+obligations (e.g. when defining mutually recursive blocks). The optional
+tactic is replaced by the default one if not specified.
+
+\begin{itemize}
+\item {\tt Obligations Tactic := \tacexpr} Sets the default obligation
+  solving tactic applied to all obligations automatically, whether to
+  solve them or when starting to prove one, e.g. using {\tt Next}.
+\item {\tt Obligations [of \ident]} Displays all remaining
+  obligations.
+\item {\tt Next Obligation [of \ident]} Start the proof of the next
+  unsolved obligation.
+\item {\tt Obligation num [of \ident]} Start the proof of
+  obligation {\tt num}.
+\item {\tt Solve Obligations [of \ident] [using \tacexpr]} Tries to solve
+  each obligation of \ident using the given tactic or the default one.
+\item {\tt Solve All Obligations [using \tacexpr]} Tries to solve
+  each obligation of every program using the given tactic or the default
+  one (useful for mutually recursive definitions).
+\item {\tt Admit Obligations [of \ident]} Admits all
+  obligations (does not work with structurally recursive programs).
+\end{itemize}
+
+The module {\tt Coq.Program.Tactics} defines the default tactic for solving
+obligations called {\tt program\_simpl}. Importing 
+{\tt Coq.Program.Program} also adds some useful notations, as documented in the file itself.
+
+\section{Frequently Asked Questions
+  \comindex{Program FAQ}
+  \label{ProgramFAQ}}
+
+\begin{itemize}
+\item {Ill-formed recursive definitions}
+  This error can happen when one tries to define a
+  function by structural recursion on a subset object, which means the Coq
+  function looks like:
+  
+  \verb$Program Fixpoint f (x : A | P) := match x with A b => f b end.$
+  
+  Supposing $b : A$, the argument at the recursive call to f is not a
+  direct subterm of x as b is wrapped inside an exist constructor to build
+  an object of type \verb${x : A | P}$.  Hence the definition is rejected
+  by the guardedness condition checker. However you can do
+  wellfounded recursion on subset objects like this:
+  
+\begin{verbatim}
+Program Fixpoint f (x : A | P) { measure size } :=
+  match x with A b => f b end.
+\end{verbatim}
+  
+  You will then just have to prove that the measure decreases at each recursive
+  call. There are three drawbacks though: 
+  \begin{enumerate}
+  \item You have to define size yourself;
+  \item The reduction is a little more involved, although it works
+    using lazy evaluation;
+  \item Mutual recursion isn't possible anymore. What would it mean ?
+  \end{enumerate}
+\end{itemize}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

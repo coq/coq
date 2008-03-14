@@ -1,0 +1,479 @@
+
+%\newcommand{\Coq}{\textsf{Coq}}
+\newcommand{\javadoc}{\textsf{javadoc}}
+\newcommand{\ocamldoc}{\textsf{ocamldoc}}
+\newcommand{\coqdoc}{\textsf{coqdoc}}
+\newcommand{\texmacs}{\TeX{}macs}
+\newcommand{\monurl}[1]{#1}
+%HEVEA\renewcommand{\monurl}[1]{\ahref{#1}{#1}}
+%\newcommand{\lnot}{not} % Hevea handles these symbols nicely
+%\newcommand{\lor}{or}
+%\newcommand{\land}{\&}
+%%% attention : -- dans un argument de \texttt est affiché comme un
+%%% seul - d'où l'utilisation de la macro suivante
+\newcommand{\mm}{\symbol{45}\symbol{45}}
+
+
+\coqdoc\ is a documentation tool for the proof assistant
+\Coq, similar to \javadoc\ or \ocamldoc. 
+The task of \coqdoc\ is
+\begin{enumerate}
+\item to produce a nice \LaTeX\ and/or HTML document from the \Coq\ 
+  sources, readable for a human and not only for the proof assistant;
+\item to help the user navigating in his own (or third-party) sources.
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Principles}
+
+Documentation is inserted into \Coq\ files as \emph{special comments}.  
+Thus your files will compile as usual, whether you use \coqdoc\ or not.
+\coqdoc\ presupposes that the given \Coq\ files are well-formed (at
+least lexically).  Documentation starts with
+\texttt{(**}, followed by a space, and ends with the pending \texttt{*)}. 
+The documentation format is inspired
+  by Todd~A.~Coram's \emph{Almost Free Text (AFT)} tool: it is mainly
+ASCII text with some syntax-light controls, described below.
+\coqdoc\ is robust: it shouldn't fail, whatever the input is. But
+remember: ``garbage in, garbage out''.
+
+\paragraph{\Coq\ material inside documentation.}
+\Coq\ material is quoted between the
+delimiters \texttt{[} and \texttt{]}. Square brackets may be nested,
+the inner ones being understood as being part of the quoted code (thus
+you can quote a term like $[x:T]u$ by writing
+\texttt{[[x:T]u]}). Inside quotations, the code is pretty-printed in
+the same way as it is in code parts.
+
+Pre-formatted vernacular is enclosed by \texttt{[[} and
+\texttt{]]}. The former must be followed by a newline and the latter
+must follow a newline.
+
+\paragraph{Pretty-printing.}
+\coqdoc\ uses different faces for identifiers and keywords.  
+The pretty-printing of \Coq\ tokens (identifiers or symbols) can be
+controlled using one of the following commands:
+\begin{alltt}
+(** printing \emph{token} %...\LaTeX...% #...HTML...# *)
+\end{alltt}
+or
+\begin{alltt}
+(** printing \emph{token} $...\LaTeX\ math...$ #...HTML...# *)
+\end{alltt}
+It gives the \LaTeX\ and HTML texts to be produced for the given \Coq\
+token. One of the \LaTeX\ or HTML text may be ommitted, causing the
+default pretty-printing to be used for this token.
+
+The printing for one token can be removed with
+\begin{alltt}
+(** remove printing \emph{token} *)
+\end{alltt}
+
+Initially, the pretty-printing table contains the following mapping:
+\begin{center}
+  \begin{tabular}{ll@{\qquad\qquad}ll@{\qquad\qquad}ll@{\qquad\qquad}}
+    \verb!->!            & $\rightarrow$   &
+    \verb!<-!            & $\leftarrow$    &
+    \verb|*|             & $\times$        \\
+    \verb|<=|            & $\le$           &
+    \verb|>=|            & $\ge$           &
+    \verb|=>|            & $\Rightarrow$   \\
+    \verb|<>|            & $\not=$         &
+    \verb|<->|           & $\leftrightarrow$ &
+    \verb!|-!            & $\vdash$        \\
+    \verb|\/|            & $\lor$          &
+    \verb|/\|            & $\land$         &
+    \verb|~|             & $\lnot$ 
+  \end{tabular}
+\end{center}
+Any of these can be overwritten or suppressed using the
+\texttt{printing} commands.
+
+Important note: the recognition of tokens is done by a (ocaml)lex
+automaton and thus applies the longest-match rule. For instance,
+\verb!->~! is recognized as a single token, where \Coq\ sees two
+tokens. It is the responsability of the user to insert space between
+tokens \emph{or} to give pretty-printing rules for the possible
+combinations, e.g. 
+\begin{verbatim}
+(** printing ->~ %\ensuremath{\rightarrow\lnot}% *)
+\end{verbatim}
+
+
+\paragraph{Sections.}
+Sections are introduced by 1 to 4 leading stars (i.e. at the beginning of the
+line) followed by a space. One star is a section, two stars a sub-section, etc.
+The section title is given on the remaining of the line.
+Example:
+\begin{verbatim}
+    (** * Well-founded relations
+  
+        In this section, we introduce...  *)
+\end{verbatim}
+
+
+%TODO \paragraph{Fonts.}
+
+
+\paragraph{Lists.}
+List items are introduced by 1 to 4 leading dashes.
+Deepness of the list is indicated by the number of dashes.
+List ends with a blank line.
+Example:
+\begin{verbatim}
+    This module defines
+        - the predecessor [pred]
+        - the addition [plus]
+        - order relations:
+          -- less or equal [le]
+          -- less [lt]
+\end{verbatim}
+
+\paragraph{Rules.}
+More than 4 leading dashes produce an horizontal rule.
+
+
+\paragraph{Escapings to \LaTeX\ and HTML.}
+Pure \LaTeX\ or HTML material can be inserted using the following
+escape sequences:
+\begin{itemize}
+\item \verb+$...LaTeX stuff...$+ inserts some \LaTeX\ material in math mode.
+  Simply discarded in HTML output.
+
+\item \verb+%...LaTeX stuff...%+ inserts some \LaTeX\ material.
+  Simply discarded in HTML output.
+
+\item \verb+#...HTML stuff...#+ inserts some HTML material. Simply
+  discarded in \LaTeX\ output.
+\end{itemize}
+
+
+\paragraph{Verbatim.} 
+Verbatim material is introduced by a leading \verb+<<+ and closed by
+\verb+>>+ at the beginning of a line. Example:
+\begin{verbatim}
+Here is the corresponding caml code:
+<<
+  let rec fact n = 
+    if n <= 1 then 1 else n * fact (n-1)
+>>
+\end{verbatim}
+
+
+\paragraph{Hyperlinks.}
+Hyperlinks can be inserted into the HTML output, so that any
+identifier is linked to the place of its definition.
+
+In order to get hyperlinks you need to first compile your \Coq\ file
+using \texttt{coqc \mm{}dump-glob \emph{file}}; this appends 
+\Coq\ names resolutions done during the compilation to file
+\texttt{\emph{file}}. Take care of erasing this file, if any, when
+starting the whole compilation process.
+
+Then invoke \texttt{coqdoc \mm{}glob-from \emph{file}} to tell
+\coqdoc\ to look for name resolutions into the file \texttt{\emph{file}}.
+
+Identifiers from the \Coq\ standard library are linked to the \Coq\
+web site at \url{http://coq.inria.fr/library/}. This behavior can be
+changed using command line options \url{--no-externals} and
+\url{--coqlib}; see below.
+
+
+\paragraph{Hiding / Showing parts of the source.}
+Some parts of the source can be hidden using command line options
+\texttt{-g} and \texttt{-l} (see below), or using such comments:
+\begin{alltt}
+(* begin hide *)
+\emph{some Coq material}
+(* end hide *)
+\end{alltt}
+Conversely, some parts of the source which would be hidden can be
+shown using such comments: 
+\begin{alltt}
+(* begin show *)
+\emph{some Coq material}
+(* end show *)
+\end{alltt}
+The latter cannot be used around some inner parts of a proof, but can
+be used around a whole proof.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Usage}
+
+\coqdoc\ is invoked on a shell command line as follows:
+\begin{displaymath}
+  \texttt{coqdoc }<\textit{options and files}>
+\end{displaymath}
+Any command line argument which is not an option is considered to be a
+file (even if it starts with a \verb!-!). \Coq\ files are identified
+by the suffixes \verb!.v! and \verb!.g! and \LaTeX\ files by the
+suffix \verb!.tex!. 
+
+\begin{description}
+\item[HTML output] ~\par
+  This is the default output.
+  One HTML file is created for each \Coq\ file given on the command line,
+  together with a file \texttt{index.html} (unless option
+  \texttt{-no-index} is passed). The HTML pages use a style sheet
+  named \texttt{style.css}. Such a file is distributed with \coqdoc.
+
+\item[\LaTeX\ output] ~\par
+  A single \LaTeX\ file is created, on standard output. It can be
+  redirected to a file with option \texttt{-o}. 
+  The order of files on the command line is kept in the final
+  document. \LaTeX\ files given on the command line are copied `as is'
+  in the final document .
+  DVI and PostScript can be produced directly with the options
+  \texttt{-dvi} and \texttt{-ps} respectively.
+
+\item[\texmacs\ output] ~\par
+  To translate the input files to \texmacs\ format, to be used by
+  the \texmacs\ Coq interface 
+  (see \url{http://www-sop.inria.fr/lemme/Philippe.Audebaud/tmcoq/}).
+\end{description}
+
+
+\subsubsection*{Command line options}
+
+
+\paragraph{Overall options}
+
+\begin{description}
+
+\item[\texttt{\mm{}html}] ~\par
+  
+  Select a HTML output.
+
+\item[\texttt{\mm{}latex}] ~\par
+  
+  Select a \LaTeX\ output.
+
+\item[\texttt{\mm{}dvi}] ~\par
+  
+  Select a DVI output.
+
+\item[\texttt{\mm{}ps}] ~\par
+  
+  Select a PostScript output.
+
+\item[\texttt{\mm{}texmacs}] ~\par
+  
+  Select a \texmacs\ output.
+
+\item[\texttt{--stdout}] ~\par
+
+  Write output to stdout.
+
+\item[\texttt{-o }\textit{file}, \texttt{\mm{}output }\textit{file}] ~\par
+  
+  Redirect the output into the file `\textit{file}' (meaningless with
+  \texttt{-html}).
+
+\item[\texttt{-d }\textit{dir}, \texttt{\mm{}directory }\textit{dir}] ~\par
+
+  Output files into directory `\textit{dir}' instead of current
+  directory (option \texttt{-d} does not change the filename specified
+  with option \texttt{-o}, if any).
+
+\item[\texttt{-s }, \texttt{\mm{}short}] ~\par
+  
+  Do not insert titles for the files. The default behavior is to
+  insert a title like ``Library Foo'' for each file.
+
+\item[\texttt{-t }\textit{string}, 
+      \texttt{\mm{}title }\textit{string}] ~\par
+  
+  Set the document title.      
+
+\item[\texttt{\mm{}body-only}] ~\par
+
+  Suppress the header and trailer of the final document. Thus, you can
+  insert the resulting document into a larger one.
+
+\item[\texttt{-p} \textit{string}, \texttt{\mm{}preamble} \textit{string}]~\par
+
+  Insert some material in the \LaTeX\ preamble, right before
+  \verb!\begin{document}! (meaningless with \texttt{-html}).
+
+\item[\texttt{\mm{}vernac-file }\textit{file},
+      \texttt{\mm{}tex-file }\textit{file}] ~\par
+      
+      Considers the file `\textit{file}' respectively as a \verb!.v!
+      (or \verb!.g!) file or a \verb!.tex! file.
+
+\item[\texttt{\mm{}files-from }\textit{file}] ~\par
+
+  Read file names to process in file `\textit{file}' as if they were
+  given on the command line. Useful for program sources splitted in
+  several directories.
+  
+\item[\texttt{-q}, \texttt{\mm{}quiet}] ~\par
+
+  Be quiet. Do not print anything except errors.
+
+\item[\texttt{-h}, \texttt{\mm{}help}] ~\par
+
+  Give a short summary of the options and exit.
+
+\item[\texttt{-v}, \texttt{\mm{}version}] ~\par
+
+  Print the version and exit.
+
+\end{description}
+
+\paragraph{Index options} ~\par
+
+Default behavior is to build an index, for the HTML output only, into
+\texttt{index.html}.
+
+\begin{description}
+
+\item[\texttt{\mm{}no-index}] ~\par
+  
+  Do not output the index.
+
+\item[\texttt{\mm{}multi-index}] ~\par
+  
+  Generate one page for each category and each letter in the index,
+  together with a top page \texttt{index.html}.
+
+\end{description}
+
+\paragraph{Table of contents option} ~\par
+
+\begin{description}
+
+\item[\texttt{-toc}, \texttt{\mm{}table-of-contents}] ~\par
+
+  Insert a table of contents.
+  For a \LaTeX\ output, it inserts a \verb!\tableofcontents! at the
+  beginning of the document. For a HTML output, it builds a table of
+  contents into \texttt{toc.html}.
+
+\end{description}
+
+\paragraph{Hyperlinks options}
+\begin{description}
+
+\item[\texttt{\mm{}glob-from }\textit{file}] ~\par
+  
+  Make references using \Coq\ globalizations from file \textit{file}. 
+  (Such globalizations are obtained with \Coq\ option \texttt{-dump-glob}).
+
+\item[\texttt{\mm{}no-externals}] ~\par
+  
+  Do not insert links to the \Coq\ standard library.
+
+\item[\texttt{\mm{}coqlib }\textit{url}] ~\par
+
+  Set base URL for the \Coq\ standard library (default is 
+  \url{http://coq.inria.fr/library/}).
+
+\item[\texttt{-R }\textit{dir }\textit{coqdir}] ~\par
+
+  Map physical directory \textit{dir} to \Coq\ logical directory
+  \textit{coqdir} (similarly to \Coq\ option \texttt{-R}).
+
+  Note: option \texttt{-R} only has effect on the files
+  \emph{following} it on the command line, so you will probably need
+  to put this option first.
+
+\end{description}
+
+\paragraph{Contents options}
+\begin{description}
+
+\item[\texttt{-g}, \texttt{\mm{}gallina}] ~\par
+
+  Do not print proofs.
+
+\item[\texttt{-l}, \texttt{\mm{}light}] ~\par
+  
+  Light mode. Suppress proofs (as with \texttt{-g}) and the following commands:
+  \begin{itemize}
+  \item {}[\texttt{Recursive}] \texttt{Tactic Definition}
+  \item \texttt{Hint / Hints} 
+  \item \texttt{Require}
+  \item \texttt{Transparent / Opaque}
+  \item \texttt{Implicit Argument / Implicits}
+  \item \texttt{Section / Variable / Hypothesis / End}
+  \end{itemize}
+
+\end{description}
+The behavior of options \texttt{-g} and \texttt{-l} can be locally
+overridden using the \texttt{(* begin show *)} \dots\ \texttt{(* end
+  show *)} environment (see above).
+
+\paragraph{Language options} ~\par
+
+Default behavior is to assume ASCII 7 bits input files.
+
+\begin{description}
+
+\item[\texttt{-latin1}, \texttt{\mm{}latin1}] ~\par
+
+  Select ISO-8859-1 input files. It is equivalent to
+  \texttt{--inputenc latin1 --charset iso-8859-1}.
+
+\item[\texttt{-utf8}, \texttt{\mm{}utf8}] ~\par
+
+  Select UTF-8 (Unicode) input files. It is equivalent to
+  \texttt{--inputenc utf8 --charset utf-8}.
+  \LaTeX\ UTF-8 support can be found at
+ \url{http://www.ctan.org/tex-archive/macros/latex/contrib/supported/unicode/}.
+
+\item[\texttt{\mm{}inputenc} \textit{string}] ~\par
+
+  Give a \LaTeX\ input encoding, as an option to \LaTeX\ package
+  \texttt{inputenc}. 
+
+\item[\texttt{\mm{}charset} \textit{string}] ~\par
+
+  Specify the HTML character set, to be inserted in the HTML header.
+
+\end{description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection[The coqdoc \LaTeX{} style file]{The coqdoc \LaTeX{} style file\label{section:coqdoc.sty}}
+
+In case you choose to produce a document without the default \LaTeX{}
+preamble (by using option \verb|--no-preamble|), then you must insert
+into your own preamble the command
+\begin{quote}
+  \verb|\usepackage{coqdoc}|
+\end{quote}
+Then you may alter the rendering of the document by
+redefining some macros:
+\begin{description}
+
+\item[\texttt{coqdockw}, \texttt{coqdocid}] ~ 
+  
+  The one-argument macros for typesetting keywords and identifiers.
+  Defaults are sans-serif for keywords and italic for identifiers.
+
+  For example, if you would like a slanted font for keywords, you
+  may insert  
+\begin{verbatim}
+     \renewcommand{\coqdockw}[1]{\textsl{#1}}
+\end{verbatim}
+  anywhere between \verb|\usepackage{coqdoc}| and
+  \verb|\begin{document}|. 
+
+\item[\texttt{coqdocmodule}] ~ 
+  
+  One-argument macro for typesetting the title of a \verb|.v| file.
+  Default is
+\begin{verbatim}
+\newcommand{\coqdocmodule}[1]{\section*{Module #1}}
+\end{verbatim}
+  and you may redefine it using \verb|\renewcommand|.
+
+\end{description}
+
+

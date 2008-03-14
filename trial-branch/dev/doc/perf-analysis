@@ -1,0 +1,91 @@
+Performance analysis (trunk repository)
+---------------------------------------
+
+Between Oct 12 and Oct 27, 2007: inefficiency temporarily introduced in the
+  tactic interpreter (from revision 10222 to 10267)
+  (+22% CoRN, +10% geometry, ...)
+
+Jun 6, 2007: optimization of the need for type unification in with-bindings
+  (-3.5% Stalmark, -6% Kildall)
+
+May 20, 21, 22, 2007: improved inference of with-bindings (including activation
+  of unification on types)
+  (+4% PICALC, +5% Stalmark, +7% Kildall)
+
+May 11, 2007: added primitive integers (+6% CoLoR, +7% CoRN, +5% FSets, ...)
+
+Between Feb 22 and March 16, 2007: bench temporarily moved on JMN's
+  computer (-25% CoRN, -25% Fairisle, ...)
+
+Oct 29 and Oct 30, 2006: abandoned attempt to add polymorphism on definitions
+  (+4% in general during these two days)
+
+Oct 17, 2006: improvement in new field [r9248]
+  (QArith -3%, geometry: -2%)
+
+Oct 5, 2006: fixing wrong unification of Meta below binders
+  (e.g. CatsInZFC: +10%, CoRN: -2.5%, Godel: +4%, LinAlg: +7%,
+   DISTRIBUTED_REFERENCE_COUNTING: +10%, CoLoR: +1%)
+
+Sep 26, 2006: new field [r9178-9181]
+  (QArith: -16%, geometry: -5%, Float: +6%, BDDS:+5% but no ring in it)
+
+  Sep 12, 2006: Rocq/AREA_METHOD extended (~ 530s)
+  Aug 12, 2006: Rocq/AREA_METHOD added (~ 480s)
+  May 30, 2006: Nancy/CoLoR added (~ 319s)
+
+May 23, 2006: new, lighter version of polymorphic inductive types
+  (CoRN: -27%, back to Mar-24 time)
+
+May 17, 2006: changes in List.v (DISTRIBUTED_REFERENCE_COUNTING: -)
+
+May 5, 2006: improvement in closure (array instead of lists)
+  (e.g. CatsInZFC: -10%, CoRN: -3%, 
+
+May 23, 2006: polymorphic inductive types (precise, heavy algorithm)
+  (CoRN: +37%)
+
+  Dec 29, 2005: new test and use of -vm in Stalmarck
+
+  Dec 27, 2005: contrib Karatsuba added (~ 30s)
+
+Dec 28, 2005: size decrease
+  mainly due to Defined moved to Qed in FSets (reduction from 95M to 7Mo)
+
+Dec 1-14, 2005: benchmarking server down
+  between the two dates: Godel: -10%, CoRN: -10%
+  probably due to changes around vm (new informative Cast,
+  change of equality in named_context_val) 
+
+  Oct 6, 2005: contribs IPC and Tait added (~ 22s and ~ 25s)
+
+Aug 19, 2005: time decrease after application of "Array.length x=0" Xavier's 
+  suggestions for optimisation
+  (e.g. Nijmegen/QArith: -3%, Nijmegen/CoRN: -7%, Godel: -3%)
+ 
+  Aug 1, 2005: contrib Kildall added (~ 65s)
+
+Jul 26-Aug 2, 2005: bench down
+
+Jul 14-15, 2005: 4 contribs failed including CoRN
+
+Jul 14, 2005: time increase after activation of "closure optimisation"
+  (e.g. Nijmegen/QArith: +8%, Nijmegen/CoRN: +3%, Godel: +13%)
+
+  Jul 7, 2005: adding contrib Fermat4
+
+  Jun 17, 2005: contrib Goodstein extended and moved to CantorOrdinals (~ 30s)
+
+  May 19, 2005: contrib Goodstein and prfx (~ 9s) added 
+
+Apr 21, 2005: strange time decrease
+  (could it be due to the change of Back and Reset mechanism) 
+  (e.g. Nijmegen/CoRN: -2%, Nijmegen/QARITH: -4%, Godel: -11%)
+
+Mar 20, 2005: fixed Logic.with_check bug
+  global time decrease (e.g. Nijmegen/CoRN: -3%, Nijmegen/QARITH: -1.5%)
+
+Jan 31-Feb 8, 2005: small instability
+  (e.g. CoRN: ~2015s -> ~1999s -> ~2032s, Godel: ~340s -> ~370s)
+
+  Jan 13, 2005: contrib SumOfTwoSquare added (~ 38s)

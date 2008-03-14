@@ -1,0 +1,78 @@
+% hevea  : hevea.sty
+% This is a very basic style file for latex document to be processed
+% with hevea. It contains definitions of LaTeX environment which are
+% processed in a special way by the translator. 
+%  Mostly :
+%     - latexonly, not processed by hevea, processed by latex.
+%     - htmlonly , the reverse.
+%     - rawhtml,  to include raw HTML in hevea output.
+%     - toimage, to send text to the image file.
+% The package also provides hevea logos, html related commands (ahref
+% etc.), void cutting and image commands.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{hevea}[2002/01/11]
+\RequirePackage{comment}
+\newif\ifhevea\heveafalse
+\@ifundefined{ifimagen}{\newif\ifimagen\imagenfalse}
+\makeatletter%
+\newcommand{\heveasmup}[2]{%
+\raise #1\hbox{$\m@th$%
+  \csname S@\f@size\endcsname
+  \fontsize\sf@size 0%
+  \math@fontsfalse\selectfont
+#2%
+}}%
+\DeclareRobustCommand{\hevea}{H\kern-.15em\heveasmup{.2ex}{E}\kern-.15emV\kern-.15em\heveasmup{.2ex}{E}\kern-.15emA}%
+\DeclareRobustCommand{\hacha}{H\kern-.15em\heveasmup{.2ex}{A}\kern-.15emC\kern-.1em\heveasmup{.2ex}{H}\kern-.15emA}%
+\DeclareRobustCommand{\html}{\protect\heveasmup{0.ex}{HTML}}
+%%%%%%%%% Hyperlinks hevea style
+\newcommand{\ahref}[2]{{#2}}
+\newcommand{\ahrefloc}[2]{{#2}}
+\newcommand{\aname}[2]{{#2}}
+\newcommand{\ahrefurl}[1]{\texttt{#1}}
+\newcommand{\footahref}[2]{#2\footnote{\texttt{#1}}}
+\newcommand{\mailto}[1]{\texttt{#1}}
+\newcommand{\imgsrc}[2][]{}
+\newcommand{\home}[1]{\protect\raisebox{-.75ex}{\char126}#1}
+\AtBeginDocument
+{\@ifundefined{url}
+{%url package is not loaded
+\let\url\ahref\let\oneurl\ahrefurl\let\footurl\footahref}
+{}}
+%% Void cutting instructions
+\newcounter{cuttingdepth}
+\newcommand{\tocnumber}{}
+\newcommand{\notocnumber}{}
+\newcommand{\cuttingunit}{}
+\newcommand{\cutdef}[2][]{}
+\newcommand{\cuthere}[2]{}
+\newcommand{\cutend}{}
+\newcommand{\htmlhead}[1]{}
+\newcommand{\htmlfoot}[1]{}
+\newcommand{\htmlprefix}[1]{}
+\newenvironment{cutflow}[1]{}{}
+\newcommand{\cutname}[1]{}
+\newcommand{\toplinks}[3]{}
+%%%% Html only
+\excludecomment{rawhtml}
+\newcommand{\rawhtmlinput}[1]{}
+\excludecomment{htmlonly}
+%%%% Latex only
+\newenvironment{latexonly}{}{}
+\newenvironment{verblatex}{}{}
+%%%% Image file stuff
+\def\toimage{\endgroup}
+\def\endtoimage{\begingroup\def\@currenvir{toimage}}
+\def\verbimage{\endgroup}
+\def\endverbimage{\begingroup\def\@currenvir{verbimage}}
+\newcommand{\imageflush}[1][]{}
+%%% Bgcolor definition
+\newsavebox{\@bgcolorbin}
+\newenvironment{bgcolor}[2][]
+  {\newcommand{\@mycolor}{#2}\begin{lrbox}{\@bgcolorbin}\vbox\bgroup}
+  {\egroup\end{lrbox}%
+   \begin{flushleft}%
+   \colorbox{\@mycolor}{\usebox{\@bgcolorbin}}%
+   \end{flushleft}}
+%%% Postlude
+\makeatother

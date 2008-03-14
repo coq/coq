@@ -1,0 +1,559 @@
+\newtheorem{cscexample}{Example}
+
+\achapter{\protect{User defined equalities and relations}}
+\aauthor{Claudio Sacerdoti Coen\footnote{Based on previous work by
+Cl\'ement Renard}}
+\label{setoid_replace}
+\tacindex{setoid\_replace}
+
+This chapter presents the extension of several equality related tactics to
+work over user-defined structures (called setoids) that are equipped with
+ad-hoc equivalence relations meant to behave as equalities.
+Actually, the tactics have also been generalized to relations weaker then
+equivalences (e.g. rewriting systems).
+
+The work generalizes, and is partially based on, a previous implementation of
+the \texttt{setoid\_replace} tactic by Cl\'ement Renard.
+
+\asection{Relations and morphisms}
+
+A parametric \emph{relation} \texttt{R} is any term of type
+\texttt{forall ($x_1$:$T_1$) \ldots ($x_n$:$T_n$), relation $A$}. The
+expression $A$, which depends on $x_1$ \ldots $x_n$, is called the
+\emph{carrier} of the relation and \texttt{R} is
+said to be a relation over \texttt{A}; the list $x_1,\ldots,x_n$
+is the (possibly empty) list of parameters of the relation.
+
+\firstexample
+\begin{cscexample}[Parametric relation]
+It is possible to implement finite sets of elements of type \texttt{A}
+as unordered list of elements of type \texttt{A}. The function
+\texttt{set\_eq: forall (A: Type), relation (list A)} satisfied by two lists
+with the same elements is a parametric relation over \texttt{(list A)} with
+one parameter \texttt{A}. The type of \texttt{set\_eq} is convertible with
+\texttt{forall (A: Type), list A -> list A -> Prop}.
+\end{cscexample}
+
+An \emph{instance} of a parametric relation \texttt{R} with $n$ parameters
+is any term \texttt{(R $t_1$ \ldots $t_n$)}.
+
+Let \texttt{R} be a relation over \texttt{A} with $n$ parameters.
+A term is a parametric proof of reflexivity for \texttt{R} if it has type
+\texttt{forall ($x_1$:$T_1$) \ldots ($x_n$:$T_n$),
+ reflexive (R $x_1$ \ldots $x_n$)}. Similar definitions are given for
+parametric proofs of symmetry and transitivity.
+
+\begin{cscexample}[Parametric relation (cont.)]
+The \texttt{set\_eq} relation of the previous example can be proved to be
+reflexive, symmetric and transitive.
+\end{cscexample}
+
+A parametric unary function $f$ of type
+\texttt{forall ($x_1$:$T_1$) \ldots ($x_n$:$T_n$), $A_1$ -> $A_2$}
+covariantly respects two parametric relation instances $R_1$ and $R_2$ if,
+whenever $x, y$ satisfy $R_1~x~y$, their images $(f~x)$ and $(f~y)$ 
+satisfy $R_2~(f~x)~(f~y)$ . An $f$ that respects its input and output relations
+will be called a unary covariant \emph{morphism}. We can also say that $f$ is
+a monotone function with respect to $R_1$ and $R_2$. The sequence $x_1,\ldots x_n$ represents the parameters of the morphism.
+
+Let $R_1$ and $R_2$ be two parametric relations.
+The \emph{signature} of a parametric morphism of type
+\texttt{forall ($x_1$:$T_1$) \ldots ($x_n$:$T_n$), $A_1$ -> $A_2$} that
+covariantly respects two parametric relations that are instances of
+$R_1$ and $R_2$ is written $R_1 \texttt{++>} R_2$.
+Notice that the special arrow \texttt{++>}, which reminds the reader
+of covariance, is placed between the two parametric relations, not
+between the two carriers or the two relation instances.
+
+The previous definitions are extended straightforwardly to $n$-ary morphisms,
+that are required to be simultaneously monotone on every argument.
+
+Morphisms can also be contravariant in one or more of their arguments.
+A morphism is contravariant on an argument associated to the relation instance
+$R$ if it is covariant on the same argument when the inverse relation
+$R^{-1}$ is considered. The special arrow \texttt{-{}->} is used in signatures
+for contravariant morphisms.
+
+Functions having arguments related by symmetric relations instances are both
+covariant and contravariant in those arguments. The special arrow
+\texttt{==>} is used in signatures for morphisms that are both covariant
+and contravariant.
+
+An instance of a parametric morphism $f$ with $n$ parameters is any term
+\texttt{f $t_1$ \ldots $t_n$}.
+
+\begin{cscexample}[Morphisms]
+Continuing the previous example, let
+\texttt{union: forall (A: Type), list A -> list A -> list A} perform the union
+of two sets by appending one list to the other. \texttt{union} is a binary
+morphism parametric over \texttt{A} that respects the relation instance
+\texttt{(set\_eq A)}. The latter condition is proved by showing
+\texttt{forall (A: Type) (S1 S1' S2 S2': list A), set\_eq A S1 S1' ->
+ set\_eq A S2 S2' -> set\_eq A (union A S1 S2) (union A S1' S2')}.
+
+The signature of the function \texttt{union} is
+\texttt{set\_eq ==> set\_eq ==> set\_eq}.
+\end{cscexample}
+
+\begin{cscexample}[Contravariant morphism]
+The division function \texttt{Rdiv: R -> R -> R} is a morphism of
+signature \texttt{le ++> le -{}-> le} where \texttt{le} is
+the usual order relation over real numbers. Notice that division is
+covariant in its first argument and contravariant in its second
+argument.
+\end{cscexample}
+
+Notice that Leibniz equality is a relation and that every function is a
+morphism that respects Leibniz equality. Unfortunately, Leibniz equality
+is not always the intended equality for a given structure.
+
+In the next section we will describe the commands to register terms as
+parametric relations and morphisms. Several tactics that deal with equality
+in \Coq\ can also work with the registered relations.
+The exact list of tactic will be given in Sect.~\ref{setoidtactics}.
+For instance, the
+tactic \texttt{reflexivity} can be used to close a goal $R~n~n$ whenever
+$R$ is an instance of a registered reflexive relation. However, the tactics
+that replace in a context $C[]$ one term with another one related by $R$
+must verify that $C[]$ is a morphism that respects the intended relation.
+Currently the verification consists in checking whether $C[]$ is a syntactic
+composition of morphism instances that respects some obvious
+compatibility constraints.
+
+\begin{cscexample}[Rewriting]
+Continuing the previous examples, suppose that the user must prove
+\texttt{set\_eq int (union int (union int S1 S2) S2) (f S1 S2)} under the
+hypothesis \texttt{H: set\_eq int S2 (nil int)}. It is possible to
+use the \texttt{rewrite} tactic to replace the first two occurrences of
+\texttt{S2} with \texttt{nil int} in the goal since the context
+\texttt{set\_eq int (union int (union int S1 nil) nil) (f S1 S2)}, being
+a composition of morphisms instances, is a morphism. However the tactic
+will fail replacing the third occurrence of \texttt{S2} unless \texttt{f}
+has also been declared as a morphism.
+\end{cscexample}
+
+\asection{Adding new relations and morphisms}
+A parametric relation
+\textit{Aeq}\texttt{: forall ($x_1$:$T_1$) \ldots ($x_n$:$T_n$),
+ relation (A $x_1$ \ldots $x_n$)} over \textit{(A $x_1$ \ldots $x_n$)}
+can be declared with the following command
+
+\comindex{Add Relation}
+\begin{quote}
+  \texttt{Add Relation} \textit{A Aeq}\\
+  ~\zeroone{\texttt{reflexivity proved by} \textit{refl}}\\
+  ~\zeroone{\texttt{symmetry proved by} \textit{sym}}\\
+  ~\zeroone{\texttt{transitivity proved by} \textit{trans}}\\
+  \texttt{~as} \textit{id}.
+\end{quote}
+after having required the \texttt{Setoid} module with the
+\texttt{Require Setoid} command.
+
+The identifier \textit{id} gives a unique name to the morphism and it is
+used by the command to generate fresh names for automatically provided lemmas
+used internally.
+
+Notice that \textit{A} is required to be a term having the same parameters
+of \textit{Aeq}. This is a limitation of the tactic that is often unproblematic
+in practice.
+
+The proofs of reflexivity, symmetry and transitivity can be omitted if the
+relation is not an equivalence relation.
+
+If \textit{Aeq} is a transitive relation, then the command also generates
+a lemma of type:
+\begin{quote}
+\texttt{forall ($x_1$:$T_1$)\ldots($x_n$:$T_n$)
+ (x y x' y': (A $x_1$ \ldots $x_n$))\\
+  Aeq $x_1$ \ldots $x_n$ x' x -> Aeq $x_1$ \ldots $x_n$ y y' ->\\
+  (Aeq $x_1$ \ldots $x_n$ x y -> Aeq $x_1$ \ldots $x_n$ x' y')}
+\end{quote}
+that is used to declare \textit{Aeq} as a parametric morphism of signature
+\texttt{Aeq -{}-> Aeq ++> impl} where \texttt{impl} is logical implication
+seen as a parametric relation over \texttt{Aeq}.
+
+Some tactics
+(\texttt{reflexivity}, \texttt{symmetry}, \texttt{transitivity}) work only
+on relations that respect the expected properties. The remaining tactics
+(\texttt{replace}, \texttt{rewrite} and derived tactics such as
+\texttt{autorewrite}) do not require any properties over the relation.
+However, they are able to replace terms with related ones only in contexts
+that are syntactic compositions of parametric morphism instances declared with
+the following command.
+
+\comindex{Add Morphism}
+\begin{quote}
+  \texttt{Add Morphism} \textit{f}\\
+  \texttt{~with signature} \textit{sig}\\
+  \texttt{~as id}.\\
+  \texttt{Proof}\\
+  ~\ldots\\
+  \texttt{Qed}
+\end{quote}
+
+The command declares \textit{f} as a parametric morphism of signature
+\textit{sig}. The identifier \textit{id} gives a unique name to the morphism
+and it is used by the command to generate fresh names for automatically
+provided lemmas used internally. The number of parameters for \textit{f}
+is inferred by comparing its type with the provided signature.
+The command asks the user to prove interactively that \textit{f} respects
+the relations identified from the signature.
+
+\begin{cscexample}
+We start the example by assuming a small theory over homogeneous sets and
+we declare set equality as a parametric equivalence relation and
+union of two sets as a parametric morphism.
+\begin{verbatim}
+Require Export Relation_Definitions.
+Require Export Setoid.
+Set Implicit Arguments.
+Set Contextual Implicit.
+Parameter set: Type -> Type.
+Parameter empty: forall A, set A.
+Parameter eq_set: forall A, set A -> set A -> Prop.
+Parameter union: forall A, set A -> set A -> set A.
+Axiom eq_set_refl: forall A, reflexive _ (eq_set (A:=A)).
+Axiom eq_set_sym: forall A, symmetric _ (eq_set (A:=A)).
+Axiom eq_set_trans: forall A, transitive _ (eq_set (A:=A)).
+Axiom empty_neutral: forall A (S: set A), eq_set (union S empty) S.
+Axiom union_compat:
+ forall (A : Type),
+  forall x x' : set A, eq_set x x' ->
+  forall y y' : set A, eq_set y y' ->
+   eq_set (union x y) (union x' y').
+
+Add Relation set eq_set
+ reflexivity proved by (@eq_set_refl)
+ symmetry proved by (@eq_set_sym)
+ transitivity proved by (@eq_set_trans)
+ as eq_set_rel.
+
+Add Morphism union
+ with signature eq_set ==> eq_set ==> eq_set
+ as union_mor.
+Proof.
+ exact union_compat.
+Qed.
+\end{verbatim}
+
+We proceed now by proving a simple lemma performing a rewrite step
+and then applying reflexivity, as we would do working with Leibniz
+equality. Both tactic applications are accepted
+since the required properties over \texttt{eq\_set} and
+\texttt{union} can be established from the two declarations above.
+
+\begin{verbatim}
+Goal forall (S: set nat),
+ eq_set (union (union S empty) S) (union S S).
+Proof.
+ intros.
+ rewrite (@empty_neutral).
+ reflexivity.
+Qed.
+\end{verbatim}
+\end{cscexample}
+
+The tables of relations and morphisms are compatible with the \Coq\ 
+sectioning mechanism. If you declare a relation or a morphism inside a section,
+the declaration will be thrown away when closing the section.
+And when you load a compiled file, all the declarations
+of this file that were not inside a section will be loaded.
+
+\asection{Rewriting and non reflexive relations}
+To replace only one argument of an n-ary morphism it is necessary to prove
+that all the other arguments are related to themselves by the respective
+relation instances.
+
+\begin{cscexample}
+To replace \texttt{(union S empty)} with \texttt{S} in
+\texttt{(union (union S empty) S) (union S S)} the rewrite tactic must
+exploit the monotony of \texttt{union} (axiom \texttt{union\_compat} in
+the previous example). Applying \texttt{union\_compat} by hand we are left
+with the goal \texttt{eq\_set (union S S) (union S S)}.
+\end{cscexample}
+
+When the relations associated to some arguments are not reflexive, the tactic
+cannot automatically prove the reflexivity goals, that are left to the user.
+
+Setoids whose relation are partial equivalence relations (PER)
+are useful to deal with partial functions. Let \texttt{R} be a PER. We say
+that an element \texttt{x} is defined if \texttt{R x x}. A partial function
+whose domain comprises all the defined elements only is declared as a
+morphism that respects \texttt{R}. Every time a rewriting step is performed
+the user must prove that the argument of the morphism is defined.
+
+\begin{cscexample}
+Let \texttt{eqO} be \texttt{fun x y => x = y $\land$ ~x$\neq$ 0} (the smaller PER over
+non zero elements). Division can be declared as a morphism of signature
+\texttt{eq ==> eq0 ==> eq}. Replace \texttt{x} with \texttt{y} in
+\texttt{div x n = div y n} opens the additional goal \texttt{eq0 n n} that
+is equivalent to \texttt{n=n $\land$ n$\neq$0}.
+\end{cscexample}
+
+\asection{Rewriting and non symmetric relations}
+When the user works up to relations that are not symmetric, it is no longer
+the case that any covariant morphism argument is also contravariant. As a
+result it is no longer possible to replace a term with a related one in
+every context, since the obtained goal implies the previous one if and
+only if the replacement has been performed in a contravariant position.
+In a similar way, replacement in an hypothesis can be performed only if
+the replaced term occurs in a covariant position.
+
+\begin{cscexample}[Covariance and contravariance]
+Suppose that division over real numbers has been defined as a
+morphism of signature \texttt{Zdiv: Zlt ++> Zlt -{}-> Zlt} (i.e.
+\texttt{Zdiv} is increasing in its first argument, but decreasing on the
+second one). Let \texttt{<} denotes \texttt{Zlt}. 
+Under the hypothesis \texttt{H: x < y} we have
+\texttt{k < x / y -> k < x / x}, but not
+\texttt{k < y / x -> k < x / x}.
+Dually, under the same hypothesis \texttt{k < x / y -> k < y / y} holds,
+but \texttt{k < y / x -> k < y / y} does not.
+Thus, if the current goal is \texttt{k < x / x}, it is possible to replace
+only the second occurrence of \texttt{x} (in contravariant position)
+with \texttt{y} since the obtained goal must imply the current one.
+On the contrary, if \texttt{k < x / x} is
+an hypothesis, it is possible to replace only the first occurrence of
+\texttt{x} (in covariant position) with \texttt{y} since
+the current hypothesis must imply the obtained one.
+\end{cscexample}
+
+An error message will be raised by the \texttt{rewrite} and \texttt{replace}
+tactics when the user is trying to replace a term that occurs in the
+wrong position.
+
+As expected, composing morphisms together propagates the variance annotations by
+switching the variance every time a contravariant position is traversed.
+\begin{cscexample}
+Let us continue the previous example and let us consider the goal
+\texttt{x / (x / x) < k}. The first and third occurrences of \texttt{x} are
+in a contravariant position, while the second one is in covariant position.
+More in detail, the second occurrence of \texttt{x} occurs
+covariantly in \texttt{(x / x)} (since division is covariant in its first
+argument), and thus contravariantly in \texttt{x / (x / x)} (since division
+is contravariant in its second argument), and finally covariantly in
+\texttt{x / (x / x) < k} (since \texttt{<}, as every transitive relation,
+is contravariant in its first argument with respect to the relation itself).
+\end{cscexample}
+
+\asection{Rewriting in ambiguous setoid contexts}
+One function can respect several different relations and thus it can be
+declared as a morphism having multiple signatures.
+
+\begin{cscexample}
+Union over homogeneous lists can be given all the following signatures:
+\texttt{eq ==> eq ==> eq} (\texttt{eq} being the equality over ordered lists)
+\texttt{set\_eq ==> set\_eq ==> set\_eq} (\texttt{set\_eq} being the equality
+over unordered lists up to duplicates),
+\texttt{multiset\_eq ==> multiset\_eq ==> multiset\_eq} (\texttt{multiset\_eq}
+being the equality over unordered lists).
+\end{cscexample}
+
+To declare multiple signatures for a morphism, repeat the \texttt{Add Morphism}
+command.
+
+When morphisms have multiple signatures it can be the case that a rewrite
+request is ambiguous, since it is unclear what relations should be used to
+perform the rewriting. When non reflexive relations are involved, different
+choices lead to different sets of new goals to prove. In this case the
+tactic automatically picks one choice, but raises a warning describing the
+set of alternative new goals. To force one particular choice, the user
+can switch to the following alternative syntax for rewriting:
+
+\comindex{setoid\_rewrite}
+\begin{quote}
+  \texttt{setoid\_rewrite} \zeroone{\textit{orientation}} \textit{term}
+  \zeroone{\texttt{in} \textit{ident}}\\
+  \texttt{~generate side conditions}
+  \textit{term}$_1$ \ldots \textit{term}$_n$\\
+\end{quote}
+Up to the \texttt{generate side conditions} part, the syntax is 
+equivalent to the
+one of the \texttt{rewrite} tactic. Additionally, the user can specify a list
+of new goals that the tactic must generate. The tactic will prune out from
+the alternative choices those choices that do not open at least the user
+proposed goals. Thus, providing enough side conditions, the user can restrict
+the tactic to at most one choice.
+
+\begin{cscexample}
+Let \texttt{[=]+} and \texttt{[=]-} be the smaller partial equivalence
+relations over positive (resp. negative) integers. Integer multiplication
+can be declared as a morphism with the following signatures:
+\texttt{Zmult: Zlt ++> [=]+ ==> Zlt} (multiplication with a positive number
+is increasing) and
+\texttt{Zmult: Zlt -{}-> [=]- ==> Zlt} (multiplication with a negative number
+is decreasing).
+Given the hypothesis \texttt{H: x < y} and the goal
+\texttt{(x * n) * m < 0} the tactic \texttt{rewrite H} proposes
+two alternative sets of goals that correspond to proving that \texttt{n}
+and \texttt{m} are both positive or both negative.
+\begin{itemize}
+ \item \texttt{\ldots $\vdash$ (y * n) * m < 0}\\
+       \texttt{\ldots $\vdash$ n [=]+ n}\\
+       \texttt{\ldots $\vdash$ m [=]+ m}\\
+ \item \texttt{\ldots $\vdash$ (y * n) * m < 0}\\
+       \texttt{\ldots $\vdash$ n [=]- n} \\
+       \texttt{\ldots $\vdash$ m [=]- m}
+\end{itemize}
+Remember that \texttt{n [=]+ n} is equivalent to \texttt{n=n $\land$ n > 0}.
+
+To pick the second set of goals it is sufficient to use
+\texttt{setoid\_rewrite H generate side conditions (m [=]- m)}
+since the side condition \texttt{m [=]- m} is contained only in the second set
+of goals.
+\end{cscexample}
+
+\asection{First class setoids and morphisms}
+First class setoids and morphisms can also be handled by encoding them
+as records. The projections of the setoid relation and of the morphism
+function can be registered as parametric relations and morphisms, as
+illustrated by the following example.
+\begin{cscexample}[First class setoids]
+\begin{verbatim}
+Require Export Relation_Definitions.
+Require Setoid.
+
+Record Setoid: Type :=
+{ car:Type;
+  eq:car->car->Prop;
+  refl: reflexive _ eq;
+  sym: symmetric _ eq;
+  trans: transitive _ eq
+}.
+
+Add Relation car eq
+ reflexivity proved by refl
+ symmetry proved by symm
+ transitivity proved by trans
+as eq_rel.
+
+Record Morphism (S1 S2:Setoid): Type :=
+{ f:car S1 ->car S2;
+  compat: forall (x1 x2: car S1), eq S1 x1 x2 -> eq S2 (f x1) (f x2)
+}.
+
+Add Morphism f with signature eq ==> eq as apply_mor.
+Proof.
+ intros S1 S2 m.
+ apply (compat S1 S2 m).
+Qed.
+
+Lemma test: forall (S1 S2:Setoid) (m: Morphism S1 S2)
+ (x y: car S1), eq S1 x y -> eq S2 (f _ _ m x) (f _ _ m y).
+Proof.
+ intros.
+ rewrite H.
+ reflexivity.
+Qed.
+\end{verbatim}
+\end{cscexample}
+
+\asection{Tactics enabled on user provided relations}
+\label{setoidtactics}
+The following tactics, all prefixed by \texttt{setoid\_}, 
+deal with arbitrary
+registered relations and morphisms. Moreover, all the corresponding unprefixed
+tactics (i.e. \texttt{reflexivity, symmetry, transitivity, replace, rewrite})
+have been extended to fall back to their prefixed counterparts when
+the relation involved is not Leibniz equality. Notice, however, that using
+the prefixed tactics it is possible to pass additional arguments such as
+\texttt{generate side conditions} or \texttt{using relation}.
+
+\comindex{setoid\_reflexivity}
+\begin{quote}
+  \texttt{setoid\_reflexivity}
+\end{quote}
+
+\comindex{setoid\_symmetry}
+\begin{quote}
+  \texttt{setoid\_symmetry}
+  \zeroone{\texttt{in} \textit{ident}}\\
+\end{quote}
+
+\comindex{setoid\_transitivity}
+\begin{quote}
+  \texttt{setoid\_transitivity}
+\end{quote}
+
+\comindex{setoid\_rewrite}
+\begin{quote}
+  \texttt{setoid\_rewrite} \zeroone{\textit{orientation}} \textit{term}\\
+  ~\zeroone{\texttt{in} \textit{ident}}\\
+  ~\zeroone{\texttt{generate side conditions}
+  \textit{term}$_1$ \ldots \textit{term}$_n$}\\
+\end{quote}
+
+The \texttt{generate side conditions} argument cannot be passed to the
+unprefixed form.
+
+\comindex{setoid\_replace}
+\begin{quote}
+  \texttt{setoid\_replace} \textit{term} \texttt{with} \textit{term}
+  ~\zeroone{\texttt{in} \textit{ident}}\\
+  ~\zeroone{\texttt{using relation} \textit{term}}\\
+  ~\zeroone{\texttt{generate side conditions}
+  \textit{term}$_1$ \ldots \textit{term}$_n$}\\
+  ~\zeroone{\texttt{by} \textit{tactic}}
+\end{quote}
+
+The  \texttt{generate  side  conditions} and  \texttt{using  relation}
+arguments cannot be passed to the unprefixed form. The latter argument
+tells the  tactic what parametric  relation should be used  to replace
+the first tactic argument with the second one. If omitted, it defaults
+to Leibniz equality.
+
+Every derived tactic that is based on the unprefixed forms of the tactics
+considered above will also work up to user defined relations. For instance,
+it is possible to register hints for \texttt{autorewrite} that are
+not proof of Leibniz equalities. In particular it is possible to exploit
+\texttt{autorewrite} to simulate normalization in a term rewriting system
+up to user defined equalities.
+
+\asection{Printing relations and morphisms}
+The \texttt{Print Setoids} command shows the list of currently registered
+parametric relations and morphisms. For each morphism its signature is also
+given. When the rewriting tactics refuse to replace a term in a context
+because the latter is not a composition of morphisms, the \texttt{Print Setoids}
+command is useful to understand what additional morphisms should be registered.
+
+\asection{Deprecated syntax and backward incompatibilities}
+Due to backward compatibility reasons, the following syntax for the
+declaration of setoids and morphisms is also accepted.
+
+\comindex{Add Setoid}
+\begin{quote}
+  \texttt{Add Setoid} \textit{A Aeq ST} \texttt{as} \textit{ident}
+\end{quote}
+where \textit{Aeq} is a congruence relation without parameters,
+\textit{A} is its carrier and \textit{ST} is an object of type
+\verb|(Setoid_Theory A Aeq)| (i.e. a record packing together the reflexivity,
+symmetry and transitivity lemmas). Notice that the syntax is not completely
+backward compatible since the identifier was not required.
+
+\comindex{Add Morphism}
+\begin{quote}
+  \texttt{Add Morphism} \textit{ f }:\textit{ ident}.\\
+  Proof.\\
+  \ldots\\
+  Qed.
+\end{quote}
+
+The latter command is restricted to the declaration of morphisms without
+parameters. It is not fully backward compatible since the property the user
+is asked to prove is slightly different: for $n$-ary morphisms the hypotheses
+of the property are permuted; moreover, when the morphism returns a
+proposition, the property is now stated using a bi-implication in place of
+a simple implication. In practice, porting an old development to the new
+semantics is usually quite simple.
+
+Notice that several limitations of the old implementation have been lifted.
+In particular, it is now possible to declare several relations with the
+same carrier and several signatures for the same morphism. Moreover, it is
+now also possible to declare several morphisms having the same signature.
+Finally, the replace and rewrite tactics can be used to replace terms in
+contexts that were refused by the old implementation.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

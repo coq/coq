@@ -1,0 +1,328 @@
+\chapter[\Coq{} Integrated Development Environment]{\Coq{} Integrated Development Environment\label{Addoc-coqide}
+\ttindex{coqide}}
+
+The \Coq{} Integrated Development Environment is a graphical tool, to
+be used as a user-friendly replacement to \texttt{coqtop}. Its main
+purpose is to allow the user to navigate forward and backward into a
+\Coq{} vernacular file, executing corresponding commands or undoing
+them respectively. % CREDITS ? Proof general, lablgtk, ...
+
+\CoqIDE{} is run by typing the command \verb|coqide| on the command
+line. Without argument, the main screen is displayed with an ``unnamed
+buffer'', and with a file name as argument, another buffer displaying
+the contents of that file. Additionally, \verb|coqide| accepts the same
+options as \verb|coqtop|, given in Chapter~\ref{Addoc-coqc}, the ones having
+obviously no meaning for \CoqIDE{} being ignored. Additionally, \verb|coqide| accepts the option \verb|-enable-geoproof| to enable the support for \emph{GeoProof} \footnote{\emph{GeoProof} is dynamic geometry software which can be used in conjunction with \CoqIDE{} to interactively build a Coq statement corresponding to a geometric figure. More information about \emph{GeoProof} can be found here: \url{http://home.gna.org/geoproof/} }. 
+  
+
+\begin{figure}[t]
+\begin{center}
+%HEVEA\imgsrc{coqide.png}
+%BEGIN LATEX
+\ifpdf   % si on est en pdflatex
+\includegraphics[width=1.0\textwidth]{coqide.png}
+\else
+\includegraphics[width=1.0\textwidth]{coqide.eps}
+\fi
+%END LATEX
+\end{center}
+\caption{\CoqIDE{} main screen}
+\label{fig:coqide}
+\end{figure}
+
+A sample \CoqIDE{} main screen, while navigating into a file
+\verb|Fermat.v|, is shown on Figure~\ref{fig:coqide}.  At
+the top is a menu bar, and a tool bar below it. The large window on
+the left is displaying the various \emph{script buffers}. The upper right
+window is the \emph{goal window}, where goals to 
+prove are displayed. The lower right window is the \emph{message window},
+where various messages resulting from commands are displayed. At the
+bottom is the status bar.
+
+\section{Managing files and buffers, basic edition}
+
+In the script window, you may open arbitrarily many buffers to
+edit. The \emph{File} menu allows you to open files or create some,
+save them, print or export them into various formats. Among all these
+buffers, there is always one which is the current \emph{running
+  buffer}, whose name is displayed on a green background, which is the
+one where Coq commands are currently executed. 
+
+Buffers may be edited as in any text editor, and classical basic
+editing commands (Copy/Paste, \ldots) are available in the \emph{Edit}
+menu. \CoqIDE{} offers only basic editing commands, so if you need
+more complex editing commands, you may launch your favorite text
+editor on the current buffer, using the \emph{Edit/External Editor}
+menu. 
+
+\section{Interactive navigation into \Coq{} scripts}
+
+The running buffer is the one where navigation takes place. The
+toolbar proposes five basic commands for this. The first one,
+represented by a down arrow icon, is for going forward executing one
+command. If that command is successful, the part of the script that
+has been executed is displayed on a green background. If that command
+fails, the error message is displayed in the message window, and the
+location of the error is emphasized by a red underline.
+
+On Figure~\ref{fig:coqide}, the running buffer is \verb|Fermat.v|, all
+commands until the \verb|Theorem| have been already executed, and the
+user tried to go forward executing \verb|Induction n|. That command
+failed because no such tactic exist (tactics are now in
+lowercase\ldots), and the wrong word is underlined. 
+
+Notice that the green part of the running buffer is not editable. If
+you ever want to modify something you have to go backward using the up
+arrow tool, or even better, put the cursor where you want to go back
+and use the \textsf{goto} button. Unlike with \verb|coqtop|, you
+should never use \verb|Undo| to go backward.
+
+Two additional tool buttons exist, one to go directly to the end and
+one to go back to the beginning. If you try to go to the end, or in
+general to run several commands using the \textsf{goto} button, the
+  execution will stop whenever an error is found.
+
+If you ever try to execute a command which happens to run during a
+long time, and would like to abort it before its
+termination, you may use the interrupt button (the white cross on a red circle).
+ 
+Finally, notice that these navigation buttons are also available in
+the menu, where their keyboard shortcuts are given.
+
+\section[Try tactics automatically]{Try tactics automatically\label{sec:trytactics}}
+
+The menu \texttt{Try Tactics} provides some features for automatically
+trying to solve the current goal using simple tactics. If such a
+tactic succeeds in solving the goal, then its text is automatically
+inserted into the script. There is finally a combination of these
+tactics, called the \emph{proof wizard} which will try each of them in
+turn. This wizard is also available as a tool button (the light
+bulb).  The set of tactics tried by the wizard is customizable in
+the preferences.
+
+These tactics are general ones, in particular they do not refer to
+particular hypotheses. You may also try specific tactics related to
+the goal or one of the hypotheses, by clicking with the right mouse
+button one the goal or the considered hypothesis. This is the
+``contextual menu on goals'' feature, that may be disabled in the
+preferences if undesirable.
+ 
+\section{Vernacular commands, templates}
+
+The \texttt{Templates} menu allows to use shortcuts to insert
+vernacular commands. This is a nice way to proceed if you are not sure
+of the spelling of the command you want.
+
+Moreover, this menu offers some \emph{templates} which will automatic
+insert a complex command like Fixpoint with a convenient shape for its
+arguments. 
+
+\section{Queries}
+
+\begin{figure}[t]
+\begin{center}
+%HEVEA\imgsrc{coqide-queries.png}
+%BEGIN LATEX
+\ifpdf  % si on est en pdflatex
+\includegraphics[width=1.0\textwidth]{coqide-queries.png}
+\else
+\includegraphics[width=1.0\textwidth]{coqide-queries.eps}
+\fi
+%END LATEX
+\end{center}
+\caption{\CoqIDE{}: the query window}
+\label{fig:querywindow}
+\end{figure}
+
+
+We call \emph{query} any vernacular command that do not change the
+current state, such as \verb|Check|, \verb|SearchAbout|, etc. Those
+commands are of course useless during compilation of a file, hence
+should not be included in scripts. To run such commands without
+writing them in the script, \CoqIDE{} offers another input window
+called the \emph{query window}. This window can be displayed on
+demand, either by using the \texttt{Window} menu, or directly using
+shortcuts given in the \texttt{Queries} menu. Indeed, with \CoqIDE{}
+the simplest way to perform a \texttt{SearchAbout} on some identifier
+is to select it using the mouse, and pressing \verb|F2|. This will
+both make appear the query window and run the \texttt{SearchAbout} in
+it, displaying the result. Shortcuts \verb|F3| and \verb|F4| are for
+\verb|Check| and \verb|Print| respectively.
+Figure~\ref{fig:querywindow} displays the query window after selection
+of the word ``mult'' in the script windows, and pressing \verb|F4| to
+print its definition.
+
+\section{Compilation}
+
+The \verb|Compile| menu offers direct commands to:
+\begin{itemize}
+\item compile the current buffer
+\item run a compilation using \verb|make|
+\item go to the last compilation error
+\item create a \verb|makefile| using \verb|coq_makefile|.
+\end{itemize}
+
+\section{Customizations}
+
+You may customize your environment using menu
+\texttt{Edit/Preferences}. A new window will be displayed, with
+several customization sections presented as a notebook. 
+
+The first section is for selecting the text font used for scripts, goal
+and message windows. 
+
+The second section is devoted to file management: you may
+configure automatic saving of files, by periodically saving the
+contents into files named \verb|#f#| for each opened file
+\verb|f|. You may also activate the \emph{revert} feature: in case a
+opened file is modified on the disk by a third party, \CoqIDE{} may read
+it again for you. Note that in the case you edited that same file, you
+will be prompt to choose to either discard your changes or not. The
+\texttt{File charset encoding} choice is described below in
+Section~\ref{sec:coqidecharencoding}
+ 
+
+The \verb|Externals| section allows to customize the external commands
+for compilation, printing, web browsing. In the browser command, you
+may use \verb|%s| to denote the URL to open, for example: %
+\verb|mozilla -remote "OpenURL(%s)"|. 
+
+The \verb|Tactics Wizard| section allows to defined the set of tactics
+that should be tried, in sequence, to solve the current goal.
+
+The last section is for miscellaneous boolean settings, such as the
+``contextual menu on goals'' feature presented in
+Section~\ref{sec:trytactics}. 
+
+Notice that these settings are saved in the file \verb|.coqiderc| of
+your home directory. 
+
+A gtk2 accelerator keymap is saved under the name \verb|.coqide.keys|.
+This file should not be edited manually: to modify a given menu
+shortcut, go to the corresponding menu item without releasing the
+mouse button, press the key you want for the new shortcut, and release
+the mouse button afterwards.
+
+For experts: it is also possible to set up a specific gtk resource
+file, under the name \verb|.coqide-gtk2rc|, following the gtk2
+resources syntax
+\url{http://developer.gnome.org/doc/API/2.0/gtk/gtk-Resource-Files.html}.
+Such a default resource file can be found in the subdirectory
+\verb=lib/coq/ide= of the root installation directory of \Coq{}
+(alternatively, it can be found in the subdirectory \verb=ide= of the
+source archive of \Coq{}). You may
+copy this file into your home directory, and edit it using any text
+editor, \CoqIDE{} itself for example.
+
+\section{Using unicode symbols}
+
+\CoqIDE{} supports unicode character encoding in its text windows,
+consequently a large set of symbols is available for notations.
+
+\subsection{Displaying unicode symbols}
+
+You just need to define suitable notations as described in
+Chapter~\ref{Addoc-syntax}. For example, to use the mathematical symbols
+$\forall$ and $\exists$, you may define 
+\begin{quote}\tt
+Notation "$\forall$ x : t, P" := \\
+\qquad  (forall x:t, P) (at level 200, x ident).\\
+Notation "$\exists$ x : t, P" := \\
+\qquad  (exists x:t, P) (at level 200, x ident).
+\end{quote}
+There exists a small set of such notations already defined, in the
+file \verb|utf8.v| of \Coq{} library, so you may enable them just by 
+\verb|Require utf8| inside \CoqIDE{}, or equivalently, by starting
+\CoqIDE{} with \verb|coqide -l utf8|.
+
+However, there are some issues when using such unicode symbols: you of
+course need to use a character font which supports them. In the Fonts
+section of the preferences, the Preview line displays some unicode symbols, so
+you could figure out if the selected font is OK. Related to this, one
+thing you may need to do is choose whether Gtk should use antialiased
+fonts or not, by setting the environment variable \verb|GDK_USE_XFT|
+to 1 or 0 respectively.
+
+\subsection{Defining an input method for non ASCII symbols}
+
+To input an Unicode symbol, a general method is to press both the
+CONTROL and the SHIFT keys, and type the hexadecimal code of the
+symbol required, for example \verb|2200| for the $\forall$ symbol.
+A list of symbol codes is available at \url{http://www.unicode.org}. 
+
+Of course, this method is painful for symbols you use often. There is
+always the possibility to copy-paste a symbol already typed in.
+Another method is to bind some key combinations for frequently used
+symbols. For example, to bind keys \verb|F11| and \verb|F12| to
+$\forall$ and $\exists$ respectively, you may add
+\begin{quote}\tt
+  bind "F11" {"insert-at-cursor" ("$\forall$")}\\
+  bind "F12" {"insert-at-cursor" ("$\exists$")}
+\end{quote}
+to your \verb|binding "text"| section in \verb|.coqide-gtk2rc|.
+
+
+%  such a binding is system-dependent. We
+% give here a solution for X11:
+% \begin{itemize}
+% \item first, using \verb|xmodmap|, bind some key combination into a
+%   new key name such as Fxx where xx greater that 12: for example (on a
+%   french keyboard)
+%   \begin{quote}\tt
+%     xmodmap -e "keycode  24 = a A F13 F13" \\
+%     xmodmap -e "keycode  26 = e E F14 F14" 
+%   \end{quote}
+%   will rebind "<AltGr>a" to F13 and "<AltGr>e" to F14.
+% \item then add   
+%   \begin{quote}\tt
+%     bind "F13" {"insert-at-cursor" ("$\forall$")}\\
+%     bind "F14" {"insert-at-cursor" ("$\exists$")}
+%   \end{quote}
+%   to your \verb|binding "text"| section in \verb|.coqide-gtk2rc|.
+%        The strange \verb|∀| argument is the UTF-8 encoding for
+%        0x2200, that is the symbol $\forall$. Computing UTF-8 encoding
+%        for a unicode can be done in various ways, including
+%        launching a \verb|lablgtk2| toplevel and use
+%\begin{verbatim}
+%     Glib.Utf8.from_unichar 0x2200;;
+%\end{verbatim}
+%\end{itemize}
+
+\subsection[Character encoding for saved files]{Character encoding for saved files\label{sec:coqidecharencoding}}
+
+In the \texttt{Files} section of the preferences, the encoding option
+is related to the way files are saved. 
+
+If you have no need to exchange files with non UTF-8 aware
+applications, it is better to choose the UTF-8 encoding, since it
+guarantees that your files will be read again without problems. (This
+is because when \CoqIDE{} reads a file, it tries to automatically
+detect its character encoding.) 
+
+If you choose something else than UTF-8, then missing characters will
+be written encoded by \verb|\x{....}| or \verb|\x{........}| where
+each dot is an hexadecimal digit: the number between braces is the
+hexadecimal UNICODE index for the missing character.
+
+
+\section{Building a custom \CoqIDE{} with user \textsc{ML} code}
+
+You can do this as described in Section~\ref{Coqmktop} for a
+custom coq text toplevel, simply by adding 
+option \verb|-ide| to \verb|coqmktop|, that is something like
+\begin{quote}
+\texttt{coqmktop -ide -byte $m_1$.cmo \ldots{} $m_n$.cmo}
+\end{quote}
+or 
+\begin{quote}
+\texttt{coqmktop -ide -opt $m_1$.cmx \ldots{} $m_n$.cmx}
+\end{quote}
+
+    
+
+% $Id$ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

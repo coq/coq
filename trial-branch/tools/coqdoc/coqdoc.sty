@@ -1,0 +1,59 @@
+
+% This is coqdoc.sty, by Jean-Christophe Filliâtre
+% This LaTeX package is used by coqdoc (http://www.lri.fr/~filliatr/coqdoc)
+%
+% You can modify the following macros to customize the appearance
+% of the document.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{coqdoc}[2002/02/11]
+
+% Headings
+\usepackage{fancyhdr}
+\newcommand{\coqdocleftpageheader}{\thepage\ -- \today}
+\newcommand{\coqdocrightpageheader}{\today\ -- \thepage}
+\pagestyle{fancyplain}
+
+%BEGIN LATEX
+\headsep 8mm
+\renewcommand{\plainheadrulewidth}{0.4pt}
+\renewcommand{\plainfootrulewidth}{0pt}
+\lhead[\coqdocleftpageheader]{\leftmark}
+\rhead[\leftmark]{\coqdocrightpageheader}
+\cfoot{}
+%END LATEX
+
+% Hevea puts to much space with \medskip and \bigskip
+%HEVEA\renewcommand{\medskip}{}
+%HEVEA\renewcommand{\bigskip}{}
+
+% own name
+\newcommand{\coqdoc}{\textsf{coqdoc}}
+
+% pretty underscores (the package fontenc causes ugly underscores)
+%BEGIN LATEX
+\def\_{\kern.08em\vbox{\hrule width.35em height.6pt}\kern.08em}
+%END LATEX
+
+% macro for typesetting keywords
+\newcommand{\coqdockw}[1]{\textsf{#1}}
+
+% macro for typesetting identifiers
+\newcommand{\coqdocid}[1]{\textit{#1}}
+
+% newline and indentation 
+%BEGIN LATEX
+\newcommand{\coqdoceol}{\setlength\parskip{0pt}\par}
+\newcommand{\coqdocindent}[1]{\noindent\kern#1}
+%END LATEX
+%HEVEA\newcommand{\coqdoceol}{\begin{rawhtml}<BR>\end{rawhtml}}
+%HEVEA\newcommand{\coqdocindent}[1]{\hspace{#1}\hspace{#1}}
+
+% macro for typesetting the title of a module implementation
+\newcommand{\coqdocmodule}[1]{\chapter{Module #1}\markboth{Module #1}{}
+}
+
+%HEVEA\newcommand{\lnot}{\coqwkw{not}}
+%HEVEA\newcommand{\lor}{\coqwkw{or}}
+%HEVEA\newcommand{\land}{\&}
+

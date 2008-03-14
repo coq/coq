@@ -1,0 +1,70 @@
+Since July 2007, Coq features a build system overhauled by Pierre
+Corbineau and Lionel Elie Mamane.
+
+This file documents internals of the implementation of the build
+system. For what a Coq developer needs to know about the build system,
+see build-system.txt .
+
+.ml4 files
+----------
+
+.ml files corresponding to .ml4 files are created to keep ocamldep
+happy only. To ensure they are not used for compilation, they contain
+invalid OCaml.
+
+multi-stage build
+-----------------
+
+Le processus de construction est séparé en trois étapes qui correspondent
+aux outils nécessaires pour calculer les dépendances de cette étape:
+
+stage1: ocamldep, sed , camlp4 sans fichiers de Coq
+stage2: camlp4 avec grammar.cma et/ou q_constr.cmo
+stage3: coqdep (.vo)
+
+Le Makefile a été séparé en plusieurs fichiers :
+
+- Makefile: coquille vide qui délègue les cibles à la bonne étape sauf
+  clean et les fichiers pour emacs (car ils sont en quelque sorte en
+  "stage0": aucun calcul de dépendance nécessaire).
+- Makefile.common : définitions des variables (essentiellement des
+  listes de fichiers)
+- Makefile.build : les règles de compilation sans inclure de
+  dépendances
+- Makefile.stage* : fichiers qui incluent les dépendances calculables
+  à cette étape ainsi que Makefile.build.
+
+The build needs to be cut in stages because make will not take into
+account one include when making another include.
+
+Parallélisation
+---------------
+
+Le découpage en étapes veut dire que le makefile est un petit peu
+moins parallélisable que strictement possible en théorie: par exemple,
+certaines choses faites en stage2 pourraient être faites en parallèle
+avec des choses de stage1. Nous essayons de minimiser cet effet, mais
+nous ne l'avons pas complètement éliminé parce que cela mènerait à un
+makefile très complexe. La minimisation est principalement que si on
+demande un objet spécifique (par exemple "make parsing/g_constr.cmx"),
+il est fait dans l'étape la plus basse possible (simplement), mais si
+un objet est fait comme dépendance de la cible demandée (par exemple
+dans un "make world"), il est fait le plus tard possible (par exemple,
+tout code OCaml non nécessaire pour coqdep ni grammar.cma ni
+q_constr.cmo est compilé en stage3 lors d'un "make world"; cela permet
+le parallélisme de compilation de code OCaml et de fichiers Coq (.v)).
+
+Le "(simplement)" ci-dessus veut dire que savoir si un fichier non
+nécessaire pour grammar.cma/q_constr.cmo peut en fait être fait en
+stage1 est compliqué avec make, alors nous retombons en général sur le
+stage2. La séparation entre le stage2 et stage3 est plus facile, donc
+l'optimisation ci-dessus s'y applique pleinement.
+
+En d'autres mots, nous avons au niveau conceptuel deux assignations
+d'étape pour chaque fichier:
+
+ - l'étape la plus petite où nous savons qu'il peut être fait.
+ - l'étape la plus grande où il peut être fait.
+
+Mais seule la première est gérée explicitement, la seconde est
+implicite.

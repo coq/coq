@@ -1,0 +1,199 @@
+.TH COQ 1 "October 11, 2006"
+
+.SH NAME
+coqtop \- The Coq Proof Assistant toplevel system
+
+
+.SH SYNOPSIS
+.B coqtop
+[
+.B options
+]
+
+.SH DESCRIPTION
+
+.B coqtop
+is the toplevel system of Coq, for interactive use.
+It reads phrases on the standard input, and prints results on the
+standard output.
+
+For batch-oriented use of Coq, see 
+.BR coqc(1).
+
+
+.SH OPTIONS
+
+.TP
+.B \-h, \-\-help
+Help. Will give you the complete list of options accepted by coqtop.
+
+.TP
+.BI \-I \ dir, \ \-\-include \ dir
+add directory 
+.I dir
+in the include path
+
+.TP
+.BI \-R \ dir\ coqdir          
+recursively map physical
+.I dir
+to logical
+.I coqdir
+
+.TP
+.BI \-top \ coqdir
+set the toplevel name to be
+.I coqdir
+instead of Top
+
+.TP
+.BI \-inputstate \ filename, \ \-is \ filename 
+read state from file
+.I filename.coq
+
+.TP
+.B \-nois
+start with an empty intial state
+
+.TP
+.BI \-outputstate filename
+write state in file
+.I filename.coq
+
+.TP
+.BI \-load\-ml\-object \ filename
+load ML object file
+.I filenname
+
+.TP
+.BI \-load\-ml\-source \ filename
+load ML file
+.I filename
+
+.TP
+.BI \-load\-vernac\-source \ filename, \ \-l \ filename
+load Coq file
+.I filename.v
+(Load filename.)
+
+.TP
+.BI \-load\-vernac\-source\-verbose \ filename, \ \-lv \ filename 
+load verbosely Coq file
+.I filename.v
+(Load Verbose filename.)
+
+.TP
+.BI \-load\-vernac\-object \ filename
+load Coq object file
+.I filename.vo
+
+.TP
+.BI \-require \ filename
+load Coq object file
+.I filename.vo
+and import it (Require Import filename.)
+
+.TP
+.BI \-compile \ filename
+compile Coq file
+.I filename.v 
+(implies 
+.B \-batch
+)
+
+.TP
+.BI \-compile\-verbose \ filename
+verbosely compile Coq file
+.I filename.v
+(implies 
+.B \-batch
+)
+
+.TP
+.B \-opt
+run the native\-code version of Coq
+
+.TP
+.B \-byte
+run the bytecode version of Coq
+
+.TP
+.B \-where
+print Coq's standard library location and exit
+
+.TP
+.B \-v
+print Coq version and exit
+
+.TP
+.B \-q
+skip loading of rcfile
+
+.TP
+.BI \-init\-file \ filename
+set the rcfile to
+.I filename
+
+.TP
+.BI \-user \ uid
+use the rcfile of user
+.I uid
+
+
+.TP
+.B \-batch
+batch mode (exits just after arguments parsing)
+
+.TP
+.B \-boot
+boot mode (implies
+.B \-q
+and
+.B \-batch
+)
+
+.TP
+.B \-emacs
+tells Coq it is executed under Emacs
+
+.TP
+.BI \-dump\-glob \ filename
+dump globalizations in file f (to be used by
+.B coqdoc(1)
+)
+
+.TP
+.BI \-with\-geoproof \ (yes|no)
+to (de)activate special functions for Geoproof within Coqide (default is
+.I yes
+)
+
+.TP
+.B \-impredicative\-set
+set sort Set impredicative
+
+.TP
+.B \-dont\-load\-proofs
+don't load opaque proofs in memory
+
+.TP
+.B \-xml
+export XML files either to the hierarchy rooted in
+the directory $COQ_XML_LIBRARY_ROOT (if set) or to
+stdout (if unset)
+
+.TP
+.B \-quality
+improve the legibility of the proof terms produced by
+some tactics
+
+.SH SEE ALSO
+
+.BR coqc (1),
+.BR coq-tex (1),
+.BR coqdep (1).
+.br
+.I
+The Coq Reference Manual.
+.I
+The Coq web site: http://coq.inria.fr

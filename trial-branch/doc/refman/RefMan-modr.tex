@@ -1,0 +1,585 @@
+\chapter[The Module System]{The Module System\label{chapter:Modules}}
+
+The module system extends the Calculus of Inductive Constructions
+providing a convenient way to structure large developments as well as
+a mean of massive abstraction.
+%It is described in details in Judicael's thesis and Jacek's thesis
+
+\section{Modules and module types}
+
+\paragraph{Access path.} It is denoted by $p$, it can be either a module 
+variable $X$ or, if $p'$ is an access path and $id$ an identifier, then
+$p'.id$ is an access path.
+
+\paragraph{Structure element.} It is denoted by \Impl\ and is either a
+definition of a constant, an assumption, a definition of an inductive
+or a definition of a module or a module type abbreviation.
+
+\paragraph{Module expression.} It is denoted by $M$ and can be:
+\begin{itemize}
+\item an access path $p$
+\item a structure $\struct{\nelist{\Impl}{;}}$
+\item a functor $\functor{X}{T}{M'}$, where $X$ is a module variable,
+  $T$ is a module type and $M'$ is a module expression
+\item an application of access paths $p' p''$
+\end{itemize}
+
+\paragraph{Signature element.} It is denoted by \Spec, it is a
+specification of a constant, an assumption, an inductive, a module or
+a module type abbreviation.
+
+\paragraph{Module type,} denoted by $T$ can be:
+\begin{itemize}
+\item a module type name
+\item an access path $p$
+\item a signature $\sig{\nelist{\Spec}{;}}$
+\item a functor type $\funsig{X}{T'}{T''}$, where $T'$ and $T''$ are
+  module types
+\end{itemize}
+
+\paragraph{Module definition,} written $\Mod{X}{T}{M}$ can be a
+structure element. It consists of a module variable $X$, a module type
+$T$ and a module expression $M$.
+
+\paragraph{Module specification,} written $\ModS{X}{T}$ or
+$\ModSEq{X}{T}{p}$ can be a signature element or a part of an
+environment. It consists of a module variable $X$, a module type $T$
+and, optionally, a module path $p$. 
+
+\paragraph{Module type abbreviation,} written $\ModType{S}{T}$, where
+$S$ is a module type name and $T$ is a module type.
+
+
+\section{Typing Modules}
+
+In order to introduce the typing system we first slightly extend
+the syntactic class of terms and environments given in
+section~\ref{Terms}. The environments, apart from definitions of
+constants and inductive types now also hold any other signature elements.
+Terms, apart from variables, constants and complex terms, 
+include also access paths.
+
+We also need additional typing judgments: 
+\begin{itemize}
+\item \WFT{E}{T}, denoting that a module type $T$ is well-formed, 
+
+\item \WTM{E}{M}{T}, denoting that a module expression $M$ has type $T$ in
+environment $E$.
+
+\item \WTM{E}{\Impl}{\Spec}, denoting that an implementation $\Impl$
+  verifies a specification $\Spec$
+
+\item \WS{E}{T_1}{T_2}, denoting that a module type $T_1$ is a subtype of a
+module type $T_2$.
+
+\item \WS{E}{\Spec_1}{\Spec_2}, denoting that a specification
+  $\Spec_1$ is more precise that a specification $\Spec_2$.
+\end{itemize}
+The rules for forming module types are the following:
+\begin{description}
+\item[WF-SIG]
+\inference{%
+  \frac{
+    \WF{E;E'}{}
+  }{%%%%%%%%%%%%%%%%%%%%%
+    \WFT{E}{\sig{E'}}
+  }
+}
+\item[WF-FUN]
+\inference{%
+  \frac{
+    \WFT{E;\ModS{X}{T}}{T'}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WFT{E}{\funsig{X}{T}{T'}}
+  }
+}
+\end{description}
+Rules for typing module expressions:
+\begin{description}
+\item[MT-STRUCT]
+\inference{%
+  \frac{
+    \begin{array}{c}
+      \WFT{E}{\sig{\Spec_1;\dots;\Spec_n}}\\
+      \WTM{E;\Spec_1;\dots;\Spec_{i-1}}{\Impl_i}{\Spec_i}
+                                              \textrm{ \ \ for } i=1\dots n
+    \end{array}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WTM{E}{\struct{\Impl_1;\dots;\Impl_n}}{\sig{\Spec_1;\dots;\Spec_n}}
+  }
+}
+\item[MT-FUN]
+\inference{%
+  \frac{
+    \WTM{E;\ModS{X}{T}}{M}{T'}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WTM{E}{\functor{X}{T}{M}}{\funsig{X}{T}{T'}}
+  }
+}
+\item[MT-APP]
+\inference{%
+  \frac{
+    \begin{array}{c}
+      \WTM{E}{p}{\funsig{X_1}{T_1}{\!\dots\funsig{X_n}{T_n}{T'}}}\\
+      \WTM{E}{p_i}{T_i\{X_1/p_1\dots X_{i-1}/p_{i-1}\}}
+                                   \textrm{ \ \ for } i=1\dots n
+    \end{array}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WTM{E}{p\; p_1 \dots p_n}{T'\{X_1/p_1\dots X_n/p_n\}}
+  }
+}
+\item[MT-SUB]
+\inference{%
+  \frac{
+    \WTM{E}{M}{T}~~~~~~~~~~~~\WS{E}{T}{T'}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WTM{E}{M}{T'}
+  }
+}
+\item[MT-STR]
+\inference{%
+  \frac{
+    \WTM{E}{p}{T}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WTM{E}{p}{T/p}
+  }
+}
+\end{description}
+The last rule, called strengthening is used to make all module fields
+manifestly equal to themselves. The notation $T/p$ has the following
+meaning:
+\begin{itemize}
+\item if $T=\sig{\Spec_1;\dots;\Spec_n}$ then
+  $T/p=\sig{\Spec_1/p;\dots;\Spec_n/p}$ where $\Spec/p$ is defined as
+  follows:
+  \begin{itemize}
+  \item $\Def{}{c}{U}{t}/p ~=~ \Def{}{c}{U}{t}$
+  \item $\Assum{}{c}{U}/p ~=~ \Def{}{c}{p.c}{U}$
+  \item $\ModS{X}{T}/p ~=~ \ModSEq{X}{T/p.X}{p.X}$
+  \item $\ModSEq{X}{T}{p'}/p ~=~ \ModSEq{X}{T/p}{p'}$
+  \item $\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$
+  \item $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}$
+  \end{itemize}
+\item if $T=\funsig{X}{T'}{T''}$ then $T/p=T$
+\item if $T$ is an access path or a module type name, then we have to
+  unfold its definition and proceed according to the rules above. 
+\end{itemize}
+The notation $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$ denotes an
+inductive definition that is definitionally equal to the inductive
+definition in the module denoted by the path $p$. All rules which have
+$\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}$ as premises are also valid for 
+$\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$. We give the formation rule
+for $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$ below as well as
+the equality rules on inductive types and constructors. 
+
+The module subtyping rules:
+\begin{description}
+\item[MSUB-SIG]
+\inference{%
+  \frac{
+    \begin{array}{c}
+      \WS{E;\Spec_1;\dots;\Spec_n}{\Spec_{\sigma(i)}}{\Spec'_i}
+                                  \textrm{ \ for } i=1..m \\
+      \sigma : \{1\dots m\} \ra \{1\dots n\} \textrm{ \ injective}
+    \end{array}
+  }{
+    \WS{E}{\sig{\Spec_1;\dots;\Spec_n}}{\sig{\Spec'_1;\dots;\Spec'_m}}
+  }
+}
+\item[MSUB-FUN]
+\inference{%       T_1 -> T_2 <: T_1' -> T_2'
+  \frac{
+    \WS{E}{T_1'}{T_1}~~~~~~~~~~\WS{E;\ModS{X}{T_1'}}{T_2}{T_2'}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WS{E}{\funsig{X}{T_1}{T_2}}{\funsig{X}{T_1'}{T_2'}}
+  }
+}
+% these are derived rules
+% \item[MSUB-EQ]
+% \inference{%
+%   \frac{
+%     \WS{E}{T_1}{T_2}~~~~~~~~~~\WTERED{}{T_1}{=}{T_1'}~~~~~~~~~~\WTERED{}{T_2}{=}{T_2'}
+%   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \WS{E}{T_1'}{T_2'}
+%   }
+% }
+% \item[MSUB-REFL]
+% \inference{%
+%   \frac{
+%     \WFT{E}{T}
+%   }{
+%     \WS{E}{T}{T}
+%   }
+% }
+\end{description}
+Specification subtyping rules:
+\begin{description}
+\item[ASSUM-ASSUM]
+\inference{%
+  \frac{
+    \WTELECONV{}{U_1}{U_2}
+  }{
+    \WSE{\Assum{}{c}{U_1}}{\Assum{}{c}{U_2}}
+  }
+}
+\item[DEF-ASSUM]
+\inference{%
+  \frac{
+    \WTELECONV{}{U_1}{U_2}
+  }{
+    \WSE{\Def{}{c}{t}{U_1}}{\Assum{}{c}{U_2}}
+  }
+}
+\item[ASSUM-DEF]
+\inference{%
+  \frac{
+    \WTELECONV{}{U_1}{U_2}~~~~~~~~\WTECONV{}{c}{t_2}
+  }{
+    \WSE{\Assum{}{c}{U_1}}{\Def{}{c}{t_2}{U_2}}
+  }
+}
+\item[DEF-DEF]
+\inference{%
+  \frac{
+    \WTELECONV{}{U_1}{U_2}~~~~~~~~\WTECONV{}{t_1}{t_2}
+  }{
+    \WSE{\Def{}{c}{t_1}{U_1}}{\Def{}{c}{t_2}{U_2}}
+  }
+}
+\item[IND-IND]
+\inference{%
+  \frac{
+    \WTECONV{}{\Gamma_P}{\Gamma_P'}%
+    ~~~~~~~~\WTECONV{\Gamma_P}{\Gamma_C}{\Gamma_C'}%
+    ~~~~~~~~\WTECONV{\Gamma_P;\Gamma_C}{\Gamma_I}{\Gamma_I'}%
+  }{
+    \WSE{\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}}%
+        {\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}}
+  }
+}
+\item[INDP-IND]
+\inference{%
+  \frac{
+    \WTECONV{}{\Gamma_P}{\Gamma_P'}%
+    ~~~~~~~~\WTECONV{\Gamma_P}{\Gamma_C}{\Gamma_C'}%
+    ~~~~~~~~\WTECONV{\Gamma_P;\Gamma_C}{\Gamma_I}{\Gamma_I'}%
+  }{
+    \WSE{\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}%
+        {\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}}
+  }
+}
+\item[INDP-INDP]
+\inference{%
+  \frac{
+    \WTECONV{}{\Gamma_P}{\Gamma_P'}%
+    ~~~~~~\WTECONV{\Gamma_P}{\Gamma_C}{\Gamma_C'}%
+    ~~~~~~\WTECONV{\Gamma_P;\Gamma_C}{\Gamma_I}{\Gamma_I'}%
+    ~~~~~~\WTECONV{}{p}{p'}
+  }{
+    \WSE{\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}%
+        {\Indp{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}{p'}}
+  }
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\item[MODS-MODS]
+\inference{%
+  \frac{
+    \WSE{T_1}{T_2}
+  }{
+    \WSE{\ModS{m}{T_1}}{\ModS{m}{T_2}}
+  }
+}
+\item[MODEQ-MODS]
+\inference{%
+  \frac{
+    \WSE{T_1}{T_2}
+  }{
+    \WSE{\ModSEq{m}{T_1}{p}}{\ModS{m}{T_2}}
+  }
+}
+\item[MODS-MODEQ]
+\inference{%
+  \frac{
+    \WSE{T_1}{T_2}~~~~~~~~\WTECONV{}{m}{p_2}
+  }{
+    \WSE{\ModS{m}{T_1}}{\ModSEq{m}{T_2}{p_2}}
+  }
+}
+\item[MODEQ-MODEQ]
+\inference{%
+  \frac{
+    \WSE{T_1}{T_2}~~~~~~~~\WTECONV{}{p_1}{p_2}
+  }{
+    \WSE{\ModSEq{m}{T_1}{p_1}}{\ModSEq{m}{T_2}{p_2}}
+  }
+}
+\item[MODTYPE-MODTYPE]
+\inference{%
+  \frac{
+    \WSE{T_1}{T_2}~~~~~~~~\WSE{T_2}{T_1}
+  }{
+    \WSE{\ModType{S}{T_1}}{\ModType{S}{T_2}}
+  }
+}
+\end{description}
+Verification of the specification
+\begin{description}
+\item[IMPL-SPEC]
+\inference{%
+  \frac{
+    \begin{array}{c}
+      \WF{E;\Spec}{}\\
+      \Spec \textrm{\ is one of } {\sf Def, Assum, Ind, ModType}
+    \end{array}
+  }{
+    \WTE{}{\Spec}{\Spec}
+  }
+}
+\item[MOD-MODS]
+\inference{%
+  \frac{
+    \WF{E;\ModS{m}{T}}{}~~~~~~~~\WTE{}{M}{T}
+  }{
+    \WTE{}{\Mod{m}{T}{M}}{\ModS{m}{T}}
+  }
+}
+\item[MOD-MODEQ]
+\inference{%
+  \frac{
+    \WF{E;\ModSEq{m}{T}{p}}{}~~~~~~~~~~~\WTECONV{}{p}{p'}
+  }{
+    \WTE{}{\Mod{m}{T}{p'}}{\ModSEq{m}{T}{p'}}
+  }
+}
+\end{description}
+New environment formation rules
+\begin{description}
+\item[WF-MODS]
+\inference{%
+  \frac{
+    \WF{E}{}~~~~~~~~\WFT{E}{T}
+  }{
+    \WF{E;\ModS{m}{T}}{}
+  }
+}
+\item[WF-MODEQ]
+\inference{%
+  \frac{
+    \WF{E}{}~~~~~~~~~~~\WTE{}{p}{T}
+  }{
+    \WF{E,\ModSEq{m}{T}{p}}{}
+  }
+}
+\item[WF-MODTYPE]
+\inference{%
+  \frac{
+    \WF{E}{}~~~~~~~~~~~\WFT{E}{T}
+  }{
+    \WF{E,\ModType{S}{T}}{}
+  }
+}
+\item[WF-IND]
+\inference{%
+  \frac{
+    \begin{array}{c}
+      \WF{E;\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}}{}\\
+      \WT{E}{}{p:\sig{\Spec_1;\dots;\Spec_n;\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'};\dots}}\\
+      \WS{E}{\subst{\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}}{p.l}{l}_{l
+      \in \lab{Spec_1;\dots;Spec_n}}}{\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}}
+    \end{array}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WF{E;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}{}
+  }
+}
+\end{description}
+Component access rules
+\begin{description}
+\item[ACC-TYPE]
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Assum{}{c}{U};\dots}}
+  }{
+    \WTEG{p.c}{\subst{U}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\\
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Def{}{c}{t}{U};\dots}}
+  }{
+    \WTEG{p.c}{\subst{U}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\item[ACC-DELTA]
+Notice that the following rule extends the delta rule defined in
+section~\ref{delta}
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Def{}{c}{t}{U};\dots}}
+  }{
+    \WTEGRED{p.c}{\triangleright_\delta}{\subst{t}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\\
+In the rules below we assume $\Gamma_P$ is $[p_1:P_1;\ldots;p_r:P_r]$,
+  $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
+  $[c_1:C_1;\ldots;c_n:C_n]$
+\item[ACC-IND]
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;\Spec_i;\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I};\dots}}
+  }{
+    \WTEG{p.I_j}{\subst{(p_1:P_1)\ldots(p_r:P_r)A_j}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;\Spec_i;\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I};\dots}}
+  }{
+    \WTEG{p.c_m}{\subst{(p_1:P_1)\ldots(p_r:P_r)\subst{C_m}{I_j}{(I_j~p_1\ldots
+       p_r)}_{j=1\ldots k}}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\item[ACC-INDP]
+\inference{%
+  \frac{
+    \WT{E}{}{p}{\sig{\Spec_1;\dots;\Spec_n;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'};\dots}}
+  }{
+    \WTRED{E}{}{p.I_i}{\triangleright_\delta}{p'.I_i}
+  }
+}
+\inference{%
+  \frac{
+    \WT{E}{}{p}{\sig{\Spec_1;\dots;\Spec_n;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'};\dots}}
+  }{
+    \WTRED{E}{}{p.c_i}{\triangleright_\delta}{p'.c_i}
+  }
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%% MODULES
+\item[ACC-MOD]
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\ModS{m}{T};\dots}}
+  }{
+    \WTEG{p.m}{\subst{T}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\\
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\ModSEq{m}{T}{p'};\dots}}
+  }{
+    \WTEG{p.m}{\subst{T}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\item[ACC-MODEQ]
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\ModSEq{m}{T}{p'};\dots}}
+  }{
+    \WTEGRED{p.m}{\triangleright_\delta}{\subst{p'}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\item[ACC-MODTYPE]
+\inference{%
+  \frac{
+    \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\ModType{S}{T};\dots}}
+  }{
+    \WTEGRED{p.S}{\triangleright_\delta}{\subst{T}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+  }
+}
+\end{description}
+The function $\lab{}$ is used to calculate the set of label of
+the set of specifications. It is defined by
+$\lab{\Spec_1;\dots;\Spec_n}=\lab{\Spec_1}\cup\dots;\cup\lab{\Spec_n}$
+where $\lab{\Spec}$ is defined as follows:
+\begin{itemize}
+\item $\lab{\Assum{\Gamma}{c}{U}}=\{c\}$,
+\item $\lab{\Def{\Gamma}{c}{t}{U}}=\{c\}$,
+\item
+  $\lab{\Ind{\Gamma}{\Gamma_P}{\Gamma_C}{\Gamma_I}}=\dom{\Gamma_C}\cup\dom{\Gamma_I}$,
+\item $\lab{\ModS{m}{T}}=\{m\}$,
+\item $\lab{\ModSEq{m}{T}{M}}=\{m\}$,
+\item $\lab{\ModType{S}{T}}=\{S\}$
+\end{itemize}
+Environment access for modules and module types
+\begin{description}
+\item[ENV-MOD]
+\inference{%
+  \frac{
+    \WF{E;\ModS{m}{T};E'}{\Gamma}
+  }{
+    \WT{E;\ModS{m}{T};E'}{\Gamma}{m}{T}
+  }
+}
+\item[]
+\inference{%
+  \frac{
+    \WF{E;\ModSEq{m}{T}{p};E'}{\Gamma}
+  }{
+    \WT{E;\ModSEq{m}{T}{p};E'}{\Gamma}{m}{T}
+  }
+}
+\item[ENV-MODEQ]
+\inference{%
+  \frac{
+    \WF{E;\ModSEq{m}{T}{p};E'}{\Gamma}
+  }{
+    \WTRED{E;\ModSEq{m}{T}{p};E'}{\Gamma}{m}{\triangleright_\delta}{p}
+  }
+}
+\item[ENV-MODTYPE]
+\inference{%
+  \frac{
+    \WF{E;\ModType{S}{T};E'}{\Gamma}
+  }{
+    \WTRED{E;\ModType{S}{T};E'}{\Gamma}{S}{\triangleright_\delta}{T}
+  }
+}
+\item[ENV-INDP]
+\inference{%
+  \frac{
+    \WF{E;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}{}
+  }{
+    \WTRED{E;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}{}{I_i}{\triangleright_\delta}{p.I_i}
+  }
+}
+\inference{%
+  \frac{
+    \WF{E;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}{}
+  }{
+    \WTRED{E;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}{}{c_i}{\triangleright_\delta}{p.c_i}
+  }
+}
+\end{description}
+% %%% replaced by \triangle_\delta
+% Module path equality is a transitive and reflexive closure of the
+% relation generated by ACC-MODEQ and ENV-MODEQ.
+% \begin{itemize}
+% \item []MP-EQ-REFL
+% \inference{%
+%   \frac{
+%     \WTEG{p}{T}
+%   }{
+%     \WTEG{p}{p}
+%   }
+% }
+% \item []MP-EQ-TRANS
+% \inference{%
+%   \frac{
+%     \WTEGRED{p}{=}{p'}~~~~~~\WTEGRED{p'}{=}{p''}
+%   }{
+%     \WTEGRED{p'}{=}{p''}
+%   }
+% }
+
+% \end{itemize}
+
+
+% $Id$
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 
+

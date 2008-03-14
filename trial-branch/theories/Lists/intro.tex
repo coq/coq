@@ -1,0 +1,27 @@
+\section{Lists}\label{Lists}
+
+This library includes the following files:
+
+\begin{itemize}
+
+\item {\tt List.v} contains definitions of (polymorphic) lists, 
+  functions on lists such as head, tail, map, append and prove some
+  properties of these functions. Implicit arguments are used in this
+  library, so you should read the Reference Manual about implicit
+  arguments before using it.
+
+\item {\tt ListSet.v} contains definitions and properties of finite
+  sets, implemented as lists.
+
+\item {\tt TheoryList.v} contains complementary results on lists. Here
+  a more theoretic point of view is assumed : one extracts functions
+  from propositions, rather than defining functions and then prove them.
+
+\item {\tt Streams.v} defines the type of infinite lists (streams). It is a
+  coinductive type. Basic facts are stated and proved. The streams are
+  also polymorphic.
+
+\item {\tt MonoList.v} THIS OLD LIBRARY IS HERE ONLY FOR COMPATIBILITY
+  WITH OLDER VERSIONS OF COQ. THE USER SHOULD USE {\tt List.v} INSTEAD.
+
+\end{itemize}

@@ -1,0 +1,34 @@
+
+(* File to include to install the pretty-printers in the ocaml toplevel *)
+
+(* clflags.cmi (a ocaml compilation by-product) must be in the library path *)
+(* Clflags.recursive_types := true;;*)
+#cd ".";;
+#use "base_include";;
+
+#install_printer  (* pattern *) pppattern;;
+#install_printer  (* rawconstr *) pprawconstr;;
+
+#install_printer  (* constr *) ppconstr;;
+#install_printer  (* constr_substituted *) ppsconstr;; 
+#install_printer  (* universe *)  ppuni;;
+#install_printer  (* universes *)  ppuniverses;;
+#install_printer  (* type_judgement *) pptype;;
+#install_printer  (* judgement *) ppj;;
+
+#install_printer  (* goal *)  ppgoal;;
+#install_printer  (* sigma goal *)  ppsigmagoal;;
+#install_printer  (* proof *)  pproof;;
+#install_printer  (* metaset.t *) ppmetas;;
+#install_printer  (* evar_map *)  ppevm;;
+#install_printer  (* evar_defs *)  ppevd;;
+#install_printer  (* clenv *) ppclenv;;
+#install_printer  (* env *) ppenv;;
+
+#install_printer  (* tactic *) pptac;;
+#install_printer  (* object *) ppobj;;
+#install_printer  (* global_reference *) ppglobal;;
+#install_printer  (* generic_argument *) pp_generic_argument;;
+
+#install_printer  (* fconstr *) ppfconstr;;
+

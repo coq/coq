@@ -1,0 +1,1003 @@
+\achapter{The \texttt{ring} and \texttt{field} tactic families}
+\aauthor{Bruno Barras, Benjamin Gr\'egoire, Assia
+  Mahboubi, Laurent Th\'ery\footnote{based on previous work from
+  Patrick Loiseleur and Samuel Boutin}}
+\label{ring}
+\tacindex{ring}
+
+This chapter presents the tactics dedicated to deal with ring and
+field equations.
+
+\asection{What does this tactic do?}
+
+\texttt{ring} does associative-commutative rewriting in ring and semi-ring
+structures. Assume you have two binary functions $\oplus$ and $\otimes$
+that are associative and commutative, with $\oplus$ distributive on
+$\otimes$, and two constants 0 and 1 that are unities for $\oplus$ and
+$\otimes$. A \textit{polynomial} is an expression built on variables $V_0, V_1,
+\dots$ and constants by application of $\oplus$ and $\otimes$.
+
+Let an {\it ordered product} be a product of variables $V_{i_1}
+\otimes \ldots \otimes V_{i_n}$ verifying $i_1 \le i_2 \le \dots \le
+i_n$. Let a \textit{monomial} be the product of a constant and an
+ordered product.  We can order the monomials by the lexicographic
+order on products of variables. Let a \textit{canonical sum} be an
+ordered sum of monomials that are all different, i.e. each monomial in
+the sum is strictly less than the following monomial according to the
+lexicographic order. It is an easy theorem to show that every
+polynomial is equivalent (modulo the ring properties) to exactly one
+canonical sum. This canonical sum is called the \textit{normal form}
+of the polynomial. In fact, the actual representation shares monomials
+with same prefixes. So what does \texttt{ring}? It normalizes
+polynomials over any ring or semi-ring structure. The basic use of
+\texttt{ring} is to simplify ring expressions, so that the user does
+not have to deal manually with the theorems of associativity and
+commutativity.
+
+\begin{Examples}
+\item In the ring of integers, the normal form of 
+$x (3 + yx + 25(1 - z)) + zx$ is $28x + (-24)xz + xxy$.
+\item For the classical propositional calculus (or the boolean rings)
+  the normal form is what logicians call \textit{disjunctive normal
+    form}: every formula is equivalent to a disjunction of
+  conjunctions of atoms. (Here $\oplus$ is $\vee$, $\otimes$ is
+  $\wedge$, variables are atoms and the only constants are T and F)
+\end{Examples}
+
+\texttt{ring} is also able to compute a normal form modulo monomial 
+equalities. For example, under the hypothesis that $2x^2 = yz+1$,
+ the normal form of $2(x + 1)x - x - zy$ is $x+1$.
+
+\asection{The variables map}
+
+It is frequent to have an expression built with + and
+  $\times$, but rarely on variables only.
+Let us associate a number to each subterm of a ring
+expression in the \gallina\ language. For example in the ring
+\texttt{nat}, consider the expression:
+
+\begin{quotation}
+\begin{verbatim}
+(plus (mult (plus (f (5)) x) x)
+      (mult (if b then (4) else (f (3))) (2)))
+\end{verbatim}
+\end{quotation}
+
+\noindent As a ring expression, it has 3 subterms. Give each subterm a
+number in an arbitrary order:
+
+\begin{tabular}{ccl}
+0 & $\mapsto$ & \verb|if b then (4) else (f (3))| \\
+1 & $\mapsto$ & \verb|(f (5))| \\
+2 & $\mapsto$ & \verb|x| \\
+\end{tabular}
+
+\noindent Then normalize the ``abstract'' polynomial 
+
+$$((V_1 \otimes V_2) \oplus V_2) \oplus (V_0 \otimes 2) $$
+
+\noindent In our example the normal form is:
+
+$$(2 \otimes V_0) \oplus (V_1 \otimes V_2) \oplus (V_2 \otimes V_2)$$
+
+\noindent Then substitute the variables by their values in the variables map to
+get the concrete normal polynomial:
+
+\begin{quotation}
+\begin{verbatim}
+(plus (mult (2) (if b then (4) else (f (3)))) 
+      (plus (mult (f (5)) x) (mult x x))) 
+\end{verbatim}
+\end{quotation}
+
+\asection{Is it automatic?}
+
+Yes, building the variables map and doing the substitution after
+normalizing is automatically done by the tactic. So you can just forget
+this paragraph and use the tactic according to your intuition.
+
+\asection{Concrete usage in \Coq
+\tacindex{ring}
+\tacindex{ring\_simplify}}
+
+The {\tt ring} tactic solves equations upon polynomial expressions of
+a ring (or semi-ring) structure. It proceeds by normalizing both hand
+sides of the equation (w.r.t. associativity, commutativity and
+distributivity, constant propagation, rewriting of monomials) 
+and comparing syntactically the results.
+
+{\tt ring\_simplify} applies the normalization procedure described
+above to the terms given. The tactic then replaces all occurrences of
+the terms given in the conclusion of the goal by their normal
+forms. If no term is given, then the conclusion should be an equation
+and both hand sides are normalized. 
+The tactic can also be applied in a hypothesis.
+
+The tactic must be loaded by \texttt{Require Import Ring}. The ring
+structures must be declared with the \texttt{Add Ring} command (see
+below). The ring of booleans is predefined; if one wants to use the
+tactic on \texttt{nat} one must first require the module
+\texttt{ArithRing} (exported by \texttt{Arith});
+for \texttt{Z}, do \texttt{Require Import
+ZArithRing} or simply \texttt{Require Import ZArith}; 
+for \texttt{N}, do \texttt{Require Import NArithRing} or 
+\texttt{Require Import NArith}.
+
+\Example
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Require Import ZArith.
+Open Scope Z_scope.
+Goal forall a b c:Z,
+  (a + b + c)^2  =
+  a * a + b^2 + c * c + 2 * a * b + 2 * a * c + 2 * b * c.
+\end{coq_example}
+\begin{coq_example}
+intros; ring.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example}
+Goal forall a b:Z, 2*a*b = 30 ->
+        (a+b)^2 = a^2 + b^2 + 30.
+\end{coq_example}
+\begin{coq_example}
+intros a b H; ring [H].
+\end{coq_example} 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{Variants}
+  \item {\tt ring [\term$_1$ {\ldots} \term$_n$]} decides the equality of two
+    terms modulo ring operations and rewriting of the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. Each of \term$_1$
+    {\ldots} \term$_n$ has to be a proof of some equality $m = p$,
+    where $m$ is a monomial (after ``abstraction''),
+    $p$ a polynomial and $=$ the corresponding equality of the ring structure.
+
+  \item {\tt ring\_simplify [\term$_1$ {\ldots} \term$_n$] $t_1 \ldots t_m$ in 
+{\ident}}
+     performs the simplification in the hypothesis named {\tt ident}.
+\end{Variants}
+
+\Warning \texttt{ring\_simplify \term$_1$; ring\_simplify \term$_2$} is
+not equivalent to \texttt{ring\_simplify \term$_1$ \term$_2$}. In the
+latter case the variables map is shared between the two terms, and
+common subterm $t$ of \term$_1$ and \term$_2$ will have the same
+associated variable number. So the first alternative should be
+avoided for terms belonging to the same ring theory.
+
+
+\begin{ErrMsgs}
+\item \errindex{not a valid ring equation}
+  The conclusion of the goal is not provable in the corresponding ring
+  theory.
+\item \errindex{arguments of ring\_simplify do not have all the same type}
+  {\tt ring\_simplify} cannot simplify terms of several rings at the
+  same time. Invoke the tactic once per ring structure.
+\item \errindex{cannot find a declared ring structure over {\tt term}}
+  No ring has been declared for the type of the terms to be
+  simplified. Use {\tt Add Ring} first.
+\item \errindex{cannot find a declared ring structure for equality
+  {\tt term}}
+  Same as above is the case of the {\tt ring} tactic.
+\end{ErrMsgs}
+
+\asection{Adding a ring structure
+\comindex{Add Ring}}
+
+Declaring a new ring consists in proving that a ring signature (a
+carrier set, an equality, and ring operations: {\tt
+Ring\_theory.ring\_theory} and {\tt Ring\_theory.semi\_ring\_theory})
+satisfies the ring axioms. Semi-rings (rings without $+$ inverse) are
+also supported. The equality can be either Leibniz equality, or any
+relation declared as a setoid (see~\ref{setoidtactics}). The definition
+of ring and semi-rings (see module {\tt Ring\_theory}) is:
+\begin{verbatim}
+ Record ring_theory : Prop := mk_rt {
+    Radd_0_l    : forall x, 0 + x == x;
+    Radd_sym    : forall x y, x + y == y + x;
+    Radd_assoc  : forall x y z, x + (y + z) == (x + y) + z;
+    Rmul_1_l    : forall x, 1 * x == x;
+    Rmul_sym    : forall x y, x * y == y * x;
+    Rmul_assoc  : forall x y z, x * (y * z) == (x * y) * z;
+    Rdistr_l    : forall x y z, (x + y) * z == (x * z) + (y * z);
+    Rsub_def    : forall x y, x - y == x + -y;
+    Ropp_def    : forall x, x + (- x) == 0
+ }.
+
+Record semi_ring_theory : Prop := mk_srt {
+    SRadd_0_l   : forall n, 0 + n == n;
+    SRadd_sym   : forall n m, n + m == m + n ;
+    SRadd_assoc : forall n m p, n + (m + p) == (n + m) + p;
+    SRmul_1_l   : forall n, 1*n == n;
+    SRmul_0_l   : forall n, 0*n == 0; 
+    SRmul_sym   : forall n m, n*m == m*n;
+    SRmul_assoc : forall n m p, n*(m*p) == (n*m)*p;
+    SRdistr_l   : forall n m p, (n + m)*p == n*p + m*p
+  }.
+\end{verbatim}
+
+This implementation of {\tt ring} also features a notion of constant
+that can be parameterized. This can be used to improve the handling of
+closed expressions when operations are effective. It consists in
+introducing a type of \emph{coefficients} and an implementation of the
+ring operations, and a morphism from the coefficient type to the ring
+carrier type. The morphism needs not be injective, nor surjective.  As
+an example, one can consider the real numbers. The set of coefficients
+could be the rational numbers, upon which the ring operations can be
+implemented. The fact that there exists a morphism is defined by the
+following properties:
+\begin{verbatim}
+ Record ring_morph : Prop := mkmorph {
+    morph0    : [cO] == 0;
+    morph1    : [cI] == 1;
+    morph_add : forall x y, [x +! y] == [x]+[y];
+    morph_sub : forall x y, [x -! y] == [x]-[y];
+    morph_mul : forall x y, [x *! y] == [x]*[y];
+    morph_opp : forall x, [-!x] == -[x];
+    morph_eq  : forall x y, x?=!y = true -> [x] == [y] 
+  }.
+
+ Record semi_morph : Prop := mkRmorph {
+    Smorph0 : [cO] == 0;
+    Smorph1 : [cI] == 1;
+    Smorph_add : forall x y, [x +! y] == [x]+[y];
+    Smorph_mul : forall x y, [x *! y] == [x]*[y];
+    Smorph_eq  : forall x y, x?=!y = true -> [x] == [y] 
+  }.
+\end{verbatim}
+where {\tt c0} and {\tt cI} denote the 0 and 1 of the coefficient set,
+{\tt +!}, {\tt *!}, {\tt -!} are the implementations of the ring
+operations, {\tt ==} is the equality of the coefficients, {\tt ?+!} is
+an implementation of this equality, and {\tt [x]} is a notation for
+the image of {\tt x} by the ring morphism.
+
+Since {\tt Z} is an initial ring (and {\tt N} is an initial
+semi-ring), it can always be considered as a set of
+coefficients. There are basically three kinds of (semi-)rings:
+\begin{description}
+\item[abstract rings] to be used when operations are not
+  effective. The set of coefficients is {\tt Z} (or {\tt N} for
+  semi-rings).
+\item[computational rings] to be used when operations are
+  effective. The set of coefficients is the ring itself. The user only
+  has to provide an implementation for the equality.
+\item[customized ring] for other cases. The user has to provide the
+  coefficient set and the morphism.
+\end{description}
+
+This implementation of ring can also recognize simple 
+power expressions as ring expressions. A power function is specified by 
+the following property:
+\begin{verbatim}
+ Section POWER.
+  Variable Cpow : Set.
+  Variable Cp_phi : N -> Cpow.
+  Variable rpow : R -> Cpow -> R. 
+  
+  Record power_theory : Prop := mkpow_th {
+    rpow_pow_N : forall r n, req (rpow r (Cp_phi n)) (pow_N rI rmul r n)
+  }.
+
+ End POWER.
+\end{verbatim}
+
+
+The syntax for adding a new ring is {\tt Add Ring $name$ : $ring$
+($mod_1$,\dots,$mod_2$)}.  The name is not relevent. It is just used
+for error messages. The term $ring$ is a proof that the ring signature
+satisfies the (semi-)ring axioms. The optional list of modifiers is
+used to tailor the behavior of the tactic. The following list
+describes their syntax and effects:
+\begin{description}
+\item[abstract] declares the ring as abstract. This is the default.
+\item[decidable \term] declares the ring as computational. The expression 
+  \term{} is
+  the correctness proof of an equality test {\tt ?=!} (which should be
+  evaluable). Its type should be of
+  the form {\tt forall x y, x?=!y = true $\rightarrow$ x == y}.
+\item[morphism \term] declares the ring as a customized one. The expression 
+  \term{} is
+  a proof that there exists a morphism between a set of coefficient
+  and the ring carrier (see {\tt Ring\_theory.ring\_morph} and {\tt
+  Ring\_theory.semi\_morph}).
+\item[setoid \term$_1$ \term$_2$] forces the use of given setoid. The 
+  expression \term$_1$ is a proof that the equality is indeed a setoid
+  (see {\tt Setoid.Setoid\_Theory}), and \term$_2$ a proof that the
+  ring operations are morphisms (see {\tt Ring\_theory.ring\_eq\_ext} and
+  {\tt Ring\_theory.sring\_eq\_ext}). This modifier needs not be used if the
+  setoid and morphisms have been declared.
+\item[constants [\ltac]] specifies a tactic expression that, given a term,
+  returns either an object of the coefficient set that is mapped to
+  the expression via the morphism, or returns {\tt
+  InitialRing.NotConstant}. The default behaviour is to map only 0 and
+  1 to their counterpart in the coefficient set. This is generally not
+  desirable for non trivial computational rings.
+\item[preprocess [\ltac]]
+  specifies a tactic that is applied as a preliminary step for {\tt
+  ring} and {\tt ring\_simplify}. It can be used to transform a goal
+  so that it is better recognized. For instance, {\tt S n} can be
+  changed to {\tt plus 1 n}.
+\item[postprocess [\ltac]] specifies a tactic that is applied as a final step
+  for {\tt ring\_simplify}. For instance, it can be used to undo
+  modifications of the preprocessor.
+\item[power\_tac {\term} [\ltac]] allows {\tt ring} and {\tt ring\_simplify} to
+  recognize power expressions with a constant positive integer exponent 
+  (example: $x^2$). The term {\term} is a proof that a given power function
+  satisfies the specification of a power function ({\term} has to be a
+  proof of {\tt Ring\_theory.power\_theory}) and {\ltac} specifies a
+  tactic expression that, given a term, ``abstracts'' it into an
+  object of type {\tt N} whose interpretation via {\tt Cp\_phi} (the
+  evaluation function of power coefficient) is the original term, or
+  returns {\tt InitialRing.NotConstant} if not a constant coefficient
+  (i.e. {\ltac} is the inverse function of {\tt Cp\_phi}).
+  See files {\tt contrib/setoid\_ring/ZArithRing.v} and
+  {\tt contrib/setoid\_ring/RealField.v} for examples.
+  By default the tactic does not recognize power expressions as ring
+  expressions.
+\item[sign {\term}] allows {\tt ring\_simplify} to use a minus operation
+  when outputing its normal form, i.e writing $x - y$ instead of $x + (-y)$. 
+  The term {\term} is a proof that a given sign function indicates expressions
+   that are signed ({\term} has to be a
+  proof of {\tt Ring\_theory.get\_sign}). See  {\tt contrib/setoid\_ring/IntialRing.v} for examples of sign function.
+\item[div {\term}] allows  {\tt ring} and {\tt ring\_simplify} to use moniomals
+with coefficient other than 1 in the rewriting. The term {\term} is a proof that a given division function  satisfies the specification of an euclidean
+  division function  ({\term} has to be a
+  proof of {\tt Ring\_theory.div\_theory}). For example, this function is
+  called when trying to rewrite $7x$ by $2x = z$ to tell that $7 = 3 * 2 + 1$.
+   See  {\tt contrib/setoid\_ring/IntialRing.v} for examples of div function.
+  
+\end{description}
+
+
+\begin{ErrMsgs}
+\item \errindex{bad ring structure}
+  The proof of the ring structure provided is not of the expected type.
+\item \errindex{bad lemma for decidability of equality}
+  The equality function provided in the case of a computational ring
+  has not the expected type.
+\item \errindex{ring {\it operation} should be declared as a morphism}
+  A setoid associated to the carrier of the ring structure as been
+  found, but the ring operation should be declared as
+  morphism. See~\ref{setoidtactics}.
+\end{ErrMsgs}
+
+\asection{How does it work?}
+
+The code of \texttt{ring} is a good example of tactic written using
+\textit{reflection}.  What is reflection? Basically, it is writing
+\Coq{} tactics in \Coq, rather than in \ocaml. From the philosophical
+point of view, it is using the ability of the Calculus of
+Constructions to speak and reason about itself.  For the \texttt{ring}
+tactic we used \Coq\ as a programming language and also as a proof
+environment to build a tactic and to prove it correctness.
+
+The interested reader is strongly advised to have a look at the file
+\texttt{Ring\_polynom.v}. Here a type for polynomials is defined: 
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Inductive PExpr : Type :=
+  | PEc : C -> PExpr
+  | PEX : positive -> PExpr
+  | PEadd : PExpr -> PExpr -> PExpr
+  | PEsub : PExpr -> PExpr -> PExpr
+  | PEmul : PExpr -> PExpr -> PExpr
+  | PEopp : PExpr -> PExpr.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+Polynomials in normal form are defined as:
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+ Inductive Pol : Type :=
+  | Pc : C -> Pol 
+  | Pinj : positive -> Pol -> Pol                   
+  | PX : Pol -> positive -> Pol -> Pol.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+where {\tt Pinj n P} denotes $P$ in which $V_i$ is replaced by
+$V_{i+n}$, and {\tt PX P n Q} denotes $P \otimes V_1^{n} \oplus Q'$,
+$Q'$ being $Q$ where $V_i$ is replaced by $V_{i+1}$. 
+
+
+Variables maps are represented by list of ring elements, and two
+interpretation functions, one that maps a variables map and a
+polynomial to an element of the concrete ring, and the second one that
+does the same for normal forms:
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Definition PEeval : list R -> PExpr -> R := [...].
+Definition Pphi_dev : list R -> Pol -> R := [...].
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+A function to normalize polynomials is defined, and the big theorem is
+its correctness w.r.t interpretation, that is:
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Definition norm : PExpr -> Pol := [...].
+Lemma Pphi_dev_ok :
+   forall l pe npe, norm pe = npe -> PEeval l pe == Pphi_dev l npe.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+So now, what is the scheme for a normalization proof? Let \texttt{p}
+be the polynomial expression that the user wants to normalize. First a
+little piece of ML code guesses the type of \texttt{p}, the ring
+theory \texttt{T} to use, an abstract polynomial \texttt{ap} and a
+variables map \texttt{v} such that \texttt{p} is
+$\beta\delta\iota$-equivalent to \verb|(PEeval v ap)|. Then we
+replace it by \verb|(Pphi_dev v (norm ap))|, using the
+main correctness theorem and we reduce it to a concrete expression
+\texttt{p'}, which is the concrete normal form of
+\texttt{p}. This is summarized in this diagram:
+\begin{center}
+\begin{tabular}{rcl}
+\texttt{p} & $\rightarrow_{\beta\delta\iota}$  
+   & \texttt{(PEeval v ap)} \\
+ & & $=_{\mathrm{(by\ the\ main\ correctness\ theorem)}}$ \\
+\texttt{p'} 
+   & $\leftarrow_{\beta\delta\iota}$ 
+   & \texttt{(Pphi\_dev v (norm ap))}
+\end{tabular}
+\end{center}
+The user do not see the right part of the diagram. 
+From outside, the tactic behaves like a
+$\beta\delta\iota$ simplification extended with AC rewriting rules.
+Basically, the proof is only the application of the main
+correctness theorem to well-chosen arguments.
+
+
+\asection{Dealing with fields
+\tacindex{field}
+\tacindex{field\_simplify}
+\tacindex{field\_simplify\_eq}}
+
+
+The {\tt field} tactic is  an extension of the {\tt ring} to deal with
+rational expresision. Given a rational expression $F=0$. It first reduces the expression $F$ to a common denominator $N/D= 0$ where $N$ and $D$ are two ring
+expressions.
+For example, if we take $F = (1 - 1/x) x - x + 1$, this gives 
+$ N= (x -1)  x - x^2 + x$ and $D= x$. It then calls {\tt ring} 
+to solve $N=0$. Note that {\tt field} also generates non-zero conditions
+for all the denominators it encounters in the reduction.
+In our example, it generates the condition $x \neq 0$. These
+conditions appear as one subgoal which is a conjunction if there are
+several denominators.
+Non-zero conditions are {\it always} polynomial expressions. For example 
+when reducing the expression $1/(1 + 1/x)$, two side conditions are
+generated: $x\neq 0$ and $x + 1 \neq 0$. Factorized expressions are
+broken since a field is an integral domain, and when the equality test
+on coefficients is complete w.r.t. the equality of the target field,
+constants can be proven different from zero automatically.
+
+The tactic must be loaded by \texttt{Require Import Field}. New field
+structures can be declared to the system with the \texttt{Add Field}
+command (see below). The field of real numbers is defined in module
+\texttt{RealField} (in texttt{contrib/setoid\_ring}). It is exported
+by module \texttt{Rbase}, so that requiring \texttt{Rbase} or
+\texttt{Reals} is enough to use the field tactics on real
+numbers. Rational numbers in canonical form are also declared as a
+field in module \texttt{Qcanon}.
+
+
+\Example
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Require Import Reals.
+Open Scope R_scope.
+Goal forall x,  x <> 0 ->
+   (1 - 1/x) * x - x + 1 = 0.
+\end{coq_example}
+\begin{coq_example}
+intros; field; auto.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example}
+Goal forall x y, y <> 0 -> y = x -> x/y = 1.
+\end{coq_example}
+\begin{coq_example}
+intros x y H H1; field [H1]; auto.
+\end{coq_example} 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{Variants}
+  \item {\tt field [\term$_1$ {\ldots} \term$_n$]} decides the equality of two
+    terms modulo field operations and rewriting of the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. Each of \term$_1$
+    {\ldots} \term$_n$ has to be a proof of some equality $m = p$,
+    where $m$ is a monomial (after ``abstraction''),
+    $p$ a polynomial and $=$ the corresponding equality of the field structure.
+    Beware that rewriting works with the equality $m=p$ only if $p$ is a 
+    polynomial since rewriting is handled by the underlying {\tt ring}
+    tactic.
+  \item {\tt field\_simplify} 
+     performs the simplification in the conclusion of the goal, $F_1 = F_2$
+     becomes $N_1/D_1 = N_2/D_2$. A normalization step (the same as the
+     one for rings) is then applied to $N_1$, $D_1$, $N_2$ and
+     $D_2$. This way, polynomials remain in factorized form during the
+     fraction simplifications. This yields smaller expressions when
+     reducing to the same denominator since common factors can be
+     cancelled.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$]}
+     performs the simplification in the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] $t_1$ \ldots
+$t_m$}
+     performs the simplification in the terms $t_1$ \ldots $t_m$
+    of the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify in $H$}  
+     performs the simplification in the assumption $H$.
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] in $H$}
+     performs the simplification in the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify   [\term$_1$ {\ldots} \term$_n$] $t_1$ \ldots
+$t_m$ in $H$}
+     performs the simplification in the terms $t_1$ \ldots $t_n$
+    of the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_m$. 
+
+  \item {\tt field\_simplify\_eq}
+     performs the simplification in the conclusion of the goal removing
+     the denominator. $F_1 = F_2$
+     becomes $N_1 D_2 = N_2  D_1$.
+
+  \item {\tt field\_simplify\_eq   [\term$_1$ {\ldots} \term$_n$]}
+     performs the simplification in the conclusion of the goal using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+
+  \item {\tt field\_simplify\_eq} in $H$
+     performs the simplification in the assumption $H$.
+
+  \item {\tt field\_simplify\_eq   [\term$_1$ {\ldots} \term$_n$] in $H$}
+     performs the simplification in the assumption $H$ using
+    the equalities
+    defined by \term$_1$ {\ldots} \term$_n$. 
+\end{Variants}
+
+\asection{Adding a new field structure
+\comindex{Add Field}}
+
+Declaring a new field consists in proving that a field signature (a
+carrier set, an equality, and field operations: {\tt
+Field\_theory.field\_theory} and {\tt Field\_theory.semi\_field\_theory})
+satisfies the field axioms. Semi-fields (fields without $+$ inverse) are
+also supported. The equality can be either Leibniz equality, or any
+relation declared as a setoid (see~\ref{setoidtactics}). The definition
+of fields and semi-fields is:
+\begin{verbatim}
+Record field_theory : Prop := mk_field {
+    F_R : ring_theory rO rI radd rmul rsub ropp req;
+    F_1_neq_0 : ~ 1 == 0;
+    Fdiv_def : forall p q, p / q == p * / q;
+    Finv_l : forall p, ~ p == 0 ->  / p * p == 1
+}.
+
+Record semi_field_theory : Prop := mk_sfield {
+    SF_SR : semi_ring_theory rO rI radd rmul req;
+    SF_1_neq_0 : ~ 1 == 0;
+    SFdiv_def : forall p q, p / q == p * / q;
+    SFinv_l : forall p, ~ p == 0 ->  / p * p == 1
+}.
+\end{verbatim}
+
+The result of the normalization process is a fraction represented by
+the following type:
+\begin{verbatim}
+Record linear : Type := mk_linear {
+   num : PExpr C;
+   denum : PExpr C;
+   condition : list (PExpr C) }.
+\end{verbatim}
+where {\tt num} and {\tt denum} are the numerator and denominator;
+{\tt condition} is a list of expressions that have appeared as a
+denominator during the normalization process. These expressions must
+be proven different from zero for the correctness of the algorithm.
+
+The syntax for adding a new field is {\tt Add Field $name$ : $field$
+($mod_1$,\dots,$mod_2$)}.  The name is not relevent. It is just used
+for error messages. $field$ is a proof that the field signature
+satisfies the (semi-)field axioms. The optional list of modifiers is
+used to tailor the behaviour of the tactic. Since field tactics are
+built upon ring tactics, all mofifiers of the {\tt Add Ring}
+apply. There is only one specific modifier:
+\begin{description}
+\item[completeness \term] allows the field tactic to prove
+  automatically that the image of non-zero coefficients are mapped to
+  non-zero elements of the field. \term is a proof of {\tt forall x y,
+    [x] == [y] -> x?=!y = true}, which is the completeness of equality
+  on coefficients w.r.t. the field equality.
+\end{description}
+
+\asection{Legacy implementation}
+
+\Warning This tactic is the {\tt ring} tactic of previous versions of
+\Coq{} and it should be considered as deprecated. It will probably be
+removed in future releases. It has been kept only for compatibility
+reasons and in order to help moving existing code to the newer
+implementation described above. For more details, please refer to the
+Coq Reference Manual, version 8.0.
+
+
+\subsection{\tt legacy ring \term$_1$ \dots\ \term$_n$
+\tacindex{legacy ring}
+\comindex{Add Legacy Ring}
+\comindex{Add Legacy Semi Ring}}
+
+This tactic, written by Samuel Boutin and Patrick Loiseleur, applies
+associative commutative rewriting on every ring.  The tactic must be
+loaded by \texttt{Require Import LegacyRing}. The ring must be declared in
+the \texttt{Add Ring} command. The ring of booleans
+is predefined; if one wants to use the tactic on \texttt{nat} one must
+first require the module \texttt{LegacyArithRing}; for \texttt{Z}, do
+\texttt{Require Import LegacyZArithRing}; for \texttt{N}, do \texttt{Require
+Import LegacyNArithRing}.
+
+The terms \term$_1$, \dots, \term$_n$ must be subterms of the goal
+conclusion. The tactic \texttt{ring} normalizes these terms
+w.r.t. associativity and commutativity and replace them by their
+normal form.
+
+\begin{Variants}
+\item \texttt{legacy ring} When the goal is an equality $t_1=t_2$, it
+  acts like \texttt{ring\_simplify} $t_1$ $t_2$ and then
+  solves the equality by reflexivity.
+
+\item \texttt{ring\_nat} is a tactic macro for \texttt{repeat rewrite
+    S\_to\_plus\_one; ring}. The theorem \texttt{S\_to\_plus\_one} is a
+  proof that \texttt{forall (n:nat), S n = plus (S O) n}.
+
+\end{Variants}
+
+You can have a look at the files \texttt{LegacyRing.v},
+\texttt{ArithRing.v}, \texttt{ZArithRing.v} to see examples of the
+\texttt{Add Ring} command.
+
+\subsection{Add a ring structure}
+
+It can be done in the \Coq toplevel (No ML file to edit and to link
+with \Coq). First, \texttt{ring} can handle two kinds of structure:
+rings and semi-rings. Semi-rings are like rings without an opposite to
+addition. Their precise specification (in \gallina) can be found in
+the file
+
+\begin{quotation}
+\begin{verbatim}
+contrib/ring/Ring_theory.v
+\end{verbatim}
+\end{quotation}
+
+The typical example of ring is \texttt{Z}, the typical
+example of semi-ring is \texttt{nat}.
+
+The specification of a
+ring is divided in two parts: first the record of constants
+($\oplus$, $\otimes$, 1, 0, $\ominus$) and then the theorems
+(associativity, commutativity, etc.).
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Section Theory_of_semi_rings.
+
+Variable A : Type.
+Variable Aplus : A -> A -> A.
+Variable Amult : A -> A -> A.
+Variable Aone : A.
+Variable Azero : A.
+(* There is also a "weakly decidable" equality on A. That means 
+  that if (A_eq x y)=true then x=y but x=y can arise when 
+  (A_eq x y)=false. On an abstract ring the function [x,y:A]false
+  is a good choice. The proof of A_eq_prop is in this case easy. *)
+Variable Aeq : A -> A -> bool.
+
+Record Semi_Ring_Theory : Prop :=
+{ SR_plus_sym  : (n,m:A)[| n + m == m + n |];
+  SR_plus_assoc : (n,m,p:A)[| n + (m + p) == (n + m) + p |];
+
+  SR_mult_sym : (n,m:A)[| n*m == m*n |];
+  SR_mult_assoc : (n,m,p:A)[| n*(m*p) == (n*m)*p |];
+  SR_plus_zero_left :(n:A)[| 0 + n == n|];
+  SR_mult_one_left : (n:A)[| 1*n == n |];
+  SR_mult_zero_left : (n:A)[| 0*n == 0 |];
+  SR_distr_left   : (n,m,p:A) [| (n + m)*p == n*p + m*p |];
+  SR_plus_reg_left : (n,m,p:A)[| n + m == n + p |] -> m==p;
+  SR_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> x==y
+}.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Section Theory_of_rings.
+
+Variable A : Type.
+
+Variable Aplus : A -> A -> A.
+Variable Amult : A -> A -> A.
+Variable Aone : A.
+Variable Azero : A.
+Variable Aopp : A -> A.
+Variable Aeq : A -> A -> bool.
+
+
+Record Ring_Theory : Prop :=
+{ Th_plus_sym  : (n,m:A)[| n + m == m + n |];
+  Th_plus_assoc : (n,m,p:A)[| n + (m + p) == (n + m) + p |];
+  Th_mult_sym : (n,m:A)[| n*m == m*n |];
+  Th_mult_assoc : (n,m,p:A)[| n*(m*p) == (n*m)*p |];
+  Th_plus_zero_left :(n:A)[| 0 + n == n|];
+  Th_mult_one_left : (n:A)[| 1*n == n |];
+  Th_opp_def : (n:A) [| n + (-n) == 0 |];
+  Th_distr_left   : (n,m,p:A) [| (n + m)*p == n*p + m*p |];
+  Th_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> x==y
+}.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+To define a ring structure on A, you must provide an addition, a
+multiplication, an opposite function and two unities 0 and 1.
+
+You must then prove all theorems that make
+(A,Aplus,Amult,Aone,Azero,Aeq) 
+a ring structure, and pack them with the \verb|Build_Ring_Theory| 
+constructor.
+
+Finally to register a ring the syntax is:
+
+\comindex{Add Legacy Ring}
+\begin{quotation}
+  \texttt{Add Legacy Ring} \textit{A Aplus Amult Aone Azero Ainv Aeq T}
+  \texttt{[} \textit{c1 \dots cn} \texttt{].}
+\end{quotation}
+
+\noindent where \textit{A} is a term of type \texttt{Set}, 
+\textit{Aplus} is a term of type \texttt{A->A->A},
+\textit{Amult} is a term of type \texttt{A->A->A},
+\textit{Aone} is a term of type \texttt{A},
+\textit{Azero} is a term of type \texttt{A},
+\textit{Ainv} is a term of type \texttt{A->A},
+\textit{Aeq} is a term of type \texttt{A->bool},
+\textit{T} is a term of type 
+\texttt{(Ring\_Theory }\textit{A Aplus Amult Aone Azero Ainv
+  Aeq}\texttt{)}.
+The arguments \textit{c1 \dots cn}, 
+are the names of constructors which define closed terms: a
+subterm will be considered as a constant if it is either one of the
+terms \textit{c1 \dots cn} or the application of one of these terms to
+closed terms. For \texttt{nat}, the given constructors are \texttt{S}
+and \texttt{O}, and the closed terms are \texttt{O}, \texttt{(S O)},
+\texttt{(S (S O))}, \ldots
+
+\begin{Variants}
+\item \texttt{Add Legacy Semi Ring} \textit{A Aplus Amult Aone Azero Aeq T} 
+  \texttt{[} \textit{c1 \dots\ cn} \texttt{].}\comindex{Add Legacy Semi
+    Ring}
+  
+  There are two differences with the \texttt{Add Ring} command: there
+  is no inverse function and the term $T$ must be of type
+  \texttt{(Semi\_Ring\_Theory }\textit{A Aplus Amult Aone Azero
+    Aeq}\texttt{)}.
+
+\item \texttt{Add Legacy Abstract Ring} \textit{A Aplus Amult Aone Azero Ainv 
+    Aeq T}\texttt{.}\comindex{Add Legacy Abstract Ring}
+  
+  This command should be used for when the operations of rings are not
+  computable; for example the real numbers of
+  \texttt{theories/REALS/}. Here $0+1$ is not beta-reduced to $1$ but
+  you still may want to \textit{rewrite} it to $1$ using the ring
+  axioms. The argument \texttt{Aeq} is not used; a good choice for
+  that function is \verb+[x:A]false+.
+
+\item \texttt{Add Legacy Abstract Semi Ring} \textit{A Aplus Amult Aone Azero
+    Aeq T}\texttt{.}\comindex{Add Legacy Abstract Semi Ring}
+
+\end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{Not a valid (semi)ring theory}.
+ 
+  That happens when the typing condition does not hold.
+\end{ErrMsgs}
+
+Currently, the hypothesis is made than no more than one ring structure
+may be declared for a given type in \texttt{Set} or \texttt{Type}.
+This allows automatic detection of the theory used to achieve the
+normalization. On popular demand, we can change that and allow several
+ring structures on the same set.
+
+The table of ring theories is compatible with the \Coq\ 
+sectioning mechanism. If you declare a ring inside a section, the
+declaration will be thrown away when closing the section.
+And when you load a compiled file, all the \texttt{Add Ring}
+commands of this file that are not inside a section will be loaded.
+
+The typical example of ring is \texttt{Z}, and the typical example of
+semi-ring is \texttt{nat}. Another ring structure is defined on the
+booleans. 
+
+\Warning Only the ring of booleans is loaded by default with the
+\texttt{Ring} module. To load the ring structure for \texttt{nat},
+load the module \texttt{ArithRing}, and for \texttt{Z},
+load the module \texttt{ZArithRing}.
+
+\subsection{\tt legacy field
+\tacindex{legacy field}}
+
+This tactic written by David~Delahaye and Micaela~Mayero solves equalities
+using commutative field theory. Denominators have to be non equal to zero and,
+as this is not decidable in general, this tactic may generate side conditions
+requiring some expressions to be non equal to zero. This tactic must be loaded
+by {\tt Require Import LegacyField}. Field theories are declared (as for
+{\tt legacy ring}) with
+the {\tt Add Legacy Field} command.
+
+\subsection{\tt Add Legacy Field
+\comindex{Add Legacy Field}}
+
+This vernacular command adds a commutative field theory to the database for the
+tactic {\tt field}. You must provide this theory as follows:
+\begin{flushleft}
+{\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero} {\it
+Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}
+\end{flushleft}
+where {\tt {\it A}} is a term of type {\tt Type}, {\tt {\it Aplus}} is
+a term of type {\tt A->A->A}, {\tt {\it Amult}} is a term of type {\tt
+  A->A->A}, {\tt {\it Aone}} is a term of type {\tt A}, {\tt {\it
+    Azero}} is a term of type {\tt A}, {\tt {\it Aopp}} is a term of
+type {\tt A->A}, {\tt {\it Aeq}} is a term of type {\tt A->bool}, {\tt
+  {\it Ainv}} is a term of type {\tt A->A}, {\tt {\it Rth}} is a term
+of type {\tt (Ring\_Theory {\it A Aplus Amult Aone Azero Ainv Aeq})},
+and {\tt {\it Tinvl}} is a term of type {\tt forall n:{\it A},
+  {\~{}}(n={\it Azero})->({\it Amult} ({\it Ainv} n) n)={\it Aone}}.
+To build a ring theory, refer to Chapter~\ref{ring} for more details.
+
+This command adds also an entry in the ring theory table if this theory is not
+already declared. So, it is useless to keep, for a given type, the {\tt Add
+Ring} command if you declare a theory with {\tt Add Field}, except if you plan
+to use specific features of {\tt ring} (see Chapter~\ref{ring}). However, the
+module {\tt ring} is not loaded by {\tt Add Field} and you have to make a {\tt
+Require Import Ring} if you want to call the {\tt ring} tactic.
+
+\begin{Variants}
+
+\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
+{\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
+{\tt \phantom{Add Field }with minus:={\it Aminus}}
+
+Adds also the term {\it Aminus} which must be a constant expressed by
+means of {\it Aopp}.
+
+\item {\tt Add Legacy Field {\it A} {\it Aplus} {\it Amult} {\it Aone} {\it Azero}
+{\it Aopp} {\it Aeq} {\it Ainv} {\it Rth} {\it Tinvl}}\\
+{\tt \phantom{Add Legacy Field }with div:={\it Adiv}}
+
+Adds also the term {\it Adiv} which must be a constant expressed by
+means of {\it Ainv}.
+
+\end{Variants}
+
+\SeeAlso \cite{DelMay01} for more details regarding the implementation of {\tt
+legacy field}.
+
+\asection{History of \texttt{ring}}
+
+First Samuel Boutin designed the tactic \texttt{ACDSimpl}. 
+This tactic did lot of rewriting. But the proofs
+terms generated by rewriting were too big for \Coq's type-checker.
+Let us see why:
+
+\begin{coq_eval}
+Require Import ZArith.
+Open Scope Z_scope.
+\end{coq_eval}
+\begin{coq_example}
+Goal forall x y z:Z, x + 3 + y + y * z = x + 3 + y + z * y.
+\end{coq_example}
+\begin{coq_example*}
+intros; rewrite (Zmult_comm y z); reflexivity.
+Save toto.
+\end{coq_example*}
+\begin{coq_example}
+Print  toto.
+\end{coq_example}
+
+At each step of rewriting, the whole context is duplicated in the proof
+term. Then, a tactic that does hundreds of rewriting generates huge proof
+terms. Since \texttt{ACDSimpl} was too slow, Samuel Boutin rewrote it
+using reflection (see his article in TACS'97 \cite{Bou97}). Later, the
+stuff was rewritten by Patrick
+Loiseleur: the new tactic does not any more require \texttt{ACDSimpl}
+to compile and it makes use of $\beta\delta\iota$-reduction 
+not only to replace the rewriting steps, but also to achieve the
+interleaving of computation and 
+reasoning (see \ref{DiscussReflection}). He also wrote a
+few ML code for the \texttt{Add Ring} command, that allow to register
+new rings dynamically.
+
+Proofs terms generated by \texttt{ring} are quite small, they are
+linear in the number of $\oplus$ and $\otimes$ operations in the
+normalized terms. Type-checking those terms requires some time because it
+makes a large use of the conversion rule, but
+memory requirements are much smaller. 
+
+\asection{Discussion}
+\label{DiscussReflection}
+
+Efficiency is not the only motivation to use reflection
+here. \texttt{ring} also deals with constants, it rewrites for example the
+expression $34 + 2*x -x + 12$ to the expected result $x + 46$. For the
+tactic \texttt{ACDSimpl}, the only constants were 0 and 1. So the
+expression $34 + 2*(x - 1) + 12$ is interpreted as 
+$V_0 \oplus V_1 \otimes (V_2 \ominus 1) \oplus V_3$, 
+with the variables mapping 
+$\{V_0 \mt 34; V_1 \mt 2; V_2 \mt x; V_3 \mt 12 \}$. Then it is
+rewritten to $34 - x + 2*x + 12$, very far from the expected
+result. Here rewriting is not sufficient: you have to do some kind of
+reduction (some kind of \textit{computation}) to achieve the
+normalization.
+
+The tactic \texttt{ring} is not only faster than a classical one:
+using reflection, we get for free integration of computation and
+reasoning that would be very complex to implement in the classic fashion.
+
+Is it the ultimate way to write tactics?  The answer is: yes and
+no. The \texttt{ring} tactic uses intensively the conversion rule of
+\CIC, that is replaces proof by computation the most as it is
+possible. It can be useful in all situations where a classical tactic
+generates huge proof terms. Symbolic Processing and Tautologies are in
+that case. But there are also tactics like \texttt{auto} or
+\texttt{linear} that do many complex computations, using side-effects
+and backtracking, and generate a small proof term. Clearly, it would
+be significantly less efficient to replace them by tactics using
+reflection.
+
+Another idea suggested by Benjamin Werner: reflection could be used to
+couple an external tool (a rewriting program or a model checker) with
+\Coq. We define (in \Coq) a type of terms, a type of \emph{traces},
+and prove a correction theorem that states that \emph{replaying
+traces} is safe w.r.t some interpretation. Then we let the external
+tool do every computation (using side-effects, backtracking,
+exception, or others features that are not available in pure lambda
+calculus) to produce the trace: now we can check in Coq{} that the
+trace has the expected semantic by applying the correction lemma.
+ 
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

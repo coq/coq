@@ -1,0 +1,74 @@
+.TH COQ 1 "29 March 1995" "Coq tools"
+
+.SH NAME
+gallina \- extracts specification from Coq vernacular files
+
+.SH SYNOPSIS
+.B gallina
+[
+.BI \-
+]
+[
+.BI \-stdout
+]
+[
+.BI \-nocomments
+]
+.I file ...
+
+.SH DESCRIPTION
+
+.B gallina 
+takes Coq files as arguments and builds the corresponding
+specification files.
+The Coq file
+.IR foo.v \&
+gives bearth to the specification file
+.IR foo.g. \&
+The suffix '.g' stands for Gallina.
+
+For that purpose, gallina removes all commands that follow a
+"Theorem", "Lemma", "Fact", "Remark" or "Goal" statement until it
+reaches a command "Abort.", "Save.", "Qed.", "Defined." or "Proof
+<...>.". It also removes every "Hint", "Syntax",
+"Immediate"  or "Transparent" command.
+
+Files without the .v suffix are ignored.
+
+
+.SH OPTIONS
+
+.TP
+.BI \-stdout
+Prints the result on standard output.
+.TP
+.BI \-
+Coq source is taken on standard input. The result is printed on
+standard output.
+.TP
+.BI \-nocomments
+Comments are removed in the *.g file.
+
+.SH NOTES
+
+Nested comments are correctly handled. In particular, every command
+"Save." or "Abort." in a comment is not taken into account.
+
+
+.SH BUGS
+
+Please report any bug to
+.B coq@pauillac.inria.fr
+
+
+
+
+
+
+	
+
+	
+
+	
+
+	

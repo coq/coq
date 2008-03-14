@@ -1,0 +1,186 @@
+
+(* File to include to get some Coq facilities under the ocaml toplevel.
+   This file is loaded by include *)
+
+#cd".";;
+#directory "parsing";;
+#directory "interp";;
+#directory "toplevel";;
+#directory "library";;
+#directory "kernel";;
+#directory "pretyping";;
+#directory "lib";;
+#directory "proofs";;
+#directory "tactics";;
+#directory "translate";;
+
+#use "top_printers.ml";;
+#use "vm_printers.ml";;
+
+#install_printer  (* identifier *) ppid;;
+#install_printer  (* identifier *) ppidset;;
+#install_printer  (* label *) pplab;;
+#install_printer  (* mod_self_id *) ppmsid;;
+#install_printer  (* mod_bound_id *) ppmbid;;
+#install_printer  (* dir_path *) ppdir;;
+#install_printer  (* module_path *) ppmp;;
+#install_printer  (* section_path *)  ppsp;;
+#install_printer  (* qualid *)  ppqualid;;
+#install_printer  (* kernel_name *) ppkn;;
+#install_printer  (* constant *) ppcon;;
+#install_printer  (* constr *)  print_pure_constr;; 
+#install_printer  (* patch *) ppripos;;
+#install_printer  (* values *) ppvalues;;
+#install_printer ppzipper;;
+#install_printer ppstack;;
+#install_printer ppatom;;
+#install_printer ppwhd;;
+#install_printer ppvblock;;
+#install_printer  (* bigint *) ppbigint;;
+#install_printer  (* loc *) pploc;;
+#install_printer  (* substitution *) prsubst;;
+
+(* Open main files *)
+
+open Names
+open Term
+open Typeops
+open Univ
+open Inductive
+open Indtypes
+open Cooking
+open Closure
+open Reduction
+open Safe_typing
+open Declare
+open Declaremods
+open Impargs
+open Libnames
+open Nametab
+open Library
+
+open Cases
+open Pattern
+open Cbv
+open Classops
+open Pretyping
+open Pretyping.Default
+open Pretyping.Default.Cases
+open Cbv
+open Classops
+open Clenv
+open Rawterm
+open Coercion
+open Recordops
+open Detyping
+open Reductionops
+open Evarconv
+open Retyping
+open Evarutil
+open Tacred
+open Evd
+open Termops
+open Indrec
+open Typing
+open Inductiveops
+open Unification
+
+open Constrextern
+open Constrintern
+open Coqlib
+open Genarg
+open Modintern
+open Notation
+open Ppextend
+open Reserve
+open Syntax_def
+open Topconstr
+
+open Clenvtac
+open Evar_refiner
+open Logic
+open Pfedit
+open Proof_trees
+open Proof_type
+open Redexpr
+open Refiner
+open Tacmach
+
+open Auto
+open Autorewrite
+open Contradiction
+open Dhyp
+open Eauto
+open Elim
+open Equality
+open Evar_tactics
+open Extraargs
+open Extratactics
+open Hiddentac
+open Hipattern
+open Inv
+open Leminv
+open Refine
+open Setoid_replace
+open Tacinterp
+open Tacticals
+open Tactics
+
+open Cerrors
+open Class
+open Command
+open Coqinit
+open Coqtop
+open Discharge
+open Himsg
+open Metasyntax
+open Mltop
+open Record
+open Toplevel
+open Vernacentries
+open Vernacinterp
+open Vernac
+
+(* Various utilities *)
+
+let qid = Libnames.qualid_of_string;;
+
+(* parsing of terms *)
+
+let parse_constr = Pcoq.parse_string Pcoq.Constr.constr;;
+let parse_tac    = Pcoq.parse_string Pcoq.Tactic.tactic;;
+let parse_vernac = Pcoq.parse_string Pcoq.Vernac_.vernac;;
+
+(* build a term of type rawconstr without type-checking or resolution of 
+   implicit syntax *)
+
+let e s =
+  Constrintern.intern_constr Evd.empty (Global.env()) (parse_constr s);;
+
+(* build a term of type constr with type-checking and resolution of 
+   implicit syntax *)
+
+let constr_of_string s = 
+  Constrintern.interp_constr Evd.empty (Global.env()) (parse_constr s);;
+
+(* get the body of a constant *)
+
+open Declarations;;
+
+let constbody_of_string s =
+  let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_sp (path_of_string s))) in
+  Option.get b.const_body;;
+
+(* Get the current goal *)
+
+let getgoal x = top_goal_of_pftreestate (Pfedit.get_pftreestate x);;
+
+let get_nth_goal n = nth_goal_of_pftreestate n (Pfedit.get_pftreestate ());;
+let current_goal () = get_nth_goal 1;;
+
+let pf_e gl s = 
+  Constrintern.interp_constr (project gl) (pf_env gl) (parse_constr s);;
+
+open Toplevel
+let go = loop
+

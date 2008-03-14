@@ -1,0 +1,898 @@
+\ifx\pdfoutput\undefined   % si on est pas en pdflatex
+\documentclass[11pt,a4paper]{article}
+\else
+\documentclass[11pt,a4paper,pdftex]{article}
+\fi
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{pslatex}
+\usepackage{url}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{fullpage}
+
+\title{Translation from Coq V7 to V8}
+\author{The Coq Development Team}
+
+%% Macros etc.
+\catcode`\_=13
+\let\subscr=_
+\def_{\ifmmode\sb\else\subscr\fi}
+
+\def\NT#1{\langle\textit{#1}\rangle}
+\def\NTL#1#2{\langle\textit{#1}\rangle_{#2}}
+%\def\TERM#1{\textsf{\bf #1}}
+\def\TERM#1{\texttt{#1}}
+\newenvironment{transbox}
+  {\begin{center}\tt\begin{tabular}{l|ll} \hfil\textrm{V7} & \hfil\textrm{V8} \\ \hline}
+  {\end{tabular}\end{center}}
+\def\TRANS#1#2
+  {\begin{tabular}[t]{@{}l@{}}#1\end{tabular} & 
+   \begin{tabular}[t]{@{}l@{}}#2\end{tabular} \\}
+\def\TRANSCOM#1#2#3
+  {\begin{tabular}[t]{@{}l@{}}#1\end{tabular} & 
+   \begin{tabular}[t]{@{}l@{}}#2\end{tabular} & #3 \\}
+
+%%
+%%
+%%
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+Coq version 8.0 is a major version and carries major changes: the
+concrete syntax was redesigned almost from scratch, and many notions
+of the libraries were renamed for uniformisation purposes. We felt
+that these changes could discourage users with large theories from
+switching to the new version.
+
+The goal of this document is to introduce these changes on simple
+examples (mainly the syntactic changes), and describe the automated
+tools to help moving to V8.0. Essentially, it consists of a translator
+that takes as input a Coq source file in old syntax and produces a
+file in new syntax and adapted to the new standard library. The main
+extra features of this translator is that it keeps comments, even
+those within expressions\footnote{The position of those comment might
+differ slightly since there is no exact matching of positions between
+old and new syntax.}.
+
+The document is organised as follows: first section describes the new
+syntax on simple examples. It is very translation-oriented. This
+should give users of older versions the flavour of the new syntax, and
+allow them to make translation manually on small
+examples. Section~\ref{Translation} explains how the translation
+process can be automatised for the most part (the boring one: applying
+similar changes over thousands of lines of code). We strongly advise
+users to follow these indications, in order to avoid many potential
+complications of the translation process.
+
+
+\section{The new syntax on examples}
+
+The goal of this section is to introduce to the new syntax of Coq on
+simple examples, rather than just giving the new grammar. It is
+strongly recommended to read first the definition of the new syntax
+(in the reference manual), but this document should also be useful for
+the eager user who wants to start with the new syntax quickly.
+
+The toplevel has an option {\tt -translate} which allows to
+interactively translate commands. This toplevel translator accepts a
+command, prints the translation on standard output (after a %
+\verb+New syntax:+ balise), executes the command, and waits for another
+command. The only requirements is that they should be syntactically
+correct, but they do not have to be well-typed.
+
+This interactive translator proved to be useful in two main
+usages. First as a ``debugger'' of the translation. Before the
+translation, it may help in spotting possible conflicts between the
+new syntax and user notations. Or when the translation fails for some
+reason, it makes it easy to find the exact reason why it failed and
+make attempts in fixing the problem.
+
+The second usage of the translator is when trying to make the first
+proofs in new syntax. Well trained users will automatically think
+their scripts in old syntax and might waste much time (and the
+intuition of the proof) if they have to search the translation in a
+document. Running a translator in the background will allow the user
+to instantly have the answer.
+
+The rest of this section is a description of all the aspects of the
+syntax that changed and how they were translated. All the examples
+below can be tested by entering the V7 commands in the toplevel
+translator.
+
+
+%%
+
+\subsection{Changes in lexical conventions w.r.t. V7}
+
+\subsubsection{Identifiers}
+
+The lexical conventions changed: \TERM{_} is not a regular identifier
+anymore. It is used in terms as a placeholder for subterms to be inferred
+at type-checking, and in patterns as a non-binding variable.
+
+Furthermore, only letters (Unicode letters), digits, single quotes and
+_ are allowed after the first character.
+
+\subsubsection{Quoted string}
+
+Quoted strings are used typically to give a filename (which may not
+be a regular identifier). As before they are written between double
+quotes ("). Unlike for V7, there is no escape character: characters
+are written normally except the double quote which is doubled.
+
+\begin{transbox}
+\TRANS{"abcd$\backslash\backslash$efg"}{"abcd$\backslash$efg"}
+\TRANS{"abcd$\backslash$"efg"}{"abcd""efg"}
+\end{transbox}
+
+
+\subsection{Main changes in terms w.r.t. V7}
+
+
+\subsubsection{Precedence of application}
+
+In the new syntax, parentheses are not really part of the syntax of
+application. The precedence of application (10) is tighter than all
+prefix and infix notations. It makes it possible to remove parentheses
+in many contexts.
+
+\begin{transbox}
+\TRANS{(A x)->(f x)=(g y)}{A x -> f x = g y}
+\TRANS{(f [x]x)}{f (fun x => x)}
+\end{transbox}
+
+
+\subsubsection{Arithmetics and scopes}
+
+The specialized notation for \TERM{Z} and \TERM{R} (introduced by
+symbols \TERM{`} and \TERM{``}) have disappeared. They have been
+replaced by the general notion of scope.
+
+\begin{center}
+\begin{tabular}{l|l|l}
+type & scope name & delimiter \\
+\hline
+types & type_scope & \TERM{type} \\
+\TERM{bool} & bool_scope & \\
+\TERM{nat} & nat_scope & \TERM{nat} \\
+\TERM{Z} & Z_scope & \TERM{Z} \\
+\TERM{R} & R_scope & \TERM{R} \\
+\TERM{positive} & positive_scope & \TERM{P}
+\end{tabular}
+\end{center}
+
+In order to use notations of arithmetics on \TERM{Z}, its scope must
+be opened with command \verb+Open Scope Z_scope.+ Another possibility
+is using the scope change notation (\TERM{\%}). The latter notation is
+to be used when notations of several scopes appear in the same
+expression.
+
+In examples below, scope changes are not needed if the appropriate scope
+has been opened. Scope \verb|nat_scope| is opened in the initial state of Coq.
+\begin{transbox}
+\TRANSCOM{`0+x=x+0`}{0+x=x+0}{\textrm{Z_scope}}
+\TRANSCOM{``0 + [if b then ``1`` else ``2``]``}{0 + if b then 1 else 2}{\textrm{R_scope}}
+\TRANSCOM{(0)}{0}{\textrm{nat_scope}}
+\end{transbox}
+
+Below is a table that tells which notation is available in which
+scope. The relative precedences and associativity of operators is the
+same as in usual mathematics. See the reference manual for more
+details. However, it is important to remember that unlike V7, the type
+operators for product and sum are left-associative, in order not to
+clash with arithmetic operators.
+
+\begin{center}
+\begin{tabular}{l|l}
+scope & notations \\
+\hline
+nat_scope & \texttt{+ - * < <= > >=} \\
+Z_scope & \texttt{+ - * / mod < <= > >= ?=} \\
+R_scope & \texttt{+ - * / < <= > >=} \\
+type_scope & \texttt{* +} \\
+bool_scope & \texttt{\&\& || -} \\
+list_scope & \texttt{:: ++}
+\end{tabular}
+\end{center}
+
+
+
+\subsubsection{Notation for implicit arguments}
+
+The explicitation of arguments is closer to the \emph{bindings}
+notation in tactics. Argument positions follow the argument names of
+the head constant. The example below assumes \verb+f+ is a function
+with two implicit dependent arguments named \verb+x+ and \verb+y+.
+\begin{transbox}
+\TRANS{f 1!t1 2!t2 t3}{f (x:=t1) (y:=t2) t3}
+\TRANS{!f t1 t2}{@f t1 t2}
+\end{transbox}
+
+
+\subsubsection{Inferred subterms}
+
+Subterms that can be automatically inferred by the type-checker is now
+written {\tt _}
+
+\begin{transbox}
+\TRANS{?}{_}
+\end{transbox}
+
+\subsubsection{Universal quantification}
+
+The universal quantification and dependent product types are now
+introduced by the \texttt{forall} keyword before the binders and a
+comma after the binders.
+
+The syntax of binders also changed significantly. A binder can simply be
+a name when its type can be inferred. In other cases, the name and the type
+of the variable are put between parentheses. When several consecutive
+variables have the same type, they can be grouped. Finally, if all variables
+have the same type, parentheses can be omitted.
+
+\begin{transbox}
+\TRANS{(x:A)B}{forall (x:~A), B ~~\textrm{or}~~ forall x:~A, B}
+\TRANS{(x,y:nat)P}{forall (x y :~nat), P ~~\textrm{or}~~ forall x y :~nat, P}
+\TRANS{(x,y:nat;z:A)P}{forall (x y :~nat) (z:A), P}
+\TRANS{(x,y,z,t:?)P}{forall x y z t, P}
+\TRANS{(x,y:nat;z:?)P}{forall (x y :~nat) z, P}
+\end{transbox}
+
+\subsubsection{Abstraction}
+
+The notation for $\lambda$-abstraction follows that of universal
+quantification. The binders are surrounded by keyword \texttt{fun}
+and \verb+=>+.
+
+\begin{transbox}
+\TRANS{[x,y:nat; z](f a b c)}{fun (x y:nat) z => f a b c}
+\end{transbox}
+
+
+\subsubsection{Pattern-matching}
+
+Beside the usage of the keyword pair \TERM{match}/\TERM{with} instead of
+\TERM{Cases}/\TERM{of}, the main change is the notation for the type of
+branches and return type. It is no longer written between \TERM{$<$ $>$} before
+the \TERM{Cases} keyword, but interleaved with the destructured objects.
+
+The idea is that for each destructured object, one may specify a
+variable name (after the \TERM{as} keyword) to tell how the branches
+types depend on this destructured objects (case of a dependent
+elimination), and also how they depend on the value of the arguments
+of the inductive type of the destructured objects (after the \TERM{in}
+keyword). The type of branches is then given after the keyword
+\TERM{return}, unless it can be inferred.
+
+Moreover, when the destructured object is a variable, one may use this
+variable in the return type.
+
+\begin{transbox}
+\TRANS{Cases n of\\~~ O => O \\| (S k) => (1) end}{match n with\\~~ 0 => 0 \\| S k => 1 end}
+\TRANS{Cases m n of \\~~0 0 => t \\| ... end}{match m, n with \\~~0, 0 => t \\| ... end}
+\TRANS{<[n:nat](P n)>Cases T of ... end}{match T as n return P n with ... end}
+\TRANS{<[n:nat][p:(even n)]\~{}(odd n)>Cases p of\\~~ ... \\end}{match p in even n return \~{} odd n with\\~~ ...\\end}
+\end{transbox}
+
+The annotations of the special pattern-matching operators
+(\TERM{if}/\TERM{then}/\TERM{else}) and \TERM{let()} also changed. The
+only restriction is that the destructuring \TERM{let} does not allow
+dependent case analysis.
+
+\begin{transbox}
+\TRANS{
+ \begin{tabular}{@{}l}
+ <[n:nat;x:(I n)](P n x)>if t then t1 \\
+ else t2
+ \end{tabular}}%
+{\begin{tabular}{@{}l}
+ if t as x in I n return P n x then t1 \\
+ else t2
+ \end{tabular}}
+\TRANS{<[n:nat](P n)>let (p,q) = t1 in t2}%
+{let (p,q) in I n return P n := t1 in t2}
+\end{transbox}
+
+
+\subsubsection{Fixpoints and cofixpoints}
+
+An simpler syntax for non-mutual fixpoints is provided, making it very close
+to the usual notation for non-recursive functions. The decreasing argument
+is now indicated by an annotation between curly braces, regardless of the
+binders grouping. The annotation can be omitted if the binders introduce only
+one variable. The type of the result can be omitted if inferable.
+
+\begin{transbox}
+\TRANS{Fix plus\{plus [n:nat] : nat -> nat :=\\~~ [m]...\}}{fix plus (n m:nat) \{struct n\}: nat := ...}
+\TRANS{Fix fact\{fact [n:nat]: nat :=\\
+~~Cases n of\\~~~~ O => (1) \\~~| (S k) => (mult n (fact k)) end\}}{fix fact
+  (n:nat) :=\\
+~~match n with \\~~~~0 => 1 \\~~| (S k) => n * fact k end}
+\end{transbox}
+
+There is a syntactic sugar for single fixpoints (defining one
+variable) associated to a local definition:
+
+\begin{transbox}
+\TRANS{let f := Fix f \{f [x:A] : T := M\} in\\(g (f y))}{let fix f (x:A) : T := M in\\g (f x)}
+\end{transbox}
+
+The same applies to cofixpoints, annotations are not allowed in that case.
+
+\subsubsection{Notation for type cast}
+
+\begin{transbox}
+\TRANS{O :: nat}{0 : nat}
+\end{transbox}
+
+\subsection{Main changes in tactics w.r.t. V7}
+
+The main change is that all tactic names are lowercase. This also holds for
+Ltac keywords.
+
+\subsubsection{Renaming of induction tactics}
+
+\begin{transbox}
+\TRANS{NewDestruct}{destruct}
+\TRANS{NewInduction}{induction}
+\TRANS{Induction}{simple induction}
+\TRANS{Destruct}{simple destruct}
+\end{transbox}
+
+\subsubsection{Ltac}
+
+Definitions of macros are introduced by \TERM{Ltac} instead of
+\TERM{Tactic Definition}, \TERM{Meta Definition} or \TERM{Recursive
+Definition}. They are considered recursive by default.
+
+\begin{transbox}
+\TRANS{Meta Definition my_tac t1 t2 := t1; t2.}%
+{Ltac my_tac t1 t2 := t1; t2.}
+\end{transbox}
+
+Rules of a match command are not between square brackets anymore.
+
+Context (understand a term with a placeholder) instantiation \TERM{inst}
+became \TERM{context}. Syntax is unified with subterm matching.
+
+\begin{transbox}
+\TRANS{Match t With [C[x=y]] -> Inst C[y=x]}%
+{match t with context C[x=y] => context C[y=x] end}
+\end{transbox}
+
+Arguments of macros use the term syntax. If a general Ltac expression
+is to be passed, it must be prefixed with ``{\tt ltac :}''. In other
+cases, when a \'{} was necessary, it is replaced by ``{\tt constr :}''
+
+\begin{transbox}
+\TRANS{my_tac '(S x)}{my_tac (S x)}
+\TRANS{my_tac (Let x=tac In x)}{my_tac ltac:(let x:=tac in x)}
+\TRANS{Let x = '[x](S (S x)) In Apply x}%
+{let x := constr:(fun x => S (S x)) in apply x}
+\end{transbox}
+
+{\tt Match Context With} is now called {\tt match goal with}. Its
+argument is an Ltac expression by default.
+
+
+\subsubsection{Named arguments of theorems ({\em bindings})}
+
+\begin{transbox}
+\TRANS{Apply thm with x:=t 1:=u}{apply thm with (x:=t) (1:=u)}
+\end{transbox}
+
+
+\subsubsection{Occurrences}
+
+To avoid ambiguity between a numeric literal and the optional
+occurrence numbers of this term, the occurrence numbers are put after
+the term itself and after keyword \TERM{as}.
+\begin{transbox}
+\TRANS{Pattern 1 2 (f x) 3 4 d y z}{pattern f x at 1 2, d at 3 4, y, z}
+\end{transbox}
+
+
+\subsubsection{{\tt LetTac} and {\tt Pose}}
+
+Tactic {\tt LetTac} was renamed into {\tt set}, and tactic {\tt Pose}
+was a particular case of {\tt LetTac} where the abbreviation is folded
+in the conclusion\footnote{There is a tactic called {\tt pose} in V8,
+but its behaviour is not to fold the abbreviation at all.}.
+
+\begin{transbox}
+\TRANS{LetTac x = t in H}{set (x := t) in H}
+\TRANS{Pose x := t}{set (x := t)}
+\end{transbox}
+
+{\tt LetTac} could be followed by a specification (called a clause) of
+the places where the abbreviation had to be folded (hypothese and/or
+conclusion). Clauses are the syntactic notion to denote in which parts
+of a goal a given transformation shold occur. Its basic notation is
+either \TERM{*} (meaning everywhere), or {\tt\textrm{\em hyps} |-
+\textrm{\em concl}} where {\em hyps} is either \TERM{*} (to denote all
+the hypotheses), or a comma-separated list of either hypothesis name,
+or {\tt (value of $H$)} or {\tt (type of $H$)}. Moreover, occurrences
+can be specified after every hypothesis after the {\TERM{at}}
+keyword. {\em concl} is either empty or \TERM{*}, and can be followed
+by occurences.
+
+\begin{transbox}
+\TRANS{in Goal}{in |- *}
+\TRANS{in H H1}{in H1, H2 |-}
+\TRANS{in H H1 ...}{in * |-}
+\TRANS{in H H1 Goal}{in H1, H2 |- *}
+\TRANS{in H H1 H2 ... Goal}{in *}
+\TRANS{in 1 2 H 3 4 H0 1 3 Goal}{in H at 1 2, H0 at 3 4 |- * at 1 3}
+\end{transbox}
+
+\subsection{Main changes in vernacular commands w.r.t. V7}
+
+
+\subsubsection{Require}
+
+The default behaviour of {\tt Require} is not to open the loaded
+module.
+
+\begin{transbox}
+\TRANS{Require Arith}{Require Import Arith}
+\end{transbox}
+
+\subsubsection{Binders}
+
+The binders of vernacular commands changed in the same way as those of
+fixpoints. This also holds for parameters of inductive definitions.
+
+
+\begin{transbox}
+\TRANS{Definition x [a:A] : T := M}{Definition x (a:A) : T := M}
+\TRANS{Inductive and [A,B:Prop]: Prop := \\~~conj : A->B->(and A B)}%
+      {Inductive and (A B:Prop): Prop := \\~~conj : A -> B -> and A B}
+\end{transbox}
+
+\subsubsection{Hints}
+
+Both {\tt Hints} and {\tt Hint} commands are beginning with {\tt Hint}.
+
+Command {\tt HintDestruct} has disappeared.
+
+
+The syntax of \emph{Extern} hints changed: the pattern and the tactic
+to be applied are separated by a {\tt =>}.
+\begin{transbox}
+\TRANS{Hint name := Resolve (f ? x)}%
+{Hint Resolve (f _ x)}
+\TRANS{Hint name := Extern 4 (toto ?) Apply lemma}%
+{Hint Extern 4 (toto _) => apply lemma}
+\TRANS{Hints Resolve x y z}{Hint Resolve x y z}
+\TRANS{Hints Resolve f : db1 db2}{Hint Resolve f : db1 db2}
+\TRANS{Hints Immediate x y z}{Hint Immediate x y z}
+\TRANS{Hints Unfold x y z}{Hint Unfold x y z}
+%% \TRANS{\begin{tabular}{@{}l}
+%%   HintDestruct Local Conclusion \\
+%%   ~~name (f ? ?) 3 [Apply thm]
+%%   \end{tabular}}%
+%% {\begin{tabular}{@{}l}
+%%  Hint Local Destuct name := \\
+%%  ~~3 Conclusion (f _ _) => apply thm
+%%  \end{tabular}}
+\end{transbox}
+
+
+\subsubsection{Implicit arguments}
+
+
+{\tt Set Implicit Arguments} changed its meaning in V8: the default is
+to turn implicit only the arguments that are {\em strictly} implicit
+(or rigid), i.e. that remains inferable whatever the other arguments
+are. For instance {\tt x} inferable from {\tt P x} is not strictly
+inferable since it can disappears if {\tt P} is instanciated by a term
+which erases {\tt x}.
+
+\begin{transbox}
+\TRANS{Set Implicit Arguments}%
+{\begin{tabular}{l}
+ Set Implicit Arguments. \\
+ Unset Strict Implicits.
+ \end{tabular}}
+\end{transbox}
+
+However, you may wish to adopt the new semantics of {\tt Set Implicit
+Arguments} (for instance because you think that the choice of
+arguments it sets implicit is more ``natural'' for you).
+
+
+\subsection{Changes in standard library}
+
+Many lemmas had their named changed to improve uniformity. The user
+generally do not have to care since the translators performs the
+renaming.
+
+  Type {\tt entier} from fast_integer.v is renamed into {\tt N} by the
+translator. As a consequence, user-defined objects of same name {\tt N}
+are systematically qualified even tough it may not be necessary.  The
+following table lists the main names with which the same problem
+arises:
+\begin{transbox}
+\TRANS{IF}{IF_then_else}
+\TRANS{ZERO}{Z0}
+\TRANS{POS}{Zpos}
+\TRANS{NEG}{Zneg}
+\TRANS{SUPERIEUR}{Gt}
+\TRANS{EGAL}{Eq}
+\TRANS{INFERIEUR}{Lt}
+\TRANS{add}{Pplus}
+\TRANS{true_sub}{Pminus}
+\TRANS{entier}{N}
+\TRANS{Un_suivi_de}{Ndouble_plus_one}
+\TRANS{Zero_suivi_de}{Ndouble}
+\TRANS{Nul}{N0}
+\TRANS{Pos}{Npos}
+\end{transbox}
+
+
+\subsubsection{Implicit arguments}
+
+%% Hugo: 
+Main definitions of standard library have now implicit
+arguments. These arguments are dropped in the translated files. This
+can exceptionally be a source of incompatibilities which has to be
+solved by hand (it typically happens for polymorphic functions applied
+to {\tt nil} or {\tt None}).
+%% preciser: avant ou apres trad ?
+
+\subsubsection{Logic about {\tt Type}}
+
+Many notations that applied to {\tt Set} have been extended to {\tt
+Type}, so several definitions in {\tt Type} are superseded by them.
+
+\begin{transbox}
+\TRANS{x==y}{x=y}
+\TRANS{(EXT x:Prop | Q)}{exists x:Prop, Q}
+\TRANS{identityT}{identity}
+\end{transbox}
+
+
+
+%% Doc of the translator
+\section{A guide to translation}
+\label{Translation}
+
+%%\subsection{Overview of the translation process}
+
+Here is a short description of the tools involved in the translation process:
+\begin{description}
+\item{\tt coqc -translate}
+is the automatic translator. It is a parser/pretty-printer. This means
+that the translation is made by parsing every command using a parser
+of old syntax, which is printed using the new syntax. Many efforts
+were made to preserve as much as possible of the quality of the
+presentation: it avoids expansion of syntax extensions, comments are
+not discarded and placed at the same place.
+\item{\tt translate-v8} (in the translation package) is a small
+shell-script that will help translate developments that compile with a
+Makefile with minimum requirements.
+\end{description}
+
+\subsection{Preparation to translation}
+
+This step is very important because most of work shall be done before
+translation. If a problem occurs during translation, it often means
+that you will have to modify the original source and restart the
+translation process. This also means that it is recommended not to
+edit the output of the translator since it would be overwritten if
+the translation has to be restarted.
+
+\subsubsection{Compilation with {\tt coqc -v7}}
+
+First of all, it is mandatory that files compile with the current
+version of Coq (8.0) with option {\tt -v7}. Translation is a
+complicated task that involves the full compilation of the
+development. If your development was compiled with older versions,
+first upgrade to Coq V8.0 with option {\tt -v7}. If you use a Makefile
+similar to those produced by {\tt coq\_makefile}, you probably just
+have to do
+
+{\tt make OPT="-opt -v7"} ~~~or~~~ {\tt make OPT="-byte -v7"}
+
+When the development compiles successfully, there are several changes
+that might be necessary for the translation. Essentially, this is
+about syntax extensions (see section below dedicated to porting syntax
+extensions). If you do not use such features, then you are ready to
+try and make the translation.
+
+\subsection{Translation}
+
+\subsubsection{The general case}
+
+The preferred way is to use script {\tt translate-v8} if your development
+is compiled by a Makefile with the following constraints:
+\begin{itemize}
+\item compilation is achieved by invoking make without specifying a target
+\item options are passed to Coq with make variable COQFLAGS that
+  includes variables OPT, COQLIBS, OTHERFLAGS and COQ_XML.
+\end{itemize}
+These constraints are met by the makefiles produced by {\tt coq\_makefile}
+
+Otherwise, modify your build program so as to pass option {\tt
+-translate} to program {\tt coqc}. The effect of this option is to
+ouptut the translated source of any {\tt .v} file in a file with
+extension {\tt .v8} located in the same directory than the original
+file.
+
+\subsubsection{What may happen during the translation}
+
+This section describes events that may happen during the
+translation and measures to adopt.
+
+These are the warnings that may arise during the translation, but they
+generally do not require any modification for the user:
+Warnings:
+\begin{itemize}
+\item {\tt Unable to detect if $id$ denotes a local definition}\\
+This is due to a semantic change in clauses. In a command such as {\tt
+simpl in H}, the old semantics were to perform simplification in the
+type of {\tt H}, or in its body if it is defined. With the new
+semantics, it is performed both in the type and the body (if any). It
+might lead to incompatibilities
+
+\item {\tt Forgetting obsolete module}\\
+Some modules have disappeared in V8.0 (new syntax). The user does not
+need to worry about it, since the translator deals with it.
+
+\item {\tt Replacing obsolete module}\\
+Same as before but with the module that were renamed. Here again, the
+translator deals with it.
+\end{itemize}
+
+\subsection{Verification of the translation}
+
+The shell-script {\tt translate-v8} also renames {\tt .v8} files into
+{\tt .v} files (older {\tt .v} files are put in a subdirectory called
+{\tt v7}) and tries to recompile them. To do so it invokes {\tt make}
+without option (which should cause the compilation using {\tt coqc}
+without particular option).
+
+If compilation fails at this stage, you should refrain from repairing
+errors manually on the new syntax, but rather modify the old syntax
+script and restart the translation. We insist on that because the
+problem encountered can show up in many instances (especially if the
+problem comes from a syntactic extension), and fixing the original
+sources (for instance the {\tt V8only} parts of notations) once will
+solve all occurrences of the problem.
+
+%%\subsubsection{Errors occurring after translation}
+%%Equality in {\tt Z} or {\tt R}...
+
+\subsection{Particular cases}
+
+\subsubsection{Lexical conventions}
+
+The definition of identifiers changed. Most of those changes are
+handled by the translator. They include:
+\begin{itemize}
+\item {\tt \_} is not an identifier anymore: it is tranlated to {\tt
+x\_}
+\item avoid clash with new keywords by adding a trailing {\tt \_}
+\end{itemize}
+
+If the choices made by translation is not satisfactory 
+or in the following cases:
+\begin{itemize}
+\item use of latin letters
+\item use of iso-latin characters in notations
+\end{itemize}
+the user should change his development prior to translation.
+
+\subsubsection{{\tt Case} and {\tt Match}}
+
+These very low-level case analysis are no longer supported. The
+translator tries hard to translate them into a user-friendly one, but
+it might lack type information to do so\footnote{The translator tries
+to typecheck terms before printing them, but it is not always possible
+to determine the context in which terms appearing in tactics
+live.}. If this happens, it is preferable to transform it manually
+before translation.
+
+\subsubsection{Syntax extensions with {\tt Grammar} and {\tt Syntax}}
+
+
+{\tt Grammar} and {\tt Syntax} are no longer supported. They
+should be replaced by an equivalent {\tt Notation} command and be
+processed as described above. Before attempting translation, users
+should verify that compilation with option {\tt -v7} succeeds.
+
+In the cases where {\tt Grammar} and {\tt Syntax} cannot be emulated
+by {\tt Notation}, users have to change manually they development as
+they wish to avoid the use of {\tt Grammar}. If this is not done, the
+translator will simply expand the notations and the output of the
+translator will use the regular Coq syntax.
+
+\subsubsection{Syntax extensions with {\tt Notation} and {\tt Infix}}
+
+These commands do not necessarily need to be changed.
+
+Some work will have to be done manually if the notation conflicts with
+the new syntax (for instance, using keywords like {\tt fun} or {\tt
+exists}, overloading of symbols of the old syntax, etc.) or if the
+precedences are not right.
+
+  Precedence levels are now from 0 to 200. In V8, the precedence and
+associativity of an operator cannot be redefined. Typical level are
+(refer to the chapter on notations in the Reference Manual for the
+full list):
+
+\begin{center}
+\begin{tabular}{|cll|}
+\hline
+Notation & Precedence & Associativity \\
+\hline
+\verb!_ <-> _! & 95 & no \\
+\verb!_ \/ _!  & 85 & right \\
+\verb!_ /\ _!  & 80 & right \\
+\verb!~ _!   & 75 & right \\
+\verb!_ = _!, \verb!_ <> _!, \verb!_ < _!, \verb!_ > _!,
+  \verb!_ <= _!, \verb!_ >= _!   & 70 & no \\
+\verb!_ + _!, \verb!_ - _!   & 50 & left \\
+\verb!_ * _!, \verb!_ / _!   & 40 & left \\
+\verb!- _!  & 35 & right \\
+\verb!_ ^ _!   & 30 & left \\
+\hline
+\end{tabular}
+\end{center}
+
+
+  By default, the translator keeps the associativity given in V7 while
+the levels are mapped according to the following table:
+ 
+\begin{center}
+\begin{tabular}{l|l|l}
+V7 level & mapped to & associativity \\
+\hline
+0 & 0 & no \\
+1 & 20 & left \\
+2 & 30 & right \\
+3 & 40 & left \\
+4 & 50 & left \\
+5 & 70 & no \\
+6 & 80 & right \\
+7 & 85 & right \\
+8 & 90 & right \\
+9 & 95 & no \\
+10 & 100 & left
+\end{tabular}
+\end{center}
+
+If this is OK, just simply apply the translator.
+
+
+\paragraph{Associativity conflict}
+
+  Since the associativity of the levels obtained by translating a V7
+level (as shown on table above) cannot be changed, you have to choose
+another level with a compatible associativity.
+
+  You can choose any level between 0 and 200, knowing that the
+standard operators are already set at the levels shown on the list
+above. 
+
+Assume you have a notation
+\begin{verbatim}
+Infix NONA 2 "=_S" my_setoid_eq.
+\end{verbatim}
+By default, the translator moves it to level 30 which is right
+associative, hence a conflict with the expected no associativity.
+
+To solve the problem, just add the "V8only" modifier to reset the
+level and enforce the associativity as follows:
+\begin{verbatim}
+Infix NONA 2 "=_S" my_setoid_eq V8only (at level 70, no associativity).
+\end{verbatim}
+The translator now knows that it has to translate "=_S" at level 70
+with no associativity.
+
+Remark: 70 is the "natural" level for relations, hence the choice of 70
+here, but any other level accepting a no-associativity would have been
+OK.
+
+Second example: assume you have a notation
+\begin{verbatim}
+Infix RIGHTA 1 "o" my_comp.
+\end{verbatim}
+By default, the translator moves it to level 20 which is left
+associative, hence a conflict with the expected right associativity.
+
+To solve the problem, just add the "V8only" modifier to reset the
+level and enforce the associativity as follows:
+\begin{verbatim}
+Infix RIGHTA 1 "o" my_comp V8only (at level 20, right associativity).
+\end{verbatim}
+The translator now knows that it has to translate "o" at level 20
+which has the correct "right associativity".
+
+Remark: we assumed here that the user wants a strong precedence for
+composition, in such a way, say, that "f o g + h" is parsed as
+"(f o g) + h". To get "o" binding less than the arithmetical operators,
+an appropriated level would have been close of 70, and below, e.g. 65.
+
+
+\paragraph{Conflict: notation hides another notation}
+
+Remark: use {\tt Print Grammar constr} in V8 to diagnose the overlap
+and see the section on factorization in the chapter on notations of
+the Reference Manual for hints on how to factorize.
+
+Example:
+\begin{verbatim}
+Notation "{ x }" := (my_embedding x) (at level 1).
+\end{verbatim}
+overlaps in V8 with notation \verb#{ x : A & P }# at level 0 and with
+x at level 99. The conflicts can be solved by left-factorizing the
+notation as follows:
+\begin{verbatim}
+Notation "{ x }" := (my_embedding x) (at level 1)
+  V8only (at level 0, x at level 99).
+\end{verbatim}
+
+\paragraph{Conflict: a notation conflicts with the V8 grammar}
+
+Again, use the {\tt V8only} modifier to tell the translator to
+automatically take in charge the new syntax.
+
+Example:
+\begin{verbatim}
+Infix 3 "@" app.
+\end{verbatim}
+Since {\tt @} is used in the new syntax for deactivating the implicit
+arguments, another symbol has to be used, e.g. {\tt @@}. This is done via
+the {\tt V8only} option as follows:
+\begin{verbatim}
+Infix 3 "@" app V8only "@@" (at level 40, left associativity).
+\end{verbatim}
+or, alternatively by
+\begin{verbatim}
+Notation "x @ y" := (app x y) (at level 3, left associativity)
+  V8only "x @@ y" (at level 40, left associativity).
+\end{verbatim}
+
+\paragraph{Conflict: my notation is already defined at another level
+  (or with another associativity)}
+
+In V8, the level and associativity of a given notation can no longer
+be changed. Then, either you adopt the standard reserved levels and
+associativity for this notation (as given on the list above) or you
+change your notation.
+\begin{itemize}
+\item To change the notation, follow the directions in the previous
+paragraph
+\item To adopt the standard level, just use {\tt V8only} without any
+argument.
+\end{itemize}
+
+Example:
+\begin{verbatim}
+Infix 6 "*" my_mult.
+\end{verbatim}
+is not accepted as such in V8. Write
+\begin{verbatim}
+Infix 6 "*" my_mult V8only.
+\end{verbatim}
+to tell the translator to use {\tt *} at the reserved level (i.e. 40
+with left associativity). Even better, use interpretation scopes (look
+at the Reference Manual).
+
+
+\subsubsection{Strict implicit arguments}
+
+In the case you want to adopt the new semantics of {\tt Set Implicit
+ Arguments} (only setting rigid arguments as implicit), add the option
+{\tt -strict-implicit} to the translator.
+
+Warning: changing the number of implicit arguments can break the
+notations.  Then use the {\tt V8only} modifier of {\tt Notation}.
+
+\end{document}

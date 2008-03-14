@@ -1,0 +1,725 @@
+
+%% -*-french-tex-*-
+
+\documentclass{article}
+
+\usepackage{verbatim}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage[french]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+
+
+\author{B.~Barras}
+\title{Proposition de syntaxe pour Coq}
+
+%% Le _ est un caractère normal
+\catcode`\_=13
+\let\subscr=_
+\def_{\ifmmode\sb\else\subscr\fi}
+
+%% Macros pour les grammaires
+\def\NT#1{\langle\textit{#1}\rangle}
+\def\TERM#1{\textsf{#1}}
+\def\STAR#1{#1\!*}
+\def\PLUS#1{#1\!+}
+
+%% Tableaux de definition de non-terminaux
+\newenvironment{cadre}
+        {\begin{array}{|c|}\hline\\}
+        {\\\\\hline\end{array}}
+\newenvironment{rulebox}
+        {$$\begin{cadre}\begin{array}{r@{~}c@{~}l@{}r}}
+        {\end{array}\end{cadre}$$}
+\def\DEFNT#1{\NT{#1} & ::= &}
+\def\EXTNT#1{\NT{#1} & ::= & ... \\&|&}
+\def\RNAME#1{(\textsc{#1})}
+\def\SEPDEF{\\\\}
+\def\nlsep{\\&|&}
+
+
+\begin{document}
+
+\maketitle
+
+\section{Grammaire des tactiques}
+\label{tacticsyntax}
+
+La réflexion de la rénovation de la syntaxe des tactiques n'est pas
+encore aussi poussée que pour les termes (section~\ref{constrsyntax}),
+mais cette section vise à énoncer les quelques principes que l'on
+souhaite suivre. 
+
+\begin{itemize}
+\item Réutiliser les mots-clés de la syntaxe des termes (i.e. en
+  minuscules) pour les constructions similaires de tactiques (let_in,
+  match, and, etc.). Le connecteur logique \texttt{and} n'étant que
+  rarement utilisé autrement que sous la forme \texttt{$\wedge$} (sauf
+  dans le code ML), on pourrait dégager ce mot-clé.
+\item Les arguments passés aux tactiques sont principalement des
+  termes, on préconise l'utilisation d'un symbole spécial (par exemple
+  l'apostrophe) pour passer une tactique ou une expression
+  (AST). L'idée étant que l'on écrit plus souvent des tactiques
+  prenant des termes en argument que des tacticals.
+\end{itemize}
+
+\begin{figure}
+\begin{rulebox}
+\DEFNT{tactic}
+       \NT{tactic} ~\TERM{\&} ~\NT{tactic}            & \RNAME{then}
+\nlsep \TERM{[} ~\NT{tactic}~\TERM{|}~...
+      ~\TERM{|}~\NT{tactic}~\TERM{]}                  & \RNAME{par}
+\nlsep \NT{ident} ~\STAR{\NT{tactic-arg}}   ~~~       & \RNAME{apply}
+\nlsep \TERM{fun} ~....                               & \RNAME{function}
+\nlsep \NT{simple-tactic}
+\SEPDEF
+\DEFNT{tactic-arg}
+       \NT{constr}
+\nlsep \TERM{'} ~\NT{tactic}
+\SEPDEF
+\DEFNT{simple-tactic}
+       \TERM{Apply} ~\NT{binding-term}
+\nlsep \NT{elim-kw} ~\NT{binding-term}
+\nlsep \NT{elim-kw} ~\NT{binding-term} ~\TERM{using} ~\NT{binding-term}
+\nlsep \TERM{Intros} ~\NT{intro-pattern}
+\SEPDEF
+\DEFNT{elim-kw}
+       \TERM{Elim} ~\mid~ \TERM{Case} ~\mid~ \TERM{Induction}
+       ~\mid~ \TERM{Destruct}
+\end{rulebox}
+\caption{Grammaire des tactiques}
+\label{tactic}
+\end{figure}
+
+
+\subsection{Arguments de tactiques}
+
+La syntaxe actuelle des arguments de tactiques est que l'on parse par
+défaut une expression de tactique, ou bien l'on parse un terme si
+celui-ci est préfixé par \TERM{'} (sauf dans le cas des
+variables). Cela est gênant pour les utilisateurs qui doivent écrire
+des \TERM{'} pour leurs tactiques.
+
+À mon avis, il n'est pas souhaitable pour l'utilisateur de l'obliger à
+marquer une différence entre les tactiques ``primitives'' (en fait
+``système'') et les tactiques définies par Ltac. En effet, on se
+dirige inévitablement vers une situation où il existera des librairies
+de tactiques et il va devenir difficile de savoir facilement s'il faut
+ou non mettre des \TERM{'}.
+
+
+
+\subsection{Bindings}
+
+Dans un premier temps, les ``bindings'' sont toujours considérés comme
+une construction du langage des tactiques, mais il est intéressant de
+prévoir l'extension de ce procédé aux termes, puisqu'il s'agit
+simplement de construire un n{\oe}ud d'application dans lequel on
+donne les arguments par nom ou par position, les autres restant à
+inférer. Le principal point est de trouver comment combiner de manière
+uniforme ce procédé avec les arguments implicites.
+
+Il est toutefois important de réfléchir dès maintenant à une syntaxe
+pour éviter de rechanger encore la syntaxe.
+
+Intégrer la notation \TERM{with} aux termes peut poser des problèmes
+puisque ce mot-clé est utilisé pour le filtrage: comment parser (en
+LL(1)) l'expression:
+\begin{verbatim}
+Cases x with y ...
+\end{verbatim}
+
+Soit on trouve un autre mot-clé, soit on joue avec les niveaus de
+priorité en obligeant a parenthéser le \TERM{with} des ``bindings'':
+\begin{verbatim}
+Cases (x with y) with (C z) => ...
+\end{verbatim}
+ce qui introduit un constructeur moralement équivalent à une
+application situé à une priorité totalement différente (les
+``bindings'' seraient au plus haut niveau alors que l'application est
+à un niveau bas).
+
+
+\begin{figure}
+\begin{rulebox}
+\DEFNT{binding-term}
+       \NT{constr} ~\TERM{with} ~\STAR{\NT{binding}}
+\SEPDEF
+\DEFNT{binding}
+       \NT{constr}
+\end{rulebox}
+\caption{Grammaire des bindings}
+\label{bindings}
+\end{figure}
+
+\subsection{Enregistrements}
+
+Il faudrait aménager la syntaxe des enregistrements dans l'optique
+d'avoir des enregistrements anonymes (termes de première classe), même
+si pour l'instant, on ne dispose que d'enregistrements définis a
+toplevel.
+
+Exemple de syntaxe pour les types d'enregistrements:
+\begin{verbatim}
+{ x1 : A1;
+  x2 : A2(x1);
+  _ : T;   (* Pas de projection disponible *)
+  y;       (* Type infere *)
+  ...      (* ; optionnel pour le dernier champ *)
+}
+\end{verbatim}
+
+Exemple de syntaxe pour le constructeur:
+\begin{verbatim}
+{ x1 = O;
+  x2 : A2(x1) = v1;
+  _ = v2;
+  ...
+}
+\end{verbatim}
+Quant aux dépendences, une convention pourrait être de considérer les
+champs non annotés par le type comme non dépendants.
+
+Plusieurs interrogations:
+\begin{itemize}
+\item l'ordre des champs doit-il être respecté ?
+  sinon, que faire pour les champs sans projection ?
+\item autorise-t-on \texttt{v1} a mentionner \texttt{x1} (comme dans
+  la définition d'un module), ce qui se comporterait comme si on avait
+  écrit \texttt{v1} à la place. Cela pourrait être une autre manière
+  de déclarer les dépendences
+\end{itemize}
+
+La notation pointée pour les projections pose un problème de parsing,
+sauf si l'on a une convention lexicale qui discrimine les noms de
+modules des projections et identificateurs: \texttt{x.y.z} peut être
+compris comme \texttt{(x.y).z} ou texttt{x.(y.z)}.
+
+
+\section{Grammaire des termes}
+\label{constrsyntax}
+
+\subsection{Quelques principes}
+
+\begin{enumerate}
+\item Diminuer le nombre de niveaux de priorité en regroupant les
+  règles qui se ressemblent: infixes, préfixes, lieurs (constructions
+  ouvertes à droite), etc.
+\item Éviter de surcharger la signification d'un symbole (ex:
+  \verb+( )+ comme parenthésage et produit dans la V7).
+\item Faire en sorte que les membres gauches (motifs de Cases, lieurs
+  d'abstraction ou de produits) utilisent une syntaxe compatible avec
+  celle des membres droits (branches de Cases et corps de fonction).
+\end{enumerate}
+
+\subsection{Présentation de la grammaire}
+
+\begin{figure}
+\begin{rulebox}
+\DEFNT{paren-constr}
+       \NT{cast-constr}~\TERM{,}~\NT{paren-constr}     &\RNAME{pair}
+\nlsep \NT{cast-constr}
+\SEPDEF
+\DEFNT{cast-constr}
+       \NT{constr}~\TERM{\!\!:}~\NT{cast-constr}       &\RNAME{cast}
+\nlsep \NT{constr}
+\SEPDEF
+\DEFNT{constr}
+       \NT{appl-constr}~\NT{infix}~\NT{constr}      &\RNAME{infix}
+\nlsep \NT{prefix}~\NT{constr}                      &\RNAME{prefix}
+\nlsep \NT{constr}~\NT{postfix}                     &\RNAME{postfix}
+\nlsep \NT{appl-constr}
+\SEPDEF
+\DEFNT{appl-constr}
+       \NT{appl-constr}~\PLUS{\NT{appl-arg}}           &\RNAME{apply}
+\nlsep \TERM{@}~\NT{global}~\PLUS{\NT{simple-constr}}  &\RNAME{expl-apply}
+\nlsep \NT{simple-constr}
+\SEPDEF
+\DEFNT{appl-arg}
+       \TERM{@}~\NT{int}~\TERM{\!:=}~\NT{simple-constr}  &\RNAME{impl-arg}
+\nlsep \NT{simple-constr}
+\SEPDEF
+\DEFNT{simple-constr}
+       \NT{atomic-constr}
+\nlsep \TERM{(}~\NT{paren-constr}~\TERM{)}
+\nlsep \NT{match-constr}
+\nlsep \NT{fix-constr}
+%% \nlsep \TERM{<\!\!:ast\!\!:<}~\NT{ast}~\TERM{>\!>} &\RNAME{quotation}
+\end{rulebox}
+\caption{Grammaire des termes}
+\label{constr}
+\end{figure}
+
+\begin{figure}
+\begin{rulebox}
+\DEFNT{prefix}
+       \TERM{!}~\PLUS{\NT{binder}}~\TERM{.}~    &\RNAME{prod}
+\nlsep \TERM{fun} ~\PLUS{\NT{binder}} ~\TERM{$\Rightarrow$} &\RNAME{lambda}
+\nlsep \TERM{let}~\NT{ident}~\STAR{\NT{binder}} ~\TERM{=}~\NT{constr}
+        ~\TERM{in}  &\RNAME{let}
+%\nlsep \TERM{let (}~\NT{comma-ident-list}~\TERM{) =}~\NT{constr}
+%        ~\TERM{in}   &~~~\RNAME{let-case}
+\nlsep \TERM{if}~\NT{constr}~\TERM{then}~\NT{constr}~\TERM{else}
+      &\RNAME{if-case}
+\nlsep \TERM{eval}~\NT{red-fun}~\TERM{in}       &\RNAME{eval}
+\SEPDEF
+\DEFNT{infix}
+      \TERM{$\rightarrow$}                     & \RNAME{impl}
+\SEPDEF
+\DEFNT{atomic-constr}
+      \TERM{_}
+\nlsep \TERM{?}\NT{int}
+\nlsep \NT{sort}
+\nlsep \NT{global}
+\SEPDEF
+\DEFNT{binder}
+       \NT{ident}                              &\RNAME{infer}
+\nlsep \TERM{(}~\NT{ident}~\NT{type}~\TERM{)}  &\RNAME{binder}
+\SEPDEF
+\DEFNT{type}
+       \TERM{\!:}~\NT{constr}
+\nlsep \epsilon
+\end{rulebox}
+\caption{Grammaires annexes aux termes}
+\label{gram-annexes}
+\end{figure}
+
+La grammaire des termes (correspondant à l'état \texttt{barestate})
+est décrite figures~\ref{constr} et~\ref{gram-annexes}. On constate
+par rapport aux précédentes versions de Coq d'importants changements
+de priorité, le plus marquant étant celui de l'application qui se
+trouve désormais juste au dessus\footnote{La convention est de
+considérer les opérateurs moins lieurs comme ``au dessus'',
+c'est-à-dire ayant un niveau de priorité plus élévé (comme c'est le
+cas avec le niveau de la grammaire actuelle des termes).} des
+constructions fermées à gauche et à droite.
+
+La grammaire des noms globaux est la suivante:
+\begin{eqnarray*}
+\DEFNT{global}
+      \NT{ident}
+%% \nlsep \TERM{\$}\NT{ident}
+\nlsep \NT{ident}\TERM{.}\NT{global}
+\end{eqnarray*}
+
+Le $\TERM{_}$ dénote les termes à synthétiser. Les métavariables sont
+reconnues au niveau du lexer pour ne pas entrer en conflit avec le
+$\TERM{?}$ de l'existentielle.
+
+Les opérateurs infixes ou préfixes sont tous au même niveau de
+priorité du point de vue de Camlp4. La solution envisagée est de les
+gérer à la manière de Yacc, avec une pile (voir discussions plus
+bas). Ainsi, l'implication est un infixe normal; la quantification
+universelle et le let sont vus comme des opérateurs préfixes avec un
+niveau de priorité plus haut (i.e. moins lieur). Il subsiste des
+problèmes si l'on ne veut pas écrire de parenthèses dans:
+\begin{verbatim}
+ A -> (!x. B -> (let y = C in D))
+\end{verbatim}
+
+La solution proposée est d'analyser le membre droit d'un infixe de
+manière à autoriser les préfixes et les infixes de niveau inférieur,
+et d'exiger le parenthésage que pour les infixes de niveau supérieurs.
+
+En revanche, à l'affichage, certains membres droits seront plus
+lisibles s'ils n'utilisent pas cette astuce:
+\begin{verbatim}
+(fun x => x) = fun x => x
+\end{verbatim}
+
+La proposition est d'autoriser ce type d'écritures au parsing, mais
+l'afficheur écrit de manière standardisée en mettant quelques
+parenthèses superflues: $\TERM{=}$ serait symétrique alors que
+$\rightarrow$ appellerait l'afficheur de priorité élevée pour son
+sous-terme droit.
+
+Les priorités des opérateurs primitifs sont les suivantes (le signe
+$*$ signifie que pour le membre droit les opérateurs préfixes seront
+affichés sans parenthèses quel que soit leur priorité):
+$$
+\begin{array}{c|l}
+$symbole$ & $priorité$ \\
+\hline
+\TERM{!}      & 200\,R* \\
+\TERM{fun}    & 200\,R* \\
+\TERM{let}    & 200\,R* \\
+\TERM{if}     & 200\,R \\
+\TERM{eval}   & 200\,R \\
+\rightarrow   & 90\,R*
+\end{array}
+$$
+
+Il y a deux points d'entrée pour les termes: $\NT{constr}$ et
+$\NT{simple-constr}$. Le premier peut être utilisé lorsqu'il est suivi
+d'un séparateur particulier. Dans le cas où l'on veut une liste de
+termes séparés par un espace, il faut lire des $\NT{simple-constr}$.
+
+
+
+Les constructions $\TERM{fix}$ et $\TERM{cofix}$ (voir aussi
+figure~\ref{gram-fix}) sont fermées par end pour simplifier
+l'analyse. Sinon, une expression de point fixe peut être suivie par un
+\TERM{in} ou un \TERM{and}, ce qui pose les mêmes problèmes que le
+``dangling else'': dans
+\begin{verbatim}
+fix f1 x {x} = fix f2 y {y} = ... and ... in ...
+\end{verbatim}
+il faut définir une stratégie pour associer le \TERM{and} et le
+\TERM{in} au bon point fixe.
+
+Un autre avantage est de faire apparaitre que le \TERM{fix} est un
+constructeur de terme de première classe et pas un lieur:
+\begin{verbatim}
+fix f1 ... and f2 ...
+in f1 end x
+\end{verbatim}
+Les propositions précédentes laissaient \texttt{f1} et \texttt{x}
+accolés, ce qui est source de confusion lorsque l'on fait par exemple
+\texttt{Pattern (f1 x)}.
+
+Les corps de points fixes et co-points fixes sont identiques, bien que
+ces derniers n'aient pas d'information de décroissance. Cela
+fonctionne puisque l'annotation est optionnelle. Cela préfigure des
+cas où l'on arrive à inférer quel est l'argument qui décroit
+structurellement (en particulier dans le cas où il n'y a qu'un seul
+argument).
+
+\begin{figure}
+\begin{rulebox}
+\DEFNT{fix-expr}
+       \TERM{fix}~\NT{fix-decls}    ~\NT{fix-select} ~\TERM{end} &\RNAME{fix}
+\nlsep \TERM{cofix}~\NT{cofix-decls}~\NT{fix-select} ~\TERM{end} &\RNAME{cofix}
+\SEPDEF
+\DEFNT{fix-decls}
+       \NT{fix-decl}~\TERM{and}~\NT{fix-decls}
+\nlsep \NT{fix-decl}
+\SEPDEF
+\DEFNT{fix-decl}
+       \NT{ident}~\PLUS{\NT{binder}}~\NT{type}~\NT{annot}
+       ~\TERM{=}~\NT{constr}
+\SEPDEF
+\DEFNT{annot}
+       \TERM{\{}~\NT{ident}~\TERM{\}}
+\nlsep \epsilon
+\SEPDEF
+\DEFNT{fix-select}
+       \TERM{in}~\NT{ident}
+\nlsep \epsilon
+\end{rulebox}
+\caption{Grammaires annexes des points fixes}
+\label{gram-fix}
+\end{figure}
+
+La construction $\TERM{Case}$ peut-être considérée comme
+obsolète. Quant au $\TERM{Match}$ de la V6, il disparaît purement et
+simplement.
+
+\begin{figure}
+\begin{rulebox}
+\DEFNT{match-expr}
+       \TERM{match}~\NT{case-items}~\NT{case-type}~\TERM{with}~
+       \NT{branches}~\TERM{end}        &\RNAME{match}
+\nlsep \TERM{match}~\NT{case-items}~\TERM{with}~
+       \NT{branches}~\TERM{end}        &\RNAME{infer-match}
+%%\nlsep \TERM{case}~\NT{constr}~\NT{case-predicate}~\TERM{of}~
+%%      \STAR{\NT{constr}}~\TERM{end}   &\RNAME{case}
+\SEPDEF
+\DEFNT{case-items}
+       \NT{case-item} ~\TERM{\&} ~\NT{case-items}
+\nlsep \NT{case-item}
+\SEPDEF
+\DEFNT{case-item}
+       \NT{constr}~\NT{pred-pattern} &\RNAME{dep-case}
+\nlsep \NT{constr}                   &\RNAME{nodep-case}
+\SEPDEF
+\DEFNT{case-type}
+       \TERM{$\Rightarrow$}~\NT{constr}
+\nlsep \epsilon
+\SEPDEF
+\DEFNT{pred-pattern}
+       \TERM{as}~\NT{ident} ~\TERM{\!:}~\NT{constr}
+\SEPDEF
+\DEFNT{branches}
+       \TERM{|} ~\NT{patterns} ~\TERM{$\Rightarrow$}
+        ~\NT{constr} ~\NT{branches}
+\nlsep \epsilon
+\SEPDEF
+\DEFNT{patterns}
+       \NT{pattern} ~\TERM{\&} ~\NT{patterns}
+\nlsep \NT{pattern}
+\SEPDEF
+\DEFNT{pattern} ...
+\end{rulebox}
+\caption{Grammaires annexes du filtrage}
+\label{gram-match}
+\end{figure}
+
+De manière globale, l'introduction de définitions dans les termes se
+fait avec le symbole $=$, et le $\!:=$ est réservé aux définitions au
+niveau vernac. Il y avait un manque de cohérence dans la
+V6, puisque l'on utilisait $=$ pour le $\TERM{let}$ et $\!:=$ pour les
+points fixes et les commandes vernac.
+
+% OBSOLETE: lieurs multiples supprimes
+%On peut remarquer que $\NT{binder}$ est un sous-ensemble de
+%$\NT{simple-constr}$, à l'exception de $\texttt{(a,b\!\!:T)}$: en tant
+%que lieur, {\tt a} et {\tt b} sont tous deux contraints, alors qu'en
+%tant que terme, seul {\tt b} l'est. Cela qui signifie que l'objectif
+%de rendre compatibles les membres gauches et droits est {\it presque}
+%atteint.
+
+\subsection{Infixes}
+
+\subsubsection{Infixes extensibles}
+
+Le problème de savoir si la liste des symboles pouvant apparaître en
+infixe est fixée ou extensible par l'utilisateur reste à voir.
+
+Notons que la solution où les symboles infixes sont des
+identificateurs que l'on peut définir paraît difficilement praticable:
+par exemple $\texttt{Logic.eq}$ n'est pas un opérateur binaire, mais
+ternaire. Il semble plus simple de garder des déclarations infixes qui
+relient un symbole infixe à un terme avec deux ``trous''. Par exemple:
+
+$$\begin{array}{c|l}
+$infixe$ &  $identificateur$ \\
+\hline
+= & \texttt{Logic.eq _ ?1 ?2} \\
+== & \texttt{JohnMajor.eq _ ?1 _ ?2}
+\end{array}$$
+
+La syntaxe d'une déclaration d'infixe serait par exemple:
+\begin{verbatim}
+Infix "=" 50 := Logic.eq _ ?1 ?2;
+\end{verbatim}
+
+
+\subsubsection{Gestion des précédences}
+
+Les infixes peuvent être soit laissé à Camlp4, ou bien (comme ici)
+considérer que tous les opérateurs ont la même précédence et gérer
+soit même la recomposition des termes à l'aide d'une pile (comme
+Yacc).
+
+
+\subsection{Extensions de syntaxe}
+
+\subsubsection{Litéraux numériques}
+
+La proposition est de considerer les litéraux numériques comme de
+simples identificateurs. Comme il en existe une infinité, il faut un
+nouveau mécanisme pour leur associer une définition. Par exemple, en
+ce qui concerne \texttt{Arith}, la définition de $5$ serait
+$\texttt{S}~4$. Pour \texttt{ZArith}, $5$ serait $\texttt{xI}~2$.
+
+Comme les infixes, les constantes numériques peuvent être qualifiées
+pour indiquer dans quels module est le type que l'on veut
+référencer. Par exemple (si on renomme \texttt{Arith} en \texttt{N} et
+\texttt{ZArith} en \texttt{Z}): \verb+N.5+, \verb+Z.5+.
+
+\begin{eqnarray*}
+\EXTNT{global}
+      \NT{int}
+\end{eqnarray*}
+
+\subsubsection{Nouveaux lieurs}
+
+$$
+\begin{array}{rclr}
+\EXTNT{constr}
+       \TERM{ex}~\PLUS{\NT{binder}}~\TERM{.}~\NT{constr}  &\RNAME{ex}
+\nlsep \TERM{ex}~\PLUS{\NT{binder}}~\TERM{.}~\NT{constr}~\TERM{,}~\NT{constr}
+        &\RNAME{ex2}
+\nlsep \TERM{ext}~\PLUS{\NT{binder}}~\TERM{.}~\NT{constr}  &\RNAME{exT}
+\nlsep \TERM{ext}~\PLUS{\NT{binder}}~\TERM{.}~\NT{constr}~\TERM{,}~\NT{constr}
+        &\RNAME{exT2}
+\end{array}
+$$
+
+Pour l'instant l'existentielle n'admet qu'une seule variable, ce qui
+oblige à écrire des cascades de $\TERM{ex}$.
+
+Pour parser les existentielles avec deux prédicats, on peut considérer
+\TERM{\&} comme un infixe intermédiaire et l'opérateur existentiel en
+présence de cet infixe se transforme en \texttt{ex2}.
+
+\subsubsection{Nouveaux infixes}
+
+Précédences des opérateurs infixes (les plus grands associent moins fort):
+$$
+\begin{array}{l|l|c|l}
+$identificateur$      & $module$     & $infixe/préfixe$ & $précédence$ \\
+\hline
+\texttt{iff}          & $Logic$      & \longleftrightarrow & 100 \\
+\texttt{or}           & $Logic$      & \vee     & 80\, R \\
+\texttt{sum}          & $Datatypes$  & +        & 80\, R \\
+\texttt{and}          & $Logic$      & \wedge   & 70\, R \\
+\texttt{prod}         & $Datatypes$  & *        & 70\, R \\
+\texttt{not}          & $Logic$      & \tilde{} & 60\, L \\
+\texttt{eq _}         & $Logic$      & =        & 50 \\
+\texttt{eqT _}        & $Logic_Type$ & =        & 50 \\
+\texttt{identityT _}  & $Data_Type$  & =        & 50 \\
+\texttt{le}           & $Peano$      & $<=$     & 50 \\
+\texttt{lt}           & $Peano$      & $<$      & 50 \\
+\texttt{ge}           & $Peano$      & $>=$     & 50 \\
+\texttt{gt}           & $Peano$      & $>$      & 50 \\
+\texttt{Zle}          & $zarith_aux$   & $<=$   & 50 \\
+\texttt{Zlt}          & $zarith_aux$   & $<$    & 50 \\
+\texttt{Zge}          & $zarith_aux$   & $>=$   & 50 \\
+\texttt{Zgt}          & $zarith_aux$   & $>$    & 50 \\
+\texttt{Rle}          & $Rdefinitions$ & $<=$   & 50 \\
+\texttt{Rlt}          & $Rdefinitions$ & $<$    & 50 \\
+\texttt{Rge}          & $Rdefinitions$ & $>=$   & 50 \\
+\texttt{Rgt}          & $Rdefinitions$ & $>$    & 50 \\
+\texttt{plus}         & $Peano$        & +      & 40\,L \\
+\texttt{Zplus}        & $fast_integer$ & +      & 40\,L \\
+\texttt{Rplus}        & $Rdefinitions$ & +      & 40\,L \\
+\texttt{minus}        & $Minus$        & -      & 40\,L \\
+\texttt{Zminus}       & $zarith_aux$   & -      & 40\,L \\
+\texttt{Rminus}       & $Rdefinitions$ & -      & 40\,L \\
+\texttt{Zopp}         & $fast_integer$ & -      & 40\,L \\
+\texttt{Ropp}         & $Rdefinitions$ & -      & 40\,L \\
+\texttt{mult}         & $Peano$        & *      & 30\,L \\
+\texttt{Zmult}        & $fast_integer$ & *      & 30\,L \\
+\texttt{Rmult}        & $Rdefinitions$ & *      & 30\,L \\
+\texttt{Rdiv}         & $Rdefinitions$ & /      & 30\,L \\
+\texttt{pow}          & $Rfunctions$   & \hat   & 20\,L \\
+\texttt{fact}         & $Rfunctions$   & !      & 20\,L \\
+\end{array}
+$$
+
+Notons qu'il faudrait découper {\tt Logic_Type} en deux car celui-ci
+définit deux égalités, ou alors les mettre dans des modules différents.
+
+\subsection{Exemples}
+
+\begin{verbatim}
+Definition not (A:Prop) := A->False;
+Inductive eq (A:Set) (x:A) : A->Prop :=
+    refl_equal : eq A x x;
+Inductive ex (A:Set) (P:A->Prop) : Prop :=
+    ex_intro : !x. P x -> ex A P;
+Lemma not_all_ex_not : !(P:U->Prop). ~(!n. P n) -> ?n. ~ P n;
+Fixpoint plus n m : nat {struct n} :=
+  match n with
+    O     => m
+  | (S k) => S (plus k m)
+  end;
+\end{verbatim}
+
+\subsection{Questions ouvertes}
+
+Voici les points sur lesquels la discussion est particulièrement
+ouverte: 
+\begin{itemize}
+\item choix d'autres symboles pour les quantificateurs \TERM{!} et
+  \TERM{?}. En l'état actuel des discussions, on garderait le \TERM{!}
+  pour la qunatification universelle, mais on choisirait quelquechose
+  comme \TERM{ex} pour l'existentielle, afin de ne pas suggérer trop
+  de symétrie entre ces quantificateurs (l'un est primitif, l'autre
+  pas).
+\item syntaxe particulière pour les \texttt{sig}, \texttt{sumor}, etc.
+\item la possibilité d'introduire plusieurs variables du même type est
+  pour l'instant supprimée au vu des problèmes de compatibilité de
+  syntaxe entre les membres gauches et membres droits. L'idée étant
+  que l'inference de type permet d'éviter le besoin de déclarer tous
+  les types.
+\end{itemize}
+
+\subsection{Autres extensions}
+
+\subsubsection{Lieur multiple}
+
+L'écriture de types en présence de polymorphisme est souvent assez
+pénible:
+\begin{verbatim}
+Check !(A:Set) (x:A) (B:Set) (y:B). P A x B y;
+\end{verbatim}
+
+On pourrait avoir des déclarations introduisant à la fois un type
+d'une certaine sorte et une variable de ce type:
+\begin{verbatim}
+Check !(x:A:Set) (y:B:Set). P A x B y;
+\end{verbatim}
+
+Noter que l'on aurait pu écrire:
+\begin{verbatim}
+Check !A x B y. P A (x:A:Set) B (y:B:Set);
+\end{verbatim}
+
+\section{Syntaxe des tactiques}
+
+\subsection{Questions diverses}
+
+Changer ``Pattern nl c ... nl c'' en ``Pattern [ nl ] c ... [ nl ] c''
+pour permettre des chiffres seuls dans la catégorie syntaxique des
+termes.
+
+Par uniformité remplacer ``Unfold nl c'' par ``Unfold [ nl ] c'' ?
+
+Même problème pour l'entier de Specialize (ou virer Specialize ?) ?
+
+\subsection{Questions en suspens}
+
+\verb=EAuto= : deux syntaxes différentes pour la recherche en largeur
+et en profondeur ? Quelle recherche par défaut ?
+
+\section*{Remarques pêle-mêle (HH)}
+
+Autoriser la syntaxe
+
+\begin{verbatim}
+Variable R (a : A) (b : B) : Prop.
+Hypotheses H (a : A) (b : B) : Prop; Y (u : U) : V.
+Variables H (a : A) (b : B), J (k : K) : nat; Z (v : V) : Set.
+\end{verbatim}
+
+Renommer eqT, refl_eqT, eqT_ind, eqT_rect, eqT_rec en eq, refl_equal, etc.
+Remplacer == en =.
+
+Mettre des \verb=?x= plutot que des \verb=?1= dans les motifs de ltac ??
+
+\section{Moulinette}
+
+\begin{itemize}
+
+\item Mettre \verb=/= et * au même niveau dans R.
+
+\item Changer la précédence du - unaire dans R.
+
+\item Ajouter Require Arith par necessite si Require ArithRing ou Require ZArithRing.
+
+\item Ajouter Require ZArith par necessite si Require ZArithRing ou Require Omega.
+
+\item Enlever le Export de Bool, Arith et ZARith de Ring quand inapproprié et
+l'ajouter à côté des Require Ring.
+
+\item Remplacer "Check n" par "n:Check ..."
+
+\item Renommer Variable/Hypothesis hors section en Parameter/Axiom.
+
+\item Renommer les \verb=command0=, \verb=command1=, ... \verb=lcommand= etc en
+\verb=constr0=, \verb=constr1=, ... \verb=lconstr=.
+
+\item Remplacer les noms Coq.omega.Omega par Coq.Omega ...
+
+\item Remplacer AddPath par Add LoadPath (ou + court)
+
+\item Unify + and \{\}+\{\} and +\{\} using Prop $\leq$ Set ??
+
+\item Remplacer Implicit Arguments On/Off par Set/Unset Implicit Arguments.
+
+\item La syntaxe \verb=Intros (a,b)= est inutile, \verb=Intros [a b]= fait l'affaire.
+
+\item Virer \verb=Goal= sans argument (synonyme de \verb=Proof= et sans effets).
+
+\item Remplacer Save. par Qed.
+
+\item Remplacer \verb=Zmult_Zplus_distr= par \verb=Zmult_plus_distr_r=
+et \verb=Zmult_plus_distr= par \verb=Zmult_plus_distr_l=.
+
+\end{itemize}
+
+\end{document}

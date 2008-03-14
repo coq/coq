@@ -1,0 +1,226 @@
+\achapter{Omega: a solver of quantifier-free problems in
+Presburger Arithmetic}
+\aauthor{Pierre Crégut}
+\label{OmegaChapter}
+
+\asection{Description of {\tt omega}}
+\tacindex{omega}
+\label{description}
+
+{\tt omega} solves a goal in Presburger arithmetic, i.e. a universally
+quantified formula made of equations and inequations. Equations may
+be specified either on the type \verb=nat= of natural numbers or on
+the type \verb=Z= of binary-encoded integer numbers. Formulas on
+\verb=nat= are automatically injected into \verb=Z=.  The procedure
+may use any hypothesis of the current proof session to solve the goal.
+
+Multiplication is handled by {\tt omega} but only goals where at
+least one of the two multiplicands of products is a constant are
+solvable. This is the restriction meaned by ``Presburger arithmetic''.
+
+If the tactic cannot solve the goal, it fails with an error message.
+In any case, the computation eventually stops.
+
+\asubsection{Arithmetical goals recognized by {\tt omega}}
+
+{\tt omega} applied only to quantifier-free formulas built from the
+connectors
+
+\begin{quote}
+\verb=/\, \/, ~, ->=
+\end{quote}
+
+on atomic formulas. Atomic formulas are built from the predicates 
+
+\begin{quote}
+\verb!=, le, lt, gt, ge!
+\end{quote}
+
+ on \verb=nat= or from the predicates
+
+\begin{quote}
+\verb!=, <, <=, >, >=!
+\end{quote}
+
+ on \verb=Z=. In expressions of type \verb=nat=, {\tt omega} recognizes 
+
+\begin{quote}
+\verb!plus, minus, mult, pred, S, O!
+\end{quote}
+
+and in expressions of type \verb=Z=, {\tt omega} recognizes 
+
+\begin{quote}
+\verb!+, -, *, Zsucc!, and constants.
+\end{quote}
+
+All expressions of type \verb=nat= or \verb=Z= not built on these
+operators are considered abstractly as if they
+were arbitrary variables of type \verb=nat= or \verb=Z=.
+
+\asubsection{Messages from {\tt omega}}
+\label{errors}
+
+When {\tt omega} does not solve the goal, one of the following errors
+is generated:
+
+\begin{ErrMsgs}
+
+\item \errindex{omega can't solve this system}
+
+  This may happen if your goal is not quantifier-free (if it is
+  universally quantified, try {\tt intros} first; if it contains
+  existentials quantifiers too, {\tt omega} is not strong enough to solve your
+  goal). This may happen also if your goal contains arithmetical
+  operators unknown from {\tt omega}. Finally, your goal may be really
+  wrong!
+
+\item \errindex{omega: Not a quantifier-free goal}
+  
+  If your goal is universally quantified, you should first apply {\tt
+    intro} as many time as needed.
+
+\item \errindex{omega: Unrecognized predicate or connective: {\sl ident}}
+
+\item \errindex{omega: Unrecognized atomic proposition: {\sl prop}}
+  
+\item \errindex{omega: Can't solve a goal with proposition variables}
+
+\item \errindex{omega: Unrecognized proposition}
+
+\item \errindex{omega: Can't solve a goal with non-linear products}
+
+\item \errindex{omega: Can't solve a goal with equality on {\sl type}}
+
+\end{ErrMsgs}
+
+%% Ce code est débranché pour l'instant
+%% 
+% \asubsection{Control over the output}
+% There are some flags that can be set to get more information on the procedure
+
+% \begin{itemize}
+% \item \verb=Time= to get the time used by the procedure
+% \item \verb=System= to visualize the normalized systems.
+% \item \verb=Action= to visualize the actions performed by the OMEGA
+%      procedure (see \ref{technical}).
+% \end{itemize}
+
+% \comindex{Set omega Time}
+% \comindex{UnSet omega Time}
+% \comindex{Switch omega Time}
+% \comindex{Set omega System}
+% \comindex{UnSet omega System}
+% \comindex{Switch omega System}
+% \comindex{Set omega Action}
+% \comindex{UnSet omega Action}
+% \comindex{Switch omega Action}
+
+% Use {\tt Set omega {\rm\sl flag}} to set the flag
+% {\rm\sl flag}. Use {\tt Unset omega {\rm\sl flag}} to unset it and
+% {\tt Switch omega {\rm\sl flag}} to toggle it.
+
+\section{Using {\tt omega}}
+
+The {\tt omega} tactic does not belong to the core system. It should be
+loaded by
+\begin{coq_example*}
+Require Import Omega.
+Open Scope Z_scope.
+\end{coq_example*}
+
+\example{}
+
+\begin{coq_example}
+Goal forall m n:Z, 1 + 2 * m <> 2 * n.
+intros; omega.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\example{}
+
+\begin{coq_example}
+Goal forall z:Z, z > 0 -> 2 * z + 1 > z.
+intro; omega.
+\end{coq_example}
+
+% Other examples can be found in \verb+$COQLIB/theories/DEMOS/OMEGA+.
+
+\asection{Technical data}
+\label{technical}
+
+\asubsection{Overview of the tactic}
+\begin{itemize}
+
+\item The goal is negated twice and the first negation is introduced as an
+     hypothesis.
+\item Hypothesis are decomposed in simple equations or inequations. Multiple
+     goals may result from this phase.
+\item Equations and inequations over \verb=nat= are translated over
+     \verb=Z=, multiple goals may result from the translation of
+     substraction.
+\item Equations and inequations are normalized.
+\item Goals are solved by the {\it OMEGA} decision procedure.
+\item The script of the solution is replayed.
+
+\end{itemize}
+
+\asubsection{Overview of the {\it OMEGA} decision procedure}
+
+The {\it OMEGA} decision procedure involved in the {\tt omega} tactic uses
+a small subset of the decision procedure presented in
+
+\begin{quote}
+  "The Omega Test: a fast and practical integer programming
+algorithm for dependence analysis", William Pugh, Communication of the
+ACM , 1992, p 102-114.
+\end{quote}
+
+Here is an overview, look at the original paper for more information.
+
+\begin{itemize}
+
+\item Equations and inequations are normalized by division by the GCD of their
+     coefficients.
+\item Equations are eliminated, using the Banerjee test to get a coefficient 
+     equal to one.
+\item Note that each inequation defines a half space in the space of real value
+     of the variables.
+   \item Inequations are solved by projecting on the hyperspace
+     defined by cancelling one of the variable.  They are partitioned
+     according to the sign of the coefficient of the eliminated
+     variable. Pairs of inequations from different classes define a
+     new edge in the projection.
+   \item Redundant inequations are eliminated or merged in new
+     equations that can be eliminated by the Banerjee test.
+\item The last two steps are iterated until a contradiction is reached
+     (success) or there is no more variable to eliminate (failure).
+
+\end{itemize}
+
+It may happen that there is a real solution and no integer one. The last
+steps of the Omega procedure (dark shadow) are not implemented, so the 
+decision procedure is only partial.
+
+\asection{Bugs}
+
+\begin{itemize}
+\item The simplification procedure is very dumb and this results in
+  many redundant cases to explore.
+
+\item Much too slow.
+
+\item Certainly other bugs! You can report them to
+
+\begin{quote}
+  \url{Pierre.Cregut@cnet.francetelecom.fr}
+\end{quote}
+
+\end{itemize}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

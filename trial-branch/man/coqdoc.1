@@ -1,0 +1,186 @@
+.TH coqdoc 1 "April, 2006"
+
+.SH NAME
+coqdoc \- A documentation tool for the Coq proof assistant
+
+
+.SH SYNOPSIS
+.B coqdoc
+[
+.B options
+]
+.B files
+
+
+.SH DESCRIPTION
+
+.B coqdoc
+is a documentation tool for the Coq proof assistant.
+It creates LaTeX or HTML documents from a set of Coq files.
+See the Coq reference manual for documentation (url below).
+
+
+.SH OPTIONS
+
+.SS Overall options
+
+.TP
+.BI \-h
+Help. Will give you the complete list of options accepted by coqdoc.
+.TP
+.B \-\-html
+Select a HTML output.
+.TP
+.B \-\-latex
+Select a LATEX output.
+.TP
+.B \-\-dvi
+Select a DVI output.
+.TP
+.B \-\-ps
+Select a PostScript output.
+.TP
+.B \-\-texmacs
+Select a TeXmacs output.
+.TP
+.B \-\-stdout
+Redirect the output to stdout
+.TP
+.BI \-o \ file, \-\-output \ file
+Redirect the output into the file 
+.I file.
+.TP
+.BI \-d \ dir, \ \-\-directory \ dir
+Output files into directory 
+.I dir 
+instead of current directory (option
+-d does not change the filename specified with option -o, if any).
+.TP
+.B \-s, \ \-\-short
+Do not insert titles for the files. The default behavior is to insert
+a title like ``Library Foo'' for each file.
+.TP
+.BI \-t \ string, \ \-\-title \ string
+Set the document title.
+.TP
+.B \-\-body\-only
+Suppress the header and trailer of the final document. Thus, you can
+insert the resulting document into a larger one.
+.TP
+.BI \-p \ string, \ \-\-preamble \ string
+Insert some material in the LATEX preamble, right before \\begin{document} (meaningless with -html).
+.TP
+.BI \-\-vernac\-file \ file, \ \-\-tex\-file \ file
+Considers the file `file' respectively as a .v (or .g) file or a .tex file.
+.TP
+.BI \-\-files\-from \ file
+Read file names to process in file `file' as if they were given on the
+command line. Useful for program sources splitted in several
+directories.
+.TP
+.B \-q, \ \-\-quiet
+Be quiet. Do not print anything except errors.
+.TP
+.B \-h, \ \-\-help
+Give a short summary of the options and exit.
+.TP
+.B
+\-v, \ \-\-version
+Print the version and exit.
+
+.SS Index options
+
+Default behavior is to build an index, for the HTML output only, into
+index.html.
+
+.TP
+.B \-\-no\-index
+Do not output the index.
+.TP
+.B \-\-multi\-index
+Generate one page for each category and each letter in the index,
+together with a top page index.html.
+
+.SS Table of contents option
+ 
+.TP
+.B \-toc, \ \-\-table\-of\-contents
+Insert a table of contents. For a LATEX output, it inserts a
+\\tableofcontents at the beginning of the document. For a HTML output,
+it builds a table of contents into toc.html.
+
+.SS Hyperlinks options
+
+.TP
+.B \-\-glob\-from \ file
+Make references using Coq globalizations from file file. (Such
+globalizations are obtained with Coq option -dump-glob).
+
+.TP
+.B \-\-no\-externals
+Do not insert links to the Coq standard library.
+
+.TP
+.BI \-\-coqlib \ url
+Set base URL for the Coq standard library (default is http://coq.inria.fr/library/).
+
+.TP
+.BI \-\-coqlib_path \ dir
+Set the base path where the Coq files are installed, especially style files coqdoc.sty and coqdoc.css.
+
+.TP
+.BI -R \ dir \  coqdir
+Map physical directory dir to Coq logical directory coqdir (similarly
+to Coq option -R).
+.B Note: 
+option -R only has effect on the files following it on the command
+line, so you will probably need to put this option first.
+
+.SS Contents options
+
+.TP
+.B -g, \ --gallina
+Do not print proofs.
+
+.TP
+.B -l, \ --light
+Light mode. Suppress proofs (as with -g) and the following commands:
+
+        * [Recursive] Tactic Definition
+        * Hint / Hints
+        * Require
+        * Transparent / Opaque
+        * Implicit Argument / Implicits
+        * Section / Variable / Hypothesis / End 
+
+The behavior of options -g and -l can be locally overridden using the (* begin show *) ... (* end show *) environment (see above).
+
+.SS Language options
+ 
+Default behavior is to assume ASCII 7 bits input files.
+
+.TP 
+.B -latin1, \ --latin1
+Select ISO-8859-1 input files. It is equivalent to --inputenc latin1
+--charset iso-8859-1.
+
+.TP 
+.B -utf8, \ --utf8
+Select UTF-8 (Unicode) input files. It is equivalent to --inputenc
+utf8 --charset utf-8. LATEX UTF-8 support can be found at
+http://www.ctan.org/tex-archive/macros/latex/contrib/supported/unicode/.
+
+.TP 
+.BI --inputenc \ string
+Give a LATEX input encoding, as an option to LATEX package inputenc.
+
+.TP
+.BI --charset \ string
+Specify the HTML character set, to be inserted in the HTML header.
+
+
+.SH SEE ALSO
+
+.I
+The Coq Reference Manual from http://coq.inria.fr/
+

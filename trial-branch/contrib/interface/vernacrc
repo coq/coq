@@ -1,0 +1,12 @@
+# $Id$
+
+# This file is loaded initially by ./vernacparser.
+
+load_syntax_file 1 Notations
+load_syntax_file 2 Logic
+load_syntax_file 34 Omega
+load_syntax_file 27 Ring
+quiet_parse_string
+Goal a.
+&& END--OF--DATA
+print_version

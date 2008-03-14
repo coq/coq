@@ -1,0 +1,11 @@
+fix F (A B : Set) (f : A -> B) (l : list A) {struct l} : 
+list B := match l with
+          | nil => nil (A:=B)
+          | a :: l0 => f a :: F A B f l0
+          end
+     : forall A B : Set, (A -> B) -> list A -> list B
+let fix f (m : nat) : nat := match m with
+                             | 0 => 0
+                             | S m' => f m'
+                             end in f 0
+     : nat

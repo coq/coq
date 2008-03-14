@@ -1,0 +1,131 @@
+# make a link to this file if you are working hard in one directory of Coq
+#   ln -s ../dev/tools/Makefile.dir Makefile
+# if you are working in a sub/dir/ make a link to dev/tools/Makefile.subdir instead
+# this Makefile provides many useful facilities to develop Coq
+# it is not completely compatible with .ml4 files unfortunately
+
+ifndef TOPDIR
+TOPDIR=..
+endif
+
+# this complicated thing should work for subsubdirs as well
+BASEDIR=$(shell (dir=`pwd`; cd $(TOPDIR); top=`pwd`; echo $$dir | sed -e "s|$$top/||"))
+
+noargs:	dir
+
+test-dir:
+	@echo TOPDIR=$(TOPDIR)
+	@echo BASEDIR=$(BASEDIR)
+
+include $(TOPDIR)/dev/tools/Makefile.common
+
+# make this directory
+dir:
+	$(MAKE) -C $(TOPDIR) $(notdir $(BASEDIR))
+
+# make all cmo's in this directory. Useful in case the main Makefile is not
+# up-to-date
+all:	
+	@( ( for i in *.ml; do \
+	       echo -n $(BASEDIR)/`basename $$i .ml`.cmo "" ; \
+	     done; \
+	     for i in *.ml4; do \
+	       echo -n $(BASEDIR)/`basename $$i .ml4`.cmo "" ; \
+	     done ) \
+	  | xargs $(MAKE) -C $(TOPDIR) )
+
+# lists all files that should be compiled in this directory
+list:
+	@(for i in *.mli; do \
+	   ls -l `basename $$i .mli`.cmi; \
+	done)
+	@(for i in *.ml; do \
+	   ls -l `basename $$i .ml`.cmo; \
+	done)
+	@(for i in *.ml4; do \
+	   ls -l `basename $$i .ml4`.cmo; \
+	done)
+
+
+clean::  
+	rm -f *.cmi *.cmo *.cmx *.o
+
+
+# if grammar.cmo files cannot be compiled and main .depend cannot be
+# rebuilt, this is quite useful
+depend:
+	(cd $(TOPDIR); ocamldep -I $(BASEDIR) $(BASEDIR)/*.ml $(BASEDIR)/*.mli > .depend.devel)
+
+
+# displays the dependency graph of the current directory (vertically,
+# unlike in doc/)
+graph:
+	(ocamldep *.ml *.mli | ocamldot | dot -Tps | gv -) &
+
+
+# the pretty entry draws a dependency graph marking red those nodes
+# which do not have their .cmo files 
+
+.INTERMEDIATE: depend.dot depend.2.dot
+.PHONY: depend.ps
+
+depend.dot:
+	ocamldep *.ml *.mli | ocamldot > $@
+
+depend.2.dot:	depend.dot
+	(i=`cat $< | wc -l`; i=`expr $$i - 1`; head -n $$i $<) > $@
+	(for ml in *.ml; do \
+	   base=`basename $$ml .ml`; \
+	   fst=`echo $$base | cut -c1 | tr [:lower:] [:upper:]`; \
+	   rest=`echo $$base | cut -c2-`; \
+	   name=`echo $$fst $$rest | tr -d " "`; \
+	   cmo=$$base.cmo; \
+	   if [ ! -e $$cmo ]; then \
+	     echo \"$$name\" [color=red]\; >> $@;\
+	   fi;\
+         done;\
+	 echo } >> $@)
+
+depend.ps:	depend.2.dot
+	dot -Tps $< > $@
+
+clean::
+	rm -f depend.ps
+
+pretty:	depend.ps
+	(gv -spartan $<; rm $<) &
+#	gv -spartan $< &
+
+
+
+# generating file.ml.mli by tricking make to pass -i to ocamlc 
+
+%.ml.mli:	FORCE
+	@(cmo=`basename $@ .ml.mli`.cmo ; \
+	mv -f $$cmo $$cmo.tmp ; \
+	$(MAKE) -s -C $(TOPDIR) $(BASEDIR)/$$cmo CAMLDEBUG=-i > $@ ; \
+	echo Generated interface file $@ ; \
+	mv -f $$cmo.tmp $$cmo)
+
+%.annot:	FORCE
+	@(cmo=`basename $@ .annot`.cmo ; \
+	mv -f $$cmo $$cmo.tmp ; \
+	$(MAKE) -s -C $(TOPDIR) $(BASEDIR)/$$cmo CAMLDEBUG=-dtypes ; \
+	echo Generated annotation file $@ ; \
+	mv -f $$cmo.tmp $$cmo)
+
+FORCE:
+
+clean::
+	rm -f *.ml.mli
+
+# this is not perfect but mostly WORKS! It just calls the main makefile
+
+%.cmi:	FORCE
+	$(MAKE) -C $(TOPDIR) $(BASEDIR)/$@
+
+%.cmo:	FORCE
+	$(MAKE) -C $(TOPDIR) $(BASEDIR)/$@
+
+coqtop:	
+	$(MAKE) -C $(TOPDIR) bin/coqtop.byte

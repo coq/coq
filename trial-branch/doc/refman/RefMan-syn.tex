@@ -1,0 +1,1062 @@
+\chapter[Syntax extensions and interpretation scopes]{Syntax extensions and interpretation scopes\label{Addoc-syntax}}
+
+In this chapter, we introduce advanced commands to modify the way
+{\Coq} parses and prints objects, i.e. the translations between the
+concrete and internal representations of terms and commands. The main
+commands are {\tt Notation} and {\tt Infix} which are described in
+section \ref{Notation}.  It also happens that the same symbolic
+notation is expected in different contexts. To achieve this form of
+overloading, {\Coq} offers a notion of interpretation scope. This is
+described in Section~\ref{scopes}.
+
+\Rem The commands {\tt Grammar}, {\tt Syntax} and {\tt Distfix} which
+were present for a while in {\Coq} are no longer available from {\Coq}
+version 8.0. The underlying AST structure is also no longer available.
+The functionalities of the command {\tt Syntactic Definition} are
+still available, see Section~\ref{Abbreviations}.
+
+\section[Notations]{Notations\label{Notation}
+\comindex{Notation}}
+
+\subsection{Basic notations}
+
+A {\em notation} is a symbolic abbreviation denoting some term
+or term pattern.
+
+A typical notation is the use of the infix symbol \verb=/\= to denote
+the logical conjunction (\texttt{and}). Such a notation is declared
+by
+
+\begin{coq_example*}
+Notation "A /\ B" := (and A B).
+\end{coq_example*}
+
+The expression \texttt{(and A B)} is the abbreviated term and the
+string \verb="A /\ B"= (called a {\em notation}) tells how it is 
+symbolically written.
+
+A notation is always surrounded by double quotes (excepted when the
+abbreviation is a single ident, see \ref{Abbreviations}). The
+notation is composed of {\em tokens} separated by spaces.  Identifiers
+in the string (such as \texttt{A} and \texttt{B}) are the {\em
+parameters} of the notation. They must occur at least once each in the
+denoted term. The other elements of the string (such as \verb=/\=) are
+the {\em symbols}.
+
+An identifier can be used as a symbol but it must be surrounded by
+simple quotes to avoid the confusion with a parameter. Similarly,
+every symbol of at least 3 characters and starting with a simple quote
+must be quoted (then it starts by two single quotes). Here is an example.
+
+\begin{coq_example*}
+Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3).
+\end{coq_example*}
+
+%TODO quote the identifier when not in front, not a keyword, as in "x 'U' y" ?
+
+A notation binds a syntactic expression to a term. Unless the parser
+and pretty-printer of {\Coq} already know how to deal with the
+syntactic expression (see \ref{ReservedNotation}), explicit precedences and
+associativity rules have to be given.
+
+\subsection[Precedences and associativity]{Precedences and associativity\index{Precedences}
+\index{Associativity}}
+
+Mixing different symbolic notations in a same text may cause serious
+parsing ambiguity. To deal with the ambiguity of notations, {\Coq}
+uses precedence levels ranging from 0 to 100 (plus one extra level
+numbered 200) and associativity rules.
+
+Consider for example the new notation
+
+\begin{coq_example*}
+Notation "A \/ B" := (or A B).
+\end{coq_example*}
+
+Clearly, an expression such as {\tt (A:Prop)True \verb=/\= A \verb=\/=
+A \verb=\/= False} is ambiguous. To tell the {\Coq} parser how to
+interpret the expression, a priority between the symbols \verb=/\= and
+\verb=\/= has to be given. Assume for instance that we want conjunction
+to bind more than disjunction. This is expressed by assigning a
+precedence level to each notation, knowing that a lower level binds
+more than a higher level.  Hence the level for disjunction must be
+higher than the level for conjunction.
+
+Since connectives are the less tight articulation points of a text, it
+is reasonable to choose levels not so far from the higher level which
+is 100, for example 85 for disjunction and 80 for
+conjunction\footnote{which are the levels effectively chosen in the
+current implementation of {\Coq}}.
+
+Similarly, an associativity is needed to decide whether {\tt True \verb=/\=
+False \verb=/\= False} defaults to {\tt True \verb=/\= (False
+\verb=/\= False)} (right associativity) or to {\tt (True
+\verb=/\= False) \verb=/\= False} (left associativity). We may
+even consider that the expression is not well-formed and that
+parentheses are mandatory (this is a ``no associativity'')\footnote{
+{\Coq} accepts notations declared as no associative but the parser on
+which {\Coq} is built, namely {\camlpppp}, currently does not implement the
+no-associativity and replace it by a left associativity; hence it is
+the same for {\Coq}: no-associativity is in fact left associativity}.
+We don't know of a special convention of the associativity of
+disjunction and conjunction, let's apply for instance a right
+associativity (which is the choice of {\Coq}).
+
+Precedence levels and associativity rules of notations have to be
+given between parentheses in a list of modifiers that the
+\texttt{Notation} command understands. Here is how the previous
+examples refine.
+
+\begin{coq_example*}
+Notation "A /\ B" := (and A B) (at level 80, right associativity).
+Notation "A \/ B" := (or A B)  (at level 85, right associativity).
+\end{coq_example*}
+
+By default, a notation is considered non associative, but the
+precedence level is mandatory (except for special cases whose level is
+canonical). The level is either a number or the mention {\tt next
+level} whose meaning is obvious. The list of levels already assigned
+is on Figure~\ref{init-notations}.
+
+\subsection{Complex notations}
+
+Notations can be made from arbitraly complex symbols. One can for
+instance define prefix notations.
+
+\begin{coq_example*}
+Notation "~ x" := (not x) (at level 75, right associativity).
+\end{coq_example*}
+
+One can also define notations for incomplete terms, with the hole
+expected to be inferred at typing time.
+
+\begin{coq_example*}
+Notation "x = y" := (@eq _ x y) (at level 70, no associativity).
+\end{coq_example*}
+
+One can define {\em closed} notations whose both sides are symbols. In
+this case, the default precedence level for inner subexpression is 200.
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces **********)
+(**** an incompatibility with the reserved notation ********)
+\end{coq_eval}
+\begin{coq_example*}
+Notation "( x , y )" := (@pair _ _ x y) (at level 0).
+\end{coq_example*}
+
+One can also define notations for binders.
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces **********)
+(**** an incompatibility with the reserved notation ********)
+\end{coq_eval}
+\begin{coq_example*}
+Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0).
+\end{coq_example*}
+
+In the last case though, there is a conflict with the notation for
+type casts. This last notation, as shown by the command {\tt Print Grammar
+constr} is at level 100. To avoid \verb=x : A= being parsed as a type cast,
+it is necessary to put {\tt x} at a level below 100, typically 99. Hence, a
+correct definition is 
+
+\begin{coq_example*}
+Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0, x at level 99).
+\end{coq_example*}
+
+%This change has retrospectively an effect on the notation for notation
+%{\tt "{ A } + { B }"}. For the sake of factorization, {\tt A} must be
+%put at level 99 too, which gives
+%
+%\begin{coq_example*}
+%Notation "{ A } + { B }" := (sumbool A B) (at level 0, A at level 99).
+%\end{coq_example*}
+
+See the next section for more about factorization.
+
+\subsection{Simple factorization rules}
+
+{\Coq} extensible parsing is performed by Camlp4 which is essentially a
+LL1 parser. Hence, some care has to be taken not to hide already
+existing rules by new rules. Some simple left factorization work has
+to be done. Here is an example.
+
+\begin{coq_eval}
+(********** The next rule for notation _ < _ < _  produces **********)
+(*** Error: Notation _ < _ < _ is already defined at level 70 ... ***)
+\end{coq_eval}
+\begin{coq_example*}
+Notation "x < y"     := (lt x y) (at level 70).
+Notation "x < y < z" := (x < y /\ y < z) (at level 70).
+\end{coq_example*}
+
+In order to factorize the left part of the rules, the subexpression
+referred by {\tt y} has to be at the same level in both rules. However
+the default behavior puts {\tt y} at the next level below 70
+in the first rule (no associativity is the default), and at the level
+200 in the second rule (level 200 is the default for inner expressions).
+To fix this, we need to force the parsing level of {\tt y},
+as follows.
+
+\begin{coq_example*}
+Notation "x < y"     := (lt x y) (at level 70).
+Notation "x < y < z" := (x < y /\ y < z) (at level 70, y at next level).
+\end{coq_example*}
+
+For the sake of factorization with {\Coq} predefined rules, simple
+rules have to be observed for notations starting with a symbol:
+e.g. rules starting with ``\{'' or ``('' should be put at level 0. The
+list of {\Coq} predefined notations can be found in Chapter~\ref{Theories}.
+
+The command to display the current state of the {\Coq} term parser is
+\comindex{Print Grammar constr}
+
+\begin{quote}
+\tt Print Grammar constr.
+\end{quote}
+
+\variant
+
+\comindex{Print Grammar pattern}
+{\tt Print Grammar pattern.}\\
+
+This displays the state of the subparser of patterns (the parser
+used in the grammar of the {\tt match} {\tt with} constructions).
+
+\subsection{Displaying symbolic notations}
+
+The command \texttt{Notation} has an effect both on the {\Coq} parser and
+on the {\Coq} printer. For example:
+
+\begin{coq_example}
+Check (and True True).
+\end{coq_example}
+
+However, printing, especially pretty-printing, requires
+more care than parsing. We may want specific indentations,
+line breaks, alignment if on several lines, etc. 
+
+The default printing of notations is very rudimentary. For printing a
+notation, a {\em formatting box} is opened in such a way that if the
+notation and its arguments cannot fit on a single line, a line break
+is inserted before the symbols of the notation and the arguments on
+the next lines are aligned with the argument on the first line.
+
+A first, simple control that a user can have on the printing of a
+notation is the insertion of spaces at some places of the
+notation. This is performed by adding extra spaces between the symbols
+and parameters: each extra space (other than the single space needed
+to separate the components) is interpreted as a space to be inserted
+by the printer. Here is an example showing how to add spaces around
+the bar of the notation.
+
+\begin{coq_example}
+Notation "{{ x : A  |  P }}" := (sig (fun x : A => P))
+  (at level 0, x at level 99).
+Check (sig (fun x : nat => x=x)).
+\end{coq_example}
+
+The second, more powerful control on printing is by using the {\tt
+format} modifier. Here is an example
+
+\begin{small}
+\begin{coq_example}
+Notation "'If' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
+(at level 200, right associativity, format
+"'[v   ' 'If'  c1 '/' '[' 'then'  c2  ']' '/' '[' 'else'  c3 ']' ']'").
+\end{coq_example}
+\end{small}
+
+A {\em format} is an extension of the string denoting the notation with
+the possible following elements delimited by single quotes:
+
+\begin{itemize}
+\item extra spaces are translated into simple spaces
+\item tokens of the form \verb='/  '= are translated into breaking point,
+  in case a line break occurs, an indentation of the number of spaces
+  after the ``\verb=/='' is applied (2 spaces in the given example)
+\item token of the form \verb='//'= force writing on a new line
+\item well-bracketed pairs of tokens of the form \verb='[    '= and \verb=']'=
+  are translated into printing boxes; in case a line break occurs,
+  an extra indentation of the number of spaces given after the ``\verb=[=''
+  is applied (4 spaces in the example)
+\item well-bracketed pairs of tokens of the form \verb='[hv   '= and \verb=']'=
+  are translated into horizontal-orelse-vertical printing boxes; 
+  if the content of the box does not fit on a single line, then every breaking
+  point forces a newline and an extra  indentation of the number of spaces
+  given after the ``\verb=[='' is applied at the beginning of each newline
+  (3 spaces in the example)
+\item well-bracketed pairs of tokens of the form \verb='[v '= and
+  \verb=']'= are translated into vertical printing boxes; every
+  breaking point forces a newline, even if the line is large enough to
+  display the whole content of the box, and an extra indentation of the
+  number of spaces given after the ``\verb=[='' is applied at the beginning
+  of each newline
+\end{itemize}
+
+Thus, for the previous example, we get
+%\footnote{The ``@'' is here to shunt
+%the notation "'IF' A 'then' B 'else' C" which is defined in {\Coq}
+%initial state}:
+
+Notations do not survive the end of sections. No typing of the denoted
+expression is performed at definition time. Type-checking is done only
+at the time of use of the notation.
+
+\begin{coq_example}
+Check 
+ (IF_then_else (IF_then_else True False True) 
+   (IF_then_else True False True)
+   (IF_then_else True False True)).   
+\end{coq_example}
+
+\Rem
+Sometimes, a notation is expected only for the parser.
+%(e.g. because
+%the underlying parser of {\Coq}, namely {\camlpppp}, is LL1 and some extra
+%rules are needed to circumvent the absence of factorization).
+To do so, the option {\em only parsing} is allowed in the list of modifiers of
+\texttt{Notation}.
+
+\subsection{The \texttt{Infix} command
+\comindex{Infix}}
+
+The \texttt{Infix} command is a shortening for declaring notations of
+infix symbols. Its syntax is 
+
+\begin{quote}
+\noindent\texttt{Infix "{\symbolentry}" :=} {\qualid} {\tt (} \nelist{\em modifier}{,} {\tt )}.
+\end{quote}
+
+and it is equivalent to
+
+\begin{quote}
+\noindent\texttt{Notation "x {\symbolentry} y" := ({\qualid} x y)  (} \nelist{\em modifier}{,} {\tt )}.
+\end{quote}
+
+where {\tt x} and {\tt y} are fresh names distinct from {\qualid}. Here is an example.
+
+\begin{coq_example*}
+Infix "/\" := and (at level 80, right associativity).
+\end{coq_example*}
+
+\subsection{Reserving notations
+\label{ReservedNotation}
+\comindex{ReservedNotation}}
+
+A given notation may be used in different contexts. {\Coq} expects all
+uses of the notation to be defined at the same precedence and with the
+same associativity. To avoid giving the precedence and associativity
+every time, it is possible to declare a parsing rule in advance
+without giving its interpretation. Here is an example from the initial
+state of {\Coq}.
+
+\begin{coq_example}
+Reserved Notation "x = y" (at level 70, no associativity).
+\end{coq_example}
+
+Reserving a notation is also useful for simultaneously defined an
+inductive type or a recursive constant and a notation for it.
+
+\Rem The notations mentioned on Figure~\ref{init-notations} are
+reserved. Hence their precedence and associativity cannot be changed.
+
+\subsection{Simultaneous definition of terms and notations
+\comindex{Fixpoint {\ldots} where {\ldots}}
+\comindex{CoFixpoint {\ldots} where {\ldots}}
+\comindex{Inductive {\ldots} where {\ldots}}}
+
+Thanks to reserved notations, the inductive, coinductive, recursive
+and corecursive definitions can benefit of customized notations. To do
+this, insert a {\tt where} notation clause after the definition of the
+(co)inductive type or (co)recursive term (or after the definition of
+each of them in case of mutual definitions). The exact syntax is given
+on Figure~\ref{notation-syntax}. Here are examples:
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces an error **********)
+(********** because the symbol /\ is already bound **********)
+(**** Error: The conclusion of A -> B -> A /\ B is not valid *****)
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive and (A B:Prop) : Prop := conj : A -> B -> A /\ B 
+where "A /\ B" := (and A B).
+\end{coq_example*}
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces an error **********)
+(********** because the symbol + is already bound **********)
+(**** Error: no recursive definition *****)
+\end{coq_eval}
+
+\begin{coq_example*}
+Fixpoint plus (n m:nat) {struct n} : nat :=
+  match n with
+  | O => m
+  | S p => S (p+m)
+  end
+where "n + m" := (plus n m).
+\end{coq_example*}
+
+\subsection{Displaying informations about notations
+\comindex{Set Printing Notations}
+\comindex{Unset Printing Notations}}
+
+To deactivate the printing of all notations, use the command
+\begin{quote}
+\tt Unset Printing Notations.
+\end{quote}
+To reactivate it, use the command
+\begin{quote}
+\tt Set Printing Notations.
+\end{quote}
+The default is to use notations for printing terms wherever possible.
+
+\SeeAlso {\tt Set Printing All} in Section~\ref{SetPrintingAll}.
+
+\subsection{Locating notations
+\comindex{Locate}
+\label{LocateSymbol}}
+
+To know to which notations a given symbol belongs to, use the command
+\begin{quote}
+\tt Locate {\symbolentry}
+\end{quote}
+where symbol is any (composite) symbol surrounded by quotes. To locate
+a particular notation, use a string where the variables of the
+notation are replaced by ``\_''.
+
+\Example
+\begin{coq_example}
+Locate "exists".
+Locate "'exists' _ , _".
+\end{coq_example}
+
+\SeeAlso Section \ref{Locate}.
+
+\begin{figure}
+\begin{small}
+\begin{centerframe}
+\begin{tabular}{lcl}
+{\sentence} & ::= & 
+   \texttt{Notation} \zeroone{\tt Local} {\str} \texttt{:=} {\term} 
+   \zeroone{\modifiers} \zeroone{:{\scope}} .\\
+  & $|$ & 
+   \texttt{Infix} \zeroone{\tt Local} {\str} \texttt{:=} {\qualid} 
+   \zeroone{\modifiers} \zeroone{:{\scope}} .\\
+  & $|$ & 
+   \texttt{Reserved Notation} \zeroone{\tt Local} {\str}
+   \zeroone{\modifiers} .\\
+  & $|$ & {\tt Inductive}
+   \nelist{{\inductivebody} \zeroone{\declnotation}}{with}{\tt .}\\
+  & $|$ & {\tt CoInductive}
+   \nelist{{\inductivebody} \zeroone{\declnotation}}{with}{\tt .}\\
+  & $|$ & {\tt Fixpoint}
+   \nelist{{\fixpointbody} \zeroone{\declnotation}}{with} {\tt .} \\
+  & $|$ & {\tt CoFixpoint}
+   \nelist{{\cofixpointbody} \zeroone{\declnotation}}{with} {\tt .} \\
+\\
+{\declnotation} & ::= & 
+  \zeroone{{\tt where} {\str} {\tt :=} {\term} \zeroone{:{\scope}}} .
+\\
+\\
+{\modifiers}
+  & ::= & \nelist{\ident}{,} {\tt at level} {\naturalnumber} \\
+  & $|$ & \nelist{\ident}{,} {\tt at next level} \\
+  & $|$ & {\tt at level} {\naturalnumber} \\
+  & $|$ & {\tt left associativity} \\
+  & $|$ & {\tt right associativity} \\
+  & $|$ & {\tt no associativity} \\
+  & $|$ & {\ident} {\tt ident} \\
+  & $|$ & {\ident} {\tt global} \\
+  & $|$ & {\ident} {\tt bigint} \\
+  & $|$ & {\tt only parsing} \\
+  & $|$ & {\tt format} {\str} 
+\end{tabular}
+\end{centerframe}
+\end{small}
+\caption{Syntax of the variants of {\tt Notation}}
+\label{notation-syntax}
+\end{figure}
+
+\subsection{Notations with recursive patterns}
+
+An experimental mechanism is provided for declaring elementary
+notations including recursive patterns. The basic syntax is
+
+\begin{coq_eval}
+Require Import List.
+\end{coq_eval}
+
+\begin{coq_example*}
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+\end{coq_example*}
+
+On the right-hand-side, an extra construction of the form {\tt ..} ($f$
+$t_1$ $\ldots$ $t_n$) {\tt ..} can be used. Notice that {\tt ..} is part of
+the {\Coq} syntax while $\ldots$ is just a meta-notation of this
+manual to denote a sequence of terms of arbitrary size.
+
+This extra construction enclosed within {\tt ..}, let's call it $t$,
+must be one of the argument of an applicative term of the form {\tt
+($f$ $u_1$ $\ldots$ $u_n$)}. The sequences $t_1$ $\ldots$ $t_n$ and
+$u_1$ $\ldots$ $u_n$ must coincide everywhere but in two places. In
+one place, say the terms of indice $i$, we must have $u_i = t$. In the
+other place, say the terms of indice $j$, both $u_j$ and $t_j$ must be
+variables, say $x$ and $y$ which are bound by the notation string on
+the left-hand-side of the declaration. The variables $x$ and $y$ in
+the string must occur in a substring of the form "$x$ $s$ {\tt ..} $s$
+$y$" where {\tt ..} is part of the syntax and $s$ is two times the
+same sequence of terminal symbols (i.e. symbols which are not
+variables).
+
+These invariants must be satisfied in order the notation to be
+correct.  The term $t_i$ is the {\em terminating} expression of
+the notation and the pattern {\tt ($f$ $u_1$ $\ldots$ $u_{i-1}$ {\rm [I]}
+$u_{i+1}$ $\ldots$ $u_{j-1}$ {\rm [E]} $u_{j+1}$ $\ldots$ $u_{n}$)} is the
+{\em iterating pattern}. The hole [I] is the {\em iterative} place
+and the hole [E] is the {\em enumerating} place. Remark that if $j<i$, the
+iterative place comes after the enumerating place accordingly.
+
+The notation parses sequences of tokens such that the subpart "$x$ $s$
+{\tt ..} $s$ $y$" parses any number of time (but at least one time) a
+sequence of expressions separated by the sequence of tokens $s$. The
+parsing phase produces a list of expressions which
+are used to fill in order the holes [E] of the iterating pattern
+which is nested as many time as the length of the list, the hole [I]
+being the nesting point. In the innermost occurrence of the nested
+iterating pattern, the hole [I] is finally filled with the terminating
+expression.
+
+In the example above, $f$ is {\tt cons}, $n=3$ (because {\tt cons} has
+a hidden implicit argument!), $i=3$ and $j=2$. The {\em terminating}
+expression is {\tt nil} and the {\em iterating pattern} is {\tt cons
+{\rm [E] [I]}}. Finally, the sequence $s$ is made of the single token
+``{\tt ;}''. Here is another example.
+\begin{coq_example*}
+Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) (at level 0).
+\end{coq_example*}
+
+Notations with recursive patterns can be reserved like standard
+notations, they can also be declared within interpretation scopes (see
+section \ref{scopes}).
+
+\subsection{Notations and binders}
+
+Notations can be defined for binders as in the example:
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces **********)
+(**** an incompatibility with the reserved notation ********)
+\end{coq_eval}
+\begin{coq_example*}
+Notation "{ x : A  |  P  }" := (sig (fun x : A => P)) (at level 0).
+\end{coq_example*}
+
+The binding variables in the left-hand-side that occur as a parameter
+of the notation naturally bind all their occurrences appearing in
+their respective scope after instantiation of the parameters of the
+notation.
+
+Contrastingly, the binding variables that are not a parameter of the
+notation do not capture the variables of same name that
+could appear in their scope after instantiation of the
+notation. E.g., for the notation
+
+\begin{coq_example*}
+Notation "'exists_different' n" := (exists p:nat, p<>n) (at level 200).
+\end{coq_example*}
+the next command fails because {\tt p} does not bind in 
+the instance of {\tt n}.
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following produces **********)
+(**** The reference p was not found in the current environment ********)
+\end{coq_eval}
+\begin{coq_example}
+Check (exists_different p).
+\end{coq_example}
+
+\Rem Binding variables must not necessarily be parsed using the
+{\tt ident} entry. For factorization purposes, they can be said to be
+parsed at another level (e.g. {\tt x} in \verb="{ x : A | P }"= must be
+parsed at level 99 to be factorized with the notation
+\verb="{ A } + { B }"= for which {\tt A} can be any term).  
+However, even if parsed as a term, this term must at the end be effectively 
+a single identifier.
+
+\subsection{Summary}
+
+\paragraph{Syntax of notations}
+
+The different syntactic variants of the command \texttt{Notation} are
+given on Figure~\ref{notation-syntax}. The optional {\tt :{\scope}} is
+described in the Section~\ref{scopes}.
+
+\Rem No typing of the denoted expression is performed at definition
+time. Type-checking is done only at the time of use of the notation.
+
+\Rem Many examples of {\tt Notation} may be found in the files
+composing the initial state of {\Coq} (see directory {\tt
+\$COQLIB/theories/Init}).
+
+\Rem The notation \verb="{ x }"= has a special status in such a way
+that complex notations of the form \verb="x + { y }"= or
+\verb="x * { y }"= can be nested with correct precedences. Especially,
+every notation involving a pattern of the form \verb="{ x }"= is
+parsed as a notation where the pattern \verb="{ x }"= has been simply
+replaced by \verb="x"= and the curly brackets are parsed separately.
+E.g. \verb="y + { z }"= is not parsed as a term of the given form but
+as a term of the form \verb="y + z"= where \verb=z= has been parsed
+using the rule parsing \verb="{ x }"=. Especially, level and
+precedences for a rule including patterns of the form \verb="{ x }"=
+are relative not to the textual notation but to the notation where the
+curly brackets have been removed (e.g. the level and the associativity
+given to some notation, say \verb="{ y } & { z }"= in fact applies to
+the underlying \verb="{ x }"=-free rule which is \verb="y & z"=).
+
+\paragraph{Persistence of notations}
+
+Notations do not survive the end of sections. They survive modules
+unless the command {\tt Notation Local} is used instead of {\tt
+Notation}.
+
+\section[Interpretation scopes]{Interpretation scopes\index{Interpretation scopes}
+\label{scopes}}
+% Introduction
+
+An {\em interpretation scope} is a set of notations for terms with
+their interpretation. Interpretation scopes provides with a weak,
+purely syntactical form of notations overloading: a same notation, for
+instance the infix symbol \verb=+= can be used to denote distinct
+definitions of an additive operator. Depending on which interpretation
+scopes is currently open, the interpretation is different.
+Interpretation scopes can include an interpretation for
+numerals and strings. However, this is only made possible at the
+{\ocaml} level.
+
+See Figure \ref{notation-syntax} for the syntax of notations including
+the possibility to declare them in a given scope.  Here is a typical
+example which declares the notation for conjunction in the scope {\tt
+type\_scope}.
+
+\begin{verbatim}
+Notation "A /\ B" := (and A B) : type_scope.
+\end{verbatim}
+
+\Rem A notation not defined in a scope is called a {\em lonely} notation.
+
+\subsection{Global interpretation rules for notations}
+
+At any time, the interpretation of a notation for term is done within
+a {\em stack} of interpretation scopes and lonely notations. In case a
+notation has several interpretations, the actual interpretation is the
+one defined by (or in) the more recently declared (or open) lonely
+notation (or interpretation scope) which defines this notation.
+Typically if a given notation is defined in some scope {\scope} but
+has also an interpretation not assigned to a scope, then, if {\scope}
+is open before the lonely interpretation is declared, then the lonely
+interpretation is used (and this is the case even if the
+interpretation of the notation in {\scope} is given after the lonely
+interpretation: otherwise said, only the order of lonely
+interpretations and opening of scopes matters, and not the declaration
+of interpretations within a scope).
+
+The initial state of {\Coq} declares three interpretation scopes and
+no lonely notations. These scopes, in opening order, are {\tt
+core\_scope}, {\tt type\_scope} and {\tt nat\_scope}.
+
+The command to add a scope to the interpretation scope stack is
+\comindex{Open Scope}
+\comindex{Close Scope}
+\begin{quote}
+{\tt Open Scope} {\scope}.
+\end{quote}
+It is also possible to remove a scope from the interpretation scope
+stack by using the command
+\begin{quote}
+{\tt Close Scope} {\scope}.
+\end{quote}
+Notice that this command does not only cancel the last {\tt Open Scope
+{\scope}} but all the invocation of it.
+
+\Rem {\tt Open Scope} and {\tt Close Scope} do not survive the end of
+sections where they occur. When defined outside of a section, they are
+exported to the modules that import the module where they occur.
+
+\begin{Variants}
+
+\item {\tt Open Local Scope} {\scope}.
+
+\item {\tt Close Local Scope} {\scope}.
+
+These variants are not exported to the modules that import the module
+where they occur, even if outside a section.
+
+\end{Variants}
+
+\subsection{Local interpretation rules for notations}
+
+In addition to the global rules of interpretation of notations, some
+ways to change the interpretation of subterms are available.
+
+\subsubsection{Local opening of an interpretation scope 
+\label{scopechange}
+\index{\%}
+\comindex{Delimit Scope}}
+
+It is possible to locally extend the interpretation scope stack using
+the syntax ({\term})\%{\nterm{key}} (or simply {\term}\%{\nterm{key}}
+for atomic terms), where {\nterm{key}} is a special identifier called
+{\em delimiting key} and bound to a given scope.
+
+In such a situation, the term {\term}, and all its subterms, are
+interpreted in the scope stack extended with the scope bound to
+{\nterm{key}}.
+
+To bind a delimiting key to a scope, use the command
+
+\begin{quote}
+\texttt{Delimit Scope} {\scope} \texttt{with} {\ident} 
+\end{quote}
+
+\subsubsection{Binding arguments of a constant to an interpretation scope
+\comindex{Arguments Scope}}
+
+It is possible to set in advance that some arguments of a given
+constant have to be interpreted in a given scope. The command is
+\begin{quote}
+{\tt Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+\end{quote}
+where the list is a list made either of {\tt \_} or of a scope name.
+Each scope in the list is bound to the corresponding parameter of
+{\qualid} in order.  When interpreting a term, if some of the
+arguments of {\qualid} are built from a notation, then this notation
+is interpreted in the scope stack extended by the scopes bound (if any)
+to these arguments.
+
+\SeeAlso The command to show the scopes bound to the arguments of a
+function is described in Section~\ref{About}.
+
+\subsubsection{Binding types of arguments to an interpretation scope}
+
+When an interpretation scope is naturally associated to a type
+(e.g. the scope of operations on the natural numbers), it may be
+convenient to bind it to this type. The effect of this is that any
+argument of a function that syntactically expects a parameter of this
+type is interpreted using scope. More precisely, it applies only if
+this argument is built from a notation, and if so, this notation is
+interpreted in the scope stack extended by this particular scope.  It
+does not apply to the subterms of this notation (unless the
+interpretation of the notation itself expects arguments of the same
+type that would trigger the same scope).
+
+\comindex{Bind Scope}
+More generally, any {\class} (see Chapter~\ref{Coercions-full}) can be
+bound to an interpretation scope. The command to do it is
+\begin{quote}
+{\tt Bind Scope} {\scope} \texttt{with} {\class}
+\end{quote}
+
+\Example
+\begin{coq_example}
+Parameter U : Set.
+Bind Scope U_scope with U.
+Parameter Uplus : U -> U -> U.
+Parameter P : forall T:Set, T -> U -> Prop.
+Parameter f : forall T:Set, T -> U.
+Infix "+" := Uplus : U_scope.
+Unset Printing Notations.
+Open Scope nat_scope. (* Define + on the nat as the default for + *)
+Check (fun x y1 y2 z t => P _ (x + t) ((f _ (y1 + y2) + z))).
+\end{coq_example}
+
+\Rem The scope {\tt type\_scope} has also a local effect on
+interpretation. See the next section.
+
+\SeeAlso The command to show the scopes bound to the arguments of a
+function is described in Section~\ref{About}.
+
+\subsection[The {\tt type\_scope} interpretation scope]{The {\tt type\_scope} interpretation scope\index{type\_scope}}
+
+The scope {\tt type\_scope} has a special status. It is a primitive
+interpretation scope which is temporarily activated each time a
+subterm of an expression is expected to be a type. This includes goals
+and statements, types of binders, domain and codomain of implication,
+codomain of products, and more generally any type argument of a
+declared or defined constant.
+
+\subsection{Interpretation scopes used in the standard library of {\Coq}}
+
+We give an overview of the scopes used in the standard library of
+{\Coq}. For a complete list of notations in each scope, use the
+commands {\tt Print Scopes} or {\tt Print Scopes {\scope}}.
+
+\subsubsection{\tt type\_scope}
+
+This includes infix {\tt *} for product types and infix {\tt +} for
+sum types. It is delimited by key {\tt type}.
+
+\subsubsection{\tt nat\_scope}
+
+This includes the standard arithmetical operators and relations on
+type {\tt nat}. Positive numerals in this scope are mapped to their
+canonical representent built from {\tt O} and {\tt S}. The scope is
+delimited by key {\tt nat}.
+
+\subsubsection{\tt N\_scope}
+
+This includes the standard arithmetical operators and relations on
+type {\tt N} (binary natural numbers). It is delimited by key {\tt N}
+and comes with an interpretation for numerals as closed term of type {\tt Z}.
+
+\subsubsection{\tt Z\_scope}
+
+This includes the standard arithmetical operators and relations on
+type {\tt Z} (binary integer numbers). It is delimited by key {\tt Z} 
+and comes with an interpretation for numerals as closed term of type {\tt Z}.
+
+\subsubsection{\tt positive\_scope}
+
+This includes the standard arithmetical operators and relations on
+type {\tt positive} (binary strictly positive numbers). It is
+delimited by key {\tt positive} and comes with an interpretation for
+numerals as closed term of type {\tt positive}.
+
+\subsubsection{\tt Q\_scope}
+
+This includes the standard arithmetical operators and relations on
+type {\tt Q} (rational numbers defined as fractions of an integer and
+a strictly positive integer modulo the equality of the
+numerator-denominator cross-product). As for numerals, only $0$ and
+$1$ have an interpretation in scope {\tt Q\_scope} (their
+interpretations are $\frac{0}{1}$ and $\frac{1}{1}$ respectively).
+
+\subsubsection{\tt Qc\_scope}
+
+This includes the standard arithmetical operators and relations on the
+type {\tt Qc} of rational numbers defined as the type of irreducible
+fractions of an integer and a strictly positive integer.
+
+\subsubsection{\tt real\_scope}
+
+This includes the standard arithmetical operators and relations on
+type {\tt R} (axiomatic real numbers). It is delimited by key {\tt R}
+and comes with an interpretation for numerals as term of type {\tt
+R}. The interpretation is based on the binary decomposition.  The
+numeral 2 is represented by $1+1$.  The interpretation $\phi(n)$ of an
+odd positive numerals greater $n$ than 3 is {\tt 1+(1+1)*$\phi((n-1)/2)$}.
+The interpretation $\phi(n)$ of an even positive numerals greater $n$
+than 4 is {\tt (1+1)*$\phi(n/2)$}.  Negative numerals are represented as the
+opposite of the interpretation of their absolute value. E.g. the
+syntactic object {\tt -11} is interpreted as {\tt
+-(1+(1+1)*((1+1)*(1+(1+1))))} where the unit $1$ and all the operations are
+those of {\tt R}.
+
+\subsubsection{\tt bool\_scope}
+
+This includes notations for the boolean operators. It is
+delimited by key {\tt bool}.
+
+\subsubsection{\tt list\_scope}
+
+This includes notations for the list operators. It is
+delimited by key {\tt list}.
+
+\subsubsection{\tt core\_scope}
+
+This includes the notation for pairs. It is delimited by key {\tt core}.
+
+\subsubsection{\tt string\_scope}
+
+This includes notation for strings as elements of the type {\tt
+string}.  Special characters and escaping follow {\Coq} conventions
+on strings (see Section~\ref{strings}). Especially, there is no
+convention to visualize non printable characters of a string.  The
+file {\tt String.v} shows an example that contains quotes, a newline
+and a beep (i.e. the ascii character of code 7).
+
+\subsubsection{\tt char\_scope}
+
+This includes interpretation for all strings of the form
+\verb!"!$c$\verb!"! where $c$ is an ascii character, or of the form
+\verb!"!$nnn$\verb!"! where $nnn$ is a three-digits number (possibly
+with leading 0's), or of the form \verb!""""!. Their respective
+denotations are the ascii code of $c$, the decimal ascii code $nnn$,
+or the ascii code of the character \verb!"! (i.e. the ascii code
+34), all of them being represented in the type {\tt ascii}.
+
+\subsection{Displaying informations about scopes}
+
+\subsubsection{\tt Print Visibility}
+
+This displays the current stack of notations in scopes and lonely
+notations that is used to interpret a notation. The top of the stack
+is displayed last. Notations in scopes whose interpretation is hidden
+by the same notation in a more recently open scope are not
+displayed. Hence each notation is displayed only once.
+
+\variant
+
+{\tt Print Visibility {\scope}}\\
+
+This displays the current stack of notations in scopes and lonely
+notations assuming that {\scope} is pushed on top of the stack.  This
+is useful to know how a subterm locally occurring in the scope of
+{\scope} is interpreted.
+
+\subsubsection{\tt Print Scope {\scope}}
+
+This displays all the notations defined in interpretation scope
+{\scope}.  It also displays the delimiting key if any and the class to
+which the scope is bound, if any.
+
+\subsubsection{\tt Print Scopes}
+
+This displays all the notations, delimiting keys and corresponding
+class of all the existing interpretation scopes.
+It also displays the lonely notations.
+
+\section[Abbreviations]{Abbreviations\index{Abbreviations}
+\label{Abbreviations}
+\comindex{Notation}}
+
+An {\em abbreviation} is a name denoting a (presumably) more complex
+expression. An abbreviation is a special form of notation with no
+parameter and only one symbol which is an identifier. This identifier
+is given with no quotes around. Example:
+
+\begin{coq_eval}
+Require Import List.
+\end{coq_eval}
+\begin{coq_example*}
+Notation List := (list nat).
+\end{coq_example*}
+
+An abbreviation expects no precedence nor associativity, since it can
+always be put at the lower level of atomic expressions, and
+associativity is irrelevant. Abbreviations are used as much as
+possible by the {\Coq} printers unless the modifier
+\verb=(only parsing)= is given.
+
+Abbreviations are bound to an absolute name like for an ordinary
+definition, and can be referred by partially qualified names too.
+
+Abbreviations are syntactic in the sense that they are bound to
+expressions which are not typed at the time of the definition of the
+abbreviation but at the time it is used. Especially, abbreviation can
+be bound to terms with holes (i.e. with ``\_''). The general syntax
+for abbreviations is
+\begin{quote}
+\texttt{Notation} \zeroone{{\tt Local}} {\ident} \texttt{:=} {\term} 
+ \zeroone{{\tt (only parsing)}} \verb=.=
+\end{quote}
+
+\Example
+\begin{coq_eval}
+Set Strict Implicit.
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Definition explicit_id (A:Set) (a:A) := a.
+Notation id := (explicit_id _).
+Check (id 0).
+\end{coq_example}
+
+Abbreviations do not survive the end of sections. No typing of the denoted
+expression is performed at definition time. Type-checking is done only
+at the time of use of the abbreviation.
+
+\Rem \index{Syntactic Definition} % For
+compatibility Abbreviations are similar to the {\em syntactic
+definitions} available in versions of {\Coq} prior to version 8.0,
+except that abbreviations are used for printing (unless the modifier
+\verb=(only parsing)= is given) while syntactic definitions were not.
+
+\section{Tactic Notations}
+
+Tactic notations allow to customize the syntax of the tactics of the
+tactic language\footnote{Tactic notations are just a simplification of
+the {\tt Grammar tactic simple\_tactic} command that existed in
+versions prior to version 8.0.}. Tactic notations obey the following
+syntax
+\medskip
+
+\noindent
+\begin{tabular}{lcl}
+{\sentence} & ::= & \texttt{Tactic Notation} {\taclevel} \sequence{\proditem}{} \\
+& & \texttt{:= {\tac} .}\\
+{\proditem} & ::= & {\str} $|$ {\tacargtype}{\tt ({\ident})} \\ 
+{\taclevel} & ::= & $|$ {\tt (at level} {\naturalnumber}{\tt )} \\
+{\tacargtype} & ::= &
+%{\tt preident} $|$
+{\tt ident} $|$
+{\tt simple\_intropattern} $|$
+{\tt hyp} \\ & $|$ &
+% {\tt quantified\_hypothesis} $|$
+{\tt reference} $|$
+{\tt constr} \\ & $|$ &
+%{\tt castedopenconstr} $|$
+{\tt integer} \\ & $|$ &
+{\tt int\_or\_var} $|$
+{\tt tactic} $|$
+\end{tabular}
+\medskip
+
+A tactic notation {\tt Tactic Notation {\taclevel}
+{\sequence{\proditem}{}} := {\tac}} extends the parser and
+pretty-printer of tactics with a new rule made of the list of
+production items. It then evaluates into the tactic expression
+{\tac}. For simple tactics, it is recommended to use a terminal
+symbol, i.e. a {\str}, for the first production item.  The tactic
+level indicates the parsing precedence of the tactic notation. This
+information is particularly relevant for notations of tacticals.
+Levels 0 to 5 are available. To know the parsing precedences of the
+existing tacticals, use the command {\tt Print Grammar tactic.}
+
+Each type of tactic argument has a specific semantic regarding how it
+is parsed and how it is interpreted. The semantic is described in the
+following table. The last command gives examples of tactics which
+use the corresponding kind of argument.
+
+\medskip
+\noindent
+\begin{tabular}{l|l|l|l}
+Tactic argument type & parsed as & interpreted as & as in tactic \\
+\hline \\
+{\tt\small ident} & identifier & a user-given name & {\tt intro} \\
+{\tt\small simple\_intropattern} & intro\_pattern & an intro\_pattern & {\tt intros}\\
+{\tt\small hyp} & identifier & an hypothesis defined in context & {\tt clear}\\
+%% quantified_hypothesis actually not supported
+%%{\tt\small quantified\_hypothesis} & identifier or integer & a named or non dep. hyp. of the goal & {\tt intros until}\\
+{\tt\small reference} & qualified identifier & a global reference of term & {\tt unfold}\\
+{\tt\small constr} & term & a term & {\tt exact} \\
+%% castedopenconstr actually not supported
+%%{\tt\small castedopenconstr} & term & a term with its sign. of exist. var. & {\tt refine}\\
+{\tt\small integer} & integer & an integer &  \\
+{\tt\small int\_or\_var} & identifier or integer & an integer & {\tt do} \\
+{\tt\small tactic} & tactic & a tactic & \\
+\end{tabular}
+
+\Rem In order to be bound in tactic definitions, each syntactic entry
+for argument type must include the case of simple {\ltac} identifier
+as part of what it parses. This is naturally the case for {\tt ident},
+{\tt simple\_intropattern}, {\tt reference}, {\tt constr}, ... but not
+for {\tt integer}. This is the reason for introducing a special entry
+{\tt int\_or\_var} which evaluates to integers only but which
+syntactically includes identifiers in order to be usable in tactic
+definitions.
+
+% $Id$ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

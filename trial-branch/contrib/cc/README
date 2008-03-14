@@ -1,0 +1,20 @@
+
+cctac: congruence-closure for coq
+
+author: Pierre Corbineau, 
+	Stage de DEA au LSV, ENS Cachan
+	Thèse au LRI, Université Paris Sud XI 
+
+Files :
+
+- ccalgo.ml : congruence closure algorithm
+- ccproof.ml : proof generation code
+- cctac.ml4 : the tactic itself
+- CCSolve.v : a small Ltac tactic based on congruence 
+
+Known Bugs : the congruence tactic can fail due to type dependencies.
+
+Related documents:
+	Peter J. Downey, Ravi Sethi, and Robert E. Tarjan.
+	Variations on the common subexpression problem.
+	JACM, 27(4):758-771, October 1980.	

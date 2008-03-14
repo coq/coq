@@ -1,0 +1,944 @@
+\chapter[Vernacular commands]{Vernacular commands\label{Vernacular-commands}
+\label{Other-commands}}
+
+\section{Displaying}
+
+\subsection[\tt Print {\qualid}.]{\tt Print {\qualid}.\comindex{Print}}
+This command displays on the screen informations about the declared or
+defined object referred by {\qualid}.
+
+\begin{ErrMsgs}
+\item {\qualid} \errindex{not a defined object}
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt Print Term {\qualid}.}
+\comindex{Print Term}\\ 
+This is a synonym to {\tt Print {\qualid}} when {\qualid} denotes a
+global constant. 
+
+\item {\tt About {\qualid}.}
+\label{About}
+\comindex{About}\\ 
+This displays various informations about the object denoted by {\qualid}:
+its kind (module, constant, assumption, inductive,
+constructor, abbreviation\ldots), long name, type, implicit
+arguments and argument scopes.
+
+%\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
+%In case \qualid\ denotes an opaque theorem defined in a section,
+%it is stored on a special unprintable form and displayed as 
+%{\tt <recipe>}. {\tt Print Proof} forces the printable form of \qualid\
+%to be computed and displays it.
+\end{Variants}
+
+\subsection[\tt Print All.]{\tt Print All.\comindex{Print All}}
+This command displays informations about the current state of the
+environment, including sections and modules.
+
+\begin{Variants}
+\item {\tt Inspect \num.}\comindex{Inspect}\\
+This command displays the {\num} last objects of the current
+environment, including sections and modules.
+\item {\tt Print Section {\ident}.}\comindex{Print Section}\\
+should correspond to a currently open section, this command
+displays the objects defined since the beginning of this section.
+% Discontinued
+%% \item {\tt Print.}\comindex{Print}\\
+%% This command displays the axioms and variables declarations in the
+%% environment as well as the constants defined since the last variable
+%% was introduced.
+\end{Variants}
+
+\section{Requests to the environment}
+
+\subsection[\tt Check {\term}.]{\tt Check {\term}.\label{Check}
+\comindex{Check}}
+This command displays the type of {\term}. When called in proof mode, 
+the term is checked in the local context of the current subgoal.
+
+\subsection[\tt Eval {\rm\sl convtactic} in {\term}.]{\tt Eval {\rm\sl convtactic} in {\term}.\comindex{Eval}}
+
+This command performs the specified reduction on {\term}, and displays
+the resulting term with its type. The term to be reduced may depend on
+hypothesis introduced in the first subgoal (if a proof is in
+progress).
+
+\SeeAlso Section~\ref{Conversion-tactics}.
+
+\subsection[\tt Extraction \term.]{\tt Extraction \term.\label{ExtractionTerm}
+\comindex{Extraction}} 
+This command displays the extracted term from
+{\term}. The extraction is processed according to the distinction
+between {\Set} and {\Prop}; that is to say, between logical and
+computational content (see Section~\ref{Sorts}). The extracted term is
+displayed in Objective Caml syntax, where global identifiers are still
+displayed as in \Coq\ terms.
+
+\begin{Variants}
+\item \texttt{Recursive Extraction {\qualid$_1$} \ldots{} {\qualid$_n$}.}\\
+  Recursively extracts all the material needed for the extraction of 
+  globals {\qualid$_1$} \ldots{} {\qualid$_n$}.
+\end{Variants}
+
+\SeeAlso Chapter~\ref{Extraction}.
+
+\subsection[\tt Opaque \qualid$_1$ \dots \qualid$_n$.]{\tt Opaque \qualid$_1$ \dots \qualid$_n$.\comindex{Opaque}\label{Opaque}} This command tells not to unfold the
+the constants {\qualid$_1$} \dots {\qualid$_n$} in tactics using
+$\delta$-conversion. Unfolding a constant is replacing it by its
+definition. {\tt Opaque} can only apply on constants originally
+defined as {\tt Transparent}.
+
+Constants defined by a proof ended by {\tt Qed} are automatically
+stamped as {\tt Opaque} and can no longer be considered as {\tt
+Transparent}. This is to keep with the usual mathematical practice of
+{\em proof irrelevance}: what matters in a mathematical development is
+the sequence of lemma statements, not their actual proofs. This
+distinguishes lemmas from the usual defined constants, whose actual
+values are of course relevant in general.
+
+\SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
+\ref{Theorem}
+
+\begin{ErrMsgs}
+\item \errindex{The reference \qualid\ was not found in the current
+environment}\\
+    There is no constant referred by {\qualid} in the environment.
+    Nevertheless, if you asked \texttt{Opaque foo bar}
+    and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
+\end{ErrMsgs}
+
+\subsection[\tt Transparent \qualid$_1$ \dots \qualid$_n$.]{\tt Transparent \qualid$_1$ \dots \qualid$_n$.\comindex{Transparent}\label{Transparent}}
+This command is the converse of {\tt Opaque} and can only apply on constants originally defined as {\tt Transparent} to restore their initial behaviour after an {\tt Opaque} command.
+
+The constants automatically declared transparent are the ones defined by a proof ended by {\tt Defined}, or by a {\tt
+  Definition} or {\tt Local} with an explicit body.
+
+\Warning {\tt Transparent} and \texttt{Opaque} are not synchronous
+with the reset mechanism. If a constant was transparent at point A, if
+you set it opaque at point B and reset to point A, you return to state
+of point A with the difference that the constant is still opaque. This
+can cause changes in tactic scripts behaviour.
+
+At section or module closing, a constant recovers the status it got at
+the time of its definition.
+
+%TODO: expliquer le rapport avec les sections
+
+\begin{ErrMsgs}
+% \item \errindex{Can not set transparent.}\\
+%     It is a constant from a required module or a parameter.
+\item \errindex{The reference \qualid\ was not found in the current
+environment}\\
+    There is no constant referred by {\qualid} in the environment.
+\end{ErrMsgs}
+
+\SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
+\ref{Theorem}
+
+\subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
+This command displays the name and type of all theorems of the current
+context whose statement's conclusion has the form {\tt ({\qualid} t1 ..
+  tn)}.  This command is useful to remind the user of the name of
+library lemmas.
+\begin{ErrMsgs}
+\item \errindex{The reference \qualid\ was not found in the current
+environment}\\
+    There is no constant in the environment named \qualid.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item
+{\tt Search {\qualid} inside {\module$_1$} \ldots{} {\module$_n$}.}
+
+This restricts the search to constructions defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\item {\tt Search {\qualid} outside {\module$_1$} \ldots{} {\module$_n$}.}
+
+This restricts the search to constructions not defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\begin{ErrMsgs}
+\item \errindex{Module/section \module{} not found}
+No module \module{} has been required (see Section~\ref{Require}).
+\end{ErrMsgs}
+
+\end{Variants}
+
+\subsection[\tt SearchAbout {\qualid}.]{\tt SearchAbout {\qualid}.\comindex{SearchAbout}}
+This command displays the name and type of all objects (theorems,
+axioms, etc) of the current context whose statement contains \qualid.
+This command is useful to remind the user of the name of library
+lemmas.
+
+\begin{ErrMsgs}
+\item \errindex{The reference \qualid\ was not found in the current
+environment}\\
+    There is no constant in the environment named \qualid.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{}
+].}\\
+\noindent where {\textrm{\textsl{qualid-or-string}}} is a {\qualid} or
+a {\str}.
+
+This extension of {\tt SearchAbout} searches for all objects whose
+statement mentions all of {\qualid} of the list and whose name
+contains all {\str} of the list.
+
+\Example
+
+\begin{coq_example}
+Require Import ZArith.
+SearchAbout [ Zmult Zplus "distr" ].
+\end{coq_example}
+
+\item
+\begin{tabular}[t]{@{}l}
+  {\tt SearchAbout {\term} inside {\module$_1$} \ldots{} {\module$_n$}.} \\
+  {\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ]
+    inside {\module$_1$} \ldots{} {\module$_n$}.}
+\end{tabular}
+
+This restricts the search to constructions defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\item
+\begin{tabular}[t]{@{}l}
+  {\tt SearchAbout {\term} outside {\module$_1$}...{\module$_n$}.} \\
+  {\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ]
+     outside {\module$_1$}...{\module$_n$}.}
+\end{tabular}
+
+This restricts the search to constructions not defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\end{Variants}
+
+\subsection[\tt SearchPattern {\term}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
+
+This command displays the name and type of all theorems of the current
+context whose statement's conclusion matches the expression {\term}
+where holes in the latter are denoted by ``{\texttt \_}''.
+
+\begin{coq_example}
+Require Import Arith.
+SearchPattern (_ + _ = _ + _).
+\end{coq_example}
+
+Patterns need not be linear: you can express that the same expression
+must occur in two places by using pattern variables `{\texttt
+?{\ident}}''.
+
+\begin{coq_example}
+Require Import Arith.
+SearchPattern (?X1 + _ = _ + ?X1).
+\end{coq_example}
+
+\begin{Variants}
+\item {\tt SearchPattern {\term} inside
+{\module$_1$} \ldots{} {\module$_n$}.}\comindex{SearchPattern \ldots{} inside
+\ldots{}}
+
+This restricts the search to constructions defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\item {\tt SearchPattern {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}\comindex{SearchPattern \ldots{} outside \ldots{}}
+
+This restricts the search to constructions not defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\end{Variants}
+
+\subsection[\tt SearchRewrite {\term}.]{\tt SearchRewrite {\term}.\comindex{SearchRewrite}}
+
+This command displays the name and type of all theorems of the current
+context whose statement's conclusion is an equality of which one side matches
+the expression {\term =}. Holes in {\term} are denoted by ``{\texttt \_}''.
+
+\begin{coq_example}
+Require Import Arith.
+SearchRewrite (_ + _ + _).
+\end{coq_example}
+
+\begin{Variants}
+\item {\tt SearchRewrite {\term} inside
+{\module$_1$} \ldots{} {\module$_n$}.}
+
+This restricts the search to constructions defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\item {\tt SearchRewrite {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}
+
+This restricts the search to constructions not defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\end{Variants}
+
+% \subsection[\tt SearchIsos {\term}.]{\tt SearchIsos {\term}.\comindex{SearchIsos}}
+% \label{searchisos}
+% \texttt{SearchIsos} searches terms by their type modulo isomorphism.
+% This command displays the full name of all constants, variables,
+% inductive types, and inductive constructors of the current
+% context whose type is isomorphic to {\term} modulo the contextual part of the
+% following axiomatization (the mutual inductive types with one constructor,
+% without implicit arguments, and for which projections exist, are regarded as a
+% sequence of $\sa{}$):
+
+
+% \begin{tabbing}
+% \ \ \ \ \=11.\ \=\kill
+% \>1.\>$A=B\mx{ if }A\stackrel{\bt{}\io{}}{\lra{}}B$\\
+% \>2.\>$\sa{}x:A.B=\sa{}y:A.B[x\la{}y]\mx{ if }y\not\in{}FV(\sa{}x:A.B)$\\
+% \>3.\>$\Pi{}x:A.B=\Pi{}y:A.B[x\la{}y]\mx{ if }y\not\in{}FV(\Pi{}x:A.B)$\\
+% \>4.\>$\sa{}x:A.B=\sa{}x:B.A\mx{ if }x\not\in{}FV(A,B)$\\
+% \>5.\>$\sa{}x:(\sa{}y:A.B).C=\sa{}x:A.\sa{}y:B[y\la{}x].C[x\la{}(x,y)]$\\
+% \>6.\>$\Pi{}x:(\sa{}y:A.B).C=\Pi{}x:A.\Pi{}y:B[y\la{}x].C[x\la{}(x,y)]$\\
+% \>7.\>$\Pi{}x:A.\sa{}y:B.C=\sa{}y:(\Pi{}x:A.B).(\Pi{}x:A.C[y\la{}(y\sm{}x)]$\\
+% \>8.\>$\sa{}x:A.unit=A$\\
+% \>9.\>$\sa{}x:unit.A=A[x\la{}tt]$\\
+% \>10.\>$\Pi{}x:A.unit=unit$\\
+% \>11.\>$\Pi{}x:unit.A=A[x\la{}tt]$
+% \end{tabbing}
+
+% For more informations about the exact working of this command, see
+% \cite{Del97}.
+
+\subsection[\tt Locate {\qualid}.]{\tt Locate {\qualid}.\comindex{Locate}
+\label{Locate}}
+This command displays the full name of the qualified identifier {\qualid}
+and consequently the \Coq\ module in which it is defined.
+
+\begin{coq_eval}
+(*************** The last line should produce **************************)
+(*********** Error: I.Dont.Exist not a defined object ******************)
+\end{coq_eval}
+\begin{coq_eval}
+Set Printing Depth 50.
+\end{coq_eval}
+\begin{coq_example}
+Locate nat.
+Locate Datatypes.O.
+Locate Init.Datatypes.O.
+Locate Coq.Init.Datatypes.O.
+Locate I.Dont.Exist.
+\end{coq_example}
+
+\SeeAlso Section \ref{LocateSymbol}
+
+\subsection{The {\sc Whelp} searching tool
+\label{Whelp}}
+
+{\sc Whelp} is an experimental searching and browsing tool for the
+whole {\Coq} library and the whole set of {\Coq} user contributions.
+{\sc Whelp} requires a browser to work. {\sc Whelp} has been developed
+at the University of Bologna as part of the HELM\footnote{Hypertextual
+Electronic Library of Mathematics} and MoWGLI\footnote{Mathematics on
+the Web, Get it by Logics and Interfaces} projects.  It can be invoked
+directly from the {\Coq} toplevel or from {\CoqIDE}, assuming a
+graphical environment is also running. The browser to use can be
+selected by setting the environment variable {\tt
+COQREMOTEBROWSER}. If not explicitly set, it defaults to
+\verb!firefox -remote "OpenURL(%s)"!  or
+\verb!C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s!, depending on the
+underlying operating system (in the command, the string \verb!%s!
+serves as metavariable for the url to open).
+The Whelp tool relies on a dedicated Whelp server and on another server
+called Getter that retrieves formal documents. The default Whelp server name
+can be obtained using the command {\tt Test Whelp Server}
+\comindex{Test Whelp Server} and the default Getter can be obtained
+using the command: {\tt Test Whelp Getter} \comindex{Test Whelp
+Getter}. The Whelp server name can be changed using the command:
+
+\smallskip
+\noindent {\tt Set Whelp Server {\str}}.\\
+where {\str} is a URL (e.g. {\tt http://mowgli.cs.unibo.it:58080}).
+\comindex{Set Whelp Server}
+\smallskip
+
+\noindent The Getter can be changed using the command:
+\smallskip
+
+\noindent {\tt Set Whelp Getter {\str}}.\\
+where {\str} is a URL (e.g. {\tt http://mowgli.cs.unibo.it:58081}).  
+\comindex{Set Whelp Getter}
+
+\bigskip
+
+The {\sc Whelp} commands are:
+
+\subsubsection{\tt Whelp Locate "{\sl reg\_expr}".
+\comindex{Whelp Locate}}
+
+This command opens a browser window and displays the result of seeking
+for all names that match the regular expression {\sl reg\_expr} in the
+{\Coq} library and user contributions. The regular expression can
+contain the special operators are * and ? that respectively stand for
+an arbitrary substring and for exactly one character.
+
+\variant {\tt Whelp Locate {\ident}.}\\
+This is equivalent to {\tt Whelp Locate "{\ident}"}.
+
+\subsubsection{\tt Whelp Match {\pattern}.
+\comindex{Whelp Match}}
+
+This command opens a browser window and displays the result of seeking
+for all statements that match the pattern {\pattern}. Holes in the
+pattern are represented by the wildcard character ``\_''.
+
+\subsubsection[\tt Whelp Instance {\pattern}.]{\tt Whelp Instance {\pattern}.\comindex{Whelp Instance}}
+
+This command opens a browser window and displays the result of seeking
+for all statements that are instances of the pattern {\pattern}. The
+pattern is here assumed to be an universally quantified expression.
+
+\subsubsection[\tt Whelp Elim {\qualid}.]{\tt Whelp Elim {\qualid}.\comindex{Whelp Elim}}
+
+This command opens a browser window and displays the result of seeking
+for all statements that have the ``form'' of an elimination scheme
+over the type denoted by {\qualid}.
+
+\subsubsection[\tt Whelp Hint {\term}.]{\tt Whelp Hint {\term}.\comindex{Whelp Hint}}
+
+This command opens a browser window and displays the result of seeking
+for all statements that can be instantiated so that to prove the
+statement {\term}.
+
+\variant {\tt Whelp Hint.}\\ This is equivalent to {\tt Whelp Hint
+{\sl goal}} where {\sl goal} is the current goal to prove. Notice that
+{\Coq} does not send the local environment of definitions to the {\sc
+Whelp} tool so that it only works on requests strictly based on, only,
+definitions of the standard library and user contributions.
+
+\section{Loading files}
+
+\Coq\ offers the possibility of loading different
+parts of a whole development stored in separate files. Their contents
+will be loaded as if they were entered from the keyboard. This means
+that the loaded files are ASCII files containing sequences of commands
+for \Coq's toplevel. This kind of file is called a {\em script} for
+\Coq\index{Script file}. The standard (and default) extension of
+\Coq's script files is {\tt .v}.
+
+\subsection[\tt Load {\ident}.]{\tt Load {\ident}.\comindex{Load}\label{Load}}
+This command loads the file named {\ident}{\tt .v}, searching
+successively in each of the directories specified in the {\em
+  loadpath}. (see Section~\ref{loadpath})
+
+\begin{Variants}
+\item {\tt Load {\str}.}\label{Load-str}\\
+  Loads the file denoted by the string {\str}, where {\str} is any
+  complete filename. Then the \verb.~. and {\tt ..}
+  abbreviations are allowed as well as shell variables. If no
+  extension is specified, \Coq\ will use the default extension {\tt
+    .v}
+\item {\tt Load Verbose {\ident}.}, 
+  {\tt Load Verbose {\str}}\\
+  \comindex{Load Verbose}
+  Display, while loading, the answers of \Coq\ to each command
+  (including tactics) contained in the loaded file
+  \SeeAlso Section~\ref{Begin-Silent}
+\end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{Can't find file {\ident} on loadpath}
+\end{ErrMsgs}
+
+\section[Compiled files]{Compiled files\label{compiled}\index{Compiled files}}
+
+This feature allows to build files for a quick loading. When loaded,
+the commands contained in a compiled file will not be {\em replayed}.
+In particular, proofs will not be replayed. This avoids a useless
+waste of time.
+
+\Rem A module containing an opened section cannot be compiled. 
+
+% \subsection{\tt Compile Module {\ident}.}
+% \index{Modules}
+% \comindex{Compile Module}
+% \index{.vo files}
+% This command loads the file
+% {\ident}{\tt .v} and plays the script it contains. Declarations,
+% definitions and proofs it contains are {\em "packaged"} in a compiled
+% form: the {\em module} named {\ident}.
+% A file {\ident}{\tt .vo} is then created.
+% The file {\ident}{\tt .v} is searched according to the
+% current loadpath.
+% The {\ident}{\tt .vo} is then written in the directory where
+% {\ident}{\tt .v} was found.
+
+% \begin{Variants}
+% \item \texttt{Compile Module {\ident} {\str}.}\\ 
+%   Uses the file {\str}{\tt .v} or {\str} if the previous one does not
+%   exist to build the module {\ident}. In this case, {\str} is any
+%   string giving a filename in the UNIX sense (see section
+%   \ref{Load-str}). 
+%   \Warning The given filename can not contain other caracters than
+%   the caracters of \Coq's identifiers : letters or digits or the
+%   underscore symbol ``\_''.
+
+% \item \texttt{Compile Module Specification {\ident}.}\\
+%   \comindex{Compile Module Specification}
+%   Builds a specification module: only the types of terms are stored
+%   in the module. The bodies (the proofs) are {\em not} written
+%   in the module. In that case, the file created is {\ident}{\tt .vi}.
+%   This is only useful when proof terms take too much place in memory
+%   and are not necessary.
+  
+% \item \texttt{Compile Verbose Module {\ident}.}\\ 
+%   \comindex{Compile Verbose Module}
+%   Verbose version of Compile: shows the contents of the file being
+%   compiled.
+% \end{Variants}
+
+% These different variants can be combined.
+
+
+% \begin{ErrMsgs}
+% \item \texttt{You cannot open a module when there are things other than}\\
+%   \texttt{Modules and Imports in the context.}\\ 
+%   The only commands allowed before a {Compile Module} command are {\tt
+%     Require},\\
+%   {\tt Read Module} and {\tt Import}. Actually, The normal way to
+%   compile modules is by the {\tt coqc} command (see chapter
+%   \ref{Addoc-coqc}).
+% \end{ErrMsgs}
+
+% \SeeAlso sections \ref{Opaque}, \ref{loadpath}, chapter
+% \ref{Addoc-coqc}
+
+%\subsection[\tt Import {\qualid}.]{\tt Import {\qualid}.\comindex{Import}}
+%\label{Import}
+
+%%%%%%%%%%%%
+% Import and Export described in RefMan-mod.tex
+% the minor difference (to avoid multiple Exporting of libraries) in
+% the treatment of normal modules and libraries by Export omitted
+
+
+\subsection[\tt Require {\dirpath}.]{\tt Require {\dirpath}.\label{Require}
+\comindex{Require}}
+
+This command looks in the loadpath for a file containing module
+{\dirpath}, then loads and opens (imports) its contents.
+More precisely, if {\dirpath} splits into a library dirpath {\dirpath'} and a module name {\textsl{ident}}, then the file {\ident}{\tt .vo} is searched in a physical path mapped to the logical path {\dirpath'}.
+
+TODO: effect on the name table.
+
+% The implementation file ({\ident}{\tt .vo}) is searched first,
+% then the specification file ({\ident}{\tt .vi}) in case of failure.
+If the module required has already been loaded, \Coq\ 
+simply opens it (as {\tt Import {\dirpath}} would do it).
+%If the module required is already loaded and open, \Coq\ 
+%displays the following warning: {\tt {\ident} already imported}.
+
+If a module {\it A} contains a command {\tt Require} {\it B} then the
+command {\tt Require} {\it A} loads the module {\it B} but does not
+open it (See the {\tt Require Export} variant below).
+
+\begin{Variants}
+\item {\tt Require Export {\qualid}.}\\
+  \comindex{Require Export}
+  This command acts as {\tt Require} {\qualid}.  But if a module {\it
+    A} contains a command {\tt Require Export} {\it B}, then the
+  command {\tt Require} {\it A} opens the module {\it B} as if the
+  user would have typed {\tt Require}{\it B}.
+% \item {\tt Require $[$ Implementation $|$ Specification $]$ {\qualid}.}\\
+%   \comindex{Require Implementation}
+%   \comindex{Require Specification}
+%   Is the same as {\tt Require}, but specifying explicitly the
+%   implementation ({\tt.vo} file) or the specification ({\tt.vi}
+%   file).
+
+% Redundant ?
+% \item {\tt Require {\qualid} {\str}.}\\ 
+%   Specifies the file to load as being {\str} but containing module
+%  {\qualid}. 
+% The opened module is still {\ident} and therefore must have been loaded.
+\item {\tt Require {\qualid} {\str}.}\\ 
+  Specifies the file to load as being {\str} but containing module
+  {\qualid} which is then opened.
+\end{Variants}
+
+These different variants can be combined.
+
+\begin{ErrMsgs}
+
+\item \errindex{Cannot load {\ident}: no physical path bound to {\dirpath}}
+
+\item \errindex{Can't find module toto on loadpath}
+
+  The command did not find the file {\tt toto.vo}. Either {\tt
+    toto.v} exists but is not compiled or {\tt toto.vo} is in a directory
+  which is not in your {\tt LoadPath} (see Section~\ref{loadpath}).
+
+\item \errindex{Bad magic number}
+
+  \index{Bad-magic-number@{\tt Bad Magic Number}}
+  The file {\tt{\ident}.vo} was found but either it is not a \Coq\
+  compiled module, or it was compiled with an older and incompatible
+  version of \Coq.
+\end{ErrMsgs}
+
+\SeeAlso Chapter~\ref{Addoc-coqc}
+
+\subsection[\tt Print Modules.]{\tt Print Modules.\comindex{Print Modules}}
+This command shows the currently loaded and currently opened
+(imported) modules.
+
+\subsection[\tt Declare ML Module {\str$_1$} .. {\str$_n$}.]{\tt Declare ML Module {\str$_1$} .. {\str$_n$}.\comindex{Declare ML Module}}
+This commands loads the Objective Caml compiled files {\str$_1$} \dots
+{\str$_n$} (dynamic link). It is mainly used to load tactics
+dynamically.
+% (see Chapter~\ref{WritingTactics}).
+ The files are
+searched into the current Objective Caml loadpath (see the command {\tt
+Add ML Path} in the Section~\ref{loadpath}).  Loading of Objective Caml
+files is only possible under the bytecode version of {\tt coqtop}
+(i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
+\ref{Addoc-coqc}).
+
+\begin{ErrMsgs}
+\item \errindex{File not found on loadpath : \str}
+\item \errindex{Loading of ML object file forbidden in a native Coq}
+\end{ErrMsgs}
+
+\subsection[\tt Print ML Modules.]{\tt Print ML Modules.\comindex{Print ML Modules}}
+This print the name of all \ocaml{} modules loaded with \texttt{Declare
+  ML Module}. To know from where these module were loaded, the user
+should use the command \texttt{Locate File} (see Section~\ref{Locate File})
+
+\section[Loadpath]{Loadpath\label{loadpath}\index{Loadpath}}
+
+There are currently two loadpaths in \Coq. A loadpath where seeking
+{\Coq} files (extensions {\tt .v} or {\tt .vo} or {\tt .vi}) and one where
+seeking Objective Caml files. The default loadpath contains the
+directory ``\texttt{.}'' denoting the current directory and mapped to the empty logical path (see Section~\ref{LongNames}).
+
+\subsection[\tt Pwd.]{\tt Pwd.\comindex{Pwd}\label{Pwd}}
+This command displays the current working directory.
+
+\subsection[\tt Cd {\str}.]{\tt Cd {\str}.\comindex{Cd}}
+This command changes the current directory according to {\str} 
+which can be any valid path.
+
+\begin{Variants}
+\item {\tt Cd.}\\
+  Is equivalent to {\tt Pwd.}
+\end{Variants}
+
+\subsection[\tt Add LoadPath {\str} as {\dirpath}.]{\tt Add LoadPath {\str} as {\dirpath}.\comindex{Add LoadPath}\label{AddLoadPath}}
+
+This command adds the path {\str} to the current {\Coq} loadpath and
+maps it to the logical directory {\dirpath}, which means that every
+file {\tt M.v} physically lying in directory {\str} becomes accessible
+through logical name ``{\dirpath}{\tt{.M}}''. 
+
+\Rem {\tt Add LoadPath} also adds {\str} to the current ML loadpath.
+
+\begin{Variants}
+\item {\tt Add LoadPath {\str}.}\\
+Performs as {\tt Add LoadPath {\str} as {\dirpath}} but for the empty directory path.
+\end{Variants}
+
+\subsection[\tt Add Rec LoadPath {\str} as {\dirpath}.]{\tt Add Rec LoadPath {\str} as {\dirpath}.\comindex{Add Rec LoadPath}\label{AddRecLoadPath}}
+This command adds the directory {\str} and all its subdirectories 
+to the current \Coq\ loadpath. The top directory {\str} is mapped to the logical directory {\dirpath} while any subdirectory {\textsl{pdir}} is mapped to logical directory {\dirpath}{\tt{.pdir}} and so on.
+
+\Rem {\tt Add Rec LoadPath} also recursively adds {\str} to the current ML loadpath.
+
+\begin{Variants}
+\item {\tt Add Rec LoadPath {\str}.}\\
+Works as {\tt Add Rec LoadPath {\str} as {\dirpath}} but for the empty logical directory path.
+\end{Variants}
+
+\subsection[\tt Remove LoadPath {\str}.]{\tt Remove LoadPath {\str}.\comindex{Remove LoadPath}}
+This command removes the path {\str} from the current \Coq\ loadpath.
+
+\subsection[\tt Print LoadPath.]{\tt Print LoadPath.\comindex{Print LoadPath}}
+This command displays the current \Coq\ loadpath.
+
+\subsection[\tt Add ML Path {\str}.]{\tt Add ML Path {\str}.\comindex{Add ML Path}}
+This command adds the path {\str} to the current Objective Caml loadpath (see
+the command {\tt Declare ML Module} in the Section~\ref{compiled}).
+
+\Rem This command is implied by {\tt Add LoadPath {\str} as {\dirpath}}.
+
+\subsection[\tt Add Rec ML Path {\str}.]{\tt Add Rec ML Path {\str}.\comindex{Add Rec ML Path}}
+This command adds the directory {\str} and all its subdirectories 
+to the current Objective Caml loadpath (see
+the command {\tt Declare ML Module} in the Section~\ref{compiled}).
+
+\Rem This command is implied by {\tt Add Rec LoadPath {\str} as {\dirpath}}.
+
+\subsection[\tt Print ML Path {\str}.]{\tt Print ML Path {\str}.\comindex{Print ML Path}}
+This command displays the current Objective Caml loadpath.
+This command makes sense only under the bytecode version of {\tt
+coqtop}, i.e. using option {\tt -byte} (see the
+command {\tt Declare ML Module} in the section
+\ref{compiled}).
+
+\subsection[\tt Locate File {\str}.]{\tt Locate File {\str}.\comindex{Locate
+  File}\label{Locate File}}
+This command displays the location of file {\str} in the current loadpath.
+Typically, {\str} is a \texttt{.cmo} or \texttt{.vo} or \texttt{.v} file.
+
+\subsection[\tt Locate Library {\dirpath}.]{\tt Locate Library {\dirpath}.\comindex{Locate Library}}
+This command gives the status of the \Coq\ module {\dirpath}. It tells if the
+module is loaded and if not searches in the load path for a module
+of logical name {\dirpath}.
+
+\section{States and Reset}
+
+\subsection[\tt Reset \ident.]{\tt Reset \ident.\comindex{Reset}}
+This command removes all the objects in the environment since \ident\ 
+was introduced, including \ident. \ident\ may be the name of a defined
+or declared object as well as the name of a section.  One cannot reset
+over the name of a module or of an object inside a module.
+
+\begin{ErrMsgs}
+\item \ident: \errindex{no such entry}
+\end{ErrMsgs}
+
+\subsection[\tt Back.]{\tt Back.\comindex{Back}}
+
+This commands undoes all the effects of the last vernacular
+command. This does not include commands that only access to the
+environment like those described in the previous sections of this
+chapter (for instance {\tt Require} and {\tt Load} can be undone, but
+not {\tt Check} and {\tt Locate}). Commands read from a vernacular
+file are considered as a single command.
+
+\begin{Variants}
+\item {\tt Back $n$} \\
+  Undoes $n$ vernacular commands.
+\end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{Reached begin of command history} \\
+  Happens when there is vernacular command to undo.
+\end{ErrMsgs}
+
+\subsection[\tt Backtrack $\num_1$ $\num_2$ $\num_3$.]{\tt Backtrack $\num_1$ $\num_2$ $\num_3$.\comindex{Backtrack}}
+
+This command is dedicated for the use in graphical interfaces.  It
+allows to backtrack to a particular \emph{global} state, i.e.
+typically a state corresponding to a previous line in a script. A
+global state includes declaration environment but also proof
+environment (see Chapter~\ref{Proof-handling}). The three numbers
+$\num_1$, $\num_2$ and $\num_3$ represent the following:
+\begin{itemize}
+\item $\num_3$: Number of \texttt{Abort} to perform, i.e. the number
+  of currently opened nested proofs that must be cancelled (see
+  Chapter~\ref{Proof-handling}).
+\item $\num_2$: \emph{Proof state number} to unbury once aborts have
+  been done. Coq will compute the number of \texttt{Undo} to perform
+  (see Chapter~\ref{Proof-handling}).
+\item $\num_1$: Environment state number to unbury, Coq will compute
+  the number of \texttt{Back} to perform.
+\end{itemize}
+
+
+\subsubsection{How to get state numbers?}
+\label{sec:statenums}
+
+
+Notice that when in \texttt{-emacs} mode, \Coq\ displays the current
+proof and environment state numbers in the prompt. More precisely the
+prompt in \texttt{-emacs} mode is the following:
+
+\verb!<prompt>! \emph{$id_i$} \verb!<! $\num_1$
+\verb!|! $id_1$\verb!|!$id_2$\verb!|!\dots\verb!|!$id_n$
+\verb!|! $\num_2$ \verb!< </prompt>!
+
+Where:
+
+\begin{itemize}
+\item \emph{$id_i$} is the name of the current proof (if there is
+  one, otherwise \texttt{Coq} is displayed, see
+Chapter~\ref{Proof-handling}).
+\item $\num_1$ is the environment state number after the last
+  command.
+\item $\num_2$ is the proof state number after the last
+  command.
+\item $id_1$ $id_2$ \dots $id_n$ are the currently opened proof names
+  (order not significant).
+\end{itemize}
+
+It is then possible to compute the \texttt{Backtrack} command to
+unbury the state corresponding to a particular prompt. For example,
+suppose the current prompt is:
+
+\verb!<! goal4 \verb!<! 35
+\verb!|!goal1\verb!|!goal4\verb!|!goal3\verb!|!goal2\verb!|! 
+\verb!|!8 \verb!< </prompt>!
+
+and we want to backtrack to a state labelled by:
+
+\verb!<! goal2 \verb!<! 32
+\verb!|!goal1\verb!|!goal2
+\verb!|!12 \verb!< </prompt>!
+
+We have to perform \verb!Backtrack 32 12 2! , i.e. perform 2
+\texttt{Abort}s (to cancel goal4 and goal3), then rewind proof until
+state 12 and finally go back to environment state 32. Notice that this
+supposes that proofs are nested in a regular way (no \texttt{Resume} or
+\texttt{Suspend} commands).
+
+\begin{Variants}
+\item {\tt BackTo n}. \comindex{BackTo}\\
+  Is a more basic form of \texttt{Backtrack} where only the first
+  argument (global environment number) is given, no \texttt{abort} and
+  no \texttt{Undo} is performed.
+\end{Variants}
+
+\subsection[\tt Restore State \str.]{\tt Restore State \str.\comindex{Restore State}}
+  Restores the state contained in the file \str.
+
+\begin{Variants}
+\item {\tt Restore State \ident}\\
+ Equivalent to {\tt Restore State "}{\ident}{\tt .coq"}.
+\item {\tt Reset Initial.}\comindex{Reset Initial}\\ 
+  Goes back to the initial state (like after the command {\tt coqtop},
+  when the interactive session began). This command is only available
+  interactively.
+\end{Variants}
+
+\subsection[\tt Write State \str.]{\tt Write State \str.\comindex{Write State}}
+Writes the current state into a file \str{} for
+use in a further session. This file can be given as the {\tt
+  inputstate} argument of the commands {\tt coqtop} and {\tt coqc}.
+
+\begin{Variants}
+\item {\tt Write State \ident}\\
+ Equivalent to {\tt Write State "}{\ident}{\tt .coq"}.
+ The state is saved in the current directory (see Section~\ref{Pwd}).
+\end{Variants}
+
+\section{Quitting and debugging}
+
+\subsection[\tt Quit.]{\tt Quit.\comindex{Quit}}
+This command permits to quit \Coq.
+
+\subsection[\tt Drop.]{\tt Drop.\comindex{Drop}\label{Drop}}
+
+This is used mostly as a debug facility by \Coq's implementors
+and does not concern the casual user.
+This command permits to leave {\Coq} temporarily and enter the
+Objective Caml toplevel. The Objective Caml command:
+
+\begin{flushleft}
+\begin{verbatim}
+#use "include";;
+\end{verbatim}
+\end{flushleft}
+
+\noindent add the right loadpaths and loads some toplevel printers for
+all abstract types of \Coq - section\_path, identfifiers, terms, judgements,
+\dots. You can also use the file \texttt{base\_include} instead,
+that loads only the pretty-printers for section\_paths and
+identifiers.
+% See Section~\ref{test-and-debug} more information on the
+% usage of the toplevel.
+You can return back to \Coq{} with the command: 
+
+\begin{flushleft}
+\begin{verbatim}
+go();;
+\end{verbatim}
+\end{flushleft}
+
+\begin{Warnings}
+\item It only works with the bytecode version of {\Coq} (i.e. {\tt coqtop} called with option {\tt -byte}, see the contents of Section~\ref{binary-images}).
+\item You must have compiled {\Coq} from the source package and set the
+  environment variable \texttt{COQTOP} to the root of your copy of the sources (see Section~\ref{EnvVariables}).
+\end{Warnings}
+
+\subsection[\tt Time \textrm{\textsl{command}}.]{\tt Time \textrm{\textsl{command}}.\comindex{Time}
+\label{time}}
+This command executes the vernac command \textrm{\textsl{command}}
+and display the time needed to execute it.
+
+\section{Controlling display}
+
+\subsection[\tt Set Silent.]{\tt Set Silent.\comindex{Set Silent}
+\label{Begin-Silent}
+\index{Silent mode}}
+This command turns off the normal displaying.
+
+\subsection[\tt Unset Silent.]{\tt Unset Silent.\comindex{Unset Silent}}
+This command turns the normal display on.
+
+\subsection[\tt Set Printing Width {\integer}.]{\tt Set Printing Width {\integer}.\comindex{Set Printing Width}}
+This command sets which left-aligned part of the width of the screen
+is used for display. 
+
+\subsection[\tt Unset Printing Width.]{\tt Unset Printing Width.\comindex{Unset Printing Width}}
+This command resets the width of the screen used for display to its
+default value (which is 78 at the time of writing this documentation).
+
+\subsection[\tt Test Printing Width.]{\tt Test Printing Width.\comindex{Test Printing Width}}
+This command displays the current screen width used for display.
+
+\subsection[\tt Set Printing Depth {\integer}.]{\tt Set Printing Depth {\integer}.\comindex{Set Printing Depth}}
+This command sets the nesting depth of the formatter used for
+pretty-printing. Beyond this depth, display of subterms is replaced by
+dots. 
+
+\subsection[\tt Unset Printing Depth.]{\tt Unset Printing Depth.\comindex{Unset Printing Depth}}
+This command resets the nesting depth of the formatter used for
+pretty-printing to its default value (at the
+time of writing this documentation, the default value is 50).
+
+\subsection[\tt Test Printing Depth.]{\tt Test Printing Depth.\comindex{Test Printing Depth}}
+This command displays the current nesting depth used for display.
+
+%\subsection{\tt Explain ...}
+%Not yet documented.
+
+%\subsection{\tt Go ...}
+%Not yet documented.
+
+%\subsection{\tt Abstraction ...}
+%Not yet documented.
+
+\section{Controlling the conversion algorithm}
+
+{\Coq} comes with two algorithms to check the convertibility of types
+(see Section~\ref{convertibility}). The first algorithm lazily
+compares applicative terms while the other is a brute-force but efficient
+algorithm that first normalizes the terms before comparing them.  The
+second algorithm is based on a bytecode representation of terms
+similar to the bytecode representation used in the ZINC virtual
+machine~\cite{Leroy90}. It is specially useful for intensive
+computation of algebraic values, such as numbers, and for reflexion-based
+tactics.
+
+\subsection{\tt Set Virtual Machine
+\label{SetVirtualMachine}
+\comindex{Set Virtual Machine}}
+
+This activates the bytecode-based conversion algorithm.
+
+\subsection{\tt Unset Virtual Machine
+\comindex{Unset Virtual Machine}}
+
+This deactivates the bytecode-based conversion algorithm.
+
+\subsection{\tt Test Virtual Machine
+\comindex{Test Virtual Machine}}
+
+This tells if the bytecode-based conversion algorithm is
+activated. The default behavior is to have the bytecode-based
+conversion algorithm deactivated.
+
+\SeeAlso sections~\ref{vmcompute} and~\ref{vmoption}.
+
+% $Id$ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

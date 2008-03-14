@@ -1,0 +1,43 @@
+# Makefile for building Coq Technical Reports
+
+# if coqc,coqtop,coq-tex are not in your PATH, you need the environment 
+# variable COQBIN to be correctly set  
+# (COQTOP is autodetected)
+# (some files are preprocessed using Coq and some part of the documentation
+# is automatically built from the theories sources)
+
+# To compile documentation, you need the following tools:
+# Dvi: latex (latex2e), bibtex, makeindex, dviselect (package RPM dviutils)
+# Ps: dvips, psutils (ftp://ftp.dcs.ed.ac.uk/pub/ajcd/psutils.tar.gz)
+# Pdf: pdflatex
+# Html:
+#   - hevea: http://para.inria.fr/~maranget/hevea/
+#   - htmlSplit: http://coq.inria.fr/~delahaye
+# Rapports INRIA: dviselect, rrkit (par Michel Mauny)
+
+include ./Makefile
+
+###################
+# RT
+###################
+# Fabrication d'un RT INRIA (utilise rrkit de Michel Mauny)
+rt/Reference-Manual-RT.dvi: refman/Reference-Manual.dvi rt/RefMan-cover.tex
+	dviselect -i refman/Reference-Manual.dvi -o rt/RefMan-body.dvi 3:
+	(cd rt; $(LATEX) RefMan-cover.tex)
+	set a=`tail -1 refman/Reference-Manual.log`;\
+	set a=expr \("$$a" : '.*(\(.*\) pages.*'\) % 2;\
+	(cd rt; if $(TEST) "$$a = 0";\
+	 then rrkit  RefMan-cover.dvi RefMan-body.dvi Reference-Manual-RT.dvi;\
+	 else rrkit -odd RefMan-cover.dvi RefMan-body.dvi Reference-Manual-RT.dvi;\
+	fi)
+
+# Fabrication d'un RT INRIA (utilise rrkit de Michel Mauny)
+rt/Tutorial-RT.dvi : tutorial/Tutorial.v.dvi rt/Tutorial-cover.tex
+	dviselect -i rt/Tutorial.v.dvi -o rt/Tutorial-body.dvi 3:
+	(cd rt; $(LATEX) Tutorial-cover.tex)
+	set a=`tail -1 tutorial/Tutorial.v.log`;\
+	set a=expr \("$$a" : '.*(\(.*\) pages.*'\) % 2;\
+	(cd rt; if $(TEST) "$$a = 0";\
+	 then rrkit      Tutorial-cover.dvi Tutorial-body.dvi Tutorial-RT.dvi;\
+	 else rrkit -odd Tutorial-cover.dvi Tutorial-body.dvi Tutorial-RT.dvi;\
+	fi)

@@ -1,0 +1,6 @@
+P x
+     : Prop
+R x x
+     : Prop
+fun (x : foo) (n : nat) => x n
+     : foo -> nat -> nat

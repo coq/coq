@@ -1,0 +1,538 @@
+=========================================
+= CHANGES BETWEEN COQ V8.1 AND COQ V8.2 =
+=========================================
+
+A few differences in Coq ML interfaces between Coq V8.0 and V8.1
+================================================================
+
+** Functions
+
+Eauto: e_resolve_constr, vernac_e_resolve_constr -> simplest_eapply
+Tactics: apply_with_bindings -> apply_with_bindings_wo_evars
+Eauto.simplest_apply -> Hiddentac.h_simplest_apply
+
+=========================================
+= CHANGES BETWEEN COQ V8.0 AND COQ V8.1 =
+=========================================
+
+A few differences in Coq ML interfaces between Coq V8.0 and V8.1
+================================================================
+
+** Functions
+
+Util: option_app -> option_map
+Term: substl_decl -> subst_named_decl
+Lib: library_part -> remove_section_part
+Printer: prterm -> pr_lconstr
+Printer: prterm_env -> pr_lconstr_env
+Ppconstr: pr_sort -> pr_rawsort
+Evd: in_dom, etc got standard ocaml names (i.e. mem, etc)
+Pretyping: 
+ - understand_gen_tcc and understand_gen_ltac merged into understand_ltac
+ - type_constraints can now say typed by a sort (use OfType to get the
+   previous behavior)
+Library: import_library -> import_module
+
+** Constructors
+
+Declarations: mind_consnrealargs -> mind_consnrealdecls
+NoRedun -> NoDup
+Cast and RCast have an extra argument: you can recover the previous
+  behavior by setting the extra argument to "CastConv DEFAULTcast" and
+  "DEFAULTcast" respectively
+Names: "kernel_name" is now "constant" when argument of Term.Const
+Tacexpr: TacTrueCut and TacForward(false,_,_) merged into new TacAssert
+Tacexpr: TacForward(true,_,_) branched to TacLetTac
+
+** Modules
+
+module Decl_kinds: new interface
+module Bigint: new interface
+module Tacred spawned module Redexpr
+module Symbols -> Notation
+module Coqast, Ast, Esyntax, Termast, and all other modules related to old
+  syntax are removed
+module Instantiate: integrated to Evd
+module Pretyping now a functor: use Pretyping.Default instead
+
+** Internal names
+
+OBJDEF and OBJDEF1 -> CANONICAL-STRUCTURE
+
+** Tactic extensions
+
+- printers have an extra parameter which is a constr printer at high precedence
+- the tactic printers have an extra arg which is the expected precedence 
+- level is now a precedence in declare_extra_tactic_pprule
+- "interp" functions now of types the actual arg type, not its encapsulation
+  as a generic_argument
+
+=========================================
+= CHANGES BETWEEN COQ V7.4 AND COQ V8.0 =
+=========================================
+
+See files in dev/syntax-v8
+
+
+==============================================
+= MAIN CHANGES BETWEEN COQ V7.3 AND COQ V7.4 =
+==============================================
+
+CHANGES DUE TO INTRODUCTION OF MODULES
+======================================
+
+1.Kernel
+--------
+
+  The module level has no effect on constr except for the structure of
+section_path. The type of unique names for constructions (what
+section_path served) is now called a kernel name and is defined by
+ 
+type uniq_ident = int * string * dir_path (* int may be enough *)
+type module_path =
+  | MPfile of dir_path    (* reference to physical module, e.g. file *)
+  | MPbound of uniq_ident (* reference to a module parameter in a functor *)
+  | MPself of uniq_ident  (* reference to one of the containing module *)
+  | MPdot of module_path * label
+type label = identifier
+type kernel_name = module_path * dir_path * label
+                   ^^^^^^^^^^^   ^^^^^^^^   ^^^^^
+                        |           |         \
+                        |           |          the base name
+                        |           \
+                       /             the (true) section path
+   example:                          (non empty only inside open sections)
+   L = (* i.e. some file of logical name L *)
+   struct
+     module A = struct Def a = ... end
+   end
+   M = (* i.e. some file of logical name M *)
+   struct
+     Def t = ...
+     N = functor (X : sig module T = struct Def b = ... end end) -> struct
+       module O = struct
+         Def u = ...
+       end
+       Def x := ... <M>.t ... <N>.O.u ... X.T.b ... L.A.a
+ 
+   <M> and <N> are self-references, X is a bound reference and L is a
+reference to a physical module.
+ 
+  Notice that functor application is not part of a path: it must be
+named by a "module M = F(A)" declaration to be used in a kernel
+name.
+ 
+  Notice that Jacek chose a practical approach, making directories not
+modules. Another approach could have been to replace the constructor
+MPfile by a constant constructor MProot representing the root of the
+world.
+ 
+  Other relevant informations are in kernel/entries.ml (type
+module_expr) and kernel/declarations.ml (type module_body and
+module_type_body).                                                              
+
+2. Library
+----------
+
+i) tables 
+[Summaries] - the only change is the special treatment of the
+global environmet.
+
+ii) objects 
+[Libobject] declares persistent objects, given with methods:
+
+   * cache_function specifying how to add the object in the current
+       scope;
+   * load_function, specifying what to do when the module 
+       containing the object is loaded; 
+   * open_function, specifying what to do when the module 
+       containing the object is opened (imported);
+   * classify_function, specyfying what to do with the object,
+       when the current module (containing the object) is ended. 
+   * subst_function
+   * export_function, to signal end_section survival
+
+(Almost) Each of these methods is called with a parameter of type
+object_name = section_path * kernel_name
+where section_path is the full user name of the object (such as
+Coq.Init.Datatypes.Fst) and kernel_name is its substitutive internal
+version such as (MPself<Datatypes#1>,[],"Fst") (see above)
+
+
+What happens at the end of an interactive module ?
+==================================================
+(or when a file is stored and reloaded from disk)
+
+All summaries (except Global environment) are reverted to the state
+from before the beginning of the module, and:
+
+a) the objects (again, since last Declaremods.start_module or
+   Library.start_library) are classified using the classify_function.
+   To simplify consider only those who returned Substitute _ or Keep _.
+
+b) If the module is not a functor, the subst_function for each object of
+   the first group is called with the substitution 
+   [MPself "<Datatypes#1>" |-> MPfile "Coq.Init.Datatypes"].
+   Then the load_function is called for substituted objects and the
+   "keep" object. 
+   (If the module is a library the substitution is done at reloading).
+
+c) The objects which returned substitute are stored in the modtab
+   together with the self ident of the module, and functor argument
+   names if the module was a functor.
+
+   They will be used (substituted and loaded) when a command like 
+     Module M := F(N)    or
+     Module Z := N 
+   is evaluated
+
+
+The difference between "substitute" and "keep" objects
+========================================================
+i) The "keep" objects can _only_ reference other objects by section_paths
+and qualids. They do not need the substitution function.
+
+They will work after end_module (or reloading a compiled library),
+because these operations do not change section_path's
+
+They will obviously not work after Module Z:=N.
+ 
+These would typically be grammar rules, pretty printing rules etc.
+
+
+
+ii) The "substitute" objects can _only_ reference objects by
+kernel_names. They must have a valid subst_function. 
+
+They will work after end_module _and_ after Module Z:=N or 
+Module Z:=F(M).
+
+
+
+Other kinds of objects:
+iii) "Dispose" - objects which do not survive end_module
+     As a consequence, objects which reference other objects sometimes
+     by kernel_names and sometimes by section_path must be of this kind...
+
+iv) "Anticipate" - objects which must be treated individually by
+    end_module (typically "REQUIRE" objects)
+
+
+
+Writing subst_thing functions
+=============================
+The subst_thing shoud not copy the thing if it hasn't actually
+changed. There are some cool emacs macros in dev/objects.el 
+to help writing subst functions this way quickly and without errors.
+Also there are *_smartmap functions in Util.
+
+The subst_thing functions are already written for many types,
+including constr (Term.subst_mps), 
+global_reference (Libnames.subst_global),
+rawconstr (Rawterm.subst_raw) etc
+
+They are all (apart from constr, for now) written in the non-copying
+way.
+
+
+Nametab
+=======
+
+Nametab has been made more uniform. For every kind of thing there is
+only one "push" function and one "locate" function. 
+
+
+Lib
+===
+
+library_segment is now a list of object_name * library_item, where
+object_name = section_path * kernel_name (see above)
+
+New items have been added for open modules and module types
+
+
+Declaremods
+==========
+Functions to declare interactive and noninteractive modules and module
+types.
+
+
+Library
+=======
+Uses Declaremods to actually communicate with Global and to register
+objects.
+
+
+OTHER CHANGES
+=============
+
+Internal representation of tactics bindings has changed (see type
+Rawterm.substitution).
+
+New parsing model for tactics and vernacular commands
+
+  - Introduction of a dedicated type for tactic expressions
+    (Tacexpr.raw_tactic_expr)
+  - Introduction of a dedicated type for vernac expressions
+    (Vernacexpr.vernac_expr)
+  - Declaration of new vernacular parsing rules by a new camlp4 macro
+    GRAMMAR COMMAND EXTEND ... END  to be used in ML files
+  - Declaration of new tactics parsing/printing rules by a new camlp4 macro
+    TACTIC EXTEND ... END  to be used in ML files
+
+New organisation of THENS:
+tclTHENS tac tacs : tacs is now an array
+tclTHENSFIRSTn tac1 tacs tac2 :
+  apply tac1 then, apply the array tacs on the first n subgoals and
+  tac2 on the remaining subgoals (previously tclTHENST)
+tclTHENSLASTn tac1 tac2 tacs :
+  apply tac1 then, apply tac2 on the first subgoals and apply the array
+  tacs on the last n subgoals
+tclTHENFIRSTn tac1 tacs = tclTHENSFIRSTn tac1 tacs tclIDTAC (prev. tclTHENSI)
+tclTHENLASTn tac1 tacs  = tclTHENSLASTn tac1 tclIDTAC tacs
+tclTHENFIRST tac1 tac2  = tclTHENFIRSTn tac1 [|tac2|]
+tclTHENLAST tac1 tac2   = tclTHENLASTn tac1 [|tac2|] (previously tclTHENL)
+tclTHENS tac1 tacs = tclTHENSFIRSTn tac1 tacs (fun _ -> error "wrong number")
+tclTHENSV same as tclTHENS but with an array
+tclTHENSi : no longer available
+
+Proof_type: subproof field in type proof_tree glued with the ref field
+
+Tacmach: no more echo from functions of module Refiner
+
+Files contrib/*/g_*.ml4 take the place of files contrib/*/*.v.
+Files parsing/{vernac,tac}extend.ml{4,i} implements TACTIC EXTEND andd
+  VERNAC COMMAND EXTEND macros
+File syntax/PPTactic.v moved to parsing/pptactic.ml
+Tactics about False and not now in tactics/contradiction.ml
+Tactics depending on Init now tactics/*.ml4 (no longer in tactics/*.v)
+File tacinterp.ml moved from proofs to directory tactics
+
+
+==========================================
+= MAIN CHANGES FROM COQ V7.1 TO COQ V7.2 =
+==========================================
+
+The core of Coq (kernel) has meen minimized with the following effects:
+
+kernel/term.ml      split into kernel/term.ml,      pretyping/termops.ml
+kernel/reduction.ml split into kernel/reduction.ml, pretyping/reductionops.ml
+kernel/names.ml     split into kernel/names.ml,     library/nameops.ml
+kernel/inductive.ml split into kernel/inductive.ml, pretyping/inductiveops.ml
+
+the prefixes "Is" ans "IsMut" have been dropped from kind_of_term constructors,
+e.g. IsRel is now Rel, IsMutCase is now Case, etc.
+
+
+=======================================================
+= PRINCIPAUX CHANGEMENTS ENTRE COQ V6.3.1 ET COQ V7.0 =
+=======================================================
+
+Changements d'organisation / modules :
+--------------------------------------
+
+  Std, More_util		-> lib/util.ml
+
+  Names				-> kernel/names.ml et kernel/sign.ml
+    (les parties noms et signatures ont été séparées)
+
+  Avm,Mavm,Fmavm,Mhm  ->  utiliser plutôt Map (et freeze alors gratuit)
+  Mhb                 ->  Bij
+
+  Generic est intégré à Term (et un petit peu à Closure)
+
+Changements dans les types de données :
+---------------------------------------
+  dans Generic: free_rels : constr -> int Listset.t
+                  devient : constr -> Intset.t
+
+  type_judgement ->  typed_type
+  environment    ->  context
+  context        ->  typed_type signature
+
+
+ATTENTION:
+----------
+
+  Il y a maintenant d'autres exceptions que UserError (TypeError,
+  RefinerError, etc.)
+
+  Il ne faut donc plus se contenter (pour rattraper) de faire
+  
+		try . .. with UserError _ -> ...
+
+  mais écrire à la place
+ 
+                try ... with e when Logic.catchable_exception e -> ...
+
+
+Changements dans les fonctions :
+--------------------------------
+
+	Vectops.
+	  it_vect          ->  Array.fold_left
+	  vect_it          ->  Array.fold_right
+	  exists_vect      ->  Util.array_exists
+	  for_all2eq_vect  ->  Util.array_for_all2
+	  tabulate_vect    ->  Array.init
+	  hd_vect          ->  Util.array_hd
+	  tl_vect          ->  Util.array_tl
+	  last_vect        ->  Util.array_last
+	  it_vect_from     ->  array_fold_left_from
+	  vect_it_from     ->  array_fold_right_from
+	  app_tl_vect	   ->  array_app_tl
+	  cons_vect	   ->  array_cons
+	  map_i_vect	   ->  Array.mapi
+	  map2_vect	   ->  array_map2
+	  list_of_tl_vect  ->  array_list_of_tl
+
+        Names
+          sign_it        -> fold_var_context (se fait sur env maintenant)
+	  it_sign        -> fold_var_context_reverse (sur env maintenant)
+
+        Generic
+	  noccur_bet     -> noccur_between
+          substn_many    -> substnl
+
+	Std 
+	  comp           ->  Util.compose
+	  rev_append	 ->  List.rev_append
+
+	Termenv
+	  mind_specif_of_mind  -> Global.lookup_mind_specif
+                ou Environ.lookup_mind_specif si on a un env sous la main
+	  mis_arity      ->  instantiate_arity
+	  mis_lc	 ->  instantiate_lc	
+
+	Ex-Environ	 
+	  mind_of_path      -> Global.lookup_mind
+
+	Printer
+	  gentermpr	->   gen_pr_term
+          term0	        ->   prterm_env	
+          pr_sign       ->   pr_var_context
+	  pr_context_opt -> pr_context_of
+          pr_ne_env      -> pr_ne_context_of
+
+	Typing, Machops
+	  type_of_type     ->  judge_of_type
+	  fcn_proposition  ->  judge_of_prop_contents
+	  safe_fmachine    ->  safe_infer
+
+	Reduction, Clenv
+          whd_betadeltat      -> whd_betaevar
+          whd_betadeltatiota  -> whd_betaiotaevar
+          find_mrectype       -> Inductive.find_mrectype
+          find_minductype     -> Inductive.find_inductive
+          find_mcoinductype   -> Inductive.find_coinductive
+
+        Astterm
+          constr_of_com_casted -> interp_casted_constr
+          constr_of_com_sort   -> interp_type
+          constr_of_com        -> interp_constr
+          rawconstr_of_com     -> interp_rawconstr
+          type_of_com          -> type_judgement_of_rawconstr
+	  judgement_of_com     -> judgement_of_rawconstr
+
+        Termast
+          bdize                -> ast_of_constr
+
+        Tacmach
+          pf_constr_of_com_sort -> pf_interp_type
+          pf_constr_of_com      -> pf_interp_constr
+	  pf_get_hyp            -> pf_get_hyp_typ
+          pf_hyps, pf_untyped_hyps -> pf_env (tout se fait sur env maintenant)
+
+        Pattern
+	  raw_sopattern_of_compattern -> Astterm.interp_constrpattern
+	  somatch               -> is_matching
+          dest_somatch          -> matches
+
+        Tacticals
+	  matches               -> gl_is_matching
+          dest_match            -> gl_matches
+	  suff                  -> utiliser sort_of_goal
+          lookup_eliminator     -> utiliser sort_of_goal pour le dernier arg
+
+        Divers
+          initial_sign     -> var_context
+
+        Sign
+          ids_of_sign      -> ids_of_var_context (or Environ.ids_of_context)
+          empty_sign       -> empty_var_context
+
+        Pfedit
+	  list_proofs      -> get_all_proof_names
+          get_proof        -> get_current_proof_name
+          abort_goal       -> abort_proof
+          abort_goals      -> abort_all_proofs
+          abort_cur_goal   -> abort_current_proof
+          get_evmap_sign   -> get_goal_context/get_current_goal_context
+          unset_undo       -> reset_undo
+
+        Proof_trees
+          mkGOAL           -> mk_goal
+
+        Declare
+  	  machine_constant ->   declare_constant (+ modifs)
+
+	ex-Trad, maintenant Pretyping
+          inh_cast_rel        -> Coercion.inh_conv_coerce_to
+          inh_conv_coerce_to  -> Coercion.inh_conv_coerce_to_fail
+	  ise_resolve1        -> understand, understand_type
+	  ise_resolve         -> understand_judgment, understand_type_judgment
+
+        ex-Tradevar, maintenant Evarutil
+          mt_tycon            -> empty_tycon
+
+        Recordops
+          struc_info          -> find_structure
+
+Changements dans les inductifs
+------------------------------
+Nouveaux types "constructor" et "inductive" dans Term
+La plupart des fonctions de typage des inductives prennent maintenant
+un inductive au lieu d'un oonstr comme argument. Les seules fonctions
+à traduire un constr en inductive sont les find_rectype and co.
+
+Changements dans les grammaires
+-------------------------------
+
+ . le lexer (parsing/lexer.mll) est maintenant un lexer ocamllex
+
+ . attention : LIDENT -> IDENT  (les identificateurs n'ont pas de
+                                 casse particulière dans Coq)
+
+ . Le mot "command" est remplacé par "constr" dans les noms de
+ fichiers, noms de modules et non-terminaux relatifs au parsing des
+ termes; aussi les changements suivants "COMMAND"/"CONSTR" dans
+ g_vernac.ml4, VARG_COMMAND/VARG_CONSTR dans vernac*.ml*
+
+ . Les constructeurs d'arguments de tactiques IDENTIFIER, CONSTR, ...n
+   passent en minuscule Identifier, Constr, ...
+ 
+ . Plusieurs parsers ont changé de format (ex: sortarg)
+
+Changements dans le pretty-printing
+-----------------------------------
+
+ . Découplage de la traduction de constr -> rawconstr (dans detyping)
+    et de rawconstr -> ast (dans termast)
+ . Déplacement des options d'affichage de printer vers termast
+ . Déplacement des réaiguillage d'univers du pp de printer vers esyntax
+
+	
+Changements divers
+------------------
+
+ . il n'y a plus de script coqtop => coqtop et coqtop.byte sont
+   directement le résultat du link du code
+   => debuggage et profiling directs
+
+ . il n'y a plus d'installation locale dans bin/$ARCH
+ 
+ . #use "include.ml"  =>  #use "include"
+   go()               =>  loop()
+
+ . il y a "make depend" et "make dependcamlp4" car ce dernier prend beaucoup
+   de temps

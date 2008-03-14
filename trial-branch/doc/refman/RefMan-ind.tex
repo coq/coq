@@ -1,0 +1,511 @@
+
+%\documentstyle[11pt]{article}
+%\input{title}
+
+%\include{macros}
+%\makeindex
+
+%\begin{document}
+%\coverpage{The module {\tt Equality}}{Cristina CORNES}
+
+%\tableofcontents
+
+\chapter[Tactics for inductive types and families]{Tactics for inductive types and families\label{Addoc-equality}}
+
+This chapter details a few special tactics useful for inferring facts
+from inductive hypotheses. They can be considered as tools that
+macro-generate complicated uses of the basic elimination tactics for
+inductive types. 
+
+Sections \ref{inversion_introduction} to \ref{inversion_using}  present
+inversion tactics and Section~\ref{scheme} describes
+a command {\tt Scheme} for automatic generation of induction schemes
+for mutual inductive types.
+
+%\end{document}
+%\documentstyle[11pt]{article}
+%\input{title}
+
+%\begin{document}
+%\coverpage{Module Inv: Inversion Tactics}{Cristina CORNES}
+
+\section[Generalities about inversion]{Generalities about inversion\label{inversion_introduction}}
+When working with (co)inductive predicates, we are very often faced to
+some of these situations:
+\begin{itemize}
+\item we have an inconsistent instance of an inductive predicate in the
+  local context of hypotheses. Thus, the current goal can be trivially
+  proved by absurdity. 
+
+\item we have a hypothesis that is an instance of an inductive
+  predicate, and the instance has some variables whose constraints we
+  would like to derive.
+\end{itemize}
+
+The inversion tactics are very useful to simplify the work in these
+cases. Inversion tools can be classified in three groups:
+\begin{enumerate}
+\item tactics for inverting an instance without stocking the inversion
+  lemma in the context: 
+  (\texttt{Dependent})  \texttt{Inversion} and
+ (\texttt{Dependent}) \texttt{Inversion\_clear}.
+\item commands for generating and stocking in the context the inversion
+  lemma corresponding to an instance: \texttt{Derive}
+  (\texttt{Dependent}) \texttt{Inversion}, \texttt{Derive}
+  (\texttt{Dependent}) \texttt{Inversion\_clear}.
+\item tactics for inverting an instance using an already defined
+  inversion lemma: \texttt{Inversion \ldots using}.
+\end{enumerate}
+
+These tactics work for inductive types of arity $(\vec{x}:\vec{T})s$ 
+where $s \in \{Prop,Set,Type\}$. Sections \ref{inversion_primitive},
+\ref{inversion_derivation} and \ref{inversion_using} 
+describe respectively each group of tools.
+
+As inversion proofs may be large in size, we recommend the user to
+stock the lemmas whenever the same instance needs to be inverted
+several times.\\
+
+Let's consider the relation \texttt{Le} over natural numbers and the
+following variables:
+
+\begin{coq_eval}
+Restore State "Initial".
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive Le : nat -> nat -> Set :=
+  | LeO : forall n:nat, Le 0%N n
+  | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
+Variable P : nat -> nat -> Prop.
+Variable Q : forall n m:nat, Le n m -> Prop.
+\end{coq_example*}
+
+For example purposes we defined  \verb+Le: nat->nat->Set+
+ but we may have defined
+it \texttt{Le} of type \verb+nat->nat->Prop+ or \verb+nat->nat->Type+.
+
+
+\section[Inverting an instance]{Inverting an instance\label{inversion_primitive}}
+\subsection{The non dependent case}
+\begin{itemize}
+
+\item \texttt{Inversion\_clear} \ident~\\
+\index{Inversion-clear@{\tt Inversion\_clear}}
+  Let the type of \ident~ in the local context be $(I~\vec{t})$,
+  where $I$ is a (co)inductive predicate. Then,
+  \texttt{Inversion} applied to \ident~ derives for each possible
+  constructor $c_i$ of $(I~\vec{t})$, {\bf all} the necessary
+  conditions that should hold for the instance $(I~\vec{t})$ to be
+  proved by $c_i$. Finally it erases \ident~ from the context.
+
+
+
+For example, consider the goal:
+\begin{coq_eval}
+Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+To prove the goal we may need to reason by cases on \texttt{H} and to 
+ derive that \texttt{m}  is necessarily of
+the form $(S~m_0)$ for certain $m_0$ and that $(Le~n~m_0)$.  
+Deriving these conditions corresponds to prove that the
+only possible constructor of \texttt{(Le (S n) m)}  is
+\texttt{LeS} and that we can invert the 
+\texttt{->} in the type  of \texttt{LeS}.  
+This inversion is possible because \texttt{Le} is the smallest set closed by
+the constructors \texttt{LeO} and \texttt{LeS}.
+
+
+\begin{coq_example}
+inversion_clear H.
+\end{coq_example}
+
+Note that \texttt{m} has been substituted in the goal for \texttt{(S m0)}
+and that the hypothesis \texttt{(Le n m0)} has been added to the
+context.
+
+\item \texttt{Inversion} \ident~\\
+\index{Inversion@{\tt Inversion}}
+  This tactic differs from   {\tt Inversion\_clear} in the fact that
+  it adds the equality constraints in the context and
+  it does not erase  the hypothesis \ident.
+
+
+In the previous example, {\tt Inversion\_clear} 
+has substituted \texttt{m} by \texttt{(S m0)}. Sometimes it is
+interesting to have the equality \texttt{m=(S m0)} in the
+context to use it after. In that case we can use  \texttt{Inversion} that
+does not clear the equalities:
+
+\begin{coq_example*}
+Undo.
+\end{coq_example*}
+\begin{coq_example}
+inversion H.
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+Note that the hypothesis \texttt{(S m0)=m} has been deduced and 
+\texttt{H} has not been cleared from the context.
+
+\end{itemize}
+
+\begin{Variants}
+
+\item \texttt{Inversion\_clear } \ident~ \texttt{in} \ident$_1$ \ldots
+  \ident$_n$\\ 
+\index{Inversion_clear...in@{\tt Inversion\_clear...in}}
+  Let \ident$_1$ \ldots \ident$_n$, be identifiers in the local context. This
+  tactic behaves as generalizing \ident$_1$ \ldots \ident$_n$, and then performing
+  {\tt Inversion\_clear}.
+
+\item \texttt{Inversion } \ident~ \texttt{in} \ident$_1$ \ldots \ident$_n$\\
+\index{Inversion ... in@{\tt Inversion ... in}}
+  Let \ident$_1$ \ldots \ident$_n$, be identifiers in the local context. This
+  tactic behaves as generalizing \ident$_1$ \ldots \ident$_n$, and then performing
+  \texttt{Inversion}.
+
+
+\item \texttt{Simple Inversion} \ident~ \\
+\index{Simple Inversion@{\tt Simple Inversion}}
+  It is a very primitive inversion tactic that derives all the necessary
+  equalities  but it does not simplify
+  the  constraints as \texttt{Inversion} and
+  {\tt Inversion\_clear} do.
+
+\end{Variants}
+
+
+\subsection{The dependent case}
+\begin{itemize}
+\item \texttt{Dependent Inversion\_clear} \ident~\\
+\index{Dependent Inversion-clear@{\tt Dependent Inversion\_clear}}
+  Let the type of \ident~ in the local context be $(I~\vec{t})$,
+  where $I$ is a (co)inductive predicate, and let the goal  depend both on
+  $\vec{t}$ and \ident. Then, 
+  \texttt{Dependent Inversion\_clear} applied to \ident~ derives 
+   for each possible constructor $c_i$ of $(I~\vec{t})$, {\bf all} the
+  necessary conditions that should hold for the instance $(I~\vec{t})$ to be
+  proved by $c_i$. It also substitutes  \ident~ for the corresponding
+  term  in the goal and  it erases \ident~ from the context.
+
+
+For example, consider the  goal:
+\begin{coq_eval}
+Lemma ex_dep : forall (n m:nat) (H:Le (S n) m), Q (S n) m H.
+intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+As \texttt{H} occurs in the goal, we may want to reason by cases on its
+structure and so, we would like  inversion tactics to
+substitute \texttt{H} by the corresponding term in constructor form. 
+Neither \texttt{Inversion} nor  {\tt Inversion\_clear} make such a
+substitution. To have such a behavior we use the dependent inversion tactics:
+
+\begin{coq_example}
+dependent inversion_clear H.
+\end{coq_example}
+
+Note that \texttt{H} has been substituted by \texttt{(LeS n m0 l)} and
+\texttt{m} by \texttt{(S m0)}.
+
+
+\end{itemize}
+
+\begin{Variants}
+
+\item \texttt{Dependent Inversion\_clear } \ident~ \texttt{ with } \term\\
+\index{Dependent Inversion_clear...with@{\tt Dependent Inversion\_clear...with}}
+ \noindent Behaves as \texttt{Dependent Inversion\_clear} but allows to give
+  explicitly the good generalization of the goal. It is useful when
+  the system fails to generalize the goal automatically. If
+  \ident~ has type $(I~\vec{t})$ and $I$ has type
+  $(\vec{x}:\vec{T})s$,   then \term~  must be of type
+  $I:(\vec{x}:\vec{T})(I~\vec{x})\rightarrow s'$ where $s'$ is the
+  type of the goal.
+
+
+
+\item \texttt{Dependent Inversion} \ident~\\
+\index{Dependent Inversion@{\tt Dependent Inversion}}
+ This tactic differs from   \texttt{Dependent Inversion\_clear} in the fact that
+  it also  adds the equality constraints in the context and
+  it does not erase  the hypothesis \ident~.
+
+\item \texttt{Dependent Inversion } \ident~ \texttt{ with } \term \\
+\index{Dependent Inversion...with@{\tt Dependent Inversion...with}}
+  Analogous to \texttt{Dependent Inversion\_clear .. with..} above. 
+\end{Variants}
+
+
+
+\section[Deriving the inversion lemmas]{Deriving the inversion lemmas\label{inversion_derivation}}
+\subsection{The non dependent case}
+
+The tactics (\texttt{Dependent}) \texttt{Inversion} and (\texttt{Dependent})
+{\tt Inversion\_clear} work on a
+certain instance $(I~\vec{t})$ of an inductive predicate. At each
+application, they inspect the given instance and derive the
+corresponding inversion lemma.  If we have to invert the same
+instance several times it is recommended to stock the lemma in the
+context and to reuse it whenever we need it.
+
+The families of commands \texttt{Derive Inversion}, \texttt{Derive
+Dependent Inversion}, \texttt{Derive} \\ {\tt Inversion\_clear} and \texttt{Derive Dependent Inversion\_clear}
+allow to generate inversion lemmas for given instances and sorts.  Next
+section describes the tactic \texttt{Inversion}$\ldots$\texttt{using} that refines the
+goal with a specified inversion lemma.
+
+\begin{itemize}
+
+\item \texttt{Derive Inversion\_clear} \ident~ \texttt{with}
+  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~ \\ 
+\index{Derive Inversion_clear...with@{\tt Derive Inversion\_clear...with}}
+  Let $I$ be an inductive predicate and $\vec{x}$ the variables
+  occurring in $\vec{t}$. This command generates and stocks
+  the inversion lemma for the sort  \sort~  corresponding to the instance
+  $(\vec{x}:\vec{T})(I~\vec{t})$ with the name \ident~ in the {\bf
+    global} environment. When applied it is equivalent to have
+  inverted the instance with the tactic {\tt Inversion\_clear}.
+
+
+  For example, to generate the inversion lemma for the instance
+ \texttt{(Le (S n) m)} and the sort \texttt{Prop} we do:
+\begin{coq_example}
+Derive Inversion_clear leminv with (forall n m:nat, Le (S n) m) Sort
+ Prop.
+\end{coq_example}
+
+Let us  inspect the type of the generated lemma:
+\begin{coq_example}
+Check leminv.
+\end{coq_example}
+
+
+
+\end{itemize}
+
+%\variants
+%\begin{enumerate} 
+%\item \verb+Derive Inversion_clear+  \ident$_1$ \ident$_2$ \\ 
+%\index{Derive Inversion_clear@{\tt Derive Inversion\_clear}}
+%  Let \ident$_1$ have type $(I~\vec{t})$ in the local context ($I$
+%  an inductive predicate).  Then, this command has the same semantics
+%  as \verb+Derive Inversion_clear+ \ident$_2$~ \verb+with+
+%  $(\vec{x}:\vec{T})(I~\vec{t})$ \verb+Sort Prop+ where $\vec{x}$ are the free
+%  variables of $(I~\vec{t})$ declared in the local context (variables
+%  of the global context are considered as constants). 
+%\item \verb+Derive Inversion+ \ident$_1$~ \ident$_2$~\\
+%\index{Derive Inversion@{\tt Derive Inversion}}
+% Analogous to the previous command. 
+%\item \verb+Derive Inversion+ $num$ \ident~ \ident~ \\ 
+%\index{Derive Inversion@{\tt Derive Inversion}}
+%  This command behaves as \verb+Derive Inversion+ \ident~ {\it
+%    namehyp} performed on the goal number $num$.
+%
+%\item \verb+Derive Inversion_clear+ $num$ \ident~ \ident~ \\ 
+%\index{Derive Inversion_clear@{\tt Derive Inversion\_clear}}
+%  This command behaves as \verb+Derive Inversion_clear+ \ident~
+%  \ident~ performed on the goal number $num$.
+%\end{enumerate}
+
+
+
+A derived inversion lemma is  adequate for inverting the instance
+with which it was generated,  \texttt{Derive} applied to
+different instances yields different lemmas. In general, if we generate
+the inversion lemma with 
+an instance $(\vec{x}:\vec{T})(I~\vec{t})$ and a sort $s$,  the inversion lemma will
+expect a predicate of type $(\vec{x}:\vec{T})s$ as first argument. \\
+
+\begin{Variant}
+\item \texttt{Derive Inversion} \ident~ \texttt{with} 
+  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort\\ 
+\index{Derive Inversion...with@{\tt Derive Inversion...with}}
+     Analogous of \texttt{Derive Inversion\_clear .. with ..} but 
+ when applied it is equivalent to having
+  inverted the instance with the tactic \texttt{Inversion}.
+\end{Variant}
+
+\subsection{The dependent case}
+\begin{itemize}
+\item \texttt{Derive Dependent Inversion\_clear} \ident~ \texttt{with}
+  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~ \\ 
+\index{Derive Dependent Inversion\_clear...with@{\tt Derive Dependent Inversion\_clear...with}}
+  Let $I$ be an inductive predicate. This command generates and stocks
+  the dependent inversion lemma for the sort  \sort~  corresponding to the instance
+  $(\vec{x}:\vec{T})(I~\vec{t})$ with the name \ident~ in the {\bf
+    global} environment. When applied it is equivalent to having
+  inverted the instance with the tactic \texttt{Dependent Inversion\_clear}.
+\end{itemize}
+
+\begin{coq_example}
+Derive Dependent Inversion_clear leminv_dep with
+ (forall n m:nat, Le (S n) m) Sort Prop.
+\end{coq_example}
+
+\begin{coq_example}
+Check leminv_dep.
+\end{coq_example}
+
+\begin{Variants}
+\item \texttt{Derive Dependent Inversion} \ident~ \texttt{with}
+  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~ \\ 
+\index{Derive Dependent Inversion...with@{\tt Derive Dependent Inversion...with}}
+  Analogous to \texttt{Derive Dependent Inversion\_clear}, but when
+  applied  it is equivalent to having
+  inverted the instance with the tactic \texttt{Dependent Inversion}.
+
+\end{Variants}
+
+\section[Using already defined inversion  lemmas]{Using already defined inversion  lemmas\label{inversion_using}}
+\begin{itemize}
+\item \texttt{Inversion} \ident \texttt{ using} \ident$'$ \\
+\index{Inversion...using@{\tt Inversion...using}}
+  Let \ident~ have type $(I~\vec{t})$ ($I$ an inductive
+  predicate) in the local context, and \ident$'$ be a (dependent) inversion
+  lemma. Then, this tactic refines the current goal with the specified
+  lemma. 
+
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+\begin{coq_example}
+inversion H using leminv.
+\end{coq_example}
+
+
+\end{itemize}
+\variant
+\begin{enumerate}
+\item \texttt{Inversion} \ident~ \texttt{using} \ident$'$ \texttt{in} \ident$_1$\ldots \ident$_n$\\
+\index{Inversion...using...in@{\tt Inversion...using...in}}
+This tactic behaves as generalizing  \ident$_1$\ldots \ident$_n$,
+then doing \texttt{Use Inversion} \ident~\ident$'$.
+\end{enumerate}
+
+\section[\tt Scheme ...]{\tt Scheme ...\index{Scheme@{\tt Scheme}}\label{Scheme}
+\label{scheme}}
+The {\tt Scheme} command is a high-level tool for generating
+automatically (possibly mutual) induction principles for given types
+and sorts.  Its syntax follows the schema :
+
+\noindent
+{\tt Scheme {\ident$_1$} := Induction for \term$_1$ Sort {\sort$_1$} \\
+  with\\
+  \mbox{}\hspace{0.1cm} .. \\
+        with {\ident$_m$} := Induction for {\term$_m$} Sort
+        {\sort$_m$}}\\
+\term$_1$ \ldots \term$_m$ are different inductive types belonging to
+the same package of mutual inductive definitions. This command
+generates {\ident$_1$}\ldots{\ident$_m$} to be mutually recursive
+definitions. Each term {\ident$_i$} proves a general principle 
+of mutual induction for objects in type {\term$_i$}. 
+
+\Example
+The definition of principle of mutual induction for {\tt tree} and
+{\tt forest} over the sort {\tt Set} is defined by the command:
+\begin{coq_eval}
+Restore State "Initial".
+Variables A B : Set.
+Inductive tree : Set :=
+    node : A -> forest -> tree
+with forest : Set :=
+  | leaf : B -> forest
+  | cons : tree -> forest -> forest.
+\end{coq_eval}
+\begin{coq_example*}
+Scheme tree_forest_rec := Induction for tree
+  Sort Set
+  with forest_tree_rec := Induction for forest Sort Set.
+\end{coq_example*}
+You may now look at the type of {\tt tree\_forest\_rec} :
+\begin{coq_example}
+Check tree_forest_rec.
+\end{coq_example}
+This principle involves two different predicates for {\tt trees} and
+{\tt forests}; it also has three premises each one corresponding to a
+constructor of one of the inductive definitions.
+
+The principle {\tt tree\_forest\_rec} shares exactly the same
+premises, only the conclusion now refers to the property of forests.
+\begin{coq_example}
+Check forest_tree_rec.
+\end{coq_example}
+
+\begin{Variant}
+\item {\tt Scheme {\ident$_1$} := Minimality for \term$_1$ Sort {\sort$_1$} \\
+  with\\
+  \mbox{}\hspace{0.1cm} .. \\
+        with {\ident$_m$} := Minimality for {\term$_m$} Sort
+        {\sort$_m$}}\\
+Same as before but defines a non-dependent elimination principle more
+natural in case of inductively defined relations. 
+\end{Variant}
+
+\Example
+With the predicates {\tt odd} and {\tt even} inductively defined as:
+% \begin{coq_eval}
+% Restore State "Initial".
+% \end{coq_eval}
+\begin{coq_example*}
+Inductive odd : nat -> Prop :=
+    oddS : forall n:nat, even n -> odd (S n)
+with even : nat -> Prop :=
+  | evenO : even 0%N
+  | evenS : forall n:nat, odd n -> even (S n).
+\end{coq_example*}
+The following command generates a powerful elimination
+principle:
+\begin{coq_example*}
+Scheme odd_even := Minimality for   odd Sort Prop
+  with even_odd := Minimality for even Sort Prop.
+\end{coq_example*}
+The type of {\tt odd\_even} for instance will be:
+\begin{coq_example}
+Check odd_even.
+\end{coq_example}
+The type of {\tt even\_odd} shares the same premises but the
+conclusion is {\tt (n:nat)(even n)->(Q n)}.
+
+\subsection[\tt Combined Scheme ...]{\tt Combined Scheme ...\index{CombinedScheme@{\tt Combined Scheme}}\label{CombinedScheme}
+\label{combinedscheme}}
+The {\tt Combined Scheme} command is a tool for combining 
+induction principles generated by the {\tt Scheme} command.
+Its syntax follows the schema :
+
+\noindent
+{\tt Combined Scheme {\ident$_0$} from {\ident$_1$}, .., {\ident$_n$}}\\
+\ident$_1$ \ldots \ident$_n$ are different inductive principles that must belong to
+the same package of mutual inductive principle definitions. This command
+generates {\ident$_0$} to be the conjunction of the principles: it is
+build from the common premises of the principles and concluded by the
+conjunction of their conclusions. For exemple, we can combine the
+induction principles for trees and forests:
+
+\begin{coq_example*}
+Combined Scheme tree_forest_mutind from tree_ind, forest_ind.
+Check tree_forest_mutind.
+\end{coq_example*}
+
+%\end{document}
+
+% $Id$ 

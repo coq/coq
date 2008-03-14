@@ -1,0 +1,193 @@
+.TH COQ 1 "28 March 1995" "Coq tools"
+
+.SH NAME
+coqdep \- Compute inter-module dependencies for Coq and Caml programs
+
+.SH SYNOPSIS
+.B coqdep
+[
+.BI \-w
+]
+[
+.BI \-I \ directory
+]
+[
+.BI \-coqlib \ directory
+]
+[
+.BI \-c
+]
+[
+.BI \-i
+]
+[
+.BI \-D
+]
+[
+.BI \-slash
+]
+.I filename ...
+.I directory ...
+
+.SH DESCRIPTION
+
+.B coqdep
+compute inter-module dependencies for Coq and Caml programs,
+and prints the dependencies on the standard output in a format
+readable by make.
+When a directory is given as argument, it is recursively looked at.
+
+Dependencies of Coq modules are computed by looking at
+.IR Require \&
+commands (Require, Require Export, Require Import, Require Implementation),
+.IR Declare \& 
+.IR ML \& 
+.IR Module \&
+commands and
+.IR Load \&
+commands. Dependencies relative to modules from the Coq library are not
+printed.
+
+Dependencies of Caml modules are computed by looking at
+.IR open \&
+directives and the dot notation
+.IR module.value \&.
+
+.SH OPTIONS
+
+.TP
+.BI \-c
+Prints the dependencies of Caml modules.
+(On Caml modules, the behaviour is exactly the same as ocamldep).
+.TP
+.BI \-w
+Prints a warning if a Coq command
+.IR Declare \& 
+.IR ML \& 
+.IR Module \&
+is incorrect. (For instance, you wrote `Declare ML Module "A".',
+but the module A contains #open "B"). The correct command is printed
+(see option -D). The warning is printed on standard error.
+.TP
+.BI \-i
+Prints also the dependencies for .vi files (Coq specification modules).
+.TP
+.BI \-D
+This commands looks for every command
+.IR Declare \& 
+.IR ML \& 
+.IR Module \&
+of each Coq file given as argument and complete (if needed)
+the list of Caml modules. The new command is printed on
+the standard output. No dependency is computed with this option.
+.TP 
+.BI \-slash
+Prints paths using a slash instead of the OS specific separator. This
+option is useful when developping under Cygwin.
+.TP
+.BI \-I \ directory
+The files .v .ml .mli of the directory
+.IR directory \&
+are taken into account during the calculus of dependencies,
+but their own dependencies are not printed.
+.TP 
+.BI \-coqlib \ directory
+Indicates where is the Coq library. The default value has been
+determined at installation time, and therefore this option should not
+be used under normal circumstances.
+
+
+.SH SEE ALSO
+
+.BR ocamlc (1),
+.BR coqc (1),
+.BR make (1).
+.br
+
+.SH NOTES
+
+Lexers (for Coq and Caml) correctly handle nested comments
+and strings.
+
+The treatment of symbolic links is primitive.
+
+If two files have the same name, in two different directories,
+a warning is printed on standard error.
+
+There is no way to limit the scope of the recursive search for
+directories.
+
+.SH EXAMPLES
+
+.LP
+Consider the files (in the same directory):
+
+	A.ml B.ml C.ml D.ml X.v Y.v and Z.v
+
+where
+.TP
+.BI \+ 
+D.ml contains the commands `open A', `open B' and `type t = C.t' ;
+.TP
+.BI \+
+Y.v contains the command `Require X' ;
+.TP
+.BI \+
+Z.v contains the commands `Require X' and `Declare ML Module "D"'.
+.LP
+To get the dependencies of the Coq files:
+.IP
+.B
+example% coqdep -I . *.v
+.RS
+.sp .5
+.nf
+.B Z.vo: Z.v ./X.vo ./D.cmo
+.B Y.vo: Y.v ./X.vo
+.B X.vo: X.v
+.fi
+.RE
+.br
+.ne 7
+.LP
+With a warning:
+.IP
+.B
+example% coqdep -w -I . *.v
+.RS
+.sp .5
+.nf
+.B Z.vo: Z.v ./X.vo ./D.cmo
+.B Y.vo: Y.v ./X.vo
+.B X.vo: X.v
+### Warning : In file Z.v, the ML modules declaration should be
+### Declare ML Module "A" "B" "C" "D".
+.fi
+.RE
+.br
+.ne 7
+.LP
+To get only the Caml dependencies:
+.IP
+.B
+example% coqdep -c -I . *.ml
+.RS
+.sp .5
+.nf
+.B D.cmo: D.ml ./A.cmo ./B.cmo ./C.cmo
+.B D.cmx: D.ml ./A.cmx ./B.cmx ./C.cmx
+.B C.cmo: C.ml
+.B C.cmx: C.ml
+.B B.cmo: B.ml
+.B B.cmx: B.ml
+.B A.cmo: A.ml
+.B A.cmx: A.ml
+.fi
+.RE
+.br
+.ne 7
+
+.SH BUGS
+
+Please report any bug to
+.B coq-bugs@pauillac.inria.fr

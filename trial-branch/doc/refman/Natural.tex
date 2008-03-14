@@ -1,0 +1,425 @@
+\achapter{\texttt{Natural} : proofs in natural language}
+\aauthor{Yann Coscoy}
+
+\asection{Introduction}
+
+\Natural~ is a package allowing the writing of proofs in natural
+language. For instance, the proof in \Coq~of the induction principle on pairs
+of natural numbers looks like this:
+
+\begin{coq_example*}
+Require Natural.
+\end{coq_example*}
+\begin{coq_example}
+Print nat_double_ind.
+\end{coq_example}
+
+Piping it through the \Natural~pretty-printer gives:
+
+\comindex{Print Natural}
+\begin{coq_example}
+Print Natural nat_double_ind.
+\end{coq_example}
+
+\asection{Activating \Natural}
+
+To enable the printing of proofs in natural language, you should
+type under \texttt{coqtop} or \texttt{coqtop -full} the command
+
+\begin{coq_example*}
+Require Natural.
+\end{coq_example*}
+
+By default, proofs are transcripted in english. If you wish to print them 
+in French, set the French option by
+
+\comindex{Set Natural}
+\begin{coq_example*}
+Set Natural French.
+\end{coq_example*}
+
+If you want to go back to English, type in
+
+\begin{coq_example*}
+Set Natural English.
+\end{coq_example*}
+
+Currently, only \verb=French= and \verb=English= are available.
+
+You may see for example the natural transcription of the proof of
+the induction principle on pairs of natural numbers:
+
+\begin{coq_example*}
+Print Natural nat_double_ind.
+\end{coq_example*}
+
+You may  also show in natural language the current proof in progress:
+
+\comindex{Show Natural}
+\begin{coq_example}
+Goal (n:nat)(le O n).
+Induction n.
+Show Natural Proof.
+\end{coq_example}
+
+\subsection*{Restrictions}
+
+For \Natural, a proof is an object of type a proposition (i.e. an
+object of type something of type {\tt Prop}). Only proofs are written
+in natural language when typing {\tt Print Natural \ident}.  All other
+objects (the objects of type something which is of type {\tt Set} or
+{\tt Type}) are written as usual $\lambda$-terms.
+
+\asection{Customizing \Natural}
+
+The transcription of proofs in natural language is mainly a paraphrase of
+the formal proofs, but some specific hints in the transcription
+can be given.
+Three kinds of customization are available.
+
+\asubsection{Implicit proof steps}
+
+\subsubsection*{Implicit lemmas}
+
+Applying a given lemma or theorem \verb=lem1= of statement, say $A
+\Rightarrow B$, to an hypothesis, say $H$ (assuming $A$) produces the
+following kind of output translation:
+
+\begin{verbatim}
+...
+Using lem1 with H we get B.
+...
+\end{verbatim}
+
+But sometimes, you may prefer not to see the explicit invocation to
+the lemma. You may prefer to see:
+
+\begin{verbatim}
+...
+With H we have A.
+...
+\end{verbatim}
+
+This is possible by declaring the lemma as implicit. You should type:
+
+\comindex{Add Natural}
+\begin{coq_example*}
+Add Natural Implicit lem1.
+\end{coq_example*}
+
+By default, the lemmas \verb=proj1=, \verb=proj2=, \verb=sym_equal=
+and \verb=sym_eqT= are declared implicit. To remove a lemma or a theorem
+previously declared as implicit, say \verb=lem1=, use the command
+
+\comindex{Remove Natural}
+\begin{coq_example*}
+Remove Natural Implicit lem1.
+\end{coq_example*}
+
+To test if the lemma or theorem \verb=lem1= is, or is not,
+declared as implicit, type
+
+\comindex{Test Natural}
+\begin{coq_example*}
+Test Natural Implicit for lem1.
+\end{coq_example*}
+
+\subsubsection*{Implicit proof constructors}
+
+Let \verb=constr1= be a proof constructor of a given inductive
+proposition (or predicate)
+\verb=Q= (of type \verb=Prop=). Assume \verb=constr1= proves 
+\verb=(x:A)(P x)->(Q x)=. Then, applying \verb=constr1= to an hypothesis,
+say \verb=H= (assuming \verb=(P a)=) produces the following kind of output:
+
+\begin{verbatim}
+...
+By the definition of Q, with H we have (Q a).
+...
+\end{verbatim}
+
+But sometimes, you may prefer not to see the explicit invocation to
+this constructor. You may prefer to see:
+
+\begin{verbatim}
+...
+With H we have (Q a).
+...
+\end{verbatim}
+
+This is possible by declaring the constructor as implicit. You should
+type, as before:
+
+\comindex{Add Natural Implicit}
+\begin{coq_example*}
+Add Natural Implicit constr1.
+\end{coq_example*}
+
+By default, the proposition (or predicate) constructors
+
+\verb=conj=, \verb=or_introl=, \verb=or_intror=, \verb=ex_intro=,
+\verb=exT_intro=, \verb=refl_equal=, \verb=refl_eqT= and \verb=exist=
+
+\noindent are declared implicit. Note that declaring implicit the
+constructor of a datatype (i.e. an inductive type of type \verb=Set=)
+has no effect.
+
+As above, you can remove or test a constant declared implicit.
+
+\subsubsection*{Implicit inductive constants}
+
+Let \verb=Ind= be an inductive type (either a proposition (or a
+predicate) -- on \verb=Prop= --, or a datatype -- on \verb=Set=).
+Suppose the proof proceeds by induction on an hypothesis \verb=h=
+proving \verb=Ind= (or more generally \verb=(Ind A1 ... An)=). The
+following kind of output is produced:
+
+\begin{verbatim}
+...
+With H, we will prove A by induction on the definition of Ind.
+Case 1. ...
+Case 2. ...
+...
+\end{verbatim}
+
+But sometimes, you may prefer not to see the explicit invocation to
+\verb=Ind=. You may prefer to see:
+
+\begin{verbatim}
+...
+We will prove A by induction on H.
+Case 1. ...
+Case 2. ...
+...
+\end{verbatim}
+
+This is possible by declaring the inductive type as implicit. You should
+type, as before:
+
+\comindex{Add Natural Implicit}
+\begin{coq_example*}
+Add Natural Implicit Ind.
+\end{coq_example*}
+
+This kind of parameterization works for any inductively defined
+proposition (or predicate) or datatype. Especially, it works whatever
+the definition is recursive or purely by cases.
+
+By default, the data type \verb=nat= and the inductive connectives
+\verb=and=, \verb=or=, \verb=sig=, \verb=False=, \verb=eq=,
+\verb=eqT=, \verb=ex= and \verb=exT= are declared implicit.
+
+As above, you can remove or test a constant declared implicit.  Use
+{\tt Remove Natural Contractible $id$} or {\tt Test Natural
+Contractible for $id$}.
+
+\asubsection{Contractible proof steps}
+
+\subsubsection*{Contractible lemmas or constructors}
+
+Some lemmas, theorems or proof constructors of inductive predicates are
+often applied in a row and you obtain an output of this kind:
+
+\begin{verbatim}
+...
+Using T with H1 and H2 we get P.
+      * By H3 we have Q.
+      Using T with theses results we get R.
+...
+\end{verbatim}
+
+where \verb=T=, \verb=H1=, \verb=H2= and \verb=H3= prove statements
+of the form \verb=(X,Y:Prop)X->Y->(L X Y)=, \verb=A=, \verb=B= and \verb=C=
+respectively (and thus \verb=R= is \verb=(L (L A B) C)=).
+
+You may obtain a condensed output of the form
+
+\begin{verbatim}
+...
+Using T with H1, H2, and H3 we get R.
+...
+\end{verbatim}
+
+by declaring \verb=T= as contractible:
+
+\comindex{Add Natural Contractible}
+\begin{coq_example*}
+Add Natural Contractible T.
+\end{coq_example*}
+
+By default, the lemmas \verb=proj1=, \verb=proj2= and the proof
+constructors \verb=conj=, \verb=or_introl=, \verb=or_intror= are
+declared contractible. As for implicit notions, you can remove or
+test a lemma or constructor declared contractible.
+
+\subsubsection*{Contractible induction steps}
+
+Let \verb=Ind= be an inductive type. When the proof proceeds by
+induction in a row, you may obtain an output of this kind:
+
+\begin{verbatim}
+...
+We have (Ind A (Ind B C)).
+We use definition of Ind in a study in two cases.
+Case 1: We have A.
+Case 2: We have (Ind B C).
+  We use definition of Ind in a study of two cases.
+  Case 2.1: We have B.
+  Case 2.2: We have C.
+...
+\end{verbatim}
+
+You may prefer to see
+
+\begin{verbatim}
+...
+We have (Ind A (Ind B C)).
+We use definition of Ind in a study in three cases.
+Case 1: We have A.
+Case 2: We have B.
+Case 3: We have C.
+...
+\end{verbatim}
+
+This is possible by declaring \verb=Ind= as contractible:
+
+\begin{coq_example*}
+Add Natural Contractible T.
+\end{coq_example*}
+
+By default, only \verb=or= is declared as a contractible inductive
+constant.
+As for implicit notions, you can remove or test an inductive notion declared
+contractible.
+
+\asubsection{Transparent definitions}
+
+``Normal'' definitions are all constructions except proofs and proof constructors.
+
+\subsubsection*{Transparent non inductive normal definitions}
+
+When using the definition of a non inductive constant, say \verb=D=, the
+following kind of output is produced:
+
+\begin{verbatim}
+...
+We have proved C which is equivalent to D.
+...
+\end{verbatim}
+
+But you may prefer to hide that D comes from the definition of C as
+follows:
+
+\begin{verbatim}
+...
+We have prove D.
+...
+\end{verbatim}
+
+This is possible by declaring \verb=C= as transparent:
+
+\comindex{Add Natural Transparent}
+\begin{coq_example*}
+Add Natural Transparent D.
+\end{coq_example*}
+
+By default, only \verb=not= (normally written \verb=~=) is declared as
+a non inductive transparent definition.
+As for implicit and contractible definitions, you can remove or test a
+non inductive definition declared transparent.
+Use \texttt{Remove Natural Transparent} \ident or 
+\texttt{Test Natural Transparent for} \ident.
+
+\subsubsection*{Transparent inductive definitions}
+
+Let \verb=Ind= be an inductive proposition (more generally: a
+predicate \verb=(Ind x1 ... xn)=). Suppose the definition of
+\verb=Ind= is non recursive and built with just
+one constructor proving something like \verb=A -> B -> Ind=.
+When coming back to the definition of \verb=Ind= the
+following kind of output is produced:
+
+\begin{verbatim}
+...
+Assume Ind (H).
+      We use H with definition of Ind.
+      We have A and B.
+      ...
+\end{verbatim}
+
+When \verb=H= is not used a second time in the proof, you may prefer
+to hide that \verb=A= and \verb=B= comes from the definition of
+\verb=Ind=. You may prefer to get directly:
+
+\begin{verbatim}
+...
+Assume A and B.
+...
+\end{verbatim}
+
+This is possible by declaring \verb=Ind= as transparent:
+
+\begin{coq_example*}
+Add Natural Transparent Ind.
+\end{coq_example*}
+
+By default, \verb=and=, \verb=or=, \verb=ex=, \verb=exT=, \verb=sig=
+are declared as inductive transparent constants.  As for implicit and
+contractible constants, you can remove or test an inductive
+constant declared transparent.
+
+As for implicit and contractible constants, you can remove or test an
+inductive constant declared transparent.
+
+\asubsection{Extending the maximal depth of nested text}
+
+The depth of nested text is limited. To know the current depth, do:
+
+\comindex{Set Natural Depth}
+\begin{coq_example}
+Set Natural Depth.
+\end{coq_example}
+
+To change the maximal depth of nested text (for instance to 125) do:
+
+\begin{coq_example}
+Set Natural Depth 125.
+\end{coq_example}
+
+\asubsection{Restoring the default parameterization}
+
+The command \verb=Set Natural Default= sets back the parameterization tables of
+\Natural~ to their default values, as listed in the above sections.
+Moreover, the language is set back to English and the max depth of
+nested text is set back to its initial value.
+
+\asubsection{Printing the current parameterization}
+
+The commands {\tt Print Natural Implicit}, {\tt Print Natural
+Contractible} and {\tt Print \\ Natural Transparent} print the list of
+constructions declared {\tt Implicit}, {\tt Contractible},
+{\tt Transparent} respectively.
+
+\asubsection{Interferences with \texttt{Reset}}
+
+The customization of \texttt{Natural} is dependent of the \texttt{Reset}
+command. If you reset the environment back to a point preceding an
+\verb=Add Natural ...= command, the effect of the command will be
+erased. Similarly, a reset back to a point before a 
+\verb=Remove Natural ... = command invalidates the removal.
+
+\asection{Error messages}
+
+An error occurs when trying to \verb=Print=, to \verb=Add=, to
+\verb=Test=, or to \verb=remove= an undefined ident. Similarly, an
+error occurs when trying to set a language unknown from \Natural.
+Errors may also occur when trying to parameterize the printing of
+proofs: some parameterization are effectively forbidden.
+Note that to \verb=Remove= an ident absent from a table or to
+\verb=Add= to a table an already present ident does not lead to an
+error.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

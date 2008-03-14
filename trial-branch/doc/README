@@ -1,0 +1,30 @@
+You can get the whole documentation of Coq in the tar file all-ps-docs.tar.
+
+You can also get separately each document. The documentation of Coq
+V8.0 is divided into the following documents :
+
+     * Tutorial.ps: An introduction to the use of the Coq Proof Assistant;
+
+     * Reference-Manual.ps:
+
+       Base chapters:
+       - the description of Gallina, the language of Coq
+       - the description of the Vernacular, the commands of Coq
+       - the description of each tactic
+       - index on tactics, commands and error messages
+
+       Additional chapters:
+       - the extended Cases (C.Cornes)
+       - the coercions (A. Saïbi)
+       - the tactic Omega (P. Crégut)
+       - the extraction features (J.-C. Filliâtre and P. Letouzey) 
+       - the tactic Ring (S. Boutin and P. Loiseleur)
+       - the Setoid_replace tactic (C. Renard)
+       - etc.
+
+     * Library.ps: A description of the Coq standard library;
+
+     * rectypes.ps : A tutorial on recursive types by Eduardo Gimenez
+
+Documentation is also available in the PDF format and HTML format
+(online at http://coq.inria.fr or by ftp in the file doc-html.tar.gz).

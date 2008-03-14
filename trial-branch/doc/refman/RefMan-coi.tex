@@ -1,0 +1,406 @@
+%\documentstyle[11pt,../tools/coq-tex/coq]{article}
+%\input{title}
+ 
+%\include{macros}
+%\begin{document}
+
+%\coverpage{Co-inductive types in Coq}{Eduardo Gim\'enez}
+\chapter[Co-inductive types in Coq]{Co-inductive types in Coq\label{Coinductives}}
+
+%\begin{abstract}
+{\it Co-inductive} types are types whose elements may not be well-founded.
+A formal study of the Calculus of Constructions extended by 
+co-inductive types has been presented
+in \cite{Gim94}. It is based on the notion of
+{\it guarded definitions} introduced by Th. Coquand
+in \cite{Coquand93}. The implementation is by E. Gim\'enez.
+%\end{abstract}
+
+\section{A short introduction to co-inductive types}
+
+We assume that the reader is rather familiar with inductive types.
+These types are characterized by their {\it constructors}, which can be 
+regarded as the basic methods from which the elements 
+of the type can be built up. It is implicit in the definition 
+of an inductive type that 
+its elements are the result of a {\it finite} number of 
+applications of its constructors. Co-inductive types arise from 
+relaxing this implicit condition and admitting that an element of
+the type can also be introduced by a non-ending (but effective) process 
+of construction defined in terms of the basic methods which characterize the
+type. So we could think in the wider notion of types defined by
+constructors (let us call them {\it recursive types}) and classify
+them into inductive and co-inductive ones, depending on whether or not
+we consider non-ending methods as admissible for constructing elements
+of the type. Note that in both cases we obtain a ``closed type'', all whose 
+elements are pre-determined in advance (by the constructors). When we
+know that $a$ is an element of a recursive type (no matter if it is 
+inductive or co-inductive) what we know is that it is the result of applying
+one of the basic forms of construction allowed for the type.
+So the more primitive way of eliminating an element of a recursive type is 
+by case analysis, i.e. by considering through which constructor it could have
+been introduced. In the case of inductive sets, the additional knowledge that
+constructors can be applied only a finite number of times provide
+us with a more powerful way of eliminating their elements, say,  
+the principle of
+induction. This principle is obviously not valid for co-inductive types,
+since it is just the expression of this extra knowledge attached to inductive 
+types.
+
+
+An example of a co-inductive type is the type of infinite sequences formed with
+elements of type $A$, or streams for shorter. In Coq, 
+it can be introduced using the \verb!CoInductive! command~:
+\begin{coq_example}
+CoInductive Stream (A:Set) : Set :=
+    cons : A -> Stream A -> Stream A.
+\end{coq_example}
+
+The syntax of this command is the same as the 
+command \verb!Inductive! (cf. section
+\ref{gal_Inductive_Definitions}).
+Definition of mutually coinductive types are possible.
+
+As was already said, there are not principles of 
+induction for co-inductive sets, the only way of eliminating these
+elements is by case analysis. 
+In the example of streams, this elimination principle can be
+used for instance to define the well known 
+destructors on streams $\hd : (\Str\;A)\rightarrow A$ 
+and $\tl: (\Str\;A)\rightarrow (\Str\;A)$  :
+\begin{coq_example}
+Section Destructors.
+Variable A : Set.
+Definition hd (x:Stream A) := match x with
+                              | cons a s => a
+                              end.
+Definition tl (x:Stream A) := match x with
+                              | cons a s => s
+                              end.
+\end{coq_example}
+\begin{coq_example*}
+End Destructors.
+\end{coq_example*}
+
+\subsection{Non-ending methods of construction}
+
+At this point the reader should have realized that we have left unexplained
+what is a ``non-ending but effective process of
+construction'' of a stream. In the widest sense, a 
+method is a non-ending process of construction if we can eliminate the
+stream that it introduces, in other words, if we can reduce
+any case analysis on it. In this sense, the following ways of 
+introducing a stream are not acceptable. 
+\begin{center}
+$\zeros = (\cons\;\nat\;\nO\;(\tl\;\zeros))\;\;:\;\;(\Str\;\nat)$\\[12pt]
+$\filter\;(\cons\;A\;a\;s) = \si\;\;(P\;a)\;\;\alors\;\;(\cons\;A\;a\;(\filter\;s))\;\;\sinon\;\;(\filter\;s) )\;\;:\;\;(\Str\;A)$
+\end{center}
+\noindent The former it is not valid since the stream can not be eliminated 
+to obtain its tail. In the latter, a stream is naively defined as
+the result of erasing from another (arbitrary) stream 
+all the elements which does not verify a certain property $P$. This
+does not always makes sense, for example it does not when all the elements
+of the stream verify $P$, in which case we can not eliminate it to
+obtain its head\footnote{Note that there is no notion of ``the empty
+stream'', a stream is always infinite and build by a \texttt{cons}.}. 
+On the contrary, the following definitions are acceptable methods for
+constructing a stream~:
+\begin{center}
+$\zeros = (\cons\;\nat\;\nO\;\zeros)\;\;:\;\;(\Str\;\nat)\;\;\;(*)$\\[12pt]
+$(\from\;n) = (\cons\;\nat\;n\;(\from\;(\nS\;n)))\;:\;(\Str\;\nat)$\\[12pt]
+$\alter  = (\cons\;\bool\;\true\;(\cons\;\bool\;\false\;\alter))\;:\;(\Str\;\bool)$.
+\end{center}
+\noindent The first one introduces a stream containing all the natural numbers
+greater than a given one, and the second the stream which infinitely
+alternates the booleans true and false.
+
+In general it is not evident to realise when a definition can 
+be accepted or not. However, there is a class of definitions that
+can be easily recognised as being valid :  those 
+where (1) all the recursive calls of the method  are done 
+after having explicitly mentioned  which is (at least) the first constructor 
+to start building the element, and (2) no other 
+functions apart from constructors are applied to recursive calls. 
+This class of definitions is usually
+referred as {\it guarded-by-constructors} 
+definitions \cite{Coquand93,Gim94}. 
+The methods $\from$ 
+and $\alter$ are examples of definitions which are guarded by constructors.
+The definition of function $\filter$ is not, because there is no 
+constructor to guard 
+the recursive call in the {\it else} branch. Neither is the one of
+$\zeros$, since there is function applied to the recursive call
+which is not a constructor. However, there is a difference between 
+the definition of $\zeros$ and $\filter$. The former may be seen as a
+wrong way of characterising an object which makes sense, and it can
+be reformulated in an admissible way using the equation (*). On the contrary, 
+the definition of
+$\filter$ can not be patched, since is the idea itself 
+of traversing an infinite
+construction searching for an element whose existence is not ensured
+which does not make sense.
+
+
+
+Guarded definitions are exactly the kind of non-ending process of 
+construction which are allowed in Coq. The way of introducing 
+a guarded definition in Coq is using the special command 
+{\tt CoFixpoint}.  This command verifies that the definition introduces an
+element of a co-inductive type, and checks if it is guarded by constructors. 
+If we try to 
+introduce the definitions above, $\from$ and $\alter$ will be accepted,
+while $\zeros$ and $\filter$ will be rejected giving some explanation 
+about why.
+\begin{coq_example}
+CoFixpoint zeros  : Stream nat := cons nat 0%N (tl nat zeros).
+CoFixpoint zeros  : Stream nat := cons nat 0%N zeros.
+CoFixpoint from (n:nat) : Stream nat := cons nat n (from (S n)).
+\end{coq_example}
+
+As in the \verb!Fixpoint! command (see Section~\ref{Fixpoint}), it is possible 
+to introduce a block of mutually dependent methods. The general syntax
+for this case is :
+
+{\tt CoFixpoint {\ident$_1$}  :{\term$_1$} := {\term$_1'$}\\
+     with\\
+        \mbox{}\hspace{0.1cm} $\ldots$  \\
+        with {\ident$_m$}   : {\term$_m$} := {\term$_m'$}}
+
+
+\subsection{Non-ending methods and reduction}
+
+The elimination of a stream introduced by a \verb!CoFixpoint! definition 
+is done lazily, i.e. its definition can be expanded only when it occurs 
+at the head of an application which is the argument of a case expression. 
+Isolately it is considered as a canonical expression which 
+is completely evaluated. We can test this using the command \verb!compute! 
+to calculate the normal forms of some terms~:
+\begin{coq_example}
+Eval compute in (from 0).
+Eval compute in (hd nat (from 0)).
+Eval compute in (tl nat (from 0)).
+\end{coq_example}
+\noindent Thus, the equality 
+$(\from\;n)\equiv(\cons\;\nat\;n\;(\from \; (\S\;n)))$
+does not hold as definitional one. Nevertheless, it can be proved 
+as a propositional  equality, in the sense of Leibniz's equality. 
+The version {\it à la Leibniz} of the equality above follows from 
+a general lemma stating that eliminating and then re-introducing a stream
+yields the same stream.
+\begin{coq_example}
+Lemma unfold_Stream :
+   forall x:Stream nat, x = match x with
+                            | cons a s => cons nat a s
+                            end.
+\end{coq_example}
+ 
+\noindent The proof is immediate from the analysis of 
+the possible cases for $x$, which transforms 
+the equality in a trivial one.
+
+\begin{coq_example}
+olddestruct x.
+trivial.
+\end{coq_example}
+\begin{coq_eval}
+Qed.
+\end{coq_eval}
+The application of this lemma to  $(\from\;n)$ puts this
+constant at the head of an application which is an  argument 
+of a case analysis, forcing its expansion. 
+We can test the type of this application using Coq's command \verb!Check!,
+which infers the type of a given term. 
+\begin{coq_example}
+Check (fun n:nat => unfold_Stream (from n)).
+\end{coq_example}
+ \noindent  Actually, The elimination of $(\from\;n)$ has actually 
+no effect, because it is followed by a re-introduction, 
+so the type of this application is in fact 
+definitionally equal to the
+desired proposition. We can test this computing
+the normal form of the application above to see its type.  
+\begin{coq_example}
+Transparent unfold_Stream.
+Eval compute in (fun n:nat => unfold_Stream (from n)).
+\end{coq_example}
+
+
+\section{Reasoning about infinite objects}
+
+At a first sight, it might seem that 
+case analysis does not provide a very powerful way
+of reasoning about infinite objects. In fact, what we can prove about 
+an infinite object using
+only case analysis is just what we can prove unfolding its method
+of construction a finite number of times, which is not always
+enough. Consider for example the following method for appending 
+two streams~:
+\begin{coq_example}
+Variable A : Set.
+CoFixpoint conc (s1 s2:Stream A) : Stream A :=
+  cons A (hd A s1) (conc (tl A s1) s2).
+\end{coq_example}
+
+Informally speaking, we expect that for all pair of streams $s_1$ and $s_2$, 
+$(\conc\;s_1\;s_2)$ 
+defines the ``the same'' stream as $s_1$, 
+in the sense that if we would be able to unfold the definition 
+``up to the infinite'', we would obtain definitionally equal normal forms.
+However, no finite unfolding of the definitions gives definitionally 
+equal terms. Their equality can not be proved just using case analysis.
+
+
+The weakness of the elimination principle proposed for infinite objects
+contrast with the power provided by the inductive 
+elimination principles, but it is not actually surprising. It just means
+that we can not expect to prove very interesting things about infinite
+objects doing finite proofs. To take advantage of infinite objects we
+have to consider infinite proofs as well. For example,
+if we want to catch up the equality between $(\conc\;s_1\;s_2)$ and 
+$s_1$ we have to introduce first the type of the infinite proofs 
+of equality between streams. This is a 
+co-inductive type, whose elements are build up from a 
+unique constructor, requiring a proof of the equality of the
+heads of the streams, and an (infinite) proof of the equality 
+of their tails. 
+
+\begin{coq_example}
+CoInductive EqSt : Stream A -> Stream A -> Prop :=
+    eqst :
+      forall s1 s2:Stream A,
+        hd A s1 = hd A s2 -> EqSt (tl A s1) (tl A s2) -> EqSt s1 s2.
+\end{coq_example}
+\noindent Now the equality of both streams can be proved introducing
+an infinite object of type 
+
+\noindent $(\EqSt\;s_1\;(\conc\;s_1\;s_2))$ by a \verb!CoFixpoint!
+definition.
+\begin{coq_example}
+CoFixpoint eqproof (s1 s2:Stream A) : EqSt s1 (conc s1 s2) :=
+  eqst s1 (conc s1 s2) (refl_equal (hd A (conc s1 s2)))
+    (eqproof (tl A s1) s2).
+\end{coq_example}
+\begin{coq_eval}
+Reset eqproof.
+\end{coq_eval}
+\noindent Instead of giving an explicit definition, 
+we can use the proof editor of Coq to help us in 
+the construction of the proof.
+A tactic \verb!Cofix! allows to place a \verb!CoFixpoint! definition
+inside a proof. 
+This tactic introduces a variable in the context which has
+the same type as the current goal, and its application stands
+for a recursive call in the construction of the proof. If no name is
+specified for this variable, the name of the lemma  is chosen by
+default.
+%\pagebreak 
+
+\begin{coq_example}
+Lemma eqproof : forall s1 s2:Stream A, EqSt s1 (conc s1 s2).
+cofix.
+\end{coq_example}
+
+\noindent An easy (and wrong!) way of finishing the proof is just to apply the
+variable \verb!eqproof!, which has the same type as the goal. 
+
+\begin{coq_example}
+intros.
+apply eqproof.
+\end{coq_example}
+
+\noindent The ``proof'' constructed in this way 
+would correspond to the \verb!CoFixpoint! definition
+\begin{coq_example*}
+CoFixpoint eqproof  : forall s1 s2:Stream A, EqSt s1 (conc s1 s2) :=
+  eqproof.
+\end{coq_example*}
+
+\noindent which is obviously non-guarded. This means that 
+we can use the proof editor to
+define a method of construction which does not make sense. However,
+the system will never accept to include it as part of the theory,
+because the guard condition is always verified before saving the proof.
+
+\begin{coq_example}
+Qed.
+\end{coq_example}
+
+\noindent Thus, the user must be careful in the 
+construction of infinite proofs 
+with the tactic \verb!Cofix!. Remark that once it has been used 
+the application of tactics performing automatic proof search in 
+the environment (like for example \verb!Auto!)
+could introduce unguarded recursive calls in the proof.
+The command \verb!Guarded! allows to verify 
+if the guarded condition has been violated 
+during the construction of the proof. This command can be
+applied even if the proof term is not complete.
+
+
+
+\begin{coq_example}
+Restart.
+cofix.
+auto.
+Guarded.
+Undo.
+Guarded.
+\end{coq_example}
+
+\noindent To finish with this example, let us restart from the
+beginning and show how to construct an admissible proof~:
+
+\begin{coq_example} 
+Restart.
+ cofix.
+\end{coq_example}
+
+%\pagebreak
+
+\begin{coq_example}
+intros.
+apply eqst.
+trivial.
+simpl.
+apply eqproof.
+Qed.
+\end{coq_example}
+
+
+\section{Experiments with co-inductive types}
+
+Some examples involving co-inductive types are available with
+the distributed system, in the theories library and in the contributions
+of the Lyon site. Here we present a short description of their contents~:
+\begin{itemize}
+\item Directory \verb!theories/LISTS! : 
+        \begin{itemize}
+                \item File \verb!Streams.v! : The type of streams and the 
+extensional equality between streams. 
+        \end{itemize}
+
+\item Directory \verb!contrib/Lyon/COINDUCTIVES! : 
+      \begin{itemize}
+                \item Directory \verb!ARITH! : An arithmetic where $\infty$
+is an explicit constant of the language instead of a metatheoretical notion.
+                \item Directory \verb!STREAM! :
+      \begin{itemize}
+                \item File \verb!Examples! :
+Several examples of guarded definitions, as well as 
+of frequent errors in the introduction of a stream. A different 
+way of defining the extensional equality of two streams,
+and the proofs showing that it is equivalent to the one in \verb!theories!.
+                \item File \verb!Alter.v! : An example showing how 
+an infinite proof introduced by a guarded definition can be also described
+using an operator of co-recursion \cite{Gimenez95b}.
+                 \end{itemize}
+\item Directory \verb!PROCESSES! : A proof of the alternating 
+bit protocol based on Pra\-sad's Calculus of Broadcasting Systems \cite{Prasad93},
+and the verification of an interpreter for this calculus. 
+See \cite{Gimenez95b} for a complete description about this development.
+        \end{itemize}
+\end{itemize}
+
+%\end{document}
+
+% $Id$ 

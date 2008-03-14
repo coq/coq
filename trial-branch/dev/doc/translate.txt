@@ -1,0 +1,495 @@
+
+                 How to use the translator
+                 =========================
+
+       (temporary version to be included in the official
+           TeX document describing the translator)
+
+The translator is a smart, robust and powerful tool to improve the
+readibility of your script. The current document describes the
+possibilities of the translator.
+
+In case of problem recompiling the translated files, don't waste time
+to modify the translated file by hand, read first the following
+document telling on how to modify the original files to get a smooth
+uniform safe translation. All 60000 lines of Coq lines on our
+user-contributions server have been translated without any change
+afterwards, and 0,5 % of the lines of the original files (mainly
+notations) had to be modified beforehand to get this result.
+
+Table of contents
+-----------------
+
+I) Implicit Arguments
+ 1) Strict Implicit Arguments 
+ 2) Implicit Arguments in standard library
+
+II) Notations
+ 1) Translating a V7 notation as it was
+ 2) Translating a V7 notation which conflicts with the new syntax
+  a) Associativity conflicts
+  b) Conflicts with other notations
+   b1) A notation hides another notation 
+   b2) A notation conflicts with the V8 grammar
+   b3) My notation is already defined at another level
+  c) How to use V8only with Distfix ?
+  d) Can I overload a notation in V8, e.g. use "*" and "+" ?
+ 3) Using the translator to have simplest notations
+ 4) Setting the translator to automatically use new notations that
+    wasn't used in old syntax
+ 5) Defining a construction and its notation simultaneously
+
+III) Various pitfalls
+ 1) New keywords
+ 2) Old "Case" and "Match"
+ 3) Change of definition or theorem names
+ 4) Change of tactic names
+
+---------------------------------------------------------------------
+
+I) Implicit Arguments
+   ------------------
+
+1) Strict Implicit Arguments 
+
+  "Set Implicit Arguments" changes its meaning in V8: the default is
+to turn implicit only the arguments that are _strictly_ implicit (or
+rigid), i.e. that remains inferable whatever the other arguments
+are. E.g "x" inferable from "P x" is not strictly inferable since it
+can disappears if "P" is instanciated by a term which erase "x".
+
+  To respect the old semantics, the default behaviour of the
+translator is to replace each occurrence "Set Implicit Arguments" by
+
+  Set Implicit Arguments.
+  Unset Strict Implicits.
+
+  However, you may wish to adopt the new semantics of "Set Implicit
+Arguments" (for instance because you think that the choice of
+arguments it setsimplicit is more "natural" for you). In this case,
+add the option -strict-implicit to the translator.
+
+  Warning: Changing the number of implicit arguments can break the
+notations.  Then use the V8only modifier of Notations.
+
+2) Implicit Arguments in standard library
+
+  Main definitions of standard library have now implicit
+arguments. These arguments are dropped in the translated files. This
+can exceptionally be a source of incompatibilities which has to be
+solved by hand (it typically happens for polymorphic functions applied
+to "nil" or "None").
+
+II) Notations
+    ---------
+
+  Grammar (on constr) and Syntax are no longer supported. Replace them by
+Notation before translation.
+
+  Precedence levels are now from 0 to 200. In V8, the precedence and
+associativity of an operator cannot be redefined. Typical level are
+(refer to the chapter on notations in the Reference Manual for the
+full list):
+
+  <-> : 95                    (no associativity)
+  -> : 90                     (right associativity)
+  \/ : 85                     (right associativity)
+  /\ : 80                     (right associativity)
+  ~ : 75                      (right associativity)
+  =, <, >, <=, >=, <> : 70    (no associativity)
+  +, - : 50                   (left associativity)
+  *, / : 40                   (left associativity)
+  ^ : 30                      (right associativity)
+
+1) Translating a V7 notation as it was
+
+  By default, the translator keeps the associativity given in V7 while
+the levels are mapped according to the following table:
+ 
+  the V7 levels             [  0;  1;  2;  3;  4;  5;  6;  7;  8;  9;  10]
+  are resp. mapped in V8 to [  0; 20; 30; 40; 50; 70; 80; 85; 90; 95; 100]
+  with predefined assoc     [ No;  L;  R;  L;  L; No;  R;  R;  R; No;   L]
+
+  If this is OK for you, just simply apply the translator.
+
+2) Translating a V7 notation which conflicts with the new syntax
+
+a) Associativity conflict
+
+  Since the associativity of the levels obtained by translating a V7
+level (as shown on table above) cannot be changed, you have to choose
+another level with a compatible associativity.
+
+  You can choose any level between 0 and 200, knowing that the
+standard operators are already set at the levels shown on the list
+above. 
+
+Example 1: Assume you have a notation
+
+Infix NONA 2 "=_S" my_setoid_eq.
+
+By default, the translator moves it to level 30 which is right
+associative, hence a conflict with the expected no associativity.
+
+To solve the problem, just add the "V8only" modifier to reset the
+level and enforce the associativity as follows:
+
+Infix NONA 2 "=_S" my_setoid_eq V8only (at level 70, no associativity).
+
+The translator now knows that it has to translate "=_S" at level 70
+with no associativity.
+
+Rem: 70 is the "natural" level for relations, hence the choice of 70
+here, but any other level accepting a no-associativity would have been
+OK.
+
+Example 2: Assume you have a notation
+
+Infix RIGHTA 1 "o" my_comp.
+
+By default, the translator moves it to level 20 which is left
+associative, hence a conflict with the expected right associativity.
+
+To solve the problem, just add the "V8only" modifier to reset the
+level and enforce the associativity as follows:
+
+Infix RIGHTA 1 "o" my_comp V8only (at level 20, right associativity).
+
+The translator now knows that it has to translate "o" at level 20
+which has the correct "right associativity".
+
+Rem: We assumed here that the user wants a strong precedence for
+composition, in such a way, say, that "f o g + h" is parsed as
+"(f o g) + h". To get "o" binding less than the arithmetical operators,
+an appropriated level would have been close of 70, and below, e.g. 65.
+
+b) Conflicts with other notations
+
+Since the new syntax comes with new keywords and new predefined
+symbols, new conflicts can occur. Again, you can use the option V8only
+to inform the translator of the new syntax to use.
+
+b1) A notation hides another notation 
+
+Rem: use Print Grammar constr in V8 to diagnose the overlap and see the
+section on factorization in the chapter on notations of the Reference
+Manual for hints on how to factorize.
+
+Example:
+
+Notation "{ x }" := (my_embedding x) (at level 1).
+
+overlaps in V8 with notation "{ x : A & P }" at level 0 and with x at
+level 99. The conflicts can be solved by left-factorizing the notation
+as follows:
+
+Notation "{ x }" := (my_embedding x) (at level 1)
+  V8only (at level 0, x at level 99).
+
+b2) A notation conflicts with the V8 grammar.
+
+Again, use the V8only modifier to tell the translator to automatically
+take in charge the new syntax.
+
+Example:
+
+Infix 3 "@" app.
+
+Since "@" is used in the new syntax for deactivating the implicit
+arguments, another symbol has to be used, e.g. "@@". This is done via
+the V8only option as follows:
+
+Infix 3 "@" app V8only "@@" (at level 40, left associativity).
+
+or, alternatively by
+
+Notation "x @ y" := (app x y) (at level 3, left associativity)
+  V8only "x @@ y" (at level 40, left associativity).
+
+b3) My notation is already defined at another level (or with another
+associativity)
+
+In V8, the level and associativity of a given notation can no longer
+be changed. Then, either you adopt the standard reserved levels and
+associativity for this notation (as given on the list above) or you
+change your notation.
+
+- To change the notation, follow the directions in section b2.
+
+- To adopt the standard level, just use V8only without any argument.
+
+Example.
+
+Infix 6 "*" my_mult.
+
+is not accepted as such in V8. Write
+
+Infix 6 "*" my_mult V8only.
+
+to tell the translator to use "*" at the reserved level (i.e. 40 with
+left associativity). Even better, use interpretation scopes (look at
+the Reference Manual).
+
+c) How to use V8only with Distfix ?
+
+You can't, use Notation instead of Distfix.
+
+d) Can I overload a notation in V8, e.g. use "*" and "+" for my own
+algebraic operations ?
+
+Yes, using interpretation scopes (see the corresponding chapter in the
+Reference Manual).
+
+3) Using the translator to have simplest notations
+
+Thanks to the new syntax, * has now the expected left associativity,
+and the symbols <, >, <= and >= are now available.
+
+Thanks to the interpretation scopes, you can overload the
+interpretation of these operators with the default interpretation
+provided in Coq.
+
+This may be a motivation to use the translator to automatically change
+the notations while switching to the new syntax.
+
+See sections b) and d) above for examples.
+
+4) Setting the translator to automatically use new notations that
+wasn't used in old syntax
+
+Thanks to the "Notation" mechanism, defining symbolic notations is
+simpler than in the previous versions of Coq.
+
+Thanks to the new syntax and interpretation scopes, new symbols and
+overloading is available.
+
+This may be a motivation for using the translator to automatically change
+the notations while switching to the new syntax.
+
+Use for that the commands V8Notation and V8Infix.
+
+Examples:
+
+V8Infix "==>" my_relation (at level 65, right associativity).
+
+tells the translator to write an infix "==>" instead of my_relation in
+the translated files.
+
+V8Infix ">=" my_ge.
+
+tells the translator to write an infix ">=" instead of my_ge in the
+translated files and that the level and associativity are the standard
+one (as defined in the chart above).
+
+V8Infix ">=" my_ge : my_scope.
+
+tells the translator to write an infix ">=" instead of my_ge in the
+translated files, that the level and associativity are the standard
+one (as defined in the chart above), but only if scope my_scope is
+open or if a delimiting key is available for "my_scope" (see the
+Reference Manual).
+
+5) Defining a construction and its notation simultaneously
+
+This is permitted by the new syntax. Look at the Reference Manual for
+explanation. The translator is not fully able to take this in charge...
+
+III) Various pitfalls
+    ----------------
+
+1) New keywords
+
+  The following identifiers are new keywords
+
+  "forall"; "fun"; "match"; "fix"; "cofix"; "for"; "if"; "then";
+  "else"; "return"; "mod"; "at"; "let"; "_"; ".("
+
+  The translator automatically add a "_" to names clashing with a
+keyword, except for files. Hence users may need to rename the files
+whose name clashes with a keyword.
+
+  Remark: "in"; "with"; "end"; "as"; "Prop"; "Set"; "Type"
+  were already keywords
+
+2) Old "Case" and "Match"
+
+  "Case" and "Match" are normally automatically translated into
+  "match" or "match" and "fix", but sometimes it fails to do so. It
+  typically fails when the Case or Match is argument of a tactic whose
+  typing context is unknown because of a preceding Intro/Intros, as e.g. in 
+
+     Intros; Exists [m:nat](<quasiterm>Case m of t [p:nat](f m) end)
+
+  The solution is then to replace the invocation of the sequence of
+  tactics into several invocation of the elementary tactics as follows
+
+     Intros. Exists [m:nat](<quasiterm>Case m of t [p:nat](f m) end)
+          ^^^
+
+3) Change of definition or theorem names
+
+  Type "entier" from fast_integer.v is renamed into "N" by the
+translator. As a consequence, user-defined objects of same name "N"
+are systematically qualified even tough it may not be necessary.  The
+same apply for names "GREATER", "EQUAL", "LESS", etc... [COMPLETE LIST
+TO GIVE].
+
+4) Change of tactics names
+
+  Since tactics names are now lowercase, this can clash with
+user-defined tactic definitions. To pally this, clashing names are
+renamed by adding an extra "_" to their name.
+
+======================================================================
+Main examples for new syntax
+----------------------------
+
+1) Constructions
+
+  Applicative terms don't any longer require to be surrounded by parentheses as
+e.g in
+
+  "x = f y -> S x = S (f y)"
+
+
+  Product is written
+
+     "forall x y : T, U"
+     "forall x y, U"
+     "forall (x y : T) z (v w : V), U"
+     etc.
+
+  Abstraction is written
+
+     "fun x y : T, U"
+     "fun x y, U"
+     "fun (x y : T) z (v w : V), U"
+     etc.
+
+  Pattern-matching is written
+
+     "match x with c1 x1 x2 => t | c2 y as z => u end"
+     "match v1, v2 with c1 x1 x2, _ => t | c2 y, d z => u end"
+     "match v1 as y in le _ n, v2 as z in I p q return P n y p q z with
+         c1 x1 x2, _ => t | c2 y, d z => u end"
+
+     The last example is the new form of what was written
+
+    "<[n;y:(le ? n);p;q;z:(I p q)](P n y p q z)>Cases v1 v2 of
+         (c1 x1 x2) _ => t | (c2 y) (d z) => u end"
+
+  Pattern-matching of type with one constructors and no dependencies
+of the arguments in the resulting type can be written
+
+    "let (x,y,z) as u return P u := t in v"
+     
+  Local fixpoints are written
+
+    "fix f (n m:nat) z (x : X) {struct m} : nat := ...
+     with ..."
+
+    and "struct" tells which argument is structurally decreasing.
+
+  Explicitation of implicit arguments is written
+
+     "f @1:=u v @3:=w t"
+     "@f u v w t"
+
+2) Tactics
+
+  The main change is that tactics names are now lowercase. Besides
+this, the following renaming are applied:
+
+  "NewDestruct" -> "destruct"
+  "NewInduction" -> "induction"
+  "Induction" -> "simple induction"
+  "Destruct" -> "simple destruct"
+
+  For tactics with occurrences, the occurrences now comes after and
+  repeated use is separated by comma as in
+
+  "Pattern 1 3 c d 4 e" -> "pattern c at 3 1, d, e at 4"
+  "Unfold 1 3 f 4 g" -> "unfold f at 1 3, g at 4"
+  "Simpl 1 3 e" -> "simpl e at 1 3"
+
+3) Tactic language
+
+  Definitions are now introduced with keyword "Ltac" (instead of
+"Tactic"/"Meta" "Definition") and are implicitly recursive
+("Recursive" is no longer used).
+
+  The new rule for distinguishing terms from ltac expressions is:
+
+  Write "ltac:" in front of any tactic in argument position and
+  "constr:" in front of any construction in head position
+
+4) Vernacular language
+
+a) Assumptions
+
+  The syntax for commands is mainly unchanged. Declaration of
+assumptions is now done as follows
+
+  Variable m : t.
+  Variables m n p : t.
+  Variables (m n : t) (u v : s) (w : r).
+  
+b) Definitions
+
+  Definitions are done as follows
+
+  Definition f m n : t := ... .
+  Definition f m n := ... .
+  Definition f m n := ... : t.
+  Definition f (m n : u) : t := ... .
+  Definition f (m n : u) := ... : t.
+  Definition f (m n : u) := ... .
+  Definition f a b (p q : v) r s (m n : t) : t := ... .
+  Definition f a b (p q : v) r s (m n : t) := ... .
+  Definition f a b (p q : v) r s (m n : t) := ... : t.
+
+c) Fixpoints
+
+  Fixpoints are done this way
+  
+  Fixpoint f x (y : t) z a (b c : u) {struct z} : v := ... with ... .
+  Fixpoint f x : v := ... .
+  Fixpoint f (x : t) : v := ... .
+
+  It is possible to give a concrete notation to a fixpoint as follows
+
+  Fixpoint plus (n m:nat) {struct n} : nat as "n + m" :=
+    match n with
+    | O => m
+    | S p => S (p + m)
+    end.
+
+d) Inductive types
+
+  The syntax for inductive types is as follows
+
+  Inductive t (a b : u) (d : e) : v :=
+     c1 : w1 | c2 : w2 | ... .
+
+  Inductive t (a b : u) (d : e) : v :=
+     c1 : w1 | c2 : w2 | ... .
+
+  Inductive t (a b : u) (d : e) : v :=
+     c1 (x y : t) : w1 | c2 (z : r) : w2 | ... .
+
+  As seen in the last example, arguments of the constructors can be
+given before the colon. If the type itself is omitted (allowed only in
+case the inductive type has no real arguments), this yields an
+ML-style notation as follows
+
+  Inductive nat : Set := O | S (n:nat).
+  Inductive bool : Set := true | false.
+
+  It is even possible to define a syntax at the same time, as follows:
+
+  Inductive or (A B:Prop) : Prop as "A \/ B":=
+    | or_introl (a:A) : A \/ B 
+    | or_intror (b:B) : A \/ B.
+
+  Inductive and (A B:Prop) : Prop as "A /\ B" := conj (a:A) (b:B).
+  

@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Instantiate links to library files in index template
+
+FILE=$1
+
+cp -f $FILE.template tmp
+echo -n Building file index-list.prehtml ...
+
+LIBDIRS="Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded IntMap FSets Reals Ints Ints/num Ints/Z Program Numbers Numbers/Natural/Abstract Numbers/Natural/Peano Numbers/Natural/Binary Numbers/Integer/Abstract Numbers/Integer/NatPairs Numbers/Integer/Binary Numbers/NatInt Strings" 
+
+for k in $LIBDIRS; do
+    i=../theories/$k
+    echo $i
+    
+    d=`basename $i`
+    if [ "$d" != "Num" -a "$d" != "CVS" ]; then
+	for j in $i/*.v; do
+	    b=`basename $j .v`
+	    rm -f tmp2
+	    grep -q theories/$k/$b.v tmp
+	    a=$?
+	    if [ $a = 0 ]; then
+		p=${k//\//.}
+		sed -e "s:theories/$k/$b.v:<a href=\"Coq.$p.$b.html\">$b</a>:g" tmp > tmp2
+		mv -f tmp2 tmp
+	    else
+		echo Warning: theories/$k/$b.v is missing in the template file
+	    fi
+	done
+    fi
+    rm -f tmp2
+    sed -e "s/#$d#//" tmp > tmp2
+    mv -f tmp2 tmp
+done
+a=`grep theories tmp`
+if [ $? = 0 ]; then echo Warning: extra files:; echo $a; fi
+mv tmp $FILE
+echo Done

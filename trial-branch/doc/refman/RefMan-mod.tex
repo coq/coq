@@ -1,0 +1,382 @@
+\section{Module system
+\index{Modules}
+\label{section:Modules}}
+
+The module system provides a way of packaging related elements
+together, as well as a mean of massive abstraction.
+
+\begin{figure}[t]
+\begin{centerframe}
+\begin{tabular}{rcl}
+{\modtype}  & ::= & {\ident} \\
+ & $|$ & {\modtype} \texttt{ with Definition }{\ident} := {\term} \\
+ & $|$ & {\modtype} \texttt{ with Module }{\ident} := {\qualid} \\
+ &&\\
+
+{\onemodbinding}  & ::= & {\tt ( \nelist{\ident}{} : {\modtype} )}\\
+ &&\\
+
+{\modbindings} & ::= & \nelist{\onemodbinding}{}\\
+ &&\\
+
+{\modexpr} & ::= & \nelist{\qualid}{} 
+\end{tabular}
+\end{centerframe}
+\caption{Syntax of modules}
+\end{figure}
+
+\subsection{\tt Module {\ident}
+\comindex{Module}}
+
+This command is used to start an interactive module named {\ident}.
+
+\begin{Variants}
+
+\item{\tt Module {\ident} {\modbindings}}
+
+  Starts an interactive functor with parameters given by {\modbindings}.
+
+\item{\tt Module {\ident} \verb.:. {\modtype}}
+
+  Starts an interactive module specifying its module type. 
+
+\item{\tt Module {\ident} {\modbindings} \verb.:. {\modtype}}
+
+  Starts an interactive functor with parameters given by
+  {\modbindings}, and output module type {\modtype}.
+
+\item{\tt Module {\ident} \verb.<:. {\modtype}}
+
+  Starts an interactive module satisfying {\modtype}. 
+
+\item{\tt Module {\ident} {\modbindings} \verb.<:. {\modtype}}
+
+  Starts an interactive functor with parameters given by
+  {\modbindings}. The output module type is verified against the
+  module type {\modtype}.
+
+\item\texttt{Module [Import|Export]}
+
+  Behaves like \texttt{Module}, but automatically imports or exports
+  the module.
+
+\end{Variants}
+
+\subsection{\tt End {\ident}
+\comindex{End}}
+
+This command closes the interactive module {\ident}. If the module type
+was given the content of the module is matched against it and an error
+is signaled if the matching fails. If the module is basic (is not a
+functor) its components (constants, inductive types, submodules etc) are
+now available through the dot notation.
+
+\begin{ErrMsgs}
+\item \errindex{No such label {\ident}}
+\item \errindex{Signature components for label {\ident} do not match}
+\item \errindex{This is not the last opened module}
+\end{ErrMsgs}
+
+
+\subsection{\tt Module {\ident} := {\modexpr}
+\comindex{Module}}
+
+This command defines the module identifier {\ident} to be equal to
+{\modexpr}. 
+
+\begin{Variants}
+\item{\tt Module {\ident} {\modbindings} := {\modexpr}}
+
+ Defines a functor with parameters given by {\modbindings} and body {\modexpr}.
+
+% Particular cases of the next 2 items
+%\item{\tt Module {\ident} \verb.:. {\modtype} := {\modexpr}}
+%
+%  Defines a module with body {\modexpr} and interface {\modtype}.
+%\item{\tt Module {\ident} \verb.<:. {\modtype} := {\modexpr}}
+%
+%  Defines a module with body {\modexpr}, satisfying {\modtype}.
+
+\item{\tt Module {\ident} {\modbindings} \verb.:. {\modtype} :=
+    {\modexpr}}
+
+  Defines a functor with parameters given by {\modbindings} (possibly none),
+  and output module type {\modtype}, with body {\modexpr}. 
+
+\item{\tt Module {\ident} {\modbindings} \verb.<:. {\modtype} :=
+    {\modexpr}}
+
+  Defines a functor with parameters given by {\modbindings} (possibly none) 
+  with body {\modexpr}. The body is checked against {\modtype}.
+
+\end{Variants}
+
+\subsection{\tt Module Type {\ident}
+\comindex{Module Type}}
+
+This command is used to start an interactive module type {\ident}.
+
+\begin{Variants}
+
+\item{\tt Module Type {\ident} {\modbindings}}
+
+  Starts an interactive functor type with parameters given by {\modbindings}.
+
+\end{Variants}
+
+\subsection{\tt End {\ident}
+\comindex{End}}
+
+This command closes the interactive module type {\ident}.
+
+\begin{ErrMsgs}
+\item \errindex{This is not the last opened module type}
+\end{ErrMsgs}
+
+\subsection{\tt Module Type {\ident} := {\modtype}}
+
+Defines a module type {\ident} equal to {\modtype}.
+
+\begin{Variants}
+\item {\tt Module Type {\ident} {\modbindings} := {\modtype}}
+
+  Defines a functor type {\ident} specifying functors taking arguments
+  {\modbindings} and returning {\modtype}.
+\end{Variants}
+
+\subsection{\tt Declare Module {\ident} : {\modtype}}
+
+Declares a module {\ident} of type {\modtype}. This command is available
+only in module types. 
+
+\begin{Variants}
+
+\item{\tt Declare Module {\ident} {\modbindings} \verb.:. {\modtype}}
+
+  Declares a functor with parameters {\modbindings} and output module
+  type {\modtype}.
+
+\item{\tt Declare Module {\ident} := {\qualid}}
+
+  Declares a module equal to the module {\qualid}.
+
+\item{\tt Declare Module {\ident} \verb.<:. {\modtype} := {\qualid}}
+
+  Declares a module equal to the module {\qualid}, verifying that the
+  module type of the latter is a subtype of {\modtype}.
+
+\item\texttt{Declare Module [Import|Export] {\ident} := {\qualid}}
+
+  Declares a modules {\ident} of type {\modtype}, and imports or
+  exports it directly.
+
+\end{Variants}
+
+
+\subsubsection{Example}
+
+Let us define a simple module.
+\begin{coq_example}
+Module M.
+  Definition T := nat.
+  Definition x := 0.
+  Definition y : bool.
+    exact true.
+  Defined.
+End M.
+\end{coq_example}
+Inside a module one can define constants, prove theorems and do any
+other things that can be done in the toplevel. Components of a closed
+module can be accessed using the dot notation:
+\begin{coq_example}
+Print M.x.
+\end{coq_example}
+A simple module type:
+\begin{coq_example}
+Module Type SIG.
+  Parameter T : Set.
+  Parameter x : T.
+End SIG.
+\end{coq_example}
+Inside a module type the proof editing mode is not available.
+Consequently commands like \texttt{Definition}\ without body,
+\texttt{Lemma}, \texttt{Theorem} are not allowed.  In order to declare
+constants, use \texttt{Axiom} and \texttt{Parameter}.
+
+Now we can create a new module from \texttt{M}, giving it a less
+precise specification: the \texttt{y} component is dropped as well
+as the body of \texttt{x}.
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(***************** Error: N.y not a defined object *******************)
+\end{coq_eval}
+\begin{coq_example}
+Module N  :  SIG with Definition T := nat  :=  M.
+Print N.T.
+Print N.x.
+Print N.y.
+\end{coq_example}
+\begin{coq_eval}
+Reset N.
+\end{coq_eval}
+
+\noindent
+The definition of \texttt{N} using the module type expression
+\texttt{SIG with Definition T:=nat} is equivalent to the following
+one:
+
+\begin{coq_example*}
+Module Type SIG'.
+  Definition T : Set := nat.
+  Parameter x : T.
+End SIG'.
+Module N : SIG' := M.
+\end{coq_example*}
+If we just want to be sure that the our implementation satisfies a
+given module type without restricting the interface, we can use a
+transparent constraint
+\begin{coq_example}
+Module P <: SIG := M.
+Print P.y.
+\end{coq_example}
+Now let us create a functor, i.e. a parametric module
+\begin{coq_example}
+Module Two (X Y: SIG).
+\end{coq_example}
+\begin{coq_example*}
+  Definition T := (X.T * Y.T)%type.
+  Definition x := (X.x, Y.x).
+\end{coq_example*}
+\begin{coq_example}
+End Two.
+\end{coq_example}
+and apply it to our modules and do some computations
+\begin{coq_example}
+Module Q := Two M N.
+Eval compute in (fst Q.x + snd Q.x).
+\end{coq_example}
+In the end, let us define a module type with two sub-modules, sharing
+some of the fields and give one of its possible implementations:
+\begin{coq_example}
+Module Type SIG2.
+  Declare Module M1 : SIG.
+  Module M2 <: SIG.
+    Definition T := M1.T.
+    Parameter x : T.
+  End M2.
+End SIG2.
+\end{coq_example}
+\begin{coq_example*}
+Module Mod <: SIG2.
+  Module M1.
+    Definition T := nat.
+    Definition x := 1.
+  End M1.
+  Module M2 := M.
+\end{coq_example*}
+\begin{coq_example}
+End Mod.
+\end{coq_example}
+Notice that \texttt{M} is a correct body for the component \texttt{M2}
+since its \texttt{T} component is equal \texttt{nat} and hence
+\texttt{M1.T} as specified.
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{Remarks}
+\item Modules and module types can be nested components of each other.
+\item When a module declaration is started inside a module type,
+  the proof editing mode is still unavailable.
+\item One can have sections inside a module or a module type, but
+  not a module or a module type inside a section.
+\item Commands like \texttt{Hint} or \texttt{Notation} can
+  also appear inside modules and module types. Note that in case of a
+  module definition like:
+
+    \smallskip
+    \noindent
+    {\tt Module N : SIG := M.} 
+    \smallskip
+
+    or
+
+    \smallskip
+    {\tt Module N : SIG.\\
+      \ \ \dots\\
+      End N.}
+    \smallskip 
+    
+    hints and the like valid for \texttt{N} are not those defined in
+    \texttt{M} (or the module body) but the ones defined in
+    \texttt{SIG}.
+
+\end{Remarks}
+
+\subsection{\tt Import {\qualid}
+\comindex{Import}
+\label{Import}}
+
+If {\qualid} denotes a valid basic module (i.e. its module type is a
+signature), makes its components available by their short names.
+
+Example:
+
+\begin{coq_example}
+Module Mod.
+\end{coq_example}
+\begin{coq_example}
+  Definition T:=nat.
+  Check T.
+\end{coq_example}
+\begin{coq_example}
+End Mod.
+Check Mod.T.
+Check T. (* Incorrect ! *)
+Import Mod.
+Check T. (* Now correct *)
+\end{coq_example}
+\begin{coq_eval}
+Reset Mod.
+\end{coq_eval}
+
+
+\begin{Variants}
+\item{\tt Export {\qualid}}\comindex{Export}
+
+  When the module containing the command {\tt Export {\qualid}} is
+  imported, {\qualid} is imported as well.
+\end{Variants}
+
+\begin{ErrMsgs}
+  \item \errindexbis{{\qualid} is not a module}{is not a module}
+% this error is impossible in the import command
+%  \item \errindex{Cannot mask the absolute name {\qualid} !}
+\end{ErrMsgs}
+
+\begin{Warnings}
+  \item Warning: Trying to mask the absolute name {\qualid} !
+\end{Warnings}
+
+\subsection{\tt Print Module {\ident}
+\comindex{Print Module}}
+
+Prints the module type and (optionally) the body of the module {\ident}.
+
+\subsection{\tt Print Module Type {\ident}
+\comindex{Print Module Type}}
+
+Prints the module type corresponding to {\ident}.
+
+\subsection{\texttt{Locate Module {\qualid}}
+\comindex{Locate Module}}
+
+Prints the full name of the module {\qualid}.
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

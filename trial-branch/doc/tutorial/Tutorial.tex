@@ -1,0 +1,1564 @@
+\documentclass[11pt,a4paper]{book}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage{pslatex}
+
+\input{../common/version.tex}
+\input{../common/macros.tex}
+\input{../common/title.tex}
+
+%\makeindex
+
+\begin{document}
+\coverpage{A Tutorial}{Gérard Huet, Gilles Kahn and Christine Paulin-Mohring}{}
+
+%\tableofcontents
+
+\chapter*{Getting started}
+
+\Coq\ is a Proof Assistant for a Logical Framework known as the Calculus
+of Inductive Constructions. It allows the interactive construction of
+formal proofs, and also the manipulation of functional programs 
+consistently with their specifications. It runs as a computer program
+on many architectures.
+%, and mainly on Unix machines. 
+It is available with a variety of user interfaces. The present
+document does not attempt to present a comprehensive view of all the
+possibilities of \Coq, but rather to present in the most elementary
+manner a tutorial on the basic specification language, called Gallina,
+in which formal axiomatisations may be developed, and on the main
+proof tools.  For more advanced information, the reader could refer to
+the \Coq{} Reference Manual or the \textit{Coq'Art}, a new book by Y.
+Bertot and P. Castéran on practical uses of the \Coq{} system.
+
+Coq can be used from a standard teletype-like shell window but
+preferably through the graphical user interface
+CoqIde\footnote{Alternative graphical interfaces exist: Proof General
+and Pcoq.}.
+
+Instructions on installation procedures, as well as more comprehensive
+documentation, may be found in the standard distribution of \Coq,
+which may be obtained from \Coq{} web site \texttt{http://coq.inria.fr}.
+
+In the following, we assume that \Coq~ is called from a standard
+teletype-like shell window. All examples preceded by the prompting
+sequence \verb:Coq < : represent user input, terminated by a
+period. 
+
+The following lines usually show \Coq's answer as it appears on the
+users screen. When used from a graphical user interface such as
+CoqIde, the prompt is not displayed: user input is given in one window
+and \Coq's answers are displayed in a different window.
+
+The sequence of such examples is a valid \Coq~
+session, unless otherwise specified. This version of the tutorial has
+been prepared on a PC workstation running Linux.  The standard
+invocation of \Coq\ delivers a message such as:
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+unix:~> coqtop
+Welcome to Coq 8.0 (Mar 2004)
+
+Coq < 
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+The first line gives a banner stating the precise version of \Coq~
+used. You should always return this banner when you report an
+anomaly to our hot-line \verb:coq-bugs@pauillac.inria.fr: or on our
+bug-tracking system~:\verb|http://logical.futurs.inria.fr/coq-bugs|
+
+\chapter{Basic Predicate Calculus}
+
+\section{An overview of the specification language Gallina}
+
+A formal development in Gallina consists in a sequence of {\sl declarations}
+and {\sl definitions}. You may also send \Coq~ {\sl commands} which are
+not really part of the formal development, but correspond to information
+requests, or service routine invocations. For instance, the command:
+\begin{verbatim}
+Coq < Quit.
+\end{verbatim}
+terminates the current session.
+
+\subsection{Declarations}
+
+A declaration associates a {\sl name} with 
+a {\sl specification}. 
+A name corresponds roughly to an identifier in a programming
+language, i.e. to a string of letters, digits, and a few ASCII symbols like
+underscore (\verb"_") and prime (\verb"'"), starting with a letter. 
+We use case distinction, so that the names \verb"A" and \verb"a" are distinct.
+Certain strings are reserved as key-words of \Coq, and thus are forbidden 
+as user identifiers.
+
+A specification is a formal expression which classifies the notion which is
+being declared. There are basically three kinds of specifications: 
+{\sl logical propositions}, {\sl mathematical collections}, and
+{\sl abstract types}. They are classified by the three basic sorts
+of the system, called respectively \verb:Prop:, \verb:Set:, and
+\verb:Type:, which are themselves atomic abstract types.
+
+Every valid expression $e$ in Gallina is associated with a specification,
+itself a valid expression, called its {\sl type} $\tau(E)$. We write
+$e:\tau(E)$ for the judgment that $e$ is of type $E$. 
+You may request \Coq~ to return to you the type of a valid expression by using
+the command \verb:Check::
+
+\begin{coq_example}
+Check O.
+\end{coq_example}
+
+Thus we know that the identifier \verb:O: (the name `O', not to be
+confused with the numeral `0' which is not a proper identifier!) is
+known in the current context, and that its type is the specification 
+\verb:nat:. This specification is itself classified as a mathematical
+collection, as we may readily check:
+
+\begin{coq_example}
+Check nat.
+\end{coq_example}
+
+The specification \verb:Set: is an abstract type, one of the basic
+sorts of the Gallina language, whereas the notions $nat$ and $O$ are
+notions which are defined in the arithmetic prelude,
+automatically loaded when running the \Coq\ system.
+
+We start by introducing a so-called section name. The role of sections
+is to structure the modelisation by limiting the scope of parameters,
+hypotheses and definitions. It will also give a convenient way to
+reset part of the development.
+
+\begin{coq_example}
+Section Declaration.
+\end{coq_example}
+With what we already know, we may now enter in the system a declaration,
+corresponding to the informal mathematics {\sl let n be a natural
+  number}. 
+
+\begin{coq_example}
+Variable n : nat.
+\end{coq_example}
+
+If we want to translate a more precise statement, such as
+{\sl let n be a positive natural number},
+we have to add another declaration, which will declare explicitly the
+hypothesis \verb:Pos_n:, with specification the proper logical
+proposition:
+\begin{coq_example}
+Hypothesis Pos_n : (gt n 0).
+\end{coq_example}
+
+Indeed we may check that the relation \verb:gt: is known with the right type
+in the current context:
+
+\begin{coq_example}
+Check gt.
+\end{coq_example}
+
+which tells us that \verb:gt: is a function expecting two arguments of
+type \verb:nat: in order to build a logical proposition.
+What happens here is similar to what we are used to in a functional
+programming language: we may compose the (specification) type \verb:nat:
+with the (abstract) type \verb:Prop: of logical propositions through the
+arrow function constructor, in order to get a functional type
+\verb:nat->Prop::
+\begin{coq_example}
+Check (nat -> Prop).
+\end{coq_example}
+which may be composed again with \verb:nat: in order to obtain the
+type \verb:nat->nat->Prop: of binary relations over natural numbers.
+Actually \verb:nat->nat->Prop: is an abbreviation for 
+\verb:nat->(nat->Prop):. 
+
+Functional notions may be composed in the usual way. An expression $f$
+of type $A\ra B$ may be applied to an expression $e$ of type $A$ in order
+to form the expression $(f~e)$ of type $B$. Here we get that
+the expression \verb:(gt n): is well-formed of type \verb:nat->Prop:,
+and thus that the expression \verb:(gt n O):, which abbreviates
+\verb:((gt n) O):, is a well-formed proposition.
+\begin{coq_example}
+Check gt n O.
+\end{coq_example}
+
+\subsection{Definitions}
+
+The initial prelude contains a few arithmetic definitions:
+\verb:nat: is defined as a mathematical collection (type \verb:Set:), constants
+\verb:O:, \verb:S:, \verb:plus:, are defined as objects of types
+respectively \verb:nat:, \verb:nat->nat:, and \verb:nat->nat->nat:.
+You may introduce new definitions, which link a name to a well-typed value.
+For instance, we may introduce the constant \verb:one: as being defined
+to be equal to the successor of zero:
+\begin{coq_example}
+Definition one := (S O).
+\end{coq_example}
+We may optionally indicate the required type:
+\begin{coq_example}
+Definition two : nat := S one.
+\end{coq_example}
+
+Actually \Coq~ allows several possible syntaxes:
+\begin{coq_example}
+Definition three : nat := S two.
+\end{coq_example}
+
+Here is a way to define the doubling function, which expects an
+argument \verb:m: of type \verb:nat: in order to build its result as
+\verb:(plus m m)::
+
+\begin{coq_example}
+Definition double (m:nat) := plus m m.
+\end{coq_example}
+This definition introduces the constant \texttt{double} defined as the
+expression \texttt{fun m:nat => plus m m}.
+The abstraction introduced by \texttt{fun} is explained as follows. The expression
+\verb+fun x:A => e+ is well formed of type \verb+A->B+ in a context
+whenever the expression \verb+e+ is well-formed of type \verb+B+ in 
+the given context to which we add the declaration that \verb+x+
+is of type \verb+A+. Here \verb+x+ is a bound, or dummy variable in
+the expression \verb+fun x:A => e+. For instance we could as well have
+defined \verb:double: as \verb+fun n:nat => (plus n n)+.
+
+Bound (local) variables and free (global) variables may be mixed.
+For instance, we may define the function which adds the constant \verb:n:
+to its argument as
+\begin{coq_example}
+Definition add_n (m:nat) := plus m n.
+\end{coq_example}
+However, note that here we may not rename the formal argument $m$ into $n$
+without capturing the free occurrence of $n$, and thus changing the meaning
+of the defined notion.
+
+Binding operations are well known for instance in logic, where they
+are called quantifiers.  Thus we may universally quantify a
+proposition such as $m>0$ in order to get a universal proposition
+$\forall m\cdot m>0$. Indeed this operator is available in \Coq, with
+the following syntax: \verb+forall m:nat, gt m O+. Similarly to the
+case of the functional abstraction binding, we are obliged to declare
+explicitly the type of the quantified variable. We check:
+\begin{coq_example}
+Check (forall m:nat, gt m 0).
+\end{coq_example}
+We may clean-up the development by removing the contents of the
+current section:
+\begin{coq_example}
+Reset Declaration.
+\end{coq_example}
+
+\section{Introduction to the proof engine: Minimal Logic}
+
+In the following, we are going to consider various propositions, built
+from atomic propositions $A, B, C$. This may be done easily, by
+introducing these atoms as global variables declared of type \verb:Prop:.
+It is easy to declare several names with the same specification:
+\begin{coq_example}
+Section Minimal_Logic.
+Variables A B C : Prop.
+\end{coq_example}
+
+We shall consider simple implications, such as $A\ra B$, read as 
+``$A$ implies $B$''. Remark that we overload the arrow symbol, which
+has been used above as the functionality type constructor, and which
+may be used as well as propositional connective:
+\begin{coq_example}
+Check (A -> B).
+\end{coq_example}
+
+Let us now embark on a simple proof. We want to prove the easy tautology
+$((A\ra (B\ra C))\ra (A\ra B)\ra (A\ra C)$. 
+We enter the proof engine by the command
+\verb:Goal:, followed by the conjecture we want to verify:
+\begin{coq_example}
+Goal (A -> B -> C) -> (A -> B) -> A -> C.
+\end{coq_example}
+
+The system displays the current goal below a double line, local hypotheses
+(there are none initially) being displayed above the line. We call 
+the combination of local hypotheses with a goal a {\sl judgment}.
+We are now in an inner 
+loop of the system, in proof mode. 
+New commands are available in this
+mode, such as {\sl tactics}, which are proof combining primitives.
+A tactic operates on the current goal by attempting to construct a proof
+of the corresponding judgment, possibly from proofs of some
+hypothetical judgments, which are then added to the current
+list of conjectured judgments.
+For instance, the \verb:intro: tactic is applicable to any judgment
+whose goal is an implication, by moving the proposition to the left
+of the application to the list of local hypotheses:
+\begin{coq_example}
+intro H.
+\end{coq_example}
+
+Several introductions may be done in one step:
+\begin{coq_example}
+intros H' HA.
+\end{coq_example}
+
+We notice that $C$, the current goal, may be obtained from hypothesis
+\verb:H:, provided the truth of $A$ and $B$ are established.
+The tactic \verb:apply: implements this piece of reasoning:
+\begin{coq_example}
+apply H.
+\end{coq_example}
+
+We are now in the situation where we have two judgments as conjectures
+that remain to be proved. Only the first is listed in full, for the
+others the system displays only the corresponding subgoal, without its
+local hypotheses list. Remark that \verb:apply: has kept the local
+hypotheses of its father judgment, which are still available for
+the judgments it generated.
+
+In order to solve the current goal, we just have to notice that it is
+exactly available as hypothesis $HA$:
+\begin{coq_example}
+exact HA.
+\end{coq_example}
+
+Now $H'$ applies:
+\begin{coq_example}
+apply H'.
+\end{coq_example}
+
+And we may now conclude the proof as before, with \verb:exact HA.:
+Actually, we may not bother with the name \verb:HA:, and just state that
+the current goal is solvable from the current local assumptions:
+\begin{coq_example}
+assumption.
+\end{coq_example}
+
+The proof is now finished. We may either discard it, by using the
+command \verb:Abort: which returns to the standard \Coq~ toplevel loop
+without further ado, or else save it as a lemma in the current context,
+under name say \verb:trivial_lemma::
+\begin{coq_example}
+Save trivial_lemma.
+\end{coq_example}
+
+As a comment, the system shows the proof script listing all tactic
+commands used in the proof. 
+
+Let us redo the same proof with a few variations. First of all we may name
+the initial goal as a conjectured lemma:
+\begin{coq_example}
+Lemma distr_impl : (A -> B -> C) -> (A -> B) -> A -> C.
+\end{coq_example}
+
+Next, we may omit the names of local assumptions created by the introduction
+tactics, they can be automatically created by the proof engine as new
+non-clashing names.
+\begin{coq_example}
+intros.
+\end{coq_example}
+
+The \verb:intros: tactic, with no arguments, effects as many individual
+applications of \verb:intro: as is legal.
+
+Then, we may compose several tactics together in sequence, or in parallel,
+through {\sl tacticals}, that is tactic combinators. The main constructions
+are the following:
+\begin{itemize}
+\item $T_1 ; T_2$ (read $T_1$ then $T_2$) applies tactic $T_1$ to the current
+goal, and then tactic $T_2$ to all the subgoals generated by $T_1$.
+\item $T; [T_1 | T_2 | ... | T_n]$ applies tactic $T$ to the current
+goal, and then tactic $T_1$ to the first newly generated subgoal, 
+..., $T_n$ to the nth.
+\end{itemize}
+
+We may thus complete the proof of \verb:distr_impl: with one composite tactic:
+\begin{coq_example}
+apply H; [ assumption | apply H0; assumption ].
+\end{coq_example}
+
+Let us now save lemma \verb:distr_impl::
+\begin{coq_example}
+Save.
+\end{coq_example}
+
+Here \verb:Save: needs no argument, since we gave the name \verb:distr_impl: 
+in advance;
+it is however possible to override the given name by giving a different 
+argument to command \verb:Save:.
+
+Actually, such an easy combination of tactics \verb:intro:, \verb:apply:
+and \verb:assumption: may be found completely automatically by an automatic
+tactic, called \verb:auto:, without user guidance:
+\begin{coq_example}
+Lemma distr_imp : (A -> B -> C) -> (A -> B) -> A -> C.
+auto.
+\end{coq_example}
+
+This time, we do not save the proof, we just discard it with the \verb:Abort: 
+command:
+
+\begin{coq_example}
+Abort.
+\end{coq_example}
+
+At any point during a proof, we may use \verb:Abort: to exit the proof mode
+and go back to Coq's main loop. We may also use \verb:Restart: to restart
+from scratch the proof of the same lemma. We may also use \verb:Undo: to
+backtrack one step, and more generally \verb:Undo n: to
+backtrack n steps.
+
+We end this section by showing a useful command, \verb:Inspect n.:,
+which inspects the global \Coq~ environment, showing the last \verb:n: declared
+notions: 
+\begin{coq_example}
+Inspect 3.
+\end{coq_example}
+
+The declarations, whether global parameters or axioms, are shown preceded by 
+\verb:***:; definitions and lemmas are stated with their specification, but
+their value (or proof-term) is omitted.
+
+\section{Propositional Calculus}
+
+\subsection{Conjunction}
+
+We have seen how \verb:intro: and \verb:apply: tactics could be combined
+in order to prove implicational statements. More generally, \Coq~ favors a style
+of reasoning, called {\sl Natural Deduction}, which decomposes reasoning into 
+so called {\sl introduction rules}, which tell how to prove a goal whose main 
+operator is a given propositional connective, and {\sl elimination rules},
+which tell how to use an hypothesis whose main operator is the propositional 
+connective. Let us show how to use these ideas for the propositional connectives
+\verb:/\: and \verb:\/:.
+
+\begin{coq_example}
+Lemma and_commutative : A /\ B -> B /\ A.
+intro.
+\end{coq_example}
+
+We make use of the conjunctive hypothesis \verb:H: with the \verb:elim: tactic,
+which breaks it into its components:
+\begin{coq_example}
+elim H.
+\end{coq_example}
+
+We now use the conjunction introduction tactic \verb:split:, which splits the 
+conjunctive goal into the two subgoals:
+\begin{coq_example}
+split.
+\end{coq_example}
+
+and the proof is now trivial. Indeed, the whole proof is obtainable as follows:
+\begin{coq_example}
+Restart.
+intro H; elim H; auto.
+Qed.
+\end{coq_example}
+
+The tactic \verb:auto: succeeded here because it knows as a hint the 
+conjunction introduction operator \verb+conj+
+\begin{coq_example}
+Check conj.
+\end{coq_example}
+
+Actually, the tactic \verb+Split+ is just an abbreviation for \verb+apply conj.+
+
+What we have just seen is that the \verb:auto: tactic is more powerful than
+just a simple application of local hypotheses; it tries to apply as well 
+lemmas which have been specified as hints. A 
+\verb:Hint Resolve: command registers a
+lemma as a hint to be used from now on by the \verb:auto: tactic, whose power 
+may thus be incrementally augmented.
+
+\subsection{Disjunction}
+
+In a similar fashion, let us consider disjunction:
+
+\begin{coq_example}
+Lemma or_commutative : A \/ B -> B \/ A.
+intro H; elim H.
+\end{coq_example}
+
+Let us prove the first subgoal in detail. We use \verb:intro: in order to
+be left to prove \verb:B\/A: from \verb:A::
+
+\begin{coq_example}
+intro HA.
+\end{coq_example}
+
+Here the hypothesis \verb:H: is not needed anymore. We could choose to
+actually erase it with the tactic \verb:clear:; in this simple proof it
+does not really matter, but in bigger proof developments it is useful to
+clear away unnecessary hypotheses which may clutter your screen.
+\begin{coq_example}
+clear H.
+\end{coq_example}
+
+The disjunction connective has two introduction rules, since \verb:P\/Q:
+may be obtained from \verb:P: or from \verb:Q:; the two corresponding
+proof constructors are called respectively \verb:or_introl: and
+\verb:or_intror:; they are applied to the current goal by tactics
+\verb:left: and \verb:right: respectively. For instance:
+\begin{coq_example}
+right.
+trivial.
+\end{coq_example}
+The tactic \verb:trivial: works like \verb:auto: with the hints
+database, but it only tries those tactics that can solve the goal in one
+step. 
+
+As before, all these tedious elementary steps may be performed automatically,
+as shown for the second symmetric case:
+
+\begin{coq_example}
+auto.
+\end{coq_example}
+
+However, \verb:auto: alone does not succeed in proving the full lemma, because
+it does not try any elimination step.
+It is a bit disappointing that \verb:auto: is not able to prove automatically 
+such a simple tautology. The reason is that we want to keep
+\verb:auto: efficient, so that it is always effective to use. 
+
+\subsection{Tauto}
+
+A complete tactic for propositional
+tautologies is indeed available in \Coq~ as the \verb:tauto: tactic. 
+\begin{coq_example}
+Restart.
+tauto.
+Qed.
+\end{coq_example}
+
+It is possible to inspect the actual proof tree constructed by \verb:tauto:,
+using a standard command of the system, which prints the value of any notion 
+currently defined in the context:
+\begin{coq_example}
+Print or_commutative.
+\end{coq_example}
+
+It is not easy to understand the notation for proof terms without a few
+explanations. The \texttt{fun} prefix, such as \verb+fun H:A\/B =>+, 
+corresponds
+to \verb:intro H:, whereas a subterm such as 
+\verb:(or_intror: \verb:B H0):
+corresponds to the sequence \verb:apply or_intror; exact H0:. 
+The generic combinator \verb:or_intror: needs to be instantiated by
+the two properties \verb:B: and \verb:A:. Because \verb:A: can be
+deduced from the type of \verb:H0:, only  \verb:B: is printed.
+The two instantiations are effected automatically by the tactic
+\verb:apply: when pattern-matching a goal. The specialist will of course
+recognize our proof term as a $\lambda$-term, used as notation for the
+natural deduction proof term through the Curry-Howard isomorphism. The
+naive user of \Coq~ may safely ignore these formal details.
+
+Let us exercise the \verb:tauto: tactic on a more complex example:
+\begin{coq_example}
+Lemma distr_and : A -> B /\ C -> (A -> B) /\ (A -> C).
+tauto.
+Qed.
+\end{coq_example}
+
+\subsection{Classical reasoning}
+
+\verb:tauto: always comes back with an answer. Here is an example where it 
+fails:
+\begin{coq_example}
+Lemma Peirce : ((A -> B) -> A) -> A.
+try tauto.
+\end{coq_example}
+
+Note the use of the \verb:Try: tactical, which does nothing if its tactic
+argument fails.
+
+This may come as a surprise to someone familiar with classical reasoning. 
+Peirce's lemma is true in Boolean logic, i.e. it evaluates to \verb:true: for 
+every truth-assignment to \verb:A: and \verb:B:. Indeed the double negation
+of Peirce's law may be proved in \Coq~ using \verb:tauto::
+\begin{coq_example}
+Abort.
+Lemma NNPeirce : ~ ~ (((A -> B) -> A) -> A).
+tauto.
+Qed.
+\end{coq_example}
+
+In classical logic, the double negation of a proposition is equivalent to this 
+proposition, but in the constructive logic of \Coq~ this is not so. If you 
+want to use classical logic in \Coq, you have to import explicitly the
+\verb:Classical: module, which will declare the axiom \verb:classic:
+of excluded middle, and classical tautologies such as de Morgan's laws.
+The \verb:Require: command is used to import a module from \Coq's library:
+\begin{coq_example}
+Require Import Classical.
+Check NNPP.
+\end{coq_example}
+
+and it is now easy (although admittedly not the most direct way) to prove
+a classical law such as Peirce's:
+\begin{coq_example}
+Lemma Peirce : ((A -> B) -> A) -> A.
+apply NNPP; tauto.
+Qed.
+\end{coq_example}
+
+Here is one more example of propositional reasoning, in the shape of
+a Scottish puzzle. A private club has the following rules:
+\begin{enumerate}
+\item Every non-scottish member wears red socks
+\item Every member wears a kilt or doesn't wear red socks
+\item The married members don't go out on Sunday
+\item A member goes out on Sunday if and only if he is Scottish
+\item Every member who wears a kilt is Scottish and married
+\item Every scottish member wears a kilt
+\end{enumerate}
+Now, we show that these rules are so strict that no one can be accepted.
+\begin{coq_example}
+Section club.
+Variables Scottish RedSocks WearKilt Married GoOutSunday : Prop.
+Hypothesis rule1 : ~ Scottish -> RedSocks.
+Hypothesis rule2 : WearKilt \/ ~ RedSocks.
+Hypothesis rule3 : Married -> ~ GoOutSunday.
+Hypothesis rule4 : GoOutSunday <-> Scottish.
+Hypothesis rule5 : WearKilt -> Scottish /\ Married.
+Hypothesis rule6 : Scottish -> WearKilt.
+Lemma NoMember : False.
+tauto.
+Qed.
+\end{coq_example}
+At that point \verb:NoMember: is a proof of the absurdity depending on
+hypotheses.
+We may end the section, in that case, the variables and hypotheses
+will be discharged, and the type of \verb:NoMember: will be
+generalised.
+
+\begin{coq_example}
+End club.
+Check NoMember.
+\end{coq_example}
+
+\section{Predicate Calculus}
+
+Let us now move into predicate logic, and first of all into first-order
+predicate calculus. The essence of predicate calculus is that to try to prove 
+theorems in the most abstract possible way, without using the definitions of 
+the mathematical notions, but by formal manipulations of uninterpreted 
+function and predicate symbols. 
+
+\subsection{Sections and signatures}
+
+Usually one works in some domain of discourse, over which range the individual 
+variables and function symbols. In \Coq~ we speak in a language with a rich 
+variety of types, so me may mix several domains of discourse, in our 
+multi-sorted language. For the moment, we just do a few exercises, over a 
+domain of discourse \verb:D: axiomatised as a \verb:Set:, and we consider two 
+predicate symbols  \verb:P: and \verb:R: over \verb:D:, of arities 
+respectively 1 and 2. Such abstract entities may be entered in the context
+as global variables. But we must be careful about the pollution of our
+global environment by such declarations. For instance, we have already 
+polluted our \Coq~ session by declaring the variables
+\verb:n:, \verb:Pos_n:, \verb:A:, \verb:B:, and \verb:C:. If we want to revert to the clean state of
+our initial session, we may use the \Coq~ \verb:Reset: command, which returns
+to the state just prior the given global notion as we did before to
+remove a section, or we may return to the initial state using~:
+\begin{coq_example}
+Reset Initial.
+\end{coq_example}
+
+We shall now declare a new \verb:Section:, which will allow us to define
+notions local to a well-delimited scope. We start by assuming a domain of
+discourse \verb:D:, and a binary relation \verb:R:  over \verb:D:: 
+\begin{coq_example}
+Section Predicate_calculus.
+Variable D : Set.
+Variable R : D -> D -> Prop.
+\end{coq_example}
+
+As a simple example of predicate calculus reasoning, let us assume
+that relation \verb:R: is symmetric and transitive, and let us show that
+\verb:R: is reflexive in any point \verb:x: which has an \verb:R: successor.
+Since we do not want to make the assumptions about \verb:R: global axioms of 
+a theory, but rather local hypotheses to a theorem, we open a specific
+section to this effect.
+\begin{coq_example}
+Section R_sym_trans.
+Hypothesis R_symmetric : forall x y:D, R x y -> R y x.
+Hypothesis R_transitive : forall x y z:D, R x y -> R y z -> R x z.
+\end{coq_example}
+
+Remark the syntax \verb+forall x:D,+ which stands for universal quantification
+$\forall x : D$.
+
+\subsection{Existential quantification}
+
+We now state our lemma, and enter proof mode.
+\begin{coq_example}
+Lemma refl_if : forall x:D, (exists y, R x y) -> R x x.
+\end{coq_example}
+
+Remark that the hypotheses which are local to the currently opened sections
+are listed as local hypotheses to the current goals.
+The rationale is that these hypotheses are going to be discharged, as we
+shall see, when we shall close the corresponding sections.
+
+Note the functional syntax for existential quantification. The existential
+quantifier is built from the operator \verb:ex:, which expects a 
+predicate as argument:
+\begin{coq_example}
+Check ex.
+\end{coq_example}
+and the notation \verb+(exists x:D, P x)+ is just concrete syntax for 
+\verb+(ex D (fun x:D => P x))+. 
+Existential quantification is handled in \Coq~ in a similar
+fashion to the connectives \verb:/\: and \verb:\/: : it is introduced by
+the proof combinator \verb:ex_intro:, which is invoked by the specific 
+tactic \verb:Exists:, and its elimination provides a witness \verb+a:D+ to
+\verb:P:, together with an assumption \verb+h:(P a)+ that indeed \verb+a+
+verifies \verb:P:. Let us see how this works on this simple example.
+\begin{coq_example}
+intros x x_Rlinked.
+\end{coq_example}
+
+Remark that \verb:intros: treats universal quantification in the same way
+as the premises of implications. Renaming of bound variables occurs
+when it is needed; for instance, had we started with \verb:intro y:,
+we would have obtained the goal:
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+\begin{coq_example}
+intro y.
+\end{coq_example}
+\begin{coq_eval}
+Undo.
+intros x x_Rlinked.
+\end{coq_eval}
+
+Let us now use the existential hypothesis \verb:x_Rlinked: to 
+exhibit an R-successor y of x. This is done in two steps, first with
+\verb:elim:, then with \verb:intros:
+
+\begin{coq_example}
+elim x_Rlinked.
+intros y Rxy.
+\end{coq_example}
+
+Now we want to use \verb:R_transitive:. The \verb:apply: tactic will know
+how to match \verb:x: with \verb:x:, and \verb:z: with \verb:x:, but needs
+help on how to instantiate \verb:y:, which appear in the hypotheses of
+\verb:R_transitive:, but not in its conclusion. We give the proper hint
+to \verb:apply: in a \verb:with: clause, as follows:
+\begin{coq_example}
+apply R_transitive with y.
+\end{coq_example}
+
+The rest of the proof is routine:
+\begin{coq_example}
+assumption.
+apply R_symmetric; assumption.
+\end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
+
+Let us now close the current section.
+\begin{coq_example}
+End R_sym_trans.
+\end{coq_example}
+
+Here \Coq's printout is a warning that all local hypotheses have been 
+discharged in the statement of \verb:refl_if:, which now becomes a general
+theorem in the first-order language declared in section 
+\verb:Predicate_calculus:. In this particular example, the use of section
+\verb:R_sym_trans: has not been really significant, since we could have
+instead stated theorem \verb:refl_if: in its general form, and done 
+basically the same proof, obtaining \verb:R_symmetric: and
+\verb:R_transitive: as local hypotheses by initial \verb:intros: rather
+than as global hypotheses in the context. But if we had pursued the
+theory by proving more theorems about relation \verb:R:,
+we would have obtained all general statements at the closing of the section,
+with minimal dependencies on the hypotheses of symmetry and transitivity.
+
+\subsection{Paradoxes of classical predicate calculus}
+
+Let us illustrate this feature by pursuing our \verb:Predicate_calculus:
+section with an enrichment of our language: we declare a unary predicate
+\verb:P: and a constant \verb:d::
+\begin{coq_example}
+Variable P :  D -> Prop.
+Variable d : D.
+\end{coq_example}
+
+We shall now prove a well-known fact from first-order logic: a universal 
+predicate is non-empty, or in other terms existential quantification 
+follows from universal quantification.
+\begin{coq_example}
+Lemma weird : (forall x:D, P x) ->  exists a, P a.
+ intro UnivP.
+\end{coq_example}
+
+First of all, notice the pair of parentheses around
+\verb+forall x:D, P x+ in
+the statement of lemma \verb:weird:.
+If we had omitted them, \Coq's parser would have interpreted the
+statement as a truly trivial fact, since we would 
+postulate an \verb:x: verifying \verb:(P x):. Here the situation is indeed
+more problematic. If we have some element in \verb:Set: \verb:D:, we may
+apply \verb:UnivP: to it and conclude, otherwise we are stuck. Indeed
+such an element \verb:d: exists, but this is just by virtue of our
+new signature. This points out a subtle difference between standard
+predicate calculus and \Coq. In standard first-order logic,
+the equivalent of lemma \verb:weird: always holds, 
+because such a rule is wired in the inference rules for quantifiers, the
+semantic justification being that the interpretation domain is assumed to
+be non-empty. Whereas in \Coq, where types are not assumed to be 
+systematically inhabited, lemma \verb:weird: only holds in signatures
+which allow the explicit construction of an element in the domain of
+the predicate. 
+
+Let us conclude the proof, in order to show the use of the \verb:Exists:
+tactic:
+\begin{coq_example}
+exists d; trivial.
+Qed.
+\end{coq_example}
+
+Another fact which illustrates the sometimes disconcerting rules of
+classical 
+predicate calculus is Smullyan's drinkers' paradox: ``In any non-empty
+bar, there is a person such that if she drinks, then everyone drinks''.
+We modelize the bar by Set \verb:D:, drinking by predicate \verb:P:.
+We shall need classical reasoning. Instead of loading the \verb:Classical:
+module as we did above, we just state the law of excluded middle as a
+local hypothesis schema at this point:
+\begin{coq_example}
+Hypothesis EM : forall A:Prop, A \/ ~ A.
+Lemma drinker :  exists x:D, P x -> forall x:D, P x.
+\end{coq_example}
+The proof goes by cases on whether or not
+there is someone who does not drink. Such reasoning by cases proceeds
+by invoking the excluded middle principle, via \verb:elim: of the
+proper instance of \verb:EM::
+\begin{coq_example}
+elim (EM (exists x, ~ P x)).
+\end{coq_example}
+
+We first look at the first case. Let Tom be the non-drinker:
+\begin{coq_example}
+intro Non_drinker; elim Non_drinker; intros Tom Tom_does_not_drink.
+\end{coq_example}
+
+We conclude in that case by considering Tom, since his drinking leads to
+a contradiction:
+\begin{coq_example}
+exists Tom; intro Tom_drinks.
+\end{coq_example}
+
+There are several ways in which we may eliminate a contradictory case;
+a simple one is to use the \verb:absurd: tactic as follows:
+\begin{coq_example}
+absurd (P Tom); trivial.
+\end{coq_example}
+
+We now proceed with the second case, in which actually any person will do;
+such a John Doe is given by the non-emptiness witness \verb:d::
+\begin{coq_example}
+intro No_nondrinker; exists d; intro d_drinks.
+\end{coq_example}
+
+Now we consider any Dick in the bar, and reason by cases according to its
+drinking or not:
+\begin{coq_example}
+intro Dick; elim (EM (P Dick)); trivial.
+\end{coq_example}
+
+The only non-trivial case is again treated by contradiction:
+\begin{coq_example}
+intro Dick_does_not_drink; absurd (exists x, ~ P x); trivial.
+exists Dick; trivial.
+Qed.
+\end{coq_example}
+
+Now, let us close the main section and look at the complete statements
+we proved:
+\begin{coq_example}
+End Predicate_calculus.
+Check refl_if.
+Check weird.
+Check drinker.
+\end{coq_example}
+
+Remark how the three theorems are completely generic in the most general 
+fashion;
+the domain \verb:D: is discharged in all of them, \verb:R: is discharged in
+\verb:refl_if: only, \verb:P: is discharged only in \verb:weird: and
+\verb:drinker:, along with the hypothesis that \verb:D: is inhabited. 
+Finally, the excluded middle hypothesis is discharged only in 
+\verb:drinker:.
+
+Note that the name \verb:d: has vanished as well from
+the statements of \verb:weird: and \verb:drinker:, 
+since \Coq's pretty-printer replaces
+systematically a quantification such as \verb+forall d:D, E+, where \verb:d:
+does not occur in \verb:E:, by the functional notation \verb:D->E:. 
+Similarly the name \verb:EM: does not appear in \verb:drinker:. 
+
+Actually, universal quantification, implication, 
+as well as function formation, are
+all special cases of one general construct of type theory called
+{\sl dependent product}. This is the mathematical construction 
+corresponding to an indexed family of functions. A function 
+$f\in \Pi x:D\cdot Cx$ maps an element $x$ of its domain $D$ to its
+(indexed) codomain $Cx$. Thus a proof of $\forall x:D\cdot Px$ is
+a function mapping an element $x$ of $D$ to a proof of proposition $Px$.
+
+
+\subsection{Flexible use of local assumptions}
+
+Very often during the course of a proof we want to retrieve a local
+assumption and reintroduce it explicitly in the goal, for instance
+in order to get a more general induction hypothesis. The tactic
+\verb:generalize: is what is needed here:
+
+\begin{coq_example}
+Section Predicate_Calculus.
+Variables P Q : nat -> Prop.
+Variable R :  nat -> nat -> Prop.
+Lemma PQR :
+ forall x y:nat, (R x x -> P x -> Q x) -> P x -> R x y -> Q x.
+intros.
+generalize H0.
+\end{coq_example}
+
+Sometimes it may be convenient to use a lemma, although we do not have
+a direct way to appeal to such an already proven fact. The tactic \verb:cut:
+permits to use the lemma at this point, keeping the corresponding proof
+obligation as a new subgoal:
+\begin{coq_example}
+cut (R x x); trivial.
+\end{coq_example}
+We clean the goal by doing an \verb:Abort: command.
+\begin{coq_example*}
+Abort.
+\end{coq_example*}
+
+
+\subsection{Equality}
+
+The basic equality provided in \Coq~ is Leibniz equality, noted infix like
+\verb+x=y+, when \verb:x: and \verb:y: are two expressions of
+type the same Set. The replacement of \verb:x: by \verb:y: in any
+term is effected by a variety of tactics, such as \verb:rewrite:
+and \verb:replace:. 
+
+Let us give a few examples of equality replacement. Let us assume that
+some arithmetic function \verb:f: is null in zero:
+\begin{coq_example}
+Variable f : nat -> nat.
+Hypothesis foo : f 0 = 0.
+\end{coq_example}
+
+We want to prove the following conditional equality:
+\begin{coq_example*}
+Lemma L1 : forall k:nat, k = 0 -> f k = k.
+\end{coq_example*}
+
+As usual, we first get rid of local assumptions with \verb:intro::
+\begin{coq_example}
+intros k E.
+\end{coq_example}
+
+Let us now use equation \verb:E: as a left-to-right rewriting:
+\begin{coq_example}
+rewrite E.
+\end{coq_example}
+This replaced both occurrences of \verb:k: by \verb:O:. 
+
+Now \verb:apply foo: will finish the proof:
+
+\begin{coq_example}
+apply foo.
+Qed.
+\end{coq_example}
+
+When one wants to rewrite an equality in a right to left fashion, we should
+use \verb:rewrite <- E: rather than \verb:rewrite E: or the equivalent
+\verb:rewrite -> E:. 
+Let us now illustrate the tactic \verb:replace:.
+\begin{coq_example}
+Hypothesis f10 : f 1 = f 0.
+Lemma L2 : f (f 1) = 0.
+replace (f 1) with 0.
+\end{coq_example}
+What happened here is that the replacement left the first subgoal to be
+proved, but another proof obligation was generated by the \verb:replace:
+tactic, as the second subgoal. The first subgoal is solved immediately
+by applying lemma \verb:foo:; the second one transitivity and then 
+symmetry of equality, for instance with tactics \verb:transitivity: and 
+\verb:symmetry::
+\begin{coq_example}
+apply foo.
+transitivity (f 0); symmetry; trivial.
+\end{coq_example}
+In case the equality $t=u$ generated by \verb:replace: $u$ \verb:with:
+$t$ is an assumption
+(possibly modulo symmetry), it will be automatically proved and the
+corresponding goal will not appear. For instance:
+\begin{coq_example}
+Restart.
+replace (f 0) with 0.
+rewrite f10; rewrite foo; trivial.
+Qed.
+\end{coq_example}
+
+\section{Using definitions}
+
+The development of mathematics does not simply proceed by logical 
+argumentation from first principles: definitions are used in an essential way.
+A formal development proceeds by a dual process of abstraction, where one
+proves abstract statements in predicate calculus, and use of definitions, 
+which in the contrary one instantiates general statements with particular 
+notions in order to use the structure of mathematical values for the proof of
+more specialised properties.
+
+\subsection{Unfolding definitions}
+
+Assume that we want to develop the theory of sets represented as characteristic
+predicates over some universe \verb:U:. For instance:
+\begin{coq_example}
+Variable U : Type.
+Definition set := U -> Prop.
+Definition element (x:U) (S:set) := S x.
+Definition subset (A B:set) := forall x:U, element x A -> element x B.
+\end{coq_example}
+
+Now, assume that we have loaded a module of general properties about
+relations over some abstract type \verb:T:, such as transitivity:
+
+\begin{coq_example}
+Definition transitive (T:Type) (R:T -> T -> Prop) :=
+  forall x y z:T, R x y -> R y z -> R x z.
+\end{coq_example}
+
+Now, assume that we want to prove that \verb:subset: is a \verb:transitive:
+relation. 
+\begin{coq_example}
+Lemma subset_transitive : transitive set subset.
+\end{coq_example}
+
+In order to make any progress, one needs to use the definition of
+\verb:transitive:. The \verb:unfold: tactic, which replaces all
+occurrences of a defined notion by its definition in the current goal,
+may be used here.
+\begin{coq_example}
+unfold transitive.
+\end{coq_example}
+
+Now, we must unfold \verb:subset::
+\begin{coq_example}
+unfold subset.
+\end{coq_example}
+Now, unfolding \verb:element: would be a mistake, because indeed a simple proof
+can be found by \verb:auto:, keeping \verb:element: an abstract predicate:
+\begin{coq_example}
+auto.
+\end{coq_example}
+
+Many variations on \verb:unfold: are provided in \Coq. For instance,
+we may selectively unfold one designated occurrence:
+\begin{coq_example}
+Undo 2.
+unfold subset at 2.
+\end{coq_example}
+
+One may also unfold a definition in a given local hypothesis, using the
+\verb:in: notation:
+\begin{coq_example}
+intros.
+unfold subset in H.
+\end{coq_example}
+
+Finally, the tactic \verb:red: does only unfolding of the head occurrence
+of the current goal:
+\begin{coq_example}
+red.
+auto.
+Qed.
+\end{coq_example}
+
+
+\subsection{Principle of proof irrelevance}
+
+Even though in principle the proof term associated with a verified lemma
+corresponds to a defined value of the corresponding specification, such
+definitions cannot be unfolded in \Coq: a lemma is considered an {\sl opaque}
+definition. This conforms to the mathematical tradition of {\sl proof
+irrelevance}: the proof of a logical proposition does not matter, and the
+mathematical justification of a logical development relies only on
+{\sl provability} of the lemmas used in the formal proof. 
+
+Conversely, ordinary mathematical definitions can be unfolded at will, they
+are {\sl transparent}. 
+\chapter{Induction}
+
+\section{Data Types as Inductively Defined Mathematical Collections}
+
+All the notions which were studied until now pertain to traditional
+mathematical logic. Specifications of objects were abstract properties
+used in reasoning more or less constructively; we are now entering
+the realm of inductive types, which specify the existence of concrete
+mathematical constructions.
+
+\subsection{Booleans}
+
+Let us start with the collection of booleans, as they are specified
+in the \Coq's \verb:Prelude: module: 
+\begin{coq_example}
+Inductive bool :  Set := true | false.
+\end{coq_example}
+
+Such a declaration defines several objects at once. First, a new
+\verb:Set: is declared, with name \verb:bool:. Then the {\sl constructors}
+of this \verb:Set: are declared, called \verb:true: and \verb:false:.
+Those are analogous to introduction rules of the new Set \verb:bool:.
+Finally, a specific elimination rule for \verb:bool: is now available, which
+permits to reason by cases on \verb:bool: values. Three instances are
+indeed defined as new combinators in the global context: \verb:bool_ind:,
+a proof combinator corresponding to reasoning by cases,
+\verb:bool_rec:, an if-then-else programming construct,
+and \verb:bool_rect:, a similar combinator at the level of types.
+Indeed:
+\begin{coq_example}
+Check bool_ind.
+Check bool_rec.
+Check bool_rect.
+\end{coq_example}
+
+Let us for instance prove that every Boolean is true or false.
+\begin{coq_example}
+Lemma duality : forall b:bool, b = true \/ b = false.
+intro b.
+\end{coq_example}
+
+We use the knowledge that \verb:b: is a \verb:bool: by calling tactic
+\verb:elim:, which is this case will appeal to combinator \verb:bool_ind:
+in order to split the proof according to the two cases:
+\begin{coq_example}
+elim b.
+\end{coq_example}
+
+It is easy to conclude in each case:
+\begin{coq_example}
+left; trivial.
+right; trivial.
+\end{coq_example}
+
+Indeed, the whole proof can be done with the combination of the
+\verb:simple induction: tactic, which combines \verb:intro: and \verb:elim:,
+with good old \verb:auto::
+\begin{coq_example}
+Restart.
+simple induction b; auto.
+Qed.
+\end{coq_example}
+
+\subsection{Natural numbers}
+
+Similarly to Booleans, natural numbers are defined in the \verb:Prelude:
+module with constructors \verb:S: and \verb:O::
+\begin{coq_example}
+Inductive nat : Set :=
+  | O : nat
+  | S : nat -> nat.
+\end{coq_example}
+
+The elimination principles which are automatically generated are Peano's
+induction principle, and a recursion operator:
+\begin{coq_example}
+Check nat_ind.
+Check nat_rec.
+\end{coq_example}
+
+Let us start by showing how to program the standard primitive recursion
+operator \verb:prim_rec: from the more general \verb:nat_rec::
+\begin{coq_example}
+Definition prim_rec := nat_rec (fun i:nat => nat).
+\end{coq_example}
+
+That is, instead of computing for natural \verb:i: an element of the indexed
+\verb:Set: \verb:(P i):, \verb:prim_rec: computes uniformly an element of 
+\verb:nat:. Let us check the type of \verb:prim_rec::
+\begin{coq_example}
+Check prim_rec.
+\end{coq_example}
+
+Oops! Instead of the expected type \verb+nat->(nat->nat->nat)->nat->nat+ we
+get an apparently more complicated expression. Indeed the type of
+\verb:prim_rec: is equivalent by rule $\beta$ to its expected type; this may
+be checked in \Coq~ by command \verb:Eval Cbv Beta:, which $\beta$-reduces
+an expression to its {\sl normal form}:
+\begin{coq_example}
+Eval cbv beta in
+  ((fun _:nat => nat) O ->
+   (forall y:nat, (fun _:nat => nat) y -> (fun _:nat => nat) (S y)) ->
+   forall n:nat, (fun _:nat => nat) n).
+\end{coq_example}
+
+Let us now show how to program addition with primitive recursion:
+\begin{coq_example}
+Definition addition (n m:nat) := prim_rec m (fun p rec:nat => S rec) n.
+\end{coq_example}
+
+That is, we specify that \verb+(addition n m)+ computes by cases on \verb:n:
+according to its main constructor; when \verb:n = O:, we get \verb:m:;
+ when \verb:n = S p:, we get \verb:(S rec):, where \verb:rec: is the result
+of the recursive computation \verb+(addition p m)+. Let us verify it by
+asking \Coq~to compute for us say $2+3$:
+\begin{coq_example}
+Eval compute in (addition (S (S O)) (S (S (S O)))).
+\end{coq_example}
+
+Actually, we do not have to do all explicitly. {\Coq} provides a
+special syntax {\tt Fixpoint/match} for generic primitive recursion,
+and we could thus have defined directly addition as:
+
+\begin{coq_example}
+Fixpoint plus (n m:nat) {struct n} : nat :=
+  match n with
+  | O => m
+  | S p => S (plus p m)
+  end.
+\end{coq_example}
+
+For the rest of the session, we shall clean up what we did so far with 
+types \verb:bool: and \verb:nat:, in order to use the initial definitions
+given in \Coq's \verb:Prelude: module, and not to get confusing error
+messages due to our redefinitions. We thus revert to the state before
+our definition of \verb:bool: with the \verb:Reset: command:
+\begin{coq_example}
+Reset bool.
+\end{coq_example}
+
+
+\subsection{Simple proofs by induction}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+Let us now show how to do proofs by structural induction. We start with easy
+properties of the \verb:plus: function we just defined. Let us first
+show that $n=n+0$.
+\begin{coq_example}
+Lemma plus_n_O : forall n:nat, n = n + 0.
+intro n; elim n.
+\end{coq_example}
+
+What happened was that \verb:elim n:, in order to construct a \verb:Prop:
+(the initial goal) from a \verb:nat: (i.e. \verb:n:), appealed to the
+corresponding induction principle \verb:nat_ind: which we saw was indeed
+exactly Peano's induction scheme. Pattern-matching instantiated the 
+corresponding predicate \verb:P: to \verb+fun n:nat => n = n + 0+, and we get
+as subgoals the corresponding instantiations of the base case \verb:(P O): ,
+and of the inductive step \verb+forall y:nat, P y -> P (S y)+.
+In each case we get an instance of function \verb:plus: in which its second
+argument starts with a constructor, and is thus amenable to simplification
+by primitive recursion. The \Coq~tactic \verb:simpl: can be used for
+this purpose:
+\begin{coq_example}
+simpl.
+auto.
+\end{coq_example}
+
+We proceed in the same way for the base step:
+\begin{coq_example}
+simpl; auto.
+Qed.
+\end{coq_example}
+
+Here \verb:auto: succeeded, because it used as a hint lemma \verb:eq_S:,
+which say that successor preserves equality:
+\begin{coq_example}
+Check eq_S.
+\end{coq_example}
+
+Actually, let us see how to declare our lemma \verb:plus_n_O: as a hint
+to be used by \verb:auto::
+\begin{coq_example}
+Hint Resolve plus_n_O .
+\end{coq_example}
+
+We now proceed to the similar property concerning the other constructor
+\verb:S::
+\begin{coq_example}
+Lemma plus_n_S : forall n m:nat, S (n + m) = n + S m.
+\end{coq_example}
+
+We now go faster, remembering that tactic \verb:simple induction: does the
+necessary \verb:intros: before applying \verb:elim:. Factoring simplification
+and automation in both cases thanks to tactic composition, we prove this
+lemma in one line:
+\begin{coq_example}
+simple induction n; simpl; auto.
+Qed.
+Hint Resolve plus_n_S .
+\end{coq_example}
+
+Let us end this exercise with the commutativity of \verb:plus::
+
+\begin{coq_example}
+Lemma plus_com : forall n m:nat, n + m = m + n.
+\end{coq_example}
+
+Here we have a choice on doing an induction on \verb:n: or on \verb:m:, the
+situation being symmetric. For instance:
+\begin{coq_example}
+simple induction m; simpl; auto.
+\end{coq_example}
+
+Here \verb:auto: succeeded on the base case, thanks to our hint
+\verb:plus_n_O:, but the induction step requires rewriting, which
+\verb:auto: does not handle:
+
+\begin{coq_example}
+intros m' E; rewrite <- E; auto.
+Qed.
+\end{coq_example}
+
+\subsection{Discriminate}
+
+It is also possible to define new propositions by primitive recursion.
+Let us for instance define the predicate which discriminates between
+the constructors \verb:O: and \verb:S:: it computes to \verb:False: 
+when its argument is \verb:O:, and to \verb:True: when its argument is 
+of the form \verb:(S n)::
+\begin{coq_example}
+Definition Is_S (n:nat) := match n with
+                           | O => False
+                           | S p => True
+                           end.
+\end{coq_example}
+
+Now we may use the computational power of \verb:Is_S: in order to prove
+trivially that \verb:(Is_S (S n))::
+\begin{coq_example}
+Lemma S_Is_S : forall n:nat, Is_S (S n).
+simpl; trivial.
+Qed.
+\end{coq_example}
+
+But we may also use it to transform a \verb:False: goal into 
+\verb:(Is_S O):. Let us show a particularly important use of this feature;
+we want to prove that \verb:O: and \verb:S: construct different values, one
+of Peano's axioms:
+\begin{coq_example}
+Lemma no_confusion : forall n:nat, 0 <> S n.
+\end{coq_example}
+
+First of all, we replace negation by its definition, by reducing the
+goal with tactic \verb:red:; then we get contradiction by successive
+\verb:intros::
+\begin{coq_example}
+red; intros n H.
+\end{coq_example}
+
+Now we use our trick:
+\begin{coq_example}
+change (Is_S 0).
+\end{coq_example}
+
+Now we use equality in order to get a subgoal which computes out to 
+\verb:True:, which finishes the proof:
+\begin{coq_example}
+rewrite H; trivial.
+simpl; trivial.
+\end{coq_example}
+
+Actually, a specific tactic \verb:discriminate: is provided
+to produce mechanically such proofs, without the need for the user to define
+explicitly the relevant discrimination predicates:
+
+\begin{coq_example}
+Restart.
+intro n; discriminate.
+Qed.
+\end{coq_example}
+
+
+\section{Logic programming}
+
+In the same way as we defined standard data-types above, we
+may define inductive families, and for instance inductive predicates.
+Here is the definition of predicate $\le$ over type \verb:nat:, as
+given in \Coq's \verb:Prelude: module:
+\begin{coq_example*}
+Inductive le (n:nat) : nat -> Prop :=
+  | le_n : le n n
+  | le_S : forall m:nat, le n m -> le n (S m).
+\end{coq_example*}
+
+This definition introduces a new predicate \verb+le:nat->nat->Prop+,
+and the two constructors \verb:le_n: and \verb:le_S:, which are the
+defining clauses of \verb:le:. That is, we get not only the ``axioms''
+\verb:le_n: and \verb:le_S:, but also the converse property, that 
+\verb:(le n m): if and only if this statement can be obtained as a
+consequence of these defining clauses; that is, \verb:le: is the
+minimal predicate verifying clauses \verb:le_n: and \verb:le_S:. This is
+insured, as in the case of inductive data types, by an elimination principle,
+which here amounts to an induction principle \verb:le_ind:, stating this 
+minimality property:
+\begin{coq_example}
+Check le.
+Check le_ind.
+\end{coq_example}
+
+Let us show how proofs may be conducted with this principle.
+First we show that $n\le m \Rightarrow n+1\le m+1$:
+\begin{coq_example}
+Lemma le_n_S : forall n m:nat, le n m -> le (S n) (S m).
+intros n m n_le_m.
+elim n_le_m.
+\end{coq_example}
+
+What happens here is similar to the behaviour of \verb:elim: on natural
+numbers: it appeals to the relevant induction principle, here \verb:le_ind:,
+which generates the two subgoals, which may then be solved easily
+with the help of the defining clauses of \verb:le:.
+\begin{coq_example}
+apply le_n; trivial.
+intros; apply le_S; trivial.
+\end{coq_example}
+
+Now we know that it is a good idea to give the defining clauses as hints,
+so that the proof may proceed with a simple combination of 
+\verb:induction: and \verb:auto:.
+\begin{coq_example}
+Restart.
+Hint Resolve le_n le_S .
+\end{coq_example}
+
+We have a slight problem however. We want to say ``Do an induction on
+hypothesis \verb:(le n m):'', but we have no explicit name for it. What we
+do in this case is to say ``Do an induction on the first unnamed hypothesis'',
+as follows.
+\begin{coq_example}
+simple induction 1; auto.
+Qed.
+\end{coq_example}
+
+Here is a more tricky problem. Assume we want to show that
+$n\le 0 \Rightarrow n=0$. This reasoning ought to follow simply from the
+fact that only the first defining clause of \verb:le: applies.
+\begin{coq_example} 
+Lemma tricky : forall n:nat, le n 0 -> n = 0.
+\end{coq_example}
+
+However, here trying something like \verb:induction 1: would lead
+nowhere (try it and see what happens). 
+An induction on \verb:n: would not be convenient either.
+What we must do here is analyse the definition of \verb"le" in order
+to match hypothesis \verb:(le n O): with the defining clauses, to find
+that only \verb:le_n: applies, whence the result. 
+This analysis may be performed by the ``inversion'' tactic
+\verb:inversion_clear: as follows:
+\begin{coq_example} 
+intros n H; inversion_clear H.
+trivial.
+Qed.
+\end{coq_example}
+
+\chapter{Modules}
+
+\section{Opening library modules}
+
+When you start \Coq~ without further requirements in the command line,
+you get a bare system with few libraries loaded.  As we saw, a standard
+prelude module provides the standard logic connectives, and a few
+arithmetic notions. If you want to load and open other modules from
+the library, you have to use the \verb"Require" command, as we saw for
+classical logic above. For instance, if you want more arithmetic
+constructions, you should request:
+\begin{coq_example*}
+Require Import Arith.
+\end{coq_example*}
+
+Such a command looks for a (compiled) module file \verb:Arith.vo: in
+the libraries registered by \Coq. Libraries inherit the structure of
+the file system of the operating system and are registered with the
+command \verb:Add LoadPath:. Physical directories are mapped to
+logical directories. Especially the standard library of \Coq~ is
+pre-registered as a library of name \verb=Coq=.  Modules have absolute
+unique names denoting their place in \Coq~ libraries.  An absolute
+name is a sequence of single identifiers separated by dots.  E.g. the
+module \verb=Arith= has full name \verb=Coq.Arith.Arith= and because
+it resides in eponym subdirectory \verb=Arith= of the standard
+library, it can be as well required by the command
+
+\begin{coq_example*}
+Require Import Coq.Arith.Arith.
+\end{coq_example*}
+
+This may be useful to avoid ambiguities if somewhere, in another branch
+of the libraries known by Coq, another module is also called
+\verb=Arith=. Notice that by default, when a library is registered,
+all its contents, and all the contents of its subdirectories recursively are
+visible and accessible by a short (relative) name as \verb=Arith=.
+Notice also that modules or definitions not explicitly registered in
+a library are put in a default library called \verb=Top=.
+
+The loading of a compiled file is quick, because the corresponding
+development is not type-checked again. 
+
+\section{Creating your own modules}
+
+You may create your own modules, by writing \Coq~ commands in a file,
+say \verb:my_module.v:. Such a module may be simply loaded in the current
+context, with command \verb:Load my_module:. It may also be compiled,
+in ``batch'' mode, using the UNIX command
+\verb:coqc:. Compiling the module \verb:my_module.v: creates a 
+file \verb:my_module.vo:{} that can be reloaded with command
+\verb:Require Import my_module:. 
+
+If a required module depends on other modules then the latters are
+automatically required beforehand. However their contents is not
+automatically visible.  If you want a module \verb=M= required in a
+module \verb=N= to be automatically visible when \verb=N= is required,
+you should use \verb:Require Export M: in your module \verb:N:.
+
+\section{Managing the context}
+
+It is often difficult to remember the names of all lemmas and
+definitions available in the current context, especially if large
+libraries have been loaded. A convenient \verb:SearchAbout: command
+is available to lookup all known facts 
+concerning a given predicate. For instance, if you want to know all the
+known lemmas about the less or equal relation, just ask:
+\begin{coq_example}
+SearchAbout le.
+\end{coq_example}
+Another command \verb:Search: displays only lemmas where the searched
+predicate appears at the head position in the conclusion.
+\begin{coq_example}
+Search le.
+\end{coq_example}
+
+A new and more convenient search tool is \textsf{SearchPattern}
+developed by Yves Bertot. It allows to find the theorems with a
+conclusion matching a given pattern, where \verb:\_: can be used in
+place of an arbitrary term. We remark in this example, that \Coq{}
+provides usual infix notations for arithmetic operators.
+
+\begin{coq_example}
+SearchPattern (_ + _ = _).
+\end{coq_example}
+
+\section{Now you are on your own}
+
+This tutorial is necessarily incomplete. If you wish to pursue serious
+proving in \Coq, you should now get your hands on \Coq's Reference Manual,
+which contains a complete description of all the tactics we saw, 
+plus many more.
+You also should look in the library of developed theories which is distributed
+with \Coq, in order to acquaint yourself with various proof techniques.
+
+
+\end{document}
+
+% $Id$ 

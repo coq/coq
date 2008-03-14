@@ -1,0 +1,64 @@
+\documentclass[11pt]{report}
+
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fullpage}
+\usepackage{coqdoc}
+
+\input{../common/version}
+\input{../common/title}
+\input{../common/macros}
+
+\begin{document}
+ 
+\coverpage{The standard library}%
+{\ }
+{This material is distributed under the terms of the GNU Lesser
+General Public License Version 2.1.}
+
+\tableofcontents
+
+\newpage
+% \section*{The \Coq\ standard library}
+
+This document is a short description of the \Coq\ standard library.
+This library comes with the system as a complement of the core library
+(the {\bf Init} library ; see the Reference Manual for a description
+of this library). It provides a set of modules directly available
+through the \verb!Require! command.
+
+The standard library is composed of the following subdirectories:
+\begin{description}
+  \item[Logic]  Classical logic and dependent equality
+  \item[Bool]   Booleans (basic functions and results)
+  \item[Arith]  Basic Peano arithmetic
+  \item[ZArith] Basic integer arithmetic
+  \item[Reals]  Classical Real Numbers and Analysis
+  \item[Lists]  Monomorphic and polymorphic lists (basic functions and
+                  results), Streams (infinite sequences defined 
+                  with co-inductive types)
+  \item[Sets]   Sets (classical, constructive, finite, infinite, power set,
+                  etc.)
+  \item[Relations] Relations (definitions and basic results).
+  \item[Sorting] Sorted list (basic definitions and heapsort
+                 correctness). 
+  \item[Wellfounded] Well-founded relations (basic results).
+  \item[IntMap]       Representation of finite sets by an efficient
+                     structure of map (trees indexed by binary integers).
+  \item[Program] Tactcis to deal with dependently-typed programs and
+    their proofs.
+\end{description}
+
+
+Each of these subdirectories contains a set of modules, whose
+specifications (\gallina{} files) have
+been roughly, and automatically, pasted in the following pages. There
+is also a version of this document in HTML format on the WWW, which
+you can access from the \Coq\ home page at
+\texttt{http://coq.inria.fr/library}.
+
+\input{Library.coqdoc}
+
+\end{document}
+
+% $Id$ 

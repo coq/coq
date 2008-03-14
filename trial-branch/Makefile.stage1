@@ -1,0 +1,33 @@
+#######################################################################
+#  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
+# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
+#   \VV/  #############################################################
+#    //   #      This file is distributed under the terms of the      #
+#         #       GNU Lesser General Public License Version 2.1       #
+#######################################################################
+
+include Makefile.build
+
+# All includes must be declared secondary, otherwise make will delete
+# them if it decided to build them by dependency instead of because of
+# include, and they will then be automatically deleted, leading to an
+# infinite loop.
+-include $(ML4FILES:.ml4=.ml4.d)
+.SECONDARY: $(ML4FILES:.ml4=.ml4.d)
+-include $(MLFILES:.ml=.ml.d)
+.SECONDARY: $(MLFILES:.ml=.ml.d)
+-include $(MLIFILES:.mli=.mli.d)
+.SECONDARY: $(MLIFILES:.mli=.mli.d)
+##Depends upon the fact that all .ml4.d for stage1 files are empty
+-include $(STAGE1_ML4:.ml4=.ml4.ml.d)
+.SECONDARY: $(STAGE1_ML4:.ml4=.ml4.ml.d)
+-include  $(CFILES:.c=.c.d)
+.SECONDARY: $(CFILES:.c=.c.d)
+
+.PHONY: stage1
+stage1: $(STAGE1)
+
+# For emacs: 
+# Local Variables: 
+# mode: makefile 
+# End:

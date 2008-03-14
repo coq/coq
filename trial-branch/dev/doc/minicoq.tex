@@ -1,0 +1,98 @@
+\documentclass{article}
+
+\usepackage{fullpage}
+\input{./macros.tex}
+\newcommand{\minicoq}{\textsf{minicoq}}
+\newcommand{\nonterm}[1]{\textit{#1}}
+\newcommand{\terminal}[1]{\textsf{#1}}
+\newcommand{\listzero}{\textit{LIST$_0$}}
+\newcommand{\listun}{\textit{LIST$_1$}}
+\newcommand{\sep}{\textit{SEP}}
+
+\title{Minicoq: a type-checker for the pure \\ 
+       Calculus of Inductive Constructions}
+
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+\minicoq\ is a minimal toplevel for the \Coq\ kernel.
+
+
+\section{Grammar of terms}
+
+The grammar of \minicoq's terms is given in Figure~\ref{fig:terms}. 
+
+\begin{figure}[htbp]
+  \hrulefill
+  \begin{center}
+    \begin{tabular}{lrl}
+      term & ::= & identifier \\
+           & $|$ & \terminal{Rel} integer \\
+           & $|$ & \terminal{Set} \\
+           & $|$ & \terminal{Prop} \\
+           & $|$ & \terminal{Type} \\
+           & $|$ & \terminal{Const} identifier \\
+           & $|$ & \terminal{Ind} identifier integer \\
+           & $|$ & \terminal{Construct} identifier integer integer \\
+           & $|$ & \terminal{[} name \terminal{:} term
+                   \terminal{]} term \\
+           & $|$ & \terminal{(} name \terminal{:} term
+                   \terminal{)} term \\
+           & $|$ & term \verb!->! term \\
+           & $|$ & \terminal{(} \listun\ term \terminal{)} \\
+           & $|$ & \terminal{(} term \terminal{::} term \terminal{)} \\
+           & $|$ & \verb!<! term \verb!>! \terminal{Case}
+                   term \terminal{of} \listzero\ term \terminal{end} 
+      \\[1em]
+      name & ::= & \verb!_! \\
+           & $|$ & identifier 
+   \end{tabular}
+  \end{center}
+  \hrulefill
+  \caption{Grammar of terms}
+  \label{fig:terms}
+\end{figure}
+
+\section{Commands}
+The grammar of \minicoq's commands are given in
+Figure~\ref{fig:commands}. All commands end with a dot.
+
+\begin{figure}[htbp]
+  \hrulefill
+  \begin{center}
+    \begin{tabular}{lrl}
+      command & ::= & \terminal{Definition} identifier \terminal{:=} term. \\
+              & $|$ & \terminal{Definition} identifier \terminal{:} term
+                      \terminal{:=} term. \\
+              & $|$ & \terminal{Parameter} identifier \terminal{:} term. \\
+              & $|$ & \terminal{Variable} identifier \terminal{:} term. \\
+              & $|$ & \terminal{Inductive} \terminal{[} \listzero\ param 
+                      \terminal{]} \listun\ inductive \sep\ 
+                      \terminal{with}. \\
+              & $|$ & \terminal{Check} term. 
+      \\[1em]
+      param   & ::= & identifier 
+      \\[1em]
+      inductive & ::= & identifier \terminal{:} term \terminal{:=}
+                        \listzero\ constructor \sep\ \terminal{$|$}
+      \\[1em]
+      constructor & ::= & identifier \terminal{:} term
+    \end{tabular}
+  \end{center}
+  \hrulefill
+  \caption{Commands}
+  \label{fig:commands}
+\end{figure}
+
+
+\end{document}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

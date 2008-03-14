@@ -1,0 +1,254 @@
+(******************************************************************************)
+(* Copyright (C) 2000-2004, Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>     *)
+(*                          Project Helm   (http://helm.cs.unibo.it)          *)
+(*                          Project MoWGLI (http://mowgli.cs.unibo.it)        *)
+(*                                                                            *)
+(*                     Coq Exportation to XML                                 *)
+(*                                                                            *)
+(******************************************************************************)
+
+This module provides commands to export a piece of Coq library in XML format.
+Only the information relevant to proof-checking and proof-rendering is exported,
+i.e. only the CIC proof objects (lambda-terms).
+
+This document is tructured in the following way:
+ 1. User documentation
+   1.1. New vernacular commands available
+   1.2. New coqc/coqtop flags and suggested usage
+   1.3. How to exploit the XML files
+ 2. Technical informations
+   2.1. Inner-types
+   2.2. CIC with Explicit Named Substitutions
+   2.3. The CIC with Explicit Named Substitutions XML DTD
+
+================================================================================
+                            USER DOCUMENTATION
+================================================================================
+
+=======================================
+1.1. New vernacular commands available:
+=======================================
+
+The new commands are:
+
+ Print XML qualid.                 It prints in XML (to standard output) the
+                                   object whose qualified name is qualid and
+                                   its inner-types (see Sect. 2.1).
+                                   The inner-types are always printed
+                                   in their own XML file. If the object is a
+                                   constant, its type and body are also printed
+                                   as two distinct XML files.
+                                   The object printed is always the most
+                                   discharged form of the object (see
+                                   the Section command of the Coq manual).
+
+ Print XML File "filename" qualid. Similar to "Print XML qualid". The generated
+                                   files are stored on the hard-disk using the
+                                   base file name "filename".
+
+ Show XML Proof.                   It prints in XML the current proof in
+                                   progress. Its inner-types are also printed.
+
+ Show XML File "filename" Proof.   Similar to "Show XML Proof". The generated
+                                   files are stored on the hard-disk using
+                                   the base file name "filename".
+
+ The verbosity of the previous commands is raised if the configuration
+ parameter verbose of xmlcommand.ml is set to true at compile time.
+
+==============================================
+1.2. New coqc/coqtop flags and suggested usage
+==============================================
+
+ The following flag has been added to coqc and coqtop:
+
+  -xml     export XML files either to the hierarchy rooted in
+           the directory $COQ_XML_LIBRARY_ROOT (if the environment
+           variable is set) or to stdout (if unset)
+
+ If the flag is set, every definition or declaration is immediately
+ exported to XML. The XML files describe the user-provided non-discharged
+ form of the definition or declaration. 
+
+
+ The coq_makefile utility has also been modified to easily allow XML
+ exportation:
+
+   make COQ_XML=-xml   (or, equivalently, setting the environment
+                        variable COQ_XML)
+
+
+ The suggested usage of the module is the following:
+
+   1. add to your own contribution a valid Make file and use coq_makefile
+      to generate the Makefile from the Make file.
+      *WARNING:* Since logical names are used to structure the XML hierarchy,
+      always add to the Make file at least one "-R" option to map physical
+      file names to logical module paths. See the Coq manual for further
+      informations on the -R flag.
+   2. set $COQ_XML_LIBRARY_ROOT to the directory where the XML file hierarchy
+      must be physically rooted.
+   3. compile your contribution with "make COQ_XML=-xml"
+
+
+=================================
+1.3. How to exploit the XML files
+=================================
+
+ Once the information is exported to XML, it becomes possible to implement
+ services that are completely Coq-independent. Projects HELM and MoWGLI
+ already provide rendering, searching and data mining functionalities.
+
+ In particular, the standard library and contributions of Coq can be
+ browsed and searched on the HELM web site:
+
+                  http://helm.cs.unibo.it/library.html
+
+
+ If you want to publish your own contribution so that it is included in the
+ HELM library, use the MoWGLI prototype upload form:
+
+                  http://mowgli.cs.unibo.it
+
+
+================================================================================
+                            TECHNICAL INFORMATIONS
+================================================================================
+
+==========================
+2.1. Inner-types
+==========================
+
+In order to do proof-rendering (for example in natural language),
+some redundant typing information is required, i.e. the type of
+at least some of the subterms of the bodies and types. So, each
+new command described in section 1.1 print not only
+the object, but also another XML file in which you can find
+the type of all the subterms of the terms of the printed object
+which respect the following conditions:
+
+ 1. It's sort is Prop or CProp (the "sort"-like definition used in
+    CoRN to type computationally relevant predicative propositions).
+ 2. It is not a cast or an atomic term, i.e. it's root is not a CAST, REL,
+    VAR, MUTCONSTR or CONST.
+ 3. If it's root is a LAMBDA, then the root's parent node is not a LAMBDA,
+    i.e. only the type of the outer LAMBDA of a block of nested LAMBDAs is
+    printed.
+
+The rationale for the 3rd condition is that the type of the inner LAMBDAs
+could be easily computed starting from the type of the outer LAMBDA; moreover,
+the types of the inner LAMBDAs requires a lot of disk/memory space: removing
+the 3rd condition leads to XML file that are two times as big as the ones
+exported appling the 3rd condition.
+
+==========================================
+2.2. CIC with Explicit Named Substitutions
+==========================================
+
+The exported files are and XML encoding of the lambda-terms used by the
+Coq system. The implementative details of the Coq system are hidden as much
+as possible, so that the XML DTD is a straightforward encoding of the  
+Calculus of (Co)Inductive Constructions.
+
+Nevertheless, there is a feature of the Coq system that can not be
+hidden in a completely satisfactory way: discharging. In Coq it is possible
+to open a section, declare variables and use them in the rest of the section
+as if they were axiom declarations. Once the section is closed, every definition
+and theorem in the section is discharged by abstracting it over the section
+variables. Variable declarations as well as section declarations are entirely
+dropped. Since we are interested in an XML encoding of definitions and
+theorems as close as possible to those directly provided the user, we
+do not want to export discharged forms. Exporting non-discharged theorem
+and definitions together with theorems that rely on the discharged forms
+obliges the tools that work on the XML encoding to implement discharging to
+achieve logical consistency. Moreover, the rendering of the files can be
+misleading, since hyperlinks can be shown between occurrences of the discharge
+form of a definition and the non-discharged definition, that are different
+objects.
+
+To overcome the previous limitations, Claudio Sacerdoti Coen developed in his
+PhD. thesis an extension of CIC, called Calculus of (Co)Inductive Constructions
+with Explicit Named Substitutions, that is a slight extension of CIC where
+discharging is not necessary. The DTD of the exported XML files describes
+constants, inductive types and variables of the Calculus of (Co)Inductive
+Constructions with Explicit Named Substitions. The conversion to the new
+calculus is performed during the exportation phase.
+
+The following example shows a very small Coq development together with its
+version in CIC with Explicit Named Substitutions.
+
+# CIC version: #
+Section S.
+ Variable A : Prop.
+
+ Definition impl := A -> A.
+
+ Theorem t : impl.           (* uses the undischarged form of impl *)
+  Proof.
+   exact (fun (a:A) => a).
+  Qed.
+
+End S.
+
+Theorem t' : (impl False).   (* uses the discharged form of impl *) 
+ Proof.
+  exact (t False).           (* uses the discharged form of t *)
+ Qed.
+
+# Corresponding CIC with Explicit Named Substitutions version: #
+Section S.
+ Variable A : Prop.
+
+ Definition impl(A) := A -> A.   (* theorems and definitions are
+                                    explicitly abstracted over the
+                                    variables. The name is sufficient
+                                    to completely describe the abstraction *)
+
+ Theorem t(A) : impl.            (* impl where A is not instantiated *)
+  Proof.
+   exact (fun (a:A) => a).
+  Qed.
+
+End S.
+
+Theorem t'() : impl{False/A}.    (* impl where A is instantiated with False
+                                    Notice that t' does not depend on A     *) 
+ Proof.
+  exact t{False/A}.              (* t where A is instantiated with False *)
+ Qed.
+
+Further details on the typing and reduction rules of the calculus can be
+found in Claudio Sacerdoti Coen PhD. dissertation, where the consistency
+of the calculus is also proved.
+
+======================================================
+2.3. The CIC with Explicit Named Substitutions XML DTD
+======================================================
+
+A copy of the DTD can be found in the file "cic.dtd".
+
+<ConstantType>     is the root element of the files that correspond to
+                   constant types.
+<ConstantBody>     is the root element of the files that correspond to
+                   constant bodies. It is used only for closed definitions and
+                   theorems (i.e. when no metavariable occurs in the body
+                   or type of the constant)
+<CurrentProof>     is the root element of the file that correspond to
+                   the body of a constant that depends on metavariables
+                   (e.g. unfinished proofs)
+<Variable>         is the root element of the files that correspond to variables
+<InductiveTypes>   is the root element of the files that correspond to blocks
+                   of mutually defined inductive definitions
+
+The elements
+ <LAMBDA>,<CAST>,<PROD>,<REL>,<SORT>,<APPLY>,<VAR>,<META>, <IMPLICIT>,<CONST>,
+ <LETIN>,<MUTIND>,<MUTCONSTRUCT>,<MUTCASE>,<FIX> and <COFIX>
+are used to encode the constructors of CIC. The sort or type attribute of the
+element, if present, is respectively the sort or the type of the term, that
+is a sort because of the typing rules of CIC.
+
+The element <instantiate> correspond to the application of an explicit named
+substitution to its first argument, that is a reference to a definition
+or declaration in the environment.
+
+All the other elements are just syntactic sugar.

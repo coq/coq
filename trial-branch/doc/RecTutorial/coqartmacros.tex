@@ -1,0 +1,180 @@
+\usepackage{url}
+
+\newcommand{\variantspringer}[1]{#1}
+\newcommand{\marginok}[1]{\marginpar{\raggedright OK:#1}}
+\newcommand{\tab}{{\null\hskip1cm}}
+\newcommand{\Ltac}{\mbox{\emph{$\cal L$}tac}}
+\newcommand{\coq}{\mbox{\emph{Coq}}}
+\newcommand{\lcf}{\mbox{\emph{LCF}}}
+\newcommand{\hol}{\mbox{\emph{HOL}}}
+\newcommand{\pvs}{\mbox{\emph{PVS}}}
+\newcommand{\isabelle}{\mbox{\emph{Isabelle}}}
+\newcommand{\prolog}{\mbox{\emph{Prolog}}}
+\newcommand{\goalbar}{\tt{}============================\it}
+\newcommand{\gallina}{\mbox{\emph{Gallina}}}
+\newcommand{\joker}{\texttt{\_}}
+\newcommand{\eprime}{\(\e^{\prime}\)}
+\newcommand{\Ztype}{\citecoq{Z}}
+\newcommand{\propsort}{\citecoq{Prop}}
+\newcommand{\setsort}{\citecoq{Set}}
+\newcommand{\typesort}{\citecoq{Type}}
+\newcommand{\ocaml}{\mbox{\emph{OCAML}}}
+\newcommand{\haskell}{\mbox{\emph{Haskell}}}
+\newcommand{\why}{\mbox{\emph{Why}}}
+\newcommand{\Pascal}{\mbox{\emph{Pascal}}}
+
+\newcommand{\ml}{\mbox{\emph{ML}}}
+
+\newcommand{\scheme}{\mbox{\emph{Scheme}}}
+\newcommand{\lisp}{\mbox{\emph{Lisp}}}
+
+\newcommand{\implarrow}{\mbox{$\Rightarrow$}}
+\newcommand{\metavar}[1]{?#1}
+\newcommand{\notincoq}[1]{#1}
+\newcommand{\coqscope}[1]{\%#1}
+\newcommand{\arrow}{\mbox{$\rightarrow$}}
+\newcommand{\fleche}{\arrow}
+\newcommand{\funarrow}{\mbox{$\Rightarrow$}}
+\newcommand{\ltacarrow}{\funarrow}
+\newcommand{\coqand}{\mbox{\(\wedge\)}}
+\newcommand{\coqor}{\mbox{\(\vee\)}}
+\newcommand{\coqnot}{\mbox{\(\neg\)}}
+\newcommand{\hide}[1]{}
+\newcommand{\hidedots}[1]{...}
+\newcommand{\sig}[3]{\texttt{\{}#1\texttt{:}#2 \texttt{|} #3\texttt{\}}}
+\renewcommand{\neg}{\sim}
+\renewcommand{\marginpar}[1]{}
+
+\addtocounter{secnumdepth}{1}
+\providecommand{\og}{«}
+\providecommand{\fg}{»}
+
+
+\newcommand{\hard}{\mbox{\small *}}
+\newcommand{\xhard}{\mbox{\small **}}
+\newcommand{\xxhard}{\mbox{\small ***}}
+
+%%% Operateurs, etc.
+\newcommand{\impl}{\mbox{$\rightarrow$}}
+\newcommand{\appli}[2]{\mbox{\tt{#1 #2}}}
+\newcommand{\applis}[1]{\mbox{\texttt{#1}}}
+\newcommand{\abst}[3]{\mbox{\tt{fun #1:#2 \funarrow #3}}}
+\newcommand{\coqle}{\mbox{$\leq$}}
+\newcommand{\coqge}{\mbox{$\geq$}}
+\newcommand{\coqdiff}{\mbox{$\neq$}}
+\newcommand{\coqiff}{\mbox{$\leftrightarrow$}}
+\newcommand{\prodsym}{\mbox{\(\forall\,\)}}
+\newcommand{\exsym}{\mbox{\(\exists\,\)}}
+
+\newcommand{\substsign}{/}
+\newcommand{\subst}[3]{\mbox{#1\{#2\substsign{}#3\}}}
+\newcommand{\anoabst}[2]{\mbox{\tt[#1]#2}}
+\newcommand{\letin}[3]{\mbox{\tt let #1:=#2 in #3}}
+\newcommand{\prodep}[3]{\mbox{\tt \(\forall\,\)#1:#2,$\,$#3}}
+\newcommand{\prodplus}[2]{\mbox{\tt\(\forall\,\)$\,$#1,$\,$#2}}
+\newcommand{\dom}[1]{\textrm{dom}(#1)} % domaine d'un contexte (log function)
+\newcommand{\norm}[1]{\textrm{n}(#1)} % forme normale (log function)
+\newcommand{\coqZ}[1]{\mbox{\tt{`#1`}}}
+\newcommand{\coqnat}[1]{\mbox{\tt{#1}}}
+\newcommand{\coqcart}[2]{\mbox{\tt{#1*#2}}}
+\newcommand{\alphacong}{\mbox{$\,\cong_{\alpha}\,$}} % alpha-congruence
+\newcommand{\betareduc}{\mbox{$\,\rightsquigarrow_{\!\beta}$}\,} % beta reduction
+%\newcommand{\betastar}{\mbox{$\,\Rightarrow_{\!\beta}^{*}\,$}} % beta reduction
+\newcommand{\deltareduc}{\mbox{$\,\rightsquigarrow_{\!\delta}$}\,} % delta reduction
+\newcommand{\dbreduc}{\mbox{$\,\rightsquigarrow_{\!\delta\beta}$}\,} % delta,beta reduction
+\newcommand{\ireduc}{\mbox{$\,\rightsquigarrow_{\!\iota}$}\,} % delta,beta reduction
+
+
+% jugement de typage
+\newcommand{\these}{\boldsymbol{\large \vdash}}
+\newcommand{\disj}{\mbox{$\backslash/$}}
+\newcommand{\conj}{\mbox{$/\backslash$}}
+%\newcommand{\juge}[3]{\mbox{$#1 \boldsymbol{\vdash} #2 : #3 $}}
+\newcommand{\juge}[4]{\mbox{$#1,#2 \these #3 \boldsymbol{:} #4 $}}
+\newcommand{\smalljuge}[3]{\mbox{$#1 \these #2 \boldsymbol{:} #3 $}}
+\newcommand{\goal}[3]{\mbox{$#1,#2 \these^{\!\!\!?} #3  $}}
+\newcommand{\sgoal}[2]{\mbox{$#1\these^{\!\!\!\!?} #2 $}}
+\newcommand{\reduc}[5]{\mbox{$#1,#2 \these #3 \rhd_{#4}#5 $}}
+\newcommand{\convert}[5]{\mbox{$#1,#2 \these #3 =_{#4}#5 $}}
+\newcommand{\convorder}[5]{\mbox{$#1,#2 \these #3\leq _{#4}#5 $}}
+\newcommand{\wouff}[2]{\mbox{$\emph{WF}(#1)[#2]$}}
+
+
+%\newcommand{\mthese}{\underset{M}{\vdash}}
+\newcommand{\mthese}{\boldsymbol{\vdash}_{\!\!M}}
+\newcommand{\type}{\boldsymbol{:}}
+
+% jugement absolu
+
+%\newcommand{\ajuge}[2]{\mbox{$ \boldsymbol{\vdash} #1 : #2 $}}
+\newcommand{\ajuge}[2]{\mbox{$\these #1 \boldsymbol{:} #2 $}}
+
+%%% logique minimale
+\newcommand{\propzero}{\mbox{$P_0$}} % types de Fzero
+
+%%% logique propositionnelle classique
+\newcommand {\ff}{\boldsymbol{f}} % faux
+\newcommand {\vv}{\boldsymbol{t}} % vrai
+
+\newcommand{\verite}{\mbox{$\cal{B}$}} % {\ff,\vv}
+\newcommand{\sequ}[2]{\mbox{$#1 \vdash #2 $}} % sequent
+\newcommand{\strip}[1]{#1^o} % enlever les variables d'un contexte
+
+
+
+%%% tactiques
+\newcommand{\decomp}{\delta} % decomposition
+\newcommand{\recomp}{\rho} % recomposition
+
+%%% divers
+\newcommand{\cqfd}{\mbox{\textbf{cqfd}}}
+\newcommand{\fail}{\mbox{\textbf{F}}}
+\newcommand{\succes}{\mbox{$\blacksquare$}}
+%%% Environnements
+
+
+%% Fzero
+\newcommand{\con}{\mbox{$\cal C$}}
+\newcommand{\var}{\mbox{$\cal V$}}
+
+\newcommand{\atomzero}{\mbox{${\cal A}_0$}} % types de base de Fzero
+\newcommand{\typezero}{\mbox{${\cal T}_0$}} % types de Fzero
+\newcommand{\termzero}{\mbox{$\Lambda_0$}} % termes de Fzero 
+\newcommand{\conzero}{\mbox{$\cal C_0$}} % contextes de Fzero 
+
+\newcommand{\buts}{\mbox{$\cal B$}} % buts
+
+%%% for drawing terms
+% abstraction [x:t]e
+\newcommand{\PicAbst}[3]{\begin{bundle}{\bf abst}\chunk{#1}\chunk{#2}\chunk{#3}%
+                        \end{bundle}}
+
+% the same in DeBruijn form
+\newcommand{\PicDbj}[2]{\begin{bundle}{\bf abst}\chunk{#1}\chunk{#2}
+                       \end{bundle}}
+
+
+% applications
+\newcommand{\PicAppl}[2]{\begin{bundle}{\bf appl}\chunk{#1}\chunk{#2}%
+                         \end{bundle}}
+
+% variables
+\newcommand{\PicVar}[1]{\begin{bundle}{\bf var}\chunk{#1}
+                          \end{bundle}}
+
+% constantes
+\newcommand{\PicCon}[1]{\begin{bundle}{\bf const}\chunk{#1}\end{bundle}}
+
+% arrows
+\newcommand{\PicImpl}[2]{\begin{bundle}{\impl}\chunk{#1}\chunk{#2}%
+                         \end{bundle}}
+
+
+
+%%%% scripts coq
+\newcommand{\prompt}{\mbox{\sl Coq $<\;$}}
+\newcommand{\natquicksort}{\texttt{nat\_quicksort}}
+\newcommand{\citecoq}[1]{\mbox{\texttt{#1}}}
+\newcommand{\safeit}{\it}
+\newtheorem{remarque}{Remark}[section]
+%\newtheorem{definition}{Definition}[chapter]

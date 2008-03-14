@@ -1,0 +1,125 @@
+.TH COQ-TEX 1 "29 March 1995"
+
+.SH NAME
+coq-tex \- Process Coq phrases embedded in LaTeX files
+
+.SH SYNOPSIS
+.B coq-tex
+[
+.BI \-o \ output-file
+]
+[
+.BI \-n \ line-width
+]
+[
+.BI \-image \ coq-image
+]
+[
+.B -w
+]
+[
+.B -v
+]
+[
+.B -sl
+]
+[
+.B -hrule
+]
+[
+.B -small
+]
+.I input-file ...
+
+
+.SH DESCRIPTION
+
+The
+.B coq-tex
+filter extracts Coq phrases embedded in LaTeX files, evaluates
+them, and insert the outcome of the evaluation after each phrase.
+
+Three LaTeX environments are provided to include Coq code in
+the input files:
+.TP
+.B coq_example
+The phrases between \\begin{coq_example} and \\end{coq_example} are
+evaluated and copied into the output file. Each phrase is followed by
+the response of the toplevel loop.
+.TP
+.B coq_example*
+The phrases between \\begin{coq_example*} and \\end{coq_example*} are
+evaluated and copied into the output file. The responses of the
+toplevel loop are discarded.
+.TP
+.B coq_eval
+The phrases between \\begin{coq_eval} and \\end{coq_eval} are
+silently evaluated. They are not copied into the output file, and the
+responses of the toplevel loop are discarded.
+.PP
+The resulting LaTeX code is stored in the file
+.IR file \&.v.tex
+if the input file has a name of the form
+.IR file \&.tex,
+otherwise the name of the output file is the name of the input file
+with `.v.tex' appended.
+
+The files produced by
+.B coq-tex
+can be directly processed by LaTeX. 
+Both the Coq phrases and the toplevel output are typeset in
+typewriter font.
+
+.SH OPTIONS
+
+.TP
+.BI \-o \ output-file
+Specify the name of a file where the LaTeX output is to be stored. A
+dash `-' causes the LaTeX output to be printed on standard output.
+.TP
+.BI \-n \ line-width
+Set the line width. The default is 72 characters. The responses of the
+toplevel loop are folded if they are longer than the line width. No
+folding is performed on the Coq input text.
+.TP
+.BI \-image \ coq-image
+Cause the file
+.IR coq-image
+to be executed to evaluate the Coq phrases. By default,
+this is the command 
+.IR coqtop
+without specifying any path which is used to evaluate the Coq phrases.
+.TP
+.B -w
+Cause lines to be folded on a space character whenever possible,
+avoiding word cuts in the output. By default, folding occurs at
+the line width, regardless of word cuts.
+.TP
+.B -v
+Verbose mode. Prints the Coq answers on the standard output.
+Useful to detect errors in Coq phrases.
+.TP
+.B -sl
+Slanted mode. The Coq answers are written in a slanted font.
+.TP
+.B -hrule
+Horizontal lines mode. The Coq parts are written between two
+horizontal lines.
+.TP
+.B -small
+Small font mode. The Coq parts are written in a smaller font.
+
+
+.SH CAVEATS
+The \\begin... and \\end... phrases must sit on a line by themselves,
+with no characters before the backslash or after the closing brace.
+Each Coq phrase must be terminated by `.' at the end of a line.
+Blank space is accepted between `.' and the newline, but any other
+character will cause coq-tex to ignore the end of the phrase,
+resulting in an incorrect shuffling of the responses into the phrases.
+(The responses ``lag behind''.)
+
+.SH SEE ALSO
+
+.B coqtop
+(1).
