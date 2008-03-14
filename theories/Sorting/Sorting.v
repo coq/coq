@@ -8,10 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import List.
-Require Import Multiset.
-Require Import Permutation.
-Require Import Relations.
+Require Import List Multiset Permutation Coq.Relations.Relations.
 
 Set Implicit Arguments.
 

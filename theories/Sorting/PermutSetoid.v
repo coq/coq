@@ -8,12 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Omega.
-Require Import Relations.
-Require Import List.
-Require Import Multiset.
-Require Import Permutation. 
-Require Import SetoidList.
+Require Import Omega Coq.Relations.Relations Multiset Permutation SetoidList.
 
 Set Implicit Arguments.
 
