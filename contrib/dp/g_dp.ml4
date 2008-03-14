@@ -41,7 +41,7 @@ TACTIC EXTEND Gwhy
 END
 
 TACTIC EXTEND Gappa
-  [ "gappa" ] -> [ Dp_gappa.gappa ]
+  [ "gappa_internal" ] -> [ Dp_gappa.gappa_internal ]
 END
 
 (* should be part of basic tactics syntax *)
