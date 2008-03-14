@@ -3,9 +3,6 @@ open Pp
 
 open Libnames
 
-(* This map is used to deal with debruijn linked indices. *)
-module Link = Map.Make (struct type t = int let compare = Pervasives.compare end)
-
 let mk_prefix pre id = id_of_string (pre^(string_of_id id))
 let mk_rel_id = mk_prefix "R_"
 let mk_correct_id id = Nameops.add_suffix (mk_rel_id id) "_correct"
@@ -509,20 +506,3 @@ let do_observe () =
     
 exception Building_graph of exn 
 exception Defining_principle of exn
-
-
-(* type 'a ctactic = 'a -> Proof_type.goal Evd.sigma -> (('a * Proof_type.goal) list Evd.sigma * Proof_type.validation) *)
-open Proof_type
-open Evd
-let ctclThen (tac1:tactic) (tac2:tactic): tactic =
-  (fun g -> 
-    let _gls,_valid = tac1 g in
-    Tacticals.tclTHEN tac1 tac2 g
-  )
-(* 
-   let lres = List.map (fun g -> tac2 {it=g;sigma=sig_sig gls}) (sig_it gls) in
-   let lgls,lvalid = List.split lres in
-   let newvalid = 
-     (fun lpftree -> List.map2 (fun x y -> x y) lvalid lpftree) in
-   lgls,newvalid
-*)

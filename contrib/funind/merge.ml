@@ -21,7 +21,6 @@ open Declarations
 open Environ
 open Rawterm
 open Rawtermops
-open Functional_principles_types
 
 (** {1 Utilities}  *)
 
@@ -80,7 +79,7 @@ let next_ident_fresh (id:identifier) =
 
 (** {2 Debugging} *)
 (* comment this line to see debug msgs *)
-(* let msg x = () ;; let pr_lconstr c = str "" *)
+let msg x = () ;; let pr_lconstr c = str ""
 (* uncomment this to see debugging *)
 let prconstr c =  msg (str"  " ++ Printer.pr_lconstr c)
 let prconstrnl c =  msg (str"  " ++ Printer.pr_lconstr c ++ str"\n")
@@ -196,16 +195,6 @@ struct
   let fold i j = if i<j then foldup i j else folddown i j
 end
 
-(** Inductive lookup *)
-let lookup_induct_princ id: Names.constant*constr =
-  let ind_kn =
-    fst (locate_with_msg
-      (Libnames.pr_reference (Libnames.Ident (dummy_loc , id)) ++ str ": Not an inductive type!")
-      locate_ind (Libnames.Ident (dummy_loc , id))) in  
-  (* TODO: replace 0 by the mutual number *)
-  let princ = destConst (Indrec.lookup_eliminator (ind_kn,0) (InProp)) in 
-  let princ_type = Typeops.type_of_constant (Global.env()) princ in
-  princ,princ_type
 
 (** {1 Parameters shifting and linking information} *)
 
@@ -246,6 +235,8 @@ let linkmonad f lnkvar =
 
 let linklift lnkvar i = linkmonad (fun x -> x+i) lnkvar
 
+(* This map is used to deal with debruijn linked indices. *)
+module Link = Map.Make (struct type t = int let compare = Pervasives.compare end)
 
 let pr_links l = 
   Printf.printf "links:\n";
@@ -906,12 +897,16 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   let _ = 
     List.iter (fun (nm,tp) -> prNamedRConstr (string_of_id nm) tp;prstr "\n") rawlist in
   let _ = prstr "\nend rawlist\n" in
-  (* FIX: retransformer en constr ici
-     let shift_prm = { shift_prm with recprms1=prms1; recprms1=prms1; } in *)
+(* FIX: retransformer en constr ici
+   let shift_prm = 
+    { shift_prm with
+      recprms1=prms1;
+      recprms1=prms1;    
+    } in *)
   let indexpr = rawterm_list_to_inductive_expr prms1 prms2 mib1 mib2 shift_prm rawlist in
   (* Declare inductive *)
-  let _ = Command.build_mutual [(indexpr,None)] true (* means: not coinductive *) in
-  ()
+  Command.build_mutual [(indexpr,None)] true (* means: not coinductive *)
+
 
 (* Find infos on identifier id. *)
 let find_Function_infos_safe (id:identifier): Indfun_common.function_info =
@@ -922,7 +917,6 @@ let find_Function_infos_safe (id:identifier): Indfun_common.function_info =
     try find_Function_infos (kn_of_id id)
     with Not_found ->
       errorlabstrm "indfun" (Nameops.pr_id id ++ str " has no functional scheme")
-
 
 (** [merge id1 id2 args1 args2 id] builds and declares a new inductive
     type called [id], representing the merged graphs of both graphs
@@ -952,31 +946,7 @@ let merge (id1:identifier) (id2:identifier) (args1:identifier array)
   (* setting functional results *)
   let _ = lnk1.(Array.length lnk1 - 1) <- Funres in 
   let _ = lnk2.(Array.length lnk2 - 1) <- Funres in
-  let res = merge_inductive finfo1.graph_ind finfo2.graph_ind lnk1 lnk2 id in  
-  let princ,princ_type= lookup_induct_princ id in
-  prconstr princ_type;  
-  let argnums1 = Array.mapi (fun i _ -> i) args1 in
-  let cpt = ref 0 in
-  let argnums2 = Array.mapi 
-    (fun i x -> 
-      match x with
-        | Unlinked -> !cpt + Array.length argnums1
-        | Linked j -> j 
-        | Funres -> assert false) 
-    lnk2 in
-  let rel2funinfo = 
-    Link.add 0 { thefun = mkConst finfo2.function_constant; theargs = argnums1}
-      (Link.add 0 { thefun = mkConst finfo1.function_constant; theargs = argnums2}
-        Link.empty) in
-  let _type_scheme = 
-    Functional_principles_types.compute_new_princ_type_from_rel 
-      rel2funinfo
-      [|Termops.new_sort_in_family InProp|] (* FIXME: la sort doit être réglable *)
-      princ_type
-  in
-  prstr "AFTER COMPUTATION OF MERGED TYPE SCHEME\n";
-  (* prconstr type_scheme; *)
-  res
+  merge_inductive finfo1.graph_ind finfo2.graph_ind lnk1 lnk2 id
 
 
 
