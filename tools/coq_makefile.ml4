@@ -138,10 +138,9 @@ let implicit () =
     print "%.html: %.v %.glob\n\t$(COQDOC) -glob-from $*.glob  -html $< -o $@\n\n";
     print "%.g.tex: %.v\n\t$(COQDOC) -latex -g $< -o $@\n\n";
     print "%.g.html: %.v %.glob\n\t$(COQDOC) -glob-from $*.glob -html -g $< -o $@\n\n";
-    print "%.v.d.raw: %.v\n";
-    print "\t$(COQDEP) -slash $(COQLIBS) \"$<\" > \"$@\"\\\n\t  || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
-    print "%.v.d: %.v.d.raw\n";
-    print "\t$(HIDE)sed 's/\\(.*\\)\\.vo[[:space:]]*:/\\1.vo \\1.glob:/' < \"$<\" > \"$@\" \\\n\t  || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+    print "%.v.d: %.v\n";
+    print "\t$(COQDEP) -glob -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
+
   and ml_suffixes =
     if !some_mlfile then 
       [ ".mli"; ".ml"; ".cmo"; ".cmi"; ".cmx" ]

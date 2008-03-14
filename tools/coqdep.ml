@@ -22,6 +22,7 @@ let option_D = ref false
 let option_w = ref false
 let option_i = ref false
 let option_sort = ref false
+let option_glob = ref false
 let option_slash = ref false
 
 let suffixe = ref ".vo"
@@ -365,11 +366,12 @@ let mL_dependencies () =
 let coq_dependencies () =
   List.iter
     (fun (name,_) ->
-       printf "%s%s: %s.v" name !suffixe name;
+       let glob = if !option_glob then " "^name^".glob" else "" in 
+       printf "%s%s%s: %s.v" name !suffixe glob name;
        traite_fichier_Coq true (name ^ ".v");
        printf "\n";
        if !option_i then begin
-	 printf "%s%s: %s.v" name !suffixe_spec name;
+	 printf "%s%s%s: %s.v" name !suffixe_spec glob name;
 	 traite_fichier_Coq false (name ^ ".v");
 	 printf "\n";
        end;
@@ -527,6 +529,7 @@ let coqdep () =
       | "-w" :: ll -> option_w := true; parse ll
       | "-i" :: ll -> option_i := true; parse ll
       | "-sort" :: ll -> option_sort := true; parse ll
+      | "-glob" :: ll -> option_glob := true; parse ll
       | "-I" :: r :: ll -> add_directory (r, []); parse ll
       | "-I" :: [] -> usage ()
       | "-R" :: r :: ln :: ll -> add_rec_directory r ln; parse ll

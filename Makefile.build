@@ -850,24 +850,9 @@ endif
 	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
-# Another nasty hack. The making of .v.d files is split in two so that
-# make notices if coqdep fails (returns an error exit code). If we
-# just make %.v.d directly from %.v with
-#	$(HIDE)$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
-#  "$<" | sed 's/\(.*\)\.vo[[:space:]]*:/\1.vo \1.glob:/' > "$@"
-# then the exit code of the whole pipe is the exit code of ... sed,
-# that is always 0. And make doesn't notice that coqdep failed and
-# merrily accepts that the .v.d file is just empty.
-# We could also make a complex shell script with ERR trapping and all
-# that, but more complex and fragile than this.
-# make will delete .raw files because they are intermediate.
-%.v.d.raw: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP)
+%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEP) -slash -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) "$<" > "$@" \
-	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
-
-%.v.d: %.v.d.raw
-	$(HIDE)sed 's/\(.*\)\.vo[[:space:]]*:/\1.vo \1.glob:/' < "$<" > "$@" \
+	$(HIDE)$(COQDEP) -glob -slash -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
