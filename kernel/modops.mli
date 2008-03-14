@@ -21,18 +21,24 @@ open Mod_subst
 (* Various operations on modules and module types *)
 
 (* make the environment entry out of type *)
-val module_body_of_type : struct_expr_body -> module_body
+val module_body_of_type : module_type_body -> module_body
 
+val  module_type_of_module : module_path option -> module_body -> 
+  module_type_body 
 
 val destr_functor : 
-  env -> struct_expr_body -> mod_bound_id * struct_expr_body * struct_expr_body
+  env -> struct_expr_body -> mod_bound_id * module_type_body * struct_expr_body
 
-val subst_modtype : substitution -> struct_expr_body -> struct_expr_body
+val subst_modtype : substitution -> module_type_body -> module_type_body
 val subst_structure : substitution -> structure_body -> structure_body
+
+val subst_struct_expr :  substitution -> struct_expr_body -> struct_expr_body
 
 val subst_signature_msid :
   mod_self_id -> module_path -> 
   structure_body -> structure_body
+
+val subst_structure : substitution -> structure_body -> structure_body
 
 (* Evaluation functions *)
 val eval_struct : env -> struct_expr_body -> struct_expr_body
@@ -53,6 +59,8 @@ val check_modpath_equiv : env -> module_path -> module_path -> unit
 
 val strengthen : env -> struct_expr_body -> module_path -> struct_expr_body
 
+val update_subst : env -> module_body -> module_path -> bool * substitution
+
 val error_existing_label : label -> 'a
 
 val error_declaration_not_path : module_struct_entry -> 'a
@@ -62,7 +70,7 @@ val error_application_to_not_path : module_struct_entry -> 'a
 val error_not_a_functor :  module_struct_entry -> 'a
 
 val error_incompatible_modtypes : 
-    struct_expr_body -> struct_expr_body -> 'a
+  module_type_body -> module_type_body -> 'a
 
 val error_not_equal : module_path -> module_path -> 'a
 
@@ -97,4 +105,6 @@ val error_local_context : label option -> 'a
 val error_no_such_label_sub : label->string->string->'a
 
 val resolver_of_environment :
-  mod_bound_id -> struct_expr_body -> module_path -> env -> resolver
+  mod_bound_id -> module_type_body -> module_path -> substitution 
+  -> env -> resolver
+

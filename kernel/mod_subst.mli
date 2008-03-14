@@ -24,11 +24,15 @@ val add_msid :
   mod_self_id -> module_path -> substitution -> substitution
 val add_mbid : 
   mod_bound_id -> module_path -> resolver option -> substitution -> substitution
+val add_mp :
+  module_path -> module_path -> substitution -> substitution
 
 val map_msid :
   mod_self_id -> module_path -> substitution
 val map_mbid :
   mod_bound_id -> module_path -> resolver option -> substitution
+val map_mp :
+  module_path -> module_path -> substitution
 
 (* sequential composition: 
    [substitute (join sub1 sub2) t = substitute sub2 (substitute sub1 t)]
@@ -78,3 +82,9 @@ val subst_mps : substitution -> constr -> constr
 
 val occur_msid : mod_self_id -> substitution -> bool
 val occur_mbid : mod_bound_id -> substitution -> bool
+
+val update_subst_alias : substitution -> substitution -> substitution
+
+val subst_key : substitution -> substitution -> substitution
+
+val join_alias : substitution -> substitution -> substitution

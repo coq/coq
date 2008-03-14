@@ -74,6 +74,7 @@ type specification_entry =
     SPEconst of constant_entry
   | SPEmind of mutual_inductive_entry
   | SPEmodule of module_entry
+  | SPEalias of module_path
   | SPEmodtype of module_struct_entry
 
 and module_struct_entry = 

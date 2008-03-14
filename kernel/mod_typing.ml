@@ -22,7 +22,7 @@ open Mod_subst
 exception Not_path
 
 let path_of_mexpr = function
-  | MSEident mb -> mb
+  | MSEident mp -> mp
   | _ -> raise Not_path
 
 let rec list_split_assoc k rev_before = function
@@ -41,10 +41,10 @@ let rec check_with env mtb with_decl =
   match with_decl with
     | With_Definition (id,_) -> 
 	let cb = check_with_aux_def env mtb with_decl in
-	  SEBwith(mtb,With_definition_body(id,cb))
+	  SEBwith(mtb,With_definition_body(id,cb)),empty_subst
     | With_Module (id,mp) -> 
-	let cst = check_with_aux_mod env mtb with_decl in
-	  SEBwith(mtb,With_module_body(id,mp,cst))
+	let cst,sub = check_with_aux_mod env mtb with_decl in
+	  SEBwith(mtb,With_module_body(id,mp,cst)),sub
 
 and check_with_aux_def env mtb with_decl = 
   let msid,sig_b = match (eval_struct env mtb) with 
@@ -102,13 +102,13 @@ and check_with_aux_def env mtb with_decl =
 		| _ -> error_not_a_module (string_of_label l)
 	      in
 		begin
-		  match old.mod_equiv with
+		  match old.mod_expr with
                     | None ->
 			let new_with_decl = match with_decl with
 			    With_Definition (_,c) -> With_Definition (idl,c)
 			  | With_Module (_,c) -> With_Module (idl,c) in 
 			  check_with_aux_def env' (type_of_mb env old) new_with_decl
-                    | Some mp ->
+                    | Some msb ->
 			error_a_generative_module_expected l
 		end
 	  | _ -> anomaly "Modtyping:incorrect use of with"
@@ -117,9 +117,9 @@ and check_with_aux_def env mtb with_decl =
       | Reduction.NotConvertible -> error_with_incorrect l
 
 and check_with_aux_mod env mtb with_decl = 
-  let msid,sig_b = match (eval_struct env mtb) with 
+  let initmsid,msid,sig_b = match (eval_struct env mtb) with 
     | SEBstruct(msid,sig_b) ->let msid'=(refresh_msid msid) in
-	msid',(subst_signature_msid msid (MPself(msid')) sig_b)
+	msid,msid',(subst_signature_msid msid (MPself(msid')) sig_b)
     | _ -> error_signature_expected mtb
   in
   let id,idl = match with_decl with 
@@ -130,39 +130,56 @@ and check_with_aux_mod env mtb with_decl =
     try
       let rev_before,spec,after = list_split_assoc l [] sig_b in
       let before = List.rev rev_before in
+      let rec mp_rec = function
+	| [] -> MPself initmsid
+	| i::r -> MPdot(mp_rec r,label_of_id i)
+      in 
       let env' = Modops.add_signature (MPself msid) before env in
 	match with_decl with
           | With_Module ([],_) -> assert false
 	  | With_Module ([id], mp) ->
-	      let old = match spec with
-		  SFBmodule msb -> msb
+	      let old,alias = match spec with
+		  SFBmodule msb -> Some msb,None
+		| SFBalias (mp',cst) -> None,Some (mp',cst)
 		| _ -> error_not_a_module (string_of_label l)
 	      in
-	      let mtb' = eval_struct env' (SEBident mp) in
+	      let mtb' = lookup_modtype mp env' in
 	      let cst =
-		try check_subtypes env' mtb' (type_of_mb env old)
-              with Failure _ -> error_with_incorrect (label_of_id id) in
-	      let _ = 
- 		match old.mod_equiv with
-		| None -> Some mp
-		| Some mp' -> 
-		    check_modpath_equiv env' mp mp';
-		    Some mp
+		match old,alias with
+		    Some msb,None ->
+		      begin
+			try Constraint.union 
+			  (check_subtypes env' mtb' (module_type_of_module None msb))
+			  msb.mod_constraints
+			with Failure _ -> error_with_incorrect (label_of_id id)
+		      end
+		  | None,Some (mp',None) ->
+		      check_modpath_equiv env' mp mp';
+		      Constraint.empty
+		  | None,Some (mp',Some cst) ->
+		      check_modpath_equiv env' mp mp';
+		      cst
+		  | _,_ ->
+		      anomaly "Mod_typing:no implementation and no alias"
 	      in
-		cst
-        | With_Module (_::_,_) -> 
+		cst,join (map_mp (mp_rec [id]) mp) mtb'.typ_alias
+        | With_Module (_::_,mp) -> 
 	    let old = match spec with
 		SFBmodule msb -> msb
 	      | _ -> error_not_a_module (string_of_label l)
 	    in
 	      begin
-		match old.mod_equiv with
+		match old.mod_expr with
                     None ->
                       let new_with_decl = match with_decl with
-			  With_Definition (_,c) -> With_Definition (idl,c)
+			  With_Definition (_,c) -> 
+			    With_Definition (idl,c)
 			| With_Module (_,c) -> With_Module (idl,c) in
-			check_with_aux_mod env' (type_of_mb env old) new_with_decl 
-                  | Some mp ->
+		      let cst,sub =
+			check_with_aux_mod env' 
+			  (type_of_mb env old) new_with_decl in
+			cst,(join (map_mp (mp_rec idl) mp) sub)
+                  | Some msb ->
                       error_a_generative_module_expected l
               end
 	| _ -> anomaly "Modtyping:incorrect use of with"
@@ -175,35 +192,33 @@ and translate_module env me =
     | None, None -> 
 	anomaly "Mod_typing.translate_module: empty type and expr in module entry"
     | None, Some mte -> 
-	let mtb = translate_struct_entry env mte in
+	let mtb,sub = translate_struct_entry env mte in
 	{ mod_expr = None;
 	  mod_type = Some mtb;
-	  mod_equiv = None;
+	  mod_alias = sub;
 	  mod_constraints = Constraint.empty; 
 	  mod_retroknowledge = []}
     | Some mexpr, _ -> 
-	let meq_o = 
-	  try       (* TODO: transparent field in module_entry *)
-	    match me.mod_entry_type with
-	      | None -> Some (path_of_mexpr mexpr)
-	      | Some _ -> None
-	  with 
-	    | Not_path -> None
-	in
-	let meb = translate_struct_entry env mexpr in
-	let mod_typ, cst =
+	let meb,sub1 = translate_struct_entry env mexpr in
+	let mod_typ,sub,cst =
 	  match me.mod_entry_type with
-	    | None ->  None, Constraint.empty
+	    | None ->  None,sub1,Constraint.empty
 	    | Some mte -> 
-		let mtb1 = translate_struct_entry env mte in
-                let cst = check_subtypes env (eval_struct env meb)
-		  mtb1 in
-		  Some mtb1, cst
+		let mtb2,sub2 = translate_struct_entry env mte in
+                let cst = check_subtypes env
+		  {typ_expr = meb;
+		   typ_strength = None;
+		   typ_alias = sub1;}
+		  {typ_expr = mtb2;
+		   typ_strength = None;
+		   typ_alias = sub2;}
+		in
+		  Some mtb2,sub2,cst
 	in
 	  { mod_type = mod_typ;
 	    mod_expr = Some meb;
-	    mod_equiv = meq_o;
 	    mod_constraints = cst;
+	    mod_alias = sub;
 	    mod_retroknowledge = []} (* spiwack: not so sure about that. It may
 					cause a bug when closing nested modules.
 					If it does, I don't really know how to
@@ -211,31 +226,39 @@ and translate_module env me =
 
 
 and translate_struct_entry env mse = match mse with
-  | MSEident mp -> 
-      SEBident mp
+  | MSEident mp ->
+      let mtb = lookup_modtype mp env in 
+      SEBident mp,mtb.typ_alias
   | MSEfunctor (arg_id, arg_e, body_expr) ->
-      let arg_b = translate_struct_entry env arg_e in
-      let env' = add_module (MPbound arg_id) (module_body_of_type arg_b) env in
-      let body_b = translate_struct_entry env' body_expr in
-	SEBfunctor (arg_id, arg_b, body_b)
+      let arg_b,sub = translate_struct_entry env arg_e in
+      let mtb =
+	{typ_expr = arg_b;
+	 typ_strength = None;
+	 typ_alias = sub} in
+      let env' = add_module (MPbound arg_id) (module_body_of_type mtb) env in
+      let body_b,sub = translate_struct_entry env' body_expr in
+	SEBfunctor (arg_id, mtb, body_b),sub
   | MSEapply (fexpr,mexpr) ->
-      let feb = translate_struct_entry env fexpr in
+      let feb,sub1 = translate_struct_entry env fexpr in
       let feb'= eval_struct env feb
       in
       let farg_id, farg_b, fbody_b = destr_functor env feb' in
-      let _ = 
+      let mtb = 
 	try
-	  path_of_mexpr mexpr 
+	  lookup_modtype (path_of_mexpr mexpr) env
 	with
 	  | Not_path -> error_application_to_not_path mexpr
 	      (* place for nondep_supertype *) in
-      let meb= translate_struct_entry env mexpr in
-      let cst = check_subtypes env (eval_struct env meb) farg_b in
-	SEBapply(feb,meb,cst)
+      let meb,sub2= translate_struct_entry env mexpr in
+      let sub = join sub1 sub2 in
+      let sub = join_alias sub (map_mbid farg_id (path_of_mexpr mexpr) None) in
+      let sub = update_subst_alias sub (map_mbid farg_id (path_of_mexpr mexpr) None) in
+      let cst = check_subtypes env mtb farg_b in
+	SEBapply(feb,meb,cst),sub
   | MSEwith(mte, with_decl) ->
-	let mtb = translate_struct_entry env mte in
-	let mtb' = check_with env mtb with_decl in
-	  mtb'
+	let mtb,sub1 = translate_struct_entry env mte in
+	let mtb',sub2 = check_with env mtb with_decl in
+	  mtb',join sub1 sub2
 
 
 let rec add_struct_expr_constraints env = function
@@ -267,6 +290,8 @@ and add_struct_elem_constraints env = function
   | SFBconst cb -> Environ.add_constraints cb.const_constraints env
   | SFBmind mib -> Environ.add_constraints mib.mind_constraints env
   | SFBmodule mb -> add_module_constraints env mb
+  | SFBalias (mp,Some cst) -> Environ.add_constraints cst env
+  | SFBalias (mp,None) -> env
   | SFBmodtype mtb -> add_modtype_constraints env mtb
 
 and add_module_constraints env mb = 
@@ -277,10 +302,10 @@ and add_module_constraints env mb =
   let env = match mb.mod_type with
     | None -> env
     | Some mtb -> 
-	add_modtype_constraints env mtb
+	add_struct_expr_constraints env mtb
   in
     Environ.add_constraints mb.mod_constraints env
 
 and add_modtype_constraints env mtb = 
-  add_struct_expr_constraints env mtb
+  add_struct_expr_constraints env mtb.typ_expr
       

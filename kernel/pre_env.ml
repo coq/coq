@@ -26,7 +26,8 @@ type globals = {
   env_constants : constant_key Cmap.t;
   env_inductives : mutual_inductive_body KNmap.t;
   env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body MPmap.t }
+  env_modtypes : module_type_body MPmap.t;
+  env_alias : module_path MPmap.t }
 
 type stratification = {
   env_universes : universes;
@@ -60,7 +61,8 @@ let empty_env = {
     env_constants = Cmap.empty;
     env_inductives = KNmap.empty;
     env_modules = MPmap.empty;
-    env_modtypes = MPmap.empty };
+    env_modtypes = MPmap.empty;
+    env_alias = MPmap.empty };
   env_named_context = empty_named_context;
   env_named_vals = [];
   env_rel_context = empty_rel_context;

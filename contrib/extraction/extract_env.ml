@@ -35,7 +35,7 @@ let toplevel_env () =
 	  | "INDUCTIVE" -> SFBmind (Global.lookup_mind kn) 
 	  | "MODULE" -> SFBmodule (Global.lookup_module (MPdot (mp,l)))
 	  | "MODULE TYPE" -> 
-	      SFBmodtype (fst (Global.lookup_modtype (MPdot (mp,l))))
+	      SFBmodtype (Global.lookup_modtype (MPdot (mp,l)))
 	  | _ -> failwith "caught"
 	in l,seb
     | _ -> failwith "caught"
@@ -164,9 +164,17 @@ let rec extract_sfb_spec env mp = function
       (l,Smodule spec) :: specs
   | (l,SFBmodtype mtb) :: msig -> 
       let specs = extract_sfb_spec env mp msig in
-      (l,Smodtype (extract_seb_spec env true(*?*) mtb)) :: specs
+      (l,Smodtype (extract_seb_spec env true(*?*) mtb.typ_expr)) :: specs
+  | (l,SFBalias(mp1,_))::msig -> 
+      extract_sfb_spec env mp 
+	((l,SFBmodule {mod_expr = Some (SEBident mp1);
+		      mod_type = None;
+		      mod_constraints = Univ.Constraint.empty;
+		      mod_alias = Mod_subst.empty_subst;
+		      mod_retroknowledge = []})::msig)
 
 (* From [struct_expr_body] to specifications *)
+
 
 and extract_seb_spec env truetype = function
   | SEBident kn when truetype -> Visit.add_mp kn; MTident kn 
@@ -182,7 +190,7 @@ and extract_seb_spec env truetype = function
   | SEBfunctor (mbid, mtb, mtb') -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in
-	MTfunsig (mbid, extract_seb_spec env true mtb, 
+	MTfunsig (mbid, extract_seb_spec env true mtb.typ_expr, 
 		  extract_seb_spec env' truetype mtb')
   | SEBstruct (msid, msig) -> 
       let mp = MPself msid in 
@@ -240,7 +248,18 @@ let rec extract_sfb env mp all = function
       let ms = extract_sfb env mp all msb in
       let mp = MPdot (mp,l) in
        if all || Visit.needed_mp mp then 
-	(l,SEmodtype (extract_seb_spec env true(*?*) mtb)) :: ms
+	(l,SEmodtype (extract_seb_spec env true(*?*) mtb.typ_expr)) :: ms
+      else ms
+  | (l,SFBalias (mp1,cst)) :: msb -> 
+      let ms = extract_sfb env mp all msb in
+      let mp = MPdot (mp,l) in 
+      if all || Visit.needed_mp mp then 
+	(l,SEmodule (extract_module env mp true 
+		       {mod_expr = Some (SEBident mp1);
+			mod_type = None;
+		        mod_constraints= Univ.Constraint.empty;
+			mod_alias = empty_subst;
+			mod_retroknowledge = []})) :: ms
       else ms
 
 (* From [struct_expr_body] to implementations *)
@@ -255,7 +274,7 @@ and extract_seb env mpo all = function
   | SEBfunctor (mbid, mtb, meb) -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
-      MEfunctor (mbid, extract_seb_spec env true mtb, 
+      MEfunctor (mbid, extract_seb_spec env true mtb.typ_expr, 
 		 extract_seb env' None true meb)
   | SEBstruct (msid, msb) -> 
       let mp,msb = match mpo with 

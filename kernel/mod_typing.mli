@@ -12,16 +12,18 @@
 open Declarations
 open Environ
 open Entries
+open Mod_subst
 (*i*)
 
 
 val translate_module : env -> module_entry -> module_body
 
-val translate_struct_entry : env -> module_struct_entry -> struct_expr_body
+val translate_struct_entry : env -> module_struct_entry -> 
+  struct_expr_body * substitution
 
-val add_modtype_constraints : env -> struct_expr_body -> env
+val add_modtype_constraints : env -> module_type_body -> env
 
 val add_module_constraints : env -> module_body -> env
 
-
+val add_struct_expr_constraints : env -> struct_expr_body -> env
 

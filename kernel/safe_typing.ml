@@ -25,11 +25,12 @@ open Term_typing
 open Modops
 open Subtyping
 open Mod_typing
+open Mod_subst
 
 type modvariant = 
   | NONE 
-  | SIG of (* funsig params *) (mod_bound_id * struct_expr_body) list 
-  | STRUCT of (* functor params *) (mod_bound_id * struct_expr_body) list
+  | SIG of (* funsig params *) (mod_bound_id * module_type_body) list 
+  | STRUCT of (* functor params *) (mod_bound_id * module_type_body) list
   | LIBRARY of dir_path
 
 type module_info = 
@@ -37,7 +38,8 @@ type module_info =
       modpath : module_path;
       seed : dir_path; (* the "seed" of unique identifier generator *)
       label : label;
-      variant : modvariant}
+      variant : modvariant;
+      alias_subst : substitution}
 
 let check_label l labset = 
   if Labset.mem l labset then error_existing_label l
@@ -81,7 +83,8 @@ let rec empty_environment =
       modpath = initial_path;
       seed = initial_dir;
       label = mk_label "_";
-      variant = NONE};
+      variant = NONE;
+      alias_subst = empty_subst};
     labset = Labset.empty;
     revstruct = [];
     univ = Univ.Constraint.empty;
@@ -253,10 +256,13 @@ let add_mind dir l mie senv =
 
 let add_modtype l mte senv = 
   check_label l senv.labset; 
-  let mtb = translate_struct_entry senv.env mte  in
+  let mtb_expr,sub = translate_struct_entry senv.env mte  in
+  let mtb = { typ_expr = mtb_expr;
+	      typ_strength = None;
+	      typ_alias = sub} in
   let env' = add_modtype_constraints senv.env mtb in
   let mp = MPdot(senv.modinfo.modpath, l) in
-  let env'' = Environ.add_modtype mp (mtb,None) env' in
+  let env'' = Environ.add_modtype mp mtb env' in
   mp, { old = senv.old;
 	env = env'';
 	modinfo = senv.modinfo;
@@ -281,10 +287,16 @@ let add_module l me senv =
   check_label l senv.labset; 
   let mb = translate_module senv.env me in
   let mp = MPdot(senv.modinfo.modpath, l) in
+  let is_functor,sub = Modops.update_subst senv.env mb mp in
   let env' = full_add_module mp mb senv.env in
   mp, { old = senv.old;
 	env = env';
-	modinfo = senv.modinfo;
+	modinfo = 
+      if is_functor then
+	senv.modinfo
+      else
+	{senv.modinfo with 
+	   alias_subst = join senv.modinfo.alias_subst sub};
 	labset = Labset.add l senv.labset;
 	revstruct = (l,SFBmodule mb)::senv.revstruct;
         univ = senv.univ;
@@ -293,6 +305,26 @@ let add_module l me senv =
 	loads = senv.loads;
         local_retroknowledge = senv.local_retroknowledge }
 
+let add_alias l mp senv =
+  check_label l senv.labset; 
+  let mp' = MPdot(senv.modinfo.modpath, l) in
+  (* we get all alias substitutions that comes from mp *)
+  let _,sub = translate_struct_entry senv.env (MSEident mp) in
+   (* we add the new one *)
+  let sub = join (map_mp mp' mp) sub in
+  let env' = register_alias mp' mp senv.env in
+    mp', { old = senv.old;
+	env = env';
+	modinfo = { senv.modinfo with 
+		      alias_subst = join 
+	    senv.modinfo.alias_subst sub};
+	labset = Labset.add l senv.labset;
+	revstruct = (l,SFBalias (mp,None))::senv.revstruct;
+        univ = senv.univ;
+        engagement = senv.engagement;
+	imports = senv.imports;
+	loads = senv.loads;
+        local_retroknowledge = senv.local_retroknowledge }
 
 (* Interactive modules *)
 
@@ -304,7 +336,8 @@ let start_module l senv =
 		  modpath = mp;
 		  seed = senv.modinfo.seed;
 		  label = l;
-		  variant = STRUCT [] }
+		  variant = STRUCT [];
+		  alias_subst = empty_subst}
   in
   mp, { old = senv;
 	env = senv.env;
@@ -322,10 +355,10 @@ let end_module l restype senv =
   let oldsenv = senv.old in
   let modinfo = senv.modinfo in
   let restype = Option.map (translate_struct_entry senv.env) restype in
-  let params = 
+  let params,is_functor = 
     match modinfo.variant with
       | NONE | LIBRARY _ | SIG _ -> error_no_module_to_end ()
-      | STRUCT params -> params
+      | STRUCT params -> params, (List.length params > 0)
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
   if not (empty_context senv.env) then error_local_context None;
@@ -339,21 +372,27 @@ let end_module l restype senv =
    let auto_tb = 
      SEBstruct (modinfo.msid, List.rev senv.revstruct)
   in
-  let mod_typ, cst = 
+  let mod_typ,subst,cst = 
     match restype with
-      | None ->  None, Constraint.empty
-      | Some res_tb -> 
-	  let cst = check_subtypes senv.env auto_tb res_tb in
+      | None ->  None,modinfo.alias_subst,Constraint.empty
+      | Some (res_tb,subst) -> 
+	  let cst = check_subtypes senv.env
+	    {typ_expr = auto_tb;
+	     typ_strength = None;
+	     typ_alias = modinfo.alias_subst}
+	    {typ_expr = res_tb;
+	     typ_strength = None;
+	     typ_alias = subst} in
 	  let mtb = functorize_struct res_tb in
-	    Some mtb, cst
+	    Some mtb,subst,cst
   in
   let mexpr = functorize_struct auto_tb in
   let cst = Constraint.union cst senv.univ in
   let mb = 
     { mod_expr = Some mexpr;
       mod_type = mod_typ;
-      mod_equiv = None;
       mod_constraints = cst;
+      mod_alias = subst;
       mod_retroknowledge = senv.local_retroknowledge }
   in
   let mp = MPdot (oldsenv.modinfo.modpath, l) in
@@ -368,9 +407,19 @@ let end_module l restype senv =
   let newenv = 
     full_add_module mp mb newenv
   in 
-  mp, { old = oldsenv.old;
+  let is_functor,subst = Modops.update_subst newenv mb mp in
+  let newmodinfo = 
+    if is_functor then
+      oldsenv.modinfo
+    else
+      { oldsenv.modinfo with 
+	  alias_subst = join 
+	  oldsenv.modinfo.alias_subst 
+	  subst };
+  in
+    mp, { old = oldsenv.old;
 	env = newenv;
-	modinfo = oldsenv.modinfo;
+	modinfo = newmodinfo;
 	labset = Labset.add l oldsenv.labset;
 	revstruct = (l,SFBmodule mb)::oldsenv.revstruct;
         univ = oldsenv.univ;
@@ -383,8 +432,8 @@ let end_module l restype senv =
 
 (* Include for module and module type*)
  let add_include me senv =
-   let struct_expr =  translate_struct_entry senv.env me in
-   let senv = { senv with env = add_modtype_constraints senv.env struct_expr } in
+   let struct_expr,_ =  translate_struct_entry senv.env me in
+   let senv = { senv with env = add_struct_expr_constraints senv.env struct_expr } in
    let msid,str = match (eval_struct senv.env struct_expr) with
      | SEBstruct(msid,str_l) -> msid,str_l
      | _ -> error ("You cannot Include a higher-order Module or Module Type" )
@@ -426,21 +475,42 @@ let end_module l restype senv =
 	       
        | SFBmodule mb ->
 	   let mp = MPdot(senv.modinfo.modpath, l) in
+	   let is_functor,sub = Modops.update_subst senv.env mb mp in
 	   let env' = full_add_module mp mb senv.env in
+	     { old = senv.old;
+	       env = env';
+	       modinfo = 
+		 if is_functor then
+		   senv.modinfo
+		 else
+		   {senv.modinfo with 
+		      alias_subst = join senv.modinfo.alias_subst sub};
+	       labset = Labset.add l senv.labset;
+	       revstruct = (l,SFBmodule mb)::senv.revstruct;
+	       univ = senv.univ;
+	       engagement = senv.engagement;
+	       imports = senv.imports;
+	       loads = senv.loads;
+	       local_retroknowledge = senv.local_retroknowledge }
+       | SFBalias (mp',cst) ->
+	   let env' = Option.fold_right 
+	     Environ.add_constraints cst senv.env in
+	   let mp = MPdot(senv.modinfo.modpath, l) in
+	   let env' = register_alias mp mp' env' in
 	     { old = senv.old;
 	       env = env';
 	       modinfo = senv.modinfo;
 	       labset = Labset.add l senv.labset;
-	       revstruct = (l,SFBmodule mb)::senv.revstruct;
+	       revstruct = (l,SFBalias (mp,cst))::senv.revstruct;
                univ = senv.univ;
                engagement = senv.engagement;
 	       imports = senv.imports;
 	       loads = senv.loads;
-               local_retroknowledge = senv.local_retroknowledge }       
+               local_retroknowledge = senv.local_retroknowledge }
        | SFBmodtype mtb ->
 	   let env' = add_modtype_constraints senv.env mtb in
 	   let mp = MPdot(senv.modinfo.modpath, l) in
-	   let env'' = Environ.add_modtype mp (mtb,None) env' in
+	   let env'' = Environ.add_modtype mp mtb env' in
 	     { old = senv.old;
 	       env = env'';
 	       modinfo = senv.modinfo;
@@ -459,7 +529,10 @@ let end_module l restype senv =
 let add_module_parameter mbid mte senv =
   if  senv.revstruct <> [] or senv.loads <> [] then
     anomaly "Cannot add a module parameter to a non empty module";
-  let mtb = translate_struct_entry senv.env mte in
+  let mtb_expr,sub = translate_struct_entry senv.env mte in
+  let mtb = {typ_expr = mtb_expr;
+	    typ_strength = None;
+	    typ_alias = sub} in
   let env = full_add_module (MPbound mbid) (module_body_of_type mtb) senv.env 
   in
   let new_variant = match senv.modinfo.variant with
@@ -490,7 +563,8 @@ let start_modtype l senv =
 		  modpath = mp;
 		  seed = senv.modinfo.seed;
 		  label = l;
-		  variant = SIG [] }
+		  variant = SIG [];
+		  alias_subst = empty_subst }
   in
   mp, { old = senv;
 	env = senv.env;
@@ -517,7 +591,7 @@ let end_modtype l senv =
   let auto_tb = 
      SEBstruct (modinfo.msid, List.rev senv.revstruct)
   in
-  let mtb = 
+  let mtb_expr = 
     List.fold_left
       (fun mtb (arg_id,arg_b) -> 
 	 SEBfunctor(arg_id,arg_b,mtb))
@@ -536,11 +610,15 @@ let end_modtype l senv =
       newenv
       (List.rev senv.loads)
   in
+  let subst = senv.modinfo.alias_subst in
+  let mtb = {typ_expr = mtb_expr;
+	    typ_strength = None;
+	    typ_alias = subst} in
   let newenv = 
-    add_modtype_constraints newenv mtb 
+    add_modtype_constraints newenv mtb
   in
   let newenv = 
-    Environ.add_modtype mp (mtb,None) newenv
+    Environ.add_modtype mp mtb newenv
   in 
   mp, { old = oldsenv.old;
 	env = newenv;
@@ -607,7 +685,8 @@ let start_library dir senv =
 		  modpath = mp;
 		  seed = dir;
 		  label = l;
-		  variant = LIBRARY dir }
+		  variant = LIBRARY dir;
+		  alias_subst = empty_subst }
   in
   mp, { old = senv;
 	env = senv.env;
@@ -637,8 +716,8 @@ let export senv dir =
   let mb = 
     { mod_expr = Some (SEBstruct (modinfo.msid, List.rev senv.revstruct));
       mod_type = None;
-      mod_equiv = None;
       mod_constraints = senv.univ;
+      mod_alias = senv.modinfo.alias_subst;
       mod_retroknowledge = senv.local_retroknowledge}
   in
     modinfo.msid, (dir,mb,senv.imports,engagement senv.env)
@@ -692,15 +771,20 @@ let import (dp,mb,depends,engmt) digest senv =
 and lighten_struct struc = 
   let lighten_body (l,body) = (l,match body with
     | SFBconst ({const_opaque=true} as x) -> SFBconst {x with const_body=None}
-    | (SFBconst _ | SFBmind _) as x -> x
+    | (SFBconst _ | SFBmind _ | SFBalias _) as x -> x
     | SFBmodule m -> SFBmodule (lighten_module m)
-    | SFBmodtype m -> SFBmodtype (lighten_modexpr m))
+    | SFBmodtype m -> SFBmodtype 
+	({m with 
+	    typ_expr = lighten_modexpr m.typ_expr}))
   in
     List.map lighten_body struc
 
 and lighten_modexpr = function
   | SEBfunctor (mbid,mty,mexpr) ->
-      SEBfunctor (mbid,lighten_modexpr mty,lighten_modexpr mexpr)
+      SEBfunctor (mbid, 
+		    ({mty with 
+			typ_expr = lighten_modexpr mty.typ_expr}),
+		  lighten_modexpr mexpr)
   | SEBident mp as x -> x
   | SEBstruct (msid, struc) ->
       SEBstruct (msid, lighten_struct struc)
@@ -708,7 +792,7 @@ and lighten_modexpr = function
       SEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
   | SEBwith (seb,wdcl) ->
       SEBwith (lighten_modexpr seb,wdcl) 
-
+ 
 let lighten_library (dp,mb,depends,s) = (dp,lighten_module mb,depends,s)
 
 

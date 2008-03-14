@@ -287,15 +287,33 @@ let shallow_add_module mp mb env =
 	env_modules = new_mods } in
   { env with env_globals = new_globals }
 
+let rec scrape_alias mp env = 
+  try
+    let mp1 = MPmap.find mp env.env_globals.env_alias in
+      scrape_alias mp1 env
+  with
+      Not_found -> mp
+
 let lookup_module mp env = 
-  MPmap.find mp env.env_globals.env_modules
+  let mp = scrape_alias mp env in
+    MPmap.find mp env.env_globals.env_modules
 
 let lookup_modtype ln env = 
-  MPmap.find ln env.env_globals.env_modtypes
+  let mp = scrape_alias ln env in
+  MPmap.find mp env.env_globals.env_modtypes
 
+let register_alias mp1 mp2 env =
+  let new_alias =  MPmap.add mp1 mp2 env.env_globals.env_alias in
+  let new_globals = 
+    { env.env_globals with 
+	env_alias = new_alias } in
+    { env with env_globals = new_globals }
+
+let lookup_alias mp env =
+  MPmap.find mp env.env_globals.env_alias
 
 (*s Judgments. *)
-
+	
 type unsafe_judgment = { 
   uj_val : constr;
   uj_type : types }

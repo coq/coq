@@ -181,13 +181,14 @@ type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
-  | SFBmodtype of struct_expr_body
+  | SFBalias of module_path * constraints option
+  | SFBmodtype of module_type_body
 
 and structure_body = (label * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path
-  | SEBfunctor of mod_bound_id * struct_expr_body * struct_expr_body 
+  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body 
   | SEBstruct of mod_self_id * structure_body
   | SEBapply of struct_expr_body * struct_expr_body
       * constraints
@@ -195,14 +196,16 @@ and struct_expr_body =
 
 and with_declaration_body =
     With_module_body of identifier list * module_path * constraints
-  | With_definition_body of identifier list * constant_body
-
+  | With_definition_body of  identifier list * constant_body
+        
 and module_body = 
     { mod_expr : struct_expr_body option;
       mod_type : struct_expr_body option;
-      mod_equiv : module_path option;
       mod_constraints : constraints;
+      mod_alias : substitution;
       mod_retroknowledge : Retroknowledge.action list}
 
-
-type module_type_body = struct_expr_body * module_path option
+and module_type_body = 
+    { typ_expr : struct_expr_body;
+      typ_strength : module_path option;
+      typ_alias : substitution}

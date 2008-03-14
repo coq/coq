@@ -93,7 +93,7 @@ let rec list_split_assoc k rev_before = function
   | h::tail -> list_split_assoc k (h::rev_before) tail
 
 let path_of_seb = function
-  | SEBident mb -> mb
+  | SEBident mp -> mp
   | _ -> anomaly "Modops: evaluation failed."
 
 
@@ -106,24 +106,32 @@ let destr_functor env mtb =
 (* the constraints are not important here *)
 
 let module_body_of_type mtb = 
-  { mod_type = Some mtb;
-    mod_equiv = None;
+  { mod_type = Some mtb.typ_expr;
     mod_expr = None;
     mod_constraints = Constraint.empty;
+    mod_alias = mtb.typ_alias;
     mod_retroknowledge = []}
 
+let module_type_of_module mp mb =
+  {typ_expr = 
+      (match mb.mod_type with
+	| Some expr -> expr
+	| None -> (match mb.mod_expr with
+		     | Some expr -> expr
+		     | None -> 
+			 anomaly "Modops: empty expr and type"));
+   typ_alias = mb.mod_alias;
+   typ_strength = mp
+  }
 
 let rec check_modpath_equiv env mp1 mp2 = 
   if mp1=mp2 then () else
-  let mb1 = lookup_module mp1 env in
-    match mb1.mod_equiv with
-      | None ->
-	  let mb2 = lookup_module mp2 env in
-	    (match mb2.mod_equiv with
-	      | None -> error_not_equal mp1 mp2
-	      | Some mp2' -> check_modpath_equiv env mp2' mp1)
-      | Some mp1' -> check_modpath_equiv env mp2 mp1'
-
+  let mp1 = scrape_alias mp1 env in
+  let mp2 = scrape_alias mp2 env in
+    if mp1=mp2 then ()
+    else 
+      error_not_equal mp1 mp2
+	
 let subst_with_body sub = function
   | With_module_body(id,mp,cst) ->
       With_module_body(id,subst_mp sub mp,cst)
@@ -131,8 +139,13 @@ let subst_with_body sub = function
       With_definition_body( id,subst_const_body sub cb)
 
 let rec subst_modtype sub mtb =
-  subst_struct_expr sub mtb
-  
+  let typ_expr' = subst_struct_expr sub mtb.typ_expr in
+    if typ_expr'==mtb.typ_expr then
+      mtb
+    else
+      { mtb with 
+	  typ_expr = typ_expr'}
+	
 and subst_structure sub sign = 
   let subst_body  = function
       SFBconst cb -> 
@@ -143,23 +156,26 @@ and subst_structure sub sign =
 	SFBmodule (subst_module sub mb)
     | SFBmodtype mtb -> 
 	SFBmodtype (subst_modtype sub mtb)
+    | SFBalias (mp,cst) ->
+	SFBalias (subst_mp sub mp,cst)
   in
     List.map (fun (l,b) -> (l,subst_body b)) sign
 
 and subst_module  sub mb =
-  let mtb' = Option.smartmap (subst_modtype sub) mb.mod_type in
+  let mtb' = Option.smartmap (subst_struct_expr sub) mb.mod_type in
   (* This is similar to the previous case. In this case we have
      a module M in a signature that is knows to be equivalent to a module M'
      (because the signature is "K with Module M := M'") and we are substituting
      M' with some M''. *)
   let me' = Option.smartmap (subst_struct_expr sub) mb.mod_expr in
-  let mpo' = Option.smartmap (subst_mp sub) mb.mod_equiv in
-    if mtb'==mb.mod_type && mpo'==mb.mod_equiv && mb.mod_expr == me' 
+  let mb_alias = join_alias mb.mod_alias sub in
+    if mtb'==mb.mod_type && mb.mod_expr == me' 
+      && mb_alias == mb.mod_alias
     then mb else
       { mod_expr = me';
 	mod_type=mtb'; 
-	mod_equiv=mpo'; 
 	mod_constraints=mb.mod_constraints;
+	mod_alias = mb_alias;
 	mod_retroknowledge=mb.mod_retroknowledge}
 
 
@@ -230,7 +246,8 @@ let strengthen_mind env mp l mib = match mib.mind_equiv with
 let rec eval_struct env = function 
   | SEBident mp -> 
       begin
-	match (lookup_modtype mp env) with
+	let mtb =lookup_modtype mp env in
+	match mtb.typ_expr,mtb.typ_strength with
 	    mtb,None -> eval_struct env mtb
 	  | mtb,Some mp -> strengthen_mtb env mp (eval_struct env mtb)
       end
@@ -238,10 +255,26 @@ let rec eval_struct env = function
       let svb1 = eval_struct env seb1 in
       let farg_id, farg_b, fbody_b = destr_functor env svb1 in
       let mp = path_of_seb seb2 in
-      let resolve = resolver_of_environment farg_id farg_b mp env in
-	eval_struct env (subst_modtype 
-			   (map_mbid farg_id mp (Some resolve)) fbody_b)
-  | SEBwith (mtb,wdb) -> merge_with env mtb wdb
+      let mp = scrape_alias mp env in
+      let sub_alias = (lookup_modtype mp env).typ_alias in
+      let sub_alias = match eval_struct env (SEBident mp) with
+	  | SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub_alias
+	  | _ -> sub_alias in
+      let sub_alias = update_subst_alias sub_alias 
+	(map_mbid farg_id mp (None)) in
+      let resolve = resolver_of_environment farg_id farg_b mp sub_alias env in
+	eval_struct env (subst_struct_expr 
+			   (join sub_alias 
+			      (map_mbid farg_id mp (Some resolve))) fbody_b)
+  | SEBwith (mtb,(With_definition_body _ as wdb)) ->
+      merge_with env mtb wdb empty_subst
+  | SEBwith (mtb, (With_module_body (_,mp,_) as wdb)) ->
+      let alias_in_mp =
+	(lookup_modtype mp env).typ_alias in
+	merge_with env mtb wdb alias_in_mp
+(*  | SEBfunctor(mbid,mtb,body) -> 
+      let env = add_module (MPbound mbid) (module_body_of_type mtb) env in
+	SEBfunctor(mbid,mtb,eval_struct env body) *)
   | mtb -> mtb
       
 and type_of_mb env mb =
@@ -251,7 +284,7 @@ and type_of_mb env mb =
     | _,_ -> anomaly 
 	"Modops:  empty type and empty expr" 
 	  
-and merge_with env mtb with_decl = 
+and merge_with env mtb with_decl alias= 
   let msid,sig_b = match (eval_struct env mtb) with 
     | SEBstruct(msid,sig_b) -> msid,sig_b
     | _ -> error_signature_expected mtb
@@ -264,50 +297,50 @@ and merge_with env mtb with_decl =
     try
       let rev_before,spec,after = list_split_assoc l [] sig_b in
       let before = List.rev rev_before in
-      let new_spec = match with_decl with
+      let rec mp_rec = function
+	| [] -> MPself msid
+	| i::r -> MPdot(mp_rec r,label_of_id i)
+      in 
+      let new_spec,subst = match with_decl with
         | With_definition_body ([],_)
         | With_module_body ([],_,_) -> assert false
 	| With_definition_body ([id],c) -> 
-	    SFBconst c
+	    SFBconst c,None
 	| With_module_body ([id], mp,cst) ->
-	    let old = match spec with
-		SFBmodule msb -> msb
-	      | _ -> error_not_a_module (string_of_label l)
-	    in
-	    let mtb' = eval_struct env (SEBident mp) in
-	    let msb =
-	      {mod_expr = Some (SEBident mp);
-	       mod_type = Some mtb'; 
-	       mod_equiv = Some mp; 
-	       mod_constraints = cst;
-	       mod_retroknowledge = old.mod_retroknowledge }
-	    in
-	      (SFBmodule msb)
+	    let mp' = scrape_alias mp env in
+	      SFBalias (mp,Some cst),
+	    Some(join (map_mp (mp_rec [id]) mp') alias)
 	| With_definition_body (_::_,_) 
         | With_module_body (_::_,_,_) -> 
 	    let old = match spec with
 		SFBmodule msb -> msb
 	      | _ -> error_not_a_module (string_of_label l)
 	    in
-            let new_with_decl = match with_decl with
-                With_definition_body (_,c) -> With_definition_body (idl,c)
-              | With_module_body (_,c,cst) -> With_module_body (idl,c,cst) in
+            let new_with_decl,subst1 = 
+	      match with_decl with
+                  With_definition_body (_,c) -> With_definition_body (idl,c),None
+		| With_module_body (idc,mp,cst) -> 
+		    With_module_body (idl,mp,cst),
+		      Some(map_mp (mp_rec idc) mp) 
+	    in
+	    let subst = Option.fold_right join subst1 alias in
             let modtype = 
-              merge_with env (type_of_mb env old) new_with_decl in
-                    let msb =
-		      { mod_expr = None;
-			mod_type = Some modtype; 
-			mod_equiv = None; 
-			mod_constraints = old.mod_constraints;
-			mod_retroknowledge = old.mod_retroknowledge}
-	            in
-	             (SFBmodule msb)
+              merge_with env (type_of_mb env old) new_with_decl alias in
+            let msb =
+	      { mod_expr = None;
+		mod_type = Some modtype; 
+		mod_constraints = old.mod_constraints;
+		mod_alias = subst;
+		mod_retroknowledge = old.mod_retroknowledge}
+	    in
+	      (SFBmodule msb),Some subst
       in
-	SEBstruct(msid,  before@(l,new_spec)::after)
+	SEBstruct(msid,  before@(l,new_spec)::
+		    (Option.fold_right subst_structure subst after))
     with
 	Not_found -> error_no_such_label l
 
-and  add_signature mp sign env = 
+and add_signature mp sign env = 
   let add_one env (l,elem) =
     let kn = make_kn mp empty_dirpath l in
     let con = make_con mp empty_dirpath l in
@@ -316,20 +349,19 @@ and  add_signature mp sign env =
 	| SFBmind mib -> Environ.add_mind kn mib env
 	| SFBmodule mb -> 
 	    add_module (MPdot (mp,l)) mb env 
-	    (* adds components as well *)
+	      (* adds components as well *)
+	| SFBalias (mp1,cst) -> 
+	    Environ.register_alias (MPdot(mp,l)) mp1 env
 	| SFBmodtype mtb -> Environ.add_modtype (MPdot(mp,l)) 
-	    (mtb,None) env
+	    mtb env
   in
     List.fold_left add_one env sign
 
 and add_module mp mb env = 
   let env = Environ.shallow_add_module mp mb env in
-  let env = match mb.mod_type,mb.mod_expr with
-    | Some mt, _ -> 
-	Environ.add_modtype mp (mt,Some mp) env
-    | None, Some me -> 
-	Environ.add_modtype mp (me,Some mp) env 
-    | _,_ -> anomaly "Modops:Empty expr and type" in
+  let env =
+    Environ.add_modtype mp (module_type_of_module (Some mp) mb) env
+  in
   let mod_typ = type_of_mb env mb in
     match mod_typ with
       | SEBstruct (msid,sign) -> 
@@ -346,9 +378,13 @@ and  constants_of_specification env mp sign =
    | SFBconst cb -> env,((make_con mp empty_dirpath l),cb)::res
    | SFBmind _ -> env,res
    | SFBmodule mb ->
-       let new_env =  add_module (MPdot (mp,l))  mb env in 
+       let new_env =  add_module (MPdot (mp,l)) mb env in 
        new_env,(constants_of_modtype env (MPdot (mp,l))
 		   (type_of_mb env mb)) @ res
+   | SFBalias (mp1,cst) ->
+       let new_env =  register_alias (MPdot (mp,l)) mp1 env in 
+       new_env,(constants_of_modtype env (MPdot (mp,l))
+		   (eval_struct env (SEBident mp1))) @ res
    | SFBmodtype mtb -> 
        (* module type dans un module type. 
 	  Il faut au moins mettre mtb dans l'environnement (avec le bon 
@@ -365,27 +401,29 @@ and  constants_of_specification env mp sign =
 	  si on ne rajoute pas T2 dans l'environement de typage 
 	  on va exploser au moment du Declare Module
        *)
-       let new_env = Environ.add_modtype (MPdot(mp,l)) (mtb,None) env in 
-       new_env, constants_of_modtype env (MPdot(mp,l)) mtb @ res
+       let new_env = Environ.add_modtype (MPdot(mp,l)) mtb env in 
+       new_env, (constants_of_modtype env (MPdot(mp,l)) mtb.typ_expr) @ res
  in
  snd (List.fold_left aux (env,[]) sign)
 
 and constants_of_modtype env mp modtype =
- match (eval_struct env modtype) with
-     SEBstruct (msid,sign) ->
-       constants_of_specification env mp
-	 (subst_signature_msid msid mp sign)
-   | SEBfunctor _ -> []
-   | _ -> anomaly "Modops:the evaluation of the structure failed "
+  match (eval_struct env modtype) with
+      SEBstruct (msid,sign) ->
+	constants_of_specification env mp
+	  (subst_signature_msid msid mp sign)
+    | SEBfunctor _ -> []
+    | _ -> anomaly "Modops:the evaluation of the structure failed "
 
 (* returns a resolver for kn that maps mbid to mp. We only keep
    constants that have the inline flag *)
-and  resolver_of_environment mbid modtype mp env =
- let constants = constants_of_modtype env (MPbound mbid) modtype in
+and  resolver_of_environment mbid modtype mp alias env =
+ let constants = constants_of_modtype env (MPbound mbid) modtype.typ_expr in
+ let constants = List.map (fun (l,cb) -> (l,subst_const_body alias cb)) constants in
  let rec make_resolve = function
    | [] -> []
    | (con,expecteddef)::r ->
-       let con' = replace_mp_in_con (MPbound mbid) mp con in
+       let con',_ = subst_con alias con in
+       let con' = replace_mp_in_con (MPbound mbid) mp con' in
 	 try
 	   if expecteddef.Declarations.const_inline then
 	     let constant = lookup_constant con' env in
@@ -413,11 +451,8 @@ and strengthen_mod env mp mb =
   let mod_typ = type_of_mb env mb in
     { mod_expr = mb.mod_expr;
       mod_type = Some (strengthen_mtb env mp mod_typ);
-      mod_equiv = begin match mb.mod_equiv with
-	| Some _ -> mb.mod_equiv
-	| None -> Some mp 
-      end ;
       mod_constraints = mb.mod_constraints;
+      mod_alias = mb.mod_alias;
       mod_retroknowledge = mb.mod_retroknowledge}
       
 and strengthen_sig env msid sign mp = match sign with
@@ -432,18 +467,19 @@ and strengthen_sig env msid sign mp = match sign with
 	item'::rest'
   | (l,SFBmodule mb) :: rest ->
       let mp' = MPdot (mp,l) in
-      let item' = l,SFBmodule (strengthen_mod env mp' mb) in
-      let env' = add_module 
-		   (MPdot (MPself msid,l)) 
-		   mb 
-		   env 
-      in
+	let item' = l,SFBmodule (strengthen_mod env mp' mb) in
+	let env' = add_module 
+	  (MPdot (MPself msid,l)) mb env in
+        let rest' = strengthen_sig env' msid rest mp in
+	item':: rest'
+  | ((l,SFBalias (mp1,cst)) as item) :: rest ->
+      let env' = register_alias (MPdot(MPself msid,l)) mp1 env in
       let rest' = strengthen_sig env' msid rest mp in
-	item'::rest'
+	item::rest'
   | (l,SFBmodtype mty as item) :: rest -> 
       let env' = add_modtype 
 		   (MPdot((MPself msid),l)) 
-		   (mty,None)
+		   mty
 		   env
       in
       let rest' = strengthen_sig env' msid rest mp in
@@ -451,5 +487,11 @@ and strengthen_sig env msid sign mp = match sign with
 
     
 let strengthen env mtb mp = strengthen_mtb env mp mtb
-  
 
+
+let update_subst env mb mp =
+  match type_of_mb env mb with
+    | SEBstruct(msid,str) -> false, join_alias 
+	(subst_key (map_msid msid mp) mb.mod_alias)
+	(map_msid msid mp)
+    | _ -> true, mb.mod_alias

@@ -318,7 +318,10 @@ let push_xref visibility sp xref =
   the_ccitab := SpTab.push visibility sp xref !the_ccitab;
   match visibility with
     | Until _ -> 
-	the_globrevtab := Globrevtab.add xref sp !the_globrevtab
+	if Globrevtab.mem xref !the_globrevtab then
+	  ()
+	else
+	  the_globrevtab := Globrevtab.add xref sp !the_globrevtab
     | _ -> ()
 
 let push_cci visibility sp ref =

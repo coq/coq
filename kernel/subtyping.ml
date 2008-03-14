@@ -32,7 +32,8 @@ type namedobject =
   | IndType of inductive * mutual_inductive_body
   | IndConstr of constructor * mutual_inductive_body
   | Module of module_body
-  | Modtype of struct_expr_body
+  | Modtype of module_type_body
+  | Alias of module_path
 
 (* adds above information about one mutual inductive: all types and
    constructors *)
@@ -63,6 +64,7 @@ let make_label_map mp list =
        add_nameobjects_of_mib (make_kn mp empty_dirpath l) mib map
     | SFBmodule mb -> add_map (Module mb)
     | SFBmodtype mtb -> add_map (Modtype mtb)
+    | SFBalias (mp,cst) -> add_map (Alias mp)
   in
     List.fold_right add_one list Labmap.empty
 
@@ -289,43 +291,59 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
 	      
 let rec check_modules cst env msid1 l msb1 msb2 =
   let mp = (MPdot(MPself msid1,l)) in
-  let mty1 = strengthen env (type_of_mb env msb1) mp in
-  let cst = check_modtypes cst env mty1 (type_of_mb env msb2) false in
-    begin
-    match msb1.mod_equiv, msb2.mod_equiv with
-      | _, None -> ()
-      | None, Some mp2 -> 
-	  check_modpath_equiv env mp mp2
-      | Some mp1, Some mp2 ->
-	  check_modpath_equiv env mp1 mp2
-  end;
-  cst
+  let mty1 = module_type_of_module (Some mp) msb1 in
+  let mty2 =  module_type_of_module None msb2 in
+  let cst = check_modtypes cst env mty1 mty2 false in
+    cst
 	
 
-and check_signatures cst env (msid1,sig1) (msid2,sig2') = 
+and check_signatures cst env (msid1,sig1) alias (msid2,sig2') = 
   let mp1 = MPself msid1 in
   let env = add_signature mp1 sig1 env in 
-  let sig2 = subst_signature_msid msid2 mp1 sig2' in
+  let alias = update_subst_alias alias (map_msid msid2 mp1) in
+  let sig2 = subst_structure alias sig2' in
+  let sig2 = subst_signature_msid msid2 mp1 sig2 in
   let map1 = make_label_map mp1 sig1 in
   let check_one_body cst (l,spec2) = 
     let info1 = 
       try 
 	Labmap.find l map1 
       with 
-	  Not_found -> error_no_such_label_sub l (string_of_msid msid1) (string_of_msid msid2)
+	  Not_found -> error_no_such_label_sub l 
+	    (string_of_msid msid1) (string_of_msid msid2)
     in
       match spec2 with
 	| SFBconst cb2 ->
 	    check_constant cst env msid1 l info1 cb2 spec2
 	| SFBmind mib2 -> 
 	    check_inductive cst env msid1 l info1 mib2 spec2
-	| SFBmodule msb2 -> 
-	    let msb1 = 
+	| SFBmodule msb2 ->  
+	    begin
 	      match info1 with
-		| Module msb -> msb
+		| Module msb -> check_modules cst env msid1 l msb msb2
+		| Alias mp ->let msb = 
+		    {mod_expr = Some (SEBident mp);
+		     mod_type = Some (eval_struct env (SEBident mp));
+		     mod_constraints = Constraint.empty;
+		     mod_alias = (lookup_modtype mp env).typ_alias;
+		     mod_retroknowledge = []} in
+		    check_modules cst env msid1 l msb msb2
 		| _ -> error_not_match l spec2
-	    in
-	      check_modules cst env msid1 l msb1 msb2
+	    end
+	| SFBalias (mp,_) ->
+	    begin	
+	      match info1 with
+		| Alias mp1 -> check_modpath_equiv env mp mp1; cst
+		| Module msb -> 
+		    let msb1 = 
+		      {mod_expr = Some (SEBident mp);
+		       mod_type = Some (eval_struct env (SEBident mp));
+		       mod_constraints = Constraint.empty;
+		       mod_alias = (lookup_modtype mp env).typ_alias;
+		       mod_retroknowledge = []} in
+			check_modules cst env msid1 l msb msb1
+		| _ -> error_not_match l spec2
+	    end
 	| SFBmodtype mtb2 ->
 	    let mtb1 = 
 	      match info1 with
@@ -336,35 +354,46 @@ and check_signatures cst env (msid1,sig1) (msid2,sig2') =
   in
     List.fold_left check_one_body cst sig2
     
+
 and check_modtypes cst env mtb1 mtb2 equiv = 
   if mtb1==mtb2 then cst else (* just in case  :) *)
-  let mtb1' = eval_struct env mtb1 in
-  let mtb2' = eval_struct env mtb2 in
-    if mtb1'==mtb2' then cst else
-    match mtb1', mtb2' with
-      | SEBstruct (msid1,list1), 
-	SEBstruct (msid2,list2) -> 
-	  let cst = check_signatures cst env (msid1,list1) (msid2,list2) in
-	  if equiv then
-	    check_signatures cst env (msid2,list2) (msid1,list1) 
-	  else
-	    cst
-      | SEBfunctor (arg_id1,arg_t1,body_t1), 
-	SEBfunctor (arg_id2,arg_t2,body_t2) ->
-	  let cst = check_modtypes cst env arg_t2 arg_t1 equiv in 
-	    (* contravariant *)
-	  let env = 
-	    add_module (MPbound arg_id2) (module_body_of_type arg_t2) env 
-	  in
-	  let body_t1' = 
-            (* since we are just checking well-typedness we do not need
-               to expand any constant. Hence the identity resolver. *)
-	    subst_modtype 
-              (map_mbid arg_id1 (MPbound arg_id2) None)
-	      body_t1
-	  in
-	  check_modtypes cst env body_t1' body_t2 equiv
-      | _ , _ -> error_incompatible_modtypes mtb1 mtb2
+  let mtb1',mtb2'=
+    (match mtb1.typ_strength with
+	 None -> eval_struct env mtb1.typ_expr,
+	   eval_struct env mtb2.typ_expr
+       | Some mp -> strengthen  env mtb1.typ_expr mp,
+	   eval_struct env mtb2.typ_expr) in
+      let rec check_structure cst env str1 str2 equiv = 
+	match str1, str2 with
+	  | SEBstruct (msid1,list1), 
+	    SEBstruct (msid2,list2) -> 
+	      let cst = check_signatures cst env
+		(msid1,list1) mtb1.typ_alias (msid2,list2) in
+		if equiv then
+		  check_signatures cst env 
+		    (msid2,list2) mtb2.typ_alias  (msid1,list1) 
+		else
+		  cst
+	  | SEBfunctor (arg_id1,arg_t1,body_t1), 
+	      SEBfunctor (arg_id2,arg_t2,body_t2) ->
+	      let cst = check_modtypes cst env arg_t2 arg_t1 equiv in 
+		(* contravariant *)
+	      let env = 
+		add_module (MPbound arg_id2) (module_body_of_type arg_t2) env 
+	      in
+	      let body_t1' = 
+		(* since we are just checking well-typedness we do not need
+		   to expand any constant. Hence the identity resolver. *)
+		subst_struct_expr
+		  (map_mbid arg_id1 (MPbound arg_id2) None)
+		  body_t1
+	      in
+		check_structure cst env (eval_struct env body_t1')
+		  (eval_struct env body_t2) equiv
+	  | _ , _ -> error_incompatible_modtypes mtb1 mtb2
+      in 
+     if mtb1'== mtb2' then cst 
+     else check_structure cst env mtb1' mtb2' equiv
 	  
 let check_subtypes env sup super = 
   check_modtypes Constraint.empty env sup super false

@@ -122,19 +122,19 @@ let msid_of_prefix (_,(mp,sec)) =
     anomaly ("Non-empty section in module name!" ^ 
 	     string_of_mp mp ^ "." ^ string_of_dirpath sec)
 
-let rec scrape_alias mp =
-  match (Environ.lookup_module mp
-	   (Global.env())) with
-    | {mod_expr = Some (SEBident mp1);
-       mod_type = None} -> scrape_alias mp1
-    | _ -> mp
+let scrape_alias mp =
+  Environ.scrape_alias mp (Global.env())
 	
 
 (* This function checks if the type calculated for the module [mp] is
    a subtype of [sub_mtb]. Uses only the global environment. *)
 let check_subtypes mp sub_mtb =
   let env = Global.env () in
-  let mtb = Modops.eval_struct env (SEBident mp) in
+  let mtb = Environ.lookup_modtype mp env in
+  let sub_mtb = 
+    {typ_expr = sub_mtb;
+    typ_strength = None;
+    typ_alias = empty_subst} in
   let _ = Environ.add_constraints 
 	    (Subtyping.check_subtypes env mtb sub_mtb) 
   in
@@ -221,15 +221,15 @@ let cache_module ((sp,kn as oname),(entry,substobjs,substituted)) =
 	  | Some mte -> Some (Mod_typing.translate_struct_entry
 				(Global.env()) mte)
 	in
-
-	let mp = Global.add_module (basename sp) me in
-	if mp <> mp_of_kn kn then
-	  anomaly "Kernel and Library names do not match";
 	  
-	match sub_mtb_o with
-	    None -> ()
-	  | Some sub_mtb -> 
-	      check_subtypes mp sub_mtb
+	let mp = Global.add_module (basename sp) me in
+	  if mp <> mp_of_kn kn then
+	    anomaly "Kernel and Library names do not match";
+	  
+	  match sub_mtb_o with
+	      None -> ()
+	    | Some (sub_mtb,sub) -> 
+		check_subtypes mp sub_mtb
 
   in
   conv_names_do_module false "cache" load_objects 1 oname substobjs substituted
@@ -246,13 +246,18 @@ let cache_module_alias ((sp,kn),(entry,substobjs,substituted)) =
 				(Global.env()) mte)
 	in
 
-	let mp' = Global.add_module (basename sp) me in
+	let mp' = match me with 
+	  | {mod_entry_type = None;
+	     mod_entry_expr = Some (MSEident mp)} ->
+	      Global.add_alias (basename sp) mp	 
+	  | _ -> anomaly "cache module alias"
+	in
 	  if mp' <> mp_of_kn kn then
 	    anomaly "Kernel and Library names do not match";
 	  
 	  let _ = match sub_mtb_o with
 	      None -> ()
-	    | Some sub_mtb -> 
+	    | Some (sub_mtb,sub) -> 
 	      check_subtypes mp' sub_mtb in
 	    match me with
 	      | {mod_entry_type = None;
@@ -278,6 +283,13 @@ let load_module i (oname,(entry,substobjs,substituted)) =
   check_empty "load_module" entry;
   conv_names_do_module false "load" load_objects i oname substobjs substituted
 
+let subst_substobjs dir mp (subst,mbids,msid,objs) =
+  match mbids with
+    | [] -> 
+	let prefix = dir,(mp,empty_dirpath) in
+	  Some (subst_objects prefix (join (map_msid msid mp) subst) objs)
+    | _ -> None
+
 let load_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
   let dir,mp,alias= 
     match entry with 
@@ -287,9 +299,9 @@ let load_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
 	      |{mod_entry_type = None;
 		mod_entry_expr = Some (MSEident mp)} ->
 		 dir_of_sp sp,mp_of_kn kn,scrape_alias mp
-	      | _ -> anomaly "tata"
+	      | _ -> anomaly "Modops: Not an alias"
 	  end
-      | None -> anomaly "toujours"
+      | None -> anomaly "Modops: Empty info"
   in
     do_module_alias false "load" load_objects i dir mp alias substobjs substituted
 
@@ -307,24 +319,19 @@ let open_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
 	      |{mod_entry_type = None;
 		mod_entry_expr = Some (MSEident mp)} ->
 		 dir_of_sp sp,mp_of_kn kn,scrape_alias mp
-	      | _ -> anomaly "tata"
+	      | _ -> anomaly "Modops: Not an alias"
 	  end
-      | None -> anomaly "toujours"
+      | None -> anomaly "Modops: Empty info"
   in
     do_module_alias true "open" open_objects i dir mp alias substobjs substituted
-
-let subst_substobjs dir mp (subst,mbids,msid,objs) =
-  match mbids with
-    | [] -> 
-	let prefix = dir,(mp,empty_dirpath) in
-	  Some (subst_objects prefix (add_msid msid mp subst) objs)
-    | _ -> None
 
 
 let subst_module ((sp,kn),subst,(entry,substobjs,_)) =
   check_empty "subst_module" entry;
   let dir,mp = dir_of_sp sp, mp_of_kn kn in
   let (sub,mbids,msid,objs) = substobjs in
+  let sub' = update_subst_alias subst sub in
+  let sub = join sub' sub in
   let subst' = join sub subst in
   (* substitutive_objects get the new substitution *)
   let substobjs = (subst',mbids,msid,objs) in
@@ -342,21 +349,25 @@ let subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
   let substobjs = (subst',mbids,msid,objs) in
   (* if we are not a functor - calculate substitued.
      We add "msid |-> mp" to the substitution *)
-  let substituted = subst_substobjs dir mp substobjs in
-       match entry with 
-      | Some (me,sub)->
+  let prefix = dir,(mp,empty_dirpath) in
+    match entry with 
+	 | Some (me,sub)->
 	  begin
 	    match me with
 	      |{mod_entry_type = None;
 		mod_entry_expr = Some (MSEident mp)} ->
+		 let mp = subst_mp subst' mp in
 		 (Some ({mod_entry_type = None;
 			 mod_entry_expr = 
-			    Some (MSEident (subst_mp subst' mp))},sub),
-		  substobjs,substituted)
+			    Some (MSEident mp)},sub),
+		  substobjs, match mbids with
+		    | [] -> 
+			Some (subst_objects prefix (join (map_msid msid mp) subst) objs)
+		    | _ -> None)
 
-	      | _ -> anomaly "tata"
+	      | _ -> anomaly "Modops: Not an alias"
 	  end
-      | None -> anomaly "toujours"
+      | None -> anomaly "Modops: Empty info"
 
 let classify_module (_,(_,substobjs,_)) =
   Substitute (None,substobjs,None)
@@ -499,28 +510,32 @@ let (in_modtype,out_modtype) =
 
 
 let rec replace_module_object idl (subst, mbids, msid, lib_stack) modobjs mp =
-  if mbids<>[] then 
+  let rec mp_rec = function
+    | [] -> MPself msid
+	| i::r -> MPdot(mp_rec r,label_of_id i)
+  in 
+    if mbids<>[] then 
     error "Unexpected functor objects"
-  else
-    let rec replace_idl = function 
-      | _,[] -> [] 
-      | id::idl,(id',obj)::tail when id = id' ->
-	  if object_tag obj = "MODULE" then
-           (match idl with
-               [] -> (id, in_module_alias (Some
-					     ({mod_entry_type = None;
-					       mod_entry_expr = Some (MSEident mp)},None)
-					     ,modobjs,None))::tail
-             | _ ->
-               let (_,substobjs,_) = out_module obj in
-                let substobjs' = replace_module_object idl substobjs modobjs mp in
-                 (id, in_module (None,substobjs',None))::tail
-           )
-	  else error "MODULE expected!"
-      | idl,lobj::tail -> lobj::replace_idl (idl,tail)
-    in
-      (subst, mbids, msid, replace_idl (idl,lib_stack))
-
+    else
+      let rec replace_idl = function 
+	| _,[] -> [] 
+	| id::idl,(id',obj)::tail when id = id' ->
+	    if object_tag obj = "MODULE" then
+              (match idl with
+		   [] -> (id, in_module_alias (Some
+						 ({mod_entry_type = None;
+						   mod_entry_expr = Some (MSEident mp)},None)
+						 ,modobjs,None))::tail
+		 | _ ->
+		     let (_,substobjs,_) = out_module obj in
+                     let substobjs' = replace_module_object idl substobjs modobjs mp in
+                       (id, in_module (None,substobjs',None))::tail
+              )
+	    else error "MODULE expected!"
+	| idl,lobj::tail -> lobj::replace_idl (idl,tail)
+      in
+	(join (map_mp (mp_rec idl) mp) subst, mbids, msid, replace_idl (idl,lib_stack))
+	  
 let abstract_substobjs mbids1 (subst, mbids2, msid, lib_stack) =
   (subst, mbids1@mbids2, msid, lib_stack)
 
@@ -535,17 +550,26 @@ let rec get_modtype_substobjs env = function
       let modobjs = MPmap.find mp !modtab_substobjs in
 	replace_module_object idl substobjs modobjs mp
   | MSEapply (mexpr, MSEident mp) ->
-      let ftb = Mod_typing.translate_struct_entry env mexpr in
+      let ftb,_ = Mod_typing.translate_struct_entry env mexpr in
       let farg_id, farg_b, fbody_b = Modops.destr_functor env 
 	(Modops.eval_struct env ftb) in
+      let mp = Environ.scrape_alias mp env in
+      let sub_alias = (Environ.lookup_modtype mp env).typ_alias in
+      let sub_alias = match Modops.eval_struct env (SEBident mp) with
+	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub_alias
+	| _ -> sub_alias in
+      let sub_alias = join_alias sub_alias (map_mbid farg_id mp None) in
+      let sub_alias = update_subst_alias sub_alias 
+	(map_mbid farg_id mp (None)) in
       let (subst, mbids, msid, objs) = get_modtype_substobjs env mexpr in
 	(match mbids with
 	   | mbid::mbids ->
                let resolve =
-		 Modops.resolver_of_environment farg_id farg_b mp env in
+		 Modops.resolver_of_environment farg_id farg_b mp sub_alias env in
 		 (* application outside the kernel, only for substitutive
                     objects (that are all non-logical objects) *)
-		 (join subst (add_mbid mbid mp (Some resolve) empty_subst), mbids, msid, objs)
+		 (join (join (map_mbid mbid mp (Some resolve)) subst ) sub_alias
+		    , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
 	       | _ -> error "Application of a functor with too few arguments")
@@ -565,19 +589,6 @@ let process_module_bindings argids args =
   in
     List.iter2 process_arg argids args
 
-(* Dead code *)
-(*
-let replace_module mtb id mb = todo "replace module after with"; mtb 
-
-let rec get_some_body mty env = match mty with
-    MTEident kn -> Environ.lookup_modtype kn env 
-  | MTEfunsig _ -> anomaly "anonymous module types not supported"
-  | MTEwith (mty,With_Definition _) -> get_some_body mty env 
-  | MTEwith (mty,With_Module (id,mp)) -> 
-      replace_module (get_some_body mty env) id (Environ.lookup_module mp env)
-*)
-(* Dead code *)
-
 let intern_args interp_modtype (idl,arg) = 
   let lib_dir = Lib.library_dp() in
   let mbids = List.map (fun (_,id) -> make_mbid lib_dir (string_of_id id)) idl in
@@ -592,6 +603,7 @@ let intern_args interp_modtype (idl,arg) =
       do_module false "interp" load_objects 1 dir mp substobjs substituted;
       (mbid,mty))
     dirs mbids
+
 let start_module interp_modtype export id args res_o =
   let fs = Summary.freeze_summaries () in
 
@@ -606,12 +618,16 @@ let start_module interp_modtype export id args res_o =
 	if restricted then
 	  Some mte, None
 	else
-	  let mtb = Mod_typing.translate_struct_entry (Global.env()) mte in
+	  let mtb,_ = Mod_typing.translate_struct_entry (Global.env()) mte in
 	  let sub_mtb = 
 	    List.fold_right 
 	      (fun (arg_id,arg_t) mte -> 
-		let arg_t = Mod_typing.translate_struct_entry (Global.env()) arg_t
-		in SEBfunctor(arg_id,arg_t,mte))
+		let arg_t,sub = Mod_typing.translate_struct_entry (Global.env()) arg_t
+		in
+		let arg_t = {typ_expr = arg_t;
+			     typ_strength = None;
+			     typ_alias = sub} in
+		  SEBfunctor(arg_id,arg_t,mte))
 	      arg_entries mtb
 	  in
 	  None, Some sub_mtb
@@ -656,7 +672,7 @@ let end_module id =
 	Not_found -> anomaly "Module objects not found..."
   in
 
-  (* must be called after get_modtype_substobjs, because of possible
+    (* must be called after get_modtype_substobjs, because of possible
      dependencies on functor arguments *)
   Summary.module_unfreeze_summaries fs;
 
@@ -839,17 +855,28 @@ let rec get_module_substobjs env = function
        let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(subst, mbid::mbids, msid, objs)
   | MSEapply (mexpr, MSEident mp) ->
-      let ftb = Mod_typing.translate_struct_entry env mexpr in
+      let ftb,_ = Mod_typing.translate_struct_entry env mexpr in
       let farg_id, farg_b, fbody_b = Modops.destr_functor env 
 	(Modops.eval_struct env ftb) in
+      let mp = Environ.scrape_alias mp env in
+      let sub_alias = (Environ.lookup_modtype mp env).typ_alias in
+      let sub_alias = match Modops.eval_struct env (SEBident mp) with
+	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub_alias
+	| _ -> sub_alias in
+      let sub_alias = join_alias sub_alias (map_mbid farg_id mp None) in
+      let sub_alias = update_subst_alias sub_alias 
+	(map_mbid farg_id mp (None)) in
       let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(match mbids with
 	   | mbid::mbids ->
-              let resolve =
-               Modops.resolver_of_environment farg_id farg_b mp env in
-               (* application outside the kernel, only for substitutive
-                  objects (that are all non-logical objects) *)
-	       (join subst (add_mbid mbid mp (Some resolve) empty_subst), mbids, msid, objs)
+               let resolve =
+		 Modops.resolver_of_environment farg_id farg_b mp sub_alias env in
+		 (* application outside the kernel, only for substitutive
+                    objects (that are all non-logical objects) *)
+		((join 
+		    (join (map_mbid mbid mp (Some resolve)) subst)
+		       sub_alias)
+		       , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
 	       | _ -> error "Application of a functor with too few arguments")
@@ -909,8 +936,15 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
     match entry with 
       |{mod_entry_type = None;	    
 	mod_entry_expr = Some (MSEident mp) } ->
-	 let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
-	 let substituted = subst_substobjs dir mp substobjs in
+	 let dir,mp' = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
+	 let (sub,mbids,msid,objs) = substobjs in
+	 let prefix =  dir,(mp',empty_dirpath) in
+	 let substituted = 
+	   match mbids with
+		    | [] -> 
+			Some (subst_objects prefix 
+				(join sub (join (map_msid msid mp') (map_mp mp' mp))) objs)
+		    | _ -> None in
 	   ignore (add_leaf
 		     id
 		     (in_module_alias (Some (entry, mty_sub_o), substobjs, substituted)))
@@ -920,11 +954,11 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 	    ignore (add_leaf
 		      id
 		      (in_module (Some (entry, mty_sub_o), substobjs, substituted)))
-	
+	      
   with e -> 
     (* Something wrong: undo the whole process *)
     Summary.unfreeze_summaries fs; raise e
-
+      
 (* Include *)
 
 let rec subst_inc_expr subst me =

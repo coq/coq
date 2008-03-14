@@ -155,6 +155,10 @@ val shallow_add_module : module_path -> module_body -> env -> env
 val lookup_module : module_path -> env -> module_body
 val lookup_modtype : module_path -> env -> module_type_body
 
+val register_alias : module_path -> module_path -> env -> env
+val lookup_alias : module_path -> env -> module_path
+val scrape_alias : module_path -> env -> module_path
+
 (************************************************************************)
 (*s Universe constraints *)
 val set_universes   :   Univ.universes -> env -> env

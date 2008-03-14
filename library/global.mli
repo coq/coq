@@ -51,6 +51,8 @@ val add_mind        :
 
 val add_module      : identifier -> module_entry -> module_path
 val add_modtype     : identifier -> module_struct_entry -> module_path
+val add_include : module_struct_entry -> unit
+val add_alias : identifier -> module_path -> module_path
 
 val add_constraints : constraints -> unit
 
@@ -71,7 +73,7 @@ val add_module_parameter : mod_bound_id -> module_struct_entry -> unit
 val start_modtype : identifier -> module_path
 val end_modtype : identifier -> module_path
 
-val add_include : module_struct_entry -> unit
+
 
 (* Queries *)
 val lookup_named     : variable -> named_declaration

@@ -68,6 +68,7 @@ let add_constant = add_thing add_constant
 let add_mind = add_thing add_mind
 let add_modtype = add_thing (fun _ -> add_modtype) ()
 let add_module = add_thing (fun _ -> add_module) ()
+let add_alias = add_thing (fun _ -> add_alias) ()
 
 let add_constraints c = global_env := add_constraints c !global_env
 

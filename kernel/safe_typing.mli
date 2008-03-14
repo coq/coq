@@ -57,6 +57,10 @@ val add_module :
   label -> module_entry -> safe_environment 
     -> module_path * safe_environment
 
+(* Adding a module alias*)
+val add_alias :
+  label -> module_path -> safe_environment 
+    -> module_path * safe_environment
 (* Adding a module type *)
 val add_modtype :
   label -> module_struct_entry -> safe_environment 

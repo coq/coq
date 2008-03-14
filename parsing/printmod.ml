@@ -52,12 +52,11 @@ let rec flatten_app mexpr l = match mexpr with
   | mexpr -> mexpr::l
 
 let rec print_module name locals with_body mb =
-  let body = match mb.mod_equiv, with_body, mb.mod_expr with 
-    | None, false, _ 
-    | None, true, None -> mt()
-    | None, true, Some mexpr -> 
+  let body = match with_body, mb.mod_expr with 
+    | false, _ 
+    | true, None -> mt()
+    | true, Some mexpr -> 
 	spc () ++ str ":= " ++ print_modexpr locals mexpr
-    | Some mp, _, _ -> str " == " ++ print_modpath locals mp
   in
   let modtype = match mb.mod_type with
       None -> str ""
@@ -77,7 +76,7 @@ and print_modtype locals mty =
 	::locals in
 	hov 2 (str "Funsig" ++ spc () ++ str "(" ++ 
 		 pr_id (id_of_mbid mbid) ++ str " : " ++ 
-		 print_modtype locals mtb1 ++ 
+		 print_modtype locals mtb1.typ_expr ++ 
 		 str ")" ++ spc() ++ print_modtype locals' mtb2)
   | SEBstruct (msid,sign) -> 
       hv 2 (str "Sig" ++ spc () ++ print_sig locals msid sign ++ brk (1,-2) ++ str "End")
@@ -103,6 +102,7 @@ and print_sig locals msid sign =
     | SFBconst {const_opaque=true} -> str "Parameter "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
+    | SFBalias (mp,_) -> str "Module"
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
   in
     prlist_with_sep spc print_spec sign
@@ -114,6 +114,7 @@ and print_struct locals msid struc =
     | SFBconst {const_body=None} -> str "Parameter "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
+    | SFBalias (mp,_) -> str "Module"
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
   in
     prlist_with_sep spc print_body struc
@@ -125,7 +126,7 @@ and print_modexpr locals mexpr = match mexpr with
       in *)
       let locals' = (mbid, get_new_id locals (id_of_mbid mbid))::locals in
       hov 2 (str "Functor" ++ spc() ++ str"[" ++ pr_id(id_of_mbid mbid) ++ 
-	     str ":" ++ print_modtype locals mty ++ 
+	     str ":" ++ print_modtype locals mty.typ_expr ++ 
       str "]" ++ spc () ++ print_modexpr locals' mexpr)
   | SEBstruct (msid, struc) -> 
       hv 2 (str "Struct" ++ spc () ++ print_struct locals msid struc ++ brk (1,-2) ++ str "End")
@@ -152,8 +153,7 @@ let print_module with_body mp =
     print_module name [] with_body (Global.lookup_module mp) ++ fnl ()
 
 let print_modtype kn = 
-  let mtb = match Global.lookup_modtype kn with
-    | mtb,_ -> mtb in
+  let mtb = Global.lookup_modtype kn in
   let name = print_kn [] kn in
       str "Module Type " ++ name ++ str " = " ++ 
-	print_modtype [] mtb ++ fnl ()
+	print_modtype [] mtb.typ_expr ++ fnl ()

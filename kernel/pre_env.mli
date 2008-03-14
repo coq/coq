@@ -26,7 +26,8 @@ type globals = {
   env_constants : constant_key Cmap.t;
   env_inductives : mutual_inductive_body KNmap.t;
   env_modules : module_body MPmap.t;
-  env_modtypes : module_type_body MPmap.t }
+  env_modtypes : module_type_body MPmap.t;
+  env_alias : module_path MPmap.t }
 
 type stratification = {
   env_universes : universes;

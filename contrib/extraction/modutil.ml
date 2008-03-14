@@ -20,6 +20,67 @@ open Mod_subst
 
 (*S Functions upon modules missing in [Modops]. *) 
 
+(*<<<<<<< .mine
+(*s Add _all_ direct subobjects of a module, not only those exported. 
+   Build on the [Modops.add_signature] model. *)
+
+let add_structure mp msb env = 
+  let add_one env (l,elem) = 
+    let kn = make_kn mp empty_dirpath l in 
+    let con = make_con mp empty_dirpath l in 
+    match elem with 
+      | SFBconst cb -> Environ.add_constant con cb env 
+      | SFBmind mib -> Environ.add_mind kn mib env 
+      | SFBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
+      | SFBmodtype mtb -> Environ.add_modtype (MPdot (mp,l)) mtb env
+      | SFBalias (mp1,_) -> Environ.register_alias (MPdot (mp,l)) mp1 env
+  in List.fold_left add_one env msb
+
+(*s Apply a module path substitution on a module.
+   Build on the [Modops.subst_modtype] model. *)
+
+let rec subst_module sub mb =
+  let mtb' = Option.smartmap (Modops.subst_struct_expr sub) mb.mod_type
+  and meb' = Option.smartmap (subst_meb sub) mb.mod_expr in
+  if (mtb'==mb.mod_type) && (meb'==mb.mod_expr) 
+  then mb
+  else { mod_expr= meb'; 
+	 mod_type=mtb'; 
+	 mod_constraints=mb.mod_constraints;
+	 mod_alias = mb.mod_alias;
+         mod_retroknowledge=[] } (* spiwack: since I'm lazy and it's unused at 
+				    this point. I forget about retroknowledge, 
+				    this may need a change later *) 
+
+and subst_meb sub = function 
+  | SEBident mp -> SEBident (subst_mp sub mp) 
+  | SEBfunctor (mbid, mtb, meb) -> 
+      assert (not (occur_mbid mbid sub)); 
+      SEBfunctor (mbid, Modops.subst_modtype sub mtb, subst_meb sub meb)
+  | SEBstruct (msid, msb) -> 
+      assert (not (occur_msid msid sub));
+      SEBstruct (msid, subst_msb sub msb)
+  | SEBapply (meb, meb', c) -> 
+      SEBapply (subst_meb sub meb, subst_meb sub meb', c)
+  | SEBwith (meb,With_module_body(id,mp,cst))->
+	SEBwith(subst_meb sub meb,
+		With_module_body(id,Mod_subst.subst_mp sub mp,cst))
+  | SEBwith (meb,With_definition_body(id,cb))->
+      SEBwith(subst_meb sub meb,
+	      With_definition_body(id,Declarations.subst_const_body sub cb))
+
+
+and subst_msb sub msb = 
+  let subst_body = function
+    | SFBconst cb -> SFBconst (subst_const_body sub cb)
+    | SFBmind mib -> SFBmind (subst_mind sub mib)
+    | SFBmodule mb -> SFBmodule (subst_module sub mb)
+    | SFBmodtype mtb -> SFBmodtype (Modops.subst_modtype sub mtb)
+    | SFBalias (mp,cst) -> SFBalias(subst_mp sub mp,cst)
+  in List.map (fun (l,b) -> (l,subst_body b)) msb
+
+=======
+>>>>>>> .r10624 *)
 (*s Change a msid in a module type, to follow a module expr. 
   Because of the "with" construct, the module type of a module can be a 
   [MTBsig] with a msid different from the one of the module. *)
