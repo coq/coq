@@ -440,9 +440,9 @@ let congruence_tac depth l =
 
 let f_equal gl = 
   let cut_eq c1 c2 = 
+    let ty = refresh_universes (pf_type_of gl c1) in 
     tclTHENTRY
-      (Tactics.cut (mkApp (Lazy.force _eq, [| pf_type_of gl c1; c1; c2|])))
-      reflexivity
+      (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|]))) reflexivity
   in 
   try match kind_of_term (pf_concl gl) with 
     | App (r,[|_;t;t'|]) when eq_constr r (Lazy.force _eq) -> 
