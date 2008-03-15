@@ -79,7 +79,7 @@ let super = function
   | Atom u -> 
       Max ([],[u])
   | Max _ ->
-      anomaly ("Cannot take the successor of a non variable universes:\n"^
+      anomaly ("Cannot take the successor of a non variable universe:\n"^
                "(maybe a bugged tactic)")
 
 (* Returns the formal universe that is greater than the universes u and v.

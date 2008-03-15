@@ -44,7 +44,7 @@ let type_of_var env id =
   with Not_found ->
     anomaly ("type_of: variable "^(string_of_id id)^" unbound")
 
-let typeur sigma metamap =
+let retype sigma metamap =
   let rec type_of env cstr=
     match kind_of_term cstr with
     | Meta n ->
@@ -132,14 +132,18 @@ let typeur sigma metamap =
   in type_of, sort_of, sort_family_of,
      type_of_global_reference_knowing_parameters
 
-let get_type_of env sigma c = let f,_,_,_ = typeur sigma [] in f env c
-let get_sort_of env sigma t = let _,f,_,_ = typeur sigma [] in f env t
-let get_sort_family_of env sigma c = let _,_,f,_ = typeur sigma [] in f env c
+let get_sort_of env sigma t = let _,f,_,_ = retype sigma [] in f env t
+let get_sort_family_of env sigma c = let _,_,f,_ = retype sigma [] in f env c
 let type_of_global_reference_knowing_parameters env sigma c args =
-  let _,_,_,f = typeur sigma [] in f env c args
+  let _,_,_,f = retype sigma [] in f env c args
 
-let get_type_of_with_meta env sigma metamap = 
-  let f,_,_,_ = typeur sigma metamap in f env
+(* We are outside the kernel: we take fresh universes *)
+(* to avoid tactics and co to refresh universes themselves *)
+let get_type_of env sigma c =
+  let f,_,_,_ = retype sigma [] in refresh_universes (f env c)
+
+let get_type_of_with_meta env sigma metamap c =
+  let f,_,_,_ = retype sigma metamap in refresh_universes (f env c)
 
 (* Makes an assumption from a constr *)
 let get_assumption_of env evc c = c

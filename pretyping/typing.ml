@@ -166,8 +166,9 @@ let mcheck env evd c t =
  
 let mtype_of env evd c =
   let j = execute env evd (nf_evar (evars_of evd) c) in
-  (* No normalization: it breaks Pattern! *)
-  (*nf_betaiota*) j.uj_type
+  (* We are outside the kernel: we take fresh universes *)
+  (* to avoid tactics and co to refresh universes themselves *)
+  Termops.refresh_universes j.uj_type
 
 let msort_of env evd c =
   let j = execute env evd (nf_evar (evars_of evd) c) in

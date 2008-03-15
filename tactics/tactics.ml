@@ -656,7 +656,6 @@ let cut_and_apply c gl =
   let goal_constr = pf_concl gl in 
     match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
       | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
-	  let c2 = refresh_universes c2 in
 	  tclTHENLAST
 	    (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
 	    (apply_term c [mkMeta (new_meta())]) gl
@@ -1050,7 +1049,7 @@ let true_cut = assert_tac true
 (**************************)
 
 let generalize_goal gl c cl =
-  let t = refresh_universes (pf_type_of gl c) in
+  let t = pf_type_of gl c in
   match kind_of_term c with
     | Var id ->
 	(* The choice of remembering or not a non dependent name has an impact
@@ -1242,7 +1241,7 @@ let letin_tac with_eq name c occs gl =
       if not (mem_named_context x (pf_hyps gl)) then x else
 	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in 
-  let t = refresh_universes (pf_type_of gl c) in
+  let t = pf_type_of gl c in
   let newcl = mkNamedLetIn id c t ccl in
   tclTHENLIST
     [ convert_concl_no_check newcl DEFAULTcast;
@@ -1254,7 +1253,7 @@ let letin_tac with_eq name c occs gl =
 let forward usetac ipat c gl =
   match usetac with
   | None -> 
-      let t = refresh_universes (pf_type_of gl c) in
+      let t = pf_type_of gl c in
       tclTHENFIRST (assert_as true ipat t) (exact_no_check c) gl
   | Some tac -> 
       tclTHENFIRST (assert_as true ipat c) tac gl
@@ -1784,10 +1783,7 @@ let abstract_args gl id =
 	  let argty = pf_type_of gl arg in
 	  let liftarg = lift (List.length ctx) arg in
 	  let liftargty = lift (List.length ctx) argty in
-	  let convertible = 
-	    Reductionops.is_conv ctxenv sigma
-	      (Termops.refresh_universes ty) (Termops.refresh_universes liftargty) 
-	  in
+	  let convertible = Reductionops.is_conv ctxenv sigma ty liftargty in
 	    match kind_of_term arg with
 	      | Var _ | Rel _ when convertible -> 
 		    (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, (Anonymous, liftarg, liftarg) :: finalargs, env)
