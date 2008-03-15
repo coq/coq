@@ -169,6 +169,8 @@ let change_vars =
 		 List.map (fun (e,x) -> (change_vars mapping e,x)) el, 
 		 List.map (change_vars_br mapping) brl
 		)
+      | RLetPattern(loc, (e,x), br) ->
+	  RLetPattern(loc, (change_vars mapping e, x), change_vars_br mapping br)
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc,
 	      change_vars mapping b,
@@ -351,6 +353,8 @@ let rec alpha_rt excluded rt =
 	  List.map (function (rt,i) -> alpha_rt excluded rt, i) el 
 	in 
 	RCases(loc,infos,new_el,List.map (alpha_br excluded) brl) 
+    | RLetPattern(loc,(rt,i),br) -> 
+	RLetPattern(loc, (alpha_rt excluded rt, i), alpha_br excluded br) 
     | RIf(loc,b,(na,e_o),lhs,rhs) -> 
 	RIf(loc,alpha_rt excluded b,
 	    (na,Option.map (alpha_rt excluded) e_o),
@@ -401,7 +405,7 @@ let is_free_in id =
     | RCases(_,_,el,brl) ->
 	(List.exists (fun (e,_) -> is_free_in e) el) ||
 	  List.exists is_free_in_br brl
-
+    | RLetPattern(_,(e,_),br) -> is_free_in e || is_free_in_br br
     | RLetTuple(_,nal,_,b,t) -> 
 	let check_in_nal = 
 	  not (List.exists (function Name id' -> id'= id | _ -> false) nal) 
@@ -501,6 +505,8 @@ let replace_var_by_term x_id term =
 		 List.map (fun (e,x) -> (replace_var_by_pattern e,x)) el, 
 		 List.map replace_var_by_pattern_br brl
 		)
+      | RLetPattern(loc,(e,x),br) ->
+	  RLetPattern(loc,(replace_var_by_pattern e, x), replace_var_by_pattern_br br)
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc, replace_var_by_pattern b,
 	      (na,Option.map replace_var_by_pattern e_option),
@@ -604,6 +610,8 @@ let ids_of_rawterm c =
           List.map idof nal @ ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
       | RCases (loc,rtntypopt,tml,brchl) -> 
 	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_rawterm [] c) brchl)
+      | RLetPattern (loc,tm,(_,idl,patl,c)) -> 
+	  idl @ ids_of_rawterm [] c
       | RRec _ -> failwith "Fix inside a constructor branch"
       | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> []
   in
@@ -656,6 +664,11 @@ let zeta_normalize =
 		 List.map (fun (e,x) -> (zeta_normalize_term e,x)) el, 
 		 List.map zeta_normalize_br brl
 		)
+      | RLetPattern(loc,(e,x),br) -> 
+	  RLetPattern(loc,
+		     (zeta_normalize_term e,x),
+		     zeta_normalize_br br
+	  )
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc, zeta_normalize_term b,
 	      (na,Option.map zeta_normalize_term e_option),
@@ -713,6 +726,9 @@ let expand_as =
       | RCases(loc,po,el,brl) ->
 	  RCases(loc, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)
+      | RLetPattern(loc,(rt,t),br) ->
+	  RLetPattern(loc, (expand_as map rt,t),
+		expand_as_br map br)
 	    
   and expand_as_br map (loc,idl,cpl,rt) = 
     (loc,idl,cpl,    expand_as (List.fold_left add_as map cpl) rt)

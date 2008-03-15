@@ -227,6 +227,8 @@ let rec is_rec names =
     | RCases(_,_,el,brl) -> 
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
+    | RLetPattern (_,(c,_),p) -> 
+	lookup names c || lookup_br names p
   and lookup_br names (_,idl,_,rt) = 
     let new_names = List.fold_right Idset.remove idl names in 
     lookup new_names rt
