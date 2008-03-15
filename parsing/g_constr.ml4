@@ -103,13 +103,16 @@ let impl_ident =
   Gram.Entry.of_parser "impl_ident"
     (fun strm ->
       match Stream.npeek 1 strm with
-	| [("IDENT",("wf"|"struct"|"measure"))] ->
-	    raise Stream.Failure
-	| [("IDENT",s)] -> 
-	    Stream.junk strm;
-            Names.id_of_string s
+	| [(_,"{")] -> 
+	    (match Stream.npeek 2 strm with
+	      | [_;("IDENT",("wf"|"struct"|"measure"))] ->
+		  raise Stream.Failure
+	      | [_;("IDENT",s)] -> 
+		  Stream.junk strm; Stream.junk strm;
+		  Names.id_of_string s
+	      | _ -> raise Stream.Failure)
 	| _ -> raise Stream.Failure)
-
+    
 let ident_eq =
   Gram.Entry.of_parser "ident_eq"
     (fun strm ->
@@ -356,10 +359,26 @@ GEXTEND Gram
 	  ctx @ bl
     | cl = LIST0 binder_let -> cl ] ]
   ;
+  binder_assum:
+    [ [ "}" -> fun id -> LocalRawAssum([id], Default Implicit, CHole(loc, None))
+    | idl=LIST1 name; ":"; c=lconstr; "}" ->
+        (fun id -> LocalRawAssum (id::idl,Default Implicit,c))
+    | idl=LIST1 name; "}" ->
+        (fun id -> LocalRawAssum (id::idl,Default Implicit,CHole (loc, None)))
+    | ":"; c=lconstr; "}" ->
+	(fun id -> LocalRawAssum ([id],Default Implicit,c))
+    ] ]
+  ;
+  fixannot:
+    [ [ "{"; IDENT "struct"; id=name; "}" -> (Some id, CStructRec)
+    | "{"; IDENT "wf"; rel=constr; id=OPT name; "}" -> (id, CWfRec rel)
+    | "{"; IDENT "measure"; rel=constr; id=OPT name; "}" -> (id, CMeasureRec rel)
+    ] ]
+  ;
   binders_let_fixannot:
-    [ [ "{"; IDENT "struct"; id=name; "}" -> [], (Some id, CStructRec)
-    | "{"; IDENT "wf"; rel=constr; id=OPT name; "}" -> [], (id, CWfRec rel)
-    | "{"; IDENT "measure"; rel=constr; id=OPT name; "}" -> [], (id, CMeasureRec rel)
+    [ [ id=impl_ident; assum=binder_assum; bl = binders_let_fixannot -> 
+	(assum (loc, Name id) :: fst bl), snd bl
+    | f = fixannot -> [], f
     | b = binder_let; bl = binders_let_fixannot -> 
 	b :: fst bl, snd bl
     | -> [], (None, CStructRec)

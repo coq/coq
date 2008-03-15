@@ -2,6 +2,8 @@ Require Import Coq.Init.Wf.
 Require Import Coq.Program.Utils.
 Require Import ProofIrrelevance.
 
+Implicit Arguments Enriching Acc_inv [y].
+
 (** Reformulation of the Wellfounded module using subsets where possible. *)
 
 Section Well_founded.

@@ -57,16 +57,20 @@ val compute_interning_datas :  Environ.env ->
     'a list ->
     'b list ->
     Term.types list ->
-    'a list *
+    Impargs.manual_explicitation list list ->
+  'a list *
     ('b *
-     (Names.identifier list * Impargs.implicits_list *
-      Topconstr.scope_name option list))
+	(Names.identifier list * Impargs.implicits_list *
+	    Topconstr.scope_name option list))
     list
 
 val build_mutual : (inductive_expr * decl_notation) list -> bool -> unit
 
 val declare_mutual_with_eliminations :
-  bool -> Entries.mutual_inductive_entry -> mutual_inductive
+  bool -> Entries.mutual_inductive_entry -> 
+  (Impargs.manual_explicitation list *
+      Impargs.manual_explicitation list list) list ->
+  mutual_inductive
 
 type fixpoint_kind =
   | IsFixpoint of (int option * recursion_order_expr) list

@@ -471,9 +471,10 @@ let rebuild_implicits (req,l) =
       | ImplAuto -> [ref,compute_global_implicits flags ref]
       | ImplManual l -> 
 	  let auto = compute_global_implicits flags ref in
+	  let auto = if flags.main then auto else List.map (fun _ -> None) auto in
 	  let l' = merge_impls auto l in [ref,l']
   in (req,l')
-
+    
 
 let (inImplicits, _) =
   declare_object {(default_object "IMPLICITS") with 
@@ -529,6 +530,10 @@ let declare_manual_implicits local ref enriching l =
     else ImplInteractive(ref,flags,ImplManual l')
   in
     add_anonymous_leaf (inImplicits (req,[ref,l']))
+
+let maybe_declare_manual_implicits local ref enriching l =
+  if l = [] then ()
+  else declare_manual_implicits local ref enriching l
 
 (*s Registration as global tables *)
 

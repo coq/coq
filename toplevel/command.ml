@@ -139,8 +139,7 @@ let red_constant_entry bl ce = function
 let declare_global_definition ident ce local imps =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition Definition) in
   let gr = ConstRef kn in
-    if Impargs.is_implicit_args () || imps <> [] then
-      declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
+    maybe_declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
     if local = Local && Flags.is_verbose() then
       msg_warning (pr_id ident ++ str" is declared as a global definition");
     definition_message ident;
@@ -192,8 +191,7 @@ let declare_one_assumption is_coe (local,kind) c imps nl (_,ident) =
         let kn =
           declare_constant ident (ParameterEntry (c,nl), IsAssumption kind) in
 	let gr = ConstRef kn in
-	  if Impargs.is_implicit_args () || imps <> [] then
-	    declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
+	  maybe_declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
         assumption_message ident;
         if local=Local & Flags.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
@@ -459,18 +457,18 @@ let declare_eliminations sp =
 
 (* 3b| Mutual inductive definitions *)
 
-let compute_interning_datas env l nal typl =
-  let mk_interning_data na typ =
+let compute_interning_datas env l nal typl impll =
+  let mk_interning_data na typ impls =
     let idl, impl =
-      if is_implicit_args() then
-	let impl = compute_implicits env typ in
-	let sub_impl,_ = list_chop (List.length l) impl in
-	let sub_impl' = List.filter is_status_implicit sub_impl in
+      let impl = 
+	compute_implicits_with_manual env typ (is_implicit_args ()) impls
+      in 
+      let sub_impl,_ = list_chop (List.length l) impl in
+      let sub_impl' = List.filter is_status_implicit sub_impl in
 	(List.map name_of_implicit sub_impl', impl)
-      else 
-	([],[]) in
-    (na, (idl, impl, compute_arguments_scope typ)) in
-  (l, List.map2 mk_interning_data nal typl)
+    in
+      (na, (idl, impl, compute_arguments_scope typ)) in
+  (l, list_map3 mk_interning_data nal typl impll)
 
 let declare_interning_data (_,impls) (df,c,scope) =
   silently (Metasyntax.add_notation_interpretation df impls c) scope
@@ -521,13 +519,14 @@ let interp_cstrs evdref env impls mldata arity ind =
   (* Complete conclusions of constructor types if given in ML-style syntax *)
   let ctyps' = List.map2 (complete_conclusion mldata) cnames ctyps in
   (* Interpret the constructor types *)
-  let ctyps'' = List.map (interp_type_evars evdref env ~impls) ctyps' in
-  (cnames, ctyps'')
+  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls evdref env ~impls) ctyps') in
+    (cnames, ctyps'', cimpls)
 
 let interp_mutual paramsl indl notations finite = 
   check_all_names_different indl;
   let env0 = Global.env() in
   let evdref = ref (Evd.create_evar_defs Evd.empty) in
+  let userimpls = Implicit_quantifiers.implicits_of_binders paramsl in
   let env_params, ctx_params = interp_context_evars evdref env0 paramsl in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 
@@ -542,7 +541,8 @@ let interp_mutual paramsl indl notations finite =
   let env_ar_params = push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
-  let impls = compute_interning_datas env0 params indnames fullarities in
+  let indimpls = List.map (fun _ -> userimpls) fullarities in
+  let impls = compute_interning_datas env0 params indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
@@ -556,17 +556,17 @@ let interp_mutual paramsl indl notations finite =
   (* Instantiate evars and check all are resolved *)
   let evd,_ = consider_remaining_unif_problems env_params !evdref in
   let sigma = evars_of evd in
-  let constructors = List.map (fun (idl,cl) -> (idl,List.map (nf_evar sigma) cl)) constructors in
+  let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map (nf_evar sigma) cl,impsl)) constructors in
   let ctx_params = Sign.map_rel_context (nf_evar sigma) ctx_params in
   let arities = List.map (nf_evar sigma) arities in
   List.iter (check_evars env_params Evd.empty evd) arities;
   Sign.iter_rel_context (check_evars env0 Evd.empty evd) ctx_params;
-  List.iter (fun (_,ctyps) ->
+  List.iter (fun (_,ctyps,_) ->
     List.iter (check_evars env_ar_params Evd.empty evd) ctyps)
     constructors;
   
   (* Build the inductive entries *)
-  let entries = list_map3 (fun ind arity (cnames,ctypes) -> {
+  let entries = list_map3 (fun ind arity (cnames,ctypes,cimpls) -> {
     mind_entry_typename = ind.ind_name;
     mind_entry_arity = arity;
     mind_entry_consnames = cnames;
@@ -577,7 +577,7 @@ let interp_mutual paramsl indl notations finite =
   { mind_entry_params = List.map prepare_param ctx_params;
     mind_entry_record = false; 
     mind_entry_finite = finite; 
-    mind_entry_inds = entries }
+    mind_entry_inds = entries }, (List.map (fun (_,_,impls) -> userimpls, impls) constructors)
 
 let eq_constr_expr c1 c2 =
   try let _ = Constrextern.check_same_type c1 c2 in true with _ -> false
@@ -630,21 +630,36 @@ let _ =
       optwrite = (fun b -> elim_flag := b) }
 
 
-let declare_mutual_with_eliminations isrecord mie =
+let lift_implicits n = 
+  List.map (fun x -> 
+    match fst x with 
+	ExplByPos (k, id) -> ExplByPos (k + n, id), snd x
+      | _ -> x)
+
+let declare_mutual_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_,kn) = declare_mind isrecord mie in
-  if_verbose ppnl (minductive_message names);
-  if !elim_flag then declare_eliminations kn;
-  kn
+  let params = List.length mie.mind_entry_params in
+  let (_,kn) = declare_mind isrecord mie in    
+    list_iter_i (fun i (indimpls, constrimpls) -> 
+      let ind = (kn,i) in
+	list_iter_i
+	  (fun j impls -> 
+	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j))
+	      (is_implicit_args()) (indimpls @ (lift_implicits params impls)))
+	  constrimpls)
+      impls;
+    if_verbose ppnl (minductive_message names);
+    if !elim_flag then declare_eliminations kn;
+    kn
 
 let build_mutual l finite =
   let indl,ntnl = List.split l in
   let paramsl = extract_params indl in
   let coes = extract_coercions indl in
   let notations,indl = prepare_inductive ntnl indl in
-  let mie = interp_mutual paramsl indl notations finite in
+  let mie,impls = interp_mutual paramsl indl notations finite in
   (* Declare the mutual inductive block with its eliminations *)
-  ignore (declare_mutual_with_eliminations false mie);
+  ignore (declare_mutual_with_eliminations false mie impls);
   (* Declare the possible notations of inductive types *)
   List.iter (declare_interning_data ([],[])) notations;
   (* Declare the coercions *)
@@ -785,11 +800,9 @@ let declare_fix boxed kind f def t imps =
   } in
   let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
   let gr = ConstRef kn in
-    if Impargs.is_implicit_args () || imps <> [] then
-      declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
+    maybe_declare_manual_implicits false gr (Impargs.is_implicit_args ()) imps;
     gr
-
-
+      
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
   let names = List.map (fun id -> Name id) fixnames in
@@ -828,7 +841,7 @@ let interp_recursive fixkind l boxed =
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)
-  let impls = compute_interning_datas env [] fixnames fixtypes in
+  let impls = compute_interning_datas env [] fixnames fixtypes fiximps in
   let notations = List.fold_right Option.List.cons ntnl [] in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
@@ -1043,8 +1056,7 @@ let start_proof_com sopt kind (bl,t) hook =
   let j = Default.understand_judgment sigma env ib in
     start_proof id kind j.uj_val
       (fun str cst -> 
-	if Impargs.is_implicit_args () || imps <> [] then
-	  declare_manual_implicits false cst (Impargs.is_implicit_args ()) imps;
+	maybe_declare_manual_implicits false cst (Impargs.is_implicit_args ()) imps;
 	hook str cst)
 
 let check_anonymity id save_ident =

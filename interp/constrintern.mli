@@ -45,6 +45,8 @@ type var_internalisation_data =
 type implicits_env = (identifier * var_internalisation_data) list
 type full_implicits_env = identifier list * implicits_env
 
+type manual_implicits = (explicitation * (bool * bool)) list
+
 type ltac_sign = identifier list * unbound_ltac_var_map
 
 (*s Internalisation performs interpretation of global names and notations *)
@@ -74,13 +76,21 @@ val interp_gen : typing_constraint -> evar_map -> env ->
 val interp_constr : evar_map -> env -> 
   constr_expr -> constr
 
-val interp_casted_constr : evar_map -> env -> ?impls:full_implicits_env -> 
-  constr_expr -> types -> constr
-
 val interp_type : evar_map -> env -> ?impls:full_implicits_env -> 
   constr_expr -> types
 
 val interp_open_constr   : evar_map -> env -> constr_expr -> evar_map * constr
+
+val interp_casted_constr : evar_map -> env -> ?impls:full_implicits_env -> 
+  constr_expr -> types -> constr
+
+(* Accepting evars and giving back the manual implicits in addition. *)
+
+val interp_casted_constr_evars_impls : evar_defs ref -> env -> 
+  ?impls:full_implicits_env -> constr_expr -> types -> constr * manual_implicits
+
+val interp_type_evars_impls : evar_defs ref -> env -> ?impls:full_implicits_env ->
+  constr_expr -> types * manual_implicits
 
 val interp_casted_constr_evars : evar_defs ref -> env -> 
   ?impls:full_implicits_env -> constr_expr -> types -> constr
