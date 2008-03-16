@@ -510,7 +510,7 @@ fourier: $(FOURIERVO) $(FOURIERCMO)
 jprover: $(JPROVERVO) $(JPROVERCMO)
 funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
-subtac: $(SUBTACVO) $(SUBTACCMO)
+programs subtac: $(SUBTACVO) $(SUBTACCMO)
 rtauto: $(RTAUTOVO) $(RTAUTOCMO)
 
 ###########################################################################

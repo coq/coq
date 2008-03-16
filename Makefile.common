@@ -876,7 +876,7 @@ VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   fsets allfsets intmap relations wellfounded ints reals allreals \
   setoids sorting natural integer rational numbers noreal \
   omega ring setoid_ring dp xml extraction field fourier jprover \
-  funind cc subtac rtauto
+  funind cc programs subtac rtauto
 DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq rectutorial
 STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \
   coqlight states pcoq-files check init theories theories-light contrib \
