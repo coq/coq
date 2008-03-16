@@ -32,14 +32,14 @@ Definition respectful_dep (A : Type) (R : relation A)
   (B : A -> Type) (R' : forall x y, B x -> B y -> Prop) : relation (forall x : A, B x) := 
   fun f g => forall x y : A, R x y -> R' x y (f x) (g y).
 
-Definition respectful A (R : relation A) B (R' : relation B) : relation (A -> B) :=
+Definition respectful A B (R : relation A) (R' : relation B) : relation (A -> B) :=
   fun f g => forall x y : A, R x y -> R' (f x) (g y).
 
 (** Notations reminiscent of the old syntax for declaring morphisms. *)
 
-Notation " R ++> R' " := (@respectful _ R _ R') (right associativity, at level 20).
-Notation " R ==> R' " := (@respectful _ R _ R') (right associativity, at level 20).
-Notation " R --> R' " := (@respectful _ (inverse R) _ R') (right associativity, at level 20).
+Notation " R ++> R' " := (@respectful _ _ R R') (right associativity, at level 20).
+Notation " R ==> R' " := (@respectful _ _ R R') (right associativity, at level 20).
+Notation " R --> R' " := (@respectful _ _ (inverse R) R') (right associativity, at level 20).
 
 (** A morphism on a relation [R] is an object respecting the relation (in its kernel). 
    The relation [R] will be instantiated by [respectful] and [A] by an arrow type 
@@ -57,7 +57,7 @@ Ltac obligations_tactic ::= program_simpl.
 
 Program Instance [ Equivalence A R, Equivalence B R' ] => 
   respecting_equiv : Equivalence respecting
-  (fun (f g : respecting) => forall (x y : A), R x y -> R' (`f x) (`g y)).
+  (fun (f g : respecting) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
 
   Next Obligation.
   Proof.
@@ -76,7 +76,7 @@ Program Instance [ Equivalence A R, Equivalence B R' ] =>
   Next Obligation.
   Proof.
     constructor ; intros.
-    trans ((`y) y0).
+    trans (proj1_sig y y0).
     apply H ; auto.
     apply H0. refl.
   Qed.
@@ -97,12 +97,12 @@ Implicit Arguments Morphism [A].
 
 (** Leibniz *)
 
-Program Definition eq_morphism A : Morphism (eq ++> eq ++> iff) (eq (A:=A)).
-Proof. intros ; constructor ; intros.
-  obligations_tactic.
-  subst.
-  intuition.
-Qed.
+(* Instance Morphism (eq ++> eq ++> iff) (eq (A:=A)). *)
+(* Proof. intros ; constructor ; intros. *)
+(*   obligations_tactic. *)
+(*   subst. *)
+(*   intuition. *)
+(* Qed. *)
 
 (* Program Definition arrow_morphism `A B` (m : A -> B) : Morphism (eq ++> eq) m. *)
 
@@ -111,7 +111,7 @@ Qed.
    morphisms at the top level when we rewrite. *)
 
 Class SubRelation A (R S : relation A) :=
-  subrelation :> Morphism (S ==> R) (fun x => x).
+  subrelation :> Morphism (S ==> R) id.
 
 Instance iff_impl_subrelation : SubRelation Prop impl iff.
 Proof.
@@ -128,24 +128,59 @@ Qed.
 Instance [ SubRelation A R₁ R₂ ] =>
   morphisms_subrelation : SubRelation (B -> A) (R ==> R₁) (R ==> R₂).
 Proof.
-  constructor ; repeat red ; intros.
+  constructor ; repeat red. intros x y H x₁ y₁ H₁.
   destruct subrelation.
   red in respect0, H ; unfold id in *.
   apply respect0.
   apply H.
-  apply H0.
+  apply H₁.
 Qed.
 
-(** High priority because it is always applicable and loops. *)
-
-Instance [ SubRelation A R₁ R₂, Morphism R₂ m ] =>
-  subrelation_morphism : Morphism R₁ m | 4.
+Instance [ SubRelation A R₂ R₁ ] =>
+  morphisms_subrelation_left : SubRelation (A -> B) (R₁ ==> R) (R₂ ==> R) | 3.
 Proof.
+  constructor ; repeat red ; intros x y H x₁ y₁ H₁.
   destruct subrelation.
-  red in respect0.
+  red in respect0, H ; unfold id in *.
+  apply H.
+  apply respect0.
+  apply H₁.
+Qed.
+
+Lemma subrelation_morphism [ SubRelation A R₁ R₂, Morphism R₂ m ] : Morphism R₁ m.
+Proof.
+  intros.
+  destruct subrelation.
+  red in respect0 ; intros.
+  constructor.
   unfold id in * ; apply respect0.
   apply respect.
 Qed.
+
+Inductive done : nat -> Type :=
+  did : forall n : nat, done n.
+
+Ltac subrelation_tac := 
+  match goal with
+    | [ H : done 1 |- @Morphism _ _ _ ] => fail
+    | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
+      set(H:=did 1) ; eapply @subrelation_morphism
+  end.
+
+Hint Resolve @subrelation_morphism 4 : typeclass_instances.
+
+(* Hint Extern 4 (@Morphism _ (_ --> _) _) => subrelation_tac : typeclass_instances. *)
+
+(* Goal forall A, Morphism (eq ++> eq ++> impl) (@eq A). *)
+(* Proof. *)
+(*   intros. *)
+(*   eauto with typeclass_instances. *)
+(*   Set Printing All. *)
+(*   Show Proof. *)
+
+(* Hint Resolve @subrelation_morphism 4 : typeclass_instances. *)
+
+
 
 (* Program Instance `A` (R : relation A) `B` (R' : relation B) *)
 (*   [ ? Morphism (R ==> R' ==> iff) m ] => *)
@@ -186,12 +221,14 @@ Qed.
 
 Program Instance iff_iff_iff_impl_morphism : Morphism (iff ==> iff ==> iff) impl.
 
-Lemma reflexive_impl_iff [ ! Symmetric A R, Morphism (R ==> impl) m ] : Morphism (R ==> iff) m.
-Proof.
-  intros.
-  constructor. red ; intros. 
-  split ; apply respect ; [ idtac | sym ] ; auto.
-Qed.
+(* Typeclasses eauto := debug. *)
+
+Program Instance [ ! Symmetric A R, Morphism (R ==> impl) m ] => reflexive_impl_iff : Morphism (R ==> iff) m.
+  
+  Next Obligation.
+  Proof.
+    split ; apply respect ; [ auto | sym ] ; auto.
+  Qed.
 
 (** The complement of a relation conserves its morphisms. *)
 
@@ -245,7 +282,20 @@ Program Instance {A B C : Type} [ Morphism (RA ==> RB ==> RC) (f : A -> B -> C) 
 
 Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B)
   [ Morphism (R ==> R') m ] => morphism_inverse_morphism :
-  Morphism (inverse R ==> inverse R') m.
+  Morphism (R --> inverse R') m.
+
+  Next Obligation.
+  Proof.
+    unfold inverse in *.
+    pose respect.
+    unfold respectful in r.
+    apply r ; auto.
+  Qed.
+
+Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) (C : Type) (R'' : relation C)
+  [ Morphism (R ++> R' ++> R'') m ] => 
+  morphism_inverse_inverse_morphism :
+  Morphism (R --> R' --> inverse R'') m.
 
   Next Obligation.
   Proof.

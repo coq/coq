@@ -524,7 +524,6 @@ module Coercion = struct
 	  (isevars, cj)
 
   let inh_conv_coerces_to loc env isevars t ((abs, t') as _tycon) =
-    isevars
 (*     (try *)
 (*        trace (str "Subtac_coercion.inh_conv_coerces_to called for " ++ *)
 (* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ *)
@@ -532,30 +531,30 @@ module Coercion = struct
 (* 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
 (* 	      Termops.print_env env); *)
 (*      with _ -> ()); *)
-(*     let nabsinit, nabs = *)
-(*       match abs with *)
-(* 	  None -> 0, 0 *)
-(* 	| Some (init, cur) -> init, cur *)
-(*     in *)
-(*       (\* a little more effort to get products is needed *\) *)
-(*       try let rels, rng = decompose_prod_n nabs t in *)
-(* 	(\* The final range free variables must have been replaced by evars, we accept only that evars *)
-(* 	   in rng are applied to free vars. *\) *)
-(* 	if noccur_with_meta 0 (succ nabsinit) rng then ( *)
-(* (\* 	  trace (str "No occur between 0 and " ++ int (succ nabsinit)); *\) *)
-(* 	  let env', t, t' = *)
-(* 	    let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in *)
-(* 	      env', rng, lift nabs t' *)
-(* 	  in *)
-(* 	    try *)
-(* 	      pi1 (try inh_conv_coerce_to_fail loc env' isevars None t t' *)
-(* 		   with NoCoercion -> *)
-(* 		     coerce_itf loc env' isevars None t t') *)
-(* 	    with NoSubtacCoercion -> *)
-(* 	      let sigma = evars_of isevars in *)
-(* 		error_cannot_coerce env' sigma (t, t')) *)
-(* 	else isevars *)
-(*       with _ -> isevars *)
+    let nabsinit, nabs =
+      match abs with
+	  None -> 0, 0
+	| Some (init, cur) -> init, cur
+    in
+      (* a little more effort to get products is needed *)
+      try let rels, rng = decompose_prod_n nabs t in
+	(* The final range free variables must have been replaced by evars, we accept only that evars
+	   in rng are applied to free vars. *)
+	if noccur_with_meta 0 (succ nabsinit) rng then (
+(* 	  trace (str "No occur between 0 and " ++ int (succ nabsinit)); *)
+	  let env', t, t' =
+	    let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
+	      env', rng, lift nabs t'
+	  in
+	    try
+	      pi1 (try inh_conv_coerce_to_fail loc env' isevars None t t'
+		   with NoCoercion ->
+		     coerce_itf loc env' isevars None t t')
+	    with NoSubtacCoercion ->
+	      let sigma = evars_of isevars in
+		error_cannot_coerce env' sigma (t, t'))
+	else isevars
+      with _ -> isevars
 (*  	trace (str "decompose_prod_n failed"); *)
 (*  	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to") *)
 end

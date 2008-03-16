@@ -22,7 +22,9 @@ Require Import Coq.Program.Program.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Notation "'relation' A " := (A -> A -> Prop) (at level 0).
+(* Notation "'relation' A " := (A -> A -> Prop) (at level 0). *)
+
+Definition relation A := A -> A -> Prop.
 
 (** Default relation on a given support. *)
 
@@ -40,7 +42,7 @@ Definition inverse A (R : relation A) : relation A := fun x y => R y x.
 Lemma inverse_inverse : forall A (R : relation A), inverse (inverse R) = R.
 Proof. intros ; unfold inverse. apply (flip_flip R). Qed.
 
-Definition complement A (R : relation A) := fun x y => R x y -> False.
+Definition complement A (R : relation A) : relation A := fun x y => R x y -> False.
 
 (** These are convertible. *)
 
@@ -126,7 +128,7 @@ Program Instance [ ! Irreflexive A (R : relation A) ] =>
 
   Next Obligation. 
   Proof. 
-    red ; intros.
+    red. intros H.
     apply (irreflexive H).
   Qed.
 
