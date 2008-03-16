@@ -51,11 +51,29 @@ let e_give_exact c gl =
 
 let assumption id = e_give_exact (mkVar id)
 
-let unify_e_resolve  (c,clenv) gls = 
-  let clenv' = connect_clenv gls clenv in
-  let _ = clenv_unique_resolver false clenv' gls in
-  h_simplest_eapply c gls
+let gen_constant dir s = Coqlib.gen_constant "Class_tactics" dir s
+let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation")
 
+open Unification
+
+let deltaset = lazy
+  (Cpred.singleton (destConst (Lazy.force coq_relation)))
+
+let auto_unif_flags = lazy {
+  modulo_conv_on_closed_terms = true; 
+  use_metas_eagerly = true;
+  modulo_delta = Lazy.force deltaset;
+}
+
+let unify_e_resolve (c,clenv) gls = 
+  let clenv' = connect_clenv gls clenv in
+  let clenv' = clenv_unique_resolver false ~flags:(Lazy.force auto_unif_flags) clenv' gls in
+    Clenvtac.clenv_refine true clenv' gls
+
+let unify_resolve (c,clenv) gls = 
+  let clenv' = connect_clenv gls clenv in
+  let clenv' = clenv_unique_resolver false ~flags:(Lazy.force auto_unif_flags) clenv' gls in  
+    Clenvtac.clenv_refine false clenv' gls
 
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl = 
@@ -142,26 +160,26 @@ module SearchProblem = struct
 (*     if !debug then  *)
 (*       (let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (*       let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(* 	msg (str"Goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n")); *)
+    (* 	msg (str"Goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n")); *)
     let rec aux = function
       | [] -> []
       | (tac,pptac) :: tacl -> 
 	  try 
-(* 	    if !debug then msg (str"\nTrying tactic: " ++ pptac ++ str"\n"); *)
+	    (* 	    if !debug then msg (str"\nTrying tactic: " ++ pptac ++ str"\n"); *)
 	    let (lgls,ptl) = apply_tac_list tac glls in 
 	    let v' p = v (ptl p) in
-(* 	      if !debug then *)
-(* 		begin *)
-(* 		  let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(* 		    msg (str"\nOn goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
-(* 		    msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")) *)
-(* 		end; *)
+	      (* 	      if !debug then *)
+	      (* 		begin *)
+	      (* 		  let evars = Evarutil.nf_evars (Refiner.project glls) in *)
+	      (* 		    msg (str"\nOn goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
+	      (* 		    msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")) *)
+	      (* 		end; *)
 	      ((lgls,v'),pptac) :: aux tacl
 	  with e when Logic.catchable_exception e ->
-(* 	    if !debug then msg (str"failed\n"); *)
+	    (* 	    if !debug then msg (str"failed\n"); *)
 	    aux tacl
     in aux l
-
+      
   let nb_empty_evars s = 
     Evd.fold (fun ev evi acc -> if evi.evar_body = Evar_empty then succ acc else acc) s 0
 
@@ -303,7 +321,7 @@ let valid evm p res_sigma l =
       !res_sigma (l, Evd.create_evar_defs !res_sigma)
   in raise (Found (snd evd'))
 
-let default_evars_tactic = 
+let default_evars_tactic =
   fun x -> raise (UserError ("default_evars_tactic", mt()))
 (* tclFAIL 0 (Pp.mt ()) *)
 
@@ -378,14 +396,10 @@ let equivalence = lazy (gen_constant ["Classes"; "RelationClasses"] "Equivalence
 let default_relation = lazy (gen_constant ["Classes"; "RelationClasses"] "DefaultRelation")
 
 (* let coq_relation = lazy (gen_constant ["RelationClasses";"Relation_Definitions"] "relation") *)
-let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation")
-let coq_relation a = mkApp (Lazy.force coq_relation, [| a |])
+let mk_relation a = mkApp (Lazy.force coq_relation, [| a |])
 let coq_relationT = lazy (gen_constant ["Classes";"Relations"] "relationT")
 
 let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv_refl")
-
-let iff_setoid = lazy (gen_constant ["Classes"; "SetoidClass"] "iff_setoid")
-let eq_setoid = lazy (gen_constant ["Classes"; "SetoidClass"] "eq_setoid")
 
 let setoid_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv")
 let setoid_morphism = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_morphism")
@@ -423,7 +437,7 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a optio
   let mk_relty ty obj =
     match obj with
       | None -> 
-	  let relty = coq_relation ty in
+	  let relty = mk_relation ty in
 	    new_evar isevars env relty
       | Some x -> f x
   in
@@ -551,13 +565,13 @@ let decompose_setoid_eqhyp gl c left2right =
 let rewrite_unif_flags = {
   Unification.modulo_conv_on_closed_terms = false;
   Unification.use_metas_eagerly = true;
-  Unification.modulo_conv = false
+  Unification.modulo_delta = Cpred.empty
 }
 
 let rewrite2_unif_flags = {
   Unification.modulo_conv_on_closed_terms = true;
   Unification.use_metas_eagerly = true;
-  Unification.modulo_conv = false
+  Unification.modulo_delta = Cpred.empty
  }
 
 (* let unification_rewrite c1 c2 cl but gl =  *)

@@ -842,7 +842,7 @@ let last_arg c = match kind_of_term c with
 let elim_flags = {
   modulo_conv_on_closed_terms = true; 
   use_metas_eagerly = true;
-  modulo_conv = false
+  modulo_delta = Cpred.empty;
 }
 
 let elimination_clause_scheme with_evars allow_K elimclause indclause gl = 

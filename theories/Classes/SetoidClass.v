@@ -139,8 +139,6 @@ Definition type_eq : relation Type :=
 
 Program Instance type_equivalence : Equivalence Type type_eq.
 
-  Solve Obligations using constructor ; unfold type_eq ; program_simpl.
-
 Ltac morphism_tac := try red ; unfold arrow ; intros ; program_simpl ; try tauto.
 
 Ltac obligations_tactic ::= morphism_tac.

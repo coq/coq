@@ -96,10 +96,10 @@ let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
 	metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 
-let expand_constant env c = 
+let expand_constant env predcst c = 
   let (ids,csts) = Conv_oracle.freeze() in
   match kind_of_term c with
-  | Const cst when Cpred.mem cst csts -> constant_opt_value env cst
+  | Const cst when Cpred.mem cst csts && Cpred.mem cst predcst -> constant_opt_value env cst
   | Var id when Idpred.mem id ids -> named_body id env
   | _ -> None
 
@@ -126,13 +126,13 @@ let sort_eqns = unify_r2l
 type unify_flags = { 
   modulo_conv_on_closed_terms : bool; 
   use_metas_eagerly : bool;
-  modulo_conv : bool
+  modulo_delta : Cpred.t;
 }
 
 let default_unify_flags = {
   modulo_conv_on_closed_terms = true;
   use_metas_eagerly = true;
-  modulo_conv = false
+  modulo_delta = Cpred.empty;
 }
 
 let unify_0_with_initial_metas metas is_subterm env sigma cv_pb flags m n =
@@ -215,12 +215,12 @@ let unify_0_with_initial_metas metas is_subterm env sigma cv_pb flags m n =
 
   and expand curenv pb b substn cM f1 l1 cN f2 l2 =
     if trivial_unify pb substn cM cN then substn
-    else if b & flags.modulo_conv then
-      match expand_constant curenv f1 with
+    else if b & not (Cpred.is_empty flags.modulo_delta) then
+      match expand_constant curenv flags.modulo_delta f1 with
       | Some c ->
 	  unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
       | None ->
-      match expand_constant curenv f2 with
+      match expand_constant curenv flags.modulo_delta f2 with
       | Some c ->
 	  unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
       | None ->

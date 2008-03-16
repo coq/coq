@@ -305,6 +305,45 @@ Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) (C : T
     apply r ; auto.
   Qed.
 
+
+(** Every transitive relation gives rise to a binary morphism on [impl], 
+   contravariant in the first argument, covariant in the second. *)
+
+Program Instance [ ! Transitive A (R : relation A) ] => 
+  trans_contra_co_morphism : Morphism (R --> R ++> impl) R.
+
+  Next Obligation.
+  Proof with auto.
+    trans x...
+    trans x0...
+  Qed.
+
+(** Dually... *)
+
+Program Instance [ ! Transitive A (R : relation A) ] =>
+  trans_co_contra_inv_impl_morphism : Morphism (R ++> R --> inverse impl) R.
+  
+  Next Obligation.
+  Proof with auto.
+    intros.
+    destruct (trans_contra_co_morphism (R:=inverse R)).
+    revert respect0.
+    unfold respectful, inverse, flip, impl in * ; intros.
+    eapply respect0 ; eauto.
+  Qed.
+
+(* Program Instance [ Transitive A (R : relation A), Symmetric A R ] => *)
+(*   trans_sym_contra_co_inv_impl_morphism : ? Morphism (R --> R ++> inverse impl) R. *)
+
+(*   Next Obligation. *)
+(*   Proof with auto. *)
+(*     trans y... *)
+(*     sym... *)
+(*     trans y0... *)
+(*     sym... *)
+(*   Qed. *)
+
+
 (** Morphism declarations for partial applications. *)
 
 Program Instance [ ! Transitive A R ] (x : A) =>

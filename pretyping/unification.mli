@@ -17,7 +17,7 @@ open Evd
 type unify_flags = { 
   modulo_conv_on_closed_terms : bool; 
   use_metas_eagerly : bool;
-  modulo_conv : bool
+  modulo_delta : Names.Cpred.t;
 }
 
 val default_unify_flags : unify_flags
