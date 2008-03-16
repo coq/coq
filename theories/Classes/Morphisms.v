@@ -15,8 +15,9 @@
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
-Require Import Coq.Program.Program.
-Require Export Coq.Classes.Relations.
+Require Import Coq.Program.Basics.
+Require Import Coq.Program.Tactics.
+Require Export Coq.Classes.RelationClasses.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -52,6 +53,7 @@ Class Morphism A (R : relation A) (m : A) :=
 
 Definition respecting [ Equivalence A (R : relation A), Equivalence B (R' : relation B) ] : Type := 
   { morph : A -> B | respectful R R' morph morph }.
+
 
 Ltac obligations_tactic ::= program_simpl.
 
@@ -179,8 +181,6 @@ Hint Resolve @subrelation_morphism 4 : typeclass_instances.
 (*   Show Proof. *)
 
 (* Hint Resolve @subrelation_morphism 4 : typeclass_instances. *)
-
-
 
 (* Program Instance `A` (R : relation A) `B` (R' : relation B) *)
 (*   [ ? Morphism (R ==> R' ==> iff) m ] => *)
@@ -381,7 +381,7 @@ Program Instance (A B : Type) (R : relation A) (R' : relation B)
    to get an [R y z] goal. *)
 
 Program Instance [ ! Transitive A R ] => 
-  trans_co_eq_inv_impl_morphism : Morphism (R ==> eq ==> inverse impl) R.
+  trans_co_eq_inv_impl_morphism : Morphism (R ==> (@eq A) ==> inverse impl) R.
 
   Next Obligation.
   Proof with auto.
@@ -390,7 +390,7 @@ Program Instance [ ! Transitive A R ] =>
   Qed.
 
 Program Instance [ ! Transitive A R ] => 
-  trans_contra_eq_impl_morphism : Morphism (R --> eq ==> impl) R.
+  trans_contra_eq_impl_morphism : Morphism (R --> (@eq A) ==> impl) R.
 
   Next Obligation.
   Proof with auto.

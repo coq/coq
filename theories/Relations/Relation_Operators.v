@@ -83,9 +83,9 @@ Variable leA : A -> A -> Prop.
 Variable leB : B -> B -> Prop.
 
 Inductive le_AsB : A + B -> A + B -> Prop :=
-  | le_aa : forall x y:A, leA x y -> le_AsB (inl x) (inl y)
-  | le_ab : forall (x:A) (y:B), le_AsB (inl x) (inr y)
-  | le_bb : forall x y:B, leB x y -> le_AsB (inr x) (inr y).
+  | le_aa : forall x y:A, leA x y -> le_AsB (inl _ x) (inl _ y)
+  | le_ab : forall (x:A) (y:B), le_AsB (inl _ x) (inr _ y)
+  | le_bb : forall x y:B, leB x y -> le_AsB (inr _ x) (inr _ y).
 
 End Disjoint_Union. 
 

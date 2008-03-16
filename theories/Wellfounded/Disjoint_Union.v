@@ -21,7 +21,7 @@ Section Wf_Disjoint_Union.
 
   Notation Le_AsB := (le_AsB A B leA leB).
   
-  Lemma acc_A_sum : forall x:A, Acc leA x -> Acc Le_AsB (inl x).
+  Lemma acc_A_sum : forall x:A, Acc leA x -> Acc Le_AsB (inl B x).
   Proof.
     induction 1.
     apply Acc_intro; intros y H2.
@@ -30,7 +30,7 @@ Section Wf_Disjoint_Union.
   Qed.
 
   Lemma acc_B_sum :
-    well_founded leA -> forall x:B, Acc leB x -> Acc Le_AsB (inr x).
+    well_founded leA -> forall x:B, Acc leB x -> Acc Le_AsB (inr A x).
   Proof.
     induction 2.
     apply Acc_intro; intros y H3.

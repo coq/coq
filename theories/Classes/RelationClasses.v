@@ -17,14 +17,12 @@
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
 Require Export Coq.Classes.Init.
-Require Import Coq.Program.Program.
+Require Import Coq.Program.Basics.
+Require Import Coq.Program.Tactics.
+Require Export Coq.Relations.Relation_Definitions.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
-
-(* Notation "'relation' A " := (A -> A -> Prop) (at level 0). *)
-
-Definition relation A := A -> A -> Prop.
 
 (** Default relation on a given support. *)
 
@@ -35,14 +33,12 @@ Class DefaultRelation A (R : relation A).
 Definition default_relation [ DefaultRelation A R ] : relation A := R.
 
 (** A notation for applying the default relation to [x] and [y]. *)
+
 Notation " x ===def y " := (default_relation x y) (at level 70, no associativity).
 
-Definition inverse A (R : relation A) : relation A := fun x y => R y x.
+Definition inverse {A} : relation A -> relation A := flip.
 
-Lemma inverse_inverse : forall A (R : relation A), inverse (inverse R) = R.
-Proof. intros ; unfold inverse. apply (flip_flip R). Qed.
-
-Definition complement A (R : relation A) : relation A := fun x y => R x y -> False.
+Definition complement {A} (R : relation A) : relation A := fun x y => R x y -> False.
 
 (** These are convertible. *)
 
@@ -355,7 +351,7 @@ Program Instance [ eq : Equivalence A eqA, Antisymmetric eq (R : relation A) ] =
 
 (** Leibinz equality [eq] is an equivalence relation. *)
 
-Program Instance eq_equivalence : Equivalence A eq.
+Program Instance eq_equivalence : Equivalence A (@eq A).
 
 (** Logical equivalence [iff] is an equivalence relation. *)
 

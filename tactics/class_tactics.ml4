@@ -360,28 +360,25 @@ let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
 let arrow = lazy (gen_constant ["Program"; "Basics"] "arrow")
 let coq_id = lazy (gen_constant ["Program"; "Basics"] "id")
 
-let reflexive_type = lazy (gen_constant ["Classes"; "Relations"] "Reflexive")
-let reflexive_proof = lazy (gen_constant ["Classes"; "Relations"] "reflexive")
+let reflexive_type = lazy (gen_constant ["Classes"; "RelationClasses"] "Reflexive")
+let reflexive_proof = lazy (gen_constant ["Classes"; "RelationClasses"] "reflexive")
 
-let symmetric_type = lazy (gen_constant ["Classes"; "Relations"] "Symmetric")
-let symmetric_proof = lazy (gen_constant ["Classes"; "Relations"] "symmetric")
+let symmetric_type = lazy (gen_constant ["Classes"; "RelationClasses"] "Symmetric")
+let symmetric_proof = lazy (gen_constant ["Classes"; "RelationClasses"] "symmetric")
 
-let transitive_type = lazy (gen_constant ["Classes"; "Relations"] "Transitive")
-let transitive_proof = lazy (gen_constant ["Classes"; "Relations"] "transitive")
+let transitive_type = lazy (gen_constant ["Classes"; "RelationClasses"] "Transitive")
+let transitive_proof = lazy (gen_constant ["Classes"; "RelationClasses"] "transitive")
 
-let inverse = lazy (gen_constant ["Classes"; "Relations"] "inverse")
+let inverse = lazy (gen_constant ["Classes"; "RelationClasses"] "inverse")
 
 let respectful_dep = lazy (gen_constant ["Classes"; "Morphisms"] "respectful_dep")
 let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
 
-let equivalence = lazy (gen_constant ["Classes"; "Relations"] "Equivalence")
-let default_relation = lazy (gen_constant ["Classes"; "Relations"] "DefaultRelation")
+let equivalence = lazy (gen_constant ["Classes"; "RelationClasses"] "Equivalence")
+let default_relation = lazy (gen_constant ["Classes"; "RelationClasses"] "DefaultRelation")
 
-let iff_equiv = lazy (gen_constant ["Classes"; "Relations"] "iff_equivalence")
-let eq_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "eq_equivalence")
-
-(* let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation") *)
-let coq_relation = lazy (gen_constant ["Classes";"Relations"] "relation")
+(* let coq_relation = lazy (gen_constant ["RelationClasses";"Relation_Definitions"] "relation") *)
+let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation")
 let coq_relation a = mkApp (Lazy.force coq_relation, [| a |])
 let coq_relationT = lazy (gen_constant ["Classes";"Relations"] "relationT")
 

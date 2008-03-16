@@ -15,7 +15,7 @@
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
-Require Export Coq.Classes.Relations.
+Require Export Coq.Classes.RelationClasses.
 Require Export Coq.Classes.Morphisms.
 
 Set Implicit Arguments.

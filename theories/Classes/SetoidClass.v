@@ -22,7 +22,7 @@ Require Import Coq.Classes.Init.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Require Export Coq.Classes.Relations.
+Require Export Coq.Classes.RelationClasses.
 Require Export Coq.Classes.Morphisms.
 Require Export Coq.Classes.Functions.
 

@@ -775,7 +775,7 @@ Qed.
 Definition Qpower_positive (q:Q)(p:positive) : Q := 
  pow_pos Qmult q p.
 
-Add Morphism Qpower_positive with signature Qeq ==> eq ==> Qeq as Qpower_positive_comp.
+Add Morphism Qpower_positive with signature Qeq ==> @eq _ ==> Qeq as Qpower_positive_comp.
 Proof.
 intros x1 x2 Hx y.
 unfold Qpower_positive.
@@ -794,7 +794,7 @@ Definition Qpower (q:Q) (z:Z) :=
 
 Notation " q ^ z " := (Qpower q z) : Q_scope.
 
-Add Morphism Qpower with signature Qeq ==> eq ==> Qeq as Qpower_comp.
+Add Morphism Qpower with signature Qeq ==> @eq _ ==> Qeq as Qpower_comp.
 Proof.
 intros x1 x2 Hx [|y|y]; try reflexivity;
 simpl; rewrite Hx; reflexivity.
