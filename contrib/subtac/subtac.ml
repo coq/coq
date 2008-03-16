@@ -112,10 +112,7 @@ let vernac_assumption env isevars kind l nl =
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
-(*   check_required_library ["Coq";"Logic";"JMeq"]; *)
-  require_library "Coq.Program.Wf";
-  require_library "Coq.Program.Tactics";
-  require_library "Coq.Logic.JMeq";
+  check_required_library ["Coq";"Program";"Tactics"];
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try

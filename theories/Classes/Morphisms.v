@@ -71,16 +71,16 @@ Program Instance [ Equivalence A R, Equivalence B R' ] =>
   Next Obligation.
   Proof.
     constructor ; intros.
-    sym ; apply H.
-    sym ; auto.
+    symmetry ; apply H.
+    symmetry ; auto.
   Qed.
 
   Next Obligation.
   Proof.
     constructor ; intros.
-    trans (proj1_sig y y0).
+    transitivity (proj1_sig y y0).
     apply H ; auto.
-    apply H0. refl.
+    apply H0. reflexivity.
   Qed.
 
 (** Can't use the definition [notT] as it gives a universe inconsistency. *)
@@ -227,7 +227,7 @@ Program Instance [ ! Symmetric A R, Morphism (R ==> impl) m ] => reflexive_impl_
   
   Next Obligation.
   Proof.
-    split ; apply respect ; [ auto | sym ] ; auto.
+    split ; apply respect ; [ auto | symmetry ] ; auto.
   Qed.
 
 (** The complement of a relation conserves its morphisms. *)
@@ -314,8 +314,8 @@ Program Instance [ ! Transitive A (R : relation A) ] =>
 
   Next Obligation.
   Proof with auto.
-    trans x...
-    trans x0...
+    transitivity x...
+    transitivity x0...
   Qed.
 
 (** Dually... *)
@@ -351,7 +351,7 @@ Program Instance [ ! Transitive A R ] (x : A) =>
 
   Next Obligation.
   Proof with auto.
-    trans y...
+    transitivity y...
   Qed.
 
 Program Instance [ ! Transitive A R ] (x : A) =>
@@ -359,7 +359,7 @@ Program Instance [ ! Transitive A R ] (x : A) =>
 
   Next Obligation.
   Proof with auto.
-    trans x0...
+    transitivity x0...
   Qed.
 
 Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
@@ -367,8 +367,8 @@ Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
 
   Next Obligation.
   Proof with auto.
-    trans y...
-    sym...
+    transitivity y...
+    symmetry...
   Qed.
 
 Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
@@ -376,8 +376,8 @@ Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
 
   Next Obligation.
   Proof with auto.
-    trans x0...
-    sym...
+    transitivity x0...
+    symmetry...
   Qed.
 
 Program Instance [ Equivalence A R ] (x : A) =>
@@ -385,10 +385,10 @@ Program Instance [ Equivalence A R ] (x : A) =>
 
   Next Obligation.
   Proof with auto.
-    split. intros ; trans x0...
+    split. intros ; transitivity x0...
     intros.
-    trans y...
-    sym...
+    transitivity y...
+    symmetry...
   Qed.
 
 (** With symmetric relations, variance is no issue ! *)
@@ -413,7 +413,7 @@ Program Instance (A B : Type) (R : relation A) (R' : relation B)
   Proof with auto.
     intros.
     apply (respect (m:=m))...
-    refl.
+    reflexivity.
   Qed.
 
 (** Every transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof
@@ -424,7 +424,7 @@ Program Instance [ ! Transitive A R ] =>
 
   Next Obligation.
   Proof with auto.
-    trans y...
+    transitivity y...
     subst x0...
   Qed.
 
@@ -433,7 +433,7 @@ Program Instance [ ! Transitive A R ] =>
 
   Next Obligation.
   Proof with auto.
-    trans x...
+    transitivity x...
     subst x0...
   Qed.
 
@@ -445,9 +445,9 @@ Program Instance [ ! Transitive A R, Symmetric R ] =>
   Next Obligation.
   Proof with auto.
     split ; intros.
-    trans x0... trans x... sym...
+    transitivity x0... transitivity x... symmetry...
   
-    trans y... trans y0... sym...
+    transitivity y... transitivity y0... symmetry...
   Qed.
 
 Program Instance [ Equivalence A R ] => 
@@ -456,9 +456,9 @@ Program Instance [ Equivalence A R ] =>
   Next Obligation.
   Proof with auto.
     split ; intros.
-    trans x0... trans x... sym...
+    transitivity x0... transitivity x... symmetry...
   
-    trans y... trans y0... sym...
+    transitivity y... transitivity y0... symmetry...
   Qed.
 
 (** In case the rewrite happens at top level. *)

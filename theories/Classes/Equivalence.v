@@ -30,14 +30,21 @@ Definition equiv [ Equivalence A R ] : relation A := R.
 
 (** Shortcuts to make proof search possible (unification won't unfold equiv). *)
 
-Definition equivalence_refl [ sa : ! Equivalence A ] : Reflexive equiv.
-Proof. eauto with typeclass_instances. Qed.
+Program Instance [ sa : ! Equivalence A ] => equiv_refl : Reflexive equiv.
 
-Definition equivalence_sym [ sa : ! Equivalence A ] : Symmetric equiv.
-Proof. eauto with typeclass_instances. Qed.
+Program Instance [ sa : ! Equivalence A ] => equiv_sym : Symmetric equiv.
 
-Definition equivalence_trans [ sa : ! Equivalence A ] : Transitive equiv.
-Proof. eauto with typeclass_instances. Qed.
+  Next Obligation.
+  Proof.
+    symmetry ; auto.
+  Qed.
+
+Program Instance [ sa : ! Equivalence A ] => equiv_trans : Transitive equiv.
+
+  Next Obligation.
+  Proof.
+    transitivity y ; auto.
+  Qed.
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
 
@@ -70,16 +77,16 @@ Tactic Notation "clsubst" "*" := clsubst_nofail.
 Lemma nequiv_equiv_trans : forall [ ! Equivalence A ] (x y z : A), x =/= y -> y === z -> x =/= z.
 Proof with auto.
   intros; intro.
-  assert(z === y) by relation_sym.
-  assert(x === y) by relation_trans.
+  assert(z === y) by (symmetry ; auto).
+  assert(x === y) by (transitivity z ; auto).
   contradiction.
 Qed.
 
 Lemma equiv_nequiv_trans : forall [ ! Equivalence A ] (x y z : A), x === y -> y =/= z -> x =/= z.
 Proof.
   intros; intro. 
-  assert(y === x) by relation_sym.
-  assert(y === z) by relation_trans.
+  assert(y === x) by (symmetry ; auto).
+  assert(y === z) by (transitivity x ; auto).
   contradiction.
 Qed.
 

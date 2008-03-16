@@ -88,7 +88,7 @@ Qed.
 (* Somewhat trivial definition, but not unfolded automatically hence we can match on [match_eq ?A ?B ?x ?f] 
    in tactics. *)
 
-Program Definition match_eq (A B : Type) (x : A) (fn : forall (y : A | y = x), B) : B :=
+Definition match_eq (A B : Type) (x : A) (fn : forall (y : A | y = x), B) : B :=
   fn (exist _ x (refl_equal x)).
 
 (* This is what we want to be able to do: replace the originaly matched object by a new, 
@@ -122,4 +122,3 @@ Ltac rewrite_match_eq H :=
 (** Otherwise we can simply unfold [match_eq] and the term trivially reduces to the original definition. *)
 
 Ltac simpl_match_eq := unfold match_eq ; simpl.
-

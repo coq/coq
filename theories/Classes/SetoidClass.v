@@ -89,16 +89,16 @@ Tactic Notation "clsubst" "*" := clsubst_nofail.
 Lemma nequiv_equiv_trans : forall [ Setoid A ] (x y z : A), x =/= y -> y == z -> x =/= z.
 Proof with auto.
   intros; intro.
-  assert(z == y) by relation_sym.
-  assert(x == y) by relation_trans.
+  assert(z == y) by (symmetry ; auto).
+  assert(x == y) by (transitivity z ; eauto).
   contradiction.
 Qed.
 
 Lemma equiv_nequiv_trans : forall [ Setoid A ] (x y z : A), x == y -> y =/= z -> x =/= z.
 Proof.
   intros; intro. 
-  assert(y == x) by relation_sym.
-  assert(y == z) by relation_trans.
+  assert(y == x) by (symmetry ; auto).
+  assert(y == z) by (transitivity x ; eauto).
   contradiction.
 Qed.
 

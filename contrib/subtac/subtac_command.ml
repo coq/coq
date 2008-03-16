@@ -176,6 +176,7 @@ let split_args n rel = match list_chop ((List.length rel) - n) rel with
   | _ -> assert(false)
 
 let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
+  Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let sigma = Evd.empty in
   let isevars = ref (Evd.create_evar_defs sigma) in
   let env = Global.env() in 

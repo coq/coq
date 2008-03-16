@@ -161,144 +161,6 @@ Program Instance eq_refl : Reflexive (@eq A).
 Program Instance eq_sym : Symmetric (@eq A).
 Program Instance eq_trans : Transitive (@eq A).
 
-(** ** General tactics to solve goals on relations.
-   Each tactic comes in two flavors:
-   - a tactic to immediately solve a goal without user intervention
-   - a tactic taking input from the user to make progress on a goal *)
-
-Definition relate A (R : relation A) : relation A := R.
-
-Ltac relationify_relation R R' :=
-  match goal with
-    | [ H : context [ R ?x ?y ] |- _ ] => change (R x y) with (R' x y) in H
-    | [ |- context [ R ?x ?y ] ] => change (R x y) with (R' x y)
-  end.
-
-Ltac relationify R :=
-  set (R' := relate R) ; progress (repeat (relationify_relation R R')).
-
-Ltac relation_refl :=
-  match goal with
-    | [ |- ?R ?X ?X ] => apply (reflexive (R:=R) X)
-    | [ H : ?R ?X ?X |- _ ] => apply (irreflexive (R:=R) H)
-
-    | [ |- ?R ?A ?X ?X ] => apply (reflexive (R:=R A) X)
-    | [ H : ?R ?A ?X ?X |- _ ] => apply (irreflexive (R:=R A) H)
-
-    | [ |- ?R ?A ?B ?X ?X ] => apply (reflexive (R:=R A B) X)
-    | [ H : ?R ?A ?B ?X ?X |- _ ] => apply (irreflexive (R:=R A B) H)
-
-    | [ |- ?R ?A ?B ?C ?X ?X ] => apply (reflexive (R:=R A B C) X)
-    | [ H : ?R ?A ?B ?C ?X ?X |- _ ] => apply (irreflexive (R:=R A B C) H)
-
-    | [ |- ?R ?A ?B ?C ?D ?X ?X ] => apply (reflexive (R:=R A B C D) X)
-    | [ H : ?R ?A ?B ?C ?D ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D) H)
-
-    | [ |- ?R ?A ?B ?C ?D ?E ?X ?X ] => apply (reflexive (R:=R A B C D E) X)
-    | [ H : ?R ?A ?B ?C ?D ?E ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E) H)
-
-    | [ |- ?R ?A ?B ?C ?D ?E ?F ?X ?X ] => apply (reflexive (R:=R A B C D E F) X)
-    | [ H : ?R ?A ?B ?C ?D ?E ?F ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E F) H)
-
-    | [ |- ?R ?A ?B ?C ?D ?E ?F ?G ?X ?X ] => apply (reflexive (R:=R A B C D E F G) X)
-    | [ H : ?R ?A ?B ?C ?D ?E ?F ?G ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E F G) H)
-
-    | [ |- ?R ?A ?B ?C ?D ?E ?F ?G ?H ?X ?X ] => apply (reflexive (R:=R A B C D E F G H) X)
-    | [ H : ?R ?A ?B ?C ?D ?E ?F ?G ?H ?X ?X |- _ ] => apply (irreflexive (R:=R A B C D E F G H) H)
-  end.
-
-Ltac refl := relation_refl.
-
-Ltac relation_sym := 
-  match goal with
-    | [ H : ?R ?X ?Y |- ?R ?Y ?X ] => apply (symmetric (R:=R) (x:=X) (y:=Y) H)
-
-    | [ H : ?R ?A ?X ?Y |- ?R ?A ?Y ?X ] => apply (symmetric (R:=R A) (x:=X) (y:=Y) H)
-
-    | [ H : ?R ?A ?B ?X ?Y |- ?R ?A ?B ?Y ?X ] => apply (symmetric (R:=R A B) (x:=X) (y:=Y) H)
-
-    | [ H : ?R ?A ?B ?C ?X ?Y |- ?R ?A ?B ?C ?Y ?X ] => apply (symmetric (R:=R A B C) (x:=X) (y:=Y) H)
-
-    | [ H : ?R ?A ?B ?C ?D ?X ?Y |- ?R ?A ?B ?C ?D ?Y ?X ] => apply (symmetric (R:=R A B C D) (x:=X) (y:=Y) H)
-
-    | [ H : ?R ?A ?B ?C ?D ?E ?X ?Y |- ?R ?A ?B ?C ?D ?E ?Y ?X ] => apply (symmetric (R:=R A B C D E) (x:=X) (y:=Y) H)
-
-    | [ H : ?R ?A ?B ?C ?D ?E ?F ?X ?Y |- ?R ?A ?B ?C ?D ?E ?F ?Y ?X ] => apply (symmetric (R:=R A B C D E F) (x:=X) (y:=Y) H)
-  end.
-
-Ltac relation_symmetric := 
-  match goal with
-    | [ |- ?R ?Y ?X ] => apply (symmetric (R:=R) (x:=X) (y:=Y))
-
-    | [ |- ?R ?A ?Y ?X ] => apply (symmetric (R:=R A) (x:=X) (y:=Y))
-
-    | [ |- ?R ?A ?B ?Y ?X ] => apply (symmetric (R:=R A B) (x:=X) (y:=Y))
-
-    | [ |- ?R ?A ?B ?C ?Y ?X ] => apply (symmetric (R:=R A B C) (x:=X) (y:=Y))
-
-    | [ |- ?R ?A ?B ?C ?D ?Y ?X ] => apply (symmetric (R:=R A B C D) (x:=X) (y:=Y))
-
-    | [ |- ?R ?A ?B ?C ?D ?E ?Y ?X ] => apply (symmetric (R:=R A B C D E) (x:=X) (y:=Y))
-
-    | [ |- ?R ?A ?B ?C ?D ?E ?F ?Y ?X ] => apply (symmetric (R:=R A B C D E F) (x:=X) (y:=Y))
-  end.
-
-Ltac sym := relation_symmetric.
-
-Ltac relation_trans := 
-  match goal with
-    | [ H : ?R ?X ?Y, H' : ?R ?Y ?Z |- ?R ?X ?Z ] => 
-      apply (transitive (R:=R) (x:=X) (y:=Y) (z:=Z) H H')
-
-    | [ H : ?R ?A ?X ?Y, H' : ?R ?A ?Y ?Z |- ?R ?A ?X ?Z ] => 
-      apply (transitive (R:=R A) (x:=X) (y:=Y) (z:=Z) H H')
-
-    | [ H : ?R ?A ?B ?X ?Y, H' : ?R ?A ?B ?Y ?Z |- ?R ?A ?B ?X ?Z ] => 
-      apply (transitive (R:=R A B) (x:=X) (y:=Y) (z:=Z) H H')
-
-    | [ H : ?R ?A ?B ?C ?X ?Y, H' : ?R ?A ?B ?C ?Y ?Z |- ?R ?A ?B ?C ?X ?Z ] => 
-      apply (transitive (R:=R A B C) (x:=X) (y:=Y) (z:=Z) H H')
-
-    | [ H : ?R ?A ?B ?C ?D ?X ?Y, H' : ?R ?A ?B ?C ?D ?Y ?Z |- ?R ?A ?B ?C ?D ?X ?Z ] => 
-      apply (transitive (R:=R A B C D) (x:=X) (y:=Y) (z:=Z) H H')
-
-    | [ H : ?R ?A ?B ?C ?D ?E ?X ?Y, H' : ?R ?A ?B ?C ?D ?E ?Y ?Z |- ?R ?A ?B ?C ?D ?E ?X ?Z ] => 
-      apply (transitive (R:=R A B C D E) (x:=X) (y:=Y) (z:=Z) H H')
-
-    | [ H : ?R ?A ?B ?C ?D ?E ?F ?X ?Y, H' : ?R ?A ?B ?C ?D ?E ?F ?Y ?Z |- ?R ?A ?B ?C ?D ?E ?F ?X ?Z ] => 
-      apply (transitive (R:=R A B C D E F) (x:=X) (y:=Y) (z:=Z) H H')
-  end.
-
-Ltac relation_transitive Y := 
-  match goal with
-    | [ |- ?R ?X ?Z ] => 
-      apply (transitive (R:=R) (x:=X) (y:=Y) (z:=Z))
-
-    | [ |- ?R ?A ?X ?Z ] => 
-      apply (transitive (R:=R A) (x:=X) (y:=Y) (z:=Z))
-
-    | [ |- ?R ?A ?B ?X ?Z ] => 
-      apply (transitive (R:=R A B) (x:=X) (y:=Y) (z:=Z))
-
-    | [ |- ?R ?A ?B ?C ?X ?Z ] => 
-      apply (transitive (R:=R A B C) (x:=X) (y:=Y) (z:=Z))
-
-    | [ |- ?R ?A ?B ?C ?D ?X ?Z ] => 
-      apply (transitive (R:=R A B C D) (x:=X) (y:=Y) (z:=Z))
-
-    | [ |- ?R ?A ?B ?C ?D ?E ?X ?Z ] => 
-      apply (transitive (R:=R A B C D E) (x:=X) (y:=Y) (z:=Z))
-
-    | [ |- ?R ?A ?B ?C ?D ?E ?F ?X ?Z ] => 
-      apply (transitive (R:=R A B C D E F) (x:=X) (y:=Y) (z:=Z))
-  end.
-
-Ltac trans Y := relation_transitive Y.
-
-(** To immediatly solve a goal on setoid equality. *)
-
-Ltac relation_tac := relation_refl || relation_sym || relation_trans.
-
 (** Various combinations of reflexivity, symmetry and transitivity. *)
 
 (** A [PreOrder] is both reflexive and transitive. *)
@@ -323,8 +185,9 @@ Program Instance [ PER A (R : relation A), PER B (R' : relation B) ] =>
   Next Obligation.
   Proof with auto.
     constructor ; intros...
-    assert(R x0 x0) by (trans y0 ; [ auto | sym ; auto ]).
-    trans (y x0)...
+    assert(R x0 x0). 
+    clapply transitive. clapply symmetric.
+    clapply transitive. 
   Qed.
 
 (** The [Equivalence] typeclass. *)

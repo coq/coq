@@ -545,19 +545,21 @@ let ring_equality (r,add,mul,opp,req) =
                     error "ring opposite should be declared as a morphism" in
 		let op_morph =
 		  op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
-		  msgnl
+		  Flags.if_verbose 
+		    msgnl
 		    (str"Using setoid \""++pr_constr req++str"\""++spc()++  
-			str"and morphisms \""++pr_constr add_m ++
-			str"\","++spc()++ str"\""++pr_constr mul_m++
-			str"\""++spc()++str"and \""++pr_constr opp_m++
+			str"and morphisms \""++pr_constr add_m_lem ++
+			str"\","++spc()++ str"\""++pr_constr mul_m_lem++
+			str"\""++spc()++str"and \""++pr_constr opp_m_lem++
 			str"\"");
 		  op_morph)
             | None ->
-		(msgnl
+		(Flags.if_verbose
+		    msgnl
 		    (str"Using setoid \""++pr_constr req ++str"\"" ++ spc() ++  
-			str"and morphisms \""++pr_constr add_m ++
+			str"and morphisms \""++pr_constr add_m_lem ++
 			str"\""++spc()++str"and \""++
-			pr_constr mul_m++str"\"");
+			pr_constr mul_m_lem++str"\"");
 		 op_smorph r add mul req add_m_lem mul_m_lem) in
           (setoid,op_morph)
 	    
