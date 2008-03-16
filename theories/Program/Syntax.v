@@ -35,6 +35,17 @@ Implicit Arguments inr [[A] [B]].
 Implicit Arguments left [[A] [B]].
 Implicit Arguments right [[A] [B]].
 
+Require Import Coq.Lists.List.
+
+Implicit Arguments nil [[A]].
+Implicit Arguments cons [[A]].
+
+(** Standard notations for lists. *)
+
+Notation " [] " := nil.
+Notation " [ x ] " := (cons x nil).
+Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..).
+
 (** n-ary exists ! *)
 
 Notation " 'exists' x y , p" := (ex (fun x => (ex (fun y => p))))

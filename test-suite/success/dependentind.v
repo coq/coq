@@ -35,69 +35,66 @@ Inductive ctx : Type :=
 | empty : ctx
 | snoc : ctx -> type -> ctx.
 
-Notation " G , tau " := (snoc G tau) (at level 20, t at next level).
+Notation " Γ , τ " := (snoc Γ τ) (at level 20, t at next level).
 
-Fixpoint conc (G D : ctx) : ctx :=
-  match D with
-    | empty => G
-    | snoc D' x => snoc (conc G D') x
+Fixpoint conc (Γ Δ : ctx) : ctx :=
+  match Δ with
+    | empty => Γ
+    | snoc Δ' x => snoc (conc Γ Δ') x
   end.
 
-Notation " G ; D " := (conc G D) (at level 20).
+Notation " Γ ; Δ " := (conc Γ Δ) (at level 20).
 
 Inductive term : ctx -> type -> Type :=
-| ax : forall G tau, term (G, tau) tau
-| weak : forall G tau, 
-  term G tau -> forall tau', term (G, tau') tau
-| abs : forall G tau tau', 
-  term (G , tau) tau' -> term G (tau --> tau')
-| app : forall G tau tau', 
-  term G (tau --> tau') -> term G tau -> term G tau'.
+| ax : forall Γ τ, term (Γ, τ) τ
+| weak : forall Γ τ, term Γ τ -> forall τ', term (Γ, τ') τ
+| abs : forall Γ τ τ', term (Γ , τ) τ' -> term Γ (τ --> τ')
+| app : forall Γ τ τ', term Γ (τ --> τ') -> term Γ τ -> term Γ τ'.
 
-Lemma weakening : forall G D tau, term (G ; D) tau -> 
-  forall tau', term (G , tau' ; D) tau.
+Lemma weakening : forall Γ Δ τ, term (Γ ; Δ) τ -> 
+  forall τ', term (Γ , τ' ; Δ) τ.
 Proof with simpl in * ; auto ; simpl_depind.
-  intros G D tau H.
+  intros Γ Δ τ H.
 
-  dependent induction H generalizing G D.
+  dependent induction H generalizing Γ Δ.
 
-  destruct D...
+  destruct Δ...
     apply weak ; apply ax.
     
     apply ax.
     
-  destruct D...
-    specialize (IHterm G empty)...
+  destruct Δ...
+    specialize (IHterm Γ empty)...
     apply weak...
 
     apply weak...
 
-  destruct D...
+  destruct Δ...
     apply weak ; apply abs ; apply H.
 
     apply abs...
-    specialize (IHterm G0 (D, t, tau))...
+    specialize (IHterm Γ0 (Δ, t, τ))...
 
-  apply app with tau...
+  apply app with τ...
 Qed.
 
-Lemma exchange : forall G D alpha bet tau, term (G, alpha, bet ; D) tau -> term (G, bet, alpha ; D) tau.
+Lemma exchange : forall Γ Δ α β τ, term (Γ, α, β ; Δ) τ -> term (Γ, β, α ; Δ) τ.
 Proof with simpl in * ; simpl_depind ; auto.
   intros until 1.
-  dependent induction H generalizing G D alpha bet...
+  dependent induction H generalizing Γ Δ α β...
 
-  destruct D...
+  destruct Δ...
     apply weak ; apply ax.
 
     apply ax.
 
-  destruct D...
-    pose (weakening (G:=G0) (D:=(empty, alpha)))...
+  destruct Δ...
+    pose (weakening (Γ:=Γ0) (Δ:=(empty, α)))...
 
     apply weak...
 
   apply abs...
-  specialize (IHterm G0 (D, tau))...
+  specialize (IHterm Γ0 (Δ, τ))...
 
-  eapply app with tau...
+  eapply app with τ...
 Save.
