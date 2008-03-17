@@ -12,6 +12,6 @@ Axiom r : False -> 0 == 1.
 Goal 0 == 0.
 Proof.
 rewrite r.
-refl.
+reflexivity.
 admit.
 Qed.

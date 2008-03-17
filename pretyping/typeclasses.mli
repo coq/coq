@@ -65,6 +65,14 @@ val is_class : inductive -> bool
 val class_of_constr : constr -> typeclass option
 
 val resolve_typeclass : env -> evar -> evar_info -> evar_defs * bool -> evar_defs * bool
+
+(* Use evar_extra for marking resolvable evars. *)
+val bool_in : bool -> Dyn.t
+val bool_out : Dyn.t -> bool
+
+val is_resolvable : evar_info -> bool
+val mark_unresolvable : evar_info -> evar_info
+
 val resolve_typeclasses : ?onlyargs:bool -> ?all:bool -> env -> evar_map -> evar_defs -> evar_defs
 
 val solve_instanciation_problem : (env -> evar_defs -> existential_key -> evar_info -> evar_defs * bool) ref

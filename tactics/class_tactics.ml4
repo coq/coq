@@ -51,28 +51,22 @@ let e_give_exact c gl =
 
 let assumption id = e_give_exact (mkVar id)
 
-let gen_constant dir s = Coqlib.gen_constant "Class_tactics" dir s
-let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation")
-
 open Unification
 
-let deltaset = lazy
-  (Cpred.singleton (destConst (Lazy.force coq_relation)))
-
-let auto_unif_flags = lazy {
+let auto_unif_flags = ref {
   modulo_conv_on_closed_terms = true; 
   use_metas_eagerly = true;
-  modulo_delta = Lazy.force deltaset;
+  modulo_delta = Cpred.empty;
 }
 
 let unify_e_resolve (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
-  let clenv' = clenv_unique_resolver false ~flags:(Lazy.force auto_unif_flags) clenv' gls in
+  let clenv' = clenv_unique_resolver false ~flags:(!auto_unif_flags) clenv' gls in
     Clenvtac.clenv_refine true clenv' gls
 
 let unify_resolve (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
-  let clenv' = clenv_unique_resolver false ~flags:(Lazy.force auto_unif_flags) clenv' gls in  
+  let clenv' = clenv_unique_resolver false ~flags:(!auto_unif_flags) clenv' gls in  
     Clenvtac.clenv_refine false clenv' gls
 
 let rec e_trivial_fail_db db_list local_db goal =
@@ -295,50 +289,41 @@ let full_eauto ~(tac:tactic) debug n lems gls =
   let db_list = List.map searchtable_map dbnames in
     e_search_auto ~tac debug n lems db_list gls
 
-exception Found of evar_defs
-
-let valid evm p res_sigma l = 
-  let evd' =
-    Evd.fold
-      (fun ev evi (gls, sigma) ->
-	if not (Evd.is_evar evm ev) then
-	  match gls with
-	      hd :: tl -> 
-		if evi.evar_body = Evar_empty then
-		  let cstr, obls = Refiner.extract_open_proof !res_sigma hd in
-		    (tl, Evd.evar_define ev cstr sigma)
-		else (tl, sigma)
-	    | [] -> ([], sigma)
-	else if not (Evd.is_defined evm ev) && p ev evi then
-	  match gls with
-	      hd :: tl -> 
-		if evi.evar_body = Evar_empty then
-		  let cstr, obls = Refiner.extract_open_proof !res_sigma hd in
-		    (tl, Evd.evar_define ev cstr sigma)
-		else (tl, sigma)
-	    | [] -> assert(false)
-	else (gls, sigma))
-      !res_sigma (l, Evd.create_evar_defs !res_sigma)
-  in raise (Found (snd evd'))
+exception Found of evar_map
 
 let default_evars_tactic =
   fun x -> raise (UserError ("default_evars_tactic", mt()))
 (* tclFAIL 0 (Pp.mt ()) *)
 
+let valid goals p res_sigma l = 
+  let evm = 
+    List.fold_left2 
+      (fun sigma (ev, evi) prf ->
+	let cstr, obls = Refiner.extract_open_proof !res_sigma prf in
+	  if not (Evd.is_defined sigma ev) then
+	    Evd.define sigma ev cstr
+	  else sigma)
+      !res_sigma goals l
+  in raise (Found evm)
+    
 let resolve_all_evars_once ?(tac=default_evars_tactic) debug (mode, depth) env p evd =
   let evm = Evd.evars_of evd in
-  let goals, evm = 
+  let goals, evm' = 
     Evd.fold
       (fun ev evi (gls, evm) ->
-	(if evi.evar_body = Evar_empty && p ev evi then evi :: gls else gls), 
-	Evd.add evm ev evi)
+	if evi.evar_body = Evar_empty 
+	  && Typeclasses.is_resolvable evi
+	  && p ev evi then ((ev,evi) :: gls, Evd.add evm ev (Typeclasses.mark_unresolvable evi)) else 
+	  (gls, Evd.add evm ev evi))
       evm ([], Evd.empty)
   in
-  let gls = { it = List.rev goals; sigma = evm } in
-  let res_sigma = ref evm in
-  let gls', valid' = full_eauto ~tac debug (mode, depth) [] (gls, valid evm p res_sigma) in
+  let goals = List.rev goals in
+  let gls = { it = List.map snd goals; sigma = evm' } in
+  let res_sigma = ref evm' in
+  let gls', valid' = full_eauto ~tac debug (mode, depth) [] (gls, valid goals p res_sigma) in
     res_sigma := Evarutil.nf_evars (sig_sig gls');
-    try ignore(valid' []); assert(false) with Found evd' -> Evarutil.nf_evar_defs evd'
+    try ignore(valid' []); assert(false) 
+    with Found evm' -> Evarutil.nf_evar_defs (Evd.evars_reset_evd evm' evd)
 
 exception FoundTerm of constr
 
@@ -360,6 +345,76 @@ let rec resolve_all_evars ~(tac:tactic) debug m env p evd =
 	aux (pred n) evd'
     else evd
   in aux 3 evd
+
+(** Handling of the state of unfolded constants. *)
+
+open Libobject
+
+let freeze () = !auto_unif_flags.modulo_delta
+
+let unfreeze delta = 
+  auto_unif_flags := { !auto_unif_flags with modulo_delta = delta }
+    
+let init () =
+  auto_unif_flags := {
+    modulo_conv_on_closed_terms = true; 
+    use_metas_eagerly = true;
+    modulo_delta = Cpred.empty;
+  }
+    
+let _ = 
+  Summary.declare_summary "typeclasses_unfold"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init;
+      Summary.survive_module = false;
+      Summary.survive_section = true }
+    
+let cache_autounfold (_,unfoldlist) = 
+  auto_unif_flags := { !auto_unif_flags with
+    modulo_delta = Cpred.union !auto_unif_flags.modulo_delta unfoldlist }
+  
+let subst_autounfold (_,subst,(unfoldlist as obj)) = 
+  let b, l' = Cpred.elements unfoldlist in
+  let l'' = list_smartmap (fun x -> fst (Mod_subst.subst_con subst x)) l' in
+    if l'' == l' then obj 
+    else
+      let set = List.fold_right Cpred.add l'' Cpred.empty in
+	if not b then set
+	else Cpred.complement set
+	  
+let classify_autounfold (_,obj) = Substitute obj
+      
+let export_autounfold obj =
+  Some obj
+
+let (inAutoUnfold,outAutoUnfold) =
+  declare_object 
+    {(default_object "AUTOUNFOLD") with
+      cache_function = cache_autounfold;
+      load_function = (fun _ -> cache_autounfold);
+      subst_function = subst_autounfold;
+      classify_function = classify_autounfold;
+      export_function = export_autounfold }
+
+let cpred_of_list l =
+  List.fold_right Cpred.add l Cpred.empty
+
+VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
+| [ "Typeclasses" "unfold" constr_list(cl) ] -> [
+    let csts = 
+      List.map
+	(fun c -> 
+	  let c = Constrintern.interp_constr Evd.empty (Global.env ()) c in
+	    match kind_of_term c with
+	      | Const c -> c
+	      | _ -> error "Not a constant reference")
+	cl
+    in
+      Lib.add_anonymous_leaf (inAutoUnfold (cpred_of_list csts))
+  ]
+END
+
 
 (** Typeclass-based rewriting. *)
 
@@ -395,7 +450,7 @@ let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
 let equivalence = lazy (gen_constant ["Classes"; "RelationClasses"] "Equivalence")
 let default_relation = lazy (gen_constant ["Classes"; "RelationClasses"] "DefaultRelation")
 
-(* let coq_relation = lazy (gen_constant ["RelationClasses";"Relation_Definitions"] "relation") *)
+let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation")
 let mk_relation a = mkApp (Lazy.force coq_relation, [| a |])
 let coq_relationT = lazy (gen_constant ["Classes";"Relations"] "relationT")
 

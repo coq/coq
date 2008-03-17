@@ -7,15 +7,15 @@ Lemma bla : forall [ ! Equivalence A (eqA : relation A) ] x y, eqA x y -> eqA y 
 Proof.
   intros.
   rewrite H0.
-  refl.
+  reflexivity.
 Defined.
 
 Lemma bla' : forall [ ! Equivalence A (eqA : relation A) ] x y, eqA x y -> eqA y x.
 Proof.
   intros.
-  (* Need delta no [relation] to unify with the right lemmas. *)
+  (* Need delta on [relation] to unify with the right lemmas. *)
   rewrite <- H0.
-  refl.
+  reflexivity.
 Qed.
 
 Axiom euclid : nat -> { x : nat | x > 0 } -> nat.

@@ -341,9 +341,27 @@ let class_of_constr c =
 	App (c, _) -> extract_ind c
       | _ -> extract_ind c
 
+(* To embed a boolean for resolvability status.
+   This is essentially a hack to mark which evars correspond to 
+   goals and do not need to be resolved when we have nested [resolve_all_evars] 
+   calls (e.g. when doing apply in an External hint in typeclass_instances).
+   Would be solved by having real evars-as-goals. *)
+
+let ((bool_in : bool -> Dyn.t),
+    (bool_out : Dyn.t -> bool)) = Dyn.create "bool"
+  
+let is_resolvable evi =
+  match evi.evar_extra with
+      Some t -> if Dyn.tag t = "bool" then bool_out t else true
+    | None -> true
+	
+let mark_unresolvable evi = 
+  { evi with evar_extra = Some (bool_in false) }
+
 let has_typeclasses evd =
   Evd.fold (fun ev evi has -> has || 
-    (evi.evar_body = Evar_empty && class_of_constr evi.evar_concl <> None))
+    (evi.evar_body = Evar_empty && class_of_constr evi.evar_concl <> None 
+	&& is_resolvable evi))
     evd false
 
 let resolve_typeclasses ?(onlyargs=false) ?(all=true) env sigma evd =

@@ -97,6 +97,10 @@ Program Instance not_iff_morphism :
 
 Implicit Arguments Morphism [A].
 
+(** We allow to unfold the relation definition while doing morphism search. *)
+
+Typeclasses unfold relation.
+
 (** Leibniz *)
 
 (* Instance Morphism (eq ++> eq ++> iff) (eq (A:=A)). *)
@@ -169,53 +173,9 @@ Ltac subrelation_tac :=
       set(H:=did 1) ; eapply @subrelation_morphism
   end.
 
-Hint Resolve @subrelation_morphism 4 : typeclass_instances.
-
-(* Hint Extern 4 (@Morphism _ (_ --> _) _) => subrelation_tac : typeclass_instances. *)
-
-(* Goal forall A, Morphism (eq ++> eq ++> impl) (@eq A). *)
-(* Proof. *)
-(*   intros. *)
-(*   eauto with typeclass_instances. *)
-(*   Set Printing All. *)
-(*   Show Proof. *)
-
 (* Hint Resolve @subrelation_morphism 4 : typeclass_instances. *)
 
-(* Program Instance `A` (R : relation A) `B` (R' : relation B) *)
-(*   [ ? Morphism (R ==> R' ==> iff) m ] => *)
-(*   iff_impl_binary_morphism : ? Morphism (R ==> R' ==> impl) m. *)
-
-(*   Next Obligation. *)
-(*   Proof. *)
-(*     destruct respect with x y x0 y0 ; auto. *)
-(*   Qed. *)
-
-(* Program Instance `A` (R : relation A) `B` (R' : relation B) *)
-(*   [ ? Morphism (R ==> R' ==> iff) m ] => *)
-(*   iff_inverse_impl_binary_morphism : ? Morphism (R ==> R' ==> inverse impl) m. *)
-
-(*   Next Obligation. *)
-(*   Proof. *)
-(*     destruct respect with x y x0 y0 ; auto. *)
-(*   Qed. *)
-
-
-(* Program Instance [ Morphism (A -> Prop) (R ==> iff) m ] => *)
-(*   iff_impl_morphism : ? Morphism (R ==> impl) m. *)
-
-(*   Next Obligation. *)
-(*   Proof. *)
-(*     destruct respect with x y ; auto. *)
-(*   Qed. *)
-
-(* Program Instance [ Morphism (A -> Prop) (R ==> iff) m ] => *)
-(*   iff_inverse_impl_morphism : ? Morphism (R ==> inverse impl) m. *)
-
-(*   Next Obligation. *)
-(*   Proof. *)
-(*     destruct respect with x y ; auto. *)
-(*   Qed. *)
+Hint Extern 4 (@Morphism _ _ _) => subrelation_tac : typeclass_instances.
 
 (** Logical implication [impl] is a morphism for logical equivalence. *)
 
@@ -224,7 +184,7 @@ Program Instance iff_iff_iff_impl_morphism : Morphism (iff ==> iff ==> iff) impl
 (* Typeclasses eauto := debug. *)
 
 Program Instance [ ! Symmetric A R, Morphism (R ==> impl) m ] => reflexive_impl_iff : Morphism (R ==> iff) m.
-  
+
   Next Obligation.
   Proof.
     split ; apply respect ; [ auto | symmetry ] ; auto.
@@ -292,18 +252,18 @@ Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B)
     apply r ; auto.
   Qed.
 
-Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) (C : Type) (R'' : relation C)
-  [ Morphism (R ++> R' ++> R'') m ] => 
-  morphism_inverse_inverse_morphism :
-  Morphism (R --> R' --> inverse R'') m.
+(* Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) (C : Type) (R'' : relation C) *)
+(*   [ Morphism (R ++> R' ++> R'') m ] => *)
+(*   morphism_inverse_inverse_morphism : *)
+(*   Morphism (R --> R' --> inverse R'') m. *)
 
-  Next Obligation.
-  Proof.
-    unfold inverse in *.
-    pose respect.
-    unfold respectful in r.
-    apply r ; auto.
-  Qed.
+(*   Next Obligation. *)
+(*   Proof. *)
+(*     unfold inverse in *. *)
+(*     pose respect. *)
+(*     unfold respectful in r. *)
+(*     apply r ; auto. *)
+(*   Qed. *)
 
 
 (** Every transitive relation gives rise to a binary morphism on [impl], 
@@ -514,14 +474,22 @@ Program Instance or_iff_morphism :
 (** Coq functions are morphisms for leibniz equality, 
    applied only if really needed. *)
 
-Instance {A B : Type} (m : A -> B) =>
-  any_eq_eq_morphism : Morphism (@Logic.eq A ==> @Logic.eq B) m | 4.
-Proof.
-  red ; intros. subst ; reflexivity.
-Qed.
+(* Instance {A B : Type} (m : A -> B) => *)
+(*   any_eq_eq_morphism : Morphism (@Logic.eq A ==> @Logic.eq B) m | 4. *)
+(* Proof. *)
+(*   red ; intros. subst ; reflexivity. *)
+(* Qed. *)
 
-Instance {A : Type} (m : A -> Prop) =>
-  any_eq_iff_morphism : Morphism (@Logic.eq A ==> iff) m | 4.
-Proof.
-  red ; intros. subst ; split; trivial.
-Qed.
+(* Instance {A : Type} (m : A -> Prop) => *)
+(*   any_eq_iff_morphism : Morphism (@Logic.eq A ==> iff) m | 4. *)
+(* Proof. *)
+(*   red ; intros. subst ; split; trivial. *)
+(* Qed. *)
+
+Instance (A B : Type) [ ! Reflexive B R ] (m : A -> B) =>
+  eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3.
+Proof. simpl_relation. Qed.
+
+Instance (A B : Type) [ ! Reflexive B R' ] => 
+  Reflexive (@Logic.eq A ==> R').
+Proof. simpl_relation. Qed.

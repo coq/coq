@@ -8,7 +8,6 @@
 (************************************************************************)
 
 (* Typeclass-based setoids, tactics and standard instances.
-   TODO: explain clrewrite, clsubstitute and so on.
  
    Author: Matthieu Sozeau
    Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
@@ -31,6 +30,8 @@ Require Export Coq.Classes.Functions.
 Class Setoid A :=
   equiv : relation A ;
   setoid_equiv :> Equivalence A equiv.
+
+Typeclasses unfold @equiv.
 
 (* Too dangerous instance *)
 (* Program Instance [ eqa : Equivalence A eqA ] =>  *)
