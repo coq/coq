@@ -1064,3 +1064,13 @@ let on_judgment f j = { uj_val = f j.uj_val; uj_type = f j.uj_type }
 let on_judgment_value f j = { j with uj_val = f j.uj_val }
 let on_judgment_type f j = { j with uj_type = f j.uj_type }
 
+(* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k 
+     variables *)
+let context_chop k ctx =
+  let rec chop_aux acc = function
+    | (0, l2) -> (List.rev acc, l2)
+    | (n, ((_,Some _,_ as h)::t)) -> chop_aux (h::acc) (n, t)
+    | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
+    | (_, []) -> anomaly "context_chop"
+  in chop_aux [] (k,ctx)
+

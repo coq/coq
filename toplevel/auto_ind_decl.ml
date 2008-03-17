@@ -27,15 +27,6 @@ open Tacticals
 open Ind_tables
 
 (* boolean equality *)
-(* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k
-   variables *)
-let context_chop k ctx =
-  let rec chop_aux acc = function
-    | (0, l2) -> (List.rev acc, l2)
-    | (n, ((_,Some _,_ as h)::t)) -> chop_aux (h::acc) (n, t)
-    | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
-    | (_, []) -> failwith "context_chop"
-  in chop_aux [] (k,ctx)
 
 let quick_chop n l = 
   let rec kick_last = function
@@ -561,9 +552,9 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                         | Ind (i1,i2) -> 
                             if(string_of_label (label i1) = "eq")
                             then (
-                              tclTHENSEQ (do_replace_bl ind gls (!avoid)
+                              tclTHENSEQ ((do_replace_bl ind gls (!avoid)
                                                       nparrec (ca.(2))
-                                                      (ca.(1))) gls
+                              (ca.(1)))@[Auto.default_auto]) gls
                             )
                             else 
                               (error "Failure while solving Boolean->Leibniz.")
