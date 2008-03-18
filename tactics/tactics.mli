@@ -232,6 +232,7 @@ type elim_scheme = {
 
 
 val compute_elim_sig : ?elimc: constr with_ebindings -> types -> elim_scheme
+val rebuild_elimtype_from_scheme: elim_scheme -> types
 
 val general_elim  : evars_flag ->
   constr with_ebindings -> constr with_ebindings -> ?allow_K:bool -> tactic

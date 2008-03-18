@@ -9,7 +9,8 @@
 (* Merging of induction principles. *)
 
 (*i $Id: i*)
-
+open Libnames
+open Tactics
 open Indfun_common
 open Util
 open Topconstr
@@ -17,6 +18,7 @@ open Vernacexpr
 open Pp
 open Names
 open Term
+open Termops 
 open Declarations
 open Environ
 open Rawterm
@@ -25,6 +27,8 @@ open Rawtermops
 (** {1 Utilities}  *)
 
 (** {2 Useful operations on constr and rawconstr} *)
+
+let rec popn i c = if i<=0 then c else pop (popn (i-1) c)
 
 (** Substitutions in constr *)
 let compare_constr_nosub t1 t2 =
@@ -949,8 +953,67 @@ let merge (id1:identifier) (id2:identifier) (args1:identifier array)
   merge_inductive finfo1.graph_ind finfo2.graph_ind lnk1 lnk2 id
 
 
+let remove_last_arg c =
+  let (x,y) = decompose_prod c in
+  let xnolast = List.rev (List.tl (List.rev x)) in
+  compose_prod xnolast y
 
+let rec remove_n_fst_list n l = if n=0 then l else remove_n_fst_list (n-1) (List.tl l)
+let remove_n_last_list n l = List.rev (remove_n_fst_list n (List.rev l))
 
+let remove_last_n_arg n c =
+  let (x,y) = decompose_prod c in
+  let xnolast = remove_n_last_list n x in
+  compose_prod xnolast y
+
+(* [funify_branches relinfo nfuns branch] returns the branch [branch]
+   of the relinfo [relinfo] modified to fit in a functional principle.
+   Things to do: 
+    - remove indargs from rel applications
+    - replace *variables only* corresponding to function (recursive)
+      results by the actual function application. *)
+let funify_branches relinfo nfuns branch = 
+  let mut_induct, induct = 
+    match relinfo.indref with
+      | None -> assert false
+      | Some (IndRef ((mutual_ind,i) as ind)) -> mutual_ind,ind
+      | _ -> assert false in
+  let is_dom c =
+    match kind_of_term c with
+      | Ind((u,_)) | Construct((u,_),_) -> u = mut_induct
+      | _ -> false in
+  let _dom_i c =
+    assert (is_dom c);
+    match kind_of_term c with
+      | Ind((u,i)) | Construct((u,_),i) -> i
+      | _ -> assert false in
+  let _is_pred c shift = 
+    match kind_of_term c with
+      | Rel i -> let reali = i-shift in (reali>=0 && reali<relinfo.nbranches)
+      | _ -> false in
+  (* FIXME: *)
+  (Anonymous,Some mkProp,mkProp)
+  
+
+let relprinctype_to_funprinctype relprinctype nfuns =
+  let relinfo = compute_elim_sig relprinctype in
+  assert (not relinfo.farg_in_concl);
+  assert (relinfo.indarg_in_concl);
+  (* first remove indarg and indarg_in_concl *)
+  let relinfo_noindarg = { relinfo with
+    indarg_in_concl = false; indarg = None;
+    concl = remove_last_arg (pop relinfo.concl); } in
+  (* the nfuns last induction arguments are functional ones: remove them *)
+  let relinfo_argsok = { relinfo_noindarg with
+    nargs = relinfo_noindarg.nargs - nfuns;
+    (* args is in reverse order, so remove fst *)
+    args = remove_n_fst_list nfuns relinfo_noindarg.args;
+    concl = popn nfuns relinfo_noindarg.concl
+  } in
+  let new_branches = 
+    List.map (funify_branches relinfo_argsok nfuns) relinfo_argsok.branches in
+  let relinfo_branches = { relinfo_argsok with branches = new_branches } in
+  relinfo_branches
 
 (* @article{ bundy93rippling,
     author = "Alan Bundy and Andrew Stevens and Frank van Harmelen and Andrew Ireland and Alan Smaill",

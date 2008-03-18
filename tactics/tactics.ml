@@ -1909,6 +1909,23 @@ let exchange_hd_app subst_hd t =
   let hd,args= decompose_app t in mkApp (subst_hd,Array.of_list args)
 
 
+
+(* [rebuild_elimtype_from_scheme scheme] rebuilds the type of an
+   eliminator from its [scheme_info]. The idea is to build variants of
+   eliminator by modifying there scheme_info, then rebuild the
+   eliminator type, then prove it (with tactics). *)
+let rebuild_elimtype_from_scheme (scheme:elim_scheme): types =
+  let hiconcl = 
+    match scheme.indarg with
+      | None -> scheme.concl
+      | Some x -> mkProd_or_LetIn x scheme.concl in
+  let xihiconcl = it_mkProd_or_LetIn hiconcl scheme.args in
+  let brconcl = it_mkProd_or_LetIn xihiconcl scheme.branches in
+  let predconcl = it_mkProd_or_LetIn brconcl scheme.predicates in
+  let paramconcl = it_mkProd_or_LetIn predconcl scheme.params in
+  paramconcl
+
+
 exception NoLastArg
 exception NoLastArgCcl
 
