@@ -425,8 +425,8 @@ type subterm_spec =
   | Not_subterm
 
 let spec_of_tree t =
-  if t=mk_norec then Not_subterm else Subterm(Strict,t)
-
+  if Rtree.eq_rtree (=) t mk_norec then Not_subterm else Subterm(Strict,t)
+ 
 let subterm_spec_glb =
   let glb2 s1 s2 =
     match s1,s2 with
@@ -435,7 +435,7 @@ let subterm_spec_glb =
       | Not_subterm, _ -> Not_subterm
       | _, Not_subterm -> Not_subterm
       | Subterm (a1,t1), Subterm (a2,t2) ->
-          if t1=t2 then Subterm (size_glb a1 a2, t1)
+          if Rtree.eq_rtree (=) t1 t2 then Subterm (size_glb a1 a2, t1)
           (* branches do not return objects with same spec *)
           else Not_subterm in
   Array.fold_left glb2 Dead_code

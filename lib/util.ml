@@ -741,6 +741,11 @@ let array_map_left_pair f a g b =
     r, s
   end
 
+let array_iter2 f v1 v2 =
+  let n = Array.length v1 in
+  if Array.length v2 <> n then invalid_arg "array_iter2"
+  else for i = 0 to n - 1 do f v1.(i) v2.(i) done
+
 let pure_functional = false
 
 let array_fold_map' f v e =
