@@ -314,7 +314,7 @@ let declare_eq_scheme sp =
           definition_message nam
     done
   with Not_found -> 
-    error "Your type contains Parameter without a boolean equality"
+    error "Your type contains Parameters without a boolean equality"
 
 (* decidability of eq *)
 
@@ -441,7 +441,11 @@ let declare_eliminations sp =
     if (!eq_flag) then (declare_eq_scheme sp);
     for i = 0 to Array.length mib.mind_packets - 1 do
       declare_one_elimination (sp,i);
-      if (!eq_flag) then (make_eq_decidability (sp,i));
+      try
+        if (!eq_flag) then (make_eq_decidability (sp,i))
+      with _ -> 
+          Pfedit.delete_current_proof();
+          message "Error while computing decidability scheme. Please report."
     done;
   end
 
@@ -970,7 +974,11 @@ tried to declare different schemes at once *)
       List.iter ( fun indname -> 
         let ind = Nametab.inductive_of_reference indname
         in declare_eq_scheme (fst ind);
+        try
            make_eq_decidability ind 
+        with _ -> 
+          Pfedit.delete_current_proof();
+          message "Error while computing decidability scheme. Please report."
       ) escheme
     )
 
