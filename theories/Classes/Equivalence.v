@@ -26,6 +26,11 @@ Require Export Coq.Classes.SetoidTactics.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+(** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
+
+Instance [ ! Equivalence A R ] => 
+  equivalence_default : DefaultRelation A R | 4.
+
 Definition equiv [ Equivalence A R ] : relation A := R.
 
 (** Shortcuts to make proof search possible (unification won't unfold equiv). *)
@@ -152,8 +157,3 @@ Notation " x =~= y " := (pequiv x y) (at level 70, no associativity) : type_scop
 (** Reset the default Program tactic. *)
 
 Ltac obligations_tactic ::= program_simpl.
-
-(** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
-
-Instance [ ! Equivalence A R ] => 
-  equivalence_default : DefaultRelation A R | 4.

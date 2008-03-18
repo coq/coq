@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
+(* -*- coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -220,51 +220,8 @@ Program Instance {A B C : Type} [ Morphism (RA ==> RB ==> RC) (f : A -> B -> C) 
 
   Next Obligation.
   Proof.
-    unfold flip. 
     apply respect ; auto.
   Qed.
-
-(** Partial applications are ok when a proof of refl is available. *)
-
-(** A proof of [R x x] is available. *)
-
-(* Program Instance (A : Type) R B (R' : relation B) *)
-(*   [ Morphism (R ==> R') m ] [ Morphism R x ] => *)
-(*   morphism_partial_app_morphism : Morphism R' (m x). *)
-
-(*   Next Obligation. *)
-(*   Proof with auto. *)
-(*     apply (respect (m:=m))... *)
-(*     apply respect. *)
-(*   Qed. *)
-
-(** Every morphism gives rise to a morphism on the inverse relation. *)
-
-Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B)
-  [ Morphism (R ==> R') m ] => morphism_inverse_morphism :
-  Morphism (R --> inverse R') m.
-
-  Next Obligation.
-  Proof.
-    unfold inverse in *.
-    pose respect.
-    unfold respectful in r.
-    apply r ; auto.
-  Qed.
-
-(* Program Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) (C : Type) (R'' : relation C) *)
-(*   [ Morphism (R ++> R' ++> R'') m ] => *)
-(*   morphism_inverse_inverse_morphism : *)
-(*   Morphism (R --> R' --> inverse R'') m. *)
-
-(*   Next Obligation. *)
-(*   Proof. *)
-(*     unfold inverse in *. *)
-(*     pose respect. *)
-(*     unfold respectful in r. *)
-(*     apply r ; auto. *)
-(*   Qed. *)
-
 
 (** Every transitive relation gives rise to a binary morphism on [impl], 
    contravariant in the first argument, covariant in the second. *)
@@ -493,3 +450,97 @@ Proof. simpl_relation. Qed.
 Instance (A B : Type) [ ! Reflexive B R' ] => 
   Reflexive (@Logic.eq A ==> R').
 Proof. simpl_relation. Qed.
+
+(** [respectful] is a morphism for relation equivalence. *)
+
+Instance respectful_morphism : 
+  Morphism (relation_equivalence ++> relation_equivalence ++> relation_equivalence) (@respectful A B). 
+Proof.
+  do 2 red ; intros.
+  unfold respectful, relation_equivalence in *.
+  red ; intros.
+  split ; intros.
+  
+    rewrite <- H0.
+    apply H1.
+    rewrite H.
+    assumption.
+
+    rewrite H0.
+    apply H1.
+    rewrite <- H.
+    assumption.
+Qed.
+
+Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : relation B),
+  inverse (R ==> R') ==rel (inverse R ==> inverse R').
+Proof.
+  intros.
+  unfold inverse, flip.
+  unfold respectful.
+  split ; intros ; intuition.
+Qed.
+
+Class (A : Type) (R : relation A) => Normalizes (m : A) (m' : A) :=
+  normalizes : R m m'.
+
+Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) =>
+  Normalizes relation_equivalence (inverse R ==> inverse R') (inverse (R ==> R')) .
+Proof.
+  symmetry ; apply inverse_respectful.
+Qed.
+
+Instance (A : Type) (R : relation A) (B : Type) (R' R'' : relation B) 
+  [ Normalizes relation_equivalence R' (inverse R'') ] =>
+  Normalizes relation_equivalence (inverse R ==> R') (inverse (R ==> R'')) .
+Proof.
+  pose normalizes.
+  setoid_rewrite r.
+  setoid_rewrite inverse_respectful.
+  reflexivity.
+Qed.
+
+Program Instance (A : Type) (R : relation A)
+  [ Morphism R m ] => morphism_inverse_morphism :
+  Morphism (inverse R) m | 2.
+
+  Next Obligation.
+  Proof.
+    apply respect.
+  Qed.
+
+(** Bootstrap !!! *)
+
+Instance morphism_morphism : Morphism (relation_equivalence ==> @eq _ ==> iff) (@Morphism A).
+Proof.
+  simpl_relation.
+  subst.
+  unfold relation_equivalence in H.
+  split ; constructor ; intros.
+  setoid_rewrite <- H.
+  apply respect.
+  setoid_rewrite H.
+  apply respect.
+Qed.
+  
+Lemma morphism_releq_morphism (A : Type) (R : relation A) (R' : relation A)
+  [ Normalizes relation_equivalence R R' ]
+  [ Morphism R' m ] : Morphism R m.
+Proof.
+  intros. 
+  pose respect.
+  assert(n:=normalizes).
+  setoid_rewrite n.
+  assumption.
+Qed.
+
+Inductive normalization_done : Prop := did_normalization.
+
+Ltac morphism_normalization := 
+  match goal with
+    | [ _ : normalization_done |- @Morphism _ _ _ ] => fail
+    | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
+      set(H:=did_normalization) ; eapply @morphism_releq_morphism
+  end.
+
+Hint Extern 5 (@Morphism _ _ _) => morphism_normalization : typeclass_instances.

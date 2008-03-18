@@ -824,8 +824,8 @@ let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
 		  if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
 		  else tclIDTAC
 	      in tclTHENLIST [evartac; rewtac] gl
-	    with UserError (env, e) -> 
-	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints") gl)
+	    with UserError (s, pp) -> 
+	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints:" ++ fnl () ++ pp) gl)
       | None -> 
 	  let {l2r=l2r; c1=x; c2=y} = !hypinfo in
 	    raise (Pretype_errors.PretypeError (pf_env gl, Pretype_errors.NoOccurrenceFound (if l2r then x else y)))
@@ -1134,8 +1134,6 @@ let default_morphism sign m =
   let mor = resolve_one_typeclass env morph in
     mor, respect_projection mor morph
     	  
-let unfold_respectful = lazy (Tactics.unfold_in_concl [[], EvalConstRef (destConst (Lazy.force respectful))])
-
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [	init_setoid ();

@@ -227,3 +227,28 @@ Program Instance [ sa : Equivalence a R, sb : Equivalence b R' ] => equiv_setoid
   (fun f g => forall (x y : a), R x y -> R' (f x) (g y)).
 *)
 
+Definition relation_equivalence {A : Type} : relation (relation A) :=
+  fun (R R' : relation A) => forall x y, R x y <-> R' x y.
+
+Infix "==rel" := relation_equivalence (at level 70).
+
+Program Instance relation_equivalence_equivalence :
+  Equivalence (relation A) relation_equivalence.
+
+  Next Obligation.
+  Proof.
+    constructor ; red ; intros.
+    apply reflexive.
+  Qed.
+
+  Next Obligation.
+  Proof.
+    constructor ; red ; intros.
+    apply symmetric ; apply H.
+  Qed.
+  
+  Next Obligation.
+  Proof.
+    constructor ; red ; intros.
+    apply transitive with (y x0 y0) ; [ apply H | apply H0 ].
+  Qed.
