@@ -386,7 +386,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) (mi,lpar) =
     push_rel (Anonymous,None,
               hnf_prod_applist env (type_of_inductive env specif) lpar) env in
   let ra_env' = 
-    (Imbr mi,Rtree.mk_param 0) ::
+    (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
   (* New index of the inductive types *)
   let newidx = n + auxntyp in
@@ -510,8 +510,8 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i nargs lcnames indlc =
 
 let check_positivity env_ar params inds =
   let ntypes = Array.length inds in
-  let lra_ind =
-    List.rev (list_tabulate (fun j -> (Mrec j, Rtree.mk_param j)) ntypes) in
+  let rc = Array.mapi (fun j t -> (Mrec j,t)) (Rtree.mk_rec_calls ntypes) in
+  let lra_ind = List.rev (Array.to_list rc) in
   let lparams = rel_context_length params in
   let nmr = rel_context_nhyps params in
   let check_one i (_,lcnames,lc,(sign,_)) =
