@@ -544,3 +544,67 @@ Ltac morphism_normalization :=
   end.
 
 Hint Extern 5 (@Morphism _ _ _) => morphism_normalization : typeclass_instances.
+
+(** Morphisms for quantifiers *)
+
+Program Instance {A : Type} => ex_iff_morphism : Morphism (pointwise_relation iff ==> iff) (@ex A).
+
+  Next Obligation.
+  Proof.
+    unfold pointwise_relation in H.     
+    split ; intros.
+    destruct H0 as [x₁ H₁].
+    exists x₁. rewrite H in H₁. assumption.
+    
+    destruct H0 as [x₁ H₁].
+    exists x₁. rewrite H. assumption.
+  Qed.
+
+Program Instance {A : Type} => ex_impl_morphism :
+  Morphism (pointwise_relation impl ==> impl) (@ex A).
+
+  Next Obligation.
+  Proof.
+    unfold pointwise_relation in H.  
+    exists H0. apply H. assumption.
+  Qed.
+
+Program Instance {A : Type} => ex_inverse_impl_morphism : 
+  Morphism (pointwise_relation (inverse impl) ==> inverse impl) (@ex A).
+
+  Next Obligation.
+  Proof.
+    unfold pointwise_relation in H.  
+    exists H0. apply H. assumption.
+  Qed.
+
+Program Instance {A : Type} => all_iff_morphism : 
+  Morphism (pointwise_relation iff ==> iff) (@all A).
+
+  Next Obligation.
+  Proof.
+    unfold pointwise_relation, all in *.
+    intuition ; specialize (H x0) ; intuition.
+  Qed.
+
+Program Instance {A : Type} => all_impl_morphism : 
+  Morphism (pointwise_relation impl ==> impl) (@all A).
+  
+  Next Obligation.
+  Proof.
+    unfold pointwise_relation, all in *.
+    intuition ; specialize (H x0) ; intuition.
+  Qed.
+
+Program Instance {A : Type} => all_inverse_impl_morphism : 
+  Morphism (pointwise_relation (inverse impl) ==> inverse impl) (@all A).
+  
+  Next Obligation.
+  Proof.
+    unfold pointwise_relation, all in *.
+    intuition ; specialize (H x0) ; intuition.
+  Qed.
+
+Lemma inverse_pointwise_relation A (R : relation A) : 
+  pointwise_relation (inverse R) ==rel inverse (pointwise_relation (A:=A) R).
+Proof. reflexivity. Qed.

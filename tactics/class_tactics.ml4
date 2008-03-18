@@ -443,6 +443,8 @@ let transitive_type = lazy (gen_constant ["Classes"; "RelationClasses"] "Transit
 let transitive_proof = lazy (gen_constant ["Classes"; "RelationClasses"] "transitive")
 
 let inverse = lazy (gen_constant ["Classes"; "RelationClasses"] "inverse")
+let complement = lazy (gen_constant ["Classes"; "RelationClasses"] "complement")
+let pointwise_relation = lazy (gen_constant ["Classes"; "RelationClasses"] "pointwise_relation")
 
 let respectful_dep = lazy (gen_constant ["Classes"; "Morphisms"] "respectful_dep")
 let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
@@ -702,7 +704,7 @@ let unfold_id t =
 
 let build_new gl env sigma occs hypinfo concl cstr evars =
   let is_occ occ = occs = [] || List.mem occ occs in
-  let rec aux t occ cstr =
+  let rec aux env t occ cstr =
     match unify_eqn gl hypinfo t with
       | Some (env', (prf, hypinfo as x)) ->
 	  if is_occ occ then (
@@ -725,7 +727,7 @@ let build_new gl env sigma occs hypinfo concl cstr evars =
 	    | App (m, args) ->
 		let args', occ = 
 		  Array.fold_left 
-		    (fun (acc, occ) arg -> let res, occ = aux arg occ None in (res :: acc, occ))
+		    (fun (acc, occ) arg -> let res, occ = aux env arg occ None in (res :: acc, occ))
 		    ([], occ) args
 		in
 		let res =
@@ -737,21 +739,35 @@ let build_new gl env sigma occs hypinfo concl cstr evars =
 		in res, occ
 		  
 	    | Prod (_, x, b) -> 
-		let x', occ = aux x occ None in
-		let b', occ = aux b occ None in
+		let x', occ = aux env x occ None in
+		let b', occ = aux env b occ None in
 		let res = 
 		  if x' = None && b' = None then None
 		  else 
 		    (try 
 			Some (resolve_morphism env sigma t
 				 ~fnewt:unfold_impl
-				 (arrow_morphism (pf_type_of gl x) (pf_type_of gl b)) [| x ; b |] [| x' ; b' |]
+				 (arrow_morphism (Typing.type_of env sigma x) (Typing.type_of env sigma b))
+				 [| x ; b |] [| x' ; b' |]
 				 cstr evars)
 		      with Not_found -> None)
 		in res, occ
 		  
+	    | Lambda (n, t, b) ->
+		let env' = Environ.push_rel (n, None, t) env in
+		let b', occ = aux env' b occ None in
+		let res =
+		  match b' with
+		      None -> None
+		    | Some (prf, (car, rel, c1, c2)) ->
+			let prf' = mkLambda (n, t, prf) in
+			let car' = mkProd (n, t, car) in
+			let rel' = mkApp (Lazy.force pointwise_relation, [| t; car; rel |]) in
+			let c1' = mkLambda(n, t, c1) and c2' = mkLambda (n, t, c2) in
+			  Some (prf', (car', rel', c1', c2'))
+		in res, occ
 	    | _ -> None, occ
-  in aux concl 1 cstr
+  in aux env concl 1 cstr
     
 let resolve_all_typeclasses env evd = 
   resolve_all_evars false (true, 15) env

@@ -40,6 +40,9 @@ Definition inverse {A} : relation A -> relation A := flip.
 
 Definition complement {A} (R : relation A) : relation A := fun x y => R x y -> False.
 
+Definition pointwise_relation {A B : Type} (R : relation B) : relation (A -> B) := 
+  fun f g => forall x : A, R (f x) (g x).
+
 (** These are convertible. *)
 
 Lemma complement_inverse : forall A (R : relation A), complement (inverse R) = inverse (complement R).
