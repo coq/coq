@@ -115,7 +115,7 @@ let call_gappa hl p =
   let _ = Sys.command cmd in
   let lambda = "test.lambda" in
   let cmd = 
-    sprintf "coqc -I ~/src/gappalib-coq-0.7 %s > %s" gappa_out lambda 
+    sprintf "%s/coqc %s > %s" Coq_config.bindir gappa_out lambda 
   in
   let out = Sys.command cmd in
   if out <> 0 then raise GappaProofFailed;
@@ -134,7 +134,7 @@ let coq_modules =
        ["Coq"; "Reals"; "Rbasic_fun";];
        ["Coq"; "Reals"; "R_sqrt";];
        ["Coq"; "Reals"; "Rfunctions";];
-       ["Coq"; "dp"; "Gappa";];
+       ["Gappa"; "Gappa_tactic";];
     ]
 
 let constant = gen_constant_in_modules "gappa" coq_modules

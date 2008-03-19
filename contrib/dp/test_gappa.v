@@ -1,5 +1,4 @@
-Require Export Gappa.
-Require Export Gappa_library.
+Require Export Gappa_tactic.
 Require Export Reals.
 
 Open Scope Z_scope.
@@ -42,5 +41,6 @@ Lemma test4 :
   - powerRZ 2 (-51) <= (x1 * x2 - y1 * y2) / (y1 * y2) <= powerRZ 2 (-51).
 Proof.
   gappa.
+Qed.
 
 
