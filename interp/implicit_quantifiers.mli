@@ -20,12 +20,13 @@ open Mod_subst
 open Rawterm
 open Topconstr
 open Util
+open Libnames
 open Typeclasses
 (*i*)
 
 val ids_of_list : identifier list -> Idset.t
-val destClassApp : constr_expr -> identifier located * constr_expr list
-val destClassAppExpl : constr_expr -> identifier located * (constr_expr * explicitation located option) list
+val destClassApp : constr_expr -> loc * reference * constr_expr list
+val destClassAppExpl : constr_expr -> loc * reference * (constr_expr * explicitation located option) list
 
 val free_vars_of_constr_expr :     Topconstr.constr_expr ->
     ?bound:Idset.t ->
@@ -55,10 +56,10 @@ val implicits_of_binders : local_binder list -> (Topconstr.explicitation * (bool
 val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool)) list
 
 val combine_params : Names.Idset.t ->
-  (Names.Idset.t -> (Names.identifier * bool) option * (Names.identifier * Term.constr option * Term.types) ->
+  (Names.Idset.t -> (global_reference * bool) option * (Names.identifier * Term.constr option * Term.types) ->
     Topconstr.constr_expr * Names.Idset.t) ->
   (Topconstr.constr_expr * Topconstr.explicitation located option) list ->
-  ((Names.identifier * bool) option * Term.named_declaration) list ->
+  ((global_reference * bool) option * Term.named_declaration) list ->
   Topconstr.constr_expr list * Names.Idset.t
 
 

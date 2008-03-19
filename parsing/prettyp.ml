@@ -763,7 +763,7 @@ let print_canonical_projections () =
 open Typeclasses
 
 let pr_typeclass env t = 
-  gallina_print_inductive (fst t.cl_impl)
+  print_ref false t.cl_impl
 
 let print_typeclasses () =
   let env = Global.env () in

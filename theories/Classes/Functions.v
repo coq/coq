@@ -22,10 +22,10 @@ Require Export Coq.Classes.Morphisms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Class [ m : ! Morphism (A -> B) (RA ++> RB) f ] => Injective :=
+Class [ m : ! Morphism (A -> B) (RA ++> RB) f ] => Injective : Prop :=
   injective : forall x y : A, RB (f x) (f y) -> RA x y.
 
-Class [ m : ! Morphism (A -> B) (RA ++> RB) f ] => Surjective :=
+Class [ m : ! Morphism (A -> B) (RA ++> RB) f ] => Surjective : Prop :=
   surjective : forall y, exists x : A, RB y (f x).
 
 Definition Bijective [ m : ! Morphism (A -> B) (RA ++> RB) (f : A -> B) ] :=

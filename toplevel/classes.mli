@@ -29,10 +29,10 @@ type binder_def_list = (identifier located * identifier located list * constr_ex
 val binders_of_lidents : identifier located list -> local_binder list
 
 val declare_implicit_proj : typeclass -> constant -> Impargs.manual_explicitation list -> bool -> unit
-
+(*
 val infer_super_instances : env -> constr list ->
   named_context -> named_context -> types list * identifier list * named_context
-
+*)
 val new_class : identifier located ->
   local_binder list ->
   Vernacexpr.sort_expr located ->
@@ -46,6 +46,9 @@ val new_instance :
   int option ->
   (constant -> unit) ->
   identifier
+
+(* For generation on names based on classes only *)
+val id_of_class : typeclass -> identifier
     
 val context : ?hook:(Libnames.global_reference -> unit) -> typeclass_context -> unit
 
@@ -76,3 +79,4 @@ val push_named_context : named_context -> env -> env
 val name_typeclass_binders : Idset.t ->
     Topconstr.local_binder list ->
     Topconstr.local_binder list * Idset.t
+

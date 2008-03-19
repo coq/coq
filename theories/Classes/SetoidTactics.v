@@ -74,7 +74,7 @@ Ltac red_subst_eq_morphism concl :=
 
 Ltac destruct_morphism :=
   match goal with
-    | [ |- @Morphism ?A ?R ?m ] => constructor
+    | [ |- @Morphism ?A ?R ?m ] => red
   end.
 
 Ltac reverse_arrows x :=
@@ -91,4 +91,3 @@ Ltac default_add_morphism_tactic :=
   end.
 
 Ltac add_morphism_tactic := default_add_morphism_tactic.
-

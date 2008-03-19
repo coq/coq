@@ -24,20 +24,21 @@ open Util
 
 (* This module defines type-classes *)
 type typeclass = {
-  (* Name of the class. FIXME: should not necessarily be globally unique. *)
-  cl_name : identifier;
+  (* The class implementation: a record parameterized by the context with defs in it or a definition if 
+     the class is a singleton. This acts as the classe's global identifier. *)
+  cl_impl : global_reference; 
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. The boolean indicates if the 
      typeclass argument is a direct superclass. *)
-  cl_context : ((identifier * bool) option * named_declaration) list; 
+  cl_context : ((global_reference * bool) option * named_declaration) list; 
 
   cl_params : int; (* This is the length of the suffix of the context which should be considered explicit parameters. *)
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : named_context;
 
-  (* The class implementation: a record parameterized by the context with defs in it. *)
-  cl_impl : inductive; 
+  (* The methods implementations of the typeclass as projections. *)
+  cl_projs : constant list;
 }
 
 type instance = {
@@ -46,7 +47,7 @@ type instance = {
   is_impl: constant;
 }
   
-val instances : Libnames.reference -> instance list
+val instances : global_reference -> instance list
 val typeclasses : unit -> typeclass list
 val add_class : typeclass -> unit
 val add_instance : instance -> unit
@@ -54,16 +55,16 @@ val add_instance : instance -> unit
 val register_add_instance_hint : (reference -> int option -> unit) -> unit
 val add_instance_hint : reference -> int option -> unit
 
-val class_info : identifier -> typeclass (* raises Not_found *)
-val class_of_inductive : inductive -> typeclass (* raises Not_found *)
+val class_info : global_reference -> typeclass (* raises a UserError if not a class *)
+val is_class : global_reference -> bool
+val class_of_constr : constr -> typeclass option
+val dest_class_app : constr -> typeclass * constr array (* raises a UserError if not a class *)
+
+(* Returns the constructor for the given fields of the class and the type constructor. *)
+val instance_constructor : typeclass -> (constr list -> constr) * types
 
 val resolve_one_typeclass : env -> types -> types (* Raises Not_found *)
 val resolve_one_typeclass_evd : env -> evar_defs ref -> types -> types (* Raises Not_found *)
-
-val is_class : inductive -> bool
-
-val class_of_constr : constr -> typeclass option
-
 val resolve_typeclass : env -> evar -> evar_info -> evar_defs * bool -> evar_defs * bool
 
 (* Use evar_extra for marking resolvable evars. *)
@@ -88,9 +89,15 @@ val nf_substitution : evar_map -> substitution -> substitution
 
 val is_implicit_arg : hole_kind -> bool
 
-
-val subst :  'a * Mod_subst.substitution *
-    ((Names.identifier, typeclass) Gmap.t * 'b * ('c, instance list) Gmap.t) ->
-    (Names.identifier, typeclass) Gmap.t * 'b * ('c, instance list) Gmap.t
-
 val qualid_of_con : Names.constant -> Libnames.reference
+
+
+(* debug *)
+
+(* val subst :  *)
+(*     'a * Mod_subst.substitution * *)
+(*     ((Libnames.global_reference, typeclass) Gmap.t * 'b * *)
+(*      ('c, instance list) Gmap.t) -> *)
+(*     (Libnames.global_reference, typeclass) Gmap.t * 'b * *)
+(*     ('c, instance list) Gmap.t *)
+

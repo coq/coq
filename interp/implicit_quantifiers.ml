@@ -159,12 +159,12 @@ let compute_context_vars env l =
 
 let destClassApp cl =
   match cl with
-    | CApp (loc, (None,CRef (Ident f)), l) -> f, List.map fst l
+    | CApp (loc, (None,CRef ref), l) -> loc, ref, List.map fst l
     | _ -> raise Not_found
-
+      
 let destClassAppExpl cl =
   match cl with
-    | CApp (loc, (None,CRef (Ident f)), l) -> f, l
+    | CApp (loc, (None,CRef ref), l) -> loc, ref, l
     | _ -> raise Not_found
 
 let full_class_binders env l = 
@@ -173,12 +173,13 @@ let full_class_binders env l =
     List.fold_left (fun (l', avoid) (iid, bk, cl as x) -> 
       match bk with
 	  Explicit -> 
-	    let (id, l) = destClassAppExpl cl in
+	    let (loc, id, l) = destClassAppExpl cl in
+	    let gr = Nametab.global id in
 	      (try
-		  let c = class_info (snd id) in
+		  let c = class_info gr in
 		  let args, avoid = combine_params_freevar avoid l (List.rev c.cl_context) in
-		    (iid, bk, CAppExpl (fst id, (None, Ident id), args)) :: l', avoid
-		with Not_found -> unbound_class (Global.env ()) id)
+		    (iid, bk, CAppExpl (loc, (None, id), args)) :: l', avoid
+		with Not_found -> not_a_class (Global.env ()) (constr_of_global gr))
 	| Implicit -> (x :: l', avoid))
       ([], avoid) l
   in List.rev l'

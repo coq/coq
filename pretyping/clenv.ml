@@ -141,13 +141,16 @@ let clenv_conv_leq env sigma t c bound =
   check_evars env sigma evars (applist (c,args));
   args
 
-let mk_clenv_from_n gls n (c,cty) =
-  let evd = create_goal_evar_defs gls.sigma in
+let mk_clenv_from_env environ sigma n (c,cty) =
+  let evd = create_goal_evar_defs sigma in
   let (env,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
     templtyp = mk_freelisted concl;
     evd = env;
-    env = Global.env_of_context gls.it.evar_hyps }
+    env = environ }
+
+let mk_clenv_from_n gls n (c,cty) =
+  mk_clenv_from_env (Global.env_of_context gls.it.evar_hyps) gls.sigma n (c, cty)
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 

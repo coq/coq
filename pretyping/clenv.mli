@@ -54,6 +54,7 @@ val mk_clenv_from : evar_info sigma -> constr * types -> clausenv
 val mk_clenv_from_n :
   evar_info sigma -> int option -> constr * types -> clausenv
 val mk_clenv_type_of : evar_info sigma -> constr -> clausenv
+val mk_clenv_from_env : env -> evar_map -> int option -> constr * types -> clausenv
 
 (***************************************************************)
 (* linking of clenvs *)

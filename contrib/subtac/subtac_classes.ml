@@ -108,11 +108,8 @@ let new_instance ctx (instid, bk, cl) props pri =
   let tclass =
     match bk with
       | Explicit ->
-	  let id, par = Implicit_quantifiers.destClassAppExpl cl in
-	  let k = 
-	    try class_info (snd id)
-	    with Not_found -> unbound_class env id
-	  in
+	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
+	  let k = class_info (Nametab.global id) in
 	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
 	  let needlen = List.fold_left (fun acc (x, y) -> if x = None then succ acc else acc) 0 k.cl_context in
 	    if needlen <> applen then 
@@ -129,7 +126,7 @@ let new_instance ctx (instid, bk, cl) props pri =
 		      in t, avoid
 		  | None -> failwith ("new instance: under-applied typeclass"))
 	      par (List.rev k.cl_context)
-	    in Topconstr.CAppExpl (Util.dummy_loc, (None, Ident id), pars)
+	    in Topconstr.CAppExpl (loc, (None, id), pars)
 
       | Implicit -> cl
   in
@@ -143,13 +140,8 @@ let new_instance ctx (instid, bk, cl) props pri =
     let c = Command.generalize_constr_expr tclass ctx in
     let c' = interp_type_evars isevars env c in
     let ctx, c = Classes.decompose_named_assum c' in
-      (match kind_of_term c with 
-	  App (c, args) -> 
-	    let cl = Option.get (class_of_constr c) in
-	      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
-	| _ -> 
-	    let cl = Option.get (class_of_constr c) in
-	      cl, ctx, [])
+    let cl, args = Typeclasses.dest_class_app c in
+      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
   in
   let id = 
     match snd instid with
@@ -159,7 +151,7 @@ let new_instance ctx (instid, bk, cl) props pri =
 	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists");
 	    id
       | Anonymous -> 
-	  let i = Nameops.add_suffix k.cl_name "_instance_0" in
+	  let i = Nameops.add_suffix (Classes.id_of_class k) "_instance_0" in
 	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in
   let env' = Classes.push_named_context ctx' env in
@@ -187,18 +179,17 @@ let new_instance ctx (instid, bk, cl) props pri =
 	  ([], props) k.cl_props
       in
 	if rest <> [] then 
-	  unbound_method env' k.cl_name (fst (List.hd rest))
+	  unbound_method env' k.cl_impl (fst (List.hd rest))
 	else
 	  type_ctx_instance isevars env' k.cl_props props substctx
   in
-  let app = 
-    applistc (mkConstruct (k.cl_impl, 1)) (List.rev_map snd subst)
-  in 
+  let inst_constr, ty_constr = instance_constructor k in
+  let app = inst_constr (List.rev_map snd subst) in 
   let term = it_mkNamedLambda_or_LetIn app ctx' in
   isevars := Evarutil.nf_evar_defs !isevars;
   let term = Evarutil.nf_isevar !isevars term in
   let termtype = 
-    let app = applistc (mkInd (k.cl_impl)) (List.rev_map snd substctx) in
+    let app = applistc ty_constr (List.rev_map snd substctx) in
     let t = it_mkNamedProd_or_LetIn app ctx' in
       Evarutil.nf_isevar !isevars t
   in

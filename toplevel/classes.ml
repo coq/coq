@@ -129,26 +129,21 @@ let declare_implicit_proj c proj imps sub =
     Impargs.declare_manual_implicits true (ConstRef proj) true expls
       
 let declare_implicits impls subs cl =
-  let projs = Recordops.lookup_projections cl.cl_impl in
-    Util.list_iter3
-      (fun c imps sub -> 
-	match c with 
-	  | None -> assert(false)
-	  | Some p -> declare_implicit_proj cl p imps sub)
-      projs impls subs;
-    let len = List.length cl.cl_context in
-    let indimps = 
-      list_fold_left_i 
-	(fun i acc (is, (na, b, t)) -> 
-	  if len - i <= cl.cl_params then acc
-	  else 
-	    match is with
-		None | Some (_, false) -> (ExplByPos (i, Some na), (false, true)) :: acc
-	      | _ -> acc)
-	1 [] (List.rev cl.cl_context)
-    in
-      Impargs.declare_manual_implicits true (IndRef cl.cl_impl) false indimps
-
+  Util.list_iter3 (fun p imps sub -> declare_implicit_proj cl p imps sub)
+    cl.cl_projs impls subs;
+  let len = List.length cl.cl_context in
+  let indimps = 
+    list_fold_left_i 
+      (fun i acc (is, (na, b, t)) -> 
+	if len - i <= cl.cl_params then acc
+	else 
+	  match is with
+	      None | Some (_, false) -> (ExplByPos (i, Some na), (false, true)) :: acc
+	    | _ -> acc)
+      1 [] (List.rev cl.cl_context)
+  in
+    Impargs.declare_manual_implicits true cl.cl_impl false indimps
+      
 let rel_of_named_context subst l = 
   List.fold_right
     (fun (id, _, t) (ctx, acc) -> (Name id, None, subst_vars acc t) :: ctx, id :: acc)
@@ -277,26 +272,54 @@ let new_class id par ar sup props =
   let ctx_props = Evarutil.nf_named_context_evar sigma ctx_props in
   let arity = Reductionops.nf_evar sigma arity in
   let ce t = Evarutil.check_evars env0 Evd.empty isevars t in
-  let kn = 
-    let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
+  let impl, projs = 
     let params, subst = rel_of_named_context [] ctx_params in
     let fields, _ = rel_of_named_context subst ctx_props in
       List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
-      declare_structure env0 (snd id) idb params arity fields
+      match fields with
+	  [(Name proj_name, _, field)] ->
+	    let class_type = it_mkProd_or_LetIn arity params in
+	    let class_body = it_mkLambda_or_LetIn field params in
+	    let class_entry = 
+	      { const_entry_body = class_body;
+		const_entry_type = Some class_type;
+		const_entry_opaque = false;
+		const_entry_boxed = false }
+	    in
+	    let cst = Declare.declare_constant (snd id)
+	      (DefinitionEntry class_entry, IsDefinition Definition) 
+	    in
+	    let inst_type = appvectc (mkConst cst) (rel_vect 0 (List.length params)) in
+	    let proj_type = it_mkProd_or_LetIn (mkProd(Name (snd id), inst_type, lift 1 field)) params in
+	    let proj_body = it_mkLambda_or_LetIn (mkLambda (Name (snd id), inst_type, mkRel 1)) params in
+	    let proj_entry = 
+	      { const_entry_body = proj_body;
+		const_entry_type = Some proj_type;
+		const_entry_opaque = false;
+		const_entry_boxed = false }
+	    in
+	    let proj_cst = Declare.declare_constant proj_name
+	      (DefinitionEntry proj_entry, IsDefinition Definition) 
+	    in
+	      ConstRef cst, [proj_cst]
+	| _ ->
+	    let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
+	    let kn = declare_structure env0 (snd id) idb params arity fields in
+	      IndRef kn, (List.map Option.get (Recordops.lookup_projections kn))
   in
   let ctx_context =
     List.map (fun ((na, b, t) as d) -> 
       match Typeclasses.class_of_constr t with
-	| Some cl -> (Some (cl.cl_name, List.exists (fun (_, n) -> n = Name na) supnames), d)
+	| Some cl -> (Some (cl.cl_impl, List.exists (fun (_, n) -> n = Name na) supnames), d)
 	| None -> (None, d))
       ctx_params
   in
   let k =
-    { cl_name = snd id;
+    { cl_impl = impl;
       cl_params = List.length par;
       cl_context = ctx_context;
       cl_props = ctx_props;
-      cl_impl = kn }
+      cl_projs = projs }
   in
     declare_implicits (List.rev prop_impls) subs k;
     add_class k
@@ -324,15 +347,7 @@ let subst_named inst subst ctx =
       (fun (id, _, t) (ctx, k) -> (id, None, substnl inst k t) :: ctx, succ k)
       ctx' ([], 0)
   in ctx'
-
-let destClass c = 
-  match kind_of_term c with
-      App (c, args) -> 
-	(match kind_of_term c with
-	  | Ind ind -> (try class_of_inductive ind, args with _ -> assert false)
-	  | _ -> assert false)
-    | _ -> assert false
-
+(*
 let infer_super_instances env params params_ctx super =
   let super = subst_named params params_ctx super in
     List.fold_right 
@@ -346,7 +361,7 @@ let infer_super_instances env params params_ctx super =
 	in
 	let d = (na, Some inst, t) in
 	  inst :: sups, na :: ids, d :: supctx)
-      super ([], [], [])
+      super ([], [], [])*)
       
 (* let evars_of_context ctx id n env = *)
 (*   List.fold_right (fun (na, _, t) (n, env, nc) ->  *)
@@ -374,6 +389,14 @@ let destClassApp cl =
 
 let refine_ref = ref (fun _ -> assert(false))
 
+let id_of_class cl =
+  match cl.cl_impl with
+    | ConstRef kn -> let _,_,l = repr_con kn in id_of_label l
+    | IndRef (kn,i) -> 
+	let mip = (Environ.lookup_mind kn (Global.env ())).Declarations.mind_packets in
+	  mip.(0).Declarations.mind_typename
+    | _ -> assert false
+	
 open Pp
 
 let ($$) g f = fun x -> g (f x)
@@ -386,11 +409,8 @@ let new_instance ctx (instid, bk, cl) props pri hook =
   let tclass = 
     match bk with
       | Explicit ->
-	  let id, par = Implicit_quantifiers.destClassAppExpl cl in
-	  let k = 
-	    try class_info (snd id)
-	    with Not_found -> unbound_class env id
-	  in
+	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
+	  let k = class_info (global id) in
 	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
 	  let needlen = List.fold_left (fun acc (x, y) -> if x = None then succ acc else acc) 0 k.cl_context in
 	    if needlen <> applen then 
@@ -407,7 +427,7 @@ let new_instance ctx (instid, bk, cl) props pri hook =
 		      in t, avoid
 		  | None -> failwith ("new instance: under-applied typeclass"))
 	      par (List.rev k.cl_context)
-	    in Topconstr.CAppExpl (Util.dummy_loc, (None, Ident id), pars)
+	    in Topconstr.CAppExpl (loc, (None, id), pars)
 
       | Implicit -> cl
   in
@@ -421,13 +441,8 @@ let new_instance ctx (instid, bk, cl) props pri hook =
     let c = Command.generalize_constr_expr tclass ctx in
     let _imps, c' = interp_type_evars isevars env c in
     let ctx, c = decompose_named_assum c' in
-      (match kind_of_term c with 
-	  App (c, args) -> 
-	    let cl = Option.get (class_of_constr c) in
-	      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
-	| _ -> 
-	    let cl = Option.get (class_of_constr c) in
-	      cl, ctx, [])
+    let cl, args = Typeclasses.dest_class_app c in
+      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
   in
   let id = 
     match snd instid with
@@ -437,7 +452,7 @@ let new_instance ctx (instid, bk, cl) props pri hook =
 	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists");
 	    id
       | Anonymous -> 
-	  let i = Nameops.add_suffix k.cl_name "_instance_0" in
+	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
 	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in
   let env' = push_named_context ctx' env in
@@ -465,18 +480,17 @@ let new_instance ctx (instid, bk, cl) props pri hook =
 	  ([], props) k.cl_props
       in
 	if rest <> [] then 
-	  unbound_method env' k.cl_name (fst (List.hd rest))
+	  unbound_method env' k.cl_impl (fst (List.hd rest))
 	else
 	  type_ctx_instance isevars env' k.cl_props props substctx
   in
-  let app = 
-    applistc (mkConstruct (k.cl_impl, 1)) (List.rev_map snd subst)
-  in 
+  let inst_constr, ty_constr = instance_constructor k in
+  let app = inst_constr (List.rev_map snd subst) in 
   let term = Termops.it_mkNamedLambda_or_LetIn app ctx' in
   isevars := Evarutil.nf_evar_defs !isevars;
   let term = Evarutil.nf_isevar !isevars term in
   let termtype = 
-    let app = applistc (mkInd (k.cl_impl)) (List.rev_map snd substctx) in
+    let app = applistc ty_constr (List.rev_map snd substctx) in
     let t = it_mkNamedProd_or_LetIn app ctx' in
       Evarutil.nf_isevar !isevars t
   in

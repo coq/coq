@@ -40,13 +40,13 @@ Typeclasses unfold @equiv.
 
 (** Shortcuts to make proof search easier. *)
 
-Definition setoid_refl [ sa : Setoid A ] : Reflexive equiv.
+Definition setoid_refl [ sa : Setoid A ] : reflexive equiv.
 Proof. eauto with typeclass_instances. Qed.
 
-Definition setoid_sym [ sa : Setoid A ] : Symmetric equiv.
+Definition setoid_sym [ sa : Setoid A ] : symmetric equiv.
 Proof. eauto with typeclass_instances. Qed.
 
-Definition setoid_trans [ sa : Setoid A ] : Transitive equiv.
+Definition setoid_trans [ sa : Setoid A ] : transitive equiv.
 Proof. eauto with typeclass_instances. Qed.
 
 Existing Instance setoid_refl.

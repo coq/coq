@@ -471,12 +471,12 @@ let explain_pretype_error env err =
       
 (* Typeclass errors *)
 
-let explain_unbound_class env (_,id) =
-  str "Unbound class name " ++ Nameops.pr_id id
+let explain_not_a_class env c =
+  pr_constr_env env c ++ str" is not a declared type class"
 
 let explain_unbound_method env cid id =
   str "Unbound method name " ++ Nameops.pr_id (snd id) ++ spc () ++ str"of class" ++ spc () ++ 
-    Nameops.pr_id cid
+    pr_global cid
 
 let pr_constr_exprs exprs = 
   hv 0 (List.fold_right 
@@ -495,7 +495,7 @@ let explain_mismatched_contexts env c i j =
 
 let explain_typeclass_error env err = 
   match err with
-    | UnboundClass id -> explain_unbound_class env id
+    | NotAClass c -> explain_not_a_class env c
     | UnboundMethod (cid, id) -> explain_unbound_method env cid id
     | NoInstance (id, l) -> explain_no_instance env id l
     | MismatchedContextInstance (c, i, j) -> explain_mismatched_contexts env c i j

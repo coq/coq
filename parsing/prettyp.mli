@@ -60,7 +60,7 @@ val print_canonical_projections : unit -> std_ppcmds
 
 (* Pretty-printing functions for type classes and instances *)
 val print_typeclasses : unit -> std_ppcmds
-val print_instances : reference -> std_ppcmds
+val print_instances : global_reference -> std_ppcmds
 
 
 val inspect : int -> std_ppcmds

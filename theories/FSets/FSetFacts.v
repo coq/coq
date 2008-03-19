@@ -431,7 +431,7 @@ Add Relation t Subset
 
 Instance In_s_m : Morphism (E.eq ==> Subset ++> impl) In | 1.
 Proof.
-  do 2 red ; intros. unfold Subset, impl; intros; eauto with set.
+  simpl_relation. eauto with set.
 Qed.
 
 Add Morphism Empty with signature Subset --> impl as Empty_s_m.

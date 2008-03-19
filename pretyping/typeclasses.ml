@@ -30,22 +30,22 @@ type rels = constr list
 
 (* This module defines type-classes *)
 type typeclass = {
-  (* Name of the class. FIXME: should not necessarily be globally unique. *)
-  cl_name : identifier;
+  (* The class implementation *)
+  cl_impl : global_reference; 
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : ((identifier * bool) option * named_declaration) list; 
+  cl_context : ((global_reference * bool) option * named_declaration) list; 
 
   cl_params: int;
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : named_context;
-
-  (* The class implementation: a record parameterized by the context with defs in it. *)
-  cl_impl : inductive; 
+  
+  (* The method implementaions as projections. *)
+  cl_projs : constant list;
 }
 
-type typeclasses = (identifier, typeclass) Gmap.t
+type typeclasses = (global_reference, typeclass) Gmap.t
 
 type instance = {
   is_class: typeclass;
@@ -53,11 +53,11 @@ type instance = {
   is_impl: constant; 
 }
 
-type instances = (identifier, instance list) Gmap.t
+type instances = (global_reference, instance list) Gmap.t
     
 let classes : typeclasses ref = ref Gmap.empty
 
-let methods : (identifier, identifier) Gmap.t ref = ref Gmap.empty
+let methods : (constant, global_reference) Gmap.t ref = ref Gmap.empty
   
 let instances : instances ref = ref Gmap.empty
   
@@ -124,47 +124,64 @@ open Libobject
 let subst (_,subst,(cl,m,inst)) = 
   let do_subst_con c = fst (Mod_subst.subst_con subst c)
   and do_subst c = Mod_subst.subst_mps subst c
-  and do_subst_ind (kn,i) = (Mod_subst.subst_kn subst kn,i)
+  and do_subst_gr gr = fst (subst_global subst gr)
   in
   let do_subst_named ctx = 
-    List.map (fun (na, b, t) ->
+    list_smartmap (fun (na, b, t) ->
       (na, Option.smartmap do_subst b, do_subst t))
       ctx
   in
   let do_subst_ctx ctx = 
-    List.map (fun (cl, (na, b, t)) ->
-      (cl, (na, Option.smartmap do_subst b, do_subst t)))
+    list_smartmap (fun (cl, (na, b, t)) ->
+      (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b) cl,
+      (na, Option.smartmap do_subst b, do_subst t)))
       ctx
   in
-  let subst_class cl = 
-    let cl' = { cl with cl_impl = do_subst_ind cl.cl_impl;
+  let do_subst_projs projs = list_smartmap do_subst_con projs in
+  let subst_class k cl classes = 
+    let k = do_subst_gr k in
+    let cl' = { cl with cl_impl = k;
 		cl_context = do_subst_ctx cl.cl_context;
-		cl_props = do_subst_named cl.cl_props; }
-    in if cl' = cl then cl else cl'
+		cl_props = do_subst_named cl.cl_props;
+		cl_projs = do_subst_projs cl.cl_projs; }
+    in 
+    let cl' = if cl' = cl then cl else cl' in
+      Gmap.add k cl' classes
   in
-  let subst_inst classes insts =
-    List.map (fun is -> 
-      let is' = 
-	{ is_class = Gmap.find is.is_class.cl_name classes; 
-	  is_pri = is.is_pri;
-	  is_impl = do_subst_con is.is_impl }
-      in if is' = is then is else is') insts
+  let classes = Gmap.fold subst_class cl Gmap.empty in
+  let subst_inst k insts instances =
+    let k = do_subst_gr k in
+    let cl = Gmap.find k classes in
+    let insts' = 
+      list_smartmap (fun is -> 
+	let is' = 
+	  { is_class = cl; 
+	    is_pri = is.is_pri;
+	    is_impl = do_subst_con is.is_impl }
+	in if is' = is then is else is') insts
+    in  Gmap.add k insts' instances
   in
-  let classes = Gmap.map subst_class cl in
-  let instances = Gmap.map (subst_inst classes) inst in
+  let instances = Gmap.fold subst_inst inst Gmap.empty in
     (classes, m, instances)
 
 let discharge (_,(cl,m,inst)) =
-  let subst_class cl = 
-    { cl with cl_impl = Lib.discharge_inductive cl.cl_impl }
+  let discharge_named (cl, r) =
+    Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b) cl, r
   in
-  let subst_inst classes insts =
-    List.map (fun is -> { is_impl = Lib.discharge_con is.is_impl;
-			  is_pri = is.is_pri;
-			  is_class = Gmap.find is.is_class.cl_name classes; }) insts
+  let subst_class cl = 
+    { cl with cl_impl = Lib.discharge_global cl.cl_impl;
+      cl_context = list_smartmap discharge_named cl.cl_context;
+      cl_projs = list_smartmap Lib.discharge_con cl.cl_projs }
   in
   let classes = Gmap.map subst_class cl in
-  let instances = Gmap.map (subst_inst classes) inst in
+  let subst_inst insts =
+    List.map (fun is ->
+      { is_impl = Lib.discharge_con is.is_impl;
+	is_pri = is.is_pri;
+	is_class = Gmap.find (Lib.discharge_global is.is_class.cl_impl) classes; })
+      insts
+  in
+  let instances = Gmap.map subst_inst inst in
     Some (classes, m, instances)
   
 let (input,output) = 
@@ -181,24 +198,20 @@ let (input,output) =
 let update () = 
   Lib.add_anonymous_leaf (input (!classes, !methods, !instances))
 
-let class_methods cl =
-  List.map (function (x, _, _) -> x) cl.cl_props
-
 let add_class c = 
-  classes := Gmap.add c.cl_name c !classes;
-  methods := List.fold_left (fun acc x -> Gmap.add x c.cl_name acc) !methods (class_methods c);
+  classes := Gmap.add c.cl_impl c !classes;
+  methods := List.fold_left (fun acc x -> Gmap.add x c.cl_impl acc) !methods c.cl_projs;
   update ()
     
 let class_info c = 
-  Gmap.find c !classes
+  try Gmap.find c !classes
+  with _ -> not_a_class (Global.env()) (constr_of_global c)
 
-let class_of_inductive ind = 
-  let res = Gmap.fold 
-    (fun k v acc -> match acc with None -> if v.cl_impl = ind then Some v else acc | _ -> acc)
-    !classes None
-  in match res with
-      None -> raise Not_found
-    | Some cl -> cl
+let instance_constructor cl = 
+  match cl.cl_impl with
+    | IndRef ind -> (fun args -> applistc (mkConstruct (ind, 1)) args), mkInd ind
+    | ConstRef cst -> list_last, mkConst cst
+    | _ -> assert false
 
 let typeclasses () = Gmap.fold (fun _ l c -> l :: c) !classes []
 
@@ -210,25 +223,16 @@ let gmapl_add x y m =
     Gmap.add x [y] m
 
 let instances_of c = 
-  try Gmap.find c.cl_name !instances with Not_found -> []
+  try Gmap.find c.cl_impl !instances with Not_found -> []
 
 let add_instance i =
-  try
-    let cl = Gmap.find i.is_class.cl_name !classes in
-      instances := gmapl_add cl.cl_name { i with is_class = cl } !instances;
-      add_instance_hint (qualid_of_con i.is_impl) i.is_pri;
-      update ()
-  with Not_found -> unbound_class (Global.env ()) (dummy_loc, i.is_class.cl_name)
-
-open Libnames
-      
-let id_of_reference r = 
-  let (_, id) = repr_qualid (snd (qualid_of_reference r)) in id
+  let cl = Gmap.find i.is_class.cl_impl !classes in
+    instances := gmapl_add cl.cl_impl { i with is_class = cl } !instances;
+    add_instance_hint (qualid_of_con i.is_impl) i.is_pri;
+    update ()
 
 let instances r = 
-  let id = id_of_reference r in
-    try let cl = class_info id in instances_of cl
-    with Not_found -> unbound_class (Global.env()) (loc_of_reference r, id)
+  let cl = class_info r in instances_of cl
 
 let solve_instanciation_problem = ref (fun _ _ _ _ -> assert false)
 let solve_instanciations_problem = ref (fun _ _ _ _ -> assert false)
@@ -273,12 +277,11 @@ let resolve_one_typeclass_evd env evd types =
 let method_typeclass ref = 
   match ref with 
     | ConstRef c -> 
-	let (_, _, l) = Names.repr_con c in
-	  class_info (Gmap.find (Names.id_of_label l) !methods)
+	class_info (Gmap.find c !methods)
     | _ -> raise Not_found
       
-let is_class ind = 
-  Gmap.fold (fun k v acc -> acc || v.cl_impl = ind) !classes false
+let is_class gr = 
+  Gmap.fold (fun k v acc -> acc || v.cl_impl = gr) !classes false
   
 let is_implicit_arg k = 
   match k with
@@ -332,14 +335,18 @@ let is_independent evm ev =
 (*   in sat (Evarutil.nf_evar_defs evd) *)
   
 let class_of_constr c = 
-  let extract_ind c =
-    match kind_of_term c with
-	Ind ind -> (try Some (class_of_inductive ind) with Not_found -> None)
-      | _ -> None
+  let extract_cl c =
+    try Some (class_info (global_of_constr c)) with _ -> None
   in
     match kind_of_term c with
-	App (c, _) -> extract_ind c
-      | _ -> extract_ind c
+	App (c, _) -> extract_cl c
+      | _ -> extract_cl c
+
+let dest_class_app c =
+  let cl c = class_info (global_of_constr c) in
+    match kind_of_term c with
+	App (c, args) -> cl c, args
+      | _ -> cl c, [||]
 
 (* To embed a boolean for resolvability status.
    This is essentially a hack to mark which evars correspond to 
