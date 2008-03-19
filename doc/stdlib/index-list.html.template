@@ -307,27 +307,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Wellfounded/Well_Ordering.v
   </dd>
     
-
-  <dt> <b>IntMap</b>:
-    An implementation of finite sets/maps as trees indexed by
-    addresses (obsolete, supersided by FSets/FMap)
-  </dt>
-  <dd> 
-    theories/IntMap/Adalloc.v
-    theories/IntMap/Map.v
-    theories/IntMap/Fset.v
-    theories/IntMap/Mapaxioms.v
-    theories/IntMap/Mapiter.v
-    theories/IntMap/Mapcanon.v
-    theories/IntMap/Mapsubset.v
-    theories/IntMap/Lsort.v
-    theories/IntMap/Mapfold.v
-    theories/IntMap/Mapcard.v
-    theories/IntMap/Mapc.v
-    theories/IntMap/Maplists.v
-    theories/IntMap/Allmaps.v
-  </dd>
-    
   <dt> <b>FSets</b>:
     Modular implementation of finite sets/maps using lists or
     efficient trees
@@ -349,7 +328,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/FMapInterface.v
     theories/FSets/FMapList.v
     theories/FSets/FMapPositive.v
-    theories/FSets/FMapIntMap.v
     theories/FSets/FMapFacts.v
     (theories/FSets/FMaps.v)
     theories/FSets/FMapAVL.v

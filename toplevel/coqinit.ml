@@ -74,7 +74,6 @@ let theories_dirs_map = [
     "theories/Classes", "Classes" ; 
     "theories/Program", "Program" ; 
     "theories/FSets", "FSets" ; 
-    "theories/IntMap", "IntMap" ; 
     "theories/Reals", "Reals" ; 
     "theories/Strings", "Strings" ; 
     "theories/Sorting", "Sorting" ; 
