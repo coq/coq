@@ -852,7 +852,7 @@ endif
 
 %.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEP) -glob -slash -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) "$<" > "$@" \
+	$(HIDE)$(COQDEP) -glob -slash -boot $(COQINCLUDES) "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
