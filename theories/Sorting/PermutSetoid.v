@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Import Omega Coq.Relations.Relations Multiset Permutation SetoidList.
+Require Import Omega Relations Multiset Permutation SetoidList.
 
 Set Implicit Arguments.
 

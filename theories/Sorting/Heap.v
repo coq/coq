@@ -12,7 +12,7 @@
 
 (* G. Huet 1-9-95 uses Multiset *)
 
-Require Import List Multiset Permutation Coq.Relations.Relations Sorting.
+Require Import List Multiset Permutation Relations Sorting.
 
 Section defs.
 
