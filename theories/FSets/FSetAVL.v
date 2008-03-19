@@ -37,7 +37,7 @@
     code after extraction.
 *)
 
-Require Import Recdef FSetInterface FSetList ZArith Int.
+Require Import FSetInterface FSetList ZArith Int.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

@@ -12,7 +12,7 @@
 Require Export OrderedType OrderedTypeEx OrderedTypeAlt.
 Require Export DecidableType DecidableTypeEx.
 Require Export FMapInterface.
-Require Export FMapList.
 Require Export FMapPositive.
-Require Export FMapIntMap.
 Require Export FMapFacts.
+Require Export FMapWeakList.
+Require Export FMapList.

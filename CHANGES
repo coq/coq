@@ -38,6 +38,8 @@ Commands
 
 Libraries
 
+- library IntMap, subsumed by FSets/FMaps, has been removed from 
+  Coq Standard Library and moved into a user contribution Cachan/IntMap
 - Better computational behavior of some constants (eq_nat_dec and 
   le_lt_dec more efficient, Z_lt_le_dec and Positive_as_OT.compare 
   transparent, ...) [exceptionally source of incompatibilities].

@@ -610,27 +610,18 @@ FSETSBASEVO:=\
  theories/FSets/FMapInterface.vo     theories/FSets/FMapList.vo \
  theories/FSets/FMaps.vo             theories/FSets/FMapFacts.vo \
  theories/FSets/FMapWeakList.vo      theories/FSets/FMapPositive.vo \
- theories/FSets/FMapIntMap.vo        theories/FSets/FSetToFiniteSet.vo \
- theories/FSets/FSetDecide.vo        
+ theories/FSets/FSetToFiniteSet.vo   theories/FSets/FSetDecide.vo \
+ theories/FSets/FSetAVL.vo           
 
 FSETS_basic:=
 
 FSETS_all:=\
- theories/FSets/FSetAVL.vo           theories/FSets/FSetFullAVL.vo \
- theories/FSets/FMapAVL.vo           
+ theories/FSets/FSetFullAVL.vo \
+ theories/FSets/FMapAVL.vo
 
 FSETSVO:=$(FSETSBASEVO) $(FSETS_$(FSETS))
 
 ALLFSETS:=$(FSETSBASEVO) $(FSETS_all)
-
-INTMAPVO:=\
- theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
- theories/IntMap/Mapfold.vo \
- theories/IntMap/Mapcard.vo    theories/IntMap/Mapc.vo \
- theories/IntMap/Allmaps.vo    theories/IntMap/Mapiter.vo \
- theories/IntMap/Fset.vo       theories/IntMap/Maplists.vo \
- theories/IntMap/Lsort.vo      theories/IntMap/Mapsubset.vo \
- theories/IntMap/Mapaxioms.vo  theories/IntMap/Map.vo \
 
 RELATIONSVO:=\
  theories/Relations/Newman.vo \
@@ -754,7 +745,7 @@ CLASSESVO:= theories/Classes/Init.vo theories/Classes/RelationClasses.vo theorie
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
-  $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) $(INTMAPVO) \
+  $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) \
   $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
   $(INTSVO) $(NUMBERSVO) $(UNICODEVO) $(CLASSESVO)
 
@@ -873,7 +864,7 @@ STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   pcoq-binaries $(COQINTERFACE) coqbinaries pcoq $(TOOLS) tools \
   printers $(MINICOQ) debug
 VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
-  fsets allfsets intmap relations wellfounded ints reals allreals \
+  fsets allfsets relations wellfounded ints reals allreals \
   setoids sorting natural integer rational numbers noreal \
   omega ring setoid_ring dp xml extraction field fourier jprover \
   funind cc programs subtac rtauto

@@ -476,7 +476,6 @@ strings: $(STRINGSVO)
 sets: $(SETSVO)
 fsets: $(FSETSVO)
 allfsets: $(ALLFSETS)
-intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
 ints: $(INTSVO)
@@ -491,7 +490,7 @@ integer: $(INTEGERVO)
 rational: $(RATIONALVO)
 numbers: $(NUMBERSVO)
 
-noreal: logic arith bool zarith qarith lists sets fsets intmap relations \
+noreal: logic arith bool zarith qarith lists sets fsets relations \
 	wellfounded setoids sorting
 
 ###########################################################################
