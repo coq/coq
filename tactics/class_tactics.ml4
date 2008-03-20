@@ -650,22 +650,31 @@ let rewrite2_unif_flags = {
 let allowK = true
 
 let refresh_hypinfo env sigma hypinfo = 
-  let {l2r=l2r; c = c} = !hypinfo in
-    match c with 
-      | Some c ->
-	  (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	  hypinfo := decompose_setoid_eqhyp env sigma c l2r;
-      | _ -> ()
-	  
+  if !hypinfo.abs = None then
+    let {l2r=l2r; c = c} = !hypinfo in
+      match c with 
+	| Some c ->
+	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
+	    hypinfo := decompose_setoid_eqhyp env sigma c l2r;
+	| _ -> ()
+  else ()
+
+let convertible env x y =
+  ignore(Reduction.conv env x y)
+  
 let unify_eqn env sigma hypinfo t = 
   try 
     let {cl=cl; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
     let env' = 
-      try clenv_unify allowK ~flags:rewrite_unif_flags
-	CONV (if l2r then c1 else c2) t cl
-      with Pretype_errors.PretypeError _ -> (* For Ring essentially *)
-	clenv_unify allowK ~flags:rewrite2_unif_flags
-	  CONV (if l2r then c1 else c2) t cl
+      match abs with
+	  Some _ -> convertible env (if l2r then c1 else c2) t; cl
+	| None ->
+	    try clenv_unify allowK ~flags:rewrite_unif_flags
+	      CONV (if l2r then c1 else c2) t cl
+	    with Pretype_errors.PretypeError _ ->
+	      (* For Ring essentially, only when doing setoid_rewrite *)
+	      clenv_unify allowK ~flags:rewrite2_unif_flags
+		CONV (if l2r then c1 else c2) t cl
     in
     let c1 = Clenv.clenv_nf_meta env' c1 
     and c2 = Clenv.clenv_nf_meta env' c2
@@ -701,7 +710,11 @@ let unfold_id t =
     | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_id) *) -> b
     | _ -> assert false
 
-let build_new gl env sigma occs hypinfo concl cstr evars =
+type rewrite_flags = { under_lambdas : bool }
+
+let default_flags = { under_lambdas = true }
+
+let build_new gl env sigma flags occs hypinfo concl cstr evars =
   let is_occ occ = occs = [] || List.mem occ occs in
   let rec aux env t occ cstr =
     match unify_eqn env sigma hypinfo t with
@@ -752,7 +765,7 @@ let build_new gl env sigma occs hypinfo concl cstr evars =
 		      with Not_found -> None)
 		in res, occ
 		  
-	    | Lambda (n, t, b) ->
+	    | Lambda (n, t, b) when flags.under_lambdas ->
 		let env' = Environ.push_rel (n, None, t) env in
 		refresh_hypinfo env' sigma hypinfo;
 		let b', occ = aux env' b occ None in
@@ -788,7 +801,7 @@ let resolve_argument_typeclasses ?(tac=tclIDTAC) d p env evd onlyargs all =
 
 let cl_rewrite_tactic = lazy (Tacinterp.interp <:tactic<setoid_rewrite_tac>>)
 
-let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
+let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
     match clause with
 	Some ((_, id), _) -> pf_get_hyp_typ gl id, Some id
@@ -802,7 +815,7 @@ let cl_rewrite_clause_aux hypinfo goal_meta occs clause gl =
   let evars = ref (Evd.create_evar_defs Evd.empty) in
   let env = pf_env gl in
   let sigma = project gl in
-  let eq, _ = build_new gl env sigma occs hypinfo concl (Some cstr) evars in
+  let eq, _ = build_new gl env sigma flags occs hypinfo concl (Some cstr) evars in
     match eq with  
 	Some (p, (_, _, oldt, newt)) -> 
 	  (try 
@@ -1242,16 +1255,17 @@ let unification_rewrite l2r c1 c2 cl rel but gl =
 	  Unification.w_unify_to_subterm ~flags:rewrite2_unif_flags
 	    (pf_env gl) ((if l2r then c1 else c2),but) cl.evd
   in
-  let cl' = {cl with evd = env' } in
+  let cl' = {cl with evd = env'} in
   let c1 = Clenv.clenv_nf_meta cl' c1 
   and c2 = Clenv.clenv_nf_meta cl' c2 in
   check_evar_map_of_evars_defs env';
   let prf = Clenv.clenv_value cl' in
   let prfty = Clenv.clenv_type cl' in
-    if occur_meta prf then
-      {cl=cl'; prf=(mkRel 1); rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
-    else
-      {cl=cl'; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=None}
+  let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
+    {cl=cl'; prf=(mkRel 1); rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
+(*         if occur_meta prf then *)
+(* else *)
+(*       {cl=cl'; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=None} *)
 
 let get_hyp gl c clause l2r = 
   match kind_of_term (pf_type_of gl c) with
@@ -1261,15 +1275,17 @@ let get_hyp gl c clause l2r =
 	  unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.rel but gl
     | _ -> decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r
 	
+let general_rewrite_flags = { under_lambdas = false }
+
 let general_s_rewrite l2r c ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo = ref (get_hyp gl c None l2r) in
-    cl_rewrite_clause_aux hypinfo meta [] None gl
+    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta [] None gl
 
 let general_s_rewrite_in id l2r c ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo = ref (get_hyp gl c (Some id) l2r) in
-    cl_rewrite_clause_aux hypinfo meta [] (Some (([],id), [])) gl
+    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta [] (Some (([],id), [])) gl
     
 let general_s_rewrite_clause = function
   | None -> general_s_rewrite

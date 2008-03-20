@@ -70,7 +70,7 @@ let check_required_library d =
      (dummy_loc,make_qualid (make_dirpath (List.rev prefix)) m)
 *)
 (* or failing ...*)
-    error ("Library "^(list_last d)^" has to be required first")
+    error ("Library "^(string_of_dirpath dir)^" has to be required first")
 
 (************************************************************************)
 (* Specific Coq objects *)
