@@ -644,13 +644,6 @@ let end_module id =
 
   let oldoname,oldprefix,fs,lib_stack = Lib.end_module id in
   let mbids, res_o, sub_o = !openmod_info in
-  let mp = Global.end_module id res_o in
-    
-  begin match sub_o with
-      None -> ()
-    | Some sub_mtb -> check_subtypes mp sub_mtb
-  end;
-    
   let substitute, keep, special = Lib.classify_segment lib_stack in
 
   let dir = fst oldprefix in
@@ -674,6 +667,14 @@ let end_module id =
 
     (* must be called after get_modtype_substobjs, because of possible
      dependencies on functor arguments *)
+
+  let mp = Global.end_module id res_o in
+    
+  begin match sub_o with
+      None -> ()
+    | Some sub_mtb -> check_subtypes mp sub_mtb
+  end;
+    
   Summary.module_unfreeze_summaries fs;
 
   let substituted = subst_substobjs dir mp substobjs in
