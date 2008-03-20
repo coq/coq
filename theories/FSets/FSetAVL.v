@@ -1604,16 +1604,7 @@ Inductive In_e (x:elt) : enumeration -> Prop :=
       forall (y : elt) (s : tree) (e : enumeration),
       In_e x e -> In_e x (More y s e).
 
-Inductive sorted_e : enumeration -> Prop :=
-  | SortedEEnd : sorted_e End
-  | SortedEMore :
-      forall (x : elt) (s : tree) (e : enumeration),
-      bst s -> gt_tree x s -> sorted_e e ->
-      (forall y, In_e y e -> X.lt x y) ->
-      (forall y, In y s -> forall z, In_e z e -> X.lt y z) ->
-      sorted_e (More x s e).
-
-Hint Constructors In_e sorted_e.
+Hint Constructors In_e.
 
 Lemma elements_app :
  forall s acc, elements_aux acc s = elements s ++ acc.
@@ -1652,18 +1643,10 @@ Fixpoint cons s e : enumeration :=
  end.
 
 Lemma cons_1 : forall s e, 
-  bst s -> sorted_e e ->
-  (forall (x y : elt), In x s -> In_e y e -> X.lt x y) ->
-  sorted_e (cons s e) /\ 
   flatten_e (cons s e) = elements s ++ flatten_e e.
 Proof.
- induction s; simpl; auto.
- clear IHs2; intros.
- inv bst.
- destruct (IHs1 (More t s2 e)); clear IHs1; intuition.
- inversion_clear H6; subst; auto; order.
- rewrite H6.
- apply flatten_e_elements.
+ induction s; simpl; auto; intros.
+ rewrite IHs1; apply flatten_e_elements.
 Qed.
 
 (** One step of comparison of elements *)
@@ -1729,29 +1712,25 @@ Proof.
 Qed.
 
 Lemma compare_cont_Cmp : forall s1 cont e2 l,
- bst s1 -> sorted_e e2 ->
- (forall e, sorted_e e -> Cmp (cont e) l (flatten_e e)) -> 
+ (forall e, Cmp (cont e) l (flatten_e e)) -> 
  Cmp (compare_cont s1 cont e2) (elements s1 ++ l) (flatten_e e2).
 Proof.
  induction s1 as [|l1 Hl1 x1 r1 Hr1 h1]; simpl; intros; auto.
  inv bst.
  rewrite <- compare_flatten_1; simpl.
- apply Hl1; auto. clear e2 H0. intros [|x2 r2 e2] He2.
+ apply Hl1; auto. clear e2. intros [|x2 r2 e2].
  simpl; auto.
  apply compare_more_Cmp.
- inversion_clear He2.
- destruct (cons_1 H H6); auto.
- rewrite <- H10; auto.
+ rewrite <- cons_1; auto.
 Qed.
 
-Lemma compare_Cmp : forall s1 s2, bst s1 -> bst s2 ->
+Lemma compare_Cmp : forall s1 s2,
  Cmp (compare s1 s2) (elements s1) (elements s2).
 Proof.
  intros; unfold compare.
- rewrite (app_nil_end (elements s1)), (app_nil_end (elements s2)).
- destruct (@cons_1 s2 End); auto.
- inversion 2.
- simpl in H2. unfold elt in *; rewrite <- H2.
+ rewrite (app_nil_end (elements s1)).
+ replace (elements s2) with (flatten_e (cons s2 End)) by 
+  (rewrite cons_1; simpl; rewrite <- app_nil_end; auto).
  apply compare_cont_Cmp; auto.
  intros.
  apply compare_end_Cmp; auto.
@@ -1769,17 +1748,17 @@ Lemma equal_1 : forall s1 s2, bst s1 -> bst s2 ->
  Equal s1 s2 -> equal s1 s2 = true.
 Proof.
 unfold equal; intros s1 s2 B1 B2 E.
-generalize (compare_Cmp B1 B2). 
+generalize (compare_Cmp s1 s2). 
 destruct (compare s1 s2); simpl in *; auto; intros.
 elim (lt_not_eq B1 B2 H E); auto.
 elim (lt_not_eq B2 B1 H (eq_sym E)); auto.
 Qed.
 
-Lemma equal_2 : forall s1 s2, bst s1 -> bst s2 ->   
+Lemma equal_2 : forall s1 s2,  
  equal s1 s2 = true -> Equal s1 s2.
 Proof.
-unfold equal; intros s1 s2 B1 B2 E.
-generalize (compare_Cmp B1 B2); 
+unfold equal; intros s1 s2 E.
+generalize (compare_Cmp s1 s2); 
  destruct compare; auto; discriminate.
 Qed.
 
@@ -1849,7 +1828,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition compare (s s':t) : Compare lt eq s s'.
  Proof.
   intros (s,b) (s',b').
-  generalize (Raw.compare_Cmp b b').
+  generalize (Raw.compare_Cmp s s').
   destruct Raw.compare; intros; [apply EQ|apply LT|apply GT]; red; auto.
  Defined.
 
@@ -1868,7 +1847,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma equal_1 : Equal s s' -> equal s s' = true.
  Proof. exact (Raw.equal_1 (is_bst s) (is_bst s')). Qed.
  Lemma equal_2 : equal s s' = true -> Equal s s'.
- Proof. exact (Raw.equal_2 (is_bst s) (is_bst s')). Qed.
+ Proof. exact (@Raw.equal_2 s s'). Qed.
 
  Ltac wrap t H := unfold t, In; simpl; rewrite H; auto; intuition.
 

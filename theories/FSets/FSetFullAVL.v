@@ -734,7 +734,6 @@ Definition ocaml_compare s1 s2 :=
  ocaml_compare_aux (cons s1 End, cons s2 End).
 
 Lemma ocaml_compare_aux_Cmp : forall e, 
- sorted_e e#1 -> sorted_e e#2 -> 
  Cmp (ocaml_compare_aux e) (flatten_e e#1) (flatten_e e#2).
 Proof.
  intros e; functional induction ocaml_compare_aux e; simpl; intros; 
@@ -742,27 +741,24 @@ Proof.
  apply L.eq_refl.
  simpl in *.
  apply cons_Cmp; auto.
- inversion H; subst; clear H.
- inversion H0; subst; clear H0.
- destruct (@cons_1 r1 e1); destruct (@cons_1 r2 e2); auto.
- rewrite <-H0, <-H2; auto.
+ rewrite <- 2 cons_1; auto.
 Qed.
 
-Lemma ocaml_compare_Cmp : forall s1 s2, bst s1 -> bst s2 ->
+Lemma ocaml_compare_Cmp : forall s1 s2,
  Cmp (ocaml_compare s1 s2) (elements s1) (elements s2).
 Proof.
  unfold ocaml_compare; intros.
- destruct (@cons_1 s1 End) as (S1,E1); auto; try inversion 2.
- destruct (@cons_1 s2 End) as (S2,E2); auto; try inversion 2.
- simpl in *; rewrite <- app_nil_end, <- E1, <- E2 in *.
- apply (@ocaml_compare_aux_Cmp (cons s1 End, cons s2 End)); simpl; auto.
+ assert (H1:=cons_1 s1 End).
+ assert (H2:=cons_1 s2 End).
+ simpl in *; rewrite <- app_nil_end in *; rewrite <-H1,<-H2.
+ apply (@ocaml_compare_aux_Cmp (cons s1 End, cons s2 End)).
 Qed.
 
 Lemma ocaml_compare_alt : forall s1 s2, bst s1 -> bst s2 -> 
  ocaml_compare s1 s2 = compare s1 s2.
 Proof.
  intros s1 s2 B1 B2.
- generalize (ocaml_compare_Cmp B1 B2)(compare_Cmp B1 B2). 
+ generalize (ocaml_compare_Cmp s1 s2)(compare_Cmp s1 s2). 
  unfold Cmp.
  destruct ocaml_compare; destruct compare; auto; intros; elimtype False.
  elim (lt_not_eq B1 B2 H0); auto.
@@ -793,17 +789,17 @@ Lemma ocaml_equal_1 : forall s1 s2, bst s1 -> bst s2 ->
  Equal s1 s2 -> ocaml_equal s1 s2 = true.
 Proof.
 unfold ocaml_equal; intros s1 s2 B1 B2 E.
-generalize (ocaml_compare_Cmp B1 B2).
+generalize (ocaml_compare_Cmp s1 s2).
 destruct (ocaml_compare s1 s2); auto; intros.
 elim (lt_not_eq B1 B2 H E); auto.
 elim (lt_not_eq B2 B1 H (eq_sym E)); auto.
 Qed.
 
-Lemma ocaml_equal_2 : forall s1 s2, bst s1 -> bst s2 ->
+Lemma ocaml_equal_2 : forall s1 s2,
  ocaml_equal s1 s2 = true -> Equal s1 s2.
 Proof.
-unfold ocaml_equal; intros s1 s2 B1 B2 E.
-generalize (ocaml_compare_Cmp B1 B2); 
+unfold ocaml_equal; intros s1 s2 E.
+generalize (ocaml_compare_Cmp s1 s2); 
  destruct ocaml_compare; auto; discriminate.
 Qed.
 
@@ -901,7 +897,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition compare (s s':t) : Compare lt eq s s'.
  Proof.
   intros (s,b,a) (s',b',a').
-  generalize (compare_Cmp b b').
+  generalize (compare_Cmp s s').
   destruct Raw.compare; intros; [apply EQ|apply LT|apply GT]; red; auto.
   change (Raw.Equal s s'); auto.
  Defined.
@@ -909,7 +905,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition ocaml_compare (s s':t) : Compare lt eq s s'.
  Proof.
   intros (s,b,a) (s',b',a').
-  generalize (ocaml_compare_Cmp b b').
+  generalize (ocaml_compare_Cmp s s').
   destruct ocaml_compare; intros; [apply EQ|apply LT|apply GT]; red; auto.
   change (Raw.Equal s s'); auto.
  Defined.
@@ -929,7 +925,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma equal_1 : Equal s s' -> equal s s' = true.
  Proof. exact (equal_1 (is_bst s) (is_bst s')). Qed.
  Lemma equal_2 : equal s s' = true -> Equal s s'.
- Proof. exact (equal_2 (is_bst s) (is_bst s')). Qed.
+ Proof. exact (@equal_2 s s'). Qed.
 
  Lemma ocaml_equal_alt : ocaml_equal s s' = equal s s'.
  Proof. 
@@ -940,7 +936,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Lemma ocaml_equal_1 : Equal s s' -> ocaml_equal s s' = true.
  Proof. exact (ocaml_equal_1 (is_bst s) (is_bst s')). Qed.
  Lemma ocaml_equal_2 : ocaml_equal s s' = true -> Equal s s'.
- Proof. exact (ocaml_equal_2 (is_bst s) (is_bst s')). Qed. 
+ Proof. exact (@ocaml_equal_2 s s'). Qed. 
 
  Ltac wrap t H := unfold t, In; simpl; rewrite H; auto; intuition.
 
