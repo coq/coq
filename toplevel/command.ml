@@ -205,12 +205,10 @@ let set_declare_assumption_hook = (:=) declare_assumption_hook
 let declare_assumption idl is_coe k bl c nl=
   if not (Pfedit.refining ()) then 
     let c = generalize_constr_expr c bl in
-    let sigma = Evd.empty and env = Global.env () in
-    let ic = intern_type sigma env c in
-    let imps = Implicit_quantifiers.implicits_of_rawterm ic in
-    let j = Default.understand_judgment sigma env ic in
-      !declare_assumption_hook j.uj_val;
-      List.iter (declare_one_assumption is_coe k j.uj_val imps nl) idl
+    let sigma = ref Evd.empty_evar_defs and env = Global.env () in
+    let c', imps = interp_type_evars_impls sigma env c in
+      !declare_assumption_hook c';
+      List.iter (declare_one_assumption is_coe k c' imps nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")

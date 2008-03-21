@@ -414,6 +414,7 @@ let create_evar_defs sigma =
 let create_goal_evar_defs sigma =
   let h = fold (fun mv _ l -> (mv,(dummy_loc,GoalEvar))::l) sigma [] in
   { evars=sigma; conv_pbs=[]; last_mods = []; history=h; metas=Metamap.empty }
+let empty_evar_defs = create_evar_defs empty
 let evars_of d = d.evars
 let evars_reset_evd evd d = {d with evars = evd}
 let reset_evd (sigma,mmap) d = {d with evars = sigma; metas=mmap}

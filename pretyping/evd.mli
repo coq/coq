@@ -143,6 +143,7 @@ val subst_evar_defs_light : substitution -> evar_defs -> evar_defs
 (* create an [evar_defs] with empty meta map: *)
 val create_evar_defs      : evar_map -> evar_defs
 val create_goal_evar_defs : evar_map -> evar_defs
+val empty_evar_defs : evar_defs
 val evars_of         : evar_defs -> evar_map
 val evars_reset_evd  : evar_map ->  evar_defs -> evar_defs
 
