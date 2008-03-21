@@ -48,6 +48,22 @@ Module MX := OrderedTypeFacts X.
 
 Definition elt := X.t.
 
+(** Workaround to get lazy andb and orb operations with vm_computation *)
+
+Notation "a &&& b" := (if a then b else false) (at level 40, left associativity) : bool_scope.
+Notation "a ||| b" := (if a then true else b) (at level 50, left associativity) : bool_scope.
+
+Lemma andb_alt : forall a b : bool, a &&& b = a && b.
+Proof.
+ destruct a; simpl; auto.
+Qed.
+
+Lemma orb_alt : forall a b : bool, a ||| b = a || b.
+Proof.
+ destruct a; simpl; auto.
+Qed.
+
+
 (** Notations and helper lemma about pairs *)
 
 Notation "s #1" := (fst s) (at level 9, format "s '#1'").
@@ -1253,7 +1269,7 @@ Qed.
 
 Fixpoint for_all (s:t) : bool := match s with 
   | Leaf => true
-  | Node l x r _ => f x && for_all l && for_all r
+  | Node l x r _ => f x &&& for_all l &&& for_all r
 end.
 
 Lemma for_all_1 : forall s, compat_bool X.eq f ->
@@ -1282,13 +1298,13 @@ Qed.
 
 Fixpoint exists_ (s:t) : bool := match s with 
   | Leaf => false
-  | Node l x r _ => f x || exists_ l || exists_ r
+  | Node l x r _ => f x ||| exists_ l ||| exists_ r
 end.  
 
 Lemma exists_1 : forall s, compat_bool X.eq f ->
  Exists (fun x => f x = true) s -> exists_ s = true.
 Proof.
- induction s; simpl; destruct 2 as (x,(U,V)); inv In.
+ induction s; simpl; destruct 2 as (x,(U,V)); inv In; rewrite ? orb_alt.
  rewrite (H _ _ (X.eq_sym H0)); rewrite V; auto.
  apply orb_true_intro; left.
  apply orb_true_intro; right; apply IHs1; auto; exists x; auto.
@@ -1298,7 +1314,7 @@ Qed.
 Lemma exists_2 : forall s, compat_bool X.eq f ->
  exists_ s = true -> Exists (fun x => f x = true) s.
 Proof. 
- induction s; simpl; intros.
+ induction s; simpl; intros; rewrite ? orb_alt in *.
  discriminate.
  destruct (orb_true_elim _ _ H0) as [H1|H1]. 
  destruct (orb_true_elim _ _ H1) as [H2|H2].
@@ -1382,7 +1398,7 @@ Fixpoint subsetl (subset_l1:t->bool) x1 s2 : bool :=
      match X.compare x1 x2 with 
       | EQ _ => subset_l1 l2 
       | LT _ => subsetl subset_l1 x1 l2
-      | GT _ => mem x1 r2 && subset_l1 s2
+      | GT _ => mem x1 r2 &&& subset_l1 s2
      end
  end.
 
@@ -1392,7 +1408,7 @@ Fixpoint subsetr (subset_r1:t->bool) x1 s2 : bool :=
   | Node l2 x2 r2 h2 => 
      match X.compare x1 x2 with 
       | EQ _ => subset_r1 r2 
-      | LT _ => mem x1 l2 && subset_r1 s2
+      | LT _ => mem x1 l2 &&& subset_r1 s2
       | GT _ => subsetr subset_r1 x1 r2
      end
  end.
@@ -1402,9 +1418,9 @@ Fixpoint subset s1 s2 : bool := match s1, s2 with
   | Node _ _ _ _, Leaf => false
   | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
      match X.compare x1 x2 with 
-      | EQ _ => subset l1 l2 && subset r1 r2
-      | LT _ => subsetl (subset l1) x1 l2 && subset r1 s2
-      | GT _ => subsetr (subset r1) x1 r2 && subset l1 s2
+      | EQ _ => subset l1 l2 &&& subset r1 r2
+      | LT _ => subsetl (subset l1) x1 l2 &&& subset r1 s2
+      | GT _ => subsetr (subset r1) x1 r2 &&& subset l1 s2
      end
  end.
 
@@ -1432,7 +1448,7 @@ Proof.
  assert (X.eq a x2) by order; intuition_in.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
 
- rewrite andb_true_iff, H1 by auto; clear H1 IHl2 IHr2.
+ rewrite andb_alt, andb_true_iff, H1 by auto; clear H1 IHl2 IHr2.
  unfold Subset. intuition_in.
  assert (H':=mem_2 H6); apply In_1 with x1; auto.
  apply mem_1; auto.
@@ -1454,7 +1470,7 @@ Proof.
  inv bst. clear H7.
  destruct X.compare.
 
- rewrite andb_true_iff, H1 by auto;  clear H1 IHl2 IHr2.
+ rewrite andb_alt, andb_true_iff, H1 by auto;  clear H1 IHl2 IHr2.
  unfold Subset. intuition_in.
  assert (H':=mem_2 H1); apply In_1 with x1; auto.
  apply mem_1; auto.
@@ -1483,21 +1499,21 @@ Proof.
  inv bst.
  destruct X.compare.
 
- rewrite andb_true_iff, IHr1 by auto.
+ rewrite andb_alt, andb_true_iff, IHr1 by auto.
  rewrite (@subsetl_12 (subset l1) l1 x1 h1) by auto.
  clear IHl1 IHr1.
  unfold Subset; intuition_in.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
 
- rewrite andb_true_iff, IHl1, IHr1 by auto.
+ rewrite andb_alt, andb_true_iff, IHl1, IHr1 by auto.
  clear IHl1 IHr1.
  unfold Subset; intuition_in.
  assert (X.eq a x2) by order; intuition_in.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
  
- rewrite andb_true_iff, IHl1 by auto.
+ rewrite andb_alt, andb_true_iff, IHl1 by auto.
  rewrite (@subsetr_12 (subset r1) r1 x1 h1) by auto.
  clear IHl1 IHr1.
  unfold Subset; intuition_in.
