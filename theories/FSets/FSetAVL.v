@@ -44,7 +44,6 @@ Unset Strict Implicit.
 
 Module Raw (Import I:Int)(X:OrderedType).
 Open Local Scope Int_scope.
-Module MX := OrderedTypeFacts X.
 
 Definition elt := X.t.
 
@@ -53,27 +52,10 @@ Definition elt := X.t.
 Notation "a &&& b" := (if a then b else false) (at level 40, left associativity) : bool_scope.
 Notation "a ||| b" := (if a then true else b) (at level 50, left associativity) : bool_scope.
 
-Lemma andb_alt : forall a b : bool, a &&& b = a && b.
-Proof.
- destruct a; simpl; auto.
-Qed.
-
-Lemma orb_alt : forall a b : bool, a ||| b = a || b.
-Proof.
- destruct a; simpl; auto.
-Qed.
-
-
 (** Notations and helper lemma about pairs *)
 
 Notation "s #1" := (fst s) (at level 9, format "s '#1'").
 Notation "s #2" := (snd s) (at level 9, format "s '#2'").
-
-Lemma distr_pair : forall (A B:Type)(s:A*B)(a:A)(b:B), s = (a,b) -> 
- s#1 = a /\ s#2 = b.
-Proof.
- destruct s; simpl; injection 1; auto.
-Qed.
 
 
 (** * Trees
@@ -100,14 +82,438 @@ Fixpoint cardinal (s : tree) : nat :=
    | Node l _ r _ => S (cardinal l + cardinal r)
   end.
 
-(** * Occurrence in a tree *)
+(** * Empty Set *)
+
+Definition empty := Leaf.
+
+(** * Emptyness test *)
+
+Definition is_empty s := 
+  match s with Leaf => true | _ => false end.
+
+(** * Appartness *)
+
+(** The [mem] function is deciding appartness. It exploits the 
+    binary search tree invariant to achieve logarithmic complexity. *)
+
+Fixpoint mem x s := 
+   match s with 
+     |  Leaf => false 
+     |  Node l y r _ => match X.compare x y with 
+             | LT _ => mem x l 
+             | EQ _ => true
+             | GT _ => mem x r
+         end
+   end.
+
+(** * Singleton set *)
+
+Definition singleton x := Node Leaf x Leaf 1.
+
+(** * Helper functions *)
+
+(** [create l x r] creates a node, assuming [l] and [r]
+    to be balanced and [|height l - height r| <= 2]. *)
+
+Definition create l x r := 
+   Node l x r (max (height l) (height r) + 1).
+
+(** [bal l x r] acts as [create], but performs one step of
+    rebalancing if necessary, i.e. assumes [|height l - height r| <= 3]. *)
+
+Definition assert_false := create.
+
+Fixpoint bal l x r := 
+  let hl := height l in 
+  let hr := height r in
+  if gt_le_dec hl (hr+2) then 
+    match l with 
+     | Leaf => assert_false l x r
+     | Node ll lx lr _ => 
+       if ge_lt_dec (height ll) (height lr) then 
+         create ll lx (create lr x r)
+       else 
+         match lr with 
+          | Leaf => assert_false l x r
+          | Node lrl lrx lrr _ => 
+              create (create ll lx lrl) lrx (create lrr x r)
+         end
+    end
+  else 
+    if gt_le_dec hr (hl+2) then 
+      match r with
+       | Leaf => assert_false l x r
+       | Node rl rx rr _ =>
+         if ge_lt_dec (height rr) (height rl) then 
+            create (create l x rl) rx rr
+         else 
+           match rl with
+            | Leaf => assert_false l x r
+            | Node rll rlx rlr _ => 
+                create (create l x rll) rlx (create rlr rx rr) 
+           end
+      end
+    else 
+      create l x r.
+
+(** * Insertion *)
+
+Fixpoint add x s := match s with 
+   | Leaf => Node Leaf x Leaf 1
+   | Node l y r h => 
+      match X.compare x y with
+         | LT _ => bal (add x l) y r
+         | EQ _ => Node l y r h
+         | GT _ => bal l y (add x r)
+      end
+  end.
+
+(** * Join
+
+    Same as [bal] but does not assume anything regarding heights 
+    of [l] and [r]. 
+*)
+
+Fixpoint join l : elt -> t -> t :=
+  match l with
+    | Leaf => add
+    | Node ll lx lr lh => fun x => 
+       fix join_aux (r:t) : t := match r with 
+          | Leaf =>  add x l
+          | Node rl rx rr rh =>  
+               if gt_le_dec lh (rh+2) then bal ll lx (join lr x r)
+               else if gt_le_dec rh (lh+2) then bal (join_aux rl) rx rr 
+               else create l x r
+          end
+  end.
+
+(** * Extraction of minimum element
+
+  Morally, [remove_min] is to be applied to a non-empty tree
+  [t = Node l x r h]. Since we can't deal here with [assert false]
+  for [t=Leaf], we pre-unpack [t] (and forget about [h]).
+*)
+ 
+Fixpoint remove_min l x r : t*elt := 
+  match l with 
+    | Leaf => (r,x)
+    | Node ll lx lr lh => 
+       let (l',m) := remove_min ll lx lr in (bal l' x r, m)
+  end.
+
+(** * Merging two trees
+
+  [merge t1 t2] builds the union of [t1] and [t2] assuming all elements
+  of [t1] to be smaller than all elements of [t2], and
+  [|height t1 - height t2| <= 2].
+*)
+
+Fixpoint merge s1 s2 :=  match s1,s2 with 
+  | Leaf, _ => s2 
+  | _, Leaf => s1
+  | _, Node l2 x2 r2 h2 => 
+        let (s2',m) := remove_min l2 x2 r2 in bal s1 m s2'
+end.
+
+(** * Deletion *)
+
+Fixpoint remove x s := match s with 
+  | Leaf => Leaf
+  | Node l y r h =>
+      match X.compare x y with
+         | LT _ => bal (remove x l) y r
+         | EQ _ => merge l r
+         | GT _ => bal l  y (remove x r)
+      end
+   end.
+
+(** * Minimum element *)
+
+Fixpoint min_elt s := match s with 
+   | Leaf => None
+   | Node Leaf y _  _ => Some y
+   | Node l _ _ _ => min_elt l
+end.
+
+(** * Maximum element *)
+
+Fixpoint max_elt s := match s with 
+   | Leaf => None
+   | Node _ y Leaf  _ => Some y
+   | Node _ _ r _ => max_elt r
+end.
+
+(** * Any element *)
+
+Definition choose := min_elt.
+
+(** * Concatenation
+
+    Same as [merge] but does not assume anything about heights.
+*)
+
+Fixpoint concat s1 s2 := 
+   match s1, s2 with 
+      | Leaf, _ => s2 
+      | _, Leaf => s1
+      | _, Node l2 x2 r2 h2 => 
+            let (s2',m) := remove_min l2 x2 r2 in 
+            join s1 m s2'
+   end.
+
+(** * Splitting 
+
+    [split x s] returns a triple [(l, present, r)] where
+    - [l] is the set of elements of [s] that are [< x]
+    - [r] is the set of elements of [s] that are [> x]
+    - [present] is [true] if and only if [s] contains  [x].
+*)
+
+Fixpoint split x s : t * (bool * t) := match s with 
+  | Leaf => (Leaf, (false, Leaf))
+  | Node l y r h => 
+     match X.compare x y with 
+      | LT _ => match split x l with 
+                 | (ll,(pres,rl)) => (ll, (pres, join rl y r))
+                end
+      | EQ _ => (l, (true, r))
+      | GT _ => match split x r with 
+                 | (rl,(pres,rr)) => (join l y rl, (pres, rr))
+                end
+     end
+ end.
+
+(** * Intersection *)
+
+Fixpoint inter s1 s2 := match s1, s2 with 
+    | Leaf, _ => Leaf
+    | _, Leaf => Leaf
+    | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
+            match split x1 s2 with
+               | (l2',(true,r2')) => join (inter l1 l2') x1 (inter r1 r2')
+               | (l2',(false,r2')) => concat (inter l1 l2') (inter r1 r2')
+            end
+    end.
+
+(** * Difference *)
+
+Fixpoint diff s1 s2 := match s1, s2 with 
+ | Leaf, _ => Leaf
+ | _, Leaf => s1
+ | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
+    match split x1 s2 with 
+      | (l2',(true,r2')) => concat (diff l1 l2') (diff r1 r2')
+      | (l2',(false,r2')) => join (diff l1 l2') x1 (diff r1 r2')
+    end
+end.
+
+(** * Union *)
+
+(** In ocaml, heights of [s1] and [s2] are compared each time in order
+   to recursively perform the split on the smaller set.
+   Unfortunately, this leads to a non-structural algorithm. The
+   following code is a simplification of the ocaml version: no
+   comparison of heights. It might be slightly slower, but
+   experimentally all the tests I've made in ocaml have shown this
+   potential slowdown to be non-significant. Anyway, the exact code
+   of ocaml has also been formalized thanks to Function+measure, see
+   [ocaml_union] in [FSetFullAVL].  
+*)
+
+Fixpoint union s1 s2 := 
+ match s1, s2 with 
+  | Leaf, _ => s2
+  | Node _ _ _ _, Leaf => s1
+  | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
+     let (l2',r2') := split x1 s2 in 
+     join (union l1 l2') x1 (union r1 r2'#2)
+ end.
+
+(** * Elements *)
+
+(** [elements_tree_aux acc t] catenates the elements of [t] in infix
+    order to the list [acc] *)
+
+Fixpoint elements_aux (acc : list X.t) (t : tree) : list X.t :=
+  match t with
+   | Leaf => acc
+   | Node l x r _ => elements_aux (x :: elements_aux acc r) l
+  end.
+
+(** then [elements] is an instanciation with an empty [acc] *)
+
+Definition elements := elements_aux nil.
+
+(** * Filter *)
+
+Fixpoint filter_acc (f:elt->bool) acc s := match s with 
+  | Leaf => acc
+  | Node l x r h => 
+     filter_acc f (filter_acc f (if f x then add x acc else acc) l) r 
+ end.
+
+Definition filter f := filter_acc f Leaf.
+
+
+(** * Partition *)
+
+Fixpoint partition_acc (f:elt->bool)(acc : t*t)(s : t) : t*t := 
+  match s with 
+   | Leaf => acc
+   | Node l x r _ => 
+      let (acct,accf) := acc in 
+      partition_acc f
+        (partition_acc f
+           (if f x then (add x acct, accf) else (acct, add x accf)) l) r
+  end.
+
+Definition partition f := partition_acc f (Leaf,Leaf).
+
+(** * [for_all] and [exists] *)
+
+Fixpoint for_all (f:elt->bool) s := match s with 
+  | Leaf => true
+  | Node l x r _ => f x &&& for_all f l &&& for_all f r
+end.
+
+Fixpoint exists_ (f:elt->bool) s := match s with 
+  | Leaf => false
+  | Node l x r _ => f x ||| exists_ f l ||| exists_ f r
+end.
+
+(** * Fold *)
+
+Fixpoint fold (A : Type) (f : elt -> A -> A)(s : tree) : A -> A := 
+ fun a => match s with
+  | Leaf => a
+  | Node l x r _ => fold f r (f x (fold f l a))
+ end.
+Implicit Arguments fold [A].
+
+
+(** * Subset *)
+
+(** In ocaml, recursive calls are made on "half-trees" such as 
+   (Node l1 x1 Leaf _) and (Node Leaf x1 r1 _). Instead of these
+   non-structural calls, we propose here two specialized functions for
+   these situations. This version should be almost as efficient as 
+   the one of ocaml (closures as arguments may slow things a bit),  
+   it is simply less compact. The exact ocaml version has also been
+   formalized (thanks to Function+measure), see [ocaml_subset] in 
+   [FSetFullAVL].
+ *)
+
+Fixpoint subsetl (subset_l1:t->bool) x1 s2 : bool := 
+ match s2 with 
+  | Leaf => false
+  | Node l2 x2 r2 h2 => 
+     match X.compare x1 x2 with 
+      | EQ _ => subset_l1 l2 
+      | LT _ => subsetl subset_l1 x1 l2
+      | GT _ => mem x1 r2 &&& subset_l1 s2
+     end
+ end.
+
+Fixpoint subsetr (subset_r1:t->bool) x1 s2 : bool := 
+ match s2 with 
+  | Leaf => false
+  | Node l2 x2 r2 h2 => 
+     match X.compare x1 x2 with 
+      | EQ _ => subset_r1 r2 
+      | LT _ => mem x1 l2 &&& subset_r1 s2
+      | GT _ => subsetr subset_r1 x1 r2
+     end
+ end.
+
+Fixpoint subset s1 s2 : bool := match s1, s2 with 
+  | Leaf, _ => true
+  | Node _ _ _ _, Leaf => false
+  | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
+     match X.compare x1 x2 with 
+      | EQ _ => subset l1 l2 &&& subset r1 r2
+      | LT _ => subsetl (subset l1) x1 l2 &&& subset r1 s2
+      | GT _ => subsetr (subset r1) x1 r2 &&& subset l1 s2
+     end
+ end.
+
+(** * A new comparison algorithm suggested by Xavier Leroy
+
+    Transformation in C.P.S. suggested by Benjamin Grégoire.
+    The original ocaml code (with non-structural recursive calls)
+    has also been formalized (thanks to Function+measure), see
+    [ocaml_compare] in [FSetFullAVL]. The following code with 
+    continuations computes dramatically faster in Coq, and 
+    should be almost as efficient after extraction.
+*)
+
+(** Enumeration of the elements of a tree *)
+
+Inductive enumeration :=
+ | End : enumeration
+ | More : elt -> tree -> enumeration -> enumeration.
+
+
+(** [cons t e] adds the elements of tree [t] on the head of 
+    enumeration [e]. *)
+
+Fixpoint cons s e : enumeration := 
+ match s with 
+  | Leaf => e
+  | Node l x r h => cons l (More x r e)
+ end.
+
+(** One step of comparison of elements *)
+
+Definition compare_more x1 (cont:enumeration->comparison) e2 :=
+ match e2 with
+ | End => Gt
+ | More x2 r2 e2 =>
+     match X.compare x1 x2 with
+      | EQ _ => cont (cons r2 e2)
+      | LT _ => Lt
+      | GT _ => Gt
+     end
+ end.
+
+(** Comparison of left tree, middle element, then right tree *)
+
+Fixpoint compare_cont s1 (cont:enumeration->comparison) e2 := 
+ match s1 with
+  | Leaf => cont e2
+  | Node l1 x1 r1 _ =>
+     compare_cont l1 (compare_more x1 (compare_cont r1 cont)) e2
+  end.
+
+(** Initial continuation *)
+
+Definition compare_end e2 := 
+ match e2 with End => Eq | _ => Lt end.
+
+(** The complete comparison *)
+
+Definition compare s1 s2 := compare_cont s1 compare_end (cons s2 End).
+
+(** * Equality test *)
+
+Definition equal s1 s2 : bool := 
+ match compare s1 s2 with 
+  | Eq => true
+  | _ => false 
+ end.
+
+
+
+
+(** * Invariants *)
+
+(** ** Occurrence in a tree *)
 
 Inductive In (x : elt) : tree -> Prop :=
   | IsRoot : forall l r h y, X.eq x y -> In x (Node l y r h)
   | InLeft : forall l r h y, In x l -> In x (Node l y r h)
   | InRight : forall l r h y, In x r -> In x (Node l y r h).
 
-(** * Binary search trees *)
+(** ** Binary search trees *)
 
 (** [lt_tree x s]: all elements in [s] are smaller than [x] 
    (resp. greater for [gt_tree]) *)
@@ -122,10 +528,51 @@ Inductive bst : tree -> Prop :=
   | BSNode : forall x l r h, bst l -> bst r -> 
      lt_tree x l -> gt_tree x r -> bst (Node l x r h).
 
+
+
+
+(** * Some shortcuts *)
+
+Definition Equal s s' := forall a : elt, In a s <-> In a s'.
+Definition Subset s s' := forall a : elt, In a s -> In a s'.
+Definition Empty s := forall a : elt, ~ In a s.
+Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
+Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
+
+
+
+(** * Correctness proofs, isolated in a sub-module *)
+
+Module Proofs.
+ Module MX := OrderedTypeFacts X.
+ Module L := FSetList.Raw X.
+
+(** * Helper lemma about [orb], [andb], [pair] *)
+
+Lemma andb_alt : forall a b : bool, a &&& b = a && b.
+Proof.
+ destruct a; simpl; auto.
+Qed.
+
+Lemma orb_alt : forall a b : bool, a ||| b = a || b.
+Proof.
+ destruct a; simpl; auto.
+Qed.
+
+Lemma distr_pair : forall (A B:Type)(s:A*B)(a:A)(b:B), s = (a,b) -> 
+ s#1 = a /\ s#2 = b.
+Proof.
+ destruct s; simpl; injection 1; auto.
+Qed.
+
 (** * Automation and dedicated tactics *)
 
 Hint Constructors In bst.
 Hint Unfold lt_tree gt_tree.
+
+Tactic Notation "factornode" ident(l) ident(x) ident(r) ident(h) 
+ "as" ident(s) :=  
+ set (s:=Node l x r h) in *; clearbody s; clear l x r h.
 
 (** A tactic to repeat [inversion_clear] on all hyps of the 
     form [(f (Node _ _ _ _))] *)
@@ -222,19 +669,24 @@ Qed.
 
 Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans.
 
+(** * Inductions principles *)
 
-(** * Some shortcuts. *)
-
-Definition Equal s s' := forall a : elt, In a s <-> In a s'.
-Definition Subset s s' := forall a : elt, In a s -> In a s'.
-Definition Empty s := forall a : elt, ~ In a s.
-Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
-Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
+Functional Scheme mem_ind := Induction for mem Sort Prop.
+Functional Scheme bal_ind := Induction for bal Sort Prop. 
+Functional Scheme add_ind := Induction for add Sort Prop.
+Functional Scheme remove_min_ind := Induction for remove_min Sort Prop.
+Functional Scheme merge_ind := Induction for merge Sort Prop. 
+Functional Scheme remove_ind := Induction for remove Sort Prop.
+Functional Scheme min_elt_ind := Induction for min_elt Sort Prop.
+Functional Scheme max_elt_ind := Induction for max_elt Sort Prop.
+Functional Scheme concat_ind := Induction for concat Sort Prop.
+Functional Scheme split_ind := Induction for split Sort Prop.
+Functional Scheme inter_ind := Induction for inter Sort Prop.
+Functional Scheme diff_ind := Induction for diff Sort Prop.
+Functional Scheme union_ind := Induction for union Sort Prop.
 
 
 (** * Empty set *)
-
-Definition empty := Leaf.
 
 Lemma empty_1 : Empty empty.
 Proof.
@@ -247,10 +699,7 @@ Proof.
  auto.
 Qed.
 
-
 (** * Emptyness test *)
-
-Definition is_empty (s:t) := match s with Leaf => true | _ => false end.
 
 Lemma is_empty_1 : forall s, Empty s -> is_empty s = true. 
 Proof.
@@ -267,19 +716,6 @@ Qed.
 
 (** * Appartness *)
 
-(** The [mem] function is deciding appartness. It exploits the [bst] property
-    to achieve logarithmic complexity. *)
-
-Function mem (x:elt)(s:t) { struct s } : bool := 
-   match s with 
-     |  Leaf => false 
-     |  Node l y r _ => match X.compare x y with 
-             | LT _ => mem x l 
-             | EQ _ => true
-             | GT _ => mem x r
-         end
-   end.
-
 Lemma mem_1 : forall s x, bst s -> In x s -> mem x s = true.
 Proof.
  intros s x; functional induction mem x s; auto; intros; try clear e0; 
@@ -294,8 +730,6 @@ Qed.
 
 
 (** * Singleton set *)
-
-Definition singleton (x : elt) := Node Leaf x Leaf 1.
 
 Lemma singleton_1 : forall x y, In y (singleton x) -> X.eq x y. 
 Proof. 
@@ -316,12 +750,6 @@ Qed.
 
 (** * Helper functions *)
 
-(** [create l x r] creates a node, assuming [l] and [r]
-    to be balanced and [|height l - height r| <= 2]. *)
-
-Definition create l x r := 
-   Node l x r (max (height l) (height r) + 1).
-
 Lemma create_in : 
  forall l x r y,  In y (create l x r) <-> X.eq y x \/ In y l \/ In y r.
 Proof.
@@ -335,45 +763,6 @@ Proof.
  unfold create; auto.
 Qed.
 Hint Resolve create_bst.
-
-
-(** [bal l x r] acts as [create], but performs one step of
-    rebalancing if necessary, i.e. assumes [|height l - height r| <= 3]. *)
-
-Definition assert_false := create.
-
-Function bal (l:t)(x:elt)(r:t) : t := 
-  let hl := height l in 
-  let hr := height r in
-  if gt_le_dec hl (hr+2) then 
-    match l with 
-     | Leaf => assert_false l x r
-     | Node ll lx lr _ => 
-       if ge_lt_dec (height ll) (height lr) then 
-         create ll lx (create lr x r)
-       else 
-         match lr with 
-          | Leaf => assert_false l x r
-          | Node lrl lrx lrr _ => 
-              create (create ll lx lrl) lrx (create lrr x r)
-         end
-    end
-  else 
-    if gt_le_dec hr (hl+2) then 
-      match r with
-       | Leaf => assert_false l x r
-       | Node rl rx rr _ =>
-         if ge_lt_dec (height rr) (height rl) then 
-            create (create l x rl) rx rr
-         else 
-           match rl with
-            | Leaf => assert_false l x r
-            | Node rll rlx rlr _ => 
-                create (create l x rll) rlx (create rlr rx rr) 
-           end
-      end
-    else 
-      create l x r. 
 
 Lemma bal_in : forall l x r y, 
  In y (bal l x r) <-> X.eq y x \/ In y l \/ In y r.
@@ -393,17 +782,8 @@ Qed.
 Hint Resolve bal_bst.
 
 
-(** * Insertion *)
 
-Function add (x:elt)(s:t) { struct s } : t := match s with 
-   | Leaf => Node Leaf x Leaf 1
-   | Node l y r h => 
-      match X.compare x y with
-         | LT _ => bal (add x l) y r
-         | EQ _ => Node l y r h
-         | GT _ => bal l y (add x r)
-      end
-  end.
+(** * Insertion *)
 
 Lemma add_in : forall s x y,
  In y (add x s) <-> X.eq y x \/ In y s.
@@ -435,26 +815,10 @@ Hint Resolve add_bst.
 
 
 
-(** * Join
+(** * Join *)
 
-    Same as [bal] but does not assume anything regarding heights
-    of [l] and [r].
-*)
-
-Fixpoint join (l:t) : elt -> t -> t :=
-  match l with
-    | Leaf => add
-    | Node ll lx lr lh => fun x => 
-       fix join_aux (r:t) : t := match r with 
-          | Leaf =>  add x l
-          | Node rl rx rr rh =>  
-               if gt_le_dec lh (rh+2) then bal ll lx (join lr x r)
-               else if gt_le_dec rh (lh+2) then bal (join_aux rl) rx rr 
-               else create l x r
-          end
-  end.
-
-(* Function can't deal with internal fix. Let's do its job by hand: *)
+(* Function/Functional Scheme can't deal with internal fix. 
+   Let's do its job by hand: *)
 
 Ltac join_tac := 
  intro l; induction l as [| ll _ lx lr Hlr lh]; 
@@ -495,19 +859,7 @@ Hint Resolve join_bst.
 
 
 
-(** * Extraction of minimum element
-
-  Morally, [remove_min] is to be applied to a non-empty tree 
-  [t = Node l x r h]. Since we can't deal here with [assert false] 
-  for [t=Leaf], we pre-unpack [t] (and forget about [h]). 
-*)
- 
-Function remove_min (l:t)(x:elt)(r:t) { struct l } : t*elt := 
-  match l with 
-    | Leaf => (r,x)
-    | Node ll lx lr lh => 
-       let (l',m) := remove_min ll lx lr in (bal l' x r, m)
-  end.
+(** * Extraction of minimum element *)
 
 Lemma remove_min_in : forall l x r h y, 
  In y (Node l x r h) <-> 
@@ -521,7 +873,7 @@ Qed.
 Lemma remove_min_bst : forall l x r h, 
  bst (Node l x r h) -> bst (remove_min l x r)#1.
 Proof.
- intros l x r; functional induction (remove_min l x r); subst;simpl in *; intros.
+ intros l x r; functional induction (remove_min l x r); simpl; intros.
  inv bst; auto.
  inversion_clear H.
  specialize IHp with (1:=H0); rewrite e0 in IHp; auto.
@@ -534,7 +886,7 @@ Lemma remove_min_gt_tree : forall l x r h,
  bst (Node l x r h) ->
  gt_tree (remove_min l x r)#2 (remove_min l x r)#1.
 Proof.
- intros l x r; functional induction (remove_min l x r); subst;simpl in *; intros.
+ intros l x r; functional induction (remove_min l x r); simpl; intros.
  inv bst; auto.
  inversion_clear H.
  specialize IHp with (1:=H0); rewrite e0 in IHp; simpl in IHp.
@@ -546,24 +898,13 @@ Hint Resolve remove_min_bst remove_min_gt_tree.
 
 
 
-(** * Merging two trees
-
-  [merge t1 t2] builds the union of [t1] and [t2] assuming all elements
-  of [t1] to be smaller than all elements of [t2], and
-  [|height t1 - height t2| <= 2].
-*)
-
-Function merge (s1 s2 :t) : t:=  match s1,s2 with 
-  | Leaf, _ => s2 
-  | _, Leaf => s1
-  | _, Node l2 x2 r2 h2 => 
-        let (s2',m) := remove_min l2 x2 r2 in bal s1 m s2'
-end.
+(** * Merging two trees *)
 
 Lemma merge_in : forall s1 s2 y,
  In y (merge s1 s2) <-> In y s1 \/ In y s2.
 Proof.
- intros s1 s2; functional induction (merge s1 s2); subst; simpl in *; intros.
+ intros s1 s2; functional induction (merge s1 s2); intros; 
+ try factornode _x _x0 _x1 _x2 as s1.
  intuition_in.
  intuition_in.
  rewrite bal_in, remove_min_in, e1; simpl; intuition.
@@ -573,7 +914,8 @@ Lemma merge_bst : forall s1 s2, bst s1 -> bst s2 ->
  (forall y1 y2 : elt, In y1 s1 -> In y2 s2 -> X.lt y1 y2) -> 
  bst (merge s1 s2).
 Proof.
- intros s1 s2; functional induction (merge s1 s2); subst; simpl in *; intros; auto; clear y.
+ intros s1 s2; functional induction (merge s1 s2); intros; auto; 
+ try factornode _x _x0 _x1 _x2 as s1.
  apply bal_bst; auto.
  change s2' with ((s2',m)#1); rewrite <-e1; eauto.
  intros y Hy.
@@ -587,21 +929,10 @@ Hint Resolve merge_bst.
 
 (** * Deletion *)
 
-Function remove (x:elt)(s:t) { struct s } : t := match s with 
-  | Leaf => Leaf
-  | Node l y r h =>
-      match X.compare x y with
-         | LT _ => bal (remove x l) y r
-         | EQ _ => merge l r
-         | GT _ => bal l  y (remove x r)
-      end
-   end.
-
 Lemma remove_in : forall s x y, bst s ->
  (In y (remove x s) <-> ~ X.eq y x /\ In y s).
 Proof.
- intros s x; functional induction (remove x s); subst; simpl; 
-  intros; inv bst.
+ intros s x; functional induction (remove x s); intros; inv bst.
  intuition_in.
  rewrite bal_in, IHt; clear e0 IHt; intuition; [order|order|intuition_in].
  rewrite merge_in; clear e0; intuition; [order|order|intuition_in].
@@ -611,8 +942,7 @@ Qed.
 
 Lemma remove_bst : forall s x, bst s -> bst (remove x s).
 Proof. 
- intros s x; functional induction (remove x s); simpl; 
-  intros; inv bst.
+ intros s x; functional induction (remove x s); intros; inv bst.
  auto.
  (* LT *)
  apply bal_bst; auto.
@@ -626,103 +956,79 @@ Qed.
 Hint Resolve remove_bst.
 
 
-
 (** * Minimum element *)
-
-Function min_elt (s:t) : option elt := match s with 
-   | Leaf => None
-   | Node Leaf y _  _ => Some y
-   | Node l _ _ _ => min_elt l
-end.
 
 Lemma min_elt_1 : forall s x, min_elt s = Some x -> In x s. 
 Proof. 
- intro s; functional induction (min_elt s); subst; simpl.
- inversion 1.
- inversion 1; auto.
- intros.
- destruct l; auto.
+ intro s; functional induction (min_elt s); auto; inversion 1; auto.
 Qed.
 
 Lemma min_elt_2 : forall s x y, bst s ->
  min_elt s = Some x -> In y s -> ~ X.lt y x. 
 Proof.
- intro s; functional induction (min_elt s); subst;simpl.
+ intro s; functional induction (min_elt s); 
+ try rename _x1 into l1, _x2 into x1, _x3 into r1, _x4 into h1.
  inversion_clear 2.
  inversion_clear 1.
  inversion 1; subst.
  inversion_clear 1; auto.
  inversion_clear H5.
- destruct l;try contradiction.
  inversion_clear 1.
  simpl.
  destruct l1.
  inversion 1; subst.
- assert (X.lt x _x) by (apply H2; auto).
+ assert (X.lt x y) by (apply H2; auto).
  inversion_clear 1; auto; order.
- assert (X.lt t _x) by auto.
+ assert (X.lt x1 y) by auto.
  inversion_clear 2; auto; 
-   (assert (~ X.lt t x) by auto); order.
+   (assert (~ X.lt x1 x) by auto); order.
 Qed.
 
 Lemma min_elt_3 : forall s, min_elt s = None -> Empty s.
 Proof.
- intro s; functional induction (min_elt s); subst;simpl.
- red; auto.
+ intro s; functional induction (min_elt s).
+ red; red; inversion 2.
  inversion 1.
- destruct l;try contradiction. 
- clear y;intro H0.
- destruct (IHo H0 t);  auto.
+ intro H0.
+ destruct (IHo H0 _x2); auto.
 Qed.
 
 
 
 (** * Maximum element *)
 
-Function max_elt (s:t) : option elt := match s with 
-   | Leaf => None
-   | Node _ y Leaf  _ => Some y
-   | Node _ _ r _ => max_elt r
-end.
-
 Lemma max_elt_1 : forall s x, max_elt s = Some x -> In x s. 
 Proof. 
- intro s; functional induction (max_elt s); subst;simpl.
- inversion 1.
- inversion 1; auto.
- destruct r;try contradiction; auto.
+ intro s; functional induction (max_elt s); auto; inversion 1; auto.
 Qed.
 
 Lemma max_elt_2 : forall s x y, bst s -> 
  max_elt s = Some x -> In y s -> ~ X.lt x y. 
 Proof.
- intro s; functional induction (max_elt s); subst;simpl.
+ intro s; functional induction (max_elt s);
+ try rename _x1 into l1, _x2 into x1, _x3 into r1, _x4 into h1.
  inversion_clear 2.
  inversion_clear 1.
  inversion 1; subst.
  inversion_clear 1; auto.
  inversion_clear H5.
- destruct r;try contradiction.
  inversion_clear 1.
- assert (X.lt _x0 t) by auto.
+ assert (X.lt y x1) by auto.
  inversion_clear 2; auto; 
-  (assert (~ X.lt x t) by auto); order.
+  (assert (~ X.lt x x1) by auto); order.
 Qed.
 
 Lemma max_elt_3 : forall s, max_elt s = None -> Empty s.
 Proof.
- intro s; functional induction (max_elt s); subst;simpl.
+ intro s; functional induction (max_elt s).
  red; auto.
  inversion 1.
- destruct r;try contradiction.
- intros H0; destruct (IHo H0 t); auto.
+ intros H0; destruct (IHo H0 _x2); auto.
 Qed.
 
 
 
 (** * Any element *)
-
-Definition choose := min_elt.
 
 Lemma choose_1 : forall s x, choose s = Some x -> In x s.
 Proof. 
@@ -749,25 +1055,13 @@ Proof.
 Qed.
 
 
-
-(** * Concatenation
-
-    Same as [merge] but does not assume anything about heights.
-*)
-
-Function concat (s1 s2 : t) : t  := 
-   match s1, s2 with 
-      | Leaf, _ => s2 
-      | _, Leaf => s1
-      | _, Node l2 x2 r2 h2 => 
-            let (s2',m) := remove_min l2 x2 r2 in 
-            join s1 m s2'
-   end.
+(** * Concatenation *)
 
 Lemma concat_in : forall s1 s2 y, 
  In y (concat s1 s2) <-> In y s1 \/ In y s2.
 Proof.
- intros s1 s2; functional induction (concat s1 s2);subst;simpl;intros.
+ intros s1 s2; functional induction (concat s1 s2); intros;
+ try factornode _x _x0 _x1 _x2 as s1.
  intuition_in.
  intuition_in.
  rewrite join_in, remove_min_in, e1; simpl; intuition.
@@ -777,8 +1071,9 @@ Lemma concat_bst :   forall s1 s2, bst s1 -> bst s2 ->
  (forall y1 y2 : elt, In y1 s1 -> In y2 s2 -> X.lt y1 y2) -> 
  bst (concat s1 s2).
 Proof. 
- intros s1 s2; functional induction (concat s1 s2); subst; auto; clear y.
- intros; apply join_bst; auto.
+ intros s1 s2; functional induction (concat s1 s2); intros; auto; 
+ try factornode _x _x0 _x1 _x2 as s1.
+ apply join_bst; auto.
  change (bst (s2',m)#1); rewrite <-e1; eauto.
  intros y Hy.
  apply H1; auto.
@@ -788,33 +1083,12 @@ Qed.
 Hint Resolve concat_bst.
 
 
-
-(** * Splitting 
-
-    [split x s] returns a triple [(l, present, r)] where
-    - [l] is the set of elements of [s] that are [< x]
-    - [r] is the set of elements of [s] that are [> x]
-    - [present] is [true] if and only if [s] contains  [x].
-*)
-
-Function split (x:elt)(s:t) { struct s } : t * (bool * t) := match s with 
-  | Leaf => (Leaf, (false, Leaf))
-  | Node l y r h => 
-     match X.compare x y with 
-      | LT _ => match split x l with 
-                 | (ll,(pres,rl)) => (ll, (pres, join rl y r))
-                end
-      | EQ _ => (l, (true, r))
-      | GT _ => match split x r with 
-                 | (rl,(pres,rr)) => (join l y rl, (pres, rr))
-                end
-     end
- end.
+(** * Splitting *)
 
 Lemma split_in_1 : forall s x y, bst s -> 
  (In y (split x s)#1 <-> In y s /\ X.lt y x).
 Proof.
- intros s x; functional induction (split x s); subst; simpl; intros; 
+ intros s x; functional induction (split x s); simpl; intros; 
   inv bst; try clear e0.
  intuition_in.
  rewrite e1 in IHp; simpl in IHp; rewrite IHp; intuition_in; order.
@@ -862,22 +1136,12 @@ Qed.
 
 (** * Intersection *)
 
-Function inter (s1 s2 : t) { struct s1 } : t := match s1, s2 with 
-    | Leaf, _ => Leaf
-    | _, Leaf => Leaf
-    | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
-            match split x1 s2 with
-               | (l2',(true,r2')) => join (inter l1 l2') x1 (inter r1 r2')
-               | (l2',(false,r2')) => concat (inter l1 l2') (inter r1 r2')
-            end
-    end.
-
 Lemma inter_bst_in : forall s1 s2, bst s1 -> bst s2 -> 
  bst (inter s1 s2) /\ (forall y, In y (inter s1 s2) <-> In y s1 /\ In y s2).
 Proof.
  intros s1 s2; functional induction inter s1 s2; intros B1 B2; 
  [intuition_in|intuition_in | | ]; 
- set (r:=Node l2 x2 r2 h2) in *; 
+ factornode _x0 _x1 _x2 _x3 as s2; 
  generalize (split_bst x1 B2); 
   rewrite e1; simpl; destruct 1; inv bst; 
  destruct IHt as (IHb1,IHi1); auto; 
@@ -896,7 +1160,7 @@ Proof.
  (* In concat *)
  intros.
  rewrite concat_in, IHi1, IHi2, <- H5, <- H8, split_in_1, split_in_2; auto.
- assert (~In x1 r) by (rewrite <- split_in_3, H7; auto).
+ assert (~In x1 s2) by (rewrite <- split_in_3, H7; auto).
  intuition_in.
  elim H6.
  apply In_1 with y; auto.
@@ -914,25 +1178,14 @@ Proof.
 Qed.
 
 
-
 (** * Difference *)
-
-Function diff (s1 s2 : t) { struct s1 } : t := match s1, s2 with 
- | Leaf, _ => Leaf
- | _, Leaf => s1
- | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
-    match split x1 s2 with 
-      | (l2',(true,r2')) => concat (diff l1 l2') (diff r1 r2')
-      | (l2',(false,r2')) => join (diff l1 l2') x1 (diff r1 r2')
-    end
-end.
 
 Lemma diff_bst_in : forall s1 s2, bst s1 -> bst s2 -> 
  bst (diff s1 s2) /\ (forall y, In y (diff s1 s2) <-> In y s1 /\ ~In y s2).
 Proof.
  intros s1 s2; functional induction diff s1 s2; intros B1 B2; 
  [intuition_in|intuition_in | | ]; 
- set (r:=Node l2 x2 r2 h2) in *; 
+ factornode _x0 _x1 _x2 _x3 as s2; 
  generalize (split_bst x1 B2); 
   rewrite e1; simpl; destruct 1; 
  inv avl; inv bst; 
@@ -953,7 +1206,7 @@ Proof.
  (* In join *)
  intros.
  rewrite join_in, IHi1, IHi2, <-H5, <-H8, split_in_1, split_in_2; auto.
- assert (~In x1 r) by (rewrite <- split_in_3, H7; auto).
+ assert (~In x1 s2) by (rewrite <- split_in_3, H7; auto).
  intuition_in.
  elim H6.
  apply In_1 with y; auto.
@@ -971,28 +1224,7 @@ Proof.
 Qed.
 
 
-
 (** * Union *)
-
-(** In ocaml, heights of [s1] and [s2] are compared each time in order
-   to recursively perform the split on the smaller set.
-   Unfortunately, this leads to a non-structural algorithm. The
-   following code is a simplification of the ocaml version: no
-   comparison of heights. It might be slightly slower, but
-   experimentally all the tests I've made in ocaml have shown this
-   potential slowdown to be non-significant. Anyway, the exact code
-   of ocaml has also been formalized thanks to Function+measure, see
-   [ocaml_union] in [FSetFullAVL].  
-*)
-
-Function union (s1 s2 : t) { struct s1 } : t := 
- match s1, s2 with 
-  | Leaf, _ => s2
-  | Node _ _ _ _, Leaf => s1
-  | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
-     let (l2',r2') := split x1 s2 in 
-     join (union l1 l2') x1 (union r1 r2'#2)
- end.
 
 Lemma union_in : forall s1 s2 y, bst s1 -> bst s2 -> 
  (In y (union s1 s2) <-> In y s1 \/ In y s2).
@@ -1024,21 +1256,7 @@ Proof.
 Qed.
 
 
-
 (** * Elements *)
-
-(** [elements_tree_aux acc t] catenates the elements of [t] in infix
-    order to the list [acc] *)
-
-Fixpoint elements_aux (acc : list X.t) (t : tree) {struct t} : list X.t :=
-  match t with
-   | Leaf => acc
-   | Node l x r _ => elements_aux (x :: elements_aux acc r) l
-  end.
-
-(** then [elements] is an instanciation with an empty [acc] *)
-
-Definition elements := elements_aux nil.
 
 Lemma elements_aux_in : forall s acc x, 
  InA X.eq x (elements_aux acc s) <-> In x s \/ InA X.eq x acc.
@@ -1108,17 +1326,9 @@ Qed.
 Section F.
 Variable f : elt -> bool.
 
-Fixpoint filter_acc (acc:t)(s:t) { struct s } : t := match s with 
-  | Leaf => acc
-  | Node l x r h => 
-     filter_acc (filter_acc (if f x then add x acc else acc) l) r 
- end.
-
-Definition filter := filter_acc Leaf. 
-
 Lemma filter_acc_in : forall s acc, 
  compat_bool X.eq f -> forall x : elt, 
- In x (filter_acc acc s) <-> In x acc \/ In x s /\ f x = true.
+ In x (filter_acc f acc s) <-> In x acc \/ In x s /\ f x = true.
 Proof.  
  induction s; simpl; intros.
  intuition_in.
@@ -1134,7 +1344,7 @@ Proof.
 Qed.
 
 Lemma filter_acc_bst : forall s acc, bst s -> bst acc -> 
- bst (filter_acc acc s).
+ bst (filter_acc f acc s).
 Proof.
  induction s; simpl; auto.
  intros.
@@ -1144,12 +1354,12 @@ Qed.
 
 Lemma filter_in : forall s,
  compat_bool X.eq f -> forall x : elt, 
- In x (filter s) <-> In x s /\ f x = true.
+ In x (filter f s) <-> In x s /\ f x = true.
 Proof.
  unfold filter; intros; rewrite filter_acc_in; intuition_in.
 Qed.
 
-Lemma filter_bst : forall s, bst s -> bst (filter s). 
+Lemma filter_bst : forall s, bst s -> bst (filter f s). 
 Proof.
  unfold filter; intros; apply filter_acc_bst; auto.
 Qed.
@@ -1158,21 +1368,9 @@ Qed.
 
 (** * Partition *)
 
-Fixpoint partition_acc (acc : t*t)(s : t) { struct s } : t*t := 
-  match s with 
-   | Leaf => acc
-   | Node l x r _ => 
-      let (acct,accf) := acc in 
-      partition_acc 
-        (partition_acc 
-           (if f x then (add x acct, accf) else (acct, add x accf)) l) r
-  end. 
-
-Definition partition := partition_acc (Leaf,Leaf).
-
 Lemma partition_acc_in_1 : forall s acc, 
  compat_bool X.eq f -> forall x : elt, 
- In x (partition_acc acc s)#1 <-> 
+ In x (partition_acc f acc s)#1 <-> 
  In x acc#1 \/ In x s /\ f x = true.
 Proof.  
  induction s; simpl; intros.
@@ -1193,7 +1391,7 @@ Qed.
 
 Lemma partition_acc_in_2 : forall s acc, 
  compat_bool X.eq f -> forall x : elt, 
- In x (partition_acc acc s)#2 <-> 
+ In x (partition_acc f acc s)#2 <-> 
  In x acc#2 \/ In x s /\ f x = false.
 Proof.  
  induction s; simpl; intros.
@@ -1215,7 +1413,7 @@ Qed.
 
 Lemma partition_in_1 : forall s, 
  compat_bool X.eq f -> forall x : elt, 
- In x (partition s)#1 <-> In x s /\ f x = true.
+ In x (partition f s)#1 <-> In x s /\ f x = true.
 Proof.
  unfold partition; intros; rewrite partition_acc_in_1; 
  simpl in *; intuition_in.
@@ -1223,14 +1421,14 @@ Qed.
 
 Lemma partition_in_2 : forall s,
  compat_bool X.eq f -> forall x : elt, 
- In x (partition s)#2 <-> In x s /\ f x = false.
+ In x (partition f s)#2 <-> In x s /\ f x = false.
 Proof.
  unfold partition; intros; rewrite partition_acc_in_2; 
  simpl in *; intuition_in.
 Qed. 
 
 Lemma partition_acc_bst_1 : forall s acc, bst s -> bst acc#1 -> 
- bst (partition_acc acc s)#1.
+ bst (partition_acc f acc s)#1.
 Proof.
  induction s; simpl; auto.
  destruct acc as [acct accf]; simpl in *.
@@ -1242,7 +1440,7 @@ Proof.
 Qed.
 
 Lemma partition_acc_bst_2 : forall s acc, bst s -> bst acc#2 -> 
- bst (partition_acc acc s)#2.
+ bst (partition_acc f acc s)#2.
 Proof.
  induction s; simpl; auto.
  destruct acc as [acct accf]; simpl in *.
@@ -1253,12 +1451,12 @@ Proof.
  apply IHs1; simpl; auto.
 Qed.
 
-Lemma partition_bst_1 : forall s, bst s -> bst (partition s)#1. 
+Lemma partition_bst_1 : forall s, bst s -> bst (partition f s)#1. 
 Proof.
  unfold partition; intros; apply partition_acc_bst_1; auto.
 Qed.
 
-Lemma partition_bst_2 : forall s, bst s -> bst (partition s)#2. 
+Lemma partition_bst_2 : forall s, bst s -> bst (partition f s)#2. 
 Proof.
  unfold partition; intros; apply partition_acc_bst_2; auto.
 Qed.
@@ -1267,13 +1465,8 @@ Qed.
 
 (** * [for_all] and [exists] *)
 
-Fixpoint for_all (s:t) : bool := match s with 
-  | Leaf => true
-  | Node l x r _ => f x &&& for_all l &&& for_all r
-end.
-
 Lemma for_all_1 : forall s, compat_bool X.eq f ->
- For_all (fun x => f x = true) s -> for_all s = true.
+ For_all (fun x => f x = true) s -> for_all f s = true.
 Proof.
  induction s; simpl; auto.
  intros.
@@ -1284,7 +1477,7 @@ Proof.
 Qed.
 
 Lemma for_all_2 : forall s, compat_bool X.eq f ->
- for_all s = true -> For_all (fun x => f x = true) s.
+ for_all f s = true -> For_all (fun x => f x = true) s.
 Proof.
  induction s; simpl; auto; intros; red; intros; inv In.
  destruct (andb_prop _ _ H0); auto.
@@ -1296,13 +1489,8 @@ Proof.
  destruct (andb_prop _ _ H0); auto.
 Qed.
 
-Fixpoint exists_ (s:t) : bool := match s with 
-  | Leaf => false
-  | Node l x r _ => f x ||| exists_ l ||| exists_ r
-end.  
-
 Lemma exists_1 : forall s, compat_bool X.eq f ->
- Exists (fun x => f x = true) s -> exists_ s = true.
+ Exists (fun x => f x = true) s -> exists_ f s = true.
 Proof.
  induction s; simpl; destruct 2 as (x,(U,V)); inv In; rewrite ? orb_alt.
  rewrite (H _ _ (X.eq_sym H0)); rewrite V; auto.
@@ -1312,7 +1500,7 @@ Proof.
 Qed.
 
 Lemma exists_2 : forall s, compat_bool X.eq f ->
- exists_ s = true -> Exists (fun x => f x = true) s.
+ exists_ f s = true -> Exists (fun x => f x = true) s.
 Proof. 
  induction s; simpl; intros; rewrite ? orb_alt in *.
  discriminate.
@@ -1328,15 +1516,6 @@ End F.
 
 
 (** * Fold *)
-
-Module L := FSetList.Raw X.
-
-Fixpoint fold (A : Type) (f : elt -> A -> A)(s : tree) {struct s} : A -> A := 
- fun a => match s with
-  | Leaf => a
-  | Node l x r _ => fold f r (f x (fold f l a))
- end.
-Implicit Arguments fold [A].
 
 Definition fold' (A : Type) (f : elt -> A -> A)(s : tree) := 
   L.fold f (elements s).
@@ -1377,52 +1556,7 @@ Proof.
  apply elements_sort; auto.
 Qed.
 
-
-
 (** * Subset *)
-
-(** In ocaml, recursive calls are made on "half-trees" such as 
-   (Node l1 x1 Leaf _) and (Node Leaf x1 r1 _). Instead of these
-   non-structural calls, we propose here two specialized functions for
-   these situations. This version should be almost as efficient as 
-   the one of ocaml (closures as arguments may slow things a bit),  
-   it is simply less compact. The exact ocaml version has also been
-   formalized (thanks to Function+measure), see [ocaml_subset] in 
-   [FSetFullAVL].
- *)
-
-Fixpoint subsetl (subset_l1:t->bool) x1 s2 : bool := 
- match s2 with 
-  | Leaf => false
-  | Node l2 x2 r2 h2 => 
-     match X.compare x1 x2 with 
-      | EQ _ => subset_l1 l2 
-      | LT _ => subsetl subset_l1 x1 l2
-      | GT _ => mem x1 r2 &&& subset_l1 s2
-     end
- end.
-
-Fixpoint subsetr (subset_r1:t->bool) x1 s2 : bool := 
- match s2 with 
-  | Leaf => false
-  | Node l2 x2 r2 h2 => 
-     match X.compare x1 x2 with 
-      | EQ _ => subset_r1 r2 
-      | LT _ => mem x1 l2 &&& subset_r1 s2
-      | GT _ => subsetr subset_r1 x1 r2
-     end
- end.
-
-Fixpoint subset s1 s2 : bool := match s1, s2 with 
-  | Leaf, _ => true
-  | Node _ _ _ _, Leaf => false
-  | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
-     match X.compare x1 x2 with 
-      | EQ _ => subset l1 l2 &&& subset r1 r2
-      | LT _ => subsetl (subset l1) x1 l2 &&& subset r1 s2
-      | GT _ => subsetr (subset r1) x1 r2 &&& subset l1 s2
-     end
- end.
 
 Lemma subsetl_12 : forall subset_l1 l1 x1 h1 s2,
  bst (Node l1 x1 Leaf h1) -> bst s2 ->
@@ -1527,6 +1661,9 @@ Qed.
 
 (** ** Relations [eq] and [lt] over trees *)
 
+Definition eq := Equal.
+Definition lt (s1 s2 : t) : Prop := L.lt (elements s1) (elements s2).
+
 Lemma eq_refl : forall s : t, Equal s s. 
 Proof.
  unfold Equal; intuition.
@@ -1557,8 +1694,6 @@ Proof.
 Qed.
 Hint Resolve eq_L_eq L_eq_eq.
 
-Definition lt (s1 s2 : t) : Prop := L.lt (elements s1) (elements s2).
-
 Definition lt_trans (s s' s'' : t) (h : lt s s') 
   (h' : lt s' s'') : lt s s'' := L.lt_trans h h'.
 
@@ -1582,21 +1717,7 @@ Qed.
 Hint Resolve L_eq_cons.
 
 
-(** * A new comparison algorithm suggested by Xavier Leroy
-
-    Transformation in C.P.S. suggested by Benjamin Grégoire.
-    The original ocaml code (with non-structural recursive calls)
-    has also been formalized (thanks to Function+measure), see
-    [ocaml_compare] in [FSetFullAVL]. The following code with 
-    continuations computes dramatically faster in Coq, and 
-    should be almost as efficient after extraction.
-*)
-
-(** ** Enumeration of the elements of a tree *)
-
-Inductive enumeration :=
- | End : enumeration
- | More : elt -> tree -> enumeration -> enumeration.
+(** * A new comparison algorithm suggested by Xavier Leroy *)
 
 (** [flatten_e e] returns the list of elements of [e] i.e. the list
     of elements actually compared *)
@@ -1605,22 +1726,6 @@ Fixpoint flatten_e (e : enumeration) : list elt := match e with
   | End => nil
   | More x t r => x :: elements t ++ flatten_e r
  end.
-
-(** [sorted_e e] expresses that elements in the enumeration [e] are
-    sorted, and that all trees in [e] are binary search trees. *)
-
-Inductive In_e (x:elt) : enumeration -> Prop :=
-  | InEHd1 :
-      forall (y : elt) (s : tree) (e : enumeration),
-      X.eq x y -> In_e x (More y s e)
-  | InEHd2 :
-      forall (y : elt) (s : tree) (e : enumeration),
-      In x s -> In_e x (More y s e)
-  | InETl :
-      forall (y : elt) (s : tree) (e : enumeration),
-      In_e x e -> In_e x (More y s e).
-
-Hint Constructors In_e.
 
 Lemma elements_app :
  forall s acc, elements_aux acc s = elements s ++ acc.
@@ -1640,8 +1745,6 @@ Proof.
  rewrite !elements_app, <- !app_nil_end, !app_ass; auto.
 Qed.
 
-(** key lemma for correctness *)
-
 Lemma flatten_e_elements :
  forall l x r h e,
  elements l ++ flatten_e (More x r e) = elements (Node l x r h) ++ flatten_e e.
@@ -1649,52 +1752,12 @@ Proof.
  intros; simpl; apply compare_flatten_1.
 Qed.
 
-(** [cons t e] adds the elements of tree [t] on the head of 
-    enumeration [e]. *)
-
-Fixpoint cons s e : enumeration := 
- match s with 
-  | Leaf => e
-  | Node l x r h => cons l (More x r e)
- end.
-
 Lemma cons_1 : forall s e, 
   flatten_e (cons s e) = elements s ++ flatten_e e.
 Proof.
  induction s; simpl; auto; intros.
  rewrite IHs1; apply flatten_e_elements.
 Qed.
-
-(** One step of comparison of elements *)
-
-Definition compare_more x1 (cont:enumeration->comparison) e2 :=
- match e2 with
- | End => Gt
- | More x2 r2 e2 =>
-     match X.compare x1 x2 with
-      | EQ _ => cont (cons r2 e2)
-      | LT _ => Lt
-      | GT _ => Gt
-     end
- end.
-
-(** Comparison of left tree, middle element, then right tree *)
-
-Fixpoint compare_cont s1 (cont:enumeration->comparison) e2 := 
- match s1 with
-  | Leaf => cont e2
-  | Node l1 x1 r1 _ =>
-     compare_cont l1 (compare_more x1 (compare_cont r1 cont)) e2
-  end.
-
-(** Initial continuation *)
-
-Definition compare_end e2 := 
- match e2 with End => Eq | _ => Lt end.
-
-(** The complete comparison *)
-
-Definition compare s1 s2 := compare_cont s1 compare_end (cons s2 End).
 
 (** Correctness of this comparison *)
 
@@ -1754,12 +1817,6 @@ Qed.
 
 (** * Equality test *)
 
-Definition equal s1 s2 : bool := 
- match compare s1 s2 with 
-  | Eq => true
-  | _ => false 
- end.
-
 Lemma equal_1 : forall s1 s2, bst s1 -> bst s2 ->  
  Equal s1 s2 -> equal s1 s2 = true.
 Proof.
@@ -1778,6 +1835,8 @@ generalize (compare_Cmp s1 s2);
  destruct compare; auto; discriminate.
 Qed.
 
+End Proofs.
+
 End Raw.
 
 
@@ -1795,6 +1854,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
 
  Module E := X.
  Module Raw := Raw I X.
+ Import Raw.Proofs.
 
  Record bst := Bst {this :> Raw.t; is_bst : Raw.bst this}.
  Definition t := bst.
@@ -1808,18 +1868,18 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition Exists (P : elt -> Prop) (s:t) := exists x, In x s /\ P x.
 
  Lemma In_1 : forall (s:t)(x y:elt), E.eq x y -> In x s -> In y s. 
- Proof. intro s; exact (@Raw.In_1 s). Qed.
+ Proof. intro s; exact (@In_1 s). Qed.
  
  Definition mem (x:elt)(s:t) : bool := Raw.mem x s.
 
- Definition empty : t := Bst Raw.empty_bst.
+ Definition empty : t := Bst empty_bst.
  Definition is_empty (s:t) : bool := Raw.is_empty s.
- Definition singleton (x:elt) : t := Bst (Raw.singleton_bst x).
- Definition add (x:elt)(s:t) : t := Bst (Raw.add_bst x (is_bst s)). 
- Definition remove (x:elt)(s:t) : t := Bst (Raw.remove_bst x (is_bst s)).
- Definition inter (s s':t) : t := Bst (Raw.inter_bst (is_bst s) (is_bst s')).
- Definition union (s s':t) : t := Bst (Raw.union_bst (is_bst s) (is_bst s')).
- Definition diff (s s':t) : t := Bst (Raw.diff_bst (is_bst s) (is_bst s')).
+ Definition singleton (x:elt) : t := Bst (singleton_bst x).
+ Definition add (x:elt)(s:t) : t := Bst (add_bst x (is_bst s)). 
+ Definition remove (x:elt)(s:t) : t := Bst (remove_bst x (is_bst s)).
+ Definition inter (s s':t) : t := Bst (inter_bst (is_bst s) (is_bst s')).
+ Definition union (s s':t) : t := Bst (union_bst (is_bst s) (is_bst s')).
+ Definition diff (s s':t) : t := Bst (diff_bst (is_bst s) (is_bst s')).
  Definition elements (s:t) : list elt := Raw.elements s.
  Definition min_elt (s:t) : option elt := Raw.min_elt s.
  Definition max_elt (s:t) : option elt := Raw.max_elt s.
@@ -1827,24 +1887,24 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Definition fold (B : Type) (f : elt -> B -> B) (s:t) : B -> B := Raw.fold f s.
  Definition cardinal (s:t) : nat := Raw.cardinal s.
  Definition filter (f : elt -> bool) (s:t) : t := 
-   Bst (Raw.filter_bst f (is_bst s)).
+   Bst (filter_bst f (is_bst s)).
  Definition for_all (f : elt -> bool) (s:t) : bool := Raw.for_all f s.
  Definition exists_ (f : elt -> bool) (s:t) : bool := Raw.exists_ f s.
  Definition partition (f : elt -> bool) (s:t) : t * t :=
    let p := Raw.partition f s in
-   (@Bst (fst p) (Raw.partition_bst_1 f (is_bst s)), 
-    @Bst (snd p) (Raw.partition_bst_2 f (is_bst s))).
+   (@Bst (fst p) (partition_bst_1 f (is_bst s)), 
+    @Bst (snd p) (partition_bst_2 f (is_bst s))).
 
  Definition equal (s s':t) : bool := Raw.equal s s'.
  Definition subset (s s':t) : bool := Raw.subset s s'.
 
  Definition eq (s s':t) : Prop := Raw.Equal s s'.
- Definition lt (s s':t) : Prop := Raw.lt s s'.
+ Definition lt (s s':t) : Prop := Raw.Proofs.lt s s'.
 
  Definition compare (s s':t) : Compare lt eq s s'.
  Proof.
   intros (s,b) (s',b').
-  generalize (Raw.compare_Cmp s s').
+  generalize (compare_Cmp s s').
   destruct Raw.compare; intros; [apply EQ|apply LT|apply GT]; red; auto.
  Defined.
 
@@ -1856,113 +1916,111 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Hint Resolve is_bst.
  
  Lemma mem_1 : In x s -> mem x s = true. 
- Proof. exact (Raw.mem_1 (is_bst s)). Qed.
+ Proof. exact (mem_1 (is_bst s)). Qed.
  Lemma mem_2 : mem x s = true -> In x s.
- Proof. exact (@Raw.mem_2 s x). Qed.
+ Proof. exact (@mem_2 s x). Qed.
 
  Lemma equal_1 : Equal s s' -> equal s s' = true.
- Proof. exact (Raw.equal_1 (is_bst s) (is_bst s')). Qed.
+ Proof. exact (equal_1 (is_bst s) (is_bst s')). Qed.
  Lemma equal_2 : equal s s' = true -> Equal s s'.
- Proof. exact (@Raw.equal_2 s s'). Qed.
+ Proof. exact (@equal_2 s s'). Qed.
 
  Ltac wrap t H := unfold t, In; simpl; rewrite H; auto; intuition.
 
  Lemma subset_1 : Subset s s' -> subset s s' = true.
- Proof. wrap subset Raw.subset_12. Qed.
+ Proof. wrap subset subset_12. Qed.
  Lemma subset_2 : subset s s' = true -> Subset s s'.
- Proof. wrap subset Raw.subset_12. Qed.
+ Proof. wrap subset subset_12. Qed.
 
  Lemma empty_1 : Empty empty.
- Proof. exact Raw.empty_1. Qed.
+ Proof. exact empty_1. Qed.
 
  Lemma is_empty_1 : Empty s -> is_empty s = true.
- Proof. exact (@Raw.is_empty_1 s). Qed.
+ Proof. exact (@is_empty_1 s). Qed.
  Lemma is_empty_2 : is_empty s = true -> Empty s. 
- Proof. exact (@Raw.is_empty_2 s). Qed.
+ Proof. exact (@is_empty_2 s). Qed.
  
  Lemma add_1 : E.eq x y -> In y (add x s).
- Proof. wrap add Raw.add_in. Qed.
+ Proof. wrap add add_in. Qed.
  Lemma add_2 : In y s -> In y (add x s).
- Proof. wrap add Raw.add_in. Qed.
+ Proof. wrap add add_in. Qed.
  Lemma add_3 : ~ E.eq x y -> In y (add x s) -> In y s. 
- Proof. wrap add Raw.add_in. elim H; auto. Qed.
+ Proof. wrap add add_in. elim H; auto. Qed.
 
  Lemma remove_1 : E.eq x y -> ~ In y (remove x s).
- Proof. wrap remove Raw.remove_in. Qed.
+ Proof. wrap remove remove_in. Qed.
  Lemma remove_2 : ~ E.eq x y -> In y s -> In y (remove x s).
- Proof. wrap remove Raw.remove_in. Qed.
+ Proof. wrap remove remove_in. Qed.
  Lemma remove_3 : In y (remove x s) -> In y s.
- Proof. wrap remove Raw.remove_in. Qed.
+ Proof. wrap remove remove_in. Qed.
 
  Lemma singleton_1 : In y (singleton x) -> E.eq x y. 
- Proof. exact (@Raw.singleton_1 x y). Qed.
+ Proof. exact (@singleton_1 x y). Qed.
  Lemma singleton_2 : E.eq x y -> In y (singleton x). 
- Proof. exact (@Raw.singleton_2 x y). Qed.
+ Proof. exact (@singleton_2 x y). Qed.
 
  Lemma union_1 : In x (union s s') -> In x s \/ In x s'.
- Proof. wrap union Raw.union_in. Qed.
+ Proof. wrap union union_in. Qed.
  Lemma union_2 : In x s -> In x (union s s'). 
- Proof. wrap union Raw.union_in. Qed.
+ Proof. wrap union union_in. Qed.
  Lemma union_3 : In x s' -> In x (union s s').
- Proof. wrap union Raw.union_in. Qed.
+ Proof. wrap union union_in. Qed.
 
  Lemma inter_1 : In x (inter s s') -> In x s.
- Proof. wrap inter Raw.inter_in. Qed.
+ Proof. wrap inter inter_in. Qed.
  Lemma inter_2 : In x (inter s s') -> In x s'.
- Proof. wrap inter Raw.inter_in. Qed.
+ Proof. wrap inter inter_in. Qed.
  Lemma inter_3 : In x s -> In x s' -> In x (inter s s').
- Proof. wrap inter Raw.inter_in. Qed.
+ Proof. wrap inter inter_in. Qed.
  
  Lemma diff_1 : In x (diff s s') -> In x s. 
- Proof. wrap diff Raw.diff_in. Qed.
+ Proof. wrap diff diff_in. Qed.
  Lemma diff_2 : In x (diff s s') -> ~ In x s'.
- Proof. wrap diff Raw.diff_in. Qed.
+ Proof. wrap diff diff_in. Qed.
  Lemma diff_3 : In x s -> ~ In x s' -> In x (diff s s').
- Proof. wrap diff Raw.diff_in. Qed.
+ Proof. wrap diff diff_in. Qed.
  
  Lemma fold_1 : forall (A : Type) (i : A) (f : elt -> A -> A),
       fold f s i = fold_left (fun a e => f e a) (elements s) i.
- Proof. 
- unfold fold, elements; intros; apply Raw.fold_1; auto.
- Qed.
+ Proof. unfold fold, elements; intros; apply fold_1; auto. Qed.
 
  Lemma cardinal_1 : cardinal s = length (elements s).
  Proof. 
- unfold cardinal, elements; intros; apply Raw.elements_cardinal; auto.
+ unfold cardinal, elements; intros; apply elements_cardinal; auto.
  Qed.
 
  Section Filter.
  Variable f : elt -> bool.
 
  Lemma filter_1 : compat_bool E.eq f -> In x (filter f s) -> In x s. 
- Proof. intro. wrap filter Raw.filter_in. Qed.
+ Proof. intro. wrap filter filter_in. Qed.
  Lemma filter_2 : compat_bool E.eq f -> In x (filter f s) -> f x = true. 
- Proof. intro. wrap filter Raw.filter_in. Qed. 
+ Proof. intro. wrap filter filter_in. Qed. 
  Lemma filter_3 : compat_bool E.eq f -> In x s -> f x = true -> In x (filter f s).
- Proof. intro. wrap filter Raw.filter_in. Qed.
+ Proof. intro. wrap filter filter_in. Qed.
 
  Lemma for_all_1 : compat_bool E.eq f -> For_all (fun x => f x = true) s -> for_all f s = true.
- Proof. exact (@Raw.for_all_1 f s). Qed.
+ Proof. exact (@for_all_1 f s). Qed.
  Lemma for_all_2 : compat_bool E.eq f -> for_all f s = true -> For_all (fun x => f x = true) s.
- Proof. exact (@Raw.for_all_2 f s). Qed.
+ Proof. exact (@for_all_2 f s). Qed.
 
  Lemma exists_1 : compat_bool E.eq f -> Exists (fun x => f x = true) s -> exists_ f s = true.
- Proof. exact (@Raw.exists_1 f s). Qed.
+ Proof. exact (@exists_1 f s). Qed.
  Lemma exists_2 : compat_bool E.eq f -> exists_ f s = true -> Exists (fun x => f x = true) s.
- Proof. exact (@Raw.exists_2 f s). Qed.
+ Proof. exact (@exists_2 f s). Qed.
 
  Lemma partition_1 : compat_bool E.eq f -> 
   Equal (fst (partition f s)) (filter f s).
  Proof.
  unfold partition, filter, Equal, In; simpl ;intros H a.
- rewrite Raw.partition_in_1, Raw.filter_in; intuition.
+ rewrite partition_in_1, filter_in; intuition.
  Qed.
 
  Lemma partition_2 : compat_bool E.eq f -> 
   Equal (snd (partition f s)) (filter (fun x => negb (f x)) s).
  Proof.
  unfold partition, filter, Equal, In; simpl ;intros H a.
- rewrite Raw.partition_in_2, Raw.filter_in; intuition.
+ rewrite partition_in_2, filter_in; intuition.
  rewrite H2; auto.
  destruct (f a); auto.
  red; intros; f_equal.
@@ -1972,47 +2030,47 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  End Filter.
 
  Lemma elements_1 : In x s -> InA E.eq x (elements s).
- Proof. wrap elements Raw.elements_in. Qed.
+ Proof. wrap elements elements_in. Qed.
  Lemma elements_2 : InA E.eq x (elements s) -> In x s.
- Proof. wrap elements Raw.elements_in. Qed.
+ Proof. wrap elements elements_in. Qed.
  Lemma elements_3 : sort E.lt (elements s).
- Proof. exact (Raw.elements_sort (is_bst s)). Qed.
+ Proof. exact (elements_sort (is_bst s)). Qed.
  Lemma elements_3w : NoDupA E.eq (elements s).
- Proof. exact (Raw.elements_nodup (is_bst s)). Qed.
+ Proof. exact (elements_nodup (is_bst s)). Qed.
 
  Lemma min_elt_1 : min_elt s = Some x -> In x s. 
- Proof. exact (@Raw.min_elt_1 s x). Qed.
+ Proof. exact (@min_elt_1 s x). Qed.
  Lemma min_elt_2 : min_elt s = Some x -> In y s -> ~ E.lt y x.
- Proof. exact (@Raw.min_elt_2 s x y (is_bst s)). Qed.
+ Proof. exact (@min_elt_2 s x y (is_bst s)). Qed.
  Lemma min_elt_3 : min_elt s = None -> Empty s.
- Proof. exact (@Raw.min_elt_3 s). Qed.
+ Proof. exact (@min_elt_3 s). Qed.
 
  Lemma max_elt_1 : max_elt s = Some x -> In x s. 
- Proof. exact (@Raw.max_elt_1 s x). Qed.
+ Proof. exact (@max_elt_1 s x). Qed.
  Lemma max_elt_2 : max_elt s = Some x -> In y s -> ~ E.lt x y.
- Proof. exact (@Raw.max_elt_2 s x y (is_bst s)). Qed.
+ Proof. exact (@max_elt_2 s x y (is_bst s)). Qed.
  Lemma max_elt_3 : max_elt s = None -> Empty s.
- Proof. exact (@Raw.max_elt_3 s). Qed.
+ Proof. exact (@max_elt_3 s). Qed.
 
  Lemma choose_1 : choose s = Some x -> In x s.
- Proof. exact (@Raw.choose_1 s x). Qed.
+ Proof. exact (@choose_1 s x). Qed.
  Lemma choose_2 : choose s = None -> Empty s.
- Proof. exact (@Raw.choose_2 s). Qed.
+ Proof. exact (@choose_2 s). Qed.
  Lemma choose_3 : choose s = Some x -> choose s' = Some y -> 
   Equal s s' -> E.eq x y.
- Proof. exact (@Raw.choose_3 _ _ (is_bst s) (is_bst s') x y). Qed.
+ Proof. exact (@choose_3 _ _ (is_bst s) (is_bst s') x y). Qed.
 
  Lemma eq_refl : eq s s. 
- Proof. exact (Raw.eq_refl s). Qed.
+ Proof. exact (eq_refl s). Qed.
  Lemma eq_sym : eq s s' -> eq s' s.
- Proof. exact (@Raw.eq_sym s s'). Qed.
+ Proof. exact (@eq_sym s s'). Qed.
  Lemma eq_trans : eq s s' -> eq s' s'' -> eq s s''.
- Proof. exact (@Raw.eq_trans s s' s''). Qed.
+ Proof. exact (@eq_trans s s' s''). Qed.
   
  Lemma lt_trans : lt s s' -> lt s' s'' -> lt s s''.
- Proof. exact (@Raw.lt_trans s s' s''). Qed.
+ Proof. exact (@lt_trans s s' s''). Qed.
  Lemma lt_not_eq : lt s s' -> ~eq s s'.
- Proof. exact (@Raw.lt_not_eq _ _ (is_bst s) (is_bst s')). Qed.
+ Proof. exact (@lt_not_eq _ _ (is_bst s) (is_bst s')). Qed.
 
  End Specs.
 End IntMake.

@@ -37,6 +37,7 @@ Unset Strict Implicit.
 
 Module AvlProofs (Import I:Int)(X:OrderedType).
 Module Import Raw := Raw I X.
+Import Raw.Proofs.
 Module Import II := MoreInt I.
 Open Local Scope Int_scope.
 
@@ -273,7 +274,7 @@ Proof.
  inv avl; simpl in *; split; auto.
  avl_nns; omega_max.
  inversion_clear H.
- rewrite e0 in IHp;simpl in IHp;destruct (IHp lh); auto.
+ rewrite e0 in IHp;simpl in IHp;destruct (IHp _x); auto.
  split; simpl in *. 
  apply bal_avl; auto; omega_max.
  omega_bal.
@@ -292,16 +293,16 @@ Lemma merge_avl_1 : forall s1 s2, avl s1 -> avl s2 ->
  avl (merge s1 s2) /\ 
  0<= height (merge s1 s2) - max (height s1) (height s2) <=1.
 Proof.
- intros s1 s2; functional induction (merge s1 s2); subst;simpl in *; intros.
- split; auto; avl_nns; omega_max.
- split; auto; avl_nns; simpl in *; omega_max.
- destruct s1;try contradiction;clear y.
+ intros s1 s2; functional induction (merge s1 s2); intros; 
+ try factornode _x _x0 _x1 _x2 as s1.
+ simpl; split; auto; avl_nns; omega_max.
+ simpl; split; auto; avl_nns; simpl in *; omega_max.
  generalize (remove_min_avl_1 H0).
- rewrite e1; simpl; destruct 1.
+ rewrite e1; destruct 1.
  split.
  apply bal_avl; auto.
  simpl; omega_max.
- omega_bal.
+ simpl in *; omega_bal.
 Qed.
 
 Lemma merge_avl : forall s1 s2, avl s1 -> avl s2 -> 
@@ -316,7 +317,7 @@ Qed.
 Lemma remove_avl_1 : forall s x, avl s -> 
  avl (remove x s) /\ 0 <= height s - height (remove x s) <= 1.
 Proof.
- intros s x; functional induction (remove x s); subst;simpl; intros.
+ intros s x; functional induction (remove x s); intros.
  intuition; omega_max.
  (* LT *)
  inv avl.
@@ -348,8 +349,7 @@ Hint Resolve remove_avl.
 
 Lemma concat_avl : forall s1 s2, avl s1 -> avl s2 -> avl (concat s1 s2).
 Proof.
- intros s1 s2; functional induction (concat s1 s2); subst;auto.
- destruct s1;try contradiction;clear y.
+ intros s1 s2; functional induction (concat s1 s2); auto.
  intros; apply join_avl; auto.
  generalize (remove_min_avl H0); rewrite e1; simpl; auto.
 Qed.
@@ -360,8 +360,7 @@ Hint Resolve concat_avl.
 Lemma split_avl : forall s x, avl s -> 
   avl (split x s)#1 /\ avl (split x s)#2#2.
 Proof. 
- intros s x; functional induction (split x s);subst;simpl in *.
- auto.
+ intros s x; functional induction (split x s); simpl; auto.
  rewrite e1 in IHp;simpl in IHp;inversion_clear 1; intuition.
  simpl; inversion_clear 1; auto.
  rewrite e1 in IHp;simpl in IHp;inversion_clear 1; intuition.
@@ -453,6 +452,7 @@ End AvlProofs.
 Module OcamlOps (Import I:Int)(X:OrderedType).
 Module Import AvlProofs := AvlProofs I X.
 Import Raw.
+Import Raw.Proofs.
 Import II.
 Open Local Scope nat_scope.
 
@@ -475,17 +475,17 @@ Qed.
 Lemma join_cardinal : forall l x r, 
  cardinal (join l x r) <= S (cardinal l + cardinal r).
 Proof.
- join_tac; simpl; auto with arith.
- apply add_cardinal.
- destruct X.compare; simpl; auto with arith.
+ join_tac; auto with arith.
+ simpl; apply add_cardinal.
+ simpl; destruct X.compare; simpl; auto with arith.
  generalize (bal_cardinal (add x ll) lx lr) (add_cardinal x ll); 
   romega with *.
  generalize (bal_cardinal ll lx (add x lr)) (add_cardinal x lr); 
   romega with *.
  generalize (bal_cardinal ll lx (join lr x (Node rl rx rr rh)))
   (Hlr x (Node rl rx rr rh)); simpl; romega with *.
- generalize (bal_cardinal (join (Node ll lx lr lh) x rl) rx rr).
- simpl in *; romega with *.
+ simpl S in *; generalize (bal_cardinal (join (Node ll lx lr lh) x rl) rx rr).
+ romega with *.
 Qed.
 
 Lemma split_cardinal_1 : forall x s, 
@@ -519,6 +519,8 @@ Ltac ocaml_union_tac :=
   generalize (split_cardinal_1 x s) (split_cardinal_2 x s); 
   rewrite H; simpl; romega with *
  end.
+
+Import Logic. (* Unhide eq, otherwise Function complains. *)
 
 Function ocaml_union (s : t * t) { measure cardinal2 s } : t  :=
  match s with 
@@ -830,6 +832,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  Module Import OcamlOps := OcamlOps I X.
  Import AvlProofs.
  Import Raw.
+ Import Raw.Proofs.
 
  Record bbst := Bbst {this :> Raw.t; is_bst : bst this; is_avl : avl this}.
  Definition t := bbst.
@@ -847,7 +850,7 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
  
  Definition mem (x:elt)(s:t) : bool := mem x s.
 
- Definition empty : t := Bbst Raw.empty_bst empty_avl.
+ Definition empty : t := Bbst empty_bst empty_avl.
  Definition is_empty (s:t) : bool := is_empty s.
  Definition singleton (x:elt) : t := 
    Bbst (singleton_bst x) (singleton_avl x).
