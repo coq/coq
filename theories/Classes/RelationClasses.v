@@ -50,74 +50,74 @@ Proof. reflexivity. Qed.
 
 (** We rebind relations in separate classes to be able to overload each proof. *)
 
-Class reflexive A (R : relation A) :=
+Class Reflexive A (R : relation A) :=
   reflexivity : forall x, R x x.
 
-Class irreflexive A (R : relation A) := 
+Class Irreflexive A (R : relation A) := 
   irreflexivity : forall x, R x x -> False.
 
-Class symmetric A (R : relation A) := 
+Class Symmetric A (R : relation A) := 
   symmetry : forall x y, R x y -> R y x.
 
-Class asymmetric A (R : relation A) := 
+Class Asymmetric A (R : relation A) := 
   asymmetry : forall x y, R x y -> R y x -> False.
 
-Class transitive A (R : relation A) := 
+Class Transitive A (R : relation A) := 
   transitivity : forall x y z, R x y -> R y z -> R x z.
 
-Implicit Arguments reflexive [A].
-Implicit Arguments irreflexive [A].
-Implicit Arguments symmetric [A].
-Implicit Arguments asymmetric [A].
-Implicit Arguments transitive [A].
+Implicit Arguments Reflexive [A].
+Implicit Arguments Irreflexive [A].
+Implicit Arguments Symmetric [A].
+Implicit Arguments Asymmetric [A].
+Implicit Arguments Transitive [A].
 
 Hint Resolve @irreflexivity : ord.
 
 (** We can already dualize all these properties. *)
 
-Program Instance [ ! reflexive A R ] => flip_reflexive : reflexive (flip R) :=
+Program Instance [ ! Reflexive A R ] => flip_Reflexive : Reflexive (flip R) :=
   reflexivity := reflexivity (R:=R).
 
-Program Instance [ ! irreflexive A R ] => flip_irreflexive : irreflexive (flip R) :=
+Program Instance [ ! Irreflexive A R ] => flip_Irreflexive : Irreflexive (flip R) :=
   irreflexivity := irreflexivity (R:=R).
 
-Program Instance [ ! symmetric A R ] => flip_symmetric : symmetric (flip R).
+Program Instance [ ! Symmetric A R ] => flip_Symmetric : Symmetric (flip R).
 
-  Solve Obligations using unfold flip ; program_simpl ; clapply symmetric.
+  Solve Obligations using unfold flip ; program_simpl ; clapply Symmetric.
 
-Program Instance [ ! asymmetric A R ] => flip_asymmetric : asymmetric (flip R).
+Program Instance [ ! Asymmetric A R ] => flip_Asymmetric : Asymmetric (flip R).
   
   Solve Obligations using program_simpl ; unfold flip in * ; intros ; clapply asymmetry.
 
-Program Instance [ ! transitive A R ] => flip_transitive : transitive (flip R).
+Program Instance [ ! Transitive A R ] => flip_Transitive : Transitive (flip R).
 
   Solve Obligations using unfold flip ; program_simpl ; clapply transitivity.
 
 (** Have to do it again for Prop. *)
 
-Program Instance [ ! reflexive A (R : relation A) ] => inverse_reflexive : reflexive (inverse R) :=
+Program Instance [ ! Reflexive A (R : relation A) ] => inverse_Reflexive : Reflexive (inverse R) :=
   reflexivity := reflexivity (R:=R).
 
-Program Instance [ ! irreflexive A (R : relation A) ] => inverse_irreflexive : irreflexive (inverse R) :=
+Program Instance [ ! Irreflexive A (R : relation A) ] => inverse_Irreflexive : Irreflexive (inverse R) :=
   irreflexivity := irreflexivity (R:=R).
 
-Program Instance [ ! symmetric A (R : relation A) ] => inverse_symmetric : symmetric (inverse R).
+Program Instance [ ! Symmetric A (R : relation A) ] => inverse_Symmetric : Symmetric (inverse R).
 
-  Solve Obligations using unfold inverse, flip ; program_simpl ; clapply symmetric.
+  Solve Obligations using unfold inverse, flip ; program_simpl ; clapply Symmetric.
 
-Program Instance [ ! asymmetric A (R : relation A) ] => inverse_asymmetric : asymmetric (inverse R).
+Program Instance [ ! Asymmetric A (R : relation A) ] => inverse_Asymmetric : Asymmetric (inverse R).
   
   Solve Obligations using program_simpl ; unfold inverse, flip in * ; intros ; clapply asymmetry.
 
-Program Instance [ ! transitive A (R : relation A) ] => inverse_transitive : transitive (inverse R).
+Program Instance [ ! Transitive A (R : relation A) ] => inverse_Transitive : Transitive (inverse R).
 
   Solve Obligations using unfold inverse, flip ; program_simpl ; clapply transitivity.
 
-Program Instance [ ! reflexive A (R : relation A) ] => 
-  reflexive_complement_irreflexive : irreflexive (complement R).
+Program Instance [ ! Reflexive A (R : relation A) ] => 
+  Reflexive_complement_Irreflexive : Irreflexive (complement R).
 
-Program Instance [ ! irreflexive A (R : relation A) ] => 
-  irreflexive_complement_reflexive : reflexive (complement R).
+Program Instance [ ! Irreflexive A (R : relation A) ] => 
+  Irreflexive_complement_Reflexive : Reflexive (complement R).
 
   Next Obligation. 
   Proof. 
@@ -125,7 +125,7 @@ Program Instance [ ! irreflexive A (R : relation A) ] =>
     apply (irreflexivity H).
   Qed.
 
-Program Instance [ ! symmetric A (R : relation A) ] => complement_symmetric : symmetric (complement R).
+Program Instance [ ! Symmetric A (R : relation A) ] => complement_Symmetric : Symmetric (complement R).
 
   Next Obligation.
   Proof.
@@ -155,34 +155,34 @@ Ltac obligations_tactic ::= simpl_relation.
 
 (** Logical implication. *)
 
-Program Instance impl_refl : reflexive impl.
-Program Instance impl_trans : transitive impl.
+Program Instance impl_refl : Reflexive impl.
+Program Instance impl_trans : Transitive impl.
 
 (** Logical equivalence. *)
 
-Program Instance iff_refl : reflexive iff.
-Program Instance iff_sym : symmetric iff.
-Program Instance iff_trans : transitive iff.
+Program Instance iff_refl : Reflexive iff.
+Program Instance iff_sym : Symmetric iff.
+Program Instance iff_trans : Transitive iff.
 
 (** Leibniz equality. *)
 
-Program Instance eq_refl : reflexive (@eq A).
-Program Instance eq_sym : symmetric (@eq A).
-Program Instance eq_trans : transitive (@eq A).
+Program Instance eq_refl : Reflexive (@eq A).
+Program Instance eq_sym : Symmetric (@eq A).
+Program Instance eq_trans : Transitive (@eq A).
 
 (** Various combinations of reflexivity, symmetry and transitivity. *)
 
-(** A [PreOrder] is both reflexive and transitive. *)
+(** A [PreOrder] is both Reflexive and Transitive. *)
 
 Class PreOrder A (R : relation A) :=
-  preorder_refl :> reflexive R ;
-  preorder_trans :> transitive R.
+  preorder_refl :> Reflexive R ;
+  preorder_trans :> Transitive R.
 
-(** A partial equivalence relation is symmetric and transitive. *)
+(** A partial equivalence relation is Symmetric and Transitive. *)
 
 Class PER (carrier : Type) (pequiv : relation carrier) :=
-  per_sym :> symmetric pequiv ;
-  per_trans :> transitive pequiv.
+  per_sym :> Symmetric pequiv ;
+  per_trans :> Transitive pequiv.
 
 (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
@@ -201,20 +201,20 @@ Program Instance [ PER A (R : relation A), PER B (R' : relation B) ] =>
 (** The [Equivalence] typeclass. *)
 
 Class Equivalence (carrier : Type) (equiv : relation carrier) :=
-  equiv_refl :> reflexive equiv ;
-  equiv_sym :> symmetric equiv ;
-  equiv_trans :> transitive equiv.
+  equiv_refl :> Reflexive equiv ;
+  equiv_sym :> Symmetric equiv ;
+  equiv_trans :> Transitive equiv.
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 
-Class [ Equivalence A eqA ] => antisymmetric (R : relation A) := 
+Class [ Equivalence A eqA ] => Antisymmetric (R : relation A) := 
   antisymmetry : forall x y, R x y -> R y x -> eqA x y.
 
-Program Instance [ eq : Equivalence A eqA, antisymmetric eq R ] => 
-  flip_antisymmetric : antisymmetric eq (flip R).
+Program Instance [ eq : Equivalence A eqA, Antisymmetric eq R ] => 
+  flip_antiSymmetric : Antisymmetric eq (flip R).
 
-Program Instance [ eq : Equivalence A eqA, antisymmetric eq (R : relation A) ] => 
-  inverse_antisymmetric : antisymmetric eq (inverse R).
+Program Instance [ eq : Equivalence A eqA, Antisymmetric eq (R : relation A) ] => 
+  inverse_antiSymmetric : Antisymmetric eq (inverse R).
 
 (** Leibinz equality [eq] is an equivalence relation. *)
 

@@ -15,15 +15,15 @@
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
 
-Require Import Coq.Program.Program.
-Require Import Coq.Classes.Init.
-
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Require Import Coq.Program.Program.
+
+Require Import Coq.Classes.Init.
 Require Export Coq.Classes.RelationClasses.
 Require Export Coq.Classes.Morphisms.
-Require Export Coq.Classes.Functions.
+Require Import Coq.Classes.Functions.
 
 (** A setoid wraps an equivalence. *)
 
@@ -40,13 +40,13 @@ Typeclasses unfold @equiv.
 
 (** Shortcuts to make proof search easier. *)
 
-Definition setoid_refl [ sa : Setoid A ] : reflexive equiv.
+Definition setoid_refl [ sa : Setoid A ] : Reflexive equiv.
 Proof. eauto with typeclass_instances. Qed.
 
-Definition setoid_sym [ sa : Setoid A ] : symmetric equiv.
+Definition setoid_sym [ sa : Setoid A ] : Symmetric equiv.
 Proof. eauto with typeclass_instances. Qed.
 
-Definition setoid_trans [ sa : Setoid A ] : transitive equiv.
+Definition setoid_trans [ sa : Setoid A ] : Transitive equiv.
 Proof. eauto with typeclass_instances. Qed.
 
 Existing Instance setoid_refl.
@@ -131,7 +131,7 @@ Implicit Arguments setoid_morphism [[!sa]].
 Existing Instance setoid_morphism.
 
 Program Definition setoid_partial_app_morphism [ sa : Setoid A ] (x : A) : Morphism (equiv ++> iff) (equiv x) :=
-  reflexive_partial_app_morphism.
+  Reflexive_partial_app_morphism.
 
 Existing Instance setoid_partial_app_morphism.
 

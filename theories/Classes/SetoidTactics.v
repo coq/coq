@@ -17,6 +17,8 @@
 
 Require Export Coq.Classes.RelationClasses.
 Require Export Coq.Classes.Morphisms.
+Require Export Coq.Classes.Equivalence.
+Require Export Coq.Relations.Relation_Definitions.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -64,6 +66,8 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id)
    and substitute leibniz equalities. One can redefine it using [Ltac add_morphism_tactic ::= t]. *)
 
 Require Import Coq.Program.Tactics.
+
+Open Local Scope signature_scope.
 
 Ltac red_subst_eq_morphism concl :=
   match concl with

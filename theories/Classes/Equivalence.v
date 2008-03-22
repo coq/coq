@@ -19,12 +19,14 @@ Require Export Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
 
 Require Import Coq.Classes.Init.
-Require Export Coq.Classes.RelationClasses.
+Require Import Relation_Definitions.
+Require Import Coq.Classes.RelationClasses.
 Require Export Coq.Classes.Morphisms.
-Require Export Coq.Classes.SetoidTactics.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
+
+Open Local Scope signature_scope.
 
 (** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
 
@@ -35,16 +37,16 @@ Definition equiv [ Equivalence A R ] : relation A := R.
 
 (** Shortcuts to make proof search possible (unification won't unfold equiv). *)
 
-Program Instance [ sa : ! Equivalence A ] => equiv_refl : reflexive equiv.
+Program Instance [ sa : ! Equivalence A ] => equiv_refl : Reflexive equiv.
 
-Program Instance [ sa : ! Equivalence A ] => equiv_sym : symmetric equiv.
+Program Instance [ sa : ! Equivalence A ] => equiv_sym : Symmetric equiv.
 
   Next Obligation.
   Proof.
     symmetry ; auto.
   Qed.
 
-Program Instance [ sa : ! Equivalence A ] => equiv_trans : transitive equiv.
+Program Instance [ sa : ! Equivalence A ] => equiv_trans : Transitive equiv.
 
   Next Obligation.
   Proof.
@@ -112,12 +114,12 @@ Ltac equivify_tac :=
 
 Ltac equivify := repeat equivify_tac.
 
-(** Every equivalence relation gives rise to a morphism, as it is transitive and symmetric. *)
+(** Every equivalence relation gives rise to a morphism, as it is Transitive and Symmetric. *)
 
 Instance [ sa : ! Equivalence ] => equiv_morphism : Morphism (equiv ++> equiv ++> iff) equiv :=
   respect := respect.
 
-(** The partial application too as it is reflexive. *)
+(** The partial application too as it is Reflexive. *)
 
 Instance [ sa : ! Equivalence A ] (x : A) => 
   equiv_partial_app_morphism : Morphism (equiv ++> iff) (equiv x) :=

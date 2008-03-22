@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C .. bin/coqtop.byte" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -423,6 +424,12 @@ let morphism_class =
 
 let respect_proj = lazy (mkConst (List.hd (Lazy.force morphism_class).cl_projs))
 
+let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
+
+let try_find_reference dir s =
+  let sp = Libnames.make_path (make_dir ("Coq"::dir)) (id_of_string s) in
+    constr_of_global (Nametab.absolute_reference sp)
+
 let gen_constant dir s = Coqlib.gen_constant "Class_setoid" dir s
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
@@ -431,14 +438,14 @@ let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
 let arrow = lazy (gen_constant ["Program"; "Basics"] "arrow")
 let coq_id = lazy (gen_constant ["Program"; "Basics"] "id")
 
-let reflexive_type = lazy (gen_constant ["Classes"; "RelationClasses"] "reflexive")
-let reflexive_proof = lazy (gen_constant ["Classes"; "RelationClasses"] "reflexivity")
+let reflexive_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Reflexive")
+let reflexive_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "reflexivity")
 
-let symmetric_type = lazy (gen_constant ["Classes"; "RelationClasses"] "symmetric")
-let symmetric_proof = lazy (gen_constant ["Classes"; "RelationClasses"] "symmetry")
+let symmetric_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Symmetric")
+let symmetric_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "symmetry")
 
-let transitive_type = lazy (gen_constant ["Classes"; "RelationClasses"] "transitive")
-let transitive_proof = lazy (gen_constant ["Classes"; "RelationClasses"] "transitivity")
+let transitive_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Transitive")
+let transitive_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "transitivity")
 
 let inverse = lazy (gen_constant ["Classes"; "RelationClasses"] "inverse")
 let complement = lazy (gen_constant ["Classes"; "RelationClasses"] "complement")
@@ -524,13 +531,13 @@ let reflexivity_proof_evar env evars carrier relation x =
 (* 	mkCast (mkMeta meta, DEFAULTcast, mkApp (relation, [| x; x |])) *)
 
 let find_class_proof proof_type proof_method env carrier relation =
-  let goal =
-    mkApp (Lazy.force proof_type, [| carrier ; relation |])
-  in
-    try 
-      let inst = resolve_one_typeclass env goal in
-	mkApp (Lazy.force proof_method, [| carrier ; relation ; inst |])
-    with e when Logic.catchable_exception e -> raise Not_found
+  try 
+    let goal =
+      mkApp (Lazy.force proof_type, [| carrier ; relation |])
+    in
+    let inst = resolve_one_typeclass env goal in
+      mkApp (Lazy.force proof_method, [| carrier ; relation ; inst |])
+  with e when Logic.catchable_exception e -> raise Not_found
 
 let reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
 let symmetric_proof env = find_class_proof symmetric_type symmetric_proof env
@@ -986,17 +993,17 @@ let init_setoid () =
   check_required_library ["Coq";"Setoids";"Setoid"]
 
 let declare_instance_refl a aeq n lemma = 
-  let instance = declare_instance a aeq (add_suffix n "_refl") "Coq.Classes.RelationClasses.reflexive" 
+  let instance = declare_instance a aeq (add_suffix n "_refl") "Coq.Classes.RelationClasses.Reflexive" 
   in anew_instance instance 
        [((dummy_loc,id_of_string "reflexivity"),[],lemma)]
 
 let declare_instance_sym a aeq n lemma = 
-  let instance = declare_instance a aeq (add_suffix n "_sym") "Coq.Classes.RelationClasses.symmetric"
+  let instance = declare_instance a aeq (add_suffix n "_sym") "Coq.Classes.RelationClasses.Symmetric"
   in anew_instance instance 
        [((dummy_loc,id_of_string "symmetry"),[],lemma)]
 
 let declare_instance_trans a aeq n lemma = 
-  let instance = declare_instance a aeq (add_suffix n "_trans") "Coq.Classes.RelationClasses.transitive" 
+  let instance = declare_instance a aeq (add_suffix n "_trans") "Coq.Classes.RelationClasses.Transitive" 
   in anew_instance instance 
        [((dummy_loc,id_of_string "transitivity"),[],lemma)]
 
@@ -1302,6 +1309,15 @@ let relation_of_constr c =
 	  mkApp (f, relargs), args
     | _ -> error "Not an applied relation"
 
+let is_loaded d =
+  let d' = List.map id_of_string d in
+  let dir = make_dirpath (List.rev d') in
+    Library.library_is_loaded dir
+
+let try_loaded f gl =
+  if is_loaded ["Coq";"Classes";"RelationClasses"] then f gl 
+  else tclFAIL 0 (str"You need to require Coq.Classes.RelationClasses first") gl
+    
 let setoid_reflexivity gl =
   let env = pf_env gl in
   let rel, args = relation_of_constr (pf_concl gl) in
@@ -1311,6 +1327,9 @@ let setoid_reflexivity gl =
       tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared reflexive relation")
 	gl
 
+(* let setoid_reflexivity gl = *)
+(*   try_loaded setoid_reflexivity gl *)
+	  
 let setoid_symmetry gl =
   let env = pf_env gl in
   let rel, args = relation_of_constr (pf_concl gl) in
@@ -1319,6 +1338,9 @@ let setoid_symmetry gl =
     with Not_found -> 
       tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared symmetric relation")
 	gl
+
+(* let setoid_symmetry gl = *)
+(*   try_loaded setoid_symmetry gl *)
 	
 let setoid_transitivity c gl =
   let env = pf_env gl in
@@ -1331,6 +1353,9 @@ let setoid_transitivity c gl =
       tclFAIL 0
 	(str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared transitive relation") gl
 	
+(* let setoid_transitivity c gl = *)
+(*   try_loaded (setoid_transitivity c) gl *)
+
 let setoid_symmetry_in id gl =
   let ctype = pf_type_of gl (mkVar id) in
   let binders,concl = Sign.decompose_prod_assum ctype in
@@ -1348,6 +1373,9 @@ let setoid_symmetry_in id gl =
       [ intro_replacing id;
 	tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ] ]
       gl
+
+(* let setoid_symmetry_in h gl = *)
+(*   try_loaded (setoid_symmetry_in h) gl *)
 
 let _ = Tactics.register_setoid_reflexivity setoid_reflexivity
 let _ = Tactics.register_setoid_symmetry setoid_symmetry
