@@ -133,7 +133,8 @@ let (current:pref ref) =
 	 then "NOTEPAD ", ""
 	 else "emacs ", "";
     
-    text_font = Pango.Font.from_string "sans 12";
+(*    text_font = Pango.Font.from_string "sans 12";*)
+    text_font = Pango.Font.from_string "Monospace 10";
 
     doc_url = "http://coq.inria.fr/doc/";
     library_url = "http://coq.inria.fr/library/";
