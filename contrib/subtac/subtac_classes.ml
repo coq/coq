@@ -107,7 +107,7 @@ let new_instance ctx (instid, bk, cl) props pri =
   let bound, fvs = Implicit_quantifiers.free_vars_of_binders ~bound [] ctx in
   let tclass =
     match bk with
-      | Explicit ->
+      | Implicit ->
 	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
 	  let k = class_info (Nametab.global id) in
 	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
@@ -128,7 +128,7 @@ let new_instance ctx (instid, bk, cl) props pri =
 	      par (List.rev k.cl_context)
 	    in Topconstr.CAppExpl (loc, (None, id), pars)
 
-      | Implicit -> cl
+      | Explicit -> cl
   in
   let ctx_bound = Idset.union bound (Implicit_quantifiers.ids_of_list fvs) in
   let gen_ids = Implicit_quantifiers.free_vars_of_constr_expr ~bound:ctx_bound tclass [] in

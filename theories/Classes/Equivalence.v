@@ -30,23 +30,23 @@ Open Local Scope signature_scope.
 
 (** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
 
-Instance [ ! Equivalence A R ] => 
+Instance [ Equivalence A R ] => 
   equivalence_default : DefaultRelation A R | 4.
 
 Definition equiv [ Equivalence A R ] : relation A := R.
 
 (** Shortcuts to make proof search possible (unification won't unfold equiv). *)
 
-Program Instance [ sa : ! Equivalence A ] => equiv_refl : Reflexive equiv.
+Program Instance [ sa : Equivalence A ] => equiv_refl : Reflexive equiv.
 
-Program Instance [ sa : ! Equivalence A ] => equiv_sym : Symmetric equiv.
+Program Instance [ sa : Equivalence A ] => equiv_sym : Symmetric equiv.
 
   Next Obligation.
   Proof.
     symmetry ; auto.
   Qed.
 
-Program Instance [ sa : ! Equivalence A ] => equiv_trans : Transitive equiv.
+Program Instance [ sa : Equivalence A ] => equiv_trans : Transitive equiv.
 
   Next Obligation.
   Proof.
@@ -81,7 +81,7 @@ Ltac clsubst_nofail :=
 
 Tactic Notation "clsubst" "*" := clsubst_nofail.
 
-Lemma nequiv_equiv_trans : forall [ ! Equivalence A ] (x y z : A), x =/= y -> y === z -> x =/= z.
+Lemma nequiv_equiv_trans : forall [ Equivalence A ] (x y z : A), x =/= y -> y === z -> x =/= z.
 Proof with auto.
   intros; intro.
   assert(z === y) by (symmetry ; auto).
@@ -89,7 +89,7 @@ Proof with auto.
   contradiction.
 Qed.
 
-Lemma equiv_nequiv_trans : forall [ ! Equivalence A ] (x y z : A), x === y -> y =/= z -> x =/= z.
+Lemma equiv_nequiv_trans : forall [ Equivalence A ] (x y z : A), x === y -> y =/= z -> x =/= z.
 Proof.
   intros; intro. 
   assert(y === x) by (symmetry ; auto).
@@ -116,12 +116,12 @@ Ltac equivify := repeat equivify_tac.
 
 (** Every equivalence relation gives rise to a morphism, as it is Transitive and Symmetric. *)
 
-Instance [ sa : ! Equivalence ] => equiv_morphism : Morphism (equiv ++> equiv ++> iff) equiv :=
+Instance [ sa : Equivalence ] => equiv_morphism : Morphism (equiv ++> equiv ++> iff) equiv :=
   respect := respect.
 
 (** The partial application too as it is Reflexive. *)
 
-Instance [ sa : ! Equivalence A ] (x : A) => 
+Instance [ sa : Equivalence A ] (x : A) => 
   equiv_partial_app_morphism : Morphism (equiv ++> iff) (equiv x) :=
   respect := respect. 
 

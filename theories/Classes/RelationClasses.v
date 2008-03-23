@@ -75,48 +75,48 @@ Hint Resolve @irreflexivity : ord.
 
 (** We can already dualize all these properties. *)
 
-Program Instance [ ! Reflexive A R ] => flip_Reflexive : Reflexive (flip R) :=
+Program Instance [ Reflexive A R ] => flip_Reflexive : Reflexive (flip R) :=
   reflexivity := reflexivity (R:=R).
 
-Program Instance [ ! Irreflexive A R ] => flip_Irreflexive : Irreflexive (flip R) :=
+Program Instance [ Irreflexive A R ] => flip_Irreflexive : Irreflexive (flip R) :=
   irreflexivity := irreflexivity (R:=R).
 
-Program Instance [ ! Symmetric A R ] => flip_Symmetric : Symmetric (flip R).
+Program Instance [ Symmetric A R ] => flip_Symmetric : Symmetric (flip R).
 
   Solve Obligations using unfold flip ; program_simpl ; clapply Symmetric.
 
-Program Instance [ ! Asymmetric A R ] => flip_Asymmetric : Asymmetric (flip R).
+Program Instance [ Asymmetric A R ] => flip_Asymmetric : Asymmetric (flip R).
   
   Solve Obligations using program_simpl ; unfold flip in * ; intros ; clapply asymmetry.
 
-Program Instance [ ! Transitive A R ] => flip_Transitive : Transitive (flip R).
+Program Instance [ Transitive A R ] => flip_Transitive : Transitive (flip R).
 
   Solve Obligations using unfold flip ; program_simpl ; clapply transitivity.
 
 (** Have to do it again for Prop. *)
 
-Program Instance [ ! Reflexive A (R : relation A) ] => inverse_Reflexive : Reflexive (inverse R) :=
+Program Instance [ Reflexive A (R : relation A) ] => inverse_Reflexive : Reflexive (inverse R) :=
   reflexivity := reflexivity (R:=R).
 
-Program Instance [ ! Irreflexive A (R : relation A) ] => inverse_Irreflexive : Irreflexive (inverse R) :=
+Program Instance [ Irreflexive A (R : relation A) ] => inverse_Irreflexive : Irreflexive (inverse R) :=
   irreflexivity := irreflexivity (R:=R).
 
-Program Instance [ ! Symmetric A (R : relation A) ] => inverse_Symmetric : Symmetric (inverse R).
+Program Instance [ Symmetric A (R : relation A) ] => inverse_Symmetric : Symmetric (inverse R).
 
   Solve Obligations using unfold inverse, flip ; program_simpl ; clapply Symmetric.
 
-Program Instance [ ! Asymmetric A (R : relation A) ] => inverse_Asymmetric : Asymmetric (inverse R).
+Program Instance [ Asymmetric A (R : relation A) ] => inverse_Asymmetric : Asymmetric (inverse R).
   
   Solve Obligations using program_simpl ; unfold inverse, flip in * ; intros ; clapply asymmetry.
 
-Program Instance [ ! Transitive A (R : relation A) ] => inverse_Transitive : Transitive (inverse R).
+Program Instance [ Transitive A (R : relation A) ] => inverse_Transitive : Transitive (inverse R).
 
   Solve Obligations using unfold inverse, flip ; program_simpl ; clapply transitivity.
 
-Program Instance [ ! Reflexive A (R : relation A) ] => 
+Program Instance [ Reflexive A (R : relation A) ] => 
   Reflexive_complement_Irreflexive : Irreflexive (complement R).
 
-Program Instance [ ! Irreflexive A (R : relation A) ] => 
+Program Instance [ Irreflexive A (R : relation A) ] => 
   Irreflexive_complement_Reflexive : Reflexive (complement R).
 
   Next Obligation. 
@@ -125,7 +125,7 @@ Program Instance [ ! Irreflexive A (R : relation A) ] =>
     apply (irreflexivity H).
   Qed.
 
-Program Instance [ ! Symmetric A (R : relation A) ] => complement_Symmetric : Symmetric (complement R).
+Program Instance [ Symmetric A (R : relation A) ] => complement_Symmetric : Symmetric (complement R).
 
   Next Obligation.
   Proof.
@@ -210,10 +210,10 @@ Class Equivalence (carrier : Type) (equiv : relation carrier) :=
 Class [ Equivalence A eqA ] => Antisymmetric (R : relation A) := 
   antisymmetry : forall x y, R x y -> R y x -> eqA x y.
 
-Program Instance [ eq : Equivalence A eqA, Antisymmetric eq R ] => 
+Program Instance [ eq : Equivalence A eqA, ! Antisymmetric eq R ] => 
   flip_antiSymmetric : Antisymmetric eq (flip R).
 
-Program Instance [ eq : Equivalence A eqA, Antisymmetric eq (R : relation A) ] => 
+Program Instance [ eq : Equivalence A eqA, ! Antisymmetric eq (R : relation A) ] => 
   inverse_antiSymmetric : Antisymmetric eq (inverse R).
 
 (** Leibinz equality [eq] is an equivalence relation. *)

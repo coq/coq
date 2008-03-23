@@ -152,7 +152,7 @@ Proof.
   reduce. apply* H.  apply* sub. assumption.
 Qed.
 
-Lemma subrelation_morphism [ SubRelation A R₁ R₂, Morphism R₂ m ] : Morphism R₁ m.
+Lemma subrelation_morphism [ SubRelation A R₁ R₂, ! Morphism R₂ m ] : Morphism R₁ m.
 Proof.
   intros. apply* H. apply H0.
 Qed.
@@ -177,7 +177,7 @@ Program Instance iff_iff_iff_impl_morphism : Morphism (iff ==> iff ==> iff) impl
 
 (* Typeclasses eauto := debug. *)
 
-Program Instance [ ! Symmetric A R, Morphism (R ==> impl) m ] => Reflexive_impl_iff : Morphism (R ==> iff) m.
+Program Instance [ Symmetric A R, Morphism _ (R ==> impl) m ] => Reflexive_impl_iff : Morphism (R ==> iff) m.
 
   Next Obligation.
   Proof.
@@ -186,7 +186,7 @@ Program Instance [ ! Symmetric A R, Morphism (R ==> impl) m ] => Reflexive_impl_
 
 (** The complement of a relation conserves its morphisms. *)
 
-Program Instance {A} (RA : relation A) [ mR : Morphism (RA ==> RA ==> iff) R ] => 
+Program Instance [ mR : Morphism (A -> A -> Prop) (RA ==> RA ==> iff) R ] => 
   complement_morphism : Morphism (RA ==> RA ==> iff) (complement R).
 
   Next Obligation.
@@ -200,7 +200,7 @@ Program Instance {A} (RA : relation A) [ mR : Morphism (RA ==> RA ==> iff) R ] =
 
 (** The inverse too. *)
 
-Program Instance {A} (RA : relation A) [ Morphism (RA ==> RA ==> iff) R ] => 
+Program Instance [ Morphism (A -> _) (RA ==> RA ==> iff) R ] => 
   inverse_morphism : Morphism (RA ==> RA ==> iff) (inverse R).
 
   Next Obligation.
@@ -208,7 +208,7 @@ Program Instance {A} (RA : relation A) [ Morphism (RA ==> RA ==> iff) R ] =>
     apply respect ; auto.
   Qed.
 
-Program Instance {A B C : Type} [ Morphism (RA ==> RB ==> RC) (f : A -> B -> C) ] => 
+Program Instance [ Morphism (A -> B -> C) (RA ==> RB ==> RC) f ] => 
   flip_morphism : Morphism (RB ==> RA ==> RC) (flip f).
 
   Next Obligation.
@@ -219,7 +219,7 @@ Program Instance {A B C : Type} [ Morphism (RA ==> RB ==> RC) (f : A -> B -> C) 
 (** Every Transitive relation gives rise to a binary morphism on [impl], 
    contravariant in the first argument, covariant in the second. *)
 
-Program Instance [ ! Transitive A (R : relation A) ] => 
+Program Instance [ Transitive A R ] => 
   trans_contra_co_morphism : Morphism (R --> R ++> impl) R.
 
   Next Obligation.
@@ -230,7 +230,7 @@ Program Instance [ ! Transitive A (R : relation A) ] =>
 
 (** Dually... *)
 
-Program Instance [ ! Transitive A (R : relation A) ] =>
+Program Instance [ Transitive A R ] =>
   trans_co_contra_inv_impl_morphism : Morphism (R ++> R --> inverse impl) R.
   
   Next Obligation.
@@ -252,7 +252,7 @@ Program Instance [ ! Transitive A (R : relation A) ] =>
 
 (** Morphism declarations for partial applications. *)
 
-Program Instance [ ! Transitive A R ] (x : A) =>
+Program Instance [ Transitive A R ] (x : A) =>
   trans_contra_inv_impl_morphism : Morphism (R --> inverse impl) (R x).
 
   Next Obligation.
@@ -260,7 +260,7 @@ Program Instance [ ! Transitive A R ] (x : A) =>
     transitivity y...
   Qed.
 
-Program Instance [ ! Transitive A R ] (x : A) =>
+Program Instance [ Transitive A R ] (x : A) =>
   trans_co_impl_morphism : Morphism (R ==> impl) (R x).
 
   Next Obligation.
@@ -268,7 +268,7 @@ Program Instance [ ! Transitive A R ] (x : A) =>
     transitivity x0...
   Qed.
 
-Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
+Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
   trans_sym_co_inv_impl_morphism : Morphism (R ==> inverse impl) (R x).
 
   Next Obligation.
@@ -276,7 +276,7 @@ Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
     transitivity y...
   Qed.
 
-Program Instance [ ! Transitive A R, Symmetric R ] (x : A) =>
+Program Instance [ Transitive A R, Symmetric _ R ] (x : A) =>
   trans_sym_contra_impl_morphism : Morphism (R --> impl) (R x).
 
   Next Obligation.
@@ -309,14 +309,13 @@ Program Instance [ Equivalence A R ] (x : A) =>
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
-Program Instance (A B : Type) (R : relation A) (R' : relation B)
-  [ Morphism (R ==> R') m ] [ Reflexive R ] (x : A) =>
+Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive _ R ] (x : A) =>
   Reflexive_partial_app_morphism : Morphism R' (m x) | 3.
 
 (** Every Transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof
    to get an [R y z] goal. *)
 
-Program Instance [ ! Transitive A R ] => 
+Program Instance [ Transitive A R ] => 
   trans_co_eq_inv_impl_morphism : Morphism (R ==> (@eq A) ==> inverse impl) R.
 
   Next Obligation.
@@ -324,7 +323,7 @@ Program Instance [ ! Transitive A R ] =>
     transitivity y...
   Qed.
 
-Program Instance [ ! Transitive A R ] => 
+Program Instance [ Transitive A R ] => 
   trans_contra_eq_impl_morphism : Morphism (R --> (@eq A) ==> impl) R.
 
   Next Obligation.
@@ -334,7 +333,7 @@ Program Instance [ ! Transitive A R ] =>
 
 (** Every Symmetric and Transitive relation gives rise to an equivariant morphism. *)
 
-Program Instance [ ! Transitive A R, Symmetric R ] => 
+Program Instance [ Transitive A R, Symmetric _ R ] => 
   trans_sym_morphism : Morphism (R ==> R ==> iff) R.
 
   Next Obligation.
@@ -421,11 +420,11 @@ Program Instance or_iff_morphism :
 (*   red ; intros. subst ; split; trivial. *)
 (* Qed. *)
 
-Instance (A B : Type) [ ! Reflexive B R ] (m : A -> B) =>
-  eq_Reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3.
+Instance (A : Type) [ Reflexive B R ] (m : A -> B) =>
+  eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3.
 Proof. simpl_relation. Qed.
 
-Instance (A B : Type) [ ! Reflexive B R' ] => 
+Instance (A : Type) [ Reflexive B R' ] => 
   Reflexive (@Logic.eq A ==> R').
 Proof. simpl_relation. Qed.
 
@@ -469,9 +468,8 @@ Proof.
   symmetry ; apply inverse_respectful.
 Qed.
 
-Instance (A : Type) (R : relation A) (B : Type) (R' R'' : relation B) 
-  [ Normalizes relation_equivalence R' (inverse R'') ] =>
-  Normalizes relation_equivalence (inverse R ==> R') (inverse (R ==> R'')) .
+Instance [ Normalizes (relation B) relation_equivalence R' (inverse R'') ] =>
+  ! Normalizes (relation (A -> B)) relation_equivalence (inverse R ==> R') (inverse (R ==> R'')) .
 Proof.
   red.
   pose normalizes.
@@ -480,9 +478,8 @@ Proof.
   reflexivity.
 Qed.
 
-Program Instance (A : Type) (R : relation A)
-  [ Morphism R m ] => morphism_inverse_morphism :
-  Morphism (inverse R) m | 2.
+Program Instance [ Morphism A R m ] => 
+  morphism_inverse_morphism : Morphism (inverse R) m | 2.
 
 (** Bootstrap !!! *)
 
@@ -497,9 +494,9 @@ Proof.
   apply respect.
 Qed.
   
-Lemma morphism_releq_morphism (A : Type) (R : relation A) (R' : relation A)
-  [ Normalizes relation_equivalence R R' ]
-  [ Morphism R' m ] : Morphism R m.
+Lemma morphism_releq_morphism 
+  [ Normalizes (relation A) relation_equivalence R R',
+    Morphism _ R' m ] : Morphism R m.
 Proof.
   intros.
   pose respect.

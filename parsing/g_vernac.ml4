@@ -492,6 +492,11 @@ GEXTEND Gram
       | IDENT "Instance"; sup = OPT [ l = delimited_binders_let ; "=>" -> l ];
 	 is = typeclass_constraint ; pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
 	   let sup = match sup with None -> [] | Some l -> l in
+	   let is = (* We reverse the default binding mode on the right *)
+	     let n, bk, t = is in
+	       n, (match bk with Rawterm.Implicit -> Rawterm.Explicit 
+		 | Rawterm.Explicit -> Rawterm.Implicit), t 
+	   in
 	     VernacInstance (sup, is, props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is

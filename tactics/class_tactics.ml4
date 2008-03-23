@@ -973,11 +973,11 @@ END
     
 let mkappc s l = CAppExpl (dummy_loc,(None,(Libnames.Ident (dummy_loc,id_of_string s))),l)
 
-let declare_instance a aeq n s = ((dummy_loc,Name n),Explicit,
-				  CApp (dummy_loc, (None, mkRefC (Qualid (dummy_loc, qualid_of_string s))), 
-					[(a,None);(aeq,None)]))
+let declare_instance a aeq n s = ((dummy_loc,Name n), Explicit,
+				 CAppExpl (dummy_loc, (None, Qualid (dummy_loc, qualid_of_string s)), 
+					  [a;aeq]))
 
-let anew_instance instance fields = new_instance [] instance fields None (fun _ -> ())
+let anew_instance instance fields = new_instance [] instance fields None
 
 let require_library dirpath =
   let qualid = (dummy_loc, Libnames.qualid_of_dirpath (Libnames.dirpath_of_string dirpath)) in
@@ -1104,6 +1104,7 @@ let declare_projection n instance_id r =
   let c = constr_of_global r in
   let term = respect_projection c ty in
   let typ = Typing.type_of (Global.env ()) Evd.empty term in
+  let ctx, typ = Sign.decompose_prod_assum typ in
   let typ =
     let n = 
       let rec aux t = 
@@ -1122,6 +1123,7 @@ let declare_projection n instance_id r =
     let ctx,ccl = Reductionops.decomp_n_prod (Global.env()) Evd.empty (3 * n) typ
     in it_mkProd_or_LetIn ccl ctx 
   in
+  let typ = it_mkProd_or_LetIn typ ctx in
   let cst = 
     { const_entry_body = term;
       const_entry_type = Some typ;
@@ -1209,18 +1211,15 @@ VERNAC COMMAND EXTEND AddSetoid1
       [ init_setoid ();
 	let instance_id = add_suffix n "_Morphism" in
 	let instance = 
-	  ((dummy_loc,Name instance_id), Implicit,
-	  CApp (dummy_loc, (None, mkRefC 
-	    (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Classes.Morphisms.Morphism"))), 
-	       [(s,None);(m,None)]))
-	in
-	  if Lib.is_modtype () then (context ~hook:(fun r -> declare_projection n instance_id r) [ instance ])
-	  else (
-	    Flags.silently 
-	      (fun () ->
-		ignore(new_instance [] instance [] None (fun cst -> declare_projection n instance_id (ConstRef cst)));
-		Pfedit.by (Tacinterp.interp <:tactic<add_morphism_tactic>>)) ();
-	    Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) ())
+	  ((dummy_loc,Name instance_id), Explicit,
+	  CAppExpl (dummy_loc, 
+		   (None, Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Classes.Morphisms.Morphism")), 
+		   [cHole; s; m]))
+	in	  
+	let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
+	  ignore(new_instance [] instance []
+		    ~tac ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst))
+		    None)
       ]
 END
 

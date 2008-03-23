@@ -401,14 +401,14 @@ open Pp
 
 let ($$) g f = fun x -> g (f x)
 
-let new_instance ctx (instid, bk, cl) props pri hook =
+let new_instance ctx (instid, bk, cl) props ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
   let bound, fvs = Implicit_quantifiers.free_vars_of_binders ~bound [] ctx in
   let tclass = 
     match bk with
-      | Explicit ->
+      | Implicit ->
 	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
 	  let k = class_info (global id) in
 	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
@@ -429,7 +429,7 @@ let new_instance ctx (instid, bk, cl) props pri hook =
 	      par (List.rev k.cl_context)
 	    in Topconstr.CAppExpl (loc, (None, id), pars)
 
-      | Implicit -> cl
+      | Explicit -> cl
   in
   let ctx_bound = Idset.union bound (Implicit_quantifiers.ids_of_list fvs) in
   let gen_ids = Implicit_quantifiers.free_vars_of_constr_expr ~bound:ctx_bound tclass [] in
@@ -461,34 +461,7 @@ let new_instance ctx (instid, bk, cl) props pri hook =
   isevars := resolve_typeclasses env sigma !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = Typeclasses.nf_substitution sigma subst in
-  let subst, _propsctx = 
-    let props = 
-      List.map (fun (x, l, d) -> 
-	x, Topconstr.abstract_constr_expr d (binders_of_lidents l))
-	props
-    in
-      if List.length props > List.length k.cl_props then 
-	mismatched_props env' (List.map snd props) k.cl_props;
-      let props, rest = 
-	List.fold_left
-	  (fun (props, rest) (id,_,_) -> 
-	    try 
-	      let (_, c) = List.find (fun ((_,id'), c) -> id' = id) rest in
-	      let rest' = List.filter (fun ((_,id'), c) -> id' <> id) rest in
-		c :: props, rest'
-	    with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
-	  ([], props) k.cl_props
-      in
-	if rest <> [] then 
-	  unbound_method env' k.cl_impl (fst (List.hd rest))
-	else
-	  type_ctx_instance isevars env' k.cl_props props substctx
-  in
   let inst_constr, ty_constr = instance_constructor k in
-  let app = inst_constr (List.rev_map snd subst) in 
-  let term = Termops.it_mkNamedLambda_or_LetIn app ctx' in
-  isevars := Evarutil.nf_evar_defs !isevars;
-  let term = Evarutil.nf_isevar !isevars term in
   let termtype = 
     let app = applistc ty_constr (List.rev_map snd substctx) in
     let t = it_mkNamedProd_or_LetIn app ctx' in
@@ -499,40 +472,82 @@ let new_instance ctx (instid, bk, cl) props pri hook =
       (fun i (na, b, t) -> ExplByPos (i, Some na), (true, true))
       1 ctx'
   in
-  let hook cst = 
-    let inst = 
-      { is_class = k;
-	is_pri = pri;
-	is_impl = cst;
-      }
-    in
-      Impargs.declare_manual_implicits false (ConstRef cst) false imps;
-      Typeclasses.add_instance inst;
-      hook cst
-  in
-  let evm = Evd.evars_of (undefined_evars !isevars) in
-    if evm = Evd.empty then
-      let cdecl = 
-	let kind = IsDefinition Instance in
-	let entry = 
-	  { const_entry_body   = term;
-	    const_entry_type   = Some termtype;
-	    const_entry_opaque = false;
-	    const_entry_boxed  = false }
-	in DefinitionEntry entry, kind
-      in
-      let kn = Declare.declare_constant id cdecl in
-	Flags.if_verbose Command.definition_message id;
-	hook kn;
-	id
+    if Lib.is_modtype () then
+      begin
+	let cst = Declare.declare_internal_constant id
+	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
+	in
+	  Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
+	  Typeclasses.add_instance { is_class = k ; is_pri = None; is_impl = cst };
+	  Command.assumption_message id;
+	  (match hook with Some h -> h cst | None -> ()); id
+      end
     else
-      let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
-	Command.start_proof id kind termtype (fun _ -> function ConstRef cst -> hook cst | _ -> assert false);
-	Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !isevars)) *)
-	  (!refine_ref (evm, term));
-	Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
-	id
-     
+      begin
+	let subst, _propsctx = 
+	  let props = 
+	    List.map (fun (x, l, d) -> 
+	      x, Topconstr.abstract_constr_expr d (binders_of_lidents l))
+	      props
+	  in
+	    if List.length props > List.length k.cl_props then 
+	      mismatched_props env' (List.map snd props) k.cl_props;
+	    let props, rest = 
+	      List.fold_left
+		(fun (props, rest) (id,_,_) -> 
+		  try 
+		    let (_, c) = List.find (fun ((_,id'), c) -> id' = id) rest in
+		    let rest' = List.filter (fun ((_,id'), c) -> id' <> id) rest in
+		      c :: props, rest'
+		  with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
+		([], props) k.cl_props
+	    in
+	      if rest <> [] then 
+		unbound_method env' k.cl_impl (fst (List.hd rest))
+	      else
+		type_ctx_instance isevars env' k.cl_props props substctx
+	in
+	let app = inst_constr (List.rev_map snd subst) in 
+	let term = Termops.it_mkNamedLambda_or_LetIn app ctx' in
+	isevars := Evarutil.nf_evar_defs !isevars;
+	let term = Evarutil.nf_isevar !isevars term in
+	let hook cst = 
+	  let inst = 
+	    { is_class = k;
+	      is_pri = pri;
+	      is_impl = cst;
+	    }
+	  in
+	    Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
+	    Typeclasses.add_instance inst;
+	    (match hook with Some h -> h cst | None -> ())
+	in
+	let evm = Evd.evars_of (undefined_evars !isevars) in
+	  if evm = Evd.empty then
+	    let cdecl = 
+	      let kind = IsDefinition Instance in
+	      let entry = 
+		{ const_entry_body   = term;
+		  const_entry_type   = Some termtype;
+		  const_entry_opaque = false;
+		  const_entry_boxed  = false }
+	      in DefinitionEntry entry, kind
+	    in
+	    let kn = Declare.declare_constant id cdecl in
+	      Flags.if_verbose Command.definition_message id;
+	      hook kn;
+	      id
+	  else
+	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+	      Flags.silently (fun () ->
+		Command.start_proof id kind termtype (fun _ -> function ConstRef cst -> hook cst | _ -> assert false);
+		Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !isevars)) *)
+		  (!refine_ref (evm, term));
+		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
+	      Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
+	      id
+      end
+
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
 
 let solve_by_tac env evd evar evi t =

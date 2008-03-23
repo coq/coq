@@ -172,7 +172,7 @@ let full_class_binders env l =
   let l', avoid =
     List.fold_left (fun (l', avoid) (iid, bk, cl as x) -> 
       match bk with
-	  Explicit -> 
+	  Implicit -> 
 	    let (loc, id, l) = destClassAppExpl cl in
 	    let gr = Nametab.global id in
 	      (try
@@ -180,14 +180,14 @@ let full_class_binders env l =
 		  let args, avoid = combine_params_freevar avoid l (List.rev c.cl_context) in
 		    (iid, bk, CAppExpl (loc, (None, id), args)) :: l', avoid
 		with Not_found -> not_a_class (Global.env ()) (constr_of_global gr))
-	| Implicit -> (x :: l', avoid))
+	| Explicit -> (x :: l', avoid))
       ([], avoid) l
   in List.rev l'
       
 let constr_expr_of_constraint (kind, id) l =
   match kind with
-    | Explicit -> CAppExpl (fst id, (None, Ident id), l)
-    | Implicit -> CApp (fst id, (None, CRef (Ident id)),
+    | Implicit -> CAppExpl (fst id, (None, Ident id), l)
+    | Explicit -> CApp (fst id, (None, CRef (Ident id)),
 		       List.map (fun x -> x, None) l)
 
 (*    | CApp of loc * (proj_flag * constr_expr) *  *)

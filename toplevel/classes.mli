@@ -43,8 +43,9 @@ val new_instance :
   local_binder list ->
   typeclass_constraint ->
   binder_def_list ->
+  ?tac:Proof_type.tactic  ->
+  ?hook:(constant -> unit) ->
   int option ->
-  (constant -> unit) ->
   identifier
 
 (* For generation on names based on classes only *)

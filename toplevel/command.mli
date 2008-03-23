@@ -33,6 +33,7 @@ open Redexpr
 val set_declare_definition_hook : (Entries.definition_entry -> unit) -> unit
 
 val definition_message : identifier -> unit
+val assumption_message : identifier -> unit
 
 val declare_definition : identifier -> definition_kind ->
   local_binder list -> red_expr option -> constr_expr ->
