@@ -20,14 +20,14 @@ show [{n : nat | P n}]. However, one can perform a recursion on an
 inductive predicate in sort [Prop] so that the returning type of the
 recursion is in [Set]. This trick is described in Coq'Art book, Sect.
 14.2.3 and 15.4. In particular, this trick is used in the proof of
-[Acc_iter] in the module Coq.Init.Wf. There, recursion is done on an
+[Fix_F] in the module Coq.Init.Wf. There, recursion is done on an
 inductive predicate [Acc] and the resulting type is in [Type].
 
 The predicate [Acc] delineates elements that are accessible via a
 given relation [R]. An element is accessible if there are no infinite
 [R]-descending chains starting from it.
 
-To use [Acc_iter], we define a relation R and prove that if [exists n,
+To use [Fix_F], we define a relation R and prove that if [exists n,
 P n] then 0 is accessible with respect to R. Then, by induction on the
 definition of [Acc R 0], we show [{n : nat | P n}]. *)
 
@@ -79,7 +79,7 @@ Defined.
 
 Theorem acc_implies_P_eventually : acc 0 -> {n : nat | P n}.
 Proof.
-intros Acc_0. pattern 0. apply Acc_iter with (R := R); [| assumption].
+intros Acc_0. pattern 0. apply Fix_F with (R := R); [| assumption].
 clear Acc_0; intros x IH.
 destruct (P_decidable x) as [Px | not_Px].
 exists x; simpl; assumption.
