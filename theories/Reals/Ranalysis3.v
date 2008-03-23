@@ -11,7 +11,8 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
-Require Import Ranalysis2. Open Local Scope R_scope.
+Require Import Ranalysis2.
+Open Local Scope R_scope.
 
 (** Division *)
 Theorem derivable_pt_lim_div :
@@ -23,7 +24,7 @@ Theorem derivable_pt_lim_div :
 Proof.
   intros f1 f2 x l1 l2 H H0 H1.
   cut (derivable_pt f2 x);
-    [ intro X | unfold derivable_pt in |- *; apply existT with l2; exact H0 ].
+    [ intro X | unfold derivable_pt in |- *; exists l2; exact H0 ].
   assert (H2 := continuous_neq_0 _ _ (derivable_continuous_pt _ _ X) H1).
   elim H2; clear H2; intros eps_f2 H2.
   unfold div_fct in |- *.
@@ -761,7 +762,7 @@ Proof.
   intros f1 f2 x X X0 H.
   elim X; intros.
   elim X0; intros.
-  apply existT with ((x0 * f2 x - x1 * f1 x) / Rsqr (f2 x)).
+  exists ((x0 * f2 x - x1 * f1 x) / Rsqr (f2 x)).
   apply derivable_pt_lim_div; assumption.
 Qed.
 
@@ -789,9 +790,9 @@ Proof.
   elim H0; clear H0; intros l2 H0.
   elim H1; clear H1; intros l H1.
   rewrite H; rewrite H0; apply derive_pt_eq_0.
-  assert (H3 := projT2 pr1).
+  assert (H3 := proj2_sig pr1).
   unfold derive_pt in H; rewrite H in H3.
-  assert (H4 := projT2 pr2).
+  assert (H4 := proj2_sig pr2).
   unfold derive_pt in H0; rewrite H0 in H4.
   apply derivable_pt_lim_div; assumption.
 Qed.

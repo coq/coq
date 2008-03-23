@@ -14,7 +14,8 @@ Require Import SeqSeries.
 Require Import Rtrigo.
 Require Import Ranalysis1.
 Require Import Ranalysis3.
-Require Import Exp_prop. Open Local Scope R_scope.
+Require Import Exp_prop.
+Open Local Scope R_scope.
 
 (**********)
 Lemma derivable_pt_inv :
@@ -28,7 +29,7 @@ Proof.
   assumption.
   assumption.
   unfold div_fct, inv_fct, fct_cte in |- *; intro X0; elim X0; intros;
-    unfold derivable_pt in |- *; apply existT with x0;
+    unfold derivable_pt in |- *; exists x0;
       unfold derivable_pt_abs in |- *; unfold derivable_pt_lim in |- *;
         unfold derivable_pt_abs in p; unfold derivable_pt_lim in p; 
           intros; elim (p eps H0); intros; exists x1; intros; 
@@ -164,10 +165,10 @@ Proof.
   intros.
   case (total_order_T x 0); intro.
   elim s; intro.
-  unfold derivable_pt in |- *; apply existT with (-1).
+  unfold derivable_pt in |- *; exists (-1).
   apply (Rabs_derive_2 x a).
   elim H; exact b.
-  unfold derivable_pt in |- *; apply existT with 1.
+  unfold derivable_pt in |- *; exists 1.
   apply (Rabs_derive_1 x r).
 Qed.
 
@@ -294,8 +295,8 @@ Proof.
   unfold derivable_pt in |- *.
   assert (H := derivable_pt_lim_finite_sum An x N).
   induction  N as [| N HrecN].
-  apply existT with 0; apply H.
-  apply existT with
+  exists 0; apply H.
+  exists
     (sum_f_R0 (fun k:nat => INR (S k) * An (S k) * x ^ k) (pred (S N))); 
     apply H.
 Qed.
@@ -352,7 +353,7 @@ Lemma derivable_pt_exp : forall x:R, derivable_pt exp x.
 Proof.
   intro.
   unfold derivable_pt in |- *.
-  apply existT with (exp x).
+  exists (exp x).
   apply derivable_pt_lim_exp.
 Qed.
 
@@ -360,7 +361,7 @@ Lemma derivable_pt_cosh : forall x:R, derivable_pt cosh x.
 Proof.
   intro.
   unfold derivable_pt in |- *.
-  apply existT with (sinh x).
+  exists (sinh x).
   apply derivable_pt_lim_cosh.
 Qed.
 
@@ -368,7 +369,7 @@ Lemma derivable_pt_sinh : forall x:R, derivable_pt sinh x.
 Proof.
   intro.
   unfold derivable_pt in |- *.
-  apply existT with (cosh x).
+  exists (cosh x).
   apply derivable_pt_lim_sinh.
 Qed.
 

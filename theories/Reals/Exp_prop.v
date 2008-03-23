@@ -27,7 +27,7 @@ Lemma E1_cvg : forall x:R, Un_cv (E1 x) (exp x).
 Proof.
   intro; unfold exp in |- *; unfold projT1 in |- *.
   case (exist_exp x); intro.
-  unfold exp_in, Un_cv in |- *; unfold infinit_sum, E1 in |- *; trivial.
+  unfold exp_in, Un_cv in |- *; unfold infinite_sum, E1 in |- *; trivial.
 Qed.
 
 Definition Reste_E (x y:R) (N:nat) : R :=
@@ -734,7 +734,7 @@ Proof.
   apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply (pow_lt _ n H).
   unfold exp in |- *; unfold projT1 in |- *; case (exist_exp x); intro.
-  unfold exp_in in |- *; unfold infinit_sum, Un_cv in |- *; trivial.
+  unfold exp_in in |- *; unfold infinite_sum, Un_cv in |- *; trivial.
 Qed.
 
 (**********)
@@ -769,7 +769,7 @@ Proof.
   unfold derivable_pt_lim in |- *; intros.
   set (fn := fun (N:nat) (x:R) => x ^ N / INR (fact (S N))).
   cut (CVN_R fn).
-  intro; cut (forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)).
+  intro; cut (forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }).
   intro cv; cut (forall n:nat, continuity (fn n)).
   intro; cut (continuity (SFL fn cv)).
   intro; unfold continuity in H1.
@@ -809,13 +809,12 @@ Proof.
   unfold Rdiv in |- *; rewrite Rinv_1; rewrite Rmult_1_r; reflexivity.
   apply lt_le_trans with 1%nat; [ apply lt_n_Sn | apply H9 ].
   unfold SFL, exp in |- *.
-  unfold projT1 in |- *.
-  case (cv h); case (exist_exp h); intros.
+  case (cv h); case (exist_exp h); simpl; intros.
   eapply UL_sequence.
   apply u.
   unfold Un_cv in |- *; intros.
   unfold exp_in in e.
-  unfold infinit_sum in e.
+  unfold infinite_sum in e.
   cut (0 < eps0 * Rabs h).
   intro; elim (e _ H9); intros N0 H10.
   exists N0; intros.
@@ -871,13 +870,12 @@ Proof.
   assert (H0 := Alembert_exp).
   unfold CVN_R in |- *.
   intro; unfold CVN_r in |- *.
-  apply existT with (fun N:nat => r ^ N / INR (fact (S N))).
+  exists (fun N:nat => r ^ N / INR (fact (S N))).
   cut
-    (sigT
-      (fun l:R =>
+    { l:R |
         Un_cv
         (fun n:nat =>
-          sum_f_R0 (fun k:nat => Rabs (r ^ k / INR (fact (S k)))) n) l)).
+          sum_f_R0 (fun k:nat => Rabs (r ^ k / INR (fact (S k)))) n) l }.
   intro X.
   elim X; intros.
   exists x; intros.

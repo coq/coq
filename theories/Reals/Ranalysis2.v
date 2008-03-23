@@ -10,7 +10,8 @@
 
 Require Import Rbase.
 Require Import Rfunctions.
-Require Import Ranalysis1. Open Local Scope R_scope.
+Require Import Ranalysis1.
+Open Local Scope R_scope.
 
 (**********)
 Lemma formule :

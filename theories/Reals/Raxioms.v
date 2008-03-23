@@ -130,7 +130,7 @@ Definition IZR (z:Z) : R :=
 Arguments Scope IZR [Z_scope].
 
 (**********************************************************)
-(** *    [R] Archimedian                                  *)
+(** *    [R] Archimedean                                  *)
 (**********************************************************)
 
 (**********)
@@ -154,4 +154,4 @@ Definition is_lub (E:R -> Prop) (m:R) :=
 Axiom
   completeness :
     forall E:R -> Prop,
-      bound E -> (exists x : R, E x) -> sigT (fun m:R => is_lub E m).
+      bound E -> (exists x : R, E x) -> { m:R | is_lub E m }.

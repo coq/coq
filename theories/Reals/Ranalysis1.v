@@ -11,7 +11,8 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Export Rlimit.
-Require Export Rderiv. Open Local Scope R_scope.
+Require Export Rderiv.
+Open Local Scope R_scope.
 Implicit Type f : R -> R.
 
 (****************************************************)
@@ -269,10 +270,10 @@ Definition derivable_pt_lim f (x l:R) : Prop :=
 
 Definition derivable_pt_abs f (x l:R) : Prop := derivable_pt_lim f x l.
 
-Definition derivable_pt f (x:R) := sigT (derivable_pt_abs f x).
+Definition derivable_pt f (x:R) := { l:R | derivable_pt_abs f x l }.
 Definition derivable f := forall x:R, derivable_pt f x.
 
-Definition derive_pt f (x:R) (pr:derivable_pt f x) := projT1 pr.
+Definition derive_pt f (x:R) (pr:derivable_pt f x) := proj1_sig pr.
 Definition derive f (pr:derivable f) (x:R) := derive_pt f x (pr x).
 
 Arguments Scope derivable_pt_lim [Rfun_scope R_scope].
@@ -380,9 +381,9 @@ Lemma derive_pt_eq :
     derive_pt f x pr = l <-> derivable_pt_lim f x l.
 Proof.
   intros; split.
-  intro; assert (H1 := projT2 pr); unfold derive_pt in H; rewrite H in H1;
+  intro; assert (H1 := proj2_sig pr); unfold derive_pt in H; rewrite H in H1;
     assumption.
-  intro; assert (H1 := projT2 pr); unfold derivable_pt_abs in H1.
+  intro; assert (H1 := proj2_sig pr); unfold derivable_pt_abs in H1.
   assert (H2 := uniqueness_limite _ _ _ _ H H1).
   unfold derive_pt in |- *; unfold derivable_pt_abs in |- *.
   symmetry  in |- *; assumption.
@@ -486,7 +487,7 @@ Qed.
 Lemma derivable_derive :
   forall f (x:R) (pr:derivable_pt f x),  exists l : R, derive_pt f x pr = l.
 Proof.
-  intros; exists (projT1 pr).
+  intros; exists (proj1_sig pr).
   unfold derive_pt in |- *; reflexivity.
 Qed.
 
@@ -714,7 +715,7 @@ Proof.
   unfold derivable_pt in |- *; intros f1 f2 x X X0.
   elim X; intros.
   elim X0; intros.
-  apply existT with (x0 + x1).
+  exists (x0 + x1).
   apply derivable_pt_lim_plus; assumption.
 Qed.
 
@@ -723,7 +724,7 @@ Lemma derivable_pt_opp :
 Proof.
   unfold derivable_pt in |- *; intros f x X.
   elim X; intros.
-  apply existT with (- x0).
+  exists (- x0).
   apply derivable_pt_lim_opp; assumption.
 Qed.
 
@@ -734,7 +735,7 @@ Proof.
   unfold derivable_pt in |- *; intros f1 f2 x X X0.
   elim X; intros.
   elim X0; intros.
-  apply existT with (x0 - x1).
+  exists (x0 - x1).
   apply derivable_pt_lim_minus; assumption.
 Qed.
 
@@ -745,14 +746,14 @@ Proof.
   unfold derivable_pt in |- *; intros f1 f2 x X X0.
   elim X; intros.
   elim X0; intros.
-  apply existT with (x0 * f2 x + f1 x * x1).
+  exists (x0 * f2 x + f1 x * x1).
   apply derivable_pt_lim_mult; assumption.
 Qed.
 
 Lemma derivable_pt_const : forall a x:R, derivable_pt (fct_cte a) x.
 Proof.
   intros; unfold derivable_pt in |- *.
-  apply existT with 0.
+  exists 0.
   apply derivable_pt_lim_const.
 Qed.
 
@@ -761,7 +762,7 @@ Lemma derivable_pt_scal :
 Proof.
   unfold derivable_pt in |- *; intros f1 a x X.
   elim X; intros.
-  apply existT with (a * x0).
+  exists (a * x0).
   apply derivable_pt_lim_scal; assumption.
 Qed.
 
@@ -774,7 +775,7 @@ Qed.
 
 Lemma derivable_pt_Rsqr : forall x:R, derivable_pt Rsqr x.
 Proof.
-  unfold derivable_pt in |- *; intro; apply existT with (2 * x).
+  unfold derivable_pt in |- *; intro; exists (2 * x).
   apply derivable_pt_lim_Rsqr.
 Qed.
 
@@ -785,7 +786,7 @@ Proof.
   unfold derivable_pt in |- *; intros f1 f2 x X X0.
   elim X; intros.
   elim X0; intros.
-  apply existT with (x1 * x0).
+  exists (x1 * x0).
   apply derivable_pt_lim_comp; assumption.
 Qed.
 
@@ -860,9 +861,9 @@ Proof.
   elim H0; clear H0; intros l2 H0.
   elim H1; clear H1; intros l H1.
   rewrite H; rewrite H0; apply derive_pt_eq_0.
-  assert (H3 := projT2 pr1).
+  assert (H3 := proj2_sig pr1).
   unfold derive_pt in H; rewrite H in H3.
-  assert (H4 := projT2 pr2).
+  assert (H4 := proj2_sig pr2).
   unfold derive_pt in H0; rewrite H0 in H4.
   apply derivable_pt_lim_plus; assumption.
 Qed.
@@ -877,7 +878,7 @@ Proof.
   elim H; clear H; intros l1 H.
   elim H0; clear H0; intros l2 H0.
   rewrite H; apply derive_pt_eq_0.
-  assert (H3 := projT2 pr1).
+  assert (H3 := proj2_sig pr1).
   unfold derive_pt in H; rewrite H in H3.
   apply derivable_pt_lim_opp; assumption.
 Qed.
@@ -896,9 +897,9 @@ Proof.
   elim H0; clear H0; intros l2 H0.
   elim H1; clear H1; intros l H1.
   rewrite H; rewrite H0; apply derive_pt_eq_0.
-  assert (H3 := projT2 pr1).
+  assert (H3 := proj2_sig pr1).
   unfold derive_pt in H; rewrite H in H3.
-  assert (H4 := projT2 pr2).
+  assert (H4 := proj2_sig pr2).
   unfold derive_pt in H0; rewrite H0 in H4.
   apply derivable_pt_lim_minus; assumption.
 Qed.
@@ -917,9 +918,9 @@ Proof.
   elim H0; clear H0; intros l2 H0.
   elim H1; clear H1; intros l H1.
   rewrite H; rewrite H0; apply derive_pt_eq_0.
-  assert (H3 := projT2 pr1).
+  assert (H3 := proj2_sig pr1).
   unfold derive_pt in H; rewrite H in H3.
-  assert (H4 := projT2 pr2).
+  assert (H4 := proj2_sig pr2).
   unfold derive_pt in H0; rewrite H0 in H4.
   apply derivable_pt_lim_mult; assumption.
 Qed.
@@ -944,7 +945,7 @@ Proof.
   elim H; clear H; intros l1 H.
   elim H0; clear H0; intros l2 H0.
   rewrite H; apply derive_pt_eq_0.
-  assert (H3 := projT2 pr).
+  assert (H3 := proj2_sig pr).
   unfold derive_pt in H; rewrite H in H3.
   apply derivable_pt_lim_scal; assumption.
 Qed.
@@ -978,9 +979,9 @@ Proof.
   elim H0; clear H0; intros l2 H0.
   elim H1; clear H1; intros l H1.
   rewrite H; rewrite H0; apply derive_pt_eq_0.
-  assert (H3 := projT2 pr1).
+  assert (H3 := proj2_sig pr1).
   unfold derive_pt in H; rewrite H in H3.
-  assert (H4 := projT2 pr2).
+  assert (H4 := proj2_sig pr2).
   unfold derive_pt in H0; rewrite H0 in H4.
   apply derivable_pt_lim_comp; assumption.
 Qed.
@@ -1046,7 +1047,7 @@ Lemma derivable_pt_pow :
   forall (n:nat) (x:R), derivable_pt (fun y:R => y ^ n) x.
 Proof.
   intros; unfold derivable_pt in |- *.
-  apply existT with (INR n * x ^ pred n).
+  exists (INR n * x ^ pred n).
   apply derivable_pt_lim_pow.
 Qed.
 

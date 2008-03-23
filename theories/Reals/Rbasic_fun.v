@@ -15,7 +15,8 @@
 
 Require Import Rbase.
 Require Import R_Ifp.
-Require Import Fourier. Open Local Scope R_scope.
+Require Import Fourier.
+Open Local Scope R_scope.
 
 Implicit Type r : R.
 

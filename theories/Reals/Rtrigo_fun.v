@@ -15,8 +15,7 @@ Open Local Scope R_scope.
 
 (*****************************************************************)
 (**           To define transcendental functions                 *)
-(**           for exponential function                           *)
-(*                                                               *)
+(**           and exponential function                           *)
 (*****************************************************************)
 
 (*********)

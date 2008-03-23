@@ -12,26 +12,25 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Rtrigo.
-Require Import Ranalysis. Open Local Scope R_scope.
+Require Import Ranalysis.
+Open Local Scope R_scope.
 
 (*******************************************)
 (*            Newton's Integral            *)
 (*******************************************)
 
 Definition Newton_integrable (f:R -> R) (a b:R) : Type :=
-  sigT (fun g:R -> R => antiderivative f g a b \/ antiderivative f g b a).
+  { g:R -> R | antiderivative f g a b \/ antiderivative f g b a }.
 
 Definition NewtonInt (f:R -> R) (a b:R) (pr:Newton_integrable f a b) : R :=
-  let g := match pr with
-             | existT a b => a
-           end in g b - g a.
+  let (g,_) := pr in g b - g a.
 
 (* If f is differentiable, then f' is Newton integrable (Tautology ?) *)
 Lemma FTCN_step1 :
   forall (f:Differential) (a b:R),
     Newton_integrable (fun x:R => derive_pt f x (cond_diff f x)) a b.
 Proof.
-  intros f a b; unfold Newton_integrable in |- *; apply existT with (d1 f);
+  intros f a b; unfold Newton_integrable in |- *; exists (d1 f);
     unfold antiderivative in |- *; intros; case (Rle_dec a b); 
       intro;
         [ left; split; [ intros; exists (cond_diff f x); reflexivity | assumption ]
@@ -52,7 +51,7 @@ Qed.
 Lemma NewtonInt_P1 : forall (f:R -> R) (a:R), Newton_integrable f a a.
 Proof.
   intros f a; unfold Newton_integrable in |- *;
-    apply existT with (fct_cte (f a) * id)%F; left;
+    exists (fct_cte (f a) * id)%F; left;
       unfold antiderivative in |- *; split.
   intros; assert (H1 : derivable_pt (fct_cte (f a) * id) x).
   apply derivable_pt_mult.
@@ -82,7 +81,7 @@ Lemma NewtonInt_P3 :
     Newton_integrable f b a.
 Proof.
   unfold Newton_integrable in |- *; intros; elim X; intros g H;
-    apply existT with g; tauto.
+    exists g; tauto.
 Defined.
 
 (* $\int_a^b f = -\int_b^a f$ *)
@@ -94,7 +93,7 @@ Proof.
   unfold NewtonInt in |- *;
     case
     (NewtonInt_P3 f a b
-      (existT
+      (exist
         (fun g:R -> R => antiderivative f g a b \/ antiderivative f g b a) x
         p)).
   intros; elim o; intro.
@@ -112,7 +111,7 @@ Proof.
   unfold NewtonInt in |- *;
     case
     (NewtonInt_P3 f a b
-      (existT
+      (exist
         (fun g:R -> R => antiderivative f g a b \/ antiderivative f g b a) x
         p)); intros; elim o; intro.
   assert (H1 := antiderivative_Ucte f x x0 b a H H0); elim H1; intros;
@@ -325,7 +324,7 @@ Proof.
           | left _ => F0 x
           | right _ => F1 x + (F0 b - F1 b)
         end) x).
-  unfold derivable_pt in |- *; apply existT with (f x); apply H7.
+  unfold derivable_pt in |- *; exists (f x); apply H7.
   exists H8; symmetry  in |- *; apply derive_pt_eq_0; apply H7.
   assert (H5 : a <= x <= b).
   split; [ assumption | right; assumption ].
@@ -370,7 +369,7 @@ Proof.
           | left _ => F0 x
           | right _ => F1 x + (F0 b - F1 b)
         end) x).
-  unfold derivable_pt in |- *; apply existT with (f x); apply H13.
+  unfold derivable_pt in |- *; exists (f x); apply H13.
   exists H14; symmetry  in |- *; apply derive_pt_eq_0; apply H13.
   assert (H5 : b <= x <= c).
   split; [ left; assumption | assumption ].
@@ -417,7 +416,7 @@ Proof.
           | left _ => F0 x
           | right _ => F1 x + (F0 b - F1 b)
         end) x).
-  unfold derivable_pt in |- *; apply existT with (f x); apply H7.
+  unfold derivable_pt in |- *; exists (f x); apply H7.
   exists H8; symmetry  in |- *; apply derive_pt_eq_0; apply H7.
 Qed.
 
@@ -482,7 +481,7 @@ Proof.
             match Rle_dec x b with
               | left _ => F0 x
               | right _ => F1 x + (F0 b - F1 b)
-            end); apply existT with g; left; unfold g in |- *;
+            end); exists g; left; unfold g in |- *;
         apply antiderivative_P2.
   elim H0; intro.
   assumption.
@@ -508,7 +507,7 @@ Proof.
   elim s0; intro.
 (* a<b & b<c *)
   unfold Newton_integrable in |- *;
-    apply existT with
+    exists
       (fun x:R =>
         match Rle_dec x b with
           | left _ => F0 x
@@ -526,7 +525,7 @@ Proof.
 (* a<b & b>c *)
   case (total_order_T a c); intro.
   elim s0; intro.
-  unfold Newton_integrable in |- *; apply existT with F0.
+  unfold Newton_integrable in |- *; exists F0.
   left.
   elim H1; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
@@ -540,7 +539,7 @@ Proof.
   unfold antiderivative in H2; elim H2; clear H2; intros _ H2.
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H2 a0)).
   rewrite b0; apply NewtonInt_P1.
-  unfold Newton_integrable in |- *; apply existT with F1.
+  unfold Newton_integrable in |- *; exists F1.
   right.
   elim H1; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.
@@ -560,7 +559,7 @@ Proof.
 (* a>b & b<c *)
   case (total_order_T a c); intro.
   elim s0; intro.
-  unfold Newton_integrable in |- *; apply existT with F1.
+  unfold Newton_integrable in |- *; exists F1.
   left.
   elim H1; intro.
 (*****************)
@@ -575,7 +574,7 @@ Proof.
   unfold antiderivative in H; elim H; clear H; intros _ H.
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H a0)).
   rewrite b0; apply NewtonInt_P1.
-  unfold Newton_integrable in |- *; apply existT with F0.
+  unfold Newton_integrable in |- *; exists F0.
   right.
   elim H0; intro.
   unfold antiderivative in H; elim H; clear H; intros _ H.

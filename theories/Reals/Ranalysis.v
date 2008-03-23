@@ -27,7 +27,8 @@ Require Export Rgeom.
 Require Export RList.
 Require Export Sqrt_reg.
 Require Export Ranalysis4.
-Require Export Rpower. Open Local Scope R_scope.
+Require Export Rpower.
+Open Local Scope R_scope.
 
 Axiom AppVar : R.
 

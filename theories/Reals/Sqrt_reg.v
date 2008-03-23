@@ -11,7 +11,8 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
-Require Import R_sqrt. Open Local Scope R_scope.
+Require Import R_sqrt. 
+Open Local Scope R_scope.
 
 (**********)
 Lemma sqrt_var_maj :
@@ -309,7 +310,7 @@ Qed.
 Lemma derivable_pt_sqrt : forall x:R, 0 < x -> derivable_pt sqrt x.
 Proof.
   unfold derivable_pt in |- *; intros.
-  apply existT with (/ (2 * sqrt x)).
+  exists (/ (2 * sqrt x)).
   apply derivable_pt_lim_sqrt; assumption.
 Qed.
 

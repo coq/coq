@@ -19,7 +19,7 @@ Open Local Scope R_scope.
 (** * Definition of exponential *)
 (********************************)
 Definition exp_in (x l:R) : Prop :=
-  infinit_sum (fun i:nat => / INR (fact i) * x ^ i) l.
+  infinite_sum (fun i:nat => / INR (fact i) * x ^ i) l.
 
 Lemma exp_cof_no_R0 : forall n:nat, / INR (fact n) <> 0.
 Proof.
@@ -28,7 +28,7 @@ Proof.
   apply INR_fact_neq_0.
 Qed.
 
-Lemma exist_exp : forall x:R, sigT (fun l:R => exp_in x l).
+Lemma exist_exp : forall x:R, { l:R | exp_in x l }.
 Proof.
   intro;
     generalize
@@ -37,7 +37,7 @@ Proof.
   trivial.
 Defined.
 
-Definition exp (x:R) : R := projT1 (exist_exp x).
+Definition exp (x:R) : R := proj1_sig (exist_exp x).
 
 Lemma pow_i : forall i:nat, (0 < i)%nat -> 0 ^ i = 0.
 Proof.
@@ -45,11 +45,10 @@ Proof.
   red in |- *; intro; rewrite H0 in H; elim (lt_irrefl _ H).
 Qed.
 
-(*i Calculus of $e^0$ *)
-Lemma exist_exp0 : sigT (fun l:R => exp_in 0 l).
+Lemma exist_exp0 : { l:R | exp_in 0 l }.
 Proof.
-  apply existT with 1.
-  unfold exp_in in |- *; unfold infinit_sum in |- *; intros.
+  exists 1.
+  unfold exp_in in |- *; unfold infinite_sum in |- *; intros.
   exists 0%nat.
   intros; replace (sum_f_R0 (fun i:nat => / INR (fact i) * 0 ^ i) n) with 1.
   unfold R_dist in |- *; replace (1 - 1) with 0;
@@ -63,6 +62,7 @@ Proof.
   unfold ge in |- *; apply le_O_n.
 Defined.
 
+(* Value of [exp 0] *)
 Lemma exp_0 : exp 0 = 1. 
 Proof.
   cut (exp_in 0 (exp 0)).
@@ -70,8 +70,8 @@ Proof.
   unfold exp_in in |- *; intros; eapply uniqueness_sum.
   apply H0.
   apply H.
-  exact (projT2 exist_exp0).
-  exact (projT2 (exist_exp 0)).
+  exact (proj2_sig exist_exp0).
+  exact (proj2_sig (exist_exp 0)).
 Qed.
 
 (*****************************************)
@@ -235,21 +235,17 @@ Qed.
 
 (**********)
 Definition cos_in (x l:R) : Prop :=
-  infinit_sum (fun i:nat => cos_n i * x ^ i) l.
+  infinite_sum (fun i:nat => cos_n i * x ^ i) l.
 
 (**********)
-Lemma exist_cos : forall x:R, sigT (fun l:R => cos_in x l).
+Lemma exist_cos : forall x:R, { l:R | cos_in x l }.
   intro; generalize (Alembert_C3 cos_n x cosn_no_R0 Alembert_cos).
   unfold Pser, cos_in in |- *; trivial.
 Qed.
 
 
 (** Definition of cosinus *)
-Definition cos (x:R) : R :=
-  match exist_cos (Rsqr x) with
-    | existT a b => a
-  end.
-
+Definition cos (x:R) : R := let (a,_) := exist_cos (Rsqr x) in a.
 
 Definition sin_n (n:nat) : R := (-1) ^ n / INR (fact (2 * n + 1)).
 
@@ -348,7 +344,7 @@ Proof.
   apply INR_eq; repeat rewrite S_INR; rewrite plus_INR; repeat rewrite mult_INR;
     rewrite plus_INR; rewrite mult_INR; repeat rewrite S_INR;
       replace (INR 0) with 0; [ ring | reflexivity ].
-Qed.
+Defined.
 
 Lemma sin_no_R0 : forall n:nat, sin_n n <> 0.
 Proof.
@@ -359,21 +355,18 @@ Qed.
 
 (**********)
 Definition sin_in (x l:R) : Prop :=
-  infinit_sum (fun i:nat => sin_n i * x ^ i) l.
+  infinite_sum (fun i:nat => sin_n i * x ^ i) l.
 
 (**********)
-Lemma exist_sin : forall x:R, sigT (fun l:R => sin_in x l).
+Lemma exist_sin : forall x:R, { l:R | sin_in x l }.
 Proof.
   intro; generalize (Alembert_C3 sin_n x sin_no_R0 Alembert_sin).
   unfold Pser, sin_n in |- *; trivial.
-Qed.
+Defined.
 
 (***********************)
 (* Definition of sinus *)
-Definition sin (x:R) : R :=
-  match exist_sin (Rsqr x) with
-    | existT a b => x * a
-  end.
+Definition sin (x:R) : R := let (a,_) := exist_sin (Rsqr x) in x * a.
 
 (*********************************************)
 (** *              Properties                *)
@@ -399,10 +392,10 @@ Proof.
   intros; ring.
 Qed.
 
-Lemma exist_cos0 : sigT (fun l:R => cos_in 0 l).
+Lemma exist_cos0 : { l:R | cos_in 0 l }.
 Proof.
-  apply existT with 1.
-  unfold cos_in in |- *; unfold infinit_sum in |- *; intros; exists 0%nat.
+  exists 1.
+  unfold cos_in in |- *; unfold infinite_sum in |- *; intros; exists 0%nat.
   intros.
   unfold R_dist in |- *.
   induction  n as [| n Hrecn].
@@ -417,7 +410,7 @@ Proof.
   simpl in |- *; ring.
 Defined.
 
-(* Calculus of (cos 0) *)
+(* Value of [cos 0] *)
 Lemma cos_0 : cos 0 = 1.
 Proof.
   cut (cos_in 0 (cos 0)).
@@ -425,7 +418,7 @@ Proof.
   unfold cos_in in |- *; intros; eapply uniqueness_sum.
   apply H0.
   apply H.
-  exact (projT2 exist_cos0).
-  assert (H := projT2 (exist_cos (Rsqr 0))); unfold cos in |- *;
+  exact (proj2_sig exist_cos0).
+  assert (H := proj2_sig (exist_cos (Rsqr 0))); unfold cos in |- *;
     pattern 0 at 1 in |- *; replace 0 with (Rsqr 0); [ exact H | apply Rsqr_0 ].
 Qed.

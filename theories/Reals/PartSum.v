@@ -153,7 +153,7 @@ Lemma tech12 :
     Un_cv (fun N:nat => sum_f_R0 (fun i:nat => An i * x ^ i) N) l ->
     Pser An x l.
 Proof.
-  intros; unfold Pser in |- *; unfold infinit_sum in |- *; unfold Un_cv in H;
+  intros; unfold Pser in |- *; unfold infinite_sum in |- *; unfold Un_cv in H;
     assumption.
 Qed. 
 
@@ -218,9 +218,9 @@ Qed.
 (* Unicity of the limit defined by convergent series *)
 Lemma uniqueness_sum :
   forall (An:nat -> R) (l1 l2:R),
-    infinit_sum An l1 -> infinit_sum An l2 -> l1 = l2.
+    infinite_sum An l1 -> infinite_sum An l2 -> l1 = l2.
 Proof.
-  unfold infinit_sum in |- *; intros.
+  unfold infinite_sum in |- *; intros.
   case (Req_dec l1 l2); intro.
   assumption.
   cut (0 < Rabs ((l1 - l2) / 2)); [ intro | apply Rabs_pos_lt ].
@@ -450,7 +450,7 @@ Qed.
 (**********)
 Lemma cv_cauchy_1 :
   forall An:nat -> R,
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l) ->
+    { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l } ->
     Cauchy_crit_series An.
 Proof.
   intros An X.
@@ -481,7 +481,7 @@ Qed.
 Lemma cv_cauchy_2 :
   forall An:nat -> R,
     Cauchy_crit_series An ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+    { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }.
 Proof.
   intros.
   apply R_complete.

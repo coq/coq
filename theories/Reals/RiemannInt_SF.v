@@ -31,7 +31,7 @@ Qed.
 Lemma Nzorn :
   forall I:nat -> Prop,
     (exists n : nat, I n) ->
-    Nbound I -> sigT (fun n:nat => I n /\ (forall i:nat, I i -> (i <= n)%nat)).
+    Nbound I -> { n:nat | I n /\ (forall i:nat, I i -> (i <= n)%nat) }.
 Proof.
   intros I H H0; set (E := fun x:R =>  exists i : nat, I i /\ INR i = x);
     assert (H1 : bound E).
@@ -133,10 +133,10 @@ Definition adapted_couple_opt (f:R -> R) (a b:R) (l lf:Rlist) :=
   (forall i:nat, (i < pred (Rlength l))%nat -> pos_Rl l i <> pos_Rl l (S i)).
 
 Definition is_subdivision (f:R -> R) (a b:R) (l:Rlist) : Type :=
-  sigT (fun l0:Rlist => adapted_couple f a b l l0).
+  { l0:Rlist & adapted_couple f a b l l0 }.
 
 Definition IsStepFun (f:R -> R) (a b:R) : Type :=
-  sigT (fun l:Rlist => is_subdivision f a b l).
+  { l:Rlist & is_subdivision f a b l }.
 
 (** ** Class of step functions *)
 Record StepFun (a b:R) : Type := mkStepFun
@@ -1779,13 +1779,12 @@ Lemma StepFun_P38 :
     ordered_Rlist l ->
     pos_Rl l 0 = a ->
     pos_Rl l (pred (Rlength l)) = b ->
-    sigT
-    (fun g:StepFun a b =>
+    { g:StepFun a b |
       g b = f b /\
       (forall i:nat,
         (i < pred (Rlength l))%nat ->
         constant_D_eq g (co_interval (pos_Rl l i) (pos_Rl l (S i)))
-        (f (pos_Rl l i)))).
+        (f (pos_Rl l i))) }.
 Proof. 
   intros l a b f; generalize a; clear a; induction l. 
   intros a H H0 H1; simpl in H0; simpl in H1;
@@ -2206,21 +2205,10 @@ Lemma StepFun_P43 :
     RiemannInt_SF (mkStepFun pr1) + RiemannInt_SF (mkStepFun pr2) =
     RiemannInt_SF (mkStepFun pr3).
 Proof. 
-  intros f; intros;
-    assert
-      (H1 :
-        sigT (fun l:Rlist => sigT (fun l0:Rlist => adapted_couple f a b l l0))).
-  apply pr1.
-  assert
-    (H2 :
-      sigT (fun l:Rlist => sigT (fun l0:Rlist => adapted_couple f b c l l0))).
-  apply pr2.
-  assert
-    (H3 :
-      sigT (fun l:Rlist => sigT (fun l0:Rlist => adapted_couple f a c l l0))).
-  apply pr3.
-  elim H1; clear H1; intros l1 [lf1 H1]; elim H2; clear H2; intros l2 [lf2 H2];
-    elim H3; clear H3; intros l3 [lf3 H3].
+  intros f; intros.
+  pose proof pr1 as (l1,(lf1,H1)).
+  pose proof pr2 as (l2,(lf2,H2)).
+  pose proof pr3 as (l3,(lf3,H3)).
   replace (RiemannInt_SF (mkStepFun pr1)) with
   match Rle_dec a b with
     | left _ => Int_SF lf1 l1
@@ -2462,7 +2450,7 @@ Proof.
         (forall (l1 lf1:Rlist) (a b c:R) (f:R -> R),
           adapted_couple f a b l1 lf1 ->
           a <= c <= b ->
-          sigT (fun l:Rlist => sigT (fun l0:Rlist => adapted_couple f a c l l0))).
+          { l:Rlist & { l0:Rlist & adapted_couple f a c l l0 } }).
   intro X; unfold IsStepFun in |- *; unfold is_subdivision in |- *; eapply X.
   apply H2.
   split; assumption.
@@ -2578,7 +2566,7 @@ Proof.
         (forall (l1 lf1:Rlist) (a b c:R) (f:R -> R),
           adapted_couple f a b l1 lf1 ->
           a <= c <= b ->
-          sigT (fun l:Rlist => sigT (fun l0:Rlist => adapted_couple f c b l l0))).
+          { l:Rlist & { l0:Rlist & adapted_couple f c b l l0 } }).
   intro X; unfold IsStepFun in |- *; unfold is_subdivision in |- *; eapply X;
     [ apply H2 | split; assumption ].
   clear f a b c H0 H H1 H2 l1 lf1; simple induction l1.

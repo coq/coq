@@ -109,6 +109,14 @@ Qed.
 Hint Resolve Rge_le: real.
 
 (**********)
+Lemma Rlt_gt : forall r1 r2, r1 < r2 -> r2 > r1.
+Proof. trivial. Qed.
+
+(**********)
+Lemma Rgt_lt : forall r1 r2, r1 > r2 -> r2 < r1.
+Proof. trivial. Qed.
+
+(**********)
 Lemma Rnot_le_lt : forall r1 r2, ~ r1 <= r2 -> r2 < r1.
 Proof.
   intros r1 r2; generalize (Rtotal_order r1 r2); unfold Rle in |- *; tauto.
@@ -220,7 +228,6 @@ Proof.
     intuition.
 Qed.
 
-(**********)
 Lemma Rle_dec : forall r1 r2, {r1 <= r2} + {~ r1 <= r2}.
 Proof.
   intros r1 r2.
@@ -228,13 +235,11 @@ Proof.
   intuition eauto 4 with real.
 Qed.
 
-(**********)
 Lemma Rgt_dec : forall r1 r2, {r1 > r2} + {~ r1 > r2}.
 Proof.
   intros; unfold Rgt in |- *; intros; apply Rlt_dec.
 Qed.
 
-(**********)
 Lemma Rge_dec : forall r1 r2, {r1 >= r2} + {~ r1 >= r2}.
 Proof.
   intros; generalize (Rle_dec r2 r1); intuition.
@@ -243,6 +248,16 @@ Qed.
 Lemma Rlt_le_dec : forall r1 r2, {r1 < r2} + {r2 <= r1}.
 Proof.
   intros; generalize (total_order_T r1 r2); intuition.
+Qed.
+
+Lemma Rle_lt_dec : forall r1 r2, {r1 <= r2} + {r2 < r1}.
+Proof.
+  intros; generalize (total_order_T r1 r2); intuition.
+Qed.
+
+Lemma Rlt_or_le : forall r1 r2, r1 < r2 \/ r2 <= r1.
+Proof.
+  intros n m; elim (Rle_lt_dec m n); auto with real.
 Qed.
 
 Lemma Rle_or_lt : forall r1 r2, r1 <= r2 \/ r2 < r1.
@@ -450,6 +465,8 @@ Qed.
 
 (***********)
 Definition Rsqr r : R := r * r.
+
+Notation "r ²" := (Rsqr r) (at level 1, format "r ²") : R_scope.
 
 (***********)
 Lemma Rsqr_0 : Rsqr 0 = 0.
@@ -1538,6 +1555,12 @@ Proof.
  rewrite mult_IZR.
  induction n;simpl;trivial.
  rewrite mult_IZR;ring[IHn].
+Qed.
+
+(**********)
+Lemma succ_IZR : forall n:Z, IZR (Zsucc n) = IZR n + 1.
+Proof.
+  intro; change 1 with (IZR 1); unfold Zsucc; apply plus_IZR.
 Qed.
 
 (**********)

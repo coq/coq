@@ -22,7 +22,8 @@ Require Import Exp_prop.
 Require Import Rsqrt_def.
 Require Import R_sqrt.
 Require Import MVT.
-Require Import Ranalysis4. Open Local Scope R_scope.
+Require Import Ranalysis4.
+Open Local Scope R_scope.
 
 Lemma P_Rmin : forall (P:R -> Prop) (x y:R), P x -> P y -> P (Rmin x y).
 Proof.
@@ -90,7 +91,7 @@ Proof.
         replace (/ INR (fact n)) with (1 ^ n / INR (fact n)).
   apply (H2 _ H3).
   unfold Rdiv in |- *; rewrite pow1; rewrite Rmult_1_l; reflexivity.
-  unfold infinit_sum in e; unfold Un_cv, tg_alt in |- *; intros; elim (e _ H0);
+  unfold infinite_sum in e; unfold Un_cv, tg_alt in |- *; intros; elim (e _ H0);
     intros; exists x0; intros;
       replace (sum_f_R0 (fun i:nat => (-1) ^ i * / INR (fact i)) n) with
       (sum_f_R0 (fun i:nat => / INR (fact i) * (-1) ^ i) n).
@@ -150,62 +151,59 @@ Proof.
   symmetry  in |- *; apply derive_pt_eq_0; apply derivable_pt_lim_exp.
 Qed.
 
-Lemma ln_exists1 : forall y:R, 0 < y -> 1 <= y -> sigT (fun z:R => y = exp z).
+Lemma ln_exists1 : forall y:R, 1 <= y -> { z:R | y = exp z }.
 Proof.
-  intros; set (f := fun x:R => exp x - y); cut (f 0 <= 0).
-  intro; cut (continuity f).
-  intro; cut (0 <= f y).
-  intro; cut (f 0 * f y <= 0).
-  intro; assert (X := IVT_cor f 0 y H2 (Rlt_le _ _ H) H4); elim X; intros t H5;
-    apply existT with t; elim H5; intros; unfold f in H7;
-      apply Rminus_diag_uniq_sym; exact H7.
+  intros; set (f := fun x:R => exp x - y).
+  assert (H0 : 0 < y) by (apply Rlt_le_trans with 1; auto with real).
+  cut (f 0 <= 0); [intro H1|].
+  cut (continuity f); [intro H2|].
+  cut (0 <= f y); [intro H3|].
+  cut (f 0 * f y <= 0); [intro H4|].
+  pose proof (IVT_cor f 0 y H2 (Rlt_le _ _ H0) H4) as (t,(_,H7));
+    exists t; unfold f in H7; apply Rminus_diag_uniq_sym; exact H7.
   pattern 0 at 2 in |- *; rewrite <- (Rmult_0_r (f y));
     rewrite (Rmult_comm (f 0)); apply Rmult_le_compat_l; 
       assumption.
   unfold f in |- *; apply Rplus_le_reg_l with y; left;
     apply Rlt_trans with (1 + y).
   rewrite <- (Rplus_comm y); apply Rplus_lt_compat_l; apply Rlt_0_1.
-  replace (y + (exp y - y)) with (exp y); [ apply (exp_ineq1 y H) | ring ].
+  replace (y + (exp y - y)) with (exp y); [ apply (exp_ineq1 y H0) | ring ].
   unfold f in |- *; change (continuity (exp - fct_cte y)) in |- *;
     apply continuity_minus;
       [ apply derivable_continuous; apply derivable_exp
         | apply derivable_continuous; apply derivable_const ].
   unfold f in |- *; rewrite exp_0; apply Rplus_le_reg_l with y;
-    rewrite Rplus_0_r; replace (y + (1 - y)) with 1; [ apply H0 | ring ].
+    rewrite Rplus_0_r; replace (y + (1 - y)) with 1; [ apply H | ring ].
 Qed.
 
 (**********)
-Lemma ln_exists : forall y:R, 0 < y -> sigT (fun z:R => y = exp z).
+Lemma ln_exists : forall y:R, 0 < y -> { z:R | y = exp z }.
 Proof.
   intros; case (Rle_dec 1 y); intro.
-  apply (ln_exists1 _ H r).
+  apply (ln_exists1 _ r).
   assert (H0 : 1 <= / y).
   apply Rmult_le_reg_l with y.
   apply H.
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r; left; apply (Rnot_le_lt _ _ n).
   red in |- *; intro; rewrite H0 in H; elim (Rlt_irrefl _ H).
-  assert (H1 : 0 < / y).
-  apply Rinv_0_lt_compat; apply H.
-  assert (H2 := ln_exists1 _ H1 H0); elim H2; intros; apply existT with (- x);
+  destruct (ln_exists1 _ H0) as (x,p); exists (- x);
     apply Rmult_eq_reg_l with (exp x / y).
   unfold Rdiv in |- *; rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; rewrite <- (Rmult_comm (/ y)); rewrite Rmult_assoc;
     rewrite <- exp_plus; rewrite Rplus_opp_r; rewrite exp_0; 
       rewrite Rmult_1_r; symmetry  in |- *; apply p.
-  red in |- *; intro; rewrite H3 in H; elim (Rlt_irrefl _ H).
+  red in |- *; intro H3; rewrite H3 in H; elim (Rlt_irrefl _ H).
   unfold Rdiv in |- *; apply prod_neq_R0.
-  assert (H3 := exp_pos x); red in |- *; intro; rewrite H4 in H3;
+  assert (H3 := exp_pos x); red in |- *; intro H4; rewrite H4 in H3;
     elim (Rlt_irrefl _ H3).
-  apply Rinv_neq_0_compat; red in |- *; intro; rewrite H3 in H;
+  apply Rinv_neq_0_compat; red in |- *; intro H3; rewrite H3 in H;
     elim (Rlt_irrefl _ H).
 Qed.
 
 (* Definition of log R+* -> R *)
 Definition Rln (y:posreal) : R :=
-  match ln_exists (pos y) (cond_pos y) with
-    | existT a b => a
-  end.
+  let (a,_) := ln_exists (pos y) (cond_pos y) in a.
 
 (* Extension on R *)
 Definition ln (x:R) : R :=

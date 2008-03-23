@@ -15,7 +15,8 @@ Require Import Rbase.
 Require Import RiemannInt_SF.
 Require Import Classical_Prop.
 Require Import Classical_Pred_Type.
-Require Import Max. Open Local Scope R_scope.
+Require Import Max.
+Open Local Scope R_scope.
 
 Set Implicit Arguments.
 
@@ -25,13 +26,11 @@ Set Implicit Arguments.
 
 Definition Riemann_integrable (f:R -> R) (a b:R) : Type :=
   forall eps:posreal,
-    sigT
-    (fun phi:StepFun a b =>
-      sigT
-      (fun psi:StepFun a b =>
+    { phi:StepFun a b &
+      { psi:StepFun a b |
         (forall t:R,
           Rmin a b <= t <= Rmax a b -> Rabs (f t - phi t) <= psi t) /\
-        Rabs (RiemannInt_SF psi) < eps)).
+        Rabs (RiemannInt_SF psi) < eps } }.
 
 Definition phi_sequence (un:nat -> posreal) (f:R -> R) 
   (a b:R) (pr:Riemann_integrable f a b) (n:nat) := 
@@ -40,12 +39,11 @@ Definition phi_sequence (un:nat -> posreal) (f:R -> R)
 Lemma phi_sequence_prop :
   forall (un:nat -> posreal) (f:R -> R) (a b:R) (pr:Riemann_integrable f a b)
     (N:nat),
-    sigT
-    (fun psi:StepFun a b =>
+    { psi:StepFun a b |
       (forall t:R,
         Rmin a b <= t <= Rmax a b ->
         Rabs (f t - phi_sequence un pr N t) <= psi t) /\
-      Rabs (RiemannInt_SF psi) < un N).
+      Rabs (RiemannInt_SF psi) < un N }.
 Proof.
   intros; apply (projT2 (pr (un N))).
 Qed.
@@ -55,8 +53,8 @@ Lemma RiemannInt_P1 :
     Riemann_integrable f a b -> Riemann_integrable f b a.
 Proof.
   unfold Riemann_integrable in |- *; intros; elim (X eps); clear X; intros;
-    elim p; clear p; intros; apply existT with (mkStepFun (StepFun_P6 (pre x)));
-      apply existT with (mkStepFun (StepFun_P6 (pre x0))); 
+    elim p; clear p; intros; exists (mkStepFun (StepFun_P6 (pre x)));
+      exists (mkStepFun (StepFun_P6 (pre x0))); 
         elim p; clear p; intros; split.
   intros; apply (H t); elim H1; clear H1; intros; split;
     [ apply Rle_trans with (Rmin b a); try assumption; right;
@@ -90,7 +88,7 @@ Lemma RiemannInt_P2 :
     (forall n:nat,
       (forall t:R, Rmin a b <= t <= Rmax a b -> Rabs (f t - vn n t) <= wn n t) /\
       Rabs (RiemannInt_SF (wn n)) < un n) ->
-    sigT (fun l:R => Un_cv (fun N:nat => RiemannInt_SF (vn N)) l).
+    { l:R | Un_cv (fun N:nat => RiemannInt_SF (vn N)) l }.
 Proof.
   intros; apply R_complete; unfold Un_cv in H; unfold Cauchy_crit in |- *;
     intros; assert (H3 : 0 < eps / 2).
@@ -143,7 +141,7 @@ Lemma RiemannInt_P3 :
     (forall n:nat,
       (forall t:R, Rmin a b <= t <= Rmax a b -> Rabs (f t - vn n t) <= wn n t) /\
       Rabs (RiemannInt_SF (wn n)) < un n) ->
-    sigT (fun l:R => Un_cv (fun N:nat => RiemannInt_SF (vn N)) l).
+    { l:R | Un_cv (fun N:nat => RiemannInt_SF (vn N)) l }.
 Proof.
   intros; case (Rle_dec a b); intro.
   apply RiemannInt_P2 with f un wn; assumption.
@@ -181,7 +179,7 @@ Proof.
   rewrite Rabs_Ropp in H4; apply H4.
   apply H4.
   assert (H3 := RiemannInt_P2 _ _ _ _ H H1 H2); elim H3; intros;
-    apply existT with (- x); unfold Un_cv in |- *; unfold Un_cv in p; 
+    exists (- x); unfold Un_cv in |- *; unfold Un_cv in p; 
       intros; elim (p _ H4); intros; exists x0; intros; 
         generalize (H5 _ H6); unfold R_dist, RiemannInt_SF in |- *;
           case (Rle_dec b a); case (Rle_dec a b); intros.
@@ -205,13 +203,12 @@ Lemma RiemannInt_exists :
   forall (f:R -> R) (a b:R) (pr:Riemann_integrable f a b) 
     (un:nat -> posreal),
     Un_cv un 0 ->
-    sigT
-    (fun l:R => Un_cv (fun N:nat => RiemannInt_SF (phi_sequence un pr N)) l).
+    { l:R | Un_cv (fun N:nat => RiemannInt_SF (phi_sequence un pr N)) l }.
 Proof.
   intros f; intros;
     apply RiemannInt_P3 with
-      f un (fun n:nat => projT1 (phi_sequence_prop un pr n));
-      [ apply H | intro; apply (projT2 (phi_sequence_prop un pr n)) ].
+      f un (fun n:nat => proj1_sig (phi_sequence_prop un pr n));
+      [ apply H | intro; apply (proj2_sig (phi_sequence_prop un pr n)) ].
 Qed.
 
 Lemma RiemannInt_P4 :
@@ -411,9 +408,7 @@ Qed.
 
 (**********) 
 Definition RiemannInt (f:R -> R) (a b:R) (pr:Riemann_integrable f a b) : R :=
-  match RiemannInt_exists pr RinvN RinvN_cv with
-    | existT a' b' => a'
-  end.
+  let (a,_) := RiemannInt_exists pr RinvN RinvN_cv in a.
 
 Lemma RiemannInt_P5 :
   forall (f:R -> R) (a b:R) (pr1 pr2:Riemann_integrable f a b),
@@ -433,8 +428,7 @@ Qed.
 
 Lemma maxN :
   forall (a b:R) (del:posreal),
-    a < b ->
-    sigT (fun n:nat => a + INR n * del < b /\ b <= a + INR (S n) * del).
+    a < b -> { n:nat | a + INR n * del < b /\ b <= a + INR (S n) * del }.
 Proof.
   intros; set (I := fun n:nat => a + INR n * del < b);
     assert (H0 :  exists n : nat, I n).
@@ -478,9 +472,7 @@ Fixpoint SubEquiN (N:nat) (x y:R) (del:posreal) {struct N} : Rlist :=
   end.
 
 Definition max_N (a b:R) (del:posreal) (h:a < b) : nat :=
-  match maxN del h with
-    | existT N H0 => N
-  end.
+  let (N,_) := maxN del h in N.
 
 Definition SubEqui (a b:R) (del:posreal) (h:a < b) : Rlist :=
   SubEquiN (S (max_N del h)) a b del.
@@ -490,12 +482,11 @@ Lemma Heine_cor1 :
     a < b ->
     (forall x:R, a <= x <= b -> continuity_pt f x) ->
     forall eps:posreal,
-      sigT
-      (fun delta:posreal =>
+      { delta:posreal |
         delta <= b - a /\
         (forall x y:R,
           a <= x <= b ->
-          a <= y <= b -> Rabs (x - y) < delta -> Rabs (f x - f y) < eps)).
+          a <= y <= b -> Rabs (x - y) < delta -> Rabs (f x - f y) < eps) }.
 Proof.
   intro f; intros;
     set
@@ -520,7 +511,7 @@ Proof.
           | intros; apply H3; try assumption; apply Rlt_le_trans with (Rmin x (b - a));
             [ assumption | apply Rmin_l ] ].
   assert (H3 := completeness E H1 H2); elim H3; intros; cut (0 < x <= b - a).
-  intro; elim H4; clear H4; intros; apply existT with (mkposreal _ H4); split.
+  intro; elim H4; clear H4; intros; exists (mkposreal _ H4); split.
   apply H5.
   unfold is_lub in p; elim p; intros; unfold is_upper_bound in H6;
     set (D := Rabs (x0 - y)); elim (classic (exists y : R, D < y /\ E y));
@@ -549,22 +540,21 @@ Lemma Heine_cor2 :
   forall (f:R -> R) (a b:R),
     (forall x:R, a <= x <= b -> continuity_pt f x) ->
     forall eps:posreal,
-      sigT
-      (fun delta:posreal =>
+      { delta:posreal |
         forall x y:R,
           a <= x <= b ->
-          a <= y <= b -> Rabs (x - y) < delta -> Rabs (f x - f y) < eps).
+          a <= y <= b -> Rabs (x - y) < delta -> Rabs (f x - f y) < eps }.
 Proof.
   intro f; intros; case (total_order_T a b); intro.
   elim s; intro.
-  assert (H0 := Heine_cor1 a0 H eps); elim H0; intros; apply existT with x;
+  assert (H0 := Heine_cor1 a0 H eps); elim H0; intros; exists x;
     elim p; intros; apply H2; assumption.
-  apply existT with (mkposreal _ Rlt_0_1); intros; assert (H3 : x = y);
+  exists (mkposreal _ Rlt_0_1); intros; assert (H3 : x = y);
     [ elim H0; elim H1; intros; rewrite b0 in H3; rewrite b0 in H5;
       apply Rle_antisym; apply Rle_trans with b; assumption
       | rewrite H3; unfold Rminus in |- *; rewrite Rplus_opp_r; rewrite Rabs_R0;
         apply (cond_pos eps) ].
-  apply existT with (mkposreal _ Rlt_0_1); intros; elim H0; intros;
+  exists (mkposreal _ Rlt_0_1); intros; elim H0; intros;
     elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ (Rle_trans _ _ _ H3 H4) r)).
 Qed.
 
@@ -664,15 +654,14 @@ Qed.
 
 Lemma SubEqui_P9 :
   forall (a b:R) (del:posreal) (f:R -> R) (h:a < b),
-    sigT
-    (fun g:StepFun a b =>
+    { g:StepFun a b |
       g b = f b /\
       (forall i:nat,
         (i < pred (Rlength (SubEqui del h)))%nat ->
         constant_D_eq g
         (co_interval (pos_Rl (SubEqui del h) i)
           (pos_Rl (SubEqui del h) (S i)))
-        (f (pos_Rl (SubEqui del h) i)))).
+        (f (pos_Rl (SubEqui del h) i))) }.
 Proof.
   intros; apply StepFun_P38;
     [ apply SubEqui_P7 | apply SubEqui_P1 | apply SubEqui_P2 ].
@@ -1003,11 +992,11 @@ Proof.
       do 2 rewrite (Rmult_comm 3); repeat rewrite Rmult_assoc;
         rewrite <- Rinv_l_sym; [ ring | discrR ]
       | discrR ].
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr2 n)); intro;
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr2 n)); intro;
     rewrite Rmin_comm; rewrite RmaxSym;
-      apply (projT2 (phi_sequence_prop RinvN pr2 n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr1 n)).
+      apply (proj2_sig (phi_sequence_prop RinvN pr2 n)).
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr1 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr1 n)).
 Qed.
 
 Lemma RiemannInt_P9 :
@@ -1272,11 +1261,11 @@ Proof.
       case (RiemannInt_exists pr1 RinvN RinvN_cv); intros; 
         eapply UL_sequence;
           [ apply u0
-            | set (psi1 := fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n));
-              set (psi2 := fun n:nat => projT1 (phi_sequence_prop RinvN pr3 n));
+            | set (psi1 := fun n:nat => proj1_sig (phi_sequence_prop RinvN pr1 n));
+              set (psi2 := fun n:nat => proj1_sig (phi_sequence_prop RinvN pr3 n));
                 apply RiemannInt_P11 with f RinvN (phi_sequence RinvN pr1) psi1 psi2;
                   [ apply RinvN_cv
-                    | intro; apply (projT2 (phi_sequence_prop RinvN pr1 n))
+                    | intro; apply (proj2_sig (phi_sequence_prop RinvN pr1 n))
                     | intro;
                       assert
                         (H1 :
@@ -1284,7 +1273,7 @@ Proof.
                             Rmin a b <= t /\ t <= Rmax a b ->
                             Rabs (f t + l * g t - phi_sequence RinvN pr3 n t) <= psi2 n t) /\
                           Rabs (RiemannInt_SF (psi2 n)) < RinvN n);
-                        [ apply (projT2 (phi_sequence_prop RinvN pr3 n))
+                        [ apply (proj2_sig (phi_sequence_prop RinvN pr3 n))
                           | elim H1; intros; split; try assumption; intros;
                             replace (f t) with (f t + l * g t);
                             [ apply H2; assumption | rewrite H0; ring ] ]
@@ -1360,8 +1349,8 @@ Proof.
             Rmin a b <= t /\ t <= Rmax a b ->
             Rabs (f t - phi_sequence RinvN pr1 n t) <= psi1 n t) /\
           Rabs (RiemannInt_SF (psi1 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr1 n0)).
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr1 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr1 n0)).
   assert
     (H8 :
       exists psi2 : nat -> StepFun a b,
@@ -1370,8 +1359,8 @@ Proof.
             Rmin a b <= t /\ t <= Rmax a b ->
             Rabs (g t - phi_sequence RinvN pr2 n t) <= psi2 n t) /\
           Rabs (RiemannInt_SF (psi2 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr2 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr2 n0)).
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr2 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr2 n0)).
   assert
     (H9 :
       exists psi3 : nat -> StepFun a b,
@@ -1380,8 +1369,8 @@ Proof.
             Rmin a b <= t /\ t <= Rmax a b ->
             Rabs (f t + l * g t - phi_sequence RinvN pr3 n t) <= psi3 n t) /\
           Rabs (RiemannInt_SF (psi3 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr3 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr3 n0)).
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr3 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr3 n0)).
   elim H7; clear H7; intros psi1 H7; elim H8; clear H8; intros psi2 H8; elim H9;
     clear H9; intros psi3 H9;
       replace
@@ -1552,8 +1541,8 @@ Proof.
                   Rmin a b <= t /\ t <= Rmax a b ->
                   Rabs (f t - phi_sequence RinvN pr n t) <= psi1 n t) /\
                 Rabs (RiemannInt_SF (psi1 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr n)).
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr n)).
   elim H1; clear H1; intros psi1 H1;
     set (phi2 := fun n:nat => mkStepFun (StepFun_P4 a b c));
       set (psi2 := fun n:nat => mkStepFun (StepFun_P4 a b 0));
@@ -1647,8 +1636,8 @@ Proof.
               Rmin a b <= t /\ t <= Rmax a b ->
               Rabs (Rabs (f t) - phi3 n t) <= psi3 n t) /\
             Rabs (RiemannInt_SF (psi3 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr2 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr2 n)). 
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr2 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr2 n)). 
   assert
     (H1 :
       exists psi2 : nat -> StepFun a b,
@@ -1664,8 +1653,8 @@ Proof.
           (forall t:R,
             Rmin a b <= t /\ t <= Rmax a b -> Rabs (f t - phi1 n t) <= psi2 n t) /\
           Rabs (RiemannInt_SF (psi2 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr1 n)).
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr1 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr1 n)).
   elim H1; clear H1; intros psi2 H1; split with psi2; intros; elim (H1 n);
     clear H1; intros; split; try assumption.
   intros; unfold phi2 in |- *; simpl in |- *;
@@ -1698,8 +1687,8 @@ Proof.
                 Rmin a b <= t /\ t <= Rmax a b ->
                 Rabs (f t - phi1 n t) <= psi1 n t) /\
               Rabs (RiemannInt_SF (psi1 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr1 n)). 
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr1 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr1 n)). 
   elim H1; clear H1; intros psi1 H1;
     set (phi2 := fun N:nat => phi_sequence RinvN pr2 N).
   set
@@ -1722,8 +1711,8 @@ Proof.
           (forall t:R,
             Rmin a b <= t /\ t <= Rmax a b -> Rabs (g t - phi2 n t) <= psi2 n t) /\
           Rabs (RiemannInt_SF (psi2 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr2 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr2 n)). 
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr2 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr2 n)). 
   elim H2; clear H2; intros psi2 H2;
     apply RiemannInt_P11 with f RinvN phi2_m psi2 psi1; 
       try assumption. 
@@ -2378,8 +2367,8 @@ Proof.
               Rmin a b <= t /\ t <= Rmax a b ->
               Rabs (f t - phi_sequence RinvN pr1 n t) <= psi1 n t) /\
             Rabs (RiemannInt_SF (psi1 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr1 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr1 n)). 
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr1 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr1 n)). 
   assert
     (H2 :
       exists psi2 : nat -> StepFun b c,
@@ -2388,8 +2377,8 @@ Proof.
             Rmin b c <= t /\ t <= Rmax b c ->
             Rabs (f t - phi_sequence RinvN pr2 n t) <= psi2 n t) /\
           Rabs (RiemannInt_SF (psi2 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr2 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr2 n)). 
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr2 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr2 n)). 
   assert
     (H3 :
       exists psi3 : nat -> StepFun a c,
@@ -2398,8 +2387,8 @@ Proof.
             Rmin a c <= t /\ t <= Rmax a c ->
             Rabs (f t - phi_sequence RinvN pr3 n t) <= psi3 n t) /\
           Rabs (RiemannInt_SF (psi3 n)) < RinvN n)).
-  split with (fun n:nat => projT1 (phi_sequence_prop RinvN pr3 n)); intro;
-    apply (projT2 (phi_sequence_prop RinvN pr3 n)). 
+  split with (fun n:nat => proj1_sig (phi_sequence_prop RinvN pr3 n)); intro;
+    apply (proj2_sig (phi_sequence_prop RinvN pr3 n)). 
   elim H1; clear H1; intros psi1 H1; elim H2; clear H2; intros psi2 H2; elim H3;
     clear H3; intros psi3 H3; assert (H := RinvN_cv); 
       unfold Un_cv in |- *; intros; assert (H4 : 0 < eps / 3).
@@ -3259,7 +3248,7 @@ Lemma RiemannInt_P30 :
   forall (f:R -> R) (a b:R),
     a <= b ->
     (forall x:R, a <= x <= b -> continuity_pt f x) ->
-    sigT (fun g:R -> R => antiderivative f g a b).
+    { g:R -> R | antiderivative f g a b }.
 Proof.
   intros; split with (primitive H (FTC_P1 H H0)); apply RiemannInt_P29.
 Qed.

@@ -9,7 +9,8 @@
 (*i $Id$ i*)
 
 Require Import Rbase.
-Require Import Rbasic_fun. Open Local Scope R_scope.
+Require Import Rbasic_fun.
+Open Local Scope R_scope.
 
 (****************************************************)
 (** Rsqr : some results                             *)

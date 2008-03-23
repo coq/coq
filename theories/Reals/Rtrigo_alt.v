@@ -137,7 +137,7 @@ Proof.
   ring.
   assert (X := exist_sin (Rsqr a)); elim X; intros.
   cut (x = sin a / a).
-  intro; rewrite H3 in p; unfold sin_in in p; unfold infinit_sum in p;
+  intro; rewrite H3 in p; unfold sin_in in p; unfold infinite_sum in p;
     unfold R_dist in p; unfold Un_cv in |- *; unfold R_dist in |- *; 
       intros.
   cut (0 < eps / Rabs a).
@@ -327,7 +327,7 @@ Proof.
   apply (fun m n p:nat => mult_le_compat_l p n m); apply le_n_S; assumption.
   assert (X := exist_cos (Rsqr a0)); elim X; intros.
   cut (x = cos a0).
-  intro; rewrite H4 in p; unfold cos_in in p; unfold infinit_sum in p;
+  intro; rewrite H4 in p; unfold cos_in in p; unfold infinite_sum in p;
     unfold R_dist in p; unfold Un_cv in |- *; unfold R_dist in |- *; 
       intros.
   elim (p _ H5); intros N H6.

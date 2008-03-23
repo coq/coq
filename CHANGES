@@ -50,6 +50,8 @@ Libraries
   at the same position, while the predicate previously called eqlistA 
   is now equivlistA (this one only states that the lists contains the same 
   elements, nothing more). 
+- In ListSet, a few definitions are now in Type (may induce possible 
+  incompatibilities)
 - Improved FSets/FMaps. In particular FMap now provides an induction principle 
   on maps, and some properties about FSets and fold need less hypothesis. 
   The polymorphic parameter for the fold function is now in Type. 
@@ -60,8 +62,11 @@ Libraries
   as "Immediate". A compatibility "oldset" database retains these expensive
   hints, so using "(e)auto with set oldset" should help porting scripts. 
   Same for FSetWeakInterface and FMap(Weak)Interface. 
-- Few changes in Reals (lemmas on prod_f_SO now on prod_f_R0, useless
-  assumption in Rpower_O removed).
+- Some changes in Reals: lemmas on prod_f_SO is now on prod_f_R0, most
+  statement in "sigT" (including the completeness axiom) are now in "sig" (in
+  case of incompatibility, use sigT_of_sig or sig_of_sigT), identifiers in 
+  French moved to English, useless hypothesis of ln_exists1 dropped, new
+  Rlogic.v states a few logical properties about R axioms.
 - Slight restructuration of the Logic library regarding choice and classical
   logic. Addition of files providing intuitionistic axiomatizations of
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v
@@ -131,7 +136,7 @@ Tactics
   induction-inversion on instantiated inductive families à la BasicElim.
 - Tactic apply now able to reason modulo unfolding of constants
   (possible source of incompatibility in situations where apply may fail, 
-   e.g.  as argument of a try or a repeat and in a ltac function).
+  e.g. as argument of a try or a repeat and in a ltac function).
 
 Type Classes
 
@@ -170,6 +175,10 @@ Program
   proofs in standard disjunctions, to avoid breaking existing scripts when importing
   Program. Also, put them in program_scope.
   
+Tools
+
+- CoqIDE font defaults to monospace so as indentation to be meaningful.
+
 Miscellaneous
 
 - Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into
@@ -280,7 +289,7 @@ Vernacular commands
 
 Ltac and tactic syntactic extensions
 
-- New primitive "external" for communication with tool external to Coq.
+- New primitive "external" for communication with tool external to Coq
 - New semantics for "match t with": if a clause returns a
   tactic, it is now applied to the current goal. If it fails, the next
   clause or next matching subterm is tried (i.e. it behaves as "match

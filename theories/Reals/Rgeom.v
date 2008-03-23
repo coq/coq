@@ -12,7 +12,8 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Rtrigo.
-Require Import R_sqrt. Open Local Scope R_scope.
+Require Import R_sqrt.
+Open Local Scope R_scope.
 
 (** * Distance *)
 

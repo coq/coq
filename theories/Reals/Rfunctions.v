@@ -786,11 +786,14 @@ Proof.
 Qed.
 
 (*******************************)
-(** *     Infinit Sum          *)
+(** *     Infinite Sum          *)
 (*******************************)
 (*********)
-Definition infinit_sum (s:nat -> R) (l:R) : Prop :=
+Definition infinite_sum (s:nat -> R) (l:R) : Prop :=
   forall eps:R,
     eps > 0 ->
     exists N : nat,
       (forall n:nat, (n >= N)%nat -> R_dist (sum_f_R0 s n) l < eps).
+
+(** Compatibility with previous versions *)
+Notation infinit_sum := infinite_sum (only parsing).

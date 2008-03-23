@@ -13,8 +13,8 @@ Require Import Rfunctions.
 Require Import Ranalysis1.
 Require Import RList.
 Require Import Classical_Prop.
-Require Import Classical_Pred_Type. Open Local Scope R_scope.
-
+Require Import Classical_Pred_Type.
+Open Local Scope R_scope.
 
 (** * General definitions and propositions *)
 

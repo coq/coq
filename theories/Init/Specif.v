@@ -46,12 +46,12 @@ Arguments Scope sigT [type_scope type_scope].
 Arguments Scope sigT2 [type_scope type_scope type_scope].
 
 Notation "{ x  |  P }" := (sig (fun x => P)) : type_scope.
-Notation "{ x  |  P  &  Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
+Notation "{ x  |  P  & Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
 Notation "{ x : A  |  P }" := (sig (fun x:A => P)) : type_scope.
-Notation "{ x : A  |  P  &  Q }" := (sig2 (fun x:A => P) (fun x:A => Q)) :
+Notation "{ x : A  |  P  & Q }" := (sig2 (fun x:A => P) (fun x:A => Q)) :
   type_scope.
-Notation "{ x : A  &  P }" := (sigT (fun x:A => P)) : type_scope.
-Notation "{ x : A  &  P  &  Q }" := (sigT2 (fun x:A => P) (fun x:A => Q)) :
+Notation "{ x : A  & P }" := (sigT (fun x:A => P)) : type_scope.
+Notation "{ x : A  & P  & Q }" := (sigT2 (fun x:A => P) (fun x:A => Q)) :
   type_scope.
 
 Add Printing Let sig.
@@ -107,6 +107,13 @@ Section Projections.
 
 End Projections.
 
+(** [sigT] of a predicate is equivalent to [sig] *)
+
+Lemma sig_of_sigT : forall (A:Type) (P:A->Prop), sigT P -> sig P.
+Proof. destruct 1 as (x,H); exists x; trivial. Defined.
+
+Lemma sigT_of_sig : forall (A:Type) (P:A->Prop), sig P -> sigT P.
+Proof. destruct 1 as (x,H); exists x; trivial. Defined.
 
 (** [sumbool] is a boolean type equipped with the justification of
     their value *)

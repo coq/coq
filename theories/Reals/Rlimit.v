@@ -16,7 +16,8 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Classical_Prop.
-Require Import Fourier. Open Local Scope R_scope.
+Require Import Fourier.
+Open Local Scope R_scope.
 
 (*******************************)
 (** *   Calculus               *)

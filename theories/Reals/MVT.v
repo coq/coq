@@ -11,7 +11,8 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
-Require Import Rtopology. Open Local Scope R_scope.
+Require Import Rtopology.
+Open Local Scope R_scope.
 
 (* The Mean Value Theorem *)
 Theorem MVT :
@@ -189,7 +190,7 @@ Proof.
   intros; apply derivable_pt_id.
   intros; apply derivable_continuous_pt; apply X; assumption.
   intros; elim H1; intros; apply X; split; left; assumption.
-  intros; unfold derivable_pt in |- *; apply existT with (f' c); apply H0;
+  intros; unfold derivable_pt in |- *; exists (f' c); apply H0;
     apply H1.
 Qed.
 
@@ -695,11 +696,11 @@ Proof.
   unfold antiderivative in |- *; intros; elim H; clear H; intros; elim H0;
     clear H0; intros H0 _; exists (g1 a - g2 a); intros;
       assert (H3 : forall x:R, a <= x <= b -> derivable_pt g1 x).
-  intros; unfold derivable_pt in |- *; apply existT with (f x0); elim (H x0 H3);
+  intros; unfold derivable_pt in |- *; exists (f x0); elim (H x0 H3);
     intros; eapply derive_pt_eq_1; symmetry  in |- *; 
       apply H4.
   assert (H4 : forall x:R, a <= x <= b -> derivable_pt g2 x).
-  intros; unfold derivable_pt in |- *; apply existT with (f x0);
+  intros; unfold derivable_pt in |- *; exists (f x0);
     elim (H0 x0 H4); intros; eapply derive_pt_eq_1; symmetry  in |- *; 
       apply H5.
   assert (H5 : forall x:R, a < x < b -> derivable_pt (g1 - g2) x).

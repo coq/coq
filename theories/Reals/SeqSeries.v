@@ -33,15 +33,9 @@ Lemma sum_maj1 :
     Rabs (l1 - SP fn N x) <= l2 - sum_f_R0 An N.
 Proof.
   intros;
-    cut
-      (sigT
-        (fun l:R =>
-          Un_cv (fun n:nat => sum_f_R0 (fun l:nat => fn (S N + l)%nat x) n) l)).
+    cut { l:R | Un_cv (fun n => sum_f_R0 (fun l => fn (S N + l)%nat x) n) l }.
   intro X;
-    cut
-      (sigT
-        (fun l:R =>
-          Un_cv (fun n:nat => sum_f_R0 (fun l:nat => An (S N + l)%nat) n) l)).
+    cut { l:R | Un_cv (fun n => sum_f_R0 (fun l => An (S N + l)%nat) n) l }.
   intro X0; elim X; intros l1N H2.
   elim X0; intros l2N H3.
   cut (l1 - SP fn N x = l1N).
@@ -131,7 +125,7 @@ Proof.
   apply le_lt_n_Sm.
   apply le_plus_l.
   apply le_O_n.
-  apply existT with (l2 - sum_f_R0 An N).
+  exists (l2 - sum_f_R0 An N).
   unfold Un_cv in H0; unfold Un_cv in |- *; intros.
   elim (H0 eps H2); intros N0 H3.
   unfold R_dist in H3; exists N0; intros.
@@ -167,7 +161,7 @@ Proof.
   apply le_lt_n_Sm.
   apply le_plus_l.
   apply le_O_n.
-  apply existT with (l1 - SP fn N x).
+  exists (l1 - SP fn N x).
   unfold Un_cv in H; unfold Un_cv in |- *; intros.
   elim (H eps H2); intros N0 H3.
   unfold R_dist in H3; exists N0; intros.
@@ -216,8 +210,8 @@ Qed.
 Lemma Rseries_CV_comp :
   forall An Bn:nat -> R,
     (forall n:nat, 0 <= An n <= Bn n) ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 Bn N) l) ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+    { l:R | Un_cv (fun N:nat => sum_f_R0 Bn N) l } ->
+    { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }.
 Proof.
   intros An Bn H X; apply cv_cauchy_2.
   assert (H0 := cv_cauchy_1 _ X).

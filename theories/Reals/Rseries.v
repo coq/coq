@@ -194,14 +194,14 @@ Section Isequence.
   Variable An : nat -> R.
 
 (*********)
-  Definition Pser (x l:R) : Prop := infinit_sum (fun n:nat => An n * x ^ n) l.
+  Definition Pser (x l:R) : Prop := infinite_sum (fun n:nat => An n * x ^ n) l.
 
 End Isequence.
 
 Lemma GP_infinite :
   forall x:R, Rabs x < 1 -> Pser (fun n:nat => 1) x (/ (1 - x)).
 Proof.
-  intros; unfold Pser in |- *; unfold infinit_sum in |- *; intros;
+  intros; unfold Pser in |- *; unfold infinite_sum in |- *; intros;
     elim (Req_dec x 0).
   intros; exists 0%nat; intros; rewrite H1; rewrite Rminus_0_r; rewrite Rinv_1;
     cut (sum_f_R0 (fun n0:nat => 1 * 0 ^ n0) n = 1).

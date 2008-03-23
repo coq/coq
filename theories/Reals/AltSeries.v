@@ -153,14 +153,14 @@ Lemma CV_ALT :
     Un_decreasing Un ->
     positivity_seq Un ->
     Un_cv Un 0 ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 (tg_alt Un) N) l).
+    { l:R | Un_cv (fun N:nat => sum_f_R0 (tg_alt Un) N) l }.
 Proof.
   intros.
   assert (H2 := CV_ALT_step0 _ H).
   assert (H3 := CV_ALT_step4 _ H H0).
   assert (X := growing_cv _ H2 H3).
   elim X; intros.
-  apply existT with x.
+  exists x.
   unfold Un_cv in |- *; unfold R_dist in |- *; unfold Un_cv in H1;
     unfold R_dist in H1; unfold Un_cv in p; unfold R_dist in p.
   intros; cut (0 < eps / 2);
@@ -220,7 +220,7 @@ Theorem alternated_series :
   forall Un:nat -> R,
     Un_decreasing Un ->
     Un_cv Un 0 ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 (tg_alt Un) N) l).
+    { l:R | Un_cv (fun N:nat => sum_f_R0 (tg_alt Un) N) l }.
 Proof.
   intros; apply CV_ALT.
   assumption.
@@ -408,7 +408,7 @@ Proof.
 Qed.
 
 Lemma exist_PI :
-  sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 (tg_alt PI_tg) N) l).
+  { l:R | Un_cv (fun N:nat => sum_f_R0 (tg_alt PI_tg) N) l }.
 Proof.
   apply alternated_series.
   apply PI_tg_decreasing.
@@ -416,9 +416,7 @@ Proof.
 Qed.
 
 (** Now, PI is defined *)
-Definition PI : R := 4 * match exist_PI with
-                           | existT a b => a
-                         end.
+Definition PI : R := 4 * (let (a,_) := exist_PI in a).
 
 (** We can get an approximation of PI with the following inequality *)
 Lemma PI_ineq :

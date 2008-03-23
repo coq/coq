@@ -192,7 +192,7 @@ Qed.
 
 Lemma dicho_lb_cv :
   forall (x y:R) (P:R -> bool),
-    x <= y -> sigT (fun l:R => Un_cv (dicho_lb x y P) l).
+    x <= y -> { l:R | Un_cv (dicho_lb x y P) l }.
 Proof.
   intros.
   apply growing_cv.
@@ -202,7 +202,7 @@ Qed.
 
 Lemma dicho_up_cv :
   forall (x y:R) (P:R -> bool),
-    x <= y -> sigT (fun l:R => Un_cv (dicho_up x y P) l).
+    x <= y -> { l:R | Un_cv (dicho_up x y P) l }.
 Proof.
   intros.
   apply decreasing_cv.
@@ -466,7 +466,7 @@ Qed.
 Lemma IVT :
   forall (f:R -> R) (x y:R),
     continuity f ->
-    x < y -> f x < 0 -> 0 < f y -> sigT (fun z:R => x <= z <= y /\ f z = 0).
+    x < y -> f x < 0 -> 0 < f y -> { z:R | x <= z <= y /\ f z = 0 }.
 Proof.
   intros.
   cut (x <= y).
@@ -478,7 +478,7 @@ Proof.
   elim X0; intros.
   assert (H4 := cv_dicho _ _ _ _ _ H3 p0 p).
   rewrite H4 in p0.
-  apply existT with x0.
+  exists x0.
   split.
   split.
   apply Rle_trans with (dicho_lb x y (fun z:R => cond_positivity (f z)) 0).
@@ -602,7 +602,7 @@ Qed.
 Lemma IVT_cor :
   forall (f:R -> R) (x y:R),
     continuity f ->
-    x <= y -> f x * f y <= 0 -> sigT (fun z:R => x <= z <= y /\ f z = 0).
+    x <= y -> f x * f y <= 0 -> { z:R | x <= z <= y /\ f z = 0 }.
 Proof.
   intros.
   case (total_order_T 0 (f x)); intro.
@@ -628,7 +628,7 @@ Proof.
   cut (0 < (- f)%F y).
   intros.
   elim (H3 H5 H4); intros.
-  apply existT with x0.
+  exists x0.
   elim p; intros.
   split.
   assumption.
@@ -643,7 +643,7 @@ Proof.
   assumption.
   rewrite H2 in a.
   elim (Rlt_irrefl _ (Rlt_trans _ _ _ r a)).
-  apply existT with x.
+  exists x.
   split.
   split; [ right; reflexivity | assumption ].
   symmetry  in |- *; assumption.
@@ -656,7 +656,7 @@ Proof.
   assumption.
   rewrite H2 in r.
   elim (Rlt_irrefl _ (Rlt_trans _ _ _ r a)).
-  apply existT with y.
+  exists y.
   split.
   split; [ assumption | right; reflexivity ].
   symmetry  in |- *; assumption.
@@ -670,7 +670,7 @@ Qed.
 (** We can now define the square root function as the reciprocal 
    transformation of the square root function *)
 Lemma Rsqrt_exists :
-  forall y:R, 0 <= y -> sigT (fun z:R => 0 <= z /\ y = Rsqr z).
+  forall y:R, 0 <= y -> { z:R | 0 <= z /\ y = Rsqr z }.
 Proof.
   intros.
   set (f := fun x:R => Rsqr x - y).
@@ -686,7 +686,7 @@ Proof.
   intro.
   assert (X := IVT_cor f 0 1 H1 (Rlt_le _ _ Rlt_0_1) H3).
   elim X; intros t H4.
-  apply existT with t.
+  exists t.
   elim H4; intros.
   split.
   elim H5; intros; assumption.
@@ -700,7 +700,7 @@ Proof.
   rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus in |- *;
     rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r; 
       left; assumption.
-  apply existT with 1.
+  exists 1.
   split.
   left; apply Rlt_0_1.
   rewrite b; symmetry  in |- *; apply Rsqr_1.
@@ -710,7 +710,7 @@ Proof.
   intro.
   assert (X := IVT_cor f 0 y H1 H H3).
   elim X; intros t H4.
-  apply existT with t.
+  exists t.
   elim H4; intros.
   split.
   elim H5; intros; assumption.
@@ -739,9 +739,7 @@ Qed.
 
 (* Definition of the square root: R+->R *)
 Definition Rsqrt (y:nonnegreal) : R :=
-  match Rsqrt_exists (nonneg y) (cond_nonneg y) with
-    | existT a b => a
-  end.
+  let (a,_) := Rsqrt_exists (nonneg y) (cond_nonneg y) in a.
 
 (**********)
 Lemma Rsqrt_positivity : forall x:nonnegreal, 0 <= Rsqrt x.

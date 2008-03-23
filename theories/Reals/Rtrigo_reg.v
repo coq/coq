@@ -25,16 +25,15 @@ Proof.
   unfold CVN_R in |- *; intros.
   cut ((r:R) <> 0).
   intro hyp_r; unfold CVN_r in |- *.
-  apply existT with (fun n:nat => / INR (fact (2 * n)) * r ^ (2 * n)).
+  exists (fun n:nat => / INR (fact (2 * n)) * r ^ (2 * n)).
   cut
-    (sigT
-      (fun l:R =>
+    { l:R |
         Un_cv
         (fun n:nat =>
           sum_f_R0 (fun k:nat => Rabs (/ INR (fact (2 * k)) * r ^ (2 * k)))
-          n) l)).
+          n) l }.
   intro X; elim X; intros.
-  apply existT with x.
+  exists x.
   split.
   apply p.
   intros; rewrite H; unfold Rdiv in |- *; do 2 rewrite Rabs_mult.
@@ -124,7 +123,7 @@ Lemma continuity_cos : continuity cos.
 Proof.
   set (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N)) * x ^ (2 * N)).
   cut (CVN_R fn).
-  intro; cut (forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)).
+  intro; cut (forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }).
   intro cv; cut (forall n:nat, continuity (fn n)).
   intro; cut (forall x:R, cos x = SFL fn cv x).
   intro; cut (continuity (SFL fn cv) -> continuity cos).
@@ -144,7 +143,7 @@ Proof.
   case (cv x); case (exist_cos (Rsqr x)); intros.
   symmetry  in |- *; eapply UL_sequence.
   apply u.
-  unfold cos_in in c; unfold infinit_sum in c; unfold Un_cv in |- *; intros.
+  unfold cos_in in c; unfold infinite_sum in c; unfold Un_cv in |- *; intros.
   elim (c _ H0); intros N0 H1.
   exists N0; intros.
   unfold R_dist in H1; unfold R_dist, SP in |- *.
@@ -200,17 +199,16 @@ Lemma CVN_R_sin :
     CVN_R fn.
 Proof.
   unfold CVN_R in |- *; unfold CVN_r in |- *; intros fn H r.
-  apply existT with (fun n:nat => / INR (fact (2 * n + 1)) * r ^ (2 * n)).
+  exists (fun n:nat => / INR (fact (2 * n + 1)) * r ^ (2 * n)).
   cut
-    (sigT
-      (fun l:R =>
+    { l:R |
         Un_cv
         (fun n:nat =>
           sum_f_R0
           (fun k:nat => Rabs (/ INR (fact (2 * k + 1)) * r ^ (2 * k))) n)
-        l)).
+        l }.
   intro X; elim X; intros.
-  apply existT with x.
+  exists x.
   split.
   apply p.
   intros; rewrite H; unfold Rdiv in |- *; do 2 rewrite Rabs_mult;
@@ -305,7 +303,7 @@ Proof.
   set
     (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N + 1)) * x ^ (2 * N)).
   cut (CVN_R fn).
-  intro; cut (forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)).
+  intro; cut (forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }).
   intro cv.
   set (r := mkposreal _ Rlt_0_1).
   cut (CVN_r fn r).
@@ -331,7 +329,7 @@ Proof.
   unfold Rdiv in |- *; rewrite (Rinv_r_simpl_m h x0 H6).
   eapply UL_sequence.
   apply u.
-  unfold sin_in in s; unfold sin_n, infinit_sum in s;
+  unfold sin_in in s; unfold sin_n, infinite_sum in s;
     unfold SP, fn, Un_cv in |- *; intros.
   elim (s _ H10); intros N0 H11.
   exists N0; intros.
@@ -584,14 +582,14 @@ Qed.
 Lemma derivable_pt_sin : forall x:R, derivable_pt sin x.
 Proof.
   unfold derivable_pt in |- *; intro.
-  apply existT with (cos x).
+  exists (cos x).
   apply derivable_pt_lim_sin.
 Qed.
 
 Lemma derivable_pt_cos : forall x:R, derivable_pt cos x.
 Proof.
   unfold derivable_pt in |- *; intro.
-  apply existT with (- sin x).
+  exists (- sin x).
   apply derivable_pt_lim_cos.
 Qed.
 

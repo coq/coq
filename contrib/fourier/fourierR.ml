@@ -334,7 +334,7 @@ let coq_Rfourier_le_lt = lazy (constant_fourier "Rfourier_le_lt")
 let coq_Rfourier_le_le = lazy (constant_fourier "Rfourier_le_le")
 let coq_Rnot_lt_lt = lazy (constant_fourier "Rnot_lt_lt")
 let coq_Rnot_le_le = lazy (constant_fourier "Rnot_le_le")
-let coq_Rlt_not_le = lazy (constant_fourier "Rlt_not_le")
+let coq_Rlt_not_le_frac_opp = lazy (constant_fourier "Rlt_not_le_frac_opp")
 
 (******************************************************************************
 Construction de la preuve en cas de succès de la méthode de Fourier,
@@ -404,7 +404,7 @@ let tac_zero_inf_false gl (n,d) =
 (* preuve que 0<=(-n)*(1/d) => False 
 *)
 let tac_zero_infeq_false gl (n,d) =
-     (tclTHEN (apply (get coq_Rlt_not_le))
+     (tclTHEN (apply (get coq_Rlt_not_le_frac_opp))
 	      (tac_zero_inf_pos gl (-n,d)))
 ;;
 

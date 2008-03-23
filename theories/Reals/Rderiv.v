@@ -19,7 +19,8 @@ Require Import Rlimit.
 Require Import Fourier.
 Require Import Classical_Prop.
 Require Import Classical_Pred_Type.
-Require Import Omega. Open Local Scope R_scope.
+Require Import Omega.
+Open Local Scope R_scope.
 
 (*********)
 Definition D_x (D:R -> Prop) (y x:R) : Prop := D x /\ y <> x.

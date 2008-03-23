@@ -25,12 +25,12 @@ Lemma Alembert_C1 :
   forall An:nat -> R,
     (forall n:nat, 0 < An n) ->
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+    { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }.
 Proof.
   intros An H H0.
   cut
-    (sigT (fun l:R => is_lub (EUn (fun N:nat => sum_f_R0 An N)) l) ->
-      sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l)).
+    ({ l:R | is_lub (EUn (fun N:nat => sum_f_R0 An N)) l } ->
+      { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }).
   intro X; apply X.
   apply completeness.
   unfold Un_cv in H0; unfold bound in |- *; cut (0 < / 2);
@@ -109,18 +109,18 @@ Proof.
   symmetry  in |- *; apply tech2; assumption.
   exists (sum_f_R0 An 0); unfold EUn in |- *; exists 0%nat; reflexivity.
   intro X; elim X; intros.
-  apply existT with x; apply tech10;
+  exists x; apply tech10;
     [ unfold Un_growing in |- *; intro; rewrite tech5;
       pattern (sum_f_R0 An n) at 1 in |- *; rewrite <- Rplus_0_r;
 	apply Rplus_le_compat_l; left; apply H
       | apply p ].
-Qed.
+Defined.
 
 Lemma Alembert_C2 :
   forall An:nat -> R,
     (forall n:nat, An n <> 0) ->
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+    { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }.
 Proof.
   intros.
   set (Vn := fun i:nat => (2 * Rabs (An i) + An i) / 2).
@@ -133,7 +133,7 @@ Proof.
   assert (H6 := Alembert_C1 Wn H2 H4).
   elim H5; intros.
   elim H6; intros.
-  apply existT with (x - x0); unfold Un_cv in |- *; unfold Un_cv in p;
+  exists (x - x0); unfold Un_cv in |- *; unfold Un_cv in p;
     unfold Un_cv in p0; intros; cut (0 < eps / 2).
   intro; elim (p (eps / 2) H8); clear p; intros.
   elim (p0 (eps / 2) H8); clear p0; intros.
@@ -334,21 +334,21 @@ Proof.
   rewrite <- Rabs_Ropp; apply RRle_abs.
   rewrite double; pattern (Rabs (An n)) at 1 in |- *; rewrite <- Rplus_0_r;
     apply Rplus_lt_compat_l; apply Rabs_pos_lt; apply H.
-Qed.
+Defined.
 
 Lemma AlembertC3_step1 :
   forall (An:nat -> R) (x:R),
     x <> 0 ->
     (forall n:nat, An n <> 0) ->
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
-    sigT (fun l:R => Pser An x l).
+    { l:R | Pser An x l }.
 Proof.
   intros; set (Bn := fun i:nat => An i * x ^ i).
   cut (forall n:nat, Bn n <> 0).
   intro; cut (Un_cv (fun n:nat => Rabs (Bn (S n) / Bn n)) 0).
   intro; assert (H4 := Alembert_C2 Bn H2 H3).
   elim H4; intros.
-  apply existT with x0; unfold Bn in p; apply tech12; assumption.
+  exists x0; unfold Bn in p; apply tech12; assumption.
   unfold Un_cv in |- *; intros; unfold Un_cv in H1; cut (0 < eps / Rabs x).
   intro; elim (H1 (eps / Rabs x) H4); intros.
   exists x0; intros; unfold R_dist in |- *; unfold Rminus in |- *;
@@ -379,13 +379,13 @@ Proof.
     [ assumption | apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption ].
   intro; unfold Bn in |- *; apply prod_neq_R0;
     [ apply H0 | apply pow_nonzero; assumption ].
-Qed.
+Defined.
 
 Lemma AlembertC3_step2 :
-  forall (An:nat -> R) (x:R), x = 0 -> sigT (fun l:R => Pser An x l).
+  forall (An:nat -> R) (x:R), x = 0 -> { l:R | Pser An x l }.
 Proof.
-  intros; apply existT with (An 0%nat).
-  unfold Pser in |- *; unfold infinit_sum in |- *; intros; exists 0%nat; intros;
+  intros; exists (An 0%nat).
+  unfold Pser in |- *; unfold infinite_sum in |- *; intros; exists 0%nat; intros;
     replace (sum_f_R0 (fun n0:nat => An n0 * x ^ n0) n) with (An 0%nat).
   unfold R_dist in |- *; unfold Rminus in |- *; rewrite Rplus_opp_r;
     rewrite Rabs_R0; assumption.
@@ -395,12 +395,12 @@ Proof.
     [ rewrite H; simpl in |- *; ring | unfold ge in |- *; apply le_O_n ].
 Qed.
 
-(** An useful criterion of convergence for power series *)
+(** A useful criterion of convergence for power series *)
 Theorem Alembert_C3 :
   forall (An:nat -> R) (x:R),
     (forall n:nat, An n <> 0) ->
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) 0 ->
-    sigT (fun l:R => Pser An x l).
+    { l:R | Pser An x l }.
 Proof.
   intros; case (total_order_T x 0); intro.
   elim s; intro.
@@ -411,19 +411,19 @@ Proof.
   cut (x <> 0).
   intro; apply AlembertC3_step1; assumption.
   red in |- *; intro; rewrite H1 in r; elim (Rlt_irrefl _ r).
-Qed.
+Defined.
 
 Lemma Alembert_C4 :
   forall (An:nat -> R) (k:R),
     0 <= k < 1 ->
     (forall n:nat, 0 < An n) ->
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) k ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+    { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }.
 Proof.
   intros An k Hyp H H0.
   cut
-    (sigT (fun l:R => is_lub (EUn (fun N:nat => sum_f_R0 An N)) l) ->
-      sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l)).
+    ({ l:R | is_lub (EUn (fun N:nat => sum_f_R0 An N)) l } ->
+      { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }).
   intro X; apply X.
   apply completeness.
   assert (H1 := tech13 _ _ Hyp H0).
@@ -524,7 +524,7 @@ Proof.
   symmetry  in |- *; apply tech2; assumption.
   exists (sum_f_R0 An 0); unfold EUn in |- *; exists 0%nat; reflexivity.
   intro X; elim X; intros.
-  apply existT with x; apply tech10;
+  exists x; apply tech10;
     [ unfold Un_growing in |- *; intro; rewrite tech5;
       pattern (sum_f_R0 An n) at 1 in |- *; rewrite <- Rplus_0_r;
 	apply Rplus_le_compat_l; left; apply H
@@ -536,21 +536,19 @@ Lemma Alembert_C5 :
     0 <= k < 1 ->
     (forall n:nat, An n <> 0) ->
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) k ->
-    sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l).
+    { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }.
 Proof.
   intros.
   cut
-    (sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l) ->
-      sigT (fun l:R => Un_cv (fun N:nat => sum_f_R0 An N) l)).
+    ({ l:R | Un_cv (fun N:nat => sum_f_R0 An N) l } ->
+      { l:R | Un_cv (fun N:nat => sum_f_R0 An N) l }).
   intro Hyp0; apply Hyp0.
   apply cv_cauchy_2.
   apply cauchy_abs.
   apply cv_cauchy_1.
   cut
-    (sigT
-      (fun l:R => Un_cv (fun N:nat => sum_f_R0 (fun i:nat => Rabs (An i)) N) l) ->
-      sigT
-      (fun l:R => Un_cv (fun N:nat => sum_f_R0 (fun i:nat => Rabs (An i)) N) l)).
+    ({ l:R | Un_cv (fun N:nat => sum_f_R0 (fun i:nat => Rabs (An i)) N) l } ->
+      { l:R | Un_cv (fun N:nat => sum_f_R0 (fun i:nat => Rabs (An i)) N) l }).
   intro Hyp; apply Hyp.
   apply (Alembert_C4 (fun i:nat => Rabs (An i)) k).
   assumption.
@@ -568,11 +566,11 @@ Proof.
   apply H0.
   intro X.
   elim X; intros.
-  apply existT with x.
+  exists x.
   assumption.
   intro X.
   elim X; intros.
-  apply existT with x.
+  exists x.
   assumption.
 Qed.
 
@@ -583,14 +581,12 @@ Lemma Alembert_C6 :
     0 < k ->
     (forall n:nat, An n <> 0) ->
     Un_cv (fun n:nat => Rabs (An (S n) / An n)) k ->
-    Rabs x < / k -> sigT (fun l:R => Pser An x l).
+    Rabs x < / k -> { l:R | Pser An x l }.
   intros.
-  cut
-    (sigT
-      (fun l:R => Un_cv (fun N:nat => sum_f_R0 (fun i:nat => An i * x ^ i) N) l)).
+  cut { l:R | Un_cv (fun N:nat => sum_f_R0 (fun i:nat => An i * x ^ i) N) l }.
   intro X.
   elim X; intros.
-  apply existT with x0.
+  exists x0.
   apply tech12; assumption.
   case (total_order_T x 0); intro.
   elim s; intro.
@@ -655,7 +651,7 @@ Lemma Alembert_C6 :
   assumption.
   apply Rinv_0_lt_compat; apply Rabs_pos_lt.
   red in |- *; intro H7; rewrite H7 in a; elim (Rlt_irrefl _ a).
-  apply existT with (An 0%nat).
+  exists (An 0%nat).
   unfold Un_cv in |- *.
   intros.
   exists 0%nat.

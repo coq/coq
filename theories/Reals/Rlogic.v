@@ -6,10 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** This module proves the decidablity of arithmetical statements from
-the axiom that the order of the real numbers is decidable. *)
+(** * This module proves the decidablity of arithmetical statements from
+excluded middle and the axiom that the order of the real numbers is
+decidable. *)
 
-(** Assuming a decidable predicate [P n], A series is constructed who's
+(** Assuming a decidable predicate [P n], A series is constructed whose
 [n]th term is 1/2^n if [P n] holds and 0 otherwise.  This sum reaches 2
 only if [P n] holds for all [n], otherwise the sum is less than 2.
 Comparing the sum to 2 decides if [forall n, P n] or [~forall n, P n] *)
@@ -20,7 +21,10 @@ statement in the arithmetical hierarchy. *)
 (** Contributed by Cezary Kaliszyk and Russell O'Connor *)
 
 Require Import ConstructiveEpsilon.
-Require Import Reals.
+Require Import Rfunctions.
+Require Import PartSum.
+Require Import SeqSeries.
+Require Import RiemannInt.
 Require Import Fourier.
  
 Section Arithmetical_dec.
@@ -130,7 +134,7 @@ assert (A0:=(GP_infinite (1/2) A)).
 symmetry.
  split; intro.
  replace 2 with (/ (1 - (1 / 2))) by field.
- unfold Pser, infinit_sum in A0.
+ unfold Pser, infinite_sum in A0.
  eapply Rle_cv_lim;[|unfold Un_cv; apply A0 |apply u].
  intros n.
  clear -n H.

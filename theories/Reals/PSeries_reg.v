@@ -13,7 +13,8 @@ Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Ranalysis1.
 Require Import Max.
-Require Import Even. Open Local Scope R_scope.
+Require Import Even.
+Open Local Scope R_scope.
 
 Definition Boule (x:R) (r:posreal) (y:R) : Prop := Rabs (y - x) < r.
 
@@ -28,25 +29,21 @@ Definition CVU (fn:nat -> R -> R) (f:R -> R) (x:R)
 
 (** Normal convergence *)
 Definition CVN_r (fn:nat -> R -> R) (r:posreal) : Type :=
-  sigT
-  (fun An:nat -> R =>
-    sigT
-    (fun l:R =>
+  { An:nat -> R &
+    { l:R |
       Un_cv (fun n:nat => sum_f_R0 (fun k:nat => Rabs (An k)) n) l /\
-      (forall (n:nat) (y:R), Boule 0 r y -> Rabs (fn n y) <= An n))).
+      (forall (n:nat) (y:R), Boule 0 r y -> Rabs (fn n y) <= An n) } }.
 
 Definition CVN_R (fn:nat -> R -> R) : Type := forall r:posreal, CVN_r fn r.
 
 Definition SFL (fn:nat -> R -> R)
-  (cv:forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)) 
-  (y:R) : R := match cv y with
-                 | existT a b => a
-               end.
+  (cv:forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }) 
+  (y:R) : R := let (a,_) := cv y in a.
 
 (** In a complete space, normal convergence implies uniform convergence *)
 Lemma CVN_CVU :
   forall (fn:nat -> R -> R)
-    (cv:forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l))
+    (cv:forall x:R, {l:R | Un_cv (fun N:nat => SP fn N x) l })
     (r:posreal), CVN_r fn r -> CVU (fun n:nat => SP fn n) (SFL fn cv) 0 r.
 Proof.
   intros; unfold CVU in |- *; intros.
@@ -193,7 +190,7 @@ Qed.
 (** Continuity and normal convergence *)
 Lemma SFL_continuity_pt :
   forall (fn:nat -> R -> R)
-    (cv:forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l))
+    (cv:forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l })
     (r:posreal),
     CVN_r fn r ->
     (forall (n:nat) (y:R), Boule 0 r y -> continuity_pt (fn n) y) ->
@@ -210,7 +207,7 @@ Qed.
 
 Lemma SFL_continuity :
   forall (fn:nat -> R -> R)
-    (cv:forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l)),
+    (cv:forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }),
     CVN_R fn -> (forall n:nat, continuity (fn n)) -> continuity (SFL fn cv).
 Proof.
   intros; unfold continuity in |- *; intro.
@@ -229,7 +226,7 @@ Qed.
 (** As R is complete, normal convergence implies that (fn) is simply-uniformly convergent *) 
 Lemma CVN_R_CVS :
   forall fn:nat -> R -> R,
-    CVN_R fn -> forall x:R, sigT (fun l:R => Un_cv (fun N:nat => SP fn N x) l).
+    CVN_R fn -> forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }.
 Proof.
   intros; apply R_complete.
   unfold SP in |- *; set (An := fun N:nat => fn N x).
@@ -248,7 +245,7 @@ Proof.
     rewrite Rminus_0_r.
   pattern (Rabs x) at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
     apply Rlt_0_1.
-  apply existT with l.
+  exists l.
   cut (forall n:nat, 0 <= Bn n).
   intro; unfold Un_cv in H3; unfold Un_cv in |- *; intros.
   elim (H3 _ H6); intros.

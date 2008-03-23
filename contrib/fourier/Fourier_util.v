@@ -152,7 +152,7 @@ apply Rlt_irrefl.
 ring.
 Qed.
  
-Lemma Rlt_not_le : forall n d:R, 0 < n * / d -> ~ 0 <= - n * / d.
+Lemma Rlt_not_le_frac_opp : forall n d:R, 0 < n * / d -> ~ 0 <= - n * / d.
 intros n d H; try assumption.
 apply Rgt_not_le.
 replace 0 with (-0).

@@ -546,45 +546,7 @@ Qed.
 *)
 
 Require Import Wf_nat.
-Require Import Compare_dec.
 Require Import Decidable.
-Require Import Arith.
-
-Definition has_unique_least_element (A:Type) (R:A->A->Prop) (P:A->Prop) :=
-  exists! x, P x /\ forall x', P x' -> R x x'.
-
-Lemma dec_inh_nat_subset_has_unique_least_element :
-  forall P:nat->Prop, (forall n, P n \/ ~ P n) ->
-    (exists n, P n) -> has_unique_least_element le P.
-Proof.
-  intros P Pdec (n0,HPn0).
-  assert
-    (forall n, (exists n', n'<n /\ P n' /\ forall n'', P n'' -> n'<=n'')
-      \/(forall n', P n' -> n<=n')).
-  induction n.
-  right.
-  intros n' Hn'.
-  apply le_O_n.
-  destruct IHn.
-  left; destruct H as (n', (Hlt', HPn')).
-  exists n'; split.
-  apply lt_S; assumption.
-  assumption.
-  destruct (Pdec n).
-  left; exists n; split.
-  apply lt_n_Sn.
-  split; assumption.
-  right.
-  intros n' Hltn'.
-  destruct (le_lt_eq_dec n n') as [Hltn|Heqn].
-  apply H; assumption.
-  assumption.
-  destruct H0.
-  rewrite Heqn; assumption.
-  destruct (H n0) as [(n,(Hltn,(Hmin,Huniqn)))|]; [exists n | exists n0];
-    repeat split;
-      assumption || intros n' (HPn',Hminn'); apply le_antisym; auto.
-Qed.
 
 Definition FunctionalChoice_on_rel (A B:Type) (R:A->B->Prop) :=
   (forall x:A, exists y : B, R x y) ->
