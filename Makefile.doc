@@ -86,7 +86,7 @@ doc/refman/Reference-Manual.dvi: $(DOCCOMMON) $(REFMANFILES)
 	$(LATEX) Reference-Manual;\
 	$(LATEX) Reference-Manual)
 
-doc/refman/Reference-Manual.pdf: doc/refman/Reference-Manual.tex
+doc/refman/Reference-Manual.pdf: $(REFMANFILES) doc/refman/Reference-Manual.tex
 	(cd doc/refman; $(PDFLATEX) Reference-Manual.tex)
 
 ### Reference Manual (browsable format)

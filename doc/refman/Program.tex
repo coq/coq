@@ -133,6 +133,7 @@ The structural fixpoint operator behaves just like the one of Coq
 It works with mutually recursive definitions too.
 
 \begin{coq_example}
+Require Import Program.
 Program Fixpoint div2 (n : nat) : { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
   match n with
   | S (S p) => S (div2 p)
@@ -150,11 +151,12 @@ You can use a well-founded order or a measure as termination orders using the sy
 \begin{coq_eval}
 Reset Initial.
 Require Import Arith.
+Require Import Program.
 \end{coq_eval}
 \begin{coq_example}
 Definition id (n : nat) := n.
-
-Program Fixpoint div2 (n : nat) {measure id n} : { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
+Program Fixpoint div2 (n : nat) {measure id n} :
+  { x : nat | n = 2 * x \/ n = 2 * x + 1 } :=
   match n with
   | S (S p) => S (div2 p)
   | _ => O
@@ -206,23 +208,27 @@ obligations (e.g. when defining mutually recursive blocks). The optional
 tactic is replaced by the default one if not specified.
 
 \begin{itemize}
-\item {\tt Obligations Tactic := \tacexpr} Sets the default obligation
+\item {\tt Obligations Tactic := \tacexpr}\comindex{Obligations Tactic}
+  Sets the default obligation
   solving tactic applied to all obligations automatically, whether to
   solve them or when starting to prove one, e.g. using {\tt Next}.
-\item {\tt Obligations [of \ident]} Displays all remaining
+\item {\tt Obligations [of \ident]}\comindex{Obligations} Displays all remaining
   obligations.
-\item {\tt Next Obligation [of \ident]} Start the proof of the next
-  unsolved obligation.
-\item {\tt Obligation num [of \ident]} Start the proof of
+\item {\tt Obligation num [of \ident]}\comindex{Obligation} Start the proof of
   obligation {\tt num}.
-\item {\tt Solve Obligations [of \ident] [using \tacexpr]} Tries to solve
+\item {\tt Next Obligation [of \ident]}\comindex{Next Obligation} Start the proof of the next
+  unsolved obligation.
+\item {\tt Solve Obligations [of \ident] [using
+    \tacexpr]}\comindex{Solve Obligations}
+  Tries to solve
   each obligation of \ident using the given tactic or the default one.
 \item {\tt Solve All Obligations [using \tacexpr]} Tries to solve
   each obligation of every program using the given tactic or the default
   one (useful for mutually recursive definitions).
-\item {\tt Admit Obligations [of \ident]} Admits all
-  obligations (does not work with structurally recursive programs).
-\item {\tt Preterm [of \ident]} Shows the term that will be fed to
+\item {\tt Admit Obligations [of \ident]}\comindex{Admit Obligations} 
+  Admits all obligations (does not work with structurally recursive programs).
+\item {\tt Preterm [of \ident]}\comindex{Preterm} 
+  Shows the term that will be fed to
   the kernel once the obligations are solved. Useful for debugging.
 \end{itemize}
 
@@ -231,7 +237,6 @@ obligations called {\tt program\_simpl}. Importing
 {\tt Coq.Program.Program} also adds some useful notations, as documented in the file itself.
 
 \section{Frequently Asked Questions
-  \comindex{Program FAQ}
   \label{ProgramFAQ}}
 
 \begin{itemize}
