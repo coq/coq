@@ -6,7 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** * This module proves the decidablity of arithmetical statements from
+(** * This module proves some logical properties of the axiomatics of Reals
+
+1. Decidablity of arithmetical statements from
+   the axiom that the order of the real numbers is decidable.
+
+2. Derivability of the archimedean "axiom"
+*)
+
+(** 1- Proof of the decidablity of arithmetical statements from
 excluded middle and the axiom that the order of the real numbers is
 decidable. *)
 
@@ -236,3 +244,50 @@ assumption.
 Qed.
 
 End Arithmetical_dec.
+
+(** 2- Derivability of the Archimedean axiom *)
+
+(* This is a standard proof (it has been taken from PlanetMath). It is
+formulated negatively so as to avoid the need for classical
+logic. Using a proof of {n | ~P n}+{forall n, P n} (the one above or a
+variant of it that does not need classical axioms) , we can in
+principle also derive [up] and its [specification] *)
+
+Theorem not_not_archimedean :
+  forall r : R, ~ (forall n : nat, (INR n <= r)%R).
+intros r H.
+set (E := fun r => exists n : nat, r = INR n).
+assert (exists x : R, E x) by
+  (exists 0%R; simpl; red; exists 0%nat; reflexivity).
+assert (bound E) by (exists r; intros x (m,H2); rewrite H2; apply H).
+destruct (completeness E) as (M,(H3,H4)); try assumption.
+set (M' := (M + -1)%R).
+assert (H2 : ~ is_upper_bound E M').
+  intro H5.
+  assert (M <= M')%R by (apply H4; exact H5).
+  apply (Rlt_not_le M M').
+    unfold M' in |- *.
+    pattern M at 2 in |- *.
+    rewrite <- Rplus_0_l.
+    pattern (0 + M)%R in |- *.
+    rewrite Rplus_comm.
+    rewrite <- (Rplus_opp_r 1).
+    apply Rplus_lt_compat_l.
+    rewrite Rplus_comm.
+    apply Rlt_plus_1.
+  assumption.
+apply H2.
+intros N (n,H7).
+rewrite H7.
+unfold M' in |- *.
+assert (H5 : (INR (S n) <= M)%R) by (apply H3; exists (S n); reflexivity).
+rewrite S_INR in H5.
+assert (H6 : (INR n + 1 + -1 <= M + -1)%R).
+  apply Rplus_le_compat_r.
+  assumption.
+rewrite Rplus_assoc in H6.
+rewrite Rplus_opp_r in H6.
+rewrite (Rplus_comm (INR n) 0) in H6.
+rewrite Rplus_0_l in H6.
+assumption.
+Qed.
