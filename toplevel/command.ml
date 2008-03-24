@@ -101,16 +101,13 @@ let definition_message id =
   if_verbose message ((string_of_id id) ^ " is defined")
 
 let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
-  let sigma = Evd.empty in
   let env = Global.env() in
     match comtypopt with
       None -> 
 	let b = abstract_constr_expr com bl in
-	let ib = intern_constr sigma env b in
-	let imps = Implicit_quantifiers.implicits_of_rawterm ib in
-  	let j = Default.understand_judgment sigma env ib in
+	let b, imps = interp_constr_evars_impls env b in
 	  imps,
-	{ const_entry_body = j.uj_val;
+	{ const_entry_body = b;
 	  const_entry_type = None;
           const_entry_opaque = opacity;
 	  const_entry_boxed = boxed }
@@ -118,9 +115,8 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
 	let b = abstract_constr_expr (mkCastC (com, Rawterm.CastConv (DEFAULTcast,comtyp))) bl in
-	let ib = intern_gen false sigma env b in
-	let imps = Implicit_quantifiers.implicits_of_rawterm ib in
-	let (body,typ) = destSubCast (Default.understand_gen (OfType None) sigma env ib) in
+	let b, imps = interp_constr_evars_impls env b in
+	let (body,typ) = destSubCast b in
 	  imps,
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
@@ -205,8 +201,8 @@ let set_declare_assumption_hook = (:=) declare_assumption_hook
 let declare_assumption idl is_coe k bl c nl=
   if not (Pfedit.refining ()) then 
     let c = generalize_constr_expr c bl in
-    let sigma = ref Evd.empty_evar_defs and env = Global.env () in
-    let c', imps = interp_type_evars_impls sigma env c in
+    let env = Global.env () in
+    let c', imps = interp_type_evars_impls env c in
       !declare_assumption_hook c';
       List.iter (declare_one_assumption is_coe k c' imps nl) idl
   else
@@ -511,7 +507,7 @@ let interp_cstrs evdref env impls mldata arity ind =
   (* Complete conclusions of constructor types if given in ML-style syntax *)
   let ctyps' = List.map2 (complete_conclusion mldata) cnames ctyps in
   (* Interpret the constructor types *)
-  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls evdref env ~impls) ctyps') in
+  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls ~evdref env ~impls) ctyps') in
     (cnames, ctyps'', cimpls)
 
 let interp_mutual paramsl indl notations finite = 
@@ -1045,12 +1041,9 @@ let start_proof_com sopt kind (bl,t) hook =
  	  (Pfedit.get_all_proof_names ())
   in
   let env = Global.env () in
-  let sigma = Evd.empty in
-  let b = generalize_constr_expr t bl in
-  let ib = intern_type sigma env b in
-  let imps = Implicit_quantifiers.implicits_of_rawterm ib in
-  let j = Default.understand_judgment sigma env ib in
-    start_proof id kind j.uj_val
+  let t = generalize_constr_expr t bl in
+  let it, imps = interp_type_evars_impls env t in
+    start_proof id kind it
       (fun str cst -> 
 	maybe_declare_manual_implicits false cst (Impargs.is_implicit_args ()) imps;
 	hook str cst)

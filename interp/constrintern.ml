@@ -1187,7 +1187,8 @@ let interp_open_constr sigma env c =
 let interp_constr_judgment sigma env c =
   Default.understand_judgment sigma env (intern_constr sigma env c)
 
-let interp_constr_evars_gen_impls evdref env ?(impls=([],[])) kind c =
+let interp_constr_evars_gen_impls ?(evdref=ref Evd.empty_evar_defs) 
+    env ?(impls=([],[])) kind c =
   let c = intern_gen (kind=IsType) ~impls (Evd.evars_of !evdref) env c in
   let imps = implicits_of_rawterm c in
     Default.understand_tcc_evars evdref env kind c, imps
@@ -1196,11 +1197,15 @@ let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
   let c = intern_gen (kind=IsType) ~impls (Evd.evars_of !evdref) env c in
     Default.understand_tcc_evars evdref env kind c
       
-let interp_casted_constr_evars_impls evdref env ?(impls=([],[])) c typ =
-  interp_constr_evars_gen_impls evdref env ~impls (OfType (Some typ)) c
+let interp_casted_constr_evars_impls ?(evdref=ref Evd.empty_evar_defs)
+    env ?(impls=([],[])) c typ =
+  interp_constr_evars_gen_impls ~evdref env ~impls (OfType (Some typ)) c
 
-let interp_type_evars_impls evdref env ?(impls=([],[])) c =
-  interp_constr_evars_gen_impls evdref env IsType ~impls c
+let interp_type_evars_impls ?(evdref=ref Evd.empty_evar_defs) env ?(impls=([],[])) c =
+  interp_constr_evars_gen_impls ~evdref env IsType ~impls c
+
+let interp_constr_evars_impls ?(evdref=ref Evd.empty_evar_defs) env ?(impls=([],[])) c =
+  interp_constr_evars_gen_impls ~evdref env (OfType None) ~impls c
 
 let interp_casted_constr_evars evdref env ?(impls=([],[])) c typ =
   interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c
