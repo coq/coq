@@ -107,6 +107,8 @@ let standard sds sps =
   print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) *~\n";
   print "\trm -f all.ps all-gal.ps all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
          $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d)\n";
+  if !some_mlfile then
+    print "\trm -f $(CMOFILES) $(MLFILES:.ml=.ml.d)\n";
   print "\t- rm -rf html\n";
   List.iter
     (fun (file,_,_) -> print "\t- rm -f "; print file; print "\n")
@@ -123,13 +125,16 @@ let standard sds sps =
   print "\n\n"
 
 let includes () =
-  if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n"
+  if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
+  if !some_mlfile then print "-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n"
 
 let implicit () =
   let ml_rules () =
     print "%.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
     print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
+    print "%.ml.d: %.ml\n";
+    print "\t$(CAMLBIN)ocamldep -slash $(ZFLAGS) $(PP) \"$<\" > \"$@\"\n\n"
   and v_rule () =
     print "%.vo %.glob: %.v\n\t$(COQC) -dump-glob $*.glob $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -139,7 +144,7 @@ let implicit () =
     print "%.g.tex: %.v\n\t$(COQDOC) -latex -g $< -o $@\n\n";
     print "%.g.html: %.v %.glob\n\t$(COQDOC) -glob-from $*.glob -html -g $< -o $@\n\n";
     print "%.v.d: %.v\n";
-    print "\t$(COQDEP) -glob -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
+    print "\t$(COQDEP) -glob -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
 
   and ml_suffixes =
     if !some_mlfile then 
@@ -271,48 +276,34 @@ let subdirs l =
     print "\n\n";
     sds
 
-(* Extract gallina/html filenames (foo.v) from the list of all targets *)
-      
-let rec other_files suff = function
-  | V n :: r -> 
-      let f = (Filename.chop_extension n) ^ suff in
-	f :: (other_files suff r)
-  | _   :: r -> 
-      other_files suff r
-  | [] -> 
-      []
-
-let vfiles = other_files ".v"
-let gfiles = other_files ".g"
-let hfiles = other_files ".html"
-let tfiles = other_files ".tex"
-let vifiles = other_files ".vi"
-let gtfiles l = List.map (fun f -> f ^ ".tex") (gfiles l)
-let ghfiles l = List.map (fun f -> f ^ ".html") (gfiles l)
-let vofiles = other_files ".vo"
 
 let all_target l =
-  let rec fnames l = 
+  let rec parse_arguments l = 
     match l with
-      | ML n :: r -> n :: (fnames r)
-      | Subdir n :: r -> n :: (fnames r)
-      | V n :: r -> n :: (fnames r)
-      | Special (n,_,_) :: r -> n :: (fnames r)
-      | Include _ :: r -> fnames r
-      | RInclude _ :: r -> fnames r
-      | Def _ :: r -> fnames r
-      | [] -> []
+      | ML n :: r -> let v,m,o = parse_arguments r in (v,n::m,o)
+      | Subdir n :: r -> let v,m,o = parse_arguments r in (n::v,m,o)
+      | V n :: r -> let v,m,o = parse_arguments r in (n::v,m,o)
+      | Special (n,_,_) :: r -> let v,m,o = (parse_arguments r) in (v,m,n::o)
+      | Include _ :: r -> parse_arguments r
+      | RInclude _ :: r -> parse_arguments r
+      | Def _ :: r -> parse_arguments r
+      | [] -> [],[],[]
+  in
+  let 
+      vfiles, mlfiles, other_targets = parse_arguments l
   in
     section "Definition of the \"all\" target.";
-    print "VFILES:="; print_list "\\\n  " (vfiles l); print "\n";
+    print "VFILES:="; print_list "\\\n  " vfiles; print "\n";
     print "VOFILES:=$(VFILES:.v=.vo)\n";
     print "GLOBFILES:=$(VFILES:.v=.glob)\n";
     print "VIFILES:=$(VFILES:.v=.vi)\n";
     print "GFILES:=$(VFILES:.v=.g)\n";
     print "HTMLFILES:=$(VFILES:.v=.html)\n";
     print "GHTMLFILES:=$(VFILES:.v=.g.html)\n";
+    print "MLFILES:="; print_list "\\\n  " mlfiles; print "\n";
+    print "CMOFILES:=$(MLFILES:.ml=.cmo)";
     print "\n";
-    print "all: "; print_list "\\\n  " (fnames l);
+    print "all: $(VOFILES) $(CMOFILES) "; print_list "\\\n  " other_targets;
     print "\n\n";
     if !some_vfile then begin
 	print "spec: $(VIFILES)\n\n";
@@ -388,10 +379,10 @@ let rec process_cmd_line = function
   | f :: r ->
       if Filename.check_suffix f ".v" then begin
           some_vfile := true; 
-	  V (f^"o") :: (process_cmd_line r)
+	  V f :: (process_cmd_line r)
 	end else if Filename.check_suffix f ".ml" then begin
             some_mlfile := true; 
-	    ML ((Filename.chop_suffix f "ml")^"cmo") :: (process_cmd_line r)
+	    ML f :: (process_cmd_line r)
       end else
             Subdir f :: (process_cmd_line r)
 	      
