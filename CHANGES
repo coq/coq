@@ -137,6 +137,7 @@ Tactics
 - Tactic apply now able to reason modulo unfolding of constants
   (possible source of incompatibility in situations where apply may fail, 
   e.g. as argument of a try or a repeat and in a ltac function).
+- Pattern for hypotheses types in match goal are now interpreted in type_scope.
 
 Type Classes
 

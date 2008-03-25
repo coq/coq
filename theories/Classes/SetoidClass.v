@@ -74,7 +74,7 @@ Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) :
 
 Ltac clsubst H := 
   match type of H with
-    ?x == ?y => clsubstitute H ; clear H x
+    ?x == ?y => substitute H ; clear H x
   end.
 
 Ltac clsubst_nofail :=

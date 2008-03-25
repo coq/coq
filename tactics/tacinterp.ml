@@ -567,18 +567,18 @@ let intern_inversion_strength lf ist = function
 let intern_hyp_location ist ((occs,id),hl) =
   ((List.map (intern_or_var ist) occs,intern_hyp ist (skip_metaid id)), hl)
 
-let interp_constrpattern_gen sigma env ltacvar c =
-  let c = intern_gen false ~allow_patvar:true ~ltacvars:(ltacvar,[])
+let interp_constrpattern_gen sigma env ?(as_type=false) ltacvar c =
+  let c = intern_gen as_type ~allow_patvar:true ~ltacvars:(ltacvar,[])
                      sigma env c in
   pattern_of_rawconstr c
 
 (* Reads a pattern *)
-let intern_pattern sigma env lfun = function
+let intern_pattern sigma env ?(as_type=false) lfun = function
   | Subterm (ido,pc) ->
       let (metas,pat) = interp_constrpattern_gen sigma env lfun pc in
       ido, metas, Subterm (ido,pat)
   | Term pc ->
-      let (metas,pat) = interp_constrpattern_gen sigma env lfun pc  in
+      let (metas,pat) = interp_constrpattern_gen sigma env ~as_type lfun pc  in
       None, metas, Term pat
 
 let intern_constr_may_eval ist = function
@@ -609,7 +609,7 @@ let extern_request ch req gl la =
 (* Reads the hypotheses of a Match Context rule *)
 let rec intern_match_context_hyps sigma env lfun = function
   | (Hyp ((_,na) as locna,mp))::tl ->
-      let ido, metas1, pat = intern_pattern sigma env lfun mp in
+      let ido, metas1, pat = intern_pattern sigma env ~as_type:true lfun mp in
       let lfun, metas2, hyps = intern_match_context_hyps sigma env lfun tl in
       let lfun' = name_cons na (Option.List.cons ido lfun) in
       lfun', metas1@metas2, Hyp (locna,pat)::hyps

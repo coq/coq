@@ -87,10 +87,12 @@ Ltac clear_dups := repeat clear_dup.
 
 (** A non-failing subst that substitutes as much as possible. *)
 
-Tactic Notation "subst" "*" :=
+Ltac subst_no_fail :=
   repeat (match goal with 
             [ H : ?X = ?Y |- _ ] => subst X || subst Y                  
           end).
+
+Tactic Notation "subst" "*" := subst_no_fail.
 
 (** Tactical [on_call f tac] applies [tac] on any application of [f] in the hypothesis or goal. *)
 Ltac on_call f tac :=

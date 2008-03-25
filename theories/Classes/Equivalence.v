@@ -66,20 +66,20 @@ Open Local Scope equiv_scope.
 
 (** Use the [clsubstitute] command which substitutes an equality in every hypothesis. *)
 
-Ltac clsubst H := 
+Ltac setoid_subst H := 
   match type of H with
-    ?x === ?y => clsubstitute H ; clear H x
+    ?x === ?y => substitute H ; clear H x
   end.
 
-Ltac clsubst_nofail :=
+Ltac setoid_subst_nofail :=
   match goal with
-    | [ H : ?x === ?y |- _ ] => clsubst H ; clsubst_nofail
+    | [ H : ?x === ?y |- _ ] => setoid_subst H ; setoid_subst_nofail
     | _ => idtac
   end.
   
 (** [subst*] will try its best at substituting every equality in the goal. *)
 
-Tactic Notation "clsubst" "*" := clsubst_nofail.
+Tactic Notation "subst" "*" := subst_no_fail ; setoid_subst_nofail.
 
 Lemma nequiv_equiv_trans : forall [ Equivalence A ] (x y z : A), x =/= y -> y === z -> x =/= z.
 Proof with auto.
@@ -99,9 +99,10 @@ Qed.
 
 Ltac equiv_simplify_one :=
   match goal with
-    | [ H : (?x === ?x)%type |- _ ] => clear H
-    | [ H : (?x === ?y)%type |- _ ] => clsubst H
-    | [ |- (?x =/= ?y)%type ] => let name:=fresh "Hneq" in intro name
+    | [ H : ?x === ?x |- _ ] => clear H
+    | [ H : ?x === ?y |- _ ] => setoid_subst H
+    | [ |- ?x =/= ?y ] => let name:=fresh "Hneq" in intro name
+    | [ |- ~ ?x === ?y ] => let name:=fresh "Hneq" in intro name
   end.
 
 Ltac equiv_simplify := repeat equiv_simplify_one.

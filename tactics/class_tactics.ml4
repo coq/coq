@@ -332,7 +332,9 @@ let resolve_one_typeclass env gl =
   let gls = { it = [ Evd.make_evar (Environ.named_context_val env) gl ] ; sigma = Evd.empty } in
   let valid x = raise (FoundTerm (fst (Refiner.extract_open_proof Evd.empty (List.hd x)))) in
   let gls', valid' = full_eauto ~tac:tclIDTAC false (true, 15) [] (gls, valid) in
-    try ignore(valid' []); assert false with FoundTerm t -> t
+    try ignore(valid' []); assert false with FoundTerm t -> 
+      let term = Evarutil.nf_evar (sig_sig gls') t in
+	if occur_existential term then raise Not_found else term
 
 let has_undefined p evd =
   Evd.fold (fun ev evi has -> has ||
@@ -890,10 +892,10 @@ let clsubstitute o c =
       (fun cl -> 
 	match cl with
 	  | Some ((_,id),_) when is_tac id -> tclIDTAC
-	  | _ -> cl_rewrite_clause c o [] cl)
+	  | _ -> tclTRY (cl_rewrite_clause c o [] cl))
 
-TACTIC EXTEND map_tac
-| [ "clsubstitute" orient(o) constr(c) ] -> [ clsubstitute o c ]
+TACTIC EXTEND substitute
+| [ "substitute" orient(o) constr(c) ] -> [ clsubstitute o c ]
 END
 
 let pr_debug _prc _prlc _prt b =
