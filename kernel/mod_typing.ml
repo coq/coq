@@ -243,16 +243,22 @@ and translate_struct_entry env mse = match mse with
       let feb'= eval_struct env feb
       in
       let farg_id, farg_b, fbody_b = destr_functor env feb' in
-      let mtb = 
+      let mtb,mp = 
 	try
-	  lookup_modtype (path_of_mexpr mexpr) env
+	  let mp = path_of_mexpr mexpr in
+	  lookup_modtype mp env,mp
 	with
 	  | Not_path -> error_application_to_not_path mexpr
 	      (* place for nondep_supertype *) in
       let meb,sub2= translate_struct_entry env mexpr in
-      let sub = join sub1 sub2 in
-      let sub = join_alias sub (map_mbid farg_id (path_of_mexpr mexpr) None) in
-      let sub = update_subst_alias sub (map_mbid farg_id (path_of_mexpr mexpr) None) in
+      let sub2 = match eval_struct env (SEBident mp) with
+	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub2
+	| _ -> sub2 in
+      let sub3 = update_subst_alias sub2 (join_alias sub1 (map_mbid farg_id mp None)) in
+      let sub = if sub2 = sub3 then
+	join sub1 sub2 else join (join sub1 sub2) sub3 in
+      let sub = join_alias sub (map_mbid farg_id mp None) in
+      let sub = update_subst_alias sub (map_mbid farg_id mp None) in
       let cst = check_subtypes env mtb farg_b in
 	SEBapply(feb,meb,cst),sub
   | MSEwith(mte, with_decl) ->

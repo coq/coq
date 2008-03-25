@@ -320,16 +320,14 @@ let update_subst_alias subst1 subst2 =
  let subst_inv key (mp,resolve) sub =
     let newmp = 
       match key with 
-	| MBI msid -> Some (MPbound msid)
-	| MSI msid -> Some (MPself msid)
-	| _ -> None
+	| MBI msid -> MPbound msid
+	| MSI msid -> MPself msid
+	| MPI mp -> mp
     in
-      match newmp with
-	| None -> sub
-	| Some mpi -> match mp with 
-	    | MPbound mbid -> Umap.add (MBI mbid) (mpi,None) sub
-	    | MPself msid -> Umap.add (MSI msid) (mpi,None) sub
-	    | _ ->  Umap.add (MPI mp) (mpi,None) sub
+   match mp with 
+     | MPbound mbid -> Umap.add (MBI mbid) (newmp,None) sub
+     | MPself msid -> Umap.add (MSI msid) (newmp,None) sub
+     | _ ->  Umap.add (MPI mp) (newmp,None) sub
   in 
   let subst_mbi = Umap.fold subst_inv subst2 empty_subst in
   let alias_subst key (mp,resolve) sub=

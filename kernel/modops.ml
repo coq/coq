@@ -271,6 +271,9 @@ let rec eval_struct env = function
   | SEBwith (mtb, (With_module_body (_,mp,_) as wdb)) ->
       let alias_in_mp =
 	(lookup_modtype mp env).typ_alias in
+      let alias_in_mp = match eval_struct env (SEBident mp) with
+	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) alias_in_mp
+	| _ -> alias_in_mp in
 	merge_with env mtb wdb alias_in_mp
 (*  | SEBfunctor(mbid,mtb,body) -> 
       let env = add_module (MPbound mbid) (module_body_of_type mtb) env in
@@ -308,8 +311,9 @@ and merge_with env mtb with_decl alias=
 	    SFBconst c,None
 	| With_module_body ([id], mp,cst) ->
 	    let mp' = scrape_alias mp env in
+	    let new_alias = update_subst_alias alias (map_mp (mp_rec [id]) mp') in
 	      SFBalias (mp,Some cst),
-	    Some(join (map_mp (mp_rec [id]) mp') alias)
+	    Some(join (map_mp (mp_rec [id]) mp') new_alias)
 	| With_definition_body (_::_,_) 
         | With_module_body (_::_,_,_) -> 
 	    let old = match spec with
@@ -323,6 +327,9 @@ and merge_with env mtb with_decl alias=
 		    With_module_body (idl,mp,cst),
 		      Some(map_mp (mp_rec idc) mp) 
 	    in
+	    let subst1 = match subst1 with
+	      | None -> None
+	      | Some s -> Some (update_subst_alias alias s) in
 	    let subst = Option.fold_right join subst1 alias in
             let modtype = 
               merge_with env (type_of_mb env old) new_with_decl alias in

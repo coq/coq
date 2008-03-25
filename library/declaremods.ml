@@ -568,7 +568,7 @@ let rec get_modtype_substobjs env = function
 		 Modops.resolver_of_environment farg_id farg_b mp sub_alias env in
 		 (* application outside the kernel, only for substitutive
                     objects (that are all non-logical objects) *)
-		 (join (join (map_mbid mbid mp (Some resolve)) subst ) sub_alias
+		 (join (join subst (map_mbid mbid mp (Some resolve))) sub_alias
 		    , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
@@ -661,20 +661,19 @@ let end_module id =
 	  anomaly "Funsig cannot be here..."
       | Some (MSEapply _ as mty) ->
 	  abstract_substobjs mbids (get_modtype_substobjs (Global.env()) mty), [], []
-    with
+  with
 	Not_found -> anomaly "Module objects not found..."
   in
-
     (* must be called after get_modtype_substobjs, because of possible
      dependencies on functor arguments *)
 
   let mp = Global.end_module id res_o in
-    
+
   begin match sub_o with
       None -> ()
     | Some sub_mtb -> check_subtypes mp sub_mtb
   end;
-    
+
   Summary.module_unfreeze_summaries fs;
 
   let substituted = subst_substobjs dir mp substobjs in
@@ -875,7 +874,7 @@ let rec get_module_substobjs env = function
 		 (* application outside the kernel, only for substitutive
                     objects (that are all non-logical objects) *)
 		((join 
-		    (join (map_mbid mbid mp (Some resolve)) subst)
+		    (join subst (map_mbid mbid mp (Some resolve)))
 		       sub_alias)
 		       , mbids, msid, objs)
 	   | [] -> match mexpr with
@@ -940,11 +939,12 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 	 let dir,mp' = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
 	 let (sub,mbids,msid,objs) = substobjs in
 	 let prefix =  dir,(mp',empty_dirpath) in
+	 let mp1 = Environ.scrape_alias mp env in
 	 let substituted = 
 	   match mbids with
 		    | [] -> 
 			Some (subst_objects prefix 
-				(join sub (join (map_msid msid mp') (map_mp mp' mp))) objs)
+				(join sub (join (map_msid msid mp') (map_mp mp' mp1))) objs)
 		    | _ -> None in
 	   ignore (add_leaf
 		     id

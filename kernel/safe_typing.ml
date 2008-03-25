@@ -311,7 +311,8 @@ let add_alias l mp senv =
   (* we get all alias substitutions that comes from mp *)
   let _,sub = translate_struct_entry senv.env (MSEident mp) in
    (* we add the new one *)
-  let sub = join (map_mp mp' mp) sub in
+  let mp1 = scrape_alias mp senv.env in
+  let sub = join (map_mp mp' mp1) sub in
   let env' = register_alias mp' mp senv.env in
     mp', { old = senv.old;
 	env = env';
