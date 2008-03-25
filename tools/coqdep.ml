@@ -238,9 +238,9 @@ let traite_fichier_Coq verbose f =
 		     addQueue deja_vu_ml str;
                	     try
               	       let mldir = Hashtbl.find mlKnown str in
-              	       printf " %s.cmo" (file_name ([str],mldir))
-              	     with Not_found -> () 
-		   end)
+              	       printf " %s.cmo" (file_name ([String.uncapitalize str],mldir))
+              	     with Not_found -> ()
+		     end)
 		sl
 	  | Load str -> 
 	      let str = Filename.basename str in
@@ -306,7 +306,7 @@ let traite_Declare f =
     | s :: ll -> 
 	if (Hashtbl.mem mlKnown s) & not (List.mem s !decl_list) then begin
        	  let mldir = Hashtbl.find mlKnown s in
-	  let fullname = file_name ([s],mldir) in
+	  let fullname = file_name ([(String.uncapitalize s)],mldir) in
 	  let depl = mL_dep_list s (fullname ^ ".ml") in
 	  treat depl;
 	  decl_list := s :: !decl_list
@@ -407,6 +407,11 @@ let usage () =
   flush stderr;
   exit 1
 
+let make_ml_module_name filename =
+  (* Computes a ML Module name from its physical name *)
+  let basename = Filename.chop_extension filename in
+    String.capitalize basename
+
 let add_coqlib_known phys_dir log_dir f = 
   if Filename.check_suffix f ".vo" then
     let basename = Filename.chop_suffix f ".vo" in
@@ -415,15 +420,9 @@ let add_coqlib_known phys_dir log_dir f =
     Hashtbl.add coqlibKnown name ()
 
 let add_known phys_dir log_dir f = 
-  if Filename.check_suffix f ".ml" then
-    let basename = Filename.chop_suffix f ".ml" in
-    Hashtbl.add mlKnown basename (Some phys_dir)
-  else if Filename.check_suffix f ".ml4" then
-    let basename = Filename.chop_suffix f ".ml4" in
-    Hashtbl.add mlKnown basename (Some phys_dir)
-  else if Filename.check_suffix f ".mli" then
-    let basename = Filename.chop_suffix f ".mli" in
-    Hashtbl.add mliKnown basename (Some phys_dir)
+  if (Filename.check_suffix f ".ml" ||  Filename.check_suffix f ".mli" || Filename.check_suffix f ".ml4")  then
+    let basename = make_ml_module_name f in
+      Hashtbl.add mlKnown basename (Some phys_dir)
   else if Filename.check_suffix f ".v" then
     let basename = Filename.chop_suffix f ".v" in
     let name = log_dir@[basename] in
