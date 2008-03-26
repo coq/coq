@@ -41,6 +41,11 @@ let file_concat l =
   if l=[] then "<empty>" else
     List.fold_left (//) (List.hd l) (List.tl l)
 
+let make_ml_module_name filename =
+  (* Computes a ML Module name from its physical name *)
+  let basename = Filename.chop_extension filename in
+    String.capitalize basename
+
 (* Files specified on the command line *)
 let mlAccu  = ref ([] : (string * string * dir) list) 
 and mliAccu = ref ([] : (string * string * dir) list) 
@@ -234,12 +239,13 @@ let traite_fichier_Coq verbose f =
 	  | Declare sl -> 
 	      List.iter 
 		(fun str ->
-		   if not (List.mem str !deja_vu_ml) then begin
-		     addQueue deja_vu_ml str;
-               	     try
-              	       let mldir = Hashtbl.find mlKnown str in
-              	       printf " %s.cmo" (file_name ([String.uncapitalize str],mldir))
-              	     with Not_found -> ()
+		  let s = String.capitalize str in
+		    if not (List.mem s !deja_vu_ml) then begin
+			addQueue deja_vu_ml s;
+               	       try
+              		 let mldir = Hashtbl.find mlKnown s in
+              		   printf " %s.cmo" (file_name ([String.uncapitalize s],mldir))
+              	       with Not_found -> ()
 		     end)
 		sl
 	  | Load str -> 
@@ -304,36 +310,37 @@ let traite_Declare f =
   let decl_list = ref ([] : string list) in
   let rec treat = function
     | s :: ll -> 
-	if (Hashtbl.mem mlKnown s) & not (List.mem s !decl_list) then begin
-       	  let mldir = Hashtbl.find mlKnown s in
-	  let fullname = file_name ([(String.uncapitalize s)],mldir) in
-	  let depl = mL_dep_list s (fullname ^ ".ml") in
-	  treat depl;
-	  decl_list := s :: !decl_list
-	end;
-	treat ll
+	let s' = String.capitalize s in
+	  if (Hashtbl.mem mlKnown s') & not (List.mem s' !decl_list) then begin
+       	      let mldir = Hashtbl.find mlKnown s in
+	      let fullname = file_name ([(String.uncapitalize s')],mldir) in
+	      let depl = mL_dep_list s (fullname ^ ".ml") in
+		treat depl;
+		decl_list := s :: !decl_list
+	    end;
+	  treat ll
     | [] -> ()
   in
-  try
-    let chan = open_in f in
-    let buf = Lexing.from_channel chan in
-    begin try 
-      while true do
-      	let tok = coq_action buf in
-      	(match tok with
-	   | Declare sl -> 
-	       decl_list := [];
-	       treat sl;
-	       decl_list := List.rev !decl_list;
-	       if !option_D then 
-		 affiche_Declare f !decl_list
-	       else if !decl_list <> sl then
-		 warning_Declare f !decl_list
-	   | _ -> ())
-      done
-    with Fin_fichier -> () end;
-    close_in chan
-  with Sys_error _ -> ()
+    try
+      let chan = open_in f in
+      let buf = Lexing.from_channel chan in
+	begin try 
+	    while true do
+      	      let tok = coq_action buf in
+      		(match tok with
+		  | Declare sl -> 
+		      decl_list := [];
+		      treat sl;
+		      decl_list := List.rev !decl_list;
+		      if !option_D then 
+			affiche_Declare f !decl_list
+		      else if !decl_list <> sl then
+			warning_Declare f !decl_list
+		  | _ -> ())
+	    done
+	  with Fin_fichier -> () end;
+	close_in chan
+    with Sys_error _ -> ()
 
 let file_mem (f,_,d) =
   let rec loop = function
@@ -406,11 +413,6 @@ let usage () =
   "[ usage: coqdep [-w] [-I dir] [-R dir coqdir] [-coqlib dir] [-c] [-i] [-D] <filename>+ ]\n";
   flush stderr;
   exit 1
-
-let make_ml_module_name filename =
-  (* Computes a ML Module name from its physical name *)
-  let basename = Filename.chop_extension filename in
-    String.capitalize basename
 
 let add_coqlib_known phys_dir log_dir f = 
   if Filename.check_suffix f ".vo" then

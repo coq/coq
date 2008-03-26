@@ -145,25 +145,9 @@ let implicit () =
     print "%.g.html: %.v %.glob\n\t$(COQDOC) -glob-from $*.glob -html -g $< -o $@\n\n";
     print "%.v.d: %.v\n";
     print "\t$(COQDEP) -glob -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
-
-  and ml_suffixes =
-    if !some_mlfile then 
-      [ ".mli"; ".ml"; ".cmo"; ".cmi"; ".cmx" ]
-    else 
-      []
-  and v_suffixes =
-    if !some_vfile then 
-      [ ".v"; ".vo"; ".vi"; ".g"; ".html"; ".tex"; ".g.tex"; ".g.html" ] 
-    else 
-      []
   in
-  let suffixes = ml_suffixes @ v_suffixes in
-  if suffixes <> [] then begin
-    print ".SUFFIXES: "; print_list " " suffixes;
-    print "\n\n"
-  end;
-  if !some_mlfile then ml_rules ();
-  if !some_vfile then v_rule ()
+    if !some_mlfile then ml_rules ();
+    if !some_vfile then v_rule ()
 
 let variables l =
   let rec var_aux = function
@@ -171,10 +155,10 @@ let variables l =
     | Def(v,def) :: r -> print v; print "="; print def; print "\n"; var_aux r
     | _ :: r -> var_aux r
   in
-  section "Variables definitions.";
-  print "CAMLP4LIB:=$(shell $(CAMLBIN)camlp5 -where 2> /dev/null || $(CAMLBIN)camlp4 -where)\n";
-  print "CAMLP4:=$(notdir $(CAMLP4LIB))\n"; 
-  print "COQSRC:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
+    section "Variables definitions.";
+    print "CAMLP4LIB:=$(shell $(CAMLBIN)camlp5 -where 2> /dev/null || $(CAMLBIN)camlp4 -where)\n";
+    print "CAMLP4:=$(notdir $(CAMLP4LIB))\n"; 
+    print "COQSRC:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
   -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
@@ -185,28 +169,28 @@ let variables l =
   -I $(COQTOP)/contrib/omega -I $(COQTOP)/contrib/romega \\
   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \\
   -I $(CAMLP4LIB)\n";
-  print "ZFLAGS:=$(OCAMLLIBS) $(COQSRC)\n";
-  if !opt = "-byte" then 
-    print "override OPT:=-byte\n"
-  else
-    print "OPT:=\n";
-  if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
-  (* Coq executables and relative variables *)
-  print "COQFLAGS:=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
-  print "COQC:=$(COQBIN)coqc\n";
-  print "COQDEP:=$(COQBIN)coqdep -c\n";
-  print "GALLINA:=$(COQBIN)gallina\n";
-  print "COQDOC:=$(COQBIN)coqdoc\n";
-  (* Caml executables and relative variables *)
-  printf "CAMLC:=$(CAMLBIN)ocamlc -rectypes -c\n";
-  printf "CAMLOPTC:=$(CAMLBIN)ocamlopt -c\n";
-  printf "CAMLLINK:=$(CAMLBIN)ocamlc\n";
-  printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt\n";
-  print "GRAMMARS:=grammar.cma\n";
-  print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
-  print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
-  var_aux l;
-  print "\n"
+    print "ZFLAGS:=$(OCAMLLIBS) $(COQSRC)\n";
+    if !opt = "-byte" then 
+      print "override OPT:=-byte\n"
+    else
+      print "OPT:=\n";
+    if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
+    (* Coq executables and relative variables *)
+    print "COQFLAGS:=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
+    print "COQC:=$(COQBIN)coqc\n";
+    print "COQDEP:=$(COQBIN)coqdep -c\n";
+    print "GALLINA:=$(COQBIN)gallina\n";
+    print "COQDOC:=$(COQBIN)coqdoc\n";
+    (* Caml executables and relative variables *)
+    printf "CAMLC:=$(CAMLBIN)ocamlc -rectypes -c\n";
+    printf "CAMLOPTC:=$(CAMLBIN)ocamlopt -c\n";
+    printf "CAMLLINK:=$(CAMLBIN)ocamlc\n";
+    printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt\n";
+    print "GRAMMARS:=grammar.cma\n";
+    print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
+    print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
+    var_aux l;
+    print "\n"
 
 let absolute_dir dir =
   let current = Sys.getcwd () in
@@ -239,9 +223,10 @@ let include_dirs l =
   in
   let l' = if List.exists (is_included ".") l then l else Include "." :: l in
   let inc_i, inc_r = parse_includes l' in
+  let inc_i' = List.filter (fun d -> List.exists (fun d' -> is_prefix d' d) inc_r) inc_i in 
     section "Libraries definition.";
     print "OCAMLLIBS:="; print_list "\\\n  " inc_i; print "\n";
-    print "COQLIBS:="; print_list "\\\n  " inc_i; print " "; print_list "\\\n  " inc_r; print "\n";
+    print "COQLIBS:="; print_list "\\\n  " inc_i'; print " "; print_list "\\\n  " inc_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " inc_r; print "\n\n"
 
 let rec special = function
@@ -281,9 +266,9 @@ let all_target l =
   let rec parse_arguments l = 
     match l with
       | ML n :: r -> let v,m,o = parse_arguments r in (v,n::m,o)
-      | Subdir n :: r -> let v,m,o = parse_arguments r in (n::v,m,o)
+      | Subdir n :: r -> let v,m,o = parse_arguments r in (v,m,n::o)
       | V n :: r -> let v,m,o = parse_arguments r in (n::v,m,o)
-      | Special (n,_,_) :: r -> let v,m,o = (parse_arguments r) in (v,m,n::o)
+      | Special (n,_,_) :: r -> let v,m,o = parse_arguments r in (v,m,n::o)
       | Include _ :: r -> parse_arguments r
       | RInclude _ :: r -> parse_arguments r
       | Def _ :: r -> parse_arguments r
@@ -293,19 +278,27 @@ let all_target l =
       vfiles, mlfiles, other_targets = parse_arguments l
   in
     section "Definition of the \"all\" target.";
-    print "VFILES:="; print_list "\\\n  " vfiles; print "\n";
-    print "VOFILES:=$(VFILES:.v=.vo)\n";
-    print "GLOBFILES:=$(VFILES:.v=.glob)\n";
-    print "VIFILES:=$(VFILES:.v=.vi)\n";
-    print "GFILES:=$(VFILES:.v=.g)\n";
-    print "HTMLFILES:=$(VFILES:.v=.html)\n";
-    print "GHTMLFILES:=$(VFILES:.v=.g.html)\n";
-    print "MLFILES:="; print_list "\\\n  " mlfiles; print "\n";
-    print "CMOFILES:=$(MLFILES:.ml=.cmo)";
-    print "\n";
-    print "all: $(VOFILES) $(CMOFILES) "; print_list "\\\n  " other_targets;
-    print "\n\n";
-    if !some_vfile then begin
+    if !some_vfile then
+      begin
+	print "VFILES:="; print_list "\\\n  " vfiles; print "\n";
+	print "VOFILES:=$(VFILES:.v=.vo)\n";
+	print "GLOBFILES:=$(VFILES:.v=.glob)\n";
+	print "VIFILES:=$(VFILES:.v=.vi)\n";
+	print "GFILES:=$(VFILES:.v=.g)\n";
+	print "HTMLFILES:=$(VFILES:.v=.html)\n";
+	print "GHTMLFILES:=$(VFILES:.v=.g.html)\n"
+      end;
+    if !some_mlfile then
+      begin
+	print "MLFILES:="; print_list "\\\n  " mlfiles; print "\n";
+	print "CMOFILES:=$(MLFILES:.ml=.cmo)\n";
+      end;
+    print "\nall: ";
+    if !some_vfile then print "$(VOFILES) ";
+    if !some_mlfile then print "$(CMOFILES) ";
+    print_list "\\\n  " other_targets; print "\n";
+    if !some_vfile then 
+      begin
 	print "spec: $(VIFILES)\n\n";
 	print "gallina: $(GFILES)\n\n";
 	print "html: $(GLOBFILES) $(VFILES)\n";

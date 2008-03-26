@@ -215,7 +215,7 @@ and modules = parse
   | '"' [^'"']* '"'
         { let lex = (Lexing.lexeme lexbuf) in 
 	  let str = String.sub lex 1 (String.length lex - 2) in
-	  mllist := str :: !mllist; modules lexbuf }
+	    mllist := str :: !mllist; modules lexbuf}
   | _   { (Declare (List.rev !mllist)) }   
 
 and qual_id = parse
