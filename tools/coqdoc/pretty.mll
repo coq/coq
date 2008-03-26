@@ -188,7 +188,7 @@ let symbolchar_no_brackets =
   '\226' ['\134'-'\143' '\152'-'\155' '\164'-'\165' '\168'-'\171'] _
 let symbolchar = symbolchar_no_brackets | '[' | ']'
 let token = symbolchar+ | '[' [^ '[' ']' ':']* ']'
-
+let printing_token = (token | id)+
 
 let thm_token = 
   "Theorem" 
@@ -346,9 +346,9 @@ rule coq_bol = parse
 	  ident s (lexeme_start lexbuf + isp); 
 	  let eol= body lexbuf in
 	    if eol then coq_bol lexbuf else coq lexbuf }
-  | space* "(**" space+ "printing" space+ (identifier | token) space+
+  | space* "(**" space+ "printing" space+ printing_token space+
       { let tok = lexeme lexbuf in
-	let s = printing_token lexbuf in
+	let s = printing_token_body lexbuf in
 	  add_printing_token tok s;
 	  coq_bol lexbuf }
   | space* "(**" space+ "printing" space+
@@ -584,7 +584,7 @@ and body = parse
       { let s = lexeme lexbuf in 
 	  ident s (lexeme_start lexbuf); 
 	  body lexbuf }
-  | token
+  | printing_token
       { let s = lexeme lexbuf in
 	  symbol s; body lexbuf }
   | _ { let c = lexeme_char lexbuf 0 in 
@@ -612,13 +612,13 @@ and skip_hide = parse
 
 (*s Reading token pretty-print *)
 
-and printing_token = parse
+and printing_token_body = parse
   | "*)" | eof 
 	{ let s = Buffer.contents token_buffer in 
 	  Buffer.clear token_buffer;
 	  s }
   | _   { Buffer.add_string token_buffer (lexeme lexbuf); 
-	  printing_token lexbuf }
+	  printing_token_body lexbuf }
 
 (*s Applying the scanners to files *)
 
