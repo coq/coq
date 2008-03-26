@@ -88,3 +88,5 @@ val update_subst_alias : substitution -> substitution -> substitution
 val subst_key : substitution -> substitution -> substitution
 
 val join_alias : substitution -> substitution -> substitution
+
+val remove_alias : substitution -> substitution

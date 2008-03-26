@@ -404,6 +404,14 @@ let join_alias (subst1 : substitution) (subst2 : substitution) =
       mp',resolve'' in
   Umap.mapi (apply_subst subst2) subst1 
 
+let remove_alias subst =
+  let rec remove key (mp,resolve) sub =
+    match key with
+	MPI _ -> sub
+      | _ -> Umap.add key (mp,resolve) sub
+  in
+    Umap.fold remove subst empty_subst
+      
 
 let rec occur_in_path uid path =
  match uid,path with
