@@ -1,4 +1,4 @@
-Require Import ZArith Coq.Program.Utils.
+Require Import ZArith Coq.Program.Wf Coq.Program.Utils.
 
 Parameter data:Set.
 

@@ -2,7 +2,7 @@
      : Z
 fun f : nat -> Z => (f 0%nat + 0)%Z
      : (nat -> Z) -> Z
-fun x : positive => Zpos x~0)
+fun x : positive => Zpos x~0
      : positive -> Z
 fun x : positive => (Zpos x + 1)%Z
      : positive -> Z

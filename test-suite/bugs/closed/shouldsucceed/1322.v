@@ -18,7 +18,7 @@ Variable F : I -> Type.
 Variable F_morphism : forall i j, I_eq i j -> F i = F j.
 
 
-Add Morphism F with signature I_eq ==> eq as F_morphism2.
+Add Morphism F with signature I_eq ==> (@eq _) as F_morphism2.
 Admitted.
 
 End transition_gen.

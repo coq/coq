@@ -322,7 +322,7 @@ Extraction test24.
 Require Import Gt.
 Definition loop (Ax:Acc gt 0) :=
   (fix F (a:nat) (b:Acc gt a) {struct b} : nat :=
-     F (S a) (Acc_inv b (gt_Sn_n a))) 0 Ax.
+     F (S a) (Acc_inv b (S a) (gt_Sn_n a))) 0 Ax.
 Extraction loop.
 (* let loop _ =
   let rec f a =

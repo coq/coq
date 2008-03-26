@@ -1,6 +1,8 @@
 Require Import Relations.
+Require Import Setoid.
 Require Import Ring_theory.
 Require Import Ring_base.
+
 
 Variable R : Type.
 Variable Rone Rzero : R.
