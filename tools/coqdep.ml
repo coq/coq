@@ -43,9 +43,10 @@ let file_concat l =
 
 let make_ml_module_name filename =
   (* Computes a ML Module name from its physical name *)
-  let basename = Filename.chop_extension filename in
-    String.capitalize basename
-
+  let fn = try Filename.chop_extension filename with _ -> filename in
+  let bn = Filename.basename fn in
+    String.capitalize bn
+      
 (* Files specified on the command line *)
 let mlAccu  = ref ([] : (string * string * dir) list) 
 and mliAccu = ref ([] : (string * string * dir) list) 
@@ -239,7 +240,7 @@ let traite_fichier_Coq verbose f =
 	  | Declare sl -> 
 	      List.iter 
 		(fun str ->
-		  let s = String.capitalize str in
+		  let s = make_ml_module_name str in
 		    if not (List.mem s !deja_vu_ml) then begin
 			addQueue deja_vu_ml s;
                	       try
@@ -310,7 +311,7 @@ let traite_Declare f =
   let decl_list = ref ([] : string list) in
   let rec treat = function
     | s :: ll -> 
-	let s' = String.capitalize s in
+	let s' = make_ml_module_name s in
 	  if (Hashtbl.mem mlKnown s') & not (List.mem s' !decl_list) then begin
        	      let mldir = Hashtbl.find mlKnown s in
 	      let fullname = file_name ([(String.uncapitalize s')],mldir) in
