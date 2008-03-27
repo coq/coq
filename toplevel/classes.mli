@@ -35,7 +35,7 @@ val infer_super_instances : env -> constr list ->
 *)
 val new_class : identifier located ->
   local_binder list ->
-  Vernacexpr.sort_expr located ->
+  Vernacexpr.sort_expr located option ->
   local_binder list ->
   binder_list -> unit
 

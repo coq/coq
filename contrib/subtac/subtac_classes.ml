@@ -136,12 +136,12 @@ let new_instance ctx (instid, bk, cl) props pri =
   let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
   let ctx, avoid = Classes.name_typeclass_binders bound ctx in
   let ctx = List.rev_append gen_ctx ctx in
-  let k, ctx', subst = 
+  let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
-    let c' = interp_type_evars isevars env c in
+    let c', imps = interp_type_evars_impls ~evdref:isevars env c in
     let ctx, c = Classes.decompose_named_assum c' in
     let cl, args = Typeclasses.dest_class_app c in
-      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
+      cl, ctx, imps, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
   in
   let id = 
     match snd instid with
@@ -194,11 +194,13 @@ let new_instance ctx (instid, bk, cl) props pri =
       Evarutil.nf_isevar !isevars t
   in
   isevars := undefined_evars !isevars;
-  let imps = 
-    Util.list_map_i 
-      (fun i (na, b, t) -> ExplByPos (i, Some na), (true, true))
-      1 ctx'
-  in
+(*   let imps =  *)
+(*     Util.list_map_i  *)
+(*       (fun i binder -> *)
+(* 	match binder with *)
+(* 	ExplByPos (i, Some na), (true, true)) *)
+(*       1 ctx *)
+(*   in *)
   let hook cst = 
     let inst = 
       { is_class = k;

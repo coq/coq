@@ -228,7 +228,7 @@ type vernac_expr =
   | VernacClass of
       lident * (* name *)
 	local_binder list * (* params *)
-	sort_expr located * (* arity *)
+	sort_expr located option * (* arity *)
 	local_binder list * (* constraints *)
 	(lident * bool * constr_expr) list (* props, with substructure hints *)
 	

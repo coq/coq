@@ -701,7 +701,7 @@ let rec pr_vernac = function
 	str"Class" ++ spc () ++ pr_lident id ++
 (* 	  prlist_with_sep (spc) (pr_lident_constr (spc() ++ str ":" ++ spc())) par ++  *)
 	  pr_and_type_binders_arg par ++
-	  spc () ++ str":" ++ spc() ++ pr_rawsort (snd ar) ++
+	  (match ar with Some ar -> spc () ++ str":" ++ spc() ++ pr_rawsort (snd ar) | None -> mt()) ++
 	  spc () ++ str"where" ++ spc () ++
 	  prlist_with_sep (fun () -> str";" ++ spc()) 
 	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props )

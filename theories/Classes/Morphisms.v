@@ -453,8 +453,7 @@ Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : r
   inverse (R ==> R') ==rel (inverse R ==> inverse R').
 Proof.
   intros.
-  unfold inverse, flip.
-  unfold respectful.
+  unfold flip, respectful.
   split ; intros ; intuition.
 Qed.
 

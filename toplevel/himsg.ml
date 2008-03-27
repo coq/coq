@@ -488,6 +488,10 @@ let explain_no_instance env (_,id) l =
   str "applied to arguments" ++ spc () ++ 
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
+let explain_unsatisfiable_constraints env evm =
+  str"Unable to satisfy the following typeclass constraints:" ++ fnl() ++
+    Evd.pr_evar_map evm
+
 let explain_mismatched_contexts env c i j = 
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
     hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_named_context env j) ++ fnl () ++ brk (1,1) ++ 
@@ -498,6 +502,7 @@ let explain_typeclass_error env err =
     | NotAClass c -> explain_not_a_class env c
     | UnboundMethod (cid, id) -> explain_unbound_method env cid id
     | NoInstance (id, l) -> explain_no_instance env id l
+    | UnsatisfiableConstraints evm -> explain_unsatisfiable_constraints env evm
     | MismatchedContextInstance (c, i, j) -> explain_mismatched_contexts env c i j
 	
 (* Refiner errors *)

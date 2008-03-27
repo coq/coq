@@ -253,6 +253,10 @@ let new_class id par ar sup props =
 
   (* Interpret the arity *)
   let arity_imps, fullarity = 
+    let ar = 
+      match ar with
+	Some ar -> ar | None -> (dummy_loc, Rawterm.RType None)
+    in
     let arity = CSort (fst ar, snd ar) in
     let term = prod_constr_expr (prod_constr_expr arity par) sup in
       interp_type_evars isevars env0 term      
@@ -278,11 +282,15 @@ let new_class id par ar sup props =
       List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
       match fields with
 	  [(Name proj_name, _, field)] ->
-	    let class_type = it_mkProd_or_LetIn arity params in
 	    let class_body = it_mkLambda_or_LetIn field params in
+	    let class_type = 
+	      match ar with
+		  Some _ -> Some (it_mkProd_or_LetIn arity params)
+		| None -> None
+	    in
 	    let class_entry = 
 	      { const_entry_body = class_body;
-		const_entry_type = Some class_type;
+		const_entry_type = class_type;
 		const_entry_opaque = false;
 		const_entry_boxed = false }
 	    in

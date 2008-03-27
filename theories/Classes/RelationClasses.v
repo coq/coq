@@ -36,7 +36,9 @@ Definition default_relation [ DefaultRelation A R ] : relation A := R.
 
 Notation " x ===def y " := (default_relation x y) (at level 70, no associativity).
 
-Definition inverse {A} : relation A -> relation A := flip.
+Notation "'inverse' R" := (flip (R:relation _) : relation _) (at level 0).
+
+(* Definition inverse {A} : relation A -> relation A := flip. *)
 
 Definition complement {A} (R : relation A) : relation A := fun x y => R x y -> False.
 
@@ -93,26 +95,6 @@ Program Instance [ Transitive A R ] => flip_Transitive : Transitive (flip R).
 
   Solve Obligations using unfold flip ; program_simpl ; clapply transitivity.
 
-(** Have to do it again for Prop. *)
-
-Program Instance [ Reflexive A (R : relation A) ] => inverse_Reflexive : Reflexive (inverse R) :=
-  reflexivity := reflexivity (R:=R).
-
-Program Instance [ Irreflexive A (R : relation A) ] => inverse_Irreflexive : Irreflexive (inverse R) :=
-  irreflexivity := irreflexivity (R:=R).
-
-Program Instance [ Symmetric A (R : relation A) ] => inverse_Symmetric : Symmetric (inverse R).
-
-  Solve Obligations using unfold inverse, flip ; program_simpl ; clapply Symmetric.
-
-Program Instance [ Asymmetric A (R : relation A) ] => inverse_Asymmetric : Asymmetric (inverse R).
-  
-  Solve Obligations using program_simpl ; unfold inverse, flip in * ; intros ; clapply asymmetry.
-
-Program Instance [ Transitive A (R : relation A) ] => inverse_Transitive : Transitive (inverse R).
-
-  Solve Obligations using unfold inverse, flip ; program_simpl ; clapply transitivity.
-
 Program Instance [ Reflexive A (R : relation A) ] => 
   Reflexive_complement_Irreflexive : Irreflexive (complement R).
 
@@ -148,7 +130,7 @@ Tactic Notation "apply" "*" constr(t) :=
     refine (t _ _ _ _ _) | refine (t _ _ _ _ _ _) | refine (t _ _ _ _ _ _ _) ].
 
 Ltac simpl_relation :=
-  unfold inverse, flip, impl, arrow ; try reduce ; program_simpl ;
+  unfold flip, impl, arrow ; try reduce ; program_simpl ;
     try ( solve [ intuition ]).
 
 Ltac obligations_tactic ::= simpl_relation.
@@ -213,12 +195,11 @@ Class [ Equivalence A eqA ] => Antisymmetric (R : relation A) :=
 Program Instance [ eq : Equivalence A eqA, ! Antisymmetric eq R ] => 
   flip_antiSymmetric : Antisymmetric eq (flip R).
 
-Program Instance [ eq : Equivalence A eqA, ! Antisymmetric eq (R : relation A) ] => 
-  inverse_antiSymmetric : Antisymmetric eq (inverse R).
+(** Leibinz equality [eq] is an equivalence relation.
+   The instance has low priority as it is always applicable 
+   if only the type is constrained. *)
 
-(** Leibinz equality [eq] is an equivalence relation. *)
-
-Program Instance eq_equivalence : Equivalence A (@eq A).
+Program Instance eq_equivalence : Equivalence A (@eq A) | 10.
 
 (** Logical equivalence [iff] is an equivalence relation. *)
 

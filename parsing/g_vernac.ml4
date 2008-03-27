@@ -475,14 +475,14 @@ GEXTEND Gram
 
       (* Type classes, new syntax without artificial sup. *)
       | IDENT "Class"; qid = identref; pars = binders_let;
-	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
+	 s = [ ":"; c = sort -> Some (loc, c) | -> None ];
 	 props = typeclass_field_types ->
 	   VernacClass (qid, pars, s, [], props)
 
       (* Type classes *)
       | IDENT "Class"; sup = OPT [ l = delimited_binders_let; "=>" -> l ];
 	 qid = identref; pars = binders_let;
-	 s = [ ":"; c = sort -> loc, c | -> (loc,Rawterm.RType None) ];
+	 s = [ ":"; c = sort -> Some (loc, c) | -> None ];
 	 props = typeclass_field_types ->
 	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
 	     

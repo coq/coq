@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Decidable setoid equality theory.
+(* Decidable equivalences.
  *
  * Author: Matthieu Sozeau
  * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
@@ -20,20 +20,22 @@ Unset Strict Implicit.
 
 (** Export notations. *)
 
-Require Export Coq.Classes.SetoidClass.
+Require Export Coq.Classes.Equivalence.
 
 (** The [DecidableSetoid] class asserts decidability of a [Setoid]. It can be useful in proofs to reason more 
    classically. *)
 
 Require Import Coq.Logic.Decidable.
 
-Class [ Setoid A ] => DecidableSetoid :=
-  setoid_decidable : forall x y : A, decidable (x == y).
+Open Scope equiv_scope.
+
+Class [ Equivalence A ] => DecidableEquivalence :=
+  setoid_decidable : forall x y : A, decidable (x === y).
 
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
-Class [ Setoid A ] => EqDec :=
-  equiv_dec : forall x y : A, { x == y } + { x =/= y }.
+Class [ Equivalence A ] => EqDec :=
+  equiv_dec : forall x y : A, { x === y } + { x =/= y }.
 
 (** We define the [==] overloaded notation for deciding equality. It does not take precedence
    of [==] defined in the type scope, hence we can have both at the same time. *)
@@ -52,7 +54,7 @@ Open Local Scope program_scope.
 
 (** Invert the branches. *)
 
-Program Definition nequiv_dec [ EqDec A ] (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
+Program Definition nequiv_dec [ EqDec A ] (x y : A) : { x =/= y } + { x === y } := swap_sumbool (x == y).
 
 (** Overloaded notation for inequality. *)
 
@@ -71,22 +73,19 @@ Infix "<>b" := nequiv_decb (no associativity, at level 70).
 
 (** Decidable leibniz equality instances. *)
 
-Require Import Coq.Arith.Arith.
+Require Import Coq.Arith.Peano_dec.
 
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
-Program Instance eq_setoid : Setoid A :=
-  equiv := eq ; setoid_equiv := eq_equivalence.
-
-Program Instance nat_eq_eqdec : EqDec (@eq_setoid nat) :=
+Program Instance nat_eq_eqdec : ! EqDec nat eq :=
   equiv_dec := eq_nat_dec.
 
 Require Import Coq.Bool.Bool.
 
-Program Instance bool_eqdec : EqDec (@eq_setoid bool) :=
+Program Instance bool_eqdec : ! EqDec bool eq :=
   equiv_dec := bool_dec.
 
-Program Instance unit_eqdec : EqDec (@eq_setoid unit) :=
+Program Instance unit_eqdec : ! EqDec unit eq :=
   equiv_dec x y := in_left.
 
   Next Obligation.
@@ -95,8 +94,8 @@ Program Instance unit_eqdec : EqDec (@eq_setoid unit) :=
     reflexivity.
   Qed.
 
-Program Instance [ ! EqDec (@eq_setoid A), ! EqDec (@eq_setoid B) ] => 
-  prod_eqdec : EqDec (@eq_setoid (prod A B)) :=
+Program Instance [ EqDec A eq, EqDec B eq ] => 
+  prod_eqdec : ! EqDec (prod A B) eq :=
   equiv_dec x y := 
     dest x as (x1, x2) in 
     dest y as (y1, y2) in 
@@ -105,13 +104,24 @@ Program Instance [ ! EqDec (@eq_setoid A), ! EqDec (@eq_setoid B) ] =>
       else in_right
     else in_right.
 
-  Solve Obligations using unfold complement ; program_simpl.
+  Solve Obligations using unfold complement, equiv ; program_simpl.
+
+Program Instance [ EqDec A eq, EqDec B eq ] => 
+  sum_eqdec : ! EqDec (sum A B) eq :=
+  equiv_dec x y := 
+    match x, y with
+      | inl a, inl b => if a == b then in_left else in_right
+      | inr a, inr b => if a == b then in_left else in_right
+      | inl _, inr _ | inr _, inl _ => in_right
+    end.
+
+  Solve Obligations using unfold complement, equiv ; program_simpl.
 
 (** Objects of function spaces with countable domains like bool have decidable equality. *)
 
 Require Import Coq.Program.FunctionalExtensionality.
 
-Program Instance [ ! EqDec (@eq_setoid A) ] => bool_function_eqdec : EqDec (@eq_setoid (bool -> A)) :=
+Program Instance [ EqDec A eq ] => bool_function_eqdec : ! EqDec (bool -> A) eq :=
   equiv_dec f g := 
     if f true == g true then
       if f false == g false then in_left
@@ -122,6 +132,7 @@ Program Instance [ ! EqDec (@eq_setoid A) ] => bool_function_eqdec : EqDec (@eq_
 
   Next Obligation.
   Proof.
+    red.
     extensionality x.
     destruct x ; auto.
   Qed.

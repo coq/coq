@@ -109,8 +109,8 @@ Ltac equiv_simplify := repeat equiv_simplify_one.
 
 Ltac equivify_tac :=
   match goal with
-    | [ s : Equivalence ?A, H : ?R ?x ?y |- _ ] => change R with (@equiv A R s) in H
-    | [ s : Equivalence ?A |- context C [ ?R ?x ?y ] ] => change (R x y) with (@equiv A R s x y)
+    | [ s : Equivalence ?A ?R, H : ?R ?x ?y |- _ ] => change R with (@equiv A R s) in H
+    | [ s : Equivalence ?A ?R |- context C [ ?R ?x ?y ] ] => change (R x y) with (@equiv A R s x y)
   end.
 
 Ltac equivify := repeat equivify_tac.

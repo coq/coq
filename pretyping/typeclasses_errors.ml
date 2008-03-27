@@ -28,6 +28,7 @@ type typeclass_error =
     | NotAClass of constr
     | UnboundMethod of global_reference * identifier located (* Class name, method *)
     | NoInstance of identifier located * constr list
+    | UnsatisfiableConstraints of evar_map
     | MismatchedContextInstance of contexts * constr_expr list * named_context (* found, expected *)
 
 exception TypeClassError of env * typeclass_error
@@ -39,5 +40,7 @@ let not_a_class env c = typeclass_error env (NotAClass c)
 let unbound_method env cid id = typeclass_error env (UnboundMethod (cid, id))
 
 let no_instance env id args = typeclass_error env (NoInstance (id, args))
+
+let unsatisfiable_constraints env evm = typeclass_error env (UnsatisfiableConstraints evm)
 
 let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))
