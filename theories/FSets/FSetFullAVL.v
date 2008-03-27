@@ -39,6 +39,7 @@ Module AvlProofs (Import I:Int)(X:OrderedType).
 Module Import Raw := Raw I X.
 Import Raw.Proofs.
 Module Import II := MoreInt I.
+Open Local Scope pair_scope.
 Open Local Scope Int_scope.
 
 (** * AVL trees *)
@@ -358,12 +359,12 @@ Hint Resolve concat_avl.
 (** split *)
 
 Lemma split_avl : forall s x, avl s -> 
-  avl (split x s)#1 /\ avl (split x s)#2#2.
+  avl (split x s)#l /\ avl (split x s)#r.
 Proof. 
  intros s x; functional induction (split x s); simpl; auto.
- rewrite e1 in IHp;simpl in IHp;inversion_clear 1; intuition.
+ rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
  simpl; inversion_clear 1; auto.
- rewrite e1 in IHp;simpl in IHp;inversion_clear 1; intuition.
+ rewrite e1 in IHt;simpl in IHt;inversion_clear 1; intuition.
 Qed.
 
 (** inter *)
@@ -454,6 +455,7 @@ Module Import AvlProofs := AvlProofs I X.
 Import Raw.
 Import Raw.Proofs.
 Import II.
+Open Local Scope pair_scope.
 Open Local Scope nat_scope.
 
 (** Properties of cardinal *)
@@ -489,24 +491,24 @@ Proof.
 Qed.
 
 Lemma split_cardinal_1 : forall x s, 
- (cardinal (split x s)#1 <= cardinal s)%nat.
+ (cardinal (split x s)#l <= cardinal s)%nat.
 Proof.
  intros x s; functional induction split x s; simpl; auto.
- rewrite e1 in IHp; simpl in *.
+ rewrite e1 in IHt; simpl in *.
  romega with *.
  romega with *.
- rewrite e1 in IHp; simpl in *.
+ rewrite e1 in IHt; simpl in *.
  generalize (@join_cardinal l y rl); romega with *.
 Qed.
 
 Lemma split_cardinal_2 : forall x s, 
- (cardinal (split x s)#2#2 <= cardinal s)%nat.
+ (cardinal (split x s)#r <= cardinal s)%nat.
 Proof.
  intros x s; functional induction split x s; simpl; auto.
- rewrite e1 in IHp; simpl in *.
+ rewrite e1 in IHt; simpl in *.
  generalize (@join_cardinal rl y r); romega with *.
  romega with *.
- rewrite e1 in IHp; simpl in *; romega with *.
+ rewrite e1 in IHt; simpl in *; romega with *.
 Qed.
 
 (** * [ocaml_union], an union faithful to the original ocaml code *)
@@ -530,12 +532,12 @@ Function ocaml_union (s : t * t) { measure cardinal2 s } : t  :=
   | (Node l1 x1 r1 h1, Node l2 x2 r2 h2) => 
         if ge_lt_dec h1 h2 then
           if eq_dec h2 1%I then add x2 s#1 else
-          let (l2',r2') := split x1 s#2 in 
-             join (ocaml_union (l1,l2')) x1 (ocaml_union (r1,r2'#2))
+          let (l2',_,r2') := split x1 s#2 in 
+             join (ocaml_union (l1,l2')) x1 (ocaml_union (r1,r2'))
         else
           if eq_dec h1 1%I then add x1 s#2 else
-          let (l1',r1') := split x2 s#1 in 
-             join (ocaml_union (l1',l2)) x2 (ocaml_union (r1'#2,r2))
+          let (l1',_,r1') := split x2 s#1 in 
+             join (ocaml_union (l1',l2)) x2 (ocaml_union (r1',r2))
  end.
 Proof.
 abstract ocaml_union_tac.
@@ -558,7 +560,7 @@ Proof.
  rewrite (height_0 H); [ | avl_nn l2; omega_max].
  rewrite (height_0 H0); [ | avl_nn r2; omega_max].
  rewrite add_in; intuition_in.
- (* join (union (l1,l2')) x1 (union (r1,r2'#2)) *)
+ (* join (union (l1,l2')) x1 (union (r1,r2')) *)
  generalize
   (split_avl x1 A2) (split_bst x1 B2)
   (split_in_1 x1 y B2) (split_in_2 x1 y B2).
@@ -572,7 +574,7 @@ Proof.
  rewrite (height_0 H3); [ | avl_nn l1; omega_max].
  rewrite (height_0 H4); [ | avl_nn r1; omega_max].
  rewrite add_in; auto; intuition_in.
- (* join (union (l1',l2)) x1 (union (r1'#2,r2)) *)
+ (* join (union (l1',l2)) x1 (union (r1',r2)) *)
  generalize 
   (split_avl x2 A1) (split_bst x2 B1)
   (split_in_1 x2 y B1) (split_in_2 x2 y B1).
@@ -589,28 +591,26 @@ Proof.
  intros s; functional induction ocaml_union s; intros B1 A1 B2 A2;
   simpl fst in *; simpl snd in *; try clear e0 e1; 
   try apply add_bst; auto.
- (* join (union (l1,l2')) x1 (union (r1,r2'#2)) *)
- generalize (split_avl x1 A2) (split_bst x1 B2).
+ (* join (union (l1,l2')) x1 (union (r1,r2')) *)
+ clear _x _x0; factornode l2 x2 r2 h2 as s2.
+ generalize (split_avl x1 A2) (split_bst x1 B2)
+  (@split_in_1 s2 x1)(@split_in_2 s2 x1).
  rewrite e2; simpl.
- destruct 1; destruct 1.
- destruct (distr_pair e2) as (L,R); clear e2.
+ destruct 1; destruct 1; intros.
  inv bst; inv avl.
  apply join_bst; auto.
- intro y; rewrite ocaml_union_in; auto; simpl.
- rewrite <- L, split_in_1; auto; intuition_in.
- intro y; rewrite ocaml_union_in; auto; simpl.
- rewrite <- R, split_in_2; auto; intuition_in.
- (* join (union (l1',l2)) x1 (union (r1'#2,r2)) *)
- generalize (split_avl x2 A1) (split_bst x2 B1).
+ intro y; rewrite ocaml_union_in, H3; intuition_in.
+ intro y; rewrite ocaml_union_in, H4; intuition_in.
+ (* join (union (l1',l2)) x1 (union (r1',r2)) *)
+ clear _x _x0; factornode l1 x1 r1 h1 as s1.
+ generalize (split_avl x2 A1) (split_bst x2 B1)
+  (@split_in_1 s1 x2)(@split_in_2 s1 x2).
  rewrite e2; simpl.
- destruct 1; destruct 1.
- destruct (distr_pair e2) as (L,R); clear e2.
+ destruct 1; destruct 1; intros.
  inv bst; inv avl.
  apply join_bst; auto.
- intro y; rewrite ocaml_union_in; auto; simpl.
- rewrite <- L, split_in_1; auto; intuition_in.
- intro y; rewrite ocaml_union_in; auto; simpl.
- rewrite <- R, split_in_2; auto; intuition_in.
+ intro y; rewrite ocaml_union_in, H3; intuition_in.
+ intro y; rewrite ocaml_union_in, H4; intuition_in.
 Qed.
 
 Lemma ocaml_union_avl : forall s, 

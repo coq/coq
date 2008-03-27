@@ -42,21 +42,21 @@ Require Import FSetInterface FSetList ZArith Int.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+(** Notations and helper lemma about pairs *)
+
+Notation "s #1" := (fst s) (at level 9, format "s '#1'") : pair_scope.
+Notation "s #2" := (snd s) (at level 9, format "s '#2'") : pair_scope.
+
+(** * Raw 
+   
+   Functor of pure functions + a posteriori proofs of invariant 
+   preservation *)
+
 Module Raw (Import I:Int)(X:OrderedType).
+Open Local Scope pair_scope.
 Open Local Scope Int_scope.
 
 Definition elt := X.t.
-
-(** Workaround to get lazy andb and orb operations with vm_computation *)
-
-Notation "a &&& b" := (if a then b else false) (at level 40, left associativity) : bool_scope.
-Notation "a ||| b" := (if a then true else b) (at level 50, left associativity) : bool_scope.
-
-(** Notations and helper lemma about pairs *)
-
-Notation "s #1" := (fst s) (at level 9, format "s '#1'").
-Notation "s #2" := (snd s) (at level 9, format "s '#2'").
-
 
 (** * Trees
 
@@ -123,7 +123,7 @@ Definition create l x r :=
 
 Definition assert_false := create.
 
-Fixpoint bal l x r := 
+Definition bal l x r := 
   let hl := height l in 
   let hr := height r in
   if gt_le_dec hl (hr+2) then 
@@ -208,7 +208,7 @@ Fixpoint remove_min l x r : t*elt :=
   [|height t1 - height t2| <= 2].
 *)
 
-Fixpoint merge s1 s2 :=  match s1,s2 with 
+Definition merge s1 s2 :=  match s1,s2 with 
   | Leaf, _ => s2 
   | _, Leaf => s1
   | _, Node l2 x2 r2 h2 => 
@@ -252,11 +252,11 @@ Definition choose := min_elt.
     Same as [merge] but does not assume anything about heights.
 *)
 
-Fixpoint concat s1 s2 := 
+Definition concat s1 s2 := 
    match s1, s2 with 
       | Leaf, _ => s2 
       | _, Leaf => s1
-      | _, Node l2 x2 r2 h2 => 
+      | _, Node l2 x2 r2 _ => 
             let (s2',m) := remove_min l2 x2 r2 in 
             join s1 m s2'
    end.
@@ -269,17 +269,19 @@ Fixpoint concat s1 s2 :=
     - [present] is [true] if and only if [s] contains  [x].
 *)
 
-Fixpoint split x s : t * (bool * t) := match s with 
-  | Leaf => (Leaf, (false, Leaf))
+Record triple := mktriple { t_left:t; t_in:bool; t_right:t }.
+Notation "<< l , b , r >>" := (mktriple l b r) (at level 9).
+Notation "t #l" := (t_left t) (at level 9, format "t '#l'").
+Notation "t #b" := (t_in t) (at level 9, format "t '#b'").
+Notation "t #r" := (t_right t) (at level 9, format "t '#r'").
+
+Fixpoint split x s : triple := match s with
+  | Leaf => << Leaf, false, Leaf >>
   | Node l y r h => 
      match X.compare x y with 
-      | LT _ => match split x l with 
-                 | (ll,(pres,rl)) => (ll, (pres, join rl y r))
-                end
-      | EQ _ => (l, (true, r))
-      | GT _ => match split x r with 
-                 | (rl,(pres,rr)) => (join l y rl, (pres, rr))
-                end
+      | LT _ => let (ll,b,rl) := split x l in << ll, b, join rl y r >>
+      | EQ _ => << l, true, r >>
+      | GT _ => let (rl,b,rr) := split x r in << join l y rl, b, rr >>
      end
  end.
 
@@ -288,11 +290,10 @@ Fixpoint split x s : t * (bool * t) := match s with
 Fixpoint inter s1 s2 := match s1, s2 with 
     | Leaf, _ => Leaf
     | _, Leaf => Leaf
-    | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
-            match split x1 s2 with
-               | (l2',(true,r2')) => join (inter l1 l2') x1 (inter r1 r2')
-               | (l2',(false,r2')) => concat (inter l1 l2') (inter r1 r2')
-            end
+    | Node l1 x1 r1 h1, _ => 
+            let (l2',pres,r2') := split x1 s2 in 
+            if pres then join (inter l1 l2') x1 (inter r1 r2')
+            else concat (inter l1 l2') (inter r1 r2')
     end.
 
 (** * Difference *)
@@ -300,11 +301,10 @@ Fixpoint inter s1 s2 := match s1, s2 with
 Fixpoint diff s1 s2 := match s1, s2 with 
  | Leaf, _ => Leaf
  | _, Leaf => s1
- | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
-    match split x1 s2 with 
-      | (l2',(true,r2')) => concat (diff l1 l2') (diff r1 r2')
-      | (l2',(false,r2')) => join (diff l1 l2') x1 (diff r1 r2')
-    end
+ | Node l1 x1 r1 h1, _ => 
+    let (l2',pres,r2') := split x1 s2 in 
+    if pres then concat (diff l1 l2') (diff r1 r2')
+    else join (diff l1 l2') x1 (diff r1 r2')
 end.
 
 (** * Union *)
@@ -323,10 +323,10 @@ end.
 Fixpoint union s1 s2 := 
  match s1, s2 with 
   | Leaf, _ => s2
-  | Node _ _ _ _, Leaf => s1
-  | Node l1 x1 r1 h1, Node l2 x2 r2 h2 => 
-     let (l2',r2') := split x1 s2 in 
-     join (union l1 l2') x1 (union r1 r2'#2)
+  | _, Leaf => s1
+  | Node l1 x1 r1 h1, _ => 
+     let (l2',_,r2') := split x1 s2 in 
+     join (union l1 l2') x1 (union r1 r2')
  end.
 
 (** * Elements *)
@@ -546,24 +546,6 @@ Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
 Module Proofs.
  Module MX := OrderedTypeFacts X.
  Module L := FSetList.Raw X.
-
-(** * Helper lemma about [orb], [andb], [pair] *)
-
-Lemma andb_alt : forall a b : bool, a &&& b = a && b.
-Proof.
- destruct a; simpl; auto.
-Qed.
-
-Lemma orb_alt : forall a b : bool, a ||| b = a || b.
-Proof.
- destruct a; simpl; auto.
-Qed.
-
-Lemma distr_pair : forall (A B:Type)(s:A*B)(a:A)(b:B), s = (a,b) -> 
- s#1 = a /\ s#2 = b.
-Proof.
- destruct s; simpl; injection 1; auto.
-Qed.
 
 (** * Automation and dedicated tactics *)
 
@@ -1067,7 +1049,7 @@ Proof.
  rewrite join_in, remove_min_in, e1; simpl; intuition.
 Qed.
  
-Lemma concat_bst :   forall s1 s2, bst s1 -> bst s2 -> 
+Lemma concat_bst : forall s1 s2, bst s1 -> bst s2 -> 
  (forall y1 y2 : elt, In y1 s1 -> In y2 s2 -> X.lt y1 y2) -> 
  bst (concat s1 s2).
 Proof. 
@@ -1086,42 +1068,42 @@ Hint Resolve concat_bst.
 (** * Splitting *)
 
 Lemma split_in_1 : forall s x y, bst s -> 
- (In y (split x s)#1 <-> In y s /\ X.lt y x).
+ (In y (split x s)#l <-> In y s /\ X.lt y x).
 Proof.
  intros s x; functional induction (split x s); simpl; intros; 
   inv bst; try clear e0.
  intuition_in.
- rewrite e1 in IHp; simpl in IHp; rewrite IHp; intuition_in; order.
+ rewrite e1 in IHt; simpl in IHt; rewrite IHt; intuition_in; order.
  intuition_in; order.
  rewrite join_in.
- rewrite e1 in IHp; simpl in IHp; rewrite IHp; intuition_in; order.
+ rewrite e1 in IHt; simpl in IHt; rewrite IHt; intuition_in; order.
 Qed.
 
 Lemma split_in_2 : forall s x y, bst s -> 
- (In y (split x s)#2#2 <-> In y s /\ X.lt x y).
+ (In y (split x s)#r <-> In y s /\ X.lt x y).
 Proof. 
  intros s x; functional induction (split x s); subst; simpl; intros; 
   inv bst; try clear e0.
  intuition_in.
  rewrite join_in.
- rewrite e1 in IHp; simpl in IHp; rewrite IHp; intuition_in; order.
+ rewrite e1 in IHt; simpl in IHt; rewrite IHt; intuition_in; order.
  intuition_in; order.
- rewrite e1 in IHp; simpl in IHp; rewrite IHp; intuition_in; order.
+ rewrite e1 in IHt; simpl in IHt; rewrite IHt; intuition_in; order.
 Qed.
 
 Lemma split_in_3 : forall s x, bst s -> 
- ((split x s)#2#1 = true <-> In x s).
+ ((split x s)#b = true <-> In x s).
 Proof. 
  intros s x; functional induction (split x s); subst; simpl; intros; 
   inv bst; try clear e0.
  intuition_in; try discriminate.
- rewrite e1 in IHp; simpl in IHp; rewrite IHp; intuition_in; order.
+ rewrite e1 in IHt; simpl in IHt; rewrite IHt; intuition_in; order.
  intuition.
- rewrite e1 in IHp; simpl in IHp; rewrite IHp; intuition_in; order.
+ rewrite e1 in IHt; simpl in IHt; rewrite IHt; intuition_in; order.
 Qed.
 
 Lemma split_bst : forall s x, bst s -> 
- bst (split x s)#1 /\ bst (split x s)#2#2.
+ bst (split x s)#l /\ bst (split x s)#r.
 Proof. 
  intros s x; functional induction (split x s); subst; simpl; intros; 
   inv bst; try clear e0; try rewrite e1 in *; simpl in *; intuition;
@@ -1143,26 +1125,23 @@ Proof.
  [intuition_in|intuition_in | | ]; 
  factornode _x0 _x1 _x2 _x3 as s2; 
  generalize (split_bst x1 B2); 
-  rewrite e1; simpl; destruct 1; inv bst; 
+  rewrite e1; simpl; destruct 1; inv bst;
  destruct IHt as (IHb1,IHi1); auto; 
- destruct IHt0 as (IHb2,IHi2); auto; 
- destruct (distr_pair e1); clear e1;
- destruct (distr_pair H6); clear H6; split.
+ destruct IHt0 as (IHb2,IHi2); auto;
+ generalize (@split_in_1 s2 x1)(@split_in_2 s2 x1)
+  (split_in_3 x1 B2)(split_bst x1 B2);
+ rewrite e1; simpl; split; intros.
  (* bst join *)
- apply join_bst; auto; intro y; [rewrite IHi1|rewrite IHi2]; intuition.
- (* In join *)
- intros.
- rewrite join_in, IHi1, IHi2, <- H5, <- H8, split_in_1, split_in_2; auto.
- rewrite split_in_3 in H7; intuition_in.
+ apply join_bst; auto; intro y; [rewrite IHi1|rewrite IHi2]; intuition. (* In join *)
+ rewrite join_in, IHi1, IHi2, H5, H6; intuition_in.
  apply In_1 with x1; auto.
  (* bst concat *)
  apply concat_bst; auto; intros y1 y2; rewrite IHi1, IHi2; intuition; order.
  (* In concat *)
- intros.
- rewrite concat_in, IHi1, IHi2, <- H5, <- H8, split_in_1, split_in_2; auto.
- assert (~In x1 s2) by (rewrite <- split_in_3, H7; auto).
+ rewrite concat_in, IHi1, IHi2, H5, H6; auto.
+ assert (~In x1 s2) by (rewrite <- H7; auto).
  intuition_in.
- elim H6.
+ elim H9.
  apply In_1 with y; auto.
 Qed.
 
@@ -1191,24 +1170,21 @@ Proof.
  inv avl; inv bst; 
  destruct IHt as (IHb1,IHi1); auto; 
  destruct IHt0 as (IHb2,IHi2); auto; 
- destruct (distr_pair e1); clear e1; 
- destruct (distr_pair H6); clear H6; split.
+ generalize (@split_in_1 s2 x1)(@split_in_2 s2 x1)
+  (split_in_3 x1 B2)(split_bst x1 B2);
+ rewrite e1; simpl; split; intros.
  (* bst concat *)
  apply concat_bst; auto; intros y1 y2; rewrite IHi1, IHi2; intuition; order.
  (* In concat *)
- intros.
- rewrite concat_in, IHi1, IHi2, <-H5, <- H8, split_in_1, split_in_2; auto.
- rewrite split_in_3 in H7; intuition_in.
- elim H10.
+ rewrite concat_in, IHi1, IHi2, H5, H6; intuition_in.
+ elim H13.
  apply In_1 with x1; auto.
  (* bst join *)
- apply join_bst; auto; intro y; [rewrite IHi1|rewrite IHi2]; intuition.
- (* In join *)
- intros.
- rewrite join_in, IHi1, IHi2, <-H5, <-H8, split_in_1, split_in_2; auto.
- assert (~In x1 s2) by (rewrite <- split_in_3, H7; auto).
+ apply join_bst; auto; intro y; [rewrite IHi1|rewrite IHi2]; intuition. (* In join *)
+ rewrite join_in, IHi1, IHi2, H5, H6; auto.
+ assert (~In x1 s2) by (rewrite <- H7; auto).
  intuition_in.
- elim H6.
+ elim H9.
  apply In_1 with y; auto.
 Qed.
 
@@ -1232,11 +1208,11 @@ Proof.
  intros s1 s2; functional induction union s1 s2; intros y B1 B2.
  intuition_in.
  intuition_in.
- generalize (split_bst x1 B2) (split_in_1 x1 y B2) (split_in_2 x1 y B2).
+ factornode _x0 _x1 _x2 _x3 as s2.
+ generalize (split_in_1 x1 y B2)(split_in_2 x1 y B2)(split_bst x1 B2).
  rewrite e1; simpl.
- destruct 1; inv bst.
- rewrite join_in, IHt, IHt0; auto.
- do 2 (intro Eq; rewrite Eq; clear Eq).
+ destruct 3; inv bst.
+ rewrite join_in, IHt, IHt0, H, H0; auto.
  case (X.compare y x1); intuition_in.
 Qed.
 
@@ -1244,15 +1220,13 @@ Lemma union_bst : forall s1 s2, bst s1 -> bst s2 ->
  bst (union s1 s2).
 Proof.
  intros s1 s2; functional induction union s1 s2; intros B1 B2; auto.
- generalize (split_bst x1 B2) .
+ factornode _x0 _x1 _x2 _x3 as s2.
+ generalize (@split_in_1 s2 x1)(@split_in_2 s2 x1)(split_bst x1 B2).
+ rewrite e1; simpl; destruct 3.
  inv bst.
- rewrite e1; simpl; destruct 1.
- destruct (distr_pair e1) as (L,R); clear e1.
  apply join_bst; auto.
- intro y; rewrite union_in; auto; simpl.
- rewrite <- L, split_in_1; auto; intuition_in.
- intro y; rewrite union_in; auto; simpl.
- rewrite <- R, split_in_2; auto; intuition_in.
+ intro y; rewrite union_in, H; intuition_in.
+ intro y; rewrite union_in, H0; intuition_in.
 Qed.
 
 
@@ -1492,7 +1466,7 @@ Qed.
 Lemma exists_1 : forall s, compat_bool X.eq f ->
  Exists (fun x => f x = true) s -> exists_ f s = true.
 Proof.
- induction s; simpl; destruct 2 as (x,(U,V)); inv In; rewrite ? orb_alt.
+ induction s; simpl; destruct 2 as (x,(U,V)); inv In; rewrite <- ?orb_lazy_alt.
  rewrite (H _ _ (X.eq_sym H0)); rewrite V; auto.
  apply orb_true_intro; left.
  apply orb_true_intro; right; apply IHs1; auto; exists x; auto.
@@ -1502,7 +1476,7 @@ Qed.
 Lemma exists_2 : forall s, compat_bool X.eq f ->
  exists_ f s = true -> Exists (fun x => f x = true) s.
 Proof. 
- induction s; simpl; intros; rewrite ? orb_alt in *.
+ induction s; simpl; intros; rewrite <- ?orb_lazy_alt in *.
  discriminate.
  destruct (orb_true_elim _ _ H0) as [H1|H1]. 
  destruct (orb_true_elim _ _ H1) as [H2|H2].
@@ -1582,7 +1556,7 @@ Proof.
  assert (X.eq a x2) by order; intuition_in.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
 
- rewrite andb_alt, andb_true_iff, H1 by auto; clear H1 IHl2 IHr2.
+ rewrite <-andb_lazy_alt, andb_true_iff, H1 by auto; clear H1 IHl2 IHr2.
  unfold Subset. intuition_in.
  assert (H':=mem_2 H6); apply In_1 with x1; auto.
  apply mem_1; auto.
@@ -1604,7 +1578,7 @@ Proof.
  inv bst. clear H7.
  destruct X.compare.
 
- rewrite andb_alt, andb_true_iff, H1 by auto;  clear H1 IHl2 IHr2.
+ rewrite <-andb_lazy_alt, andb_true_iff, H1 by auto;  clear H1 IHl2 IHr2.
  unfold Subset. intuition_in.
  assert (H':=mem_2 H1); apply In_1 with x1; auto.
  apply mem_1; auto.
@@ -1633,21 +1607,21 @@ Proof.
  inv bst.
  destruct X.compare.
 
- rewrite andb_alt, andb_true_iff, IHr1 by auto.
+ rewrite <-andb_lazy_alt, andb_true_iff, IHr1 by auto.
  rewrite (@subsetl_12 (subset l1) l1 x1 h1) by auto.
  clear IHl1 IHr1.
  unfold Subset; intuition_in.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
 
- rewrite andb_alt, andb_true_iff, IHl1, IHr1 by auto.
+ rewrite <-andb_lazy_alt, andb_true_iff, IHl1, IHr1 by auto.
  clear IHl1 IHr1.
  unfold Subset; intuition_in.
  assert (X.eq a x2) by order; intuition_in.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
  assert (In a (Node l2 x2 r2 h2)) by auto; intuition_in; order.
  
- rewrite andb_alt, andb_true_iff, IHl1 by auto.
+ rewrite <-andb_lazy_alt, andb_true_iff, IHl1 by auto.
  rewrite (@subsetr_12 (subset r1) r1 x1 h1) by auto.
  clear IHl1 IHr1.
  unfold Subset; intuition_in.

@@ -684,7 +684,7 @@ Proof.
   destruct b; intuition.
 Qed.
 
-(* Rewrite rules about andb, orb and if (used in romega) *)
+(** Rewrite rules about andb, orb and if (used in romega) *)
 
 Lemma andb_if : forall (A:Type)(a a':A)(b b' : bool), 
   (if b && b' then a else a') = 
@@ -700,7 +700,28 @@ Proof.
  destruct b; auto.
 Qed.
 
-(* Compatibility *)
+(*****************************************)
+(** * Alternative versions of [andb] and [orb] 
+    with lazy behavior (for vm_compute)  *)
+(*****************************************)
+
+Notation "a &&& b" := (if a then b else false) 
+ (at level 40, left associativity) : bool_scope.
+Notation "a ||| b" := (if a then true else b)
+ (at level 50, left associativity) : bool_scope.
+
+Lemma andb_lazy_alt : forall a b : bool, a && b = a &&& b.
+Proof.
+ unfold andb; auto.
+Qed.
+
+Lemma orb_lazy_alt : forall a b : bool, a || b = a ||| b.
+Proof.
+ unfold orb; auto.
+Qed.
+
+
+(** Compatibility *)
 
 Notation andb := Datatypes.andb (only parsing).
 Notation orb := Datatypes.orb (only parsing).
