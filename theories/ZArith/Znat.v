@@ -29,6 +29,11 @@ Definition neq (x y:nat) := x <> y.
 
 (** Injection and successor *)
 
+Theorem inj_0 : Z_of_nat 0 = 0%Z.
+Proof.
+  reflexivity.
+Qed.
+
 Theorem inj_S : forall n:nat, Z_of_nat (S n) = Zsucc (Z_of_nat n).
 Proof.
   intro y; induction y as [| n H];
