@@ -488,22 +488,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  in
 	    { uj_val = v; uj_type = p }
 
-    | RLetPattern (loc, c, p) ->
-	(* Just use cases typing *)
-	let j = 
-	  pretype tycon env isevars lvar 
-	    (RCases (loc, None, [c], [p]))
-	in
-	  (* Change case info *)
-	let j' = match kind_of_term j.uj_val with
-	    Case (ci, po, c, br) ->
-	      let pp_info = { ci.ci_pp_info with style = LetPatternStyle } in
-		{ j with uj_val = mkCase ({ ci with ci_pp_info = pp_info }, po, c, br) }
-	  | _ -> j
-	in j'
-
-    | RCases (loc,po,tml,eqns) ->
-	Cases.compile_cases loc
+    | RCases (loc,sty,po,tml,eqns) ->
+	Cases.compile_cases loc sty
 	  ((fun vtyc env -> pretype vtyc env isevars lvar),isevars)
 	  tycon env (* loc *) (po,tml,eqns)
 

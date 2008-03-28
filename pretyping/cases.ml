@@ -65,7 +65,7 @@ let error_needs_inversion env x t =
 
 module type S = sig
   val compile_cases :
-    loc ->
+    loc -> case_style ->
     (type_constraint -> env -> rawconstr -> unsafe_judgment) *
       Evd.evar_defs ref ->
     type_constraint -> 
@@ -275,13 +275,14 @@ let push_history_pattern n current cont =
 
 *)
 type pattern_matching_problem =
-    { env      : env;
-      evdref   : Evd.evar_defs ref;
-      pred     : predicate_signature option;
-      tomatch  : tomatch_stack;
-      history  : pattern_continuation;
-      mat      : matrix;
-      caseloc  : loc;
+    { env       : env;
+      evdref    : Evd.evar_defs ref;
+      pred      : predicate_signature option;
+      tomatch   : tomatch_stack;
+      history   : pattern_continuation;
+      mat       : matrix;
+      caseloc   : loc;
+      casestyle : case_style;
       typing_function: type_constraint -> env -> rawconstr -> unsafe_judgment }
 
 (*--------------------------------------------------------------------------*
@@ -1275,7 +1276,7 @@ and match_current pb tomatch =
 	  let (pred,typ,s) =
 	    find_predicate pb.caseloc pb.env pb.evdref 
 	      pb.pred brtyps cstrs current indt pb.tomatch in
-	  let ci = make_case_info pb.env mind RegularStyle in
+	  let ci = make_case_info pb.env mind pb.casestyle in
 	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
 	  let inst = List.map mkRel deps in
 	  { uj_val = applist (case, inst);
@@ -1504,7 +1505,7 @@ let extract_arity_signature env0 tomatchl tmsign =
 	    | Some (loc,_,_,_) -> 
  	    user_err_loc (loc,"",
 	    str "Unexpected type annotation for a term of non inductive type"))
-      | IsInd (_,IndType(indf,realargs)) ->
+      | IsInd (term,IndType(indf,realargs)) ->
           let indf' = lift_inductive_family n indf in
 	  let (ind,params) = dest_ind_family indf' in
 	  let nrealargs = List.length realargs in
@@ -1519,6 +1520,14 @@ let extract_arity_signature env0 tomatchl tmsign =
 		  List.rev realnal
 	      | None -> list_tabulate (fun _ -> Anonymous) nrealargs in
 	  let arsign = fst (get_arity env0 indf') in
+(* 	  let na =  *)
+(* 	    match na with  *)
+(* 	      | Name _ -> na *)
+(* 	      | Anonymous -> *)
+(* 		  match kind_of_term term with *)
+(* 		    | Rel n -> pi1 (lookup_rel n (Environ.rel_context env0)) *)
+(* 		    | _ -> Anonymous *)
+(* 	  in *)
 	  (na,None,build_dependent_inductive env0 indf')
 	  ::(List.map2 (fun x (_,c,t) ->(x,c,t)) realnal arsign) in
   let rec buildrec n = function
@@ -1537,6 +1546,34 @@ let inh_conv_coerce_to_tycon loc env evdref j tycon =
           j
     | None -> j
 
+(* We put the tycon inside the arity signature, possibly discovering dependencies. *)
+
+let prepare_predicate_from_arsign_tycon loc env evdref tomatchs sign arsign c =
+  let nar = List.fold_left (fun n sign -> List.length sign + n) 0 arsign in
+  let subst, len = 
+    List.fold_left2 (fun (subst, len) (tm, tmtype) sign ->
+      let signlen = List.length sign in
+	match kind_of_term tm with
+	  | Rel n when dependent tm c 
+		&& signlen = 1 (* The term to match is not of a dependent type itself *) ->
+	      ((n, len) :: subst, len - signlen)
+	  | _ -> (subst, len - signlen))
+      ([], nar) tomatchs arsign
+  in
+  let rec predicate lift c =
+    match kind_of_term c with
+      | Rel n when n > lift -> 
+	  (try 
+	      (* Make the predicate dependent on the matched variable *)
+	      let idx = List.assoc (n - lift) subst in
+		mkRel (idx + lift)
+	    with Not_found -> 
+	      (* A variable that is not matched, lift over the arsign. *)
+	      mkRel (n + nar))
+      | _ ->
+	  map_constr_with_binders succ predicate lift c 
+  in predicate 0 c
+
 
 (* Builds the predicate. If the predicate is dependent, its context is
  * made of 1+nrealargs assumptions for each matched term in an inductive
@@ -1545,7 +1582,8 @@ let inh_conv_coerce_to_tycon loc env evdref j tycon =
 
  * Each matched terms are independently considered dependent or not.
 
- * A type constraint but no annotation case: it is assumed non dependent.
+ * A type constraint but no annotation case: we try to specialize the
+ * tycon to make the predicate if it is not closed.
  *)
 
 let prepare_predicate loc typing_fun evdref env tomatchs sign tycon = function
@@ -1553,9 +1591,23 @@ let prepare_predicate loc typing_fun evdref env tomatchs sign tycon = function
   | None ->
       (match tycon with
        | Some (None, t) ->
-	   let names,pred = 
-	     prepare_predicate_from_tycon loc false env evdref tomatchs sign t 
-	   in Some (build_initial_predicate false names pred)
+	   if noccur_with_meta 0 max_int t then
+	     let names,pred =
+	       prepare_predicate_from_tycon loc false env evdref tomatchs sign t
+	     in
+	       Some (build_initial_predicate false names pred)
+	   else
+	     let arsign = extract_arity_signature env tomatchs sign in
+	     let env' = List.fold_right push_rels arsign env in
+	     let names = List.rev (List.map (List.map pi1) arsign) in
+	     let pred = prepare_predicate_from_arsign_tycon loc env' evdref tomatchs sign arsign t in
+	       if eq_constr pred t then
+		 let names,pred =
+		   prepare_predicate_from_tycon loc false env evdref tomatchs sign t
+		 in
+		   Some (build_initial_predicate false names pred)
+	       else
+		 Some (build_initial_predicate true names pred)
        | _ -> None)
 
   (* Some type annotation *)
@@ -1577,7 +1629,7 @@ let prepare_predicate loc typing_fun evdref env tomatchs sign tycon = function
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
   
-let compile_cases loc (typing_fun, evdref) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns)=
+let compile_cases loc style (typing_fun, evdref) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns)=
   
   (* We build the matrix of patterns and right-hand-side *)
   let matx = matx_of_eqns env tomatchl eqns in
@@ -1596,13 +1648,14 @@ let compile_cases loc (typing_fun, evdref) (tycon : Evarutil.type_constraint) en
   let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
     
   let pb =
-    { env      = env;
-      evdref   = evdref;
-      pred     = pred;
-      tomatch  = initial_pushed;
-      history  = start_history (List.length initial_pushed);
-      mat      = matx;
-      caseloc  = loc;
+    { env       = env;
+      evdref    = evdref;
+      pred      = pred;
+      tomatch   = initial_pushed;
+      history   = start_history (List.length initial_pushed);
+      mat       = matx;
+      caseloc   = loc;
+      casestyle = style;
       typing_function = typing_fun } in
     
   let j = compile pb in

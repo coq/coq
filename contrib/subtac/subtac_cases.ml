@@ -241,6 +241,7 @@ type pattern_matching_problem =
       history  : pattern_continuation;
       mat      : matrix;
       caseloc  : loc;
+      casestyle: case_style;
       typing_function: type_constraint -> env -> rawconstr -> unsafe_judgment }
 
 (*--------------------------------------------------------------------------*
@@ -1263,7 +1264,7 @@ and match_current pb tomatch =
 	  let (pred,typ,s) =
 	    find_predicate pb.caseloc pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt pb.tomatch in
-	  let ci = make_case_info pb.env mind RegularStyle in
+	  let ci = make_case_info pb.env mind pb.casestyle in
 	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
 	  let inst = List.map mkRel deps in
 	  { uj_val = applist (case, inst);
@@ -2081,7 +2082,7 @@ let nf_evars_env evar_defs (env : env) : env =
     Environ.fold_rel_context (fun e (na, b, t) e' -> Environ.push_rel (na, Option.map nf b, nf t) e')
      ~init:env' env
       
-let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =
+let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =
   (* We build the matrix of patterns and right-hand-side *)
   let matx = matx_of_eqns env eqns in
      
@@ -2151,6 +2152,7 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	  history  = start_history (List.length initial_pushed);
 	  mat      = matx;
 	  caseloc  = loc;
+	  casestyle= style;
 	  typing_function = typing_fun } in
 	
       let j = compile pb in
@@ -2180,6 +2182,7 @@ let compile_cases loc (typing_fun, isevars) (tycon : Evarutil.type_constraint) e
 	      history  = start_history (List.length initial_pushed);
 	      mat      = matx;
 	      caseloc  = loc;
+	      casestyle= style;
 	      typing_function = typing_fun } in
 	    
 	  let j = compile pb in

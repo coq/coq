@@ -210,7 +210,7 @@ let rec depends_of_rawconstr rc acc = match rc with
   | RLambda (_, _, _, rct, rcb)
   | RProd   (_, _, _, rct, rcb)
   | RLetIn  (_, _, rct, rcb) -> depends_of_rawconstr rcb (depends_of_rawconstr rct acc)
-  | RCases  (_, rco, tmt, cc) ->
+  | RCases  (_, _, rco, tmt, cc) ->
       (* LEM TODO: handle the cc *)
       (Option.fold_right depends_of_rawconstr rco
          (list_union_map
@@ -221,13 +221,6 @@ let rec depends_of_rawconstr rc acc = match rc with
 	    acc))
   | RLetTuple (_,_,(_,rco),rc0,rc1) ->
      depends_of_rawconstr rc1 (depends_of_rawconstr rc0 (Option.fold_right depends_of_rawconstr rco acc))
-  | RLetPattern (_, tmt, cc) ->
-      (* LEM TODO: handle the cc *)
-      (fun (rc, pp) acc ->
-	 Option.fold_right (fun (_,ind,_,_) acc -> (IndRef ind)::acc) (snd pp)
-	   (depends_of_rawconstr rc acc))
-	tmt
-	acc
   | RIf (_, rcC, (_, rco), rcT, rcF) -> let dorc = depends_of_rawconstr in
       dorc rcF (dorc rcT (dorc rcF (dorc rcC (Option.fold_right dorc rco acc))))
   | RRec (_, _, _, rdla, rca0, rca1) -> let dorca = array_union_map depends_of_rawconstr in

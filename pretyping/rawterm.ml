@@ -62,10 +62,9 @@ type rawconstr =
   | RLambda of loc * name * binding_kind * rawconstr * rawconstr
   | RProd of loc * name * binding_kind * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * rawconstr option * tomatch_tuples * cases_clauses
+  | RCases of loc * case_style * rawconstr option * tomatch_tuples * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
-  | RLetPattern of loc * tomatch_tuple * cases_clause
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
   | RRec of loc * fix_kind * identifier array * rawdecl list array *
       rawconstr array * rawconstr array
@@ -115,14 +114,12 @@ let map_rawconstr f = function
   | RLambda (loc,na,bk,ty,c) -> RLambda (loc,na,bk,f ty,f c)
   | RProd (loc,na,bk,ty,c) -> RProd (loc,na,bk,f ty,f c)
   | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
-  | RCases (loc,rtntypopt,tml,pl) ->
-      RCases (loc,Option.map f rtntypopt,
+  | RCases (loc,sty,rtntypopt,tml,pl) ->
+      RCases (loc,sty,Option.map f rtntypopt,
         List.map (fun (tm,x) -> (f tm,x)) tml,
         List.map (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl)
   | RLetTuple (loc,nal,(na,po),b,c) ->
       RLetTuple (loc,nal,(na,Option.map f po),f b,f c)
-  | RLetPattern (loc,(b,x),(loc',idl,p,c)) ->
-      RLetPattern (loc,(f b,x),(loc',idl,p,f c))
   | RIf (loc,c,(na,po),b1,b2) ->
       RIf (loc,f c,(na,Option.map f po),f b1,f b2)
   | RRec (loc,fk,idl,bl,tyl,bv) ->
@@ -177,14 +174,13 @@ let occur_rawconstr id =
     | RLambda (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RProd (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
-    | RCases (loc,rtntypopt,tml,pl) ->
+    | RCases (loc,sty,rtntypopt,tml,pl) ->
 	(occur_option rtntypopt)
         or (List.exists (fun (tm,_) -> occur tm) tml)
 	or (List.exists occur_pattern pl)
     | RLetTuple (loc,nal,rtntyp,b,c) -> 
 	occur_return_type rtntyp id
         or (occur b) or (not (List.mem (Name id) nal) & (occur c))
-    | RLetPattern (loc, (b, _), p) -> (occur b) or (occur_pattern p)
     | RIf (loc,c,rtntyp,b1,b2) -> 
 	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
     | RRec (loc,fk,idl,bl,tyl,bv) ->
@@ -224,7 +220,7 @@ let free_rawvars  =
 	let vs' = vars bounded vs ty in 
 	let bounded' = add_name_to_ids bounded na in 
 	vars bounded' vs' c
-    | RCases (loc,rtntypopt,tml,pl) ->
+    | RCases (loc,sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bounded vs rtntypopt in 
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bounded vs tm) vs1 tml in 
 	List.fold_left (vars_pattern bounded) vs2 pl
@@ -233,7 +229,6 @@ let free_rawvars  =
 	let vs2 = vars bounded vs1 b in 
 	let bounded' = List.fold_left add_name_to_ids bounded nal in
 	vars bounded' vs2 c
-    | RLetPattern (loc, (c, _), p) -> vars_pattern bounded (vars bounded vs c) p
     | RIf (loc,c,rtntyp,b1,b2) -> 
 	let vs1 = vars_return_type bounded vs rtntyp in 
 	let vs2 = vars bounded vs1 c in 
@@ -285,8 +280,7 @@ let loc_of_rawconstr = function
   | RLambda (loc,_,_,_,_) -> loc
   | RProd (loc,_,_,_,_) -> loc
   | RLetIn (loc,_,_,_) -> loc
-  | RLetPattern (loc,_,_) -> loc
-  | RCases (loc,_,_,_) -> loc
+  | RCases (loc,_,_,_,_) -> loc
   | RLetTuple (loc,_,_,_,_) -> loc
   | RIf (loc,_,_,_,_) -> loc
   | RRec (loc,_,_,_,_,_) -> loc

@@ -434,27 +434,16 @@ let tm_clash = function
       -> Some id
   | _ -> None
 
-let pr_case_item pr (tm,(na,indnalopt)) =
-  hov 0 (pr (lcast,E) tm ++
-(*
-  (match na with
-    | Name id when not (is_var id tm) -> spc () ++ str "as " ++  pr_id id
-    | Anonymous when tm_clash (tm,indnalopt) <> None ->
-	(* hide [tm] name to avoid conflicts *)
-	spc () ++ str "as _" (* ++ pr_id (Option.get (tm_clash (tm,indnalopt)))*)
-    | _ -> mt ()) ++
-*)
+let pr_asin pr (na,indnalopt) =
   (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
     | Some na -> spc () ++ str "as " ++  pr_name na
     | None -> mt ()) ++
   (match indnalopt with
     | None -> mt ()
-(*
-    | Some (_,ind,nal) ->
-        spc () ++ str "in " ++ 
-        hov 0 (pr_reference ind ++ prlist (pr_arg pr_name) nal))
-*)
-    | Some t -> spc () ++ str "in " ++ pr lsimple t))
+    | Some t -> spc () ++ str "in " ++ pr lsimple t)
+    
+let pr_case_item pr (tm,asin) =
+  hov 0 (pr (lcast,E) tm ++ pr_asin pr asin)
 
 let pr_case_type pr po =
   match po with
@@ -551,15 +540,24 @@ let rec pr sep inherited a =
       else
 	p, lproj
   | CApp (_,(None,a),l) -> pr_app (pr mt) a l, lapp
-  | CCases (_,rtntypopt,c,eqns) ->
+  | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
+      hv 0 (
+	str "let '" ++ 
+	  hov 0 (pr_patt ltop p ++ 
+		 pr_asin (pr_dangling_with_for mt) asin ++
+		 str " :=" ++ pr spc ltop c ++ 
+		 pr_case_type (pr_dangling_with_for mt) rtntypopt ++
+		 str " in" ++ pr spc ltop b)),
+	lletpattern
+  | CCases(_,_,rtntypopt,c,eqns) ->
       v 0
         (hv 0 (str "match" ++ brk (1,2) ++
-	  hov 0 (
-	    prlist_with_sep sep_v
-              (pr_case_item (pr_dangling_with_for mt)) c
-            ++ pr_case_type (pr_dangling_with_for mt) rtntypopt) ++
-	spc () ++ str "with") ++
-        prlist (pr_eqn (pr mt)) eqns ++ spc() ++ str "end"),
+		  hov 0 (
+		    prlist_with_sep sep_v
+		      (pr_case_item (pr_dangling_with_for mt)) c
+		    ++ pr_case_type (pr_dangling_with_for mt) rtntypopt) ++
+		  spc () ++ str "with") ++
+		  prlist (pr_eqn (pr mt)) eqns ++ spc() ++ str "end"),
       latom
   | CLetTuple (_,nal,(na,po),c,b) ->
       hv 0 (
@@ -571,11 +569,6 @@ let rec pr sep inherited a =
                pr spc ltop c ++ str " in") ++
         pr spc ltop b),
       lletin
-  | CLetPattern (_, p, c, b) ->
-      hv 0 (
-	str "let| " ++ 
-	hov 0 (pr_patt ltop p ++ str " :=" ++ pr spc ltop c ++ str " in") ++
-	pr spc ltop b), lletpattern
   | CIf (_,c,(na,po),b1,b2) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)

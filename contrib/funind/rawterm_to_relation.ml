@@ -567,7 +567,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 		  funnames 
 		  avoid
 		  (mkRLetIn(new_n,t,mkRApp(new_b,args)))
-	    | RCases _ | RLambda _ | RIf _ | RLetTuple _ | RLetPattern _ -> 
+	    | RCases _ | RLambda _ | RIf _ | RLetTuple _ -> 
 		(* we have [(match e1, ...., en with ..... end) t1 tn]
 		   we first compute the result from the case and 
 		   then combine each of them with each of args one
@@ -627,14 +627,12 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_letin n) v_res b_res
-    | RCases(_,_,el,brl) -> 
+    | RCases(_,_,_,el,brl) -> 
 	(* we create the discrimination function 
 	   and treat the case itself 
 	*)
 	let make_discr = make_discr_match brl in 
 	build_entry_lc_from_case env funnames make_discr el brl avoid
-    | RLetPattern (loc,c,p) -> 
-	build_entry_lc env funnames avoid (RCases (loc, None, [c], [p]))
     | RIf(_,b,(na,e_option),lhs,rhs) -> 
 	let b_as_constr = Pretyping.Default.understand Evd.empty env b in
 	let b_typ = Typing.type_of env Evd.empty b_as_constr in 
@@ -1021,7 +1019,7 @@ let rec compute_cst_params relnames params = function
   | RLambda(_,_,_,t,b) | RProd(_,_,_,t,b) | RLetIn(_,_,t,b) | RLetTuple(_,_,_,t,b) -> 
       let t_params = compute_cst_params relnames params t in 
       compute_cst_params relnames t_params b
-  | RCases _ | RLetPattern _ -> 
+  | RCases _ ->
       params  (* If there is still cases at this point they can only be 
 		 discriminitation ones *)
   | RSort _ -> params

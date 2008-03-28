@@ -360,8 +360,6 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CLambdaN(_,ll,b)-> CT_lambdac(xlate_binder_ne_list ll, xlate_formula b)
    | CLetIn(_, v, a, b) -> 
        CT_letin(CT_def(xlate_id_opt v, xlate_formula a), xlate_formula b)
-   | CLetPattern(_, v, a, b) -> 
-       error "TODO: xlate_formula let | pattern"
    | CAppExpl(_, (Some n, r), l) -> 
        let l', last = decompose_last l in
 	 CT_proj(xlate_formula last,
@@ -379,8 +377,8 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 		 (xlate_formula f, List.map xlate_formula_expl l'))
    | CApp(_, (_,f), l) -> 
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
-   | CCases (_, _, [], _) -> assert false
-   | CCases (_, ret_type, tm::tml, eqns)->
+   | CCases (_, _, _, [], _) -> assert false
+   | CCases (_, _, ret_type, tm::tml, eqns)->
        CT_cases(CT_matched_formula_ne_list(xlate_matched_formula tm,
 					   List.map xlate_matched_formula tml),
 		xlate_formula_opt ret_type,

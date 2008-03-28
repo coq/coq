@@ -1070,7 +1070,7 @@ let (value_f:constr list -> global_reference -> constr) =
     in
     let fun_body = 
       RCases
-	(d0,None,
+	(d0,RegularStyle,None,
 	 [RApp(d0, RRef(d0,fterm), List.rev_map (fun x_id -> RVar(d0, x_id)) rev_x_id_l),
 	  (Anonymous,None)],
 	 [d0, [v_id], [PatCstr(d0,(ind_of_ref 

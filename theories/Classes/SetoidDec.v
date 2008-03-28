@@ -98,8 +98,8 @@ Program Instance unit_eqdec : EqDec (@eq_setoid unit) :=
 Program Instance [ ! EqDec (@eq_setoid A), ! EqDec (@eq_setoid B) ] => 
   prod_eqdec : EqDec (@eq_setoid (prod A B)) :=
   equiv_dec x y := 
-    dest x as (x1, x2) in 
-    dest y as (y1, y2) in 
+    let '(x1, x2) := x in 
+    let '(y1, y2) := y in 
     if x1 == y1 then 
       if x2 == y2 then in_left
       else in_right

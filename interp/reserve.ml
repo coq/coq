@@ -57,15 +57,13 @@ let rec unloc = function
   | RLambda (_,na,bk,ty,c) -> RLambda (dummy_loc,na,bk,unloc ty,unloc c)
   | RProd (_,na,bk,ty,c) -> RProd (dummy_loc,na,bk,unloc ty,unloc c)
   | RLetIn (_,na,b,c) -> RLetIn (dummy_loc,na,unloc b,unloc c)
-  | RCases (_,rtntypopt,tml,pl) ->
-      RCases (dummy_loc,
+  | RCases (_,sty,rtntypopt,tml,pl) ->
+      RCases (dummy_loc,sty,
         (Option.map unloc rtntypopt),
 	List.map (fun (tm,x) -> (unloc tm,x)) tml,
         List.map (fun (_,idl,p,c) -> (dummy_loc,idl,p,unloc c)) pl)
   | RLetTuple (_,nal,(na,po),b,c) ->
       RLetTuple (dummy_loc,nal,(na,Option.map unloc po),unloc b,unloc c)
-  | RLetPattern (_,(tm,x),(_,idl,p,c)) -> 
-      RLetPattern (dummy_loc,(unloc tm,x),(dummy_loc,idl,p,unloc c))
   | RIf (_,c,(na,po),b1,b2) ->
       RIf (dummy_loc,unloc c,(na,Option.map unloc po),unloc b1,unloc b2)
   | RRec (_,fk,idl,bl,tyl,bv) ->

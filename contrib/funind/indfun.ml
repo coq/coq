@@ -224,11 +224,9 @@ let rec is_rec names =
 	  )
 	  b
     | RApp(_,f,args) -> List.exists (lookup names) (f::args)
-    | RCases(_,_,el,brl) -> 
+    | RCases(_,_,_,el,brl) -> 
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
-    | RLetPattern (_,(c,_),p) -> 
-	lookup names c || lookup_br names p
   and lookup_br names (_,idl,_,rt) = 
     let new_names = List.fold_right Idset.remove idl names in 
     lookup new_names rt
@@ -590,8 +588,8 @@ let rec add_args id new_args b =
   | CApp(loc,(pf,b),bl) -> 
       CApp(loc,(pf,add_args id new_args b), 
 	   List.map (fun (e,o) -> add_args id new_args e,o) bl)
-  | CCases(loc,b_option,cel,cal) -> 
-      CCases(loc,Option.map (add_args id new_args) b_option,
+  | CCases(loc,sty,b_option,cel,cal) -> 
+      CCases(loc,sty,Option.map (add_args id new_args) b_option,
 	     List.map (fun (b,(na,b_option)) -> 
 			 add_args id new_args b,
 			 (na,Option.map (add_args id new_args) b_option)) cel, 
@@ -603,9 +601,6 @@ let rec add_args id new_args b =
 		add_args id new_args b2
 	       )
 		
-  | CLetPattern(loc,p,b,c) ->
-      CLetPattern(loc,p,add_args id new_args b,add_args id new_args c)
-
   | CIf(loc,b1,(na,b_option),b2,b3) -> 
       CIf(loc,add_args id new_args b1, 
 	  (na,Option.map (add_args id new_args) b_option),

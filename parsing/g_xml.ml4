@@ -171,7 +171,7 @@ let rec interp_xml_constr = function
       let mat = simple_cases_matrix_of_branches ind brns brs in
       let nparams,n = compute_inductive_nargs ind in
       let nal,rtn = return_type_of_predicate ind nparams n p in
-      RCases (loc,rtn,[tm,nal],mat)
+      RCases (loc,RegularStyle,rtn,[tm,nal],mat)
   | XmlTag (loc,"MUTIND",al,[]) ->
       RRef (loc, IndRef (get_xml_inductive al))
   | XmlTag (loc,"MUTCONSTRUCT",al,[]) ->

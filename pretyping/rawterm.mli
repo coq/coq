@@ -66,10 +66,9 @@ type rawconstr =
   | RLambda of loc * name * binding_kind *  rawconstr * rawconstr
   | RProd of loc * name * binding_kind * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * rawconstr option * tomatch_tuples * cases_clauses
+  | RCases of loc * case_style * rawconstr option * tomatch_tuples * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
-  | RLetPattern of loc * tomatch_tuple * cases_clause
   | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
   | RRec of loc * fix_kind * identifier array * rawdecl list array *
       rawconstr array * rawconstr array

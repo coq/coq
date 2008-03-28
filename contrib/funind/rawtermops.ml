@@ -15,7 +15,7 @@ let mkRApp(rt,rtl) = RApp(dummy_loc,rt,rtl)
 let mkRLambda(n,t,b) = RLambda(dummy_loc,n,Explicit,t,b)
 let mkRProd(n,t,b) = RProd(dummy_loc,n,Explicit,t,b)
 let mkRLetIn(n,t,b) = RLetIn(dummy_loc,n,t,b)
-let mkRCases(rto,l,brl) = RCases(dummy_loc,rto,l,brl)
+let mkRCases(rto,l,brl) = RCases(dummy_loc,Term.RegularStyle,rto,l,brl)
 let mkRSort s = RSort(dummy_loc,s)
 let mkRHole () = RHole(dummy_loc,Evd.BinderType Anonymous)
 let mkRCast(b,t) = RCast(dummy_loc,b,CastConv (Term.DEFAULTcast,t))
@@ -163,14 +163,12 @@ let change_vars =
 		    change_vars mapping b, 
 		    change_vars new_mapping e
 		   )
-      | RCases(loc,infos,el,brl) -> 
-	  RCases(loc,
+      | RCases(loc,sty,infos,el,brl) -> 
+	  RCases(loc,sty,
 		 infos,
 		 List.map (fun (e,x) -> (change_vars mapping e,x)) el, 
 		 List.map (change_vars_br mapping) brl
 		)
-      | RLetPattern(loc, (e,x), br) ->
-	  RLetPattern(loc, (change_vars mapping e, x), change_vars_br mapping br)
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc,
 	      change_vars mapping b,
@@ -348,13 +346,11 @@ let rec alpha_rt excluded rt =
 	let new_b = alpha_rt new_excluded new_b in 
 	let new_rto = Option.map (alpha_rt new_excluded) new_rto  in
 	RLetTuple(loc,new_nal,(na,new_rto),new_t,new_b)
-    | RCases(loc,infos,el,brl) -> 
+    | RCases(loc,sty,infos,el,brl) -> 
 	let new_el = 
 	  List.map (function (rt,i) -> alpha_rt excluded rt, i) el 
 	in 
-	RCases(loc,infos,new_el,List.map (alpha_br excluded) brl) 
-    | RLetPattern(loc,(rt,i),br) -> 
-	RLetPattern(loc, (alpha_rt excluded rt, i), alpha_br excluded br) 
+	RCases(loc,sty,infos,new_el,List.map (alpha_br excluded) brl) 
     | RIf(loc,b,(na,e_o),lhs,rhs) -> 
 	RIf(loc,alpha_rt excluded b,
 	    (na,Option.map (alpha_rt excluded) e_o),
@@ -402,10 +398,9 @@ let is_free_in id =
 	    | _ -> true
 	in
 	is_free_in t || (check_in_b && is_free_in b)
-    | RCases(_,_,el,brl) ->
+    | RCases(_,_,_,el,brl) ->
 	(List.exists (fun (e,_) -> is_free_in e) el) ||
 	  List.exists is_free_in_br brl
-    | RLetPattern(_,(e,_),br) -> is_free_in e || is_free_in_br br
     | RLetTuple(_,nal,_,b,t) -> 
 	let check_in_nal = 
 	  not (List.exists (function Name id' -> id'= id | _ -> false) nal) 
@@ -499,14 +494,12 @@ let replace_var_by_term x_id term =
 		    replace_var_by_pattern def,
 		    replace_var_by_pattern b
 		   )
-      | RCases(loc,infos,el,brl) -> 
-	  RCases(loc,
+      | RCases(loc,sty,infos,el,brl) -> 
+	  RCases(loc,sty,
 		 infos,
 		 List.map (fun (e,x) -> (replace_var_by_pattern e,x)) el, 
 		 List.map replace_var_by_pattern_br brl
 		)
-      | RLetPattern(loc,(e,x),br) ->
-	  RLetPattern(loc,(replace_var_by_pattern e, x), replace_var_by_pattern_br br)
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc, replace_var_by_pattern b,
 	      (na,Option.map replace_var_by_pattern e_option),
@@ -608,10 +601,8 @@ let ids_of_rawterm c =
       | RIf (loc,c,(na,po),b1,b2) -> ids_of_rawterm [] c @ ids_of_rawterm [] b1 @ ids_of_rawterm [] b2 @ acc
       | RLetTuple (_,nal,(na,po),b,c) -> 
           List.map idof nal @ ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
-      | RCases (loc,rtntypopt,tml,brchl) -> 
+      | RCases (loc,sty,rtntypopt,tml,brchl) -> 
 	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_rawterm [] c) brchl)
-      | RLetPattern (loc,tm,(_,idl,patl,c)) -> 
-	  idl @ ids_of_rawterm [] c
       | RRec _ -> failwith "Fix inside a constructor branch"
       | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> []
   in
@@ -658,17 +649,12 @@ let zeta_normalize =
 		    zeta_normalize_term def,
 		    zeta_normalize_term b
 		   )
-      | RCases(loc,infos,el,brl) -> 
-	  RCases(loc,
+      | RCases(loc,sty,infos,el,brl) -> 
+	  RCases(loc,sty,
 		 infos,
 		 List.map (fun (e,x) -> (zeta_normalize_term e,x)) el, 
 		 List.map zeta_normalize_br brl
 		)
-      | RLetPattern(loc,(e,x),br) -> 
-	  RLetPattern(loc,
-		     (zeta_normalize_term e,x),
-		     zeta_normalize_br br
-	  )
       | RIf(loc,b,(na,e_option),lhs,rhs) -> 
 	  RIf(loc, zeta_normalize_term b,
 	      (na,Option.map zeta_normalize_term e_option),
@@ -723,14 +709,10 @@ let expand_as =
       | RDynamic _ -> error "Not handled RDynamic"
       | RCast(loc,b,CastConv(kind,t)) -> RCast(loc,expand_as map b,CastConv(kind,expand_as map t))
       | RCast(loc,b,CastCoerce) -> RCast(loc,expand_as map b,CastCoerce)
-      | RCases(loc,po,el,brl) ->
-	  RCases(loc, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
+      | RCases(loc,sty,po,el,brl) ->
+	  RCases(loc, sty, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)
-      | RLetPattern(loc,(rt,t),br) ->
-	  RLetPattern(loc, (expand_as map rt,t),
-		expand_as_br map br)
-	    
   and expand_as_br map (loc,idl,cpl,rt) = 
-    (loc,idl,cpl,    expand_as (List.fold_left add_as map cpl) rt)
+    (loc,idl,cpl, expand_as (List.fold_left add_as map cpl) rt)
   in
   expand_as Idmap.empty 

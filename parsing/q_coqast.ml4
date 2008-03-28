@@ -153,7 +153,7 @@ let rec mlexpr_of_constr = function
   | Topconstr.CLetIn (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CAppExpl (loc,a,l) -> <:expr< Topconstr.CAppExpl $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference a$ $mlexpr_of_list mlexpr_of_constr l$ >>
   | Topconstr.CApp (loc,a,l) -> <:expr< Topconstr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option (mlexpr_of_located mlexpr_of_explicitation))) l$ >>
-  | Topconstr.CCases (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
+  | Topconstr.CCases (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CHole (loc, None) -> <:expr< Topconstr.CHole $dloc$ None >>
   | Topconstr.CHole (loc, Some _) -> failwith "mlexpr_of_constr: TODO CHole (Some _)"
   | Topconstr.CNotation(_,ntn,l) ->

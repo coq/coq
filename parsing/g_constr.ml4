@@ -125,6 +125,8 @@ let ident_eq =
               | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
+let aliasvar = function CPatAlias (_, _, id) -> Some (Name id) | _ -> None
+
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
   constr_pattern lconstr_pattern Constr.ident
@@ -228,15 +230,16 @@ GEXTEND Gram
 	  ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
           CLetTuple (loc,List.map snd lb,po,c1,c2)
-      | "let"; "|"; p=pattern; ":="; c1 = operconstr LEVEL "200";
+      | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
-	    CLetPattern (loc, p, c1, c2)
-      | "dest"; c1 = operconstr LEVEL "200";
-	  "as"; p=pattern; 
+	    CCases (loc, LetPatternStyle, None, [(c1,(None,None))], [(loc, [(loc,[p])], c2)])
+      | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200"; 
+	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
+	    CCases (loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, None))], [(loc, [(loc, [p])], c2)])
+      | "let"; "'"; p=pattern; "in"; t = operconstr LEVEL "200"; 
+	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
-	    let loc' = cases_pattern_expr_loc p in
-              CCases (loc, None, [(c1, (None, None))],
-                     [loc, [loc',[p]], c2])
+	    CCases (loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, Some t))], [(loc, [(loc, [p])], c2)])
       | "if"; c=operconstr LEVEL "200"; po = return_type;
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
@@ -283,7 +286,7 @@ GEXTEND Gram
 (*   ; *)
   match_constr:
     [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
-        br=branches; "end" -> CCases(loc,ty,ci,br) ] ]
+        br=branches; "end" -> CCases(loc,RegularStyle,ty,ci,br) ] ]
   ;
   case_item:
     [ [ c=operconstr LEVEL "100"; p=pred_pattern -> (c,p) ] ]

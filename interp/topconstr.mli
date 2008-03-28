@@ -33,7 +33,7 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
-  | ACases of aconstr option *
+  | ACases of case_style * aconstr option *
       (aconstr * (name * (inductive * int * name list) option)) list *
       (cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
@@ -117,13 +117,12 @@ type constr_expr =
   | CLetIn of loc * name located * constr_expr * constr_expr
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
-        (constr_expr * explicitation located option) list
-  | CCases of loc * constr_expr option *
+      (constr_expr * explicitation located option) list
+  | CCases of loc * case_style * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
-  | CLetPattern of loc * cases_pattern_expr * constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
       * constr_expr * constr_expr
   | CHole of loc * Evd.hole_kind option

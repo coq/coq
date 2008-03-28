@@ -245,7 +245,7 @@ let rec pat_of_raw metas vars = function
       let c = List.fold_left mkRLambda c nal in
       PCase ((LetStyle,[|1|],None,None),PMeta None,pat_of_raw metas vars b,
              [|pat_of_raw metas vars c|])
-  | RCases (loc,p,[c,(na,indnames)],brs) ->
+  | RCases (loc,sty,p,[c,(na,indnames)],brs) ->
       let pred,ind_nargs, ind = match p,indnames with
 	| Some p, Some (_,ind,n,nal) ->
 	    rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas vars p)),
@@ -259,7 +259,7 @@ let rec pat_of_raw metas vars = function
 	Array.init (List.length brs) (pat_of_raw_branch loc metas vars ind brs)
       in
       let cstr_nargs,brs = (Array.map fst cbrs, Array.map snd cbrs) in
-      PCase ((RegularStyle,cstr_nargs,ind,ind_nargs), pred,
+      PCase ((sty,cstr_nargs,ind,ind_nargs), pred,
              pat_of_raw metas vars c, brs)
              
   | r ->

@@ -349,8 +349,6 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       let bl' = Array.map detype bl in
       let (nal,d) = it_destRLambda_or_LetIn_names consnargsl.(0) bl'.(0) in
       RLetTuple (dl,nal,(alias,pred),tomatch,d)
-  | LetPatternStyle when List.length eqnl = 1 -> (* If irrefutable due to some inversion, print as match *) 
-      RLetPattern (dl,(tomatch,(alias,aliastyp)),List.hd eqnl)
   | IfStyle when aliastyp = None ->
       let bl' = Array.map detype bl in
       let nondepbrs =
@@ -359,9 +357,9 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	RIf (dl,tomatch,(alias,pred),
              Option.get nondepbrs.(0),Option.get nondepbrs.(1))
       else
-	RCases (dl,pred,[tomatch,(alias,aliastyp)],eqnl)
+	RCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
-      RCases (dl,pred,[tomatch,(alias,aliastyp)],eqnl)
+      RCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let detype_sort = function
   | Prop c -> RProp c
@@ -605,7 +603,7 @@ let rec subst_rawconstr subst raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  RLetIn (loc,n,r1',r2')
 
-  | RCases (loc,rtno,rl,branches) -> 
+  | RCases (loc,sty,rtno,rl,branches) -> 
       let rtno' = Option.smartmap (subst_rawconstr subst) rtno
       and rl' = list_smartmap (fun (a,x as y) ->
         let a' = subst_rawconstr subst a in
@@ -625,7 +623,7 @@ let rec subst_rawconstr subst raw =
 			branches
       in
 	if rtno' == rtno && rl' == rl && branches' == branches then raw else
-	  RCases (loc,rtno',rl',branches')
+	  RCases (loc,sty,rtno',rl',branches')
 
   | RLetTuple (loc,nal,(na,po),b,c) ->
       let po' = Option.smartmap (subst_rawconstr subst) po
@@ -633,28 +631,6 @@ let rec subst_rawconstr subst raw =
       and c' = subst_rawconstr subst c in
 	if po' == po && b' == b && c' == c then raw else
           RLetTuple (loc,nal,(na,po'),b',c')
-
-  | RLetPattern (loc, (a,x as c), (loc',idl,cpl,r as branch)) ->
-      let c' = 
-	let a' = subst_rawconstr subst a in
-        let (n,topt) = x in 
-        let topt' = Option.smartmap
-          (fun (loc,(sp,i),x,y as t) ->
-            let sp' = subst_kn subst sp in
-              if sp == sp' then t else (loc,(sp',i),x,y))
-	  topt 
-	in
-          if a == a' && topt == topt' then c else (a',(n,topt'))
-      in
-      let p' = 
-	let cpl' =
-	  list_smartmap (subst_cases_pattern subst) cpl
-	and r' = subst_rawconstr subst r in
-	  if cpl' == cpl && r' == r then branch else
-	    (loc',idl,cpl',r')
-      in 
-	if c' == c && p' == branch then raw else
-	  RLetPattern (loc, c', p')
 	        
   | RIf (loc,c,(na,po),b1,b2) ->
       let po' = Option.smartmap (subst_rawconstr subst) po

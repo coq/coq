@@ -37,7 +37,7 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
-  | ACases of aconstr option *
+  | ACases of case_style * aconstr option *
       (aconstr * (name * (inductive * int * name list) option)) list *
       (cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
@@ -79,7 +79,7 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let e,na = name_fold_map g e na in RProd (loc,na,Explicit,f e ty,f e c)
   | ALetIn (na,b,c) ->
       let e,na = name_fold_map g e na in RLetIn (loc,na,f e b,f e c)
-  | ACases (rtntypopt,tml,eqnl) ->
+  | ACases (sty,rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
 	| None -> e',None
@@ -94,7 +94,7 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
 	let ((idl,e),patl) =
 	  list_fold_map (cases_pattern_fold_map loc fold) ([],e) patl in
 	(loc,idl,patl,f e rhs)) eqnl in
-      RCases (loc,Option.map (f e') rtntypopt,tml',eqnl')
+      RCases (loc,sty,Option.map (f e') rtntypopt,tml',eqnl')
   | ALetTuple (nal,(na,po),b,c) ->
       let e,nal = list_fold_map (name_fold_map g) e nal in 
       let e,na = name_fold_map g e na in
@@ -138,9 +138,9 @@ let compare_rawconstr f t1 t2 = match t1,t2 with
   | RHole _, RHole _ -> true
   | RSort (_,s1), RSort (_,s2) -> s1 = s2
   | (RLetIn _ | RCases _ | RRec _ | RDynamic _
-    | RPatVar _ | REvar _ | RLetTuple _ | RLetPattern _ | RIf _ | RCast _),_
+    | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _),_
   | _,(RLetIn _ | RCases _ | RRec _ | RDynamic _
-      | RPatVar _ | REvar _ | RLetTuple _ | RLetPattern _ | RIf _ | RCast _)
+      | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _)
       -> error "Unsupported construction in recursive notations"
   | (RRef _ | RVar _ | RApp _ | RLambda _ | RProd _ | RHole _ | RSort _), _
       -> false
@@ -183,9 +183,9 @@ let aconstr_and_vars_of_rawconstr a =
   | RLambda (_,na,bk,ty,c) -> add_name found na; ALambda (na,aux ty,aux c)
   | RProd (_,na,bk,ty,c) -> add_name found na; AProd (na,aux ty,aux c)
   | RLetIn (_,na,b,c) -> add_name found na; ALetIn (na,aux b,aux c)
-  | RCases (_,rtntypopt,tml,eqnl) ->
+  | RCases (_,sty,rtntypopt,tml,eqnl) ->
       let f (_,idl,pat,rhs) = found := idl@(!found); (pat,aux rhs) in
-      ACases (Option.map aux rtntypopt,
+      ACases (sty,Option.map aux rtntypopt,
         List.map (fun (tm,(na,x)) ->
 	  add_name found na;
 	  Option.iter
@@ -196,7 +196,6 @@ let aconstr_and_vars_of_rawconstr a =
       add_name found na;
       List.iter (add_name found) nal;
       ALetTuple (nal,(na,Option.map aux po),aux b,aux c)
-  | RLetPattern (loc, c, p) -> error "TODO: aconstr of letpattern"
   | RIf (loc,c,(na,po),b1,b2) ->
       add_name found na;
       AIf (aux c,(na,Option.map aux po),aux b1,aux b2)
@@ -208,8 +207,7 @@ let aconstr_and_vars_of_rawconstr a =
   | RRef (_,r) -> ARef r
   | RPatVar (_,(_,n)) -> APatVar n
   | RDynamic _ | RRec _ | REvar _ ->
-      error "Fixpoints, cofixpoints, existential variables and pattern-matching  not \
-allowed in abbreviatable expressions"
+      error "Fixpoints, cofixpoints and existential variables not allowed in abbreviatable expressions"
 
   (* Recognizing recursive notations *)
   and terminator_of_pat f1 ll1 lr1 = function
@@ -305,7 +303,7 @@ let rec subst_aconstr subst bound raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  ALetIn (n,r1',r2')
 
-  | ACases (rtntypopt,rl,branches) -> 
+  | ACases (sty,rtntypopt,rl,branches) -> 
       let rtntypopt' = Option.smartmap (subst_aconstr subst bound) rtntypopt
       and rl' = list_smartmap
         (fun (a,(n,signopt) as x) -> 
@@ -325,7 +323,7 @@ let rec subst_aconstr subst bound raw =
       in
         if rtntypopt' == rtntypopt && rtntypopt == rtntypopt' &
           rl' == rl && branches' == branches then raw else
-          ACases (rtntypopt',rl',branches')
+          ACases (sty,rtntypopt',rl',branches')
 
   | ALetTuple (nal,(na,po),b,c) ->
       let po' = Option.smartmap (subst_aconstr subst bound) po
@@ -447,8 +445,9 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
      match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
   | RLetIn (_,na1,t1,b1), ALetIn (na2,t2,b2) ->
      match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
-  | RCases (_,rtno1,tml1,eqnl1), ACases (rtno2,tml2,eqnl2) 
-      when List.length tml1 = List.length tml2
+  | RCases (_,sty1,rtno1,tml1,eqnl1), ACases (sty2,rtno2,tml2,eqnl2) 
+      when sty1 = sty2
+	 & List.length tml1 = List.length tml2
 	 & List.length eqnl1 = List.length eqnl2 ->
       let rtno1' = abstract_return_type_context_rawconstr tml1 rtno1 in
       let rtno2' = abstract_return_type_context_aconstr tml2 rtno2 in
@@ -559,12 +558,11 @@ type constr_expr =
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
       (constr_expr * explicitation located option) list
-  | CCases of loc * constr_expr option *
+  | CCases of loc * case_style * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list
   | CLetTuple of loc * name list * (name option * constr_expr option) *
       constr_expr * constr_expr
-  | CLetPattern of loc * cases_pattern_expr * constr_expr * constr_expr
   | CIf of loc * constr_expr * (name option * constr_expr option)
       * constr_expr * constr_expr
   | CHole of loc * Evd.hole_kind option
@@ -576,7 +574,6 @@ type constr_expr =
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
-
 
 and fixpoint_expr =
     identifier * (int option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
@@ -632,9 +629,8 @@ let constr_loc = function
   | CLetIn (loc,_,_,_) -> loc
   | CAppExpl (loc,_,_) -> loc
   | CApp (loc,_,_) -> loc
-  | CCases (loc,_,_,_) -> loc
+  | CCases (loc,_,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
-  | CLetPattern (loc,_,_,_) -> loc
   | CIf (loc,_,_,_,_) -> loc
   | CHole (loc, _) -> loc
   | CPatVar (loc,_) -> loc
@@ -726,7 +722,7 @@ let fold_constr_expr_with_binders g f n acc = function
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _  | CRef _ ->
       acc
-  | CCases (loc,rtnpo,al,bl) ->
+  | CCases (loc,sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (List.fold_right g ids n)) acc rtnpo in
       let acc = List.fold_left (f n) acc (List.map fst al) in
@@ -736,10 +732,6 @@ let fold_constr_expr_with_binders g f n acc = function
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let n' = List.fold_right (name_fold g) nal n in
       f (Option.fold_right (name_fold g) ona n') (f n acc b) c
-  | CLetPattern (loc,p,b,c) ->
-      let acc = f n acc b in
-      let ids = cases_pattern_fold_names Idset.add Idset.empty p in
-	f (Idset.fold g ids n) acc c
   | CIf (_,c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
       Option.fold_left (f (Option.fold_right (name_fold g) ona n)) acc po
@@ -841,19 +833,16 @@ let map_constr_expr_with_binders g f e = function
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 
   | CPrim _ | CDynamic _ | CRef _ as x -> x
-  | CCases (loc,rtnpo,a,bl) ->
+  | CCases (loc,sty,rtnpo,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in
       let ids = ids_of_cases_tomatch a in
       let po = Option.map (f (List.fold_right g ids e)) rtnpo in
-      CCases (loc, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
+      CCases (loc, sty, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let e' = List.fold_right (name_fold g) nal e in
       let e'' = Option.fold_right (name_fold g) ona e in
       CLetTuple (loc,nal,(ona,Option.map (f e'') po),f e b,f e' c)
-  | CLetPattern (loc, p, b, c) -> 
-      (* TODO: apply g on the binding variables in pat... *)
-      CLetPattern (loc, p, f e b,f e c)
   | CIf (loc,c,(ona,po),b1,b2) ->
       let e' = Option.fold_right (name_fold g) ona e in
       CIf (loc,f e c,(ona,Option.map (f e') po),f e b1,f e b2)

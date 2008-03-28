@@ -195,7 +195,7 @@ let rec check_same_type ty1 ty2 =
       List.iter2 (fun (a1,e1) (a2,e2) ->
                     if e1<>e2 then failwith "not same expl";
                     check_same_type a1 a2) al1 al2
-  | CCases(_,_,a1,brl1), CCases(_,_,a2,brl2) ->
+  | CCases(_,_,_,a1,brl1), CCases(_,_,_,a2,brl2) ->
       List.iter2 (fun (tm1,_) (tm2,_) -> check_same_type tm1 tm2) a1 a2;
       List.iter2 (fun (_,pl1,r1) (_,pl2,r2) ->
         List.iter2 (located_iter2 (List.iter2 check_same_pattern)) pl1 pl2;
@@ -264,7 +264,7 @@ let rec same_raw c d =
   | RLetIn(_,na1,t1,m1), RLetIn(_,na2,t2,m2) ->
       if na1 <> na2 then failwith "RLetIn";
       same_raw t1 t2; same_raw m1 m2
-  | RCases(_,_,c1,b1), RCases(_,_,c2,b2) ->
+  | RCases(_,_,_,c1,b1), RCases(_,_,_,c2,b2) ->
       List.iter2
         (fun (t1,(al1,oind1)) (t2,(al2,oind2)) ->
           same_raw t1 t2;
@@ -690,7 +690,7 @@ let rec extern inctx scopes vars r =
       let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
       CLambdaN (loc,[(dummy_loc,na)::idl,Default bk,t],c)
 
-  | RCases (loc,rtntypopt,tml,eqns) ->
+  | RCases (loc,sty,rtntypopt,tml,eqns) ->
       let vars' = 
 	List.fold_right (name_fold Idset.add)
 	  (cases_predicate_names tml) vars in
@@ -713,7 +713,7 @@ let rec extern inctx scopes vars r =
 	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),params@args) in
 	  (extern_typ scopes vars t)) x))) tml in
       let eqns = List.map (extern_eqn (rtntypopt<>None) scopes vars) eqns in 
-      CCases (loc,rtntypopt',tml,eqns)
+      CCases (loc,sty,rtntypopt',tml,eqns)
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
       CLetTuple (loc,nal,
@@ -721,15 +721,6 @@ let rec extern inctx scopes vars r =
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
-
-  | RLetPattern (loc,(tm,_), eqn) ->
-      let p, c = 
-	match extern_eqn false scopes vars eqn with
-	    (loc,[loc',[p]], c) -> p,c
-	  | _ -> assert false
-      in
-      let t = extern inctx scopes vars tm in
-	CLetPattern(loc, p, t, c)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
@@ -948,7 +939,7 @@ let rec raw_of_pat env = function
       let nal,b = it_destRLambda_or_LetIn_names n (raw_of_pat env b) in
       RLetTuple (loc,nal,(Anonymous,None),raw_of_pat env tm,b)
   | PCase (_,PMeta None,tm,[||]) ->
-      RCases (loc,None,[raw_of_pat env tm,(Anonymous,None)],[])
+      RCases (loc,RegularStyle,None,[raw_of_pat env tm,(Anonymous,None)],[])
   | PCase ((_,cstr_nargs,indo,ind_nargs),p,tm,bv) ->
       let brs = Array.to_list (Array.map (raw_of_pat env) bv) in
       let brns = Array.to_list cstr_nargs in
@@ -960,7 +951,7 @@ let rec raw_of_pat env = function
 	else 
 	  let nparams,n = Option.get ind_nargs in
 	  return_type_of_predicate ind nparams n (raw_of_pat env p) in
-      RCases (loc,rtn,[raw_of_pat env tm,indnames],mat)
+      RCases (loc,RegularStyle,rtn,[raw_of_pat env tm,indnames],mat)
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)

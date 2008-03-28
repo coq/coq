@@ -97,8 +97,8 @@ Program Instance unit_eqdec : ! EqDec unit eq :=
 Program Instance [ EqDec A eq, EqDec B eq ] => 
   prod_eqdec : ! EqDec (prod A B) eq :=
   equiv_dec x y := 
-    dest x as (x1, x2) in 
-    dest y as (y1, y2) in 
+    let '(x1, x2) := x in 
+    let '(y1, y2) := y in 
     if x1 == y1 then 
       if x2 == y2 then in_left
       else in_right
