@@ -130,7 +130,6 @@ type search_state = {
   tacres : goal list sigma * validation;
   pri : int;
   last_tactic : std_ppcmds;
-  custom_tactic : tactic;
   dblist : Auto.Hint_db.t list;
   localdb :  Auto.Hint_db.t list }
     
@@ -253,22 +252,19 @@ end
 
 module Search = Explore.Make(SearchProblem)
 
-let make_initial_state n gls ~(tac:tactic) dblist localdbs =
+let make_initial_state n gls dblist localdbs =
   { depth = n;
     tacres = gls;
     pri = 0;
     last_tactic = (mt ());
-    custom_tactic = tac;
     dblist = dblist;
     localdb = localdbs }
 
 let e_depth_search debug s =
-  try
-    let tac = if debug then
-      (SearchProblem.debug := true; Search.debug_depth_first) else Search.depth_first in
-    let s = tac s in
+  let tac = if debug then
+    (SearchProblem.debug := true; Search.debug_depth_first) else Search.depth_first in
+  let s = tac s in
     s.tacres
-  with Not_found -> error "EAuto: depth first search failed"
 
 let e_breadth_search debug s =
   try
@@ -277,26 +273,22 @@ let e_breadth_search debug s =
     in let s = tac s in s.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
-let e_search_auto ~(tac:tactic) debug (in_depth,p) lems db_list gls = 
+let e_search_auto debug (in_depth,p) lems db_list gls = 
   let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
   let local_dbs = List.map (fun gl -> make_local_hint_db lems ({it = gl; sigma = sigma})) gls' in
-  let state = make_initial_state p gls ~tac db_list local_dbs in
+  let state = make_initial_state p gls db_list local_dbs in
   if in_depth then 
     e_depth_search debug state
   else
     e_breadth_search debug state
 
-let full_eauto ~(tac:tactic) debug n lems gls = 
+let full_eauto debug n lems gls = 
   let dbnames = current_db_names () in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
-    e_search_auto ~tac debug n lems db_list gls
+    e_search_auto debug n lems db_list gls
 
 exception Found of evar_map
-
-let default_evars_tactic =
-  fun x -> raise (UserError ("default_evars_tactic", mt()))
-(* tclFAIL 0 (Pp.mt ()) *)
 
 let valid goals p res_sigma l = 
   let evm = 
@@ -309,7 +301,7 @@ let valid goals p res_sigma l =
       !res_sigma goals l
   in raise (Found evm)
     
-let resolve_all_evars_once ?(tac=default_evars_tactic) debug (mode, depth) env p evd =
+let resolve_all_evars_once debug (mode, depth) env p evd =
   let evm = Evd.evars_of evd in
   let goals, evm' = 
     Evd.fold
@@ -323,7 +315,7 @@ let resolve_all_evars_once ?(tac=default_evars_tactic) debug (mode, depth) env p
   let goals = List.rev goals in
   let gls = { it = List.map snd goals; sigma = evm' } in
   let res_sigma = ref evm' in
-  let gls', valid' = full_eauto ~tac debug (mode, depth) [] (gls, valid goals p res_sigma) in
+  let gls', valid' = full_eauto debug (mode, depth) [] (gls, valid goals p res_sigma) in
     res_sigma := Evarutil.nf_evars (sig_sig gls');
     try ignore(valid' []); assert(false) 
     with Found evm' -> Evarutil.nf_evar_defs (Evd.evars_reset_evd evm' evd)
@@ -333,7 +325,7 @@ exception FoundTerm of constr
 let resolve_one_typeclass env gl =
   let gls = { it = [ Evd.make_evar (Environ.named_context_val env) gl ] ; sigma = Evd.empty } in
   let valid x = raise (FoundTerm (fst (Refiner.extract_open_proof Evd.empty (List.hd x)))) in
-  let gls', valid' = full_eauto ~tac:tclIDTAC false (true, 15) [] (gls, valid) in
+  let gls', valid' = full_eauto false (true, 15) [] (gls, valid) in
     try ignore(valid' []); assert false with FoundTerm t -> 
       let term = Evarutil.nf_evar (sig_sig gls') t in
 	if occur_existential term then raise Not_found else term
@@ -343,19 +335,21 @@ let has_undefined p evd =
     (evi.evar_body = Evar_empty && p ev evi))
     (Evd.evars_of evd) false
     
-let rec resolve_all_evars ~(tac:tactic) debug m env p oevd =
+let resolve_all_evars debug m env p oevd =
 (*   let evd = resolve_all_evars_once ~tac debug m env p evd in *)
 (*     if has_undefined p evd then raise Not_found *)
 (*     else evd *)
-  let rec aux n evd =
-    if has_undefined p evd then
-      if n > 0 then
-	let evd' = resolve_all_evars_once ~tac debug m env p evd in
-	  aux (pred n) evd'
-      else raise Not_found
-    else evd
-  in aux 3 oevd
-
+  try
+    let rec aux n evd =
+      if has_undefined p evd then
+	if n > 0 then
+	  let evd' = resolve_all_evars_once debug m env p evd in
+	    aux (pred n) evd'
+	else None
+      else Some evd
+    in aux 3 oevd
+  with Not_found -> None
+    
 (** Handling of the state of unfolded constants. *)
 
 open Libobject
@@ -805,29 +799,15 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 	    | _ -> None, occ
   in aux env concl 1 cstr
     
-(* let resolve_all_typeclasses env evd =  *)
-(*   resolve_all_evars false (true, 15) env *)
-(*     (fun ev evi -> Typeclasses.class_of_constr evi.Evd.evar_concl <> None) evd *)
-
-let resolve_argument_typeclasses ?(tac=tclIDTAC) d p env evd onlyargs all =
+let resolve_typeclass_evars d p env evd onlyargs =
   let pred = 
     if onlyargs then 
       (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
 	class_of_constr evi.Evd.evar_concl <> None)
     else
       (fun ev evi -> class_of_constr evi.Evd.evar_concl <> None)
-  in
-    try 
-      resolve_all_evars ~tac d p env pred evd
-    with 
-      | Not_found -> 
-	  if all then 
-	    (* Unable to satisfy the constraints. *)
-	    Typeclasses_errors.unsatisfiable_constraints env (Evd.evars_of evd)
-	  else evd
-      | e ->
-	  if all then raise e else evd
-	    
+  in resolve_all_evars d p env pred evd
+      
 let cl_rewrite_tactic = lazy (Tacinterp.interp <:tactic<setoid_rewrite_tac>>)
 
 let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause gl =
@@ -882,8 +862,11 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 		  if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
 		  else tclIDTAC
 	      in tclTHENLIST [evartac; rewtac] gl
-	    with UserError (s, pp) -> 
-	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints:" ++ fnl () ++ pp) gl)
+	    with 
+	      | TypeClassError (_env, UnsatisfiableConstraints _evm) -> 
+		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl
+	      | Not_found ->
+		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl)
       | None -> 
 	  let {l2r=l2r; c1=x; c2=y} = !hypinfo in
 	    raise (Pretype_errors.PretypeError (pf_env gl, Pretype_errors.NoOccurrenceFound (if l2r then x else y)))
@@ -946,17 +929,27 @@ ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
 | [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
 END
 	
-VERNAC COMMAND EXTEND Typeclasses_Settings
-| [ "Typeclasses" "eauto" ":=" debug(d) search_mode(s) depth(depth) ] -> [ 
-    let mode = match s with Some t -> t | None -> true in
-    let depth = match depth with Some i -> i | None -> 15 in
-      Typeclasses.solve_instanciations_problem :=
-	resolve_argument_typeclasses d (mode, depth) ]
-END
+let solve_inst debug mode depth env evd onlyargs all =
+  match resolve_typeclass_evars debug (mode, depth) env evd onlyargs with 
+    | None -> 
+	if all then 
+	  (* Unable to satisfy the constraints. *)
+	  Typeclasses_errors.unsatisfiable_constraints env evd
+	else (* Best effort: do nothing *) evd
+    | Some evd -> evd
 
 let _ = 
   Typeclasses.solve_instanciations_problem :=
-    resolve_argument_typeclasses false (true, 15)
+    solve_inst false true 15
+      
+VERNAC COMMAND EXTEND Typeclasses_Settings
+ | [ "Typeclasses" "eauto" ":=" debug(d) search_mode(s) depth(depth) ] -> [ 
+     let mode = match s with Some t -> t | None -> true in
+     let depth = match depth with Some i -> i | None -> 15 in
+       Typeclasses.solve_instanciations_problem :=
+	 solve_inst d mode depth
+   ]
+END
 
 TACTIC EXTEND typeclasses_eauto
 | [ "typeclasses" "eauto" debug(d) search_mode(s) depth(depth) ] -> [ fun gl ->
@@ -967,8 +960,10 @@ TACTIC EXTEND typeclasses_eauto
 	let evd = Evd.create_evar_defs sigma in
 	let mode = match s with Some t -> t | None -> true in
 	let depth = match depth with Some i -> i | None -> 15 in
-	let evd' = resolve_argument_typeclasses d (mode, depth) env evd false false in
-	  Refiner.tclEVARS (Evd.evars_of evd') gl ]
+	  match resolve_typeclass_evars d (mode, depth) env evd false with
+	    | Some evd' -> Refiner.tclEVARS (Evd.evars_of evd') gl
+	    | None -> tclIDTAC gl
+  ]
 END
 
 let _ = 

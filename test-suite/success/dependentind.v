@@ -35,7 +35,7 @@ Inductive ctx : Type :=
 | empty : ctx
 | snoc : ctx -> type -> ctx.
 
-Notation " Γ , τ " := (snoc Γ τ) (at level 20, t at next level).
+Notation " Γ , τ " := (snoc Γ τ) (at level 25, t at next level, left associativity).
 
 Fixpoint conc (Γ Δ : ctx) : ctx :=
   match Δ with
@@ -43,7 +43,7 @@ Fixpoint conc (Γ Δ : ctx) : ctx :=
     | snoc Δ' x => snoc (conc Γ Δ') x
   end.
 
-Notation " Γ ; Δ " := (conc Γ Δ) (at level 20).
+Notation " Γ ; Δ " := (conc Γ Δ) (at level 25, left associativity).
 
 Inductive term : ctx -> type -> Type :=
 | ax : forall Γ τ, term (Γ, τ) τ

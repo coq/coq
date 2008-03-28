@@ -488,9 +488,9 @@ let explain_no_instance env (_,id) l =
   str "applied to arguments" ++ spc () ++ 
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
-let explain_unsatisfiable_constraints env evm =
+let explain_unsatisfiable_constraints env evd =
   str"Unable to satisfy the following typeclass constraints:" ++ fnl() ++
-    Evd.pr_evar_map evm
+    Evd.pr_evar_map (Evd.evars_of (Evd.undefined_evars evd))
 
 let explain_mismatched_contexts env c i j = 
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++

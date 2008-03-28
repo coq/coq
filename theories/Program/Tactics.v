@@ -27,9 +27,11 @@ Ltac destruct_pairs := repeat (destruct_one_pair).
 
 Ltac destruct_one_ex :=
   let tac H := let ph := fresh "H" in destruct H as [H ph] in
+  let tacT H := let ph := fresh "X" in destruct H as [H ph] in
     match goal with
       | [H : (ex _) |- _] => tac H
       | [H : (sig ?P) |- _ ] => tac H
+      | [H : (sigT ?P) |- _ ] => tacT H
       | [H : (ex2 _) |- _] => tac H
     end.
 

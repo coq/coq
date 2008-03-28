@@ -30,12 +30,20 @@ Unset Strict Implicit.
 
 (** Respectful morphisms. *)
 
-Definition respectful_dep (A : Type) (R : relation A) 
-  (B : A -> Type) (R' : forall x y, B x -> B y -> Prop) : relation (forall x : A, B x) := 
-  fun f g => forall x y : A, R x y -> R' x y (f x) (g y).
+(** The fully dependent version, not used yet. *)
 
-Definition respectful A B (R : relation A) (R' : relation B) : relation (A -> B) :=
-  fun f g => forall x y : A, R x y -> R' (f x) (g y).
+Definition respectful_hetero 
+  (A B : Type) 
+  (C : A -> Type) (D : B -> Type) 
+  (R : A -> B -> Prop) 
+  (R' : forall (x : A) (y : B), C x -> D y -> Prop) : 
+    (forall x : A, C x) -> (forall x : B, D x) -> Prop := 
+    fun f g => forall x y, R x y -> R' x y (f x) (g y).
+
+(** The non-dependent version is an instance where we forget dependencies. *)
+
+Definition respectful (A B : Type) (R : relation A) (R' : relation B) : relation (A -> B) :=
+  Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').
 
 (** Notations reminiscent of the old syntax for declaring morphisms. *)
 
@@ -114,48 +122,31 @@ Implicit Arguments Morphism [A].
 
 Typeclasses unfold relation.
 
-(** Leibniz *)
+(** Subrelations induce a morphism on the identity, not used for morphism search yet. *)
 
-(* Instance Morphism (eq ++> eq ++> iff) (eq (A:=A)). *)
-(* Proof. intros ; constructor ; intros. *)
-(*   obligations_tactic. *)
-(*   subst. *)
-(*   intuition. *)
-(* Qed. *)
+Lemma subrelation_id_morphism [ subrelation A R₁ R₂ ] : Morphism (R₁ ==> R₂) id.
+Proof. firstorder. Qed.
 
-(* Program Definition arrow_morphism `A B` (m : A -> B) : Morphism (eq ++> eq) m. *)
+(** The subrelation property goes through products as usual. *)
 
-(** Any morphism respecting some relations up to [iff] respects 
-   them up to [impl] in each way. Very important instances as we need [impl]
-   morphisms at the top level when we rewrite. *)
+Instance [ sub : subrelation A R₁ R₂ ] =>
+  morphisms_subrelation : ! subrelation (B -> A) (R ==> R₁) (R ==> R₂).
+Proof. firstorder. Qed.
 
-Class SubRelation A (R S : relation A) : Prop :=
-  subrelation :> Morphism (S ==> R) id.
+Instance [ sub : subrelation A R₂ R₁ ] =>
+  morphisms_subrelation_left : ! subrelation (A -> B) (R₁ ==> R) (R₂ ==> R) | 3.
+Proof. firstorder. Qed.
 
-Instance iff_impl_subrelation : SubRelation Prop impl iff.
-Proof. reduce. tauto. Qed.
+(** [Morphism] is itself a covariant morphism for [subrelation]. *)
 
-Instance iff_inverse_impl_subrelation : SubRelation Prop (inverse impl) iff.
-Proof.
-  reduce. tauto.
-Qed.
-
-Instance [ sub : SubRelation A R₁ R₂ ] =>
-  morphisms_subrelation : SubRelation (B -> A) (R ==> R₁) (R ==> R₂).
-Proof.
-  reduce. apply* sub. apply H. assumption.
-Qed.
-
-Instance [ sub : SubRelation A R₂ R₁ ] =>
-  morphisms_subrelation_left : SubRelation (A -> B) (R₁ ==> R) (R₂ ==> R) | 3.
-Proof.
-  reduce. apply* H.  apply* sub. assumption.
-Qed.
-
-Lemma subrelation_morphism [ SubRelation A R₁ R₂, ! Morphism R₂ m ] : Morphism R₁ m.
+Lemma subrelation_morphism [ subrelation A R₁ R₂, ! Morphism R₁ m ] : Morphism R₂ m.
 Proof.
   intros. apply* H. apply H0.
 Qed.
+
+Instance morphism_subrelation_morphism : 
+  Morphism (subrelation ++> @eq _ ==> impl) (@Morphism A).
+Proof. reduce. subst. firstorder. Qed.
 
 Inductive done : nat -> Type :=
   did : forall n : nat, done n.
@@ -428,6 +419,10 @@ Instance (A : Type) [ Reflexive B R' ] =>
   Reflexive (@Logic.eq A ==> R').
 Proof. simpl_relation. Qed.
 
+Instance [ Morphism (A -> B) (inverse R ==> R') m ] =>
+  Morphism (R ==> inverse R') m | 10.
+Proof. firstorder. Qed.
+
 (** [respectful] is a morphism for relation equivalence. *)
 
 Instance respectful_morphism : 
@@ -450,7 +445,7 @@ Proof.
 Qed.
 
 Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : relation B),
-  inverse (R ==> R') ==rel (inverse R ==> inverse R').
+  inverse (R ==> R') <->rel (inverse R ==> inverse R').
 Proof.
   intros.
   unfold flip, respectful.
@@ -515,6 +510,26 @@ Ltac morphism_normalization :=
 
 Hint Extern 5 (@Morphism _ _ _) => morphism_normalization : typeclass_instances.
 
+(** Morphisms for relations *)
+
+Instance [ PartialOrder A eqA R ] => 
+   partial_order_morphism : Morphism (eqA ==> eqA ==> iff) R.
+Proof with auto.
+  intros. rewrite partial_order_equivalence.
+  simpl_relation. firstorder.
+    transitivity x... transitivity x0... 
+    transitivity y... transitivity y0...
+Qed.
+
+Instance Morphism (relation_equivalence (A:=A) ==> 
+  relation_equivalence ==> relation_equivalence) relation_conjunction.
+  Proof. firstorder. Qed.
+
+Instance Morphism (relation_equivalence (A:=A) ==> 
+  relation_equivalence ==> relation_equivalence) relation_disjunction.
+  Proof. firstorder. Qed.
+
+
 (** Morphisms for quantifiers *)
 
 Program Instance {A : Type} => ex_iff_morphism : Morphism (pointwise_relation iff ==> iff) (@ex A).
@@ -576,5 +591,5 @@ Program Instance {A : Type} => all_inverse_impl_morphism :
   Qed.
 
 Lemma inverse_pointwise_relation A (R : relation A) : 
-  pointwise_relation (inverse R) ==rel inverse (pointwise_relation (A:=A) R).
+  pointwise_relation (inverse R) <->rel inverse (pointwise_relation (A:=A) R).
 Proof. reflexivity. Qed.

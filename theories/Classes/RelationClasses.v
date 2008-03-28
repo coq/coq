@@ -11,7 +11,7 @@
    This is the basic theory needed to formalize morphisms and setoids.
  
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
+   Institution: LRI, CNRS UMR 8623 - UniversitÃƒcopyright Paris Sud
    91405 Orsay, France *)
 
 (* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
@@ -212,10 +212,33 @@ Program Instance [ sa : Equivalence a R, sb : Equivalence b R' ] => equiv_setoid
   (fun f g => forall (x y : a), R x y -> R' (f x) (g y)).
 *)
 
+
+(** We define the various operations which define the algebra on relations.
+   They are essentially liftings of the logical operations. *)
+
 Definition relation_equivalence {A : Type} : relation (relation A) :=
   fun (R R' : relation A) => forall x y, R x y <-> R' x y.
 
-Infix "==rel" := relation_equivalence (at level 70).
+Infix "<->rel" := relation_equivalence (at level 70).
+
+Class subrelation {A:Type} (R R' : relation A) :=
+  is_subrelation : forall x y, R x y -> R' x y.
+
+Implicit Arguments subrelation [[A]].
+
+Infix "->rel" := subrelation (at level 70).
+
+Definition relation_conjunction {A} (R : relation A) (R' : relation A) : relation A :=
+  fun x y => R x y /\ R' x y.
+
+Infix "//\\" := relation_conjunction (at level 55).
+
+Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relation A :=
+  fun x y => R x y \/ R' x y.
+
+Infix "\\//" := relation_disjunction (at level 55).
+
+(** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
 Program Instance relation_equivalence_equivalence :
   Equivalence (relation A) relation_equivalence.
@@ -225,3 +248,42 @@ Program Instance relation_equivalence_equivalence :
     unfold relation_equivalence in *.
     apply transitivity with (y x0 y0) ; [ apply H | apply H0 ].
   Qed.
+
+Program Instance subrelation_preorder :
+  PreOrder (relation A) subrelation.
+
+(** *** Partial Order.
+   A partial order is a preorder which is additionally antisymmetric.
+   We give an equivalent definition, up-to an equivalence relation 
+   on the carrier. *)
+
+Class [ equ : Equivalence A eqA, PreOrder A R ] => PartialOrder :=
+  partial_order_equivalence : relation_equivalence eqA (R //\\ flip R).
+
+
+(** The equivalence proof is sufficient for proving that [R] must be a morphism 
+   for equivalence (see Morphisms).
+   It is also sufficient to show that [R] is antisymmetric w.r.t. [eqA] *)
+
+Instance [ PartialOrder A eqA R ] =>  partial_order_antisym : ! Antisymmetric A eqA R.
+Proof with auto.
+  reduce_goal. pose partial_order_equivalence. red in r.
+  apply <- r. firstorder.
+Qed.
+
+(** The partial order defined by subrelation and relation equivalence. *)
+
+Program Instance subrelation_partial_order :
+  ! PartialOrder (relation A) relation_equivalence subrelation.
+
+  Next Obligation.
+  Proof.
+    unfold relation_equivalence in *. firstorder.
+  Qed.
+
+Instance iff_impl_subrelation : subrelation iff impl.
+Proof. firstorder. Qed.
+
+Instance iff_inverse_impl_subrelation : subrelation iff (inverse impl).
+Proof. firstorder. Qed.
+
