@@ -1586,28 +1586,28 @@ let prepare_predicate_from_arsign_tycon loc env evdref tomatchs sign arsign c =
  * tycon to make the predicate if it is not closed.
  *)
 
+let is_dependent_on_rel x t =
+  match kind_of_term x with
+      Rel n -> not (noccur_with_meta n n t)
+    | _ -> false
+
 let prepare_predicate loc typing_fun evdref env tomatchs sign tycon = function
   (* No type annotation *)
   | None ->
       (match tycon with
        | Some (None, t) ->
-	   if noccur_with_meta 0 max_int t then
-	     let names,pred =
-	       prepare_predicate_from_tycon loc false env evdref tomatchs sign t
-	     in
-	       Some (build_initial_predicate false names pred)
-	   else
+	   if List.exists (fun (x,_) -> is_dependent_on_rel x t) tomatchs
+	   then
 	     let arsign = extract_arity_signature env tomatchs sign in
 	     let env' = List.fold_right push_rels arsign env in
 	     let names = List.rev (List.map (List.map pi1) arsign) in
 	     let pred = prepare_predicate_from_arsign_tycon loc env' evdref tomatchs sign arsign t in
-	       if eq_constr pred t then
-		 let names,pred =
-		   prepare_predicate_from_tycon loc false env evdref tomatchs sign t
-		 in
-		   Some (build_initial_predicate false names pred)
-	       else
-		 Some (build_initial_predicate true names pred)
+	       Some (build_initial_predicate true names pred)
+	   else
+	     let names,pred =
+	       prepare_predicate_from_tycon loc false env evdref tomatchs sign t
+	     in
+	       Some (build_initial_predicate false names pred)
        | _ -> None)
 
   (* Some type annotation *)

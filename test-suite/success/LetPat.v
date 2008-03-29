@@ -48,8 +48,8 @@ Definition identity_functor (c : category) : functor c c :=
     fun x => x.
 
 Definition functor_composition (a b c : category) : functor a b -> functor b c -> functor a c := 
-  let ' (A :& homA :& CA) := a in
-  let ' (B :& homB :& CB) := b in
-  let ' (C :& homB :& CB) := c in
+  let 'A :& homA :& CA := a in
+  let 'B :& homB :& CB := b in
+  let 'C :& homB :& CB := c in
     fun f g => 
-      fun x : A => g (f x).
+      fun x => g (f x).

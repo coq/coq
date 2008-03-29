@@ -20,6 +20,8 @@ Require Import Coq.Program.Tactics.
 Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Classes.RelationClasses.
 
+Open Local Scope relation_scope.
+
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -445,7 +447,7 @@ Proof.
 Qed.
 
 Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : relation B),
-  inverse (R ==> R') <->rel (inverse R ==> inverse R').
+  inverse (R ==> R') <R> (inverse R ==> inverse R').
 Proof.
   intros.
   unfold flip, respectful.
@@ -591,5 +593,5 @@ Program Instance {A : Type} => all_inverse_impl_morphism :
   Qed.
 
 Lemma inverse_pointwise_relation A (R : relation A) : 
-  pointwise_relation (inverse R) <->rel inverse (pointwise_relation (A:=A) R).
+  pointwise_relation (inverse R) <R> inverse (pointwise_relation (A:=A) R).
 Proof. reflexivity. Qed.

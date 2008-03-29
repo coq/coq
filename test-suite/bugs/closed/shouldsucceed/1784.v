@@ -58,30 +58,30 @@ Program Fixpoint lt_dec (x y:sv) { struct x } : {slt x y}+{~slt x y} :=
   match x with
     | I x => 
       match y with
-        | I y => if (Z_eq_dec x y) then left else right
-        | S ys => right
+        | I y => if (Z_eq_dec x y) then in_left else in_right
+        | S ys => in_right
       end
     | S xs => 
       match y with
-        | I y => right
+        | I y => in_right
         | S ys =>
           let fix list_in (xs ys:list sv) {struct xs} : 
             {slist_in xs ys} + {~slist_in xs ys} :=
             match xs with
-              | nil => left
+              | nil => in_left
               | x::xs =>
                 let fix elem_in (ys:list sv) : {sin x ys}+{~sin x ys} :=
                   match ys with
-                    | nil => right
-                    | y::ys => if lt_dec x y then left else if elem_in
-                      ys then left else right
+                    | nil => in_right
+                    | y::ys => if lt_dec x y then in_left else if elem_in
+                      ys then in_left else in_right
                   end
                 in 
                 if elem_in ys then 
-                  if list_in xs ys then left else right
-                else right
+                  if list_in xs ys then in_left else in_right
+                else in_right
             end
-            in if list_in xs ys then left else right
+            in if list_in xs ys then in_left else in_right
       end
   end.
 
