@@ -11,7 +11,7 @@
 class command_window () = 
   let window = GWindow.window 
 		 ~allow_grow:true ~allow_shrink:true 
-		 ~width:320 ~height:200
+		 ~width:500 ~height:250
 		 ~position:`CENTER
 		 ~title:"CoqIde queries" ~show:false ()
   in

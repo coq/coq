@@ -132,7 +132,7 @@ type unify_flags = {
 let default_unify_flags = {
   modulo_conv_on_closed_terms = true;
   use_metas_eagerly = true;
-  modulo_delta = Cpred.empty;
+  modulo_delta = Cpred.full;
 }
 
 let unify_0_with_initial_metas metas is_subterm env sigma cv_pb flags m n =

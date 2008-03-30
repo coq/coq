@@ -31,6 +31,8 @@ To use [Fix_F], we define a relation R and prove that if [exists n,
 P n] then 0 is accessible with respect to R. Then, by induction on the
 definition of [Acc R 0], we show [{n : nat | P n}]. *)
 
+(** Based on ideas from Benjamin Werner and Jean-François Monin *)
+
 (** Contributed by Yevgeniy Makarov *)
 
 Require Import Arith.

@@ -606,7 +606,7 @@ let find_constructor ref f aliases pats scopes =
 	   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
 	   let idspl1 = List.map (subst_cases_pattern loc (alias_of aliases) f subst scopes) args in
 	   cstr, idspl1, pats2
-       | _ -> error_invalid_pattern_notation loc)
+       | _ -> raise Not_found)
       
   | TrueGlobal r ->
       let rec unf = function

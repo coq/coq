@@ -23,7 +23,7 @@ open Util
 let assoc_last ist =
   match List.assoc (Names.id_of_string "X1") ist.lfun with
     | VConstr c -> c
-    | _ -> failwith "Tauto: anomaly"
+    | _ -> failwith "tauto: anomaly"
 
 let is_empty ist =
   if is_empty_type (assoc_last ist) then
@@ -165,7 +165,7 @@ let tauto g =
   try intuition_gen (interp <:tactic<fail>>) g
   with
     Refiner.FailError _ | UserError _ ->
-      errorlabstrm "tauto" [< str "Tauto failed" >]
+      errorlabstrm "tauto" [< str "tauto failed" >]
 
 let default_intuition_tac = interp <:tactic< auto with * >>
 

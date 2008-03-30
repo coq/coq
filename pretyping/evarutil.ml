@@ -1074,7 +1074,9 @@ let check_evars env initial_sigma evd c =
             let (loc,k) = evar_source evk evd in
 	    let evi = nf_evar_info sigma (Evd.find sigma evk) in
 	    let explain =
-	      let f (_,_,t1,t2) = head_evar t1 = evk or head_evar t2 = evk in
+	      let f (_,_,t1,t2) =
+		(try head_evar t1 = evk with Failure _ -> false)
+		or (try head_evar t2 = evk with Failure _ -> false) in
 	      let check_several c inst =
 		let _,argsv = destEvar c in
 		let l = List.filter (eq_constr inst) (Array.to_list argsv) in
