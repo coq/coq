@@ -853,7 +853,12 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
                       subst in
 	          insert_delimiters (make_notation loc ntn l) key)
           | SynDefRule kn ->
-              CRef (Qualid (loc, shortest_qualid_of_syndef vars kn)) in
+	      let l =
+		List.map (fun (c,(scopt,scl)) ->
+		  extern true (scopt,scl@scopes) vars c, None)
+		  subst in
+              let a = CRef (Qualid (loc, shortest_qualid_of_syndef vars kn)) in
+	      if l = [] then a else CApp (loc,(None,a),l) in
  	if args = [] then e 
 	else
 	  (* TODO: compute scopt for the extra args, in case, head is a ref *)

@@ -88,6 +88,7 @@ Notations and implicit arguments
 - New modifier of "Implicit Arguments" to enrich the set of implicit arguments.
 - Level "constr" moved from 9 to 8.
 - Structure/Record now printed as Record (unless option Printing All is set).
+- Support for parametric notations defining constants (i.e. abbreviations).
 
 Tactic Language
 
@@ -409,7 +410,8 @@ Libraries
   digit 0; weaken premises in Z_lt_induction).
 - Restructuration of Eqdep_dec.v and Eqdep.v: more lemmas in Type.
 - Znumtheory now contains a gcd function that can compute within Coq.
-- More lemmas stated on Type in Wf.v, removal of redundant Fix_F.
+- More lemmas stated on Type in Wf.v, removal of redundant Acc_iter and 
+  Acc_iter2.
 - Change of the internal names of lemmas in OmegaLemmas.
 - Acc in Wf.v and clos_refl_trans in Relation_Operators.v now rely on
   the allowance for recursively non uniform parameters (possible

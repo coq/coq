@@ -65,11 +65,6 @@ val rawconstr_of_aconstr_with_binders : loc ->
 val rawconstr_of_aconstr : loc -> aconstr -> rawconstr
 
 (**********************************************************************)
-(* Substitution of kernel names, avoiding a list of bound identifiers *)
-
-val subst_aconstr : substitution -> identifier list -> aconstr -> aconstr
-
-(**********************************************************************)
 (* [match_aconstr metas] matches a rawconstr against an aconstr with  *)
 (* metavariables in [metas]; raise [No_match] if the matching fails   *)
 
@@ -84,6 +79,11 @@ type interpretation =
 
 val match_aconstr : rawconstr -> interpretation ->
       (rawconstr * (tmp_scope_name option * scope_name list)) list
+
+(**********************************************************************)
+(* Substitution of kernel names in interpretation data                *)
+
+val subst_interpretation : substitution -> interpretation -> interpretation
 
 (**********************************************************************)
 (*s Concrete syntax for terms                                         *)

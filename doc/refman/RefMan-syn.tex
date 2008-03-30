@@ -928,35 +928,38 @@ It also displays the lonely notations.
 \label{Abbreviations}
 \comindex{Notation}}
 
-An {\em abbreviation} is a name denoting a (presumably) more complex
-expression. An abbreviation is a special form of notation with no
-parameter and only one symbol which is an identifier. This identifier
-is given with no quotes around. Example:
+An {\em abbreviation} is a name, possibly applied to arguments, that
+denotes a (presumably) more complex expression. Here are examples:
 
 \begin{coq_eval}
 Require Import List.
+Require Import Relations.
+Set Printing Notations.
 \end{coq_eval}
-\begin{coq_example*}
-Notation List := (list nat).
-\end{coq_example*}
+\begin{coq_example}
+Notation Nlist := (list nat).
+Check 1 :: 2 :: 3 :: nil.
+Notation reflexive R := (forall x, R x x).
+Check forall A:Prop, A <-> A.
+Check reflexive iff.
+\end{coq_example}
 
-An abbreviation expects no precedence nor associativity, since it can
-always be put at the lower level of atomic expressions, and
-associativity is irrelevant. Abbreviations are used as much as
-possible by the {\Coq} printers unless the modifier
+An abbreviation expects no precedence nor associativity, since it
+follows the usual syntax of application. Abbreviations are used as
+much as possible by the {\Coq} printers unless the modifier
 \verb=(only parsing)= is given.
 
-Abbreviations are bound to an absolute name like for an ordinary
-definition, and can be referred by partially qualified names too.
+Abbreviations are bound to an absolute name as an ordinary
+definition is, and they can be referred by qualified names too.
 
 Abbreviations are syntactic in the sense that they are bound to
 expressions which are not typed at the time of the definition of the
-abbreviation but at the time it is used. Especially, abbreviation can
+abbreviation but at the time it is used. Especially, abbreviations can
 be bound to terms with holes (i.e. with ``\_''). The general syntax
 for abbreviations is
 \begin{quote}
-\texttt{Notation} \zeroone{{\tt Local}} {\ident} \texttt{:=} {\term} 
- \zeroone{{\tt (only parsing)}} \verb=.=
+\texttt{Notation} \zeroone{{\tt Local}} {\ident} \sequence{\ident} {\ident} \texttt{:=} {\term} 
+ \zeroone{{\tt (only parsing)}}~\verb=.=
 \end{quote}
 
 \Example
@@ -974,11 +977,11 @@ Abbreviations do not survive the end of sections. No typing of the denoted
 expression is performed at definition time. Type-checking is done only
 at the time of use of the abbreviation.
 
-\Rem \index{Syntactic Definition} % For
-compatibility Abbreviations are similar to the {\em syntactic
-definitions} available in versions of {\Coq} prior to version 8.0,
-except that abbreviations are used for printing (unless the modifier
-\verb=(only parsing)= is given) while syntactic definitions were not.
+%\Rem \index{Syntactic Definition} %
+%Abbreviations are similar to the {\em syntactic
+%definitions} available in versions of {\Coq} prior to version 8.0,
+%except that abbreviations are used for printing (unless the modifier
+%\verb=(only parsing)= is given) while syntactic definitions were not.
 
 \section{Tactic Notations}
 

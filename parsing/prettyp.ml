@@ -400,10 +400,11 @@ let gallina_print_constant_with_infos sp =
 let gallina_print_syntactic_def kn =
   let sep = " := "
   and qid = Nametab.shortest_qualid_of_syndef Idset.empty kn
-  and c = Syntax_def.search_syntactic_definition dummy_loc kn in 
-  str "Notation " ++ pr_qualid qid ++ str sep ++ 
+  and (vars,a) = Syntax_def.search_syntactic_definition dummy_loc kn in 
+  let c = Topconstr.rawconstr_of_aconstr dummy_loc a in
+  str "Notation " ++ pr_qualid qid ++ 
+  prlist_with_sep spc pr_id (List.map fst vars) ++ str sep ++
   Constrextern.without_symbols pr_lrawconstr c ++ fnl ()
-
 
 let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
   let sep = if with_values then " = " else " : "

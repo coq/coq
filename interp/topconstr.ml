@@ -361,6 +361,8 @@ let rec subst_aconstr subst bound raw =
 	      if r1' == r1 then raw else
 		ACast (r1',CastCoerce)
 		  
+let subst_interpretation subst (metas,pat) = 
+  (metas,subst_aconstr subst (List.map fst metas) pat)
 
 let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
 
@@ -434,7 +436,14 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
   | RRef (_,r1), ARef r2 when r1 = r2 -> sigma
   | RPatVar (_,(_,n1)), APatVar n2 when n1=n2 -> sigma
-  | RApp (_,f1,l1), AApp (f2,l2) when List.length l1 = List.length l2 ->
+  | RApp (loc,f1,l1), AApp (f2,l2) ->
+      let n1 = List.length l1 and n2 = List.length l2 in
+      let f1,l1,f2,l2 =
+	if n1 < n2 then
+	  let l21,l22 = list_chop (n2-n1) l2 in f1,l1, AApp (f2,l21), l22
+	else if n1 > n2 then
+	  let l11,l12 = list_chop (n1-n2) l1 in RApp (loc,f1,l11),l12, f2,l2
+	else f1,l1, f2, l2 in
       List.fold_left2 (match_ alp metas) (match_ alp metas sigma f1 f2) l1 l2
   | RApp (_,f1,l1), AList (x,_,(AApp (f2,l2) as iter),termin,lassoc) 
       when List.length l1 = List.length l2 ->

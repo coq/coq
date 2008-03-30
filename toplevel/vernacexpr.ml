@@ -287,8 +287,8 @@ type vernac_expr =
   | VernacDeclareTacticDefinition of
       rec_flag * (lident * bool * raw_tactic_expr) list
   | VernacHints of locality_flag * lstring list * hints
-  | VernacSyntacticDefinition of identifier * constr_expr * locality_flag *
-      onlyparsing_flag
+  | VernacSyntacticDefinition of identifier * (identifier list * constr_expr) *
+      locality_flag * onlyparsing_flag
   | VernacDeclareImplicits of locality_flag * lreference * bool *
       (explicitation * bool * bool) list option
   | VernacReserve of lident list * constr_expr

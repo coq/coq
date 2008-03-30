@@ -816,10 +816,10 @@ let rec pr_vernac = function
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacHints (local,dbnames,h) ->
       pr_hints local dbnames h pr_constr pr_pattern_expr
-  | VernacSyntacticDefinition (id,c,local,onlyparsing) ->
+  | VernacSyntacticDefinition (id,(ids,c),local,onlyparsing) ->
       hov 2
-        (str"Notation " ++ pr_locality local ++ pr_id id ++ str" :=" ++
-         pr_constrarg c ++
+        (str"Notation " ++ pr_locality local ++ pr_id id ++ 
+	 prlist_with_sep spc pr_id ids ++ str" :=" ++ pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
   | VernacDeclareImplicits (local,q,e,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)

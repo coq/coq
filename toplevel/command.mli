@@ -39,7 +39,8 @@ val declare_definition : identifier -> definition_kind ->
   local_binder list -> red_expr option -> constr_expr ->
   constr_expr option -> declaration_hook -> unit
 
-val syntax_definition : identifier -> constr_expr -> bool -> bool -> unit
+val syntax_definition : identifier -> identifier list * constr_expr -> 
+  bool -> bool -> unit
 
 val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types ->
   Impargs.manual_explicitation list -> bool -> Names.variable located  -> unit

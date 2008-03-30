@@ -794,9 +794,10 @@ GEXTEND Gram
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacInfix (local,(op,modl),p,sc)
-     | IDENT "Notation"; local = locality; id = ident; ":="; c = constr;
+     | IDENT "Notation"; local = locality; id = ident; idl = LIST0 ident; 
+	 ":="; c = constr;
 	 b = [ "("; IDENT "only"; IDENT "parsing"; ")" -> true | -> false ] ->
-           VernacSyntacticDefinition (id,c,local,b)
+           VernacSyntacticDefinition (id,(idl,c),local,b)
      | IDENT "Notation"; local = locality; s = ne_string; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->

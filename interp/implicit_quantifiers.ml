@@ -34,7 +34,7 @@ let locate_reference qid =
     | TrueGlobal ref -> ref
     | SyntacticDef kn -> 
 	match Syntax_def.search_syntactic_definition dummy_loc kn with
-	  | Rawterm.RRef (_,ref) -> ref
+	  | [],ARef ref -> ref
 	  | _ -> raise Not_found
 
 let is_global id =
