@@ -36,9 +36,7 @@ Definition default_relation [ DefaultRelation A R ] : relation A := R.
 
 Notation " x ===def y " := (default_relation x y) (at level 70, no associativity).
 
-Notation "'inverse' R" := (flip (R:relation _) : relation _) (at level 0).
-
-(* Definition inverse {A} : relation A -> relation A := flip. *)
+Notation inverse R := (flip (R:relation _) : relation _).
 
 Definition complement {A} (R : relation A) : relation A := fun x y => R x y -> False.
 
@@ -219,7 +217,7 @@ Program Instance [ sa : Equivalence a R, sb : Equivalence b R' ] => equiv_setoid
 Definition relation_equivalence {A : Type} : relation (relation A) :=
   fun (R R' : relation A) => forall x y, R x y <-> R' x y.
 
-Infix "<R>" := relation_equivalence (at level 70) : relation_scope.
+Infix "<R>" := relation_equivalence (at level 95, no associativity) : relation_scope.
 
 Class subrelation {A:Type} (R R' : relation A) :=
   is_subrelation : forall x y, R x y -> R' x y.
@@ -231,12 +229,12 @@ Infix "-R>" := subrelation (at level 70) : relation_scope.
 Definition relation_conjunction {A} (R : relation A) (R' : relation A) : relation A :=
   fun x y => R x y /\ R' x y.
 
-Infix "/R\" := relation_conjunction (at level 55) : relation_scope.
+Infix "/R\" := relation_conjunction (at level 80, right associativity) : relation_scope.
 
 Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relation A :=
   fun x y => R x y \/ R' x y.
 
-Infix "\R/" := relation_disjunction (at level 55) : relation_scope.
+Infix "\R/" := relation_disjunction (at level 85, right associativity) : relation_scope.
 
 Open Local Scope relation_scope.
 
@@ -288,4 +286,3 @@ Proof. firstorder. Qed.
 
 Instance iff_inverse_impl_subrelation : subrelation iff (inverse impl).
 Proof. firstorder. Qed.
-

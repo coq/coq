@@ -437,6 +437,7 @@ let gen_constant dir s = Coqlib.gen_constant "Class_setoid" dir s
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
 let iff = lazy (gen_constant ["Init"; "Logic"] "iff")
+let coq_all = lazy (gen_constant ["Init"; "Logic"] "all")
 let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
 let arrow = lazy (gen_constant ["Program"; "Basics"] "arrow")
 let coq_id = lazy (gen_constant ["Program"; "Basics"] "id")
@@ -727,6 +728,14 @@ let unfold_id t =
     | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_id) *) -> b
     | _ -> assert false
 
+let unfold_all t = 
+  match kind_of_term t with
+    | App (id, [| a; b |]) (* when eq_constr id (Lazy.force coq_all) *) ->
+	(match kind_of_term b with
+	  | Lambda (n, ty, b) -> mkProd (n, ty, b)
+	  | _ -> assert false)
+    | _ -> assert false
+
 type rewrite_flags = { under_lambdas : bool }
 
 let default_flags = { under_lambdas = true }
@@ -780,6 +789,21 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 				 [| x ; b |] [| x' ; b' |]
 				 cstr evars)
 		      with Not_found -> None)
+		in res, occ
+		  
+	    | Prod (n, ty, b) ->
+		let lam = mkLambda (n, ty, b) in
+		let lam', occ = aux env lam occ None in
+		let res = 
+		  match lam' with
+		    | None -> None
+		    | Some (prf, (car, rel, c1, c2)) ->
+			try 
+			  Some (resolve_morphism env sigma t
+				   ~fnewt:unfold_all
+				   (Lazy.force coq_all) [| ty ; lam |] [| None; lam' |]
+				   cstr evars)
+			with Not_found -> None
 		in res, occ
 		  
 	    | Lambda (n, t, b) when flags.under_lambdas ->

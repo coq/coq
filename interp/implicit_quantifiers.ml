@@ -31,15 +31,12 @@ let ids_of_list l =
 
 let locate_reference qid =
   match Nametab.extended_locate qid with
-    | TrueGlobal ref -> ref
-    | SyntacticDef kn -> 
-	match Syntax_def.search_syntactic_definition dummy_loc kn with
-	  | [],ARef ref -> ref
-	  | _ -> raise Not_found
+    | TrueGlobal ref -> true
+    | SyntacticDef kn -> true
 
 let is_global id =
   try 
-    let _ = locate_reference (make_short_qualid id) in true
+    locate_reference (make_short_qualid id)
   with Not_found -> 
     false
 
