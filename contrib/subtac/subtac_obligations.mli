@@ -12,6 +12,9 @@ type progress = (* Resolution status of a program *)
 val set_default_tactic : Tacexpr.glob_tactic_expr -> unit
 val default_tactic : unit -> Proof_type.tactic
 
+val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
+val get_proofs_transparency : unit -> bool
+
 type definition_hook = constant -> unit
 
 val add_definition : Names.identifier ->  Term.constr -> Term.types -> 

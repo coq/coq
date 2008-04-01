@@ -59,6 +59,22 @@ let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic ())
 
 let set_default_tactic t = default_tactic_expr := t; default_tactic := Tacinterp.eval_tactic t
 
+(* true = All transparent, false = Opaque if possible *)
+let proofs_transparency = ref false
+
+let set_proofs_transparency = (:=) proofs_transparency
+let get_proofs_transparency () = !proofs_transparency
+
+open Goptions
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
+      optname  = "transparency of Program obligations";
+      optkey   = (SecondaryTable ("Transparent","Obligations"));
+      optread  = get_proofs_transparency;
+      optwrite = set_proofs_transparency; } 
+
 let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
 let subst_deps obls deps t =
@@ -211,7 +227,7 @@ let declare_obligation obl body =
   let ce = 
     { const_entry_body = body;
       const_entry_type = Some obl.obl_type;
-      const_entry_opaque = obl.obl_opaque;
+      const_entry_opaque = if get_proofs_transparency () then false else obl.obl_opaque;
       const_entry_boxed = false} 
   in
   let constant = Declare.declare_constant obl.obl_name 
