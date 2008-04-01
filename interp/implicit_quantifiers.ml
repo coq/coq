@@ -23,6 +23,7 @@ open Topconstr
 open Libnames
 open Typeclasses
 open Typeclasses_errors
+open Pp
 (*i*)
 
 let ids_of_list l = 
@@ -120,24 +121,38 @@ let ids_of_named_context_avoiding avoid l =
     ([], avoid) (Termops.ids_of_named_context l)
     
 let combine_params avoid fn applied needed =
+  let named, applied = 
+    List.partition 
+      (function
+	  (t, Some (loc, ExplByName id)) -> 
+	    if not (List.exists (fun (_, (id', _, _)) -> id = id') needed) then
+	      user_err_loc (loc,"",str "Wrong argument name: " ++ Nameops.pr_id id);
+	    true
+	| _ -> false) applied
+  in
+  let named = List.map
+    (fun x -> match x with (t, Some (loc, ExplByName id)) -> id, t | _ -> assert false)
+    named
+  in
   let rec aux ids avoid app need =
     match app, need with
-	[], need -> 
-	  let need', avoid = 
-	    List.fold_left (fun (terms, avoid) decl -> 
-	      let t', avoid = fn avoid decl in
-		(t' :: terms, avoid))
-	      ([], avoid) need
-	  in List.rev ids @ (List.rev need'), avoid
+	[], [] -> List.rev ids, avoid
 
-      | (x, Some (loc, ExplByName id')) :: app, (Some _, (id, _, _)) :: need when id' = id -> 
+      | app, (_, (id, _, _)) :: need when List.mem_assoc id named ->
+	  aux (List.assoc id named :: ids) avoid app need
+	    
+      | (x, None) :: app, (None, (id, _, _)) :: need ->
 	  aux (x :: ids) avoid app need
-
+	    
       | _, (Some cl, (id, _, _) as d) :: need -> 
 	  let t', avoid' = fn avoid d in
 	    aux (t' :: ids) avoid' app need
 
-      | x :: app, (None, _) :: need -> aux (fst x :: ids) avoid app need    
+      | x :: app, (None, _) :: need -> aux (fst x :: ids) avoid app need
+
+      | [], (None, _ as decl) :: need -> 
+	  let t', avoid' = fn avoid decl in
+	    aux (t' :: ids) avoid' app need
 
       | _ :: _, [] -> failwith "combine_params: overly applied typeclass"
   in aux [] avoid applied needed
