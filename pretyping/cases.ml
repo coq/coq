@@ -1557,6 +1557,19 @@ let prepare_predicate_from_arsign_tycon loc env evdref tomatchs sign arsign c =
 	  | Rel n when dependent tm c 
 		&& signlen = 1 (* The term to match is not of a dependent type itself *) ->
 	      ((n, len) :: subst, len - signlen)
+	  | Rel _ when not (dependent tm c)
+		&& signlen > 1 (* The term is of a dependent type but does not appear in 
+				  the tycon, maybe some variable in its type does. *) ->
+	      (match tmtype with
+		  NotInd _ -> (* len - signlen, subst*) assert false (* signlen > 1 *)
+		| IsInd (_, IndType(indf,realargs)) ->
+		    List.fold_left
+		      (fun (subst, len) arg -> 
+			match kind_of_term arg with
+			  | Rel n when dependent arg c ->
+			      ((n, len) :: subst, pred len)
+			  | _ -> (subst, pred len))
+		      (subst, len) realargs)
 	  | _ -> (subst, len - signlen))
       ([], nar) tomatchs arsign
   in
@@ -1596,8 +1609,7 @@ let prepare_predicate loc typing_fun evdref env tomatchs sign tycon = function
   | None ->
       (match tycon with
        | Some (None, t) ->
-	   if List.exists (fun (x,_) -> is_dependent_on_rel x t) tomatchs
-	   then
+	   if not (noccur_with_meta 0 max_int t) then (* If the tycon is not closed w.r.t real variables *)
 	     let arsign = extract_arity_signature env tomatchs sign in
 	     let env' = List.fold_right push_rels arsign env in
 	     let names = List.rev (List.map (List.map pi1) arsign) in
