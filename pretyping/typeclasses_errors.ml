@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: classes.ml 6748 2005-02-18 22:17:50Z herbelin $ i*)
+(*i $Id:$ i*)
 
 (*i*)
 open Names

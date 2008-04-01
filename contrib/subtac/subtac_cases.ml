@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: cases.ml 9399 2006-11-22 16:11:53Z herbelin $ *)
+(* $Id$ *)
 
 open Cases
 open Util

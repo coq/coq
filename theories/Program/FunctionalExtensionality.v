@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: Tactics.v 10410 2007-12-31 13:11:55Z msozeau $ i*)
+(*i $Id$ i*)
 
 (** This module states the axiom of (dependent) functional extensionality and (dependent) eta-expansion.
    It introduces a tactic [extensionality] to apply the axiom of extensionality to an equality goal. 

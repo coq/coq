@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: retroknowledge.ml ??? 2006-??-?? ??:??:??Z spiwack $ *)
+(* $Id$ *)
 
 open Term
 open Names

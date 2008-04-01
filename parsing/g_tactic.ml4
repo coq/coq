@@ -365,8 +365,12 @@ GEXTEND Gram
       | IDENT "exact_no_check"; c = constr -> TacExactNoCheck c
       | IDENT "vm_cast_no_check"; c = constr -> TacVmCastNoCheck c
 
-      | IDENT "apply"; cl = constr_with_bindings -> TacApply (false,cl)
-      | IDENT "eapply"; cl = constr_with_bindings -> TacApply (true,cl)
+      | IDENT "apply"; cl = constr_with_bindings -> TacApply (true,false,cl)
+      | IDENT "eapply"; cl = constr_with_bindings -> TacApply (true,true,cl)
+      | IDENT "simple"; IDENT "apply"; cl = constr_with_bindings -> 
+          TacApply (false,false,cl)
+      | IDENT "simple"; IDENT "eapply"; cl = constr_with_bindings -> 
+          TacApply (false, true,cl)
       | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (false,cl,el)
       | IDENT "eelim"; cl = constr_with_bindings; el = OPT eliminator ->

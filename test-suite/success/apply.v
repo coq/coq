@@ -51,7 +51,7 @@ Abort.
 
 (* Check insertion of coercions in bindings *)
 
-Coercion eq_true : bool >-> Sortclass.
+(*Coercion eq_true : bool >-> Sortclass.*)
 Goal exists A:Prop, A = A.
 exists true.
 trivial.

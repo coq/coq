@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: cases.mli 8741 2006-04-26 22:30:32Z herbelin $ i*)
+(*i $Id$ i*)
 
 (*i*)
 open Util

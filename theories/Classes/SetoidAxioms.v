@@ -13,7 +13,7 @@
  * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
  *              91405 Orsay, France *)
 
-(* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
+(* $Id$ *)
 
 Require Import Coq.Program.Program.
 

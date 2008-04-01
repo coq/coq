@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: options.ml 10106 2007-08-30 16:56:10Z herbelin $ *)
+(*i $Id:$ i*)
 
 open Util
 

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: options.mli 9679 2007-02-24 15:22:07Z herbelin $ i*)
+(*i $Id$ i*)
 
 (* Global options of the system. *)
 

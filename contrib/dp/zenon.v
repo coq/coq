@@ -1,5 +1,5 @@
 (*  Copyright 2004 INRIA  *)
-(*  $Id: zenon.v,v 1.6 2006-02-16 09:22:46 doligez Exp $  *)
+(*  $Id$  *)
 
 Require Export Classical.
 

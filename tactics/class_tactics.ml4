@@ -9,7 +9,7 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id: eauto.ml4 10346 2007-12-05 21:11:19Z aspiwack $ *)
+(* $Id$ *)
 
 open Pp
 open Util

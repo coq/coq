@@ -280,7 +280,7 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacExact          c
     | TacExactNoCheck   c
     | TacVmCastNoCheck  c  -> depends_of_'constr c acc
-    | TacApply (_, cb) -> depends_of_'constr_with_bindings cb acc
+    | TacApply (_, _, cb) -> depends_of_'constr_with_bindings cb acc
     | TacElim (_, cwb, cwbo) ->
 	depends_of_'constr_with_bindings cwb
 	  (Option.fold_right depends_of_'constr_with_bindings cwbo acc)

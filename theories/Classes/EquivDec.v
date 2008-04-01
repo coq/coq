@@ -13,7 +13,7 @@
  * Institution: LRI, CNRS UMR 8623 - Universit√copyright Paris Sud
  *              91405 Orsay, France *)
 
-(* $Id: FSetAVL_prog.v 616 2007-08-08 12:28:10Z msozeau $ *)
+(* $Id$ *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

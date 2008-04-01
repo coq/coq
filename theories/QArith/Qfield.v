@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: Qring.v 9427 2006-12-11 18:46:35Z bgregoir $ i*)
+(*i $Id$ i*)
 
 Require Export Field.
 Require Export QArith_base.

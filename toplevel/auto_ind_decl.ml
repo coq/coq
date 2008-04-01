@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i $Id:$ i*)
+
 open Tacmach
 open Util
 open Flags
