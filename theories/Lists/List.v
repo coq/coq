@@ -1638,7 +1638,7 @@ Hint Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons
 
 
 (**************************************)
-(* ** Cutting a list at some position *)
+(** * Cutting a list at some position *)
 (**************************************)
 
 Section Cutting.
