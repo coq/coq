@@ -545,7 +545,9 @@ let clenv_refine_in with_evars id clenv gl =
 
 (* Resolution with missing arguments *)
 
-let apply_with_ebindings_gen with_evars (c,lbind) gl = 
+let apply_with_ebindings_gen advanced with_evars (c,lbind) gl =
+  let flags = 
+    if advanced then default_unify_flags else default_no_delta_unify_flags in
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -555,7 +557,7 @@ let apply_with_ebindings_gen with_evars (c,lbind) gl =
     let n = nb_prod thm_ty - nprod in
     if n<0 then error "Apply: theorem has not enough premisses.";
     let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
-    Clenvtac.res_pf clause ~with_evars:with_evars gl in
+    Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl in
   try try_apply thm_ty0 concl_nprod
   with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
     let rec try_red_apply thm_ty =
@@ -573,14 +575,17 @@ let apply_with_ebindings_gen with_evars (c,lbind) gl =
         else raise exn in
     try_red_apply thm_ty0
 
-let apply_with_ebindings = apply_with_ebindings_gen false
-let eapply_with_ebindings = apply_with_ebindings_gen true
+let advanced_apply_with_ebindings = apply_with_ebindings_gen true false
+let advanced_eapply_with_ebindings = apply_with_ebindings_gen true true
+
+let apply_with_ebindings = apply_with_ebindings_gen false false
+let eapply_with_ebindings = apply_with_ebindings_gen false true
 
 let apply_with_bindings (c,bl) =
   apply_with_ebindings (c,inj_ebindings bl)
 
 let eapply_with_bindings (c,bl) =
-  apply_with_ebindings_gen true (c,inj_ebindings bl)
+  apply_with_ebindings_gen false true (c,inj_ebindings bl)
 
 let apply c =
   apply_with_ebindings (c,NoBindings)
@@ -589,7 +594,7 @@ let apply_list = function
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
   | _ -> assert false
 
-(* Resolution with no reduction on the type *)
+(* Resolution with no reduction on the type (used ?) *)
 
 let apply_without_reduce c gl = 
   let clause = mk_clenv_type_of gl c in 
@@ -796,7 +801,7 @@ let constructor_tac expctdnumopt i lbind gl =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   check_number_of_constructors expctdnumopt i nconstr;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac = apply_with_ebindings (cons,lbind) in
+  let apply_tac = advanced_apply_with_ebindings (cons,lbind) in
   (tclTHENLIST 
      [convert_concl_no_check redcl DEFAULTcast; intros; apply_tac]) gl
 

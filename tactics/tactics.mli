@@ -172,11 +172,18 @@ val bring_hyps : named_context -> tactic
 val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
 val apply_list            : constr list -> tactic
-val apply_with_ebindings_gen : evars_flag -> constr with_ebindings -> tactic
+
+val apply_with_ebindings_gen : 
+  advanced_flag -> evars_flag -> constr with_ebindings -> tactic
+
 val apply_with_bindings   : constr with_bindings -> tactic
-val apply_with_ebindings  : constr with_ebindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
+
+val apply_with_ebindings  : constr with_ebindings -> tactic
 val eapply_with_ebindings : constr with_ebindings -> tactic
+
+val advanced_apply_with_ebindings  : constr with_ebindings -> tactic
+val advanced_eapply_with_ebindings : constr with_ebindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 

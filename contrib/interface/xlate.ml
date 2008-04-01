@@ -1143,10 +1143,11 @@ and xlate_tac =
 	xlate_error "TODO: trivial using"
     | TacReduce (red, l) ->
      CT_reduce (xlate_red_tactic red, xlate_clause l)
-    | TacApply (false,(c,bindl)) ->
+    | TacApply (true,false,(c,bindl)) ->
      CT_apply (xlate_formula c, xlate_bindings bindl)
-    | TacApply (true,(c,bindl)) ->
+    | TacApply (true,true,(c,bindl)) ->
      CT_eapply (xlate_formula c, xlate_bindings bindl)
+    | TacApply (false,_,_) -> xlate_error "TODO: simple (e)apply"
     | TacConstructor (n_or_meta, bindl) ->
 	let n = match n_or_meta with AI n -> n | MetaId _ -> xlate_error ""
 	in CT_constructor (CT_int n, xlate_bindings bindl)
@@ -1984,7 +1985,7 @@ let rec xlate_vernac =
    | VernacCombinedScheme _ -> xlate_error "TODO: Combined Scheme"
    | VernacSyntacticDefinition (id, ([],c), false, _) ->
        CT_syntax_macro (xlate_ident id, xlate_formula c, xlate_int_opt None)
-   | VernacSyntacticDefinition (id, _, true, _) ->
+   | VernacSyntacticDefinition (id, _, _, _) ->
        xlate_error"TODO: Local abbreviations and abbreviations with parameters"
   (* Modules and Module Types *)
    | VernacInclude (_) -> xlate_error "TODO : Include "
@@ -2202,7 +2203,7 @@ let rec xlate_vernac =
      VernacMemOption (_, _)|VernacRemoveOption (_, _)
   | VernacBack _ | VernacBacktrack _ |VernacBackTo _|VernacRestoreState _| VernacWriteState _|
     VernacSolveExistential (_, _)|VernacCanonical _ |
-     VernacTacticNotation _)
+     VernacTacticNotation _ | VernacUndoTo _ | VernacRemoveName _)
     -> xlate_error "TODO: vernac";;
 
 let rec xlate_vernac_list =

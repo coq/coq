@@ -1202,7 +1202,7 @@ let rec natural_ntree ig ntree =
 	  | TacExtend (_,"InductionIntro",[a]) -> 
               let id=(out_gen wit_ident a) in
               natural_induction ig lh g gs ge id ltree true
-	  | TacApply (false,(c,_)) -> natural_apply ig lh g gs (snd c) ltree
+	  | TacApply (_,false,(c,_)) -> natural_apply ig lh g gs (snd c) ltree
 	  | TacExact c -> natural_exact ig lh g gs (snd c) ltree
 	  | TacCut c -> natural_cut ig lh g gs (snd c) ltree
 	  | TacExtend (_,"CutIntro",[a]) ->

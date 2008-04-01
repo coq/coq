@@ -39,9 +39,9 @@ let h_exact_no_check c =
   abstract_tactic (TacExactNoCheck (inj_open c)) (exact_no_check c)
 let h_vm_cast_no_check c = 
   abstract_tactic (TacVmCastNoCheck (inj_open c)) (vm_cast_no_check c)
-let h_apply ev cb    =
-  abstract_tactic (TacApply (ev,inj_open_wb cb))
-    (apply_with_ebindings_gen ev cb)
+let h_apply simple ev cb    =
+  abstract_tactic (TacApply (simple,ev,inj_open_wb cb))
+    (apply_with_ebindings_gen simple ev cb)
 let h_elim ev cb cbo    =
   abstract_tactic (TacElim (ev,inj_open_wb cb,Option.map inj_open_wb cbo))
     (elim ev cb cbo)
@@ -123,8 +123,8 @@ let h_symmetry c     = abstract_tactic (TacSymmetry c) (intros_symmetry c)
 let h_transitivity c =
   abstract_tactic (TacTransitivity (inj_open c)) (intros_transitivity c)
 
-let h_simplest_apply c  = h_apply false (c,NoBindings)
-let h_simplest_eapply c = h_apply true (c,NoBindings)
+let h_simplest_apply c  = h_apply false false (c,NoBindings)
+let h_simplest_eapply c = h_apply false true (c,NoBindings)
 let h_simplest_elim c   = h_elim false (c,NoBindings) None
 let h_simplest_case   c = h_case false (c,NoBindings)
 

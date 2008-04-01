@@ -21,6 +21,7 @@ type unify_flags = {
 }
 
 val default_unify_flags : unify_flags
+val default_no_delta_unify_flags : unify_flags
 
 (* The "unique" unification fonction *)
 val w_unify :

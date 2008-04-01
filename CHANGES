@@ -118,7 +118,8 @@ Tactics
   expressions with explicit occurrences of match or fix.
 - Better heuristic of lemma unfolding for apply/eapply.
 - New tactics "eapply in", "erewrite", "erewrite in".
-- Unfoldable references can be given by notation rather than by name in unfold.
+- Unfoldable references can be given by notation's string rather than by name 
+  in unfold.
 - The "with" arguments are now typed using informations from the current goal:
   allows support for coercions and more inference of implicit arguments.
 - Application of "f_equal"-style lemmas works better.
@@ -137,7 +138,9 @@ Tactics
   induction-inversion on instantiated inductive families à la BasicElim.
 - Tactic apply now able to reason modulo unfolding of constants
   (possible source of incompatibility in situations where apply may fail, 
-  e.g. as argument of a try or a repeat and in a ltac function).
+  e.g. as argument of a try or a repeat and in a ltac function);
+  version of apply that does not unfold is renamed into "simple apply"
+  (usable for compatibility or for automation).
 - Pattern for hypotheses types in match goal are now interpreted in type_scope.
 
 Type Classes

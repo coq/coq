@@ -672,8 +672,9 @@ and pr_atom1 = function
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg c)
   | TacExactNoCheck c -> hov 1 (str "exact_no_check" ++ pr_constrarg c)
   | TacVmCastNoCheck c -> hov 1 (str "vm_cast_no_check" ++ pr_constrarg c)
-  | TacApply (ev,cb) ->
-      hov 1 (str (if ev then "eapply" else "apply") ++ spc () ++ 
+  | TacApply (a,ev,cb) ->
+      hov 1 ((if a then str "simple " else mt()) ++
+             str (if ev then "eapply" else "apply") ++ spc () ++ 
              pr_with_bindings cb)
   | TacElim (ev,cb,cbo) ->
       hov 1 (str (if ev then "eelim" else "elim") ++ pr_arg pr_with_bindings cb ++ 

@@ -23,6 +23,7 @@ type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
 type lazy_flag = bool      (* true = lazy             false = eager *)
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 type rec_flag = bool       (* true = recursive        false = not recursive *)
+type advanced_flag = bool  (* true = advanced         false = basic *)
 
 type raw_red_flag =
   | FBeta
@@ -130,7 +131,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacExact of 'constr
   | TacExactNoCheck of 'constr
   | TacVmCastNoCheck of 'constr
-  | TacApply of evars_flag * 'constr with_bindings
+  | TacApply of advanced_flag * evars_flag * 'constr with_bindings
   | TacElim of evars_flag * 'constr with_bindings * 
       'constr with_bindings option
   | TacElimType of 'constr
