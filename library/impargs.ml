@@ -240,12 +240,6 @@ let compute_implicits_flags env f all t =
     (f.strict or f.strongly_strict) f.strongly_strict
     f.reversible_pattern f.contextual all env t
     
-let compute_implicits_auto env f t =
-  let l = compute_implicits_flags env f false t in
-    prepare_implicits f l
-
-let compute_implicits env t = compute_implicits_auto env !implicit_args t
-
 let set_implicit id imp insmax =
   (id,(match imp with None -> Manual false | Some imp -> imp),insmax)
 
@@ -258,7 +252,7 @@ let rec assoc_by_pos k = function
   | hd :: tl -> let (x, tl) = assoc_by_pos k tl in x, hd :: tl
   | [] -> raise Not_found
 
-let compute_manual_implicits flags env t enriching l =
+let compute_manual_implicits env flags t enriching l =
   let autoimps =
     if enriching then compute_implicits_flags env flags true t
     else compute_implicits_gen false false false true true env t in
@@ -296,8 +290,9 @@ let compute_manual_implicits flags env t enriching l =
 	forced :: merge (k+1) l' imps
   | [] when l = [] -> []
   | [] ->
-      match List.hd l with
-	| ExplByName id,b ->
+      List.iter (function 
+	| ExplByName id,(b,forced) -> 
+	    if not forced then
 	      error ("Wrong or not dependent implicit argument name: "^(string_of_id id))
 	| ExplByPos (i,_id),_t ->
 	    if i<1 or i>n then 
@@ -305,9 +300,18 @@ let compute_manual_implicits flags env t enriching l =
 	    else
 	      errorlabstrm ""
 		(str "Cannot set implicit argument number " ++ int i ++
-		    str ": it has no name")
+		    str ": it has no name"))
+	l; []
   in
   merge 1 l autoimps
+
+let compute_implicits_auto env f manual t =
+  match manual with
+      [] -> let l = compute_implicits_flags env f false t in
+	      prepare_implicits f l
+    | _ -> compute_manual_implicits env f t true manual
+	
+let compute_implicits env t = compute_implicits_auto env !implicit_args [] t
 
 type maximal_insertion = bool (* true = maximal contextual insertion *)
 
@@ -353,16 +357,16 @@ let positions_of_implicits =
 
 (*s Constants. *)
 
-let compute_constant_implicits flags cst =
+let compute_constant_implicits flags manual cst =
   let env = Global.env () in
-  compute_implicits_auto env flags (Typeops.type_of_constant env cst)
+  compute_implicits_auto env flags manual (Typeops.type_of_constant env cst)
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
    $i$ are the implicit arguments of the inductive and $v$ the array of 
    implicit arguments of the constructors. *)
 
-let compute_mib_implicits flags kn =
+let compute_mib_implicits flags manual kn =
   let env = Global.env () in
   let mib = lookup_mind kn env in
   let ar =
@@ -375,34 +379,34 @@ let compute_mib_implicits flags kn =
   let imps_one_inductive i mip =
     let ind = (kn,i) in
     let ar = type_of_inductive env (mib,mip) in
-    ((IndRef ind,compute_implicits_auto env flags ar),
+    ((IndRef ind,compute_implicits_auto env flags manual ar),
      Array.mapi (fun j c ->
-       (ConstructRef (ind,j+1),compute_implicits_auto env_ar flags c))
+       (ConstructRef (ind,j+1),compute_implicits_auto env_ar flags manual c))
        mip.mind_nf_lc)
   in
   Array.mapi imps_one_inductive mib.mind_packets
 
-let compute_all_mib_implicits flags kn =
-  let imps = compute_mib_implicits flags kn in
+let compute_all_mib_implicits flags manual kn =
+  let imps = compute_mib_implicits flags manual kn in
   List.flatten 
     (array_map_to_list (fun (ind,cstrs) -> ind::Array.to_list cstrs) imps)
 
 (*s Variables. *)
 
-let compute_var_implicits flags id =
+let compute_var_implicits flags manual id =
   let env = Global.env () in
   let (_,_,ty) = lookup_named id env in
-  compute_implicits_auto env flags ty
+  compute_implicits_auto env flags manual ty
 
 (* Implicits of a global reference. *)
 
-let compute_global_implicits flags = function
-  | VarRef id -> compute_var_implicits flags id
-  | ConstRef kn -> compute_constant_implicits flags kn
+let compute_global_implicits flags manual = function
+  | VarRef id -> compute_var_implicits flags manual id
+  | ConstRef kn -> compute_constant_implicits flags manual kn
   | IndRef (kn,i) -> 
-      let ((_,imps),_) = (compute_mib_implicits flags kn).(i) in imps
+      let ((_,imps),_) = (compute_mib_implicits flags manual kn).(i) in imps
   | ConstructRef ((kn,i),j) -> 
-      let (_,cimps) = (compute_mib_implicits flags kn).(i) in snd cimps.(j-1)
+      let (_,cimps) = (compute_mib_implicits flags manual kn).(i) in snd cimps.(j-1)
 
 (* Merge a manual explicitation with an implicit_status list *)
 
@@ -459,19 +463,23 @@ let discharge_implicits (_,(req,l)) =
   | ImplMutualInductive (kn,flags) ->
       Some (ImplMutualInductive (pop_kn kn,flags),l)
 
-let rebuild_implicits (req,l) =
+let rebuild_implicits (info,(req,l)) =
+  let manual = List.fold_left (fun acc (id, impl, keep) -> 
+    if impl then (ExplByName id, (true, true)) :: acc else acc)
+    [] info
+  in
   let l' = match req with
   | ImplNoDischarge -> assert false
   | ImplConstant (con,flags) -> 
-      [ConstRef con,compute_constant_implicits flags con]
+      [ConstRef con, compute_constant_implicits flags manual con]
   | ImplMutualInductive (kn,flags) ->
-      compute_all_mib_implicits flags kn
+      compute_all_mib_implicits flags manual kn
   | ImplInteractive (ref,flags,o) ->
       match o with
-      | ImplAuto -> [ref,compute_global_implicits flags ref]
+      | ImplAuto -> [ref,compute_global_implicits flags manual ref]
       | ImplManual l -> 
-	  let auto = compute_global_implicits flags ref in
-	  let auto = if flags.main then auto else List.map (fun _ -> None) auto in
+	  let auto = compute_global_implicits flags manual ref in
+(* 	  let auto = if flags.main then auto else List.map (fun _ -> None) auto in *)
 	  let l' = merge_impls auto l in [ref,l']
   in (req,l')
     
@@ -487,7 +495,7 @@ let (inImplicits, _) =
     export_function = (fun x -> Some x) }
 
 let declare_implicits_gen req flags ref =
-  let imps = compute_global_implicits flags ref in
+  let imps = compute_global_implicits flags [] ref in
   add_anonymous_leaf (inImplicits (req,[ref,imps]))
 
 let declare_implicits local ref =
@@ -510,7 +518,7 @@ let declare_mib_implicits kn =
     let flags = !implicit_args in
     let imps = array_map_to_list
       (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
-      (compute_mib_implicits flags kn) in
+      (compute_mib_implicits flags [] kn) in
     add_anonymous_leaf
       (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
@@ -518,13 +526,13 @@ let declare_mib_implicits kn =
 type manual_explicitation = Topconstr.explicitation * (bool * bool) 
 
 let compute_implicits_with_manual env typ enriching l = 
-  compute_manual_implicits !implicit_args env typ enriching l
+  compute_manual_implicits env !implicit_args typ enriching l
 
 let declare_manual_implicits local ref enriching l =
   let flags = !implicit_args in
   let env = Global.env () in
   let t = Global.type_of_global ref in
-  let l' = compute_manual_implicits flags env t enriching l in
+  let l' = compute_manual_implicits env flags t enriching l in
   let req =
     if local or isVarRef ref then ImplNoDischarge
     else ImplInteractive(ref,flags,ImplManual l')

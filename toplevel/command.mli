@@ -43,13 +43,14 @@ val syntax_definition : identifier -> identifier list * constr_expr ->
   bool -> bool -> unit
 
 val declare_one_assumption : coercion_flag -> assumption_kind -> Term.types ->
-  Impargs.manual_explicitation list -> bool -> Names.variable located  -> unit
-
+  Impargs.manual_explicitation list ->
+  bool (* implicit *) -> bool (* keep *) -> bool (* inline *) -> Names.variable located  -> unit
+  
 val set_declare_assumption_hook : (types -> unit) -> unit
 
 val declare_assumption : identifier located list ->
-  coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> bool 
-  ->unit
+  coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> 
+  bool -> bool -> bool -> unit
 
 val declare_interning_data : 'a * Constrintern.implicits_env ->
     string * Topconstr.constr_expr * Topconstr.scope_name option -> unit

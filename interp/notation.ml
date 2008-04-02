@@ -467,7 +467,7 @@ let discharge_arguments_scope (_,(req,r,l)) =
   if req = ArgsScopeNoDischarge then None
   else Some (req,pop_global_reference r,l)
 
-let rebuild_arguments_scope (req,r,l) =
+let rebuild_arguments_scope (_,(req,r,l)) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->

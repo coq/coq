@@ -33,11 +33,14 @@ open Entries
 
 let hint_db = "typeclass_instances"
 
+let qualid_of_con c = 
+  Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
+
 let _ =
   Typeclasses.register_add_instance_hint 
     (fun inst pri ->
       Auto.add_hints false [hint_db] 
-	(Vernacexpr.HintsResolve [pri, CAppExpl (dummy_loc, (None, inst), [])]))
+	(Vernacexpr.HintsResolve [pri, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])]))
 
 let declare_instance_constant con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
@@ -593,7 +596,7 @@ let context ?(hook=fun _ -> ()) l =
 	    | None -> ()
       else
 	(Command.declare_one_assumption false (Local (* global *), Definitional) t
-	    [] false (* inline *) (dummy_loc, id);
+	    [] true (* implicit *) true (* always kept *) false (* inline *) (dummy_loc, id);
 	 match class_of_constr t with
 	     None -> ()
 	   | Some tc -> hook (VarRef id)))

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 (*i*)
 open Names
@@ -90,8 +90,8 @@ let gmap_list_merge old upd ne =
       let oldv = try Gmap.find k old with Not_found -> [] in
       let v' = 
 	List.fold_left (fun acc x -> 
-	  if not (List.exists (fun y -> y.is_impl = x.is_impl) v) then
-	    (x :: acc) else acc)
+	  if not (List.exists (fun y -> y.is_impl = x.is_impl) v) then (
+	    (x :: acc)) else acc)
 	v oldv
       in Gmap.add k v' acc)
       ne Gmap.empty
@@ -106,17 +106,15 @@ let gmap_list_merge old upd ne =
       old ne
 
 let add_instance_hint_ref = ref (fun id pri -> assert false)
-let register_add_instance_hint = (:=) add_instance_hint_ref
+let register_add_instance_hint =
+  (:=) add_instance_hint_ref
 let add_instance_hint id = !add_instance_hint_ref id
-
-let qualid_of_con c = 
-  Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
 
 let cache (_, (cl, m, inst)) =
   classes := gmap_merge !classes cl;
   methods := gmap_merge !methods m;
-  instances := gmap_list_merge !instances 
-    (fun i -> add_instance_hint (qualid_of_con i.is_impl))
+  instances := gmap_list_merge !instances
+    (fun (i : instance) -> add_instance_hint i.is_impl i.is_pri)
     inst
 
 open Libobject
@@ -179,11 +177,17 @@ let discharge (_,(cl,m,inst)) =
       { is_impl = Lib.discharge_con is.is_impl;
 	is_pri = is.is_pri;
 	is_class = Gmap.find (Lib.discharge_global is.is_class.cl_impl) classes; })
-      insts
+      insts;
   in
   let instances = Gmap.map subst_inst inst in
     Some (classes, m, instances)
   
+let rebuild (_,(cl,m,inst as obj)) =
+  Gmap.iter (fun _ insts -> 
+    List.iter (fun is -> add_instance_hint is.is_impl is.is_pri) insts) 
+    inst;
+  obj
+
 let (input,output) = 
   declare_object
     { (default_object "type classes state") with
@@ -192,6 +196,7 @@ let (input,output) =
       open_function = (fun _ -> cache);
       classify_function = (fun (_,x) -> Substitute x);
       discharge_function = discharge;
+(*       rebuild_function = rebuild; *)
       subst_function = subst;
       export_function = (fun x -> Some x) }
 
@@ -228,7 +233,7 @@ let instances_of c =
 let add_instance i =
   let cl = Gmap.find i.is_class.cl_impl !classes in
     instances := gmapl_add cl.cl_impl { i with is_class = cl } !instances;
-    add_instance_hint (qualid_of_con i.is_impl) i.is_pri;
+    add_instance_hint i.is_impl i.is_pri;
     update ()
 
 let instances r = 

@@ -214,9 +214,9 @@ let add_leaf id obj =
   add_entry oname (Leaf obj);
   oname
 
-let add_discharged_leaf id obj =
+let add_discharged_leaf id varinfo obj =
   let oname = make_oname id in
-  let newobj = rebuild_object obj in
+  let newobj = rebuild_object (varinfo, obj) in
   cache_object (oname,newobj);
   add_entry oname (Leaf newobj)
 
@@ -440,18 +440,19 @@ let what_is_opened () = find_entry_p is_something_opened
 type abstr_list = Sign.named_context Cmap.t * Sign.named_context KNmap.t
 
 let sectab =
-  ref ([] : (identifier list * Cooking.work_list * abstr_list) list)
+  ref ([] : ((identifier * bool * Term.types option) list * Cooking.work_list * abstr_list) list)
 
 let add_section () =
   sectab := ([],(Cmap.empty,KNmap.empty),(Cmap.empty,KNmap.empty)) :: !sectab
 
-let add_section_variable id =
+let add_section_variable id impl keep =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
-    | (vars,repl,abs)::sl -> sectab := (id::vars,repl,abs)::sl
+    | (vars,repl,abs)::sl -> sectab := ((id,impl,keep)::vars,repl,abs)::sl
 
 let rec extract_hyps = function
-  | (id::idl,(id',_,_ as d)::hyps) when id=id' -> d :: extract_hyps (idl,hyps)
+  | ((id,impl,keep)::idl,(id',_,_ as d)::hyps) when id=id' -> d :: extract_hyps (idl,hyps)
+  | ((id,impl,Some ty)::idl,hyps) -> (id,None,ty) :: extract_hyps (idl,hyps)
   | (id::idl,hyps) -> extract_hyps (idl,hyps)
   | [], _ -> []
 
@@ -472,6 +473,8 @@ let add_section_constant kn =
   add_section_replacement f f
 
 let replacement_context () = pi2 (List.hd !sectab)
+
+let variables_context () = pi1 (List.hd !sectab)
 
 let section_segment_of_constant con =
   Cmap.find con (fst (pi3 (List.hd !sectab)))
@@ -548,6 +551,10 @@ let close_section id =
     with Not_found ->
       error "no opened section"
   in
+  let var_info = List.map
+    (fun (x, y, z) -> (x, y, match z with Some _ -> true | None -> false))
+    (variables_context ())
+  in
   let (secdecls,secopening,before) = split_lib oname in
   lib_stk := before;
   let full_olddir = fst !path_prefix in
@@ -556,7 +563,7 @@ let close_section id =
   if !Flags.xml_export then !xml_close_section id;
   let newdecls = List.map discharge_item secdecls in
   Summary.section_unfreeze_summaries fs;
-  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
+  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id var_info o)) newdecls;
   Cooking.clear_cooking_sharing ();
   Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
 

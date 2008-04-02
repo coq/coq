@@ -172,12 +172,12 @@ let syntax_definition ident (vars,c) local onlyparse =
 let assumption_message id =
   if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_one_assumption is_coe (local,kind) c imps nl (_,ident) =
+let declare_one_assumption is_coe (local,kind) c imps impl keep nl (_,ident) =
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let _ = 
           declare_variable ident 
-            (Lib.cwd(), SectionLocalAssum c, IsAssumption kind) in
+            (Lib.cwd(), SectionLocalAssum (c,impl,keep), IsAssumption kind) in
         assumption_message ident;
         if is_verbose () & Pfedit.refining () then 
           msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
@@ -198,13 +198,13 @@ let declare_one_assumption is_coe (local,kind) c imps nl (_,ident) =
 let declare_assumption_hook = ref ignore
 let set_declare_assumption_hook = (:=) declare_assumption_hook
 
-let declare_assumption idl is_coe k bl c nl=
+let declare_assumption idl is_coe k bl c impl keep nl =
   if not (Pfedit.refining ()) then 
     let c = generalize_constr_expr c bl in
     let env = Global.env () in
     let c', imps = interp_type_evars_impls env c in
       !declare_assumption_hook c';
-      List.iter (declare_one_assumption is_coe k c' imps nl) idl
+      List.iter (declare_one_assumption is_coe k c' imps impl keep nl) idl
   else
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")

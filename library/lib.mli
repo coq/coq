@@ -175,7 +175,7 @@ val section_segment_of_mutual_inductive: mutual_inductive -> Sign.named_context
 
 val section_instance : global_reference -> identifier array
 
-val add_section_variable : identifier -> unit
+val add_section_variable : identifier -> bool -> Term.types option -> unit
 val add_section_constant : constant -> Sign.named_context -> unit
 val add_section_kn : kernel_name -> Sign.named_context -> unit
 val replacement_context : unit ->

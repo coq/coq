@@ -63,6 +63,8 @@ open Mod_subst
 type 'a substitutivity = 
     Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
 
+type discharge_info = (identifier * bool * bool) list
+
 type 'a object_declaration = {
   object_name : string;
   cache_function : object_name * 'a -> unit;
@@ -71,7 +73,7 @@ type 'a object_declaration = {
   classify_function : object_name * 'a -> 'a substitutivity;
   subst_function : object_name * substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
-  rebuild_function : 'a -> 'a;
+  rebuild_function : discharge_info * 'a -> 'a;
   export_function : 'a -> 'a option }
 
 (* The default object is a "Keep" object with empty methods. 
@@ -106,5 +108,5 @@ val subst_object : object_name * substitution * obj -> obj
 val classify_object : object_name * obj -> obj substitutivity
 val export_object : obj -> obj option
 val discharge_object : object_name * obj -> obj option
-val rebuild_object : obj -> obj
+val rebuild_object : discharge_info * obj -> obj
 val relax : bool -> unit

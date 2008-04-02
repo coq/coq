@@ -59,7 +59,8 @@ val compute_implicits : env -> types -> implicits_list
    maximal insertion and forcing flags. *)
 type manual_explicitation = Topconstr.explicitation * (bool * bool)
 
-val compute_implicits_with_manual : env -> types -> bool -> manual_explicitation list -> implicits_list
+val compute_implicits_with_manual : env -> types -> bool -> 
+  manual_explicitation list -> implicits_list
 
 (*s Computation of implicits (done using the global environment). *)
 

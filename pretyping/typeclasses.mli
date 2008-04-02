@@ -52,8 +52,8 @@ val typeclasses : unit -> typeclass list
 val add_class : typeclass -> unit
 val add_instance : instance -> unit
 
-val register_add_instance_hint : (reference -> int option -> unit) -> unit
-val add_instance_hint : reference -> int option -> unit
+val register_add_instance_hint : (constant -> int option -> unit) -> unit
+val add_instance_hint : constant -> int option -> unit
 
 val class_info : global_reference -> typeclass (* raises a UserError if not a class *)
 val is_class : global_reference -> bool
@@ -88,9 +88,6 @@ val substitution_of_named_context :
 val nf_substitution : evar_map -> substitution -> substitution
 
 val is_implicit_arg : hole_kind -> bool
-
-val qualid_of_con : Names.constant -> Libnames.reference
-
 
 (* debug *)
 

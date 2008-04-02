@@ -353,7 +353,7 @@ let vernac_exact_proof c =
 	(str "Command 'Proof ...' can only be used at the beginning of the proof")
   	
 let vernac_assumption kind l nl=
-  List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c nl) l
+  List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c false false nl) l
 
 let vernac_inductive f indl = build_mutual indl f
 
