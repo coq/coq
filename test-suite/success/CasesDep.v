@@ -478,3 +478,9 @@ match l return l = l with
     end
 | _ => refl_equal _
 end.
+
+Fixpoint app {A} {n m} (v : listn A n) (w : listn A m) : listn A (n + m) :=
+  match v with
+    | niln => w
+    | consn a n' v' => consn _ a _ (app v' w)
+  end.

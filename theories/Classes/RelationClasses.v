@@ -217,26 +217,24 @@ Program Instance [ sa : Equivalence a R, sb : Equivalence b R' ] => equiv_setoid
 Definition relation_equivalence {A : Type} : relation (relation A) :=
   fun (R R' : relation A) => forall x y, R x y <-> R' x y.
 
-Infix "<R>" := relation_equivalence (at level 95, no associativity) : relation_scope.
-
 Class subrelation {A:Type} (R R' : relation A) :=
   is_subrelation : forall x y, R x y -> R' x y.
 
 Implicit Arguments subrelation [[A]].
 
-Infix "-R>" := subrelation (at level 70) : relation_scope.
 
 Definition relation_conjunction {A} (R : relation A) (R' : relation A) : relation A :=
   fun x y => R x y /\ R' x y.
 
-Infix "/R\" := relation_conjunction (at level 80, right associativity) : relation_scope.
-
 Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relation A :=
   fun x y => R x y \/ R' x y.
 
-Infix "\R/" := relation_disjunction (at level 85, right associativity) : relation_scope.
+(* Infix "<R>" := relation_equivalence (at level 95, no associativity) : relation_scope. *)
+(* Infix "-R>" := subrelation (at level 70) : relation_scope. *)
+(* Infix "/R\" := relation_conjunction (at level 80, right associativity) : relation_scope. *)
+(* Infix "\R/" := relation_disjunction (at level 85, right associativity) : relation_scope. *)
 
-Open Local Scope relation_scope.
+(* Open Local Scope relation_scope. *)
 
 (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
@@ -258,7 +256,7 @@ Program Instance subrelation_preorder :
    on the carrier. *)
 
 Class [ equ : Equivalence A eqA, PreOrder A R ] => PartialOrder :=
-  partial_order_equivalence : relation_equivalence eqA (R /R\ flip R).
+  partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (flip R)).
 
 
 (** The equivalence proof is sufficient for proving that [R] must be a morphism 

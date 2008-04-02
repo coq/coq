@@ -15,7 +15,7 @@
 
 (** Unicode lambda abstraction, does not work with factorization of lambdas. *)
 
-Notation  " 'λ' x : T , y " := (fun x:T => y) (at level 100, x,T,y at level 10, no associativity) : program_scope.
+Notation  " 'λ' x : T , y " := (fun x:T => y) (at level 100, x,T at level 10, y at next level, no associativity) : program_scope.
 
 (** Notations for the unit type and value. *)
 

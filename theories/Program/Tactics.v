@@ -96,33 +96,25 @@ Ltac subst_no_fail :=
 
 Tactic Notation "subst" "*" := subst_no_fail.
 
+Ltac on_application f tac T :=
+  match T with
+    | context [f ?x ?y ?z ?w ?v ?u ?a ?b ?c] => tac (f x y z w v u a b c)
+    | context [f ?x ?y ?z ?w ?v ?u ?a ?b] => tac (f x y z w v u a b)
+    | context [f ?x ?y ?z ?w ?v ?u ?a] => tac (f x y z w v u a)
+    | context [f ?x ?y ?z ?w ?v ?u] => tac (f x y z w v u)
+    | context [f ?x ?y ?z ?w ?v] => tac (f x y z w v)
+    | context [f ?x ?y ?z ?w] => tac (f x y z w)
+    | context [f ?x ?y ?z] => tac (f x y z)
+    | context [f ?x ?y] => tac (f x y) 
+    | context [f ?x] => tac (f x)
+  end.
+  
 (** Tactical [on_call f tac] applies [tac] on any application of [f] in the hypothesis or goal. *)
+
 Ltac on_call f tac :=
   match goal with
-    | H : ?T |- _  =>
-      match T with
-        | context [f ?x ?y ?z ?w ?v ?u ?a ?b ?c] => tac (f x y z w v u a b c)
-        | context [f ?x ?y ?z ?w ?v ?u ?a ?b] => tac (f x y z w v u a b)
-        | context [f ?x ?y ?z ?w ?v ?u ?a] => tac (f x y z w v u a)
-        | context [f ?x ?y ?z ?w ?v ?u] => tac (f x y z w v u)
-        | context [f ?x ?y ?z ?w ?v] => tac (f x y z w v)
-        | context [f ?x ?y ?z ?w] => tac (f x y z w)
-        | context [f ?x ?y ?z] => tac (f x y z)
-        | context [f ?x ?y] => tac (f x y) 
-        | context [f ?x] => tac (f x)
-      end
-    | |- ?T  =>
-      match T with
-        | context [f ?x ?y ?z ?w ?v ?u ?a ?b ?c] => tac (f x y z w v u a b c)
-        | context [f ?x ?y ?z ?w ?v ?u ?a ?b] => tac (f x y z w v u a b)
-        | context [f ?x ?y ?z ?w ?v ?u ?a] => tac (f x y z w v u a)
-        | context [f ?x ?y ?z ?w ?v ?u] => tac (f x y z w v u)
-        | context [f ?x ?y ?z ?w ?v] => tac (f x y z w v)
-        | context [f ?x ?y ?z ?w] => tac (f x y z w)
-        | context [f ?x ?y ?z] => tac (f x y z)
-        | context [f ?x ?y] => tac (f x y)
-        | context [f ?x] => tac (f x)
-      end
+    | |- ?T  => on_application f tac T
+    | H : ?T |- _  => on_application f tac T
   end.
 
 (* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object. *)
@@ -130,14 +122,35 @@ Ltac on_call f tac :=
 Ltac destruct_call f :=
   let tac t := destruct t in on_call f tac.
 
+Ltac destruct_calls f := repeat destruct_call f.
+
+Ltac destruct_call_in f H :=
+  let tac t := destruct t in
+  let T := type of H in
+    on_application f tac T.
+
 Ltac destruct_call_as f l :=
   let tac t := destruct t as l in on_call f tac.
+
+Ltac destruct_call_as_in f l H :=
+  let tac t := destruct t as l in
+  let T := type of H in
+    on_application f tac T.
 
 Tactic Notation "destruct_call" constr(f) := destruct_call f.
 
 (** Permit to name the results of destructing the call to [f]. *)
 
-Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) := destruct_call_as f l.
+Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) := 
+  destruct_call_as f l.
+
+(** Specify the hypothesis in which the call occurs as well. *)
+
+Tactic Notation "destruct_call" constr(f) "in" hyp(id) := 
+  destruct_call_in f id.
+
+Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) "in" hyp(id) := 
+  destruct_call_as_in f l id.
 
 (** Try to inject any potential constructor equality hypothesis. *)
 
