@@ -245,12 +245,12 @@ and translate_struct_entry env mse = match mse with
       let farg_id, farg_b, fbody_b = destr_functor env feb' in
       let mtb,mp = 
 	try
-	  let mp = path_of_mexpr mexpr in
+	  let mp = scrape_alias (path_of_mexpr mexpr) env in
 	  lookup_modtype mp env,mp
 	with
 	  | Not_path -> error_application_to_not_path mexpr
 	      (* place for nondep_supertype *) in
-      let meb,sub2= translate_struct_entry env mexpr in
+      let meb,sub2= translate_struct_entry env (MSEident mp) in
       let sub2 = match eval_struct env (SEBident mp) with
 	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub2
 	| _ -> sub2 in
