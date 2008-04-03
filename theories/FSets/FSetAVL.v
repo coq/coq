@@ -1293,6 +1293,23 @@ Proof.
  exact (fun s => elements_aux_cardinal s nil).
 Qed.
 
+Lemma elements_app :
+ forall s acc, elements_aux acc s = elements s ++ acc.
+Proof.
+ induction s; simpl; intros; auto.
+ rewrite IHs1, IHs2.
+ unfold elements; simpl.
+ rewrite 2 IHs1, IHs2, <- !app_nil_end, !app_ass; auto.
+Qed.
+
+Lemma elements_node :
+ forall l x r h acc,
+ elements l ++ x :: elements r ++ acc =
+ elements (Node l x r h) ++ acc.
+Proof.
+ unfold elements; simpl; intros; auto.
+ rewrite !elements_app, <- !app_nil_end, !app_ass; auto.
+Qed.
 
 
 (** * Filter *)
@@ -1701,29 +1718,11 @@ Fixpoint flatten_e (e : enumeration) : list elt := match e with
   | More x t r => x :: elements t ++ flatten_e r
  end.
 
-Lemma elements_app :
- forall s acc, elements_aux acc s = elements s ++ acc.
-Proof.
- induction s; simpl; intuition.
- rewrite IHs1, IHs2.
- unfold elements; simpl.
- rewrite 2 IHs1, IHs2, <- !app_nil_end, !app_ass; auto.
-Qed.
-
-Lemma compare_flatten_1 :
- forall l x r h acc,
- elements l ++ x :: elements r ++ acc =
- elements (Node l x r h) ++ acc.
-Proof.
- unfold elements; simpl; intuition.
- rewrite !elements_app, <- !app_nil_end, !app_ass; auto.
-Qed.
-
 Lemma flatten_e_elements :
  forall l x r h e,
  elements l ++ flatten_e (More x r e) = elements (Node l x r h) ++ flatten_e e.
 Proof.
- intros; simpl; apply compare_flatten_1.
+ intros; simpl; apply elements_node.
 Qed.
 
 Lemma cons_1 : forall s e, 
@@ -1769,8 +1768,7 @@ Lemma compare_cont_Cmp : forall s1 cont e2 l,
  Cmp (compare_cont s1 cont e2) (elements s1 ++ l) (flatten_e e2).
 Proof.
  induction s1 as [|l1 Hl1 x1 r1 Hr1 h1]; simpl; intros; auto.
- inv bst.
- rewrite <- compare_flatten_1; simpl.
+ rewrite <- elements_node; simpl.
  apply Hl1; auto. clear e2. intros [|x2 r2 e2].
  simpl; auto.
  apply compare_more_Cmp.
