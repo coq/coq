@@ -620,7 +620,7 @@ FSETS_basic:=
 
 FSETS_all:=\
  theories/FSets/FSetFullAVL.vo \
- theories/FSets/FMapAVL.vo
+ theories/FSets/FMapAVL.vo theories/FSets/FMapFullAVL.vo
 
 FSETSVO:=$(FSETSBASEVO) $(FSETS_$(FSETS))
 

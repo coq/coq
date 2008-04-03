@@ -536,6 +536,24 @@ end.
 
 Ltac intuition_in := repeat progress (intuition; inv In; inv MapsTo).
 
+(* Function/Functional Scheme can't deal with internal fix. 
+   Let's do its job by hand: *)
+
+Ltac join_tac := 
+ intros l; induction l as [| ll _ lx ld lr Hlr lh]; 
+   [ | intros x d r; induction r as [| rl Hrl rx rd rr _ rh]; unfold join;
+     [ | destruct (gt_le_dec lh (rh+2)); 
+       [ match goal with |- context [ bal ?u ?v ?w ?z ] =>
+           replace (bal u v w z) 
+           with (bal ll lx ld (join lr x d (Node rl rx rd rr rh))); [ | auto]
+         end 
+       | destruct (gt_le_dec rh (lh+2)); 
+         [ match goal with |- context [ bal ?u ?v ?w ?z ] => 
+             replace (bal u v w z) 
+             with (bal (join (Node ll lx ld lr lh) x d rl) rx rd rr); [ | auto] 
+           end
+         | ] ] ] ]; intros.
+
 Section Elt.
 Variable elt:Type.
 Implicit Types m r : t elt.
@@ -1078,24 +1096,6 @@ Proof.
 Qed.
 
 (** * join *)
-
-(* Function/Functional Scheme can't deal with internal fix. 
-   Let's do its job by hand: *)
-
-Ltac join_tac := 
- intros l; induction l as [| ll _ lx ld lr Hlr lh]; 
-   [ | intros x d r; induction r as [| rl Hrl rx rd rr _ rh]; unfold join;
-     [ | destruct (gt_le_dec lh (rh+2)); 
-       [ match goal with |- context [ bal ?u ?v ?w ?z ] =>
-           replace (bal u v w z) 
-           with (bal ll lx ld (join lr x d (Node rl rx rd rr rh))); [ | auto]
-         end 
-       | destruct (gt_le_dec rh (lh+2)); 
-         [ match goal with |- context [ bal ?u ?v ?w ?z ] => 
-             replace (bal u v w z) 
-             with (bal (join (Node ll lx ld lr lh) x d rl) rx rd rr); [ | auto] 
-           end
-         | ] ] ] ]; intros.
 
 Lemma join_in : forall l x d r y, 
  In y (join l x d r) <-> X.eq y x \/ In y l \/ In y r.
