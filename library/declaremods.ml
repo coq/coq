@@ -287,6 +287,8 @@ let subst_substobjs dir mp (subst,mbids,msid,objs) =
   match mbids with
     | [] -> 
 	let prefix = dir,(mp,empty_dirpath) in
+	let subst' = join_alias (map_msid msid mp) subst in
+	let subst = join subst' subst in
 	  Some (subst_objects prefix (join (map_msid msid mp) subst) objs)
     | _ -> None
 
@@ -355,14 +357,16 @@ let subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
 	  begin
 	    match me with
 	      |{mod_entry_type = None;
-		mod_entry_expr = Some (MSEident mp)} ->
-		 let mp = subst_mp subst' mp in
+		mod_entry_expr = Some (MSEident mp')} ->
+		 let mp' = subst_mp subst' mp' in
 		 (Some ({mod_entry_type = None;
 			 mod_entry_expr = 
-			    Some (MSEident mp)},sub),
+			    Some (MSEident mp')},sub),
 		  substobjs, match mbids with
 		    | [] -> 
-			Some (subst_objects prefix (join (map_msid msid mp) subst) objs)
+			Some (subst_objects prefix 
+				(join (map_mp mp mp')
+				   (join (map_msid msid mp') subst)) objs)
 		    | _ -> None)
 
 	      | _ -> anomaly "Modops: Not an alias"
