@@ -107,10 +107,10 @@ let safe_assoc verbose file k =
 
 let absolute_dir dir =
   let current = Sys.getcwd () in
-  Sys.chdir dir;
-  let dir' = Sys.getcwd () in
-  Sys.chdir current;
-  dir'
+    Sys.chdir dir;
+    let dir' = Sys.getcwd () in
+      Sys.chdir current;
+      dir'
 
 let absolute_file_name basename odir =
   let dir = match odir with Some dir -> dir | None -> "." in

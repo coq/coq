@@ -209,25 +209,43 @@ let is_included dir = function
   | Include dir' -> absolute_dir dir = absolute_dir dir'
   | _ -> false
 
+let dir_of_target t = 
+  match t with
+    | RInclude (dir,_) -> dir
+    | Include dir -> dir
+    | _ -> assert false
+
 let include_dirs l =
+  let rec split_includes l = 
+    match l with
+      | [] -> [], []
+      | Include _ as i :: rem ->
+	  let ri, rr = split_includes rem in 
+	    (i :: ri), rr
+      | RInclude _ as r :: rem -> 
+	  let ri, rr = split_includes rem in 
+	    ri, (r :: rr)
+      | _ :: rem -> split_includes rem
+  in
   let rec parse_includes l = 
     match l with
-      | [] -> [],[]
-      | Include x :: r -> let ri, rr = parse_includes r in
-			    ("-I " ^ x) :: ri, rr
-      | RInclude (p,l) :: r ->
-          let ri, rr = parse_includes r in
+      | [] -> []
+      | Include x :: rem -> ("-I " ^ x) :: parse_includes rem
+      | RInclude (p,l) :: rem ->
 	  let l' = if l = "" then "\"\"" else l in
-            ri, ("-R " ^ p ^ " " ^ l') :: rr
-      | _ :: r -> parse_includes r
+            ("-R " ^ p ^ " " ^ l') :: parse_includes rem
+      | _ :: rem -> parse_includes rem
   in
   let l' = if List.exists (is_included ".") l then l else Include "." :: l in
-  let inc_i, inc_r = parse_includes l' in
-  let inc_i' = List.filter (fun d -> List.exists (fun d' -> is_prefix d' d) inc_r) inc_i in 
+  let inc_i, inc_r = split_includes l' in
+  let inc_i' = List.filter (fun i -> not (List.exists (fun i' -> is_included (dir_of_target i) i') inc_r)) inc_i in 
+  let str_i = parse_includes inc_i in
+  let str_i' = parse_includes inc_i' in
+  let str_r = parse_includes inc_r in
     section "Libraries definition.";
-    print "OCAMLLIBS:="; print_list "\\\n  " inc_i; print "\n";
-    print "COQLIBS:="; print_list "\\\n  " inc_i'; print " "; print_list "\\\n  " inc_r; print "\n";
-    print "COQDOCLIBS:=";   print_list "\\\n  " inc_r; print "\n\n"
+    print "OCAMLLIBS:="; print_list "\\\n  " str_i; print "\n";
+    print "COQLIBS:="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
+    print "COQDOCLIBS:=";   print_list "\\\n  " str_r; print "\n\n"
 
 let rec special = function
   | [] -> []
