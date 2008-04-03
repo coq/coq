@@ -141,7 +141,7 @@ let default_no_delta_unify_flags = {
   modulo_delta = Cpred.empty;
 }
 
-let unify_0_with_initial_metas metas is_subterm env sigma cv_pb flags m n =
+let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
   let nb = nb_rel env in
   let trivial_unify pb (metasubst,_) m n =
     match subst_defined_metas metas m with
@@ -242,7 +242,7 @@ let unify_0_with_initial_metas metas is_subterm env sigma cv_pb flags m n =
     then 
       (metas,[])
     else 
-      unirec_rec env cv_pb is_subterm (metas,[]) m n
+      unirec_rec env cv_pb conv_at_top (metas,[]) m n
 
 let unify_0 = unify_0_with_initial_metas [] true
 
@@ -529,7 +529,7 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
 let w_unify_core_0 env with_types cv_pb flags m n evd =
   let (mc1,evd') = retract_coercible_metas evd in
   let (mc2,ec) = 
-    unify_0_with_initial_metas mc1 false env (evars_of evd') cv_pb flags m n
+    unify_0_with_initial_metas mc1 true env (evars_of evd') cv_pb flags m n
   in 
   w_merge env with_types flags mc2 ec evd'
 
