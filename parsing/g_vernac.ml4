@@ -668,7 +668,9 @@ GEXTEND Gram
           (* This should be in "syntax" section but is here for factorization*)
 	  PrintGrammar ent
       | IDENT "LoadPath" -> PrintLoadPath
-      | IDENT "Modules" -> PrintModules
+      | IDENT "Modules" -> 
+          error "Print Modules is obsolete; use Print Libraries instead"
+      | IDENT "Libraries" -> PrintModules
 
       | IDENT "ML"; IDENT "Path" -> PrintMLLoadPath
       | IDENT "ML"; IDENT "Modules" -> PrintMLModules
