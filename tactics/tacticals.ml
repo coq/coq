@@ -91,6 +91,10 @@ let tclNTH_HYP m (tac : constr->tactic) gl =
 
 let tclLAST_HYP = tclNTH_HYP 1
 
+let tclLAST_NHYPS n tac gl =
+  tac (try list_firstn n (pf_ids_of_hyps gl)
+       with Failure _ -> error "No such assumptions") gl
+
 let tclTRY_sign (tac : constr->tactic) sign gl =
   let rec arec = function
     | []      -> tclFAIL 0 (str "no applicable hypothesis")

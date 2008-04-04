@@ -539,6 +539,133 @@ let clenv_refine_in with_evars id clenv gl =
       (fun x gl -> refine_no_check new_hyp_prf gl)) gl
 
 
+(********************************************)
+(*       Elimination tactics                *)
+(********************************************)
+
+let last_arg c = match kind_of_term c with
+  | App (f,cl) ->  
+      array_last cl
+  | _ -> anomaly "last_arg"
+
+let elim_flags = {
+  modulo_conv_on_closed_terms = true; 
+  use_metas_eagerly = true;
+  modulo_delta = Cpred.empty;
+}
+
+let elimination_clause_scheme with_evars allow_K elimclause indclause gl = 
+  let indmv = 
+    (match kind_of_term (last_arg elimclause.templval.rebus) with
+       | Meta mv -> mv
+       | _  -> errorlabstrm "elimination_clause"
+             (str "The type of elimination clause is not well-formed")) 
+  in
+  let elimclause' = clenv_fchain indmv elimclause indclause in 
+  res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K ~flags:elim_flags
+    gl
+
+(* cast added otherwise tactics Case (n1,n2) generates (?f x y) and 
+ * refine fails *)
+
+let type_clenv_binding wc (c,t) lbind = 
+  clenv_type (make_clenv_binding wc (c,t) lbind)
+
+(* 
+ * Elimination tactic with bindings and using an arbitrary 
+ * elimination constant called elimc. This constant should end 
+ * with a clause (x:I)(P .. ), where P is a bound variable.
+ * The term c is of type t, which is a product ending with a type 
+ * matching I, lbindc are the expected terms for c arguments 
+ *)
+
+let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) gl =
+  let ct = pf_type_of gl c in
+  let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
+  let indclause  = make_clenv_binding gl (c,t) lbindc  in
+  let elimt      = pf_type_of gl elimc in
+  let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
+    elimtac elimclause indclause gl
+
+let general_elim with_evars c e ?(allow_K=true) =
+  general_elim_clause (elimination_clause_scheme with_evars allow_K) c e
+
+(* Elimination tactic with bindings but using the default elimination 
+ * constant associated with the type. *)
+
+let find_eliminator c gl =
+  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  lookup_eliminator ind (elimination_sort_of_goal gl)
+
+let default_elim with_evars (c,_ as cx) gl = 
+  general_elim with_evars cx (find_eliminator c gl,NoBindings) gl
+
+let elim_in_context with_evars c = function
+  | Some elim -> general_elim with_evars c elim ~allow_K:true
+  | None -> default_elim with_evars c
+
+let elim with_evars (c,lbindc as cx) elim =
+  match kind_of_term c with
+    | Var id when lbindc = NoBindings ->
+	tclTHEN (tclTRY (intros_until_id id))
+	  (elim_in_context with_evars cx elim)
+    | _ -> elim_in_context with_evars cx elim
+
+(* The simplest elimination tactic, with no substitutions at all. *)
+
+let simplest_elim c = default_elim false (c,NoBindings)
+
+(* Elimination in hypothesis *)
+(* Typically, elimclause := (eq_ind ?x ?P ?H ?y ?Heq : ?P ?y)
+              indclause : forall ..., hyps -> a=b    (to take place of ?Heq)
+              id : phi(a)                            (to take place of ?H)
+      and the result is to overwrite id with the proof of phi(b)
+
+   but this generalizes to any elimination scheme with one constructor
+   (e.g. it could replace id:A->B->C by id:C, knowing A/\B)
+*)
+
+let elimination_in_clause_scheme with_evars id elimclause indclause gl =
+  let (hypmv,indmv) = 
+    match clenv_independent elimclause with
+        [k1;k2] -> (k1,k2)
+      | _  -> errorlabstrm "elimination_clause"
+          (str "The type of elimination clause is not well-formed") in
+  let elimclause'  = clenv_fchain indmv elimclause indclause in 
+  let hyp = mkVar id in
+  let hyp_typ = pf_type_of gl hyp in
+  let hypclause = mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
+  let elimclause'' =
+    clenv_fchain ~allow_K:false ~flags:elim_flags hypmv elimclause' hypclause in
+  let new_hyp_typ  = clenv_type elimclause'' in
+  if eq_constr hyp_typ new_hyp_typ then
+    errorlabstrm "general_rewrite_in" 
+      (str "Nothing to rewrite in " ++ pr_id id);
+  clenv_refine_in with_evars id elimclause'' gl
+
+let general_elim_in with_evars id =
+  general_elim_clause (elimination_in_clause_scheme with_evars id)
+
+(* Case analysis tactics *)
+
+let general_case_analysis_in_context with_evars (c,lbindc) gl =
+  let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  let sort     = elimination_sort_of_goal gl in
+  let case = 
+    if occur_term c (pf_concl gl) then make_case_dep else make_case_gen in
+  let elim     = pf_apply case gl mind sort in 
+  general_elim with_evars (c,lbindc) (elim,NoBindings) gl
+
+let general_case_analysis with_evars (c,lbindc as cx) =
+  match kind_of_term c with
+    | Var id when lbindc = NoBindings ->
+	tclTHEN (tclTRY (intros_until_id id))
+	(general_case_analysis_in_context with_evars cx)
+    | _ ->
+	general_case_analysis_in_context with_evars cx
+
+let simplest_case c = general_case_analysis false (c,NoBindings)
+
 (****************************************************)
 (*            Resolution tactics                    *)
 (****************************************************)
@@ -551,8 +678,9 @@ let apply_with_ebindings_gen advanced with_evars (c,lbind) gl =
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
-  let thm_ty0 = nf_betaiota (pf_type_of gl c) in
   let concl_nprod = nb_prod (pf_concl gl) in
+  let rec try_main_apply c gl =
+  let thm_ty0 = nf_betaiota (pf_type_of gl c) in
   let try_apply thm_ty nprod =
     let n = nb_prod thm_ty - nprod in
     if n<0 then error "Apply: theorem has not enough premisses.";
@@ -570,10 +698,36 @@ let apply_with_ebindings_gen advanced with_evars (c,lbind) gl =
       with Redelimination -> 
         (* Last chance: if the head is a variable, apply may try
 	   second order unification *)
-        if concl_nprod <> 0 then try_apply thm_ty 0
-          (* Reraise the initial error message *)
-        else raise exn in
-    try_red_apply thm_ty0
+	try if concl_nprod <> 0 then try_apply thm_ty 0 else raise Exit
+	with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
+	  if advanced then
+	    let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+	    match match_with_conjunction (snd (decompose_prod t)) with
+	    | Some _ ->
+	      let n = (mis_constr_nargs mind).(0) in
+	      let sort = elimination_sort_of_goal gl in
+	      let elim = pf_apply make_case_gen gl mind sort in
+	      tclTHENLAST
+		(general_elim with_evars (c,NoBindings) (elim,NoBindings))
+		(tclTHENLIST [
+		  tclDO n intro;
+		  tclLAST_NHYPS n (fun l ->
+		    tclFIRST
+		      (List.map (fun id ->
+			tclTHEN (try_main_apply (mkVar id)) (thin l)) l))
+		]) gl
+	    | None -> 
+	    match match_with_empty_type (snd (decompose_prod t)) with
+	    | Some _ ->
+	      let sort = elimination_sort_of_goal gl in
+	      let elim = pf_apply make_case_gen gl mind sort in
+	      general_elim with_evars (c,NoBindings) (elim,NoBindings) gl
+	    | None ->
+	      raise exn
+	  else
+	    raise exn in
+    try_red_apply thm_ty0 in
+  try_main_apply c gl
 
 let advanced_apply_with_ebindings = apply_with_ebindings_gen true false
 let advanced_eapply_with_ebindings = apply_with_ebindings_gen true true
@@ -834,133 +988,6 @@ let simplest_right = right NoBindings
 let split l        = split_with_ebindings (inj_ebindings l)
 let simplest_split = split NoBindings
 
-
-(********************************************)
-(*       Elimination tactics                *)
-(********************************************)
-
-let last_arg c = match kind_of_term c with
-  | App (f,cl) ->  
-      array_last cl
-  | _ -> anomaly "last_arg"
-
-let elim_flags = {
-  modulo_conv_on_closed_terms = true; 
-  use_metas_eagerly = true;
-  modulo_delta = Cpred.empty;
-}
-
-let elimination_clause_scheme with_evars allow_K elimclause indclause gl = 
-  let indmv = 
-    (match kind_of_term (last_arg elimclause.templval.rebus) with
-       | Meta mv -> mv
-       | _  -> errorlabstrm "elimination_clause"
-             (str "The type of elimination clause is not well-formed")) 
-  in
-  let elimclause' = clenv_fchain indmv elimclause indclause in 
-  res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K ~flags:elim_flags
-    gl
-
-(* cast added otherwise tactics Case (n1,n2) generates (?f x y) and 
- * refine fails *)
-
-let type_clenv_binding wc (c,t) lbind = 
-  clenv_type (make_clenv_binding wc (c,t) lbind)
-
-(* 
- * Elimination tactic with bindings and using an arbitrary 
- * elimination constant called elimc. This constant should end 
- * with a clause (x:I)(P .. ), where P is a bound variable.
- * The term c is of type t, which is a product ending with a type 
- * matching I, lbindc are the expected terms for c arguments 
- *)
-
-let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) gl =
-  let ct = pf_type_of gl c in
-  let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
-  let indclause  = make_clenv_binding gl (c,t) lbindc  in
-  let elimt      = pf_type_of gl elimc in
-  let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
-    elimtac elimclause indclause gl
-
-let general_elim with_evars c e ?(allow_K=true) =
-  general_elim_clause (elimination_clause_scheme with_evars allow_K) c e
-
-(* Elimination tactic with bindings but using the default elimination 
- * constant associated with the type. *)
-
-let find_eliminator c gl =
-  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  lookup_eliminator ind (elimination_sort_of_goal gl)
-
-let default_elim with_evars (c,_ as cx) gl = 
-  general_elim with_evars cx (find_eliminator c gl,NoBindings) gl
-
-let elim_in_context with_evars c = function
-  | Some elim -> general_elim with_evars c elim ~allow_K:true
-  | None -> default_elim with_evars c
-
-let elim with_evars (c,lbindc as cx) elim =
-  match kind_of_term c with
-    | Var id when lbindc = NoBindings ->
-	tclTHEN (tclTRY (intros_until_id id))
-	  (elim_in_context with_evars cx elim)
-    | _ -> elim_in_context with_evars cx elim
-
-(* The simplest elimination tactic, with no substitutions at all. *)
-
-let simplest_elim c = default_elim false (c,NoBindings)
-
-(* Elimination in hypothesis *)
-(* Typically, elimclause := (eq_ind ?x ?P ?H ?y ?Heq : ?P ?y)
-              indclause : forall ..., hyps -> a=b    (to take place of ?Heq)
-              id : phi(a)                            (to take place of ?H)
-      and the result is to overwrite id with the proof of phi(b)
-
-   but this generalizes to any elimination scheme with one constructor
-   (e.g. it could replace id:A->B->C by id:C, knowing A/\B)
-*)
-
-let elimination_in_clause_scheme with_evars id elimclause indclause gl =
-  let (hypmv,indmv) = 
-    match clenv_independent elimclause with
-        [k1;k2] -> (k1,k2)
-      | _  -> errorlabstrm "elimination_clause"
-          (str "The type of elimination clause is not well-formed") in
-  let elimclause'  = clenv_fchain indmv elimclause indclause in 
-  let hyp = mkVar id in
-  let hyp_typ = pf_type_of gl hyp in
-  let hypclause = mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
-  let elimclause'' =
-    clenv_fchain ~allow_K:false ~flags:elim_flags hypmv elimclause' hypclause in
-  let new_hyp_typ  = clenv_type elimclause'' in
-  if eq_constr hyp_typ new_hyp_typ then
-    errorlabstrm "general_rewrite_in" 
-      (str "Nothing to rewrite in " ++ pr_id id);
-  clenv_refine_in with_evars id elimclause'' gl
-
-let general_elim_in with_evars id =
-  general_elim_clause (elimination_in_clause_scheme with_evars id)
-
-(* Case analysis tactics *)
-
-let general_case_analysis_in_context with_evars (c,lbindc) gl =
-  let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sort     = elimination_sort_of_goal gl in
-  let case = 
-    if occur_term c (pf_concl gl) then make_case_dep else make_case_gen in
-  let elim     = pf_apply case gl mind sort in 
-  general_elim with_evars (c,lbindc) (elim,NoBindings) gl
-
-let general_case_analysis with_evars (c,lbindc as cx) =
-  match kind_of_term c with
-    | Var id when lbindc = NoBindings ->
-	tclTHEN (tclTRY (intros_until_id id))
-	(general_case_analysis_in_context with_evars cx)
-    | _ ->
-	general_case_analysis_in_context with_evars cx
-
-let simplest_case c = general_case_analysis false (c,NoBindings)
 
 (*****************************)
 (* Decomposing introductions *)

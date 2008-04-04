@@ -52,7 +52,7 @@ let rec catchable_exception = function
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
   (* unification errors *)
-  | PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _|
+  | PretypeError(_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _|NoOccurrenceFound _|
       CannotUnifyBindingType _|NotClean _)) -> true
   | _ -> false
 
