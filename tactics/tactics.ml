@@ -984,17 +984,18 @@ let intro_or_and_pattern ll l' tac =
   tclLAST_HYP (fun c gl ->
     let ind,_ = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     let nv = mis_constr_nargs ind in
-    let rec adjust_names_length force n = function
-      | [] when n = 0 or not force -> []
-      | [] -> IntroAnonymous :: adjust_names_length force (n-1) []
-      | _ :: _ when n = 0 -> error "Too many names in some branch"
-      | ip :: l -> ip :: adjust_names_length force (n-1) l in
+    let rec adjust_names_length tail n = function
+      | [] when n = 0 or tail -> []
+      | [] -> IntroAnonymous :: adjust_names_length tail (n-1) []
+      | _ :: _ as l when n = 0 -> 
+	  if tail then l else error "Too many names in some branch"
+      | ip :: l -> ip :: adjust_names_length tail (n-1) l in
     let ll = fix_empty_case nv ll in
     if List.length ll <> Array.length nv then
       error "Not the right number of patterns";
     tclTHENLASTn
       (tclTHEN case_last clear_last)
-      (array_map2 (fun n l -> tac ((adjust_names_length (l'<>[]) n l)@l'))
+      (array_map2 (fun n l -> tac ((adjust_names_length (l'=[]) n l)@l'))
 	nv (Array.of_list ll))
       gl)
 

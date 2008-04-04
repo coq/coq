@@ -67,12 +67,13 @@ let mlexpr_of_by_notation f = function
   | Genarg.ByNotation (loc,s) -> <:expr< Genarg.ByNotation $dloc$ $str:s$ >>
 
 let mlexpr_of_intro_pattern = function
-  | Genarg.IntroOrAndPattern _ -> failwith "mlexpr_of_intro_pattern: TODO"
   | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
   | Genarg.IntroAnonymous -> <:expr< Genarg.IntroAnonymous >>
   | Genarg.IntroFresh id -> <:expr< Genarg.IntroFresh (mlexpr_of_ident $dloc$ id) >>
   | Genarg.IntroIdentifier id ->
       <:expr< Genarg.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
+  | Genarg.IntroOrAndPattern _ | Genarg.IntroRewrite _ ->
+      failwith "mlexpr_of_intro_pattern: TODO"
 
 let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)
 

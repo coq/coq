@@ -633,6 +633,8 @@ let w_unify_to_subterm_list env flags allow_K oplist t evd =
     (evd,[])
 
 let secondOrderAbstraction env flags allow_K typ (p, oplist) evd =
+  (* Remove delta when looking for a subterm *)
+  let flags = { flags with modulo_delta = Cpred.empty } in
   let (evd',cllist) =
     w_unify_to_subterm_list env flags allow_K oplist typ evd in
   let typp = Typing.meta_type evd' p in
