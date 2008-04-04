@@ -29,3 +29,12 @@ Axiom e : forall (A : Set) (EA : A -> A -> Prop) (a : A), EA a a.
 Theorem th : forall x : N, E x x.
 intro x. try rewrite e.
 Abort.
+
+(* Behavior of rewrite wrt conversion *)
+
+Require Import Arith.
+
+Goal forall n, 0 + n = n -> True.
+intros n H.
+rewrite plus_0_l in H.
+Abort.

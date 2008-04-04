@@ -334,7 +334,7 @@ let e_breadth_search debug n db_list local_db gl =
   with Not_found -> error "EAuto: breadth first search failed"
 
 let e_search_auto debug (n,p) db_list gl = 
-  let local_db = make_local_hint_db [] gl in 
+  let local_db = make_local_hint_db true [] gl in 
   if n = 0 then 
     e_depth_search debug p db_list local_db gl
   else 
@@ -354,7 +354,7 @@ let full_eauto debug n gl =
   let dbnames = current_db_names () in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
-  let _local_db = make_local_hint_db [] gl in
+  let _local_db = make_local_hint_db true [] gl in
   tclTRY (e_search_auto debug n db_list) gl
 
 let my_full_eauto n gl = full_eauto false (n,0) gl
@@ -495,7 +495,7 @@ let full_auto n gl =
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db [] gl) hyps) gl
+  tclTRY (search n db_list (make_local_hint_db false [] gl) hyps) gl
   
 let default_full_auto gl = full_auto !default_search_depth gl
 (************************************************************************)

@@ -29,7 +29,7 @@ description principles
 
 - OAC_rel = "omniscient" relational form of the (non extensional) axiom of choice
 - OAC_fun = "omniscient" functional form of the (non extensional) axiom of choice
-            (called AC* in Bell [Bell])
+            (called AC* in Bell [[Bell]])
 - OAC!
 
 - ID_iota    = intuitionistic definite description
@@ -43,7 +43,7 @@ description principles
             (an unconstrained generalisation of the constructive principle of
              independence of premises)
 - Drinker = drinker's paradox (small form)
-            (called Ex in Bell [Bell])  
+            (called Ex in Bell [[Bell]])
 
 We let also
 
@@ -75,10 +75,10 @@ Table of contents
 
 References:
 
-[Bell] John L. Bell, Choice principles in intuitionistic set theory,
+[[Bell]] John L. Bell, Choice principles in intuitionistic set theory,
 unpublished.
 
-[Bell93] John L. Bell, Hilbert's Epsilon Operator in Intuitionistic
+[[Bell93]] John L. Bell, Hilbert's Epsilon Operator in Intuitionistic
 Type Theories, Mathematical Logic Quarterly, volume 39, 1993.
 
 [Carlstrøm05] Jesper Carlstrøm, Interpreting descriptions in
@@ -426,7 +426,7 @@ Qed.
 
 (** AC_fun + Drinker = OAC_fun *)
 
-(** This was already observed by Bell [Bell] *)
+(** This was already observed by Bell [[Bell]] *)
 
 Lemma omniscient_fun_choice_imp_small_drinker :
   OmniscientFunctionalChoice -> SmallDrinker'sParadox.
@@ -754,17 +754,17 @@ be applied on the same Type universes on both sides of the first
 (**********************************************************************)
 (** * Excluded-middle + definite description => computational excluded-middle *)
 
-(** The idea for the following proof comes from [ChicliPottierSimpson02] *)
+(** The idea for the following proof comes from [[ChicliPottierSimpson02]] *)
 
 (** Classical logic and axiom of unique choice (i.e. functional
-    relation reification), as shown in [ChicliPottierSimpson02],
+    relation reification), as shown in [[ChicliPottierSimpson02]],
     implies the double-negation of excluded-middle in [Set] (which is
     incompatible with the impredicativity of [Set]).
 
     We adapt the proof to show that constructive definite description
     transports excluded-middle from [Prop] to [Set].
 
-    [ChicliPottierSimpson02] Laurent Chicli, Loïc Pottier, Carlos
+    [[ChicliPottierSimpson02]] Laurent Chicli, Loïc Pottier, Carlos
     Simpson, Mathematical Quotients and Quotient Types in Coq,
     Proceedings of TYPES 2002, Lecture Notes in Computer Science 2646,
     Springer Verlag.  *)
