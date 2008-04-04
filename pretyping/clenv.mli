@@ -61,7 +61,7 @@ val mk_clenv_from_env : env -> evar_map -> int option -> constr * types -> claus
 
 val connect_clenv : evar_info sigma -> clausenv -> clausenv
 val clenv_fchain : 
-  ?allow_K:bool -> metavariable -> clausenv -> clausenv -> clausenv
+  ?allow_K:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
 
 (***************************************************************)
 (* Unification with clenvs *)

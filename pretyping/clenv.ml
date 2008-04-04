@@ -304,7 +304,7 @@ let connect_clenv gls clenv =
 
    In particular, it assumes that [env'] and [sigma'] extend [env] and [sigma].
 *)
-let clenv_fchain ?(allow_K=true) mv clenv nextclenv =
+let clenv_fchain ?(allow_K=true) ?(flags=default_unify_flags) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
   let clenv' =
     { templval = clenv.templval;
@@ -314,7 +314,7 @@ let clenv_fchain ?(allow_K=true) mv clenv nextclenv =
       env = nextclenv.env } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
-    clenv_unify allow_K CUMUL
+    clenv_unify allow_K ~flags:flags CUMUL
       (clenv_term clenv' nextclenv.templtyp)
       (clenv_meta_type clenv' mv)
       clenv' in
