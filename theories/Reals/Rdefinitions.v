@@ -22,6 +22,8 @@ Delimit Scope R_scope with R.
 (* Automatically open scope R_scope for arguments of type R *)
 Bind Scope R_scope with R.
 
+Open Local Scope R_scope.
+
 Parameter R0 : R.
 Parameter R1 : R.
 Parameter Rplus : R -> R -> R.
@@ -38,33 +40,33 @@ Notation "/ x" := (Rinv x) : R_scope.
 
 Infix "<" := Rlt : R_scope.
 
-(*i*******************************************************i*)
+(***********************************************************)
 
 (**********)
-Definition Rgt (r1 r2:R) : Prop := (r2 < r1)%R.
+Definition Rgt (r1 r2:R) : Prop := r2 < r1.
 
 (**********)
-Definition Rle (r1 r2:R) : Prop := (r1 < r2)%R \/ r1 = r2.
+Definition Rle (r1 r2:R) : Prop := r1 < r2 \/ r1 = r2.
 
 (**********)
 Definition Rge (r1 r2:R) : Prop := Rgt r1 r2 \/ r1 = r2.
 
 (**********)
-Definition Rminus (r1 r2:R) : R := (r1 + - r2)%R.
+Definition Rminus (r1 r2:R) : R := r1 + - r2.
 
 (**********)
-Definition Rdiv (r1 r2:R) : R := (r1 * / r2)%R.
+Definition Rdiv (r1 r2:R) : R := r1 * / r2.
 
 (**********)
 
 Infix "-" := Rminus : R_scope.
-Infix "/" := Rdiv : R_scope.
+Infix "/" := Rdiv   : R_scope.
 
 Infix "<=" := Rle : R_scope.
 Infix ">=" := Rge : R_scope.
-Infix ">" := Rgt : R_scope.
+Infix ">"  := Rgt : R_scope.
 
-Notation "x <= y <= z" := ((x <= y)%R /\ (y <= z)%R) : R_scope.
-Notation "x <= y < z" := ((x <= y)%R /\ (y < z)%R) : R_scope.
-Notation "x < y < z" := ((x < y)%R /\ (y < z)%R) : R_scope.
-Notation "x < y <= z" := ((x < y)%R /\ (y <= z)%R) : R_scope.
+Notation "x <= y <= z" := (x <= y /\ y <= z) : R_scope.
+Notation "x <= y < z"  := (x <= y /\ y <  z) : R_scope.
+Notation "x < y < z"   := (x <  y /\ y <  z) : R_scope.
+Notation "x < y <= z"  := (x <  y /\ y <= z) : R_scope.

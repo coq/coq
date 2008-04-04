@@ -12,5 +12,7 @@
 
 Require Export BinPos.
 Require Export BinNat.
+Require Export Nnat.
+Require Export Ndigits.
 
 Require Export NArithRing.
