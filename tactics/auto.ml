@@ -204,39 +204,41 @@ let make_apply_entry env sigma (eapply,verbose) pri (c,cty) =
 	let pat = Pattern.pattern_of_constr c' in
         let hd = (try head_pattern_bound pat
                   with BoundPattern -> failwith "make_apply_entry") in
-        let nmiss = List.length (clenv_missing ce) 
-        in 
-	if eapply & (nmiss <> 0) then begin
-          if verbose then 
-	    warn (str "the hint: eapply " ++ pr_lconstr c ++
-		  str " will only be used by eauto"); 
-          (hd,
-           { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
-             pat = Some pat;
-             code = ERes_pf(c,{ce with env=empty_env}) })
-        end else 
+        let nmiss = List.length (clenv_missing ce) in
+	if nmiss = 0 then 
 	  (hd,
-           { pri = (match pri with None -> nb_hyp cty | Some p -> p);
-             pat = Some pat;
-             code = Res_pf(c,{ce with env=empty_env}) })
+          { pri = (match pri with None -> nb_hyp cty | Some p -> p);
+            pat = Some pat;
+            code = Res_pf(c,{ce with env=empty_env}) })
+	else begin
+	  if not eapply then failwith "make_apply_entry";
+          if verbose then
+	    warn (str "the hint: eapply " ++ pr_lconstr c ++
+	    str " will only be used by eauto");
+          (hd,
+            { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
+              pat = Some pat;
+              code = ERes_pf(c,{ce with env=empty_env}) })
+        end
     | _ -> failwith "make_apply_entry"
  
-(* eap is (e,v) with e=true if eapply and v=true if verbose 
+(* flags is (e,v) with e=true if eapply and v=true if verbose 
    c is a constr
    cty is the type of constr *)
 
-let make_resolves env sigma eap pri c =
+let make_resolves env sigma flags pri c =
   let cty = type_of env sigma c in
   let ents = 
     map_succeed 
       (fun f -> f (c,cty)) 
-      [make_exact_entry pri; make_apply_entry env sigma (eap,Flags.is_verbose()) pri]
+      [make_exact_entry pri; make_apply_entry env sigma flags pri]
   in 
   if ents = [] then
     errorlabstrm "Hint" 
-      (pr_lconstr c ++ spc() ++ str"cannot be used as a hint");
+      (pr_lconstr c ++ spc() ++ 
+        (if fst flags then str"cannot be used as a hint"
+	else str "can be used as a hint only for eauto"));
   ents
-
 
 (* used to add an hypothesis to the local hint database *)
 let make_resolve_hyp env sigma (hname,_,htyp) = 
@@ -364,7 +366,8 @@ let add_resolves env sigma clist local dbnames =
        Lib.add_anonymous_leaf
 	 (inAutoHint
 	    (local,dbname,
-     	     List.flatten (List.map (fun (x, y) -> make_resolves env sigma true x y) clist))))
+     	     List.flatten (List.map (fun (x, y) ->
+	       make_resolves env sigma (true,Flags.is_verbose()) x y) clist))))
     dbnames
 
 
@@ -577,10 +580,10 @@ let unify_resolve (c,clenv) gls =
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
-let make_local_hint_db lems g =
+let make_local_hint_db eapply lems g =
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g) sign in
-  let hintlist' = list_map_append (pf_apply make_resolves g true None) lems in
+  let hintlist' = list_map_append (pf_apply make_resolves g (eapply,false) None) lems in
   Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty)
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
@@ -668,13 +671,13 @@ let trivial lems dbnames gl =
 	   error ("trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db lems gl)) gl 
+  tclTRY (trivial_fail_db db_list (make_local_hint_db false lems gl)) gl 
     
 let full_trivial lems gl =
   let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db lems gl)) gl
+  tclTRY (trivial_fail_db db_list (make_local_hint_db false lems gl)) gl
 
 let gen_trivial lems = function
   | None -> full_trivial lems
@@ -772,7 +775,7 @@ let auto n lems dbnames gl =
       ("core"::dbnames) 
   in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db lems gl) hyps) gl
+  tclTRY (search n db_list (make_local_hint_db false lems gl) hyps) gl
 
 let default_auto = auto !default_search_depth [] []
 
@@ -781,7 +784,7 @@ let full_auto n lems gl =
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db lems gl) hyps) gl
+  tclTRY (search n db_list (make_local_hint_db false lems gl) hyps) gl
   
 let default_full_auto gl = full_auto !default_search_depth [] gl
 
@@ -810,7 +813,7 @@ let default_search_decomp = ref 1
 let destruct_auto des_opt lems n gl = 
   let hyps = pf_hyps gl in
   search_gen des_opt n (List.map searchtable_map ["core";"extcore"])
-    (make_local_hint_db lems gl) hyps gl
+    (make_local_hint_db false lems gl) hyps gl
     
 let dautomatic des_opt lems n = tclTRY (destruct_auto des_opt lems n)
 
@@ -895,7 +898,7 @@ let search_superauto n to_add argl g =
       (fun (id,c) -> add_named_decl (id, None, pf_type_of g c))
       to_add empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
-  let db = Hint_db.add_list db0 (make_local_hint_db [] g) in
+  let db = Hint_db.add_list db0 (make_local_hint_db false [] g) in
   super_search n [Hintdbmap.find "core" !searchtable] db argl g
 
 let superauto n to_add argl  = 

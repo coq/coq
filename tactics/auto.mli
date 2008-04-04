@@ -95,7 +95,7 @@ val make_apply_entry :
        has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool -> int option -> constr -> 
+  env -> evar_map -> bool * bool -> int option -> constr -> 
       (global_reference * pri_auto_tactic) list
 
 (* [make_resolve_hyp hname htyp].
@@ -125,9 +125,10 @@ val set_extern_subst_tactic :
   -> unit
 
 (* Create a Hint database from the pairs (name, constr).
-   Useful to take the current goal hypotheses as hints *)
+   Useful to take the current goal hypotheses as hints;
+   Boolean tells if lemmas with evars are allowed *)
 
-val make_local_hint_db : constr list -> goal sigma -> Hint_db.t
+val make_local_hint_db : bool -> constr list -> goal sigma -> Hint_db.t
 
 val priority : (int * 'a) list -> 'a list
 

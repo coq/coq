@@ -275,7 +275,7 @@ let e_breadth_search debug s =
 
 let e_search_auto debug (in_depth,p) lems db_list gls = 
   let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
-  let local_dbs = List.map (fun gl -> make_local_hint_db lems ({it = gl; sigma = sigma})) gls' in
+  let local_dbs = List.map (fun gl -> make_local_hint_db true lems ({it = gl; sigma = sigma})) gls' in
   let state = make_initial_state p gls db_list local_dbs in
   if in_depth then 
     e_depth_search debug state
