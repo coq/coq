@@ -290,6 +290,40 @@ else
     checkedout=0
 fi
 
+# make command
+
+MAKE=`which make`
+if [ "$MAKE" != "" ]; then
+  MAKEVERSION=`$MAKE -v | head -1`
+  case $MAKEVERSION in
+    "GNU Make 3.81") 
+      echo "You have GNU Make 3.81. Good!";;
+    *)
+      OK="no"
+      if [ -x ./make ]; then
+	  MAKEVERSION=`./make -v | head -1`
+	  if [ "$MAKEVERSION" == "GNU Make 3.81" ]; then OK="yes"; fi
+      fi
+      if [ $OK = "no" ]; then
+	  echo "GNU Make >= 3.81 is needed"
+	  echo "Make 3.81 can be downloaded from ftp://ftp.gnu.org/gnu/make/make-3.81.tar.gz"
+	  echo "then locally installed on a Unix-style system by issuing:"
+	  echo "  tar xzvf make-3.81.tar.gz"
+	  echo "  cd make-3.81"
+          echo "  ./configure"
+          echo "  make"
+          echo "  mv make .."
+	  echo "  cd .."
+	  echo "Restart then the configure script and later use ./make instead of make"
+	  exit 1
+      else
+	  echo "You have locally installed GNU Make 3.81. Good!"
+      fi
+  esac
+else
+  echo "Cannot find GNU Make 3.81"
+fi
+
 #########################################
 # Objective Caml programs
 
