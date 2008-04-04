@@ -966,15 +966,54 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 (* Decomposing introductions *)
 (*****************************)
 
+let forward_general_multi_rewrite =
+  ref (fun _ -> failwith "general_multi_rewrite undefined")
+
+let register_general_multi_rewrite f =
+  forward_general_multi_rewrite := f
+
 let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
 let case_last  = tclLAST_HYP simplest_case
 
+let fix_empty_case nv l =
+  (* The syntax does not distinguish between "[ ]" for one clause with no names
+     and "[ ]" for no clause at all; so we are a bit liberal here *)
+  if Array.length nv = 0 & l = [[]] then [] else l
+
+let intro_or_and_pattern ll l' tac =
+  tclLAST_HYP (fun c gl ->
+    let ind,_ = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+    let nv = mis_constr_nargs ind in
+    let rec adjust_names_length force n = function
+      | [] when n = 0 or not force -> []
+      | [] -> IntroAnonymous :: adjust_names_length force (n-1) []
+      | _ :: _ when n = 0 -> error "Too many names in some branch"
+      | ip :: l -> ip :: adjust_names_length force (n-1) l in
+    let ll = fix_empty_case nv ll in
+    if List.length ll <> Array.length nv then
+      error "Not the right number of patterns";
+    tclTHENLASTn
+      (tclTHEN case_last clear_last)
+      (array_map2 (fun n l -> tac ((adjust_names_length (l'<>[]) n l)@l'))
+	nv (Array.of_list ll))
+      gl)
+
+let clear_if_atomic l2r id gl =
+  let eq = pf_type_of gl (mkVar id) in
+  let (_,lhs,rhs) = snd (find_eq_data_decompose eq) in
+  if l2r & isVar lhs then tclTRY (clear [destVar lhs;id]) gl
+  else if not l2r & isVar rhs then tclTRY (clear [destVar rhs;id]) gl
+  else tclIDTAC gl
+
 let rec explicit_intro_names = function
-| (IntroWildcard | IntroAnonymous | IntroFresh _) :: l -> explicit_intro_names l
-| IntroIdentifier id :: l -> id :: explicit_intro_names l
+| IntroIdentifier id :: l ->
+    id :: explicit_intro_names l
+| (IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _) :: l ->
+    explicit_intro_names l
 | IntroOrAndPattern ll :: l' -> 
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
-| [] -> []
+| [] ->
+    []
 
   (* We delay thinning until the completion of the whole intros tactic
      to ensure that dependent hypotheses are cleared in the right
@@ -1003,9 +1042,16 @@ let rec intros_patterns avoid thin destopt = function
   | IntroOrAndPattern ll :: l' ->
       tclTHEN
         introf
-        (tclTHENS
-	  (tclTHEN case_last clear_last)
-	  (List.map (fun l -> intros_patterns avoid thin destopt (l@l')) ll))
+        (intro_or_and_pattern ll l' (intros_patterns avoid thin destopt))
+  | IntroRewrite l2r :: l ->
+      tclTHEN 
+        (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) None true)
+        (onLastHyp (fun id ->
+	  tclTHENLIST [
+	    !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) 
+	      allClauses;
+	    clear_if_atomic l2r id;
+	    intros_patterns avoid thin destopt l ]))
   | [] -> clear thin
 
 let intros_pattern = intros_patterns [] []
@@ -1030,6 +1076,9 @@ let prepare_intros s ipat gl = match ipat with
   | IntroFresh id -> fresh_id [] id gl, tclIDTAC
   | IntroWildcard -> let id = make_id s gl in id, thin [id]
   | IntroIdentifier id -> id, tclIDTAC
+  | IntroRewrite l2r -> 
+      let id = make_id s gl in
+      id, !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allClauses
   | IntroOrAndPattern ll -> make_id s gl, 
     (tclTHENS 
       (tclTHEN case_last clear_last)
@@ -1341,6 +1390,7 @@ let rec first_name_buggy = function
   | IntroOrAndPattern ([]::l) -> first_name_buggy (IntroOrAndPattern l)
   | IntroOrAndPattern ((p::_)::_) -> first_name_buggy p
   | IntroWildcard -> None
+  | IntroRewrite _ -> None
   | IntroIdentifier id -> Some id
   | IntroAnonymous | IntroFresh _ -> assert false
 

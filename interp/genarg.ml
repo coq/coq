@@ -79,6 +79,7 @@ type intro_pattern_expr =
   | IntroWildcard
   | IntroIdentifier of identifier
   | IntroAnonymous
+  | IntroRewrite of bool
   | IntroFresh of identifier
 and case_intro_pattern_expr = intro_pattern_expr list list
 
@@ -87,6 +88,8 @@ let rec pr_intro_pattern = function
   | IntroWildcard -> str "_"
   | IntroIdentifier id -> pr_id id
   | IntroAnonymous -> str "?"
+  | IntroRewrite true -> str "->"
+  | IntroRewrite false -> str "<-"
   | IntroFresh id -> str "?" ++ pr_id id
 
 and pr_case_intro_pattern = function

@@ -1302,3 +1302,4 @@ let replace_term_in t hyp = replace_multi_term None t (Tacticals.onHyp hyp)
 
 let _ = Setoid_replace.register_replace (fun tac_opt c2 c1 gl ->  replace_in_clause_maybe_by c2 c1 onConcl tac_opt gl)
 let _ = Setoid_replace.register_general_rewrite general_rewrite
+let _ = Tactics.register_general_multi_rewrite general_multi_rewrite

@@ -193,6 +193,8 @@ GEXTEND Gram
       | prefix = pattern_ident -> IntroFresh prefix
       | "?" -> IntroAnonymous
       | id = ident -> IntroIdentifier id
+      | "->" -> IntroRewrite true
+      | "<-" -> IntroRewrite false
       ] ]
   ;
   simple_binding:
@@ -268,14 +270,15 @@ GEXTEND Gram
   ;
   clause:
     [ [ "in"; "*"; occs=occurrences ->
-        {onhyps=None;onconcl=true;concl_occs=occs}
+          {onhyps=None; onconcl=true; concl_occs=occs}
       | "in"; "*"; "|-"; (b,occs)=concl_occ ->
           {onhyps=None; onconcl=b; concl_occs=occs}
       | "in"; hl=LIST0 hypident_occ SEP","; "|-"; (b,occs)=concl_occ ->
           {onhyps=Some hl; onconcl=b; concl_occs=occs}
       | "in"; hl=LIST0 hypident_occ SEP"," ->
           {onhyps=Some hl; onconcl=false; concl_occs=[]}
-      | -> {onhyps=Some[];onconcl=true; concl_occs=[]} ] ]
+      | ->
+	  {onhyps=Some[]; onconcl=true; concl_occs=[]} ] ]
   ;
   concl_occ:
     [ [ "*"; occs = occurrences -> (true,occs)

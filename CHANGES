@@ -66,7 +66,8 @@ Libraries
   statement in "sigT" (including the completeness axiom) are now in "sig" (in
   case of incompatibility, use sigT_of_sig or sig_of_sigT), identifiers in 
   French moved to English, useless hypothesis of ln_exists1 dropped, new
-  Rlogic.v states a few logical properties about R axioms.
+  Rlogic.v states a few logical properties about R axioms; RIneq.v made more
+  uniform.
 - Slight restructuration of the Logic library regarding choice and classical
   logic. Addition of files providing intuitionistic axiomatizations of
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v
@@ -345,6 +346,13 @@ Tactics
 - Tactic "assert" now accepts "as" intro patterns and "by" tactic clauses.
 - New tactic "pose proof" that generalizes "assert (id:=p)" with intro patterns.
 - New introduction pattern "?" for letting Coq choose a name.
+- Introduction patterns now support side hypotheses (e.g. intros [|] on 
+  "(nat -> nat) -> nat" works).
+- New introduction patterns "->" and "<-" for immediate rewriting of
+  introduced hypotheses.
+- Introduction patterns coming after non trivial introduction patterns now
+  force full introduction of the first pattern (e.g. "intros [[|] p]" on
+  "nat->nat->nat" now behaves like "intros [[|?] p]")
 - Added "eassumption".
 - Added option 'using lemmas' to auto, trivial and eauto.
 - Tactic "congruence" is now complete for its intended scope (ground

@@ -382,6 +382,8 @@ let rec get_names allow_conj = function
       error "Anonymous pattern not allowed for inversion equations"
   | IntroFresh _->
       error "Fresh pattern not allowed for inversion equations"
+  | IntroRewrite _->
+      error "Rewriting pattern not allowed for inversion equations"
   | IntroOrAndPattern [l] -> 
       if allow_conj then
 	if l = [] then (None,[]) else

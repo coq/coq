@@ -36,6 +36,7 @@ type intro_pattern_expr =
   | IntroWildcard
   | IntroIdentifier of identifier
   | IntroAnonymous
+  | IntroRewrite of bool
   | IntroFresh of identifier
 and case_intro_pattern_expr = intro_pattern_expr list list
 

@@ -633,6 +633,7 @@ let rec xlate_intro_pattern =
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
   | IntroAnonymous -> xlate_error "TODO: IntroAnonymous"
   | IntroFresh _ -> xlate_error "TODO: IntroFresh"
+  | IntroRewrite _ -> xlate_error "TODO: IntroRewrite"
 
 let compute_INV_TYPE = function
    FullInversionClear -> CT_inv_clear
