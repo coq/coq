@@ -9,6 +9,8 @@
 Require Import Coq.Program.Utils.
 Require Import Coq.Program.Equality.
 
+Open Local Scope subset_scope.
+
 (** Tactics related to subsets and proof irrelevance. *)
 
 (** Simplify dependent equality using sigmas to equality of the codomains if possible. *)
@@ -72,7 +74,7 @@ Ltac clear_subset_proofs :=
 
 Ltac pi := repeat progress f_equal ; apply proof_irrelevance.
 
-Lemma subset_eq : forall A (P : A -> Prop) (n m : sig P), n = m <-> (`n) = (`m).
+Lemma subset_eq : forall A (P : A -> Prop) (n m : sig P), n = m <-> `n = `m.
 Proof.
   induction n.
   induction m.

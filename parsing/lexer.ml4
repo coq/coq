@@ -189,7 +189,8 @@ let lookup_utf8_tail c cs =
     | x when 0x2058 <= x & x <= 0x205E -> Utf8Symbol
     (* Invisible mathematical operators *)
     | x when 0x2061 <= x & x <= 0x2063 -> Utf8Symbol
-
+    (* utf-8 superscript U2070-207C *) 
+    | x when 0x2070 <= x & x <= 0x207C -> Utf8Symbol
     (* utf-8 subscript U2080-2089 *) 
     | x when 0x2080 <= x & x <= 0x2089 -> Utf8IdentPart n
     (* utf-8 letter-like U2100-214F *)

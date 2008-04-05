@@ -182,7 +182,7 @@ module SearchProblem = struct
       List.length (sig_it (fst s.tacres)) + 
 	nb_empty_evars (sig_sig (fst s.tacres))
     in
-      if d <> 0 then d else
+      if d <> 0 && d <> 1 then d else
 	let pri = s.pri - s'.pri in
 	  if pri <> 0 then pri
 	  else nbgoals s - nbgoals s'
@@ -1027,7 +1027,7 @@ let require_library dirpath =
 let check_required_library d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
-  if not (Library.library_is_opened dir) then
+  if not (Library.library_is_opened dir) || not (Library.library_is_loaded dir) then
     error ("Library "^(list_last d)^" has to be required first")
 
 let init_setoid () =

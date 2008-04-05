@@ -22,17 +22,17 @@ Notation "{ ( x , y )  :  A  |  P }" :=
   (sig (fun anonymous : A => let (x,y) := anonymous in P))
   (x ident, y ident, at level 10) : type_scope.
 
+(** The scope in which programs are typed (not their types). *)
+
 (** Generates an obligation to prove False. *)
 
-Notation " ! " := (False_rect _ _).
-
-(** Abbreviation for first projection and hiding of proofs of subset objects. *)
-
-(** The scope in which programs are typed (not their types). *)
+Notation " ! " := (False_rect _ _) : program_scope.
 
 Delimit Scope program_scope with prg.
 
-Notation " ` t " := (proj1_sig t) (at level 10) : core_scope.
+(** Abbreviation for first projection and hiding of proofs of subset objects. *)
+
+Notation " ` t " := (proj1_sig t) (at level 10, t at next level) : subset_scope.
 
 Delimit Scope subset_scope with subset.
 
@@ -41,23 +41,15 @@ Notation "( x & ? )" := (@exist _ _ x _) : subset_scope.
 
 (** Coerces objects to their support before comparing them. *)
 
-Notation " x '`=' y " := ((x :>) = (y :>)) (at level 70).
+Notation " x '`=' y " := ((x :>) = (y :>)) (at level 70) : program_scope.
 
 (** Quantifying over subsets. *)
-
-(* Notation "'fun' ( x : A | P ) => Q" := *)
-(*   (fun (x :A|P} => Q) *)
-(*   (at level 200, x ident, right associativity). *)
-
-(* Notation "'forall' ( x : A | P ), Q" := *)
-(*   (forall (x : A | P), Q) *)
-(*   (at level 200, x ident, right associativity). *)
 
 Require Import Coq.Bool.Sumbool.
 
 (** Construct a dependent disjunction from a boolean. *)
 
-Notation "'dec'" := (sumbool_of_bool) (at level 0). 
+Notation dec := sumbool_of_bool.
 
 (** The notations [in_right] and [in_left] construct objects of a dependent disjunction. *)
 
