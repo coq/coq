@@ -42,7 +42,7 @@ Libraries
   Coq Standard Library and moved into a user contribution Cachan/IntMap
 - Better computational behavior of some constants (eq_nat_dec and 
   le_lt_dec more efficient, Z_lt_le_dec and Positive_as_OT.compare 
-  transparent, ...) [exceptionally source of incompatibilities].
+  transparent, ...) [exceptional source of incompatibilities].
 - Boolean operators moved from module Bool to module Datatypes.
 - Improvements to NArith (Nminus, Nmin, Nmax), and to QArith (in particular 
   a better power function). 
@@ -52,22 +52,29 @@ Libraries
   elements, nothing more). 
 - In ListSet, a few definitions are now in Type (may induce possible 
   incompatibilities)
-- Improved FSets/FMaps. In particular FMap now provides an induction principle 
-  on maps, and some properties about FSets and fold need less hypothesis. 
-  The polymorphic parameter for the fold function is now in Type. 
-- Loading FSets/FMap used to open unwanted scopes of integer datatypes 
-  (see bug #1347). These scopes may need to be opened manually now.
-- Hints in FSetInterface.v have been transfered from the core database 
-  to a "set" database, and some expensive hints have been downgraded 
-  as "Immediate". A compatibility "oldset" database retains these expensive
-  hints, so using "(e)auto with set oldset" should help porting scripts. 
-  Same for FSetWeakInterface and FMap(Weak)Interface. 
-- Some changes in Reals: lemmas on prod_f_SO is now on prod_f_R0, most
-  statement in "sigT" (including the completeness axiom) are now in "sig" (in
-  case of incompatibility, use sigT_of_sig or sig_of_sigT), identifiers in 
-  French moved to English, useless hypothesis of ln_exists1 dropped, new
-  Rlogic.v states a few logical properties about R axioms; RIneq.v made more
-  uniform.
+- Changes in FSets/FMaps.
+  - Improvements: in particular FMap now provides an induction principle 
+    on maps, and some properties about FSets and fold need less hypothesis. 
+    The polymorphic parameter for the fold function is now in Type. 
+  - Loading FSets/FMap used to open unwanted scopes of integer datatypes 
+    (see bug #1347). These scopes may need to be opened manually now.
+  - Hints in FSetInterface.v have been transfered from the core database 
+    to a "set" database, and some expensive hints have been downgraded 
+    as "Immediate". A compatibility "oldset" database retains these expensive
+    hints, so using "(e)auto with set oldset" should help porting scripts. 
+    Same for FSetWeakInterface and FMap(Weak)Interface. 
+- Changes in Reals:
+  - most statement in "sigT" (including the
+    completeness axiom) are now in "sig" (in case of incompatibility,
+    use proj1_sig instead of projT1, sig instead of sigT, etc),
+  - more uniform naming scheme (identifiers in French moved to English,
+    consistent use of 0 -- zero -- instead of O -- letter O --, etc)
+  - lemma on prod_f_SO is now on prod_f_R0, 
+  - useless hypothesis of ln_exists1 dropped,
+  - new Rlogic.v states a few logical properties about R axioms,
+  - RIneq.v extended and made cleaner,
+  - slightly more powerful "real" hints database (Rle_ge now fully usable as
+    a hint, occasionally leading to a few more subgoals automatically proved)
 - Slight restructuration of the Logic library regarding choice and classical
   logic. Addition of files providing intuitionistic axiomatizations of
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v
