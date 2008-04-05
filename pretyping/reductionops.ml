@@ -893,13 +893,12 @@ let is_arity env sigma c =
 
 let meta_value evd mv = 
   let rec valrec mv =
-    try
-      let b,_ = meta_fvalue evd mv in
+    match meta_opt_fvalue evd mv with
+    | Some (b,_) -> 
       instance
         (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
         b.rebus
-    with Anomaly _ | Not_found -> 
-      mkMeta mv
+    | None -> mkMeta mv
   in 
   valrec mv
 
@@ -916,13 +915,12 @@ let nf_meta env c = meta_instance env (mk_freelisted c)
 
 let meta_value evd mv = 
   let rec valrec mv =
-    try
-      let b,_ = meta_fvalue evd mv in
+    match meta_opt_fvalue evd mv with
+    | Some (b,_) ->
       instance
         (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
         b.rebus
-    with Anomaly _ | Not_found -> 
-      mkMeta mv
+    | None -> mkMeta mv
   in 
   valrec mv
 

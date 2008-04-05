@@ -716,12 +716,6 @@ let apply_with_ebindings_gen advanced with_evars (c,lbind) gl =
 		      (List.map (fun id ->
 			tclTHEN (try_main_apply (mkVar id)) (thin l)) l))
 		]) gl
-	    | None -> 
-	    match match_with_empty_type (snd (decompose_prod t)) with
-	    | Some _ ->
-	      let sort = elimination_sort_of_goal gl in
-	      let elim = pf_apply make_case_gen gl mind sort in
-	      general_elim with_evars (c,NoBindings) (elim,NoBindings) gl
 	    | None ->
 	      raise exn
 	  else

@@ -95,7 +95,7 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msgnl (print_treescript true evc pf)
+  msgnl_with Pp_control.deep_ft (print_treescript true evc pf)
 
 let show_thesis () =
      msgnl (anomaly "TODO" )
