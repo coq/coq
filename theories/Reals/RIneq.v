@@ -34,11 +34,11 @@ Lemma Rle_refl : forall r, r <= r.
 Proof.
   intro; right; reflexivity.
 Qed.
-Hint Resolve Rle_refl: real2.
+Hint Immediate Rle_refl: rorders.
 
 Lemma Rge_refl : forall r, r <= r.
 Proof. exact Rle_refl. Qed.
-Hint Resolve Rge_refl: real2.
+Hint Immediate Rge_refl: rorders.
 
 (** Irreflexivity of the strict order *)
 
@@ -105,8 +105,7 @@ Lemma Rlt_le : forall r1 r2, r1 < r2 -> r1 <= r2.
 Proof.
   intros; red in |- *; tauto.
 Qed.
-
-Hint Resolve Rlt_le: real real2.
+Hint Resolve Rlt_le: real.
 
 Lemma Rgt_ge : forall r1 r2, r1 > r2 -> r1 >= r2.
 Proof.
@@ -118,30 +117,28 @@ Lemma Rle_ge : forall r1 r2, r1 <= r2 -> r2 >= r1.
 Proof.
   destruct 1; red in |- *; auto with real.
 Qed.
-
-Hint Resolve Rle_ge: real.
-Hint Resolve Rle_ge: real2.
+Hint Immediate Rle_ge: real.
+Hint Resolve Rle_ge: rorders.
 
 Lemma Rge_le : forall r1 r2, r1 >= r2 -> r2 <= r1.
 Proof.
   destruct 1; red in |- *; auto with real.
 Qed.
-
-Hint Immediate Rge_le: real.
-Hint Immediate Rge_le: real2.
+Hint Resolve Rge_le: real.
+Hint Immediate Rge_le: rorders.
 
 (**********)
 Lemma Rlt_gt : forall r1 r2, r1 < r2 -> r2 > r1.
 Proof. 
   trivial.
 Qed.
-Hint Resolve Rlt_gt: real2.
+Hint Resolve Rlt_gt: rorders.
 
 Lemma Rgt_lt : forall r1 r2, r1 > r2 -> r2 < r1.
 Proof.
   trivial.
 Qed.
-Hint Immediate Rgt_lt: real2.
+Hint Immediate Rgt_lt: rorders.
 
 (**********)
 
@@ -163,17 +160,17 @@ Proof. intros; apply Rnot_le_lt. auto with real. Qed.
 Lemma Rnot_lt_le : forall r1 r2, ~ r1 < r2 -> r2 <= r1.
 Proof.
   intros r1 r2 H; destruct (Rtotal_order r1 r2) as [ | [ H0 | H0 ] ].
-    contradiction. subst; auto with real2. auto with real2.
+    contradiction. subst; auto with rorders. auto with real.
 Qed.
 
 Lemma Rnot_gt_le : forall r1 r2, ~ r1 > r2 -> r1 <= r2.
 Proof. auto using Rnot_lt_le with real. Qed.
 
 Lemma Rnot_gt_ge : forall r1 r2, ~ r1 > r2 -> r2 >= r1.
-Proof. intros; eauto using Rnot_lt_le with real2. Qed.
+Proof. intros; eauto using Rnot_lt_le with rorders. Qed.
 
 Lemma Rnot_lt_ge : forall r1 r2, ~ r1 < r2 -> r1 >= r2.
-Proof. eauto using Rnot_gt_ge with real2. Qed.
+Proof. eauto using Rnot_gt_ge with rorders. Qed.
 
 (**********)
 Lemma Rlt_not_le : forall r1 r2, r2 < r1 -> ~ r1 <= r2.
@@ -286,10 +283,10 @@ Proof.
 Qed.
 
 Lemma Rge_trans : forall r1 r2 r3, r1 >= r2 -> r2 >= r3 -> r1 >= r3.
-Proof. eauto using Rle_trans with real2. Qed.
+Proof. eauto using Rle_trans with rorders. Qed.
 
 Lemma Rgt_trans : forall r1 r2 r3, r1 > r2 -> r2 > r3 -> r1 > r3.
-Proof. eauto using Rlt_trans with real2. Qed.
+Proof. eauto using Rlt_trans with rorders. Qed.
 
 (**********)
 Lemma Rle_lt_trans : forall r1 r2 r3, r1 <= r2 -> r2 < r3 -> r1 < r3.
@@ -305,10 +302,10 @@ Proof.
 Qed.
 
 Lemma Rge_gt_trans : forall r1 r2 r3, r1 >= r2 -> r2 > r3 -> r1 > r3.
-Proof. eauto using Rlt_le_trans with real2. Qed.
+Proof. eauto using Rlt_le_trans with rorders. Qed.
 
 Lemma Rgt_ge_trans : forall r1 r2 r3, r1 > r2 -> r2 >= r3 -> r1 > r3.
-Proof. eauto using Rle_lt_trans with real2. Qed.
+Proof. eauto using Rle_lt_trans with rorders. Qed.
 
 (** *** (Classical) decidability *)
 
@@ -329,7 +326,7 @@ Lemma Rgt_dec : forall r1 r2, {r1 > r2} + {~ r1 > r2}.
 Proof. do 2 intro; apply Rlt_dec. Qed.
 
 Lemma Rge_dec : forall r1 r2, {r1 >= r2} + {~ r1 >= r2}.
-Proof. intros; edestruct Rle_dec; [left|right]; eauto with real2. Qed.
+Proof. intros; edestruct Rle_dec; [left|right]; eauto with rorders. Qed.
 
 Lemma Rlt_le_dec : forall r1 r2, {r1 < r2} + {r2 <= r1}.
 Proof.
@@ -337,7 +334,7 @@ Proof.
 Qed.
 
 Lemma Rgt_ge_dec : forall r1 r2, {r1 > r2} + {r2 >= r1}.
-Proof. intros; edestruct Rlt_le_dec; [left|right]; eauto with real2. Qed.
+Proof. intros; edestruct Rlt_le_dec; [left|right]; eauto with rorders. Qed.
 
 Lemma Rle_lt_dec : forall r1 r2, {r1 <= r2} + {r2 < r1}.
 Proof.
@@ -345,7 +342,7 @@ Proof.
 Qed.
 
 Lemma Rge_gt_dec : forall r1 r2, {r1 >= r2} + {r2 > r1}.
-Proof. intros; edestruct Rle_lt_dec; [left|right]; eauto with real2. Qed.
+Proof. intros; edestruct Rle_lt_dec; [left|right]; eauto with rorders. Qed.
 
 Lemma Rlt_or_le : forall r1 r2, r1 < r2 \/ r2 <= r1.
 Proof.
@@ -353,7 +350,7 @@ Proof.
 Qed.
 
 Lemma Rgt_or_ge : forall r1 r2, r1 > r2 \/ r2 >= r1.
-Proof. intros; edestruct Rlt_or_le; [left|right]; eauto with real2. Qed.
+Proof. intros; edestruct Rlt_or_le; [left|right]; eauto with rorders. Qed.
 
 Lemma Rle_or_lt : forall r1 r2, r1 <= r2 \/ r2 < r1.
 Proof.
@@ -361,7 +358,7 @@ Proof.
 Qed.
 
 Lemma Rge_or_gt : forall r1 r2, r1 >= r2 \/ r2 > r1.
-Proof. intros; edestruct Rle_or_lt; [left|right]; eauto with real2. Qed.
+Proof. intros; edestruct Rle_or_lt; [left|right]; eauto with rorders. Qed.
 
 Lemma Rle_lt_or_eq_dec : forall r1 r2, r1 <= r2 -> {r1 < r2} + {r1 = r2}.
 Proof.
@@ -831,7 +828,7 @@ Qed.
 (** Remark: [Rplus_lt_compat_l] is an axiom *)
 
 Lemma Rplus_gt_compat_l : forall r r1 r2, r1 > r2 -> r + r1 > r + r2.
-Proof. eauto using Rplus_lt_compat_l with real2. Qed.
+Proof. eauto using Rplus_lt_compat_l with rorders. Qed.
 Hint Resolve Rplus_gt_compat_l: real.
 
 (**********)
@@ -854,7 +851,7 @@ Proof.
 Qed.
 
 Lemma Rplus_ge_compat_l : forall r r1 r2, r1 >= r2 -> r + r1 >= r + r2.
-Proof. auto using Rplus_le_compat_l with real2. Qed.
+Proof. auto using Rplus_le_compat_l with rorders. Qed.
 Hint Resolve Rplus_ge_compat_l: real.
 
 (**********)
@@ -868,7 +865,7 @@ Qed.
 Hint Resolve Rplus_le_compat_l Rplus_le_compat_r: real.
 
 Lemma Rplus_ge_compat_r : forall r r1 r2, r1 >= r2 -> r1 + r >= r2 + r.
-Proof. auto using Rplus_le_compat_r with real2. Qed.
+Proof. auto using Rplus_le_compat_r with rorders. Qed.
 
 (*********)
 Lemma Rplus_lt_compat :
@@ -887,11 +884,11 @@ Hint Immediate Rplus_le_compat: real.
 
 Lemma Rplus_gt_compat :
   forall r1 r2 r3 r4, r1 > r2 -> r3 > r4 -> r1 + r3 > r2 + r4.
-Proof. auto using Rplus_lt_compat with real2. Qed.
+Proof. auto using Rplus_lt_compat with rorders. Qed.
 
 Lemma Rplus_ge_compat :
   forall r1 r2 r3 r4, r1 >= r2 -> r3 >= r4 -> r1 + r3 >= r2 + r4.
-Proof. auto using Rplus_le_compat with real2. Qed.
+Proof. auto using Rplus_le_compat with rorders. Qed.
 
 (*********)
 Lemma Rplus_lt_le_compat :
@@ -910,11 +907,11 @@ Hint Immediate Rplus_lt_le_compat Rplus_le_lt_compat: real.
 
 Lemma Rplus_gt_ge_compat :
   forall r1 r2 r3 r4, r1 > r2 -> r3 >= r4 -> r1 + r3 > r2 + r4.
-Proof. auto using Rplus_lt_le_compat with real2. Qed.
+Proof. auto using Rplus_lt_le_compat with rorders. Qed.
 
 Lemma Rplus_ge_gt_compat :
   forall r1 r2 r3 r4, r1 >= r2 -> r3 > r4 -> r1 + r3 > r2 + r4.
-Proof. auto using Rplus_le_lt_compat with real2. Qed.
+Proof. auto using Rplus_le_lt_compat with rorders. Qed.
 
 (**********)
 Lemma Rplus_lt_0_compat : forall r1 r2, 0 < r1 -> 0 < r2 -> 0 < r1 + r2.
@@ -1128,7 +1125,7 @@ Qed.
 Hint Immediate Ropp_lt_cancel: real.
 
 Lemma Ropp_gt_cancel : forall r1 r2, - r2 > - r1 -> r1 > r2.
-Proof. auto using Ropp_lt_cancel with real2. Qed.
+Proof. auto using Ropp_lt_cancel with rorders. Qed.
 
 Lemma Ropp_le_cancel : forall r1 r2, - r2 <= - r1 -> r1 <= r2.
 Proof.
@@ -1140,7 +1137,7 @@ Qed.
 Hint Immediate Ropp_le_cancel: real.
 
 Lemma Ropp_ge_cancel : forall r1 r2, - r2 >= - r1 -> r1 >= r2.
-Proof. auto using Ropp_le_cancel with real2. Qed.
+Proof. auto using Ropp_le_cancel with rorders. Qed.
 
 (*********************************************************)
 (** ** Order and multiplication                          *)
@@ -1157,10 +1154,10 @@ Qed.
 Hint Resolve Rmult_lt_compat_r.
 
 Lemma Rmult_gt_compat_r : forall r r1 r2, r > 0 -> r1 > r2 -> r1 * r > r2 * r.
-Proof. eauto using Rmult_lt_compat_r with real2. Qed.
+Proof. eauto using Rmult_lt_compat_r with rorders. Qed.
 
 Lemma Rmult_gt_compat_l : forall r r1 r2, r > 0 -> r1 > r2 -> r * r1 > r * r2.
-Proof. eauto using Rmult_lt_compat_l with real2. Qed.
+Proof. eauto using Rmult_lt_compat_l with rorders. Qed.
 
 (**********)
 Lemma Rmult_le_compat_l :
@@ -1182,11 +1179,11 @@ Hint Resolve Rmult_le_compat_r: real.
 
 Lemma Rmult_ge_compat_l :
   forall r r1 r2, r >= 0 -> r1 >= r2 -> r * r1 >= r * r2.
-Proof. eauto using Rmult_le_compat_l with real2. Qed.
+Proof. eauto using Rmult_le_compat_l with rorders. Qed.
 
 Lemma Rmult_ge_compat_r :
   forall r r1 r2, r >= 0 -> r1 >= r2 -> r1 * r >= r2 * r.
-Proof. eauto using Rmult_le_compat_r with real2. Qed.
+Proof. eauto using Rmult_le_compat_r with rorders. Qed.
 
 (**********)
 Lemma Rmult_le_compat :
@@ -1204,7 +1201,7 @@ Hint Resolve Rmult_le_compat: real.
 Lemma Rmult_ge_compat :
   forall r1 r2 r3 r4,
     0 <= r1 -> 0 <= r3 -> r1 <= r2 -> r3 <= r4 -> r1 * r3 <= r2 * r4.
-Proof. auto with real real2. Qed.
+Proof. auto with real rorders. Qed.
 
 Lemma Rmult_gt_0_lt_compat :
   forall r1 r2 r3 r4,
@@ -1271,7 +1268,7 @@ Proof.
 Qed.
 
 Lemma Rmult_gt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
-Proof. eauto using Rmult_lt_reg_l with real2. Qed.
+Proof. eauto using Rmult_lt_reg_l with rorders. Qed.
 
 Lemma Rmult_le_reg_l : forall r r1 r2, 0 < r -> r * r1 <= r * r2 -> r1 <= r2.
 Proof.
@@ -1316,7 +1313,7 @@ Lemma Rge_minus : forall r1 r2, r1 >= r2 -> r1 - r2 >= 0.
 Proof. 
   destruct 1.
     auto using Rgt_minus, Rgt_ge.
-    right; auto using Rminus_diag_eq with real2.
+    right; auto using Rminus_diag_eq with rorders.
 Qed.
 
 (**********)

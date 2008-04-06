@@ -349,7 +349,7 @@ Proof.
   rewrite Rabs_Rinv; auto.
   rewrite <- Rinv_pow; auto.
   rewrite RPow_abs; auto.
-  rewrite H'0; rewrite Rabs_right; auto with real.
+  rewrite H'0; rewrite Rabs_right; auto with real rorders.
   apply Rlt_pow; auto with arith.
   rewrite Rabs_Rinv; auto.
   apply Rmult_lt_reg_l with (r := Rabs r).
