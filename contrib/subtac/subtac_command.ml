@@ -390,6 +390,7 @@ let interp_recursive fixkind l boxed =
   let fixdefs = List.map (nf_evar (evars_of evd)) fixdefs in
   let fixtypes = List.map (nf_evar (evars_of evd)) fixtypes in
   let rec_sign = nf_named_context_evar (evars_of evd) rec_sign in
+    
   let recdefs = List.length rec_sign in
 (*   List.iter (check_evars env_rec Evd.empty evd) fixdefs; *)
 (*   List.iter (check_evars env Evd.empty evd) fixtypes; *)
@@ -422,7 +423,8 @@ let interp_recursive fixkind l boxed =
 	  let possible_indexes =
 	    List.map2 compute_possible_guardness_evidences wfl fixtypes in
 	  let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames), 
-	    Array.of_list fixtypes, Array.of_list (List.map (subst_vars fixnames) fixdefs)
+	    Array.of_list fixtypes, 
+	    Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
 	  in
 	  let indexes = Pretyping.search_guard dummy_loc (Global.env ()) possible_indexes fixdecls in
 	    list_iter_i (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) l
