@@ -402,7 +402,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 )
 	) 
     in
-    Topconstr.CApp (dummy_loc,(None,Topconstr.mkIdentC (id_of_string "eq")),
+    Topconstr.CApp (dummy_loc,(None,Topconstr.mkRefC (Qualid (dummy_loc,(qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Command.generalize_constr_expr unbounded_eq args in 
