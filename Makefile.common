@@ -744,6 +744,7 @@ SETOIDSVO:= theories/Setoids/Setoid.vo # theories/Setoids/Setoid_tac.vo theories
 UNICODEVO:= theories/Unicode/Utf8.vo
 
 CLASSESVO:= theories/Classes/Init.vo theories/Classes/RelationClasses.vo theories/Classes/Morphisms.vo \
+	theories/Classes/Morphisms_Prop.vo theories/Classes/Morphisms_Relations.vo \
 	theories/Classes/Functions.vo theories/Classes/Equivalence.vo theories/Classes/SetoidTactics.vo \
 	theories/Classes/SetoidClass.vo theories/Classes/SetoidAxioms.vo theories/Classes/EquivDec.vo \
 	 theories/Classes/SetoidDec.vo

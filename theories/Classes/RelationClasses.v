@@ -21,9 +21,6 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
 Require Export Coq.Relations.Relation_Definitions.
 
-Set Implicit Arguments.
-Unset Strict Implicit.
-
 (** Default relation on a given support. *)
 
 Class DefaultRelation A (R : relation A).
@@ -50,6 +47,9 @@ Proof. reflexivity. Qed.
 
 (** We rebind relations in separate classes to be able to overload each proof. *)
 
+Set Implicit Arguments.
+Unset Strict Implicit.
+
 Class Reflexive A (R : relation A) :=
   reflexivity : forall x, R x x.
 
@@ -72,6 +72,8 @@ Implicit Arguments Asymmetric [A].
 Implicit Arguments Transitive [A].
 
 Hint Resolve @irreflexivity : ord.
+
+Unset Implicit Arguments.
 
 (** We can already dualize all these properties. *)
 
@@ -115,11 +117,19 @@ Program Instance [ Symmetric A (R : relation A) ] => complement_Symmetric : Symm
 
 (** * Standard instances. *)
 
+Ltac reduce_hyp H :=
+  match type of H with
+    | context [ _ <-> _ ] => fail 1
+    | _ => red in H ; try reduce_hyp H
+  end.
+
 Ltac reduce_goal :=
   match goal with
     | [ |- _ <-> _ ] => fail 1
     | _ => red ; intros ; try reduce_goal
   end.
+
+Tactic Notation "reduce" "in" hyp(Hid) := reduce_hyp Hid.
 
 Ltac reduce := reduce_goal.
 
@@ -203,52 +213,187 @@ Program Instance eq_equivalence : Equivalence A (@eq A) | 10.
 
 Program Instance iff_equivalence : Equivalence Prop iff.
 
-(** The following is not definable. *)
-(*
-Program Instance [ sa : Equivalence a R, sb : Equivalence b R' ] => equiv_setoid : 
-  Equivalence (a -> b)
-  (fun f g => forall (x y : a), R x y -> R' (f x) (g y)).
-*)
+(** We now develop a generalization of results on relations for arbitrary predicates.
+   The resulting theory can be applied to homogeneous binary relations but also to
+   arbitrary n-ary predicates. *)
 
+Require Import List.
 
-(** We define the various operations which define the algebra on relations.
-   They are essentially liftings of the logical operations. *)
+(* Notation " [ ] " := nil : list_scope. *)
+(* Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) (at level 1) : list_scope. *)
+
+(* Open Local Scope list_scope. *)
+
+(** A compact representation of non-dependent arities, with the codomain singled-out. *)
+
+Fixpoint arrows (l : list Type) (r : Type) : Type := 
+  match l with 
+    | nil => r
+    | A :: l' => A -> arrows l' r
+  end.
+
+(** We can define abbreviations for operation and relation types based on [arrows]. *)
+
+Definition unary_operation A := arrows (cons A nil) A.
+Definition binary_operation A := arrows (cons A (cons A nil)) A.
+Definition ternary_operation A := arrows (cons A (cons A (cons A nil))) A.
+
+(** We define n-ary [predicate]s as functions into [Prop]. *)
+
+Definition predicate (l : list Type) := arrows l Prop.
+
+(** Unary predicates, or sets. *)
+
+Definition unary_predicate A := predicate (cons A nil).
+
+(** Homogenous binary relations, equivalent to [relation A]. *)
+
+Definition binary_relation A := predicate (cons A (cons A nil)).
+
+(** We can close a predicate by universal or existential quantification. *) 
+
+Fixpoint predicate_all (l : list Type) : predicate l -> Prop :=
+  match l with
+    | nil => fun f => f
+    | A :: tl => fun f => forall x : A, predicate_all tl (f x)
+  end.
+
+Fixpoint predicate_exists (l : list Type) : predicate l -> Prop :=
+  match l with
+    | nil => fun f => f
+    | A :: tl => fun f => exists x : A, predicate_exists tl (f x)
+  end.
+
+(** Pointwise extension of a binary operation on [T] to a binary operation 
+   on functions whose codomain is [T]. *)
+
+Fixpoint pointwise_extension {l : list Type} {T : Type}
+  (op : binary_operation T) : binary_operation (arrows l T) :=
+  match l with
+    | nil => fun R R' => op R R'
+    | A :: tl => fun R R' => 
+      fun x => pointwise_extension op (R x) (R' x)
+  end.
+
+(** For an operator on [Prop] this lifts the operator to a binary operation. *)
+
+Definition pointwise_relation_extension (l : list Type) (op : binary_relation Prop) : 
+  binary_operation (predicate l) := pointwise_extension op.
+
+(** Pointwise lifting, equivalent to doing [pointwise_extension] and closing using [predicate_all]. *)
+
+Fixpoint lift_pointwise (l : list Type) (op : binary_relation Prop) : binary_relation (predicate l) :=
+  match l with
+    | nil => fun R R' => op R R'
+    | A :: tl => fun R R' => 
+      forall x, lift_pointwise tl op (R x) (R' x)
+  end.
+
+(** The n-ary equivalence relation, defined by lifting the 0-ary [iff] relation. *)
+
+Definition predicate_equivalence {l : list Type} : binary_relation (predicate l) :=
+  lift_pointwise l iff.
+
+(** The n-ary implication relation, defined by lifting the 0-ary [impl] relation. *)
+
+Definition predicate_implication {l : list Type} :=
+  lift_pointwise l impl.
+
+(** Notations for pointwise equivalence and implication of predicates. *)
+
+Infix "<∙>" := predicate_equivalence (at level 95, no associativity) : predicate_scope.
+Infix "-∙>" := predicate_implication (at level 70) : predicate_scope.
+
+Open Local Scope predicate_scope.
+
+(** The pointwise liftings of conjunction and disjunctions.
+   Note that these are [binary_operation]s, building new relations out of old ones. *)
+
+Definition predicate_intersection {l : list Type} : binary_operation (predicate l) :=
+  pointwise_relation_extension l and.
+
+Definition predicate_union {l : list Type} : binary_operation (predicate l) :=
+  pointwise_relation_extension l or.
+
+Infix "/∙\" := predicate_intersection (at level 80, right associativity) : predicate_scope.
+Infix "\∙/" := predicate_union (at level 85, right associativity) : predicate_scope.
+
+(** The always [True] and always [False] predicates. *)
+
+Fixpoint true_predicate {l : list Type} : predicate l := 
+  match l with
+    | nil => True
+    | A :: tl => fun _ => @true_predicate tl
+  end.
+
+Fixpoint false_predicate {l : list Type} : predicate l :=
+  match l with
+    | nil => False
+    | A :: tl => fun _ => @false_predicate tl
+  end.
+
+Notation "∙⊤∙" := true_predicate : predicate_scope.
+Notation "∙⊥∙" := false_predicate : predicate_scope.
+
+(** Predicate equivalence is an equivalence, and predicate implication defines a preorder. *)
+
+Program Instance predicate_equivalence_equivalence :
+  Equivalence (predicate l) predicate_equivalence.
+
+  Next Obligation.
+    induction l ; firstorder.
+  Qed.
+
+  Next Obligation.
+    induction l ; firstorder.
+  Qed.
+  
+  Next Obligation.
+    fold lift_pointwise.
+    induction l. firstorder.
+    intros. simpl in *. intro. pose (IHl (x x0) (y x0) (z x0)).
+    firstorder.
+  Qed.
+
+Program Instance predicate_implication_preorder :
+  PreOrder (predicate l) predicate_implication.
+
+  Next Obligation.
+    induction l ; firstorder.
+  Qed.
+
+  Next Obligation.
+    fold lift_pointwise.
+    induction l. firstorder.
+    unfold predicate_implication in *. simpl in *. 
+    intro. pose (IHl (x x0) (y x0) (z x0)). firstorder.
+  Qed.
+
+(** We define the various operations which define the algebra on binary relations, 
+   from the general ones. *)
 
 Definition relation_equivalence {A : Type} : relation (relation A) :=
-  fun (R R' : relation A) => forall x y, R x y <-> R' x y.
+  @predicate_equivalence (cons _ (cons _ nil)).
 
-Class subrelation {A:Type} (R R' : relation A) :=
-  is_subrelation : forall x y, R x y -> R' x y.
+Class subrelation {A:Type} (R R' : relation A) : Prop :=
+  is_subrelation : @predicate_implication (cons A (cons A nil)) R R'.
 
 Implicit Arguments subrelation [[A]].
 
-
 Definition relation_conjunction {A} (R : relation A) (R' : relation A) : relation A :=
-  fun x y => R x y /\ R' x y.
+  @predicate_intersection (cons A (cons A nil)) R R'.
 
 Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relation A :=
-  fun x y => R x y \/ R' x y.
-
-(* Infix "<R>" := relation_equivalence (at level 95, no associativity) : relation_scope. *)
-(* Infix "-R>" := subrelation (at level 70) : relation_scope. *)
-(* Infix "/R\" := relation_conjunction (at level 80, right associativity) : relation_scope. *)
-(* Infix "\R/" := relation_disjunction (at level 85, right associativity) : relation_scope. *)
-
-(* Open Local Scope relation_scope. *)
+  @predicate_union (cons A (cons A nil)) R R'.
 
 (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
-Program Instance relation_equivalence_equivalence :
+Instance (A : Type) => relation_equivalence_equivalence :
   Equivalence (relation A) relation_equivalence.
+Proof. intro A. exact (@predicate_equivalence_equivalence (cons A (cons A nil))). Qed.
 
-  Next Obligation.
-  Proof.
-    unfold relation_equivalence in *.
-    apply transitivity with (y x0 y0) ; [ apply H | apply H0 ].
-  Qed.
-
-Program Instance subrelation_preorder :
-  PreOrder (relation A) subrelation.
+Instance relation_implication_preorder : PreOrder (relation A) subrelation.
+Proof. intro A. exact (@predicate_implication_preorder (cons A (cons A nil))). Qed.
 
 (** *** Partial Order.
    A partial order is a preorder which is additionally antisymmetric.
@@ -256,8 +401,7 @@ Program Instance subrelation_preorder :
    on the carrier. *)
 
 Class [ equ : Equivalence A eqA, PreOrder A R ] => PartialOrder :=
-  partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (flip R)).
-
+  partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (inverse R)).
 
 (** The equivalence proof is sufficient for proving that [R] must be a morphism 
    for equivalence (see Morphisms).
@@ -265,8 +409,8 @@ Class [ equ : Equivalence A eqA, PreOrder A R ] => PartialOrder :=
 
 Instance [ PartialOrder A eqA R ] =>  partial_order_antisym : ! Antisymmetric A eqA R.
 Proof with auto.
-  reduce_goal. pose partial_order_equivalence. red in r.
-  apply <- r. firstorder.
+  reduce_goal. pose partial_order_equivalence as poe. do 3 red in poe. 
+  apply <- poe. firstorder.
 Qed.
 
 (** The partial order defined by subrelation and relation equivalence. *)
@@ -279,8 +423,6 @@ Program Instance subrelation_partial_order :
     unfold relation_equivalence in *. firstorder.
   Qed.
 
-Instance iff_impl_subrelation : subrelation iff impl.
-Proof. firstorder. Qed.
-
-Instance iff_inverse_impl_subrelation : subrelation iff (inverse impl).
-Proof. firstorder. Qed.
+Lemma inverse_pointwise_relation A (R : relation A) : 
+  relation_equivalence (pointwise_relation (inverse R)) (inverse (pointwise_relation (A:=A) R)).
+Proof. reflexivity. Qed.

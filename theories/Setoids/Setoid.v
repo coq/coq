@@ -8,22 +8,18 @@
 
 (*i $Id$: i*)
 
-Set Implicit Arguments.
-
 Require Export Coq.Classes.SetoidTactics.
 
 (** For backward compatibility *)
 
-Record Setoid_Theory  (A: Type) (Aeq: relation A) : Prop := 
-  { Seq_refl : forall x:A, Aeq x x;
-    Seq_sym : forall x y:A, Aeq x y -> Aeq y x;
-    Seq_trans : forall x y z:A, Aeq x y -> Aeq y z -> Aeq x z }.
-
-Implicit Arguments Setoid_Theory [].
-Implicit Arguments Seq_refl [].
-Implicit Arguments Seq_sym [].
-Implicit Arguments Seq_trans [].
-
+Definition Setoid_Theory := @Equivalence.  
+Definition Build_Setoid_Theory := @Build_Equivalence.  
+Definition Seq_refl A Aeq (s : Setoid_Theory A Aeq) : forall x:A, Aeq x x :=
+  Eval compute in reflexivity.
+Definition Seq_sym A Aeq (s : Setoid_Theory A Aeq) : forall x y:A, Aeq x y -> Aeq y x :=
+  Eval compute in symmetry.
+Definition Seq_trans A Aeq (s : Setoid_Theory A Aeq) : forall x y z:A, Aeq x y -> Aeq y z -> Aeq x z :=
+  Eval compute in transitivity.
 
 (** Some tactics for manipulating Setoid Theory not officially 
     declared as Setoid. *)

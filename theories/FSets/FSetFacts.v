@@ -295,12 +295,12 @@ End BoolSpec.
 
 Definition E_ST : Setoid_Theory elt E.eq.
 Proof.
-constructor; [apply E.eq_refl|apply E.eq_sym|apply E.eq_trans].
+constructor ; red; [apply E.eq_refl|apply E.eq_sym|apply E.eq_trans].
 Qed.
 
 Definition Equal_ST : Setoid_Theory t Equal.
 Proof. 
-constructor; [apply eq_refl | apply eq_sym | apply eq_trans].
+constructor ; red; [apply eq_refl | apply eq_sym | apply eq_trans].
 Qed.
 
 Add Relation elt E.eq 

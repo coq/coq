@@ -130,6 +130,7 @@ type search_state = {
   tacres : goal list sigma * validation;
   pri : int;
   last_tactic : std_ppcmds;
+(*   filter : constr -> constr -> bool; *)
   dblist : Auto.Hint_db.t list;
   localdb :  Auto.Hint_db.t list }
     
@@ -148,23 +149,23 @@ module SearchProblem = struct
       prlist (pr_ev evars) (sig_it gls)
 	
   let filter_tactics (glls,v) l =
-    if !debug then
-      (let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in
-      let evars = Evarutil.nf_evars (Refiner.project glls) in
-    	msg (str"Goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"));
+(*     if !debug then *)
+(*       (let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
+(*       let evars = Evarutil.nf_evars (Refiner.project glls) in *)
+(*     	msg (str"Goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n")); *)
     let rec aux = function
       | [] -> []
       | (tac,pri,pptac) :: tacl -> 
 	  try 
-	    if !debug then msg (str"\nTrying tactic: " ++ pptac ++ str"\n");
+(* 	    if !debug then msg (str"\nTrying tactic: " ++ pptac ++ str"\n"); *)
 	    let (lgls,ptl) = apply_tac_list tac glls in 
 	    let v' p = v (ptl p) in
-	      	      if !debug then
-	      		begin
-	      		  let evars = Evarutil.nf_evars (Refiner.project glls) in
-	      		    msg (str"\nOn goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n");
-	      		    msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n"))
-	      		end;
+(* 	      	      if !debug then *)
+(* 	      		begin *)
+(* 	      		  let evars = Evarutil.nf_evars (Refiner.project glls) in *)
+(* 	      		    msg (str"\nOn goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
+(* 	      		    msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")) *)
+(* 	      		end; *)
 	      ((lgls,v'),pri,pptac) :: aux tacl
 	  with e when Logic.catchable_exception e ->
 	    (* 	    if !debug then msg (str"failed\n"); *)
@@ -195,31 +196,33 @@ module SearchProblem = struct
       let nbgl = List.length (sig_it lg) in
       assert (nbgl > 0);
       let g = find_first_goal lg in
+(*       let filt = s.filter (pf_concl g) in *)
       let assumption_tacs = 
 	let l = 
 	  filter_tactics s.tacres
 	    (List.map 
 		(fun id -> (Eauto.e_give_exact_constr (mkVar id), 0,
 			   (str "exact" ++ spc () ++ pr_id id)))
-		(pf_ids_of_hyps g))
+(* 		(List.filter (fun id -> filt (pf_get_hyp_typ g id)) *)
+		    (pf_ids_of_hyps g))
 	in
 	  List.map (fun (res,pri,pp) -> { s with tacres = res; pri = 0;
 	    last_tactic = pp; localdb = List.tl s.localdb }) l
       in
-      let intro_tac = 
-	List.map 
-	  (fun ((lgls,_) as res,pri,pp) -> 
-	     let g' = first_goal lgls in 
-	     let hintl = 
-	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
-	     in	       
-             let ldb = Hint_db.add_list hintl (match s.localdb with [] -> assert false | hd :: _ -> hd) in
-	       { s with tacres = res; 
-		 last_tactic = pp;
-		 pri = pri;
-		 localdb = ldb :: List.tl s.localdb })
-	  (filter_tactics s.tacres [Tactics.intro,1,(str "intro")])
-      in
+(*       let intro_tac =  *)
+(* 	List.map  *)
+(* 	  (fun ((lgls,_) as res,pri,pp) ->  *)
+(* 	     let g' = first_goal lgls in  *)
+(* 	     let hintl =  *)
+(* 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g') *)
+(* 	     in	        *)
+(*              let ldb = Hint_db.add_list hintl (match s.localdb with [] -> assert false | hd :: _ -> hd) in *)
+(* 	       { s with tacres = res;  *)
+(* 		 last_tactic = pp; *)
+(* 		 pri = pri; *)
+(* 		 localdb = ldb :: List.tl s.localdb }) *)
+(* 	  (filter_tactics s.tacres [Tactics.intro,1,(str "intro")]) *)
+(*       in *)
       let possible_resolve ((lgls,_) as res, pri, pp) =
 	let nbgl' = List.length (sig_it lgls) in
 	  if nbgl' < nbgl then
@@ -232,17 +235,13 @@ module SearchProblem = struct
 	      localdb = 
 		list_addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb }
       in
-(*       let custom_tac =  *)
-(* 	List.map possible_resolve *)
-(* 	  (filter_tactics s.tacres [s.custom_tactic,(str "custom_tactic")]) *)
-(*       in *)
       let rec_tacs = 
 	let l = 
 	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
 	in
 	List.map possible_resolve l
       in
-      List.sort compare (assumption_tacs @ intro_tac (* @ custom_tac *) @ rec_tacs)
+      List.sort compare (assumption_tacs (* @intro_tac  @ custom_tac *) @ rec_tacs)
 
   let pp s = 
     msg (hov 0 (str " depth=" ++ int s.depth ++ spc () ++ 
@@ -252,10 +251,48 @@ end
 
 module Search = Explore.Make(SearchProblem)
 
+
+let filter_pat c =
+  try
+    let morg = Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism")) in
+    let morc = constr_of_global morg in
+	match kind_of_term c with
+	  | App(morph, [| t; r; m |]) when eq_constr morph morc ->
+	      (fun y ->
+		(match y.pat with
+		    Some (PApp (PRef mor, [| t'; r'; m' |])) when mor = morg ->
+		      (match m' with
+			| PRef c -> if isConst m then eq_constr (constr_of_global c) m else false
+			| _ -> true)
+		  | _ -> true))
+	  | _ -> fun _ -> true
+  with _ -> fun _ -> true
+
+let morphism_class = 
+  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))))
+    
+let filter c =
+  try let morc = constr_of_global (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))) in
+	match kind_of_term c with
+	  | App(morph, [| t; r; m |]) when eq_constr morph morc ->
+	      (fun y ->
+		let (_, r) = decompose_prod y in
+		  (match kind_of_term r with
+		      App (morph', [| t'; r'; m' |]) when eq_constr morph' morc ->
+			(match kind_of_term m' with
+			  | Rel n -> true
+			  | Const c -> eq_constr m m'
+			  | App _ -> true
+			  | _ -> false)
+		    | _ -> false))
+	  | _ -> fun _ -> true
+  with _ -> fun _ -> true
+
 let make_initial_state n gls dblist localdbs =
   { depth = n;
     tacres = gls;
     pri = 0;
+(*     filter = filter; *)
     last_tactic = (mt ());
     dblist = dblist;
     localdb = localdbs }
@@ -422,9 +459,6 @@ END
 
 (** Typeclass-based rewriting. *)
 
-let morphism_class = 
-  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))))
-
 let respect_proj = lazy (mkConst (List.hd (Lazy.force morphism_class).cl_projs))
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
@@ -499,7 +533,7 @@ let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
 
-let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a option) (f : 'a -> constr) =
+let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t option) (f : 'a -> constr) =
   let new_evar isevars env t =
     Evarutil.e_new_evar isevars env
       (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
@@ -527,7 +561,8 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a optio
 		let t = Reductionops.nf_betaiota t in
 		let rel = mk_relty t None in 
 		  t, rel, [t, rel]
-	    | Some (t, rel) -> t, rel, [t, rel])
+	    | Some codom -> let (t, rel) = Lazy.force codom in
+			      t, rel, [t, rel])
   in aux m cstrs
 
 let reflexivity_proof_evar env evars carrier relation x =
@@ -554,26 +589,17 @@ let reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
 let symmetric_proof env = find_class_proof symmetric_type symmetric_proof env
 let transitive_proof env = find_class_proof transitive_type transitive_proof env
 
+exception FoundInt of int
+
+let array_find (arr: 'a array) (pred: int -> 'a -> bool): int = 
+  try
+    for i=0 to Array.length arr - 1 do if pred i (arr.(i)) then raise (FoundInt i) done;
+    raise Not_found
+  with FoundInt i -> i
+
 let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars =
   let morph_instance, proj, sigargs, m', args, args' = 
-(*     if is_equiv env sigma m then  *)
-(*       let params, rest = array_chop 3 args in *)
-(*       let a, r, s = params.(0), params.(1), params.(2) in *)
-(*       let params', rest' = array_chop 3 args' in *)
-(*       let inst = mkApp (Lazy.force setoid_morphism, params) in *)
-(* 	(* Equiv gives a binary morphism *) *)
-(*       let (cl, proj) = Lazy.force class_two in *)
-(*       let ctxargs = [ a; r; s; a; r; s; mkProp; Lazy.force iff; Lazy.force iff_setoid; ] in *)
-(*       let m' = mkApp (m, [| a; r; s |]) in *)
-(* 	inst, proj, ctxargs, m', rest, rest' *)
-(*     else *)
-    let first = 
-      let first = ref (-1) in
-	for i = 0 to Array.length args' - 1 do
-	  if !first = -1 && args'.(i) <> None then first := i
-	done;
-	!first
-    in
+    let first = try (array_find args' (fun i b -> b <> None)) with Not_found -> raise (Invalid_argument "resolve_morphism") in
     let morphargs, morphobjs = array_chop first args in
     let morphargs', morphobjs' = array_chop first args' in
     let appm = mkApp(m, morphargs) in
@@ -736,9 +762,47 @@ let unfold_all t =
 	  | _ -> assert false)
     | _ -> assert false
 
-type rewrite_flags = { under_lambdas : bool }
+(* let lift_cstr env sigma evars args cstr = *)
+(*   let codom =  *)
+(*     match cstr with *)
+(*       | Some c -> c *)
+(*       | None -> *)
+(* 	  let ty = Evarutil.e_new_evar evars env (new_Type ()) in *)
+(* 	  let rel = Evarutil.e_new_evar evars env (mk_relation ty) in *)
+(* 	    (ty, rel) *)
+(*   in *)
+(*     Array.fold_right *)
+(*       (fun arg (car, rel) ->  *)
+(* 	let ty = Typing.type_of env sigma arg in *)
+(* 	let car' = mkProd (Anonymous, ty, car) in *)
+(* 	let rel' = mkApp (Lazy.force pointwise_relation, [| ty; car; rel |]) in *)
+(* 	  (car', rel')) *)
+(*       args codom *)
 
-let default_flags = { under_lambdas = true }
+let rec decomp_pointwise n c =
+  if n = 0 then c
+  else
+    match kind_of_term c with
+      | App (pointwise, [| a; b; relb |]) -> decomp_pointwise (pred n) relb
+      | _ -> raise Not_found
+	  
+let lift_cstr env sigma evars args cstr =
+  match cstr with
+    | Some codom -> 
+	let cstr () =
+	  Array.fold_right
+	    (fun arg (car, rel) -> 
+	      let ty = Typing.type_of env sigma arg in
+	      let car' = mkProd (Anonymous, ty, car) in
+	      let rel' = mkApp (Lazy.force pointwise_relation, [| ty; car; rel |]) in
+		(car', rel'))
+	    args (Lazy.force codom)
+	in Some (Lazy.lazy_from_fun cstr)
+    | None -> None
+	  
+type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
+
+let default_flags = { under_lambdas = true; on_morphisms = true; }
 
 let build_new gl env sigma flags occs hypinfo concl cstr evars =
   let is_occ occ = occs = [] || List.mem occ occs in
@@ -763,19 +827,36 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
       | None -> 
 	  match kind_of_term t with
 	    | App (m, args) ->
-		let args', occ = 
-		  Array.fold_left 
-		    (fun (acc, occ) arg -> let res, occ = aux env arg occ None in (res :: acc, occ))
-		    ([], occ) args
+		let rewrite_args () = 
+		  let args', occ = 
+		    Array.fold_left 
+		      (fun (acc, occ) arg -> let res, occ = aux env arg occ None in (res :: acc, occ))
+		      ([], occ) args
+		  in
+		  let res =
+		    if List.for_all (fun x -> x = None) args' then None
+		    else 
+		      let args' = Array.of_list (List.rev args') in
+			(try Some (resolve_morphism env sigma t m args args' cstr evars)
+			  with Not_found -> None)
+		  in res, occ
 		in
-		let res =
-		  if List.for_all (fun x -> x = None) args' then None
-		  else 
-		    let args' = Array.of_list (List.rev args') in
-		      (try Some (resolve_morphism env sigma t m args args' cstr evars)
-			with Not_found -> None)
-		in res, occ
-		  
+		  if flags.on_morphisms then
+		    let m', occ = aux env m occ (lift_cstr env sigma evars args cstr) in
+		      match m' with
+			  None -> rewrite_args () (* Standard path, try rewrite on arguments *)
+			| Some (prf, (car, rel, c1, c2)) -> 
+			    (* We rewrote the function and get a proof of pointwise rel for the arguments.
+			       We just apply it. *)
+			    let nargs = Array.length args in
+			    let decompprod c = snd (Reductionops.decomp_n_prod env (Evd.evars_of !evars) nargs c) in
+			    let res = 
+			      try Some (mkApp (prf, args),
+				       (decompprod car, decomp_pointwise nargs rel, mkApp(c1, args), mkApp(c2, args)))
+			      with Not_found -> None
+			    in res, occ
+		  else rewrite_args ()
+		    
 	    | Prod (_, x, b) when not (dependent (mkRel 1) b) -> 
 		let x', occ = aux env x occ None in
 		let b', occ = aux env b occ None in
@@ -832,8 +913,6 @@ let resolve_typeclass_evars d p env evd onlyargs =
       (fun ev evi -> class_of_constr evi.Evd.evar_concl <> None)
   in resolve_all_evars d p env pred evd
       
-let cl_rewrite_tactic = lazy (Tacinterp.interp <:tactic<setoid_rewrite_tac>>)
-
 let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
     match clause with
@@ -848,7 +927,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
   let evars = ref (Evd.create_evar_defs Evd.empty) in
   let env = pf_env gl in
   let sigma = project gl in
-  let eq, _ = build_new gl env sigma flags occs hypinfo concl (Some cstr) evars in
+  let eq, _ = build_new gl env sigma flags occs hypinfo concl (Some (Lazy.lazy_from_val cstr)) evars in
     match eq with  
 	Some (p, (_, _, oldt, newt)) -> 
 	  (try 
@@ -1322,7 +1401,7 @@ let get_hyp gl c clause l2r =
 	  unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.rel but gl
     | _ -> decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r
 	
-let general_rewrite_flags = { under_lambdas = false }
+let general_rewrite_flags = { under_lambdas = false; on_morphisms = false }
 
 let general_s_rewrite l2r c ~new_goals gl =
   let meta = Evarutil.new_meta() in

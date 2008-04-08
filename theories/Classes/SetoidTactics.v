@@ -17,6 +17,7 @@
 
 Require Export Coq.Classes.RelationClasses.
 Require Export Coq.Classes.Morphisms.
+Require Export Coq.Classes.Morphisms_Prop.
 Require Export Coq.Classes.Equivalence.
 Require Export Coq.Relations.Relation_Definitions.
 
@@ -89,6 +90,7 @@ Ltac reverse_arrows x :=
   end.
 
 Ltac default_add_morphism_tactic :=
+  intros ;
   (try destruct_morphism) ;
   match goal with
     | [ |- (?x ==> ?y) _ _ ] => red_subst_eq_morphism (x ==> y) ; reverse_arrows (x ==> y)

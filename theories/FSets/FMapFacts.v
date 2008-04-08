@@ -651,7 +651,7 @@ Proof. unfold Equal; congruence. Qed.
 
 Definition Equal_ST : forall elt:Type, Setoid_Theory (t elt) (@Equal _).
 Proof. 
-constructor; [apply Equal_refl | apply Equal_sym | apply Equal_trans].
+constructor; red; [apply Equal_refl | apply Equal_sym | apply Equal_trans].
 Qed.
 
 Add Relation key E.eq 

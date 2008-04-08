@@ -35,23 +35,25 @@ Instance [ Equivalence A R ] =>
 
 Definition equiv [ Equivalence A R ] : relation A := R.
 
-(** Shortcuts to make proof search possible (unification won't unfold equiv). *)
+Typeclasses unfold @equiv.
 
-Program Instance [ sa : Equivalence A ] => equiv_refl : Reflexive equiv.
+(* (** Shortcuts to make proof search possible (unification won't unfold equiv). *) *)
 
-Program Instance [ sa : Equivalence A ] => equiv_sym : Symmetric equiv.
+(* Program Instance [ sa : Equivalence A ] => equiv_refl : Reflexive equiv. *)
 
-  Next Obligation.
-  Proof.
-    symmetry ; auto.
-  Qed.
+(* Program Instance [ sa : Equivalence A ] => equiv_sym : Symmetric equiv. *)
 
-Program Instance [ sa : Equivalence A ] => equiv_trans : Transitive equiv.
+(*   Next Obligation. *)
+(*   Proof. *)
+(*     symmetry ; auto. *)
+(*   Qed. *)
 
-  Next Obligation.
-  Proof.
-    transitivity y ; auto.
-  Qed.
+(* Program Instance [ sa : Equivalence A ] => equiv_trans : Transitive equiv. *)
+
+(*   Next Obligation. *)
+(*   Proof. *)
+(*     transitivity y ; auto. *)
+(*   Qed. *)
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
 
@@ -63,23 +65,6 @@ Notation " x === y " := (equiv x y) (at level 70, no associativity) : equiv_scop
 Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) : equiv_scope.
   
 Open Local Scope equiv_scope.
-
-(** Use the [clsubstitute] command which substitutes an equality in every hypothesis. *)
-
-Ltac setoid_subst H := 
-  match type of H with
-    ?x === ?y => substitute H ; clear H x
-  end.
-
-Ltac setoid_subst_nofail :=
-  match goal with
-    | [ H : ?x === ?y |- _ ] => setoid_subst H ; setoid_subst_nofail
-    | _ => idtac
-  end.
-  
-(** [subst*] will try its best at substituting every equality in the goal. *)
-
-Tactic Notation "subst" "*" := subst_no_fail ; setoid_subst_nofail.
 
 Lemma nequiv_equiv_trans : forall [ Equivalence A ] (x y z : A), x =/= y -> y === z -> x =/= z.
 Proof with auto.
@@ -96,6 +81,23 @@ Proof.
   assert(y === z) by (transitivity x ; auto).
   contradiction.
 Qed.
+
+(** Use the [substitute] command which substitutes an applied relation in every hypothesis. *)
+
+Ltac setoid_subst H := 
+  match type of H with
+    ?x === ?y => substitute H ; clear H x
+  end.
+
+Ltac setoid_subst_nofail :=
+  match goal with
+    | [ H : ?x === ?y |- _ ] => setoid_subst H ; setoid_subst_nofail
+    | _ => idtac
+  end.
+  
+(** [subst*] will try its best at substituting every equality in the goal. *)
+
+Tactic Notation "subst" "*" := subst_no_fail ; setoid_subst_nofail.
 
 Ltac equiv_simplify_one :=
   match goal with
@@ -117,34 +119,28 @@ Ltac equivify := repeat equivify_tac.
 
 (** Every equivalence relation gives rise to a morphism, as it is Transitive and Symmetric. *)
 
-Instance [ sa : Equivalence ] => equiv_morphism : Morphism (equiv ++> equiv ++> iff) equiv :=
-  respect := respect.
+(* Instance [ sa : Equivalence ] => equiv_morphism : Morphism (equiv ++> equiv ++> iff) equiv := *)
+(*   respect := respect. *)
 
-(** The partial application too as it is Reflexive. *)
+(* (** The partial application too as it is Reflexive. *) *)
 
-Instance [ sa : Equivalence A ] (x : A) => 
-  equiv_partial_app_morphism : Morphism (equiv ++> iff) (equiv x) :=
-  respect := respect. 
+(* Instance [ sa : Equivalence A ] (x : A) =>  *)
+(*   equiv_partial_app_morphism : Morphism (equiv ++> iff) (equiv x) := *)
+(*   respect := respect.  *)
 
-Definition type_eq : relation Type :=
-  fun x y => x = y.
+(** Instance not exported by default, as comparing types for equivalence may be unintentional. *)
 
-Program Instance type_equivalence : Equivalence Type type_eq.
+Section Type_Equivalence.
 
-  Solve Obligations using constructor ; unfold type_eq ; program_simpl.
+  Definition type_eq : relation Type :=
+    fun x y => x = y.
+  
+  Program Instance type_equivalence : Equivalence Type type_eq.
+  
+  Next Obligation. 
+  Proof. unfold type_eq in *. subst. reflexivity. Qed.
 
-Ltac morphism_tac := try red ; unfold arrow ; intros ; program_simpl ; try tauto.
-
-Ltac obligations_tactic ::= morphism_tac.
-
-(** These are morphisms used to rewrite at the top level of a proof, 
-   using [iff_impl_id_morphism] if the proof is in [Prop] and
-   [eq_arrow_id_morphism] if it is in Type. *)
-
-Program Instance iff_impl_id_morphism : 
-  Morphism (iff ++> impl) id.
-
-(* Program Instance eq_arrow_id_morphism : ? Morphism (eq +++> arrow) id. *)
+End Type_Equivalence.
 
 (** Partial equivs don't require reflexivity so we can build a partial equiv on the function space. *)
 
@@ -152,11 +148,32 @@ Class PartialEquivalence (carrier : Type) (pequiv : relation carrier) :=
   pequiv_prf :> PER carrier pequiv.
 
 Definition pequiv [ PartialEquivalence A R ] : relation A := R.
+Typeclasses unfold @pequiv.
 
 (** Overloaded notation for partial equiv equivalence. *)
 
 Notation " x =~= y " := (pequiv x y) (at level 70, no associativity) : type_scope.
 
-(** Reset the default Program tactic. *)
+Section Respecting.
 
-Ltac obligations_tactic ::= program_simpl.
+  (** Here we build an equivalence instance for functions which relates respectful ones only, 
+     we do not export it. *)
+
+  Definition respecting [ Equivalence A (R : relation A), Equivalence B (R' : relation B) ] : Type := 
+    { morph : A -> B | respectful R R' morph morph }.
+  
+  Program Instance [ Equivalence A R, Equivalence B R' ] => 
+    respecting_equiv : Equivalence respecting
+    (fun (f g : respecting) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
+
+  Solve Obligations using unfold respecting in * ; simpl_relation ; program_simpl.
+
+  Next Obligation.
+  Proof. 
+    unfold respecting in *. program_simpl. red in H2,H3,H4. 
+    transitivity (y x0) ; auto.
+    transitivity (y y0) ; auto.
+    symmetry. auto.
+  Qed.
+
+End Respecting.

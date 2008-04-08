@@ -552,8 +552,9 @@ let new_instance ctx (instid, bk, cl) props ?(tac:Proof_type.tactic option) ?(ho
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
 		Command.start_proof id kind termtype (fun _ -> function ConstRef cst -> hook cst | _ -> assert false);
-		Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !isevars)) *)
-		  (!refine_ref (evm, term));
+		if props <> [] then 
+		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !isevars)) *)
+		    (!refine_ref (evm, term));
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
 	      Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
 	      id

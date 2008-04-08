@@ -44,7 +44,7 @@ Implicit Arguments cons [[A]].
 
 Notation " [] " := nil.
 Notation " [ x ] " := (cons x nil).
-Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..).
+Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) (at level 1).
 
 (** n-ary exists ! *)
 

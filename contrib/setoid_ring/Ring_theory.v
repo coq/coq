@@ -257,7 +257,7 @@ Section ALMOST_RING.
 
  (** Leibniz equality leads to a setoid theory and is extensional*)
  Lemma Eqsth : Setoid_Theory R (@eq R).
- Proof.  constructor;intros;subst;trivial. Qed.
+ Proof.  constructor;red;intros;subst;trivial. Qed.
 
  Lemma Eq_s_ext : sring_eq_ext radd rmul (@eq R).
  Proof. constructor;intros;subst;trivial. Qed.

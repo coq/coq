@@ -121,7 +121,7 @@ Defined.
 
 Definition Q_Setoid : Setoid_Theory Q Qeq.
 Proof.
- split; unfold Qeq in |- *; auto; apply Qeq_trans.
+ split; red; unfold Qeq in |- *; auto; apply Qeq_trans.
 Qed.
 
 Add Setoid Q Qeq Q_Setoid as Qsetoid.

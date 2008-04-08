@@ -527,7 +527,7 @@ let ring_equality (r,add,mul,opp,req) =
 	  (setoid,op_morph)
     | _ ->
 	let setoid = setoid_of_relation (Global.env ()) r req in
-	let signature = [Some (r,req);Some (r,req)],Some(r,req) in
+	let signature = [Some (r,req);Some (r,req)],Some(Lazy.lazy_from_val (r,req)) in
 	let add_m, add_m_lem =
 	  try Class_tactics.default_morphism signature add
           with Not_found ->
@@ -540,7 +540,7 @@ let ring_equality (r,add,mul,opp,req) =
           match opp with
             | Some opp ->
 		(let opp_m,opp_m_lem =
-		  try Class_tactics.default_morphism ([Some(r,req)],Some(r,req)) opp
+		  try Class_tactics.default_morphism ([Some(r,req)],Some(Lazy.lazy_from_val (r,req))) opp
 		  with Not_found ->
                     error "ring opposite should be declared as a morphism" in
 		let op_morph =
@@ -830,7 +830,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(lr)
       "[" constr(t) "]" ] ->
-          [ring_lookup (fst f) lH lr t]
+    [ring_lookup (fst f) lH lr t]
 END
 
 
@@ -1037,7 +1037,7 @@ let field_equality r inv req =
         mkApp((Coqlib.build_coq_eq_data()).congr,[|r;r;inv|])
     | _ ->
 	let _setoid = setoid_of_relation (Global.env ()) r req in
-	let signature = [Some (r,req)],Some(r,req) in
+	let signature = [Some (r,req)],Some(Lazy.lazy_from_val (r,req)) in
 	let inv_m, inv_m_lem =
 	  try Class_tactics.default_morphism signature inv
           with Not_found ->

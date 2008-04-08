@@ -9,7 +9,6 @@
   (*i $Id$ i*)
 
 Require Import Le Gt Minus Min Bool.
-Require Import Coq.Setoids.Setoid.
 
 Set Implicit Arguments.
 
@@ -554,8 +553,7 @@ Section Elts.
     simpl; intros; split; [destruct 1 | apply gt_irrefl].
     simpl. intro x; destruct (eqA_dec y x) as [Heq|Hneq].
     rewrite Heq; intuition. 
-    rewrite <- (IHl x).
-    tauto.
+    pose (IHl x). intuition.
   Qed.
   
   Theorem count_occ_inv_nil : forall (l : list A), (forall x:A, count_occ l x = 0) <-> l = nil.
