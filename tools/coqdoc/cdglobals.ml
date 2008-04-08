@@ -33,6 +33,10 @@ let close_out_file () = close_out !out_channel
 
 
 let header_trailer = ref true
+let header_file = ref ""
+let header_file_spec = ref false
+let footer_file = ref ""
+let footer_file_spec = ref false
 let quiet = ref true
 let light = ref false
 let gallina = ref false

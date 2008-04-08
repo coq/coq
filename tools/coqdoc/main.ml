@@ -26,37 +26,39 @@ open Printf
 let usage () =
   prerr_endline "";
   prerr_endline "Usage: coqdoc <options and files>";
-  prerr_endline "  --html              produce a HTML document (default)";
-  prerr_endline "  --latex             produce a LaTeX document";
-  prerr_endline "  --texmacs           produce a TeXmacs document";
-  prerr_endline "  --dvi               output the DVI";
-  prerr_endline "  --ps                output the PostScript";
-  prerr_endline "  --stdout            write output to stdout";
-  prerr_endline "  -o <file>           write output in file <file>";
-  prerr_endline "  -d <dir>            output files into directory <dir>";
-  prerr_endline "  -g                  (gallina) skip proofs";
-  prerr_endline "  -s                  (short) no titles for files";
-  prerr_endline "  -l                  light mode (only defs and statements)";
-  prerr_endline "  -t <string>         give a title to the document";
-  prerr_endline "  --body-only         suppress LaTeX/HTML header and trailer";
-  prerr_endline "  --no-index          do not output the index";
-  prerr_endline "  --multi-index       index split in multiple files";
-  prerr_endline "  --toc               output a table of contents";
-  prerr_endline "  --vernac <file>     consider <file> as a .v file";
-  prerr_endline "  --tex <file>        consider <file> as a .tex file";
-  prerr_endline "  -p <string>         insert <string> in LaTeX preamble";
-  prerr_endline "  --files-from <file> read file names to process in <file>";
-  prerr_endline "  --quiet             quiet mode (default)";
-  prerr_endline "  --verbose           verbose mode";  
-  prerr_endline "  --no-externals      no links to Coq standard library";
-  prerr_endline "  --coqlib <url>      set URL for Coq standard library";
-  prerr_endline "                      (default is http://coq.inria.fr/library/)";
-  prerr_endline "  --coqlib_path <dir> set the path where Coq files are installed";
-  prerr_endline "  -R <dir> <coqdir>   map physical dir to Coq dir";
-  prerr_endline "  --latin1            set ISO-8859-1 input language";
-  prerr_endline "  --utf8              set UTF-8 input language";
-  prerr_endline "  --charset <string>  set HTML charset";
-  prerr_endline "  --inputenc <string> set LaTeX input encoding";
+  prerr_endline "  --html               produce a HTML document (default)";
+  prerr_endline "  --latex              produce a LaTeX document";
+  prerr_endline "  --texmacs            produce a TeXmacs document";
+  prerr_endline "  --dvi                output the DVI";
+  prerr_endline "  --ps                 output the PostScript";
+  prerr_endline "  --stdout             write output to stdout";
+  prerr_endline "  -o <file>            write output in file <file>";
+  prerr_endline "  -d <dir>             output files into directory <dir>";
+  prerr_endline "  -g                   (gallina) skip proofs";
+  prerr_endline "  -s                   (short) no titles for files";
+  prerr_endline "  -l                   light mode (only defs and statements)";
+  prerr_endline "  -t <string>          give a title to the document";
+  prerr_endline "  --body-only          suppress LaTeX/HTML header and trailer";
+  prerr_endline "  --with-header <file> prepend <file> as html reader";
+  prerr_endline "  --with-footer <file> append <file> as html footer";
+  prerr_endline "  --no-index           do not output the index";
+  prerr_endline "  --multi-index        index split in multiple files";
+  prerr_endline "  --toc                output a table of contents";
+  prerr_endline "  --vernac <file>      consider <file> as a .v file";
+  prerr_endline "  --tex <file>         consider <file> as a .tex file";
+  prerr_endline "  -p <string>          insert <string> in LaTeX preamble";
+  prerr_endline "  --files-from <file>  read file names to process in <file>";
+  prerr_endline "  --quiet              quiet mode (default)";
+  prerr_endline "  --verbose            verbose mode";  
+  prerr_endline "  --no-externals       no links to Coq standard library";
+  prerr_endline "  --coqlib <url>       set URL for Coq standard library";
+  prerr_endline "                       (default is http://coq.inria.fr/library/)";
+  prerr_endline "  --coqlib_path <dir>  set the path where Coq files are installed";
+  prerr_endline "  -R <dir> <coqdir>    map physical dir to Coq dir";
+  prerr_endline "  --latin1             set ISO-8859-1 input language";
+  prerr_endline "  --utf8               set UTF-8 input language";
+  prerr_endline "  --charset <string>   set HTML charset";
+  prerr_endline "  --inputenc <string>  set LaTeX input encoding";
   prerr_endline "";
   exit 1
 
@@ -201,6 +203,14 @@ let parse () =
     | ("-nopreamble" | "--nopreamble" | "--no-preamble"
       |  "-bodyonly"   | "--bodyonly"   | "--body-only") :: rem ->
 	header_trailer := false; parse_rec rem
+    | ("-with-header" | "--with-header") :: f ::rem ->
+	header_trailer := true; header_file_spec := true; header_file := f; parse_rec rem
+    | ("-with-header" | "--with-header") :: [] ->
+	usage ()
+    | ("-with-footer" | "--with-footer") :: f ::rem ->
+	header_trailer := true; footer_file_spec := true; footer_file := f; parse_rec rem
+    | ("-with-footer" | "--with-footer") :: [] ->
+	usage ()
     | ("-p" | "--preamble") :: s :: rem ->
 	Output.push_in_preamble s; parse_rec rem
     | ("-p" | "--preamble") :: [] ->
