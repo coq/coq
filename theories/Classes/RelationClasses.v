@@ -240,13 +240,13 @@ Definition ternary_operation A := arrows (cons A (cons A (cons A nil))) A.
 
 (** We define n-ary [predicate]s as functions into [Prop]. *)
 
-Definition predicate (l : list Type) := arrows l Prop.
+Notation predicate l := (arrows l Prop).
 
 (** Unary predicates, or sets. *)
 
 Definition unary_predicate A := predicate (cons A nil).
 
-(** Homogenous binary relations, equivalent to [relation A]. *)
+(** Homogeneous binary relations, equivalent to [relation A]. *)
 
 Definition binary_relation A := predicate (cons A (cons A nil)).
 
@@ -265,39 +265,35 @@ Fixpoint predicate_exists (l : list Type) : predicate l -> Prop :=
   end.
 
 (** Pointwise extension of a binary operation on [T] to a binary operation 
-   on functions whose codomain is [T]. *)
+   on functions whose codomain is [T].
+   For an operator on [Prop] this lifts the operator to a binary operation. *)
 
-Fixpoint pointwise_extension {l : list Type} {T : Type}
-  (op : binary_operation T) : binary_operation (arrows l T) :=
+Fixpoint pointwise_extension {T : Type} (op : binary_operation T)
+  (l : list Type) : binary_operation (arrows l T) :=
   match l with
     | nil => fun R R' => op R R'
     | A :: tl => fun R R' => 
-      fun x => pointwise_extension op (R x) (R' x)
+      fun x => pointwise_extension op tl (R x) (R' x)
   end.
-
-(** For an operator on [Prop] this lifts the operator to a binary operation. *)
-
-Definition pointwise_relation_extension (l : list Type) (op : binary_relation Prop) : 
-  binary_operation (predicate l) := pointwise_extension op.
 
 (** Pointwise lifting, equivalent to doing [pointwise_extension] and closing using [predicate_all]. *)
 
-Fixpoint lift_pointwise (l : list Type) (op : binary_relation Prop) : binary_relation (predicate l) :=
+Fixpoint pointwise_lifting (op : binary_relation Prop)  (l : list Type) : binary_relation (predicate l) :=
   match l with
     | nil => fun R R' => op R R'
     | A :: tl => fun R R' => 
-      forall x, lift_pointwise tl op (R x) (R' x)
+      forall x, pointwise_lifting op tl (R x) (R' x)
   end.
 
 (** The n-ary equivalence relation, defined by lifting the 0-ary [iff] relation. *)
 
 Definition predicate_equivalence {l : list Type} : binary_relation (predicate l) :=
-  lift_pointwise l iff.
+  pointwise_lifting iff l.
 
 (** The n-ary implication relation, defined by lifting the 0-ary [impl] relation. *)
 
 Definition predicate_implication {l : list Type} :=
-  lift_pointwise l impl.
+  pointwise_lifting impl l.
 
 (** Notations for pointwise equivalence and implication of predicates. *)
 
@@ -309,11 +305,8 @@ Open Local Scope predicate_scope.
 (** The pointwise liftings of conjunction and disjunctions.
    Note that these are [binary_operation]s, building new relations out of old ones. *)
 
-Definition predicate_intersection {l : list Type} : binary_operation (predicate l) :=
-  pointwise_relation_extension l and.
-
-Definition predicate_union {l : list Type} : binary_operation (predicate l) :=
-  pointwise_relation_extension l or.
+Definition predicate_intersection := pointwise_extension and.
+Definition predicate_union := pointwise_extension or.
 
 Infix "/∙\" := predicate_intersection (at level 80, right associativity) : predicate_scope.
 Infix "\∙/" := predicate_union (at level 85, right associativity) : predicate_scope.
@@ -349,9 +342,9 @@ Program Instance predicate_equivalence_equivalence :
   Qed.
   
   Next Obligation.
-    fold lift_pointwise.
+    fold pointwise_lifting.
     induction l. firstorder.
-    intros. simpl in *. intro. pose (IHl (x x0) (y x0) (z x0)).
+    intros. simpl in *. pose (IHl (x x0) (y x0) (z x0)).
     firstorder.
   Qed.
 
@@ -363,7 +356,6 @@ Program Instance predicate_implication_preorder :
   Qed.
 
   Next Obligation.
-    fold lift_pointwise.
     induction l. firstorder.
     unfold predicate_implication in *. simpl in *. 
     intro. pose (IHl (x x0) (y x0) (z x0)). firstorder.

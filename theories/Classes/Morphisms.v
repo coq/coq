@@ -232,7 +232,7 @@ Program Instance [ Equivalence A R ] (x : A) =>
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
 Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive _ R ] (x : A) =>
-  Reflexive_partial_app_morphism : Morphism R' (m x) | 3.
+  Reflexive_partial_app_morphism : Morphism R' (m x) | 4.
 
 (** Every Transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof
    to get an [R y z] goal. *)
@@ -330,22 +330,31 @@ Proof.
   split ; intros ; intuition.
 Qed.
 
+(** Special-purpose class to do normalization of signatures w.r.t. inverse. *)
 
-Class (A : Type) (R : relation A) => Normalizes (m : A) (m' : A) : Prop :=
-  normalizes : R m m'.
+Class (A : Type) => Normalizes (m : relation A) (m' : relation A) : Prop :=
+  normalizes : relation_equivalence m m'.
 
 Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) =>
-  Normalizes subrelation (inverse R ==> inverse R') (inverse (R ==> R')) .
-Proof. simpl_relation. Qed.
+  inverse_respectful_norm : Normalizes _ (inverse R ==> inverse R') (inverse (R ==> R')) .
+Proof. firstorder. Qed.
 
-Instance [ Normalizes (relation B) relation_equivalence R' (inverse R'') ] =>
-  ! Normalizes (relation (A -> B)) relation_equivalence (inverse R ==> R') (inverse (R ==> R'')) .
-Proof. red ; intros. 
+(* If not an inverse on the left, do a double inverse. *)
+
+Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) =>
+  not_inverse_respectful_norm : Normalizes _ (R ==> inverse R') (inverse (inverse R ==> R')) | 4.
+Proof. firstorder. Qed.
+
+Instance [ Normalizes B R' (inverse R'') ] =>
+  inverse_respectful_rec_norm : Normalizes (A -> B) (inverse R ==> R') (inverse (R ==> R'')).
+Proof. red ; intros.  
   pose normalizes as r.
   setoid_rewrite r.
   setoid_rewrite inverse_respectful.
   reflexivity.
 Qed.
+
+(** Once we have normalized, we will apply this instance to simplify the problem. *)
 
 Program Instance [ Morphism A R m ] => 
   morphism_inverse_morphism : Morphism (inverse R) m | 2.
@@ -363,9 +372,7 @@ Proof.
   apply H0.
 Qed.
 
-Lemma morphism_releq_morphism 
-  [ Normalizes (relation A) relation_equivalence R R',
-    Morphism _ R' m ] : Morphism R m.
+Lemma morphism_releq_morphism [ Normalizes A R R', Morphism _ R' m ] : Morphism R m.
 Proof.
   intros.
   pose respect as r.
@@ -378,7 +385,7 @@ Inductive normalization_done : Prop := did_normalization.
 
 Ltac morphism_normalization := 
   match goal with
-    | [ _ : normalization_done |- @Morphism _ _ _ ] => fail
+    | [ _ : normalization_done |- _ ] => fail
     | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
       set(H:=did_normalization) ; eapply @morphism_releq_morphism
   end.

@@ -14,7 +14,8 @@
    91405 Orsay, France *)
 
 Require Import Coq.Classes.Morphisms.
-Require Import Coq.Program.Program.
+Require Import Coq.Program.Basics.
+Require Import Coq.Program.Tactics.
 
 (** Standard instances for [not], [iff] and [impl]. *)
 

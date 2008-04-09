@@ -31,11 +31,11 @@ Instance relation_disjunction_morphism : Morphism (relation_equivalence (A:=A) =
 Require Import List.
 
 Lemma predicate_equivalence_pointwise (l : list Type) :
-  Morphism (@predicate_equivalence l ==> lift_pointwise l iff) id.
+  Morphism (@predicate_equivalence l ==> pointwise_lifting iff l) id.
 Proof. do 2 red. unfold predicate_equivalence. auto. Qed.
 
 Lemma predicate_implication_pointwise (l : list Type) :
-  Morphism (@predicate_implication l ==> lift_pointwise l impl) id.
+  Morphism (@predicate_implication l ==> pointwise_lifting impl l) id.
 Proof. do 2 red. unfold predicate_implication. auto. Qed.
 
 (** The instanciation at relation allows to rewrite applications of relations [R x y] to [R' x y] *)
