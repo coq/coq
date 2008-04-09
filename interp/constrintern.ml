@@ -436,12 +436,11 @@ let rec simple_adjust_scopes n = function
   | [] -> if n=0 then [] else None :: simple_adjust_scopes (n-1) []
   | sc::scopes -> sc :: simple_adjust_scopes (n-1) scopes
 
-let find_remaining_constructor_scopes pl1 (ind,j as cstr) =
+let find_remaining_constructor_scopes pl1 pl2 (ind,j as cstr) =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
   let npar = mib.Declarations.mind_nparams in
-  let nargs = Declarations.recarg_length mip.Declarations.mind_recargs j in
   snd (list_chop (List.length pl1 + npar)
-    (simple_adjust_scopes (npar+nargs)
+    (simple_adjust_scopes (npar + List.length pl2)
       (find_arguments_scope (ConstructRef cstr))))
 
 (**********************************************************************)
@@ -651,7 +650,7 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
   | CPatCstr (loc, head, pl) ->
       let c,idslpl1,pl2 = mustbe_constructor loc head intern_pat aliases pl scopes in
       check_constructor_length genv loc c idslpl1 pl2;
-      let argscs2 = find_remaining_constructor_scopes idslpl1 c in
+      let argscs2 = find_remaining_constructor_scopes idslpl1 pl2 c in
       let idslpl2 = List.map2 (intern_pat scopes ([],[])) argscs2 pl2 in
       let (ids',pll) = product_of_cases_patterns ids (idslpl1@idslpl2) in
       let pl' = List.map (fun (subst,pl) ->
