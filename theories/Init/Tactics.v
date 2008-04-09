@@ -18,6 +18,7 @@ Require Import Logic.
     -   H:~A |- ~B    gives  H: B |-  A
     -   H: A |-  B    gives       |- ~A
     -   H: A |- ~B    gives  H: B |- ~A
+    -   H:False leads to a resolved subgoal.
    Moreover, negations may be in unfolded forms, 
    and A or B may live in Type *)
 
@@ -46,7 +47,7 @@ Ltac contradict H :=
   match type of H with 
    | (~_) => neg H
    | (_->False) => neg H
-   | _ => pos H
+   | _ => (elim H;fail) || pos H
   end.
 
 (* Transforming a negative goal [ H:~A |- ~B ] into a positive one [ B |- A ]*)
@@ -62,7 +63,7 @@ Ltac absurd_hyp H :=
   let T := type of H in 
   absurd T.
 
-(* A useful complement to contradict. Here H : A and G allows to conclude ~A *)
+(* A useful complement to contradict. Here H:A while G allows to conclude ~A *)
 
 Ltac false_hyp H G := 
   let T := type of H in absurd T; [ apply G | assumption ].
