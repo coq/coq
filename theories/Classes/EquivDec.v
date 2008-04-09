@@ -132,7 +132,6 @@ Program Instance [ EqDec A eq ] => bool_function_eqdec : ! EqDec (bool -> A) eq 
 
   Next Obligation.
   Proof.
-    red.
     extensionality x.
     destruct x ; auto.
   Qed.
