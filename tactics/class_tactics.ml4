@@ -1418,9 +1418,11 @@ let general_s_rewrite_in id l2r c ~new_goals gl =
   let hypinfo = ref (get_hyp gl c (Some id) l2r) in
     cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta [] (Some (([],id), [])) gl
     
-let general_s_rewrite_clause = function
-  | None -> general_s_rewrite
-  | Some id -> general_s_rewrite_in id
+let general_s_rewrite_clause x =
+  init_setoid ();
+  match x with
+    | None -> general_s_rewrite
+    | Some id -> general_s_rewrite_in id
 
 let _ = Equality.register_general_setoid_rewrite_clause general_s_rewrite_clause
 
