@@ -1417,13 +1417,20 @@ let general_s_rewrite_in id l2r c ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo = ref (get_hyp gl c (Some id) l2r) in
     cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta [] (Some (([],id), [])) gl
-    
+
+let classes_dirpath =
+  make_dirpath (List.map id_of_string ["Classes";"Coq"])
+  
+let init_rewrite () =
+  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
+  else check_required_library ["Coq";"Setoids";"Setoid"]
+
 let general_s_rewrite_clause x =
-  init_setoid ();
+  init_rewrite ();
   match x with
     | None -> general_s_rewrite
     | Some id -> general_s_rewrite_in id
-
+	
 let _ = Equality.register_general_setoid_rewrite_clause general_s_rewrite_clause
 
 (* [setoid_]{reflexivity,symmetry,transitivity} tactics *)

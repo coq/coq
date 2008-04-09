@@ -7,7 +7,7 @@
 
  *************************************************************************)
 
-Require Import List Bool Sumbool EqNat Ring_theory Decidable.
+Require Import List Bool Sumbool EqNat Setoid Ring_theory Decidable.
 Delimit Scope Int_scope with I.
 
 (* Abstract Integers. *)
