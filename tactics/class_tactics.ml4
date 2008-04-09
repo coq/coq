@@ -134,6 +134,11 @@ type search_state = {
   dblist : Auto.Hint_db.t list;
   localdb :  Auto.Hint_db.t list }
     
+let filter_hyp t = 
+  match kind_of_term t with
+    | Evar _ | Meta _ | Sort _ -> false
+    | _ -> true
+
 module SearchProblem = struct
     
   type state = search_state
@@ -203,8 +208,8 @@ module SearchProblem = struct
 	    (List.map 
 		(fun id -> (Eauto.e_give_exact_constr (mkVar id), 0,
 			   (str "exact" ++ spc () ++ pr_id id)))
-(* 		(List.filter (fun id -> filt (pf_get_hyp_typ g id)) *)
-		    (pf_ids_of_hyps g))
+		(List.filter (fun id -> filter_hyp (pf_get_hyp_typ g id))
+		    (pf_ids_of_hyps g)))
 	in
 	  List.map (fun (res,pri,pp) -> { s with tacres = res; pri = 0;
 	    last_tactic = pp; localdb = List.tl s.localdb }) l

@@ -687,9 +687,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     let c = pretype_gen evdref env lvar kind c in
     let evd,_ = consider_remaining_unif_problems env !evdref in
       if fail_evar then 
-	(let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~all:false env (evars_of evd) evd in
-	   check_evars env Evd.empty evd c);
-      evd, c
+	let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~all:false env (evars_of evd) evd in
+	let c = Evarutil.nf_isevar evd c in
+	  check_evars env Evd.empty evd c;
+	  evd, c
+      else evd, c
 
   (** Entry points of the high-level type synthesis algorithm *)
 
