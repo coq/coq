@@ -13,6 +13,9 @@
    Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
    91405 Orsay, France *)
 
+Require Import Coq.Classes.Morphisms.
+Require Import Coq.Program.Program.
+
 (** Morphisms for relations *)
 
 Instance relation_conjunction_morphism : Morphism (relation_equivalence (A:=A) ==>
@@ -40,8 +43,8 @@ Proof. do 2 red. unfold predicate_implication. auto. Qed.
 
 Instance relation_equivalence_pointwise :
   Morphism (relation_equivalence ==> pointwise_relation (A:=A) (pointwise_relation (A:=A) iff)) id.
-Proof. apply (predicate_equivalence_pointwise (l:=(cons A (cons A nil)))). Qed.
+Proof. intro. apply (predicate_equivalence_pointwise (cons A (cons A nil))). Qed.
 
 Instance subrelation_pointwise :
   Morphism (subrelation ==> pointwise_relation (A:=A) (pointwise_relation (A:=A) impl)) id.
-Proof. apply (predicate_implication_pointwise (l:=(cons A (cons A nil)))). Qed.
+Proof. intro. apply (predicate_implication_pointwise (cons A (cons A nil))). Qed.
