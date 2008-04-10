@@ -57,7 +57,7 @@ let find_name decl = function
   | IntroBasedOn (id,idl) -> fresh_id idl id
   | IntroMustBe id        -> 
       fresh_id [] id >>= fun id' ->
-      if id' <> id then Subproof.fail (Pp.str ((string_of_id id)^" is already used"));
+      if id' <> id then Proofview.fail (Pp.str ((string_of_id id)^" is already used"));
       Goal.return id'
 
 (* arnaud: à éventuellement restaurer plus tard
@@ -94,7 +94,7 @@ let find_intro_gen_name name_flag force_flag =
 	Util.anomaly "Intro.intro_gen: last case: à restaurer"
 	(* arnaud: à restaurer: original venant de intro_gen
 	try
-	  Subproof.tclTHEN
+	  Proofview.tclTHEN
 	    (reduce (Red true) onConcl)
 	    (intro_gen name_flag move_flag force_flag)
 	with Redelimination ->
@@ -120,22 +120,22 @@ let central_intro = intro_gen
 *)
 
 let rec intros_using = function
-  | []      -> Subproof.idtac None
-  | id::l  -> Subproof.tclTHEN (intro_using id) (intros_using l)
+  | []      -> Proofview.id ()
+  | id::l  -> Proofview.tclTHEN (intro_using id) (intros_using l)
 
-let intros = Subproof.tclREPEAT (intro_force false)
+let intros = Proofview.tclREPEAT (intro_force false)
 
-let intro_erasing id = Subproof.tclTHEN (Logic.clear (Goal.expr_of_list [id])) 
+let intro_erasing id = Proofview.tclTHEN (Logic.clear (Goal.expr_of_list [id])) 
                                         (Logic.intro id)
 
 let intros_replacing ids = 
   Util.anomaly "Intro.intros_replacing: à restaurer"
   (* arnaud: à restaurer : il manque intro_replacing apparemment
   let rec introrec = function
-    | [] -> Subproof.idtac
+    | [] -> Proofview.id
     | id::tl ->
-	(Subproof.tclTHEN (Subproof.tclORELSE (intro_replacing id)
-		    (Subproof.tclORELSE (intro_erasing id)   (* ?? *)
+	(Proofview.tclTHEN (Proofview.tclORELSE (intro_replacing id)
+		    (Proofview.tclORELSE (intro_erasing id)   (* ?? *)
                        (intro_using id)))
            (introrec tl))
   in 
@@ -191,7 +191,7 @@ let depth_of_quantified_hypothesis red h =
     match hyp with
     | Some depth -> depth
     | None ->
-        Subproof.fail ( 
+        Proofview.fail ( 
           (str "No " ++ msg_quantified_hypothesis h ++
 	  str " in current goal" ++
 	  if red then str " even after head-reduction" else mt ())
@@ -201,9 +201,9 @@ let depth_of_quantified_hypothesis red h =
 (* arnaud: faire intros until 0 *)
 (* arnaud: si il y a un bug là dedans je ne serais pas étonné *)
 let intros_until_gen red h =
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     depth_of_quantified_hypothesis red h >>= fun depth ->
-    Subproof.goal_tactic_of_tactic (Logic.tclDO depth intro)
+    Proofview.goal_tactic_of_tactic (Logic.tclDO depth intro)
   )
 
 let intros_until_id id = intros_until_gen true (Rawterm.NamedHyp id)
@@ -214,14 +214,14 @@ let intros_until_n = intros_until_n_gen true
 let intros_until_n_wored = intros_until_n_gen false
 
 let try_intros_until tac = function
-  | Rawterm.NamedHyp id -> Subproof.tclTHEN
+  | Rawterm.NamedHyp id -> Proofview.tclTHEN
                                (Logic.tclTRY (intros_until_id id)) 
 	                       (tac (Goal.return id))
-  | Rawterm.AnonHyp n -> Subproof.tclTHEN (intros_until_n n) (Logic.onLastHyp tac)
+  | Rawterm.AnonHyp n -> Proofview.tclTHEN (intros_until_n n) (Logic.onLastHyp tac)
 
 let rec intros_move = function
-  | [] -> Subproof.idtac None
+  | [] -> Proofview.id ()
   | (hyp,destopt) :: rest ->
-      Subproof.tclTHEN (intro_gen (IntroMustBe hyp) destopt false)
+      Proofview.tclTHEN (intro_gen (IntroMustBe hyp) destopt false)
 	               (intros_move rest)
 

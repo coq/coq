@@ -10,7 +10,7 @@
 
 (* This module implements the actual proof datatype. It enforces strong
    invariants, and it is the only module that should access the module
-   Subproof.
+   Proofview.
    Actually from outside the proofs/ subdirectory, this is the only module
    that should be used directly. *)
 
@@ -50,7 +50,7 @@ val unfocus : proof -> unit
 (*** ***)
 (* arnaud: cette section, si courte qu'elle est, mérite probablement un titre *)
 
-val run_tactic : Environ.env -> Subproof.tactic -> proof -> unit
+val run_tactic : Environ.env -> 'a Proofview.tactic -> proof -> unit
 
 (*** **)
 (* arnaud: hack pour debugging *)
@@ -58,8 +58,8 @@ val run_tactic : Environ.env -> Subproof.tactic -> proof -> unit
 val pr_subgoals : proof -> (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
 
 (* arnaud:
-val hide_interp : (proof -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic) -> Tacexpr.raw_tactic_expr -> 'a option -> Subproof.tactic
+val hide_interp : (proof -> Tacexpr.raw_tactic_expr -> 'a option -> Proofview.tactic) -> Tacexpr.raw_tactic_expr -> 'a option -> Proofview.tactic
 *)
 
 (* arnaud:fonction très temporaire*)
-val subproof_of : proof -> Subproof.subproof
+val subproof_of : proof -> Proofview.subproof

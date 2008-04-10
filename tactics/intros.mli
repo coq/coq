@@ -14,3 +14,14 @@
 (*   Those the user sees.                                               *)
 (*                                                                      *)
 (************************************************************************)
+
+open Names
+
+type intro_name_flag =
+  | IntroAvoid of identifier list
+  | IntroBasedOn of identifier * identifier list
+  | IntroMustBe of identifier
+
+val find_name : name * Term.types option * Term.types ->
+                intro_name_flag -> 
+                identifier Goal.sensitive

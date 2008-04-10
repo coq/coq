@@ -122,7 +122,7 @@ INTERP:=\
 PROOFS:=\
   proofs/tacexpr.cmo proofs/redexpr.cmo \
   proofs/permutation.cmo \
-  proofs/goal.cmo proofs/subproof.cmo \
+  proofs/goal.cmo proofs/proofview.cmo \
   proofs/proof.cmo \
   proofs/clenv.cmo proofs/logic.cmo \
   proofs/decl_mode.cmo proofs/tactic_debug.cmo \
@@ -145,6 +145,7 @@ HIGHPARSING:=\
 TACTICS:=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
   tactics/nbtermdn.cmo tactics/tacticals.cmo \
+  tactics/intros.cmo tactics/ntactics.cmo \
   tactics/hipattern.cmo tactics/tactics.cmo \
   tactics/evar_tactics.cmo \
   tactics/hiddentac.cmo tactics/elim.cmo \

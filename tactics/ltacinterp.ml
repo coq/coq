@@ -27,7 +27,7 @@ let (>>=) = Goal.bind
 (* arnaud: à commenter un peu plus dans le sens de ce que c'est vraiment. A savoir les valeurs qui peuvent être dans des variables de tactique *)
 (* Values for interpretation *)
 type value =
-  | VTactic of Util.loc * Subproof.tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
+  | VTactic of Util.loc * Proofview.tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
   | VFun of (Names.identifier * value) list * Names.identifier option list * Tacexpr.glob_tactic_expr
   | VVoid
   | VInteger of int
@@ -1423,10 +1423,10 @@ let interp_open_constr_with_bindings ist (c,bl) =
   interp_bindings ist bl >>= fun ibindings ->
   Goal.return (ioconstr, ibindings)
 
-(* arnaud: peut-être ne faut-il pas toujours renvoyer un Goal.expression,
+(* arnaud: peut-être ne faut-il pas toujours renvoyer un Goal.sensitive,
    certaines tactiques ne dépendente pas des buts, ce qui change largement
    l'interprétation des arguments. Donc peut-être faut il un type de retourn
-   somme, où seuls les trucs qui sont nécessairement des Goal.expression 
+   somme, où seuls les trucs qui sont nécessairement des Goal.sensitive 
    typent ainsi. *)
 let rec interp_genarg ist x =
   match genarg_tag x with
@@ -1551,7 +1551,7 @@ let interp_atomic ist = function
       tac (List.map (interp_and_tag ist) l)
       (* arnaud: à nettoyer dès que ça marche :)
       let tac = lookup_tactic opn in
-      Subproof.tactic_of_goal_tactic (
+      Proofview.tactic_of_goal_tactic (
 	Goal.expr_of_list (List.map (interp_genarg ist) l) >>= fun args ->
 	tac args
       )
@@ -1628,7 +1628,7 @@ let eval_tactic t =
 let hide_interp p t ot =
   let ist = { ltacvars = ([],[]); 
 	      ltacrecvars = []; 
-              gsigma = Evd.evars_of (Subproof.defs_of (Proof.subproof_of p));
+              gsigma = Evd.evars_of (Proofview.defs_of (Proof.subproof_of p));
               genv = Global.env () } in
   let te = intern_tactic ist t in
   let t = eval_tactic te in

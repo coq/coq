@@ -77,7 +77,7 @@ let rec catchable_exception = function
 let (>>=) = Goal.bind
 
 
-(*** [Goal.expression]-s: tool-kit for the tactic builder ***)
+(*** [Goal.sensitive]-s: tool-kit for the tactic builder ***)
 
 
 (* Raises Typing.type_of to the Goal monad *)
@@ -107,13 +107,13 @@ let  lastHyp =
 (* [do n] tactical *)
 let rec tclDO n tac =
   match n with
-  | 0 -> Subproof.idtac None
-  | n when n>0 -> Subproof.tclTHEN tac (tclDO (n-1) tac)
+  | 0 -> Proofview.id ()
+  | n when n>0 -> Proofview.tclTHEN tac (tclDO (n-1) tac)
   | _ -> Util.anomaly "Logic.tclDO: fed with a negative number"
   
 (* [try] tactical *)
 let tclTRY tac =
-  Subproof.tclORELSE tac (Subproof.idtac None)
+  Proofview.tclORELSE tac (Proofview.id ())
 
 (* arnaud: à remettre dans "tacticals" ? *)
  let onLastHyp tac = 
@@ -128,22 +128,22 @@ let std_refine check_type raw_step =
 
 (* [refine] tactic *)
 let refine oc = 
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     oc >>= Goal.refine
   )
 (* [clear] tactic *)
 let clear l = 
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     l >>= Goal.clear
   )
 (* [clearbody] tactic *)
 let clear_body l = 
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     l >>= Goal.clear_body
   )
 (* [intro] tactic *)
 let intro id = 
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     (* arnaud: vérifier que "id" n'apparaît pas.*)
     id >>= fun id ->
     std_refine true (
@@ -161,14 +161,14 @@ let intro id =
 (* [exact] tactic *)
 (* arnaud: comme le check est pas fait là, ça fait aussi exact_no_check... *)
 let exact c =
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     c >>= fun c ->
     Goal.refine (Goal.open_of_closed c)
   )
 
 (* [assumption] tactic *)
 let assumption =
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     Goal.concl >>= fun concl ->
     Goal.env >>= fun env ->
     Goal.hyps >>= fun hyps ->
@@ -177,14 +177,14 @@ let assumption =
     let sigma = Evd.evars_of defs in
     let rec arec only_eq = function
       | [] -> 
-          if only_eq then arec false hyps else Subproof.fail (Pp.str "No such assumption")
+          if only_eq then arec false hyps else Proofview.fail (Pp.str "No such assumption")
       | (id,c,t)::rest -> 
 	  if (only_eq & eq_constr t concl) 
             or (not only_eq & Reductionops.is_conv_leq env sigma t concl)
           then exact (Goal.return (mkVar id))
 	  else arec only_eq rest
     in
-    Subproof.goal_tactic_of_tactic (arec true hyps)
+    Proofview.goal_tactic_of_tactic (arec true hyps)
   )
 
 
@@ -202,7 +202,7 @@ let mkCastMeta t =
 
 (* [cut] tactic *)
 let cut c = 
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     c >>= fun c ->
     hnf_type_of c >>= fun ty ->
     Goal.hyps >>= fun hyps ->
@@ -219,7 +219,7 @@ let cut c =
 	  )
 	in
 	Goal.process_typed_metas cut_term >>= Goal.refine
-    | _ -> Subproof.fail (Pp.str"Not a proposition or a type")
+    | _ -> Proofview.fail (Pp.str"Not a proposition or a type")
   )
 
 
@@ -327,7 +327,7 @@ let goal_apply_with_ebindings_gen with_evars (c,lbind) =
         else raise exn in
     try_red_apply thm_ty0
 let apply_with_ebindings_gen with_evars c_and_lbind =
-  Subproof.tactic_of_goal_tactic (
+  Proofview.tactic_of_goal_tactic (
     c_and_lbind >>= (goal_apply_with_ebindings_gen with_evars)
   )
 

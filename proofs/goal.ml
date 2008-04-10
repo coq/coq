@@ -60,11 +60,11 @@ type proof_step = { subgoals: goal list ;
    evaluation. As a matter of fact it should only change as far
    as caching is concerned, which is of no concern for the tactics
    themselves. *)
-type 'a expression = Environ.env -> Evd.evar_defs ref -> goal -> Evd.evar_info -> 'a
+type 'a sensitive = Environ.env -> Evd.evar_defs ref -> goal -> Evd.evar_info -> 'a
 
 
 (* type of the goal tactics*)
-type tactic = proof_step expression
+type tactic = proof_step sensitive
 
 (* type of constr with holes manipulated by the API *)
 type open_constr = {
@@ -75,7 +75,7 @@ let constr_of_open_constr { me=c } = c
 let open_of_closed c = { me = c; my_evars = []}
 let make_open_constr c el = { me = c ; my_evars = el }
 (* arnaud: pas bonne idée, le defs doit changer..
-   au pire je peux le faire dans la monade expression, 
+   au pire je peux le faire dans la monade sensitive, 
    mais ça me paraît casse-gueule
 let open_of_weak (sigma,c) = 
   let sigma_list = List.map fst (Evd.to_list sigma) in
@@ -95,9 +95,9 @@ let run t env defs gl =
   t env rdefs gl info
 
 (* This is a tactic which does nothing. It's main purpose
-   is to enforce a full duality betweens [Subproof.tactic]-s
+   is to enforce a full duality betweens [Proofview.tactic]-s
    and [Goal.tactic]-s.
-   Indeed, given this [null] tactic, [Subproof] will know
+   Indeed, given this [null] tactic, [Proofview. will know
    how to transform its tactics to [Goal.tactic].*)
 let null _ rdefs gl _ =
   { subgoals = [gl] ; new_defs = !rdefs }
@@ -294,25 +294,25 @@ let clear_body idents env rdefs gl info =
 
 
 
-(*** Expressions & Tacticals ***)
+(*** Sensitive expressions & Tacticals ***)
 
 
 (* arnaud: peut-être pas besoin de cond/map/map2 ? *)
-(* if then else on expressions *)
+(* if then else on sensitive expressions *)
 let cond b ~thn ~els env rdefs goal info =
   if b env rdefs goal info then
     thn env rdefs goal info
   else 
     els env rdefs goal info
 
-(* monadic bind on expressions *)
+(* monadic bind on sensitive expressions *)
 let bind e f env rdefs goal info =
   f (e env rdefs goal info) env rdefs goal info
 
-(* monadic return on expressions *)
+(* monadic return on sensitive expressions *)
 let return v _ _ _ _ = v
 
-(* changes a list of expressions into an list expression *)
+(* changes a list of sensitive expressions into a sensitive list. *)
 let expr_of_list l env rdefs goal info = 
   List.map (fun x -> x env rdefs goal info) l
 

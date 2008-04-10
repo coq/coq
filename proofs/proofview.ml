@@ -42,7 +42,7 @@ let rec init = function
 			 let e = match Term.kind_of_term econstr with
 			         | Term.Evar (e,_) -> e
 				 | _ -> Util.anomaly 
-				     "Subproof.init: new_evar failure"
+				     "Proofview.init: new_evar failure"
 				       (* arnaud:faire un nouveau new_evar 
 					  ad hoc. Ou utiliser destEvar.
 				          Chercher le pattern dans 
@@ -132,12 +132,14 @@ let unfocus c sp =
 
 
 (* arnaud : à virer ? utile pour "choose_one" mais "choose_one"
-   devrait probablement dégager, si je ne dis pas de bêtise *)
+   devrait probablement dégager, si je ne dis pas de bêtise.
+   Ou pas... Choose one est un brilliant tactical *)
 let focus_proof_step i j ps =
   let (new_subgoals, context) = focus_sublist i j ps.Goal.subgoals in
   ( { ps with Goal.subgoals = new_subgoals } , context )
 
-(* arnaud: à virer pareil ? *)
+(* arnaud: à virer pareil ?
+   Ou pas pareil. *)
 let unfocus_proof_step c ps =
   { ps with Goal.subgoals = unfocus_sublist c ps.Goal.subgoals }
   
@@ -162,8 +164,10 @@ let goals { comb = comb } = comb
 
 
 (* type of tactics *)
+type +'a result = { proof_step : Goal.proof_step;
+		    content : 'a }
 
-type tactic = Environ.env -> Goal.proof_step -> Goal.proof_step
+type +'a tactic = Environ.env -> Goal.proof_step -> 'a result
 
 (* exception which represent a failure in a command *)
 exception TacticFailure of Pp.std_ppcmds
@@ -175,7 +179,7 @@ let fail msg = raise (TacticFailure msg)
 (* Applies a tactic to the current subproof. *)
 let apply env t sp  = 
   let start = { Goal.subgoals = sp.comb ; Goal.new_defs = sp.solution } in
-  let next = t env start in
+  let next = (t env start).proof_step in
   {sp with
      solution = next.Goal.new_defs ;
      comb = next.Goal.subgoals
@@ -184,7 +188,7 @@ let apply env t sp  =
 
 (* arnaud: à recommenter *)
 (* Transforms a function of type 
-   [Evd.evar_defs -> Goal.goal -> Goal.refinement] (i.e.
+   [Evd.evar_defs -> Goal.goal -> Goal.proof_step] (i.e.
    a tactic that operates on a single goal) into an actual tactic.
    It operates by iterating the single-tactic from the last goal to 
    the first one. *)
@@ -201,35 +205,75 @@ let tactic_of_goal_tactic f env ps =
   let ( new_defs , combed_subgoals ) = 
     List.fold_right wrap ps.Goal.subgoals (ps.Goal.new_defs,[])
   in
-  { Goal.new_defs = new_defs;
-    Goal.subgoals = List.flatten combed_subgoals }
+  { proof_step = 
+      { Goal.new_defs = new_defs;
+	Goal.subgoals = List.flatten combed_subgoals };
+    content = ()
+  }
 
+(* arnaud: kill sans doute en faveur d'un [tactic sensitive -> tactic] *)
 let goal_tactic_of_tactic t =
   let (>>=) = Goal.bind in (* arnaud: peut-être à déplacer, peut-être pas*)
   Goal.env >>= fun env ->
   Goal.null >>= fun ps ->
-  Goal.return (t env ps)
+  Goal.return (t env ps).proof_step
 
+
+(*** tactics ***)
+
+(* Prototype to the [idtac] tactic, also plays the role of 
+   "return" in the tactic monad *)
+let id a _ (ps:Goal.proof_step) =
+  { proof_step = ps; content = a }
+
+(* Reoders the goals on the comb according to a permutation *)
+let reorder p _ ps =
+  { proof_step =
+    { ps with Goal.subgoals = Array.to_list 
+                                (Permutation.permute p 
+				(Array.of_list ps.Goal.subgoals)) 
+    };
+    content = ()
+  }
+
+
+(*** tacticals ***)
+
+(* Interpretes the ";" (semicolon) of Ltac. *)
+let tclTHEN t1 t2 env ps = t2 env (t1 env ps).proof_step  
+
+(* Bind operation of the tactic monad.*)
+(* For now it is used only for the OCaml tactic toolkit, no 
+   equivalent in Ltac. *)
+let tclBIND t1 t2 env ps = 
+  let result1 = t1 env ps in
+  t2 result1.content env result1.proof_step
 
 (* Focuses a tactic at a single subgoal, found by it's index. *)
 (* There could easily be such a tactical for a range of goals. *)
 (* arnaud: bug if 0 goals ! *)
-let choose_one i t env sp =
+let tclFOCUS i t env sp =
   let (single,context) = focus_proof_step i i sp in
-  unfocus_proof_step context (t env single)
+  { proof_step = unfocus_proof_step context (t env single).proof_step ;
+    content = ()
+  }
 
 (* Makes a list of tactic into a tactic (interpretes the [ | ] construct).
    It applies the tactics from the last one to the first one.
    Fails on the proofs with a number of subgoals not matching the length
    of the list.*)
-let rec list_of_tactics tac_list env ps =
+let rec tclLIST tac_list env ps =
   match tac_list, ps.Goal.subgoals with
   | tac::list,goal::sgoals -> let rec_ps = { ps with Goal.subgoals = sgoals } in
-                            let intermediate = list_of_tactics list env rec_ps in
+                            let intermediate = (tclLIST list env rec_ps).proof_step in
 		            let this_ps = { intermediate with Goal.subgoals = [goal] } in
-			    let almost = tac env this_ps in
-			    { almost with Goal.subgoals = almost.Goal.subgoals@intermediate.Goal.subgoals }
-  | [],[] -> ps
+			    let almost = (tac env this_ps).proof_step in
+			    { proof_step =
+			      { almost
+				with Goal.subgoals = almost.Goal.subgoals@intermediate.Goal.subgoals };
+			      content = ()
+			    }
+  | [],[] -> { proof_step = ps ; content = () }
   | _,_ -> fail (Pp.str "Not the right number of subgoals.")
 
 (* arnaud: syntax de la construction ? *)
@@ -237,68 +281,76 @@ let rec list_of_tactics tac_list env ps =
 (* Interpretes the [ t1 | t2 | ... | t3 | t4 ] construct.
    That is it applies [t1] to the first goal, [t3] and [t4] to the 
    last two, and [t2] to the rest (this generalizes to two lists
-   of tactics and a tactic to be repeated.
+   of tactics and a tactic to be repeated).
    As in the other constructions, the tactics are applied from the last
    goal to the first. *)
-let rec extend_list_of_tactics begin_tac_list repeat_tac end_tac_list env ps =
+let tclEXTEND begin_tac_list repeat_tac end_tac_list env ps =
   let subgoals = ps.Goal.subgoals in
   let (b,m_e) = Util.list_chop (List.length begin_tac_list) subgoals in
   let (m,e) = Util.list_chop (List.length m_e - List.length end_tac_list) m_e in
   let end_ps = { ps with Goal.subgoals = e } in
-  let intermediate_end_ps = list_of_tactics end_tac_list env end_ps in
+  let intermediate_end_ps = (tclLIST end_tac_list env end_ps).proof_step in
   let middle_ps = { intermediate_end_ps with Goal.subgoals = m } in
-  let intermediate_middle_ps = repeat_tac env middle_ps in
+  let intermediate_middle_ps = (repeat_tac env middle_ps).proof_step in
   let begin_ps = { intermediate_middle_ps with Goal.subgoals = b } in
-  let almost = list_of_tactics begin_tac_list env begin_ps in
-  { almost with Goal.subgoals  = almost.Goal.subgoals
-                                  @(intermediate_middle_ps.Goal.subgoals
-				  @ intermediate_end_ps.Goal.subgoals)
+  let almost = (tclLIST begin_tac_list env begin_ps).proof_step in
+  { proof_step =
+    { almost with Goal.subgoals  = almost.Goal.subgoals
+                                   @(intermediate_middle_ps.Goal.subgoals
+				   @ intermediate_end_ps.Goal.subgoals)
+    };
+    content = ()
   }
 
-
-(*** tacticals ***)
-
-(* Interpretes the ";" (semicolon) of Ltac. *)
-let tclTHEN t1 t2 env ps = t2 env (t1 env ps)  
-
+(* This internal tactical specialises the argument tactic on every single 
+   goal. Making, for instance, global backtracking local. *)
+let rec traverse tac env ps = 
+  match ps.Goal.subgoals with
+  | goal::sgoals -> let intermediate = 
+                      (traverse tac env { ps with Goal.subgoals = sgoals }).proof_step 
+                    in
+                    let almost = 
+		      (tac env { ps with Goal.subgoals = sgoals }).proof_step
+		    in
+		    { proof_step = 
+			{ almost with Goal.subgoals = almost.Goal.subgoals
+			                              @intermediate.Goal.subgoals
+			};
+		      content = ()
+		    }
+  | [] -> { proof_step = ps ; content = () }
 
 (* Interpretes the "solve" tactical. *)
 let tclSOLVE t env ps =
-  let new_ps = t env ps in
-  match new_ps.Goal.subgoals with
-  | [] -> new_ps
+  let new_result = t env ps in
+  match new_result.proof_step.Goal.subgoals with
+  | [] -> new_result
   | _ -> fail (Pp.str "") (* arnaud: améliorer le message d'erreur sans doute :D*)
 
+(* G stands for global, it backtracks on all current goals instead
+   of just one.
+   It is also used to implement tclORELSE *)
+(* spiwack: not exporter at the moment but might be needed *)
+(* arnaud: mettre le commentaire suivant au bon endroit. *)
 (* Interpretes the or-else tactical. (denoted "||") *)
 (* arnaud: penser à transmettre les info comme le message de l'idtac *)
-let tclORELSE t1 t2 env ps =
+let tclGORELSE t1 t2 env ps =
   try
     t1 env ps
   with TacticFailure _ ->
     t2 env ps
 
-(* [idtac] tactic *)
-(* it is out of the "tactics" section because it is needed for tclREPEAT *)
-(* arnaud: rajouter le message *)
-let idtac msg _ (ps:Goal.proof_step) =
-  ps
+let tclORELSE t1 t2 =
+  traverse (tclGORELSE t1 t2)
 
 (* Interpretes the repeat tactical *)
-(* despite what it looks like, tclREPEAT cannot be defined
-   out of Subproof. This is left as an exercise to the reader ;) .*)
+(* Despite what it may look like, tclREPEAT cannot be defined
+   out of Proofview. This is left as an exercise to the reader ;) .*)
 let rec tclREPEAT tac env ps =
-  tclORELSE (tclTHEN tac (tclREPEAT tac)) (idtac None) env ps
+  tclORELSE (tclTHEN tac (tclREPEAT tac)) (id ()) env ps
 
-
-(*** tactics ***)
-
-(* Reoders the goals on the comb according to a permutation *)
-let reorder p _ ps =
-  { ps with Goal.subgoals = Array.to_list 
-                             (Permutation.permute p 
-				(Array.of_list ps.Goal.subgoals)) 
-  }
-
+let tclIGNORE tac env ps = 
+  { (tac env ps) with content = () }
 
 
 (*** **)

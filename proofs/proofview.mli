@@ -61,7 +61,7 @@ val unfocus : focus_context -> subproof -> subproof
 (******************************************************************)
 
 
-type tactic 
+type +'a tactic 
 
 (* arnaud: exportée pour Proof. *)
 (* exception which represent a failure in a command *)
@@ -71,7 +71,8 @@ exception TacticFailure of Pp.std_ppcmds
 val fail : Pp.std_ppcmds -> 'a
 
 (* Applies a tactic to the current subproof. *)
-val apply : Environ.env -> tactic -> subproof -> subproof
+val apply : Environ.env -> 'a tactic -> subproof -> subproof
+
 
 (* arnaud: à recommenter *)
 (* Transforms a function of type 
@@ -79,21 +80,33 @@ val apply : Environ.env -> tactic -> subproof -> subproof
    a tactic that operates on a single goal) into an actual tactic.
    It operates by iterating the single-tactic from the last goal to 
    the first one. *)
-val tactic_of_goal_tactic : Goal.tactic -> tactic
+val tactic_of_goal_tactic : Goal.tactic -> unit tactic
 
 (* arnaud: à commenter, ainsi que dans le .ml *)
-val goal_tactic_of_tactic : tactic -> Goal.tactic
+val goal_tactic_of_tactic : unit tactic -> Goal.tactic
+
+
+
+(*** tacticals ***)
+
+(* Interpetes the ";" (semicolon) of Ltac. *)
+val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
+
+(* Bind operation of the tactic monad.*)
+(* For now it is used only for the OCaml tactic toolkit, no 
+   equivalent in Ltac. *)
+val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
 
 
 (* Focuses a tactic at a single subgoal, found by it's index. *)
 (* There could easily be such a tactical for a range of goals. *)
-val choose_one : int -> tactic -> tactic
+val tclFOCUS : int -> unit tactic -> unit tactic
 
 (* Makes a list of tactic into a tactic (interpretes the [ | ] construct).
    It applies the tactics from the last one to the first one.
    Fails on the proofs with a number of subgoals not matching the length
    of the list.*)
-val list_of_tactics : tactic list -> tactic
+val tclLIST : unit tactic list -> unit tactic
 
 (* arnaud: syntax de la construction ? *)
 (* Interpretes the [ t1 | t2 | ... | t3 | t4 ] construct.
@@ -102,34 +115,28 @@ val list_of_tactics : tactic list -> tactic
    of tactics and a tactic to be repeated.
    As in the other constructions, the tactics are applied from the last
    goal to the first. *)
-val extend_list_of_tactics : tactic list -> tactic -> tactic list -> tactic
-
-
-
-(*** tacticals ***)
-
-(* Interpetes the ";" (semicolon) of Ltac. *)
-val tclTHEN : tactic -> tactic -> tactic
+val tclEXTEND : unit tactic list -> unit tactic -> unit tactic list -> unit tactic
 
 (* Interpretes the "solve" tactical. *)
-val tclSOLVE : tactic -> tactic
+val tclSOLVE : 'a tactic -> 'a tactic
 
 
 (* Interpretes the or-else tactical. (denoted "||") *)
-val tclORELSE : tactic -> tactic -> tactic
+val tclORELSE : unit tactic -> unit tactic -> unit tactic
 
 (* Interpretes the repeat tactical *)
-val tclREPEAT : tactic -> tactic
+val tclREPEAT : unit tactic -> unit tactic
 
 
 (*** tactics ***)
 
+(* Prototype to the [idtac] tactic, also plays the role of 
+   "return" in the tactic monad *)
+val id : 'a -> 'a tactic
+
 (* Reorders the open goals of the given pointer, according to the 
    permutation *)
-val reorder : Permutation.permutation -> tactic
-
-(* [idtac] tactic *)
-val idtac : string option -> tactic
+val reorder : Permutation.permutation -> unit tactic
 
 
 (*** **)

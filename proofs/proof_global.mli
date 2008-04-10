@@ -35,4 +35,4 @@ val discard : unit -> unit
 val pr_subgoals : (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
 
 
-val db_run_tactic_on : Environ.env -> int -> Subproof.tactic -> unit
+val db_run_tactic_on : Environ.env -> int -> unit Proofview.tactic -> unit

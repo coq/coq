@@ -819,7 +819,7 @@ object(self)
       match Decl_mode.get_end_command (Pfedit.get_pftreestate ()) with
 	  Some endc ->
 	    proof_buffer#insert 
-	      ("Subproof completed, now type "^endc^".") 
+	      ("Proofview.completed, now type "^endc^".") 
 	| None ->
 	    proof_buffer#insert "Proof completed."
 

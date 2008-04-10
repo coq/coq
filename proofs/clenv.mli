@@ -50,12 +50,12 @@ val clenv_nf_meta   : clausenv -> constr -> constr
 val clenv_meta_type : clausenv -> metavariable -> types
 
 
-val mk_clenv_from : constr * types -> clausenv Goal.expression
-val mk_clenv_from_n : int option -> constr * types -> clausenv Goal.expression
+val mk_clenv_from : constr * types -> clausenv Goal.sensitive
+val mk_clenv_from_n : int option -> constr * types -> clausenv Goal.sensitive
 
-val mk_clenv_rename_from : constr * types -> clausenv Goal.expression
-val mk_clenv_rename_from_n : int option -> constr * types -> clausenv Goal.expression
-val mk_clenv_type_of : constr -> clausenv Goal.expression
+val mk_clenv_rename_from : constr * types -> clausenv Goal.sensitive
+val mk_clenv_rename_from_n : int option -> constr * types -> clausenv Goal.sensitive
+val mk_clenv_type_of : constr -> clausenv Goal.sensitive
 (* arnaud:original 
 val mk_clenv_from : evar_info sigma -> constr * types -> clausenv
 val mk_clenv_from_n :
@@ -84,13 +84,13 @@ val clenv_unify :
 
 (* unifies the concl of the goal with the type of the clenv *)
 val clenv_unique_resolver :
-  bool -> clausenv -> clausenv Goal.expression
+  bool -> clausenv -> clausenv Goal.sensitive
 
 (* arnaud: si ça sert à rien, alors virer simplement
 (* same as above ([allow_K=false]) but replaces remaining metas
    with fresh evars if [evars_flag] is [true] *)
 val evar_clenv_unique_resolver :
-  bool -> clausenv -> clausenv Goal.expression
+  bool -> clausenv -> clausenv Goal.sensitive
 *)
 
 val clenv_pose_dependent_evars : clausenv -> clausenv * evar list
@@ -106,11 +106,11 @@ type arg_bindings = Goal.open_constr explicit_bindings
 val clenv_independent : clausenv -> metavariable list
 val clenv_missing : clausenv -> metavariable list
 
-val clenv_constrain_last_binding : constr -> clausenv -> clausenv Goal.expression
+val clenv_constrain_last_binding : constr -> clausenv -> clausenv Goal.sensitive
 
 (* arnaud: on se satisfairait d'un clausenv expression most likely *) 
 (* defines metas corresponding to the name of the bindings *)
-val clenv_match_args : arg_bindings -> clausenv -> clausenv Goal.expression
+val clenv_match_args : arg_bindings -> clausenv -> clausenv Goal.sensitive
 
 val clenv_unify_meta_types : clausenv -> clausenv
 
@@ -123,9 +123,9 @@ val clenv_unify_meta_types : clausenv -> clausenv
    trunk *)
 val make_clenv_binding_apply :
   int option -> constr * constr -> Goal.open_constr bindings ->
-   clausenv Goal.expression
+   clausenv Goal.sensitive
 val make_clenv_binding :
-  constr * constr -> Goal.open_constr bindings -> clausenv Goal.expression
+  constr * constr -> Goal.open_constr bindings -> clausenv Goal.sensitive
 
 (* [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
    [lmetas] is a list of metas to be applied to a proof of [t] so that

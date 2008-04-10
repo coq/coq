@@ -313,7 +313,7 @@ let default_pr_subgoals close_cmd sigma = function
       begin
 	match close_cmd with
 	  Some cmd ->
-	    (str "Subproof completed, now type " ++ str cmd ++ 
+	    (str "Proofview.completed, now type " ++ str cmd ++ 
 	       str "." ++ fnl ())
 	| None -> (* arnaud: ce morceau devrait disparaître *)
 	    let exl = Evarutil.non_instantiated sigma in 

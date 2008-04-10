@@ -177,10 +177,11 @@ let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
           SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
         let _ = declare_variable ident (Lib.cwd(),c,IsDefinition Definition) in
         definition_message ident;
+	  (* arnaud: ce warning n'est peut-être plus d'actualité... à voir
         if Pfedit.refining () then 
           Flags.if_verbose msg_warning 
 	    (str"Local definition " ++ pr_id ident ++ 
-             str" is not visible from current goals");
+             str" is not visible from current goals"); *)
         VarRef ident
     | (Global|Local) ->
         declare_global_definition ident ce' local in
@@ -238,9 +239,10 @@ let declare_one_assumption is_coe (local,kind) c nl (_,ident) =
           declare_variable ident 
             (Lib.cwd(), SectionLocalAssum c, IsAssumption kind) in
         assumption_message ident;
+	  (* arnaud: ce warning n'est peut-être plus d'actualité ?
         if is_verbose () & Pfedit.refining () then 
           msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
-          str" is not visible from current goals");
+          str" is not visible from current goals"); *)
         VarRef ident
     | (Global|Local) ->
         let kn =
@@ -253,13 +255,15 @@ let declare_one_assumption is_coe (local,kind) c nl (_,ident) =
   if is_coe then Class.try_add_new_coercion r local
 
 let declare_assumption idl is_coe k bl c nl=
-  if not (Pfedit.refining ()) then 
+  (* arnaud: est-ce toujours bien ?
+  if not (Pfedit.refining ()) then  *)
     let c = generalize_constr_expr c bl in
     let c = interp_type Evd.empty (Global.env()) c in
       List.iter (declare_one_assumption is_coe k c nl) idl
+(* arnaud:
   else
     errorlabstrm "Command.Assumption"
-	(str "Cannot declare an assumption while in proof editing mode.")
+	(str "Cannot declare an assumption while in proof editing mode.") *)
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 

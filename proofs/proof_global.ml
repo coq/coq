@@ -55,4 +55,4 @@ let pr_subgoals pr_fun =
 let db_run_tactic_on env n tac =
   match !current_proof with
   | None -> ()
-  | Some cur -> Proof.run_tactic env (Subproof.choose_one n tac) cur
+  | Some cur -> Proof.run_tactic env (Proofview.tclFOCUS n tac) cur

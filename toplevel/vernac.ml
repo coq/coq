@@ -22,7 +22,12 @@ open Ppvernac
 (* arnaud:trucs factices *)
 module Pfedit =
   struct
-    let get_all_proof_names _ = Util.anomaly "Vernac.get_all_proof_names: fantome"
+    (* arnaud: get_all_proof_names est là pour assurer qu'il n'y a plus
+       de preuve en cours à la fin du fichier qu'on compile. Si il en reste
+       on fait échouer la compilation. Voir si c'est une restriction qu'on
+       veut garder, ce n'est pas important dans un premier temps. Au final
+       il faudra rebrancher sur Proof_global. *)
+    let get_all_proof_names _ = []
     let get_current_proof_name _ = Util.anomaly "Vernac.get_current_proof_names: fantome"
   end
 (* arnaud: /trucs factices *)

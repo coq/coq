@@ -10,11 +10,12 @@
 
 (* This module implements the abstract interface to goals *)
 
+(* arnaud: repasser sur les commentaires *)
 
 type goal
 
 (*arnaud: virer build quand on aura trouvé une meilleure primitive
-          pour Subproof.init. *)
+          pour Proofview.init. *)
 val build : ?name:string -> Evd.evar -> goal 
 
 val is_defined : Evd.evar_map -> goal -> bool
@@ -32,16 +33,16 @@ val content : Evd.evar_map -> goal -> Evd.evar_info
    the evars to instantiate *)
 (* arnaud: réfléchir à le faire "private" *)
 (* arnaud: private ne marche probablement pas, puisqu'on va en construire
-   avec Subproof.*)
+   avec Proofview.*)
 (* arnaud: probablement commenter pourquoi c'est là. *)
 type proof_step = { subgoals: goal list ;
                     new_defs: Evd.evar_defs}
 
 (* type of the base elements of the goal API.*)
-type 'a expression
+type 'a sensitive
 
 (* type of the goal tactics*)
-type tactic = proof_step expression
+type tactic = proof_step sensitive
 
 (* type of constr with holes manipulated by the API *)
 type open_constr
@@ -52,22 +53,22 @@ val open_of_closed : Term.constr -> open_constr
 val run : tactic -> Environ.env -> Evd.evar_defs -> goal -> proof_step
 
 (* This is a tactic which does nothing. It's main purpose
-   is to enforce a full duality betweens [Subproof.tactic]-s
+   is to enforce a full duality betweens [Proofview.tactic]-s
    and [Goal.tactic]-s.
-   Indeed, given this [null] tactic, [Subproof] will know
+   Indeed, given this [null] tactic, [Proofview. will know
    how to transform its tactics to [Goal.tactic].*)
 val null : tactic
 
 (*arnaud: à commenter/déplacer tout ça *)
-val open_constr_of_raw : bool -> Rawterm.rawconstr -> open_constr expression
+val open_constr_of_raw : bool -> Rawterm.rawconstr -> open_constr sensitive
 (*arnaud: ça aussi *)
-val process_apply_case_metas : open_constr -> Term.types -> open_constr expression
+val process_apply_case_metas : open_constr -> Term.types -> open_constr sensitive
 (*arnaud: à commenter ? idéalement à virer *)
 val make_open_constr : Term.constr -> Evd.evar list ->  open_constr
 (* This function takes an [constr] with metas, and introduces
    a evar for each meta. The metas must be casted and 
    pairwise distinct. *)
-val process_typed_metas : Term.constr -> open_constr expression
+val process_typed_metas : Term.constr -> open_constr sensitive
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)
 val refine : open_constr -> tactic
@@ -82,7 +83,7 @@ val clear : Names.identifier list -> tactic
 (* Implements the clearbody tactic *)
 val clear_body : Names.identifier list -> tactic
 
-(*** Expressions & Tacticals ***)
+(*** Sensitive expressions & Tacticals ***)
 
 
 (* The following combinators allow to construct tactical expressions 
@@ -98,39 +99,39 @@ val clear_body : Names.identifier list -> tactic
 
 
 (* if then else on expressions *)
-val cond : bool expression -> thn:'a expression -> 
-  els:'a expression ->  'a expression
+val cond : bool sensitive -> thn:'a sensitive -> 
+  els:'a sensitive ->  'a sensitive
 
 (* monadic bind on expressions *)
-val bind : 'a expression -> ('a -> 'b expression) -> 'b expression
+val bind : 'a sensitive -> ('a -> 'b sensitive) -> 'b sensitive
 
 (* monadic return on expressions *)
-val return : 'a -> 'a expression
+val return : 'a -> 'a sensitive
 
 (* changes a list of expressions into an list expression *)
-val expr_of_list : 'a expression list -> 'a list expression
+val expr_of_list : 'a sensitive list -> 'a list sensitive
 
 (* arnaud : à virer ? (ainsi que dans le .ml) 
 (* map combinator which may usefully complete [bind] *)
-   val map : ('a -> 'b) -> 'a expression -> 'b expression
+   val map : ('a -> 'b) -> 'a sensitive -> 'b sensitive
 
 (* binary map combinator *)
-   val map2 : ('a -> 'b -> 'c) -> 'a expression -> 'b expression -> 'c expression
+   val map2 : ('a -> 'b -> 'c) -> 'a sensitive -> 'b sensitive -> 'c sensitive
 *)
 
 (* [concl] is the conclusion of the current goal *)
-val concl : Term.constr expression
+val concl : Term.constr sensitive
 
 (* [hyps] is the [named_context_val] representing the hypotheses
    of the current goal *)
-val hyps : Environ.named_context_val expression
+val hyps : Environ.named_context_val sensitive
 
 (* [env] is the current [Environ.env] containing both the 
    environment in which the proof is ran, and the goal hypotheses *)
-val env : Environ.env expression
+val env : Environ.env sensitive
 
 (* [defs] is the [Evd.evar_defs] at the current evaluation point *)
-val defs : Evd.evar_defs expression
+val defs : Evd.evar_defs sensitive
 
 
 (* arnaud: à remplacer par un print 
