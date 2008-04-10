@@ -19,26 +19,32 @@ type goal = {
   content : Evd.evar;      (* Corresponding evar. Allows to retrieve
 			      logical information once put together
 			      with an evar_map. *)
-  name : string option     (* Optional name of the goal to be displayed *)
+  itags: int list;         (* Heriditary internal tags, used to
+			      keep some track of inheritance *)
+  tags : string list       (* Heriditary? tags to be displayed *)
 }
 
 (* access primitive *)
 (* invariant : [e] must exist in [em] *)
 let content evars { content = e } = Evd.find evars e
-let name { name = n } = n
+(* let name { name = n } = n*)
 
 
+(* arnaud: commentaire ? *)
 (* Builds a new goal named [name] with evar [e] *)
-let build ?name e =
+let build e =
   { content = e ;
-    name = name
+    itags = [];
+    tags = []
   }
 
+(* Builds a new goal with content evar [e] and 
+   inheriting from goal [gl]*)
+let descendent gl e =
+  { gl with content = e}
 
 (* Returns [true] if the goal has been partially resolved. *)
 let is_defined evars { content = e } = Evd.is_defined evars e
-
-
 
 (*** Goal tactics ***)
 
@@ -160,7 +166,7 @@ let refine step env rdefs gl info =
   (* The evars in [my_evars] are stored in reverse order.
      It is expectingly better however to display the goal
      in increasing order. *)
-  let subgoals = List.map build (List.rev step.my_evars) in
+  let subgoals = List.map (descendent gl) (List.rev step.my_evars) in
   (* creates the new [evar_defs] by defining the evar of the current goal
      as being [refine_step]. *)
   let new_defs = Evd.evar_define gl.content (step.me) !rdefs in
@@ -203,7 +209,7 @@ let clear idents _ rdefs gl info =
                      | Evar (e,_) -> e
 		     | _ -> Util.anomaly "Goal.clear: e_new_evar failure"
   in
-  let cleared_goal = build cleared_evar in
+  let cleared_goal = descendent gl cleared_evar in
   rdefs := Evd.evar_define gl.content clearing_constr !rdefs;
   { subgoals = [cleared_goal] ;
     new_defs = !rdefs
@@ -276,7 +282,7 @@ let clear_body idents env rdefs gl info =
                      | Evar (e,_) -> e
 		     | _ -> Util.anomaly "Goal.clear: e_new_evar failure"
   in
-  let new_goal = build new_evar in
+  let new_goal = descendent gl new_evar in
   rdefs := Evd.evar_define gl.content new_constr defs';
   { subgoals = [new_goal] ;
     new_defs = !rdefs
@@ -581,6 +587,18 @@ and process_arg_metas l acc funty env rdefs goal info =
 	    process_arg_metas allargs acc (subst1 c1 b) env rdefs goal info
 	| _ -> Util.anomaly "Goal.process_arg_metas: mettre une vrai erreur"
 	    (* arnaud: original: raise (RefinerError (CannotApply (t,harg)))*)
+
+
+(*** Tag related things ***)
+
+(* arnaud: commentaire *)
+let freeze gl = 
+  let unique_tag = gl.content in
+  { gl with itags = unique_tag::gl.itags }   ,  unique_tag
+
+let has_itag i _ _ gl _ =
+  List.mem i gl.itags
+
 
 (* arnaud: à nettoyer
 let rec mk_refgoals sigma goal goalacc conclty trm =

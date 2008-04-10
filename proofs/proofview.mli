@@ -134,6 +134,15 @@ val tclREPEAT : unit tactic -> unit tactic
    "return" in the tactic monad *)
 val id : 'a -> 'a tactic
 
+(* Freezes a goal sensitive value to its "current value".
+   Its value will be the same inside a goal than inside its 
+   ancestor among current goal.
+   If there is no such parent then it raises an error to evaluate
+   it, better be careful not to use it after unfocusing. *)
+(* arnaud: I believe it raises a simple tactic failure when
+   incorrectly evaluated. *)
+val freeze : 'a Goal.sensitive -> 'a Goal.sensitive tactic
+
 (* Reorders the open goals of the given pointer, according to the 
    permutation *)
 val reorder : Permutation.permutation -> unit tactic

@@ -33,6 +33,7 @@ let rec init = function
 	     solution = Evd.create_evar_defs Evd.empty ;
 	     comb = []
 	   }
+      (* arnaud, garder les names ? *)
   | (env,typ,name)::l -> let { initial = ret ; solution = sol ; comb = comb } =
                            init l
                          in
@@ -52,7 +53,7 @@ let rec init = function
 					  outputed a non-evar constr,
 					  which it should not. *)
 			 in
-			 let gl = Goal.build ?name e in
+			 let gl = Goal.build e in
 			 { initial = econstr::ret;
 			   solution = new_defs ;
 			   comb = gl::comb }
@@ -223,8 +224,35 @@ let goal_tactic_of_tactic t =
 
 (* Prototype to the [idtac] tactic, also plays the role of 
    "return" in the tactic monad *)
-let id a _ (ps:Goal.proof_step) =
+let id a _ ps =
   { proof_step = ps; content = a }
+
+(* Internal function to freeze. *)
+let rec sensitive_assoc = function
+  | ((_,t),v)::l -> Goal.cond (Goal.has_itag t) ~thn:
+                      (Goal.return v)
+	            ~els:
+	               (sensitive_assoc l)
+  | [] -> fail (Pp.str"") (* arnaud: améliorer le message d'erreur *)
+
+(* Freezes a goal sensitive value to its "current value".
+   Its value will be the same inside a goal than inside its 
+   ancestor among current goal.
+   If there is no such parent then it raises an error to evaluate
+   it, better be careful not to use it after unfocusing. *)
+(* arnaud: I believe it raises a simple tactic failure when
+   incorrectly evaluated. *)
+(* spiwack: there are probably optimisation to be done *)
+let freeze s env ps =
+  let assoc_list = 
+    List.map (fun g -> Goal.freeze g, Goal.run s env ps.Goal.new_defs g) 
+              ps.Goal.subgoals
+  in
+  { proof_step =
+      { ps with Goal.subgoals = List.map (fun ((g,_),_) -> g) assoc_list };
+    content =
+      sensitive_assoc assoc_list
+  }
 
 (* Reoders the goals on the comb according to a permutation *)
 let reorder p _ ps =

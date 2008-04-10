@@ -16,7 +16,7 @@ type goal
 
 (*arnaud: virer build quand on aura trouvé une meilleure primitive
           pour Proofview.init. *)
-val build : ?name:string -> Evd.evar -> goal 
+val build : Evd.evar -> goal 
 
 val is_defined : Evd.evar_map -> goal -> bool
 
@@ -24,6 +24,7 @@ val is_defined : Evd.evar_map -> goal -> bool
 (* arnaud: mieux commenter *)
 (* invariant : [e] must exist in [em] *)
 val content : Evd.evar_map -> goal -> Evd.evar_info
+
 
 (*** Goal tactics ***)
 
@@ -50,7 +51,7 @@ type open_constr
 val constr_of_open_constr: open_constr -> Term.constr
 val open_of_closed : Term.constr -> open_constr
 
-val run : tactic -> Environ.env -> Evd.evar_defs -> goal -> proof_step
+val run : 'a sensitive -> Environ.env -> Evd.evar_defs -> goal -> 'a
 
 (* This is a tactic which does nothing. It's main purpose
    is to enforce a full duality betweens [Proofview.tactic]-s
@@ -132,6 +133,13 @@ val env : Environ.env sensitive
 
 (* [defs] is the [Evd.evar_defs] at the current evaluation point *)
 val defs : Evd.evar_defs sensitive
+
+
+(*** Tag related things ***)
+
+val freeze : goal -> goal * int
+
+val has_itag : int -> bool sensitive
 
 
 (* arnaud: à remplacer par un print 
