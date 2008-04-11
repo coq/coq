@@ -98,6 +98,10 @@ val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
    equivalent in Ltac. *)
 val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
 
+(* [tclIGNORE t] has the same operational content as [t],
+   but drops the value at the end. *)
+val tclIGNORE : 'a tactic -> unit tactic
+
 
 (* Focuses a tactic at a single subgoal, found by it's index. *)
 (* There could easily be such a tactical for a range of goals. *)

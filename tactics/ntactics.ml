@@ -417,7 +417,7 @@ let clenv_refine_in with_evars id clenv gl =
 
 (* Resolution with missing arguments *)
 
-let apply_with_ebindings_gen with_evars (c,lbind) gl = 
+let apply_with_ebindings_gen with_evars (c,lbind) = 
   Util.anomaly "Ntactics.apply_with_ebindings_gen: normalement inutile"
   (* arnaud: à remplacer
   (* The actual type of the theorem. It will be matched against the
@@ -655,19 +655,23 @@ let new_hyp mopt (c,lbind) g =
 
 (* Keeping only a few hypotheses *)
 
-let keep hyps gl =
-  let env = Global.env() in
-  Goal.concl >>= fun ccl ->
-  let cl,_ =
-    fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
-      if List.mem hyp hyps
-	or List.exists (occur_var_in_decl env hyp) keep
-	or occur_var env hyp ccl
-      then (clear,decl::keep)
-      else (hyp::clear,keep))
-      ~init:([],[]) (pf_env gl)
-  in 
-  Goal.return (thin cl)
+let keep hyps =
+  Proofview.tactic_of_sensitive_proof_step (
+    let genv = Global.env() in
+    Goal.concl >>= fun ccl ->
+    Goal.env >>= fun env ->
+    hyps >>= fun hyps ->
+    let cl,_ =
+      fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
+        if List.mem hyp hyps
+	  or List.exists (occur_var_in_decl genv hyp) keep
+	  or occur_var genv hyp ccl
+	then (clear,decl::keep)
+	else (hyp::clear,keep))
+	~init:([],[]) env
+    in 
+    Goal.clear cl
+  )
 
 (************************)
 (* Introduction tactics *)
@@ -683,16 +687,17 @@ let check_number_of_constructors expctdnumopt i nconstr =
   end;
   if i > nconstr then error "Not enough constructors"
 
-let constructor_tac expctdnumopt i lbind gl =
-  let cl = pf_concl gl in 
-  let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
+let constructor_tac expctdnumopt i lbind =
+  Goal.concl >>= fun concl ->
+  let cl = concl in 
+  let (mind,redcl) = pf_reduce_to_quantified_ind cl in 
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   check_number_of_constructors expctdnumopt i nconstr;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
   let apply_tac = apply_with_ebindings (cons,lbind) in
-  (tclTHENLIST 
-     [convert_concl_no_check redcl DEFAULTcast; intros; apply_tac]) gl
+  (Logic.tclTHENLIST 
+     [convert_concl_no_check redcl DEFAULTcast; Intros.intros; apply_tac])
 
 let one_constructor i = constructor_tac None i
 
@@ -701,14 +706,15 @@ let one_constructor i = constructor_tac None i
    Should be generalize in Constructor (Fun c : I -> tactic)
  *)
 
-let any_constructor tacopt gl =
-  let t = match tacopt with None -> tclIDTAC | Some t -> t in
-  let mind = fst (pf_reduce_to_quantified_ind gl (pf_concl gl)) in
+let any_constructor tacopt =
+  let t = match tacopt with None -> Proofview.id () | Some t -> t in
+  Goal.concl >>= fun concl ->
+  let mind = fst (pf_reduce_to_quantified_ind concl) in
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   if nconstr = 0 then error "The type has no constructors";
-  tclFIRST (List.map (fun i -> tclTHEN (one_constructor i NoBindings) t) 
-              (interval 1 nconstr)) gl
+  Logic.tclFIRST (List.map (fun i -> Logic.tclTHEN (one_constructor i NoBindings) t) 
+              (interval 1 nconstr))
 
 let left_with_ebindings  = constructor_tac (Some 2) 1
 let right_with_ebindings = constructor_tac (Some 2) 2

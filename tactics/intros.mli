@@ -17,6 +17,13 @@
 
 open Names
 
+(*** Introduction tactics ***)
+
+val intros : unit Proofview.tactic
+
+
+(*** Related functions ***)
+
 type intro_name_flag =
   | IntroAvoid of identifier list
   | IntroBasedOn of identifier * identifier list
@@ -25,3 +32,4 @@ type intro_name_flag =
 val find_name : name * Term.types option * Term.types ->
                 intro_name_flag -> 
                 identifier Goal.sensitive
+

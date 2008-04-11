@@ -11,6 +11,7 @@
 (*i*)
 open Names
 open Term
+open Proofview
 (* open Sign
 open Evd
 open Environ *)
@@ -24,47 +25,70 @@ val get_type_of : constr -> types Goal.sensitive
 
 (*** tacticals ***)
 
+(* Tacticals from Proofview, for consistency *)
+val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
+val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
+val tclORELSE : unit tactic -> unit tactic -> unit tactic
+val tclREPEAT : unit tactic -> unit tactic
+val tclLIST : unit tactic list -> unit tactic list
+val tclEXTEND : unit tactic list -> 
+                unit tactic -> 
+                unit tactic list -> 
+                unit tactic
+val tclIGNORE : 'a tactic -> unit tactic
+
 (* [do n] tactical *)
-val tclDO : int -> unit Proofview.tactic -> unit Proofview.tactic
+val tclDO : int -> unit tactic -> unit tactic
 (* [try] tactical *)
-val tclTRY : unit Proofview.tactic -> unit Proofview.tactic
+val tclTRY : unit tactic -> unit tactic
+
+(* Wrapper tactical around tclLIST, takes an array as argument instead. *)
+val tclARRAY : unit tactic array -> unit tactic
+
+(* [tclTHENLIST [t1;...;tn]] and [tclTHENARRAY [| t1;...;tn |]] 
+   apply t1 then ... then tn. *)
+val tclTHENLIST : unit tactic list -> unit tactic
+val tclTHENARRAY : unit tactic array -> unit tactic
+
+(* Compatibility tacticals *)
+val tclFIRST : unit tactic -> unit tactic
 
 (* [onLastHyp itac] applies [itac] to the name of the last
    hypothesis of the context *)
 (* arnaud: statut ?*)
-val onLastHyp : (identifier Goal.sensitive -> 'a Proofview.tactic) 
-                      -> 'a Proofview.tactic
+val onLastHyp : (identifier Goal.sensitive -> 'a tactic) 
+                      -> 'a tactic
 
 (*** tactics ***)
 (* [refine] tactic *)
-val refine : Goal.open_constr Goal.sensitive -> unit Proofview.tactic
+val refine : Goal.open_constr Goal.sensitive -> unit tactic
 (* [clear] tactic *)
-val clear : identifier list Goal.sensitive -> unit Proofview.tactic
+val clear : identifier list Goal.sensitive -> unit tactic
 (* [clearbody] tactic *)
-val clear_body : identifier list Goal.sensitive -> unit Proofview.tactic
+val clear_body : identifier list Goal.sensitive -> unit tactic
 (* [intro] tactic *)
-val intro : identifier Goal.sensitive -> unit Proofview.tactic
+val intro : identifier Goal.sensitive -> unit tactic
 
 
 (*** remettre dans [tactics] ?***)
 (* [assumption] tactic *)
-val assumption : unit Proofview.tactic
+val assumption : unit tactic
 (* [exact] tactic *)
-val exact : Term.constr Goal.sensitive -> unit Proofview.tactic
+val exact : Term.constr Goal.sensitive -> unit tactic
 (* [apply] tactic *)
 val apply_with_ebindings : 
           (Term.constr * Goal.open_constr Rawterm.bindings) Goal.sensitive
-                  -> unit Proofview.tactic
+                  -> unit tactic
 (* [eapply] tactic *)
 val eapply_with_ebindings : 
           (Term.constr * Goal.open_constr Rawterm.bindings) Goal.sensitive 
-                  -> unit Proofview.tactic
+                  -> unit tactic
 (* [false] --> [apply] , [true] --> [eapply] *)
 val apply_with_ebindings_gen : 
      bool -> (Term.constr * Goal.open_constr Rawterm.bindings) Goal.sensitive 
-          -> unit Proofview.tactic
+          -> unit tactic
 (* [cut] tactic *)
-val cut : Term.constr Goal.sensitive -> unit Proofview.tactic
+val cut : Term.constr Goal.sensitive -> unit tactic
 
 type simple_tactic =
   | Intro of identifier

@@ -104,6 +104,17 @@ let  lastHyp =
 
 (*** tacticals ***)
 
+(* Tacticals from Proofview, for consistency *)
+(* spiwack: maybe a bad idea, but sounds ok since there are few primitive
+   tacticals. *)
+let tclTHEN = Proofview.tclTHEN
+let tclBIND = Proofview.tclBIND
+let tclORELSE = Proofview.tclORELSE
+let tclREPEAT = Proofview.tclREPEAT
+let tclLIST = Proofview.tclLIST
+let tclEXTEND = Proofview.tclEXTEND
+let tclIGNORE = Proofview.tclIGNORE
+
 (* [do n] tactical *)
 let rec tclDO n tac =
   match n with
@@ -114,6 +125,21 @@ let rec tclDO n tac =
 (* [try] tactical *)
 let tclTRY tac =
   Proofview.tclORELSE tac (Proofview.id ())
+
+(* Wrapper tactical around tclLIST *)
+let tclARRAY tacs =
+  tclLIST (Array.to_list tacs)
+
+let rec tclTHENLIST = function
+  | [] -> Proofview.id ()
+  | t::l -> tclTHEN t (tclTHENLIST l)
+
+let tclTHENARRAY t1 tacs =
+  tclTHENLIST (Array.to_list tacs)
+
+
+(* Compatibility tacticals *)
+let tclFIRST = tclFOCUS 1
 
 (* arnaud: à remettre dans "tacticals" ? *)
  let onLastHyp tac = 
