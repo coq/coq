@@ -195,7 +195,7 @@ let apply env t sp  =
    the first one. *)
 (* arnaud: avancer dans les termes modifiés par effet de bord peut se faire
    en mutuel-recursant wrap et [tactic_of...]*)
-let tactic_of_goal_tactic f env ps =
+let tactic_of_sensitive_proof_step f env ps =
   let wrap g ((defs, partial_list) as partial_res) = 
     if Goal.is_defined (Evd.evars_of defs) g then 
       partial_res

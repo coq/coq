@@ -80,10 +80,11 @@ val apply : Environ.env -> 'a tactic -> subproof -> subproof
    a tactic that operates on a single goal) into an actual tactic.
    It operates by iterating the single-tactic from the last goal to 
    the first one. *)
-val tactic_of_goal_tactic : Goal.tactic -> unit tactic
+val tactic_of_sensitive_proof_step : Goal.proof_step Goal.sensitive -> 
+                                     unit tactic
 
 (* arnaud: à commenter, ainsi que dans le .ml *)
-val goal_tactic_of_tactic : unit tactic -> Goal.tactic
+val goal_tactic_of_tactic : unit tactic -> Goal.proof_step Goal.sensitive
 
 
 

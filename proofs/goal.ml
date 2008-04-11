@@ -69,8 +69,6 @@ type proof_step = { subgoals: goal list ;
 type 'a sensitive = Environ.env -> Evd.evar_defs ref -> goal -> Evd.evar_info -> 'a
 
 
-(* type of the goal tactics*)
-type tactic = proof_step sensitive
 
 (* type of constr with holes manipulated by the API *)
 type open_constr = {

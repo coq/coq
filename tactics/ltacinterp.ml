@@ -1551,7 +1551,7 @@ let interp_atomic ist = function
       tac (List.map (interp_and_tag ist) l)
       (* arnaud: à nettoyer dès que ça marche :)
       let tac = lookup_tactic opn in
-      Proofview.tactic_of_goal_tactic (
+      Proofview.tactic_of_sensitive_proof_step (
 	Goal.expr_of_list (List.map (interp_genarg ist) l) >>= fun args ->
 	tac args
       )

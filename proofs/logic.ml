@@ -128,22 +128,22 @@ let std_refine check_type raw_step =
 
 (* [refine] tactic *)
 let refine oc = 
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     oc >>= Goal.refine
   )
 (* [clear] tactic *)
 let clear l = 
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     l >>= Goal.clear
   )
 (* [clearbody] tactic *)
 let clear_body l = 
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     l >>= Goal.clear_body
   )
 (* [intro] tactic *)
 let intro id = 
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     (* arnaud: vérifier que "id" n'apparaît pas.*)
     id >>= fun id ->
     std_refine true (
@@ -161,14 +161,14 @@ let intro id =
 (* [exact] tactic *)
 (* arnaud: comme le check est pas fait là, ça fait aussi exact_no_check... *)
 let exact c =
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     c >>= fun c ->
     Goal.refine (Goal.open_of_closed c)
   )
 
 (* [assumption] tactic *)
 let assumption =
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     Goal.concl >>= fun concl ->
     Goal.env >>= fun env ->
     Goal.hyps >>= fun hyps ->
@@ -202,7 +202,7 @@ let mkCastMeta t =
 
 (* [cut] tactic *)
 let cut c = 
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     c >>= fun c ->
     hnf_type_of c >>= fun ty ->
     Goal.hyps >>= fun hyps ->
@@ -327,7 +327,7 @@ let goal_apply_with_ebindings_gen with_evars (c,lbind) =
         else raise exn in
     try_red_apply thm_ty0
 let apply_with_ebindings_gen with_evars c_and_lbind =
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     c_and_lbind >>= (goal_apply_with_ebindings_gen with_evars)
   )
 

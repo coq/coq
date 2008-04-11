@@ -201,7 +201,7 @@ let depth_of_quantified_hypothesis red h =
 (* arnaud: faire intros until 0 *)
 (* arnaud: si il y a un bug là dedans je ne serais pas étonné *)
 let intros_until_gen red h =
-  Proofview.tactic_of_goal_tactic (
+  Proofview.tactic_of_sensitive_proof_step (
     depth_of_quantified_hypothesis red h >>= fun depth ->
     Proofview.goal_tactic_of_tactic (Logic.tclDO depth intro)
   )

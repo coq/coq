@@ -42,8 +42,6 @@ type proof_step = { subgoals: goal list ;
 (* type of the base elements of the goal API.*)
 type 'a sensitive
 
-(* type of the goal tactics*)
-type tactic = proof_step sensitive
 
 (* type of constr with holes manipulated by the API *)
 type open_constr
@@ -58,7 +56,7 @@ val run : 'a sensitive -> Environ.env -> Evd.evar_defs -> goal -> 'a
    and [Goal.tactic]-s.
    Indeed, given this [null] tactic, [Proofview. will know
    how to transform its tactics to [Goal.tactic].*)
-val null : tactic
+val null : proof_step sensitive
 
 (*arnaud: à commenter/déplacer tout ça *)
 val open_constr_of_raw : bool -> Rawterm.rawconstr -> open_constr sensitive
@@ -72,17 +70,17 @@ val make_open_constr : Term.constr -> Evd.evar list ->  open_constr
 val process_typed_metas : Term.constr -> open_constr sensitive
 
 (* arnaud: à commenter un brin (comme le .ml quoi) *)
-val refine : open_constr -> tactic
+val refine : open_constr -> proof_step sensitive
 
 
 (*arnaud: commenter plus sans doute. Pareil dans le .ml *)
 (* Implements the clear tactics *)
-val clear : Names.identifier list -> tactic
+val clear : Names.identifier list -> proof_step sensitive
 
 
 (*arnaud: quelques mots ne feront pas de mal*)
 (* Implements the clearbody tactic *)
-val clear_body : Names.identifier list -> tactic
+val clear_body : Names.identifier list -> proof_step sensitive
 
 (*** Sensitive expressions & Tacticals ***)
 
