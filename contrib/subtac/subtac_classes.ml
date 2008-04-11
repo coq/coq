@@ -194,6 +194,7 @@ let new_instance ctx (instid, bk, cl) props pri =
       Evarutil.nf_isevar !isevars t
   in
   isevars := undefined_evars !isevars;
+  Evarutil.check_evars env Evd.empty !isevars termtype;
 (*   let imps =  *)
 (*     Util.list_map_i  *)
 (*       (fun i binder -> *)

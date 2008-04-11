@@ -485,6 +485,7 @@ let new_instance ctx (instid, bk, cl) props ?(tac:Proof_type.tactic option) ?(ho
   in
     if Lib.is_modtype () then
       begin
+	Evarutil.check_evars env Evd.empty !isevars termtype;
 	let cst = Declare.declare_internal_constant id
 	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in
@@ -533,7 +534,9 @@ let new_instance ctx (instid, bk, cl) props ?(tac:Proof_type.tactic option) ?(ho
 	    Typeclasses.add_instance inst;
 	    (match hook with Some h -> h cst | None -> ())
 	in
+	let termtype = Evarutil.nf_isevar !isevars termtype in
 	let evm = Evd.evars_of (undefined_evars !isevars) in
+	  Evarutil.check_evars env Evd.empty !isevars termtype;
 	  if evm = Evd.empty then
 	    let cdecl = 
 	      let kind = IsDefinition Instance in
