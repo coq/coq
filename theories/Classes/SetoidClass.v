@@ -131,7 +131,7 @@ Implicit Arguments setoid_morphism [[!sa]].
 Existing Instance setoid_morphism.
 
 Program Definition setoid_partial_app_morphism [ sa : Setoid A ] (x : A) : Morphism (equiv ++> iff) (equiv x) :=
-  Reflexive_partial_app_morphism x.
+  Reflexive_partial_app_morphism.
 
 Existing Instance setoid_partial_app_morphism.
 

@@ -100,7 +100,7 @@ let type_class_instance_params isevars env id n ctx inst subst =
 let substitution_of_constrs ctx cstrs =
   List.fold_right2 (fun c (na, _, _) acc -> (na, c) :: acc) cstrs ctx []
 
-let new_instance ctx (instid, bk, cl) props pri =
+let new_instance ctx (instid, bk, cl) props ?(on_free_vars=Classes.default_on_free_vars) pri =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
@@ -133,9 +133,10 @@ let new_instance ctx (instid, bk, cl) props pri =
   let ctx_bound = Idset.union bound (Implicit_quantifiers.ids_of_list fvs) in
   let gen_ids = Implicit_quantifiers.free_vars_of_constr_expr ~bound:ctx_bound tclass [] in
   let bound = Idset.union (Implicit_quantifiers.ids_of_list gen_ids) ctx_bound in
+  on_free_vars (List.rev (gen_ids @ fvs));
   let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
   let ctx, avoid = Classes.name_typeclass_binders bound ctx in
-  let ctx = List.rev_append gen_ctx ctx in
+  let ctx = List.append ctx (List.rev gen_ctx) in
   let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
     let c', imps = interp_type_evars_impls ~evdref:isevars env c in

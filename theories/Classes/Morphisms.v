@@ -128,9 +128,9 @@ Proof. firstorder. Qed.
 Instance iff_inverse_impl_subrelation : subrelation iff (inverse impl).
 Proof. firstorder. Qed.
 
-Instance [ subrelation A R R' ] => pointwise_subrelation :
+Instance [ sub : subrelation A R R' ] => pointwise_subrelation :
   subrelation (pointwise_relation (A:=B) R) (pointwise_relation R') | 4.
-Proof. reduce. unfold pointwise_relation in *. apply subrelation0. apply H. Qed.
+Proof. reduce. unfold pointwise_relation in *. apply sub. apply H. Qed.
 
 (** The complement of a relation conserves its morphisms. *)
 
@@ -186,7 +186,7 @@ Program Instance [ Transitive A R ] =>
 
 (** Morphism declarations for partial applications. *)
 
-Program Instance [ Transitive A R ] (x : A) =>
+Program Instance [ Transitive A R ] =>
   trans_contra_inv_impl_morphism : Morphism (R --> inverse impl) (R x).
 
   Next Obligation.
@@ -194,7 +194,7 @@ Program Instance [ Transitive A R ] (x : A) =>
     transitivity y...
   Qed.
 
-Program Instance [ Transitive A R ] (x : A) =>
+Program Instance [ Transitive A R ] =>
   trans_co_impl_morphism : Morphism (R ==> impl) (R x).
 
   Next Obligation.
@@ -202,7 +202,7 @@ Program Instance [ Transitive A R ] (x : A) =>
     transitivity x0...
   Qed.
 
-Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
+Program Instance [ Transitive A R, Symmetric A R ] =>
   trans_sym_co_inv_impl_morphism : Morphism (R ==> inverse impl) (R x).
 
   Next Obligation.
@@ -210,7 +210,7 @@ Program Instance [ Transitive A R, Symmetric A R ] (x : A) =>
     transitivity y...
   Qed.
 
-Program Instance [ Transitive A R, Symmetric _ R ] (x : A) =>
+Program Instance [ Transitive A R, Symmetric _ R ] =>
   trans_sym_contra_impl_morphism : Morphism (R --> impl) (R x).
 
   Next Obligation.
@@ -218,7 +218,7 @@ Program Instance [ Transitive A R, Symmetric _ R ] (x : A) =>
     transitivity x0...
   Qed.
 
-Program Instance [ Equivalence A R ] (x : A) =>
+Program Instance [ Equivalence A R ] =>
   equivalence_partial_app_morphism : Morphism (R ==> iff) (R x).
 
   Next Obligation.
@@ -231,7 +231,7 @@ Program Instance [ Equivalence A R ] (x : A) =>
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
-Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive _ R ] (x : A) =>
+Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive _ R ]  =>
   Reflexive_partial_app_morphism : Morphism R' (m x) | 4.
 
 (** Every Transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof
@@ -294,7 +294,7 @@ Program Instance inverse_iff_impl_id :
 (** Coq functions are morphisms for leibniz equality, 
    applied only if really needed. *)
 
-Instance (A : Type) [ Reflexive B R ] (m : A -> B) =>
+Instance (A : Type) [ Reflexive B R ] =>
   eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3.
 Proof. simpl_relation. Qed.
 
@@ -305,7 +305,7 @@ Proof. simpl_relation. Qed.
 (** [respectful] is a morphism for relation equivalence. *)
 
 Instance respectful_morphism : 
-  Morphism (relation_equivalence ++> relation_equivalence ++> relation_equivalence) (@respectful A B). 
+  Morphism (relation_equivalence ++> relation_equivalence ++> relation_equivalence) (@respectful A B).
 Proof.
   reduce.
   unfold respectful, relation_equivalence, predicate_equivalence in * ; simpl in *.
@@ -335,14 +335,14 @@ Qed.
 Class (A : Type) => Normalizes (m : relation A) (m' : relation A) : Prop :=
   normalizes : relation_equivalence m m'.
 
-Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) =>
-  inverse_respectful_norm : Normalizes _ (inverse R ==> inverse R') (inverse (R ==> R')) .
+Instance inverse_respectful_norm : 
+  Normalizes (A -> B) (inverse R ==> inverse R') (inverse (R ==> R')) .
 Proof. firstorder. Qed.
 
 (* If not an inverse on the left, do a double inverse. *)
 
-Instance (A : Type) (R : relation A) (B : Type) (R' : relation B) =>
-  not_inverse_respectful_norm : Normalizes _ (R ==> inverse R') (inverse (inverse R ==> R')) | 4.
+Instance not_inverse_respectful_norm : 
+  Normalizes (A -> B) (R ==> inverse R') (inverse (inverse R ==> R')) | 4.
 Proof. firstorder. Qed.
 
 Instance [ Normalizes B R' (inverse R'') ] =>
@@ -391,4 +391,3 @@ Ltac morphism_normalization :=
   end.
 
 Hint Extern 5 (@Morphism _ _ _) => morphism_normalization : typeclass_instances.
-

@@ -36,5 +36,6 @@ val new_instance :
   Topconstr.local_binder list ->
   typeclass_constraint ->
   binder_def_list ->
+  ?on_free_vars:(identifier list -> unit) ->
   int option ->
   identifier

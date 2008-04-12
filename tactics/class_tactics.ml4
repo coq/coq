@@ -550,8 +550,8 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
 	    new_evar isevars env relty
       | Some x -> f x
   in
-  let rec aux t l =
-    let t = Reductionops.whd_betadeltaiota env (Evd.evars_of !isevars) t in
+  let rec aux ty l =
+    let t = Reductionops.whd_betadeltaiota env (Evd.evars_of !isevars) ty in
     match kind_of_term t, l with
       | Prod (na, ty, b), obj :: cstrs -> 
 	  let (b, arg, evars) = aux b cstrs in
@@ -563,7 +563,7 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
       | _, [] -> 
 	  (match finalcstr with
 	      None -> 
-		let t = Reductionops.nf_betaiota t in
+		let t = Reductionops.nf_betaiota ty in
 		let rel = mk_relty t None in 
 		  t, rel, [t, rel]
 	    | Some codom -> let (t, rel) = Lazy.force codom in
@@ -680,7 +680,7 @@ let rewrite2_unif_flags = {
 (* let unification_rewrite c1 c2 cl but gl =  *)
 (*   let (env',c1) = *)
 (*     try *)
-(*       (\* ~flags:(false,true) to allow to mark occurences that must not be *)
+(*       (\* ~flags:(false,true) to allow to mark occurrences that must not be *)
 (*          rewritten simply by replacing them with let-defined definitions *)
 (*          in the context *\) *)
 (*       w_unify_to_subterm ~flags:rewrite_unif_flags (pf_env gl) (c1,but) cl.evd *)
@@ -989,10 +989,10 @@ open Genarg
 open Extraargs
 
 TACTIC EXTEND class_rewrite
-| [ "clrewrite" orient(o) constr(c) "in" hyp(id) "at" occurences(occ) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) constr(c) "at" occurences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) constr(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) constr(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
 | [ "clrewrite" orient(o) constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o [] (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) constr(c) "at" occurences(occ) ] -> [ cl_rewrite_clause c o occ None ]
+| [ "clrewrite" orient(o) constr(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o occ None ]
 | [ "clrewrite" orient(o) constr(c) ] -> [ cl_rewrite_clause c o [] None ]
 END
 
@@ -1084,25 +1084,31 @@ TACTIC EXTEND setoid_rewrite
    -> [ cl_rewrite_clause c o [] None ]
  | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) ] ->
       [ cl_rewrite_clause c o [] (Some (([],id), []))]
- | [ "setoid_rewrite" orient(o) constr(c) "at" occurences(occ) ] ->
+ | [ "setoid_rewrite" orient(o) constr(c) "at" occurrences(occ) ] ->
       [ cl_rewrite_clause c o occ None]
- | [ "setoid_rewrite" orient(o) constr(c) "at" occurences(occ) "in" hyp(id)] ->
+ | [ "setoid_rewrite" orient(o) constr(c) "at" occurrences(occ) "in" hyp(id)] ->
       [ cl_rewrite_clause c o occ (Some (([],id), []))]
- | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) "at" occurences(occ)] ->
+ | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) "at" occurrences(occ)] ->
       [ cl_rewrite_clause c o occ (Some (([],id), []))]
 END
 
 (* let solve_obligation lemma =  *)
 (*   tclTHEN (Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor None))) *)
 (*     (eapply_with_bindings (Constrintern.interp_constr Evd.empty (Global.env()) lemma, NoBindings)) *)
-    
+
 let mkappc s l = CAppExpl (dummy_loc,(None,(Libnames.Ident (dummy_loc,id_of_string s))),l)
 
-let declare_instance a aeq n s = ((dummy_loc,Name n), Explicit,
-				 CAppExpl (dummy_loc, (None, Qualid (dummy_loc, qualid_of_string s)), 
-					  [a;aeq]))
+let declare_an_instance n s args =
+  ((dummy_loc,Name n), Explicit,
+  CAppExpl (dummy_loc, (None, Qualid (dummy_loc, qualid_of_string s)), 
+	   args))
 
-let anew_instance instance fields = new_instance [] instance fields None
+let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
+
+let anew_instance binders instance fields = 
+  new_instance binders instance fields 
+    ~on_free_vars:Classes.fail_on_free_vars
+    None
 
 let require_library dirpath =
   let qualid = (dummy_loc, Libnames.qualid_of_dirpath (Libnames.dirpath_of_string dirpath)) in
@@ -1111,75 +1117,85 @@ let require_library dirpath =
 let check_required_library d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
-  if not (Library.library_is_opened dir) || not (Library.library_is_loaded dir) then
+  if (* not (Library.library_is_opened dir) ||  *)not (Library.library_is_loaded dir) then
     error ("Library "^(list_last d)^" has to be required first")
 
 let init_setoid () =
   check_required_library ["Coq";"Setoids";"Setoid"]
 
-let declare_instance_refl a aeq n lemma = 
+let declare_instance_refl binders a aeq n lemma = 
   let instance = declare_instance a aeq (add_suffix n "_refl") "Coq.Classes.RelationClasses.Reflexive" 
-  in anew_instance instance 
+  in anew_instance binders instance 
        [((dummy_loc,id_of_string "reflexivity"),[],lemma)]
 
-let declare_instance_sym a aeq n lemma = 
+let declare_instance_sym binders a aeq n lemma = 
   let instance = declare_instance a aeq (add_suffix n "_sym") "Coq.Classes.RelationClasses.Symmetric"
-  in anew_instance instance 
+  in anew_instance binders instance 
        [((dummy_loc,id_of_string "symmetry"),[],lemma)]
 
-let declare_instance_trans a aeq n lemma = 
+let declare_instance_trans binders a aeq n lemma = 
   let instance = declare_instance a aeq (add_suffix n "_trans") "Coq.Classes.RelationClasses.Transitive" 
-  in anew_instance instance 
+  in anew_instance binders instance 
        [((dummy_loc,id_of_string "transitivity"),[],lemma)]
 
 let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor None)) 
 
-let declare_relation a aeq n refl symm trans = 
+let declare_relation ?(binders=[]) a aeq n refl symm trans = 
   init_setoid ();
   match (refl,symm,trans) with 
       (None, None, None) -> 
-	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.DefaultRelation" 
-	in ignore(anew_instance instance [])
+	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.DefaultRelation"
+	in ignore(anew_instance binders instance [])
     | (Some lemma1, None, None) -> 
-	ignore (declare_instance_refl a aeq n lemma1)
+	ignore (declare_instance_refl binders a aeq n lemma1)
     | (None, Some lemma2, None) -> 
-	ignore (declare_instance_sym a aeq n lemma2)
+	ignore (declare_instance_sym binders a aeq n lemma2)
     | (None, None, Some lemma3) -> 
-	ignore (declare_instance_trans a aeq n lemma3)
+	ignore (declare_instance_trans binders a aeq n lemma3)
     | (Some lemma1, Some lemma2, None) -> 
-	ignore (declare_instance_refl a aeq n lemma1); 
-	ignore (declare_instance_sym a aeq n lemma2)
+	ignore (declare_instance_refl binders a aeq n lemma1); 
+	ignore (declare_instance_sym binders a aeq n lemma2)
     | (Some lemma1, None, Some lemma3) -> 
-	let lemma_refl = declare_instance_refl a aeq n lemma1 in
-	let lemma_trans = declare_instance_trans a aeq n lemma3 in
+	let lemma_refl = declare_instance_refl binders a aeq n lemma1 in
+	let lemma_trans = declare_instance_trans binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder" 
 	in ignore(
-	    anew_instance instance 
+	    anew_instance binders instance 
 	      [((dummy_loc,id_of_string "preorder_refl"), [], mkIdentC lemma_refl);
 	       ((dummy_loc,id_of_string "preorder_trans"),[], mkIdentC lemma_trans)])
     | (None, Some lemma2, Some lemma3) -> 
-	let lemma_sym = declare_instance_sym a aeq n lemma2 in
-	let lemma_trans = declare_instance_trans a aeq n lemma3 in
+	let lemma_sym = declare_instance_sym binders a aeq n lemma2 in
+	let lemma_trans = declare_instance_trans binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER" 
 	in ignore(
-	    anew_instance instance 
+	    anew_instance binders instance 
 	      [((dummy_loc,id_of_string "per_sym"),  [], mkIdentC lemma_sym);
 	       ((dummy_loc,id_of_string "per_trans"),[], mkIdentC lemma_trans)])
      | (Some lemma1, Some lemma2, Some lemma3) -> 
-	let lemma_refl = declare_instance_refl a aeq n lemma1 in 
-	let lemma_sym = declare_instance_sym a aeq n lemma2 in
-	let lemma_trans = declare_instance_trans a aeq n lemma3 in
+	let lemma_refl = declare_instance_refl binders a aeq n lemma1 in 
+	let lemma_sym = declare_instance_sym binders a aeq n lemma2 in
+	let lemma_trans = declare_instance_trans binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence" 
 	in ignore(
-	    anew_instance instance 
-	      [((dummy_loc,id_of_string "equiv_refl"), [], mkIdentC lemma_refl);
-	       ((dummy_loc,id_of_string "equiv_sym"),  [], mkIdentC lemma_sym);
-	       ((dummy_loc,id_of_string "equiv_trans"),[], mkIdentC lemma_trans)])
+	  anew_instance binders instance 
+	    [((dummy_loc,id_of_string "equiv_refl"), [], mkIdentC lemma_refl);
+	     ((dummy_loc,id_of_string "equiv_sym"),  [], mkIdentC lemma_sym);
+	     ((dummy_loc,id_of_string "equiv_trans"),[], mkIdentC lemma_trans)])
+
+type 'a binders_let_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
+
+let (wit_binders_let : Genarg.tlevel binders_let_argtype),
+  (globwit_binders_let : Genarg.glevel binders_let_argtype),
+  (rawwit_binders_let : Genarg.rlevel binders_let_argtype) =
+  Genarg.create_arg "binders_let"
+
+open Pcoq.Constr
 
 VERNAC COMMAND EXTEND AddRelation
-    [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1) 
+  | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1) 
 	"symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
       [ declare_relation a aeq n (Some lemma1) (Some lemma2) None ]
+
   | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)  
 	"as" ident(n) ] ->
       [ declare_relation a aeq n (Some lemma1) None None ]
@@ -1206,6 +1222,40 @@ VERNAC COMMAND EXTEND AddRelation3
   | [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
 	"as" ident(n) ] ->  
       [ declare_relation a aeq n None None (Some lemma3) ] 
+END
+
+VERNAC COMMAND EXTEND AddParametricRelation
+  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq)
+	"reflexivity" "proved" "by" constr(lemma1) 
+	"symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
+      [ declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) None ]
+  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq)
+	"reflexivity" "proved" "by" constr(lemma1)  
+	"as" ident(n) ] ->
+      [ declare_relation ~binders:b a aeq n (Some lemma1) None None ]
+  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq)  "as" ident(n) ] -> 
+      [ declare_relation ~binders:b a aeq n None None None ]
+END
+
+VERNAC COMMAND EXTEND AddParametricRelation2
+    [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) 
+      "as" ident(n) ] ->
+      [ declare_relation ~binders:b a aeq n None (Some lemma2) None ]
+  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
+      [ declare_relation ~binders:b a aeq n None (Some lemma2) (Some lemma3) ]
+END
+
+VERNAC COMMAND EXTEND AddParametricRelation3
+    [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1) 
+      "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
+      [ declare_relation ~binders:b a aeq n (Some lemma1) None (Some lemma3) ]
+  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1) 
+      "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3) 
+      "as" ident(n) ] ->
+      [ declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) (Some lemma3) ] 
+  | [ "Add" "Parametric" "Relation" binders_let(b) ":" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
+	"as" ident(n) ] ->  
+      [ declare_relation ~binders:b a aeq n None None (Some lemma3) ] 
 END
 
 let mk_qualid s =
@@ -1271,10 +1321,10 @@ let build_morphism_signature m =
     in aux t
   in
   let t', sig_, evars = build_signature isevars env t cstrs None snd in
-  let _ = List.iter 
+  let _ = List.iter
     (fun (ty, rel) -> 
       let default = mkApp (Lazy.force default_relation, [| ty; rel |]) in
-	ignore(Evarutil.e_new_evar isevars env default))
+	ignore (Evarutil.e_new_evar isevars env default))
     evars
   in
   let morph = 
@@ -1283,7 +1333,7 @@ let build_morphism_signature m =
   let evd = resolve_all_evars_once false (true, 15) env
     (fun x evi -> class_of_constr evi.Evd.evar_concl <> None) !isevars in
     Evarutil.nf_isevar evd morph
-
+	
 let default_morphism sign m =
   let env = Global.env () in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
@@ -1297,55 +1347,67 @@ let default_morphism sign m =
   let mor = resolve_one_typeclass env morph in
     mor, respect_projection mor morph
     	  
+let add_setoid binders a aeq t n =
+  init_setoid ();
+  let lemma_refl = declare_instance_refl binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in 
+  let lemma_sym = declare_instance_sym binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
+  let lemma_trans = declare_instance_trans binders a aeq n (mkappc "Seq_trans" [a;aeq;t])  in
+  let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
+  in ignore(
+    anew_instance binders instance
+      [((dummy_loc,id_of_string "equiv_refl"), [], mkIdentC lemma_refl);
+       ((dummy_loc,id_of_string "equiv_sym"),  [], mkIdentC lemma_sym);
+       ((dummy_loc,id_of_string "equiv_trans"),[], mkIdentC lemma_trans)])
+
+let add_morphism_infer m n =
+  init_setoid ();
+  let instance_id = add_suffix n "_Morphism" in
+  let instance = build_morphism_signature m in
+    if Lib.is_modtype () then 
+      let cst = Declare.declare_internal_constant instance_id
+	(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
+      in
+	add_instance { is_class = Lazy.force morphism_class ; is_pri = None; is_impl = cst };
+	declare_projection n instance_id (ConstRef cst)
+    else
+      let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+	Flags.silently 
+	  (fun () ->
+	    Command.start_proof instance_id kind instance 
+	      (fun _ -> function
+		  Libnames.ConstRef cst -> 
+		    add_instance { is_class = Lazy.force morphism_class ; is_pri = None; is_impl = cst };
+		    declare_projection n instance_id (ConstRef cst)
+		| _ -> assert false);
+	    Pfedit.by (Tacinterp.interp <:tactic<add_morphism_tactic>>)) ();
+	Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () 
+
+let add_morphism binders m s n =
+  init_setoid ();
+  let instance_id = add_suffix n "_Morphism" in
+  let instance = 
+    ((dummy_loc,Name instance_id), Explicit,
+    CAppExpl (dummy_loc, 
+	     (None, Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Classes.Morphisms.Morphism")), 
+	     [cHole; s; m]))
+  in	  
+  let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
+    ignore(new_instance binders instance []
+	      ~on_free_vars:Classes.fail_on_free_vars
+	      ~tac ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst))
+	      None)
+
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [	init_setoid ();
-	let lemma_refl = declare_instance_refl a aeq n (mkappc "Seq_refl" [a;aeq;t]) in 
-	let lemma_sym = declare_instance_sym a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-	let lemma_trans = declare_instance_trans a aeq n (mkappc "Seq_trans" [a;aeq;t])  in
-	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
-	in ignore(
-	    anew_instance instance
-	      [((dummy_loc,id_of_string "equiv_refl"), [], mkIdentC lemma_refl);
-	       ((dummy_loc,id_of_string "equiv_sym"),  [], mkIdentC lemma_sym);
-	       ((dummy_loc,id_of_string "equiv_trans"),[], mkIdentC lemma_trans)])]
+     [ add_setoid [] a aeq t n ]
+  | [ "Add" "Parametric" "Setoid" binders_let(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
+     [	add_setoid binders a aeq t n ]
   | [ "Add" "Morphism" constr(m) ":" ident(n) ] ->
-      [ init_setoid ();
-	let instance_id = add_suffix n "_Morphism" in
-	let instance = build_morphism_signature m in
-	  if Lib.is_modtype () then 
-	    let cst = Declare.declare_internal_constant instance_id
-	      (Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
-	    in
-	      add_instance { is_class = Lazy.force morphism_class ; is_pri = None; is_impl = cst };
-	      declare_projection n instance_id (ConstRef cst)
-	  else
-	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
-	      Flags.silently 
-		(fun () ->
-		  Command.start_proof instance_id kind instance 
-		    (fun _ -> function
-			Libnames.ConstRef cst -> 
-			  add_instance { is_class = Lazy.force morphism_class ; is_pri = None; is_impl = cst };
-			  declare_projection n instance_id (ConstRef cst)
-		      | _ -> assert false);
-		  Pfedit.by (Tacinterp.interp <:tactic<add_morphism_tactic>>)) ();
-	      Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () ]
-
+      [ add_morphism_infer m n ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
-      [ init_setoid ();
-	let instance_id = add_suffix n "_Morphism" in
-	let instance = 
-	  ((dummy_loc,Name instance_id), Explicit,
-	  CAppExpl (dummy_loc, 
-		   (None, Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Classes.Morphisms.Morphism")), 
-		   [cHole; s; m]))
-	in	  
-	let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
-	  ignore(new_instance [] instance []
-		    ~tac ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst))
-		    None)
-      ]
+      [ add_morphism [] m s n ]
+  | [ "Add" "Parametric" "Morphism" binders_let(binders) ":" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
+      [ add_morphism binders m s n ]
 END
 
 (** Bind to "rewrite" too *)
@@ -1375,7 +1437,7 @@ let check_evar_map_of_evars_defs evd =
 let unification_rewrite l2r c1 c2 cl rel but gl = 
   let (env',c') =
     try
-      (* ~flags:(false,true) to allow to mark occurences that must not be
+      (* ~flags:(false,true) to allow to mark occurrences that must not be
          rewritten simply by replacing them with let-defined definitions
          in the context *)
       Unification.w_unify_to_subterm ~flags:rewrite_unif_flags (pf_env gl) ((if l2r then c1 else c2),but) cl.evd
@@ -1408,15 +1470,15 @@ let get_hyp gl c clause l2r =
 	
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = false }
 
-let general_s_rewrite l2r c ~new_goals gl =
+let general_s_rewrite l2r occs c ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo = ref (get_hyp gl c None l2r) in
-    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta [] None gl
+    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta occs None gl
 
-let general_s_rewrite_in id l2r c ~new_goals gl =
+let general_s_rewrite_in id l2r occs c ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo = ref (get_hyp gl c (Some id) l2r) in
-    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta [] (Some (([],id), [])) gl
+    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta occs (Some (([],id), [])) gl
 
 let classes_dirpath =
   make_dirpath (List.map id_of_string ["Classes";"Coq"])

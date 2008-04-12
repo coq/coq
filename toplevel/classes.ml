@@ -412,7 +412,25 @@ open Pp
 
 let ($$) g f = fun x -> g (f x)
 
-let new_instance ctx (instid, bk, cl) props ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
+let default_on_free_vars =
+  Flags.if_verbose
+    (fun fvs ->
+      match fvs with
+	  [] -> ()
+	| l -> msgnl (str"Implicitly generalizing " ++ 
+			 prlist_with_sep (fun () -> str", ") Nameops.pr_id l ++ str"."))
+
+let fail_on_free_vars = function
+    [] -> ()
+  | [fv] ->
+      errorlabstrm "Classes" 
+	(str"Unbound variable " ++ Nameops.pr_id fv ++ str".")
+  | fvs -> errorlabstrm "Classes" 
+      (str"Unbound variables " ++
+	  prlist_with_sep (fun () -> str", ") Nameops.pr_id fvs ++ str".")
+	
+let new_instance ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars) 
+    ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
@@ -444,10 +462,12 @@ let new_instance ctx (instid, bk, cl) props ?(tac:Proof_type.tactic option) ?(ho
   in
   let ctx_bound = Idset.union bound (Implicit_quantifiers.ids_of_list fvs) in
   let gen_ids = Implicit_quantifiers.free_vars_of_constr_expr ~bound:ctx_bound tclass [] in
-  let bound = Idset.union (Implicit_quantifiers.ids_of_list gen_ids) ctx_bound in
+  on_free_vars (List.rev fvs @ List.rev gen_ids);
+  let gen_idset = Implicit_quantifiers.ids_of_list gen_ids in
+  let bound = Idset.union gen_idset ctx_bound in
   let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
   let ctx, avoid = name_typeclass_binders bound ctx in
-  let ctx = List.rev_append gen_ctx ctx in
+  let ctx = List.append ctx (List.rev gen_ctx) in
   let k, ctx', subst = 
     let c = Command.generalize_constr_expr tclass ctx in
     let _imps, c' = interp_type_evars isevars env c in

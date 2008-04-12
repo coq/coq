@@ -71,12 +71,12 @@ let free_vars_of_binders ?(bound=Idset.empty) l (binders : local_binder list) =
   let rec aux bdvars l c = match c with
       ((LocalRawAssum (n, _, c)) :: tl) ->
 	let bound = ids_of_names n in
-	let l' = bound @ free_vars_of_constr_expr c ~bound:bdvars l in
+	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
 	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
 
     | ((LocalRawDef (n, c)) :: tl) -> 
 	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
-	let l' = bound @ free_vars_of_constr_expr c ~bound:bdvars l in
+	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
 	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
 	
     | [] -> bdvars, l

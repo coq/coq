@@ -39,10 +39,17 @@ val new_class : identifier located ->
   local_binder list ->
   binder_list -> unit
 
+(* By default, print the free variables that are implicitely generalized. *)
+
+val default_on_free_vars : identifier list -> unit
+
+val fail_on_free_vars : identifier list -> unit
+    
 val new_instance : 
   local_binder list ->
   typeclass_constraint ->
   binder_def_list ->
+  ?on_free_vars:(identifier list -> unit) ->
   ?tac:Proof_type.tactic  ->
   ?hook:(constant -> unit) ->
   int option ->
