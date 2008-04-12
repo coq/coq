@@ -768,12 +768,15 @@ let pr_typeclass env t =
 
 let print_typeclasses () =
   let env = Global.env () in
-    prlist_with_sep pr_spc (pr_typeclass env) (typeclasses ())
-
+    prlist_with_sep fnl (pr_typeclass env) (typeclasses ())
+      
 let pr_instance env i = 
-  gallina_print_constant_with_infos i.is_impl
-
+  (*   gallina_print_constant_with_infos i.is_impl *)
+  (* lighter *)
+  print_ref false (ConstRef i.is_impl)
+    
 let print_instances r =
   let env = Global.env () in
   let inst = instances r in 
-    prlist_with_sep pr_spc (pr_instance env) inst
+    prlist_with_sep fnl (pr_instance env) inst
+      

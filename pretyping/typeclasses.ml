@@ -111,10 +111,15 @@ let register_add_instance_hint =
 let add_instance_hint id = !add_instance_hint_ref id
 
 let cache (_, (cl, m, inst)) =
+  classes := cl;
+  methods := m;
+  instances := inst
+    
+let load (_, (cl, m, inst)) =
   classes := gmap_merge !classes cl;
   methods := gmap_merge !methods m;
   instances := gmap_list_merge !instances
-    (fun (i : instance) -> add_instance_hint i.is_impl i.is_pri)
+    (fun (i : instance) -> () (*add_instance_hint i.is_impl i.is_pri*))
     inst
 
 open Libobject
@@ -192,8 +197,8 @@ let (input,output) =
   declare_object
     { (default_object "type classes state") with
       cache_function = cache;
-      load_function = (fun _ -> cache);
-      open_function = (fun _ -> cache);
+      load_function = (fun _ -> load);
+      open_function = (fun _ -> load);
       classify_function = (fun (_,x) -> Substitute x);
       discharge_function = discharge;
 (*       rebuild_function = rebuild; *)

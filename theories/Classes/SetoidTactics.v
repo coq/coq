@@ -36,16 +36,16 @@ Ltac setoidreplacein H H' t :=
     cut(H) ; unfold default_relation ; [ intro Heq ; setoid_rewrite Heq in H' ; clear Heq | t ].
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) :=
-  setoidreplace (x ===def y) idtac.
+  setoidreplace (default_relation x y) idtac.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) :=
-  setoidreplacein (x ===def y) id idtac.
+  setoidreplacein (default_relation x y) id idtac.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) "by" tactic(t) :=
-  setoidreplace (x ===def y) ltac:t.
+  setoidreplace (default_relation x y) ltac:t.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) "by" tactic(t) :=
-  setoidreplacein (x ===def y) id ltac:t.
+  setoidreplacein (default_relation x y) id ltac:t.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) "using" "relation" constr(rel) :=
   setoidreplace (rel x y) idtac.

@@ -25,13 +25,9 @@ Require Export Coq.Relations.Relation_Definitions.
 
 Class DefaultRelation A (R : relation A).
 
+Definition default_relation [ DefaultRelation A R ] := R.
+
 (** To search for the default relation, just call [default_relation]. *)
-
-Definition default_relation [ DefaultRelation A R ] : relation A := R.
-
-(** A notation for applying the default relation to [x] and [y]. *)
-
-Notation " x ===def y " := (default_relation x y) (at level 70, no associativity).
 
 Notation inverse R := (flip (R:relation _) : relation _).
 
