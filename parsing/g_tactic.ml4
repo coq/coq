@@ -277,6 +277,8 @@ GEXTEND Gram
           {onhyps=Some hl; onconcl=b; concl_occs=occs}
       | "in"; hl=LIST0 hypident_occ SEP"," ->
           {onhyps=Some hl; onconcl=false; concl_occs=[]}
+      | occs=occurrences ->
+	  {onhyps=Some[]; onconcl=true; concl_occs=occs}
       | ->
 	  {onhyps=Some[]; onconcl=true; concl_occs=[]} ] ]
   ;

@@ -40,7 +40,7 @@ type morphism_signature = (bool option * constr_expr) list * constr_expr
 val pr_morphism_signature : morphism_signature -> Pp.std_ppcmds
 
 val register_replace : (tactic option -> constr -> constr -> tactic) -> unit
-val register_general_rewrite : (bool -> constr -> tactic) -> unit
+val register_general_rewrite : (bool -> int list -> constr -> tactic) -> unit
 
 val print_setoids : unit -> unit
 
@@ -58,9 +58,9 @@ val setoid_replace_in :
  identifier -> constr option -> constr -> constr -> new_goals:constr list ->
   tactic
 
-val general_s_rewrite : bool -> constr -> new_goals:constr list -> tactic
+val general_s_rewrite : bool -> int list -> constr -> new_goals:constr list -> tactic
 val general_s_rewrite_in :
- identifier -> bool -> constr -> new_goals:constr list -> tactic
+ identifier -> bool -> int list -> constr -> new_goals:constr list -> tactic
 
 val setoid_reflexivity : tactic
 val setoid_symmetry : tactic

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 open Tacmach
 open Util
@@ -793,7 +793,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
             (tclTHENSEQ [apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs));
                       Auto.default_auto
             ]);
-         Pfedit.by (Equality.general_rewrite_bindings_in true 
+         Pfedit.by (Equality.general_rewrite_bindings_in true []
                               (List.hd !avoid) 
                               ((mkVar (List.hd (List.tl !avoid))),
                                 Rawterm.NoBindings

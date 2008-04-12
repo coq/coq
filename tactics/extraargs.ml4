@@ -33,14 +33,14 @@ ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 | [ ] -> [ true ]
 END
 
-let pr_occurences _prc _prlc _prt l =
+let pr_occurrences _prc _prlc _prt l =
   let rec aux = function
     | i :: l -> Pp.int i ++ Pp.spc () ++ aux l
     | [] -> Pp.mt()
   in aux l
 
-ARGUMENT EXTEND occurences TYPED AS int list PRINTED BY pr_occurences
-| [ integer(i) occurences(l) ] -> [ i :: l ]
+ARGUMENT EXTEND occurrences TYPED AS int list PRINTED BY pr_occurrences
+| [ integer(i) occurrences(l) ] -> [ i :: l ]
 | [ ] -> [ [] ]
 END
 

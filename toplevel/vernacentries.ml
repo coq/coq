@@ -227,9 +227,6 @@ let dump_universes s =
   with
       e -> close_out output; raise e
 
-let print_instances c =
-  ppnl (Prettyp.print_instances (global c))
-
 (*********************)
 (* "Locate" commands *)
 
@@ -977,7 +974,7 @@ let vernac_print = function
   | PrintGraph -> ppnl (Prettyp.print_graph())
   | PrintClasses -> ppnl (Prettyp.print_classes())
   | PrintTypeClasses -> ppnl (Prettyp.print_typeclasses())
-  | PrintInstances c -> print_instances c 
+  | PrintInstances c -> ppnl (Prettyp.print_instances (global c))
   | PrintLtac qid -> ppnl (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
   | PrintCoercions -> ppnl (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->

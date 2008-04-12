@@ -1364,7 +1364,7 @@ let rec rewrite_eqs_in_eqs eqs =
 	       (fun id gl -> 
 		  observe_tac 
 		    (Format.sprintf "rewrite %s in %s " (string_of_id eq) (string_of_id id)) 
-		    (tclTRY (Equality.general_rewrite_in true id (mkVar eq) false))
+		    (tclTRY (Equality.general_rewrite_in true [] id (mkVar eq) false))
 		    gl
 	       ) 
 	       eqs

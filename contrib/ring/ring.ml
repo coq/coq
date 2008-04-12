@@ -826,9 +826,9 @@ let raw_polynom th op lc gl =
 				     c'''i; ci; c'i_eq_c''i |]))))
 	      (tclTHENS
 		 (tclORELSE
-                   (Setoid_replace.general_s_rewrite true c'i_eq_c''i
+                   (Setoid_replace.general_s_rewrite true [] c'i_eq_c''i
                      ~new_goals:[])
-                   (Setoid_replace.general_s_rewrite false c'i_eq_c''i
+                   (Setoid_replace.general_s_rewrite false [] c'i_eq_c''i
                      ~new_goals:[]))
                  [tac]))
 	 else

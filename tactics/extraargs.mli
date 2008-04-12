@@ -19,9 +19,9 @@ val rawwit_orient : bool raw_abstract_argument_type
 val wit_orient : bool typed_abstract_argument_type
 val orient : bool Pcoq.Gram.Entry.e
 
-val rawwit_occurences : (int list) raw_abstract_argument_type
-val wit_occurences : (int list) typed_abstract_argument_type
-val occurences : (int list) Pcoq.Gram.Entry.e
+val rawwit_occurrences : (int list) raw_abstract_argument_type
+val wit_occurrences : (int list) typed_abstract_argument_type
+val occurrences : (int list) Pcoq.Gram.Entry.e
 
 val rawwit_morphism_signature :
  Setoid_replace.morphism_signature raw_abstract_argument_type

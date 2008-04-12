@@ -80,7 +80,7 @@ let one_base general_rewrite_maybe_in tac_main bas =
 let autorewrite tac_main lbas =
   tclREPEAT_MAIN (tclPROGRESS
     (List.fold_left (fun tac bas -> 
-       tclTHEN tac (one_base general_rewrite tac_main bas)) tclIDTAC lbas))
+       tclTHEN tac (one_base (fun dir -> general_rewrite dir []) tac_main bas)) tclIDTAC lbas))
 
 let autorewrite_multi_in idl tac_main lbas : tactic =
   fun gl -> 
@@ -96,7 +96,7 @@ let autorewrite_multi_in idl tac_main lbas : tactic =
       | _ -> (* even the hypothesis id is missing *)
              error ("No such hypothesis : " ^ (string_of_id !id))
     in
-    let gl' = general_rewrite_in dir !id cstr false gl in
+    let gl' = general_rewrite_in dir [] !id cstr false gl in
     let gls = (fst gl').Evd.it in
     match gls with
        g::_ ->

@@ -26,9 +26,9 @@ open Genarg
 (*i*)
 
 val general_rewrite_bindings : 
-  bool -> constr with_bindings -> evars_flag -> tactic
+  bool -> int list -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite : 
-  bool -> constr -> tactic
+  bool -> int list -> constr -> tactic
 
 (* Obsolete, use [general_rewrite_bindings l2r]
 [val rewriteLR_bindings       : constr with_bindings -> tactic]
@@ -43,12 +43,12 @@ val rewriteRL   : constr  -> tactic
 
 val register_general_setoid_rewrite_clause :
   (identifier option ->
-    bool -> constr -> new_goals:constr list -> tactic) -> unit
+    bool -> int list -> constr -> new_goals:constr list -> tactic) -> unit
 
 val general_rewrite_bindings_in :
-  bool -> identifier -> constr with_bindings -> evars_flag -> tactic
+  bool -> int list -> identifier -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite_in          :
-  bool -> identifier -> constr -> evars_flag -> tactic
+  bool -> int list -> identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite : 
   bool -> evars_flag -> constr with_ebindings -> clause -> tactic

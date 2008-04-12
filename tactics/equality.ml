@@ -84,14 +84,14 @@ let general_s_rewrite_clause = function
 let general_setoid_rewrite_clause = ref general_s_rewrite_clause
 let register_general_setoid_rewrite_clause = (:=) general_setoid_rewrite_clause
 
-let general_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl =
+let general_rewrite_ebindings_clause cls lft2rgt occs (c,l) with_evars gl =
   let ctype = pf_apply get_type_of gl c in 
   (* A delta-reduction would be here too strong, since it would 
      break search for a defined setoid relation in head position. *)
   let t = snd (decompose_prod (whd_betaiotazeta ctype)) in 
   let head = if isApp t then fst (destApp t) else t in 
     if relation_table_mem head && l = NoBindings then 
-      !general_setoid_rewrite_clause cls lft2rgt c [] gl
+      !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
     else 
       (* Original code. In particular, [splay_prod] performs delta-reduction. *)
       let env = pf_env gl in
@@ -100,45 +100,51 @@ let general_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl =
 	match match_with_equation t with
 	  | None -> 
 	      if l = NoBindings
-	      then !general_setoid_rewrite_clause cls lft2rgt c [] gl
+	      then !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
 	      else error "The term provided does not end with an equation" 
 	  | Some (hdcncl,_) -> 
-              let hdcncls = string_of_inductive hdcncl in 
-	      let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
-              let dir = if cls=None then lft2rgt else not lft2rgt in
-              let rwr_thm = if dir then hdcncls^suffix^"_r" else hdcncls^suffix in
-              let elim =
-		try pf_global gl (id_of_string rwr_thm)
-		with Not_found ->
-		  error ("Cannot find rewrite principle "^rwr_thm)
-              in 
-		try general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
-		with e -> 
-		  let eq = build_coq_eq () in
-		    if not (eq_constr eq head) then
-		      try !general_setoid_rewrite_clause cls lft2rgt c [] gl
-		      with _ -> raise e
-		    else raise e
-
+	      if occs <> [] then (
+		!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl)
+	      else
+		let hdcncls = string_of_inductive hdcncl in 
+		let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
+		let dir = if cls=None then lft2rgt else not lft2rgt in
+		let rwr_thm = if dir then hdcncls^suffix^"_r" else hdcncls^suffix in
+		let elim =
+		  try pf_global gl (id_of_string rwr_thm)
+		  with Not_found ->
+		    error ("Cannot find rewrite principle "^rwr_thm)
+		in 
+		  try general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
+		  with e -> 
+		    let eq = build_coq_eq () in
+		      if not (eq_constr eq head) then
+			try !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
+			with _ -> raise e
+		      else raise e
+			
 let general_rewrite_ebindings = 
   general_rewrite_ebindings_clause None
-let general_rewrite_bindings l2r (c,bl) = 
-  general_rewrite_ebindings_clause None l2r (c,inj_ebindings bl)
+let general_rewrite_bindings l2r occs (c,bl) = 
+  general_rewrite_ebindings_clause None l2r occs (c,inj_ebindings bl)
 
-let general_rewrite l2r c =
-  general_rewrite_bindings l2r (c,NoBindings) false
+let general_rewrite l2r occs c =
+  general_rewrite_bindings l2r occs (c,NoBindings) false
 
-let general_rewrite_ebindings_in l2r id =
-  general_rewrite_ebindings_clause (Some id) l2r
-let general_rewrite_bindings_in l2r id (c,bl) =
-  general_rewrite_ebindings_clause (Some id) l2r (c,inj_ebindings bl)
-let general_rewrite_in l2r id c = 
-  general_rewrite_ebindings_clause (Some id) l2r (c,NoBindings)
+let general_rewrite_ebindings_in l2r occs id =
+  general_rewrite_ebindings_clause (Some id) l2r occs
+let general_rewrite_bindings_in l2r occs id (c,bl) =
+  general_rewrite_ebindings_clause (Some id) l2r occs (c,inj_ebindings bl)
+let general_rewrite_in l2r occs id c = 
+  general_rewrite_ebindings_clause (Some id) l2r occs (c,NoBindings)
 
 let general_multi_rewrite l2r with_evars c cl = 
-  if cl.concl_occs <> [] then 
-    error "The \"at\" syntax isn't available yet for the rewrite/replace tactic"
-  else match cl.onhyps with 
+  let occs = List.fold_left 
+    (fun acc ->
+      function ArgArg x -> x :: acc | ArgVar _ -> acc)
+    [] cl.concl_occs
+  in
+  match cl.onhyps with 
     | Some l -> 
 	(* If a precise list of locations is given, success is mandatory for
 	   each of these locations. *)
@@ -146,12 +152,12 @@ let general_multi_rewrite l2r with_evars c cl =
 	  | [] -> tclIDTAC
 	  | ((_,id),_) :: l -> 
 	      tclTHENFIRST
-	        (general_rewrite_ebindings_in l2r id c with_evars)
+	        (general_rewrite_ebindings_in l2r occs id c with_evars)
 	        (do_hyps l)
 	in 
 	if not cl.onconcl then do_hyps l else
 	  tclTHENFIRST
-	    (general_rewrite_ebindings l2r c with_evars)
+	    (general_rewrite_ebindings l2r occs c with_evars)
 	    (do_hyps l)
     | None -> 
 	(* Otherwise, if we are told to rewrite in all hypothesis via the 
@@ -160,7 +166,7 @@ let general_multi_rewrite l2r with_evars c cl =
 	  | [] -> (fun gl -> error "Nothing to rewrite.")
 	  | id :: l -> 
 	      tclIFTHENTRYELSEMUST 
-		(general_rewrite_ebindings_in l2r id c with_evars) 
+		(general_rewrite_ebindings_in l2r occs id c with_evars) 
 		(do_hyps_atleastonce l)
 	in 
 	let do_hyps gl = 
@@ -172,7 +178,7 @@ let general_multi_rewrite l2r with_evars c cl =
 	in 
 	  if not cl.onconcl then do_hyps else
 	    tclIFTHENTRYELSEMUST 
-	      (general_rewrite_ebindings l2r c with_evars)
+	      (general_rewrite_ebindings l2r occs c with_evars)
 	      do_hyps
 
 let general_multi_multi_rewrite with_evars l cl tac = 
@@ -200,20 +206,20 @@ let general_multi_multi_rewrite with_evars l cl tac =
    to the resolution of the conditions by a given tactic *)
 
 let conditional_rewrite lft2rgt tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_ebindings lft2rgt (c,bl) false)
+  tclTHENSFIRSTn (general_rewrite_ebindings lft2rgt [] (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
-let rewriteLR_bindings = general_rewrite_bindings true
-let rewriteRL_bindings = general_rewrite_bindings false
+let rewriteLR_bindings = general_rewrite_bindings true []
+let rewriteRL_bindings = general_rewrite_bindings false []
 
-let rewriteLR = general_rewrite true
-let rewriteRL = general_rewrite false
+let rewriteLR = general_rewrite true []
+let rewriteRL = general_rewrite false []
 
-let rewriteLRin_bindings = general_rewrite_bindings_in true
-let rewriteRLin_bindings = general_rewrite_bindings_in false
+let rewriteLRin_bindings = general_rewrite_bindings_in true []
+let rewriteRLin_bindings = general_rewrite_bindings_in false []
 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_ebindings_in lft2rgt id (c,bl) false)
+  tclTHENSFIRSTn (general_rewrite_ebindings_in lft2rgt [] id (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
 let rewriteRL_clause = function

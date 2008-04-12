@@ -1806,7 +1806,7 @@ let relation_rewrite_no_unif c1 c2 hyp ~new_goals sigma gl =
      if_output_relation_is_if gl
   with
     Optimize ->
-      !general_rewrite (fst hyp = Left2Right) (snd hyp) gl
+      !general_rewrite (fst hyp = Left2Right) [] (snd hyp) gl
 
 let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
  let (sigma,cl,c1,c2) = unification_rewrite c1 c2 cl (pf_concl gl) gl in 
@@ -1824,7 +1824,7 @@ let analyse_hypothesis gl c =
  let others,(c1,c2) = split_last_two args in
   eqclause,mkApp (equiv, Array.of_list others),c1,c2
 
-let general_s_rewrite lft2rgt c ~new_goals gl =
+let general_s_rewrite lft2rgt occs c ~new_goals gl =
   let eqclause,_,c1,c2 = analyse_hypothesis gl c in
   if lft2rgt then 
     relation_rewrite c1 c2 (Left2Right,eqclause) ~new_goals gl
@@ -1861,7 +1861,7 @@ let relation_rewrite_in id c1 c2 (direction,eqclause) ~new_goals gl =
             (relation_rewrite_no_unif c2 c1 (oppdir,cl) ~new_goals sigma))))
    gl
 
-let general_s_rewrite_in id lft2rgt c ~new_goals gl =
+let general_s_rewrite_in id lft2rgt occs c ~new_goals gl =
   let eqclause,_,c1,c2 = analyse_hypothesis gl c in
   if lft2rgt then 
     relation_rewrite_in id c1 c2 (Left2Right,eqclause) ~new_goals gl
@@ -1916,7 +1916,7 @@ let general_setoid_replace rewrite_tac try_prove_eq_tac_opt relation c1 c2 ~new_
       tclTHENS (assert_tac false Anonymous eq)
 	[onLastHyp (fun id ->
           tclTHEN
-            (rewrite_tac dir (mkVar id) ~new_goals)
+            (rewrite_tac dir [] (mkVar id) ~new_goals)
             (clear [id]));
 	 try_prove_eq_tac]
     in
@@ -1928,7 +1928,7 @@ let general_setoid_replace rewrite_tac try_prove_eq_tac_opt relation c1 c2 ~new_
 	  tclTHENS (assert_tac false Anonymous eq)
 	    [onLastHyp (fun id ->
 	      tclTHEN
-		(rewrite_tac false (mkVar id) ~new_goals)
+		(rewrite_tac false [] (mkVar id) ~new_goals)
 		(clear [id]));
 	     try_prove_eq_tac] gl
       
