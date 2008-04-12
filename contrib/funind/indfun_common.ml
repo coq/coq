@@ -238,16 +238,20 @@ let with_full_print f a =
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
   let old_rawprint = !Flags.raw_print in 
+  let old_dump = !Flags.dump in 
   Flags.raw_print := true;
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
   Impargs.make_contextual_implicit_args false;
+  Impargs.make_contextual_implicit_args false;
+  Flags.dump := false;
   try 
     let res = f a in 
     Impargs.make_implicit_args old_implicit_args;
     Impargs.make_strict_implicit_args old_strict_implicit_args;
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
     Flags.raw_print := old_rawprint;
+    Flags.dump := old_dump;
     res
   with  
     | e -> 
@@ -255,6 +259,7 @@ let with_full_print f a =
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
 	Flags.raw_print := old_rawprint;
+	Flags.dump := old_dump;
 	raise e
 
 
