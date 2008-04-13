@@ -60,8 +60,16 @@ let clenv_cast_meta clenv =
   in 
   crec
 
+let clenv_pose_dependent_evars with_evars clenv =
+  let dep_mvs = clenv_dependent false clenv in
+  if dep_mvs <> [] & not with_evars then
+    raise
+      (RefinerError (UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
+  clenv_pose_metas_as_evars clenv dep_mvs
+
+
 let clenv_refine with_evars clenv gls =
-  let clenv = if with_evars then clenv_pose_dependent_evars clenv else clenv in
+  let clenv = clenv_pose_dependent_evars with_evars clenv in
   tclTHEN
     (tclEVARS (evars_of clenv.evd)) 
     (refine (clenv_cast_meta clenv (clenv_value clenv)))

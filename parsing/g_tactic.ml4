@@ -470,14 +470,22 @@ GEXTEND Gram
       | IDENT "revert"; l = LIST1 id_or_meta -> TacRevert l
 
       (* Constructors *)
-      | IDENT "left"; bl = with_bindings -> TacLeft bl
-      | IDENT "right"; bl = with_bindings -> TacRight bl
-      | IDENT "split"; bl = with_bindings -> TacSplit (false,bl)
-      | "exists"; bl = bindings -> TacSplit (true,bl)
-      | "exists" -> TacSplit (true,NoBindings)
+      | IDENT "left";   bl = with_bindings -> TacLeft  (false,bl)
+      | IDENT "eleft";  bl = with_bindings -> TacLeft  (true,bl)
+      | IDENT "right";  bl = with_bindings -> TacRight (false,bl)
+      | IDENT "eright"; bl = with_bindings -> TacRight (true,bl)
+      | IDENT "split";  bl = with_bindings -> TacSplit (false,false,bl)
+      | IDENT "esplit"; bl = with_bindings -> TacSplit (true,false,bl)
+      | "exists";       bl = bindings -> TacSplit (false,true,bl)
+      | "eexists";      bl = bindings -> TacSplit (true,true,bl)
+      | "exists"  (* meaningless? *)  -> TacSplit (false,true,NoBindings)
+      | "eexists"                     -> TacSplit (true,true,NoBindings)
       | IDENT "constructor"; n = num_or_meta; l = with_bindings ->
-	  TacConstructor (n,l)
-      | IDENT "constructor"; t = OPT tactic -> TacAnyConstructor t
+	  TacConstructor (false,n,l)
+      | IDENT "econstructor"; n = num_or_meta; l = with_bindings ->
+	  TacConstructor (true,n,l)
+      | IDENT "constructor"; t = OPT tactic -> TacAnyConstructor (false,t)
+      | IDENT "econstructor"; t = OPT tactic -> TacAnyConstructor (true,t)
 
       (* Equivalence relations *)
       | IDENT "reflexivity" -> TacReflexivity

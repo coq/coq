@@ -182,9 +182,6 @@ val eapply_with_bindings  : constr with_bindings -> tactic
 val apply_with_ebindings  : constr with_ebindings -> tactic
 val eapply_with_ebindings : constr with_ebindings -> tactic
 
-val advanced_apply_with_ebindings  : constr with_ebindings -> tactic
-val advanced_eapply_with_ebindings : constr with_ebindings -> tactic
-
 val cut_and_apply         : constr -> tactic
 
 val apply_in : evars_flag -> identifier -> constr with_ebindings list -> tactic
@@ -282,22 +279,22 @@ val dorE : bool -> clause ->tactic
 
 (*s Introduction tactics. *)
 
-val constructor_tac            : int option -> int -> 
-                                 open_constr bindings  -> tactic
-val one_constructor            : int -> open_constr bindings  -> tactic
-val any_constructor            : tactic option -> tactic
+val constructor_tac      : evars_flag -> int option -> int -> 
+                           open_constr bindings  -> tactic
+val any_constructor      : evars_flag -> tactic option -> tactic
+val one_constructor      : int -> open_constr bindings  -> tactic
 
-val left                       : constr bindings -> tactic
-val right                      : constr bindings -> tactic
-val split                      : constr bindings -> tactic
+val left                 : constr bindings -> tactic
+val right                : constr bindings -> tactic
+val split                : constr bindings -> tactic
 
-val left_with_ebindings        : open_constr bindings -> tactic
-val right_with_ebindings       : open_constr bindings -> tactic
-val split_with_ebindings       : open_constr bindings -> tactic
+val left_with_ebindings  : evars_flag -> open_constr bindings -> tactic
+val right_with_ebindings : evars_flag -> open_constr bindings -> tactic
+val split_with_ebindings : evars_flag -> open_constr bindings -> tactic
 
-val simplest_left              : tactic
-val simplest_right             : tactic
-val simplest_split             : tactic
+val simplest_left        : tactic
+val simplest_right       : tactic
+val simplest_split       : tactic
 
 (*s Logical connective tactics. *)
 

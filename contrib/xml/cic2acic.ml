@@ -57,16 +57,6 @@ let remove_module_dirpath_from_dirpath ~basedir dir =
 let get_uri_of_var v pvars =
  let module D = Declare in
  let module N = Names in
-  let rec search_in_pvars names =
-   function
-      [] -> None
-    | ((name,l)::tl) ->
-       let names' = name::names in
-        if List.mem v l then
-         Some names'
-        else
-         search_in_pvars names' tl
-  in
   let rec search_in_open_sections =
    function
       [] -> Util.error ("Variable "^v^" not found")
@@ -78,9 +68,10 @@ let get_uri_of_var v pvars =
          search_in_open_sections tl
   in
    let path =
-    match search_in_pvars [] pvars with
-       None -> search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
-     | Some path -> path
+    if List.mem v pvars then
+      []
+    else
+      search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
    in
     "cic:" ^
      List.fold_left

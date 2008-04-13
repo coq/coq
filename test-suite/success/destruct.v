@@ -29,3 +29,10 @@ Goal forall n, n = S n.
 induction S.
 Abort.
 
+(* Check that elimination with remaining evars do not raise an bad
+   error message *)
+
+Theorem Refl : forall P, P <-> P. tauto. Qed.
+Goal True.
+case Refl || ecase Refl.
+Abort.

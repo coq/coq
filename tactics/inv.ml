@@ -449,16 +449,15 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
 let raw_inversion inv_kind id status names gl =
   let env = pf_env gl and sigma = project gl in
   let c = mkVar id in
-  let t = strong_prodspine (pf_whd_betadeltaiota gl) (pf_type_of gl c) in
-  let indclause = mk_clenv_from gl (c,t) in
-  let newc = clenv_value indclause in
-  let ccl = clenv_type indclause in
-  check_no_metas indclause ccl;
-  let IndType (indf,realargs) =
-    try find_rectype env sigma ccl
-    with Not_found ->
+  let (ind,t) = 
+    try pf_reduce_to_quantified_ind gl (pf_type_of gl c)
+    with UserError _ -> 
       errorlabstrm "raw_inversion"
 	(str ("The type of "^(string_of_id id)^" is not inductive")) in
+  let indclause = mk_clenv_from gl (c,t) in
+  let ccl = clenv_type indclause in
+  check_no_metas indclause ccl;
+  let IndType (indf,realargs) = find_rectype env sigma ccl in
   let (elim_predicate,neqns) =
     make_inv_predicate env sigma indf realargs id status (pf_concl gl) in
   let (cut_concl,case_tac) =
@@ -473,7 +472,7 @@ let raw_inversion inv_kind id status names gl =
      (true_cut Anonymous cut_concl)
      [case_tac names 
        (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
-       (Some elim_predicate) ([],[]) newc;
+       (Some elim_predicate) ([],[]) ind indclause;
       onLastHyp
         (fun id ->
            (tclTHEN

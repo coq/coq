@@ -79,7 +79,9 @@ val clenv_unique_resolver :
 val evar_clenv_unique_resolver :
   bool -> ?flags:unify_flags -> clausenv -> evar_info sigma -> clausenv
 
-val clenv_pose_dependent_evars : clausenv -> clausenv
+val clenv_dependent : bool -> clausenv -> metavariable list
+
+val clenv_pose_metas_as_evars : clausenv -> metavariable list -> clausenv
 
 (***************************************************************)
 (* Bindings *)

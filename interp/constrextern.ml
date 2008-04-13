@@ -922,7 +922,7 @@ let rec raw_of_pat env = function
 	| Name id   -> id
 	| Anonymous ->
 	    anomaly "rawconstr_of_pattern: index to an anonymous variable"
-      with Not_found -> id_of_string ("[REL "^(string_of_int n)^"]") in
+      with Not_found -> id_of_string ("_UNBOUND_REL_"^(string_of_int n)^"]") in
       RVar (loc,id)
   | PMeta None -> RHole (loc,Evd.InternalHole)
   | PMeta (Some n) -> RPatVar (loc,(false,n))

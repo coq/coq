@@ -261,8 +261,8 @@ let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
  * pose a value for it by constructing a fresh evar.  We do this in
  * left-to-right order, so that every evar's type is always closed w.r.t.
  * metas. *)
-let clenv_pose_dependent_evars clenv =
-  let dep_mvs = clenv_dependent false clenv in
+
+let clenv_pose_metas_as_evars clenv dep_mvs =
   List.fold_left
     (fun clenv mv ->
       let ty = clenv_meta_type clenv mv in

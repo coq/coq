@@ -976,10 +976,12 @@ and xlate_tac =
     | TacIntroMove (Some id, None) ->
      CT_intros (CT_intro_patt_list[CT_coerce_ID_to_INTRO_PATT(xlate_ident id)])
     | TacIntroMove (None, None) ->  CT_intro (CT_coerce_NONE_to_ID_OPT CT_none)
-    | TacLeft bindl -> CT_left (xlate_bindings bindl)
-    | TacRight bindl -> CT_right (xlate_bindings bindl)
-    | TacSplit (false,bindl) -> CT_split (xlate_bindings bindl)
-    | TacSplit (true,bindl) -> CT_exists (xlate_bindings bindl)
+    | TacLeft (false,bindl) -> CT_left (xlate_bindings bindl)
+    | TacRight (false,bindl) -> CT_right (xlate_bindings bindl)
+    | TacSplit (false,false,bindl) -> CT_split (xlate_bindings bindl)
+    | TacSplit (false,true,bindl) -> CT_exists (xlate_bindings bindl)
+    | TacSplit _ | TacRight _ | TacLeft _ -> 
+	xlate_error "TODO: esplit, eright, etc"
     | TacExtend (_,"replace", [c1; c2;cl;tac_opt]) ->
 	let c1 = xlate_formula (out_gen rawwit_constr c1) in
 	let c2 = xlate_formula (out_gen rawwit_constr c2) in
@@ -1149,9 +1151,10 @@ and xlate_tac =
     | TacApply (true,true,(c,bindl)) ->
      CT_eapply (xlate_formula c, xlate_bindings bindl)
     | TacApply (false,_,_) -> xlate_error "TODO: simple (e)apply"
-    | TacConstructor (n_or_meta, bindl) ->
+    | TacConstructor (false,n_or_meta, bindl) ->
 	let n = match n_or_meta with AI n -> n | MetaId _ -> xlate_error ""
 	in CT_constructor (CT_int n, xlate_bindings bindl)
+    | TacConstructor _ -> xlate_error "TODO: econstructor"
     | TacSpecialize (nopt, (c,sl)) ->
      CT_specialize (xlate_int_opt nopt, xlate_formula c, xlate_bindings sl)
     | TacGeneralize [] -> xlate_error ""
@@ -1239,11 +1242,12 @@ and xlate_tac =
         CT_truecut(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
     | TacAssert _ ->
 	xlate_error "TODO: assert with 'as' and 'by' and pose proof with 'as'"
-    | TacAnyConstructor(Some tac) -> 
+    | TacAnyConstructor(false,Some tac) -> 
 	CT_any_constructor
 	(CT_coerce_TACTIC_COM_to_TACTIC_OPT(xlate_tactic tac))
-    | TacAnyConstructor(None) -> 
+    | TacAnyConstructor(false,None) -> 
 	CT_any_constructor(CT_coerce_NONE_to_TACTIC_OPT CT_none)
+    | TacAnyConstructor _ -> xlate_error "TODO: econstructor"
     | TacExtend(_, "ring", [args]) -> 
 	CT_ring
 	  (CT_formula_list

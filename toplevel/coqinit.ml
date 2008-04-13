@@ -55,7 +55,8 @@ let add_ml_include s =
   Mltop.add_ml_dir s
 
 (* Puts dir in the path of ML and in the LoadPath *)
-let coq_add_path s = Mltop.add_path s (Names.make_dirpath [Nameops.coq_root])
+let coq_add_path d s =
+  Mltop.add_path d (Names.make_dirpath [Nameops.coq_root;Names.id_of_string s])
 let coq_add_rec_path s = Mltop.add_rec_path s (Names.make_dirpath [Nameops.coq_root])
 
 (* By the option -include -I or -R of the command line *)
@@ -95,21 +96,21 @@ let theories_dirs_map = [
 
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
-  (* developper specific directories to open *)
-  let dev = if Coq_config.local then [ "dev" ] else [] in
   let coqlib =
     (* variable COQLIB overrides the default library *)
     getenv_else "COQLIB"
       (if Coq_config.local || !Flags.boot then Coq_config.coqtop
 	else Coq_config.coqlib) in
   let user_contrib = coqlib/"user-contrib" in
-  let dirs = "states" :: "contrib" :: dev in
+  let dirs = "states" :: ["contrib"] in
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
     (* first user-contrib *)
     if Sys.file_exists user_contrib then 
       Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
     (* then states, contrib and dev *)
     List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
+    (* developer specific directory to open *)
+    if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
     (* then standard library *)
     List.iter 
       (fun (s,alias) -> Mltop.add_rec_path (coqlib/s) (Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root])) 

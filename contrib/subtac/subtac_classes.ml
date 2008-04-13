@@ -79,7 +79,7 @@ let type_ctx_instance isevars env ctx inst subst =
 	(na, c) :: subst, d :: instctx)
     (subst, []) (List.rev ctx) inst
 
-let superclass_ce = CRef (Ident (dummy_loc, id_of_string ".superclass"))
+(*let superclass_ce = CRef (Ident (dummy_loc, id_of_string ".superclass"))*)
 
 let type_class_instance_params isevars env id n ctx inst subst =
   List.fold_left2

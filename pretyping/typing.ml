@@ -23,7 +23,7 @@ open Evd
 let meta_type evd mv =
   let ty =
     try Evd.meta_ftype evd mv
-    with Not_found -> error ("unknown meta ?"^string_of_int mv) in
+    with Not_found -> anomaly ("unknown meta ?"^Nameops.string_of_meta mv) in
   meta_instance evd ty
 
 let constant_type_knowing_parameters env cst jl =

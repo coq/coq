@@ -89,8 +89,7 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 (* OF VARIABLES DECLARED IN THE i-th SUPER-SECTION OF THE CURRENT   *)
 (* SECTION, WHOSE PATH IS namei                                     *)
 
-let pvars =
- ref ([Names.id_of_string "",[]] : (Names.identifier * string list) list);;
+let pvars = ref ([] : string list);;
 let cumenv = ref Environ.empty_env;;
 
 (* filter_params pvars hyps *)
@@ -138,9 +137,7 @@ let add_to_pvars x =
          E.push_named (Names.id_of_string v, None, typ) !cumenv ;
        v
   in
-   match !pvars with
-      []       -> assert false
-    | ((name,l)::tl) -> pvars := (name,v::l)::tl
+  pvars := v::!pvars
 ;;
 
 (* The computation is very inefficient, but we can't do anything *)

@@ -97,18 +97,18 @@ let h_rename l =
 let h_revert l = abstract_tactic (TacRevert l) (revert l)
 
 (* Constructors *)
-let h_left l    = abstract_tactic (TacLeft l) (left_with_ebindings l)
-let h_right l   = abstract_tactic (TacLeft l) (right_with_ebindings l)
-let h_split l   = abstract_tactic (TacSplit (false,l)) (split_with_ebindings l)
-(* Moved to tacinterp because of dependence in Tacinterp.interp
+let h_left ev l  = abstract_tactic (TacLeft (ev,l)) (left_with_ebindings ev l)
+let h_right ev l = abstract_tactic (TacLeft (ev,l)) (right_with_ebindings ev l)
+let h_split ev l = abstract_tactic (TacSplit (ev,false,l)) (split_with_ebindings ev l)
+(* Moved to tacinterp because of dependencies in Tacinterp.interp
 let h_any_constructor t =
   abstract_tactic (TacAnyConstructor t) (any_constructor t)
 *)
-let h_constructor n l =
-  abstract_tactic (TacConstructor(AI n,l))(constructor_tac None n l)
-let h_one_constructor n = h_constructor n NoBindings
-let h_simplest_left   = h_left NoBindings
-let h_simplest_right  = h_right NoBindings
+let h_constructor ev n l =
+  abstract_tactic (TacConstructor(ev,AI n,l))(constructor_tac ev None n l)
+let h_one_constructor n = h_constructor false n NoBindings
+let h_simplest_left   = h_left false NoBindings
+let h_simplest_right  = h_right false NoBindings
 
 (* Conversion *)
 let h_reduce r cl  = 

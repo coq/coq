@@ -1712,7 +1712,7 @@ let check_evar_map_of_evars_defs evd =
   Evd.Metaset.iter
    (fun m ->
      if Evd.meta_defined evd m then () else
-      raise (Logic.RefinerError (Logic.OccurMetaGoal rebus)))
+      raise (Logic.RefinerError (Logic.UnresolvedBindings [Evd.meta_name evd m])))
  in
   List.iter
    (fun (_,binding) ->

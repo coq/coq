@@ -62,7 +62,9 @@ let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 
 let ppbigint n = pp (Bigint.pr_bigint n);;
 
-let ppidset l = pp (prlist_with_sep spc pr_id (Idset.elements l))
+let prset pr l = str "[" ++ prlist_with_sep spc pr l ++ str "]"
+let ppintset l = pp (prset int (Intset.elements l))
+let ppidset l = pp (prset pr_id (Idset.elements l))
 
 let pP s = pp (hov 0 s)
 

@@ -324,11 +324,11 @@ let last_arg c = match kind_of_term c with
   | App (f,cl) -> array_last cl
   | _ -> anomaly "last_arg"
 
-let general_elim_then_using 
-  elim isrec allnames tac predicate (indbindings,elimbindings) c gl =
-  let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+let general_elim_then_using mk_elim 
+  isrec allnames tac predicate (indbindings,elimbindings) 
+  ind indclause gl =
+  let elim = mk_elim ind gl in
   (* applying elimination_scheme just a little modified *)
-  let indclause  = mk_clenv_from gl (c,t) in
   let indclause' = clenv_match_args indbindings indclause in
   let elimclause = mk_clenv_from gl (elim,pf_type_of gl elim) in
   let indmv = 
@@ -351,7 +351,7 @@ let general_elim_then_using
   in
   let elimclause' = clenv_fchain indmv elimclause indclause' in
   let elimclause' = clenv_match_args elimbindings elimclause' in
-  let branchsigns = compute_construtor_signatures isrec ity in
+  let branchsigns = compute_construtor_signatures isrec ind in
   let brnames = compute_induction_names (Array.length branchsigns) allnames in
   let after_tac ce i gl =
     let (hd,largs) = decompose_app ce.templtyp.Evd.rebus in
@@ -362,7 +362,7 @@ let general_elim_then_using
                    (fun acc b -> if b then acc+2 else acc+1)
                    0 branchsigns.(i);
                branchnum = i+1;
-               ity = ity;
+               ity = ind;
                largs = List.map (clenv_nf_meta ce) largs;
                pred = clenv_nf_meta ce hd }
     in 
@@ -377,36 +377,31 @@ let general_elim_then_using
   in 
   elim_res_pf_THEN_i elimclause' branchtacs gl
 
+(* computing the case/elim combinators *)
 
-let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
+let gl_make_elim ind gl =
+  Indrec.lookup_eliminator ind (elimination_sort_of_goal gl)
+
+let gl_make_case_dep ind gl =
+  pf_apply Indrec.make_case_dep gl ind (elimination_sort_of_goal gl)
+
+let gl_make_case_nodep ind gl =
+  pf_apply Indrec.make_case_nodep gl ind (elimination_sort_of_goal gl)
+
+let elimination_then_using tac predicate bindings c gl = 
   let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let elim =
-    Indrec.lookup_eliminator ind (elimination_sort_of_goal gl) in
-  general_elim_then_using
-    elim true IntroAnonymous tac predicate (indbindings,elimbindings) c gl
+  let indclause  = mk_clenv_from gl (c,t) in
+  general_elim_then_using gl_make_elim
+    true IntroAnonymous tac predicate bindings ind indclause gl
 
+let case_then_using =
+  general_elim_then_using gl_make_case_dep false
+
+let case_nodep_then_using =
+  general_elim_then_using gl_make_case_nodep false
 
 let elimination_then tac        = elimination_then_using tac None 
 let simple_elimination_then tac = elimination_then tac ([],[])
-
-let case_then_using allnames tac predicate (indbindings,elimbindings) c gl =
-  (* finding the case combinator *)
-  let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sigma = project gl in 
-  let sort  = elimination_sort_of_goal gl  in
-  let elim  = Indrec.make_case_dep (pf_env gl) sigma ity sort in  
-  general_elim_then_using 
-    elim false allnames tac predicate (indbindings,elimbindings) c gl
-
-let case_nodep_then_using allnames tac predicate (indbindings,elimbindings)
-  c gl =
-  (* finding the case combinator *)
-  let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sigma = project gl in 
-  let sort  = elimination_sort_of_goal gl  in
-  let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  
-  general_elim_then_using 
-    elim false allnames tac predicate (indbindings,elimbindings) c gl
 
 
 let make_elim_branch_assumptions ba gl =   

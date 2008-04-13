@@ -32,8 +32,7 @@ type refiner_error =
 
   (* Errors raised by the refiner *)
   | BadType of constr * constr * constr
-  | OccurMeta of constr
-  | OccurMetaGoal of constr
+  | UnresolvedBindings of name list
   | CannotApply of constr * constr
   | NotWellTyped of constr
   | NonLinearProof of constr
@@ -266,8 +265,8 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 *)
   match kind_of_term trm with
     | Meta _ ->
-	if occur_meta conclty then
-          raise (RefinerError (OccurMetaGoal conclty));
+	if !check && occur_meta conclty then
+	  anomaly "refined called with a dependent meta";
 	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
 
     | Cast (t,_, ty) ->
@@ -302,7 +301,8 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	(acc'',conclty')
 
     | _ -> 
-	if occur_meta trm then raise (RefinerError (OccurMeta trm));
+	if occur_meta trm then
+	  anomaly "refiner called with a meta in non app/case subterm";
       	let t'ty = goal_type_of env sigma trm in
 	check_conv_leq_goal env sigma trm t'ty conclty;
         (goalacc,t'ty)
@@ -342,7 +342,10 @@ and mk_hdgoals sigma goal goalacc trm =
 	in
 	(acc'',conclty')
 
-    | _ -> goalacc, goal_type_of env sigma trm
+    | _ ->
+	if !check && occur_meta trm then
+	  anomaly "refined called with a dependent meta";
+	goalacc, goal_type_of env sigma trm
 
 and mk_arggoals sigma goal goalacc funty = function
   | [] -> goalacc,funty

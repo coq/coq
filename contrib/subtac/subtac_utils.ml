@@ -238,7 +238,7 @@ let build_dependent_sum l =
 	     (tclTHENS tac
 		([intros;
 		  (tclTHENSEQ 
-		     [constructor_tac (Some 1) 1 
+		     [constructor_tac false (Some 1) 1 
 			(Rawterm.ImplicitBindings [inj_open (mkVar n)]);
 		      cont]);
 		 ])))

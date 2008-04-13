@@ -73,7 +73,7 @@ let make_constr_action
 	  make ((p,CPrim (dummy_loc,Numeral v)) :: env) tl)
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:constr_expr list) ->
-          let dummyid = Ident (dummy_loc,id_of_string "") in
+          let dummyid = Ident (dummy_loc,id_of_string "_") in
 	  make ((p,CAppExpl (dummy_loc,(None,dummyid),v)) :: env) tl)
     | Some (p, ETPattern) :: tl -> 
 	failwith "Unexpected entry of type cases pattern" in
@@ -99,7 +99,7 @@ let make_cases_pattern_action
 	  make ((p,CPatPrim (dummy_loc,Numeral v)) :: env) tl)
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:cases_pattern_expr list) ->
-          let dummyid = Ident (dummy_loc,id_of_string "") in
+          let dummyid = Ident (dummy_loc,id_of_string "_") in
 	  make ((p,CPatCstr (dummy_loc,dummyid,v)) :: env) tl)
     | Some (p, (ETPattern | ETOther _)) :: tl -> 
 	failwith "Unexpected entry of type cases pattern or other" in

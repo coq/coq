@@ -92,7 +92,7 @@ let head_of_constr_reference c = match kind_of_term c with
 let rec pattern_of_constr t =
   match kind_of_term t with
     | Rel n  -> PRel n
-    | Meta n -> PMeta (Some (id_of_string (string_of_int n)))
+    | Meta n -> PMeta (Some (id_of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
     | Sort (Prop c) -> PSort (RProp c)
     | Sort (Type _) -> PSort (RType None)

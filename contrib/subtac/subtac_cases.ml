@@ -1705,7 +1705,7 @@ let vars_of_ctx ctx =
 	    match na with
 		Anonymous -> raise (Invalid_argument "vars_of_ctx")
 	      | Name n -> n, RVar (dummy_loc, n) :: vars)
-      ctx (id_of_string "vars_of_ctx: error", [])
+      ctx (id_of_string "vars_of_ctx_error", [])
   in List.rev y
 
 let rec is_included x y = 

@@ -138,9 +138,9 @@ val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
 
 val general_elim_then_using :
-  constr -> (* isrec: *) bool -> intro_pattern_expr ->
+  (inductive -> goal sigma -> constr) -> rec_flag -> intro_pattern_expr ->
     (branch_args -> tactic) -> constr option -> 
-      (arg_bindings * arg_bindings) -> constr -> tactic
+      (arg_bindings * arg_bindings) -> inductive -> clausenv -> tactic
 	  
 val elimination_then_using :
   (branch_args -> tactic) -> constr option -> 
@@ -152,11 +152,13 @@ val elimination_then :
 
 val case_then_using :
   intro_pattern_expr -> (branch_args -> tactic) -> 
-    constr option -> (arg_bindings * arg_bindings) -> constr -> tactic
+    constr option -> (arg_bindings * arg_bindings) ->
+      inductive -> clausenv -> tactic
 
 val case_nodep_then_using :
   intro_pattern_expr -> (branch_args -> tactic) -> 
-    constr option -> (arg_bindings * arg_bindings) -> constr -> tactic
+    constr option -> (arg_bindings * arg_bindings) -> 
+      inductive -> clausenv -> tactic
 
 val simple_elimination_then :
   (branch_args -> tactic) -> constr -> tactic

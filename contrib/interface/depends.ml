@@ -337,11 +337,11 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacRevert    _ -> acc
 
     (* Constructors *)
-    | TacLeft        cb
-    | TacRight       cb
-    | TacSplit       (_, cb)
-    | TacConstructor (_, cb) -> depends_of_'a_bindings depends_of_'constr cb acc
-    | TacAnyConstructor taco -> Option.fold_right depends_of_'tac taco acc
+    | TacLeft        (_,cb)
+    | TacRight       (_,cb)
+    | TacSplit       (_, _, cb)
+    | TacConstructor (_, _, cb) -> depends_of_'a_bindings depends_of_'constr cb acc
+    | TacAnyConstructor (_,taco) -> Option.fold_right depends_of_'tac taco acc
 
     (* Conversion *)
     | TacReduce  (reg,_) ->

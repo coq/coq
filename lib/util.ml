@@ -50,15 +50,8 @@ let pi3 (_,_,a) = a
 
 (* Characters *)
 
-let is_letter c =
-  (c >= 'a' && c <= 'z') or
-  (c >= 'A' && c <= 'Z') or
-  (c >= '\248' && c <= '\255') or
-  (c >= '\192' && c <= '\214') or
-  (c >= '\216' && c <= '\246')
-
+let is_letter c = (c >= 'a' && c <= 'z') or (c >= 'A' && c <= 'Z')
 let is_digit c = (c >= '0' && c <= '9')
-
 let is_ident_tail c =
   is_letter c or is_digit c or c = '\'' or c = '_'
 
@@ -125,6 +118,179 @@ let parse_loadpath s =
 module Stringset = Set.Make(struct type t = string let compare = compare end)
 
 module Stringmap = Map.Make(struct type t = string let compare = compare end)
+
+type utf8_status = Utf8Letter | Utf8IdentPart | Utf8Symbol
+
+exception UnsupportedUtf8
+
+let classify_utf8 unicode =
+    match unicode land 0x1F000 with
+    | 0x0 ->
+    begin match unicode with
+    (* utf-8 Basic Latin underscore *)
+    | x when x = 0x005F -> Utf8Letter
+    (* utf-8 Basic Latin letters *)
+    | x when 0x0041 <= x & x <= 0x005A -> Utf8Letter
+    | x when 0x0061 <= x & x <= 0x007A -> Utf8Letter
+    (* utf-8 Basic Latin digits and quote *)
+    | x when 0x0030 <= x & x <= 0x0039 or x = 0x0027 -> Utf8IdentPart
+    (* utf-8 Basic Latin symbols *)
+    | x when x <= 0x007F -> Utf8Symbol
+    (* utf-8 Latin-1 non breaking space U00A0 *)
+    | 0x00A0 -> Utf8Letter
+    (* utf-8 Latin-1 symbols U00A1-00BF *)
+    | x when 0x00A0 <= x & x <= 0x00BF -> Utf8Symbol
+    (* utf-8 Latin-1 letters U00C0-00D6 *)
+    | x when 0x00C0 <= x & x <= 0x00D6 -> Utf8Letter
+    (* utf-8 Latin-1 symbol U00D7 *)
+    | 0x00D7 -> Utf8Symbol
+    (* utf-8 Latin-1 letters U00D8-00F6 *)
+    | x when 0x00D8 <= x & x <= 0x00F6 -> Utf8Letter
+    (* utf-8 Latin-1 symbol U00F7 *)
+    | 0x00F7 -> Utf8Symbol
+    (* utf-8 Latin-1 letters U00F8-00FF *)
+    | x when 0x00F8 <= x & x <= 0x00FF -> Utf8Letter
+    (* utf-8 Latin Extended A U0100-017F and Latin Extended B U0180-U0241 *)
+    | x when 0x0100 <= x & x <= 0x0241 -> Utf8Letter
+    (* utf-8 Phonetic letters U0250-02AF *)
+    | x when 0x0250 <= x & x <= 0x02AF -> Utf8Letter
+    (* utf-8 what do to with diacritics U0300-U036F ? *)
+    (* utf-8 Greek letters U0380-03FF *)
+    | x when 0x0380 <= x & x <= 0x03FF -> Utf8Letter
+    (* utf-8 Cyrillic letters U0400-0481 *)
+    | x when 0x0400 <= x & x <= 0x0481 -> Utf8Letter
+    (* utf-8 Cyrillic symbol U0482 *)
+    | 0x0482 -> Utf8Symbol
+    (* utf-8 what do to with diacritics U0483-U0489 \ U0487 ? *)
+    (* utf-8 Cyrillic letters U048A-U4F9 (Warning: 04CF) *)
+    | x when 0x048A <= x & x <= 0x04F9 -> Utf8Letter
+    (* utf-8 Cyrillic supplement letters U0500-U050F *)
+    | x when 0x0500 <= x & x <= 0x050F -> Utf8Letter
+    (* utf-8 Hebrew letters U05D0-05EA *)
+    | x when 0x05D0 <= x & x <= 0x05EA -> Utf8Letter
+    (* utf-8 Arabic letters U0621-064A *)
+    | x when 0x0621 <= x & x <= 0x064A -> Utf8Letter
+    (* utf-8 Arabic supplement letters U0750-076D *)
+    | x when 0x0750 <= x & x <= 0x076D -> Utf8Letter
+    | _ -> raise UnsupportedUtf8
+    end
+    | 0x1000 ->
+    begin match unicode with
+    (* utf-8 Georgian U10A0-10FF (has holes) *)
+    | x when 0x10A0 <= x & x <= 0x10FF -> Utf8Letter
+    (* utf-8 Hangul Jamo U1100-11FF (has holes) *)
+    | x when 0x1100 <= x & x <= 0x11FF -> Utf8Letter
+    (* utf-8 Latin additional letters U1E00-1E9B and U1EA0-1EF9 *)
+    | x when 0x1E00 <= x & x <= 0x1E9B -> Utf8Letter
+    | x when 0x1EA0 <= x & x <= 0x1EF9 -> Utf8Letter
+    | _ -> raise UnsupportedUtf8
+    end
+    | 0x2000 ->
+    begin match unicode with
+    (* utf-8 general punctuation U2080-2089 *)
+    (* Hyphens *)
+    | x when 0x2010 <= x & x <= 0x2011 -> Utf8Letter 
+    (* Dashes and other symbols *)
+    | x when 0x2012 <= x & x <= 0x2027 -> Utf8Symbol
+    (* Per mille and per ten thousand signs *)
+    | x when 0x2030 <= x & x <= 0x2031 -> Utf8Symbol
+    (* Prime letters *)
+    | x when 0x2032 <= x & x <= 0x2034 or x = 0x2057 -> Utf8IdentPart
+    (* Miscellaneous punctuation *)
+    | x when 0x2039 <= x & x <= 0x2056 -> Utf8Symbol
+    | x when 0x2058 <= x & x <= 0x205E -> Utf8Symbol
+    (* Invisible mathematical operators *)
+    | x when 0x2061 <= x & x <= 0x2063 -> Utf8Symbol
+    (* utf-8 superscript U2070-207C *) 
+    | x when 0x2070 <= x & x <= 0x207C -> Utf8Symbol
+    (* utf-8 subscript U2080-2089 *) 
+    | x when 0x2080 <= x & x <= 0x2089 -> Utf8IdentPart
+    (* utf-8 letter-like U2100-214F *)
+    | x when 0x2100 <= x & x <= 0x214F -> Utf8Letter
+    (* utf-8 number-forms U2153-2183 *)
+    | x when 0x2153 <= x & x <= 0x2183 -> Utf8Symbol
+    (* utf-8 arrows A U2190-21FF *)
+    (* utf-8 mathematical operators U2200-22FF *)
+    (* utf-8 miscellaneous technical U2300-23FF *)
+    | x when 0x2190 <= x & x <= 0x23FF -> Utf8Symbol
+    (* utf-8 box drawing U2500-257F has ceiling, etc. *)
+    (* utf-8 block elements U2580-259F *)
+    (* utf-8 geom. shapes U25A0-25FF (has triangles, losange, etc) *)
+    (* utf-8 miscellaneous symbols U2600-26FF *)
+    | x when 0x2500 <= x & x <= 0x26FF -> Utf8Symbol
+    (* utf-8 arrows B U2900-297F *)
+    | x when 0x2900 <= x & x <= 0x297F -> Utf8Symbol
+    (* utf-8 mathematical operators U2A00-2AFF *)
+    | x when 0x2A00 <= x & x <= 0x2AFF -> Utf8Symbol
+    (* utf-8 bold symbols U2768-U2775 *)
+    | x when 0x2768 <= x & x <= 0x2775 -> Utf8Symbol
+    (* utf-8 arrows and brackets U27E0-U27FF *)
+    | x when 0x27E0 <= x & x <= 0x27FF -> Utf8Symbol
+    (* utf-8 brackets, braces and parentheses *)
+    | x when 0x2980 <= x & x <= 0x299F -> Utf8Symbol
+    (* utf-8 miscellaneous including double-plus U29F0-U29FF *)
+    | x when 0x29F0 <= x & x <= 0x29FF -> Utf8Symbol
+    | _ -> raise UnsupportedUtf8
+    end
+    | _ ->
+    begin match unicode with
+    (* utf-8 Hiragana U3040-309F and Katakana U30A0-30FF *)
+    | x when 0x3040 <= x & x <= 0x30FF -> Utf8Letter
+    (* utf-8 Unified CJK Ideographs U4E00-9FA5 *)
+    | x when 0x4E00 <= x & x <= 0x9FA5 -> Utf8Letter
+    (* utf-8 Hangul syllables UAC00-D7AF *)
+    | x when 0xAC00 <= x & x <= 0xD7AF -> Utf8Letter
+    (* utf-8 Gothic U10330-1034A *)
+    | x when 0x10330 <= x & x <= 0x1034A -> Utf8Letter
+    | _ -> raise UnsupportedUtf8
+    end
+
+exception End_of_input
+
+let next_utf8 s i =
+  let err () = invalid_arg "utf8" in
+  let l = String.length s - i in
+  if l = 0 then raise End_of_input
+  else let a = Char.code s.[i] in if a <= 0x7F then
+    1, a
+  else if a land 0x40 = 0 then err ()
+  else if l = 1 then err ()
+  else let b = Char.code s.[i+1] in if b land 0xC0 <> 0x80 then err ()
+  else if a land 0x20 = 0 then
+    2, (a land 0x1F) lsl 6 + (b land 0x3F)
+  else if l = 2 then err ()
+  else let c = Char.code s.[i+2] in if c land 0xC0 <> 0x80 then err ()
+  else if a land 0x10 = 0 then
+    3, (a land 0x0F) lsl 12 + (b land 0x3F) lsl 6 + (c land 0x3F)
+  else if l = 3 then err ()
+  else let d = Char.code s.[i+3] in if d land 0xC0 <> 0x80 then err ()
+  else if a land 0x08 = 0 then
+    4, (a land 0x07) lsl 18 + (b land 0x3F) lsl 12 +
+       (c land 0x3F) lsl 6 + (d land 0x3F)
+  else err ()
+
+(* Check the well-formedness of an identifier *)
+
+let check_ident s =
+  let i = ref 0 in
+  if s <> ".." then try
+    let j, n = next_utf8 s 0 in
+    match classify_utf8 n with
+    | Utf8Letter ->
+	i := !i + j;
+	begin try
+	  while true do
+	    let j, n = next_utf8 s !i in
+	    match classify_utf8 n with
+	    | Utf8Letter | Utf8IdentPart -> i := !i + j
+	    | _ -> error
+		("invalid character "^(String.sub s !i j)^" in identifier "^s)
+	  done
+	with End_of_input -> () end
+    | _ -> error (s^": an identifier should start with a letter")
+  with 
+  | End_of_input -> error "The empty string is not an identifier"
+  | Invalid_argument _ -> error (s^": invalid utf8 sequence")
 
 (* Lists *)
 

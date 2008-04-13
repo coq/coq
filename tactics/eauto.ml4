@@ -55,69 +55,6 @@ let registered_e_assumption gl =
   tclFIRST (List.map (fun id gl -> e_give_exact_constr (mkVar id) gl) 
               (pf_ids_of_hyps gl)) gl
 
-let e_constructor_tac boundopt i lbind gl = 
-    let cl = pf_concl gl in 
-  let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
-  let nconstr =
-    Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
-  if i=0 then error "The constructors are numbered starting from 1";
-  if i > nconstr then error "Not enough constructors";
-  begin match boundopt with 
-    | Some expctdnum -> 
-        if expctdnum <> nconstr then 
-	  error "Not the expected number of constructors"
-    | None -> ()
-  end;
-  let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac = eapply_with_ebindings (cons,lbind) in
-  (tclTHENLIST [convert_concl_no_check redcl DEFAULTcast
-; intros; apply_tac]) gl
-
-let e_one_constructor i = e_constructor_tac None i
-
-let e_any_constructor tacopt gl =
-  let t = match tacopt with None -> tclIDTAC | Some t -> t in
-  let mind = fst (pf_reduce_to_quantified_ind gl (pf_concl gl)) in
-  let nconstr =
-    Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
-  if nconstr = 0 then error "The type has no constructors";
-  tclFIRST (List.map (fun i -> tclTHEN (e_one_constructor i NoBindings) t) 
-              (interval 1 nconstr)) gl
-
-let e_left = e_constructor_tac (Some 2) 1
-
-let e_right = e_constructor_tac (Some 2) 2
-
-let e_split = e_constructor_tac (Some 1) 1
-
-(* This automatically define h_econstructor (among other things) *)
-TACTIC EXTEND econstructor
-  [ "econstructor" integer(n) "with" bindings(c) ] -> [ e_constructor_tac None n c ]
-| [ "econstructor" integer(n) ] -> [ e_constructor_tac None n NoBindings ]
-| [ "econstructor" tactic_opt(t) ] -> [ e_any_constructor (Option.map Tacinterp.eval_tactic t) ] 
-      END
-
-TACTIC EXTEND eleft
-  [ "eleft" "with" bindings(l) ] -> [e_left l]
-| [ "eleft"] -> [e_left NoBindings]
-END
-
-TACTIC EXTEND eright
-  [ "eright" "with" bindings(l) ] -> [e_right l]
-| [ "eright" ] -> [e_right NoBindings]
-END
-
-TACTIC EXTEND esplit
-  [ "esplit" "with" bindings(l) ] -> [e_split l]
-| [ "esplit"] -> [e_split NoBindings]
-END
-
-
-TACTIC EXTEND eexists
-  [ "eexists" bindings(l) ] -> [e_split l]
-END
-
-
 (************************************************************************)
 (*   PROLOG tactic                                                      *)
 (************************************************************************)

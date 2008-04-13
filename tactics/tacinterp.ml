@@ -215,10 +215,14 @@ let _ =
         "cofix", TacCofix None;
         "trivial", TacTrivial ([],None);
         "auto", TacAuto(None,[],None);
-        "left", TacLeft NoBindings;
-        "right", TacRight NoBindings;
-        "split", TacSplit(false,NoBindings);
-        "constructor", TacAnyConstructor None;
+        "left", TacLeft(false,NoBindings);
+        "eleft", TacLeft(true,NoBindings);
+        "right", TacRight(false,NoBindings);
+        "eright", TacRight(true,NoBindings);
+        "split", TacSplit(false,false,NoBindings);
+        "esplit", TacSplit(true,false,NoBindings);
+        "constructor", TacAnyConstructor (false,None);
+        "econstructor", TacAnyConstructor (true,None);
         "reflexivity", TacReflexivity;
         "symmetry", TacSymmetry nocl
       ];
@@ -721,11 +725,11 @@ let rec intern_atomic lf ist x =
   | TacRevert l -> TacRevert (List.map (intern_hyp_or_metaid ist) l)
 	
   (* Constructors *)
-  | TacLeft bl -> TacLeft (intern_bindings ist bl)
-  | TacRight bl -> TacRight (intern_bindings ist bl)
-  | TacSplit (b,bl) -> TacSplit (b,intern_bindings ist bl)
-  | TacAnyConstructor t -> TacAnyConstructor (Option.map (intern_tactic ist) t)
-  | TacConstructor (n,bl) -> TacConstructor (n, intern_bindings ist bl)
+  | TacLeft (ev,bl) -> TacLeft (ev,intern_bindings ist bl)
+  | TacRight (ev,bl) -> TacRight (ev,intern_bindings ist bl)
+  | TacSplit (ev,b,bl) -> TacSplit (ev,b,intern_bindings ist bl)
+  | TacAnyConstructor (ev,t) -> TacAnyConstructor (ev,Option.map (intern_tactic ist) t)
+  | TacConstructor (ev,n,bl) -> TacConstructor (ev,n,intern_bindings ist bl)
 
   (* Conversion *)
   | TacReduce (r,cl) ->
@@ -2083,14 +2087,14 @@ and interp_atomic ist gl = function
   | TacRevert l -> h_revert (interp_hyp_list ist gl l)
 
   (* Constructors *)
-  | TacLeft bl -> h_left (interp_bindings ist gl bl)
-  | TacRight bl -> h_right (interp_bindings ist gl bl)
-  | TacSplit (_,bl) -> h_split (interp_bindings ist gl bl)
-  | TacAnyConstructor t ->
-      abstract_tactic (TacAnyConstructor t)
-        (Tactics.any_constructor (Option.map (interp_tactic ist) t))
-  | TacConstructor (n,bl) ->
-      h_constructor (skip_metaid n) (interp_bindings ist gl bl)
+  | TacLeft (ev,bl) -> h_left ev (interp_bindings ist gl bl)
+  | TacRight (ev,bl) -> h_right ev (interp_bindings ist gl bl)
+  | TacSplit (ev,_,bl) -> h_split ev (interp_bindings ist gl bl)
+  | TacAnyConstructor (ev,t) ->
+      abstract_tactic (TacAnyConstructor (ev,t))
+        (Tactics.any_constructor ev (Option.map (interp_tactic ist) t))
+  | TacConstructor (ev,n,bl) ->
+      h_constructor ev (skip_metaid n) (interp_bindings ist gl bl)
 
   (* Conversion *)
   | TacReduce (r,cl) ->
@@ -2391,11 +2395,11 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacRevert _ as x -> x
 
   (* Constructors *)
-  | TacLeft bl -> TacLeft (subst_bindings subst bl)
-  | TacRight bl -> TacRight (subst_bindings subst bl)
-  | TacSplit (b,bl) -> TacSplit (b,subst_bindings subst bl)
-  | TacAnyConstructor t -> TacAnyConstructor (Option.map (subst_tactic subst) t)
-  | TacConstructor (n,bl) -> TacConstructor (n, subst_bindings subst bl)
+  | TacLeft (ev,bl) -> TacLeft (ev,subst_bindings subst bl)
+  | TacRight (ev,bl) -> TacRight (ev,subst_bindings subst bl)
+  | TacSplit (ev,b,bl) -> TacSplit (ev,b,subst_bindings subst bl)
+  | TacAnyConstructor (ev,t) -> TacAnyConstructor (ev,Option.map (subst_tactic subst) t)
+  | TacConstructor (ev,n,bl) -> TacConstructor (ev,n,subst_bindings subst bl)
 
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)

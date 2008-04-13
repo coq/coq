@@ -1138,7 +1138,7 @@ let declare_instance_trans binders a aeq n lemma =
   in anew_instance binders instance 
        [((dummy_loc,id_of_string "transitivity"),[],lemma)]
 
-let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor None)) 
+let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor (false,None)))
 
 let declare_relation ?(binders=[]) a aeq n refl symm trans = 
   init_setoid ();
@@ -1421,7 +1421,8 @@ let check_evar_map_of_evars_defs evd =
   Evd.Metaset.iter
    (fun m ->
      if Evd.meta_defined evd m then () else
-      raise (Logic.RefinerError (Logic.OccurMetaGoal rebus)))
+      raise
+	(Logic.RefinerError (Logic.UnresolvedBindings [Evd.meta_name evd m])))
  in
   List.iter
    (fun (_,binding) ->

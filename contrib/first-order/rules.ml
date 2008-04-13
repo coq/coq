@@ -78,7 +78,7 @@ let and_tac backtrack continue seq=
 
 let or_tac backtrack continue seq=
   tclORELSE 
-    (any_constructor (Some (tclCOMPLETE (wrap 0 true continue seq))))
+    (any_constructor false (Some (tclCOMPLETE (wrap 0 true continue seq))))
     backtrack
 
 let arrow_tac backtrack continue seq=

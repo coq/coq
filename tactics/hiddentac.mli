@@ -80,10 +80,10 @@ val h_rename          : (identifier*identifier) list -> tactic
 val h_revert          : identifier list -> tactic
 
 (* Constructors *)
-val h_constructor     : int -> open_constr bindings -> tactic
-val h_left            : open_constr bindings -> tactic
-val h_right           : open_constr bindings -> tactic
-val h_split           : open_constr bindings -> tactic
+val h_constructor     : evars_flag -> int -> open_constr bindings -> tactic
+val h_left            : evars_flag -> open_constr bindings -> tactic
+val h_right           : evars_flag -> open_constr bindings -> tactic
+val h_split           : evars_flag -> open_constr bindings -> tactic
 
 val h_one_constructor : int -> tactic
 val h_simplest_left   : tactic

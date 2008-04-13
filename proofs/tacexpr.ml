@@ -24,6 +24,7 @@ type lazy_flag = bool      (* true = lazy             false = eager *)
 type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
+type split_flag = bool     (* true = exists           false = split *)
 
 type raw_red_flag =
   | FBeta
@@ -179,11 +180,11 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacRevert of 'id list
 
   (* Constructors *)
-  | TacLeft of 'constr bindings
-  | TacRight of 'constr bindings
-  | TacSplit of bool * 'constr bindings
-  | TacAnyConstructor of 'tac option
-  | TacConstructor of int or_metaid * 'constr bindings
+  | TacLeft of evars_flag * 'constr bindings
+  | TacRight of evars_flag * 'constr bindings
+  | TacSplit of evars_flag * split_flag * 'constr bindings
+  | TacAnyConstructor of evars_flag * 'tac option
+  | TacConstructor of evars_flag * int or_metaid * 'constr bindings
 
   (* Conversion *)
   | TacReduce of ('constr,'cst) red_expr_gen * 'id gclause

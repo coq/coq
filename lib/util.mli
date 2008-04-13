@@ -78,6 +78,13 @@ val parse_loadpath : string -> string list
 module Stringset : Set.S with type elt = string
 module Stringmap : Map.S with type key = string
 
+type utf8_status = Utf8Letter | Utf8IdentPart | Utf8Symbol
+
+exception UnsupportedUtf8
+
+val classify_utf8 : int -> utf8_status
+val check_ident : string -> unit
+
 (*s Lists. *)
 
 val list_add_set : 'a -> 'a list -> 'a list

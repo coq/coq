@@ -508,22 +508,19 @@ let explain_typeclass_error env err =
 (* Refiner errors *)
 
 let explain_refiner_bad_type arg ty conclty =
-  str "refiner was given an argument" ++ brk(1,1) ++
+  str "Refiner was given an argument" ++ brk(1,1) ++
   pr_lconstr arg ++ spc () ++
   str "of type" ++ brk(1,1) ++ pr_lconstr ty ++ spc () ++
   str "instead of" ++ brk(1,1) ++ pr_lconstr conclty
 
-let explain_refiner_occur_meta t =
-  str "cannot refine with term" ++ brk(1,1) ++ pr_lconstr t ++
-  spc () ++ str "because there are metavariables, and it is" ++
-  spc () ++ str "neither an application nor a Case"
-
-let explain_refiner_occur_meta_goal t =
-  str "generated subgoal" ++ brk(1,1) ++ pr_lconstr t ++
-  spc () ++ str "has metavariables in it"
+let explain_refiner_unresolved_bindings l =
+  let l = map_succeed (function Name id -> id | _ -> failwith "") l in
+  str "Unable to find an instance for the " ++ 
+  str (plural (List.length l) "variable") ++ spc () ++
+  prlist_with_sep pr_coma pr_id l
 
 let explain_refiner_cannot_apply t harg =
-  str "in refiner, a term of type " ++ brk(1,1) ++
+  str "In refiner, a term of type " ++ brk(1,1) ++
   pr_lconstr t ++ spc () ++ str "could not be applied to" ++ brk(1,1) ++
   pr_lconstr harg
 
@@ -538,13 +535,12 @@ let explain_does_not_occur_in c hyp =
   str "does not occur in" ++ spc () ++ pr_id hyp ++ str "."
 
 let explain_non_linear_proof c =
-  str "cannot refine with term" ++ brk(1,1) ++ pr_lconstr c ++
+  str "Cannot refine with term" ++ brk(1,1) ++ pr_lconstr c ++
   spc () ++ str "because a metavariable has several occurrences."
 
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
-  | OccurMeta t -> explain_refiner_occur_meta t
-  | OccurMetaGoal t -> explain_refiner_occur_meta_goal t
+  | UnresolvedBindings t -> explain_refiner_unresolved_bindings t
   | CannotApply (t,harg) -> explain_refiner_cannot_apply t harg
   | NotWellTyped c -> explain_refiner_not_well_typed c
   | IntroNeedsProduct -> explain_intro_needs_product ()
@@ -611,7 +607,7 @@ let error_bad_entry () =
   str "Bad inductive definition."
 
 let error_not_allowed_case_analysis dep kind i =
-  str (if dep then "Dependent" else "Non Dependent") ++
+  str (if dep then "Dependent" else "Non dependent") ++
   str " case analysis on sort: " ++ pr_sort kind ++ fnl () ++
   str "is not allowed for inductive definition: " ++
   pr_inductive (Global.env()) i ++ str "."

@@ -120,7 +120,7 @@ type side = Hyp | Concl | Hint
 
 let no_atoms = (false,{positive=[];negative=[]})
 
-let dummy_id=VarRef (id_of_string "")
+let dummy_id=VarRef (id_of_string "_") (* "_" cannot be parsed *)
 
 let build_atoms gl metagen side cciterm =
   let trivial =ref false

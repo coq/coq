@@ -133,6 +133,8 @@ let rec pr_message_token prid = function
 
 let pr_fresh_ids = prlist (fun s -> spc() ++ pr_or_var qs s)
 
+let with_evars ev s = if ev then "e" ^ s else s
+
 let out_bindings = function
   | ImplicitBindings l -> ImplicitBindings (List.map snd l)
   | ExplicitBindings l -> ExplicitBindings (List.map (fun (loc,id,c) -> (loc,id,snd c)) l)
@@ -637,7 +639,8 @@ let rec pr_atom0 = function
   | TacIntroPattern [] -> str "intros"
   | TacIntroMove (None,None) -> str "intro"
   | TacAssumption -> str "assumption"
-  | TacAnyConstructor None -> str "constructor"
+  | TacAnyConstructor (false,None) -> str "constructor"
+  | TacAnyConstructor (true,None) -> str "econstructor"
   | TacTrivial ([],Some []) -> str "trivial"
   | TacAuto (None,[],Some []) -> str "auto"
   | TacReflexivity -> str "reflexivity"
@@ -674,14 +677,14 @@ and pr_atom1 = function
   | TacVmCastNoCheck c -> hov 1 (str "vm_cast_no_check" ++ pr_constrarg c)
   | TacApply (a,ev,cb) ->
       hov 1 ((if a then mt() else str "simple ") ++
-             str (if ev then "eapply" else "apply") ++ spc () ++ 
+             str (with_evars ev "apply") ++ spc () ++ 
              pr_with_bindings cb)
   | TacElim (ev,cb,cbo) ->
-      hov 1 (str (if ev then "eelim" else "elim") ++ pr_arg pr_with_bindings cb ++ 
+      hov 1 (str (with_evars ev "elim") ++ pr_arg pr_with_bindings cb ++ 
         pr_opt pr_eliminator cbo)
   | TacElimType c -> hov 1 (str "elimtype" ++ pr_constrarg c)
   | TacCase (ev,cb) ->
-      hov 1 (str (if ev then "ecase" else "case") ++ spc () ++ pr_with_bindings cb)
+      hov 1 (str (with_evars ev "case") ++ spc () ++ pr_with_bindings cb)
   | TacCaseType c -> hov 1 (str "casetype" ++ pr_constrarg c)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
   | TacMutualFix (id,n,l) ->
@@ -724,14 +727,14 @@ and pr_atom1 = function
   | TacSimpleInduction h ->
       hov 1 (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewInduction (ev,h,e,ids) ->
-      hov 1 (str (if ev then "einduction" else "induction") ++ spc () ++
+      hov 1 (str (with_evars ev "induction") ++ spc () ++
 	     prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++
 	     pr_with_names ids ++
              pr_opt pr_eliminator e)
   | TacSimpleDestruct h ->
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
   | TacNewDestruct (ev,h,e,ids) ->
-      hov 1 (str (if ev then "edestruct" else "destruct") ++ spc () ++
+      hov 1 (str (with_evars ev "destruct") ++ spc () ++
              prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++ 
 	     pr_with_names ids ++
              pr_opt pr_eliminator e)
@@ -792,15 +795,16 @@ and pr_atom1 = function
       hov 1 (str "revert" ++ spc () ++ prlist_with_sep spc pr_ident l) 
 
   (* Constructors *)
-  | TacLeft l -> hov 1 (str "left" ++ pr_bindings l)
-  | TacRight l -> hov 1 (str "right" ++ pr_bindings l)
-  | TacSplit (false,l) -> hov 1 (str "split" ++ pr_bindings l)
-  | TacSplit (true,l) -> hov 1 (str "exists" ++ pr_ex_bindings l)
-  | TacAnyConstructor (Some t) ->
-      hov 1 (str "constructor" ++ pr_arg (pr_tac_level (latom,E)) t)
-  | TacAnyConstructor None as t -> pr_atom0 t
-  | TacConstructor (n,l) ->
-      hov 1 (str "constructor" ++ pr_or_metaid pr_intarg n ++ pr_bindings l)
+  | TacLeft (ev,l) -> hov 1 (str (with_evars ev "left") ++ pr_bindings l)
+  | TacRight (ev,l) -> hov 1 (str (with_evars ev "right") ++ pr_bindings l)
+  | TacSplit (ev,false,l) -> hov 1 (str (with_evars ev "split") ++ pr_bindings l)
+  | TacSplit (ev,true,l) -> hov 1 (str (with_evars ev "exists") ++ pr_ex_bindings l)
+  | TacAnyConstructor (ev,Some t) ->
+      hov 1 (str (with_evars ev "constructor") ++ pr_arg (pr_tac_level (latom,E)) t)
+  | TacAnyConstructor (ev,None) as t -> pr_atom0 t
+  | TacConstructor (ev,n,l) ->
+      hov 1 (str (with_evars ev "constructor") ++ 
+             pr_or_metaid pr_intarg n ++ pr_bindings l)
 
   (* Conversion *)  
   | TacReduce (r,h) ->
@@ -825,7 +829,7 @@ and pr_atom1 = function
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) -> 
-      hov 1 (str (if ev then "erewrite" else "rewrite") ++ 
+      hov 1 (str (with_evars ev "rewrite") ++ 
 	     prlist_with_sep
 	     (fun () -> str ","++spc())
 	     (fun (b,m,c) -> 

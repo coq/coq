@@ -14,6 +14,7 @@
  * ast-based camlp4 *)
 
 open Pp
+open Util
 open Token
 
 (* Dictionaries: trees annotated with string options, each node being a map
@@ -76,8 +77,10 @@ let bad_token str = raise (Error (Bad_token str))
 
 (* Lexer conventions on tokens *)
 
-type utf8_token =
-    Utf8Letter of int | Utf8IdentPart of int | Utf8Symbol | AsciiChar
+type token_kind =
+  | Utf8Token of (utf8_status * int)
+  | AsciiChar
+  | EmptyStream
 
 let error_unsupported_unicode_character n cs =
   let bp = Stream.count cs in
@@ -121,123 +124,14 @@ let lookup_utf8_tail c cs =
 	  (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
       | _ -> error_utf8 cs
     in
-    match unicode land 0x1F000 with
-    | 0x0 ->
-    begin match unicode with
-    (* utf-8 Latin-1 non breaking space U00A0 *)
-    | 0x00A0 -> Utf8Letter n
-    (* utf-8 Latin-1 symbols U00A1-00BF *)
-    | x when 0x00A0 <= x & x <= 0x00BF -> Utf8Symbol
-    (* utf-8 Latin-1 letters U00C0-00D6 *)
-    | x when 0x00C0 <= x & x <= 0x00D6 -> Utf8Letter n
-    (* utf-8 Latin-1 symbol U00D7 *)
-    | 0x00D7 -> Utf8Symbol
-    (* utf-8 Latin-1 letters U00D8-00F6 *)
-    | x when 0x00D8 <= x & x <= 0x00F6 -> Utf8Letter n
-    (* utf-8 Latin-1 symbol U00F7 *)
-    | 0x00F7 -> Utf8Symbol
-    (* utf-8 Latin-1 letters U00F8-00FF *)
-    | x when 0x00F8 <= x & x <= 0x00FF -> Utf8Letter n
-    (* utf-8 Latin Extended A U0100-017F and Latin Extended B U0180-U0241 *)
-    | x when 0x0100 <= x & x <= 0x0241 -> Utf8Letter n
-    (* utf-8 Phonetic letters U0250-02AF *)
-    | x when 0x0250 <= x & x <= 0x02AF -> Utf8Letter n
-    (* utf-8 what do to with diacritics U0300-U036F ? *)
-    (* utf-8 Greek letters U0380-03FF *)
-    | x when 0x0380 <= x & x <= 0x03FF -> Utf8Letter n
-    (* utf-8 Cyrillic letters U0400-0481 *)
-    | x when 0x0400 <= x & x <= 0x0481 -> Utf8Letter n
-    (* utf-8 Cyrillic symbol U0482 *)
-    | 0x0482 -> Utf8Symbol
-    (* utf-8 what do to with diacritics U0483-U0489 \ U0487 ? *)
-    (* utf-8 Cyrillic letters U048A-U4F9 (Warning: 04CF) *)
-    | x when 0x048A <= x & x <= 0x04F9 -> Utf8Letter n
-    (* utf-8 Cyrillic supplement letters U0500-U050F *)
-    | x when 0x0500 <= x & x <= 0x050F -> Utf8Letter n
-    (* utf-8 Hebrew letters U05D0-05EA *)
-    | x when 0x05D0 <= x & x <= 0x05EA -> Utf8Letter n
-    (* utf-8 Arabic letters U0621-064A *)
-    | x when 0x0621 <= x & x <= 0x064A -> Utf8Letter n
-    (* utf-8 Arabic supplement letters U0750-076D *)
-    | x when 0x0750 <= x & x <= 0x076D -> Utf8Letter n
-    | _ -> error_unsupported_unicode_character n cs
-    end
-    | 0x1000 ->
-    begin match unicode with
-    (* utf-8 Georgian U10A0-10FF (has holes) *)
-    | x when 0x10A0 <= x & x <= 0x10FF -> Utf8Letter n
-    (* utf-8 Hangul Jamo U1100-11FF (has holes) *)
-    | x when 0x1100 <= x & x <= 0x11FF -> Utf8Letter n
-    (* utf-8 Latin additional letters U1E00-1E9B and U1EA0-1EF9 *)
-    | x when 0x1E00 <= x & x <= 0x1E9B -> Utf8Letter n
-    | x when 0x1EA0 <= x & x <= 0x1EF9 -> Utf8Letter n
-    | _ -> error_unsupported_unicode_character n cs
-    end
-    | 0x2000 ->
-    begin match unicode with
-    (* utf-8 general punctuation U2080-2089 *)
-    (* Hyphens *)
-    | x when 0x2010 <= x & x <= 0x2011 -> Utf8Letter n 
-    (* Dashes and other symbols *)
-    | x when 0x2012 <= x & x <= 0x2027 -> Utf8Symbol
-    (* Per mille and per ten thousand signs *)
-    | x when 0x2030 <= x & x <= 0x2031 -> Utf8Symbol
-    (* Prime letters *)
-    | x when 0x2032 <= x & x <= 0x2034 or x = 0x2057 -> Utf8IdentPart n
-    (* Miscellaneous punctuation *)
-    | x when 0x2039 <= x & x <= 0x2056 -> Utf8Symbol
-    | x when 0x2058 <= x & x <= 0x205E -> Utf8Symbol
-    (* Invisible mathematical operators *)
-    | x when 0x2061 <= x & x <= 0x2063 -> Utf8Symbol
-    (* utf-8 superscript U2070-207C *) 
-    | x when 0x2070 <= x & x <= 0x207C -> Utf8Symbol
-    (* utf-8 subscript U2080-2089 *) 
-    | x when 0x2080 <= x & x <= 0x2089 -> Utf8IdentPart n
-    (* utf-8 letter-like U2100-214F *)
-    | x when 0x2100 <= x & x <= 0x214F -> Utf8Letter n
-    (* utf-8 number-forms U2153-2183 *)
-    | x when 0x2153 <= x & x <= 0x2183 -> Utf8Symbol
-    (* utf-8 arrows A U2190-21FF *)
-    (* utf-8 mathematical operators U2200-22FF *)
-    (* utf-8 miscellaneous technical U2300-23FF *)
-    | x when 0x2190 <= x & x <= 0x23FF -> Utf8Symbol
-    (* utf-8 box drawing U2500-257F has ceiling, etc. *)
-    (* utf-8 block elements U2580-259F *)
-    (* utf-8 geom. shapes U25A0-25FF (has triangles, losange, etc) *)
-    (* utf-8 miscellaneous symbols U2600-26FF *)
-    | x when 0x2500 <= x & x <= 0x26FF -> Utf8Symbol
-    (* utf-8 arrows B U2900-297F *)
-    | x when 0x2900 <= x & x <= 0x297F -> Utf8Symbol
-    (* utf-8 mathematical operators U2A00-2AFF *)
-    | x when 0x2A00 <= x & x <= 0x2AFF -> Utf8Symbol
-    (* utf-8 bold symbols U2768-U2775 *)
-    | x when 0x2768 <= x & x <= 0x2775 -> Utf8Symbol
-    (* utf-8 arrows and brackets U27E0-U27FF *)
-    | x when 0x27E0 <= x & x <= 0x27FF -> Utf8Symbol
-    (* utf-8 brackets, braces and parentheses *)
-    | x when 0x2980 <= x & x <= 0x299F -> Utf8Symbol
-    (* utf-8 miscellaneous including double-plus U29F0-U29FF *)
-    | x when 0x29F0 <= x & x <= 0x29FF -> Utf8Symbol
-    | _ -> error_unsupported_unicode_character n cs
-    end
-    | _ ->
-    begin match unicode with
-    (* utf-8 Hiragana U3040-309F and Katakana U30A0-30FF *)
-    | x when 0x3040 <= x & x <= 0x30FF -> Utf8Letter n
-    (* utf-8 Unified CJK Ideographs U4E00-9FA5 *)
-    | x when 0x4E00 <= x & x <= 0x9FA5 -> Utf8Letter n
-    (* utf-8 Hangul syllables UAC00-D7AF *)
-    | x when 0xAC00 <= x & x <= 0xD7AF -> Utf8Letter n
-    (* utf-8 Gothic U10330-1034A *)
-    | x when 0x10330 <= x & x <= 0x1034A -> Utf8Letter n
-    | _ -> error_unsupported_unicode_character n cs
-    end
+    try classify_utf8 unicode, n
+    with UnsupportedUtf8 -> error_unsupported_unicode_character n cs
 	
 let lookup_utf8 cs =
   match Stream.peek cs with
-    | Some ('\x00'..'\x7F') -> Some AsciiChar
-    | Some ('\x80'..'\xFF' as c) -> Some (lookup_utf8_tail c cs)
-    | None -> None
+    | Some ('\x00'..'\x7F') -> AsciiChar
+    | Some ('\x80'..'\xFF' as c) -> Utf8Token (lookup_utf8_tail c cs)
+    | None -> EmptyStream
 
 let check_special_token str =
   let rec loop_symb = parser
@@ -249,16 +143,16 @@ let check_special_token str =
 
 let check_ident str =
   let rec loop_id intail = parser
-    | [< ' ('$' | 'a'..'z' | 'A'..'Z' | '_'); s >] ->
+    | [< ' ('a'..'z' | 'A'..'Z' | '_'); s >] ->
         loop_id true s
     | [< ' ('0'..'9' | ''') when intail; s >] ->
         loop_id true s
     | [< s >] ->
 	match lookup_utf8 s with
-	| Some (Utf8Letter n) -> njunk n s; loop_id true s
-	| Some (Utf8IdentPart n) when intail -> njunk n s; loop_id true s
-	| Some _ -> bad_token str
-	| None -> ()
+	| Utf8Token (Utf8Letter, n) -> njunk n s; loop_id true s
+	| Utf8Token (Utf8IdentPart, n) when intail -> njunk n s; loop_id true s
+	| EmptyStream -> ()
+	| Utf8Token _ | AsciiChar -> bad_token str
   in
   loop_id false (Stream.of_string str)
 
@@ -323,7 +217,7 @@ let rec ident_tail len = parser
       ident_tail (store len c) s
   | [< s >] ->
       match lookup_utf8 s with
-      | Some (Utf8IdentPart n | Utf8Letter n) ->
+      | Utf8Token ((Utf8IdentPart | Utf8Letter), n) ->
 	  ident_tail (nstore n len s) s
       | _ -> len
 
@@ -480,9 +374,9 @@ let parse_after_dot bp c =
       (constructor, get_buff len)
   | [< s >] ->
       match lookup_utf8 s with
-      | Some (Utf8Letter n) -> 
+      | Utf8Token (Utf8Letter, n) -> 
 	  (constructor, get_buff (ident_tail (nstore n 0 s) s))
-      | Some (Utf8IdentPart _ | AsciiChar | Utf8Symbol) | None -> 
+      | AsciiChar | Utf8Token _ | EmptyStream -> 
 	  fst (process_chars bp c s)
 
 (* Parse a token in a char stream *)
@@ -518,16 +412,16 @@ let rec next_token = parser bp
       t
   | [< s >] ->
       match lookup_utf8 s with
-	| Some (Utf8Letter n) ->
+	| Utf8Token (Utf8Letter, n) ->
 	    let len = ident_tail (nstore n 0 s) s in
 	    let id = get_buff len in
 	    let ep = Stream.count s in
 	    comment_stop bp;
 	    (try ("",find_keyword id) with Not_found -> ("IDENT",id)), (bp, ep)
-	| Some (Utf8Symbol | AsciiChar | Utf8IdentPart _) -> 
+	| AsciiChar | Utf8Token ((Utf8Symbol | Utf8IdentPart), _) -> 
 	    let t = process_chars bp (Stream.next s) s in
 	    comment_stop bp; t
-	| None ->
+	| EmptyStream ->
 	    comment_stop bp; (("EOI", ""), (bp, bp + 1))
 
 (* Location table system for creating tables associating a token count

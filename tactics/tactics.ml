@@ -528,7 +528,7 @@ let error_uninstantiated_metas t clenv =
   in errorlabstrm "" (str "cannot find an instance for " ++ pr_id id)
 
 let clenv_refine_in with_evars id clenv gl =
-  let clenv = if with_evars then clenv_pose_dependent_evars clenv else clenv in
+  let clenv = clenv_pose_dependent_evars with_evars clenv in
   let new_hyp_typ  = clenv_type clenv in
   if not with_evars & occur_meta new_hyp_typ then 
     error_uninstantiated_metas new_hyp_typ clenv;
@@ -672,9 +672,9 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 
 (* Resolution with missing arguments *)
 
-let apply_with_ebindings_gen advanced with_evars (c,lbind) gl =
+let general_apply with_delta with_destruct with_evars (c,lbind) gl =
   let flags = 
-    if advanced then default_unify_flags else default_no_delta_unify_flags in
+    if with_delta then default_unify_flags else default_no_delta_unify_flags in
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -700,7 +700,8 @@ let apply_with_ebindings_gen advanced with_evars (c,lbind) gl =
 	   second order unification *)
 	try if concl_nprod <> 0 then try_apply thm_ty 0 else raise Exit
 	with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
-	  if advanced then
+	  if with_destruct then
+	   try
 	    let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
 	    match match_with_conjunction (snd (decompose_prod t)) with
 	    | Some _ ->
@@ -717,14 +718,15 @@ let apply_with_ebindings_gen advanced with_evars (c,lbind) gl =
 			tclTHEN (try_main_apply (mkVar id)) (thin l)) l))
 		]) gl
 	    | None ->
-	      raise exn
+		raise Exit
+	   with RefinerError _|UserError _|Exit -> raise exn 
 	  else
-	    raise exn in
+	    raise exn
+ in
     try_red_apply thm_ty0 in
   try_main_apply c gl
 
-let advanced_apply_with_ebindings = apply_with_ebindings_gen true false
-let advanced_eapply_with_ebindings = apply_with_ebindings_gen true true
+let apply_with_ebindings_gen b = general_apply b b
 
 let apply_with_ebindings = apply_with_ebindings_gen false false
 let eapply_with_ebindings = apply_with_ebindings_gen false true
@@ -942,45 +944,47 @@ let check_number_of_constructors expctdnumopt i nconstr =
   end;
   if i > nconstr then error "Not enough constructors"
 
-let constructor_tac expctdnumopt i lbind gl =
+let constructor_tac with_evars expctdnumopt i lbind gl =
   let cl = pf_concl gl in 
   let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   check_number_of_constructors expctdnumopt i nconstr;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac = advanced_apply_with_ebindings (cons,lbind) in
+  let apply_tac = general_apply true false with_evars (cons,lbind) in
   (tclTHENLIST 
      [convert_concl_no_check redcl DEFAULTcast; intros; apply_tac]) gl
 
-let one_constructor i = constructor_tac None i
+let one_constructor i = constructor_tac false None i
 
 (* Try to apply the constructor of the inductive definition followed by 
    a tactic t given as an argument.
    Should be generalize in Constructor (Fun c : I -> tactic)
  *)
 
-let any_constructor tacopt gl =
+let any_constructor with_evars tacopt gl =
   let t = match tacopt with None -> tclIDTAC | Some t -> t in
   let mind = fst (pf_reduce_to_quantified_ind gl (pf_concl gl)) in
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   if nconstr = 0 then error "The type has no constructors";
-  tclFIRST (List.map (fun i -> tclTHEN (one_constructor i NoBindings) t) 
-              (interval 1 nconstr)) gl
+  tclFIRST
+    (List.map
+      (fun i -> tclTHEN (constructor_tac with_evars None i NoBindings) t) 
+      (interval 1 nconstr)) gl
 
-let left_with_ebindings  = constructor_tac (Some 2) 1
-let right_with_ebindings = constructor_tac (Some 2) 2
-let split_with_ebindings = constructor_tac (Some 1) 1
+let left_with_ebindings  with_evars = constructor_tac with_evars (Some 2) 1
+let right_with_ebindings with_evars = constructor_tac with_evars (Some 2) 2
+let split_with_ebindings with_evars = constructor_tac with_evars (Some 1) 1
 
-let left l         = left_with_ebindings (inj_ebindings l)
-let simplest_left  = left NoBindings
+let left l             = left_with_ebindings false (inj_ebindings l)
+let simplest_left      = left NoBindings
 
-let right l        = right_with_ebindings (inj_ebindings l)
-let simplest_right = right NoBindings
+let right l            = right_with_ebindings false (inj_ebindings l)
+let simplest_right     = right NoBindings
 
-let split l        = split_with_ebindings (inj_ebindings l)
-let simplest_split = split NoBindings
+let split l            = split_with_ebindings false (inj_ebindings l)
+let simplest_split     = split NoBindings
 
 
 (*****************************)
@@ -1742,13 +1746,14 @@ let make_base n id =
 let make_up_names n ind_opt cname = 
   let is_hyp = atompart_of_id cname = "H" in
   let base = string_of_id (make_base n cname) in
+  let ind_prefix = "IH" in
   let base_ind = 
     if is_hyp then 
       match ind_opt with
-	| None -> id_of_string ""
-	| Some ind_id -> Nametab.id_of_global ind_id 
-    else cname in
-  let hyprecname = add_prefix "IH" (make_base n base_ind) in
+	| None -> id_of_string ind_prefix
+	| Some ind_id -> add_prefix ind_prefix (Nametab.id_of_global ind_id)
+    else add_prefix ind_prefix cname in
+  let hyprecname = make_base n base_ind in
   let avoid =
     if n=1 (* Only one recursive argument *) or n=0 then []
     else

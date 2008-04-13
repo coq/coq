@@ -17,7 +17,7 @@ type identifier = string
 
 let id_ord = Pervasives.compare
 
-let id_of_string s = String.copy s
+let id_of_string s = check_ident s; String.copy s
 
 let string_of_id id = String.copy id
 
@@ -185,7 +185,7 @@ module Cmap = KNmap
 module Cpred = KNpred
 module Cset = KNset
 
-let default_module_name = id_of_string "If you see this, it's a bug"
+let default_module_name = "If you see this, it's a bug"
 
 let initial_dir = make_dirpath [default_module_name]
 
