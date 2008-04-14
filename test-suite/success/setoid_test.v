@@ -18,7 +18,7 @@ Definition same (s t : set) : Prop := forall a : A, In a s <-> In a t.
 
 Lemma setoid_set : Setoid_Theory set same.
 
-unfold same in |- *; split.
+unfold same in |- *; split ; red.
 red in |- *; auto.
 
 red in |- *.

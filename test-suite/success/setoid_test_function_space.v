@@ -26,7 +26,7 @@ Hint Unfold feq. Hint Resolve feq_refl feq_sym feq_trans.
 Variable K:(nat -> nat)->Prop.
 Variable K_ext:forall a b, (K a)->(a =f b)->(K b).
 
-Add Relation (A -> B) (@feq A B)
+Add Parametric Relation (A B : Type) : (A -> B) (@feq A B)
  reflexivity proved by (@feq_refl A B)
  symmetry proved by (@feq_sym A B)
  transitivity proved by (@feq_trans A B) as funsetoid.
