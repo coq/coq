@@ -41,16 +41,16 @@ Typeclasses unfold @equiv.
 
 (* (** Shortcuts to make proof search possible (unification won't unfold equiv). *) *)
 
-Program Instance [ sa : Equivalence A ] => equiv_refl : Reflexive equiv.
+Program Instance [ sa : Equivalence A ] => equiv_reflexive : Reflexive equiv.
 
-Program Instance [ sa : Equivalence A ] => equiv_sym : Symmetric equiv.
+Program Instance [ sa : Equivalence A ] => equiv_symmetric : Symmetric equiv.
 
   Next Obligation.
   Proof.
     symmetry ; auto.
   Qed.
 
-Program Instance [ sa : Equivalence A ] => equiv_trans : Transitive equiv.
+Program Instance [ sa : Equivalence A ] => equiv_transitive : Transitive equiv.
 
   Next Obligation.
   Proof.
