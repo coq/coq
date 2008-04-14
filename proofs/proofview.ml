@@ -219,6 +219,16 @@ let goal_tactic_of_tactic t =
   Goal.null >>= fun ps ->
   Goal.return (t env ps).proof_step
 
+let sensitive_tactic st =
+  let sps =
+    let (>>=) = Goal.bind in (* arnaud: peut-être à déplacer, peut-être pas*)
+    Goal.env >>= fun env ->
+    Goal.null >>= fun ps ->
+    st env ps >>= fun result ->
+    Goal.return result.proof_step
+  in
+  tactic_of_sensitive_proof_step sps
+  
 
 (*** tactics ***)
 

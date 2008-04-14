@@ -42,6 +42,9 @@ val tclDO : int -> unit tactic -> unit tactic
 (* [try] tactical *)
 val tclTRY : unit tactic -> unit tactic
 
+(* [first] tactical *)
+val tclFIRST : unit tactic list -> unit tactic
+
 (* Wrapper tactical around tclLIST, takes an array as argument instead. *)
 val tclARRAY : unit tactic array -> unit tactic
 
@@ -49,9 +52,6 @@ val tclARRAY : unit tactic array -> unit tactic
    apply t1 then ... then tn. *)
 val tclTHENLIST : unit tactic list -> unit tactic
 val tclTHENARRAY : unit tactic array -> unit tactic
-
-(* Compatibility tacticals *)
-val tclFIRST : unit tactic -> unit tactic
 
 (* [onLastHyp itac] applies [itac] to the name of the last
    hypothesis of the context *)

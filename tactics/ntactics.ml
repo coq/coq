@@ -688,14 +688,25 @@ let check_number_of_constructors expctdnumopt i nconstr =
   if i > nconstr then error "Not enough constructors"
 
 let constructor_tac expctdnumopt i lbind =
-  Goal.concl >>= fun concl ->
-  let cl = concl in 
-  let (mind,redcl) = pf_reduce_to_quantified_ind cl in 
-  let nconstr =
-    Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
-  check_number_of_constructors expctdnumopt i nconstr;
-  let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac = apply_with_ebindings (cons,lbind) in
+  let apply_tac_arg_and_redcl = 
+    Goal.concl >>= fun concl ->
+    (* let (mind,redcl) = pf_reduce_to_quantified_ind concl in *)
+    pf_reduce_to_quantified_ind concl >>= fun (mind,redcl) ->
+    let nconstr =
+      Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
+    check_number_of_constructors expctdnumopt i nconstr;
+    let cons = mkConstruct (ith_constructor_of_inductive mind i) in
+    Goal.return ((cons,lbind),redcl)
+  in
+  let apply_tac_arg = 
+    apply_tac_arg_and_redcl >>= fun (ata,_) -> 
+    Goal.return ata
+  in
+  let redcl =
+    apply_tac_arg_and_redcl >>= fun (_,redcl) -> 
+    Goal.return redcl
+  in
+  let apply_tac = Logic.apply_with_ebindings apply_tac_arg in
   (Logic.tclTHENLIST 
      [convert_concl_no_check redcl DEFAULTcast; Intros.intros; apply_tac])
 
@@ -708,13 +719,23 @@ let one_constructor i = constructor_tac None i
 
 let any_constructor tacopt =
   let t = match tacopt with None -> Proofview.id () | Some t -> t in
-  Goal.concl >>= fun concl ->
-  let mind = fst (pf_reduce_to_quantified_ind concl) in
-  let nconstr =
-    Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
-  if nconstr = 0 then error "The type has no constructors";
-  Logic.tclFIRST (List.map (fun i -> Logic.tclTHEN (one_constructor i NoBindings) t) 
-              (interval 1 nconstr))
+  let sensitive_tactic =
+    Goal.concl >>= fun concl ->
+    let mind = fst (pf_reduce_to_quantified_ind concl) in
+    let nconstr =
+      Array.length (snd (Global.lookup_inductive mind)).mind_consnames 
+    in
+    if nconstr = 0 then error "The type has no constructors"; (* arnaud:error ou fail ?*)
+    Goal.return (
+    Logic.tclFIRST (List.map (fun i -> Logic.tclTHEN (one_constructor i 
+						                    NoBindings)
+			                             t
+			     ) 
+		             (interval 1 nconstr)
+		   )
+    )
+  in
+  Proofview.sensitive_tactic sensitive_tactic
 
 let left_with_ebindings  = constructor_tac (Some 2) 1
 let right_with_ebindings = constructor_tac (Some 2) 2
@@ -766,7 +787,7 @@ let type_clenv_binding wc (c,t) lbind =
  * matching I, lbindc are the expected terms for c arguments 
  *)
 
-let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) gl =
+let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) =
   Util.anomaly "Tactics.general_elim_clause: à restaurer"
   (* arnaud: à restaurer
   let ct = pf_type_of gl c in
@@ -783,11 +804,11 @@ let general_elim with_evars c e ?(allow_K=true) =
 (* Elimination tactic with bindings but using the default elimination 
  * constant associated with the type. *)
 
-let find_eliminator c gl =
+let find_eliminator c =
   let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   lookup_eliminator ind (elimination_sort_of_goal gl)
 
-let default_elim with_evars (c,_ as cx) gl = 
+let default_elim with_evars (c,_ as cx) = 
   general_elim with_evars cx (find_eliminator c gl,NoBindings) gl
 
 let elim_in_context with_evars c = function

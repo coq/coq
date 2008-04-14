@@ -126,6 +126,10 @@ let rec tclDO n tac =
 let tclTRY tac =
   Proofview.tclORELSE tac (Proofview.id ())
 
+(* [first] tactical *)
+let tclFIRST tacs =
+  Util.anomaly "tclFIRST:todo"
+
 (* Wrapper tactical around tclLIST *)
 let tclARRAY tacs =
   tclLIST (Array.to_list tacs)
@@ -136,10 +140,6 @@ let rec tclTHENLIST = function
 
 let tclTHENARRAY t1 tacs =
   tclTHENLIST (Array.to_list tacs)
-
-
-(* Compatibility tacticals *)
-let tclFIRST = tclFOCUS 1
 
 (* arnaud: à remettre dans "tacticals" ? *)
  let onLastHyp tac = 

@@ -86,6 +86,9 @@ val tactic_of_sensitive_proof_step : Goal.proof_step Goal.sensitive ->
 (* arnaud: à commenter, ainsi que dans le .ml *)
 val goal_tactic_of_tactic : unit tactic -> Goal.proof_step Goal.sensitive
 
+(* arnaud: à documenter *)
+val sensitive_tactic : unit tactic Goal.sensitive -> unit tactic
+
 
 
 (*** tacticals ***)
