@@ -508,11 +508,11 @@ let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "rela
 let mk_relation a = mkApp (Lazy.force coq_relation, [| a |])
 let coq_relationT = lazy (gen_constant ["Classes";"Relations"] "relationT")
 
-let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv_refl")
+let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "equivalence_reflexive")
 
 let setoid_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv")
 let setoid_morphism = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_morphism")
-let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv_refl")
+let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "equivalence_reflexive")
   
 let arrow_morphism a b = 
   if isprop a && isprop b then
@@ -1124,17 +1124,17 @@ let init_setoid () =
   check_required_library ["Coq";"Setoids";"Setoid"]
 
 let declare_instance_refl binders a aeq n lemma = 
-  let instance = declare_instance a aeq (add_suffix n "_refl") "Coq.Classes.RelationClasses.Reflexive" 
+  let instance = declare_instance a aeq (add_suffix n "_reflexive") "Coq.Classes.RelationClasses.Reflexive" 
   in anew_instance binders instance 
        [((dummy_loc,id_of_string "reflexivity"),[],lemma)]
 
 let declare_instance_sym binders a aeq n lemma = 
-  let instance = declare_instance a aeq (add_suffix n "_sym") "Coq.Classes.RelationClasses.Symmetric"
+  let instance = declare_instance a aeq (add_suffix n "_symmetric") "Coq.Classes.RelationClasses.Symmetric"
   in anew_instance binders instance 
        [((dummy_loc,id_of_string "symmetry"),[],lemma)]
 
 let declare_instance_trans binders a aeq n lemma = 
-  let instance = declare_instance a aeq (add_suffix n "_trans") "Coq.Classes.RelationClasses.Transitive" 
+  let instance = declare_instance a aeq (add_suffix n "_transitive") "Coq.Classes.RelationClasses.Transitive" 
   in anew_instance binders instance 
        [((dummy_loc,id_of_string "transitivity"),[],lemma)]
 
@@ -1161,16 +1161,16 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder" 
 	in ignore(
 	    anew_instance binders instance 
-	      [((dummy_loc,id_of_string "preorder_refl"), [], mkIdentC lemma_refl);
-	       ((dummy_loc,id_of_string "preorder_trans"),[], mkIdentC lemma_trans)])
+	      [((dummy_loc,id_of_string "preorder_reflexive"), [], mkIdentC lemma_refl);
+	       ((dummy_loc,id_of_string "preorder_transitive"),[], mkIdentC lemma_trans)])
     | (None, Some lemma2, Some lemma3) -> 
 	let lemma_sym = declare_instance_sym binders a aeq n lemma2 in
 	let lemma_trans = declare_instance_trans binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER" 
 	in ignore(
 	    anew_instance binders instance 
-	      [((dummy_loc,id_of_string "per_sym"),  [], mkIdentC lemma_sym);
-	       ((dummy_loc,id_of_string "per_trans"),[], mkIdentC lemma_trans)])
+	      [((dummy_loc,id_of_string "per_symmetric"),  [], mkIdentC lemma_sym);
+	       ((dummy_loc,id_of_string "per_transitive"),[], mkIdentC lemma_trans)])
      | (Some lemma1, Some lemma2, Some lemma3) -> 
 	let lemma_refl = declare_instance_refl binders a aeq n lemma1 in 
 	let lemma_sym = declare_instance_sym binders a aeq n lemma2 in
@@ -1178,9 +1178,9 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence" 
 	in ignore(
 	  anew_instance binders instance 
-	    [((dummy_loc,id_of_string "equiv_refl"), [], mkIdentC lemma_refl);
-	     ((dummy_loc,id_of_string "equiv_sym"),  [], mkIdentC lemma_sym);
-	     ((dummy_loc,id_of_string "equiv_trans"),[], mkIdentC lemma_trans)])
+	    [((dummy_loc,id_of_string "equivalence_reflexive"), [], mkIdentC lemma_refl);
+	     ((dummy_loc,id_of_string "equivalence_symmetric"),  [], mkIdentC lemma_sym);
+	     ((dummy_loc,id_of_string "equivalence_transitive"),[], mkIdentC lemma_trans)])
 
 type 'a binders_let_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
 
@@ -1355,9 +1355,9 @@ let add_setoid binders a aeq t n =
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in ignore(
     anew_instance binders instance
-      [((dummy_loc,id_of_string "equiv_refl"), [], mkIdentC lemma_refl);
-       ((dummy_loc,id_of_string "equiv_sym"),  [], mkIdentC lemma_sym);
-       ((dummy_loc,id_of_string "equiv_trans"),[], mkIdentC lemma_trans)])
+      [((dummy_loc,id_of_string "equivalence_reflexive"), [], mkIdentC lemma_refl);
+       ((dummy_loc,id_of_string "equivalence_symmetric"),  [], mkIdentC lemma_sym);
+       ((dummy_loc,id_of_string "equivalence_transitive"),[], mkIdentC lemma_trans)])
 
 let add_morphism_infer m n =
   init_setoid ();

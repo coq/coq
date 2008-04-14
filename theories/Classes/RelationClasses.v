@@ -141,34 +141,34 @@ Ltac obligations_tactic ::= simpl_relation.
 
 (** Logical implication. *)
 
-Program Instance impl_refl : Reflexive impl.
-Program Instance impl_trans : Transitive impl.
+Program Instance impl_reflexive : Reflexive impl.
+Program Instance impl_transitive : Transitive impl.
 
 (** Logical equivalence. *)
 
-Program Instance iff_refl : Reflexive iff.
-Program Instance iff_sym : Symmetric iff.
-Program Instance iff_trans : Transitive iff.
+Program Instance iff_reflexive : Reflexive iff.
+Program Instance iff_symmetric : Symmetric iff.
+Program Instance iff_transitive : Transitive iff.
 
 (** Leibniz equality. *)
 
-Program Instance eq_refl : Reflexive (@eq A).
-Program Instance eq_sym : Symmetric (@eq A).
-Program Instance eq_trans : Transitive (@eq A).
+Program Instance eq_reflexive : Reflexive (@eq A).
+Program Instance eq_symmetric : Symmetric (@eq A).
+Program Instance eq_transitive : Transitive (@eq A).
 
 (** Various combinations of reflexivity, symmetry and transitivity. *)
 
 (** A [PreOrder] is both Reflexive and Transitive. *)
 
 Class PreOrder A (R : relation A) :=
-  preorder_refl :> Reflexive R ;
-  preorder_trans :> Transitive R.
+  preorder_reflexive :> Reflexive R ;
+  preorder_transitive :> Transitive R.
 
 (** A partial equivalence relation is Symmetric and Transitive. *)
 
 Class PER (carrier : Type) (pequiv : relation carrier) :=
-  per_sym :> Symmetric pequiv ;
-  per_trans :> Transitive pequiv.
+  per_symmetric :> Symmetric pequiv ;
+  per_transitive :> Transitive pequiv.
 
 (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
@@ -187,9 +187,9 @@ Program Instance [ PER A (R : relation A), PER B (R' : relation B) ] =>
 (** The [Equivalence] typeclass. *)
 
 Class Equivalence (carrier : Type) (equiv : relation carrier) :=
-  equiv_refl :> Reflexive equiv ;
-  equiv_sym :> Symmetric equiv ;
-  equiv_trans :> Transitive equiv.
+  equivalence_reflexive :> Reflexive equiv ;
+  equivalence_symmetric :> Symmetric equiv ;
+  equivalence_transitive :> Transitive equiv.
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 

@@ -37,23 +37,25 @@ Definition equiv [ Equivalence A R ] : relation A := R.
 
 Typeclasses unfold @equiv.
 
+
+
 (* (** Shortcuts to make proof search possible (unification won't unfold equiv). *) *)
 
-(* Program Instance [ sa : Equivalence A ] => equiv_refl : Reflexive equiv. *)
+Program Instance [ sa : Equivalence A ] => equiv_refl : Reflexive equiv.
 
-(* Program Instance [ sa : Equivalence A ] => equiv_sym : Symmetric equiv. *)
+Program Instance [ sa : Equivalence A ] => equiv_sym : Symmetric equiv.
 
-(*   Next Obligation. *)
-(*   Proof. *)
-(*     symmetry ; auto. *)
-(*   Qed. *)
+  Next Obligation.
+  Proof.
+    symmetry ; auto.
+  Qed.
 
-(* Program Instance [ sa : Equivalence A ] => equiv_trans : Transitive equiv. *)
+Program Instance [ sa : Equivalence A ] => equiv_trans : Transitive equiv.
 
-(*   Next Obligation. *)
-(*   Proof. *)
-(*     transitivity y ; auto. *)
-(*   Qed. *)
+  Next Obligation.
+  Proof.
+    transitivity y ; auto.
+  Qed.
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
 
