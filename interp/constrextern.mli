@@ -56,7 +56,8 @@ val print_no_symbol : bool ref
 val print_projections : bool ref
 
 (* Debug printing options *)
-val rawdebug : bool ref
+val set_debug_global_reference_printer :
+  (loc -> global_reference -> reference) -> unit
 
 (* This governs printing of implicit arguments. If [with_implicits] is
    on and not [with_arguments] then implicit args are printed prefixed

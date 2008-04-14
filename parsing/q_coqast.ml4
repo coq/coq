@@ -470,19 +470,15 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       <:expr< Tacexpr.TacFun
         ($mlexpr_of_list mlexpr_of_ident_option idol$,
          $mlexpr_of_tactic body$) >>
-(*
-  | Tacexpr.TacFunRec of $dloc$ * identifier * tactic_fun_ast
-*)
-(*
-  | Tacexpr.TacArg (Tacexpr.AstTacArg (Coqast.Nmeta $dloc$ id)) -> anti loc id
-*)
-  | Tacexpr.TacArg (Tacexpr.MetaIdArg (_,id)) -> anti loc id
+  | Tacexpr.TacArg (Tacexpr.MetaIdArg (_,true,id)) -> anti loc id
   | Tacexpr.TacArg t ->
       <:expr< Tacexpr.TacArg $mlexpr_of_tactic_arg t$ >>
   | _ -> failwith "Quotation of tactic expressions: TODO"
 
 and mlexpr_of_tactic_arg = function
-  | Tacexpr.MetaIdArg (loc,id) -> anti loc id
+  | Tacexpr.MetaIdArg (loc,true,id) -> anti loc id
+  | Tacexpr.MetaIdArg (loc,false,id) -> 
+      <:expr< Tacexpr.ConstrMayEval (Rawterm.ConstrTerm $anti loc id$) >>
   | Tacexpr.TacCall (loc,t,tl) ->
       <:expr< Tacexpr.TacCall $dloc$ $mlexpr_of_reference t$ $mlexpr_of_list mlexpr_of_tactic_arg tl$>>
   | Tacexpr.Tacexp t ->

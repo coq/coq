@@ -383,7 +383,8 @@ let parse_after_dot bp c =
 let rec next_token = parser bp
   | [< '' ' | '\t' | '\n' |'\r' as c; s >] ->
       comm_loc bp; push_char c; next_token s
-  | [< ''$'; len = ident_tail (store 0 '$') >] ep -> 
+  | [< ''$'; ' ('a'..'z' | 'A'..'Z' | '_' as c); 
+      len = ident_tail (store 0 c) >] ep -> 
       comment_stop bp;
       (("METAIDENT", get_buff len), (bp,ep))
   | [< ' ('.' | '?') as c; t = parse_after_dot bp c >] ep ->

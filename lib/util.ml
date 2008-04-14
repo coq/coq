@@ -290,6 +290,7 @@ let check_ident s =
     | _ -> error (s^": an identifier should start with a letter")
   with 
   | End_of_input -> error "The empty string is not an identifier"
+  | UnsupportedUtf8 -> error (s^": unsupported character in utf8 sequence")
   | Invalid_argument _ -> error (s^": invalid utf8 sequence")
 
 (* Lists *)

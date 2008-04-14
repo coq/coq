@@ -169,8 +169,10 @@ let mentions clenv mv0 =
   let rec menrec mv1 =
     mv0 = mv1 ||
     let mlist =
-      try (fst (meta_fvalue clenv.evd mv1)).freemetas
-      with Anomaly _ | Not_found -> Metaset.empty in
+      try match meta_opt_fvalue clenv.evd mv1 with
+      | Some (b,_) -> b.freemetas
+      | None -> Metaset.empty
+      with Not_found -> Metaset.empty in
     meta_exists menrec mlist
   in menrec
 
@@ -230,6 +232,7 @@ let dependent_metas clenv mvs conclmetas =
 
 let clenv_dependent hyps_only clenv =
   let mvs = collect_metas (clenv_value clenv) in
+  let mvs = undefined_metas clenv.evd in
   let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter
@@ -256,21 +259,47 @@ let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
     clenv_unify allow_K CUMUL ~flags:flags
       (meta_reducible_instance clenv.evd clenv.templtyp) (pf_concl gl) clenv
 
-(* [clenv_pose_dependent_evars clenv]
+(* [clenv_pose_metas_as_evars clenv dep_mvs]
  * For each dependent evar in the clause-env which does not have a value,
  * pose a value for it by constructing a fresh evar.  We do this in
  * left-to-right order, so that every evar's type is always closed w.r.t.
- * metas. *)
+ * metas. 
+
+ * Node added 14/4/08 [HH]: before this date, evars were collected in
+   clenv_dependent by collect_metas in the fold_constr order which is
+   (almost) the left-to-right order of dependencies in term. However,
+   due to K-redexes, collect_metas was sometimes missing some metas.
+   The call to collect_metas has been replaced by a call to
+   undefined_metas, but then the order was the one of definition of
+   the metas (numbers in increasing order) which is _not_ the
+   dependency order when a clenv_fchain occurs (because clenv_fchain
+   plugs a term with a list of consecutive metas in place of a - a priori -
+   arbitrary metavariable belonging to another sequence of consecutive metas:
+   e.g., clenv_fchain may plug (H ?1 ?2) at the position ?6 of 
+   (nat_ind ?3 ?4 ?5 ?6), leading to a dependency order 3<4<5<1<2).
+   To ensure the dependency order, we check that the type of each meta
+   to pose is already meta-free, otherwise we postpone the transformation,
+   hoping that no cycle may happen.
+
+   Another approach could have been to use decimal numbers for metas so that
+   in the example above, (H ?1 ?2) would have been renumbered (H ?6.1 ?6.2)
+   then making the numeric order match the dependency order.
+*)
 
 let clenv_pose_metas_as_evars clenv dep_mvs =
-  List.fold_left
-    (fun clenv mv ->
+  let rec fold clenv = function
+  | [] -> clenv
+  | mv::mvs -> 
       let ty = clenv_meta_type clenv mv in
-      let (evd,evar) = 
-	new_evar clenv.evd (cl_env clenv) ~src:(dummy_loc,GoalEvar) ty in
-      clenv_assign mv evar {clenv with evd=evd})
-    clenv
-    dep_mvs
+      (* Postpone the evar-ization if dependent on another meta *)
+      (* This assumes no cycle in the dependencies - is it correct ? *)
+      if occur_meta ty then fold clenv (mvs@[mv])
+      else
+	let (evd,evar) = 
+	  new_evar clenv.evd (cl_env clenv) ~src:(dummy_loc,GoalEvar) ty in
+	let clenv = clenv_assign mv evar {clenv with evd=evd} in
+	fold clenv mvs in
+  fold clenv dep_mvs
 
 let evar_clenv_unique_resolver = clenv_unique_resolver
 

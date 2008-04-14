@@ -957,7 +957,8 @@ let rec pr_tac inherited tac =
 and pr_tacarg = function
   | TacDynamic (loc,t) ->
       pr_with_comments loc (str ("<dynamic ["^(Dyn.tag t)^"]>"))
-  | MetaIdArg (loc,s) -> pr_with_comments loc (str ("$" ^ s))
+  | MetaIdArg (loc,true,s) -> pr_with_comments loc (str ("$" ^ s))
+  | MetaIdArg (loc,false,s) -> pr_with_comments loc (str ("constr: $" ^ s))
   | IntroPattern ipat -> str "ipattern:" ++ pr_intro_pattern ipat
   | TacVoid -> str "()"
   | Reference r -> pr_ref r

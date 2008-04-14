@@ -50,14 +50,16 @@ let ppsp sp = pp(pr_sp sp)
 let ppqualid qid = pp(pr_qualid qid)
 
 (* term printers *)
+let rawdebug = ref false
 let ppconstr x = pp (Termops.print_constr x)
-let ppconstrdb x = pp(Flags.with_option Constrextern.rawdebug Termops.print_constr x)
+let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr x)
 let ppterm = ppconstr
 let ppsconstr x = ppconstr (Declarations.force x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
 let pprawconstr = (fun x -> pp(pr_lrawconstr x))
 let pppattern = (fun x -> pp(pr_constr_pattern x))
 let pptype = (fun x -> pp(pr_ltype x))
+
 let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 
 let ppbigint n = pp (Bigint.pr_bigint n);;
@@ -413,3 +415,48 @@ let _ =
          (Gramext.Snterm (Pcoq.Gram.Entry.obj Constr.constr),
           ConstrArgType),
          Some "c")]]
+
+(* Setting printer of unbound global reference *)
+open Names
+open Nameops
+open Libnames
+
+let encode_path loc prefix mpdir suffix id =
+  let dir = match mpdir with
+    | None -> []
+    | Some (mp,dir) -> 
+	(repr_dirpath (dirpath_of_string (string_of_mp mp))@
+	repr_dirpath dir) in
+  Qualid (loc, make_qualid 
+    (make_dirpath (List.rev (id_of_string prefix::dir@suffix))) id)
+
+let raw_string_of_ref loc = function
+  | ConstRef cst -> 
+      let (mp,dir,id) = repr_con cst in
+      encode_path loc "CST" (Some (mp,dir)) [] (id_of_label id)
+  | IndRef (kn,i) ->
+      let (mp,dir,id) = repr_kn kn in
+      encode_path loc "IND" (Some (mp,dir)) [id_of_label id] 
+	(id_of_string ("_"^string_of_int i))
+  | ConstructRef ((kn,i),j) -> 
+      let (mp,dir,id) = repr_kn kn in
+      encode_path loc "CSTR" (Some (mp,dir))
+	[id_of_label id;id_of_string ("_"^string_of_int i)] 
+	(id_of_string ("_"^string_of_int j))
+  | VarRef id -> 
+      encode_path loc "SECVAR" None [] id
+
+let short_string_of_ref loc = function
+  | VarRef id -> Ident (loc,id)
+  | ConstRef cst -> Ident (loc,id_of_label (pi3 (repr_con cst)))
+  | IndRef (kn,0) -> Ident (loc,id_of_label (pi3 (repr_kn kn)))
+  | IndRef (kn,i) ->
+      encode_path loc "IND" None [id_of_label (pi3 (repr_kn kn))]
+        (id_of_string ("_"^string_of_int i))
+  | ConstructRef ((kn,i),j) -> 
+      encode_path loc "CSTR" None 
+        [id_of_label (pi3 (repr_kn kn));id_of_string ("_"^string_of_int i)]
+        (id_of_string ("_"^string_of_int j))
+
+let _ = Constrextern.set_debug_global_reference_printer
+  (if !rawdebug then raw_string_of_ref else short_string_of_ref)

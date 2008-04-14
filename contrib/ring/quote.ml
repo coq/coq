@@ -191,8 +191,11 @@ let decomp_term c = kind_of_term (strip_outer_cast c)
   ?2 ?1)}, where \texttt{C} is the [i]-th constructor of inductive
   type [typ] *)
 
-let coerce_meta_out id = int_of_string (string_of_id id)
-let coerce_meta_in n = id_of_string (string_of_int n)
+let coerce_meta_out id = 
+  let s = string_of_id id in
+  int_of_string (String.sub s 1 (String.length s - 1))
+let coerce_meta_in n =
+  id_of_string ("M" ^ string_of_int n)
 
 let compute_lhs typ i nargsi =
   match kind_of_term typ with

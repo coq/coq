@@ -503,8 +503,7 @@ let rec fourier gl=
     let res=fourier_lineq (!lineq) in
     let tac=ref tclIDTAC in
     if res=[]
-    then (print_string "Tactic Fourier fails.\n";
-		       flush stdout)
+    then Util.error "fourier failed"
     (* l'algorithme de Fourier a réussi: on va en tirer une preuve Coq *)
     else (match res with
         [(cres,sres,lc)]->

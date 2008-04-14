@@ -95,6 +95,8 @@ GEXTEND Gram
 	  TacArg (TacExternal (loc,com,req,la))
       | st = simple_tactic -> TacAtom (loc,st)
       | a = may_eval_arg -> TacArg(a)
+      | IDENT "constr"; ":"; id = METAIDENT ->
+          TacArg(MetaIdArg (loc,false,id))
       | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(ConstrMayEval(ConstrTerm c))
       | IDENT "ipattern"; ":"; ipat = simple_intropattern -> 
@@ -125,7 +127,7 @@ GEXTEND Gram
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
-      | id = METAIDENT -> MetaIdArg (loc,id)
+      | id = METAIDENT -> MetaIdArg (loc,true,id)
       | "()" -> TacVoid ] ]
   ;
   may_eval_arg:
@@ -148,7 +150,7 @@ GEXTEND Gram
       | c = Constr.constr -> ConstrTerm c ] ]
   ;
   tactic_atom:
-    [ [ id = METAIDENT -> MetaIdArg (loc,id)
+    [ [ id = METAIDENT -> MetaIdArg (loc,true,id)
       | n = integer -> Integer n
       | "()" -> TacVoid ] ]
   ;

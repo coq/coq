@@ -108,35 +108,17 @@ let idopt_of_name = function
 let extern_evar loc n l =
   if !print_evar_arguments then CEvar (loc,n,l) else CEvar (loc,n,None)
 
-let rawdebug = ref false
+let debug_global_reference_printer =
+  ref (fun _ -> failwith "Cannot print a global reference")
 
-let raw_string_of_ref = function
-  | ConstRef kn -> 
-      "CONST("^(string_of_con kn)^")"
-  | IndRef (kn,i) ->
-      "IND("^(string_of_kn kn)^","^(string_of_int i)^")"
-  | ConstructRef ((kn,i),j) -> 
-      "CONSTRUCT("^
-      (string_of_kn kn)^","^(string_of_int i)^","^(string_of_int j)^")"
-  | VarRef id -> 
-      "SECVAR("^(string_of_id id)^")"
-
-let short_string_of_ref = function
-  | VarRef id -> string_of_id id
-  | ConstRef cst -> string_of_label (pi3 (repr_con cst))
-  | IndRef (kn,0) -> string_of_label (pi3 (repr_kn kn))
-  | IndRef (kn,i) -> 
-      "IND("^string_of_label (pi3 (repr_kn kn))^(string_of_int i)^")"
-  | ConstructRef ((kn,i),j) -> 
-      "CONSTRUCT("^
-      string_of_label (pi3 (repr_kn kn))^","^(string_of_int i)^","^(string_of_int j)^")"
+let set_debug_global_reference_printer f =
+  debug_global_reference_printer := f
 
 let extern_reference loc vars r =
   try Qualid (loc,shortest_qualid_of_global vars r)
   with Not_found ->
     (* happens in debugger *)
-    let f = if !rawdebug then raw_string_of_ref else short_string_of_ref in
-    Ident (loc,id_of_string (f r))
+    !debug_global_reference_printer loc r
 
 (************************************************************************)
 (* Equality up to location (useful for translator v8) *)
@@ -922,7 +904,7 @@ let rec raw_of_pat env = function
 	| Name id   -> id
 	| Anonymous ->
 	    anomaly "rawconstr_of_pattern: index to an anonymous variable"
-      with Not_found -> id_of_string ("_UNBOUND_REL_"^(string_of_int n)^"]") in
+      with Not_found -> id_of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       RVar (loc,id)
   | PMeta None -> RHole (loc,Evd.InternalHole)
   | PMeta (Some n) -> RPatVar (loc,(false,n))

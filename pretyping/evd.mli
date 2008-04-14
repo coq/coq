@@ -196,6 +196,7 @@ val meta_reassign  : metavariable -> constr * instance_status -> evar_defs -> ev
 (* [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : evar_defs -> evar_defs -> evar_defs
 
+val undefined_metas : evar_defs -> metavariable list
 val metas_of : evar_defs -> metamap
 
 type metabinding = metavariable * constr * instance_status

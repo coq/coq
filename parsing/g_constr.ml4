@@ -142,10 +142,7 @@ GEXTEND Gram
     [ [ "_" -> (loc, Anonymous) ] ]
   ;
   global:
-    [ [ r = Prim.reference -> r
-
-      (* This is used in quotations *)
-      | id = METAIDENT -> Ident (loc,id_of_string id) ] ]
+    [ [ r = Prim.reference -> r ] ]
   ;
   constr_pattern:
     [ [ c = constr -> c ] ]

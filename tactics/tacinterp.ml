@@ -829,10 +829,12 @@ and intern_tacarg strict ist = function
       IntroPattern (intern_intro_pattern lf ist ipat)
   | Integer n -> Integer n
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
-  | MetaIdArg (loc,s) ->
+  | MetaIdArg (loc,istac,s) ->
       (* $id can occur in Grammar tactic... *)
       let id = id_of_string s in
-      if find_ltacvar id ist then Reference (ArgVar (adjust_loc loc,id))
+      if find_ltacvar id ist then
+	if istac then Reference (ArgVar (adjust_loc loc,id))
+	else ConstrMayEval (ConstrTerm (RVar (adjust_loc loc,id), None))
       else error_syntactic_metavariables_not_allowed loc
   | TacCall (loc,f,l) ->
       TacCall (loc,
@@ -1635,7 +1637,7 @@ and interp_tacarg ist gl = function
   | Integer n -> VInteger n
   | IntroPattern ipat -> VIntroPattern (interp_intro_pattern ist gl ipat)
   | ConstrMayEval c -> VConstr (interp_constr_may_eval ist gl c)
-  | MetaIdArg (loc,id) -> assert false
+  | MetaIdArg (loc,_,id) -> assert false
   | TacCall (loc,r,[]) -> interp_ltac_reference false true ist gl r
   | TacCall (loc,f,l) ->
       let fv = interp_ltac_reference true true ist gl f
@@ -2464,7 +2466,7 @@ and subst_tactic_fun subst (var,body) = (var,subst_tactic subst body)
 and subst_tacarg subst = function
   | Reference r -> Reference (subst_reference subst r)
   | ConstrMayEval c -> ConstrMayEval (subst_raw_may_eval subst c)
-  | MetaIdArg (_loc,_) -> assert false
+  | MetaIdArg (_loc,_,_) -> assert false
   | TacCall (_loc,f,l) ->
       TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
   | TacExternal (_loc,com,req,la) -> 

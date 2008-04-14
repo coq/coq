@@ -241,7 +241,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_fun_ast =
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | TacDynamic     of loc * Dyn.t
   | TacVoid
-  | MetaIdArg      of loc * string
+  | MetaIdArg      of loc * bool * string
   | ConstrMayEval  of ('constr,'cst) may_eval
   | IntroPattern   of intro_pattern_expr
   | Reference      of 'ref
