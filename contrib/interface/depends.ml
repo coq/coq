@@ -369,7 +369,7 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
   and depends_of_tac_arg ta acc = match ta with
     | TacDynamic (_,d)  -> failwith "Don't know what to do with a Dyn in tac_arg"
     | TacVoid           -> acc
-    | MetaIdArg  (_,s)  -> failwith "Don't know what to do with a MetaIdArg in tac_arg"
+    | MetaIdArg  _      -> failwith "Don't know what to do with a MetaIdArg in tac_arg"
     | ConstrMayEval  me -> failwith "TODO: depends_of_tac_arg of a ConstrMayEval"
     | IntroPattern   _  -> acc
     | Reference     ltc -> acc (* TODO: This assumes the "ltac constant" cannot somehow refer to a named object... *)
