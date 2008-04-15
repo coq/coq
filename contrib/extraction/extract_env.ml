@@ -324,17 +324,24 @@ let descr () = match lang () with
 (* From a filename string "foo.ml" or "foo", builds "foo.ml" and "foo.mli" 
    Works similarly for the other languages. *)
 
+let default_id = id_of_string "Main"
+
 let mono_filename f = 
   let d = descr () in 
   match f with 
-    | None -> None, None, id_of_string "Main"
+    | None -> None, None, default_id
     | Some f -> 
 	let f = 
 	  if Filename.check_suffix f d.file_suffix then 
 	    Filename.chop_suffix f d.file_suffix 
 	  else f
-	in 
-	Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id_of_string f
+	in
+	let id = 
+	  if lang () <> Haskell then default_id
+	  else try id_of_string (Filename.basename f)
+	  with _ -> error "Extraction: provided filename is not a valid identifier"
+	in
+	Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
 
 (* Builds a suitable filename from a module id *)
 
