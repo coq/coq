@@ -133,34 +133,34 @@ Ltac obligations_tactic ::= simpl_relation.
 
 (** Logical implication. *)
 
-Program Instance impl_reflexive : Reflexive impl.
-Program Instance impl_transitive : Transitive impl.
+Program Instance impl_Reflexive : Reflexive impl.
+Program Instance impl_Transitive : Transitive impl.
 
 (** Logical equivalence. *)
 
-Program Instance iff_reflexive : Reflexive iff.
-Program Instance iff_symmetric : Symmetric iff.
-Program Instance iff_transitive : Transitive iff.
+Program Instance iff_Reflexive : Reflexive iff.
+Program Instance iff_Symmetric : Symmetric iff.
+Program Instance iff_Transitive : Transitive iff.
 
 (** Leibniz equality. *)
 
-Program Instance eq_reflexive : Reflexive (@eq A).
-Program Instance eq_symmetric : Symmetric (@eq A).
-Program Instance eq_transitive : Transitive (@eq A).
+Program Instance eq_Reflexive : Reflexive (@eq A).
+Program Instance eq_Symmetric : Symmetric (@eq A).
+Program Instance eq_Transitive : Transitive (@eq A).
 
 (** Various combinations of reflexivity, symmetry and transitivity. *)
 
 (** A [PreOrder] is both Reflexive and Transitive. *)
 
 Class PreOrder A (R : relation A) :=
-  preorder_reflexive :> Reflexive R ;
-  preorder_transitive :> Transitive R.
+  PreOrder_Reflexive :> Reflexive R ;
+  PreOrder_Transitive :> Transitive R.
 
 (** A partial equivalence relation is Symmetric and Transitive. *)
 
 Class PER (carrier : Type) (pequiv : relation carrier) :=
-  per_symmetric :> Symmetric pequiv ;
-  per_transitive :> Transitive pequiv.
+  PER_Symmetric :> Symmetric pequiv ;
+  PER_Transitive :> Transitive pequiv.
 
 (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
@@ -179,9 +179,9 @@ Program Instance [ PER A (R : relation A), PER B (R' : relation B) ] =>
 (** The [Equivalence] typeclass. *)
 
 Class Equivalence (carrier : Type) (equiv : relation carrier) :=
-  equivalence_reflexive :> Reflexive equiv ;
-  equivalence_symmetric :> Symmetric equiv ;
-  equivalence_transitive :> Transitive equiv.
+  Equivalence_Reflexive :> Reflexive equiv ;
+  Equivalence_Symmetric :> Symmetric equiv ;
+  Equivalence_Transitive :> Transitive equiv.
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 
