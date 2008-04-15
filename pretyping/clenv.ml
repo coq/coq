@@ -231,7 +231,6 @@ let dependent_metas clenv mvs conclmetas =
     mvs conclmetas
 
 let clenv_dependent hyps_only clenv =
-  let mvs = collect_metas (clenv_value clenv) in
   let mvs = undefined_metas clenv.evd in
   let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
   let deps = dependent_metas clenv mvs ctyp_mvs in
