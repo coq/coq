@@ -2283,6 +2283,12 @@ Abort.
 Beware that \texttt{injection} yields always an equality in a sigma type
 whenever the injected object has a dependent type.
 
+\Rem There is a special case for dependant pairs. If we have a decidable 
+equality over the type of the first argument, then it is safe to do 
+the projection on the second one, and so {\tt injection} will work fine.
+To define such an equality, you have to use the {\tt Scheme} command 
+(see \ref{Scheme}).
+
 \Rem If {\ident} does not denote an hypothesis in the local context
 but refers to an hypothesis quantified in the goal, then the
 latter is first introduced in the local context using
@@ -3668,6 +3674,21 @@ general principle of mutual induction for objects in type {\term$_i$}.
 \SeeAlso \ref{Scheme-examples}
 
 \SeeAlso Section~\ref{Scheme-examples}
+
+\subsection{Automatic declaration of schemes}
+\comindex{Set Equality Scheme}
+\comindex{Set Elimination Schemes}
+It is possible to desactive the automatic declaration of the induction
+ principles when defining a new inductive type  with the
+ {\tt UnSet Elimination Schemes} command. It may be
+reactivated at any time with {\tt Set Elimination Schemes}. 
+\\
+
+You can also activate the automatic declaration of those boolean equalities 
+(see the second variant of {\tt Scheme})  with the {\tt Set Equality Scheme}
+ command. However you have to be carefull with this option since
+\Coq~ may now reject well-defined inductive types because it cannot compute
+a boolean equality for them.
 
 \subsection{\tt Combined Scheme\label{CombinedScheme}
 \comindex{Combined Scheme}}
