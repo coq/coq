@@ -138,7 +138,7 @@ let rec tclTHENLIST = function
   | [] -> Proofview.id ()
   | t::l -> tclTHEN t (tclTHENLIST l)
 
-let tclTHENARRAY t1 tacs =
+let tclTHENARRAY tacs =
   tclTHENLIST (Array.to_list tacs)
 
 (* arnaud: à remettre dans "tacticals" ? *)
@@ -215,7 +215,6 @@ let assumption =
 
 
 (* head normal form of the type of [c] (in the expression monad) *)
-(* arnaud: à exposer ? probablement pas *)
 let hnf_type_of c =
   get_type_of c >>= fun ty ->
   Goal.env >>= fun env ->

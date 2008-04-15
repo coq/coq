@@ -205,22 +205,38 @@ let depth_of_quantified_hypothesis red h =
 (* arnaud: si il y a un bug là dedans je ne serais pas étonné *)
 let intros_until_gen red h =
   Proofview.tactic_of_sensitive_proof_step (
+    h >>= fun h ->
     depth_of_quantified_hypothesis red h >>= fun depth ->
     Proofview.goal_tactic_of_tactic (Logic.tclDO depth intro)
   )
 
-let intros_until_id id = intros_until_gen true (Rawterm.NamedHyp id)
-let intros_until_n_gen red n = intros_until_gen red (Rawterm.AnonHyp n)
+let intros_until_id id = 
+  let arg = 
+    id >>= fun id ->
+    Goal.return (Rawterm.NamedHyp id)
+  in
+  intros_until_gen true arg
+let intros_until_n_gen red n = 
+  let arg =
+      n >>= fun n ->
+      Goal.return (Rawterm.AnonHyp n)
+  in
+  intros_until_gen red arg
 
 let intros_until = intros_until_gen true
 let intros_until_n = intros_until_n_gen true
 let intros_until_n_wored = intros_until_n_gen false
 
-let try_intros_until tac = function
+let try_intros_until tac = 
+  Util.anomaly "Intros.try_intros_until: à restaurer"
+  (* arnaud: à restaurer:
+     Fait parti de sensitive_tactic probablement
+     function
   | Rawterm.NamedHyp id -> Proofview.tclTHEN
                                (Logic.tclTRY (intros_until_id id)) 
 	                       (tac (Goal.return id))
   | Rawterm.AnonHyp n -> Proofview.tclTHEN (intros_until_n n) (Logic.onLastHyp tac)
+  *)
 
 let rec intros_move = function
   | [] -> Proofview.id ()

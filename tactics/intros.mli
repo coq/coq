@@ -21,6 +21,12 @@ open Names
 
 val intros : unit Proofview.tactic
 
+(* arnaud: à virer ?
+val intros_until :  Rawterm.quantified_hypothesis Goal.sensitive -> 
+                    unit Proofview.tactic
+*)
+val intros_until_id : Names.identifier Goal.sensitive -> unit Proofview.tactic
+
 
 (*** Related functions ***)
 

@@ -69,6 +69,10 @@ let abstract_extended_tactic ?dflt _ _ x = x
 (* arnaud: /trucs factices *)
 
 
+(*** Preliminary Definition, to avoid opening the whole Goal module *)
+let (>>=) = Goal.bind
+
+
 (******************************************)
 (*         Basic Tacticals                *)
 (******************************************)
@@ -333,16 +337,22 @@ let compute_construtor_signatures isrec (_,k as ity) =
   let lrecargs = dest_subterms mip.mind_recargs in
   array_map2 analrec lc lrecargs
 
-let elimination_sort_of_goal gl = 
-  match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
+let elimination_sort_of_goal  =
+  Goal.concl >>= fun concl ->
+  Logic.hnf_type_of concl >>= fun typ -> 
+  Goal.return (
+    match kind_of_term typ with 
     | Sort s ->
 	(match s with
 	   | Prop Null -> InProp
 	   | Prop Pos -> InSet
 	   | Type _ -> InType)
     | _        -> anomaly "goal should be a type"
+  )
 
-let elimination_sort_of_hyp id gl = 
+let elimination_sort_of_hyp id = 
+  Util.anomaly "Tacticals.elimination_sort_of_hyps: à restaurer"
+  (* arnaud: à restaurer:
   match kind_of_term (hnf_type_of gl (pf_get_hyp_typ gl id)) with 
     | Sort s ->
 	(match s with
@@ -350,6 +360,7 @@ let elimination_sort_of_hyp id gl =
 	   | Prop Pos -> InSet
 	   | Type _ -> InType)
     | _        -> anomaly "goal should be a type"
+  *)
 
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
@@ -360,7 +371,7 @@ let last_arg c = match kind_of_term c with
   | _ -> anomaly "last_arg"
 
 let general_elim_then_using 
-  elim isrec allnames tac predicate (indbindings,elimbindings) c gl =
+  elim isrec allnames tac predicate (indbindings,elimbindings) c =
   Util.anomaly "general_elim_then_using: todo" (* arnaud: à restaurer
   let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   (* applying elimination_scheme just a little modified *)
@@ -414,35 +425,42 @@ let general_elim_then_using
   elim_res_pf_THEN_i elimclause' branchtacs gl
 					       *)
 
-let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
-  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let elim =
-    Indrec.lookup_eliminator ind (elimination_sort_of_goal gl) in
+let elimination_then_using tac predicate (indbindings,elimbindings) c = 
+  Logic.type_of c >>= fun type_of_c -> 
+  pf_reduce_to_quantified_ind type_of_c >>= fun (ind,t) ->
+  elimination_sort_of_goal >>= fun s ->
+  let elim = Indrec.lookup_eliminator ind s in
   general_elim_then_using
-    elim true IntroAnonymous tac predicate (indbindings,elimbindings) c gl
+    elim true IntroAnonymous tac predicate (indbindings,elimbindings) c
 
 
 let elimination_then tac        = elimination_then_using tac None 
 let simple_elimination_then tac = elimination_then tac ([],[])
 
-let case_then_using allnames tac predicate (indbindings,elimbindings) c gl =
+let case_then_using allnames tac predicate (indbindings,elimbindings) c =
   (* finding the case combinator *)
-  let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sigma = project gl in 
-  let sort  = elimination_sort_of_goal gl  in
-  let elim  = Indrec.make_case_dep (pf_env gl) sigma ity sort in  
+  Logic.type_of c >>= fun type_of_c ->
+  pf_reduce_to_quantified_ind type_of_c >>= fun (ity,t) ->
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of defs in 
+  elimination_sort_of_goal >>= fun sort ->
+  Goal.env >>= fun env ->
+  let elim  = Indrec.make_case_dep env sigma ity sort in  
   general_elim_then_using 
-    elim false allnames tac predicate (indbindings,elimbindings) c gl
+    elim false allnames tac predicate (indbindings,elimbindings) c
 
 let case_nodep_then_using allnames tac predicate (indbindings,elimbindings)
-  c gl =
+  c =
   (* finding the case combinator *)
-  let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sigma = project gl in 
-  let sort  = elimination_sort_of_goal gl  in
-  let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  
+  Logic.type_of c >>= fun type_of_c ->
+  pf_reduce_to_quantified_ind type_of_c >>= fun (ity,t) ->
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of defs in 
+  elimination_sort_of_goal >>= fun sort ->
+  Goal.env >>= fun env ->
+  let elim  = Indrec.make_case_nodep env sigma ity sort in  
   general_elim_then_using 
-    elim false allnames tac predicate (indbindings,elimbindings) c gl
+    elim false allnames tac predicate (indbindings,elimbindings) c
 
 
 let make_elim_branch_assumptions ba gl =   

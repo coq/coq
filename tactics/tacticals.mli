@@ -162,8 +162,8 @@ type branch_assumptions = {
 val compute_induction_names : 
   int -> intro_pattern_expr -> intro_pattern_expr list array
 
-val elimination_sort_of_goal : goal sigma -> sorts_family
-val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
+val elimination_sort_of_goal : sorts_family Goal.sensitive
+val elimination_sort_of_hyp  : identifier -> sorts_family Goal.sensitive
 
 val general_elim_then_using :
   constr -> (* isrec: *) bool -> intro_pattern_expr ->
@@ -172,22 +172,22 @@ val general_elim_then_using :
 	  
 val elimination_then_using :
   (branch_args -> tactic) -> constr option -> 
-    (arg_bindings * arg_bindings) -> constr -> tactic
+    (arg_bindings * arg_bindings) -> constr -> Goal.proof_step Goal.sensitive
 
 val elimination_then :
   (branch_args -> tactic) -> 
-    (arg_bindings * arg_bindings) -> constr -> tactic
+    (arg_bindings * arg_bindings) -> constr -> Goal.proof_step Goal.sensitive
 
 val case_then_using :
   intro_pattern_expr -> (branch_args -> tactic) -> 
-    constr option -> (arg_bindings * arg_bindings) -> constr -> tactic
+    constr option -> (arg_bindings * arg_bindings) -> constr -> Goal.proof_step Goal.sensitive
 
 val case_nodep_then_using :
   intro_pattern_expr -> (branch_args -> tactic) -> 
-    constr option -> (arg_bindings * arg_bindings) -> constr -> tactic
+    constr option -> (arg_bindings * arg_bindings) -> constr -> Goal.proof_step Goal.sensitive
 
 val simple_elimination_then :
-  (branch_args -> tactic) -> constr -> tactic
+  (branch_args -> tactic) -> constr -> Goal.proof_step Goal.sensitive
 
 val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic 
 val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic 

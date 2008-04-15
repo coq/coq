@@ -798,29 +798,35 @@ let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) =
     elimtac elimclause indclause gl
   *)
 
-let general_elim with_evars c e ?(allow_K=true) =
+let general_elim ?(allow_K=true) with_evars c e  =
   general_elim_clause (elimination_clause_scheme with_evars allow_K) c e
 
 (* Elimination tactic with bindings but using the default elimination 
  * constant associated with the type. *)
 
 let find_eliminator c =
-  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  lookup_eliminator ind (elimination_sort_of_goal gl)
+  Logic.type_of c >>= fun typ ->
+  pf_reduce_to_quantified_ind typ >>= fun (ind,t) ->
+  Tacticals.elimination_sort_of_goal >>= fun s ->
+  Goal.return (lookup_eliminator ind s)
 
 let default_elim with_evars (c,_ as cx) = 
-  general_elim with_evars cx (find_eliminator c gl,NoBindings) gl
+  find_eliminator c >>= fun eliminator ->
+  general_elim with_evars cx (eliminator,NoBindings)
 
 let elim_in_context with_evars c = function
   | Some elim -> general_elim with_evars c elim ~allow_K:true
   | None -> default_elim with_evars c
 
 let elim with_evars (c,lbindc as cx) elim =
+  (* arnaud: il va sûrement falloir rendre ses arguments sensitive *)
   match kind_of_term c with
     | Var id when lbindc = NoBindings ->
-	tclTHEN (tclTRY (intros_until_id id))
-	  (elim_in_context with_evars cx elim)
-    | _ -> elim_in_context with_evars cx elim
+	Logic.tclTHEN (Logic.tclTRY (Intros.intros_until_id (Goal.return id)))
+	  (Proofview.tactic_of_sensitive_proof_step
+	       (elim_in_context with_evars cx elim))
+    | _ -> Proofview.tactic_of_sensitive_proof_step 
+  	       (elim_in_context with_evars cx elim)
 
 (* The simplest elimination tactic, with no substitutions at all. *)
 
@@ -861,21 +867,27 @@ let general_elim_in with_evars id =
 
 (* Case analysis tactics *)
 
-let general_case_analysis_in_context with_evars (c,lbindc) gl =
-  let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sort     = elimination_sort_of_goal gl in
+let general_case_analysis_in_context with_evars (c,lbindc) =
+  Logic.type_of c >>= fun type_of_c ->
+  pf_reduce_to_quantified_ind type_of_c >>= fun (mind,_) ->
+  Tacticals.elimination_sort_of_goal >>= fun sort ->
+  Goal.concl >>= fun concl ->
   let case = 
-    if occur_term c (pf_concl gl) then make_case_dep else make_case_gen in
-  let elim     = pf_apply case gl mind sort in 
-  general_elim with_evars (c,lbindc) (elim,NoBindings) gl
+    if occur_term c concl then make_case_dep else make_case_gen in
+  let elim     = pf_apply case mind sort in 
+  general_elim with_evars (c,lbindc) (elim,NoBindings)
 
 let general_case_analysis with_evars (c,lbindc as cx) =
+  (* arnaud: probablement sensitiver les arguments*)
   match kind_of_term c with
     | Var id when lbindc = NoBindings ->
-	tclTHEN (tclTRY (intros_until_id id))
-	(general_case_analysis_in_context with_evars cx)
+	Logic.tclTHEN (Logic.tclTRY (Intros.intros_until_id (Goal.return id)))
+	(Proofview.tactic_of_sensitive_proof_step
+	   (general_case_analysis_in_context with_evars cx)
+	)
     | _ ->
-	general_case_analysis_in_context with_evars cx
+	Proofview.tactic_of_sensitive_proof_step
+	  (general_case_analysis_in_context with_evars cx)
 
 let simplest_case c = general_case_analysis false (c,NoBindings)
 

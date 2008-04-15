@@ -23,6 +23,9 @@ val type_of : constr -> types Goal.sensitive
 (* type of [c] (in the expression monad), c must be well typed *)
 val get_type_of : constr -> types Goal.sensitive
 
+(* head normal form of the type of [c] (in the expression monad) *)
+val hnf_type_of : constr -> types Goal.sensitive
+
 (*** tacticals ***)
 
 (* Tacticals from Proofview, for consistency *)
@@ -30,7 +33,7 @@ val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
 val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
 val tclORELSE : unit tactic -> unit tactic -> unit tactic
 val tclREPEAT : unit tactic -> unit tactic
-val tclLIST : unit tactic list -> unit tactic list
+val tclLIST : unit tactic list -> unit tactic
 val tclEXTEND : unit tactic list -> 
                 unit tactic -> 
                 unit tactic list -> 
