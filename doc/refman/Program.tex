@@ -80,7 +80,6 @@ will be first rewrote to:
 If you do specify a {\tt return} or {\tt in} clause the typechecker will
 fall back directly to \Coq's usual typing of dependent pattern-matching.
 
-
 The next two commands are similar to their standard counterparts
 Definition (see Section~\ref{Simpl-definitions}) and Fixpoint (see Section~\ref{Fixpoint}) in that
 they define constants. However, they may require the user to prove some
@@ -201,7 +200,7 @@ Otherwise the proof will be started with the elobarted version as a goal.
 The {\tt Program} prefix can similarly be used as a prefix for {\tt Variable}, {\tt
   Hypothesis}, {\tt Axiom} etc...
 
-\subsection{Solving obligations}
+\section{Solving obligations}
 The following commands are available to manipulate obligations. The
 optional identifier is used when multiple functions have unsolved
 obligations (e.g. when defining mutually recursive blocks). The optional
@@ -212,9 +211,6 @@ tactic is replaced by the default one if not specified.
   Sets the default obligation
   solving tactic applied to all obligations automatically, whether to
   solve them or when starting to prove one, e.g. using {\tt Next}.
-\item {\tt Set Transparent Obligations}
-  Force all obligations to be declared as transparent, otherwise let the
-  system infer which obligations can be declared opaque.
 \item {\tt Obligations [of \ident]}\comindex{Obligations} Displays all remaining
   obligations.
 \item {\tt Obligation num [of \ident]}\comindex{Obligation} Start the proof of
@@ -233,6 +229,9 @@ tactic is replaced by the default one if not specified.
 \item {\tt Preterm [of \ident]}\comindex{Preterm} 
   Shows the term that will be fed to
   the kernel once the obligations are solved. Useful for debugging.
+\item {\tt Set Transparent Obligations}\comindex{Set Transparent Obligations}
+  Force all obligations to be declared as transparent, otherwise let the
+  system infer which obligations can be declared opaque.
 \end{itemize}
 
 The module {\tt Coq.Program.Tactics} defines the default tactic for solving

@@ -502,7 +502,7 @@ let respectful_dep = lazy (gen_constant ["Classes"; "Morphisms"] "respectful_dep
 let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
 
 let equivalence = lazy (gen_constant ["Classes"; "RelationClasses"] "Equivalence")
-let default_relation = lazy (gen_constant ["Classes"; "RelationClasses"] "DefaultRelation")
+let default_relation = lazy (gen_constant ["Classes"; "SetoidTactics"] "DefaultRelation")
 
 let coq_relation = lazy (gen_constant ["Relations";"Relation_Definitions"] "relation")
 let mk_relation a = mkApp (Lazy.force coq_relation, [| a |])
@@ -1144,7 +1144,7 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
   match (refl,symm,trans) with 
       (None, None, None) -> 
-	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.DefaultRelation"
+	let instance = declare_instance a aeq n "Coq.Classes.SetoidTactics.DefaultRelation"
 	in ignore(anew_instance binders instance [])
     | (Some lemma1, None, None) -> 
 	ignore (declare_instance_refl binders a aeq n lemma1)

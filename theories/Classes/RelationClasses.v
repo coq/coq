@@ -21,14 +21,6 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
 Require Export Coq.Relations.Relation_Definitions.
 
-(** Default relation on a given support. *)
-
-Class DefaultRelation A (R : relation A).
-
-Definition default_relation [ DefaultRelation A R ] := R.
-
-(** To search for the default relation, just call [default_relation]. *)
-
 Notation inverse R := (flip (R:relation _) : relation _).
 
 Definition complement {A} (R : relation A) : relation A := fun x y => R x y -> False.

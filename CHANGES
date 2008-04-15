@@ -90,8 +90,8 @@ Notations and implicit arguments
 - New options "Set Maximal Implicit Insertion", "Set Reversible Pattern
   Implicit", "Set Strongly Strict Implicit" and "Set Printing Implicit
   Defensive" for controlling inference and use of implicit arguments.
-- New modifiers in "Implicit Arguments" to force an implicit argument to
-  be maximally inserted and/or forced if it is not seen as inferable.
+- New modifier in "Implicit Arguments" to force an implicit argument to
+  be maximally inserted.
 - New modifier of "Implicit Arguments" to enrich the set of implicit arguments.
   (DOC TODO?)
 - New options Global and Local to "Implicit Arguments" for section
@@ -147,10 +147,12 @@ Tactics
   intros ?a?b used to be legal and equivalent to intros ? a ? b. Now it
   is still legal but equivalent to intros ?a ?b.
 - New intro pattern "{A,B,C}" synonym to "(A,(B,C))"
+- rewrite now supports "by" to solve side-conditions and "at" to select
+  occurrences.
 - New syntax "rewrite A,B" for "rewrite A; rewrite B"
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
-- New tactic "dependent induction H [ generalizing id_1 .. id_n ]" to do 
-  induction-inversion on instantiated inductive families à la BasicElim.
+- New tactics "dependent induction/destruction H [ generalizing id_1 .. id_n ]" 
+  to do induction-inversion on instantiated inductive families à la BasicElim.
 - Tactic "apply" now able to reason modulo unfolding of constants
   (possible source of incompatibility in situations where apply may fail, 
   e.g. as argument of a try or a repeat and in a ltac function);
@@ -160,24 +162,6 @@ Tactics
   matching lemma among the components of the conjunction; tactic apply also
   able to apply lemmas of conclusion an empty type.
 
-Type Classes
-
-- New "Class", "Instance" and "Program Instance" commands to define
-  classes and instances documented in the reference manual.  
-- New binding construct " [ Class_1 param_1 .. param_n, Class_2 ... ] " 
-  for binding type classes, usable everywhere.  
-- New command " Print Classes " and " Print Instances some_class " to
-  print tables for typeclasses.  
-- New default eauto hint database "typeclass_instances" used by the default
-  typeclass instance search tactic.  
-- New theories directory "theories/Classes" for standard typeclasses 
-  declarations. Module Classes.Relations is a typeclass port of 
-  Relation_Definitions.
-- New experimental "setoid" rewriting tactic based on typeclasses.
-  Classes.Morphisms declares standard morphisms, Classes.Equivalence declares 
-  the new Setoid typeclass and some derived tactics (source of
-  incompatibilities: 1- Setoid has to be required first 2- ...)
-  
 Program
 
 - Moved useful tactics in theories/Program and documented them.
@@ -194,10 +178,89 @@ Program
   iff they can be automatically solved by the default tactic.
 - New command "Preterm [ of id ]" to see the actual term fed to Coq for
   debugging purposes.
+- New option "Transparent Obligations" to force the declaration of 
+  all obligations as transparent.
 - Changed the notations "left" and "right" to "in_left" and "in_right" to hide 
   the proofs in standard disjunctions, to avoid breaking existing scripts when 
   importing Program. Also, put them in program_scope.
+
+Type Classes
+
+- New "Class", "Instance" and "Program Instance" commands to define
+  classes and instances documented in the reference manual.  
+- New binding construct " [ Class_1 param_1 .. param_n, Class_2 ... ] " 
+  for binding type classes, usable everywhere.  
+- New command " Print Classes " and " Print Instances some_class " to
+  print tables for typeclasses.  
+- New default eauto hint database "typeclass_instances" used by the default
+  typeclass instance search tactic.  
+- New theories directory "theories/Classes" for standard typeclasses 
+  declarations. Module Classes.RelationClasses is a typeclass port of 
+  Relation_Definitions plus a generic development of algebra on 
+  n-ary heterogeneous predicates.
   
+Setoid rewriting
+
+- Complete (and still experimental) rewrite of the tactic
+  based on typeclasses. The old interface and semantics are
+  almost entirely respected, except:
+
+  - Import Setoid is now mandatory to be able to call setoid_replace
+  and declare morphisms.
+
+  - "-->", "++>" and "==>" are now right associative notations
+  declared at level 55 in scope signature_scope.
+  Their introduction may break existing scripts that defined 
+  them as notations with different levels.
+  
+  - One needs to use [Typeclasses unfold [cst]] if [cst] is used
+  as an abbreviation hiding products in types of morphisms,
+  e.g. if ones redefines [relation] and declares morphisms 
+  whose type mentions [relation].
+
+  - The [setoid_rewrite]'s semantics change when rewriting with
+  a lemma: it can rewrite two different instantiations of the lemma
+  at once. Use [setoid_rewrite H at 1] for (almost) the usual semantics.
+  [setoid_rewrite] will also try to rewrite under binders now, and can
+  succeed on different terms than before. In particular, it will unify under 
+  let-bound variables. When called through [rewrite], the semantics are
+  unchanged though.
+
+  - [Add Morphism term : id] has different semantics when used with
+  parametric morphism: it will try to find a relation on the parameters
+  too. The behavior has also changed with respect to default relations:
+  the most recently declared Setoid/Relation will be used, the documentation
+  explains how to customize this behavior.
+
+  - Parametric Relation and Morphism are declared differently, using the
+  new [Add Parametric] commands, documented in the manual.
+
+  - Setoid_Theory is now an alias to Equivalence, scripts building objects
+  of type Setoid_Theory need to unfold (or "red") the definitions
+  of Reflexive, Symmetric and Transitive in order to get the same goals 
+  as before. Scripts which introduced variables explicitely will not break.
+
+  - The order of subgoals when doing [setoid_rewrite] with side-conditions
+  is always the same: first the new goal, then the conditions.
+
+- New standard library modules Classes.Morphisms declares
+  standard morphisms on refl/sym/trans relations.
+  Classes.Morphisms_Prop declares morphisms on propositional 
+  connectives and Classes.Morphisms_Relations on generalized predicate
+  connectives. Classes.Equivalence declares notations and tactics
+  related to equivalences and Classes.SetoidTactics defines the
+  setoid_replace tactics and some support for the "Add *" interface,
+  notably the tactic applied automatically before each "Add Morphism"
+  proof.
+
+- User-defined subrelations are supported, as well as higher-order morphisms
+  and rewriting under binders. The tactic is also extensible entirely in Ltac.
+  The documentation has been updated to cover these features.
+
+- [setoid_rewrite] and [rewrite] now support the [at] modifier to select 
+  occurrences to rewrite, and both use the [setoid_rewrite] code, even when
+  rewriting with leibniz equality if occurrences are specified.
+
 Tools
 
 - CoqIDE font defaults to monospace so as indentation to be meaningful.

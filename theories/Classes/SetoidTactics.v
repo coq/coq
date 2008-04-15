@@ -24,7 +24,24 @@ Require Export Coq.Relations.Relation_Definitions.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** The setoid_replace tactics in Ltac, defined in terms of default relations [===def] and
+(** Default relation on a given support. Can be used by tactics
+   to find a sensible default relation on any carrier. Users can 
+   declare an [Instance A RA] anywhere to declare default relations.
+   This is also done by the [Declare Relation A RA] command with no
+   parameters for backward compatibility. *)
+
+Class DefaultRelation A (R : relation A).
+
+(** To search for the default relation, just call [default_relation]. *)
+
+Definition default_relation [ DefaultRelation A R ] := R.
+
+(** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
+
+Instance [ Equivalence A R ] => 
+  equivalence_default : DefaultRelation A R | 4.
+
+(** The setoid_replace tactics in Ltac, defined in terms of default relations and
    the setoid_rewrite tactic. *)
 
 Ltac setoidreplace H t :=
