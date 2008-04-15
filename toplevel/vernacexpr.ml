@@ -233,6 +233,7 @@ type vernac_expr =
 	(lident * bool * constr_expr) list (* props, with substructure hints *)
 	
   | VernacInstance of
+      bool * (* global *)
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	(lident * lident list * constr_expr) list * (* props *)

@@ -47,14 +47,33 @@ type typeclass = {
 
 type typeclasses = (global_reference, typeclass) Gmap.t
 
+type globality = int option
+
 type instance = {
   is_class: typeclass;
   is_pri: int option;
+  is_global: globality;
+  (* Sections where the instance should be redeclared, 
+     Some n for n sections, None for discard at end of section. *)
   is_impl: constant; 
 }
 
 type instances = (global_reference, instance list) Gmap.t
+
+let instance_impl is = is.is_impl
     
+let new_instance cl pri glob impl = 
+  let global =
+    if Lib.sections_are_opened () then 
+      if glob then Some (Lib.sections_depth ())
+      else None
+    else Some 0
+  in
+    { is_class = cl ;
+      is_pri = pri ;
+      is_global = global ;
+      is_impl = impl }
+	
 let classes : typeclasses ref = ref Gmap.empty
 
 let methods : (constant, global_reference) Gmap.t ref = ref Gmap.empty
@@ -158,8 +177,7 @@ let subst (_,subst,(cl,m,inst)) =
     let insts' = 
       list_smartmap (fun is -> 
 	let is' = 
-	  { is_class = cl; 
-	    is_pri = is.is_pri;
+	  { is with is_class = cl; 
 	    is_impl = do_subst_con is.is_impl }
 	in if is' = is then is else is') insts
     in  Gmap.add k insts' instances
@@ -179,19 +197,27 @@ let discharge (_,(cl,m,inst)) =
   let classes = Gmap.map subst_class cl in
   let subst_inst insts =
     List.map (fun is ->
-      { is_impl = Lib.discharge_con is.is_impl;
-	is_pri = is.is_pri;
+      { is with 
+	is_impl = Lib.discharge_con is.is_impl;
 	is_class = Gmap.find (Lib.discharge_global is.is_class.cl_impl) classes; })
       insts;
   in
   let instances = Gmap.map subst_inst inst in
     Some (classes, m, instances)
-  
-let rebuild (_,(cl,m,inst as obj)) =
-  Gmap.iter (fun _ insts -> 
-    List.iter (fun is -> add_instance_hint is.is_impl is.is_pri) insts) 
-    inst;
-  obj
+      
+let rebuild (_,(cl,m,inst)) =
+  let inst = 
+    Gmap.map (fun insts -> 
+      List.fold_left (fun insts is -> 
+	match is.is_global with
+	  | None -> insts
+	  | Some 0 -> is :: insts
+	  | Some n -> 
+	      add_instance_hint is.is_impl is.is_pri;
+	      let is' = { is with is_global = Some (pred n) }
+	      in is' :: insts) [] insts)
+      inst
+  in (cl, m, inst)
 
 let (input,output) = 
   declare_object
@@ -201,7 +227,7 @@ let (input,output) =
       open_function = (fun _ -> load);
       classify_function = (fun (_,x) -> Substitute x);
       discharge_function = discharge;
-(*       rebuild_function = rebuild; *)
+      rebuild_function = rebuild;
       subst_function = subst;
       export_function = (fun x -> Some x) }
 

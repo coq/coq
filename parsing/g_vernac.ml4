@@ -489,7 +489,8 @@ GEXTEND Gram
       | IDENT "Context"; c = typeclass_context -> 
 	  VernacContext c
 
-      | IDENT "Instance"; sup = OPT [ l = delimited_binders_let ; "=>" -> l ];
+      | global = [ IDENT "Global" -> true | -> false ];
+	 IDENT "Instance"; sup = OPT [ l = delimited_binders_let ; "=>" -> l ];
 	 is = typeclass_constraint ; pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
 	   let sup = match sup with None -> [] | Some l -> l in
 	   let is = (* We reverse the default binding mode on the right *)
@@ -497,7 +498,7 @@ GEXTEND Gram
 	       n, (match bk with Rawterm.Implicit -> Rawterm.Explicit 
 		 | Rawterm.Explicit -> Rawterm.Implicit), t 
 	   in
-	     VernacInstance (sup, is, props, pri)
+	     VernacInstance (global, sup, is, props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 

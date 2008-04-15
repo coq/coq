@@ -46,6 +46,7 @@ val default_on_free_vars : identifier list -> unit
 val fail_on_free_vars : identifier list -> unit
     
 val new_instance : 
+  ?global:bool -> (* Not global by default. *)
   local_binder list ->
   typeclass_constraint ->
   binder_def_list ->
@@ -60,7 +61,7 @@ val id_of_class : typeclass -> identifier
     
 val context : ?hook:(Libnames.global_reference -> unit) -> typeclass_context -> unit
 
-val declare_instance : identifier located -> unit
+val declare_instance : bool -> identifier located -> unit
 
 val mismatched_params : env -> constr_expr list -> named_context -> 'a
 

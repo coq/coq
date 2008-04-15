@@ -41,11 +41,11 @@ type typeclass = {
   cl_projs : constant list;
 }
 
-type instance = {
-  is_class: typeclass;
-  is_pri : int option;
-  is_impl: constant;
-}
+type instance
+
+val instance_impl : instance -> constant
+
+val new_instance : typeclass -> int option -> bool -> constant -> instance
   
 val instances : global_reference -> instance list
 val typeclasses : unit -> typeclass list

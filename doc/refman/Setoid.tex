@@ -34,7 +34,8 @@ the previous implementation in several ways:
   morphisms. Again, most of the work is handled in the tactics.
 \item First-class morphisms and signatures. Signatures and morphisms are
   ordinary Coq terms, hence they can be manipulated inside Coq, put
-  inside structures and lemmas about them can be proved inside the system.
+  inside structures and lemmas about them can be proved inside the
+  system. Higher-order morphisms are also allowed.
 \item Performance. The implementation is based on a depth-first search for the first
   solution to a set of constraints which can be as fast as linear in the
   size of the term, and the size of the proof term is linear
@@ -478,10 +479,9 @@ the projections of the setoid relation and of the morphism function
 can be registered as parametric relations and morphisms.
 \begin{cscexample}[First class setoids]
 
-\begin{verbatim}
+\begin{coq_example*}
 Require Export Relation_Definitions.
 Require Import Setoid.
-
 Record Setoid: Type :=
 { car:Type;
   eq:car->car->Prop;
@@ -489,32 +489,21 @@ Record Setoid: Type :=
   sym: symmetric _ eq;
   trans: transitive _ eq
 }.
-
 Add Parametric Relation (s : Setoid) : (@car s) (@eq s)
  reflexivity proved by (refl s)
  symmetry proved by (sym s)
  transitivity proved by (trans s)
 as eq_rel.
-
 Record Morphism (S1 S2:Setoid): Type :=
 { f:car S1 ->car S2;
-  compat: forall (x1 x2: car S1), eq S1 x1 x2 -> eq S2 (f x1) (f x2)
-}.
-
+  compat: forall (x1 x2: car S1), eq S1 x1 x2 -> eq S2 (f x1) (f x2) }.
 Add Parametric Morphism (S1 S2 : Setoid) (M : Morphism S1 S2) :
  (@f S1 S2 M) with signature (@eq S1 ==> @eq S2) as apply_mor.
-Proof.
- apply (compat S1 S2 M).
-Qed.
-
+Proof. apply (compat S1 S2 M). Qed.
 Lemma test: forall (S1 S2:Setoid) (m: Morphism S1 S2)
  (x y: car S1), eq S1 x y -> eq S2 (f _ _ m x) (f _ _ m y).
-Proof.
- intros.
- rewrite H.
- reflexivity.
-Qed.
-\end{verbatim}
+Proof. intros. rewrite H. reflexivity. Qed.
+\end{coq_example*}
 \end{cscexample}
 
 \asection{Tactics enabled on user provided relations}
@@ -652,7 +641,26 @@ will be generated for the surrounding morphism \texttt{m}.
 
 Hence, one can add higher-order combinators as morphisms by providing
 signatures using pointwise extension for the relations on the functional
-arguments. Note that when one does rewriting with a lemma under a binder
+arguments (or whatever subrelation of the pointwise extension).
+For example, one could declare the \texttt{map} combinator on lists as 
+a morphism:
+\begin{coq_eval}
+Require Import List.
+Set Implicit Arguments.
+Inductive list_equiv {A:Type} (eqA : relation A) : relation (list A) :=
+| eq_nil : list_equiv eqA nil nil
+| eq_cons : forall x y, eqA x y -> 
+  forall l l', list_equiv eqA l l' -> list_equiv eqA (x :: l) (y :: l').
+\end{coq_eval}
+\begin{coq_example*}
+Instance [ Equivalence A eqA, Equivalence B eqB ] => 
+  Morphism ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) 
+     (@map A B).
+\end{coq_example*}
+
+where \texttt{list\_equiv} implements an equivalence on lists.
+
+Note that when one does rewriting with a lemma under a binder
 using \texttt{setoid\_rewrite}, the application of the lemma may capture
 the bound variable, as the semantics are different from rewrite where
 the lemma is first matched on the whole term. With the new

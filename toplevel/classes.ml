@@ -42,20 +42,20 @@ let _ =
       Auto.add_hints false [hint_db] 
 	(Vernacexpr.HintsResolve [pri, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])]))
 
-let declare_instance_constant con =
+let declare_instance_constant glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
-      | Some tc -> add_instance { is_class = tc ; is_pri = None; is_impl = con }
+      | Some tc -> add_instance (new_instance tc None glob con)
       | None -> error "Constant does not build instances of a declared type class"
 
-let declare_instance idl =
+let declare_instance glob idl =
   let con = 
     try (match global (Ident idl) with
       | ConstRef x -> x
       | _ -> raise Not_found)
     with _ -> error "Instance definition not found"
-  in declare_instance_constant con
+  in declare_instance_constant glob con
 	  
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 (* let mismatched_defs env n m = mismatched_ctx_inst env Definitions n m *)
@@ -128,7 +128,7 @@ let declare_implicit_proj c proj imps sub =
   in 
   let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
     if sub then 
-      declare_instance_constant proj;
+      declare_instance_constant true proj;
     Impargs.declare_manual_implicits true (ConstRef proj) true expls
       
 let declare_implicits impls subs cl =
@@ -429,7 +429,7 @@ let fail_on_free_vars = function
       (str"Unbound variables " ++
 	  prlist_with_sep (fun () -> str", ") Nameops.pr_id fvs ++ str".")
 	
-let new_instance ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars) 
+let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars) 
     ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
@@ -439,7 +439,7 @@ let new_instance ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars)
     match bk with
       | Implicit ->
 	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
-	  let k = class_info (global id) in
+	  let k = class_info (Nametab.global id) in
 	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
 	  let needlen = List.fold_left (fun acc (x, y) -> if x = None then succ acc else acc) 0 k.cl_context in
 	    if needlen <> applen then 
@@ -510,7 +510,7 @@ let new_instance ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars)
 	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in
 	  Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
-	  Typeclasses.add_instance { is_class = k ; is_pri = None; is_impl = cst };
+	  Typeclasses.add_instance (Typeclasses.new_instance k None false cst);
 	  Command.assumption_message id;
 	  (match hook with Some h -> h cst | None -> ()); id
       end
@@ -544,12 +544,7 @@ let new_instance ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars)
 	isevars := Evarutil.nf_evar_defs !isevars;
 	let term = Evarutil.nf_isevar !isevars term in
 	let hook cst = 
-	  let inst = 
-	    { is_class = k;
-	      is_pri = pri;
-	      is_impl = cst;
-	    }
-	  in
+	  let inst = Typeclasses.new_instance k pri global cst in
 	    Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
 	    Typeclasses.add_instance inst;
 	    (match hook with Some h -> h cst | None -> ())
@@ -615,7 +610,7 @@ let context ?(hook=fun _ -> ()) l =
 	in
 	  match class_of_constr t with
 	    | Some tc ->
-		(add_instance { is_class = tc ; is_pri = None; is_impl = cst });
+		add_instance (Typeclasses.new_instance tc None false cst);
 		hook (ConstRef cst)
 	    | None -> ()
       else

@@ -179,3 +179,13 @@ Section Respecting.
   Qed.
 
 End Respecting.
+
+(** The default equivalence on function spaces. *)
+
+Program Instance [ Equivalence A eqA ] => 
+  pointwise_equivalence : Equivalence (B -> A) (pointwise_relation eqA).
+
+  Next Obligation.
+  Proof.
+    transitivity (y x0) ; auto.
+  Qed.

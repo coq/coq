@@ -773,7 +773,7 @@ let print_typeclasses () =
 let pr_instance env i = 
   (*   gallina_print_constant_with_infos i.is_impl *)
   (* lighter *)
-  print_ref false (ConstRef i.is_impl)
+  print_ref false (ConstRef (instance_impl i))
     
 let print_instances r =
   let env = Global.env () in

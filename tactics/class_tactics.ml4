@@ -1367,7 +1367,7 @@ let add_morphism_infer m n =
       let cst = Declare.declare_internal_constant instance_id
 	(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
-	add_instance { is_class = Lazy.force morphism_class ; is_pri = None; is_impl = cst };
+	add_instance (Typeclasses.new_instance (Lazy.force morphism_class) None false cst);
 	declare_projection n instance_id (ConstRef cst)
     else
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
@@ -1376,7 +1376,7 @@ let add_morphism_infer m n =
 	    Command.start_proof instance_id kind instance 
 	      (fun _ -> function
 		  Libnames.ConstRef cst -> 
-		    add_instance { is_class = Lazy.force morphism_class ; is_pri = None; is_impl = cst };
+		    add_instance (Typeclasses.new_instance (Lazy.force morphism_class) None false cst);
 		    declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false);
 	    Pfedit.by (Tacinterp.interp <:tactic<add_morphism_tactic>>)) ();

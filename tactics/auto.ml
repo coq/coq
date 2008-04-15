@@ -93,8 +93,8 @@ let empty_se = ([],[],Btermdn.create ())
 
 let add_tac t (l,l',dn) =
   match t.pat with
-      None -> (insert t l, l', dn)
-    | Some pat -> (l, insert t l', Btermdn.add dn (pat,t))
+      None -> if not (List.mem t l) then (insert t l, l', dn) else (l, l', dn)
+    | Some pat -> if not (List.mem t l') then (l, insert t l', Btermdn.add dn (pat,t)) else (l, l', dn)
 
 
 let lookup_tacs (hdc,c) (l,l',dn) =
