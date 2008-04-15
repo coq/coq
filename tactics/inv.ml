@@ -450,7 +450,7 @@ let raw_inversion inv_kind id status names gl =
   let env = pf_env gl and sigma = project gl in
   let c = mkVar id in
   let (ind,t) = 
-    try pf_reduce_to_quantified_ind gl (pf_type_of gl c)
+    try pf_reduce_to_atomic_ind gl (pf_type_of gl c)
     with UserError _ -> 
       errorlabstrm "raw_inversion"
 	(str ("The type of "^(string_of_id id)^" is not inductive")) in

@@ -1,6 +1,6 @@
 The "Coq proof assistant" was jointly developed by 
 	
-- INRIA Formel, Coq, LogiCal, ProVal projects (since 1985), 
+- INRIA Formel, Coq, LogiCal, ProVal, TypiCal projects (since 1985), 
 - Laboratoire de l'Informatique du Parallelisme (LIP) 
   associated to CNRS and ENS Lyon (Sep. 1989 to Aug. 1997),
 - Laboratoire de Recherche en Informatique (LRI)
@@ -14,7 +14,7 @@ All files of the "Coq proof assistant" in directories or sub-directories of
   scripts states tactics test-suite theories tools toplevel
 
 are distributed under the terms of the GNU Lesser General Public License 
-Version 2.1 (see file LICENSE). These files are COPYRIGHT 1999-2006,
+Version 2.1 (see file LICENSE). These files are COPYRIGHT 1999-2008,
 The Coq development team, CNRS, INRIA and Université Paris Sud.
 
 Files from the directory doc are distributed as indicated in file doc/LICENCE.
@@ -24,26 +24,30 @@ by the Coq development team. All of them are released under the terms of
 the GNU Lesser General Public License Version 2.1.
 
 contrib/cc
-  developed by Pierre Corbineau (ENS Cachan, 2001 and LRI, 2001-2005)
+  developed by Pierre Corbineau (ENS Cachan, 2001, LRI, 2001-2005, Radboud
+  University at Nijmegen, 2005-2008)
 contrib/correctness
   developed by Jean-Christophe Filliâtre (LRI, 1999-2001)
 contrib/dp
-  developed by Nicolas Ayache and Jean-Christophe Filliâtre (LRI, 2005-2006)
+  developed by Nicolas Ayache (LRI, 2005-2006) and Jean-Christophe Filliâtre
+  (LRI, 2005-2008)
 contrib/extraction
-  developed by Pierre Letouzey (LRI, 2000-2006)
+  developed by Pierre Letouzey (LRI, 2000-2008)
 contrib/field
   developed by David Delahaye and Micaela Mayero (INRIA-LogiCal, 2001)
 contrib/first-order 
-  developed by Pierre Corbineau (LRI, 2003-2005)
+  developed by Pierre Corbineau (LRI, 2003-2008)
 contrib/fourier
   developed by Loïc Pottier (INRIA-Lemme, 2001)
 contrib/funind
-  developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2004-2006),
-  Julien Forest (INRIA-Everest, 2006) 
-  and Yves Bertot (INRIA-Marelle, 2005-2006).
+  developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2004-2008),
+  Julien Forest (INRIA-Everest, 2006, CNAM, 2007-2008) 
+  and Yves Bertot (INRIA-Marelle, 2005-2006)
 contrib/interface
   developed by Yves Bertot with contributions from Loïc Pottier and
-  Laurence Rideau as part of the Pcoq project (INRIA-Lemme, 1997-2006)
+  Laurence Rideau as part of the Pcoq project (INRIA-Lemme, 1997-2006);
+  extended by Lionel Mamane as part of the TeXMacs project (Radboud university
+  at Nijmegen, 2007-2008)
 contrib/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
 contrib/recdef
@@ -60,11 +64,11 @@ contrib/setoid_ring
   Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006) 
   and Bruno Barras (INRIA LogiCal, 2005-2006),
 contrib/subtac
-  developed by Matthieu Sozeau (LRI, 2005-2006)
+  developed by Matthieu Sozeau (LRI, 2005-2008)
 contrib/xml
   developed by Claudio Sacerdoti (Univ. Bologna, 2000-2005) 
-  as part of the HELM and MoWGLI projects
-
+  as part of the HELM and MoWGLI projects; extension by Cezary Kaliszyk as
+  part of the ProofWeb project (Radbout University at Nijmegen, 2008)
 parsing/search.ml
   mainly developed by Yves Bertot (INRIA-Lemme, 2000-2004)
 theories/ZArith
@@ -84,11 +88,12 @@ influenced significantly the design of Coq especially with
 
 Intensive users suggested improvements of the system : 
 
-  Y. Bertot, L. Pottier, L. Théry (INRIA-Lemme projects),
+  Y. Bertot, L. Pottier, L. Théry (INRIA-Lemme/Marelle projects),
   C. Alvarado, P. Crégut, J.-F. Monin (France Telecom R&D),
   P. Castéran (University Bordeaux 1),
   The Foundations Group (Radboud University, Nijmegen, The Netherlands),
-  Laboratoire J.-A. Dieudonné (University of Nice-Sophia Antipolis).
+  Laboratoire J.-A. Dieudonné (University of Nice-Sophia Antipolis),
+  G. Gonthier (INRIA-MSR joint lab), A. Charguéraud (INRIA-Gallium project).
 
 The following people have contributed to the development of different versions 
 of the Coq Proof assistant during the indicated time :
@@ -117,13 +122,15 @@ of the Coq Proof assistant during the indicated time :
   César Muñoz (INRIA, 1994-1995)
   Chetan Murthy (INRIA, 1992-1994)
   Julien Narboux (INRIA, 2005-2006)
-  Jean-Marc Notin (CNRS, 2006)
+  Jean-Marc Notin (CNRS, 2006-now)
   Catherine Parent-Vigouroux (ENS Lyon, 1992-1995)
   Patrick Loiseleur (Paris Sud, 1997-1999)
   Christine Paulin-Mohring (INRIA, 1985-1989, ENS Lyon, 1989-1997, 
                             LRI, 1997-now)
   Clément Renard (INRIA, 2001-2004)
   Claudio Sacerdoti Coen (INRIA, 2004-2005)
+  Matthieu Sozeau (INRIA, 2005-now)
+  Arnaud Spiwack (INRIA, 2006-now)
   Amokrane Saïbi (INRIA, 1993-1998)
   Benjamin Werner (INRIA, 1989-1994)
 

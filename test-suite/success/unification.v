@@ -109,3 +109,11 @@ intros.
 apply H0. (* Check that equation ?n[H] = ?n[H] is correctly considered true *)
 reflexivity.
 Qed.
+
+(* Check treatment of metas erased by K-redexes at the time of turning
+   them to evas *)
+
+Inductive nonemptyT (t : Type) : Prop := nonemptyT_intro : t -> nonemptyT t.
+Goal True.
+try case nonemptyT_intro. (* check that it fails w/o anomaly *)
+Abort.

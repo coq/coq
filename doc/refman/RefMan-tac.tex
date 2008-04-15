@@ -642,6 +642,12 @@ This does the same but uses the bindings in each {\bindinglist} to
 instantiate the parameters of the corresponding type of {\term}
 (see syntax of bindings in Section~\ref{Binding-list}).
 
+\item {\tt eapply \nelist{{\term} {\bindinglist}}{,} in {\ident}}
+
+This works as {\tt apply \nelist{{\term} {\bindinglist}}{,} in
+{\ident}} but turns unresolved bindings into existential variables, if
+any, instead of failing.
+
 \end{Variants}
 
 \subsection{\tt generalize \term
@@ -1085,6 +1091,19 @@ with its $\beta\iota$-normal form.
   \ErrMsg {\tt bad occurrence number of {\qualid}$_i$}
 
   \ErrMsg {\qualid}$_i$ {\tt does not occur}
+
+\item {\tt unfold {\qstring}}
+
+  If {\qstring} denotes the discriminating symbol of a notation (e.g. {\tt
+  "+"}) or an expression defining a notation (e.g. \verb!"_ + _"!), and
+  this notation refers to an unfoldable constant, then the tactic
+  unfolds it.
+
+\item {\tt unfold \qualidorstring$_1$ at \num$_1^1$, \dots, \num$_i^1$,
+\dots,\ \qualidorstring$_n$ at \num$_1^n$ \dots\ \num$_j^n$}
+
+  This is the most general form, where {\qualidorstring} is either a
+  {\qualid} or a {\qstring} referring to a notation.
 
 \end{Variants}
 
@@ -1980,6 +1999,11 @@ This happens if \term$_1$ does not occur in the goal.
     of $\term$ will be done, leading to failure if these $n$ rewrites are not possible. 
   \end{itemize}
 
+\item {\tt erewrite {\term}\tacindex{erewrite}}
+
+This tactic works as {\tt rewrite {\term}} but turning unresolved
+bindings into existential variables, if any, instead of failing. It has
+the same variants as {\tt rewrite} has.
 
 \end{Variants}
 
@@ -3596,6 +3620,7 @@ The tactic {\tt exists (n // m)} did not fail. The hole was solved by
 
 \section{Generation of induction principles with {\tt Scheme}
 \label{Scheme}
+\index{Schemes}
 \comindex{Scheme}}
 
 The {\tt Scheme} command is a high-level tool for generating
@@ -3624,7 +3649,7 @@ general principle of mutual induction for objects in type {\term$_i$}.
   Same as before but defines a non-dependent elimination principle more
   natural in case of inductively defined relations. 
 
-\item {\tt Scheme Equality for \ident$_1$}
+\item {\tt Scheme Equality for \ident$_1$\comindex{Scheme Equality}}
 
   Tries to generate a boolean equality and a proof of the
   decidability of the usual equality.
@@ -3657,8 +3682,6 @@ the same package of mutual inductive principle definitions. This command
 generates {\ident$_0$} to be the conjunction of the principles: it is
 built from the common premises of the principles and concluded by the
 conjunction of their conclusions.
-
-\SeeAlso \ref{CombinedScheme-examples}
 
 \SeeAlso Section~\ref{CombinedScheme-examples}
 

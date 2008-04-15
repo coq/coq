@@ -1183,6 +1183,23 @@ After the above declaration is issued, implicit arguments can just (and
 have to) be skipped in any expression involving an application of
 {\qualid}.
 
+\begin{Variants}
+\item {\tt Implicit Arguments Global {\qualid} [ \nelist{\possiblybracketedident}{} ]
+\comindex{Implicit Arguments Global}}
+
+Tells to recompute the implicit arguments of {\qualid} after ending of
+the current section if any, enforcing the implicit arguments known
+from inside the section to be the ones declared by the command.
+
+\item {\tt Implicit Arguments Local {\qualid} [ \nelist{\possiblybracketedident}{} ]
+\comindex{Implicit Arguments Local}}
+
+When in a module, tells not to activate the implicit arguments of
+{\qualid} declared by this commands to contexts that requires the
+module.
+
+\end{Variants}
+
 \Example
 \begin{coq_eval}
 Reset Initial.
@@ -1217,13 +1234,30 @@ implicit arguments of {\qualid}.
 {\Coq} can also automatically detect what are the implicit arguments
 of a defined object. The command is just
 \begin{quote}
-\tt Implicit Arguments {\qualid}.
+{\tt Implicit Arguments {\qualid}
+\comindex{Implicit Arguments}}
 \end{quote}
 The auto-detection is governed by options telling if strict,
 contextual, or reversible-pattern implicit arguments must be
 considered or not (see
 Sections~\ref{SetStrictImplicit},~\ref{SetContextualImplicit},~\ref{SetReversiblePatternImplicit}
 and also~\ref{SetMaximalImplicitInsertion}).
+
+\begin{Variants}
+\item {\tt Implicit Arguments Global {\qualid}
+\comindex{Implicit Arguments Global}}
+
+Tells to recompute the implicit arguments of {\qualid} after ending of
+the current section if any.
+
+\item {\tt Implicit Arguments Local {\qualid}
+\comindex{Implicit Arguments Local}}
+
+When in a module, tells not to activate the implicit arguments of
+{\qualid} computed by this declaration to contexts that requires the
+module.
+
+\end{Variants}
 
 \Example
 \begin{coq_eval}

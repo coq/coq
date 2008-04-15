@@ -428,7 +428,7 @@ type implicit_interactive_request =
   | ImplManual of implicit_status list
 
 type implicit_discharge_request =
-  | ImplNoDischarge
+  | ImplLocal
   | ImplConstant of constant * implicits_flags
   | ImplMutualInductive of kernel_name * implicits_flags
   | ImplInteractive of global_reference * implicits_flags * 
@@ -451,11 +451,11 @@ let subst_implicits_decl subst (r,imps as o) =
   let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
 
 let subst_implicits (_,subst,(req,l)) =
-  (ImplNoDischarge,list_smartmap (subst_implicits_decl subst) l)
+  (ImplLocal,list_smartmap (subst_implicits_decl subst) l)
 
 let discharge_implicits (_,(req,l)) =
   match req with
-  | ImplNoDischarge -> None
+  | ImplLocal -> None
   | ImplInteractive (ref,flags,exp) -> 
       Some (ImplInteractive (pop_global_reference ref,flags,exp),l)
   | ImplConstant (con,flags) ->
@@ -469,7 +469,7 @@ let rebuild_implicits (info,(req,l)) =
     [] info
   in
   let l' = match req with
-  | ImplNoDischarge -> assert false
+  | ImplLocal -> assert false
   | ImplConstant (con,flags) -> 
       [ConstRef con, compute_constant_implicits flags manual con]
   | ImplMutualInductive (kn,flags) ->
@@ -482,7 +482,9 @@ let rebuild_implicits (info,(req,l)) =
 (* 	  let auto = if flags.main then auto else List.map (fun _ -> None) auto in *)
 	  let l' = merge_impls auto l in [ref,l']
   in (req,l')
-    
+
+let export_implicits (req,_ as x) = 
+  if req = ImplLocal then None else Some x
 
 let (inImplicits, _) =
   declare_object {(default_object "IMPLICITS") with 
@@ -492,7 +494,7 @@ let (inImplicits, _) =
     classify_function = (fun (_,x) -> Substitute x);
     discharge_function = discharge_implicits;
     rebuild_function = rebuild_implicits;
-    export_function = (fun x -> Some x) }
+    export_function = export_implicits }
 
 let declare_implicits_gen req flags ref =
   let imps = compute_global_implicits flags [] ref in
@@ -501,12 +503,12 @@ let declare_implicits_gen req flags ref =
 let declare_implicits local ref =
   let flags = { !implicit_args with main = true } in
   let req = 
-    if local then ImplNoDischarge else ImplInteractive(ref,flags,ImplAuto) in
+    if local then ImplLocal else ImplInteractive(ref,flags,ImplAuto) in
   declare_implicits_gen req flags ref
 
 let declare_var_implicits id =
   if !implicit_args.main then
-    declare_implicits_gen ImplNoDischarge !implicit_args (VarRef id)
+    declare_implicits_gen ImplLocal !implicit_args (VarRef id)
 
 let declare_constant_implicits con =
   if !implicit_args.main then
@@ -534,7 +536,7 @@ let declare_manual_implicits local ref enriching l =
   let t = Global.type_of_global ref in
   let l' = compute_manual_implicits env flags t enriching l in
   let req =
-    if local or isVarRef ref then ImplNoDischarge
+    if local or isVarRef ref then ImplLocal
     else ImplInteractive(ref,flags,ImplManual l')
   in
     add_anonymous_leaf (inImplicits (req,[ref,l']))

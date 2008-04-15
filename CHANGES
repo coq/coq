@@ -5,86 +5,85 @@ Language
 
 - If a fixpoint is not written with an explicit { struct ... }, then 
   all arguments are tried successively (from left to right) until one is 
-  found that satisfies the structural decreasing condition.
+  found that satisfies the structural decreasing condition. (DOC TODO?)
 - Improved inference of implicit arguments.
 - New experimental typeclass system giving ad-hoc polymorphism and 
   overloading based on dependent records and implicit arguments.
-- New syntax "let| pat := b in c" for let-binding using irrefutable patterns.
+- New syntax "let 'pat := b in c" for let-binding using irrefutable patterns.
 - New syntax "forall {A}, T" for specifying maximally inserted implicit 
   arguments in terms.
+- Sort of Record/Structure, Inductive and CoInductive defaults to Type
+  if omitted. (DOC TODO?)
+- Record/Structure now usable for defining coinductive types
+  (e.g. "Record stream := { hd : nat; tl : stream }.")
 
 Commands
 
-- Added option Global to "Implicit Arguments" and "Arguments Scope" for
-  section surviving.
-- Added option "Unset Elimination Schemes" to deactivated the automatic
-  generation of elimination schemes.
+- Added option Global to "Arguments Scope" for section surviving. (DOC TODO)
+- Added option "Unset Elimination Schemes" to deactivate the automatic
+  generation of elimination schemes. (DOC TODO)
 - Modification of the Scheme command so you can ask for the name to be
-  automatically computed (e.g. Scheme Induction for nat Sort Set).
+  automatically computed (e.g. Scheme Induction for nat Sort Set). (DOC TODO?)
 - New command "Combined Scheme" to build combined mutual induction
-  principles from existing mutual induction principles.
-- New commad "Scheme Equality" tries to build a decidable (boolean) equality 
-  for simple inductive datatypes and a decision property over this equality.
-  e.g.  Scheme Equality for nat.
+  principles from existing mutual induction principles. 
+- New command "Scheme Equality" to build a decidable (boolean) equality 
+  for simple inductive datatypes and a decision property over this equality
+  (e.g.  Scheme Equality for nat).
 - Added option "Set Equality Scheme" to make automatic the declaration 
-  of the boolean equality when possible.
+  of the boolean equality when possible. (DOC TODO?)
 - Source of universe inconsistencies now printed when option 
   "Set Printing Universes" is activated,
-- Support for option "[id1 ... idn]", and "-[id1 ... idn]", for the "compute" 
-  reduction strategy, respectively meaning reduce only, or everything
-  but, the constants id1 ... idn. "lazy" alone or followed by
+- Support for option "[id1 ... idn]", and "-[id1 ... idn]", for the 
+  "compute"/"cbv" reduction strategy, respectively meaning reduce only, or 
+  everything but, the constants id1 ... idn. "lazy" alone or followed by
   "[id1 ... idn]", and "-[id1 ... idn]" also supported, meaning apply
   all of beta-iota-zeta-delta, possibly restricting delta.
 
-Libraries
+Libraries (DOC TO CHECK)
 
-- library IntMap, subsumed by FSets/FMaps, has been removed from 
+- New arithmetical libraries:
+  - Numbers contains an abstract modular development of natural and integer
+    arithmetics.
+  - Ints contains a library of efficient computational bounded and
+    unbounded integers that can be mapped to processor native arithmetics.
+- Library IntMap, subsumed by FSets/FMaps, has been removed from 
   Coq Standard Library and moved into a user contribution Cachan/IntMap
 - Better computational behavior of some constants (eq_nat_dec and 
   le_lt_dec more efficient, Z_lt_le_dec and Positive_as_OT.compare 
-  transparent, ...) [exceptional source of incompatibilities].
+  transparent, ...) (exceptional source of incompatibilities).
 - Boolean operators moved from module Bool to module Datatypes.
 - Improvements to NArith (Nminus, Nmin, Nmax), and to QArith (in particular 
   a better power function). 
-- In SetoidList, eqlistA now express that two lists have similar elements 
+- In SetoidList, eqlistA now expresses that two lists have similar elements 
   at the same position, while the predicate previously called eqlistA 
-  is now equivlistA (this one only states that the lists contains the same 
+  is now equivlistA (this one only states that the lists contain the same 
   elements, nothing more). 
-- In ListSet, a few definitions are now in Type (may induce possible 
-  incompatibilities)
-- Changes in FSets/FMaps.
+- In ListSet, a few definitions are now in Type (may induce a few
+  incompatibilities).
+- Changes in FSets/FMaps:
   - Improvements: in particular FMap now provides an induction principle 
-    on maps, and some properties about FSets and fold need less hypothesis. 
+    on maps, and some properties about FSets and fold needs less hypotheses.
     The polymorphic parameter for the fold function is now in Type. 
   - Loading FSets/FMap used to open unwanted scopes of integer datatypes 
     (see bug #1347). These scopes may need to be opened manually now.
-  - Hints in FSetInterface.v have been transfered from the core database 
+  - Hints in FSetInterface.v have been transfered from the "core" database 
     to a "set" database, and some expensive hints have been downgraded 
     as "Immediate". A compatibility "oldset" database retains these expensive
     hints, so using "(e)auto with set oldset" should help porting scripts. 
     Same for FSetWeakInterface and FMap(Weak)Interface. 
 - Changes in Reals:
-  - most statement in "sigT" (including the
+  - Most statement in "sigT" (including the
     completeness axiom) are now in "sig" (in case of incompatibility,
-    use proj1_sig instead of projT1, sig instead of sigT, etc),
-  - more uniform naming scheme (identifiers in French moved to English,
-    consistent use of 0 -- zero -- instead of O -- letter O --, etc)
-  - lemma on prod_f_SO is now on prod_f_R0, 
-  - useless hypothesis of ln_exists1 dropped,
-  - new Rlogic.v states a few logical properties about R axioms,
-  - RIneq.v extended and made cleaner,
-  - slightly more powerful "real" hints database (Rle_ge now fully usable as
-    a hint, occasionally leading to a few more subgoals automatically proved)
+    use proj1_sig instead of projT1, sig instead of sigT, etc).
+  - More uniform naming scheme (identifiers in French moved to English,
+    consistent use of 0 -- zero -- instead of O -- letter O --, etc).
+  - Lemma on prod_f_SO is now on prod_f_R0.
+  - Useless hypothesis of ln_exists1 dropped.
+  - New Rlogic.v states a few logical properties about R axioms.
+  - RIneq.v extended and made cleaner.
 - Slight restructuration of the Logic library regarding choice and classical
   logic. Addition of files providing intuitionistic axiomatizations of
-  descriptions: Epsilon.v, Description.v and IndefiniteDescription.v
-
-Language
-
-- Sort of Record/Structure, Inductive and CoInductive defaults to Type
-  if omitted
-- Record/Structure now usable for defining coinductive types
-  (e.g. "Record stream := { hd : nat; tl : stream }.")
+  descriptions: Epsilon.v, Description.v and IndefiniteDescription.v.
 
 Notations and implicit arguments
 
@@ -94,7 +93,10 @@ Notations and implicit arguments
 - New modifiers in "Implicit Arguments" to force an implicit argument to
   be maximally inserted and/or forced if it is not seen as inferable.
 - New modifier of "Implicit Arguments" to enrich the set of implicit arguments.
-- Level "constr" moved from 9 to 8.
+  (DOC TODO?)
+- New options Global and Local to "Implicit Arguments" for section
+  surviving or non export outside module.
+- Level "constr" moved from 9 to 8. (DOC TODO?)
 - Structure/Record now printed as Record (unless option Printing All is set).
 - Support for parametric notations defining constants (i.e. abbreviations).
 
@@ -102,13 +104,13 @@ Tactic Language
 
 - Second-order pattern-matching now working in Ltac "match" clauses
   (syntax for second-order unification variable is "@?X").
-- Ltac accepts integer arguments (syntax is "ltac:nnn" for nnn an integer)
+- Ltac accepts integer arguments (syntax is "ltac:nnn" for nnn an integer).
 - The general sequence tactical "expr_0 ; [ expr_1 | ... | expr_n ]"
   is extended so that at most one expr_i may have the form "expr .."
   or just "..". Also, n can be different from the number of subgoals
   generated by expr_0. In this case, the value of expr (or idtac in
   case of just "..") is applied to the intermediate subgoals to make
-  the number of tactics equal to the number of subgoals.
+  the number of tactics equal to the number of subgoals. (DOC TODO)
 - A name used as the name of the parameter of a lemma (like f in
   "apply f_equal with (f:=t)") is now interpreted as a ltac variable
   if such a variable exists (this is a possible source of
@@ -116,18 +118,20 @@ Tactic Language
   ltac function into names that do not clash with the lemmas
   parameter names used in the tactic).
 - New syntax "Ltac tac ::= ..." to rebind a tactic to a new expression.
-- "let rec ... in ... " now supports for expressions without explicit
+  (DOC TODO?)
+- "let rec ... in ... " now supported for expressions without explicit
   parameters; interpretation is lazy to the contrary of "let ... in ...";
   hence, the "rec" keyword can be used to turn the argument of a
   "let ... in ..." into a lazy one.
+- Patterns for hypotheses types in "match goal" are now interpreted in
+  type_scope.
 
 Tactics
 
 - New tactics [apply -> term], [apply <- term], [apply -> term in
-  ident], [apply <- term in ident] for applying equivalences (iff).
+  ident], [apply <- term in ident] for applying equivalences (iff). (DOC TODO)
 - Slight improvement of the hnf and simpl tactics when applied on
   expressions with explicit occurrences of match or fix.
-- Better heuristic of lemma unfolding for apply/eapply.
 - New tactics "eapply in", "erewrite", "erewrite in".
 - Unfoldable references can be given by notation's string rather than by name 
   in unfold.
@@ -147,15 +151,14 @@ Tactics
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
 - New tactic "dependent induction H [ generalizing id_1 .. id_n ]" to do 
   induction-inversion on instantiated inductive families à la BasicElim.
-- Tactic apply now able to reason modulo unfolding of constants
+- Tactic "apply" now able to reason modulo unfolding of constants
   (possible source of incompatibility in situations where apply may fail, 
   e.g. as argument of a try or a repeat and in a ltac function);
   version of apply that does not unfold is renamed into "simple apply"
   (usable for compatibility or for automation).
-- Tactic apply now able to traverse conjunctions and to select the first 
+- Tactic "apply" now able to traverse conjunctions and to select the first 
   matching lemma among the components of the conjunction; tactic apply also
   able to apply lemmas of conclusion an empty type.
-- Pattern for hypotheses types in match goal are now interpreted in type_scope.
 
 Type Classes
 
@@ -187,13 +190,13 @@ Program
   "let" in Programs).
 - Program CoFixpoint is accepted, Program Fixpoint uses the new way to infer 
   which argument decreases structurally.
-- Program Lemma, Axiom etc... now permit to have obligations in the statement iff 
-  they can be automatically solved by the default tactic.
+- Program Lemma, Axiom etc... now permit to have obligations in the statement 
+  iff they can be automatically solved by the default tactic.
 - New command "Preterm [ of id ]" to see the actual term fed to Coq for
   debugging purposes.
-- Changed the notations "left" and "right" to "in_left" and "in_right" to hide the 
-  proofs in standard disjunctions, to avoid breaking existing scripts when importing
-  Program. Also, put them in program_scope.
+- Changed the notations "left" and "right" to "in_left" and "in_right" to hide 
+  the proofs in standard disjunctions, to avoid breaking existing scripts when 
+  importing Program. Also, put them in program_scope.
   
 Tools
 

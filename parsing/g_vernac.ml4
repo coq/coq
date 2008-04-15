@@ -503,13 +503,10 @@ GEXTEND Gram
 
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; enrich = [ IDENT "Enriching" -> true | -> false ];
-	 (local,qid,pos) = 
-	     [ local = [ IDENT "Global" -> false | IDENT "Local" -> true ];
-	       qid = global -> (local,qid,None) 
-	     | qid = global;
-	       l = OPT [ "["; l = LIST0 implicit_name; "]" -> 
+	   local = [ IDENT "Global" -> false | IDENT "Local" -> true | -> Lib.sections_are_opened () ]; 
+	   qid = global; 
+	   pos = OPT [ "["; l = LIST0 implicit_name; "]" -> 
 		   List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
-		 (true,qid,l) ] ->
 	   VernacDeclareImplicits (local,qid,enrich,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
