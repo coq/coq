@@ -6,6 +6,29 @@ Open Scope R_scope.
 
 Ltac gappa := gappa_prepare; gappa_internal.
 
+Lemma test_float2 :
+  forall x y:R,
+  0 <= x <= 1 ->
+  0 <= y <= 1 ->
+  0 <= gappa_rounding (rounding_float roundNE 53 (1074)) (x+y) <= 2. 
+Proof.
+  gappa.
+
+
+  gappa_prepare.
+  refine (subset _ _ (makepairF _ _) (gappa2.proof x y _ _) _); auto.
+Qed.
+
+
+Lemma test_float1 :
+  forall x y:R,
+  0 <= gappa_rounding (rounding_fixed roundDN (0)) x -
+           gappa_rounding (rounding_fixed roundDN (0)) y <= 0 ->
+  0 <= Rabs (x - y) <= 1.
+Proof.
+  gappa.
+Qed.
+
 Lemma test1 : 
   forall x y:R,
   0 <= x <= 1 -> 

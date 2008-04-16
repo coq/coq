@@ -43,11 +43,14 @@ type binop = Bminus | Bplus | Bmult | Bdiv
 
 type unop = Usqrt | Uabs | Uopp
 
+type rounding_mode = string
+
 type term =
   | Tconst of Constant.t
   | Tvar of string
   | Tbinop of binop * term * term
   | Tunop of unop * term
+  | Tround of rounding_mode * term
 
 type pred =
   | Pin of term * Constant.t * Constant.t
@@ -67,6 +70,8 @@ let rec print_term fmt = function
 	| Uopp -> "-" | Usqrt -> "sqrt" | _ -> assert false 
       in
       fprintf fmt "(%s(%a))" s print_term t
+  | Tround (m, t) ->
+      fprintf fmt "(%s(%a))" m print_term t
 
 let print_pred fmt = function
   | Pin (t, c1, c2) -> 
@@ -98,6 +103,36 @@ let read_gappa_proof f =
 exception GappaFailed
 exception GappaProofFailed
 
+let patch_gappa_proof fin fout =
+  let cin = open_in fin in
+  let cout = open_out fout in
+  let fmt = formatter_of_out_channel cout in
+  let last = ref "" in
+  let defs = ref "" in
+  try
+    while true do
+      let s = input_line cin in
+      if s = "Qed." then
+	fprintf fmt "Defined.@\n"
+      else begin
+	begin 
+	  try Scanf.sscanf s "Lemma %s " 
+	    (fun n -> defs := n ^ " " ^ !defs; last := n)
+	  with Scanf.Scan_failure _ ->
+	    try Scanf.sscanf s "Definition %s " 
+	      (fun n -> defs := n ^ " " ^ !defs)
+	    with Scanf.Scan_failure _ ->
+	      ()
+	end;
+	fprintf fmt "%s@\n" s
+      end
+    done
+  with End_of_file ->
+    close_in cin;
+    fprintf fmt "Definition proof := Eval cbv delta [%s] in %s.@." !defs !last;
+    close_out cout
+    
+
 let call_gappa hl p =
   let gappa_in = "test.gappa" in
   let c = open_out gappa_in in
@@ -110,13 +145,19 @@ let call_gappa hl p =
   let cmd = sprintf "gappa -Bcoq < %s > %s" gappa_in gappa_out in
   let out = Sys.command cmd in
   if out <> 0 then raise GappaFailed;
-  let cmd = sprintf "sed -e '/^Lemma/ h ; s/Qed/Defined/ ; $ { p ; g ; s/Lemma \\([^ ]*\\).*/Eval compute in \\1./ }' -i %s" gappa_out
-  in
-  let _ = Sys.command cmd in
+  let gappa_out2 = "gappa2.v" in
+  patch_gappa_proof gappa_out gappa_out2;
   let lambda = "test.lambda" in
-  let cmd = 
-    sprintf "%s/coqc %s > %s" Coq_config.bindir gappa_out lambda 
-  in
+  let cmd = sprintf "%s/coqc %s" Coq_config.bindir gappa_out2 in
+  let out = Sys.command cmd in
+  if out <> 0 then raise GappaProofFailed;
+  let gappa_out3 = "gappa3.v" in
+  let c = open_out gappa_out3 in
+  let gappa2 = Filename.chop_suffix gappa_out2 ".v" in
+  Printf.fprintf c 
+    "Require %s. Set Printing Depth 9999999. Print %s.proof." gappa2 gappa2;
+  close_out c;
+  let cmd = sprintf "%s/coqc %s > %s" Coq_config.bindir gappa_out3 lambda in
   let out = Sys.command cmd in
   if out <> 0 then raise GappaProofFailed;
   read_gappa_proof lambda
@@ -135,10 +176,16 @@ let coq_modules =
        ["Coq"; "Reals"; "R_sqrt";];
        ["Coq"; "Reals"; "Rfunctions";];
        ["Gappa"; "Gappa_tactic";];
-    ]
+       ["Gappa"; "Gappa_fixed";];
+       ["Gappa"; "Gappa_float";];
+       ["Gappa"; "Gappa_round_def";];
+       ["Gappa"; "Gappa_pred_bnd";];  
+       ["Gappa"; "Gappa_definitions";];
+  ]
 
 let constant = gen_constant_in_modules "gappa" coq_modules
 
+let coq_refl_equal = lazy (constant "refl_equal")
 let coq_Rle = lazy (constant "Rle")
 let coq_R = lazy (constant "R")
 (*
@@ -159,6 +206,13 @@ let coq_reFloat2 = lazy (constant "reFloat2")
 let coq_reInteger = lazy (constant "reInteger")
 let coq_reBinary = lazy (constant "reBinary")
 let coq_reUnary = lazy (constant "reUnary")
+let coq_reRound = lazy (constant "reRound")
+let coq_roundDN = lazy (constant "roundDN")
+let coq_roundUP = lazy (constant "roundUP")
+let coq_roundNE = lazy (constant "roundNE")
+let coq_roundZR = lazy (constant "roundZR")
+let coq_rounding_fixed = lazy (constant "rounding_fixed")
+let coq_rounding_float = lazy (constant "rounding_float")
 let coq_boAdd = lazy (constant "boAdd")
 let coq_boSub = lazy (constant "boSub")
 let coq_boMul = lazy (constant "boMul")
@@ -166,6 +220,8 @@ let coq_boDiv = lazy (constant "boDiv")
 let coq_uoAbs = lazy (constant "uoAbs")
 let coq_uoNeg = lazy (constant "uoNeg")
 let coq_uoSqrt = lazy (constant "uoSqrt")
+let coq_subset = lazy (constant "subset")
+let coq_makepairF = lazy (constant "makepairF")
 
 let coq_true = lazy (constant "true")
 let coq_false = lazy (constant "false")
@@ -233,6 +289,26 @@ let tr_var c = match decomp c with
   | Var x, [] -> string_of_id x
   | _ -> assert false
 
+let tr_mode c = match decompose_app c with
+  | c, [] when c = Lazy.force coq_roundDN -> "dn"
+  | c, [] when c = Lazy.force coq_roundNE -> "ne"
+  | c, [] when c = Lazy.force coq_roundUP -> "up"
+  | c, [] when c = Lazy.force coq_roundZR -> "zr"
+  | _ -> raise NotGappa
+
+let tr_rounding_mode c = match decompose_app c with
+  | c, [a;b] when c = Lazy.force coq_rounding_fixed ->
+      let a = tr_mode a in
+      let b = tr_arith_constant b in
+      sprintf "fixed<%d,%s>" b a
+  | c, [a;p;e] when c = Lazy.force coq_rounding_float ->
+      let a = tr_mode a in
+      let p = tr_positive p in
+      let e = tr_arith_constant e in
+      sprintf "float<%d,%d,%s>" p (-e) a
+  | _ ->
+      raise NotGappa
+
 (* REexpr -> term *)
 let rec tr_term c0 = 
   let c, args = decompose_app c0 in
@@ -247,6 +323,8 @@ let rec tr_term c0 =
 	Tbinop (tr_binop op, tr_term a, tr_term b)
     | _, [op;a] when c = Lazy.force coq_reUnary ->
 	Tunop (tr_unop op, tr_term a)
+    | _, [op;a] when c = Lazy.force coq_reRound ->
+	Tround (tr_rounding_mode op, tr_term a)
     | _ -> 
 	msgnl (str "tr_term: " ++ Printer.pr_constr c0); 
 	assert false
@@ -301,14 +379,21 @@ let var_name = function
       let s = String.sub s 1 (String.length s - 1) in
       mkVar (id_of_string s)
   | Anonymous -> 
-      assert false
+       assert false
 
 let build_proof_term c0 =
   let bl,c = decompose_lam c0 in
-  List.fold_right 
-    (fun (x,t) pf -> 
-      mkApp (pf, [| if is_R t then var_name x else mk_new_meta () |]))
-    bl c0
+  let c = 
+    List.fold_right 
+      (fun (x,t) pf -> 
+	mkApp (pf, [| if is_R t then var_name x else mk_new_meta () |]))
+      bl c0
+  in
+  mkApp 
+    (Lazy.force coq_subset, 
+    [| mk_new_meta (); mk_new_meta (); 
+       mkApp (Lazy.force coq_makepairF, [| mk_new_meta(); mk_new_meta() |]);
+       c; mk_new_meta () |])
 
 let gappa_internal gl =
   try
@@ -317,7 +402,9 @@ let gappa_internal gl =
     msgnl (str s);
     let pf = constr_of_string gl s in
     let pf = build_proof_term pf in
-    Tacticals.tclTHEN (Tactics.refine pf) Tactics.assumption gl
+    Tacticals.tclTHEN (Tactics.refine pf) 
+      (Tacticals.tclORELSE Tactics.assumption Tactics.reflexivity)
+      gl
   with 
     | NotGappa -> error "not a gappa goal"
     | GappaFailed -> error "gappa failed"
@@ -325,7 +412,7 @@ let gappa_internal gl =
 
 (*
 Local Variables: 
-compile-command: "make -C ../.. bin/coqc.opt bin/coqide.opt contrib/dp/Gappa.vo"
+compile-command: "make -C ../.. bin/coqc.opt bin/coqide.opt"
 End: 
 *)
 
