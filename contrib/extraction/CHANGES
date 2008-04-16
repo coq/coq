@@ -346,8 +346,8 @@ Dyade/BDDS				boolean tautology checker.
 Lyon/CIRCUITS				multiplication via a modelization of a circuit.
 Lyon/FIRING-SQUAD			print the states of the firing squad.
 Marseille/CIRCUITS			compares integers via a modelization of a circuit. 
-Nancy/FOUnify				unification of two first-orderde deux termes.
-Rocq/ARITH/Chinese			computation of the chinese remaindering.  
+Nancy/FOUnify				unification of two first-order terms.
+Rocq/ARITH/Chinese			computation of the chinese remainder.  
 Rocq/COC				small coc typechecker. (test by B. Barras, not by me)
 Rocq/HIGMAN				run the proof on one example. 
 Rocq/GRAPHS				linear constraints checker in Z. 

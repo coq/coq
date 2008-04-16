@@ -19,7 +19,7 @@ exec $OCAMLDEBUG \
 	-I $COQTOP/toplevel -I $COQTOP/dev -I $COQTOP/config \
 	-I $COQTOP/translate \
         -I $COQTOP/contrib/extraction -I $COQTOP/contrib/field \
-        -I $COQTOP/contrib/fourier    -I $COQTOP/contrib/first-order \
+        -I $COQTOP/contrib/fourier    -I $COQTOP/contrib/firstorder \
         -I $COQTOP/contrib/interface  -I $COQTOP/contrib/jprover \
         -I $COQTOP/contrib/omega      -I $COQTOP/contrib/romega \
         -I $COQTOP/contrib/ring       -I $COQTOP/contrib/xml \

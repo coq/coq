@@ -32,10 +32,10 @@ contrib/dp
   developed by Nicolas Ayache (LRI, 2005-2006) and Jean-Christophe Filliâtre
   (LRI, 2005-2008)
 contrib/extraction
-  developed by Pierre Letouzey (LRI, 2000-2008)
+  developed by Pierre Letouzey (LRI, 2000-2004, PPS-Paris7, 2005-now)
 contrib/field
   developed by David Delahaye and Micaela Mayero (INRIA-LogiCal, 2001)
-contrib/first-order 
+contrib/firstorder 
   developed by Pierre Corbineau (LRI, 2003-2008)
 contrib/fourier
   developed by Loïc Pottier (INRIA-Lemme, 2001)
@@ -114,7 +114,7 @@ of the Coq Proof assistant during the indicated time :
   Benjamin Grégoire (INRIA, 2003-now)
   Hugo Herbelin (INRIA, 1996-now)
   Gérard Huet (INRIA, 1985-1997)
-  Pierre Letouzey (LRI, 2000-2005 & PPS-Paris 7, 2005-now)
+  Pierre Letouzey (LRI, 2000-2004 & PPS-Paris 7, 2005-now)
   Pascal Manoury (INRIA, 1993)
   Micaela Mayero (INRIA, 1997-2002)
   Claude Marché (INRIA 2003-2004 & LRI, 2004-now)
