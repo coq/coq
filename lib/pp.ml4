@@ -174,6 +174,27 @@ let qstring s = str ("\""^escape_string s^"\"")
 let qs = qstring
 let quote s = h 0 (str "\"" ++ s ++ str "\"")
 
+let rec xmlescape ppcmd =
+  let rec escape what withwhat (len, str) =
+    try
+      let pos = String.index str what in
+      let (tlen, tail) =
+        escape what withwhat ((len - pos - 1),
+          (String.sub str (pos + 1) (len - pos - 1)))
+      in
+      (pos + tlen + String.length withwhat, String.sub str 0 pos ^ withwhat ^ tail)
+    with Not_found -> (len, str)
+  in
+  match ppcmd with
+    | Ppcmd_print (len, str) ->
+        Ppcmd_print (escape '"' "&quot;"
+          (escape '<' "&lt;" (escape '&' "&amp;" (len, str))))
+      (* In XML we always print whole content so we can npeek the whole stream *)
+    | Ppcmd_box (x, str) -> Ppcmd_box (x, Stream.of_list
+        (List.map xmlescape (Stream.npeek max_int str)))
+    | x -> x
+
+
 (* This flag tells if the last printed comment ends with a newline, to
   avoid empty lines *)
 let com_eol = ref false
