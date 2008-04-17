@@ -723,10 +723,3 @@ Proof.
 Qed.
 
 
-(** Compatibility *)
-
-Notation andb := Datatypes.andb (only parsing).
-Notation orb := Datatypes.orb (only parsing).
-Notation implb := Datatypes.implb (only parsing).
-Notation xorb := Datatypes.xorb (only parsing).
-Notation negb := Datatypes.negb (only parsing).
