@@ -158,7 +158,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
   let env' = Classes.push_named_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
-  isevars := resolve_typeclasses ~onlyargs:false ~all:true env' sigma !isevars;
+  isevars := resolve_typeclasses ~onlyargs:false ~fail:true env' sigma !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = Typeclasses.nf_substitution sigma subst in
   let subst, _propsctx = 

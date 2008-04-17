@@ -558,7 +558,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
       | IsType ->
 	  (pretype_type empty_valcon env isevars lvar c).utj_val in
     let evd,_ = consider_remaining_unif_problems env !isevars in
-    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~all:false env (evars_of evd) evd in
+    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:false env (evars_of evd) evd in
       isevars:=evd;
       nf_evar (evars_of !isevars) c'
 

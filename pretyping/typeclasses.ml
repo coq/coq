@@ -407,10 +407,10 @@ let has_typeclasses evd =
 	&& is_resolvable evi))
     evd false
 
-let resolve_typeclasses ?(onlyargs=false) ?(all=true) env sigma evd =
+let resolve_typeclasses ?(onlyargs=false) ?(fail=true) env sigma evd =
   if not (has_typeclasses sigma) then evd
   else
-    !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) onlyargs all
+    !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) onlyargs fail
 
 type substitution = (identifier * constr) list
 

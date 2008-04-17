@@ -275,6 +275,9 @@ let filter_pat c =
 
 let morphism_class = 
   lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))))
+
+let morphism_proxy_class = 
+  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.MorphismProxy"))))
     
 let filter c =
   try let morc = constr_of_global (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))) in
@@ -528,6 +531,8 @@ let setoid_refl pars x =
       
 let morphism_type = lazy (constr_of_global (Lazy.force morphism_class).cl_impl)
 
+let morphism_proxy_type = lazy (constr_of_global (Lazy.force morphism_proxy_class).cl_impl)
+
 exception Found of (constr * constr * (types * types) list * constr * constr array *
 		       (constr * (constr * constr * constr * constr)) option array)
 
@@ -570,16 +575,10 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
 			      t, rel, [t, rel])
   in aux m cstrs
 
-let reflexivity_proof_evar env evars carrier relation x =
+let morphism_proof env evars carrier relation x =
   let goal =
-    mkApp (Lazy.force reflexive_type, [| carrier ; relation |])
-  in
-  let inst = Evarutil.e_new_evar evars env goal in
-    (* try resolve_one_typeclass env goal *)
-    mkApp (Lazy.force reflexive_proof, [| carrier ; relation ; inst ; x |])
-    (*     with Not_found -> *)
-(*       let meta = Evarutil.new_meta() in *)
-(* 	mkCast (mkMeta meta, DEFAULTcast, mkApp (relation, [| x; x |])) *)
+    mkApp (Lazy.force morphism_proxy_type, [| carrier ; relation; x |])
+  in Evarutil.e_new_evar evars env goal
 
 let find_class_proof proof_type proof_method env carrier relation =
   try 
@@ -626,8 +625,8 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
 	let (carrier, relation), sigargs = split_head sigargs in
 	  match y with
 	      None ->
-		let refl_proof = reflexivity_proof_evar env evars carrier relation x in
-		  [ refl_proof ; x ; x ] @ acc, sigargs, x :: typeargs'
+		let proof = morphism_proof env evars carrier relation x in
+		  [ proof ; x ; x ] @ acc, sigargs, x :: typeargs'
 	    | Some (p, (_, _, _, t')) ->
 		[ p ; t'; x ] @ acc, sigargs, t' :: typeargs')
       ([], sigargs, []) args args'
@@ -936,7 +935,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
     match eq with  
 	Some (p, (_, _, oldt, newt)) -> 
 	  (try 
-	      evars := Typeclasses.resolve_typeclasses env (Evd.evars_of !evars) !evars;
+	      evars := Typeclasses.resolve_typeclasses env (Evd.evars_of !evars) ~fail:true !evars;
 	      let p = Evarutil.nf_isevar !evars p in
 	      let newt = Evarutil.nf_isevar !evars newt in
 	      let undef = Evd.undefined_evars !evars in
@@ -971,8 +970,9 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 		  else tclIDTAC
 	      in tclTHENLIST [evartac; rewtac] gl
 	    with 
-	      | TypeClassError (_env, UnsatisfiableConstraints _evm) -> 
-		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl
+	      | TypeClassError (env, (UnsatisfiableConstraints _ as e)) -> 
+		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints."
+			      ++ Himsg.explain_typeclass_error env e) gl
 	      | Not_found ->
 		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl)
       | None -> 
@@ -1037,10 +1037,10 @@ ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
 | [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
 END
 	
-let solve_inst debug mode depth env evd onlyargs all =
+let solve_inst debug mode depth env evd onlyargs fail =
   match resolve_typeclass_evars debug (mode, depth) env evd onlyargs with 
     | None -> 
-	if all then 
+	if fail then 
 	  (* Unable to satisfy the constraints. *)
 	  Typeclasses_errors.unsatisfiable_constraints env evd
 	else (* Best effort: do nothing *) evd

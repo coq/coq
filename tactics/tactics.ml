@@ -1862,14 +1862,17 @@ let abstract_args gl id =
 	   eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
 	*)
 	let aux (prod, ctx, ctxenv, c, args, eqs, refls, finalargs, env) arg =
-	  let (name, ty, arity) = destProd prod in
+	  let (name, _, ty), arity = 
+	    let rel, c = Reductionops.decomp_n_prod env sigma 1 prod in
+	      List.hd rel, c
+	  in
 	  let argty = pf_type_of gl arg in
 	  let liftarg = lift (List.length ctx) arg in
 	  let liftargty = lift (List.length ctx) argty in
 	  let convertible = Reductionops.is_conv ctxenv sigma ty liftargty in
 	    match kind_of_term arg with
 	      | Var _ | Rel _ when convertible -> 
-		    (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, (Anonymous, liftarg, liftarg) :: finalargs, env)
+		  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, (Anonymous, liftarg, liftarg) :: finalargs, env)
 	      | _ ->
 		  let name = get_id name in
 		  let decl = (Name name, None, ty) in

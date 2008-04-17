@@ -75,7 +75,7 @@ Arguments Scope Morphism [type_scope signature_scope].
 
 Implicit Arguments Morphism [A].
 
-(** We allow to unfold the relation definition while doing morphism search. *)
+(** We allow to unfold the [relation] definition while doing morphism search. *)
 
 Typeclasses unfold relation.
 
@@ -144,15 +144,7 @@ Program Instance [ mR : Morphism (A -> A -> Prop) (RA ==> RA ==> iff) R ] =>
     intuition.
   Qed.
 
-(** The inverse too. *)
-
-Program Instance [ mor : Morphism (A -> _) (RA ==> RA ==> iff) R ] => 
-  inverse_morphism : Morphism (RA ==> RA ==> iff) (inverse R).
-
-  Next Obligation.
-  Proof.
-    apply mor ; auto.
-  Qed.
+(** The [inverse] too, actually the [flip] instance is a bit more general. *) 
 
 Program Instance [ mor : Morphism (A -> B -> C) (RA ==> RB ==> RC) f ] => 
   flip_morphism : Morphism (RB ==> RA ==> RC) (flip f).
@@ -174,15 +166,15 @@ Program Instance [ Transitive A R ] =>
     transitivity x0...
   Qed.
 
-(** Dually... *)
+(* (** Dually... *) *)
 
-Program Instance [ Transitive A R ] =>
-  trans_co_contra_inv_impl_morphism : Morphism (R ++> R --> inverse impl) R.
+(* Program Instance [ Transitive A R ] => *)
+(*   trans_co_contra_inv_impl_morphism : Morphism (R ++> R --> inverse impl) R. *)
   
-  Next Obligation.
-  Proof with auto.
-    apply* trans_contra_co_morphism ; eauto. eauto.
-  Qed.
+(*   Next Obligation. *)
+(*   Proof with auto. *)
+(*     apply* trans_contra_co_morphism ; eauto. eauto. *)
+(*   Qed. *)
 
 (** Morphism declarations for partial applications. *)
 
@@ -229,10 +221,8 @@ Program Instance [ Equivalence A R ] =>
     symmetry...
   Qed.
 
-(** [R] is Reflexive, hence we can build the needed proof. *)
-
-Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive _ R ]  =>
-  Reflexive_partial_app_morphism : Morphism R' (m x) | 4.
+(* Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive _ R ]  => *)
+(*   Reflexive_partial_app_morphism : Morphism R' (m x) | 4. *)
 
 (** Every Transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof
    to get an [R y z] goal. *)
@@ -245,13 +235,13 @@ Program Instance [ Transitive A R ] =>
     transitivity y...
   Qed.
 
-Program Instance [ Transitive A R ] => 
-  trans_contra_eq_impl_morphism : Morphism (R --> (@eq A) ==> impl) R.
+(* Program Instance [ Transitive A R ] =>  *)
+(*   trans_contra_eq_impl_morphism : Morphism (R --> (@eq A) ==> impl) R. *)
 
-  Next Obligation.
-  Proof with auto.
-    transitivity x...
-  Qed.
+(*   Next Obligation. *)
+(*   Proof with auto. *)
+(*     transitivity x... *)
+(*   Qed. *)
 
 (** Every Symmetric and Transitive relation gives rise to an equivariant morphism. *)
 
@@ -266,7 +256,7 @@ Program Instance [ Transitive A R, Symmetric _ R ] =>
     transitivity y... transitivity y0... 
   Qed.
 
-Program Instance [ Equivalence A R ] => 
+Program Instance [ Equivalence A R ] =>
   equiv_morphism : Morphism (R ==> R ==> iff) R.
 
   Next Obligation.
@@ -294,11 +284,11 @@ Program Instance inverse_iff_impl_id :
 (** Coq functions are morphisms for leibniz equality, 
    applied only if really needed. *)
 
-Instance (A : Type) [ Reflexive B R ] =>
-  eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3.
-Proof. simpl_relation. Qed.
+(* Instance (A : Type) [ Reflexive B R ] => *)
+(*   eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3. *)
+(* Proof. simpl_relation. Qed. *)
 
-Instance (A : Type) [ Reflexive B R' ] => 
+Instance (A : Type) [ Reflexive B R' ] =>
   Reflexive (@Logic.eq A ==> R').
 Proof. simpl_relation. Qed.
 
@@ -321,6 +311,37 @@ Proof.
     rewrite <- H.
     assumption.
 Qed.
+
+(** Every element in the carrier of a reflexive relation is a morphism for this relation.
+   We use a proxy class for this case which is used internally to discharge reflexivity constraints.
+   The [Reflexive] instance will almost always be used, but it won't apply in general to any kind of 
+   [Morphism (A -> B) _ _] goal, making proof-search much slower. A cleaner solution would be to be able
+   to set different priorities in different hint bases and select a particular hint database for
+   resolution of a type class constraint.*) 
+
+Class MorphismProxy A (R : relation A) (m : A) : Prop :=
+  respect_proxy : R m m.
+
+Instance [ Reflexive A R ] (x : A) => 
+  reflexive_morphism_proxy : MorphismProxy A R x | 1.
+Proof. firstorder. Qed.
+
+Instance [ Morphism A R x ] =>
+  morphism_morphism_proxy : MorphismProxy A R x | 2.
+Proof. firstorder. Qed.
+
+(* Instance (A : Type) [ Reflexive B R ] => *)
+(*   eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3. *)
+(* Proof. simpl_relation. Qed. *)
+
+Instance [ Reflexive A R ] (x : A) => 
+  reflexive_morphism : Morphism R x | 4.
+Proof. firstorder. Qed.
+
+(** [R] is Reflexive, hence we can build the needed proof. *)
+
+Program Instance [ Morphism (A -> B) (R ==> R') m, MorphismProxy A R x ]  =>
+  Reflexive_partial_app_morphism : Morphism R' (m x) | 4.
 
 Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : relation B),
   relation_equivalence (inverse (R ==> R')) (inverse R ==> inverse R').
