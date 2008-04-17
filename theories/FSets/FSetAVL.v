@@ -54,6 +54,7 @@ Notation "s #2" := (snd s) (at level 9, format "s '#2'") : pair_scope.
 
 Module Raw (Import I:Int)(X:OrderedType).
 Open Local Scope pair_scope.
+Open Local Scope lazy_bool_scope.
 Open Local Scope Int_scope.
 
 Definition elt := X.t.
