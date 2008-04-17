@@ -15,26 +15,26 @@ open Libnames
 open Declarations
 open Evarutil
 
+let debug = ref false
+
 (* 1. gappa syntax trees and output *)
 
 module Constant = struct
 
-  type t = { mantissa : int; base : int; exp : int }
+  open Bigint
+
+  type t = { mantissa : bigint; base : int; exp : bigint }
 
   let create (b, m, e) =
     { mantissa = m; base = b; exp = e }
 
   let of_int x = 
-    { mantissa = x; base = 1; exp = 0 }
-
-  let mult x y =
-    if x.base = 1 then { y with mantissa = x.mantissa * y.mantissa }
-    else invalid_arg "Constant.mult"
+    { mantissa = x; base = 1; exp = zero }
 
   let print fmt x = match x.base with
-    | 1 -> fprintf fmt "%d" x.mantissa
-    | 2 -> fprintf fmt "%db%d" x.mantissa x.exp
-    | 10 -> fprintf fmt "%de%d" x.mantissa x.exp
+    | 1 -> fprintf fmt "%s" (to_string x.mantissa)
+    | 2 -> fprintf fmt "%sb%s" (to_string x.mantissa) (to_string x.exp)
+    | 10 -> fprintf fmt "%se%s" (to_string x.mantissa) (to_string x.exp)
     | _ -> assert false
 
 end
@@ -78,6 +78,9 @@ let print_pred fmt = function
       fprintf fmt "%a in [%a, %a]" 
 	print_term t Constant.print c1 Constant.print c2
 
+let temp_file f = if !debug then f else Filename.temp_file f ".v"
+let remove_file f = if not !debug then try Sys.remove f with _ -> ()
+
 let read_gappa_proof f =
   let buf = Buffer.create 1024 in
   Buffer.add_char buf '(';
@@ -97,6 +100,8 @@ let read_gappa_proof f =
     done;
     assert false
   with Exit ->
+    close_in cin;
+    remove_file f;
     Buffer.add_char buf ')';
     Buffer.contents buf
 
@@ -132,34 +137,38 @@ let patch_gappa_proof fin fout =
     fprintf fmt "Definition proof := Eval cbv delta [%s] in %s.@." !defs !last;
     close_out cout
     
-
 let call_gappa hl p =
-  let gappa_in = "test.gappa" in
+  let gappa_in = temp_file "gappa_input" in
   let c = open_out gappa_in in
   let fmt = formatter_of_out_channel c in
   fprintf fmt "@[{ "; 
   List.iter (fun h -> fprintf fmt "%a ->@ " print_pred h) hl;
   fprintf fmt "%a }@]@." print_pred p;
   close_out c;
-  let gappa_out = "gappa.v" in
-  let cmd = sprintf "gappa -Bcoq < %s > %s" gappa_in gappa_out in
+  let gappa_out = temp_file "gappa_output" in
+  let cmd = sprintf "gappa -Bcoq < %s > %s 2> /dev/null" gappa_in gappa_out in
   let out = Sys.command cmd in
   if out <> 0 then raise GappaFailed;
-  let gappa_out2 = "gappa2.v" in
+  remove_file gappa_in;
+  let gappa_out2 = temp_file "gappa2" in
   patch_gappa_proof gappa_out gappa_out2;
-  let lambda = "test.lambda" in
+  remove_file gappa_out;
   let cmd = sprintf "%s/coqc %s" Coq_config.bindir gappa_out2 in
   let out = Sys.command cmd in
   if out <> 0 then raise GappaProofFailed;
-  let gappa_out3 = "gappa3.v" in
+  let gappa_out3 = temp_file "gappa3" in
   let c = open_out gappa_out3 in
-  let gappa2 = Filename.chop_suffix gappa_out2 ".v" in
+  let gappa2 = Filename.chop_suffix (Filename.basename gappa_out2) ".v" in
   Printf.fprintf c 
-    "Require %s. Set Printing Depth 9999999. Print %s.proof." gappa2 gappa2;
+    "Require \"%s\". Set Printing Depth 9999999. Print %s.proof." 
+    (Filename.chop_suffix gappa_out2 ".v") gappa2;
   close_out c;
+  let lambda = temp_file "gappa_lambda" in
   let cmd = sprintf "%s/coqc %s > %s" Coq_config.bindir gappa_out3 lambda in
   let out = Sys.command cmd in
   if out <> 0 then raise GappaProofFailed;
+  remove_file gappa_out2; remove_file gappa_out3;
+  remove_file (gappa_out2 ^ "o"); remove_file (gappa_out3 ^ "o");
   read_gappa_proof lambda
 
 (* 2. coq -> gappa translation *)
@@ -203,6 +212,7 @@ let coq_sqrt = lazy (constant "sqrt")
 let coq_convert = lazy (constant "convert")
 let coq_reUnknown = lazy (constant "reUnknown")
 let coq_reFloat2 = lazy (constant "reFloat2")
+let coq_reFloat10 = lazy (constant "reFloat10")
 let coq_reInteger = lazy (constant "reInteger")
 let coq_reBinary = lazy (constant "reBinary")
 let coq_reUnary = lazy (constant "reUnary")
@@ -249,16 +259,33 @@ let rec tr_positive p = match kind_of_term p with
 
 (* translates a closed Coq term t:Z into a term of type int *)
 let rec tr_arith_constant t = match kind_of_term t with
-  | Term.Construct _ when t = Lazy.force coq_Z0 ->
-      0
-  | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos ->
-      tr_positive a
-  | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg ->
-      - (tr_positive a)
-  | Term.Cast (t, _, _) ->
-      tr_arith_constant t
-  | _ -> 
+  | Term.Construct _ when t = Lazy.force coq_Z0 -> 0
+  | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos -> tr_positive a
+  | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg -> - (tr_positive a)
+  | Term.Cast (t, _, _) -> tr_arith_constant t
+  | _ -> raise NotGappa
+
+(* translates a closed Coq term p:positive into a FOL term of type bigint *)
+let rec tr_bigpositive p = match kind_of_term p with
+  | Term.Construct _ when p = Lazy.force coq_xH -> 
+      Bigint.one
+  | Term.App (f, [|a|]) when f = Lazy.force coq_xI ->
+      Bigint.add_1 (Bigint.mult_2 (tr_bigpositive a))
+  | Term.App (f, [|a|]) when f = Lazy.force coq_xO ->
+      (Bigint.mult_2 (tr_bigpositive a))
+  | Term.Cast (p, _, _) ->
+      tr_bigpositive p
+  | _ ->
       raise NotGappa
+
+(* translates a closed Coq term t:Z into a term of type bigint *)
+let rec tr_arith_bigconstant t = match kind_of_term t with
+  | Term.Construct _ when t = Lazy.force coq_Z0 -> Bigint.zero
+  | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos -> tr_bigpositive a
+  | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg -> 
+      Bigint.neg (tr_bigpositive a)
+  | Term.Cast (t, _, _) -> tr_arith_bigconstant t
+  | _ -> raise NotGappa
 
 let decomp c = 
   let c, args = decompose_app c in
@@ -270,7 +297,7 @@ let tr_bool c = match decompose_app c with
   | _ -> raise NotGappa
 
 let tr_float b m e =
-  (b, tr_arith_constant m, tr_arith_constant e)
+  (b, tr_arith_bigconstant m, tr_arith_bigconstant e)
 
 let tr_binop c = match decompose_app c with
   | c, [] when c = Lazy.force coq_boAdd -> Bplus
@@ -317,8 +344,10 @@ let rec tr_term c0 =
 	Tvar (tr_var a)
     | _, [a; b] when c = Lazy.force coq_reFloat2 ->
 	Tconst (Constant.create (tr_float 2 a b))
+    | _, [a; b] when c = Lazy.force coq_reFloat10 ->
+	Tconst (Constant.create (tr_float 10 a b))
     | _, [a] when c = Lazy.force coq_reInteger ->
-	Tconst (Constant.create (1, tr_arith_constant a, 0))
+	Tconst (Constant.create (1, tr_arith_bigconstant a, Bigint.zero))
     | _, [op;a;b] when c = Lazy.force coq_reBinary ->
 	Tbinop (tr_binop op, tr_term a, tr_term b)
     | _, [op;a] when c = Lazy.force coq_reUnary ->
@@ -383,32 +412,30 @@ let var_name = function
 
 let build_proof_term c0 =
   let bl,c = decompose_lam c0 in
-  let c = 
-    List.fold_right 
-      (fun (x,t) pf -> 
-	mkApp (pf, [| if is_R t then var_name x else mk_new_meta () |]))
-      bl c0
-  in
-  mkApp 
-    (Lazy.force coq_subset, 
-    [| mk_new_meta (); mk_new_meta (); 
-       mkApp (Lazy.force coq_makepairF, [| mk_new_meta(); mk_new_meta() |]);
-       c; mk_new_meta () |])
+  List.fold_right 
+    (fun (x,t) pf -> 
+      mkApp (pf, [| if is_R t then var_name x else mk_new_meta () |]))
+    bl c0
 
 let gappa_internal gl =
   try
     let c = tr_pred (pf_concl gl) in
     let s = call_gappa (tr_hyps (pf_hyps_types gl)) c in
-    msgnl (str s);
     let pf = constr_of_string gl s in
     let pf = build_proof_term pf in
-    Tacticals.tclTHEN (Tactics.refine pf) 
-      (Tacticals.tclORELSE Tactics.assumption Tactics.reflexivity)
-      gl
+    Tacticals.tclTHEN (Tacmach.refine_no_check pf) Tactics.assumption gl
   with 
     | NotGappa -> error "not a gappa goal"
     | GappaFailed -> error "gappa failed"
     | GappaProofFailed -> error "incorrect gappa proof term"
+
+let gappa_prepare =
+  let id = Ident (dummy_loc, id_of_string "gappa_prepare") in
+  lazy (Tacinterp.interp (Tacexpr.TacArg (Tacexpr.Reference id)))
+
+let gappa gl =
+  Coqlib.check_required_library ["Gappa"; "Gappa_tactic"];
+  Tacticals.tclTHEN (Lazy.force gappa_prepare) gappa_internal gl
 
 (*
 Local Variables: 

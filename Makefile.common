@@ -84,6 +84,7 @@ REFMANTEXFILES:=\
   doc/refman/RefMan-com.tex \
   doc/refman/RefMan-uti.tex doc/refman/RefMan-ide.tex \
   doc/refman/RefMan-add.tex doc/refman/RefMan-modr.tex \
+  doc/refman/ExternalProvers.tex \
   $(REFMANCOQTEXFILES) \
 
 REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps
@@ -800,7 +801,7 @@ JPROVERVO:=
 
 CCVO:=
 
-DPVO:=contrib/dp/Dp.vo
+DPVO:=contrib/dp/Dp.vo 
 
 SUBTACVO:=theories/Program/Tactics.vo theories/Program/Equality.vo theories/Program/Subset.vo \
 	theories/Program/Utils.vo theories/Program/Wf.vo theories/Program/Basics.vo \
