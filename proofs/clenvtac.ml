@@ -99,6 +99,7 @@ let fail_quick_unif_flags = {
   modulo_conv_on_closed_terms = true; 
   use_metas_eagerly = false;
   modulo_delta = Cpred.empty; 
+  modulo_zeta = true;
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)

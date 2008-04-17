@@ -406,9 +406,12 @@ let explain_refiner_cannot_generalize env ty =
   str "Cannot find a well-typed generalisation of the goal with type : " ++
   pr_lconstr_env env ty
 
-let explain_no_occurrence_found env c =
+let explain_no_occurrence_found env c id =
   str "Found no subterm matching " ++ pr_lconstr_env env c ++
-  str " in the current goal"
+  str " in " ++ 
+    (match id with
+      | Some id -> pr_id id
+      | None -> str"the current goal")
 
 let explain_cannot_unify_binding_type env m n =
   let pm = pr_lconstr_env env m in
@@ -465,7 +468,7 @@ let explain_pretype_error env err =
   | CannotUnify (m,n) -> explain_cannot_unify env m n
   | CannotUnifyLocal (m,n,sn) -> explain_cannot_unify_local env m n sn
   | CannotGeneralize ty -> explain_refiner_cannot_generalize env ty
-  | NoOccurrenceFound c -> explain_no_occurrence_found env c
+  | NoOccurrenceFound (c, id) -> explain_no_occurrence_found env c id
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type env m n
 
       

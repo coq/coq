@@ -18,6 +18,7 @@ type unify_flags = {
   modulo_conv_on_closed_terms : bool; 
   use_metas_eagerly : bool;
   modulo_delta : Names.Cpred.t;
+  modulo_zeta : bool;
 }
 
 val default_unify_flags : unify_flags

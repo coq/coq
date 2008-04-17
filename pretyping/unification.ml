@@ -96,13 +96,6 @@ let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
 	metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 
-let expand_constant env predcst c = 
-  let (ids,csts) = Conv_oracle.freeze() in
-  match kind_of_term c with
-  | Const cst when Cpred.mem cst csts && Cpred.mem cst predcst -> constant_opt_value env cst
-  | Var id when Idpred.mem id ids -> named_body id env
-  | _ -> None
-
 (*******************************)
 
 (* Unification à l'ordre 0 de m et n: [unify_0 env sigma cv_pb m n]
@@ -127,19 +120,29 @@ type unify_flags = {
   modulo_conv_on_closed_terms : bool; 
   use_metas_eagerly : bool;
   modulo_delta : Cpred.t;
+  modulo_zeta : bool;
 }
 
 let default_unify_flags = {
   modulo_conv_on_closed_terms = true;
   use_metas_eagerly = true;
   modulo_delta = Cpred.full;
+  modulo_zeta = true;
 }
 
 let default_no_delta_unify_flags = {
   modulo_conv_on_closed_terms = true;
   use_metas_eagerly = true;
   modulo_delta = Cpred.empty;
+  modulo_zeta = true;
 }
+
+let expand_constant env flags c = 
+  let (ids,csts) = Conv_oracle.freeze() in
+  match kind_of_term c with
+  | Const cst when Cpred.mem cst csts && Cpred.mem cst flags.modulo_delta -> constant_opt_value env cst
+  | Var id when flags.modulo_zeta && Idpred.mem id ids -> named_body id env
+  | _ -> None
 
 let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
   let nb = nb_rel env in
@@ -222,11 +225,11 @@ let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
   and expand curenv pb b substn cM f1 l1 cN f2 l2 =
     if trivial_unify pb substn cM cN then substn
     else if b & not (Cpred.is_empty flags.modulo_delta) then
-      match expand_constant curenv flags.modulo_delta f1 with
+      match expand_constant curenv flags f1 with
       | Some c ->
 	  unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
       | None ->
-      match expand_constant curenv flags.modulo_delta f2 with
+      match expand_constant curenv flags f2 with
       | Some c ->
 	  unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
       | None ->
@@ -608,7 +611,7 @@ let w_unify_to_subterm env ?(flags=default_unify_flags) (op,cl) evd =
   in 
   try matchrec cl
   with ex when precatchable_exception ex ->
-    raise (PretypeError (env,NoOccurrenceFound op))
+    raise (PretypeError (env,NoOccurrenceFound (op, None)))
 
 let w_unify_to_subterm_list env flags allow_K oplist t evd = 
   List.fold_right 
@@ -628,7 +631,7 @@ let w_unify_to_subterm_list env flags allow_K oplist t evd =
 	(evd,op::l)
       else
 	(* This is not up to delta ... *)
-	raise (PretypeError (env,NoOccurrenceFound op)))
+	raise (PretypeError (env,NoOccurrenceFound (op, None))))
     oplist 
     (evd,[])
 
@@ -693,7 +696,7 @@ let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 	    with ex when precatchable_exception ex -> 
 	      try 
 		w_unify2 env flags allow_K cv_pb ty1 ty2 evd
-	      with PretypeError (env,NoOccurrenceFound c) as e -> raise e
+	      with PretypeError (env,NoOccurrenceFound _) as e -> raise e
 		| ex when precatchable_exception ex -> 
 		    error "Cannot solve a second-order unification problem")
 	    
@@ -701,7 +704,7 @@ let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
       | (Meta _, true, _, _ | _, _, Meta _, true) -> 
 	  (try 
 	      w_unify2 env flags allow_K cv_pb ty1 ty2 evd
-	    with PretypeError (env,NoOccurrenceFound c) as e -> raise e
+	    with PretypeError (env,NoOccurrenceFound _) as e -> raise e
 	      | ex when precatchable_exception ex -> 
 		  try 
 		    w_typed_unify env cv_pb flags ty1 ty2 evd

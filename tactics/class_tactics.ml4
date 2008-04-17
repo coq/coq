@@ -40,6 +40,19 @@ open Command
 open Libnames
 open Evd
 
+let check_required_library d =
+  let d' = List.map id_of_string d in
+  let dir = make_dirpath (List.rev d') in
+  if (* not (Library.library_is_opened dir) ||  *)not (Library.library_is_loaded dir) then
+    error ("Library "^(list_last d)^" has to be required first")
+
+let classes_dirpath =
+  make_dirpath (List.map id_of_string ["Classes";"Coq"])
+  
+let init_setoid () =
+  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
+  else check_required_library ["Coq";"Setoids";"Setoid"]
+
 (** Typeclasses instance search tactic / eauto *)
 
 open Auto
@@ -58,6 +71,7 @@ let auto_unif_flags = ref {
   modulo_conv_on_closed_terms = true; 
   use_metas_eagerly = true;
   modulo_delta = Cpred.empty;
+  modulo_zeta = true;
 }
 
 let unify_e_resolve (c,clenv) gls = 
@@ -409,6 +423,7 @@ let init () =
     modulo_conv_on_closed_terms = true; 
     use_metas_eagerly = true;
     modulo_delta = Cpred.empty;
+    modulo_zeta = true;
   }
     
 let _ = 
@@ -642,6 +657,7 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
 type hypinfo = {
   cl : clausenv;
   prf : constr;
+  car : constr;
   rel : constr;
   l2r : bool;
   c1 : constr;
@@ -650,31 +666,44 @@ type hypinfo = {
   abs : (constr * types) option;
 }
 
+let convertible env evd x y =
+  try ignore(Evarconv.the_conv_x env x y evd); true 
+  with _ -> false
+    (* ignore(Reduction.conv env x y) *)
+  
 let decompose_setoid_eqhyp env sigma c left2right =
   let ctype = Typing.type_of env sigma c in
-  let eqclause  = Clenv.mk_clenv_from_env env sigma None (c,ctype) in
+  let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ctype) in
   let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)
     | x::y::z ->
 	let l,res = split_last_two (y::z) in x::l, res
     | _ -> error "The term provided is not an applied relation" in
-  let others, (c1,c2) = split_last_two args in
-    { cl=eqclause; prf=(Clenv.clenv_value eqclause);
-      rel=mkApp (equiv, Array.of_list others);
-      l2r=left2right; c1=c1; c2=c2; c=Some c; abs=None }
+  let others,(c1,c2) = split_last_two args in
+  let ty1, ty2 = 
+    Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
+  in
+    if not (convertible env eqclause.evd ty1 ty2) then
+      error "The term does not end with an applied homogeneous relation"
+    else
+      { cl=eqclause; prf=(Clenv.clenv_value eqclause);
+	car=ty1; rel=mkApp (equiv, Array.of_list others);
+	l2r=left2right; c1=c1; c2=c2; c=Some c; abs=None }
 
 let rewrite_unif_flags = {
   Unification.modulo_conv_on_closed_terms = false;
   Unification.use_metas_eagerly = true;
-  Unification.modulo_delta = Cpred.empty
+  Unification.modulo_delta = Cpred.empty;
+  Unification.modulo_zeta = false;
 }
 
 let rewrite2_unif_flags = {
   Unification.modulo_conv_on_closed_terms = true;
   Unification.use_metas_eagerly = true;
-  Unification.modulo_delta = Cpred.empty
- }
+  Unification.modulo_delta = Cpred.empty;
+  Unification.modulo_zeta = false;
+}
 
 (* let unification_rewrite c1 c2 cl but gl =  *)
 (*   let (env',c1) = *)
@@ -707,27 +736,39 @@ let refresh_hypinfo env sigma hypinfo =
 	| _ -> ()
   else ()
 
-let convertible env x y =
-  ignore(Reduction.conv env x y)
-  
 let unify_eqn env sigma hypinfo t = 
   try 
-    let {cl=cl; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
-    let env' = 
+    let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
+    let env', c1, c2, car, rel = 
       match abs with
-	  Some _ -> convertible env (if l2r then c1 else c2) t; cl
+	  Some _ -> 
+	    if convertible env cl.evd (if l2r then c1 else c2) t then 
+	      cl, c1, c2, car, rel
+	    else raise Not_found
 	| None ->
-	    try clenv_unify allowK ~flags:rewrite_unif_flags
-	      CONV (if l2r then c1 else c2) t cl
-	    with Pretype_errors.PretypeError _ ->
-	      (* For Ring essentially, only when doing setoid_rewrite *)
-	      clenv_unify allowK ~flags:rewrite2_unif_flags
+	    let env' =
+	      try clenv_unify allowK ~flags:rewrite_unif_flags
 		CONV (if l2r then c1 else c2) t cl
+	      with Pretype_errors.PretypeError _ ->
+		(* For Ring essentially, only when doing setoid_rewrite *)
+		clenv_unify allowK ~flags:rewrite2_unif_flags
+		  CONV (if l2r then c1 else c2) t cl
+	    in
+	    let env' = 
+	      let mvs = clenv_dependent false env' in
+		clenv_pose_metas_as_evars env' mvs
+	    in
+	    let c1 = Clenv.clenv_nf_meta env' c1 
+	    and c2 = Clenv.clenv_nf_meta env' c2
+	    and car = Clenv.clenv_nf_meta env' car
+	    and rel = Clenv.clenv_nf_meta env' rel in
+	    let ty1 = Typing.mtype_of env'.env env'.evd c1 
+	    and ty2 = Typing.mtype_of env'.env env'.evd c2
+	    in
+	      if convertible env env'.evd ty1 ty2 then
+		env', c1, c2, car, rel
+	      else raise Not_found
     in
-    let c1 = Clenv.clenv_nf_meta env' c1 
-    and c2 = Clenv.clenv_nf_meta env' c2
-    and rel = Clenv.clenv_nf_meta env' rel in
-    let car = Typing.type_of env'.env (Evd.evars_of env'.evd) c1 in
     let prf =
       if abs = None then
 (* 	let (rel, args) = destApp typ in *)
@@ -747,7 +788,7 @@ let unify_eqn env sigma hypinfo t =
     in Some (env', res)
   with _ -> None
 
-let unfold_impl t = 
+let unfold_impl t =
   match kind_of_term t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) -> 
 	mkProd (Anonymous, a, b)
@@ -813,7 +854,7 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
   let rec aux env t occ cstr =
     match unify_eqn env sigma hypinfo t with
       | Some (env', (prf, hypinfo as x)) ->
-	  if is_occ occ then (
+	  if is_occ occ then (	    
 	    evars := Evd.evar_merge !evars (Evd.evars_of (Evd.undefined_evars env'.evd));
 	    match cstr with
 		None -> Some x, succ occ
@@ -971,16 +1012,19 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 	      in tclTHENLIST [evartac; rewtac] gl
 	    with 
 	      | TypeClassError (env, (UnsatisfiableConstraints _ as e)) -> 
-		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints."
-			      ++ Himsg.explain_typeclass_error env e) gl
-	      | Not_found ->
-		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl)
+		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints." 
+			      ++ fnl () ++ Himsg.explain_typeclass_error env e) gl)
+(* 	      | Not_found -> *)
+(* 		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl) *)
       | None -> 
 	  let {l2r=l2r; c1=x; c2=y} = !hypinfo in
-	    raise (Pretype_errors.PretypeError (pf_env gl, Pretype_errors.NoOccurrenceFound (if l2r then x else y)))
+	    raise (Pretype_errors.PretypeError 
+		      (pf_env gl, 
+		      Pretype_errors.NoOccurrenceFound ((if l2r then x else y), is_hyp)))
 	      (* tclFAIL 1 (str"setoid rewrite failed") gl *)
 	  
 let cl_rewrite_clause c left2right occs clause gl =
+  init_setoid ();
   let meta = Evarutil.new_meta() in
   let hypinfo = ref (decompose_setoid_eqhyp (pf_env gl) (project gl) c left2right) in
     cl_rewrite_clause_aux hypinfo meta occs clause gl
@@ -1113,15 +1157,6 @@ let anew_instance binders instance fields =
 let require_library dirpath =
   let qualid = (dummy_loc, Libnames.qualid_of_dirpath (Libnames.dirpath_of_string dirpath)) in
     Library.require_library [qualid] (Some false)
-
-let check_required_library d =
-  let d' = List.map id_of_string d in
-  let dir = make_dirpath (List.rev d') in
-  if (* not (Library.library_is_opened dir) ||  *)not (Library.library_is_loaded dir) then
-    error ("Library "^(list_last d)^" has to be required first")
-
-let init_setoid () =
-  check_required_library ["Coq";"Setoids";"Setoid"]
 
 let declare_instance_refl binders a aeq n lemma = 
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive" 
@@ -1435,7 +1470,7 @@ let check_evar_map_of_evars_defs evd =
          check_freemetas_is_empty rebus2 freemetas2
    ) metas
 
-let unification_rewrite l2r c1 c2 cl rel but gl = 
+let unification_rewrite l2r c1 c2 cl car rel but gl = 
   let (env',c') =
     try
       (* ~flags:(false,true) to allow to mark occurrences that must not be
@@ -1456,7 +1491,7 @@ let unification_rewrite l2r c1 c2 cl rel but gl =
   let prf = Clenv.clenv_value cl' in
   let prfty = Clenv.clenv_type cl' in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
-    {cl=cl'; prf=(mkRel 1); rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
+    {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
 (*         if occur_meta prf then *)
 (* else *)
 (*       {cl=cl'; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=None} *)
@@ -1466,7 +1501,7 @@ let get_hyp gl c clause l2r =
       Prod _ -> 
 	let hi = decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r in
 	let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
-	  unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.rel but gl
+	  unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
     | _ -> decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r
 	
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = false }
@@ -1481,15 +1516,8 @@ let general_s_rewrite_in id l2r occs c ~new_goals gl =
   let hypinfo = ref (get_hyp gl c (Some id) l2r) in
     cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta occs (Some (([],id), [])) gl
 
-let classes_dirpath =
-  make_dirpath (List.map id_of_string ["Classes";"Coq"])
-  
-let init_rewrite () =
-  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else check_required_library ["Coq";"Setoids";"Setoid"]
-
 let general_s_rewrite_clause x =
-  init_rewrite ();
+  init_setoid ();
   match x with
     | None -> general_s_rewrite
     | Some id -> general_s_rewrite_in id
@@ -1511,7 +1539,7 @@ let is_loaded d =
     Library.library_is_loaded dir
 
 let try_loaded f gl =
-  if is_loaded ["Coq";"Classes";"RelationClasses"] then f gl 
+  if is_loaded ["Coq";"Classes";"RelationClasses"] then f gl
   else tclFAIL 0 (str"You need to require Coq.Classes.RelationClasses first") gl
     
 let setoid_reflexivity gl =

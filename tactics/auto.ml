@@ -567,7 +567,8 @@ open Unification
 let auto_unif_flags = {
   modulo_conv_on_closed_terms = true; 
   use_metas_eagerly = false;
-  modulo_delta = Cpred.empty; 
+  modulo_delta = Cpred.empty;
+  modulo_zeta = true;
 }
 
 (* Try unification with the precompiled clause, then use registered Apply *)

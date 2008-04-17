@@ -552,6 +552,7 @@ let elim_flags = {
   modulo_conv_on_closed_terms = true; 
   use_metas_eagerly = true;
   modulo_delta = Cpred.empty;
+  modulo_zeta = true;
 }
 
 let elimination_clause_scheme with_evars allow_K elimclause indclause gl = 

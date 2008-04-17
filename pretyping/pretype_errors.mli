@@ -33,7 +33,7 @@ type pretype_error =
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
-  | NoOccurrenceFound of constr
+  | NoOccurrenceFound of constr * identifier option
   (* Pretyping *)
   | VarNotFound of identifier
   | UnexpectedType of constr * constr

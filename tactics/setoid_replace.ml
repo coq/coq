@@ -1734,14 +1734,16 @@ let check_evar_map_of_evars_defs evd =
 let rewrite_unif_flags = {
   modulo_conv_on_closed_terms = false;
   use_metas_eagerly = true;
-  modulo_delta = Cpred.empty
+  modulo_delta = Cpred.empty;
+  modulo_zeta = false;
 }
 
 let rewrite2_unif_flags = {
   modulo_conv_on_closed_terms = true;
   use_metas_eagerly = true;
-  modulo_delta = Cpred.empty
- }
+  modulo_delta = Cpred.empty;
+  modulo_zeta = false;
+}
 
 let unification_rewrite c1 c2 cl but gl = 
   let (env',c1) =

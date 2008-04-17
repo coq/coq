@@ -52,15 +52,21 @@ open Indrec
 *)
 
 (* Ad hoc asymmetric general_elim_clause *)
-let general_elim_clause with_evars cls c elim = match cls with
-  | None ->
-      (* was tclWEAK_PROGRESS which only fails for tactics generating one 
-         subgoal and did not fail for useless conditional rewritings generating
-         an extra condition *)
-      tclNOTSAMEGOAL (general_elim with_evars c elim ~allow_K:false)
-  | Some id ->
-      general_elim_in with_evars id c elim 
-
+let general_elim_clause with_evars cls c elim = 
+  try 
+    (match cls with
+      | None ->
+	  (* was tclWEAK_PROGRESS which only fails for tactics generating one 
+             subgoal and did not fail for useless conditional rewritings generating
+             an extra condition *)
+	  tclNOTSAMEGOAL (general_elim with_evars c elim ~allow_K:false)
+      | Some id ->
+	  general_elim_in with_evars id c elim)
+  with Pretype_errors.PretypeError (env,
+				   (Pretype_errors.NoOccurrenceFound (c', _))) ->
+    raise (Pretype_errors.PretypeError
+	      (env, (Pretype_errors.NoOccurrenceFound (c', cls))))
+      
 let elimination_sort_of_clause = function
   | None -> elimination_sort_of_goal
   | Some id -> elimination_sort_of_hyp id
