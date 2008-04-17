@@ -1,0 +1,58 @@
+
+\achapter{Calling external provers}
+
+\asection{The \texttt{gappa} tactic}
+\aauthor{Sylvie Boldo, Guillaume Melquiond, Jean-Christophe Filliâtre}
+\tacindex{gappa}
+
+The \texttt{gappa} tactic invokes the Gappa
+tool\footnote{\url{http://lipforge.ens-lyon.fr/www/gappa/}} to solve
+properties about floating-point or fixed-point arithmetic. It can also
+solve simple inequalities over real numbers.
+
+The Gappa tool must be installed and its executable (called
+\texttt{gappa}) must be in the user program path. The Coq support
+library for Gappa must also be installed (it is available from Gappa's
+web site). This library provides a \texttt{Gappa\_tactic} module,
+which must be loaded for the tactic to work properly.
+
+The \texttt{gappa} tactic only handles goals and hypotheses that are
+double inequalities $f_1 \le e \le f_2$ where $f_1$ and $f_2$ are
+dyadic constants and $e$ a real-valued expression. Here is an example
+of a goal solved by \texttt{gappa}:
+\begin{verbatim}
+Lemma test_gappa : 
+  forall x y:R,
+  3/4 <= x <= 3 -> 
+  0 <= sqrt x <= 1775 * (powerRZ 2 (-10)).
+Proof.
+  gappa.
+Qed.
+\end{verbatim}
+
+Gappa supports floating-point rounding operations (as functions over
+real numbers). Here is an example involving double-precision
+floating-point numbers with rounding toward zero:
+\begin{verbatim}
+Definition rnd := gappa_rounding (rounding_float roundZR 53 1074).
+
+Lemma test_gappa2 :
+  forall a_ b_ a b : R,
+  a = rnd a_ ->
+  b = rnd b_ ->
+  52 / 16 <= a <= 53 / 16 ->
+  22 / 16 <= b <= 30 / 16 ->
+  0 <= rnd (a - b) - (a - b) <= 0.
+Proof.
+  unfold rnd; gappa.
+Qed.
+\end{verbatim}
+The function \texttt{gappa\_rounding} declares a rounding mode
+recognized by the \texttt{gappa} tactic. Rounding modes are built
+using constants such as \texttt{rounding\_float} and
+\texttt{roundZR} provided by the Gappa support library.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
