@@ -1,0 +1,52 @@
+\def\Haskell{\textsc{Haskell}\xspace}
+\def\eol{\setlength\parskip{0pt}\par}
+\def\indent#1{\noindent\kern#1}
+\def\cst#1{\textsf{#1}}
+
+\achapter{\protect{Type Classes}}
+\aauthor{Matthieu Sozeau}
+\label{typeclasses}
+
+\begin{flushleft}
+  \em The status of Type Classes is (extremelly) experimental.
+\end{flushleft}
+
+This chapter presents a quick reference of the commands related to type
+classes. It is not meant as an introduction to type classes altough it
+may become one in the future. For an actual introduction, there is a
+description of the system \cite{sozeau08} and the literature on type
+classes in \Haskell which also applies.
+
+\asection{Class and Instance declarations}
+
+The syntax for class and instance declarations is a mix between the
+record syntax of \Coq~and the type classes syntax of \Haskell:
+\def\kw{\texttt}
+\def\classid{\texttt}
+
+\begin{multicols}{2}{
+\medskip
+  \kw{Class} \classid{Id} $(\alpha_1 : \tau_1) \cdots (\alpha_n : \tau_n)$ :=
+  \eol\indent{3.00em}$\cst{f}_1 : \phi_1$ ;
+  \eol\indent{4.00em}\vdots
+  \eol\indent{3.00em}$\cst{f}_m : \phi_m$.
+\medskip}
+{
+  
+  \medskip
+  \kw{Instance} \classid{Id} $t_1 \cdots t_n$ :=
+  \eol\indent{3.00em}$\cst{f}_1 := b_1$ ;
+  \eol\indent{4.00em}\vdots
+  \eol\indent{3.00em}$\cst{f}_m := b_m$.
+  \medskip}
+\end{multicols}
+
+\begin{coq_eval}
+  Reset Initial.
+\end{coq_eval}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% compile-command: "make -C ../.. -f Makefile.stage3 doc/refman/Reference-Manual.pdf"
+%%% End: 

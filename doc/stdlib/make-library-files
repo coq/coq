@@ -10,7 +10,7 @@
 # En supposant que make fait son boulot, ca fait un tri topologique du
 # graphe des dépendances
 
-LIBDIRS="Arith NArith ZArith Reals Logic Bool Lists Relations Sets Sorting Wellfounded Setoids Program"
+LIBDIRS="Arith NArith ZArith Reals Logic Bool Lists Relations Sets Sorting Wellfounded Setoids Program Classes"
 
 rm -f library.files.ls.tmp
 (cd $COQTOP/theories; find $LIBDIR -name "*.v" -ls) > library.files.ls.tmp

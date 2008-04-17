@@ -75,7 +75,7 @@ REFMANCOQTEXFILES:=\
   doc/refman/RefMan-decl.v.tex \
   doc/refman/Cases.v.tex doc/refman/Coercion.v.tex doc/refman/Extraction.v.tex \
   doc/refman/Program.v.tex doc/refman/Omega.v.tex doc/refman/Polynom.v.tex \
-  doc/refman/Setoid.v.tex doc/refman/Helm.tex # doc/refman/Natural.v.tex
+  doc/refman/Setoid.v.tex doc/refman/Helm.tex doc/refman/Classes.v.tex
 
 REFMANTEXFILES:=\
   doc/refman/headers.sty \

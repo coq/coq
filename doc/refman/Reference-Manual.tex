@@ -17,6 +17,8 @@
 \usepackage{ifpdf}
 \usepackage[headings]{fullpage}
 \usepackage{headers} % in this directory
+\usepackage{multicol}
+\usepackage{xspace}
 
 % for coqide
 \ifpdf   % si on est pas en pdflatex
@@ -99,6 +101,7 @@ Options A and B of the licence are {\em not} elected.}
 \include{AddRefMan-pre}%
 \include{Cases.v}%
 \include{Coercion.v}%
+\include{Classes.v}%
 %%SUPPRIME \include{Natural.v}%
 \include{Omega.v}%
 %%SUPPRIME \include{Correctness.v}% = preuve de pgms imperatifs
