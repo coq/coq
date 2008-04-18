@@ -917,7 +917,14 @@ let one_step_reduce env sigma c =
 let isIndRef = function IndRef _ -> true | _ -> false
 
 let reduce_to_ref_gen allow_product env sigma ref t =
-  if isIndRef ref then snd (reduce_to_ind_gen allow_product env sigma t) else
+  if isIndRef ref then
+    let (mind,t) = reduce_to_ind_gen allow_product env sigma t in
+    if IndRef mind <> ref then
+      errorlabstrm "" (str "Cannot recognize a statement based on " ++ 
+        Nametab.pr_global_env Idset.empty ref)
+    else
+      t
+  else
   (* lazily reduces to match the head of [t] with the expected [ref] *)
   let rec elimrec env t l = 
     let c, _ = Reductionops.whd_stack t in

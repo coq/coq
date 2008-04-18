@@ -857,6 +857,7 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
     | Rel i when i>k ->	project_variable env' (mkRel (i-k)) k t
     | Var id -> project_variable env' t k t
     | Evar (evk',args' as ev') ->
+        if evk = evk' then error_occur_check env (evars_of evd) evk rhs;
 	(* Evar/Evar problem (but left evar is virtual) *)
 	let projs' =
 	  array_map_to_list
@@ -904,6 +905,8 @@ and evar_define env (evk,_ as ev) rhs evd =
   try
     let (evd',body) = invert_definition env evd ev rhs in
     if occur_meta body then error "Meta cannot occur in evar body";
+    (* invert_definition may have instantiate some evars of rhs with evk *)
+    (* so we recheck acyclicity *)
     if occur_evar evk body then error_occur_check env (evars_of evd) evk body;
     (* needed only if an inferred type *)
     let body = refresh_universes body in
