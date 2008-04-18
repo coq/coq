@@ -63,7 +63,7 @@ rectutorial:\
 ### Version
 
 doc/common/version.tex: config/Makefile
-	echo "\newcommand{\coqversion}{$(VERSION)}" > doc/common/version.tex
+	echo '\\newcommand{\\coqversion}'"{$(VERSION)}" > doc/common/version.tex
 
 ######################################################################
 # Reference Manual
