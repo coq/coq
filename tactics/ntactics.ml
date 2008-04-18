@@ -891,12 +891,14 @@ let general_case_analysis with_evars (c,lbindc as cx) =
 
 let simplest_case c = general_case_analysis false (c,NoBindings)
 
+
 (*****************************)
 (* Decomposing introductions *)
 (*****************************)
 
-let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
-let case_last  = tclLAST_HYP simplest_case
+let clear_last = Tacticals.tclLAST_HYP 
+                        (fun c -> (clear (Goal.return [destVar c])))
+let case_last  = Tacticals.tclLAST_HYP simplest_case
 
 let rec explicit_intro_names = function
 | (IntroWildcard | IntroAnonymous | IntroFresh _) :: l -> explicit_intro_names l
@@ -949,6 +951,10 @@ let intro_patterns = function
 (*   Other cut tactics    *)
 (**************************)
 
+
+(*** arnaud: j'ai tout commenté jusqu'à la fin, niark
+             ya sûrement des trucs de intros.ml{,i} que j'ai pas
+             enlevé en plus
 let hid = id_of_string "H"
 let xid = id_of_string "X"
 
@@ -2721,3 +2727,8 @@ let admit_as_an_axiom gl =
     (applist (axiom, 
               List.rev (Array.to_list (instance_from_named_context sign))))
     gl
+
+
+
+
+***)

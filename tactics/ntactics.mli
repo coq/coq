@@ -46,6 +46,10 @@ val type_clenv_binding : goal sigma ->
 val string_of_inductive : constr -> string
 val head_constr       : constr -> constr list
 val head_constr_bound : constr -> constr list -> constr list
+
+
+(*** arnaud: commenté jusqu'à la fin, virer les doublons avec intros.mli
+
 val is_quantified_hypothesis : identifier -> goal sigma -> bool
 
 exception Bound
@@ -332,3 +336,4 @@ val tclABSTRACT : identifier option -> tactic -> tactic
 val admit_as_an_axiom : tactic
 
 val abstract_generalize : identifier -> tactic
+***)
