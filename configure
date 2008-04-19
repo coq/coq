@@ -397,28 +397,6 @@ esac
 
 CAMLTAG=OCAML`echo $CAMLVERSION | sed -e "s/\([1-9]\)\.\([0-9]*\).*/\1\2/g"`
 
-# do we have a native compiler: test of ocamlopt and its version
-
-if [ "$best_compiler" = "opt" ] ; then
-  if test -e `which "$nativecamlc"` ; then
-      CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
-      if [ "`uname -s`" = "Darwin" -a "$ARCH" = "i386" ]; then
-	  case $CAMLOPTVERSION in
-	      3.09.3|3.1?*) ;;
-	      *) echo "Native compilation on MacOS X Pentium requires Objective-Caml >= 3.09.3,"
-		 best_compiler=byte
-		 echo "only the bytecode version of Coq will be available."
-	  esac
-      elif [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then
-	  echo "Native and bytecode compilers do not have the same version!";
-      fi
-      echo "You have native-code compilation. Good!"
-  else
-      best_compiler=byte
-      echo "You have only bytecode compilation."
-  fi
-fi
-
 # For coqmktop & bytecode compiler
 
 case $ARCH in
@@ -435,7 +413,6 @@ case  $CAMLVERSION in
 esac
 
 # Camlp4 / Camlp5 configuration
-# Very basic for the moment: if camlp5 exists, we use it...
 
 if [ "$camlp5dir" != "" ]; then
     CAMLP4=camlp5
@@ -489,6 +466,33 @@ esac
 # (this should become configurable some day) 
 CAMLP4BIN=${CAMLBIN}
 
+# do we have a native compiler: test of ocamlopt and its version
+
+if [ "$best_compiler" = "opt" ] ; then
+  if test -e "`which $nativecamlc`" ; then
+      CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+      if [ "`uname -s`" = "Darwin" -a "$ARCH" = "i386" ]; then
+	  case $CAMLOPTVERSION in
+	      3.09.3|3.1?*) ;;
+	      *) echo "Native compilation on MacOS X Pentium requires Objective-Caml >= 3.09.3,"
+		 best_compiler=byte
+		 echo "only the bytecode version of Coq will be available."
+	  esac
+      elif [ ! -f $FULLCAMLP4LIB/gramlib.cmxa ]; then
+	  best_compiler=byte
+	  echo "Cannot find native-code $CAMLP4,"
+	  echo "only the bytecode version of Coq will be available."
+      else
+        if [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then
+	  echo "Native and bytecode compilers do not have the same version!";
+        fi
+        echo "You have native-code compilation. Good!"
+      fi
+  else
+      best_compiler=byte
+      echo "You have only bytecode compilation."
+  fi
+fi
 
 # OS dependent libraries
 
