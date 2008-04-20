@@ -204,6 +204,10 @@ val is_conv : env ->  evar_map -> constr -> constr -> bool
 val is_conv_leq : env ->  evar_map -> constr -> constr -> bool
 val is_fconv : conv_pb -> env ->  evar_map -> constr -> constr -> bool
 
+val is_trans_conv : transparent_state -> env -> evar_map -> constr -> constr -> bool
+val is_trans_conv_leq : transparent_state -> env ->  evar_map -> constr -> constr -> bool
+val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr -> constr -> bool
+
 (*s Special-Purpose Reduction Functions *)
 
 val whd_meta : (metavariable * constr) list -> constr -> constr

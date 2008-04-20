@@ -11,6 +11,7 @@
 (*i*)
 open Term
 open Environ
+open Closure
 (*i*)
 
 (************************************************************************)
@@ -28,6 +29,7 @@ val nf_betaiota      : constr -> constr
 exception NotConvertible
 exception NotConvertibleVect of int
 type 'a conversion_function = env -> 'a -> 'a -> Univ.constraints
+type 'a trans_conversion_function = Names.transparent_state -> env -> 'a -> 'a -> Univ.constraints
 
 type conv_pb = CONV | CUMUL
 
@@ -36,6 +38,11 @@ val sort_cmp :
 
 val conv_sort      : sorts conversion_function
 val conv_sort_leq  : sorts conversion_function
+
+val trans_conv_cmp       : conv_pb -> constr trans_conversion_function
+
+val trans_conv           : constr trans_conversion_function
+val trans_conv_leq       : types trans_conversion_function
 
 val conv_cmp       : conv_pb -> constr conversion_function
 
