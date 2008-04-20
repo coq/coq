@@ -25,7 +25,7 @@ Definition compose {A B C} (g : B -> C) (f : A -> B) := fun x : A => g (f x).
 
 Hint Unfold compose.
 
-Notation " g ∘ f " := (compose g f)  (at level 50, left associativity) : program_scope.
+Notation " g ∘ f " := (compose g f)  (at level 40, left associativity) : program_scope.
 
 Open Local Scope program_scope.
 

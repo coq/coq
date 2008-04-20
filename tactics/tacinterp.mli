@@ -152,3 +152,14 @@ val declare_xml_printer :
 
 (* printing *)
 val print_ltac : Libnames.qualid -> std_ppcmds
+
+(* Internals that can be useful for syntax extensions. *)
+
+exception CannotCoerceTo of string
+
+val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> identifier located -> 'a
+
+val interp_int : interp_sign -> identifier located -> int
+
+val error_ltac_variable : loc -> identifier -> Environ.env option -> value -> string -> 'a
+

@@ -33,15 +33,68 @@ ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 | [ ] -> [ true ]
 END
 
-let pr_occurrences _prc _prlc _prt l =
+let pr_int_list _prc _prlc _prt l =
   let rec aux = function
     | i :: l -> Pp.int i ++ Pp.spc () ++ aux l
     | [] -> Pp.mt()
   in aux l
 
-ARGUMENT EXTEND occurrences TYPED AS int list PRINTED BY pr_occurrences
-| [ integer(i) occurrences(l) ] -> [ i :: l ]
-| [ ] -> [ [] ]
+ARGUMENT EXTEND int_nelist
+  TYPED AS int list 
+  PRINTED BY pr_int_list
+  RAW_TYPED AS int list 
+  RAW_PRINTED BY pr_int_list
+  GLOB_TYPED AS int list
+  GLOB_PRINTED BY pr_int_list
+| [ integer(x) int_nelist(l) ] -> [x::l]
+| [ integer(x) ] -> [ [x] ]
+END
+
+open Rawterm
+
+let pr_occurrences _prc _prlc _prt l =
+  match l with
+    | ArgArg x -> pr_int_list _prc _prlc _prt x
+    | ArgVar (loc, id) -> Nameops.pr_id id
+
+let coerce_to_int = function
+  | VInteger n -> n
+  | v -> raise (CannotCoerceTo "an integer")
+
+let int_list_of_VList = function
+  | VList l -> List.map (fun n -> coerce_to_int n) l
+  | _ -> raise Not_found
+      
+let interp_occs ist gl l = 
+  match l with
+    | ArgArg x -> x
+    | ArgVar (_,id as locid) -> 
+	(try int_list_of_VList (List.assoc id ist.lfun)
+	  with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
+
+let glob_occs ist l = l
+
+let subst_occs evm l = l
+
+type occurrences_or_var = int list or_var
+type occurrences = int list
+
+ARGUMENT EXTEND occurrences
+  TYPED AS occurrences
+  PRINTED BY pr_int_list
+
+  INTERPRETED BY interp_occs
+  GLOBALIZED BY glob_occs
+  SUBSTITUTED BY subst_occs
+
+  RAW_TYPED AS occurrences_or_var
+  RAW_PRINTED BY pr_occurrences
+
+  GLOB_TYPED AS occurrences_or_var
+  GLOB_PRINTED BY pr_occurrences
+
+| [ int_nelist(l) ] -> [ ArgArg l ]
+| [ var(id) ] -> [ ArgVar id ]
 END
 
 (* For Setoid rewrite *)

@@ -166,15 +166,15 @@ GEXTEND Gram
     [ [ c = global -> AN c
       | s = ne_string -> ByNotation (loc,s) ] ]
   ;
-  occurrences:
+  occs:
     [ [ "at"; nl = LIST1 int_or_var -> nl
       | -> [] ] ]
   ;
   pattern_occ:
-    [ [ c = constr; nl = occurrences -> (nl,c) ] ]
+    [ [ c = constr; nl = occs -> (nl,c) ] ]
   ;
   unfold_occ:
-    [ [ c = smart_global; nl = occurrences -> (nl,c) ] ]
+    [ [ c = smart_global; nl = occs -> (nl,c) ] ]
   ;
   intropatterns:
     [ [ l = LIST0 simple_intropattern -> l ]]
@@ -266,10 +266,10 @@ GEXTEND Gram
     ] ]
   ;
   hypident_occ:
-    [ [ (id,l)=hypident; occs=occurrences -> ((occs,id),l) ] ]
+    [ [ (id,l)=hypident; occs=occs -> ((occs,id),l) ] ]
   ;
   clause:
-    [ [ "in"; "*"; occs=occurrences ->
+    [ [ "in"; "*"; occs=occs ->
           {onhyps=None; onconcl=true; concl_occs=occs}
       | "in"; "*"; "|-"; (b,occs)=concl_occ ->
           {onhyps=None; onconcl=b; concl_occs=occs}
@@ -277,13 +277,13 @@ GEXTEND Gram
           {onhyps=Some hl; onconcl=b; concl_occs=occs}
       | "in"; hl=LIST0 hypident_occ SEP"," ->
           {onhyps=Some hl; onconcl=false; concl_occs=[]}
-      | occs=occurrences ->
+      | occs=occs ->
 	  {onhyps=Some[]; onconcl=true; concl_occs=occs}
       | ->
 	  {onhyps=Some[]; onconcl=true; concl_occs=[]} ] ]
   ;
   concl_occ:
-    [ [ "*"; occs = occurrences -> (true,occs)
+    [ [ "*"; occs = occs -> (true,occs)
       | -> (false, []) ] ]
   ;
   simple_clause:

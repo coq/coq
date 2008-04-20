@@ -739,35 +739,41 @@ let refresh_hypinfo env sigma hypinfo =
 let unify_eqn env sigma hypinfo t = 
   try 
     let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
-    let env', c1, c2, car, rel = 
-      match abs with
-	  Some _ -> 
-	    if convertible env cl.evd (if l2r then c1 else c2) t then 
-	      cl, c1, c2, car, rel
-	    else raise Not_found
-	| None ->
-	    let env' =
-	      try clenv_unify allowK ~flags:rewrite_unif_flags
-		CONV (if l2r then c1 else c2) t cl
-	      with Pretype_errors.PretypeError _ ->
-		(* For Ring essentially, only when doing setoid_rewrite *)
-		clenv_unify allowK ~flags:rewrite2_unif_flags
-		  CONV (if l2r then c1 else c2) t cl
-	    in
-	    let env' = 
-	      let mvs = clenv_dependent false env' in
-		clenv_pose_metas_as_evars env' mvs
-	    in
-	    let c1 = Clenv.clenv_nf_meta env' c1 
-	    and c2 = Clenv.clenv_nf_meta env' c2
-	    and car = Clenv.clenv_nf_meta env' car
-	    and rel = Clenv.clenv_nf_meta env' rel in
-	    let ty1 = Typing.mtype_of env'.env env'.evd c1 
-	    and ty2 = Typing.mtype_of env'.env env'.evd c2
-	    in
-	      if convertible env env'.evd ty1 ty2 then
-		env', c1, c2, car, rel
+    let env', c1, c2, car, rel =
+      let left = if l2r then c1 else c2 in
+	match abs with
+	    Some _ -> 
+	      (* Disallow unfolding of a local var. *)
+	      if isVar left || isVar t then
+		if eq_constr left t then
+		  cl, c1, c2, car, rel
+		else raise Not_found
+	      else if convertible env cl.evd left t then
+		cl, c1, c2, car, rel
 	      else raise Not_found
+	  | None ->
+	      let env' =
+		try clenv_unify allowK ~flags:rewrite_unif_flags
+		  CONV left t cl
+		with Pretype_errors.PretypeError _ ->
+		  (* For Ring essentially, only when doing setoid_rewrite *)
+		  clenv_unify allowK ~flags:rewrite2_unif_flags
+		    CONV left t cl
+	      in
+	      let env' = 
+		let mvs = clenv_dependent false env' in
+		  clenv_pose_metas_as_evars env' mvs
+	      in
+	      let c1 = Clenv.clenv_nf_meta env' c1 
+	      and c2 = Clenv.clenv_nf_meta env' c2
+	      and car = Clenv.clenv_nf_meta env' car
+	      and rel = Clenv.clenv_nf_meta env' rel in
+	      let ty1 = Typing.mtype_of env'.env env'.evd c1 
+	      and ty2 = Typing.mtype_of env'.env env'.evd c2
+	      in
+		if convertible env env'.evd ty1 ty2 then
+		  env', c1, c2, car, rel
+		else raise Not_found
     in
     let prf =
       if abs = None then
@@ -1497,12 +1503,12 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
 (*       {cl=cl'; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=None} *)
 
 let get_hyp gl c clause l2r = 
-  match kind_of_term (pf_type_of gl c) with
-      Prod _ -> 
+(*   match kind_of_term (pf_type_of gl c) with *)
+(*       Prod _ ->  *)
 	let hi = decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r in
 	let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
 	  unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
-    | _ -> decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r
+(*     | _ -> decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r *)
 	
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = false }
 

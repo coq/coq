@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
+(* -*- coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.SetoidTactics") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -52,32 +52,93 @@ Ltac setoidreplacein H H' t :=
   let Heq := fresh "Heq" in
     cut(H) ; unfold default_relation ; [ intro Heq ; setoid_rewrite Heq in H' ; clear Heq | t ].
 
+Ltac setoidreplaceinat H H' t occs :=
+  let Heq := fresh "Heq" in
+    cut(H) ; unfold default_relation ; [ intro Heq ; setoid_rewrite Heq in H' at occs ; clear Heq | t ].
+
+Ltac setoidreplaceat H t occs :=
+  let Heq := fresh "Heq" in
+    cut(H) ; unfold default_relation ; [ intro Heq ; setoid_rewrite Heq at occs ; clear Heq | t ].
+
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) :=
   setoidreplace (default_relation x y) idtac.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) :=
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "at" int_or_var_list(o) :=
+  setoidreplaceat (default_relation x y) idtac o.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "in" hyp(id) :=
   setoidreplacein (default_relation x y) id idtac.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "by" tactic(t) :=
+Tactic Notation "setoid_replace" constr(x) "with" constr(y)
+  "in" hyp(id) 
+  "at" int_or_var_list(o) :=
+  setoidreplaceinat (default_relation x y) id idtac o.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "by" tactic(t) :=
   setoidreplace (default_relation x y) ltac:t.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) "by" tactic(t) :=
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "at" int_or_var_list(o) 
+  "by" tactic(t) :=
+  setoidreplaceat (default_relation x y) ltac:t o.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "in" hyp(id) 
+  "by" tactic(t) :=
   setoidreplacein (default_relation x y) id ltac:t.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "using" "relation" constr(rel) :=
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "in" hyp(id) 
+  "at" int_or_var_list(o) 
+  "by" tactic(t) :=
+  setoidreplaceinat (default_relation x y) id ltac:t o.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel) :=
   setoidreplace (rel x y) idtac.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
-  "using" "relation" constr(rel) "by" tactic(t) :=
+  "using" "relation" constr(rel)
+  "at" int_or_var_list(o) :=
+  setoidreplaceat (rel x y) idtac o.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel) 
+  "by" tactic(t) :=
   setoidreplace (rel x y) ltac:t.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id) 
-  "using" "relation" constr(rel) :=
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel) 
+  "at" int_or_var_list(o)  
+  "by" tactic(t) :=
+  setoidreplaceat (rel x y) ltac:t o.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel)
+  "in" hyp(id) :=
   setoidreplacein (rel x y) id idtac.
 
-Tactic Notation "setoid_replace" constr(x) "with" constr(y) "in" hyp(id)
-  "using" "relation" constr(rel) "by" tactic(t) :=
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel)
+  "in" hyp(id) 
+  "at" int_or_var_list(o) :=
+  setoidreplaceinat (rel x y) id idtac o.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel)
+  "in" hyp(id)
+  "by" tactic(t) :=
   setoidreplacein (rel x y) id ltac:t.
+
+Tactic Notation "setoid_replace" constr(x) "with" constr(y) 
+  "using" "relation" constr(rel) 
+  "in" hyp(id)
+  "at" int_or_var_list(o)  
+  "by" tactic(t) :=
+  setoidreplaceinat (rel x y) id ltac:t o.
 
 (** The [add_morphism_tactic] tactic is run at each [Add Morphism] command before giving the hand back
    to the user to discharge the proof. It essentially amounts to unfold the right amount of [respectful] calls
