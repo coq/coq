@@ -50,13 +50,13 @@ Definition respectful (A B : Type) (R : relation A) (R' : relation B) : relation
 Delimit Scope signature_scope with signature.
 
 Notation " R ++> R' " := (@respectful _ _ (R%signature) (R'%signature)) 
-  (right associativity, at level 90) : signature_scope.
+  (right associativity, at level 55) : signature_scope.
 
 Notation " R ==> R' " := (@respectful _ _ (R%signature) (R'%signature))
-  (right associativity, at level 90) : signature_scope.
+  (right associativity, at level 55) : signature_scope.
 
 Notation " R --> R' " := (@respectful _ _ (inverse (R%signature)) (R'%signature))
-  (right associativity, at level 90) : signature_scope.
+  (right associativity, at level 55) : signature_scope.
 
 Arguments Scope respectful [type_scope type_scope signature_scope signature_scope].
 

@@ -655,13 +655,26 @@ let refresh_hypinfo env sigma hypinfo =
 let unify_eqn env sigma hypinfo t = 
   try 
     let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
-    let env', c1, c2, car, rel =
+    let env', prf, c1, c2, car, rel =
       let left = if l2r then c1 else c2 in
 	match abs with
-	    Some _ -> 
-	      if convertible env cl.evd left t then
-		cl, c1, c2, car, rel
-	      else raise Not_found
+	    Some (absprf, absprfty) -> 
+(* 	      if convertible env cl.evd left t then *)
+(* 		cl, prf, c1, c2, car, rel *)
+(* 	      else raise Not_found *)
+	      let env' = clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl in
+	      let env' = 
+		let mvs = clenv_dependent false env' in
+		  clenv_pose_metas_as_evars env' mvs
+	      in
+	      let c1 = Clenv.clenv_nf_meta env' c1 
+	      and c2 = Clenv.clenv_nf_meta env' c2
+	      and car = Clenv.clenv_nf_meta env' car
+	      and rel = Clenv.clenv_nf_meta env' rel in
+		hypinfo := { !hypinfo with 
+		  cl = env';
+		  abs = Some (Clenv.clenv_value env', Clenv.clenv_type env') };
+		env', prf, c1, c2, car, rel
 	  | None ->
 	      let env' =
 		try clenv_unify allowK ~flags:rewrite_unif_flags
@@ -679,22 +692,14 @@ let unify_eqn env sigma hypinfo t =
 	      and c2 = Clenv.clenv_nf_meta env' c2
 	      and car = Clenv.clenv_nf_meta env' car
 	      and rel = Clenv.clenv_nf_meta env' rel in
+	      let prf = Clenv.clenv_value env' in
 	      let ty1 = Typing.mtype_of env'.env env'.evd c1 
 	      and ty2 = Typing.mtype_of env'.env env'.evd c2
 	      in
-		if convertible env env'.evd ty1 ty2 then
-		  env', c1, c2, car, rel
+		if convertible env env'.evd ty1 ty2 then (
+		  if occur_meta prf then refresh_hypinfo env sigma hypinfo;
+		  env', prf, c1, c2, car, rel)
 		else raise Not_found
-    in
-    let prf =
-      if abs = None then
-(* 	let (rel, args) = destApp typ in *)
-(* 	let relargs, args = array_chop (Array.length args - 2) args in *)
-(* 	let rel = mkApp (rel, relargs) in *)
-	let prf = Clenv.clenv_value env' in
-	  if occur_meta prf then refresh_hypinfo env sigma hypinfo;
-	  prf
-      else prf
     in
     let res =
       if l2r then (prf, (car, rel, c1, c2))
@@ -880,11 +885,13 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 	      let p = Evarutil.nf_isevar !evars p in
 	      let newt = Evarutil.nf_isevar !evars newt in
 	      let undef = Evd.undefined_evars !evars in
+	      let abs = Option.map (fun (x, y) -> Evarutil.nf_isevar !evars x,
+		Evarutil.nf_isevar !evars y) !hypinfo.abs in
 	      let rewtac = 
 		match is_hyp with
 		  | Some id -> 
 		      let term = 
-			match !hypinfo.abs with
+			match abs with
 			    None -> p
 			  | Some (t, ty) -> 
 			      mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
@@ -892,7 +899,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 			cut_replacing id newt 
 			  (fun x -> Tactics.refine (mkApp (term, [| mkVar id |])))
 		  | None -> 
-		      (match !hypinfo.abs with
+		      (match abs with
 			  None -> 
 			    let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
 			      tclTHENLAST
@@ -1348,7 +1355,7 @@ END
 (** Bind to "rewrite" too *)
 
 (** Taken from original setoid_replace, to emulate the old rewrite semantics where
-    lemmas are first instantiated once and then rewrite proceeds. *)
+    lemmas are first instantiated and then rewrite proceeds. *)
 
 let check_evar_map_of_evars_defs evd =
  let metas = Evd.meta_list evd in

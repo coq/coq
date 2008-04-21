@@ -8,6 +8,12 @@ Axiom recursion_S :
 
 Goal forall n : nat, recursion nat 0 (fun _ _ => 1) (S n) = 1.
 intro n.
+rewrite recursion_S.
+reflexivity.
+Qed.
+
+Goal forall n : nat, recursion nat 0 (fun _ _ => 1) (S n) = 1.
+intro n.
 setoid_rewrite recursion_S.
 reflexivity.
 Qed.
