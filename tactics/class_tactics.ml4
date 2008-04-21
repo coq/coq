@@ -40,18 +40,18 @@ open Command
 open Libnames
 open Evd
 
-let check_required_library d =
+let check_imported_library d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
-  if (* not (Library.library_is_opened dir) ||  *)not (Library.library_is_loaded dir) then
-    error ("Library "^(list_last d)^" has to be required first")
-
+  if not (Library.library_is_loaded dir) then
+    error ("Library "^(list_last d)^" has to be imported first")
+      
 let classes_dirpath =
   make_dirpath (List.map id_of_string ["Classes";"Coq"])
   
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else check_required_library ["Coq";"Setoids";"Setoid"]
+  else check_imported_library ["Coq";"Setoids";"Setoid"]
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -67,21 +67,24 @@ let assumption id = e_give_exact (mkVar id)
 
 open Unification
 
-let auto_unif_flags = ref {
-  modulo_conv_on_closed_terms = true; 
+let auto_unif_flags = {
+  modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
-  modulo_delta = Cpred.empty;
-  modulo_zeta = true;
+  modulo_delta = var_full_transparent_state;
 }
 
-let unify_e_resolve (c,clenv) gls = 
+let unify_e_resolve st (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
-  let clenv' = clenv_unique_resolver false ~flags:(!auto_unif_flags) clenv' gls in
+  let clenv' = clenv_unique_resolver false
+    ~flags:{auto_unif_flags with modulo_delta = st} clenv' gls 
+  in
     Clenvtac.clenv_refine true clenv' gls
-
-let unify_resolve (c,clenv) gls = 
+      
+let unify_resolve st (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
-  let clenv' = clenv_unique_resolver false ~flags:(!auto_unif_flags) clenv' gls in  
+  let clenv' = clenv_unique_resolver false
+    ~flags:{auto_unif_flags with modulo_delta = st} clenv' gls 
+  in
     Clenvtac.clenv_refine false clenv' gls
 
 let rec e_trivial_fail_db db_list local_db goal =
@@ -92,7 +95,7 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
-	     (Hint_db.add_list hintl local_db) g'))) ::
+	     (add_hint_list hintl local_db) g'))) ::
     (List.map pi1 (e_trivial_resolve db_list local_db (pf_concl goal)) )
   in 
   tclFIRST (List.map tclCOMPLETE tacl) goal 
@@ -101,19 +104,23 @@ and e_my_find_search db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then
-      list_map_append (Hint_db.map_all hdc) (local_db::db_list)
+      list_map_append
+	(fun (st, db) -> List.map (fun x -> (st, x)) (Hint_db.map_all hdc db))
+	(local_db::db_list)
     else
-      list_map_append (Hint_db.map_auto (hdc,concl)) (local_db::db_list)
+      list_map_append
+	(fun (st, db) -> List.map (fun x -> (st, x)) (Hint_db.map_auto (hdc,concl) db))
+	(local_db::db_list)
   in 
   let tac_of_hint = 
-    fun {pri=b; pat = p; code=t} -> 
+    fun (st, {pri=b; pat = p; code=t}) -> 
       let tac =
 	match t with
-	  | Res_pf (term,cl) -> unify_resolve (term,cl)
-	  | ERes_pf (term,cl) -> unify_e_resolve (term,cl)
+	  | Res_pf (term,cl) -> unify_resolve st (term,cl)
+	  | ERes_pf (term,cl) -> unify_e_resolve st (term,cl)
 	  | Give_exact (c) -> e_give_exact c
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
-              tclTHEN (unify_e_resolve (term,cl)) 
+              tclTHEN (unify_e_resolve st (term,cl)) 
 		(e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> conclPattern concl 
@@ -144,9 +151,8 @@ type search_state = {
   tacres : goal list sigma * validation;
   pri : int;
   last_tactic : std_ppcmds;
-(*   filter : constr -> constr -> bool; *)
-  dblist : Auto.Hint_db.t list;
-  localdb :  Auto.Hint_db.t list }
+  dblist : Auto.hint_db list;
+  localdb :  Auto.hint_db list }
     
 let filter_hyp t = 
   match kind_of_term t with
@@ -215,7 +221,6 @@ module SearchProblem = struct
       let nbgl = List.length (sig_it lg) in
       assert (nbgl > 0);
       let g = find_first_goal lg in
-(*       let filt = s.filter (pf_concl g) in *)
       let assumption_tacs = 
 	let l = 
 	  filter_tactics s.tacres
@@ -314,7 +319,6 @@ let make_initial_state n gls dblist localdbs =
   { depth = n;
     tacres = gls;
     pri = 0;
-(*     filter = filter; *)
     last_tactic = (mt ());
     dblist = dblist;
     localdb = localdbs }
@@ -395,9 +399,6 @@ let has_undefined p evd =
     (Evd.evars_of evd) false
     
 let resolve_all_evars debug m env p oevd =
-(*   let evd = resolve_all_evars_once ~tac debug m env p evd in *)
-(*     if has_undefined p evd then raise Not_found *)
-(*     else evd *)
   try
     let rec aux n evd =
       if has_undefined p evd then
@@ -409,76 +410,11 @@ let resolve_all_evars debug m env p oevd =
     in aux 3 oevd
   with Not_found -> None
     
-(** Handling of the state of unfolded constants. *)
-
-open Libobject
-
-let freeze () = !auto_unif_flags.modulo_delta
-
-let unfreeze delta = 
-  auto_unif_flags := { !auto_unif_flags with modulo_delta = delta }
-    
-let init () =
-  auto_unif_flags := {
-    modulo_conv_on_closed_terms = true; 
-    use_metas_eagerly = true;
-    modulo_delta = Cpred.empty;
-    modulo_zeta = true;
-  }
-    
-let _ = 
-  Summary.declare_summary "typeclasses_unfold"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
-      Summary.survive_module = false;
-      Summary.survive_section = true }
-    
-let cache_autounfold (_,unfoldlist) = 
-  auto_unif_flags := { !auto_unif_flags with
-    modulo_delta = Cpred.union !auto_unif_flags.modulo_delta unfoldlist }
-  
-let subst_autounfold (_,subst,(unfoldlist as obj)) = 
-  let b, l' = Cpred.elements unfoldlist in
-  let l'' = list_smartmap (fun x -> fst (Mod_subst.subst_con subst x)) l' in
-    if l'' == l' then obj 
-    else
-      let set = List.fold_right Cpred.add l'' Cpred.empty in
-	if not b then set
-	else Cpred.complement set
-	  
-let classify_autounfold (_,obj) = Substitute obj
-      
-let export_autounfold obj =
-  Some obj
-
-let (inAutoUnfold,outAutoUnfold) =
-  declare_object 
-    {(default_object "AUTOUNFOLD") with
-      cache_function = cache_autounfold;
-      load_function = (fun _ -> cache_autounfold);
-      subst_function = subst_autounfold;
-      classify_function = classify_autounfold;
-      export_function = export_autounfold }
-
-let cpred_of_list l =
-  List.fold_right Cpred.add l Cpred.empty
-
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
-| [ "Typeclasses" "unfold" constr_list(cl) ] -> [
-    let csts = 
-      List.map
-	(fun c -> 
-	  let c = Constrintern.interp_constr Evd.empty (Global.env ()) c in
-	    match kind_of_term c with
-	      | Const c -> c
-	      | _ -> error "Not a constant reference")
-	cl
-    in
-      Lib.add_anonymous_leaf (inAutoUnfold (cpred_of_list csts))
+| [ "Typeclasses" "unfold" reference_list(cl) ] -> [
+    add_hints true ["typeclass_instances"] (Vernacexpr.HintsUnfold cl)
   ]
 END
-
 
 (** Typeclass-based rewriting. *)
 
@@ -537,10 +473,7 @@ let arrow_morphism a b =
     Lazy.force impl
   else
     mkApp(Lazy.force arrow, [|a;b|])
-(*     mkLambda (Name (id_of_string "A"), a,  *)
-(* 	     mkLambda (Name (id_of_string "B"), b,  *)
-(* 		      mkProd (Anonymous, mkRel 2, mkRel 2))) *)
-    
+
 let setoid_refl pars x = 
   applistc (Lazy.force setoid_refl_proj) (pars @ [x])
       
@@ -666,10 +599,9 @@ type hypinfo = {
   abs : (constr * types) option;
 }
 
-let convertible env evd x y =
+let evd_convertible env evd x y =
   try ignore(Evarconv.the_conv_x env x y evd); true 
   with _ -> false
-    (* ignore(Reduction.conv env x y) *)
   
 let decompose_setoid_eqhyp env sigma c left2right =
   let ctype = Typing.type_of env sigma c in
@@ -684,7 +616,7 @@ let decompose_setoid_eqhyp env sigma c left2right =
   let ty1, ty2 = 
     Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
   in
-    if not (convertible env eqclause.evd ty1 ty2) then
+    if not (evd_convertible env eqclause.evd ty1 ty2) then
       error "The term does not end with an applied homogeneous relation"
     else
       { cl=eqclause; prf=(Clenv.clenv_value eqclause);
@@ -692,38 +624,22 @@ let decompose_setoid_eqhyp env sigma c left2right =
 	l2r=left2right; c1=c1; c2=c2; c=Some c; abs=None }
 
 let rewrite_unif_flags = {
-  Unification.modulo_conv_on_closed_terms = false;
+  Unification.modulo_conv_on_closed_terms = None;
   Unification.use_metas_eagerly = true;
-  Unification.modulo_delta = Cpred.empty;
-  Unification.modulo_zeta = false;
+  Unification.modulo_delta = empty_transparent_state;
 }
+
+let conv_transparent_state = (Idpred.empty, Cpred.full)
 
 let rewrite2_unif_flags = {
-  Unification.modulo_conv_on_closed_terms = true;
+  Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
   Unification.use_metas_eagerly = true;
-  Unification.modulo_delta = Cpred.empty;
-  Unification.modulo_zeta = false;
+  Unification.modulo_delta = empty_transparent_state;
 }
 
-(* let unification_rewrite c1 c2 cl but gl =  *)
-(*   let (env',c1) = *)
-(*     try *)
-(*       (\* ~flags:(false,true) to allow to mark occurrences that must not be *)
-(*          rewritten simply by replacing them with let-defined definitions *)
-(*          in the context *\) *)
-(*       w_unify_to_subterm ~flags:rewrite_unif_flags (pf_env gl) (c1,but) cl.evd *)
-(*     with *)
-(* 	Pretype_errors.PretypeError _ -> *)
-(* 	  (\* ~flags:(true,true) to make Ring work (since it really *)
-(*              exploits conversion) *\) *)
-(* 	  w_unify_to_subterm ~flags:rewrite2_unif_flags *)
-(* 	    (pf_env gl) (c1,but) cl.evd *)
-(*   in *)
-(*   let cl' = {cl with evd = env' } in *)
-(*   let c2 = Clenv.clenv_nf_meta cl' c2 in *)
-(*   check_evar_map_of_evars_defs env' ; *)
-(*   env',Clenv.clenv_value cl', c1, c2 *)
-
+let convertible env evd x y =
+  Reductionops.is_trans_conv conv_transparent_state env (Evd.evars_of evd) x y
+  
 let allowK = true
 
 let refresh_hypinfo env sigma hypinfo = 
@@ -743,12 +659,7 @@ let unify_eqn env sigma hypinfo t =
       let left = if l2r then c1 else c2 in
 	match abs with
 	    Some _ -> 
-	      (* Disallow unfolding of a local var. *)
-	      if isVar left || isVar t then
-		if eq_constr left t then
-		  cl, c1, c2, car, rel
-		else raise Not_found
-	      else if convertible env cl.evd left t then
+	      if convertible env cl.evd left t then
 		cl, c1, c2, car, rel
 	      else raise Not_found
 	  | None ->
@@ -812,23 +723,6 @@ let unfold_all t =
 	  | Lambda (n, ty, b) -> mkProd (n, ty, b)
 	  | _ -> assert false)
     | _ -> assert false
-
-(* let lift_cstr env sigma evars args cstr = *)
-(*   let codom =  *)
-(*     match cstr with *)
-(*       | Some c -> c *)
-(*       | None -> *)
-(* 	  let ty = Evarutil.e_new_evar evars env (new_Type ()) in *)
-(* 	  let rel = Evarutil.e_new_evar evars env (mk_relation ty) in *)
-(* 	    (ty, rel) *)
-(*   in *)
-(*     Array.fold_right *)
-(*       (fun arg (car, rel) ->  *)
-(* 	let ty = Typing.type_of env sigma arg in *)
-(* 	let car' = mkProd (Anonymous, ty, car) in *)
-(* 	let rel' = mkApp (Lazy.force pointwise_relation, [| ty; car; rel |]) in *)
-(* 	  (car', rel')) *)
-(*       args codom *)
 
 let rec decomp_pointwise n c =
   if n = 0 then c
@@ -1498,17 +1392,11 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
   let prfty = Clenv.clenv_type cl' in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
     {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
-(*         if occur_meta prf then *)
-(* else *)
-(*       {cl=cl'; prf=prf; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=None} *)
 
 let get_hyp gl c clause l2r = 
-(*   match kind_of_term (pf_type_of gl c) with *)
-(*       Prod _ ->  *)
-	let hi = decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r in
-	let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
-	  unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
-(*     | _ -> decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r *)
+  let hi = decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r in
+  let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
+    unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
 	
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = false }
 
@@ -1556,9 +1444,6 @@ let setoid_reflexivity gl =
     with Not_found -> 
       tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared reflexive relation")
 	gl
-
-(* let setoid_reflexivity gl = *)
-(*   try_loaded setoid_reflexivity gl *)
 	  
 let setoid_symmetry gl =
   let env = pf_env gl in
@@ -1568,9 +1453,6 @@ let setoid_symmetry gl =
     with Not_found -> 
       tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared symmetric relation")
 	gl
-
-(* let setoid_symmetry gl = *)
-(*   try_loaded setoid_symmetry gl *)
 	
 let setoid_transitivity c gl =
   let env = pf_env gl in
@@ -1582,9 +1464,6 @@ let setoid_transitivity c gl =
     with Not_found -> 
       tclFAIL 0
 	(str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared transitive relation") gl
-	
-(* let setoid_transitivity c gl = *)
-(*   try_loaded (setoid_transitivity c) gl *)
 
 let setoid_symmetry_in id gl =
   let ctype = pf_type_of gl (mkVar id) in
@@ -1603,9 +1482,6 @@ let setoid_symmetry_in id gl =
       [ intro_replacing id;
 	tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ] ]
       gl
-
-(* let setoid_symmetry_in h gl = *)
-(*   try_loaded (setoid_symmetry_in h) gl *)
 
 let _ = Tactics.register_setoid_reflexivity setoid_reflexivity
 let _ = Tactics.register_setoid_symmetry setoid_symmetry

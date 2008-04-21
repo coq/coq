@@ -10,7 +10,7 @@ Hypothesis Seq_sym : forall {a:A} (x y : S a), Seq x y -> Seq y x.
 Hypothesis Seq_trans : forall {a:A} (x y z : S a), Seq x y -> Seq y z ->
 Seq x z.
 
-Add Relation (S a) Seq
+Add Parametric Relation a : (S a) Seq
  reflexivity proved by Seq_refl
  symmetry proved by Seq_sym
  transitivity proved by Seq_trans

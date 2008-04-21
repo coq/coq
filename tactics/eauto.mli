@@ -34,4 +34,4 @@ val gen_eauto : bool -> bool * int -> constr list ->
 val eauto_with_bases :
   bool ->
   bool * int ->
-  Term.constr list -> Auto.Hint_db.t list -> Proof_type.tactic
+  Term.constr list -> Auto.hint_db list -> Proof_type.tactic

@@ -103,7 +103,7 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
-	     (Hint_db.add_list hintl local_db) g'))) ::
+	     (add_hint_list hintl local_db) g'))) ::
     (List.map fst (e_trivial_resolve db_list local_db (pf_concl goal)) )
   in 
   tclFIRST (List.map tclCOMPLETE tacl) goal 
@@ -112,16 +112,16 @@ and e_my_find_search db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then 
-      list_map_append (Hint_db.map_all hdc) (local_db::db_list)
+      list_map_append (fun (st, db) -> List.map (fun x -> st, x) (Hint_db.map_all hdc db)) (local_db::db_list)
     else 
-      list_map_append (Hint_db.map_auto (hdc,concl)) (local_db::db_list)
+      list_map_append (fun (st, db) -> List.map (fun x -> st, x) (Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
   in 
   let tac_of_hint = 
-    fun {pri=b; pat = p; code=t} -> 
+    fun (st, {pri=b; pat = p; code=t}) -> 
       (b, 
        let tac =
 	 match t with
-	   | Res_pf (term,cl) -> unify_resolve (term,cl)
+	   | Res_pf (term,cl) -> unify_resolve st (term,cl)
 	   | ERes_pf (term,cl) -> unify_e_resolve (term,cl)
 	   | Give_exact (c) -> e_give_exact_constr c
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
@@ -168,8 +168,8 @@ type search_state = {
   depth : int; (*r depth of search before failing *)
   tacres : goal list sigma * validation;
   last_tactic : std_ppcmds;
-  dblist : Auto.Hint_db.t list;
-  localdb :  Auto.Hint_db.t list }
+  dblist : Auto.hint_db list;
+  localdb :  Auto.hint_db list }
     
 module SearchProblem = struct
     
@@ -235,7 +235,7 @@ module SearchProblem = struct
 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
 	     in
 	       
-             let ldb = Hint_db.add_list hintl (match s.localdb with [] -> assert false | hd :: _ -> hd) in
+             let ldb = add_hint_list hintl (List.hd s.localdb) in
 	     { depth = s.depth; tacres = res; 
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb })
@@ -255,7 +255,7 @@ module SearchProblem = struct
 	       { depth = pred s.depth; tacres = res; 
 		 dblist = s.dblist; last_tactic = pp;
 		 localdb = 
-		   list_addn (nbgl'-nbgl) (match s.localdb with [] -> assert false | hd :: _ -> hd) s.localdb })
+		   list_addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb })
 	  l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)

@@ -96,10 +96,9 @@ let e_res_pf clenv = res_pf clenv ~with_evars:true ~allow_K:false ~flags:dft
 open Unification
 
 let fail_quick_unif_flags = {
-  modulo_conv_on_closed_terms = true; 
+  modulo_conv_on_closed_terms = Some full_transparent_state; 
   use_metas_eagerly = false;
-  modulo_delta = Cpred.empty; 
-  modulo_zeta = true;
+  modulo_delta = empty_transparent_state;
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)

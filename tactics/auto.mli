@@ -58,9 +58,13 @@ module Hint_db :
 
 type hint_db_name = string
 
-val searchtable_map : hint_db_name -> Hint_db.t
+type hint_db = transparent_state * Hint_db.t
+
+val searchtable_map : hint_db_name -> hint_db
 
 val current_db_names : unit -> hint_db_name list
+
+val add_hint_list : (global_reference * pri_auto_tactic) list -> hint_db -> hint_db
 
 val add_hints : locality_flag -> hint_db_name list -> hints -> unit
 
@@ -128,14 +132,14 @@ val set_extern_subst_tactic :
    Useful to take the current goal hypotheses as hints;
    Boolean tells if lemmas with evars are allowed *)
 
-val make_local_hint_db : bool -> constr list -> goal sigma -> Hint_db.t
+val make_local_hint_db : bool -> constr list -> goal sigma -> hint_db
 
 val priority : (int * 'a) list -> 'a list
 
 val default_search_depth : int ref
 
 (* Try unification with the precompiled clause, then use registered Apply *)
-val unify_resolve : (constr * clausenv) -> tactic
+val unify_resolve : transparent_state -> (constr * clausenv) -> tactic
 
 (* [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of 

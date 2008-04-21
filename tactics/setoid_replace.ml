@@ -1732,17 +1732,15 @@ let check_evar_map_of_evars_defs evd =
    returns the modified objects (in particular [c1] and [c2]) *)  
 
 let rewrite_unif_flags = {
-  modulo_conv_on_closed_terms = false;
+  modulo_conv_on_closed_terms = None;
   use_metas_eagerly = true;
-  modulo_delta = Cpred.empty;
-  modulo_zeta = false;
+  modulo_delta = empty_transparent_state;
 }
 
 let rewrite2_unif_flags = {
-  modulo_conv_on_closed_terms = true;
+  modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
-  modulo_delta = Cpred.empty;
-  modulo_zeta = false;
+  modulo_delta = empty_transparent_state;
 }
 
 let unification_rewrite c1 c2 cl but gl = 

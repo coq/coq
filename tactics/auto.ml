@@ -137,14 +137,16 @@ end
 
 module Hintdbmap = Gmap
 
-type frozen_hint_db_table = (string,Hint_db.t) Hintdbmap.t 
+type hint_db = Names.transparent_state * Hint_db.t
 
-type hint_db_table = (string,Hint_db.t) Hintdbmap.t ref
+type frozen_hint_db_table = (string,hint_db) Hintdbmap.t 
+
+type hint_db_table = (string,hint_db) Hintdbmap.t ref
 
 type hint_db_name = string
 
 let searchtable = (ref Hintdbmap.empty : hint_db_table)
-
+  
 let searchtable_map name = 
   Hintdbmap.find name !searchtable
 let searchtable_add (name,db) = 
@@ -277,18 +279,32 @@ open Vernacexpr
 (*               declaration of the AUTOHINT library object               *)
 (**************************************************************************)
 
+let add_hint_list hintlist (st,db) =
+  let db' = Hint_db.add_list hintlist db in
+  let st' = 
+    List.fold_left 
+      (fun (ids, csts as st) (_, hint) -> 
+	match hint.code with
+	  | Unfold_nth egr ->
+	      (match egr with
+		| EvalVarRef id -> (Idpred.add id ids, csts)
+		| EvalConstRef cst -> (ids, Cpred.add cst csts))
+	  | _ -> st)
+      st hintlist
+  in (st', db')
+
 (* If the database does not exist, it is created *)
 (* TODO: should a warning be printed in this case ?? *)
 let add_hint dbname hintlist = 
   try 
     let db = searchtable_map dbname in
-    let db' = Hint_db.add_list hintlist db in
+    let db' = add_hint_list hintlist db in
     searchtable_add (dbname,db')
   with Not_found -> 
-    let db = Hint_db.add_list hintlist Hint_db.empty in
+    let db = add_hint_list hintlist (empty_transparent_state, Hint_db.empty) in
     searchtable_add (dbname,db)
 
-let cache_autohint (_,(local,name,hintlist)) = add_hint name hintlist
+let cache_autohint (_,(local,name,hints)) = add_hint name hints
 
 let forward_subst_tactic = 
   ref (fun _ -> failwith "subst_tactic is not installed for auto")
@@ -476,7 +492,7 @@ let fmt_hint_list_for_head c =
   let dbs = Hintdbmap.to_list !searchtable in
   let valid_dbs = 
     map_succeed 
-      (fun (name,db) -> (name,db,Hint_db.map_all c db)) 
+      (fun (name,(_,db)) -> (name,db,Hint_db.map_all c db)) 
       dbs 
   in
   if valid_dbs = [] then 
@@ -502,11 +518,11 @@ let fmt_hint_term cl =
     let valid_dbs = 
       if occur_existential cl then 
 	map_succeed 
-	  (fun (name, db) -> (name, db, Hint_db.map_all hd db)) 
+	  (fun (name, (_, db)) -> (name, db, Hint_db.map_all hd db)) 
 	  dbs
       else 
 	map_succeed 
-	  (fun (name, db) -> 
+	  (fun (name, (_, db)) -> 
 	     (name, db, Hint_db.map_auto (hd,applist(hdc,args)) db)) 
 	  dbs
     in 
@@ -537,14 +553,14 @@ let print_hint_db db =
 
 let print_hint_db_by_name dbname =
   try 
-    let db = searchtable_map dbname in print_hint_db db
+    let db = snd (searchtable_map dbname) in print_hint_db db
   with Not_found -> 
     error (dbname^" : No such Hint database")
   
 (* displays all the hints of all databases *)
 let print_searchtable () =
   Hintdbmap.iter
-    (fun name db ->
+    (fun name (_, db) ->
        msg (str "In the database " ++ str name ++ fnl ());
        print_hint_db db)
     !searchtable
@@ -565,17 +581,16 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
 open Unification
 
 let auto_unif_flags = {
-  modulo_conv_on_closed_terms = true; 
+  modulo_conv_on_closed_terms = Some full_transparent_state; 
   use_metas_eagerly = false;
-  modulo_delta = Cpred.empty;
-  modulo_zeta = true;
+  modulo_delta = empty_transparent_state;
 }
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
-let unify_resolve (c,clenv) gls = 
+let unify_resolve st (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
-  let _ = clenv_unique_resolver false ~flags:auto_unif_flags clenv' gls in  
+  let _ = clenv_unique_resolver false ~flags:{auto_unif_flags with modulo_delta = st} clenv' gls in  
   h_simplest_apply c gls
 
 (* builds a hint database from a constr signature *)
@@ -585,7 +600,7 @@ let make_local_hint_db eapply lems g =
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g) sign in
   let hintlist' = list_map_append (pf_apply make_resolves g (eapply,false) None) lems in
-  Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty)
+    (empty_transparent_state, Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty))
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
    substitution sans passer par bdize dont l'objectif est de préparer un
@@ -623,7 +638,7 @@ let rec trivial_fail_db db_list local_db gl =
     tclTHEN intro 
       (fun g'->
 	 let hintl = make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
-	 in trivial_fail_db db_list (Hint_db.add_list hintl local_db) g')
+	 in trivial_fail_db db_list (add_hint_list hintl local_db) g')
   in
   tclFIRST 
     (assumption::intro_tac::
@@ -633,21 +648,24 @@ let rec trivial_fail_db db_list local_db gl =
 and my_find_search db_list local_db hdc concl =
   let tacl = 
     if occur_existential concl then 
-      list_map_append (fun db -> Hint_db.map_all hdc db) (local_db::db_list)
+      list_map_append
+	(fun (st, db) -> List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
+	(local_db::db_list)
     else 
-      list_map_append (fun db -> Hint_db.map_auto (hdc,concl) db)
+      list_map_append (fun (st, db) -> 
+	List.map (fun x -> (st,x)) (Hint_db.map_auto (hdc,concl) db))
       	(local_db::db_list)
   in
-  List.map 
-    (fun {pri=b; pat=p; code=t} -> 
-       (b,
+    List.map 
+      (fun (st, {pri=b; pat=p; code=t}) -> 
+	(b,
 	match t with
-	  | Res_pf (term,cl)  -> unify_resolve (term,cl)
+	  | Res_pf (term,cl)  -> unify_resolve st (term,cl)
 	  | ERes_pf (_,c) -> (fun gl -> error "eres_pf")
 	  | Give_exact c  -> exact_check c
 	  | Res_pf_THEN_trivial_fail (term,cl) -> 
 	      tclTHEN 
-		(unify_resolve (term,cl)) 
+		(unify_resolve st (term,cl)) 
 		(trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> 
@@ -749,7 +767,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 		(mkVar hid, htyp)]
 	   with Failure _ -> [] 
 	 in
-         search_gen decomp n db_list (Hint_db.add_list hintl local_db) [d] g') 
+         search_gen decomp n db_list (add_hint_list hintl local_db) [d] g') 
   in
   let rec_tacs = 
     List.map 
@@ -881,7 +899,7 @@ let rec super_search n db_list local_db argl goal =
      (tclTHEN intro 
         (fun g -> 
 	   let hintl = pf_apply make_resolve_any_hyp g (pf_last_hyp g) in
-	   super_search n db_list (Hint_db.add_list hintl local_db)
+	   super_search n db_list (add_hint_list hintl local_db)
 	     argl g))
      ::
      ((List.map 
@@ -899,7 +917,7 @@ let search_superauto n to_add argl g =
       (fun (id,c) -> add_named_decl (id, None, pf_type_of g c))
       to_add empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
-  let db = Hint_db.add_list db0 (make_local_hint_db false [] g) in
+  let db = add_hint_list db0 (make_local_hint_db false [] g) in
   super_search n [Hintdbmap.find "core" !searchtable] db argl g
 
 let superauto n to_add argl  = 

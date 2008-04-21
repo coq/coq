@@ -117,31 +117,28 @@ let sort_eqns = unify_r2l
 *)
 
 type unify_flags = { 
-  modulo_conv_on_closed_terms : bool; 
+  modulo_conv_on_closed_terms : Names.transparent_state option;
   use_metas_eagerly : bool;
-  modulo_delta : Cpred.t;
-  modulo_zeta : bool;
+  modulo_delta : Names.transparent_state;
 }
 
 let default_unify_flags = {
-  modulo_conv_on_closed_terms = true;
+  modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
-  modulo_delta = Cpred.full;
-  modulo_zeta = true;
+  modulo_delta = full_transparent_state;
 }
 
 let default_no_delta_unify_flags = {
-  modulo_conv_on_closed_terms = true;
+  modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
-  modulo_delta = Cpred.empty;
-  modulo_zeta = true;
+  modulo_delta = empty_transparent_state;
 }
 
 let expand_constant env flags c = 
   let (ids,csts) = Conv_oracle.freeze() in
   match kind_of_term c with
-  | Const cst when Cpred.mem cst csts && Cpred.mem cst flags.modulo_delta -> constant_opt_value env cst
-  | Var id when flags.modulo_zeta && Idpred.mem id ids -> named_body id env
+  | Const cst when Cpred.mem cst csts && Cpred.mem cst (snd flags.modulo_delta) -> constant_opt_value env cst
+  | Var id when Idpred.mem id ids && Idpred.mem id (fst flags.modulo_delta) -> named_body id env
   | _ -> None
 
 let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
@@ -149,9 +146,10 @@ let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
   let trivial_unify pb (metasubst,_) m n =
     match subst_defined_metas metas m with
     | Some m ->
-	if flags.modulo_conv_on_closed_terms 
-	then is_fconv (conv_pb_of pb) env sigma m n
-	else eq_constr m n
+	(match flags.modulo_conv_on_closed_terms with
+	    Some flags ->
+	      is_trans_fconv (conv_pb_of pb) flags env sigma m n
+	  | None -> eq_constr m n)
     | _ -> false in
   let rec unirec_rec curenv pb b ((metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_castappevar sigma curm
@@ -224,7 +222,7 @@ let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
 
   and expand curenv pb b substn cM f1 l1 cN f2 l2 =
     if trivial_unify pb substn cM cN then substn
-    else if b & not (Cpred.is_empty flags.modulo_delta) then
+    else if b then
       match expand_constant curenv flags f1 with
       | Some c ->
 	  unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
@@ -239,9 +237,10 @@ let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
 
   in
     if (not(occur_meta m)) &&
-      (if flags.modulo_conv_on_closed_terms
-       then is_fconv (conv_pb_of cv_pb) env sigma m n
-       else eq_constr m n)
+      (match flags.modulo_conv_on_closed_terms with
+	  Some flags ->
+	    is_trans_fconv (conv_pb_of cv_pb) flags env sigma m n
+	| None -> eq_constr m n)
     then 
       (metas,[])
     else 
@@ -637,7 +636,7 @@ let w_unify_to_subterm_list env flags allow_K oplist t evd =
 
 let secondOrderAbstraction env flags allow_K typ (p, oplist) evd =
   (* Remove delta when looking for a subterm *)
-  let flags = { flags with modulo_delta = Cpred.empty } in
+  let flags = { flags with modulo_delta = (fst flags.modulo_delta, Cpred.empty) } in
   let (evd',cllist) =
     w_unify_to_subterm_list env flags allow_K oplist typ evd in
   let typp = Typing.meta_type evd' p in
