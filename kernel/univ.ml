@@ -259,6 +259,55 @@ let compare g u v =
    Adding u>v is consistent iff compare(v,u) = NLE 
     and then it is redundant iff compare(u,v) = LT *)
 
+let compare_eq g u v =
+  let g = declare_univ u g in
+  let g = declare_univ v g in
+  repr g u == repr g v
+
+
+type check_function = universes -> universe -> universe -> bool
+
+let incl_list cmp l1 l2 =
+  List.for_all (fun x1 -> List.exists (fun x2 -> cmp x1 x2) l2) l1 
+
+let compare_list cmp l1 l2 =
+  incl_list cmp l1 l2 && incl_list cmp l2 l1
+
+let rec check_eq g u v =
+  match (u,v) with
+    | Atom ul, Atom vl -> compare_eq g ul vl
+    | Max(ule,ult), Max(vle,vlt) ->
+        (* TODO: remove elements of lt in le! *)
+        compare_list (compare_eq g) ule vle &&
+        compare_list (compare_eq g) ult vlt
+    | _ -> anomaly "check_eq" (* not complete! (Atom(u) = Max([u],[]) *)
+
+let check_eq g u v =
+  check_eq g u v
+
+let compare_greater g strict u v =
+  let g = declare_univ u g in
+  let g = declare_univ v g in
+  if not strict && compare_eq g v Base then true else
+  match compare g v u with
+    | (EQ|LE) -> not strict
+    | LT -> true
+    | NLE -> false
+(*
+let compare_greater g strict u v =
+  let b = compare_greater g strict u v in
+  ppnl(str (if b then if strict then ">" else ">=" else "NOT >="));
+  b
+*)
+let rec check_greater g strict u v =
+  match u, v with
+    | Atom ul, Atom vl -> compare_greater g strict ul vl
+    | Atom ul, Max(le,lt) ->
+        List.for_all (fun vl -> compare_greater g strict ul vl) le &&
+        List.for_all (fun vl -> compare_greater g true ul vl) lt
+    | _ -> anomaly "check_greater"
+
+let check_geq g = check_greater g false
 
 (* setlt : universe_level -> universe_level -> unit *)
 (* forces u > v *)

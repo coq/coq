@@ -1,0 +1,2 @@
+
+let _ = Checker.start ()
