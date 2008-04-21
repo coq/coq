@@ -897,78 +897,7 @@ let rec get_module_substobjs env = function
       let modobjs = MPmap.find mp !modtab_substobjs in
 	replace_module_object idl substobjs modobjs mp
 
-let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 
-  let fs = Summary.freeze_summaries () in
-
-  try
-  let _ = Global.start_module id in
-  let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
-
-  let mty_entry_o, mty_sub_o = match mty_o with
-      None -> None, None
-    | (Some (mty, true)) -> 
-	Some (List.fold_right 
-		(fun (arg_id,arg_t) mte -> MSEfunctor(arg_id,arg_t,mte))
-		arg_entries 
-		(interp_modtype (Global.env()) mty)), 
-	None
-    | (Some (mty, false)) -> 
-	None, 
-	Some (List.fold_right 
-		(fun (arg_id,arg_t) mte -> MSEfunctor(arg_id,arg_t,mte))
-		arg_entries 
-		(interp_modtype (Global.env()) mty))
-  in
-  let mexpr_entry_o = match mexpr_o with
-      None -> None
-    | Some mexpr -> 
-	Some (List.fold_right 
-		(fun (mbid,mte) me -> MSEfunctor(mbid,mte,me))
-		arg_entries
-		(interp_modexpr (Global.env()) mexpr))
-  in
-  let entry = 
-    {mod_entry_type = mty_entry_o;	    
-     mod_entry_expr = mexpr_entry_o }
-  in
-  let env = Global.env() in
-  let substobjs =
-    match entry with
-      | {mod_entry_type = Some mte} -> get_modtype_substobjs env mte
-      | {mod_entry_expr = Some mexpr} -> get_module_substobjs env mexpr
-      | _ -> anomaly "declare_module: No type, no body ..."
-  in
-    (* Undo the simulated interactive building of the module *)
-    (* and declare the module as a whole *)
-    Summary.unfreeze_summaries fs;
-    match entry with 
-      |{mod_entry_type = None;	    
-	mod_entry_expr = Some (MSEident mp) } ->
-	 let dir,mp' = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
-	 let (sub,mbids,msid,objs) = substobjs in
-	 let prefix =  dir,(mp',empty_dirpath) in
-	 let mp1 = Environ.scrape_alias mp env in
-	 let substituted = 
-	   match mbids with
-		    | [] -> 
-			Some (subst_objects prefix 
-				(join sub (join (map_msid msid mp') (map_mp mp' mp1))) objs)
-		    | _ -> None in
-	   ignore (add_leaf
-		     id
-		     (in_module_alias (Some (entry, mty_sub_o), substobjs, substituted)))
-      | _ ->
-	  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
-	  let substituted = subst_substobjs dir mp substobjs in
-	    ignore (add_leaf
-		      id
-		      (in_module (Some (entry, mty_sub_o), substobjs, substituted)))
-	      
-  with e -> 
-    (* Something wrong: undo the whole process *)
-    Summary.unfreeze_summaries fs; raise e
-      
 (* Include *)
 
 let rec subst_inc_expr subst me =
@@ -1042,6 +971,99 @@ let (in_include,out_include) =
     subst_function = subst_include;
     classify_function = classify_include;
     export_function = (fun _ -> anomaly "No modules in section!") }
+
+let rec update_include (sub,mbids,msid,objs) =
+  let rec replace_include = function
+    | [] -> [] 
+    | (id,obj)::tail ->
+	if object_tag obj = "INCLUDE" then
+	  let ((me,is_mod),substobjs,substituted) = out_include obj in
+	    if not (is_mod) then
+	      let substobjs' = update_include substobjs in
+                (id, in_include ((me,true),substobjs',substituted))::
+		  (replace_include tail)
+	    else
+		  (id,obj)::(replace_include tail)
+	else
+	  (id,obj)::(replace_include tail)
+  in
+    (sub,mbids,msid,replace_include objs)
+      
+      
+      
+let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
+  
+  let fs = Summary.freeze_summaries () in
+
+  try
+  let _ = Global.start_module id in
+  let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
+
+  let mty_entry_o, mty_sub_o = match mty_o with
+      None -> None, None
+    | (Some (mty, true)) -> 
+	Some (List.fold_right 
+		(fun (arg_id,arg_t) mte -> MSEfunctor(arg_id,arg_t,mte))
+		arg_entries 
+		(interp_modtype (Global.env()) mty)), 
+	None
+    | (Some (mty, false)) -> 
+	None, 
+	Some (List.fold_right 
+		(fun (arg_id,arg_t) mte -> MSEfunctor(arg_id,arg_t,mte))
+		arg_entries 
+		(interp_modtype (Global.env()) mty))
+  in
+  let mexpr_entry_o = match mexpr_o with
+      None -> None
+    | Some mexpr -> 
+	Some (List.fold_right 
+		(fun (mbid,mte) me -> MSEfunctor(mbid,mte,me))
+		arg_entries
+		(interp_modexpr (Global.env()) mexpr))
+  in
+  let entry = 
+    {mod_entry_type = mty_entry_o;	    
+     mod_entry_expr = mexpr_entry_o }
+  in
+  let env = Global.env() in
+  let substobjs =
+    match entry with
+      | {mod_entry_type = Some mte} -> get_modtype_substobjs env mte
+      | {mod_entry_expr = Some mexpr} -> get_module_substobjs env mexpr
+      | _ -> anomaly "declare_module: No type, no body ..."
+  in
+  let substobjs = update_include substobjs in
+    (* Undo the simulated interactive building of the module *)
+    (* and declare the module as a whole *)
+    Summary.unfreeze_summaries fs;
+    match entry with 
+      |{mod_entry_type = None;	    
+	mod_entry_expr = Some (MSEident mp) } ->
+	 let dir,mp' = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
+	 let (sub,mbids,msid,objs) = substobjs in
+	 let prefix =  dir,(mp',empty_dirpath) in
+	 let mp1 = Environ.scrape_alias mp env in
+	 let substituted = 
+	   match mbids with
+		    | [] -> 
+			Some (subst_objects prefix 
+				(join sub (join (map_msid msid mp') (map_mp mp' mp1))) objs)
+		    | _ -> None in
+	   ignore (add_leaf
+		     id
+		     (in_module_alias (Some (entry, mty_sub_o), substobjs, substituted)))
+      | _ ->
+	  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
+	  let substituted = subst_substobjs dir mp substobjs in
+	    ignore (add_leaf
+		      id
+		      (in_module (Some (entry, mty_sub_o), substobjs, substituted)))
+	      
+  with e -> 
+    (* Something wrong: undo the whole process *)
+    Summary.unfreeze_summaries fs; raise e
+      
 
 let declare_include interp_struct me_ast is_mod =
 
