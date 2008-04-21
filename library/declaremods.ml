@@ -560,7 +560,9 @@ let rec get_modtype_substobjs env = function
       let mp = Environ.scrape_alias mp env in
       let sub_alias = (Environ.lookup_modtype mp env).typ_alias in
       let sub_alias = match Modops.eval_struct env (SEBident mp) with
-	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub_alias
+	| SEBstruct (msid,sign) -> join_alias 
+	    (subst_key (map_msid msid mp) sub_alias)
+	      (map_msid msid mp)
 	| _ -> sub_alias in
       let sub_alias = join_alias sub_alias (map_mbid farg_id mp None) in
       let sub_alias = update_subst_alias sub_alias 
@@ -866,7 +868,9 @@ let rec get_module_substobjs env = function
       let mp = Environ.scrape_alias mp env in
       let sub_alias = (Environ.lookup_modtype mp env).typ_alias in
       let sub_alias = match Modops.eval_struct env (SEBident mp) with
-	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub_alias
+	| SEBstruct (msid,sign) -> join_alias 
+	    (subst_key (map_msid msid mp) sub_alias)
+	      (map_msid msid mp)
 	| _ -> sub_alias in
       let sub_alias = join_alias sub_alias (map_mbid farg_id mp None) in
       let sub_alias = update_subst_alias sub_alias 

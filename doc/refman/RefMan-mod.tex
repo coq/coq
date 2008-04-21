@@ -8,12 +8,13 @@ together, as well as a mean of massive abstraction.
 \begin{figure}[t]
 \begin{centerframe}
 \begin{tabular}{rcl}
-{\modtype}  & ::= & {\ident} \\
- & $|$ & {\modtype} \texttt{ with Definition }{\ident} := {\term} \\
- & $|$ & {\modtype} \texttt{ with Module }{\ident} := {\qualid} \\
+{\modtype}  & ::= & {\qualid.\ident} \\
+ & $|$ & {\modtype} \texttt{ with Definition }{\qualid} := {\term} \\
+ & $|$ & {\modtype} \texttt{ with Module }{\qualid} := {\qualid} \\
+ & $|$ & {\qualid.\ident} \nelist{\qualid}{}\\
  &&\\
 
-{\onemodbinding}  & ::= & {\tt ( \nelist{\ident}{} : {\modtype} )}\\
+{\onemodbinding}  & ::= & {\tt ( [Import|Export] \nelist{\ident}{} : {\modtype} )}\\
  &&\\
 
 {\modbindings} & ::= & \nelist{\onemodbinding}{}\\
@@ -61,7 +62,18 @@ This command is used to start an interactive module named {\ident}.
   the module.
 
 \end{Variants}
+\subsubsection{Reserved commands inside an interactive module:
+\comindex{Include}}
+\begin{enumerate}
+\item {\tt Include {\modexpr}}
 
+ Includes the content of {\modexpr} in the current interactive module.
+
+\item {\tt Include Type {\modtype}}
+
+ Includes the content of {\modtype} in the current interactive module.
+
+\end{enumerate}
 \subsection{\tt End {\ident}
 \comindex{End}}
 
@@ -123,7 +135,22 @@ This command is used to start an interactive module type {\ident}.
   Starts an interactive functor type with parameters given by {\modbindings}.
 
 \end{Variants}
+\subsubsection{Reserved commands inside an interactive module type:
+\comindex{Include}\comindex{Inline}}
+\begin{enumerate}
+\item {\tt Include {\modexpr}}
 
+ Includes the content of {\modexpr} in the current interactive module type.
+
+\item {\tt Include Type {\modtype}}
+
+ Includes the content of {\modtype} in the current interactive module type.
+
+\item {\tt {\declarationkeyword} Inline {\assums} }
+
+ This declaration will be automatically unfolded at functor application.
+
+\end{enumerate}
 \subsection{\tt End {\ident}
 \comindex{End}}
 

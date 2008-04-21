@@ -287,8 +287,8 @@ let add_module l me senv =
   check_label l senv.labset; 
   let mb = translate_module senv.env me in
   let mp = MPdot(senv.modinfo.modpath, l) in
-  let is_functor,sub = Modops.update_subst senv.env mb mp in
   let env' = full_add_module mp mb senv.env in
+  let is_functor,sub = Modops.update_subst senv.env mb mp in
   mp, { old = senv.old;
 	env = env';
 	modinfo = 

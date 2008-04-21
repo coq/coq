@@ -270,7 +270,6 @@
 \newcommand{\T}{\texttt{T}}
 \newcommand{\U}{\texttt{U}}
 \newcommand{\real}{\textsf{Real}}
-\newcommand{\Spec}{\textit{Spec}}
 \newcommand{\Data}{\textit{Data}}
 \newcommand{\In} {{\textbf{in }}}
 \newcommand{\AND} {{\textbf{and}}}
@@ -356,6 +355,8 @@
 \newcommand{\WFT}[2]{\ensuremath{#1[] \vdash {\cal W\!F}(#2)}}
 \newcommand{\WS}[3]{\ensuremath{#1[] \vdash #2 <: #3}}
 \newcommand{\WSE}[2]{\WS{E}{#1}{#2}}
+\newcommand{\WEV}[3]{\mbox{$#1[] \vdash #2 \lra  #3$}}
+\newcommand{\WEVT}[3]{\mbox{$#1[] \vdash #2 \lra$}\\ \mbox{$ #3$}}
 
 \newcommand{\WTRED}[5]{\mbox{$#1[#2] \vdash #3 #4 #5$}}
 \newcommand{\WTERED}[4]{\mbox{$E[#1] \vdash #2 #3 #4$}}
@@ -404,14 +405,25 @@
 \newcommand{\tristackrel}[3]{\mathrel{\mathop{#2}\limits_{#3}^{#1}}}
 
 \newcommand{\Impl}{{\it Impl}}
+\newcommand{\elem}{{\it e}}
 \newcommand{\Mod}[3]{{\sf Mod}({#1}:{#2}:={#3})}
+\newcommand{\ModS}[2]{{\sf Mod}({#1}:{#2})}
 \newcommand{\ModType}[2]{{\sf ModType}({#1}:={#2})}
-\newcommand{\ModS}[2]{{\sf ModS}({#1}:{#2})}
-\newcommand{\ModSEq}[3]{{\sf ModSEq}({#1}:{#2}=={#3})}
+\newcommand{\ModA}[2]{{\sf ModA}({#1}=={#2})}
 \newcommand{\functor}[3]{\ensuremath{{\sf Functor}(#1:#2)\;#3}}
 \newcommand{\funsig}[3]{\ensuremath{{\sf Funsig}(#1:#2)\;#3}}
 \newcommand{\sig}[1]{\ensuremath{{\sf Sig}~#1~{\sf End}}}
 \newcommand{\struct}[1]{\ensuremath{{\sf Struct}~#1~{\sf End}}}
+\newcommand{\structe}[1]{\ensuremath{
+        {\sf Struct}~\elem_1;\ldots;\elem_i;#1;\elem_{i+2};\ldots
+        ;\elem_n~{\sf End}}}
+\newcommand{\structes}[2]{\ensuremath{
+        {\sf Struct}~\elem_1;\ldots;\elem_i;#1;\elem_{i+2}\{#2\}
+        ;\ldots;\elem_n\{#2\}~{\sf End}}}
+\newcommand{\with}[3]{\ensuremath{#1~{\sf with}~#2 := #3}}
+
+\newcommand{\Spec}{{\it Spec}}
+\newcommand{\ModSEq}[3]{{\sf Mod}({#1}:{#2}:={#3})}
 
 
 %\newbox\tempa

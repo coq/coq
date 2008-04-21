@@ -258,8 +258,11 @@ let rec eval_struct env = function
       let mp = scrape_alias mp env in
       let sub_alias = (lookup_modtype mp env).typ_alias in
       let sub_alias = match eval_struct env (SEBident mp) with
-	  | SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub_alias
-	  | _ -> sub_alias in
+	| SEBstruct (msid,sign) ->
+	    join_alias 
+	      (subst_key (map_msid msid mp) sub_alias)
+	      (map_msid msid mp)
+	| _ -> sub_alias in
       let sub_alias = update_subst_alias sub_alias 
 	(map_mbid farg_id mp (None)) in
       let resolve = resolver_of_environment farg_id farg_b mp sub_alias env in
