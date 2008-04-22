@@ -779,33 +779,34 @@ let ergo_proof_from_file f gl =
 
 let call_prover prover q =
   let fwhy = Filename.temp_file "coq_dp" ".why" in
-  Dp_why.output_file fwhy q;
-  if !debug then Format.eprintf "Why file: %s@." fwhy;
-  match prover with
-    | Simplify -> call_simplify fwhy
-    | Ergo -> call_ergo fwhy
-    | Yices -> call_yices fwhy
-    | Zenon -> call_zenon fwhy
-    | CVCLite -> call_cvcl fwhy
-    | Harvey -> call_harvey fwhy
-    | Gwhy -> call_gwhy fwhy
+    Dp_why.output_file fwhy q;
+    if !debug then Format.eprintf "Why file: %s@." fwhy;
+    match prover with
+      | Simplify -> call_simplify fwhy
+      | Ergo -> call_ergo fwhy
+      | Yices -> call_yices fwhy
+      | Zenon -> call_zenon fwhy
+      | CVCLite -> call_cvcl fwhy
+      | Harvey -> call_harvey fwhy
+      | Gwhy -> call_gwhy fwhy
   
 let dp prover gl =
+  Coqlib.check_required_library(["Coq";"ZArith";"ZArith"]);
   let concl_type = pf_type_of gl (pf_concl gl) in
-  if not (is_Prop concl_type) then error "Conclusion is not a Prop";
-  try 
-    let q = tr_goal gl in
-    begin match call_prover prover q with
-      | Valid (Some f) when prover = Zenon -> Dp_zenon.proof_from_file f gl
-      | Valid (Some f) when prover = Ergo -> ergo_proof_from_file f gl
-      | Valid _ -> Tactics.admit_as_an_axiom gl
-      | Invalid -> error "Invalid"
-      | DontKnow -> error "Don't know"
-      | Timeout -> error "Timeout"
-      | NoAnswer -> Tacticals.tclIDTAC gl
-    end
-  with NotFO ->
-    error "Not a first order goal"
+    if not (is_Prop concl_type) then error "Conclusion is not a Prop";
+    try 
+      let q = tr_goal gl in
+	begin match call_prover prover q with
+	  | Valid (Some f) when prover = Zenon -> Dp_zenon.proof_from_file f gl
+	  | Valid (Some f) when prover = Ergo -> ergo_proof_from_file f gl
+	  | Valid _ -> Tactics.admit_as_an_axiom gl
+	  | Invalid -> error "Invalid"
+	  | DontKnow -> error "Don't know"
+	  | Timeout -> error "Timeout"
+	  | NoAnswer -> Tacticals.tclIDTAC gl
+	end
+    with NotFO ->
+      error "Not a first order goal"
   
 
 let simplify = tclTHEN intros (dp Simplify)
