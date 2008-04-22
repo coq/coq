@@ -253,7 +253,10 @@ let reduct_option redfun = function
    to the hypotheses. *) 
 
 let redin_combinator redfun =
-  Tacticals.onClauses (reduct_option redfun)
+  Util.anomaly "Ntactics.redin_combinator: à restaurer"
+  (* arnaud: à restaurer
+  Ntacticals.onClauses (reduct_option redfun)
+  *)
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb t env sigma c =
@@ -278,12 +281,15 @@ let change_option occl t = function
   | None -> change_in_concl occl t
 
 let change occl c cls =
+  Util.anomaly "Ntactics.change: à restaurer"
+  (* arnaud: à restaurer
   (match cls, occl with
       ({onhyps=(Some(_::_::_)|None)}|{onhyps=Some(_::_);onconcl=true}),
       Some _ ->
 	error "No occurrences expected when changing several hypotheses"
     | _ -> ());
-  Tacticals.onClauses (change_option occl c) cls
+  Ntacticals.onClauses (change_option occl c) cls
+  *)
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
 let red_in_concl        = reduct_in_concl (red_product,DEFAULTcast)
@@ -807,7 +813,7 @@ let general_elim ?(allow_K=true) with_evars c e  =
 let find_eliminator c =
   Logic.type_of c >>= fun typ ->
   pf_reduce_to_quantified_ind typ >>= fun (ind,t) ->
-  Tacticals.elimination_sort_of_goal >>= fun s ->
+  Ntacticals.elimination_sort_of_goal >>= fun s ->
   Goal.return (lookup_eliminator ind s)
 
 let default_elim with_evars (c,_ as cx) = 
@@ -867,38 +873,57 @@ let general_elim_in with_evars id =
 
 (* Case analysis tactics *)
 
-let general_case_analysis_in_context with_evars (c,lbindc) =
+let general_case_analysis_in_context with_evars c_and_lbindc =
+  with_evars >>= fun with_evars ->
+    c_and_lbindc >>= fun (c,lbindc) ->
   Logic.type_of c >>= fun type_of_c ->
   pf_reduce_to_quantified_ind type_of_c >>= fun (mind,_) ->
-  Tacticals.elimination_sort_of_goal >>= fun sort ->
+  Ntacticals.elimination_sort_of_goal >>= fun sort ->
   Goal.concl >>= fun concl ->
   let case = 
     if occur_term c concl then make_case_dep else make_case_gen in
   let elim     = pf_apply case mind sort in 
   general_elim with_evars (c,lbindc) (elim,NoBindings)
 
-let general_case_analysis with_evars (c,lbindc as cx) =
+let general_case_analysis with_evars cx =
   (* arnaud: probablement sensitiver les arguments*)
-  match kind_of_term c with
+  Proofview.sensitive_tactic (
+    cx >>= fun (c,lbindc) ->
+    match kind_of_term c with
     | Var id when lbindc = NoBindings ->
+	Goal.return (
 	Logic.tclTHEN (Logic.tclTRY (Intros.intros_until_id (Goal.return id)))
 	(Proofview.tactic_of_sensitive_proof_step
 	   (general_case_analysis_in_context with_evars cx)
 	)
+	)
     | _ ->
+	Goal.return (
 	Proofview.tactic_of_sensitive_proof_step
 	  (general_case_analysis_in_context with_evars cx)
+	)
+  )
 
-let simplest_case c = general_case_analysis false (c,NoBindings)
+let simplest_case c = 
+  let arg =
+    c >>= fun c ->
+    Goal.return (c,NoBindings)
+  in 
+  general_case_analysis (Goal.return false) arg
 
 
 (*****************************)
 (* Decomposing introductions *)
 (*****************************)
 
-let clear_last = Tacticals.tclLAST_HYP 
-                        (fun c -> (clear (Goal.return [destVar c])))
-let case_last  = Tacticals.tclLAST_HYP simplest_case
+let clear_last = Ntacticals.tclLAST_HYP 
+                        (fun c ->
+			   let c_var =
+			     c >>= fun c ->
+			     Goal.return [destVar c]
+			   in
+			   clear c_var)
+let case_last  = Ntacticals.tclLAST_HYP simplest_case
 
 let rec explicit_intro_names = function
 | (IntroWildcard | IntroAnonymous | IntroFresh _) :: l -> explicit_intro_names l
@@ -913,29 +938,29 @@ let rec explicit_intro_names = function
      the tactic, for the hyps to clear *)
 let rec intros_patterns avoid thin destopt = function
   | IntroWildcard :: l ->
-      tclTHEN 
+      Logic.tclTHEN 
         (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) None true)
         (onLastHyp (fun id ->
-	  tclORELSE
-	    (tclTHEN (clear [id]) (intros_patterns avoid thin destopt l))
+	  Logic.tclORELSE
+	    (Logic.tclTHEN (clear [id]) (intros_patterns avoid thin destopt l))
 	    (intros_patterns avoid (id::thin) destopt l)))
   | IntroIdentifier id :: l ->
-      tclTHEN
+      Logic.tclTHEN
         (intro_gen (IntroMustBe id) destopt true)
         (intros_patterns avoid thin destopt l)
   | IntroAnonymous :: l ->
-      tclTHEN
+      Logic.tclTHEN
         (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) destopt true)
         (intros_patterns avoid thin destopt l)
   | IntroFresh id :: l ->
-      tclTHEN
+      Logic.tclTHEN
         (intro_gen (IntroBasedOn (id, avoid@explicit_intro_names l)) destopt true)
         (intros_patterns avoid thin destopt l)
   | IntroOrAndPattern ll :: l' ->
-      tclTHEN
+      Logic.tclTHEN
         introf
-        (tclTHENS
-	  (tclTHEN case_last clear_last)
+        (Logic.tclTHENS
+	  (Logic.tclTHEN case_last clear_last)
 	  (List.map (fun l -> intros_patterns avoid thin destopt (l@l')) ll))
   | [] -> clear thin
 

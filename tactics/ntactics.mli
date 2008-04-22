@@ -21,7 +21,8 @@ open Reduction
 open Evd
 open Clenv
 open Redexpr
-open Tacticals
+open Ntacticals
+open Proofview
 open Libnames
 open Genarg
 open Tacexpr
@@ -40,15 +41,18 @@ val inj_ebindings : constr bindings -> Goal.open_constr bindings
 
 (*s General functions. *)
 
+(* arnaud: à restaurer ?
 val type_clenv_binding : goal sigma ->
   constr * constr -> Goal.open_constr bindings  -> constr
+*)
 
 val string_of_inductive : constr -> string
 val head_constr       : constr -> constr list
 val head_constr_bound : constr -> constr list -> constr list
 
 
-(*** arnaud: commenté jusqu'à la fin, virer les doublons avec intros.mli
+(*** arnaud: commenté un peu jusqu'à la fin, 
+             virer les doublons avec intros.mli
 
 val is_quantified_hypothesis : identifier -> goal sigma -> bool
 
@@ -246,9 +250,14 @@ val general_elim_in : evars_flag ->
 
 val default_elim  : evars_flag -> constr with_ebindings -> tactic
 val simplest_elim : constr -> tactic
-val elim : 
-  evars_flag -> constr with_ebindings -> constr with_ebindings option -> tactic
+*)
 
+val elim : evars_flag Goal.sensitive -> 
+           constr with_ebindings Goal.sensitive -> 
+           constr with_ebindings option Goal.sensitive -> 
+           unit tactic
+
+(*
 val simple_induct : quantified_hypothesis -> tactic
 
 val new_induct : evars_flag -> constr with_ebindings induction_arg list -> 
