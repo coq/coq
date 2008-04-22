@@ -251,6 +251,12 @@ let add_mind dir l mie senv =
 	loads = senv.loads;
         local_retroknowledge = senv.local_retroknowledge }
 
+(* Insertion of orphaned universe constraints *)
+
+let add_constraints cst senv = 
+  {senv with
+    env = Environ.add_constraints cst senv.env;
+    univ = Univ.Constraint.union cst senv.univ }
 
 (* Insertion of module types *)
 
@@ -434,7 +440,7 @@ let end_module l restype senv =
 (* Include for module and module type*)
  let add_include me senv =
    let struct_expr,_ =  translate_struct_entry senv.env me in
-   let senv = { senv with env = add_struct_expr_constraints senv.env struct_expr } in
+   let senv = add_constraints (struct_expr_constraints struct_expr) senv in
    let msid,str = match (eval_struct senv.env struct_expr) with
      | SEBstruct(msid,str_l) -> msid,str_l
      | _ -> error ("You cannot Include a higher-order Module or Module Type" )
@@ -603,7 +609,7 @@ let end_modtype l senv =
   let newenv = oldsenv.env in
   (* since universes constraints cannot be stored in the modtype,
      they are propagated to the upper level *)
-  let newenv = add_constraints senv.univ  newenv in
+  let newenv = Environ.add_constraints senv.univ  newenv in
   let newenv = set_engagement_opt senv.engagement newenv in
   let newenv = 
     List.fold_left
@@ -639,11 +645,6 @@ let end_modtype l senv =
 let current_modpath senv = senv.modinfo.modpath
 let current_msid senv = senv.modinfo.msid
 
-
-let add_constraints cst senv = 
-  {senv with
-    env = Environ.add_constraints cst senv.env;
-    univ = Univ.Constraint.union cst senv.univ }
 
 (* Check that the engagement expected by a library matches the initial one *)
 let check_engagement env c =

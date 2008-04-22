@@ -27,3 +27,5 @@ val add_module_constraints : env -> module_body -> env
 
 val add_struct_expr_constraints : env -> struct_expr_body -> env
 
+val struct_expr_constraints : struct_expr_body -> Univ.constraints
+

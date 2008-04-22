@@ -315,3 +315,49 @@ and add_module_constraints env mb =
 and add_modtype_constraints env mtb = 
   add_struct_expr_constraints env mtb.typ_expr
       
+
+let rec struct_expr_constraints cst = function
+  | SEBident _ -> cst
+
+  | SEBfunctor (_,mtb,meb) -> 
+      struct_expr_constraints 
+	(modtype_constraints cst mtb) meb
+
+  | SEBstruct (_,structure_body) ->
+      List.fold_left 
+        (fun cst (l,item) -> struct_elem_constraints cst item)
+        cst
+        structure_body
+
+  | SEBapply (meb1,meb2,cst1) ->
+      struct_expr_constraints 
+	(struct_expr_constraints (Univ.Constraint.union cst1 cst) meb1)
+	meb2
+  | SEBwith(meb,With_definition_body(_,cb))->
+      struct_expr_constraints
+        (Univ.Constraint.union cb.const_constraints cst) meb
+  | SEBwith(meb,With_module_body(_,_,cst1))->
+      struct_expr_constraints (Univ.Constraint.union cst1 cst) meb	
+		
+and struct_elem_constraints cst = function 
+  | SFBconst cb -> cst
+  | SFBmind mib -> cst
+  | SFBmodule mb -> module_constraints cst mb
+  | SFBalias (mp,Some cst1) -> Univ.Constraint.union cst1 cst
+  | SFBalias (mp,None) -> cst
+  | SFBmodtype mtb -> modtype_constraints cst mtb
+
+and module_constraints cst mb = 
+  let cst = match mb.mod_expr with
+    | None -> cst
+    | Some meb -> struct_expr_constraints cst meb in
+  let cst = match mb.mod_type with
+    | None -> cst
+    | Some mtb -> struct_expr_constraints cst mtb in
+  Univ.Constraint.union mb.mod_constraints cst
+
+and modtype_constraints cst mtb = 
+  struct_expr_constraints cst mtb.typ_expr
+      
+
+let struct_expr_constraints = struct_expr_constraints Univ.Constraint.empty

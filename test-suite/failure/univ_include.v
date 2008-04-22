@@ -17,13 +17,14 @@ Module G (E : MU).
   Include F E.
 Print Universes. (* U <= T *)
 End G.
-Print Universes. (* constraint lost! *)
+Print Universes. (* Check if constraint is lost *)
 
 Module Mt.
-  Definition t :=T.
+  Definition t := T.
 End Mt.
 
-Module P := G Mt.
+Module P := G Mt. (* should yield Universe inconsistency *)
+(* ... otherwise the following command will show that T has type T! *)
 Eval cbv delta [P.elt Mt.t] in P.elt.
 
 
