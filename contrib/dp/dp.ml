@@ -713,19 +713,20 @@ let call_prover prover q =
     | Harvey -> call_harvey fwhy
   
 let dp prover gl =
+  Coqlib.check_required_library(["Coq";"ZArith";"ZArith"]);
   let concl_type = pf_type_of gl (pf_concl gl) in
-  if not (is_Prop concl_type) then error "Conclusion is not a Prop";
-  try 
-    let q = tr_goal gl in
-    begin match call_prover prover q with
-      | Valid -> Tactics.admit_as_an_axiom gl
-      | Invalid -> error "Invalid"
-      | DontKnow -> error "Don't know"
-      | Timeout -> error "Timeout"
-    end
-  with NotFO ->
-    error "Not a first order goal"
-  
+    if not (is_Prop concl_type) then error "Conclusion is not a Prop";
+    try 
+      let q = tr_goal gl in
+	begin match call_prover prover q with
+	  | Valid -> Tactics.admit_as_an_axiom gl
+	  | Invalid -> error "Invalid"
+	  | DontKnow -> error "Don't know"
+	  | Timeout -> error "Timeout"
+	end
+    with NotFO ->
+      error "Not a first order goal"
+	
 
 let simplify = tclTHEN intros (dp Simplify)
 let cvc_lite = tclTHEN intros (dp CVCLite)
