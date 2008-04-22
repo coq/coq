@@ -43,7 +43,7 @@ let rec check_with env mtb with_decl =
 	let cb = check_with_aux_def env mtb with_decl in
 	  SEBwith(mtb,With_definition_body(id,cb)),empty_subst
     | With_Module (id,mp) -> 
-	let cst,sub = check_with_aux_mod env mtb with_decl in
+	let cst,sub = check_with_aux_mod env mtb with_decl true in
 	  SEBwith(mtb,With_module_body(id,mp,cst)),sub
 
 and check_with_aux_def env mtb with_decl = 
@@ -116,7 +116,7 @@ and check_with_aux_def env mtb with_decl =
 	Not_found -> error_no_such_label l
       | Reduction.NotConvertible -> error_with_incorrect l
 
-and check_with_aux_mod env mtb with_decl = 
+and check_with_aux_mod env mtb with_decl now = 
   let initmsid,msid,sig_b = match (eval_struct env mtb) with 
     | SEBstruct(msid,sig_b) ->let msid'=(refresh_msid msid) in
 	msid,msid',(subst_signature_msid msid (MPself(msid')) sig_b)
@@ -162,7 +162,12 @@ and check_with_aux_mod env mtb with_decl =
 		  | _,_ ->
 		      anomaly "Mod_typing:no implementation and no alias"
 	      in
-		cst,join (map_mp (mp_rec [id]) mp) mtb'.typ_alias
+		if now then 
+		  let mp' = scrape_alias mp env' in
+		  let up_subst = update_subst_alias mtb'.typ_alias (map_mp (mp_rec [id]) mp') in
+		    cst, (join (map_mp (mp_rec [id]) mp') up_subst)
+		else
+		cst,empty_subst
         | With_Module (_::_,mp) -> 
 	    let old = match spec with
 		SFBmodule msb -> msb
@@ -175,11 +180,18 @@ and check_with_aux_mod env mtb with_decl =
 			  With_Definition (_,c) -> 
 			    With_Definition (idl,c)
 			| With_Module (_,c) -> With_Module (idl,c) in
-		      let cst,sub =
+		      let cst,_ =
 			check_with_aux_mod env' 
-			  (type_of_mb env old) new_with_decl in
-			cst,(join (map_mp (mp_rec idl) mp) sub)
-                  | Some msb ->
+			  (type_of_mb env old) new_with_decl false in
+			if now then 
+			  let mtb' = lookup_modtype mp env' in
+			  let mp' = scrape_alias mp env' in
+			  let up_subst = update_subst_alias 
+			    mtb'.typ_alias (map_mp (mp_rec (List.rev (id::idl))) mp') in
+			    cst, (join (map_mp (mp_rec (List.rev (id::idl))) mp') up_subst)
+		else
+		cst,empty_subst
+		  | Some msb ->
                       error_a_generative_module_expected l
               end
 	| _ -> anomaly "Modtyping:incorrect use of with"

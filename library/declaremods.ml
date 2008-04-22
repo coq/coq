@@ -538,7 +538,7 @@ let rec replace_module_object idl (subst, mbids, msid, lib_stack) modobjs mp =
 	    else error "MODULE expected!"
 	| idl,lobj::tail -> lobj::replace_idl (idl,tail)
       in
-	(join (map_mp (mp_rec idl) mp) subst, mbids, msid, replace_idl (idl,lib_stack))
+	(join (map_mp (mp_rec (List.rev idl)) mp) subst, mbids, msid, replace_idl (idl,lib_stack))
 	  
 let abstract_substobjs mbids1 (subst, mbids2, msid, lib_stack) =
   (subst, mbids1@mbids2, msid, lib_stack)
@@ -554,7 +554,7 @@ let rec get_modtype_substobjs env = function
       let modobjs = MPmap.find mp !modtab_substobjs in
 	replace_module_object idl substobjs modobjs mp
   | MSEapply (mexpr, MSEident mp) ->
-      let ftb,_ = Mod_typing.translate_struct_entry env mexpr in
+     let ftb,sub1 = Mod_typing.translate_struct_entry env mexpr in
       let farg_id, farg_b, fbody_b = Modops.destr_functor env 
 	(Modops.eval_struct env ftb) in
       let mp = Environ.scrape_alias mp env in
@@ -564,18 +564,22 @@ let rec get_modtype_substobjs env = function
 	    (subst_key (map_msid msid mp) sub_alias)
 	      (map_msid msid mp)
 	| _ -> sub_alias in
-      let sub_alias = join_alias sub_alias (map_mbid farg_id mp None) in
-      let sub_alias = update_subst_alias sub_alias 
-	(map_mbid farg_id mp (None)) in
-      let (subst, mbids, msid, objs) = get_modtype_substobjs env mexpr in
+      let sub3 = update_subst_alias sub_alias
+	(join_alias sub1 (map_mbid farg_id mp None)) in
+      let sub = if sub_alias = sub3 then
+	join sub1 sub_alias else join (join sub1 sub_alias) sub3 in
+      let sub = join_alias sub (map_mbid farg_id mp None) in
+       let (subst, mbids, msid, objs) = get_modtype_substobjs env mexpr in
 	(match mbids with
 	   | mbid::mbids ->
                let resolve =
 		 Modops.resolver_of_environment farg_id farg_b mp sub_alias env in
 		 (* application outside the kernel, only for substitutive
                     objects (that are all non-logical objects) *)
-		 (join (join subst (map_mbid mbid mp (Some resolve))) sub_alias
-		    , mbids, msid, objs)
+		((join 
+		    (join subst (map_mbid mbid mp (Some resolve)))
+		       sub)
+		       , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
 	       | _ -> error "Application of a functor with too few arguments")
@@ -862,7 +866,7 @@ let rec get_module_substobjs env = function
        let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(subst, mbid::mbids, msid, objs)
   | MSEapply (mexpr, MSEident mp) ->
-      let ftb,_ = Mod_typing.translate_struct_entry env mexpr in
+      let ftb,sub1 = Mod_typing.translate_struct_entry env mexpr in
       let farg_id, farg_b, fbody_b = Modops.destr_functor env 
 	(Modops.eval_struct env ftb) in
       let mp = Environ.scrape_alias mp env in
@@ -872,10 +876,12 @@ let rec get_module_substobjs env = function
 	    (subst_key (map_msid msid mp) sub_alias)
 	      (map_msid msid mp)
 	| _ -> sub_alias in
-      let sub_alias = join_alias sub_alias (map_mbid farg_id mp None) in
-      let sub_alias = update_subst_alias sub_alias 
-	(map_mbid farg_id mp (None)) in
-      let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
+      let sub3 = update_subst_alias sub_alias
+	(join_alias sub1 (map_mbid farg_id mp None)) in
+      let sub = if sub_alias = sub3 then
+	join sub1 sub_alias else join (join sub1 sub_alias) sub3 in
+      let sub = join_alias sub (map_mbid farg_id mp None) in
+       let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(match mbids with
 	   | mbid::mbids ->
                let resolve =
@@ -884,7 +890,7 @@ let rec get_module_substobjs env = function
                     objects (that are all non-logical objects) *)
 		((join 
 		    (join subst (map_mbid mbid mp (Some resolve)))
-		       sub_alias)
+		       sub)
 		       , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"

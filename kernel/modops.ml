@@ -270,17 +270,19 @@ let rec eval_struct env = function
 			   (join sub_alias 
 			      (map_mbid farg_id mp (Some resolve))) fbody_b)
   | SEBwith (mtb,(With_definition_body _ as wdb)) ->
-      merge_with env mtb wdb empty_subst
+      let mtb',_ = merge_with env mtb wdb empty_subst in
+	mtb'
   | SEBwith (mtb, (With_module_body (_,mp,_) as wdb)) ->
       let alias_in_mp =
 	(lookup_modtype mp env).typ_alias in
       let alias_in_mp = match eval_struct env (SEBident mp) with
 	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) alias_in_mp
 	| _ -> alias_in_mp in
-	merge_with env mtb wdb alias_in_mp
+      let mtb',_ = merge_with env mtb wdb alias_in_mp in
+	mtb'
 (*  | SEBfunctor(mbid,mtb,body) -> 
-      let env = add_module (MPbound mbid) (module_body_of_type mtb) env in
-	SEBfunctor(mbid,mtb,eval_struct env body) *)
+    let env = add_module (MPbound mbid) (module_body_of_type mtb) env in
+    SEBfunctor(mbid,mtb,eval_struct env body) *)
   | mtb -> mtb
       
 and type_of_mb env mb =
@@ -328,25 +330,28 @@ and merge_with env mtb with_decl alias=
                   With_definition_body (_,c) -> With_definition_body (idl,c),None
 		| With_module_body (idc,mp,cst) -> 
 		    With_module_body (idl,mp,cst),
-		      Some(map_mp (mp_rec idc) mp) 
+		      Some(map_mp (mp_rec (List.rev idc)) mp) 
 	    in
-	    let subst1 = match subst1 with
+	    let subst = match subst1 with
 	      | None -> None
-	      | Some s -> Some (update_subst_alias alias s) in
-	    let subst = Option.fold_right join subst1 alias in
-            let modtype = 
+	      | Some s -> Some (join s (update_subst_alias alias s)) in
+            let modtype,subst_msb = 
               merge_with env (type_of_mb env old) new_with_decl alias in
             let msb =
 	      { mod_expr = None;
 		mod_type = Some modtype; 
 		mod_constraints = old.mod_constraints;
-		mod_alias = subst;
+		mod_alias = begin 
+		  match subst_msb with
+		    |None -> empty_subst
+		    |Some s -> s
+		end;
 		mod_retroknowledge = old.mod_retroknowledge}
 	    in
-	      (SFBmodule msb),Some subst
+	      (SFBmodule msb),subst
       in
 	SEBstruct(msid,  before@(l,new_spec)::
-		    (Option.fold_right subst_structure subst after))
+		    (Option.fold_right subst_structure subst after)),subst
     with
 	Not_found -> error_no_such_label l
 

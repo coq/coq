@@ -300,6 +300,7 @@ let rec check_modules cst env msid1 l msb1 msb2 =
 and check_signatures cst env (msid1,sig1) alias (msid2,sig2') = 
   let mp1 = MPself msid1 in
   let env = add_signature mp1 sig1 env in 
+  let sig1 = subst_structure alias sig1 in
   let alias = update_subst_alias alias (map_msid msid2 mp1) in
   let sig2 = subst_structure alias sig2' in
   let sig2 = subst_signature_msid msid2 mp1 sig2 in
