@@ -8,8 +8,8 @@
 
 (* $Id$ *)
 
-(* The subproof datastructure is a pure datastructure underlying the notion
-   of proof (namely, a proof is a subproof which can evolve and has safety
+(* The proofview datastructure is a pure datastructure underlying the notion
+   of proof (namely, a proof is a proofview which can evolve and has safety
    mechanisms attached).
    The general idea of the structure is that it is composed of a chemical
    solution: an unstructured bag of stuff which has some relations with 
@@ -19,15 +19,19 @@
    The natural candidate for the solution is an {!Evd.evar_defs}, that is
    a calculus of evars. The comb is then a list of goals (evars wrapped 
    with some extra information, like possible name anotations).
-   There is also need of a list of the evars which initialised the subproof
-   to be able to return information about the subproof. *)
+   There is also need of a list of the evars which initialised the proofview
+   to be able to return information about the proofview. *)
 
-type subproof = {
+(* Type of proofviews. *)
+type proofview = {
      initial : Term.constr list;
      solution : Evd.evar_defs;
      comb : Goal.goal list
      }
 
+(* Initialises a proofview, the argument is a list of environement, 
+   conclusion types, and optional names, creating that many initial goals. *)
+(* arnaud: doit-elle être définitivement comme ça ? *)
 let rec init = function
   | [] ->  { initial = [] ; 
 	     solution = Evd.create_evar_defs Evd.empty ;
@@ -40,37 +44,22 @@ let rec init = function
                          let ( new_defs , econstr ) = 
 			   Evarutil.new_evar sol env typ
 			 in
-			 let e = match Term.kind_of_term econstr with
-			         | Term.Evar (e,_) -> e
-				 | _ -> Util.anomaly 
-				     "Proofview.init: new_evar failure"
-				       (* arnaud:faire un nouveau new_evar 
-					  ad hoc. Ou utiliser destEvar.
-				          Chercher le pattern dans 
-				          goal.ml aussi.*)
-				       (* the above error would mean
-					  that [Evarutil.new_evar]
-					  outputed a non-evar constr,
-					  which it should not. *)
-			 in
+			 let (e,_) = Term.destEvar econstr in
 			 let gl = Goal.build e in
 			 { initial = econstr::ret;
 			   solution = new_defs ;
 			   comb = gl::comb }
 
-(* arnaud: plutôt dans proofutils		    
-let rec start env l =
-  init (List.map (fun x -> (env,x,None)) l)
-*)
-
-(* Returns whether this subproof is finished or not. *)
+(* Returns whether this proofview is finished or not. That is,
+   if it has empty subgoals in the comb. There could still be unsolved
+   subgoaled, but they would then be out of the view, focused out. *)
 let finished = function
   | {comb = []} -> true
   | _  -> false
 
 
 (* Function which returns the current state of refinement of the required
-   evars. *)
+   (= initial) evars. *)
 let return { initial=init; solution=defs } =
   List.map (Evarutil.nf_evar (Evd.evars_of defs)) init
 
@@ -79,7 +68,12 @@ let return { initial=init; solution=defs } =
    with respect to list lengths. *)
 exception IndexOutOfRange
 
-(*arnaud: commenter*)
+(* [list_goto i l] returns a pair of lists [c,t] where
+   [c] has length [i] and is the reversed of the [i] first
+   elements of [l], and [t] is the rest of the list.
+   The idea is to navigate through the list, [c] is then
+   seen as the context of the current position. 
+   Raises [IndexOutOfRange] if [i > length l]*)
 let list_goto i = 
   let rec aux acc index = function
     | l when index = 0-> (acc,l)
@@ -92,23 +86,23 @@ let list_goto i =
     else
       aux [] i l
 
+(* Type of the object which allow to unfocus a view.*)
+(* First component is a reverse list of what comes before
+   and second component is what goes after (in the expected
+   order) *)
 type focus_context = Goal.goal list * Goal.goal list
 
-(* arnaud: is de NegativeIndex *)
-(* arnaud: préciser "between two indices". Et tout le reste qui est
-   probablement pas correct. *)
-(* arnaud : [list_goto i] et [list_chop i] renvoient tous les deux une 
-   paire (l,r) avec [List.length l = i].
-   On va dire que [focus_sublist] focus sur les buts [i] à [j] inclus.
-   Donc on doit rajouter plein de +1, sachant que les buts sont numérotés
-   à partir de 1. *)
 (* This (internal) function extracts a sublist between two indices, and
-   returns this sublist together with its context :
+   returns this sublist together with its context:
    if it returns [(a,(b,c))] then [a] is the sublist and (rev b)@a@c is the
    original list.
+   The focused list has lenght [j-i-1] and contains the goals from
+   number [i] to number [j] (both included) the first goal of the list
+   being numbered [1].
    [focus_sublist i j l] raises [IndexOutOfRange] if
-   [i > length l], or if [j > length l]. 
-   It can also raise [NegativeIndex] if either [i] or [j-i] are negative. *)
+   [i > length l], or [j > length l] or [ j < i ].  *)
+(* arnaud: il faudrait corriger l'erreur de list_chop de façon 
+   à rendre le commentaire correct. *)
 let focus_sublist i j l =
   let (left,sub_right) = list_goto (i-1) l in
   let (sub, right) = Util.list_chop (j-i+1) sub_right in
@@ -119,33 +113,32 @@ let unfocus_sublist (left,right) s =
   List.rev_append left (s@right)
 
 
-(* [focus i j] focuses a subproof on the goals from index [i] to index [j] 
+(* [focus i j] focuses a proofview on the goals from index [i] to index [j] 
    (inclusive). (i.e. goals number [i] to [j] become the only goals of the
-   returned subproof).
+   returned proofview).
    It returns the focus proof, and a context for the focus trace. *)
 let focus i j sp =
   let (new_comb, context) = focus_sublist i j sp.comb in
   ( { sp with comb = new_comb } , context )
 
-(* Unfocuses a subproof with respect to a context. *)
+(* Unfocuses a proofview with respect to a context. *)
 let unfocus c sp =
   { sp with comb = unfocus_sublist c sp.comb }
 
 
-(* arnaud : à virer ? utile pour "choose_one" mais "choose_one"
-   devrait probablement dégager, si je ne dis pas de bêtise.
-   Ou pas... Choose one est un brilliant tactical *)
+(* arnaud: on devrait peut-être rendre les proofviews plus ou moins
+   identiques aux proof_steps, ça simplifierait peut-être. *)
+(* Focusing operation on proof_steps. *)
 let focus_proof_step i j ps =
   let (new_subgoals, context) = focus_sublist i j ps.Goal.subgoals in
   ( { ps with Goal.subgoals = new_subgoals } , context )
 
-(* arnaud: à virer pareil ?
-   Ou pas pareil. *)
+(* Unfocusing operation of proof_steps. *)
 let unfocus_proof_step c ps =
   { ps with Goal.subgoals = unfocus_sublist c ps.Goal.subgoals }
   
 
-(* Returns the open goals of the subproof *)
+(* Returns the open goals of the proofview *)
 let goals { comb = comb } = comb
 
 
@@ -163,6 +156,44 @@ let goals { comb = comb } = comb
 (******************************************************************)
 
 
+(* The tactic monad:
+   - Tactics are objects which apply a transformation to all
+     the subgoals of the current view at the same time. By opposed
+     to the old vision of applying it to a single goal. It mostly 
+     allows to consider tactic like [reorder] to reorder the goals
+     in the current view (which might be useful for the tactic designer)
+     (* spiwack: the ordering of goals, though, is actually very
+        brittle. It would be much more interesting to find a more
+        robust way to adress goals, I have no idea at this time 
+        though*) 
+     or global automation tactic for dependent subgoals (instantiating
+     an evar has influences on the other goals of the proof in progress,
+     not being able to take that into account causes the current eauto
+     tactic to fail on some instances where it could succeed).
+   - Tactics are a monad ['a tactic], in a sense a tactic can be 
+     seens as a function (without argument) which returns a value
+     of type 'a and modifies the environement (in our case: the view).
+     Tactics of course have arguments, but these are given at the 
+     meta-level as OCaml functions.
+     Most tactics in the sense we are used to return [ () ], that is
+     no really interesting values. But some might, to pass information 
+     around; for instance [Proofview.freeze] allows to store a certain
+     goal sensitive value "at the present time" (which means, considering the
+     structure of the dynamics of proofs, [Proofview.freeze s] will have,
+     for every current goal [gl], and for any of its descendent [g'] in 
+     the future the same value in [g'] that in [gl]). 
+     (* spiwack: I don't know how much all this relates to F. Kirchner and 
+        C. Muñoz. I wasn't able to understand how they used the monad
+        structure in there developpement.
+     *)
+     The tactics seen in Coq's Ltac are (for now at least) only 
+     [unit tactic], the return values are kept for the OCaml toolkit.
+     The operation or the monad are [Proofview.id] (which is the 
+     "return" of the tactic monad) [Proofview.tclBIND] (which is
+     the "bind") and [Proofview.tclTHEN] (which is a specialized
+     bind on unit-returning tactics).
+*)
+
 
 (* type of tactics *)
 type +'a result = { proof_step : Goal.proof_step;
@@ -170,14 +201,18 @@ type +'a result = { proof_step : Goal.proof_step;
 
 type +'a tactic = Environ.env -> Goal.proof_step -> 'a result
 
+(* arnaud: abandon, cf le .mli
 (* exception which represent a failure in a command *)
 exception TacticFailure of Pp.std_ppcmds
+*)
 
 (* [fail s] raises [TacticFailure s].  *)
-let fail msg = raise (TacticFailure msg)
+let fail msg =  
+  Pp.pp_with Format.str_formatter msg;
+  Util.error (Format.flush_str_formatter ())
 
 
-(* Applies a tactic to the current subproof. *)
+(* Applies a tactic to the current proofview. *)
 let apply env t sp  = 
   let start = { Goal.subgoals = sp.comb ; Goal.new_defs = sp.solution } in
   let next = (t env start).proof_step in
@@ -187,12 +222,9 @@ let apply env t sp  =
   }
 
 
-(* arnaud: à recommenter *)
-(* Transforms a function of type 
-   [Evd.evar_defs -> Goal.goal -> Goal.proof_step] (i.e.
-   a tactic that operates on a single goal) into an actual tactic.
-   It operates by iterating the single-tactic from the last goal to 
-   the first one. *)
+(* A [proof_step Goal.sensitive] can be seen as a tactic by
+   contatenating its value inside each individual goal of the
+   current view. *)
 (* arnaud: avancer dans les termes modifiés par effet de bord peut se faire
    en mutuel-recursant wrap et [tactic_of...]*)
 let tactic_of_sensitive_proof_step f env ps =
@@ -212,19 +244,32 @@ let tactic_of_sensitive_proof_step f env ps =
     content = ()
   }
 
+(* arnaud: abandonné en faveur de [sensitive_tactic]
 (* arnaud: kill sans doute en faveur d'un [tactic sensitive -> tactic] *)
 let goal_tactic_of_tactic t =
   let (>>=) = Goal.bind in (* arnaud: peut-être à déplacer, peut-être pas*)
   Goal.env >>= fun env ->
   Goal.null >>= fun ps ->
   Goal.return (t env ps).proof_step
+*)
 
+
+(* This tactical is included for compatibitility with the previous
+   way of building tactic. It corresponds to a very natural way of building
+   tactic according to it, far less now, though it may be unavoidable (
+   if we want to really get rid of it, it might be necessary to have
+   some clever ways or "focusing" or such).
+   It takes a [unit tactic Goal.sensitive] that is a value that becomes
+   a tactic inside a goal and make it a tactic by applying it individually
+   to a view containing a single goal (it peeks inside the goal to figure
+   which tactic it should apply, then applies it). *)
 let sensitive_tactic st =
   let sps =
     let (>>=) = Goal.bind in (* arnaud: peut-être à déplacer, peut-être pas*)
-    Goal.env >>= fun env ->
+    Goal.env  >>= fun env ->
     Goal.null >>= fun ps ->
-    st env ps >>= fun result ->
+    st        >>= fun st ->
+    let  result = st env ps in
     Goal.return result.proof_step
   in
   tactic_of_sensitive_proof_step sps
@@ -277,7 +322,9 @@ let reorder p _ ps =
 
 (*** tacticals ***)
 
-(* Interpretes the ";" (semicolon) of Ltac. *)
+(* Interpretes the ";" (semicolon) of Ltac.
+   As a monadic operation, it's a specialized "bind"
+   on unit-returning tactic (meaning "there is no value to bind") *)
 let tclTHEN t1 t2 env ps = t2 env (t1 env ps).proof_step  
 
 (* Bind operation of the tactic monad.*)
@@ -375,14 +422,14 @@ let tclSOLVE t env ps =
 let tclGORELSE t1 t2 env ps =
   try
     t1 env ps
-  with TacticFailure _ ->
+  with Util.UserError _ ->
     t2 env ps
 
 let tclORELSE t1 t2 =
   traverse (tclGORELSE t1 t2)
 
 (* Interpretes the repeat tactical *)
-(* Despite what it may look like, tclREPEAT cannot be defined
+(* Despite what it might look like, tclREPEAT cannot be defined
    out of Proofview. This is left as an exercise to the reader ;) .*)
 let rec tclREPEAT tac env ps =
   tclORELSE (tclTHEN tac (tclREPEAT tac)) (id ()) env ps

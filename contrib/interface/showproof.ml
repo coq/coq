@@ -229,7 +229,7 @@ let  to_nproof sigma osign pf =
     | Some(r,spfl) ->
       	if rule_is_complex r
       	then (
-	  let p1= to_nproof_rec sigma sign (subproof_of_proof pf) in
+	  let p1= to_nproof_rec sigma sign (proofview_of_proof pf) in
           let ntree= fill_unproved p1 
               (List.map (fun x -> (to_nproof_rec sigma sign x).t_proof)
 		 spfl) in

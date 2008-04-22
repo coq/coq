@@ -8,7 +8,27 @@
 
 (* $Id$ *)
 
-(* arnaud: rajouter le blabla sur la  théorie du module ici. Le undo ! Le undo ! Note importante : une preuve est un record mutable de truc immutables !*)
+(* Module defining the last essential tiles of interractive proofs.
+   The focuses of the Proof module are undoing and focusing.
+   A proof is a mutable object, it contains a proofview, and some information
+   to be able to undo actions, and to unfocus the current view. All three
+   of these being meant to evolve.
+   - Proofview: a proof is primarily the data of the current view.
+     That which is shown to the user (as a remainder, a proofview
+     is mainly the logical state of the proof, together with the
+     currently focused goals).
+   - Focus: a proof has a focus stack: the top of the stack contains
+     the context in which to unfocus the current view to a view focused
+     with the rest of the stack.
+     In addition, this contains, for each of the focus context,  a 
+     "focus kind". This kind represents the intention of the focus.
+     In particular, by giving ourselves a "Rigid" focus kind, that
+     disallows unfocusing while there are still open goals in the 
+     current view, we can implement the Begin Subproof/End Subproof
+     feature.
+   - Undo: since proofviews and focus stacks are immutable objects, 
+     it suffices to hold the previous states, to allow to return to past.
+*)
 
 open Term
 
@@ -22,10 +42,10 @@ type focus_kind =
   | InternalFocus
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
-   are controled by the undo mechanism *)
+   are under control of the undo mechanism *)
 type proof_state = {
-  (* Current focused subproof *)
-  subproof: Proofview.subproof;
+  (* Current focused proofview *)
+  proofview: Proofview.proofview;
   (* History of the focusings, provides information on how
      to unfocus the proof.
      The list is empty when the proof is fully unfocused. *)
@@ -44,7 +64,7 @@ type proof = { (* current proof_state *)
 (*** General proof functions ***)
 
 let start l return = 
-  { state = { subproof = Proofview.init l;
+  { state = { proofview = Proofview.init l;
 	      focus_stack = []
 	    };
     undo_stack = [];
@@ -52,10 +72,10 @@ let start l return =
   }
 
 let is_done p =
-  Proofview.finished p.state.subproof && p.state.focus_stack = []
+  Proofview.finished p.state.proofview && p.state.focus_stack = []
 
 let return p =
-  p.return (Proofview.return p.state.subproof)
+  p.return (Proofview.return p.state.proofview)
 
 (*** The following functions implement the basic internal mechanisms
      of proofs, they are not meant to be exported in the .mli ***)
@@ -95,16 +115,16 @@ let pop_undo pr =
 
 (* This function focuses the proof [pr] between indices [i] and [j] *)
 let _focus ?(kind=InternalFocus) i j pr =
-  let (focused,context) = Proofview.focus i j pr.state.subproof in
+  let (focused,context) = Proofview.focus i j pr.state.proofview in
   push_focus kind context pr;
-  pr.state <- { pr.state with subproof = focused }
+  pr.state <- { pr.state with proofview = focused }
 
 (* This function unfocuses the proof [pr], it raises [CannotUnfocus],
    if the proof is already fully unfocused.
    This function does not care which is the kind of the current focus. *)
 let _unfocus pr =
   let (_,fc) = pop_focus pr in
-  pr.state <- { pr.state with subproof = Proofview.unfocus fc pr.state.subproof }
+  pr.state <- { pr.state with proofview = Proofview.unfocus fc pr.state.proofview }
 
 
 
@@ -132,7 +152,7 @@ let undo pr =
 (* This function unfocuses a proof until it is fully unfocused
    or there is at least one focused subgoal. *)
 let rec unfocus_until_sound pr =
-  if Proofview.finished pr.state.subproof then
+  if Proofview.finished pr.state.proofview then
     try 
       _unfocus pr; unfocus_until_sound pr
     with
@@ -176,10 +196,10 @@ let unfocus pr =
 
 let run_tactic env tac pr =
   let starting_point = save_state pr in
-  let sp = pr.state.subproof in
+  let sp = pr.state.proofview in
   try
-    let tacticced_subproof = Proofview.apply env tac sp in
-    pr.state <- { pr.state with subproof = tacticced_subproof };
+    let tacticced_proofview = Proofview.apply env tac sp in
+    pr.state <- { pr.state with proofview = tacticced_proofview };
     unfocus_until_sound pr;
     push_undo starting_point pr
   with e -> (* arnaud: traitement particulier de TacticFailure ? *)
@@ -189,7 +209,7 @@ let run_tactic env tac pr =
 (*** **)
 (* arnaud: hack pour debugging *)
 
-let pr_subgoals { state = { subproof = sp } } pr_fun =
+let pr_subgoals { state = { proofview = sp } } pr_fun =
    Proofview.pr_subgoals sp pr_fun
 
 (* arnaud:
@@ -199,4 +219,4 @@ let hide_interp f t ot =
     | Some cur -> f cur t ot
 *)
 
-let subproof_of { state = { subproof = sp } } = sp
+let proofview_of { state = { proofview = sp } } = sp

@@ -8,15 +8,31 @@
 
 (* $Id: proof.mli aspiwack $ *)
 
-(* This module implements the actual proof datatype. It enforces strong
-   invariants, and it is the only module that should access the module
-   Proofview.
-   Actually from outside the proofs/ subdirectory, this is the only module
-   that should be used directly. *)
+(* Module defining the last essential tiles of interractive proofs.
+   The focuses of the Proof module are undoing and focusing.
+   A proof is a mutable object, it contains a proofview, and some information
+   to be able to undo actions, and to unfocus the current view. All three
+   of these being meant to evolve.
+   - Proofview: a proof is primarily the data of the current view.
+     That which is shown to the user (as a remainder, a proofview
+     is mainly the logical state of the proof, together with the
+     currently focused goals).
+   - Focus: a proof has a focus stack: the top of the stack contains
+     the context in which to unfocus the current view to a view focused
+     with the rest of the stack.
+     In addition, this contains, for each of the focus context,  a 
+     "focus kind". This kind represents the intention of the focus.
+     In particular, by giving ourselves a "Rigid" focus kind, that
+     disallows unfocusing while there are still open goals in the 
+     current view, we can implement the Begin Subproof/End Subproof
+     feature.
+   - Undo: since proofviews and focus stacks are immutable objects, 
+     it suffices to hold the previous states, to allow to return to past.
+*)
 
 open Term
 
-(* Type of a proof of return type ['a]. *)
+(* Type of a proof. *)
 type proof
 
 
@@ -62,4 +78,4 @@ val hide_interp : (proof -> Tacexpr.raw_tactic_expr -> 'a option -> Proofview.ta
 *)
 
 (* arnaud:fonction très temporaire*)
-val subproof_of : proof -> Proofview.subproof
+val proofview_of : proof -> Proofview.proofview

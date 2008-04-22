@@ -6,49 +6,57 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: subproof.mli aspiwack $ *)
+(* $Id: proofview.mli aspiwack $ *)
 
-(* arnaud: conceptuali-commenter *)
+(* The proofview datastructure is a pure datastructure underlying the notion
+   of proof (namely, a proof is a proofview which can evolve and has safety
+   mechanisms attached).
+   The general idea of the structure is that it is composed of a chemical
+   solution: an unstructured bag of stuff which has some relations with 
+   one another, which represents the various subnodes of the proof, together
+   with a comb: a datastructure that gives order to some of these nodes, 
+   namely the open goals. 
+   The natural candidate for the solution is an {!Evd.evar_defs}, that is
+   a calculus of evars. The comb is then a list of goals (evars wrapped 
+   with some extra information, like possible name anotations).
+   There is also need of a list of the evars which initialised the proofview
+   to be able to return information about the proofview. *)
+
 open Term
 
-type subproof 
+type proofview 
 
-(* arnaud: plutôt dans proofutils
-(* Starts a subproof in a given environement, with initial subgoals
-   whose conclusion type is given by a list.
-   The subgoals of the returned subproof are in the same order as
-   the list of conclusion. *)
-val start : Environ.env -> Term.types list -> subproof
-*)
+(* Initialises a proofview, the argument is a list of environement, 
+   conclusion types, and optional names, creating that many initial goals. *)
+val init : (Environ.env * Term.types * string option) list -> proofview
 
-(* Initialises a subproof, the argument is a list of environement, 
-   conclusion types, and optional names, creating that many initial goals.
-   It is a more elaborated version of {!start}. *)
-val init : (Environ.env * Term.types * string option) list -> subproof
+(* Returns the open goals of the proofview *)
+val goals : proofview -> Goal.goal list
 
-(* Returns the open goals of the subproof *)
-val goals : subproof -> Goal.goal list
+(* Returns whether this proofview is finished or not.That is,
+   if it has empty subgoals in the comb. There could still be unsolved
+   subgoaled, but they would then be out of the view, focused out. *)
+val finished : proofview -> bool
 
-(* Returns whether this subproof is finished or not. *)
-val finished : subproof -> bool
-
-(* Returns the current value of the subproof return terms *)
-val return : subproof -> constr list
+(* Returns the current value of the proofview return terms *)
+(* arnaud: synchroniser d'une façon ou d'une autre sur le commentaire
+   dans le .ml *)
+val return : proofview -> constr list
 
 
 (*** Focusing operations ***)
 
-(* type of the contexts allowing to unfocus a focused subgoal *)
+(* Type of the object which allow to unfocus a view.*)
 type focus_context
 
-(* [focus i j] focuses a subproof on the goals from index [i] to index [j] 
+(* [focus i j] focuses a proofview on the goals from index [i] to index [j] 
    (inclusive). (i.e. goals number [i] to [j] become the only goals of the
-   returned subproof).
+   returned proofview).
    It returns the focus proof, and a context for the focus trace. *)
-val focus : int -> int -> subproof -> subproof * focus_context
+val focus : int -> int -> proofview -> proofview * focus_context
 
-(* Unfocuses a subproof with respect to a context. *)
-val unfocus : focus_context -> subproof -> subproof
+(* Unfocuses a proofview with respect to a context. *)
+val unfocus : focus_context -> proofview -> proofview
 
 
 
@@ -61,39 +69,90 @@ val unfocus : focus_context -> subproof -> subproof
 (******************************************************************)
 
 
+(* The tactic monad:
+   - Tactics are objects which apply a transformation to all
+     the subgoals of the current view at the same time. By opposed
+     to the old vision of applying it to a single goal. It mostly 
+     allows to consider tactic like [reorder] to reorder the goals
+     in the current view (which might be useful for the tactic designer)
+     (* spiwack: the ordering of goals, though, is actually very
+        brittle. It would be much more interesting to find a more
+        robust way to adress goals, I have no idea at this time 
+        though*) 
+     or global automation tactic for dependent subgoals (instantiating
+     an evar has influences on the other goals of the proof in progress,
+     not being able to take that into account causes the current eauto
+     tactic to fail on some instances where it could succeed).
+   - Tactics are a monad ['a tactic], in a sense a tactic can be 
+     seens as a function (without argument) which returns a value
+     of type 'a and modifies the environement (in our case: the view).
+     Tactics of course have arguments, but these are given at the 
+     meta-level as OCaml functions.
+     Most tactics in the sense we are used to return [ () ], that is
+     no really interesting values. But some might, to pass information 
+     around; for instance [Proofview.freeze] allows to store a certain
+     goal sensitive value "at the present time" (which means, considering the
+     structure of the dynamics of proofs, [Proofview.freeze s] will have,
+     for every current goal [gl], and for any of its descendent [g'] in 
+     the future the same value in [g'] that in [gl]). 
+     (* spiwack: I don't know how much all this relates to F. Kirchner and 
+        C. Muñoz. I wasn't able to understand how they used the monad
+        structure in there developpement.
+     *)
+     The tactics seen in Coq's Ltac are (for now at least) only 
+     [unit tactic], the return values are kept for the OCaml toolkit.
+     The operation or the monad are [Proofview.id] (which is the 
+     "return" of the tactic monad) [Proofview.tclBIND] (which is
+     the "bind") and [Proofview.tclTHEN] (which is a specialized
+     bind on unit-returning tactics).
+*)
+
+
 type +'a tactic 
 
-(* arnaud: exportée pour Proof. *)
+(* arnaud: exportée pour Proof. 
+  Abandon de tactic failure, on revient à Error, trop pénible de changer
+  tout le code existant, et c'est essentiellement cosmétique.
 (* exception which represent a failure in a command *)
 exception TacticFailure of Pp.std_ppcmds
+  *)
 
 (* [fail s] raises [TacticFailure s].  *)
 val fail : Pp.std_ppcmds -> 'a
 
-(* Applies a tactic to the current subproof. *)
-val apply : Environ.env -> 'a tactic -> subproof -> subproof
+(* Applies a tactic to the current proofview. *)
+val apply : Environ.env -> 'a tactic -> proofview -> proofview
 
 
-(* arnaud: à recommenter *)
-(* Transforms a function of type 
-   [Evd.evar_defs -> Goal.goal -> Goal.refinement] (i.e.
-   a tactic that operates on a single goal) into an actual tactic.
-   It operates by iterating the single-tactic from the last goal to 
-   the first one. *)
+(* A [proof_step Goal.sensitive] can be seen as a tactic by
+   contatenating its value inside each individual goal of the
+   current view. *)
 val tactic_of_sensitive_proof_step : Goal.proof_step Goal.sensitive -> 
                                      unit tactic
 
+(* arnaud: abandonnée en faveur de "sensitive_tactic"
 (* arnaud: à commenter, ainsi que dans le .ml *)
 val goal_tactic_of_tactic : unit tactic -> Goal.proof_step Goal.sensitive
+*)
 
-(* arnaud: à documenter *)
+(* This tactical is included for compatibitility with the previous
+   way of building tactic. It corresponds to a very natural way of building
+   tactic according to it, far less now, though it may be unavoidable (
+   if we want to really get rid of it, it might be necessary to have
+   some clever ways or "focusing" or such).
+   It takes a [unit tactic Goal.sensitive] that is a value that becomes
+   a tactic inside a goal and make it a tactic by applying it individually
+   to a view containing a single goal (it peeks inside the goal to figure
+   which tactic it should apply, then applies it). *)
 val sensitive_tactic : unit tactic Goal.sensitive -> unit tactic
 
 
 
 (*** tacticals ***)
 
-(* Interpetes the ";" (semicolon) of Ltac. *)
+(* Interpetes the ";" (semicolon) of Ltac.
+   As a monadic operation, it's a specialized "bind"
+   on unit-returning tactic (meaning "there is no value to bind") *)
 val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
 
 (* Bind operation of the tactic monad.*)
@@ -158,6 +217,6 @@ val reorder : Permutation.permutation -> unit tactic
 
 (*** **)
 (* arnaud: hack pour debugging *)
-val pr_subgoals : subproof -> (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
+val pr_subgoals : proofview -> (string option -> Evd.evar_map -> Goal.goal list -> Pp.std_ppcmds) -> Pp.std_ppcmds
 
-val defs_of : subproof -> Evd.evar_defs
+val defs_of : proofview -> Evd.evar_defs

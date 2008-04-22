@@ -130,7 +130,7 @@ let format_print_info_script sigma osign pf =
     
 let print_subscript sigma sign pf = 
  (* if is_tactic_proof pf then 
-    format_print_info_script sigma sign (subproof_of_proof pf)
+    format_print_info_script sigma sign (proofview_of_proof pf)
   else *)
     format_print_info_script sigma sign pf
 (****************)

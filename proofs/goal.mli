@@ -22,6 +22,8 @@ val is_defined : Evd.evar_map -> goal -> bool
 
 
 (* arnaud: mieux commenter *)
+(* arnaud: ça sert à imprimer apparemment, c'est marrant que imprimer soit
+   hacky *)
 (* invariant : [e] must exist in [em] *)
 val content : Evd.evar_map -> goal -> Evd.evar_info
 
@@ -135,13 +137,13 @@ val defs : Evd.evar_defs sensitive
 
 (*** Tag related things ***)
 
+(* The [Goal.freeze] primitive is the main component of the tactic monad's 
+   (from the Proofview module) [Proofview.freeze].
+   Precisely [Goal.freeze gl] returns a pair [ ( g' , i ) ], where [g'] is
+   a goal identical to [gl] except that it has an additional hereditary
+   internal tag [i].*)
 val freeze : goal -> goal * int
 
+(* A [has_itag i] is a [bool Goal.sensitive] which is true inside
+   the goals which have the internal tag [i]. *)
 val has_itag : int -> bool sensitive
-
-
-(* arnaud: à remplacer par un print 
-(* This function returns a new goal where the evars have been
-   instantiated according to an evar_map *)
-val instantiate : Evd.evar_map -> goal -> goal
-*)

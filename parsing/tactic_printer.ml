@@ -30,7 +30,7 @@ and strange =  Tactic of (Pptactic.Proof_type.tactic_expr *bool)
 
 let pr_prim_rule _ = Util.anomaly "Tactic_printer.pr_prim_rule: fantome"
 let is_tactic_proof _ = Util.anomaly "Tactic_printer.is_tactic_proof: fantome"
-let subproof_of_proof _ = Util.anomaly "Tactic_printer.subproof_of_proof: fantome"
+let proofview_of_proof _ = Util.anomaly "Tactic_printer.proofview_of_proof: fantome"
 (* arnaud: /trucs factices *)
 
 let pr_tactic = function
@@ -241,7 +241,7 @@ let format_print_info_script sigma osign pf =
 let print_subscript sigma sign pf = 
   Util.anomaly "Tactic_printer.print_subscript: à restaurer" (* arnaud: à restaurer
   if is_tactic_proof pf then 
-    format_print_info_script sigma sign (subproof_of_proof pf)
+    format_print_info_script sigma sign (proofview_of_proof pf)
   else 
     format_print_info_script sigma sign pf
 

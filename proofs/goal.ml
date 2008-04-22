@@ -66,7 +66,8 @@ type proof_step = { subgoals: goal list ;
    evaluation. As a matter of fact it should only change as far
    as caching is concerned, which is of no concern for the tactics
    themselves. *)
-type 'a sensitive = Environ.env -> Evd.evar_defs ref -> goal -> Evd.evar_info -> 'a
+type 'a sensitive = 
+    Environ.env -> Evd.evar_defs ref -> goal -> Evd.evar_info -> 'a
 
 
 
@@ -75,12 +76,14 @@ type open_constr = {
   me: constr;
   my_evars: Evd.evar list
 }
+
 let constr_of_open_constr { me=c } = c
 let open_of_closed c = { me = c; my_evars = []}
 let make_open_constr c el = { me = c ; my_evars = el }
 (* arnaud: pas bonne idée, le defs doit changer..
    au pire je peux le faire dans la monade sensitive, 
    mais ça me paraît casse-gueule
+   Je ne sais plus à quoi c'est utile de toute façon
 let open_of_weak (sigma,c) = 
   let sigma_list = List.map fst (Evd.to_list sigma) in
   { me = c ; my_evars = List.rev sigma_list }
@@ -203,10 +206,7 @@ let clear idents _ rdefs gl info =
                                                      Environ.empty_env in
   let cleared_concl = Evd.evar_concl cleared_info in
   let clearing_constr = Evarutil.e_new_evar rdefs cleared_env cleared_concl in
-  let cleared_evar = match kind_of_term clearing_constr with
-                     | Evar (e,_) -> e
-		     | _ -> Util.anomaly "Goal.clear: e_new_evar failure"
-  in
+  let (cleared_evar,_) = Term.destEvar clearing_constr in
   let cleared_goal = descendent gl cleared_evar in
   rdefs := Evd.evar_define gl.content clearing_constr !rdefs;
   { subgoals = [cleared_goal] ;
@@ -276,24 +276,12 @@ let clear_body idents env rdefs gl info =
   in
   let concl = Evd.evar_concl info in
   let (defs',new_constr) = Evarutil.new_evar !rdefs new_env concl in
-  let new_evar = match kind_of_term new_constr with
-                     | Evar (e,_) -> e
-		     | _ -> Util.anomaly "Goal.clear: e_new_evar failure"
-  in
+  let (new_evar,_) = destEvar new_constr in
   let new_goal = descendent gl new_evar in
   rdefs := Evd.evar_define gl.content new_constr defs';
   { subgoals = [new_goal] ;
     new_defs = !rdefs
   }
-
-
-
-(*** Implementation of the "apply" tactic ***)
-
-
-
-
-(* arnaud Evarutil ou Reductionops ou Pretype_errors .nf_evar? *)
 
 
 
@@ -388,16 +376,6 @@ let process_typed_metas t env rdefs goal info =
     (* arnaud: ordre non spécifié = danger ? *)
     | _ -> map_constr (fun t -> process_typed_metas t env) t
   in
-    (* arnaud: nettoyer
-  let pr_list = 
-    let rec aux = function
-      | [] -> ""
-      | a::r -> ", "^(string_of_int a)^(aux r)
-    in
-      function [] -> Format.printf "[]" 
-	| a::q -> Format.printf "[%i%s]" a (aux q)
-  in
-    *)
   let me = process_typed_metas t env in
   { me = me;
     my_evars = !acc
@@ -459,7 +437,6 @@ and main_process_apply_case_metas ot ty env rdefs goal info =
 	                  hdty
 	                  env rdefs goal info
       in
-	(* arnaud: à nettoyer mk_arggoals sigma goal acc' hdty (Array.to_list l) in*)
       (* arnaud: original: check_conv_leq_goal env sigma trm conclty' conclty;*)
       let sigma = Evd.evars_of !rdefs in
       if not (Reductionops.is_conv_leq env sigma ty ty') then
@@ -512,9 +489,6 @@ and process_head_metas ot env rdefs goal info =
 	in
 	let (e,_) = Term.destEvar new_me in
 	{ me=new_me ; my_evars=e::ot.my_evars }, ty
-        (* arnaud: à nettoyer 
-	(mk_goal hyps (nf_betaiota ty))::goalacc,ty
-	*)
 
     | Cast (t,_, ty) ->
 	let sigma = Evd.evars_of !rdefs in
@@ -542,9 +516,6 @@ and process_head_metas ot env rdefs goal info =
 		       my_evars = o' }
 	in
 	( new_ot , ty')
-	  (* arnaud: à nettoyer 
-	mk_arggoals sigma goal acc' hdty (Array.to_list l)
-	  *)
 
     | Case (_,p,c,lf) ->
 	Util.anomaly "Goal.process_head_metas: Case: à restaurer"
@@ -589,160 +560,16 @@ and process_arg_metas l acc funty env rdefs goal info =
 
 (*** Tag related things ***)
 
-(* arnaud: commentaire *)
+(* The [Goal.freeze] primitive is the main component of the tactic monad's
+   (from the Proofview module) [Proofview.freeze].
+   Precisely [Goal.freeze gl] returns a pair [ ( g' , i ) ], where [g'] is
+   a goal identical to [gl] except that it has an additional hereditary
+   internal tag [i].*)
 let freeze gl = 
   let unique_tag = gl.content in
   { gl with itags = unique_tag::gl.itags }   ,  unique_tag
 
+(* A [has_itag i] is a [bool Goal.sensitive] which is true inside
+   the goals which have the internal tag [i]. *)
 let has_itag i _ _ gl _ =
   List.mem i gl.itags
-
-
-(* arnaud: à nettoyer
-let rec mk_refgoals sigma goal goalacc conclty trm =
-  let env = evar_env goal in
-  let hyps = goal.evar_hyps in
-  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
-(*
-   if  not (occur_meta trm) then
-    let t'ty = (unsafe_machine env sigma trm).uj_type in 	
-    let _ = conv_leq_goal env sigma trm t'ty conclty in
-      (goalacc,t'ty)
-  else
-*)
-  match kind_of_term trm with
-    | Meta _ ->
-	if occur_meta conclty then
-          raise (RefinerError (OccurMetaGoal conclty));
-	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
-
-    | Cast (t,_, ty) ->
-	check_typability env sigma ty;
-	check_conv_leq_goal env sigma trm ty conclty;
-	mk_refgoals sigma goal goalacc ty t
-
-    | App (f,l) ->
-	let (acc',hdty) =
-	  match kind_of_term f with
-	    | (Ind _ (* needed if defs in Type are polymorphic: | Const _*))
-		when not (array_exists occur_meta l) (* we could be finer *) ->
-		(* Sort-polymorphism of definition and inductive types *)
-		goalacc, 
-		type_of_global_reference_knowing_parameters env sigma f l
-	    | _ -> 
-		mk_hdgoals sigma goal goalacc f
-	in
-	let (acc'',conclty') =
-	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
-	check_conv_leq_goal env sigma trm conclty' conclty;
-        (acc'',conclty')
-
-    | Case (_,p,c,lf) ->
-	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
-	check_conv_leq_goal env sigma trm conclty' conclty;
-	let acc'' = 
-	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
-            acc' lbrty lf 
-	in
-	(acc'',conclty')
-
-    | _ -> 
-	if occur_meta trm then raise (RefinerError (OccurMeta trm));
-      	let t'ty = goal_type_of env sigma trm in
-	check_conv_leq_goal env sigma trm t'ty conclty;
-        (goalacc,t'ty)
-
-(* Same as mkREFGOALS but without knowing te type of the term. Therefore,
- * Metas should be casted. *)
-
-and mk_hdgoals sigma goal goalacc trm =
-  let env = evar_env goal in
-  let hyps = goal.evar_hyps in
-  let mk_goal hyps concl = mk_goal hyps concl goal.evar_extra in
-  match kind_of_term trm with
-    | Cast (c,_, ty) when isMeta c ->
-	check_typability env sigma ty;
-	(mk_goal hyps (nf_betaiota ty))::goalacc,ty
-
-    | Cast (t,_, ty) ->
-	check_typability env sigma ty;
-	mk_refgoals sigma goal goalacc ty t
-
-    | App (f,l) ->
-	let (acc',hdty) = 
-	  if isInd f or isConst f 
-	     & not (array_exists occur_meta l) (* we could be finer *)
-	  then
-	    (goalacc,type_of_global_reference_knowing_parameters env sigma f l)
-	  else mk_hdgoals sigma goal goalacc f
-	in
-	mk_arggoals sigma goal acc' hdty (Array.to_list l)
-
-    | Case (_,p,c,lf) ->
-	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
-	let acc'' = 
-	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
-            acc' lbrty lf 
-	in
-	(acc'',conclty')
-
-    | _ -> goalacc, goal_type_of env sigma trm
-
-and mk_arggoals sigma goal goalacc funty = function
-  | [] -> goalacc,funty
-  | harg::tlargs as allargs ->
-      let t = whd_betadeltaiota (evar_env goal) sigma funty in
-      match kind_of_term t with
-	| Prod (_,c1,b) ->
-	    let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
-	    mk_arggoals sigma goal acc' (subst1 harg b) tlargs
-	| LetIn (_,c1,_,b) ->
-	    mk_arggoals sigma goal goalacc (subst1 c1 b) allargs
-	| _ -> raise (RefinerError (CannotApply (t,harg)))
-
-and mk_casegoals sigma goal goalacc p c =
-  let env = evar_env goal in
-  let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
-  let (acc'',pt) = mk_hdgoals sigma goal acc' p in
-  let pj = {uj_val=p; uj_type=pt} in 
-  let indspec =
-    try find_mrectype env sigma ct
-    with Not_found -> anomaly "mk_casegoals" in
-  let (lbrty,conclty) =
-    type_case_branches_with_names env indspec pj c in
-  (acc'',lbrty,conclty)
-
-*)
-
-
-
-
-
-
-
-
-
-
-
-  
-(* arnaud: remplacer par un "print goal" I guess suppose. 
-(* This function returns a new goal where the evars have been
-   instantiated according to an evar_map *)
-let instantiate em gl =
-  (* note: goals don't have an evar_body *)
-  let content = gl.content in
-  let instantiate =  Evarutil.nf_evar em in
-  { gl with
-  
-    content = { content with
-                (* arnaud: map_named_val est a priori ok: si [t] n'a pas
-		   d'evar alors [instantiate t] = [t], sinon [t] n'a
-                   pas de forme compilé donc ça reste correct. Commenter
-                   dans environ.ml(i) (et pre_env.ml(i)?) si ça fonctionne.*)
-		Evd.evar_hyps = Environ.map_named_val instantiate content.Evd.evar_hyps;
-		Evd.evar_concl = instantiate content.Evd.evar_concl
-	      }
-  }
-*)

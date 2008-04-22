@@ -194,7 +194,7 @@ let exact c =
 
 (* [assumption] tactic *)
 let assumption =
-  Proofview.tactic_of_sensitive_proof_step (
+  Proofview.sensitive_tactic (
     Goal.concl >>= fun concl ->
     Goal.env >>= fun env ->
     Goal.hyps >>= fun hyps ->
@@ -210,7 +210,7 @@ let assumption =
           then exact (Goal.return (mkVar id))
 	  else arec only_eq rest
     in
-    Proofview.goal_tactic_of_tactic (arec true hyps)
+    Goal.return (arec true hyps)
   )
 
 

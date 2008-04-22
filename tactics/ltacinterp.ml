@@ -1628,7 +1628,7 @@ let eval_tactic t =
 let hide_interp p t ot =
   let ist = { ltacvars = ([],[]); 
 	      ltacrecvars = []; 
-              gsigma = Evd.evars_of (Proofview.defs_of (Proof.subproof_of p));
+              gsigma = Evd.evars_of (Proofview.defs_of (Proof.proofview_of p));
               genv = Global.env () } in
   let te = intern_tactic ist t in
   let t = eval_tactic te in
