@@ -197,10 +197,12 @@ and read_vernac_file verbosely s =
 (* raw_do_vernac : char Stream.t -> unit
  * parses and executes one command of the vernacular char stream.
  * Marks the end of the command in the lib_stk with a new label to
- * make vernac undoing easier. *)
+ * make vernac undoing easier. Also freeze state to speed up
+ * backtracking. *)
 
 let raw_do_vernac po =
   vernac (States.with_heavy_rollback Vernacentries.interp) (po,None);
+  Lib.add_frozen_state();
   Lib.mark_end_of_command()
 
 (* XML output hooks *)
