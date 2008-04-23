@@ -263,11 +263,11 @@ let rec eval_struct env = function
 	      (subst_key (map_msid msid mp) sub_alias)
 	      (map_msid msid mp)
 	| _ -> sub_alias in
-      let sub_alias = update_subst_alias sub_alias 
+      let sub_alias1 = update_subst_alias sub_alias 
 	(map_mbid farg_id mp (None)) in
       let resolve = resolver_of_environment farg_id farg_b mp sub_alias env in
 	eval_struct env (subst_struct_expr 
-			   (join sub_alias 
+			   (join sub_alias1 
 			      (map_mbid farg_id mp (Some resolve))) fbody_b)
   | SEBwith (mtb,(With_definition_body _ as wdb)) ->
       let mtb',_ = merge_with env mtb wdb empty_subst in
@@ -437,8 +437,9 @@ and  resolver_of_environment mbid modtype mp alias env =
  let rec make_resolve = function
    | [] -> []
    | (con,expecteddef)::r ->
-       let con',_ = subst_con alias con in
-       let con' = replace_mp_in_con (MPbound mbid) mp con' in
+       let con' = replace_mp_in_con (MPbound mbid) mp con in
+       let con',_ = subst_con alias con' in
+  (*     let con' = replace_mp_in_con (MPbound mbid) mp con' in *)
 	 try
 	   if expecteddef.Declarations.const_inline then
 	     let constant = lookup_constant con' env in
