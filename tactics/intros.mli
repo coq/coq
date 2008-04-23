@@ -17,16 +17,6 @@
 
 open Names
 
-(*** Introduction tactics ***)
-
-val intros : unit Proofview.tactic
-
-(* arnaud: à virer ?
-val intros_until :  Rawterm.quantified_hypothesis Goal.sensitive -> 
-                    unit Proofview.tactic
-*)
-val intros_until_id : Names.identifier Goal.sensitive -> unit Proofview.tactic
-
 
 (*** Related functions ***)
 
@@ -38,4 +28,20 @@ type intro_name_flag =
 val find_name : name * Term.types option * Term.types ->
                 intro_name_flag -> 
                 identifier Goal.sensitive
+
+(*** Introduction tactics ***)
+
+val intro_gen : intro_name_flag Goal.sensitive -> 
+                identifier option Goal.sensitive ->
+                bool Goal.sensitive ->
+                unit Proofview.tactic
+
+val intro : unit Proofview.tactic
+val intros : unit Proofview.tactic
+
+(* arnaud: à virer ?
+val intros_until :  Rawterm.quantified_hypothesis Goal.sensitive -> 
+                    unit Proofview.tactic
+*)
+val intros_until_id : Names.identifier Goal.sensitive -> unit Proofview.tactic
 

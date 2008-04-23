@@ -16,6 +16,8 @@
 (************************************************************************)
 
 (* arnaud: remplacer la plupart des Proofview. par des Logic. ? *)
+(* arnaud: beaucoup d'occurence de Goal.return ({None,true,false}),
+   peut-être tenter de factoriser. *)
 
 open Term
 open Names
@@ -80,12 +82,22 @@ let find_intro_names ctxt gl =
   List.rev res 
 *)
 
+let build_intro_tac id move_flag =
+  Proofview.sensitive_tactic (
+    move_flag >>= function
+      | None      -> Goal.return (Logic.intro id)
+      | Some dest -> Util.anomaly "Intro.build_intro_tac: Some: à restaurer" (* arnaud: original tclTHEN (introduction id) (move_hyp true id dest)*)
+  )
+(* arnaud: original
 let build_intro_tac id = function
   | None      -> Logic.intro id
   | Some dest -> Util.anomaly "Intro.build_intro_tac: Some: à restaurer" (* arnaud: original tclTHEN (introduction id) (move_hyp true id dest)*)
+*)
 
 let find_intro_gen_name name_flag force_flag =
   Goal.concl >>= fun concl ->
+  name_flag >>= fun name_flag ->
+  force_flag >>= fun force_flag ->
   match kind_of_term concl with
     | Prod (name,t,_) -> 
 	find_name (name,None,t) name_flag
@@ -106,15 +118,32 @@ let find_intro_gen_name name_flag force_flag =
 let rec intro_gen name_flag move_flag force_flag =
   build_intro_tac (find_intro_gen_name name_flag force_flag) move_flag
 
-let intro_mustbe_force id = intro_gen (IntroMustBe id) None true
-let intro_using id = intro_gen (IntroBasedOn (id,[])) None false
-let intro_force force_flag = intro_gen (IntroAvoid []) None force_flag
-let intro = intro_force false
-let introf = intro_force true
+let intro_mustbe_force id = 
+  let mustbe_id =
+    id >>= fun id ->
+    Goal.return (IntroMustBe id)
+  in
+  intro_gen mustbe_id Goal.sNone Goal.strue
+let intro_using id = 
+  let basedon_id =
+    id >>= fun id ->
+    Goal.return (IntroBasedOn (id,[]))
+  in
+  intro_gen basedon_id Goal.sNone Goal.sfalse
+let intro_force force_flag = 
+  intro_gen (Goal.return (IntroAvoid [])) Goal.sNone force_flag
+let intro = intro_force Goal.sfalse
+let introf = intro_force Goal.strue
 
-let intro_avoiding l = intro_gen (IntroAvoid l) None false 
+let intro_avoiding l = 
+  let avoid_l =
+    l >>= fun l ->
+    Goal.return (IntroAvoid l)
+  in
+  intro_gen avoid_l Goal.sNone Goal.sfalse
 
-let introf_move_name destopt = intro_gen (IntroAvoid []) destopt true
+let introf_move_name destopt = 
+  intro_gen (Goal.return (IntroAvoid [])) destopt Goal.strue
 
 (* arnaud: à virer
 (* For backwards compatibility *)
@@ -125,7 +154,7 @@ let rec intros_using = function
   | []      -> Proofview.id ()
   | id::l  -> Proofview.tclTHEN (intro_using id) (intros_using l)
 
-let intros = Proofview.tclREPEAT (intro_force false)
+let intros = Proofview.tclREPEAT (intro_force Goal.sfalse)
 
 let intro_erasing id = Proofview.tclTHEN (Logic.clear (Goal.expr_of_list [id])) 
                                         (Logic.intro id)
@@ -146,8 +175,8 @@ let intros_replacing ids =
 
 let intro_move idopt idopt' = 
   match idopt with
-  | None -> intro_gen (IntroAvoid []) idopt' true
-  | Some id -> intro_gen (IntroMustBe id) idopt' true
+  | None -> intro_gen (Goal.return (IntroAvoid [])) idopt' Goal.strue
+  | Some id -> intro_gen (Goal.return (IntroMustBe id)) idopt' Goal.strue
 
 let pf_lookup_hypothesis_as_renamed env ccl = function
   | Rawterm.AnonHyp n -> Detyping.lookup_index_as_renamed env ccl n
@@ -169,7 +198,7 @@ let pf_lookup_hypothesis_as_renamed_gen red h =
     Goal.concl >>= fun concl ->
     Goal.return (aux concl)
   with Tacred.Redelimination -> 
-    Goal.return None
+    Goal.sNone
 
 let is_quantified_hypothesis id =
   pf_lookup_hypothesis_as_renamed_gen true (Rawterm.NamedHyp id) >>= fun hyp ->
@@ -204,10 +233,10 @@ let depth_of_quantified_hypothesis red h =
    fait dans le trunk. *)
 (* arnaud: si il y a un bug là dedans je ne serais pas étonné *)
 let intros_until_gen red h =
-  Proofview.tactic_of_sensitive_proof_step (
+  Proofview.sensitive_tactic (
     h >>= fun h ->
     depth_of_quantified_hypothesis red h >>= fun depth ->
-    Proofview.goal_tactic_of_tactic (Logic.tclDO depth intro)
+    Goal.return (Logic.tclDO depth intro)
   )
 
 let intros_until_id id = 
@@ -241,6 +270,6 @@ let try_intros_until tac =
 let rec intros_move = function
   | [] -> Proofview.id ()
   | (hyp,destopt) :: rest ->
-      Proofview.tclTHEN (intro_gen (IntroMustBe hyp) destopt false)
+      Proofview.tclTHEN (intro_gen (Goal.return (IntroMustBe hyp)) destopt Goal.sfalse)
 	               (intros_move rest)
 

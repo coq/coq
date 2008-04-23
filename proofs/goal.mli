@@ -42,7 +42,7 @@ type proof_step = { subgoals: goal list ;
                     new_defs: Evd.evar_defs}
 
 (* type of the base elements of the goal API.*)
-type 'a sensitive
+type +'a sensitive
 
 
 (* type of constr with holes manipulated by the API *)
@@ -147,3 +147,22 @@ val freeze : goal -> goal * int
 (* A [has_itag i] is a [bool Goal.sensitive] which is true inside
    the goals which have the internal tag [i]. *)
 val has_itag : int -> bool sensitive
+
+
+(*** Useful sensitive constant ***)
+
+(* The following few constants, despite being definable, are very
+   commonly used, sharing them from here, improves memory and 
+   speed *)
+
+(* [Goal.strue] is [Goal.return true] *)
+val strue : bool sensitive
+
+(* [Goal.sfalse] is [Goal.return false] *)
+val sfalse : bool sensitive
+
+(* [Goal.sNone] is [Goal.return None] *)
+val sNone : 'a option sensitive
+
+(* [Goal.sNil] is [Goal.return []] *)
+val sNil : 'a list sensitive

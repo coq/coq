@@ -936,10 +936,12 @@ let rec explicit_intro_names = function
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
-let rec intros_patterns avoid thin destopt = function
+let rec intros_patterns avoid thin destopt = 
+  Util.anomaly "Ntactics.intros_patterns: à restaurer"
+  (* arnaud: à restaurer: function
   | IntroWildcard :: l ->
       Logic.tclTHEN 
-        (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) None true)
+        (Intros.intro_gen (Intros.IntroAvoid (avoid@explicit_intro_names l)) None true)
         (onLastHyp (fun id ->
 	  Logic.tclORELSE
 	    (Logic.tclTHEN (clear [id]) (intros_patterns avoid thin destopt l))
@@ -963,13 +965,14 @@ let rec intros_patterns avoid thin destopt = function
 	  (Logic.tclTHEN case_last clear_last)
 	  (List.map (fun l -> intros_patterns avoid thin destopt (l@l')) ll))
   | [] -> clear thin
+  *)
 
 let intros_pattern = intros_patterns [] []
 
 let intro_pattern destopt pat = intros_patterns [] [] destopt [pat]
 
 let intro_patterns = function 
-  | [] -> tclREPEAT intro
+  | [] -> Logic.tclREPEAT Intros.intro
   | l  -> intros_pattern None l
 
 (**************************)

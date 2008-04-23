@@ -573,3 +573,21 @@ let freeze gl =
    the goals which have the internal tag [i]. *)
 let has_itag i _ _ gl _ =
   List.mem i gl.itags
+
+(*** Useful sensitive constant ***)
+
+(* The following few constants, despite being definable, are very
+   commonly used, sharing them from here, improves memory and 
+   speed *)
+
+(* [Goal.strue] is [Goal.return true] *)
+let strue = return true
+
+(* [Goal.sfalse] is [Goal.return false] *)
+let sfalse = return false
+
+(* [Goal.sNone] is [Goal.return None] *)
+let sNone = return None
+
+(* [Goal.sNil] is [Goal.return []] *)
+let sNil = return []
