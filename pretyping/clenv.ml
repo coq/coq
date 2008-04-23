@@ -28,15 +28,7 @@ open Unification
 open Mod_subst
 open Coercion.Default
 
-(* *)
-let w_coerce env c ctyp target evd =
-  try
-    let j = make_judge c ctyp in
-    let tycon = mk_tycon_type target in
-    let (evd',j') = inh_conv_coerce_to dummy_loc env evd j tycon in
-    (evd',j'.uj_val)
-  with e when precatchable_exception e ->
-    evd,c
+(* Abbreviations *)
 
 let pf_env gls = Global.env_of_context gls.it.evar_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
@@ -398,36 +390,24 @@ let error_already_defined b =
         anomalylabstrm ""
           (str "Position " ++ int n ++ str" already defined")
 
-let rec similar_type_shapes t u =
-  let t,_ = decompose_app t and u,_ = decompose_app u in
-  match kind_of_term t, kind_of_term u with
-  | Prod (_,t1,t2), Prod (_,u1,u2) -> similar_type_shapes t2 u2
-  | Const cst, Const cst' -> cst = cst'
-  | Var id, Var id' -> id = id'
-  | Ind ind, Ind ind' -> ind = ind'
-  | Rel n, Rel n' -> n = n'
-  | Sort s, Sort s' -> family_of_sort s = family_of_sort s'
-  | Case (_,_,c,_), Case (_,_,c',_) -> similar_type_shapes c c'
-  | _ -> false
-
-let clenv_unify_similar_types clenv c t u =
-  if occur_meta u then
-    if similar_type_shapes t u then
-      try TypeProcessed, clenv_unify true CUMUL t u clenv, c
-      with e when precatchable_exception e -> TypeNotProcessed, clenv, c
-    else
-      CoerceToType, clenv, c
+let clenv_unify_binding_type clenv c t u =
+  if isMeta (fst (whd_stack u)) then
+    (* Not enough information to know if some subtyping is needed *)
+    CoerceToType, clenv, c
   else
-    let evd,c = w_coerce (cl_env clenv) c t u clenv.evd in
-    TypeProcessed, { clenv with evd = evd }, c
+    (* Enough information so as to try a coercion now *)
+    try
+      let evd,c = w_coerce_to_type (cl_env clenv) clenv.evd c t u in
+      TypeProcessed, { clenv with evd = evd }, c
+    with e when precatchable_exception e ->
+      TypeNotProcessed, clenv, c
 
 let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
   let c_typ = nf_betaiota (clenv_get_type_of clenv' c) in
   let c_typ = clenv_hnf_constr clenv' c_typ in
-  let status,clenv'',c = clenv_unify_similar_types clenv' c c_typ k_typ in
-(*  let evd,c' = w_coerce (cl_env clenv') c c_typ k_typ clenv'.evd in*)
+  let status,clenv'',c = clenv_unify_binding_type clenv' c c_typ k_typ in
   { clenv'' with evd = meta_assign k (c,(UserGiven,status)) clenv''.evd }
 
 let clenv_match_args bl clenv =

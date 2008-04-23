@@ -946,7 +946,7 @@ let meta_reducible_instance evd b =
 	(match
 	  try
 	    let g,s = List.assoc m metas in
-	    if isConstruct g or s = TypeProcessed then Some g else None
+	    if isConstruct g or s <> CoerceToType then Some g else None
 	  with Not_found -> None
 	  with
 	    | Some g -> irec (mkCase (ci,p,g,bl))
@@ -956,13 +956,13 @@ let meta_reducible_instance evd b =
 	(match
 	  try
 	    let g,s = List.assoc m metas in
-	    if isLambda g or s = TypeProcessed then Some g else None
+	    if isLambda g or s <> CoerceToType then Some g else None
 	  with Not_found -> None
 	 with
 	   | Some g -> irec (mkApp (g,l))
 	   | None -> mkApp (f,Array.map irec l))
     | Meta m ->
-	(try let g,s = List.assoc m metas in if s=TypeProcessed then irec g else u
+	(try let g,s = List.assoc m metas in if s<>CoerceToType then irec g else u
 	 with Not_found -> u)
     | _ -> map_constr irec u
   in 

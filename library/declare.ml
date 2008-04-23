@@ -8,6 +8,8 @@
 
 (* $Id$ *)
 
+(** This module is about the low-level declaration of logical objects *)
+
 open Pp
 open Util
 open Names
@@ -17,32 +19,16 @@ open Term
 open Sign
 open Declarations
 open Entries
-open Inductive
-open Indtypes
-open Reduction
-open Type_errors
-open Typeops
 open Libobject
 open Lib
 open Impargs
-open Nametab
 open Safe_typing
+open Cooking
+open Decls
 open Decl_kinds
 
-(**********************************************)
+(** XML output hooks *)
 
-(* Strength *)
-
-open Nametab
-
-let strength_min (stre1,stre2) =
-  if stre1 = Local or stre2 = Local then Local else Global
-
-let string_of_strength = function
-  | Local -> "(local)"
-  | Global -> "(global)"
-
-(* XML output hooks *)
 let xml_declare_variable = ref (fun (sp:object_name) -> ())
 let xml_declare_constant = ref (fun (sp:bool * constant)-> ())
 let xml_declare_inductive = ref (fun (sp:bool * object_name) -> ())
@@ -53,7 +39,7 @@ let set_xml_declare_variable f = xml_declare_variable := if_xml f
 let set_xml_declare_constant f = xml_declare_constant := if_xml f
 let set_xml_declare_inductive f = xml_declare_inductive := if_xml f
 
-(* Section variables. *)
+(** Declaration of section variables and local definitions *)
 
 type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
@@ -61,53 +47,30 @@ type section_variable_entry =
 
 type variable_declaration = dir_path * section_variable_entry * logical_kind
 
-type checked_section_variable =
-  | CheckedSectionLocalDef of constr * types * Univ.constraints * bool
-  | CheckedSectionLocalAssum of types * Univ.constraints
-
-type checked_variable_declaration = 
-    dir_path * checked_section_variable * logical_kind
-
-let vartab = ref (Idmap.empty : checked_variable_declaration Idmap.t)
-
-let _ = Summary.declare_summary "VARIABLE"
-  { Summary.freeze_function = (fun () -> !vartab);
-    Summary.unfreeze_function = (fun ft -> vartab := ft);
-    Summary.init_function = (fun () -> vartab := Idmap.empty);
-    Summary.survive_module = false;
-    Summary.survive_section = false }
-
 let cache_variable ((sp,_),o) =
   match o with
   | Inl cst -> Global.add_constraints cst
   | Inr (id,(p,d,mk)) ->
   (* Constr raisonne sur les noms courts *)
-  if Idmap.mem id !vartab then
+  if variable_exists id then
     errorlabstrm "cache_variable" (pr_id id ++ str " already exists");
-  let vd,impl,keep = match d with (* Fails if not well-typed *)
+  let impl,opaq,cst,keep = match d with (* Fails if not well-typed *)
     | SectionLocalAssum (ty, impl, keep) ->
         let cst = Global.push_named_assum (id,ty) in
-        let (_,bd,ty) = Global.lookup_named id in
-        CheckedSectionLocalAssum (ty,cst), impl, if keep then Some ty else None
+        impl, true, cst, (if keep then Some ty else None)
     | SectionLocalDef (c,t,opaq) -> 
         let cst = Global.push_named_def (id,c,t) in
-        let (_,bd,ty) = Global.lookup_named id in
-        CheckedSectionLocalDef (Option.get bd,ty,cst,opaq), false, None in
+        false, opaq, cst, None in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl keep;
   Dischargedhypsmap.set_discharged_hyps sp [];
-  vartab := Idmap.add id (p,vd,mk) !vartab
-
-let get_variable_constraints id = 
-  match pi2 (Idmap.find id !vartab) with
-  | CheckedSectionLocalDef (c,ty,cst,opaq) -> cst
-  | CheckedSectionLocalAssum (ty,cst) -> cst
+  add_variable_data id (p,opaq,cst,mk)
 
 let discharge_variable (_,o) = match o with
-  | Inr (id,_) -> Some (Inl (get_variable_constraints id))
+  | Inr (id,_) -> Some (Inl (variable_constraints id))
   | Inl _ -> Some o
 
-let (in_variable, out_variable) =
+let (inVariable, outVariable) =
   declare_object { (default_object "VARIABLE") with
     cache_function = cache_variable;
     discharge_function = discharge_variable;
@@ -115,24 +78,16 @@ let (in_variable, out_variable) =
 
 (* for initial declaration *)
 let declare_variable id obj =
-  let oname = add_leaf id (in_variable (Inr (id,obj))) in
+  let oname = add_leaf id (inVariable (Inr (id,obj))) in
   declare_var_implicits id;
   Notation.declare_ref_arguments_scope (VarRef id);
+  Heads.declare_head (EvalVarRef id);
   !xml_declare_variable oname;
   oname
 
-(* Globals: constants and parameters *)
+(** Declaration of constants and parameters *)
 
 type constant_declaration = constant_entry * logical_kind
-
-let csttab = ref (Spmap.empty : logical_kind Spmap.t)
-
-let _ = Summary.declare_summary "CONSTANT"
-	  { Summary.freeze_function = (fun () -> !csttab);
-	    Summary.unfreeze_function = (fun ft -> csttab := ft);
-	    Summary.init_function = (fun () -> csttab := Spmap.empty);
-	    Summary.survive_module = false;
-	    Summary.survive_section = false }
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
@@ -141,7 +96,7 @@ let load_constant i ((sp,kn),(_,_,kind)) =
     errorlabstrm "cache_constant" 
       (pr_id (basename sp) ++ str " already exists");
   Nametab.push (Nametab.Until i) sp (ConstRef (constant_of_kn kn));
-  csttab := Spmap.add sp kind !csttab
+  add_constant_kind (constant_of_kn kn) kind
 
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn),_) =
@@ -150,18 +105,14 @@ let open_constant i ((sp,kn),_) =
 let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
-  if Idmap.mem id !vartab or Nametab.exists_cci sp then
+  if variable_exists id or Nametab.exists_cci sp then
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists");
   let kn' = Global.add_constant dir id cdt in
   assert (kn' = constant_of_kn kn);
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
   add_section_constant kn' (Global.lookup_constant kn').const_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
-  csttab := Spmap.add sp kind !csttab
-
-(*s Registration as global tables and rollback. *)
-
-open Cooking
+  add_constant_kind (constant_of_kn kn) kind
 
 let discharged_hyps kn sechyps =
   let (_,dir,_) = repr_kn kn in
@@ -185,7 +136,7 @@ let export_constant cst = Some (dummy_constant cst)
 
 let classify_constant (_,cst) = Substitute (dummy_constant cst)
 
-let (in_constant, out_constant) =
+let (inConstant, outConstant) =
   declare_object { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
@@ -206,9 +157,10 @@ let hcons_constant_declaration = function
   | cd -> cd
 
 let declare_constant_common id dhyps (cd,kind) =
-  let (sp,kn) = add_leaf id (in_constant (cd,dhyps,kind)) in
+  let (sp,kn) = add_leaf id (inConstant (cd,dhyps,kind)) in
   let kn = constant_of_kn kn in
   declare_constant_implicits kn;
+  Heads.declare_head (EvalConstRef kn);
   Notation.declare_ref_arguments_scope (ConstRef kn);
   kn
 
@@ -221,7 +173,7 @@ let declare_constant_gen internal id (cd,kind) =
 let declare_internal_constant = declare_constant_gen true
 let declare_constant = declare_constant_gen false
 
-(* Inductives. *)
+(** Declaration of inductive blocks *)
 
 let declare_inductive_argument_scopes kn mie =
   list_iter_i (fun i {mind_entry_consnames=lc} ->
@@ -251,7 +203,7 @@ let inductive_names sp kn mie =
   in names
 
 let check_exists_inductive (sp,_) =
-  (if Idmap.mem (basename sp) !vartab then
+  (if variable_exists (basename sp) then
     errorlabstrm ""
       (pr_id (basename sp) ++ str " already exists"));
   if Nametab.exists_cci sp then
@@ -301,7 +253,7 @@ let dummy_inductive_entry (_,m) = ([],{
 
 let export_inductive x = Some (dummy_inductive_entry x)
 
-let (in_inductive, out_inductive) =
+let (inInductive, outInductive) =
   declare_object {(default_object "INDUCTIVE") with 
     cache_function = cache_inductive;
     load_function = load_inductive;
@@ -316,84 +268,9 @@ let declare_mind isrecord mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives" in
-  let (sp,kn as oname) = add_leaf id (in_inductive ([],mie)) in
+  let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   declare_mib_implicits kn;
   declare_inductive_argument_scopes kn mie;
   !xml_declare_inductive (isrecord,oname);
   oname
 
-(*s Test and access functions. *)
-
-let is_constant sp = 
-  try let _ = Spmap.find sp !csttab in true with Not_found -> false
-
-let constant_strength sp = Global
-let constant_kind sp = Spmap.find sp !csttab
-
-let get_variable id = 
-  let (p,x,_) = Idmap.find id !vartab in
-  match x with
-    | CheckedSectionLocalDef (c,ty,cst,opaq) -> (id,Some c,ty)
-    | CheckedSectionLocalAssum (ty,cst) -> (id,None,ty)
-
-let variable_strength _ = Local
-
-let find_section_variable id =
-  let (p,_,_) = Idmap.find id !vartab in Libnames.make_path p id
-
-let variable_opacity id =
-  let (_,x,_) = Idmap.find id !vartab in
-  match x with
-    | CheckedSectionLocalDef (c,ty,cst,opaq) -> opaq
-    | CheckedSectionLocalAssum (ty,cst) -> false (* any.. *)
-
-let variable_kind id =
-  pi3 (Idmap.find id !vartab)
-
-let clear_proofs sign =
-  List.fold_right
-    (fun (id,c,t as d) signv -> 
-      let d = if variable_opacity id then (id,None,t) else d in
-      Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
-
-(* Global references. *)
-
-let first f v =
-  let n = Array.length v in
-  let rec look_for i =
-    if i = n then raise Not_found;
-    try f i v.(i) with Not_found -> look_for (succ i)
-  in
-  look_for 0
-
-let mind_oper_of_id sp id mib =
-  first
-    (fun tyi mip ->
-       if id = mip.mind_typename then 
-	 IndRef (sp,tyi)
-       else
-	 first 
-	   (fun cj cid -> 
-	      if id = cid then 
-		ConstructRef ((sp,tyi),succ cj) 
-	      else raise Not_found) 
-	   mip.mind_consnames)
-    mib.mind_packets
-
-let last_section_hyps dir =
-  fold_named_context
-    (fun (id,_,_) sec_ids ->
-      try
-        let (p,_,_) = Idmap.find id !vartab in
-        if dir=p then id::sec_ids else sec_ids
-      with Not_found -> sec_ids)
-    (Environ.named_context (Global.env()))
-    ~init:[]
-
-let is_section_variable = function
-  | VarRef _ -> true
-  | _ -> false
-
-let strength_of_global = function
-  | VarRef _ -> Local
-  | IndRef _ | ConstructRef _ | ConstRef _ -> Global

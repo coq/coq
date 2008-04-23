@@ -909,10 +909,12 @@ let specialize mopt (c,lbind) g =
     (match kind_of_term (fst (decompose_app c)) with 
        | Var id when List.exists (fun (i,_,_)-> i=id) (pf_hyps g) ->
 	   let id' = fresh_id [] id g in 
-	   tclTHENS (internal_cut id' (pf_type_of g term))
+	   tclTHENS (fun g -> internal_cut id' (pf_type_of g term) g)
 	     [ exact_no_check term; 
 	       tclTHEN (clear [id]) (rename_hyp [id',id]) ]
-       | _ -> tclTHENLAST (cut (pf_type_of g term)) (exact_no_check term))
+       | _ -> tclTHENLAST 
+                 (fun g -> cut (pf_type_of g term) g)
+                 (exact_no_check term))
     g
 
 (* Keeping only a few hypotheses *)
@@ -2208,7 +2210,7 @@ let mapi f l =
   mapi_aux f 0 l
 
 
-(* Instanciate all meta variables of elimclause using lid, some elts
+(* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
    arguments. Returns the clause obtained.  *)
 let recolle_clenv scheme lid elimclause gl = 

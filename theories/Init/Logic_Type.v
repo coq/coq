@@ -32,17 +32,17 @@ Section identity_is_a_congruence.
  Lemma sym_id : identity x y -> identity y x.
  Proof.
   destruct 1; trivial.
- Qed.
+ Defined.
 
  Lemma trans_id : identity x y -> identity y z -> identity x z.
  Proof.
   destruct 2; trivial.
- Qed.
+ Defined.
 
  Lemma congr_id : identity x y -> identity (f x) (f y).
  Proof.
   destruct 1; trivial.
- Qed.
+ Defined.
 
  Lemma sym_not_id : notT (identity x y) -> notT (identity y x).
  Proof.

@@ -45,6 +45,7 @@ open Notation
 open Goptions
 open Mod_subst
 open Evd
+open Decls
 
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,default_binder_kind,a,b))
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,default_binder_kind,a,b))

@@ -341,7 +341,7 @@ let mk_freelisted c =
 
 let map_fl f cfl = { cfl with rebus=f cfl.rebus }
 
-(* Status of an instance wrt to the meta it solves:
+(* Status of an instance found by unification wrt to the meta it solves:
   - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
   - a subtype of the meta (e.g. the solution to T <= ?X is a supertype of ?X)
   - a term that can be eta-expanded n times while still being a solution
@@ -351,8 +351,23 @@ let map_fl f cfl = { cfl with rebus=f cfl.rebus }
 type instance_constraint =
     IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
 
+(* Status of the unification of the type of an instance against the type of
+     the meta it instantiates:
+   - CoerceToType means that the unification of types has not been done
+     and that a coercion can still be inserted: the meta should not be
+     substituted freely (this happens for instance given via the
+     "with" binding clause).
+   - TypeProcessed means that the information obtainable from the
+     unification of types has been extracted.
+   - TypeNotProcessed means that the unification of types has not been
+     done but it is known that no coercion may be inserted: the meta
+     can be substituted freely.
+*)
+
 type instance_typing_status =
     CoerceToType | TypeNotProcessed | TypeProcessed
+
+(* Status of an instance together with the status of its type unification *)
 
 type instance_status = instance_constraint * instance_typing_status
 
@@ -518,6 +533,13 @@ let metas_of evd =
     | (n,Clval(_,_,typ)) -> (n,typ.rebus)
     | (n,Cltyp (_,typ))  -> (n,typ.rebus))
     (meta_list evd)
+
+let map_metas_fvalue f evd =
+  { evd with metas =
+      Metamap.map 
+        (function 
+          | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)
+          | x -> x) evd.metas }
 
 let meta_opt_fvalue evd mv =
   match Metamap.find mv evd.metas with

@@ -44,7 +44,7 @@ type coe_typ = global_reference
 type coe_info_typ = {
   coe_value : constr;
   coe_type : types;
-  coe_strength : strength;
+  coe_strength : locality;
   coe_is_identity : bool;
   coe_param : int }
 
@@ -290,7 +290,7 @@ let add_coercion_in_graph (ic,source,target) =
   if (!ambig_paths <> []) && is_verbose () then 
     ppnl (message_ambig !ambig_paths)
 
-type coercion = coe_typ * strength * bool * cl_typ * cl_typ * int
+type coercion = coe_typ * locality * bool * cl_typ * cl_typ * int
 
 (* Calcul de l'arité d'une classe *)
 
@@ -304,7 +304,7 @@ let class_params = function
   | CL_SECVAR sp -> reference_arity_length (VarRef sp)
   | CL_IND sp  -> reference_arity_length (IndRef sp)
 
-(* add_class : cl_typ -> strength option -> bool -> unit *)
+(* add_class : cl_typ -> locality_flag option -> bool -> unit *)
 
 let add_class cl =
   add_new_class cl { cl_param = class_params cl }
@@ -365,6 +365,8 @@ let coercion_identity v = v.coe_is_identity
 
 (* For printing purpose *)
 let get_coercion_value v = v.coe_value
+
+let pr_cl_index n = int n
 
 let classes () = Bijint.dom !class_tab
 let coercions () = Gmap.rng !coercion_tab

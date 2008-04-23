@@ -360,12 +360,12 @@ let gallina_print_inductive sp =
     (print_inductive_implicit_args sp mipv ++
      print_inductive_argument_scopes sp mipv)
 
-let print_named_decl sp = 
-  gallina_print_named_decl (get_variable sp) ++ fnl ()
+let print_named_decl id = 
+  gallina_print_named_decl (Global.lookup_named id) ++ fnl ()
 
-let gallina_print_section_variable sp =
-  print_named_decl sp ++
-  with_line_skip (print_name_infos (VarRef sp))
+let gallina_print_section_variable id =
+  print_named_decl id ++
+  with_line_skip (print_name_infos (VarRef id))
 
 let print_body = function
   | Some lc  -> pr_lconstr (Declarations.force lc)

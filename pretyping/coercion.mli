@@ -45,6 +45,9 @@ module type S = sig
      [j.uj_type] are convertible; it fails if no coercion is applicable *)
   val inh_conv_coerce_to : loc -> 
     env -> evar_defs -> unsafe_judgment -> type_constraint_type -> evar_defs * unsafe_judgment
+
+  val inh_conv_coerce_rigid_to : loc -> 
+    env -> evar_defs -> unsafe_judgment -> type_constraint_type -> evar_defs * unsafe_judgment
     
   (* [inh_conv_coerces_to loc env isevars t t'] checks if an object of type [t]
      is coercible to an object of type [t'] adding evar constraints if needed;

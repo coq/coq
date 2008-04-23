@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
+(* $Id: decl_kinds.ml 10410 2007-12-31 13:11:55Z msozeau $ *)
 
 open Util
 open Libnames
@@ -72,40 +72,12 @@ type logical_kind =
 
 (* Utils *)
 
-let logical_kind_of_goal_kind = function
-  | DefinitionBody d -> IsDefinition d
-  | Proof s -> IsProof s
+val logical_kind_of_goal_kind : goal_object_kind -> logical_kind
+val string_of_theorem_kind : theorem_kind -> string
+val string_of_definition_kind :
+  locality * boxed_flag * definition_object_kind -> string
 
-let string_of_theorem_kind = function
-  | Theorem -> "Theorem"
-  | Lemma -> "Lemma"
-  | Fact -> "Fact"
-  | Remark -> "Remark"
-  | Property -> "Property"
-  | Proposition -> "Proposition"
-  | Corollary -> "Corollary"
+(* About locality *)
 
-let string_of_definition_kind (l,boxed,d) =
-  match (l,d) with
-  | Local, Coercion -> "Coercion Local"
-  | Global, Coercion -> "Coercion"
-  | Local, Definition -> "Let"
-  | Global, Definition -> if boxed then "Boxed Definition" else "Definition"
-  | Local, SubClass -> "Local SubClass"
-  | Global, SubClass -> "SubClass"
-  | Global, CanonicalStructure -> "Canonical Structure"
-  | Global, Example -> "Example"
-  | Local, (CanonicalStructure|Example) ->
-      anomaly "Unsupported local definition kind"
-  | _, (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Instance)
-      -> anomaly "Internal definition kind"
-
-(* Strength *)
-
-let strength_of_global = function
-  | VarRef _ -> Local
-  | IndRef _ | ConstructRef _ | ConstRef _ -> Global
-
-let string_of_strength = function
-  | Local -> "Local"
-  | Global -> "Global"
+val strength_of_global : global_reference -> locality
+val string_of_strength : locality -> string

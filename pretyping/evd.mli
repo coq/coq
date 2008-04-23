@@ -122,10 +122,27 @@ val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 type instance_constraint = 
     IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
 
+(* Status of the unification of the type of an instance against the type of
+     the meta it instantiates:
+   - CoerceToType means that the unification of types has not been done
+     and that a coercion can still be inserted: the meta should not be
+     substituted freely (this happens for instance given via the
+     "with" binding clause).
+   - TypeProcessed means that the information obtainable from the
+     unification of types has been extracted.
+   - TypeNotProcessed means that the unification of types has not been
+     done but it is known that no coercion may be inserted: the meta
+     can be substituted freely.
+*)
+
 type instance_typing_status =
     CoerceToType | TypeNotProcessed | TypeProcessed
 
+(* Status of an instance together with the status of its type unification *)
+
 type instance_status = instance_constraint * instance_typing_status
+
+(* Clausal environments *)
 
 type clbinding =
   | Cltyp of name * constr freelisted
@@ -198,6 +215,7 @@ val meta_merge : evar_defs -> evar_defs -> evar_defs
 
 val undefined_metas : evar_defs -> metavariable list
 val metas_of : evar_defs -> metamap
+val map_metas_fvalue : (constr -> constr) -> evar_defs -> evar_defs
 
 type metabinding = metavariable * constr * instance_status
 

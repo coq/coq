@@ -158,7 +158,7 @@ let constant_to_ast_list kn =
 	make_definition_ast (id_of_label (con_label kn)) (Declarations.force c1) typ l)
 
 let variable_to_ast_list sp =
-  let (id, c, v) = get_variable sp in
+  let (id, c, v) = Global.lookup_named sp in
   let l = implicits_of_global (VarRef sp) in
     (match c with
 	 None -> 

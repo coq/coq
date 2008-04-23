@@ -27,27 +27,11 @@ open Nametab
 open Decl_kinds
 open Safe_typing
 
-let strength_min4 stre1 stre2 stre3 stre4 =
-  strength_min ((strength_min (stre1,stre2)),(strength_min (stre3,stre4)))
+let strength_min l = if List.mem Local l then Local else Global
 
 let id_of_varid c = match kind_of_term c with
   | Var id -> id
   | _ -> anomaly "class__id_of_varid"
-
-(* lf liste des variable dont depend la coercion f
-   lc liste des variable dont depend la classe source *)
-
-let rec stre_unif_cond = function
-  | ([],[]) -> Global
-  | (v::l,[]) -> variable_strength v
-  | ([],v::l) -> variable_strength v
-  | (v1::l1,v2::l2) ->
-      if v1=v2 then 
-	stre_unif_cond (l1,l2)
-      else
-	let stre1 = (variable_strength v1)
-	and stre2 = (variable_strength v2) in 
-	strength_min (stre1,stre2)
 
 (* Errors *)
 
@@ -98,9 +82,9 @@ let check_reference_arity ref =
 
 let check_arity = function
   | CL_FUN | CL_SORT -> ()
-  | CL_CONST sp -> check_reference_arity (ConstRef sp)
-  | CL_SECVAR sp -> check_reference_arity (VarRef sp)
-  | CL_IND sp  -> check_reference_arity (IndRef sp)
+  | CL_CONST cst -> check_reference_arity (ConstRef cst)
+  | CL_SECVAR id -> check_reference_arity (VarRef id)
+  | CL_IND kn -> check_reference_arity (IndRef kn)
 
 (* Coercions *)
 
@@ -184,20 +168,15 @@ let prods_of t =
   aux [] t
 
 let strength_of_cl = function 
-  | CL_CONST kn -> constant_strength (sp_of_global (ConstRef kn))
-  | CL_SECVAR sp -> variable_strength sp
+  | CL_CONST kn -> Global
+  | CL_SECVAR id -> Local
   | _ -> Global
 
 let get_strength stre ref cls clt =
   let stres = strength_of_cl cls in
   let stret = strength_of_cl clt in
   let stref = strength_of_global ref in
-(* 01/00: Supprimé la prise en compte de la force des variables locales. Sens ?
-  let streunif = stre_unif_cond (s_vardep,f_vardep) in
- *)
-  let streunif = Global in
-  let stre' = strength_min4 stres stret stref streunif in
-  strength_min (stre,stre')
+  strength_min [stre;stres;stret;stref]
 
 (* coercion identité *)
 

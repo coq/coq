@@ -50,11 +50,11 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
   let crible_rec (sp,_) lobj = match object_tag lobj with
     | "VARIABLE" ->
 	(try 
-	   let (idc,_,typ) = get_variable (basename sp) in 
+	   let (id,_,typ) = Global.lookup_named (basename sp) in 
            if refopt = None
 	     || head_const typ = constr_of_global (Option.get refopt)
 	   then
-	     fn (VarRef idc) env typ
+	     fn (VarRef id) env typ
 	 with Not_found -> (* we are in a section *) ())
     | "CONSTANT" ->
 	let cst = locate_constant (qualid_of_sp sp) in

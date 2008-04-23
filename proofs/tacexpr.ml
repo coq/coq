@@ -16,6 +16,7 @@ open Rawterm
 open Util
 open Genarg
 open Pattern
+open Decl_kinds
 
 type 'a or_metaid = AI of 'a | MetaId of loc * string
 
@@ -325,4 +326,4 @@ type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
-type declaration_hook = Decl_kinds.strength -> global_reference -> unit
+type declaration_hook = locality -> global_reference -> unit

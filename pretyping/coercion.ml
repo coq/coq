@@ -48,7 +48,9 @@ module type S = sig
      [j.uj_type] are convertible; it fails if no coercion is applicable *)
   val inh_conv_coerce_to : loc -> 
     env -> evar_defs -> unsafe_judgment -> type_constraint_type -> evar_defs * unsafe_judgment
-    
+
+  val inh_conv_coerce_rigid_to : loc -> 
+    env -> evar_defs -> unsafe_judgment -> type_constraint_type -> evar_defs * unsafe_judgment
 
   (* [inh_conv_coerces_to loc env evd t t'] checks if an object of type [t]
      is coercible to an object of type [t'] adding evar constraints if needed;
@@ -158,7 +160,11 @@ module Default = struct
 
   let inh_coerce_to_base loc env evd j = (evd, j)
 
-  let inh_coerce_to_fail env evd c1 v t =
+  let inh_coerce_to_fail env evd rigidonly v c1 t =
+    if rigidonly & not (Heads.is_rigid env c1 && Heads.is_rigid env t)
+    then
+      raise NoCoercion
+    else
     let v', t' =
       try 
 	let t1,i1 = class_of1 env evd c1 in
@@ -171,77 +177,44 @@ module Default = struct
 	    | None -> None, t
       with Not_found -> raise NoCoercion 
     in
-      try (the_conv_x_leq env t' c1 evd, v', t')
+      try (the_conv_x_leq env t' c1 evd, v')
       with Reduction.NotConvertible -> raise NoCoercion
 
-  let rec inh_conv_coerce_to_fail loc env evd v t c1 =
-    try (the_conv_x_leq env t c1 evd, v, t)
+  let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
+    try (the_conv_x_leq env t c1 evd, v)
     with Reduction.NotConvertible ->
-    try inh_coerce_to_fail env evd c1 v t
+    try inh_coerce_to_fail env evd rigidonly v c1 t
     with NoCoercion ->
     match
       kind_of_term (whd_betadeltaiota env (evars_of evd) t),
       kind_of_term (whd_betadeltaiota env (evars_of evd) c1)
     with
-    | Prod (_,t1,t2), Prod (name,u1,u2) -> 
-	let v' = Option.map (whd_betadeltaiota env (evars_of evd)) v in
-	let (evd',b) =
-	  match v' with 
-	  | Some v' ->
-	      (match kind_of_term v' with
-	       | Lambda (x,v1,v2) ->
-		   (* sous-typage non contravariant: pas de "leq v1 u1" *)
-		   (try the_conv_x env v1 u1 evd, Some (x, v1, v2)
-		   with Reduction.NotConvertible -> (evd, None))
-	       | _  -> (evd, None))
-	  | None -> (evd, None)
-	in
-	(match b with
-	 | Some (x, v1, v2) ->
-	     let env1 = push_rel (x,None,v1) env in
-	     let (evd'', v2', t2') = inh_conv_coerce_to_fail loc env1 evd'
-	       (Some v2) t2 u2 in
-	     (evd'', Option.map (fun v2' -> mkLambda (x, v1, v2')) v2', 
-	     mkProd (x, v1, t2'))
-	 | None ->
-	     (* Mismatch on t1 and u1 or not a lambda: we eta-expand *)
-	     (* we look for a coercion c:u1->t1 s.t. [name:u1](v' (c x)) *)
-	     (* has type (name:u1)u2 (with v' recursively obtained) *)
-	     let name = match name with 
-	       | Anonymous -> Name (id_of_string "x")
-	       | _ -> name
-	     in
-	     let env1 = push_rel (name,None,u1) env in
-	     let (evd', v1', t1') =
-	       inh_conv_coerce_to_fail loc env1 evd
-		 (Some (mkRel 1)) (lift 1 u1) (lift 1 t1)
-	     in
-	     let (evd'', v2', t2') = 
-	       let v2 =
-		 match v with 
-		 | Some v -> Option.map (fun x -> mkApp(lift 1 v,[|x|])) v1'
-		 | None -> None
-	       and evd', t2 =
-		 match v1' with 
-		 | Some v1' -> evd', subst_term v1' t2
-		 | None -> 
-		     let evd', ev =
-		       new_evar evd' env ~src:(loc, InternalHole) t1' in
-		     evd', subst_term ev t2
-	       in
-	       inh_conv_coerce_to_fail loc env1 evd' v2 t2 u2
-	     in
-	     (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2',
-	     mkProd (name, u1, t2')))
+    | Prod (name,t1,t2), Prod (_,u1,u2) -> 
+        (* Conversion did not work, we may succeed with a coercion. *)
+        (* We eta-expand (hence possibly modifying the original term!) *)
+	(* and look for a coercion c:u1->t1 s.t. fun x:u1 => v' (c x)) *)
+	(* has type forall (x:u1), u2 (with v' recursively obtained) *)
+	let name = match name with 
+	  | Anonymous -> Name (id_of_string "x")
+	  | _ -> name in
+	let env1 = push_rel (name,None,u1) env in
+	let (evd', v1) =
+	  inh_conv_coerce_to_fail loc env1 evd rigidonly
+            (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in
+        let v1 = Option.get v1 in
+	let v2 = Option.map (fun v -> beta_applist (lift 1 v,[v1])) v in
+        let t2 = subst_term v1 t2 in
+	let (evd'',v2') = inh_conv_coerce_to_fail loc env1 evd' rigidonly v2 t2 u2 in
+	(evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
     | _ -> raise NoCoercion
 
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-  let inh_conv_coerce_to loc env evd cj (n, t) =
+  let inh_conv_coerce_to_gen rigidonly loc env evd cj (n, t) =
     match n with
 	None ->
-	  let (evd', val', type') = 
+	  let (evd', val') = 
 	    try 
-	      inh_conv_coerce_to_fail loc env evd (Some cj.uj_val) cj.uj_type t
+	      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
 	    with NoCoercion ->
 	      let sigma = evars_of evd in
 		error_actual_type_loc loc env sigma cj t
@@ -249,6 +222,10 @@ module Default = struct
 	  let val' = match val' with Some v -> v | None -> assert(false) in
 	    (evd',{ uj_val = val'; uj_type = t })
       | Some (init, cur) -> (evd, cj)
+
+  let inh_conv_coerce_to = inh_conv_coerce_to_gen false
+  let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true
+
       
     let inh_conv_coerces_to loc env (evd : evar_defs) t (abs, t') = evd
       (* Still problematic, as it changes unification 

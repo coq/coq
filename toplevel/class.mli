@@ -22,28 +22,28 @@ open Nametab
 
 (* [try_add_new_coercion_with_target ref s src tg] declares [ref] as a coercion
    from [src] to [tg] *)
-val try_add_new_coercion_with_target : global_reference -> strength -> 
+val try_add_new_coercion_with_target : global_reference -> locality -> 
   source:cl_typ -> target:cl_typ ->  unit
 
 (* [try_add_new_coercion ref s] declares [ref], assumed to be of type
    [(x1:T1)...(xn:Tn)src->tg], as a coercion from [src] to [tg] *)
-val try_add_new_coercion : global_reference -> strength -> unit
+val try_add_new_coercion : global_reference -> locality -> unit
 
 (* [try_add_new_coercion_subclass cst s] expects that [cst] denotes a
    transparent constant which unfolds to some class [tg]; it declares
    an identity coercion from [cst] to [tg], named something like
    ["Id_cst_tg"] *)
-val try_add_new_coercion_subclass : cl_typ -> strength -> unit
+val try_add_new_coercion_subclass : cl_typ -> locality -> unit
 
 (* [try_add_new_coercion_with_source ref s src] declares [ref] as a coercion
    from [src] to [tg] where the target is inferred from the type of [ref] *)
-val try_add_new_coercion_with_source : global_reference -> strength ->
+val try_add_new_coercion_with_source : global_reference -> locality ->
   source:cl_typ -> unit
 
 (* [try_add_new_identity_coercion id s src tg] enriches the
    environment with a new definition of name [id] declared as an
    identity coercion from [src] to [tg] *)
-val try_add_new_identity_coercion : identifier -> strength ->
+val try_add_new_identity_coercion : identifier -> locality ->
   source:cl_typ -> target:cl_typ -> unit
 
 val add_coercion_hook : Tacexpr.declaration_hook

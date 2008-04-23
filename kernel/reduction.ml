@@ -90,11 +90,11 @@ let pure_stack lfts stk =
 let nf_betaiota t =
   norm_val (create_clos_infos betaiota empty_env) (inject t)
 
-let whd_betaiotazeta env x =
+let whd_betaiotazeta x =
   match kind_of_term x with
     | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
        Prod _|Lambda _|Fix _|CoFix _) -> x
-    | _ -> whd_val (create_clos_infos betaiotazeta env) (inject x)
+    | _ -> whd_val (create_clos_infos betaiotazeta empty_env) (inject x)
 
 let whd_betadeltaiota env t = 
   match kind_of_term t with

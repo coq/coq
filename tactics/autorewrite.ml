@@ -207,7 +207,7 @@ let classify_hintrewrite (_,x) = Libobject.Substitute x
 
 
 (* Declaration of the Hint Rewrite library object *)
-let (in_hintrewrite,out_hintrewrite)=
+let (inHintRewrite,outHintRewrite)=
   Libobject.declare_object {(Libobject.default_object "HINT_REWRITE") with
        Libobject.cache_function = cache_hintrewrite;
        Libobject.load_function = (fun _ -> cache_hintrewrite);
@@ -223,4 +223,4 @@ let add_rew_rules base lrul =
       (c,mkProp (* dummy value *), b,Tacinterp.glob_tactic t)
     ) lrul
   in
-   Lib.add_anonymous_leaf (in_hintrewrite (base,lrul))
+   Lib.add_anonymous_leaf (inHintRewrite (base,lrul))

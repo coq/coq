@@ -73,11 +73,7 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
   let tag = Libobject.object_tag o in
    print_if_verbose ("Object tag: " ^ tag ^ "\n") ;
    match tag with
-      "CONSTANT" ->
-        (match D.constant_strength sp with
-          | DK.Local  -> false (* a local definition *)
-          | DK.Global -> true  (* a non-local one    *)
-        )
+      "CONSTANT"        -> true   (* constants/parameters are non global *)
     | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)
     | "VARIABLE"        -> false  (* variables are local, so no namesakes     *)
     | _                 -> false  (* uninteresting thing that won't be printed*)
@@ -154,7 +150,7 @@ let search_variables () =
      | he::tl as modules ->
         let one_section_variables =
          let dirpath = N.make_dirpath (modules @ N.repr_dirpath modulepath) in
-          let t = List.map N.string_of_id (Declare.last_section_hyps dirpath) in
+          let t = List.map N.string_of_id (Decls.last_section_hyps dirpath) in
            [he,t]
         in
          one_section_variables @ aux tl
@@ -443,7 +439,7 @@ let kind_of_inductive isrecord kn =
 
 let kind_of_variable id =
   let module DK = Decl_kinds in
-  match Declare.variable_kind id with
+  match Decls.variable_kind id with
     | DK.IsAssumption DK.Definitional -> "VARIABLE","Assumption"
     | DK.IsAssumption DK.Logical -> "VARIABLE","Hypothesis"
     | DK.IsAssumption DK.Conjectural -> "VARIABLE","Conjecture"
@@ -454,7 +450,7 @@ let kind_of_variable id =
 
 let kind_of_constant kn = 
   let module DK = Decl_kinds in
-  match Declare.constant_kind (Nametab.sp_of_global(Libnames.ConstRef kn)) with
+  match Decls.constant_kind kn with
     | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
     | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
     | DK.IsAssumption DK.Conjectural ->
@@ -540,11 +536,10 @@ let print internal glob_ref kind xml_library_root =
   let tag,obj =
    match glob_ref with
       Ln.VarRef id ->
-       let sp = Declare.find_section_variable id in
        (* this kn is fake since it is not provided by Coq *)
        let kn = 
         let (mod_path,dir_path) = Lib.current_prefix () in
-        N.make_kn mod_path dir_path (N.label_of_id (Ln.basename sp))
+        N.make_kn mod_path dir_path (N.label_of_id id)
        in
        let (_,body,typ) = G.lookup_named id in
         Cic2acic.Variable kn,mk_variable_obj id body typ

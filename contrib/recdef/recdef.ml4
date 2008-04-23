@@ -27,6 +27,7 @@ open Typing
 open Tacmach
 open Tactics
 open Nametab
+open Decls
 open Declare
 open Decl_kinds
 open Tacred

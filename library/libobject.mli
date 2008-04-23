@@ -51,6 +51,14 @@ open Mod_subst
      this function should be declared for substitutive objects 
      only (see obove)
 
+   * a discharge function, that is applied at section closing time to
+     collect the data necessary to rebuild the discharged form of the
+     non volatile objects
+
+   * a rebuild function, that is applied after section closing to
+     rebuild the non volatile content of a section from the data
+     collected by the discharge function
+
    * an export function, to enable optional writing of its contents 
      to disk (.vo). This function is also the oportunity to remove 
      redundant information in order to keep .vo size small 

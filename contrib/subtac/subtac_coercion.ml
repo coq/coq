@@ -523,6 +523,9 @@ module Coercion = struct
       | Some (init, cur) ->
 	  (isevars, cj)
 
+  let inh_conv_coerce_rigid_to _ _ _ _ _ =
+    failwith "inh_conv_coerce_rigid_to: TODO"
+
   let inh_conv_coerces_to loc env isevars t ((abs, t') as _tycon) =
 (*     (try *)
 (*        trace (str "Subtac_coercion.inh_conv_coerces_to called for " ++ *)

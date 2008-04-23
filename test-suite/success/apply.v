@@ -163,3 +163,14 @@ apply H.
 try apply H.
 unfold ID; apply H0.
 Qed.
+
+(* Test coercion below product and on non meta-free terms in with bindings *)
+(* Cf wishes #1408 from E. Makarov *)
+
+Parameter bool_Prop :> bool -> Prop.
+Parameter r : bool -> bool -> bool.
+Axiom ax : forall (A : Set) (R : A -> A -> Prop) (x y : A), R x y.
+
+Theorem t : r true false.
+apply ax with (R := r).
+Qed.

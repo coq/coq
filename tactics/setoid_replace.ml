@@ -923,7 +923,7 @@ let new_morphism m signature id hook =
 	new_edited id
 	  (m,args_ty_quantifiers_rev,args,argsconstr,output,outputconstr);
 	Pfedit.start_proof id (Global, Proof Lemma) 
-	  (Declare.clear_proofs (Global.named_context ()))
+	  (Decls.clear_proofs (Global.named_context ()))
 	  lem hook;
 	Flags.if_verbose msg (Printer.pr_open_subgoals ());
       end

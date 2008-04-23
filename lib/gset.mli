@@ -26,7 +26,7 @@ val compare : 'a t -> 'a t -> int
 val equal : 'a t -> 'a t -> bool
 val subset : 'a t -> 'a t -> bool
 val iter : ('a -> unit) -> 'a t -> unit
-val fold : ('a -> 'a -> 'a) -> 'a t -> 'a -> 'a
+val fold : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 val cardinal : 'a t -> int
 val elements : 'a t -> 'a list
 val min_elt : 'a t -> 'a

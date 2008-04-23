@@ -89,11 +89,11 @@ val string_of_hole_kind : hole_kind -> string
 val evars_of_term : evar_map -> evar_map -> constr -> evar_map
 val non_instanciated_map : env -> evar_defs ref -> evar_map -> evar_map
 val global_kind : logical_kind
-val goal_kind : locality_flag * goal_object_kind
+val goal_kind : locality * goal_object_kind
 val global_proof_kind : logical_kind
-val goal_proof_kind : locality_flag * goal_object_kind
+val goal_proof_kind : locality * goal_object_kind
 val global_fix_kind : logical_kind
-val goal_fix_kind : locality_flag * goal_object_kind
+val goal_fix_kind : locality * goal_object_kind
 
 val mkSubset : name -> constr -> constr -> constr
 val mkProj1 : constr -> constr -> constr -> constr

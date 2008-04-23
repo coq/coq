@@ -66,7 +66,7 @@ val class_args_of : constr -> constr list
 
 (*s [declare_coercion] adds a coercion in the graph of coercion paths *)
 val declare_coercion : 
-  coe_typ -> strength -> isid:bool ->
+  coe_typ -> locality -> isid:bool ->
       src:cl_typ -> target:cl_typ -> params:int -> unit
 
 (*s Access to coercions infos *)
@@ -90,6 +90,7 @@ val install_path_printer :
 (*s This is for printing purpose *)
 val string_of_class : cl_typ -> string
 val pr_class : cl_typ -> std_ppcmds
+val pr_cl_index : cl_index -> std_ppcmds
 val get_coercion_value : coe_index -> constr
 val inheritance_graph : unit -> ((cl_index * cl_index) * inheritance_path) list
 val classes : unit -> cl_typ list

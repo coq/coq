@@ -140,7 +140,8 @@ LIBRARY:=\
   library/nameops.cmo library/libnames.cmo library/libobject.cmo \
   library/summary.cmo library/nametab.cmo library/global.cmo library/lib.cmo \
   library/declaremods.cmo library/library.cmo library/states.cmo \
-  library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo
+  library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo \
+  library/decls.cmo library/heads.cmo
 
 PRETYPING:=\
   pretyping/termops.cmo pretyping/evd.cmo \
@@ -456,7 +457,7 @@ PRINTERSCMO:=\
   kernel/term_typing.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo	\
   library/summary.cmo library/global.cmo library/nameops.cmo		\
   library/libnames.cmo library/nametab.cmo library/libobject.cmo	\
-  library/lib.cmo library/goptions.cmo \
+  library/lib.cmo library/goptions.cmo library/decls.cmo library/heads.cmo \
   pretyping/termops.cmo pretyping/evd.cmo pretyping/rawterm.cmo \
   pretyping/reductionops.cmo pretyping/inductiveops.cmo			    \
   pretyping/retyping.cmo pretyping/cbv.cmo				    \

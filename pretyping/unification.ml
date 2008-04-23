@@ -24,6 +24,7 @@ open Pattern
 open Evarutil
 open Pretype_errors
 open Retyping
+open Coercion.Default
 
 (* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
    gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
@@ -380,14 +381,39 @@ let is_mimick_head f =
       (Const _|Var _|Rel _|Construct _|Ind _) -> true
     | _ -> false
 
-let w_coerce env c ctyp target evd =
+let pose_all_metas_as_evars env evd t =
+  let evdref = ref evd in
+  let rec aux t = match kind_of_term t with
+  | Meta mv ->
+      (match Evd.meta_opt_fvalue !evdref mv with
+       | Some ({rebus=c},_) -> c
+       | None ->
+        let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
+        let ty = if mvs = Evd.Metaset.empty then ty else aux ty in
+        let ev = Evarutil.e_new_evar evdref env ~src:(dummy_loc,GoalEvar) ty in
+        evdref := meta_assign mv (ev,(ConvUpToEta 0,TypeNotProcessed)) !evdref;
+        ev)
+  | _ ->
+      map_constr aux t in
+  let c = aux t in
+  (* side-effect *)
+  (!evdref, c)
+
+let w_coerce_to_type env evd c cty mvty =
   try
-    let j = make_judge c ctyp in
-    let tycon = mk_tycon_type target in
-    let (evd',j') = Coercion.Default.inh_conv_coerce_to dummy_loc env evd j tycon in
+    let j = make_judge c cty in
+    let evd,mvty = pose_all_metas_as_evars env evd mvty in
+    let tycon = mk_tycon_type mvty in
+    let (evd',j') = inh_conv_coerce_rigid_to dummy_loc env evd j tycon in
+    let evd' = Evd.map_metas_fvalue (nf_evar (evars_of evd')) evd' in
     (evd',j'.uj_val)
   with e when precatchable_exception e ->
-    evd,c
+    (evd,c)
+
+let w_coerce env evd mv c =
+  let cty = get_type_of env (evars_of evd) c in
+  let mvty = Typing.meta_type evd mv in
+  w_coerce_to_type env evd c cty mvty
 
 let unify_to_type env evd flags c u =
   let sigma = evars_of evd in
@@ -397,20 +423,6 @@ let unify_to_type env evd flags c u =
   let u = Tacred.hnf_constr env sigma u in
   try unify_0 env sigma Cumul flags t u
   with e when precatchable_exception e -> ([],[])
-
-let coerce_to_type env evd c u =
-  let c = refresh_universes c in
-  let t = get_type_of_with_meta env (evars_of evd) (metas_of evd) c in
-  w_coerce env c t u evd
-
-let unify_or_coerce_type env evd flags mv c =
-  let mvty = Typing.meta_type evd mv in
-  (* nf_betaiota was before in type_of - useful to reduce
-     types like (x:A)([x]P u) *)
-  if occur_meta mvty then
-    (evd,c),unify_to_type env evd flags c mvty
-  else
-    coerce_to_type env evd c mvty,([],[])
 
 let unify_type env evd flags mv c =
   let mvty = Typing.meta_type evd mv in
@@ -471,7 +483,7 @@ let w_merge env with_types flags metas evars evd =
 	  if with_types & to_type <> TypeProcessed then
 	    if to_type = CoerceToType then
               (* Some coercion may have to be inserted *)
-	      (unify_or_coerce_type env evd flags mv c,[])
+	      (w_coerce env evd mv c,([],[])),[]
 	    else
               (* No coercion needed: delay the unification of types *)
 	      ((evd,c),([],[])),(mv,c)::eqns

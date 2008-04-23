@@ -653,7 +653,7 @@ let check_one_fix renv recpos def =
     (* if [t] does not make recursive calls, it is guarded: *)
     if noccur_with_meta renv.rel_min nfi t then ()
     else
-      let (f,l) = decompose_app (whd_betaiotazeta renv.env t) in
+      let (f,l) = decompose_app (whd_betaiotazeta t) in
       match kind_of_term f with
         | Rel p -> 
             (* Test if [p] is a fixpoint (recursive call) *) 

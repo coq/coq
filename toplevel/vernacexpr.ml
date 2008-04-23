@@ -220,8 +220,8 @@ type vernac_expr =
       export_flag option * specif_flag option * lreference list
   | VernacImport of export_flag * lreference list
   | VernacCanonical of lreference
-  | VernacCoercion of strength * lreference * class_rawexpr * class_rawexpr
-  | VernacIdentityCoercion of strength * lident * 
+  | VernacCoercion of locality * lreference * class_rawexpr * class_rawexpr
+  | VernacIdentityCoercion of locality * lident * 
       class_rawexpr * class_rawexpr
 
   (* Type classes *)

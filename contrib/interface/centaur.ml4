@@ -408,7 +408,7 @@ let inspect n =
              	oname, Lib.Leaf lobj ->
 		  (match oname, object_tag lobj with
                        (sp,_), "VARIABLE" ->
-			 let (_, _, v) = get_variable (basename sp) in
+			 let (_, _, v) = Global.lookup_named (basename sp) in
 			   add_search2 (Nametab.locate (qualid_of_sp sp)) v
 		     | (sp,kn), "CONSTANT" ->
 			 let typ = Typeops.type_of_constant (Global.env()) (constant_of_kn kn) in

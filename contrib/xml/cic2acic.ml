@@ -55,7 +55,7 @@ let remove_module_dirpath_from_dirpath ~basedir dir =
 
 
 let get_uri_of_var v pvars =
- let module D = Declare in
+ let module D = Decls in
  let module N = Names in
   let rec search_in_open_sections =
    function
