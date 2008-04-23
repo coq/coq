@@ -551,7 +551,7 @@ let last_arg c = match kind_of_term c with
 let elim_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state; 
   use_metas_eagerly = true;
-  modulo_delta = empty_transparent_state;
+  modulo_delta = var_full_transparent_state;
 }
 
 let elimination_clause_scheme with_evars allow_K elimclause indclause gl = 

@@ -40,6 +40,8 @@ open Command
 open Libnames
 open Evd
 
+let default_eauto_depth = 100
+
 let check_imported_library d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
@@ -388,7 +390,7 @@ exception FoundTerm of constr
 let resolve_one_typeclass env gl =
   let gls = { it = [ Evd.make_evar (Environ.named_context_val env) gl ] ; sigma = Evd.empty } in
   let valid x = raise (FoundTerm (fst (Refiner.extract_open_proof Evd.empty (List.hd x)))) in
-  let gls', valid' = full_eauto false (true, 15) [] (gls, valid) in
+  let gls', valid' = full_eauto false (true, default_eauto_depth) [] (gls, valid) in
     try ignore(valid' []); assert false with FoundTerm t -> 
       let term = Evarutil.nf_evar (sig_sig gls') t in
 	if occur_existential term then raise Not_found else term
@@ -659,19 +661,19 @@ let unify_eqn env sigma hypinfo t =
       let left = if l2r then c1 else c2 in
 	match abs with
 	    Some (absprf, absprfty) -> 
-(* 	      if convertible env cl.evd left t then *)
-(* 		cl, prf, c1, c2, car, rel *)
-(* 	      else raise Not_found *)
+	      (*if convertible env cl.evd left t then
+		cl, prf, c1, c2, car, rel
+	      else raise Not_found*)
 	      let env' = clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl in
-	      let env' = 
+	      let env' =
 		let mvs = clenv_dependent false env' in
 		  clenv_pose_metas_as_evars env' mvs
 	      in
-	      let c1 = Clenv.clenv_nf_meta env' c1 
+	      let c1 = Clenv.clenv_nf_meta env' c1
 	      and c2 = Clenv.clenv_nf_meta env' c2
 	      and car = Clenv.clenv_nf_meta env' car
 	      and rel = Clenv.clenv_nf_meta env' rel in
-		hypinfo := { !hypinfo with 
+		hypinfo := { !hypinfo with
 		  cl = env';
 		  abs = Some (Clenv.clenv_value env', Clenv.clenv_type env') };
 		env', prf, c1, c2, car, rel
@@ -999,12 +1001,12 @@ let solve_inst debug mode depth env evd onlyargs fail =
 
 let _ = 
   Typeclasses.solve_instanciations_problem :=
-    solve_inst false true 15
+    solve_inst false true default_eauto_depth
       
 VERNAC COMMAND EXTEND Typeclasses_Settings
  | [ "Typeclasses" "eauto" ":=" debug(d) search_mode(s) depth(depth) ] -> [ 
      let mode = match s with Some t -> t | None -> true in
-     let depth = match depth with Some i -> i | None -> 15 in
+     let depth = match depth with Some i -> i | None -> default_eauto_depth in
        Typeclasses.solve_instanciations_problem :=
 	 solve_inst d mode depth
    ]
@@ -1018,7 +1020,7 @@ TACTIC EXTEND typeclasses_eauto
       else
 	let evd = Evd.create_evar_defs sigma in
 	let mode = match s with Some t -> t | None -> true in
-	let depth = match depth with Some i -> i | None -> 15 in
+	let depth = match depth with Some i -> i | None -> default_eauto_depth in
 	  match resolve_typeclass_evars d (mode, depth) env evd false with
 	    | Some evd' -> Refiner.tclEVARS (Evd.evars_of evd') gl
 	    | None -> tclIDTAC gl
@@ -1272,7 +1274,7 @@ let build_morphism_signature m =
   let morph = 
     mkApp (Lazy.force morphism_type, [| t; sig_; m |])
   in
-  let evd = resolve_all_evars_once false (true, 15) env
+  let evd = resolve_all_evars_once false (true, default_eauto_depth) env
     (fun x evi -> class_of_constr evi.Evd.evar_concl <> None) !isevars in
     Evarutil.nf_isevar evd morph
 	

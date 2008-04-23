@@ -209,7 +209,7 @@ Setoid rewriting
   and declare morphisms.
 
   - "-->", "++>" and "==>" are now right associative notations
-  declared at level 90 in scope signature_scope.
+  declared at level 55 in scope signature_scope.
   Their introduction may break existing scripts that defined 
   them as notations with different levels.
   
