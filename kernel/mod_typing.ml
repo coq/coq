@@ -266,7 +266,13 @@ and translate_struct_entry env mse = match mse with
       let sub2 = match eval_struct env (SEBident mp) with
 	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub2
 	| _ -> sub2 in
-      let sub3 = update_subst_alias sub2 (join_alias sub1 (map_mbid farg_id mp None)) in
+       let sub3=
+	if sub1 = empty_subst then
+	  update_subst_alias sub2 (map_mbid farg_id mp None)
+	else
+	  update_subst_alias sub2
+	    (join_alias sub1 (map_mbid farg_id mp None))
+       in
       let sub = if sub2 = sub3 then
 	join sub1 sub2 else join (join sub1 sub2) sub3 in
       let sub = join_alias sub (map_mbid farg_id mp None) in

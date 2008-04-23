@@ -564,8 +564,13 @@ let rec get_modtype_substobjs env = function
 	    (subst_key (map_msid msid mp) sub_alias)
 	      (map_msid msid mp)
 	| _ -> sub_alias in
-      let sub3 = update_subst_alias sub_alias
-	(join_alias sub1 (map_mbid farg_id mp None)) in
+      let sub3=
+	if sub1 = empty_subst then
+	  update_subst_alias sub_alias (map_mbid farg_id mp None)
+	else
+	  update_subst_alias sub_alias
+	    (join_alias sub1 (map_mbid farg_id mp None))
+      in
       let sub = if sub_alias = sub3 then
 	join sub1 sub_alias else join (join sub1 sub_alias) sub3 in
       let sub = join_alias sub (map_mbid farg_id mp None) in
@@ -876,8 +881,14 @@ let rec get_module_substobjs env = function
 	    (subst_key (map_msid msid mp) sub_alias)
 	      (map_msid msid mp)
 	| _ -> sub_alias in
-      let sub3 = update_subst_alias sub_alias
-	(join_alias sub1 (map_mbid farg_id mp None)) in
+
+      let sub3=
+	if sub1 = empty_subst then
+	  update_subst_alias sub_alias (map_mbid farg_id mp None)
+	else
+	  update_subst_alias sub_alias
+	    (join_alias sub1 (map_mbid farg_id mp None))
+      in
       let sub = if sub_alias = sub3 then
 	join sub1 sub_alias else join (join sub1 sub_alias) sub3 in
       let sub = join_alias sub (map_mbid farg_id mp None) in
