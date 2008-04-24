@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id: decl_kinds.ml 10410 2007-12-31 13:11:55Z msozeau $ *)
+(* $Id$ *)
 
 open Util
 open Libnames

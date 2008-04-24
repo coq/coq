@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id: declare.mli 10741 2008-04-02 15:47:07Z msozeau $ i*)
+(*i $Id$ i*)
 
 open Names
 open Sign
