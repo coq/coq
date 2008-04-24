@@ -62,9 +62,6 @@ let id_of_name = function
 let string_of_name nme = string_of_id (id_of_name nme)
  (*end debugging *)
 
-(* Interpretation of constr's *)
-let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
-
 (*s specific manipulations on constr *)
 let lift1_leqs leq=
  List.map 
@@ -817,7 +814,7 @@ let buildFunscheme fonc mutflist =
 let declareFunScheme f fname mutflist =
  let _ = prstr "Recherche du perincipe...\n" in
  let id_to_cstr id = 
-  try constr_of_id (Global.env()) id 
+  try global_reference id
   with
      Not_found -> error (string_of_id id ^ " not found in the environment") in
  let flist = if mutflist=[] then [f] else mutflist in
