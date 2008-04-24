@@ -976,50 +976,56 @@ tried to declare different schemes at once *)
           message "Error while computing decidability scheme. Please report."
       ) escheme
     )
-
-let rec get_concl n t = 
-  if n = 0 then t
-  else
-    match kind_of_term t with
-	Prod (_,_,t) -> get_concl (pred n) t
-      | _ -> raise (Invalid_argument "get_concl")
-
-let cut_last l = 
-  let rec aux acc = function
-      hd :: [] -> List.rev acc, hd
-    | hd :: tl -> aux (hd :: acc) tl
-    | [] -> raise (Invalid_argument "cut_last")
-  in aux [] l
 	
+let list_split_rev_at index l = 
+  let rec aux i acc = function
+      hd :: tl when i = index -> acc, tl
+    | hd :: tl -> aux (succ i) (hd :: acc) tl
+    | [] -> failwith "list_split_at: Invalid argument"
+  in aux 0 [] l
+
+let fold_left' f = function 
+    [] -> raise (Invalid_argument "fold_right'")
+  | hd :: tl -> List.fold_left f hd tl
+      
 let build_combined_scheme name schemes =
   let env = Global.env () in
+(*   let nschemes = List.length schemes in *)
+  let find_inductive ty =
+    let (ctx, arity) = decompose_prod ty in
+    let (_, last) = List.hd ctx in
+      match kind_of_term last with
+	| App (ind, args) -> ctx, destInd ind, Array.length args
+	| _ -> ctx, destInd last, 0
+  in
   let defs = 
     List.map (fun x -> 
 		let refe = Ident x in
 		let qualid = qualid_of_reference refe in
 		let cst = Nametab.locate_constant (snd qualid) in
-		  qualid, cst, Typeops.type_of_constant env cst)
+		let ty = Typeops.type_of_constant env cst in
+		  qualid, cst, ty)
       schemes
   in
   let (qid, c, t) = List.hd defs in
-  let nargs = 
-    let (_, arity, _) = destProd t in
-      nb_prod arity
-  in
-  let prods = nb_prod t - nargs in
-  let defs, (qid, c, t) = cut_last defs in
-  let (args, concl) = decompose_prod_n prods t in
-  let concls = List.map (fun (_, cst, t) -> cst, get_concl prods t) defs in
+  let ctx, ind, nargs = find_inductive t in
+  (* Number of clauses, including the predicates quantification *)
+  let prods = nb_prod t - (nargs + 1) in
   let coqand = Coqlib.build_coq_and () and coqconj = Coqlib.build_coq_conj () in
   let relargs = rel_vect 0 prods in
-  let concl_typ, concl_bod = 
-    List.fold_right
-      (fun (cst, x) (acct, accb) -> 
-	 mkApp (coqand, [| x; acct |]),
-	 mkApp (coqconj, [| x; acct; mkApp(mkConst cst, relargs); accb |])) 
-      concls (concl, mkApp (mkConst c, relargs))
+  let concls = List.rev_map 
+    (fun (_, cst, t) -> 
+      mkApp(mkConst cst, relargs),
+      snd (decompose_prod_n prods t)) defs in
+  let concl_bod, concl_typ = 
+    fold_left'
+      (fun (accb, acct) (cst, x) -> 
+	mkApp (coqconj, [| x; acct; cst; accb |]),
+	mkApp (coqand, [| x; acct |])) concls
   in
-  let ctx = List.map (fun (x, y) -> x, None, y) args in
+  let ctx, _ = 
+    list_split_rev_at prods 
+      (List.rev_map (fun (x, y) -> x, None, y) ctx) in
   let typ = it_mkProd_wo_LetIn concl_typ ctx in
   let body = it_mkLambda_or_LetIn concl_bod ctx in
   let ce = { const_entry_body = body;
