@@ -334,10 +334,6 @@ Proof. firstorder. Qed.
 (*   eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3. *)
 (* Proof. simpl_relation. Qed. *)
 
-Instance [ Reflexive A R ] (x : A) => 
-  reflexive_morphism : Morphism R x | 4.
-Proof. firstorder. Qed.
-
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
 Program Instance [ Morphism (A -> B) (R ==> R') m, MorphismProxy A R x ]  =>
@@ -407,8 +403,24 @@ Inductive normalization_done : Prop := did_normalization.
 Ltac morphism_normalization := 
   match goal with
     | [ _ : normalization_done |- _ ] => fail
+(*     | [ _ : subrelation_done |- _ ] => fail (* avoid useless interleavings. *) *)
     | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
       set(H:=did_normalization) ; eapply @morphism_releq_morphism
   end.
 
 Hint Extern 5 (@Morphism _ _ _) => morphism_normalization : typeclass_instances.
+
+(** Every reflexive relation gives rise to a morphism, only for immediately solving goals without variables. *)
+
+Lemma reflexive_morphism [ Reflexive A R ] (x : A)
+   : Morphism R x.
+Proof. firstorder. Qed.
+
+Ltac morphism_reflexive :=
+  match goal with
+    | [ _ : normalization_done |- _ ] => fail
+    | [ _ : subrelation_done |- _ ] => fail
+    | [ |- @Morphism _ _ _ ] => eapply @reflexive_morphism
+  end.
+
+Hint Extern 4 (@Morphism _ _ _) => morphism_reflexive : typeclass_instances.

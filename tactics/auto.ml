@@ -543,7 +543,10 @@ let print_applicable_hint () =
   print_hint_term (pf_concl gl)
     
 (* displays the whole hint database db *)
-let print_hint_db db =
+let print_hint_db ((ids, csts),db) =
+  msg (hov 0
+	  (str"Unfoldable variable definitions: " ++ pr_idpred ids ++ fnl () ++
+	   str"Unfoldable constant definitions: " ++ pr_cpred csts ++ fnl ()));
   Hint_db.iter 
     (fun head hintlist ->
        msg (hov 0 
@@ -553,14 +556,14 @@ let print_hint_db db =
 
 let print_hint_db_by_name dbname =
   try 
-    let db = snd (searchtable_map dbname) in print_hint_db db
+    let db = searchtable_map dbname in print_hint_db db
   with Not_found -> 
     error (dbname^" : No such Hint database")
   
 (* displays all the hints of all databases *)
 let print_searchtable () =
   Hintdbmap.iter
-    (fun name (_, db) ->
+    (fun name db ->
        msg (str "In the database " ++ str name ++ fnl ());
        print_hint_db db)
     !searchtable
@@ -591,7 +594,7 @@ let auto_unif_flags = {
 let unify_resolve st (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false ~flags:{auto_unif_flags with modulo_delta = st} clenv' gls in  
-  h_simplest_apply c gls
+  h_apply true false (c,NoBindings) gls
 
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
@@ -633,6 +636,9 @@ let conclPattern concl pat tac gl =
 (* Papageno : cette fonction a été pas mal simplifiée depuis que la base
   de Hint impérative a été remplacée par plusieurs bases fonctionnelles *)
 
+let transparent_state_union (xids, xcsts) (yids, ycsts) = 
+  (Idpred.union xids yids, Cpred.union xcsts ycsts)
+
 let rec trivial_fail_db db_list local_db gl =
   let intro_tac = 
     tclTHEN intro 
@@ -649,11 +655,16 @@ and my_find_search db_list local_db hdc concl =
   let tacl = 
     if occur_existential concl then 
       list_map_append
-	(fun (st, db) -> List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
+	(fun (st, db) -> 
+	  List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
 	(local_db::db_list)
     else 
-      list_map_append (fun (st, db) -> 
-	List.map (fun x -> (st,x)) (Hint_db.map_auto (hdc,concl) db))
+      list_map_append (fun ((ids, csts as st), db) -> 
+	let l = 
+(* 	  if Idpred.is_empty ids && Cpred.is_empty csts *)
+(* 	  then  *)Hint_db.map_auto (hdc,concl) db
+(* 	  else Hint_db.map_all hdc db *)
+	in List.map (fun x -> (st,x)) l)
       	(local_db::db_list)
   in
     List.map 

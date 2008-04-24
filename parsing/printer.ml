@@ -244,6 +244,22 @@ let pr_restricted_named_context among env =
 	       pps)
           env ~init:(mt ()))
 
+
+let pr_predicate pr_elt (b, elts) = 
+  let pr_elts = prlist_with_sep spc pr_elt elts in
+    if b then
+      str"all" ++ 
+	(if elts = [] then mt () else str" except: " ++ pr_elts)
+    else
+      if elts = [] then str"none" else pr_elts
+      
+let pr_cpred p = pr_predicate pr_con (Cpred.elements p)
+let pr_idpred p = pr_predicate Nameops.pr_id (Idpred.elements p)
+
+let pr_transparent_state (ids, csts) = 
+  hv 0 (str"VARIABLES: " ++ pr_idpred ids ++ fnl () ++
+	str"CONSTANTS: " ++ pr_cpred csts ++ fnl ())
+
 let pr_subgoal_metas metas env=
   let pr_one (meta,typ) = 
     str "?" ++ int meta ++ str " : " ++ 

@@ -406,8 +406,9 @@ Section GenMul.
      intros z Hz; rewrite <- Hz; unfold interp_carry; assert (Hz1 := (spec_ww_to_Z z)).
    generalize (spec_w_compare xl xh); case (w_compare xl xh); intros Hxlh;
     try rewrite Hxlh; try rewrite spec_w_0; try (ring; fail).
-   generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh;
-     try rewrite Hylh; try rewrite spec_w_0; try (ring; fail).
+   generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh.
+   rewrite Hylh; rewrite spec_w_0; try (ring; fail).
+   rewrite spec_w_0; try (ring; fail). 
    repeat (rewrite spec_ww_sub || rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    split; auto with zarith.
@@ -425,8 +426,8 @@ Section GenMul.
    rewrite spec_w_1; unfold interp_carry in Hz2; rewrite Hz2;
      repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
-   generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh;
-     try rewrite Hylh; try rewrite spec_w_0; try (ring; fail).
+   generalize (spec_w_compare yl yh); case (w_compare yl yh); intros Hylh.
+   rewrite Hylh; rewrite spec_w_0; try (ring; fail).
    match goal with |- context[ww_add_c ?x ?y] =>
      generalize (spec_ww_add_c x y); case (ww_add_c x y); try rewrite spec_w_0;
      intros z1 Hz2
@@ -436,6 +437,7 @@ Section GenMul.
    rewrite spec_w_1; unfold interp_carry in Hz2; rewrite Hz2;
      repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
+   rewrite spec_w_0; try (ring; fail).
    repeat (rewrite spec_ww_sub || rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    split.

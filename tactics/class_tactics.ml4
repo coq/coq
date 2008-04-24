@@ -414,7 +414,7 @@ let resolve_all_evars debug m env p oevd =
     
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
 | [ "Typeclasses" "unfold" reference_list(cl) ] -> [
-    add_hints true ["typeclass_instances"] (Vernacexpr.HintsUnfold cl)
+    add_hints false ["typeclass_instances"] (Vernacexpr.HintsUnfold cl)
   ]
 END
 

@@ -91,6 +91,13 @@ val pr_rel_context         : env -> rel_context -> std_ppcmds
 val pr_rel_context_of      : env -> std_ppcmds
 val pr_context_of          : env -> std_ppcmds
 
+(* Predicates *)
+
+val pr_predicate           : ('a -> std_ppcmds) -> (bool * 'a list) -> std_ppcmds
+val pr_cpred               : Cpred.t -> std_ppcmds
+val pr_idpred              : Idpred.t -> std_ppcmds
+val pr_transparent_state   : transparent_state -> std_ppcmds
+
 (* Proofs *)
 
 val pr_goal                : goal -> std_ppcmds

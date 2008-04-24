@@ -32,6 +32,9 @@
 #install_printer  (* constr *)  print_pure_constr;; 
 #install_printer  (* patch *) ppripos;;
 #install_printer  (* values *) ppvalues;;
+#install_printer  (* Idpred.t *) pp_idpred;;
+#install_printer  (* Cpred.t *) pp_cpred;;
+#install_printer  (* transparent_state *) pp_transparent_state;;
 #install_printer ppzipper;;
 #install_printer ppstack;;
 #install_printer ppatom;;

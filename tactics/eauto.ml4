@@ -384,3 +384,20 @@ TACTIC EXTEND dfs_eauto
       hintbases(db) ] ->
     [ gen_eauto false (true, make_depth p) lems db ]
 END
+
+let autosimpl db cl =
+  let unfold_of_elts constr (b, elts) =
+    if not b then 
+      List.map (fun c -> [], constr c) elts
+    else []
+  in
+  let unfolds = List.concat (List.map (fun dbname -> 
+    let ((ids, csts), _) = searchtable_map dbname in
+      unfold_of_elts (fun x -> EvalConstRef x) (Cpred.elements csts) @
+      unfold_of_elts (fun x -> EvalVarRef x) (Idpred.elements ids)) db)
+  in unfold_option unfolds cl
+
+TACTIC EXTEND autosimpl
+| [ "autosimpl" hintbases(db) ] ->
+    [ autosimpl (match db with None -> ["core"] | Some x -> "core"::x) None ]
+END

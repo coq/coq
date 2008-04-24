@@ -93,6 +93,10 @@ let ppj j = pp (genppj pr_ljudge j)
 
 let prsubst s = pp (Mod_subst.debug_pr_subst s)
 
+let pp_idpred s = pp (pr_idpred s)
+let pp_cpred s = pp (pr_cpred s)
+let pp_transparent_state s = pp (pr_transparent_state s)
+
 (* proof printers *)
 let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map evd)
