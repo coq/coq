@@ -305,7 +305,7 @@ let bind e f env rdefs goal info =
 let return v _ _ _ _ = v
 
 (* changes a list of sensitive expressions into a sensitive list. *)
-let expr_of_list l env rdefs goal info = 
+let sensitive_list l env rdefs goal info = 
   List.map (fun x -> x env rdefs goal info) l
 
 (* map combinator which may usefully complete [bind] *)
@@ -557,6 +557,52 @@ and process_arg_metas l acc funty env rdefs goal info =
 	| _ -> Util.anomaly "Goal.process_arg_metas: mettre une vrai erreur"
 	    (* arnaud: original: raise (RefinerError (CannotApply (t,harg)))*)
 
+(* Primitives for the tactic [change] *)
+let convert_hyp check (id,b,bt as d) envv rdefs gl info =
+  let env = env envv rdefs gl info in
+  let sigma = Evd.evars_of !rdefs in
+  (* This function substitutes the new type and body definitions
+     in the appropriate variable when used with {!Environ.apply_hyps}. *)
+  let replace_function =
+    (fun _ (_,c,ct) _ ->
+       if check && not (Reductionops.is_conv env sigma bt ct) then
+	 Util.error ("Incorrect change of the type of "^(Names.string_of_id id));
+       if check && not (Option.Misc.compare (Reductionops.is_conv env sigma) b c) then
+	 Util.error ("Incorrect change of the body of "^(Names.string_of_id id));
+       d)
+  in
+  (* Modified named context. *)
+  let new_hyps = 
+    Environ.apply_to_hyp (hyps envv rdefs gl info) id replace_function
+  in  
+  let new_env = Environ.reset_with_named_context new_hyps envv in
+  let new_constr = 
+    Evarutil.e_new_evar rdefs new_env (concl envv rdefs gl info)
+  in
+  let (new_evar,_) = Term.destEvar new_constr in
+  let new_goal = descendent gl new_evar in
+  rdefs := Evd.evar_define gl.content new_constr !rdefs;
+  { subgoals = [new_goal] ;
+    new_defs = !rdefs
+  }
+  
+let convert_concl check cl' envv rdefs gl info =
+  let env = env envv rdefs gl info in
+  let sigma = Evd.evars_of !rdefs in
+  let cl = concl envv rdefs gl info in
+  check_typability env sigma cl';
+  if (not check) || Reductionops.is_conv_leq env sigma cl' cl then
+    let new_constr = 
+      Evarutil.e_new_evar rdefs env cl' 
+    in
+    let (new_evar,_) = Term.destEvar new_constr in
+    let new_goal = descendent gl new_evar in
+    rdefs := Evd.evar_define gl.content new_constr !rdefs;
+    { subgoals = [new_goal] ;
+      new_defs = !rdefs
+    }
+  else
+    Util.error "convert-concl rule passed non-converting term"
 
 (*** Tag related things ***)
 

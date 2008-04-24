@@ -107,7 +107,7 @@ let make_act loc act pil =
 
 let make_rule loc (prods,act) =
   let (symbs,pil) = List.split prods in
-  <:expr< ($mlexpr_of_list (fun x -> x) symbs$,$make_act loc act pil$) >>
+  <:expr< ($mlsensitive_list (fun x -> x) symbs$,$make_act loc act pil$) >>
 
 let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
   let rawtyp, rawpr = match rawtyppr with
@@ -141,7 +141,7 @@ let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
   let wit = <:expr< $lid:"wit_"^s$ >> in
   let rawwit = <:expr< $lid:"rawwit_"^s$ >> in
   let globwit = <:expr< $lid:"globwit_"^s$ >> in
-  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
+  let rules = mlsensitive_list (make_rule loc) (List.rev cl) in
   <:str_item<
     declare
       value ($lid:"wit_"^s$, $lid:"globwit_"^s$, $lid:"rawwit_"^s$) =
@@ -166,7 +166,7 @@ let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
 let declare_vernac_argument loc s cl =
   let se = mlexpr_of_string s in
   let rawwit = <:expr< $lid:"rawwit_"^s$ >> in
-  let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
+  let rules = mlsensitive_list (make_rule loc) (List.rev cl) in
   <:str_item<
     declare
       value $lid:"rawwit_"^s$ = let (_,_,x) = Genarg.create_arg $se$ in x;

@@ -20,7 +20,7 @@ open Term
 (* arnaud: à commenter un peu plus dans le sens de ce que c'est vraiment. A savoir les valeurs qui peuvent être dans des variables de tactique *)
 (* Values for interpretation *)
 type value =
-  | VTactic of Util.loc * Proofview.tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
+  | VTactic of Util.loc * unit Proofview.tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
   | VFun of (Names.identifier * value) list * Names.identifier option list * Tacexpr.glob_tactic_expr
   | VVoid
   | VInteger of int
@@ -37,7 +37,7 @@ type value =
 val add_tactic :
   string -> ((Genarg.argument_type *
 	      Tacexpr.typed_generic_argument Goal.sensitive) list 
-	     -> Proofview.tactic) -> unit
+	     -> unit Proofview.tactic) -> unit
 val out_gen_expr : ('a,'l) Genarg.abstract_argument_type 
                       -> 'l Genarg.generic_argument Goal.sensitive
                       -> 'a Goal.sensitive
@@ -63,8 +63,8 @@ type glob_sign = {
 val intern_tactic : 
   glob_sign -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr
 
-val eval_tactic : Tacexpr.glob_tactic_expr -> Proofview.tactic
+val eval_tactic : Tacexpr.glob_tactic_expr -> unit Proofview.tactic
 
 
 (* arnaud: fonction très temporaire *)
-val hide_interp : Proof.proof -> Tacexpr.raw_tactic_expr -> 'a option -> Proofview.tactic
+val hide_interp : Proof.proof -> Tacexpr.raw_tactic_expr -> 'a option -> unit Proofview.tactic

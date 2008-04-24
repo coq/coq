@@ -144,7 +144,7 @@ HIGHPARSING:=\
 
 TACTICS:=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-  tactics/nbtermdn.cmo tactics/tacticals.cmo \
+  tactics/nbtermdn.cmo tactics/tacticals.cmo tactics/ntacticals.cmo \
   tactics/intros.cmo tactics/ntactics.cmo \
   tactics/hipattern.cmo tactics/tactics.cmo \
   tactics/evar_tactics.cmo \

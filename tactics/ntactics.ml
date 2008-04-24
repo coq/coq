@@ -61,7 +61,6 @@ module Pfedit =
   end
 open Pfedit
 
-let convert_concl_no_check _ = Util.anomaly "Tactics.convert_concl_no_check: fantome"
 let pf_reduce _ = Util.anomaly "Tactics.pf_reduce: fantome"
 let pf_concl _ = Util.anomaly "Tactics.pf_concl: fantome"
 let pf_get_hyp _ = Util.anomaly "Tactics.pf_get_hyp: fantome"
@@ -228,10 +227,14 @@ type tactic_reduction = env -> evar_map -> constr -> constr
    reduction function either to the conclusion or to a 
    certain hypothesis *)
 
-let reduct_in_concl (redfun,sty) gl = 
-  convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty gl
+let reduct_in_concl (redfun,_) =
+  Goal.concl >>= fun concl ->
+  pf_reduce redfun concl >>= fun new_concl ->
+  Goal.convert_concl false new_concl
 
-let reduct_in_hyp redfun ((_,id),where) gl =
+let reduct_in_hyp redfun ((_,id),where) =
+  Util.anomaly "Ntactics.reduct_in_hyp: à restaurer"
+  (* arnaud: à restaurer
   let (_,c, ty) = pf_get_hyp gl id in
   let redfun' = (*under_casts*) (pf_reduce redfun gl) in
   match c with
@@ -243,6 +246,7 @@ let reduct_in_hyp redfun ((_,id),where) gl =
       let b' = if where <> InHypTypeOnly then redfun' b else b in
       let ty' =	if where <> InHypValueOnly then redfun' ty else ty in
       convert_hyp_no_check (id,Some b',ty') gl
+  *)
 
 let reduct_option redfun = function
   | Some id -> reduct_in_hyp (fst redfun) id 
@@ -625,16 +629,20 @@ let clear_body = thin_body
  *  quantified in the goal which are associated with a value
  *  true  in the boolean list. *)
 
-let rec intros_clearing = 
-  Util.anomaly "Ntactics.intros_clearing: à restaurer"
-    (* arnaud: à restaurer:
-function
-  | []          -> tclIDTAC
-  | (false::tl) -> tclTHEN intro (intros_clearing tl)
+let rec intros_clearing_gen = function
+  | []          -> Proofview.id ()
+  | (false::tl) -> Logic.tclTHEN Intros.intro (intros_clearing_gen tl)
   | (true::tl)  ->
-      tclTHENLIST
-        [ intro; onLastHyp (fun id -> clear [id]); intros_clearing tl]
-    *)
+      Logic.tclTHENLIST
+        [ Intros.intro; 
+	  Logic.onLastHyp (fun id -> clear (Goal.sensitive_list [id])); 
+	  intros_clearing_gen tl]
+
+let intros_clearing scl =
+  Proofview.sensitive_tactic (
+    scl >>= fun cl ->
+    Goal.return (intros_clearing_gen cl)
+  )
 
 (* Adding new hypotheses  *)
 
@@ -714,7 +722,8 @@ let constructor_tac expctdnumopt i lbind =
   in
   let apply_tac = Logic.apply_with_ebindings apply_tac_arg in
   (Logic.tclTHENLIST 
-     [convert_concl_no_check redcl DEFAULTcast; Intros.intros; apply_tac])
+     (* arnaud: convert_concl ici, était un convert_concl_nocheck*)
+     [convert_concl false redcl DEFAULTcast; Intros.intros; apply_tac])
 
 let one_constructor i = constructor_tac None i
 
@@ -793,7 +802,10 @@ let type_clenv_binding wc (c,t) lbind =
  * matching I, lbindc are the expected terms for c arguments 
  *)
 
+(* arnaud: original
 let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) =
+*)
+let general_elim_clause elimtac cx elimcx =
   Util.anomaly "Tactics.general_elim_clause: à restaurer"
   (* arnaud: à restaurer
   let ct = pf_type_of gl c in
@@ -816,27 +828,46 @@ let find_eliminator c =
   Ntacticals.elimination_sort_of_goal >>= fun s ->
   Goal.return (lookup_eliminator ind s)
 
-let default_elim with_evars (c,_ as cx) = 
+let default_elim with_evars cx = 
+  cx >>= fun (c,_) ->
   find_eliminator c >>= fun eliminator ->
   general_elim with_evars cx (eliminator,NoBindings)
 
+let  elim_in_context with_evars c eo =
+  eo >>= function
+    | Some elim -> general_elim with_evars c elim ~allow_K:true
+    | None -> default_elim with_evars c    
+(* arnaud: original
 let elim_in_context with_evars c = function
   | Some elim -> general_elim with_evars c elim ~allow_K:true
   | None -> default_elim with_evars c
+*)
 
-let elim with_evars (c,lbindc as cx) elim =
-  (* arnaud: il va sûrement falloir rendre ses arguments sensitive *)
-  match kind_of_term c with
+let elim with_evars cx elim =
+  Proofview.sensitive_tactic (
+    cx         >>= fun (c,lbindc) ->
+    match kind_of_term c with
     | Var id when lbindc = NoBindings ->
+	Goal.return (
 	Logic.tclTHEN (Logic.tclTRY (Intros.intros_until_id (Goal.return id)))
 	  (Proofview.tactic_of_sensitive_proof_step
 	       (elim_in_context with_evars cx elim))
-    | _ -> Proofview.tactic_of_sensitive_proof_step 
+	)
+    | _ ->
+	Goal.return (
+	  Proofview.tactic_of_sensitive_proof_step 
   	       (elim_in_context with_evars cx elim)
+	)
+  )
 
 (* The simplest elimination tactic, with no substitutions at all. *)
 
-let simplest_elim c = default_elim false (c,NoBindings)
+let simplest_elim c = 
+  let c_nobindings =
+    c >>= fun c ->
+    Goal.return (c,NoBindings)
+  in
+  default_elim false c_nobindings
 
 (* Elimination in hypothesis *)
 (* Typically, elimclause := (eq_ind ?x ?P ?H ?y ?Heq : ?P ?y)
@@ -1210,7 +1241,7 @@ let letin_tac with_eq name c occs gl =
   let t = refresh_universes (pf_type_of gl c) in
   let newcl = mkNamedLetIn id c t ccl in
   tclTHENLIST
-    [ convert_concl_no_check newcl DEFAULTcast;
+    [ Goal.convert_concl false newcl DEFAULTcast;
       intro_gen (IntroMustBe id) lastlhyp true;
       if with_eq then tclIDTAC else thin_body [id];
       tclMAP convert_hyp_no_check depdecls ] gl

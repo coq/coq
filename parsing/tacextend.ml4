@@ -121,7 +121,7 @@ let mlexpr_terminals_of_grammar_production = function
   | TacNonTerm (loc,nt,g,sopt) -> <:expr< None >>
 
 let mlexpr_of_clause =
-  mlexpr_of_list (fun (a,b) -> mlexpr_of_list mlexpr_of_grammar_production a)
+  mlsensitive_list (fun (a,b) -> mlsensitive_list mlexpr_of_grammar_production a)
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
@@ -135,10 +135,10 @@ let rec make_tags loc = function
 let make_one_printing_rule se (pt,e) =
   let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
-  let prods = mlexpr_of_list mlexpr_terminals_of_grammar_production pt in
+  let prods = mlsensitive_list mlexpr_terminals_of_grammar_production pt in
   <:expr< ($se$, $make_tags loc pt$, ($level$, $prods$)) >>
 
-let make_printing_rule se = mlexpr_of_list (make_one_printing_rule se)
+let make_printing_rule se = mlsensitive_list (make_one_printing_rule se)
 
 let rec contains_epsilon = function
   | List0ArgType _ -> true
@@ -177,7 +177,7 @@ let declare_tactic loc s cl =
   in
   let hidden = if List.length cl = 1 then List.map hide_tac cl else [] in
   let atomic_tactics =
-    mlexpr_of_list mlexpr_of_string
+    mlsensitive_list mlexpr_of_string
       (List.flatten (List.map (fun (al,_) -> is_atomic al) cl)) in
   <:str_item<
     declare

@@ -35,7 +35,7 @@ let rec patt_of_expr e =
     | <:expr< $anti:e$ >> -> <:patt< $anti:patt_of_expr e$ >>
     | _ -> not_impl "patt_of_expr" e
 
-let mlexpr_of_list f l =
+let mlsensitive_list f l =
   List.fold_right
     (fun e1 e2 ->
       let e1 = f e1 in

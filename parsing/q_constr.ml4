@@ -23,7 +23,7 @@ let dloc = <:expr< Util.dummy_loc >>
 
 let apply_ref f l = 
   <:expr< 
-    Rawterm.RApp ($dloc$, Rawterm.RRef ($dloc$, Lazy.force $f$), $mlexpr_of_list (fun x -> x) l$)
+    Rawterm.RApp ($dloc$, Rawterm.RRef ($dloc$, Lazy.force $f$), $mlsensitive_list (fun x -> x) l$)
   >>
 
 EXTEND
@@ -70,7 +70,7 @@ EXTEND
         apply_ref <:expr< coq_eq_ref >> [t;c1;c2] ]
     | "10" LEFTA
       [ f = constr; args = LIST1 NEXT ->
-        let args = mlexpr_of_list (fun x -> x) args in
+        let args = mlsensitive_list (fun x -> x) args in
         <:expr< Rawterm.RApp ($dloc$,$f$,$args$) >> ]
     | "0"
       [ s = sort -> <:expr< Rawterm.RSort ($dloc$,s) >>
@@ -86,27 +86,27 @@ EXTEND
   match_constr:
     [ [ "match"; c = constr LEVEL "100"; (ty,nal) = match_type;
         "with"; OPT"|"; br = LIST0 eqn SEP "|"; "end" -> 
-          let br = mlexpr_of_list (fun x -> x) br in
+          let br = mlsensitive_list (fun x -> x) br in
      <:expr< Rawterm.RCases ($dloc$,$ty$,[($c$,$nal$)],$br$) >> 
     ] ]
   ;
   match_type:
     [ [ "as"; id = ident; "in"; ind = LIDENT; nal = LIST0 name;  
         "return"; ty = constr LEVEL "100" -> 
-          let nal = mlexpr_of_list (fun x -> x) nal in
+          let nal = mlsensitive_list (fun x -> x) nal in
           <:expr< Some $ty$ >>, 
           <:expr< (Name $id$, Some ($dloc$,$lid:ind$,$nal$)) >> 
       | -> <:expr< None >>, <:expr< (Anonymous, None) >> ] ]
   ;
   eqn:
     [ [ (lid,pl) = pattern; "=>"; rhs = constr -> 
-        let lid = mlexpr_of_list (fun x -> x) lid in
+        let lid = mlsensitive_list (fun x -> x) lid in
         <:expr< ($dloc$,$lid$,[$pl$],$rhs$) >> 
     ] ]
   ;
   pattern: 
     [ [ "%"; e = string; lip = LIST0 patvar ->
-        let lp = mlexpr_of_list (fun (_,x) -> x) lip in
+        let lp = mlsensitive_list (fun (_,x) -> x) lip in
         let lid = List.flatten (List.map fst lip) in
         lid, <:expr< Rawterm.PatCstr ($dloc$,$lid:e$,$lp$,Anonymous) >>
       | p = patvar -> p

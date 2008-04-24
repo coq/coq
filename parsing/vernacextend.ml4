@@ -81,9 +81,9 @@ let mlexpr_of_grammar_production = function
       <:expr< Egrammar.TacNonTerm $default_loc$ ($g$,$mlexpr_of_argtype loc nt$) $mlexpr_of_option mlexpr_of_string sopt$ >>
 
 let mlexpr_of_clause =
-  mlexpr_of_list
+  mlsensitive_list
     (fun (a,b,c) -> 
-      mlexpr_of_list mlexpr_of_grammar_production (VernacTerm a::b))
+      mlsensitive_list mlexpr_of_grammar_production (VernacTerm a::b))
 
 let declare_command loc s cl =
   let gl = mlexpr_of_clause cl in

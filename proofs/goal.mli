@@ -84,6 +84,14 @@ val clear : Names.identifier list -> proof_step sensitive
 (* Implements the clearbody tactic *)
 val clear_body : Names.identifier list -> proof_step sensitive
 
+(* Changes an hypothesis of the goal with a convertible type and body.
+   Checks convertibility if the boolean argument is true. *)
+val convert_hyp : bool -> Term.named_declaration -> proof_step sensitive
+
+(* Changes the conclusion of the goal with a convertible type and body.
+   Checks convertibility if the boolean argument is true. *)
+val convert_concl : bool -> Term.constr -> proof_step sensitive
+
 (*** Sensitive expressions & Tacticals ***)
 
 
@@ -110,7 +118,7 @@ val bind : 'a sensitive -> ('a -> 'b sensitive) -> 'b sensitive
 val return : 'a -> 'a sensitive
 
 (* changes a list of expressions into an list expression *)
-val expr_of_list : 'a sensitive list -> 'a list sensitive
+val sensitive_list : 'a sensitive list -> 'a list sensitive
 
 (* arnaud : à virer ? (ainsi que dans le .ml) 
 (* map combinator which may usefully complete [bind] *)

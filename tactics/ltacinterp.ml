@@ -27,7 +27,7 @@ let (>>=) = Goal.bind
 (* arnaud: à commenter un peu plus dans le sens de ce que c'est vraiment. A savoir les valeurs qui peuvent être dans des variables de tactique *)
 (* Values for interpretation *)
 type value =
-  | VTactic of Util.loc * Proofview.tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
+  | VTactic of Util.loc * unit Proofview.tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
   | VFun of (Names.identifier * value) list * Names.identifier option list * Tacexpr.glob_tactic_expr
   | VVoid
   | VInteger of int
@@ -1265,7 +1265,7 @@ let pf_interp_constr_list_as_list ist (c,_ as x) =
 	  [interp_constr ist (Evd.evars_of defs) env x]
 
 let pf_interp_constr_list ist l =
-  Goal.expr_of_list (List.map (pf_interp_constr_list_as_list ist) l) 
+  Goal.sensitive_list (List.map (pf_interp_constr_list_as_list ist) l) 
     >>= fun l ->
   Goal.return (List.flatten l)
 
@@ -1275,7 +1275,7 @@ let pf_interp_open_constr_list_as_list ist (c,_) =
   Goal.env >>= fun env ->
   Goal.defs >>= fun defs ->
   let sigma = Evd.evars_of defs in
-  Goal.expr_of_list (
+  Goal.sensitive_list (
     match c with
     | RVar (_,id) ->
 	(try List.map inj_open 
@@ -1287,7 +1287,7 @@ let pf_interp_open_constr_list_as_list ist (c,_) =
   )
 
 let pf_interp_open_constr_list ist l =
-  Goal.expr_of_list (List.map (pf_interp_open_constr_list_as_list ist) l) 
+  Goal.sensitive_list (List.map (pf_interp_open_constr_list_as_list ist) l) 
     >>= fun l ->
   Goal.return (List.flatten l)
 
@@ -1344,7 +1344,7 @@ let interp_hyp_list_as_list ist (loc,id as x) =
     Goal.return [hyp_x]
 
 let interp_hyp_list ist l =
-  Goal.expr_of_list (List.map (interp_hyp_list_as_list ist) l) >>= fun hyps ->
+  Goal.sensitive_list (List.map (interp_hyp_list_as_list ist) l) >>= fun hyps ->
   Goal.return (List.flatten hyps) 
 
 
@@ -1410,7 +1410,7 @@ let interp_bindings ist = function
     Goal.return (ImplicitBindings cl)
 | ExplicitBindings l ->
     let interp_binding ist (l,qh,(c,_)) = interp_binding ist (l,qh,c) in
-    Goal.expr_of_list (List.map (interp_binding ist) l) >>= fun bindings ->
+    Goal.sensitive_list (List.map (interp_binding ist) l) >>= fun bindings ->
     Goal.return (ExplicitBindings bindings)
 
 let interp_constr_with_bindings ist (c,bl) =
@@ -1552,7 +1552,7 @@ let interp_atomic ist = function
       (* arnaud: à nettoyer dès que ça marche :)
       let tac = lookup_tactic opn in
       Proofview.tactic_of_sensitive_proof_step (
-	Goal.expr_of_list (List.map (interp_genarg ist) l) >>= fun args ->
+	Goal.sensitive_list (List.map (interp_genarg ist) l) >>= fun args ->
 	tac args
       )
       *)
@@ -1567,7 +1567,14 @@ let interp_atomic ist = function
   | TacApply (ev,cb) ->
       Logic.apply_with_ebindings_gen ev (interp_constr_with_bindings ist cb)
   | TacElim (ev,cb,cbo) ->
-      Util.anomaly "Ltacinterp.interp_atomic: Elim: à restaurer"
+      let i_cbo =
+	match cbo with
+	| None -> Goal.sNone
+	| Some cb -> 
+	    interp_constr_with_bindings ist cb >>= fun i_cb ->
+	    Goal.return (Some i_cb)
+      in
+      Ntactics.elim (Goal.return ev) (interp_constr_with_bindings ist cb) i_cbo      
   | TacElimType c ->
       Util.anomaly "Ltacinterp.interp_atomic: ElimType: à restaurer"
   | TacCase (ev,cb) ->

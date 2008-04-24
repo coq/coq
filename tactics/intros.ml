@@ -156,7 +156,7 @@ let rec intros_using = function
 
 let intros = Proofview.tclREPEAT (intro_force Goal.sfalse)
 
-let intro_erasing id = Proofview.tclTHEN (Logic.clear (Goal.expr_of_list [id])) 
+let intro_erasing id = Proofview.tclTHEN (Logic.clear (Goal.sensitive_list [id])) 
                                         (Logic.intro id)
 
 let intros_replacing ids = 
