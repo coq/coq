@@ -42,7 +42,8 @@ Definition respectful_hetero
 
 (** The non-dependent version is an instance where we forget dependencies. *)
 
-Definition respectful (A B : Type) (R : relation A) (R' : relation B) : relation (A -> B) :=
+Definition respectful (A B : Type) 
+  (R : relation A) (R' : relation B) : relation (A -> B) :=
   Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').
 
 (** Notations reminiscent of the old syntax for declaring morphisms. *)
@@ -113,7 +114,7 @@ Inductive subrelation_done : Prop :=
 
 Ltac subrelation_tac := 
   match goal with
-    | [ H : subrelation_done |- _ ] => fail
+    | [ _ : subrelation_done |- _ ] => fail
     | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
       set(H:=did_subrelation) ; eapply @subrelation_morphism
   end.
@@ -134,8 +135,10 @@ Proof. reduce. unfold pointwise_relation in *. apply sub. apply H. Qed.
 
 (** The complement of a relation conserves its morphisms. *)
 
-Program Instance [ mR : Morphism (A -> A -> Prop) (RA ==> RA ==> iff) R ] => 
-  complement_morphism : Morphism (RA ==> RA ==> iff) (complement R).
+Program Instance [ mR : Morphism (A -> A -> Prop)
+  (RA ==> RA ==> iff) R ] => 
+  complement_morphism : Morphism (RA ==> RA ==> iff)
+  (complement R).
 
   Next Obligation.
   Proof.
@@ -220,9 +223,6 @@ Program Instance [ Equivalence A R ] =>
     transitivity y...
     symmetry...
   Qed.
-
-(* Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive _ R ]  => *)
-(*   Reflexive_partial_app_morphism : Morphism R' (m x) | 4. *)
 
 (** Every Transitive relation induces a morphism by "pushing" an [R x y] on the left of an [R x z] proof
    to get an [R y z] goal. *)
@@ -336,7 +336,7 @@ Proof. firstorder. Qed.
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
-Program Instance [ Morphism (A -> B) (R ==> R') m, MorphismProxy A R x ]  =>
+Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive A R ]  =>
   Reflexive_partial_app_morphism : Morphism R' (m x) | 4.
 
 Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : relation B),
@@ -403,12 +403,11 @@ Inductive normalization_done : Prop := did_normalization.
 Ltac morphism_normalization := 
   match goal with
     | [ _ : normalization_done |- _ ] => fail
-(*     | [ _ : subrelation_done |- _ ] => fail (* avoid useless interleavings. *) *)
     | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
       set(H:=did_normalization) ; eapply @morphism_releq_morphism
   end.
 
-Hint Extern 5 (@Morphism _ _ _) => morphism_normalization : typeclass_instances.
+Hint Extern 6 (@Morphism _ _ _) => morphism_normalization : typeclass_instances.
 
 (** Every reflexive relation gives rise to a morphism, only for immediately solving goals without variables. *)
 

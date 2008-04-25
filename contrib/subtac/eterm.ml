@@ -141,7 +141,7 @@ let eterm_obligations env name isevars evm fs t ty =
     (* Remove existential variables in types and build the corresponding products *)
     fold_right 
       (fun (id, (n, nstr), ev) l ->
-	 let hyps = Environ.named_context_of_val ev.evar_hyps in
+	 let hyps = Evd.evar_filtered_context ev in
 	 let hyps = trunc_named_context nc_len hyps in
 	 let evtyp, deps, transp = etype_of_evar l hyps ev.evar_concl in
 	 let evtyp, hyps, chop = 
