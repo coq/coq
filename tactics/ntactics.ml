@@ -48,7 +48,6 @@ module Tacmach =
     let internal_cut _ = Util.anomaly "Tactics.Tacmach.internal_cut: fantome"
     let internal_cut_rev _ = Util.anomaly "Tactics.Tacmach.internal_cut_rev: fantome"
     let refine _ = Util.anomaly "Tactics.Tacmach.refine: fantome"
-    let convert_concl _ = Util.anomaly "Tactics.Tacmach.convert_concl: fantome"
     let convert_hyp _ = Util.anomaly "Tactics.Tacmach.convert_hyp: fantome"
     let move_hyp _ = Util.anomaly "Tactics.Tacmach.move_hyp: fantome"
     let rename_hyp _ = Util.anomaly "Tactics.Tacmach.rename_hyp: fantome"
@@ -192,7 +191,8 @@ let intro_replacing = Tacmach.intro_replacing
 let internal_cut    = Tacmach.internal_cut
 let internal_cut_rev = Tacmach.internal_cut_rev
 let refine          = Tacmach.refine
-let convert_concl   = Tacmach.convert_concl
+let convert_concl cl' sty  = Logic.convert_concl true cl' sty
+let convert_concl_nocheck cl' sty = Logic.convert_concl false cl' sty
 let convert_hyp     = Tacmach.convert_hyp
 let thin            = Logic.clear
 let thin_body       = Logic.clear_body
@@ -722,8 +722,7 @@ let constructor_tac expctdnumopt i lbind =
   in
   let apply_tac = Logic.apply_with_ebindings apply_tac_arg in
   (Logic.tclTHENLIST 
-     (* arnaud: convert_concl ici, était un convert_concl_nocheck*)
-     [convert_concl false redcl DEFAULTcast; Intros.intros; apply_tac])
+     [convert_concl_nocheck redcl DEFAULTcast; Intros.intros; apply_tac])
 
 let one_constructor i = constructor_tac None i
 
@@ -1241,7 +1240,7 @@ let letin_tac with_eq name c occs gl =
   let t = refresh_universes (pf_type_of gl c) in
   let newcl = mkNamedLetIn id c t ccl in
   tclTHENLIST
-    [ Goal.convert_concl false newcl DEFAULTcast;
+    [ Goal.convert_concl_nocheck newcl DEFAULTcast;
       intro_gen (IntroMustBe id) lastlhyp true;
       if with_eq then tclIDTAC else thin_body [id];
       tclMAP convert_hyp_no_check depdecls ] gl

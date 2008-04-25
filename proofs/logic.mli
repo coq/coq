@@ -72,6 +72,19 @@ val clear_body : identifier list Goal.sensitive -> unit tactic
 (* [intro] tactic *)
 val intro : identifier Goal.sensitive -> unit tactic
 
+(* [change] tactic for the conclusion. *)
+(* spiwack: third argument is for vm vs default reduction for 
+   checking conversion (I think), not implemented yet. *)
+val convert_concl : bool -> 
+                    Term.constr Goal.sensitive -> 
+                    Term.cast_kind ->
+                    unit tactic
+
+(* [change] tactic for an hypothesis. *)
+val convert_hyp : bool ->
+                  Term.named_declaration Goal.sensitive ->
+                  unit tactic
+         
 
 (*** remettre dans [tactics] ?***)
 (* [assumption] tactic *)
@@ -92,6 +105,7 @@ val apply_with_ebindings_gen :
           -> unit tactic
 (* [cut] tactic *)
 val cut : Term.constr Goal.sensitive -> unit tactic
+
 
 type simple_tactic =
   | Intro of identifier

@@ -180,6 +180,21 @@ let intro id =
     )
   )
 
+(* [change] tactic for the conclusion. *)
+(* spiwack: third argument is for vm vs default reduction for 
+   checking conversion (I think), not implemented yet. *)
+let convert_concl check cl' _ =
+  Proofview.tactic_of_sensitive_proof_step (
+    cl' >>= fun cl' ->
+    Goal.convert_concl check cl'
+  )
+
+(* [change] tactic for an hypothesis. *)
+let convert_hyp check d =
+  Proofview.tactic_of_sensitive_proof_step (
+    d >>= fun d ->
+    Goal.convert_hyp check d
+  )
 
 (*** arnaud: remettre dans tactics.ml ? ***)
 
