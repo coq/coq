@@ -72,9 +72,9 @@ Notation "x <= y" := (rle x y).
 Notation "x < y" := (rlt x y).
 
 Add Relation R req
-  reflexivity proved by sor.(SORsetoid).(Seq_refl _ _)
-  symmetry proved by sor.(SORsetoid).(Seq_sym _ _)
-  transitivity proved by sor.(SORsetoid).(Seq_trans _ _)
+  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)
+  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _)
+  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _)
 as sor_setoid.
 
 Add Morphism rplus with signature req ==> req ==> req as rplus_morph.
@@ -417,7 +417,7 @@ Qed.
 Theorem Rlt_0_1 : 0 < 1.
 Proof.
 apply <- Rlt_le_neq. split.
-setoid_replace 1 with (1 * 1) by ring; apply Rtimes_square_nonneg.
+setoid_replace 1 with (1 * 1) by ring. apply Rtimes_square_nonneg.
 apply Rneq_0_1.
 Qed.
 

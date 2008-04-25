@@ -30,9 +30,9 @@ Notation "x <= y" := (rle x y).
 Notation "x < y" := (rlt x y).
 
 Add Relation R req
-  reflexivity proved by sor.(SORsetoid).(Seq_refl _ _)
-  symmetry proved by sor.(SORsetoid).(Seq_sym _ _)
-  transitivity proved by sor.(SORsetoid).(Seq_trans _ _)
+  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)
+  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _)
+  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _)
 as sor_setoid.
 
 Add Morphism rplus with signature req ==> req ==> req as rplus_morph.
@@ -56,7 +56,9 @@ Proof.
 exact sor.(SORlt_wd).
 Qed.
 Add Morphism rminus with signature req ==> req ==> req as rminus_morph.
-Proof (rminus_morph sor).
+Proof.
+  exact (rminus_morph sor).
+Qed.
 
 Ltac le_less := rewrite (Rle_lt_eq sor); left; try assumption.
 Ltac le_equal := rewrite (Rle_lt_eq sor); right; try reflexivity; try assumption.

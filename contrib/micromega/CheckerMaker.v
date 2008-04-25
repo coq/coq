@@ -2,10 +2,11 @@
 (*                                                                  *)
 (* Micromega: A reflexive tactics using the Positivstellensatz      *)
 (*                                                                  *)
-(*  Frédéric Besson (Irisa/Inria) 2006				    *)
+(*  FrÃ©dÃ©ric Besson (Irisa/Inria) 2006				    *)
 (*                                                                  *)
 (********************************************************************)
 
+Require Import Setoid.
 Require Import Decidable.
 Require Import List.
 Require Import Refl.
@@ -113,7 +114,8 @@ assert (H2 : make_impl (eval' env) (negate a2 :: normalise_list t1) False) by
 now apply check_formulas'_sound with (w := w). clear H1.
 pose proof (IH ws H env) as H1. simpl in H2.
 assert (H3 : eval' env (negate a2) -> make_impl (eval env) t1 False)
-by auto using normalise_sound_contr. clear H2. rewrite <- make_conj_impl in *.
+by auto using normalise_sound_contr. clear H2.
+rewrite <- make_conj_impl in *.
 rewrite make_conj_cons. intro H2. split.
 apply <- negate_correct. intro; now elim H3. exact (H1 H2).
 Qed.
