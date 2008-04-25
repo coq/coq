@@ -1602,6 +1602,17 @@ let interp_atomic ist = function
 (* arnaud: commenter et renommer *)
 let other_eval_tactic ist = function
   | TacAtom (loc,t) -> interp_atomic ist t
+  | TacThen _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacThen: todo"
+  | TacThens _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacThens: todo"
+  | TacFirst _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacFirst: todo"
+  | TacComplete _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacComplete: todo"
+  | TacSolve _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacSolve: todo"
+  | TacTry _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacTry: todo"
+  | TacOrelse _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacOrelse: todo"
+  | TacDo _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacDo: todo"
+  | TacRepeat _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacRepeat: todo"
+  | TacProgress _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacProgress: todo"
+  | TacAbstract _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacAbstract: todo"
   | _ -> Util.anomaly "Ltacinterp.other_eval_tactic: todo"
 
 let rec val_interp ist (tac:glob_tactic_expr) =
