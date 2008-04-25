@@ -534,12 +534,13 @@ let rec pr_vernac = function
         | None -> mt()
         | Some cc -> str" :=" ++ spc() ++ cc))
 
-  | VernacStartTheoremProof (ki,id,(bl,c),b,d) ->
-      hov 1 (pr_thm_token ki ++ spc() ++ pr_lident id ++ spc() ++
-      (match bl with
-        | [] -> mt()
-        | _ -> pr_binders bl ++ spc())
-      ++ str":" ++ pr_spc_lconstr c)
+  | VernacStartTheoremProof (ki,l,_,_) ->
+      hov 1 (pr_thm_token ki ++ spc() ++ 
+             prlist_with_sep (fun () -> str "with ") (fun (id,(bl,c)) -> hov 0
+               (pr_opt pr_lident id ++ spc() ++
+                (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
+                str":" ++ pr_spc_lconstr c)) l)
+
   | VernacEndProof Admitted -> str"Admitted"
   | VernacEndProof (Proved (opac,o)) -> (match o with
     | None -> if opac then str"Qed" else str"Defined"

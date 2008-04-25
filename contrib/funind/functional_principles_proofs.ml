@@ -1141,7 +1141,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	    then
 	      (* observe_tac ("h_fix") *) (h_fix (Some this_fix_info.name) (this_fix_info.idx +1))
 	    else
-	      h_mutual_fix this_fix_info.name (this_fix_info.idx + 1)
+	      h_mutual_fix false this_fix_info.name (this_fix_info.idx + 1)
 		other_fix_infos
 	| _ -> anomaly "Not a valid information"
     in

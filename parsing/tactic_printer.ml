@@ -34,7 +34,7 @@ let pr_rule = function
   | Nested(cmpd,_) ->
       begin
 	match cmpd with 
-	    Tactic (texp,_) -> hov 0 (pr_tactic texp)
+	  | Tactic (texp,_) -> hov 0 (pr_tactic texp)
 	  | Proof_instr (_,instr) -> hov 0 (pr_proof_instr instr)
       end
   | Daimon -> str "<Daimon>"
@@ -49,6 +49,14 @@ let pr_rule_dot = function
   | Prim Change_evars -> mt ()
   | r ->
       pr_rule r ++ if uses_default_tac r then str "..." else str"."
+
+let pr_rule_dot_fnl = function
+  | Nested (Tactic (TacAtom (_,(TacMutualFix (true,_,_,_)
+                              | TacMutualCofix (true,_,_))),_),_) ->
+      (* Very big hack to not display hidden tactics in "Theorem with" *)
+      (* (would not scale!) *)
+      mt ()
+  | r -> pr_rule_dot r ++ fnl ()
 
 exception Different
 
@@ -155,7 +163,7 @@ let rec print_script nochange sigma pf =
            (print_script nochange sigma) spfl )
     | Some(rule,spfl) ->
 	((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
-	   pr_rule_dot rule ++ fnl () ++
+	   pr_rule_dot_fnl rule ++
 	   prlist_with_sep pr_fnl
            (print_script nochange sigma) spfl )	
 
@@ -189,7 +197,7 @@ let print_treescript nochange sigma pf =
     | Some(r,spfl) ->
         let indent = if List.length spfl >= 2 then 1 else 0 in
         (if nochange then mt () else (pr_change pf.goal ++ fnl ())) ++
-        hv indent (pr_rule_dot r ++ fnl () ++ prlist_with_sep fnl aux spfl)
+        hv indent (pr_rule_dot_fnl r ++ prlist_with_sep fnl aux spfl)
   in hov 0 (aux pf)
 
 let rec print_info_script sigma osign pf =

@@ -49,14 +49,15 @@ let h_elim_type c    = abstract_tactic (TacElimType (inj_open c)) (elim_type c)
 let h_case ev cb     = abstract_tactic (TacCase (ev,inj_open_wb cb)) (general_case_analysis ev cb)
 let h_case_type c    = abstract_tactic (TacCaseType (inj_open c)) (case_type c)
 let h_fix ido n      = abstract_tactic (TacFix (ido,n)) (fix ido n)
-let h_mutual_fix id n l =
+let h_mutual_fix b id n l =
   abstract_tactic
-    (TacMutualFix (id,n,List.map (fun (id,n,c) -> (id,n,inj_open c)) l))
+    (TacMutualFix (b,id,n,List.map (fun (id,n,c) -> (id,n,inj_open c)) l))
     (mutual_fix id n l)
+
 let h_cofix ido      = abstract_tactic (TacCofix ido) (cofix ido)
-let h_mutual_cofix id l =
+let h_mutual_cofix b id l =
   abstract_tactic
-    (TacMutualCofix (id,List.map (fun (id,c) -> (id,inj_open c)) l)) 
+    (TacMutualCofix (b,id,List.map (fun (id,c) -> (id,inj_open c)) l)) 
     (mutual_cofix id l)
 
 let h_cut c          = abstract_tactic (TacCut (inj_open c)) (cut c)

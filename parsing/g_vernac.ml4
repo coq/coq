@@ -123,9 +123,11 @@ GEXTEND Gram
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = identref; bl = binders_let; ":";
-        c = lconstr ->
-          VernacStartTheoremProof (thm, id, (bl, c), false, no_hook)
+    [ [ thm = thm_token; id = identref; bl = binders_let; ":"; c = lconstr;
+        l = LIST0 
+          [ "with"; id = identref; bl = binders_let; ":"; c = lconstr ->
+            (Some id,(bl,c)) ] ->
+          VernacStartTheoremProof (thm,(Some id,(bl,c))::l, false, no_hook)
       | stre = assumption_token; nl = inline; bl = assum_list -> 
 	  VernacAssumption (stre, nl, bl)
       | stre = assumptions_token; nl = inline; bl = assum_list ->

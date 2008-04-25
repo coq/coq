@@ -297,13 +297,22 @@ GEXTEND Gram
       | "-" -> false
       | -> true ]]
   ;
+  simple_fix_binder:
+    [ [ id=name -> ([id],Default Explicit,CHole (loc, None))
+      | "("; idl=LIST1 name; ":"; c=lconstr; ")" -> (idl,Default Explicit,c) 
+    ] ]
+  ;
   fixdecl:
-    [ [ "("; id = ident; bl=LIST0 Constr.binder; ann=fixannot;
+    [ [ "("; id = ident; bl=LIST0 simple_fix_binder; ann=fixannot;
         ":"; ty=lconstr; ")" -> (loc,id,bl,ann,ty) ] ]
   ;
   fixannot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> Some id
       | -> None ] ]
+  ;
+  cofixdecl:
+    [ [ "("; id = ident; bl=LIST0 simple_fix_binder; ":"; ty=lconstr; ")" ->
+        (loc,id,bl,None,ty) ] ]
   ;
   hintbases:
     [ [ "with"; "*" -> None
@@ -387,11 +396,11 @@ GEXTEND Gram
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = ident; n = natural -> TacFix (Some id,n)
       | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
-	  TacMutualFix (id,n,List.map mk_fix_tac fd)
+	  TacMutualFix (false,id,n,List.map mk_fix_tac fd)
       | "cofix" -> TacCofix None
       | "cofix"; id = ident -> TacCofix (Some id)
-      | "cofix"; id = ident; "with"; fd = LIST1 fixdecl ->
-	  TacMutualCofix (id,List.map mk_cofix_tac fd)
+      | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
+	  TacMutualCofix (false,id,List.map mk_cofix_tac fd)
 
       | IDENT "pose"; id = lpar_id_coloneq; b = lconstr; ")" ->
 	  TacLetTac (Names.Name id,b,nowhere)

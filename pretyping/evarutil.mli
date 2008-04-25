@@ -71,6 +71,10 @@ val non_instantiated : evar_map -> (evar * evar_info) list
 (* Unification utils *)
 
 val is_ground_term :  evar_defs -> constr -> bool
+val solve_refl : 
+  (env ->  evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool)
+  -> env ->  evar_defs -> existential_key -> constr array -> constr array ->
+    evar_defs
 val solve_simple_eqn :
   (env ->  evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool)
   -> env ->  evar_defs -> conv_pb * existential * constr ->

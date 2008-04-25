@@ -1,7 +1,7 @@
 Changes from V8.1 to V8.2
 =========================
 
-Language 
+Language
 
 - If a fixpoint is not written with an explicit { struct ... }, then 
   all arguments are tried successively (from left to right) until one is 
@@ -16,8 +16,10 @@ Language
   if omitted. (DOC TODO?)
 - Record/Structure now usable for defining coinductive types
   (e.g. "Record stream := { hd : nat; tl : stream }.")
+- New syntax "Theorem id1:t1 ... with idn:tn" for proving mutually dependent
+  statements.
 
-Commands
+Vernacular commands
 
 - Added option Global to "Arguments Scope" for section surviving. (DOC TODO)
 - Added option "Unset Elimination Schemes" to deactivate the automatic

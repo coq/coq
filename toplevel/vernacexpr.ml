@@ -199,8 +199,9 @@ type vernac_expr =
   (* Gallina *)
   | VernacDefinition of definition_kind * lident * definition_expr * 
       declaration_hook
-  | VernacStartTheoremProof of theorem_kind * lident *
-      (local_binder list * constr_expr) * bool * declaration_hook
+  | VernacStartTheoremProof of theorem_kind * 
+      (lident option * (local_binder list * constr_expr)) list *
+        bool * declaration_hook
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * bool * simple_binder with_coercion list

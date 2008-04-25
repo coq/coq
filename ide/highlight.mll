@@ -82,7 +82,7 @@ rule next_order = parse
       { comment_start := lexeme_start lexbuf; comment lexbuf }
   | "Module Type"
       { lexeme_start lexbuf, lexeme_end lexbuf, "kwd" }
-  | "Program" space+ ident as id { lexeme_start lexbuf, lexeme_end lexbuf, "decl" }
+  | "Program" space+ ident { lexeme_start lexbuf, lexeme_end lexbuf, "decl" }
   | ident as id 
       { if is_keyword id then 
 	    lexeme_start lexbuf, lexeme_end lexbuf, "kwd" 

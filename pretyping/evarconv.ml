@@ -226,10 +226,10 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	and f2 i =
           if sp1 = sp2 then
             ise_and i
-            [(fun i -> ise_array2 i
-                (fun i -> evar_conv_x env i CONV) al1 al2);
-             (fun i -> ise_list2 i
-                 (fun i -> evar_conv_x env i CONV) l1 l2)]
+            [(fun i -> ise_list2 i 
+                  (fun i -> evar_conv_x env i CONV) l1 l2);
+             (fun i -> solve_refl evar_conv_x env i sp1 al1 al2,
+                  true)]
           else (i,false)
 	in 
 	ise_try evd [f1; f2]

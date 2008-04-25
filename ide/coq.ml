@@ -351,7 +351,7 @@ let compute_reset_info = function
   | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
       Reset (id, ref true)
   | VernacDefinition (_, (_,id), ProveBody _, _)
-  | VernacStartTheoremProof (_, (_,id), _, _, _) ->
+  | VernacStartTheoremProof (_, [Some (_,id), _], _, _) ->
       Reset (id, ref false)
   | _ -> NoReset
 

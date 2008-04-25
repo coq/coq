@@ -313,20 +313,22 @@ let rec mlexpr_of_atomic_tactic = function
       let ido = mlexpr_of_ident_option ido in
       let n = mlexpr_of_int n in
       <:expr< Tacexpr.TacFix $ido$ $n$ >>
-  | Tacexpr.TacMutualFix (id,n,l) ->
+  | Tacexpr.TacMutualFix (b,id,n,l) ->
+      let b = mlexpr_of_bool b in
       let id = mlexpr_of_ident id in
       let n = mlexpr_of_int n in
       let f =mlexpr_of_triple mlexpr_of_ident mlexpr_of_int mlexpr_of_constr in
       let l = mlexpr_of_list f l in
-      <:expr< Tacexpr.TacMutualFix $id$ $n$ $l$ >>
+      <:expr< Tacexpr.TacMutualFix $b$ $id$ $n$ $l$ >>
   | Tacexpr.TacCofix ido ->
       let ido = mlexpr_of_ident_option ido in
       <:expr< Tacexpr.TacCofix $ido$ >>
-  | Tacexpr.TacMutualCofix (id,l) ->
+  | Tacexpr.TacMutualCofix (b,id,l) ->
+      let b = mlexpr_of_bool b in
       let id = mlexpr_of_ident id in
       let f = mlexpr_of_pair mlexpr_of_ident mlexpr_of_constr in
       let l = mlexpr_of_list f l in
-      <:expr< Tacexpr.TacMutualCofix $id$ $l$ >>
+      <:expr< Tacexpr.TacMutualCofix $b$ $id$ $l$ >>
 
   | Tacexpr.TacCut c ->
       <:expr< Tacexpr.TacCut $mlexpr_of_constr c$ >>

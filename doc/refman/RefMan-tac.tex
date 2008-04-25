@@ -806,6 +806,76 @@ a hypothesis or in the body or the type of a local definition.
 
 \end{Variants}
 
+\subsection{\tt fix {\ident} {\num}
+\tacindex{fix}
+\label{tactic:fix}}
+
+This tactic is a primitive tactic to start a proof by induction. In
+general, it is easier to rely on higher-level induction tactics such
+as the ones described in Section~\ref{Tac-induction}.
+
+In the syntax of the tactic, the identifier {\ident} is the name given
+to the induction hypothesis. The natural number {\num} tells on which
+premise of the current goal the induction acts, starting
+from 1 and counting both dependent and non dependent
+products. Especially, the current lemma must be composed of at least
+{\num} products.
+
+Like in a {\tt fix} expression, the induction
+hypotheses have to be used on structurally smaller arguments.
+The verification that inductive proof arguments are correct is done
+only at the time of registering the lemma in the environment. To know
+if the use of induction hypotheses is correct at some
+time of the interactive development of a proof, use the command {\tt
+  Guarded} (see Section~\ref{Guarded}).
+
+\begin{Variants}
+  \item {\tt fix} {\ident}$_1$ {\num} {\tt with (} {\ident}$_2$
+    \nelist{{\binder}$_{2}$}{} \zeroone{{\tt \{ struct {\ident$'_2$}
+      \}}} {\tt :} {\type}$_2$ {\tt )} {\ldots} {\tt (} {\ident}$_1$
+    \nelist{{\binder}$_n$}{} \zeroone{{\tt \{ struct {\ident$'_n$} \}}}
+           {\tt :} {\type}$_n$ {\tt )}
+
+This starts a proof by mutual induction. The statements to be
+simultaneously proved are respectively {\tt forall}
+  \nelist{{\binder}$_2$}{}{\tt ,} {\type}$_2$, {\ldots}, {\tt forall}
+  \nelist{{\binder}$_n$}{}{\tt ,} {\type}$_n$.  The identifiers
+{\ident}$_1$ {\ldots} {\ident}$_n$ are the names of the induction
+hypotheses. The identifiers {\ident}$'_2$ {\ldots} {\ident}$'_n$ are the
+respective names of the premises on which the induction is performed
+in the statements to be simultaneously proved (if not given, the
+system tries to guess itself what they are).
+
+\end{Variants}
+
+\subsection{\tt cofix {\ident}
+\tacindex{cofix}
+\label{tactic:cofix}}
+
+This tactic starts a proof by coinduction. The identifier {\ident} is
+the name given to the coinduction hypothesis.  Like in a {\tt cofix}
+expression, the use of induction hypotheses have to guarded by a
+constructor.  The verification that the use of coinductive hypotheses
+is correct is done only at the time of registering the lemma in the
+environment. To know if the use of coinduction hypotheses is correct
+at some time of the interactive development of a proof, use the
+command {\tt Guarded} (see Section~\ref{Guarded}).
+
+
+\begin{Variants}
+  \item {\tt cofix} {\ident}$_1$ {\tt with (} {\ident}$_2$
+    \nelist{{\binder}$_2$}{} {\tt :} {\type}$_2$ {\tt )} {\ldots} {\tt
+      (} {\ident}$_1$ \nelist{{\binder}$_1$}{} {\tt :} {\type}$_n$
+           {\tt )}
+
+This starts a proof by mutual coinduction. The statements to be
+simultaneously proved are respectively {\tt forall}
+\nelist{{\binder}$_2$}{}{\tt ,} {\type}$_2$, {\ldots}, {\tt forall}
+  \nelist{{\binder}$_n$}{}{\tt ,} {\type}$_n$. The identifiers
+    {\ident}$_1$ {\ldots} {\ident}$_n$ are the names of the
+    coinduction hypotheses.
+
+\end{Variants}
 
 \section{Negation and contradiction}
 

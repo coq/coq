@@ -26,6 +26,7 @@ type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
 type split_flag = bool     (* true = exists           false = split *)
+type hidden_flag = bool    (* true = internal use     false = user-level *)
 
 type raw_red_flag =
   | FBeta
@@ -140,9 +141,10 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacCase of evars_flag * 'constr with_bindings
   | TacCaseType of 'constr
   | TacFix of identifier option * int
-  | TacMutualFix of identifier * int * (identifier * int * 'constr) list
+  | TacMutualFix of hidden_flag * identifier * int * (identifier * int * 
+      'constr) list
   | TacCofix of identifier option
-  | TacMutualCofix of identifier * (identifier * 'constr) list
+  | TacMutualCofix of hidden_flag * identifier * (identifier * 'constr) list
   | TacCut of 'constr
   | TacAssert of 'tac option * intro_pattern_expr * 'constr
   | TacGeneralize of 'constr list

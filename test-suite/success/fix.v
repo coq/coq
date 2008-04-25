@@ -57,3 +57,41 @@ Lemma bx0bx : decomp bx0 = bx1.
 simpl. (* used to return bx0 in V8.1 and before instead of bx1 *)
 reflexivity.
 Qed.
+
+(* Check mutually inductive statements *)
+
+Require Import ZArith_base Omega.
+Open Scope Z_scope.
+
+Inductive even: Z -> Prop :=
+| even_base: even 0
+| even_succ: forall n, odd (n - 1) -> even n
+with odd: Z -> Prop :=
+| odd_succ: forall n, even (n - 1) -> odd n.
+
+Lemma even_pos_odd_pos: forall n, even n -> n >= 0
+with odd_pos_even_pos : forall n, odd n -> n >= 1.
+Proof.
+ intros.
+ destruct H.
+   omega.
+   apply odd_pos_even_pos in H.
+   omega.
+ intros.
+ destruct H.
+  apply even_pos_odd_pos in H.
+  omega.
+Qed.
+
+CoInductive a : Prop := acons : b -> a
+with b : Prop := bcons : a -> b.
+
+Lemma a1 : a
+with b1 : b.
+Proof.
+apply acons.
+assumption.
+
+apply bcons.
+assumption.
+Qed.

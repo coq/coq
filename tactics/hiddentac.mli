@@ -43,10 +43,11 @@ val h_elim_type       : constr -> tactic
 val h_case            : evars_flag -> constr with_ebindings -> tactic
 val h_case_type       : constr -> tactic
 
-val h_mutual_fix      : identifier -> int ->
+val h_mutual_fix      : hidden_flag -> identifier -> int ->
                         (identifier * int * constr) list -> tactic
 val h_fix             : identifier option -> int -> tactic
-val h_mutual_cofix    : identifier -> (identifier * constr) list -> tactic
+val h_mutual_cofix    : hidden_flag -> identifier -> 
+                        (identifier * constr) list -> tactic
 val h_cofix           : identifier option -> tactic
 
 val h_cut             : constr -> tactic 

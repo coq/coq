@@ -71,13 +71,16 @@ val current_proof_depth: unit -> int
 val set_undo : int option -> unit
 val get_undo : unit -> int option
 
-(*s [start_proof s str env t hook] starts a proof of name [s] and conclusion
-    [t]; [hook] is optionally a function to be applied at proof end (e.g. to
-    declare the built constructions as a coercion or a setoid morphism) *)
+(*s [start_proof s str env t hook tac] starts a proof of name [s] and
+    conclusion [t]; [hook] is optionally a function to be applied at
+    proof end (e.g. to declare the built constructions as a coercion
+    or a setoid morphism); init_tac is possibly a tactic to
+    systematically apply at initialization time (e.g. to start the
+    proof of mutually dependent theorems) *)
 
 val start_proof : 
-  identifier -> goal_kind -> named_context_val -> constr
-    -> declaration_hook -> unit
+  identifier -> goal_kind -> named_context_val -> constr ->
+    ?init_tac:tactic -> declaration_hook -> unit
 
 (* [restart_proof ()] restarts the current focused proof from the beginning
    or fails if no proof is focused *)

@@ -295,12 +295,12 @@ let vernac_notation = Metasyntax.add_notation
 (***********)
 (* Gallina *)
 
-let start_proof_and_print idopt k t hook =
-  start_proof_com idopt k t hook;
+let start_proof_and_print k l hook =
+  start_proof_com k l hook;
   print_subgoals ();
   if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
-let vernac_definition (local,_,_ as k) id def hook =
+let vernac_definition (local,_,_ as k) (_,id as lid) def hook =
   match def with
   | ProveBody (bl,t) ->   (* local binders, typ *)
       if Lib.is_modtype () then
@@ -308,7 +308,8 @@ let vernac_definition (local,_,_ as k) id def hook =
 	  (str "Proof editing mode not supported in module types")
       else
 	let hook _ _ = () in
-	start_proof_and_print (Some id) (local,DefinitionBody Definition) (bl,t) hook
+	start_proof_and_print (local,DefinitionBody Definition)
+                             [Some lid,(bl,t)] hook
   | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
@@ -317,7 +318,7 @@ let vernac_definition (local,_,_ as k) id def hook =
 	    Some (interp_redexp env evc r) in
       declare_definition id k bl red_option c typ_opt hook
 
-let vernac_start_proof kind sopt (bl,t) lettop hook =
+let vernac_start_proof kind l lettop hook =
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
@@ -325,7 +326,7 @@ let vernac_start_proof kind sopt (bl,t) lettop hook =
   if Lib.is_modtype () then
     errorlabstrm "Vernacentries.StartProof"
       (str "Proof editing mode not supported in module types");
-  start_proof_and_print sopt (Global, Proof kind) (bl,t) hook
+  start_proof_and_print (Global, Proof kind) l hook
 
 let vernac_end_proof = function
   | Admitted -> admit ()
@@ -1051,7 +1052,7 @@ let vernac_goal = function
   | Some c ->
       if not (refining()) then begin
         let unnamed_kind = Lemma (* Arbitrary *) in
-        start_proof_com None (Global, Proof unnamed_kind) c (fun _ _ ->());
+        start_proof_com (Global, Proof unnamed_kind) [None,c] (fun _ _ ->());
 	print_subgoals ()
       end else 
 	error "repeated Goal not permitted in refining mode"
@@ -1186,9 +1187,8 @@ let interp c = match c with
   | VernacNotation (local,c,infpl,sc) -> vernac_notation local c infpl sc
 
   (* Gallina *)
-  | VernacDefinition (k,(_,id),d,f) -> vernac_definition k id d f
-  | VernacStartTheoremProof (k,(_,id),t,top,f) ->
-      vernac_start_proof k (Some id) t top f
+  | VernacDefinition (k,lid,d,f) -> vernac_definition k lid d f
+  | VernacStartTheoremProof (k,l,top,f) -> vernac_start_proof k l top f
   | VernacEndProof e -> vernac_end_proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption stre l nl
@@ -1279,7 +1279,7 @@ let interp c = match c with
   | VernacNop -> ()
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof Theorem None ([],t) false (fun _ _ ->())
+  | VernacGoal t -> vernac_start_proof Theorem [None,([],t)] false (fun _ _->())
   | VernacAbort id -> vernac_abort id
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()

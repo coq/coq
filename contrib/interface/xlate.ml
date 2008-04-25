@@ -947,18 +947,22 @@ and xlate_tac =
 	xlate_error "TODO: injection as"
     | TacFix (idopt, n) ->
      CT_fixtactic (xlate_ident_opt idopt, CT_int n, CT_fix_tac_list [])
-    | TacMutualFix (id, n, fixtac_list) ->
+    | TacMutualFix (false, id, n, fixtac_list) ->
      let f (id,n,c) = CT_fixtac (xlate_ident id, CT_int n, xlate_formula c) in
      CT_fixtactic
       (ctf_ID_OPT_SOME (xlate_ident id), CT_int n,
       CT_fix_tac_list (List.map f fixtac_list))
+    | TacMutualFix (true, id, n, fixtac_list) ->
+        xlate_error "TODO: non user-visible fix"
     | TacCofix idopt ->
        CT_cofixtactic (xlate_ident_opt idopt, CT_cofix_tac_list [])
-    | TacMutualCofix (id, cofixtac_list) ->
+    | TacMutualCofix (false, id, cofixtac_list) ->
      let f (id,c) = CT_cofixtac (xlate_ident id, xlate_formula c) in
      CT_cofixtactic
       (CT_coerce_ID_to_ID_OPT (xlate_ident id),
       CT_cofix_tac_list (List.map f cofixtac_list))
+    | TacMutualCofix (true, id, cofixtac_list) ->
+        xlate_error "TODO: non user-visible cofix"
     | TacIntrosUntil (NamedHyp id) -> 
 	CT_intros_until (CT_coerce_ID_to_ID_OR_INT (xlate_ident id))
     | TacIntrosUntil (AnonHyp n) -> 
@@ -1880,10 +1884,12 @@ let rec xlate_vernac =
   | VernacBeginSection (_,id) ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
   | VernacEndSegment (_,id) -> CT_section_end (xlate_ident id)
-  | VernacStartTheoremProof (k, (_,s), (bl,c), _, _) ->
+  | VernacStartTheoremProof (k, [Some (_,s), (bl,c)], _, _) ->
       CT_coerce_THEOREM_GOAL_to_COMMAND(
 	CT_theorem_goal (CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k), xlate_ident s,
            xlate_binder_list bl, xlate_formula c))
+  | VernacStartTheoremProof _ ->
+      xlate_error "TODO: Mutually dependent theorems"
   | VernacSuspend -> CT_suspend
   | VernacResume idopt -> CT_resume (xlate_ident_opt (Option.map snd idopt))
   | VernacDefinition (k,(_,s),ProveBody (bl,typ),_) ->

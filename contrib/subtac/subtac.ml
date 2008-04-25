@@ -67,10 +67,10 @@ let solve_tccs_in_type env id isevars evm c typ =
 
 let start_proof_com env isevars sopt kind (bl,t) hook =
   let id = match sopt with
-    | Some id ->
+    | Some (loc,id) ->
         (* We check existence here: it's a bit late at Qed time *)
         if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
-          errorlabstrm "start_proof" (pr_id id ++ str " already exists");
+          user_err_loc (loc,"start_proof",pr_id id ++ str " already exists");
         id
     | None ->
 	next_global_ident_away false (id_of_string "Unnamed_thm")
@@ -117,13 +117,13 @@ let subtac (loc, command) =
   let isevars = ref (create_evar_defs Evd.empty) in
   try
   match command with
-	VernacDefinition (defkind, (locid, id), expr, hook) -> 
+	VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
 	    (match expr with
 	      | ProveBody (bl, t) -> 
 		  if Lib.is_modtype () then
 		    errorlabstrm "Subtac_command.StartProof"
 		      (str "Proof editing mode not supported in module types");
-		  start_proof_and_print env isevars (Some id) (Global, DefinitionBody Definition) (bl,t) 
+		  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t) 
 		    (fun _ _ -> ())
 	      | DefineBody (bl, _, c, tycon) -> 
 		   ignore(Subtac_pretyping.subtac_proof env isevars id bl c tycon))
@@ -131,7 +131,7 @@ let subtac (loc, command) =
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)
 
-      | VernacStartTheoremProof (thkind, (locid, id), (bl, t), lettop, hook) ->
+      | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
 	  if not(Pfedit.refining ()) then
 	    if lettop then
 	      errorlabstrm "Subtac_command.StartProof"

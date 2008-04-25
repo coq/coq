@@ -687,11 +687,13 @@ and pr_atom1 = function
       hov 1 (str (with_evars ev "case") ++ spc () ++ pr_with_bindings cb)
   | TacCaseType c -> hov 1 (str "casetype" ++ pr_constrarg c)
   | TacFix (ido,n) -> hov 1 (str "fix" ++ pr_opt pr_id ido ++ pr_intarg n)
-  | TacMutualFix (id,n,l) ->
+  | TacMutualFix (hidden,id,n,l) ->
+      if hidden then str "idtac" (* should caught before! *) else
       hov 1 (str "fix" ++ spc () ++ pr_id id ++ pr_intarg n ++ spc() ++
              str"with " ++ prlist_with_sep spc pr_fix_tac l)
   | TacCofix ido -> hov 1 (str "cofix" ++ pr_opt pr_id ido)
-  | TacMutualCofix (id,l) ->
+  | TacMutualCofix (hidden,id,l) ->
+      if hidden then str "idtac" (* should be caught before! *) else
       hov 1 (str "cofix" ++ spc () ++ pr_id id ++ spc() ++
              str"with " ++ prlist_with_sep spc pr_cofix_tac l)
   | TacCut c -> hov 1 (str "cut" ++ pr_constrarg c)

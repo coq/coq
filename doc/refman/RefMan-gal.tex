@@ -1568,6 +1568,30 @@ All these commands are synonymous of \texttt{Theorem}
 % %within the section will be replaced by the proof of  {\ident}.
 % Same as {\tt Remark} except
 % that the innermost section name is dropped from the full name.
+\item {\tt Theorem \nelist{{\ident} : {\type}}{with}.}
+
+This command is useful for theorems that are proved by simultaneous
+induction over a mutually inductive assumption, or that state mutually
+dependent statements in some mutual coinductive type. It is equivalent
+to {\tt Fixpoint} (see Section~\ref{Fixpoint}) or {\tt CoFixpoint}
+(see Section~\ref{CoFixpoint}) but using tactics to build the proof of
+the statements (or the body of the specification, depending on the
+point of view). The inductive or coinductive types on which the
+induction or coinduction has to be done is assumed to be non ambiguous
+and is guessed by the system. 
+
+Like in a {\tt Fixpoint} or {\tt CoFixpoint} definition, the induction
+hypotheses have to be used on {\em structurally smaller} arguments
+(for a {\tt Fixpoint}) or be {\em guarded by a constructor} (for a {\tt
+  CoFixpoint}).  The verification that recursive proof arguments are
+correct is done only at the time of registering the lemma in the
+environment. To know if the use of induction hypotheses is correct at
+some time of the interactive development of a proof, use the command
+{\tt Guarded} (see Section~\ref{Guarded}).
+
+The command can be used also with {\tt Lemma},
+{\tt Remark}, etc. instead of {\tt Theorem}.
+
 \item {\tt Definition {\ident} : {\type}.} \\
 Allow to define a term of type {\type} using the proof editing mode. It
 behaves as {\tt Theorem} but is intended for the interactive

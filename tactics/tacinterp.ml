@@ -657,13 +657,13 @@ let rec intern_atomic lf ist x =
   | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings ist cb)
   | TacCaseType c -> TacCaseType (intern_type ist c)
   | TacFix (idopt,n) -> TacFix (Option.map (intern_ident lf ist) idopt,n)
-  | TacMutualFix (id,n,l) ->
+  | TacMutualFix (b,id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
-      TacMutualFix (intern_ident lf ist id, n, List.map f l)
+      TacMutualFix (b,intern_ident lf ist id, n, List.map f l)
   | TacCofix idopt -> TacCofix (Option.map (intern_ident lf ist) idopt)
-  | TacMutualCofix (id,l) ->
+  | TacMutualCofix (b,id,l) ->
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
-      TacMutualCofix (intern_ident lf ist id, List.map f l)
+      TacMutualCofix (b,intern_ident lf ist id, List.map f l)
   | TacCut c -> TacCut (intern_type ist c)
   | TacAssert (otac,ipat,c) ->
       TacAssert (Option.map (intern_tactic ist) otac,
@@ -2016,13 +2016,13 @@ and interp_atomic ist gl = function
   | TacCase (ev,cb) -> h_case ev (interp_constr_with_bindings ist gl cb)
   | TacCaseType c -> h_case_type (pf_interp_type ist gl c)
   | TacFix (idopt,n) -> h_fix (Option.map (interp_fresh_ident ist gl) idopt) n
-  | TacMutualFix (id,n,l) ->
+  | TacMutualFix (b,id,n,l) ->
       let f (id,n,c) = (interp_fresh_ident ist gl id,n,pf_interp_type ist gl c)
-      in h_mutual_fix (interp_fresh_ident ist gl id) n (List.map f l)
+      in h_mutual_fix b (interp_fresh_ident ist gl id) n (List.map f l)
   | TacCofix idopt -> h_cofix (Option.map (interp_fresh_ident ist gl) idopt)
-  | TacMutualCofix (id,l) ->
+  | TacMutualCofix (b,id,l) ->
       let f (id,c) = (interp_fresh_ident ist gl id,pf_interp_type ist gl c) in
-      h_mutual_cofix (interp_fresh_ident ist gl id) (List.map f l)
+      h_mutual_cofix b (interp_fresh_ident ist gl id) (List.map f l)
   | TacCut c -> h_cut (pf_interp_type ist gl c)
   | TacAssert (t,ipat,c) ->
       let c = (if t=None then pf_interp_constr else pf_interp_type) ist gl c in
@@ -2350,11 +2350,11 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacCase (ev,cb) -> TacCase (ev,subst_raw_with_bindings subst cb)
   | TacCaseType c -> TacCaseType (subst_rawconstr subst c)
   | TacFix (idopt,n) as x -> x
-  | TacMutualFix (id,n,l) ->
-      TacMutualFix(id,n,List.map (fun (id,n,c) -> (id,n,subst_rawconstr subst c)) l)
+  | TacMutualFix (b,id,n,l) ->
+      TacMutualFix(b,id,n,List.map (fun (id,n,c) -> (id,n,subst_rawconstr subst c)) l)
   | TacCofix idopt as x -> x
-  | TacMutualCofix (id,l) ->
-      TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_rawconstr subst c)) l)
+  | TacMutualCofix (b,id,l) ->
+      TacMutualCofix (b,id, List.map (fun (id,c) -> (id,subst_rawconstr subst c)) l)
   | TacCut c -> TacCut (subst_rawconstr subst c)
   | TacAssert (b,na,c) ->
       TacAssert (Option.map (subst_tactic subst) b,na,subst_rawconstr subst c)
