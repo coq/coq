@@ -263,27 +263,25 @@ and translate_struct_entry env mse = match mse with
 	  | Not_path -> error_application_to_not_path mexpr
 	      (* place for nondep_supertype *) in
       let meb,sub2= translate_struct_entry env (MSEident mp) in
-      let sub2 = match eval_struct env (SEBident mp) with
-	| SEBstruct (msid,sign) -> subst_key (map_msid msid mp) sub2
-	| _ -> sub2 in
-       let sub3=
-	if sub1 = empty_subst then
-	  update_subst_alias sub2 (map_mbid farg_id mp None)
+	if sub1 = empty_subst then 
+	  let cst = check_subtypes env mtb farg_b in
+	    SEBapply(feb,meb,cst),sub1
 	else
-	  update_subst_alias sub2
-	    (join_alias sub1 (map_mbid farg_id mp None))
-       in
-      let sub = if sub2 = sub3 then
-	join sub1 sub2 else join (join sub1 sub2) sub3 in
-      let sub = join_alias sub (map_mbid farg_id mp None) in
-      let sub = update_subst_alias sub (map_mbid farg_id mp None) in
-      let cst = check_subtypes env mtb farg_b in
-	SEBapply(feb,meb,cst),sub
+	  let sub2 = match eval_struct env (SEBident mp) with
+	    | SEBstruct (msid,sign) -> 
+		join_alias 
+		  (subst_key (map_msid msid mp) sub2)
+		  (map_msid msid mp)
+	    | _ -> sub2 in
+	  let sub3 = join_alias sub1 (map_mbid farg_id mp None) in
+	  let sub4 = update_subst sub2 sub3 in
+	  let cst = check_subtypes env mtb farg_b in
+	    SEBapply(feb,meb,cst),(join sub3 sub4)
   | MSEwith(mte, with_decl) ->
 	let mtb,sub1 = translate_struct_entry env mte in
 	let mtb',sub2 = check_with env mtb with_decl in
 	  mtb',join sub1 sub2
-
+	    
 
 let rec add_struct_expr_constraints env = function
   | SEBident _ -> env

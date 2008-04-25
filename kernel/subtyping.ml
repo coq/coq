@@ -289,9 +289,16 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
        check_conv cst conv env ty1 ty2
    | _ -> error ()
 	      
-let rec check_modules cst env msid1 l msb1 msb2 =
+let rec check_modules cst env msid1 l msb1 msb2 alias =
   let mp = (MPdot(MPself msid1,l)) in
   let mty1 = module_type_of_module (Some mp) msb1 in
+  let alias1,struct_expr = match eval_struct env mty1.typ_expr with
+    	| SEBstruct (msid,sign) as str ->
+	    update_subst alias (map_msid msid mp),str
+	| _ as str -> empty_subst,str in
+  let mty1 = {mty1 with 
+		typ_expr = struct_expr;
+		typ_alias = join alias1 mty1.typ_alias } in
   let mty2 =  module_type_of_module None msb2 in
   let cst = check_modtypes cst env mty1 mty2 false in
     cst
@@ -301,8 +308,8 @@ and check_signatures cst env (msid1,sig1) alias (msid2,sig2') =
   let mp1 = MPself msid1 in
   let env = add_signature mp1 sig1 env in 
   let sig1 = subst_structure alias sig1 in
-  let alias = update_subst_alias alias (map_msid msid2 mp1) in
-  let sig2 = subst_structure alias sig2' in
+  let alias1 = update_subst_alias alias (map_msid msid2 mp1) in
+  let sig2 = subst_structure alias1 sig2' in
   let sig2 = subst_signature_msid msid2 mp1 sig2 in
   let map1 = make_label_map mp1 sig1 in
   let check_one_body cst (l,spec2) = 
@@ -321,14 +328,14 @@ and check_signatures cst env (msid1,sig1) alias (msid2,sig2') =
 	| SFBmodule msb2 ->  
 	    begin
 	      match info1 with
-		| Module msb -> check_modules cst env msid1 l msb msb2
+		| Module msb -> check_modules cst env msid1 l msb msb2 alias
 		| Alias mp ->let msb = 
 		    {mod_expr = Some (SEBident mp);
 		     mod_type = Some (eval_struct env (SEBident mp));
 		     mod_constraints = Constraint.empty;
 		     mod_alias = (lookup_modtype mp env).typ_alias;
 		     mod_retroknowledge = []} in
-		    check_modules cst env msid1 l msb msb2
+		    check_modules cst env msid1 l msb msb2 alias
 		| _ -> error_not_match l spec2
 	    end
 	| SFBalias (mp,_) ->
@@ -342,7 +349,7 @@ and check_signatures cst env (msid1,sig1) alias (msid2,sig2') =
 		       mod_constraints = Constraint.empty;
 		       mod_alias = (lookup_modtype mp env).typ_alias;
 		       mod_retroknowledge = []} in
-			check_modules cst env msid1 l msb msb1
+			check_modules cst env msid1 l msb msb1 alias
 		| _ -> error_not_match l spec2
 	    end
 	| SFBmodtype mtb2 ->

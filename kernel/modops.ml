@@ -329,8 +329,9 @@ and merge_with env mtb with_decl alias=
 	      match with_decl with
                   With_definition_body (_,c) -> With_definition_body (idl,c),None
 		| With_module_body (idc,mp,cst) -> 
+		    let mp' = scrape_alias mp env in
 		    With_module_body (idl,mp,cst),
-		      Some(map_mp (mp_rec (List.rev idc)) mp) 
+		      Some(map_mp (mp_rec (List.rev idc)) mp') 
 	    in
 	    let subst = match subst1 with
 	      | None -> None

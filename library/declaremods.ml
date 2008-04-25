@@ -332,7 +332,9 @@ let subst_module ((sp,kn),subst,(entry,substobjs,_)) =
   check_empty "subst_module" entry;
   let dir,mp = dir_of_sp sp, mp_of_kn kn in
   let (sub,mbids,msid,objs) = substobjs in
+  let sub = subst_key subst sub in
   let sub' = update_subst_alias subst sub in
+  let sub' = update_subst_alias sub' (map_msid msid mp) in
   let sub = join sub' sub in
   let subst' = join sub subst in
   (* substitutive_objects get the new substitution *)
@@ -346,6 +348,7 @@ let subst_module ((sp,kn),subst,(entry,substobjs,_)) =
 let subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
   let dir,mp = dir_of_sp sp, mp_of_kn kn in
   let (sub,mbids,msid,objs) = substobjs in
+  let sub = update_subst_alias subst (map_msid msid mp) in
   let subst' = join sub subst in
   (* substitutive_objects get the new substitution *)
   let substobjs = (subst',mbids,msid,objs) in
@@ -365,8 +368,8 @@ let subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
 		  substobjs, match mbids with
 		    | [] -> 
 			Some (subst_objects prefix 
-				(join (map_mp mp mp')
-				   (join (map_msid msid mp') subst)) objs)
+				(join subst' (join (map_msid msid mp')
+						(map_mp mp mp'))) objs)
 		    | _ -> None)
 
 	      | _ -> anomaly "Modops: Not an alias"
@@ -886,12 +889,10 @@ let rec get_module_substobjs env = function
 	if sub1 = empty_subst then
 	  update_subst_alias sub_alias (map_mbid farg_id mp None)
 	else
-	  update_subst_alias sub_alias
-	    (join_alias sub1 (map_mbid farg_id mp None))
+	  let sub1' = join_alias sub1 (map_mbid farg_id mp None) in
+	  let sub_alias' =  update_subst_alias sub_alias sub1' in
+	    join sub1' sub_alias'
       in
-      let sub = if sub_alias = sub3 then
-	join sub1 sub_alias else join (join sub1 sub_alias) sub3 in
-      let sub = join_alias sub (map_mbid farg_id mp None) in
        let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(match mbids with
 	   | mbid::mbids ->
@@ -901,7 +902,7 @@ let rec get_module_substobjs env = function
                     objects (that are all non-logical objects) *)
 		((join 
 		    (join subst (map_mbid mbid mp (Some resolve)))
-		       sub)
+		       sub3)
 		       , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
@@ -1072,6 +1073,9 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 		     (in_module_alias (Some (entry, mty_sub_o), substobjs, substituted)))
       | _ ->
 	  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
+	  let (sub,mbids,msid,objs) = substobjs in
+	  let sub' = subst_key (map_msid msid mp) sub in
+	  let substobjs = (join sub sub',mbids,msid,objs) in
 	  let substituted = subst_substobjs dir mp substobjs in
 	    ignore (add_leaf
 		      id

@@ -347,6 +347,48 @@ let update_subst_alias subst1 subst2 =
   in
     Umap.fold alias_subst subst1 empty_subst
 
+let update_subst subst1 subst2 =
+ let subst_inv key (mp,resolve) l =
+    let newmp = 
+      match key with 
+	| MBI msid -> MPbound msid
+	| MSI msid -> MPself msid
+	| MPI mp -> mp
+    in
+   match mp with 
+     | MPbound mbid ->  ((MBI mbid),newmp)::l
+     | MPself msid ->  ((MSI msid),newmp)::l
+     | _ ->   ((MPI mp),newmp)::l
+  in 
+  let subst_mbi = Umap.fold subst_inv subst2 [] in
+  let alias_subst key (mp,resolve) sub=
+    let newsetkey = 
+      match key with
+	| MPI mp1 -> 
+	    let compute_set_newkey l (k,mp') = 
+	      let mp_from_key = match k with
+		  	| MBI msid -> MPbound msid
+			| MSI msid -> MPself msid
+			| MPI mp -> mp
+	      in
+	      let new_mp1 = replace_mp_in_mp mp_from_key mp' mp1 in
+		if new_mp1 == mp1 then l else (MPI new_mp1)::l
+	    in
+	    begin
+	      match List.fold_left compute_set_newkey [] subst_mbi with
+		| [] -> None
+		| l -> Some (l)
+	    end
+	| _ -> None
+    in
+      match newsetkey with
+	| None -> sub
+	| Some l -> 
+	    List.fold_left (fun s k -> Umap.add k (mp,resolve) s)
+	      sub l
+  in
+    Umap.fold alias_subst subst1 empty_subst
+
 let join_alias (subst1 : substitution) (subst2 : substitution) =
   let apply_subst (sub : substitution) key (mp,resolve) =
     let mp',resolve' =

@@ -85,6 +85,8 @@ val occur_mbid : mod_bound_id -> substitution -> bool
 
 val update_subst_alias : substitution -> substitution -> substitution
 
+val update_subst : substitution -> substitution -> substitution
+
 val subst_key : substitution -> substitution -> substitution
 
 val join_alias : substitution -> substitution -> substitution
