@@ -586,6 +586,7 @@ open Unification
 let auto_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state; 
   use_metas_eagerly = false;
+  use_types = false;
   modulo_delta = empty_transparent_state;
 }
 

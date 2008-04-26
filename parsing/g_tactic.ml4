@@ -72,6 +72,22 @@ let lpar_id_colon =
               | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
+(* idem for (x1..xn:t) [not efficient but exceptional use] *)
+let check_lpar_ids_colon =
+  Gram.Entry.of_parser "lpar_id_colon"
+    (fun strm ->
+      match Stream.npeek 1 strm with
+        | [("","(")] ->
+	    let rec aux tok n =
+              match tok with
+              | ("IDENT",id) ->
+                  (match list_last (Stream.npeek n strm) with
+                    | ("", ":") -> ()
+                    | tok -> aux tok (n+1))
+              | _ -> raise Stream.Failure
+	    in aux (list_last (Stream.npeek 2 strm)) 3
+        | _ -> raise Stream.Failure)
+
 let guess_lpar_ipat s strm =
   match Stream.npeek 1 strm with
     | [("","(")] ->
@@ -343,7 +359,8 @@ GEXTEND Gram
   ;
   simple_named_binder:
     [ [ id=identref -> ([id],CHole (loc, None))
-      | "("; idl=LIST1 identref; ":"; c=lconstr; ")" -> (idl,c) 
+      | check_lpar_ids_colon; 
+        "("; idl=LIST1 identref; ":"; c=lconstr; ")" -> (idl,c) 
     ] ]
   ;
   fixdecl:
@@ -367,7 +384,7 @@ GEXTEND Gram
 	  let first_args = appl_args_of_simple_named_binders bl in
 	  (Names.Anonymous, CApp(loc,(None,CRef (Ident lid)),first_args@args))
       | "("; c = lconstr; ")" -> (Names.Anonymous, c) 
-      | c = lconstr -> (Names.Anonymous, c) ] ]
+      | c = constr -> (Names.Anonymous, c) ] ]
   ;
   hintbases:
     [ [ "with"; "*" -> None
@@ -457,8 +474,14 @@ GEXTEND Gram
       | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
 	  TacMutualCofix (false,id,List.map mk_cofix_tac fd)
 
+(*
       | IDENT "pose"; (na,c) = constr_or_decl ->
 	  TacLetTac (na,c,nowhere)
+*)
+      | IDENT "pose"; id = lpar_id_coloneq; b = lconstr; ")" ->
+	  TacLetTac (Names.Name id,b,nowhere)
+      | IDENT "pose"; b = constr ->
+	  TacLetTac (Names.Anonymous,b,nowhere)
       | IDENT "set"; (na,c) = constr_or_decl; p = clause ->
 	  TacLetTac (na,c,p)
 

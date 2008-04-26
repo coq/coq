@@ -97,7 +97,8 @@ val clenv_missing : clausenv -> metavariable list
 val clenv_constrain_last_binding : constr -> clausenv -> clausenv
 
 (* defines metas corresponding to the name of the bindings *)
-val clenv_match_args : arg_bindings -> clausenv -> clausenv
+val clenv_match_args : bool (* unify types *) -> arg_bindings -> clausenv -> 
+  clausenv
 
 val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 
@@ -106,9 +107,10 @@ val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 (* the arity of the lemma is fixed *)
 (* the optional int tells how many prods of the lemma have to be used *)
 (* use all of them if None *)
+(* boolean tells to unify immediately unifiable types of the bindings *)
 val make_clenv_binding_apply :
-  evar_info sigma -> int option -> constr * constr -> open_constr bindings ->
-   clausenv
+  bool -> int option -> evar_info sigma -> constr * constr -> 
+    open_constr bindings -> clausenv
 val make_clenv_binding :
   evar_info sigma -> constr * constr -> open_constr bindings -> clausenv
 

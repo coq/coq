@@ -1734,12 +1734,14 @@ let check_evar_map_of_evars_defs evd =
 let rewrite_unif_flags = {
   modulo_conv_on_closed_terms = None;
   use_metas_eagerly = true;
+  use_types = true;
   modulo_delta = empty_transparent_state;
 }
 
 let rewrite2_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
+  use_types = true;
   modulo_delta = empty_transparent_state;
 }
 

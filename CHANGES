@@ -161,8 +161,8 @@ Tactics
 - Tactic "apply" now able to reason modulo unfolding of constants
   (possible source of incompatibility in situations where apply may fail, 
   e.g. as argument of a try or a repeat and in a ltac function);
-  version of apply that does not unfold is renamed into "simple apply"
-  (usable for compatibility or for automation).
+- The version of apply that does not unfold, nor use types in "with" bindings
+  is renamed into "simple apply" (usable for compatibility or for automation).
 - Tactic "apply" now able to traverse conjunctions and to select the first 
   matching lemma among the components of the conjunction; tactic apply also
   able to apply lemmas of conclusion an empty type.

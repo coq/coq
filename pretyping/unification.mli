@@ -17,11 +17,12 @@ open Evd
 type unify_flags = { 
   modulo_conv_on_closed_terms : Names.transparent_state option; 
   use_metas_eagerly : bool;
+  use_types : bool;
   modulo_delta : Names.transparent_state;
 }
 
 val default_unify_flags : unify_flags
-val default_no_delta_unify_flags : unify_flags
+val simple_apply_unify_flags : unify_flags
 
 (* The "unique" unification fonction *)
 val w_unify :

@@ -329,7 +329,7 @@ let general_elim_then_using mk_elim
   ind indclause gl =
   let elim = mk_elim ind gl in
   (* applying elimination_scheme just a little modified *)
-  let indclause' = clenv_match_args indbindings indclause in
+  let indclause' = clenv_match_args true indbindings indclause in
   let elimclause = mk_clenv_from gl (elim,pf_type_of gl elim) in
   let indmv = 
     match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
@@ -350,7 +350,7 @@ let general_elim_then_using mk_elim
 	  error ("The elimination combinator " ^ name_elim ^ " is not known") 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause' in
-  let elimclause' = clenv_match_args elimbindings elimclause' in
+  let elimclause' = clenv_match_args true elimbindings elimclause' in
   let branchsigns = compute_construtor_signatures isrec ind in
   let brnames = compute_induction_names (Array.length branchsigns) allnames in
   let after_tac ce i gl =

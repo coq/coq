@@ -160,7 +160,7 @@ module Default = struct
 
   let inh_coerce_to_base loc env evd j = (evd, j)
 
-  let inh_coerce_to_fail env evd rigidonly v c1 t =
+  let inh_coerce_to_fail env evd rigidonly v t c1 =
     if rigidonly & not (Heads.is_rigid env c1 && Heads.is_rigid env t)
     then
       raise NoCoercion
@@ -183,7 +183,7 @@ module Default = struct
   let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
     try (the_conv_x_leq env t c1 evd, v)
     with Reduction.NotConvertible ->
-    try inh_coerce_to_fail env evd rigidonly v c1 t
+    try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
     match
       kind_of_term (whd_betadeltaiota env (evars_of evd) t),
