@@ -13,7 +13,7 @@ Language
 - New syntax "forall {A}, T" for specifying maximally inserted implicit 
   arguments in terms.
 - Sort of Record/Structure, Inductive and CoInductive defaults to Type
-  if omitted. (DOC TODO?)
+  if omitted.
 - Record/Structure now usable for defining coinductive types
   (e.g. "Record stream := { hd : nat; tl : stream }.")
 - New syntax "Theorem id1:t1 ... with idn:tn" for proving mutually dependent
@@ -53,7 +53,8 @@ Libraries (DOC TO CHECK)
 - Better computational behavior of some constants (eq_nat_dec and 
   le_lt_dec more efficient, Z_lt_le_dec and Positive_as_OT.compare 
   transparent, ...) (exceptional source of incompatibilities).
-- Boolean operators moved from module Bool to module Datatypes.
+- Boolean operators moved from module Bool to module Datatypes (may need
+  to rename qualified references in script)
 - Improvements to NArith (Nminus, Nmin, Nmax), and to QArith (in particular 
   a better power function). 
 - In SetoidList, eqlistA now expresses that two lists have similar elements 
@@ -87,7 +88,7 @@ Libraries (DOC TO CHECK)
   logic. Addition of files providing intuitionistic axiomatizations of
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v.
 
-Notations and implicit arguments
+Notations, coercions and implicit arguments
 
 - New options "Set Maximal Implicit Insertion", "Set Reversible Pattern
   Implicit", "Set Strongly Strict Implicit" and "Set Printing Implicit
@@ -100,7 +101,9 @@ Notations and implicit arguments
   surviving or non export outside module.
 - Level "constr" moved from 9 to 8. (DOC TODO?)
 - Structure/Record now printed as Record (unless option Printing All is set).
-- Support for parametric notations defining constants (i.e. abbreviations).
+- Support for parametric notations defining constants.
+- Insertion of coercions below product types refrains to unfold
+  constants (possible source of incompatibility).
 
 Tactic Language
 
@@ -130,8 +133,8 @@ Tactic Language
 
 Tactics
 
-- New tactics [apply -> term], [apply <- term], [apply -> term in
-  ident], [apply <- term in ident] for applying equivalences (iff). (DOC TODO)
+- New tactics "apply -> term", "apply <- term", "apply -> term in
+  ident", "apply <- term in ident" for applying equivalences (iff). (DOC TODO)
 - Slight improvement of the hnf and simpl tactics when applied on
   expressions with explicit occurrences of match or fix.
 - New tactics "eapply in", "erewrite", "erewrite in".
@@ -150,7 +153,7 @@ Tactics
   is still legal but equivalent to intros ?a ?b.
 - New intro pattern "{A,B,C}" synonym to "(A,(B,C))"
 - rewrite now supports "by" to solve side-conditions and "at" to select
-  occurrences.
+  occurrences. (DOC TODO)
 - New syntax "rewrite A,B" for "rewrite A; rewrite B"
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
 - New tactics "dependent induction/destruction H [ generalizing id_1 .. id_n ]" 
@@ -163,6 +166,7 @@ Tactics
 - Tactic "apply" now able to traverse conjunctions and to select the first 
   matching lemma among the components of the conjunction; tactic apply also
   able to apply lemmas of conclusion an empty type.
+- Tactics "set" and "pose" can set functions using notation "(f x1..xn := c)".
 
 Program
 

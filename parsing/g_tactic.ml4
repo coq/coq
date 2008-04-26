@@ -17,6 +17,8 @@ open Tacexpr
 open Rawterm
 open Genarg
 open Topconstr
+open Term
+open Libnames
 
 let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
 
@@ -88,6 +90,13 @@ let guess_lpar_coloneq =
 let guess_lpar_colon =
   Gram.Entry.of_parser "guess_lpar_colon" (guess_lpar_ipat ":")
 
+let test_not_ident =
+  Gram.Entry.of_parser "not_ident"
+    (fun strm ->
+      match Stream.npeek 1 strm with
+        | [("IDENT",_)] -> raise Stream.Failure
+	| _ -> ())
+
 open Constr
 open Prim
 open Tactic
@@ -116,6 +125,36 @@ let induction_arg_of_constr (c,lbind as clbind) =
     try ElimOnIdent (constr_loc c,snd(coerce_to_id c))
     with _ -> ElimOnConstr clbind
   else ElimOnConstr clbind
+
+(* Turn a simple binder as the argument for an application *)
+let appl_args_of_simple_named_binder = function
+| (idl,CHole _) ->
+    List.map (fun id -> CRef (Ident id), None) idl
+| (idl,t) -> 
+    let loc = join_loc (fst (List.hd idl)) (constr_loc t) in
+    let mk id = CCast (loc,CRef (Ident id),CastConv (DEFAULTcast,t)), None in
+    List.map mk idl
+
+let appl_args_of_simple_named_binders bl =
+  List.flatten (List.map appl_args_of_simple_named_binder bl)
+
+let rec mkCLambdaN_simple_loc loc bll c =
+  match bll with
+  | ((loc1,_)::_ as idl,bk,t) :: bll -> 
+      CLambdaN (loc,[idl,bk,t],mkCLambdaN_simple_loc (join_loc loc1 loc) bll c)
+  | ([],_,_) :: bll -> mkCLambdaN_simple_loc loc bll c
+  | [] -> c
+
+let mkCLambdaN_simple bl1 bl2 c =
+  let bl =
+    List.map (fun (idl,c) ->
+      (List.map (fun (loc,id) -> (loc,Names.Name id)) idl,
+       Default Explicit,c)) bl1
+      @ bl2 in
+  if bl=[] then c
+  else
+    let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (constr_loc c) in
+    mkCLambdaN_simple_loc loc bl c
 
 (* Auxiliary grammar rules *)
 
@@ -297,13 +336,18 @@ GEXTEND Gram
       | "-" -> false
       | -> true ]]
   ;
-  simple_fix_binder:
+  simple_binder:
     [ [ id=name -> ([id],Default Explicit,CHole (loc, None))
       | "("; idl=LIST1 name; ":"; c=lconstr; ")" -> (idl,Default Explicit,c) 
     ] ]
   ;
+  simple_named_binder:
+    [ [ id=identref -> ([id],CHole (loc, None))
+      | "("; idl=LIST1 identref; ":"; c=lconstr; ")" -> (idl,c) 
+    ] ]
+  ;
   fixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_fix_binder; ann=fixannot;
+    [ [ "("; id = ident; bl=LIST0 simple_binder; ann=fixannot;
         ":"; ty=lconstr; ")" -> (loc,id,bl,ann,ty) ] ]
   ;
   fixannot:
@@ -311,8 +355,19 @@ GEXTEND Gram
       | -> None ] ]
   ;
   cofixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_fix_binder; ":"; ty=lconstr; ")" ->
+    [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
         (loc,id,bl,None,ty) ] ]
+  ;
+  constr_or_decl:
+    [ [ "("; lid = identref; bl1 = LIST0 simple_named_binder; 
+        ":="; c = lconstr; ")" ->
+          (Names.Name (snd lid), mkCLambdaN_simple bl1 [] c)
+      | "("; lid = identref; bl = LIST0 simple_named_binder; 
+	 args = LIST0 appl_arg; ")" ->
+	  let first_args = appl_args_of_simple_named_binders bl in
+	  (Names.Anonymous, CApp(loc,(None,CRef (Ident lid)),first_args@args))
+      | "("; c = lconstr; ")" -> (Names.Anonymous, c) 
+      | c = lconstr -> (Names.Anonymous, c) ] ]
   ;
   hintbases:
     [ [ "with"; "*" -> None
@@ -345,10 +400,10 @@ GEXTEND Gram
     (* hack for allowing "rewrite ?t" and "rewrite NN?t" that normally 
        produce a pattern_ident *)
         c = pattern_ident -> 
-	  let c = (CRef (Libnames.Ident (loc,c)), NoBindings) in  
+	  let c = (CRef (Ident (loc,c)), NoBindings) in  
 	  (RepeatStar, c)
       | n = natural; c = pattern_ident -> 
-	  let c = (CRef (Libnames.Ident (loc,c)), NoBindings) in  
+	  let c = (CRef (Ident (loc,c)), NoBindings) in  
 	  (UpTo n, c)
       | "!"; c = constr_with_bindings -> (RepeatPlus,c)
       |	"?"; c = constr_with_bindings -> (RepeatStar,c)
@@ -402,14 +457,10 @@ GEXTEND Gram
       | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
 	  TacMutualCofix (false,id,List.map mk_cofix_tac fd)
 
-      | IDENT "pose"; id = lpar_id_coloneq; b = lconstr; ")" ->
-	  TacLetTac (Names.Name id,b,nowhere)
-      | IDENT "pose"; b = constr ->
-	  TacLetTac (Names.Anonymous,b,nowhere)
-      | IDENT "set"; id = lpar_id_coloneq; c = lconstr; ")"; p = clause ->
-	  TacLetTac (Names.Name id,c,p)
-      | IDENT "set"; c = constr; p = clause ->
-          TacLetTac (Names.Anonymous,c,p)
+      | IDENT "pose"; (na,c) = constr_or_decl ->
+	  TacLetTac (na,c,nowhere)
+      | IDENT "set"; (na,c) = constr_or_decl; p = clause ->
+	  TacLetTac (na,c,p)
 
       (* Begin compatibility *)
       | IDENT "assert"; id = lpar_id_coloneq; c = lconstr; ")" -> 

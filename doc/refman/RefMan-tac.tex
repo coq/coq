@@ -497,7 +497,12 @@ This allows to specify which occurrences of the conclusion are concerned.
   {\num$_{n_i}^i$} of hypothesis {\ident$_i$}. Each {\tt at} part is
   optional.
 
-\item {\tt set (} {\ident$_0$} {\tt :=} {\term} {\tt ) in}
+\item {\tt set (} {\ident} \nelist{\binder}{} {\tt :=} {\term} {\tt )}
+
+  This is equivalent to {\tt set (} {\ident} {\tt :=} {\tt fun}
+  \nelist{\binder}{} {\tt =>} {\term} {\tt )}.
+
+\item {\tt set (} {\ident$_0$} \nelist{\binder}{} {\tt :=} {\term} {\tt ) in}
     {\ident$_1$} {\tt at} {\num$_1^1$} \dots\ {\num$_{n_1}^1$}, \dots
     {\ident$_m$} {\tt at} {\num$_1^m$} \dots {\num$_{n_m}^m$}
     {\tt |- *} {\tt at} {\num$'_1$} \dots\ {\num$'_n$}
@@ -516,6 +521,11 @@ This allows to specify which occurrences of the conclusion are concerned.
   This adds the local definition {\ident} := {\term} to the current
   context without performing any replacement in the goal or in the
   hypotheses.
+
+\item {\tt pose (} {\ident} \nelist{\binder}{} {\tt :=} {\term} {\tt )}
+
+  This is equivalent to {\tt pose (} {\ident} {\tt :=} {\tt fun}
+  \nelist{\binder}{} {\tt =>} {\term} {\tt )}.
 
 \item{\tt pose {\term}}
   

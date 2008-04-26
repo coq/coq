@@ -131,7 +131,7 @@ GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
   constr_pattern lconstr_pattern Constr.ident
   binder binder_let binders_let delimited_binder_let delimited_binders_let
-  binders_let_fixannot typeclass_constraint pattern;
+  binders_let_fixannot typeclass_constraint pattern appl_arg;
   Constr.ident:
     [ [ id = Prim.ident -> id
 

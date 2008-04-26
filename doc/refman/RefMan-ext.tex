@@ -20,7 +20,7 @@ construction allows to define ``signatures''.
 {\sentence} & ++= & {\record}\\
   & & \\
 {\record} & ::= &
-   {\tt Record} {\ident} \sequence{\binderlet}{} {\tt :} {\sort} \verb.:=. \\
+   {\tt Record} {\ident} \sequence{\binderlet}{} \zeroone{{\tt :} {\sort}} \verb.:=. \\
 && ~~~~\zeroone{\ident}
        \verb!{! \zeroone{\nelist{\field}{;}} \verb!}! \verb:.:\\
   & & \\
@@ -45,7 +45,8 @@ construction allows to define ``signatures''.
 \noindent the identifier {\ident} is the name of the defined record
 and {\sort} is its type. The identifier {\ident$_0$} is the name of
 its constructor. If {\ident$_0$} is omitted, the default name {\tt
-Build\_{\ident}} is used. The identifiers {\ident$_1$}, ..,
+Build\_{\ident}} is used. If {\sort} is omitted, the default sort is ``{\Type}''.
+The identifiers {\ident$_1$}, ..,
 {\ident$_n$} are the names of fields and {\term$_1$}, .., {\term$_n$}
 their respective types. Remark that the type of {\ident$_i$} may
 depend on the previous {\ident$_j$} (for $j<i$). Thus the order of the
@@ -289,17 +290,15 @@ declared as such (see Section~\ref{printing-options}).
 \index{let in@{\tt let ... in}}
 \label{Letin}}
 
-Closed terms (that is not relying on any axiom or variable) in an
-inductive type having only one constructor, say {\tt foo}, have
-necessarily the form \texttt{(foo ...)}. In this case, the {\tt match}
-construction can be written with a syntax close to the {\tt let ... in
-...}  construction. 
+Pattern-matching on terms inhabiting inductive type having only one
+constructor can be alternatively written using {\tt let ... in ...}
+constructions. There are two variants of them.
 
-\subsubsection{Destructuring {\tt let}}
-Expression {\tt let
+\subsubsection{First destructuring {\tt let} syntax}
+The expression {\tt let
 (}~{\ident$_1$},\ldots,{\ident$_n$}~{\tt ) :=}~{\term$_0$}~{\tt
-in}~{\term$_1$} performs case analysis on {\term$_0$} which must be in
-an inductive type with one constructor with $n$ arguments. Variables
+in}~{\term$_1$} performs case analysis on a {\term$_0$} which must be in
+an inductive type with one constructor having itself $n$ arguments. Variables
 {\ident$_1$}\ldots{\ident$_n$} are bound to the $n$ arguments of the
 constructor in expression {\term$_1$}. For instance, the definition
 
@@ -317,23 +316,25 @@ Reset fst.
 \begin{coq_example}
 Definition fst (A B:Set) (p:A * B) := let (x, _) := p in x.
 \end{coq_example}
-Note however that reduction is slightly different from regular {\tt
-let ... in ...} construction since it can occur only if {\term$_0$}
-can be put in constructor form. Otherwise, reduction is blocked.
+Notice that reduction is different from regular {\tt let ... in ...}
+construction since it happens only if {\term$_0$} is in constructor
+form. Otherwise, the reduction is blocked.
 
 The pretty-printing of a definition by matching on a
 irrefutable pattern can either be done using {\tt match} or the {\tt
 let} construction (see Section~\ref{printing-options}).
 
-The general equivalence for an inductive type with one constructors {\tt C} is
+If {\term} inhabits an inductive type with one constructor {\tt C},
+we have an equivalence between
 
-\smallskip
-{\tt let ({\ident}$_1$,\ldots,{\ident}$_n$) \zeroone{\ifitem} := {\term} in {\term}'} \\
-$\equiv$~
+{\tt let ({\ident}$_1$,\ldots,{\ident}$_n$) \zeroone{\ifitem} := {\term} in {\term}'}
+
+\noindent and
+
 {\tt match {\term} \zeroone{\ifitem} with C {\ident}$_1$ {\ldots} {\ident}$_n$ \verb!=>! {\term}' end}
 
 
-\subsubsection{{\tt let} pattern}
+\subsubsection{Second destructuring {\tt let} syntax\index{let '... in}}
 
 Another destructuring {\tt let} syntax is available for inductive types with
 one constructor by giving an arbitrary pattern instead of just a tuple
@@ -342,19 +343,19 @@ for all the arguments. For example, the preceding example can be written:
 Reset fst.
 \end{coq_eval}
 \begin{coq_example}
-Definition fst (A B:Set) (p:A * B) := let| pair x _ := p in x.
+Definition fst (A B:Set) (p:A * B) := let 'pair x _ := p in x.
 \end{coq_example}
 
 This is useful to match deeper inside tuples and also to use notations
-for the pattern, as the syntax {\tt let| p := t in b} allows arbitrary
+for the pattern, as the syntax {\tt let 'p := t in b} allows arbitrary
 patterns to do the deconstruction. For example:
 
 \begin{coq_example}
 Definition deep_tuple (A : Set) (x : (A * A) * (A * A)) : A * A * A * A :=
-  let| ((a,b), (c, d)) := x in (a,b,c,d).
+  let '((a,b), (c, d)) := x in (a,b,c,d).
 Notation " x 'with' p " := (exist _ x p) (at level 20).
 Definition proj1_sig' (A :Set) (P : A -> Prop) (t:{ x : A | P x }) : A :=
-  let| x with p := t in x.
+  let 'x with p := t in x.
 \end{coq_example}
 
 When printing definitions which are written using this construct it
