@@ -114,7 +114,7 @@ Inductive subrelation_done : Prop :=
 
 Ltac subrelation_tac := 
   match goal with
-    | [ _ : subrelation_done |- _ ] => fail
+    | [ _ : subrelation_done |- _ ] => fail 1
     | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
       set(H:=did_subrelation) ; eapply @subrelation_morphism
   end.
@@ -336,8 +336,38 @@ Proof. firstorder. Qed.
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
-Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive A R ]  =>
-  Reflexive_partial_app_morphism : Morphism R' (m x) | 4.
+Lemma Reflexive_partial_app_morphism [ Morphism (A -> B) (R ==> R') m, Reflexive A R ] (x : A) :
+   Morphism R' (m x).
+Proof. simpl_relation. Qed.
+
+Ltac partial_application_tactic := 
+  let tac x :=
+    match type of x with
+      | Type => fail 1
+      | _ => eapply @Reflexive_partial_app_morphism
+    end
+  in
+  let on_morphism m :=
+    match m with
+      | ?m' ?x => tac x
+      | ?m' _ ?x => tac x
+      | ?m' _ _ ?x => tac x
+      | ?m' _ _ _ ?x => tac x
+      | ?m' _ _ _ _ ?x => tac x
+      | ?m' _ _ _ _ _ ?x => tac x
+      | ?m' _ _ _ _ _ _ ?x => tac x
+      | ?m' _ _ _ _ _ _ _ ?x => tac x
+      | ?m' _ _ _ _ _ _ _ _ ?x => tac x
+    end
+  in
+  match goal with
+    | [ |- @Morphism _ _ ?m ] => on_morphism m
+  end.
+
+(* Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive A R ] (x : A) => *)
+(*   reflexive_partial_app_morphism : Morphism R' (m x). *)
+
+Hint Extern 4 (@Morphism _ _ _) => partial_application_tactic : typeclass_instances.
 
 Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : relation B),
   relation_equivalence (inverse (R ==> R')) (inverse R ==> inverse R').
@@ -402,7 +432,7 @@ Inductive normalization_done : Prop := did_normalization.
 
 Ltac morphism_normalization := 
   match goal with
-    | [ _ : normalization_done |- _ ] => fail
+    | [ _ : normalization_done |- _ ] => fail 1
     | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
       set(H:=did_normalization) ; eapply @morphism_releq_morphism
   end.
@@ -417,8 +447,8 @@ Proof. firstorder. Qed.
 
 Ltac morphism_reflexive :=
   match goal with
-    | [ _ : normalization_done |- _ ] => fail
-    | [ _ : subrelation_done |- _ ] => fail
+    | [ _ : normalization_done |- _ ] => fail 1
+    | [ _ : subrelation_done |- _ ] => fail 1
     | [ |- @Morphism _ _ _ ] => eapply @reflexive_morphism
   end.
 

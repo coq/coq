@@ -161,6 +161,11 @@ let filter_hyp t =
     | Evar _ | Meta _ | Sort _ -> false
     | _ -> true
 
+let rec catchable = function
+  | Refiner.FailError _ -> true
+  | Stdpp.Exc_located (_, e) -> catchable e
+  | e -> Logic.catchable_exception e
+
 module SearchProblem = struct
     
   type state = search_state
@@ -194,9 +199,7 @@ module SearchProblem = struct
 (* 	      		    msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")) *)
 (* 	      		end; *)
 	      ((lgls,v'),pri,pptac) :: aux tacl
-	  with e when Logic.catchable_exception e ->
-	    (* 	    if !debug then msg (str"failed\n"); *)
-	    aux tacl
+	  with e when catchable e -> aux tacl
     in aux l
       
   let nb_empty_evars s = 
