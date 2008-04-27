@@ -174,3 +174,15 @@ Axiom ax : forall (A : Set) (R : A -> A -> Prop) (x y : A), R x y.
 Theorem t : r true false.
 apply ax with (R := r).
 Qed.
+
+
+(* Check verification of type at unification (Submitted by Stéphane Lengrand)
+   (without verification, the first "apply" works which leads to wrongly
+   instantiate x by Prop) *)
+
+Theorem t: ~(forall x:Prop, ~x).
+unfold not.
+intro.
+eapply H.
+apply (forall B:Prop,B->B) || (instantiate (1:=True); exact I).
+Defined.

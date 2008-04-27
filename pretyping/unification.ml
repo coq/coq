@@ -48,8 +48,8 @@ let abstract_list_all env evd typ c l =
   try 
     if is_conv_leq env (evars_of evd) (Typing.mtype_of env evd p) typ then p
     else error "abstract_list_all"
-  with UserError _ ->
-    raise (PretypeError (env,CannotGeneralize typ))
+  with UserError _ | Type_errors.TypeError _ ->
+    error_cannot_find_well_typed_abstraction env (evars_of evd) p l
 
 (**)
 
@@ -142,7 +142,7 @@ let expand_constant env flags c =
   | Var id when Idpred.mem id ids && Idpred.mem id (fst flags.modulo_delta) -> named_body id env
   | _ -> None
 
-let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
+let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
   let nb = nb_rel env in
   let trivial_unify pb (metasubst,_) m n =
     match subst_defined_metas metasubst m with
@@ -243,11 +243,11 @@ let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
 	    is_trans_fconv (conv_pb_of cv_pb) flags env sigma m n
 	| None -> eq_constr m n)
     then 
-      (metas,[])
+      subst
     else 
-      unirec_rec env cv_pb conv_at_top (metas,[]) m n
+      unirec_rec env cv_pb conv_at_top subst m n
 
-let unify_0 = unify_0_with_initial_metas [] true
+let unify_0 = unify_0_with_initial_metas ([],[]) true
 
 let left = true
 let right = false
@@ -451,7 +451,7 @@ let solve_simple_evar_eqn env evd ev rhs =
    or in evars, possibly generating new unification problems; if [b]
    is true, unification of types of metas is required *)
 
-let w_merge env with_types flags metas evars evd =
+let w_merge env with_types flags (metas,evars) evd =
   let rec w_merge_rec evd metas evars eqns =
 
     (* Process evars *)
@@ -528,7 +528,7 @@ let w_merge env with_types flags metas evars evd =
 
 let w_unify_meta_types env ?(flags=default_unify_flags) evd =
   let metas,evd = retract_coercible_metas evd in
-  w_merge env true flags metas [] evd
+  w_merge env true flags (metas,[]) evd
 
 (* [w_unify env evd M N]
    performs a unification of M and N, generating a bunch of
@@ -540,12 +540,22 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
    [clenv_typed_unify M N clenv] expects in addition that expected
    types of metavars are unifiable with the types of their instances    *)
 
+let check_types env evd subst m n =
+  if isEvar (fst (whd_stack m)) or isEvar (fst (whd_stack n)) then
+    unify_0_with_initial_metas subst true env (evars_of evd) topconv 
+      default_unify_flags
+      (Retyping.get_type_of_with_meta env (evars_of evd) (metas_of evd) m)
+      (Retyping.get_type_of_with_meta env (evars_of evd) (metas_of evd) n)
+  else
+    subst
+
 let w_unify_core_0 env with_types cv_pb flags m n evd =
   let (mc1,evd') = retract_coercible_metas evd in
-  let (mc2,ec) = 
-    unify_0_with_initial_metas mc1 true env (evars_of evd') cv_pb flags m n
+  let subst1 = check_types env evd (mc1,[]) m n in
+  let subst2 =
+     unify_0_with_initial_metas subst1 true env (evars_of evd') cv_pb flags m n
   in 
-  w_merge env with_types flags mc2 ec evd'
+  w_merge env with_types flags subst2 evd'
 
 let w_unify_0 env = w_unify_core_0 env false
 let w_typed_unify env = w_unify_core_0 env true
@@ -653,7 +663,7 @@ let secondOrderAbstraction env flags allow_K typ (p, oplist) evd =
     w_unify_to_subterm_list env flags allow_K oplist typ evd in
   let typp = Typing.meta_type evd' p in
   let pred = abstract_list_all env evd' typp typ cllist in
-  w_unify_0 env topconv flags (mkMeta p) pred evd'
+  w_merge env false flags ([p,pred,(ConvUpToEta 0,TypeProcessed)],[]) evd'
 
 let w_unify2 env flags allow_K cv_pb ty1 ty2 evd =
   let c1, oplist1 = whd_stack ty1 in
@@ -672,7 +682,6 @@ let w_unify2 env flags allow_K cv_pb ty1 ty2 evd =
         (* Resume first order unification *)
 	w_unify_0 env cv_pb flags ty1 (nf_meta evd' ty2) evd'
     | _ -> error "w_unify2"
-
 
 (* The unique unification algorithm works like this: If the pattern is
    flexible, and the goal has a lambda-abstraction at the head, then
@@ -707,9 +716,7 @@ let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 	    with ex when precatchable_exception ex -> 
 	      try 
 		w_unify2 env flags allow_K cv_pb ty1 ty2 evd
-	      with PretypeError (env,NoOccurrenceFound _) as e -> raise e
-		| ex when precatchable_exception ex -> 
-		    error "Cannot solve a second-order unification problem")
+	      with PretypeError (env,NoOccurrenceFound _) as e -> raise e)
 	    
       (* Second order case *)
       | (Meta _, true, _, _ | _, _, Meta _, true) -> 
@@ -719,9 +726,8 @@ let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 	      | ex when precatchable_exception ex -> 
 		  try 
 		    w_typed_unify env cv_pb flags ty1 ty2 evd
-		  with ex when precatchable_exception ex -> 
-		    error "Cannot solve a second-order unification problem")
+		  with ex' when precatchable_exception ex' ->
+		    raise ex)
 	    
       (* General case: try first order *)
       | _ -> w_typed_unify env cv_pb flags ty1 ty2 evd
-

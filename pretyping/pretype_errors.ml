@@ -32,6 +32,7 @@ type pretype_error =
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * identifier option
+  | CannotFindWellTypedAbstraction of constr * constr list
   (* Pretyping *)
   | VarNotFound of identifier
   | UnexpectedType of constr * constr
@@ -165,6 +166,9 @@ let error_cannot_unify_local env sigma (m,n,sn) =
 
 let error_cannot_coerce env sigma (m,n) =
   raise (PretypeError (env_ise sigma env,CannotUnify (m,n)))
+
+let error_cannot_find_well_typed_abstraction env sigma p l =
+  raise (PretypeError (env_ise sigma env,CannotFindWellTypedAbstraction (p,l)))
 
 (*s Ml Case errors *)
 

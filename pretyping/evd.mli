@@ -112,7 +112,7 @@ val metavars_of : constr -> Metaset.t
 val mk_freelisted : constr -> constr freelisted
 val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 
-(* Possible constraints over the instance of a metavariable:
+(* Status of an instance found by unification wrt to the meta it solves:
   - a supertype of the meta (e.g. the solution to ?X <= T is a supertype of ?X)
   - a subtype of the meta (e.g. the solution to T <= ?X is a supertype of ?X)
   - a term that can be eta-expanded n times while still being a solution

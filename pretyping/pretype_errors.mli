@@ -34,6 +34,7 @@ type pretype_error =
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * identifier option
+  | CannotFindWellTypedAbstraction of constr * constr list
   (* Pretyping *)
   | VarNotFound of identifier
   | UnexpectedType of constr * constr
@@ -100,6 +101,9 @@ val error_unsolvable_implicit :
 val error_cannot_unify : env -> Evd.evar_map -> constr * constr -> 'b
 
 val error_cannot_unify_local : env -> Evd.evar_map -> constr * constr * constr -> 'b
+
+val error_cannot_find_well_typed_abstraction : env -> Evd.evar_map ->
+      constr -> constr list -> 'b
 
 (*s Ml Case errors *)
 

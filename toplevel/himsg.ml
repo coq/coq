@@ -403,7 +403,7 @@ let explain_cannot_unify_local env m n subn =
       psubn ++ str " contains local variables"
 
 let explain_refiner_cannot_generalize env ty =
-  str "Cannot find a well-typed generalisation of the goal with type : " ++
+  str "Cannot find a well-typed generalisation of the goal with type: " ++
   pr_lconstr_env env ty
 
 let explain_no_occurrence_found env c id =
@@ -418,6 +418,16 @@ let explain_cannot_unify_binding_type env m n =
   let pn = pr_lconstr_env env n in
   str "This binding has type" ++ brk(1,1) ++ pm ++ spc () ++
   str "which should be unifiable with" ++ brk(1,1) ++ pn
+
+let explain_cannot_find_well_typed_abstraction env p l =
+  let la,lc = list_chop (List.length l - 1) l in
+  str "Abstracting over the " ++
+  str (plural (List.length l) "term") ++ spc () ++ 
+  hov 0 (prlist_with_sep pr_coma (pr_lconstr_env env) la ++
+         (if la<>[] then str " and" ++ spc () else mt()) ++ 
+         pr_lconstr_env env (List.hd lc)) ++ spc () ++
+  str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++ 
+  str "which is ill-typed"
 
 let explain_type_error env err =
   let env = make_all_name_different env in
@@ -470,6 +480,8 @@ let explain_pretype_error env err =
   | CannotGeneralize ty -> explain_refiner_cannot_generalize env ty
   | NoOccurrenceFound (c, id) -> explain_no_occurrence_found env c id
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type env m n
+  | CannotFindWellTypedAbstraction (p,l) ->
+      explain_cannot_find_well_typed_abstraction env p l
 
       
 (* Typeclass errors *)
@@ -716,7 +728,7 @@ let explain_cannot_infer_predicate env typs =
   let env = make_all_name_different env in
   let pr_branch (cstr,typ) =
     let cstr,_ = decompose_app cstr in
-    str "For " ++ pr_lconstr_env env cstr ++ str " : " ++ pr_lconstr_env env typ
+    str "For " ++ pr_lconstr_env env cstr ++ str ": " ++ pr_lconstr_env env typ
   in
   str "Unable to unify the types found in the branches:" ++
   spc () ++ hov 0 (prlist_with_sep pr_fnl pr_branch (Array.to_list typs))
