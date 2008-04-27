@@ -43,8 +43,9 @@ type sorts =
   | Prop of contents                      (* proposition types *)
   | Type of universe
       
-let mk_Set  = Prop Pos
-let mk_Prop = Prop Null
+let prop_sort = Prop Null
+let set_sort = Prop Pos
+let type1_sort = Type type1_univ
 
 type sorts_family = InProp | InSet | InType
 
@@ -830,17 +831,13 @@ let mkMeta = mkMeta
 let mkVar = mkVar
 
 (* Construct a type *)
-let mkProp   = mkSort mk_Prop
-let mkSet    = mkSort mk_Set
+let mkProp   = mkSort prop_sort
+let mkSet    = mkSort set_sort
 let mkType u = mkSort (Type u)
 let mkSort   = function
   | Prop Null -> mkProp (* Easy sharing *)
   | Prop Pos -> mkSet
   | s -> mkSort s
-
-let prop = mk_Prop
-and spec = mk_Set
-and type_0 = Type prop_univ
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
 (* (that means t2 is declared as the type of t1) *)

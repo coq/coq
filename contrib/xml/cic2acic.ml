@@ -263,7 +263,7 @@ let typeur sigma metamap =
        match sort_of env cstr with
           Coq_sort T.InProp -> T.mkProp
         | Coq_sort T.InSet -> T.mkSet
-        | Coq_sort T.InType -> T.mkType Univ.prop_univ (* ERROR HERE *)
+        | Coq_sort T.InType -> T.mkType Univ.type1_univ (* ERROR HERE *)
         | CProp -> T.mkConst DoubleTypeInference.cprop
                                                                                 
   and sort_of env t =

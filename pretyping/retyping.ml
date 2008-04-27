@@ -84,7 +84,7 @@ let retype sigma metamap =
   and sort_of env t = 
     match kind_of_term t with
     | Cast (c,_, s) when isSort s -> destSort s
-    | Sort (Prop c) -> type_0
+    | Sort (Prop c) -> type1_sort
     | Sort (Type u) -> Type (Univ.super u)
     | Prod (name,t,c2) ->
         (match (sort_of env t, sort_of (push_rel (name,None,t) env) c2) with
@@ -92,8 +92,8 @@ let retype sigma metamap =
           | Prop _, (Prop Pos as s) -> s
           | Type _, (Prop Pos as s) when
               Environ.engagement env = Some ImpredicativeSet -> s
-          | Type u1, Prop Pos -> Type (Univ.sup u1 Univ.base_univ)
-	  | Prop Pos, (Type u2) -> Type (Univ.sup Univ.base_univ u2)
+          | Type u1, Prop Pos -> Type (Univ.sup u1 Univ.type0_univ)
+	  | Prop Pos, (Type u2) -> Type (Univ.sup Univ.type0_univ u2)
 	  | Prop Null, (Type _ as s) -> s
 	  | Type u1, Type u2 -> Type (Univ.sup u1 u2))
     | App(f,args) when isGlobalRef f ->

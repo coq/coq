@@ -611,25 +611,14 @@ let pb_equal = function
   | CUMUL -> CONV
   | CONV -> CONV
 
-let sort_cmp pb s0 s1 cuniv =
-  match (s0,s1) with
-    | (Prop c1, Prop c2) -> if c1 = c2 then cuniv else raise NotConvertible
-    | (Prop c1, Type u)  ->
-        (match pb with
-            CUMUL -> cuniv
-          | _ -> raise NotConvertible)
-    | (Type u1, Type u2) ->
-	(match pb with
-           | CONV -> enforce_eq u1 u2 cuniv
-	   | CUMUL -> enforce_geq u2 u1 cuniv)
-    | (_, _) -> raise NotConvertible
+let sort_cmp = sort_cmp
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
     | (Prop c1, Prop c2) -> c1 = c2
     | (Prop c1, Type u)  -> pb = CUMUL
     | (Type u1, Type u2) -> true
-    | (_, _) -> false
+    | (Type u, Prop _) -> u = lower_univ & pb = CUMUL
 
 
 let test_conversion f env sigma x y =

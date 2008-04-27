@@ -127,8 +127,8 @@ Remark: Set (predicative) is encoded as Type(0)
 
 let sort_as_univ = function
 | Type u -> u
-| Prop Null -> neutral_univ
-| Prop Pos -> base_univ
+| Prop Null -> lower_univ
+| Prop Pos -> type0_univ
 
 let cons_subst u su subst =
   try (u, sup su (List.assoc u subst)) :: List.remove_assoc u subst
@@ -182,8 +182,8 @@ let instantiate_universes env ctx ar argsorts =
   let ctx,subst = make_subst env (ctx,ar.poly_param_levels,args) in
   let level = subst_large_constraints subst ar.poly_level in
   ctx,
-  if is_empty_univ level then Prop Null
-  else if is_base_univ level then Prop Pos
+  if is_lower_univ level then Prop Null
+  else if is_type0_univ level then Prop Pos
   else Type level
 
 let type_of_inductive_knowing_parameters env mip paramtyps =
@@ -204,11 +204,11 @@ let type_of_inductive env (_,mip) =
 
 let cumulate_constructor_univ u = function
   | Prop Null -> u
-  | Prop Pos -> sup base_univ u
+  | Prop Pos -> sup type0_univ u
   | Type u' -> sup u u'
 
 let max_inductive_sort =
-  Array.fold_left cumulate_constructor_univ neutral_univ
+  Array.fold_left cumulate_constructor_univ lower_univ
 
 (************************************************************************)
 (* Type of a constructor *)

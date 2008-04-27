@@ -50,7 +50,7 @@ let assumption_of_judgment env j =
 
 (* Prop and Set *)
 
-let judge_of_prop = Sort (Type prop_univ)
+let judge_of_prop = Sort (Type type1_univ)
 
 (* Type of Type(i). *)
 
@@ -179,9 +179,9 @@ let sort_of_product env domsort rangsort =
           rangsort
         else
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
-          Type (sup u1 base_univ)
+          Type (sup u1 type0_univ)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (sup base_univ u2)
+    | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
     (* Product rule (Prop,Type_i,Type_i) *)
     | (Prop Null, Type _)  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *) 

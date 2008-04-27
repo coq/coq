@@ -21,9 +21,9 @@ type sorts =
   | Prop of contents       (* Prop and Set *)
   | Type of Univ.universe  (* Type *)
 
-val mk_Set  : sorts
-val mk_Prop : sorts
-val type_0  : sorts
+val set_sort  : sorts
+val prop_sort : sorts
+val type1_sort  : sorts
 
 (*s The sorts family of CCI. *)
 

@@ -38,7 +38,7 @@ let add_sign (id,t) s =
 
 let cast_set c = mkCast (c, mkSet)
 
-let set = mkCast (mkSet, mkType Univ.prop_univ)
+let set = mkCast (mkSet, mkType Univ.type1_univ)
 
 (* [cci_sign_of env] construit un environnement pour CIC ne comprenant que
  * les objets fonctionnels de l'environnement de programes [env]

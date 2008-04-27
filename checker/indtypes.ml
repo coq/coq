@@ -140,7 +140,7 @@ let small_unit constrsinfos =
 
 let extract_level (_,_,_,lc,lev) =
   (* Enforce that the level is not in Prop if more than two constructors *)
-  if Array.length lc >= 2 then sup base_univ lev else lev
+  if Array.length lc >= 2 then sup type0_univ lev else lev
 
 let inductive_levels arities inds =
   let levels = Array.map pi3 arities in

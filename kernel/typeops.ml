@@ -59,11 +59,11 @@ let sort_judgment env j = (type_judgment env j).utj_type
 
 let judge_of_prop =
   { uj_val = mkProp;
-    uj_type = mkSort type_0 }
+    uj_type = mkSort type1_sort }
 
 let judge_of_set =
   { uj_val = mkSet;
-    uj_type = mkSort type_0 }
+    uj_type = mkSort type1_sort }
 
 let judge_of_prop_contents = function
   | Null -> judge_of_prop
@@ -237,9 +237,9 @@ let sort_of_product env domsort rangsort =
           rangsort
         else
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
-          Type (sup u1 base_univ)
+          Type (sup u1 type0_univ)
     (* Product rule (Prop,Type_i,Type_i) *)
-    | (Prop Pos,  Type u2)  -> Type (sup base_univ u2)
+    | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
     (* Product rule (Prop,Type_i,Type_i) *)
     | (Prop Null, Type _)  -> rangsort
     (* Product rule (Type_i,Type_i,Type_i) *) 

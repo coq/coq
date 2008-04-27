@@ -12,12 +12,13 @@
 
 type universe
 
-val base_univ : universe
-val prop_univ : universe
-val neutral_univ : universe
+val type0_univ : universe  (* predicative Set seen as a universe *)
+val type1_univ : universe  (* the universe of the type of Prop/Set *)
+val lower_univ : universe  (* image of Prop in the predicative hierarchy *)
 val make_univ : Names.dir_path * int -> universe
 
-val is_base_univ : universe -> bool
+val is_type0_univ : universe -> bool
+val is_lower_univ : universe -> bool
 val is_univ_variable : universe -> bool
 
 (* The type of a universe *)
@@ -65,8 +66,6 @@ val fresh_local_univ : unit -> universe
 
 val solve_constraints_system : universe option array -> universe array -> 
   universe array
-
-val is_empty_univ : universe -> bool
 
 val subst_large_constraint : universe -> universe -> universe -> universe
 

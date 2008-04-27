@@ -83,7 +83,7 @@ let instantiate_params full t args sign =
 let instantiate_partial_params = instantiate_params false
 
 let full_inductive_instantiate mib params sign =
-  let dummy = mk_Prop in
+  let dummy = prop_sort in
   let t = mkArity (sign,dummy) in
   fst (destArity (instantiate_params true t params mib.mind_params_ctxt))
 
@@ -124,8 +124,8 @@ Remark: Set (predicative) is encoded as Type(0)
 
 let sort_as_univ = function
 | Type u -> u
-| Prop Null -> neutral_univ
-| Prop Pos -> base_univ
+| Prop Null -> lower_univ
+| Prop Pos -> type0_univ
 
 let cons_subst u su subst =
   try (u, sup su (List.assoc u subst)) :: List.remove_assoc u subst
@@ -179,9 +179,10 @@ let instantiate_universes env ctx ar argsorts =
   let ctx,subst = make_subst env (ctx,ar.poly_param_levels,args) in
   let level = subst_large_constraints subst ar.poly_level in
   ctx,
-  if is_empty_univ level then mk_Prop
-  else if is_base_univ level then mk_Set
-  else Type level
+  if is_type0_univ level then set_sort else Type level
+    (* Note: for singleton types, we keep a representative in Type so that
+       predicativity and subtyping in Set applies, even if the resulting type
+       is semantically equivalent to Prop (and indeed convertible to it) *)
 
 let type_of_inductive_knowing_parameters env mip paramtyps =
   match mip.mind_arity with
@@ -201,11 +202,11 @@ let type_of_inductive env (_,mip) =
 
 let cumulate_constructor_univ u = function
   | Prop Null -> u
-  | Prop Pos -> sup base_univ u
+  | Prop Pos -> sup type0_univ u
   | Type u' -> sup u u'
 
 let max_inductive_sort =
-  Array.fold_left cumulate_constructor_univ neutral_univ
+  Array.fold_left cumulate_constructor_univ lower_univ
 
 (************************************************************************)
 (* Type of a constructor *)

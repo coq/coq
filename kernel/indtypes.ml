@@ -100,7 +100,7 @@ let mind_check_arities env mie =
 
 (* Typing the arities and constructor types *)
 
-let is_logic_type t = (t.utj_type = mk_Prop)
+let is_logic_type t = (t.utj_type = prop_sort)
 
 (* [infos] is a sequence of pair [islogic,issmall] for each type in
    the product of a constructor or arity *)
@@ -157,7 +157,7 @@ let small_unit constrsinfos =
 
 let extract_level (_,_,_,lc,lev) =
   (* Enforce that the level is not in Prop if more than two constructors *)
-  if Array.length lc >= 2 then sup base_univ lev else lev
+  if Array.length lc >= 2 then sup type0_univ lev else lev
 
 let inductive_levels arities inds =
   let levels = Array.map pi3 arities in
@@ -262,7 +262,7 @@ let typecheck_inductive env mie =
 	  Inl (info,full_arity,s), enforce_geq u lev cst
       | Prop Pos when engagement env <> Some ImpredicativeSet ->
 	  (* Predicative set: check that the content is indeed predicative *)
-	  if not (is_empty_univ lev) & not (is_base_univ lev) then
+	  if not (is_lower_univ lev) & not (is_type0_univ lev) then
 	    error "Large non-propositional inductive types must be in Type";
 	  Inl (info,full_arity,s), cst
       | Prop _ ->

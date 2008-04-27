@@ -163,15 +163,15 @@ let new_Type_sort () = Type (new_univ ())
 let refresh_universes t =
   let modified = ref false in
   let rec refresh t = match kind_of_term t with
-    | Sort (Type _) -> modified := true; new_Type ()
+    | Sort (Type u) when u <> Univ.lower_univ -> modified := true; new_Type ()
     | Prod (na,u,v) -> mkProd (na,u,refresh v)
     | _ -> t in
   let t' = refresh t in
   if !modified then t' else t
 
 let new_sort_in_family = function 
-  | InProp -> mk_Prop
-  | InSet -> mk_Set
+  | InProp -> prop_sort
+  | InSet -> set_sort
   | InType -> Type (new_univ ())
 
 
