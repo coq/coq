@@ -72,7 +72,6 @@ open Unification
 let auto_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
-  use_types = true;
   modulo_delta = var_full_transparent_state;
 }
 
@@ -632,7 +631,6 @@ let decompose_setoid_eqhyp env sigma c left2right =
 let rewrite_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
   Unification.use_metas_eagerly = true;
-  Unification.use_types = true;
   Unification.modulo_delta = empty_transparent_state;
 }
 
@@ -641,7 +639,6 @@ let conv_transparent_state = (Idpred.empty, Cpred.full)
 let rewrite2_unif_flags = {
   Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
   Unification.use_metas_eagerly = true;
-  Unification.use_types = true;
   Unification.modulo_delta = empty_transparent_state;
 }
 

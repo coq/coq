@@ -17,7 +17,6 @@ open Tacexpr
 open Rawterm
 open Genarg
 open Topconstr
-open Term
 open Libnames
 
 let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
@@ -72,21 +71,29 @@ let lpar_id_colon =
               | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
-(* idem for (x1..xn:t) [not efficient but exceptional use] *)
-let check_lpar_ids_colon =
+(* idem for (x1..xn:t) [n^2 complexity but exceptional use] *)
+let check_for_coloneq =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
+      let rec skip_to_rpar n =
+	match list_last (Stream.npeek n strm) with
+        | ("",")") -> n+1
+	| ("",".") -> raise Stream.Failure
+	| _ -> skip_to_rpar (n+1) in
+      let rec skip_names n =
+	match list_last (Stream.npeek n strm) with
+        | ("IDENT",_) | ("","_") -> skip_names (n+1)
+	| ("",":") -> skip_to_rpar (n+1) (* skip a constr *)
+	| _ -> raise Stream.Failure in
+      let rec skip_binders n =
+	match list_last (Stream.npeek n strm) with
+        | ("","(") -> skip_binders (skip_names (n+1))
+        | ("IDENT",_) | ("","_") -> skip_binders (n+1)
+	| ("",":=") -> ()
+	| _ -> raise Stream.Failure in
       match Stream.npeek 1 strm with
-        | [("","(")] ->
-	    let rec aux tok n =
-              match tok with
-              | ("IDENT",id) ->
-                  (match list_last (Stream.npeek n strm) with
-                    | ("", ":") -> ()
-                    | tok -> aux tok (n+1))
-              | _ -> raise Stream.Failure
-	    in aux (list_last (Stream.npeek 2 strm)) 3
-        | _ -> raise Stream.Failure)
+      | [("","(")] -> skip_binders 2
+      | _ -> raise Stream.Failure)
 
 let guess_lpar_ipat s strm =
   match Stream.npeek 1 strm with
@@ -105,13 +112,6 @@ let guess_lpar_coloneq =
 
 let guess_lpar_colon =
   Gram.Entry.of_parser "guess_lpar_colon" (guess_lpar_ipat ":")
-
-let test_not_ident =
-  Gram.Entry.of_parser "not_ident"
-    (fun strm ->
-      match Stream.npeek 1 strm with
-        | [("IDENT",_)] -> raise Stream.Failure
-	| _ -> ())
 
 open Constr
 open Prim
@@ -142,18 +142,6 @@ let induction_arg_of_constr (c,lbind as clbind) =
     with _ -> ElimOnConstr clbind
   else ElimOnConstr clbind
 
-(* Turn a simple binder as the argument for an application *)
-let appl_args_of_simple_named_binder = function
-| (idl,CHole _) ->
-    List.map (fun id -> CRef (Ident id), None) idl
-| (idl,t) -> 
-    let loc = join_loc (fst (List.hd idl)) (constr_loc t) in
-    let mk id = CCast (loc,CRef (Ident id),CastConv (DEFAULTcast,t)), None in
-    List.map mk idl
-
-let appl_args_of_simple_named_binders bl =
-  List.flatten (List.map appl_args_of_simple_named_binder bl)
-
 let rec mkCLambdaN_simple_loc loc bll c =
   match bll with
   | ((loc1,_)::_ as idl,bk,t) :: bll -> 
@@ -161,12 +149,7 @@ let rec mkCLambdaN_simple_loc loc bll c =
   | ([],_,_) :: bll -> mkCLambdaN_simple_loc loc bll c
   | [] -> c
 
-let mkCLambdaN_simple bl1 bl2 c =
-  let bl =
-    List.map (fun (idl,c) ->
-      (List.map (fun (loc,id) -> (loc,Names.Name id)) idl,
-       Default Explicit,c)) bl1
-      @ bl2 in
+let mkCLambdaN_simple bl c =
   if bl=[] then c
   else
     let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (constr_loc c) in
@@ -353,14 +336,8 @@ GEXTEND Gram
       | -> true ]]
   ;
   simple_binder:
-    [ [ id=name -> ([id],Default Explicit,CHole (loc, None))
-      | "("; idl=LIST1 name; ":"; c=lconstr; ")" -> (idl,Default Explicit,c) 
-    ] ]
-  ;
-  simple_named_binder:
-    [ [ id=identref -> ([id],CHole (loc, None))
-      | check_lpar_ids_colon; 
-        "("; idl=LIST1 identref; ":"; c=lconstr; ")" -> (idl,c) 
+    [ [ na=name -> ([na],Default Explicit,CHole (loc, None))
+      | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> (nal,Default Explicit,c) 
     ] ]
   ;
   fixdecl:
@@ -375,16 +352,9 @@ GEXTEND Gram
     [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
         (loc,id,bl,None,ty) ] ]
   ;
-  constr_or_decl:
-    [ [ "("; lid = identref; bl1 = LIST0 simple_named_binder; 
-        ":="; c = lconstr; ")" ->
-          (Names.Name (snd lid), mkCLambdaN_simple bl1 [] c)
-      | "("; lid = identref; bl = LIST0 simple_named_binder; 
-	 args = LIST0 appl_arg; ")" ->
-	  let first_args = appl_args_of_simple_named_binders bl in
-	  (Names.Anonymous, CApp(loc,(None,CRef (Ident lid)),first_args@args))
-      | "("; c = lconstr; ")" -> (Names.Anonymous, c) 
-      | c = constr -> (Names.Anonymous, c) ] ]
+  bindings_with_parameters:
+    [ [ check_for_coloneq; "(";  id = ident; bl = LIST0 simple_binder; 
+        ":="; c = lconstr; ")" -> (id, mkCLambdaN_simple bl c) ] ]
   ;
   hintbases:
     [ [ "with"; "*" -> None
@@ -474,16 +444,14 @@ GEXTEND Gram
       | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
 	  TacMutualCofix (false,id,List.map mk_cofix_tac fd)
 
-(*
-      | IDENT "pose"; (na,c) = constr_or_decl ->
-	  TacLetTac (na,c,nowhere)
-*)
-      | IDENT "pose"; id = lpar_id_coloneq; b = lconstr; ")" ->
+      | IDENT "pose"; (id,b) = bindings_with_parameters ->
 	  TacLetTac (Names.Name id,b,nowhere)
       | IDENT "pose"; b = constr ->
 	  TacLetTac (Names.Anonymous,b,nowhere)
-      | IDENT "set"; (na,c) = constr_or_decl; p = clause ->
-	  TacLetTac (na,c,p)
+      | IDENT "set"; (id,c) = bindings_with_parameters; p = clause ->
+	  TacLetTac (Names.Name id,c,p)
+      | IDENT "set"; c = constr; p = clause ->
+          TacLetTac (Names.Anonymous,c,p)
 
       (* Begin compatibility *)
       | IDENT "assert"; id = lpar_id_coloneq; c = lconstr; ")" -> 

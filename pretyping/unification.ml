@@ -120,21 +120,18 @@ let sort_eqns = unify_r2l
 type unify_flags = { 
   modulo_conv_on_closed_terms : Names.transparent_state option;
   use_metas_eagerly : bool;
-  use_types : bool;
   modulo_delta : Names.transparent_state;
 }
 
 let default_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
-  use_types = true;
   modulo_delta = full_transparent_state;
 }
 
-let simple_apply_unify_flags = {
+let default_no_delta_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = false;
-  use_types = false;
+  use_metas_eagerly = true;
   modulo_delta = empty_transparent_state;
 }
 
@@ -726,6 +723,5 @@ let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 		    error "Cannot solve a second-order unification problem")
 	    
       (* General case: try first order *)
-      | _ ->
-	  if flags.use_types then w_typed_unify env cv_pb flags ty1 ty2 evd
-	  else w_unify_0 env cv_pb flags ty1 ty2 evd
+      | _ -> w_typed_unify env cv_pb flags ty1 ty2 evd
+

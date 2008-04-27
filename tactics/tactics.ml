@@ -551,7 +551,6 @@ let last_arg c = match kind_of_term c with
 let elim_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state; 
   use_metas_eagerly = true;
-  use_types = true;
   modulo_delta = empty_transparent_state;
 }
 
@@ -673,10 +672,9 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 
 (* Resolution with missing arguments *)
 
-let general_apply with_delta_and_types with_destruct with_evars (c,lbind) gl =
+let general_apply with_delta with_destruct with_evars (c,lbind) gl =
   let flags = 
-    if with_delta_and_types then default_unify_flags
-    else simple_apply_unify_flags in
+    if with_delta then default_unify_flags else default_no_delta_unify_flags in
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
@@ -686,9 +684,7 @@ let general_apply with_delta_and_types with_destruct with_evars (c,lbind) gl =
   let try_apply thm_ty nprod =
     let n = nb_prod thm_ty - nprod in
     if n<0 then error "Apply: theorem has not enough premisses.";
-    let clause =
-     make_clenv_binding_apply with_delta_and_types (Some n) gl (c,thm_ty) lbind
-    in
+    let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
     Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl in
   try try_apply thm_ty0 concl_nprod
   with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->

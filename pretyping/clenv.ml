@@ -402,17 +402,15 @@ let clenv_unify_binding_type clenv c t u =
     with e when precatchable_exception e ->
       TypeNotProcessed, clenv, c
 
-let clenv_assign_binding use_types clenv k (sigma,c) =
+let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
   let c_typ = nf_betaiota (clenv_get_type_of clenv' c) in
   let c_typ = clenv_hnf_constr clenv' c_typ in
-  let status,clenv'',c = 
-    if use_types then clenv_unify_binding_type clenv' c c_typ k_typ
-    else TypeNotProcessed, clenv, c in
+  let status,clenv'',c = clenv_unify_binding_type clenv' c c_typ k_typ in
   { clenv'' with evd = meta_assign k (c,(UserGiven,status)) clenv''.evd }
 
-let clenv_match_args use_types bl clenv =
+let clenv_match_args bl clenv =
   if bl = [] then
     clenv
   else
@@ -425,7 +423,7 @@ let clenv_match_args use_types bl clenv =
           if eq_constr (fst (meta_fvalue clenv.evd k)).rebus c then clenv
           else error_already_defined b
         else
-	  clenv_assign_binding use_types clenv k sc)
+	  clenv_assign_binding clenv k sc)
       clenv bl
 
 let clenv_constrain_last_binding c clenv =
@@ -433,15 +431,15 @@ let clenv_constrain_last_binding c clenv =
   let k =
     try list_last all_mvs 
     with Failure _ -> error "clenv_constrain_with_bindings" in
-  clenv_assign_binding true clenv k (Evd.empty,c)
+  clenv_assign_binding clenv k (Evd.empty,c)
 
-let clenv_constrain_dep_args use_types hyps_only bl clenv =
+let clenv_constrain_dep_args hyps_only bl clenv =
   if bl = [] then
     clenv
   else
     let occlist = clenv_dependent hyps_only clenv in
     if List.length occlist = List.length bl then
-      List.fold_left2 (clenv_assign_binding use_types) clenv occlist bl
+      List.fold_left2 clenv_assign_binding clenv occlist bl
     else 
       error ("Not the right number of missing arguments (expected "
 	     ^(string_of_int (List.length occlist))^")")
@@ -449,18 +447,18 @@ let clenv_constrain_dep_args use_types hyps_only bl clenv =
 (****************************************************************)
 (* Clausal environment for an application *)
 
-let make_clenv_binding_gen use_types hyps_only n gls (c,t) = function
+let make_clenv_binding_gen hyps_only n gls (c,t) = function
   | ImplicitBindings largs ->
       let clause = mk_clenv_from_n gls n (c,t) in
-      clenv_constrain_dep_args use_types hyps_only largs clause
+      clenv_constrain_dep_args hyps_only largs clause
   | ExplicitBindings lbind ->
       let clause = mk_clenv_rename_from_n gls n (c,t) in
-      clenv_match_args use_types lbind clause
+      clenv_match_args lbind clause
   | NoBindings ->
       mk_clenv_from_n gls n (c,t)
 
-let make_clenv_binding_apply use_types = make_clenv_binding_gen use_types true 
-let make_clenv_binding = make_clenv_binding_gen true false None
+let make_clenv_binding_apply gls n = make_clenv_binding_gen true n gls
+let make_clenv_binding = make_clenv_binding_gen false None
 
 (****************************************************************)
 (* Pretty-print *)
