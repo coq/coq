@@ -637,34 +637,37 @@ let conclPattern concl pat tac gl =
 (* Papageno : cette fonction a été pas mal simplifiée depuis que la base
   de Hint impérative a été remplacée par plusieurs bases fonctionnelles *)
 
-let transparent_state_union (xids, xcsts) (yids, ycsts) = 
-  (Idpred.union xids yids, Cpred.union xcsts ycsts)
-
-let rec trivial_fail_db db_list local_db gl =
+let rec trivial_fail_db mod_delta db_list local_db gl =
   let intro_tac = 
     tclTHEN intro 
       (fun g'->
 	 let hintl = make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
-	 in trivial_fail_db db_list (add_hint_list hintl local_db) g')
+	 in trivial_fail_db mod_delta db_list (add_hint_list hintl local_db) g')
   in
   tclFIRST 
     (assumption::intro_tac::
      (List.map tclCOMPLETE 
-	(trivial_resolve db_list local_db (pf_concl gl)))) gl
+       (trivial_resolve mod_delta db_list local_db (pf_concl gl)))) gl
 
-and my_find_search db_list local_db hdc concl =
+and my_find_search mod_delta db_list local_db hdc concl =
   let tacl = 
     if occur_existential concl then 
       list_map_append
 	(fun (st, db) -> 
-	  List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
+	  let st = if mod_delta then st else empty_transparent_state in
+	    List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
 	(local_db::db_list)
-    else 
+    else
       list_map_append (fun ((ids, csts as st), db) -> 
-	let l = 
-(* 	  if Idpred.is_empty ids && Cpred.is_empty csts *)
-(* 	  then  *)Hint_db.map_auto (hdc,concl) db
-(* 	  else Hint_db.map_all hdc db *)
+	let st, l = 
+	  if not mod_delta then
+	    empty_transparent_state, Hint_db.map_auto (hdc,concl) db
+	  else 
+	    let l =
+	      if (Idpred.is_empty ids && Cpred.is_empty csts)
+	      then Hint_db.map_auto (hdc,concl) db
+	      else Hint_db.map_all hdc db
+	    in st, l
 	in List.map (fun x -> (st,x)) l)
       	(local_db::db_list)
   in
@@ -678,17 +681,17 @@ and my_find_search db_list local_db hdc concl =
 	  | Res_pf_THEN_trivial_fail (term,cl) -> 
 	      tclTHEN 
 		(unify_resolve st (term,cl)) 
-		(trivial_fail_db db_list local_db)
+		(trivial_fail_db mod_delta db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> 
 	      conclPattern concl (Option.get p) tacast))
     tacl
 
-and trivial_resolve db_list local_db cl = 
+and trivial_resolve mod_delta db_list local_db cl = 
   try 
     let hdconstr = List.hd (head_constr_bound cl []) in
     priority 
-      (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
+      (my_find_search mod_delta db_list local_db (head_of_constr_reference hdconstr) cl)
   with Bound | Not_found -> 
     []
 
@@ -702,13 +705,13 @@ let trivial lems dbnames gl =
 	   error ("trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db false lems gl)) gl 
+  tclTRY (trivial_fail_db false db_list (make_local_hint_db false lems gl)) gl 
     
 let full_trivial lems gl =
   let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db false lems gl)) gl
+  tclTRY (trivial_fail_db false db_list (make_local_hint_db false lems gl)) gl
 
 let gen_trivial lems = function
   | None -> full_trivial lems
@@ -724,11 +727,11 @@ let h_trivial lems l =
 (*                       The classical Auto tactic                        *)
 (**************************************************************************)
 
-let possible_resolve db_list local_db cl =
+let possible_resolve mod_delta db_list local_db cl =
   try 
     let hdconstr = List.hd (head_constr_bound cl []) in
     List.map snd 
-      (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
+      (my_find_search mod_delta db_list local_db (head_of_constr_reference hdconstr) cl)
   with Bound | Not_found -> 
     []
 
@@ -754,7 +757,7 @@ let decomp_empty_term c gls =
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
-let rec search_gen decomp n db_list local_db extra_sign goal =
+let rec search_gen decomp n mod_delta db_list local_db extra_sign goal =
   if n=0 then error "BOUND 2";
   let decomp_tacs = match decomp with 
     | 0 -> [] 
@@ -765,7 +768,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	   (fun id -> tclTHENSEQ
                [decomp_unary_term (mkVar id);
                 clear [id];
-		search_gen decomp p db_list local_db []])
+		search_gen decomp p mod_delta db_list local_db []])
 	   (pf_ids_of_hyps goal)) 
   in
   let intro_tac = 
@@ -779,14 +782,14 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 		(mkVar hid, htyp)]
 	   with Failure _ -> [] 
 	 in
-         search_gen decomp n db_list (add_hint_list hintl local_db) [d] g') 
+         search_gen decomp n mod_delta db_list (add_hint_list hintl local_db) [d] g') 
   in
   let rec_tacs = 
     List.map 
       (fun ntac -> 
 	 tclTHEN ntac
-	   (search_gen decomp (n-1) db_list local_db empty_named_context))
-      (possible_resolve db_list local_db (pf_concl goal))
+	   (search_gen decomp (n-1) mod_delta db_list local_db empty_named_context))
+      (possible_resolve mod_delta db_list local_db (pf_concl goal))
   in 
   tclFIRST (assumption::(decomp_tacs@(intro_tac::rec_tacs))) goal
 
@@ -795,7 +798,7 @@ let search = search_gen 0
 
 let default_search_depth = ref 5
 
-let auto n lems dbnames gl =
+let delta_auto mod_delta n lems dbnames gl =
   let db_list = 
     List.map
       (fun x -> 
@@ -806,17 +809,24 @@ let auto n lems dbnames gl =
       ("core"::dbnames) 
   in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db false lems gl) hyps) gl
+  tclTRY (search n mod_delta db_list (make_local_hint_db false lems gl) hyps) gl
+
+let auto = delta_auto false
+
+let new_auto = delta_auto true
 
 let default_auto = auto !default_search_depth [] []
 
-let full_auto n lems gl = 
+let delta_full_auto mod_delta n lems gl = 
   let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db false lems gl) hyps) gl
-  
+  tclTRY (search n false db_list (make_local_hint_db false lems gl) hyps) gl
+
+let full_auto = delta_full_auto false
+let new_full_auto = delta_full_auto true
+
 let default_full_auto gl = full_auto !default_search_depth [] gl
 
 let gen_auto n lems dbnames =
@@ -843,7 +853,7 @@ let default_search_decomp = ref 1
 
 let destruct_auto des_opt lems n gl = 
   let hyps = pf_hyps gl in
-  search_gen des_opt n (List.map searchtable_map ["core";"extcore"])
+  search_gen des_opt n false (List.map searchtable_map ["core";"extcore"])
     (make_local_hint_db false lems gl) hyps gl
     
 let dautomatic des_opt lems n = tclTRY (destruct_auto des_opt lems n)
@@ -918,7 +928,7 @@ let rec super_search n db_list local_db argl goal =
          (fun ntac -> 
             tclTHEN ntac 
               (super_search (n-1) db_list local_db argl))
-         (possible_resolve db_list local_db (pf_concl goal)))
+         (possible_resolve false db_list local_db (pf_concl goal)))
       @
       (compileAutoArgList  
          (super_search (n-1) db_list local_db argl) argl))) goal

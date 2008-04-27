@@ -148,7 +148,7 @@ let expand_constant env flags c =
 let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
   let nb = nb_rel env in
   let trivial_unify pb (metasubst,_) m n =
-    match subst_defined_metas metas m with
+    match subst_defined_metas metasubst m with
     | Some m ->
 	(match flags.modulo_conv_on_closed_terms with
 	    Some flags ->
@@ -214,9 +214,9 @@ let unify_0_with_initial_metas metas conv_at_top env sigma cv_pb flags m n =
 		  let pb = ConvUnderApp (len1,len2) in
 		  array_fold_left2 (unirec_rec curenv topconv true)
 		    (unirec_rec curenv pb true substn f1 f2) l1 l2
-		  with ex when precatchable_exception ex ->
-		    expand curenv pb b substn cM f1 l1 cN f2 l2)
-
+		with ex when precatchable_exception ex ->
+		  expand curenv pb b substn cM f1 l1 cN f2 l2)
+		
 	| _ -> 
 	    let (f1,l1) = 
 	      match kind_of_term cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in

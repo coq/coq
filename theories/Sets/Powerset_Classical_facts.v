@@ -101,6 +101,7 @@ Section Sets_as_an_algebra.
     intros X x H'; red in |- *.
     intros x0 H'0; try assumption.
     elim (classic (x = x0)); intro K; auto with sets.
+    elim K; auto with sets.
   Qed.
   
   Lemma add_soustr_1 :

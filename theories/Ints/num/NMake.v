@@ -5177,9 +5177,6 @@ Qed.
    rewrite H1; simpl Z_of_nat; change (2^1) with (2).
    unfold base.
    apply Zpower_le_monotone; split; auto with zarith.
-   rewrite Zmult_comm; repeat rewrite <- Zmult_assoc.
-     repeat rewrite <- Zpos_xO.
-   refine (Zle_refl _).
  intros n; case n; clear n.
  intros H1; rewrite spec_reduce_2; unfold to_Z.
  apply (znz_of_pos_correct w2_spec).
@@ -5187,19 +5184,13 @@ Qed.
    rewrite H1; simpl Z_of_nat; change (2^2) with (2 * 2).
    unfold base.
    apply Zpower_le_monotone; split; auto with zarith.
-   rewrite Zmult_comm; repeat rewrite <- Zmult_assoc.
-     repeat rewrite <- Zpos_xO.
-   refine (Zle_refl _).
  intros n; case n; clear n.
  intros H1; rewrite spec_reduce_3; unfold to_Z.
  apply (znz_of_pos_correct w3_spec).
  apply Zlt_le_trans with (1 := pheight_correct x).
    rewrite H1; simpl Z_of_nat; change (2^3) with (2 * 2 * 2).
    unfold base.
-   apply Zpower_le_monotone; split; auto with zarith.
-   rewrite Zmult_comm; repeat rewrite <- Zmult_assoc.
-     repeat rewrite <- Zpos_xO.
-   refine (Zle_refl _).
+   apply Zpower_le_monotone; split; auto with zarith. 
  intros n; case n; clear n.
  intros H1; rewrite spec_reduce_4; unfold to_Z.
  apply (znz_of_pos_correct w4_spec).
@@ -5207,9 +5198,6 @@ Qed.
    rewrite H1; simpl Z_of_nat; change (2^4) with (2 * 2 * 2 * 2).
    unfold base.
    apply Zpower_le_monotone; split; auto with zarith.
-   rewrite Zmult_comm; repeat rewrite <- Zmult_assoc.
-     repeat rewrite <- Zpos_xO.
-   refine (Zle_refl _).
  intros n; case n; clear n.
  intros H1; rewrite spec_reduce_5; unfold to_Z.
  apply (znz_of_pos_correct w5_spec).
@@ -5217,9 +5205,6 @@ Qed.
    rewrite H1; simpl Z_of_nat; change (2^5) with (2 * 2 * 2 * 2 * 2).
    unfold base.
    apply Zpower_le_monotone; split; auto with zarith.
-   rewrite Zmult_comm; repeat rewrite <- Zmult_assoc.
-     repeat rewrite <- Zpos_xO.
-   refine (Zle_refl _).
  intros n; case n; clear n.
  intros H1; rewrite spec_reduce_6; unfold to_Z.
  apply (znz_of_pos_correct w6_spec).
@@ -5227,9 +5212,6 @@ Qed.
    rewrite H1; simpl Z_of_nat; change (2^6) with (2 * 2 * 2 * 2 * 2 * 2).
    unfold base.
    apply Zpower_le_monotone; split; auto with zarith.
-   rewrite Zmult_comm; repeat rewrite <- Zmult_assoc.
-     repeat rewrite <- Zpos_xO.
-   refine (Zle_refl _).
  intros n.
  intros H1; rewrite spec_reduce_n; unfold to_Z.
  simpl minus; rewrite <- minus_n_O.

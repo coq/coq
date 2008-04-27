@@ -110,8 +110,8 @@ Proof.
 intros s1; elim s1; simpl in |- *; auto.
 intros s2 n; rewrite plus_comm; simpl in |- *; auto.
 intros a s1' Rec s2 n; case n; simpl in |- *; auto.
-generalize (Rec s2 0); simpl in |- *; auto.
-intros n0; rewrite <- Plus.plus_Snm_nSm; auto.
+generalize (Rec s2 0); simpl in |- *; auto. intros.
+rewrite <- Plus.plus_Snm_nSm; auto.
 Qed.
 
 (** *** Substrings *)

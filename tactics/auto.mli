@@ -152,11 +152,19 @@ val conclPattern : constr -> constr_pattern -> Tacexpr.glob_tactic_expr -> tacti
 
 val auto : int -> constr list -> hint_db_name list -> tactic
 
+(* Auto with more delta. *)
+
+val new_auto : int -> constr list -> hint_db_name list -> tactic
+
 (* auto with default search depth and with the hint database "core" *)
 val default_auto : tactic
 
 (* auto with all hint databases except the "v62" compatibility database *)
 val full_auto : int -> constr list -> tactic
+
+(* auto with all hint databases except the "v62" compatibility database
+   and doing delta *)
+val new_full_auto : int -> constr list -> tactic
 
 (* auto with default search depth and with all hint databases 
    except the "v62" compatibility database *)

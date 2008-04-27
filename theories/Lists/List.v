@@ -686,8 +686,7 @@ Section ListOps.
     rewrite app_nth1; auto.
     rewrite (minus_plus_simpl_l_reverse (length l) n 1).
     replace (1 + length l) with (S (length l)); auto with arith.
-    rewrite <- minus_Sn_m; auto with arith; simpl.
-    apply IHl; auto.
+    rewrite <- minus_Sn_m; auto with arith.
     rewrite rev_length; auto.
   Qed.
 
@@ -1363,7 +1362,6 @@ End Fold_Right_Recursor.
       destruct n; destruct d; simpl; auto.
       destruct a; destruct (split l); simpl; auto.
       destruct a; destruct (split l); simpl in *; auto.
-      rewrite IHl; simpl; auto.
     Qed.
 
     Lemma split_length_l : forall (l:list (A*B)),

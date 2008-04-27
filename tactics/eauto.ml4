@@ -373,6 +373,15 @@ TACTIC EXTEND eauto
     [ gen_eauto false (make_dimension n p) lems db ]
 END
 
+TACTIC EXTEND new_eauto
+| [ "new" "auto" int_or_var_opt(n) auto_using(lems) 
+    hintbases(db) ] ->
+    [ match db with
+      | None -> new_full_auto (make_depth n) lems
+      | Some l ->
+	  new_auto (make_depth n) lems l ]
+END
+      
 TACTIC EXTEND debug_eauto
 | [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems) 
     hintbases(db) ] ->
