@@ -1,7 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
 Require Import Bool.
 Require Import ZArith.
 Require Import Znumtheory.
-Require Import ZAux.
+Require Import Zaux.
 Require Import Arith.
 Require Export BigN.
 Require Export BigZ.
@@ -12,19 +20,15 @@ Require Import QMake_base.
 
 Module Qif.
 
- (* Troisieme solution :
-    0 a de nombreuse representation :
-         0, -0, 1/0, ... n/0,
-    il faut alors faire attention avec la comparaison et l'addition 
-    
-    Les fonctions de normalization s'effectue seulement si les
-    nombres sont grands.
- *)
+ (** The notation of a rational number is either an integer x,
+     interpreted as itself or a pair (x,y) of an integer x and a naturel
+     number y interpreted as x/y. The pairs (x,0) and (0,y) are all
+     interpreted as 0. *)
 
  Definition t := q_type.
 
  Definition zero: t := Qz BigZ.zero.
- Definition one: t  := Qz BigZ.one.
+ Definition one: t := Qz BigZ.one.
  Definition minus_one: t := Qz BigZ.minus_one.
 
  Definition of_Z x: t := Qz (BigZ.of_Z x).

@@ -1,10 +1,22 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*        Benjamin Gregoire, INRIA          Laurent Thery, INRIA        *)
+(************************************************************************)
 
-(*************************************************************)
-(*      This file is distributed under the terms of the      *)
-(*      GNU Lesser General Public License Version 2.1        *)
-(*************************************************************)
-(*    Benjamin.Gregoire@inria.fr Laurent.Thery@inria.fr      *)
-(*************************************************************)
+(* $Id:$ *)
+
+(** * Signature and specification of a bounded integer structure *)
+
+(** 
+- Authors: Benjamin Grégoire, Laurent Théry
+- Institution: INRIA
+- Date: 2007
+*)
 
 Set Implicit Arguments.
 
@@ -20,6 +32,7 @@ Section ZnZ_Op.
  Variable znz : Set.
 
  Record znz_op : Set := mk_znz_op {
+
     (* Conversion functions with Z *)
     znz_digits : positive;
     znz_zdigits: znz;
@@ -27,6 +40,7 @@ Section ZnZ_Op.
     znz_of_pos : positive -> N * znz;
     znz_head0  : znz -> znz;
     znz_tail0  : znz -> znz;
+
     (* Basic constructors *)
     znz_0   : znz;
     znz_1   : znz;
@@ -42,7 +56,7 @@ Section ZnZ_Op.
     (* Basic arithmetic operations *)
     znz_opp_c       : znz -> carry znz;
     znz_opp         : znz -> znz;
-    znz_opp_carry   : znz -> znz; (* the carry is know to be -1 *)
+    znz_opp_carry   : znz -> znz; (* the carry is known to be -1 *)
 
     znz_succ_c      : znz -> carry znz;
     znz_add_c       : znz -> znz -> carry znz;
@@ -87,7 +101,7 @@ Section Spec.
  Variable w_op : znz_op w.
 
  Let w_digits      := w_op.(znz_digits).
- Let w_zdigits      := w_op.(znz_zdigits).
+ Let w_zdigits     := w_op.(znz_zdigits).
  Let w_to_Z        := w_op.(znz_to_Z).
  Let w_of_pos      := w_op.(znz_of_pos).
  Let w_head0       := w_op.(znz_head0).

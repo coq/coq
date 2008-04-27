@@ -1,3 +1,17 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(** * Natural numbers in base 2^31 *)
+
+(**
+Author: Arnaud Spiwack
+*)
+
 Require Export Int31.
 Require Import NMake.
 Require Import ZnZ.
@@ -90,7 +104,7 @@ Defined.
 Definition int31_spec : znz_spec int31_op.
 Admitted.
 
- 
+
 
 Module Int31_words <: W0Type.
   Definition w := int31.

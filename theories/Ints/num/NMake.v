@@ -1,4 +1,23 @@
-Require Import ZAux.
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(* $Id$ *)
+
+(** * *)
+
+(** 
+- Authors: Benjamin Grégoire, Laurent Théry
+- Institution: INRIA
+- Date: 2007
+- Remark: File automatically generated
+*)
+
+Require Import Zaux.
 Require Import ZArith.
 Require Import Basic_type.
 Require Import ZnZ.
@@ -8,20 +27,6 @@ Require Import GenMul.
 Require Import GenDivn1.
 Require Import Wf_nat.
 Require Import MemoFn.
-
-(***************************************************************)
-(*                                                             *)
-(*        File automatically generated DO NOT EDIT             *)
-(*        Constructors: 6  Generated Proofs: true              *)
-(*                                                             *)
-(*  To change this file, edit in genN.ml the two lines         *)
-(*   let size = 6                                              *)
-(*   let gen_proof = true                                      *)
-(*  Recompile the file                                         *)
-(*   camlopt -o genN unix.cmxa genN.ml                         *)
-(*  Regenerate NMake.v                                         *)
-(*   ./genN                                                    *)
-(***************************************************************)
 
 Module Type W0Type.
  Parameter w : Set.
@@ -6796,4 +6801,3 @@ Qed.
  Qed.
 
 End Make.
-

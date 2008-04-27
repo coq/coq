@@ -1,7 +1,15 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
 Require Import Bool.
 Require Import ZArith.
 Require Import Znumtheory.
-Require Import ZAux.
+Require Import Zaux.
 Require Import Arith.
 Require Export BigN.
 Require Export BigZ.
@@ -12,8 +20,10 @@ Require Import QMake_base.
 
 Module Qv.
 
- (* /!\  Invariant maintenu par les fonctions :
-         - le denominateur n'est jamais nul *)
+ (** The notation of a rational number is either an integer x,
+     interpreted as itself or a pair (x,y) of an integer x and a naturel
+     number y interpreted as x/y. All functions maintain the invariant
+     that y is never zero. *)
 
  Definition t := q_type.
 

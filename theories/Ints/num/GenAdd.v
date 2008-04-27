@@ -1,3 +1,10 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
 (*************************************************************)
 (*      This file is distributed under the terms of the      *)
@@ -9,7 +16,7 @@
 Set Implicit Arguments.
 
 Require Import ZArith.
-Require Import ZAux.
+Require Import Zaux.
 Require Import Basic_type.
 Require Import GenBase.
 
