@@ -561,7 +561,7 @@ ZARITHVO:=\
  theories/ZArith/ZOdiv_def.vo   theories/ZArith/ZOdiv.vo
 
 INTSVO:=\
- theories/Ints/Z/ZAux.vo \
+ theories/Ints/Zaux.vo \
  theories/Ints/Basic_type.vo theories/Ints/Int31.vo \
  theories/Ints/num/GenBase.vo theories/Ints/num/ZnZ.vo \
  theories/Ints/num/GenAdd.vo theories/Ints/num/GenSub.vo \

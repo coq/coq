@@ -8,13 +8,13 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i i*)
+(*i $Id:$ i*)
 
 Require Export NZAxioms.
 Require Import NMake. (* contains W0Type *)
 Require Import ZnZ.
-Require Import Basic_type. (* contais base *)
-Require Import ZAux.
+Require Import Basic_type. (* contains base *)
+Require Import Zaux.
 
 Module NZBigIntsAxiomsMod (Import BoundedIntsMod : W0Type) <: NZAxiomsSig.
 
