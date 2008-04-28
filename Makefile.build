@@ -65,8 +65,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
 	      -I contrib/funind -I contrib/firstorder \
-              -I contrib/field -I contrib/subtac -I contrib/rtauto \
-              -I contrib/recdef
+              -I contrib/field -I contrib/subtac -I contrib/rtauto 
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
