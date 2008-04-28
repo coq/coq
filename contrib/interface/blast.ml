@@ -168,11 +168,14 @@ let rec e_trivial_fail_db db_list local_db goal =
 
 and e_my_find_search db_list local_db hdc concl = 
   let hdc = head_of_constr_reference hdc in
+  let flags = Auto.auto_unif_flags in
   let hintl =
     if occur_existential concl then 
-      list_map_append (fun (st, db) -> List.map (fun x -> (st, x)) (Hint_db.map_all hdc db)) (local_db::db_list)
+      list_map_append (fun (st, db) -> List.map (fun x -> ({flags with Unification.modulo_delta = st}, x))
+	(Hint_db.map_all hdc db)) (local_db::db_list)
     else 
-      list_map_append (fun (st, db) -> List.map (fun x -> (st, x)) (Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
+      list_map_append (fun (st, db) -> List.map (fun x -> ({flags with Unification.modulo_delta = st}, x)) 
+	(Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
   in 
   let tac_of_hint = 
     fun (st, ({pri=b; pat = p; code=t} as _patac)) -> 
@@ -380,12 +383,14 @@ let rec trivial_fail_db db_list local_db gl =
 	(trivial_resolve db_list local_db (pf_concl gl)))) gl
 
 and my_find_search db_list local_db hdc concl =
+  let flags = Auto.auto_unif_flags in
   let tacl = 
     if occur_existential concl then 
-      list_map_append (fun (st, db) -> List.map (fun x -> st, x) (Hint_db.map_all hdc db)) (local_db::db_list)
+      list_map_append (fun (st, db) -> List.map (fun x -> {flags with Unification.modulo_delta = st}, x) 
+	(Hint_db.map_all hdc db)) (local_db::db_list)
     else 
-      list_map_append (fun (st, db) -> List.map (fun x -> st, x) (Hint_db.map_auto (hdc,concl) db))
-      	(local_db::db_list)
+      list_map_append (fun (st, db) -> List.map (fun x -> {flags with Unification.modulo_delta = st}, x)
+	(Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
   in
   List.map 
     (fun (st, {pri=b; pat=p; code=t} as _patac) -> 

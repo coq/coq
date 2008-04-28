@@ -85,7 +85,7 @@ Program Fixpoint lt_dec (x y:sv) { struct x } : {slt x y}+{~slt x y} :=
       end
   end.
 
-Next Obligation. apply H; inversion H0; subst; trivial. reflexivity. Defined.
+Next Obligation. apply H; inversion H0; subst; trivial. Defined.
 Next Obligation. inversion H. Defined.
 Next Obligation. inversion H. Defined.
 Next Obligation. inversion H; subst. Defined.

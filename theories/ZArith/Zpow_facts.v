@@ -171,6 +171,7 @@ Qed.
 Theorem Zpower_ge_0: forall x y, 0 <= x -> 0 <= x^y. 
 Proof.
   intros x y; case y; auto with zarith.
+  simpl ; auto with zarith.
   intros p H1; assert (H: 0 <= Zpos p); auto with zarith.
   generalize H; pattern (Zpos p); apply natlike_ind; auto with zarith.
   intros p1 H2 H3 _; unfold Zsucc; rewrite Zpower_exp; simpl; auto with zarith. 

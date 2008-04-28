@@ -145,7 +145,8 @@ let expand_constant env flags c =
 let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
   let nb = nb_rel env in
   let trivial_unify pb (metasubst,_) m n =
-    match subst_defined_metas metasubst m with
+    let subst = if flags.use_metas_eagerly then metasubst else fst subst in
+    match subst_defined_metas subst m with
     | Some m ->
 	(match flags.modulo_conv_on_closed_terms with
 	    Some flags ->

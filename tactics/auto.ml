@@ -591,9 +591,9 @@ let auto_unif_flags = {
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
-let unify_resolve st (c,clenv) gls = 
+let unify_resolve flags (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
-  let _ = clenv_unique_resolver false ~flags:{auto_unif_flags with modulo_delta = st} clenv' gls in  
+  let _ = clenv_unique_resolver false ~flags clenv' gls in  
   h_apply true false (c,NoBindings) gls
 
 (* builds a hint database from a constr signature *)
@@ -649,24 +649,32 @@ let rec trivial_fail_db mod_delta db_list local_db gl =
        (trivial_resolve mod_delta db_list local_db (pf_concl gl)))) gl
 
 and my_find_search mod_delta db_list local_db hdc concl =
+  let flags = 
+    if mod_delta then {auto_unif_flags with use_metas_eagerly = true}
+    else auto_unif_flags
+  in
   let tacl = 
     if occur_existential concl then 
       list_map_append
 	(fun (st, db) -> 
-	  let st = if mod_delta then st else empty_transparent_state in
+	  let st = 
+	    if mod_delta then
+	      {flags with modulo_delta = st} 
+	    else flags 
+	  in
 	    List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
 	(local_db::db_list)
     else
       list_map_append (fun ((ids, csts as st), db) -> 
 	let st, l = 
 	  if not mod_delta then
-	    empty_transparent_state, Hint_db.map_auto (hdc,concl) db
+	    flags, Hint_db.map_auto (hdc,concl) db
 	  else 
 	    let l =
 	      if (Idpred.is_empty ids && Cpred.is_empty csts)
 	      then Hint_db.map_auto (hdc,concl) db
 	      else Hint_db.map_all hdc db
-	    in st, l
+	    in {flags with modulo_delta = st}, l
 	in List.map (fun x -> (st,x)) l)
       	(local_db::db_list)
   in

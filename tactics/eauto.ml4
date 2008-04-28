@@ -85,14 +85,15 @@ TACTIC EXTEND prolog
 END
 
 open Auto
+open Unification
 
 (***************************************************************************)
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)
 (***************************************************************************)
 
-let unify_e_resolve  (c,clenv) gls = 
+let unify_e_resolve flags (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
-  let _ = clenv_unique_resolver false clenv' gls in
+  let _ = clenv_unique_resolver false ~flags clenv' gls in
   h_simplest_eapply c gls
 
 let rec e_trivial_fail_db db_list local_db goal =
@@ -112,9 +113,13 @@ and e_my_find_search db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then 
-      list_map_append (fun (st, db) -> List.map (fun x -> st, x) (Hint_db.map_all hdc db)) (local_db::db_list)
+      list_map_append (fun (st, db) -> 
+	let flags = {auto_unif_flags with modulo_delta = st} in
+	  List.map (fun x -> flags, x) (Hint_db.map_all hdc db)) (local_db::db_list)
     else 
-      list_map_append (fun (st, db) -> List.map (fun x -> st, x) (Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
+      list_map_append (fun (st, db) -> 
+	let flags = {auto_unif_flags with modulo_delta = st} in
+	  List.map (fun x -> flags, x) (Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
   in 
   let tac_of_hint = 
     fun (st, {pri=b; pat = p; code=t}) -> 
@@ -122,10 +127,10 @@ and e_my_find_search db_list local_db hdc concl =
        let tac =
 	 match t with
 	   | Res_pf (term,cl) -> unify_resolve st (term,cl)
-	   | ERes_pf (term,cl) -> unify_e_resolve (term,cl)
+	   | ERes_pf (term,cl) -> unify_e_resolve st (term,cl)
 	   | Give_exact (c) -> e_give_exact_constr c
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
-               tclTHEN (unify_e_resolve (term,cl)) 
+               tclTHEN (unify_e_resolve st (term,cl)) 
 		 (e_trivial_fail_db db_list local_db)
 	   | Unfold_nth c -> unfold_in_concl [[],c]
 	   | Extern tacast -> conclPattern concl 
