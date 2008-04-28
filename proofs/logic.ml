@@ -51,8 +51,9 @@ let rec catchable_exception = function
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
   (* unification errors *)
-  | PretypeError(_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _|NoOccurrenceFound _|
-      CannotUnifyBindingType _|NotClean _)) -> true
+  | PretypeError(_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
+		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
+		   |CannotFindWellTypedAbstraction _)) -> true
   | _ -> false
 
 (* Tells if the refiner should check that the submitted rules do not
@@ -277,8 +278,10 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     | App (f,l) ->
 	let (acc',hdty) =
 	  match kind_of_term f with
-	    | (Ind _ (* needed if defs in Type are polymorphic: | Const _*))
-		when not (array_exists occur_meta l) (* we could be finer *) ->
+	    | Ind _ | Const _
+		when not (array_exists occur_meta l) (* we could be finer *)
+		  & (isInd f or Heads.has_inductive_head env f)
+		  ->
 		(* Sort-polymorphism of definition and inductive types *)
 		goalacc, 
 		type_of_global_reference_knowing_parameters env sigma f l

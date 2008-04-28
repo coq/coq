@@ -73,7 +73,7 @@ let process_inductive sechyps modlist mib =
   let inds = 
     array_map_to_list
       (fun mip ->
-	 let arity = expmod_constr modlist (Termops.refresh_universes (Inductive.type_of_inductive (Global.env()) (mib,mip))) in
+	 let arity = expmod_constr modlist (Termops.refresh_universes_strict (Inductive.type_of_inductive (Global.env()) (mib,mip))) in
 	 let lc = Array.map (expmod_constr modlist) mip.mind_user_lc in
 	 (mip.mind_typename,
 	  arity,

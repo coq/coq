@@ -175,12 +175,11 @@ Theorem t : r true false.
 apply ax with (R := r).
 Qed.
 
+(* Check verification of type at unification (submitted by Stéphane Lengrand):
+   without verification, the first "apply" works what leads to the incorrect
+   instantiation of x by Prop *)
 
-(* Check verification of type at unification (Submitted by Stéphane Lengrand)
-   (without verification, the first "apply" works which leads to wrongly
-   instantiate x by Prop) *)
-
-Theorem t: ~(forall x:Prop, ~x).
+Theorem u : ~(forall x:Prop, ~x).
 unfold not.
 intro.
 eapply H.

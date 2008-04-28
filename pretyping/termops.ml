@@ -160,14 +160,18 @@ let new_Type_sort () = Type (new_univ ())
 (* This refreshes universes in types; works only for inferred types (i.e. for
    types of the form (x1:A1)...(xn:An)B with B a sort or an atom in
    head normal form) *)
-let refresh_universes t =
+let refresh_universes_gen strict t =
   let modified = ref false in
   let rec refresh t = match kind_of_term t with
-    | Sort (Type u) when u <> Univ.lower_univ -> modified := true; new_Type ()
+    | Sort (Type u) when strict or u <> Univ.lower_univ ->
+	modified := true; new_Type ()
     | Prod (na,u,v) -> mkProd (na,u,refresh v)
     | _ -> t in
   let t' = refresh t in
   if !modified then t' else t
+
+let refresh_universes = refresh_universes_gen false
+let refresh_universes_strict = refresh_universes_gen true
 
 let new_sort_in_family = function 
   | InProp -> prop_sort

@@ -21,6 +21,7 @@ val new_sort_in_family : sorts_family -> sorts
 val new_Type : unit -> types
 val new_Type_sort : unit -> sorts
 val refresh_universes : types -> types
+val refresh_universes_strict : types -> types
 
 (* printers *)
 val print_sort : sorts -> std_ppcmds
