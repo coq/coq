@@ -274,14 +274,12 @@ JPROVERCMO:=\
 
 FUNINDCMO:=\
   contrib/funind/indfun_common.cmo contrib/funind/rawtermops.cmo \
+  contrib/funind/recdef.cmo \
   contrib/funind/rawterm_to_relation.cmo \
   contrib/funind/functional_principles_proofs.cmo \
   contrib/funind/functional_principles_types.cmo \
   contrib/funind/invfun.cmo contrib/funind/indfun.cmo \
-  contrib/funind/merge.cmo contrib/funind/indfun_main.cmo
-
-RECDEFCMO:=\
-  contrib/recdef/recdef.cmo
+  contrib/funind/merge.cmo contrib/funind/g_indfun.cmo
 
 FOCMO:=\
   contrib/firstorder/formula.cmo contrib/firstorder/unify.cmo \
@@ -307,7 +305,7 @@ RTAUTOCMO:=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 CONTRIB:=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
 	$(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
-        $(RECDEFCMO) $(FUNINDCMO)
+	$(FUNINDCMO)
 
 CMA:=$(CLIBS) $(CAMLP4OBJS)
 CMXA:=$(CMA:.cma=.cmxa)
@@ -797,7 +795,7 @@ FOURIERVO:=\
 
 FUNINDVO:= 
 
-RECDEFVO:=contrib/recdef/Recdef.vo
+RECDEFVO:=contrib/funind/Recdef.vo
 
 JPROVERVO:= 
 

@@ -1427,22 +1427,4 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     end
 
 
-VERNAC COMMAND EXTEND RecursiveDefinition
-  [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
-     constr(proof) integer_opt(rec_arg_num) constr(eq) ] ->
-  [ 
-    warning "Recursive Definition is obsolete. Use Function instead";
-    ignore(proof);ignore(wf);
-    let rec_arg_num = 
-      match rec_arg_num with 
-	| None -> 1
-	| Some n -> n 
-    in
-    recursive_definition false f [] type_of_f r rec_arg_num eq (fun _ _ _ _ _  _ _ _ -> ()) []]
-| [ "Recursive" "Definition" ident(f) constr(type_of_f) constr(r) constr(wf)
-     "[" ne_constr_list(proof) "]" constr(eq) ] ->
-  [ ignore(proof);ignore(wf);recursive_definition false f [] type_of_f r 1 eq  (fun  _ _  _ _ _ _ _ _ -> ()) []]
-END
-
-
 
