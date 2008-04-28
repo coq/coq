@@ -1596,13 +1596,50 @@ let interp_atomic ist = function
   | TacGeneralize cl ->
       Util.anomaly "Ltacinterp.interp_atomic:Generalize: à restaurer"
   |  TacGeneralizeDep c -> 
-        Util.anomaly "Ltacinterp.interp_atomic:GeneralizeARestaurer: à restaurer"
+        Util.anomaly "Ltacinterp.interp_atomic:GeneralizeDep: à restaurer"
+  | TacLetTac (na,c,clp) -> 
+      Util.anomaly "Ltacinterp.interp_atomic:LetTac: à restaurer"
+ 
+  (* Automation tactics *)
+  | TacTrivial (lems,l) -> 
+      Util.anomaly "Ltacinterp.interp_atomic:LetTrivial: à restaurer"
+  | TacAuto (n,lems,l) ->
+      Util.anomaly "Ltacinterp.interp_atomic:LetAuto: à restaurer"
+  | TacAutoTDB n -> 
+      Util.anomaly "Ltacinterp.interp_atomic:LetAutoTDB: à restaurer"
+  | TacDestructHyp (b,id) -> 
+      Util.anomaly "Ltacinterp.interp_atomic:LetDestructHyp: à restaurer"
+  | TacDestructConcl -> 
+      Util.anomaly "Ltacinterp.interp_atomic:LetDestructConcl: à restaurer"
+  | TacSuperAuto (n,l,b1,b2) -> 
+      Util.anomaly "Ltacinterp.interp_atomic:SuperAuto: à restaurer"
+  | TacDAuto (n,p,lems) ->
+      Util.anomaly "Ltacinterp.interp_atomic:DAuto: à restaurer"
+
+  (* Derived basic tactics *)
+  | TacSimpleInduction h -> 
+      Util.anomaly "Ltacinterp.interp_atomic:SimpleInduction: à restaurer"
+  | TacNewInduction (ev,lc,cbo,ids) ->
+      Util.anomaly "Ltacinterp.interp_atomic:NewInduction: à restaurer"
+  | TacSimpleDestruct h ->
+      Util.anomaly "Ltacinterp.interp_atomic:SimpleDestruct: à restaurer"
+  | TacNewDestruct (ev,c,cbo,ids) -> 
+      Util.anomaly "Ltacinterp.interp_atomic:NewDestruct: à restaurer"
   | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: commenter et renommer *)
-let other_eval_tactic ist = function
+let rec other_eval_tactic ist = function
   | TacAtom (loc,t) -> interp_atomic ist t
-  | TacThen _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacThen: todo"
+  (* arnaud: temporairement, je ne fais pas de nouvelles syntaxe,
+     ça aidera à rebrancher tout ça plus conservativement. *)
+  | TacThen (t1,a,t2,b) -> let a = Array.to_list a in
+                           let b = Array.to_list b in
+		           let i_t1 = other_eval_tactic ist t1 in
+			   let i_a = List.map (other_eval_tactic ist) a in
+			   let i_t2 = other_eval_tactic ist t2 in
+			   let i_b = List.map (other_eval_tactic ist) b in
+			   Logic.tclTHEN i_t1
+			                (Logic.tclEXTEND i_a i_t2 i_b)
   | TacThens _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacThens: todo"
   | TacFirst _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacFirst: todo"
   | TacComplete _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacComplete: todo"
