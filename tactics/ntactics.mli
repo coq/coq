@@ -51,11 +51,10 @@ val head_constr       : constr -> constr list
 val head_constr_bound : constr -> constr list -> constr list
 
 
-(*** arnaud: commenté un peu jusqu'à la fin, 
+
+
+(*** arnaud: commenté plus ou moins jusqu'à la fin, 
              virer les doublons avec intros.mli
-
-val is_quantified_hypothesis : identifier -> goal sigma -> bool
-
 exception Bound
 
 (*s Primitive tactics. *)
@@ -269,9 +268,14 @@ val general_case_analysis : evars_flag -> constr with_ebindings ->  tactic
 val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
-val new_destruct : evars_flag -> constr with_ebindings induction_arg list -> 
-  constr with_ebindings option -> intro_pattern_expr -> tactic
+*)
+val new_destruct : evars_flag Goal.sensitive -> 
+                   constr with_ebindings induction_arg list Goal.sensitive -> 
+                   constr with_ebindings option Goal.sensitive -> 
+                   intro_pattern_expr Goal.sensitive -> 
+                   unit tactic
 
+(*
 (*s Eliminations giving the type instead of the proof. *)
 
 val case_type         : constr  -> tactic

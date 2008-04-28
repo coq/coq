@@ -1010,22 +1010,21 @@ let intro_patterns = function
 (**************************)
 
 
-(*** arnaud: j'ai tout commenté jusqu'à la fin, niark
-             ya sûrement des trucs de intros.ml{,i} que j'ai pas
-             enlevé en plus
+
 let hid = id_of_string "H"
 let xid = id_of_string "X"
 
-let make_id s = fresh_id [] (match s with Prop _ -> hid | Type _ -> xid)
+let make_id s = 
+  Logic.fresh_id [] (match s with Prop _ -> hid | Type _ -> xid)
 
 let prepare_intros s ipat gl = match ipat with
-  | IntroAnonymous -> make_id s gl, tclIDTAC
-  | IntroFresh id -> fresh_id [] id gl, tclIDTAC
-  | IntroWildcard -> let id = make_id s gl in id, thin [id]
-  | IntroIdentifier id -> id, tclIDTAC
-  | IntroOrAndPattern ll -> make_id s gl, 
-    (tclTHENS 
-      (tclTHEN case_last clear_last)
+  | IntroAnonymous -> make_id s, Proofview.id ()
+  | IntroFresh id -> Logic.fresh_id [] id, Proofview.id ()
+  | IntroWildcard -> let id = make_id s in id, thin (Goal.sensitive_list [id])
+  | IntroIdentifier id -> Goal.return id, Proofview.id ()
+  | IntroOrAndPattern ll -> make_id s , 
+    (Logic.tclTHENS 
+      (Logic.tclTHEN case_last clear_last)
       (List.map (intros_pattern None) ll))
 
 let ipat_of_name = function
@@ -1036,8 +1035,8 @@ let assert_as first ipat c gl =
   match kind_of_term (hnf_type_of gl c) with
   | Sort s ->
       let id,tac = prepare_intros s ipat gl in
-      tclTHENS ((if first then internal_cut else internal_cut_rev) id c)
-	(if first then [tclIDTAC; tac] else [tac; tclIDTAC]) gl
+      Logic.tclTHENS ((if first then internal_cut else internal_cut_rev) id c)
+	(if first then [Proofview.id (); tac] else [tac; Proofview.id ()])
   | _  -> error "Not a proposition or a type"
 
 let assert_tac first na = assert_as first (ipat_of_name na)
@@ -1047,9 +1046,11 @@ let true_cut = assert_tac true
 (*   Generalize tactics   *)
 (**************************)
 
-let generalize_goal gl c cl =
-  let t = refresh_universes (pf_type_of gl c) in
-  match kind_of_term c with
+let generalize_goal c cl =
+  Logic.type_of c >>= fun type_of_c ->
+  let t = refresh_universes type_of_c in
+  Goal.return begin
+    match kind_of_term c with
     | Var id ->
 	(* The choice of remembering or not a non dependent name has an impact
 	   on the future Intro naming strategy! *)
@@ -1064,11 +1065,22 @@ let generalize_goal gl c cl =
              la premiere lettre du type, meme si "ci" est une
              constante et qu'on pourrait prendre directement son nom *)
         else 
+	  (* spiwack: [Global.env ()] should possibly be replaced
+	     by [Goal.env]. *)
 	  prod_name (Global.env()) (Anonymous, t, cl')
+  end
 
-let generalize_dep c gl =
-  let env = pf_env gl in
-  let sign = pf_hyps gl in
+let dependent_in_decl a (_,c,t) =
+  match c with
+    | None -> dependent a t
+    | Some body -> dependent a body || dependent a t
+
+let generalize_dep c =
+  (* spiwack: Proofview.sensitive_tactic doesn't seem necessary here *)
+Proofview.sensitive_tactic begin
+  Goal.env >>= fun env ->
+  Goal.hyps >>= fun hyps ->
+  let sign = Environ.named_context_of_val hyps in
   let init_ids = ids_of_named_context (Global.named_context()) in
   let rec seek d toquant =
     if List.exists (fun (id,_,_) -> occur_var_in_decl env id d) toquant
@@ -1086,17 +1098,24 @@ let generalize_dep c gl =
 	  -> id::tothin
       | _ -> tothin
   in
-  let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
-  let cl'' = generalize_goal gl c cl' in
+  Goal.concl >>= fun concl ->
+  let cl' = it_mkNamedProd_or_LetIn concl to_quantify in
+  generalize_goal c cl' >>= fun cl'' ->
   let args = Array.to_list (instance_from_named_context to_quantify_rev) in
-  tclTHEN
-    (apply_type cl'' (c::args))
-    (thin (List.rev tothin'))
-    gl
+  Goal.return (
+    Logic.tclTHEN
+      (apply_type cl'' (c::args))
+      (thin (Goal.return (List.rev tothin')))
+  )
+end
     
-let generalize lconstr gl = 
-  let newcl = List.fold_right (generalize_goal gl) lconstr (pf_concl gl) in
-  apply_type newcl lconstr gl
+let generalize lconstr = 
+  Util.anomaly "Ntactics.generalize: à restaurer"
+  (* arnaud: à restaurer: faut comprendre apply_type
+  Goal.concl >>= fun concl ->
+  let newcl = List.fold_right generalize_goal lconstr concl in
+  apply_type newcl lconstr
+  *)
 
 (* Faudra-t-il une version avec plusieurs args de generalize_dep ?
 Cela peut-être troublant de faire "Generalize Dependent H n" dans
@@ -1230,10 +1249,12 @@ let letin_abstract id c occs gl =
   let lastlhyp = if depdecls = [] then None else Some(pi1(list_last depdecls)) in
   (depdecls,lastlhyp,ccl)
 
-let letin_tac with_eq name c occs gl =
+let letin_tac with_eq name c occs =
+  Util.anomaly "Ntactics.letin_tac: à restaurer"
+  (* arnaud: à restaurer
   let id =
     let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
-    if name = Anonymous then fresh_id [] x gl else
+    if name = Anonymous then Logic.fresh_id [] x gl else
       if not (mem_named_context x (pf_hyps gl)) then x else
 	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in 
@@ -1244,15 +1265,19 @@ let letin_tac with_eq name c occs gl =
       intro_gen (IntroMustBe id) lastlhyp true;
       if with_eq then tclIDTAC else thin_body [id];
       tclMAP convert_hyp_no_check depdecls ] gl
+  *)
   
 (* Tactics "pose proof" (usetac=None) and "assert" (otherwise) *)
-let forward usetac ipat c gl =
+let forward usetac ipat c =
+  Util.anomaly "Ntactics.forward: à restaurer"
+  (* Arnaud: à restaurer
   match usetac with
   | None -> 
       let t = refresh_universes (pf_type_of gl c) in
       tclTHENFIRST (assert_as true ipat t) (exact_no_check c) gl
   | Some tac -> 
       tclTHENFIRST (assert_as true ipat c) tac gl
+  *)
 
 (*****************************)
 (* Ad hoc unfold             *)
@@ -1260,7 +1285,9 @@ let forward usetac ipat c gl =
 
 (* The two following functions should already exist, but found nowhere *)
 (* Unfolds x by its definition everywhere *)
-let unfold_body x gl =
+let unfold_body x =
+  Util.anomaly "Ntactics.unfold_body: à restaurer"
+  (* arnaud: à restaurer
   let hyps = pf_hyps gl in
   let xval =
     match Sign.lookup_named x hyps with
@@ -1274,14 +1301,18 @@ let unfold_body x gl =
   tclTHENLIST
     [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
      reduct_in_concl (rfun,DEFAULTcast)] gl
+  *)
 
 (* Unfolds x by its definition everywhere and clear x. This may raise
    an error if x is not defined. *)
-let unfold_all x gl =
+let unfold_all x =
+  Util.anomaly "Ntactic.unfold_all: restaurer" 
+  (* arnaud: à restaurer
   let (_,xval,_) = pf_get_hyp gl x in
   (* If x has a body, simply replace x with body and clear x *)
   if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl
   else tclIDTAC gl
+  *)
 
 (*****************************)
 (* High-level induction      *)
@@ -1334,23 +1365,31 @@ let rec first_name_buggy = function
   | IntroIdentifier id -> Some id
   | IntroAnonymous | IntroFresh _ -> assert false
 
-let consume_pattern avoid id gl = function
+let consume_pattern avoid id = 
+  Util.anomaly "Ntactics.consume_pattern: à restaurer"
+  (* arnaud: à restaurer: function
   | [] -> (IntroIdentifier (fresh_id avoid id gl), [])
   | IntroAnonymous::names ->
       let avoid = avoid@explicit_intro_names names in
       (IntroIdentifier (fresh_id avoid id gl), names)
   | pat::names -> (pat,names)
+  *)
 
 let re_intro_dependent_hypotheses tophyp (lstatus,rstatus) =
+  Util.anomaly "Ntactics.re_intro_dependent_hypotheses: à restaurer"
+  (* arnaud: à restaurer:
   let newlstatus = (* if some IH has taken place at the top of hyps *)
     List.map (function (hyp,None) -> (hyp,tophyp) | x -> x) lstatus in
-  tclTHEN
+  Logic.tclTHEN
     (intros_rmove rstatus)
     (intros_move newlstatus)
+  *)
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
-let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
+let induct_discharge statuslists destopt avoid' (avoid,ra) names =
+  Util.anomaly "Ntactic.induct_discharge: à restaurer"
+  (* arnaud: à restaurer:
   let avoid = avoid @ avoid' in
   let rec peel_tac ra names tophyp gl = match ra with
     | (RecArg,recvarname) ::
@@ -1390,6 +1429,7 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
         re_intro_dependent_hypotheses tophyp statuslists gl
   in
   peel_tac ra names None gl
+  *)
 
 (* - le recalcul de indtyp à chaque itération de atomize_one est pour ne pas
      s'embêter à regarder si un letin_tac ne fait pas des
@@ -1397,7 +1437,9 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
 
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
-let atomize_param_of_ind (indref,nparams) hyp0 gl =
+let atomize_param_of_ind (indref,nparams) hyp0 =
+  Util.anomaly "Ntactics.atomize_param_of_ind: à restaurer"
+  (* arnaud: à restaurer:
   let tmptyp0 = pf_get_hyp_typ gl hyp0 in
   let typ0 = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in
   let prods, indtyp = decompose_prod typ0 in
@@ -1431,6 +1473,7 @@ let atomize_param_of_ind (indref,nparams) hyp0 gl =
       tclIDTAC gl
   in
   atomize_one (List.length argl) params gl
+  *)
 
 let find_atomic_param_of_ind nparams indtyp =
   let argl = snd (decompose_app indtyp) in
@@ -1755,7 +1798,9 @@ let make_abstract_generalize gl id concl ctx c eqs args refls coe =
       appeqs
   in cstr
     
-let abstract_args gl id = 
+let abstract_args id = 
+  Util.anomaly "Ntactics.abstract_args: à restaurer"
+  (* arnaud: à restaurer: 
   let c = pf_get_hyp_typ gl id in
   let sigma = project gl in
   let env = pf_env gl in
@@ -1835,12 +1880,16 @@ let abstract_args gl id =
 	let args, refls = List.rev args, List.rev refls in
 	  Some (make_abstract_generalize gl id concl ctx c' eqs args refls coe)
     | _ -> None
+  *)
 
-let abstract_generalize id gl =
+let abstract_generalize id =
+  Util.anomaly "Ntactics.abstract_generalize: à restaurer"
+  (* arnaud: à restaurer:
   let newc = abstract_args gl id in
     match newc with
       | None -> tclIDTAC gl
       | Some newc -> refine newc gl
+  *)
 
 let occur_rel n c = 
   let res = not (noccurn n c) in
@@ -2100,7 +2149,9 @@ let compute_elim_signature elimc elimt names_info =
 	indsign,scheme
 
 
-let find_elim_signature isrec elim hyp0 gl =
+let find_elim_signature isrec elim hyp0 =
+  Util.anomaly "Ntactics.find_elim_signature: à restaurer"
+  (* arnaud: à restaurer:
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let (elimc,elimt) = match elim with
     | None ->
@@ -2115,6 +2166,7 @@ let find_elim_signature isrec elim hyp0 gl =
 	(e, pf_type_of gl elimc) in
   let indsign,elim_scheme = compute_elim_signature elimc elimt hyp0 in
   (indsign,elim_scheme)
+  *)
 
 
 let mapi f l =
@@ -2199,7 +2251,9 @@ let induction_tac_felim with_evars indvars (* (elimc,lbindelimc) elimt *) scheme
    all args and params must be given, so we help a bit the unifier by
    making the "pattern" by hand before calling induction_tac_felim
    FIXME: REUNIF AVEC induction_tac_felim? *)
-let induction_from_context_l isrec with_evars elim_info lid names gl =
+let induction_from_context_l isrec with_evars elim_info lid names =
+  Util.anomaly "Ntactics.induction_from_context_l: à restaurer"
+  (* arnaud: à restaurer:
   let indsign,scheme = elim_info in
   (* number of all args, counting farg and indarg if present. *)
   let nargs_indarg_farg = scheme.nargs
@@ -2255,10 +2309,12 @@ let induction_from_context_l isrec with_evars elim_info lid names gl =
 	  (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
     ]
     gl
+  *)
 
 
-
-let induction_from_context isrec with_evars elim_info (hyp0,lbind) names gl =
+let induction_from_context isrec with_evars elim_info (hyp0,lbind) names =
+  Util.anomaly "Ntactics: induction_from_context: à restaurer"
+  (* arnaud: à restaurer:
   (*test suivant sans doute inutile car refait par le letin_tac*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
     errorlabstrm "induction" 
@@ -2300,12 +2356,15 @@ let induction_from_context isrec with_evars elim_info (hyp0,lbind) names gl =
 	   (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
     ]
     gl
+  *)
 
 
 
 exception TryNewInduct of exn
 
-let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) gl =
+let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) =
+  Util.anomaly "Ntactics.induction_with_atomization_of_ind_arg: à restaurer"
+  (* arnaud: à restaurer:
   let (indsign,scheme as elim_info) = find_elim_signature isrec elim hyp0 gl in
   if scheme.indarg = None then (* This is not a standard induction scheme (the
 				  argument is probably a parameter) So try the
@@ -2316,11 +2375,14 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbin
     tclTHEN
       (atomize_param_of_ind (indref,scheme.nparams) hyp0)
       (induction_from_context isrec with_evars elim_info (hyp0,lbind) names) gl
+  *)
 
 (* Induction on a list of induction arguments. Analyse the elim
    scheme (which is mandatory for multiple ind args), check that all
    parameters and arguments are given (mandatory too). *)
-let induction_without_atomization isrec with_evars elim names lid gl =
+let induction_without_atomization isrec with_evars elim names lid  =
+  Util.anomaly "Ntactics.induction_without_atomization: à restaurer"
+  (* arnaud: à restaurer:
   let (indsign,scheme as elim_info) =
     find_elim_signature isrec elim (List.hd lid) gl in
   let awaited_nargs = 
@@ -2332,8 +2394,11 @@ let induction_without_atomization isrec with_evars elim names lid gl =
   if nlid <> awaited_nargs
   then error "Not the right number of induction arguments"
   else induction_from_context_l isrec with_evars elim_info lid names gl
+  *)
 
-let new_induct_gen isrec with_evars elim names (c,lbind) gl =
+let new_induct_gen isrec with_evars elim names (c,lbind)  =
+  Util.anomaly "Ntactics.new_induct_gen: à restaurer"
+  (* arnaud: à restaurer:
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context()))
 	        & lbind = NoBindings & not with_evars ->
@@ -2347,13 +2412,16 @@ let new_induct_gen isrec with_evars elim names (c,lbind) gl =
 	  (letin_tac true (Name id) c allClauses)
 	  (induction_with_atomization_of_ind_arg
 	     isrec with_evars elim names (id,lbind)) gl
+  *)
 
 (* Induction on a list of arguments. First make induction arguments
    atomic (using letins), then do induction. The specificity here is
    that all arguments and parameters of the scheme are given
    (mandatory for the moment), so we don't need to deal with
     parameters of the inductive type as in new_induct_gen. *)
-let new_induct_gen_l isrec with_evars elim names lc gl =
+let new_induct_gen_l isrec with_evars elim names lc =
+  Util.anomaly "Ntactics.new_induct_gen_l: à restaurer"
+  (* arnaud: à restaurer:
   let newlc = ref [] in
   let letids = ref [] in
   let rec atomize_list l gl =
@@ -2387,6 +2455,7 @@ let new_induct_gen_l isrec with_evars elim names lc gl =
 	tclMAP (fun x -> tclTRY (unfold_all x)) !letids gl')
     ]
     gl
+  *)
 
 
 let induct_destruct_l isrec with_evars lc elim names = 
@@ -2411,20 +2480,27 @@ let induct_destruct_l isrec with_evars lc elim names =
    principles). 
    TODO: really unify induction with one and induction with several
    args *)
-let induct_destruct isrec with_evars lc elim names = 
+let induct_destruct isrec with_evars lc elim names =
+Proofview.sensitive_tactic begin
+  isrec      >>= fun isrec      ->
+  with_evars >>= fun with_evars ->
+  lc         >>= fun lc         ->
+  elim       >>= fun elim       ->
+  names      >>= fun names      ->
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
+  Goal.return begin
   if List.length lc = 1 then (* induction on one arg: use old mechanism *)
     try 
       let c = List.hd lc in
       match c with
 	| ElimOnConstr c -> new_induct_gen isrec with_evars elim names c
 	| ElimOnAnonHyp n ->
-	    tclTHEN (intros_until_n n)
-	      (tclLAST_HYP (fun c -> 
+	    Logic.tclTHEN (Intros.intros_until_n (Goal.return n))
+	      (Ntacticals.tclLAST_HYP (fun c -> 
 		  new_induct_gen isrec with_evars elim names (c,NoBindings)))
 	      (* Identifier apart because id can be quantified in goal and not typable *)
 	| ElimOnIdent (_,id) ->
-	    tclTHEN (tclTRY (intros_until_id id))
+	    Logic.tclTHEN (Logic.tclTRY (Intros.intros_until_id (Goal.return id)))
 	      (new_induct_gen isrec with_evars elim names (mkVar id,NoBindings))
     with (* If this fails, try with new mechanism but if it fails too,
 	    then the exception is the first one. *)
@@ -2432,16 +2508,22 @@ let induct_destruct isrec with_evars lc elim names =
 	  (try induct_destruct_l isrec with_evars lc elim names
 	   with _  -> raise x)
   else induct_destruct_l isrec with_evars lc elim names
-
+  end
+end
 
       
 
-let new_induct = induct_destruct true
-let new_destruct = induct_destruct false
+let new_induct = induct_destruct Goal.strue
+let new_destruct = induct_destruct Goal.sfalse
 
 (* The registered tactic, which calls the default elimination
  * if no elimination constant is provided. *)
 	
+
+(*** arnaud: j'ai tout commenté jusqu'à la fin, niark
+             ya sûrement des trucs de intros.ml{,i} que j'ai pas
+             enlevé en plus
+
 (* Induction tactics *)
 
 (* This was Induction before 6.3 (induction only in quantified premisses) *)

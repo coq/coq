@@ -1522,6 +1522,23 @@ let do_intro = function
   [x] -> Logic.intro x
   | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples (bis)"
 
+let interp_induction_arg ist = function
+  | ElimOnConstr c -> 
+      interp_constr_with_bindings ist c >>= fun i_c ->
+      Goal.return (ElimOnConstr i_c)
+  | ElimOnAnonHyp n as x -> 
+      Goal.return x
+  | ElimOnIdent (loc,id) ->
+      Goal.cond (Intros.is_quantified_hypothesis id) ~thn: 
+       (Goal.return (ElimOnIdent (loc,id)))
+      ~els: 
+       (pf_interp_constr ist 
+	  (RVar (loc,id),Some (Topconstr.CRef (Ident (loc,id)))) >>= fun i_c ->
+	Goal.return (
+	  ElimOnConstr (i_c, NoBindings)
+	)
+       )
+
 let interp_atomic ist = function
   (* Basic tactics *)
   | TacIntroPattern l ->
@@ -1602,7 +1619,7 @@ let interp_atomic ist = function
  
   (* Automation tactics *)
   | TacTrivial (lems,l) -> 
-      Util.anomaly "Ltacinterp.interp_atomic:LetTrivial: à restaurer"
+      Util.anomaly "Ltacinterp.interp_atomic:Trivial: à restaurer"
   | TacAuto (n,lems,l) ->
       Util.anomaly "Ltacinterp.interp_atomic:LetAuto: à restaurer"
   | TacAutoTDB n -> 
@@ -1624,7 +1641,22 @@ let interp_atomic ist = function
   | TacSimpleDestruct h ->
       Util.anomaly "Ltacinterp.interp_atomic:SimpleDestruct: à restaurer"
   | TacNewDestruct (ev,c,cbo,ids) -> 
-      Util.anomaly "Ltacinterp.interp_atomic:NewDestruct: à restaurer"
+      let i_c =
+	Goal.sensitive_list (
+	  List.map (interp_induction_arg ist) c
+	)
+      in 
+      let i_cbo =
+	match cbo with
+	| None -> Goal.sNone
+	| Some cb -> 
+	    interp_constr_with_bindings ist cb  >>= fun i_cb ->
+	    Goal.return (Some i_cb)
+      in
+      let i_ids =
+	Goal.return (interp_intro_pattern ist ids)
+      in
+      Ntactics.new_destruct (Goal.return ev) i_c i_cbo i_ids
   | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: commenter et renommer *)

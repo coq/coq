@@ -102,6 +102,16 @@ let  lastHyp =
   | [] -> Util.anomaly "Logic.lastHyp: does not apply to empty-context-goals"
   | a::_ -> Goal.return a
 
+
+let fresh_id_avoid avoid id =
+  Termops.next_global_ident_away true id avoid
+
+let fresh_id avoid id =
+  Goal.hyps >>= fun hyps ->
+  let ids = Termops.ids_of_named_context (Environ.named_context_of_val hyps) in
+  Goal.return (fresh_id_avoid (avoid@ids) id)
+
+
 (*** tacticals ***)
 
 (* Tacticals from Proofview, for consistency *)
@@ -133,6 +143,14 @@ let tclFIRST tacs =
 (* Wrapper tactical around tclLIST *)
 let tclARRAY tacs =
   tclLIST (Array.to_list tacs)
+
+(* Wrapper tactical combining tclTHEN and tclLIST *)
+let tclTHENS tac1 tacs =
+  tclTHEN tac1 (tclLIST tacs)
+
+(* Wrapper tactical around tclTHENS taking an array instead *)
+let tclTHENSA tac1 tacs =
+  tclTHENS tac1 (Array.to_list tacs)
 
 let rec tclTHENLIST = function
   | [] -> Proofview.id ()

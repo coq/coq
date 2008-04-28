@@ -26,6 +26,12 @@ val get_type_of : constr -> types Goal.sensitive
 (* head normal form of the type of [c] (in the expression monad) *)
 val hnf_type_of : constr -> types Goal.sensitive
 
+(* [fresh_id avoid id] gives a fresh name starting with [id] 
+   avoiding the list [avoid]. *)
+val fresh_id : Names.identifier list -> 
+               Names.identifier ->
+               Names.identifier Goal.sensitive
+
 (*** tacticals ***)
 
 (* Tacticals from Proofview, for consistency *)
@@ -50,6 +56,12 @@ val tclFIRST : unit tactic list -> unit tactic
 
 (* Wrapper tactical around tclLIST, takes an array as argument instead. *)
 val tclARRAY : unit tactic array -> unit tactic
+
+(* Wrapper tactical combining tclTHEN and tclLIST *)
+val tclTHENS : unit tactic -> unit tactic list -> unit tactic
+
+(* Wrapper tactical around tclTHENS taking an array instead *)
+val tclTHENSA : unit tactic -> unit tactic array -> unit tactic
 
 (* [tclTHENLIST [t1;...;tn]] and [tclTHENARRAY [| t1;...;tn |]] 
    apply t1 then ... then tn. *)

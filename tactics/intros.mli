@@ -29,6 +29,8 @@ val find_name : name * Term.types option * Term.types ->
                 intro_name_flag -> 
                 identifier Goal.sensitive
 
+val is_quantified_hypothesis : Names.identifier -> bool Goal.sensitive
+
 (*** Introduction tactics ***)
 
 val intro_gen : intro_name_flag Goal.sensitive -> 
@@ -44,4 +46,5 @@ val intros_until :  Rawterm.quantified_hypothesis Goal.sensitive ->
                     unit Proofview.tactic
 *)
 val intros_until_id : Names.identifier Goal.sensitive -> unit Proofview.tactic
+val intros_until_n : int Goal.sensitive -> unit Proofview.tactic
 

@@ -23,24 +23,22 @@ open Term
 open Names
 let (>>=) = Goal.bind
 
-let fresh_id_avoid avoid id =
-  Termops.next_global_ident_away true id avoid
-
-let fresh_id avoid id =
-  Goal.hyps >>= fun hyps ->
-  let ids = Termops.ids_of_named_context (Environ.named_context_of_val hyps) in
-  Goal.return (fresh_id_avoid (avoid@ids) id)
-
 let id_of_name_with_default s = function
   | Anonymous -> id_of_string s
   | Name id   -> id
 
-let default_id env sigma = function
-  | (name,None,t) ->
-      (match Typing.sort_of env sigma t with
-	| Prop _ -> (id_of_name_with_default "H" name)
-	| Type _ -> (id_of_name_with_default "X" name))
-  | (name,Some b,_) -> Termops.id_of_name_using_hdchar env b name
+let default_id decl = 
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of defs in
+  Goal.return (
+    match decl with
+    | (name,None,t) ->
+	(match Typing.sort_of env sigma t with
+	 | Prop _ -> (id_of_name_with_default "H" name)
+	 | Type _ -> (id_of_name_with_default "X" name))
+    | (name,Some b,_) -> Termops.id_of_name_using_hdchar env b name
+  )
 
 (* Non primitive introduction tactics are treated by central_intro
    There is possibly renaming, with possibly names to avoid and 
@@ -57,10 +55,11 @@ let find_name decl = function
       Goal.env >>= fun env ->
       Goal.defs >>= fun defs ->
       let sigma = Evd.evars_of defs in
-      fresh_id idl (default_id env sigma decl)
-  | IntroBasedOn (id,idl) -> fresh_id idl id
+      default_id decl >>= fun id ->
+      Logic.fresh_id idl id
+  | IntroBasedOn (id,idl) -> Logic.fresh_id idl id
   | IntroMustBe id        -> 
-      fresh_id [] id >>= fun id' ->
+      Logic.fresh_id [] id >>= fun id' ->
       if id' <> id then Proofview.fail (Pp.str ((string_of_id id)^" is already used"));
       Goal.return id'
 
