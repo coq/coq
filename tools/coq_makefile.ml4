@@ -161,10 +161,10 @@ let variables l =
     print "COQSRC:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
-  -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
+  -I $(COQTOP)/proofs -I $(COQTOP)/tactics \\
   -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/correctness \\
   -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
-  -I $(COQTOP)/contrib/fourier -I $(COQTOP)/contrib/graphs \\
+  -I $(COQTOP)/contrib/fourier \\
   -I $(COQTOP)/contrib/interface -I $(COQTOP)/contrib/jprover \\
   -I $(COQTOP)/contrib/omega -I $(COQTOP)/contrib/romega \\
   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \\
@@ -183,7 +183,7 @@ let variables l =
     print "COQDOC:=$(COQBIN)coqdoc\n";
     (* Caml executables and relative variables *)
     printf "CAMLC:=$(CAMLBIN)ocamlc -rectypes -c\n";
-    printf "CAMLOPTC:=$(CAMLBIN)ocamlopt -c\n";
+    printf "CAMLOPTC:=$(CAMLBIN)ocamlopt -rectypes -c\n";
     printf "CAMLLINK:=$(CAMLBIN)ocamlc\n";
     printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt\n";
     print "GRAMMARS:=grammar.cma\n";
@@ -368,8 +368,16 @@ let rec process_cmd_line = function
   | "-impredicative-set" :: r ->
       impredicative_set := true; process_cmd_line r
   | "-custom" :: com :: dependencies :: file :: r ->
-      some_file := true;
-      Special (file,dependencies,com) :: (process_cmd_line r)
+      let check_dep f =
+	if Filename.check_suffix f ".v" then
+          some_vfile := true
+	else if Filename.check_suffix f ".ml" then
+          some_mlfile := true
+	else
+	  () 
+      in
+	List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies);
+	Special (file,dependencies,com) :: (process_cmd_line r)
   | "-I" :: d :: r ->
       Include d :: (process_cmd_line r)
   | "-R" :: p :: l :: r ->
