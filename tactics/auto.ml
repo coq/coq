@@ -591,10 +591,16 @@ let auto_unif_flags = {
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
+let unify_resolve_nodelta (c,clenv) gls = 
+  let clenv' = connect_clenv gls clenv in
+  let _ = clenv_unique_resolver false ~flags:auto_unif_flags clenv' gls in  
+  h_simplest_apply c gls
+
 let unify_resolve flags (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false ~flags clenv' gls in  
   h_apply true false (c,NoBindings) gls
+
 
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
@@ -648,33 +654,54 @@ let rec trivial_fail_db mod_delta db_list local_db gl =
      (List.map tclCOMPLETE 
        (trivial_resolve mod_delta db_list local_db (pf_concl gl)))) gl
 
-and my_find_search mod_delta db_list local_db hdc concl =
-  let flags = 
-    if mod_delta then {auto_unif_flags with use_metas_eagerly = true}
-    else auto_unif_flags
+and my_find_search_nodelta db_list local_db hdc concl =
+  let tacl = 
+    if occur_existential concl then 
+      list_map_append
+	(fun (st, db) -> (Hint_db.map_all hdc db))
+	(local_db::db_list)
+    else
+      list_map_append (fun (_, db) -> 
+	Hint_db.map_auto (hdc,concl) db)
+      	(local_db::db_list)
   in
+    List.map 
+      (fun {pri=b; pat=p; code=t} -> 
+	(b,
+	match t with
+	  | Res_pf (term,cl) -> unify_resolve_nodelta (term,cl)
+	  | ERes_pf (_,c) -> (fun gl -> error "eres_pf")
+	  | Give_exact c  -> exact_check c
+	  | Res_pf_THEN_trivial_fail (term,cl) -> 
+	      tclTHEN 
+		(unify_resolve_nodelta (term,cl)) 
+		(trivial_fail_db false db_list local_db)
+	  | Unfold_nth c -> unfold_in_concl [[],c]
+	  | Extern tacast -> 
+	      conclPattern concl (Option.get p) tacast))
+    tacl
+
+and my_find_search mod_delta =
+  if mod_delta then my_find_search_delta
+  else my_find_search_nodelta
+    
+and my_find_search_delta db_list local_db hdc concl =
+  let flags = {auto_unif_flags with use_metas_eagerly = true} in
   let tacl = 
     if occur_existential concl then 
       list_map_append
 	(fun (st, db) -> 
-	  let st = 
-	    if mod_delta then
-	      {flags with modulo_delta = st} 
-	    else flags 
-	  in
+	  let st = {flags with modulo_delta = st} in
 	    List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
 	(local_db::db_list)
     else
       list_map_append (fun ((ids, csts as st), db) -> 
 	let st, l = 
-	  if not mod_delta then
-	    flags, Hint_db.map_auto (hdc,concl) db
-	  else 
-	    let l =
-	      if (Idpred.is_empty ids && Cpred.is_empty csts)
-	      then Hint_db.map_auto (hdc,concl) db
-	      else Hint_db.map_all hdc db
-	    in {flags with modulo_delta = st}, l
+	  let l =
+	    if (Idpred.is_empty ids && Cpred.is_empty csts)
+	    then Hint_db.map_auto (hdc,concl) db
+	    else Hint_db.map_all hdc db
+	  in {flags with modulo_delta = st}, l
 	in List.map (fun x -> (st,x)) l)
       	(local_db::db_list)
   in
@@ -682,18 +709,18 @@ and my_find_search mod_delta db_list local_db hdc concl =
       (fun (st, {pri=b; pat=p; code=t}) -> 
 	(b,
 	match t with
-	  | Res_pf (term,cl)  -> unify_resolve st (term,cl)
+	  | Res_pf (term,cl) -> unify_resolve st (term,cl)
 	  | ERes_pf (_,c) -> (fun gl -> error "eres_pf")
 	  | Give_exact c  -> exact_check c
 	  | Res_pf_THEN_trivial_fail (term,cl) -> 
 	      tclTHEN 
 		(unify_resolve st (term,cl)) 
-		(trivial_fail_db mod_delta db_list local_db)
+		(trivial_fail_db true db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> 
 	      conclPattern concl (Option.get p) tacast))
-    tacl
-
+      tacl
+      
 and trivial_resolve mod_delta db_list local_db cl = 
   try 
     let hdconstr = List.hd (head_constr_bound cl []) in

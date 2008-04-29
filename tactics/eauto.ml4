@@ -91,25 +91,72 @@ open Unification
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)
 (***************************************************************************)
 
+(* no delta yet *)
+
 let unify_e_resolve flags (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false ~flags clenv' gls in
   h_simplest_eapply c gls
 
-let rec e_trivial_fail_db db_list local_db goal =
+let unify_e_resolve_nodelta (c,clenv) gls = 
+  let clenv' = connect_clenv gls clenv in
+  let _ = clenv_unique_resolver false clenv' gls in
+  h_simplest_eapply c gls
+
+let rec e_trivial_fail_db mod_delta db_list local_db goal =
   let tacl = 
     registered_e_assumption ::
     (tclTHEN Tactics.intro 
        (function g'->
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
-          (e_trivial_fail_db db_list
+          (e_trivial_fail_db mod_delta db_list
 	     (add_hint_list hintl local_db) g'))) ::
-    (List.map fst (e_trivial_resolve db_list local_db (pf_concl goal)) )
+    (List.map fst (e_trivial_resolve mod_delta db_list local_db (pf_concl goal)) )
   in 
   tclFIRST (List.map tclCOMPLETE tacl) goal 
 
-and e_my_find_search db_list local_db hdc concl = 
+and e_my_find_search mod_delta =
+  if mod_delta then e_my_find_search_delta
+  else e_my_find_search_nodelta
+
+and e_my_find_search_nodelta db_list local_db hdc concl = 
+  let hdc = head_of_constr_reference hdc in
+  let hintl =
+    if occur_existential concl then 
+      list_map_append (fun (st, db) -> Hint_db.map_all hdc db) (local_db::db_list)
+    else 
+      list_map_append (fun (st, db) -> 
+	Hint_db.map_auto (hdc,concl) db) (local_db::db_list)
+  in 
+  let tac_of_hint = 
+    fun {pri=b; pat = p; code=t} -> 
+      (b, 
+       let tac =
+	 match t with
+	   | Res_pf (term,cl) -> unify_resolve_nodelta (term,cl)
+	   | ERes_pf (term,cl) -> unify_e_resolve_nodelta (term,cl)
+	   | Give_exact (c) -> e_give_exact_constr c
+	   | Res_pf_THEN_trivial_fail (term,cl) ->
+               tclTHEN (unify_e_resolve_nodelta (term,cl)) 
+		 (e_trivial_fail_db false db_list local_db)
+	   | Unfold_nth c -> unfold_in_concl [[],c]
+	   | Extern tacast -> conclPattern concl 
+	       (Option.get p) tacast
+       in 
+       (tac,fmt_autotactic t))
+       (*i
+	 fun gls -> pPNL (fmt_autotactic t); Format.print_flush (); 
+                     try tac gls
+		     with e when Logic.catchable_exception(e) -> 
+                            (Format.print_string "Fail\n"; 
+			     Format.print_flush (); 
+			     raise e)
+       i*)
+  in 
+  List.map tac_of_hint hintl
+
+and e_my_find_search_delta db_list local_db hdc concl = 
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then 
@@ -131,7 +178,7 @@ and e_my_find_search db_list local_db hdc concl =
 	   | Give_exact (c) -> e_give_exact_constr c
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve st (term,cl)) 
-		 (e_trivial_fail_db db_list local_db)
+		 (e_trivial_fail_db true db_list local_db)
 	   | Unfold_nth c -> unfold_in_concl [[],c]
 	   | Extern tacast -> conclPattern concl 
 	       (Option.get p) tacast
@@ -148,16 +195,16 @@ and e_my_find_search db_list local_db hdc concl =
   in 
   List.map tac_of_hint hintl
     
-and e_trivial_resolve db_list local_db gl = 
+and e_trivial_resolve mod_delta db_list local_db gl = 
   try 
     Auto.priority 
-      (e_my_find_search db_list local_db 
+      (e_my_find_search mod_delta db_list local_db 
 	 (List.hd (head_constr_bound gl [])) gl)
   with Bound | Not_found -> []
 
-let e_possible_resolve db_list local_db gl =
+let e_possible_resolve mod_delta db_list local_db gl =
   try List.map snd 
-    (e_my_find_search db_list local_db 
+    (e_my_find_search mod_delta db_list local_db 
 	(List.hd (head_constr_bound gl [])) gl)
   with Bound | Not_found -> []
 
@@ -248,7 +295,7 @@ module SearchProblem = struct
       in
       let rec_tacs = 
 	let l = 
-	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
+	  filter_tactics s.tacres (e_possible_resolve false s.dblist (List.hd s.localdb) (pf_concl g))
 	in
 	List.map 
 	  (fun ((lgls,_) as res, pp) -> 

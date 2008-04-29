@@ -2,6 +2,7 @@
 \def\eol{\setlength\parskip{0pt}\par}
 \def\indent#1{\noindent\kern#1}
 \def\cst#1{\textsf{#1}}
+\def\tele#1{\overrightarrow{#1}}
 
 \achapter{\protect{Type Classes}}
 \aauthor{Matthieu Sozeau}
@@ -12,12 +13,12 @@
 \end{flushleft}
 
 This chapter presents a quick reference of the commands related to type
-classes. It is not meant as an introduction to type classes altough it
-may become one in the future. For an actual introduction, there is a
+classes. For an actual introduction to type classes, there is a
 description of the system \cite{sozeau08} and the literature on type
 classes in \Haskell which also applies.
 
 \asection{Class and Instance declarations}
+\label{ClassesInstances}
 
 The syntax for class and instance declarations is a mix between the
 record syntax of \Coq~and the type classes syntax of \Haskell:
@@ -32,7 +33,7 @@ record syntax of \Coq~and the type classes syntax of \Haskell:
   \eol\indent{3.00em}$\cst{f}_m : \phi_m$.
 \medskip}
 {
-  
+ 
   \medskip
   \kw{Instance} \classid{Id} $t_1 \cdots t_n$ :=
   \eol\indent{3.00em}$\cst{f}_1 := b_1$ ;
@@ -44,6 +45,263 @@ record syntax of \Coq~and the type classes syntax of \Haskell:
 \begin{coq_eval}
   Reset Initial.
 \end{coq_eval}
+
+The $\tele{\alpha_i : \tau_i}$ variables are called the \emph{parameters}
+of the class and the $\tele{f_k : \phi_k}$ are called the
+\emph{methods}. Each class definition gives rise to a corresponding
+record declaration and each instance is a regular definition whose type
+is an instantiation of the record type.
+
+We'll use the following example class in the rest of the chapter:
+
+\begin{coq_example*}
+Class Eq (A : Type) :=
+  eq : A -> A -> bool ;
+  eq_leibniz : forall x y, eq x y = true -> x = y.
+\end{coq_example*}
+
+This class implements a boolean equality test which is compatible with
+leibniz equality on some type. An example implementation is:
+
+\begin{coq_example*}
+Instance Eq unit :=
+  eq x y := true ;
+  eq_leibniz x y H := 
+    match x, y return x = y with tt, tt => refl_equal tt end.
+\end{coq_example*}
+
+If one does not give all the members in the \texttt{Instance}
+declaration, Coq enters the proof-mode and the user is asked to build
+inhabitants of the remaining fields, e.g.:
+
+\begin{coq_example*}
+Instance eq_bool : Eq bool :=
+  eq x y := if x then y else negb y.
+\end{coq_example*}
+
+\begin{coq_example}
+  Proof. intros x y H.
+  destruct x ; destruct y ; try discriminate ; reflexivity. 
+  Defined.
+\end{coq_example}
+
+One has to take care that the transparency of every field is determined
+by the transparency of the \texttt{Instance} proof. One can use
+alternatively the \texttt{Program} \texttt{Instance} \comindex{Program Instance} variant which has
+richer facilities for dealing with obligations.
+
+\asection{Binding classes}
+
+Once a type class is declared, one can use it in class binders:
+\begin{coq_example}
+  Definition neq {A : Type} [ Eq A ] (x y : A) := negb (eq x y).
+\end{coq_example}
+
+When one calls a class method, a constraint is generated that is
+satisfied only in contexts where the appropriate instances can be
+found. In the example above, a constraint \texttt{Eq A} is generated and
+satisfied by \texttt{[ Eq A ]}. In case no satisfying constraint can be
+found, an error is raised:
+
+\begin{coq_example}
+  Definition neq' (A : Type) (x y : A) := negb (eq x y).
+\end{coq_example}
+
+The algorithm used to solve constraints is a variant of the eauto tactic
+that does proof search with a set of lemmas (the instances). It will use
+local hypotheses as well as declared lemmas in the
+\texttt{typeclass\_instances} database. Hence the example can also be
+written:
+
+\begin{coq_example}
+  Definition neq' (A : Type) (eqa : Eq A) (x y : A) := negb (eq x y).
+\end{coq_example}
+
+However, the bracketed binders should be used instead as they have
+particular support for type classes:
+\begin{itemize}
+\item They automatically set the maximally implicit status for type
+  class arguments, making derived functions as easy to use as class
+  methods. In the example above, \texttt{A} and \texttt{eqa} should be
+  set maximally implicit.
+\item They support implicit quantification on class arguments and
+  partialy applied type classes \S \ref{classes:implicitquant}
+\item They support implicit quantification on superclasses (see section
+  \S \ref{classes:superclasses}
+\end{itemize}
+
+\subsection{Implicit quantification}
+
+Implicit quantification is an automatic elaboration of a statement with
+free variables into a closed statement where these variables are
+quantified explicitely. Implicit generalization is done only inside
+bracketed binders.
+
+Following the previous example, one can write:
+\begin{coq_example}
+  Definition neq_impl [ eqa : Eq A ] (x y : A) := negb (eq x y).
+\end{coq_example}
+
+Here \texttt{A} is implicitely generalized, and the resulting function
+is equivalent to the one above. One must be careful that \emph{all} the
+free variables are generalized, which may result in confusing errors in
+case of typos. 
+
+\asection{Parameterized Instances}
+
+One can declare parameterized instances as in \Haskell simply by giving
+the constraints as a binding context before the instance, e.g.:
+
+\begin{coq_example*}
+Instance [ eqa : Eq A, eqb : Eq B ] => prod_eq : Eq (A * B) :=
+  eq x y := match x, y with
+  | (la, ra), (lb, rb) => andb (eq la lb) (eq ra rb)
+  end.
+\end{coq_example*}
+\begin{coq_eval}
+Admitted.
+\end{coq_eval}
+
+These instances are used just as well as lemmas in the instances hint database.
+
+\asection{Building hierarchies}
+
+\subsection{Superclasses}
+One can also parameterize classes by other classes, generating a
+hierarchy of classes and superclasses. In the same way, we give the
+superclasses as a binding context:
+
+\begin{coq_example}
+Class [ eqa : Eq A ] => Ord :=
+  le : A -> A -> bool.
+\end{coq_example}
+
+This declaration means that any instance of the \texttt{Ord} class must
+have an instance of \texttt{Eq}. The parameters of the subclass contains
+at least all the parameters of its superclasses in their order of
+appearance (here \texttt{A} is the only one). 
+
+Internally, \texttt{Ord} will become a record type with two parameters:
+a type \texttt{A} and an object of type \texttt{Eq A}. However, one can
+still use it as if it had a single parameter inside class binders: the
+generalization of superclasses will be done automatically. 
+\begin{coq_example}
+Definition le_eq [ Ord A ] (x y : A) :=
+  andb (le x y) (le y x).
+\end{coq_example}
+
+In some cases, to be able to specify sharing of structures, one may want to give
+explicitely the superclasses. It is is possible to do it directly in regular
+binders, and using the \texttt{!} modifier in class binders. For
+example:
+
+\begin{coq_example*}
+Definition lt [ eqa : Eq A, ! Ord eqA ] (x y : A) :=
+  andb (le x y) (neq x y).
+\end{coq_example*}
+
+The \texttt{!} modifier switches the way a binder is parsed back to the
+regular interpretation of Coq. In particular, it uses the implicit
+arguments mechanism if available, as shown in the example.
+
+\subsection{Substructures}
+
+Substructures are components of a class which are instances of a class
+themselves. They often arise when using classes for logical properties,
+e.g.:
+
+\begin{coq_eval}
+Require Import Relations.
+\end{coq_eval}
+\begin{coq_example*}
+Class Reflexive (A : Type) (R : relation A) :=
+  reflexivity : forall x, R x x.
+Class Transitive (A : Type) (R : relation A) :=
+  transitivity : forall x y z, R x y -> R y z -> R x z.
+\end{coq_example*}
+
+This declares singleton classes for reflexive and transitive relations. 
+These may be used as part of other classes:
+
+\begin{coq_example*}
+Class PreOrder (A : Type) (R : relation A) :=
+  PreOrder_Reflexive :> Reflexive A R ;
+  PreOrder_Transitive :> Transitive A R.
+\end{coq_example*}
+
+The syntax \texttt{:>} indicates that each \texttt{PreOrder} can be seen
+as a \texttt{Reflexive} relation. So each time a reflexive relation is
+needed, a preorder can be used instead. This is very similar to the
+coercion mechanism of \texttt{Structure} declarations.
+The implementation simply declares the projection as an instance. 
+
+One can also declare existing objects or structure
+projections using the \texttt{Existing Instance} command to achieve the 
+same effect.
+
+\section{Summary of the commands
+\label{TypeClassCommands}}
+
+\subsection{\tt Class {\ident} {\binder$_1$ \ldots \binder$_n$} 
+  : \sort := field$_1$ ; \ldots ; field$_k$.}
+\comindex{Class}
+\label{Class}
+
+The \texttt{Class} command is used to declare a type class with
+parameters {\binder$_1$} to {\binder$_n$} and fields {\tt field$_1$} to
+{\tt field$_k$}. A optional context of the form {\tt [ C$_1$, \ldots
+  C$_j$ ] =>} can be put before the name of the class to declare
+superclasses.
+
+\subsection{\tt Instance {\ident} : {Class} {t$_1$ \ldots t$_n$}
+  := field$_1$ := b$_1$ ; \ldots ; field$_i$ := b$_i$}
+\comindex{Instance}
+\label{Instance}
+
+The \texttt{Instance} command is used to declare a type class instance
+named {\ident} of the class \emph{Class} with parameters {t$_1$} to {t$_n$} and
+fields {\tt b$_1$} to {\tt b$_i$}, where each field must be a declared
+field of the class. Missing fields must be filled in interactive proof mode.
+
+A arbitrary context of the form {\tt \binder$_1$ \ldots \binder$_n$ =>}
+can be put before the name of the instance to declare a parameterized instance.
+
+Besides the {\tt Class} and {\tt Instance} vernacular commands, there
+are a few other commands related to type classes.
+
+\subsection{\tt Existing Instance {\ident}}
+\comindex{Existing Instance}
+\label{ExistingInstance}
+
+This commands adds an arbitrary constant whose type ends with an applied
+type class to the instance database. It can be used for redeclaring
+instances at the end of sections, or declaring structure projections as
+instances. This is almost equivalent to {\tt Hint Resolve {\ident} :
+  typeclass\_instances}.
+
+\subsection{\tt Typeclasses unfold {\ident$_1$ \ldots \ident$_n$}}
+\comindex{Typeclasses unfold}
+\label{TypeclassesUnfold}
+
+This commands declares {\ident} as an unfoldable constant during type
+class resolution. It is useful when some constants prevent some
+unifications and make resolution fail. It happens in particular when constants are
+used to abbreviate type, like {\tt relation A := A -> A -> Prop}.
+This is equivalent to {\tt Hint Unfold {\ident} : typeclass\_instances}.
+
+\subsection{\tt Typeclasses eauto := [debug] [dfs | bfs] [\emph{depth}]}
+\comindex{Typeclasses eauto}
+\label{TypeclassesEauto}
+
+This commands allows to customize the type class resolution tactic,
+based on a variant of eauto. The flags semantics are:
+\begin{itemize}
+\item {\tt debug} In debug mode, the trace of successfully applied
+  tactics is printed.
+\item {\tt dfs, bfs} This sets the search strategy to depth-first search
+  (the default) or breadth-first search.
+\item {\emph{depth}} This sets the depth of the search (the default is 100).
+\end{itemize}
 
 %%% Local Variables: 
 %%% mode: latex

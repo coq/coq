@@ -42,7 +42,7 @@ Class Reflexive A (R : relation A) :=
   reflexivity : forall x, R x x.
 
 Class Irreflexive A (R : relation A) := 
-  irreflexivity : forall x, R x x -> False.
+  irreflexivity :> Reflexive A (complement R).
 
 Class Symmetric A (R : relation A) := 
   symmetry : forall x y, R x y -> R y x.
@@ -86,14 +86,14 @@ Program Instance [ Transitive A R ] => flip_Transitive : Transitive (flip R).
 Program Instance [ Reflexive A (R : relation A) ] => 
   Reflexive_complement_Irreflexive : Irreflexive (complement R).
 
-Program Instance [ Irreflexive A (R : relation A) ] => 
-  Irreflexive_complement_Reflexive : Reflexive (complement R).
-
   Next Obligation. 
   Proof. 
+    unfold complement.
     red. intros H.
-    apply (irreflexivity H).
+    intros H' ; apply H'.
+    apply (reflexivity H).
   Qed.
+
 
 Program Instance [ Symmetric A (R : relation A) ] => complement_Symmetric : Symmetric (complement R).
 
@@ -152,13 +152,13 @@ Program Instance eq_Transitive : Transitive (@eq A).
 
 (** A [PreOrder] is both Reflexive and Transitive. *)
 
-Class PreOrder A (R : relation A) :=
+Class PreOrder A (R : relation A) : Prop :=
   PreOrder_Reflexive :> Reflexive R ;
   PreOrder_Transitive :> Transitive R.
 
 (** A partial equivalence relation is Symmetric and Transitive. *)
 
-Class PER (carrier : Type) (pequiv : relation carrier) :=
+Class PER (carrier : Type) (pequiv : relation carrier) : Prop :=
   PER_Symmetric :> Symmetric pequiv ;
   PER_Transitive :> Transitive pequiv.
 
@@ -178,7 +178,7 @@ Program Instance [ PER A (R : relation A), PER B (R' : relation B) ] =>
 
 (** The [Equivalence] typeclass. *)
 
-Class Equivalence (carrier : Type) (equiv : relation carrier) :=
+Class Equivalence (carrier : Type) (equiv : relation carrier) : Prop :=
   Equivalence_Reflexive :> Reflexive equiv ;
   Equivalence_Symmetric :> Symmetric equiv ;
   Equivalence_Transitive :> Transitive equiv.

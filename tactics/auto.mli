@@ -141,6 +141,8 @@ val default_search_depth : int ref
 val auto_unif_flags : Unification.unify_flags
 
 (* Try unification with the precompiled clause, then use registered Apply *)
+val unify_resolve_nodelta : (constr * clausenv) -> tactic
+
 val unify_resolve : Unification.unify_flags -> (constr * clausenv) -> tactic
 
 (* [ConclPattern concl pat tacast]:
