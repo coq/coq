@@ -724,7 +724,7 @@ ifeq ($(CHECKEDOUT),svn)
 	rm -f revision
 	set -e; \
 	if test -x "`which svn`"; then \
-	  LANG=C; export LANG; \
+	  export LC_ALL=C;\
 	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/\1/p' > revision; \
 	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/\1/p'>> revision; \
 	fi
