@@ -431,6 +431,9 @@ let tclORELSE t1 t2 =
 (* Interpretes the repeat tactical *)
 (* Despite what it might look like, tclREPEAT cannot be defined
    out of Proofview. This is left as an exercise to the reader ;) .*)
+(* arnaud: c'est plus vrai maintenant que tclBIND est dans la place, 
+   à regarder mais ya des chances que ça ne coûte rien de sortir
+   tclREPEAT d'ici donc. *)
 let rec tclREPEAT tac env ps =
   tclORELSE (tclTHEN tac (tclREPEAT tac)) (id ()) env ps
 

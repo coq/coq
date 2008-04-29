@@ -430,6 +430,8 @@ let list_rewrite (rev:bool) (eqs: constr list) =
 
 let base_leaf_terminate (func:global_reference) eqs expr =
 (*  let _ = msgnl (str "entering base_leaf") in *)
+  Util.anomaly "Recdef.base_leaf_terminate: à restaurer"
+  (* arnaud: à restaurer:
   (fun g ->
      let k',h = 
        match pf_get_new_ids [k_id;h_id] g with 
@@ -452,6 +454,7 @@ let base_leaf_terminate (func:global_reference) eqs expr =
       unfold_constr func;
       list_rewrite true eqs;
       default_auto] g);;
+  *)
 
 (* La fonction est donnee en premier argument a la 
    fonctionnelle suivie d'autres Lambdas et de Case ...
@@ -485,6 +488,8 @@ let rec compute_le_proofs = function
             tclORELSE (apply (delayed_force le_n)) assumption])
 
 let make_lt_proof pmax le_proof =
+  Util.anomaly "Recdef.make_lt_proof: à restaurer"
+  (* arnaud: à restaurer:
   tclTHENS
     (fun g -> 
        let le_lt_trans = delayed_force le_lt_trans in 
@@ -499,6 +504,7 @@ let make_lt_proof pmax le_proof =
 	  ExplicitBindings[dummy_loc,NamedHyp m_id, pmax]) g)
     [observe_tac "compute_le_proofs" (compute_le_proofs le_proof); 
      tclTHENLIST[observe_tac "lt_S_n" (apply (delayed_force lt_S_n)); default_full_auto]];;
+  *)
 
 let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
   match cond_eqs with
@@ -523,6 +529,8 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
 
 let rec introduce_all_equalities func eqs values specs bound le_proofs 
     cond_eqs =
+  Util.anomaly "Recdef.introduce_all_equalities: à restaurer"
+  (* arnaud: à restaurer:
   match specs with
     [] -> 
       fun g ->
@@ -574,6 +582,7 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	   introduce_all_equalities func eqs values specs 
 	     (mkVar pmax) ((mkVar pmax)::le_proofs)
 	     (heq::cond_eqs)] g;;
+  *)
     
 let string_match s =
   if String.length s < 3 then failwith "string_match";
@@ -936,6 +945,8 @@ let prove_with_tcc lemma _ : tactic =
 	     
 
 let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_name (gls_type,decompose_and_tac,nb_goal)   = 
+  Util.anomaly "Recdef.open_new_goal: à restaurer"
+  (* arnaud: à restaurer:
   let current_proof_name = get_current_proof_name () in
   let name = match goal_name with 
     | Some s -> s 
@@ -1009,6 +1020,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref goal_n
     defined ()
   
 ;;    
+  *)
 
 
 let com_terminate 

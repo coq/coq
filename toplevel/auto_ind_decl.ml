@@ -314,6 +314,8 @@ so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
 let do_replace_lb aavoid narg gls p q = 
+  Util.anomaly "Auto_ind_decl.do_replace_lb: à restaurer"
+  (* arnaud: à restaurer:
   let avoid = Array.of_list aavoid in
   let do_arg v offset = 
   try   
@@ -350,10 +352,13 @@ let do_replace_lb aavoid narg gls p q =
         in let app =  if lb_args = [||] 
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args) 
             in [Equality.replace p q ; apply app ; Auto.default_auto]
+  *)
 
 
 (* used in the bool -> leib side *)
 let do_replace_bl ind gls aavoid narg lft rgt = 
+  Util.anomaly "Auto_ind_decl.do_replace_bl: à restaurer"
+  (* arnaud: à restaurer:
   let avoid = Array.of_list aavoid in 
   let do_arg v offset = 
   try   
@@ -424,6 +429,7 @@ let do_replace_bl ind gls aavoid narg lft rgt =
     if (sp1 <> sp2) || (i1 <> i2)
       then (error "Eq should be on the same type")
       else (aux (Array.to_list ca1) (Array.to_list ca2)) 
+  *)
 
 (* 
   create, from a list of ids [i1,i2,...,in] the list
@@ -603,6 +609,8 @@ let compute_lb_goal ind lnamesparrec nparrec =
         )))
 
 let compute_lb_tact ind lnamesparrec nparrec = 
+  Util.anomaly "Auto_ind_decl.compute_lb_tact: à restaurer"
+  (* arnaud: à restaurer:
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
     let gsig = top_goal_of_pftreestate (Pfedit.get_pftreestate()) in
@@ -660,6 +668,7 @@ let compute_lb_tact ind lnamesparrec nparrec =
                                   "Failure while solving Leibniz->Boolean." 
                     ]
             )
+  *)
 
 (* {n=m}+{n<>m}  part  *)
 let compute_dec_goal ind lnamesparrec nparrec = 
@@ -713,6 +722,8 @@ let compute_dec_goal ind lnamesparrec nparrec =
       )
 
 let compute_dec_tact ind lnamesparrec nparrec = 
+  Util.anomaly "Auto_ind_decl.compute_dec_tact: à restaurer"
+  (* arnaud: à restaurer:
   let list_id = list_id lnamesparrec in
   let eqI = eqI ind lnamesparrec in
     let avoid = ref [] in
@@ -799,4 +810,4 @@ let compute_dec_tact ind lnamesparrec nparrec =
                               true);
         Pfedit.by (Equality.discr_tac None)
         
-
+  *)

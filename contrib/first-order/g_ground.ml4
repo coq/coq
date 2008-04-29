@@ -121,6 +121,8 @@ END
 *)
 
 let default_declarative_automation gls = 
+  Util.anomaly "G_ground.default_declarative_automation: à restaurer"
+  (* arnaud: à restaurer:
   tclORELSE
     (tclORELSE (Auto.h_trivial [] None) 
     (Cctac.congruence_tac !congruence_depth []))
@@ -129,6 +131,7 @@ let default_declarative_automation gls =
 		default_solver
 		(Cctac.congruence_tac !congruence_depth [])))
        Void) gls
+  *)
 
 
 

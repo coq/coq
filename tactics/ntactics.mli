@@ -52,10 +52,10 @@ val head_constr_bound : constr -> constr list -> constr list
 
 
 
+exception Bound
 
 (*** arnaud: commenté plus ou moins jusqu'à la fin, 
              virer les doublons avec intros.mli
-exception Bound
 
 (*s Primitive tactics. *)
 

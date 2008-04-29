@@ -2126,19 +2126,28 @@ and interp_atomic ist gl = function
 
   (* Automation tactics *)
   | TacTrivial (lems,l) -> 
+      Util.anomaly "Tacinterp.interp_atomic: TacTrivial: obsolète"
+      (* arnaud: obsolète:
       Auto.h_trivial (pf_interp_constr_list ist gl lems)
-	(Option.map (List.map (interp_hint_base ist)) l)
+	(Option.map (List.map (interp_hint_base ist)) l)\
+      *)
   | TacAuto (n,lems,l) ->
+      Util.anomaly "Tacinterp.interp_atomic: TacAuto: obsolète"
+      (* arnaud: obsolète:
       Auto.h_auto (Option.map (interp_int_or_var ist) n)
       (pf_interp_constr_list ist gl lems)
       (Option.map (List.map (interp_hint_base ist)) l)
+      *)
   | TacAutoTDB n -> Dhyp.h_auto_tdb n
   | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
   | TacDestructConcl -> Dhyp.h_destructConcl
-  | TacSuperAuto (n,l,b1,b2) -> Auto.h_superauto n l b1 b2
+  | TacSuperAuto (n,l,b1,b2) -> Util.anomaly "Tacinterp.interp_atomic: TacSuperAuto"(* Auto.h_superauto n l b1 b2 *)
   | TacDAuto (n,p,lems) ->
+      Util.anomaly "Tacinterp.interp_atomic: TacDAuto: obsolète"
+      (* arnaud: obsolète:
       Auto.h_dauto (Option.map (interp_int_or_var ist) n,p)
       (pf_interp_constr_list ist gl lems)
+      *)
 
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
@@ -2723,6 +2732,7 @@ let interp_redexp env sigma r =
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
+(* arnaud: à porter sans doute.
 let _ = Auto.set_extern_interp
   (fun l -> 
     let l = List.map (fun (id,c) -> (id,VConstr c)) l in
@@ -2735,3 +2745,5 @@ let _ = Auto.set_extern_subst_tactic subst_tactic
 let _ = Dhyp.set_extern_interp eval_tactic
 let _ = Dhyp.set_extern_intern_tac
   (fun t -> intern_tactic (make_empty_glob_sign()) t)
+
+*)

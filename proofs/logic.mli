@@ -32,6 +32,11 @@ val fresh_id : Names.identifier list ->
                Names.identifier ->
                Names.identifier Goal.sensitive
 
+val last_hyp : Term.named_declaration Goal.sensitive
+
+val get_hyp : Names.identifier -> Term.named_declaration Goal.sensitive
+val get_hyp_typ : Names.identifier -> Term.types Goal.sensitive
+
 (*** tacticals ***)
 
 (* Tacticals from Proofview, for consistency *)

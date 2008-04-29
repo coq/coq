@@ -28,7 +28,7 @@ open Rawterm
 open Hiddentac
 
 (* arnaud: trucs factices *)
-type tactics = Tacticals.tactic
+type tactic = Tacticals.tactic
 
 let pf_type_of _ = Util.anomaly "Eauto.pf_type_of: fantome"
 let pf_concl _ = Util.anomaly "Eauto.pf_concl: fantome"
@@ -101,7 +101,9 @@ let e_constructor_tac boundopt i lbind gl =
 
 let e_one_constructor i = e_constructor_tac None i
 
-let e_any_constructor tacopt gl =
+let e_any_constructor tacopt =
+  Util.anomaly "Eauto.e_any_constructor: à restaurer"
+  (* arnaud: à restaurer:
   let t = match tacopt with None -> tclIDTAC | Some t -> t in
   let mind = fst (pf_reduce_to_quantified_ind gl (pf_concl gl)) in
   let nconstr =
@@ -109,6 +111,7 @@ let e_any_constructor tacopt gl =
   if nconstr = 0 then error "The type has no constructors";
   tclFIRST (List.map (fun i -> tclTHEN (e_one_constructor i NoBindings) t) 
               (interval 1 nconstr)) gl
+  *)
 
 let e_left = e_constructor_tac (Some 2) 1
 
@@ -201,6 +204,8 @@ let rec e_trivial_fail_db db_list local_db goal =
   tclFIRST (List.map tclCOMPLETE tacl) goal 
 
 and e_my_find_search db_list local_db hdc concl = 
+  Util.anomaly "Eauto.e_my_find_search: à restaurer"
+  (* arnaud:
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then 
@@ -234,6 +239,7 @@ and e_my_find_search db_list local_db hdc concl =
        i*)
   in 
   List.map tac_of_hint hintl
+  *)
     
 and e_trivial_resolve db_list local_db gl = 
   try 
@@ -266,7 +272,9 @@ module SearchProblem = struct
 		 
   let success s = (sig_it (fst s.tacres)) = []
 
-  let rec filter_tactics (glls,v) = function
+  let rec filter_tactics (glls,v) = 
+    Util.anomaly "Eauto.SearchProblem.filter_tactic: à restaurer"
+    (* arnaud: à restaurer: function
     | [] -> []
     | (tac,pptac) :: tacl -> 
 	try 
@@ -275,6 +283,7 @@ module SearchProblem = struct
 	  ((lgls,v'),pptac) :: filter_tactics (glls,v) tacl
 	with e when Logic.catchable_exception e ->
 	  filter_tactics (glls,v) tacl
+    *)
 
   (* Ordering of states is lexicographic on depth (greatest first) then
      number of remaining goals. *)
@@ -284,6 +293,8 @@ module SearchProblem = struct
     if d <> 0 then d else nbgoals s - nbgoals s'
 
   let branching s = 
+    Util.anomaly "Eauto.SearchProblem.branching: à restaurer"
+    (* arnaud: à restaurer:
     if s.depth = 0 then 
       []
     else      
@@ -335,6 +346,7 @@ module SearchProblem = struct
 	  l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
+    *)
 
   let pp s = 
     msg (hov 0 (str " depth=" ++ int s.depth ++ spc () ++ 
@@ -367,12 +379,15 @@ let e_breadth_search debug n db_list local_db gl =
     s.SearchProblem.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
-let e_search_auto debug (in_depth,p) lems db_list gl = 
+let e_search_auto debug (in_depth,p) lems db_list = 
+  Util.anomaly "Eauto.e_search_auto: à restaurer"
+  (* arnaud: à restaurer:
   let local_db = make_local_hint_db lems gl in 
   if in_depth then 
     e_depth_search debug p db_list local_db gl
   else 
     e_breadth_search debug p db_list local_db gl
+  *)
 
 let eauto debug np lems dbnames =
   let db_list =

@@ -40,6 +40,9 @@ open Indrec
 open Pretype_errors
 
 
+let (>>=) = Goal.bind
+
+
 (* arnaud: trucs factices *)
 type hyp_location =  (int list list list * Names.identifier) * Tacexpr.hyp_location_flag
 module Tacmach = 
@@ -60,7 +63,6 @@ module Pfedit =
   end
 open Pfedit
 
-let pf_reduce _ = Util.anomaly "Tactics.pf_reduce: fantome"
 let pf_concl _ = Util.anomaly "Tactics.pf_concl: fantome"
 let pf_get_hyp _ = Util.anomaly "Tactics.pf_get_hyp: fantome"
 let convert_hyp_no_check _ = Util.anomaly "Tactics.convert_hyp_no_check: fantome"
@@ -92,8 +94,6 @@ let catchable_exception _ = Util.anomaly "Tactics.catchable_exception: fantome"
 let pf_get_hyp_typ _ = Util.anomaly "Tactics.pf_get_hyp_typ: fantome"
 let pf_hnf_constr _ = Util.anomaly "Tactics.pf_hnf_constr: fantome"
 let pf_conv_x_leq _ = Util.anomaly "Tactics.pf_conv_x_leq: fantome"
-let pf_reduce_to_quantified_ind _ = Util.anomaly "Tactics.pf_reduce_to_quantified_ind: fantome"
-let pf_apply _ = Util.anomaly "Tactics.pf_apply: fantome"
 let clenv_refine _ = Util.anomaly "Tactics.clenv_refine: fantome"
 let pf_reduce_to_atomic_ind _ = Util.anomaly "Tactics.pf_reduce_to_atomic_ind: fantome"
 let pf_parse_const _ = Util.anomaly "Tactics.pf_parse_const: fantome"
@@ -108,7 +108,6 @@ type anything = IntroNeedsProduct
 exception RefinerError of anything
 (* arnaud: /trucs factices *)
 
-let (>>=) = Goal.bind
 
 exception Bound
 
@@ -229,7 +228,9 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 
 let reduct_in_concl (redfun,_) =
   Goal.concl >>= fun concl ->
-  pf_reduce redfun concl >>= fun new_concl ->
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  let new_concl = redfun env (Evd.evars_of defs) concl in
   Goal.convert_concl false new_concl
 
 let reduct_in_hyp redfun ((_,id),where) =
@@ -323,10 +324,9 @@ let needs_check = function
   | Fold _ -> true
   | _ -> false
 
-let reduce redexp cl goal =
+let reduce redexp cl =
   (if needs_check redexp then with_check else (fun x -> x))
     (redin_combinator (Redexpr.reduction_of_red_expr redexp) cl)
-    goal
 
 (* Unfolding occurrences of a constant *)
 
@@ -704,8 +704,11 @@ let check_number_of_constructors expctdnumopt i nconstr =
 let constructor_tac expctdnumopt i lbind =
   let apply_tac_arg_and_redcl = 
     Goal.concl >>= fun concl ->
-    (* let (mind,redcl) = pf_reduce_to_quantified_ind concl in *)
-    pf_reduce_to_quantified_ind concl >>= fun (mind,redcl) ->
+    Goal.env >>= fun env ->
+    Goal.defs >>= fun defs ->
+    let (mind,redcl) = 
+      Tacred.reduce_to_quantified_ind env (Evd.evars_of defs) concl 
+    in
     let nconstr =
       Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
     check_number_of_constructors expctdnumopt i nconstr;
@@ -735,7 +738,11 @@ let any_constructor tacopt =
   let t = match tacopt with None -> Proofview.id () | Some t -> t in
   let sensitive_tactic =
     Goal.concl >>= fun concl ->
-    let mind = fst (pf_reduce_to_quantified_ind concl) in
+    Goal.env >>= fun env ->
+    Goal.defs >>= fun defs ->
+    let mind = 
+      fst (Tacred.reduce_to_quantified_ind env (Evd.evars_of defs) concl) 
+    in
     let nconstr =
       Array.length (snd (Global.lookup_inductive mind)).mind_consnames 
     in
@@ -823,7 +830,9 @@ let general_elim ?(allow_K=true) with_evars c e  =
 
 let find_eliminator c =
   Logic.type_of c >>= fun typ ->
-  pf_reduce_to_quantified_ind typ >>= fun (ind,t) ->
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  let (ind,t) = Tacred.reduce_to_quantified_ind env (Evd.evars_of defs) typ in
   Ntacticals.elimination_sort_of_goal >>= fun s ->
   Goal.return (lookup_eliminator ind s)
 
@@ -907,12 +916,16 @@ let general_case_analysis_in_context with_evars c_and_lbindc =
   with_evars >>= fun with_evars ->
     c_and_lbindc >>= fun (c,lbindc) ->
   Logic.type_of c >>= fun type_of_c ->
-  pf_reduce_to_quantified_ind type_of_c >>= fun (mind,_) ->
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  let (mind,_) = 
+    Tacred.reduce_to_quantified_ind env (Evd.evars_of defs) type_of_c 
+  in
   Ntacticals.elimination_sort_of_goal >>= fun sort ->
   Goal.concl >>= fun concl ->
   let case = 
     if occur_term c concl then make_case_dep else make_case_gen in
-  let elim     = pf_apply case mind sort in 
+  let elim     = case env (Evd.evars_of defs) mind sort in 
   general_elim with_evars (c,lbindc) (elim,NoBindings)
 
 let general_case_analysis with_evars cx =
@@ -1438,42 +1451,66 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names =
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
 let atomize_param_of_ind (indref,nparams) hyp0 =
-  Util.anomaly "Ntactics.atomize_param_of_ind: à restaurer"
-  (* arnaud: à restaurer:
-  let tmptyp0 = pf_get_hyp_typ gl hyp0 in
-  let typ0 = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in
-  let prods, indtyp = decompose_prod typ0 in
-  let argl = snd (decompose_app indtyp) in
-  let params = list_firstn nparams argl in
-  (* le gl est important pour ne pas préévaluer *)
-  let rec atomize_one i avoid gl =
+  let argl =  
+    Logic.get_hyp_typ hyp0 >>= fun tmptyp0 ->
+    Goal.env >>= fun env ->
+    Goal.defs >>= fun defs ->
+    let typ0 = 
+      reduce_to_quantified_ref env (Evd.evars_of defs) indref tmptyp0 
+    in
+    let prods, indtyp = decompose_prod typ0 in
+    Goal.return (snd (decompose_app indtyp))
+  in
+  let length_argl =
+    argl >>= fun argl ->
+    Goal.return (List.length argl)
+  in
+  let params = 
+    argl >>= fun argl ->
+    Goal.return (list_firstn nparams argl)
+  in
+  let rec atomize_one i avoid =
+    Proofview.sensitive_tactic begin
+    i >>= fun i ->
+    avoid >>= fun avoid ->
     if i<>nparams then
-      let tmptyp0 = pf_get_hyp_typ gl hyp0 in
+      Logic.get_hyp_typ hyp0 >>= fun tmptyp0 ->
+      Goal.env >>= fun env ->
+      Goal.defs >>= fun defs ->
       (* If argl <> [], we expect typ0 not to be quantified, in order to
          avoid bound parameters... then we call pf_reduce_to_atomic_ind *)
-      let indtyp = pf_apply reduce_to_atomic_ref gl indref tmptyp0 in
+      let indtyp = 
+	reduce_to_atomic_ref env (Evd.evars_of defs) indref tmptyp0 
+      in
       let argl = snd (decompose_app indtyp) in
       let c = List.nth argl (i-1) in
       match kind_of_term c with
-	| Var id when not (List.exists (occur_var (pf_env gl) id) avoid) ->
-	    atomize_one (i-1) ((mkVar id)::avoid) gl
+	| Var id when not (List.exists (occur_var env id) avoid) ->
+	    Goal.return (
+	      atomize_one (Goal.return (i-1)) (Goal.return ((mkVar id)::avoid))
+	    )
 	| Var id ->
-	    let x = fresh_id [] id gl in
-	    tclTHEN
-	      (letin_tac true (Name x) (mkVar id) allClauses)
-	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
+	    Logic.fresh_id [] id >>= fun x ->
+	    Goal.return (
+	      Logic.tclBIND
+		(letin_tac true (Name x) (mkVar id) Ntacticals.allClauses)
+		(fun () -> atomize_one (Goal.return (i-1)) (Goal.return ((mkVar x)::avoid)))
+	    )
 	| _ ->
-	    let id = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c)
+	    Logic.type_of c >>= fun type_of_c ->
+	    let id = id_of_name_using_hdchar (Global.env()) type_of_c
 		       Anonymous in
-	    let x = fresh_id [] id gl in
-	    tclTHEN
-	      (letin_tac true (Name x) c allClauses)
-	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
+	    Logic.fresh_id [] id >>= fun x ->
+	    Goal.return (
+	      Logic.tclBIND
+		(letin_tac true (Name x) c Ntacticals.allClauses)
+		(fun () -> atomize_one (Goal.return (i-1)) (Goal.return((mkVar x)::avoid)))
+	    )
     else 
-      tclIDTAC gl
+      Goal.return (Proofview.id ())
+    end
   in
-  atomize_one (List.length argl) params gl
-  *)
+  atomize_one length_argl params
 
 let find_atomic_param_of_ind nparams indtyp =
   let argl = snd (decompose_app indtyp) in
@@ -1680,7 +1717,7 @@ let empty_scheme =
 
 (* Unification between ((elimc:elimt) ?i ?j ?k ?l ... ?m) and the
    hypothesis on which the induction is made *)
-let induction_tac with_evars (varname,lbind) typ scheme gl =
+let induction_tac with_evars (varname,lbind) typ scheme =
   Util.anomaly "Tactics.induction_tac: à restaurer"
   (* arnaud: à restaurer
   let elimc,lbindelimc = 
@@ -2150,23 +2187,25 @@ let compute_elim_signature elimc elimt names_info =
 
 
 let find_elim_signature isrec elim hyp0 =
-  Util.anomaly "Ntactics.find_elim_signature: à restaurer"
-  (* arnaud: à restaurer:
-  let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
-  let (elimc,elimt) = match elim with
+  Logic.get_hyp_typ hyp0 >>= fun tmptyp0 ->
+  begin match elim with
     | None ->
-	let mind,_ = pf_reduce_to_quantified_ind gl tmptyp0 in
-	let s = elimination_sort_of_goal gl in
+        Goal.env >>= fun env ->
+        Goal.defs >>= fun defs ->
+	let (mind,_) = 
+	  Tacred.reduce_to_quantified_ind env (Evd.evars_of defs) tmptyp0 
+	in
+	Ntacticals.elimination_sort_of_goal >>= fun s ->
 	let elimc =
 	  if isrec then lookup_eliminator mind s
-	  else pf_apply make_case_gen gl mind s in
-	let elimt = pf_type_of gl elimc in
-	((elimc, NoBindings), elimt)
+	  else make_case_gen env (Evd.evars_of defs) mind s in
+	Logic.type_of elimc >>= fun elimt ->
+	Goal.return ((elimc, NoBindings), elimt)
     | Some (elimc,lbind as e) -> 
-	(e, pf_type_of gl elimc) in
+	Goal.return (e, pf_type_of elimc) 
+  end >>= fun (elimc,elimt) ->
   let indsign,elim_scheme = compute_elim_signature elimc elimt hyp0 in
-  (indsign,elim_scheme)
-  *)
+  Goal.return (indsign,elim_scheme)
 
 
 let mapi f l =
@@ -2229,7 +2268,7 @@ let recolle_clenv scheme lid elimclause gl =
    (elimc ?i ?j ?k...?l). This solves partly meta variables (and may
     produce new ones). Then refine with the resulting term with holes.
 *)
-let induction_tac_felim with_evars indvars (* (elimc,lbindelimc) elimt *) scheme gl = 
+let induction_tac_felim with_evars indvars (* (elimc,lbindelimc) elimt *) scheme = 
   Util.anomaly "Tactics.induction_tac_felim: à restaurer"
   (* arnaud: à restaurer:
   let elimt = scheme.elimt in
@@ -2252,8 +2291,7 @@ let induction_tac_felim with_evars indvars (* (elimc,lbindelimc) elimt *) scheme
    making the "pattern" by hand before calling induction_tac_felim
    FIXME: REUNIF AVEC induction_tac_felim? *)
 let induction_from_context_l isrec with_evars elim_info lid names =
-  Util.anomaly "Ntactics.induction_from_context_l: à restaurer"
-  (* arnaud: à restaurer:
+Proofview.sensitive_tactic begin
   let indsign,scheme = elim_info in
   (* number of all args, counting farg and indarg if present. *)
   let nargs_indarg_farg = scheme.nargs
@@ -2262,7 +2300,7 @@ let induction_from_context_l isrec with_evars elim_info lid names =
   (* Number of given induction args must be exact. *)
   if List.length lid <> nargs_indarg_farg + scheme.nparams then 
       error "not the right number of arguments given to induction scheme";  
-  let env = pf_env gl in
+  Goal.env >>= fun env ->
   (* hyp0 is used for re-introducing hyps at the right place afterward.
      We chose the first element of the list of variables on which to
      induct. It is probably the first of them appearing in the
@@ -2275,8 +2313,9 @@ let induction_from_context_l isrec with_evars elim_info lid names =
 	  let ivs,lp = cut_list nargs_without_first l in
 	  e, ivs, lp in
   let statlists,lhyp0,indhyps,deps = cook_sign None (hyp0::indvars) env in
-  let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
-  let names = compute_induction_names (Array.length indsign) names in
+  Goal.concl >>= fun concl ->
+  let tmpcl = it_mkNamedProd_or_LetIn concl deps in
+  let names = Ntacticals.compute_induction_names (Array.length indsign) names in
   let dephyps = List.map (fun (id,_,_) -> id) deps in
   let deps_cstr =
     List.fold_left (fun a (id,b,_) -> if b = None then (mkVar id)::a else a) [] deps in
@@ -2289,32 +2328,32 @@ let induction_from_context_l isrec with_evars elim_info lid names =
 		       farg in the conclusion of the induction scheme *)
     List.rev ((if scheme.farg_in_concl then indvars else hyp0::indvars) @ lid_params) in
   (* Magistral effet de bord: comme dans induction_from_context. *)
-  tclTHENLIST
-    [ 
-      (* Generalize dependent hyps (but not args) *)
-      if deps = [] then tclIDTAC else apply_type tmpcl deps_cstr;
-      thin dephyps; (* clear dependent hyps *)
-      (* pattern to make the predicate appear. *)
-      reduce (Pattern (List.map (fun e -> ([],e)) lidcstr)) onConcl;
-      (* FIXME: Tester ca avec un principe dependant et non-dependant *)
-      (if isrec then tclTHENFIRSTn else tclTHENLASTn)
-       	(tclTHENLIST [ 
-	  (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
-	     possible holes using arguments given by the user (but the
-	     functional one). *)
-	  induction_tac_felim with_evars realindvars scheme;
-          tclTRY (thin (List.rev (indhyps)));
-	])
-	(array_map2 
-	  (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
-    ]
-    gl
-  *)
+  Goal.return begin
+    Logic.tclTHENLIST
+      [ 
+	(* Generalize dependent hyps (but not args) *)
+	if deps = [] then Proofview.id () else apply_type tmpcl deps_cstr;
+	thin (Goal.return dephyps); (* clear dependent hyps *)
+	(* pattern to make the predicate appear. *)
+	reduce (Pattern (List.map (fun e -> ([],e)) lidcstr)) Ntacticals.onConcl;
+	(* FIXME: Tester ca avec un principe dependant et non-dependant *)
+	(if isrec then Ntacticals.tclTHENFIRSTn else Ntacticals.tclTHENLASTn)
+       	  (Logic.tclTHENLIST [ 
+	     (* Induction by "refine (indscheme ?i ?j ?k...)" + resolution of all
+		possible holes using arguments given by the user (but the
+		functional one). *)
+	     induction_tac_felim with_evars realindvars scheme;
+             Logic.tclTRY (thin (Goal.return (List.rev (indhyps))));
+	   ])
+	  (array_map2 
+	     (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
+      ]
+  end
+end
 
 
 let induction_from_context isrec with_evars elim_info (hyp0,lbind) names =
-  Util.anomaly "Ntactics: induction_from_context: à restaurer"
-  (* arnaud: à restaurer:
+Proofview.sensitive_tactic begin
   (*test suivant sans doute inutile car refait par le letin_tac*)
   if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
     errorlabstrm "induction" 
@@ -2322,15 +2361,16 @@ let induction_from_context isrec with_evars elim_info (hyp0,lbind) names =
   let indsign,scheme = elim_info in
 
   let indref = match scheme.indref with | None -> assert false | Some x -> x in
-  let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
-  let typ0 = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in
-
-  let env = pf_env gl in
+  Logic.get_hyp_typ hyp0 >>= fun tmptyp0 ->
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  let typ0 = reduce_to_quantified_ref env (Evd.evars_of defs) indref tmptyp0 in
   let indvars = find_atomic_param_of_ind scheme.nparams (snd (decompose_prod typ0)) in
   (* induction_from_context_l isrec elim_info (hyp0::List.rev indvars) names gl  *)
   let statlists,lhyp0,indhyps,deps = cook_sign (Some hyp0) indvars env in
-  let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
-  let names = compute_induction_names (Array.length indsign) names in
+  Goal.concl >>= fun concl ->
+  let tmpcl = it_mkNamedProd_or_LetIn concl deps in
+  let names = Ntacticals.compute_induction_names (Array.length indsign) names in
   let dephyps = List.map (fun (id,_,_) -> id) deps in
   let deps_cstr =
     List.fold_left
@@ -2344,38 +2384,39 @@ let induction_from_context isrec with_evars elim_info (hyp0,lbind) names =
      comme lookup_eliminator renvoie un combinateur de la forme
      "ind_rec ... (hyp0 ?)", les buts correspondant à des arguments de
      hyp0 sont maintenant à la fin et c'est tclTHENFIRSTn qui marche !!! *)
-  tclTHENLIST
-    [ if deps = [] then tclIDTAC else apply_type tmpcl deps_cstr;
-      thin dephyps;
-      (if isrec then tclTHENFIRSTn else tclTHENLASTn)
-       	(tclTHENLIST
+  Goal.return begin
+  Logic.tclTHENLIST
+    [ if deps = [] then Proofview.id () else apply_type tmpcl deps_cstr;
+      thin (Goal.return dephyps);
+      (if isrec then Ntacticals.tclTHENFIRSTn else Ntacticals.tclTHENLASTn)
+       	(Logic.tclTHENLIST
 	  [ induction_tac with_evars (hyp0,lbind) typ0 scheme;
-	    tclTHEN (tclTRY (unfold_body hyp0)) (thin [hyp0]);
-            tclTRY (thin indhyps) ])
+	    Logic.tclTHEN (Logic.tclTRY (unfold_body hyp0)) (thin (Goal.return [hyp0]));
+            Logic.tclTRY (thin (Goal.return indhyps)) ])
        	(array_map2
 	   (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
     ]
-    gl
-  *)
-
+  end
+end
 
 
 exception TryNewInduct of exn
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) =
-  Util.anomaly "Ntactics.induction_with_atomization_of_ind_arg: à restaurer"
-  (* arnaud: à restaurer:
-  let (indsign,scheme as elim_info) = find_elim_signature isrec elim hyp0 gl in
-  if scheme.indarg = None then (* This is not a standard induction scheme (the
-				  argument is probably a parameter) So try the
-				  more general induction mechanism. *)
-    induction_from_context_l isrec with_evars elim_info [hyp0] names gl
-  else
-    let indref = match scheme.indref with | None -> assert false | Some x -> x in
-    tclTHEN
-      (atomize_param_of_ind (indref,scheme.nparams) hyp0)
-      (induction_from_context isrec with_evars elim_info (hyp0,lbind) names) gl
-  *)
+Proofview.sensitive_tactic begin
+  find_elim_signature isrec elim hyp0 >>= fun (indsign,scheme as elim_info) ->
+  Goal.return begin
+    if scheme.indarg = None then (* This is not a standard induction scheme (the
+			  	    argument is probably a parameter) So try the
+				    more general induction mechanism. *)
+      induction_from_context_l isrec with_evars elim_info [hyp0] names
+    else
+      let indref = match scheme.indref with | None -> assert false | Some x -> x in
+	Logic.tclTHEN
+	  (atomize_param_of_ind (indref,scheme.nparams) hyp0)
+	  (induction_from_context isrec with_evars elim_info (hyp0,lbind) names)
+  end
+end
 
 (* Induction on a list of induction arguments. Analyse the elim
    scheme (which is mandatory for multiple ind args), check that all
@@ -2396,23 +2437,28 @@ let induction_without_atomization isrec with_evars elim names lid  =
   else induction_from_context_l isrec with_evars elim_info lid names gl
   *)
 
-let new_induct_gen isrec with_evars elim names (c,lbind)  =
-  Util.anomaly "Ntactics.new_induct_gen: à restaurer"
-  (* arnaud: à restaurer:
-  match kind_of_term c with
+let new_induct_gen isrec with_evars elim names cx  =
+  Proofview.sensitive_tactic begin
+    cx >>= fun (c,lbind) ->
+    match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context()))
 	        & lbind = NoBindings & not with_evars ->
-	induction_with_atomization_of_ind_arg
-	  isrec with_evars elim names (id,lbind) gl
+	Goal.return (
+	  induction_with_atomization_of_ind_arg
+	    isrec with_evars elim names (id,lbind)
+	)
     | _        ->
-	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) 
+	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of c) 
 		  Anonymous in
-	let id = fresh_id [] x gl in
-	tclTHEN
-	  (letin_tac true (Name id) c allClauses)
-	  (induction_with_atomization_of_ind_arg
-	     isrec with_evars elim names (id,lbind)) gl
-  *)
+	Logic.fresh_id [] x >>= fun id ->
+	let name = Goal.return (Name id) in
+	Goal.return (
+	  Logic.tclTHEN
+	    (letin_tac true name c Ntacticals.allClauses)
+	    (induction_with_atomization_of_ind_arg
+	       isrec with_evars elim names (id,lbind))
+	)
+  end
 
 (* Induction on a list of arguments. First make induction arguments
    atomic (using letins), then do induction. The specificity here is
@@ -2493,21 +2539,28 @@ Proofview.sensitive_tactic begin
     try 
       let c = List.hd lc in
       match c with
-	| ElimOnConstr c -> new_induct_gen isrec with_evars elim names c
+	| ElimOnConstr c -> 
+	    new_induct_gen isrec with_evars elim names (Goal.return c)
 	| ElimOnAnonHyp n ->
 	    Logic.tclTHEN (Intros.intros_until_n (Goal.return n))
 	      (Ntacticals.tclLAST_HYP (fun c -> 
-		  new_induct_gen isrec with_evars elim names (c,NoBindings)))
+                  let cx = c >>= fun c -> Goal.return (c,NoBindings) in
+		  new_induct_gen isrec with_evars elim names cx))
 	      (* Identifier apart because id can be quantified in goal and not typable *)
 	| ElimOnIdent (_,id) ->
 	    Logic.tclTHEN (Logic.tclTRY (Intros.intros_until_id (Goal.return id)))
-	      (new_induct_gen isrec with_evars elim names (mkVar id,NoBindings))
+	      (let cx = Goal.return (mkVar id,NoBindings) in
+	       new_induct_gen isrec with_evars elim names cx)
     with (* If this fails, try with new mechanism but if it fails too,
 	    then the exception is the first one. *)
       | x ->
+	  Util.anomaly "Ntactics.induct_destruct: restaurer le cas 'x'"
+	  (* arnaud: à restaurer:
 	  (try induct_destruct_l isrec with_evars lc elim names
 	   with _  -> raise x)
-  else induct_destruct_l isrec with_evars lc elim names
+	  *)
+  else Util.anomaly "Ntactics.induct_destruct: restaurer le cas 'else'"
+    (* arnaud: à restaurer: induct_destruct_l isrec with_evars lc elim names*)
   end
 end
 

@@ -93,13 +93,34 @@ let get_type_of c =
   Goal.defs >>= fun defs ->
   Goal.return (Retyping.get_type_of env (Evd.evars_of defs) c)
 
-(* Create a singleton clause list with the last hypothesis from then context *)
-(* arnaud: exporter ? *)
-let  lastHyp = 
+let get_hyp id =
+  Goal.hyps >>= fun hyps ->
+  let sign = Environ.named_context_of_val hyps in
+  Goal.return (
+    try
+      Sign.lookup_named id sign
+    with Not_found ->
+      Util.error ("No such hypothesis : " ^ (Names.string_of_id id))
+  )
+
+let get_hyp_typ id =
+  get_hyp id >>= fun (_,_,t) ->
+  Goal.return t
+
+let last_hyp =
+  Goal.hyps >>= fun hyps ->
+  Goal.return (
+    List.hd (Environ.named_context_of_val hyps)
+  )
+
+(* Create a singleton clause list with the name of the last hypothesis 
+   from then context *)
+(* arnaud: peut-être factoriser avec last_hyp? *)
+let  last_hyp_id = 
   Goal.hyps >>= fun hyps ->
   let ids = Termops.ids_of_named_context (Environ.named_context_of_val hyps) in
   match ids with
-  | [] -> Util.anomaly "Logic.lastHyp: does not apply to empty-context-goals"
+  | [] -> Util.anomaly "Logic.last_hyp_id: does not apply to empty-context-goals"
   | a::_ -> Goal.return a
 
 
@@ -160,8 +181,9 @@ let tclTHENARRAY tacs =
   tclTHENLIST (Array.to_list tacs)
 
 (* arnaud: à remettre dans "tacticals" ? *)
+(* arnaud: renommer pour mettre "id" dans le titre ? *)
  let onLastHyp tac = 
-   tac lastHyp
+   tac last_hyp_id
 
 
 (*** tactics ***)

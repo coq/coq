@@ -75,7 +75,6 @@ val unTAC            : 'a tactic -> goal sigma -> proof_tree sigma
 
 (*s Clause tacticals. *)
 
-(* arnaud: débranchement temporaire
 type simple_clause = identifier gsimple_clause
 type clause = identifier gclause
 
@@ -83,6 +82,8 @@ val allClauses : 'a gclause
 val allHyps : clause
 val onHyp : identifier -> clause
 val onConcl : 'a gclause
+
+(* arnaud: débranchement temporaire
 
 val nth_clause  : int Goal.sensitive -> clause Goal.sensitive
 val clause_type : clause Goal.sensitive -> constr Goal.sensitive

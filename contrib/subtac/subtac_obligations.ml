@@ -206,6 +206,8 @@ let declare_obligation obl body =
     { obl with obl_body = Some (mkConst constant) }
       
 let try_tactics obls = 
+  Util.anomaly "Subtac_obligations.try_tactics: à restaurer"
+  (* arnaud: à restaurer:
   Array.map
     (fun obl ->
        match obl.obl_body with
@@ -217,6 +219,7 @@ let try_tactics obls =
 	      with _ -> obl)
 	 | _ -> obl)
     obls
+  *)
         
 let red = Reductionops.nf_betaiota
 

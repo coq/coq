@@ -116,6 +116,8 @@ let eqCase tac =
   tac)))
 
 let diseqCase eqonleft =
+  Util.anomaly "Eqdecide.diseqCase: à restaurer"
+  (* arnaud : à restaurer: 
   let diseq  = id_of_string "diseq" in
   let absurd = id_of_string "absurd" in 
   (tclTHEN (intro_using diseq)
@@ -125,14 +127,18 @@ let diseqCase eqonleft =
   (tclTHEN  (h_simplest_apply (mkVar diseq))
   (tclTHEN  (Extratactics.h_injHyp (Rawterm.NamedHyp absurd))
             (full_trivial [])))))))
+  *)
 
-let solveArg eqonleft op a1 a2 tac g = 
+let solveArg eqonleft op a1 a2 tac = 
+  Util.anomaly "Eqdecide.solveArg: à restaurer"
+  (* arnaud: à restaurer:
   let rectype = pf_type_of g a1 in
   let decide  = mkDecideEqGoal eqonleft op rectype a1 a2 g in
   let subtacs = 
     if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto] 
     else [diseqCase eqonleft;eqCase tac;default_auto] in
   (tclTHENS (h_elim_type decide) subtacs) g
+  *)
 
 let solveEqBranch rectype g =
   try
@@ -171,10 +177,13 @@ let decideGralEquality g =
 
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 
-let decideEquality c1 c2 g = 
+let decideEquality c1 c2 =
+  Util.anomaly "Eqdecide.decideEquality: à restaurer" 
+  (* arnaud: à restaurer:
   let rectype = (pf_type_of g c1) in     
   let decide  = mkGenDecideEqGoal rectype g in  
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal]) g
+  *)
 
 
 (* The tactic Compare *)

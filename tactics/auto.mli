@@ -20,13 +20,9 @@ open Evd
 open Libnames
 open Vernacexpr
 open Mod_subst
+open Proofview
 (*i*)
 
-(* arnaud: trucs factices *)
-type tactic = Tacticals.tactic
-type goal = Evd.evar_info
-(* arnaud: /trucs factices *)
-  
 type auto_tactic = 
   | Res_pf     of constr * clausenv    (* Hint Apply *)
   | ERes_pf    of constr * clausenv    (* Hint EApply *)
@@ -117,7 +113,7 @@ val make_extern :
       -> global_reference * pri_auto_tactic
 
 val set_extern_interp :
-  (patvar_map -> Tacexpr.glob_tactic_expr -> tactic) -> unit
+  (patvar_map -> Tacexpr.glob_tactic_expr -> unit tactic) -> unit
 
 val set_extern_intern_tac :
   (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr)
@@ -130,58 +126,60 @@ val set_extern_subst_tactic :
 (* Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints *)
 
-val make_local_hint_db : constr list -> goal sigma -> Hint_db.t
+val make_local_hint_db : constr list -> Hint_db.t Goal.sensitive
 
 val priority : (int * 'a) list -> 'a list
 
 val default_search_depth : int ref
 
 (* Try unification with the precompiled clause, then use registered Apply *)
-val unify_resolve : (constr * clausenv) -> tactic
+val unify_resolve : (constr * clausenv) -> unit tactic
 
 (* [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of 
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> constr_pattern -> Tacexpr.glob_tactic_expr -> tactic
+val conclPattern : constr -> constr_pattern -> Tacexpr.glob_tactic_expr -> unit tactic
 
 (* The Auto tactic *)
 
-val auto : int -> constr list -> hint_db_name list -> tactic
+val auto : int -> constr list -> hint_db_name list -> unit tactic
 
 (* auto with default search depth and with the hint database "core" *)
-val default_auto : tactic
+val default_auto : unit -> unit tactic
 
 (* auto with all hint databases except the "v62" compatibility database *)
-val full_auto : int -> constr list -> tactic
+val full_auto : int -> constr list -> unit tactic
 
 (* auto with default search depth and with all hint databases 
    except the "v62" compatibility database *)
-val default_full_auto : tactic
+val default_full_auto : unit -> unit tactic
 
 (* The generic form of auto (second arg [None] means all bases) *)
-val gen_auto : int option -> constr list -> hint_db_name list option -> tactic
+val gen_auto : int option -> constr list -> hint_db_name list option -> unit tactic
 
 (* The hidden version of auto *)
-val h_auto   : int option -> constr list -> hint_db_name list option -> tactic
+val h_auto   : int option -> constr list -> hint_db_name list option -> unit tactic
 
 (* Trivial *)
-val trivial : constr list -> hint_db_name list -> tactic
-val gen_trivial : constr list -> hint_db_name list option -> tactic
-val full_trivial : constr list -> tactic
-val h_trivial : constr list -> hint_db_name list option -> tactic
+val trivial : constr list Goal.sensitive -> hint_db_name list -> unit tactic
+val gen_trivial : constr list Goal.sensitive -> hint_db_name list option -> unit tactic
+val full_trivial : constr list Goal.sensitive -> unit tactic
+(* arnaud: à virer sans doute ?
+val h_trivial : constr list -> hint_db_name list option -> unit tactic
+*)
 
 val fmt_autotactic : auto_tactic -> Pp.std_ppcmds
 
 (*s The following is not yet up to date -- Papageno. *)
 
 (* DAuto *)
-val dauto : int option * int option -> constr list -> tactic
+val dauto : int option * int option -> constr list -> unit tactic
 val default_search_decomp : int ref
-val default_dauto : tactic
+val default_dauto : unit -> unit tactic
 
-val h_dauto : int option * int option -> constr list -> tactic
+val h_dauto : int option * int option -> constr list -> unit tactic
 (* SuperAuto *)
 
 type autoArguments =
@@ -192,4 +190,4 @@ type autoArguments =
 val superauto : int -> (identifier * constr) list -> autoArguments list -> tactic
 *)
 
-val h_superauto : int option -> reference list -> bool -> bool -> tactic
+val h_superauto : int option -> reference list -> bool -> bool -> unit tactic

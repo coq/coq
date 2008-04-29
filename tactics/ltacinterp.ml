@@ -1423,6 +1423,14 @@ let interp_open_constr_with_bindings ist (c,bl) =
   interp_bindings ist bl >>= fun ibindings ->
   Goal.return (ioconstr, ibindings)
 
+let coerce_to_hint_base = function
+  | VIntroPattern (IntroIdentifier id) -> string_of_id id
+  | _ -> raise (CannotCoerceTo "a hint base name")
+
+let interp_hint_base ist s =
+  try try_interp_ltac_var coerce_to_hint_base ist None (Util.dummy_loc,id_of_string s)
+  with Not_found -> s
+
 (* arnaud: peut-être ne faut-il pas toujours renvoyer un Goal.sensitive,
    certaines tactiques ne dépendente pas des buts, ce qui change largement
    l'interprétation des arguments. Donc peut-être faut il un type de retourn
@@ -1619,7 +1627,9 @@ let interp_atomic ist = function
  
   (* Automation tactics *)
   | TacTrivial (lems,l) -> 
-      Util.anomaly "Ltacinterp.interp_atomic:Trivial: à restaurer"
+      let i_lems = pf_interp_constr_list ist lems in
+      let i_l = (Option.map (List.map (interp_hint_base ist)) l) in
+      Auto.gen_trivial i_lems i_l
   | TacAuto (n,lems,l) ->
       Util.anomaly "Ltacinterp.interp_atomic:LetAuto: à restaurer"
   | TacAutoTDB n -> 

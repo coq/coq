@@ -24,8 +24,6 @@ open Pattern
 open Matching
 open Rawterm
 open Tacred
-open Tactics
-open Tacticals
 open Clenv
 open Hiddentac
 open Libnames
@@ -37,10 +35,9 @@ open Declarations
 open Tacexpr
 open Mod_subst
 
-(* arnaud: trucs factices *)
-type tactic = Tacticals.tactic
-type goal = Evd.evar_info
+let (>>=) = Goal.bind
 
+(* arnaud: trucs factices *)
 let get_pftreestate _ = Util.anomaly "Auto.get_pftreestate: fantome"
 let nth_goal_of_pftreestate _ = Util.anomaly "Auto.nth_goal_of_pftreestate: fantome"
 let pf_concl _ = Util.anomaly "Auto.pf_concl: fantome"
@@ -201,6 +198,8 @@ let try_head_pattern c =
   with BoundPattern -> error "Bound head variable"
 
 let make_exact_entry (c,cty) =
+  Util.anomaly "Auto.make_exact_entry: à restaurer"
+  (* arnaud: à restaurer:
   let cty = strip_outer_cast cty in
   match kind_of_term cty with
     | Prod (_,_,_) -> 
@@ -208,6 +207,7 @@ let make_exact_entry (c,cty) =
     | _ ->
 	(head_of_constr_reference (List.hd (head_constr cty)),
 	   { pri=0; pat=None; code=Give_exact c })
+  *)
 
 let dummy_goal = 
   {it = make_evar empty_named_context_val mkProp;
@@ -318,6 +318,8 @@ let forward_subst_tactic =
 let set_extern_subst_tactic f = forward_subst_tactic := f
 
 let subst_autohint (_,subst,(local,name,hintlist as obj)) = 
+  Util.anomaly "Auto.subst_autohint: à restaurer"
+  (*
   let trans_clenv clenv = Clenv.subst_clenv subst clenv in
   let trans_data data code = 	      
     { data with
@@ -363,6 +365,7 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
   let hintlist' = list_smartmap subst_hint hintlist in
     if hintlist' == hintlist then obj else
       (local,name,hintlist')
+  *)
 
 let classify_autohint (_,((local,name,hintlist) as obj)) =
   if local or hintlist = [] then Dispose else Substitute obj
@@ -513,6 +516,8 @@ let fmt_hint_ref ref = fmt_hint_list_for_head ref
 let print_hint_ref ref =  ppnl(fmt_hint_ref ref)
 
 let fmt_hint_term cl = 
+  Util.anomaly "Auto.fmt_hint_term: à restaurer"
+  (* arnaud: à restaurer:
   try 
     let (hdc,args) = match head_constr_bound cl [] with 
       | hdc::args -> (hdc,args)
@@ -538,6 +543,7 @@ let fmt_hint_term cl =
 	 hov 0 (prlist fmt_hints_db valid_dbs))
   with Bound | Match_failure _ | Failure _ -> 
     (str "No hint applicable for current goal")
+  *)
 	  
 let print_hint_term cl = ppnl (fmt_hint_term cl)
 
@@ -583,7 +589,7 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
-let unify_resolve (c,clenv) gls = 
+let unify_resolve (c,clenv) = 
   Util.anomaly "Auto.unify_resolve: à restaurer"
   (*arnaud: à restaurer
   let clenv' = connect_clenv gls clenv in
@@ -594,11 +600,20 @@ let unify_resolve (c,clenv) gls =
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
-let make_local_hint_db lems g =
+let make_local_hint_db lems =
+  Goal.hyps >>= fun hyps ->
+  let sign = Environ.named_context_of_val hyps in
+  let hintlist = list_map_append (pf_apply make_resolve_hyp) sign in
+  let hintlist' = list_map_append (pf_apply make_resolves true) lems in
+  Goal.return (
+    Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty)
+  )
+  (* arnaud: à restaurer:
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g) sign in
   let hintlist' = list_map_append (pf_apply make_resolves g true) lems in
   Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty)
+  *)
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
    substitution sans passer par bdize dont l'objectif est de préparer un
@@ -615,13 +630,18 @@ si après Intros la conclusion matche le pattern.
 let forward_interp_tactic = 
   ref (fun _ -> failwith "interp_tactic is not installed for auto")
 
-let set_extern_interp f = forward_interp_tactic := f
+let set_extern_interp f = 
+  Util.anomaly "Auto.set_extern_interp: à restaurer"
+  (*arnaud: restaurer: forward_interp_tactic := f*)
 
-let conclPattern concl pat tac gl =
+let conclPattern concl pat tac =
+  Util.anomaly "Auto.conclPattern: à restaurer"
+  (* arnaud: à restaurer:
   let constr_bindings =
     try matches pat concl
     with PatternMatchingFailure -> error "conclPattern" in
   !forward_interp_tactic constr_bindings tac gl
+  *)
 
 (**************************************************************************)
 (*                           The Trivial tactic                           *)
@@ -631,51 +651,81 @@ let conclPattern concl pat tac gl =
 (* Papageno : cette fonction a été pas mal simplifiée depuis que la base
   de Hint impérative a été remplacée par plusieurs bases fonctionnelles *)
 
-let rec trivial_fail_db db_list local_db gl =
-  let intro_tac = 
-    tclTHEN intro 
-      (fun g'->
-	 let hintl = make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
-	 in trivial_fail_db db_list (Hint_db.add_list hintl local_db) g')
+let rec trivial_fail_db db_list local_db =
+  (* spiwack: could be improved by using a variant of intro which returns
+     the name of the hypothesis introduced (and associated information). 
+     It would avoid the, rather ugly, call to [last_hyp]. *)
+  let new_local_db = 
+    Goal.env >>= fun env ->
+    Goal.defs >>= fun defs ->
+    Logic.last_hyp >>= fun last_hyp ->
+    let hintl = make_resolve_hyp env (Evd.evars_of defs) last_hyp in
+    local_db >>= fun local_db ->
+    Goal.return (
+      Hint_db.add_list hintl local_db
+    )
   in
-  tclFIRST 
-    (assumption::intro_tac::
-     (List.map tclCOMPLETE 
-	(trivial_resolve db_list local_db (pf_concl gl)))) gl
+  let intro_tac = 
+    Logic.tclBIND Intros.intro 
+      (fun () -> trivial_fail_db db_list new_local_db)
+  in
+  Proofview.sensitive_tactic begin
+    trivial_resolve db_list local_db Goal.concl >>= fun tr ->
+    Goal.return begin
+      Logic.tclFIRST 
+	(Logic.assumption::intro_tac::
+	   (List.map Ntacticals.tclCOMPLETE tr))
+    end
+  end
 
 and my_find_search db_list local_db hdc concl =
   let tacl = 
-    if occur_existential concl then 
-      list_map_append (fun db -> Hint_db.map_all hdc db) (local_db::db_list)
+    local_db >>= fun local_db ->
+    hdc      >>= fun hdc ->
+    concl    >>= fun concl ->
+    Goal.return (
+      if occur_existential concl then 
+	list_map_append (fun db -> Hint_db.map_all hdc db) (local_db::db_list)
     else 
-      list_map_append (fun db -> Hint_db.map_auto (hdc,concl) db)
-      	(local_db::db_list)
+	list_map_append (fun db -> Hint_db.map_auto (hdc,concl) db)
+      	  (local_db::db_list)
+    )
   in
+  tacl >>= fun tacl ->
+  Goal.return begin
   List.map 
     (fun {pri=b; pat=p; code=t} -> 
        (b,
 	match t with
 	  | Res_pf (term,cl)  -> unify_resolve (term,cl)
-	  | ERes_pf (_,c) -> (fun gl -> error "eres_pf")
-	  | Give_exact c  -> exact_check c
+	  | ERes_pf (_,c) -> error "eres_pf"
+	  | Give_exact c  -> Util.anomaly "Auto.my_find_search: restaurer 'exact_check'" (* exact_check c *)
 	  | Res_pf_THEN_trivial_fail (term,cl) -> 
-	      tclTHEN 
+	      Logic.tclTHEN 
 		(unify_resolve (term,cl)) 
 		(trivial_fail_db db_list local_db)
-	  | Unfold_nth c -> unfold_in_concl [[],c]
+	  | Unfold_nth c -> Util.anomaly "Auto.my_find_search: restaurer unfold_in_concl" (* unfold_in_concl [[],c] *)
 	  | Extern tacast -> 
 	      conclPattern concl (Option.get p) tacast))
     tacl
+  end
 
 and trivial_resolve db_list local_db cl = 
   try 
-    let hdconstr = List.hd (head_constr_bound cl []) in
-    priority 
-      (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
-  with Bound | Not_found -> 
-    []
+    let hdconstr = 
+      cl >>= fun cl ->
+      Goal.return ( List.hd (Ntactics.head_constr_bound cl []) )
+    in
+    let head_of_hdconstr =
+      hdconstr >>= fun hdconstr ->
+      Goal.return (head_of_constr_reference hdconstr)
+    in
+    my_find_search db_list local_db head_of_hdconstr cl >>= fun mfs ->
+    Goal.return (priority mfs)
+  with Ntactics.Bound | Not_found -> 
+    Goal.sNil
 
-let trivial lems dbnames gl =
+let trivial lems dbnames =
   let db_list = 
     List.map
       (fun x -> 
@@ -685,13 +735,20 @@ let trivial lems dbnames gl =
 	   error ("trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db lems gl)) gl 
+  let local_hints = 
+    lems >>= fun lems ->
+    make_local_hint_db lems
+  in
+  Logic.tclTRY (trivial_fail_db db_list local_hints)
     
-let full_trivial lems gl =
+let full_trivial lems =
+  Util.anomaly "Auto.full_trivial: à restaurer"
+  (* arnaud: à restaurer
   let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   tclTRY (trivial_fail_db db_list (make_local_hint_db lems gl)) gl
+  *)
 
 let gen_trivial lems = function
   | None -> full_trivial lems
@@ -699,37 +756,48 @@ let gen_trivial lems = function
 
 let inj_open c = (Evd.empty,c)
 
+(* arnaud: à zapper
 let h_trivial lems l =
   Refiner.abstract_tactic (TacTrivial (List.map inj_open lems,l))
     (gen_trivial lems l)
+*)
 
 (**************************************************************************)
 (*                       The classical Auto tactic                        *)
 (**************************************************************************)
 
 let possible_resolve db_list local_db cl =
+  Util.anomaly "Auto.possible_resolve: à restaurer"
+  (* arnaud: à restaurer
   try 
     let hdconstr = List.hd (head_constr_bound cl []) in
     List.map snd 
       (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
   with Bound | Not_found -> 
     []
+  *)
 
-let decomp_unary_term c gls = 
+let decomp_unary_term c (* arnaud: zapper je crois: gls*) =
+  Util.anomaly "Auto.decomp_unary_term: à restaurer"
+  (* arnaud: à restaurer
   let typc = pf_type_of gls c in 
   let hd = List.hd (head_constr typc) in 
   if Hipattern.is_conjunction hd then 
     simplest_case c gls 
   else 
     errorlabstrm "Auto.decomp_unary_term" (str "not a unary type") 
+  *)
 
-let decomp_empty_term c gls = 
+let decomp_empty_term c (* arnaud: zapper je crois: gls *) = 
+  Util.anomaly "Auto.decomp_empty_term: à restaurer"
+  (* arnaud: à restaurer:
   let typc = pf_type_of gls c in 
   let (hd,_) = decompose_app typc in 
   if Hipattern.is_empty_type hd then 
     simplest_case c gls 
   else 
     errorlabstrm "Auto.decomp_empty_term" (str "not an empty type") 
+  *)
 
 
 (* decomp is an natural number giving an indication on decomposition 
@@ -737,7 +805,9 @@ let decomp_empty_term c gls =
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
-let rec search_gen decomp n db_list local_db extra_sign goal =
+let rec search_gen decomp n db_list local_db extra_sign =
+  Util.anomaly "Auto.search_gen: à restaurer"
+  (* arnaud: à restaurer
   if n=0 then error "BOUND 2";
   let decomp_tacs = match decomp with 
     | 0 -> [] 
@@ -772,13 +842,16 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
       (possible_resolve db_list local_db (pf_concl goal))
   in 
   tclFIRST (assumption::(decomp_tacs@(intro_tac::rec_tacs))) goal
+  *)
 
 
 let search = search_gen 0
 
 let default_search_depth = ref 5
 
-let auto n lems dbnames gl =
+let auto n lems dbnames =
+  Util.anomaly "Auto.auto: à restaurer"
+  (* arnaud: à restaurer:
   let db_list = 
     List.map
       (fun x -> 
@@ -790,17 +863,21 @@ let auto n lems dbnames gl =
   in
   let hyps = pf_hyps gl in
   tclTRY (search n db_list (make_local_hint_db lems gl) hyps) gl
+  *)
 
-let default_auto = auto !default_search_depth [] []
+let default_auto () = auto !default_search_depth [] []
 
-let full_auto n lems gl = 
+let full_auto n lems = 
+  Util.anomaly "Auto.full_auto: à restaurer"
+  (* arnaud: à restaurer
   let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let hyps = pf_hyps gl in
   tclTRY (search n db_list (make_local_hint_db lems gl) hyps) gl
+  *)
   
-let default_full_auto gl = full_auto !default_search_depth [] gl
+let default_full_auto () = full_auto !default_search_depth []
 
 let gen_auto n lems dbnames =
   let n = match n with None -> !default_search_depth | Some n -> n in
@@ -824,19 +901,23 @@ let h_auto n lems l =
    l'instant *)
 let default_search_decomp = ref 1
 
-let destruct_auto des_opt lems n gl = 
-  let hyps = pf_hyps gl in
-  search_gen des_opt n (List.map searchtable_map ["core";"extcore"])
-    (make_local_hint_db lems gl) hyps gl
+let destruct_auto des_opt lems n = 
+  Goal.hyps >>= fun hyps ->
+  Goal.return (
+    search_gen des_opt n (List.map searchtable_map ["core";"extcore"])
+      (make_local_hint_db lems) hyps
+  )
     
-let dautomatic des_opt lems n = tclTRY (destruct_auto des_opt lems n)
+let dautomatic des_opt lems n = 
+  Util.anomaly "Auto.dautomatic: à restaurer"
+  (* arnaud: à restaurer: tclTRY (destruct_auto des_opt lems n) *)
 
 let dauto (n,p) lems =
   let p = match p with Some p -> p | None -> !default_search_decomp in
   let n = match n with Some n -> n | None -> !default_search_depth in
   dautomatic p lems n
 
-let default_dauto = dauto (None,None) []
+let default_dauto () = dauto (None,None) []
 
 let h_dauto (n,p) lems =
   Refiner.abstract_tactic (TacDAuto (inj_or_var n,p,List.map inj_open lems))
@@ -859,10 +940,15 @@ type autoArguments =
   | Destructing   
 
 let keepAfter tac1 tac2 = 
+  Util.anomaly "Auto.keppAfter: à restaurer"
+  (*
   (tclTHEN tac1 
      (function g -> tac2 [pf_last_hyp g] g))
+  *)
 
-let compileAutoArg contac = function
+let compileAutoArg contac = 
+  Util.anomaly "Auto.compileAutoArg: à restaurer"
+  (* arnaud: à restaurer: function
   | Destructing -> 
       (function g -> 
          let ctx = pf_hyps g in  
@@ -883,10 +969,13 @@ let compileAutoArg contac = function
                | Some ((_,id),_) -> Dhyp.h_destructHyp false id
                | None          -> Dhyp.h_destructConcl))
          contac)
+  *)
 
 let compileAutoArgList contac = List.map (compileAutoArg contac)
 
-let rec super_search n db_list local_db argl goal =
+let rec super_search n db_list local_db argl =
+  Util.anomaly "Auto.super_search: à restaurer"
+  (* arnaud: à restaurer:
   if n = 0 then error "BOUND 2";
   tclFIRST
     (assumption
@@ -905,18 +994,25 @@ let rec super_search n db_list local_db argl goal =
       @
       (compileAutoArgList  
          (super_search (n-1) db_list local_db argl) argl))) goal
+  *)
 
-let search_superauto n to_add argl g = 
+let search_superauto n to_add argl = 
+  Util.anomaly "Auto.search_superauto: à restaurer"
+  (* arnaud: à restaurer
   let sigma =
     List.fold_right
       (fun (id,c) -> add_named_decl (id, None, pf_type_of g c))
       to_add empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
-  let db = Hint_db.add_list db0 (make_local_hint_db [] g) in
+  let db = Hint_db.add_list db0 (make_local_hint_db []) in
   super_search n [Hintdbmap.find "core" !searchtable] db argl g
+  *)
 
-let superauto n to_add argl  = 
+let superauto n to_add (* arnaud: à zapper: argl *)  = 
+  Util.anomaly "Auto.superauto: à restaurer"
+  (* arnaud: à restaurer
   tclTRY (tclCOMPLETE (search_superauto n to_add argl))
+  *)
 
 let default_superauto g = superauto !default_search_depth [] [] g
 

@@ -14,7 +14,7 @@ open Topconstr
 (*i*)
 
 (* arnaud: trucs factices *)
-type tactics = Tacticals.tactic
+type tactic = Tacticals.tactic
 (* arnaud: /trucs factices *)
 
 val rawwit_hintbases : hint_db_name list option raw_abstract_argument_type
