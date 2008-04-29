@@ -152,6 +152,7 @@ GEXTEND Gram
   tactic_atom:
     [ [ id = METAIDENT -> MetaIdArg (loc,true,id)
       | n = integer -> Integer n
+      | r = reference -> Reference r
       | "()" -> TacVoid ] ]
   ;
   match_key:

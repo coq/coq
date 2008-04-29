@@ -1,12 +1,12 @@
-  (************************************************************************)
-  (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
-  (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
-  (*   \VV/  **************************************************************)
-  (*    //   *      This file is distributed under the terms of the       *)
-  (*         *       GNU Lesser General Public License Version 2.1        *)
-  (************************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
-  (*i $Id$ i*)
+(*i $Id$ i*)
 
 Require Import Le Gt Minus Min Bool.
 
@@ -81,9 +81,11 @@ End Lists.
 Implicit Arguments nil [A].
 Infix "::" := cons (at level 60, right associativity) : list_scope.
 Infix "++" := app (right associativity, at level 60) : list_scope.
- 
-Ltac now_show c := change c in |- *.
 
+Notation "[ ]" := nil : list_scope.
+Notation "[ x ]" := (cons x nil) : list_scope.
+Notation "[ x ; y ; .. ; z ]" := (cons x (cons y .. (cons z nil) .. )) : list_scope.
+ 
 Open Scope list_scope.
 
 Delimit Scope list_scope with list.

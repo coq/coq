@@ -152,3 +152,6 @@ match goal with
 | _ => solve [trivial | reflexivity | symmetry; trivial | discriminate | split]
 | _ => fail 1 "Cannot solve this goal"
 end.
+
+(** A tactic to document or check what is proved at some point of a script *)
+Ltac now_show c := change c.

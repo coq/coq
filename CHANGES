@@ -63,6 +63,7 @@ Libraries (DOC TO CHECK)
   elements, nothing more). 
 - In ListSet, a few definitions are now in Type (may induce a few
   incompatibilities).
+- Notation [t;...;u] for lists made available in list_scope.
 - Changes in FSets/FMaps:
   - Improvements: in particular FMap now provides an induction principle 
     on maps, and some properties about FSets and fold needs less hypotheses.
@@ -99,7 +100,8 @@ Notations, coercions and implicit arguments
   (DOC TODO?)
 - New options Global and Local to "Implicit Arguments" for section
   surviving or non export outside module.
-- Level "constr" moved from 9 to 8. (DOC TODO?)
+- Level "constr" moved from 9 to 8 and notation "[ _ ]" now at level 0
+  (easy to fix in case of incompatibilites). (DOC TODO?)
 - Structure/Record now printed as Record (unless option Printing All is set).
 - Support for parametric notations defining constants.
 - Insertion of coercions below product types refrains to unfold

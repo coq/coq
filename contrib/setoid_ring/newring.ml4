@@ -828,9 +828,8 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
           lemma1;lemma2;pretac;posttac;lH;rl])) gl
 
 TACTIC EXTEND ring_lookup
-| [ "ring_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(lr)
-      "[" constr(t) "]" ] ->
-    [ring_lookup (fst f) lH lr t]
+| [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
+    [ let (t,lr) = list_sep_last lrt in ring_lookup (fst f) lH lr t]
 END
 
 
@@ -1163,7 +1162,6 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
          field_simpl_eq_in_ok;cond_ok;pretac;posttac;lH;rl])) gl
 
 TACTIC EXTEND field_lookup
-| [ "field_lookup" tactic(f) "[" constr_list(lH) "]" constr_list(l) 
-     "[" constr(t) "]" ] -> 
-      [ field_lookup (fst f) lH l t ]
+| [ "field_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] -> 
+      [ let (t,l) = list_sep_last lt in field_lookup (fst f) lH l t ]
 END

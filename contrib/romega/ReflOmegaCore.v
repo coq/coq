@@ -879,7 +879,7 @@ Infix "+" := Tplus : romega_scope.
 Infix "*" := Tmult : romega_scope.
 Infix "-" := Tminus : romega_scope.
 Notation "- x" := (Topp x) : romega_scope.
-Notation "[ x ]" := (Tvar x) (at level 1) : romega_scope.
+Notation "[ x ]" := (Tvar x) : romega_scope.
 
 (* \subsubsection{Definition of reified goals} *)
 

@@ -143,12 +143,12 @@ Ltac Field_simplify := Field_simplify_gen ltac:(fun H => rewrite H).
 
 Tactic Notation (at level 0) "field_simplify" constr_list(rl) :=
   let G := Get_goal in
-  field_lookup Field_simplify [] rl [G].
+  field_lookup Field_simplify [] rl G.
 
 Tactic Notation (at level 0) 
   "field_simplify" "[" constr_list(lH) "]" constr_list(rl) :=
   let G := Get_goal in
-  field_lookup Field_simplify [lH] rl [G].
+  field_lookup Field_simplify [lH] rl G.
 
 Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=   
   let G := Get_goal in
@@ -156,7 +156,7 @@ Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=
   let g := fresh "goal" in
   set (g:= G);
   generalize H;clear H;
-  field_lookup Field_simplify [] rl [t];
+  field_lookup Field_simplify [] rl t;
   intro H;
   unfold g;clear g.
 
@@ -167,7 +167,7 @@ Tactic Notation "field_simplify"
   let g := fresh "goal" in
   set (g:= G);
   generalize H;clear H;
-  field_lookup Field_simplify [lH] rl [t];
+  field_lookup Field_simplify [lH] rl t;
   intro H;
   unfold g;clear g.
 
@@ -178,12 +178,12 @@ Ltac Field_simplify_in hyp:=
 Tactic Notation (at level 0) 
   "field_simplify" constr_list(rl) "in" hyp(h) :=
   let t := type of h in
-  field_lookup (Field_simplify_in h) [] rl [t].
+  field_lookup (Field_simplify_in h) [] rl t.
 
 Tactic Notation (at level 0) 
   "field_simplify" "[" constr_list(lH) "]" constr_list(rl) "in" hyp(h) :=
   let t := type of h in
-  field_lookup (Field_simplify_in h) [lH] rl [t].
+  field_lookup (Field_simplify_in h) [lH] rl t.
 *)
 
 (** Generic tactic for solving equations *)
@@ -242,11 +242,11 @@ Ltac FIELD :=
  
 Tactic Notation (at level 0) "field" :=
   let G := Get_goal in
-  field_lookup FIELD [] [G].
+  field_lookup FIELD [] G.
 
 Tactic Notation (at level 0) "field" "[" constr_list(lH) "]" :=
   let G := Get_goal in
-  field_lookup FIELD [lH] [G].
+  field_lookup FIELD [lH] G.
 
 (* transforms a field equation to an equivalent (simplified) ring equation,
    and leaves non-zero conditions to be proved (field_simplify_eq) *)
@@ -260,11 +260,11 @@ Ltac FIELD_SIMPL  :=
 
 Tactic Notation (at level 0) "field_simplify_eq" :=  
   let G := Get_goal in
-  field_lookup FIELD_SIMPL [] [G].
+  field_lookup FIELD_SIMPL [] G.
 
 Tactic Notation (at level 0) "field_simplify_eq" "[" constr_list(lH) "]" :=  
   let G := Get_goal in
-  field_lookup FIELD_SIMPL [lH] [G].
+  field_lookup FIELD_SIMPL [lH] G.
 
 (* Same as FIELD_SIMPL but in hypothesis *)
 
@@ -323,7 +323,7 @@ Ltac FIELD_SIMPL_EQ :=
 Tactic Notation (at level 0) "field_simplify_eq" "in" hyp(H) :=
   let t := type of H in
   generalize H;
-  field_lookup FIELD_SIMPL_EQ [] [t];
+  field_lookup FIELD_SIMPL_EQ [] t;
   [ try exact I
   | clear H;intro H].
 
@@ -332,7 +332,7 @@ Tactic Notation (at level 0)
   "field_simplify_eq" "[" constr_list(lH) "]"  "in" hyp(H) :=  
   let t := type of H in
   generalize H;
-  field_lookup FIELD_SIMPL_EQ [lH] [t];
+  field_lookup FIELD_SIMPL_EQ [lH] t;
   [ try exact I
   |clear H;intro H].
  
