@@ -272,3 +272,40 @@ let rec intros_move = function
       Proofview.tclTHEN (intro_gen (Goal.return (IntroMustBe hyp)) destopt Goal.sfalse)
 	               (intros_move rest)
 
+
+let move_to_rhyp rhyp =
+  Proofview.sensitive_tactic begin
+  let rec get_lhyp lastfixed depdecls = function
+    | [] ->
+	Goal.return
+	(match rhyp with
+	   | None -> lastfixed
+      	   | Some h -> Util.anomaly ("Hypothesis should occur: "^ (string_of_id h)))
+    | (hyp,c,typ) as ht :: rest ->
+	Goal.env >>= fun env ->
+	if Some hyp = rhyp then 
+	  Goal.return lastfixed
+	else if List.exists (Termops.occur_var_in_decl env hyp) depdecls then 
+	  get_lhyp lastfixed (ht::depdecls) rest
+        else
+	  get_lhyp (Some hyp) depdecls rest
+  in
+  Goal.hyps >>= fun hyps ->
+  let sign = Environ.named_context_of_val hyps in
+  let (hyp,c,typ as decl) = List.hd sign in
+  get_lhyp None [decl] (List.tl sign) >>= function
+    | None -> Goal.return (Proofview.id ())
+    | Some hypto -> Goal.return (move_hyp true hyp hypto)
+  end
+
+let rec intros_rmove_gen = function
+  | [] -> Proofview.id ()
+  | (hyp,destopt) :: rest ->
+      Logic.tclTHENLIST [ Logic.intro hyp;
+ 			  move_to_rhyp destopt;
+			  intros_rmove rest ]
+let intros_rmove l =
+  Proofview.sensitive_tactic (
+    l >>= fun l ->
+    Goal.return (intros_rmove_gen l)
+  )

@@ -48,3 +48,6 @@ val intros_until :  Rawterm.quantified_hypothesis Goal.sensitive ->
 val intros_until_id : Names.identifier Goal.sensitive -> unit Proofview.tactic
 val intros_until_n : int Goal.sensitive -> unit Proofview.tactic
 
+
+val intros_rmove : unit -> unit Proofview.tactic
+val intros_move  : unit -> unit Proofview.tactic

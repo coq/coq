@@ -1389,60 +1389,54 @@ let consume_pattern avoid id =
   *)
 
 let re_intro_dependent_hypotheses tophyp (lstatus,rstatus) =
-  Util.anomaly "Ntactics.re_intro_dependent_hypotheses: à restaurer"
-  (* arnaud: à restaurer:
   let newlstatus = (* if some IH has taken place at the top of hyps *)
     List.map (function (hyp,None) -> (hyp,tophyp) | x -> x) lstatus in
   Logic.tclTHEN
     (intros_rmove rstatus)
     (intros_move newlstatus)
-  *)
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
 let induct_discharge statuslists destopt avoid' (avoid,ra) names =
-  Util.anomaly "Ntactic.induct_discharge: à restaurer"
-  (* arnaud: à restaurer:
   let avoid = avoid @ avoid' in
-  let rec peel_tac ra names tophyp gl = match ra with
+  let rec peel_tac ra names tophyp = match ra with
     | (RecArg,recvarname) ::
         (IndArg,hyprecname) :: ra' ->
         let recpat,names = match names with
           | [IntroIdentifier id as pat] ->
               let id = next_ident_away (add_prefix "IH" id) avoid in
 	      (pat, [IntroIdentifier id])
-          | _ -> consume_pattern avoid recvarname gl names in
-        let hyprec,names = consume_pattern avoid hyprecname gl names in
+          | _ -> consume_pattern avoid recvarname names in
+        let hyprec,names = consume_pattern avoid hyprecname names in
         (* IH stays at top: we need to update tophyp *)
         (* This is buggy for intro-or-patterns with different first hypnames *)
         (* Would need to pass peel_tac as a continuation of intros_patterns *)
         (* (or to have hypotheses classified by blocks...) *)
         let tophyp = if tophyp=None then first_name_buggy hyprec else tophyp in
-        tclTHENLIST
+        Logic.tclTHENLIST
 	  [ intros_patterns avoid [] destopt [recpat];
 	    intros_patterns avoid [] None [hyprec];
-	    peel_tac ra' names tophyp] gl
+	    peel_tac ra' names tophyp]
     | (IndArg,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
-        let pat,names = consume_pattern avoid hyprecname gl names in
-	tclTHEN (intros_patterns avoid [] destopt [pat])
-          (peel_tac ra' names tophyp) gl
+        let pat,names = consume_pattern avoid hyprecname names in
+	Logic.tclTHEN (intros_patterns avoid [] destopt [pat])
+          (peel_tac ra' names tophyp) 
     | (RecArg,recvarname) :: ra' ->
-        let pat,names = consume_pattern avoid recvarname gl names in
-	tclTHEN (intros_patterns avoid [] destopt [pat]) 
-          (peel_tac ra' names tophyp) gl
+        let pat,names = consume_pattern avoid recvarname names in
+	Logic.tclTHEN (intros_patterns avoid [] destopt [pat]) 
+          (peel_tac ra' names tophyp)
     | (OtherArg,_) :: ra' ->
         let pat,names = match names with
           | [] -> IntroAnonymous, []
           | pat::names -> pat,names in
-	tclTHEN (intros_patterns avoid [] destopt [pat])
-          (peel_tac ra' names tophyp) gl
+	Logic.tclTHEN (intros_patterns avoid [] destopt [pat])
+          (peel_tac ra' names tophyp) 
     | [] ->
         check_unused_names names;
-        re_intro_dependent_hypotheses tophyp statuslists gl
+        re_intro_dependent_hypotheses tophyp statuslists 
   in
-  peel_tac ra names None gl
-  *)
+  peel_tac ra names None 
 
 (* - le recalcul de indtyp à chaque itération de atomize_one est pour ne pas
      s'embêter à regarder si un letin_tac ne fait pas des
