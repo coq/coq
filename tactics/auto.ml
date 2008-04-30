@@ -856,7 +856,7 @@ let delta_full_auto mod_delta n lems gl =
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let hyps = pf_hyps gl in
-  tclTRY (search n false db_list (make_local_hint_db false lems gl) hyps) gl
+  tclTRY (search n mod_delta db_list (make_local_hint_db false lems gl) hyps) gl
 
 let full_auto = delta_full_auto false
 let new_full_auto = delta_full_auto true

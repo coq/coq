@@ -643,7 +643,7 @@ let rewrite2_unif_flags = {
 }
 
 let convertible env evd x y =
-  Reductionops.is_trans_conv conv_transparent_state env (Evd.evars_of evd) x y
+  Reductionops.is_conv env (Evd.evars_of evd) x y
   
 let allowK = true
 
