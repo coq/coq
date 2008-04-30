@@ -129,6 +129,8 @@ let cook_constant env r =
     | PolymorphicArity (ctx,s) ->
 	let t = mkArity (ctx,Type s.poly_level) in
 	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
-	Typeops.make_polymorphic_if_arity env typ in
+	let j = make_judge (force (Option.get body)) typ in
+	Typeops.make_polymorphic_if_constant_for_ind env j
+  in
   let boxed = Cemitcodes.is_boxed cb.const_body_code in
   (body, typ, cb.const_constraints, cb.const_opaque, boxed,false)

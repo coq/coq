@@ -411,7 +411,9 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  | App (f,args) ->
               let f = whd_evar (Evd.evars_of !evdref) f in
               begin match kind_of_term f with
-              | Ind _ (* | Const _ *) ->
+              | Ind _ | Const _
+		  when isInd f or has_polymorphic_type (destConst f)
+		    ->
 	          let sigma = evars_of !evdref in
 		  let c = mkApp (f,Array.map (whd_evar sigma) args) in
 	          let t = Retyping.get_type_of env sigma c in

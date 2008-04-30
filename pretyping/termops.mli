@@ -237,6 +237,8 @@ val is_section_variable : identifier -> bool
 
 val isGlobalRef : constr -> bool
 
+val has_polymorphic_type : constant -> bool
+
 (* Combinators on judgments *)
 
 val on_judgment       : (types -> types) -> unsafe_judgment -> unsafe_judgment

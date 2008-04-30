@@ -877,6 +877,11 @@ let isGlobalRef c =
   | Const _ | Ind _ | Construct _ | Var _ -> true
   | _ -> false
 
+let has_polymorphic_type c =
+  match (Global.lookup_constant c).Declarations.const_type with
+  | Declarations.PolymorphicArity _ -> true
+  | _ -> false
+
 (* nouvelle version de renommage des variables (DEC 98) *)
 (* This is the algorithm to display distinct bound variables 
 

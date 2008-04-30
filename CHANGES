@@ -18,6 +18,7 @@ Language
   (e.g. "Record stream := { hd : nat; tl : stream }.")
 - New syntax "Theorem id1:t1 ... with idn:tn" for proving mutually dependent
   statements.
+- Support for sort-polymorphism on constants denoting inductive types.
 
 Vernacular commands
 
@@ -100,8 +101,8 @@ Notations, coercions and implicit arguments
   (DOC TODO?)
 - New options Global and Local to "Implicit Arguments" for section
   surviving or non export outside module.
-- Level "constr" moved from 9 to 8 and notation "[ _ ]" now at level 0
-  (easy to fix in case of incompatibilites). (DOC TODO?)
+- Level "constr" moved from 9 to 8 and notation "[ _ ]" now reserved at level 0
+  (may need to move post-fixed uses of [ ] at level 8). (DOC TODO?)
 - Structure/Record now printed as Record (unless option Printing All is set).
 - Support for parametric notations defining constants.
 - Insertion of coercions below product types refrains to unfold
@@ -317,7 +318,7 @@ Syntax
 
 Language and commands
 
-- Added sort-polymorphism for definitions in Type.
+- Added sort-polymorphism for definitions in Type (but finally abandonned).
 - Support for implicit arguments in the types of parameters in
   (co-)fixpoints and (co-)inductive declarations.
 - Improved type inference: use as much of possible general information.
