@@ -40,7 +40,8 @@ val get_constr_entry :
   bool -> constr_entry -> grammar_object Gram.Entry.e * int option * bool
 
 val grammar_extend :
-  grammar_object Gram.Entry.e -> Gramext.position option ->
+  grammar_object Gram.Entry.e -> Gramext.position option -> 
+   (* for reinitialization if ever: *) Gramext.g_assoc option ->
     (string option * Gramext.g_assoc option *
      (Compat.token Gramext.g_symbol list * Gramext.g_action) list) list
     -> unit
@@ -224,7 +225,8 @@ val symbol_of_production : Gramext.g_assoc option -> constr_entry ->
 
 val find_position : 
   bool -> bool -> Gramext.g_assoc option -> int option ->
-    Gramext.position option * Gramext.g_assoc option * string option
+    Gramext.position option * Gramext.g_assoc option * string option * 
+    (* for reinitialization: *) Gramext.g_assoc option
 
 val remove_levels : int -> unit 
 
