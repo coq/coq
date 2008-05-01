@@ -133,6 +133,10 @@ val tclTHENFIRSTn   : tactic -> tactic array -> tactic
 (* A special exception for levels for the Fail tactic *)
 exception FailError of int * Pp.std_ppcmds
 
+(* Takes an exception and either raise it at the next
+   level or do nothing. *)
+val catch_failerror  : exn -> unit
+
 val tclORELSE        : tactic -> tactic -> tactic
 val tclREPEAT        : tactic -> tactic
 val tclREPEAT_MAIN   : tactic -> tactic

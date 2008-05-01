@@ -492,19 +492,21 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
       (str"Tactic generated a subgoal identical to the original goal.")
   else rslt
 
-
+let catch_failerror = function
+  | e when catchable_exception e -> check_for_interrupt ()
+  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_)) ->
+      check_for_interrupt ()
+  | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
+  | Stdpp.Exc_located (s,FailError (lvl,s')) ->
+      raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
+  | _ -> ()
 
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)
 let tclORELSE0 t1 t2 g =
   try 
     t1 g
   with (* Breakpoint *)
-  | e when catchable_exception e -> check_for_interrupt (); t2 g
-  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_)) ->
-      check_for_interrupt (); t2 g
-  | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
-  | Stdpp.Exc_located (s,FailError (lvl,s')) ->
-      raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
+    | e -> catch_failerror e; t2 g
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
    then applies t2 *)
