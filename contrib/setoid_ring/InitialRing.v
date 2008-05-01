@@ -667,17 +667,17 @@ End GEN_DIV.
    | (add rI (add rI rI)) => constr:3%positive
    | (mul (add rI rI) ?p) => (* 2p *)
        match inv_cst p with
-         NotConstant => NotConstant
-       | 1%positive => NotConstant (* 2*1 is not convertible to 2 *)
+         NotConstant => constr:NotConstant
+       | 1%positive => constr:NotConstant (* 2*1 is not convertible to 2 *)
        | ?p => constr:(xO p)
        end
    | (add rI (mul (add rI rI) ?p)) => (* 1+2p *)
        match inv_cst p with
-         NotConstant => NotConstant
-       | 1%positive => NotConstant
+         NotConstant => constr:NotConstant
+       | 1%positive => constr:NotConstant
        | ?p => constr:(xI p)
        end
-   | _ => NotConstant
+   | _ => constr:NotConstant
    end in
    inv_cst t.
 
@@ -687,7 +687,7 @@ End GEN_DIV.
      rO => constr:NwO
    | _ =>
      match inv_gen_phi_pos rI add mul t with
-       NotConstant => NotConstant
+       NotConstant => constr:NotConstant
      | ?p => constr:(Npos p::nil)
      end
    end.
@@ -699,7 +699,7 @@ End GEN_DIV.
      rO => constr:0%N
    | _ =>
      match inv_gen_phi_pos rI add mul t with
-       NotConstant => NotConstant
+       NotConstant => constr:NotConstant
      | ?p => constr:(Npos p)
      end
    end.
@@ -710,12 +710,12 @@ End GEN_DIV.
      rO => constr:0%Z
    | (opp ?p) =>
      match inv_gen_phi_pos rI add mul p with
-       NotConstant => NotConstant
+       NotConstant => constr:NotConstant
      | ?p => constr:(Zneg p)
      end
    | _ =>
      match inv_gen_phi_pos rI add mul t with
-       NotConstant => NotConstant
+       NotConstant => constr:NotConstant
      | ?p => constr:(Zpos p)
      end
    end.
@@ -731,7 +731,7 @@ Ltac inv_gen_phi rO rI cO cI t :=
   end.
 
 (* A simple tactic recognizing no constant *)
- Ltac inv_morph_nothing t := constr:(NotConstant).
+ Ltac inv_morph_nothing t := constr:NotConstant.
 
 Ltac coerce_to_almost_ring set ext rspec :=
   match type of rspec with
@@ -875,9 +875,9 @@ Ltac ring_elements set ext rspec pspec sspec dspec rk :=
 (* Tactic for constant *)
 Ltac isnatcst t :=
   match t with
-    O => true
+    O => constr:true
   | S ?p => isnatcst p
-  | _ => false
+  | _ => constr:false
   end.
 
 Ltac isPcst t :=
@@ -887,7 +887,7 @@ Ltac isPcst t :=
   | xH => constr:true
   (* nat -> positive *)
   | P_of_succ_nat ?n => isnatcst n 
-  | _ => false
+  | _ => constr:false
   end.
 
 Ltac isNcst t :=
@@ -899,7 +899,7 @@ Ltac isNcst t :=
 
 Ltac isZcst t :=
   match t with
-    Z0 => true
+    Z0 => constr:true
   | Zpos ?p => isPcst p
   | Zneg ?p => isPcst p
   (* injection nat -> Z *)
@@ -907,7 +907,7 @@ Ltac isZcst t :=
   (* injection N -> Z *)
   | Z_of_N ?n => isNcst n
   (* *)
-  | _ => false
+  | _ => constr:false
   end.
 
 

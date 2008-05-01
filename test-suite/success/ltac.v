@@ -173,7 +173,7 @@ Abort.
    empty args *)
 
 Goal True.
-match None with @None => exact I end.
+match constr:@None with @None => exact I end.
 Abort.
 
 (* Check second-order pattern unification *)
@@ -209,3 +209,14 @@ Goal True -> True -> True.
 is.
 exact I.
 Abort.
+
+(* Interférence entre espaces des noms *)
+
+Ltac O := intro.
+Ltac Z1 t := set (x:=t).
+Ltac Z2 t := t.
+Goal True -> True.
+Z1 O.
+Z2 ltac:O.
+exact I.
+Qed.

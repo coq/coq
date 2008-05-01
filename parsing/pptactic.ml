@@ -946,6 +946,7 @@ let rec pr_tac inherited tac =
       pr_may_eval pr_constr pr_lconstr pr_cst c, leval
   | TacArg(TacFreshId l) -> str "fresh" ++ pr_fresh_ids l, latom
   | TacArg(Integer n) -> int n, latom
+  | TacArg(TacCall(loc,f,[])) -> pr_ref f, latom
   | TacArg(TacCall(loc,f,l)) ->
       pr_with_comments loc
         (hov 1 (pr_ref f ++ spc () ++

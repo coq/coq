@@ -25,11 +25,6 @@ let fail_default_value = ArgArg 0
 let arg_of_expr = function
     TacArg a -> a
   | e -> Tacexp (e:raw_tactic_expr)
-    
-let tacarg_of_expr = function
-  | TacArg (Reference r) -> TacCall (dummy_loc,r,[])
-  | TacArg a -> a
-  | e -> Tacexp (e:raw_tactic_expr)
 
 (* Tactics grammar rules *)
 
@@ -101,9 +96,8 @@ GEXTEND Gram
           TacArg(ConstrMayEval(ConstrTerm c))
       | IDENT "ipattern"; ":"; ipat = simple_intropattern -> 
 	  TacArg(IntroPattern ipat)
-      | r = reference; la = LIST1 tactic_arg ->
-          TacArg(TacCall (loc,r,la))
-      | r = reference -> TacArg (Reference r) ]
+      | r = reference; la = LIST0 tactic_arg ->
+          TacArg(TacCall (loc,r,la)) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
       | a = tactic_atom -> TacArg a ] ]
@@ -120,7 +114,7 @@ GEXTEND Gram
   ;
   (* Tactic arguments *)
   tactic_arg:
-    [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> tacarg_of_expr a
+    [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
       | IDENT "ltac"; ":"; n = natural -> Integer n
       | IDENT "ipattern"; ":"; ipat = simple_intropattern -> IntroPattern ipat
       | a = may_eval_arg -> a
@@ -152,7 +146,7 @@ GEXTEND Gram
   tactic_atom:
     [ [ id = METAIDENT -> MetaIdArg (loc,true,id)
       | n = integer -> Integer n
-      | r = reference -> Reference r
+      | r = reference -> TacCall (loc,r,[])
       | "()" -> TacVoid ] ]
   ;
   match_key:

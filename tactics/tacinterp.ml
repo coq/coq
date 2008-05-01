@@ -59,6 +59,8 @@ let error_syntactic_metavariables_not_allowed loc =
     (loc,"out_ident",
      str "Syntactic metavariables allowed only in quotations")
 
+let error_global_not_found_loc (loc,qid) = error_global_not_found_loc loc qid
+
 let skip_metaid = function
   | AI x -> x
   | MetaId (loc,_) -> error_syntactic_metavariables_not_allowed loc
@@ -234,10 +236,9 @@ let _ =
       ]
  
 let lookup_atomic id = Idmap.find id !atomic_mactab
-let is_atomic id = Idmap.mem id !atomic_mactab
 let is_atomic_kn kn =
   let (_,_,l) = repr_kn kn in
-  is_atomic (id_of_label l)
+  Idmap.mem (id_of_label l) !atomic_mactab
 
 (* Summary and Object declaration *)
 let mactab = ref Gmap.empty
@@ -398,26 +399,21 @@ let intern_inductive ist = function
 let intern_global_reference ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
   | r -> 
-      let loc,qid as lqid = qualid_of_reference r in
+      let loc,_ as lqid = qualid_of_reference r in
       try ArgArg (loc,locate_global_with_alias lqid)
       with Not_found -> 
-	error_global_not_found_loc loc qid
+	error_global_not_found_loc lqid
 
-let intern_tac_ref ist = function
-  | Ident (loc,id) when find_ltacvar id ist -> ArgVar (loc,id)
+let intern_ltac_variable ist = function
   | Ident (loc,id) ->
-      ArgArg (loc,
-         try find_recvar id ist 
-         with Not_found -> locate_tactic (make_short_qualid id))
-  | r -> 
-      let (loc,qid) = qualid_of_reference r in
-      ArgArg (loc,locate_tactic qid)
-
-let intern_tactic_reference ist r =
-  try intern_tac_ref ist r
-  with Not_found -> 
-    let (loc,qid) = qualid_of_reference r in
-    error_global_not_found_loc loc qid
+      if find_ltacvar id ist then
+	(* A local variable of any type *)
+	ArgVar (loc,id)
+      else
+      (* A recursive variable *)
+      ArgArg (loc,find_recvar id ist)
+  | _ ->
+      raise Not_found
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) when (not strict & find_hyp id ist) or find_ctxvar id ist ->
@@ -426,17 +422,63 @@ let intern_constr_reference strict ist = function
       let loc,_ as lqid = qualid_of_reference r in
       RRef (loc,locate_global_with_alias lqid), if strict then None else Some (CRef r)
 
-let intern_reference strict ist r =
-  (try Reference (intern_tac_ref ist r)
-   with Not_found ->
-     (try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
-      with Not_found ->
-        (match r with
-          | Ident (loc,id) when is_atomic id -> Tacexp (lookup_atomic id)
-          | Ident (loc,id) when not strict -> IntroPattern (IntroIdentifier id)
-          | _ ->
-              let (loc,qid) = qualid_of_reference r in
-              error_global_not_found_loc loc qid)))
+(* Internalize an isolated reference in position of tactic *)
+
+let intern_isolated_global_tactic_reference r =
+  let (loc,qid) = qualid_of_reference r in
+  try TacCall (loc,ArgArg (loc,locate_tactic qid),[])
+  with Not_found ->
+  match r with
+  | Ident (_,id) -> Tacexp (lookup_atomic id)
+  | _ -> raise Not_found
+
+let intern_isolated_tactic_reference ist r =
+  (* An ltac reference *)
+  try Reference (intern_ltac_variable ist r)
+  with Not_found ->
+  (* A global tactic *)
+  try intern_isolated_global_tactic_reference r
+  with Not_found ->
+  (* Tolerance for compatibility, allow not to use "constr:" *)
+  try ConstrMayEval (ConstrTerm (intern_constr_reference true ist r))
+  with Not_found ->
+  (* Reference not found *)
+  error_global_not_found_loc (qualid_of_reference r)
+
+(* Internalize an applied tactic reference *)
+
+let intern_applied_global_tactic_reference r =
+  let (loc,qid) = qualid_of_reference r in
+  ArgArg (loc,locate_tactic qid)
+
+let intern_applied_tactic_reference ist r =
+  (* An ltac reference *)
+  try intern_ltac_variable ist r
+  with Not_found ->
+  (* A global tactic *)
+  try intern_applied_global_tactic_reference r
+  with Not_found ->
+  (* Reference not found *)
+  error_global_not_found_loc (qualid_of_reference r)
+
+(* Intern a reference parsed in a non-tactic entry *)
+
+let intern_non_tactic_reference strict ist r =
+  (* An ltac reference *)
+  try Reference (intern_ltac_variable ist r)
+  with Not_found ->
+  (* A constr reference *)
+  try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
+  with Not_found ->
+  (* Tolerance for compatibility, allow not to use "ltac:" *)
+  try intern_isolated_global_tactic_reference r
+  with Not_found ->
+  (* By convention, use IntroIdentifier for unbound ident, when not in a def *)
+  match r with
+  | Ident (_,id) when not strict -> IntroPattern (IntroIdentifier id)
+  | _ ->
+  (* Reference not found *)
+  error_global_not_found_loc (qualid_of_reference r)
 
 let intern_message_token ist = function
   | (MsgString _ | MsgInt _ as x) -> x
@@ -515,12 +557,12 @@ let short_name = function
   | _ -> None
 
 let interp_global_reference r =
-  let loc,qid as lqid = qualid_of_reference r in
+  let lqid = qualid_of_reference r in
   try locate_global_with_alias lqid
   with Not_found ->
   match r with 
   | Ident (loc,id) when not !strict_check -> VarRef id
-  | _ -> error_global_not_found_loc loc qid
+  | _ -> error_global_not_found_loc lqid
 
 let intern_evaluable_reference_or_by_notation = function
   | AN r -> evaluable_of_global_reference (interp_global_reference r)
@@ -823,7 +865,7 @@ and intern_tactic_fun ist (var,body) =
 
 and intern_tacarg strict ist = function
   | TacVoid -> TacVoid
-  | Reference r -> intern_reference strict ist r
+  | Reference r -> intern_non_tactic_reference strict ist r
   | IntroPattern ipat -> 
       let lf = ref([],[]) in (*How to know what names the intropattern binds?*)
       IntroPattern (intern_intro_pattern lf ist ipat)
@@ -836,9 +878,10 @@ and intern_tacarg strict ist = function
 	if istac then Reference (ArgVar (adjust_loc loc,id))
 	else ConstrMayEval (ConstrTerm (RVar (adjust_loc loc,id), None))
       else error_syntactic_metavariables_not_allowed loc
+  | TacCall (loc,f,[]) -> intern_isolated_tactic_reference ist f
   | TacCall (loc,f,l) ->
       TacCall (loc,
-        intern_tactic_reference ist f,
+        intern_applied_tactic_reference ist f,
         List.map (intern_tacarg !strict_check ist) l)
   | TacExternal (loc,com,req,la) -> 
       TacExternal (loc,com,req,List.map (intern_tacarg !strict_check ist) la)

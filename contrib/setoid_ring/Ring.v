@@ -38,7 +38,7 @@ Ltac bool_cst t :=
   match t with
     true => constr:true
   | false => constr:false
-  | _ => NotConstant
+  | _ => constr:NotConstant
   end.
 
 Add Ring bool_ring : BoolTheory (decidable bool_eq_ok, constants [bool_cst]).
