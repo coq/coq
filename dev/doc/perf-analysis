@@ -1,9 +1,52 @@
 Performance analysis (trunk repository)
 ---------------------------------------
 
+Apr 17, 2008: improvement probably due to commit 10807 or 10813 (bug
+  fixes, control of zeta in rewrite, auto (??))
+  (-18% Buchberger, -40% PAutomata, -28% IntMap, -43% CoRN, -13% LinAlg,
+  but CatsInZFC -0.5% only, PiCalc stable, PersistentUnionFind -1%)
+
+Mar 11, 2008:
+  (+19 % PersistentUnionFind wrt Mar 3, +21% Angles, 
+   +270% Continuations between 7/3 and 18/4)
+
+Mar 7, 2008:
+  (-10 % PersistentUnionFind wrt Mar 3)
+
+Feb 20, 2008: temporary 1-day slow down
+  (+64% LinAlg)
+
+Feb 14, 2008:
+  (-10% PersistentUnionFind, -19% Groups)
+
+Feb 7, 8, 2008: temporary 2-days long slow down
+  (+20 LinAlg, +50% BDDs)
+
+Feb 2, 2008: many updates of the module system
+  (-13% LinAlg, -50% AMM11262, -5% Goedel, -1% PersistentUnionFind, 
+   -42% ExactRealArithmetic, -41% Icharate, -42% Kildall, -74% SquareMatrices)
+
+Jan 1, 2008: merge of TypeClasses branch
+  (+8% PersistentUnionFind, +36% LinAlg, +76% Goedel)
+
+Nov 16, 17, 2007:
+  (+18% Cantor, +4% LinAlg, +27% IEEE1394 on 2 days)
+
+Nov 8, 2007:
+  (+18% Cantor, +16% LinAlg, +55% Continuations, +200% IEEE1394, +170% CTLTCTL,
+   +220% SquareMatrices)
+
+Oct 29, V8.1 (+ 3% geometry but CoRN, Godel, Kildall, Stalmark stables)
+
 Between Oct 12 and Oct 27, 2007: inefficiency temporarily introduced in the
   tactic interpreter (from revision 10222 to 10267)
   (+22% CoRN, +10% geometry, ...)
+
+Sep 16, 2007:
+  (+16% PersistentUnionFind on 3 days, LinAlg stable,
+
+Sep 4, 2007:
+  (+26% PersistentUnionFind, LinAlg stable,
 
 Jun 6, 2007: optimization of the need for type unification in with-bindings
   (-3.5% Stalmark, -6% Kildall)
