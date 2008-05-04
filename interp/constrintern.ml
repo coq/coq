@@ -729,6 +729,36 @@ let push_name_env lvar (ids,tmpsc,scopes as env) = function
       check_hidden_implicit_parameters id lvar;
       (Idset.add id ids,tmpsc,scopes)
 
+let intern_typeclass_binders intern_type env bl =
+  List.fold_left 
+    (fun ((ids,ts,sc) as env,bl) ((loc, na), bk, ty) ->
+      let ty = locate_if_isevar loc na (intern_type env ty) in
+	((name_fold Idset.add na ids,ts,sc), (na,bk,None,ty)::bl))
+    env bl
+
+let intern_typeclass_binder intern_type (env,bl) na b ty =
+  let ctx = (na, b, ty) in
+  let (fvs, bind) = Implicit_quantifiers.generalize_class_binders_raw (pi1 env) [ctx] in
+  let env, ifvs = intern_typeclass_binders intern_type (env,bl) fvs in
+    intern_typeclass_binders intern_type (env,ifvs) bind
+    
+let intern_local_binder_aux intern intern_type ((ids,ts,sc as env),bl) = function
+  | LocalRawAssum(nal,bk,ty) ->
+      (match bk with
+	| Default k ->
+	    let (loc,na) = List.hd nal in
+	      (* TODO: fail if several names with different implicit types *)
+	    let ty = locate_if_isevar loc na (intern_type env ty) in
+	      List.fold_left
+		(fun ((ids,ts,sc),bl) (_,na) ->
+		  ((name_fold Idset.add na ids,ts,sc), (na,k,None,ty)::bl))
+		(env,bl) nal
+	| TypeClass b ->
+	    intern_typeclass_binder intern_type (env,bl) (List.hd nal) b ty)
+  | LocalRawDef((loc,na),def) ->
+      ((name_fold Idset.add na ids,ts,sc),
+      (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
+
 (**********************************************************************)
 (* Utilities for application                                          *)
 
@@ -957,21 +987,8 @@ let internalise sigma globalenv env allow_patvar lvar c =
 
   and intern_type env = intern (set_type_scope env)
 
-  and intern_local_binder ((ids,ts,sc as env),bl) = function
-    | LocalRawAssum(nal,bk,ty) ->
-	(match bk with
-	  | Default k ->
-	      let (loc,na) = List.hd nal in
-		(* TODO: fail if several names with different implicit types *)
-	      let ty = locate_if_isevar loc na (intern_type env ty) in
-		List.fold_left
-		  (fun ((ids,ts,sc),bl) (_,na) ->
-		    ((name_fold Idset.add na ids,ts,sc), (na,k,None,ty)::bl))
-		  (env,bl) nal
-	  | TypeClass b -> anomaly ("TODO: intern_local_binder TypeClass"))
-    | LocalRawDef((loc,na),def) ->
-        ((name_fold Idset.add na ids,ts,sc),
-         (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
+  and intern_local_binder env bind = 
+    intern_local_binder_aux intern intern_type env bind
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern scopes n (loc,pl) =
@@ -1032,13 +1049,6 @@ let internalise sigma globalenv env allow_patvar lvar c =
       | _, Some na -> na in
     (tm',(na,typ)), na::ids
       
-  and intern_typeclass_binders env bl =
-    List.fold_left 
-      (fun ((ids,ts,sc) as env,bl) ((loc, na), bk, ty) ->
-	let ty = locate_if_isevar loc na (intern_type env ty) in
-	  ((name_fold Idset.add na ids,ts,sc), (na,bk,None,ty)::bl))
-      env bl
-
   and iterate_prod loc2 env bk ty body nal =
     let rec default env bk = function
     | (loc1,na)::nal ->
@@ -1051,10 +1061,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
       match bk with
 	| Default b -> default env b nal
 	| TypeClass b -> 
-	    let ctx = (List.hd nal, b, ty) in
-	    let (fvs, bind) = Implicit_quantifiers.generalize_class_binders_raw (pi1 env) [ctx] in
-	    let env, ifvs = intern_typeclass_binders (env,[]) fvs in
-	    let env, ibind = intern_typeclass_binders (env,ifvs) bind in
+	    let env, ibind = intern_typeclass_binder intern_type (env, []) (List.hd nal) b ty in
 	    let body = intern_type env body in
 	      it_mkRProd ibind body
 					   
@@ -1069,13 +1076,10 @@ let internalise sigma globalenv env allow_patvar lvar c =
     in match bk with
       | Default b -> default env b nal
       | TypeClass b ->
-	  let ctx = (List.hd nal, b, ty) in
-	  let (fvs, bind) = Implicit_quantifiers.generalize_class_binders_raw (pi1 env) [ctx] in
-	  let env, ifvs = intern_typeclass_binders (env,[]) fvs in
-	  let env, ibind = intern_typeclass_binders (env,ifvs) bind in
+	  let env, ibind = intern_typeclass_binder intern_type (env, []) (List.hd nal) b ty in
 	  let body = intern env body in
 	    it_mkRLambda ibind body
-
+	      
   and intern_impargs c env l subscopes args =
     let eargs, rargs = extract_explicit_arg l args in
     let rec aux n impl subscopes eargs rargs =
@@ -1267,42 +1271,51 @@ let interp_binder_evars evdref env na t =
 open Environ
 open Term
 
+let my_intern_constr sigma env acc c =
+  internalise sigma env acc false (([],[]),Environ.named_context env, [], ([], [])) c
+
+let my_intern_type sigma env acc c = my_intern_constr sigma env (set_type_scope acc) c
+
 let interp_context sigma env params = 
-  List.fold_left
-    (fun (env,params) d -> match d with
-      | LocalRawAssum ([_,na],k,(CHole _ as t)) ->
-	  let t = interp_binder sigma env na t in
-	  let d = (na,None,t) in
-	  (push_rel d env, d::params)
-      | LocalRawAssum (nal,k,t) ->
-	  let t = interp_type sigma env t in
-	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
-	  let ctx = List.rev ctx in
-	  (push_rel_context ctx env, ctx@params)
-      | LocalRawDef ((_,na),c) ->
-	  let c = interp_constr_judgment sigma env c in
-	  let d = (na, Some c.uj_val, c.uj_type) in
-	  (push_rel d env,d::params))
-    (env,[]) params
+  let ids, bl =
+    List.fold_left
+      (intern_local_binder_aux (my_intern_constr sigma env) (my_intern_type sigma env))
+      ((extract_ids env,None,[]), []) params
+  in
+    List.fold_left
+      (fun (env,params) (na, k, b, t) ->
+	match b with
+	    None ->
+	      let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+	      let t = Default.understand_type sigma env t' in
+	      let d = (na,None,t) in
+		(push_rel d env, d::params)
+	  | Some b ->
+	      let c = Default.understand_judgment sigma env b in
+	      let d = (na, Some c.uj_val, c.uj_type) in
+		(push_rel d env,d::params))
+      (env,[]) (List.rev bl)
 
 let interp_context_evars evdref env params =
-  List.fold_left
-    (fun (env,params) d -> match d with
-      | LocalRawAssum ([_,na],k,(CHole _ as t)) ->
-	  let t = interp_binder_evars evdref env na t in
-	  let d = (na,None,t) in
-	  (push_rel d env, d::params)
-      | LocalRawAssum (nal,k,t) ->
-	  let t = interp_type_evars evdref env t in
-	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
-	  let ctx = List.rev ctx in
-	  (push_rel_context ctx env, ctx@params)
-      | LocalRawDef ((_,na),c) ->
-	  let c = interp_constr_judgment_evars evdref env c in
-	  let d = (na, Some c.uj_val, c.uj_type) in
-	  (push_rel d env,d::params))
-    (env,[]) params
-
+  let ids, bl =
+    List.fold_left
+      (intern_local_binder_aux (my_intern_constr evdref env) (my_intern_type evdref env))
+      ((extract_ids env,None,[]), []) params
+  in
+    List.fold_left
+      (fun (env,params) (na, k, b, t) ->
+	match b with
+	    None ->
+	      let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+	      let t = Default.understand_tcc_evars evdref env IsType t' in
+	      let d = (na,None,t) in
+		(push_rel d env, d::params)
+	  | Some b ->
+	      let c = Default.understand_judgment_tcc evdref env b in
+	      let d = (na, Some c.uj_val, c.uj_type) in
+		(push_rel d env,d::params))
+      (env,[]) (List.rev bl)
+    
 (**********************************************************************)
 (* Locating reference, possibly via an abbreviation *)
 
