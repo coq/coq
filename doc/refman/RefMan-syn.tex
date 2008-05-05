@@ -73,7 +73,7 @@ Consider for example the new notation
 Notation "A \/ B" := (or A B).
 \end{coq_example*}
 
-Clearly, an expression such as {\tt (A:Prop)True \verb=/\= A \verb=\/=
+Clearly, an expression such as {\tt forall A:Prop, True \verb=/\= A \verb=\/=
 A \verb=\/= False} is ambiguous. To tell the {\Coq} parser how to
 interpret the expression, a priority between the symbols \verb=/\= and
 \verb=\/= has to be given. Assume for instance that we want conjunction
@@ -179,7 +179,7 @@ See the next section for more about factorization.
 
 \subsection{Simple factorization rules}
 
-{\Coq} extensible parsing is performed by Camlp4 which is essentially a
+{\Coq} extensible parsing is performed by Camlp5 which is essentially a
 LL1 parser. Hence, some care has to be taken not to hide already
 existing rules by new rules. Some simple left factorization work has
 to be done. Here is an example.
