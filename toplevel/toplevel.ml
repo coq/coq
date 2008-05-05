@@ -134,7 +134,7 @@ let print_highlight_location ib loc =
 	  (l1 ++ li ++ ln)
   in 
   let loc = make_loc (bp,ep) in
-  (str"Toplevel input, characters " ++ Cerrors.print_loc loc ++ fnl () ++
+  (str"Toplevel input, characters " ++ Cerrors.print_loc loc ++ str":" ++ fnl () ++
      highlight_lines ++ fnl ())
 
 (* Functions to report located errors in a file. *)
@@ -162,7 +162,7 @@ let print_location_in_file s inlibrary fname loc =
       close_in ic;
       (errstrm  ++ str"File " ++ str ("\""^fname^"\"") ++
          str", line " ++ int line ++
-         str", characters " ++ Cerrors.print_loc (make_loc (bp-bol,ep-bol)) ++ fnl ())
+         str", characters " ++ Cerrors.print_loc (make_loc (bp-bol,ep-bol)) ++ str":" ++ fnl ())
     with e -> (close_in ic; (errstrm ++ str", invalid location." ++ fnl ()))
 	
 let print_command_location ib dloc =
