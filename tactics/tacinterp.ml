@@ -1677,7 +1677,7 @@ and eval_with_fail ist is_lazy goal tac =
 
 (* Interprets recursive expressions *)
 and letrec_interp ist gl lrc u =
-  let lref = Array.to_list (Array.make (List.length lrc) (ref VVoid)) in
+  let lref = list_tabulate (fun _ -> ref VVoid) (List.length lrc) in
   let lenv =
     List.fold_right2 (fun ((loc,name),_) vref l -> (name,VRec vref)::l)
       lrc lref [] in
