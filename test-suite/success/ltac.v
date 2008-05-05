@@ -175,3 +175,17 @@ Abort.
 Goal True.
 match None with @None => exact I end.
 Abort.
+
+
+(* Check bug 1848, fixed in revision 10833 *)
+
+Ltac bogus_call arg :=
+  let rec first x := second x
+  with second x := idtac
+  with third x := assert False
+  in first arg.
+
+Lemma test:True.
+  bogus_call 0.
+  exact I.
+  Qed.
