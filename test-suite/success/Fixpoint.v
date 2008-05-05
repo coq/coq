@@ -29,8 +29,8 @@ CoFixpoint g (n:nat) (m:=pred n) (l:Stream m) (p:=S n) : Stream p :=
 
 Eval compute in (fun l => match g 2 (Consn 0 6 l) with Consn _ a _ => a end).
 
-(* Check inference of simple types even in presence of (non ambiguous)
-   dependencies (needs revision ) *)
+(* Check inference of simple types in presence of non ambiguous
+   dependencies (needs revision 10125) *)
 
 Section folding.
 

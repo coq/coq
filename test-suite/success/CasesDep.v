@@ -71,12 +71,8 @@ Inductive Setoid : Type :=
 
 Definition elem (A : Setoid) := let (S, R, e) := A in S.
 
-(* <Warning> : Grammar is replaced by Notation *)
-
 Definition equal (A : Setoid) :=
   let (S, R, e) as s return (Relation (elem s)) := A in R.
-
-(* <Warning> : Grammar is replaced by Notation *)
 
 
 Axiom prf_equiv : forall A : Setoid, Equivalence (elem A) (equal A).

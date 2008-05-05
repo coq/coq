@@ -173,6 +173,7 @@ type hole_kind =
   | InternalHole
   | TomatchTypeParameter of inductive * int
   | GoalEvar
+  | ImpossibleCase
 val is_defined_evar :  evar_defs -> existential -> bool
 val is_undefined_evar :  evar_defs -> constr -> bool
 val undefined_evars : evar_defs -> evar_defs

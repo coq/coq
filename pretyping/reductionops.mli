@@ -216,7 +216,7 @@ val instance : (metavariable * constr) list -> constr -> constr
 
 (*s Heuristic for Conversion with Evar *)
 
-val apprec :  state_reduction_function
+val whd_betaiota_deltazeta_for_iota_state :  state_reduction_function
 
 (*s Meta-related reduction functions *)
 val meta_instance : evar_defs -> constr freelisted -> constr

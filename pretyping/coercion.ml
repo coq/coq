@@ -129,7 +129,7 @@ module Default = struct
       match kind_of_term t with
 	| Prod (_,_,_) -> (evd,j)
 	| Evar ev ->
-	    let (evd',t) = define_evar_as_arrow evd ev in
+	    let (evd',t) = define_evar_as_product evd ev in
 	      (evd',{ uj_val = j.uj_val; uj_type = t })
 	| _ ->
        	    (try

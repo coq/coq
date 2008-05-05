@@ -21,6 +21,7 @@ open Environ
 open Evd
 open Reductionops
 open Pretype_errors
+open Retyping
 
 (* Expanding existential variables (pretyping.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
@@ -381,7 +382,7 @@ let shrink_context env subst ty =
   shrink_named subst [] rev_named_sign
 
 let extend_evar env evdref k (evk1,args1) c =
-  let ty = Retyping.get_type_of env (evars_of !evdref) c in
+  let ty = get_type_of env (evars_of !evdref) c in
   let overwrite_first v1 v2 =
     let v = Array.copy v1 in
     let n = Array.length v - Array.length v2 in
@@ -520,6 +521,10 @@ let clear_hyps_in_evi evdref hyps concl ids =
   in
   (nhyps,nconcl)
 
+(* Expand rels and vars that are bound to other rels or vars so that 
+   dependencies in variables are canonically associated to the most ancient
+   variable in its family of aliased variables *)
+
 let rec expand_var env x = match kind_of_term x with
   | Rel n ->
       begin try match pi2 (lookup_rel n env) with
@@ -533,6 +538,10 @@ let rec expand_var env x = match kind_of_term x with
       | _ -> x
       end
   | _ -> x
+
+let rec expand_vars_in_term env t = match kind_of_term t with
+  | Rel _ | Var _ -> expand_var env t
+  | _ -> map_constr_with_full_binders push_rel expand_vars_in_term env t
 
 (* [find_projectable_vars env sigma y subst] finds all vars of [subst]
  * that project on [y]. It is able to find solutions to the following
@@ -574,6 +583,7 @@ type evar_projection =
 
 let rec find_projectable_vars env sigma y subst =
   let is_projectable (id,(idc,y')) =
+    let y' = whd_evar sigma y' in
     if y = y' or expand_var env y = expand_var env y'
     then (idc,(y'=y,(id,ProjectVar)))
     else if isEvar y' then
@@ -617,6 +627,7 @@ let rec do_projection_effects define_fun env ty evd = function
   | ProjectVar -> evd
   | ProjectEvar ((evk,argsv),evi,id,p) ->
       let evd = Evd.evar_define evk (mkVar id) evd in
+      (* TODO: simplify constraints involving evk *)
       let evd = do_projection_effects define_fun env ty evd p in
       let ty = whd_betadeltaiota env (evars_of evd) (Lazy.force ty) in
       if not (isSort ty) then
@@ -738,19 +749,27 @@ let do_restrict_hyps evd evk projs =
     let evk',_ = destEvar nc in
     evd,evk'
 
-(* [postpone_evar_term] postpones an equation of the form ?e[σ] := c *)
+(* [postpone_evar_term] postpones an equation of the form ?e[σ] = c *)
 
 let postpone_evar_term env evd (evk,argsv) rhs =
+  let rhs = expand_vars_in_term env rhs in
   let evi = Evd.find (evars_of evd) evk in
   let evd,evk,args =
     restrict_upon_filter evd evi evk
+      (* Keep only variables that depends in rhs *)
+      (* This is not safe: is the variable is a local def, its body *)
+      (* may contain references to variables that are removed, leading to *)
+      (* a ill-formed context. We would actually need a notion of filter *)
+      (* that says that the body is hidden. Note that expand_vars_in_term *)
+      (* expands only rels and vars aliases, not rels or vars bound to an *)
+      (* arbitrary complex term *)
       (fun a -> not (isRel a || isVar a) || dependent a rhs)
       (Array.to_list argsv) in
   let args = Array.of_list args in
   let pb = (Reduction.CONV,env,mkEvar(evk,args),rhs) in
   Evd.add_conv_pb pb evd
 
-(* [postpone_evar_evar] postpones an equation of the form ?e1[σ1] := ?e2[σ2] *)
+(* [postpone_evar_evar] postpones an equation of the form ?e1[σ1] = ?e2[σ2] *)
 
 let postpone_evar_evar env evd projs1 (evk1,args1) projs2 (evk2,args2) =
   (* Leave an equation between (restrictions of) ev1 andv ev2 *)
@@ -799,8 +818,13 @@ let solve_evar_evar f env evd ev1 ev2 =
   with CannotProject projs2 ->
   postpone_evar_evar env evd projs1 ev1 projs2 ev2
 
-(* [invert_instance Γ Σ 
- * We try to instantiate the evar assuming the body won't depend
+let expand_rhs env sigma subst rhs =
+  let d = (named_hd env rhs Anonymous,Some rhs,get_type_of env sigma rhs) in
+  let rhs' = lift 1 rhs in
+  let f (id,(idc,t)) = (id,(idc,replace_term rhs' (mkRel 1) (lift 1 t))) in
+  push_rel d env, List.map f subst, mkRel 1
+
+(* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
  * (i.e. we tackle a generalization of Miller-Pfenning patterns unification) 
  *
@@ -1158,7 +1182,7 @@ let define_evar_as_abstraction abs evd (ev,args) =
   let prod' = abs (Name nvar, mkEvar evdom, mkEvar evrng) in
   (evd3,prod')
 
-let define_evar_as_arrow evd (ev,args) =
+let define_evar_as_product evd (ev,args) =
   define_evar_as_abstraction (fun t -> mkProd t) evd (ev,args)
 
 let define_evar_as_lambda evd (ev,args) =
@@ -1186,7 +1210,7 @@ let split_tycon loc env evd tycon =
       match kind_of_term t with
 	| Prod (na,dom,rng) -> evd, (na, dom, rng)
 	| Evar ev when not (Evd.is_defined_evar evd ev) ->
-	    let (evd',prod) = define_evar_as_arrow evd ev in
+	    let (evd',prod) = define_evar_as_product evd ev in
 	    let (_,dom,rng) = destProd prod in
 	      evd',(Anonymous, dom, rng)
 	| _ -> error_not_product_loc loc env sigma c

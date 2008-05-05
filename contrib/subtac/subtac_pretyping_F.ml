@@ -490,7 +490,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
     | RCases (loc,sty,po,tml,eqns) ->
 	Cases.compile_cases loc sty
-	  ((fun vtyc env -> pretype vtyc env isevars lvar),isevars)
+	  ((fun vtyc env isevars -> pretype vtyc env isevars lvar),isevars)
 	  tycon env (* loc *) (po,tml,eqns)
 
     | RCast(loc,c,k) ->

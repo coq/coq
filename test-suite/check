@@ -147,7 +147,7 @@ test_complexity() {
 
 test_bugs () {
     # Process verifications concerning submitted bugs. A message is
-    # printed for all opened bugs (still active or seem to be closed.
+    # printed for all opened bugs (still active or seems to be closed).
     # For closed bugs that behave as expected, no message is printed
 
     # All files are assumed to have <# of the bug>.v as a name
@@ -213,6 +213,26 @@ test_bugs () {
     
 }
 
+test_features () {
+    # Process verifications concerning submitted bugs. A message is
+    # printed for all opened bugs (still active or seem to be closed.
+    # For closed bugs that behave as expected, no message is printed
+
+    echo "Testing wishes..."
+    files=`/bin/ls -1 $1/*.v 2> /dev/null`
+    for f in $files; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+	$command $f $2 > /dev/null 2>&1 
+	if [ $? != 0 ]; then
+	    echo "still wished"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Good news! (wish seems to be granted, please check)"
+        fi
+    done
+}
+
 # Programme principal
 
 echo "Success tests"
@@ -233,10 +253,9 @@ echo "Module tests"
 $coqtop -compile modules/Nat
 $coqtop -compile modules/plik
 test_success modules "-I modules -impredicative-set"
+#echo "Ideal-features tests"
+#test_features ideal-features
 
 pourcentage=`expr 100 \* $nbtestsok / $nbtests`
 echo
 echo "$nbtestsok tests passed over $nbtests, i.e. $pourcentage %"
-
-#echo "Ideal-features tests"
-#test_success ideal-features

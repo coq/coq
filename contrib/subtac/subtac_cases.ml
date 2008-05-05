@@ -2083,6 +2083,9 @@ let nf_evars_env evar_defs (env : env) : env =
      ~init:env' env
       
 let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =
+
+  let typing_fun tycon env = typing_fun tycon env isevars in
+
   (* We build the matrix of patterns and right-hand-side *)
   let matx = matx_of_eqns env eqns in
      

@@ -806,21 +806,23 @@ let is_sort env sigma arity =
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)
 
-let rec apprec env sigma s =
-  let (t, stack as s) = whd_betaiota_state s in
-  match kind_of_term t with
+let whd_betaiota_deltazeta_for_iota_state env sigma s =
+  let rec whrec s = 
+    let (t, stack as s) = whd_betaiota_state s in
+    match kind_of_term t with
     | Case (ci,p,d,lf) ->
         let (cr,crargs) = whd_betadeltaiota_stack env sigma d in
         let rslt = mkCase (ci, p, applist (cr,crargs), lf) in
         if reducible_mind_case cr then 
-	  apprec env sigma (rslt, stack)
+	  whrec (rslt, stack)
         else 
 	  s
     | Fix fix ->
 	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix stack with
-             | Reduced s -> apprec env sigma s
+             | Reduced s -> whrec s
 	     | NotReducible -> s)
     | _ -> s
+  in whrec s
 
 (* A reduction function like whd_betaiota but which keeps casts
  * and does not reduce redexes containing existential variables.

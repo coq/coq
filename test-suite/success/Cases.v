@@ -10,6 +10,10 @@ Type match 0, eq, 0 return nat with
      | O, x, y => 0
      | S x, y, z => x
      end.
+Type match 0, eq, 0 return _ with
+     | O, x, y => 0
+     | S x, y, z => x
+     end.
 
 (* Non dependent form of annotation *)
 Type match 0, eq return nat with
@@ -405,7 +409,6 @@ Type match niln with
      | niln => 0
      | x => 0
      end.
-
 
 Type match niln return nat with
      | niln => 0

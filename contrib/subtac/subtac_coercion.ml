@@ -376,7 +376,7 @@ module Coercion = struct
       match kind_of_term t with
 	| Prod (_,_,_) -> (isevars,j)
 	| Evar ev when not (is_defined_evar isevars ev) ->
-	    let (isevars',t) = define_evar_as_arrow isevars ev in
+	    let (isevars',t) = define_evar_as_product isevars ev in
 	      (isevars',{ uj_val = j.uj_val; uj_type = t })
 	| _ ->
        	    (try

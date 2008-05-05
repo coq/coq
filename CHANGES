@@ -6,7 +6,6 @@ Language
 - If a fixpoint is not written with an explicit { struct ... }, then 
   all arguments are tried successively (from left to right) until one is 
   found that satisfies the structural decreasing condition. (DOC TODO?)
-- Improved inference of implicit arguments.
 - New experimental typeclass system giving ad-hoc polymorphism and 
   overloading based on dependent records and implicit arguments.
 - New syntax "let 'pat := b in c" for let-binding using irrefutable patterns.
@@ -90,8 +89,13 @@ Libraries (DOC TO CHECK)
   logic. Addition of files providing intuitionistic axiomatizations of
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v.
 
-Notations, coercions and implicit arguments
+Notations, coercions, implicit arguments and type inference
 
+- More automation in the inference of the return clause of dependent
+  pattern-matching problems.
+- Experimental allowance for omission of the clauses easily detectable as
+  impossible in pattern-matching problems.
+- Improved inference of implicit arguments.
 - New options "Set Maximal Implicit Insertion", "Set Reversible Pattern
   Implicit", "Set Strongly Strict Implicit" and "Set Printing Implicit
   Defensive" for controlling inference and use of implicit arguments.
@@ -159,7 +163,7 @@ Tactics
   occurrences. (DOC TODO)
 - New syntax "rewrite A,B" for "rewrite A; rewrite B"
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
-- New tactics "dependent induction/destruction H [ generalizing id_1 .. id_n ]" 
+- New tactics "dependent induction/destruction H [ generalizing id_1 .. id_n ]"
   to do induction-inversion on instantiated inductive families à la BasicElim.
 - Tactic "apply" now able to reason modulo unfolding of constants
   (possible source of incompatibility in situations where apply may fail, 
@@ -272,6 +276,7 @@ Setoid rewriting
 
 Tools
 
+- New stand-alone .vo files verifier.a
 - CoqIDE font defaults to monospace so as indentation to be meaningful.
 
 Miscellaneous

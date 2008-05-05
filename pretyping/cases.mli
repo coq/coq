@@ -48,10 +48,22 @@ val error_needs_inversion : env -> constr -> types -> 'a
 
 (*s Compilation of pattern-matching. *)
 
+type alias_constr =
+  | DepAlias
+  | NonDepAlias
+type dep_status = KnownDep | KnownNotDep | DepUnknown
+type tomatch_type =
+  | IsInd of types * inductive_type * name list
+  | NotInd of constr option * types
+type tomatch_status =
+  | Pushed of ((constr * tomatch_type) * int list * (name * dep_status))
+  | Alias of (constr * constr * alias_constr * constr)
+  | Abstract of rel_declaration
+
 module type S = sig
   val compile_cases :
     loc -> case_style ->
-    (type_constraint -> env -> rawconstr -> unsafe_judgment) * evar_defs ref ->
+    (type_constraint -> env -> evar_defs ref -> rawconstr -> unsafe_judgment) * evar_defs ref ->
     type_constraint -> 
     env -> rawconstr option * tomatch_tuples * cases_clauses ->
     unsafe_judgment

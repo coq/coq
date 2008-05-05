@@ -10,6 +10,7 @@ A few differences in Coq ML interfaces between Coq V8.0 and V8.1
 Eauto: e_resolve_constr, vernac_e_resolve_constr -> simplest_eapply
 Tactics: apply_with_bindings -> apply_with_bindings_wo_evars
 Eauto.simplest_apply -> Hiddentac.h_simplest_apply
+Evarutil.define_evar_as_arrow -> define_evar_as_product
 
 ** Universe names (univ.mli)
 

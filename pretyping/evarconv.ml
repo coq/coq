@@ -50,37 +50,11 @@ let eval_flexible_term env c =
   | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
   | _ -> assert false
-(*
-let rec apprec_nobeta env sigma s =
-  let (t,stack as s) = whd_state s in
-  match kind_of_term (fst s) with
-    | Case (ci,p,d,lf) ->
-        let (cr,crargs) = whd_betadeltaiota_stack env sigma d in
-        let rslt = mkCase (ci, p, applist (cr,crargs), lf) in
-        if reducible_mind_case cr then 
-	  apprec_nobeta env sigma (rslt, stack)
-        else 
-	  s
-    | Fix fix ->
-	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix stack with
-             | Reduced s -> apprec_nobeta env sigma s
-	     | NotReducible -> s)
-    | _ -> s
-
-let evar_apprec_nobeta env evd stack c =
-  let rec aux s =
-    let (t,stack as s') = apprec_nobeta env (evars_of evd) s in
-    match kind_of_term t with
-      | Evar (evk,_ as ev) when Evd.is_defined (evars_of evd) evk ->
-	  aux (Evd.existential_value (evars_of evd) ev, stack)
-      | _ -> (t, list_of_stack stack)
-  in aux (c, append_stack (Array.of_list stack) empty_stack)
-*)
 
 let evar_apprec env evd stack c =
   let sigma = evars_of evd in
   let rec aux s =
-    let (t,stack) = Reductionops.apprec env sigma s in
+    let (t,stack) = whd_betaiota_deltazeta_for_iota_state env sigma s in
     match kind_of_term t with
       | Evar (evk,_ as ev) when Evd.is_defined sigma evk ->
 	  aux (Evd.existential_value sigma ev, stack)

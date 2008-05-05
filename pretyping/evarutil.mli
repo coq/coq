@@ -84,7 +84,7 @@ val solve_simple_eqn :
    new unresolved evar remains in [c] *)
 val check_evars : env -> evar_map -> evar_defs -> constr -> unit
 
-val define_evar_as_arrow : evar_defs -> existential -> evar_defs * types
+val define_evar_as_product : evar_defs -> existential -> evar_defs * types
 val define_evar_as_lambda : evar_defs -> existential -> evar_defs * types
 val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 
@@ -158,6 +158,10 @@ val nf_evar_defs : evar_defs -> evar_defs
 exception Uninstantiated_evar of existential_key
 val whd_ise :  evar_map -> constr -> constr
 val whd_castappevar :  evar_map -> constr -> constr
+
+(* Replace the vars and rels that are aliases to other vars and rels by *)
+(* their representative that is most ancient in the context *)
+val expand_vars_in_term : env -> constr -> constr 
 
 (*********************************************************************)
 (* debug pretty-printer: *)

@@ -408,6 +408,7 @@ type hole_kind =
   | InternalHole
   | TomatchTypeParameter of inductive * int
   | GoalEvar
+  | ImpossibleCase
 
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * Environ.env * constr * constr
