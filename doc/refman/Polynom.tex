@@ -389,7 +389,8 @@ Inductive PExpr : Type :=
   | PEadd : PExpr -> PExpr -> PExpr
   | PEsub : PExpr -> PExpr -> PExpr
   | PEmul : PExpr -> PExpr -> PExpr
-  | PEopp : PExpr -> PExpr.
+  | PEopp : PExpr -> PExpr
+  | PEpow : PExpr -> N -> PExpr.
 \end{verbatim}
 \end{flushleft}
 \end{small}
