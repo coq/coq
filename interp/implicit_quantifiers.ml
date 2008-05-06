@@ -185,7 +185,11 @@ let full_class_binders env l =
     List.fold_left (fun (l', avoid) (iid, bk, cl as x) -> 
       match bk with
 	  Implicit -> 
-	    let (loc, id, l) = destClassAppExpl cl in
+	    let (loc, id, l) = 
+	      try destClassAppExpl cl 
+	      with Not_found -> 
+		user_err_loc (constr_loc cl, "class_binders", str"Not an applied type class")
+	    in
 	    let gr = Nametab.global id in
 	      (try
 		  let c = class_info gr in

@@ -275,10 +275,9 @@ GEXTEND Gram
               | None -> 
 		  (* If there is only one argument, it is the recursive one, 
 		     otherwise, we search the recursive index later *)
-		  if List.length names = 1 then
-		    let (loc, na) = List.hd names in
-		      Some (loc, Nameops.out_name na)
-		  else None	  
+		  match names with
+		    | [(loc, Name na)] -> Some (loc, na)
+		    | _ -> None	  
 	  in 
 	  ((id,(ni,snd annot),bl,ty,def),ntn) ] ]
   ;

@@ -112,8 +112,8 @@ let impl_ident =
 	      | _ -> raise Stream.Failure)
 	| _ -> raise Stream.Failure)
     
-let ident_eq =
-  Gram.Entry.of_parser "ident_eq"
+let ident_colon =
+  Gram.Entry.of_parser "ident_colon"
     (fun strm ->
       match Stream.npeek 1 strm with
 	| [("IDENT",s)] ->
@@ -438,29 +438,16 @@ GEXTEND Gram
 	LocalRawAssum ([n], TypeClass bk, t)
     ] ]
   ;
-  typeclass_constraint:
-    [ [ "!" ; qid=global ; cl = LIST0 typeclass_param -> 
-	(loc, Anonymous), Explicit, CApp (loc, (None, mkRefC qid), cl)
-    | iid=ident_eq ; qid=typeclass_name ; cl = LIST0 typeclass_param -> 
-	(loc, Name iid), (fst qid), CApp (loc, (None, mkRefC (snd qid)), cl)
-    | qid=global ; cl = LIST0 typeclass_param -> 
-	(loc, Anonymous), Implicit, CApp (loc, (None, mkRefC qid), cl)
-    ] ]
-  ;
-  typeclass_name:
-    [ [ id=global -> (Implicit, id)
-    | "!"; id=global -> (Explicit, id)
-    ] ]
-  ;
 
-  typeclass_param: 
-    [ [ id = global -> CRef id, None
-    | c = sort -> CSort (loc, c), None
-    | id = lpar_id_coloneq; c=lconstr; ")" ->
-	(c,Some (loc,ExplByName id))
-    | c=operconstr LEVEL "9" -> c, None
+  typeclass_constraint:
+    [ [ "!" ; c = operconstr LEVEL "200" -> (loc, Anonymous), Explicit, c
+    | iid=ident_colon ; expl = [ "!" -> Explicit | -> Implicit ] ; c = operconstr LEVEL "200" ->
+	(loc, Name iid), expl, c
+    | c = operconstr LEVEL "200" ->
+	(loc, Anonymous), Implicit, c
     ] ]
   ;
+  
   type_cstr:
     [ [ c=OPT [":"; c=lconstr -> c] -> (loc,c) ] ]
   ;
