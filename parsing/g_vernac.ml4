@@ -263,18 +263,22 @@ GEXTEND Gram
         ty = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
 	  let bl, annot = (b :: fst bl, snd bl) in
-          let names = List.map snd (names_of_local_assums bl) in
+          let names = names_of_local_assums bl in
           let ni =
             match fst annot with
-                Some (_, id) ->
-                  (try Some (list_index0 id names)
-                   with Not_found ->  Util.user_err_loc
-                     (loc,"Fixpoint",
-                      Pp.str "No argument named " ++ Nameops.pr_name id))
+                Some (loc, id) ->
+                  (if List.exists (fun (_, id') -> Name id = id') names then
+		    Some (loc, id)
+		    else Util.user_err_loc
+                      (loc,"Fixpoint",
+                      Pp.str "No argument named " ++ Nameops.pr_id id))
               | None -> 
 		  (* If there is only one argument, it is the recursive one, 
 		     otherwise, we search the recursive index later *)
-		  if List.length names = 1 then Some 0 else None	  
+		  if List.length names = 1 then
+		    let (loc, na) = List.hd names in
+		      Some (loc, Nameops.out_name na)
+		  else None	  
 	  in 
 	  ((id,(ni,snd annot),bl,ty,def),ntn) ] ]
   ;

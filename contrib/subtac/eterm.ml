@@ -28,7 +28,7 @@ let subst_evar_constr evs n t =
   let evar_info id = List.assoc id evs in
   let rec substrec (depth, fixrels) c = match kind_of_term c with
     | Evar (k, args) ->
-	let (id, idstr), hyps, chop, _, _ = 
+	let (id, idstr), hyps, chop, _, _, _ = 
 	  try evar_info k
 	  with Not_found -> 
 	    anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found")
@@ -158,7 +158,7 @@ let eterm_obligations env name isevars evm fs t ty =
 	 let loc, k = evar_source id isevars in
 	 let opacity = match k with QuestionMark o -> o | _ -> true in
 	 let opaque = if not opacity || chop <> fs then None else Some chop in
-	 let y' = (id, ((n, nstr), hyps, opaque, evtyp, deps)) in
+	 let y' = (id, ((n, nstr), hyps, opaque, loc, evtyp, deps)) in
 	   y' :: l) 
       evn []
   in 
@@ -167,13 +167,14 @@ let eterm_obligations env name isevars evm fs t ty =
   in
   let ty, _, _ = subst_evar_constr evts 0 ty in
   let evars = 
-    List.map (fun (_, ((_, name), _, opaque, typ, deps)) -> name, typ, not (opaque = None) && not (Idset.mem name transparent), deps) evts
+    List.map (fun (_, ((_, name), _, opaque, loc, typ, deps)) -> 
+      name, typ, loc, not (opaque = None) && not (Idset.mem name transparent), deps) evts
   in
     (try
        trace (str "Term constructed in eterm" ++ spc () ++
 		Termops.print_constr_env (Global.env ()) t');
        ignore(iter
-		(fun (name, typ, _, deps) ->
+		(fun (name, typ, _, _, deps) ->
 		   trace (str "Evar :" ++ spc () ++ str (string_of_id name) ++
 			    Termops.print_constr_env (Global.env ()) typ))
 		evars);

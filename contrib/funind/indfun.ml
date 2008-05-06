@@ -510,13 +510,8 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 	    List.map
 	      (function
 		 | (name,Some (Struct id),args,types,body),_ -> 
-		     let names = 
-		       List.map
-			 snd
-			 (Topconstr.names_of_local_assums args) 
-		     in 
 		     let annot = 
-		       try Some (list_index0 (Name id) names), Topconstr.CStructRec 
+		       try Some (dummy_loc, id), Topconstr.CStructRec 
 		       with Not_found -> 
 			 raise (UserError("",str "Cannot find argument " ++ 
 					    Ppconstr.pr_id id)) 
@@ -529,7 +524,8 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 			 (dummy_loc,"Function",
 			  Pp.str "the recursive argument needs to be specified in Function")
 		     else 
-		       (name,(Some 0, Topconstr.CStructRec),args,types,body),
+		       let loc, na = List.hd names in
+			 (name,(Some (loc, Nameops.out_name na), Topconstr.CStructRec),args,types,body),
 		     (None:Vernacexpr.decl_notation)
 		 | (_,Some (Wf _),_,_,_),_ | (_,Some (Mes _),_,_,_),_-> 
 		     error 
@@ -713,20 +709,7 @@ let make_graph (f_ref:global_reference) =
 		let l = 
 		  List.map
 		    (fun (id,(n,recexp),bl,t,b) -> 
-		       let bl' =  
-			 List.flatten 
-			   (List.map 
-			      (function 
-				 | Topconstr.LocalRawDef (na,_)-> []
-				 | Topconstr.LocalRawAssum (nal,_,_) -> nal
-			      )
-			      bl
-			   )
-		       in 
-		       let rec_id = 
-			 match List.nth bl' (Option.get n)  with 
-			   |(_,Name id) -> id | _ -> anomaly ""
-		       in
+		       let loc, rec_id = Option.get n in
 		       let new_args = 
 			 List.flatten 
 			   (List.map 

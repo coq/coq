@@ -29,12 +29,12 @@ Require Import Coq.Logic.Decidable.
 
 Open Scope equiv_scope.
 
-Class [ Equivalence A ] => DecidableEquivalence :=
+Class [ equiv : Equivalence A ] => DecidableEquivalence :=
   setoid_decidable : forall x y : A, decidable (x === y).
 
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
-Class [ Equivalence A ] => EqDec :=
+Class [ equiv : Equivalence A ] => EqDec :=
   equiv_dec : forall x y : A, { x === y } + { x =/= y }.
 
 (** We define the [==] overloaded notation for deciding equality. It does not take precedence
@@ -135,3 +135,24 @@ Program Instance [ EqDec A eq ] => bool_function_eqdec : ! EqDec (bool -> A) eq 
     extensionality x.
     destruct x ; auto.
   Qed.
+
+Require Import List.
+
+Program Instance [ eqa : EqDec A eq ] => list_eqdec : ! EqDec (list A) eq :=
+  equiv_dec := 
+    fix aux (x : list A) y { struct x } :=
+    match x, y with
+      | nil, nil => in_left
+      | cons hd tl, cons hd' tl' => 
+        if hd == hd' then
+          if aux tl tl' then in_left else in_right
+          else in_right
+      | _, _ => in_right
+    end.
+
+  Solve Obligations using unfold equiv, complement in * ; program_simpl ; intuition (discriminate || eauto).
+
+  Next Obligation.
+  Proof. clear aux. red in H0. subst. 
+    destruct y; intuition (discriminate || eauto).
+  Defined.

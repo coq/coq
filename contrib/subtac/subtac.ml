@@ -54,7 +54,7 @@ let solve_tccs_in_type env id isevars evm c typ =
     let stmt_id = Nameops.add_suffix id "_stmt" in
     let obls, c', t' = eterm_obligations env stmt_id !isevars evm 0 c typ in
     (** Make all obligations transparent so that real dependencies can be sorted out by the user *)
-    let obls = Array.map (fun (id, t, op, d) -> (id, t, false, d)) obls in
+    let obls = Array.map (fun (id, t, l, op, d) -> (id, t, l, false, d)) obls in
       match Subtac_obligations.add_definition stmt_id c' typ obls with
 	  Subtac_obligations.Defined cst -> constant_value (Global.env()) cst
 	| _ -> 

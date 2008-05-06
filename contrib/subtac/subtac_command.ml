@@ -98,24 +98,30 @@ let locate_if_isevar loc na = function
 let interp_binder sigma env na t =
   let t = Constrintern.intern_gen true (Evd.evars_of !sigma) env t in
     SPretyping.pretype_gen sigma env ([], []) IsType (locate_if_isevar (loc_of_rawconstr t) na t)
-      
-let interp_context_evars sigma env params = 
-  List.fold_left
-    (fun (env,params) d -> match d with
-      | LocalRawAssum ([_,na],k,(CHole _ as t)) ->
-	  let t = interp_binder sigma env na t in
-	  let d = (na,None,t) in
-	  (push_rel d env, d::params)
-      | LocalRawAssum (nal,k,t) ->
-	  let t = interp_type_evars sigma env t in
-	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
-	  let ctx = List.rev ctx in
-	  (push_rel_context ctx env, ctx@params)
-      | LocalRawDef ((_,na),c) ->
-	  let c = interp_constr_judgment sigma env c in
-	  let d = (na, Some c.uj_val, c.uj_type) in
-	  (push_rel d env,d::params))
-    (env,[]) params
+
+let interp_context_evars evdref env params = 
+  let bl = Constrintern.intern_context (Evd.evars_of !evdref) env params in
+  let (env, par, _, impls) =
+    List.fold_left
+      (fun (env,params,n,impls) (na, k, b, t) ->
+	match b with
+	    None ->
+	      let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+	      let t = SPretyping.understand_tcc_evars evdref env IsType t' in
+	      let d = (na,None,t) in
+	      let impls = 
+		if k = Implicit then
+		  let na = match na with Name n -> Some n | Anonymous -> None in
+		    (ExplByPos (n, na), (true, true)) :: impls
+		else impls
+	      in
+		(push_rel d env, d::params, succ n, impls)
+	  | Some b ->
+	      let c = SPretyping.understand_judgment_tcc evdref env b in
+	      let d = (na, Some c.uj_val, c.uj_type) in
+		(push_rel d env,d::params, succ n, impls))
+      (env,[],1,[]) (List.rev bl)
+  in (env, par), impls
 
 (* try to find non recursive definitions *)
 
@@ -191,8 +197,10 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 (* 		 Ppconstr.pr_constr_expr body) *)
 (*     with _ -> () *)
     (*   in *)
-  let env', binders_rel = interp_context_evars isevars env bl in
-  let after, ((argname, _, argtyp) as arg), before = split_args (succ n) binders_rel in
+  let (env', binders_rel), impls = interp_context_evars isevars env bl in
+  let after, ((argname, _, argtyp) as arg), before = 
+    let idx = list_index (Name (snd n)) (List.rev_map (fun (na, _, _) -> na) binders_rel) in
+      split_args idx binders_rel in
   let before_length, after_length = List.length before, List.length after in
   let argid = match argname with Name n -> n | _ -> assert(false) in
   let liftafter = lift_binders 1 after_length after in
@@ -232,7 +240,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let top_env = push_rel_context top_bl env in
   let top_arity = interp_type_evars isevars top_env arityc in
   let intern_bl = wfarg 1 :: arg :: before in
-  let intern_env = push_rel_context intern_bl env in
+  let _intern_env = push_rel_context intern_bl env in
   let proj = (Lazy.force sig_).Coqlib.proj1 in
   let projection = 
     mkApp (proj, [| argtyp ;
@@ -242,32 +250,19 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 		 |])
   in
   let intern_arity = it_mkProd_or_LetIn top_arity after in
-    trace (str "After length: " ++ int after_length ++ str "Top env: " ++ prr top_bl ++ spc () ++ 
-	      str "Intern arity: " ++ my_print_constr 
-	      (push_rel_context (arg :: before) env) intern_arity);
   (* Intern arity is in top_env = arg :: before *)
   let intern_arity = liftn 2 2 intern_arity in
-    trace (str "After lifting arity: " ++ 
-	      my_print_constr (push_rel (Name argid', None, lift 2 argtyp) intern_env)
-	      intern_arity);
+(*     trace (str "After lifting arity: " ++  *)
+(* 	      my_print_constr (push_rel (Name argid', None, lift 2 argtyp) intern_env) *)
+(* 	      intern_arity); *)
   (* arity is now in something :: wfarg :: arg :: before 
      where what refered to arg now refers to something *)
   let intern_arity = substl [projection] intern_arity in
   (* substitute the projection of wfarg for something *)
-  (try trace (str "Top arity after subst: " ++ my_print_constr intern_env intern_arity) with _ -> ());
-(*   let intern_arity = liftn 1 (succ after_length) intern_arity in (\* back in after :: wfarg :: arg :: before (ie, jump over arg) *\) *)
-(*   (try trace (str "Top arity after subst and lift: " ++ my_print_constr (Global.env ()) intern_arity) with _ -> ()); *)
   let intern_before_env = push_rel_context before env in
-(*   let intern_fun_bl = liftafter @ [wfarg 1]  in (\* FixMe dependencies *\) *)
-(*   (try debug 2 (str "Intern fun bl: " ++ prr intern_fun_bl) with _ -> ()); *)
-  (try trace (str "Intern arity: " ++
-		  my_print_constr intern_env intern_arity) with _ -> ());
   let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfarg 1] in
-  (try trace (str "Intern fun arity product: " ++
-		  my_print_constr (push_rel_context [arg] intern_before_env) intern_fun_arity_prod) with _ -> ());
   let intern_fun_binder = (Name recname, None, intern_fun_arity_prod) in
   let fun_bl = liftafter @ (intern_fun_binder :: [arg]) in
-(*   (try debug 2 (str "Fun bl: " ++ pr_rel intern_before_env fun_bl ++ spc ()) with _ -> ()); *)
   let fun_env = push_rel_context fun_bl intern_before_env in
   let fun_arity = interp_type_evars isevars fun_env arityc in
   let intern_body = interp_casted_constr isevars fun_env body fun_arity in
@@ -338,9 +333,12 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let names = List.map (fun id -> Name id) fixnames in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
-let compute_possible_guardness_evidences (n,_) fixtype =
+let rel_index n ctx = 
+  list_index0 (Name n) (List.rev_map (fun (na, _, _) -> na) ctx)
+
+let compute_possible_guardness_evidences (n,_) (_, fixctx) fixtype =
   match n with 
-  | Some n -> [n] 
+  | Some (loc, n) -> [rel_index n fixctx] 
   | None -> 
       (* If recursive argument was not given by user, we try all args.
 	 An earlier approach was to look only for inductive arguments,
@@ -360,12 +358,7 @@ let interp_recursive fixkind l boxed =
 
   (* Interp arities allowing for unresolved types *)
   let evdref = ref (Evd.create_evar_defs Evd.empty) in
-  let fiximps = 
-    List.map 
-      (fun x -> Implicit_quantifiers.implicits_of_binders x.Command.fix_binders) 
-      fixl 
-  in
-  let fixctxs = List.map (interp_fix_context evdref env) fixl in
+  let fixctxs, fiximps = List.split (List.map (interp_fix_context evdref env) fixl) in
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let rec_sign = 
@@ -421,7 +414,7 @@ let interp_recursive fixkind l boxed =
     (match fixkind with
       | Command.IsFixpoint wfl ->
 	  let possible_indexes =
-	    List.map2 compute_possible_guardness_evidences wfl fixtypes in
+	    list_map3 compute_possible_guardness_evidences wfl fixctxs fixtypes in
 	  let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames), 
 	    Array.of_list fixtypes, 
 	    Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
@@ -433,7 +426,7 @@ let interp_recursive fixkind l boxed =
 
 let out_n = function
     Some n -> n
-  | None -> 0
+  | None -> raise Not_found
 
 let build_recursive l b =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in

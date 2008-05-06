@@ -585,7 +585,7 @@ type constr_expr =
   | CDynamic of loc * Dyn.t
 
 and fixpoint_expr =
-    identifier * (int option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
+    identifier * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
 
 and local_binder =
   | LocalRawDef of name located * constr_expr

@@ -395,16 +395,15 @@ let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
 
 let pr_fixdecl pr prd dangling_with_for (id,(n,ro),bl,t,c) =
   let annot =
-    let ids = names_of_local_assums bl in
-      match ro with
-	  CStructRec ->
-	    if List.length ids > 1 && n <> None then 
-	      spc() ++ str "{struct " ++ pr_name (snd (List.nth ids (Option.get n))) ++ str"}"
-	    else mt() 
-	| CWfRec c ->
-	    spc () ++ str "{wf " ++ pr lsimple c ++ pr_name (snd (List.nth ids (Option.get n))) ++ str"}"
-	| CMeasureRec c ->
-	    spc () ++ str "{measure " ++ pr lsimple c ++ pr_name (snd (List.nth ids (Option.get n))) ++ str"}"
+    match ro with
+	CStructRec ->
+	  if List.length bl > 1 && n <> None then 
+	    spc() ++ str "{struct " ++ pr_id (snd (Option.get n)) ++ str"}"
+	  else mt() 
+      | CWfRec c ->
+	  spc () ++ str "{wf " ++ pr lsimple c ++ pr_id (snd (Option.get n)) ++ str"}"
+      | CMeasureRec c ->
+	  spc () ++ str "{measure " ++ pr lsimple c ++ pr_id (snd (Option.get n)) ++ str"}"
   in
     pr_recursive_decl pr prd dangling_with_for id bl annot t c
 

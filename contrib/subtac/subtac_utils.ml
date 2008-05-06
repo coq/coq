@@ -373,7 +373,7 @@ let solve_by_tac evi t =
       Pfedit.delete_current_proof (); const.Entries.const_entry_body
   with e ->
     Pfedit.delete_current_proof();
-    raise Exit
+    raise e
 
 (* let apply_tac t goal = t goal *)
 

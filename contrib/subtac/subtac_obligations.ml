@@ -24,11 +24,12 @@ let explain_no_obligations = function
     Some ident -> str "No obligations for program " ++ str (string_of_id ident)
   | None -> str "No obligations remaining"
 
-type obligation_info = (Names.identifier * Term.types * bool * Intset.t) array
+type obligation_info = (Names.identifier * Term.types * loc * bool * Intset.t) array
 
 type obligation =
     { obl_name : identifier;
       obl_type : types;
+      obl_location : loc;
       obl_body : constr option;
       obl_opaque : bool;
       obl_deps : Intset.t;
@@ -179,9 +180,16 @@ let declare_definition prg =
 open Pp
 open Ppconstr
 
-let compute_possible_guardness_evidences (n,_) fixtype =
+let rec lam_index n t acc =
+  match kind_of_term t with
+    | Lambda (na, _, b) ->
+	if na = Name n then acc
+	else lam_index n b (succ acc)
+    | _ -> raise Not_found
+	
+let compute_possible_guardness_evidences (n,_) fixbody fixtype =
   match n with 
-  | Some n -> [n] 
+  | Some (loc, n) -> [lam_index n fixbody 0]
   | None -> 
       (* If recursive argument was not given by user, we try all args.
 	 An earlier approach was to look only for inductive arguments,
@@ -210,7 +218,7 @@ let declare_mutual_definition l =
     match fixkind with
       | IsFixpoint wfl ->
 	  let possible_indexes =
-	    List.map2 compute_possible_guardness_evidences wfl fixtypes in
+	    list_map3 compute_possible_guardness_evidences wfl fixdefs fixtypes in
 	  let indexes = Pretyping.search_guard dummy_loc (Global.env ()) possible_indexes fixdecls in
 	    Some indexes, list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 l
       | IsCoFixpoint ->
@@ -254,10 +262,10 @@ let red = Reductionops.nf_betaiota
 let init_prog_info n b t deps fixkind notations obls impls kind hook =
   let obls' = 
     Array.mapi
-      (fun i (n, t, o, d) ->
+      (fun i (n, t, l, o, d) ->
 	 debug 2 (str "Adding obligation " ++ int i ++ str " with deps : " ++ str (string_of_intset d));
          { obl_name = n ; obl_body = None; 
-	   obl_type = red t; obl_opaque = o;
+	   obl_location = l; obl_type = red t; obl_opaque = o;
 	   obl_deps = d })
       obls
   in
@@ -346,6 +354,7 @@ let obligations_of_evars evars =
 	 (fun (n, t) ->
 	    { obl_name = n;
 	      obl_type = t;
+	      obl_location = dummy_loc;
 	      obl_body = None;
 	      obl_opaque = false;
 	      obl_deps = Intset.empty;
@@ -397,7 +406,7 @@ and solve_obligation_by_tac prg obls i tac =
       Some _ -> false
     | None -> 
 	(try
-	   if deps_remaining obls obl.obl_deps = [] then
+	    if deps_remaining obls obl.obl_deps = [] then
 	     let obl = subst_deps_obl obls obl in
 	     let t = Subtac_utils.solve_by_tac (evar_of_obligation obl) tac in
 	       if obl.obl_opaque then 
@@ -405,8 +414,12 @@ and solve_obligation_by_tac prg obls i tac =
 	       else
 		 obls.(i) <- { obl with obl_body = Some t };
 	       true		 
-	   else false
-	 with _ -> false)  
+	    else false
+	  with
+	    | Stdpp.Exc_located(_, Refiner.FailError (_, s))
+	    | Refiner.FailError (_, s) ->
+		user_err_loc (obl.obl_location, "solve_obligation", s)
+	    | e -> false)
 
 and solve_prg_obligations prg tac = 
   let obls, rem = prg.prg_obligations in

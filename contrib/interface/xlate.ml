@@ -305,11 +305,7 @@ let make_fix_struct (n,bl) =
   let names = names_of_local_assums bl in
   let nn = List.length names in
   if nn = 1 || n = None then ctv_ID_OPT_NONE
-  else 
-    let n = Option.get n in 
-    if n < nn then xlate_id_opt(List.nth names n)
-    else xlate_error "unexpected result of parsing for Fixpoint";;
-
+  else ctf_ID_OPT_SOME(CT_ident (string_of_id (snd (Option.get n))));;
 
 let rec xlate_binder = function
     (l,k,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
@@ -425,14 +421,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi)))
    | CFix (_, (_, id), lm::lmi) ->       
      let strip_mutrec (fid, (n, ro), bl, arf, ardef) =
-        let (struct_arg,bl,arf,ardef) =
-	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
-	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
-         if bl = [] then
-	   let n = Option.get n in 
-           let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
-           (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
-         else (make_fix_struct (n, bl),bl,arf,ardef) in
+        let struct_arg = make_fix_struct (n, bl) in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
 	match xlate_binder_list bl with
@@ -1953,14 +1942,7 @@ let rec xlate_vernac =
    | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
    | VernacFixpoint ((lm :: lmi),boxed) ->
       let strip_mutrec ((fid, (n, ro), bl, arf, ardef), _ntn) =
-        let (struct_arg,bl,arf,ardef) =
-	 (* Pierre L: could the case [n=None && bl=[]] happen ? Normally not *)
-	 (* By the way, how could [bl = []] happen in V8 syntax ?  *)
-         if bl = [] then
-	   let n = Option.get n in 
-           let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
-           (xlate_id_opt(List.nth (names_of_local_assums bl) n),bl,arf,ardef)
-         else (make_fix_struct (n, bl),bl,arf,ardef) in
+        let struct_arg = make_fix_struct (n, bl) in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
 	match xlate_binder_list bl with

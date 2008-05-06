@@ -76,7 +76,7 @@ val declare_mutual_with_eliminations :
   mutual_inductive
 
 type fixpoint_kind =
-  | IsFixpoint of (int option * recursion_order_expr) list
+  | IsFixpoint of (identifier located option * recursion_order_expr) list
   | IsCoFixpoint
 
 type fixpoint_expr = {

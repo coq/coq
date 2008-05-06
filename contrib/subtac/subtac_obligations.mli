@@ -1,8 +1,8 @@
 open Names
 open Util
 
-type obligation_info = (Names.identifier * Term.types * bool * Intset.t) array
-    (* ident, type, opaque or transparent, dependencies *)
+type obligation_info = (Names.identifier * Term.types * loc * bool * Intset.t) array
+    (* ident, type, location, opaque or transparent, dependencies *)
 
 type progress = (* Resolution status of a program *)
     | Remain of int  (* n obligations remaining *)

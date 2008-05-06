@@ -43,7 +43,7 @@ let interp_decl sigma env = function
 
 let typecheck_params_and_fields id t ps fs =
   let env0 = Global.env () in
-  let env1,newps = interp_context Evd.empty env0 ps in
+  let (env1,newps), _ = interp_context Evd.empty env0 ps in
   let fullarity = it_mkProd_or_LetIn t newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
   let env2,newfs =

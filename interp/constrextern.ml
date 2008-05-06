@@ -720,7 +720,12 @@ let rec extern inctx scopes vars r =
                  let (ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 let n, ro = fst nv.(i), extern_recursion_order scopes vars (snd nv.(i)) in
+		 let n = 
+		   match fst nv.(i) with
+		     | None -> None
+		     | Some x -> Some (dummy_loc, out_name (List.nth ids x))
+		 in 
+		 let ro = extern_recursion_order scopes vars (snd nv.(i)) in
 		 (fi, (n, ro), bl, extern_typ scopes vars0 ty,
                   extern false scopes vars1 def)) idv
 	     in 

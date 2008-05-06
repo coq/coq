@@ -49,6 +49,8 @@ type manual_implicits = (explicitation * (bool * bool)) list
 
 type ltac_sign = identifier list * unbound_ltac_var_map
 
+type raw_binder = (name * binding_kind * rawconstr option * rawconstr)
+
 (*s Internalisation performs interpretation of global names and notations *)
 
 val intern_constr : evar_map -> env -> constr_expr -> rawconstr
@@ -62,6 +64,8 @@ val intern_gen : bool -> evar_map -> env ->
 val intern_pattern : env -> cases_pattern_expr ->
   Names.identifier list *
     ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
+
+val intern_context : evar_map -> env -> local_binder list -> raw_binder list
 
 (*s Composing internalisation with pretyping *)
 
@@ -120,10 +124,10 @@ val interp_binder_evars : evar_defs ref -> env -> name -> constr_expr -> types
 
 (* Interpret contexts: returns extended env and context *)
 
-val interp_context : evar_map -> env -> local_binder list -> env * rel_context
+val interp_context : evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
 val interp_context_evars : 
-  evar_defs ref -> env -> local_binder list -> env * rel_context
+  evar_defs ref -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
 (* Locating references of constructions, possibly via a syntactic definition *)
 

@@ -1745,7 +1745,7 @@ let build_ineqs prevpatterns pats liftsign =
 			  len',
 			  succ n, (* nth pattern *)
 			  mkApp (Lazy.force eq_ind,
-				[| lift (succ len') curpat_ty ;
+				[| lift (len' + liftsign) curpat_ty;
 				   liftn (len + liftsign) (succ lens) ppat_c ;
 				   lift len' curpat_c |]) :: 
 			    List.map (lift lens (* Jump over this prevpat signature *)) c)

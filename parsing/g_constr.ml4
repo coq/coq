@@ -43,12 +43,11 @@ let loc_of_binder_let = function
 
 let rec index_and_rec_order_of_annot loc bl ann =
   match names_of_local_assums bl,ann with
-    | [_], (None, r) -> Some 0, r
-    | lids, (Some x, ro) ->
-        let ids = List.map snd lids in
-        (try Some (list_index0 (snd x) ids), ro
-        with Not_found ->
-          user_err_loc(fst x,"index_of_annot", Pp.str"no such fix variable"))
+    | [loc,Name id], (None, r) -> Some (loc, id), r
+    | lids, (Some (loc, n), ro) ->
+        if List.exists (fun (_, x) -> x = Name n) lids then
+	  Some (loc, n), ro
+        else user_err_loc(loc,"index_of_annot", Pp.str"no such fix variable")
     | _, (None, r) -> None, r
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
@@ -370,9 +369,9 @@ GEXTEND Gram
     ] ]
   ;
   fixannot:
-    [ [ "{"; IDENT "struct"; id=name; "}" -> (Some id, CStructRec)
-    | "{"; IDENT "wf"; rel=constr; id=OPT name; "}" -> (id, CWfRec rel)
-    | "{"; IDENT "measure"; rel=constr; id=OPT name; "}" -> (id, CMeasureRec rel)
+    [ [ "{"; IDENT "struct"; id=identref; "}" -> (Some id, CStructRec)
+    | "{"; IDENT "wf"; rel=constr; id=OPT identref; "}" -> (id, CWfRec rel)
+    | "{"; IDENT "measure"; rel=constr; id=OPT identref; "}" -> (id, CMeasureRec rel)
     ] ]
   ;
   binders_let_fixannot:

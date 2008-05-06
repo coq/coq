@@ -510,8 +510,7 @@ let interp_mutual paramsl indl notations finite =
   check_all_names_different indl;
   let env0 = Global.env() in
   let evdref = ref (Evd.create_evar_defs Evd.empty) in
-  let userimpls = Implicit_quantifiers.implicits_of_binders paramsl in
-  let env_params, ctx_params = interp_context_evars evdref env0 paramsl in
+  let (env_params, ctx_params), userimpls = interp_context_evars evdref env0 paramsl in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 
   (* Names of parameters as arguments of the inductive type (defs removed) *)
@@ -752,7 +751,7 @@ let check_mutuality env kind fixl =
     | _ -> ()
 
 type fixpoint_kind =
-  | IsFixpoint of (int option * recursion_order_expr) list
+  | IsFixpoint of (identifier located option * recursion_order_expr) list
   | IsCoFixpoint
 
 type fixpoint_expr = {
@@ -792,17 +791,19 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let names = List.map (fun id -> Name id) fixnames in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
-let compute_possible_guardness_evidences (n,_) fixl fixtype =
+let rel_index n ctx = 
+  list_index0 (Name n) (List.rev_map (fun (na, _, _) -> na) ctx)
+
+let compute_possible_guardness_evidences (n,_) (_, fixctx) fixtype =
   match n with 
-  | Some n -> [n] 
+  | Some (loc, n) -> [rel_index n fixctx]
   | None -> 
       (* If recursive argument was not given by user, we try all args.
 	 An earlier approach was to look only for inductive arguments,
 	 but doing it properly involves delta-reduction, and it finally 
          doesn't seem to worth the effort (except for huge mutual 
 	 fixpoints ?) *)
-      (* FIXME, local_binders_length does not give the size of the final product if typeclasses are used *)
-      let m = local_binders_length fixl.fix_binders in
+      let m = List.length fixctx in
       let ctx = fst (Sign.decompose_prod_n_assum m fixtype) in
       list_map_i (fun i _ -> i) 0 ctx
 
@@ -814,12 +815,8 @@ let interp_recursive fixkind l boxed =
 
   (* Interp arities allowing for unresolved types *)
   let evdref = ref (Evd.create_evar_defs Evd.empty) in
-  let fiximps = 
-    List.map 
-      (fun x -> Implicit_quantifiers.implicits_of_binders x.fix_binders) 
-      fixl 
-  in
-  let fixctxs = List.map (interp_fix_context evdref env) fixl in
+  let fixctxs, fiximps =
+    List.split (List.map (interp_fix_context evdref env) fixl) in
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let env_rec = push_named_types env fixnames fixtypes in
@@ -849,7 +846,7 @@ let interp_recursive fixkind l boxed =
     match fixkind with
     | IsFixpoint wfl ->
 	let possible_indexes = 
-	  list_map3 compute_possible_guardness_evidences wfl fixl fixtypes in
+	  list_map3 compute_possible_guardness_evidences wfl fixctxs fixtypes in
 	let indexes = search_guard dummy_loc env possible_indexes fixdecls in 
 	Some indexes, list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 l
     | IsCoFixpoint ->

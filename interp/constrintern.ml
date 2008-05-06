@@ -32,6 +32,8 @@ type var_internalisation_data =
 type implicits_env = (identifier * var_internalisation_data) list
 type full_implicits_env = identifier list * implicits_env
 
+type raw_binder = (name * binding_kind * rawconstr option * rawconstr)
+
 let interning_grammar = ref false
 
 (* Historically for parsing grammar rules, but in fact used only for
@@ -848,23 +850,32 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
 	     let intern_ro_arg c f =
-	       let before, after = list_chop (succ (Option.get n)) bl in
-	       let ((ids',_,_),rafter) =
-		 List.fold_left intern_local_binder (env,[]) after in
-	       let ro = (intern (ids', tmp_scope, scopes) c) in
-		 f ro, List.fold_left intern_local_binder (env,rafter) before
+	       let idx = 
+		 match n with
+		     Some (loc, n) -> list_index0 (Name n) (List.map snd (names_of_local_assums bl))
+		   | None -> 0
+	       in
+	       let before, after = list_chop idx bl in
+	       let ((ids',_,_) as env',rbefore) =
+		 List.fold_left intern_local_binder (env,[]) before in
+	       let ro =
+		 match c with 
+		   | None -> RStructRec 
+		   | Some c' -> f (intern (ids', tmp_scope, scopes) c') 
+	       in 
+	       let n' = Option.map (fun _ -> List.length before) n in
+		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
 	     in
-	     let ro, ((ids',_,_),rbl) =
+	     let n, ro, ((ids',_,_),rbl) =
 	       (match order with
-		    CStructRec -> 
-		      RStructRec,
-		      List.fold_left intern_local_binder (env,[]) bl
-		  | CWfRec c ->
-		      intern_ro_arg c (fun r -> RWfRec r)
-		  | CMeasureRec c ->
-		      intern_ro_arg c (fun r -> RMeasureRec r))
-	    in
-	    let ids'' = List.fold_right Idset.add lf ids' in
+		 | CStructRec -> 
+		     intern_ro_arg None (fun _ -> RStructRec)
+		 | CWfRec c ->
+		     intern_ro_arg (Some c) (fun r -> RWfRec r)
+		 | CMeasureRec c ->
+		     intern_ro_arg (Some c) (fun r -> RMeasureRec r))
+	     in
+	     let ids'' = List.fold_right Idset.add lf ids' in
 	     ((n, ro), List.rev rbl, 
              intern_type (ids',tmp_scope,scopes) ty,
              intern (ids'',None,scopes) bd)) dl in
@@ -1276,45 +1287,43 @@ let my_intern_constr sigma env acc c =
 
 let my_intern_type sigma env acc c = my_intern_constr sigma env (set_type_scope acc) c
 
-let interp_context sigma env params = 
-  let ids, bl =
-    List.fold_left
-      (intern_local_binder_aux (my_intern_constr sigma env) (my_intern_type sigma env))
-      ((extract_ids env,None,[]), []) params
-  in
-    List.fold_left
-      (fun (env,params) (na, k, b, t) ->
-	match b with
-	    None ->
-	      let t' = locate_if_isevar (loc_of_rawconstr t) na t in
-	      let t = Default.understand_type sigma env t' in
-	      let d = (na,None,t) in
-		(push_rel d env, d::params)
-	  | Some b ->
-	      let c = Default.understand_judgment sigma env b in
-	      let d = (na, Some c.uj_val, c.uj_type) in
-		(push_rel d env,d::params))
-      (env,[]) (List.rev bl)
+let intern_context sigma env params =
+  snd (List.fold_left
+	  (intern_local_binder_aux (my_intern_constr sigma env) (my_intern_type sigma env))
+	  ((extract_ids env,None,[]), []) params)
 
-let interp_context_evars evdref env params =
-  let ids, bl =
+let interp_context_gen understand_type understand_judgment env bl = 
+  let (env, par, _, impls) =
     List.fold_left
-      (intern_local_binder_aux (my_intern_constr evdref env) (my_intern_type evdref env))
-      ((extract_ids env,None,[]), []) params
-  in
-    List.fold_left
-      (fun (env,params) (na, k, b, t) ->
+      (fun (env,params,n,impls) (na, k, b, t) ->
 	match b with
 	    None ->
 	      let t' = locate_if_isevar (loc_of_rawconstr t) na t in
-	      let t = Default.understand_tcc_evars evdref env IsType t' in
+	      let t = understand_type env t' in
 	      let d = (na,None,t) in
-		(push_rel d env, d::params)
+	      let impls = 
+		if k = Implicit then
+		  let na = match na with Name n -> Some n | Anonymous -> None in
+		    (ExplByPos (n, na), (true, true)) :: impls
+		else impls
+	      in
+		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
-	      let c = Default.understand_judgment_tcc evdref env b in
+	      let c = understand_judgment env b in
 	      let d = (na, Some c.uj_val, c.uj_type) in
-		(push_rel d env,d::params))
-      (env,[]) (List.rev bl)
+		(push_rel d env,d::params, succ n, impls))
+      (env,[],1,[]) (List.rev bl)
+  in (env, par), impls
+
+let interp_context sigma env params = 
+  let bl = intern_context sigma env params in
+    interp_context_gen (Default.understand_type sigma) 
+      (Default.understand_judgment sigma) env bl
+    
+let interp_context_evars evdref env params =
+  let bl = intern_context (Evd.evars_of !evdref) env params in
+    interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
+      (Default.understand_judgment_tcc evdref) env bl
     
 (**********************************************************************)
 (* Locating reference, possibly via an abbreviation *)

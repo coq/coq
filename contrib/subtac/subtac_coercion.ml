@@ -150,7 +150,7 @@ module Coercion = struct
 		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
 		let eq = mkApp (Lazy.force eq_ind, [| eqT; hdx; hdy |]) in
 (* 		let jmeq = mkApp (Lazy.force jmeq_ind, [| eqT; hdx; eqT; hdy |]) in *)
-		let evar = make_existential dummy_loc env isevars eq in
+		let evar = make_existential loc env isevars eq in
 		let eq_app x = mkApp (Lazy.force eq_rect,
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
 (* 		  trace (str"Inserting coercion at application"); *)
@@ -300,7 +300,7 @@ module Coercion = struct
 		    Some 
 		      (fun x ->
 			 let cx = app_opt c x in
-			 let evar = make_existential dummy_loc env isevars (mkApp (p, [| cx |]))
+			 let evar = make_existential loc env isevars (mkApp (p, [| cx |]))
 			 in
 			   (mkApp 
 			      ((Lazy.force sig_).intro, 

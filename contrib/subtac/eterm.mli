@@ -21,7 +21,8 @@ val mkMetas : int -> constr list
 (* env, id, evars, number of
    function prototypes to try to clear from evars contexts, object and type *)
 val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> constr -> types -> 
-  (identifier * types * bool * Intset.t) array * constr * types
-    (* Obl. name, type as product, opacity (true = opaque) and dependencies as indexes into the array *)
+  (identifier * types * loc * bool * Intset.t) array * constr * types
+    (* Obl. name, type as product, location of the original evar, 
+       opacity (true = opaque) and dependencies as indexes into the array *)
 
 val etermtac : open_constr -> tactic
