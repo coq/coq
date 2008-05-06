@@ -118,54 +118,6 @@ let small_unit constrsinfos =
   and isunit = is_unit constrsinfos in
   issmall, isunit
 
-(* Computing the levels of polymorphic inductive types
-
-   For each inductive type of a block that is of level u_i, we have
-   the constraints that u_i >= v_i where v_i is the type level of the
-   types of the constructors of this inductive type. Each v_i depends
-   of some of the u_i and of an extra (maybe non variable) universe,
-   say w_i that summarize all the other constraints. Typically, for
-   three inductive types, we could have
-
-   u1,u2,u3,w1 <= u1
-   u1       w2 <= u2
-      u2,u3,w3 <= u3
-
-   From this system of inequations, we shall deduce
-
-   w1,w2,w3 <= u1
-   w1,w2 <= u2
-   w1,w2,w3 <= u3
-*)   
-
-let extract_level (_,_,_,lc,lev) =
-  (* Enforce that the level is not in Prop if more than two constructors *)
-  if Array.length lc >= 2 then sup type0_univ lev else lev
-
-let inductive_levels arities inds =
-  let levels = Array.map pi3 arities in
-  let cstrs_levels = Array.map extract_level inds in
-  (* Take the transitive closure of the system of constructors *)
-  (* level constraints and remove the recursive dependencies *)
-  solve_constraints_system levels cstrs_levels
-
-
-let check_kind env ar u =
-  if snd (dest_prod env ar) = Sort(Type u) then ()
-  else failwith "not the correct sort"
-
-let check_polymorphic_arity env params par =
-  let pl = par.poly_param_levels in
-  let rec check_p env pl params =
-    match pl, params with
-        Some u::pl, (na,None,ty)::params ->
-          check_kind env ty u;
-          check_p (push_rel (na,None,ty) env) pl params
-      | None::pl,d::params -> check_p (push_rel d env) pl params
-      | [], _ -> ()
-      | _ -> failwith "check_poly: not the right number of params" in
-  check_p env pl (List.rev params)
-
 (* check information related to inductive arity *)
 let typecheck_arity env params inds =
   let nparamargs = rel_context_nhyps params in

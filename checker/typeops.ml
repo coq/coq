@@ -436,3 +436,21 @@ let check_named_ctxt env ctxt =
           conv_leq env j1 ty;
           push_named d env)
     ctxt ~init:env
+
+(* Polymorphic arities utils *)
+
+let check_kind env ar u =
+  if snd (dest_prod env ar) = Sort(Type u) then ()
+  else failwith "not the correct sort"
+
+let check_polymorphic_arity env params par =
+  let pl = par.poly_param_levels in
+  let rec check_p env pl params =
+    match pl, params with
+        Some u::pl, (na,None,ty)::params ->
+          check_kind env ty u;
+          check_p (push_rel (na,None,ty) env) pl params
+      | None::pl,d::params -> check_p (push_rel d env) pl params
+      | [], _ -> ()
+      | _ -> failwith "check_poly: not the right number of params" in
+  check_p env pl (List.rev params)

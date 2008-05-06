@@ -94,16 +94,20 @@ let register_loaded_library m =
   libraries_table := LibraryMap.add m.library_name m !libraries_table
 
 let check_one_lib admit (dir,m) =
+  let file = m.library_filename in
   let md = m.library_compiled in
   let dig = m.library_digest in
+  (* Look up if the library is to be admitted correct. We could
+     also check if it carries a validation certificate (yet to
+     be implemented). *)
   if LibraryMap.mem dir admit then
     (Flags.if_verbose msgnl
       (str "Admitting library: " ++ pr_dirpath dir);
-      Safe_typing.unsafe_import md dig)
+      Safe_typing.unsafe_import file md dig)
   else
     (Flags.if_verbose msgnl
       (str "Checking library: " ++ pr_dirpath dir);
-      Safe_typing.import md dig);
+      Safe_typing.import file md dig);
   Flags.if_verbose msg(fnl());
   register_loaded_library m
 
@@ -288,16 +292,16 @@ let mk_library md f digest = {
   library_digest = digest }
 
 let intern_from_file f =
-  pp (str"[intern "++str f++str" ..."); pp_flush();
+  Flags.if_verbose msg (str"[intern "++str f++str" ...");
   let (md,digest) = 
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (md:library_disk) = System.marshal_in ch in
       let digest = System.marshal_in ch in
       close_in ch;
-      msgnl(str" done]");
+      Flags.if_verbose msgnl(str" done]");
       md,digest
-    with e -> msgnl(str" failed!]"); raise e in
+    with e -> Flags.if_verbose msgnl(str" failed!]"); raise e in
   mk_library md f digest
 
 
@@ -343,12 +347,11 @@ let recheck_library ~admit ~check =
   let admit = List.fold_right library_dep al LibraryMap.empty in
   let modl = List.map try_locate_qualified_library check in
   let needed = List.rev (List.fold_right intern_library modl []) in
-  msg(fnl());
-  Flags.if_verbose msgnl (hv 2 (str "Ordered list:" ++ fnl() ++
+  Flags.if_verbose msgnl (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
   List.iter (check_one_lib admit) needed;
-  msgnl(str"Modules were successfully checked"++fnl())
+  Flags.if_verbose msgnl(str"Modules were successfully checked")
 
 open Printf
 

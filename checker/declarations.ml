@@ -39,6 +39,14 @@ type resolver
 type substitution = (module_path * resolver option) Umap.t
 type 'a subst_fun = substitution -> 'a -> 'a
 
+let fold_subst fs fb fp =
+  Umap.fold
+    (fun k (mp,_) acc ->
+      match k with
+          MSI msid -> fs msid mp acc
+        | MBI mbid -> fb mbid mp acc
+        | MPI mp1 -> fp mp1 mp acc)
+
 let empty_subst = Umap.empty
 
 let add_msid msid mp =

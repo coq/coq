@@ -21,5 +21,7 @@ val get_env : unit -> env
 type compiled_library
 
 val set_engagement : Declarations.engagement -> unit
-val import         : compiled_library -> Digest.t -> unit
-val unsafe_import  : compiled_library -> Digest.t -> unit
+val import         :
+  System.physical_path -> compiled_library -> Digest.t -> unit
+val unsafe_import  :
+  System.physical_path -> compiled_library -> Digest.t -> unit

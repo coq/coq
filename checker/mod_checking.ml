@@ -38,7 +38,9 @@ let check_constant_declaration env kn cb =
               let j = infer env' (force_constr bd) in
               conv_leq envty j ty
           | None -> ())
-    | _ -> failwith "polymorphic constants not supported");
+    | PolymorphicArity(ctxt,par) ->
+        let _ = check_ctxt env ctxt in
+        check_polymorphic_arity env ctxt par);
   add_constant kn cb env
 
 (************************************************************************)
@@ -116,7 +118,7 @@ let rec list_fold_map2 f e = function
 	 e'',h1'::t1',h2'::t2'
 
 
-let check_alias s1 s2 =
+let check_alias (s1:substitution) s2 =
   if s1 <> s2 then failwith "Incorrect alias"
 
 let check_definition_sub env cb1 cb2 =
@@ -179,6 +181,11 @@ let check_definition_sub env cb1 cb2 =
 	  | None -> assert false in
 	Reduction.conv env c1 c2
     | _ -> ())
+
+let is_functor env mb =
+  match type_of_mb env mb with
+    | SEBstruct(msid,str) -> false
+    | _ -> true
 
 let rec check_with env mtb with_decl = 
   match with_decl with
@@ -328,27 +335,30 @@ and check_module env mb =
 		sub2) in
   check_alias mb.mod_alias sub
 
-and check_structure_field env mp lab = function
+and check_structure_field (s,env) mp lab = function
   | SFBconst cb ->
       let c = make_con mp empty_dirpath lab in
-      check_constant_declaration env c cb
+      (s,check_constant_declaration env c cb)
   | SFBmind mib ->
       let kn = make_kn mp empty_dirpath lab in
-      Indtypes.check_inductive env kn mib
+      (s,Indtypes.check_inductive env kn mib)
   | SFBmodule msb ->
-      let _ = check_module env msb in
-      Modops.add_module (MPdot(mp,lab)) msb
-        (add_module_constraints env msb)
+      check_module env msb;
+      ((if is_functor env msb then s else join s msb.mod_alias),
+       Modops.add_module (MPdot(mp,lab)) msb
+         (add_module_constraints env msb))
   | SFBalias(mp2,cst) ->
-      (* TODO: check mp.lab and mp2 have the same sig *)
       (try
-        let _ = lookup_module mp2 env in
-        register_alias (MPdot(mp,lab)) mp2 env
+        let msb = lookup_module mp2 env in
+        (add_mp (MPdot(mp,lab)) mp2 (join s msb.mod_alias),
+         Option.fold_right add_constraints cst
+           (register_alias (MPdot(mp,lab)) mp2 env))
       with Not_found -> failwith "unkown aliased module")
   | SFBmodtype mty ->
       let kn = MPdot(mp, lab) in
       check_module_type env mty;
-      add_modtype kn mty (add_modtype_constraints env mty)
+      (join s mty.typ_alias,
+       add_modtype kn mty (add_modtype_constraints env mty))
 
 and check_modexpr env mse = match mse with
   | SEBident mp ->
@@ -381,8 +391,7 @@ and check_modexpr env mse = match mse with
 	join sub1 sub2
   | SEBstruct(msid,msb) ->
       let mp = MPself msid in
-      let _ =
+      let (sub,_) =
         List.fold_left (fun env (lab,mb) ->
-          check_structure_field env mp lab mb) env msb in
-      empty_subst
-
+          check_structure_field env mp lab mb) (empty_subst,env) msb in
+      sub

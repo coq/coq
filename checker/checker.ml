@@ -51,7 +51,7 @@ let get_version_date () =
 
 let print_header () =
   let (ver,rev) = (get_version_date ()) in
-    Printf.printf "Welcome to Coq %s (%s)\n" ver rev;
+    Printf.printf "Welcome to Chicken %s (%s)\n" ver rev;
     flush stdout
 
 (* Adding files to Coq loadpath *)
@@ -194,7 +194,7 @@ let print_usage_channel co command =
 let print_usage = print_usage_channel stderr
 
 let print_usage_coqtop () =
-  print_usage "Usage: checker <options>\n\n"
+  print_usage "Usage: coqchk <options>\n\n"
 
 let usage () =
   print_usage_coqtop ();
@@ -364,11 +364,12 @@ let init() =
   end
 
 let run () =
-  (try 
-    compile_files ()
+  try 
+    compile_files ();
+    flush_all()
   with e ->
-    Pp.ppnl(explain_exn e));
+    (Pp.ppnl(explain_exn e);
     flush_all(); 
-    if not !Flags.debug then exit 0
+    exit 1)
 
-let start () = init(); run()
+let start () = init(); run(); exit 0

@@ -1,5 +1,17 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
-let rec pr_obj o =
+(* $Id: term.ml 10098 2007-08-27 11:41:08Z herbelin $ *)
+
+(* This module defines validation functions to ensure an imported
+   value (using input_value) has the correct structure. *)
+
+let rec pr_obj_rec o =
   if Obj.is_int o then
     Format.print_string ("INT:"^string_of_int(Obj.magic o))
   else if Obj.is_block o then
@@ -14,86 +26,112 @@ let rec pr_obj o =
       Format.print_string ("#"^string_of_int t^"(");
       Format.open_hvbox 0;
       for i = 0 to n-1 do
-        pr_obj (Obj.field o i);
+        pr_obj_rec (Obj.field o i);
         if i<>n-1 then (Format.print_string ","; Format.print_cut())
       done;
       Format.close_box();
       Format.print_string ")")
   else Format.print_string "?"
 
-let pr_obj o = pr_obj o; Format.print_newline()
+let pr_obj o = pr_obj_rec o; Format.print_newline()
 
+(**************************************************************************)
+(* Low-level validators *)
 
-
+(* data not validated *)
 let no_val (o:Obj.t) = ()
 
+(* Check that object o is a block with tag t *)
 let val_tag t o =
   if Obj.is_block o && Obj.tag o = t then ()
   else failwith ("tag "^string_of_int t)
 
+let val_obj s o =
+  if Obj.is_block o then
+    (if Obj.tag o > Obj.no_scan_tag then
+      failwith (s^". Not a normal tag"))
+  else failwith (s^". Not a block")
+
+(* Check that an object is a tuple (or a record). v is an array of
+   validation functions for each field. Its size corresponds to the
+   expected size of the object. *)
 let val_tuple s v o =
   let n = Array.length v in
-  if Obj.is_block o then
-    if Obj.size o = n then
-      Array.iteri (fun i f -> f (Obj.field o i)) v
-    else
-      (pr_obj o;
-       failwith
-         ("tuple:" ^s^" size found:"^string_of_int (Obj.size o)))
-  else failwith ("tuple:" ^s)
+  val_obj ("tuple: "^s) o;
+  if Obj.size o = n then
+    Array.iteri (fun i f -> f (Obj.field o i)) v
+  else
+    (pr_obj o;
+     failwith
+       ("tuple:" ^s^" size found:"^string_of_int (Obj.size o)))
 
+(* Check that the object is either a constant constructor of tag < cc,
+   or a constructed variant. each element of vv is an array of
+   validation functions to be applied to the constructor arguments.
+   The size of vv corresponds to the number of non-constant
+   constructors, and the size of vv.(i) is the expected arity of the
+   i-th non-constant constructor. *)
 let val_sum s cc vv o =
   if Obj.is_block o then
+    (val_obj ("sum: "^s) o;
     let n = Array.length vv in
     let i = Obj.tag o in
     if i < n then val_tuple (s^"("^string_of_int i^")") vv.(i) o
-    else failwith ("bad tag in sum: "^string_of_int i)
+    else failwith ("bad tag in sum ("^s^"): "^string_of_int i))
   else if Obj.is_int o then
     let (n:int) = Obj.magic o in
-    (if n<0 || n>=cc then failwith "bad constant constructor")
-  else failwith "not a sum"
+    (if n<0 || n>=cc then failwith ("bad constant constructor ("^s^")"))
+  else failwith ("not a sum ("^s^")")
 
+let val_enum s n = val_sum s n [||]
+
+(* Recursive types: avoid looping by eta-expansion *)
+let rec val_rec_sum s cc f o =
+  val_sum s cc (f (val_rec_sum s cc f)) o
+
+(**************************************************************************)
+(* Builtin types *)
+
+(* Check the o is an array of values satisfying f. *)
 let val_array f o =
-  if Obj.is_block o then
-    for i = 0 to Obj.size o - 1 do
-      (f (Obj.field o i):unit)
-    done
-  else failwith "not array"
-(*
-let val_tuple s v o =
-  prerr_endline ("TUPLE "^s);
-  val_tuple s v o;
-  prerr_endline ("END "^s)
-let val_sum s cc vv o =
-  prerr_endline ("SUM "^s);
-  val_sum s cc vv o;
-  prerr_endline ("END "^s)
-let val_array f o =
-  prerr_endline "ARRAY";
-  val_array f o;
-  prerr_endline "END ARRAY"
-*)
-let val_int o = if not (Obj.is_int o) then failwith "not int"
-(*; prerr_endline "INT"
-*)
+  val_obj "array" o;
+  for i = 0 to Obj.size o - 1 do
+    (f (Obj.field o i):unit)
+  done
+
+(* Integer validator *)
+let val_int o =
+  if not (Obj.is_int o) then failwith "expected an int"
+
+(* String validator *)
 let val_str s = val_tag Obj.string_tag s
-(*; prerr_endline ("STR "^Obj.magic s)*)
 
-let val_bool o = val_sum "bool" 2 [||] o
+(* Booleans *)
+let val_bool = val_enum "bool" 2
 
+(* Option type *)
 let val_opt f = val_sum "option" 1 [|[|f|]|]
 
-let rec val_list f o =
-  val_sum "list" 1 [|[|f;val_list f|]|] o
+(* Lists *)
+let val_list f =
+  val_rec_sum "list" 1 (fun vlist -> [|[|f;vlist|]|])
 
+(* Reference *)
 let val_ref f = val_tuple "ref" [|f|]
 
-let rec val_set f o =
-  val_sum "set" 1 [|[|val_set f;f;val_set f;val_int|]|] o
-let rec val_map fk fv o =
-  val_sum "map" 1 [|[|val_map fk fv;fk;fv;val_map fk fv;val_int|]|] o
+(**************************************************************************)
+(* Standard library types *)
 
-(* Coq *)
+(* Sets *)
+let val_set f =
+  val_rec_sum "set" 1 (fun vset -> [|[|vset;f;vset;val_int|]|])
+
+(* Maps *)
+let rec val_map fk fv =
+  val_rec_sum "map" 1 (fun vmap -> [|[|vmap;fk;fv;vmap;val_int|]|])
+
+(**************************************************************************)
+(* Coq types *)
 
 let val_id = val_str
 
@@ -103,27 +141,31 @@ let val_name = val_sum "name" 1 [|[|val_id|]|]
 
 let val_uid = val_tuple "uid" [|val_int;val_str;val_dp|]
 
-let rec val_mp o =
-  val_sum "mp" 0 [|[|val_dp|];[|val_uid|];[|val_uid|];[|val_mp;val_id|]|] o
+let val_mp =
+  val_rec_sum "mp" 0
+    (fun vmp -> [|[|val_dp|];[|val_uid|];[|val_uid|];[|vmp;val_id|]|])
 
 let val_kn = val_tuple "kn" [|val_mp;val_dp;val_id|]
 
 let val_ind = val_tuple "ind"[|val_kn;val_int|]
 let val_cstr = val_tuple "cstr"[|val_ind;val_int|]
 
-let val_ci = no_val
+let val_ci =
+  let val_cstyle = val_enum "case_style" 5 in
+  let val_cprint = val_tuple "case_printing" [|val_int;val_cstyle|] in
+  val_tuple "case_info" [|val_ind;val_int;val_array val_int;val_cprint|]
 
-let val_cast = no_val
 
 let val_level = val_sum "level" 1 [|[|val_dp;val_int|]|]
 let val_univ = val_sum "univ" 0
   [|[|val_level|];[|val_list val_level;val_list val_level|]|]
 
 let val_cstrs =
-  val_set (val_tuple"univ_cstr"[|val_level;val_sum "order" 3[||];val_level|])
+  val_set (val_tuple"univ_cstr"[|val_level;val_enum "order" 3;val_level|])
 
-let val_sort = val_sum "sort" 0 [|[|val_sum "cnt" 2 [||]|];[|val_univ|]|]
-let val_sortfam = val_sum "sort_family" 3 [||]
+let val_cast = val_enum "cast_kind" 2
+let val_sort = val_sum "sort" 0 [|[|val_enum "cnt" 2|];[|val_univ|]|]
+let val_sortfam = val_enum "sort_family" 3
 
 let val_evar f = val_tuple "evar" [|val_int;val_array f|]
 
@@ -134,7 +176,7 @@ let val_fix f =
 let val_cofix f = val_tuple"cofix"[|val_int;val_prec f|]
 
 
-let rec val_constr o = val_sum "constr" 0 [|
+let val_constr = val_rec_sum "constr" 0 (fun val_constr -> [|
   [|val_int|]; (* Rel *)
   [|val_id|]; (* Var *)
   [|val_int|]; (* Meta *)
@@ -151,7 +193,7 @@ let rec val_constr o = val_sum "constr" 0 [|
   [|val_ci;val_constr;val_constr;val_array val_constr|]; (* Case *)
   [|val_fix val_constr|]; (* Fix *)
   [|val_cofix val_constr|] (* CoFix *)
-|] o
+|])
 
 
 let val_ndecl = val_tuple"ndecl"[|val_id;val_opt val_constr;val_constr|]
@@ -161,7 +203,7 @@ let val_rctxt = val_list val_rdecl
 
 let val_arity = val_tuple"arity"[|val_rctxt;val_constr|]
 
-let val_eng = val_sum "eng" 1 [||]
+let val_eng = val_enum "eng" 1
 
 let val_pol_arity = val_tuple"pol_arity"[|val_list(val_opt val_univ);val_univ|]
 let val_cst_type =
@@ -185,9 +227,10 @@ let val_cb = val_tuple "cb"
 
 let val_recarg = val_sum "recarg" 1 [|[|val_int|];[|val_ind|]|]
 
-let rec val_wfp o = val_sum "wf_paths" 0
-  [|[|val_int;val_int|];[|val_recarg;val_array val_wfp|];
-    [|val_int;val_array val_wfp|]|] o
+let val_wfp = val_rec_sum "wf_paths" 0
+  (fun val_wfp -> 
+    [|[|val_int;val_int|];[|val_recarg;val_array val_wfp|];
+      [|val_int;val_array val_wfp|]|])
 
 let val_mono_ind_arity = val_tuple"mono_ind_arity"[|val_constr;val_sort|]
 let val_ind_arity = val_sum "ind_arity" 0

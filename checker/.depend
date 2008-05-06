@@ -1,9 +1,9 @@
-checker.cmo: ../lib/util.cmi univ.cmi type_errors.cmi \
+checker.cmo: ../lib/util.cmi ../kernel/univ.cmi type_errors.cmi \
     /usr/lib/ocaml/camlp4/token.cmi ../kernel/term.cmi ../lib/system.cmi \
     /usr/lib/ocaml/camlp4/stdpp.cmi safe_typing.cmi ../lib/pp.cmi \
     ../kernel/names.cmi indtypes.cmi ../lib/flags.cmi declarations.cmi \
     ../config/coq_config.cmi check_stat.cmi check.cmo 
-checker.cmx: ../lib/util.cmx univ.cmx type_errors.cmx \
+checker.cmx: ../lib/util.cmx ../kernel/univ.cmx type_errors.cmx \
     /usr/lib/ocaml/camlp4/token.cmi ../kernel/term.cmx ../lib/system.cmx \
     /usr/lib/ocaml/camlp4/stdpp.cmi safe_typing.cmx ../lib/pp.cmi \
     ../kernel/names.cmx indtypes.cmx ../lib/flags.cmx declarations.cmx \
@@ -13,108 +13,104 @@ check.cmo: ../lib/util.cmi ../lib/system.cmi safe_typing.cmi ../lib/pp.cmi \
 check.cmx: ../lib/util.cmx ../lib/system.cmx safe_typing.cmx ../lib/pp.cmi \
     ../kernel/names.cmx ../lib/flags.cmx 
 check_stat.cmo: ../lib/util.cmi ../kernel/term.cmi ../lib/system.cmi \
-    safe_typing.cmi ../lib/pp.cmi ../kernel/names.cmi ../kernel/environ.cmi \
-    declarations.cmi check_stat.cmi 
+    safe_typing.cmi ../lib/pp.cmi ../kernel/names.cmi indtypes.cmi \
+    ../lib/flags.cmi ../kernel/environ.cmi declarations.cmi check_stat.cmi 
 check_stat.cmx: ../lib/util.cmx ../kernel/term.cmx ../lib/system.cmx \
-    safe_typing.cmx ../lib/pp.cmi ../kernel/names.cmx ../kernel/environ.cmx \
-    declarations.cmx check_stat.cmi 
+    safe_typing.cmx ../lib/pp.cmi ../kernel/names.cmx indtypes.cmx \
+    ../lib/flags.cmx ../kernel/environ.cmx declarations.cmx check_stat.cmi 
 closure.cmo: ../lib/util.cmi ../kernel/term.cmi ../lib/pp.cmi \
-    ../kernel/names.cmi esubst.cmi ../kernel/environ.cmi closure.cmi 
+    ../kernel/names.cmi ../kernel/esubst.cmi ../kernel/environ.cmi \
+    closure.cmi 
 closure.cmx: ../lib/util.cmx ../kernel/term.cmx ../lib/pp.cmi \
-    ../kernel/names.cmx esubst.cmx ../kernel/environ.cmx closure.cmi 
-closure.cmi: ../kernel/term.cmi ../lib/pp.cmi ../kernel/names.cmi esubst.cmi \
-    ../kernel/environ.cmi 
-declarations.cmo: ../lib/util.cmi univ.cmi ../kernel/term.cmi \
+    ../kernel/names.cmx ../kernel/esubst.cmx ../kernel/environ.cmx \
+    closure.cmi 
+closure.cmi: ../kernel/term.cmi ../lib/pp.cmi ../kernel/names.cmi \
+    ../kernel/esubst.cmi ../kernel/environ.cmi 
+declarations.cmo: ../lib/util.cmi ../kernel/univ.cmi ../kernel/term.cmi \
     ../lib/rtree.cmi ../lib/option.cmi ../kernel/names.cmi declarations.cmi 
-declarations.cmx: ../lib/util.cmx univ.cmx ../kernel/term.cmx \
+declarations.cmx: ../lib/util.cmx ../kernel/univ.cmx ../kernel/term.cmx \
     ../lib/rtree.cmx ../lib/option.cmx ../kernel/names.cmx declarations.cmi 
-declarations.cmi: ../lib/util.cmi univ.cmi ../kernel/term.cmi \
+declarations.cmi: ../lib/util.cmi ../kernel/univ.cmi ../kernel/term.cmi \
     ../lib/rtree.cmi ../kernel/names.cmi 
-environ.cmo: ../lib/util.cmi univ.cmi ../kernel/term.cmi ../kernel/names.cmi \
-    declarations.cmi 
-environ.cmx: ../lib/util.cmx univ.cmx ../kernel/term.cmx ../kernel/names.cmx \
-    declarations.cmx 
-esubst.cmo: ../lib/util.cmi esubst.cmi 
-esubst.cmx: ../lib/util.cmx esubst.cmi 
-esubst.cmi: ../lib/util.cmi 
-indtypes.cmo: ../lib/util.cmi univ.cmi typeops.cmi ../kernel/term.cmi \
-    ../lib/rtree.cmi reduction.cmi ../lib/pp.cmi ../kernel/names.cmi \
-    inductive.cmi ../lib/flags.cmi ../kernel/environ.cmi declarations.cmi \
-    indtypes.cmi 
-indtypes.cmx: ../lib/util.cmx univ.cmx typeops.cmx ../kernel/term.cmx \
-    ../lib/rtree.cmx reduction.cmx ../lib/pp.cmi ../kernel/names.cmx \
-    inductive.cmx ../lib/flags.cmx ../kernel/environ.cmx declarations.cmx \
-    indtypes.cmi 
-indtypes.cmi: univ.cmi typeops.cmi ../kernel/term.cmi ../kernel/names.cmi \
-    ../kernel/environ.cmi declarations.cmi 
-inductive.cmo: ../lib/util.cmi univ.cmi type_errors.cmi ../kernel/term.cmi \
-    ../lib/rtree.cmi reduction.cmi ../kernel/names.cmi ../kernel/environ.cmi \
-    declarations.cmi inductive.cmi 
-inductive.cmx: ../lib/util.cmx univ.cmx type_errors.cmx ../kernel/term.cmx \
-    ../lib/rtree.cmx reduction.cmx ../kernel/names.cmx ../kernel/environ.cmx \
-    declarations.cmx inductive.cmi 
-inductive.cmi: univ.cmi ../kernel/term.cmi ../kernel/names.cmi \
+environ.cmo: ../lib/util.cmi ../kernel/univ.cmi ../kernel/term.cmi \
+    ../kernel/names.cmi declarations.cmi 
+environ.cmx: ../lib/util.cmx ../kernel/univ.cmx ../kernel/term.cmx \
+    ../kernel/names.cmx declarations.cmx 
+indtypes.cmo: ../lib/util.cmi ../kernel/univ.cmi typeops.cmi \
+    ../kernel/term.cmi ../lib/rtree.cmi reduction.cmi ../lib/pp.cmi \
+    ../kernel/names.cmi inductive.cmi ../lib/flags.cmi ../kernel/environ.cmi \
+    declarations.cmi indtypes.cmi 
+indtypes.cmx: ../lib/util.cmx ../kernel/univ.cmx typeops.cmx \
+    ../kernel/term.cmx ../lib/rtree.cmx reduction.cmx ../lib/pp.cmi \
+    ../kernel/names.cmx inductive.cmx ../lib/flags.cmx ../kernel/environ.cmx \
+    declarations.cmx indtypes.cmi 
+indtypes.cmi: ../kernel/univ.cmi typeops.cmi ../kernel/term.cmi ../lib/pp.cmi \
+    ../kernel/names.cmi ../kernel/environ.cmi declarations.cmi 
+inductive.cmo: ../lib/util.cmi ../kernel/univ.cmi type_errors.cmi \
+    ../kernel/term.cmi ../lib/rtree.cmi reduction.cmi ../kernel/names.cmi \
+    ../kernel/environ.cmi declarations.cmi inductive.cmi 
+inductive.cmx: ../lib/util.cmx ../kernel/univ.cmx type_errors.cmx \
+    ../kernel/term.cmx ../lib/rtree.cmx reduction.cmx ../kernel/names.cmx \
+    ../kernel/environ.cmx declarations.cmx inductive.cmi 
+inductive.cmi: ../kernel/univ.cmi ../kernel/term.cmi ../kernel/names.cmi \
     ../kernel/environ.cmi declarations.cmi 
 main.cmo: checker.cmo 
 main.cmx: checker.cmx 
-mod_checking.cmo: ../lib/util.cmi univ.cmi typeops.cmi ../kernel/term.cmi \
-    subtyping.cmi reduction.cmi ../lib/pp.cmi ../kernel/names.cmi modops.cmi \
-    inductive.cmi indtypes.cmi ../lib/flags.cmi ../kernel/environ.cmi \
-    declarations.cmi 
-mod_checking.cmx: ../lib/util.cmx univ.cmx typeops.cmx ../kernel/term.cmx \
-    subtyping.cmx reduction.cmx ../lib/pp.cmi ../kernel/names.cmx modops.cmx \
-    inductive.cmx indtypes.cmx ../lib/flags.cmx ../kernel/environ.cmx \
-    declarations.cmx 
-modops.cmo: ../lib/util.cmi univ.cmi ../kernel/term.cmi ../lib/pp.cmi \
-    ../lib/option.cmi ../kernel/names.cmi ../kernel/environ.cmi \
+mod_checking.cmo: ../lib/util.cmi ../kernel/univ.cmi typeops.cmi \
+    ../kernel/term.cmi subtyping.cmi reduction.cmi ../lib/pp.cmi \
+    ../kernel/names.cmi modops.cmi inductive.cmi indtypes.cmi \
+    ../lib/flags.cmi ../kernel/environ.cmi declarations.cmi 
+mod_checking.cmx: ../lib/util.cmx ../kernel/univ.cmx typeops.cmx \
+    ../kernel/term.cmx subtyping.cmx reduction.cmx ../lib/pp.cmi \
+    ../kernel/names.cmx modops.cmx inductive.cmx indtypes.cmx \
+    ../lib/flags.cmx ../kernel/environ.cmx declarations.cmx 
+modops.cmo: ../lib/util.cmi ../kernel/univ.cmi ../kernel/term.cmi \
+    ../lib/pp.cmi ../lib/option.cmi ../kernel/names.cmi ../kernel/environ.cmi \
     declarations.cmi modops.cmi 
-modops.cmx: ../lib/util.cmx univ.cmx ../kernel/term.cmx ../lib/pp.cmi \
-    ../lib/option.cmx ../kernel/names.cmx ../kernel/environ.cmx \
+modops.cmx: ../lib/util.cmx ../kernel/univ.cmx ../kernel/term.cmx \
+    ../lib/pp.cmi ../lib/option.cmx ../kernel/names.cmx ../kernel/environ.cmx \
     declarations.cmx modops.cmi 
-modops.cmi: ../lib/util.cmi univ.cmi ../kernel/term.cmi ../kernel/names.cmi \
-    ../kernel/environ.cmi declarations.cmi 
-reduction.cmo: ../lib/util.cmi univ.cmi ../kernel/term.cmi \
-    ../kernel/names.cmi esubst.cmi ../kernel/environ.cmi closure.cmi \
-    reduction.cmi 
-reduction.cmx: ../lib/util.cmx univ.cmx ../kernel/term.cmx \
-    ../kernel/names.cmx esubst.cmx ../kernel/environ.cmx closure.cmx \
-    reduction.cmi 
+modops.cmi: ../lib/util.cmi ../kernel/univ.cmi ../kernel/term.cmi \
+    ../kernel/names.cmi ../kernel/environ.cmi declarations.cmi 
+reduction.cmo: ../lib/util.cmi ../kernel/univ.cmi ../kernel/term.cmi \
+    ../kernel/names.cmi ../kernel/esubst.cmi ../kernel/environ.cmi \
+    closure.cmi reduction.cmi 
+reduction.cmx: ../lib/util.cmx ../kernel/univ.cmx ../kernel/term.cmx \
+    ../kernel/names.cmx ../kernel/esubst.cmx ../kernel/environ.cmx \
+    closure.cmx reduction.cmi 
 reduction.cmi: ../kernel/term.cmi ../kernel/environ.cmi 
 safe_typing.cmo: validate.cmo ../lib/util.cmi ../lib/pp.cmi ../lib/option.cmi \
-    ../kernel/names.cmi modops.cmi mod_checking.cmo ../kernel/environ.cmi \
-    declarations.cmi safe_typing.cmi 
+    ../kernel/names.cmi modops.cmi mod_checking.cmo ../lib/flags.cmi \
+    ../kernel/environ.cmi declarations.cmi safe_typing.cmi 
 safe_typing.cmx: validate.cmx ../lib/util.cmx ../lib/pp.cmi ../lib/option.cmx \
-    ../kernel/names.cmx modops.cmx mod_checking.cmx ../kernel/environ.cmx \
-    declarations.cmx safe_typing.cmi 
-safe_typing.cmi: ../kernel/term.cmi ../kernel/names.cmi ../kernel/environ.cmi \
+    ../kernel/names.cmx modops.cmx mod_checking.cmx ../lib/flags.cmx \
+    ../kernel/environ.cmx declarations.cmx safe_typing.cmi 
+safe_typing.cmi: ../kernel/term.cmi ../lib/system.cmi ../kernel/names.cmi \
+    ../kernel/environ.cmi declarations.cmi 
+subtyping.cmo: ../lib/util.cmi ../kernel/univ.cmi typeops.cmi \
+    ../kernel/term.cmi reduction.cmi ../lib/pp.cmi ../kernel/names.cmi \
+    modops.cmi inductive.cmi ../kernel/environ.cmi declarations.cmi \
+    subtyping.cmi 
+subtyping.cmx: ../lib/util.cmx ../kernel/univ.cmx typeops.cmx \
+    ../kernel/term.cmx reduction.cmx ../lib/pp.cmi ../kernel/names.cmx \
+    modops.cmx inductive.cmx ../kernel/environ.cmx declarations.cmx \
+    subtyping.cmi 
+subtyping.cmi: ../kernel/univ.cmi ../kernel/term.cmi ../kernel/environ.cmi \
     declarations.cmi 
-subtyping.cmo: ../lib/util.cmi univ.cmi typeops.cmi ../kernel/term.cmi \
-    reduction.cmi ../lib/pp.cmi ../kernel/names.cmi modops.cmi inductive.cmi \
-    ../kernel/environ.cmi declarations.cmi subtyping.cmi 
-subtyping.cmx: ../lib/util.cmx univ.cmx typeops.cmx ../kernel/term.cmx \
-    reduction.cmx ../lib/pp.cmi ../kernel/names.cmx modops.cmx inductive.cmx \
-    ../kernel/environ.cmx declarations.cmx subtyping.cmi 
-subtyping.cmi: univ.cmi ../kernel/term.cmi ../kernel/environ.cmi \
-    declarations.cmi 
-term.cmo: ../lib/util.cmi univ.cmi ../lib/pp.cmi ../lib/option.cmi \
-    ../kernel/names.cmi esubst.cmi 
-term.cmx: ../lib/util.cmx univ.cmx ../lib/pp.cmi ../lib/option.cmx \
-    ../kernel/names.cmx esubst.cmx 
+term.cmo: ../lib/util.cmi ../kernel/univ.cmi ../lib/pp.cmi ../lib/option.cmi \
+    ../kernel/names.cmi ../kernel/esubst.cmi 
+term.cmx: ../lib/util.cmx ../kernel/univ.cmx ../lib/pp.cmi ../lib/option.cmx \
+    ../kernel/names.cmx ../kernel/esubst.cmx 
 type_errors.cmo: ../kernel/term.cmi ../kernel/names.cmi ../kernel/environ.cmi \
     type_errors.cmi 
 type_errors.cmx: ../kernel/term.cmx ../kernel/names.cmx ../kernel/environ.cmx \
     type_errors.cmi 
 type_errors.cmi: ../kernel/term.cmi ../kernel/names.cmi ../kernel/environ.cmi 
-typeops.cmo: ../lib/util.cmi univ.cmi type_errors.cmi ../kernel/term.cmi \
-    reduction.cmi ../kernel/names.cmi inductive.cmi ../kernel/environ.cmi \
-    declarations.cmi typeops.cmi 
-typeops.cmx: ../lib/util.cmx univ.cmx type_errors.cmx ../kernel/term.cmx \
-    reduction.cmx ../kernel/names.cmx inductive.cmx ../kernel/environ.cmx \
-    declarations.cmx typeops.cmi 
+typeops.cmo: ../lib/util.cmi ../kernel/univ.cmi type_errors.cmi \
+    ../kernel/term.cmi reduction.cmi ../kernel/names.cmi inductive.cmi \
+    ../kernel/environ.cmi declarations.cmi typeops.cmi 
+typeops.cmx: ../lib/util.cmx ../kernel/univ.cmx type_errors.cmx \
+    ../kernel/term.cmx reduction.cmx ../kernel/names.cmx inductive.cmx \
+    ../kernel/environ.cmx declarations.cmx typeops.cmi 
 typeops.cmi: ../kernel/term.cmi ../kernel/names.cmi ../kernel/environ.cmi \
     declarations.cmi 
-univ.cmo: ../lib/util.cmi ../lib/pp.cmi ../lib/option.cmi ../kernel/names.cmi \
-    univ.cmi 
-univ.cmx: ../lib/util.cmx ../lib/pp.cmi ../lib/option.cmx ../kernel/names.cmx \
-    univ.cmi 
-univ.cmi: ../lib/pp.cmi ../kernel/names.cmi 

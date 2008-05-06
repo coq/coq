@@ -225,21 +225,29 @@ type compiled_library =
     (dir_path * Digest.t) list *
     engagement option
  
+(* This function should append a certificate to the .vo file.
+   The digest must be part of the certicate to rule out attackers
+   that could change the .vo file between the time it was read and
+   the time the stamp is written.
+   For the moment, .vo are not signed. *)
+let stamp_library file digest = ()
+
 (* When the module is checked, digests do not need to match, but a
    warning is issued in case of mismatch *)
-let import (dp,mb,depends,engmt as vo) digest = 
-Validate.val_vo (Obj.repr vo);
-prerr_endline "*** vo validated ***";
+let import file (dp,mb,depends,engmt as vo) digest = 
+  Validate.val_vo (Obj.repr vo);
+  Flags.if_verbose msgnl (str "*** vo structure validated ***");
   let env = !genv in
   check_imports msg_warning dp env depends;
   check_engagement env engmt;
   check_module env mb;
+  stamp_library file digest;
   (* We drop proofs once checked *)
 (*  let mb = lighten_module mb in*)
   full_add_module dp mb digest
 
 (* When the module is admitted, digests *must* match *)
-let unsafe_import (dp,mb,depends,engmt) digest = 
+let unsafe_import file (dp,mb,depends,engmt) digest = 
   let env = !genv in
   check_imports (errorlabstrm"unsafe_import") dp env depends;
   check_engagement env engmt;
