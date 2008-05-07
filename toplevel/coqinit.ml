@@ -83,7 +83,6 @@ let theories_dirs_map = [
     "theories/Lists", "Lists" ; 
     "theories/Wellfounded", "Wellfounded" ; 
     "theories/Relations", "Relations" ; 
-    "theories/Ints", "Ints" ; 
     "theories/Numbers", "Numbers" ; 
     "theories/QArith", "QArith" ; 
     "theories/NArith", "NArith" ; 
