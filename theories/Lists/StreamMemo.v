@@ -7,32 +7,27 @@
 (************************************************************************)
 
 Require Import Eqdep_dec.
+Require Import Streams.
+
+(** * Memoization *)
+
+(** Successive outputs of a given function [f] are stored in 
+    a stream in order to avoid duplicated computations. *) 
 
 Section MemoFunction.
 
 Variable A: Type.
 Variable f: nat -> A.
-Variable g: A -> A.
 
-Hypothesis Hg_correct: forall n, f (S n) = g (f n).
-  
-(* Memo Stream *)
-CoInductive MStream: Type :=
- MSeq : A -> MStream -> MStream.
-
-(* Hd and Tl function *)
-Definition mhd (x: MStream) := 
-  let (a,s) := x in a.
-Definition mtl (x: MStream) := 
-  let (a,s) := x in s.
-
-CoFixpoint memo_make (n: nat): MStream:= MSeq (f n) (memo_make (S n)).
+CoFixpoint memo_make (n:nat) : Stream A := Cons (f n) (memo_make (S n)).
 
 Definition memo_list := memo_make 0.
 
-Fixpoint memo_get (n: nat) (l: MStream) {struct n}: A :=
-  match n with O => mhd l | S n1 => 
-     memo_get n1 (mtl l) end.
+Fixpoint memo_get (n:nat) (l:Stream A) : A :=
+  match n with 
+    | O => hd l 
+    | S n1 => memo_get n1 (tl l)
+  end.
 
 Theorem memo_get_correct: forall n, memo_get n memo_list = f n.
 Proof.
@@ -44,13 +39,21 @@ intros n; apply trans_equal with (f (n + 0)); try exact (F1 n 0).
 rewrite <- plus_n_O; auto.
 Qed.
 
-(* Building with possible sharing using g *)
-CoFixpoint imemo_make (fn: A): MStream :=
+(** Building with possible sharing using a iterator [g] :
+    We now suppose in addition that [f n] is in fact the [n]-th
+    iterate of a function [g].
+*)
+
+Variable g: A -> A.
+
+Hypothesis Hg_correct: forall n, f (S n) = g (f n).
+
+CoFixpoint imemo_make (fn:A) : Stream A :=
   let fn1 := g fn in 
-  MSeq fn1 (imemo_make fn1).
+  Cons fn1 (imemo_make fn1).
 
 Definition imemo_list := let f0 := f 0 in
-  MSeq f0 (imemo_make f0).
+  Cons f0 (imemo_make f0).
 
 Theorem imemo_get_correct: forall n, memo_get n imemo_list = f n.
 Proof.
@@ -65,13 +68,14 @@ Qed.
 
 End MemoFunction.
 
+(** For a dependent function, the previous solution is 
+    reused thanks to a temporarly hiding of the dependency
+    in a "container" [memo_val]. *)
+
 Section DependentMemoFunction.
 
 Variable A: nat -> Type.
 Variable f: forall n, A n.
-Variable g: forall n, A n -> A (S n).
-
-Hypothesis Hg_correct: forall n, f (S n) = g n (f n).
 
 Inductive memo_val: Type :=
   memo_mval: forall n, A n -> memo_val.
@@ -101,15 +105,10 @@ match v with
 end.
 
 Let mf n :=  memo_mval n (f n).
-Let mg v :=  match v with 
-             memo_mval n1 v1 => memo_mval (S n1) (g n1 v1) end.
-
 
 Definition dmemo_list := memo_list _ mf.
 
 Definition dmemo_get n l := memo_get_val n (memo_get _ n l).
-
-Definition dimemo_list := imemo_list _ mf mg.
 
 Theorem dmemo_get_correct: forall n, dmemo_get n dmemo_list = f n.
 Proof.
@@ -128,6 +127,17 @@ assert (e = refl_equal n).
  injection HH1; auto.
 rewrite H; auto.
 Qed.
+
+(** Finally, a version with both dependency and iterator *)
+
+Variable g: forall n, A n -> A (S n).
+
+Hypothesis Hg_correct: forall n, f (S n) = g n (f n).
+
+Let mg v :=  match v with 
+             memo_mval n1 v1 => memo_mval (S n1) (g n1 v1) end.
+
+Definition dimemo_list := imemo_list _ mf mg.
 
 Theorem dimemo_get_correct: forall n, dmemo_get n dimemo_list = f n.
 Proof.
@@ -150,17 +160,20 @@ Qed.
 
 End DependentMemoFunction.
 
-(* An example with the memo function on factorial *)
+(** An example with the memo function on factorial *)
 
 (*
 Require Import ZArith.
+Open Scope Z_scope.
 
-Fixpoint tfact (n: nat) {struct n} := 
-  match n with O => 1%Z | 
-               S n1 => (Z_of_nat n * tfact n1)%Z end.
+Fixpoint tfact (n: nat) := 
+  match n with 
+   | O => 1 
+   | S n1 => Z_of_nat n * tfact n1 
+  end.
 
 Definition lfact_list := 
-  dimemo_list _ tfact (fun n z => (Z_of_nat (S  n) * z)%Z). 
+  dimemo_list _ tfact (fun n z => (Z_of_nat (S  n) * z)).
 
 Definition lfact n := dmemo_get _ tfact n lfact_list.
 
@@ -170,16 +183,23 @@ intros n; unfold lfact, lfact_list.
 rewrite dimemo_get_correct; auto.
 Qed.
 
-Fixpoint nop p := match p with
-xH => 0 | xI p1 => nop p1 | xO p1 => nop p1 end.
+Fixpoint nop p := 
+  match p with
+   | xH => 0 
+   | xI p1 => nop p1 
+   | xO p1 => nop p1 
+  end.
 
-Fixpoint test z := match z with
-Z0 => 0 | Zpos p1 => nop p1 | Zneg p1 => nop p1 end.
+Fixpoint test z := 
+  match z with
+   | Z0 => 0 
+   | Zpos p1 => nop p1 
+   | Zneg p1 => nop p1 
+  end.
 
 Time Eval vm_compute in test (lfact 2000).
 Time Eval vm_compute in test (lfact 2000).
 Time Eval vm_compute in test (lfact 1500).
 Time Eval vm_compute in (lfact 1500).
-
 *)
  

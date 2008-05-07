@@ -17,7 +17,7 @@
 - Remark: File automatically generated
 *)
 
-Require Import Zaux.
+Require Import BigNumPrelude.
 Require Import ZArith.
 Require Import Basic_type.
 Require Import ZnZ.
@@ -26,7 +26,7 @@ Require Import Nbasic.
 Require Import GenMul.
 Require Import GenDivn1.
 Require Import Wf_nat.
-Require Import MemoFn.
+Require Import StreamMemo.
 
 Module Type W0Type.
  Parameter w : Set.

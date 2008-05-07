@@ -8,7 +8,7 @@
 (*        Benjamin Gregoire, INRIA          Laurent Thery, INRIA        *)
 (************************************************************************)
 
-(* $Id:$ *)
+(* $Id$ *)
 
 (** * Signature and specification of a bounded integer structure *)
 

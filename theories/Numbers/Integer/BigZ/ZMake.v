@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import ZArith.
-Require Import Zaux.
+Require Import BigNumPrelude.
 
 Open Scope Z_scope.
 

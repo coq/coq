@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id:$ *)
+(* $Id$ *)
 
 (** * *)
 
@@ -20,7 +20,7 @@
 Set Implicit Arguments.
 
 Require Import ZArith.
-Require Import Zaux.
+Require Import BigNumPrelude.
 Require Import Basic_type.
 Require Import JMeq.
 

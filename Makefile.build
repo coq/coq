@@ -477,7 +477,6 @@ fsets: $(FSETSVO)
 allfsets: $(ALLFSETS)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
-ints: $(INTSVO)
 # reals
 reals: $(REALSVO)
 allreals: $(ALLREALS)

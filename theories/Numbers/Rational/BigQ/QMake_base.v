@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id:$ *)
+(* $Id$ *)
 
 (** * An implementation of rational numbers based on big integers *)
 

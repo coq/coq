@@ -9,7 +9,7 @@
 Set Implicit Arguments.
 
 Require Import ZArith.
-Require Import Zaux.
+Require Import BigNumPrelude.
 Require Import Basic_type.
 Require Import GenBase.
 Require Import GenAdd.

@@ -359,7 +359,7 @@ INTERFACE:=\
 
 INTERFACECMX:=$(INTERFACE:.cmo=.cmx)
 
-PARSERREQUIRES:=$(LINKCMO) $(LIBCOQRUN) # Solution de facilité...
+PARSERREQUIRES:=$(LINKCMO) $(LIBCOQRUN) # Solution de facilitÃ©...
 PARSERREQUIRESCMX:=$(LINKCMX)
 
 ifeq ($(BEST),opt)
@@ -487,329 +487,267 @@ PRINTERSCMO:=\
 
 ## Theories
 
-INITVO:=\
- theories/Init/Notations.vo \
- theories/Init/Datatypes.vo         theories/Init/Peano.vo     \
- theories/Init/Logic.vo             theories/Init/Specif.vo    \
- theories/Init/Logic_Type.vo        theories/Init/Wf.vo      \
- theories/Init/Tactics.vo           theories/Init/Prelude.vo
+INITVO:=$(addprefix theories/Init/, \
+ Notations.vo	Datatypes.vo	Peano.vo	Logic.vo	\
+ Specif.vo	Logic_Type.vo  	Wf.vo		Tactics.vo	\
+ Prelude.vo )
 
-LOGICVO:=\
- theories/Logic/Hurkens.vo            theories/Logic/ProofIrrelevance.vo\
- theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
- theories/Logic/Classical_Pred_Set.vo theories/Logic/Eqdep.vo          \
- theories/Logic/Classical_Prop.vo     theories/Logic/Classical_Pred_Type.vo \
- theories/Logic/ClassicalFacts.vo     theories/Logic/ChoiceFacts.vo \
- theories/Logic/Berardi.vo            theories/Logic/Eqdep_dec.vo \
- theories/Logic/Decidable.vo          theories/Logic/JMeq.vo \
- theories/Logic/ClassicalChoice.vo    theories/Logic/ClassicalDescription.vo \
- theories/Logic/RelationalChoice.vo   theories/Logic/Diaconescu.vo \
- theories/Logic/EqdepFacts.vo         theories/Logic/ProofIrrelevanceFacts.vo \
- theories/Logic/ClassicalEpsilon.vo   theories/Logic/ClassicalUniqueChoice.vo \
- theories/Logic/DecidableType.vo      theories/Logic/DecidableTypeEx.vo \
- theories/Logic/Epsilon.vo            theories/Logic/ConstructiveEpsilon.vo \
- theories/Logic/Description.vo        theories/Logic/IndefiniteDescription.vo \
- theories/Logic/SetIsType.vo
+LOGICVO:=$(addprefix theories/Logic/, \
+ Hurkens.vo               ProofIrrelevance.vo      Classical.vo 	\
+ Classical_Type.vo        Classical_Pred_Set.vo    Eqdep.vo     	\
+ Classical_Prop.vo        Classical_Pred_Type.vo   ClassicalFacts.vo 	\
+ ChoiceFacts.vo           Berardi.vo               Eqdep_dec.vo 	\
+ Decidable.vo             JMeq.vo                  ClassicalChoice.vo 	\
+ ClassicalDescription.vo  RelationalChoice.vo      Diaconescu.vo 	\
+ EqdepFacts.vo            ProofIrrelevanceFacts.vo ClassicalEpsilon.vo 	\
+ ClassicalUniqueChoice.vo DecidableType.vo         DecidableTypeEx.vo 	\
+ Epsilon.vo               ConstructiveEpsilon.vo   Description.vo 	\
+ IndefiniteDescription.vo SetIsType.vo )
 
-ARITHVO:=\
- theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
- theories/Arith/Between.vo      theories/Arith/Le.vo          \
- theories/Arith/Compare.vo      theories/Arith/Lt.vo          \
- theories/Arith/Compare_dec.vo  theories/Arith/Min.vo         \
- theories/Arith/Div2.vo         theories/Arith/Minus.vo       \
- theories/Arith/Mult.vo         theories/Arith/Even.vo        \
- theories/Arith/EqNat.vo        theories/Arith/Peano_dec.vo   \
- theories/Arith/Euclid.vo       theories/Arith/Plus.vo        \
- theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
- theories/Arith/Bool_nat.vo	theories/Arith/Factorial.vo   \
- theories/Arith/Arith_base.vo 
+ARITHVO:=$(addprefix theories/Arith/, \
+ Arith.vo	Gt.vo          	Between.vo	Le.vo          \
+ Compare.vo	Lt.vo          	Compare_dec.vo	Min.vo         \
+ Div2.vo	Minus.vo       	Mult.vo		Even.vo        \
+ EqNat.vo	Peano_dec.vo   	Euclid.vo	Plus.vo        \
+ Wf_nat.vo  	Max.vo		Factorial.vo	Arith_base.vo  )
 
-SORTINGVO:=\
- theories/Sorting/Heap.vo	theories/Sorting/Permutation.vo \
- theories/Sorting/Sorting.vo	theories/Sorting/PermutSetoid.vo \
- theories/Sorting/PermutEq.vo
+SORTINGVO:=$(addprefix theories/Sorting/, \
+ Heap.vo 	Permutation.vo	Sorting.vo 	PermutSetoid.vo \
+ PermutEq.vo )
 
-BOOLVO:=\
- theories/Bool/Bool.vo  	theories/Bool/IfProp.vo \
- theories/Bool/Zerob.vo 	theories/Bool/DecBool.vo \
- theories/Bool/Sumbool.vo 	theories/Bool/BoolEq.vo \
- theories/Bool/Bvector.vo
+BOOLVO:=$(addprefix theories/Bool/, \
+ Bool.vo  	IfProp.vo    	Zerob.vo 	DecBool.vo 	\
+ Sumbool.vo 	BoolEq.vo    	Bvector.vo )
 
-NARITHVO:=\
- theories/NArith/BinPos.vo	theories/NArith/Pnat.vo \
- theories/NArith/BinNat.vo	theories/NArith/NArith.vo \
- theories/NArith/Nnat.vo	theories/NArith/Ndigits.vo \
- theories/NArith/Ndec.vo	theories/NArith/Ndist.vo 
+NARITHVO:=$(addprefix theories/NArith/, \
+ BinPos.vo	Pnat.vo      	BinNat.vo   	NArith.vo 	\
+ Nnat.vo	Ndigits.vo   	Ndec.vo	 	Ndist.vo 	)
 
-ZARITHVO:=\
- theories/ZArith/BinInt.vo      theories/ZArith/Wf_Z.vo \
- theories/ZArith/ZArith.vo      theories/ZArith/ZArith_dec.vo \
- theories/ZArith/auxiliary.vo   theories/ZArith/Zmisc.vo \
- theories/ZArith/Zcompare.vo    theories/ZArith/Znat.vo \
- theories/ZArith/Zorder.vo      theories/ZArith/Zabs.vo \
- theories/ZArith/Zmin.vo        theories/ZArith/Zmax.vo \
- theories/ZArith/Zminmax.vo     theories/ZArith/Zeven.vo \
- theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
- theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
- theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
- theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
- theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo \
- theories/ZArith/Znumtheory.vo  theories/ZArith/Int.vo \
- theories/ZArith/Zpow_def.vo	theories/ZArith/Zpow_facts.vo \
- theories/ZArith/ZOdiv_def.vo   theories/ZArith/ZOdiv.vo
+ZARITHVO:=$(addprefix theories/ZArith/, \
+ BinInt.vo      Wf_Z.vo 	ZArith.vo      	ZArith_dec.vo 	\
+ auxiliary.vo   Zmisc.vo 	Zcompare.vo    	Znat.vo 	\
+ Zorder.vo      Zabs.vo 	Zmin.vo        	Zmax.vo 	\
+ Zminmax.vo     Zeven.vo 	Zhints.vo	Zlogarithm.vo 	\
+ Zpower.vo 	Zcomplements.vo Zdiv.vo		Zsqrt.vo 	\
+ Zwf.vo		ZArith_base.vo 	Zbool.vo	Zbinary.vo 	\
+ Znumtheory.vo  Int.vo 		Zpow_def.vo	Zpow_facts.vo 	\
+ ZOdiv_def.vo   ZOdiv.vo )
 
-INTSVO:=\
- theories/Ints/Zaux.vo \
- theories/Ints/Basic_type.vo theories/Ints/Int31.vo \
- theories/Ints/num/GenBase.vo theories/Ints/num/ZnZ.vo \
- theories/Ints/num/GenAdd.vo theories/Ints/num/GenSub.vo \
- theories/Ints/num/GenMul.vo theories/Ints/num/GenDivn1.vo \
- theories/Ints/num/GenDiv.vo theories/Ints/num/GenSqrt.vo \
- theories/Ints/num/GenLift.vo theories/Ints/num/Zn2Z.vo\
- theories/Ints/num/Nbasic.vo theories/Ints/num/NMake.vo \
- theories/Ints/num/MemoFn.vo \
- theories/Ints/BigN.vo theories/Ints/num/ZMake.vo \
- theories/Ints/BigZ.vo theories/Ints/num/BigQ.vo \
- theories/Ints/num/QMake_base.vo theories/Ints/num/QpMake.vo \
- theories/Ints/num/QvMake.vo theories/Ints/num/Q0Make.vo \
- theories/Ints/num/QifMake.vo  theories/Ints/num/QbiMake.vo 
-# spiwack : should use the genN.ml to create NMake eventually
-# arnaud : see above
+QARITHVO:=$(addprefix theories/QArith/, \
+ QArith_base.vo Qreduction.vo 	Qring.vo	Qreals.vo 	\
+ QArith.vo	Qcanon.vo 	Qfield.vo	Qpower.vo 	\
+ Qabs.vo        Qround.vo )
 
-QARITHVO:=\
- theories/QArith/QArith_base.vo theories/QArith/Qreduction.vo \
- theories/QArith/Qring.vo       theories/QArith/Qreals.vo \
- theories/QArith/QArith.vo	theories/QArith/Qcanon.vo \
- theories/QArith/Qfield.vo	theories/QArith/Qpower.vo \
- theories/QArith/Qabs.vo        theories/QArith/Qround.vo
+LISTSVO:=$(addprefix theories/Lists/, \
+ MonoList.vo  	ListSet.vo   	Streams.vo 	StreamMemo.vo  \
+ TheoryList.vo	List.vo 	SetoidList.vo   ListTactics.vo )
 
-LISTSVO:=\
- theories/Lists/MonoList.vo \
- theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
- theories/Lists/TheoryList.vo   theories/Lists/List.vo \
- theories/Lists/SetoidList.vo   theories/Lists/ListTactics.vo
+STRINGSVO:=$(addprefix theories/Strings/, \
+ Ascii.vo      	String.vo )
 
-STRINGSVO:=\
- theories/Strings/Ascii.vo      theories/Strings/String.vo
+SETSVO:=$(addprefix theories/Sets/, \
+ Classical_sets.vo    	Permut.vo \
+ Constructive_sets.vo 	Powerset.vo \
+ Cpo.vo               	Powerset_Classical_facts.vo \
+ Ensembles.vo         	Powerset_facts.vo \
+ Finite_sets.vo       	Relations_1.vo \
+ Finite_sets_facts.vo 	Relations_1_facts.vo \
+ Image.vo             	Relations_2.vo \
+ Infinite_sets.vo     	Relations_2_facts.vo \
+ Integers.vo          	Relations_3.vo \
+ Multiset.vo          	Relations_3_facts.vo \
+ Partial_Order.vo     	Uniset.vo )
 
-SETSVO:=\
- theories/Sets/Classical_sets.vo    theories/Sets/Permut.vo \
- theories/Sets/Constructive_sets.vo theories/Sets/Powerset.vo \
- theories/Sets/Cpo.vo               theories/Sets/Powerset_Classical_facts.vo \
- theories/Sets/Ensembles.vo         theories/Sets/Powerset_facts.vo \
- theories/Sets/Finite_sets.vo       theories/Sets/Relations_1.vo \
- theories/Sets/Finite_sets_facts.vo theories/Sets/Relations_1_facts.vo \
- theories/Sets/Image.vo             theories/Sets/Relations_2.vo \
- theories/Sets/Infinite_sets.vo     theories/Sets/Relations_2_facts.vo \
- theories/Sets/Integers.vo          theories/Sets/Relations_3.vo \
- theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
- theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
-
-FSETSBASEVO:=\
- theories/FSets/OrderedType.vo \
- theories/FSets/OrderedTypeEx.vo     theories/FSets/OrderedTypeAlt.vo \
- theories/FSets/FSetInterface.vo     theories/FSets/FSetList.vo \
- theories/FSets/FSetBridge.vo        theories/FSets/FSetFacts.vo \
- theories/FSets/FSetProperties.vo    theories/FSets/FSetEqProperties.vo \
- theories/FSets/FSets.vo             theories/FSets/FSetWeakList.vo \
- theories/FSets/FMapInterface.vo     theories/FSets/FMapList.vo \
- theories/FSets/FMaps.vo             theories/FSets/FMapFacts.vo \
- theories/FSets/FMapWeakList.vo      theories/FSets/FMapPositive.vo \
- theories/FSets/FSetToFiniteSet.vo   theories/FSets/FSetDecide.vo \
- theories/FSets/FSetAVL.vo           
+FSETSBASEVO:=$(addprefix theories/FSets/, \
+ OrderedType.vo		OrderedTypeEx.vo	OrderedTypeAlt.vo	\
+ FSetInterface.vo	FSetList.vo 		FSetBridge.vo        	\
+ FSetFacts.vo 		FSetProperties.vo	FSetEqProperties.vo 	\
+ FSetWeakList.vo 	FSetAVL.vo           	FSetDecide.vo 		\
+ FSets.vo \
+ FMapInterface.vo       FMapList.vo		FMapFacts.vo 		\
+ FMapWeakList.vo      	FMapPositive.vo		FSetToFiniteSet.vo   	\
+ FMaps.vo )            
 
 FSETS_basic:=
 
-FSETS_all:=\
- theories/FSets/FSetFullAVL.vo \
- theories/FSets/FMapAVL.vo theories/FSets/FMapFullAVL.vo
+FSETS_all:=$(addprefix theories/FSets/, \
+ FSetFullAVL.vo 	FMapAVL.vo 		FMapFullAVL.vo )
 
 FSETSVO:=$(FSETSBASEVO) $(FSETS_$(FSETS))
 
 ALLFSETS:=$(FSETSBASEVO) $(FSETS_all)
 
-RELATIONSVO:=\
- theories/Relations/Newman.vo \
- theories/Relations/Operators_Properties.vo \
- theories/Relations/Relation_Definitions.vo \
- theories/Relations/Relation_Operators.vo \
- theories/Relations/Relations.vo \
- theories/Relations/Rstar.vo
+RELATIONSVO:=$(addprefix theories/Relations/, \
+ Newman.vo 		Operators_Properties.vo	Relation_Definitions.vo \
+ Relation_Operators.vo 	Relations.vo 		Rstar.vo )
 
-WELLFOUNDEDVO:=\
- theories/Wellfounded/Disjoint_Union.vo \
- theories/Wellfounded/Inclusion.vo \
- theories/Wellfounded/Inverse_Image.vo \
- theories/Wellfounded/Lexicographic_Exponentiation.vo \
- theories/Wellfounded/Transitive_Closure.vo \
- theories/Wellfounded/Union.vo \
- theories/Wellfounded/Wellfounded.vo \
- theories/Wellfounded/Well_Ordering.vo \
- theories/Wellfounded/Lexicographic_Product.vo 
+WELLFOUNDEDVO:=$(addprefix theories/Wellfounded/, \
+ Disjoint_Union.vo 	Inclusion.vo 	Inverse_Image.vo \
+ Transitive_Closure.vo  Union.vo 	Wellfounded.vo 	 \
+ Well_Ordering.vo 	Lexicographic_Product.vo         \
+ Lexicographic_Exponentiation.vo )
 
-REALSBASEVO:=\
- theories/Reals/Rdefinitions.vo \
- theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
- theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
- theories/Reals/LegacyRfield.vo theories/Reals/Rpow_def.vo
+REALSBASEVO:=$(addprefix theories/Reals/, \
+ Rdefinitions.vo Raxioms.vo      RIneq.vo	DiscrR.vo \
+ Rbase.vo 	 LegacyRfield.vo Rpow_def.vo )
 
-REALS_basic= 
+REALS_basic:= 
 
-REALS_all=\
- theories/Reals/R_Ifp.vo \
- theories/Reals/Rbasic_fun.vo   theories/Reals/R_sqr.vo \
- theories/Reals/SplitAbsolu.vo  theories/Reals/SplitRmult.vo \
- theories/Reals/ArithProp.vo    theories/Reals/Rfunctions.vo \
- theories/Reals/Rseries.vo      theories/Reals/SeqProp.vo \
- theories/Reals/Rcomplete.vo    theories/Reals/PartSum.vo \
- theories/Reals/AltSeries.vo    theories/Reals/Binomial.vo \
- theories/Reals/Rsigma.vo       theories/Reals/Rprod.vo \
- theories/Reals/Cauchy_prod.vo  theories/Reals/Alembert.vo \
- theories/Reals/SeqSeries.vo    theories/Reals/Rtrigo_fun.vo \
- theories/Reals/Rtrigo_def.vo   theories/Reals/Rtrigo_alt.vo \
- theories/Reals/Cos_rel.vo      theories/Reals/Cos_plus.vo \
- theories/Reals/Rtrigo.vo       theories/Reals/Rlimit.vo \
- theories/Reals/Rderiv.vo       theories/Reals/RList.vo \
- theories/Reals/Ranalysis1.vo   theories/Reals/Ranalysis2.vo \
- theories/Reals/Ranalysis3.vo   theories/Reals/Rtopology.vo \
- theories/Reals/MVT.vo          theories/Reals/PSeries_reg.vo \
- theories/Reals/Exp_prop.vo     theories/Reals/Rtrigo_reg.vo \
- theories/Reals/Rsqrt_def.vo    theories/Reals/R_sqrt.vo \
- theories/Reals/Rtrigo_calc.vo  theories/Reals/Rgeom.vo \
- theories/Reals/Sqrt_reg.vo     theories/Reals/Ranalysis4.vo \
- theories/Reals/Rpower.vo       theories/Reals/Ranalysis.vo \
- theories/Reals/NewtonInt.vo    theories/Reals/RiemannInt_SF.vo \
- theories/Reals/RiemannInt.vo   theories/Reals/Integration.vo \
- theories/Reals/Rlogic.vo	theories/Reals/Reals.vo
+REALS_all:=$(addprefix theories/Reals/, \
+ R_Ifp.vo 	Rbasic_fun.vo	R_sqr.vo	SplitAbsolu.vo	\
+ SplitRmult.vo	ArithProp.vo    Rfunctions.vo	Rseries.vo      \
+ SeqProp.vo 	Rcomplete.vo    PartSum.vo	AltSeries.vo    \
+ Binomial.vo	Rsigma.vo       Rprod.vo	Cauchy_prod.vo  \
+ Alembert.vo	SeqSeries.vo    Rtrigo_fun.vo	Rtrigo_def.vo   \
+ Rtrigo_alt.vo  Cos_rel.vo      Cos_plus.vo	Rtrigo.vo       \
+ Rlimit.vo	Rderiv.vo       RList.vo	Ranalysis1.vo   \
+ Ranalysis2.vo	Ranalysis3.vo   Rtopology.vo	MVT.vo          \
+ PSeries_reg.vo Exp_prop.vo     Rtrigo_reg.vo	Rsqrt_def.vo    \
+ R_sqrt.vo	Rtrigo_calc.vo  Rgeom.vo	Sqrt_reg.vo     \
+ Ranalysis4.vo	Rpower.vo       Ranalysis.vo	NewtonInt.vo    \
+ RiemannInt_SF.vo		RiemannInt.vo   Integration.vo 	\
+ Rlogic.vo	Reals.vo )
 
 REALSVO:=$(REALSBASEVO) $(REALS_$(REALS))
 
 ALLREALS:=$(REALSBASEVO) $(REALS_all)
 
-NUMBERSDIR:=theories/Numbers
-NUMBERSCOMMONVO:=$(NUMBERSDIR)/QRewrite.vo $(NUMBERSDIR)/NumPrelude.vo
-NATINTDIR:=$(NUMBERSDIR)/NatInt
-NATINTVO:=\
-  $(NATINTDIR)/NZAxioms.vo\
-  $(NATINTDIR)/NZBase.vo\
-  $(NATINTDIR)/NZPlus.vo\
-  $(NATINTDIR)/NZTimes.vo\
-  $(NATINTDIR)/NZOrder.vo\
-  $(NATINTDIR)/NZPlusOrder.vo\
-  $(NATINTDIR)/NZTimesOrder.vo
+NUMBERSCOMMONVO:=$(addprefix theories/Numbers/, \
+ QRewrite.vo	NumPrelude.vo	BigNumPrelude.vo )
 
-NATURALDIR:=$(NUMBERSDIR)/Natural
-NATABSTRACTDIR:=$(NATURALDIR)/Abstract
-NATURALABSTRACTVO:=\
-  $(NATABSTRACTDIR)/NAxioms.vo\
-  $(NATABSTRACTDIR)/NBase.vo\
-  $(NATABSTRACTDIR)/NPlus.vo\
-  $(NATABSTRACTDIR)/NTimes.vo\
-  $(NATABSTRACTDIR)/NOrder.vo\
-  $(NATABSTRACTDIR)/NPlusOrder.vo\
-  $(NATABSTRACTDIR)/NTimesOrder.vo\
-  $(NATABSTRACTDIR)/NMinus.vo\
-  $(NATABSTRACTDIR)/NIso.vo
+CYCLICABSTRACTVO:=$(addprefix theories/Numbers/Cyclic/Abstract/, \
+ ZnZ.vo )
 
-NATURALPEANOVO:=$(NATURALDIR)/Peano/NPeano.vo
+CYCLICINT31VO:=$(addprefix theories/Numbers/Cyclic/Int31/, \
+ Int31.vo )
 
-NATURALBINARYVO:=\
-  $(NATURALDIR)/Binary/NBinDefs.vo\
-  $(NATURALDIR)/Binary/NBinary.vo
+CYCLICDOUBLECYCLICVO:=$(addprefix theories/Numbers/Cyclic/DoubleCyclic/, \
+ Basic_type.vo	GenBase.vo	GenAdd.vo	GenSub.vo	\
+ GenMul.vo	GenDivn1.vo 	GenDiv.vo	GenSqrt.vo	\
+ GenLift.vo 	Zn2Z.vo )
 
-NATURALVO:=$(NATURALABSTRACTVO) $(NATURALPEANOVO) $(NATURALBINARYVO)
+CYCLICVO:=$(CYCLICABSTRACTVO) $(CYCLICINT31VO) $(CYCLICDOUBLECYCLICVO)
 
-INTEGERDIR:=$(NUMBERSDIR)/Integer
-INTABSTRACTDIR:=$(INTEGERDIR)/Abstract
-INTEGERABSTRACTVO:=\
-  $(INTABSTRACTDIR)/ZAxioms.vo\
-  $(INTABSTRACTDIR)/ZBase.vo\
-  $(INTABSTRACTDIR)/ZPlus.vo\
-  $(INTABSTRACTDIR)/ZTimes.vo\
-  $(INTABSTRACTDIR)/ZLt.vo\
-  $(INTABSTRACTDIR)/ZPlusOrder.vo\
-  $(INTABSTRACTDIR)/ZTimesOrder.vo
+NATINTVO:=$(addprefix theories/Numbers/NatInt/, \
+ NZAxioms.vo	NZBase.vo	NZPlus.vo	NZTimes.vo	\
+ NZOrder.vo 	NZPlusOrder.vo	NZTimesOrder.vo )
 
-INTEGERBINARYVO:=$(INTEGERDIR)/Binary/ZBinary.vo
+NATURALABSTRACTVO:=$(addprefix theories/Numbers/Natural/Abstract/, \
+ NAxioms.vo 	NBase.vo 	NPlus.vo 	NTimes.vo 	\
+ NOrder.vo 	NPlusOrder.vo	NTimesOrder.vo 	NMinus.vo	\
+ NIso.vo )
 
-INTEGERNATPAIRSVO:=$(INTEGERDIR)/NatPairs/ZNatPairs.vo
+NATURALPEANOVO:=$(addprefix theories/Numbers/Natural/Peano/, \
+ NPeano.vo )
 
-INTEGERTREEMODVO:=$(INTEGERDIR)/TreeMod/ZTreeMod.vo
+NATURALBINARYVO:=$(addprefix theories/Numbers/Natural/Binary/, \
+ NBinDefs.vo 	NBinary.vo )
 
-INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) $(INTEGERTREEMODVO)
+NATURALBIGNVO:=$(addprefix theories/Numbers/Natural/BigN/, \
+ Nbasic.vo 	NMake.vo 	BigN.vo )
 
-NUMBERSVO:= $(NUMBERSCOMMONVO) $(NATURALVO) $(INTEGERVO) $(NATINTVO)
+NATURALVO:=$(NATURALABSTRACTVO) $(NATURALPEANOVO) $(NATURALBINARYVO) $(NATURALBIGNVO)
 
-SETOIDSVO:= theories/Setoids/Setoid.vo # theories/Setoids/Setoid_tac.vo theories/Setoids/Setoid_Prop.vo
+INTEGERABSTRACTVO:=$(addprefix theories/Numbers/Integer/Abstract/, \
+ ZAxioms.vo 	ZBase.vo 	ZPlus.vo 	ZTimes.vo 	\
+ ZLt.vo 	ZPlusOrder.vo 	ZTimesOrder.vo )
 
-UNICODEVO:= theories/Unicode/Utf8.vo
+INTEGERBINARYVO:=$(addprefix theories/Numbers/Integer/Binary/, \
+ ZBinary.vo )
 
-CLASSESVO:= theories/Classes/Init.vo theories/Classes/RelationClasses.vo theories/Classes/Morphisms.vo \
-	theories/Classes/Morphisms_Prop.vo theories/Classes/Morphisms_Relations.vo \
-	theories/Classes/Functions.vo theories/Classes/Equivalence.vo theories/Classes/SetoidTactics.vo \
-	theories/Classes/SetoidClass.vo theories/Classes/SetoidAxioms.vo theories/Classes/EquivDec.vo \
-	 theories/Classes/SetoidDec.vo
+INTEGERNATPAIRSVO:=$(addprefix theories/Numbers/Integer/NatPairs/, \
+ ZNatPairs.vo )
+
+INTEGERTREEMODVO:=$(addprefix theories/Numbers/Integer/TreeMod/, \
+ ZTreeMod.vo )
+
+INTEGERBIGZVO:=$(addprefix theories/Numbers/Integer/BigZ/, \
+ ZMake.vo 	BigZ.vo )
+
+INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) \
+ $(INTEGERTREEMODVO) $(INTEGERBIGZVO)
+
+RATIONALBIGQVO:=$(addprefix theories/Numbers/Rational/BigQ/, \
+ QMake_base.vo	QpMake.vo	QvMake.vo	Q0Make.vo 	\
+ QifMake.vo 	QbiMake.vo 	BigQ.vo )
+
+RATIONALVO:=$(RATIONALBIGVO)
+
+NUMBERSVO:= $(NUMBERSCOMMONVO) $(NATURALVO) $(INTEGERVO) $(NATINTVO) $(CYCLICVO) $(RATIONALVO)
+
+SETOIDSVO:=$(addprefix theories/Setoids/, \
+ Setoid.vo ) 
+
+UNICODEVO:=$(addprefix theories/Unicode/, \
+ Utf8.vo )
+
+CLASSESVO:=$(addprefix theories/Classes/, \
+ Init.vo	RelationClasses.vo	Morphisms.vo	Morphisms_Prop.vo \
+ Morphisms_Relations.vo	Functions.vo 	Equivalence.vo  SetoidTactics.vo  \
+ SetoidClass.vo 	SetoidAxioms.vo EquivDec.vo 	SetoidDec.vo )
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
   $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) \
   $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
-  $(INTSVO) $(NUMBERSVO) $(UNICODEVO) $(CLASSESVO)
+  $(NUMBERSVO) $(UNICODEVO) $(CLASSESVO)
 
 THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(ARITHVO)
 
 ## Contribs
 
-OMEGAVO:=\
- contrib/omega/PreOmega.vo contrib/omega/OmegaLemmas.vo contrib/omega/Omega.vo
+OMEGAVO:=$(addprefix contrib/omega/, \
+ PreOmega.vo	OmegaLemmas.vo 	Omega.vo )
 
-ROMEGAVO:=\
- contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
+ROMEGAVO:=$(addprefix contrib/romega/, \
+ ReflOmegaCore.vo 	ROmega.vo )
 
-RINGVO:=\
- contrib/ring/LegacyArithRing.vo      	contrib/ring/Ring_normalize.vo \
- contrib/ring/LegacyRing_theory.vo	contrib/ring/LegacyRing.vo \
- contrib/ring/LegacyNArithRing.vo     \
- contrib/ring/LegacyZArithRing.vo	contrib/ring/Ring_abstract.vo \
- contrib/ring/Quote.vo			contrib/ring/Setoid_ring_normalize.vo \
- contrib/ring/Setoid_ring.vo		contrib/ring/Setoid_ring_theory.vo
+RINGVO:=$(addprefix contrib/ring/, \
+ LegacyArithRing.vo	Ring_normalize.vo \
+ LegacyRing_theory.vo	LegacyRing.vo \
+ LegacyNArithRing.vo    \
+ LegacyZArithRing.vo	Ring_abstract.vo \
+ Quote.vo		Setoid_ring_normalize.vo \
+ Setoid_ring.vo		Setoid_ring_theory.vo )
 
-FIELDVO:=\
- contrib/field/LegacyField_Compl.vo     contrib/field/LegacyField_Theory.vo \
- contrib/field/LegacyField_Tactic.vo    contrib/field/LegacyField.vo
+FIELDVO:=$(addprefix contrib/field/, \
+ LegacyField_Compl.vo   LegacyField_Theory.vo \
+ LegacyField_Tactic.vo  LegacyField.vo )
 
-NEWRINGVO:=\
- contrib/setoid_ring/BinList.vo   	contrib/setoid_ring/Ring_theory.vo \
- contrib/setoid_ring/Ring_polynom.vo	contrib/setoid_ring/Ring_tac.vo \
- contrib/setoid_ring/Ring_base.vo 	contrib/setoid_ring/InitialRing.vo \
- contrib/setoid_ring/Ring_equiv.vo 	contrib/setoid_ring/Ring.vo \
- contrib/setoid_ring/ArithRing.vo	contrib/setoid_ring/NArithRing.vo \
- contrib/setoid_ring/ZArithRing.vo \
- contrib/setoid_ring/Field_theory.vo	contrib/setoid_ring/Field_tac.vo \
- contrib/setoid_ring/Field.vo		contrib/setoid_ring/RealField.vo
+NEWRINGVO:=$(addprefix contrib/setoid_ring/, \
+ BinList.vo   		Ring_theory.vo \
+ Ring_polynom.vo	Ring_tac.vo \
+ Ring_base.vo 		InitialRing.vo \
+ Ring_equiv.vo 		Ring.vo \
+ ArithRing.vo		NArithRing.vo \
+ ZArithRing.vo		\
+ Field_theory.vo	Field_tac.vo \
+ Field.vo		RealField.vo )
 
 XMLVO:= 
 
-FOURIERVO:=\
- contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
+FOURIERVO:=$(addprefix contrib/fourier/, \
+ Fourier_util.vo    	Fourier.vo )
 
 FUNINDVO:= 
 
-RECDEFVO:=contrib/funind/Recdef.vo
+RECDEFVO:=$(addprefix contrib/funind/, \
+ Recdef.vo )
 
 JPROVERVO:= 
 
 CCVO:=
 
-DPVO:=contrib/dp/Dp.vo 
+DPVO:=$(addprefix contrib/dp/, \
+ Dp.vo )
 
-SUBTACVO:=theories/Program/Tactics.vo theories/Program/Equality.vo theories/Program/Subset.vo \
-	theories/Program/Utils.vo theories/Program/Wf.vo theories/Program/Basics.vo \
-	theories/Program/FunctionalExtensionality.vo theories/Program/Combinators.vo \
-	theories/Program/Syntax.vo theories/Program/Program.vo 
+SUBTACVO:=$(addprefix theories/Program/, \
+ Tactics.vo 	Equality.vo 	Subset.vo	Utils.vo 	\
+ Wf.vo 		Basics.vo	FunctionalExtensionality.vo 	\
+ Combinators.vo	Syntax.vo 	Program.vo )
 
-RTAUTOVO:= \
- contrib/rtauto/Bintree.vo contrib/rtauto/Rtauto.vo
+RTAUTOVO:=$(addprefix contrib/rtauto/, \
+ Bintree.vo	Rtauto.vo )
 
 CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \

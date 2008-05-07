@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 (* digit-based syntax for int31, bigN bigZ and bigQ *)
 
@@ -28,7 +28,7 @@ let make_kn dir id = Libnames.encode_kn (make_dir dir) (Names.id_of_string id)
 
 
 (* int31 stuff *)
-let int31_module = ["Coq"; "Ints"; "Int31"]
+let int31_module = ["Coq"; "Numbers"; "Cyclic"; "Int31"; "Int31"]
 let int31_path = make_path int31_module "int31"
 let int31_id = make_kn int31_module
 let int31_scope = "int31_scope"
@@ -40,14 +40,14 @@ let int31_1 = ConstructRef ((int31_id "digits",0),2)
 
 
 (* bigN stuff*)
-let zn2z_module = ["Coq"; "Ints"; "Basic_type"]
+let zn2z_module = ["Coq"; "Numbers"; "Cyclic"; "DoubleCyclic"; "Basic_type"]
 let zn2z_path = make_path zn2z_module "zn2z"
 let zn2z_id = make_kn zn2z_module
 
 let zn2z_W0 = ConstructRef ((zn2z_id "zn2z",0),1)
 let zn2z_WW = ConstructRef ((zn2z_id "zn2z",0),2)
 
-let bigN_module = ["Coq"; "Ints"; "BigN"]
+let bigN_module = ["Coq"; "Numbers"; "Natural"; "BigN"; "BigN"]
 let bigN_path = make_path bigN_module "bigN"
 (* big ugly hack *)
 let bigN_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigN_module)), 
@@ -78,7 +78,7 @@ let bigN_constructor =
 	       )
 
 (*bigZ stuff*)
-let bigZ_module = ["Coq"; "Ints"; "BigZ"]
+let bigZ_module = ["Coq"; "Numbers"; "Integer"; "BigZ"; "BigZ"]
 let bigZ_path = make_path bigZ_module "bigZ"
 (* big ugly hack bis *)
 let bigZ_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigZ_module)), 
@@ -91,8 +91,8 @@ let bigZ_neg = ConstructRef ((bigZ_id "t_",0),2)
 
 
 (*bigQ stuff*)
-let bigQ_module = ["Coq"; "Ints"; "num"; "BigQ"]
-let qmake_module = ["Coq"; "Ints"; "num"; "QMake_base"]
+let bigQ_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "BigQ"]
+let qmake_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "QMake_base"]
 let bigQ_path = make_path bigQ_module "bigQ"
 (* big ugly hack bis *)
 let bigQ_id = make_kn qmake_module

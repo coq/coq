@@ -9,7 +9,7 @@
 Require Import Bool.
 Require Import ZArith.
 Require Import Znumtheory.
-Require Import Zaux.
+Require Import BigNumPrelude.
 Require Import Arith.
 Require Export BigN.
 Require Export BigZ.
