@@ -288,7 +288,7 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
 
 let declare_notation_level ntn level =
   if Gmap.mem ntn !notation_level_map then
-    error ("Notation "^ntn^" is already assigned a level");
+    anomaly ("Notation "^ntn^" is already assigned a level");
   notation_level_map := Gmap.add ntn level !notation_level_map
 
 let level_of_notation ntn =

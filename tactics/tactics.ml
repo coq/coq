@@ -400,7 +400,7 @@ let is_quantified_hypothesis id g =
 
 let msg_quantified_hypothesis = function
   | NamedHyp id -> 
-      str "hypothesis " ++ pr_id id
+      str "quantified hypothesis named " ++ pr_id id
   | AnonHyp n ->
       int n ++ str (match n with 1 -> "st" | 2 -> "nd" | _ -> "th") ++
       str " non dependent hypothesis"
@@ -411,8 +411,8 @@ let depth_of_quantified_hypothesis red h gl =
     | None ->
         errorlabstrm "lookup_quantified_hypothesis" 
           (str "No " ++ msg_quantified_hypothesis h ++
-	  str " in current goal" ++
-	  if red then str " even after head-reduction" else mt ())
+	  strbrk " in current goal" ++
+	  if red then strbrk " even after head-reduction" else mt ())
 
 let intros_until_gen red h g =
   tclDO (depth_of_quantified_hypothesis red h g) intro g
