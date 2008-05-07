@@ -45,6 +45,8 @@ val check_modpath_equiv : env -> module_path -> module_path -> unit
 
 val strengthen : env -> struct_expr_body -> module_path -> struct_expr_body
 
+val update_subst : env -> module_body -> module_path -> bool * substitution
+
 val error_incompatible_modtypes : 
   module_type_body -> module_type_body -> 'a
 

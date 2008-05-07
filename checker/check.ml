@@ -342,10 +342,12 @@ let rec intern_library (dir, f) needed =
 and intern_mandatory_library (dir,_) needed =
   intern_library (try_locate_absolute_library dir) needed
 
-let recheck_library ~admit ~check =
-  let al = List.map (fun q -> fst(try_locate_qualified_library q)) admit in
-  let admit = List.fold_right library_dep al LibraryMap.empty in
-  let modl = List.map try_locate_qualified_library check in
+let recheck_library ~norec ~admit ~check =
+  let nrl = List.map (fun q -> fst(try_locate_qualified_library q)) norec in
+  let al =  List.map (fun q -> fst(try_locate_qualified_library q)) admit in
+  let admit = List.fold_right library_dep (nrl@al) LibraryMap.empty in
+  let admit = List.fold_right LibraryMap.remove nrl admit in
+  let modl = List.map try_locate_qualified_library (norec@check) in
   let needed = List.rev (List.fold_right intern_library modl []) in
   Flags.if_verbose msgnl (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist

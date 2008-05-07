@@ -182,11 +182,6 @@ let check_definition_sub env cb1 cb2 =
 	Reduction.conv env c1 c2
     | _ -> ())
 
-let is_functor env mb =
-  match type_of_mb env mb with
-    | SEBstruct(msid,str) -> false
-    | _ -> true
-
 let rec check_with env mtb with_decl = 
   match with_decl with
     | With_definition_body _ -> 
@@ -344,13 +339,16 @@ and check_structure_field (s,env) mp lab = function
       (s,Indtypes.check_inductive env kn mib)
   | SFBmodule msb ->
       check_module env msb;
-      ((if is_functor env msb then s else join s msb.mod_alias),
+      let mp1 = MPdot(mp,lab) in
+      let is_fun, sub = Modops.update_subst env msb mp1 in
+      ((if is_fun then s else join s sub),
        Modops.add_module (MPdot(mp,lab)) msb
          (add_module_constraints env msb))
   | SFBalias(mp2,cst) ->
       (try
-        let msb = lookup_module mp2 env in
-        (add_mp (MPdot(mp,lab)) mp2 (join s msb.mod_alias),
+        let mp2' = scrape_alias mp2 env in
+        let msb = lookup_module mp2' env in
+        (join s (add_mp (MPdot(mp,lab)) mp2' msb.mod_alias),
          Option.fold_right add_constraints cst
            (register_alias (MPdot(mp,lab)) mp2 env))
       with Not_found -> failwith "unkown aliased module")
@@ -367,24 +365,27 @@ and check_modexpr env mse = match mse with
   | SEBfunctor (arg_id, mtb, body) ->
       check_module_type env mtb;
       let env' = add_module (MPbound arg_id) (module_body_of_type mtb) env in
-      check_modexpr env' body
+      let sub = check_modexpr env' body in
+      sub
   | SEBapply (f,m,cst) ->
       let sub1 = check_modexpr env f in
       let f'= eval_struct env f in
       let farg_id, farg_b, fbody_b = destr_functor env f' in
-      let mtb = 
-	try
-	  lookup_modtype (path_of_mexpr m) env
-	with
-	  | Not_path -> error_application_to_not_path m
+      let mp =
+	try scrape_alias (path_of_mexpr m) env
+	with Not_path -> error_application_to_not_path m
 	      (* place for nondep_supertype *) in
-      let sub2= check_modexpr env m in
-      let sub = join sub1 sub2 in
-      let sub = join_alias sub (map_mbid farg_id (path_of_mexpr m)) in
-      let sub =
-        update_subst_alias sub (map_mbid farg_id (path_of_mexpr m)) in
+      let mtb = lookup_modtype mp env in
       check_subtypes env mtb farg_b;
-      sub
+      let sub2 = match eval_struct env m with
+	| SEBstruct (msid,sign) -> 
+	    join_alias 
+	      (subst_key (map_msid msid mp) mtb.typ_alias)
+	      (map_msid msid mp)
+	| _ -> mtb.typ_alias in
+      let sub3 = join_alias sub1 (map_mbid farg_id mp) in
+      let sub4 = update_subst sub2 sub3 in
+      join sub3 sub4
   | SEBwith(mte, with_decl) ->
 	let sub1 = check_modexpr env mte in
 	let sub2 = check_with env mte with_decl in

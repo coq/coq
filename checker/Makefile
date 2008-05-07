@@ -10,15 +10,7 @@ OPTFLAGS=$(MLDIRS)
 CHECKERNAME=coqchk
 
 BINARIES=../bin/$(CHECKERNAME)$(EXE) ../bin/$(CHECKERNAME).opt$(EXE)
-
-MCHECKER:=\
-  $(COQSRC)/config/coq_config.cmo \
-  $(COQSRC)/lib/pp_control.cmo $(COQSRC)/lib/pp.cmo $(COQSRC)/lib/compat.cmo \
-  $(COQSRC)/lib/util.cmo $(COQSRC)/lib/option.cmo $(COQSRC)/lib/hashcons.cmo \
-  $(COQSRC)/lib/system.cmo $(COQSRC)/lib/flags.cmo \
-  $(COQSRC)/lib/predicate.cmo $(COQSRC)/lib/rtree.cmo \
-  $(COQSRC)/kernel/names.cmo $(COQSRC)/kernel/univ.cmo \
-  $(COQSRC)/kernel/esubst.cmo term.cmo \
+MCHECKERLOCAL :=\
   declarations.cmo environ.cmo \
   closure.cmo reduction.cmo \
   type_errors.cmo \
@@ -29,15 +21,25 @@ validate.cmo \
   safe_typing.cmo check.cmo \
   check_stat.cmo checker.cmo
 
+MCHECKER:=\
+  $(COQSRC)/config/coq_config.cmo \
+  $(COQSRC)/lib/pp_control.cmo $(COQSRC)/lib/pp.cmo $(COQSRC)/lib/compat.cmo \
+  $(COQSRC)/lib/util.cmo $(COQSRC)/lib/option.cmo $(COQSRC)/lib/hashcons.cmo \
+  $(COQSRC)/lib/system.cmo $(COQSRC)/lib/flags.cmo \
+  $(COQSRC)/lib/predicate.cmo $(COQSRC)/lib/rtree.cmo \
+  $(COQSRC)/kernel/names.cmo $(COQSRC)/kernel/univ.cmo \
+  $(COQSRC)/kernel/esubst.cmo term.cmo \
+  $(MCHECKERLOCAL)
+
 all: $(BINARIES)
 
 byte : ../bin/$(CHECKERNAME)$(EXE)
 opt : ../bin/$(CHECKERNAME).opt$(EXE)
 
-check.cma: $(MCHECKER)
+check.cma: $(MCHECKERLOCAL)
 	ocamlc $(BYTEFLAGS) -a -o $@ $(MCHECKER)
 
-check.cmxa: $(MCHECKER:.cmo=.cmx)
+check.cmxa: $(MCHECKERLOCAL:.cmo=.cmx)
 	ocamlopt $(OPTFLAGS) -a -o $@ $(MCHECKER:.cmo=.cmx)
 
 ../bin/$(CHECKERNAME)$(EXE): check.cma
@@ -78,7 +80,7 @@ stats:
 
 
 depend::
-	ocamldep $(MLDIRS) *.ml* > .depend
+	ocamldep *.ml* > .depend
 
 clean::
 	rm -f *.cm* *.o *.a *~ $(BINARIES)

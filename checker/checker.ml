@@ -152,6 +152,10 @@ let admit_list = ref ([] : section_path list)
 let add_admit s =
   admit_list := path_of_string s :: !admit_list
 
+let norec_list = ref ([] : section_path list)
+let add_norec s =
+  norec_list := path_of_string s :: !norec_list
+
 let compile_list = ref ([] : section_path list)
 let add_compile s =
   compile_list := path_of_string s :: !compile_list
@@ -162,6 +166,7 @@ let add_compile s =
 
 let compile_files () =
   Check.recheck_library
+    ~norec:(List.rev !norec_list)
     ~admit:(List.rev !admit_list)
     ~check:(List.rev !compile_list) 
 
@@ -182,6 +187,7 @@ let print_usage_channel co command =
   -R dir coqdir          recursively map physical dir to logical coqdir 
 
   -admit module          load module and dependencies without checking
+  -norec module          check module but admit dependencies without checking
 
   -where                 print Coq's standard library location and exit
   -v                     print Coq version and exit
@@ -324,6 +330,9 @@ let parse_args() =
 
     | "-admit" :: s :: rem -> add_admit s; parse rem
     | "-admit" :: [] -> usage ()
+
+    | "-norec" :: s :: rem -> add_norec s; parse rem
+    | "-norec" :: [] -> usage ()
 
     | "-silent" :: rem ->
         Flags.make_silent true; parse rem
