@@ -84,12 +84,6 @@ let hnf_type_of _ = Util.anomaly "Tactics.hnf_type_of: fantome"
 let tclEVARS _ = Util.anomaly "Tactics.tclEVARS: fantome"
 let pf_type_of _ = Util.anomaly "Tactics.pf_type_of: fantome"
 
-module Clenvtac =
-  struct
-    let res_pf _ = Util.anomaly "Tactics.Clevntac.res_pf: fantome"
-  end
-open Clenvtac
-
 let catchable_exception _ = Util.anomaly "Tactics.catchable_exception: fantome"
 let pf_get_hyp_typ _ = Util.anomaly "Tactics.pf_get_hyp_typ: fantome"
 let pf_hnf_constr _ = Util.anomaly "Tactics.pf_hnf_constr: fantome"
@@ -406,7 +400,7 @@ let error_uninstantiated_metas t clenv =
   let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
   in errorlabstrm "" (str "cannot find an instance for " ++ pr_id id)
 
-let clenv_refine_in with_evars id clenv gl =
+let clenv_refine_in with_evars id clenv =
   Util.anomaly "Ntactics.clenv_refine_in: à réfléchir"
   (* arnaud: à réfléchir
   let clenv = if with_evars then clenv_pose_dependent_evars clenv else clenv in
@@ -439,7 +433,7 @@ let apply_with_ebindings_gen with_evars (c,lbind) =
     let n = nb_prod thm_ty - nprod in
     if n<0 then error "Apply: theorem has not enough premisses.";
     let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
-    Clenvtac.res_pf clause ~with_evars:with_evars gl in
+    Logic.res_pf clause ~with_evars:with_evars gl in
   try try_apply thm_ty0 concl_nprod
   with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
     let rec try_red_apply thm_ty =
@@ -476,11 +470,11 @@ let apply_list = function
 
 (* Resolution with no reduction on the type *)
 
-let apply_without_reduce c gl = 
+let apply_without_reduce c = 
   Util.anomaly "Tactics.apply_without_reduce: à restaurer"
   (* arnaud: à restaurer (sans doute)
   let clause = mk_clenv_type_of gl c in 
-  res_pf clause gl
+  Logic.res_pf clause
   *)
 
 (* [apply_in hyp c] replaces
@@ -789,7 +783,7 @@ let elimination_clause_scheme with_evars allow_K elimclause indclause =
              (str "The type of elimination clause is not well-formed")) 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause in 
-  Goal.return (res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K)
+  Logic.res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K
 
 (* cast added otherwise tactics Case (n1,n2) generates (?f x y) and 
  * refine fails *)
@@ -2617,7 +2611,7 @@ let elim_scheme_type elim t gl =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
 	  clenv_unify true Reduction.CUMUL t
             (clenv_meta_type clause mv) clause in
-	res_pf clause' ~allow_K:true gl
+	Logic.res_pf clause' ~allow_K:true gl
     | _ -> anomaly "elim_scheme_type"
   *)
 

@@ -251,7 +251,7 @@ val default_elim  : evars_flag -> constr with_ebindings -> tactic
 val simplest_elim : constr -> tactic
 *)
 
-val elim : evars_flag Goal.sensitive -> 
+val elim : evars_flag -> 
            constr with_ebindings Goal.sensitive -> 
            constr with_ebindings option Goal.sensitive -> 
            unit tactic

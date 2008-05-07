@@ -34,8 +34,8 @@ val tclTHENFIRST     : 'a tactic -> 'a tactic -> 'a tactic
 val tclTHENLAST      : 'a tactic -> 'a tactic -> 'a tactic
 val tclTHENS         : 'a tactic -> 'a tactic list -> 'a tactic
 val tclTHENSV        : 'a tactic -> 'a tactic array -> 'a tactic
-val tclTHENSLASTn    : 'a tactic -> 'a tactic -> 'a tactic array -> 'a tactic
-val tclTHENLASTn     : 'a tactic -> 'a tactic array -> 'a tactic
+val tclTHENSLASTn    : unit tactic -> unit tactic -> unit tactic array -> unit tactic
+val tclTHENLASTn     : unit tactic -> unit tactic array -> unit tactic
 val tclTHENSFIRSTn   : 'a tactic -> 'a tactic array -> 'a tactic -> 'a tactic
 val tclTHENFIRSTn    : 'a tactic -> 'a tactic array -> 'a tactic
 val tclREPEAT        : 'a tactic -> 'a tactic

@@ -1599,7 +1599,7 @@ let interp_atomic ist = function
 	    interp_constr_with_bindings ist cb >>= fun i_cb ->
 	    Goal.return (Some i_cb)
       in
-      Ntactics.elim (Goal.return ev) (interp_constr_with_bindings ist cb) i_cbo      
+      Ntactics.elim ev (interp_constr_with_bindings ist cb) i_cbo      
   | TacElimType c ->
       Util.anomaly "Ltacinterp.interp_atomic: ElimType: à restaurer"
   | TacCase (ev,cb) ->

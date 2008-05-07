@@ -56,9 +56,12 @@ let tclTHENLAST      = fun _ _ -> Util.anomaly "Tacticals.tclTHENLAST: à restau
 let tclTHENS         = fun _ _ -> Util.anomaly "Tacticals.tclTHENS: à restaurer" (* arnaud: restaurer: tclTHENS*)
 let tclTHENSV        = fun _ _ -> Util.anomaly "Tacticals.tclTHENSV: à restaurer" (* arnaud: restaurer: Refiner.tclTHENSV*)
 let tclTHENSFIRSTn   = fun _ -> Util.anomaly "Tacticals.tclTHENSFIRSTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENSFIRSTn*)
-let tclTHENSLASTn    = fun _ -> Util.anomaly "Tacticals.tclTHENSLASTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENSLASTn*)
+let tclTHENSLASTn tac1 tac2 tacns = 
+  Logic.tclTHEN tac1
+                (Logic.tclEXTENDARRAYS [||] tac2 tacns)
 let tclTHENFIRSTn    = fun _ -> Util.anomaly "Tacticals.tclTHENFIRSTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENFIRSTn*)
-let tclTHENLASTn     = fun _ -> Util.anomaly "Tacticals.tclTHENLASTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENLASTn*)
+let tclTHENLASTn tac1 tacns = 
+  tclTHENSLASTn tac1 (Proofview.id ()) tacns
 let tclREPEAT        = fun _ -> Util.anomaly "Tacticals.tclREPEAT: à restaurer" (* arnaud: restaurer: Refiner.tclREPEAT*)
 let tclREPEAT_MAIN   = fun _ -> Util.anomaly "Tacticals.tclREPEAT_MAIN: à restaurer" (* arnaud: restaurer: tclREPEAT_MAIN*)
 let tclFIRST         = fun _ -> Util.anomaly "Tacticals.tclFIRST: à restaurer" (* arnaud: restaurer: Refiner.tclFIRST*)

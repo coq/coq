@@ -180,6 +180,10 @@ let rec tclTHENLIST = function
 let tclTHENARRAY tacs =
   tclTHENLIST (Array.to_list tacs)
 
+(* Wrapper tactical around [tclEXTEND] taking arrays instead of list. *)
+let tclEXTENDARRAYS a1 t a2 =
+  tclEXTEND (Array.to_list a1) t (Array.to_list a2)
+
 (* arnaud: à remettre dans "tacticals" ? *)
 (* arnaud: renommer pour mettre "id" dans le titre ? *)
  let onLastHyp tac = 
@@ -324,7 +328,6 @@ let cut c =
  * Does check that the casted type is closed. Anyway, the refiner would
  * fail in this case... *)
 
-(* arnaud: circular dependency with Clenv... mover there je suppose *)
 
 let clenv_cast_meta clenv = 
   let rec crec u =

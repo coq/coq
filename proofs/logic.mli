@@ -73,6 +73,13 @@ val tclTHENSA : unit tactic -> unit tactic array -> unit tactic
 val tclTHENLIST : unit tactic list -> unit tactic
 val tclTHENARRAY : unit tactic array -> unit tactic
 
+(* Wrapper tactical around [tclEXTEND] taking arrays instead of list. *)
+val tclEXTENDARRAYS : unit tactic array -> 
+                      unit tactic -> 
+                      unit tactic array -> 
+                      unit tactic
+
+
 (* [onLastHyp itac] applies [itac] to the name of the last
    hypothesis of the context *)
 (* arnaud: statut ?*)
@@ -129,6 +136,13 @@ val apply_with_ebindings_gen :
 (* [cut] tactic *)
 val cut : Term.constr Goal.sensitive -> unit tactic
 
+(*** remettre dans clenvtac ? ***)
+val clenv_refine : bool -> Clenv.clausenv -> Goal.proof_step Goal.sensitive
+val res_pf : ?with_evars:bool ->
+             ?allow_K:bool ->
+             ?flags:Unification.unify_flags ->
+             Clenv.clausenv -> 
+             Goal.proof_step Goal.sensitive
 
 type simple_tactic =
   | Intro of identifier
