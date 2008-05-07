@@ -604,6 +604,87 @@ let convert_concl check cl' envv rdefs gl info =
   else
     Util.error "convert-concl rule passed non-converting term"
 
+(* Auxiliary functions for primitive MOVE tactic
+ *
+ * [move_after with_dep toleft (left,(hfrom,typfrom),right) hto] moves
+ * hyp [hfrom] just after the hyp [hto] which belongs to the hyps on the 
+ * left side [left] of the full signature if [toleft=true] or to the hyps 
+ * on the right side [right] if [toleft=false].
+ * If [with_dep] then dependent hypotheses are moved accordingly. *)
+
+let split_sign hfrom hto l =
+  let rec splitrec left toleft = function
+    | [] -> Util.error ("No such hypothesis : " ^ (Names.string_of_id hfrom))
+    | (hyp,c,typ) as d :: right ->
+      	if hyp = hfrom then 
+	  (left,right,d,toleft) 
+      	else 
+	  splitrec (d::left) (toleft or (hyp = hto)) right
+  in 
+    splitrec [] false l
+
+
+let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
+  (* arnaud: Global.env ?? *)
+  let env = Global.env() in
+  let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
+    if toleft
+    then Termops.occur_var_in_decl env hyp2 d
+    else Termops.occur_var_in_decl env hyp d2
+  in
+  let rec moverec first middle = function
+    | [] -> Util.error ("No such hypothesis : " ^ (Names.string_of_id hto))
+    | (hyp,_,_) as d :: right ->
+	let (first',middle') =
+      	  if List.exists (test_dep d) middle then 
+	    if with_dep & (hyp <> hto) then 
+	      (first, d::middle)
+            else 
+	      Util.error 
+		("Cannot move "^(Names.string_of_id idfrom)^" after "
+		 ^(Names.string_of_id hto)
+		 ^(if toleft then ": it occurs in " else ": it depends on ")
+		 ^(Names.string_of_id hyp))
+          else 
+	    (d::first, middle)
+	in
+      	if hyp = hto then 
+	  (List.rev first')@(List.rev middle')@right
+      	else 
+	  moverec first' middle' right
+  in
+  if toleft then 
+    let right = 
+      List.fold_right Environ.push_named_context_val right Environ.empty_named_context_val in
+    List.fold_left (fun sign d -> Environ.push_named_context_val d sign)
+      right (moverec [] [declfrom] left) 
+  else 
+    let right = 
+      List.fold_right Environ.push_named_context_val
+	(moverec [] [declfrom] right) Environ.empty_named_context_val in
+    List.fold_left (fun sign d -> Environ.push_named_context_val d sign)
+      right left
+
+(* arnaud: à commenter *)
+let move_hyp withdep hfrom hto env rdefs gl info =
+  let sign = info.Evd.evar_hyps in
+  let (left,right,declfrom,toleft) = 
+    split_sign hfrom hto (Environ.named_context_of_val sign) 
+  in
+  let hyps' = 
+    move_after withdep toleft (left,declfrom,right) hto 
+  in
+  let env' = Environ.reset_with_named_context hyps' env in
+  let cl = info.Evd.evar_concl in
+  let new_constr = Evarutil.e_new_evar rdefs env' cl in
+  let (new_evar,_) = Term.destEvar new_constr in
+  let new_goal = descendent gl new_evar in
+  rdefs := Evd.evar_define gl.content new_constr !rdefs;
+  { subgoals = [new_goal] ;
+    new_defs = !rdefs
+  }
+
+
 (*** Tag related things ***)
 
 (* The [Goal.freeze] primitive is the main component of the tactic monad's

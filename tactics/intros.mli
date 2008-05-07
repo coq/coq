@@ -39,6 +39,7 @@ val intro_gen : intro_name_flag Goal.sensitive ->
                 unit Proofview.tactic
 
 val intro : unit Proofview.tactic
+val introf : unit Proofview.tactic
 val intros : unit Proofview.tactic
 
 (* arnaud: à virer ?
@@ -49,5 +50,11 @@ val intros_until_id : Names.identifier Goal.sensitive -> unit Proofview.tactic
 val intros_until_n : int Goal.sensitive -> unit Proofview.tactic
 
 
-val intros_rmove : unit -> unit Proofview.tactic
-val intros_move  : unit -> unit Proofview.tactic
+val intros_rmove : (Names.identifier  * 
+		      Names.identifier option) list Goal.sensitive -> 
+                    unit Proofview.tactic
+
+(* arnaud: pas sûr que ce "'a" soit désirable. N'était pas dehors
+   dans la version originale de tactics.ml{,i}. *)
+val intros_move  : (Names.identifier * 'a option) list Goal.sensitive -> 
+                   unit Proofview.tactic

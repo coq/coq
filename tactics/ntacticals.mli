@@ -91,8 +91,11 @@ val simple_clause_list_of : clause Goal.sensitive -> simple_clause list Goal.sen
 
 val pf_matches : constr_pattern Goal.sensitive -> constr Goal.sensitive -> patvar_map Goal.sensitive
 val pf_is_matching : constr_pattern Goal.sensitive -> constr Goal.sensitive -> bool Goal.sensitive
+*)
 
-val afterHyp   : identifier Goal.sensitive -> named_context Goal.sensitive
+val afterHyp   : identifier -> named_context Goal.sensitive
+
+(*
 val lastHyp    : identifier Goal.sensitive
 val nLastHyps  : int Goal.sensitive -> named_context Goal.sensitive
 

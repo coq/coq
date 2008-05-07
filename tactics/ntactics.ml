@@ -781,7 +781,7 @@ let last_arg c = match kind_of_term c with
       array_last cl
   | _ -> anomaly "last_arg"
 	
-let elimination_clause_scheme with_evars allow_K elimclause indclause gl = 
+let elimination_clause_scheme with_evars allow_K elimclause indclause = 
   let indmv = 
     (match kind_of_term (last_arg elimclause.templval.rebus) with
        | Meta mv -> mv
@@ -789,7 +789,7 @@ let elimination_clause_scheme with_evars allow_K elimclause indclause gl =
              (str "The type of elimination clause is not well-formed")) 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause in 
-  res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K gl
+  Goal.return (res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K)
 
 (* cast added otherwise tactics Case (n1,n2) generates (?f x y) and 
  * refine fails *)
@@ -979,36 +979,33 @@ let rec explicit_intro_names = function
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
-let rec intros_patterns avoid thin destopt = 
-  Util.anomaly "Ntactics.intros_patterns: à restaurer"
-  (* arnaud: à restaurer: function
+let rec intros_patterns avoid thin destopt = function
   | IntroWildcard :: l ->
       Logic.tclTHEN 
-        (Intros.intro_gen (Intros.IntroAvoid (avoid@explicit_intro_names l)) None true)
-        (onLastHyp (fun id ->
+        (Intros.intro_gen (Goal.return (Intros.IntroAvoid (avoid@explicit_intro_names l))) Goal.sNone Goal.strue)
+        (Logic.onLastHyp (fun id ->
 	  Logic.tclORELSE
-	    (Logic.tclTHEN (clear [id]) (intros_patterns avoid thin destopt l))
+	    (Logic.tclTHEN (clear (Goal.sensitive_list [id])) (intros_patterns avoid thin destopt l))
 	    (intros_patterns avoid (id::thin) destopt l)))
   | IntroIdentifier id :: l ->
       Logic.tclTHEN
-        (intro_gen (IntroMustBe id) destopt true)
+        (Intros.intro_gen (Goal.return (Intros.IntroMustBe id)) destopt Goal.strue)
         (intros_patterns avoid thin destopt l)
   | IntroAnonymous :: l ->
       Logic.tclTHEN
-        (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) destopt true)
+        (Intros.intro_gen (Goal.return (Intros.IntroAvoid (avoid@explicit_intro_names l))) destopt Goal.strue)
         (intros_patterns avoid thin destopt l)
   | IntroFresh id :: l ->
       Logic.tclTHEN
-        (intro_gen (IntroBasedOn (id, avoid@explicit_intro_names l)) destopt true)
+        (Intros.intro_gen (Goal.return (Intros.IntroBasedOn (id, avoid@explicit_intro_names l))) destopt Goal.strue)
         (intros_patterns avoid thin destopt l)
   | IntroOrAndPattern ll :: l' ->
       Logic.tclTHEN
-        introf
+        Intros.introf
         (Logic.tclTHENS
 	  (Logic.tclTHEN case_last clear_last)
 	  (List.map (fun l -> intros_patterns avoid thin destopt (l@l')) ll))
-  | [] -> clear thin
-  *)
+  | [] -> clear (Goal.sensitive_list thin)
 
 let intros_pattern = intros_patterns [] []
 
@@ -1016,7 +1013,7 @@ let intro_pattern destopt pat = intros_patterns [] [] destopt [pat]
 
 let intro_patterns = function 
   | [] -> Logic.tclREPEAT Intros.intro
-  | l  -> intros_pattern None l
+  | l  -> intros_pattern Goal.sNone l
 
 (**************************)
 (*   Other cut tactics    *)
@@ -1038,7 +1035,7 @@ let prepare_intros s ipat gl = match ipat with
   | IntroOrAndPattern ll -> make_id s , 
     (Logic.tclTHENS 
       (Logic.tclTHEN case_last clear_last)
-      (List.map (intros_pattern None) ll))
+      (List.map (intros_pattern Goal.sNone) ll))
 
 let ipat_of_name = function
   | Anonymous -> IntroAnonymous
@@ -1299,22 +1296,26 @@ let forward usetac ipat c =
 (* The two following functions should already exist, but found nowhere *)
 (* Unfolds x by its definition everywhere *)
 let unfold_body x =
-  Util.anomaly "Ntactics.unfold_body: à restaurer"
-  (* arnaud: à restaurer
-  let hyps = pf_hyps gl in
+Proofview.sensitive_tactic begin
+  Goal.hyps >>= fun hyps ->
+  let hyps = Environ.named_context_of_val hyps in
   let xval =
     match Sign.lookup_named x hyps with
         (_,Some xval,_) -> xval
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis") in
-  let aft = afterHyp x gl in
+  Ntacticals.afterHyp x >>= fun aft ->
   let hl = List.fold_right (fun (y,yval,_) cl -> (([],y),InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
-  tclTHENLIST
-    [tclMAP (fun h -> reduct_in_hyp rfun h) hl;
-     reduct_in_concl (rfun,DEFAULTcast)] gl
-  *)
+  Goal.return (
+    Logic.tclTHENLIST
+      [Proofview.tclIGNORE 
+	 (Ntacticals.tclMAP (fun h -> reduct_in_hyp rfun h) hl);
+       Proofview.tactic_of_sensitive_proof_step
+         (reduct_in_concl (rfun,DEFAULTcast))]
+  )
+end
 
 (* Unfolds x by its definition everywhere and clear x. This may raise
    an error if x is not defined. *)
@@ -1389,11 +1390,12 @@ let consume_pattern avoid id =
   *)
 
 let re_intro_dependent_hypotheses tophyp (lstatus,rstatus) =
+  (* arnaud: mieux faire le sensitive de ce fichier. *)
   let newlstatus = (* if some IH has taken place at the top of hyps *)
     List.map (function (hyp,None) -> (hyp,tophyp) | x -> x) lstatus in
   Logic.tclTHEN
-    (intros_rmove rstatus)
-    (intros_move newlstatus)
+    (Intros.intros_rmove (Goal.return rstatus))
+    (Intros.intros_move (Goal.return newlstatus))
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
@@ -1415,7 +1417,7 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names =
         let tophyp = if tophyp=None then first_name_buggy hyprec else tophyp in
         Logic.tclTHENLIST
 	  [ intros_patterns avoid [] destopt [recpat];
-	    intros_patterns avoid [] None [hyprec];
+	    intros_patterns avoid [] Goal.sNone [hyprec];
 	    peel_tac ra' names tophyp]
     | (IndArg,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
@@ -1711,18 +1713,20 @@ let empty_scheme =
 
 (* Unification between ((elimc:elimt) ?i ?j ?k ?l ... ?m) and the
    hypothesis on which the induction is made *)
-let induction_tac with_evars (varname,lbind) typ scheme =
-  Util.anomaly "Tactics.induction_tac: à restaurer"
-  (* arnaud: à restaurer
+let induction_proof_step with_evars (varname,lbind) typ scheme =
   let elimc,lbindelimc = 
     match scheme.elimc with | Some x -> x | None -> error "No definition of the principle" in
   let elimt = scheme.elimt in
-  let indclause = make_clenv_binding gl (mkVar varname,typ) lbind  in
-  let elimclause =
-    make_clenv_binding gl 
-      (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc in
-  elimination_clause_scheme with_evars true elimclause indclause gl
-  *)
+  make_clenv_binding (mkVar varname,typ) lbind  >>= fun indclause ->
+  make_clenv_binding 
+    (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc 
+                                                >>= fun elimclause ->
+  elimination_clause_scheme with_evars true elimclause indclause
+
+let induction_tac with_evars vl typ scheme =
+  Proofview.tactic_of_sensitive_proof_step (
+    induction_proof_step with_evars vl typ scheme
+  )
 
 let make_base n id =
   if n=0 or n=1 then id
@@ -2340,7 +2344,8 @@ Proofview.sensitive_tactic begin
              Logic.tclTRY (thin (Goal.return (List.rev (indhyps))));
 	   ])
 	  (array_map2 
-	     (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
+	     (induct_discharge statlists (Goal.return lhyp0)
+			       (List.rev dephyps)) indsign names)
       ]
   end
 end
@@ -2388,7 +2393,7 @@ Proofview.sensitive_tactic begin
 	    Logic.tclTHEN (Logic.tclTRY (unfold_body hyp0)) (thin (Goal.return [hyp0]));
             Logic.tclTRY (thin (Goal.return indhyps)) ])
        	(array_map2
-	   (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
+	   (induct_discharge statlists (Goal.return lhyp0) (List.rev dephyps)) indsign names)
     ]
   end
 end

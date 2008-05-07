@@ -92,6 +92,12 @@ val convert_hyp : bool -> Term.named_declaration -> proof_step sensitive
    Checks convertibility if the boolean argument is true. *)
 val convert_concl : bool -> Term.constr -> proof_step sensitive
 
+(* arnaud: commenter. *)
+val move_hyp : bool -> 
+               Names.identifier -> 
+               Names.identifier -> 
+               proof_step sensitive
+
 (*** Sensitive expressions & Tacticals ***)
 
 

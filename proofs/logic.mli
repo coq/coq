@@ -101,6 +101,12 @@ val convert_concl : bool ->
 val convert_hyp : bool ->
                   Term.named_declaration Goal.sensitive ->
                   unit tactic
+
+(* [move] tactic *)
+val move_hyp : bool ->
+               Names.identifier Goal.sensitive ->
+               Names.identifier Goal.sensitive ->
+               unit tactic
          
 
 (*** remettre dans [tactics] ?***)

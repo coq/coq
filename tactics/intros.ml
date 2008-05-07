@@ -54,7 +54,7 @@ let find_name decl = function
       (* this case must be compatible with [find_intro_names] below. *)
       Goal.env >>= fun env ->
       Goal.defs >>= fun defs ->
-      let sigma = Evd.evars_of defs in
+      (* arnaud: pourquoi est-ce là ? let sigma = Evd.evars_of defs in*)
       default_id decl >>= fun id ->
       Logic.fresh_id idl id
   | IntroBasedOn (id,idl) -> Logic.fresh_id idl id
@@ -266,12 +266,17 @@ let try_intros_until tac =
   | Rawterm.AnonHyp n -> Proofview.tclTHEN (intros_until_n n) (Logic.onLastHyp tac)
   *)
 
-let rec intros_move = function
+let rec intros_move_gen = function
   | [] -> Proofview.id ()
   | (hyp,destopt) :: rest ->
-      Proofview.tclTHEN (intro_gen (Goal.return (IntroMustBe hyp)) destopt Goal.sfalse)
-	               (intros_move rest)
+      Proofview.tclTHEN (intro_gen (Goal.return (IntroMustBe hyp)) (Goal.return destopt) Goal.sfalse)
+	               (intros_move_gen rest)
 
+let intros_move l =
+  Proofview.sensitive_tactic (
+    l >>= fun l -> 
+    Goal.return (intros_move_gen l)
+  )
 
 let move_to_rhyp rhyp =
   Proofview.sensitive_tactic begin
@@ -295,15 +300,15 @@ let move_to_rhyp rhyp =
   let (hyp,c,typ as decl) = List.hd sign in
   get_lhyp None [decl] (List.tl sign) >>= function
     | None -> Goal.return (Proofview.id ())
-    | Some hypto -> Goal.return (move_hyp true hyp hypto)
+    | Some hypto -> Goal.return (Logic.move_hyp true (Goal.return hyp) (Goal.return hypto))
   end
 
 let rec intros_rmove_gen = function
   | [] -> Proofview.id ()
   | (hyp,destopt) :: rest ->
-      Logic.tclTHENLIST [ Logic.intro hyp;
+      Logic.tclTHENLIST [ Logic.intro (Goal.return hyp);
  			  move_to_rhyp destopt;
-			  intros_rmove rest ]
+			  intros_rmove_gen rest ]
 let intros_rmove l =
   Proofview.sensitive_tactic (
     l >>= fun l ->

@@ -236,6 +236,14 @@ let convert_hyp check d =
     Goal.convert_hyp check d
   )
 
+(* [move] tactic *)
+let move_hyp withdep hfrom hto =
+  Proofview.tactic_of_sensitive_proof_step (
+    hfrom >>= fun hfrom ->
+    hto   >>= fun hto ->
+    Goal.move_hyp withdep hfrom hto
+  )
+
 (*** arnaud: remettre dans tactics.ml ? ***)
 
 

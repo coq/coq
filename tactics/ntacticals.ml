@@ -220,14 +220,17 @@ let onCL cfind cltac gl = cltac (cfind gl) gl
 
 let onHyps find tac gl = tac (find gl) gl
 
-
+*)
 
 (* Create a clause list with all the hypotheses from the context, occuring
    after id *)
 
-let afterHyp id gl =
-  fst (list_splitby (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
-    
+let afterHyp id =
+  Goal.hyps >>= fun hyps ->
+  let sign = Environ.named_context_of_val hyps in
+  Goal.return (fst (list_splitby (fun (hyp,_,_) -> hyp = id) sign))
+  
+(*  
 
 (* Create a singleton clause list with the last hypothesis from then context *)
 
