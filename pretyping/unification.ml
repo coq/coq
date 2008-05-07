@@ -247,8 +247,7 @@ let w_merge env with_types mod_delta metas evars evd =
 		let rhs' = 
 		  if occur_meta rhs then subst_meta metas rhs else rhs 
 		in
-		if occur_evar evn rhs' then
-                  error "w_merge: recursive equation";
+		if occur_evar evn rhs' then error "recursive equation";
                 match krhs with
 		  | App (f,cl) when is_mimick_head f ->
 		      (try 
