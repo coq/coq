@@ -890,6 +890,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|EXECUTEEXTENSION|$EXE|" \
     -e "s|BYTECAMLC|$bytecamlc|" \
     -e "s|NATIVECAMLC|$nativecamlc|" \
+    -e "s|OCAMLEXEC|$ocamlexec|" \
     -e "s|OCAMLDEPEXEC|$ocamldepexec|" \
     -e "s|OCAMLDOCEXEC|$ocamldocexec|" \
     -e "s|OCAMLLEXEXEC|$ocamllexexec|" \

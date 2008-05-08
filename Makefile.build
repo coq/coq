@@ -523,11 +523,8 @@ theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | 
 	$(HIDE)rm -f theories/Init/$*.glob
 	$(HIDE)$(BOOTCOQTOP) -dump-glob theories/Init/$*.glob -nois -compile theories/Init/$*
 
-theories/Numbers/Natural/BigN/genN: theories/Numbers/Natural/BigN/genN.ml
-	$(OCAMLC) -o $@ $<
-
-theories/Numbers/Natural/BigN/NMake.v: theories/Numbers/Natural/BigN/genN
-	$< > $@
+theories/Numbers/Natural/BigN/NMake.v: theories/Numbers/Natural/BigN/NMake_gen.ml
+	$(OCAML) $< > $@
 
 ###########################################################################
 # tools
@@ -853,7 +850,7 @@ endif
 	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
-%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP)
+%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
 	$(HIDE)$(COQDEP) -glob -slash -boot $(COQINCLUDES) "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )

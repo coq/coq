@@ -33,7 +33,8 @@ export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
   scripts/tolink.ml kernel/copcodes.ml
 export GENMLIFILES:=$(YACCFILES:.mly=.mli)
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
-export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
+export GENVFILES:=theories/Numbers/Natural/BigN/NMake.v
+export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES)
 export MLFILES  := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml'  ')' $(FIND_PRINTF_P) | \
   while read f; do if ! [ -e "$${f}4" ]; then echo "$$f"; fi; done) \
   $(GENMLFILES)
@@ -154,7 +155,6 @@ indepclean:
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 	rm -f glob.dump
 	rm -f revision
-	rm -f theories/Numbers/Natural/BigN/NMake.v
 
 docclean:
 	rm -f doc/*/*.dvi doc/*/*.aux doc/*/*.log doc/*/*.bbl doc/*/*.blg doc/*/*.toc \
@@ -180,7 +180,6 @@ archclean: clean-ide cleantheories
 	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' | xargs rm -f
 	rm -f $(TOOLS)
 	rm -f $(MINICOQ)
-	rm -f theories/Numbers/Natural/BigN/genN
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
