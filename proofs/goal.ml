@@ -446,18 +446,28 @@ and main_process_apply_case_metas ot ty env rdefs goal info =
 		       my_evars = o' }
 	in
 	( new_ot , ty')
-  | Case (_,p,c,lf) ->
-      Util.anomaly "Goal.main_process_evars: Case: à restaurer"
-      (* arnaud: à restaurer
-      let (acc',lbrty,conclty') = process_case_metas sigma goal goalacc p c in
-      check_conv_leq_goal env sigma trm conclty' conclty;
-      let acc'' = 
-	array_fold_left2
-          (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
-          acc' lbrty lf 
+  | Case (k,p,c,lf) ->
+      let (ip,ic,evars,lbrty,ty') = 
+	process_case_metas ot.my_evars p c env rdefs goal info
       in
-      (acc'',conclty')
-      *)
+      (* arnaud: original: check_conv_leq_goal env sigma trm conclty' conclty; *)
+      if not (Reductionops.is_conv_leq env (Evd.evars_of !rdefs) ty ty') then
+	Util.anomaly "Goal.main_process_metas: mettre une vrai erreur(4)"
+      else
+	let (ilf,new_evars) = 
+	  Util.array_fold_right2
+            (fun ty fi (l,evars) -> 
+	       let { me = me ; my_evars = new_evars } = 
+		 fst (main_process_apply_case_metas {me=fi;my_evars=evars} ty
+			                             env rdefs goal info) 
+	       in
+		 (me::l,new_evars)
+	    )
+	    lbrty lf ([] , evars)
+	in
+	({ me = Term.mkCase(k,ic,ip,Array.of_list ilf) ; 
+	   my_evars = new_evars } ,
+	   ty')
   | _ -> 
       if Termops.occur_meta ot.me then 
 	Util.anomaly "Goal.main_process_metas: mettre une vrai erreur (4)"(*arnaud:original :raise (RefinerError (OccurMeta trm));*)
@@ -517,21 +527,46 @@ and process_head_metas ot env rdefs goal info =
 	in
 	( new_ot , ty')
 
-    | Case (_,p,c,lf) ->
-	Util.anomaly "Goal.process_head_metas: Case: à restaurer"
-	(* arnaud: à restaurer:
-	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
-	let acc'' = 
-	  array_fold_left2
-            (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
-            acc' lbrty lf 
+    | Case (k,p,c,lf) ->
+	let (ip,ic,evars,lbrty,ty') = 
+	  process_case_metas ot.my_evars p c env rdefs goal info 
 	in
-	(acc'',conclty')
-	*)
-
+	let (ilf,new_evars) = 
+	  Util.array_fold_right2
+            (fun ty fi (l,evars) -> 
+	       let { me = me ; my_evars = new_evars } = 
+		 fst (main_process_apply_case_metas {me=fi;my_evars=evars} ty
+			                             env rdefs goal info) 
+	       in
+		 (me::l,new_evars)
+	    )
+	    lbrty lf ([] , evars)
+	in
+	({ me = Term.mkCase(k,ic,ip,Array.of_list ilf) ; 
+	   my_evars = new_evars } ,
+	   ty')
     | _ -> ot, 
         let sigma = Evd.evars_of !rdefs in
 	Retyping.get_type_of env sigma (ot.me)(* arnaud: original: goal_type_of env sigma trm *)
+
+and process_case_metas es p c env rdefs goal info =
+  let oc = { me = c ; my_evars = es } in
+  let { me = ic; my_evars = es } , ct = 
+    process_head_metas oc env rdefs goal info 
+  in 
+  let op = { me = p ; my_evars = es } in
+  let { me = ip; my_evars = es } , pt = 
+    process_head_metas op env rdefs goal info 
+  in
+  let pj = {Environ.uj_val=p; Environ.uj_type=pt} in 
+  let indspec =
+    try Inductiveops.find_mrectype env (Evd.evars_of !rdefs) ct
+    with Not_found -> 
+      Util.anomaly "Goal.process_case_metas: the impossible happened" 
+  in
+  let (lbrty,conclty) =
+    Inductiveops.type_case_branches_with_names env indspec pj c in
+  (ip,ic,es,lbrty,conclty)
 
 
 and process_arg_metas l acc funty env rdefs goal info =
