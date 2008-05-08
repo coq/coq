@@ -28,14 +28,20 @@ let rec gen2 n = if n == 0 then "1" else if n == 1 then "2"
 let rec genxO n s = 
   if n == 0 then s else " (xO" ^ (genxO (n - 1) s) ^ ")"
 
+(* NB: in ocaml >= 3.10, we could use Printf.ifprintf for printing to 
+   /dev/null, but for being compatible with earlier ocaml and not 
+   relying on system-dependent stuff like open_out "/dev/null", 
+   let's use instead a magical hack *)
+
 (* Standard printer, with a final newline *)
 let pr s = Printf.printf (s^^"\n")
-(* /dev/null printer *)
-let pn s = Printf.ifprintf stdout s
+(* Printing to /dev/null *)
+let pn = (fun s -> Obj.magic (fun _ _ _ _ _ _ _ _ _ _ _ _ _ _ -> ()) 
+	  : ('a, out_channel, unit) format -> 'a)
 (* Proof printer : prints iff gen_proof is true *)
 let pp = if gen_proof then pr else pn
 (* Printer for admitted parts : prints iff gen_proof is false *)
-let pa = if gen_proof then pn else pr
+let pa = if not gen_proof then pr else pn
 (* Same as before, but without the final newline *)
 let pr0 = Printf.printf
 let pp0 = if gen_proof then pr0 else pn
