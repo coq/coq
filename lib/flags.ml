@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 open Util
 
@@ -108,21 +108,20 @@ let boxed_definitions _ = !boxed_definitions
  
 (* Flags.for external tools *)
 
+let subst_command_placeholder s t =
+  let buff = Buffer.create (String.length s + String.length t) in
+  for i = 0 to String.length s - 2 do
+    if s.[i] = '%' & s.[i+1] = 's' then Buffer.add_string buff t
+    else Buffer.add_char buff s.[i]
+  done;
+  Buffer.contents buff
+
 let browser_cmd_fmt =
  try
   let coq_netscape_remote_var = "COQREMOTEBROWSER" in
-  let coq_netscape_remote = Sys.getenv coq_netscape_remote_var in
-  let i = Util.string_index_from coq_netscape_remote 0 "%s" in
-  let pre = String.sub coq_netscape_remote 0 i in
-  let post = String.sub coq_netscape_remote (i + 2)
-              (String.length coq_netscape_remote - (i + 2)) in
-   if Util.string_string_contains ~where:post ~what:"%s" then
-    error ("The environment variable \"" ^
-           coq_netscape_remote_var ^
-           "\" must contain exactly one placeholder \"%s\".")
-   else pre,post
+  Sys.getenv coq_netscape_remote_var
  with
   Not_found ->
    if Sys.os_type = "Win32"
-   then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE ", ""
-   else "firefox -remote \"OpenURL(", ")\""
+   then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s"
+   else "firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s"
