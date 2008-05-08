@@ -2191,7 +2191,6 @@ let rec xlate_vernac =
 				 List.map reference_to_ct_ID l))
   | VernacImport(_, []) -> assert false
   | VernacProof t -> CT_proof_with(xlate_tactic t)
-  | VernacVar _ -> xlate_error "Grammar vernac obsolete"
   | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)
   | VernacBack _ | VernacBacktrack _ |VernacBackTo _|VernacRestoreState _| VernacWriteState _|

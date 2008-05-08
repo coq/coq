@@ -94,7 +94,8 @@ let rec depends_of_hole_kind hk acc = match hk with
   | Evd.QuestionMark _
   | Evd.CasesType
   | Evd.InternalHole
-  | Evd.GoalEvar        -> acc
+  | Evd.GoalEvar
+  | Evd.ImpossibleCase  -> acc
 
 let depends_of_'a_cast_type depends_of_'a act acc = match act with
   | CastConv (ck, a) -> depends_of_'a a acc
