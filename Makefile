@@ -154,6 +154,7 @@ indepclean:
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 	rm -f glob.dump
 	rm -f revision
+	rm -f theories/Numbers/Natural/BigN/NMake.v
 
 docclean:
 	rm -f doc/*/*.dvi doc/*/*.aux doc/*/*.log doc/*/*.bbl doc/*/*.blg doc/*/*.toc \
@@ -179,6 +180,7 @@ archclean: clean-ide cleantheories
 	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' | xargs rm -f
 	rm -f $(TOOLS)
 	rm -f $(MINICOQ)
+	rm -f theories/Numbers/Natural/BigN/genN
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
