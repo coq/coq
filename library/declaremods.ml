@@ -81,19 +81,26 @@ let openmod_info =
   ref (([],None,None) : mod_bound_id list * module_struct_entry option 
                                           * struct_expr_body option) 
 
+(* The library_cache here is needed to avoid recalculations of
+   substituted modules object during "reloading" of libraries *)
+let library_cache = ref Dirmap.empty
+
 let _ = Summary.declare_summary "MODULE-INFO"
 	  { Summary.freeze_function = (fun () -> 
 					 !modtab_substobjs,
 					 !modtab_objects,
-					 !openmod_info);
-	    Summary.unfreeze_function = (fun (sobjs,objs,info) -> 
+					 !openmod_info,
+					 !library_cache);
+	    Summary.unfreeze_function = (fun (sobjs,objs,info,libcache) -> 
 					   modtab_substobjs := sobjs;
 					   modtab_objects := objs;
-					   openmod_info := info);
+					   openmod_info := info;
+					   library_cache := libcache);
 	    Summary.init_function = (fun () -> 
 				       modtab_substobjs := MPmap.empty;
 				       modtab_objects := MPmap.empty;
-				       openmod_info := ([],None,None));
+				       openmod_info := ([],None,None);
+				       library_cache := Dirmap.empty);
 	    Summary.survive_module = false;
 	    Summary.survive_section = false }
 
@@ -729,18 +736,13 @@ type library_objects =
     mod_self_id * lib_objects * lib_objects
 
 
-(* The library_cache here is needed to avoid recalculations of
-   substituted modules object during "reloading" of libraries *)
-let library_cache = Hashtbl.create 17
-
-
 let register_library dir cenv objs digest =
   let mp = MPfile dir in
   let substobjs, objects =
     try 
       ignore(Global.lookup_module mp);
       (* if it's in the environment, the cached objects should be correct *)
-      Hashtbl.find library_cache dir
+      Dirmap.find dir !library_cache 
     with
 	Not_found ->
 	  if mp <> Global.import cenv digest then
@@ -750,7 +752,7 @@ let register_library dir cenv objs digest =
 	  let substituted = subst_substobjs dir mp substobjs in
 	  let objects = Option.map (fun seg -> seg@keep) substituted in
 	  let modobjs = substobjs, objects in
-	    Hashtbl.add library_cache dir modobjs;
+	    library_cache := Dirmap.add dir modobjs !library_cache;
 	    modobjs
   in
     do_module false "register_library" load_objects 1 dir mp substobjs objects

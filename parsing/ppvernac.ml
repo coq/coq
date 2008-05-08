@@ -468,7 +468,6 @@ let rec pr_vernac = function
   | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose"
   ++ spc()) else spc()  ++ qs s
   | VernacTime v -> str"Time" ++ spc() ++ pr_vernac v
-  | VernacVar id -> pr_lident id
   
   (* Syntax *) 
   | VernacTacticNotation (n,r,e) -> pr_grammar_tactic_rule n ("",r,e)

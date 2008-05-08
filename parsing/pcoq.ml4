@@ -78,18 +78,21 @@ let grammar_delete e pos reinit rls =
 
       (* Caveat: deletion is not the converse of extension: when an
 	 empty level is extended, deletion removes the level instead
-	 of keeping it empty. This has an effect on the empty levels 8
-	 and 99. We didn't find a good solution to this problem
+	 of keeping it empty. This has an effect on the empty levels 8,
+	 99 and 200. We didn't find a good solution to this problem
 	 (e.g. using G.extend to know if the level exists results in a
 	 printed error message as side effect). As a consequence an
-	 extension at 99 or 8 inside a section corrupts the parser. *)
+	 extension at 99 or 8 (and for pattern 200 too) inside a section 
+         corrupts the parser. *)
 
       List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
     (List.rev rls);
   if reinit <> None then
     let lev = match pos with Some (Gramext.Level n) -> n | _ -> assert false in
-    G.extend e (Some (Gramext.After (string_of_int (int_of_string lev + 1))))
-      [Some lev,reinit,[]];
+    let pos =
+      if lev = "200" then Gramext.First 
+      else Gramext.After (string_of_int (int_of_string lev + 1)) in
+    G.extend e (Some pos) [Some lev,reinit,[]];
 
 (* grammar_object is the superclass of all grammar entries *)
 module type Gramobj =
@@ -528,7 +531,7 @@ END
    (to be translated into "constr LEVEL n") 
 
    The boolean is true if the entry was existing _and_ empty; this to
-   circumvent a weakness of camlp5 whose undo mechanism is not the
+   circumvent a weakness of camlp4/camlp5 whose undo mechanism is not the
    converse of the extension mechanism *)
 
 let constr_level = string_of_int
@@ -545,7 +548,7 @@ let default_levels =
    0,Gramext.RightA,false]
 
 let default_pattern_levels =
-  [200,Gramext.RightA,false;
+  [200,Gramext.RightA,true;
    100,Gramext.RightA,false;
    99,Gramext.RightA,true;
    10,Gramext.LeftA,false;

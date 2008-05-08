@@ -21,7 +21,8 @@ val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
 val interp_and_replace : string -> (Util.loc * Vernacexpr.vernac_expr) * string
 
 val is_tactic : Vernacexpr.vernac_expr -> bool
-val is_state_preserving : Vernacexpr.vernac_expr -> bool
+val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool
+val is_vernac_goal_starting_command : Vernacexpr.vernac_expr -> bool
 
 (* type hyp = (identifier * constr option * constr) * string *)
 
@@ -41,7 +42,10 @@ val print_no_goal : unit -> string
 
 val process_exn : exn -> string*(Util.loc option)
 
-type reset_info = NoReset | Reset of Names.identifier * bool ref
+type reset_info =
+  | NoReset
+  | ResetAtDecl of Names.identifier * bool ref 
+  | ResetAtSegmentStart of Names.identifier * bool ref
 
 val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
 val reset_initial : unit -> unit

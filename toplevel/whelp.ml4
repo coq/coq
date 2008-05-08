@@ -175,7 +175,7 @@ let make_string f x = Buffer.reset b; f x; Buffer.contents b
 
 let send_whelp req s =
   let url = make_whelp_request req s in
-  let command = (fst browser_cmd_fmt) ^ url ^ (snd browser_cmd_fmt) in
+  let command = subst_command_placeholder browser_cmd_fmt url in
   let _ = run_command (fun x -> x) print_string command in ()
 
 let whelp_constr req c =

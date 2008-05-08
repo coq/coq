@@ -396,6 +396,7 @@ let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o =
     error "Modules and Module Types are not allowed inside sections";
   match mexpr_ast_o with
     | None ->
+       check_no_pending_proofs ();
        let binders_ast,argsexport =
         List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
@@ -438,6 +439,7 @@ let vernac_declare_module_type id binders_ast mty_ast_o =
   
   match mty_ast_o with
     | None ->
+       check_no_pending_proofs ();
        let binders_ast,argsexport =
         List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
@@ -498,7 +500,10 @@ let vernac_record struc binders sort nameopt cfs =
 
   (* Sections *)
 
-let vernac_begin_section = Lib.open_section
+let vernac_begin_section id =
+  check_no_pending_proofs ();
+  Lib.open_section id
+
 let vernac_end_section = Lib.close_section
 
 let vernac_end_segment id =
@@ -1174,7 +1179,7 @@ let vernac_check_guard () =
 
 let interp c = match c with
   (* Control (done in vernac) *)
-  | (VernacTime _ | VernacVar _ | VernacList _ | VernacLoad _) -> assert false
+  | (VernacTime _ | VernacList _ | VernacLoad _) -> assert false
 
   (* Syntax *)
   | VernacTacticNotation (n,r,e) -> Metasyntax.add_tactic_notation (n,r,e)

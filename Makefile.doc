@@ -198,6 +198,15 @@ doc/RecTutorial/RecTutorial.v.pdf: doc/common/version.tex doc/common/title.tex d
 doc/RecTutorial/RecTutorial.v.html: doc/RecTutorial/RecTutorial.v.tex
 	(cd doc/RecTutorial; hevea -exec xxdate.exe RecTutorial.v)
 
+######################################################################
+# Index file for CoqIDE
+######################################################################
+
+# Not robust, improve...
+ide/index_urls.txt: doc/refman/html/index.html
+	- rm ide/index_url.txt
+	cat doc/refman/html/command-index.html doc/refman/html/tactic-index.html | grep li-itemize | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > ide/index_urls.txt
+
 
 ######################################################################
 # Install all documentation files

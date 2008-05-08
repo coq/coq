@@ -110,6 +110,166 @@ let is_in_proof_mode () =
 let user_error_loc l s =
   raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
 
+type command_attribute =
+    NavigationCommand | QueryCommand | DebugCommand
+  | OtherStatePreservingCommand | GoalStartingCommand
+
+let rec attribute_of_vernac_command = function
+  (* Control *)
+  | VernacTime com -> attribute_of_vernac_command com
+  | VernacList _ -> [] (* unsupported *)
+  | VernacLoad _ -> []
+
+  (* Syntax *)
+  | VernacTacticNotation _ -> []
+  | VernacSyntaxExtension _ -> []
+  | VernacDelimiters _ -> []
+  | VernacBindScope _ -> []
+  | VernacOpenCloseScope _ -> []
+  | VernacArgumentsScope _ -> []
+  | VernacInfix _ -> []
+  | VernacNotation _ -> []
+
+  (* Gallina *)
+  | VernacDefinition (_,_,DefineBody _,_) -> []
+  | VernacDefinition (_,_,ProveBody _,_) -> [GoalStartingCommand]
+  | VernacStartTheoremProof _ -> [GoalStartingCommand]
+  | VernacEndProof _ -> []
+  | VernacExactProof _ -> []
+
+  | VernacAssumption _ -> []
+  | VernacInductive _ -> []
+  | VernacFixpoint _ -> []
+  | VernacCoFixpoint _ -> []
+  | VernacScheme _ -> []
+  | VernacCombinedScheme _ -> []
+
+  (* Modules *)
+  | VernacDeclareModule _ -> []
+  | VernacDefineModule _  -> []
+  | VernacDeclareModuleType _ -> []
+  | VernacInclude _ -> []
+
+  (* Gallina extensions *)
+  | VernacBeginSection _ -> []
+  | VernacEndSegment _ -> []
+  | VernacRecord _ -> []
+  | VernacRequire _ -> []
+  | VernacImport _ -> []
+  | VernacCanonical _ -> []
+  | VernacCoercion _ -> []
+  | VernacIdentityCoercion _ -> []
+
+  (* Type classes *)
+  | VernacClass _ -> []
+  | VernacInstance _ -> []
+  | VernacContext _ -> []
+  | VernacDeclareInstance _ -> []
+
+  (* Solving *)
+  | VernacSolve _ -> []
+  | VernacSolveExistential _ -> []
+
+  (* MMode *)
+  | VernacDeclProof -> []
+  | VernacReturn -> []
+  | VernacProofInstr _ -> []
+
+  (* Auxiliary file and library management *)
+  | VernacRequireFrom _ -> []
+  | VernacAddLoadPath _ -> []
+  | VernacRemoveLoadPath _ -> []
+  | VernacAddMLPath _ -> []
+  | VernacDeclareMLModule _ -> []
+  | VernacChdir _ -> [OtherStatePreservingCommand]
+
+  (* State management *)
+  | VernacWriteState _ -> []
+  | VernacRestoreState _ -> []
+
+  (* Resetting *)
+  | VernacRemoveName _ -> [NavigationCommand]
+  | VernacResetName _ -> [NavigationCommand]
+  | VernacResetInitial -> [NavigationCommand]
+  | VernacBack _ -> [NavigationCommand]
+  | VernacBackTo _ -> [NavigationCommand]
+
+  (* Commands *)
+  | VernacDeclareTacticDefinition _ -> []
+  | VernacHints _ -> []
+  | VernacSyntacticDefinition _ -> []
+  | VernacDeclareImplicits _ -> []
+  | VernacReserve _ -> []
+  | VernacSetOpacity _ -> []
+  | VernacSetOption (Goptions.SecondaryTable ("Ltac","Debug"), _) -> 
+      [DebugCommand]
+  | VernacSetOption _ -> []
+  | VernacUnsetOption _ -> []
+  | VernacRemoveOption _ -> []
+  | VernacAddOption _ -> []
+  | VernacMemOption _ -> [QueryCommand]
+
+  | VernacPrintOption _ -> [QueryCommand]
+  | VernacCheckMayEval _ -> [QueryCommand]
+  | VernacGlobalCheck _ -> [QueryCommand]
+  | VernacPrint _ -> [QueryCommand]
+  | VernacSearch _ -> [QueryCommand]
+  | VernacLocate _ -> [QueryCommand]
+
+  | VernacComments _ -> [OtherStatePreservingCommand]
+  | VernacNop -> [OtherStatePreservingCommand]
+
+  (* Proof management *)
+  | VernacGoal _ -> [GoalStartingCommand]
+
+  | VernacAbort _ -> [NavigationCommand]
+  | VernacAbortAll -> [NavigationCommand]
+  | VernacRestart -> [NavigationCommand]
+  | VernacSuspend -> [NavigationCommand]
+  | VernacResume _ -> [NavigationCommand]
+  | VernacUndo _ -> [NavigationCommand]
+  | VernacUndoTo _ -> [NavigationCommand]
+  | VernacBacktrack _ -> [NavigationCommand]
+
+  | VernacFocus _ -> []
+  | VernacUnfocus -> []
+  | VernacGo _ -> []
+  | VernacShow _ -> [OtherStatePreservingCommand]
+  | VernacCheckGuard -> [OtherStatePreservingCommand]
+  | VernacProof (Tacexpr.TacId []) -> [OtherStatePreservingCommand]
+  | VernacProof _ -> []
+
+  (* Toplevel control *)
+  | VernacToplevelControl _ -> []
+
+  (* Extensions *)
+  | VernacExtend _ -> []
+
+let is_vernac_goal_starting_command com =
+  List.mem GoalStartingCommand (attribute_of_vernac_command com)
+
+let is_vernac_navigation_command com =
+  List.mem NavigationCommand (attribute_of_vernac_command com)
+
+let is_vernac_query_command com =
+  List.mem QueryCommand (attribute_of_vernac_command com)
+
+let is_vernac_debug_command com =
+  List.mem DebugCommand (attribute_of_vernac_command com)
+
+let is_vernac_state_preserving_command com =
+  let attribute = attribute_of_vernac_command com in
+  let b =
+    List.mem OtherStatePreservingCommand attribute or
+    List.mem QueryCommand attribute in
+  if b then prerr_endline "state preserving command found";
+  b
+
+let rec is_tactic = function
+  | VernacSolve _ -> true
+  | VernacTime com -> is_tactic com
+  | _ -> false
+
 let interp verbosely s = 
   prerr_endline "Starting interp...";
   prerr_endline s;
@@ -118,51 +278,20 @@ let interp verbosely s =
   match pe with 
     | None -> assert false
     | Some((loc,vernac) as last) ->
-	match vernac with
-	  | VernacDefinition _  | VernacStartTheoremProof _ 
-	  | VernacBeginSection _ | VernacGoal _
-	  | VernacDefineModule _ | VernacDeclareModuleType _
-	  | VernacDeclareTacticDefinition _
-		when is_in_proof_mode () -> 
-		  user_error_loc loc (str "CoqIDE do not support nested goals")
-	  | VernacSetOption (Goptions.SecondaryTable ("Ltac","Debug"), _) ->
-	      user_error_loc loc (str "Debug mode not available within CoqIDE")
-	  | VernacResetName _
-	  | VernacResetInitial 
-	  | VernacBack _ 
-	  | VernacAbort _ 
-	  | VernacAbortAll
-	  | VernacRestart
-	  | VernacSuspend
-	  | VernacResume _
-	  | VernacUndo _ ->
-	      user_error_loc loc (str "Use CoqIDE navigation instead") 
-	  | _ ->
-	      begin
-		match vernac with
-		  | VernacPrintOption _ 
-		  | VernacCheckMayEval _
-		  | VernacGlobalCheck _
-		  | VernacPrint _
-		  | VernacSearch _ 
-		    -> !flash_info 
-			"Warning: query commands should not be inserted in scripts" 
-		  | VernacDefinition (_,_,DefineBody _,_) 
-		  | VernacInductive _
-		  | VernacFixpoint _
-		  | VernacCoFixpoint _
-		  | VernacEndProof _
-                  | VernacScheme _ 
-		  | VernacExtend("Extraction", _)
-		  | VernacExtend("ExtractionLibrary",_)
-		  | VernacExtend("RecursiveExtractionLibrary",_)
-		    -> Flags.make_silent (not verbosely)
-		  | _ -> ()
-	      end;
-	      Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
-	      Flags.make_silent true;
-	      prerr_endline ("...Done with interp of : "^s);
-	      last
+	if is_vernac_goal_starting_command vernac & is_in_proof_mode () then
+	  user_error_loc loc (str "CoqIDE do not support nested goals");
+	if is_vernac_debug_command vernac then
+	  user_error_loc loc (str "Debug mode not available within CoqIDE");
+	if is_vernac_navigation_command vernac then
+	  user_error_loc loc (str "Use CoqIDE navigation instead");
+	if is_vernac_query_command vernac then 
+	  !flash_info
+	    "Warning: query commands should not be inserted in scripts";
+	Flags.make_silent (not verbosely); (*verbose if in small step forward*)
+	Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
+	Flags.make_silent true;
+	prerr_endline ("...Done with interp of : "^s);
+	last
 
 let interp_and_replace s = 
   let result = interp false s in
@@ -198,11 +327,6 @@ let try_interptac s =
       -> prerr_endline "try_interp: interrupted"; Interrupted
   | Stdpp.Exc_located (_,e) -> prerr_endline ("try_interp: failed ("^(Printexc.to_string e)); Failed
   | e -> Failed	  
-
-let is_tactic = function
-  | VernacSolve _ -> true
-  | _ -> false
-
 
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
@@ -339,20 +463,24 @@ let word_class s =
     SHashtbl.find word_tbl s
   with Not_found -> Normal
 
-type reset_info = NoReset | Reset of Names.identifier * bool ref
+type reset_info =
+  | NoReset
+  | ResetAtDecl of Names.identifier * bool ref 
+  | ResetAtSegmentStart of Names.identifier * bool ref
 
 let compute_reset_info = function 
-  | VernacDefinition (_, (_,id), DefineBody _, _) 
-  | VernacBeginSection (_,id) 
-  | VernacDefineModule (_,(_,id), _, _, _) 
-  | VernacDeclareModule (_,(_,id), _, _)
-  | VernacDeclareModuleType ((_,id), _, _)
+  | VernacBeginSection id 
+  | VernacDefineModule (_,id, _, _, _) 
+  | VernacDeclareModule (_,id, _, _)
+  | VernacDeclareModuleType (id, _, _) ->
+      ResetAtSegmentStart (snd id, ref true)
+  | VernacDefinition (_, (_,id), DefineBody _, _)
   | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
   | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
-      Reset (id, ref true)
+      ResetAtDecl (id, ref true)
   | VernacDefinition (_, (_,id), ProveBody _, _)
   | VernacStartTheoremProof (_, [Some (_,id), _], _, _) ->
-      Reset (id, ref false)
+      ResetAtDecl (id, ref false)
   | _ -> NoReset
 
 let reset_initial () = 
@@ -471,16 +599,6 @@ let make_cases s =
 	  tarr
 	  []
     | _ -> raise Not_found
-
-let is_state_preserving = function
-  | VernacPrint _ | VernacPrintOption _ | VernacGlobalCheck _
-  | VernacCheckMayEval _ | VernacSearch _ | VernacLocate _ 
-  | VernacShow _ | VernacMemOption _ | VernacComments _ 
-  | VernacChdir None | VernacNop -> 
-      prerr_endline "state preserving command found"; true
-  | _ -> 
-      false
-
 
 let current_status () = 
   let path = msg (Libnames.pr_dirpath (Lib.cwd ())) in

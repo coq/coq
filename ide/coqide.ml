@@ -459,7 +459,7 @@ let rec complete input_buffer w (offset:int) =
 	
 let get_current_word () =
   let av = Option.get ((get_current_view ()).analyzed_view) in 
-    match GtkBase.Clipboard.wait_for_text (cb ())#as_clipboard with
+    match (cb ())#text with
       | None -> 
 	  prerr_endline "None selected";
 	  let it = av#get_insert in
@@ -498,19 +498,16 @@ let pop () = try Stack.pop processed_stack with Stack.Empty -> raise (Size 0)
 let top () = try Stack.top processed_stack with Stack.Empty -> raise (Size 0)
 let is_empty () = Stack.is_empty processed_stack
 
-  
 (* push a new Coq phrase *)
 
-let update_on_end_of_proof id =
+let update_on_end_of_proof () =
   let lookup_lemma = function
-    | { ast = _, ( VernacDefinition (_, _, ProveBody _, _)
-	| VernacDeclareTacticDefinition _
-	| VernacStartTheoremProof _) ; 
-	reset_info = Reset (_, r) } -> 
-	if not !r then begin 
+    | { reset_info = ResetAtDecl (_, r) } ->
+	if not !r then begin
 	    prerr_endline "Toggling Reset info to true";
 	    r := true; raise Exit end
 	else begin
+	  (* Hide the Definition done since last started proof *)
 	    prerr_endline "Toggling Changing Reset id"; 
 	    r := false
 	  end
@@ -521,13 +518,9 @@ let update_on_end_of_proof id =
 
 let update_on_end_of_segment id =
   let lookup_section = function 
-    | { ast = _, ( VernacBeginSection id'
-	| VernacDefineModule (_,id',_,_,None)
-	| VernacDeclareModule (_,id',_,_)
-	| VernacDeclareModuleType (id',_,None)); 
-	reset_info = Reset (_, r) } 
-	when id = id' -> raise Exit
-    | { reset_info = Reset (_, r) } -> r := false
+    | { reset_info = ResetAtSegmentStart (id', r) } when id = id' -> raise Exit
+    | { reset_info = ResetAtSegmentStart (_, r) } -> r := false
+    | { reset_info = ResetAtDecl (_, r) } -> r := false
     | _ -> ()
   in
     try Stack.iter lookup_section processed_stack with Exit -> ()
@@ -537,21 +530,26 @@ let push_phrase start_of_phrase_mark end_of_phrase_mark ast =
 	   stop = end_of_phrase_mark;
 	   ast = ast;
 	   reset_info = Coq.compute_reset_info (snd ast)
-	  } 
-  in
-    push x;
+	  } in
+  begin
     match snd ast with
       | VernacEndProof (Proved (_, None)) -> update_on_end_of_proof ()
-      | VernacEndSegment id -> update_on_end_of_segment id
+      | VernacEndSegment (_,id) -> update_on_end_of_segment id
       | _ -> ()
+  end;
+  push x
+
 
 let repush_phrase x =
   let x = { x with reset_info = Coq.compute_reset_info (snd x.ast) } in
-    push x;
+  begin
     match snd x.ast with
       | VernacEndProof (Proved (_, None)) -> update_on_end_of_proof ()
-      | VernacEndSegment id -> update_on_end_of_segment id
+      | VernacEndSegment (_,id) -> update_on_end_of_segment id
       | _ -> ()
+  end;
+  push x
+
 
 (* For electric handlers *)
 exception Found
@@ -1284,13 +1282,10 @@ object(self)
       else begin
 	  let t = pop () in
 	    begin match t.reset_info with
-	      | Reset (id, ({contents=true} as v)) -> v:=false; 
-		  (match snd t.ast with
-		     | VernacBeginSection _ | VernacDefineModule _ 
-		     | VernacDeclareModule _ | VernacDeclareModuleType _
-		     | VernacEndSegment _ 
-		       -> reset_to_mod id
-		     | _ ->  reset_to id)
+	      | ResetAtSegmentStart (id, ({contents=true} as v)) ->
+		  v:=false; reset_to_mod id
+	      | ResetAtDecl (id, ({contents=true} as v)) ->
+		  v:=false; reset_to id
 	      | _ -> synchro ()
 	    end;
 	    interp_last t.ast;
@@ -1388,20 +1383,16 @@ Please restart and report NOW.";
 		      try Pfedit.undo 1; ignore (pop ()); sync update_input () 
 		      with _ -> self#backtrack_to_no_lock start
 		    end
-		| {ast=_,t;reset_info=Reset (id, {contents=true})} ->
+
+		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
 		    ignore (pop ());
-		    (match t with 
-		       | VernacBeginSection _ | VernacDefineModule _ 
-		       | VernacDeclareModule _ | VernacDeclareModuleType _
-		       | VernacEndSegment _
-			 -> reset_to_mod id
-		       | _ ->  reset_to id);
+		    reset_to_mod id;
 		    sync update_input ()
-		| { ast = _, ( VernacStartTheoremProof _ 
-		    | VernacGoal _
-		    | VernacDeclareTacticDefinition _
-		    | VernacDefinition (_,_,ProveBody _,_));
-		    reset_info=Reset(id,{contents=false})} ->
+		| {reset_info=ResetAtDecl (id, {contents=true})} ->
+		    ignore (pop ());
+		    reset_to id;
+		    sync update_input ()
+		| {reset_info=ResetAtDecl (id,{contents=false})} ->
 		    ignore (pop ());
 		    (try 
 			 Pfedit.delete_current_proof () 
@@ -1411,7 +1402,7 @@ Please restart and report NOW.";
 			 raise e
 		       end);
 		    sync update_input ()
-		| { ast = (_, a) } when is_state_preserving a ->
+		| { ast = (_, a) } when is_vernac_state_preserving_command a ->
 		    ignore (pop ());
 		    sync update_input ()
 		| _ -> 
@@ -2418,8 +2409,8 @@ let main files =
 				       | None -> ()
 				       | Some f ->
 					   save_f ();
-					   let l,r = !current.cmd_editor in
-					   let _ = run_command av#insert_message (l ^ (Filename.quote f) ^ r) in
+					   let com = Flags.subst_command_placeholder !current.cmd_editor (Filename.quote f) in
+					   let _ = run_command av#insert_message com in
 					     av#revert)
 			    in
 			    let _ = edit_f#add_separator () in
