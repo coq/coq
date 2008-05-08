@@ -54,12 +54,7 @@ left-inverse to the successor at this point *)
 
 Section CentralInduction.
 
-Variable A : NZ -> Prop.
-
-(* FIXME: declaring "A : predicate NZ" leads to the error during the
-declaration of the morphism below because the "predicate NZ" is not
-recognized as a type of function. Maybe it should do "eval hnf" or
-something like this. The same goes for "relation". *)
+Variable A : predicate NZ.
 
 Hypothesis A_wd : predicate_wd NZeq A.
 
