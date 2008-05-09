@@ -2283,6 +2283,7 @@ let induction_tac_felim with_evars indvars (* (elimc,lbindelimc) elimt *) scheme
    making the "pattern" by hand before calling induction_tac_felim
    FIXME: REUNIF AVEC induction_tac_felim? *)
 let induction_from_context_l isrec with_evars elim_info lid names =
+Util.anomaly "context_l";
 Proofview.sensitive_tactic begin
   let indsign,scheme = elim_info in
   (* number of all args, counting farg and indarg if present. *)
@@ -2379,8 +2380,8 @@ Proofview.sensitive_tactic begin
      hyp0 sont maintenant à la fin et c'est tclTHENFIRSTn qui marche !!! *)
   Goal.return begin
   Logic.tclTHENLIST
-    [ if deps = [] then Proofview.tclIDTAC () else apply_type tmpcl deps_cstr;
-      thin (Goal.return dephyps);
+    [ if deps = [] then Proofview.tclIDTAC () else Util.anomaly "sous-cas interdit pour débuggage(1)"(*apply_type tmpcl deps_cstr*);
+      thin (Goal.return dephyps); 
       (if isrec then Ntacticals.tclTHENFIRSTn else Ntacticals.tclTHENLASTn)
        	(Logic.tclTHENLIST
 	  [ induction_tac with_evars (hyp0,lbind) typ0 scheme;

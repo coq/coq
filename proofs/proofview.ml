@@ -422,7 +422,7 @@ let tclSOLVE t env ps =
 let tclGORELSE t1 t2 env ps =
   try
     t1 env ps
-  with Util.UserError _ ->
+  with Util.UserError _ | Failure _ (*arnaud: faudra rattraper les erreurs mieux que ça :). *)->
     t2 env ps
 
 let tclORELSE t1 t2 =
