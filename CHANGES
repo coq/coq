@@ -105,8 +105,7 @@ Notations, coercions, implicit arguments and type inference
   (DOC TODO?)
 - New options Global and Local to "Implicit Arguments" for section
   surviving or non export outside module.
-- Level "constr" moved from 9 to 8 and notation "[ _ ]" now reserved at level 0
-  (may need to move post-fixed uses of [ ] at level 8). (DOC TODO?)
+- Level "constr" moved from 9 to 8. (DOC TODO?)
 - Structure/Record now printed as Record (unless option Printing All is set).
 - Support for parametric notations defining constants.
 - Insertion of coercions below product types refrains to unfold

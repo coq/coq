@@ -897,6 +897,6 @@ End rings.
 Infix "+" := Pplus : ring_scope.
 Infix "*" := Pmult : ring_scope.
 Notation "- x" := (Popp x) : ring_scope.
-Notation "[ x ]" := (Pvar x) : ring_scope.
+Notation "[ x ]" := (Pvar x) (at level 0) : ring_scope.
 
 Delimit Scope ring_scope with ring.

@@ -19,6 +19,8 @@ Reserved Notation "x -! y" (at level 50, left associativity).
 Reserved Notation "x *! y" (at level 40, left associativity).
 Reserved Notation "-! x" (at level 35, right associativity).
 
+Reserved Notation "[ x ]" (at level 0).
+
 Reserved Notation "x ?== y" (at level 70, no associativity).
 Reserved Notation "x -- y" (at level 50, left associativity).
 Reserved Notation "x ** y" (at level 40, left associativity).

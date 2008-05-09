@@ -82,10 +82,6 @@ Implicit Arguments nil [A].
 Infix "::" := cons (at level 60, right associativity) : list_scope.
 Infix "++" := app (right associativity, at level 60) : list_scope.
 
-Notation "[ ]" := nil : list_scope.
-Notation "[ x ]" := (cons x nil) : list_scope.
-Notation "[ x ; y ; .. ; z ]" := (cons x (cons y .. (cons z nil) .. )) : list_scope.
- 
 Open Scope list_scope.
 
 Delimit Scope list_scope with list.
