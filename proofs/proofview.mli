@@ -101,7 +101,7 @@ val unfocus : focus_context -> proofview -> proofview
      *)
      The tactics seen in Coq's Ltac are (for now at least) only 
      [unit tactic], the return values are kept for the OCaml toolkit.
-     The operation or the monad are [Proofview.id] (which is the 
+     The operation or the monad are [Proofview.tclIDTAC] (which is the 
      "return" of the tactic monad) [Proofview.tclBIND] (which is
      the "bind") and [Proofview.tclTHEN] (which is a specialized
      bind on unit-returning tactics).
@@ -199,7 +199,7 @@ val tclREPEAT : unit tactic -> unit tactic
 
 (* Prototype to the [idtac] tactic, also plays the role of 
    "return" in the tactic monad *)
-val id : 'a -> 'a tactic
+val tclIDTAC : 'a -> 'a tactic
 
 (* Freezes a goal sensitive value to its "current value".
    Its value will be the same inside a goal than inside its 

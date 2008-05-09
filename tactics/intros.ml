@@ -150,7 +150,7 @@ let central_intro = intro_gen
 *)
 
 let rec intros_using = function
-  | []      -> Proofview.id ()
+  | []      -> Proofview.tclIDTAC ()
   | id::l  -> Proofview.tclTHEN (intro_using id) (intros_using l)
 
 let intros = Proofview.tclREPEAT (intro_force Goal.sfalse)
@@ -162,7 +162,7 @@ let intros_replacing ids =
   Util.anomaly "Intro.intros_replacing: à restaurer"
   (* arnaud: à restaurer : il manque intro_replacing apparemment
   let rec introrec = function
-    | [] -> Proofview.id
+    | [] -> Proofview.tclIDTAC
     | id::tl ->
 	(Proofview.tclTHEN (Proofview.tclORELSE (intro_replacing id)
 		    (Proofview.tclORELSE (intro_erasing id)   (* ?? *)
@@ -267,7 +267,7 @@ let try_intros_until tac =
   *)
 
 let rec intros_move_gen = function
-  | [] -> Proofview.id ()
+  | [] -> Proofview.tclIDTAC ()
   | (hyp,destopt) :: rest ->
       Proofview.tclTHEN (intro_gen (Goal.return (IntroMustBe hyp)) (Goal.return destopt) Goal.sfalse)
 	               (intros_move_gen rest)
@@ -299,12 +299,12 @@ let move_to_rhyp rhyp =
   let sign = Environ.named_context_of_val hyps in
   let (hyp,c,typ as decl) = List.hd sign in
   get_lhyp None [decl] (List.tl sign) >>= function
-    | None -> Goal.return (Proofview.id ())
+    | None -> Goal.return (Proofview.tclIDTAC ())
     | Some hypto -> Goal.return (Logic.move_hyp true (Goal.return hyp) (Goal.return hypto))
   end
 
 let rec intros_rmove_gen = function
-  | [] -> Proofview.id ()
+  | [] -> Proofview.tclIDTAC ()
   | (hyp,destopt) :: rest ->
       Logic.tclTHENLIST [ Logic.intro (Goal.return hyp);
  			  move_to_rhyp destopt;

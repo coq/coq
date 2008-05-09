@@ -614,7 +614,7 @@ let (assumption : tactic) = fun gl ->
 let clear ids = (* avant seul dyn_clear n'echouait pas en [] *)
   Logic.clear ids
   (* arnaud: original, probablement le même comportement
-  if ids=[] then Proofview.idtac None else with_check (thin ids)
+  if ids=[] then Proofview.tclIDTACtac None else with_check (thin ids)
   *)
 
 let clear_body = thin_body
@@ -624,7 +624,7 @@ let clear_body = thin_body
  *  true  in the boolean list. *)
 
 let rec intros_clearing_gen = function
-  | []          -> Proofview.id ()
+  | []          -> Proofview.tclIDTAC ()
   | (false::tl) -> Logic.tclTHEN Intros.intro (intros_clearing_gen tl)
   | (true::tl)  ->
       Logic.tclTHENLIST
@@ -729,7 +729,7 @@ let one_constructor i = constructor_tac None i
  *)
 
 let any_constructor tacopt =
-  let t = match tacopt with None -> Proofview.id () | Some t -> t in
+  let t = match tacopt with None -> Proofview.tclIDTAC () | Some t -> t in
   let sensitive_tactic =
     Goal.concl >>= fun concl ->
     Goal.env >>= fun env ->
@@ -1022,10 +1022,10 @@ let make_id s =
   Logic.fresh_id [] (match s with Prop _ -> hid | Type _ -> xid)
 
 let prepare_intros s ipat gl = match ipat with
-  | IntroAnonymous -> make_id s, Proofview.id ()
-  | IntroFresh id -> Logic.fresh_id [] id, Proofview.id ()
+  | IntroAnonymous -> make_id s, Proofview.tclIDTAC ()
+  | IntroFresh id -> Logic.fresh_id [] id, Proofview.tclIDTAC ()
   | IntroWildcard -> let id = make_id s in id, thin (Goal.sensitive_list [id])
-  | IntroIdentifier id -> Goal.return id, Proofview.id ()
+  | IntroIdentifier id -> Goal.return id, Proofview.tclIDTAC ()
   | IntroOrAndPattern ll -> make_id s , 
     (Logic.tclTHENS 
       (Logic.tclTHEN case_last clear_last)
@@ -1040,7 +1040,7 @@ let assert_as first ipat c gl =
   | Sort s ->
       let id,tac = prepare_intros s ipat gl in
       Logic.tclTHENS ((if first then internal_cut else internal_cut_rev) id c)
-	(if first then [Proofview.id (); tac] else [tac; Proofview.id ()])
+	(if first then [Proofview.tclIDTAC (); tac] else [tac; Proofview.tclIDTAC ()])
   | _  -> error "Not a proposition or a type"
 
 let assert_tac first na = assert_as first (ipat_of_name na)
@@ -1497,7 +1497,7 @@ let atomize_param_of_ind (indref,nparams) hyp0 =
 		(fun () -> atomize_one (Goal.return (i-1)) (Goal.return((mkVar x)::avoid)))
 	    )
     else 
-      Goal.return (Proofview.id ())
+      Goal.return (Proofview.tclIDTAC ())
     end
   in
   atomize_one length_argl params
@@ -2324,7 +2324,7 @@ Proofview.sensitive_tactic begin
     Logic.tclTHENLIST
       [ 
 	(* Generalize dependent hyps (but not args) *)
-	if deps = [] then Proofview.id () else apply_type tmpcl deps_cstr;
+	if deps = [] then Proofview.tclIDTAC () else apply_type tmpcl deps_cstr;
 	thin (Goal.return dephyps); (* clear dependent hyps *)
 	(* pattern to make the predicate appear. *)
 	reduce (Pattern (List.map (fun e -> ([],e)) lidcstr)) Ntacticals.onConcl;
@@ -2379,7 +2379,7 @@ Proofview.sensitive_tactic begin
      hyp0 sont maintenant à la fin et c'est tclTHENFIRSTn qui marche !!! *)
   Goal.return begin
   Logic.tclTHENLIST
-    [ if deps = [] then Proofview.id () else apply_type tmpcl deps_cstr;
+    [ if deps = [] then Proofview.tclIDTAC () else apply_type tmpcl deps_cstr;
       thin (Goal.return dephyps);
       (if isrec then Ntacticals.tclTHENFIRSTn else Ntacticals.tclTHENLASTn)
        	(Logic.tclTHENLIST

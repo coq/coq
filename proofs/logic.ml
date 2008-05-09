@@ -149,13 +149,13 @@ let tclIGNORE = Proofview.tclIGNORE
 (* [do n] tactical *)
 let rec tclDO n tac =
   match n with
-  | 0 -> Proofview.id ()
+  | 0 -> Proofview.tclIDTAC ()
   | n when n>0 -> Proofview.tclTHEN tac (tclDO (n-1) tac)
   | _ -> Util.anomaly "Logic.tclDO: fed with a negative number"
   
 (* [try] tactical *)
 let tclTRY tac =
-  Proofview.tclORELSE tac (Proofview.id ())
+  Proofview.tclORELSE tac (Proofview.tclIDTAC ())
 
 (* [first] tactical *)
 let tclFIRST tacs =
@@ -174,7 +174,7 @@ let tclTHENSA tac1 tacs =
   tclTHENS tac1 (Array.to_list tacs)
 
 let rec tclTHENLIST = function
-  | [] -> Proofview.id ()
+  | [] -> Proofview.tclIDTAC ()
   | t::l -> tclTHEN t (tclTHENLIST l)
 
 let tclTHENARRAY tacs =

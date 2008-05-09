@@ -188,7 +188,7 @@ let goals { comb = comb } = comb
      *)
      The tactics seen in Coq's Ltac are (for now at least) only 
      [unit tactic], the return values are kept for the OCaml toolkit.
-     The operation or the monad are [Proofview.id] (which is the 
+     The operation or the monad are [Proofview.tclIDTAC] (which is the 
      "return" of the tactic monad) [Proofview.tclBIND] (which is
      the "bind") and [Proofview.tclTHEN] (which is a specialized
      bind on unit-returning tactics).
@@ -279,7 +279,7 @@ let sensitive_tactic st =
 
 (* Prototype to the [idtac] tactic, also plays the role of 
    "return" in the tactic monad *)
-let id a _ ps =
+let tclIDTAC a _ ps =
   { proof_step = ps; content = a }
 
 (* Internal function to freeze. *)
@@ -435,7 +435,7 @@ let tclORELSE t1 t2 =
    à regarder mais ya des chances que ça ne coûte rien de sortir
    tclREPEAT d'ici donc. *)
 let rec tclREPEAT tac env ps =
-  tclORELSE (tclTHEN tac (tclREPEAT tac)) (id ()) env ps
+  tclORELSE (tclTHEN tac (tclREPEAT tac)) (tclIDTAC ()) env ps
 
 let tclIGNORE tac env ps = 
   { (tac env ps) with content = () }
