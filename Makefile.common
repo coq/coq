@@ -667,11 +667,11 @@ INTEGERBIGZVO:=$(addprefix theories/Numbers/Integer/BigZ/, \
 INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) \
  $(INTEGERTREEMODVO) $(INTEGERBIGZVO)
 
-RATIONALBIGVO:=$(addprefix theories/Numbers/Rational/BigQ/, \
+RATIONALBIGQVO:=$(addprefix theories/Numbers/Rational/BigQ/, \
  QMake_base.vo	QpMake.vo	QvMake.vo	Q0Make.vo 	\
  QifMake.vo 	QbiMake.vo 	BigQ.vo )
 
-RATIONALVO:=$(RATIONALBIGVO)
+RATIONALVO:=$(RATIONALBIGQVO)
 
 NUMBERSVO:= $(NUMBERSCOMMONVO) $(NATURALVO) $(INTEGERVO) $(NATINTVO) $(CYCLICVO) $(RATIONALVO)
 
