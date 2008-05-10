@@ -92,8 +92,8 @@ let _ = set_dflt_gp !std_ft
 let err_ft = ref Format.err_formatter
 let _ = set_gp !err_ft deep_gp
 
-let deep_ft = with_output_to stdout
-let _ = set_gp deep_ft deep_gp
+let deep_ft = ref (with_output_to stdout)
+let _ = set_gp !deep_ft deep_gp
 
 (* For parametrization through vernacular *)
 let default = Format.pp_get_max_boxes !std_ft ()

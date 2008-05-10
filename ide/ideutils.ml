@@ -151,9 +151,13 @@ let set_highlight_timer f =
 let init_stdout,read_stdout,clear_stdout =
   let out_buff = Buffer.create 100 in
   let out_ft = Format.formatter_of_buffer out_buff in
+  let deep_out_ft = Format.formatter_of_buffer out_buff in
+  let _ = Pp_control.set_gp deep_out_ft Pp_control.deep_gp in
   (fun () -> 
     Pp_control.std_ft := out_ft;
-    Pp_control.err_ft := out_ft),
+    Pp_control.err_ft := out_ft;
+    Pp_control.deep_ft := deep_out_ft;
+),
   (fun () -> Format.pp_print_flush out_ft (); 
      let r = Buffer.contents out_buff in
      prerr_endline "Output from Coq is: "; prerr_endline r;

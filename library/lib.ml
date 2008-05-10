@@ -489,15 +489,15 @@ let section_instance = function
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
       KNmap.find kn (snd (pi2 (List.hd !sectab)))
 
-let init () = sectab := []
-let freeze () = !sectab
-let unfreeze s = sectab := s
+let init_sectab () = sectab := []
+let freeze_sectab () = !sectab
+let unfreeze_sectab s = sectab := s
 
 let _ = 
   Summary.declare_summary "section-context"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init;
+    { Summary.freeze_function = freeze_sectab;
+      Summary.unfreeze_function = unfreeze_sectab;
+      Summary.init_function = init_sectab;
       Summary.survive_module = false;
       Summary.survive_section = false }
 

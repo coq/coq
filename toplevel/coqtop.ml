@@ -305,6 +305,7 @@ let parse_args is_ide =
 
 let init is_ide =
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
+  Lib.init();
   begin
     try
       parse_args is_ide;
