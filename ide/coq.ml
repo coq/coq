@@ -112,7 +112,7 @@ let user_error_loc l s =
 
 type command_attribute =
     NavigationCommand | QueryCommand | DebugCommand
-  | OtherStatePreservingCommand | GoalStartingCommand
+  | OtherStatePreservingCommand | GoalStartingCommand | SolveCommand
 
 let rec attribute_of_vernac_command = function
   (* Control *)
@@ -167,8 +167,8 @@ let rec attribute_of_vernac_command = function
   | VernacDeclareInstance _ -> []
 
   (* Solving *)
-  | VernacSolve _ -> []
-  | VernacSolveExistential _ -> []
+  | VernacSolve _ -> [SolveCommand]
+  | VernacSolveExistential _ -> [SolveCommand]
 
   (* MMode *)
   | VernacDeclProof -> []
@@ -243,6 +243,7 @@ let rec attribute_of_vernac_command = function
   | VernacToplevelControl _ -> []
 
   (* Extensions *)
+  | VernacExtend ("Subtac_Obligations", _) -> [GoalStartingCommand]
   | VernacExtend _ -> []
 
 let is_vernac_goal_starting_command com =
@@ -257,18 +258,18 @@ let is_vernac_query_command com =
 let is_vernac_debug_command com =
   List.mem DebugCommand (attribute_of_vernac_command com)
 
+let is_vernac_goal_printing_command com =
+  let attribute = attribute_of_vernac_command com in
+  List.mem GoalStartingCommand attribute or
+  List.mem SolveCommand attribute
+
 let is_vernac_state_preserving_command com =
   let attribute = attribute_of_vernac_command com in
-  let b =
-    List.mem OtherStatePreservingCommand attribute or
-    List.mem QueryCommand attribute in
-  if b then prerr_endline "state preserving command found";
-  b
+  List.mem OtherStatePreservingCommand attribute or
+  List.mem QueryCommand attribute
 
-let rec is_tactic = function
-  | VernacSolve _ -> true
-  | VernacTime com -> is_tactic com
-  | _ -> false
+let is_vernac_tactic_command com =
+  List.mem SolveCommand (attribute_of_vernac_command com)
 
 let interp verbosely s = 
   prerr_endline "Starting interp...";
@@ -287,7 +288,9 @@ let interp verbosely s =
 	if is_vernac_query_command vernac then 
 	  !flash_info
 	    "Warning: query commands should not be inserted in scripts";
-	Flags.make_silent (not verbosely); (*verbose if in small step forward*)
+	if not (is_vernac_goal_printing_command vernac) then
+	  (* Verbose if in small step forward and not a tactic *)
+	  Flags.make_silent (not verbosely);
 	Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
 	Flags.make_silent true;
 	prerr_endline ("...Done with interp of : "^s);

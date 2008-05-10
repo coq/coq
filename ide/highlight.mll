@@ -18,18 +18,15 @@
 
   let comment_start = ref 0
 
-  let is_keyword =
+  (* Without this table, the automaton would be too big and
+     ocamllex would fail *)
+  let is_one_word_command =
     let h = Hashtbl.create 97 in
     List.iter (fun s -> Hashtbl.add h s ())
-      [  "Add" ; "Check"; "Defined" ; 
-	 "End" ; "Eval"; "Export" ; "Extraction" ; "Hint" ; "Hints" ;
-	 "Implicits" ; "Import" ; 
-	 "Infix" ; "Load" ; "Module" ;
-	 "Notation"; "Proof" ; "Print"; "Qed" ;
-	 "Require" ; "Reset"; "Undo"; "Save" ;
-	 "Section" ; "Unset" ;
-	 "Set" ; "Notation";
-	 "Implicit"; "Arguments"; "Unfold"; "Resolve"
+      [  "Add" ; "Check"; "Eval"; "Extraction" ;
+	 "Load" ; "Undo";
+	 "Proof" ; "Print"; "Qed" ; "Defined" ; "Save" ;
+	 "End" ; "Section"
       ];
     Hashtbl.mem h
 
@@ -38,20 +35,31 @@
       List.iter (fun s -> Hashtbl.add h s ())
 	[ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "for"; 
 	  "end"; "as"; "let"; "in"; "dest"; "if"; "then"; "else"; "return";
-	  "Prop"; "Set"; "Type"]; 
+	  "Prop"; "Set"; "Type" ]; 
       Hashtbl.mem h
 
-  let is_declaration =
+  (* Without this table, the automaton would be too big and
+     ocamllex would fail *)
+  let is_one_word_declaration =
     let h = Hashtbl.create 97 in
       List.iter (fun s -> Hashtbl.add h s ())
-	[ "Theorem" ; "Lemma" ; "Fact" ; "Remark" ; "Corollary" ; "Proposition" ; "Property" ;
-	  "Definition" ; "Let" ; "Example" ; "SubClass" ; "Inductive" ; "CoInductive" ; 
-	  "Record" ; "Structure" ; "Fixpoint" ; "CoFixpoint"; 
+	[ (* Theorems *)
+          "Theorem" ; "Lemma" ; "Fact" ; "Remark" ; "Corollary" ;
+	  "Proposition" ; "Property" ;
+          (* Definitions *)
+	  "Definition" ; "Let" ; "Example" ; "SubClass" ;
+          "Fixpoint" ; "CoFixpoint"; 
+          (* Assumptions *)
 	  "Hypothesis" ; "Variable" ; "Axiom" ; "Parameter" ; "Conjecture" ;
-	  "Hypotheses" ; "Variables" ; "Axioms" ; "Parameters"
+	  "Hypotheses" ; "Variables" ; "Axioms" ; "Parameters";
+          (* Inductive *)
+          "Inductive" ; "CoInductive" ; "Record" ; "Structure" ;
+          (* Other *)
+	  "Ltac" ; "Typeclasses"; "Instance"
 	];
       Hashtbl.mem h
 
+  let starting = ref true
 }
 
 let space = 
@@ -62,44 +70,54 @@ let identchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let ident = firstchar identchar*
 
-let thm_token = "Theorem" | "Lemma" | "Fact" | "Remark" | "Corollary" | "Proposition" | "Property"
+let multiword_declaration =
+  "Module" (space+ "Type")
+| "Program" space+ ident
 
-let def_token = "Definition" | "Let" | "Example" | "SubClass"
+let locality = ("Local" space+)?
 
-let assumption = "Hypothesis" | "Variable" | "Axiom" | "Parameter" | "Conjecture" |
-  "Hypotheses" | "Variables" | "Axioms" | "Parameters"
+let multiword_command =
+  "Set" (space+ ident)* 
+| "Unset" (space+ ident)* 
+| "Open" space+ locality "Scope"
+| "Next" space+ "Obligation"
+| "Solve" space+ "Obligations"
+| "Require" space+ ("Import"|"Export")
+| "Infix" space+ locality
+| "Notation" space+ locality
+| "Hint" space+ locality ident
+| "Reset" (space+ "Initial")?
+| "Tactic" space+ "Notation"
 
-let declaration = 
-  "Theorem" | "Lemma" | "Fact" | "Remark" | "Corollary" | "Proposition" | "Property" |
-  "Definition" | "Let" | "Example" | "SubClass" |
-  "Inductive" | "CoInductive" | 
-  "Record" | "Structure" |
-  "Fixpoint" | "CoFixpoint"
-       
+rule next_starting_order = parse
+  | "(*" { comment_start := lexeme_start lexbuf; comment lexbuf }
+  | space+ { next_starting_order lexbuf }
+  | multiword_declaration
+      { starting:=false; lexeme_start lexbuf, lexeme_end lexbuf, "decl" }
+  | multiword_command
+      { starting:=false; lexeme_start lexbuf, lexeme_end lexbuf, "kwd" }
+  | ident as id 
+      { starting:=false; 
+        if is_one_word_command id then 
+	  lexeme_start lexbuf, lexeme_end lexbuf, "kwd" 
+	else if is_one_word_declaration id then
+	  lexeme_start lexbuf, lexeme_end lexbuf, "decl"
+	else
+	  next_interior_order lexbuf
+      }
+  | _    { starting := false; next_interior_order lexbuf}
+  | eof  { raise End_of_file }
 
-rule next_order = parse
+and next_interior_order = parse
   | "(*" 
       { comment_start := lexeme_start lexbuf; comment lexbuf }
-  | "Module Type"
-      { lexeme_start lexbuf, lexeme_end lexbuf, "kwd" }
-  | "Program" space+ ident { lexeme_start lexbuf, lexeme_end lexbuf, "decl" }
   | ident as id 
-      { if is_keyword id then 
-	    lexeme_start lexbuf, lexeme_end lexbuf, "kwd" 
-	else 
-	    begin
-	      if is_constr_kw id then
-		lexeme_start lexbuf, lexeme_end lexbuf, "kwd"
-	      else
-		begin
-		  if is_declaration id then
-		    lexeme_start lexbuf, lexeme_end lexbuf, "decl"
-		  else
-		    next_order lexbuf 
-		end
-	    end
-      }
-  | _    { next_order lexbuf}
+      { if is_constr_kw id then
+	  lexeme_start lexbuf, lexeme_end lexbuf, "kwd"
+        else
+	  next_interior_order lexbuf }
+  | "." (" "|"\n"|"\t") { starting := true; next_starting_order lexbuf }
+  | _    { next_interior_order lexbuf}
   | eof  { raise End_of_file }
 
 and comment = parse
@@ -114,6 +132,7 @@ and comment = parse
   let highlighting = ref false
 
   let highlight_slice (input_buffer:GText.buffer) (start:GText.iter) stop = 
+    starting := true; (* approximation: assume the beginning of a sentence *)
     if !highlighting then prerr_endline "Rejected highlight" 
     else begin
       highlighting := true;
@@ -130,7 +149,10 @@ and comment = parse
 	let lb = Lexing.from_string s in
 	try 
 	  while true do
-	    let b,e,o=next_order lb in
+	    let b,e,o =
+	      if !starting then next_starting_order lb
+	      else next_interior_order lb in
+	    
 	    let b,e = convert_pos b,convert_pos e in
 	    let start = input_buffer#get_iter_at_char (offset + b) in
 	    let stop = input_buffer#get_iter_at_char (offset + e) in
@@ -142,7 +164,7 @@ and comment = parse
       highlighting := false
     end
 
-  let highlight_current_line input_buffer = 
+  let highlight_current_line input_buffer =
     try 
       let i = get_insert input_buffer in
       highlight_slice input_buffer (i#set_line_offset 0) i

@@ -159,7 +159,7 @@ object('self)
   method activate : unit -> unit
   method active_keypress_handler : GdkEvent.Key.t -> bool
   method backtrack_to : GText.iter -> unit
-  method backtrack_to_no_lock : GText.iter -> unit
+  method backtrack_to_no_lock : GText.iter -> Names.identifier list -> unit
   method clear_message : unit
   method deactivate : unit -> unit
   method disconnected_keypress_handler : GdkEvent.Key.t -> bool
@@ -1271,22 +1271,34 @@ object(self)
 	    self#clear_message)();
     Coq.reset_initial ()
 
-
   (* backtrack Coq to the phrase preceding iterator [i] *)
-  method backtrack_to_no_lock i =
+  method backtrack_to_no_lock i oldest_id_to_reset =
     prerr_endline "Backtracking_to iter starts now.";
+    let was_refining = Pfedit.refining () in
     (* re-synchronize Coq to the current state of the stack *)
-    let rec synchro () =
+    let rec synchro oldest_decl_in_middle_of_proof =
       if is_empty () then
 	Coq.reset_initial ()
       else begin
 	  let t = pop () in
 	    begin match t.reset_info with
-	      | ResetAtSegmentStart (id, ({contents=true} as v)) ->
-		  v:=false; reset_to_mod id
-	      | ResetAtDecl (id, ({contents=true} as v)) ->
-		  v:=false; reset_to id
-	      | _ -> synchro ()
+	      | ResetAtSegmentStart (id, {contents=true}) ->
+		  reset_to_mod id
+	      | ResetAtDecl (id, {contents=true}) ->
+		  if was_refining then
+		    (prerr_endline ("Skipping "^Names.string_of_id id);
+		    synchro [id])
+		  else
+		    reset_to (List.hd (oldest_decl_in_middle_of_proof@[id]))
+	      | ResetAtDecl (id, {contents=false}) ->
+		  if was_refining then
+		    (*reset oldest decl found before theorem started, if any*)
+		    List.iter reset_to oldest_decl_in_middle_of_proof
+		  else
+		    (prerr_endline ("Skipping "^Names.string_of_id id);
+		    synchro [id])
+	      | _ ->
+		  synchro oldest_decl_in_middle_of_proof
 	    end;
 	    interp_last t.ast;
 	    repush_phrase t
@@ -1301,9 +1313,12 @@ object(self)
       else
 	let t = top () in 
 	  if i#compare (input_buffer#get_iter_at_mark t.stop) < 0 then begin
+	    prerr_endline "Popped top command";
 	      ignore (pop ());
-	      let undos = if is_tactic (snd t.ast) then add_undo undos else None in
-		pop_commands true undos
+	      let undos =
+		if is_vernac_tactic_command (snd t.ast) then add_undo undos
+		else None in
+	      pop_commands true undos
 	    end else
 	    done_smthg, undos
     in
@@ -1313,8 +1328,8 @@ object(self)
 	begin 
 	  try 
 	    (match undos with 
-	       | None -> synchro () 
-	       | Some n -> try Pfedit.undo n with _ -> synchro ());
+	       | None -> synchro oldest_id_to_reset
+	       | Some n -> try Pfedit.undo n with _ -> synchro oldest_id_to_reset);
             sync (fun _ ->
 		    let start =
 		      if is_empty () then input_buffer#start_iter 
@@ -1342,7 +1357,8 @@ Please restart and report NOW.";
       
   method backtrack_to i = 
     if Mutex.try_lock coq_may_stop then 
-      (!push_info "Undoing...";self#backtrack_to_no_lock i ; Mutex.unlock coq_may_stop;
+      (!push_info "Undoing...";
+       self#backtrack_to_no_lock i []; Mutex.unlock coq_may_stop;
        !pop_info ())
     else prerr_endline "backtrack_to : discarded (lock is busy)"
 
@@ -1381,7 +1397,7 @@ Please restart and report NOW.";
 		| {ast=_, (VernacSolve _ | VernacTime (VernacSolve _))} -> 
 		    begin 
 		      try Pfedit.undo 1; ignore (pop ()); sync update_input () 
-		      with _ -> self#backtrack_to_no_lock start
+		      with _ -> self#backtrack_to_no_lock start []
 		    end
 
 		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
@@ -1389,9 +1405,10 @@ Please restart and report NOW.";
 		    reset_to_mod id;
 		    sync update_input ()
 		| {reset_info=ResetAtDecl (id, {contents=true})} ->
-		    ignore (pop ());
-		    reset_to id;
-		    sync update_input ()
+		    if Pfedit.refining () then
+		      self#backtrack_to_no_lock start [id]
+		    else
+		      (ignore (pop ()); sync update_input ())
 		| {reset_info=ResetAtDecl (id,{contents=false})} ->
 		    ignore (pop ());
 		    (try 
@@ -1406,7 +1423,7 @@ Please restart and report NOW.";
 		    ignore (pop ());
 		    sync update_input ()
 		| _ -> 
-		    self#backtrack_to_no_lock start
+		    self#backtrack_to_no_lock start []
 	      end;
 	with
 	  | Size 0 -> (* !flash_info "Nothing to Undo"*)()
@@ -3468,6 +3485,7 @@ let start () =
 		  else failwith ("Coqide internal error: " ^ msg)));
     Command_windows.main ();
     Blaster_window.main 9;
+    init_stdout ();
     main files;
     if !Coq_config.with_geoproof then ignore (Thread.create check_for_geoproof_input ()); 
     while true do 
@@ -3480,5 +3498,3 @@ let start () =
 	    flush stderr;
 	    crash_save 127
     done
-      
-      

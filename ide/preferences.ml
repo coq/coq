@@ -276,7 +276,7 @@ let load_pref () =
     set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
     current := np;
 (*
-    Format.printf "in laod_pref: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+    Format.printf "in load_pref: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
 *)
   with e -> 
     prerr_endline ("Could not load preferences ("^

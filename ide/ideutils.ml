@@ -148,13 +148,15 @@ let set_highlight_timer f =
 
 
 (* Get back the standard coq out channels *)
-let read_stdout,clear_stdout =
+let init_stdout,read_stdout,clear_stdout =
   let out_buff = Buffer.create 100 in
   let out_ft = Format.formatter_of_buffer out_buff in
+  (fun () -> 
     Pp_control.std_ft := out_ft;
-    Pp_control.err_ft := out_ft;    
+    Pp_control.err_ft := out_ft),
   (fun () -> Format.pp_print_flush out_ft (); 
      let r = Buffer.contents out_buff in
+     prerr_endline "Output from Coq is: "; prerr_endline r;
      Buffer.clear out_buff; r),
   (fun () -> 
      Format.pp_print_flush out_ft (); Buffer.clear out_buff)

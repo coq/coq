@@ -20,7 +20,7 @@ val interp : bool -> string -> Util.loc * Vernacexpr.vernac_expr
 val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
 val interp_and_replace : string -> (Util.loc * Vernacexpr.vernac_expr) * string
 
-val is_tactic : Vernacexpr.vernac_expr -> bool
+val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
 val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool
 val is_vernac_goal_starting_command : Vernacexpr.vernac_expr -> bool
 
