@@ -140,12 +140,12 @@ let print_highlight_location ib loc =
 (* Functions to report located errors in a file. *)
 
 let print_location_in_file s inlibrary fname loc =
-  let errstrm = (str"Error while reading " ++ str s ++ str" :" ++ fnl ()) in
+  let errstrm = (str"Error while reading " ++ str s ++ str":") in
   if loc = dummy_loc then 
     (errstrm ++ str", unknown location." ++ fnl ())
   else
     if inlibrary then
-      (errstrm ++ str"Module " ++ str ("\""^fname^"\"") ++
+      (errstrm ++ fnl () ++ str"Module " ++ str ("\""^fname^"\"") ++
        str" characters " ++ Cerrors.print_loc loc ++ fnl ())
     else
     let (bp,ep) = unloc loc in

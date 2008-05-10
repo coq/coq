@@ -303,15 +303,9 @@ let parse_args is_ide =
       end
     | e -> begin msgnl (Cerrors.explain_exn e); exit 1 end
 
-
-(* To prevent from doing the initialization twice *)
-let initialized = ref false
-
 let init is_ide =
-  if not !initialized then begin
-    initialized := true;
-    Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
-    Lib.init();
+  Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
+  begin
     try
       parse_args is_ide;
       re_exec is_ide;
@@ -328,10 +322,10 @@ let init is_ide =
       load_rcfile();
       load_vernacular ();
       compile_files ();
-      outputstate ();
+      outputstate ()
     with e ->
       flush_all();
-      if not !batch_mode then message "Error during initialization :";
+      if not !batch_mode then message "Error during initialization:";
       msgnl (Toplevel.print_toplevel_error e);
       exit 1
   end;

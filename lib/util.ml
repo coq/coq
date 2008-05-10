@@ -247,14 +247,38 @@ let classify_utf8 unicode =
 
 exception End_of_input
 
+let utf8_of_unicode n =
+  if n < 128 then 
+    String.make 1 (Char.chr n)
+  else if n < 2048 then
+    let s = String.make 2 (Char.chr (128 + n mod 64)) in
+    begin
+      s.[0] <- Char.chr (192 + n / 64);
+      s
+    end
+  else if n < 65536 then
+    let s = String.make 3 (Char.chr (128 + n mod 64)) in
+    begin 
+      s.[1] <- Char.chr (128 + (n / 64) mod 64);
+      s.[0] <- Char.chr (224 + n / 4096); 
+      s
+    end
+  else
+    let s = String.make 4 (Char.chr (128 + n mod 64)) in
+    begin 
+      s.[2] <- Char.chr (128 + (n / 64) mod 64);
+      s.[1] <- Char.chr (128 + (n / 4096) mod 64);
+      s.[0] <- Char.chr (240 + n / 262144);
+      s 
+    end
+
 let next_utf8 s i =
   let err () = invalid_arg "utf8" in
   let l = String.length s - i in
   if l = 0 then raise End_of_input
   else let a = Char.code s.[i] in if a <= 0x7F then
     1, a
-  else if a land 0x40 = 0 then err ()
-  else if l = 1 then err ()
+  else if a land 0x40 = 0 or l = 1 then err ()
   else let b = Char.code s.[i+1] in if b land 0xC0 <> 0x80 then err ()
   else if a land 0x20 = 0 then
     2, (a land 0x1F) lsl 6 + (b land 0x3F)
@@ -292,6 +316,109 @@ let check_ident s =
   | End_of_input -> error "The empty string is not an identifier"
   | UnsupportedUtf8 -> error (s^": unsupported character in utf8 sequence")
   | Invalid_argument _ -> error (s^": invalid utf8 sequence")
+
+let lowercase_utf8 s unicode =
+    match unicode land 0x1F000 with
+    | 0x0 ->
+    begin match unicode with
+    (* utf-8 Basic Latin underscore *)
+    | x when x = 0x005F -> x
+    (* utf-8 Basic Latin letters *)
+    | x when 0x0041 <= x & x <= 0x005A -> x + 32
+    | x when 0x0061 <= x & x <= 0x007A -> x
+    (* utf-8 Latin-1 non breaking space U00A0 *)
+    | 0x00A0 as x -> x
+    (* utf-8 Latin-1 letters U00C0-00D6 *)
+    | x when 0x00C0 <= x & x <= 0x00D6 -> x + 32
+    (* utf-8 Latin-1 letters U00D8-00F6 *)
+    | x when 0x00D8 <= x & x <= 0x00DE -> x + 32
+    | x when 0x00E0 <= x & x <= 0x00F6 -> x
+    (* utf-8 Latin-1 letters U00F8-00FF *)
+    | x when 0x00F8 <= x & x <= 0x00FF -> x
+    (* utf-8 Latin Extended A U0100-017F and Latin Extended B U0180-U0241 *)
+    | x when 0x0100 <= x & x <= 0x017F ->
+	if x mod 2 = 1 then x else x + 1
+    | x when 0x0180 <= x & x <= 0x0241 ->
+	warning ("Unable to decide which lowercase letter to map to "^s); x
+    (* utf-8 Phonetic letters U0250-02AF *)
+    | x when 0x0250 <= x & x <= 0x02AF -> x
+    (* utf-8 what do to with diacritics U0300-U036F ? *)
+    (* utf-8 Greek letters U0380-03FF *)
+    | x when 0x0380 <= x & x <= 0x0385 -> x
+    | 0x0386 -> 0x03AC
+    | x when 0x0388 <= x & x <= 0x038A -> x + 37
+    | 0x038C -> 0x03CC
+    | x when 0x038E <= x & x <= 0x038F -> x + 63
+    | x when 0x0390 <= x & x <= 0x03AB & x <> 0x03A2 -> x + 32
+    | x when 0x03AC <= x & x <= 0x039E ->
+	warning ("Unable to decide which lowercase letter to map to "^s); x
+    (* utf-8 Cyrillic letters U0400-0481 *)
+    | x when 0x0400 <= x & x <= 0x040F -> x + 80
+    | x when 0x0410 <= x & x <= 0x042F -> x + 32
+    | x when 0x0430 <= x & x <= 0x045F -> x 
+    | x when 0x0460 <= x & x <= 0x0481 ->
+	if x mod 2 = 1 then x else x + 1
+    (* utf-8 Cyrillic letters U048A-U4F9 (Warning: 04CF) *)
+    | x when 0x048A <= x & x <= 0x04F9 & x <> 0x04CF -> 
+	if x mod 2 = 1 then x else x + 1
+    (* utf-8 Cyrillic supplement letters U0500-U050F *)
+    | x when 0x0500 <= x & x <= 0x050F ->
+	if x mod 2 = 1 then x else x + 1
+    (* utf-8 Hebrew letters U05D0-05EA *)
+    | x when 0x05D0 <= x & x <= 0x05EA -> x
+    (* utf-8 Arabic letters U0621-064A *)
+    | x when 0x0621 <= x & x <= 0x064A -> x
+    (* utf-8 Arabic supplement letters U0750-076D *)
+    | x when 0x0750 <= x & x <= 0x076D -> x
+    | _ -> raise UnsupportedUtf8
+    end
+    | 0x1000 ->
+    begin match unicode with
+    (* utf-8 Georgian U10A0-10FF (has holes) *)
+    | x when 0x10A0 <= x & x <= 0x10FF -> x
+    (* utf-8 Hangul Jamo U1100-11FF (has holes) *)
+    | x when 0x1100 <= x & x <= 0x11FF -> x
+    (* utf-8 Latin additional letters U1E00-1E9B and U1EA0-1EF9 *)
+    | x when 0x1E00 <= x & x <= 0x1E95 ->
+	if x mod 2 = 1 then x else x + 1
+    | x when 0x1E96 <= x & x <= 0x1E9B -> x
+    | x when 0x1EA0 <= x & x <= 0x1EF9 ->
+	if x mod 2 = 1 then x else x + 1
+    | _ -> raise UnsupportedUtf8
+    end
+    | 0x2000 ->
+    begin match unicode with
+    (* utf-8 general punctuation U2080-2089 *)
+    (* Hyphens *)
+    | x when 0x2010 <= x & x <= 0x2011 -> x
+    (* utf-8 letter-like U2100-214F *)
+    | 0x2102 (* double-struck C *) -> Char.code 'x'
+    | 0x2115 (* double-struck N *) -> Char.code 'n'
+    | 0x2119 (* double-struck P *) -> Char.code 'x'
+    | 0x211A (* double-struck Q *) -> Char.code 'x'
+    | 0x211D (* double-struck R *) -> Char.code 'r'
+    | 0x2124 (* double-struck Z *) -> Char.code 'x'
+    | x when 0x2100 <= x & x <= 0x214F ->
+	warning ("Unable to decide which lowercase letter to map to "^s); x
+    | _ -> raise UnsupportedUtf8
+    end
+    | _ ->
+    begin match unicode with
+    (* utf-8 Hiragana U3040-309F and Katakana U30A0-30FF *)
+    | x when 0x3040 <= x & x <= 0x30FF -> x
+    (* utf-8 Unified CJK Ideographs U4E00-9FA5 *)
+    | x when 0x4E00 <= x & x <= 0x9FA5 -> x
+    (* utf-8 Hangul syllables UAC00-D7AF *)
+    | x when 0xAC00 <= x & x <= 0xD7AF -> x
+    (* utf-8 Gothic U10330-1034A *)
+    | x when 0x10330 <= x & x <= 0x1034A -> x
+    | _ -> raise UnsupportedUtf8
+    end
+
+let lowercase_first_char_utf8 s =
+  assert (s <> "");
+  let j, n = next_utf8 s 0 in
+  utf8_of_unicode (lowercase_utf8 (String.sub s 0 j) n)
 
 (* Lists *)
 

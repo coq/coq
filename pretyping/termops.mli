@@ -151,7 +151,6 @@ val eta_reduce_head : constr -> constr
 val eta_eq_constr : constr -> constr -> bool
 
 (* finding "intuitive" names to hypotheses *)
-val first_char : identifier -> string
 val lowercase_first_char : identifier -> string
 val sort_hdchar : sorts -> string
 val hdchar : env -> types -> string

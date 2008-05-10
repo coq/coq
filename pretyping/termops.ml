@@ -684,12 +684,8 @@ let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
 
 (* First character of a constr *)
 
-let first_char id =
-  let id = string_of_id id in
-  assert (id <> "");
-  String.make 1 id.[0]
-
-let lowercase_first_char id = String.lowercase (first_char id)
+let lowercase_first_char id =
+  lowercase_first_char_utf8 (string_of_id id)
 
 let vars_of_env env =
   let s = 
@@ -718,8 +714,7 @@ let hdchar env c =
     | Cast (c,_,_)         -> hdrec k c
     | App (f,l)         -> hdrec k f
     | Const kn       ->
-	let c = lowercase_first_char (id_of_label (con_label kn)) in
-	if c = "?" then "y" else c
+	lowercase_first_char (id_of_label (con_label kn))
     | Ind ((kn,i) as x) ->
 	if i=0 then 
 	  lowercase_first_char (id_of_label (label kn))
