@@ -80,7 +80,8 @@ Close Local Scope positive_scope.
 Definition Zplus (x y:Z) :=
   match x, y with
     | Z0, y => y
-    | x, Z0 => x
+    | Zpos x', Z0 => Zpos x'
+    | Zneg x', Z0 => Zneg x'
     | Zpos x', Zpos y' => Zpos (x' + y')
     | Zpos x', Zneg y' =>
       match (x' ?= y')%positive Eq with

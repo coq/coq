@@ -824,7 +824,7 @@ GEXTEND Gram
     [ [ "("; "at"; IDENT "level"; n = natural; ")" -> n | -> 0 ] ]
   ;
   locality:
-    [ [ IDENT "Local" -> true | -> false ] ]
+    [ [ IDENT "Global" -> false | IDENT "Local" -> true | -> false ] ]
   ;
   non_globality:
     [ [ IDENT "Global" -> false | IDENT "Local" -> true | -> true ] ]

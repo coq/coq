@@ -8,25 +8,29 @@
 (************************************************************************)
 
 (* Logic *)
-Notation "∀ x , P" := 
-  (forall x , P) (at level 200, x ident) : type_scope.
-Notation "∀ x y , P" := 
-  (forall x y , P) (at level 200, x ident, y ident) : type_scope.
-Notation "∀ x y z , P" := 
-  (forall x y z , P) (at level 200, x ident, y ident, z ident) : type_scope.
-Notation "∀ x y z u , P" := 
-  (forall x y z u , P) (at level 200, x ident, y ident, z ident, u ident) : type_scope.
-Notation "∀ x : t , P" := 
-  (forall x : t , P) (at level 200, x ident) : type_scope.
-Notation "∀ x y : t , P" := 
-  (forall x y : t , P) (at level 200, x ident, y ident) : type_scope.
-Notation "∀ x y z : t , P" := 
-  (forall x y z : t , P) (at level 200, x ident, y ident, z ident) : type_scope.
-Notation "∀ x y z u : t , P" := 
-  (forall x y z u : t , P) (at level 200, x ident, y ident, z ident, u ident) : type_scope.
+Notation "∀ x , P" := (forall x , P)
+  (at level 200, x ident, right associativity) : type_scope.
+Notation "∀ x y , P" := (forall x y , P)
+  (at level 200, x ident, y ident, right associativity) : type_scope.
+Notation "∀ x y z , P" := (forall x y z , P)
+  (at level 200, x ident, y ident, z ident, right associativity) : type_scope.
+Notation "∀ x y z u , P" := (forall x y z u , P)
+  (at level 200, x ident, y ident, z ident, u ident, right associativity)
+  : type_scope.
+Notation "∀ x : t , P" := (forall x : t , P)
+  (at level 200, x ident, right associativity) : type_scope.
+Notation "∀ x y : t , P" := (forall x y : t , P) 
+  (at level 200, x ident, y ident, right associativity) : type_scope.
+Notation "∀ x y z : t , P" := (forall x y z : t , P)
+  (at level 200, x ident, y ident, z ident, right associativity) : type_scope.
+Notation "∀ x y z u : t , P" := (forall x y z u : t , P) 
+  (at level 200, x ident, y ident, z ident, u ident, right associativity)
+  : type_scope.
 
-Notation "∃ x , P" := (exists x , P) (at level 200, x ident) : type_scope.
-Notation "∃ x : t , P" := (exists x : t, P) (at level 200, x ident) : type_scope.
+Notation "∃ x , P" := (exists x , P)
+  (at level 200, x ident, right associativity) : type_scope.
+Notation "∃ x : t , P" := (exists x : t, P)
+  (at level 200, x ident, right associativity) : type_scope.
 
 Notation "x ∨ y" := (x \/ y) (at level 85, right associativity) : type_scope.
 Notation "x ∧ y" := (x /\ y) (at level 80, right associativity) : type_scope.

@@ -204,7 +204,7 @@ doc/RecTutorial/RecTutorial.v.html: doc/RecTutorial/RecTutorial.v.tex
 
 # Not robust, improve...
 ide/index_urls.txt: doc/refman/html/index.html
-	- rm ide/index_url.txt
+	- rm ide/index_urls.txt
 	cat doc/refman/html/command-index.html doc/refman/html/tactic-index.html | grep li-itemize | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > ide/index_urls.txt
 
 

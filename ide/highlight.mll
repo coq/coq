@@ -26,7 +26,7 @@
       [  "Add" ; "Check"; "Eval"; "Extraction" ;
 	 "Load" ; "Undo";
 	 "Proof" ; "Print"; "Qed" ; "Defined" ; "Save" ;
-	 "End" ; "Section"
+	 "End" ; "Section"; "Chapter"; "Transparent"; "Opaque"; "Comments"
       ];
     Hashtbl.mem h
 
@@ -48,14 +48,14 @@
 	  "Proposition" ; "Property" ;
           (* Definitions *)
 	  "Definition" ; "Let" ; "Example" ; "SubClass" ;
-          "Fixpoint" ; "CoFixpoint"; 
+          "Fixpoint" ; "CoFixpoint" ; "Scheme" ;
           (* Assumptions *)
 	  "Hypothesis" ; "Variable" ; "Axiom" ; "Parameter" ; "Conjecture" ;
 	  "Hypotheses" ; "Variables" ; "Axioms" ; "Parameters";
           (* Inductive *)
           "Inductive" ; "CoInductive" ; "Record" ; "Structure" ;
           (* Other *)
-	  "Ltac" ; "Typeclasses"; "Instance"
+	  "Ltac" ; "Typeclasses"; "Instance"; "Include"; "Context"; "Class"
 	];
       Hashtbl.mem h
 
@@ -73,6 +73,8 @@ let ident = firstchar identchar*
 let multiword_declaration =
   "Module" (space+ "Type")
 | "Program" space+ ident
+| "Existing" space+ "Instance"
+| "Canonical" space+ "Structure"
 
 let locality = ("Local" space+)?
 
@@ -80,14 +82,25 @@ let multiword_command =
   "Set" (space+ ident)* 
 | "Unset" (space+ ident)* 
 | "Open" space+ locality "Scope"
+| "Close" space+ locality "Scope"
+| "Bind" space+ "Scope"
+| "Arguments" space+ "Scope"
+| "Reserved" space+ "Notation" space+ locality
+| "Delimit" space+ "Scope"
 | "Next" space+ "Obligation"
 | "Solve" space+ "Obligations"
-| "Require" space+ ("Import"|"Export")
+| "Require" space+ ("Import"|"Exportp")
 | "Infix" space+ locality
 | "Notation" space+ locality
 | "Hint" space+ locality ident
 | "Reset" (space+ "Initial")?
 | "Tactic" space+ "Notation"
+| "Implicit" space+ "Arguments"
+| "Implicit" space+ ("Type"|"Types")
+| "Combined" space+ "Scheme"
+
+(* At least still missing: "Inline" + decl, variants of "Identity
+  Coercion", variants of Print, Add, ... *)
 
 rule next_starting_order = parse
   | "(*" { comment_start := lexeme_start lexbuf; comment lexbuf }
