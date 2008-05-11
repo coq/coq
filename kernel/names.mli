@@ -172,6 +172,7 @@ type transparent_state = Idpred.t * Cpred.t
 val empty_transparent_state : transparent_state
 val full_transparent_state : transparent_state
 val var_full_transparent_state : transparent_state
+val cst_full_transparent_state : transparent_state
 
 type inv_rel_key = int (* index in the [rel_context] part of environment
 			  starting by the end, {\em inverse} 

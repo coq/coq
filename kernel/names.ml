@@ -320,6 +320,7 @@ type transparent_state = Idpred.t * Cpred.t
 let empty_transparent_state = (Idpred.empty, Cpred.empty)
 let full_transparent_state = (Idpred.full, Cpred.full)
 let var_full_transparent_state = (Idpred.full, Cpred.empty)
+let cst_full_transparent_state = (Idpred.empty, Cpred.full)
 
 type 'a tableKey =
   | ConstKey of constant

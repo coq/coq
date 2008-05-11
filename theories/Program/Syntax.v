@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
+(* -*- coq-prog-args: ("-emacs-U") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -12,10 +12,6 @@
  * Author: Matthieu Sozeau
  * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
  *              91405 Orsay, France *)
-
-(** Unicode lambda abstraction, does not work with factorization of lambdas. *)
-
-Notation  " 'λ' x : T , y " := (fun x:T => y) (at level 100, x,T at level 10, y at next level, no associativity) : program_scope.
 
 (** Notations for the unit type and value. *)
 
@@ -42,11 +38,11 @@ Implicit Arguments cons [[A]].
 
 (** Standard notations for lists. *)
 
-Notation " [] " := nil.
-Notation " [ x ] " := (cons x nil).
-Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) (at level 1).
+Notation " [ ] " := nil : list_scope.
+Notation " [ x ] " := (cons x nil) : list_scope.
+Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
 
-(** n-ary exists ! *)
+(** n-ary exists *)
 
 Notation " 'exists' x y , p" := (ex (fun x => (ex (fun y => p))))
   (at level 200, x ident, y ident, right associativity) : type_scope.
@@ -61,9 +57,3 @@ Tactic Notation "exist" constr(x) := exists x.
 Tactic Notation "exist" constr(x) constr(y) := exists x ; exists y.
 Tactic Notation "exist" constr(x) constr(y) constr(z) := exists x ; exists y ; exists z.
 Tactic Notation "exist" constr(x) constr(y) constr(z) constr(w) := exists x ; exists y ; exists z ; exists w.
-
-(* Notation " 'Σ' x : T , p" := (sigT (fun x : T => p)) *)
-(*   (at level 200, x ident, y ident, right associativity) : program_scope. *)
-
-(* Notation " 'Π' x : T , p " := (forall x : T, p) *)
-(*   (at level 200, x ident, right associativity) : program_scope. *)

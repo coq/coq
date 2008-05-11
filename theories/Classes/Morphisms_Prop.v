@@ -73,7 +73,7 @@ Program Instance iff_iff_iff_impl_morphism : Morphism (iff ==> iff ==> iff) impl
 
 (** Morphisms for quantifiers *)
 
-Program Instance {A : Type} => ex_iff_morphism : Morphism (pointwise_relation iff ==> iff) (@ex A).
+Program Instance ex_iff_morphism {A : Type} : Morphism (pointwise_relation iff ==> iff) (@ex A).
 
   Next Obligation.
   Proof.
@@ -86,7 +86,7 @@ Program Instance {A : Type} => ex_iff_morphism : Morphism (pointwise_relation if
     exists x₁. rewrite H. assumption.
   Qed.
 
-Program Instance {A : Type} => ex_impl_morphism :
+Program Instance ex_impl_morphism {A : Type} :
   Morphism (pointwise_relation impl ==> impl) (@ex A).
 
   Next Obligation.
@@ -95,7 +95,7 @@ Program Instance {A : Type} => ex_impl_morphism :
     exists H0. apply H. assumption.
   Qed.
 
-Program Instance {A : Type} => ex_inverse_impl_morphism : 
+Program Instance ex_inverse_impl_morphism {A : Type} : 
   Morphism (pointwise_relation (inverse impl) ==> inverse impl) (@ex A).
 
   Next Obligation.
@@ -104,7 +104,7 @@ Program Instance {A : Type} => ex_inverse_impl_morphism :
     exists H0. apply H. assumption.
   Qed.
 
-Program Instance {A : Type} => all_iff_morphism : 
+Program Instance all_iff_morphism {A : Type} : 
   Morphism (pointwise_relation iff ==> iff) (@all A).
 
   Next Obligation.
@@ -113,7 +113,7 @@ Program Instance {A : Type} => all_iff_morphism :
     intuition ; specialize (H x0) ; intuition.
   Qed.
 
-Program Instance {A : Type} => all_impl_morphism : 
+Program Instance all_impl_morphism {A : Type} : 
   Morphism (pointwise_relation impl ==> impl) (@all A).
   
   Next Obligation.
@@ -122,7 +122,7 @@ Program Instance {A : Type} => all_impl_morphism :
     intuition ; specialize (H x0) ; intuition.
   Qed.
 
-Program Instance {A : Type} => all_inverse_impl_morphism : 
+Program Instance all_inverse_impl_morphism {A : Type} : 
   Morphism (pointwise_relation (inverse impl) ==> inverse impl) (@all A).
   
   Next Obligation.

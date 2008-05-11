@@ -9,7 +9,7 @@
 Require Import Coq.Program.Utils.
 Require Import Coq.Program.Equality.
 
-Open Local Scope subset_scope.
+Open Local Scope program_scope.
 
 (** Tactics related to subsets and proof irrelevance. *)
 

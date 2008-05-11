@@ -65,26 +65,26 @@ Unset Implicit Arguments.
 
 (** We can already dualize all these properties. *)
 
-Program Instance [ Reflexive A R ] => flip_Reflexive : Reflexive (flip R) :=
+Program Instance flip_Reflexive [ Reflexive A R ] : Reflexive (flip R) :=
   reflexivity := reflexivity (R:=R).
 
-Program Instance [ Irreflexive A R ] => flip_Irreflexive : Irreflexive (flip R) :=
+Program Instance flip_Irreflexive [ Irreflexive A R ] : Irreflexive (flip R) :=
   irreflexivity := irreflexivity (R:=R).
 
-Program Instance [ Symmetric A R ] => flip_Symmetric : Symmetric (flip R).
+Program Instance flip_Symmetric [ Symmetric A R ] : Symmetric (flip R).
 
   Solve Obligations using unfold flip ; program_simpl ; clapply Symmetric.
 
-Program Instance [ Asymmetric A R ] => flip_Asymmetric : Asymmetric (flip R).
+Program Instance flip_Asymmetric [ Asymmetric A R ] : Asymmetric (flip R).
   
   Solve Obligations using program_simpl ; unfold flip in * ; intros ; clapply asymmetry.
 
-Program Instance [ Transitive A R ] => flip_Transitive : Transitive (flip R).
+Program Instance flip_Transitive [ Transitive A R ] : Transitive (flip R).
 
   Solve Obligations using unfold flip ; program_simpl ; clapply transitivity.
 
-Program Instance [ Reflexive A (R : relation A) ] => 
-  Reflexive_complement_Irreflexive : Irreflexive (complement R).
+Program Instance Reflexive_complement_Irreflexive [ Reflexive A (R : relation A) ]
+   : Irreflexive (complement R).
 
   Next Obligation. 
   Proof. 
@@ -95,7 +95,7 @@ Program Instance [ Reflexive A (R : relation A) ] =>
   Qed.
 
 
-Program Instance [ Symmetric A (R : relation A) ] => complement_Symmetric : Symmetric (complement R).
+Program Instance complement_Symmetric [ Symmetric A (R : relation A) ] : Symmetric (complement R).
 
   Next Obligation.
   Proof.
@@ -165,8 +165,7 @@ Class PER (carrier : Type) (pequiv : relation carrier) : Prop :=
 (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
 
-Program Instance [ PER A (R : relation A), PER B (R' : relation B) ] => 
-  arrow_per : PER (A -> B)
+Program Instance arrow_per [ PER A (R : relation A), PER B (R' : relation B) ] : PER (A -> B)
   (fun f g => forall (x y : A), R x y -> R' (f x) (g y)).
 
   Next Obligation.
@@ -188,8 +187,8 @@ Class Equivalence (carrier : Type) (equiv : relation carrier) : Prop :=
 Class [ Equivalence A eqA ] => Antisymmetric (R : relation A) := 
   antisymmetry : forall x y, R x y -> R y x -> eqA x y.
 
-Program Instance [ eq : Equivalence A eqA, ! Antisymmetric eq R ] => 
-  flip_antiSymmetric : Antisymmetric eq (flip R).
+Program Instance flip_antiSymmetric [ eq : Equivalence A eqA, ! Antisymmetric eq R ] :
+  Antisymmetric eq (flip R).
 
 (** Leibinz equality [eq] is an equivalence relation.
    The instance has low priority as it is always applicable 
@@ -368,7 +367,7 @@ Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relatio
 
 (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
-Instance (A : Type) => relation_equivalence_equivalence :
+Instance relation_equivalence_equivalence (A : Type) :
   Equivalence (relation A) relation_equivalence.
 Proof. intro A. exact (@predicate_equivalence_equivalence (cons A (cons A nil))). Qed.
 
@@ -387,7 +386,7 @@ Class [ equ : Equivalence A eqA, PreOrder A R ] => PartialOrder :=
    for equivalence (see Morphisms).
    It is also sufficient to show that [R] is antisymmetric w.r.t. [eqA] *)
 
-Instance [ PartialOrder A eqA R ] =>  partial_order_antisym : ! Antisymmetric A eqA R.
+Instance partial_order_antisym [ PartialOrder A eqA R ] : ! Antisymmetric A eqA R.
 Proof with auto.
   reduce_goal. pose partial_order_equivalence as poe. do 3 red in poe. 
   apply <- poe. firstorder.

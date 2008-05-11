@@ -187,7 +187,9 @@ is understood as
 \begin{tabular}{lcl}
 \nterm{top} & ::= & {\tt Ltac} \nelist{\nterm{ltac\_def}} {\tt with} \\
 \\
-\nterm{ltac\_def} & ::= & {\ident} \sequence{\ident}{} {\tt :=} {\tacexpr}
+\nterm{ltac\_def} & ::= & {\ident} \sequence{\ident}{} {\tt :=}
+{\tacexpr}\\
+& $|$ &{\qualid} \sequence{\ident}{} {\tt ::=}{\tacexpr}
 \end{tabular}
 \end{centerframe}
 \caption{Tactic toplevel definitions}
@@ -831,11 +833,15 @@ possible with the syntax:
 {\tacexpr}$_n$
 \end{quote}
 
-%This definition bloc is a set of definitions (use of
-%the same previous syntactical sugar) and the other scripts are evaluated as
-%usual except that the substitutions are lazily carried out (when an identifier
-%to be evaluated is the name of a recursive definition).
-
+It is also possible to \emph{redefine} an existing user-defined tactic
+using the syntax:
+\begin{quote}
+{\tt Ltac} {\qualid} {\ident}$_1$ ... {\ident}$_n$ {\tt ::=}
+{\tacexpr}
+\end{quote}
+A previous definition of \qualid must exist in the environment.
+The new definition will always be used instead of the old one and
+it goes accross module boundaries.
 
 \subsection[Printing {\ltac} tactics]{Printing {\ltac} tactics\comindex{Print Ltac}}
 

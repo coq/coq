@@ -2655,40 +2655,60 @@ let print_ltac id =
    errorlabstrm "print_ltac"
     (pr_qualid id ++ spc() ++ str "is not a user defined tactic")
 
+open Libnames
+
 (* Adds a definition for tactics in the table *)
-let make_absolute_name (loc,id) repl =
+let make_absolute_name ident repl =
+  let loc = loc_of_reference ident in
   try 
-    let kn = if repl then Nametab.locate_tactic (make_short_qualid id) else Lib.make_kn id in
+    let id, kn = 
+      if repl then None, Nametab.locate_tactic (snd (qualid_of_reference ident))
+      else let id = Pcoq.coerce_global_to_id ident in
+	     Some id, Lib.make_kn id 
+    in
       if Gmap.mem kn !mactab then
-	if repl then kn
+	if repl then id, kn
 	else
 	  user_err_loc (loc,"Tacinterp.add_tacdef",
-		       str "There is already an Ltac named " ++ pr_id id)
+		       str "There is already an Ltac named " ++ pr_reference ident)
       else if is_atomic_kn kn then 
 	user_err_loc (loc,"Tacinterp.add_tacdef",
-		     str "Reserved Ltac name " ++ pr_id id)
-      else kn
+		     str "Reserved Ltac name " ++ pr_reference ident)
+      else id, kn
   with Not_found ->
     user_err_loc (loc,"Tacinterp.add_tacdef",
-		 str "There is no Ltac named " ++ pr_id id)
+		 str "There is no Ltac named " ++ pr_reference ident)
+
+let rec filter_map f l = 
+  let rec aux acc = function
+      [] -> acc
+    | hd :: tl -> 
+	match f hd with
+	    Some x -> aux (x :: acc) tl
+	  | None -> aux acc tl
+  in aux [] l
       
 let add_tacdef isrec tacl =
-(*  let isrec = if !Flags.p1 then isrec else true in*)
-  let rfun = List.map (fun ((loc,id as locid),b,_) -> (id,make_absolute_name locid b)) tacl in
+  let rfun = List.map (fun (ident, b, _) -> make_absolute_name ident b) tacl in
   let ist =
-    {(make_empty_glob_sign()) with ltacrecvars = if isrec then rfun else []} in
+    {(make_empty_glob_sign()) with ltacrecvars = 
+	if isrec then filter_map 
+	  (function (Some id, qid) -> Some (id, qid) | (None, _) -> None) rfun 
+	else []} in
   let gtacl =
-    List.map2 (fun ((_,id),b,def) (_, qid) ->
-      let k = if b then UpdateTac qid else NewTac id in
+    List.map2 (fun (_,b,def) (id, qid) ->
+      let k = if b then UpdateTac qid else NewTac (Option.get id) in
       let t = Flags.with_option strict_check (intern_tactic ist) def in
 	(k, t))
       tacl rfun in
   let id0 = fst (List.hd rfun) in
-  let _ = Lib.add_leaf id0 (inMD gtacl) in
+  let _ = match id0 with Some id0 -> ignore(Lib.add_leaf id0 (inMD gtacl))
+    | _ -> Lib.add_anonymous_leaf (inMD gtacl) in
   List.iter
-    (fun ((_,id),b,_) -> 
-      if b then Flags.if_verbose msgnl (pr_id id ++ str " is redefined")
-      else Flags.if_verbose msgnl (pr_id id ++ str " is defined"))
+    (fun (id,b,_) -> 
+      Flags.if_verbose msgnl (Libnames.pr_reference id ++ 
+				 (if b then str " is redefined"
+				   else str " is defined")))
     tacl
 
 (***************************************************************************)

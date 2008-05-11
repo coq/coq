@@ -95,8 +95,7 @@ Program Instance unit_eqdec : EqDec (@eq_setoid unit) :=
     reflexivity.
   Qed.
 
-Program Instance [ ! EqDec (@eq_setoid A), ! EqDec (@eq_setoid B) ] => 
-  prod_eqdec : EqDec (@eq_setoid (prod A B)) :=
+Program Instance prod_eqdec [ ! EqDec (@eq_setoid A), ! EqDec (@eq_setoid B) ] : EqDec (@eq_setoid (prod A B)) :=
   equiv_dec x y := 
     let '(x1, x2) := x in 
     let '(y1, y2) := y in 
@@ -111,7 +110,7 @@ Program Instance [ ! EqDec (@eq_setoid A), ! EqDec (@eq_setoid B) ] =>
 
 Require Import Coq.Program.FunctionalExtensionality.
 
-Program Instance [ ! EqDec (@eq_setoid A) ] => bool_function_eqdec : EqDec (@eq_setoid (bool -> A)) :=
+Program Instance bool_function_eqdec [ ! EqDec (@eq_setoid A) ] : EqDec (@eq_setoid (bool -> A)) :=
   equiv_dec f g := 
     if f true == g true then
       if f false == g false then in_left

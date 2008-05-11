@@ -203,9 +203,9 @@ GEXTEND Gram
 	
   (* Definitions for tactics *)
   tacdef_body:
-    [ [ name = identref; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
+    [ [ name = Constr.global; it=LIST1 input_fun; redef = ltac_def_kind; body = tactic_expr ->
 	  (name, redef, TacFun (it, body))
-      | name = identref; redef = ltac_def_kind; body = tactic_expr ->
+      | name = Constr.global; redef = ltac_def_kind; body = tactic_expr ->
 	  (name, redef, body) ] ]
   ;
   tactic:

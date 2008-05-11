@@ -2,7 +2,7 @@ Require Import Coq.Init.Wf.
 Require Import Coq.Program.Utils.
 Require Import ProofIrrelevance.
 
-Open Local Scope subset_scope.
+Open Local Scope program_scope.
 
 Implicit Arguments Enriching Acc_inv [y].
 
@@ -91,9 +91,9 @@ Section Well_founded_measure.
     
     Variable F_sub : forall x:A, (forall y: { y : A | m y < m x }, P (proj1_sig y)) -> P x.
     
-    Fixpoint Fix_measure_F_sub (x : A) (r : Acc lt (m x)) {struct r} : P x :=
-      F_sub x (fun y: { y : A | m y < m x}  => Fix_measure_F_sub (proj1_sig y) 
-        (@Acc_inv _ _ _ r (m (proj1_sig y)) (proj2_sig y))).
+    Program Fixpoint Fix_measure_F_sub (x : A) (r : Acc lt (m x)) {struct r} : P x :=
+      F_sub x (fun (y : A | m y < m x)  => Fix_measure_F_sub y
+        (@Acc_inv _ _ _ r (m y) (proj2_sig y))).
     
     Definition Fix_measure_sub (x : A) := Fix_measure_F_sub x (lt_wf (m x)).
   
@@ -102,7 +102,7 @@ Section Well_founded_measure.
   Section FixPoint.
     Variable P : A -> Type.
     
-    Variable F_sub : forall x:A, (forall (y : A | m y < m x), P (proj1_sig y)) -> P x.
+    Program Variable F_sub : forall x:A, (forall (y : A | m y < m x), P y) -> P x.
     
     Notation Fix_F := (Fix_measure_F_sub P F_sub) (only parsing). (* alias *)
     
@@ -113,9 +113,9 @@ Section Well_founded_measure.
       forall (x:A) (f g:forall y : { y : A | m y < m x}, P (`y)),
         (forall y : { y : A | m y < m x}, f y = g y) -> F_sub x f = F_sub x g.
 
-    Lemma Fix_measure_F_eq :
+    Program Lemma Fix_measure_F_eq :
       forall (x:A) (r:Acc lt (m x)),
-        F_sub x (fun (y:{y:A|m y < m x}) => Fix_F (`y) (Acc_inv r (proj2_sig y))) = Fix_F x r.
+        F_sub x (fun (y:A | m y < m x) => Fix_F y (Acc_inv r (proj2_sig y))) = Fix_F x r.
     Proof.
       intros x.
       set (y := m x).

@@ -50,7 +50,7 @@ let pr_lname = function
     (loc,Name id) -> pr_lident (loc,id)
   | lna -> pr_located pr_name lna
 
-let pr_ltac_id = Nameops.pr_id
+let pr_ltac_id = Libnames.pr_reference
 
 let pr_module = Libnames.pr_reference
 
@@ -795,13 +795,14 @@ let rec pr_vernac = function
           match body with
 	    | Tacexpr.TacFun (idl,b) -> idl,b
             | _ -> [], body in
-        pr_located pr_ltac_id id ++ 
+        pr_ltac_id id ++ 
 	prlist (function None -> str " _"
                        | Some id -> spc () ++ pr_id id) idl
 	++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
 	let idl = List.map Option.get (List.filter (fun x -> not (x=None)) idl)in
         pr_raw_tactic_env 
-	  (idl @ List.map snd (List.map (fun (x, _, _) -> x) l))
+	  (idl @ List.map coerce_global_to_id 
+	    (List.map (fun (x, _, _) -> x) (List.filter (fun (_, redef, _) -> not redef) l)))
 	  (Global.env())
 	  body in
       hov 1

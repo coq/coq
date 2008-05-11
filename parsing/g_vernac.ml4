@@ -157,7 +157,7 @@ GEXTEND Gram
   ;
   gallina_ext:
     [ [ b = record_token; oc = opt_coercion; name = identref;
-        ps = LIST0 binder_let; 
+        ps = binders_let; 
 	s = [ ":"; s = lconstr -> s | -> CSort (loc,Rawterm.RType None) ];
 	":="; cstr = OPT identref; "{";
         fs = LIST0 record_field SEP ";"; "}" ->
@@ -237,7 +237,7 @@ GEXTEND Gram
     ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = identref; indpar = LIST0 binder_let; 
+    [ [ id = identref; indpar = binders_let; 
         c = [ ":"; c = lconstr -> c | -> CSort (loc,Rawterm.RType None) ];
         ":="; lc = constructor_list; ntn = decl_notation ->
 	  ((id,indpar,c,lc),ntn) ] ]
@@ -258,11 +258,11 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = ident; b = binder_let;
+    [ [ id = ident; 
 	bl = binders_let_fixannot;
         ty = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
-	  let bl, annot = (b :: fst bl, snd bl) in
+	  let bl, annot = bl in
           let names = names_of_local_assums bl in
           let ni =
             match fst annot with
@@ -282,7 +282,7 @@ GEXTEND Gram
 	  ((id,(ni,snd annot),bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = ident; bl = LIST0 binder_let; ty = type_cstr; ":=";
+    [ [ id = ident; bl = binders_let; ty = type_cstr; ":=";
         def = lconstr; ntn = decl_notation ->
           ((id,bl,ty,def),ntn) ] ]
   ;
@@ -337,10 +337,10 @@ GEXTEND Gram
         (oc,(idl,c)) ] ]
   ;
   constructor:
-    [ [ id = identref; l = LIST0 binder_let; 
+    [ [ id = identref; l = binders_let; 
         coe = of_type_with_opt_coercion; c = lconstr ->
 	  (coe,(id,mkCProdN loc l c))
-      | id = identref; l = LIST0 binder_let ->
+      | id = identref; l = binders_let ->
 	  (false,(id,mkCProdN loc l (CHole (loc, None)))) ] ]
   ;
   of_type_with_opt_coercion:
@@ -485,7 +485,7 @@ GEXTEND Gram
 	   VernacClass (qid, pars, s, [], props)
 
       (* Type classes *)
-      | IDENT "Class"; sup = OPT [ l = delimited_binders_let; "=>" -> l ];
+      | IDENT "Class"; sup = OPT [ l = binders_let; "=>" -> l ];
 	 qid = identref; pars = binders_let;
 	 s = [ ":"; c = sort -> Some (loc, c) | -> None ];
 	 props = typeclass_field_types ->
@@ -493,15 +493,20 @@ GEXTEND Gram
 	     
       | IDENT "Context"; c = typeclass_context -> 
 	  VernacContext c
-
+	    
       | global = [ IDENT "Global" -> true | -> false ];
-	 IDENT "Instance"; sup = OPT [ l = delimited_binders_let ; "=>" -> l ];
-	 is = typeclass_constraint ; pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
+	 IDENT "Instance"; name = OPT identref; sup = OPT [ l = binders_let -> l ];
+(* 	 name' = OPT [ "=>"; id = identref -> id ]; *)
+	 ":" ; expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
+	 pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
 	   let sup = match sup with None -> [] | Some l -> l in
 	   let is = (* We reverse the default binding mode on the right *)
-	     let n, bk, t = is in
-	       n, (match bk with Rawterm.Implicit -> Rawterm.Explicit 
-		 | Rawterm.Explicit -> Rawterm.Implicit), t 
+	     let n = 
+	       match name with
+		 | Some (loc, id) -> (loc, Name id)
+		 | None -> (dummy_loc, Anonymous)
+	     in
+	       n, expl, t 
 	   in
 	     VernacInstance (global, sup, is, props, pri)
 

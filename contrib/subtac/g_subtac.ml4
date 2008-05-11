@@ -53,7 +53,7 @@ open Constr
 let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 GEXTEND Gram
-  GLOBAL: subtac_gallina_loc typeclass_constraint Constr.binder_let Constr.binder subtac_nameopt;
+  GLOBAL: subtac_gallina_loc typeclass_constraint Constr.binder subtac_nameopt;
  
   subtac_gallina_loc:
     [ [ g = Vernac.gallina -> loc, g
@@ -66,9 +66,9 @@ GEXTEND Gram
     ;
 
   Constr.binder_let:
-    [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" -> 
+    [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" ->
 	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
-	    LocalRawAssum ([id], default_binder_kind, typ)
+          [LocalRawAssum ([id], default_binder_kind, typ)]
     ] ];
 
   Constr.binder:
@@ -141,7 +141,8 @@ VERNAC COMMAND EXTEND Subtac_Admit_Obligations
 VERNAC COMMAND EXTEND Subtac_Set_Solver
 | [ "Obligations" "Tactic" ":=" tactic(t) ] -> [ 
     Coqlib.check_required_library ["Coq";"Program";"Tactics"];
-    Tacinterp.add_tacdef false [((dummy_loc, id_of_string "obligations_tactic"), true, t)] ]
+    Tacinterp.add_tacdef false 
+      [(Qualid (dummy_loc, qualid_of_string "Coq.Program.Tactics.obligations_tactic"), true, t)] ]
 END
 
 VERNAC COMMAND EXTEND Subtac_Show_Obligations

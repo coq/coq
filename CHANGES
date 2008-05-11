@@ -129,7 +129,6 @@ Tactic Language
   ltac function into names that do not clash with the lemmas
   parameter names used in the tactic).
 - New syntax "Ltac tac ::= ..." to rebind a tactic to a new expression.
-  (DOC TODO?)
 - "let rec ... in ... " now supported for expressions without explicit
   parameters; interpretation is lazy to the contrary of "let ... in ...";
   hence, the "rec" keyword can be used to turn the argument of a

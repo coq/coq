@@ -94,8 +94,8 @@ Program Instance unit_eqdec : ! EqDec unit eq :=
     reflexivity.
   Qed.
 
-Program Instance [ EqDec A eq, EqDec B eq ] => 
-  prod_eqdec : ! EqDec (prod A B) eq :=
+Program Instance prod_eqdec [ EqDec A eq, EqDec B eq ] :
+  ! EqDec (prod A B) eq :=
   equiv_dec x y := 
     let '(x1, x2) := x in 
     let '(y1, y2) := y in 
@@ -106,8 +106,8 @@ Program Instance [ EqDec A eq, EqDec B eq ] =>
 
   Solve Obligations using unfold complement, equiv ; program_simpl.
 
-Program Instance [ EqDec A eq, EqDec B eq ] => 
-  sum_eqdec : ! EqDec (sum A B) eq :=
+Program Instance sum_eqdec [ EqDec A eq, EqDec B eq ] :
+  ! EqDec (sum A B) eq :=
   equiv_dec x y := 
     match x, y with
       | inl a, inl b => if a == b then in_left else in_right
@@ -121,7 +121,7 @@ Program Instance [ EqDec A eq, EqDec B eq ] =>
 
 Require Import Coq.Program.FunctionalExtensionality.
 
-Program Instance [ EqDec A eq ] => bool_function_eqdec : ! EqDec (bool -> A) eq :=
+Program Instance bool_function_eqdec [ EqDec A eq ] : ! EqDec (bool -> A) eq :=
   equiv_dec f g := 
     if f true == g true then
       if f false == g false then in_left
@@ -138,7 +138,7 @@ Program Instance [ EqDec A eq ] => bool_function_eqdec : ! EqDec (bool -> A) eq 
 
 Require Import List.
 
-Program Instance [ eqa : EqDec A eq ] => list_eqdec : ! EqDec (list A) eq :=
+Program Instance list_eqdec [ eqa : EqDec A eq ] : ! EqDec (list A) eq :=
   equiv_dec := 
     fix aux (x : list A) y { struct x } :=
     match x, y with

@@ -12,17 +12,11 @@ Require Export Coq.Program.Tactics.
 
 Set Implicit Arguments.
 
-(** Wrap a proposition inside a subset. *)
-
-Notation " {{ x }} " := (tt : { y : unit | x }).
-
 (** A simpler notation for subsets defined on a cartesian product. *)
 
 Notation "{ ( x , y )  :  A  |  P }" :=
   (sig (fun anonymous : A => let (x,y) := anonymous in P))
   (x ident, y ident, at level 10) : type_scope.
-
-(** The scope in which programs are typed (not their types). *)
 
 (** Generates an obligation to prove False. *)
 
@@ -32,18 +26,11 @@ Delimit Scope program_scope with prg.
 
 (** Abbreviation for first projection and hiding of proofs of subset objects. *)
 
-Notation " ` t " := (proj1_sig t) (at level 10, t at next level) : subset_scope.
-
-Delimit Scope subset_scope with subset.
-
-(* In [subset_scope] to allow masking by redefinitions for particular types. *)
-Notation "( x & ? )" := (@exist _ _ x _) : subset_scope.
+Notation " ` t " := (proj1_sig t) (at level 10, t at next level) : program_scope.
 
 (** Coerces objects to their support before comparing them. *)
 
 Notation " x '`=' y " := ((x :>) = (y :>)) (at level 70) : program_scope.
-
-(** Quantifying over subsets. *)
 
 Require Import Coq.Bool.Sumbool.
 
@@ -59,10 +46,11 @@ Notation "'in_left'" := (@left _ _ _) : program_scope.
 Notation "'in_right'" := (@right _ _ _) : program_scope.
 
 (** Extraction directives *)
-
+(*
 Extraction Inline proj1_sig.
 Extract Inductive unit => "unit" [ "()" ].
 Extract Inductive bool => "bool" [ "true" "false" ].
 Extract Inductive sumbool => "bool" [ "true" "false" ].
 (* Extract Inductive prod "'a" "'b" => " 'a * 'b " [ "(,)" ]. *)
 (* Extract Inductive sigT => "prod" [ "" ]. *)
+*)
