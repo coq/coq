@@ -153,21 +153,9 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 cuniv =
 
 (* The sort cumulativity is
 
-    Prop, Set <= Type 1 <= ... <= Type i <= ...
+    Prop <= Set <= Type 1 <= ... <= Type i <= ...
 
     and this holds whatever Set is predicative or impredicative
-
-    In addition, there are the following internal sorts:
-    - Type (-1) is semantically equivalent to Prop but with the
-      following syntactic restrictions: 
-      Type (-1) is syntactically predicative and subtype of all Type i
-      Prop is syntactically impredicative and subtype of Type i only for i>=1
-    - Type 0 is semantically equivalent to predicative Set
-    Both Type (-1) and Type 0 can only occur as types of polymorphic 
-    inductive types (in practice Type 0 is systematically converted to Set and
-    we do not see it outside the computation of polymorphic inductive but
-    Type (-1) is kept to avoid setting Prop <= predicative Set in the syntax;
-    this means that (*1*) below can happen).
 *)
 
 type conv_pb = 
@@ -176,14 +164,15 @@ type conv_pb =
 
 let sort_cmp pb s0 s1 cuniv =
   match (s0,s1) with
-    | (Prop c1, Prop c2) -> if c1 = c2 then cuniv else raise NotConvertible
+    | (Prop c1, Prop c2) ->
+        if c1 = Null or c2 = Pos then cuniv   (* Prop <= Set *)
+        else raise NotConvertible
     | (Prop c1, Type u) when pb = CUMUL -> assert (is_univ_variable u); cuniv
     | (Type u1, Type u2) ->
 	assert (is_univ_variable u2);
 	(match pb with
            | CONV -> enforce_eq u1 u2 cuniv
 	   | CUMUL -> enforce_geq u2 u1 cuniv)
-    | (Type u, Prop _) when u = lower_univ & pb = CUMUL -> cuniv    (*1*)
     | (_, _) -> raise NotConvertible
 
 

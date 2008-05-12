@@ -12,13 +12,17 @@
 
 type universe
 
-val type0_univ : universe  (* predicative Set seen as a universe *)
+(* The universes hierarchy: Type 0- = Prop <= Type 0 = Set <= Type 1 <= ... *)
+(* Typing of universes: Type 0-, Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
+
+val type0m_univ : universe  (* image of Prop in the universes hierarchy *)
+val type0_univ : universe  (* image of Set in the universes hierarchy *)
 val type1_univ : universe  (* the universe of the type of Prop/Set *)
-val lower_univ : universe  (* image of Prop in the predicative hierarchy *)
+
 val make_univ : Names.dir_path * int -> universe
 
 val is_type0_univ : universe -> bool
-val is_lower_univ : universe -> bool
+val is_type0m_univ : universe -> bool
 val is_univ_variable : universe -> bool
 
 (* The type of a universe *)

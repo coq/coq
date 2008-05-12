@@ -262,7 +262,7 @@ let typecheck_inductive env mie =
 	  Inl (info,full_arity,s), enforce_geq u lev cst
       | Prop Pos when engagement env <> Some ImpredicativeSet ->
 	  (* Predicative set: check that the content is indeed predicative *)
-	  if not (is_lower_univ lev) & not (is_type0_univ lev) then
+	  if not (is_type0m_univ lev) & not (is_type0_univ lev) then
 	    error "Large non-propositional inductive types must be in Type";
 	  Inl (info,full_arity,s), cst
       | Prop _ ->

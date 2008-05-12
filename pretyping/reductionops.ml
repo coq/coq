@@ -615,10 +615,10 @@ let sort_cmp = sort_cmp
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
-    | (Prop c1, Prop c2) -> c1 = c2
+    | (Prop c1, Prop c2) -> c1 = Null or c2 = Pos  (* Prop <= Set *)
     | (Prop c1, Type u)  -> pb = CUMUL
     | (Type u1, Type u2) -> true
-    | (Type u, Prop _) -> u = lower_univ & pb = CUMUL
+    | _ -> false
 
 
 let test_conversion f env sigma x y =

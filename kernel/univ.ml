@@ -40,8 +40,8 @@ open Util
  *)
 
 type universe_level =
-  | PredicativeSet
-  | PredicativeLevel of Names.dir_path * int
+  | Set
+  | Level of Names.dir_path * int
 
 type universe =
   | Atom of universe_level
@@ -53,10 +53,10 @@ module UniverseOrdered = struct
 end
 
 let string_of_univ_level = function
-  | PredicativeSet -> "0"
-  | PredicativeLevel (d,n) -> Names.string_of_dirpath d^"."^string_of_int n
+  | Set -> "0"
+  | Level (d,n) -> Names.string_of_dirpath d^"."^string_of_int n
 
-let make_univ (m,n) = Atom (PredicativeLevel (m,n))
+let make_univ (m,n) = Atom (Level (m,n))
 
 let pr_uni_level u = str (string_of_univ_level u)
 
@@ -78,8 +78,6 @@ let pr_uni = function
 let super = function
   | Atom u -> 
       Max ([],[u])
-  | Max ([],[]) -> (* Used for polym. inductive types at the lower level *)
-      Max ([],[PredicativeSet])
   | Max _ ->
       anomaly ("Cannot take the successor of a non variable universe:\n"^
                "(maybe a bugged tactic)")
@@ -128,28 +126,28 @@ let declare_univ u g =
 
 (* The lower predicative level of the hierarchy that contains (impredicative)
    Prop and singleton inductive types *)
-let lower_univ = Max ([],[])
+let type0m_univ = Max ([],[])
 
-let is_lower_univ = function
+let is_type0m_univ = function
   | Max ([],[]) -> true
   | _ -> false
 
 (* The level of predicative Set *)
-let type0_univ = Atom PredicativeSet
+let type0_univ = Atom Set
 
 let is_type0_univ = function
-  | Atom PredicativeSet -> true
-  | Max ([PredicativeSet],[]) -> warning "Non canonical Set"; true
+  | Atom Set -> true
+  | Max ([Set],[]) -> warning "Non canonical Set"; true
   | u -> false
 
 let is_univ_variable = function
-  | Atom a when a<>PredicativeSet -> true
+  | Atom a when a<>Set -> true
   | _ -> false
 
 (* When typing [Prop] and [Set], there is no constraint on the level,
    hence the definition of [type1_univ], the type of [Prop] *)
 
-let type1_univ = Max ([],[PredicativeSet])
+let type1_univ = Max ([],[Set])
 
 let initial_universes = UniverseMap.empty
 
@@ -297,7 +295,7 @@ let check_eq g u v =
 let compare_greater g strict u v =
   let g = declare_univ u g in
   let g = declare_univ v g in
-  if not strict && compare_eq g v PredicativeSet then true else
+  if not strict && compare_eq g v Set then true else
   match compare g v u with
     | (EQ|LE) -> not strict
     | LT -> true
@@ -461,7 +459,7 @@ type constraint_function =
     universe -> universe -> constraints -> constraints
 
 let constraint_add_leq v u c =
-  if v = PredicativeSet then c else Constraint.add (v,Leq,u) c
+  if v = Set then c else Constraint.add (v,Leq,u) c
 
 let enforce_geq u v c =
   match u, v with
@@ -485,7 +483,7 @@ let merge_constraints c g =
 (* Temporary inductive type levels *)
 
 let fresh_level =
-  let n = ref 0 in fun () -> incr n; PredicativeLevel (Names.make_dirpath [],!n)
+  let n = ref 0 in fun () -> incr n; Level (Names.make_dirpath [],!n)
 
 let fresh_local_univ () = Atom (fresh_level ())
 
@@ -612,8 +610,8 @@ module Huniv =
       type t = universe
       type u = Names.dir_path -> Names.dir_path
       let hash_aux hdir = function
-	| PredicativeSet -> PredicativeSet
-	| PredicativeLevel (d,n) -> PredicativeLevel (hdir d,n)
+	| Set -> Set
+	| Level (d,n) -> Level (hdir d,n)
       let hash_sub hdir = function
 	| Atom u -> Atom (hash_aux hdir u)
 	| Max (gel,gtl) ->

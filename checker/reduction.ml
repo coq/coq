@@ -145,7 +145,7 @@ type conv_pb =
 
 let sort_cmp univ pb s0 s1 =
   match (s0,s1) with
-    | (Prop c1, Prop c2) -> if c1 <> c2 then raise NotConvertible
+    | (Prop c1, Prop c2) -> if c1 = Pos & c2 = Null then raise NotConvertible
     | (Prop c1, Type u)  ->
         (match pb with
             CUMUL -> ()
