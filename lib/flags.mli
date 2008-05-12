@@ -27,6 +27,8 @@ val dont_load_proofs : bool ref
 
 val raw_print : bool ref
 
+val unicode_syntax : bool ref
+
 val translate : bool ref
 val make_translate : bool -> unit
 val do_translate : unit -> bool

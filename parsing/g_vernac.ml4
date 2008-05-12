@@ -495,49 +495,39 @@ GEXTEND Gram
 	  VernacContext c
 	    
       | global = [ IDENT "Global" -> true | -> false ];
-	 IDENT "Instance"; name = OPT identref; sup = OPT [ l = binders_let -> l ];
-(* 	 name' = OPT [ "=>"; id = identref -> id ]; *)
-	 ":" ; expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
+	 IDENT "Instance"; name = identref; sup = OPT binders_let; ":";
+	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
-	   let sup = match sup with None -> [] | Some l -> l in
-	   let is = (* We reverse the default binding mode on the right *)
-	     let n = 
-	       match name with
-		 | Some (loc, id) -> (loc, Name id)
-		 | None -> (dummy_loc, Anonymous)
-	     in
-	       n, expl, t 
+	   let sup =
+	     match sup with
+		 None -> []
+	       | Some l -> l
 	   in
-	     VernacInstance (global, sup, is, props, pri)
+	   let n = 
+	     let (loc, id) = name in 
+	       (loc, Name id)
+	   in
+	     VernacInstance (global, sup, (n, expl, t), props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 
       (* Implicit *)
-      | IDENT "Implicit"; IDENT "Arguments"; enrich = [ IDENT "Enriching" -> true | -> false ];
+      | IDENT "Implicit"; IDENT "Arguments"; 
 	   local = [ IDENT "Global" -> false | IDENT "Local" -> true | -> Lib.sections_are_opened () ]; 
 	   qid = global; 
 	   pos = OPT [ "["; l = LIST0 implicit_name; "]" -> 
-		   List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
-	   VernacDeclareImplicits (local,qid,enrich,pos)
+	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
+	   VernacDeclareImplicits (local,qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
   ;
-
-(*   typeclass_ctx:  *)
-(*     [ [ sup = LIST1 operconstr SEP "->"; "=>" -> sup *)
-(*     ] ] *)
-(*   ; *)
   implicit_name:
     [ [ "!"; id = ident -> (id, false, true)
     | id = ident -> (id,false,false)
     | "["; "!"; id = ident; "]" -> (id,true,true) 
     | "["; id = ident; "]" -> (id,true, false) ] ]
   ;
-(*   typeclass_param_type: *)
-(*     [ [ "(" ; id = identref; ":"; t = lconstr ; ")" -> id, t  *)
-(*     | id = identref -> id, CHole (loc, None) ] ] *)
-(*   ; *)
   typeclass_field_type:
     [ [ id = identref; oc = of_type_with_opt_coercion; t = lconstr -> id, oc, t ] ]
   ;

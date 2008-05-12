@@ -290,7 +290,7 @@ type vernac_expr =
   | VernacHints of locality_flag * lstring list * hints
   | VernacSyntacticDefinition of identifier * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag
-  | VernacDeclareImplicits of locality_flag * lreference * bool *
+  | VernacDeclareImplicits of locality_flag * lreference * 
       (explicitation * bool * bool) list option
   | VernacReserve of lident list * constr_expr
   | VernacSetOpacity of opacity_flag * lreference list

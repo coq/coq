@@ -218,13 +218,13 @@ let begin_of_binders = function
 let surround_binder k p = 
   match k with
       Default Explicit -> hov 1 (str"(" ++ p ++ str")")
-    | Default Implicit -> hov 1 (str"`" ++ p ++ str"`")
+    | Default Implicit -> hov 1 (str"{" ++ p ++ str"}")
     | TypeClass b -> hov 1 (str"[" ++ p ++ str"]")
 
 let surround_implicit k p =
   match k with
       Default Explicit -> p
-    | Default Implicit -> (str"`" ++ p ++ str"`")
+    | Default Implicit -> (str"{" ++ p ++ str"}")
     | TypeClass b -> (str"[" ++ p ++ str"]")
 
 let pr_binder many pr (nal,k,t) =
@@ -472,6 +472,16 @@ let pr_app pr a l =
     pr (lapp,L) a  ++ 
     prlist (fun a -> spc () ++ pr_expl_args pr a) l)
 
+let pr_forall () =
+  if !Flags.unicode_syntax then str"Î " ++ spc ()
+  else str"forall" ++ spc ()
+
+let pr_fun () =
+  if !Flags.unicode_syntax then str"Î»" ++ spc ()
+  else str"fun" ++ spc ()
+
+let pr_fun_sep = lazy (if !Flags.unicode_syntax then str "," else str " =>")
+
 let rec pr sep inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
@@ -492,17 +502,16 @@ let rec pr sep inherited a =
   | CProdN _ ->
       let (bl,a) = extract_prod_binders a in
       hov 0 (
-	hov 2 (pr_delimited_binders (fun () -> str"forall" ++ spc())
+	hov 2 (pr_delimited_binders pr_forall
                  (pr mt ltop) bl) ++
         str "," ++ pr spc ltop a),
       lprod
   | CLambdaN _ ->
       let (bl,a) = extract_lam_binders a in
       hov 0 (
-        hov 2 (pr_delimited_binders (fun () -> str"fun" ++ spc())
-                 (pr mt ltop) bl) ++
-
-        str " =>" ++ pr spc ltop a),
+        hov 2 (pr_delimited_binders pr_fun
+                (pr mt ltop) bl) ++
+	  Lazy.force pr_fun_sep ++ pr spc ltop a),
       llambda
   | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), b)
       when x=x' ->
@@ -569,8 +578,8 @@ let rec pr sep inherited a =
         pr spc ltop b),
       lletin
   | CIf (_,c,(na,po),b1,b2) ->
-      (* On force les parenthèses autour d'un "if" sous-terme (même si le
-	 parsing est lui plus tolérant) *)
+      (* On force les parenthÃ¨ses autour d'un "if" sous-terme (mÃªme si le
+	 parsing est lui plus tolÃ©rant) *)
       hv 0 (
 	hov 1 (str "if " ++ pr mt ltop c ++ pr_simple_return_type (pr mt) na po) ++
 	spc () ++

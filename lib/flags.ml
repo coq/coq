@@ -32,6 +32,8 @@ let dont_load_proofs = ref false
 
 let raw_print = ref false
 
+let unicode_syntax = ref false
+
 (* Translate *)
 let translate = ref false
 let make_translate f = translate := f

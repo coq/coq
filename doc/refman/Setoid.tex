@@ -540,7 +540,7 @@ the prefixed tactics it is possible to pass additional arguments such as
 
 The \texttt{using relation}
 arguments cannot be passed to the unprefixed form. The latter argument
-tells the  tactic what parametric  relation should be used  to replace
+tells the tactic what parametric relation should be used to replace
 the first tactic argument with the second one. If omitted, it defaults
 to the \texttt{DefaultRelation} instance on the type of the objects.
 By default, it means the most recent \texttt{Equivalence} instance in
@@ -679,7 +679,7 @@ If a signature mentions a relation $R$ on the left of an arrow
 is smaller than $R$, and the inverse applies on the right of an arrow. 
 One can then declare only a few morphisms instances that generate the complete set
 of signatures for a particular constant. By default, the only declared
-subrelations is \texttt{iff}, which is a subrelation of \texttt{impl}
+subrelation is \texttt{iff}, which is a subrelation of \texttt{impl}
 and \texttt{inverse impl} (the dual of implication). That's why we can
 declare only two morphisms for conjunction:
 \verb|Morphism (impl ==> impl ==> impl) and| and 

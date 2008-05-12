@@ -2008,16 +2008,18 @@ must have the form
 \noindent where \texttt{eq} is the Leibniz equality or a registered
 setoid equality.
 
-\noindent Then {\tt rewrite \term} replaces every occurrence of 
-\term$_1$ by \term$_2$ in the goal. Some of the variables x$_1$ are
+\noindent Then {\tt rewrite \term} finds the first subterm matching
+\term$_1$ in the goal, resulting in instances \term$_1'$ and \term$_2'$
+and then replaces every occurrence of \term$_1'$ by \term$_2'$.
+Hence, some of the variables x$_i$ are
 solved by unification, and some of the types \texttt{A}$_1$, \dots,
 \texttt{A}$_n$ become new subgoals.
 
-\Rem In case the type of  
-\term$_1$ contains occurrences of variables bound in the
-type of \term, the tactic tries first to find a subterm of the goal
-which matches this term in order to find a closed instance \term$'_1$
-of \term$_1$, and then all instances of \term$'_1$ will be replaced.
+% \Rem In case the type of  
+% \term$_1$ contains occurrences of variables bound in the
+% type of \term, the tactic tries first to find a subterm of the goal
+% which matches this term in order to find a closed instance \term$'_1$
+% of \term$_1$, and then all instances of \term$'_1$ will be replaced.
 
 \begin{ErrMsgs}
 \item \errindex{The term provided does not end with an equation}
@@ -2055,6 +2057,21 @@ This happens if \term$_1$ does not occur in the goal.
   \end{itemize}
   Orientation {\tt ->} or {\tt <-} (or {\tt +} or {\tt -}) can be
   inserted before the term to rewrite.
+
+\item {\tt rewrite {\term} at \textit{occurrences}}
+  \tacindex{rewrite \dots\ at}
+
+  Rewrite only the given occurrences of \term$_1'$. Occurrences are
+  specified from left to right as for \texttt{pattern} (\S
+  \ref{pattern}). The rewrite is always performed using setoid
+  rewriting, even for leibniz equality, so one has to 
+  \texttt{Import Setoid} to use this variant.
+
+\item {\tt rewrite {\term} by {\tac}}
+  \tacindex{rewrite \dots\ by}
+
+  Use {\tac} to completely solve the side-conditions arising from the
+  rewrite.
 
 \item {\tt rewrite $\term_1$, \ldots, $term_n$}\\
   Is equivalent to the $n$ successive tactics {\tt rewrite $\term_1$}

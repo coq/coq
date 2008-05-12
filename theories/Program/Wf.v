@@ -4,7 +4,7 @@ Require Import ProofIrrelevance.
 
 Open Local Scope program_scope.
 
-Implicit Arguments Enriching Acc_inv [y].
+Implicit Arguments Acc_inv [A R x y].
 
 (** Reformulation of the Wellfounded module using subsets where possible. *)
 
@@ -137,11 +137,10 @@ Section Well_founded_measure.
       apply Fix_measure_F_inv.
     Qed.
 
-    Lemma fix_measure_sub_eq :
-        forall x : A,
-          Fix_measure_sub P F_sub x =
-          let f_sub := F_sub in
-            f_sub x (fun (y : A | m y < m x) => Fix_measure (`y)).
+    Lemma fix_measure_sub_eq : forall x : A,
+      Fix_measure_sub P F_sub x =
+        let f_sub := F_sub in
+          f_sub x (fun (y : A | m y < m x) => Fix_measure (`y)).
       exact Fix_measure_eq.
     Qed.
 

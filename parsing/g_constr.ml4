@@ -205,10 +205,20 @@ GEXTEND Gram
                 CNotation(loc,"( _ )",[c])
             | _ -> c) ] ]
   ;
+  forall: 
+    [ [ "forall" -> () 
+    | IDENT "Π" -> ()
+    ] ]
+  ;
+  lambda: 
+    [ [ "fun" -> () 
+    | IDENT "λ" -> ()
+    ] ]
+  ;
   binder_constr:
-    [ [ "forall"; bl = binder_list; ","; c = operconstr LEVEL "200" ->
+    [ [ forall; bl = binder_list; ","; c = operconstr LEVEL "200" ->
           mkCProdN loc bl c
-      | "fun"; bl = binder_list; "=>"; c = operconstr LEVEL "200" ->
+      | lambda; bl = binder_list; [ "=>" | "," ]; c = operconstr LEVEL "200" ->
           mkCLambdaN loc bl c
       | "let"; id=name; bl = binders_let; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->

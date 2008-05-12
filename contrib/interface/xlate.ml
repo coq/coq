@@ -2111,7 +2111,7 @@ let rec xlate_vernac =
   | VernacNop -> CT_proof_no_op
   | VernacComments l -> 
       CT_scomments(CT_scomment_content_list (List.map xlate_comment l))
-  | VernacDeclareImplicits(true, id, _, opt_positions) ->
+  | VernacDeclareImplicits(true, id, opt_positions) ->
       CT_implicits
 	(reference_to_ct_ID id,
 	 match opt_positions with
@@ -2124,7 +2124,7 @@ let rec xlate_vernac =
 		       -> xlate_error
 			   "explication argument by rank is obsolete"
 		     | ExplByName id, _, _ -> CT_ident (string_of_id id)) l)))
-  | VernacDeclareImplicits(false, id, _, opt_positions) ->
+  | VernacDeclareImplicits(false, id, opt_positions) ->
       xlate_error "TODO: Implicit Arguments Global"
   | VernacReserve((_,a)::l, f) ->
       CT_reserve(CT_id_ne_list(xlate_ident a, 

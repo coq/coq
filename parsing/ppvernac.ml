@@ -818,12 +818,12 @@ let rec pr_vernac = function
         (str"Notation " ++ pr_locality local ++ pr_id id ++ 
 	 prlist_with_sep spc pr_id ids ++ str" :=" ++ pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
-  | VernacDeclareImplicits (local,q,e,None) ->
+  | VernacDeclareImplicits (local,q,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
-  | VernacDeclareImplicits (local,q,e,Some imps) ->
+  | VernacDeclareImplicits (local,q,Some imps) ->
       hov 1 (str"Implicit Arguments" ++ pr_non_globality local ++
-      spc() ++ pr_reference q ++ spc() ++
-             str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
+	spc() ++ pr_reference q ++ spc() ++
+	str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
   | VernacReserve (idl,c) ->
       hov 1 (str"Implicit Type" ++
         str (if List.length idl > 1 then "s " else " ") ++

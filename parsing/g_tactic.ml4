@@ -205,7 +205,8 @@ GEXTEND Gram
       | s = ne_string -> ByNotation (loc,s) ] ]
   ;
   occs:
-    [ [ "at"; nl = LIST1 int_or_var -> nl
+    [ [ "at"; nl = LIST1 integer -> List.map (fun x -> Rawterm.ArgArg x) nl
+      | "at"; id = identref -> [Rawterm.ArgVar id]
       | -> [] ] ]
   ;
   pattern_occ:

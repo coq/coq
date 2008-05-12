@@ -681,9 +681,9 @@ let vernac_hints = Auto.add_hints
 
 let vernac_syntactic_definition = Command.syntax_definition 
 
-let vernac_declare_implicits local r e = function
+let vernac_declare_implicits local r = function
   | Some imps ->
-      Impargs.declare_manual_implicits local (global_with_alias r) e
+      Impargs.declare_manual_implicits local (global_with_alias r) false
 	(List.map (fun (ex,b,f) -> ex, (b,f)) imps)
   | None -> 
       Impargs.declare_implicits local (global_with_alias r)
@@ -1266,7 +1266,7 @@ let interp c = match c with
   | VernacDeclareTacticDefinition (x,l) -> vernac_declare_tactic_definition x l
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
-  | VernacDeclareImplicits (local,qid,e,l) ->vernac_declare_implicits local qid e l
+  | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l
   | VernacReserve (idl,c) -> vernac_reserve idl c
   | VernacSetOpacity (opaq, qidl) -> List.iter (vernac_set_opacity opaq) qidl
   | VernacSetOption (key,v) -> vernac_set_option key v

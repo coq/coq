@@ -253,7 +253,9 @@ let parse_args is_ide =
     | "-emacs" :: rem -> Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
     | "-emacs-U" :: rem -> Flags.print_emacs := true; 
 	Flags.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
-	  
+	
+    | "-unicode" :: rem -> Flags.unicode_syntax := true; parse rem
+
     | "-where" :: _ -> print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0
 
     | ("-quiet"|"-silent") :: rem -> Flags.make_silent true; parse rem
