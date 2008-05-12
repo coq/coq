@@ -63,7 +63,6 @@ Libraries (DOC TO CHECK)
   elements, nothing more). 
 - In ListSet, a few definitions are now in Type (may induce a few
   incompatibilities).
-- Notation [t;...;u] for lists made available in list_scope.
 - Changes in FSets/FMaps:
   - Improvements: in particular FMap now provides an induction principle 
     on maps, and some properties about FSets and fold needs less hypotheses.

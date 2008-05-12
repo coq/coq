@@ -994,10 +994,10 @@ syntax
 
 \noindent
 \begin{tabular}{lcl}
-{\sentence} & ::= & \texttt{Tactic Notation} {\taclevel} \sequence{\proditem}{} \\
+{\sentence} & ::= & \texttt{Tactic Notation} \zeroone{\taclevel} \nelist{\proditem}{} \\
 & & \texttt{:= {\tac} .}\\
 {\proditem} & ::= & {\str} $|$ {\tacargtype}{\tt ({\ident})} \\ 
-{\taclevel} & ::= & $|$ {\tt (at level} {\naturalnumber}{\tt )} \\
+{\taclevel} & ::= & {\tt (at level} {\naturalnumber}{\tt )} \\
 {\tacargtype} & ::= &
 %{\tt preident} $|$
 {\tt ident} $|$
@@ -1007,9 +1007,9 @@ syntax
 {\tt reference} $|$
 {\tt constr} \\ & $|$ &
 %{\tt castedopenconstr} $|$
-{\tt integer} \\ & $|$ &
-{\tt int\_or\_var} $|$
-{\tt tactic} $|$
+{\tt integer} $|$
+{\tt int\_or\_var} \\ & $|$ &
+{\tt tactic} $|$ {\tt tactic$n$} \qquad\mbox{(for $0\leq n\leq 5$)}
 \end{tabular}
 \medskip
 
@@ -1021,7 +1021,8 @@ production items. It then evaluates into the tactic expression
 symbol, i.e. a {\str}, for the first production item.  The tactic
 level indicates the parsing precedence of the tactic notation. This
 information is particularly relevant for notations of tacticals.
-Levels 0 to 5 are available. To know the parsing precedences of the
+Levels 0 to 5 are available (default is 0). 
+To know the parsing precedences of the
 existing tacticals, use the command {\tt Print Grammar tactic.}
 
 Each type of tactic argument has a specific semantic regarding how it
@@ -1045,7 +1046,8 @@ Tactic argument type & parsed as & interpreted as & as in tactic \\
 %%{\tt\small castedopenconstr} & term & a term with its sign. of exist. var. & {\tt refine}\\
 {\tt\small integer} & integer & an integer &  \\
 {\tt\small int\_or\_var} & identifier or integer & an integer & {\tt do} \\
-{\tt\small tactic} & tactic & a tactic & \\
+{\tt\small tactic} & tactic at level 5 & a tactic & \\
+{\tt\small tactic$n$} & tactic at level $n$ & a tactic & \\
 \end{tabular}
 
 \Rem In order to be bound in tactic definitions, each syntactic entry

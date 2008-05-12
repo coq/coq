@@ -115,6 +115,9 @@ Proof. destruct 1 as (x,H); exists x; trivial. Defined.
 Lemma sigT_of_sig : forall (A:Type) (P:A->Prop), sig P -> sigT P.
 Proof. destruct 1 as (x,H); exists x; trivial. Defined.
 
+Coercion sigT_of_sig : sig >-> sigT.
+Coercion sig_of_sigT : sigT >-> sig.
+
 (** [sumbool] is a boolean type equipped with the justification of
     their value *)
 

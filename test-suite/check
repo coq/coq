@@ -106,6 +106,7 @@ test_interactive() {
 # La fonction suivante teste en interactif 
 # It expects a line "(* Expected time < XXX.YYs *)" in the .v file 
 # with exactly two digits after the dot
+# The reference for time is a 6120 bogomips cpu
 test_complexity() {
     if [ -f /proc/cpuinfo ]; then
 	if grep -q bogomips /proc/cpuinfo; then # i386, ppc
