@@ -172,11 +172,13 @@ let compute_context_vars env l =
 let destClassApp cl =
   match cl with
     | CApp (loc, (None,CRef ref), l) -> loc, ref, List.map fst l
+    | CRef ref -> loc_of_reference ref, ref, []
     | _ -> raise Not_found
       
 let destClassAppExpl cl =
   match cl with
     | CApp (loc, (None,CRef ref), l) -> loc, ref, l
+    | CRef ref -> loc_of_reference ref, ref, []
     | _ -> raise Not_found
 
 let full_class_binders env l = 
