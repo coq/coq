@@ -11,8 +11,10 @@ val zenon : tactic
 val gwhy : tactic
 
 val dp_hint : reference list -> unit
-val set_timeout : int -> unit
-val set_debug : bool -> unit
-val set_trace : bool -> unit
+val dp_timeout : int -> unit
+val dp_debug : bool -> unit
+val dp_trace : bool -> unit
+val dp_prelude : string list -> unit
+val dp_predefined : reference -> string -> unit
 
 

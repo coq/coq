@@ -13,6 +13,8 @@
 
 open Util
 open Pp
+open Libobject
+open Summary
 open Term
 open Tacmach
 open Tactics
@@ -33,6 +35,33 @@ let trace = ref false
 let set_trace b = trace := b
 let timeout = ref 10
 let set_timeout n = timeout := n
+
+let (dp_timeout_obj,_) = 
+  declare_object 
+    {(default_object "Dp_timeout") with  
+       cache_function = (fun (_,x) -> set_timeout x);
+       load_function = (fun _ (_,x) -> set_timeout x);
+       export_function = (fun x -> Some x)}
+
+let dp_timeout x = Lib.add_anonymous_leaf (dp_timeout_obj x)
+
+let (dp_debug_obj,_) = 
+  declare_object 
+    {(default_object "Dp_debug") with  
+       cache_function = (fun (_,x) -> set_debug x);
+       load_function = (fun _ (_,x) -> set_debug x);
+       export_function = (fun x -> Some x)}
+
+let dp_debug x = Lib.add_anonymous_leaf (dp_debug_obj x)
+
+let (dp_trace_obj,_) = 
+  declare_object 
+    {(default_object "Dp_trace") with  
+       cache_function = (fun (_,x) -> set_trace x);
+       load_function = (fun _ (_,x) -> set_trace x);
+       export_function = (fun x -> Some x)}
+
+let dp_trace x = Lib.add_anonymous_leaf (dp_trace_obj x)
 
 let logic_dir = ["Coq";"Logic";"Decidable"]
 let coq_modules =
@@ -112,7 +141,7 @@ let coq_rename_vars env vars =
    type_quantifiers env (A1:Set)...(Ak:Set)t = A1...An, (env+Ai), t *)
 let decomp_type_quantifiers env t =
   let rec loop vars t = match kind_of_term t with
-    | Prod (n, a, t) when is_Set a -> 
+    | Prod (n, a, t) when is_Set a || is_Type a -> 
 	loop ((n,a) :: vars) t
     | _ -> 
 	let vars, env = coq_rename_vars env vars in
@@ -124,7 +153,7 @@ let decomp_type_quantifiers env t =
 (* same thing with lambda binders (for axiomatize body) *)
 let decomp_type_lambdas env t =
   let rec loop vars t = match kind_of_term t with
-    | Lambda (n, a, t) when is_Set a -> 
+    | Lambda (n, a, t) when is_Set a || is_Type a -> 
 	loop ((n,a) :: vars) t
     | _ -> 
 	let vars, env = coq_rename_vars env vars in
@@ -322,7 +351,7 @@ and make_term_abstraction tv env c =
  *)
 and tr_decl env id ty =
   let tv, env, t = decomp_type_quantifiers env ty in
-  if is_Set t then
+  if is_Set t || is_Type t then
     DeclType (id, List.length tv)
   else if is_Prop t then
     DeclPred (id, List.length tv, [])
@@ -337,8 +366,8 @@ and tr_decl env id ty =
 	DeclPred(id, List.length tv, l)
       else 
 	let s = Typing.type_of env Evd.empty t in
-	if is_Set s then 
-	  DeclFun(id, List.length tv, l, tr_type tv env t)
+	if is_Set s || is_Type s then 
+	  DeclFun (id, List.length tv, l, tr_type tv env t)
 	else 
 	  raise NotFO
 
@@ -372,13 +401,14 @@ and axiomatize_body env r id d = match r with
       begin match (Global.lookup_constant c).const_body with
 	| Some b ->
 	    let b = force b in
-	    let tv, env, b = decomp_type_lambdas env b in
 	    let axioms =
 	      (match d with
 		 | DeclPred (id, _, []) ->
+		     let tv, env, b = decomp_type_lambdas env b in
 		     let value = tr_formula tv [] env b in
 		     [id, Iff (Fatom (Pred (id, [])), value)]
 		 | DeclFun (id, _, [], _) ->
+		     let tv, env, b = decomp_type_lambdas env b in
 		     let value = tr_term tv [] env b in
 		     [id, Fatom (Eq (Fol.App (id, []), value))]
 		 | DeclFun (id, _, l, _) | DeclPred (id, _, l) ->
@@ -399,6 +429,7 @@ and axiomatize_body env r id d = match r with
 		       | _ -> 
 			   b
 		     in
+		     let tv, env, b = decomp_type_lambdas env b in
 		     let vars, t = decompose_lam b in
 		     let n = List.length l in
 		     let k = List.length vars in
@@ -568,7 +599,7 @@ and tr_formula tv bv env f =
 	Fatom (Pred (rename_global (VarRef id), []))
     | _, [t;a;b] when c = build_coq_eq () ->
 	let ty = Typing.type_of env Evd.empty t in
-	if is_Set ty then
+	if is_Set ty || is_Type ty then
 	  let _ = tr_type tv env t in
 	  Fatom (Eq (tr_term tv bv env a, tr_term tv bv env b))
 	else 
@@ -650,8 +681,58 @@ let remove_files = List.iter (fun f -> try Sys.remove f with _ -> ())
 
 let sprintf = Format.sprintf
 
+let file_contents f =
+  let buf = Buffer.create 1024 in
+  try
+    let c = open_in f in
+    begin try 
+      while true do 
+	let s = input_line c in Buffer.add_string buf s; 
+	Buffer.add_char buf '\n'
+      done;
+      assert false
+    with End_of_file ->
+      close_in c;
+      Buffer.contents buf
+    end
+  with _ -> 
+    sprintf "(cannot open %s)" f
+
+let timeout_sys_command cmd =
+  if !debug then Format.eprintf "command line: %s@." cmd;
+  let out = Filename.temp_file "out" "" in
+  let cmd = sprintf "cpulimit %d %s > %s 2>&1" !timeout cmd out in
+  let ret = Sys.command cmd in
+  if !debug then 
+    Format.eprintf "Output file %s:@.%s@." out (file_contents out);
+  ret, out
+
+let timeout_or_failure c cmd out =
+  if c = 152 then 
+    Timeout 
+  else
+    Failure 
+      (sprintf "command %s failed with output:\n%s " cmd (file_contents out))
+
+let prelude_files = ref ([] : string list)
+
+let set_prelude l = prelude_files := l
+
+let (dp_prelude_obj,_) = 
+  declare_object 
+    {(default_object "Dp_prelude") with  
+       cache_function = (fun (_,x) -> set_prelude x);
+       load_function = (fun _ (_,x) -> set_prelude x);
+       export_function = (fun x -> Some x)}
+
+let dp_prelude x = Lib.add_anonymous_leaf (dp_prelude_obj x)
+
+let why_files f = String.concat " " (!prelude_files @ [f])
+
 let call_simplify fwhy =
-  let cmd = sprintf "why --no-arrays --simplify --encoding sstrat %s" fwhy in
+  let cmd = 
+    sprintf "why --no-arrays --simplify --encoding sstrat %s" (why_files fwhy) 
+  in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsx = Filename.chop_suffix fwhy ".why" ^ "_why.sx" in
   let cmd = 
@@ -666,26 +747,36 @@ let call_simplify fwhy =
   r
 
 let call_ergo fwhy =
+  let cmd = sprintf "why --no-arrays --why %s" (why_files fwhy) in
+  if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
+  let fwhy = Filename.chop_suffix fwhy ".why" ^ "_why.why" in
   let ftrace = Filename.temp_file "ergo_trace" "" in
   let cmd = 
     if !trace then
-      sprintf 
-	"timeout %d ergo -cctrace %s %s > out 2>&1 && grep -q -w Valid out"  
-	!timeout ftrace fwhy
+      sprintf "ergo -cctrace %s %s" ftrace fwhy
     else
-      sprintf "timeout %d ergo %s > out 2>&1 && grep -q -w Valid out" 
-	!timeout fwhy
+      sprintf "ergo %s" fwhy
   in
-  let out = Sys.command cmd in
+  let ret,out = timeout_sys_command cmd in
   let r = 
-    if out = 0 then Valid (if !trace then Some ftrace else None)
-    else if out = 1 then Invalid else Timeout 
+    if ret <> 0 then 
+      timeout_or_failure ret cmd out
+    else if Sys.command (sprintf "grep -q -w Valid %s" out) = 0 then
+      Valid (if !trace then Some ftrace else None)
+    else if Sys.command (sprintf "grep -q -w \"I don't know\" %s" out) = 0 then
+      DontKnow
+    else if Sys.command (sprintf "grep -q -w \"Invalid\" %s" out) = 0 then
+      Invalid
+    else
+      Failure ("command failed: " ^ cmd)
   in
-  if not !debug then remove_files [fwhy];
+  if not !debug then remove_files [fwhy; out];
   r
 
 let call_zenon fwhy =
-  let cmd = sprintf "why --no-prelude --no-zenon-prelude --zenon %s" fwhy in
+  let cmd = 
+    sprintf "why --no-prelude --no-zenon-prelude --zenon %s" (why_files fwhy)
+  in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fznn = Filename.chop_suffix fwhy ".why" ^ "_why.znn" in
   let out = Filename.temp_file "dp_out" "" in
@@ -705,7 +796,9 @@ let call_zenon fwhy =
   end
 
 let call_yices fwhy =
-  let cmd = sprintf "why --no-arrays -smtlib --encoding sstrat %s" fwhy in
+  let cmd = 
+    sprintf "why --no-arrays -smtlib --encoding sstrat %s" (why_files fwhy)
+  in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fsmt = Filename.chop_suffix fwhy ".why" ^ "_why.smt" in
   let cmd = 
@@ -720,7 +813,9 @@ let call_yices fwhy =
   r
 
 let call_cvcl fwhy =
-  let cmd = sprintf "why --no-arrays --cvcl --encoding sstrat %s" fwhy in
+  let cmd = 
+    sprintf "why --no-arrays --cvcl --encoding sstrat %s" (why_files fwhy)
+  in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let fcvc = Filename.chop_suffix fwhy ".why" ^ "_why.cvc" in
   let cmd = 
@@ -735,7 +830,9 @@ let call_cvcl fwhy =
   r
 
 let call_harvey fwhy =
-  let cmd = sprintf "why --no-arrays --harvey --encoding strat %s" fwhy in
+  let cmd = 
+    sprintf "why --no-arrays --harvey --encoding strat %s" (why_files fwhy)
+  in
   if Sys.command cmd <> 0 then error ("call to " ^ cmd ^ " failed");
   let frv = Filename.chop_suffix fwhy ".why" ^ "_why.rv" in
   let out = Sys.command (sprintf "rvc -e -t %s > /dev/null 2>&1" frv) in
@@ -759,7 +856,7 @@ let call_harvey fwhy =
   r
 
 let call_gwhy fwhy =
-  let cmd = sprintf "gwhy --no-arrays  %s" fwhy in
+  let cmd = sprintf "gwhy --no-arrays  %s" (why_files fwhy) in
   if Sys.command cmd <> 0 then ignore (Sys.command (sprintf "emacs %s" fwhy));
   NoAnswer
 
@@ -779,35 +876,35 @@ let ergo_proof_from_file f gl =
 
 let call_prover prover q =
   let fwhy = Filename.temp_file "coq_dp" ".why" in
-    Dp_why.output_file fwhy q;
-    if !debug then Format.eprintf "Why file: %s@." fwhy;
-    match prover with
-      | Simplify -> call_simplify fwhy
-      | Ergo -> call_ergo fwhy
-      | Yices -> call_yices fwhy
-      | Zenon -> call_zenon fwhy
-      | CVCLite -> call_cvcl fwhy
-      | Harvey -> call_harvey fwhy
-      | Gwhy -> call_gwhy fwhy
+  Dp_why.output_file fwhy q;
+  match prover with
+    | Simplify -> call_simplify fwhy
+    | Ergo -> call_ergo fwhy
+    | Yices -> call_yices fwhy
+    | Zenon -> call_zenon fwhy
+    | CVCLite -> call_cvcl fwhy
+    | Harvey -> call_harvey fwhy
+    | Gwhy -> call_gwhy fwhy
   
 let dp prover gl =
-  Coqlib.check_required_library(["Coq";"ZArith";"ZArith"]);
+  Coqlib.check_required_library ["Coq";"ZArith";"ZArith"];
   let concl_type = pf_type_of gl (pf_concl gl) in
-    if not (is_Prop concl_type) then error "Conclusion is not a Prop";
-    try 
-      let q = tr_goal gl in
-	begin match call_prover prover q with
-	  | Valid (Some f) when prover = Zenon -> Dp_zenon.proof_from_file f gl
-	  | Valid (Some f) when prover = Ergo -> ergo_proof_from_file f gl
-	  | Valid _ -> Tactics.admit_as_an_axiom gl
-	  | Invalid -> error "Invalid"
-	  | DontKnow -> error "Don't know"
-	  | Timeout -> error "Timeout"
-	  | NoAnswer -> Tacticals.tclIDTAC gl
-	end
-    with NotFO ->
-      error "Not a first order goal"
-  
+  if not (is_Prop concl_type) then error "Conclusion is not a Prop";
+  try 
+    let q = tr_goal gl in
+    begin match call_prover prover q with
+      | Valid (Some f) when prover = Zenon -> Dp_zenon.proof_from_file f gl
+      | Valid (Some f) when prover = Ergo -> ergo_proof_from_file f gl
+      | Valid _ -> Tactics.admit_as_an_axiom gl
+      | Invalid -> error "Invalid"
+      | DontKnow -> error "Don't know"
+      | Timeout -> error "Timeout"
+      | Failure s -> error s
+      | NoAnswer -> Tacticals.tclIDTAC gl
+    end
+  with NotFO ->
+    error "Not a first order goal"
+      
 
 let simplify = tclTHEN intros (dp Simplify)
 let ergo = tclTHEN intros (dp Ergo)
@@ -843,3 +940,52 @@ let dp_hint l =
     end
   in
   List.iter one_hint (List.map (fun qid -> qid, Nametab.global qid) l)
+
+let (dp_hint_obj,_) = 
+  declare_object 
+    {(default_object "Dp_hint") with  
+       cache_function = (fun (_,l) -> dp_hint l);
+       load_function = (fun _ (_,l) -> dp_hint l);
+       export_function = (fun x -> Some x)}
+
+let dp_hint l = Lib.add_anonymous_leaf (dp_hint_obj l)
+
+let dp_predefined qid s =
+  let r = Nametab.global qid in
+  let ty = Global.type_of_global r in
+  let env = Global.env () in
+  let id = rename_global r in
+  try
+    let d = match tr_decl env id ty with
+      | DeclType (_, n) -> DeclType (s, n)
+      | DeclFun (_, n, tyl, ty) -> DeclFun (s, n, tyl, ty)
+      | DeclPred (_, n, tyl) -> DeclPred (s, n, tyl) 
+      | Axiom _ as d -> d
+    in
+    match d with
+      | Axiom _ ->  msg_warning (str " ignored (axiom)")
+      | d -> add_global r (Gfo d)
+  with NotFO ->
+    msg_warning (str " ignored (not a first order declaration)")
+
+let (dp_predefined_obj,_) = 
+  declare_object 
+    {(default_object "Dp_predefined") with  
+       cache_function = (fun (_,(id,s)) -> dp_predefined id s);
+       load_function = (fun _ (_,(id,s)) -> dp_predefined id s);
+       export_function = (fun x -> Some x)}
+
+let dp_predefined id s = Lib.add_anonymous_leaf (dp_predefined_obj (id,s))
+
+let _ = declare_summary "Dp options" 
+	  { freeze_function = 
+	      (fun () -> !debug, !trace, !timeout, !prelude_files);
+	    unfreeze_function = 
+	      (fun (d,tr,tm,pr) -> 
+		debug := d; trace := tr; timeout := tm; prelude_files := pr);
+	    init_function = 
+	      (fun () -> 
+		debug := false; trace := false; timeout := 10; 
+		prelude_files := []);
+	    survive_module = true;
+	    survive_section = true }  

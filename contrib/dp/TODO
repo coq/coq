@@ -21,8 +21,4 @@ TODO
 BUGS
 ----
 
-- value = Some : forall A:Set, A -> option A
-
-  -> eta_expanse échoue sur assert false (ligne 147)
-
 

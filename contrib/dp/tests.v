@@ -5,14 +5,42 @@ Require Import Classical.
 Dp_debug.
 Dp_timeout 3.
 
+(* module renamings *)
+
+Module M.
+  Parameter t : Set.
+End M.
+
+Lemma test_module_0 : forall x:M.t, x=x.
+ergo.
+Qed.
+
+Module N := M.
+
+Lemma test_module_renaming_0 : forall x:N.t, x=x.
+ergo.
+Qed.
+
+Dp_predefined M.t => "int".
+
+Lemma test_module_renaming_1 : forall x:N.t, x=x.
+ergo.
+Qed.
+
 (* Coq lists *)
 
 Require Export List.
+
+Lemma test_pol_0 : forall l:list nat, l=l.
+ergo.
+Qed.
+
 Parameter nlist: list nat -> Prop.
 
- Goal forall l,  nlist l -> True.
- intros. 
- simplify.
+Lemma poly_1 : forall l,  nlist l -> True.
+intros. 
+simplify.
+Qed.
 
 (* user lists *)
 
@@ -28,7 +56,7 @@ end.
 
 Lemma entail: (nil Z) = app Z (nil Z) (nil Z) -> True. 
 intros; ergo. 
-
+Qed.
 
 (* polymorphism *)
 Require Import List.
@@ -37,11 +65,10 @@ Inductive mylist (A:Set) : Set :=
   mynil : mylist A
 | mycons : forall a:A, mylist A -> mylist A.
 
-Parameter nlist: mylist nat -> Prop.
+Parameter my_nlist: mylist nat -> Prop.
 
- Goal forall l,  nlist l -> True.
+ Goal forall l,  my_nlist l -> True.
  intros.
-gwhy.
  simplify. 
 Qed.
 

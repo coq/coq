@@ -51,4 +51,5 @@ type prover_answer =
   | DontKnow
   | Timeout
   | NoAnswer
+  | Failure of string
 

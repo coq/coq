@@ -58,14 +58,22 @@ VERNAC COMMAND EXTEND Dp_hint
 END
 
 VERNAC COMMAND EXTEND Dp_timeout
-| [ "Dp_timeout" natural(n) ] -> [ set_timeout n ]
+| [ "Dp_timeout" natural(n) ] -> [ dp_timeout n ]
+END
+
+VERNAC COMMAND EXTEND Dp_prelude
+| [ "Dp_prelude" string_list(l) ] -> [ dp_prelude l ]
+END
+
+VERNAC COMMAND EXTEND Dp_predefined
+| [ "Dp_predefined" global(g) "=>" string(s) ] -> [ dp_predefined g s ]
 END
 
 VERNAC COMMAND EXTEND Dp_debug
-| [ "Dp_debug" ] -> [ set_debug true; Dp_zenon.set_debug true ]
+| [ "Dp_debug" ] -> [ dp_debug true; Dp_zenon.set_debug true ]
 END
 
 VERNAC COMMAND EXTEND Dp_trace
-| [ "Dp_trace" ] -> [ set_trace true ]
+| [ "Dp_trace" ] -> [ dp_trace true ]
 END
 
