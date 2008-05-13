@@ -230,8 +230,8 @@ tactic is replaced by the default one if not specified.
   Shows the term that will be fed to
   the kernel once the obligations are solved. Useful for debugging.
 \item {\tt Set Transparent Obligations}\comindex{Set Transparent Obligations}
-  Force all obligations to be declared as transparent, otherwise let the
-  system infer which obligations can be declared opaque.
+  Control whether all obligations should be declared as transparent (the
+  default), or if the system should infer which obligations can be declared opaque. 
 \end{itemize}
 
 The module {\tt Coq.Program.Tactics} defines the default tactic for solving

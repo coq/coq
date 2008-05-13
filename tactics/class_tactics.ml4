@@ -41,6 +41,7 @@ open Libnames
 open Evd
 
 let default_eauto_depth = 100
+let typeclasses_db = "typeclass_instances"
 
 let check_imported_library d =
   let d' = List.map id_of_string d in
@@ -356,6 +357,11 @@ let full_eauto debug n lems gls =
   let db_list = List.map searchtable_map dbnames in
     e_search_auto debug n lems db_list gls
 
+let typeclasses_eauto debug n lems gls = 
+  let dbnames = [typeclasses_db] in
+  let db_list = List.map searchtable_map dbnames in
+    e_search_auto debug n lems db_list gls
+
 exception Found of evar_map
 
 let valid goals p res_sigma l = 
@@ -383,7 +389,7 @@ let resolve_all_evars_once debug (mode, depth) env p evd =
   let goals = List.rev goals in
   let gls = { it = List.map snd goals; sigma = evm' } in
   let res_sigma = ref evm' in
-  let gls', valid' = full_eauto debug (mode, depth) [] (gls, valid goals p res_sigma) in
+  let gls', valid' = typeclasses_eauto debug (mode, depth) [] (gls, valid goals p res_sigma) in
     res_sigma := Evarutil.nf_evars (sig_sig gls');
     try ignore(valid' []); assert(false) 
     with Found evm' -> Evarutil.nf_evar_defs (Evd.evars_reset_evd evm' evd)
@@ -393,7 +399,7 @@ exception FoundTerm of constr
 let resolve_one_typeclass env gl =
   let gls = { it = [ Evd.make_evar (Environ.named_context_val env) gl ] ; sigma = Evd.empty } in
   let valid x = raise (FoundTerm (fst (Refiner.extract_open_proof Evd.empty (List.hd x)))) in
-  let gls', valid' = full_eauto false (true, default_eauto_depth) [] (gls, valid) in
+  let gls', valid' = typeclasses_eauto false (true, default_eauto_depth) [] (gls, valid) in
     try ignore(valid' []); assert false with FoundTerm t -> 
       let term = Evarutil.nf_evar (sig_sig gls') t in
 	if occur_existential term then raise Not_found else term
@@ -417,7 +423,7 @@ let resolve_all_evars debug m env p oevd =
     
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
 | [ "Typeclasses" "unfold" reference_list(cl) ] -> [
-    add_hints false ["typeclass_instances"] (Vernacexpr.HintsUnfold cl)
+    add_hints false [typeclasses_db] (Vernacexpr.HintsUnfold cl)
   ]
 END
 
@@ -1512,3 +1518,27 @@ END
 TACTIC EXTEND setoid_transitivity
    [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
 END
+
+let try_classes t gls = 
+  try t gls
+  with (Pretype_errors.PretypeError _) as e -> raise e
+
+TACTIC EXTEND try_classes
+  [ "try_classes" tactic(t) ] -> [ try_classes (snd t) ]
+END
+
+(* let lift_monad env t = *)
+(*   match kind_of_term t with *)
+(*     | Rel n -> t *)
+(*     | Var id -> t *)
+(*     | App (f, args) -> *)
+(* 	let args' =  *)
+(* 	  List.fold_right *)
+(* 	    (fun arg acc -> *)
+(* 	      let ty = Typing.type_of env arg in *)
+(* 	      let arg' = lift_monad t in *)
+(* 		monad_bind arg'  *)
+(* 		  (mkLambda (Name (id_of_string "x"),  *)
+			    
+			    
+			    

@@ -791,8 +791,15 @@ let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let names = List.map (fun id -> Name id) fixnames in
   (Array.of_list names, Array.of_list fixtypes, Array.of_list defs)
 
+(* Jump over let-bindings. *)
+
 let rel_index n ctx = 
-  list_index0 (Name n) (List.rev_map (fun (na, _, _) -> na) ctx)
+  list_index0 (Name n) (List.rev_map pi1 (List.filter (fun x -> pi2 x = None) ctx))
+
+let rec unfold f b =
+  match f b with
+    | Some (x, b') -> x :: unfold f b'
+    | None -> []
 
 let compute_possible_guardness_evidences (n,_) (_, fixctx) fixtype =
   match n with 
@@ -803,9 +810,9 @@ let compute_possible_guardness_evidences (n,_) (_, fixctx) fixtype =
 	 but doing it properly involves delta-reduction, and it finally 
          doesn't seem to worth the effort (except for huge mutual 
 	 fixpoints ?) *)
-      let m = List.length fixctx in
-      let ctx = fst (Sign.decompose_prod_n_assum m fixtype) in
-      list_map_i (fun i _ -> i) 0 ctx
+      let len = List.length fixctx in
+	unfold (function x when x = len -> None 
+	  | n -> Some (n, succ n)) 0
 
 let interp_recursive fixkind l boxed =
   let env = Global.env() in

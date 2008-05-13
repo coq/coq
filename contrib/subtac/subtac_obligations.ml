@@ -61,7 +61,7 @@ let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic ())
 let set_default_tactic t = default_tactic_expr := t; default_tactic := Tacinterp.eval_tactic t
 
 (* true = All transparent, false = Opaque if possible *)
-let proofs_transparency = ref false
+let proofs_transparency = ref true
 
 let set_proofs_transparency = (:=) proofs_transparency
 let get_proofs_transparency () = !proofs_transparency
