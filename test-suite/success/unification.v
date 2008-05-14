@@ -117,3 +117,12 @@ Inductive nonemptyT (t : Type) : Prop := nonemptyT_intro : t -> nonemptyT t.
 Goal True.
 try case nonemptyT_intro. (* check that it fails w/o anomaly *)
 Abort.
+
+(* Test handling of return type and when it is decided to make the
+   predicate dependent or not - see "bug" #1851 *)
+
+Goal forall X (a:X) (f':nat -> X), (exists f : nat -> X, True).
+intros.
+exists (fun n => match n with O => a | S n' => f' n' end).
+constructor.
+Qed.

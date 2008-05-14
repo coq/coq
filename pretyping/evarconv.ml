@@ -477,46 +477,57 @@ and conv_record env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
      (fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) ts ts1);
      (fun i -> evar_conv_x env i CONV c1 (applist (c,(List.rev ks))))]
 
-let first_order_unification env evd pbty (term1,l1) (term2,l2) =
+(* We assume here |l1| <= |l2| *)
+
+let first_order_unification env evd (ev1,l1) (term2,l2) =
+  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
+  ise_and evd
+    (* First compare extra args for better failure message *)
+    [(fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) rest2 l1);
+    (fun i ->
+      (* Then instantiate evar unless already done by unifying args *)
+      let t2 = applist(term2,deb2) in
+      if is_defined_evar i ev1 then
+	evar_conv_x env i CONV t2 (mkEvar ev1)
+      else
+	solve_simple_eqn evar_conv_x env i (CONV,ev1,t2))]
+
+let choose_less_dependent_instance evk evd =
+  let evi = Evd.find (evars_of evd) evk in
+  let ctx = evar_filtered_context evi in
+  Evd.evar_define evk (mkVar (pi1 (List.hd ctx))) evd
+
+let apply_conversion_problem_heuristic env evd pbty t1 t2 =
+  let t1 = apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t1) in
+  let t2 = apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t2) in
+  let (term1,l1 as appr1) = decompose_app t1 in
+  let (term2,l2 as appr2) = decompose_app t2 in
   match kind_of_term term1, kind_of_term term2 with
-    | Evar ev1,_ when List.length l1 <= List.length l2 ->
-	let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
-	ise_and evd
-          (* First compare extra args for better failure message *)
-        [(fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) rest2 l1);
-	(fun i ->
-          (* Then instantiate evar unless already done by unifying args *)
-	  let t2 = applist(term2,deb2) in
-	  if is_defined_evar i ev1 then
-	    evar_conv_x env i pbty t2 (mkEvar ev1)
-	  else
-	    solve_simple_eqn evar_conv_x env i (pbty,ev1,t2))]
-    | _,Evar ev2 when List.length l2 <= List.length l1 ->
-	let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
-	ise_and evd
-          (* First compare extra args for better failure message *)
-        [(fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) rest1 l2);
-	(fun i ->
-          (* Then instantiate evar unless already done by unifying args *)
-	  let t1 = applist(term1,deb1) in
-	  if is_defined_evar i ev2 then
-	    evar_conv_x env i pbty t1 (mkEvar ev2)
-	  else
-	    solve_simple_eqn evar_conv_x env i (pbty,ev2,t1))]
-    | _ -> 
-	(* Some head evar have been instantiated *)
-	evar_conv_x env evd pbty (applist(term1,l1)) (applist(term2,l2))
+  | Evar (evk1,args1), Rel _ when l1 = [] & l2 = [] ->
+      (* The typical kind of constraint coming from patter-matching return
+         type inference *)
+      assert (array_for_all ((=) term2) args1);
+      choose_less_dependent_instance evk1 evd, true
+  | Rel _, Evar (evk2,args2) when l1 = [] & l2 = [] ->
+      (* The typical kind of constraint coming from patter-matching return
+         type inference *)
+      assert (array_for_all ((=) term1) args2);
+      choose_less_dependent_instance evk2 evd, true
+  | Evar ev1,_ when List.length l1 <= List.length l2 ->
+      (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
+      first_order_unification env evd (ev1,l1) appr2
+  | _,Evar ev2 when List.length l2 <= List.length l1 ->
+      (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
+      first_order_unification env evd (ev2,l2) appr1
+  | _ ->
+      (* Some head evar have been instantiated, or unknown kind of problem *)
+      evar_conv_x env evd pbty t1 t2
 
 let consider_remaining_unif_problems env evd =
   let (evd,pbs) = extract_all_conv_pbs evd in
   List.fold_left
     (fun (evd,b as p) (pbty,env,t1,t2) ->
-      if b then
-	let t1 = apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t1) in
-	let t2 = apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t2) in
-	first_order_unification env evd pbty 
-	  (decompose_app t1) (decompose_app t2)
-      else p)
+      if b then apply_conversion_problem_heuristic env evd pbty t1 t2 else p)
     (evd,true)
     pbs
 
