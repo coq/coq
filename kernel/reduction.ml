@@ -219,20 +219,21 @@ let in_whnf (t,stk) =
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb infos lft1 lft2 term1 term2 cuniv = 
+  eqappr cv_pb infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
+
+(* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
+and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
   Util.check_for_interrupt ();
-  let rec whd_both (t1,stk1) (t2,stk2) =
+  (* First head reduce both terms *)
+  let rec  whd_both (t1,stk1) (t2,stk2) =
     let st1' = whd_stack (snd infos) t1 stk1 in
     let st2' = whd_stack (snd infos) t2 stk2 in
     (* Now, whd_stack on term2 might have modified st1 (due to sharing),
        and st1 might not be in whnf anymore. If so, we iterate ccnv. *)
     if in_whnf st1' then (st1',st2') else whd_both st1' st2' in
-  let (st1,st2) = whd_both (term1,[]) (term2,[]) in
-  eqappr cv_pb infos (lft1, st1) (lft2, st2) cuniv
-
-(* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
-and eqappr cv_pb infos appr1 appr2 cuniv =
-  let (lft1,(hd1,v1)) = appr1 in
-  let (lft2,(hd2,v2)) = appr2 in
+  let ((hd1,v1),(hd2,v2)) = whd_both st1 st2 in
+  let appr1 = (lft1,(hd1,v1)) and appr2 = (lft2,(hd2,v2)) in
+  (* compute the lifts that apply to the head of the term (hd1 and hd2) *)
   let el1 = el_stack lft1 v1 in
   let el2 = el_stack lft2 v2 in
   match (fterm_of hd1, fterm_of hd2) with
