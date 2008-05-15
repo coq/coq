@@ -166,19 +166,60 @@ let conv_sort env s0 s1 = sort_cmp CONV s0 s1 Constraint.empty
 
 let conv_sort_leq env s0 s1 = sort_cmp CUMUL s0 s1 Constraint.empty
 
+let rec no_arg_available = function
+  | [] -> true
+  | Zupdate _ :: stk -> no_arg_available stk
+  | Zshift _ :: stk -> no_arg_available stk
+  | Zapp v :: stk -> Array.length v = 0 && no_arg_available stk
+  | Zcase _ :: _ -> true
+  | Zfix _ :: _ -> true
+
+let rec no_nth_arg_available n = function
+  | [] -> true
+  | Zupdate _ :: stk -> no_nth_arg_available n stk
+  | Zshift _ :: stk -> no_nth_arg_available n stk
+  | Zapp v :: stk ->
+      let k = Array.length v in
+      if n >= k then no_nth_arg_available (n-k) stk
+      else false
+  | Zcase _ :: _ -> true
+  | Zfix _ :: _ -> true
+
+let rec no_case_available = function
+  | [] -> true
+  | Zupdate _ :: stk -> no_case_available stk
+  | Zshift _ :: stk -> no_case_available stk
+  | Zapp _ :: stk -> no_case_available stk
+  | Zcase _ :: _ -> false
+  | Zfix _ :: _ -> true
+
+let in_whnf (t,stk) =
+  match fterm_of t with
+    | (FLetIn _ | FCases _ | FApp _ | FCLOS _ | FLIFT _ | FCast _) -> false
+    | FLambda _ -> no_arg_available stk
+    | FConstruct _ -> no_case_available stk
+    | FCoFix _ -> no_case_available stk
+    | FFix(((ri,n),(_,_,_)),_) -> no_nth_arg_available ri.(n) stk
+    | (FFlex _ | FProd _ | FEvar _ | FInd _ | FAtom _ | FRel _) -> true
+    | FLOCKED -> assert false
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb infos lft1 lft2 term1 term2 cuniv = 
-  Util.check_for_interrupt ();
-  eqappr cv_pb infos
-    (lft1, whd_stack infos term1 [])
-    (lft2, whd_stack infos term2 [])
-    cuniv
+  eqappr cv_pb infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
 
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
-and eqappr cv_pb infos appr1 appr2 cuniv =
-  let (lft1,(hd1,v1)) = appr1 in
-  let (lft2,(hd2,v2)) = appr2 in
+and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
+  Util.check_for_interrupt ();
+  (* First head reduce both terms *)
+  let rec  whd_both (t1,stk1) (t2,stk2) =
+    let st1' = whd_stack infos t1 stk1 in
+    let st2' = whd_stack infos t2 stk2 in
+    (* Now, whd_stack on term2 might have modified st1 (due to sharing),
+       and st1 might not be in whnf anymore. If so, we iterate ccnv. *)
+    if in_whnf st1' then (st1',st2') else whd_both st1' st2' in
+  let ((hd1,v1),(hd2,v2)) = whd_both st1 st2 in
+  let appr1 = (lft1,(hd1,v1)) and appr2 = (lft2,(hd2,v2)) in
+  (* compute the lifts that apply to the head of the term (hd1 and hd2) *)
   let el1 = el_stack lft1 v1 in
   let el2 = el_stack lft2 v2 in
   match (fterm_of hd1, fterm_of hd2) with
@@ -244,6 +285,7 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
 	
     (* other constructors *)
     | (FLambda _, FLambda _) ->
+        assert (is_empty_stack v1 && is_empty_stack v2);
         let (_,ty1,bd1) = destFLambda mk_clos hd1 in
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
         let u1 = ccnv CONV infos el1 el2 ty1 ty2 cuniv in
@@ -299,19 +341,12 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
            convert_stacks infos lft1 lft2 v1 v2 u2
          else raise NotConvertible
 
-    (* Can happen because whd_stack on one arg may have side-effects
-       on the other arg and coulb be no more in hnf... *)
-    | ( (FLetIn _, _) | (FCases _,_) | (FApp _,_)
-      | (FCLOS _, _) | (FLIFT _, _)) ->
-        eqappr cv_pb infos (lft1, whd_stack infos hd1 v1) appr2 cuniv
-
-    | ( (_, FLetIn _) | (_,FCases _) | (_,FApp _)
-      | (_,FCLOS _) | (_,FLIFT _)) ->
-        eqappr cv_pb infos (lft1, whd_stack infos hd1 v1) appr2 cuniv
-
-    (* Should not happen because whd_stack unlocks references *)
-    | ((FLOCKED,_) | (_,FLOCKED)) -> assert false
-
+     (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
+     | ( (FLetIn _, _) | (FCases _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
+       | (_, FLetIn _) | (_,FCases _) | (_,FApp _) | (_,FCLOS _) | (_,FLIFT _)
+       | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
+    
+     (* In all other cases, terms are not convertible *)
      | _ -> raise NotConvertible
 
 and convert_stacks infos lft1 lft2 stk1 stk2 cuniv =
