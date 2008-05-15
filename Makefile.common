@@ -505,11 +505,12 @@ LOGICVO:=$(addprefix theories/Logic/, \
  IndefiniteDescription.vo SetIsType.vo )
 
 ARITHVO:=$(addprefix theories/Arith/, \
- Arith.vo	Gt.vo          	Between.vo	Le.vo          \
- Compare.vo	Lt.vo          	Compare_dec.vo	Min.vo         \
- Div2.vo	Minus.vo       	Mult.vo		Even.vo        \
- EqNat.vo	Peano_dec.vo   	Euclid.vo	Plus.vo        \
- Wf_nat.vo  	Max.vo		Factorial.vo	Arith_base.vo  )
+ Arith.vo	Gt.vo          	Between.vo	Le.vo         	\
+ Compare.vo	Lt.vo          	Compare_dec.vo	Min.vo        	\
+ Div2.vo	Minus.vo       	Mult.vo		Even.vo       	\
+ EqNat.vo	Peano_dec.vo   	Euclid.vo	Plus.vo		\
+ Wf_nat.vo  	Max.vo		Bool_nat.vo	Factorial.vo	\
+ Arith_base.vo )
 
 SORTINGVO:=$(addprefix theories/Sorting/, \
  Heap.vo 	Permutation.vo	Sorting.vo 	PermutSetoid.vo \
