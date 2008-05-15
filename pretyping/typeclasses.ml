@@ -50,7 +50,7 @@ type typeclasses = (global_reference, typeclass) Gmap.t
 type globality = int option
 
 type instance = {
-  is_class: typeclass;
+  is_class: global_reference;
   is_pri: int option;
   is_global: globality;
   (* Sections where the instance should be redeclared, 
@@ -58,10 +58,10 @@ type instance = {
   is_impl: constant; 
 }
 
-type instances = (global_reference, instance list) Gmap.t
+type instances = (global_reference, instance Cmap.t) Gmap.t
 
 let instance_impl is = is.is_impl
-    
+
 let new_instance cl pri glob impl = 
   let global =
     if Lib.sections_are_opened () then 
@@ -69,7 +69,7 @@ let new_instance cl pri glob impl =
       else None
     else Some 0
   in
-    { is_class = cl ;
+    { is_class = cl.cl_impl;
       is_pri = pri ;
       is_global = global ;
       is_impl = impl }
@@ -101,29 +101,16 @@ let _ =
       Summary.survive_section = true }
 
 let gmap_merge old ne =
-  Gmap.fold (fun k v acc -> Gmap.add k v acc) ne old
+  Gmap.fold (fun k v acc -> Gmap.add k v acc) old ne
 
-let gmap_list_merge old upd ne =
-  let ne = 
-    Gmap.fold (fun k v acc -> 
-      let oldv = try Gmap.find k old with Not_found -> [] in
-      let v' = 
-	List.fold_left (fun acc x -> 
-	  if not (List.exists (fun y -> y.is_impl = x.is_impl) v) then (
-	    (x :: acc)) else acc)
-	v oldv
-      in Gmap.add k v' acc)
-      ne Gmap.empty
-  in
-    Gmap.fold (fun k v acc -> 
-      let newv = try Gmap.find k ne with Not_found -> [] in
-      let v' = 
-	List.fold_left (fun acc x -> 
-	  if not (List.exists (fun y -> y.is_impl = x.is_impl) acc) then x :: acc else acc)
-	  newv v
-      in Gmap.add k v' acc)
-      old ne
+let cmap_union = Cmap.fold Cmap.add
 
+let gmap_cmap_merge old ne =
+  Gmap.fold (fun cl insts acc -> 
+    let oldinsts = try Gmap.find cl old with Not_found -> Cmap.empty in
+      Gmap.add cl (cmap_union oldinsts insts) acc)
+    Gmap.empty ne
+    
 let add_instance_hint_ref = ref (fun id pri -> assert false)
 let register_add_instance_hint =
   (:=) add_instance_hint_ref
@@ -137,9 +124,7 @@ let cache (_, (cl, m, inst)) =
 let load (_, (cl, m, inst)) =
   classes := gmap_merge !classes cl;
   methods := gmap_merge !methods m;
-  instances := gmap_list_merge !instances
-    (fun (i : instance) -> () (*add_instance_hint i.is_impl i.is_pri*))
-    inst
+  instances := gmap_cmap_merge !instances inst
 
 open Libobject
 
@@ -173,14 +158,12 @@ let subst (_,subst,(cl,m,inst)) =
   let classes = Gmap.fold subst_class cl Gmap.empty in
   let subst_inst k insts instances =
     let k = do_subst_gr k in
-    let cl = Gmap.find k classes in
     let insts' = 
-      list_smartmap (fun is -> 
-	let is' = 
-	  { is with is_class = cl; 
-	    is_impl = do_subst_con is.is_impl }
-	in if is' = is then is else is') insts
-    in  Gmap.add k insts' instances
+      Cmap.fold (fun cst is acc -> 
+	let cst = do_subst_con cst in
+	let is' = { is with is_class = k; is_impl = cst } in
+	  Cmap.add cst (if is' = is then is else is') acc) insts Cmap.empty
+    in Gmap.add k insts' instances
   in
   let instances = Gmap.fold subst_inst inst Gmap.empty in
     (classes, m, instances)
@@ -196,11 +179,11 @@ let discharge (_,(cl,m,inst)) =
   in
   let classes = Gmap.map subst_class cl in
   let subst_inst insts =
-    List.map (fun is ->
-      { is with 
-	is_impl = Lib.discharge_con is.is_impl;
-	is_class = Gmap.find (Lib.discharge_global is.is_class.cl_impl) classes; })
-      insts;
+    Cmap.fold (fun k is acc ->
+      let impl = Lib.discharge_con is.is_impl in
+      let is = { is with is_class = Lib.discharge_global is.is_class; is_impl = impl } in
+	Cmap.add impl is acc)
+      insts Cmap.empty;
   in
   let instances = Gmap.map subst_inst inst in
     Some (classes, m, instances)
@@ -208,14 +191,14 @@ let discharge (_,(cl,m,inst)) =
 let rebuild (_,(cl,m,inst)) =
   let inst = 
     Gmap.map (fun insts -> 
-      List.fold_left (fun insts is -> 
+      Cmap.fold (fun k is insts -> 
 	match is.is_global with
 	  | None -> insts
-	  | Some 0 -> is :: insts
+	  | Some 0 -> Cmap.add k is insts
 	  | Some n -> 
 	      add_instance_hint is.is_impl is.is_pri;
 	      let is' = { is with is_global = Some (pred n) }
-	      in is' :: insts) [] insts)
+	      in Cmap.add k is' insts) insts Cmap.empty)
       inst
   in (cl, m, inst)
 
@@ -251,21 +234,23 @@ let instance_constructor cl =
 
 let typeclasses () = Gmap.fold (fun _ l c -> l :: c) !classes []
 
-let gmapl_add x y m =
+let cmapl_add x y m =
   try
     let l = Gmap.find x m in
-    Gmap.add x (y::Util.list_except y l) m
+    Gmap.add x (Cmap.add y.is_impl y l) m
   with Not_found ->
-    Gmap.add x [y] m
+    Gmap.add x (Cmap.add y.is_impl y Cmap.empty) m
+
+let cmap_elements c = Cmap.fold (fun k v acc -> v :: acc) c []
 
 let instances_of c = 
-  try Gmap.find c.cl_impl !instances with Not_found -> []
+  try cmap_elements (Gmap.find c.cl_impl !instances) with Not_found -> []
 
 let add_instance i =
-  let cl = Gmap.find i.is_class.cl_impl !classes in
-    instances := gmapl_add cl.cl_impl { i with is_class = cl } !instances;
-    add_instance_hint i.is_impl i.is_pri;
-    update ()
+  let cl = class_info i.is_class in
+  instances := cmapl_add cl.cl_impl i !instances;
+  add_instance_hint i.is_impl i.is_pri;
+  update ()
 
 let instances r = 
   let cl = class_info r in instances_of cl
