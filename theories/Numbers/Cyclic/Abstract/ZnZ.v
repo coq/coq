@@ -5,18 +5,12 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(*        Benjamin Gregoire, INRIA          Laurent Thery, INRIA        *)
+(*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
 (* $Id$ *)
 
 (** * Signature and specification of a bounded integer structure *)
-
-(** 
-- Authors: Benjamin Grégoire, Laurent Théry
-- Institution: INRIA
-- Date: 2007
-*)
 
 Set Implicit Arguments.
 

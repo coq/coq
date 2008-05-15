@@ -5,16 +5,12 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+(*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
+(************************************************************************)
 
 (* $Id$ *)
 
 (** * An implementation of rational numbers based on big integers *)
-
-(** 
-- Authors: Benjamin Grégoire, Laurent Théry
-- Institution: INRIA
-- Date: 2007
-*)
 
 Require Export BigN.
 Require Export BigZ.

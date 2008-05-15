@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i i*)
+(*i $Id$ i*)
 
 Require Import NMinus. (* The most complete file for natural numbers *)
 Require Export ZTimesOrder. (* The most complete file for integers *)

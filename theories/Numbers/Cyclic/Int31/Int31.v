@@ -5,8 +5,10 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+(*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
+(************************************************************************)
 
-(*i $ $ i*)
+(*i $Id$ i*)
 
 (* Require Import Notations.*)
 Require Export ZArith.

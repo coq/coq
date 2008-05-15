@@ -1,16 +1,20 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
+(************************************************************************)
 
-(*************************************************************)
-(*      This file is distributed under the terms of the      *)
-(*      GNU Lesser General Public License Version 2.1        *)
-(*************************************************************)
-(*    Benjamin.Gregoire@inria.fr Laurent.Thery@inria.fr      *)
-(*************************************************************)
+(*i $Id$ i*)
 
-(**********************************************************************
-     Aux.v
+(** * BigNumPrelude *)
 
-     Auxillary functions & Theorems
- **********************************************************************)
+(** Auxillary functions & theorems used for arbitrary precision efficient
+    numbers. *)
+
 
 Require Import ArithRing.
 Require Export ZArith.

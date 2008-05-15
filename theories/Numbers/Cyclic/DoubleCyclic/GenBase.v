@@ -5,17 +5,10 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+(*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
+(************************************************************************)
 
-(* $Id$ *)
-
-(** * *)
-
-(** 
-- Authors: Benjamin Grégoire, Laurent Théry
-- Institution: INRIA
-- Date: 2007
-- Remark: File automatically generated
-*)
+(*i $Id$ i*)
 
 Set Implicit Arguments.
 

@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i i*)
+(*i $Id$ i*)
 
 Require Import List.
 Require Import Setoid.

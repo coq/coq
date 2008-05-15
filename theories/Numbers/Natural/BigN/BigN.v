@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i $Id$ i*)
+
 (** * Natural numbers in base 2^31 *)
 
 (**
