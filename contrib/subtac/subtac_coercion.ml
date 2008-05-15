@@ -129,9 +129,9 @@ module Coercion = struct
 	with Reduction.NotConvertible -> coerce' env x y
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
-      let rec coerce_application typ c c' l l' =
+      let rec coerce_application typ typ' c c' l l' =
 	let len = Array.length l in
-	let rec aux tele typ i co = 
+	let rec aux tele typ typ' i co = 
 (* 	  (try trace (str "coerce_application.aux from " ++ (my_print_constr env x) ++ *)
 (* 			 str " to "++ my_print_constr env y *)
 (* 		       ++ str "in env:" ++ my_print_env env); *)
@@ -140,9 +140,15 @@ module Coercion = struct
 	    let hdx = l.(i) and hdy = l'.(i) in
 	      try isevars := the_conv_x_leq env hdx hdy !isevars;
 		let (n, eqT, restT) = destProd typ in
-		aux (hdx :: tele) (subst1 hdy restT) (succ i) co
+		let (n', eqT', restT') = destProd typ' in
+		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
 	      with Reduction.NotConvertible ->
 		let (n, eqT, restT) = destProd typ in
+		let (n', eqT', restT') = destProd typ' in
+		let _ = 
+		  try isevars := the_conv_x_leq env eqT eqT' !isevars
+		  with Reduction.NotConvertible -> raise NoSubtacCoercion
+		in
 		let restargs = lift_args 1 
 		  (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
 		in 
@@ -154,9 +160,9 @@ module Coercion = struct
 		let eq_app x = mkApp (Lazy.force eq_rect,
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
 (* 		  trace (str"Inserting coercion at application"); *)
-		  aux (hdy :: tele) (subst1 hdy restT) (succ i)  (fun x -> eq_app (co x))
-	  else co
-	in aux [] typ 0 (fun x -> x)
+		  aux (hdy :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
+	  else Some co
+	in aux [] typ typ' 0 (fun x -> x)
       in
 (* 	(try trace (str "coerce' from " ++ (my_print_constr env x) ++ *)
 (* 		       str " to "++ my_print_constr env y *)
@@ -264,21 +270,22 @@ module Coercion = struct
 		       else
 			 if i = i' && len = Array.length l' then
 			   let evm = evars_of !isevars in
-			   let typ = Typing.type_of env evm c in
 			     (try subco () 
-			      with NoSubtacCoercion ->
-				
-(* 			     if not (is_arity env evm typ) then *)
-			       Some (coerce_application typ c c' l l'))
-(* 			     else subco () *)
+			       with NoSubtacCoercion ->
+				 let typ = Typing.type_of env evm c in
+				 let typ' = Typing.type_of env evm c' in
+				   (* 			     if not (is_arity env evm typ) then *)
+				   coerce_application typ typ' c c' l l')
+			       (* 			     else subco () *)
 			 else
 			   subco ()
 		 | x, y when x = y ->
 		     if Array.length l = Array.length l' then
 		       let evm = evars_of !isevars in
 		       let lam_type = Typing.type_of env evm c in
+		       let lam_type' = Typing.type_of env evm c' in
 (* 			 if not (is_arity env evm lam_type) then ( *)
-			   Some (coerce_application lam_type c c' l l')
+			 coerce_application lam_type lam_type' c c' l l'
 (* 			 ) else subco () *)
 		     else subco ()
 		 | _ -> subco ())

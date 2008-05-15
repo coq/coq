@@ -50,9 +50,6 @@ Section Well_founded.
     Lemma Fix_F_inv : forall (x:A) (r s:Acc R x), Fix_F x r = Fix_F x s.
     Proof.
       intro x; induction (Rwf x); intros.
-      rewrite <- (Fix_F_eq x r); rewrite <- (Fix_F_eq x s); intros.
-      apply F_ext; auto.
-      intros.
       rewrite (proof_irrelevance (Acc R x) r s) ; auto.
     Qed.
 

@@ -17,9 +17,9 @@ Require Import ProofIrrelevance.
 
 Goal forall n, forall v : vector (S n), exists v' : vector n, exists a : A, v = vcons a v'.
 Proof.
-  intros n H.
-  dependent destruction H.
-  exists H ; exists a.
+  intros n v.
+  dependent destruction v.
+  exists v ; exists a.
   reflexivity.
 Save.
 
@@ -81,7 +81,7 @@ Qed.
 Lemma exchange : forall Γ Δ α β τ, term (Γ, α, β ; Δ) τ -> term (Γ, β, α ; Δ) τ.
 Proof with simpl in * ; simpl_depind ; auto.
   intros until 1.
-  dependent induction H generalizing Γ Δ α β...
+  dependent induction H generalizing Γ Δ α β.
 
   destruct Δ...
     apply weak ; apply ax.

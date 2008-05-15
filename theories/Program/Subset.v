@@ -13,16 +13,6 @@ Open Local Scope program_scope.
 
 (** Tactics related to subsets and proof irrelevance. *)
 
-(** Simplify dependent equality using sigmas to equality of the codomains if possible. *)
-
-Ltac simpl_existT :=
-  match goal with
-    [ H : existT _ ?x _ = existT _ ?x _ |- _ ] => 
-    let Hi := fresh H in assert(Hi:=inj_pairT2 _ _ _ _ _ H) ; clear H
-  end.
-
-Ltac simpl_existTs := repeat simpl_existT.
-
 (** The following tactics implement a poor-man's solution for proof-irrelevance: it tries to 
    factorize every proof of the same proposition in a goal so that equality of such proofs becomes trivial. *)
 

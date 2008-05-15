@@ -120,7 +120,7 @@ Axiom eqS1: S1 -> S1 -> Prop.
 Axiom SetoidS1 : Setoid_Theory S1 eqS1.
 Add Setoid S1 eqS1 SetoidS1 as S1setoid.
 
-Instance DefaultRelation S1 eqS1.
+Instance eqS1_default : DefaultRelation S1 eqS1.
 
 Axiom eqS1': S1 -> S1 -> Prop.
 Axiom SetoidS1' : Setoid_Theory S1 eqS1'.
@@ -220,7 +220,7 @@ Axiom eqS1_test8: S1_test8 -> S1_test8 -> Prop.
 Axiom SetoidS1_test8 : Setoid_Theory S1_test8 eqS1_test8.
 Add Setoid S1_test8 eqS1_test8 SetoidS1_test8 as S1_test8setoid.
 
-Instance DefaultRelation S1_test8 eqS1_test8.
+Instance eqS1_test8_default : DefaultRelation S1_test8 eqS1_test8.
 
 Axiom f_test8 : S2 -> S1_test8.
 Add Morphism f_test8 : f_compat_test8. Admitted.

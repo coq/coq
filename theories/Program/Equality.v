@@ -45,6 +45,17 @@ Ltac simpl_one_dep_JMeq :=
 
 Require Import Eqdep.
 
+(** Simplify dependent equality using sigmas to equality of the second projections if possible. 
+   Uses UIP. *)
+
+Ltac simpl_existT :=
+  match goal with
+    [ H : existT _ ?x _ = existT _ ?x _ |- _ ] => 
+    let Hi := fresh H in assert(Hi:=inj_pairT2 _ _ _ _ _ H) ; clear H
+  end.
+
+Ltac simpl_existTs := repeat simpl_existT.
+
 (** Tries to eliminate a call to [eq_rect] (the substitution principle) by any means available. *)
 
 Ltac elim_eq_rect :=
@@ -213,7 +224,8 @@ Ltac do_simpl_IHs_eqs :=
 
 Ltac simpl_IHs_eqs := repeat do_simpl_IHs_eqs.
 
-Ltac simpl_depind := subst* ; autoinjections ; try discriminates ; simpl_JMeq ; simpl_IHs_eqs.
+Ltac simpl_depind := subst* ; autoinjections ; try discriminates ; 
+  simpl_JMeq ; simpl_existTs ; simpl_IHs_eqs.
 
 (** The following tactics allow to do induction on an already instantiated inductive predicate
    by first generalizing it and adding the proper equalities to the context, in a maner similar to 
@@ -231,7 +243,7 @@ Ltac prepare_depind H :=
    and starts a dependent induction using this tactic. *)
 
 Ltac do_depind tac H :=
-  prepare_depind H ; tac H ; simpl_depind.
+  prepare_depind H ; tac H ; repeat progress simpl_depind.
 
 (** Calls [destruct] on the generalized hypothesis, results should be similar to inversion. *)
 

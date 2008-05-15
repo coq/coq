@@ -1977,7 +1977,7 @@ let build_dependent_signature env evars avoid tomatchs arsign =
 			     (lift (nargeqs + nar) arg),
 			   mk_eq_refl argt arg)
 			else
-			  (mk_JMeq (lift (nargeqs + slift) appt)
+			  (mk_JMeq (lift (nargeqs + slift) t)
 			     (mkRel (nargeqs + slift))
 			     (lift (nargeqs + nar) argt)
 			     (lift (nargeqs + nar) arg),

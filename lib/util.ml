@@ -350,7 +350,9 @@ let lowercase_utf8 s unicode =
     | 0x038C -> 0x03CC
     | x when 0x038E <= x & x <= 0x038F -> x + 63
     | x when 0x0390 <= x & x <= 0x03AB & x <> 0x03A2 -> x + 32
-    | x when 0x03AC <= x & x <= 0x039E ->
+    (* utf-8 Greek lowercase letters U03B0-03CE *)	
+    | x when 0x03AC <= x & x <= 0x03CE -> x
+    | x when 0x03CF <= x & x <= 0x03FF ->
 	warning ("Unable to decide which lowercase letter to map to "^s); x
     (* utf-8 Cyrillic letters U0400-0481 *)
     | x when 0x0400 <= x & x <= 0x040F -> x + 80
