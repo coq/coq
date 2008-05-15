@@ -73,7 +73,7 @@ Proof NZneq_times_0.
 Theorem Ztimes_pred_r : forall n m : Z, n * (P m) == n * m - n.
 Proof.
 intros n m.
-pattern m at 2; qsetoid_rewrite <- (Zsucc_pred m).
+rewrite <- (Zsucc_pred m) at 2.
 now rewrite Ztimes_succ_r, <- Zplus_minus_assoc, Zminus_diag, Zplus_0_r.
 Qed.
 

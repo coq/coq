@@ -11,11 +11,6 @@
 (*i $Id$ i*)
 
 Require Export Setoid.
-(*Require Export Bool.*)
-(* Standard library. Export, not Import, because if a file
-importing the current file wants to use. e.g.,
-Theorem eq_true_or : forall b1 b2 : bool, b1 || b2 <-> b1 \/ b2,
-then it needs to know about bool and have a notation ||. *)
 Require Export QRewrite.
 
 Set Implicit Arguments.
@@ -183,7 +178,7 @@ let x2 := fresh "x" in
 let y2 := fresh "y" in
 let H2 := fresh "H" in
   intros x1 y1 H1 x2 y2 H2;
-  qsetoid_rewrite H1;
+  rewrite H1;
   qiff x2 y2 H2.
 
 (* The tactic solve_relation_wd is not very efficient because qsetoid_rewrite

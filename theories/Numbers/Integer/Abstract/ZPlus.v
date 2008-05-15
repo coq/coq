@@ -75,7 +75,7 @@ Proof NZplus_cancel_r.
 Theorem Zplus_pred_l : forall n m : Z, P n + m == P (n + m).
 Proof.
 intros n m.
-pattern n at 2. qsetoid_rewrite <- (Zsucc_pred n).
+rewrite <- (Zsucc_pred n) at 2.
 rewrite Zplus_succ_l. now rewrite Zpred_succ.
 Qed.
 
@@ -104,19 +104,19 @@ Qed.
 
 Theorem Zminus_pred_l : forall n m : Z, P n - m == P (n - m).
 Proof.
-intros n m. pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n).
+intros n m. rewrite <- (Zsucc_pred n) at 2.
 rewrite Zminus_succ_l; now rewrite Zpred_succ.
 Qed.
 
 Theorem Zminus_pred_r : forall n m : Z, n - (P m) == S (n - m).
 Proof.
-intros n m. pattern m at 2; qsetoid_rewrite <- (Zsucc_pred m).
+intros n m. rewrite <- (Zsucc_pred m) at 2.
 rewrite Zminus_succ_r; now rewrite Zsucc_pred.
 Qed.
 
 Theorem Zopp_pred : forall n : Z, - (P n) == S (- n).
 Proof.
-intro n. pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n).
+intro n. rewrite <- (Zsucc_pred n) at 2.
 rewrite Zopp_succ. now rewrite Zsucc_pred.
 Qed.
 

@@ -342,7 +342,7 @@ Proof NZgt_wf.
 
 Theorem Zlt_pred_l : forall n : Z, P n < n.
 Proof.
-intro n; pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n); apply Zlt_succ_diag_r.
+intro n; rewrite <- (Zsucc_pred n) at 2; apply Zlt_succ_diag_r.
 Qed.
 
 Theorem Zle_pred_l : forall n : Z, P n <= n.
@@ -362,7 +362,7 @@ Qed.
 
 Theorem Zlt_pred_le : forall n m : Z, P n < m <-> n <= m.
 Proof.
-intros n m; pattern n at 2; qsetoid_rewrite <- (Zsucc_pred n).
+intros n m; rewrite <- (Zsucc_pred n) at 2.
 symmetry; apply Zle_succ_l.
 Qed.
 
