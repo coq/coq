@@ -71,12 +71,12 @@ let _ =
   pr "";
   pr "Require Import BigNumPrelude.";
   pr "Require Import ZArith.";
-  pr "Require Import Basic_type.";
-  pr "Require Import ZnZ.";
-  pr "Require Import Zn2Z.";
+  pr "Require Import DoubleType.";
+  pr "Require Import DoubleMul.";
+  pr "Require Import DoubleDivn1.";
+  pr "Require Import Z_nZ.";
+  pr "Require Import Z_2nZ.";
   pr "Require Import Nbasic.";
-  pr "Require Import GenMul.";
-  pr "Require Import GenDivn1.";
   pr "Require Import Wf_nat.";
   pr "Require Import StreamMemo.";
   pr "";
@@ -187,30 +187,30 @@ let _ =
     pp " Let nmake_op%i := nmake_op _ w%i_op." i i;
     pp " Let eval%in n := znz_to_Z  (nmake_op%i n)." i i;
     if i == 0 then 
-      pr " Let extend%i := GenBase.extend  (WW w_0)." i
+      pr " Let extend%i := DoubleBase.extend  (WW w_0)." i
     else
-      pr " Let extend%i := GenBase.extend  (WW (W0: w%i))." i i;
+      pr " Let extend%i := DoubleBase.extend  (WW (W0: w%i))." i i;
   done;
   pr "";
 
 
-  pp " Theorem digits_gend:forall n ww (w_op: znz_op ww), ";
+  pp " Theorem digits_doubled:forall n ww (w_op: znz_op ww), ";
   pp "    znz_digits (nmake_op _ w_op n) = ";
-  pp "    GenBase.gen_digits (znz_digits w_op) n.";
+  pp "    DoubleBase.double_digits (znz_digits w_op) n.";
   pp " Proof.";
   pp " intros n; elim n; auto; clear n.";
-  pp " intros n Hrec ww ww_op; simpl GenBase.gen_digits.";
+  pp " intros n Hrec ww ww_op; simpl DoubleBase.double_digits.";
   pp " rewrite <- Hrec; auto.";
   pp " Qed.";
   pp "";
-  pp " Theorem nmake_gen: forall n ww (w_op: znz_op ww), ";
+  pp " Theorem nmake_double: forall n ww (w_op: znz_op ww), ";
   pp "    znz_to_Z (nmake_op _ w_op n) =";
-  pp "    @GenBase.gen_to_Z _ (znz_digits w_op) (znz_to_Z w_op) n.";
+  pp "    @DoubleBase.double_to_Z _ (znz_digits w_op) (znz_to_Z w_op) n.";
   pp " Proof.";
   pp " intros n; elim n; auto; clear n.";
-  pp " intros n Hrec ww ww_op; simpl GenBase.gen_to_Z; unfold zn2z_to_Z.";
+  pp " intros n Hrec ww ww_op; simpl DoubleBase.double_to_Z; unfold zn2z_to_Z.";
   pp " rewrite <- Hrec; auto.";
-  pp " unfold GenBase.gen_wB; rewrite <- digits_gend; auto.";
+  pp " unfold DoubleBase.double_wB; rewrite <- digits_doubled; auto.";
   pp " Qed.";
   pp "";
 
@@ -311,9 +311,9 @@ let _ =
       pp " rewrite digits_nmake; rewrite <- digits_w%i; auto." (i - 1);
     pp " Qed.";
     pp "";
-    pp " Let spec_gen_eval%in: forall n, eval%in n = GenBase.gen_to_Z (znz_digits w%i_op) (znz_to_Z w%i_op) n." i i i i; 
+    pp " Let spec_double_eval%in: forall n, eval%in n = DoubleBase.double_to_Z (znz_digits w%i_op) (znz_to_Z w%i_op) n." i i i i; 
     pp " Proof.";
-    pp "  intros n; exact (nmake_gen n w%i w%i_op)." i i;
+    pp "  intros n; exact (nmake_double n w%i w%i_op)." i i;
     pp " Qed.";
     pp "";
   done;
@@ -344,7 +344,7 @@ let _ =
       pp " Let spec_eval%in%i: forall x, [%s%i x] = eval%in %i x." i j c (i + j) i j; 
       pp " Proof.";
       if j == 0 then
-        pp " intros x; rewrite spec_gen_eval%in; unfold GenBase.gen_to_Z, to_Z; auto." i
+        pp " intros x; rewrite spec_double_eval%in; unfold DoubleBase.double_to_Z, to_Z; auto." i
       else
         begin
           pp " intros x; case x.";
@@ -561,7 +561,7 @@ let _ =
     pr0 "extend%i " i;
   done;
   pr "";
-  pr "                                         GenBase.extend GenBase.extend_aux";
+  pr "                                         DoubleBase.extend DoubleBase.extend_aux";
   pr "                                         ] in";
   pr "  match x, y with";
   for i = 0 to size do
@@ -629,7 +629,7 @@ let _ =
     pr0 "extend%i " i;
   done;
   pr "";
-  pr "                                         GenBase.extend GenBase.extend_aux";
+  pr "                                         DoubleBase.extend DoubleBase.extend_aux";
   pr "                                         ] in";
   pr "  match x with";
   for i = 0 to size do
@@ -731,7 +731,7 @@ let _ =
     pr0 "extend%i " i;
   done;
   pr "";
-  pr "                                         GenBase.extend GenBase.extend_aux";
+  pr "                                         DoubleBase.extend DoubleBase.extend_aux";
   pr "                                         ] in";
   pr "  match x, y with";
   for i = 0 to size do
@@ -796,7 +796,7 @@ let _ =
     pr0 "extend%i " i;
   done;
   pr "";
-  pr "                                         GenBase.extend GenBase.extend_aux";
+  pr "                                         DoubleBase.extend DoubleBase.extend_aux";
   pr "                                         ] in";
   pr "  match x with";
   for i = 0 to size do
@@ -1335,7 +1335,7 @@ let _ =
     pp "  | Gt => eval%in n x > [%s%i y]" i c i;
     pp "  end.";
     pp "  intros n x y.";
-    pp "  unfold comparen_%i, to_Z; rewrite spec_gen_eval%in." i i;
+    pp "  unfold comparen_%i, to_Z; rewrite spec_double_eval%in." i i;
     pp "  apply spec_compare_mn_1.";
     pp "  exact (spec_0 w%i_spec)." i;
     pp "  intros x1; exact (spec_compare w%i_spec %s x1)." i (pz i);
@@ -1436,7 +1436,7 @@ let _ =
 
   for i = 0 to size do
     pr " Definition w%i_mul_add_n1 :=" i;
-    pr "  @gen_mul_add_n1 w%i %s w%i_op.(znz_WW) w%i_0W w%i_mul_add."  i (pz i) i i i
+    pr "  @double_mul_add_n1 w%i %s w%i_op.(znz_WW) w%i_0W w%i_mul_add."  i (pz i) i i i
   done;
   pr "";
 
@@ -1528,11 +1528,11 @@ let _ =
     pp "  znz_to_Z w%i_op z." i;
     pp " Proof.";
     pp " intros n x y z; unfold w%i_mul_add_n1." i;
-    pp " rewrite nmake_gen.";
-    pp " rewrite digits_gend.";
-    pp " change (base (GenBase.gen_digits (znz_digits w%i_op) n)) with" i;
-    pp "        (GenBase.gen_wB (znz_digits w%i_op) n)." i;
-    pp " apply spec_gen_mul_add_n1; auto.";
+    pp " rewrite nmake_double.";
+    pp " rewrite digits_doubled.";
+    pp " change (base (DoubleBase.double_digits (znz_digits w%i_op) n)) with" i;
+    pp "        (DoubleBase.double_wB (znz_digits w%i_op) n)." i;
+    pp " apply spec_double_mul_add_n1; auto.";
     if i == 0 then pp " exact (spec_0 w%i_spec)." i;
     pp " exact (spec_WW w%i_spec)." i;
     pp " exact (spec_0W w%i_spec)." i;
@@ -1554,9 +1554,9 @@ let _ =
     pp "  znz_to_Z (nmake_op _ w%i_op (S n)) (extend%i n x1) = " i i;
     pp "  znz_to_Z w%i_op x1." i;
     pp "  Proof.";
-    pp "    intros n1 x2; rewrite nmake_gen.";
+    pp "    intros n1 x2; rewrite nmake_double.";
     pp "    unfold extend%i." i;
-    pp "    rewrite GenBase.spec_extend; auto.";
+    pp "    rewrite DoubleBase.spec_extend; auto.";
     if i == 0 then 
       pp "    intros l; simpl; unfold w_0; rewrite (spec_0 w0_spec); ring.";
     pp "  Qed.";
@@ -1767,7 +1767,7 @@ let _ =
   pr "";
 
   pp " Let spec_divn1 ww (ww_op: znz_op ww) (ww_spec: znz_spec ww_op) := ";
-  pp "   (spec_gen_divn1 ";
+  pp "   (spec_double_divn1 ";
   pp "    ww_op.(znz_zdigits) ww_op.(znz_0)";
   pp "    ww_op.(znz_WW) ww_op.(znz_head0)";
   pp "    ww_op.(znz_add_mul_div) ww_op.(znz_div21)";
@@ -1776,13 +1776,13 @@ let _ =
   pp "    (spec_zdigits ww_spec)";
   pp "   (spec_0 ww_spec) (spec_WW ww_spec) (spec_head0 ww_spec)";
   pp "   (spec_add_mul_div ww_spec) (spec_div21 ww_spec) ";
-  pp "    (ZnZ.spec_compare ww_spec) (ZnZ.spec_sub ww_spec)).";
+  pp "    (Z_nZ.spec_compare ww_spec) (Z_nZ.spec_sub ww_spec)).";
   pp "";
 
   for i = 0 to size do
     pr " Definition w%i_divn1 n x y :="  i;
     pr "  let (u, v) :=";
-    pr "  gen_divn1 w%i_op.(znz_zdigits) w%i_op.(znz_0)" i i;
+    pr "  double_divn1 w%i_op.(znz_zdigits) w%i_op.(znz_0)" i i;
     pr "    w%i_op.(znz_WW) w%i_op.(znz_head0)" i i;
     pr "    w%i_op.(znz_add_mul_div) w%i_op.(znz_div21)" i i;
     pr "    w%i_op.(znz_compare) w%i_op.(znz_sub) (S n) x y in" i i;
@@ -1796,15 +1796,15 @@ let _ =
   for i = 0 to size do
     pp " Lemma spec_get_end%i: forall n x y," i;
     pp "    eval%in n x  <= [%s%i y] -> " i c i;
-    pp "     [%s%i (GenBase.get_low %s n x)] = eval%in n x." c i (pz i) i;
+    pp "     [%s%i (DoubleBase.get_low %s n x)] = eval%in n x." c i (pz i) i;
     pp " Proof.";
     pp " intros n x y H.";
-    pp " rewrite spec_gen_eval%in; unfold to_Z." i;
-    pp " apply GenBase.spec_get_low.";
+    pp " rewrite spec_double_eval%in; unfold to_Z." i;
+    pp " apply DoubleBase.spec_get_low.";
     pp " exact (spec_0 w%i_spec)." i;
     pp " exact (spec_to_Z w%i_spec)." i;
     pp " apply Zle_lt_trans with [%s%i y]; auto." c i;
-    pp "   rewrite <- spec_gen_eval%in; auto." i;
+    pp "   rewrite <- spec_double_eval%in; auto." i;
     pp " unfold to_Z; case (spec_to_Z w%i_spec y); auto." i;
     pp " Qed.";
     pp "";
@@ -1830,7 +1830,7 @@ let _ =
   pr "   (iter _ ";
   for i = 0 to size do 
     pr "      div_gt%i" i;
-    pr "      (fun n x y => div_gt%i x (GenBase.get_low %s (S n) y))" i (pz i);
+    pr "      (fun n x y => div_gt%i x (DoubleBase.get_low %s (S n) y))" i (pz i);
     pr "      w%i_divn1" i;
   done;
   pr "      div_gtnm).";
@@ -1851,7 +1851,7 @@ let _ =
   pp "      x = [q] * y + [r] /\\ 0 <= [r] < y)";
   for i = 0 to size do 
     pp "      div_gt%i" i;
-    pp "      (fun n x y => div_gt%i x (GenBase.get_low %s (S n) y))" i (pz i);
+    pp "      (fun n x y => div_gt%i x (DoubleBase.get_low %s (S n) y))" i (pz i);
     pp "      w%i_divn1 _ _ _" i;
   done;
   pp "      div_gtnm _).";
@@ -1864,7 +1864,7 @@ let _ =
     else
       pp "  intros n x y H1 H2 H3; unfold div_gt%i, w%i_div_gt." i i;
     pp "    generalize (spec_div_gt w%i_spec x " i;
-    pp "                (GenBase.get_low %s (S n) y))." (pz i);
+    pp "                (DoubleBase.get_low %s (S n) y))." (pz i);
     pp0 "    ";
     for j = 0 to i do
       pp0 "unfold w%i; " (i-j); 
@@ -1883,17 +1883,17 @@ let _ =
     for j = 0 to i do
       pp0 "unfold w%i; " (i-j); 
     done;
-    pp "case gen_divn1.";
+    pp "case double_divn1.";
     pp "    intros xx yy H4.";
     if i == size then
       begin
-        pp "    repeat rewrite <- spec_gen_eval%in in H4; auto." i;
+        pp "    repeat rewrite <- spec_double_eval%in in H4; auto." i;
         pp "    rewrite spec_eval%in; auto." i;
       end
     else
       begin
         pp "    rewrite to_Z%i_spec; auto with zarith." i;
-        pp "    repeat rewrite <- spec_gen_eval%in in H4; auto." i;
+        pp "    repeat rewrite <- spec_double_eval%in in H4; auto." i;
       end;
   done;
   pp "  intros n m x y H1 H2; unfold div_gtnm.";
@@ -1983,7 +1983,7 @@ let _ =
 
   for i = 0 to size do
     pr " Definition w%i_modn1 :=" i;
-    pr "  gen_modn1 w%i_op.(znz_zdigits) w%i_op.(znz_0)" i i;
+    pr "  double_modn1 w%i_op.(znz_zdigits) w%i_op.(znz_0)" i i;
     pr "    w%i_op.(znz_head0) w%i_op.(znz_add_mul_div) w%i_op.(znz_div21)" i i i;
     pr "    w%i_op.(znz_compare) w%i_op.(znz_sub)." i i;
   done;
@@ -2002,14 +2002,14 @@ let _ =
   pr "   (iter _ ";
   for i = 0 to size do
     pr "      (fun x y => reduce_%i (w%i_mod_gt x y))" i i;
-    pr "      (fun n x y => reduce_%i (w%i_mod_gt x (GenBase.get_low %s (S n) y)))" i i (pz i);
+    pr "      (fun n x y => reduce_%i (w%i_mod_gt x (DoubleBase.get_low %s (S n) y)))" i i (pz i);
     pr "      (fun n x y => reduce_%i (w%i_modn1 (S n) x y))" i i;
   done;
   pr "      mod_gtnm).";
   pr "";
 
   pp " Let spec_modn1 ww (ww_op: znz_op ww) (ww_spec: znz_spec ww_op) := ";
-  pp "   (spec_gen_modn1 ";
+  pp "   (spec_double_modn1 ";
   pp "    ww_op.(znz_zdigits) ww_op.(znz_0)";
   pp "    ww_op.(znz_WW) ww_op.(znz_head0)";
   pp "    ww_op.(znz_add_mul_div) ww_op.(znz_div21)";
@@ -2018,7 +2018,7 @@ let _ =
   pp "    (spec_zdigits ww_spec)";
   pp "   (spec_0 ww_spec) (spec_WW ww_spec) (spec_head0 ww_spec)";
   pp "   (spec_add_mul_div ww_spec) (spec_div21 ww_spec) ";
-  pp "    (ZnZ.spec_compare ww_spec) (ZnZ.spec_sub ww_spec)).";
+  pp "    (Z_nZ.spec_compare ww_spec) (Z_nZ.spec_sub ww_spec)).";
   pp "";
 
   pr " Theorem spec_mod_gt:";
@@ -2029,7 +2029,7 @@ let _ =
   pp "      [res] = x mod y)";
   for i = 0 to size do
     pp "      (fun x y => reduce_%i (w%i_mod_gt x y))" i i;
-    pp "      (fun n x y => reduce_%i (w%i_mod_gt x (GenBase.get_low %s (S n) y)))" i i (pz i);
+    pp "      (fun n x y => reduce_%i (w%i_mod_gt x (DoubleBase.get_low %s (S n) y)))" i i (pz i);
     pp "      (fun n x y => reduce_%i (w%i_modn1 (S n) x y)) _ _ _" i i;
   done;
   pp "      mod_gtnm _).";
@@ -2049,7 +2049,7 @@ let _ =
       pp " intros n x y H2 H3; rewrite spec_reduce_%i." i
     else 
       pp " intros n x y H1 H2 H3; rewrite spec_reduce_%i." i;
-    pp " unfold w%i_modn1, to_Z; rewrite spec_gen_eval%in." i i;
+    pp " unfold w%i_modn1, to_Z; rewrite spec_double_eval%in." i i;
     pp " apply (spec_modn1 _ _ w%i_spec); auto." i;
   done;
   pp " intros n m x y H1 H2; unfold mod_gtnm.";
@@ -2152,8 +2152,8 @@ let _ =
   pp " apply Zis_gcd_mult; apply Zis_gcd_1.";
   pp " intros; apply False_ind.";
   pp " case (spec_digits (mod_gt a b)); auto with zarith.";
-  pp " intros H6; apply GenDiv.Zis_gcd_mod; auto with zarith.";
-  pp " apply GenDiv.Zis_gcd_mod; auto with zarith.";
+  pp " intros H6; apply DoubleDiv.Zis_gcd_mod; auto with zarith.";
+  pp " apply DoubleDiv.Zis_gcd_mod; auto with zarith.";
   pp " rewrite <- spec_mod_gt; auto with zarith.";
   pp " assert (F2: [b] > [mod_gt a b]).";
   pp "   case (Z_mod_lt [a] [b]); auto with zarith.";
@@ -2576,7 +2576,7 @@ let _ =
   pp "                ).";
   pp "     rewrite (spec_0 Hw).";
   pp "     rewrite Zmult_0_l; rewrite Zplus_0_l.";
-  pp "     rewrite (ZnZ.spec_sub Hw).";
+  pp "     rewrite (Z_nZ.spec_sub Hw).";
   pp "     rewrite Zmod_small; auto with zarith.";
   pp "     rewrite (spec_zdigits Hw).";
   pp "     rewrite F0.";
@@ -2754,7 +2754,7 @@ let _ =
   pp "     assert (F1: znz_to_Z ww1_op (znz_head0 ww1_op xx) <= Zpos (znz_digits ww1_op)).";
   pp "     case (Zle_lt_or_eq _ _ HH1); intros HH5.";
   pp "     apply Zlt_le_weak.";
-  pp "     case (ZnZ.spec_head0 Hw1 xx).";
+  pp "     case (Z_nZ.spec_head0 Hw1 xx).";
   pp "       rewrite <- Hx; auto.";
   pp "     intros _ Hu; unfold base in Hu.";
   pp "     case (Zle_or_lt (Zpos (znz_digits ww1_op))";
@@ -2766,7 +2766,7 @@ let _ =
   pp "       apply Zle_lt_trans with (2 := Hu).";
   pp "       apply Zmult_le_compat_l; auto with zarith.";
   pp "     apply Zpower_le_monotone; auto with zarith.";
-  pp "     rewrite (ZnZ.spec_head00 Hw1 xx); auto with zarith.";
+  pp "     rewrite (Z_nZ.spec_head00 Hw1 xx); auto with zarith.";
   pp "     rewrite Zdiv_0_l; auto with zarith.";
   pp "     rewrite Zplus_0_r.";
   pp "     case (Zle_lt_or_eq _ _ HH1); intros HH5.";
@@ -2779,7 +2779,7 @@ let _ =
   pp "     split; auto with zarith .";
   pp "     apply Zlt_le_trans with (base (znz_digits ww1_op)).";
   pp "     rewrite Hx.";
-  pp "     case (ZnZ.spec_head0 Hw1 xx); auto.";
+  pp "     case (Z_nZ.spec_head0 Hw1 xx); auto.";
   pp "       rewrite <- Hx; auto.";
   pp "     intros _ Hu; rewrite Zmult_comm in Hu.";
   pp "     apply Zle_lt_trans with (2 := Hu).";
@@ -2794,7 +2794,7 @@ let _ =
   pp "     rewrite Zmod_small; auto with zarith.";
   pp "     intros HH; apply HH.";
   pp "     rewrite Hy; apply Zle_trans with (1 := Hl).";
-  pp "     rewrite (ZnZ.spec_head00 Hw1 xx); auto with zarith.";
+  pp "     rewrite (Z_nZ.spec_head00 Hw1 xx); auto with zarith.";
   pp "     rewrite <- (spec_zdigits Hw); auto with zarith.";
   pp "     rewrite <- (spec_zdigits Hw1); auto with zarith.";
   pp "  assert (F5: forall n m, (n <= m)%snat ->" "%";

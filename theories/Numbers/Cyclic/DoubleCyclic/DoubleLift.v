@@ -14,12 +14,12 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
-Require Import GenBase.
+Require Import DoubleType.
+Require Import DoubleBase.
 
 Open Local Scope Z_scope.
 
-Section GenLift.
+Section DoubleLift.
  Variable w : Set.
  Variable w_0 : w.
  Variable w_WW : w -> w -> zn2z w.
@@ -91,7 +91,7 @@ Section GenLift.
     end
   end.
 
- Section GenProof.
+ Section DoubleProof.
   Variable w_to_Z : w -> Z.
  
   Notation wB  := (base w_digits).
@@ -481,7 +481,7 @@ Section GenLift.
   case (spec_to_Z xh); auto with zarith.
   Qed.
 
- End GenProof.
+ End DoubleProof.
 
-End GenLift.
+End DoubleLift.
 

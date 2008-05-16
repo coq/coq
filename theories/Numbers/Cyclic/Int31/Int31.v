@@ -12,7 +12,7 @@
 
 (* Require Import Notations.*)
 Require Export ZArith.
-Require Export Basic_type.
+Require Export DoubleType.
 
 Unset Boxed Definitions.
 

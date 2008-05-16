@@ -617,15 +617,15 @@ NUMBERSCOMMONVO:=$(addprefix theories/Numbers/, \
  QRewrite.vo	NumPrelude.vo	BigNumPrelude.vo )
 
 CYCLICABSTRACTVO:=$(addprefix theories/Numbers/Cyclic/Abstract/, \
- ZnZ.vo NZCyclic.vo )
+ Z_nZ.vo NZCyclic.vo )
 
 CYCLICINT31VO:=$(addprefix theories/Numbers/Cyclic/Int31/, \
- Int31.vo Z31Z.vo )
+ Int31.vo Z_31Z.vo )
 
 CYCLICDOUBLECYCLICVO:=$(addprefix theories/Numbers/Cyclic/DoubleCyclic/, \
- Basic_type.vo	GenBase.vo	GenAdd.vo	GenSub.vo	\
- GenMul.vo	GenDivn1.vo 	GenDiv.vo	GenSqrt.vo	\
- GenLift.vo 	Zn2Z.vo )
+ DoubleType.vo	DoubleBase.vo	DoubleAdd.vo	DoubleSub.vo	\
+ DoubleMul.vo	DoubleDivn1.vo 	DoubleDiv.vo	DoubleSqrt.vo	\
+ DoubleLift.vo 	Z_2nZ.vo )
 
 CYCLICVO:=$(CYCLICABSTRACTVO) $(CYCLICINT31VO) $(CYCLICDOUBLECYCLICVO)
 

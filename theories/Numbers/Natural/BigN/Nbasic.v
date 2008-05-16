@@ -12,11 +12,11 @@
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
 Require Import Max.
-Require Import GenBase.
-Require Import ZnZ.
-Require Import Zn2Z.
+Require Import DoubleType.
+Require Import DoubleBase.
+Require Import Z_nZ.
+Require Import Z_2nZ.
 
 (* To compute the necessary height *)
 
@@ -301,8 +301,8 @@ Section CompareRec.
     end.
  Variable wm_to_Z_pos: forall x, 0 <= wm_to_Z x < base wm_base.
 
- Let gen_to_Z := gen_to_Z wm_base wm_to_Z.
- Let gen_wB := gen_wB wm_base.
+ Let double_to_Z := double_to_Z wm_base wm_to_Z.
+ Let double_wB := double_wB wm_base.
 
  Lemma base_xO: forall n, base (xO n) = (base n)^2.
  Proof.
@@ -310,15 +310,15 @@ Section CompareRec.
  rewrite (Zpos_xO n1); rewrite Zmult_comm; rewrite Zpower_mult; auto with zarith.
  Qed.
 
- Let gen_to_Z_pos: forall n x, 0 <= gen_to_Z n x < gen_wB n :=
-   (spec_gen_to_Z wm_base wm_to_Z wm_to_Z_pos).
+ Let double_to_Z_pos: forall n x, 0 <= double_to_Z n x < double_wB n :=
+   (spec_double_to_Z wm_base wm_to_Z wm_to_Z_pos).
 
 
  Lemma spec_compare0_mn: forall n x,
     match compare0_mn n x with
-      Eq => 0 = gen_to_Z n x
-    | Lt => 0 < gen_to_Z n x
-    | Gt => 0 > gen_to_Z n x
+      Eq => 0 = double_to_Z n x
+    | Lt => 0 < double_to_Z n x
+    | Gt => 0 > double_to_Z n x
     end.
   Proof.
   intros n; elim n; clear n; auto.
@@ -327,17 +327,17 @@ Section CompareRec.
   intros xh xl.
   generalize (Hrec xh); case compare0_mn; auto.
   generalize (Hrec xl); case compare0_mn; auto.
-  simpl gen_to_Z; intros H1 H2; rewrite H1; rewrite <- H2; auto.
-  simpl gen_to_Z; intros H1 H2; rewrite <- H2; auto.
-  case (gen_to_Z_pos n xl); auto with zarith.
-  intros H1; simpl gen_to_Z.
-  set (u := GenBase.gen_wB wm_base n).
-  case (gen_to_Z_pos n xl); intros H2 H3.
+  simpl double_to_Z; intros H1 H2; rewrite H1; rewrite <- H2; auto.
+  simpl double_to_Z; intros H1 H2; rewrite <- H2; auto.
+  case (double_to_Z_pos n xl); auto with zarith.
+  intros H1; simpl double_to_Z.
+  set (u := DoubleBase.double_wB wm_base n).
+  case (double_to_Z_pos n xl); intros H2 H3.
   assert (0 < u); auto with zarith.
-  unfold u, GenBase.gen_wB, base; auto with zarith.
+  unfold u, DoubleBase.double_wB, base; auto with zarith.
   change 0 with (0 + 0); apply Zplus_lt_le_compat; auto with zarith.
   apply Zmult_lt_0_compat; auto with zarith.
-  case (gen_to_Z_pos n xh); auto with zarith.
+  case (double_to_Z_pos n xh); auto with zarith.
   Qed.
 
  Fixpoint compare_mn_1 (n:nat) : word wm n -> w -> comparison :=
@@ -369,15 +369,15 @@ Section CompareRec.
  Variable wm_base_lt: forall x, 
    0 <= w_to_Z x < base (wm_base).
 
- Let gen_wB_lt: forall n x,
-   0 <= w_to_Z x < (gen_wB n).
+ Let double_wB_lt: forall n x,
+   0 <= w_to_Z x < (double_wB n).
  Proof.
  intros n x; elim n; simpl; auto; clear n.
  intros n (H0, H); split; auto.
  apply Zlt_le_trans with (1:= H).
- unfold gen_wB, GenBase.gen_wB; simpl.
+ unfold double_wB, DoubleBase.double_wB; simpl.
  rewrite base_xO.
- set (u := base (gen_digits wm_base n)).
+ set (u := base (double_digits wm_base n)).
  assert (0 < u).
   unfold u, base; auto with zarith.
  replace (u^2) with (u * u); simpl; auto with zarith.
@@ -388,9 +388,9 @@ Section CompareRec.
  
  Lemma spec_compare_mn_1: forall n x y,
    match compare_mn_1 n x y with
-     Eq => gen_to_Z n x = w_to_Z y
-   | Lt => gen_to_Z n x < w_to_Z y
-   | Gt => gen_to_Z n x > w_to_Z y
+     Eq => double_to_Z n x = w_to_Z y
+   | Lt => double_to_Z n x < w_to_Z y
+   | Gt => double_to_Z n x > w_to_Z y
    end.
  Proof.
  intros n; elim n; simpl; auto; clear n.
@@ -400,13 +400,13 @@ Section CompareRec.
  rewrite <- H1b; rewrite Zmult_0_l; rewrite Zplus_0_l; auto.
  apply Hrec.
  apply Zlt_gt.
- case (gen_wB_lt n y); intros _ H0.
+ case (double_wB_lt n y); intros _ H0.
  apply Zlt_le_trans with (1:= H0).
- fold gen_wB.
- case (gen_to_Z_pos n xl); intros H1 H2.
- apply Zle_trans with (gen_to_Z n xh * gen_wB n); auto with zarith.
- apply Zle_trans with (1 * gen_wB n); auto with zarith.
- case (gen_to_Z_pos n xh); auto with zarith.
+ fold double_wB.
+ case (double_to_Z_pos n xl); intros H1 H2.
+ apply Zle_trans with (double_to_Z n xh * double_wB n); auto with zarith.
+ apply Zle_trans with (1 * double_wB n); auto with zarith.
+ case (double_to_Z_pos n xh); auto with zarith.
  Qed.
 
 End CompareRec.

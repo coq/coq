@@ -14,12 +14,12 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
-Require Import GenBase.
+Require Import DoubleType.
+Require Import DoubleBase.
 
 Open Local Scope Z_scope.
 
-Section GenMul.
+Section DoubleMul.
  Variable w : Set.
  Variable w_0 : w.
  Variable w_1 : w.
@@ -48,7 +48,7 @@ Section GenMul.
    xl*yl         = ll  =         |llh|lll 
   *)
 
- Definition gen_mul_c (cross:w->w->w->w->zn2z w -> zn2z w -> w*zn2z w) x y :=
+ Definition double_mul_c (cross:w->w->w->w->zn2z w -> zn2z w -> w*zn2z w) x y :=
   match x, y with
   | W0, _ => W0
   | _, W0 => W0
@@ -67,7 +67,7 @@ Section GenMul.
   end.
 
  Definition ww_mul_c :=
-  gen_mul_c 
+  double_mul_c 
     (fun xh xl yh yl hh ll=> 
       match ww_add_c (w_mul_c xh yl) (w_mul_c xl yh) with
       | C0 cc => (w_0, cc)
@@ -124,7 +124,7 @@ Section GenMul.
          end
     end.
 
- Definition ww_karatsuba_c :=  gen_mul_c kara_prod.
+ Definition ww_karatsuba_c :=  double_mul_c kara_prod.
 
  Definition ww_mul x y :=
   match x, y with
@@ -157,49 +157,49 @@ Section GenMul.
     end
   end.
 
- Section GenMulAddn1.
+ Section DoubleMulAddn1.
   Variable w_mul_add : w -> w -> w -> w * w.
 
-  Fixpoint gen_mul_add_n1 (n:nat) : word w n -> w -> w -> w * word w n :=
+  Fixpoint double_mul_add_n1 (n:nat) : word w n -> w -> w -> w * word w n :=
    match n return word w n -> w -> w -> w * word w n with 
    | O => w_mul_add 
    | S n1 => 
-     let mul_add := gen_mul_add_n1 n1 in
+     let mul_add := double_mul_add_n1 n1 in
      fun x y r =>
      match x with
      | W0 => (w_0,extend w_0W n1 r)
      | WW xh xl =>
        let (rl,l) := mul_add xl y r in
        let (rh,h) := mul_add xh y rl in
-       (rh, gen_WW w_WW n1 h l)
+       (rh, double_WW w_WW n1 h l)
      end
    end.
 
- End GenMulAddn1.
+ End DoubleMulAddn1.
 
- Section GenMulAddmn1.
+ Section DoubleMulAddmn1.
   Variable wn: Set.
   Variable extend_n : w -> wn.
   Variable wn_0W : wn -> zn2z wn.
   Variable wn_WW : wn -> wn -> zn2z wn.
   Variable w_mul_add_n1 : wn -> w -> w -> w*wn.
-  Fixpoint gen_mul_add_mn1 (m:nat) : 
+  Fixpoint double_mul_add_mn1 (m:nat) : 
 	word wn m -> w -> w -> w*word wn m :=
    match m return word wn m -> w -> w -> w*word wn m with 
    | O => w_mul_add_n1 
    | S m1 => 
-     let mul_add := gen_mul_add_mn1 m1 in
+     let mul_add := double_mul_add_mn1 m1 in
      fun x y r =>
      match x with
      | W0 => (w_0,extend wn_0W m1 (extend_n r))
      | WW xh xl =>
        let (rl,l) := mul_add xl y r in
        let (rh,h) := mul_add xh y rl in
-       (rh, gen_WW wn_WW m1 h l)
+       (rh, double_WW wn_WW m1 h l)
      end
    end.
 
- End GenMulAddmn1.
+ End DoubleMulAddmn1.
 
  Definition w_mul_add x y r :=
   match w_mul_c x y with
@@ -212,7 +212,7 @@ Section GenMul.
   end.
 
   
- (*Section GenProof. *)
+ (*Section DoubleProof. *)
   Variable w_digits : positive.
   Variable w_to_Z : w -> Z.
 
@@ -235,7 +235,7 @@ Section GenMul.
   Notation "[|| x ||]" :=
     (zn2z_to_Z wwB (ww_to_Z w_digits w_to_Z) x)  (at level 0, x at level 99).
 
-  Notation "[! n | x !]" := (gen_to_Z w_digits w_to_Z n x)
+  Notation "[! n | x !]" := (double_to_Z w_digits w_to_Z n x)
     (at level 0, x at level 99).
 
   Variable spec_more_than_1_digit: 1 < Zpos w_digits.
@@ -359,13 +359,13 @@ Section GenMul.
    repeat rewrite <- Zplus_assoc;rewrite H;apply mult_add_ineq2;zarith.
   Qed.
 
-  Lemma spec_gen_mul_c : forall cross:w->w->w->w->zn2z w -> zn2z w -> w*zn2z w,
+  Lemma spec_double_mul_c : forall cross:w->w->w->w->zn2z w -> zn2z w -> w*zn2z w,
      (forall xh xl yh yl hh ll,
         [[hh]] = [|xh|]*[|yh|] ->
         [[ll]] = [|xl|]*[|yl|] ->
         let (wc,cc) :=  cross xh xl yh yl hh ll in 
         [|wc|]*wwB + [[cc]] = [|xh|]*[|yl|] + [|xl|]*[|yh|]) -> 
-     forall x y, [||gen_mul_c cross x y||] = [[x]] * [[y]].
+     forall x y, [||double_mul_c cross x y||] = [[x]] * [[y]].
   Proof.
    intros cross Hcross x y;destruct x as [ |xh xl];simpl;trivial.
    destruct y as [ |yh yl];simpl. rewrite Zmult_0_r;trivial.
@@ -378,7 +378,7 @@ Section GenMul.
 
   Lemma spec_ww_mul_c : forall x y, [||ww_mul_c x y||] = [[x]] * [[y]]. 
   Proof.
-   intros x y;unfold ww_mul_c;apply spec_gen_mul_c.
+   intros x y;unfold ww_mul_c;apply spec_double_mul_c.
    intros xh xl yh yl hh ll H1 H2.
    generalize (spec_ww_add_c (w_mul_c xh yl) (w_mul_c xl yh));
    destruct (ww_add_c (w_mul_c xh yl) (w_mul_c xl yh)) as [c|c];
@@ -534,7 +534,7 @@ Section GenMul.
 
   Lemma spec_ww_karatsuba_c : forall x y, [||ww_karatsuba_c x y||]=[[x]]*[[y]].
   Proof.
-   intros x y; unfold ww_karatsuba_c;apply spec_gen_mul_c.
+   intros x y; unfold ww_karatsuba_c;apply spec_double_mul_c.
    intros; apply spec_kara_prod; auto.
   Qed.
 
@@ -577,31 +577,31 @@ Section GenMul.
    rewrite spec_w_1;rewrite Zmult_1_l;rewrite <- wwB_wBwB;trivial.
   Qed.
 
-  Section GenMulAddn1Proof.
+  Section DoubleMulAddn1Proof.
 
    Variable w_mul_add : w -> w -> w -> w * w.
    Variable spec_w_mul_add : forall x y r,
     let (h,l):= w_mul_add x y r in
     [|h|]*wB+[|l|] = [|x|]*[|y|] + [|r|]. 
 
-   Lemma spec_gen_mul_add_n1 : forall n x y r,
-     let (h,l) := gen_mul_add_n1 w_mul_add n x y r in
-     [|h|]*gen_wB w_digits n + [!n|l!] = [!n|x!]*[|y|]+[|r|].
+   Lemma spec_double_mul_add_n1 : forall n x y r,
+     let (h,l) := double_mul_add_n1 w_mul_add n x y r in
+     [|h|]*double_wB w_digits n + [!n|l!] = [!n|x!]*[|y|]+[|r|].
    Proof.
     induction n;intros x y r;trivial.
     exact (spec_w_mul_add x y r).
-    unfold gen_mul_add_n1;destruct x as[ |xh xl]; 
-     fold(gen_mul_add_n1 w_mul_add).
+    unfold double_mul_add_n1;destruct x as[ |xh xl]; 
+     fold(double_mul_add_n1 w_mul_add).
     rewrite spec_w_0;rewrite spec_extend;simpl;trivial.
-    assert(H:=IHn xl y r);destruct (gen_mul_add_n1 w_mul_add n xl y r)as(rl,l).
-   assert(U:=IHn xh y rl);destruct(gen_mul_add_n1 w_mul_add n xh y rl)as(rh,h).
-    rewrite <- gen_wB_wwB. rewrite spec_gen_WW;simpl;trivial.
+    assert(H:=IHn xl y r);destruct (double_mul_add_n1 w_mul_add n xl y r)as(rl,l).
+   assert(U:=IHn xh y rl);destruct(double_mul_add_n1 w_mul_add n xh y rl)as(rh,h).
+    rewrite <- double_wB_wwB. rewrite spec_double_WW;simpl;trivial.
     rewrite Zmult_plus_distr_l;rewrite <- Zplus_assoc;rewrite <- H.
     rewrite Zmult_assoc;rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
     rewrite U;ring.
    Qed. 
  
-  End GenMulAddn1Proof.
+  End DoubleMulAddn1Proof.
 
   Lemma spec_w_mul_add : forall x y r, 
     let (h,l):= w_mul_add x y r in
@@ -623,6 +623,6 @@ Section GenMul.
    assert (H1 := beta_lex _ _ _ _ _ H0 (spec_to_Z l));zarith.
   Qed.
 
-(* End GenProof. *)
+(* End DoubleProof. *)
 
-End GenMul.
+End DoubleMul.

@@ -12,8 +12,8 @@
 
 Require Export NZAxioms.
 Require Import BigNumPrelude.
-Require Import Basic_type.
-Require Import ZnZ.
+Require Import DoubleType.
+Require Import Z_nZ.
 
 (** * A Z/nZ representation (module type [CyclicType]) implements 
   [NZAxiomsSig], e.g. the common properties between N and Z. *)

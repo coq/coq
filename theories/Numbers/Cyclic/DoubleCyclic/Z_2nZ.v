@@ -14,22 +14,22 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
-Require Import GenBase.
-Require Import GenAdd.
-Require Import GenSub.
-Require Import GenMul.
-Require Import GenSqrt.
-Require Import GenLift.
-Require Import GenDivn1.
-Require Import GenDiv. 
-Require Import ZnZ.
+Require Import DoubleType.
+Require Import DoubleBase.
+Require Import DoubleAdd.
+Require Import DoubleSub.
+Require Import DoubleMul.
+Require Import DoubleSqrt.
+Require Import DoubleLift.
+Require Import DoubleDivn1.
+Require Import DoubleDiv. 
+Require Import Z_nZ.
 
 Open Local Scope Z_scope.
 
 
-Section Zn2Z.
- 
+Section Z_2nZ.
+
  Variable w : Set.
  Variable w_op : znz_op w.
  Let w_digits      := w_op.(znz_digits).
@@ -200,11 +200,11 @@ Section Zn2Z.
  (* ** Multiplication ** *)
 
  Let mul_c :=
-  Eval lazy beta iota delta [ww_mul_c gen_mul_c] in
+  Eval lazy beta iota delta [ww_mul_c double_mul_c] in
   ww_mul_c w_0 w_1 w_WW w_W0 w_mul_c add_c add add_carry.
 
  Let karatsuba_c :=
-  Eval lazy beta iota delta [ww_karatsuba_c gen_mul_c kara_prod] in
+  Eval lazy beta iota delta [ww_karatsuba_c double_mul_c kara_prod] in
   ww_karatsuba_c w_0 w_1 w_WW w_W0 w_compare w_add w_sub w_mul_c 
     add_c add add_carry sub_c sub.
 
@@ -885,7 +885,8 @@ refine
   rewrite (spec_zdigits op_spec).
   rewrite <- Zpos_xO; exact spec_ww_digits.
  Qed.
-End Zn2Z. 
+
+End Z_2nZ. 
  
 Section MulAdd.
  

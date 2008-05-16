@@ -14,11 +14,11 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
-Require Import GenBase.
-Require Import GenDivn1.
-Require Import GenAdd.
-Require Import GenSub.
+Require Import DoubleType.
+Require Import DoubleBase.
+Require Import DoubleDivn1.
+Require Import DoubleAdd.
+Require Import DoubleSub.
 
 Open Local Scope Z_scope.
 
@@ -199,7 +199,7 @@ generalize (spec_ww_compare p ww_zdigits);
    
 End POS_MOD.
 
-Section GenDiv32.
+Section DoubleDiv32.
 
  Variable w             : Set.
  Variable w_0           : w.
@@ -470,9 +470,9 @@ Section GenDiv32.
   Qed.
 
 
-End GenDiv32.
+End DoubleDiv32.
 
-Section GenDiv21.
+Section DoubleDiv21.
  Variable w : Set.
  Variable w_0 : w.
 
@@ -631,9 +631,9 @@ Section GenDiv21.
    [rewrite H4;simpl|rewrite wwB_wBwB];ring.
   Qed.
 
-End GenDiv21.
+End DoubleDiv21.
 
-Section GenDivGt.
+Section DoubleDivGt.
  Variable w : Set.
  Variable w_digits : positive.
  Variable w_0 : w.
@@ -681,9 +681,9 @@ Section GenDivGt.
     end.
 
  Definition ww_div_gt a b := 
-  Eval lazy beta iota delta [ww_div_gt_aux gen_divn1 
-  gen_divn1_p gen_divn1_p_aux gen_divn1_0 gen_divn1_0_aux
-  gen_split gen_0 gen_WW] in
+  Eval lazy beta iota delta [ww_div_gt_aux double_divn1 
+  double_divn1_p double_divn1_p_aux double_divn1_0 double_divn1_0_aux
+  double_split double_0 double_WW] in
   match a, b with
   | W0, _ => (W0,W0)
   | _, W0 => (W0,W0)
@@ -695,7 +695,7 @@ Section GenDivGt.
      match w_compare w_0 bh with
      | Eq => 
        let(q,r):=
-        gen_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
+        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
                   w_compare w_sub 1 a bl in
        (q, w_0W r)
      | Lt => ww_div_gt_aux ah al bh bl
@@ -722,9 +722,9 @@ Section GenDivGt.
     end.
 
  Definition ww_mod_gt a b := 
-  Eval lazy beta iota delta [ww_mod_gt_aux gen_modn1 
-  gen_modn1_p gen_modn1_p_aux gen_modn1_0 gen_modn1_0_aux
-  gen_split gen_0 gen_WW snd] in
+  Eval lazy beta iota delta [ww_mod_gt_aux double_modn1 
+  double_modn1_p double_modn1_p_aux double_modn1_0 double_modn1_0_aux
+  double_split double_0 double_WW snd] in
   match a, b with
   | W0, _ => W0
   | _, W0 => W0
@@ -733,7 +733,7 @@ Section GenDivGt.
     else 
      match w_compare w_0 bh with
      | Eq => 
-       w_0W (gen_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
+       w_0W (double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
              w_compare w_sub 1 a bl)
      | Lt => ww_mod_gt_aux ah al bh bl
      | Gt => W0 (* cas absurde *)
@@ -741,15 +741,15 @@ Section GenDivGt.
   end.
 
   Definition ww_gcd_gt_body (cont: w->w->w->w->zn2z w) (ah al bh bl: w) :=
-   Eval lazy beta iota delta [ww_mod_gt_aux gen_modn1 
-   gen_modn1_p gen_modn1_p_aux gen_modn1_0 gen_modn1_0_aux
-   gen_split gen_0 gen_WW snd] in
+   Eval lazy beta iota delta [ww_mod_gt_aux double_modn1 
+   double_modn1_p double_modn1_p_aux double_modn1_0 double_modn1_0_aux
+   double_split double_0 double_WW snd] in
     match w_compare w_0 bh with
     | Eq =>
       match w_compare w_0 bl with
       | Eq => WW ah al (* normalement n'arrive pas si forme normale *)
       | Lt => 
-	let m := gen_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
+	let m := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
                    w_compare w_sub 1 (WW ah al) bl in
         WW w_0 (w_gcd_gt bl m)
       | Gt => W0 (* absurde *)
@@ -764,7 +764,7 @@ Section GenDivGt.
           match w_compare w_0 ml with
           | Eq => WW bh bl
           | _  => 
-            let r := gen_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
+            let r := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
                       w_compare w_sub 1 (WW bh bl) ml in
             WW w_0 (w_gcd_gt ml r)
           end
@@ -1039,7 +1039,7 @@ Section GenDivGt.
      match w_compare w_0 bh with
      | Eq => 
        let(q,r):=
-        gen_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
+        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
                   w_compare w_sub 1 a bl in
        (q, w_0W r)
      | Lt => ww_div_gt_aux ah al bh bl
@@ -1062,11 +1062,11 @@ Section GenDivGt.
    rewrite spec_w_0 in Hcmp. change [[WW bh bl]] with ([|bh|]*wB+[|bl|]).
    rewrite <- Hcmp;rewrite Zmult_0_l;rewrite Zplus_0_l.
    simpl in Hpos;rewrite <- Hcmp in Hpos;simpl in Hpos.
-   assert (H2:= @spec_gen_divn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
+   assert (H2:= @spec_double_divn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
     w_div21 w_compare w_sub w_to_Z spec_to_Z spec_w_zdigits spec_w_0 spec_w_WW spec_head0
     spec_add_mul_div spec_div21 spec_compare spec_sub 1 (WW ah al) bl Hpos).
-   unfold gen_to_Z,gen_wB,gen_digits in H2.
-   destruct (gen_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
+   unfold double_to_Z,double_wB,double_digits in H2.
+   destruct (double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
               w_compare w_sub 1
              (WW ah al) bl).
    rewrite spec_w_0W;unfold ww_to_Z;trivial.
@@ -1118,7 +1118,7 @@ Section GenDivGt.
     else 
      match w_compare w_0 bh with
      | Eq => 
-       w_0W (gen_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
+       w_0W (double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
              w_compare w_sub 1 a bl)
      | Lt => ww_mod_gt_aux ah al bh bl
      | Gt => W0 (* cas absurde *)
@@ -1135,7 +1135,7 @@ Section GenDivGt.
      match w_compare w_0 bh with
      | Eq => 
        let(q,r):=
-        gen_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
+        double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 
                   w_compare w_sub 1 a bl in
        (q, w_0W r)
      | Lt => ww_div_gt_aux ah al bh bl
@@ -1155,9 +1155,9 @@ Section GenDivGt.
    destruct (w_div_gt al bl);simpl;rewrite spec_w_0W;trivial.
    clear H.
    assert (H2 := spec_compare w_0 bh);destruct (w_compare w_0 bh).
-   rewrite (@spec_gen_modn1_aux w w_zdigits w_0 w_WW w_head0 w_add_mul_div 
+   rewrite (@spec_double_modn1_aux w w_zdigits w_0 w_WW w_head0 w_add_mul_div 
             w_div21 w_compare w_sub w_to_Z spec_w_0 spec_compare 1 (WW ah al) bl).
-   destruct (gen_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 w_compare w_sub 1
+   destruct (double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21 w_compare w_sub 1
              (WW ah al) bl);simpl;trivial.
    rewrite spec_ww_mod_gt_aux_eq;trivial;symmetry;trivial.
    trivial.
@@ -1197,7 +1197,7 @@ Section GenDivGt.
       match w_compare w_0 bl with
       | Eq => WW ah al (* normalement n'arrive pas si forme normale *)
       | Lt => 
-	let m := gen_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
+	let m := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21
                    w_compare w_sub 1 (WW ah al) bl in
         WW w_0 (w_gcd_gt bl m)
       | Gt => W0 (* absurde *)
@@ -1212,7 +1212,7 @@ Section GenDivGt.
           match w_compare w_0 ml with
           | Eq => WW bh bl
           | _  => 
-            let r := gen_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
+            let r := double_modn1 w_zdigits w_0 w_head0 w_add_mul_div w_div21 
                       w_compare w_sub 1 (WW bh bl) ml in
             WW w_0 (w_gcd_gt ml r)
           end
@@ -1235,12 +1235,12 @@ Section GenDivGt.
    simpl;rewrite spec_w_0;rewrite Zmult_0_l;rewrite Zplus_0_l.
    rewrite spec_w_0 in Hbl.
    apply Zis_gcd_mod;zarith.
-   change ([|ah|] * wB + [|al|]) with (gen_to_Z w_digits w_to_Z 1 (WW ah al)).
-   rewrite <- (@spec_gen_modn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
+   change ([|ah|] * wB + [|al|]) with (double_to_Z w_digits w_to_Z 1 (WW ah al)).
+   rewrite <- (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
     w_div21 w_compare w_sub w_to_Z spec_to_Z spec_w_zdigits spec_w_0 spec_w_WW spec_head0 spec_add_mul_div
     spec_div21 spec_compare spec_sub 1 (WW ah al) bl Hbl).
    apply spec_gcd_gt. 
-   rewrite  (@spec_gen_modn1 w w_digits w_zdigits w_0 w_WW); trivial.   
+   rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.   
    apply Zlt_gt;match goal with | |- ?x mod ?y < ?y => 
     destruct (Z_mod_lt x y);zarith end.
    rewrite spec_w_0 in Hbl;Spec_w_to_Z bl;elimtype False;omega.
@@ -1257,12 +1257,12 @@ Section GenDivGt.
    rewrite <- Hml;rewrite spec_w_0;simpl;apply Zis_gcd_0.
    simpl;rewrite spec_w_0;simpl. 
    rewrite spec_w_0 in Hml. apply Zis_gcd_mod;zarith.
-   change ([|bh|] * wB + [|bl|]) with (gen_to_Z w_digits w_to_Z 1 (WW bh bl)).
-   rewrite <- (@spec_gen_modn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
+   change ([|bh|] * wB + [|bl|]) with (double_to_Z w_digits w_to_Z 1 (WW bh bl)).
+   rewrite <- (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
    w_div21 w_compare w_sub w_to_Z spec_to_Z spec_w_zdigits spec_w_0 spec_w_WW spec_head0 spec_add_mul_div
    spec_div21 spec_compare spec_sub 1 (WW bh bl) ml Hml).
    apply spec_gcd_gt. 
-   rewrite  (@spec_gen_modn1 w w_digits w_zdigits w_0 w_WW); trivial.   
+   rewrite  (@spec_double_modn1 w w_digits w_zdigits w_0 w_WW); trivial.   
    apply Zlt_gt;match goal with | |- ?x mod ?y < ?y => 
    destruct (Z_mod_lt x y);zarith end.
    rewrite spec_w_0 in Hml;Spec_w_to_Z ml;elimtype False;omega.
@@ -1340,9 +1340,9 @@ Section GenDivGt.
    ring_simplify (n + 1 - 1);trivial.
   Qed.
 
-End GenDivGt.
+End DoubleDivGt.
 
-Section GenDiv.
+Section DoubleDiv.
 
  Variable w : Set.
  Variable w_digits : positive.
@@ -1536,5 +1536,5 @@ Section GenDiv.
    apply spec_ww_gcd_gt;zarith.
   Qed.
 
-End GenDiv.
+End DoubleDiv.
 

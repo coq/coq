@@ -14,8 +14,8 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
-Require Import GenBase.
+Require Import DoubleType.
+Require Import DoubleBase.
 
 Open Local Scope Z_scope.
 
@@ -40,7 +40,7 @@ Section GENDIVN1.
  Notation wB := (base w_digits). 
 
  Notation "[| x |]" := (w_to_Z x)  (at level 0, x at level 99).
- Notation "[! n | x !]" := (gen_to_Z w_digits w_to_Z n x) 
+ Notation "[! n | x !]" := (double_to_Z w_digits w_to_Z n x) 
                                       (at level 0, x at level 99).
  Notation "[[ x ]]" := (zn2z_to_Z wB w_to_Z x)  (at level 0, x at level 99).
  
@@ -77,64 +77,64 @@ Section GENDIVN1.
   Variable b2p : w.
   Variable b2p_le : wB/2 <= [|b2p|].
 
-  Definition gen_divn1_0_aux n (divn1: w -> word w n -> word w n * w) r h :=
-   let (hh,hl) := gen_split w_0 n h in
+  Definition double_divn1_0_aux n (divn1: w -> word w n -> word w n * w) r h :=
+   let (hh,hl) := double_split w_0 n h in
    let (qh,rh) := divn1 r hh in
    let (ql,rl) := divn1 rh hl in
-   (gen_WW w_WW n qh ql, rl).
+   (double_WW w_WW n qh ql, rl).
 
-  Fixpoint gen_divn1_0 (n:nat) : w -> word w n -> word w n * w :=
+  Fixpoint double_divn1_0 (n:nat) : w -> word w n -> word w n * w :=
    match n return w -> word w n -> word w n * w with
    | O => fun r x => w_div21 r x b2p 
-   | S n => gen_divn1_0_aux n (gen_divn1_0 n) 
+   | S n => double_divn1_0_aux n (double_divn1_0 n) 
    end.
  
   Lemma spec_split : forall (n : nat) (x : zn2z (word w n)),
-       let (h, l) := gen_split w_0 n x in
-       [!S n | x!] = [!n | h!] * gen_wB w_digits n + [!n | l!].
-  Proof (spec_gen_split w_0 w_digits w_to_Z spec_0).
+       let (h, l) := double_split w_0 n x in
+       [!S n | x!] = [!n | h!] * double_wB w_digits n + [!n | l!].
+  Proof (spec_double_split w_0 w_digits w_to_Z spec_0).
 
-  Lemma spec_gen_divn1_0 : forall n r a,
+  Lemma spec_double_divn1_0 : forall n r a,
     [|r|] < [|b2p|] ->
-    let (q,r') := gen_divn1_0 n r a in
-    [|r|] * gen_wB w_digits n + [!n|a!] = [!n|q!] * [|b2p|] + [|r'|] /\
+    let (q,r') := double_divn1_0 n r a in
+    [|r|] * double_wB w_digits n + [!n|a!] = [!n|q!] * [|b2p|] + [|r'|] /\
     0 <= [|r'|] < [|b2p|].
   Proof.
    induction n;intros.
    exact (spec_div21 a b2p_le H).
-   simpl (gen_divn1_0 (S n) r a); unfold gen_divn1_0_aux.
-   assert (H1 := spec_split n a);destruct (gen_split w_0 n a) as (hh,hl).
+   simpl (double_divn1_0 (S n) r a); unfold double_divn1_0_aux.
+   assert (H1 := spec_split n a);destruct (double_split w_0 n a) as (hh,hl).
    rewrite H1.
-   assert (H2 := IHn r hh H);destruct (gen_divn1_0 n r hh) as (qh,rh).
+   assert (H2 := IHn r hh H);destruct (double_divn1_0 n r hh) as (qh,rh).
    destruct H2.
    assert ([|rh|] < [|b2p|]). omega.
-   assert (H4 := IHn rh hl H3);destruct (gen_divn1_0 n rh hl) as (ql,rl).
+   assert (H4 := IHn rh hl H3);destruct (double_divn1_0 n rh hl) as (ql,rl).
    destruct H4;split;trivial.
-   rewrite spec_gen_WW;trivial.
-   rewrite <- gen_wB_wwB.
+   rewrite spec_double_WW;trivial.
+   rewrite <- double_wB_wwB.
    rewrite Zmult_assoc;rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
    rewrite H0;rewrite Zmult_plus_distr_l;rewrite <- Zplus_assoc.
    rewrite H4;ring.
   Qed.
 
-  Definition gen_modn1_0_aux n (modn1:w -> word w n -> w) r h :=
-   let (hh,hl) := gen_split w_0 n h in modn1 (modn1 r hh) hl.
+  Definition double_modn1_0_aux n (modn1:w -> word w n -> w) r h :=
+   let (hh,hl) := double_split w_0 n h in modn1 (modn1 r hh) hl.
 
-  Fixpoint gen_modn1_0 (n:nat) : w -> word w n -> w :=
+  Fixpoint double_modn1_0 (n:nat) : w -> word w n -> w :=
    match n return w -> word w n -> w with
    | O => fun r x => snd (w_div21 r x b2p)
-   | S n => gen_modn1_0_aux n (gen_modn1_0 n)
+   | S n => double_modn1_0_aux n (double_modn1_0 n)
    end.
 
-  Lemma spec_gen_modn1_0 : forall n r x,
-     gen_modn1_0 n r x = snd (gen_divn1_0 n r x).
+  Lemma spec_double_modn1_0 : forall n r x,
+     double_modn1_0 n r x = snd (double_divn1_0 n r x).
   Proof.
    induction n;simpl;intros;trivial.
-   unfold gen_modn1_0_aux, gen_divn1_0_aux.
-   destruct (gen_split w_0 n x) as (hh,hl).
+   unfold double_modn1_0_aux, double_divn1_0_aux.
+   destruct (double_split w_0 n x) as (hh,hl).
    rewrite (IHn r hh). 
-   destruct (gen_divn1_0 n r hh) as (qh,rh);simpl.
-   rewrite IHn. destruct (gen_divn1_0 n rh hl);trivial.
+   destruct (double_divn1_0 n r hh) as (qh,rh);simpl.
+   rewrite IHn. destruct (double_divn1_0 n rh hl);trivial.
   Qed.
  
   Variable p : w.
@@ -148,21 +148,21 @@ Section GENDIVN1.
    intros;apply spec_add_mul_div;auto.
   Qed.
 
-  Definition gen_divn1_p_aux n 
+  Definition double_divn1_p_aux n 
    (divn1 : w -> word w n -> word w n -> word w n * w) r h l := 
-   let (hh,hl) := gen_split w_0 n h in
-   let (lh,ll) := gen_split w_0 n l in	
+   let (hh,hl) := double_split w_0 n h in
+   let (lh,ll) := double_split w_0 n l in	
    let (qh,rh) := divn1 r hh hl in
    let (ql,rl) := divn1 rh hl lh in
-   (gen_WW w_WW n qh ql, rl).
+   (double_WW w_WW n qh ql, rl).
 
-  Fixpoint gen_divn1_p (n:nat) : w -> word w n -> word w n -> word w n * w :=
+  Fixpoint double_divn1_p (n:nat) : w -> word w n -> word w n -> word w n * w :=
    match n return w -> word w n -> word w n ->  word w n * w with
    | O => fun r h l => w_div21 r (w_add_mul_div p h l) b2p 
-   | S n => gen_divn1_p_aux n (gen_divn1_p n)   
+   | S n => double_divn1_p_aux n (double_divn1_p n)   
    end.
 
-  Lemma p_lt_gen_digits : forall n, [|p|] <= Zpos (gen_digits w_digits n).
+  Lemma p_lt_double_digits : forall n, [|p|] <= Zpos (double_digits w_digits n).
   Proof.
 (*
    induction n;simpl. destruct p_bounded;trivial.
@@ -172,130 +172,130 @@ Section GENDIVN1.
    case (spec_to_Z p); rewrite Zpos_xO;auto with zarith.
   Qed.
 
-  Lemma spec_gen_divn1_p : forall n r h l,
+  Lemma spec_double_divn1_p : forall n r h l,
     [|r|] < [|b2p|] ->
-    let (q,r') := gen_divn1_p n r h l in
-    [|r|] * gen_wB w_digits n + 
+    let (q,r') := double_divn1_p n r h l in
+    [|r|] * double_wB w_digits n + 
       ([!n|h!]*2^[|p|] + 
-        [!n|l!] / (2^(Zpos(gen_digits w_digits n) - [|p|])))
-        mod gen_wB w_digits n = [!n|q!] * [|b2p|] + [|r'|] /\
+        [!n|l!] / (2^(Zpos(double_digits w_digits n) - [|p|])))
+        mod double_wB w_digits n = [!n|q!] * [|b2p|] + [|r'|] /\
     0 <= [|r'|] < [|b2p|].
   Proof.
    case (spec_to_Z p); intros HH0 HH1.
    induction n;intros.
-   simpl (gen_divn1_p 0 r h l).
-   unfold gen_to_Z, gen_wB, gen_digits.
+   simpl (double_divn1_p 0 r h l).
+   unfold double_to_Z, double_wB, double_digits.
    rewrite <- spec_add_mul_divp.
    exact (spec_div21 (w_add_mul_div p h l) b2p_le H).
-   simpl (gen_divn1_p (S n) r h l).
-   unfold gen_divn1_p_aux.
-   assert (H1 := spec_split n h);destruct (gen_split w_0 n h) as (hh,hl).
-   rewrite H1. rewrite <- gen_wB_wwB.
-   assert (H2 := spec_split n l);destruct (gen_split w_0 n l) as (lh,ll).
+   simpl (double_divn1_p (S n) r h l).
+   unfold double_divn1_p_aux.
+   assert (H1 := spec_split n h);destruct (double_split w_0 n h) as (hh,hl).
+   rewrite H1. rewrite <- double_wB_wwB.
+   assert (H2 := spec_split n l);destruct (double_split w_0 n l) as (lh,ll).
    rewrite H2.
-   replace ([|r|] * (gen_wB w_digits n * gen_wB w_digits n) +
-    (([!n|hh!] * gen_wB w_digits n + [!n|hl!]) * 2 ^ [|p|] +
-    ([!n|lh!] * gen_wB w_digits n + [!n|ll!]) /
-     2^(Zpos (gen_digits w_digits (S n)) - [|p|])) mod
-      (gen_wB w_digits n * gen_wB w_digits n)) with
-    (([|r|] * gen_wB w_digits n + ([!n|hh!] * 2^[|p|] + 
-      [!n|hl!] / 2^(Zpos (gen_digits w_digits n) - [|p|])) mod
-                      gen_wB w_digits n) * gen_wB w_digits n +
+   replace ([|r|] * (double_wB w_digits n * double_wB w_digits n) +
+    (([!n|hh!] * double_wB w_digits n + [!n|hl!]) * 2 ^ [|p|] +
+    ([!n|lh!] * double_wB w_digits n + [!n|ll!]) /
+     2^(Zpos (double_digits w_digits (S n)) - [|p|])) mod
+      (double_wB w_digits n * double_wB w_digits n)) with
+    (([|r|] * double_wB w_digits n + ([!n|hh!] * 2^[|p|] + 
+      [!n|hl!] / 2^(Zpos (double_digits w_digits n) - [|p|])) mod
+                      double_wB w_digits n) * double_wB w_digits n +
      ([!n|hl!] * 2^[|p|] + 
-      [!n|lh!] / 2^(Zpos (gen_digits w_digits n) - [|p|])) mod 
-              gen_wB w_digits n).
-   generalize (IHn r hh hl H);destruct (gen_divn1_p n r hh hl) as (qh,rh);
+      [!n|lh!] / 2^(Zpos (double_digits w_digits n) - [|p|])) mod 
+              double_wB w_digits n).
+   generalize (IHn r hh hl H);destruct (double_divn1_p n r hh hl) as (qh,rh);
    intros (H3,H4);rewrite H3.
    assert ([|rh|] < [|b2p|]). omega. 
-   replace (([!n|qh!] * [|b2p|] + [|rh|]) * gen_wB w_digits n +
+   replace (([!n|qh!] * [|b2p|] + [|rh|]) * double_wB w_digits n +
      ([!n|hl!] * 2 ^ [|p|] +
-      [!n|lh!] / 2 ^ (Zpos (gen_digits w_digits n) - [|p|])) mod
-      gen_wB w_digits n)  with  
-    ([!n|qh!] * [|b2p|] *gen_wB w_digits n + ([|rh|]*gen_wB w_digits n +
+      [!n|lh!] / 2 ^ (Zpos (double_digits w_digits n) - [|p|])) mod
+      double_wB w_digits n)  with  
+    ([!n|qh!] * [|b2p|] *double_wB w_digits n + ([|rh|]*double_wB w_digits n +
       ([!n|hl!] * 2 ^ [|p|] +
-       [!n|lh!] / 2 ^ (Zpos (gen_digits w_digits n) - [|p|])) mod
-      gen_wB w_digits n)). 2:ring.
-   generalize (IHn rh hl lh H0);destruct (gen_divn1_p n rh hl lh) as (ql,rl);
+       [!n|lh!] / 2 ^ (Zpos (double_digits w_digits n) - [|p|])) mod
+      double_wB w_digits n)). 2:ring.
+   generalize (IHn rh hl lh H0);destruct (double_divn1_p n rh hl lh) as (ql,rl);
    intros (H5,H6);rewrite H5.
-   split;[rewrite spec_gen_WW;trivial;ring|trivial]. 
-   assert (Uhh := spec_gen_to_Z w_digits w_to_Z spec_to_Z n hh);
-    unfold gen_wB,base in Uhh.
-   assert (Uhl := spec_gen_to_Z w_digits w_to_Z spec_to_Z n hl);
-    unfold gen_wB,base in Uhl.
-   assert (Ulh := spec_gen_to_Z w_digits w_to_Z spec_to_Z n lh);
-    unfold gen_wB,base in Ulh.
-   assert (Ull := spec_gen_to_Z w_digits w_to_Z spec_to_Z n ll);
-    unfold gen_wB,base in Ull.
-   unfold gen_wB,base.
-   assert (UU:=p_lt_gen_digits n).
+   split;[rewrite spec_double_WW;trivial;ring|trivial]. 
+   assert (Uhh := spec_double_to_Z w_digits w_to_Z spec_to_Z n hh);
+    unfold double_wB,base in Uhh.
+   assert (Uhl := spec_double_to_Z w_digits w_to_Z spec_to_Z n hl);
+    unfold double_wB,base in Uhl.
+   assert (Ulh := spec_double_to_Z w_digits w_to_Z spec_to_Z n lh);
+    unfold double_wB,base in Ulh.
+   assert (Ull := spec_double_to_Z w_digits w_to_Z spec_to_Z n ll);
+    unfold double_wB,base in Ull.
+   unfold double_wB,base.
+   assert (UU:=p_lt_double_digits n).
    rewrite Zdiv_shift_r;auto with zarith. 
-   2:change (Zpos (gen_digits w_digits (S n))) 
-     with (2*Zpos (gen_digits w_digits n));auto with zarith.
-   replace (2 ^ (Zpos (gen_digits w_digits (S n)) - [|p|])) with
-    (2^(Zpos (gen_digits w_digits n) - [|p|])*2^Zpos (gen_digits w_digits n)).
+   2:change (Zpos (double_digits w_digits (S n))) 
+     with (2*Zpos (double_digits w_digits n));auto with zarith.
+   replace (2 ^ (Zpos (double_digits w_digits (S n)) - [|p|])) with
+    (2^(Zpos (double_digits w_digits n) - [|p|])*2^Zpos (double_digits w_digits n)).
    rewrite Zdiv_mult_cancel_r;auto with zarith.
    rewrite Zmult_plus_distr_l with (p:=  2^[|p|]). 
    pattern  ([!n|hl!] * 2^[|p|]) at 2;
-   rewrite (shift_unshift_mod (Zpos(gen_digits w_digits n))([|p|])([!n|hl!]));
+   rewrite (shift_unshift_mod (Zpos(double_digits w_digits n))([|p|])([!n|hl!]));
     auto with zarith.
    rewrite Zplus_assoc. 
    replace 
-    ([!n|hh!] * 2^Zpos (gen_digits w_digits n)* 2^[|p|] +
-      ([!n|hl!] / 2^(Zpos (gen_digits w_digits n)-[|p|])*
-       2^Zpos(gen_digits w_digits n)))
+    ([!n|hh!] * 2^Zpos (double_digits w_digits n)* 2^[|p|] +
+      ([!n|hl!] / 2^(Zpos (double_digits w_digits n)-[|p|])*
+       2^Zpos(double_digits w_digits n)))
    with 
-    (([!n|hh!] *2^[|p|] + gen_to_Z w_digits w_to_Z n hl / 
-       2^(Zpos (gen_digits w_digits n)-[|p|]))
-      * 2^Zpos(gen_digits w_digits n));try (ring;fail).
+    (([!n|hh!] *2^[|p|] + double_to_Z w_digits w_to_Z n hl / 
+       2^(Zpos (double_digits w_digits n)-[|p|]))
+      * 2^Zpos(double_digits w_digits n));try (ring;fail).
    rewrite <- Zplus_assoc.
    rewrite <- (Zmod_shift_r ([|p|]));auto with zarith.
    replace 
-     (2 ^ Zpos (gen_digits w_digits n) * 2 ^ Zpos (gen_digits w_digits n)) with
-     (2 ^ (Zpos (gen_digits w_digits n) + Zpos (gen_digits w_digits n))).
-   rewrite (Zmod_shift_r (Zpos (gen_digits w_digits n)));auto with zarith.
-   replace (2 ^ (Zpos (gen_digits w_digits n) + Zpos (gen_digits w_digits n)))
-   with (2^Zpos(gen_digits w_digits n) *2^Zpos(gen_digits w_digits n)). 
+     (2 ^ Zpos (double_digits w_digits n) * 2 ^ Zpos (double_digits w_digits n)) with
+     (2 ^ (Zpos (double_digits w_digits n) + Zpos (double_digits w_digits n))).
+   rewrite (Zmod_shift_r (Zpos (double_digits w_digits n)));auto with zarith.
+   replace (2 ^ (Zpos (double_digits w_digits n) + Zpos (double_digits w_digits n)))
+   with (2^Zpos(double_digits w_digits n) *2^Zpos(double_digits w_digits n)). 
    rewrite (Zmult_comm (([!n|hh!] * 2 ^ [|p|] +
-      [!n|hl!] / 2 ^ (Zpos (gen_digits w_digits n) - [|p|])))).
+      [!n|hl!] / 2 ^ (Zpos (double_digits w_digits n) - [|p|])))).
    rewrite  Zmult_mod_distr_l;auto with zarith.
    ring. 
    rewrite Zpower_exp;auto with zarith.
-   assert (0 < Zpos (gen_digits w_digits n)). unfold Zlt;reflexivity.
+   assert (0 < Zpos (double_digits w_digits n)). unfold Zlt;reflexivity.
    auto with zarith.
    apply Z_mod_lt;auto with zarith.
    rewrite Zpower_exp;auto with zarith.
    split;auto with zarith.
    apply Zdiv_lt_upper_bound;auto with zarith.
    rewrite <- Zpower_exp;auto with zarith.
-   replace ([|p|] + (Zpos (gen_digits w_digits n) - [|p|])) with 
-     (Zpos(gen_digits w_digits n));auto with zarith.
+   replace ([|p|] + (Zpos (double_digits w_digits n) - [|p|])) with 
+     (Zpos(double_digits w_digits n));auto with zarith.
    rewrite <- Zpower_exp;auto with zarith.
-   replace (Zpos (gen_digits w_digits (S n)) - [|p|]) with 
-       (Zpos (gen_digits w_digits n) - [|p|] + 
-         Zpos (gen_digits w_digits n));trivial.
-   change (Zpos (gen_digits w_digits (S n))) with 
-    (2*Zpos (gen_digits w_digits n)). ring.
+   replace (Zpos (double_digits w_digits (S n)) - [|p|]) with 
+       (Zpos (double_digits w_digits n) - [|p|] + 
+         Zpos (double_digits w_digits n));trivial.
+   change (Zpos (double_digits w_digits (S n))) with 
+    (2*Zpos (double_digits w_digits n)). ring.
   Qed.
 
-  Definition gen_modn1_p_aux n (modn1 : w -> word w n -> word w n -> w) r h l:=
-   let (hh,hl) := gen_split w_0 n h in
-   let (lh,ll) := gen_split w_0 n l in	
+  Definition double_modn1_p_aux n (modn1 : w -> word w n -> word w n -> w) r h l:=
+   let (hh,hl) := double_split w_0 n h in
+   let (lh,ll) := double_split w_0 n l in	
    modn1 (modn1 r hh hl) hl lh.
 
-  Fixpoint gen_modn1_p (n:nat) : w -> word w n -> word w n -> w :=
+  Fixpoint double_modn1_p (n:nat) : w -> word w n -> word w n -> w :=
    match n return w -> word w n -> word w n -> w with
    | O => fun r h l => snd (w_div21 r (w_add_mul_div p h l) b2p) 
-   | S n => gen_modn1_p_aux n (gen_modn1_p n)
+   | S n => double_modn1_p_aux n (double_modn1_p n)
    end.
 
-  Lemma spec_gen_modn1_p : forall n r h l ,
-    gen_modn1_p n r h l = snd (gen_divn1_p n r h l).
+  Lemma spec_double_modn1_p : forall n r h l ,
+    double_modn1_p n r h l = snd (double_divn1_p n r h l).
   Proof.
    induction n;simpl;intros;trivial.
-   unfold gen_modn1_p_aux, gen_divn1_p_aux.
-   destruct(gen_split w_0 n h)as(hh,hl);destruct(gen_split w_0 n l) as (lh,ll).
-   rewrite (IHn r hh hl);destruct (gen_divn1_p n r hh hl) as (qh,rh).
-   rewrite IHn;simpl;destruct (gen_divn1_p n rh hl lh);trivial.
+   unfold double_modn1_p_aux, double_divn1_p_aux.
+   destruct(double_split w_0 n h)as(hh,hl);destruct(double_split w_0 n l) as (lh,ll).
+   rewrite (IHn r hh hl);destruct (double_divn1_p n r hh hl) as (qh,rh).
+   rewrite IHn;simpl;destruct (double_divn1_p n rh hl lh);trivial.
   Qed.
 
  End DIVAUX.
@@ -311,46 +311,46 @@ Section GENDIVN1.
      end
   end.
 
- Lemma spec_gen_digits:forall n, Zpos w_digits <= Zpos (gen_digits w_digits n).
+ Lemma spec_double_digits:forall n, Zpos w_digits <= Zpos (double_digits w_digits n).
  Proof.
   induction n;simpl;auto with zarith.
-  change (Zpos (xO (gen_digits w_digits n))) with 
-    (2*Zpos (gen_digits w_digits n)).
+  change (Zpos (xO (double_digits w_digits n))) with 
+    (2*Zpos (double_digits w_digits n)).
   assert (0 < Zpos w_digits);auto with zarith.
   exact (refl_equal Lt).
  Qed.
 
  Lemma spec_high : forall n (x:word w n), 
-   [|high n x|] = [!n|x!] / 2^(Zpos (gen_digits w_digits n) - Zpos w_digits).
+   [|high n x|] = [!n|x!] / 2^(Zpos (double_digits w_digits n) - Zpos w_digits).
  Proof.
   induction n;intros.
-  unfold high,gen_digits,gen_to_Z.
+  unfold high,double_digits,double_to_Z.
   replace (Zpos w_digits - Zpos w_digits) with 0;try ring.
   simpl. rewrite <- (Zdiv_unique [|x|] 1 [|x|] 0);auto with zarith.
-  assert (U2 := spec_gen_digits n). 
+  assert (U2 := spec_double_digits n). 
   assert (U3 : 0 < Zpos w_digits). exact (refl_equal Lt).
   destruct x;unfold high;fold high.
-  unfold gen_to_Z,zn2z_to_Z;rewrite spec_0.
+  unfold double_to_Z,zn2z_to_Z;rewrite spec_0.
   rewrite Zdiv_0_l;trivial.
-  assert (U0 := spec_gen_to_Z w_digits w_to_Z spec_to_Z n w0);
-   assert (U1 := spec_gen_to_Z w_digits w_to_Z spec_to_Z n w1).
+  assert (U0 := spec_double_to_Z w_digits w_to_Z spec_to_Z n w0);
+   assert (U1 := spec_double_to_Z w_digits w_to_Z spec_to_Z n w1).
   simpl [!S n|WW w0 w1!].
-  unfold gen_wB,base;rewrite Zdiv_shift_r;auto with zarith.
-  replace (2 ^ (Zpos (gen_digits w_digits (S n)) - Zpos w_digits)) with
-   (2^(Zpos (gen_digits w_digits n) - Zpos w_digits) * 
-        2^Zpos (gen_digits w_digits n)).
+  unfold double_wB,base;rewrite Zdiv_shift_r;auto with zarith.
+  replace (2 ^ (Zpos (double_digits w_digits (S n)) - Zpos w_digits)) with
+   (2^(Zpos (double_digits w_digits n) - Zpos w_digits) * 
+        2^Zpos (double_digits w_digits n)).
   rewrite Zdiv_mult_cancel_r;auto with zarith.
   rewrite <- Zpower_exp;auto with zarith.
-  replace (Zpos (gen_digits w_digits n) - Zpos w_digits + 
-    Zpos (gen_digits w_digits n)) with
-   (Zpos (gen_digits w_digits (S n)) - Zpos w_digits);trivial.
-  change (Zpos (gen_digits w_digits (S n))) with 
-     (2*Zpos (gen_digits w_digits n));ring.
-  change (Zpos (gen_digits w_digits (S n))) with 
-  (2*Zpos (gen_digits w_digits n)); auto with zarith.
+  replace (Zpos (double_digits w_digits n) - Zpos w_digits + 
+    Zpos (double_digits w_digits n)) with
+   (Zpos (double_digits w_digits (S n)) - Zpos w_digits);trivial.
+  change (Zpos (double_digits w_digits (S n))) with 
+     (2*Zpos (double_digits w_digits n));ring.
+  change (Zpos (double_digits w_digits (S n))) with 
+  (2*Zpos (double_digits w_digits n)); auto with zarith.
  Qed.
  
- Definition gen_divn1 (n:nat) (a:word w n) (b:w) := 
+ Definition double_divn1 (n:nat) (a:word w n) (b:w) := 
   let p := w_head0 b in
   match w_compare p w_0 with
   | Gt =>
@@ -359,18 +359,18 @@ Section GENDIVN1.
     let k := w_sub w_zdigits p in
     let lsr_n := w_add_mul_div k w_0 in 
     let r0 := w_add_mul_div p w_0 ha in
-    let (q,r) := gen_divn1_p b2p p n r0 a (gen_0 w_0 n) in
+    let (q,r) := double_divn1_p b2p p n r0 a (double_0 w_0 n) in
     (q, lsr_n r)
-  | _ => gen_divn1_0 b n w_0 a 
+  | _ => double_divn1_0 b n w_0 a 
   end.
 
- Lemma spec_gen_divn1 : forall n a b,
+ Lemma spec_double_divn1 : forall n a b,
     0 < [|b|] ->
-    let (q,r) := gen_divn1 n a b in
+    let (q,r) := double_divn1 n a b in
     [!n|a!] = [!n|q!] * [|b|] + [|r|] /\
     0 <= [|r|] < [|b|].
   Proof.
-   intros n a b H. unfold gen_divn1.
+   intros n a b H. unfold double_divn1.
    case (spec_head0 H); intros H0 H1.
    case (spec_to_Z (w_head0 b)); intros HH1 HH2.
    generalize (spec_compare (w_head0 b) w_0); case w_compare;
@@ -380,7 +380,7 @@ Section GENDIVN1.
        rewrite Zmult_1_l; auto.
    assert (Hv2: [|w_0|] < [|b|]).
      rewrite spec_0; auto.
-   generalize (spec_gen_divn1_0 Hv1 n a Hv2).
+   generalize (spec_double_divn1_0 Hv1 n a Hv2).
    rewrite spec_0;rewrite Zmult_0_l; rewrite Zplus_0_l; auto.
    contradict H2; auto with zarith.
    assert (HHHH : 0 < [|w_head0 b|]); auto with zarith.
@@ -422,30 +422,30 @@ Section GENDIVN1.
     apply Zpower_le_monotone;split;auto with zarith.
    rewrite <- H4 in H0. 
    assert (Hb3: [|w_head0 b|] <= Zpos w_digits); auto with zarith. 
-   assert (H7:= spec_gen_divn1_p H0 Hb3 n a (gen_0 w_0 n) H6).
-   destruct (gen_divn1_p (w_add_mul_div (w_head0 b) b w_0) (w_head0 b) n
+   assert (H7:= spec_double_divn1_p H0 Hb3 n a (double_0 w_0 n) H6).
+   destruct (double_divn1_p (w_add_mul_div (w_head0 b) b w_0) (w_head0 b) n
              (w_add_mul_div (w_head0 b) w_0 (high n a)) a
-             (gen_0 w_0 n)) as (q,r).
-   assert (U:= spec_gen_digits n).
-   rewrite spec_gen_0 in H7;trivial;rewrite Zdiv_0_l in H7.
+             (double_0 w_0 n)) as (q,r).
+   assert (U:= spec_double_digits n).
+   rewrite spec_double_0 in H7;trivial;rewrite Zdiv_0_l in H7.
    rewrite Zplus_0_r in H7.
    rewrite spec_add_mul_div in H7;auto with zarith.
    rewrite spec_0 in H7;rewrite Zmult_0_l in H7;rewrite Zplus_0_l in H7.
    assert (([|high n a|] / 2 ^ (Zpos w_digits - [|w_head0 b|])) mod wB
-     = [!n|a!] / 2^(Zpos (gen_digits w_digits n) - [|w_head0 b|])).
+     = [!n|a!] / 2^(Zpos (double_digits w_digits n) - [|w_head0 b|])).
    rewrite Zmod_small;auto with zarith.
    rewrite spec_high. rewrite Zdiv_Zdiv;auto with zarith.
    rewrite <- Zpower_exp;auto with zarith.
-   replace (Zpos (gen_digits w_digits n) - Zpos w_digits + 
+   replace (Zpos (double_digits w_digits n) - Zpos w_digits + 
                        (Zpos w_digits - [|w_head0 b|]))
-    with (Zpos (gen_digits w_digits n) - [|w_head0 b|]);trivial;ring.
+    with (Zpos (double_digits w_digits n) - [|w_head0 b|]);trivial;ring.
    assert (H8 := Zpower_gt_0 2  (Zpos w_digits - [|w_head0 b|]));auto with zarith.
    split;auto with zarith.
    apply Zle_lt_trans with ([|high n a|]);auto with zarith.
    apply Zdiv_le_upper_bound;auto with zarith.
    pattern ([|high n a|]) at 1;rewrite <- Zmult_1_r.
    apply Zmult_le_compat;auto with zarith.
-   rewrite H8 in H7;unfold gen_wB,base in H7.
+   rewrite H8 in H7;unfold double_wB,base in H7.
    rewrite <- shift_unshift_mod in H7;auto with zarith.
    rewrite H4 in H7.
    assert ([|w_add_mul_div (w_sub w_zdigits (w_head0 b)) w_0 r|] 
@@ -484,11 +484,11 @@ Section GENDIVN1.
    rewrite H9.
    apply Zdiv_lt_upper_bound;auto with zarith.
    rewrite Zmult_comm;auto with zarith.
-   exact (spec_gen_to_Z w_digits w_to_Z spec_to_Z n a).
+   exact (spec_double_to_Z w_digits w_to_Z spec_to_Z n a).
  Qed.
 
  
- Definition gen_modn1 (n:nat) (a:word w n) (b:w) := 
+ Definition double_modn1 (n:nat) (a:word w n) (b:w) := 
   let p := w_head0 b in
   match w_compare p w_0 with
   | Gt =>
@@ -497,31 +497,31 @@ Section GENDIVN1.
     let k := w_sub w_zdigits p in
     let lsr_n := w_add_mul_div k w_0 in 
     let r0 := w_add_mul_div p w_0 ha in
-    let r := gen_modn1_p b2p p n r0 a (gen_0 w_0 n) in
+    let r := double_modn1_p b2p p n r0 a (double_0 w_0 n) in
     lsr_n r
-  | _ => gen_modn1_0 b n w_0 a 
+  | _ => double_modn1_0 b n w_0 a 
   end.
 
- Lemma spec_gen_modn1_aux : forall n a b,
-    gen_modn1 n a b = snd (gen_divn1 n a b).
+ Lemma spec_double_modn1_aux : forall n a b,
+    double_modn1 n a b = snd (double_divn1 n a b).
  Proof.
-  intros n a b;unfold gen_divn1,gen_modn1.
+  intros n a b;unfold double_divn1,double_modn1.
   generalize (spec_compare (w_head0 b) w_0); case w_compare;
      rewrite spec_0; intros H2; auto with zarith.
-  apply spec_gen_modn1_0.
-  apply spec_gen_modn1_0.
-  rewrite spec_gen_modn1_p.
-  destruct (gen_divn1_p (w_add_mul_div (w_head0 b) b w_0) (w_head0 b) n
-            (w_add_mul_div (w_head0 b) w_0 (high n a)) a (gen_0 w_0 n));simpl;trivial.
+  apply spec_double_modn1_0.
+  apply spec_double_modn1_0.
+  rewrite spec_double_modn1_p.
+  destruct (double_divn1_p (w_add_mul_div (w_head0 b) b w_0) (w_head0 b) n
+            (w_add_mul_div (w_head0 b) w_0 (high n a)) a (double_0 w_0 n));simpl;trivial.
  Qed.
 
- Lemma spec_gen_modn1 : forall n a b, 0 < [|b|] ->
-  [|gen_modn1 n a b|] = [!n|a!] mod [|b|].
+ Lemma spec_double_modn1 : forall n a b, 0 < [|b|] ->
+  [|double_modn1 n a b|] = [!n|a!] mod [|b|].
  Proof.
-  intros n a b H;assert (H1 := spec_gen_divn1 n a H).
-  assert (H2 := spec_gen_modn1_aux n a b).
-  rewrite H2;destruct (gen_divn1 n a b) as (q,r).
-  simpl;apply Zmod_unique with (gen_to_Z w_digits w_to_Z n q);auto with zarith.
+  intros n a b H;assert (H1 := spec_double_divn1 n a H).
+  assert (H2 := spec_double_modn1_aux n a b).
+  rewrite H2;destruct (double_divn1 n a b) as (q,r).
+  simpl;apply Zmod_unique with (double_to_Z w_digits w_to_Z n q);auto with zarith.
   destruct H1 as (h1,h2);rewrite h1;ring.
  Qed.
 

@@ -14,12 +14,12 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
-Require Import GenBase.
+Require Import DoubleType.
+Require Import DoubleBase.
 
 Open Local Scope Z_scope.
 
-Section GenSub.
+Section DoubleSub.
  Variable w : Set.
  Variable w_0 : w.
  Variable w_Bm1 : w.
@@ -152,7 +152,7 @@ Section GenSub.
     end
   end.
 
- (*Section GenProof.*)
+ (*Section DoubleProof.*)
   Variable w_digits : positive.
   Variable w_to_Z : w -> Z.
  
@@ -347,9 +347,9 @@ Section GenSub.
    rewrite (mod_wwB w_digits w_to_Z spec_to_Z);rewrite spec_sub_carry;trivial.
   Qed.
 
-(* End GenProof. *)
+(* End DoubleProof. *)
 
-End GenSub.
+End DoubleSub.
 
 
 

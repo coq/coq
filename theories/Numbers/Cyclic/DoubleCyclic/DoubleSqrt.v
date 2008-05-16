@@ -14,12 +14,12 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
-Require Import GenBase.
+Require Import DoubleType.
+Require Import DoubleBase.
 
 Open Local Scope Z_scope.
 
-Section GenSqrt.
+Section DoubleSqrt.
  Variable w              : Set.
  Variable w_is_even      : w -> bool.
  Variable w_compare      : w -> w -> comparison.
@@ -202,7 +202,7 @@ Section GenSqrt.
   Notation "[|| x ||]" :=
     (zn2z_to_Z wwB (ww_to_Z w_digits w_to_Z) x)  (at level 0, x at level 99).
 
-  Notation "[! n | x !]" := (gen_to_Z w_digits w_to_Z n x)
+  Notation "[! n | x !]" := (double_to_Z w_digits w_to_Z n x)
     (at level 0, x at level 99).
 
   Variable spec_w_0   : [|w_0|] = 0.
@@ -1386,4 +1386,4 @@ intros x; case x; simpl ww_is_even.
   unfold base; apply Zpower2_lt_lin; auto with zarith.
   Qed.
 
-End GenSqrt.
+End DoubleSqrt.

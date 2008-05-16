@@ -14,11 +14,11 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import BigNumPrelude.
-Require Import Basic_type.
+Require Import DoubleType.
 
 Open Local Scope Z_scope.
 
-Section GenBase.
+Section DoubleBase.
  Variable w : Set.
  Variable w_0   : w.
  Variable w_1   : w.
@@ -59,7 +59,7 @@ Section GenBase.
   | _ => WW W0 l
   end.
  
- Definition gen_WW (n:nat) := 
+ Definition double_WW (n:nat) := 
   match n return word w n -> word w n -> word w (S n) with 
   | O => w_WW 
   | S n =>
@@ -70,18 +70,18 @@ Section GenBase.
      end
   end.
 
- Fixpoint gen_digits (n:nat) : positive := 
+ Fixpoint double_digits (n:nat) : positive := 
   match n with 
   | O => w_digits
-  | S n => xO (gen_digits n)
+  | S n => xO (double_digits n)
   end.
 
- Definition gen_wB n := base (gen_digits n).
+ Definition double_wB n := base (double_digits n).
 
- Fixpoint gen_to_Z (n:nat) : word w n -> Z :=
+ Fixpoint double_to_Z (n:nat) : word w n -> Z :=
   match n return word w n -> Z with
   | O => w_to_Z 
-  | S n => zn2z_to_Z (gen_wB n) (gen_to_Z n)
+  | S n => zn2z_to_Z (double_wB n) (double_to_Z n)
   end.
 
  Fixpoint extend_aux (n:nat) (x:zn2z w) {struct n}: word w (S n) :=
@@ -97,13 +97,13 @@ Section GenBase.
   | _ => extend_aux n r
   end.
 
- Definition gen_0 n : word w n :=
+ Definition double_0 n : word w n :=
    match n return word w n with 
    | O => w_0
    | S _ => W0
    end.
  
- Definition gen_split (n:nat) (x:zn2z (word w n)) :=
+ Definition double_split (n:nat) (x:zn2z (word w n)) :=
   match x with 
   | W0 => 
     match n return word w n * word w n with 
@@ -149,7 +149,7 @@ Section GenBase.
   end.
 
   
- Section GenProof.
+ Section DoubleProof.
   Notation wB  := (base w_digits).
   Notation wwB := (base ww_digits).
   Notation "[| x |]" := (w_to_Z x)  (at level 0, x at level 99).
@@ -158,7 +158,7 @@ Section GenBase.
    (interp_carry 1 wwB ww_to_Z c) (at level 0, x at level 99).
   Notation "[-[ c ]]" := 
    (interp_carry (-1) wwB ww_to_Z c) (at level 0, x at level 99).
-  Notation "[! n | x !]" := (gen_to_Z n x) (at level 0, x at level 99).
+  Notation "[! n | x !]" := (double_to_Z n x) (at level 0, x at level 99).
 
   Variable spec_w_0   : [|w_0|] = 0.
   Variable spec_w_1   : [|w_1|] = 1.
@@ -294,29 +294,29 @@ Section GenBase.
     apply beta_lex_inv;auto with zarith.
   Qed.
 
-  Lemma gen_wB_wwB : forall n, gen_wB n * gen_wB n = gen_wB (S n).
+  Lemma double_wB_wwB : forall n, double_wB n * double_wB n = double_wB (S n).
   Proof.
-   intros n;unfold gen_wB;simpl.
-   unfold base;rewrite (Zpos_xO (gen_digits n)).
-   replace  (2 * Zpos (gen_digits n)) with 
-     (Zpos (gen_digits n) + Zpos (gen_digits n)).
+   intros n;unfold double_wB;simpl.
+   unfold base;rewrite (Zpos_xO (double_digits n)).
+   replace  (2 * Zpos (double_digits n)) with 
+     (Zpos (double_digits n) + Zpos (double_digits n)).
    symmetry; apply Zpower_exp;intro;discriminate.
    ring.
   Qed.
 
-  Lemma gen_wB_pos:
-   forall n, 0 <= gen_wB n.
+  Lemma double_wB_pos:
+   forall n, 0 <= double_wB n.
  Proof.
- intros n; unfold gen_wB, base; auto with zarith.
+ intros n; unfold double_wB, base; auto with zarith.
  Qed.
 
-  Lemma gen_wB_more_digits:
-  forall n, wB <= gen_wB n.
+  Lemma double_wB_more_digits:
+  forall n, wB <= double_wB n.
   Proof.
   clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
   intros n; elim n; clear n; auto.
-    unfold gen_wB, gen_digits; auto with zarith.
-  intros n H1; rewrite <- gen_wB_wwB.
+    unfold double_wB, double_digits; auto with zarith.
+  intros n H1; rewrite <- double_wB_wwB.
   apply Zle_trans with (wB * 1).
     rewrite Zmult_1_r; apply Zle_refl.
   apply Zmult_le_compat; auto with zarith.
@@ -327,22 +327,22 @@ Section GenBase.
   unfold base; auto with zarith.
   Qed.
 
-  Lemma spec_gen_to_Z : 
-   forall n (x:word w n), 0 <= [!n | x!] < gen_wB n.
+  Lemma spec_double_to_Z : 
+   forall n (x:word w n), 0 <= [!n | x!] < double_wB n.
   Proof.
   clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
   induction n;intros. exact (spec_to_Z x).
-  unfold gen_to_Z;fold gen_to_Z.
+  unfold double_to_Z;fold double_to_Z.
   destruct x;unfold zn2z_to_Z.
-  unfold gen_wB,base;split;auto with zarith.
+  unfold double_wB,base;split;auto with zarith.
   assert (U0:= IHn w0);assert (U1:= IHn w1).
   split;auto with zarith.
-  apply Zlt_le_trans with ((gen_wB n - 1) * gen_wB n + gen_wB n).
-  assert (gen_to_Z n w0*gen_wB n <= (gen_wB n - 1)*gen_wB n).
+  apply Zlt_le_trans with ((double_wB n - 1) * double_wB n + double_wB n).
+  assert (double_to_Z n w0*double_wB n <= (double_wB n - 1)*double_wB n).
   apply Zmult_le_compat_r;auto with zarith.
   auto with zarith.
-  rewrite <- gen_wB_wwB.
-  replace ((gen_wB n - 1) * gen_wB n + gen_wB n) with (gen_wB n * gen_wB n);
+  rewrite <- double_wB_wwB.
+  replace ((double_wB n - 1) * double_wB n + double_wB n) with (double_wB n * double_wB n);
    [auto with zarith | ring].
   Qed.
 
@@ -356,23 +356,23 @@ Section GenBase.
   intros xx yy H1; simpl in H1.
   assert (F1: [!n | xx!] = 0).
     case (Zle_lt_or_eq 0 ([!n | xx!])); auto.
-      case (spec_gen_to_Z n xx); auto.
+      case (spec_double_to_Z n xx); auto.
      intros F2.
-     assert (F3 := gen_wB_more_digits n).
+     assert (F3 := double_wB_more_digits n).
     assert (F4: 0 <= [!n | yy!]).
-      case (spec_gen_to_Z n yy); auto.
-    assert (F5: 1 * wB <=  [!n | xx!] * gen_wB n);
+      case (spec_double_to_Z n yy); auto.
+    assert (F5: 1 * wB <=  [!n | xx!] * double_wB n);
      auto with zarith.
     apply Zmult_le_compat; auto with zarith.
     unfold base; auto with zarith.
-  simpl get_low; simpl gen_to_Z.
+  simpl get_low; simpl double_to_Z.
   generalize H1; clear H1.
   rewrite F1; rewrite Zmult_0_l; rewrite Zplus_0_l.
   intros H1; apply Hrec; auto.
   Qed.
 
-  Lemma spec_gen_WW : forall n (h l : word w n),
-    [!S n|gen_WW n h l!] = [!n|h!] * gen_wB n + [!n|l!].
+  Lemma spec_double_WW : forall n (h l : word w n),
+    [!S n|double_WW n h l!] = [!n|h!] * double_wB n + [!n|l!].
   Proof.
    induction n;simpl;intros;trivial.
    destruct h;auto.
@@ -389,12 +389,12 @@ Section GenBase.
    rewrite <- H;exact (spec_extend_aux n (WW w0 w1)).
   Qed.
 
-  Lemma spec_gen_0 : forall n, [!n|gen_0 n!] = 0.
+  Lemma spec_double_0 : forall n, [!n|double_0 n!] = 0.
   Proof. destruct n;trivial. Qed.
 
-  Lemma spec_gen_split : forall n x, 
-   let (h,l) := gen_split n x in
-   [!S n|x!] = [!n|h!] * gen_wB n + [!n|l!].
+  Lemma spec_double_split : forall n x, 
+   let (h,l) := double_split n x in
+   [!S n|x!] = [!n|h!] * double_wB n + [!n|l!].
   Proof.
    destruct x;simpl;auto.
    destruct n;simpl;trivial.
@@ -440,7 +440,7 @@ Section GenBase.
   Qed.
 
    
- End GenProof.
+ End DoubleProof.
 
-End GenBase.
+End DoubleBase.
 

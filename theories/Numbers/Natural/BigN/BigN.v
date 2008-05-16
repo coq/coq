@@ -15,9 +15,9 @@ Author: Arnaud Spiwack
 *)
 
 Require Export Int31.
-Require Import Z31Z.
+Require Import Z_nZ.
+Require Import Z_31Z.
 Require Import NMake.
-Require Import ZnZ.
 
 Open Scope int31_scope.
 

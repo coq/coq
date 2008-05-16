@@ -17,13 +17,13 @@ Set Implicit Arguments.
 Require Import ZArith.
 Require Import Znumtheory.
 Require Import BigNumPrelude.
-Require Import Basic_type.
+Require Import DoubleType.
 
 Open Local Scope Z_scope.
 
-(** First, a description via operator records and spec records. *)
+(** First, a description via an operator record and a spec record. *)
 
-Section ZnZ_Op.
+Section Z_nZ_Op.
 
  Variable znz : Set.
 
@@ -90,9 +90,9 @@ Section ZnZ_Op.
     znz_sqrt2       : znz -> znz -> znz * carry znz;
     znz_sqrt        : znz -> znz  }.
 
-End ZnZ_Op.
+End Z_nZ_Op.
 
-Section ZnZ_Spec.
+Section Z_nZ_Spec.
  Variable w : Set.
  Variable w_op : znz_op w.
 
@@ -270,7 +270,7 @@ Section ZnZ_Spec.
        [|w_sqrt x|] ^ 2 <= [|x|] < ([|w_sqrt x|] + 1) ^ 2
   }.
 
-End ZnZ_Spec.
+End Z_nZ_Spec.
 
 
 
