@@ -13,10 +13,15 @@
 Require Export NZAxioms.
 Require Import BigNumPrelude.
 Require Import DoubleType.
-Require Import Z_nZ.
+Require Import CyclicAxioms.
 
-(** * A Z/nZ representation (module type [CyclicType]) implements 
-  [NZAxiomsSig], e.g. the common properties between N and Z. *)
+(** * From [CyclicType] to [NZAxiomsSig] *)
+
+(** A [Z/nZ] representation given by a module type [CyclicType] 
+    implements [NZAxiomsSig], e.g. the common properties between 
+    N and Z with no ordering. Notice that the [n] in [Z/nZ] is 
+    a power of 2.
+*)
 
 Module NZCyclicAxiomsMod (Import Cyclic : CyclicType) <: NZAxiomsSig.
 

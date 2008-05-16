@@ -12,6 +12,9 @@
 
 (** * Signature and specification of a bounded integer structure *)
 
+(** This file specifies how to represent [Z/nZ] when [n=2^d], 
+    [d] being the number of digits of these bounded integers. *) 
+
 Set Implicit Arguments.
 
 Require Import ZArith.
@@ -30,7 +33,7 @@ Section Z_nZ_Op.
  Record znz_op : Set := mk_znz_op {
 
     (* Conversion functions with Z *)
-    znz_digits : positive;
+    znz_digits : positive;  
     znz_zdigits: znz;
     znz_to_Z   : znz -> Z;
     znz_of_pos : positive -> N * znz;
@@ -40,7 +43,7 @@ Section Z_nZ_Op.
     (* Basic constructors *)
     znz_0   : znz;
     znz_1   : znz;
-    znz_Bm1 : znz;
+    znz_Bm1 : znz;  (* [2^digits-1], which is equivalent to [-1] *)
     znz_WW  : znz -> znz -> zn2z znz;
     znz_W0  : znz -> zn2z znz;
     znz_0W  : znz -> zn2z znz;

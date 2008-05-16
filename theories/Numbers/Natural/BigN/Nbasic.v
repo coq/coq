@@ -15,8 +15,8 @@ Require Import BigNumPrelude.
 Require Import Max.
 Require Import DoubleType.
 Require Import DoubleBase.
-Require Import Z_nZ.
-Require Import Z_2nZ.
+Require Import CyclicAxioms.
+Require Import DoubleCyclic.
 
 (* To compute the necessary height *)
 

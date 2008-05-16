@@ -23,7 +23,7 @@ Require Import DoubleSqrt.
 Require Import DoubleLift.
 Require Import DoubleDivn1.
 Require Import DoubleDiv. 
-Require Import Z_nZ.
+Require Import CyclicAxioms.
 
 Open Local Scope Z_scope.
 

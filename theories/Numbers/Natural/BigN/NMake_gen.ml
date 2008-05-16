@@ -71,11 +71,11 @@ let _ =
   pr "";
   pr "Require Import BigNumPrelude.";
   pr "Require Import ZArith.";
+  pr "Require Import CyclicAxioms.";
   pr "Require Import DoubleType.";
   pr "Require Import DoubleMul.";
   pr "Require Import DoubleDivn1.";
-  pr "Require Import Z_nZ.";
-  pr "Require Import Z_2nZ.";
+  pr "Require Import DoubleCyclic.";
   pr "Require Import Nbasic.";
   pr "Require Import Wf_nat.";
   pr "Require Import StreamMemo.";
@@ -1776,7 +1776,7 @@ let _ =
   pp "    (spec_zdigits ww_spec)";
   pp "   (spec_0 ww_spec) (spec_WW ww_spec) (spec_head0 ww_spec)";
   pp "   (spec_add_mul_div ww_spec) (spec_div21 ww_spec) ";
-  pp "    (Z_nZ.spec_compare ww_spec) (Z_nZ.spec_sub ww_spec)).";
+  pp "    (CyclicAxioms.spec_compare ww_spec) (CyclicAxioms.spec_sub ww_spec)).";
   pp "";
 
   for i = 0 to size do
@@ -2018,7 +2018,7 @@ let _ =
   pp "    (spec_zdigits ww_spec)";
   pp "   (spec_0 ww_spec) (spec_WW ww_spec) (spec_head0 ww_spec)";
   pp "   (spec_add_mul_div ww_spec) (spec_div21 ww_spec) ";
-  pp "    (Z_nZ.spec_compare ww_spec) (Z_nZ.spec_sub ww_spec)).";
+  pp "    (CyclicAxioms.spec_compare ww_spec) (CyclicAxioms.spec_sub ww_spec)).";
   pp "";
 
   pr " Theorem spec_mod_gt:";
@@ -2576,7 +2576,7 @@ let _ =
   pp "                ).";
   pp "     rewrite (spec_0 Hw).";
   pp "     rewrite Zmult_0_l; rewrite Zplus_0_l.";
-  pp "     rewrite (Z_nZ.spec_sub Hw).";
+  pp "     rewrite (CyclicAxioms.spec_sub Hw).";
   pp "     rewrite Zmod_small; auto with zarith.";
   pp "     rewrite (spec_zdigits Hw).";
   pp "     rewrite F0.";
@@ -2754,7 +2754,7 @@ let _ =
   pp "     assert (F1: znz_to_Z ww1_op (znz_head0 ww1_op xx) <= Zpos (znz_digits ww1_op)).";
   pp "     case (Zle_lt_or_eq _ _ HH1); intros HH5.";
   pp "     apply Zlt_le_weak.";
-  pp "     case (Z_nZ.spec_head0 Hw1 xx).";
+  pp "     case (CyclicAxioms.spec_head0 Hw1 xx).";
   pp "       rewrite <- Hx; auto.";
   pp "     intros _ Hu; unfold base in Hu.";
   pp "     case (Zle_or_lt (Zpos (znz_digits ww1_op))";
@@ -2766,7 +2766,7 @@ let _ =
   pp "       apply Zle_lt_trans with (2 := Hu).";
   pp "       apply Zmult_le_compat_l; auto with zarith.";
   pp "     apply Zpower_le_monotone; auto with zarith.";
-  pp "     rewrite (Z_nZ.spec_head00 Hw1 xx); auto with zarith.";
+  pp "     rewrite (CyclicAxioms.spec_head00 Hw1 xx); auto with zarith.";
   pp "     rewrite Zdiv_0_l; auto with zarith.";
   pp "     rewrite Zplus_0_r.";
   pp "     case (Zle_lt_or_eq _ _ HH1); intros HH5.";
@@ -2779,7 +2779,7 @@ let _ =
   pp "     split; auto with zarith .";
   pp "     apply Zlt_le_trans with (base (znz_digits ww1_op)).";
   pp "     rewrite Hx.";
-  pp "     case (Z_nZ.spec_head0 Hw1 xx); auto.";
+  pp "     case (CyclicAxioms.spec_head0 Hw1 xx); auto.";
   pp "       rewrite <- Hx; auto.";
   pp "     intros _ Hu; rewrite Zmult_comm in Hu.";
   pp "     apply Zle_lt_trans with (2 := Hu).";
@@ -2794,7 +2794,7 @@ let _ =
   pp "     rewrite Zmod_small; auto with zarith.";
   pp "     intros HH; apply HH.";
   pp "     rewrite Hy; apply Zle_trans with (1 := Hl).";
-  pp "     rewrite (Z_nZ.spec_head00 Hw1 xx); auto with zarith.";
+  pp "     rewrite (CyclicAxioms.spec_head00 Hw1 xx); auto with zarith.";
   pp "     rewrite <- (spec_zdigits Hw); auto with zarith.";
   pp "     rewrite <- (spec_zdigits Hw1); auto with zarith.";
   pp "  assert (F5: forall n m, (n <= m)%snat ->" "%";

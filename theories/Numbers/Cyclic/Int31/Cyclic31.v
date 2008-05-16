@@ -8,14 +8,14 @@
 
 (*i $Id$ i*)
 
-(** * Int31 numbers defines indeed a cyclic structure : Z/31Z *)
+(** * Int31 numbers defines indeed a cyclic structure : Z/(2^31)Z *)
 
 (**
 Author: Arnaud Spiwack
 *)
 
 Require Export Int31.
-Require Import Z_nZ.
+Require Import CyclicAxioms.
 
 Open Scope int31_scope.
 
@@ -107,8 +107,8 @@ Definition int31_spec : znz_spec int31_op.
 Admitted.
 
 
-Module Int31_words <: CyclicType.
+Module Int31Cyclic <: CyclicType.
   Definition w := int31.
   Definition w_op := int31_op.
   Definition w_spec := int31_spec.
-End Int31_words.
+End Int31Cyclic.

@@ -15,13 +15,13 @@ Author: Arnaud Spiwack
 *)
 
 Require Export Int31.
-Require Import Z_nZ.
-Require Import Z_31Z.
+Require Import CyclicAxioms.
+Require Import Cyclic31.
 Require Import NMake.
 
 Open Scope int31_scope.
 
-Module BigN := NMake.Make Int31_words.
+Module BigN := NMake.Make Int31Cyclic.
 
 Definition bigN := BigN.t.
 
