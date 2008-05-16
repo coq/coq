@@ -620,7 +620,7 @@ CYCLICABSTRACTVO:=$(addprefix theories/Numbers/Cyclic/Abstract/, \
  ZnZ.vo )
 
 CYCLICINT31VO:=$(addprefix theories/Numbers/Cyclic/Int31/, \
- Int31.vo )
+ Int31.vo Z31Z.vo )
 
 CYCLICDOUBLECYCLICVO:=$(addprefix theories/Numbers/Cyclic/DoubleCyclic/, \
  Basic_type.vo	GenBase.vo	GenAdd.vo	GenSub.vo	\

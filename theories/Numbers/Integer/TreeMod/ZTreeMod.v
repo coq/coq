@@ -11,12 +11,12 @@
 (*i $Id$ i*)
 
 Require Export NZAxioms.
-Require Import NMake. (* contains W0Type *)
+Require Import NMake. (* contains CyclicType *)
 Require Import ZnZ.
 Require Import Basic_type. (* contains base *)
 Require Import BigNumPrelude.
 
-Module NZBigIntsAxiomsMod (Import BoundedIntsMod : W0Type) <: NZAxiomsSig.
+Module NZBigIntsAxiomsMod (Import BoundedIntsMod : CyclicType) <: NZAxiomsSig.
 
 Open Local Scope Z_scope.
 

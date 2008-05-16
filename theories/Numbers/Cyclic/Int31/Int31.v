@@ -16,11 +16,17 @@ Require Export Basic_type.
 
 Unset Boxed Definitions.
 
-Inductive digits : Type := |D0 |D1.
+Inductive digits : Type := D0 | D1.
 
 Inductive int31 : Type :=
-| I31 : digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits ->digits -> int31
-.
+ | I31 : digits -> digits -> digits -> digits ->
+         digits -> digits -> digits -> digits ->
+         digits -> digits -> digits -> digits ->
+         digits -> digits -> digits -> digits ->
+         digits -> digits -> digits -> digits ->
+         digits -> digits -> digits -> digits ->
+         digits -> digits -> digits -> digits ->
+         digits -> digits -> digits -> int31.
 
 (* spiwack: Registration of the type of integers, so that the matchs in
    the functions below perform dynamic decompilation (otherwise some segfault

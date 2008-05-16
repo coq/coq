@@ -80,14 +80,7 @@ let _ =
   pr "Require Import Wf_nat.";
   pr "Require Import StreamMemo.";
   pr "";
-  pr "Module Type W0Type.";
-  pr " Parameter w : Set.";
-  pr " Parameter w_op : znz_op w.";
-  pr " Parameter w_spec : znz_spec w_op.";
-  pr "End W0Type.";
-  pr "";
-  pr "Module Make (W0:W0Type).";
-  pr " Import W0.";
+  pr "Module Make (Import W0:CyclicType).";
   pr "";
 
   pr " Definition w0 := W0.w.";

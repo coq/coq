@@ -16,10 +16,12 @@ Set Implicit Arguments.
 
 Require Import ZArith.
 Require Import Znumtheory.
+Require Import BigNumPrelude.
 Require Import Basic_type.
-Require Import GenBase.
 
 Open Local Scope Z_scope.
+
+(** First, a description via operator records and spec records. *)
 
 Section ZnZ_Op.
 
@@ -90,7 +92,7 @@ Section ZnZ_Op.
 
 End ZnZ_Op.
 
-Section Spec.
+Section ZnZ_Spec.
  Variable w : Set.
  Variable w_op : znz_op w.
 
@@ -164,9 +166,6 @@ Section Spec.
 
  Notation "[|| x ||]" :=
    (zn2z_to_Z wB w_to_Z x)  (at level 0, x at level 99).
- 
- Notation "[! n | x !]" := (gen_to_Z w_digits w_to_Z n x) 
-       (at level 0, x at level 99).
 
  Record znz_spec : Set := mk_znz_spec {
 
@@ -271,8 +270,11 @@ Section Spec.
        [|w_sqrt x|] ^ 2 <= [|x|] < ([|w_sqrt x|] + 1) ^ 2
   }.
 
-End Spec.
+End ZnZ_Spec.
 
+
+
+(** Injecting [Z] numbers into a cyclic structure *)
 
 Section znz_of_pos.
  
@@ -315,3 +317,12 @@ Section znz_of_pos.
  intros p1 (H1, _); contradict H1; apply Zlt_not_le; red; simpl; auto.
  Qed.
 End znz_of_pos.
+
+
+(** A modular specification grouping the earlier records. *)
+
+Module Type CyclicType.
+ Parameter w : Set.
+ Parameter w_op : znz_op w.
+ Parameter w_spec : znz_spec w_op.
+End CyclicType.
