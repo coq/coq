@@ -11,12 +11,14 @@
 (*i $Id$ i*)
 
 Require Export NZAxioms.
-Require Import NMake. (* contains CyclicType *)
-Require Import ZnZ.
-Require Import Basic_type. (* contains base *)
 Require Import BigNumPrelude.
+Require Import Basic_type.
+Require Import ZnZ.
 
-Module NZBigIntsAxiomsMod (Import BoundedIntsMod : CyclicType) <: NZAxiomsSig.
+(** * A Z/nZ representation (module type [CyclicType]) implements 
+  [NZAxiomsSig], e.g. the common properties between N and Z. *)
+
+Module NZCyclicAxiomsMod (Import Cyclic : CyclicType) <: NZAxiomsSig.
 
 Open Local Scope Z_scope.
 
@@ -226,4 +228,4 @@ rewrite Zplus_mod_idemp_l, Zmult_mod_idemp_l.
 now rewrite Zmult_plus_distr_l, Zmult_1_l.
 Qed.
 
-End NZBigIntsAxiomsMod.
+End NZCyclicAxiomsMod.

@@ -617,7 +617,7 @@ NUMBERSCOMMONVO:=$(addprefix theories/Numbers/, \
  QRewrite.vo	NumPrelude.vo	BigNumPrelude.vo )
 
 CYCLICABSTRACTVO:=$(addprefix theories/Numbers/Cyclic/Abstract/, \
- ZnZ.vo )
+ ZnZ.vo NZCyclic.vo )
 
 CYCLICINT31VO:=$(addprefix theories/Numbers/Cyclic/Int31/, \
  Int31.vo Z31Z.vo )
@@ -659,14 +659,11 @@ INTEGERBINARYVO:=$(addprefix theories/Numbers/Integer/Binary/, \
 INTEGERNATPAIRSVO:=$(addprefix theories/Numbers/Integer/NatPairs/, \
  ZNatPairs.vo )
 
-INTEGERTREEMODVO:=$(addprefix theories/Numbers/Integer/TreeMod/, \
- ZTreeMod.vo )
-
 INTEGERBIGZVO:=$(addprefix theories/Numbers/Integer/BigZ/, \
  ZMake.vo 	BigZ.vo )
 
 INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) \
- $(INTEGERTREEMODVO) $(INTEGERBIGZVO)
+ $(INTEGERBIGZVO)
 
 RATIONALBIGQVO:=$(addprefix theories/Numbers/Rational/BigQ/, \
  QMake_base.vo	QpMake.vo	QvMake.vo	Q0Make.vo 	\
