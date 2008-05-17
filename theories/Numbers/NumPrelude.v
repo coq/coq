@@ -164,7 +164,7 @@ unfold predicate_wd;
 let x := fresh "x" in
 let y := fresh "y" in
 let H := fresh "H" in
-  intros x y H; qiff x y H.
+  intros x y H; setoid_rewrite H; reflexivity.
 
 (* solve_relation_wd solves the goal [relation_wd R] for R consisting of
 morhisms and quatifiers *)
@@ -178,14 +178,7 @@ let x2 := fresh "x" in
 let y2 := fresh "y" in
 let H2 := fresh "H" in
   intros x1 y1 H1 x2 y2 H2;
-  rewrite H1;
-  qiff x2 y2 H2.
-
-(* The tactic solve_relation_wd is not very efficient because qsetoid_rewrite
-uses qiff to take the formula apart in order to make it quantifier-free,
-and then qiff is called again and takes the formula apart for the second
-time. It is better to analyze the formula once and generalize qiff to take
-a list of equalities that it has to rewrite. *)
+  rewrite H1; setoid_rewrite H2; reflexivity.
 
 (* The following tactic uses solve_predicate_wd to solve the goals
 relating to well-defidedness that are produced by applying induction.

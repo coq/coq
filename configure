@@ -271,7 +271,7 @@ case $ARCH in
 	# true -> strip : it exists under cygwin !
 	STRIPCOMMAND="strip";; 
     *)
-    if [ "$coq_profile_flag" = "-p" ] ; then
+    if [ "$coq_profile_flag" = "-p" ] || [ "$coq_debug_flag" = "-g" ]; then
 	STRIPCOMMAND="true"
     else
 	STRIPCOMMAND="strip"
@@ -579,7 +579,7 @@ case $ARCH in
 	# true -> strip : it exists under cygwin !
 	STRIPCOMMAND="strip";; 
     *)
-    if [ "$coq_profile_flag" = "-p" ] ; then
+    if [ "$coq_profile_flag" = "-p" ] || [ "$coq_debug_flag" = "-g" ]; then
 	STRIPCOMMAND="true"
     else
 	STRIPCOMMAND="strip"

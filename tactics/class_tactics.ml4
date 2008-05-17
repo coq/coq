@@ -724,7 +724,7 @@ let unify_eqn env sigma hypinfo t =
 let unfold_impl t =
   match kind_of_term t with
     | App (arrow, [| a; b |])(*  when eq_constr arrow (Lazy.force impl) *) -> 
-	mkProd (Anonymous, a, b)
+	mkProd (Anonymous, a, lift 1 b)
     | _ -> assert false
 
 let unfold_id t = 
@@ -820,6 +820,7 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 		    
 	    | Prod (_, x, b) when not (dependent (mkRel 1) b) -> 
 		let x', occ = aux env x occ None in
+		let b = subst1 mkProp b in
 		let b', occ = aux env b occ None in
 		let res = 
 		  if x' = None && b' = None then None
