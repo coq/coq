@@ -627,7 +627,11 @@ CYCLICDOUBLECYCLICVO:=$(addprefix theories/Numbers/Cyclic/DoubleCyclic/, \
  DoubleMul.vo	DoubleDivn1.vo 	DoubleDiv.vo	DoubleSqrt.vo	\
  DoubleLift.vo 	DoubleCyclic.vo )
 
-CYCLICVO:=$(CYCLICABSTRACTVO) $(CYCLICINT31VO) $(CYCLICDOUBLECYCLICVO)
+CYCLICZMODULOVO := $(addprefix theories/Numbers/Cyclic/ZModulo/, \
+ ZModulo.vo )
+
+CYCLICVO:=$(CYCLICABSTRACTVO) $(CYCLICINT31VO) $(CYCLICDOUBLECYCLICVO) \
+ $(CYCLICZMODULOVO)
 
 NATINTVO:=$(addprefix theories/Numbers/NatInt/, \
  NZAxioms.vo	NZBase.vo	NZPlus.vo	NZTimes.vo	\

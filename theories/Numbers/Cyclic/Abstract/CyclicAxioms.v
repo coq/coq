@@ -36,17 +36,17 @@ Section Z_nZ_Op.
     znz_digits : positive;  
     znz_zdigits: znz;
     znz_to_Z   : znz -> Z;
-    znz_of_pos : positive -> N * znz;
-    znz_head0  : znz -> znz;
-    znz_tail0  : znz -> znz;
+    znz_of_pos : positive -> N * znz; (* Euclidean division by [2^digits] *)
+    znz_head0  : znz -> znz; (* number of digits 0 in front of the number *)
+    znz_tail0  : znz -> znz; (* number of digits 0 at the bottom of the number *)
 
     (* Basic constructors *)
     znz_0   : znz;
     znz_1   : znz;
     znz_Bm1 : znz;  (* [2^digits-1], which is equivalent to [-1] *)
-    znz_WW  : znz -> znz -> zn2z znz;
-    znz_W0  : znz -> zn2z znz;
-    znz_0W  : znz -> zn2z znz;
+    znz_WW  : znz -> znz -> zn2z znz; (* from high and low words to a double word *)
+    znz_W0  : znz -> zn2z znz; (* same, with null low word *)
+    znz_0W  : znz -> zn2z znz; (* same, with null high word *)
 
     (* Comparison *)
     znz_compare     : znz -> znz -> comparison;
@@ -76,16 +76,16 @@ Section Z_nZ_Op.
     znz_square_c    : znz -> zn2z znz;
 
     (* Special divisions operations *)
-    znz_div21       : znz -> znz -> znz -> znz*znz;
-    znz_div_gt      : znz -> znz -> znz * znz;
+    znz_div21       : znz -> znz -> znz -> znz*znz; (* very ad-hoc ?? *)
+    znz_div_gt      : znz -> znz -> znz * znz; (* why this one ? *)
     znz_div         : znz -> znz -> znz * znz;
 
-    znz_mod_gt      : znz -> znz -> znz; 
+    znz_mod_gt      : znz -> znz -> znz; (* why this one ? *)
     znz_mod         : znz -> znz -> znz; 
 
-    znz_gcd_gt      : znz -> znz -> znz;
+    znz_gcd_gt      : znz -> znz -> znz; (* why this one ? *)
     znz_gcd         : znz -> znz -> znz; 
-    znz_add_mul_div : znz -> znz -> znz -> znz;
+    znz_add_mul_div : znz -> znz -> znz -> znz; (* very ad-hoc *)
     znz_pos_mod     : znz -> znz -> znz;
 
    (* square root *)

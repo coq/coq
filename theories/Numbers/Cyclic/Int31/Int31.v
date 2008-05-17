@@ -257,7 +257,7 @@ Definition iter_int31 i A f x :=
        i x
 .
 
-(* [addmuldiv31 p i j] = i*2^p+y/2^(31-p) (modulo 2^31) *)
+(* [addmuldiv31 p i j] = i*2^p+j/2^(31-p) (modulo 2^31) *)
 Definition addmuldiv31 p i j := 
  let (res, _ ) := 
  iter_int31 p (int31*int31) (fun ij => let (i,j) := ij in 
