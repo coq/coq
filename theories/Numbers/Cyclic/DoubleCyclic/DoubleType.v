@@ -25,6 +25,12 @@ Section Carry.
   | C0 : A -> carry
   | C1 : A -> carry.
 
+ Definition interp_carry (sign:Z)(B:Z)(interp:A -> Z) c :=
+  match c with
+  | C0 x => interp x
+  | C1 x => sign*B + interp x
+  end.
+
 End Carry.
 
 Section Zn2Z.
@@ -45,12 +51,6 @@ Section Zn2Z.
   match x with
   | W0 => 0
   | WW xh xl => w_to_Z xh * wB + w_to_Z xl
-  end.
-
- Definition interp_carry sign B (interp:znz -> Z) c :=
-  match c with
-  | C0 x => interp x
-  | C1 x => sign*B + interp x
   end.
 
 End Zn2Z.
