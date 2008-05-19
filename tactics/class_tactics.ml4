@@ -359,7 +359,12 @@ let full_eauto debug n lems gls =
 
 let typeclasses_eauto debug n lems gls = 
   let dbnames = [typeclasses_db] in
-  let db_list = List.map searchtable_map dbnames in
+  let db_list = List.map
+    (fun x -> 
+      try searchtable_map x 
+      with Not_found -> (empty_transparent_state, Hint_db.empty))
+    dbnames 
+  in
     e_search_auto debug n lems db_list gls
 
 exception Found of evar_map

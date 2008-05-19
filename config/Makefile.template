@@ -72,8 +72,9 @@ CAMLMKTOP="CAMLMKTOPEXEC"
 # Caml flags
 CAMLFLAGS=-rectypes CAMLANNOTATEFLAG
 
-# Compilation debug flag
+# Compilation debug flags
 CAMLDEBUG=COQDEBUGFLAG
+CAMLDEBUGOPT=COQDEBUGFLAGOPT
 
 # User compilation flag
 USERFLAGS=

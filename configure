@@ -87,6 +87,7 @@ camlp4oexec=camlp4o
 
 
 coq_debug_flag=
+coq_debug_flag_opt=
 coq_profile_flag=
 coq_annotate_flag=
 best_compiler=opt
@@ -411,6 +412,11 @@ case  $CAMLVERSION in
 	3.07*)
 	  cflags="$cflags -DOCAML_307";;
 esac
+
+if [ "$CAMLTAG" = "OCAML310" ] && [ "$coq_debug_flag" = "-g" ]; then
+    # Compilation debug flag
+    coq_debug_flag_opt="-g"
+fi
 
 # Camlp4 / Camlp5 configuration
 
@@ -882,6 +888,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|CAMLP4TOOL|$camlp4oexec|" \
     -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
     -e "s|LABLGTKINCLUDES|$ESCLABLGTKINCLUDES|" \
+    -e "s|COQDEBUGFLAGOPT|$coq_debug_flag_opt|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
     -e "s|CAMLANNOTATEFLAG|$coq_annotate_flag|" \
