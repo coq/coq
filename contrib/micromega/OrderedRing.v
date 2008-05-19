@@ -1,5 +1,17 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
 Require Import Setoid.
 Require Import Ring.
+
+(** Generic properties of ordered rings on a setoid equality *)
 
 Set Implicit Arguments.
 
@@ -29,7 +41,7 @@ Notation "x ~= y" := (~ req x y).
 Notation "x <= y" := (rle x y).
 Notation "x < y" := (rlt x y).
 
-Record SOR : Prop := mk_SOR_theory {
+Record SOR : Type := mk_SOR_theory {
   SORsetoid : Setoid_Theory R req;
   SORplus_wd : forall x1 x2, x1 == x2 -> forall y1 y2, y1 == y2 -> x1 + y1 == x2 + y2;
   SORtimes_wd : forall x1 x2, x1 == x2 -> forall y1 y2, y1 == y2 -> x1 * y1 == x2 * y2;
@@ -71,11 +83,13 @@ Notation "x ~= y" := (~ req x y).
 Notation "x <= y" := (rle x y).
 Notation "x < y" := (rlt x y).
 
+
 Add Relation R req
-  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)
-  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _)
-  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _)
+  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _ )
+  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _ )
+  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _ )
 as sor_setoid.
+
 
 Add Morphism rplus with signature req ==> req ==> req as rplus_morph.
 Proof.
@@ -148,7 +162,8 @@ Qed.
 Theorem Rminus_eq_0 : forall n m : R, n - m == 0 <-> n == m.
 Proof.
 intros n m.
-split; intro H. setoid_replace n with ((n - m) + m) by ring. rewrite H. now rewrite Rplus_0_l.
+split; intro H. setoid_replace n with ((n - m) + m) by ring. rewrite H. 
+now rewrite Rplus_0_l.
 rewrite H; ring.
 Qed.
 

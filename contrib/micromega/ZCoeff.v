@@ -1,3 +1,13 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
 Require Import OrderedRing.
 Require Import RingMicromega.
 Require Import ZArith.
@@ -28,6 +38,25 @@ Notation "x == y" := (req x y).
 Notation "x ~= y" := (~ req x y).
 Notation "x <= y" := (rle x y).
 Notation "x < y" := (rlt x y).
+
+Lemma req_refl : forall x, req x x.
+Proof.
+  destruct sor.(SORsetoid).
+  apply Equivalence_Reflexive.
+Qed.
+
+Lemma req_sym : forall x y, req x y -> req y x.
+Proof.
+  destruct sor.(SORsetoid).
+  apply Equivalence_Symmetric.
+Qed.
+
+Lemma req_trans : forall x y z, req x y -> req y z -> req x z.
+Proof.
+  destruct sor.(SORsetoid).
+  apply Equivalence_Transitive.
+Qed.
+  
 
 Add Relation R req
   reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)

@@ -1,11 +1,19 @@
-(********************************************************************)
-(*                                                                  *)
-(* Micromega: A reflexive tactics using the Positivstellensatz *)
-(*                                                                  *)
-(*  Frédéric Besson (Irisa/Inria) 2006				    *)
-(*                                                                  *)
-(********************************************************************)
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                                                                      *)
+(* Micromega: A reflexive tactic using the Positivstellensatz           *)
+(*                                                                      *)
+(*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
+(*                                                                      *)
+(************************************************************************)
+
 Require Import List.
+Require Setoid.
 
 Set Implicit Arguments.
 
@@ -37,6 +45,7 @@ Theorem make_conj_cons : forall (A : Type) (eval : A -> Prop) (a : A) (l : list 
 Proof.
 intros; destruct l; simpl; tauto.
 Qed.
+
 
 Lemma make_conj_impl : forall (A : Type) (eval : A -> Prop) (l : list A) (g : Prop),
   (make_conj eval l -> g) <-> make_impl eval l g.
@@ -72,3 +81,49 @@ Proof.
   apply IHl; auto.
 Qed.
 
+
+
+Lemma make_conj_app : forall  A eval l1 l2, @make_conj A eval (l1 ++ l2) <-> @make_conj A eval l1 /\ @make_conj A eval l2.
+Proof.
+  induction l1.
+  simpl.
+  tauto.
+  intros.
+  change ((a::l1) ++ l2) with (a :: (l1 ++ l2)).
+  rewrite make_conj_cons.
+  rewrite IHl1.
+  rewrite make_conj_cons.
+  tauto.
+Qed.
+
+Lemma not_make_conj_cons : forall (A:Type) (t:A) a eval  (no_middle_eval : (eval t) \/ ~ (eval  t)),
+  ~ make_conj  eval (t ::a) -> ~  (eval t) \/ (~ make_conj  eval a).
+Proof.
+  intros.
+  simpl in H.
+  destruct a.
+  tauto.
+  tauto.
+Qed.
+
+Lemma not_make_conj_app : forall (A:Type) (t:list A) a eval
+  (no_middle_eval : forall d, eval d \/ ~ eval d) , 
+  ~ make_conj  eval (t ++ a) -> (~ make_conj  eval t) \/ (~ make_conj eval a).
+Proof.
+  induction t.
+  simpl.
+  tauto.
+  intros.
+  simpl ((a::t)++a0)in H.
+  destruct (@not_make_conj_cons _ _ _ _  (no_middle_eval a) H).
+  left ; red ; intros.
+  apply H0.
+  rewrite  make_conj_cons in H1.
+  tauto.
+  destruct (IHt _ _ no_middle_eval H0).
+  left ; red ; intros.
+  apply H1.
+  rewrite make_conj_cons in H2.
+  tauto.
+  right ; auto.
+Qed.

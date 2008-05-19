@@ -59,7 +59,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
 	      -I scripts -I lib -I kernel -I kernel/byterun -I library \
               -I proofs -I tactics -I pretyping \
               -I interp -I toplevel -I parsing -I ide/utils -I ide \
-              -I contrib/omega -I contrib/romega \
+              -I contrib/omega -I contrib/romega -I contrib/micromega \
 	      -I contrib/ring -I contrib/dp -I contrib/setoid_ring \
               -I contrib/xml -I contrib/extraction \
               -I contrib/interface -I contrib/fourier \
@@ -163,12 +163,12 @@ coqlight: theories-light tools coqbinaries
 
 states:: states/initial.coq
 
-$(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX)
+$(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO)
+$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@
 
@@ -307,14 +307,13 @@ parsing/highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSING:.cmo=.cmx)
 
-tactics/hightactics.cma: $(HIGHTACTICS) $(USERTACCMO)
+tactics/hightactics.cma: $(HIGHTACTICS)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHTACTICS) $(USERTACCMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHTACTICS)
 
-tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx) $(USERTACCMO:.cmo=.cmx)
+tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHTACTICS:.cmo=.cmx) \
-		$(USERTACCMO:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHTACTICS:.cmo=.cmx)
 
 contrib/contrib.cma: $(CONTRIB)
 	$(SHOW)'OCAMLC -a -o $@'
@@ -323,6 +322,20 @@ contrib/contrib.cma: $(CONTRIB)
 contrib/contrib.cmxa: $(CONTRIB:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(CONTRIB:.cmo=.cmx)
+
+###########################################################################
+# Csdp to micromega special targets
+###########################################################################
+
+ifeq ($(BEST),opt)
+bin/csdpcert$(EXE): $(CSDPCERTCMX)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) nums.cmxa -o $@ $(CSDPCERTCMX)
+else
+bin/csdpcert$(EXE): $(CSDPCERTCMO)
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) -custom $(BYTEFLAGS) nums.cma -o $@ $(CSDPCERTCMO)
+endif
 
 ###########################################################################
 # CoqIde special targets
@@ -343,12 +356,12 @@ coqide-byte: $(COQIDEBYTE) $(COQIDE)
 coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 coqide-files: $(IDEFILES)
 
-$(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX) ide/ide.cmxa
+$(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) ide/ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO) ide/ide.cma
+$(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) ide/ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -g -ide -top $(BYTEFLAGS) -o $@
 
@@ -410,23 +423,23 @@ pcoq: pcoq-binaries pcoq-files
 
 pcoq-binaries:: $(COQINTERFACE) 
 
-bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO) $(INTERFACE)
+bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(INTERFACE)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
-bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX) $(INTERFACECMX)
+bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(INTERFACECMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 
 bin/parser$(EXE):$(LIBCOQRUN) $(PARSERCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) -custom -linkall $(BYTEFLAGS) -o $@ \
-	  dynlink.cma $(LIBCOQRUN) $(CMA) $(PARSERCMO)
+	  dynlink.cma nums.cma $(LIBCOQRUN) $(CMA) $(PARSERCMO)
 
 bin/parser.opt$(EXE): $(LIBCOQRUN) $(PARSERCMX)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall $(OPTFLAGS) -o $@ \
-	  $(LIBCOQRUN) $(CMXA) $(PARSERCMX)
+	  $(LIBCOQRUN) nums.cmxa $(CMXA) $(PARSERCMX)
 
 pcoq-files:: $(INTERFACEVO) $(INTERFACERC)
 
@@ -497,6 +510,7 @@ noreal: logic arith bool zarith qarith lists sets fsets relations \
 
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
+micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
 ring: $(RINGVO) $(RINGCMO)
 setoid_ring: $(NEWRINGVO) $(NEWRINGCMO)
 dp: $(DPCMO)

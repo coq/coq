@@ -1,17 +1,25 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+(*                      Evgeny Makarov, INRIA, 2007                     *)
+(************************************************************************)
+
 Require Import NArith.
 Require Import Relation_Definitions.
 Require Import Setoid.
 (*****)
-Require Import NRing.
-(*****)
-(*Require Import Ring_polynom.*)
+Require Import Env.
+Require Import EnvRing.
 (*****)
 Require Import List.
 Require Import Bool.
 Require Import OrderedRing.
 Require Import Refl.
-Require Import CheckerMaker.
-Require VarMap.
+
 
 Set Implicit Arguments.
 
@@ -71,9 +79,9 @@ Record SORaddon := mk_SOR_addon {
 Variable addon : SORaddon.
 
 Add Relation R req
-  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)
-  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _)
-  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _)
+  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _ )
+  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _ )
+  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _ )
 as micomega_sor_setoid.
 
 Add Morphism rplus with signature req ==> req ==> req as rplus_morph.
@@ -132,26 +140,26 @@ Qed.
 (* Begin Micromega *)
 
 Definition PExprC := PExpr C. (* arbitrary expressions built from +, *, - *)
-Definition PolC := Pol C. (* polynomials in generalized Horner form, defined in Ring_polynom or NRing *)
+Definition PolC := Pol C. (* polynomials in generalized Horner form, defined in Ring_polynom or EnvRing *)
 (*****)
-Definition Env := VarMap.t R. (* For interpreting PExprC *)
-Definition PolEnv := VarMap.off_map R. (* For interpreting PolC *)
+(*Definition Env := Env R. (* For interpreting PExprC *)*)
+Definition PolEnv := Env R. (* For interpreting PolC *)
 (*****)
 (*Definition Env := list R.
 Definition PolEnv := list R.*)
 (*****)
 
-(* What benefit do we get, in the case of NRing, from defining eval_pexpr
+(* What benefit do we get, in the case of EnvRing, from defining eval_pexpr
 explicitely below and not through PEeval, as the following lemma says? The
 function eval_pexpr seems to be a straightforward special case of PEeval
 when the environment (i.e., the second last argument of PEeval) of type
 off_map (which is (option positive * t)) is (None, env). *)
 
 (*****)
-Fixpoint eval_pexpr (l : Env) (pe : PExprC) {struct pe} : R :=
+Fixpoint eval_pexpr (l : PolEnv) (pe : PExprC) {struct pe} : R :=
 match pe with
 | PEc c => phi c
-| PEX j => VarMap.find 0 j l
+| PEX j =>  l j
 | PEadd pe1 pe2 => (eval_pexpr l pe1) + (eval_pexpr l pe2)
 | PEsub pe1 pe2 => (eval_pexpr l pe1) - (eval_pexpr l pe2)
 | PEmul pe1 pe2 => (eval_pexpr l pe1) * (eval_pexpr l pe2)
@@ -159,9 +167,27 @@ match pe with
 | PEpow pe1 n => rpow (eval_pexpr l pe1) (pow_phi n)
 end.
 
-Lemma eval_pexpr_PEeval : forall (env : Env) (pe : PExprC),
+
+Lemma eval_pexpr_simpl : forall  (l : PolEnv) (pe : PExprC),
+  eval_pexpr l pe = 
+  match pe with
+    | PEc c => phi c
+    | PEX j => l j
+    | PEadd pe1 pe2 => (eval_pexpr l pe1) + (eval_pexpr l pe2)
+    | PEsub pe1 pe2 => (eval_pexpr l pe1) - (eval_pexpr l pe2)
+    | PEmul pe1 pe2 => (eval_pexpr l pe1) * (eval_pexpr l pe2)
+    | PEopp pe1 => - (eval_pexpr l pe1)
+    | PEpow pe1 n => rpow (eval_pexpr l pe1) (pow_phi n)
+  end.
+Proof.
+  intros ; destruct pe ; reflexivity.
+Qed.
+
+
+
+Lemma eval_pexpr_PEeval : forall (env : PolEnv) (pe : PExprC),
   eval_pexpr env pe =
-  PEeval 0 rplus rtimes rminus ropp phi pow_phi rpow (None, env) pe.
+  PEeval rplus rtimes rminus ropp phi pow_phi rpow env pe.
 Proof.
 induction pe; simpl; intros.
 reflexivity.
@@ -176,36 +202,6 @@ Qed.
 (*Definition eval_pexpr : Env -> PExprC -> R :=
   PEeval 0 rplus rtimes rminus ropp phi pow_phi rpow.*)
 (*****)
-
-Inductive Op2 : Set := (* binary relations *)
-| OpEq
-| OpNEq
-| OpLe
-| OpGe
-| OpLt
-| OpGt.
-
-Definition eval_op2 (o : Op2) : R -> R -> Prop :=
-match o with
-| OpEq => req
-| OpNEq => fun x y : R => x ~= y
-| OpLe => rle
-| OpGe => fun x y : R => y <= x
-| OpLt => fun x y : R => x < y
-| OpGt => fun x y : R => y < x
-end.
-
-Record Formula : Type := {
-  Flhs : PExprC;
-  Fop : Op2;
-  Frhs : PExprC
-}.
-
-Definition eval_formula (env : Env) (f : Formula) : Prop :=
-  let (lhs, op, rhs) := f in
-    (eval_op2 op) (eval_pexpr env lhs) (eval_pexpr env rhs).
-
-(* We normalize Formulas by moving terms to one side *)
 
 Inductive Op1 : Set := (* relations with 0 *)
 | Equal (* == 0 *)
@@ -223,59 +219,9 @@ match o with
 | NonStrict => fun x : R => 0 <= x
 end.
 
-Definition eval_nformula (env : Env) (f : NFormula) : Prop :=
+Definition eval_nformula (env : PolEnv) (f : NFormula) : Prop :=
 let (p, op) := f in eval_op1 op (eval_pexpr env p).
 
-Definition normalise (f : Formula) : NFormula :=
-let (lhs, op, rhs) := f in
-  match op with
-  | OpEq => (PEsub lhs rhs, Equal)
-  | OpNEq => (PEsub lhs rhs, NonEqual)
-  | OpLe => (PEsub rhs lhs, NonStrict)
-  | OpGe => (PEsub lhs rhs, NonStrict)
-  | OpGt => (PEsub lhs rhs, Strict)
-  | OpLt => (PEsub rhs lhs, Strict)
-  end.
-
-Definition negate (f : Formula) : NFormula :=
-let (lhs, op, rhs) := f in
-  match op with
-  | OpEq => (PEsub rhs lhs, NonEqual)
-  | OpNEq => (PEsub rhs lhs, Equal)
-  | OpLe => (PEsub lhs rhs, Strict) (* e <= e' == ~ e > e' *)
-  | OpGe => (PEsub rhs lhs, Strict)
-  | OpGt => (PEsub rhs lhs, NonStrict)
-  | OpLt => (PEsub lhs rhs, NonStrict)
-end.
-
-Theorem normalise_sound :
-  forall (env : Env) (f : Formula),
-    eval_formula env f -> eval_nformula env (normalise f).
-Proof.
-intros env f H; destruct f as [lhs op rhs]; simpl in *.
-destruct op; simpl in *.
-now apply <- (Rminus_eq_0 sor).
-intros H1. apply -> (Rminus_eq_0 sor) in H1. now apply H.
-now apply -> (Rle_le_minus sor).
-now apply -> (Rle_le_minus sor).
-now apply -> (Rlt_lt_minus sor).
-now apply -> (Rlt_lt_minus sor).
-Qed.
-
-Theorem negate_correct :
-  forall (env : Env) (f : Formula),
-    eval_formula env f <-> ~ (eval_nformula env (negate f)).
-Proof.
-intros env f; destruct f as [lhs op rhs]; simpl.
-destruct op; simpl.
-symmetry. rewrite (Rminus_eq_0 sor).
-split; intro H; [symmetry; now apply -> (Req_dne sor) | symmetry in H; now apply <- (Req_dne sor)].
-rewrite (Rminus_eq_0 sor). split; intro; now apply (Rneq_symm sor).
-rewrite <- (Rlt_lt_minus sor). now rewrite <- (Rle_ngt sor).
-rewrite <- (Rlt_lt_minus sor). now rewrite <- (Rle_ngt sor).
-rewrite <- (Rle_le_minus sor). now rewrite <- (Rlt_nge sor).
-rewrite <- (Rle_le_minus sor). now rewrite <- (Rlt_nge sor).
-Qed.
 
 Definition OpMult (o o' : Op1) : Op1 :=
 match o with
@@ -365,6 +311,12 @@ Inductive Monoid (l : list NFormula) : PExprC -> Prop :=
 | M_In : forall p : PExprC, In (p, NonEqual) l -> Monoid l p
 | M_Mult : forall (e1 e2 : PExprC), Monoid l e1 -> Monoid l e2 -> Monoid l (PEmul e1 e2).
 
+(* Do we really need to rely on the intermediate definition of monoid ?
+   InC why the restriction NonEqual ?
+   Could not we consider the IsIdeal as a IsMult ?
+   The same for IsSquare ?
+*)
+
 Inductive Cone (l : list (NFormula)) : PExprC -> Op1 -> Prop :=
 | InC : forall p op, In (p, op) l -> op <> NonEqual -> Cone l p op
 | IsIdeal : forall p, Cone l p Equal -> forall p', Cone l (PEmul p p') Equal
@@ -378,7 +330,7 @@ Inductive Cone (l : list (NFormula)) : PExprC -> Op1 -> Prop :=
 (* As promised, if all hypotheses are true in some environment, then every
 member of the monoid is nonzero in this environment *)
 
-Lemma monoid_nonzero : forall (l : list NFormula) (env : Env),
+Lemma monoid_nonzero : forall (l : list NFormula) (env : PolEnv),
   (forall f : NFormula, In f l -> eval_nformula env f) ->
     forall p : PExprC, Monoid l p -> eval_pexpr env p ~= 0.
 Proof.
@@ -392,7 +344,7 @@ Qed.
 member of the cone is true as well *)
 
 Lemma cone_true :
-  forall (l : list NFormula) (env : Env),
+  forall (l : list NFormula) (env : PolEnv),
     (forall (f : NFormula), In f l -> eval_nformula env f) ->
       forall (p : PExprC) (op : Op1), Cone l p op ->
         op <> NonEqual /\ eval_nformula env (p, op).
@@ -423,7 +375,7 @@ Inductive ConeMember : Type :=
 | S_Monoid : MonoidMember -> ConeMember
 | S_Mult : ConeMember -> ConeMember -> ConeMember
 | S_Add : ConeMember -> ConeMember -> ConeMember
-| S_Pos : forall c : C, cltb cO c = true -> ConeMember (* the proof of cltb 0 c = true should be (refl_equal true) *)
+| S_Pos : C -> ConeMember 
 | S_Z : ConeMember.
 
 Definition nformula_times (f f' : NFormula) : NFormula :=
@@ -477,7 +429,7 @@ match cm with
 | S_Monoid m => let p := eval_monoid l m in (PEmul p p, Strict)
 | S_Mult p q => nformula_times (eval_cone l p) (eval_cone l q)
 | S_Add p q => nformula_plus (eval_cone l p) (eval_cone l q)
-| S_Pos c _ => (PEc c, Strict)
+| S_Pos c  => if cltb cO c then (PEc c, Strict) else (PEc cO, Equal)
 | S_Z => (PEc cO, Equal)
 end.
 
@@ -494,7 +446,8 @@ apply IsSquare.
 apply IsMonoid. apply eval_monoid_in_monoid.
 destruct (eval_cone l cm1). destruct (eval_cone l cm2). unfold nformula_times. now apply IsMult.
 destruct (eval_cone l cm1). destruct (eval_cone l cm2). unfold nformula_plus. now apply IsAdd.
-now apply IsPos. apply IsZ.
+case_eq (cO [<] c) ; intros ; [apply IsPos ; auto| apply IsZ].
+apply IsZ.
 Qed.
 
 (* (inconsistent_cone_member l p) means (p, op) is in the cone for some op
@@ -507,7 +460,7 @@ verified if we have a certificate. *)
 
 Definition inconsistent_cone_member (l : list NFormula) (p : PExprC) :=
   exists op : Op1, Cone l p op /\
-    forall env : Env, ~ eval_op1 op (eval_pexpr env p).
+    forall env : PolEnv, ~ eval_op1 op (eval_pexpr env p).
 
 (* If some element of a cone is inconsistent, then the base of the cone
 is also inconsistent *)
@@ -540,7 +493,7 @@ let Rops_wd := mk_reqe rplus rtimes ropp req
                        sor.(SORplus_wd)
                        sor.(SORtimes_wd)
                        sor.(SORopp_wd) in
-  norm_aux_spec sor.(SORsetoid) Rops_wd (Rth_ARth sor.(SORsetoid) Rops_wd sor.(SORrt))
+  norm_aux_spec sor.(SORsetoid) Rops_wd (Rth_ARth (SORsetoid sor) Rops_wd sor.(SORrt))
                 addon.(SORrm) addon.(SORpower).
 (*****)
 (*Definition normalise_pexpr_correct :=
@@ -593,7 +546,7 @@ Definition check_normalised_formulas : list NFormula -> ConeMember -> bool :=
 Lemma checker_nf_sound :
   forall (l : list NFormula) (cm : ConeMember),
     check_normalised_formulas l cm = true ->
-      forall env : Env, make_impl (eval_nformula env) l False.
+      forall env : PolEnv, make_impl (eval_nformula env) l False.
 Proof.
 intros l cm H env.
 unfold check_normalised_formulas in H.
@@ -603,29 +556,224 @@ pose proof (eval_cone_in_cone l cm) as H2. now rewrite H1 in H2.
 apply check_inconsistent_sound. now rewrite <- H1.
 Qed.
 
-Definition check_formulas :=
-  CheckerMaker.check_formulas normalise check_normalised_formulas.
+(** Normalisation of formulae **)
 
-Theorem check_formulas_sound :
-  forall (l : list Formula) (w : ConeMember),
-    check_formulas l w = true ->
-      forall env : Env, make_impl (eval_formula env) l False.
+Inductive Op2 : Set := (* binary relations *)
+| OpEq
+| OpNEq
+| OpLe
+| OpGe
+| OpLt
+| OpGt.
+
+Definition eval_op2 (o : Op2) : R -> R -> Prop :=
+match o with
+| OpEq => req
+| OpNEq => fun x y : R => x ~= y
+| OpLe => rle
+| OpGe => fun x y : R => y <= x
+| OpLt => fun x y : R => x < y
+| OpGt => fun x y : R => y < x
+end.
+
+Record Formula : Type := {
+  Flhs : PExprC;
+  Fop : Op2;
+  Frhs : PExprC
+}.
+
+Definition eval_formula (env : PolEnv) (f : Formula) : Prop :=
+  let (lhs, op, rhs) := f in
+    (eval_op2 op) (eval_pexpr env lhs) (eval_pexpr env rhs).
+
+(* We normalize Formulas by moving terms to one side *)
+
+Definition normalise (f : Formula) : NFormula :=
+let (lhs, op, rhs) := f in
+  match op with
+  | OpEq => (PEsub lhs rhs, Equal)
+  | OpNEq => (PEsub lhs rhs, NonEqual)
+  | OpLe => (PEsub rhs lhs, NonStrict)
+  | OpGe => (PEsub lhs rhs, NonStrict)
+  | OpGt => (PEsub lhs rhs, Strict)
+  | OpLt => (PEsub rhs lhs, Strict)
+  end.
+
+Definition negate (f : Formula) : NFormula :=
+let (lhs, op, rhs) := f in
+  match op with
+  | OpEq => (PEsub rhs lhs, NonEqual)
+  | OpNEq => (PEsub rhs lhs, Equal)
+  | OpLe => (PEsub lhs rhs, Strict) (* e <= e' == ~ e > e' *)
+  | OpGe => (PEsub rhs lhs, Strict)
+  | OpGt => (PEsub rhs lhs, NonStrict)
+  | OpLt => (PEsub lhs rhs, NonStrict)
+end.
+
+Theorem normalise_sound :
+  forall (env : PolEnv) (f : Formula),
+    eval_formula env f -> eval_nformula env (normalise f).
 Proof.
-exact (CheckerMaker.check_formulas_sound eval_formula eval_nformula normalise
-       normalise_sound check_normalised_formulas checker_nf_sound).
+intros env f H; destruct f as [lhs op rhs]; simpl in *.
+destruct op; simpl in *.
+now apply <- (Rminus_eq_0 sor).
+intros H1. apply -> (Rminus_eq_0 sor) in H1. now apply H.
+now apply -> (Rle_le_minus sor).
+now apply -> (Rle_le_minus sor).
+now apply -> (Rlt_lt_minus sor).
+now apply -> (Rlt_lt_minus sor).
 Qed.
 
-Definition check_conj_formulas :=
-  CheckerMaker.check_conj_formulas normalise negate check_normalised_formulas.
-
-Theorem check_conj_formulas_sound :
-  forall (l1 : list Formula) (l2 : list Formula) (ws : list ConeMember),
-    check_conj_formulas l1 ws l2 = true ->
-      forall env : Env, make_impl (eval_formula env) l1 (make_conj (eval_formula env) l2).
+Theorem negate_correct :
+  forall (env : PolEnv) (f : Formula),
+    eval_formula env f <-> ~ (eval_nformula env (negate f)).
 Proof.
-exact (check_conj_formulas_sound eval_formula eval_nformula normalise negate
-       normalise_sound negate_correct check_normalised_formulas checker_nf_sound).
+intros env f; destruct f as [lhs op rhs]; simpl.
+destruct op; simpl.
+symmetry. rewrite (Rminus_eq_0 sor).
+split; intro H; [symmetry; now apply -> (Req_dne sor) | symmetry in H; now apply <- (Req_dne sor)].
+rewrite (Rminus_eq_0 sor). split; intro; now apply (Rneq_symm sor).
+rewrite <- (Rlt_lt_minus sor). now rewrite <- (Rle_ngt sor).
+rewrite <- (Rlt_lt_minus sor). now rewrite <- (Rle_ngt sor).
+rewrite <- (Rle_le_minus sor). now rewrite <- (Rlt_nge sor).
+rewrite <- (Rle_le_minus sor). now rewrite <- (Rlt_nge sor).
 Qed.
+
+(** Another normalistion - this is used for cnf conversion **)
+
+Definition xnormalise (t:Formula) : list (NFormula)  :=
+  let (lhs,o,rhs) := t in
+    match o with
+      | OpEq => 
+        (PEsub lhs  rhs, Strict)::(PEsub rhs lhs , Strict)::nil
+      | OpNEq => (PEsub lhs rhs,Equal) :: nil
+      | OpGt   => (PEsub rhs lhs,NonStrict) :: nil
+      | OpLt => (PEsub lhs rhs,NonStrict) :: nil
+      | OpGe => (PEsub rhs lhs , Strict) :: nil
+      | OpLe => (PEsub lhs rhs ,Strict) :: nil
+    end.
+
+Require Import Tauto.
+
+Definition cnf_normalise (t:Formula) : cnf (NFormula) :=
+  List.map  (fun x => x::nil) (xnormalise t).
+
+
+Add Ring SORRing : sor.(SORrt).
+
+Lemma cnf_normalise_correct : forall env t, eval_cnf (eval_nformula env) (cnf_normalise t) -> eval_formula env t.
+Proof.
+  unfold cnf_normalise, xnormalise ; simpl ; intros env t.
+  unfold eval_cnf.
+  destruct t as [lhs o rhs]; case_eq o ; simpl;    
+    generalize (eval_pexpr  env lhs);
+      generalize (eval_pexpr  env rhs) ; intros z1 z2 ; intros.
+  (**)
+  apply sor.(SORle_antisymm).
+  rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
+  rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
+  now rewrite <- (Rminus_eq_0 sor).
+  rewrite (Rle_ngt sor).  rewrite (Rlt_lt_minus sor). auto.
+  rewrite (Rle_ngt sor).  rewrite (Rlt_lt_minus sor). auto.
+  rewrite (Rlt_nge sor).  rewrite (Rle_le_minus sor). auto.
+  rewrite (Rlt_nge sor).  rewrite (Rle_le_minus sor). auto.
+Qed.
+
+Definition xnegate (t:Formula) : list (NFormula)  :=
+  let (lhs,o,rhs) := t in
+    match o with
+      | OpEq  => (PEsub lhs rhs,Equal) :: nil
+      | OpNEq => (PEsub lhs  rhs ,Strict)::(PEsub rhs lhs,Strict)::nil
+      | OpGt  => (PEsub lhs  rhs,Strict) :: nil
+      | OpLt  => (PEsub rhs lhs,Strict) :: nil
+      | OpGe  => (PEsub lhs rhs,NonStrict) :: nil
+      | OpLe  => (PEsub rhs lhs,NonStrict) :: nil
+    end.
+
+Definition cnf_negate (t:Formula) : cnf (NFormula) :=
+  List.map  (fun x => x::nil) (xnegate t).
+
+Lemma cnf_negate_correct : forall env t, eval_cnf (eval_nformula env) (cnf_negate t) -> ~ eval_formula env t.
+Proof.
+  unfold cnf_negate, xnegate ; simpl ; intros env t.
+  unfold eval_cnf.
+  destruct t as [lhs o rhs]; case_eq o ; simpl ;
+    generalize (eval_pexpr env lhs);
+    generalize (eval_pexpr env rhs) ; intros z1 z2 ; intros ; 
+    intuition.
+  (**)
+  apply H0.
+  rewrite H1 ; ring.
+  (**)
+  apply H1.
+  apply sor.(SORle_antisymm).
+  rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
+  rewrite  (Rle_ngt sor). rewrite (Rlt_lt_minus sor). tauto.
+  (**)
+  apply H0. now rewrite  (Rle_le_minus sor) in H1.
+  apply H0. now rewrite (Rle_le_minus sor) in H1.
+  apply H0. now rewrite (Rlt_lt_minus sor) in H1.
+  apply H0. now rewrite (Rlt_lt_minus sor) in H1.
+Qed.
+
+
+Lemma eval_nformula_dec : forall env d, (eval_nformula env d) \/ ~ (eval_nformula env d).
+Proof.
+  intros.
+  destruct d ; simpl.
+  generalize (eval_pexpr env p); intros.
+  destruct o ; simpl. 
+  apply (Req_em sor r 0).
+  destruct (Req_em sor r 0) ; tauto.
+  rewrite <- (Rle_ngt sor r 0). generalize (Rle_gt_cases sor r 0). tauto.
+  rewrite <- (Rlt_nge sor r 0). generalize (Rle_gt_cases sor 0 r). tauto.
+Qed.
+
+(** Some syntactic simplifications of expressions and cone elements *)
+
+
+Fixpoint simpl_expr (e:PExprC) : PExprC :=
+  match e with
+    | PEmul y z => let y' := simpl_expr y in let z' := simpl_expr z in
+      match y' , z' with
+        | PEc c , z' => if ceqb c cI then z' else PEmul y' z'
+        |     _     , _   => PEmul y' z'
+      end
+    | PEadd x  y => PEadd (simpl_expr x) (simpl_expr y)
+    |   _    => e
+  end.
+
+
+Definition simpl_cone (e:ConeMember) : ConeMember :=
+  match e with
+    | S_Square t => match simpl_expr t with
+                      | PEc c   => if ceqb cO c then S_Z else S_Pos (ctimes c c)
+                      |       x     => S_Square x
+                    end
+    | S_Mult t1 t2 => 
+      match t1 , t2 with
+        | S_Z      , x        => S_Z 
+        |    x     , S_Z      => S_Z 
+        | S_Pos c ,  S_Pos c' => S_Pos (ctimes c c')
+        | S_Pos p1 , S_Mult (S_Pos p2)  x => S_Mult (S_Pos (ctimes p1 p2)) x
+        | S_Pos p1 , S_Mult x (S_Pos p2)  => S_Mult (S_Pos (ctimes p1 p2)) x
+        | S_Mult (S_Pos p2)  x  , S_Pos p1   => S_Mult (S_Pos (ctimes p1 p2)) x
+        | S_Mult x (S_Pos p2)   , S_Pos p1   => S_Mult (S_Pos (ctimes p1 p2)) x
+        | S_Pos x   , S_Add y z   => S_Add (S_Mult (S_Pos x) y) (S_Mult (S_Pos x) z)
+        | S_Pos c ,  _        => if ceqb cI c then t2 else S_Mult t1 t2
+        | _ ,  S_Pos c        => if ceqb cI c then t1 else S_Mult t1 t2
+        |     _     , _   => e
+      end
+    | S_Add t1 t2 => 
+      match t1 ,  t2 with
+        | S_Z     , x => x
+        |   x     , S_Z => x
+        |   x     , y   => S_Add x y
+      end
+    |   _     => e
+  end.
+
+
 
 End Micromega.
 

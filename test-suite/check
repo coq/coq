@@ -248,6 +248,8 @@ echo "Parser tests"
 test_parser parser
 echo "Interactive tests"
 test_interactive interactive
+echo "Micromega tests"
+test_success micromega
 echo "Complexity tests"
 test_complexity complexity
 echo "Module tests"

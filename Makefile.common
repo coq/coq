@@ -38,6 +38,8 @@ OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
 MINICOQ:=bin/minicoq$(EXE)
 
+CSDPCERT:=bin/csdpcert
+
 ###########################################################################
 # tools
 ###########################################################################
@@ -212,13 +214,8 @@ TOPLEVEL:=\
 
 HIGHTACTICS:=\
   tactics/refine.cmo tactics/extraargs.cmo \
-  tactics/extratactics.cmo tactics/eauto.cmo tactics/class_tactics.cmo
-
-SPECTAC:= tactics/tauto.ml4 tactics/eqdecide.ml4
-USERTAC:= $(SPECTAC)
-
-USERTACCMO:=$(USERTAC:.ml4=.cmo)
-USERTACCMX:=$(USERTAC:.ml4=.cmx)
+  tactics/extratactics.cmo tactics/eauto.cmo tactics/class_tactics.cmo \
+  tactics/tauto.cmo tactics/eqdecide.cmo
 
 OMEGACMO:=\
   contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
@@ -227,6 +224,12 @@ OMEGACMO:=\
 ROMEGACMO:=\
   contrib/romega/const_omega.cmo \
   contrib/romega/refl_omega.cmo contrib/romega/g_romega.cmo
+
+MICROMEGACMO:=\
+  contrib/micromega/mutils.cmo contrib/micromega/vector.cmo \
+  contrib/micromega/micromega.cmo contrib/micromega/mfourier.cmo \
+  contrib/micromega/certificate.cmo \
+  contrib/micromega/coq_micromega.cmo contrib/micromega/g_micromega.cmo
 
 RINGCMO:=\
   contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
@@ -302,7 +305,8 @@ SUBTACCMO:=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
 RTAUTOCMO:=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 	contrib/rtauto/g_rtauto.cmo
 
-CONTRIB:=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
+CONTRIB:=$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) \
+        $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
 	$(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
 	$(FUNINDCMO)
@@ -325,7 +329,7 @@ LINKCMX:=$(LINKCMOCMXA:.cmo=.cmx)
 # objects known by the toplevel of Coq
 OBJSCMO:=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
         $(PROOFS) $(PARSING) $(TACTICS) $(TOPLEVEL) $(HIGHPARSING) \
-        $(HIGHTACTICS) $(USERTACMO) $(CONTRIB)
+        $(HIGHTACTICS) $(CONTRIB)
 
 COQIDECMO:=ide/utils/okey.cmo ide/utils/config_file.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
@@ -374,6 +378,12 @@ PARSERCMO:=$(PARSERREQUIRES) $(PARSERCODE)
 PARSERCMX:= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
 
 INTERFACERC:= contrib/interface/vernacrc
+
+CSDPCERTCMO:= contrib/micromega/mutils.cmo contrib/micromega/micromega.cmo \
+              contrib/micromega/vector.cmo contrib/micromega/mfourier.cmo \
+              contrib/micromega/certificate.cmo \
+              contrib/micromega/sos.cmo contrib/micromega/csdpcert.cmo
+CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
@@ -704,6 +714,15 @@ OMEGAVO:=$(addprefix contrib/omega/, \
 ROMEGAVO:=$(addprefix contrib/romega/, \
  ReflOmegaCore.vo 	ROmega.vo )
 
+MICROMEGAVO:=$(addprefix contrib/micromega/, \
+  CheckerMaker.vo       Refl.vo \
+  Env.vo                RingMicromega.vo \
+  EnvRing.vo            VarMap.vo \
+  OrderedRing.vo        ZCoeff.vo \
+  Micromegatac.vo       ZMicromega.vo \
+  QMicromega.vo         RMicromega.vo \
+  Tauto.vo )
+
 RINGVO:=$(addprefix contrib/ring/, \
  LegacyArithRing.vo	Ring_normalize.vo \
  LegacyRing_theory.vo	LegacyRing.vo \
@@ -751,9 +770,9 @@ SUBTACVO:=$(addprefix theories/Program/, \
 RTAUTOVO:=$(addprefix contrib/rtauto/, \
  Bintree.vo	Rtauto.vo )
 
-CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
-	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
-	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO)
+CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
+	    $(XMLVO) $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) \
+	    $(SUBTACVO) $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO)
 
 ALLVO:= $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 
@@ -808,12 +827,12 @@ STAGE1_TARGETS:= $(STAGE1) \
 STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   interp parsing pretyping highparsing toplevel hightactics \
   coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \
-  pcoq-binaries $(COQINTERFACE) coqbinaries pcoq $(TOOLS) tools \
+  pcoq-binaries $(COQINTERFACE) $(CSDPCERT) coqbinaries pcoq $(TOOLS) tools \
   printers $(MINICOQ) debug
 VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   fsets allfsets relations wellfounded ints reals allreals \
   setoids sorting natural integer rational numbers noreal \
-  omega ring setoid_ring dp xml extraction field fourier jprover \
+  omega micromega ring setoid_ring dp xml extraction field fourier jprover \
   funind cc programs subtac rtauto
 DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq rectutorial
 STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \
