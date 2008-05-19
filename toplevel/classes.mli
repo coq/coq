@@ -44,6 +44,17 @@ val new_class : identifier located ->
 val default_on_free_vars : identifier list -> unit
 
 val fail_on_free_vars : identifier list -> unit
+
+val declare_instance_constant :
+  typeclass ->
+  int option -> (* priority *)
+  bool -> (* globality *)
+  Impargs.manual_explicitation list -> (* implicits *)
+  ?hook:(Names.constant -> unit) ->
+  identifier -> (* name *)
+  Term.constr -> (* body *)
+  Term.types -> (* type *)
+  Names.identifier
     
 val new_instance : 
   ?global:bool -> (* Not global by default. *)

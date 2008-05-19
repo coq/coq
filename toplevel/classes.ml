@@ -42,7 +42,7 @@ let _ =
       Auto.add_hints false [hint_db] 
 	(Vernacexpr.HintsResolve [pri, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])]))
 
-let declare_instance_constant glob con =
+let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
@@ -55,7 +55,7 @@ let declare_instance glob idl =
       | ConstRef x -> x
       | _ -> raise Not_found)
     with _ -> error "Instance definition not found"
-  in declare_instance_constant glob con
+  in declare_instance_cst glob con
 	  
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 (* let mismatched_defs env n m = mismatched_ctx_inst env Definitions n m *)
@@ -128,7 +128,7 @@ let declare_implicit_proj c proj imps sub =
   in 
   let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
     if sub then 
-      declare_instance_constant true proj;
+      declare_instance_cst true proj;
     Impargs.declare_manual_implicits true (ConstRef proj) true expls
       
 let declare_implicits impls subs cl =
@@ -429,6 +429,27 @@ let fail_on_free_vars = function
       (str"Unbound variables " ++
 	  prlist_with_sep (fun () -> str", ") Nameops.pr_id fvs ++ str".")
 	
+let instance_hook k pri global imps ?hook cst = 
+  let inst = Typeclasses.new_instance k pri global cst in
+    Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
+    Typeclasses.add_instance inst;
+    (match hook with Some h -> h cst | None -> ())
+
+let declare_instance_constant k pri global imps ?hook id term termtype =
+  let cdecl = 
+    let kind = IsDefinition Instance in
+    let entry = 
+      { const_entry_body   = term;
+	const_entry_type   = Some termtype;
+	const_entry_opaque = false;
+	const_entry_boxed  = false }
+    in DefinitionEntry entry, kind
+  in
+  let kn = Declare.declare_constant id cdecl in
+    Flags.if_verbose Command.definition_message id;
+    instance_hook k pri global imps ?hook kn;
+    id
+
 let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars) 
     ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
@@ -508,11 +529,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 	Evarutil.check_evars env Evd.empty !isevars termtype;
 	let cst = Declare.declare_internal_constant id
 	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
-	in
-	  Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
-	  Typeclasses.add_instance (Typeclasses.new_instance k None false cst);
-	  Command.assumption_message id;
-	  (match hook with Some h -> h cst | None -> ()); id
+	in instance_hook k None false imps ?hook cst; id
       end
     else
       begin
@@ -543,33 +560,17 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 	let term = Termops.it_mkNamedLambda_or_LetIn app ctx' in
 	isevars := Evarutil.nf_evar_defs !isevars;
 	let term = Evarutil.nf_isevar !isevars term in
-	let hook cst = 
-	  let inst = Typeclasses.new_instance k pri global cst in
-	    Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
-	    Typeclasses.add_instance inst;
-	    (match hook with Some h -> h cst | None -> ())
-	in
 	let termtype = Evarutil.nf_isevar !isevars termtype in
 	let evm = Evd.evars_of (undefined_evars !isevars) in
 	  Evarutil.check_evars env Evd.empty !isevars termtype;
 	  if evm = Evd.empty then
-	    let cdecl = 
-	      let kind = IsDefinition Instance in
-	      let entry = 
-		{ const_entry_body   = term;
-		  const_entry_type   = Some termtype;
-		  const_entry_opaque = false;
-		  const_entry_boxed  = false }
-	      in DefinitionEntry entry, kind
-	    in
-	    let kn = Declare.declare_constant id cdecl in
-	      Flags.if_verbose Command.definition_message id;
-	      hook kn;
-	      id
+	    declare_instance_constant k pri global imps ?hook id term termtype
 	  else
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
-		Command.start_proof id kind termtype (fun _ -> function ConstRef cst -> hook cst | _ -> assert false);
+		Command.start_proof id kind termtype 
+		  (fun _ -> function ConstRef cst -> instance_hook k pri global imps ?hook cst
+		    | _ -> assert false);
 		if props <> [] then 
 		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !isevars)) *)
 		    (!refine_ref (evm, term));

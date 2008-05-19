@@ -1338,7 +1338,7 @@ let add_morphism_infer m n =
 		    add_instance (Typeclasses.new_instance (Lazy.force morphism_class) None false cst);
 		    declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false);
-	    Pfedit.by (Tacinterp.interp <:tactic<add_morphism_tactic>>)) ();
+	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
 	Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) () 
 
 let add_morphism binders m s n =
