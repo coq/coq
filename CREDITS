@@ -69,6 +69,11 @@ contrib/xml
   developed by Claudio Sacerdoti (Univ. Bologna, 2000-2005) 
   as part of the HELM and MoWGLI projects; extension by Cezary Kaliszyk as
   part of the ProofWeb project (Radbout University at Nijmegen, 2008)
+contrib/micromega
+  developed by Frédéric Besson (IRISA/INRIA, 2006-2008), with some 
+  extensions by Evgeny Makarov (INRIA, 2007); sum-of-squares solver and 
+  interface to the csdp solver uses code from John Harrison (University
+  of Cambridge, 1998)
 parsing/search.ml
   mainly developed by Yves Bertot (INRIA-Lemme, 2000-2004)
 theories/ZArith
@@ -115,6 +120,7 @@ of the Coq Proof assistant during the indicated time :
   Hugo Herbelin (INRIA, 1996-now)
   Gérard Huet (INRIA, 1985-1997)
   Pierre Letouzey (LRI, 2000-2004 & PPS-Paris 7, 2005-now)
+  Evgeny Makarov (INRIA, 2007)
   Pascal Manoury (INRIA, 1993)
   Micaela Mayero (INRIA, 1997-2002)
   Claude Marché (INRIA 2003-2004 & LRI, 2004-now)

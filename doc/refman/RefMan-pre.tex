@@ -595,6 +595,103 @@ Palaiseau, July 2006\\
 Hugo Herbelin
 \end{flushright}
 
+\section*{Credits: version 8.2}
+
+{\Coq} version 8.2 adds new features, new libraries and 
+improves on many various aspects.
+
+Regarding the language of Coq, the main novelty is the introduction by
+Matthieu Sozeau of a package of commands providing Haskell-style
+type classes. Type classes, that come with a few convenient features
+such as type-based resolution of implicit arguments, plays a new role
+of landmark in the architecture of Coq with respect to automatization.
+For instance, thanks to type classes support, Matthieu Sozeau could
+implement a new resolution-based version of the tactics dedicated to
+rewriting on arbitrary transitive relations.
+
+Another major improvement of Coq 8.2 is the evolution of the
+arithmetic libraries and of the tools associated to them. Benjamin
+Grégoire and Laurent Théry contributed a modular library for building
+arbitrarily large integers from bounded integers while Evgeny Makarov
+contributed a modular library of abstract natural and integer
+arithmetics together with a few convenient tactics. On his side,
+Pierre Letouzey made various extensions to the arithmetic libraries on
+$\mathbb{Z}$ and $\mathbb{Q}$, including extra support for
+automatization in presence of various number-theory concepts.
+
+Frédéric Besson contributed a reflexive tactic based on
+Krivine-Stengle Positivstellensatz (the easy way) for validating
+provability of systems of inequalities. The platform is flexible enough
+to support the validation of any algorithm able to produce a
+``certificate'' for the Positivstellensatz and this covers the case of
+Fourier-Motzkin (for linear systems in $\mathbb{Q}$ and $\mathbb{R}$),
+Fourier-Motzkin with cutting planes (for linear systems in
+$\mathbb{Z}$) and sum-of-squares (for non-linear systems).  Evgeny
+Makarov made the platform generic over arbitrary ordered rings.
+
+Arnaud Spiwack developed a library of 31-bits machine integers and,
+relying on Benjamin Grégoire and Laurent Théry's library, delivered a
+library of unbounded integers in base $2^{31}$. As importantly, he
+developed a notion of ``retro-knowledge'' so as to safely extend the
+kernel-located bytecode-based efficient evaluation algorithm of Coq
+version 8.1 to use 31-bits machine arithmetics for efficiently
+computing with the library of integers he developed.
+
+Beside the libraries, various improvements contributed to provide a
+more comfortable end-user language and more expressive tactic
+language. Hugo Herbelin and Matthieu Sozeau improved the
+pattern-matching compilation algorithm (detection of impossible
+clauses in pattern-matching, automatic inference of the return
+type). Hugo Herbelin, Pierre Letouzey and Matthieu Sozeau contributed
+various new convenient syntactic constructs and new tactics or tactic
+features: more inference of redundant information, better unification,
+better support for proof or definition by fixpoint, more expressive
+rewriting tactics, better support for meta-variables, more convenient
+notations, ...
+
+Élie Soubiran improved the module system, adding new features (such as
+an ``include'' command) and making it more flexible and more
+general. He and Pierre Letouzey improved the support for modules in
+the extraction mechanism.
+
+Matthieu Sozeau extended the \textsc{Russell} language, ending in an
+convenient way to write programs of given specifications, Pierre
+Corbineau extended the Mathematical Proof Language and the
+automatization tools that accompany it, Pierre Letouzey supervised and
+extended various parts the standard library, Stéphane Glondu
+contributed a few tactics and improvements, Jean-Marc Notin provided
+help in debugging, general maintenance and {\tt coqdoc} support,
+Vincent Siles contributed extensions of the {\tt Scheme} command and
+of {\tt injection}.
+
+Bruno Barras implemented the {\tt coqchk} tool: this is a stand-alone
+type-checker that can be used to certify {\tt .vo} files. Especially,
+as this verifier runs in a separate process, it is granted not to be
+``hijacked'' by virtually malicious extensions added to {\Coq}.
+
+Yves Bertot, Jean-Christophe Filliâtre, Pierre Courtieu and
+Julien Forest acted as maintainers of features they implemented in
+previous versions of Coq.
+
+Nicolas Tabareau made the adaptation of the interface of the old
+``setoid rewrite'' tactic to the new version. Lionel Mamane worked on
+the interaction between Coq and its external interfaces. With Samuel
+Mimram, he also helped making Coq compatible with recent software
+tools.  Russell O'Connor, Cezary Kaliscyk, Milad Niqui contributed to
+improved the libraries of integers, rational, and real numbers. We
+also thank many users and partners for suggestions and feedback, in
+particular Pierre Castéran and Arthur Charguéraud, the INRIA Marelle
+team, the INRIA-Microsoft Mathematical Components team, the
+Foundations group at Radbout university in Nijmegen, reporters of bugs
+and participants to the Coq-Club mailing list.
+
+\begin{flushright}
+Palaiseau, May 2008\\
+Hugo Herbelin\\
+\end{flushright}
+
+%new Makefile
+
 %\newpage
 
 % Integration of ZArith lemmas from Sophia and Nijmegen.

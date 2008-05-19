@@ -13,7 +13,7 @@
 
 .PHONY: doc doc-html doc-pdf doc-ps refman tutorial stdlib faq rectutorial
 
-doc: doc-html doc-pdf doc-ps
+doc: doc-html doc-pdf doc-ps ide/index_urls.txt
 
 doc-html:\
   doc/tutorial/Tutorial.v.html doc/refman/html/index.html \
