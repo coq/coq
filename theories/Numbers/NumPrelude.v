@@ -11,7 +11,6 @@
 (*i $Id$ i*)
 
 Require Export Setoid.
-Require Export QRewrite.
 
 Set Implicit Arguments.
 (*
