@@ -715,7 +715,7 @@ let unify_eqn env sigma hypinfo t =
 		if convertible env env'.evd ty1 ty2 then (
 		  if occur_meta prf then refresh_hypinfo env sigma hypinfo;
 		  env', prf, c1, c2, car, rel)
-		else raise Not_found
+		else raise Reduction.NotConvertible
     in
     let res =
       if l2r then (prf, (car, rel, c1, c2))
@@ -745,6 +745,9 @@ let unfold_all t =
 	  | _ -> assert false)
     | _ -> assert false
 
+let decomp_prod env evm n c = 
+  snd (Reductionops.decomp_n_prod env evm n c)
+
 let rec decomp_pointwise n c =
   if n = 0 then c
   else
@@ -753,19 +756,31 @@ let rec decomp_pointwise n c =
       | _ -> raise Not_found
 	  
 let lift_cstr env sigma evars args cstr =
-  match cstr with
-    | Some codom -> 
-	let cstr () =
-	  Array.fold_right
-	    (fun arg (car, rel) -> 
-	      let ty = Typing.type_of env sigma arg in
-	      let car' = mkProd (Anonymous, ty, car) in
-	      let rel' = mkApp (Lazy.force pointwise_relation, [| ty; car; rel |]) in
-		(car', rel'))
-	    args (Lazy.force codom)
-	in Some (Lazy.lazy_from_fun cstr)
-    | None -> None
-	  
+  let cstr () =
+    let start = 
+      match cstr with
+	| Some codom -> Lazy.force codom
+	| None -> let car = Evarutil.e_new_evar evars env (new_Type ()) in
+	  let rel = Evarutil.e_new_evar evars env (mk_relation car) in
+	    (car, rel)
+    in
+      Array.fold_right
+	(fun arg (car, rel) -> 
+	  let ty = Typing.type_of env sigma arg in
+	  let car' = mkProd (Anonymous, ty, car) in
+	  let rel' = mkApp (Lazy.force pointwise_relation, [| ty; car; rel |]) in
+	    (car', rel'))
+	args start
+  in Some (Lazy.lazy_from_fun cstr)
+
+let unlift_cstr env sigma = function
+  | None -> None
+  | Some codom -> 
+      let cstr () =
+	let car, rel = Lazy.force codom in
+	  decomp_prod env sigma 1 car, decomp_pointwise 1 rel
+      in Some (Lazy.lazy_from_fun cstr)
+
 type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
 
 let default_flags = { under_lambdas = true; on_morphisms = true; }
@@ -774,26 +789,24 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
   let is_occ occ = occs = [] || List.mem occ occs in
   let rec aux env t occ cstr =
     match unify_eqn env sigma hypinfo t with
-      | Some (env', (prf, hypinfo as x)) ->
-	  if is_occ occ then (	    
-	    evars := Evd.evar_merge !evars (Evd.evars_of (Evd.undefined_evars env'.evd));
-	    match cstr with
-		None -> Some x, succ occ
-	      | Some _ ->
-		  let (car, r, orig, dest) = hypinfo in
-		  let res = 
-		    try 
-		      Some 
-			(resolve_morphism env sigma t ~fnewt:unfold_id
-			  (mkApp (Lazy.force coq_id, [| car |]))
-			  [| orig |] [| Some x |] cstr evars)
-		    with Not_found -> None
-		  in res, succ occ)
-	  else None, succ occ
+      | Some (env', (prf, hypinfo as x)) -> 
+	  let occ = succ occ in
+	    if is_occ occ then (	    
+	      evars := Evd.evar_merge !evars (Evd.evars_of (Evd.undefined_evars env'.evd));
+	      match cstr with
+		  None -> Some x, occ
+		| Some _ ->
+		    let (car, r, orig, dest) = hypinfo in
+		    let res = 
+		      resolve_morphism env sigma t ~fnewt:unfold_id
+			(mkApp (Lazy.force coq_id, [| car |]))
+			[| orig |] [| Some x |] cstr evars
+		    in Some res, occ)
+	    else None, occ
       | None -> 
 	  match kind_of_term t with
 	    | App (m, args) ->
-		let rewrite_args () = 
+		let rewrite_args occ = 
 		  let args', occ = 
 		    Array.fold_left 
 		      (fun (acc, occ) arg -> let res, occ = aux env arg occ None in (res :: acc, occ))
@@ -803,25 +816,23 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 		    if List.for_all (fun x -> x = None) args' then None
 		    else 
 		      let args' = Array.of_list (List.rev args') in
-			(try Some (resolve_morphism env sigma t m args args' cstr evars)
-			  with Not_found -> None)
+			(Some (resolve_morphism env sigma t m args args' cstr evars))
 		  in res, occ
 		in
 		  if flags.on_morphisms then
 		    let m', occ = aux env m occ (lift_cstr env sigma evars args cstr) in
 		      match m' with
-			  None -> rewrite_args () (* Standard path, try rewrite on arguments *)
+			  None -> rewrite_args occ (* Standard path, try rewrite on arguments *)
 			| Some (prf, (car, rel, c1, c2)) -> 
 			    (* We rewrote the function and get a proof of pointwise rel for the arguments.
 			       We just apply it. *)
 			    let nargs = Array.length args in
-			    let decompprod c = snd (Reductionops.decomp_n_prod env (Evd.evars_of !evars) nargs c) in
 			    let res = 
-			      try Some (mkApp (prf, args),
-				       (decompprod car, decomp_pointwise nargs rel, mkApp(c1, args), mkApp(c2, args)))
-			      with Not_found -> None
-			    in res, occ
-		  else rewrite_args ()
+			      mkApp (prf, args),
+			      (decomp_prod env (Evd.evars_of !evars) nargs car, 
+			      decomp_pointwise nargs rel, mkApp(c1, args), mkApp(c2, args))
+			    in Some res, occ
+		  else rewrite_args occ
 		    
 	    | Prod (_, x, b) when not (dependent (mkRel 1) b) -> 
 		let x', occ = aux env x occ None in
@@ -830,13 +841,11 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 		let res = 
 		  if x' = None && b' = None then None
 		  else 
-		    (try 
-			Some (resolve_morphism env sigma t
-				 ~fnewt:unfold_impl
-				 (arrow_morphism (Typing.type_of env sigma x) (Typing.type_of env sigma b))
-				 [| x ; b |] [| x' ; b' |]
-				 cstr evars)
-		      with Not_found -> None)
+		    Some (resolve_morphism env sigma t
+			     ~fnewt:unfold_impl
+			     (arrow_morphism (Typing.type_of env sigma x) (Typing.type_of env sigma b))
+			     [| x ; b |] [| x' ; b' |]
+			     cstr evars)
 		in res, occ
 		  
 	    | Prod (n, ty, b) ->
@@ -846,18 +855,16 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 		  match lam' with
 		    | None -> None
 		    | Some (prf, (car, rel, c1, c2)) ->
-			try 
-			  Some (resolve_morphism env sigma t
-				   ~fnewt:unfold_all
-				   (Lazy.force coq_all) [| ty ; lam |] [| None; lam' |]
-				   cstr evars)
-			with Not_found -> None
+			Some (resolve_morphism env sigma t
+				 ~fnewt:unfold_all
+				 (Lazy.force coq_all) [| ty ; lam |] [| None; lam' |]
+				 cstr evars)
 		in res, occ
 		  
 	    | Lambda (n, t, b) when flags.under_lambdas ->
 		let env' = Environ.push_rel (n, None, t) env in
 		refresh_hypinfo env' sigma hypinfo;
-		let b', occ = aux env' b occ None in
+		let b', occ = aux env' b occ (unlift_cstr env sigma cstr) in
 		let res =
 		  match b' with
 		      None -> None
@@ -869,7 +876,7 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 			  Some (prf', (car', rel', c1', c2'))
 		in res, occ
 	    | _ -> None, occ
-  in aux env concl 1 cstr
+  in aux env concl 0 cstr
     
 let resolve_typeclass_evars d p env evd onlyargs =
   let pred = 
