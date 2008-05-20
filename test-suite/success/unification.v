@@ -126,11 +126,3 @@ intros.
 exists (fun n => match n with O => a | S n' => f' n' end).
 constructor.
 Qed.
-
-(* Why this not work, even, without the "fix" to #1851 *)
-
-Goal forall X (a:X 0) (f':forall n:nat, X n), (exists f : forall n:nat, X n, True).
-intros.
-exists (fun n => match n with O => a | S n' => f' n' end).
-constructor.
-Qed.
