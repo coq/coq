@@ -803,6 +803,7 @@ let parse_rexpr =
 	let g,env = xparse_formula env b in
         mkformula_binary mkI term f g,env
     | _ when term = Lazy.force coq_True -> (TT,env)
+    | _ when term = Lazy.force coq_False -> (FF,env)
     | _  -> X(term),env in
   xparse_formula env term
 
