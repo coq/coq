@@ -159,7 +159,7 @@ object('self)
   method activate : unit -> unit
   method active_keypress_handler : GdkEvent.Key.t -> bool
   method backtrack_to : GText.iter -> unit
-  method backtrack_to_no_lock : GText.iter -> Names.identifier list -> unit
+  method backtrack_to_no_lock : GText.iter -> Names.identifier option -> unit
   method clear_message : unit
   method deactivate : unit -> unit
   method disconnected_keypress_handler : GdkEvent.Key.t -> bool
@@ -1287,16 +1287,20 @@ object(self)
 	      | ResetAtDecl (id, {contents=true}) ->
 		  if was_refining then
 		    (prerr_endline ("Skipping "^Names.string_of_id id);
-		    synchro [id])
+		    synchro (Some id))
 		  else
-		    reset_to (List.hd (oldest_decl_in_middle_of_proof@[id]))
+		    reset_to (Option.default id oldest_decl_in_middle_of_proof)
 	      | ResetAtDecl (id, {contents=false}) ->
 		  if was_refining then
-		    (*reset oldest decl found before theorem started, if any*)
-		    List.iter reset_to oldest_decl_in_middle_of_proof
+		    (* reset oldest decl found before theorem started what *)
+		    (* also aborts the proof; explicitly aborts otherwise *)
+		    if oldest_decl_in_middle_of_proof = None then
+   		      Pfedit.delete_current_proof () 
+		    else
+		      reset_to (Option.get oldest_decl_in_middle_of_proof)
 		  else
 		    (prerr_endline ("Skipping "^Names.string_of_id id);
-		    synchro [id])
+		    synchro (Some id))
 	      | _ ->
 		  synchro oldest_decl_in_middle_of_proof
 	    end;
@@ -1397,7 +1401,7 @@ Please restart and report NOW.";
 		| {ast=_, (VernacSolve _ | VernacTime (VernacSolve _))} -> 
 		    begin 
 		      try Pfedit.undo 1; ignore (pop ()); sync update_input () 
-		      with _ -> self#backtrack_to_no_lock start []
+		      with _ -> self#backtrack_to_no_lock start None
 		    end
 
 		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
@@ -1406,7 +1410,7 @@ Please restart and report NOW.";
 		    sync update_input ()
 		| {reset_info=ResetAtDecl (id, {contents=true})} ->
 		    if Pfedit.refining () then
-		      self#backtrack_to_no_lock start [id]
+		      self#backtrack_to_no_lock start (Some id)
 		    else
 		      (ignore (pop ()); sync update_input ())
 		| {reset_info=ResetAtDecl (id,{contents=false})} ->
@@ -1423,7 +1427,7 @@ Please restart and report NOW.";
 		    ignore (pop ());
 		    sync update_input ()
 		| _ -> 
-		    self#backtrack_to_no_lock start []
+		    self#backtrack_to_no_lock start None
 	      end;
 	with
 	  | Size 0 -> (* !flash_info "Nothing to Undo"*)()
