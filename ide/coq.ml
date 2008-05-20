@@ -231,8 +231,8 @@ let rec attribute_of_vernac_command = function
   | VernacUndoTo _ -> [NavigationCommand]
   | VernacBacktrack _ -> [NavigationCommand]
 
-  | VernacFocus _ -> []
-  | VernacUnfocus -> []
+  | VernacFocus _ -> [SolveCommand]
+  | VernacUnfocus -> [SolveCommand]
   | VernacGo _ -> []
   | VernacShow _ -> [OtherStatePreservingCommand]
   | VernacCheckGuard -> [OtherStatePreservingCommand]

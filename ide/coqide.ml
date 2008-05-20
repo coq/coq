@@ -1276,7 +1276,7 @@ object(self)
     prerr_endline "Backtracking_to iter starts now.";
     let was_refining = Pfedit.refining () in
     (* re-synchronize Coq to the current state of the stack *)
-    let rec synchro oldest_decl_in_middle_of_proof =
+    let rec synchro oldest_decl_in_middle_of_proof inproof =
       if is_empty () then
 	Coq.reset_initial ()
       else begin
@@ -1285,24 +1285,24 @@ object(self)
 	      | ResetAtSegmentStart (id, {contents=true}) ->
 		  reset_to_mod id
 	      | ResetAtDecl (id, {contents=true}) ->
-		  if was_refining then
+		  if inproof then
 		    (prerr_endline ("Skipping "^Names.string_of_id id);
-		    synchro (Some id))
+		    synchro (Some id) inproof)
 		  else
 		    reset_to (Option.default id oldest_decl_in_middle_of_proof)
 	      | ResetAtDecl (id, {contents=false}) ->
-		  if was_refining then
-		    (* reset oldest decl found before theorem started what *)
-		    (* also aborts the proof; explicitly aborts otherwise *)
+		  if inproof then
 		    if oldest_decl_in_middle_of_proof = None then
-   		      Pfedit.delete_current_proof () 
+		      synchro None false
 		    else
+		      (* reset oldest decl found before theorem started what *)
+		      (* resets back just before the proof was started *)
 		      reset_to (Option.get oldest_decl_in_middle_of_proof)
 		  else
 		    (prerr_endline ("Skipping "^Names.string_of_id id);
-		    synchro (Some id))
+		    synchro (Some id) inproof)
 	      | _ ->
-		  synchro oldest_decl_in_middle_of_proof
+		  synchro oldest_decl_in_middle_of_proof inproof
 	    end;
 	    interp_last t.ast;
 	    repush_phrase t
@@ -1332,8 +1332,9 @@ object(self)
 	begin 
 	  try 
 	    (match undos with 
-	       | None -> synchro oldest_id_to_reset
-	       | Some n -> try Pfedit.undo n with _ -> synchro oldest_id_to_reset);
+	       | None -> synchro oldest_id_to_reset was_refining
+	       | Some n -> try Pfedit.undo n with _ -> 
+		   synchro oldest_id_to_reset was_refining);
             sync (fun _ ->
 		    let start =
 		      if is_empty () then input_buffer#start_iter 
@@ -1362,7 +1363,7 @@ Please restart and report NOW.";
   method backtrack_to i = 
     if Mutex.try_lock coq_may_stop then 
       (!push_info "Undoing...";
-       self#backtrack_to_no_lock i []; Mutex.unlock coq_may_stop;
+       self#backtrack_to_no_lock i None; Mutex.unlock coq_may_stop;
        !pop_info ())
     else prerr_endline "backtrack_to : discarded (lock is busy)"
 
@@ -1398,7 +1399,7 @@ Please restart and report NOW.";
 	      self#clear_message
 	    in
 	      begin match last_command with 
-		| {ast=_, (VernacSolve _ | VernacTime (VernacSolve _))} -> 
+		| {ast=_,com} when is_vernac_tactic_command com -> 
 		    begin 
 		      try Pfedit.undo 1; ignore (pop ()); sync update_input () 
 		      with _ -> self#backtrack_to_no_lock start None

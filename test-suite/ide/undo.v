@@ -3,7 +3,7 @@
 
 (* Undoing arbitrary commands, as first step *)
 
-Theorem a:True.
+Theorem a : O=O.
 Set Printing All.
 assert True by trivial.
 trivial.
@@ -11,7 +11,7 @@ Qed.
 
 (* Undoing arbitrary commands, as non-first step *)
 
-Theorem a:True.
+Theorem b : O=O.
 assert True by trivial.
 Set Printing All.
 assert True by trivial.
@@ -21,7 +21,7 @@ Qed.
 (* Undoing declarations, as first step *)
 (* was bugged in 8.1 *)
 
-Theorem a:True.
+Theorem c : O=O.
 Inductive T : Type := I.
 trivial.
 Qed.
@@ -29,9 +29,9 @@ Qed.
 (* Undoing declarations, as first step *)
 (* new in 8.2 *)
 
-Theorem a:True.
-Definition b:=O.
-Definition c:=O.
+Theorem d : O=O.
+Definition e := O.
+Definition f := O.
 assert True by trivial.
 trivial.
 Qed.
@@ -39,10 +39,10 @@ Qed.
 (* Undoing declarations, as non-first step *)
 (* new in 8.2 *)
 
-Theorem a:True.
+Theorem h : O=O.
 assert True by trivial.
-Definition b:=O.
-Definition c:=O.
+Definition i := O.
+Definition j := O.
 assert True by trivial.
 trivial.
 Qed.
@@ -50,11 +50,11 @@ Qed.
 (* Undoing declarations, interleaved with proof steps *)
 (* new in 8.2 *)
 
-Theorem a:True.
+Theorem k : O=O.
 assert True by trivial.
-Definition b:=O.
+Definition l := O.
 assert True by trivial.
-Definition c:=O.
+Definition m := O.
 assert True by trivial.
 trivial.
 Qed.
@@ -62,13 +62,13 @@ Qed.
 (* Undoing declarations, interleaved with proof steps and commands *)
 (* new in 8.2 *)
 
-Theorem a:True.
+Theorem n : O=O.
 assert True by trivial.
-Definition b:=O.
+Definition o := O.
 Set Printing All.
 assert True by trivial.
 Focus.
-Definition c:=O.
+Definition p := O.
 assert True by trivial.
 trivial.
 Qed.

@@ -274,8 +274,10 @@ Setoid rewriting
 
 Tools
 
-- New stand-alone .vo files verifier.a
+- New stand-alone .vo files verifier "coqchk".
 - CoqIDE font defaults to monospace so as indentation to be meaningful.
+- CoqIDE supports Definition/Parameter/Inductive in middle of a proof.
+- Undoing non-tactic commands in CoqIDE works faster.
 
 Miscellaneous
 
