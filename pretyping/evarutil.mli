@@ -88,8 +88,8 @@ val define_evar_as_product : evar_defs -> existential -> evar_defs * types
 val define_evar_as_lambda : evar_defs -> existential -> evar_defs * types
 val define_evar_as_sort : evar_defs -> existential -> evar_defs * sorts
 
-val is_unification_pattern_evar : existential -> constr list -> bool
-val is_unification_pattern : constr -> constr array -> bool
+val is_unification_pattern_evar : env -> existential -> constr list -> bool
+val is_unification_pattern : env -> constr -> constr array -> bool
 val solve_pattern_eqn : env -> constr list -> constr -> constr
 
 (***********************************************************)
