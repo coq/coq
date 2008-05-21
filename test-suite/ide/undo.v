@@ -72,3 +72,8 @@ Definition p := O.
 assert True by trivial.
 trivial.
 Qed.
+
+(* Undoing declarations, not in proof *)
+
+Definition q := O.
+Definition r := O.

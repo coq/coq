@@ -1400,12 +1400,14 @@ Please restart and report NOW.";
 	    in
 	      begin match last_command with 
 		| {ast=_,com} when is_vernac_tactic_command com -> 
+prerr_endline "TACT";
 		    begin 
 		      try Pfedit.undo 1; ignore (pop ()); sync update_input () 
 		      with _ -> self#backtrack_to_no_lock start None
 		    end
 
 		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
+prerr_endline "SEG";
 		    ignore (pop ());
 		    reset_to_mod id;
 		    sync update_input ()
@@ -1413,7 +1415,7 @@ Please restart and report NOW.";
 		    if Pfedit.refining () then
 		      self#backtrack_to_no_lock start (Some id)
 		    else
-		      (ignore (pop ()); sync update_input ())
+		      (ignore (pop ()); reset_to id; sync update_input ())
 		| {reset_info=ResetAtDecl (id,{contents=false})} ->
 		    ignore (pop ());
 		    (try 
@@ -3348,7 +3350,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
        \nContributors : Jean-Christophe Filliâtre\
        \n               Pierre Letouzey, Claude Marché\n\
        \nFeature wish or bug report: use Web interface\n\
-       \n\thttp://logical.futurs.inria.fr/coq-bugs\n\
+       \n\thttp://logical.saclay.inria.fr/coq-bugs\n\
        \nVersion information\
        \n-------------------\n"
 							      in

@@ -89,7 +89,7 @@ let multiword_command =
 | "Delimit" space+ "Scope"
 | "Next" space+ "Obligation"
 | "Solve" space+ "Obligations"
-| "Require" space+ ("Import"|"Exportp")
+| "Require" space+ ("Import"|"Export")?
 | "Infix" space+ locality
 | "Notation" space+ locality
 | "Hint" space+ locality ident
