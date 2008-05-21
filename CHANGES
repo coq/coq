@@ -40,6 +40,10 @@ Vernacular commands
   everything but, the constants id1 ... idn. "lazy" alone or followed by
   "[id1 ... idn]", and "-[id1 ... idn]" also supported, meaning apply
   all of beta-iota-zeta-delta, possibly restricting delta.
+- New command "Strategy" to control the expansion of constants during
+  conversion tests. It generalizes commands Opaque and Transparent by
+  introducing a range of levels. Lower levels are assigned to constants
+  that should be expanded first.
 
 Libraries (DOC TO CHECK)
 

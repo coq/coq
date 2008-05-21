@@ -10,33 +10,67 @@
 
 open Names
 
-(* Opaque constants *)
-let cst_transp = ref Cpred.full
+(* Priority for the expansion of constant in the conversion test.
+ * Higher levels means that the expansion is less prioritary.
+ * (And Expand stands for -oo, and Opaque +oo.)
+ * The default value is [Level 100].
+ *)
+type level = Expand | Level of int | Opaque
+let default = Level 0
+let transparent = default
 
-let set_opaque_const kn = cst_transp := Cpred.remove kn !cst_transp
-let set_transparent_const kn = cst_transp := Cpred.add kn !cst_transp
+type oracle = level Idmap.t * level Cmap.t
 
-let is_opaque_cst kn = not (Cpred.mem kn !cst_transp)
+let var_opacity = ref Idmap.empty
+let cst_opacity = ref Cmap.empty
 
-(* Opaque variables *)
-let var_transp = ref Idpred.full
+let get_strategy = function
+  | VarKey id ->
+      (try Idmap.find id !var_opacity
+      with Not_found -> default)
+  | ConstKey c ->
+      (try Cmap.find c !cst_opacity
+      with Not_found -> default)
+  | RelKey _ -> Expand
 
-let set_opaque_var kn = var_transp := Idpred.remove kn !var_transp
-let set_transparent_var kn = var_transp := Idpred.add kn !var_transp
+let set_strategy k l =
+  match k with
+  | VarKey id ->
+      var_opacity :=
+      if l=default then Idmap.remove id !var_opacity
+      else Idmap.add id l !var_opacity
+  | ConstKey c ->
+      cst_opacity :=
+      if l=default then Cmap.remove c !cst_opacity
+      else Cmap.add c l !cst_opacity
+  | RelKey _ -> Util.error "set_strategy: RelKey"
 
-let is_opaque_var kn = not (Idpred.mem kn !var_transp)
+let set_transparent_const kn =
+  cst_opacity := Cmap.remove kn !cst_opacity
+let set_transparent_var id =
+  var_opacity := Idmap.remove id !var_opacity
 
-(* Opaque reference keys *)
-let is_opaque = function
-  | ConstKey cst -> is_opaque_cst cst
-  | VarKey id -> is_opaque_var id
-  | RelKey _ -> false
+let set_opaque_const kn = set_strategy (ConstKey kn) Opaque
+let set_opaque_var id = set_strategy (VarKey id) Opaque
 
-(* Unfold the first only if it is not opaque and the second is opaque *)
-let oracle_order k1 k2 = is_opaque k2 & not (is_opaque k1)
+let get_transp_state () =
+  (Idmap.fold
+    (fun id l ts -> if  l=Opaque then Idpred.remove id ts else ts)
+    !var_opacity Idpred.full,
+   Cmap.fold
+    (fun c l ts -> if  l=Opaque then Cpred.remove c ts else ts)
+    !cst_opacity Cpred.full)
+
+(* Unfold the first constant only if it is "more transparent" than the
+   second one. In case of tie, expand the second one. *)
+let oracle_order k1 k2 =
+  match get_strategy k1, get_strategy k2 with
+    | Expand, _ -> true
+    | Level n1, Opaque -> true
+    | Level n1, Level n2 -> n1 < n2
+    | _ -> false (* expand k2 *)
 
 (* summary operations *)
-type transparent_state = Idpred.t * Cpred.t
-let init() = (cst_transp := Cpred.full; var_transp := Idpred.full)
-let freeze () = (!var_transp, !cst_transp)
-let unfreeze (vo,co) = (cst_transp := co; var_transp := vo)
+let init() = (cst_opacity := Cmap.empty; var_opacity := Idmap.empty)
+let freeze () = (!var_opacity, !cst_opacity)
+let unfreeze (vo,co) = (cst_opacity := co; var_opacity := vo)
