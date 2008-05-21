@@ -3337,6 +3337,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								   input_views;
 							      );
 							    let about (b:GText.buffer) =
+(*
 							      (try 
 								   let image = lib_ide_file "coq.png" in
 								   let startup_image = GdkPixbuf.from_file image in
@@ -3344,6 +3345,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								       ~pixbuf:startup_image;
 								     b#insert ~iter:b#start_iter "\t\t";
 							       with _ -> ());
+*)
 							      let about_string =
 								"\nCoqIDE: an Integrated Development Environment for Coq\n\
        \nMain author  : Benjamin Monate\
