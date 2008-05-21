@@ -446,9 +446,13 @@ GEXTEND Gram
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
-        IDENT "Transparent"; l = LIST1 global -> VernacSetOpacity (false, l)
-      | IDENT "Opaque"; l = LIST1 global -> VernacSetOpacity (true, l)
-
+        IDENT "Transparent"; l = LIST1 global ->
+          VernacSetOpacity [Conv_oracle.transparent,l]
+      | IDENT "Opaque"; l = LIST1 global ->
+          VernacSetOpacity [Conv_oracle.Opaque, l]
+      | IDENT "Strategy"; l =
+          LIST1 [ lev=strategy_level; "["; q=LIST1 global; "]" -> (lev,q)] ->
+            VernacSetOpacity l
       (* Canonical structure *)
       | IDENT "Canonical"; IDENT "Structure"; qid = global ->
 	  VernacCanonical qid
@@ -541,6 +545,13 @@ GEXTEND Gram
   typeclass_field_defs:
     [ [ ":="; l = LIST1 typeclass_field_def SEP ";" -> l
     | -> [] ] ]
+  ;
+  strategy_level:
+    [ [ IDENT "expand" -> Conv_oracle.Expand
+      | IDENT "opaque" -> Conv_oracle.Opaque
+      | n=INT -> Conv_oracle.Level (int_of_string n)
+      | "-"; n=INT -> Conv_oracle.Level (- int_of_string n)
+      | IDENT "transparent" -> Conv_oracle.transparent ] ]
   ;
 END
 

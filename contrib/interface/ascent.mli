@@ -113,7 +113,6 @@ and ct_COMMAND =
   | CT_module_type_decl of ct_ID * ct_MODULE_BINDER_LIST * ct_MODULE_TYPE_OPT
   | CT_no_inline of ct_ID_NE_LIST
   | CT_omega_flag of ct_OMEGA_MODE * ct_OMEGA_FEATURE
-  | CT_opaque of ct_ID_NE_LIST
   | CT_open_scope of ct_ID
   | CT_print
   | CT_print_about of ct_ID
@@ -189,13 +188,13 @@ and ct_COMMAND =
   | CT_show_script
   | CT_show_tree
   | CT_solve of ct_INT * ct_TACTIC_COM * ct_DOTDOT_OPT
+  | CT_strategy of ct_LEVEL_LIST
   | CT_suspend
   | CT_syntax_macro of ct_ID * ct_FORMULA * ct_INT_OPT
   | CT_tactic_definition of ct_TAC_DEF_NE_LIST
   | CT_test_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_theorem_struct of ct_THEOREM_GOAL * ct_PROOF_SCRIPT
   | CT_time of ct_COMMAND
-  | CT_transparent of ct_ID_NE_LIST
   | CT_undo of ct_INT_OPT
   | CT_unfocus
   | CT_unset_option of ct_TABLE
@@ -204,6 +203,12 @@ and ct_COMMAND =
   | CT_user_vernac of ct_ID * ct_VARG_LIST
   | CT_variable of ct_VAR * ct_BINDER_NE_LIST
   | CT_write_module of ct_ID * ct_STRING_OPT
+and ct_LEVEL_LIST =
+    CT_level_list of (ct_LEVEL * ct_ID_LIST) list
+and ct_LEVEL =
+    CT_Opaque
+  | CT_Level of ct_INT
+  | CT_Expand
 and ct_COMMAND_LIST =
     CT_command_list of ct_COMMAND * ct_COMMAND list
 and ct_COMMENT =

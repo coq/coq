@@ -393,9 +393,6 @@ and fCOMMAND = function
    fOMEGA_MODE x1 ++
    fOMEGA_FEATURE x2 ++
    fNODE "omega_flag" 2
-| CT_opaque(x1) ->
-   fID_NE_LIST x1 ++
-   fNODE "opaque" 1
 | CT_open_scope(x1) ->
    fID x1 ++
    fNODE "open_scope" 1
@@ -596,6 +593,10 @@ and fCOMMAND = function
    fTACTIC_COM x2 ++
    fDOTDOT_OPT x3 ++
    fNODE "solve" 3
+| CT_strategy(CT_level_list x1) ->
+   List.fold_left (++) (mt())
+     (List.map (fun(l,q) -> fLEVEL l ++ fID_LIST q ++ fNODE "pair"2) x1) ++
+   fNODE "strategy" (List.length x1)
 | CT_suspend -> fNODE "suspend" 0
 | CT_syntax_macro(x1, x2, x3) ->
    fID x1 ++
@@ -616,9 +617,6 @@ and fCOMMAND = function
 | CT_time(x1) ->
    fCOMMAND x1 ++
    fNODE "time" 1
-| CT_transparent(x1) ->
-   fID_NE_LIST x1 ++
-   fNODE "transparent" 1
 | CT_undo(x1) ->
    fINT_OPT x1 ++
    fNODE "undo" 1
@@ -640,6 +638,10 @@ and fCOMMAND = function
    fID x1 ++
    fSTRING_OPT x2 ++
    fNODE "write_module" 2
+and fLEVEL = function
+| CT_Opaque -> fNODE "opaque" 0
+| CT_Level n -> fINT n ++ fNODE "level" 1
+| CT_Expand -> fNODE "expand" 0
 and fCOMMAND_LIST = function
 | CT_command_list(x,l) ->
    fCOMMAND x ++

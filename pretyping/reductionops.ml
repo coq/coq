@@ -601,6 +601,9 @@ let fakey = Profile.declare_profile "fhnf_apply";;
 let fhnf_apply info k h a = Profile.profile4 fakey fhnf_apply info k h a;;
 *)
 
+let is_transparent k =
+  Conv_oracle.get_strategy k <> Conv_oracle.Opaque
+
 (* Conversion utility functions *)
 
 type conversion_test = constraints -> constraints

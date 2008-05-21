@@ -1186,6 +1186,8 @@ Proof.
    | PEpow pe1 n => rpow (PEeval l pe1) (Cp_phi n)
    end.
 
+Strategy expand [PEeval].
+
  (** Correctness proofs *)
  
  Lemma mkX_ok : forall p l, nth 0 p l == (mk_X p) @ l.

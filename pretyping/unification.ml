@@ -136,10 +136,13 @@ let default_no_delta_unify_flags = {
 }
 
 let expand_constant env flags c = 
-  let (ids,csts) = Conv_oracle.freeze() in
   match kind_of_term c with
-  | Const cst when Cpred.mem cst csts && Cpred.mem cst (snd flags.modulo_delta) -> constant_opt_value env cst
-  | Var id when Idpred.mem id ids && Idpred.mem id (fst flags.modulo_delta) -> named_body id env
+  | Const cst when is_transparent (ConstKey cst) &&
+                   Cpred.mem cst (snd flags.modulo_delta) ->
+      constant_opt_value env cst
+  | Var id when is_transparent (VarKey id) &&
+                Idpred.mem id (fst flags.modulo_delta) ->
+      named_body id env
   | _ -> None
 
 let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =

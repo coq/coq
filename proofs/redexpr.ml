@@ -26,23 +26,20 @@ let cbv_vm env _ c =
   let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
   Vnorm.cbv_vm env c ctyp
 
-
-let set_opaque_const sp = 
-  Conv_oracle.set_opaque_const sp;
-  Csymtable.set_opaque_const sp
-
-let set_transparent_const sp =
-  let cb = Global.lookup_constant sp in
-  if cb.const_body <> None & cb.const_opaque then
-    errorlabstrm "set_transparent_const"
-      (str "Cannot make" ++ spc () ++ 
-         Nametab.pr_global_env Idset.empty (ConstRef sp) ++
-         spc () ++ str "transparent because it was declared opaque.");
-  Conv_oracle.set_transparent_const sp;
-  Csymtable.set_transparent_const sp
-
-let set_opaque_var      = Conv_oracle.set_opaque_var
-let set_transparent_var = Conv_oracle.set_transparent_var
+let set_strategy k l = 
+  Conv_oracle.set_strategy k l;
+  match k,l with
+      ConstKey sp, Conv_oracle.Opaque ->
+        Csymtable.set_opaque_const sp
+    | ConstKey sp, _ ->
+        let cb = Global.lookup_constant sp in
+        if cb.const_body <> None & cb.const_opaque then
+          errorlabstrm "set_transparent_const"
+            (str "Cannot make" ++ spc () ++ 
+            Nametab.pr_global_env Idset.empty (ConstRef sp) ++
+            spc () ++ str "transparent because it was declared opaque.");
+        Csymtable.set_transparent_const sp
+    | _ -> ()
 
 let _ = 
   Summary.declare_summary "Transparent constants and variables"
@@ -70,7 +67,7 @@ let make_flag f =
   let red =
     if f.rDelta then (* All but rConst *)
         let red = red_add red fDELTA in
-        let red = red_add_transparent red (Conv_oracle.freeze ()) in
+        let red = red_add_transparent red (Conv_oracle.get_transp_state()) in
 	List.fold_right
 	  (fun v red -> red_sub red (make_flag_constant v))
 	  f.rConst red

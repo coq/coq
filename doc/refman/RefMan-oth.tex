@@ -123,8 +123,6 @@ can cause changes in tactic scripts behaviour.
 At section or module closing, a constant recovers the status it got at
 the time of its definition.
 
-%TODO: expliquer le rapport avec les sections
-
 \begin{ErrMsgs}
 % \item \errindex{Can not set transparent.}\\
 %     It is a constant from a required module or a parameter.
@@ -135,6 +133,34 @@ environment}\\
 
 \SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
 \ref{Theorem}
+
+
+\subsection{\tt Strategy {\it level} [ \qualid$_1$ \dots \qualid$_n$ ].\comindex{Strategy}\label{Strategy}}
+This command generalizes the behaviour of {\tt Opaque} and {\tt
+  Transaparent} commands. It is used to fine-tune the strategy for
+unfolding constants, both at the tactic level and at the kernel
+level. This command associates a level to \qualid$_1$ \dots
+\qualid$_n$. Whenever two expressions with two distinct head
+constants are compared (for instance, this comparison can be triggered
+by a type cast), the one with lower level is expanded first. In case
+of a tie, the second one (appearing in the cast type) is expanded.
+
+Levels can be one of the following (higher to lower):
+\begin{description}
+\item[opaque]: level of opaque constants. They cannot be expanded by
+  tactics (behaves like $+\infty$, see next item).
+\item[\num]: levels indexed by an integer. Level $0$ corresponds
+  to the default behaviour, which corresponds to transparent
+  constants. This level can also be referred to as {\bf transparent}.
+  Negative levels correspond to constants to be expanded before normal
+  transparent constants, while positive levels correspond to constants
+  to be expanded after normal transparent constants.
+\item[expand]: level of constants that should be expanded first
+  (behaves like $-\infty$)
+\end{description}
+
+The behaviour regarding sections and modules is the same as for the
+{\tt Transparent} command.
 
 \subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
 This command displays the name and type of all theorems of the current

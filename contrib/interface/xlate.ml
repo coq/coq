@@ -1796,13 +1796,11 @@ let rec xlate_vernac =
        ctf_ID_OPT_SOME (xlate_ident s))
   | VernacEndProof Admitted ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Admitted"), ctv_ID_OPT_NONE)
-  | VernacSetOpacity (false, id :: idl) ->
-            CT_transparent(CT_id_ne_list(loc_qualid_to_ct_ID id,
-                   List.map loc_qualid_to_ct_ID idl))
-  | VernacSetOpacity (true, id :: idl)
-            -> CT_opaque (CT_id_ne_list(loc_qualid_to_ct_ID id,
-                   List.map loc_qualid_to_ct_ID idl))
-  | VernacSetOpacity (_, []) -> xlate_error "Shouldn't occur"
+  | VernacSetOpacity l ->
+      CT_strategy(CT_level_list
+        (List.map (fun (l,q) ->
+          (level_to_ct_LEVEL l,
+           CT_id_list(List.map loc_qualid_to_ct_ID q))) l))
   | VernacUndo n -> CT_undo (CT_coerce_INT_to_INT_OPT (CT_int n))
   | VernacShow (ShowGoal nopt) -> CT_show_goal (xlate_int_opt nopt)
   | VernacShow ShowNode -> CT_show_node
@@ -2196,7 +2194,12 @@ let rec xlate_vernac =
   | VernacBack _ | VernacBacktrack _ |VernacBackTo _|VernacRestoreState _| VernacWriteState _|
     VernacSolveExistential (_, _)|VernacCanonical _ |
      VernacTacticNotation _ | VernacUndoTo _ | VernacRemoveName _)
-    -> xlate_error "TODO: vernac";;
+    -> xlate_error "TODO: vernac"
+and level_to_ct_LEVEL = function
+    Conv_oracle.Opaque -> CT_Opaque
+  | Conv_oracle.Level n -> CT_Level (CT_int n)
+  | Conv_oracle.Expand -> CT_Expand;;
+
 
 let rec xlate_vernac_list =
  function

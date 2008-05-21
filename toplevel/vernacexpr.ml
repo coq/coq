@@ -293,7 +293,7 @@ type vernac_expr =
   | VernacDeclareImplicits of locality_flag * lreference * 
       (explicitation * bool * bool) list option
   | VernacReserve of lident list * constr_expr
-  | VernacSetOpacity of opacity_flag * lreference list
+  | VernacSetOpacity of (Conv_oracle.level * lreference list) list
   | VernacUnsetOption of Goptions.option_name
   | VernacSetOption of Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list

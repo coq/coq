@@ -116,12 +116,14 @@ type opacity =
 
 let opacity env = function
   | VarRef v when pi2 (Environ.lookup_named v env) <> None -> 
-      Some (TransparentMaybeOpacified (Conv_oracle.is_opaque_var v))
+      Some (TransparentMaybeOpacified 
+        (not (Reductionops.is_transparent(VarKey v))))
   | ConstRef cst ->
       let cb = Environ.lookup_constant cst env in
       if cb.const_body = None then None
       else if cb.const_opaque then Some FullyOpaque
-      else Some (TransparentMaybeOpacified (Conv_oracle.is_opaque_cst cst))
+      else Some (TransparentMaybeOpacified
+        (not(Reductionops.is_transparent(ConstKey cst))))
   | _ -> None
 
 let print_opacity ref =

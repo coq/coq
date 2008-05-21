@@ -38,13 +38,11 @@ exception Redelimination
 let is_evaluable env ref =
   match ref with
       EvalConstRef kn ->
-        let (ids,kns) = Conv_oracle.freeze() in
-        Cpred.mem kn kns &
+        is_transparent (ConstKey kn) &&
         let cb = Environ.lookup_constant kn env in
         cb.const_body <> None & not cb.const_opaque
     | EvalVarRef id ->
-        let (ids,sps) = Conv_oracle.freeze() in
-        Idpred.mem id ids &
+        is_transparent (VarKey id) &&
         let (_,value,_) = Environ.lookup_named id env in
         value <> None
 

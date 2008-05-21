@@ -190,6 +190,9 @@ val fix_recarg : fixpoint -> constr stack -> (int * constr) option
 val reduce_fix : local_state_reduction_function -> fixpoint
    -> constr stack -> fix_reduction_result
 
+(*s Querying the kernel conversion oracle: opaque/transparent constants *)
+val is_transparent : 'a tableKey -> bool
+
 (*s Conversion Functions (uses closures, lazy strategy) *)
 
 type conversion_test = constraints -> constraints

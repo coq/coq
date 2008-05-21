@@ -25,13 +25,8 @@ val reduction_of_red_expr : red_expr -> reduction_function * cast_kind
 val declare_red_expr : string -> reduction_function -> unit
 
 (* Opaque and Transparent commands. *)
-val set_opaque_const      : constant -> unit
-val set_transparent_const : constant -> unit
 
-val set_opaque_var      : identifier -> unit
-val set_transparent_var : identifier -> unit
-
-
+val set_strategy : 'a tableKey ->  Conv_oracle.level -> unit
 
 (* call by value normalisation function using the virtual machine *)
 val cbv_vm : reduction_function

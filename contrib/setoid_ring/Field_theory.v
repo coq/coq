@@ -661,6 +661,8 @@ Fixpoint FEeval (l : list R) (pe : FExpr) {struct pe} : R :=
   | FEpow x n => rpow (FEeval l x) (Cp_phi n)
   end.
 
+Strategy expand [FEeval].
+
 (* The result of the normalisation *)
  
 Record linear : Type := mk_linear {
