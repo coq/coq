@@ -111,8 +111,11 @@ Definition firstr : int31 -> digits := Eval compute in
     [ match x with (I31 D0 ... D0) => true | _ => false end ] *)
 
 Definition iszero : int31 -> bool := Eval compute in 
- let f (d:digits)(b:bool) := if d then b else false in 
- int31_rect _ (nfold_bis _ _ f true size).
+ let f d b := match d with D0 => b | D1 => false end 
+ in int31_rect _ (nfold_bis _ _ f true size).
+
+(* NB: DO NOT transform the above match in a nicer (if then else). 
+   It seems to work, but later "unfold iszero" takes forever. *)
 
 
 (** [base] is [2^31], obtained via iterations of [Zdouble]. 
