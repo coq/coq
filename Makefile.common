@@ -651,7 +651,7 @@ REALSVO:=$(REALSBASEVO) $(REALS_$(REALS))
 ALLREALS:=$(REALSBASEVO) $(REALS_all)
 
 NUMBERSCOMMONVO:=$(addprefix theories/Numbers/, \
- QRewrite.vo	NumPrelude.vo	BigNumPrelude.vo )
+ NumPrelude.vo	BigNumPrelude.vo )
 
 CYCLICABSTRACTVO:=$(addprefix theories/Numbers/Cyclic/Abstract/, \
  CyclicAxioms.vo NZCyclic.vo )
