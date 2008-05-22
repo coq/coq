@@ -45,22 +45,22 @@ Notation "x >= y" := (NZle y x) (only parsing) : NatScope.
 
 Open Local Scope NatScope.
 
-Parameter Inline recursion : forall A : Set, A -> (N -> A -> A) -> N -> A.
+Parameter Inline recursion : forall A : Type, A -> (N -> A -> A) -> N -> A.
 Implicit Arguments recursion [A].
 
 Axiom pred_0 : P 0 == 0.
 
-Axiom recursion_wd : forall (A : Set) (Aeq : relation A),
+Axiom recursion_wd : forall (A : Type) (Aeq : relation A),
   forall a a' : A, Aeq a a' ->
     forall f f' : N -> A -> A, fun2_eq Neq Aeq Aeq f f' ->
       forall x x' : N, x == x' ->
         Aeq (recursion a f x) (recursion a' f' x').
 
 Axiom recursion_0 :
-  forall (A : Set) (a : A) (f : N -> A -> A), recursion a f 0 = a.
+  forall (A : Type) (a : A) (f : N -> A -> A), recursion a f 0 = a.
 
 Axiom recursion_succ :
-  forall (A : Set) (Aeq : relation A) (a : A) (f : N -> A -> A),
+  forall (A : Type) (Aeq : relation A) (a : A) (f : N -> A -> A),
     Aeq a a -> fun2_wd Neq Aeq Aeq f ->
       forall n : N, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 

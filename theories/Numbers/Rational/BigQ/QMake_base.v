@@ -17,7 +17,7 @@ Require Export BigZ.
 
 (* Basic type for Q: a Z or a pair of a Z and an N *)
 
-Inductive q_type : Set := 
+Inductive q_type := 
  | Qz : BigZ.t -> q_type
  | Qq : BigZ.t -> BigN.t -> q_type.
 

@@ -175,8 +175,8 @@ Qed.
 
 End NZOrdAxiomsMod.
 
-Definition recursion : forall A : Set, A -> (nat -> A -> A) -> nat -> A :=
-  fun A : Set => nat_rec (fun _ => A).
+Definition recursion : forall A : Type, A -> (nat -> A -> A) -> nat -> A :=
+  fun A : Type => nat_rect (fun _ => A).
 Implicit Arguments recursion [A].
 
 Theorem succ_neq_0 : forall n : nat, S n <> 0.
@@ -189,7 +189,7 @@ Proof.
 reflexivity.
 Qed.
 
-Theorem recursion_wd : forall (A : Set) (Aeq : relation A),
+Theorem recursion_wd : forall (A : Type) (Aeq : relation A),
   forall a a' : A, Aeq a a' ->
     forall f f' : nat -> A -> A, fun2_eq (@eq nat) Aeq Aeq f f' ->
       forall n n' : nat, n = n' ->
@@ -199,13 +199,13 @@ unfold fun2_eq; induction n; intros n' Enn'; rewrite <- Enn' in *; simpl; auto.
 Qed.
 
 Theorem recursion_0 :
-  forall (A : Set) (a : A) (f : nat -> A -> A), recursion a f 0 = a.
+  forall (A : Type) (a : A) (f : nat -> A -> A), recursion a f 0 = a.
 Proof.
 reflexivity.
 Qed.
 
 Theorem recursion_succ :
-  forall (A : Set) (Aeq : relation A) (a : A) (f : nat -> A -> A),
+  forall (A : Type) (Aeq : relation A) (a : A) (f : nat -> A -> A),
     Aeq a a -> fun2_wd (@eq nat) Aeq Aeq f ->
       forall n : nat, Aeq (recursion a f (S n)) (f n (recursion a f n)).
 Proof.

@@ -370,7 +370,7 @@ Qed.
 safely removed *)
 
 Definition NZsucc_iter (n : nat) (m : NZ) :=
-  nat_rec (fun _ => NZ) m (fun _ l => S l) n.
+  nat_rect (fun _ => NZ) m (fun _ l => S l) n.
 
 Theorem NZlt_succ_iter_r :
   forall (n : nat) (m : NZ), m < NZsucc_iter (Datatypes.S n) m.

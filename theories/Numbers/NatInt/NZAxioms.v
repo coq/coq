@@ -14,7 +14,7 @@ Require Export NumPrelude.
 
 Module Type NZAxiomsSig.
 
-Parameter Inline NZ : Set.
+Parameter Inline NZ : Type.
 Parameter Inline NZeq : NZ -> NZ -> Prop.
 Parameter Inline NZ0 : NZ.
 Parameter Inline NZsucc : NZ -> NZ.

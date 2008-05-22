@@ -19,7 +19,7 @@ Require Import DoubleType.
 Open Local Scope Z_scope.
 
 Section DoubleBase.
- Variable w : Set.
+ Variable w : Type.
  Variable w_0   : w.
  Variable w_1   : w.
  Variable w_Bm1 : w.

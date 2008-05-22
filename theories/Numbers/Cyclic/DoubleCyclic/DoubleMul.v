@@ -20,7 +20,7 @@ Require Import DoubleBase.
 Open Local Scope Z_scope.
 
 Section DoubleMul.
- Variable w : Set.
+ Variable w : Type.
  Variable w_0 : w.
  Variable w_1 : w.
  Variable w_WW : w -> w -> zn2z w.
@@ -178,7 +178,7 @@ Section DoubleMul.
  End DoubleMulAddn1.
 
  Section DoubleMulAddmn1.
-  Variable wn: Set.
+  Variable wn: Type.
   Variable extend_n : w -> wn.
   Variable wn_0W : wn -> zn2z wn.
   Variable wn_WW : wn -> wn -> zn2z wn.

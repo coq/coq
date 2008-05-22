@@ -19,9 +19,9 @@ Definition base digits := Zpower 2 (Zpos digits).
 
 Section Carry.
 
- Variable A : Set.
+ Variable A : Type.
 
- Inductive carry : Set :=
+ Inductive carry :=
   | C0 : A -> carry
   | C1 : A -> carry.
 
@@ -35,7 +35,7 @@ End Carry.
 
 Section Zn2Z.
 
- Variable znz : Set.
+ Variable znz : Type.
 
  (** From a type [znz] representing a cyclic structure Z/nZ, 
      we produce a representation of Z/2nZ by pairs of elements of [znz]
@@ -43,7 +43,7 @@ Section Zn2Z.
      first. 
  *)
 
- Inductive zn2z : Set :=
+ Inductive zn2z :=
   | W0 : zn2z
   | WW : znz -> znz -> zn2z.
 
@@ -63,7 +63,7 @@ Implicit Arguments W0 [znz].
     (if depth = n). 
 *)
 
-Fixpoint word (w:Set) (n:nat) {struct n} : Set :=
+Fixpoint word (w:Type) (n:nat) : Type :=
  match n with
  | O => w
  | S n => zn2z (word w n)

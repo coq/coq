@@ -28,9 +28,9 @@ Open Local Scope Z_scope.
 
 Section Z_nZ_Op.
 
- Variable znz : Set.
+ Variable znz : Type.
 
- Record znz_op : Set := mk_znz_op {
+ Record znz_op := mk_znz_op {
 
     (* Conversion functions with Z *)
     znz_digits : positive;  
@@ -76,7 +76,7 @@ Section Z_nZ_Op.
     znz_square_c    : znz -> zn2z znz;
 
     (* Special divisions operations *)
-    znz_div21       : znz -> znz -> znz -> znz*znz; (* very ad-hoc ?? *)
+    znz_div21       : znz -> znz -> znz -> znz*znz;
     znz_div_gt      : znz -> znz -> znz * znz; (* why this one ? *)
     znz_div         : znz -> znz -> znz * znz;
 
@@ -85,18 +85,22 @@ Section Z_nZ_Op.
 
     znz_gcd_gt      : znz -> znz -> znz; (* why this one ? *)
     znz_gcd         : znz -> znz -> znz; 
-    znz_add_mul_div : znz -> znz -> znz -> znz; (* very ad-hoc *)
+    (* [znz_add_mul_div p i j] is a combination of the [(digits-p)]
+       low bits of [i] above the [p] high bits of [j]: 
+       [znz_add_mul_div p i j = i*2^p+j/2^(digits-p)] *)
+    znz_add_mul_div : znz -> znz -> znz -> znz;
+    (* [znz_pos_mod p i] is [i mod 2^p] *)
     znz_pos_mod     : znz -> znz -> znz;
 
-   (* square root *)
     znz_is_even     : znz -> bool;
+    (* square root *)
     znz_sqrt2       : znz -> znz -> znz * carry znz;
     znz_sqrt        : znz -> znz  }.
 
 End Z_nZ_Op.
 
 Section Z_nZ_Spec.
- Variable w : Set.
+ Variable w : Type.
  Variable w_op : znz_op w.
 
  Let w_digits      := w_op.(znz_digits).
@@ -170,7 +174,7 @@ Section Z_nZ_Spec.
  Notation "[|| x ||]" :=
    (zn2z_to_Z wB w_to_Z x)  (at level 0, x at level 99).
 
- Record znz_spec : Set := mk_znz_spec {
+ Record znz_spec := mk_znz_spec {
 
     (* Conversion functions with Z *)
     spec_to_Z   : forall x, 0 <= [| x |] < wB;
@@ -281,13 +285,13 @@ End Z_nZ_Spec.
 
 Section znz_of_pos.
  
- Variable w : Set.
+ Variable w : Type.
  Variable w_op : znz_op w.
  Variable op_spec : znz_spec w_op.
 
  Notation "[| x |]" := (znz_to_Z w_op x)  (at level 0, x at level 99).
 
- Definition znz_of_Z (w:Set) (op:znz_op w) z :=
+ Definition znz_of_Z (w:Type) (op:znz_op w) z :=
  match z with
  | Zpos p => snd (op.(znz_of_pos) p)
  | _ => op.(znz_0)
@@ -325,7 +329,7 @@ End znz_of_pos.
 (** A modular specification grouping the earlier records. *)
 
 Module Type CyclicType.
- Parameter w : Set.
+ Parameter w : Type.
  Parameter w_op : znz_op w.
  Parameter w_spec : znz_spec w_op.
 End CyclicType.

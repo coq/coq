@@ -30,7 +30,7 @@ Open Local Scope Z_scope.
 
 Section Z_2nZ.
 
- Variable w : Set.
+ Variable w : Type.
  Variable w_op : znz_op w.
  Let w_digits      := w_op.(znz_digits).
  Let w_zdigits      := w_op.(znz_zdigits).
@@ -890,7 +890,7 @@ End Z_2nZ.
  
 Section MulAdd.
  
-  Variable w: Set.
+  Variable w: Type.
   Variable op: znz_op w.
   Variable sop: znz_spec op.
 
@@ -918,5 +918,16 @@ Section MulAdd.
 End MulAdd.
 
 
+(** Modular versions of DoubleCyclic *) 
 
- 
+Module DoubleCyclic (C:CyclicType) <: CyclicType.
+ Definition w := zn2z C.w.
+ Definition w_op := mk_zn2z_op C.w_op.
+ Definition w_spec := mk_znz2_spec C.w_spec.
+End DoubleCyclic.
+
+Module DoubleCyclicKaratsuba (C:CyclicType) <: CyclicType.
+ Definition w := zn2z C.w.
+ Definition w_op := mk_zn2z_op_karatsuba C.w_op.
+ Definition w_spec := mk_znz2_karatsuba_spec C.w_spec.
+End DoubleCyclicKaratsuba.

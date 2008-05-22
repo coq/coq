@@ -120,8 +120,8 @@ Definition zn2z_word_comm : forall w n, zn2z (word w n) = word (zn2z w) n.
   reflexivity.
 Defined.
 
-Fixpoint extend (n:nat) {struct n} : forall w:Set, zn2z w -> word w (S n) :=
- match n return forall w:Set, zn2z w -> word w (S n) with 
+Fixpoint extend (n:nat) {struct n} : forall w:Type, zn2z w -> word w (S n) :=
+ match n return forall w:Type, zn2z w -> word w (S n) with 
  | O => fun w x => x
  | S m => 
    let aux := extend m in
@@ -193,7 +193,7 @@ Fixpoint diff_r (m n: nat) {struct m}: snd (diff m n) + m = max m n :=
       end
   end.
 
- Variable w: Set.
+ Variable w: Type.
 
  Definition castm (m n: nat) (H: m = n) (x: word w (S m)):
      (word w (S n)) :=
@@ -219,8 +219,8 @@ Implicit Arguments castm[w m n].
 
 Section Reduce.
 
- Variable w : Set.
- Variable nT : Set.
+ Variable w : Type.
+ Variable nT : Type.
  Variable N0 : nT.
  Variable eq0 : w -> bool.
  Variable reduce_n : w -> nT.
@@ -238,8 +238,8 @@ End Reduce.
 
 Section ReduceRec.
 
- Variable w : Set.
- Variable nT : Set.
+ Variable w : Type.
+ Variable nT : Type.
  Variable N0 : nT.
  Variable reduce_1n : zn2z w -> nT.
  Variable c : forall n, word w (S n) -> nT.
@@ -269,7 +269,7 @@ Definition opp_compare cmp :=
 
 Section CompareRec.
 
- Variable wm w : Set.
+ Variable wm w : Type.
  Variable w_0 : w.
  Variable compare : w -> w -> comparison.
  Variable compare0_m : wm -> comparison.
@@ -414,7 +414,7 @@ End CompareRec.
 
 Section AddS.
 
- Variable  w wm: Set.
+ Variable w wm : Type.
  Variable incr : wm -> carry wm.
  Variable addr : w -> wm -> carry wm.
  Variable injr : w -> zn2z wm.
@@ -479,7 +479,7 @@ End AddS.
 
  Section SimplOp.
 
- Variable w: Set.
+ Variable w: Type.
 
  Theorem digits_zop: forall w (x: znz_op w),
   znz_digits (mk_zn2z_op x) = xO (znz_digits x).

@@ -20,7 +20,7 @@ Require Import DoubleBase.
 Open Local Scope Z_scope.
 
 Section DoubleLift.
- Variable w : Set.
+ Variable w : Type.
  Variable w_0 : w.
  Variable w_WW : w -> w -> zn2z w.
  Variable w_W0 : w ->  zn2z w.

@@ -96,7 +96,7 @@ Notation Local plus_wd := NZplus_wd (only parsing).
 Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
 Module Export NZAxiomsMod <: NZAxiomsSig.
 
-Definition NZ : Set := Z.
+Definition NZ : Type := Z.
 Definition NZeq := Zeq.
 Definition NZ0 := Z0.
 Definition NZsucc := Zsucc.

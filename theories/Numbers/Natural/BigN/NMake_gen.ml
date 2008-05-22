@@ -130,7 +130,7 @@ let _ =
   pr " Qed.";
   pr "";
 
-  pr " Inductive %s_ : Set :=" t;
+  pr " Inductive %s_ :=" t;
   for i = 0 to size do 
     pr "  | %s%i : w%i -> %s_" c i i t
   done;
@@ -167,7 +167,7 @@ let _ =
 
 
   pp " (* Regular make op (no karatsuba) *)";
-  pp " Fixpoint nmake_op (ww:Set) (ww_op: znz_op ww) (n: nat) : ";
+  pp " Fixpoint nmake_op (ww:Type) (ww_op: znz_op ww) (n: nat) : ";
   pp "       znz_op (word ww n) :=";
   pp "  match n return znz_op (word ww n) with ";
   pp "   O => ww_op";
@@ -519,7 +519,7 @@ let _ =
 
   pr " Section LevelAndIter.";
   pr "";
-  pr "  Variable res: Set.";
+  pr "  Variable res: Type.";
   pr "  Variable xxx: res.";
   pr "  Variable P: Z -> Z -> res -> Prop.";
   pr "  (* Abstraction function for each level *)";

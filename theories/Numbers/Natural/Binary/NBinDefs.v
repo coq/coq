@@ -197,7 +197,7 @@ Qed.
 
 End NZOrdAxiomsMod.
 
-Definition recursion (A : Set) (a : A) (f : N -> A -> A) (n : N) :=
+Definition recursion (A : Type) (a : A) (f : N -> A -> A) (n : N) :=
   Nrect (fun _ => A) a f n.
 Implicit Arguments recursion [A].
 
@@ -207,7 +207,7 @@ reflexivity.
 Qed.
 
 Theorem recursion_wd :
-forall (A : Set) (Aeq : relation A),
+forall (A : Type) (Aeq : relation A),
   forall a a' : A, Aeq a a' ->
     forall f f' : N -> A -> A, fun2_eq NZeq Aeq Aeq f f' ->
       forall x x' : N, x = x' ->
@@ -224,13 +224,13 @@ now apply Eff'; [| apply IH].
 Qed.
 
 Theorem recursion_0 :
-  forall (A : Set) (a : A) (f : N -> A -> A), recursion a f N0 = a.
+  forall (A : Type) (a : A) (f : N -> A -> A), recursion a f N0 = a.
 Proof.
 intros A a f; unfold recursion; now rewrite Nrect_base.
 Qed.
 
 Theorem recursion_succ :
-  forall (A : Set) (Aeq : relation A) (a : A) (f : N -> A -> A),
+  forall (A : Type) (Aeq : relation A) (a : A) (f : N -> A -> A),
     Aeq a a -> fun2_wd NZeq Aeq Aeq f ->
       forall n : N, Aeq (recursion a f (Nsucc n)) (f n (recursion a f n)).
 Proof.

@@ -17,7 +17,7 @@ Open Scope Z_scope.
 
 Module Type NType.
 
- Parameter t : Set.
+ Parameter t : Type.
  
  Parameter zero : t.
  Parameter one : t.
@@ -101,7 +101,7 @@ End NType.
 
 Module Make (N:NType).
  
- Inductive t_ : Set := 
+ Inductive t_ := 
   | Pos : N.t -> t_
   | Neg : N.t -> t_.
  

@@ -20,7 +20,7 @@ Require Import DoubleBase.
 Open Local Scope Z_scope.
 
 Section DoubleSqrt.
- Variable w              : Set.
+ Variable w              : Type.
  Variable w_is_even      : w -> bool.
  Variable w_compare      : w -> w -> comparison.
  Variable w_0            : w.

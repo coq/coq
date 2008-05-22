@@ -21,7 +21,7 @@ Open Local Scope Z_scope.
 
 Section GENDIVN1.
 
- Variable w             : Set.
+ Variable w             : Type.
  Variable w_digits      : positive.
  Variable w_zdigits     : w.
  Variable w_0           : w.
