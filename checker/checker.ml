@@ -102,19 +102,11 @@ let set_default_rec_include d =
   check_coq_overwriting p; 
   push_rec_include (d, p)
 
-let safe_getenv_def var def =
-  try 
-    Sys.getenv var
-  with Not_found ->
-    warning ("Environment variable "^var^" not found: using '"^def^"' .");
-    flush_all();
-    def
-
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
   let coqlib =
     (* variable COQLIB overrides the default library *)
-    safe_getenv_def "COQLIB"
+    getenv_else "COQLIB"
       (if Coq_config.local || !Flags.boot then Coq_config.coqtop
 	else Coq_config.coqlib) in
   let user_contrib = coqlib/"user-contrib" in

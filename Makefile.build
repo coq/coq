@@ -109,6 +109,9 @@ VO_TOOLS_DEP := $(BESTCOQTOP)
 ifdef COQ_XML
  VO_TOOLS_DEP += $(COQDOC)
 endif
+ifdef VALIDATE
+ VO_TOOLS_DEP += $(BESTCHICKEN)
+endif
 ifdef NO_RECOMPILE_LIB
  VO_TOOLS_ORDER_ONLY:=$(VO_TOOLS_DEP)
 else
@@ -174,6 +177,21 @@ $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 
 $(COQTOP): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
+
+LOCALCHKLIBS:=-I checker -I lib -I config -I kernel
+CHKLIBS:=$(LOCALCHKLIBS) -I +camlp4
+
+$(CHICKENOPT): checker/check.cmxa checker/main.ml
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) -o $@ unix.cmxa gramlib.cmxa checker/check.cmxa checker/main.ml
+	$(STRIP) $@
+
+$(CHICKENBYTE): checker/check.cma checker/main.ml
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(CHKLIBS) -o $@ unix.cma gramlib.cma checker/check.cma checker/main.ml
+
+$(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
+	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
 
 # coqmktop 
 
@@ -242,6 +260,14 @@ kernel/kernel.cma: $(KERNEL)
 kernel/kernel.cmxa: $(KERNEL:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(KERNEL:.cmo=.cmx)
+
+checker/check.cma: $(MCHECKER)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(CHKLIBS) -a -o $@ $(MCHECKER)
+
+checker/check.cmxa: $(MCHECKER:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) -a -o $@ $(MCHECKER:.cmo=.cmx)
 
 library/library.cma: $(LIBRARY)
 	$(SHOW)'OCAMLC -a -o $@'
@@ -771,6 +797,18 @@ endif
 # Default rules
 ###########################################################################
 
+checker/%.cmo: checker/%.ml | checker/%.ml.d
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) -c -I checker -I config -I lib -I kernel -I +camlp4 $<
+
+checker/%.cmx: checker/%.ml | checker/%.ml.d
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) -c -I checker -I config -I lib -I kernel -I +camlp4 $<
+
+checker/%.cmi: checker/%.mli | checker/%.mli.d
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)$(OCAMLC) -c -I checker -I lib -I kernel $<
+
 %.o: %.c
 	$(SHOW)'CC        $<'
 	$(HIDE)$(CC) -o $@ $(CFLAGS) $(CINCLUDES)  -c $<
@@ -823,6 +861,11 @@ endif
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob 
 	$(HIDE)$(BOOTCOQTOP) -dump-glob $*.glob -compile $*
+ifdef VALIDATE
+	$(SHOW)'COQCHK    $(shell basename $*)'
+	$(HIDE)$(BESTCHICKEN) -silent -norec $(shell basename $*) \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+endif
 
 ###########################################################################
 # Dependencies
@@ -857,6 +900,14 @@ endif
 %.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILES:.ml4=.ml)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $< > "$@"
+
+checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC)
+	$(SHOW)'OCAMLDEP  $<'
+	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) $< > "$@"
+
+checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC)
+	$(SHOW)'OCAMLDEP  $<'
+	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) $< > "$@"
 
 ## Veerry nasty hack to keep ocamldep happy
 %.ml: | %.ml4

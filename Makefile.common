@@ -24,15 +24,21 @@ COQTOPBYTE:=bin/coqtop.byte$(EXE)
 COQTOPOPT:=bin/coqtop.opt$(EXE)
 BESTCOQTOP:=bin/coqtop.$(BEST)$(EXE)
 COQTOP:=bin/coqtop$(EXE)
+CHICKENBYTE:=bin/coqchk.byte$(EXE)
+CHICKENOPT:=bin/coqchk.opt$(EXE)
+BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
+CHICKEN:=bin/coqchk$(EXE)
 
 COQIDEBYTE:=bin/coqide.byte$(EXE)
 COQIDEOPT:=bin/coqide.opt$(EXE)
 COQIDE:=bin/coqide$(EXE)
 
 ifeq ($(BEST),opt)
-COQBINARIES:= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(COQTOP)
+COQBINARIES:= $(COQMKTOP) $(COQC) \
+  $(COQTOPBYTE) $(COQTOPOPT) $(COQTOP) $(CHICKENBYTE) $(CHICKENOPT) $(CHICKEN)
 else
-COQBINARIES:= $(COQMKTOP) $(COQC) $(COQTOPBYTE)              $(COQTOP)
+COQBINARIES:= $(COQMKTOP) $(COQC) \
+  $(COQTOPBYTE)              $(COQTOP) $(CHICKENBYTE)               $(CHICKEN)
 endif
 OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
@@ -392,6 +398,27 @@ GALLINACMO:=tools/gallina_lexer.cmo tools/gallina.cmo
 COQDOCCMO:=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
 	tools/coqdoc/index.cmo tools/coqdoc/output.cmo \
 	tools/coqdoc/pretty.cmo tools/coqdoc/main.cmo
+
+
+# checker
+
+MCHECKER:=\
+  config/coq_config.cmo \
+  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo \
+  lib/util.cmo lib/option.cmo lib/hashcons.cmo \
+  lib/system.cmo lib/flags.cmo \
+  lib/predicate.cmo lib/rtree.cmo \
+  kernel/names.cmo kernel/univ.cmo \
+  kernel/esubst.cmo checker/term.cmo \
+  checker/declarations.cmo checker/environ.cmo \
+  checker/closure.cmo checker/reduction.cmo \
+  checker/type_errors.cmo \
+  checker/modops.cmo \
+  checker/inductive.cmo checker/typeops.cmo \
+  checker/indtypes.cmo checker/subtyping.cmo checker/mod_checking.cmo \
+  checker/validate.cmo \
+  checker/safe_typing.cmo checker/check.cmo \
+  checker/check_stat.cmo checker/checker.cmo
 
 # minicoq
 
