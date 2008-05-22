@@ -885,16 +885,15 @@ let _ =
       optread=(fun () -> get_debug () <> Tactic_debug.DebugOff);
       optwrite=vernac_debug }
 
-let vernac_set_opacity r =
-  let set_one l r =
-    let r =
-      match global_with_alias r with
-        | ConstRef sp -> ConstKey sp
-        | VarRef id -> VarKey id
-        | _ -> error
-            "cannot set an inductive type or a constructor as transparent" in
-    set_strategy r l in
-  List.iter (fun (l,q) -> List.iter (set_one l) q) r
+let vernac_set_opacity local str =
+  let glob_ref r =
+    match global_with_alias r with
+      | ConstRef sp -> EvalConstRef sp
+      | VarRef id -> EvalVarRef id
+      | _ -> error
+          "cannot set an inductive type or a constructor as transparent" in
+  let str = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) str in
+  Redexpr.set_strategy local str
 
 let vernac_set_option key = function
   | StringValue s -> set_string_option_value key s
@@ -1269,7 +1268,7 @@ let interp c = match c with
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
   | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l
   | VernacReserve (idl,c) -> vernac_reserve idl c
-  | VernacSetOpacity qidl -> vernac_set_opacity qidl
+  | VernacSetOpacity (local,qidl) -> vernac_set_opacity local qidl
   | VernacSetOption (key,v) -> vernac_set_option key v
   | VernacUnsetOption key -> vernac_unset_option key
   | VernacRemoveOption (key,v) -> vernac_remove_option key v

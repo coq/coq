@@ -829,13 +829,13 @@ let rec pr_vernac = function
         str (if List.length idl > 1 then "s " else " ") ++
         prlist_with_sep spc pr_lident idl ++ str " :" ++ spc () ++
         pr_lconstr c)
-  | VernacSetOpacity[k,l] when k=Conv_oracle.transparent ->
+  | VernacSetOpacity(true,[k,l]) when k=Conv_oracle.transparent ->
       hov 1 (str"Transparent" ++
              spc() ++ prlist_with_sep sep pr_reference l)
-  | VernacSetOpacity[Conv_oracle.Opaque,l] ->
+  | VernacSetOpacity(true,[Conv_oracle.Opaque,l]) ->
       hov 1 (str"Opaque" ++
              spc() ++ prlist_with_sep sep pr_reference l)
-  | VernacSetOpacity l ->
+  | VernacSetOpacity (local,l) ->
       let pr_lev = function
           Conv_oracle.Opaque -> str"opaque"
         | Conv_oracle.Expand -> str"expand"
@@ -844,7 +844,8 @@ let rec pr_vernac = function
       let pr_line (l,q) =
         hov 2 (pr_lev l ++ spc() ++
                str"[" ++ prlist_with_sep sep pr_reference q ++ str"]") in
-      hov 1 (str"Strategy" ++ spc() ++ hv 0 (prlist_with_sep sep pr_line l))
+      hov 1 (pr_locality local ++ str"Strategy" ++ spc() ++
+             hv 0 (prlist_with_sep sep pr_line l))
   | VernacUnsetOption na ->
       hov 1 (str"Unset" ++ spc() ++ pr_printoption na None)
   | VernacSetOption (na,v) -> hov 2 (str"Set" ++ spc() ++ pr_set_option na v)

@@ -26,7 +26,11 @@ val declare_red_expr : string -> reduction_function -> unit
 
 (* Opaque and Transparent commands. *)
 
-val set_strategy : 'a tableKey ->  Conv_oracle.level -> unit
+(* Sets the expansion strategy of a constant. When the boolean is
+   true, the effect is non-synchronous (i.e. it does not survive
+   section and module closure). *)
+val set_strategy :
+  bool -> (Conv_oracle.level * evaluable_global_reference list) list -> unit
 
 (* call by value normalisation function using the virtual machine *)
 val cbv_vm : reduction_function

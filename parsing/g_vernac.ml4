@@ -447,12 +447,15 @@ GEXTEND Gram
   gallina_ext:
     [ [ (* Transparent and Opaque *)
         IDENT "Transparent"; l = LIST1 global ->
-          VernacSetOpacity [Conv_oracle.transparent,l]
+          VernacSetOpacity (true,[Conv_oracle.transparent,l])
       | IDENT "Opaque"; l = LIST1 global ->
-          VernacSetOpacity [Conv_oracle.Opaque, l]
+          VernacSetOpacity (true,[Conv_oracle.Opaque, l])
       | IDENT "Strategy"; l =
           LIST1 [ lev=strategy_level; "["; q=LIST1 global; "]" -> (lev,q)] ->
-            VernacSetOpacity l
+            VernacSetOpacity (false,l)
+      | IDENT "Local"; IDENT "Strategy"; l =
+          LIST1 [ lev=strategy_level; "["; q=LIST1 global; "]" -> (lev,q)] ->
+            VernacSetOpacity (true,l)
       (* Canonical structure *)
       | IDENT "Canonical"; IDENT "Structure"; qid = global ->
 	  VernacCanonical qid

@@ -19,14 +19,19 @@ open Reductionops
 open Tacred
 open Closure
 open RedFlags
-
+open Libobject
 
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env _ c =
   let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
   Vnorm.cbv_vm env c ctyp
 
-let set_strategy k l = 
+
+let set_strategy_one ref l  =
+  let k =
+    match ref with
+      | EvalConstRef sp -> ConstKey sp
+      | EvalVarRef id -> VarKey id in
   Conv_oracle.set_strategy k l;
   match k,l with
       ConstKey sp, Conv_oracle.Opaque ->
@@ -40,6 +45,61 @@ let set_strategy k l =
             spc () ++ str "transparent because it was declared opaque.");
         Csymtable.set_transparent_const sp
     | _ -> ()
+
+let cache_strategy str =
+  List.iter 
+    (fun (lev,ql) -> List.iter (fun q -> set_strategy_one q lev) ql)
+    str
+
+let subst_strategy (_,subs,obj) =
+  list_smartmap
+    (fun (k,ql as entry) ->
+      let ql' = list_smartmap (Mod_subst.subst_evaluable_reference subs) ql in
+      if ql==ql' then entry else (k,ql'))
+    obj
+
+
+let map_strategy f l =
+  let l'  = List.fold_right
+    (fun (lev,ql) str -> 
+      let ql' = List.fold_right
+        (fun q ql ->
+          match f q with
+              Some q' -> q' :: ql
+            | None -> ql) ql [] in
+      if ql'=[] then str else (lev,ql')::str) l [] in
+  if l'=[] then None else Some l'
+
+let export_strategy obj =
+  map_strategy (function
+      EvalVarRef _ -> None
+    | EvalConstRef _ as q -> Some q) obj
+
+let classify_strategy (_,obj) = Substitute obj
+
+let disch_ref ref =
+  match ref with
+      EvalConstRef c -> 
+        let c' = Lib.discharge_con c in
+        if c==c' then Some ref else Some (EvalConstRef c')
+    | _ -> Some ref
+
+let discharge_strategy (_,obj) =
+  map_strategy disch_ref obj
+
+let (inStrategy,outStrategy) =
+  declare_object {(default_object "STRATEGY") with
+                    cache_function = (fun (_,obj) -> cache_strategy obj);
+		    load_function = (fun _ (_,obj) -> cache_strategy obj);
+		    subst_function = subst_strategy;
+                    discharge_function = discharge_strategy;
+		    classify_function = classify_strategy;
+                    export_function = export_strategy }
+
+
+let set_strategy local str =
+  if local then cache_strategy str
+  else Lib.add_anonymous_leaf (inStrategy str)
 
 let _ = 
   Summary.declare_summary "Transparent constants and variables"

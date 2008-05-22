@@ -135,7 +135,8 @@ environment}\\
 \ref{Theorem}
 
 
-\subsection{\tt Strategy {\it level} [ \qualid$_1$ \dots \qualid$_n$ ].\comindex{Strategy}\label{Strategy}}
+\subsection{\tt Strategy {\it level} [ \qualid$_1$ \dots \qualid$_n$
+  ].\comindex{Strategy}\comindex{Local Strategy}\label{Strategy}}
 This command generalizes the behaviour of {\tt Opaque} and {\tt
   Transaparent} commands. It is used to fine-tune the strategy for
 unfolding constants, both at the tactic level and at the kernel
@@ -159,8 +160,10 @@ Levels can be one of the following (higher to lower):
   (behaves like $-\infty$)
 \end{description}
 
-The behaviour regarding sections and modules is the same as for the
-{\tt Transparent} command.
+These directives survive section and module closure, unless the
+command is prefixed by {\tt Local}. In the latter case, the behaviour
+regarding sections and modules is the same as for the {\tt
+  Transparent} and {\tt Opaque} commands.
 
 \subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
 This command displays the name and type of all theorems of the current

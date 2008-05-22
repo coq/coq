@@ -112,18 +112,17 @@ let need_expansion impl ref =
 
 type opacity =
   | FullyOpaque
-  | TransparentMaybeOpacified of bool
+  | TransparentMaybeOpacified of Conv_oracle.level
 
 let opacity env = function
   | VarRef v when pi2 (Environ.lookup_named v env) <> None -> 
-      Some (TransparentMaybeOpacified 
-        (not (Reductionops.is_transparent(VarKey v))))
+      Some(TransparentMaybeOpacified (Conv_oracle.get_strategy(VarKey v)))
   | ConstRef cst ->
       let cb = Environ.lookup_constant cst env in
       if cb.const_body = None then None
       else if cb.const_opaque then Some FullyOpaque
-      else Some (TransparentMaybeOpacified
-        (not(Reductionops.is_transparent(ConstKey cst))))
+      else Some
+        (TransparentMaybeOpacified (Conv_oracle.get_strategy(ConstKey cst)))
   | _ -> None
 
 let print_opacity ref =
@@ -132,8 +131,14 @@ let print_opacity ref =
     | Some s -> pr_global ref ++ str " is " ++ 
         str (match s with
           | FullyOpaque -> "opaque"
-          | TransparentMaybeOpacified true -> "basically transparent but considered opaque for reduction"
-          | TransparentMaybeOpacified false -> "transparent") ++ fnl()
+          | TransparentMaybeOpacified Conv_oracle.Opaque ->
+              "basically transparent but considered opaque for reduction"
+          | TransparentMaybeOpacified lev when lev = Conv_oracle.transparent ->
+              "transparent"
+          | TransparentMaybeOpacified (Conv_oracle.Level n) ->
+              "transparent (with expansion weight "^string_of_int n^")"
+          | TransparentMaybeOpacified Conv_oracle.Expand ->
+              "transparent (with minimal expansion weight)") ++ fnl()
     
 let print_name_infos ref =
   let impl = implicits_of_global ref in

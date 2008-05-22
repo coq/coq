@@ -1796,7 +1796,7 @@ let rec xlate_vernac =
        ctf_ID_OPT_SOME (xlate_ident s))
   | VernacEndProof Admitted ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Admitted"), ctv_ID_OPT_NONE)
-  | VernacSetOpacity l ->
+  | VernacSetOpacity (_,l) ->
       CT_strategy(CT_level_list
         (List.map (fun (l,q) ->
           (level_to_ct_LEVEL l,
