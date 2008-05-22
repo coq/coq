@@ -300,7 +300,7 @@ let (in_import, out_import) =
 
 (*s Loading from disk to cache (preparation phase) *)
 
-let vo_magic_number = 08190 (* trunk *)
+let vo_magic_number = 08020 (* trunk *)
 
 let (raw_extern_library, raw_intern_library) =
   System.raw_extern_intern vo_magic_number ".vo"

@@ -1,5 +1,5 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V8.1 SYSTEM
+            INSTALLATION PROCEDURES FOR THE COQ V8.2 SYSTEM
             -----------------------------------------------
 
 WHAT DO YOU NEED ?
@@ -33,7 +33,7 @@ WHAT DO YOU NEED ?
    - Gentoo GNU/Linux: emerge sci-mathematics/coq
 
 
-   Should you need or prefer to compile Coq V8.1 yourself, you need:
+   Should you need or prefer to compile Coq V8.2 yourself, you need:
 
      - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
