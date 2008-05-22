@@ -179,16 +179,18 @@ $(COQTOP): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
 
 LOCALCHKLIBS:=-I checker -I lib -I config -I kernel
-CHKLIBS:=$(LOCALCHKLIBS) -I +camlp4
+CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
+CHKBYTEFLAGS:=$(CHKLIBS) $(CAMLDEBUG) $(USERFLAGS)
+CHKOPTFLAGS:=$(CHKLIBS) $(CAMLDEBUG) $(CAMLTIMEPROF) $(USERFLAGS)
 
 $(CHICKENOPT): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKLIBS) -o $@ unix.cmxa gramlib.cmxa checker/check.cmxa checker/main.ml
+	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ unix.cmxa gramlib.cmxa checker/check.cmxa checker/main.ml
 	$(STRIP) $@
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) -o $@ unix.cma gramlib.cma checker/check.cma checker/main.ml
+	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -o $@ unix.cma gramlib.cma checker/check.cma checker/main.ml
 
 $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
@@ -263,11 +265,11 @@ kernel/kernel.cmxa: $(KERNEL:.cmo=.cmx)
 
 checker/check.cma: $(MCHECKER)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) -a -o $@ $(MCHECKER)
+	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -a -o $@ $(MCHECKER)
 
 checker/check.cmxa: $(MCHECKER:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKLIBS) -a -o $@ $(MCHECKER:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -a -o $@ $(MCHECKER:.cmo=.cmx)
 
 library/library.cma: $(LIBRARY)
 	$(SHOW)'OCAMLC -a -o $@'
@@ -799,15 +801,15 @@ endif
 
 checker/%.cmo: checker/%.ml | checker/%.ml.d
 	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) -c -I checker -I config -I lib -I kernel -I +camlp4 $<
+	$(HIDE)$(OCAMLC) -c $(CHKBYTEFLAGS) $<
 
 checker/%.cmx: checker/%.ml | checker/%.ml.d
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) -c -I checker -I config -I lib -I kernel -I +camlp4 $<
+	$(HIDE)$(OCAMLOPT) -c $(CHKOPTFLAGS) $<
 
 checker/%.cmi: checker/%.mli | checker/%.mli.d
 	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) -c -I checker -I lib -I kernel $<
+	$(HIDE)$(OCAMLC) -c $(CHKBYTEFLAGS) $<
 
 %.o: %.c
 	$(SHOW)'CC        $<'
