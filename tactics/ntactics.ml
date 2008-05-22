@@ -2380,7 +2380,8 @@ Proofview.sensitive_tactic begin
      hyp0 sont maintenant à la fin et c'est tclTHENFIRSTn qui marche !!! *)
   Goal.return begin
   Logic.tclTHENLIST
-    [ if deps = [] then Proofview.tclIDTAC () else Util.anomaly "sous-cas interdit pour débuggage(1)"(*apply_type tmpcl deps_cstr*);
+    [ Proofview.tclFAIL (Pp.str "induction_from_context(1)");
+      if deps = [] then Proofview.tclIDTAC () else Util.anomaly "sous-cas interdit pour débuggage(1)"(*apply_type tmpcl deps_cstr*);
       thin (Goal.return dephyps); 
       (if isrec then Ntacticals.tclTHENFIRSTn else Ntacticals.tclTHENLASTn)
        	(Logic.tclTHENLIST

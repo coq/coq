@@ -150,6 +150,8 @@ val sensitive_tactic : unit tactic Goal.sensitive -> unit tactic
 
 (*** tacticals ***)
 
+val tclFAIL : Pp.std_ppcmds -> unit tactic
+
 (* Interpetes the ";" (semicolon) of Ltac.
    As a monadic operation, it's a specialized "bind"
    on unit-returning tactic (meaning "there is no value to bind") *)

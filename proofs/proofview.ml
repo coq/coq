@@ -207,7 +207,7 @@ exception TacticFailure of Pp.std_ppcmds
 *)
 
 (* [fail s] raises [TacticFailure s].  *)
-let fail msg =  
+let fail msg = 
   Pp.pp_with Format.str_formatter msg;
   Util.error (Format.flush_str_formatter ())
 
@@ -276,6 +276,14 @@ let sensitive_tactic st =
   
 
 (*** tactics ***)
+
+let tclFAIL msg env ps =
+  if ps.Goal.subgoals = [] then
+    { proof_step = ps; content = () }
+  else begin
+    Pp.pp_with Format.str_formatter msg;
+    Util.error (Format.flush_str_formatter ())
+  end
 
 (* Prototype to the [idtac] tactic, also plays the role of 
    "return" in the tactic monad *)
