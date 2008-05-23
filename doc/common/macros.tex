@@ -385,6 +385,8 @@
 
 \newcommand{\Indp}[5]{\mbox{{\sf Ind}$_{#5}(#1)[#2](\begin{array}[t]{@{}l}#3:=#4
                                                  \,)\end{array}$}}
+\newcommand{\Indpstr}[6]{\mbox{{\sf Ind}$_{#5}(#1)[#2](\begin{array}[t]{@{}l}#3:=#4
+                                                 \,)/{#6}\end{array}$}}
 \newcommand{\Def}[4]{\mbox{{\sf Def}$(#1)(#2:=#3:#4)$}}
 \newcommand{\Assum}[3]{\mbox{{\sf Assum}$(#1)(#2:#3)$}}
 \newcommand{\Match}[3]{\mbox{$<\!#1\!>\!{\mbox{\tt Match}}~#2~{\mbox{\tt with}}~#3~{\mbox{\tt end}}$}}
@@ -406,7 +408,7 @@
 
 \newcommand{\Impl}{{\it Impl}}
 \newcommand{\elem}{{\it e}}
-\newcommand{\Mod}[3]{{\sf Mod}({#1}:{#2}:={#3})}
+\newcommand{\Mod}[3]{{\sf Mod}({#1}:{#2}\,\zeroone{:={#3}})}
 \newcommand{\ModS}[2]{{\sf Mod}({#1}:{#2})}
 \newcommand{\ModType}[2]{{\sf ModType}({#1}:={#2})}
 \newcommand{\ModA}[2]{{\sf ModA}({#1}=={#2})}

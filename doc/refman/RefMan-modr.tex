@@ -30,7 +30,7 @@ and $T$ is the type of $t$.
 
 \paragraph{Module definition,} is written $\Mod{X}{S}{S'}$ and
  consists of a module variable $X$, a module type
-$S$ which can be any structure expression and optionnaly a module implementation $S'$ 
+$S$ which can be any structure expression and optionally a module implementation $S'$ 
  which can be any structure expression except a refined structure.
 
 \paragraph{Module alias,} is written $\ModA{X}{p}$ and
@@ -56,16 +56,16 @@ We also need additional typing judgments:
 \item \WTM{E}{p}{S}, denoting that the module pointed by $p$ has type $S$ in
 environment $E$.
 
-\item \WEV{E}{S}{S'}, denoting that a structure $S$ is evaluated to 
-a structure $S'$.
+\item \WEV{E}{S}{\overline{S}}, denoting that a structure $S$ is evaluated to 
+a structure $\overline{S}$ in weak head normal form.
 
 \item \WS{E}{S_1}{S_2}, denoting that a structure $S_1$ is a subtype of a
-strucutre $S_2$.
+structure $S_2$.
 
 \item \WS{E}{\elem_1}{\elem_2}, denoting that a structure element
   $\elem_1$ is more precise that a structure element $\elem_2$.
 \end{itemize}
-The rules for forming strucutres are the following:
+The rules for forming structures are the following:
 \begin{description}
 \item[WF-STR]
 \inference{%
@@ -78,7 +78,7 @@ The rules for forming strucutres are the following:
 \item[WF-FUN]
 \inference{%
   \frac{
-    \WFT{E;\ModS{X}{S}}{S'}
+    \WFT{E;\ModS{X}{S}}{\overline{S'}}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WFT{E}{\functor{X}{S}{S'}}
   }
@@ -91,22 +91,27 @@ Evaluation of structures to weak head normal form:
   \frac{
     \begin{array}{c}
     \WEV{E}{S}{\functor{X}{S_1}{S_2}}\\
-    \WTM{E}{p}{S_3}\qquad \WS{E}{S_3}{S_1}
+    \WTM{E}{p}{S_3}\qquad \WS{E}{\overline{S_3}}{\overline{S_1}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{S\,p}{S\{X/p\}}
+    \WEV{E}{S\,p}{S\{p/X,t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}}
   }
 }
+\end{description}
+In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
+ substitution from the inlining mechanism. We substitute in $S$ the
+ inlined fields $p_i.c_i$ form $\ModS{X}{S_1}$ by the corresponding delta-reduced term $t_i$ in $p$.
+\begin{description}
 \item[WEVAL-WITH-MOD]
 \inference{%
   \frac{
     \begin{array}{c}
     \WEV{E}{S}{\structe{\ModS{X}{S_1}}}\\
-    \WTM{E}{p}{S_2}\qquad \WS{E;\elem_1;\ldots;\elem_i}{S_2}{S_1}
+    \WTM{E}{p}{S_2}\qquad \WS{E;\elem_1;\ldots;\elem_i}{\overline{S_2}}{\overline{S_1}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \begin{array}{c}
-    \WEVT{E}{\with{S}{x}{p}}{\structes{\ModA{X}{p}}{X/p}}
+    \WEVT{E}{\with{S}{x}{p}}{\structes{\ModA{X}{p}}{p/X}}
     \end{array}
   }
 }
@@ -115,11 +120,11 @@ Evaluation of structures to weak head normal form:
   \frac{
     \begin{array}{c}
     \WEV{E}{S}{\structe{\ModS{X_1}{S_1}}}\\
-    \WEV{E;\elem_1;\ldots;\elem_i}{\with{S_1}{p}{p_1}}{S_2}
+    \WEV{E;\elem_1;\ldots;\elem_i}{\with{S_1}{p}{p_1}}{\overline{S_2}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \begin{array}{c}
-    \WEVT{E}{\with{S}{X_1.p}{p_1}}{\structes{\ModS{X}{S_2}}{X_1.p/p_1}}
+    \WEVT{E}{\with{S}{X_1.p}{p_1}}{\structes{\ModS{X}{\overline{S_2}}}{p_1/X_1.p}}
     \end{array}
   }
 }
@@ -141,11 +146,11 @@ Evaluation of structures to weak head normal form:
   \frac{
     \begin{array}{c}
     \WEV{E}{S}{\structe{\ModS{X_1}{S_1}}}\\
-    \WEV{E;\elem_1;\ldots;\elem_i}{\with{S_1}{p}{p_1}}{S_2}
+    \WEV{E;\elem_1;\ldots;\elem_i}{\with{S_1}{p}{p_1}}{\overline{S_2}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \begin{array}{c}
-    \WEVT{E}{\with{S}{X_1.p}{t:T}}{\structe{\ModS{X}{S_2}}}
+    \WEVT{E}{\with{S}{X_1.p}{t:T}}{\structe{\ModS{X}{\overline{S_2}}}}
     \end{array}
   }
 }
@@ -153,9 +158,16 @@ Evaluation of structures to weak head normal form:
 \item[WEVAL-PATH-MOD]
 \inference{%
   \frac{
-    \WEV{E}{p}{\structe{{\sf Mod(X:S\left[:=S_1\right])}}}
+    \WEV{E}{p}{\structe{ \Mod{X}{S}{S_1}}}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{p.X}{S}
+    \WEV{E}{p.X}{\overline{S}}
+  }
+}
+\inference{%
+  \frac{
+    \WF{E}{}~~~~~~\Mod{X}{S}{S_1}\in E
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WEV{E}{X}{\overline{S}}
   }
 }
 \item[WEVAL-PATH-ALIAS]
@@ -163,18 +175,36 @@ Evaluation of structures to weak head normal form:
   \frac{
     \begin{array}{c}
     \WEV{E}{p}{\structe{\ModA{X}{p_1}}}\\
-    \WEV{E}{p_1}{S}
+    \WEV{E}{p_1}{\overline{S}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{p.X}{S}
+    \WEV{E}{p.X}{\overline{S}}
+  }
+}
+\inference{%
+  \frac{
+    \begin{array}{c}
+      \WF{E}{}~~~~~~~\ModA{X}{p_1}\in E\\
+      \WEV{E}{p_1}{\overline{S}}
+    \end{array}
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WEV{E}{X}{\overline{S}}
   }
 }
 \item[WEVAL-PATH-TYPE]
 \inference{%
   \frac{
-    \WEV{E}{p}{\structe{\ModType{Y}{S}}}\\
+    \WEV{E}{p}{\structe{\ModType{Y}{S}}}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{p.Y}{S}
+    \WEV{E}{p.Y}{\overline{S}}
+  }
+}
+\item[WEVAL-PATH-TYPE]
+\inference{%
+  \frac{
+    \WF{E}{}~~~~~~~\ModType{Y}{S}\in E
+  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    \WEV{E}{Y}{\overline{S}}
   }
 }
 \end{description}
@@ -183,9 +213,9 @@ Evaluation of structures to weak head normal form:
 \item[MT-EVAL]
 \inference{%
   \frac{
- \WEV{E}{p}{S}
+ \WEV{E}{p}{\overline{S}}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WTM{E}{p}{S}
+    \WTM{E}{p}{\overline{S}}
   }
 }
 \item[MT-STR]
@@ -205,12 +235,12 @@ meaning:
   $S/p=\struct{\elem_1/p;\dots;\elem_n/p}$ where $\elem/p$ is defined as
   follows:
   \begin{itemize}
-  \item $\Def{}{c}{t}{T}/p ~=~ \Def{}{c}{t}{T}$
+  \item $\Def{}{c}{t}{T}/p\footnote{Opaque definitions are processed as assumptions.} ~=~ \Def{}{c}{t}{T}$
   \item $\Assum{}{c}{U}/p ~=~ \Def{}{c}{p.c}{U}$
   \item $\ModS{X}{S}/p ~=~ \ModA{X}{p.X}$
   \item $\ModA{X}{p'}/p ~=~ \ModA{X}{p'}$
   \item $\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$
-  \item $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}$
+  \item $\Indpstr{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}{p} ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}$
   \end{itemize}
 \item if $S\lra\funsig{X}{S'}{S''}$ then $S/p=S$
 \end{itemize}
@@ -239,7 +269,7 @@ The module subtyping rules:
 \item[MSUB-FUN]
 \inference{%       T_1 -> T_2 <: T_1' -> T_2'
   \frac{
-    \WS{E}{S_1'}{S_1}~~~~~~~~~~\WS{E;\ModS{X}{S_1'}}{S_2}{S_2'}
+    \WS{E}{\overline{S_1'}}{\overline{S_1}}~~~~~~~~~~\WS{E;\ModS{X}{S_1'}}{\overline{S_2}}{\overline{S_2'}}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WS{E}{\functor{X}{S_1}{S_2}}{\functor{X}{S_1'}{S_2'}}
   }
@@ -351,7 +381,7 @@ Structure element subtyping rules:
 \inference{%
   \frac{
       \WTM{E}{p}{S_2}~~~~~~~~
-      \WSE{S_1}{S_2}~~~~~~~~\WTECONV{}{X}{p_2}
+      \WSE{S_1}{S_2}~~~~~~~~\WTECONV{}{X}{p}
   }{
     \WSE{\ModS{X}{S_1}}{\ModA{X}{p}}
   }

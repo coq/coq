@@ -8,10 +8,10 @@ together, as well as a mean of massive abstraction.
 \begin{figure}[t]
 \begin{centerframe}
 \begin{tabular}{rcl}
-{\modtype}  & ::= & {\qualid.\ident} \\
+{\modtype}  & ::= & {\qualid} \\
  & $|$ & {\modtype} \texttt{ with Definition }{\qualid} := {\term} \\
  & $|$ & {\modtype} \texttt{ with Module }{\qualid} := {\qualid} \\
- & $|$ & {\qualid.\ident} \nelist{\qualid}{}\\
+ & $|$ & {\qualid} \nelist{\qualid}{}\\
  &&\\
 
 {\onemodbinding}  & ::= & {\tt ( [Import|Export] \nelist{\ident}{} : {\modtype} )}\\
@@ -173,8 +173,7 @@ Defines a module type {\ident} equal to {\modtype}.
 
 \subsection{\tt Declare Module {\ident} : {\modtype}}
 
-Declares a module {\ident} of type {\modtype}. This command is available
-only in module types. 
+Declares a module {\ident} of type {\modtype}.
 
 \begin{Variants}
 
@@ -183,19 +182,6 @@ only in module types.
   Declares a functor with parameters {\modbindings} and output module
   type {\modtype}.
 
-\item{\tt Declare Module {\ident} := {\qualid}}
-
-  Declares a module equal to the module {\qualid}.
-
-\item{\tt Declare Module {\ident} \verb.<:. {\modtype} := {\qualid}}
-
-  Declares a module equal to the module {\qualid}, verifying that the
-  module type of the latter is a subtype of {\modtype}.
-
-\item\texttt{Declare Module [Import|Export] {\ident} := {\qualid}}
-
-  Declares a modules {\ident} of type {\modtype}, and imports or
-  exports it directly.
 
 \end{Variants}
 
