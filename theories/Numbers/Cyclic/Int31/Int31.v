@@ -442,17 +442,17 @@ Definition sqrt312 (ih il:int31) :=
      (root, rem)
   end.
 
-Definition positive_to_int31 (p:positive) :=
-  (fix aux (max_digit:nat) (p:positive) {struct p} : (N*int31)%type := 
-   match max_digit with
-   | O => (Npos p, On)
-   | S md => match p with
-             | xO p' => let (r,i) := aux md p' in (r, Twon*i)
-             | xI p' => let (r,i) := aux md p' in (r, Twon*i+In)
-             | xH => (N0, In)
+Fixpoint p2i n p : (N*int31)%type := 
+  match n with
+    | O => (Npos p, On)
+    | S n => match p with
+               | xO p => let (r,i) := p2i n p in (r, Twon*i)
+               | xI p => let (r,i) := p2i n p in (r, Twon*i+In)
+               | xH => (N0, In)
              end
-   end)
-   size p.
+  end.
+
+Definition positive_to_int31 (p:positive) := p2i size p.
 
 (** Constant 31 converted into type int31.
     It is used as default answer for numbers of zeros 
