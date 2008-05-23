@@ -2380,13 +2380,21 @@ Proofview.sensitive_tactic begin
      hyp0 sont maintenant à la fin et c'est tclTHENFIRSTn qui marche !!! *)
   Goal.return begin
   Logic.tclTHENLIST
-    [ Proofview.tclFAIL (Pp.str "induction_from_context(1)");
+    [ Proofview.tclEMPTY (Pp.str "induction_from_context(1)");
       if deps = [] then Proofview.tclIDTAC () else Util.anomaly "sous-cas interdit pour débuggage(1)"(*apply_type tmpcl deps_cstr*);
+      Proofview.tclEMPTY (Pp.str "induction_from_context(2)");
       thin (Goal.return dephyps); 
+      Proofview.tclEMPTY (Pp.str "induction_from_context(3)");
       (if isrec then Ntacticals.tclTHENFIRSTn else Ntacticals.tclTHENLASTn)
        	(Logic.tclTHENLIST
 	  [ induction_tac with_evars (hyp0,lbind) typ0 scheme;
-	    Logic.tclTHEN (Logic.tclTRY (unfold_body hyp0)) (thin (Goal.return [hyp0]));
+            Proofview.tclEMPTY (Pp.str "induction_from_context(4)");
+	    Logic.tclTHENLIST [
+              Logic.tclTRY (Proofview.tclFAIL (Pp.str "induction_from_context(4b)")) (*unfold_body hyp0*);
+              Proofview.tclEMPTY (Pp.str "induction_from_context(5)");
+              thin (Goal.return [hyp0])
+            ];
+            Proofview.tclEMPTY (Pp.str "induction_from_context(6)");
             Logic.tclTRY (thin (Goal.return indhyps)) ])
        	(array_map2
 	   (induct_discharge statlists (Goal.return lhyp0) (List.rev dephyps)) indsign names)

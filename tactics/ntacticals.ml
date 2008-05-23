@@ -57,8 +57,12 @@ let tclTHENS         = fun _ _ -> Util.anomaly "Tacticals.tclTHENS: à restaurer
 let tclTHENSV        = fun _ _ -> Util.anomaly "Tacticals.tclTHENSV: à restaurer" (* arnaud: restaurer: Refiner.tclTHENSV*)
 let tclTHENSFIRSTn   = fun _ -> Util.anomaly "Tacticals.tclTHENSFIRSTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENSFIRSTn*)
 let tclTHENSLASTn tac1 tac2 tacns = 
-  Logic.tclTHEN tac1
-                (Logic.tclEXTENDARRAYS [||] tac2 tacns)
+  Logic.tclTHENLIST
+    [
+      tac1;
+      Proofview.tclEMPTY (Pp.str "tclTHENSLASTn");
+      Logic.tclEXTENDARRAYS [||] tac2 tacns
+    ]
 let tclTHENFIRSTn    = fun _ -> Util.anomaly "Tacticals.tclTHENFIRSTn: à restaurer" (* arnaud: restaurer: Refiner.tclTHENFIRSTn*)
 let tclTHENLASTn tac1 tacns = 
   tclTHENSLASTn tac1 (Proofview.tclIDTAC ()) tacns

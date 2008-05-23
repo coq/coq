@@ -285,6 +285,14 @@ let tclFAIL msg env ps =
     Util.error (Format.flush_str_formatter ())
   end
 
+let tclEMPTY msg env ps =
+  if ps.Goal.subgoals <> [] then
+    { proof_step = ps; content = () }
+  else begin
+    Pp.pp_with Format.str_formatter msg;
+    Util.error (Format.flush_str_formatter ())
+  end
+
 (* Prototype to the [idtac] tactic, also plays the role of 
    "return" in the tactic monad *)
 let tclIDTAC a _ ps =
