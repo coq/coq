@@ -403,7 +403,7 @@ let rec traverse tac env ps =
                       (traverse tac env { ps with Goal.subgoals = sgoals }).proof_step 
                     in
                     let almost = 
-		      (tac env { ps with Goal.subgoals = sgoals }).proof_step
+		      (tac env { ps with Goal.subgoals = [goal] }).proof_step
 		    in
 		    { proof_step = 
 			{ almost with Goal.subgoals = almost.Goal.subgoals
