@@ -2,12 +2,13 @@
 \ttindex{coqtop}
 \ttindex{coqc}}
 
-There are two \Coq~commands: 
+There are three \Coq~commands: 
 \begin{itemize}
 \item {\tt coqtop}: The \Coq\ toplevel (interactive mode) ; 
 \item {\tt coqc} : The \Coq\ compiler (batch compilation).
+\item {\tt coqchk} : The \Coq\ checker (validation of compiled libraries)
 \end{itemize}
-The options are (basically) the same for the two commands, and
+The options are (basically) the same for the first two commands, and
 roughly described below. You can also look at the \verb!man! pages of
 \verb!coqtop! and \verb!coqc! for more details.
 
@@ -74,7 +75,7 @@ option \verb:-q:.
 
 There are three environment variables used by the \Coq\ system.
 \verb:$COQBIN: for the directory where the binaries are,
-\verb:$COQLIB: for the directory whrer the standard library is, and 
+\verb:$COQLIB: for the directory where the standard library is, and 
 \verb:$COQTOP: for the directory of the sources. The latter is useful
 only for developers that are writing their own tactics and are using
 \texttt{coq\_makefile} (see \ref{Makefile}). If \verb:$COQBIN: or
@@ -267,13 +268,84 @@ The following command-line options are recognized by the commands {\tt
 
 \end{description}
 
-% {\tt coqtop} has an additional option:
 
-% \begin{description}
-% \item[{\tt -searchisos}]\ \\
-%   Launch the {\sf Coq\_SearchIsos} toplevel
-%   (see Section~\ref{coqsearchisos}, page~\pageref{coqsearchisos}).
-% \end{description}
+\section{Compiled libraries checker ({\tt coqchk})}
+
+The {\tt coqchk} command takes a list of library paths as argument.
+The corresponding compiled libraries (.vo files) are searched in the
+path, recursively processing the libraries they depend on. The content
+of all these libraries is then type-checked. The effect of {\tt
+  coqchk} is only to return with normal exit code in case of success,
+and with positive exit code if an error has been found. Error messages
+are not deemed to help the user understand what is wrong. In the
+current version, it does not modify the compiled libraries to mark
+them as succesfully checked.
+
+Note that non-logical information is not checked. By logical
+information, we mean the type and optional body associated to names.
+It excludes for instance anything related to the concrete syntax of
+objects (customized syntax rules, association between short and long
+names), implicit arguments, etc.
+
+This tool can be used for several purposes. One is to check that a
+compiled library provided by a third-party has not been forged and
+that loading it cannot introduce inconsistencies.\footnote{Ill-formed
+  non-logical information might for instance bind {\tt
+    Coq.Init.Logic.True} to short name {\tt False}, so apprently {\tt
+    False} is inhabited, but using fully qualified names, {\tt
+    Coq.Init.Logic.False} will always refer to the absurd proposition,
+  what we guarantee is that there is no proof of this latter
+  constant.}
+Another point is to get an even higher level of security. Since {\tt
+  coqtop} can be extended with custom tactics, possibly ill-typed
+code, it cannot be guaranteed that the produced compiled libraries are
+correct. {\tt coqchk} is a standalone verifier, and thus it cannot be
+tainted by such malicious code.
+
+Command-line options {\tt -I}, {\tt -R}, {\tt -where} and
+{\tt -impredicative-set} are supported by {\tt coqchk} and have the
+same meaning as for {\tt coqtop}. Extra options are:
+\begin{description}
+\item[{\tt -norec} $module$]\ 
+
+  Check $module$ but do not force check of its dependencies.
+\item[{\tt -admit} $module$] \
+
+  Do not check $module$ and any of its dependencies, unless
+  explicitely required.
+\item[{\tt -o}]\ 
+
+  At exit, print a summary about the context. List the names of all
+  assumptions and variables (constants without body).
+\item[{\tt -silent}]\ 
+
+  Do not write progress information in standard output.
+\end{description}
+
+Environment variable \verb:$COQLIB: can be set to override the
+location of the standard library.
+
+The algorithm for deciding which modules are checked or admitted is
+the following: assuming that {\tt coqchk} is called with argument $M$,
+option {\tt -norec} $N$, and {\tt -admit} $A$. Let us write
+$\overline{S}$ the set of reflexive transitive dependencies of set
+$S$. Then:
+\begin{itemize}
+\item Modules $C=\overline{M}\backslash\overline{A}\cup M\cup N$ are
+  loaded and type-checked before being added to the context.
+\item And $\overline{M}\cup\overline{N}\backslash C$ is the set of
+  modules that are loaded and added to the context without
+  type-checking. Basic integrity checks (checksums) are nonetheless
+  performed.
+\end{itemize}
+
+As a rule of thumb, the {\tt -admit} can be used to tell that some
+libraries have already been checked. So {\tt coqchk A B} can be split
+in {\tt coqchk A \&\& coqchk B -admit A} without type-checking any
+definition twice. Of course, the latter is slightly slower since it
+makes more disk access. It is also less secure since an attacker might
+have replaced the compiled library $A$ after it has been read by the
+first command, but before it has been read by the second command.
 
 % $Id$ 
 

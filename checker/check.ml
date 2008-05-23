@@ -70,6 +70,7 @@ module LibraryOrdered =
         (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2))
   end
 
+module LibrarySet = Set.Make(LibraryOrdered)
 module LibraryMap = Map.Make(LibraryOrdered)
 
 (* This is a map from names to loaded libraries *)
@@ -100,7 +101,7 @@ let check_one_lib admit (dir,m) =
   (* Look up if the library is to be admitted correct. We could
      also check if it carries a validation certificate (yet to
      be implemented). *)
-  if LibraryMap.mem dir admit then
+  if LibrarySet.mem dir admit then
     (Flags.if_verbose msgnl
       (str "Admitting library: " ++ pr_dirpath dir);
       Safe_typing.unsafe_import file md dig)
@@ -200,7 +201,6 @@ let get_full_load_paths () = List.combine (fst !load_paths) (snd !load_paths)
 
 exception LibUnmappedDir
 exception LibNotFound
-type library_location = LibLoaded | LibInPath
 
 let locate_absolute_library dir =
   (* Search in loadpath *)
@@ -234,9 +234,9 @@ let locate_qualified_library qid =
       extend_dirpath (find_logical_path path) (id_of_string qid.basename) in
     (* Look if loaded *)
     try 
-      (LibLoaded, dir, library_full_filename dir)      
+      (dir, library_full_filename dir)      
     with Not_found ->
-      (LibInPath, dir, file)
+      (dir, file)
   with Not_found -> raise LibNotFound
 
 let explain_locate_library_error qid = function
@@ -258,8 +258,7 @@ let try_locate_absolute_library dir =
 
 let try_locate_qualified_library qid =
   try
-    let (_,dir,f) = locate_qualified_library qid in
-    dir,f
+    locate_qualified_library qid
   with e -> 
     explain_locate_library_error qid e
 
@@ -291,7 +290,15 @@ let mk_library md f digest = {
   library_deps = md.md_deps;
   library_digest = digest }
 
-let intern_from_file f =
+let name_clash_message dir mdir f =
+  str ("The file " ^ f ^ " contains library") ++ spc () ++
+  pr_dirpath mdir ++ spc () ++ str "and not library" ++ spc() ++
+  pr_dirpath dir
+
+(* Dependency graph *)
+let depgraph = ref LibraryMap.empty
+
+let intern_from_file (dir, f) =
   Flags.if_verbose msg (str"[intern "++str f++str" ...");
   let (md,digest) = 
     try
@@ -299,60 +306,67 @@ let intern_from_file f =
       let (md:library_disk) = System.marshal_in ch in
       let digest = System.marshal_in ch in
       close_in ch;
+      if dir <> md.md_name then
+        errorlabstrm "load_physical_library"
+          (name_clash_message dir md.md_name f);
       Flags.if_verbose msgnl(str" done]");
       md,digest
     with e -> Flags.if_verbose msgnl(str" failed!]"); raise e in
+  depgraph := LibraryMap.add md.md_name md.md_deps !depgraph; 
   mk_library md f digest
 
-
-let name_clash_message dir mdir f =
-  str ("The file " ^ f ^ " contains library") ++ spc () ++
-  pr_dirpath mdir ++ spc () ++ str "and not library" ++ spc() ++
-  pr_dirpath dir
-
-let rec library_dep dir needed =
-  try let _ = find_library dir in needed
+let get_deps (dir, f) =
+  try LibraryMap.find dir !depgraph
   with Not_found ->
-  try let _ = LibraryMap.find dir needed in needed
-  with Not_found ->
-    let (_,f) = try_locate_absolute_library dir in
-    let m = intern_from_file f in
-    let deps = m.library_deps in
-    if dir <> m.library_name then
-      errorlabstrm "load_physical_library"
-        (name_clash_message dir m.library_name f);
-    LibraryMap.add dir f
-      (List.fold_right (fun (d,_) n -> library_dep d n) deps needed)
+    let _ = intern_from_file (dir,f) in
+    LibraryMap.find dir !depgraph
 
+(* Read a compiled library and all dependencies, in reverse order.
+   Do not include files that are already in the context. *)
 let rec intern_library (dir, f) needed =
   (* Look if in the current logical environment *)
   try let _ = find_library dir in needed
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  try let _ = List.assoc dir needed in needed
-  with Not_found ->
-  (* [dir] is an absolute name which matches [f] which must be in loadpath *)
-  let m = intern_from_file f in
-  if dir <> m.library_name then
-    errorlabstrm "load_physical_library"
-      (name_clash_message dir m.library_name f);
-  (dir,m)::List.fold_right intern_mandatory_library m.library_deps needed
+  if List.mem_assoc dir needed then needed
+  else
+    (* [dir] is an absolute name which matches [f] which must be in loadpath *)
+    let m = intern_from_file (dir,f) in
+    (dir,m)::List.fold_right intern_mandatory_library m.library_deps needed
 
 (* digest error with checked modules could be a warning *)
 and intern_mandatory_library (dir,_) needed =
   intern_library (try_locate_absolute_library dir) needed
 
+(* Compute the reflexive transitive dependency closure *)
+let rec fold_deps ff (dir,f) s =
+  if  LibrarySet.mem dir s then s
+  else
+    let deps = get_deps (dir,f) in
+    let deps = List.map (fun (d,_) -> try_locate_absolute_library d) deps in
+    ff dir (List.fold_right (fold_deps ff) deps s)
+
+and fold_deps_list  ff modl needed =
+  List.fold_right (fold_deps ff) modl needed
+
 let recheck_library ~norec ~admit ~check =
-  let nrl = List.map (fun q -> fst(try_locate_qualified_library q)) norec in
-  let al =  List.map (fun q -> fst(try_locate_qualified_library q)) admit in
-  let admit = List.fold_right library_dep (nrl@al) LibraryMap.empty in
-  let admit = List.fold_right LibraryMap.remove nrl admit in
-  let modl = List.map try_locate_qualified_library (norec@check) in
-  let needed = List.rev (List.fold_right intern_library modl []) in
+  let ml = List.map try_locate_qualified_library check in
+  let nrl = List.map try_locate_qualified_library norec in
+  let al =  List.map try_locate_qualified_library admit in
+  let needed = List.rev (List.fold_right intern_library (ml@nrl) []) in
+  (* first compute the closure of norec, remove closure of check,
+     add closure of admit, and finally remove norec and check *)
+  let nochk = fold_deps_list LibrarySet.add nrl LibrarySet.empty in
+  let nochk = fold_deps_list LibrarySet.remove ml nochk in
+  let nochk = fold_deps_list LibrarySet.add al nochk in
+  (* explicitely required modules cannot be skipped... *)
+  let nochk =
+    List.fold_right LibrarySet.remove (List.map fst (nrl@ml)) nochk in
+  (* *)
   Flags.if_verbose msgnl (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
-  List.iter (check_one_lib admit) needed;
+  List.iter (check_one_lib nochk) needed;
   Flags.if_verbose msgnl(str"Modules were successfully checked")
 
 open Printf
