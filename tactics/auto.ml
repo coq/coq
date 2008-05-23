@@ -42,7 +42,6 @@ let get_pftreestate _ = Util.anomaly "Auto.get_pftreestate: fantome"
 let nth_goal_of_pftreestate _ = Util.anomaly "Auto.nth_goal_of_pftreestate: fantome"
 let pf_concl _ = Util.anomaly "Auto.pf_concl: fantome"
 let pf_hyps _ = Util.anomaly "Auto.pf_hyps: fantome"
-let pf_apply _ = Util.anomaly "Auto.pf_apply: fantome"
 let pf_env _ = Util.anomaly "Auto.pf_env: fantome"
 let project _ = Util.anomaly "Auto.project: fantome"
 let pf_last_hyp _ = Util.anomaly "Auto.pf_last_hyp: fantome"
@@ -214,11 +213,16 @@ let dummy_goal =
    sigma = empty}
 
 let make_apply_entry env sigma (eapply,verbose) (c,cty) =
-  Util.anomaly "Auto.make_appy_entry: à restaurer"
-  (*arnaud: à restaurer
+  Util.anomaly "Auto.make_apply_entry: à restaurer"
+  (* arnaud: à restaurer
   let cty = hnf_constr env sigma cty in
   match kind_of_term cty with
     | Prod _ ->
+	(* arnaud: on pourrait aussi faire un dummy_goal dans la
+	   nouvelle implémentation, mais je ne comprends pas bien 
+	   à quoi ça rime, il serait sans doute de bon goût de porter
+	   la série de fonction qui dépendent de celle là pour 
+	   que leur type ait plus de sens. *)
         let ce = mk_clenv_from dummy_goal (c,cty) in
 	let c' = clenv_type ce in
 	let pat = Pattern.pattern_of_constr c' in
@@ -602,9 +606,12 @@ let unify_resolve (c,clenv) =
 
 let make_local_hint_db lems =
   Goal.hyps >>= fun hyps ->
+  Goal.env >>= fun env ->
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of defs in
   let sign = Environ.named_context_of_val hyps in
-  let hintlist = list_map_append (pf_apply make_resolve_hyp) sign in
-  let hintlist' = list_map_append (pf_apply make_resolves true) lems in
+  let hintlist = list_map_append (make_resolve_hyp env sigma) sign in
+  let hintlist' = list_map_append (make_resolves env sigma true) lems in
   Goal.return (
     Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty)
   )
