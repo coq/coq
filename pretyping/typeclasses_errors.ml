@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 (*i*)
 open Names
@@ -41,6 +41,10 @@ let unbound_method env cid id = typeclass_error env (UnboundMethod (cid, id))
 
 let no_instance env id args = typeclass_error env (NoInstance (id, args))
 
-let unsatisfiable_constraints env evm = typeclass_error env (UnsatisfiableConstraints evm)
+let unsatisfiable_constraints env evd = 
+  let evd = Evd.undefined_evars evd in
+  let ev = List.hd (Evd.dom (Evd.evars_of evd)) in
+  let loc, _ = Evd.evar_source ev evd in
+    raise (Stdpp.Exc_located (loc, TypeClassError (env, UnsatisfiableConstraints evd)))
 
 let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))

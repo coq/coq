@@ -60,8 +60,9 @@ val is_class : global_reference -> bool
 val class_of_constr : constr -> typeclass option
 val dest_class_app : constr -> typeclass * constr array (* raises a UserError if not a class *)
 
-(* Returns the constructor for the given fields of the class and the type constructor. *)
-val instance_constructor : typeclass -> (constr list -> constr) * types
+(* Returns the term and type for the given instance of the parameters and fields
+   of the type class. *)
+val instance_constructor : typeclass -> constr list -> constr * types
 
 val resolve_one_typeclass : env -> types -> types (* Raises Not_found *)
 val resolve_one_typeclass_evd : env -> evar_defs ref -> types -> types (* Raises Not_found *)

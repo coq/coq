@@ -432,7 +432,7 @@ let add_hints local dbnames0 h =
       add_trivials env sigma (List.map f lhints) local dbnames
   | HintsUnfold lhints ->
       let f r =
-	let r = Syntax_def.locate_global_with_alias (qualid_of_reference r) in
+	let r = Syntax_def.global_with_alias r in
         let r' = match r with
          | ConstRef c -> EvalConstRef c
          | VarRef c -> EvalVarRef c

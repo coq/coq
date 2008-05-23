@@ -226,12 +226,14 @@ let class_info c =
   try Gmap.find c !classes
   with _ -> not_a_class (Global.env()) (constr_of_global c)
 
-let instance_constructor cl = 
-  match cl.cl_impl with
-    | IndRef ind -> (fun args -> applistc (mkConstruct (ind, 1)) args), mkInd ind
-    | ConstRef cst -> list_last, mkConst cst
-    | _ -> assert false
-
+let instance_constructor cl args = 
+  let pars = fst (list_chop (List.length cl.cl_context) args) in
+    match cl.cl_impl with
+      | IndRef ind -> applistc (mkConstruct (ind, 1)) args,
+	  applistc (mkInd ind) pars
+      | ConstRef cst -> list_last args, applistc (mkConst cst) pars
+      | _ -> assert false
+	  
 let typeclasses () = Gmap.fold (fun _ l c -> l :: c) !classes []
 
 let cmapl_add x y m =

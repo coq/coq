@@ -843,6 +843,8 @@ let interp_recursive fixkind l boxed =
   let evd,_ = consider_remaining_unif_problems env_rec !evdref in
   let fixdefs = List.map (nf_evar (evars_of evd)) fixdefs in
   let fixtypes = List.map (nf_evar (evars_of evd)) fixtypes in
+  let evd = Typeclasses.resolve_typeclasses
+    ~onlyargs:false ~fail:true env (evars_of evd) evd in
   List.iter (check_evars env_rec Evd.empty evd) fixdefs;
   List.iter (check_evars env Evd.empty evd) fixtypes;
   check_mutuality env kind (List.combine fixnames fixdefs);

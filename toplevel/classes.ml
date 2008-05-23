@@ -39,8 +39,10 @@ let qualid_of_con c =
 let _ =
   Typeclasses.register_add_instance_hint 
     (fun inst pri ->
-      Auto.add_hints false [hint_db] 
-	(Vernacexpr.HintsResolve [pri, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])]))
+      Flags.silently (fun () ->      
+	Auto.add_hints false [hint_db] 
+	  (Vernacexpr.HintsResolve 
+	      [pri, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])])) ())
 
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
@@ -472,7 +474,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 		      let t = 
 			if b then 
 			  let _k = class_info cl in
-			    CHole (Util.dummy_loc, Some Evd.InternalHole) (* (Evd.ImplicitArg (IndRef k.cl_impl, (1, None)))) *)
+			    CHole (Util.dummy_loc, Some (Evd.ImplicitArg (k.cl_impl, (1, None))))
 			else CHole (Util.dummy_loc, None)
 		      in t, avoid
 		  | None -> failwith ("new instance: under-applied typeclass"))
@@ -513,12 +515,6 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
   isevars := resolve_typeclasses env sigma !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = Typeclasses.nf_substitution sigma subst in
-  let inst_constr, ty_constr = instance_constructor k in
-  let termtype = 
-    let app = applistc ty_constr (List.rev_map snd substctx) in
-    let t = it_mkNamedProd_or_LetIn app ctx' in
-      Evarutil.nf_isevar !isevars t
-  in
   let imps = 
     Util.list_map_i 
       (fun i (na, b, t) -> ExplByPos (i, Some na), (true, true))
@@ -526,6 +522,11 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
   in
     if Lib.is_modtype () then
       begin
+	let _, ty_constr = instance_constructor k (List.rev_map snd substctx) in
+	let termtype = 
+	  let t = it_mkNamedProd_or_LetIn ty_constr ctx' in
+	    Evarutil.nf_isevar !isevars t
+	in
 	Evarutil.check_evars env Evd.empty !isevars termtype;
 	let cst = Declare.declare_internal_constant id
 	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
@@ -556,13 +557,17 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 	      else
 		type_ctx_instance isevars env' k.cl_props props substctx
 	in
-	let app = inst_constr (List.rev_map snd subst) in 
+	let app, ty_constr = instance_constructor k (List.rev_map snd subst) in
+	let termtype = 
+	  let t = it_mkNamedProd_or_LetIn ty_constr ctx' in
+	    Evarutil.nf_isevar !isevars t
+	in
 	let term = Termops.it_mkNamedLambda_or_LetIn app ctx' in
 	isevars := Evarutil.nf_evar_defs !isevars;
 	let term = Evarutil.nf_isevar !isevars term in
-	let termtype = Evarutil.nf_isevar !isevars termtype in
 	let evm = Evd.evars_of (undefined_evars !isevars) in
-	  Evarutil.check_evars env Evd.empty !isevars termtype;
+	Evarutil.check_evars env Evd.empty !isevars termtype;
+	isevars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env evm !isevars;
 	  if evm = Evd.empty then
 	    declare_instance_constant k pri global imps ?hook id term termtype
 	  else

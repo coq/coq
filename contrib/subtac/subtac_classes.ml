@@ -184,18 +184,13 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 	else
 	  type_ctx_instance isevars env' k.cl_props props substctx
   in
-  let inst_constr, ty_constr = instance_constructor k in
-  let app = inst_constr (List.rev_map snd subst) in 
-  let term = it_mkNamedLambda_or_LetIn app ctx' in
-  isevars := Evarutil.nf_evar_defs !isevars;
-  let term = Evarutil.nf_isevar !isevars term in
-  let termtype = 
-    let app = applistc ty_constr (List.rev_map snd substctx) in
-    let t = it_mkNamedProd_or_LetIn app ctx' in
-      Evarutil.nf_isevar !isevars t
-  in
-  isevars := undefined_evars !isevars;
-  Evarutil.check_evars env Evd.empty !isevars termtype;
+  let inst_constr, ty_constr = instance_constructor k (List.rev_map snd subst) in
+    isevars := Evarutil.nf_evar_defs !isevars;
+    let term = Evarutil.nf_isevar !isevars (it_mkNamedLambda_or_LetIn inst_constr ctx')
+    and termtype = Evarutil.nf_isevar !isevars (it_mkNamedProd_or_LetIn ty_constr ctx') 
+    in
+      isevars := undefined_evars !isevars;
+      Evarutil.check_evars env Evd.empty !isevars termtype;
 (*   let imps =  *)
 (*     Util.list_map_i  *)
 (*       (fun i binder -> *)
@@ -203,12 +198,12 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 (* 	ExplByPos (i, Some na), (true, true)) *)
 (*       1 ctx *)
 (*   in *)
-  let hook cst = 
-    let inst = Typeclasses.new_instance k pri global cst in
-      Impargs.declare_manual_implicits false (ConstRef cst) false imps;
-      Typeclasses.add_instance inst
-  in
-  let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
-  let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
-    ignore(Subtac_obligations.add_definition id constr typ ~kind:Instance ~hook obls);
-    id
+      let hook cst = 
+	let inst = Typeclasses.new_instance k pri global cst in
+	  Impargs.declare_manual_implicits false (ConstRef cst) false imps;
+	  Typeclasses.add_instance inst
+      in
+      let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
+      let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
+	ignore(Subtac_obligations.add_definition id constr typ ~kind:Instance ~hook obls);
+	id
