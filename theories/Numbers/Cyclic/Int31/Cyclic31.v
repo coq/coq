@@ -14,6 +14,8 @@
 Author: Arnaud Spiwack (+ Pierre Letouzey)
 *)
 
+Require Import List.
+Require Import Min.
 Require Export Int31.
 Require Import Znumtheory.
 Require Import CyclicAxioms.
@@ -34,6 +36,67 @@ Section Basics.
  Lemma Zdouble_plus_one_spec : forall z, Zdouble_plus_one z = (2*z+1)%Z.
  Proof.
  destruct z; simpl; auto with zarith.
+ Qed.
+
+ Fixpoint cstlist (A:Type)(a:A) n := 
+  match n with 
+   | O => nil 
+   | S n => a::cstlist _ a n
+  end.
+
+ Lemma removelast_app : 
+  forall A (l1 l2:list A), l2 <> nil -> removelast (l1++l2) = 
+  l1 ++ removelast l2.
+ Proof.
+ induction l1.
+ simpl; auto.
+ simpl; intros.
+ assert (l1++l2 <> nil).
+  destruct l1.
+  simpl; auto.
+  simpl; discriminate.
+ specialize (IHl1 l2 H).
+ destruct (l1++l2); [elim H0; auto|f_equal; auto].
+ Qed.
+
+ Lemma firstn_length : forall A n (l:list A), 
+  length (firstn n l) = min n (length l).
+ Proof.
+ induction n; destruct l; simpl; auto.
+ Qed.
+
+ Lemma removelast_firstn : forall A n (l:list A), n < length l -> 
+  removelast (firstn (S n) l) = firstn n l.
+ Proof.
+ induction n; destruct l.
+ simpl; auto.
+ simpl; auto.
+ simpl; auto.
+ intros.
+ simpl in H.
+ change (firstn (S (S n)) (a::l)) with ((a::nil)++firstn (S n) l).
+ change (firstn (S n) (a::l)) with (a::firstn n l).
+ rewrite removelast_app.
+ rewrite IHn; auto with arith.
+
+ clear IHn; destruct l; simpl in *; try discriminate.
+ inversion_clear H.
+ inversion_clear H0.
+ Qed.
+
+ Lemma firstn_removelast : forall A n (l:list A), n < length l -> 
+  firstn n (removelast l) = firstn n l.
+ Proof.
+ induction n; destruct l.
+ simpl; auto.
+ simpl; auto.
+ simpl; auto.
+ intros.
+ simpl in H.
+ change (removelast (a :: l)) with (removelast ((a::nil)++l)).
+ rewrite removelast_app.
+ simpl; f_equal; auto with arith.
+ intro H0; rewrite H0 in H; inversion_clear H; inversion_clear H1.
  Qed.
 
 
@@ -460,7 +523,7 @@ Section Basics.
 
  Section EqShiftL.
 
- (** after killing [n] bits at the left, are the numbers equal ?*) 
+ (** After killing [n] bits at the left, are the numbers equal ?*) 
 
  Definition EqShiftL n x y :=  
   nshiftl n x = nshiftl n y.
@@ -504,25 +567,129 @@ Section Basics.
  rewrite 2 nshiftl_S_tail; split; auto.
  Qed.
 
- Lemma twice_equal_equiv : forall x y,
-  twice x = twice y <-> twice_plus_one x = twice_plus_one y.
- Proof. 
- destruct x; destruct y; split; intro H; injection H; intros; subst; auto.
+ (** * From int31 to list of digits. *)
+     
+ (** Lower (=rightmost) bits comes first. *)
+
+ Definition i2l := recrbis _ nil (fun d _ rec => d::rec).
+
+ Lemma i2l_length : forall x, length (i2l x) = size.
+ Proof.
+ intros; reflexivity.
+ Qed. 
+
+ Fixpoint lshiftl l x := 
+   match l with 
+     | nil => x
+     | d::l => sneakl d (lshiftl l x)
+   end.
+
+ Definition l2i l := lshiftl l On.
+
+ Lemma l2i_i2l : forall x, l2i (i2l x) = x.
+ Proof.
+ destruct x; compute; auto.
  Qed.
 
- (** Ugly brute-force proof. Don't know yet how to do otherwise. *)
+ Lemma i2l_sneakr : forall x d, 
+   i2l (sneakr d x) = tail (i2l x) ++ d::nil.
+ Proof.
+ destruct x; compute; auto.
+ Qed.
+
+ Lemma i2l_sneakl : forall x d, 
+   i2l (sneakl d x) = d :: removelast (i2l x).
+ Proof.
+ destruct x; compute; auto.
+ Qed.
+
+ Lemma i2l_l2i : forall l, length l = size -> 
+  i2l (l2i l) = l.
+ Proof.
+ repeat (destruct l as [ |? l]; [intros; discriminate | ]).
+ destruct l; [ | intros; discriminate].
+ intros _; compute; auto.
+ Qed.
+
+ Lemma i2l_nshiftl : forall n x, n<=size ->
+  i2l (nshiftl n x) = cstlist _ D0 n ++ firstn (size-n) (i2l x).
+ Proof.
+ induction n.
+ intros.
+ assert (firstn (size-0) (i2l x) = i2l x).
+  rewrite <- minus_n_O, <- (i2l_length x).
+  induction (i2l x); simpl; f_equal; auto.
+ rewrite H0; clear H0.
+ reflexivity.
+ 
+ intros.
+ rewrite nshiftl_S.
+ unfold shiftl; rewrite i2l_sneakl.
+ simpl cstlist.
+ rewrite <- app_comm_cons; f_equal.
+ rewrite IHn; [ | omega].
+ rewrite removelast_app.
+ f_equal.
+ replace (size-n)%nat with (S (size - S n))%nat by omega.
+ rewrite removelast_firstn; auto.
+ rewrite i2l_length; omega.
+ generalize (firstn_length _ (size-n) (i2l x)).
+ rewrite i2l_length.
+ intros H0 H1; rewrite H1 in H0.
+ rewrite min_l in H0 by omega.
+ simpl length in H0.
+ omega.
+ Qed.
+
+ (** [i2l] can be used to define a relation equivalent to [EqShiftL] *)
+
+ Lemma EqShiftL_i2l : forall k x y,
+   EqShiftL k x y  <-> firstn (size-k) (i2l x) = firstn (size-k) (i2l y).
+ Proof.
+ intros.
+ destruct (le_lt_dec size k).
+ split; intros.
+ replace (size-k)%nat with O by omega.
+ unfold firstn; auto.
+ apply EqShiftL_size; auto.
+
+ unfold EqShiftL.
+ assert (k <= size) by omega.
+ split; intros.
+ assert (i2l (nshiftl k x) = i2l (nshiftl k y)) by (f_equal; auto).
+ rewrite 2 i2l_nshiftl in H1; auto.
+ eapply app_inv_head; eauto.
+ assert (i2l (nshiftl k x) = i2l (nshiftl k y)).
+  rewrite 2 i2l_nshiftl; auto.
+  f_equal; auto.
+ rewrite <- (l2i_i2l (nshiftl k x)), <- (l2i_i2l (nshiftl k y)).
+ f_equal; auto.
+ Qed.
+
+ (** This equivalence allows to prove easily the following delicate 
+     result *)
 
  Lemma EqShiftL_twice_plus_one : forall k x y, 
   EqShiftL k (twice_plus_one x) (twice_plus_one y) <-> EqShiftL (S k) x y.
  Proof.
- intros; unfold EqShiftL.
- destruct x; destruct y.
- do 31
-   (destruct k;
-    [split; intro H; try injection H; intros; subst; auto| ]).
- split; intros; apply EqShiftL_size; auto with arith.
- unfold size; omega.
- unfold size; omega.
+ intros.
+ destruct (le_lt_dec size k).
+ split; intros; apply EqShiftL_size; auto.
+
+ rewrite 2 EqShiftL_i2l.
+ unfold twice_plus_one.
+ rewrite 2 i2l_sneakl.
+ replace (size-k)%nat with (S (size - S k))%nat by omega.
+ remember (size - S k)%nat as n.
+ remember (i2l x) as lx.
+ remember (i2l y) as ly.
+ simpl.
+ rewrite 2 firstn_removelast.
+ split; intros.
+ injection H; auto.
+ f_equal; auto.
+ subst ly n; rewrite i2l_length; omega.
+ subst lx n; rewrite i2l_length; omega.
  Qed.
 
  Lemma EqShiftL_shiftr : forall k x y, EqShiftL k x y -> 
@@ -580,13 +747,6 @@ Section Basics.
 
  (** * More equations about [incr] *)
 
-(*
- Lemma incr_twice : forall x, incr (twice x) = twice_plus_one x.
- Proof.
- intros.
- rewrite incr_eqn1; destruct x; simpl; auto.
- Qed.
-*)
  Lemma incr_twice_plus_one : 
   forall x, incr (twice_plus_one x) = twice (incr x).
  Proof.
@@ -621,8 +781,6 @@ Section Basics.
  elim (incr_firstr x).
  rewrite H1, H; destruct y; simpl; auto.
  Qed.
-
- (** * More equations about [phi] *)
 
  (** * Conversion from [Z] : the [phi_inv] function *)
 
@@ -706,6 +864,11 @@ Section Basics.
  replace x with (nshiftr (size - size) x) by auto.
  apply phi_inv_phi_aux; auto.
  Qed.
+
+ (** The other composition [phi o phi_inv] is harder to prove correct.
+     In particular, an overflow can happen, so a modulo is needed.
+     For the moment, we proceed via several steps, the first one
+     being a detour to [positive_to_in31]. *)
 
  (** * [positive_to_int31] *)
 
