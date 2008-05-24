@@ -42,6 +42,9 @@ type aconstr =
       (cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
+  | ARec of fix_kind * identifier array *
+      (name * aconstr option * aconstr) list array * aconstr array * 
+      aconstr array
   | ASort of rawsort
   | AHole of Evd.hole_kind
   | APatVar of patvar
@@ -102,6 +105,12 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
   | AIf (c,(na,po),b1,b2) ->
       let e,na = name_fold_map g e na in
       RIf (loc,f e c,(na,Option.map (f e) po),f e b1,f e b2)
+  | ARec (fk,idl,dll,tl,bl) ->
+      let e,idl = array_fold_map g e idl in
+      let e,dll = array_fold_map (list_fold_map (fun e (na,oc,b) ->
+	  let e,na = name_fold_map g e na in
+	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
+      RRec (loc,fk,idl,dll,Array.map (f e) tl,Array.map (f e) bl)
   | ACast (c,k) -> RCast (loc,f e c, 
 			  match k with 
 			    | CastConv (k,t) -> CastConv (k,f e t)
@@ -199,6 +208,13 @@ let aconstr_and_vars_of_rawconstr a =
   | RIf (loc,c,(na,po),b1,b2) ->
       add_name found na;
       AIf (aux c,(na,Option.map aux po),aux b1,aux b2)
+  | RRec (_,fk,idl,dll,tl,bl) ->
+      Array.iter (fun id -> found := id::!found) idl;
+      let dll = Array.map (List.map (fun (na,bk,oc,b) -> 
+	 if bk <> Explicit then 
+	   error "Binders marked as implicit not allowed in notations";
+	 add_name found na; (na,Option.map aux oc,aux b))) dll in
+      ARec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | RCast (_,c,k) -> ACast (aux c, 
 			    match k with CastConv (k,t) -> CastConv (k,aux t) 
 			      | CastCoerce -> CastCoerce)
@@ -206,8 +222,8 @@ let aconstr_and_vars_of_rawconstr a =
   | RHole (_,w) -> AHole w
   | RRef (_,r) -> ARef r
   | RPatVar (_,(_,n)) -> APatVar n
-  | RDynamic _ | RRec _ | REvar _ ->
-      error "Fixpoints, cofixpoints and existential variables not allowed in abbreviatable expressions"
+  | RDynamic _ | REvar _ ->
+      error "Existential variables not allowed in notations"
 
   (* Recognizing recursive notations *)
   and terminator_of_pat f1 ll1 lr1 = function
@@ -340,6 +356,17 @@ let rec subst_aconstr subst bound raw =
 	if po' == po && b1' == b1 && b2' == b2 && c' == c then raw else
 	  AIf (c',(na,po'),b1',b2')
 
+  | ARec (fk,idl,dll,tl,bl) ->
+      let dll' = 
+	array_smartmap (list_smartmap (fun (na,oc,b as x) ->
+	  let oc' =  Option.smartmap (subst_aconstr subst bound) oc in
+	  let b' =  subst_aconstr subst bound b in
+	  if oc' == oc && b' == b then x else (na,oc',b'))) dll in
+      let tl' = array_smartmap (subst_aconstr subst bound) tl in
+      let bl' = array_smartmap (subst_aconstr subst bound) bl in
+      if dll' == dll && tl' == tl && bl' == bl then raw else
+	  ARec (fk,idl,dll',tl',bl')
+
   | APatVar _ | ASort _ -> raw
 
   | AHole (Evd.ImplicitArg (ref,i)) ->
@@ -411,6 +438,14 @@ let bind_env alp sigma var v =
     (* TODO: handle the case of multiple occs in different scopes *)
     (var,v)::sigma
 
+let match_fix_kind fk1 fk2 =
+  match (fk1,fk2) with
+  | RCoFix n1, RCoFix n2 -> n1 = n2
+  | RFix (nl1,n1), RFix (nl2,n2) ->
+      n1 = n2 && 
+      array_for_all2 (fun (n1,_) (n2,_) -> n2 = None || n1 = n2) nl1 nl2
+  | _ -> false
+
 let match_opt f sigma t1 t2 = match (t1,t2) with
   | None, None -> sigma
   | Some t1, Some t2 -> f sigma t1 t2
@@ -465,9 +500,6 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
       let sigma = List.fold_left2 
        (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
       List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
-  | RIf (_,a1,(na1,to1),b1,c1), AIf (a2,(na2,to2),b2,c2) ->
-      let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
-      List.fold_left2 (match_ alp metas) sigma [a1;b1;c1] [a2;b2;c2]
   | RLetTuple (_,nal1,(na1,to1),b1,c1), ALetTuple (nal2,(na2,to2),b2,c2) 
       when List.length nal1 = List.length nal2 ->
       let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
@@ -475,6 +507,22 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
       let (alp,sigma) =
 	List.fold_left2 (match_names metas) (alp,sigma) nal1 nal2 in
       match_ alp metas sigma c1 c2
+  | RIf (_,a1,(na1,to1),b1,c1), AIf (a2,(na2,to2),b2,c2) ->
+      let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
+      List.fold_left2 (match_ alp metas) sigma [a1;b1;c1] [a2;b2;c2]
+  | RRec (_,fk1,idl1,dll1,tl1,bl1), ARec (fk2,idl2,dll2,tl2,bl2) 
+      when match_fix_kind fk1 fk2 & Array.length idl1 =  Array.length idl2 &
+	array_for_all2 (fun l1 l2 -> List.length l1 = List.length l2) dll1 dll2
+	->
+      let alp,sigma = array_fold_left2
+	(List.fold_left2 (fun (alp,sigma) (na1,_,oc1,b1) (na2,oc2,b2) ->
+	  let sigma =
+	    match_ alp metas (match_opt (match_ alp metas) sigma oc1 oc2) b1 b2
+	  in match_names metas (alp,sigma) na1 na2)) (alp,sigma) dll1 dll2 in
+      let sigma = array_fold_left2 (match_ alp metas) sigma tl1 tl2 in
+      let alp,sigma = array_fold_right2 (fun id1 id2 alsig -> 
+	match_names metas alsig (Name id1) (Name id2)) idl1 idl2 (alp,sigma) in
+      array_fold_left2 (match_ alp metas) sigma bl1 bl2
   | RCast(_,c1, CastConv(_,t1)), ACast(c2, CastConv (_,t2)) ->
       match_ alp metas (match_ alp metas sigma c1 c2) t1 t2
   | RCast(_,c1, CastCoerce), ACast(c2, CastCoerce) ->

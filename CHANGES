@@ -113,6 +113,7 @@ Notations, coercions, implicit arguments and type inference
 - Support for parametric notations defining constants.
 - Insertion of coercions below product types refrains to unfold
   constants (possible source of incompatibility).
+- New support for fix/cofix in notations.
 
 Tactic Language
 

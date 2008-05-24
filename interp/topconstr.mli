@@ -38,6 +38,9 @@ type aconstr =
       (cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
+  | ARec of fix_kind * identifier array *
+      (name * aconstr option * aconstr) list array * aconstr array * 
+      aconstr array
   | ASort of rawsort
   | AHole of Evd.hole_kind
   | APatVar of patvar

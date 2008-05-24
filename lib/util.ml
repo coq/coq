@@ -1056,6 +1056,11 @@ else
   let v' = Array.map (fun x -> let (y,e) = f x !e' in e' := e; y) v in
   (v',!e')
 
+let array_fold_map f e v =
+  let e' = ref e in
+  let v' = Array.map (fun x -> let (e,y) = f !e' x in e' := e; y) v in
+  (!e',v')
+
 let array_fold_map2' f v1 v2 e =
   let e' = ref e in
   let v' = 
