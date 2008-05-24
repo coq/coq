@@ -271,6 +271,57 @@ let is_vernac_state_preserving_command com =
 let is_vernac_tactic_command com =
   List.mem SolveCommand (attribute_of_vernac_command com)
 
+type reset_mark =
+  | ResetToId of Names.identifier
+  | ResetToState of  Libnames.object_name
+
+type reset_info =
+  | NoReset
+  | ResetAtDecl of reset_mark * bool ref
+  | ResetAtSegmentStart of Names.identifier * bool ref 
+  | ResetAtFrozenState of Libnames.object_name * bool ref
+
+let reset_mark id = match Lib.has_top_frozen_state () with
+  | Some sp -> ResetToState sp
+  | None -> ResetToId id
+
+let compute_reset_info = function 
+  | VernacBeginSection id 
+  | VernacDefineModule (_,id, _, _, _) 
+  | VernacDeclareModule (_,id, _, _)
+  | VernacDeclareModuleType (id, _, _) ->
+      ResetAtSegmentStart (snd id, ref true)
+
+  | VernacDefinition (_, (_,id), DefineBody _, _)
+  | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
+  | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
+      ResetAtDecl (reset_mark id, ref true)
+
+  | VernacDefinition (_, (_,id), ProveBody _, _)
+  | VernacStartTheoremProof (_, [Some (_,id), _], _, _) ->
+      ResetAtDecl (reset_mark id, ref false)
+
+  | VernacEndProof _ -> NoReset
+  | _ -> match Lib.has_top_frozen_state () with
+      | Some sp -> ResetAtFrozenState (sp, ref true)
+      | None -> NoReset
+
+let reset_initial () = 
+  prerr_endline "Reset initial called"; flush stderr;
+  Vernacentries.abort_refine Lib.reset_initial ()
+
+let reset_to = function
+  | ResetToId id ->
+      prerr_endline ("Reset called with "^(string_of_id id));
+      Vernacentries.abort_refine Lib.reset_name (Util.dummy_loc,id)
+  | ResetToState sp ->
+      Vernacentries.abort_refine Lib.reset_to_state sp
+
+let reset_to_mod id = 
+  prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id)); 
+  Vernacentries.abort_refine Lib.reset_mod (Util.dummy_loc,id)
+
+
 let interp verbosely s = 
   prerr_endline "Starting interp...";
   prerr_endline s;
@@ -291,10 +342,11 @@ let interp verbosely s =
 	if not (is_vernac_goal_printing_command vernac) then
 	  (* Verbose if in small step forward and not a tactic *)
 	  Flags.make_silent (not verbosely);
+	let reset_info = compute_reset_info vernac in
 	Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
 	Flags.make_silent true;
 	prerr_endline ("...Done with interp of : "^s);
-	last
+	reset_info,last
 
 let interp_and_replace s = 
   let result = interp false s in
@@ -423,79 +475,6 @@ let print_no_goal () =
     assert (gls = []);
     let sigma = Tacmach.project (Tacmach.top_goal_of_pftreestate pfts) in
     msg (Printer.pr_subgoals (Decl_mode.get_end_command pfts) sigma gls)
-
-
-type word_class = Normal | Kwd | Reserved
-
-
-let kwd = [(* "Compile";"Inductive";"Qed";"Type";"end";"Axiom";
-	      "Definition";"Load";"Quit";"Variable";"in";"Cases";"FixPoint";
-	      "Parameter";"Set";"of";"CoFixpoint";"Grammar";"Proof";"Syntax";
-	      "using";"CoInductive";"Hypothesis";"Prop";"Theorem";
-	   *)
-  "Add"; "AddPath"; "Axiom"; "Chapter"; "CoFixpoint";
-  "CoInductive"; "Defined"; "Definition"; 
-  "End"; "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Hint";
-  "Hypothesis"; "Immediate"; "Implicits"; "Import"; "Inductive"; 
-  "Infix"; "Lemma"; "Load"; "Local"; 
-  "Match"; "Module"; "Module Type";
-  "Mutual"; "Parameter"; "Print"; "Proof"; "Qed";
-  "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
-  "Section"; "Show"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
-  "Unset"; "Variable"; "Variables"; 
-]
-	    
-let reserved = []
-
-module SHashtbl = 
-  Hashtbl.Make 
-    (struct 
-       type t = string
-       let equal = ( = )
-       let hash = Hashtbl.hash
-     end)
-
-
-let word_tbl = SHashtbl.create 37
-let _ = 
-  List.iter (fun w -> SHashtbl.add word_tbl w Kwd) kwd;
-  List.iter (fun w -> SHashtbl.add word_tbl w Reserved) reserved
-
-let word_class s = 
-  try
-    SHashtbl.find word_tbl s
-  with Not_found -> Normal
-
-type reset_info =
-  | NoReset
-  | ResetAtDecl of Names.identifier * bool ref 
-  | ResetAtSegmentStart of Names.identifier * bool ref
-
-let compute_reset_info = function 
-  | VernacBeginSection id 
-  | VernacDefineModule (_,id, _, _, _) 
-  | VernacDeclareModule (_,id, _, _)
-  | VernacDeclareModuleType (id, _, _) ->
-      ResetAtSegmentStart (snd id, ref true)
-  | VernacDefinition (_, (_,id), DefineBody _, _)
-  | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
-  | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
-      ResetAtDecl (id, ref true)
-  | VernacDefinition (_, (_,id), ProveBody _, _)
-  | VernacStartTheoremProof (_, [Some (_,id), _], _, _) ->
-      ResetAtDecl (id, ref false)
-  | _ -> NoReset
-
-let reset_initial () = 
-  prerr_endline "Reset initial called"; flush stderr;
-  Vernacentries.abort_refine Lib.reset_initial ()
-
-let reset_to id = 
-  prerr_endline ("Reset called with "^(string_of_id id));
-  Vernacentries.abort_refine Lib.reset_name (Util.dummy_loc,id)
-let reset_to_mod id = 
-  prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id)); 
-  Vernacentries.abort_refine Lib.reset_mod (Util.dummy_loc,id)
 
 
 let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =

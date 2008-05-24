@@ -584,6 +584,13 @@ let recache_context ctx =
 
 let is_frozen_state = function (_,FrozenState _) -> true | _ -> false
 
+let has_top_frozen_state () =
+  let rec aux = function
+  | (sp, FrozenState _)::_ -> Some sp
+  | (sp, Leaf o)::t when object_tag o = "DOT" -> aux t
+  | _ -> None
+  in aux !lib_stk 
+
 let set_lib_stk new_lib_stk =
   lib_stk := new_lib_stk;
   recalc_path_prefix ();
@@ -602,6 +609,14 @@ let reset_to_gen test =
   set_lib_stk before
 
 let reset_to sp = reset_to_gen (fun x -> (fst x) = sp)
+
+let reset_to_state sp =
+  let (_,eq,before) = split_lib sp in
+  (* if eq a frozen state, we'll reset to it *)
+  match eq with
+  | [_,FrozenState f] -> lib_stk := eq@before;  unfreeze_summaries f
+  | _ -> error "Not a frozen state"
+
 
 (* LEM: TODO
  * We will need to muck with frozen states in after, too!

@@ -159,7 +159,7 @@ object('self)
   method activate : unit -> unit
   method active_keypress_handler : GdkEvent.Key.t -> bool
   method backtrack_to : GText.iter -> unit
-  method backtrack_to_no_lock : GText.iter -> Names.identifier option -> unit
+  method backtrack_to_no_lock : GText.iter -> reset_mark option -> unit
   method clear_message : unit
   method deactivate : unit -> unit
   method disconnected_keypress_handler : GdkEvent.Key.t -> bool
@@ -182,7 +182,8 @@ object('self)
   method reset_initial : unit
   method send_to_coq :
     bool -> bool -> string ->
-    bool -> bool -> bool -> (bool*(Util.loc * Vernacexpr.vernac_expr)) option
+    bool -> bool -> bool ->
+    (bool*(reset_info*(Util.loc * Vernacexpr.vernac_expr))) option
   method set_message : string -> unit
   method show_pm_goal : unit
   method show_goals : unit
@@ -502,6 +503,9 @@ let is_empty () = Stack.is_empty processed_stack
 
 let update_on_end_of_proof () =
   let lookup_lemma = function
+    | { reset_info = ResetAtFrozenState (_, r) } -> 
+	prerr_endline "Toggling Frozen State info to false";
+	r := false
     | { reset_info = ResetAtDecl (_, r) } ->
 	if not !r then begin
 	    prerr_endline "Toggling Reset info to true";
@@ -521,15 +525,16 @@ let update_on_end_of_segment id =
     | { reset_info = ResetAtSegmentStart (id', r) } when id = id' -> raise Exit
     | { reset_info = ResetAtSegmentStart (_, r) } -> r := false
     | { reset_info = ResetAtDecl (_, r) } -> r := false
+    | { reset_info = ResetAtFrozenState (_, r) } -> r := false
     | _ -> ()
   in
     try Stack.iter lookup_section processed_stack with Exit -> ()
 
-let push_phrase start_of_phrase_mark end_of_phrase_mark ast = 
+let push_phrase reset_info start_of_phrase_mark end_of_phrase_mark ast = 
   let x = {start = start_of_phrase_mark;
 	   stop = end_of_phrase_mark;
 	   ast = ast;
-	   reset_info = Coq.compute_reset_info (snd ast)
+	   reset_info = reset_info
 	  } in
   begin
     match snd ast with
@@ -540,8 +545,8 @@ let push_phrase start_of_phrase_mark end_of_phrase_mark ast =
   push x
 
 
-let repush_phrase x =
-  let x = { x with reset_info = Coq.compute_reset_info (snd x.ast) } in
+let repush_phrase reset_info x =
+  let x = { x with reset_info = reset_info } in
   begin
     match snd x.ast with
       | VernacEndProof (Proved (_, None)) -> update_on_end_of_proof ()
@@ -1143,7 +1148,7 @@ object(self)
 	  input_view#set_editable true;
 	  !pop_info ();
 	end in
-      let mark_processed complete (start,stop) ast =
+      let mark_processed reset_info complete (start,stop) ast =
         let b = input_buffer in
 	b#move_mark ~where:stop (`NAME "start_of_input");
 	b#apply_tag_by_name 
@@ -1155,7 +1160,8 @@ object(self)
 	  end;
 	let start_of_phrase_mark = `MARK (b#create_mark start) in
 	let end_of_phrase_mark = `MARK (b#create_mark stop) in
-	push_phrase 
+	push_phrase
+          reset_info 
 	  start_of_phrase_mark 
 	  end_of_phrase_mark ast;
 	if display_goals then self#show_goals;
@@ -1165,14 +1171,14 @@ object(self)
             None -> false
           | Some (loc,phrase) ->
             (match self#send_to_coq verbosely false phrase true true true with
-	      | Some (complete,ast) -> 
-		  sync (mark_processed complete) loc ast; true
+	      | Some (complete,(reset_info,ast)) -> 
+		  sync (mark_processed reset_info complete) loc ast; true
 	      | None -> sync remove_tag loc; false)
       end
     
   method insert_this_phrase_on_success 
     show_output show_msg localize coqphrase insertphrase = 
-    let mark_processed complete ast =
+    let mark_processed reset_info complete ast =
       let stop = self#get_start_of_input in
       if stop#starts_line then
 	input_buffer#insert ~iter:stop insertphrase
@@ -1185,7 +1191,7 @@ object(self)
 	input_buffer#place_cursor stop;
       let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
       let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
-      push_phrase start_of_phrase_mark end_of_phrase_mark ast;
+      push_phrase reset_info start_of_phrase_mark end_of_phrase_mark ast;
       self#show_goals;
       (*Auto insert save on success... 
       try (match Coq.get_current_goals () with 
@@ -1206,13 +1212,15 @@ object(self)
                       `MARK (input_buffer#create_mark start) in
 	            let end_of_phrase_mark =
                       `MARK (input_buffer#create_mark stop) in
-	            push_phrase start_of_phrase_mark end_of_phrase_mark ast
+	            push_phrase
+	              reset_info start_of_phrase_mark end_of_phrase_mark ast
 	          end
 	      | None -> ())
 	| _ -> ())
       with _ -> ()*) in
     match self#send_to_coq false false coqphrase show_output show_msg localize with
-      | Some (complete,ast) -> sync (mark_processed complete) ast; true
+      | Some (complete,(reset_info,ast)) ->
+	  sync (mark_processed reset_info complete) ast; true
       | None ->
           sync
             (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase))
@@ -1284,28 +1292,35 @@ object(self)
 	    begin match t.reset_info with
 	      | ResetAtSegmentStart (id, {contents=true}) ->
 		  reset_to_mod id
-	      | ResetAtDecl (id, {contents=true}) ->
+	      | ResetAtFrozenState (sp, {contents=true}) ->
 		  if inproof then
-		    (prerr_endline ("Skipping "^Names.string_of_id id);
-		    synchro (Some id) inproof)
+		    synchro (Some (ResetToState sp)) inproof
 		  else
-		    reset_to (Option.default id oldest_decl_in_middle_of_proof)
-	      | ResetAtDecl (id, {contents=false}) ->
+		    reset_to (ResetToState sp)
+	      | ResetAtDecl (mark, {contents=true}) ->
+		  if inproof then
+		    synchro (Some mark) inproof
+		  else
+		    reset_to
+		      (Option.default mark oldest_decl_in_middle_of_proof)
+	      | ResetAtDecl (mark, {contents=false}) ->
 		  if inproof then
 		    if oldest_decl_in_middle_of_proof = None then
-		      synchro None false
+		      match mark with
+		      | ResetToId _ -> synchro None false
+		      | ResetToState _ -> reset_to mark 
 		    else
 		      (* reset oldest decl found before theorem started what *)
 		      (* resets back just before the proof was started *)
 		      reset_to (Option.get oldest_decl_in_middle_of_proof)
 		  else
-		    (prerr_endline ("Skipping "^Names.string_of_id id);
-		    synchro (Some id) inproof)
+		    synchro (Some mark) inproof
 	      | _ ->
 		  synchro oldest_decl_in_middle_of_proof inproof
 	    end;
+	    let reset_info = Coq.compute_reset_info (snd t.ast) in
 	    interp_last t.ast;
-	    repush_phrase t
+	    repush_phrase reset_info t
 	end
     in
     let add_undo t = match t with | Some n -> Some (succ n) | None -> None
@@ -1400,23 +1415,25 @@ Please restart and report NOW.";
 	    in
 	      begin match last_command with 
 		| {ast=_,com} when is_vernac_tactic_command com -> 
-prerr_endline "TACT";
 		    begin 
 		      try Pfedit.undo 1; ignore (pop ()); sync update_input () 
 		      with _ -> self#backtrack_to_no_lock start None
 		    end
 
+		| {reset_info=ResetAtFrozenState (sp, {contents=true})} ->
+		    ignore (pop ());
+		    Lib.reset_to_state sp;
+		    sync update_input ()
 		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
-prerr_endline "SEG";
 		    ignore (pop ());
 		    reset_to_mod id;
 		    sync update_input ()
-		| {reset_info=ResetAtDecl (id, {contents=true})} ->
+		| {reset_info=ResetAtDecl (mark, {contents=true})} ->
 		    if Pfedit.refining () then
-		      self#backtrack_to_no_lock start (Some id)
+		      self#backtrack_to_no_lock start (Some mark)
 		    else
-		      (ignore (pop ()); reset_to id; sync update_input ())
-		| {reset_info=ResetAtDecl (id,{contents=false})} ->
+		      (ignore (pop ()); reset_to mark; sync update_input ())
+		| {reset_info=ResetAtDecl (_, {contents=false})} ->
 		    ignore (pop ());
 		    (try 
 			 Pfedit.delete_current_proof () 

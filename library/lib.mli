@@ -145,6 +145,9 @@ val reset_to : object_name -> unit
 val reset_name : identifier located -> unit
 val remove_name : identifier located -> unit
 val reset_mod : identifier located -> unit
+val reset_to_state : object_name -> unit
+
+val has_top_frozen_state : unit -> object_name option
 
 (* [back n] resets to the place corresponding to the $n$-th call of 
    [mark_end_of_command] (counting backwards) *)

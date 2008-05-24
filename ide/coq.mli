@@ -15,10 +15,26 @@ open Evd
 
 val version : unit -> string
 
+type reset_mark =
+  | ResetToId of Names.identifier
+  | ResetToState of  Libnames.object_name
+
+type reset_info =
+  | NoReset
+  | ResetAtDecl of reset_mark * bool ref
+  | ResetAtSegmentStart of Names.identifier * bool ref 
+  | ResetAtFrozenState of Libnames.object_name * bool ref
+
+val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
+val reset_initial : unit -> unit
+val reset_to : reset_mark -> unit
+val reset_to_mod : identifier -> unit
+
 val init : unit -> string list 
-val interp : bool -> string -> Util.loc * Vernacexpr.vernac_expr
+val interp : bool -> string -> reset_info * (Util.loc * Vernacexpr.vernac_expr)
 val interp_last : Util.loc * Vernacexpr.vernac_expr -> unit
-val interp_and_replace : string -> (Util.loc * Vernacexpr.vernac_expr) * string
+val interp_and_replace : string -> 
+      (reset_info * (Util.loc * Vernacexpr.vernac_expr)) * string
 
 val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
 val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool
@@ -41,16 +57,6 @@ val get_current_goals_nb : unit -> int
 val print_no_goal : unit -> string
 
 val process_exn : exn -> string*(Util.loc option)
-
-type reset_info =
-  | NoReset
-  | ResetAtDecl of Names.identifier * bool ref 
-  | ResetAtSegmentStart of Names.identifier * bool ref
-
-val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
-val reset_initial : unit -> unit
-val reset_to : identifier -> unit
-val reset_to_mod : identifier -> unit
 
 val hyp_menu : hyp -> (string * string) list
 val concl_menu : concl -> (string * string) list
