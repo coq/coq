@@ -773,6 +773,13 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
+      optname  = "printing of existential variable instances";
+      optkey   = (TertiaryTable ("Printing","Existential","Instances"));
+      optread  = (fun () -> !Constrextern.print_evar_arguments);
+      optwrite = (:=) Constrextern.print_evar_arguments }
+let _ =
+  declare_bool_option 
+    { optsync  = true;
       optname  = "implicit arguments printing";
       optkey   = (SecondaryTable ("Printing","Implicit"));
       optread  = (fun () -> !Constrextern.print_implicits);
@@ -870,7 +877,7 @@ let _ =
   declare_bool_option
     { optsync=true;
       optkey=SecondaryTable("Printing","Universes");
-      optname="the printing of universes";
+      optname="printing of universes";
       optread=(fun () -> !Constrextern.print_universes);
       optwrite=(fun b -> Constrextern.print_universes:=b) }
 

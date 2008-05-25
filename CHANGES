@@ -34,7 +34,9 @@ Vernacular commands
 - Added option "Set Equality Scheme" to make automatic the declaration 
   of the boolean equality when possible.
 - Source of universe inconsistencies now printed when option 
-  "Set Printing Universes" is activated,
+  "Set Printing Universes" is activated.
+- New option "Set Printing Existential Instances" for making the display of
+  existential variable instances explicit.
 - Support for option "[id1 ... idn]", and "-[id1 ... idn]", for the 
   "compute"/"cbv" reduction strategy, respectively meaning reduce only, or 
   everything but, the constants id1 ... idn. "lazy" alone or followed by
@@ -283,6 +285,7 @@ Tools
 - CoqIDE font defaults to monospace so as indentation to be meaningful.
 - CoqIDE supports Definition/Parameter/Inductive in middle of a proof.
 - Undoing non-tactic commands in CoqIDE works faster.
+- New CoqIDE buttons for activating display of various implicit informations.
 
 Miscellaneous
 

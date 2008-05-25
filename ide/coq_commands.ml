@@ -156,6 +156,8 @@ let commands = [
 let state_preserving = [
   "Check";
   "Eval";
+  "Eval lazy in";
+  "Eval vm_compute in";
   "Eval compute in";
   "Extraction";
   "Extraction Library";

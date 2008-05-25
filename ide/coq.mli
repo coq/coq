@@ -15,6 +15,18 @@ open Evd
 
 val version : unit -> string
 
+type printing_state = {
+  mutable printing_implicit : bool;
+  mutable printing_coercions : bool;
+  mutable printing_raw_matching : bool;
+  mutable printing_no_notation : bool;
+  mutable printing_all : bool;
+  mutable printing_evar_instances : bool;
+  mutable printing_universes : bool
+}
+
+val printing_state : printing_state
+
 type reset_mark =
   | ResetToId of Names.identifier
   | ResetToState of  Libnames.object_name

@@ -16,7 +16,7 @@ open Ideutils
 let cb_ = ref None
 let cb () = ((Option.get !cb_):GData.clipboard)
 let last_cb_content = ref ""
-  
+
 let (message_view:GText.view option ref) = ref None
 let (proof_view:GText.view option ref) = ref None
   
@@ -1422,7 +1422,7 @@ Please restart and report NOW.";
 
 		| {reset_info=ResetAtFrozenState (sp, {contents=true})} ->
 		    ignore (pop ());
-		    Lib.reset_to_state sp;
+		    reset_to (ResetToState sp);
 		    sync update_input ()
 		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
 		    ignore (pop ());
@@ -1865,7 +1865,7 @@ let main files =
     (* Toolbar *)
     let toolbar = GButton.toolbar 
       ~orientation:`HORIZONTAL 
-      ~style:`ICONS
+      ~style:`BOTH
       ~tooltips:true 
       ~packing:(* handle#add *)
       (vbox#pack ~expand:false ~fill:false)
@@ -2535,7 +2535,7 @@ let main files =
 				  end;
 				  ignore (toolbar#insert_button
 					    ~tooltip
-					    ~text:tooltip
+(*					    ~text:tooltip*)
 					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR icon)
 					    ~callback
 					    ())
@@ -2583,8 +2583,7 @@ let main files =
 				    ~tooltip:"Interrupt computations"    
 				    ~key:GdkKeysyms._Break 
 				    ~callback:break
-				    `STOP
-				  ;
+				    `STOP;
 
 				  (* Tactics Menu *)
 				  let tactics_menu =  factory#add_submenu "_Try Tactics" in
@@ -2658,6 +2657,59 @@ let main files =
 					   );
 
 
+				    ignore (toolbar#insert_space ());
+
+				    ignore (toolbar#insert_toggle_button
+					    ~tooltip:"Toggle printing of implicit arguments"
+					    ~text:"Impl"
+					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
+					    ~callback:(fun () -> printing_state.printing_implicit <- not printing_state.printing_implicit; do_or_activate (fun a -> a#show_goals) ())
+					    ());
+
+				    ignore (toolbar#insert_toggle_button
+					    ~tooltip:"Toggle printing of coercions"
+					    ~text:"Coer"
+					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
+					    ~callback:(fun () -> printing_state.printing_coercions <- not printing_state.printing_coercions; do_or_activate (fun a -> a#show_goals) ())
+					    ());
+
+				    ignore (toolbar#insert_toggle_button
+					    ~tooltip:"Toggle printing of raw matching expressions"
+					    ~text:"Match"
+					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
+					    ~callback:(fun () -> printing_state.printing_raw_matching <- not printing_state.printing_raw_matching; do_or_activate (fun a -> a#show_goals) ())
+					    ());
+
+				    ignore (toolbar#insert_toggle_button
+					    ~tooltip:"Toggle deactivation of notations"
+					    ~text:"Nota"
+					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
+					    ~callback:(fun () -> printing_state.printing_no_notation <- not printing_state.printing_no_notation; do_or_activate (fun a -> a#show_goals) ())
+					    ());
+
+				    ignore (toolbar#insert_toggle_button
+					    ~tooltip:"Toggle full low-level printing"
+					    ~text:"All"
+					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
+					    ~callback:(fun () -> printing_state.printing_all <- not printing_state.printing_all; do_or_activate (fun a -> a#show_goals) ())
+					    ());
+
+				    ignore (toolbar#insert_toggle_button
+					    ~tooltip:"Toggle printing of existential variable instances"
+					    ~text:"Evars"
+					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
+					    ~callback:(fun () -> printing_state.printing_evar_instances <- not printing_state.printing_evar_instances; do_or_activate (fun a -> a#show_goals) ())
+					    ());
+
+				    ignore (toolbar#insert_toggle_button
+					    ~tooltip:"Toggle printing of universe levels"
+					    ~text:"Univ"
+					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
+					    ~callback:(fun () -> printing_state.printing_universes <- not printing_state.printing_universes; do_or_activate (fun a -> a#show_goals) ())
+					    ());
+
+				    ignore (toolbar#insert_space ());
+
 				    ignore (toolbar#insert_button
 					      ~tooltip:"Proof Wizard"
 					      ~text:"Wizard"
@@ -2666,6 +2718,8 @@ let main files =
 									 !current.automatic_tactics
 								      ))
 					      ());
+
+
 
 				    ignore (tactics_factory#add_item "<Proof _Wizard>"
 					      ~key:GdkKeysyms._dollar

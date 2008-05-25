@@ -24,7 +24,7 @@
     let h = Hashtbl.create 97 in
     List.iter (fun s -> Hashtbl.add h s ())
       [  "Add" ; "Check"; "Eval"; "Extraction" ;
-	 "Load" ; "Undo";
+	 "Load" ; "Undo"; "Goal"; 
 	 "Proof" ; "Print"; "Qed" ; "Defined" ; "Save" ;
 	 "End" ; "Section"; "Chapter"; "Transparent"; "Opaque"; "Comments"
       ];

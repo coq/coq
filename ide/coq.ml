@@ -110,8 +110,74 @@ let is_in_proof_mode () =
 let user_error_loc l s =
   raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
 
+type printing_state = {
+  mutable printing_implicit : bool;
+  mutable printing_coercions : bool;
+  mutable printing_raw_matching : bool;
+  mutable printing_no_notation : bool;
+  mutable printing_all : bool;
+  mutable printing_evar_instances : bool;
+  mutable printing_universes : bool
+}
+
+let printing_state = {
+  printing_implicit = false;
+  printing_coercions = false;
+  printing_raw_matching = false;
+  printing_no_notation = false;
+  printing_all = false;
+  printing_evar_instances = false;
+  printing_universes = false;
+}
+
+let printing_implicit_data = ["Printing";"Implicit"], false
+let printing_coercions_data = ["Printing";"Coercions"], false
+let printing_raw_matching_data = ["Printing";"Matching"], true
+let printing_no_synth_data = ["Printing";"Synth"], true
+let printing_no_notation_data = ["Printing";"Notations"], true
+let printing_all_data = ["Printing";"All"], false
+let printing_evar_instances_data = ["Printing";"Existential";"Instances"],false
+let printing_universes_data = ["Printing";"Universes"], false
+
+let known_options = ref []
+
+let prepare_option (l,dft) =
+  known_options := l :: !known_options;
+  let set = (String.concat " " ("Set"::l)) ^ "." in
+  let unset = (String.concat " " ("Unset"::l)) ^ "." in
+  if dft then unset,set else set,unset
+
+let coqide_known_option = function
+  | Goptions.TertiaryTable (a,b,c) -> List.mem [a;b;c] !known_options
+  | Goptions.SecondaryTable (a,b) -> List.mem [a;b] !known_options
+  | Goptions.PrimaryTable a -> List.mem [a] !known_options
+
+let with_printing_implicit = prepare_option printing_implicit_data
+let with_printing_coercions = prepare_option printing_coercions_data
+let with_printing_raw_matching = prepare_option printing_raw_matching_data
+let with_printing_no_synth = prepare_option printing_no_synth_data
+let with_printing_no_notation = prepare_option printing_no_notation_data
+let with_printing_all = prepare_option printing_all_data
+let with_printing_evar_instances = prepare_option printing_evar_instances_data
+let with_printing_universes = prepare_option printing_universes_data
+
+let make_option_commands () =
+  let p = printing_state in
+  (if p.printing_implicit then [with_printing_implicit] else [])@
+  (if p.printing_coercions then [with_printing_coercions] else [])@
+  (if p.printing_raw_matching then [with_printing_raw_matching;with_printing_no_synth] else [])@
+  (if p.printing_no_notation then [with_printing_no_notation] else [])@
+  (if p.printing_all then [with_printing_all] else [])@
+  (if p.printing_evar_instances then [with_printing_evar_instances] else [])@
+  (if p.printing_universes then [with_printing_universes] else [])
+
+let make_option_commands () =
+  let l = make_option_commands () in
+  List.iter (fun (a,b) -> prerr_endline a; prerr_endline b) l;
+  l
+
 type command_attribute =
-    NavigationCommand | QueryCommand | DebugCommand
+    NavigationCommand | QueryCommand | DebugCommand | KnownOptionCommand
   | OtherStatePreservingCommand | GoalStartingCommand | SolveCommand
 
 let rec attribute_of_vernac_command = function
@@ -203,8 +269,9 @@ let rec attribute_of_vernac_command = function
   | VernacSetOpacity _ -> []
   | VernacSetOption (Goptions.SecondaryTable ("Ltac","Debug"), _) -> 
       [DebugCommand]
+  | VernacSetOption (o,BoolValue true) | VernacUnsetOption o ->
+      if coqide_known_option o then [KnownOptionCommand] else []
   | VernacSetOption _ -> []
-  | VernacUnsetOption _ -> []
   | VernacRemoveOption _ -> []
   | VernacAddOption _ -> []
   | VernacMemOption _ -> [QueryCommand]
@@ -254,6 +321,9 @@ let is_vernac_navigation_command com =
 
 let is_vernac_query_command com =
   List.mem QueryCommand (attribute_of_vernac_command com)
+
+let is_vernac_known_option_command com =
+  List.mem KnownOptionCommand (attribute_of_vernac_command com)
 
 let is_vernac_debug_command com =
   List.mem DebugCommand (attribute_of_vernac_command com)
@@ -315,14 +385,18 @@ let reset_to = function
       prerr_endline ("Reset called with "^(string_of_id id));
       Vernacentries.abort_refine Lib.reset_name (Util.dummy_loc,id)
   | ResetToState sp ->
+      prerr_endline
+        ("Reset called with state "^(Libnames.string_of_path (fst sp)));
       Vernacentries.abort_refine Lib.reset_to_state sp
 
 let reset_to_mod id = 
   prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id)); 
   Vernacentries.abort_refine Lib.reset_mod (Util.dummy_loc,id)
 
+let raw_interp s =
+  Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s))
 
-let interp verbosely s = 
+let interp_with_options verbosely options s = 
   prerr_endline "Starting interp...";
   prerr_endline s;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
@@ -336,6 +410,8 @@ let interp verbosely s =
 	  user_error_loc loc (str "Debug mode not available within CoqIDE");
 	if is_vernac_navigation_command vernac then
 	  user_error_loc loc (str "Use CoqIDE navigation instead");
+	if is_vernac_known_option_command vernac then
+	  user_error_loc loc (str "Use CoqIDE buttons instead");
 	if is_vernac_query_command vernac then 
 	  !flash_info
 	    "Warning: query commands should not be inserted in scripts";
@@ -343,10 +419,15 @@ let interp verbosely s =
 	  (* Verbose if in small step forward and not a tactic *)
 	  Flags.make_silent (not verbosely);
 	let reset_info = compute_reset_info vernac in
-	Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
+	List.iter (fun (set_option,_) -> raw_interp set_option) options;
+	raw_interp s;
 	Flags.make_silent true;
+	List.iter (fun (_,unset_option) -> raw_interp unset_option) options;
 	prerr_endline ("...Done with interp of : "^s);
 	reset_info,last
+
+let interp verbosely phrase =
+  interp_with_options verbosely (make_option_commands ()) phrase
 
 let interp_and_replace s = 
   let result = interp false s in
@@ -447,10 +528,17 @@ let prepare_hyps sigma env =
   in
   List.rev hyps
 
-let prepare_goal sigma g =
+let prepare_goal_main sigma g =
   let env = evar_env g in
   (prepare_hyps sigma env,
    (env, sigma, g.evar_concl, msg (pr_ltype_env_at_top env g.evar_concl)))
+
+let prepare_goal sigma g =
+  let options = make_option_commands () in
+  List.iter (fun (set_option,_) -> raw_interp set_option) options;
+  let x = prepare_goal_main sigma g in
+  List.iter (fun (_,unset_option) -> raw_interp unset_option) options;
+  x
 
 let get_current_pm_goal () =
   let pfts = get_pftreestate ()  in
@@ -588,5 +676,3 @@ let current_status () =
   try
     path ^ ", proving " ^ (Names.string_of_id (Pfedit.get_current_proof_name ()))
   with _ -> path
-
-  
