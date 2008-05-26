@@ -2641,58 +2641,6 @@ let main files =
 					      ~callback:(do_if_active( fun a -> a#insert_command "progress trivial.\n"  "trivial.\n" ))
 					   );
 
-
-				    ignore (toolbar#insert_space ());
-
-				    ignore (toolbar#insert_toggle_button
-					    ~tooltip:"Toggle printing of implicit arguments"
-					    ~text:"Impl"
-					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
-					    ~callback:(fun () -> printing_state.printing_implicit <- not printing_state.printing_implicit; do_or_activate (fun a -> a#show_goals) ())
-					    ());
-
-				    ignore (toolbar#insert_toggle_button
-					    ~tooltip:"Toggle printing of coercions"
-					    ~text:"Coer"
-					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
-					    ~callback:(fun () -> printing_state.printing_coercions <- not printing_state.printing_coercions; do_or_activate (fun a -> a#show_goals) ())
-					    ());
-
-				    ignore (toolbar#insert_toggle_button
-					    ~tooltip:"Toggle printing of raw matching expressions"
-					    ~text:"Match"
-					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
-					    ~callback:(fun () -> printing_state.printing_raw_matching <- not printing_state.printing_raw_matching; do_or_activate (fun a -> a#show_goals) ())
-					    ());
-
-				    ignore (toolbar#insert_toggle_button
-					    ~tooltip:"Toggle deactivation of notations"
-					    ~text:"Nota"
-					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
-					    ~callback:(fun () -> printing_state.printing_no_notation <- not printing_state.printing_no_notation; do_or_activate (fun a -> a#show_goals) ())
-					    ());
-
-				    ignore (toolbar#insert_toggle_button
-					    ~tooltip:"Toggle full low-level printing"
-					    ~text:"All"
-					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
-					    ~callback:(fun () -> printing_state.printing_all <- not printing_state.printing_all; do_or_activate (fun a -> a#show_goals) ())
-					    ());
-
-				    ignore (toolbar#insert_toggle_button
-					    ~tooltip:"Toggle printing of existential variable instances"
-					    ~text:"Evars"
-					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
-					    ~callback:(fun () -> printing_state.printing_evar_instances <- not printing_state.printing_evar_instances; do_or_activate (fun a -> a#show_goals) ())
-					    ());
-
-				    ignore (toolbar#insert_toggle_button
-					    ~tooltip:"Toggle printing of universe levels"
-					    ~text:"Univ"
-					    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_WARNING)
-					    ~callback:(fun () -> printing_state.printing_universes <- not printing_state.printing_universes; do_or_activate (fun a -> a#show_goals) ())
-					    ());
-
 				    ignore (toolbar#insert_space ());
 
 				    ignore (toolbar#insert_button
@@ -2917,6 +2865,80 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								       ())
 					  in
 
+					  (* Display menu *)
+					    
+					  let display_menu =  factory#add_submenu "_Display" in
+					  let view_factory =  new GMenu.factory display_menu
+					    ~accel_path:"<CoqIde MenuBar>/Display/"
+					    ~accel_group 
+					    ~accel_modi:[`MOD1;`SHIFT]
+					  in
+
+					  let _ = ignore (view_factory#add_check_item 
+							    "Toggle printing of _implicit arguments" 
+							    ~key:GdkKeysyms._i
+							    ~callback:(fun _ -> printing_state.printing_implicit <- not printing_state.printing_implicit; do_or_activate (fun a -> a#show_goals) ())) in
+
+					  let _ = ignore (view_factory#add_check_item 
+							    "Toggle printing of _coercions"
+							    ~key:GdkKeysyms._c
+							    ~callback:(fun _ -> printing_state.printing_coercions <- not printing_state.printing_coercions; do_or_activate (fun a -> a#show_goals) ())) in
+
+					  let _ = ignore (view_factory#add_check_item
+							    "Toggle printing of raw _matching expressions"
+							    ~key:GdkKeysyms._m
+							    ~callback:(fun _ -> printing_state.printing_raw_matching <- not printing_state.printing_raw_matching; do_or_activate (fun a -> a#show_goals) ())) in
+
+					  let _ = ignore (view_factory#add_check_item  
+							    "Toggle deactivation of _notations"
+							    ~key:GdkKeysyms._n
+							    ~callback:(fun _ -> printing_state.printing_no_notation <- not printing_state.printing_no_notation; do_or_activate (fun a -> a#show_goals) ())) in
+
+					  let _ = ignore (view_factory#add_check_item  
+							    "Toggle _full low-level printing"
+							    ~key:GdkKeysyms._f
+							    ~callback:(fun _ -> printing_state.printing_all <- not printing_state.printing_all; do_or_activate (fun a -> a#show_goals) ())) in 
+					   
+					  let _ = ignore (view_factory#add_check_item     
+							    "Toggle printing of _existential variable instances"
+							    ~key:GdkKeysyms._e
+					    		    ~callback:(fun _ -> printing_state.printing_evar_instances <- not printing_state.printing_evar_instances; do_or_activate (fun a -> a#show_goals) ())) in
+
+					  let _ = ignore (view_factory#add_check_item  
+							    "Toggle printing of _universe levels"
+							    ~key:GdkKeysyms._u
+					    		    ~callback:(fun _ -> printing_state.printing_universes <- not printing_state.printing_universes; do_or_activate (fun a -> a#show_goals) ())) in
+
+
+					  (* Unicode *)
+(*
+					  let unicode_menu =  factory#add_submenu "_Unicode" in
+					  let unicode_factory =  new GMenu.factory unicode_menu
+					    ~accel_path:"<CoqIde MenuBar>/Unicode/"
+					    ~accel_group 
+					    ~accel_modi:[]
+					  in
+					  let logic_symbols_menu = unicode_factory#add_submenu "Math operators" in
+					  let logic_factory = new GMenu.factory logic_symbols_menu
+					    ~accel_path:"<CoqIde MenuBar>/Unicode/Math operators"
+					    ~accel_group 
+					    ~accel_modi:[]
+					  in
+					  let new_unicode_item s = ignore (
+					    logic_factory#add_item s 
+					      ~callback:(fun () ->  
+							   let v = get_current_view () in
+							     ignore (v.view#buffer#insert_interactive s)))
+					  in
+					  
+					  for i = 0x2200 to 0x22FF do
+					 	List.iter new_unicode_item [Glib.Utf8.from_unichar i];
+					 	 
+					  done;			
+					  		  			
+*)				  
+		  			
+		  			
 					  (* Externals *)
 					  let externals_menu =  factory#add_submenu "_Compile" in
 					  let externals_factory = new GMenu.factory externals_menu 
@@ -3147,7 +3169,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					    let nb = notebook () in
 					    let hb2 = GPack.paned `VERTICAL ~packing:hb#add2 () in
 					    let fr_a = GBin.frame ~shadow_type:`IN ~packing:hb2#add () in
-					    let fr_b = GBin.frame ~shadow_type:`IN ~packing:hb2#add () in
+                                            let fr_b = GBin.frame ~shadow_type:`IN ~packing:hb2#add () in
 					    let sw2 = GBin.scrolled_window 
 					      ~vpolicy:`AUTOMATIC 
 					      ~hpolicy:`AUTOMATIC
