@@ -1136,7 +1136,7 @@ Let w_iszero i := match i ?= 0 with Eq => true | _ => false end.
 
 (** Modulo [2^p] *)
 Let w_pos_mod p i :=
-  match compare31 p 32 with
+  match compare31 p 31 with
     | Lt => addmuldiv31 p 0 (addmuldiv31 (31-p) i 0)
     | _ => i
   end.
@@ -1227,9 +1227,7 @@ Section Int31_Spec.
  Notation "[|| x ||]" :=
    (zn2z_to_Z wB phi x)  (at level 0, x at level 99).
 
- Definition spec_to_Z := phi_bounded.
-
- Lemma spec_zdigits : [| 31%int31 |] = 31.
+ Lemma spec_zdigits : [| 31 |] = 31.
  Proof.
   reflexivity.
  Qed.
@@ -1239,23 +1237,23 @@ Section Int31_Spec.
   auto with zarith.
  Qed.
 
- Lemma spec_0   : [|0%int31|] = 0.
+ Lemma spec_0   : [| 0 |] = 0.
  Proof.
   reflexivity.
  Qed.
  
- Lemma spec_1   : [|1%int31|] = 1.
+ Lemma spec_1   : [| 1 |] = 1.
  Proof.
   reflexivity.
  Qed.
     
- Lemma spec_Bm1 : [|Tn|] = wB - 1.
+ Lemma spec_Bm1 : [| Tn |] = wB - 1.
  Proof.
   reflexivity.
  Qed.
 
  Lemma spec_compare : forall x y,
-   match compare31 x y with
+   match (x ?= y)%int31 with
      | Eq => [|x|] = [|y|]
      | Lt => [|x|] < [|y|]
      | Gt => [|x|] > [|y|]
@@ -1265,6 +1263,402 @@ Section Int31_Spec.
  case_eq ([|x|] ?= [|y|]); auto.
  intros; apply Zcompare_Eq_eq; auto.
  Qed.
+
+ (** Addition *)
+
+ Lemma spec_add_c  : forall x y, [+|add31c x y|] = [|x|] + [|y|].
+ Proof.
+ intros; unfold add31c, add31, interp_carry; rewrite phi_phi_inv.
+ generalize (phi_bounded x)(phi_bounded y); intros.
+ set (X:=[|x|]) in *; set (Y:=[|y|]) in *; clearbody X Y.
+
+ assert ((X+Y) mod wB ?= X+Y <> Eq -> [+|C1 (phi_inv (X+Y))|] = X+Y).
+  unfold interp_carry; rewrite phi_phi_inv, Zcompare_Eq_iff_eq; intros.
+  destruct (Z_lt_le_dec (X+Y) wB).
+  contradict H1; auto using Zmod_small with zarith.
+  rewrite <- (Z_mod_plus_full (X+Y) (-1) wB).
+  rewrite Zmod_small; romega. 
+
+ generalize (Zcompare_Eq_eq ((X+Y) mod wB) (X+Y)); intros Heq.
+ destruct Zcompare; intros; 
+  [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
+ Qed.
+
+ Lemma spec_succ_c : forall x, [+|add31c x 1|] = [|x|] + 1.
+ Proof.
+ intros; apply spec_add_c. 
+ Qed.
+
+ Lemma spec_add_carry_c : forall x y, [+|add31carryc x y|] = [|x|] + [|y|] + 1.
+ Proof.
+ intros.
+ unfold add31carryc, interp_carry; rewrite phi_phi_inv.
+ generalize (phi_bounded x)(phi_bounded y); intros.
+ set (X:=[|x|]) in *; set (Y:=[|y|]) in *; clearbody X Y.
+
+ assert ((X+Y+1) mod wB ?= X+Y+1 <> Eq -> [+|C1 (phi_inv (X+Y+1))|] = X+Y+1).
+  unfold interp_carry; rewrite phi_phi_inv, Zcompare_Eq_iff_eq; intros.
+  destruct (Z_lt_le_dec (X+Y+1) wB).
+  contradict H1; auto using Zmod_small with zarith.
+  rewrite <- (Z_mod_plus_full (X+Y+1) (-1) wB).
+  rewrite Zmod_small; romega.
+
+ generalize (Zcompare_Eq_eq ((X+Y+1) mod wB) (X+Y+1)); intros Heq.
+ destruct Zcompare; intros; 
+  [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
+ Qed.
+
+ Lemma spec_add : forall x y, [|x+y|] = ([|x|] + [|y|]) mod wB.
+ Proof.
+ intros; apply phi_phi_inv.
+ Qed.
+
+ Lemma spec_add_carry :
+	 forall x y, [|x+y+1|] = ([|x|] + [|y|] + 1) mod wB.
+ Proof.
+ unfold add31; intros.
+ repeat rewrite phi_phi_inv.
+ apply Zplus_mod_idemp_l.
+ Qed.
+
+ Lemma spec_succ : forall x, [|x+1|] = ([|x|] + 1) mod wB.
+ Proof.
+ intros; rewrite <- spec_1; apply spec_add.
+ Qed.
+
+ (** Substraction *)
+
+ Lemma spec_sub_c : forall x y, [-|sub31c x y|] = [|x|] - [|y|].
+ Proof. 
+ unfold sub31c, sub31, interp_carry; intros.
+ rewrite phi_phi_inv.
+ generalize (phi_bounded x)(phi_bounded y); intros.
+ set (X:=[|x|]) in *; set (Y:=[|y|]) in *; clearbody X Y.
+
+ assert ((X-Y) mod wB ?= X-Y <> Eq -> [-|C1 (phi_inv (X-Y))|] = X-Y).
+  unfold interp_carry; rewrite phi_phi_inv, Zcompare_Eq_iff_eq; intros.
+  destruct (Z_lt_le_dec (X-Y) 0).
+  rewrite <- (Z_mod_plus_full (X-Y) 1 wB).
+  rewrite Zmod_small; romega.
+  contradict H1; apply Zmod_small; romega.
+
+ generalize (Zcompare_Eq_eq ((X-Y) mod wB) (X-Y)); intros Heq.
+ destruct Zcompare; intros;
+  [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
+ Qed.
+
+ Lemma spec_sub_carry_c : forall x y, [-|sub31carryc x y|] = [|x|] - [|y|] - 1.
+ Proof.
+ unfold sub31carryc, sub31, interp_carry; intros.
+ rewrite phi_phi_inv.
+ generalize (phi_bounded x)(phi_bounded y); intros.
+ set (X:=[|x|]) in *; set (Y:=[|y|]) in *; clearbody X Y.
+
+ assert ((X-Y-1) mod wB ?= X-Y-1 <> Eq -> [-|C1 (phi_inv (X-Y-1))|] = X-Y-1).
+  unfold interp_carry; rewrite phi_phi_inv, Zcompare_Eq_iff_eq; intros.
+  destruct (Z_lt_le_dec (X-Y-1) 0).
+  rewrite <- (Z_mod_plus_full (X-Y-1) 1 wB).
+  rewrite Zmod_small; romega.
+  contradict H1; apply Zmod_small; romega.
+
+ generalize (Zcompare_Eq_eq ((X-Y-1) mod wB) (X-Y-1)); intros Heq.
+ destruct Zcompare; intros; 
+  [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
+ Qed.
+
+ Lemma spec_sub : forall x y, [|x-y|] = ([|x|] - [|y|]) mod wB.
+ Proof.
+ intros; apply phi_phi_inv.
+ Qed.
+
+ Lemma spec_sub_carry :
+   forall x y, [|x-y-1|] = ([|x|] - [|y|] - 1) mod wB.
+ Proof.
+ unfold sub31; intros.
+ repeat rewrite phi_phi_inv.
+ apply Zminus_mod_idemp_l.
+ Qed.
+
+ Lemma spec_opp_c : forall x, [-|sub31c 0 x|] = -[|x|].
+ Proof. 
+ intros; apply spec_sub_c.
+ Qed.
+
+ Lemma spec_opp : forall x, [|0 - x|] = (-[|x|]) mod wB.
+ Proof.
+ intros; apply phi_phi_inv.
+ Qed.
+
+ Lemma spec_opp_carry : forall x, [|0 - x - 1|] = wB - [|x|] - 1.
+ Proof.
+ unfold sub31; intros.
+ repeat rewrite phi_phi_inv.
+ change [|1|] with 1; change [|0|] with 0.
+ rewrite <- (Z_mod_plus_full (0-[|x|]) 1 wB).
+ rewrite Zminus_mod_idemp_l.
+ rewrite Zmod_small; generalize (phi_bounded x); romega.
+ Qed.
+
+ Lemma spec_pred_c : forall x, [-|sub31c x 1|] = [|x|] - 1.
+ Proof.
+ intros; apply spec_sub_c.
+ Qed.
+
+ Lemma spec_pred : forall x, [|x-1|] = ([|x|] - 1) mod wB.
+ Proof.
+ intros; apply spec_sub.
+ Qed.
+
+ (** Multiplication *)
+
+ Lemma phi2_phi_inv2 : forall x, [||phi_inv2 x||] = x mod (wB^2).
+ Proof.
+ assert (forall z, (z / wB) mod wB * wB + z mod wB = z mod wB ^ 2).
+  intros.
+  assert ((z/wB) mod wB = z/wB - (z/wB/wB)*wB).
+   rewrite (Z_div_mod_eq (z/wB) wB wB_pos) at 2; ring.
+  assert (z mod wB = z - (z/wB)*wB).
+   rewrite (Z_div_mod_eq z wB wB_pos) at 2; ring.
+  rewrite H.
+  rewrite H0 at 1.
+  ring_simplify.
+  rewrite Zdiv_Zdiv; auto with zarith.
+  rewrite (Z_div_mod_eq z (wB*wB)) at 2; auto with zarith.
+  change (wB*wB) with (wB^2); ring.
+
+ unfold phi_inv2.
+ destruct x; unfold zn2z_to_Z; rewrite ?phi_phi_inv; 
+  change base with wB; auto.
+ Qed.
+
+ Lemma spec_mul_c : forall x y, [|| mul31c x y ||] = [|x|] * [|y|].
+ Proof.
+ unfold mul31c; intros.
+ rewrite phi2_phi_inv2.
+ apply Zmod_small.
+ generalize (phi_bounded x)(phi_bounded y); intros.
+ change (wB^2) with (wB * wB).
+ auto using Zmult_lt_compat with zarith.
+ Qed.
+
+ Lemma spec_mul : forall x y, [|x*y|] = ([|x|] * [|y|]) mod wB.
+ Proof.
+ intros; apply phi_phi_inv.
+ Qed.
+
+ Lemma spec_square_c : forall x, [|| mul31c x x ||] = [|x|] * [|x|].
+ Proof.
+ intros; apply spec_mul_c.
+ Qed.
+
+ (** Division *) 
+
+ Lemma spec_div21 : forall a1 a2 b,
+      wB/2 <= [|b|] ->
+      [|a1|] < [|b|] ->
+      let (q,r) := div3121 a1 a2 b in
+      [|a1|] *wB+ [|a2|] = [|q|] * [|b|] + [|r|] /\
+      0 <= [|r|] < [|b|].
+ Proof.
+ unfold div3121; intros.
+ generalize (phi_bounded a1)(phi_bounded a2)(phi_bounded b); intros.
+ assert ([|b|]>0) by (auto with zarith).
+ generalize (Z_div_mod (phi2 a1 a2) [|b|] H4) (Z_div_pos (phi2 a1 a2) [|b|] H4).
+ unfold Zdiv; destruct (Zdiv_eucl (phi2 a1 a2) [|b|]); simpl.
+ rewrite ?phi_phi_inv.
+ destruct 1; intros.
+ unfold phi2 in *.
+ change base with wB; change base with wB in H5.
+ change (Zpower_pos 2 31) with wB; change (Zpower_pos 2 31) with wB in H.
+ rewrite H5, Zmult_comm.
+ replace (z0 mod wB) with z0 by (symmetry; apply Zmod_small; omega).
+ replace (z mod wB) with z; auto with zarith.
+  symmetry; apply Zmod_small.
+  split.
+  apply H7; change base with wB; auto with zarith.
+  apply Zmult_gt_0_lt_reg_r with [|b|].
+  omega.
+  rewrite Zmult_comm.
+  apply Zle_lt_trans with ([|b|]*z+z0).
+  omega.
+  rewrite <- H5.
+  apply Zle_lt_trans with ([|a1|]*wB+(wB-1)).
+  omega.
+  replace ([|a1|]*wB+(wB-1)) with (wB*([|a1|]+1)-1) by ring.
+  assert (wB*([|a1|]+1) <= wB*[|b|]); try omega.
+  apply Zmult_le_compat; omega.
+ Qed.
+
+ Lemma spec_div : forall a b, 0 < [|b|] ->
+      let (q,r) := div31 a b in
+      [|a|] = [|q|] * [|b|] + [|r|] /\
+      0 <= [|r|] < [|b|].
+ Proof.
+ unfold div31; intros.
+ assert ([|b|]>0) by (auto with zarith).
+ generalize (Z_div_mod [|a|] [|b|] H0) (Z_div_pos [|a|] [|b|] H0).
+ unfold Zdiv; destruct (Zdiv_eucl [|a|] [|b|]); simpl.
+ rewrite ?phi_phi_inv.
+ destruct 1; intros.
+ rewrite H1, Zmult_comm.
+ generalize (phi_bounded a)(phi_bounded b); intros.
+ replace (z0 mod wB) with z0 by (symmetry; apply Zmod_small; omega).
+ replace (z mod wB) with z; auto with zarith.
+  symmetry; apply Zmod_small.
+  split; auto with zarith.
+  apply Zle_lt_trans with [|a|]; auto with zarith.
+  rewrite H1.
+  apply Zle_trans with ([|b|]*z); try omega.
+  rewrite <- (Zmult_1_l z) at 1.
+  apply Zmult_le_compat; auto with zarith.
+ Qed.
+
+ Lemma spec_mod :  forall a b, 0 < [|b|] ->
+      [|let (_,r) := (a/b)%int31 in r|] = [|a|] mod [|b|].
+ Proof.
+ unfold div31; intros.
+ assert ([|b|]>0) by (auto with zarith).
+ unfold Zmod.
+ generalize (Z_div_mod [|a|] [|b|] H0).
+ destruct (Zdiv_eucl [|a|] [|b|]); simpl.
+ rewrite ?phi_phi_inv.
+ destruct 1; intros.
+ generalize (phi_bounded b); intros.
+ apply Zmod_small; omega.
+ Qed.
+
+ Lemma spec_gcd : forall a b, Zis_gcd [|a|] [|b|] [|gcd31 a b|].
+ Proof.
+ Admitted. (* TODO !! *)
+ Opaque gcd31.
+
+ Lemma Zmod_eq_full : forall a b, b<>0 -> 
+  a mod b = a - (a/b)*b.
+ Proof.
+ intros.
+ rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
+ apply Z_div_mod_eq_full; auto.
+ Qed.
+
+ Lemma Zmod_eq : forall a b, b>0 -> 
+  a mod b = a - (a/b)*b.
+ Proof.
+ intros.
+ rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
+ apply Z_div_mod_eq; auto.
+ Qed.
+
+ Lemma shift_unshift_mod_2 : forall n p a, (0<=p<=n)%Z -> 
+   ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) = 
+   a mod 2 ^ p.
+ Proof.
+ intros.
+ rewrite Zmod_small.
+ rewrite Zmod_eq by (auto with zarith).
+ unfold Zminus at 1.
+ rewrite BigNumPrelude.Z_div_plus_l by (auto with zarith).
+ assert (2^n = 2^(n-p)*2^p).
+  rewrite <- Zpower_exp by (auto with zarith).
+  replace (n-p+p) with n; auto with zarith.
+ rewrite H0.
+ rewrite <- Zdiv_Zdiv, Z_div_mult by (auto with zarith).
+ rewrite (Zmult_comm (2^(n-p))), Zmult_assoc.
+ rewrite Zopp_mult_distr_l.
+ rewrite Z_div_mult by (auto with zarith).
+ symmetry; apply Zmod_eq; auto with zarith.
+
+ remember (a * 2 ^ (n - p)) as b.
+ destruct (Z_mod_lt b (2^n)); auto with zarith.
+ split.
+ apply Z_div_pos; auto with zarith.
+ apply Zdiv_lt_upper_bound; auto with zarith.
+ apply Zlt_le_trans with (2^n); auto with zarith.
+ rewrite <- (Zmult_1_r (2^n)) at 1.
+ apply Zmult_le_compat; auto with zarith.
+ cut (0 < 2 ^ (n-p)); auto with zarith.
+ Qed.
+
+ Lemma spec_add_mul_div : forall x y p,
+       [|p|] <= Zpos 31 ->
+       [| addmuldiv31 p x y |] =
+         ([|x|] * (2 ^ [|p|]) +
+          [|y|] / (2 ^ ((Zpos 31) - [|p|]))) mod wB.
+ Admitted. (* TODO !! *)
+
+ Let w_pos_mod     := int31_op.(znz_pos_mod).
+
+ Lemma spec_pos_mod : forall w p,
+       [|w_pos_mod p w|] = [|w|] mod (2 ^ [|p|]).
+ Proof.
+ unfold w_pos_mod, znz_pos_mod, int31_op, compare31.
+ change [|31|] with 31%Z.
+ assert (forall w p, 31<=p -> [|w|] = [|w|] mod 2^p).
+  intros.
+  generalize (phi_bounded w).
+  symmetry; apply Zmod_small.
+  split; auto with zarith.
+  apply Zlt_le_trans with wB; auto with zarith.
+  apply Zpow_facts.Zpower_le_monotone; auto with zarith.
+ intros.
+ case_eq ([|p|] ?= 31); intros; 
+  [ apply H; rewrite (Zcompare_Eq_eq _ _ H0); auto with zarith | | 
+    apply H; change ([|p|]>31)%Z in H0; auto with zarith ].
+ change ([|p|]<31) in H0.
+ rewrite spec_add_mul_div by auto with zarith.
+ change [|0|] with 0%Z; rewrite Zmult_0_l, Zplus_0_l.
+ generalize (phi_bounded p)(phi_bounded w); intros.
+ assert (31-[|p|]<wB).
+  apply Zle_lt_trans with 31%Z; auto with zarith.
+  compute; auto.
+ assert ([|31-p|]=31-[|p|]).
+  unfold sub31; rewrite phi_phi_inv.
+  change [|31|] with 31%Z.
+  apply Zmod_small; auto with zarith.
+ rewrite spec_add_mul_div by (rewrite H4; auto with zarith).
+ change [|0|] with 0%Z; rewrite Zdiv_0_l, Zplus_0_r.
+ rewrite H4.
+ apply shift_unshift_mod_2; auto with zarith.
+ Qed.
+
+
+ (** Shift operations *)
+
+ Lemma spec_head00:  forall x, [|x|] = 0 -> [|head031 x|] = Zpos 31.
+ Proof.
+  intros.
+  generalize (phi_inv_phi x).
+  rewrite H; simpl.
+  intros H'; rewrite <- H'.
+  simpl; auto.
+ Qed.
+ Lemma spec_head0  : forall x,  0 < [|x|] ->
+	 wB/ 2 <= 2 ^ ([|head031 x|]) * [|x|] < wB.
+ Admitted. (* TODO !! *)
+ Lemma spec_tail00:  forall x, [|x|] = 0 -> [|tail031 x|] = Zpos 31.
+ Proof.
+  intros.
+  generalize (phi_inv_phi x).
+  rewrite H; simpl.
+  intros H'; rewrite <- H'.
+  simpl; auto.
+ Qed.
+ Lemma spec_tail0  : forall x, 0 < [|x|] -> 
+         exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|tail031 x|]).
+ Admitted. (* TODO !! *)
+    
+ (* Sqrt *)
+
+ Lemma spec_sqrt2 : forall x y,
+       wB/ 4 <= [|x|] ->
+       let (s,r) := sqrt312 x y in
+          [||WW x y||] = [|s|] ^ 2 + [+|r|] /\
+          [+|r|] <= 2 * [|s|].
+ Admitted. (* TODO !! *)
+ Lemma spec_sqrt : forall x,
+       [|sqrt31 x|] ^ 2 <= [|x|] < ([|sqrt31 x|] + 1) ^ 2.
+ Admitted. (* TODO !! *)
+
+ (** [iszero] *)
 
  Let w_eq0         := int31_op.(znz_eq0).
 
@@ -1276,6 +1670,8 @@ Section Int31_Spec.
  apply Zcompare_Eq_eq.
  now destruct ([|x|] ?= 0).
  Qed.
+
+ (** [WW] and variants *) 
 
  Let wWW           := int31_op.(znz_WW).
  Let w0W           := int31_op.(znz_0W).
@@ -1310,399 +1706,6 @@ Section Int31_Spec.
  case_eq ([|h|] ?= 0); simpl; auto with zarith.
  intro H; rewrite (Zcompare_Eq_eq _ _ H); auto.
  Qed.
-
- (** Addition *)
-
- Let w_add_c       := int31_op.(znz_add_c).
- Let w_add_carry_c := int31_op.(znz_add_carry_c).
- Let w_add         := int31_op.(znz_add).
- Let w_add_carry   := int31_op.(znz_add_carry).
- Let w_succ        := int31_op.(znz_succ).
- Let w_succ_c      := int31_op.(znz_succ_c).
-
- Lemma spec_add_c  : forall x y, [+|w_add_c x y|] = [|x|] + [|y|].
- Proof.
- clear; unfold w_add_c, znz_add_c; simpl; intros.
- unfold add31c, add31, interp_carry; rewrite phi_phi_inv.
- generalize (spec_to_Z x)(spec_to_Z y); intros.
- set (X:=[|x|]) in *; set (Y:=[|y|]) in *; clearbody X Y.
-
- assert ((X+Y) mod wB ?= X+Y <> Eq -> [+|C1 (phi_inv (X+Y))|] = X+Y).
-  unfold interp_carry; rewrite phi_phi_inv, Zcompare_Eq_iff_eq; intros.
-  destruct (Z_lt_le_dec (X+Y) wB).
-  contradict H1; auto using Zmod_small with zarith.
-  rewrite <- (Z_mod_plus_full (X+Y) (-1) wB).
-  rewrite Zmod_small; romega. (* omega : BUG !! (peut-etre a cause du clear) *)
-
- generalize (Zcompare_Eq_eq ((X+Y) mod wB) (X+Y)); intros Heq.
- destruct Zcompare; intros; 
-  [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
- Qed.
-
- Lemma spec_succ_c : forall x, [+|w_succ_c x|] = [|x|] + 1.
- Proof.
- clear - w_add_c; unfold w_succ_c, znz_succ_c; simpl; intros.
- apply spec_add_c. (* erreur gore si clear trop violent *)
- Qed.
-
- Lemma spec_add_carry_c : forall x y, [+|w_add_carry_c x y|] = [|x|] + [|y|] + 1.
- Proof.
- clear; unfold w_add_carry_c, znz_add_carry_c, int31_op; intros.
- unfold add31carryc, interp_carry; rewrite phi_phi_inv.
- generalize (spec_to_Z x)(spec_to_Z y); intros.
- set (X:=[|x|]) in *; set (Y:=[|y|]) in *; clearbody X Y.
-
- assert ((X+Y+1) mod wB ?= X+Y+1 <> Eq -> [+|C1 (phi_inv (X+Y+1))|] = X+Y+1).
-  unfold interp_carry; rewrite phi_phi_inv, Zcompare_Eq_iff_eq; intros.
-  destruct (Z_lt_le_dec (X+Y+1) wB).
-  contradict H1; auto using Zmod_small with zarith.
-  rewrite <- (Z_mod_plus_full (X+Y+1) (-1) wB).
-  rewrite Zmod_small; romega.
-
- generalize (Zcompare_Eq_eq ((X+Y+1) mod wB) (X+Y+1)); intros Heq.
- destruct Zcompare; intros; 
-  [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
- Qed.
-
- Lemma spec_add : forall x y, [|w_add x y|] = ([|x|] + [|y|]) mod wB.
- Proof.
- clear; unfold w_add; simpl; intros.
- apply phi_phi_inv.
- Qed.
-
- Lemma spec_add_carry :
-	 forall x y, [|w_add_carry x y|] = ([|x|] + [|y|] + 1) mod wB.
- Proof.
- clear; unfold w_add_carry, znz_add_carry, int31_op, add31; intros.
- repeat rewrite phi_phi_inv.
- apply Zplus_mod_idemp_l.
- Qed.
-
- Lemma spec_succ : forall x, [|w_succ x|] = ([|x|] + 1) mod wB.
- Proof.
- clear - w_add; unfold w_succ, znz_succ, int31_op; intros.
- change 1 with [|1|].
- apply spec_add.
- Qed.
-
- (** Substraction *)
-
- Let w_sub_c       := int31_op.(znz_sub_c).
- Let w_sub_carry_c := int31_op.(znz_sub_carry_c).
- Let w_sub         := int31_op.(znz_sub).
- Let w_sub_carry   := int31_op.(znz_sub_carry).
- Let w_pred_c      := int31_op.(znz_pred_c).
- Let w_pred        := int31_op.(znz_pred).
- Let w_opp_c       := int31_op.(znz_opp_c).
- Let w_opp         := int31_op.(znz_opp).
- Let w_opp_carry   := int31_op.(znz_opp_carry).
-
- Lemma spec_sub_c : forall x y, [-|w_sub_c x y|] = [|x|] - [|y|].
- Proof. 
- clear; unfold w_sub_c; simpl; intros.
- unfold sub31c, sub31, interp_carry; intros.
- rewrite phi_phi_inv.
- generalize (spec_to_Z x)(spec_to_Z y); intros.
- set (X:=[|x|]) in *; set (Y:=[|y|]) in *; clearbody X Y.
-
- assert ((X-Y) mod wB ?= X-Y <> Eq -> [-|C1 (phi_inv (X-Y))|] = X-Y).
-  unfold interp_carry; rewrite phi_phi_inv, Zcompare_Eq_iff_eq; intros.
-  destruct (Z_lt_le_dec (X-Y) 0).
-  rewrite <- (Z_mod_plus_full (X-Y) 1 wB).
-  rewrite Zmod_small; romega.
-  contradict H1; apply Zmod_small; romega.
-
- generalize (Zcompare_Eq_eq ((X-Y) mod wB) (X-Y)); intros Heq.
- destruct Zcompare; intros;
-  [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
- Qed.
-
- Lemma spec_sub_carry_c : forall x y, [-|w_sub_carry_c x y|] = [|x|] - [|y|] - 1.
- Proof.
- clear; unfold w_sub_carry_c; simpl; intros.
- unfold sub31carryc, sub31, interp_carry; intros.
- rewrite phi_phi_inv.
- generalize (spec_to_Z x)(spec_to_Z y); intros.
- set (X:=[|x|]) in *; set (Y:=[|y|]) in *; clearbody X Y.
-
- assert ((X-Y-1) mod wB ?= X-Y-1 <> Eq -> [-|C1 (phi_inv (X-Y-1))|] = X-Y-1).
-  unfold interp_carry; rewrite phi_phi_inv, Zcompare_Eq_iff_eq; intros.
-  destruct (Z_lt_le_dec (X-Y-1) 0).
-  rewrite <- (Z_mod_plus_full (X-Y-1) 1 wB).
-  rewrite Zmod_small; romega.
-  contradict H1; apply Zmod_small; romega.
-
- generalize (Zcompare_Eq_eq ((X-Y-1) mod wB) (X-Y-1)); intros Heq.
- destruct Zcompare; intros; 
-  [ rewrite phi_phi_inv; auto | now apply H1 | now apply H1].
- Qed.
-
- Lemma spec_sub : forall x y, [|w_sub x y|] = ([|x|] - [|y|]) mod wB.
- Proof.
- clear; unfold w_sub; simpl; intros.
- apply phi_phi_inv.
- Qed.
-
- Lemma spec_sub_carry :
-   forall x y, [|w_sub_carry x y|] = ([|x|] - [|y|] - 1) mod wB.
- Proof.
- clear; unfold w_sub_carry; simpl; intros.
- unfold sub31.
- repeat rewrite phi_phi_inv.
- apply Zminus_mod_idemp_l.
- Qed.
-
- Lemma spec_opp_c : forall x, [-|w_opp_c x|] = -[|x|].
- Proof. 
- clear - w_sub_c; unfold w_opp_c; simpl; intros.
- apply spec_sub_c.
- Qed.
-
- Lemma spec_opp : forall x, [|w_opp x|] = (-[|x|]) mod wB.
- Proof.
- clear; unfold w_opp; simpl; intros.
- apply phi_phi_inv.
- Qed.
-
- Lemma spec_opp_carry : forall x, [|w_opp_carry x|] = wB - [|x|] - 1.
- Proof.
- clear; unfold w_opp_carry, znz_opp_carry, int31_op; intros.
- unfold sub31.
- repeat rewrite phi_phi_inv.
- change [|1|] with 1; change [|0|] with 0.
- rewrite <- (Z_mod_plus_full (0-[|x|]) 1 wB).
- rewrite Zminus_mod_idemp_l.
- rewrite Zmod_small; generalize (spec_to_Z x); romega.
- Qed.
-
- Lemma spec_pred_c : forall x, [-|w_pred_c x|] = [|x|] - 1.
- Proof.
- clear -w_sub_c; unfold w_pred_c; simpl; intros.
- apply spec_sub_c.
- Qed.
-
- Lemma spec_pred : forall x, [|w_pred x|] = ([|x|] - 1) mod wB.
- Proof.
- clear -w_sub; unfold w_pred; simpl; intros.
- apply spec_sub.
- Qed.
-
- (** Multiplication *)
-
- Let w_mul_c       := int31_op.(znz_mul_c).
- Let w_mul         := int31_op.(znz_mul).
- Let w_square_c    := int31_op.(znz_square_c).
-
- Lemma phi2_phi_inv2 : forall x, [||phi_inv2 x||] = x mod (wB^2).
- Proof.
- assert (forall z, (z / wB) mod wB * wB + z mod wB = z mod wB ^ 2).
-  intros.
-  assert ((z/wB) mod wB = z/wB - (z/wB/wB)*wB).
-   rewrite (Z_div_mod_eq (z/wB) wB wB_pos) at 2; ring.
-  assert (z mod wB = z - (z/wB)*wB).
-   rewrite (Z_div_mod_eq z wB wB_pos) at 2; ring.
-  rewrite H.
-  rewrite H0 at 1.
-  ring_simplify.
-  rewrite Zdiv_Zdiv; auto with zarith.
-  rewrite (Z_div_mod_eq z (wB*wB)) at 2; auto with zarith.
-  change (wB*wB) with (wB^2); ring.
-
- unfold phi_inv2.
- destruct x; unfold zn2z_to_Z; rewrite ?phi_phi_inv; 
-  change base with wB; auto.
- Qed.
-
- Lemma spec_mul_c : forall x y, [|| w_mul_c x y ||] = [|x|] * [|y|].
- Proof.
- clear; unfold w_mul_c; simpl; intros.
- unfold mul31c.
- rewrite phi2_phi_inv2.
- apply Zmod_small.
- generalize (spec_to_Z x)(spec_to_Z y); intros.
- change (wB^2) with (wB * wB).
- auto using Zmult_lt_compat with zarith.
- Qed.
-
- Lemma spec_mul : forall x y, [|w_mul x y|] = ([|x|] * [|y|]) mod wB.
- Proof.
- clear; unfold w_mul; simpl; intros.
- apply phi_phi_inv.
- Qed.
-
- Lemma spec_square_c : forall x, [|| w_square_c x||] = [|x|] * [|x|].
- Proof.
- clear -w_mul_c; unfold w_square_c; simpl; intros.
- apply spec_mul_c.
- Qed.
-
- (** Division *) 
-
- Let w_div21       := int31_op.(znz_div21).
- Let w_div_gt      := int31_op.(znz_div_gt).
- Let w_div         := int31_op.(znz_div).
-
- Let w_mod_gt      := int31_op.(znz_mod_gt).
- Let w_mod         := int31_op.(znz_mod).
- Let w_gcd_gt      := int31_op.(znz_gcd_gt).
- Let w_gcd         := int31_op.(znz_gcd).
-
- Let w_add_mul_div := int31_op.(znz_add_mul_div).
-
- Let w_pos_mod     := int31_op.(znz_pos_mod).
-
- Lemma spec_div21 : forall a1 a2 b,
-      wB/2 <= [|b|] ->
-      [|a1|] < [|b|] ->
-      let (q,r) := w_div21 a1 a2 b in
-      [|a1|] *wB+ [|a2|] = [|q|] * [|b|] + [|r|] /\
-      0 <= [|r|] < [|b|].
- Proof.
- unfold w_div21, znz_div21; simpl; unfold div3121.
- intros.
- generalize (spec_to_Z a1)(spec_to_Z a2)(spec_to_Z b); intros.
- assert ([|b|]>0) by (auto with zarith).
- generalize (Z_div_mod (phi2 a1 a2) [|b|] H4) (Z_div_pos (phi2 a1 a2) [|b|] H4).
- unfold Zdiv; destruct (Zdiv_eucl (phi2 a1 a2) [|b|]); simpl.
- rewrite ?phi_phi_inv.
- destruct 1; intros.
- unfold phi2 in *.
- change base with wB; change base with wB in H5.
- change (Zpower_pos 2 31) with wB; change (Zpower_pos 2 31) with wB in H.
- rewrite H5, Zmult_comm.
- replace (z0 mod wB) with z0 by (symmetry; apply Zmod_small; omega).
- replace (z mod wB) with z; auto with zarith.
-  symmetry; apply Zmod_small.
-  split.
-  apply H7; change base with wB; auto with zarith.
-  apply Zmult_gt_0_lt_reg_r with [|b|].
-  omega.
-  rewrite Zmult_comm.
-  apply Zle_lt_trans with ([|b|]*z+z0).
-  omega.
-  rewrite <- H5.
-  apply Zle_lt_trans with ([|a1|]*wB+(wB-1)).
-  omega.
-  replace ([|a1|]*wB+(wB-1)) with (wB*([|a1|]+1)-1) by ring.
-  assert (wB*([|a1|]+1) <= wB*[|b|]); try omega.
-  apply Zmult_le_compat; omega.
- Qed.
-
- Lemma spec_div : forall a b, 0 < [|b|] ->
-      let (q,r) := w_div a b in
-      [|a|] = [|q|] * [|b|] + [|r|] /\
-      0 <= [|r|] < [|b|].
- Proof.
- intros.
- unfold w_div, znz_div; simpl; unfold div31.
- assert ([|b|]>0) by (auto with zarith).
- generalize (Z_div_mod [|a|] [|b|] H0) (Z_div_pos [|a|] [|b|] H0).
- unfold Zdiv; destruct (Zdiv_eucl [|a|] [|b|]); simpl.
- rewrite ?phi_phi_inv.
- destruct 1; intros.
- rewrite H1, Zmult_comm.
- generalize (spec_to_Z a)(spec_to_Z b); intros.
- replace (z0 mod wB) with z0 by (symmetry; apply Zmod_small; omega).
- replace (z mod wB) with z; auto with zarith.
-  symmetry; apply Zmod_small.
-  split; auto with zarith.
-  apply Zle_lt_trans with [|a|]; auto with zarith.
-  rewrite H1.
-  apply Zle_trans with ([|b|]*z); try omega.
-  rewrite <- (Zmult_1_l z) at 1.
-  apply Zmult_le_compat; auto with zarith.
- Qed.
- Lemma spec_div_gt : forall a b, [|a|] > [|b|] -> 0 < [|b|] ->
-      let (q,r) := w_div_gt a b in
-      [|a|] = [|q|] * [|b|] + [|r|] /\
-      0 <= [|r|] < [|b|].
- Proof.
- intros; apply spec_div; auto.
- Qed.
-
- Lemma spec_mod :  forall a b, 0 < [|b|] ->
-      [|w_mod a b|] = [|a|] mod [|b|].
- Proof.
- intros.
- unfold w_mod, znz_mod; simpl; unfold div31.
- assert ([|b|]>0) by (auto with zarith).
- unfold Zmod.
- generalize (Z_div_mod [|a|] [|b|] H0).
- destruct (Zdiv_eucl [|a|] [|b|]); simpl.
- rewrite ?phi_phi_inv.
- destruct 1; intros.
- generalize (spec_to_Z b); intros.
- apply Zmod_small; omega.
- Qed.
- Lemma spec_mod_gt : forall a b, [|a|] > [|b|] -> 0 < [|b|] ->
-      [|w_mod_gt a b|] = [|a|] mod [|b|].
- Proof.
- intros; apply spec_mod; auto.
- Qed.
-
- Lemma spec_gcd : forall a b, Zis_gcd [|a|] [|b|] [|w_gcd a b|].
- Proof.
- Admitted. (* TODO !! *)
- Opaque gcd31.
- Lemma spec_gcd_gt : forall a b, [|a|] > [|b|] ->
-      Zis_gcd [|a|] [|b|] [|w_gcd_gt a b|].
- Proof. 
- intros; apply spec_gcd; auto.
- Qed.
-
- Lemma spec_add_mul_div : forall x y p,
-       [|p|] <= Zpos 31 ->
-       [| w_add_mul_div p x y |] =
-         ([|x|] * (2 ^ [|p|]) +
-          [|y|] / (2 ^ ((Zpos 31) - [|p|]))) mod wB.
- Admitted. (* TODO !! *)
- Lemma spec_pos_mod : forall w p,
-       [|w_pos_mod p w|] = [|w|] mod (2 ^ [|p|]).
- Admitted. (* TODO !! *)
-
- (** Shift operations *)
-
- Let w_head0       := int31_op.(znz_head0).
- Let w_tail0       := int31_op.(znz_tail0).
- 
-
- Lemma spec_head00:  forall x, [|x|] = 0 -> [|w_head0 x|] = Zpos 31.
- Proof.
-  intros.
-  generalize (phi_inv_phi x).
-  rewrite H; simpl.
-  intros H'; rewrite <- H'.
-  simpl; auto.
- Qed.
- Lemma spec_head0  : forall x,  0 < [|x|] ->
-	 wB/ 2 <= 2 ^ ([|w_head0 x|]) * [|x|] < wB.
- Admitted. (* TODO !! *)
- Lemma spec_tail00:  forall x, [|x|] = 0 -> [|w_tail0 x|] = Zpos 31.
- Proof.
-  intros.
-  generalize (phi_inv_phi x).
-  rewrite H; simpl.
-  intros H'; rewrite <- H'.
-  simpl; auto.
- Qed.
- Lemma spec_tail0  : forall x, 0 < [|x|] -> 
-         exists y, 0 <= y /\ [|x|] = (2 * y + 1) * (2 ^ [|w_tail0 x|]).
- Admitted. (* TODO !! *)
-    
- (* Sqrt *)
-
- Let w_sqrt2       := int31_op.(znz_sqrt2).
- Let w_sqrt        := int31_op.(znz_sqrt).
-
- Lemma spec_sqrt2 : forall x y,
-       wB/ 4 <= [|x|] ->
-       let (s,r) := w_sqrt2 x y in
-          [||WW x y||] = [|s|] ^ 2 + [+|r|] /\
-          [+|r|] <= 2 * [|s|].
- Admitted. (* TODO !! *)
- Lemma spec_sqrt : forall x,
-       [|w_sqrt x|] ^ 2 <= [|x|] < ([|w_sqrt x|] + 1) ^ 2.
- Admitted. (* TODO !! *)
   
  (* Even *)
  
@@ -1711,8 +1714,21 @@ Section Int31_Spec.
  Lemma spec_is_even : forall x,
       if w_is_even x then [|x|] mod 2 = 0 else [|x|] mod 2 = 1.
  Proof.
- clear; unfold w_is_even; simpl; intros.
- Admitted. (* TODO !! *)
+ unfold w_is_even; simpl; intros.
+ generalize (spec_div x 2).
+ destruct (x/2)%int31 as (q,r); intros.
+ unfold compare31.
+ change [|2|] with 2 in H.
+ change [|0|] with 0.
+ destruct H; auto with zarith.
+ replace ([|x|] mod 2) with [|r|].
+ destruct H; auto with zarith.
+ case_eq ([|r|] ?= 0)%Z; intros.
+ apply Zcompare_Eq_eq; auto.
+ change ([|r|] < 0)%Z in H; auto with zarith.
+ change ([|r|] > 0)%Z in H; auto with zarith.
+ apply Zmod_unique with [|q|]; auto with zarith.
+ Qed.
 
  (* The following definition is verrry slooow  
     without the two Opaque  (??) *)
@@ -1721,64 +1737,64 @@ Section Int31_Spec.
 
  Definition int31_spec : znz_spec int31_op.
   split.
-  exact    spec_to_Z.
-  exact    positive_to_int31_spec.
-  exact    spec_zdigits.
-  exact    spec_more_than_1_digit.
+  exact phi_bounded.
+  exact positive_to_int31_spec.
+  exact spec_zdigits.
+  exact spec_more_than_1_digit.
 
-  exact    spec_0.
-  exact    spec_1.  
-  exact    spec_Bm1.
-  exact    spec_WW.
-  exact    spec_0W. 
-  exact    spec_W0.
+  exact spec_0.
+  exact spec_1.  
+  exact spec_Bm1.
+  exact spec_WW.
+  exact spec_0W. 
+  exact spec_W0.
 
-  exact    spec_compare.
-  exact    spec_eq0.
+  exact spec_compare.
+  exact spec_eq0.
 
-  exact    spec_opp_c. 
-  exact    spec_opp.
-  exact    spec_opp_carry.
+  exact spec_opp_c. 
+  exact spec_opp.
+  exact spec_opp_carry.
 
-  exact    spec_succ_c.
-  exact    spec_add_c.
-  exact    spec_add_carry_c.
-  exact    spec_succ.
-  exact    spec_add.
-  exact    spec_add_carry.
+  exact spec_succ_c.
+  exact spec_add_c.
+  exact spec_add_carry_c.
+  exact spec_succ.
+  exact spec_add.
+  exact spec_add_carry.
 
-  exact    spec_pred_c.
-  exact    spec_sub_c.
-  exact    spec_sub_carry_c.
-  exact    spec_pred.
-  exact    spec_sub.
-  exact    spec_sub_carry.
+  exact spec_pred_c.
+  exact spec_sub_c.
+  exact spec_sub_carry_c.
+  exact spec_pred.
+  exact spec_sub.
+  exact spec_sub_carry.
 
-  exact    spec_mul_c.
-  exact    spec_mul.
-  exact    spec_square_c.
+  exact spec_mul_c.
+  exact spec_mul.
+  exact spec_square_c.
 
-  exact    spec_div21.
-  exact    spec_div_gt. 
-  exact    spec_div.
+  exact spec_div21.
+  intros; apply spec_div; auto.
+  exact spec_div.
 
-  exact    spec_mod_gt.
-  exact    spec_mod.
+  intros; unfold int31_op; simpl; apply spec_mod; auto.
+  exact spec_mod.
 
-  exact    spec_gcd_gt.
-  exact    spec_gcd.
+  intros; apply spec_gcd; auto.
+  exact spec_gcd.
 
-  exact    spec_head00.
-  exact    spec_head0.
-  exact    spec_tail00. 
-  exact    spec_tail0.
+  exact spec_head00.
+  exact spec_head0.
+  exact spec_tail00. 
+  exact spec_tail0.
 
-  exact    spec_add_mul_div.
-  exact    spec_pos_mod.
+  exact spec_add_mul_div.
+  exact spec_pos_mod.
 
-  exact    spec_is_even.
-  exact    spec_sqrt2.
-  exact    spec_sqrt.
+  exact spec_is_even.
+  exact spec_sqrt2.
+  exact spec_sqrt.
  Qed.
 
  Transparent gcd31.
