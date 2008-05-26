@@ -352,7 +352,7 @@ Definition gcd31 (i j:int31) :=
             | _ => euler p j (let (_, r ) := i/j in r)
             end
    end)
-  size i j.
+  (2*size)%nat i j.
 
 Definition sqrt31 (i:int31) : int31 :=
   match i ?= On with
