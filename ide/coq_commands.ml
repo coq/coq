@@ -109,9 +109,9 @@ let commands = [
      "Set Extraction Optimize";
      "Set Hyps__limit";
      "Set Implicit Arguments";
-     "Set Printing Coercion";
+     (*"Set Printing Coercion";
      "Set Printing Coercions";
-     "Set Printing Synth";
+     "Set Printing Synth";*)
      "Set Printing Wildcard";
      "Set Silent.";
      "Set Undo";
@@ -142,9 +142,10 @@ let commands = [
    "Unset Extraction Optimize";
    "Unset Hyps__limit";
    "Unset Implicit Arguments";
+   (*
    "Unset Printing Coercion";
    "Unset Printing Coercions";
-   "Unset Printing Synth";
+   "Unset Printing Synth"; *)
    "Unset Printing Wildcard";
    "Unset Silent.";
    "Unset Undo";];
