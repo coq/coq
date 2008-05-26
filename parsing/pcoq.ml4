@@ -541,7 +541,7 @@ let default_levels =
    90,Gramext.RightA,false;
    10,Gramext.RightA,false;
    9,Gramext.RightA,false;
-   8,Gramext.LeftA,true;
+   8,Gramext.RightA,true;
    1,Gramext.LeftA,false;
    0,Gramext.RightA,false]
 
@@ -580,23 +580,25 @@ let error_level_assoc p current expected =
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative")
 
-let find_position forpat other assoc lev =
+let find_position_gen forpat ensure assoc lev =
   let ccurrent,pcurrent as current = List.hd !level_stack in
   match lev with
   | None ->
       level_stack := current :: !level_stack;
-      None, (if other then assoc else None), None, None
+      None, None, None, None
   | Some n ->
       let after = ref None in
       let init = ref None in
       let rec add_level q = function
         | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
         | (p,a,reinit)::l when p = n ->
-	    if admissible_assoc (a,assoc) then
-              if reinit then (init := Some a; (p,a,false)::l) else raise Exit
+            if reinit then
+	      let a' = create_assoc assoc in (init := Some a'; (p,a',false)::l)
+	    else if admissible_assoc (a,assoc) then
+	      raise Exit
             else
 	      error_level_assoc p a (Option.get assoc)
-	| l -> after := q; (n,create_assoc assoc,false)::l
+	| l -> after := q; (n,create_assoc assoc,ensure)::l
       in
       try
 	let updated =
@@ -621,6 +623,25 @@ let find_position forpat other assoc lev =
 
 let remove_levels n =
   level_stack := list_skipn n !level_stack
+
+let rec list_mem_assoc_triple x = function
+  | [] -> false
+  | (a,b,c) :: l -> a = x or list_mem_assoc_triple x l
+
+let register_empty_levels forpat symbs =
+  map_succeed (function
+    | Gramext.Snterml (_,n) when
+	let levels = (if forpat then snd else fst) (List.hd !level_stack) in
+	not (list_mem_assoc_triple (int_of_string n) levels) ->
+	find_position_gen forpat true None (Some (int_of_string n))
+    | _ -> failwith "") symbs
+
+let find_position forpat assoc level =
+  find_position_gen forpat false assoc level
+
+(* Synchronise the stack of level updates *) 
+let synchronize_level_positions () =
+  let _ = find_position true None None in ()
 
 (* Camlp4 levels do not treat NonA: use RightA with a NEXT on the left *)
 let camlp4_assoc = function
@@ -685,9 +706,10 @@ let compute_entry allow_create adjust forpat = function
 (* This computes the name of the level where to add a new rule *)
 let get_constr_entry forpat = function
   | ETConstr(200,()) when not forpat ->
-      weaken_entry Constr.binder_constr, None, false
+      weaken_entry Constr.binder_constr, None
   | e ->
-      compute_entry true (fun (n,()) -> Some n) forpat e
+      let (e,level,_) = compute_entry true (fun (n,()) -> Some n) forpat e in
+      (e, level)
 
 (* This computes the name to give to a production knowing the name and
    associativity of the level where it must be added *)

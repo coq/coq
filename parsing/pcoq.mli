@@ -37,7 +37,7 @@ val object_of_typed_entry : typed_entry -> grammar_object Gram.Entry.e
 val weaken_entry : 'a Gram.Entry.e -> grammar_object Gram.Entry.e
 
 val get_constr_entry :
-  bool -> constr_entry -> grammar_object Gram.Entry.e * int option * bool
+  bool -> constr_entry -> grammar_object Gram.Entry.e * int option
 
 val grammar_extend :
   grammar_object Gram.Entry.e -> Gramext.position option -> 
@@ -222,9 +222,16 @@ val symbol_of_production : Gramext.g_assoc option -> constr_entry ->
 (* Registering/resetting the level of an entry *)
 
 val find_position : 
-  bool -> bool -> Gramext.g_assoc option -> int option ->
+  bool (* true if for creation in pattern entry; false if in constr entry *) ->
+  Gramext.g_assoc option -> int option ->
     Gramext.position option * Gramext.g_assoc option * string option * 
     (* for reinitialization: *) Gramext.g_assoc option
+
+val synchronize_level_positions : unit -> unit
+
+val register_empty_levels : bool -> Compat.token Gramext.g_symbol list ->
+    (Gramext.position option * Gramext.g_assoc option *
+     string option * Gramext.g_assoc option) list
 
 val remove_levels : int -> unit 
 
