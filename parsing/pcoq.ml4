@@ -70,11 +70,27 @@ module G = Grammar.Make(L)
 
 END
 
-let grammar_delete e rls =
+let grammar_delete e pos reinit rls =
   List.iter
-    (fun (_,_,lev) ->
-       List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
-    (List.rev rls)
+    (fun (n,ass,lev) ->
+
+      (* Caveat: deletion is not the converse of extension: when an
+	 empty level is extended, deletion removes the level instead
+	 of keeping it empty. This has an effect on the empty levels 8,
+	 99 and 200. We didn't find a good solution to this problem
+	 (e.g. using G.extend to know if the level exists results in a
+	 printed error message as side effect). As a consequence an
+	 extension at 99 or 8 (and for pattern 200 too) inside a section 
+         corrupts the parser. *)
+
+      List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
+    (List.rev rls);
+  if reinit <> None then
+    let lev = match pos with Some (Gramext.Level n) -> n | _ -> assert false in
+    let pos =
+      if lev = "200" then Gramext.First 
+      else Gramext.After (string_of_int (int_of_string lev + 1)) in
+    G.extend e (Some pos) [Some lev,reinit,[]];
 
 (* grammar_object is the superclass of all grammar entries *)
 module type Gramobj =
@@ -120,7 +136,8 @@ type ext_kind =
   | ByGrammar of
       grammar_object G.Entry.e * Gramext.position option *
       (string option * Gramext.g_assoc option *
-       (Compat.token Gramext.g_symbol list * Gramext.g_action) list) list
+       (Compat.token Gramext.g_symbol list * Gramext.g_action) list) list *
+        Gramext.g_assoc option
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
 
 let camlp4_state = ref []
@@ -132,7 +149,7 @@ module Gram =
     include G
     let extend e pos rls =
       camlp4_state :=
-      (ByGEXTEND ((fun () -> grammar_delete e rls),
+      (ByGEXTEND ((fun () -> grammar_delete e pos None rls),
                   (fun () -> G.extend e pos rls)))
       :: !camlp4_state;
       G.extend e pos rls
@@ -149,8 +166,8 @@ let camlp4_verbosity silent f x =
 
 (* This extension command is used by the Grammar constr *)
 
-let grammar_extend te pos rls =
-  camlp4_state := ByGrammar (Gramobj.weaken_entry te,pos,rls) :: !camlp4_state;
+let grammar_extend te pos reinit rls =
+  camlp4_state := ByGrammar (weaken_entry te,pos,rls,reinit) :: !camlp4_state;
   camlp4_verbosity (Options.is_verbose ()) (G.extend te pos) rls
 
 (* n is the number of extended entries (not the number of Grammar commands!)
@@ -159,8 +176,8 @@ let rec remove_grammars n =
   if n>0 then
     (match !camlp4_state with
        | [] -> anomaly "Pcoq.remove_grammars: too many rules to remove"
-       | ByGrammar(g,_,rls)::t ->
-           grammar_delete g rls;
+       | ByGrammar(g,pos,rls,reinit)::t ->
+           grammar_delete g pos reinit rls;
            camlp4_state := t;
            remove_grammars (n-1)
        | ByGEXTEND (undo,redo)::t ->
@@ -506,22 +523,22 @@ END
 let constr_level = string_of_int
 
 let default_levels =
-  [200,Gramext.RightA;
-   100,Gramext.RightA;
-   99,Gramext.RightA;
-   90,Gramext.RightA;
-   10,Gramext.RightA;
-   9,Gramext.RightA;
-   1,Gramext.LeftA;
-   0,Gramext.RightA]
+  [200,Gramext.RightA,false;
+   100,Gramext.RightA,false;
+   99,Gramext.RightA,true;
+   90,Gramext.RightA,false;
+   10,Gramext.RightA,false;
+   9,Gramext.RightA,false;
+   1,Gramext.LeftA,false;
+   0,Gramext.RightA,false]
 
 let default_pattern_levels =
-  [200,Gramext.RightA;
-   100,Gramext.RightA;
-   99,Gramext.RightA;
-   10,Gramext.LeftA;
-   1,Gramext.LeftA;
-   0,Gramext.RightA]
+  [200,Gramext.RightA,true;
+   100,Gramext.RightA,false;
+   99,Gramext.RightA,true;
+   10,Gramext.LeftA,false;
+   1,Gramext.LeftA,false;
+   0,Gramext.RightA,false]
 
 let level_stack = 
   ref [(default_levels, default_pattern_levels)]
@@ -550,39 +567,67 @@ let error_level_assoc p current expected =
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative")
 
-let find_position forpat other assoc lev =
+let find_position_gen forpat ensure assoc lev =
   let ccurrent,pcurrent as current = List.hd !level_stack in 
   match lev with
   | None ->
       level_stack := current :: !level_stack;
-      None, (if other then assoc else None), None
+      None, None, None, None
   | Some n ->
       let after = ref None in
+      let init = ref None in
       let rec add_level q = function
-        | (p,_ as pa)::l when p > n -> pa :: add_level (Some p) l
-        | (p,a)::l when p = n ->
-	    if admissible_assoc (a,assoc) then raise Exit;
-	    error_level_assoc p a (out_some assoc)
-	| l -> after := q; (n,create_assoc assoc)::l
+        | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
+        | (p,a,reinit)::l when p = n ->
+            if reinit then
+	      let a' = create_assoc assoc in (init := Some a'; (p,a',false)::l)
+	    else if admissible_assoc (a,assoc) then
+	      raise Exit
+            else
+              error_level_assoc p a (out_some assoc)
+	| l -> after := q; (n,create_assoc assoc,false)::l
       in
       try
-	(* Create the entry *)
 	let updated =
 	  if forpat then (ccurrent, add_level None pcurrent)
 	  else (add_level None ccurrent, pcurrent) in
-        level_stack := updated:: !level_stack;
+	level_stack := updated:: !level_stack;
 	let assoc = create_assoc assoc in
-	(if !after = None then Some Gramext.First
-	else Some (Gramext.After (constr_level (out_some !after)))),
-	Some assoc, Some (constr_level n)
+	if !init = None then
+	  (* Create the entry *)
+          (if !after = None then Some Gramext.First
+          else Some (Gramext.After (constr_level (out_some !after)))),
+          Some assoc, Some (constr_level n), None
+        else
+          (* The reinit flag has been updated *)
+         Some (Gramext.Level (constr_level n)), None, None, !init
       with
           Exit ->
             level_stack := current :: !level_stack;
 	    (* Just inherit the existing associativity and name (None) *)
-	    Some (Gramext.Level (constr_level n)), None, None
+	    Some (Gramext.Level (constr_level n)), None, None, None
 
 let remove_levels n =
   level_stack := list_skipn n !level_stack
+
+let rec list_mem_assoc_triple x = function
+  | [] -> false
+  | (a,b,c) :: l -> a = x or list_mem_assoc_triple x l
+
+let register_empty_levels forpat symbs =
+  map_succeed (function
+    | Gramext.Snterml (_,n) when
+	let levels = (if forpat then snd else fst) (List.hd !level_stack) in
+	not (list_mem_assoc_triple (int_of_string n) levels) ->
+	find_position_gen forpat true None (Some (int_of_string n))
+    | _ -> failwith "") symbs
+
+let find_position forpat assoc level =
+  find_position_gen forpat false assoc level
+
+(* Synchronise the stack of level updates *) 
+let synchronize_level_positions () =
+  let _ = find_position true None None in ()
 
 (* Camlp4 levels do not treat NonA: use RightA with a NEXT on the left *)
 let camlp4_assoc = function
@@ -647,9 +692,10 @@ let compute_entry allow_create adjust forpat = function
 (* This computes the name of the level where to add a new rule *)
 let get_constr_entry forpat = function
   | ETConstr(200,()) when not forpat ->
-      weaken_entry Constr.binder_constr, None, false
+      weaken_entry Constr.binder_constr, None
   | e ->
-      compute_entry true (fun (n,()) -> Some n) forpat e
+      let (e,level,_) = compute_entry true (fun (n,()) -> Some n) forpat e in
+      (e, level)
 
 (* This computes the name to give to a production knowing the name and
    associativity of the level where it must be added *)
