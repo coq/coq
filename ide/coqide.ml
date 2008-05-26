@@ -1421,9 +1421,12 @@ Please restart and report NOW.";
 		    end
 
 		| {reset_info=ResetAtFrozenState (sp, {contents=true})} ->
-		    ignore (pop ());
-		    reset_to (ResetToState sp);
-		    sync update_input ()
+		    if Pfedit.refining () then
+		      self#backtrack_to_no_lock start (Some (ResetToState sp))
+		    else
+		      (ignore (pop ());
+		       reset_to (ResetToState sp);
+		       sync update_input ())
 		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
 		    ignore (pop ());
 		    reset_to_mod id;
