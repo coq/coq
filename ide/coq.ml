@@ -371,7 +371,7 @@ let compute_reset_info = function
   | VernacStartTheoremProof (_, [Some (_,id), _], _, _) ->
       ResetAtDecl (reset_mark id, ref false)
 
-  | VernacEndProof _ -> NoReset
+  | VernacEndProof _ | VernacEndSegment _ -> NoReset
   | _ -> match Lib.has_top_frozen_state () with
       | Some sp -> ResetAtFrozenState (sp, ref true)
       | None -> NoReset
