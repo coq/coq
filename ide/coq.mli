@@ -33,9 +33,9 @@ type reset_mark =
 
 type reset_info =
   | NoReset
-  | ResetAtDecl of reset_mark * bool ref
   | ResetAtSegmentStart of Names.identifier * bool ref 
-  | ResetAtFrozenState of Libnames.object_name * bool ref
+  | ResetAtStatement of reset_mark * bool ref
+  | ResetAtRegisteredObject of reset_mark * bool ref
 
 val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
 val reset_initial : unit -> unit

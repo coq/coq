@@ -503,18 +503,12 @@ let is_empty () = Stack.is_empty processed_stack
 
 let update_on_end_of_proof () =
   let lookup_lemma = function
-    | { reset_info = ResetAtFrozenState (_, r) } -> 
+    | { reset_info = ResetAtRegisteredObject (_, r) } -> 
 	prerr_endline "Toggling Frozen State info to false";
 	r := false
-    | { reset_info = ResetAtDecl (_, r) } ->
-	if not !r then begin
-	    prerr_endline "Toggling Reset info to true";
-	    r := true; raise Exit end
-	else begin
-	  (* Hide the Definition done since last started proof *)
-	    prerr_endline "Toggling Changing Reset id"; 
-	    r := false
-	  end
+    | { reset_info = ResetAtStatement (_, r) } when not !r ->
+	prerr_endline "Toggling Reset info to true";
+	r := true; raise Exit
     | { ast = _, (VernacAbort _ | VernacAbortAll | VernacGoal _) } -> raise Exit
     | _ -> ()
   in
@@ -524,8 +518,8 @@ let update_on_end_of_segment id =
   let lookup_section = function 
     | { reset_info = ResetAtSegmentStart (id', r) } when id = id' -> raise Exit
     | { reset_info = ResetAtSegmentStart (_, r) } -> r := false
-    | { reset_info = ResetAtDecl (_, r) } -> r := false
-    | { reset_info = ResetAtFrozenState (_, r) } -> r := false
+    | { reset_info = ResetAtStatement (_, r) } -> r := false
+    | { reset_info = ResetAtRegisteredObject (_, r) } -> r := false
     | _ -> ()
   in
     try Stack.iter lookup_section processed_stack with Exit -> ()
@@ -1292,18 +1286,13 @@ object(self)
 	    begin match t.reset_info with
 	      | ResetAtSegmentStart (id, {contents=true}) ->
 		  reset_to_mod id
-	      | ResetAtFrozenState (sp, {contents=true}) ->
-		  if inproof then
-		    synchro (Some (ResetToState sp)) inproof
-		  else
-		    reset_to (ResetToState sp)
-	      | ResetAtDecl (mark, {contents=true}) ->
-		  if inproof then
-		    synchro (Some mark) inproof
-		  else
-		    reset_to
-		      (Option.default mark oldest_decl_in_middle_of_proof)
-	      | ResetAtDecl (mark, {contents=false}) ->
+	      | ResetAtRegisteredObject (mark, {contents=true}) ->
+		  if inproof then synchro (Some mark) inproof
+		  else reset_to mark
+	      | ResetAtStatement (mark, {contents=true}) ->
+		  assert (not inproof);
+		  reset_to (Option.default mark oldest_decl_in_middle_of_proof)
+	      | ResetAtStatement (mark, {contents=false}) ->
 		  if inproof then
 		    if oldest_decl_in_middle_of_proof = None then
 		      match mark with
@@ -1420,23 +1409,16 @@ Please restart and report NOW.";
 		      with _ -> self#backtrack_to_no_lock start None
 		    end
 
-		| {reset_info=ResetAtFrozenState (sp, {contents=true})} ->
-		    if Pfedit.refining () then
-		      self#backtrack_to_no_lock start (Some (ResetToState sp))
-		    else
-		      (ignore (pop ());
-		       reset_to (ResetToState sp);
-		       sync update_input ())
-		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
-		    ignore (pop ());
-		    reset_to_mod id;
-		    sync update_input ()
-		| {reset_info=ResetAtDecl (mark, {contents=true})} ->
+		| {reset_info=ResetAtRegisteredObject (mark,{contents=true})} ->
 		    if Pfedit.refining () then
 		      self#backtrack_to_no_lock start (Some mark)
 		    else
 		      (ignore (pop ()); reset_to mark; sync update_input ())
-		| {reset_info=ResetAtDecl (_, {contents=false})} ->
+		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
+		    ignore (pop ());
+		    reset_to_mod id;
+		    sync update_input ()
+		| {reset_info=ResetAtStatement (_, {contents=false})} ->
 		    ignore (pop ());
 		    (try 
 			 Pfedit.delete_current_proof () 

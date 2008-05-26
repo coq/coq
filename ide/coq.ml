@@ -347,9 +347,9 @@ type reset_mark =
 
 type reset_info =
   | NoReset
-  | ResetAtDecl of reset_mark * bool ref
   | ResetAtSegmentStart of Names.identifier * bool ref 
-  | ResetAtFrozenState of Libnames.object_name * bool ref
+  | ResetAtStatement of reset_mark * bool ref
+  | ResetAtRegisteredObject of reset_mark * bool ref
 
 let reset_mark id = match Lib.has_top_frozen_state () with
   | Some sp -> ResetToState sp
@@ -365,15 +365,15 @@ let compute_reset_info = function
   | VernacDefinition (_, (_,id), DefineBody _, _)
   | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
   | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
-      ResetAtDecl (reset_mark id, ref true)
+      ResetAtRegisteredObject (reset_mark id, ref true)
 
   | VernacDefinition (_, (_,id), ProveBody _, _)
   | VernacStartTheoremProof (_, [Some (_,id), _], _, _) ->
-      ResetAtDecl (reset_mark id, ref false)
+      ResetAtStatement (reset_mark id, ref false)
 
   | VernacEndProof _ | VernacEndSegment _ -> NoReset
   | _ -> match Lib.has_top_frozen_state () with
-      | Some sp -> ResetAtFrozenState (sp, ref true)
+      | Some sp -> ResetAtRegisteredObject (ResetToState sp, ref true)
       | None -> NoReset
 
 let reset_initial () = 
