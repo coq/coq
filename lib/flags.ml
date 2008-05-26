@@ -112,9 +112,11 @@ let boxed_definitions _ = !boxed_definitions
 
 let subst_command_placeholder s t =
   let buff = Buffer.create (String.length s + String.length t) in
-  for i = 0 to String.length s - 2 do
-    if s.[i] = '%' & s.[i+1] = 's' then Buffer.add_string buff t
-    else Buffer.add_char buff s.[i]
+  let i = ref 0 in
+  while (!i <> String.length s - 2) do
+    if s.[!i] = '%' & s.[!i+1] = 's' then (Buffer.add_string buff t;incr i)
+    else Buffer.add_char buff s.[!i];
+    incr i
   done;
   Buffer.contents buff
 
