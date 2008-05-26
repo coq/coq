@@ -21,7 +21,7 @@ for k in $LIBDIRS; do
 	    grep -q theories/$k/$b.v tmp
 	    a=$?
 	    if [ $a = 0 ]; then
-		p=${k//\//.}
+		p=`echo $k | sed 's:/:.:g'`
 		sed -e "s:theories/$k/$b.v:<a href=\"Coq.$p.$b.html\">$b</a>:g" tmp > tmp2
 		mv -f tmp2 tmp
 	    else
