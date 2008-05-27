@@ -418,9 +418,21 @@ Section Basics.
 
  (** [phi x] is positive and lower than [2^31] *)
 
+ Lemma phibis_aux_pos : forall n x, (0 <= phibis_aux n x)%Z.
+ Proof.
+ induction n.
+ simpl; unfold phibis_aux; simpl; auto with zarith. 
+ intros.
+ unfold phibis_aux, recrbis_aux; fold recrbis_aux; 
+  fold (phibis_aux n (shiftr x)).
+ destruct (firstr x).
+ specialize IHn with (shiftr x); rewrite Zdouble_mult; omega.
+ specialize IHn with (shiftr x); rewrite Zdouble_plus_one_mult; omega.
+ Qed.
+
  Lemma phibis_aux_bounded : 
   forall n x, n <= size -> 
-  (0 <= phibis_aux n (nshiftr (size-n) x) < 2 ^ (Z_of_nat n))%Z.
+  (phibis_aux n (nshiftr (size-n) x) < 2 ^ (Z_of_nat n))%Z.
  Proof.
  induction n.
  simpl; unfold phibis_aux; simpl; auto with zarith.
@@ -431,8 +443,8 @@ Section Basics.
   replace (size - n)%nat with (S (size - (S n))) by omega.
   simpl; auto.
  rewrite H0.
- destruct (IHn x).
- omega.
+ assert (H1 : n <= size) by omega.
+ specialize (IHn x H1).
  set (y:=phibis_aux n (nshiftr (size - n) x)) in *.
  rewrite inj_S, Zpower_Zsucc; auto with zarith.
  case_eq (firstr (nshiftr (size - S n) x)); intros.
@@ -444,6 +456,8 @@ Section Basics.
  Proof.
  intros.
  rewrite <- phibis_aux_equiv.
+ split.
+ apply phibis_aux_pos.
  change x with (nshiftr (size-size) x).
  apply phibis_aux_bounded; auto.
  Qed.
@@ -1496,12 +1510,76 @@ Section Int31_Spec.
  intros (H,_); compute in H; elim H; auto.
  Qed.
 
+ Lemma iter_int31_iter_nat : forall A f i a, 
+  iter_int31 i A f a = iter_nat (Zabs_nat [|i|]) A f a.
+ Proof.
+ intros.
+ unfold iter_int31.
+ rewrite <- recrbis_equiv; auto; unfold recrbis.
+ rewrite <- phibis_aux_equiv.
+
+ revert i a; induction size.
+ simpl; auto.
+ simpl; intros.
+ case_eq (firstr i); intros H; rewrite 2 IHn; 
+  unfold phibis_aux; simpl; rewrite H; fold (phibis_aux n (shiftr i));
+  generalize (phibis_aux_pos n (shiftr i)); intros; 
+  set (z := phibis_aux n (shiftr i)) in *; clearbody z; 
+  rewrite <- iter_nat_plus.
+
+ f_equal.
+ rewrite Zdouble_mult, Zmult_comm, <- Zplus_diag_eq_mult_2.
+ symmetry; apply Zabs_nat_Zplus; auto with zarith.
+
+ change (iter_nat (S (Zabs_nat z + Zabs_nat z)) A f a = 
+         iter_nat (Zabs_nat (Zdouble_plus_one z)) A f a); f_equal.
+ rewrite Zdouble_plus_one_mult, Zmult_comm, <- Zplus_diag_eq_mult_2.
+ rewrite Zabs_nat_Zplus; auto with zarith.
+ rewrite Zabs_nat_Zplus; auto with zarith.
+ change (Zabs_nat 1) with 1%nat; omega.
+ Qed.
+
  Lemma spec_add_mul_div : forall x y p,
        [|p|] <= Zpos 31 ->
        [| addmuldiv31 p x y |] =
          ([|x|] * (2 ^ [|p|]) +
           [|y|] / (2 ^ ((Zpos 31) - [|p|]))) mod wB.
+ Proof.
  Admitted. (* TODO !! *)
+
+(* (* don't work yet (not enough information in IHn) *)
+ unfold addmuldiv31.
+ intros; rewrite iter_int31_iter_nat.
+ assert ([|p|] = Z_of_nat (Zabs_nat [|p|])).
+  rewrite inj_Zabs_nat; symmetry; apply Zabs_eq.
+  destruct (phi_bounded p); auto.
+ rewrite H0; rewrite H0 in H; clear H0; rewrite Zabs_nat_Z_of_nat.
+ set (n := Zabs_nat [|p|]) in *; clearbody n.
+ assert (n <= 31)%nat.
+  rewrite inj_le_iff; auto with zarith.
+ clear H.
+
+ induction n.
+ simpl.
+ change (Zpower_pos 2 31) with (2^31).
+ rewrite Zmult_1_r.
+ replace ([|y|] / 2^31) with 0.
+ rewrite Zplus_0_r.
+ symmetry; apply Zmod_small; apply phi_bounded.
+ symmetry; apply Zdiv_small; apply phi_bounded.
+ 
+ simpl iter_nat.
+ destruct (iter_nat n (int31 * int31)
+                (fun ij : int31 * int31 =>
+                 let (i, j) := ij in (sneakl (firstl j) i, shiftl j)) 
+                (x, y)).
+ case_eq (firstl i0); intros; rewrite ?phi_twice,?phi_twice_plus_one; 
+  rewrite ?Zdouble_mult, ?Zdouble_plus_one_mult; 
+  rewrite IHn; try omega.
+ rewrite inj_S, Zpower_Zsucc; auto with zarith.
+ rewrite Zmult_mod_idemp_r, Zmult_plus_distr_r.
+
+*)
 
  Let w_pos_mod     := int31_op.(znz_pos_mod).
 
