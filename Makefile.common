@@ -569,7 +569,7 @@ ZARITHVO:=$(addprefix theories/ZArith/, \
  Zpower.vo 	Zcomplements.vo Zdiv.vo		Zsqrt.vo 	\
  Zwf.vo		ZArith_base.vo 	Zbool.vo	Zbinary.vo 	\
  Znumtheory.vo  Int.vo 		Zpow_def.vo	Zpow_facts.vo 	\
- ZOdiv_def.vo   ZOdiv.vo )
+ ZOdiv_def.vo   ZOdiv.vo 	Zgcd_alt.vo )
 
 QARITHVO:=$(addprefix theories/QArith/, \
  QArith_base.vo Qreduction.vo 	Qring.vo	Qreals.vo 	\

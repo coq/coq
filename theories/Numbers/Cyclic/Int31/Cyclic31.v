@@ -18,15 +18,74 @@ Require Import List.
 Require Import Min.
 Require Export Int31.
 Require Import Znumtheory.
+Require Import Zgcd_alt.
 Require Import CyclicAxioms.
 Require Import ROmega.
 
-Open Scope nat_scope.
-Open Scope int31_scope.
-
-Section Basics.
+ Open Scope Z_scope.
 
  (** Auxiliary lemmas. To migrate later *)
+
+ Lemma Zmod_eq_full : forall a b, b<>0 -> 
+  a mod b = a - (a/b)*b.
+ Proof.
+ intros.
+ rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
+ apply Z_div_mod_eq_full; auto.
+ Qed.
+
+ Lemma Zmod_eq : forall a b, b>0 -> 
+  a mod b = a - (a/b)*b.
+ Proof.
+ intros.
+ rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
+ apply Z_div_mod_eq; auto.
+ Qed.
+
+ Lemma shift_unshift_mod_2 : forall n p a, (0<=p<=n)%Z -> 
+   ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) = 
+   a mod 2 ^ p.
+ Proof.
+ intros.
+ rewrite Zmod_small.
+ rewrite Zmod_eq by (auto with zarith).
+ unfold Zminus at 1.
+ rewrite BigNumPrelude.Z_div_plus_l by (auto with zarith).
+ assert (2^n = 2^(n-p)*2^p).
+  rewrite <- Zpower_exp by (auto with zarith).
+  replace (n-p+p) with n; auto with zarith.
+ rewrite H0.
+ rewrite <- Zdiv_Zdiv, Z_div_mult by (auto with zarith).
+ rewrite (Zmult_comm (2^(n-p))), Zmult_assoc.
+ rewrite Zopp_mult_distr_l.
+ rewrite Z_div_mult by (auto with zarith).
+ symmetry; apply Zmod_eq; auto with zarith.
+
+ remember (a * 2 ^ (n - p)) as b.
+ destruct (Z_mod_lt b (2^n)); auto with zarith.
+ split.
+ apply Z_div_pos; auto with zarith.
+ apply Zdiv_lt_upper_bound; auto with zarith.
+ apply Zlt_le_trans with (2^n); auto with zarith.
+ rewrite <- (Zmult_1_r (2^n)) at 1.
+ apply Zmult_le_compat; auto with zarith.
+ cut (0 < 2 ^ (n-p)); auto with zarith.
+ Qed.
+
+ Lemma Zpower2_Psize : 
+  forall n p, Zpos p < 2^(Z_of_nat n) <-> (Psize p <= n)%nat.
+ Proof.
+ induction n.
+ destruct p; split; intros H; discriminate H || inversion H.
+ destruct p; simpl Psize.
+ rewrite inj_S, Zpow_facts.Zpower_Zsucc; auto with zarith.
+ rewrite Zpos_xI; specialize IHn with p; omega.
+ rewrite inj_S, Zpow_facts.Zpower_Zsucc; auto with zarith.
+ rewrite Zpos_xO; specialize IHn with p; omega.
+ split; auto with arith.
+ intros _; apply Zpow_facts.Zpower_gt_1; auto with zarith.
+ rewrite inj_S; generalize (Zle_0_nat n); omega.
+ Qed.
 
  Lemma Zdouble_spec : forall z, Zdouble z = (2*z)%Z.
  Proof.
@@ -65,7 +124,7 @@ Section Basics.
  induction n; destruct l; simpl; auto.
  Qed.
 
- Lemma removelast_firstn : forall A n (l:list A), n < length l -> 
+ Lemma removelast_firstn : forall A n (l:list A), (n < length l)%nat -> 
   removelast (firstn (S n) l) = firstn n l.
  Proof.
  induction n; destruct l.
@@ -84,7 +143,7 @@ Section Basics.
  inversion_clear H0.
  Qed.
 
- Lemma firstn_removelast : forall A n (l:list A), n < length l -> 
+ Lemma firstn_removelast : forall A n (l:list A), (n < length l)%nat -> 
   firstn n (removelast l) = firstn n l.
  Proof.
  induction n; destruct l.
@@ -99,6 +158,10 @@ Section Basics.
  intro H0; rewrite H0 in H; inversion_clear H; inversion_clear H1.
  Qed.
 
+Open Scope nat_scope.
+Open Scope int31_scope.
+
+Section Basics.
 
  (** * Basic results about [iszero], [shiftl], [shiftr] *)
 
@@ -1527,55 +1590,39 @@ Section Int31_Spec.
  apply Zmod_small; omega.
  Qed.
 
+ Lemma phi_gcd : forall i j,
+  [|gcd31 i j|] = Zgcdn (2*size) [|j|] [|i|].
+ Proof.
+  unfold gcd31.
+  induction (2*size)%nat; intros.
+  reflexivity.
+  simpl.
+  unfold compare31.
+  change [|On|] with 0.
+  generalize (phi_bounded j)(phi_bounded i); intros.
+  case_eq [|j|]; intros.
+  simpl; intros.
+  generalize (Zabs_spec [|i|]); omega.
+  simpl.
+  rewrite IHn, H1; f_equal.
+  rewrite spec_mod, H1; auto.
+  rewrite H1; compute; auto.
+  rewrite H1 in H; destruct H as [H _]; compute in H; elim H; auto.
+ Qed.
+
  Lemma spec_gcd : forall a b, Zis_gcd [|a|] [|b|] [|gcd31 a b|].
  Proof.
- Admitted. (* TODO !! *)
- Opaque gcd31.
-
- Lemma Zmod_eq_full : forall a b, b<>0 -> 
-  a mod b = a - (a/b)*b.
- Proof.
  intros.
- rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
- apply Z_div_mod_eq_full; auto.
- Qed.
-
- Lemma Zmod_eq : forall a b, b>0 -> 
-  a mod b = a - (a/b)*b.
- Proof.
- intros.
- rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
- apply Z_div_mod_eq; auto.
- Qed.
-
- Lemma shift_unshift_mod_2 : forall n p a, (0<=p<=n)%Z -> 
-   ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) = 
-   a mod 2 ^ p.
- Proof.
- intros.
- rewrite Zmod_small.
- rewrite Zmod_eq by (auto with zarith).
- unfold Zminus at 1.
- rewrite BigNumPrelude.Z_div_plus_l by (auto with zarith).
- assert (2^n = 2^(n-p)*2^p).
-  rewrite <- Zpower_exp by (auto with zarith).
-  replace (n-p+p) with n; auto with zarith.
- rewrite H0.
- rewrite <- Zdiv_Zdiv, Z_div_mult by (auto with zarith).
- rewrite (Zmult_comm (2^(n-p))), Zmult_assoc.
- rewrite Zopp_mult_distr_l.
- rewrite Z_div_mult by (auto with zarith).
- symmetry; apply Zmod_eq; auto with zarith.
-
- remember (a * 2 ^ (n - p)) as b.
- destruct (Z_mod_lt b (2^n)); auto with zarith.
- split.
- apply Z_div_pos; auto with zarith.
- apply Zdiv_lt_upper_bound; auto with zarith.
- apply Zlt_le_trans with (2^n); auto with zarith.
- rewrite <- (Zmult_1_r (2^n)) at 1.
- apply Zmult_le_compat; auto with zarith.
- cut (0 < 2 ^ (n-p)); auto with zarith.
+ rewrite phi_gcd.
+ apply Zis_gcd_sym.
+ apply Zgcdn_is_gcd.
+ unfold Zgcd_bound.
+ generalize (phi_bounded b).
+ destruct [|b|].
+ unfold size; auto with zarith.
+ intros (_,H).
+ cut (Psize p <= size)%nat; [ omega | rewrite <- Zpower2_Psize; auto].
+ intros (H,_); compute in H; elim H; auto.
  Qed.
 
  Lemma spec_add_mul_div : forall x y p,
@@ -1730,11 +1777,6 @@ Section Int31_Spec.
  apply Zmod_unique with [|q|]; auto with zarith.
  Qed.
 
- (* The following definition is verrry slooow  
-    without the two Opaque  (??) *)
- Opaque gcd31.
- Opaque addmuldiv31.
-
  Definition int31_spec : znz_spec int31_op.
   split.
   exact phi_bounded.
@@ -1796,9 +1838,6 @@ Section Int31_Spec.
   exact spec_sqrt2.
   exact spec_sqrt.
  Qed.
-
- Transparent gcd31.
- Transparent addmuldiv31.
 
 End Int31_Spec.
 
