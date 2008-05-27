@@ -1850,7 +1850,7 @@ let main files =
     (* Toolbar *)
     let toolbar = GButton.toolbar 
       ~orientation:`HORIZONTAL 
-      ~style:`BOTH
+      ~style:`ICONS
       ~tooltips:true 
       ~packing:(* handle#add *)
       (vbox#pack ~expand:false ~fill:false)
@@ -2641,7 +2641,6 @@ let main files =
 					      ~callback:(do_if_active( fun a -> a#insert_command "progress trivial.\n"  "trivial.\n" ))
 					   );
 
-				    ignore (toolbar#insert_space ());
 
 				    ignore (toolbar#insert_button
 					      ~tooltip:"Proof Wizard"
