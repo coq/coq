@@ -29,6 +29,19 @@ Require Export Zpow_facts.
 
 
 Open Local Scope Z_scope. 
+ 
+(* For compatibility of scripts, weaker version of some lemmas of Zdiv *)
+
+Lemma Zlt0_not_eq : forall n, 0<n -> n<>0.
+Proof.
+ auto with zarith.
+Qed.
+
+Definition Zdiv_mult_cancel_r a b c H := Zdiv.Zdiv_mult_cancel_r a b c (Zlt0_not_eq _ H).
+Definition Zdiv_mult_cancel_l a b c H := Zdiv.Zdiv_mult_cancel_r a b c (Zlt0_not_eq _ H).
+Definition Z_div_plus_l a b c H := Zdiv.Z_div_plus_full_l a b c (Zlt0_not_eq _ H).
+
+(* Automation *)
 
 Hint  Extern 2 (Zle _ _) => 
  (match goal with
@@ -263,6 +276,37 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
   apply Zlt_gt. apply Zpower_gt_0;auto with zarith.
  Qed.
 
+
+ Lemma shift_unshift_mod_2 : forall n p a, (0<=p<=n)%Z -> 
+   ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) = 
+   a mod 2 ^ p.
+ Proof.
+ intros.
+ rewrite Zmod_small.
+ rewrite Zmod_eq by (auto with zarith).
+ unfold Zminus at 1.
+ rewrite Z_div_plus_l by (auto with zarith).
+ assert (2^n = 2^(n-p)*2^p).
+  rewrite <- Zpower_exp by (auto with zarith).
+  replace (n-p+p) with n; auto with zarith.
+ rewrite H0.
+ rewrite <- Zdiv_Zdiv, Z_div_mult by (auto with zarith).
+ rewrite (Zmult_comm (2^(n-p))), Zmult_assoc.
+ rewrite Zopp_mult_distr_l.
+ rewrite Z_div_mult by (auto with zarith).
+ symmetry; apply Zmod_eq; auto with zarith.
+
+ remember (a * 2 ^ (n - p)) as b.
+ destruct (Z_mod_lt b (2^n)); auto with zarith.
+ split.
+ apply Z_div_pos; auto with zarith.
+ apply Zdiv_lt_upper_bound; auto with zarith.
+ apply Zlt_le_trans with (2^n); auto with zarith.
+ rewrite <- (Zmult_1_r (2^n)) at 1.
+ apply Zmult_le_compat; auto with zarith.
+ cut (0 < 2 ^ (n-p)); auto with zarith.
+ Qed.
+
  Lemma div_le_0 : forall p x, 0 <= x -> 0 <= x / 2 ^ p.
  Proof.
   intros p x Hle;destruct (Z_le_gt_dec 0 p).
@@ -295,17 +339,6 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  rewrite <- H; auto with zarith.
  assert (F := (Zgcd_is_gcd a b)); inversion F; auto.
  Qed.
- 
-(* For compatibility of scripts, weaker version of some lemmas of Zdiv *)
-
-Lemma Zlt0_not_eq : forall n, 0<n -> n<>0.
-Proof.
- auto with zarith.
-Qed.
-
-Definition Zdiv_mult_cancel_r a b c H := Zdiv.Zdiv_mult_cancel_r a b c (Zlt0_not_eq _ H).
-Definition Zdiv_mult_cancel_l a b c H := Zdiv.Zdiv_mult_cancel_r a b c (Zlt0_not_eq _ H).
-Definition Z_div_plus_l a b c H := Zdiv.Z_div_plus_full_l a b c (Zlt0_not_eq _ H).
 
 Theorem Zbounded_induction :
   (forall Q : Z -> Prop, forall b : Z,

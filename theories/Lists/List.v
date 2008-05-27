@@ -529,6 +529,20 @@ Section Elts.
     exists (a::l'); exists a'; auto.
   Qed.
 
+  Lemma removelast_app : 
+    forall l l', l' <> nil -> removelast (l++l') = l ++ removelast l'.
+  Proof.
+    induction l.
+    simpl; auto.
+    simpl; intros.
+    assert (l++l' <> nil).
+    destruct l.
+    simpl; auto.
+    simpl; discriminate.
+    specialize (IHl l' H).
+    destruct (l++l'); [elim H0; auto|f_equal; auto].
+  Qed.
+
   
   (****************************************)
   (** ** Counting occurences of a element *)
@@ -1666,6 +1680,45 @@ Section Cutting.
     destruct l; simpl; auto.
     f_equal; auto.
   Qed.
+
+  Lemma firstn_length : forall n l, length (firstn n l) = min n (length l).
+  Proof.
+    induction n; destruct l; simpl; auto.
+  Qed.
+
+   Lemma removelast_firstn : forall n l, n < length l -> 
+     removelast (firstn (S n) l) = firstn n l.
+   Proof.
+     induction n; destruct l.
+     simpl; auto.
+     simpl; auto.
+     simpl; auto.
+     intros.
+     simpl in H.
+     change (firstn (S (S n)) (a::l)) with ((a::nil)++firstn (S n) l).
+     change (firstn (S n) (a::l)) with (a::firstn n l).
+     rewrite removelast_app.
+     rewrite IHn; auto with arith.
+     
+     clear IHn; destruct l; simpl in *; try discriminate.
+     inversion_clear H.
+     inversion_clear H0.
+   Qed.
+
+   Lemma firstn_removelast : forall n l, n < length l -> 
+     firstn n (removelast l) = firstn n l.
+   Proof.
+     induction n; destruct l.
+     simpl; auto.
+     simpl; auto.
+     simpl; auto.
+     intros.
+     simpl in H.
+     change (removelast (a :: l)) with (removelast ((a::nil)++l)).
+     rewrite removelast_app.
+     simpl; f_equal; auto with arith.
+     intro H0; rewrite H0 in H; inversion_clear H; inversion_clear H1.
+   Qed.
 
 End Cutting.
 

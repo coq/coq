@@ -19,144 +19,10 @@ Require Import Min.
 Require Export Int31.
 Require Import Znumtheory.
 Require Import Zgcd_alt.
+Require Import Zpow_facts.
+Require Import BigNumPrelude.
 Require Import CyclicAxioms.
 Require Import ROmega.
-
- Open Scope Z_scope.
-
- (** Auxiliary lemmas. To migrate later *)
-
- Lemma Zmod_eq_full : forall a b, b<>0 -> 
-  a mod b = a - (a/b)*b.
- Proof.
- intros.
- rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
- apply Z_div_mod_eq_full; auto.
- Qed.
-
- Lemma Zmod_eq : forall a b, b>0 -> 
-  a mod b = a - (a/b)*b.
- Proof.
- intros.
- rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
- apply Z_div_mod_eq; auto.
- Qed.
-
- Lemma shift_unshift_mod_2 : forall n p a, (0<=p<=n)%Z -> 
-   ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) = 
-   a mod 2 ^ p.
- Proof.
- intros.
- rewrite Zmod_small.
- rewrite Zmod_eq by (auto with zarith).
- unfold Zminus at 1.
- rewrite BigNumPrelude.Z_div_plus_l by (auto with zarith).
- assert (2^n = 2^(n-p)*2^p).
-  rewrite <- Zpower_exp by (auto with zarith).
-  replace (n-p+p) with n; auto with zarith.
- rewrite H0.
- rewrite <- Zdiv_Zdiv, Z_div_mult by (auto with zarith).
- rewrite (Zmult_comm (2^(n-p))), Zmult_assoc.
- rewrite Zopp_mult_distr_l.
- rewrite Z_div_mult by (auto with zarith).
- symmetry; apply Zmod_eq; auto with zarith.
-
- remember (a * 2 ^ (n - p)) as b.
- destruct (Z_mod_lt b (2^n)); auto with zarith.
- split.
- apply Z_div_pos; auto with zarith.
- apply Zdiv_lt_upper_bound; auto with zarith.
- apply Zlt_le_trans with (2^n); auto with zarith.
- rewrite <- (Zmult_1_r (2^n)) at 1.
- apply Zmult_le_compat; auto with zarith.
- cut (0 < 2 ^ (n-p)); auto with zarith.
- Qed.
-
- Lemma Zpower2_Psize : 
-  forall n p, Zpos p < 2^(Z_of_nat n) <-> (Psize p <= n)%nat.
- Proof.
- induction n.
- destruct p; split; intros H; discriminate H || inversion H.
- destruct p; simpl Psize.
- rewrite inj_S, Zpow_facts.Zpower_Zsucc; auto with zarith.
- rewrite Zpos_xI; specialize IHn with p; omega.
- rewrite inj_S, Zpow_facts.Zpower_Zsucc; auto with zarith.
- rewrite Zpos_xO; specialize IHn with p; omega.
- split; auto with arith.
- intros _; apply Zpow_facts.Zpower_gt_1; auto with zarith.
- rewrite inj_S; generalize (Zle_0_nat n); omega.
- Qed.
-
- Lemma Zdouble_spec : forall z, Zdouble z = (2*z)%Z.
- Proof.
- reflexivity.
- Qed.
-
- Lemma Zdouble_plus_one_spec : forall z, Zdouble_plus_one z = (2*z+1)%Z.
- Proof.
- destruct z; simpl; auto with zarith.
- Qed.
-
- Fixpoint cstlist (A:Type)(a:A) n := 
-  match n with 
-   | O => nil 
-   | S n => a::cstlist _ a n
-  end.
-
- Lemma removelast_app : 
-  forall A (l1 l2:list A), l2 <> nil -> removelast (l1++l2) = 
-  l1 ++ removelast l2.
- Proof.
- induction l1.
- simpl; auto.
- simpl; intros.
- assert (l1++l2 <> nil).
-  destruct l1.
-  simpl; auto.
-  simpl; discriminate.
- specialize (IHl1 l2 H).
- destruct (l1++l2); [elim H0; auto|f_equal; auto].
- Qed.
-
- Lemma firstn_length : forall A n (l:list A), 
-  length (firstn n l) = min n (length l).
- Proof.
- induction n; destruct l; simpl; auto.
- Qed.
-
- Lemma removelast_firstn : forall A n (l:list A), (n < length l)%nat -> 
-  removelast (firstn (S n) l) = firstn n l.
- Proof.
- induction n; destruct l.
- simpl; auto.
- simpl; auto.
- simpl; auto.
- intros.
- simpl in H.
- change (firstn (S (S n)) (a::l)) with ((a::nil)++firstn (S n) l).
- change (firstn (S n) (a::l)) with (a::firstn n l).
- rewrite removelast_app.
- rewrite IHn; auto with arith.
-
- clear IHn; destruct l; simpl in *; try discriminate.
- inversion_clear H.
- inversion_clear H0.
- Qed.
-
- Lemma firstn_removelast : forall A n (l:list A), (n < length l)%nat -> 
-  firstn n (removelast l) = firstn n l.
- Proof.
- induction n; destruct l.
- simpl; auto.
- simpl; auto.
- simpl; auto.
- intros.
- simpl in H.
- change (removelast (a :: l)) with (removelast ((a::nil)++l)).
- rewrite removelast_app.
- simpl; f_equal; auto with arith.
- intro H0; rewrite H0 in H; inversion_clear H; inversion_clear H1.
- Qed.
 
 Open Scope nat_scope.
 Open Scope int31_scope.
@@ -568,10 +434,10 @@ Section Basics.
  destruct (IHn x).
  omega.
  set (y:=phibis_aux n (nshiftr (size - n) x)) in *.
- rewrite inj_S, Zpow_facts.Zpower_Zsucc; auto with zarith.
+ rewrite inj_S, Zpower_Zsucc; auto with zarith.
  case_eq (firstr (nshiftr (size - S n) x)); intros.
- rewrite Zdouble_spec; auto with zarith.
- rewrite Zdouble_plus_one_spec; auto with zarith.
+ rewrite Zdouble_mult; auto with zarith.
+ rewrite Zdouble_plus_one_mult; auto with zarith.
  Qed.
 
  Lemma phi_bounded  : forall x, (0 <= phi x < 2 ^ (Z_of_nat size))%Z.
@@ -674,6 +540,12 @@ Section Basics.
  intros _; compute; auto.
  Qed.
 
+ Fixpoint cstlist (A:Type)(a:A) n := 
+  match n with 
+   | O => nil 
+   | S n => a::cstlist _ a n
+  end.
+
  Lemma i2l_nshiftl : forall n x, n<=size ->
   i2l (nshiftl n x) = cstlist _ D0 n ++ firstn (size-n) (i2l x).
  Proof.
@@ -696,7 +568,7 @@ Section Basics.
  replace (size-n)%nat with (S (size - S n))%nat by omega.
  rewrite removelast_firstn; auto.
  rewrite i2l_length; omega.
- generalize (firstn_length _ (size-n) (i2l x)).
+ generalize (firstn_length (size-n) (i2l x)).
  rewrite i2l_length.
  intros H0 H1; rewrite H1 in H0.
  rewrite min_l in H0 by omega.
@@ -986,7 +858,7 @@ Section Basics.
  induction n; intros.
  simpl; rewrite Pmult_1_r; auto.
  replace (2^(Z_of_nat (S n)))%Z with (2*2^(Z_of_nat n))%Z by 
-  (rewrite <- Zpow_facts.Zpower_Zsucc, <- Zpos_P_of_succ_nat; 
+  (rewrite <- Zpower_Zsucc, <- Zpos_P_of_succ_nat; 
    auto with zarith).
  rewrite (Zmult_comm 2).
  assert (n<=size) by omega.
@@ -996,7 +868,7 @@ Section Basics.
   destruct (p2ibis n p) as (r,i); simpl in *; intros.
 
  change (Zpos p~1) with (2*Zpos p + 1)%Z.
- rewrite phi_twice_plus_one_firstl, Zdouble_plus_one_spec.
+ rewrite phi_twice_plus_one_firstl, Zdouble_plus_one_mult.
  rewrite IHn; ring.
  apply (nshiftr_0_firstl n); auto; try omega.
 
@@ -1049,7 +921,7 @@ Section Basics.
  Proof.
  intros. 
  unfold mul31.
- rewrite <- Zdouble_spec, <- phi_twice_firstl, phi_inv_phi; auto.
+ rewrite <- Zdouble_mult, <- phi_twice_firstl, phi_inv_phi; auto.
  Qed.
 
  Lemma double_twice_plus_one_firstl : forall x, firstl x = D0 -> 
@@ -1058,7 +930,7 @@ Section Basics.
  intros.
  rewrite double_twice_firstl; auto.
  unfold add31.
- rewrite phi_twice_firstl, <- Zdouble_plus_one_spec,
+ rewrite phi_twice_firstl, <- Zdouble_plus_one_mult,
    <- phi_twice_plus_one_firstl, phi_inv_phi; auto.
  Qed.
  
@@ -1106,7 +978,7 @@ Section Basics.
  pattern x at 1; rewrite <- (phi_inv_phi x).
  rewrite <- phi_inv_double.
  assert (0 <= Zdouble (phi x))%Z.
-  rewrite Zdouble_spec; generalize (phi_bounded x); omega.
+  rewrite Zdouble_mult; generalize (phi_bounded x); omega.
  destruct (Zdouble (phi x)).
  simpl; auto.
  apply phi_phi_inv_positive.
@@ -1120,7 +992,7 @@ Section Basics.
  pattern x at 1; rewrite <- (phi_inv_phi x).
  rewrite <- phi_inv_double_plus_one.
  assert (0 <= Zdouble_plus_one (phi x))%Z.
-  rewrite Zdouble_plus_one_spec; generalize (phi_bounded x); omega.
+  rewrite Zdouble_plus_one_mult; generalize (phi_bounded x); omega.
  destruct (Zdouble_plus_one (phi x)).
  simpl; auto.
  apply phi_phi_inv_positive.
@@ -1154,7 +1026,7 @@ Section Basics.
  rewrite phi_incr in IHp.
  rewrite incr_twice, phi_twice_plus_one.
  remember (phi (complement_negative p)) as q.
- rewrite Zdouble_plus_one_spec.
+ rewrite Zdouble_plus_one_mult.
  replace (2*q+1)%Z with (2*(Zsucc q)-1)%Z by omega.
  rewrite <- Zminus_mod_idemp_l, <- Zmult_mod_idemp_r, IHp.
  rewrite Zmult_mod_idemp_r, Zminus_mod_idemp_l; auto with zarith.
@@ -1162,7 +1034,7 @@ Section Basics.
  simpl complement_negative.
  rewrite incr_twice_plus_one, phi_twice.
  remember (phi (incr (complement_negative p))) as q.
- rewrite Zdouble_spec, IHp, Zmult_mod_idemp_r; auto with zarith.
+ rewrite Zdouble_mult, IHp, Zmult_mod_idemp_r; auto with zarith.
  
  simpl; auto.
  Qed.
@@ -1175,7 +1047,6 @@ Section Basics.
  apply phi_phi_inv_positive.
  apply phi_phi_inv_negative.
  Qed.
-
 
 End Basics.
 
@@ -1645,7 +1516,7 @@ Section Int31_Spec.
   symmetry; apply Zmod_small.
   split; auto with zarith.
   apply Zlt_le_trans with wB; auto with zarith.
-  apply Zpow_facts.Zpower_le_monotone; auto with zarith.
+  apply Zpower_le_monotone; auto with zarith.
  intros.
  case_eq ([|p|] ?= 31); intros; 
   [ apply H; rewrite (Zcompare_Eq_eq _ _ H0); auto with zarith | | 

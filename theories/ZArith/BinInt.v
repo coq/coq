@@ -222,6 +222,7 @@ Qed.
 
 
 (**********************************************************************)
+
 (** ** Properties of opposite on binary integer numbers *)
 
 Theorem Zopp_neg : forall p:positive, - Zneg p = Zpos p.
@@ -861,6 +862,19 @@ Proof.
     (destruct y as [| q| q]; try discriminate; simpl in H; injection H; clear H;
       intro H; rewrite Pmult_1_inversion_l with (1 := H); 
 	reflexivity).
+Qed.
+
+(** ** Multiplication and Doubling *)
+
+Lemma Zdouble_mult : forall z, Zdouble z = (Zpos 2) * z.
+Proof.
+  reflexivity.
+Qed.
+
+Lemma Zdouble_plus_one_mult : forall z, 
+  Zdouble_plus_one z = (Zpos 2) * z + (Zpos 1).
+Proof.
+  destruct z; simpl; auto with zarith.
 Qed.
 
 (** ** Multiplication and Opposite *)

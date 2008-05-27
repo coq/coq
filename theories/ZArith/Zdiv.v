@@ -289,6 +289,20 @@ Proof.
   intros; apply Z_div_mod_eq_full; auto with zarith.
 Qed.
 
+Lemma Zmod_eq_full : forall a b:Z, b<>0 -> a mod b = a - (a/b)*b.
+Proof.
+  intros.
+  rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
+  apply Z_div_mod_eq_full; auto.
+Qed.
+
+Lemma Zmod_eq : forall a b:Z, b>0 -> a mod b = a - (a/b)*b.
+Proof.
+  intros.
+  rewrite <- Zeq_plus_swap, Zplus_comm, Zmult_comm; symmetry.
+  apply Z_div_mod_eq; auto.
+Qed.
+
 (** Existence theorem *)
 
 Theorem Zdiv_eucl_exist : forall (b:Z)(Hb:b>0)(a:Z),

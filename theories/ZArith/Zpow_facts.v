@@ -262,6 +262,20 @@ Proof.
   intros; apply Zlt_le_weak; apply Zpower2_lt_lin; auto.
 Qed.
 
+Lemma Zpower2_Psize : 
+  forall n p, Zpos p < 2^(Z_of_nat n) <-> (Psize p <= n)%nat.
+Proof.
+  induction n.
+  destruct p; split; intros H; discriminate H || inversion H.
+  destruct p; simpl Psize.
+  rewrite inj_S, Zpower_Zsucc; auto with zarith.
+  rewrite Zpos_xI; specialize IHn with p; omega.
+  rewrite inj_S, Zpower_Zsucc; auto with zarith.
+  rewrite Zpos_xO; specialize IHn with p; omega.
+  split; auto with arith.
+  intros _; apply Zpower_gt_1; auto with zarith.
+  rewrite inj_S; generalize (Zle_0_nat n); omega.
+Qed.
 
 (** * Zpower and modulo *)
 
