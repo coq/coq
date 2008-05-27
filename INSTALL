@@ -30,8 +30,13 @@ WHAT DO YOU NEED ?
 
      aptitude install coq
 
-   - Gentoo GNU/Linux: emerge sci-mathematics/coq
+   - Gentoo GNU/Linux: 
 
+     emerge sci-mathematics/coq
+
+   - Mandriva GNU/Linux:
+
+     urpmi coq
 
    Should you need or prefer to compile Coq V8.1 yourself, you need:
 
@@ -65,7 +70,7 @@ WHAT DO YOU NEED ?
 
      - a C compiler
 
-     - for Coqide, the Lablgtk development files, and the GTK libraries
+     - for Coqide, the Lablgtk development files, and the GTK libraries, see INSTALL.ide for more details
 
    By FTP, Coq comes as a single compressed tar-file. You have
    probably already decompressed it if you are reading this document.

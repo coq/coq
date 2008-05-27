@@ -45,11 +45,13 @@ REQUIREMENT:
 	  Your distribution may contain precompiled packages. For
           example, for Debian, run
                 aptitude install liblablgtk2-ocaml-dev
+		   for Mandriva, run
+		urpmi ocaml-lablgtk2-devel
 
           If it does not, see
           http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html .
 
-          The first official release of lablftk2 is here:
+          One official releases of lablgtk2 is here:
           http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.0.tar.gz
 
           Note that even if its README requires ocaml > 3.07, it works
