@@ -43,7 +43,7 @@ Inductive int31 : Type := I31 : nfun digits size int31.
 
 (* spiwack: Registration of the type of integers, so that the matchs in
    the functions below perform dynamic decompilation (otherwise some segfault
-   occur when they are applied to one non-closed term and one closed term *)
+   occur when they are applied to one non-closed term and one closed term). *)
 Register digits as int31 bits in "coq_int31" by True.
 Register int31 as int31 type in "coq_int31" by True.
 

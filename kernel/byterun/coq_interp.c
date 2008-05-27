@@ -1190,7 +1190,7 @@ value coq_interprete
       Instruct (DIV21INT31) {
 	print_instr("DIV21INT31");
 	/* spiwack: takes three int31 (the two first ones represent an
-                    int62) and perfoms the euclidian division of the
+                    int62) and performs the euclidian division of the
                     int62 by the int31 */
         uint64 bigint;
         bigint = UI64_of_value(accu);

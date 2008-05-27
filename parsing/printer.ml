@@ -491,44 +491,39 @@ let prterm = pr_lconstr
 
 (* spiwack: printer function for sets of Environ.assumption.
             It is used primarily by the Print Assumption command. *)
-exception EmptyAssumptionSet
-
 let pr_assumptionset env s = 
-  if (Environ.AssumptionSet.is_empty s) then
+  if (Environ.ContextObjectMap.is_empty s) then
     str "Closed under the global context"
   else
-    let (vars, axioms) = Environ.AssumptionSet.partition 
-                         (function |Variable _ -> true | _ -> false) 
-			 s
+    let (vars,axioms) =
+      Environ.ContextObjectMap.fold (fun o typ r ->
+	let (v,a) = r in
+	match o with
+	| Variable id -> (  Some (
+	                      Option.default (fnl ()) v 
+			   ++ str (string_of_id id)
+			   ++ str " : "
+	                   ++ pr_ltype typ
+	                   ++ fnl ()
+			    )
+	                 ,
+	                   a )
+	| Axiom kn    -> ( v ,
+			     Some (
+			      Option.default (fnl ()) a
+			   ++ (pr_constant env kn)
+	                   ++ str " : "
+	                   ++ pr_ltype typ
+	                   ++ fnl ()
+			     )
+			 )
+	)
+	s (None,None)
     in
-    (if Environ.AssumptionSet.is_empty vars then
-       mt ()
-     else
-      str "Section Variables:" ++
-      (Environ.AssumptionSet.fold 
-         (function Variable (id,typ ) -> 
-	    (fun b -> b++str (string_of_id id)
-	               ++str " : "
-	               ++pr_ltype typ
-	               ++fnl ())
-	 | _ -> anomaly 
-	        "Printer.pr_assumptionset: failure of partition (Variable)")
-         vars (fnl ()))
-    )
-    ++ fnl () 
-    ++
-    if Environ.AssumptionSet.is_empty axioms then
-      mt ()
-    else
-      str "Axioms:" ++
-      (Environ.AssumptionSet.fold
-         (function Axiom (cst, typ) -> 
-	    (fun b -> b++(pr_constant env cst)
-	               ++str " : "
-	               ++pr_ltype typ
-	               ++fnl ())
-	  | _ -> anomaly 
-	         "Printer.pr_assumptionset: failure of partition (Axiom)")
-         axioms 
-	 (fnl ()))
+    let (vars,axioms) = 
+      ( Option.map (fun p -> str "Section Variables:" ++ p) vars ,
+	Option.map (fun p -> str "Axioms:" ++ p) axioms 
+      )
+    in
+    (Option.default (mt ()) vars) ++ (Option.default (mt ()) axioms)
 

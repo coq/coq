@@ -241,17 +241,16 @@ val register : env -> field -> Retroknowledge.entry -> env
 (******************************************************************)
 (* spiwack: a few declarations for the "Print Assumption" command *)
 
-type assumption =
-  | Variable of identifier*Term.constr (* A section variable and its type *)
-  | Axiom of constant*Term.constr      (* An axiom and its type*)
-
+type context_object =
+  | Variable of identifier (* A section variable or a Let definition *)
+  | Axiom of constant      (* An axiom or a constant. *)
 
 (* AssumptionSet.t is a set of [assumption] *)
-module OrderedAssumption :  Set.OrderedType with type t = assumption
-module AssumptionSet : Set.S with type elt = assumption
+module OrderedContextObject :  Set.OrderedType with type t = context_object
+module ContextObjectMap : Map.S with type key = context_object
 
 (* collects all the assumptions on which a term relies (together with
    their type *)
-val assumptions : constr -> env -> AssumptionSet.t
+val assumptions : constr -> env -> Term.types ContextObjectMap.t
 
 

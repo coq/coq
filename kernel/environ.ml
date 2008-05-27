@@ -554,25 +554,46 @@ fun env field value ->
    axioms and sections variables on which a given term depends
    in a context (expectingly the Global context) *)
 
-type assumption =
-  | Variable of identifier*constr (* A section variable and its type *)
-  | Axiom of constant*constr      (* An axiom and its type*)
+type context_object =
+  | Variable of identifier (* A section variable or a Let definition *)
+  | Axiom of constant      (* An axiom or a constant. *)
 
 
 (* Defines a set of [assumption] *)
-module OrderedAssumption = 
+module OrderedContextObject = 
 struct 
-  type t = assumption
-  let compare = compare
+  type t = context_object
+  let compare x y = 
+      match x , y with
+      | Variable i1 , Variable i2 -> id_ord i1 i2
+      | Axiom k1 , Axiom k2 -> Pervasives.compare k1 k2
+	          (* spiwack: it would probably be cleaner
+		     to provide a [kn_ord] function *)
+      | Variable _ , Axiom _ -> -1
+      | Axiom _ , Variable _ -> 1
 end
 
-module AssumptionSet = Set.Make (OrderedAssumption)
+module ContextObjectSet = Set.Make (OrderedContextObject)
+module ContextObjectMap = Map.Make (OrderedContextObject)
 
-(* infix definition of set-union for redability purposes *)
-let ( ** ) s1 s2  = AssumptionSet.union s1 s2
 
-let rec assumptions t env =   
- (* Goes recursively into the terms to see if it depends on assumptions
+let assumptions (* t env *) =   
+  (* Infix definition for chaining function that accumulate
+     on a and a ContextObjectSet, ContextObjectMap.  *)
+  let ( ** ) f1 f2 s m = let (s',m') = f1 s m in f2 s' m' in
+  (* This function eases memoization, by checking if an object is already
+     stored before trying and applying a function. 
+     If the object is there, the function is not fired (we are in a 
+     particular case where memoized object don't need a treatment at all).
+     If the object isn't there, it is stored and the function is fired*)
+  let try_and_go o f s m =
+    if ContextObjectSet.mem o s then
+      (s,m)
+    else
+      f (ContextObjectSet.add o s) m
+  in
+  let identity2 s m = (s,m) in
+  (* Goes recursively into the term to see if it depends on assumptions
     the 3 important cases are : - Const _ where we need to first unfold
     the constant and return the needed assumptions of its body in the 
     environment,
@@ -581,44 +602,73 @@ let rec assumptions t env =
                                 - Var _ which means that the term refers
     to a section variable or a "Let" definition, in the former it is
     an assumption of [t], in the latter is must be unfolded like a Const.
-    The other cases are straightforward recursion.*)
-  match kind_of_term t with
-    | Var id -> (* a Var can be either a variable, or a "Let" definition.*)
-                (match named_body id env with
-                | None ->
-                      AssumptionSet.singleton (Variable (id,named_type id env))
-		| Some bdy -> assumptions bdy env)
-    | Meta _ | Evar _ -> Util.anomaly "Environ.assumption: does not expect a meta or an evar"
+    The other cases are straightforward recursion.
+    Calls to the environment are memoized, thus avoiding to explore
+    the DAG of the environment as if it was a tree (can cause
+    exponential behavior and prevent the algorithm from terminating
+    in reasonable time). [s] is a set of [context_object], representing
+    the object already visited.*)
+  let rec aux t env s acc =
+    match kind_of_term t with
+    | Var id -> aux_memoize_id id env s acc
+    | Meta _ | Evar _ -> 
+	Util.anomaly "Environ.assumption: does not expect a meta or an evar"
     | Cast (e1,_,e2) | Prod (_,e1,e2) | Lambda (_,e1,e2) -> 
-                   (assumptions e1 env)**(assumptions e2 env)
-    | LetIn (_,e1,e2,e3) ->(assumptions e1 env)**
-                           (assumptions e2 env)**
-                           (assumptions e3 env)
-    | App (e1, e_array) -> (assumptions e1 env)**
-                   (Array.fold_right (fun e s -> (assumptions e env)**s)
-                                      e_array AssumptionSet.empty)
-    | Case (_,e1,e2,e_array) -> (assumptions e1 env)**
-                                (assumptions e2 env)**
-                   (Array.fold_right (fun e s -> (assumptions e env)**s)
-                                      e_array AssumptionSet.empty)
+                           ((aux e1 env)**(aux e2 env)) s acc
+    | LetIn (_,e1,e2,e3) -> ((aux e1 env)**
+                             (aux e2 env)**
+                             (aux e3 env))
+	                     s acc 
+    | App (e1, e_array) -> ((aux e1 env)**
+			    (Array.fold_right 
+			       (fun e f -> (aux e env)**f)
+                               e_array identity2))
+	                   s acc
+    | Case (_,e1,e2,e_array) -> ((aux e1 env)**
+                                 (aux e2 env)**
+				 (Array.fold_right 
+				    (fun e f -> (aux e env)**f)
+                                    e_array identity2))
+	                        s acc
     | Fix (_,(_, e1_array, e2_array)) | CoFix (_,(_,e1_array, e2_array)) ->
-                   Array.fold_right (fun e s -> (assumptions e env)**s)
-                                      e1_array
-                   (Array.fold_right (fun e s -> (assumptions e env)**s)
-                                      e2_array AssumptionSet.empty)
-    | Const kn -> 
-	let cb = lookup_constant kn env in
-        (match cb.Declarations.const_body with
-        | None -> 
-	    let ctype = 
-	      match cb.Declarations.const_type with
-		| PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
-		| NonPolymorphicType t -> t
-	    in
-	    AssumptionSet.singleton (Axiom (kn,ctype))
-        | Some body -> assumptions (Declarations.force body) env)
-    | _ -> AssumptionSet.empty (* closed atomic types + rel *)
+                  ((Array.fold_right 
+		      (fun e f -> (aux e env)**f)
+                      e1_array identity2) **
+                   (Array.fold_right 
+		      (fun e f -> (aux e env)**f)
+                      e2_array identity2))
+		     s acc
+    | Const kn -> aux_memoize_kn kn env s acc
+    | _ -> (s,acc) (* closed atomic types + rel *)
 
+  and add_id id env s acc =
+    (* a Var can be either a variable, or a "Let" definition.*)
+    match lookup_named id env with
+    | (_,None,t) ->
+        (s,ContextObjectMap.add (Variable id) t acc)
+    | (_,Some bdy,_) -> aux bdy env s acc
+
+  and aux_memoize_id id env =
+    try_and_go (Variable id) (add_id id env)
+
+  and add_kn kn env s acc =
+    let cb = lookup_constant kn env in
+    match cb.Declarations.const_body with
+    | None -> 
+	let ctype = 
+	  match cb.Declarations.const_type with
+	  | PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
+	  | NonPolymorphicType t -> t
+	in
+	(s,ContextObjectMap.add (Axiom kn) ctype acc)
+    | Some body -> aux (Declarations.force body) env s acc
+
+  and aux_memoize_kn kn env =
+    try_and_go (Axiom kn) (add_kn kn env)
+ in
+ fun t env ->
+   snd (aux t env (ContextObjectSet.empty) (ContextObjectMap.empty))
+    
 (* /spiwack *)
 
 
