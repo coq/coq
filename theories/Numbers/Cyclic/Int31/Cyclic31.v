@@ -1901,10 +1901,63 @@ Section Int31_Spec.
        let (s,r) := sqrt312 x y in
           [||WW x y||] = [|s|] ^ 2 + [+|r|] /\
           [+|r|] <= 2 * [|s|].
- Admitted. (* TODO !! *)
+ Proof.
+ intros; unfold sqrt312.
+ change base with wB.
+ simpl zn2z_to_Z; change (Zpower_pos 2 31) with wB.
+ remember ([|x|]*wB+[|y|]) as z.
+ destruct z.
+ auto with zarith.
+ destruct sqrtrempos; intros.
+ assert (s < wB).
+  destruct (Z_lt_le_dec s wB); auto.
+  assert (wB * wB <= Zpos p).
+   rewrite e.
+   apply Zle_trans with (s*s); try omega.
+   apply Zmult_le_compat; generalize wB_pos; auto with zarith.
+  assert (Zpos p < wB*wB).
+   rewrite Heqz.
+   replace (wB*wB) with ((wB-1)*wB+wB) by ring.
+   apply Zplus_le_lt_compat; auto with zarith.
+   apply Zmult_le_compat; auto with zarith.
+   generalize (phi_bounded x); auto with zarith.
+   generalize (phi_bounded y); auto with zarith.
+  omega.
+ destruct Z_lt_le_dec; unfold interp_carry.
+ rewrite 2 phi_phi_inv.
+ rewrite 2 Zmod_small by (auto with zarith).
+ rewrite Zpower_2; auto with zarith.
+
+ rewrite 2 phi_phi_inv.
+ rewrite 2 Zmod_small by (auto with zarith).
+ rewrite Zpower_2; auto with zarith.
+ 
+ assert (0<=Zneg p).
+  rewrite Heqz; generalize (phi_bounded x)(phi_bounded y);
+   auto with zarith.
+ compute in H0; elim H0; auto.
+ Qed.
+
  Lemma spec_sqrt : forall x,
        [|sqrt31 x|] ^ 2 <= [|x|] < ([|sqrt31 x|] + 1) ^ 2.
- Admitted. (* TODO !! *)
+ Proof.
+ intros.
+ unfold sqrt31.
+ assert (Hx := phi_bounded x). 
+ rewrite phi_phi_inv.
+ rewrite Zmod_small.
+ repeat rewrite Zpower_2.
+ apply Zsqrt_interval; auto with zarith.
+ split.
+ apply Zsqrt_plain_is_pos; auto with zarith.
+
+ cut (Zsqrt_plain [|x|] <= (wB-1)); try omega.
+ rewrite <- (Zsqrt_square_id (wB-1)) by (auto with zarith).
+ apply Zsqrt_le.
+ split; auto with zarith.
+ apply Zle_trans with (wB-1); auto with zarith.
+ apply Zsquare_le.
+ Qed.
 
  (** [iszero] *)
 

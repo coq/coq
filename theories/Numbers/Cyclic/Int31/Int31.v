@@ -354,6 +354,26 @@ Definition gcd31 (i j:int31) :=
    end)
   (2*size)%nat i j.
 
+(** Very naive square root functions, for easy correctness proofs.
+   TODO: replace them someday by efficient code in the spirit of
+   the code commented afterwards. *)
+
+Definition sqrt31 (i:int31) : int31 := phi_inv (Zsqrt_plain (phi i)).
+
+Definition sqrt312 (i j:int31) : int31*(carry int31) := 
+  let z := ((phi i)*base+(phi j))%Z in 
+  match z with 
+   | Z0 => (On, C0 On)
+   | Zpos p => 
+      let (s,r,_,_) := sqrtrempos p in 
+      (phi_inv s, 
+        if Z_lt_le_dec r base 
+        then C0 (phi_inv r) 
+        else C1 (phi_inv (r-base)))
+   | Zneg _ => (On, C0 On)
+  end.
+
+(*
 Definition sqrt31 (i:int31) : int31 :=
   match i ?= On with
   | Eq =>  On
@@ -441,6 +461,8 @@ Definition sqrt312 (ih il:int31) :=
      in
      (root, rem)
   end.
+*)
+
 
 Fixpoint p2i n p : (N*int31)%type := 
   match n with

@@ -587,17 +587,6 @@ Section ZModulo.
  generalize (Z_mod_lt [|x|] 2); omega.
  Qed.
 
- Lemma Zsquare_le : forall x, x <= x*x.
- Proof.
- intros.
- destruct (Z_lt_le_dec 0 x).
- pattern x at 1; rewrite <- (Zmult_1_l x).
- apply Zmult_le_compat; auto with zarith.
- apply Zle_trans with 0; auto with zarith.
- rewrite <- Zmult_opp_opp.
- apply Zmult_le_0_compat; auto with zarith.
- Qed.
-
  Definition znz_sqrt x := Zsqrt_plain [|x|]. 
  Lemma spec_sqrt : forall x,
        [|znz_sqrt x|] ^ 2 <= [|x|] < ([|znz_sqrt x|] + 1) ^ 2.

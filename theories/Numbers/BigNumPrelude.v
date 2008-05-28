@@ -359,3 +359,14 @@ right; auto with zarith.
 unfold Q' in *; intros n H1 H2. destruct (H n H1) as [[H3 H4] | H3].
 assumption. apply Zle_not_lt in H3. false_hyp H2 H3.
 Qed.
+
+Lemma Zsquare_le : forall x, x <= x*x.
+Proof.
+intros.
+destruct (Z_lt_le_dec 0 x).
+pattern x at 1; rewrite <- (Zmult_1_l x).
+apply Zmult_le_compat; auto with zarith.
+apply Zle_trans with 0; auto with zarith.
+rewrite <- Zmult_opp_opp.
+apply Zmult_le_0_compat; auto with zarith.
+Qed.
