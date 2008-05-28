@@ -167,33 +167,60 @@ let init_stdout,read_stdout,clear_stdout =
 
 
 let last_dir = ref ""
-let select_file ~title ?(dir = last_dir) ?(filename="") () =
-  let fs =
-    if Filename.is_relative filename then begin
-      if !dir <> "" then
-        let filename = Filename.concat !dir filename in 
-        GWindow.file_selection ~show_fileops:true ~modal:true ~title ~filename ()
-      else
-        GWindow.file_selection ~show_fileops:true ~modal:true ~title ()
-    end else begin
-      dir := Filename.dirname filename;
-      GWindow.file_selection ~show_fileops:true ~modal:true ~title ~filename ()
-    end
-  in
-  fs#complete ~filter:"";
-  ignore (fs#connect#destroy ~callback: GMain.Main.quit);
-  let file = ref None in 
-  ignore (fs#ok_button#connect#clicked ~callback:
-    begin fun () ->
-      file := Some fs#filename; 
-      dir := Filename.dirname fs#filename;
-      fs#destroy ()
-    end);
-  ignore (fs # cancel_button # connect#clicked ~callback:fs#destroy);
-  fs # show ();
-  GMain.Main.main ();
-  !file
 
+let filter_all_files () = GFile.filter 
+  ~name:"All" 
+  ~patterns:["*"] () 
+  
+let filter_coq_files () =  GFile.filter 
+  ~name:"Coq source code" 
+  ~patterns:[ "*.v"] ()
+
+let select_file_for_open ~title ?(dir = last_dir) ?(filename="") () =
+  let file = ref None in 
+  let file_chooser = GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title () in
+    file_chooser#add_button_stock `CANCEL `CANCEL ;
+    file_chooser#add_select_button_stock `OPEN `OPEN ;
+    file_chooser#add_filter (filter_coq_files ());
+    file_chooser#add_filter (filter_all_files ());
+    ignore (file_chooser#set_current_folder !dir);
+    begin match file_chooser#run () with
+      | `OPEN -> 
+	  begin 
+	    file := file_chooser#filename;
+	    match !file with
+		None -> ()
+	      | Some s -> dir := Filename.dirname s;
+	  end
+      | `DELETE_EVENT | `CANCEL -> ()
+    end ;
+    file_chooser#destroy ();	    
+    !file
+
+
+let select_file_for_save ~title ?(dir = last_dir) ?(filename="") () =
+  let file = ref None in 
+  let file_chooser = GWindow.file_chooser_dialog ~action:`SAVE ~modal:true ~title () in
+    file_chooser#add_button_stock `CANCEL `CANCEL ;
+    file_chooser#add_select_button_stock `SAVE `SAVE ;
+    file_chooser#add_filter (filter_coq_files ());
+    file_chooser#add_filter (filter_all_files ());
+    file_chooser#set_do_overwrite_confirmation true;
+    ignore (file_chooser#set_current_folder !dir);
+    ignore (file_chooser#set_current_name filename);
+    
+    begin match file_chooser#run () with
+      | `SAVE -> 
+	  begin 
+	    file := file_chooser#filename;
+	    match !file with
+		None -> ()
+	      | Some s -> dir := Filename.dirname s;
+	  end
+      | `DELETE_EVENT | `CANCEL -> ()
+    end ;
+    file_chooser#destroy ();	    
+    !file
 
 let find_tag_start (tag :GText.tag) (it:GText.iter) =
   let it = it#copy in

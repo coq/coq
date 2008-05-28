@@ -31,6 +31,7 @@ let usage () =
   prerr_endline "  --texmacs            produce a TeXmacs document";
   prerr_endline "  --dvi                output the DVI";
   prerr_endline "  --ps                 output the PostScript";
+  prerr_endline "  --pdf                output the Pdf";
   prerr_endline "  --stdout             write output to stdout";
   prerr_endline "  -o <file>            write output in file <file>";
   prerr_endline "  -d <dir>             output files into directory <dir>";
@@ -193,6 +194,7 @@ let files_from_file f =
       
 let dvi = ref false
 let ps = ref false
+let pdf = ref false
 
 let parse () =
   let files = ref [] in
@@ -243,6 +245,8 @@ let parse () =
 	usage ()
     | ("-latex" | "--latex") :: rem ->
 	Cdglobals.target_language := LaTeX; parse_rec rem
+    | ("-pdf" | "--pdf") :: rem ->
+	Cdglobals.target_language := LaTeX; pdf := true; parse_rec rem
     | ("-dvi" | "--dvi") :: rem ->
 	Cdglobals.target_language := LaTeX; dvi := true; parse_rec rem
     | ("-ps" | "--ps") :: rem ->
@@ -318,7 +322,7 @@ let parse () =
 (*s The following function produces the output. The default output is
     the \LaTeX\ document: in that case, we just call [Web.produce_document]. 
     If option \verb!-dvi!, \verb!-ps! or \verb!-html! is invoked, then
-    we make calls to \verb!latex! or \verb!dvips!  accordingly. *)
+    we make calls to \verb!latex! or \verb!dvips! or \verb!pdflatex! accordingly. *)
 
 let locally dir f x =
   let cwd = Sys.getcwd () in
@@ -335,6 +339,7 @@ let clean_temp_files basefile =
     remove (basefile ^ ".toc");
     remove (basefile ^ ".dvi");
     remove (basefile ^ ".ps");
+    remove (basefile ^ ".pdf");
     remove (basefile ^ ".haux");
     remove (basefile ^ ".html")
       
@@ -442,7 +447,7 @@ let produce_document l =
 	gen_mult_files l
 	  
 let produce_output fl =
-  if not (!dvi || !ps) then 
+  if not (!dvi || !ps || !pdf) then 
     produce_document fl
   else 
     begin
@@ -452,12 +457,14 @@ let produce_output fl =
 	out_to := File texfile;
 	output_dir := (Filename.dirname texfile);
 	produce_document fl;
+	
+	let latexexe = if !pdf then "pdflatex" else "latex" in
 	let latexcmd = 
 	  let file = Filename.basename texfile in
 	  let file = 
 	    if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file 
 	  in
-	    sprintf "latex %s && latex %s 1>&2 %s" file file (if !quiet then "> /dev/null" else "")
+	    sprintf "%s %s && %s %s 1>&2 %s" latexexe file latexexe file (if !quiet then "> /dev/null" else "")
 	in
 	let res = locally (Filename.dirname texfile) Sys.command latexcmd in
 	  if res <> 0 then begin
@@ -472,8 +479,15 @@ let produce_output fl =
 		  | MultFiles | StdOut -> cat dvifile
 		  | File f -> copy dvifile f
 	      end;
+	  let pdffile = basefile ^ ".pdf" in
+	    if !pdf then 
+            begin
+	        match final_out_to with
+		  | MultFiles | StdOut -> cat pdffile
+		  | File f -> copy pdffile f
+	    end;
 	    if !ps then begin
-		let psfile = basefile ^ ".ps" 
+	        let psfile = basefile ^ ".ps" 
 		in
 		let command = 
 		  sprintf "dvips %s -o %s %s" dvifile psfile 
@@ -488,6 +502,7 @@ let produce_output fl =
 		    | MultFiles | StdOut -> cat psfile
 		    | File f -> copy psfile f
 	      end;
+	 
 	    clean_temp_files basefile
     end
 

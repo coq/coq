@@ -40,7 +40,10 @@ val print_id : 'a -> unit
 val read_stdout : unit -> string
 val revert_timer : GMain.Timeout.id option ref
 val auto_save_timer : GMain.Timeout.id option ref
-val select_file :
+val select_file_for_open :
+  title:string ->
+  ?dir:string ref -> ?filename:string -> unit -> string option
+val select_file_for_save :
   title:string ->
   ?dir:string ref -> ?filename:string -> unit -> string option
 val set_highlight_timer : (unit -> 'a) -> unit

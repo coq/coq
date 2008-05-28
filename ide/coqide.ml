@@ -152,7 +152,6 @@ object('self)
   method revert : unit
   method auto_save : unit
   method save : string -> bool
-  method save_as : string -> bool
   method read_only : bool
   method set_read_only : bool -> unit
   method is_active : bool
@@ -717,7 +716,7 @@ object(self)
 		warning ("Autosave: unexpected error while writing "^fn)
       end	      
       
-  method save_as f =
+(*  method save_as f =
     if Sys.file_exists f then 
       match (GToolbox.question_box ~title:"File exists on disk"
 	       ~buttons:["Overwrite";
@@ -733,7 +732,7 @@ object(self)
       with 1 -> self#save f
 	| _ -> false
     else self#save f
-
+*)
   method set_read_only b = read_only<-b
   method read_only = read_only
   method is_active = is_active
@@ -1921,10 +1920,19 @@ let main files =
 	    | Vector.Found i -> set_current_view i
 	    | e -> !flash_info ("Load failed: "^(Printexc.to_string e))
       in
-      let load_m = file_factory#add_item "_Open/Create" 
+      let load_m = file_factory#add_item "_New" 
+	~key:GdkKeysyms._N in
+      let load_f () = 	  
+	match select_file_for_save ~title:"Create file" () with 
+	  | None -> ()
+	  | Some f -> load f
+      in
+	ignore (load_m#connect#activate (load_f));
+
+      let load_m = file_factory#add_item "_Open" 
 	~key:GdkKeysyms._O in
       let load_f () = 	  
-	match select_file ~title:"Load file" () with 
+	match select_file_for_open ~title:"Load file" () with 
 	  | None -> ()
 	  | Some f -> load f
       in
@@ -1940,11 +1948,11 @@ let main files =
 	    try
 	      (match (Option.get current.analyzed_view)#filename with 
 		 | None ->
-		     begin match GToolbox.select_file ~title:"Save file" ()
+		     begin match select_file_for_save ~title:"Save file" ()
 		       with
 			 | None -> ()
 			 | Some f -> 
-			     if (Option.get current.analyzed_view)#save_as f then begin
+			     if (Option.get current.analyzed_view)#save f then begin
 				 set_current_tab_label (Filename.basename f);
 				 !flash_info ("File " ^ f ^ " saved")
 			       end
@@ -1968,25 +1976,25 @@ let main files =
 	    let current = get_current_view () in
 	      try (match (Option.get current.analyzed_view)#filename with 
 		     | None -> 
-			 begin match GToolbox.select_file ~title:"Save file as" ()
+			 begin match select_file_for_save ~title:"Save file as" ()
 			   with
 			     | None -> ()
 			     | Some f -> 
-				 if (Option.get current.analyzed_view)#save_as f then begin
+				 if (Option.get current.analyzed_view)#save f then begin
 				     set_current_tab_label (Filename.basename f);
 				     !flash_info "Saved"
 				   end
 				 else !flash_info "Save Failed"
 			 end
 		     | Some f -> 
-			 begin match GToolbox.select_file 
+			 begin match select_file_for_save 
 			     ~dir:(ref (Filename.dirname f)) 
 			     ~filename:(Filename.basename f)
 			     ~title:"Save file as" ()
 			   with
 			     | None -> ()
 			     | Some f -> 
-				 if (Option.get current.analyzed_view)#save_as f then begin
+				 if (Option.get current.analyzed_view)#save f then begin
 				     set_current_tab_label (Filename.basename f);
 				     !flash_info "Saved"
 				   end else !flash_info "Save Failed"
@@ -2082,7 +2090,7 @@ let main files =
 			      let basef_we = try Filename.chop_extension basef with _ -> basef in
 				match kind with
 				  | "latex" -> basef_we ^ ".tex"
-				  | "dvi" | "ps" | "html" -> basef_we ^ "." ^ kind
+				  | "dvi" | "ps" | "pdf" | "html" -> basef_we ^ "." ^ kind
 				  | _ -> assert false
 			    in
 			    let cmd = 
@@ -2106,6 +2114,9 @@ let main files =
 		  in
 		  let _ = 
 		    file_export_factory#add_item "_Dvi" ~callback:(export_f "dvi") 
+		  in
+		  let _ = 
+		    file_export_factory#add_item "_Pdf" ~callback:(export_f "pdf") 
 		  in
 		  let _ = 
 		    file_export_factory#add_item "_Ps" ~callback:(export_f "ps") 
