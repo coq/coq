@@ -12,7 +12,7 @@
 <<
 Fixpoint minus (n m:nat) {struct n} : nat :=
   match n, m with
-  | O, _ => 0
+  | O, _ => n
   | S k, O => S k
   | S k, S l => k - l
   end

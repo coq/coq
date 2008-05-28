@@ -507,10 +507,12 @@ Proof.
       trivial with arith.
 Qed.
 
-Lemma Zplus_succ_r : forall n m:Z, Zsucc (n + m) = n + Zsucc m.
+Lemma Zplus_succ_r_reverse : forall n m:Z, Zsucc (n + m) = n + Zsucc m.
 Proof.
   intros n m; unfold Zsucc in |- *; rewrite Zplus_assoc; trivial with arith.
 Qed.
+
+Notation Zplus_succ_r := Zplus_succ_r_reverse (only parsing).
 
 Lemma Zplus_succ_comm : forall n m:Z, Zsucc n + m = n + Zsucc m.
 Proof.

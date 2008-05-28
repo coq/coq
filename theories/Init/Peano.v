@@ -40,7 +40,7 @@ Hint Resolve (f_equal (A:=nat)): core.
 (** The predecessor function *)
 
 Definition pred (n:nat) : nat := match n with
-                                 | O => 0
+                                 | O => n
                                  | S u => u
                                  end.
 Hint Resolve (f_equal pred): v62.
@@ -123,6 +123,11 @@ Proof.
   auto.
 Qed.
 
+(** Standard associated names *)
+
+Notation plus_0_r_reverse := plus_n_O.
+Notation plus_succ_r_reverse := plus_n_Sm.
+
 (** Multiplication *)
 
 Fixpoint mult (n m:nat) {struct n} : nat :=
@@ -149,11 +154,16 @@ Proof.
 Qed.
 Hint Resolve mult_n_Sm: core v62.
 
+(** Standard associated names *)
+
+Notation mult_0_r_reverse := mult_n_O.
+Notation mult_succ_r_reverse := mult_n_Sm.
+
 (** Truncated subtraction: [m-n] is [0] if [n>=m] *)
 
 Fixpoint minus (n m:nat) {struct n} : nat :=
   match n, m with
-  | O, _ => 0
+  | O, _ => n
   | S k, O => S k
   | S k, S l => k - l
   end
@@ -211,5 +221,3 @@ Proof.
   induction n; auto.
   destruct m as [| n0]; auto.
 Qed.
-
-(** Notations *)

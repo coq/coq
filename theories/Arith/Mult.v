@@ -127,6 +127,20 @@ Proof.
       rewrite Hm in Hnm; rewrite mult_1_r in Hnm; auto. 
 Qed.
 
+(** ** Multiplication and successor *)
+
+Lemma mult_succ_l : forall n m:nat, S n * m = n * m + m.
+Proof.
+  intros; simpl. rewrite plus_comm. reflexivity.
+Qed.
+
+Lemma mult_succ_r : forall n m:nat, n * S m = n * m + n.
+Proof.
+  induction n as [| p H]; intro m; simpl.
+  reflexivity.
+  rewrite H, <- plus_n_Sm; apply f_equal; rewrite plus_assoc; reflexivity.
+Qed.
+
 (** * Compatibility with orders *)
 
 Lemma mult_O_le : forall n m, m = 0 \/ n <= m * n.
