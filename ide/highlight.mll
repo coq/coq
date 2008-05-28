@@ -71,7 +71,7 @@ let identchar =
 let ident = firstchar identchar*
 
 let multiword_declaration =
-  "Module" (space+ "Type")
+  "Module" (space+ "Type")?
 | "Program" space+ ident
 | "Existing" space+ "Instance"
 | "Canonical" space+ "Structure"

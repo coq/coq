@@ -1,17 +1,23 @@
 Performance analysis (trunk repository)
 ---------------------------------------
 
+May 21, 2008: New version of CoRN
+  (needs +84% more time to compile)
+
+Apr 25-29, 2008: Temporary attempt with delta in eauto (Matthieu)
+  (+28% CoRN) 
+
 Apr 17, 2008: improvement probably due to commit 10807 or 10813 (bug
   fixes, control of zeta in rewrite, auto (??))
   (-18% Buchberger, -40% PAutomata, -28% IntMap, -43% CoRN, -13% LinAlg,
   but CatsInZFC -0.5% only, PiCalc stable, PersistentUnionFind -1%)
 
 Mar 11, 2008:
-  (+19 % PersistentUnionFind wrt Mar 3, +21% Angles, 
+  (+19% PersistentUnionFind wrt Mar 3, +21% Angles, 
    +270% Continuations between 7/3 and 18/4)
 
 Mar 7, 2008:
-  (-10 % PersistentUnionFind wrt Mar 3)
+  (-10% PersistentUnionFind wrt Mar 3)
 
 Feb 20, 2008: temporary 1-day slow down
   (+64% LinAlg)

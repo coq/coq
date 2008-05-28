@@ -72,55 +72,6 @@ Proof.
   exact (f H0).
 Defined.
 
-(* This works...
-
-Notation "'!rew' a -> b [ Heq ]  'in' t" := (eq_rect a _ t b Heq)
-  (at level 10, a, b at level 80).
-
-Fixpoint Vlast (n:nat) (v:vector (S n)) { struct v } : A :=
-  match v with
-  | Vnil => I
-  | Vcons a n v => 
-      match v in vector q return n=q -> A with
-      | Vnil => fun _ => a
-      | Vcons _ q _ => fun Heq => Vlast q (!rew n -> (S q) [Heq] in v)
-      end (refl_equal n)
-  end.
-*)
-
-(* Remarks on the definition of Vlast...
-
-(* The ideal version... still now accepted, even with Program *)
-Fixpoint Vlast (n:nat) (v:vector (S n)) { struct v } : A :=
-  match v with
-  | Vnil => I
-  | Vcons a _ Vnil => a
-  | Vcons a n v => Vlast (pred n) v
-  end.
-
-(* This version does not work because Program Fixpoint expands v with
-   violates the guard condition *)
-
-Program Fixpoint Vlast (n:nat) (v:vector (S n)) { struct v } : A :=
-  match v in vector p return match p with O => True | _ => A end with
-  | Vnil => I
-  | Vcons a _ Vnil => a
-  | Vcons a _ (Vcons _ n _ as v) => Vlast n v
-  end.
-
-(* This version works *)
-
-Program Fixpoint Vlast (n:nat) (v:vector (S n)) { struct v } : A :=
-  match v in vector p return match p with O => True | _ => A end with
-  | Vnil => I
-  | Vcons a n v =>
-      match v with
-      | Vnil => a
-      | Vcons _ q _ => Vlast q v
-      end
-  end.
-*)
-
 Fixpoint Vconst (a:A) (n:nat) :=
   match n return vector n with
   | O => Vnil
@@ -192,15 +143,6 @@ Fixpoint Vunary n (v:vector n) : vector n :=
 
 Variable g : A -> A -> A.
 
-(* Would need to have the constraint n = n' ...
-
-Fixpoint Vbinary n (v w:vector n) : vector n :=
-  match v, w with
-  | Vnil, Vnil => Vnil
-  | Vcons a n' v', Vcons b _ w' => Vcons (g a b) n' (Vbinary n' v' w')
-  end.
-*)
-
 Lemma Vbinary : forall n:nat, vector n -> vector n -> vector n.
 Proof.
   induction n as [| n h]; intros v v0.
@@ -212,12 +154,11 @@ Defined.
 
 (** Eta-expansion of a vector *)
 
-Definition Vid : forall n:nat, vector n -> vector n.
-Proof.
-  destruct n; intro v.
-  exact Vnil.
-  exact (Vcons (Vhead _ v) _ (Vtail _ v)).
-Defined.
+Definition Vid n : vector n -> vector n :=
+  match n with
+  | O => fun _ => Vnil
+  | _ => fun v => Vcons (Vhead _ v) _ (Vtail _ v)
+  end.
 
 Lemma Vid_eq : forall (n:nat) (v:vector n), v = Vid n v.
 Proof.

@@ -4,7 +4,7 @@
 (* Undoing arbitrary commands, as first step *)
 
 Theorem a : O=O.
-Set Printing All.
+Ltac f x := x.
 assert True by trivial.
 trivial.
 Qed.
@@ -13,7 +13,7 @@ Qed.
 
 Theorem b : O=O.
 assert True by trivial.
-Set Printing All.
+Ltac g x := x.
 assert True by trivial.
 trivial.
 Qed.
@@ -65,7 +65,7 @@ Qed.
 Theorem n : O=O.
 assert True by trivial.
 Definition o := O.
-Set Printing All.
+Ltac h x := x.
 assert True by trivial.
 Focus.
 Definition p := O.

@@ -280,58 +280,6 @@ let evar_well_typed_body evd ev evi body =
        print_constr body);
     false
 
-(* Unused
-
-let strict_inverse = false
-
-let inverse_instance env evd ev evi inst rhs =
-  let subst = make_projectable_subst (evars_of evd) evi inst in
-  let subst = List.map (fun (x,(_,y)) -> (y,mkVar x)) subst in
-  let evdref = ref evd in
-  let error () = 
-    error_not_clean env (evars_of !evdref) ev rhs (evar_source ev !evdref) in
-  let rec subs rigid k t =
-    match kind_of_term t with
-      | Rel i ->
- 	  if i<=k then t
- 	  else
-            (try List.assoc (mkRel (i-k)) subst
-             with Not_found ->
-               if rigid then error()
-               else if strict_inverse then
-                 failwith "cannot solve pb yet"
-               else t)
-      | Var id ->
-          (try List.assoc t subst
-           with Not_found ->
-             if rigid then error()
-             else if
-               not strict_inverse &&
-               List.exists (fun (id',_,_) -> id=id') (evar_context evi)
-             then
-               failwith "cannot solve pb yet"
-             else t)
-      | Evar (evk,args as ev) ->
-          if Evd.is_defined_evar !evdref ev then
-            subs rigid k (existential_value (evars_of !evdref) ev)
-          else
-	    let args' = Array.map (subs false k) args in
-	    mkEvar (evk,args')
-      | _ -> map_constr_with_binders succ (subs rigid) k t in
-  let body = subs true 0 (nf_evar (evars_of evd) rhs) in
-  (!evdref,body)
-
-
-let is_defined_equation env evd (ev,inst) rhs =
-  is_pattern inst &&
-  not (occur_evar ev rhs) &&
-  try
-    let evi = Evd.find (evars_of evd) ev in
-    let (evd',body) = inverse_instance env evd ev evi inst rhs in
-    evar_well_typed_body evd' ev evi body
-  with Failure _ -> false
-*)
-
 (* We have x1..xq |- ?e1 and had to solve something like 
  * Σ; Γ |- ?e1[u1..uq] = (...\y1 ... \yk ... c), where c is typically some 
  * ?e2[v1..vn], hence flexible. We had to go through k binders and now 
