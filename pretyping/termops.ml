@@ -939,6 +939,22 @@ let next_name_not_occuring avoid_flags name l env_names t =
         (* invent a valid name *)
         next (id_of_string "H")
 
+let base_sort_cmp pb s0 s1 =
+  match (s0,s1) with
+    | (Prop c1, Prop c2) -> c1 = Null or c2 = Pos  (* Prop <= Set *)
+    | (Prop c1, Type u)  -> pb = Reduction.CUMUL
+    | (Type u1, Type u2) -> true
+    | _ -> false
+
+(* eq_constr extended with universe erasure *)
+let rec constr_cmp cv_pb t1 t2 =
+  (match kind_of_term t1, kind_of_term t2 with
+      Sort s1, Sort s2 -> base_sort_cmp cv_pb s1 s2
+    | _ -> false)
+  || compare_constr (constr_cmp cv_pb) t1 t2
+
+let eq_constr = constr_cmp Reduction.CONV
+
 (* On reduit une serie d'eta-redex de tete ou rien du tout  *)
 (* [x1:c1;...;xn:cn]@(f;a1...an;x1;...;xn) --> @(f;a1...an) *)
 (* Remplace 2 versions précédentes buggées                  *)
@@ -963,6 +979,7 @@ let rec eta_reduce_head c =
                     | _   -> c)
            | _ -> c)
     | _ -> c
+
 
 (* alpha-eta conversion : ignore print names and casts *)
 let eta_eq_constr =

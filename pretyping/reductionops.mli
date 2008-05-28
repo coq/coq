@@ -201,7 +201,6 @@ val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
 val sort_cmp : conv_pb -> sorts -> sorts -> conversion_test
-val base_sort_cmp : conv_pb -> sorts -> sorts -> bool
 
 val is_conv : env ->  evar_map -> constr -> constr -> bool
 val is_conv_leq : env ->  evar_map -> constr -> constr -> bool

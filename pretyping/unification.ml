@@ -154,8 +154,8 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	(match flags.modulo_conv_on_closed_terms with
 	    Some flags ->
 	      is_trans_fconv (conv_pb_of pb) flags env sigma m n
-	  | None -> eq_constr m n)
-    | _ -> false in
+	  | None -> constr_cmp (conv_pb_of cv_pb) m n)
+    | _ -> constr_cmp (conv_pb_of cv_pb) m n in
   let rec unirec_rec curenv pb b ((metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_castappevar sigma curm
     and cN = Evarutil.whd_castappevar sigma curn in 
@@ -247,7 +247,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
       (match flags.modulo_conv_on_closed_terms with
 	  Some flags ->
 	    is_trans_fconv (conv_pb_of cv_pb) flags env sigma m n
-	| None -> eq_constr m n)
+	| None -> constr_cmp (conv_pb_of cv_pb) m n)
     then 
       subst
     else 

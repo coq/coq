@@ -147,6 +147,10 @@ val subst_term_occ_decl :
 val error_invalid_occurrence : int list -> 'a
 
 (* Alternative term equalities *)
+val base_sort_cmp : Reduction.conv_pb -> sorts -> sorts -> bool
+val constr_cmp : Reduction.conv_pb -> constr -> constr -> bool
+val eq_constr : constr -> constr -> bool
+
 val eta_reduce_head : constr -> constr
 val eta_eq_constr : constr -> constr -> bool
 
