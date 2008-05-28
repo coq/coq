@@ -182,6 +182,11 @@ Definition CompOpp (r:comparison) :=
     | Gt => Lt
   end.
 
+(** Identity *)
+
+Definition ID := forall A:Type, A -> A.
+Definition id : ID := fun A x => x.
+
 (* begin hide *)
 
 (* Compatibility *)

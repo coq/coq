@@ -46,6 +46,7 @@ val error_wrong_predicate_arity_loc : loc -> env -> constr -> constr -> constr -
 
 val error_needs_inversion : env -> constr -> types -> 'a
 
+val set_impossible_default_clause : constr * types -> unit
 (*s Compilation of pattern-matching. *)
 
 type alias_constr =

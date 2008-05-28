@@ -63,6 +63,27 @@ let error_wrong_predicate_arity_loc loc env c n1 n2 =
 let error_needs_inversion env x t =
   raise (PatternMatchingError (env, NeedsInversion (x,t)))
 
+(**********************************************************************)
+(* Functions to deal with impossible cases *)
+
+let impossible_default_case = ref None
+
+let set_impossible_default_clause c = impossible_default_case := Some c
+
+let coq_unit_judge =
+  let na1 = Name (id_of_string "A") in
+  let na2 = Name (id_of_string "H") in
+  fun () -> 
+    match !impossible_default_case with
+    | Some (id,type_of_id) ->
+	make_judge id type_of_id
+    | None -> 
+	(* In case the constants id/ID are not defined *)
+	make_judge (mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1)))
+                 (mkProd (na1,mkProp,mkArrow (mkRel 1) (mkRel 2)))
+
+(**********************************************************************)
+
 module type S = sig
   val compile_cases :
     loc -> case_style ->
@@ -520,15 +541,6 @@ let extract_rhs pb =
         eqn.rhs
 
 (**********************************************************************)
-(* Functions to deal with impossible cases *)
-
-let coq_unit_judge =
-  let na1 = Name (id_of_string "A") in
-  let na2 = Name (id_of_string "H") in
-  { uj_val = mkLambda (na1,mkProp,mkLambda(na2,mkRel 1,mkRel 1));
-    uj_type =  mkProd (na1,mkProp,mkArrow (mkRel 1) (mkRel 2)) }
-
-(**********************************************************************)
 (* Functions to deal with matrix factorization *)
 
 let occur_in_rhs na rhs =
@@ -909,7 +921,8 @@ let adjust_impossible_cases pb pred tomatch submat =
   if submat = [] then
     match kind_of_term (whd_evar (evars_of !(pb.evdref)) pred) with
     | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) = ImpossibleCase ->
-	pb.evdref := Evd.evar_define evk coq_unit_judge.uj_type !(pb.evdref);
+	let default = (coq_unit_judge ()).uj_type in
+	pb.evdref := Evd.evar_define evk default !(pb.evdref);
       (* we add an "assert false" case *)
       let pats = List.map (fun _ -> PatVar (dummy_loc,Anonymous)) tomatch in
       let aliasnames =
@@ -1816,7 +1829,7 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
     (* A typing function that provides with a canonical term for absurd cases*)
     let typing_fun tycon env evdref = function
     | Some t ->	typing_fun tycon env evdref t
-    | None -> coq_unit_judge in
+    | None -> coq_unit_judge () in
 
     let pb =
       { env       = env;

@@ -109,6 +109,14 @@ let arith_module = make_dir ["Coq";"Arith";"Arith"]
 
 (* TODO: temporary hack *)
 let make_kn dir id = Libnames.encode_kn dir id
+let make_con dir id = Libnames.encode_con dir id
+
+(** Identity *)
+
+let id = make_con datatypes_module (id_of_string "id")
+let type_of_id = make_con datatypes_module (id_of_string "ID")
+
+let _ = Cases.set_impossible_default_clause (mkConst id,mkConst type_of_id)
 
 (** Natural numbers *)
 let nat_kn = make_kn datatypes_module (id_of_string "nat")
