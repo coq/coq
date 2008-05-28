@@ -32,6 +32,7 @@ type pref =
       mutable modifier_for_navigation : Gdk.Tags.modifier list;
       mutable modifier_for_templates : Gdk.Tags.modifier list;
       mutable modifier_for_tactics : Gdk.Tags.modifier list;
+      mutable modifier_for_display : Gdk.Tags.modifier list;
       mutable modifiers_valid : Gdk.Tags.modifier list;
 
       mutable cmd_browse : string;

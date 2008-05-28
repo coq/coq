@@ -1,3 +1,4 @@
+
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -2881,7 +2882,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  let view_factory =  new GMenu.factory display_menu
 					    ~accel_path:"<CoqIde MenuBar>/Display/"
 					    ~accel_group 
-					    ~accel_modi:[`MOD1;`SHIFT]
+					    ~accel_modi:!current.modifier_for_display
 					  in
 
 					  let _ = ignore (view_factory#add_check_item 
@@ -3166,7 +3167,6 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					      let faq_m = help_factory#add_item "_FAQ" in
 					    *)
 					  let about_m = help_factory#add_item "_About" in
-
 					  (* End of menu *)
 
 					  (* The vertical Separator between Scripts and Goals *)

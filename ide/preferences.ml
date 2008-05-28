@@ -73,6 +73,7 @@ type pref =
       mutable modifier_for_navigation : Gdk.Tags.modifier list;
       mutable modifier_for_templates : Gdk.Tags.modifier list;
       mutable modifier_for_tactics : Gdk.Tags.modifier list;
+      mutable modifier_for_display : Gdk.Tags.modifier list;
       mutable modifiers_valid : Gdk.Tags.modifier list;
 
       mutable cmd_browse : string;
@@ -124,6 +125,7 @@ let (current:pref ref) =
     modifier_for_navigation = [`CONTROL; `MOD1];
     modifier_for_templates = [`CONTROL; `SHIFT];
     modifier_for_tactics = [`CONTROL; `MOD1];
+    modifier_for_display = [`MOD1;`SHIFT];
     modifiers_valid = [`SHIFT; `CONTROL; `MOD1];
 
     
@@ -194,6 +196,8 @@ let save_pref () =
       (List.map mod_to_str p.modifier_for_templates) ++
     add "modifier_for_tactics" 
       (List.map mod_to_str p.modifier_for_tactics) ++
+    add "modifier_for_display" 
+      (List.map mod_to_str p.modifier_for_display) ++
     add "modifiers_valid" 
       (List.map mod_to_str p.modifiers_valid) ++
     add "cmd_browse" [p.cmd_browse] ++
@@ -255,6 +259,8 @@ let load_pref () =
       (fun v -> np.modifier_for_templates <- List.map str_to_mod v);
     set "modifier_for_tactics" 
       (fun v -> np.modifier_for_tactics <- List.map str_to_mod v);
+    set "modifier_for_display" 
+      (fun v -> np.modifier_for_display <- List.map str_to_mod v);
     set "modifiers_valid" 
       (fun v -> np.modifiers_valid <- List.map str_to_mod v);
     set_command_with_pair_compat "cmd_browse" (fun v -> np.cmd_browse <- v);
@@ -468,6 +474,13 @@ let configure ?(apply=(fun () -> ())) () =
       "Modifiers for Navigation Menu"
       !current.modifier_for_navigation
   in
+  let modifier_for_display = 
+    modifiers
+      ~allow:!current.modifiers_valid
+      ~f:(fun l -> !current.modifier_for_display <- l)
+      "Modifiers for Display Menu"
+      !current.modifier_for_display
+  in
   let modifiers_valid = 
     modifiers
       ~f:(fun l -> !current.modifiers_valid <- l)
@@ -557,7 +570,7 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts",
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_navigation;mod_msg]);
+	      modifier_for_templates; modifier_for_display; modifier_for_navigation;mod_msg]);
      Section("Misc",
 	     misc)]
   in
