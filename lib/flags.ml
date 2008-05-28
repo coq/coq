@@ -112,13 +112,18 @@ let boxed_definitions _ = !boxed_definitions
 
 let subst_command_placeholder s t =
   let buff = Buffer.create (String.length s + String.length t) in
-  let i = ref 0 in
-  while (!i <> String.length s - 2) do
-    if s.[!i] = '%' & s.[!i+1] = 's' then (Buffer.add_string buff t;incr i)
-    else Buffer.add_char buff s.[!i];
-    incr i
-  done;
-  Buffer.contents buff
+    if String.length s < 2 then
+      Buffer.add_string buff s
+    else
+      begin
+	let i = ref 0 in
+	  while (!i <= String.length s - 2) do
+	    if s.[!i] = '%' & s.[!i+1] = 's' then (Buffer.add_string buff t;incr i)
+	    else Buffer.add_char buff s.[!i];
+	    incr i
+	  done
+      end;
+    Buffer.contents buff
 
 let browser_cmd_fmt =
  try
