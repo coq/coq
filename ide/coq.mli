@@ -13,6 +13,7 @@ open Term
 open Environ
 open Evd
 
+val short_version : unit -> string
 val version : unit -> string
 
 type printing_state = {

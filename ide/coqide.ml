@@ -3424,34 +3424,46 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								   (fun {view=view} -> view#misc#modify_font fd)
 								   input_views;
 							      );
-							    let about (b:GText.buffer) =
-(*
-							      (try 
-								   let image = lib_ide_file "coq.png" in
-								   let startup_image = GdkPixbuf.from_file image in
-								     b#insert_pixbuf ~iter:b#start_iter 
-								       ~pixbuf:startup_image;
-								     b#insert ~iter:b#start_iter "\t\t";
-							       with _ -> ());
-*)
-							      let about_string =
-								"\nCoqIDE: an Integrated Development Environment for Coq\n\
+							    let about_full_string =
+							      "\nCoq is developed by the Coq Development Team\
+       \n(INRIA - CNRS - University Paris 11 and partners)\
+       \nWeb site: http://coq.inria.fr\
+       \nFeature wish or bug report: http://logical.saclay.inria.fr/coq-bugs\
+       \n\
+       \nCredits for CoqIDE, the Integrated Development Environment for Coq:\
+       \n\
        \nMain author  : Benjamin Monate\
        \nContributors : Jean-Christophe Filliâtre\
-       \n               Pierre Letouzey, Claude Marché\n\
-       \nFeature wish or bug report: use Web interface\n\
-       \n\thttp://logical.saclay.inria.fr/coq-bugs\n\
+       \n               Pierre Letouzey, Claude Marché\
+       \n               Bruno Barras, Pierre Corbineau\
+       \n               Julien Narboux, Hugo Herbelin, ... \
+       \n\
        \nVersion information\
-       \n-------------------\n"
-							      in
-								if Glib.Utf8.validate about_string
-								then b#insert about_string;
-								let coq_version = Coq.version () in
-								  if Glib.Utf8.validate coq_version
-								  then b#insert coq_version;
-								  
+       \n-------------------\
+       \n"
 							    in
-							      about  tv2#buffer;
+							    let initial_about (b:GText.buffer) =
+							      (try 
+								let image = lib_ide_file "coq.png" in
+								let startup_image = GdkPixbuf.from_file image in
+								b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
+								b#insert ~iter:b#start_iter "\t\t   "
+							       with _ -> ());
+							      let coq_version = Coq.short_version () in
+							      b#insert ~iter:b#start_iter "\n\n";
+							      if Glib.Utf8.validate coq_version then b#insert ~iter:b#start_iter coq_version;
+							      b#insert ~iter:b#start_iter "\n   "
+							    in
+
+							    let about (b:GText.buffer) =
+							      if Glib.Utf8.validate about_full_string
+							      then b#insert about_full_string;
+							      let coq_version = Coq.version () in
+							      if Glib.Utf8.validate coq_version
+							      then b#insert coq_version
+
+							    in
+							      initial_about tv2#buffer;
 							      w#add_accel_group accel_group;
 							      (* Remove default pango menu for textviews *)
 							      ignore (tv2#event#connect#button_press ~callback:
