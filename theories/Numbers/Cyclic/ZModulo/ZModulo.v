@@ -158,35 +158,6 @@ Section ZModulo.
   unfold znz_eq0; intros; now destruct [|x|].
  Qed.
 
- Definition znz_WW h l := 
-   if znz_eq0 h && znz_eq0 l then W0 else WW h l.
- 
- Lemma spec_WW  : forall h l, [||znz_WW h l||] = [|h|] * wB + [|l|].
- Proof.
- intros; unfold znz_WW.
- case_eq (znz_eq0 h); intros; simpl; auto.
- case_eq (znz_eq0 l); intros; simpl; auto.
- rewrite 2 spec_eq0; auto.
- Qed.
-
- Definition znz_0W l := if znz_eq0 l then W0 else WW 0 l.
- 
- Lemma spec_0W : forall l, [||znz_0W l||] = [|l|].
- Proof.
- intros; unfold znz_0W.
- case_eq (znz_eq0 l); intros; simpl; auto.
- rewrite spec_eq0; auto.
- Qed.
-
- Definition znz_W0 h := if znz_eq0 h then W0 else WW h 0.
- 
- Lemma spec_W0 : forall h, [||znz_W0 h||] = [|h|]*wB.
- Proof.
- intros; unfold znz_W0.
- case_eq (znz_eq0 h); intros; simpl; auto with zarith.
- rewrite spec_eq0; auto with zarith.
- Qed.
-
  Definition znz_opp_c x := 
    if znz_eq0 x then C0 0 else C1 (- x).
  Definition znz_opp x := - x.
@@ -399,7 +370,7 @@ Section ZModulo.
   
  Definition znz_mul_c x y := 
   let (h,l) := Zdiv_eucl ([|x|]*[|y|]) wB in
-  znz_WW h l.
+  if znz_eq0 h then if znz_eq0 l then W0 else WW h l else WW h l.
 
  Definition znz_mul := Zmult.
 
@@ -407,7 +378,7 @@ Section ZModulo.
  
  Lemma spec_mul_c : forall x y, [|| znz_mul_c x y ||] = [|x|] * [|y|].
  Proof.
- intros; unfold znz_mul_c, zn2z_to_Z, znz_WW.
+ intros; unfold znz_mul_c, zn2z_to_Z.
  assert (Zdiv_eucl ([|x|]*[|y|]) wB = (([|x|]*[|y|])/wB,([|x|]*[|y|]) mod wB)).
   unfold Zmod, Zdiv; destruct Zdiv_eucl; auto.
  generalize (Z_div_mod ([|x|]*[|y|]) wB wB_pos); destruct Zdiv_eucl as (h,l).
@@ -870,9 +841,6 @@ Section ZModulo.
     (znz_0   : znz)
     (znz_1   : znz)
     (znz_Bm1 : znz)
-    (znz_WW  : znz -> znz -> zn2z znz)
-    (znz_W0  : znz -> zn2z znz)
-    (znz_0W  : znz -> zn2z znz)
 
     (znz_compare     : znz -> znz -> comparison)
     (znz_eq0         : znz -> bool)
@@ -924,9 +892,6 @@ Section ZModulo.
     spec_0
     spec_1   
     spec_Bm1 
-    spec_WW  
-    spec_0W  
-    spec_W0  
 
     spec_compare 
     spec_eq0 

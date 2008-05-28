@@ -1430,13 +1430,18 @@ let _ =
   pr "";
 
   for i = 0 to size do
-    pr " Definition w%i_0W := w%i_op.(znz_0W)." i i
+    pr " Definition w%i_0W := znz_0W w%i_op." i i
+  done;
+  pr "";
+
+  for i = 0 to size do
+    pr " Definition w%i_WW := znz_WW w%i_op." i i
   done;
   pr "";
 
   for i = 0 to size do
     pr " Definition w%i_mul_add_n1 :=" i;
-    pr "  @double_mul_add_n1 w%i %s w%i_op.(znz_WW) w%i_0W w%i_mul_add."  i (pz i) i i i
+    pr "  @double_mul_add_n1 w%i %s w%i_WW w%i_0W w%i_mul_add."  i (pz i) i i i
   done;
   pr "";
 
@@ -1769,7 +1774,7 @@ let _ =
   pp " Let spec_divn1 ww (ww_op: znz_op ww) (ww_spec: znz_spec ww_op) := ";
   pp "   (spec_double_divn1 ";
   pp "    ww_op.(znz_zdigits) ww_op.(znz_0)";
-  pp "    ww_op.(znz_WW) ww_op.(znz_head0)";
+  pp "    (znz_WW ww_op) ww_op.(znz_head0)";
   pp "    ww_op.(znz_add_mul_div) ww_op.(znz_div21)";
   pp "    ww_op.(znz_compare) ww_op.(znz_sub) (znz_to_Z ww_op)";
   pp "    (spec_to_Z ww_spec) ";
@@ -1783,7 +1788,7 @@ let _ =
     pr " Definition w%i_divn1 n x y :="  i;
     pr "  let (u, v) :=";
     pr "  double_divn1 w%i_op.(znz_zdigits) w%i_op.(znz_0)" i i;
-    pr "    w%i_op.(znz_WW) w%i_op.(znz_head0)" i i;
+    pr "    (znz_WW w%i_op) w%i_op.(znz_head0)" i i;
     pr "    w%i_op.(znz_add_mul_div) w%i_op.(znz_div21)" i i;
     pr "    w%i_op.(znz_compare) w%i_op.(znz_sub) (S n) x y in" i i;
     if i == size then
@@ -2011,7 +2016,7 @@ let _ =
   pp " Let spec_modn1 ww (ww_op: znz_op ww) (ww_spec: znz_spec ww_op) := ";
   pp "   (spec_double_modn1 ";
   pp "    ww_op.(znz_zdigits) ww_op.(znz_0)";
-  pp "    ww_op.(znz_WW) ww_op.(znz_head0)";
+  pp "    (znz_WW ww_op) ww_op.(znz_head0)";
   pp "    ww_op.(znz_add_mul_div) ww_op.(znz_div21)";
   pp "    ww_op.(znz_compare) ww_op.(znz_sub) (znz_to_Z ww_op)";
   pp "    (spec_to_Z ww_spec) ";

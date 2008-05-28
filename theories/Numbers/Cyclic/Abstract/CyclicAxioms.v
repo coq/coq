@@ -40,13 +40,10 @@ Section Z_nZ_Op.
     znz_head0  : znz -> znz; (* number of digits 0 in front of the number *)
     znz_tail0  : znz -> znz; (* number of digits 0 at the bottom of the number *)
 
-    (* Basic constructors *)
+    (* Basic numbers *)
     znz_0   : znz;
     znz_1   : znz;
     znz_Bm1 : znz;  (* [2^digits-1], which is equivalent to [-1] *)
-    znz_WW  : znz -> znz -> zn2z znz; (* from high and low words to a double word *)
-    znz_W0  : znz -> zn2z znz; (* same, with null low word *)
-    znz_0W  : znz -> zn2z znz; (* same, with null high word *)
 
     (* Comparison *)
     znz_compare     : znz -> znz -> comparison;
@@ -77,13 +74,13 @@ Section Z_nZ_Op.
 
     (* Special divisions operations *)
     znz_div21       : znz -> znz -> znz -> znz*znz;
-    znz_div_gt      : znz -> znz -> znz * znz; (* why this one ? *)
+    znz_div_gt      : znz -> znz -> znz * znz; (* specialized version of [znz_div] *)
     znz_div         : znz -> znz -> znz * znz;
 
-    znz_mod_gt      : znz -> znz -> znz; (* why this one ? *)
+    znz_mod_gt      : znz -> znz -> znz; (* specialized version of [znz_mod] *)
     znz_mod         : znz -> znz -> znz; 
 
-    znz_gcd_gt      : znz -> znz -> znz; (* why this one ? *)
+    znz_gcd_gt      : znz -> znz -> znz; (* specialized version of [znz_gcd] *)
     znz_gcd         : znz -> znz -> znz; 
     (* [znz_add_mul_div p i j] is a combination of the [(digits-p)]
        low bits of [i] above the [p] high bits of [j]: 
@@ -113,10 +110,6 @@ Section Z_nZ_Spec.
  Let w0            := w_op.(znz_0).
  Let w1            := w_op.(znz_1).
  Let wBm1          := w_op.(znz_Bm1).
-
- Let wWW           := w_op.(znz_WW).
- Let w0W           := w_op.(znz_0W).
- Let wW0           := w_op.(znz_W0).
 
  Let w_compare     := w_op.(znz_compare).
  Let w_eq0         := w_op.(znz_eq0).
@@ -183,13 +176,10 @@ Section Z_nZ_Spec.
     spec_zdigits : [| w_zdigits |] = Zpos w_digits;
     spec_more_than_1_digit: 1 < Zpos w_digits;
 
-    (* Basic constructors *)
+    (* Basic numbers *)
     spec_0   : [|w0|] = 0;
     spec_1   : [|w1|] = 1;
     spec_Bm1 : [|wBm1|] = wB - 1;
-    spec_WW  : forall h l, [||wWW h l||] = [|h|] * wB + [|l|];
-    spec_0W  : forall l, [||w0W l||] = [|l|];
-    spec_W0  : forall h, [||wW0 h||] = [|h|]*wB;
 
     (* Comparison *)
     spec_compare :
@@ -279,7 +269,57 @@ Section Z_nZ_Spec.
 
 End Z_nZ_Spec.
 
+(** Generic construction of double words *)
 
+Section WW.
+ 
+ Variable w : Type.
+ Variable w_op : znz_op w.
+ Variable op_spec : znz_spec w_op.
+ 
+ Let wB := base w_op.(znz_digits).
+ Let w_to_Z := w_op.(znz_to_Z).
+ Let w_eq0 := w_op.(znz_eq0).
+ Let w_0 := w_op.(znz_0).
+
+ Definition znz_W0 h := 
+  if w_eq0 h then W0 else WW h w_0.
+
+ Definition znz_0W l := 
+  if w_eq0 l then W0 else WW w_0 l.
+
+ Definition znz_WW h l := 
+  if w_eq0 h then znz_0W l else WW h l.
+
+ Lemma spec_W0 : forall h,
+   zn2z_to_Z wB w_to_Z (znz_W0 h) = (w_to_Z h)*wB.
+ Proof.
+ unfold zn2z_to_Z, znz_W0, w_to_Z; simpl; intros.
+ case_eq (w_eq0 h); intros.
+ rewrite (op_spec.(spec_eq0) _ H); auto.
+ unfold w_0; rewrite op_spec.(spec_0); auto with zarith.
+ Qed.
+
+ Lemma spec_0W : forall l, 
+   zn2z_to_Z wB w_to_Z (znz_0W l) = w_to_Z l.
+ Proof.
+ unfold zn2z_to_Z, znz_0W, w_to_Z; simpl; intros.
+ case_eq (w_eq0 l); intros.
+ rewrite (op_spec.(spec_eq0) _ H); auto.
+ unfold w_0; rewrite op_spec.(spec_0); auto with zarith.
+ Qed.
+
+ Lemma spec_WW : forall h l, 
+  zn2z_to_Z wB w_to_Z (znz_WW h l) = (w_to_Z h)*wB + w_to_Z l.
+ Proof.
+ unfold znz_WW, w_to_Z; simpl; intros.
+ case_eq (w_eq0 h); intros.
+ rewrite (op_spec.(spec_eq0) _ H); auto.
+ rewrite spec_0W; auto.
+ simpl; auto.
+ Qed.
+
+End WW.
 
 (** Injecting [Z] numbers into a cyclic structure *)
 

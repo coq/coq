@@ -1109,18 +1109,6 @@ End Basics.
 
 Section Int31_Op.
 
-(** A function which given two int31 i and j, returns a double word
-    which is worth i*2^31+j *)
-Let w_WW i j := 
-  match (match i ?= 0 with Eq => j ?= 0 | not0 => not0 end) with 
-    | Eq => W0 
-    | _ => WW i j 
-  end.
-
-(** Two special cases where i and j are respectively taken equal to 0 *)
-Let w_W0 i := match i ?= 0 with Eq => W0 | _ => WW i 0 end.
-Let w_0W j := match j ?= 0 with Eq => W0 | _ => WW 0 j end.
-
 (** Nullity test *)
 Let w_iszero i := match i ?= 0 with Eq => true | _ => false end.
 
@@ -1147,9 +1135,6 @@ Definition int31_op := (mk_znz_op
  0
  1
  Tn (* 2^31 - 1 *)
- w_WW
- w_W0
- w_0W
  (* Comparison *)
  compare31
  w_iszero
@@ -1933,42 +1918,6 @@ Section Int31_Spec.
  apply Zcompare_Eq_eq.
  now destruct ([|x|] ?= 0).
  Qed.
-
- (** [WW] and variants *) 
-
- Let wWW           := int31_op.(znz_WW).
- Let w0W           := int31_op.(znz_0W).
- Let wW0           := int31_op.(znz_W0).
-
- Lemma spec_WW  : forall h l, [||wWW h l||] = [|h|] * wB + [|l|].
- Proof.
- clear; unfold wWW; simpl; intros.
- unfold compare31 in *.
- change [|0|] with 0.
- case_eq ([|h|] ?= 0); simpl; auto.
- case_eq ([|l|] ?= 0); simpl; auto.
- intros.
- rewrite (Zcompare_Eq_eq _ _ H); simpl.
- rewrite (Zcompare_Eq_eq _ _ H0); simpl; auto.
- Qed.
-
- Lemma spec_0W  : forall l, [||w0W l||] = [|l|].
- Proof.
- clear; unfold w0W; simpl; intros.
- unfold compare31 in *.
- change [|0|] with 0.
- case_eq ([|l|] ?= 0); simpl; auto.
- intros; symmetry; apply Zcompare_Eq_eq; auto.
- Qed.
-
- Lemma spec_W0  : forall h, [||wW0 h||] = [|h|]*wB.
- Proof.
- clear; unfold wW0; simpl; intros.
- unfold compare31 in *.
- change [|0|] with 0.
- case_eq ([|h|] ?= 0); simpl; auto with zarith.
- intro H; rewrite (Zcompare_Eq_eq _ _ H); auto.
- Qed.
   
  (* Even *)
  
@@ -2003,9 +1952,6 @@ Section Int31_Spec.
   exact spec_0.
   exact spec_1.  
   exact spec_Bm1.
-  exact spec_WW.
-  exact spec_0W. 
-  exact spec_W0.
 
   exact spec_compare.
   exact spec_eq0.
