@@ -40,7 +40,9 @@ REQUIREMENT:
           install GTK+ 2.x should you need to force it for one reason
           or another.)
 
-        - The OCaml bindings for for GTK+ 2.x, lablgtk2.
+        - The OCaml bindings for GTK+ 2.x, lablgtk2.
+
+	  You need at least version 2.10.0.
 
 	  Your distribution may contain precompiled packages. For
           example, for Debian, run
@@ -52,23 +54,23 @@ REQUIREMENT:
           http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html .
 
           One official releases of lablgtk2 is here:
-          http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.0.tar.gz
+          http://wwwfun.kurims.kyoto-u.ac.jp/soft/lsl/dist/lablgtk-2.10.1.tar.gz
 
           Note that even if its README requires ocaml > 3.07, it works
           ok with 3.07. If you are in a hurry just run :
 
               cd /tmp && \
               wget \
-               http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.0.tar.gz && \
-              tar zxvf lablgtk-2.10.0.tar.gz && \
-              cd lablgtk-2.10.0 && \
+               http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.1.tar.gz && \
+              tar zxvf lablgtk-2.10.1.tar.gz && \
+              cd lablgtk-2.10.1 && \
               ./configure && \
               make world && \
               make install
 
    	  You must have write access to the OCaml standard library path.
 
-          If this fails, read lablgtk-2.10.0/README.
+          If this fails, read lablgtk-2.10.1/README.
 
 
 INSTALLATION
