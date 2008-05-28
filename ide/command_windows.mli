@@ -12,10 +12,10 @@ class command_window :
   unit ->
   object
     method new_command : ?command:string -> ?term:string -> unit -> unit
-    method window : GWindow.window
+    method frame : GBin.frame
   end
 
-val main : unit -> unit
+ val main : unit -> unit
 
 val command_window : unit -> command_window
 

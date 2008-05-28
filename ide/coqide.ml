@@ -3073,17 +3073,20 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  let configuration_factory = new GMenu.factory configuration_menu ~accel_path:"<CoqIde MenuBar>/Windows" ~accel_group
 					  in
 					  let _ = 
-					    configuration_factory#add_item 
-					      "Show _Query Window"
+					    configuration_factory#add_check_item 
+					      "Show/Hide _Query Pane"
 					      (*
 						~key:GdkKeysyms._F12
 					      *)
-					      ~callback:(Command_windows.command_window ())#window#present
+					      ~callback:(fun b -> if b then 
+							   (Command_windows.command_window ())#frame#misc#show ()
+							 else
+							   (Command_windows.command_window ())#frame#misc#hide ())
 					  in  
 					  let _ = 
-					    configuration_factory#add_item 
+					    configuration_factory#add_check_item 
 					      "Show/Hide _Toolbar"	       
-					      ~callback:(fun () ->  
+					      ~callback:(fun _ ->  
 							   !current.show_toolbar <- not !current.show_toolbar; 
 							   !show_toolbar !current.show_toolbar) 
 					  in
@@ -3170,7 +3173,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  (* End of menu *)
 
 					  (* The vertical Separator between Scripts and Goals *)
-					  let hb = GPack.paned `HORIZONTAL  ~border_width:5 ~packing:vbox#add () in
+					  let queries_pane = GPack.paned `VERTICAL ~packing:(vbox#pack ~expand:true ) () in
+					  let hb = GPack.paned `HORIZONTAL ~border_width:5 ~packing:(queries_pane#pack1 ~shrink:false ~resize:true) () in
 					  let fr_notebook = GBin.frame ~shadow_type:`IN ~packing:hb#add1 () in
 					    _notebook := Some (GPack.notebook ~border_width:2 ~show_border:false ~scrollable:true 
 								 ~packing:fr_notebook#add
@@ -3188,6 +3192,10 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					      ~vpolicy:`AUTOMATIC 
 					      ~hpolicy:`AUTOMATIC
 					      ~packing:(fr_b#add) () in
+					    let command_object = Command_windows.command_window() in
+					    let queries_frame = command_object#frame in
+					      queries_pane#pack2 ~shrink:true ~resize:true (queries_frame#coerce);
+					     
 					    let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
 					    let status_bar = GMisc.statusbar ~packing:(lower_hbox#pack ~expand:true) () 
 					    in

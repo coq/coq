@@ -9,17 +9,19 @@
 (* $Id$ *)
 
 class command_window () = 
-  let window = GWindow.window 
+(*  let window = GWindow.window 
 		 ~allow_grow:true ~allow_shrink:true 
 		 ~width:500 ~height:250
 		 ~position:`CENTER
 		 ~title:"CoqIde queries" ~show:false ()
-  in
+  in *)
+  let frame = GBin.frame ~label:"Command Pane" ~shadow_type:`IN () in
+  let _ = frame#misc#hide () in
   let _ = GtkData.AccelGroup.create () in
-  let vbox = GPack.vbox ~homogeneous:false ~packing:window#add () in
+  let vbox = GPack.vbox ~homogeneous:false ~packing:frame#add () in
   let toolbar = GButton.toolbar 
 		  ~orientation:`HORIZONTAL 
-		  ~style:`ICONS
+		  ~style:`BOTH
 		  ~tooltips:true 
 		  ~packing:(vbox#pack 
 			       ~expand:false
@@ -35,10 +37,10 @@ class command_window () =
   in
   let _ = 
     toolbar#insert_button
-      ~tooltip:"Hide Window"
-      ~text:"Hide Window"
+      ~tooltip:"Hide Commands Pane"
+      ~text:"Hide Pane"
       ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `CLOSE)
-      ~callback:window#misc#hide
+      ~callback:frame#misc#hide
       ()
   in
   let new_page_menu = 
@@ -46,28 +48,24 @@ class command_window () =
       ~tooltip:"New Page"
       ~text:"New Page"
       ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `NEW)
-(*
-      ~callback:window#misc#hide
-*)
       ()
   in
 
   let _ = 
     toolbar#insert_button
-      ~tooltip:"Kill Page"
-      ~text:"Kill Page"
+      ~tooltip:"Delete Page"
+      ~text:"Delete Page"
       ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `DELETE)
       ~callback:(fun () -> notebook#remove_page notebook#current_page)
       ()
   in
 object(self)
-  val window = window
-(*
-  val menubar = menubar
-*)
+  val frame = frame
+
+
   val new_page_menu = new_page_menu
   val notebook = notebook
-  method window = window
+  method frame = frame 
   method new_command ?command ?term () =
     let appendp x = ignore (notebook#append_page x) in
     let frame = GBin.frame 
@@ -136,11 +134,11 @@ object(self)
     entry#misc#grab_default ();
     ignore (entry#connect#activate ~callback);
     ignore (combo#entry#connect#activate ~callback);
-    self#window#present ()
+    self#frame#misc#show () 
 
   initializer 
     ignore (new_page_menu#connect#clicked self#new_command);
-    ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));
+   (* ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));*)
 end
 
 let command_window = ref None
