@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 open Names
 open Declarations
@@ -220,7 +220,8 @@ and nf_predicate env ind mip params v pT =
       let name = Name (id_of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
-      let dom = mkApp(mkApp(mkInd ind,params),rargs) in
+      let params = if n=0 then params else Array.map (lift n) params in
+      let dom = mkApp(mkInd ind,Array.append params rargs) in
       let body = nf_vtype (push_rel (name,None,dom) env) vb in
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_val env v crazy_type
