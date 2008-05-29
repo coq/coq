@@ -686,7 +686,7 @@ NATURALBINARYVO:=$(addprefix theories/Numbers/Natural/Binary/, \
  NBinDefs.vo 	NBinary.vo )
 
 NATURALBIGNVO:=$(addprefix theories/Numbers/Natural/BigN/, \
- Nbasic.vo 	NMake.vo 	BigN.vo )
+ Nbasic.vo 	NMake.vo 	BigN.vo 	NBigN.vo )
 
 NATURALVO:=$(NATURALABSTRACTVO) $(NATURALPEANOVO) $(NATURALBINARYVO) $(NATURALBIGNVO)
 
