@@ -453,18 +453,17 @@ let rec tclTHENLIST = function
 
 (* various progress criterions *)
 let same_goal gl subgoal = 
-  eq_named_context_val (hypotheses subgoal) (hypotheses gl) &&
-  eq_constr (conclusion subgoal) (conclusion gl)
+  eq_constr (conclusion subgoal) (conclusion gl) &&
+  eq_named_context_val (hypotheses subgoal) (hypotheses gl)
 
 
 let weak_progress gls ptree =
-  (List.length gls.it <> 1) or 
+  (List.length gls.it <> 1) || 
   (not (same_goal (List.hd gls.it) ptree.it))
 
-(* Il y avait ici un ts_eq ........ *)
 let progress gls ptree =
-  (weak_progress gls ptree) or
-  (not (ptree.sigma == gls.sigma))
+  (not (ptree.sigma == gls.sigma)) ||
+  (weak_progress gls ptree)
 
 
 (* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
@@ -499,7 +498,7 @@ let catch_failerror = function
   | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
   | Stdpp.Exc_located (s,FailError (lvl,s')) ->
       raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
-  | _ -> ()
+  | e -> raise e
 
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)
 let tclORELSE0 t1 t2 g =
@@ -511,6 +510,19 @@ let tclORELSE0 t1 t2 g =
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
    then applies t2 *)
 let tclORELSE t1 t2 = tclORELSE0 (tclPROGRESS t1) t2
+
+(* applies t1;t2then if t1 succeeds or t2else if t1 fails
+   t2* are called in terminal position (unless t1 produces more than
+   1 subgoal!) *) 
+let tclORELSE_THEN t1 t2then t2else gls =
+  match
+    try Some(tclPROGRESS t1 gls)
+    with e -> catch_failerror e; None
+  with
+    | None -> t2else gls
+    | Some (sgl,v) ->
+        let (sigr,gl) = unpackage sgl in 
+        finish_tac (then_tac t2then  (sigr,gl,v))
 
 (* TRY f tries to apply f, and if it fails, leave the goal unchanged *)
 let tclTRY f = (tclORELSE0 f tclIDTAC)
@@ -576,9 +588,10 @@ let tclDO n t =
   in 
   dorec n 
 
+
 (* Beware: call by need of CAML, g is needed *)
 let rec tclREPEAT t g =
-  (tclORELSE (tclTHEN t (tclREPEAT t)) tclIDTAC) g
+  tclORELSE_THEN t (tclREPEAT t) tclIDTAC g
 
 let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
 
