@@ -205,7 +205,7 @@ let select_file_for_save ~title ?(dir = last_dir) ?(filename="") () =
     file_chooser#add_select_button_stock `SAVE `SAVE ;
     file_chooser#add_filter (filter_coq_files ());
     file_chooser#add_filter (filter_all_files ());
-    file_chooser#set_do_overwrite_confirmation true;
+(*    file_chooser#set_do_overwrite_confirmation true;*)
     ignore (file_chooser#set_current_folder !dir);
     ignore (file_chooser#set_current_name filename);
     
