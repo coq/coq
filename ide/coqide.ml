@@ -153,6 +153,7 @@ object('self)
   method revert : unit
   method auto_save : unit
   method save : string -> bool
+  method save_as : string -> bool
   method read_only : bool
   method set_read_only : bool -> unit
   method is_active : bool
@@ -717,7 +718,7 @@ object(self)
 		warning ("Autosave: unexpected error while writing "^fn)
       end	      
       
-(*  method save_as f =
+  method save_as f =
     if Sys.file_exists f then 
       match (GToolbox.question_box ~title:"File exists on disk"
 	       ~buttons:["Overwrite";
@@ -733,7 +734,7 @@ object(self)
       with 1 -> self#save f
 	| _ -> false
     else self#save f
-*)
+
   method set_read_only b = read_only<-b
   method read_only = read_only
   method is_active = is_active
@@ -1953,7 +1954,7 @@ let main files =
 		       with
 			 | None -> ()
 			 | Some f -> 
-			     if (Option.get current.analyzed_view)#save f then begin
+			     if (Option.get current.analyzed_view)#save_as f then begin
 				 set_current_tab_label (Filename.basename f);
 				 !flash_info ("File " ^ f ^ " saved")
 			       end
@@ -1981,7 +1982,7 @@ let main files =
 			   with
 			     | None -> ()
 			     | Some f -> 
-				 if (Option.get current.analyzed_view)#save f then begin
+				 if (Option.get current.analyzed_view)#save_as f then begin
 				     set_current_tab_label (Filename.basename f);
 				     !flash_info "Saved"
 				   end
@@ -1995,7 +1996,7 @@ let main files =
 			   with
 			     | None -> ()
 			     | Some f -> 
-				 if (Option.get current.analyzed_view)#save f then begin
+				 if (Option.get current.analyzed_view)#save_as f then begin
 				     set_current_tab_label (Filename.basename f);
 				     !flash_info "Saved"
 				   end else !flash_info "Save Failed"
