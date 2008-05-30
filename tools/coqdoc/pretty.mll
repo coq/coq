@@ -173,6 +173,7 @@ let firstchar =
   (* utf-8 latin 1 supplement *) 
   '\195' ['\128'-'\191'] |
   (* utf-8 letterlike symbols *) 
+  '\206' ['\177'-'\183'] |
   '\226' ('\132' ['\128'-'\191'] | '\133' ['\128'-'\143'])
 let identchar = 
   firstchar | ['\'' '0'-'9' '@' ]
@@ -188,6 +189,7 @@ let symbolchar_no_brackets =
   (* utf-8 symbols *) 
   '\226' ['\134'-'\143' '\152'-'\155' '\164'-'\165' '\168'-'\171'] _
 let symbolchar = symbolchar_no_brackets | '[' | ']'
+let token_no_brackets = symbolchar_no_brackets+
 let token = symbolchar+ | '[' [^ '[' ']' ':']* ']'
 let printing_token = (token | id)+
 
@@ -608,7 +610,7 @@ and body = parse
   | eof { false }
   | '.' space* nl | '.' space* eof { Output.char '.'; Output.line_break(); true }      
   | '.' space+ { Output.char '.'; Output.char ' '; false }
-  | '"' { Output.char '"'; notation lexbuf; body lexbuf }
+  | '"' { Output.char '"'; ignore(notation lexbuf); body lexbuf }
   | "(*" { let eol = comment lexbuf in 
 	     if eol 
 	     then begin Output.line_break(); body_bol lexbuf end
@@ -617,7 +619,7 @@ and body = parse
       { let s = lexeme lexbuf in 
 	  Output.ident s (lexeme_start lexbuf); 
 	  body lexbuf }
-  | printing_token
+  | token_no_brackets
       { let s = lexeme lexbuf in
 	  Output.symbol s; body lexbuf }
   | _ { let c = lexeme_char lexbuf 0 in 
@@ -659,7 +661,6 @@ and printing_token_body = parse
 
   let coq_file f m =
     reset ();
-    Index.scan_file f m;
     Output.start_module ();
     let c = open_in f in
     let lb = from_channel c in

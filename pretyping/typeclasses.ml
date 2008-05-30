@@ -42,7 +42,7 @@ type typeclass = {
   cl_props : named_context;
   
   (* The method implementaions as projections. *)
-  cl_projs : constant list;
+  cl_projs : (identifier * constant) list;
 }
 
 type typeclasses = (global_reference, typeclass) Gmap.t
@@ -144,7 +144,7 @@ let subst (_,subst,(cl,m,inst)) =
       (na, Option.smartmap do_subst b, do_subst t)))
       ctx
   in
-  let do_subst_projs projs = list_smartmap do_subst_con projs in
+  let do_subst_projs projs = list_smartmap (fun (x, y) -> (x, do_subst_con y)) projs in
   let subst_class k cl classes = 
     let k = do_subst_gr k in
     let cl' = { cl with cl_impl = k;
@@ -175,7 +175,7 @@ let discharge (_,(cl,m,inst)) =
   let subst_class cl = 
     { cl with cl_impl = Lib.discharge_global cl.cl_impl;
       cl_context = list_smartmap discharge_named cl.cl_context;
-      cl_projs = list_smartmap Lib.discharge_con cl.cl_projs }
+      cl_projs = list_smartmap (fun (x, y) -> x, Lib.discharge_con y) cl.cl_projs }
   in
   let classes = Gmap.map subst_class cl in
   let subst_inst insts =
@@ -219,7 +219,7 @@ let update () =
 
 let add_class c = 
   classes := Gmap.add c.cl_impl c !classes;
-  methods := List.fold_left (fun acc x -> Gmap.add x c.cl_impl acc) !methods c.cl_projs;
+  methods := List.fold_left (fun acc x -> Gmap.add (snd x) c.cl_impl acc) !methods c.cl_projs;
   update ()
     
 let class_info c = 
@@ -306,6 +306,20 @@ let method_typeclass ref =
 let is_class gr = 
   Gmap.fold (fun k v acc -> acc || v.cl_impl = gr) !classes false
   
+let is_method c =
+  Gmap.mem c !methods
+
+let is_instance = function
+  | ConstRef c ->
+      (match Decls.constant_kind c with
+      | IsDefinition Instance -> true
+      | _ -> false)
+  | VarRef v ->
+      (match Decls.variable_kind v with
+      | IsDefinition Instance -> true
+      | _ -> false)
+  | _ -> false
+
 let is_implicit_arg k = 
   match k with
       ImplicitArg (ref, (n, id)) -> true

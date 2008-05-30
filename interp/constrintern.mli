@@ -149,3 +149,5 @@ val for_grammar : ('a -> 'b) -> 'a -> 'b
 type coqdoc_state
 val coqdoc_freeze : unit -> coqdoc_state
 val coqdoc_unfreeze : coqdoc_state -> unit
+
+val add_glob : Util.loc -> global_reference -> unit

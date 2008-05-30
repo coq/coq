@@ -258,7 +258,7 @@ GEXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = ident; 
+    [ [ id = identref; 
 	bl = binders_let_fixannot;
         ty = type_cstr; 
 	":="; def = lconstr; ntn = decl_notation ->
@@ -282,7 +282,7 @@ GEXTEND Gram
 	  ((id,(ni,snd annot),bl,ty,def),ntn) ] ]
   ;
   corec_definition:
-    [ [ id = ident; bl = binders_let; ty = type_cstr; ":=";
+    [ [ id = identref; bl = binders_let; ty = type_cstr; ":=";
         def = lconstr; ntn = decl_notation ->
           ((id,bl,ty,def),ntn) ] ]
   ;
@@ -808,7 +808,7 @@ GEXTEND Gram
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacInfix (local,(op,modl),p,sc)
-     | IDENT "Notation"; local = locality; id = ident; idl = LIST0 ident; 
+     | IDENT "Notation"; local = locality; id = identref; idl = LIST0 ident; 
 	 ":="; c = constr;
 	 b = [ "("; IDENT "only"; IDENT "parsing"; ")" -> true | -> false ] ->
            VernacSyntacticDefinition (id,(idl,c),local,b)

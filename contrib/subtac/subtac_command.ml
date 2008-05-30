@@ -58,10 +58,9 @@ let interp_gen kind isevars env
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars (Evd.evars_of !isevars) env c in
-(*     (try trace (str "Pretyping " ++ my_print_constr_expr c) with _ -> ()); *)
   let c' = SPretyping.pretype_gen isevars env ([],[]) kind c' in
     evar_nf isevars c'
-    
+
 let interp_constr isevars env c =
   interp_gen (OfType None) isevars env c 
 
@@ -276,11 +275,6 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 (* 		   str "Intern body " ++ pr intern_body_lam) *)
     with _ -> ()
   in
-  let _impl = 
-    if Impargs.is_implicit_args()
-    then Impargs.compute_implicits top_env top_arity
-    else [] 
-  in
   let prop = mkLambda (Name argid, argtyp, it_mkProd_or_LetIn top_arity after) in
     (* Lift to get to constant arguments *)
   let lift_cst = List.length after + 1 in
@@ -309,7 +303,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let evm = evars_of_term (Evd.evars_of !isevars) evm fullcoqc in
   let evm = non_instanciated_map env isevars evm in
   let evars, evars_def, evars_typ = Eterm.eterm_obligations env recname !isevars evm 0 fullcoqc fullctyp in
-    Subtac_obligations.add_definition recname evars_def evars_typ evars
+    Subtac_obligations.add_definition recname evars_def evars_typ ~implicits:impls evars
 
 let nf_evar_context isevars ctx = 
   List.map (fun (n, b, t) -> 
@@ -436,14 +430,14 @@ let out_n = function
 let build_recursive l b =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
-	[(n, CWfRec r)], [((id,_,bl,typ,def),ntn)] ->
+	[(n, CWfRec r)], [(((_,id),_,bl,typ,def),ntn)] ->
 	  ignore(build_wellfounded (id, out_n n, bl, typ, def) r false ntn false)
 
-      | [(n, CMeasureRec r)], [((id,_,bl,typ,def),ntn)] ->
+      | [(n, CMeasureRec r)], [(((_,id),_,bl,typ,def),ntn)] ->
 	  ignore(build_wellfounded (id, out_n n, bl, typ, def) r true ntn false)
 
       | _, _ when List.for_all (fun (n, ro) -> ro = CStructRec) g ->
-	  let fixl = List.map (fun ((id,_,bl,typ,def),ntn) -> 
+	  let fixl = List.map (fun (((_,id),_,bl,typ,def),ntn) -> 
 	    ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_body = def; Command.fix_type = typ},ntn)) l 
 	  in interp_recursive (Command.IsFixpoint g) fixl b
       | _, _ -> 
@@ -451,7 +445,7 @@ let build_recursive l b =
 	    (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
 let build_corecursive l b =
-  let fixl = List.map (fun ((id,bl,typ,def),ntn) -> 
+  let fixl = List.map (fun (((_,id),bl,typ,def),ntn) -> 
     ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_body = def; Command.fix_type = typ},ntn))
     l in
   interp_recursive Command.IsCoFixpoint fixl b

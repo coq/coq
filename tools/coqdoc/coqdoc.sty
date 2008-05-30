@@ -8,20 +8,20 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{coqdoc}[2002/02/11]
 
-% Headings
-\usepackage{fancyhdr}
-\newcommand{\coqdocleftpageheader}{\thepage\ -- \today}
-\newcommand{\coqdocrightpageheader}{\today\ -- \thepage}
-\pagestyle{fancyplain}
+% % Headings
+% \usepackage{fancyhdr}
+% \newcommand{\coqdocleftpageheader}{\thepage\ -- \today}
+% \newcommand{\coqdocrightpageheader}{\today\ -- \thepage}
+% \pagestyle{fancyplain}
 
-%BEGIN LATEX
-\headsep 8mm
-\renewcommand{\plainheadrulewidth}{0.4pt}
-\renewcommand{\plainfootrulewidth}{0pt}
-\lhead[\coqdocleftpageheader]{\leftmark}
-\rhead[\leftmark]{\coqdocrightpageheader}
-\cfoot{}
-%END LATEX
+% %BEGIN LATEX
+% \headsep 8mm
+% \renewcommand{\plainheadrulewidth}{0.4pt}
+% \renewcommand{\plainfootrulewidth}{0pt}
+% \lhead[\coqdocleftpageheader]{\leftmark}
+% \rhead[\leftmark]{\coqdocrightpageheader}
+% \cfoot{}
+% %END LATEX
 
 % Hevea puts to much space with \medskip and \bigskip
 %HEVEA\renewcommand{\medskip}{}
@@ -36,10 +36,19 @@
 %END LATEX
 
 % macro for typesetting keywords
-\newcommand{\coqdockw}[1]{\textsf{#1}}
+\newcommand{\coqdockw}[1]{\texttt{#1}}
 
-% macro for typesetting identifiers
+% macro for typesetting variable identifiers
 \newcommand{\coqdocid}[1]{\textit{#1}}
+
+% macro for typesetting constant identifiers
+\newcommand{\coqdoccst}[1]{\textsf{#1}}
+
+% macro for typesetting inductive type identifiers
+\newcommand{\coqdocind}[1]{\textbf{\textsf{#1}}}
+
+% macro for typesetting constructor identifiers
+\newcommand{\coqdocconstr}[1]{\textsf{#1}}
 
 % newline and indentation 
 %BEGIN LATEX
@@ -52,6 +61,52 @@
 % macro for typesetting the title of a module implementation
 \newcommand{\coqdocmodule}[1]{\chapter{Module #1}\markboth{Module #1}{}
 }
+
+\usepackage{hyperref}
+%\usepackage{color}
+%\hypersetup{colorlinks=true,linkcolor=black}
+%\usepackage{multind}
+%\newcommand{\coqdef}[3]{\hypertarget{coq:#1}{\index{coq}{#1@#2|hyperpage}#3}}
+
+\newcommand{\coqdef}[3]{\hypertarget{coq:#1}{#3}}
+\newcommand{\coqref}[2]{\hyperlink{coq:#1}{#2}}
+
+\newcommand{\coqdocvar}[1]{{\textit{#1}}}
+\newcommand{\coqdoctac}[1]{{\texttt{#1}}}
+
+\newcommand{\identref}[2]{\hyperlink{coq:#1}{\textsf {#2}}}
+
+\newcommand{\coqdefinition}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
+\newcommand{\coqdefinitionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+
+\newcommand{\coqvariable}[2]{\coqdef{#1}{#2}{\coqdocid{#2}}}
+
+\newcommand{\coqinductive}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
+\newcommand{\coqinductiveref}[2]{\coqref{#1}{\coqdocind{#2}}}
+
+\newcommand{\coqconstructor}[2]{\coqdef{#1}{#2}{\coqdocconstr{#2}}}
+\newcommand{\coqconstructorref}[2]{\coqref{#1}{\coqdocconstr{#2}}}
+
+\newcommand{\coqlemma}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
+\newcommand{\coqlemmaref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+
+\newcommand{\coqclass}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
+\newcommand{\coqclassref}[2]{\coqref{#1}{\coqdocind{#2}}}
+
+\newcommand{\coqinstance}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
+\newcommand{\coqinstanceref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+
+\newcommand{\coqmethod}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
+\newcommand{\coqmethodref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+
+\newcommand{\coqabbreviation}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
+\newcommand{\coqabbreviationref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+
+\newcommand{\coqrecord}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
+\newcommand{\coqrecordref}[2]{\coqref{#1}{\coqdocind{#2}}}
+
+\newcommand{\coqprojection}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
+\newcommand{\coqprojectionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
 
 %HEVEA\newcommand{\lnot}{\coqwkw{not}}
 %HEVEA\newcommand{\lor}{\coqwkw{or}}

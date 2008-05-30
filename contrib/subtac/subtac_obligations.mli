@@ -1,5 +1,6 @@
 open Names
 open Util
+open Libnames
 
 type obligation_info = (Names.identifier * Term.types * loc * bool * Intset.t) array
     (* ident, type, location, opaque or transparent, dependencies *)
@@ -7,7 +8,7 @@ type obligation_info = (Names.identifier * Term.types * loc * bool * Intset.t) a
 type progress = (* Resolution status of a program *)
     | Remain of int  (* n obligations remaining *)
     | Dependent (* Dependent on other definitions *)
-    | Defined of constant (* Defined as id *)
+    | Defined of global_reference (* Defined as id *)
 	
 val set_default_tactic : Tacexpr.glob_tactic_expr -> unit
 val default_tactic : unit -> Proof_type.tactic
@@ -15,11 +16,11 @@ val default_tactic : unit -> Proof_type.tactic
 val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
 val get_proofs_transparency : unit -> bool
 
-type definition_hook = constant -> unit
+type definition_hook = global_reference -> unit
 
 val add_definition : Names.identifier ->  Term.constr -> Term.types -> 
   ?implicits:(Topconstr.explicitation * (bool * bool)) list ->
-  ?kind:Decl_kinds.definition_object_kind ->
+  ?kind:Decl_kinds.definition_kind ->
   ?hook:definition_hook -> obligation_info -> progress
 
 type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) list
@@ -27,7 +28,7 @@ type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) 
 val add_mutual_definitions : 
   (Names.identifier * Term.constr * Term.types *
       (Topconstr.explicitation * (bool * bool)) list * obligation_info) list -> 
-  ?kind:Decl_kinds.definition_object_kind ->
+  ?kind:Decl_kinds.definition_kind ->
   notations ->
   Command.fixpoint_kind -> unit
 

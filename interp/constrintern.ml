@@ -44,8 +44,6 @@ let for_grammar f x =
     interning_grammar := false;
     a
 
-let variables_bind = ref false
-
 (**********************************************************************)
 (* Internalisation errors                                             *)
 
@@ -144,6 +142,56 @@ let coqdoc_unfreeze (lt,tn,lp) =
   token_number := tn;
   last_pos := lp
 
+open Decl_kinds
+
+let type_of_logical_kind = function
+  | IsDefinition def -> 
+      (match def with
+      | Definition -> "def"
+      | Coercion -> "coe"
+      | SubClass -> "subclass"
+      | CanonicalStructure -> "canonstruc"
+      | Example -> "ex"
+      | Fixpoint -> "def"
+      | CoFixpoint -> "def"
+      | Scheme -> "scheme"
+      | StructureComponent -> "proj"
+      | IdentityCoercion -> "coe"
+      | Instance -> "inst"
+      | Method -> "meth")
+  | IsAssumption a ->
+      (match a with
+      | Definitional -> "def"
+      | Logical -> "prf"
+      | Conjectural -> "prf")
+  | IsProof th ->
+      (match th with
+      | Theorem
+      | Lemma
+      | Fact
+      | Remark
+      | Property
+      | Proposition
+      | Corollary -> "thm")
+
+let type_of_global_ref gr =
+  if Typeclasses.is_class gr then
+    "class"
+  else
+    match gr with
+    | ConstRef cst -> 
+	type_of_logical_kind (Decls.constant_kind cst)
+    | VarRef v ->
+	"var" ^ type_of_logical_kind (Decls.variable_kind v)
+    | IndRef ind ->
+	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
+	  if mib.Declarations.mind_record then
+	    if mib.Declarations.mind_finite then "rec"
+	    else "corec"
+	  else if mib.Declarations.mind_finite then "ind"
+	  else "coind"
+    | ConstructRef _ -> "constr"
+	
 let add_glob loc ref = 
   let sp = Nametab.sp_of_global ref in
   let lib_dp = Lib.library_part ref in
@@ -151,8 +199,25 @@ let add_glob loc ref =
   let mod_dp_trunc =  drop_dirpath_prefix lib_dp mod_dp in
   let filepath = string_of_dirpath lib_dp in
   let fullname = string_of_qualid (make_qualid mod_dp_trunc id) in
-    dump_string (Printf.sprintf "R%d %s %s\n" (fst (unloc loc)) filepath fullname)
+  let ty = type_of_global_ref ref in
+    dump_string (Printf.sprintf "R%d %s %s %s\n" 
+		    (fst (unloc loc)) filepath fullname ty)
 
+let add_glob loc ref =
+  if !Flags.dump && loc <> dummy_loc then add_glob loc ref
+
+let add_glob_kn loc kn =
+  let sp = Nametab.sp_of_syntactic_definition kn in
+  let dp, id = repr_path sp in
+  let fullname = string_of_id id in
+  let filepath = string_of_dirpath dp in
+    dump_string (Printf.sprintf "R%d %s %s syndef\n" (fst (unloc loc)) filepath fullname)
+
+let add_glob_kn loc ref =
+  if !Flags.dump && loc <> dummy_loc then add_glob_kn loc ref
+
+let dump_binding loc id = ()
+      
 let loc_of_notation f loc args ntn =
   if args=[] or ntn.[0] <> '_' then fst (unloc loc)
   else snd (unloc (f (List.hd args)))
@@ -171,8 +236,8 @@ let dump_notation_location pos ((path,df),sc) =
   let loc = next (pos >= !last_pos) in
     last_pos := pos;
     let path = string_of_dirpath path in
-    let sc = match sc with Some sc -> " "^sc | None -> "" in
-      dump_string (Printf.sprintf "R%d %s \"%s\"%s\n" (fst (unloc loc)) path df sc)
+    let _sc = match sc with Some sc -> " "^sc | None -> "" in
+      dump_string (Printf.sprintf "R%d %s \"%s\" not\n" (fst (unloc loc)) path df)
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
@@ -383,9 +448,10 @@ let check_no_explicitation l =
 let intern_qualid loc qid intern env args =
   try match Nametab.extended_locate qid with
   | TrueGlobal ref ->
-      if !dump then add_glob loc ref;
+      add_glob loc ref;
       RRef (loc, ref), args
   | SyntacticDef sp ->
+      add_glob_kn loc sp;
       let (ids,c) = Syntax_def.search_syntactic_definition loc sp in
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments loc;
@@ -615,7 +681,7 @@ let find_constructor ref f aliases pats scopes =
 	    let v = Environ.constant_value (Global.env()) cst in
 	    unf (global_of_constr v)
         | ConstructRef cstr -> 
-	    if !dump then add_glob loc r; 
+	    add_glob loc r; 
 	    cstr, [], pats
         | _ -> raise Not_found
       in unf r
@@ -731,20 +797,28 @@ let push_name_env lvar (ids,tmpsc,scopes as env) = function
       check_hidden_implicit_parameters id lvar;
       (Idset.add id ids,tmpsc,scopes)
 
-let intern_typeclass_binders intern_type env bl =
+let push_loc_name_env lvar (ids,tmpsc,scopes as env) loc = function
+  | Anonymous -> env 
+  | Name id -> 
+      check_hidden_implicit_parameters id lvar;
+      dump_binding loc id;
+      (Idset.add id ids,tmpsc,scopes)
+
+let intern_typeclass_binders intern_type lvar env bl =
   List.fold_left 
     (fun ((ids,ts,sc) as env,bl) ((loc, na), bk, ty) ->
+      let env = push_loc_name_env lvar env loc na in
       let ty = locate_if_isevar loc na (intern_type env ty) in
-	((name_fold Idset.add na ids,ts,sc), (na,bk,None,ty)::bl))
+	(env, (na,bk,None,ty)::bl))
     env bl
 
-let intern_typeclass_binder intern_type (env,bl) na b ty =
+let intern_typeclass_binder intern_type lvar (env,bl) na b ty =
   let ctx = (na, b, ty) in
   let (fvs, bind) = Implicit_quantifiers.generalize_class_binders_raw (pi1 env) [ctx] in
-  let env, ifvs = intern_typeclass_binders intern_type (env,bl) fvs in
-    intern_typeclass_binders intern_type (env,ifvs) bind
+  let env, ifvs = intern_typeclass_binders intern_type lvar (env,bl) fvs in
+    intern_typeclass_binders intern_type lvar (env,ifvs) bind
     
-let intern_local_binder_aux intern intern_type ((ids,ts,sc as env),bl) = function
+let intern_local_binder_aux intern intern_type lvar ((ids,ts,sc as env),bl) = function
   | LocalRawAssum(nal,bk,ty) ->
       (match bk with
 	| Default k ->
@@ -756,7 +830,7 @@ let intern_local_binder_aux intern intern_type ((ids,ts,sc as env),bl) = functio
 		  ((name_fold Idset.add na ids,ts,sc), (na,k,None,ty)::bl))
 		(env,bl) nal
 	| TypeClass b ->
-	    intern_typeclass_binder intern_type (env,bl) (List.hd nal) b ty)
+	    intern_typeclass_binder intern_type lvar (env,bl) (List.hd nal) b ty)
   | LocalRawDef((loc,na),def) ->
       ((name_fold Idset.add na ids,ts,sc),
       (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
@@ -840,7 +914,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
           | [] -> c
           | l -> RApp (constr_loc x, c, l))
     | CFix (loc, (locid,iddef), dl) ->
-        let lf = List.map (fun (id,_,_,_,_) -> id) dl in
+        let lf = List.map (fun ((_, id),_,_,_,_) -> id) dl in
         let dl = Array.of_list dl in
 	let n =
 	  try list_index0 iddef lf
@@ -886,7 +960,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
               Array.map (fun (_,_,ty,_) -> ty) idl,
               Array.map (fun (_,_,_,bd) -> bd) idl)
     | CCoFix (loc, (locid,iddef), dl) ->
-        let lf = List.map (fun (id,_,_,_) -> id) dl in
+        let lf = List.map (fun ((_, id),_,_,_) -> id) dl in
         let dl = Array.of_list dl in
 	let n =
           try list_index0 iddef lf
@@ -916,9 +990,9 @@ let internalise sigma globalenv env allow_patvar lvar c =
         intern env c2
     | CLambdaN (loc,(nal,bk,ty)::bll,c2) ->
 	iterate_lam loc (reset_tmp_scope env) bk ty (CLambdaN (loc, bll, c2)) nal
-    | CLetIn (loc,(_,na),c1,c2) ->
+    | CLetIn (loc,(loc1,na),c1,c2) ->
 	RLetIn (loc, na, intern (reset_tmp_scope env) c1,
-          intern (push_name_env lvar env na) c2)
+          intern (push_loc_name_env lvar env loc1 na) c2)
     | CNotation (loc,"- _",[CPrim (_,Numeral p)])
 	when Bigint.is_strictly_pos p -> 
 	intern env (CPrim (loc,Numeral (Bigint.neg p)))
@@ -999,7 +1073,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
   and intern_type env = intern (set_type_scope env)
 
   and intern_local_binder env bind = 
-    intern_local_binder_aux intern intern_type env bind
+    intern_local_binder_aux intern intern_type lvar env bind
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern scopes n (loc,pl) =
@@ -1064,7 +1138,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
     let rec default env bk = function
     | (loc1,na)::nal ->
 	if nal <> [] then check_capture loc1 ty na;
-	let body = default (push_name_env lvar env na) bk nal in
+	let body = default (push_loc_name_env lvar env loc1 na) bk nal in
 	let ty = locate_if_isevar loc1 na (intern_type env ty) in
 	  RProd (join_loc loc1 loc2, na, bk, ty, body)
     | [] -> intern_type env body
@@ -1072,7 +1146,8 @@ let internalise sigma globalenv env allow_patvar lvar c =
       match bk with
 	| Default b -> default env b nal
 	| TypeClass b -> 
-	    let env, ibind = intern_typeclass_binder intern_type (env, []) (List.hd nal) b ty in
+	    let env, ibind = intern_typeclass_binder intern_type lvar
+	      (env, []) (List.hd nal) b ty in
 	    let body = intern_type env body in
 	      it_mkRProd ibind body
 					   
@@ -1080,14 +1155,15 @@ let internalise sigma globalenv env allow_patvar lvar c =
     let rec default env bk = function 
       | (loc1,na)::nal ->
 	  if nal <> [] then check_capture loc1 ty na;
-	  let body = default (push_name_env lvar env na) bk nal in
+	  let body = default (push_loc_name_env lvar env loc1 na) bk nal in
 	  let ty = locate_if_isevar loc1 na (intern_type env ty) in
 	    RLambda (join_loc loc1 loc2, na, bk, ty, body)
       | [] -> intern env body
     in match bk with
       | Default b -> default env b nal
-      | TypeClass b ->
-	  let env, ibind = intern_typeclass_binder intern_type (env, []) (List.hd nal) b ty in
+      | TypeClass b ->	  
+	  let env, ibind = intern_typeclass_binder intern_type lvar
+	    (env, []) (List.hd nal) b ty in
 	  let body = intern env body in
 	    it_mkRLambda ibind body
 	      
@@ -1151,9 +1227,9 @@ let intern_gen isarity sigma env
                c =
   let tmp_scope = 
     if isarity then Some Notation.type_scope else None in
-  internalise sigma env (extract_ids env, tmp_scope,[])
-    allow_patvar (ltacvars,Environ.named_context env, [], impls) c
-
+    internalise sigma env (extract_ids env, tmp_scope,[])
+      allow_patvar (ltacvars,Environ.named_context env, [], impls) c
+      
 let intern_constr sigma env c = intern_gen false sigma env c 
 
 let intern_type sigma env c = intern_gen true sigma env c 
@@ -1282,15 +1358,16 @@ let interp_binder_evars evdref env na t =
 open Environ
 open Term
 
-let my_intern_constr sigma env acc c =
-  internalise sigma env acc false (([],[]),Environ.named_context env, [], ([], [])) c
+let my_intern_constr sigma env lvar acc c =
+  internalise sigma env acc false lvar c
 
-let my_intern_type sigma env acc c = my_intern_constr sigma env (set_type_scope acc) c
+let my_intern_type sigma env lvar acc c = my_intern_constr sigma env lvar (set_type_scope acc) c
 
 let intern_context sigma env params =
-  snd (List.fold_left
-	  (intern_local_binder_aux (my_intern_constr sigma env) (my_intern_type sigma env))
-	  ((extract_ids env,None,[]), []) params)
+  let lvar = (([],[]),Environ.named_context env, [], ([], [])) in
+    snd (List.fold_left
+	    (intern_local_binder_aux (my_intern_constr sigma env lvar) (my_intern_type sigma env lvar) lvar)
+	    ((extract_ids env,None,[]), []) params)
 
 let interp_context_gen understand_type understand_judgment env bl = 
   let (env, par, _, impls) =

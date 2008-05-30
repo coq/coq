@@ -584,7 +584,7 @@ let rec pr_vernac = function
         | LocalRawAssum (nal,_,_) -> nal
         | LocalRawDef (_,_) -> [] in
       let pr_onerec = function
-        | (id,(n,ro),bl,type_,def),ntn ->
+        | ((loc,id),(n,ro),bl,type_,def),ntn ->
             let (bl',def,type_) =
               if Flags.do_translate() then extract_def_binders def type_
               else ([],def,type_) in
@@ -616,7 +616,7 @@ let rec pr_vernac = function
         prlist_with_sep (fun _ -> fnl() ++ fnl() ++ str"with ") pr_onerec recs)
 
   | VernacCoFixpoint (corecs,b) ->
-      let pr_onecorec ((id,bl,c,def),ntn) =
+      let pr_onecorec (((loc,id),bl,c,def),ntn) =
         let (bl',def,c) =
               if Flags.do_translate() then extract_def_binders def c
               else ([],def,c) in
@@ -815,7 +815,7 @@ let rec pr_vernac = function
       pr_hints local dbnames h pr_constr pr_pattern_expr
   | VernacSyntacticDefinition (id,(ids,c),local,onlyparsing) ->
       hov 2
-        (str"Notation " ++ pr_locality local ++ pr_id id ++ 
+        (str"Notation " ++ pr_locality local ++ pr_lident id ++ 
 	 prlist_with_sep spc pr_id ids ++ str" :=" ++ pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
   | VernacDeclareImplicits (local,q,None) ->

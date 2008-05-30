@@ -56,7 +56,8 @@ let solve_tccs_in_type env id isevars evm c typ =
     (** Make all obligations transparent so that real dependencies can be sorted out by the user *)
     let obls = Array.map (fun (id, t, l, op, d) -> (id, t, l, false, d)) obls in
       match Subtac_obligations.add_definition stmt_id c' typ obls with
-	  Subtac_obligations.Defined cst -> constant_value (Global.env()) cst
+	  Subtac_obligations.Defined cst -> constant_value (Global.env()) 
+	    (match cst with ConstRef kn -> kn | _ -> assert false)
 	| _ -> 
 	    errorlabstrm "start_proof" 
 	      (str "The statement obligations could not be resolved automatically, " ++ spc () ++
@@ -105,9 +106,24 @@ let declare_assumption env isevars idl is_coe k bl c nl =
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")
 
-let vernac_assumption env isevars kind l nl =
-  List.iter (fun (is_coe,(idl,c)) -> declare_assumption env isevars idl is_coe kind [] c nl) l
+let dump_definition (loc, id) s =
+  Flags.dump_string (Printf.sprintf "%s %d %s\n" s (fst (unloc loc)) (string_of_id id))
 
+let dump_constraint ty ((loc, n), _, _) =
+  match n with
+    | Name id -> dump_definition (loc, id) ty
+    | Anonymous -> ()
+
+let dump_variable lid = ()
+
+let vernac_assumption env isevars kind l nl =
+  let global = fst kind = Global in
+    List.iter (fun (is_coe,(idl,c)) -> 
+      if !Flags.dump then
+	List.iter (fun lid -> 
+	  if global then dump_definition lid "ax" 
+	  else dump_variable lid) idl;
+      declare_assumption env isevars idl is_coe kind [] c nl) l
 
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
@@ -118,6 +134,7 @@ let subtac (loc, command) =
   try
   match command with
 	VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
+	  dump_definition lid "def";
 	    (match expr with
 	      | ProveBody (bl, t) -> 
 		  if Lib.is_modtype () then
@@ -126,12 +143,14 @@ let subtac (loc, command) =
 		  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t) 
 		    (fun _ _ -> ())
 	      | DefineBody (bl, _, c, tycon) -> 
-		   ignore(Subtac_pretyping.subtac_proof env isevars id bl c tycon))
+		   ignore(Subtac_pretyping.subtac_proof defkind env isevars id bl c tycon))
       | VernacFixpoint (l, b) -> 
+	  List.iter (fun ((lid, _, _, _, _), _) -> dump_definition lid "fix") l;
 	  let _ = trace (str "Building fixpoint") in
 	    ignore(Subtac_command.build_recursive l b)
 
       | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
+	  if !Flags.dump then dump_definition id "prf";
 	  if not(Pfedit.refining ()) then
 	    if lettop then
 	      errorlabstrm "Subtac_command.StartProof"
@@ -146,11 +165,12 @@ let subtac (loc, command) =
 	  vernac_assumption env isevars stre l nl
 
       | VernacInstance (glob, sup, is, props, pri) ->
+	  if !Flags.dump then dump_constraint "inst" is;
 	  ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
 
       | VernacCoFixpoint (l, b) ->
-	  let _ = trace (str "Building cofixpoint") in
-	    ignore(Subtac_command.build_corecursive l b)
+	  List.iter (fun ((lid, _, _, _), _) -> dump_definition lid "cofix") l;
+	  ignore(Subtac_command.build_corecursive l b)
 
       (*| VernacEndProof e -> 
 	  subtac_end_proof e*)

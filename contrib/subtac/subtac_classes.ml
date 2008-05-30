@@ -173,8 +173,9 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 	List.fold_left
 	  (fun (props, rest) (id,_,_) -> 
 	    try 
-	      let (_, c) = List.find (fun ((_,id'), c) -> id' = id) rest in
+	      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> id' = id) rest in
 	      let rest' = List.filter (fun ((_,id'), c) -> id' <> id) rest in
+		Constrintern.add_glob loc (ConstRef (List.assoc mid k.cl_projs));
 		c :: props, rest'
 	    with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
 	  ([], props) k.cl_props
@@ -198,12 +199,13 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 (* 	ExplByPos (i, Some na), (true, true)) *)
 (*       1 ctx *)
 (*   in *)
-      let hook cst = 
+      let hook gr = 
+	let cst = match gr with ConstRef kn -> kn | _ -> assert false in
 	let inst = Typeclasses.new_instance k pri global cst in
-	  Impargs.declare_manual_implicits false (ConstRef cst) false imps;
+	  Impargs.declare_manual_implicits false gr false imps;
 	  Typeclasses.add_instance inst
       in
       let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
       let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
-	ignore(Subtac_obligations.add_definition id constr typ ~kind:Instance ~hook obls);
+	ignore(Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls);
 	id

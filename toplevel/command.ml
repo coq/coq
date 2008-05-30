@@ -144,6 +144,7 @@ let declare_global_definition ident ce local imps =
 
 let declare_definition_hook = ref ignore
 let set_declare_definition_hook = (:=) declare_definition_hook
+let get_declare_definition_hook () = !declare_definition_hook
 
 let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
   let imps, ce = constant_entry_of_com (bl,c,typopt,false,boxed) in
@@ -871,13 +872,13 @@ let interp_recursive fixkind l boxed =
 
 let build_recursive l b =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
-  let fixl = List.map (fun ((id,_,bl,typ,def),ntn) -> 
+  let fixl = List.map (fun (((_,id),_,bl,typ,def),ntn) -> 
     ({fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ},ntn))
     l in
   interp_recursive (IsFixpoint g) fixl b
 
 let build_corecursive l b =
-  let fixl = List.map (fun ((id,bl,typ,def),ntn) -> 
+  let fixl = List.map (fun (((_,id),bl,typ,def),ntn) -> 
     ({fix_name = id; fix_binders = bl; fix_body = def; fix_type = typ},ntn))
     l in
   interp_recursive IsCoFixpoint fixl b

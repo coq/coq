@@ -38,7 +38,7 @@ type typeclass = {
   cl_props : named_context;
 
   (* The methods implementations of the typeclass as projections. *)
-  cl_projs : constant list;
+  cl_projs : (identifier * constant) list;
 }
 
 type instance
@@ -59,6 +59,9 @@ val class_info : global_reference -> typeclass (* raises a UserError if not a cl
 val is_class : global_reference -> bool
 val class_of_constr : constr -> typeclass option
 val dest_class_app : constr -> typeclass * constr array (* raises a UserError if not a class *)
+
+val is_instance : global_reference -> bool
+val is_method : constant -> bool
 
 (* Returns the term and type for the given instance of the parameters and fields
    of the type class. *)

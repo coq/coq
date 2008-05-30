@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C ../.. bin/coqdoc" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -408,14 +409,16 @@ let gen_mult_files l =
     end 
       (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)
 
-let read_glob = function
-  | Vernac_file (f,m) ->   
-      let glob = (Filename.chop_extension f) ^ ".glob" in
-	(try
-	  Index.read_glob glob
-	with 
-	    _ -> eprintf "Warning: file %s cannot be opened; links will not be available\n" glob)
-  | Latex_file _ -> ()
+let read_glob x =
+  match x with
+    | Vernac_file (f,m) ->   
+	let glob = (Filename.chop_extension f) ^ ".glob" in
+	  (try
+	      Vernac_file (f, Index.read_glob glob)
+	    with _ -> 
+	      eprintf "Warning: file %s cannot be opened; links will not be available\n" glob;
+	      x)
+  | Latex_file _ -> x
 
 let index_module = function
   | Vernac_file (f,m) ->   
@@ -426,14 +429,14 @@ let produce_document l =
   (if !target_language=HTML then
     let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.css") in
     let dst = if !output_dir <> "" then Filename.concat !output_dir "coqdoc.css" else "coqdoc.css" in
-      copy src dst;
-      List.iter read_glob l);
+      copy src dst);
   (if !target_language=LaTeX then
       let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.sty") in
       let dst = if !output_dir <> "" then 
 	  Filename.concat !output_dir "coqdoc.sty" 
 	else "coqdoc.sty" in
 	copy src dst);
+  let l = List.map read_glob l in
   List.iter index_module l;
   match !out_to with
     | StdOut -> 

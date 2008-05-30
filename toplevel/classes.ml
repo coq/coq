@@ -117,7 +117,7 @@ open Topconstr
 
 let declare_implicit_proj c proj imps sub =
   let len = List.length c.cl_context in
-  let (ctx, _) = decompose_prod_n (len + 1) (Typeops.type_of_constant (Global.env()) proj) in
+  let (ctx, _) = decompose_prod_n (len + 1) (Typeops.type_of_constant (Global.env()) (snd proj)) in
   let expls =
     let rec aux i expls = function
 	[] -> expls
@@ -130,8 +130,8 @@ let declare_implicit_proj c proj imps sub =
   in 
   let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
     if sub then 
-      declare_instance_cst true proj;
-    Impargs.declare_manual_implicits true (ConstRef proj) true expls
+      declare_instance_cst true (snd proj);
+    Impargs.declare_manual_implicits true (ConstRef (snd proj)) true expls
       
 let declare_implicits impls subs cl =
   Util.list_iter3 (fun p imps sub -> declare_implicit_proj cl p imps sub)
@@ -186,7 +186,7 @@ let declare_structure env id idbuild params arity fields =
   let kn = Command.declare_mutual_with_eliminations true mie [] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
   let id = Nameops.next_ident_away id (ids_of_context (Global.env())) in
-  let kinds,sp_projs = Record.declare_projections rsp ~name:id (List.map (fun _ -> false) fields) fields in
+  let kinds,sp_projs = Record.declare_projections rsp ~kind:Method ~name:id (List.map (fun _ -> false) fields) fields in
   let _build = ConstructRef (rsp,1) in
     Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
     rsp
@@ -314,11 +314,12 @@ let new_class id par ar sup props =
 	    let proj_cst = Declare.declare_constant proj_name
 	      (DefinitionEntry proj_entry, IsDefinition Definition) 
 	    in
-	      ConstRef cst, [proj_cst]
+	      ConstRef cst, [proj_name, proj_cst]
 	| _ ->
 	    let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
 	    let kn = declare_structure env0 (snd id) idb params arity fields in
-	      IndRef kn, (List.map Option.get (Recordops.lookup_projections kn))
+	      IndRef kn, (List.map2 (fun (id, _, _) y -> Nameops.out_name id, Option.get y)
+			     fields (Recordops.lookup_projections kn))
   in
   let ctx_context =
     List.map (fun ((na, b, t) as d) -> 
@@ -546,8 +547,9 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 	      List.fold_left
 		(fun (props, rest) (id,_,_) -> 
 		  try 
-		    let (_, c) = List.find (fun ((_,id'), c) -> id' = id) rest in
+		    let ((loc, mid), c) = List.find (fun ((_,id'), c) -> id' = id) rest in
 		    let rest' = List.filter (fun ((_,id'), c) -> id' <> id) rest in
+		      Constrintern.add_glob loc (ConstRef (List.assoc mid k.cl_projs));
 		      c :: props, rest'
 		  with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
 		([], props) k.cl_props

@@ -115,7 +115,7 @@ val destruct_ex : constr -> constr -> constr list
 
 val id_of_name : name -> identifier
 
-val definition_message : constant -> std_ppcmds
+val definition_message : identifier -> std_ppcmds
 val recursive_message : constant array -> std_ppcmds
 
 val print_message : std_ppcmds -> unit

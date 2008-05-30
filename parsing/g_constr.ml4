@@ -55,7 +55,7 @@ let mk_fixb (id,bl,ann,body,(loc,tyc)) =
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole (loc, None) in
-  (snd id,(n,ro),bl,ty,body)
+  (id,(n,ro),bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
   let _ = Option.map (fun (aloc,_) ->
@@ -65,7 +65,7 @@ let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole (loc, None) in
-  (snd id,bl,ty,body)
+  (id,bl,ty,body)
 
 let mk_fix(loc,kw,id,dcls) =
   if kw then 

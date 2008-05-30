@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C ../.. bin/coqdoc" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -25,13 +26,20 @@ type entry_type =
   | Inductive
   | Constructor
   | Lemma
+  | Record
+  | Projection
+  | Instance
+  | Class
+  | Method
   | Variable
   | Axiom
   | TacticDefinition
+  | Abbreviation
+  | Notation
 
 type index_entry = 
   | Def of string * entry_type
-  | Ref of coq_module * string
+  | Ref of coq_module * string * entry_type
   | Mod of coq_module * string
 
 let current_type = ref Library
@@ -43,12 +51,12 @@ let table = Hashtbl.create 97
 
 let add_def loc ty id = Hashtbl.add table (!current_library, loc) (Def (id, ty))
 
-let add_ref m loc m' id = Hashtbl.add table (m, loc) (Ref (m', id))
+let add_ref m loc m' id ty = 
+  Hashtbl.add table (m, loc) (Ref (m', id, ty))
 
 let add_mod m loc m' id = Hashtbl.add table (m, loc) (Mod (m', id))
 
 let find m l = Hashtbl.find table (m, l)
-
 
 (*s Manipulating path prefixes *) 
 
@@ -173,9 +181,16 @@ let type_name = function
   | Inductive -> "inductive"
   | Constructor -> "constructor"
   | Lemma -> "lemma"
+  | Record -> "record"
+  | Projection -> "projection"
+  | Instance -> "instance"
+  | Class -> "class"
+  | Method -> "method"
   | Variable -> "variable"
   | Axiom -> "axiom"
   | TacticDefinition -> "tactic"
+  | Abbreviation -> "abbreviation"
+  | Notation -> "notation"
       
 let all_entries () =
   let gl = ref [] in
@@ -390,7 +405,26 @@ and module_refs = parse
       { () }
 
 {
-  
+  let type_of_string = function
+    | "def" | "coe" | "subclass" | "canonstruc" 
+    | "ex" | "scheme" -> Definition
+    | "prf" | "thm" -> Lemma
+    | "ind" | "coind" -> Inductive
+    | "constr" -> Constructor
+    | "rec" | "corec" -> Record
+    | "proj" -> Projection
+    | "class" -> Class
+    | "meth" -> Method
+    | "inst" -> Instance
+    | "var" -> Variable
+    | "ax" -> Axiom
+    | "syndef" -> Abbreviation
+    | "not" -> Notation
+    | s -> raise (Invalid_argument ("type_of_string:" ^ s))
+(*   | Library *)
+(*   | Module *)
+(*   | TacticDefinition *)
+
   let read_glob f = 
     let c = open_in f in
     let cur_mod = ref "" in
@@ -401,22 +435,22 @@ and module_refs = parse
 	if n > 0 then begin
 	  match s.[0] with
 	    | 'F' -> 
-		cur_mod := String.sub s 1 (n - 1)
+		cur_mod := String.sub s 1 (n - 1);
+		current_library := !cur_mod
 	    | 'R' ->
 		(try
-		   let i = String.index s ' ' in
-		   let j = String.index_from s (i+1) ' ' in 
-		   let loc = int_of_string (String.sub s 1 (i - 1)) in
-		   let lib_dp = String.sub s (i + 1) (j - i - 1) in
-		   let full_id = String.sub s (j + 1) (n - j - 1) in
-		     add_ref !cur_mod loc lib_dp full_id
-		 with Not_found -> 
-		   ())
-	    | _ -> ()
+		    Scanf.sscanf s "R%d %s %s %s"
+		      (fun loc lib_dp full_id ty ->
+			add_ref !cur_mod loc lib_dp full_id (type_of_string ty))
+		  with _ -> ())
+	    | _ -> 
+		try Scanf.sscanf s "%s %d %s"
+		  (fun ty loc id -> add_def loc (type_of_string ty) id)
+		with Scanf.Scan_failure _ -> ()
 	end
-      done
+      done; assert false
     with End_of_file -> 
-      close_in c
+      close_in c; !cur_mod
 	
   let scan_file f m = 
     init_stack (); current_library := m;

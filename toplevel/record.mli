@@ -21,7 +21,7 @@ open Topconstr
    as coercions accordingly to [coers]; it returns the absolute names of projections *)
 
 val declare_projections :
-  inductive -> ?name:identifier -> bool list -> rel_context -> bool list * constant option list
+  inductive -> ?kind:Decl_kinds.definition_object_kind -> ?name:identifier -> bool list -> rel_context -> bool list * constant option list
 
 val definition_structure :
   lident with_coercion * local_binder list *

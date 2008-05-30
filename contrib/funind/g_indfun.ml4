@@ -183,7 +183,7 @@ VERNAC ARGUMENT EXTEND rec_definition2
 	 | Some an ->
 	     check_exists_args an
      in
-     (id, ni, bl, type_, def) ]
+     ((Util.dummy_loc,id), ni, bl, type_, def) ]
       END
 
 

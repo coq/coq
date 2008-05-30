@@ -30,6 +30,7 @@ open Redexpr
    functions of [Declare]; they return an absolute reference to the
    defined object *)
 
+val get_declare_definition_hook : unit -> (Entries.definition_entry -> unit)
 val set_declare_definition_hook : (Entries.definition_entry -> unit) -> unit
 
 val definition_message : identifier -> unit

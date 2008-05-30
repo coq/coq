@@ -414,13 +414,13 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
        xlate_error "Second order variable not supported"
    | CEvar _ -> xlate_error "CEvar not supported"
    | CCoFix (_, (_, id), lm::lmi) -> 
-     let strip_mutcorec (fid, bl,arf, ardef) =
+     let strip_mutcorec ((_, fid), bl,arf, ardef) =
 	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
                       xlate_formula arf, xlate_formula ardef) in
         CT_cofixc(xlate_ident id,
 	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi)))
    | CFix (_, (_, id), lm::lmi) ->       
-     let strip_mutrec (fid, (n, ro), bl, arf, ardef) =
+     let strip_mutrec ((_, fid), (n, ro), bl, arf, ardef) =
         let struct_arg = make_fix_struct (n, bl) in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
@@ -1939,7 +1939,7 @@ let rec xlate_vernac =
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
    | VernacFixpoint ((lm :: lmi),boxed) ->
-      let strip_mutrec ((fid, (n, ro), bl, arf, ardef), _ntn) =
+      let strip_mutrec (((_,fid), (n, ro), bl, arf, ardef), _ntn) =
         let struct_arg = make_fix_struct (n, bl) in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
@@ -1952,7 +1952,7 @@ let rec xlate_vernac =
 	  (CT_fix_rec_list (strip_mutrec lm, List.map strip_mutrec lmi))
    | VernacCoFixpoint ([],boxed) -> xlate_error "mutual corecursive"
    | VernacCoFixpoint ((lm :: lmi),boxed) ->
-      let strip_mutcorec ((fid, bl, arf, ardef), _ntn) =
+      let strip_mutcorec (((_,fid), bl, arf, ardef), _ntn) =
 	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
                       xlate_formula arf, xlate_formula ardef) in
         CT_cofix_decl
@@ -1974,9 +1974,9 @@ let rec xlate_vernac =
         CT_ind_scheme
 	  (CT_scheme_spec_list (strip_ind lm, List.map strip_ind lmi))
    | VernacCombinedScheme _ -> xlate_error "TODO: Combined Scheme"
-   | VernacSyntacticDefinition (id, ([],c), false, _) ->
+   | VernacSyntacticDefinition ((_,id), ([],c), false, _) ->
        CT_syntax_macro (xlate_ident id, xlate_formula c, xlate_int_opt None)
-   | VernacSyntacticDefinition (id, _, _, _) ->
+   | VernacSyntacticDefinition ((_,id), _, _, _) ->
        xlate_error"TODO: Local abbreviations and abbreviations with parameters"
   (* Modules and Module Types *)
    | VernacInclude (_) -> xlate_error "TODO : Include "

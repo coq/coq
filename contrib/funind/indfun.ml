@@ -160,7 +160,7 @@ let build_newrecursive
   in
   let (rec_sign,rec_impls) =
     List.fold_left
-      (fun (env,impls) (recname,_,bl,arityc,_) ->
+      (fun (env,impls) ((_,recname),_,bl,arityc,_) ->
         let arityc = Command.generalize_constr_expr arityc bl in
         let arity = Constrintern.interp_type sigma env0 arityc in
 	let impl =
@@ -297,7 +297,7 @@ let generate_principle  on_error
     is_general do_built fix_rec_l recdefs  interactive_proof 
     (continue_proof : int -> Names.constant array -> Term.constr array -> int -> 
       Tacmach.tactic) : unit =
-  let names = List.map (function (name,_,_,_,_) -> name) fix_rec_l in
+  let names = List.map (function ((_, name),_,_,_,_) -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
   let funs_types =  List.map (function (_,_,_,types,_) -> types) fix_rec_l in
@@ -318,7 +318,7 @@ let generate_principle  on_error
 		 f_R_mut)
 	in
 	let fname_kn (fname,_,_,_,_) =
-	  let f_ref = Ident (dummy_loc,fname) in
+	  let f_ref = Ident fname in
 	  locate_with_msg
 	    (pr_reference f_ref++str ": Not an inductive type!")
 	    locate_constant
@@ -351,7 +351,7 @@ let generate_principle  on_error
 
 let register_struct is_rec fixpoint_exprl = 
   match fixpoint_exprl with 
-    | [(fname,_,bl,ret_type,body),_] when not is_rec -> 
+    | [((_,fname),_,bl,ret_type,body),_] when not is_rec -> 
 	Command.declare_definition
 	  fname
 	  (Decl_kinds.Global,Flags.boxed_definitions (),Decl_kinds.Definition)
@@ -475,7 +475,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
   let recdefs,rec_impls = build_newrecursive fixpoint_exprl in 
   let _is_struct = 
     match fixpoint_exprl with 
-      | [((name,Some (Wf (wf_rel,wf_x,using_lemmas)),args,types,body))] -> 
+      | [(((_,name),Some (Wf (wf_rel,wf_x,using_lemmas)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
 	      on_error
@@ -488,7 +488,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 	  if register_built 
 	  then register_wf name rec_impls wf_rel wf_x using_lemmas args types body pre_hook;
 	  false
-      | [((name,Some (Mes (wf_mes,wf_x,using_lemmas)),args,types,body))] -> 
+      | [(((_,name),Some (Mes (wf_mes,wf_x,using_lemmas)),args,types,body))] -> 
 	  let pre_hook = 
 	    generate_principle 
 	      on_error
@@ -503,7 +503,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 	  true
       | _ -> 
 	  let fix_names = 
-	    List.map (function (name,_,_,_,_) -> name) fixpoint_exprl 
+	    List.map (function ((_,name),_,_,_,_) -> name) fixpoint_exprl 
 	  in
 	  let is_one_rec = is_rec fix_names  in
 	  let old_fixpoint_exprl =  
@@ -535,7 +535,7 @@ let do_generate_principle on_error register_built interactive_proof fixpoint_exp
 	  in
 	  (* ok all the expressions are structural *) 
 	  let fix_names = 
-	    List.map (function (name,_,_,_,_) -> name) fixpoint_exprl 
+	    List.map (function ((_,name),_,_,_,_) -> name) fixpoint_exprl 
 	  in
 	  let is_rec = List.exists (is_rec fix_names) recdefs in
 	  if register_built then register_struct is_rec old_fixpoint_exprl;
@@ -724,7 +724,7 @@ let make_graph (f_ref:global_reference) =
 			      nal_tas
 			   )
 		       in
-		       let b' = add_args id new_args b in 
+		       let b' = add_args (snd id) new_args b in 
 		       (id, Some (Struct rec_id),nal_tas@bl,t,b')
 		    )
 		    fixexprl
@@ -732,13 +732,13 @@ let make_graph (f_ref:global_reference) =
 		l
 	    | _ ->   
 		let id = id_of_label (con_label c) in 
-		[(id,None,nal_tas,t,b)]
+		[((dummy_loc,id),None,nal_tas,t,b)]
 	in
 	do_generate_principle error_error false false expr_list;
 	(* We register the infos *)
 	let mp,dp,_ = repr_con c in 
 	List.iter 
-	  (fun (id,_,_,_,_) -> add_Function false (make_con mp dp (label_of_id id))) 
+	  (fun ((_,id),_,_,_,_) -> add_Function false (make_con mp dp (label_of_id id))) 
 	  expr_list
 
 

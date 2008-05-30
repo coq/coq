@@ -12,8 +12,9 @@ open Entries
 open Decl_kinds
 open Util
 open Evd
+open Declare
 
-type definition_hook = constant -> unit
+type definition_hook = global_reference -> unit
 
 let pperror cmd = Util.errorlabstrm "Program" cmd
 let error s = pperror (str s)
@@ -48,7 +49,7 @@ type program_info = {
   prg_fixkind : Command.fixpoint_kind option ;
   prg_implicits : (Topconstr.explicitation * (bool * bool)) list;
   prg_notations : notations ;
-  prg_kind : definition_object_kind;
+  prg_kind : definition_kind;
   prg_hook : definition_hook;
 }
 
@@ -161,21 +162,36 @@ let declare_definition prg =
 		  my_print_constr (Global.env()) body ++ str " : " ++ 
 		  my_print_constr (Global.env()) prg.prg_type);
      with _ -> ());
+  let (local, boxed, kind) = prg.prg_kind in
   let ce = 
     { const_entry_body = body;
       const_entry_type = Some typ;
       const_entry_opaque = false;
-      const_entry_boxed = false} 
+      const_entry_boxed = boxed} 
   in
-  let c = Declare.declare_constant 
-    prg.prg_name (DefinitionEntry ce,IsDefinition prg.prg_kind)
-  in
-  let gr = ConstRef c in
-    if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
-      Impargs.declare_manual_implicits false gr (Impargs.is_implicit_args ()) prg.prg_implicits;
-    print_message (Subtac_utils.definition_message c);
-    prg.prg_hook c;
-    c
+    (Command.get_declare_definition_hook ()) ce;
+    match local with
+    | Local when Lib.sections_are_opened () ->
+        let c =
+          SectionLocalDef(ce.const_entry_body,ce.const_entry_type,false) in
+        let _ = declare_variable prg.prg_name (Lib.cwd(),c,IsDefinition kind) in
+          print_message (Subtac_utils.definition_message prg.prg_name);
+          if Pfedit.refining () then 
+            Flags.if_verbose msg_warning 
+	      (str"Local definition " ++ Nameops.pr_id prg.prg_name ++ 
+		  str" is not visible from current goals");
+          VarRef prg.prg_name
+    | (Global|Local) ->
+	let c =
+	  Declare.declare_constant 
+	    prg.prg_name (DefinitionEntry ce,IsDefinition (pi3 prg.prg_kind))
+	in
+	let gr = ConstRef c in
+	  if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
+	    Impargs.declare_manual_implicits false gr (Impargs.is_implicit_args ()) prg.prg_implicits;
+	  print_message (Subtac_utils.definition_message prg.prg_name);
+	  prg.prg_hook gr;
+	  gr
 
 open Pp
 open Ppconstr
@@ -241,7 +257,7 @@ let declare_obligation obl body =
   let constant = Declare.declare_constant obl.obl_name 
     (DefinitionEntry ce,IsProof Property)
   in
-    print_message (Subtac_utils.definition_message constant);
+    print_message (Subtac_utils.definition_message obl.obl_name);
     { obl with obl_body = Some (mkConst constant) }
       
 let try_tactics obls = 
@@ -298,7 +314,7 @@ let update_state s =
 type progress = 
     | Remain of int 
     | Dependent
-    | Defined of constant
+    | Defined of global_reference
 	  
 let obligations_message rem =
   if rem > 0 then
@@ -328,7 +344,7 @@ let update_obls prg obls rem =
 		     from_prg := List.fold_left
 		       (fun acc x -> 
 			 ProgMap.remove x.prg_name acc) !from_prg progs;
-		    Defined kn)
+		    Defined (ConstRef kn))
 		else Dependent);
     in
       update_state (!from_prg, !default_tactic_expr);
@@ -473,7 +489,7 @@ let show_term n =
     msgnl (str (string_of_id n) ++ spc () ++ str":" ++ spc () ++ my_print_constr (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ my_print_constr (Global.env ()) prg.prg_body)
 
-let add_definition n b t ?(implicits=[]) ?(kind=Definition) ?(hook=fun x -> ()) obls =
+let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?(hook=fun x -> ()) obls =
   Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n b t [] None [] obls implicits kind hook in
   let obls,_ = prg.prg_obligations in
@@ -491,7 +507,7 @@ let add_definition n b t ?(implicits=[]) ?(kind=Definition) ?(hook=fun x -> ()) 
 	  | Remain rem when rem < 5 -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	  | _ -> res)
 	
-let add_mutual_definitions l ?(kind=Definition) notations fixkind =
+let add_mutual_definitions l ?(kind=Global,false,Definition) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
   let upd = List.fold_left
       (fun acc (n, b, t, imps, obls) ->

@@ -726,7 +726,7 @@ let rec extern inctx scopes vars r =
 		     | Some x -> Some (dummy_loc, out_name (List.nth ids x))
 		 in 
 		 let ro = extern_recursion_order scopes vars (snd nv.(i)) in
-		 (fi, (n, ro), bl, extern_typ scopes vars0 ty,
+		 ((dummy_loc, fi), (n, ro), bl, extern_typ scopes vars0 ty,
                   extern false scopes vars1 def)) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
@@ -736,7 +736,7 @@ let rec extern inctx scopes vars r =
                  let (ids,bl) = extern_local_binder scopes vars blv.(i) in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 (fi,bl,extern_typ scopes vars0 tyv.(i),
+		 ((dummy_loc, fi),bl,extern_typ scopes vars0 tyv.(i),
                   sub_extern false scopes vars1 bv.(i))) idv
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))

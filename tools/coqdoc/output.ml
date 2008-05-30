@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C ../.. bin/coqdoc" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -46,7 +47,7 @@ let is_keyword =
       "Delimit"; "Bind"; "Open"; "Scope";
       "Boxed"; "Unboxed";
       "Arguments";
-      "Instance"; "Class"; "where"; "Instantiation";
+      "Instance"; "Class"; "Instantiation";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
@@ -58,6 +59,15 @@ let is_keyword =
       (*i (* coq terms *) *)
 	"match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="
        ]
+
+let is_tactic = 
+  build_table
+    [ "intro"; "intros"; "apply"; "rewrite"; "setoid_rewrite";
+      "destruct"; "induction"; "elim"; "dependent"; 
+      "generalize"; "clear"; "rename"; "move"; "set"; "assert";
+      "cut"; "assumption"; "exact";
+      "unfold"; "red"; "compute"; "at"; "in"; "by";
+      "reflexivity"; "symmetry"; "transitivity" ]
 
 (*s Current Coq module *)
 
@@ -159,6 +169,12 @@ module Latex = struct
     | _ -> 
 	output_char c
 
+  let label_char c = match c with
+    | '\\' | '$' | '#' | '%' | '&' | '{' | '}' | '_'
+    | '^' | '~' -> ()
+    | _ -> 
+	output_char c
+
   let latex_char = output_char
   let latex_string = output_string
 
@@ -167,6 +183,9 @@ module Latex = struct
 
   let raw_ident s =
     for i = 0 to String.length s - 1 do char s.[i] done
+
+  let label_ident s =
+    for i = 0 to String.length s - 1 do label_char s.[i] done
 
   let start_module () = 
     if not !short then begin
@@ -198,11 +217,52 @@ module Latex = struct
     with Not_found -> 
       f tok
 
-  let ident s _ = 
+  let module_ref m s = 
+    printf "\\moduleid{%s}{" m; raw_ident s; printf "}"
+      (*i
+    match find_module m with
+    | Local ->
+	printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
+    | Coqlib when !externals ->
+	let m = Filename.concat !coqlib m in
+	printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
+    | Coqlib | Unknown ->
+	raw_ident s
+    i*)
+
+  let ident_ref m fid typ s = 
+    match find_module m with
+      | Local ->
+	  printf "\\coq%sref{" (type_name typ); label_ident (m ^ "." ^ fid); printf "}{"; raw_ident s; printf "}"
+      | Coqlib when !externals ->
+	  let _m = Filename.concat !coqlib m in
+	    printf "\\coq%sref{" (type_name typ); label_ident (m ^ "." ^ fid); printf "}{"; raw_ident s; printf "}"
+      | Coqlib | Unknown ->
+	  raw_ident s
+
+  let defref m id ty s =
+    printf "\\coq%s{" (type_name ty); label_ident (m ^ "." ^ id); printf "}{"; raw_ident s; printf "}"
+
+  let ident s loc = 
     if is_keyword s then begin
       printf "\\coqdockw{"; raw_ident s; printf "}"
+    end else if is_tactic s then begin
+      printf "\\coqdoctac{"; raw_ident s; printf "}"
     end else begin
-      printf "\\coqdocid{"; raw_ident s; printf "}"
+      begin
+	try
+	  (match Index.find !current_module loc with
+	     | Def (fullid,typ) -> 
+		 defref !current_module fullid typ s
+             | Mod (m,s') when s = s' ->
+		 module_ref m s
+	     | Ref (m,fullid,typ) -> 
+		 ident_ref m fullid typ s
+	     | Mod _ ->
+		 printf "\\coqdocid{"; raw_ident s; printf "}")
+	with Not_found ->
+	  printf "\\coqdocvar{"; raw_ident s; printf "}"
+      end
     end
 
   let ident s l = with_latex_printing (fun s -> ident s l) s
@@ -387,7 +447,7 @@ module Html = struct
 		 printf "<a name=\"%s\"></a>" fullid; raw_ident s
              | Mod (m,s') when s = s' ->
 		 module_ref m s
-	     | Ref (m,fullid) -> 
+	     | Ref (m,fullid,ty) -> 
 		 ident_ref m fullid s
 	     | Mod _ ->
 		 raw_ident s)
@@ -456,17 +516,6 @@ module Html = struct
 
   let rule () = printf "<hr/>\n"
 
-  let entry_type = function
-    | Library -> "library"
-    | Module -> "module"
-    | Definition -> "definition"
-    | Inductive -> "inductive"
-    | Constructor -> "constructor"
-    | Lemma -> "lemma"
-    | Variable -> "variable"
-    | Axiom -> "axiom"
-    | TacticDefinition -> "tactic definition"
-
   (* make a HTML index from a list of triples (name,text,link) *)
   let index_ref i c =
     let idxc = sprintf "%s_%c" i.idx_name c in
@@ -492,7 +541,7 @@ module Html = struct
 	 if t = Library then 
 	   "[library]", m ^ ".html"
 	 else
-	   sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (entry_type t) m m ,
+	   sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
 	 sprintf "%s.html#%s" m s)
 
   let format_bytype_index = function

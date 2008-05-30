@@ -40,6 +40,7 @@ type definition_object_kind =
   | StructureComponent
   | IdentityCoercion
   | Instance
+  | Method
 
 type assumption_object_kind = Definitional | Logical | Conjectural
 

@@ -19,13 +19,22 @@ type entry_type =
   | Inductive
   | Constructor
   | Lemma
+  | Record
+  | Projection
+  | Instance
+  | Class
+  | Method
   | Variable
   | Axiom
   | TacticDefinition
+  | Abbreviation
+  | Notation
+
+val type_name : entry_type -> string
 
 type index_entry = 
   | Def of string * entry_type
-  | Ref of coq_module * string
+  | Ref of coq_module * string * entry_type
   | Mod of coq_module * string
 
 val find : coq_module -> loc -> index_entry
@@ -42,7 +51,7 @@ val scan_file : string -> coq_module -> unit
 
 (*s Read globalizations from a file (produced by coqc -dump-glob) *)
 
-val read_glob : string -> unit
+val read_glob : string -> coq_module
 
 (*s Indexes *)
 

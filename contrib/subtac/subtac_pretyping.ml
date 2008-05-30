@@ -136,8 +136,8 @@ let subtac_process env isevars id bl c tycon =
 
 open Subtac_obligations
 
-let subtac_proof env isevars id bl c tycon =
+let subtac_proof kind env isevars id bl c tycon =
   let evm, coqc, coqt, imps = subtac_process env isevars id bl c tycon in
   let evm = Subtac_utils.evars_of_term evm Evd.empty coqc in
   let evars, def, ty = Eterm.eterm_obligations env id !isevars evm 0 coqc coqt in
-    add_definition id def ty ~implicits:imps evars
+    add_definition id def ty ~implicits:imps ~kind:kind evars

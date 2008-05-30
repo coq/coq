@@ -393,7 +393,7 @@ let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
   pr_opt_type_spc pr t ++ str " :=" ++
   pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
 
-let pr_fixdecl pr prd dangling_with_for (id,(n,ro),bl,t,c) =
+let pr_fixdecl pr prd dangling_with_for ((_,id),(n,ro),bl,t,c) =
   let annot =
     match ro with
 	CStructRec ->
@@ -407,7 +407,7 @@ let pr_fixdecl pr prd dangling_with_for (id,(n,ro),bl,t,c) =
   in
     pr_recursive_decl pr prd dangling_with_for id bl annot t c
 
-let pr_cofixdecl pr prd dangling_with_for (id,bl,t,c) =
+let pr_cofixdecl pr prd dangling_with_for ((_,id),bl,t,c) =
   pr_recursive_decl pr prd dangling_with_for id bl (mt()) t c
 
 let pr_recursive pr_decl id = function

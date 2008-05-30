@@ -434,7 +434,7 @@ END
 
 (** Typeclass-based rewriting. *)
 
-let respect_proj = lazy (mkConst (List.hd (Lazy.force morphism_class).cl_projs))
+let respect_proj = lazy (mkConst (snd (List.hd (Lazy.force morphism_class).cl_projs)))
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 

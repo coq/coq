@@ -634,7 +634,7 @@ type constr_expr =
   | CDynamic of loc * Dyn.t
 
 and fixpoint_expr =
-    identifier * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
+    identifier located * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
 
 and local_binder =
   | LocalRawDef of name located * constr_expr
@@ -645,7 +645,7 @@ and typeclass_constraint = name located * binding_kind * constr_expr
 and typeclass_context = typeclass_constraint list
 
 and cofixpoint_expr =
-    identifier * local_binder list * constr_expr * constr_expr
+    identifier located * local_binder list * constr_expr * constr_expr
 
 and recursion_order_expr = 
   | CStructRec
@@ -794,7 +794,7 @@ let fold_constr_expr_with_binders g f n acc = function
       let acc = f n (f n (f n acc b1) b2) c in
       Option.fold_left (f (Option.fold_right (name_fold g) ona n)) acc po
   | CFix (loc,_,l) ->
-      let n' = List.fold_right (fun (id,_,_,_,_) -> g id) l n in
+      let n' = List.fold_right (fun ((_,id),_,_,_,_) -> g id) l n in
       List.fold_right (fun (_,(_,o),lb,t,c) acc ->
 	fold_local_binders g f n' 
 	  (fold_local_binders g f n acc t lb) c lb) l acc
@@ -909,14 +909,14 @@ let map_constr_expr_with_binders g f e = function
         let (e',bl') = map_local_binders f g e bl in
         let t' = f e' t in
         (* Note: fix names should be inserted before the arguments... *)
-        let e'' = List.fold_left (fun e (id,_,_,_,_) -> g id e) e' dl in
+        let e'' = List.fold_left (fun e ((_,id),_,_,_,_) -> g id e) e' dl in
         let d' = f e'' d in
         (id,n,bl',t',d')) dl)
   | CCoFix (loc,id,dl) ->
       CCoFix (loc,id,List.map (fun (id,bl,t,d) ->
         let (e',bl') = map_local_binders f g e bl in
         let t' = f e' t in
-        let e'' = List.fold_left (fun e (id,_,_,_) -> g id e) e' dl in
+        let e'' = List.fold_left (fun e ((_,id),_,_,_) -> g id e) e' dl in
         let d' = f e'' d in
         (id,bl',t',d')) dl)
 

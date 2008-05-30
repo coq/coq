@@ -131,7 +131,7 @@ let instantiate_possibly_recursive_type indsp paramdecls fields =
   substl_rel_context (subst@[mkInd indsp]) fields
 
 (* We build projections *)
-let declare_projections indsp ?name coers fields =
+let declare_projections indsp ?(kind=StructureComponent) ?name coers fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let paramdecls = mib.mind_params_ctxt in
@@ -172,7 +172,7 @@ let declare_projections indsp ?name coers fields =
                     const_entry_type = Some projtyp;
                     const_entry_opaque = false;
 		    const_entry_boxed = Flags.boxed_definitions() } in
-		  let k = (DefinitionEntry cie,IsDefinition StructureComponent) in
+		  let k = (DefinitionEntry cie,IsDefinition kind) in
 		  let kn = declare_internal_constant fid k in
 		  Flags.if_verbose message (string_of_id fid ^" is defined");
 		  kn

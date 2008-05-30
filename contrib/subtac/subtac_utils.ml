@@ -350,7 +350,7 @@ let id_of_name = function
   | Anonymous -> raise (Invalid_argument "id_of_name")
 
 let definition_message id =
-  Printer.pr_constant (Global.env ()) id ++ str " is defined"
+  Nameops.pr_id id ++ str " is defined"
     
 let recursive_message v =
   match Array.length v with

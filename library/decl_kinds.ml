@@ -40,6 +40,7 @@ type definition_object_kind =
   | StructureComponent
   | IdentityCoercion
   | Instance
+  | Method
 
 type assumption_object_kind = Definitional | Logical | Conjectural
 
@@ -97,7 +98,9 @@ let string_of_definition_kind (l,boxed,d) =
   | Global, Example -> "Example"
   | Local, (CanonicalStructure|Example) ->
       anomaly "Unsupported local definition kind"
-  | _, (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Instance)
+  | Local, Instance -> "Instance"
+  | Global, Instance -> "Global Instance"
+  | _, (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method)
       -> anomaly "Internal definition kind"
 
 (* Strength *)

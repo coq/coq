@@ -300,7 +300,20 @@ let start_proof_and_print k l hook =
   print_subgoals ();
   if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
+let dump_definition (loc, id) s =
+  Flags.dump_string (Printf.sprintf "%s %d %s\n" s (fst (unloc loc)) (string_of_id id))
+
+let dump_variable (loc, id) s = ()
+(*   Flags.dump_string (Printf.sprintf "%s %d %s\n" s (fst (unloc loc)) *)
+(* 			(string_of_kn (Lib.make_kn id))) *)
+
+let dump_constraint ty ((loc, n), _, _) =
+  match n with
+    | Name id -> dump_definition (loc, id) ty
+    | Anonymous -> ()
+
 let vernac_definition (local,_,_ as k) (_,id as lid) def hook =
+  if !Flags.dump then dump_definition lid "def";
   match def with
   | ProveBody (bl,t) ->   (* local binders, typ *)
       if Lib.is_modtype () then
@@ -319,6 +332,11 @@ let vernac_definition (local,_,_ as k) (_,id as lid) def hook =
       declare_definition id k bl red_option c typ_opt hook
 
 let vernac_start_proof kind l lettop hook =
+  if !Flags.dump then
+    List.iter (fun (id, _) -> 
+      match id with
+      | Some lid -> dump_definition lid "prf"
+      | None -> ()) l;
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
@@ -351,13 +369,29 @@ let vernac_exact_proof c =
 	(str "Command 'Proof ...' can only be used at the beginning of the proof")
   	
 let vernac_assumption kind l nl=
-  List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c false false nl) l
+  let global = fst kind = Global in
+  List.iter (fun (is_coe,(idl,c)) -> 
+    if !dump then
+      List.iter (fun lid -> if global then dump_definition lid "ax" else
+	  dump_variable lid "var") idl;
+    declare_assumption idl is_coe kind [] c false false nl) l
 
-let vernac_inductive f indl = build_mutual indl f
+let vernac_inductive f indl = 
+  if !dump then
+    List.iter (fun ((lid, _, _, cstrs), _) ->
+      dump_definition lid "ind";
+      List.iter (fun (_, (lid, _)) ->
+	dump_definition lid "constr") cstrs)
+      indl;
+  build_mutual indl f
 
-let vernac_fixpoint = build_recursive
+let vernac_fixpoint l b = 
+  List.iter (fun ((lid, _, _, _, _), _) -> dump_definition lid "def") l;
+  build_recursive l b
 
-let vernac_cofixpoint = build_corecursive
+let vernac_cofixpoint l b =
+  List.iter (fun ((lid, _, _, _), _) -> dump_definition lid "def") l;
+  build_corecursive l b
 
 let vernac_scheme = build_scheme
 
@@ -487,7 +521,8 @@ let vernac_include = function
 let vernac_record struc binders sort nameopt cfs =
   let const = match nameopt with 
     | None -> add_prefix "Build_" (snd (snd struc))
-    | Some (_,id) -> id in
+    | Some (_,id as lid) ->
+	if !dump then dump_definition lid "constr"; id in
   let sigma = Evd.empty in
   let env = Global.env() in
   let s = interp_constr sigma env sort in
@@ -496,7 +531,13 @@ let vernac_record struc binders sort nameopt cfs =
     | Sort s -> s
     | _ -> user_err_loc
         (constr_loc sort,"definition_structure", str "Sort expected") in
-  ignore(Record.definition_structure (struc,binders,cfs,const,s))
+    if !dump then (
+      dump_definition (snd struc) "rec";
+      List.iter (fun (_, x) ->
+	match x with
+	| AssumExpr ((loc, Name id), _) -> dump_definition (loc,id) "proj"
+	| _ -> ()) cfs);
+    ignore(Record.definition_structure (struc,binders,cfs,const,s))
 
   (* Sections *)
 
@@ -537,15 +578,21 @@ let vernac_identity_coercion stre id qids qidt =
 
 (* Type classes *)
 let vernac_class id par ar sup props =
+  if !dump then (
+    dump_definition id "class";
+    List.iter (fun (lid, _, _) -> dump_definition lid "meth") props);
   Classes.new_class id par ar sup props
-
+ 
 let vernac_instance glob sup inst props pri =
+  if !dump then dump_constraint "inst" inst;
   ignore(Classes.new_instance ~global:glob sup inst props pri)
 
 let vernac_context l =
+  if !dump then List.iter (dump_constraint "var") l;
   Classes.context l
 
 let vernac_declare_instance id =
+  if !dump then dump_definition id "inst";
   Classes.declare_instance false id
 
 (***********)
@@ -679,7 +726,9 @@ let vernac_declare_tactic_definition = Tacinterp.add_tacdef
 
 let vernac_hints = Auto.add_hints
 
-let vernac_syntactic_definition = Command.syntax_definition 
+let vernac_syntactic_definition lid =
+  dump_definition lid "syndef";
+  Command.syntax_definition (snd lid)
 
 let vernac_declare_implicits local r = function
   | Some imps ->
