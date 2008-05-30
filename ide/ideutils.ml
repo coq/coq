@@ -289,10 +289,8 @@ let run_command f c =
   let buffe = String.make 127 ' ' in
   let n = ref 0 in
   let ne = ref 0 in
-
-  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ; 
-    !n+ !ne <> 0
-  do 
+  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ; !n+ !ne <> 0
+  do
     let r = try_convert (String.sub buff 0 !n) in 
     f r;
     Buffer.add_string result r;
@@ -304,10 +302,10 @@ let run_command f c =
 
 let browse f url =
   let com = Flags.subst_command_placeholder !current.cmd_browse url in
-  let (s,_res) = run_command f com in
-  if s = Unix.WEXITED 127 then
-    prerr_endline
-      ("Could not execute\n  \""^com^"\"\ncheck your preferences for setting a valid browser command")
+  let s = Sys.command com in
+  if s = 127 then
+    f ("Could not execute\n\""^com^
+       "\"\ncheck your preferences for setting a valid browser command\n")
 
 let url_for_keyword =
   let ht = Hashtbl.create 97 in
@@ -332,8 +330,7 @@ let url_for_keyword =
 
 let browse_keyword f text = 
   try let u = url_for_keyword text in browse f (!current.doc_url ^ u) 
-  with Not_found ->
-    prerr_endline ("No documentation found for "^text)
+  with Not_found -> f ("No documentation found for "^text)
 
 
 let underscore = Glib.Utf8.to_unichar "_" (ref 0)

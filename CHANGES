@@ -93,6 +93,8 @@ Libraries (DOC TO CHECK)
 - Slight restructuration of the Logic library regarding choice and classical
   logic. Addition of files providing intuitionistic axiomatizations of
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v.
+- Definition of pred and minus made compatible with the structural
+  decreasing criterion for use in fixpoints.
 
 Notations, coercions, implicit arguments and type inference
 
@@ -497,7 +499,7 @@ Modules
   "Module Type M(Export/Import X Y: T)"
   (only for interactive definitions)
 - Construct "with" generalized to module paths:
-   T with (Definition|Module) M1.M2....Mn.l := l' (doc TODO).
+   T with (Definition|Module) M1.M2....Mn.l := l'.
 
 Notations
 

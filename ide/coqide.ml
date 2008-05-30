@@ -533,7 +533,7 @@ let push_phrase reset_info start_of_phrase_mark end_of_phrase_mark ast =
 	  } in
   begin
     match snd ast with
-      | VernacEndProof (Proved (_, None)) -> update_on_end_of_proof ()
+      | VernacEndProof _ | VernacExactProof _ -> update_on_end_of_proof ()
       | VernacEndSegment (_,id) -> update_on_end_of_segment id
       | _ -> ()
   end;
