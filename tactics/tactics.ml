@@ -1819,28 +1819,40 @@ let lift_together l = lift_togethern 0 l
 
 let lift_list l = List.map (lift 1) l
 
-let make_abstract_generalize gl id concl ctx c eqs args refls = 
+let ids_of_constr vars c = 
+  let rec aux vars c = 
+    match kind_of_term c with
+    | Var id -> if List.mem id vars then vars else id :: vars
+    | _ -> fold_constr aux vars c
+  in aux vars c
+
+let make_abstract_generalize gl id concl dep ctx c eqs args refls = 
   let meta = Evarutil.new_meta() in
-  let cstr = 
+  let cstr =
     (* Abstract by equalitites *)
-    let abseqs = it_mkProd_or_LetIn ~init:concl (List.map (fun x -> (Anonymous, None, x)) eqs) in 
-    (* Abstract by the "generalized" hypothesis and its equality proof *)
+    let eqs = lift_togethern 1 eqs in
+    let abseqs = it_mkProd_or_LetIn ~init:concl (List.map (fun x -> (Anonymous, None, x)) eqs) in
+      (* Abstract by the "generalized" hypothesis and its equality proof *)
     let term, typ = mkVar id, pf_get_hyp_typ gl id in
     let abshyp = 
-      let abshypeq = mkProd (Anonymous, mkHEq (lift 1 c) (mkRel 1) typ term, lift 1 abseqs) in
+      let abshypeq = 
+	if dep then 
+	  mkProd (Anonymous, mkHEq (lift 1 c) (mkRel 1) typ term, lift 1 abseqs)
+	else abseqs
+      in
 	mkProd (Name id, c, abshypeq)
     in
-    (* Abstract by the extension of the context *)
+      (* Abstract by the extension of the context *)
     let genctyp = it_mkProd_or_LetIn ~init:abshyp ctx in
-    (* The goal will become this product. *)
+      (* The goal will become this product. *)
     let genc = mkCast (mkMeta meta, DEFAULTcast, genctyp) in      
-    (* Apply the old arguments giving the proper instantiation of the hyp *)
+      (* Apply the old arguments giving the proper instantiation of the hyp *)
     let instc = mkApp (genc, Array.of_list args) in
-    (* Then apply to the original instanciated hyp. *)
+      (* Then apply to the original instanciated hyp. *)
     let newc = mkApp (instc, [| mkVar id |]) in
-    (* Apply the reflexivity proof for the original hyp. *)
-    let newc = mkApp (newc, [| mkHRefl typ term |]) in
-    (* Finaly, apply the remaining reflexivity proofs on the index, to get a term of type gl again *)
+      (* Apply the reflexivity proof for the original hyp. *)
+    let newc = if dep then mkApp (newc, [| mkHRefl typ term |]) else newc in
+      (* Finaly, apply the remaining reflexivity proofs on the index, to get a term of type gl again *)
     let appeqs = mkApp (newc, Array.of_list refls) in
       appeqs
   in cstr
@@ -1850,6 +1862,7 @@ let abstract_args gl id =
   let sigma = project gl in
   let env = pf_env gl in
   let concl = pf_concl gl in
+  let dep = dependent (mkVar id) concl in
   let avoid = ref [] in
   let get_id name = 
     let id = fresh_id !avoid (match name with Name n -> n | Anonymous -> id_of_string "gen_x") gl in 
@@ -1859,22 +1872,21 @@ let abstract_args gl id =
       App (f, args) -> 
 	(* Build application generalized w.r.t. the argument plus the necessary eqs.
 	   From env |- c : forall G, T and args : G we build
-	   (T[G'], G' : ctx, env ; G' |- args' : G, eqs := G'_i = G_i, refls : G' = G)
+	   (T[G'], G' : ctx, env ; G' |- args' : G, eqs := G'_i = G_i, refls : G' = G, vars to generalize)
 
 	   eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
 	*)
-	let aux (prod, ctx, ctxenv, c, args, eqs, refls, finalargs, env) arg =
+	let aux (prod, ctx, ctxenv, c, args, eqs, refls, vars, env) arg =
 	  let (name, _, ty), arity = 
 	    let rel, c = Reductionops.decomp_n_prod env sigma 1 prod in
 	      List.hd rel, c
 	  in
 	  let argty = pf_type_of gl arg in
-	  let liftarg = lift (List.length ctx) arg in
 	  let liftargty = lift (List.length ctx) argty in
-	  let convertible = Reductionops.is_conv ctxenv sigma ty liftargty in
+	  let convertible = Reductionops.is_conv_leq ctxenv sigma liftargty ty in
 	    match kind_of_term arg with
-	      | Var _ | Rel _ when convertible -> 
-		  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, (Anonymous, liftarg, liftarg) :: finalargs, env)
+	      | Var _ | Rel _ | Ind _ when convertible -> 
+		  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, vars, env)
 	      | _ ->
 		  let name = get_id name in
 		  let decl = (Name name, None, ty) in
@@ -1890,25 +1902,40 @@ let abstract_args gl id =
 		  in
 		  let eqs = eq :: lift_list eqs in
 		  let refls = refl :: refls in
-		  let finalargs = (Name name, mkRel 1, liftarg) :: List.map (fun (x, y, z) -> (x, lift 1 y, lift 1 z)) finalargs in
-		    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, finalargs, env)
+		  let vars = ids_of_constr vars arg in
+		    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, vars, env)
 	in 
-	let arity, ctx, ctxenv, c', args, eqs, refls, finalargs, env = 
+	let arity, ctx, ctxenv, c', args, eqs, refls, vars, env = 
 	  Array.fold_left aux (pf_type_of gl f,[],env,f,[],[],[],[],env) args
 	in
-	let eqs = lift_togethern 1 eqs in
 	let args, refls = List.rev args, List.rev refls in
-	  Some (make_abstract_generalize gl id concl ctx c' eqs args refls)
+	  Some (make_abstract_generalize gl id concl dep ctx c' eqs args refls,
+	       dep, succ (List.length ctx), vars)
     | _ -> None
 
 let abstract_generalize id gl =
   Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
 (*   let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string "Coq.Logic.JMeq")) in *)
 (*   Library.require_library [qualid] None; *)
+  let oldid = pf_get_new_id id gl in
   let newc = abstract_args gl id in
     match newc with
       | None -> tclIDTAC gl
-      | Some newc -> refine newc gl
+      | Some (newc, dep, n, vars) -> 
+	  if dep then
+	    tclTHENLIST [refine newc;
+			 rename_hyp [(id, oldid)];
+			 tclDO n intro; 
+			 generalize_dep (mkVar oldid);
+			 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars]
+	      gl
+	  else
+	    tclTHENLIST [refine newc;
+			 clear [id];
+			 tclDO n intro; 
+			 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars]
+	      gl
+
 
 let occur_rel n c = 
   let res = not (noccurn n c) in

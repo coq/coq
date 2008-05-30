@@ -231,24 +231,19 @@ Ltac simpl_depind := subst* ; autoinjections ; try discriminates ;
    by first generalizing it and adding the proper equalities to the context, in a maner similar to 
    the BasicElim tactic of "Elimination with a motive" by Conor McBride. *)
 
-(** First a tactic to prepare for a dependent induction on an hypothesis [H]. *)
-
-Ltac prepare_depind H :=
-  let oldH := fresh "old" H in
-    generalize_eqs H ; rename H into oldH ; (intros until H || intros until 1) ; 
-      generalize dependent oldH ;
-        try (intros _ _) (* If the goal is not dependent on the hyp, we can prove a stronger statement *).
-
 (** The [do_depind] higher-order tactic takes an induction tactic as argument and an hypothesis 
    and starts a dependent induction using this tactic. *)
 
 Ltac do_depind tac H :=
-  prepare_depind H ; tac H ; repeat progress simpl_depind.
+  generalize_eqs H ; tac H ; repeat progress simpl_depind.
 
 (** Calls [destruct] on the generalized hypothesis, results should be similar to inversion. *)
 
 Tactic Notation "dependent" "destruction" ident(H) := 
   do_depind ltac:(fun H => destruct H ; intros) H ; subst*.
+
+Tactic Notation "dependent" "destruction" ident(H) "using" constr(c) := 
+  do_depind ltac:(fun H => destruct H using c ; intros) H.
 
 (** Then we have wrappers for usual calls to induction. One can customize the induction tactic by 
    writting another wrapper calling do_depind. *)
@@ -256,12 +251,14 @@ Tactic Notation "dependent" "destruction" ident(H) :=
 Tactic Notation "dependent" "induction" ident(H) := 
   do_depind ltac:(fun H => induction H ; intros) H.
 
+Tactic Notation "dependent" "induction" ident(H) "using" constr(c) := 
+  do_depind ltac:(fun H => induction H using c ; intros) H.
+
 (** This tactic also generalizes the goal by the given variables before the induction. *)
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) := 
   do_depind ltac:(fun H => generalize l ; clear l ; induction H ; intros) H.
 
-(** This tactic also generalizes the goal by the given variables before the induction. *)
-
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
   do_depind ltac:(fun H => generalize l ; clear l ; induction H using c ; intros) H.
+
