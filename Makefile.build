@@ -764,36 +764,46 @@ $(foreach f,$(RECTYPESML),$(eval $(call rectypes-rules-template,$(f))))
 .PHONY: revision
 
 revision:
+	$(SHOW)'CHECK revision'
+	$(HIDE)set -e
+	$(HIDE)rm -f revision.new
 ifeq ($(CHECKEDOUT),svn)
-	rm -f revision
-	set -e; \
-	if test -x "`which svn`"; then \
+	$(HIDE)\
+        if test -x "`which svn`"; then \
 	  export LC_ALL=C;\
-	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/\1/p' > revision; \
-	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/\1/p'>> revision; \
+	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/\1/p' > revision.new; \
+	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/\1/p'>> revision.new; \
 	fi
 endif
 ifeq ($(CHECKEDOUT),gnuarch)
-	rm -f revision
-	set -e; \
-	if test -x "`which tla`"; then \
+	$(HIDE)\
+        if test -x "`which tla`"; then \
 	  LANG=C; export LANG; \
-	  tla tree-version  >  revision ; \
-	  tla tree-revision | sed -ne 's|.*--||p' >> revision ; \
+	  tla tree-version  >  revision.new ; \
+	  tla tree-revision | sed -ne 's|.*--||p' >> revision.new ; \
 	fi
 endif
 ifeq ($(CHECKEDOUT),git)
-	rm -f revision
-	set -e; \
+        $(HIDE)\
 	if test -x "`which git`"; then \
 	  LANG=C; export LANG; \
 	  GIT_BRANCH=$$(git branch -a | sed -ne '/^\* /s/^\* \(.*\)/\1/p'); \
 	  GIT_HOST=$$(hostname --fqdn); \
 	  GIT_PATH=$$(pwd); \
-	  (echo "$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}") > revision; \
-	  git log -1 | sed -ne '/^commit /s/^commit[[:space:]]\+\(.*\)/\1/p'  >> revision; \
+	  (echo "$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}") > revision.new; \
+	  git log -1 | sed -ne '/^commit /s/^commit[[:space:]]\+\(.*\)/\1/p'  >> revision.new; \
 	fi
 endif
+	$(HIDE)\
+        if test -e revision; then \
+	    if test "`cat revision`" = "`cat revision.new`" ; then \
+	       rm -f revision.new; \
+            else \
+               mv -f revision.new revision; \
+            fi; \
+        else \
+            mv -f revision.new revision; \
+        fi
 
 ###########################################################################
 # Default rules
