@@ -17,32 +17,67 @@ Author: Arnaud Spiwack
 Require Export Int31.
 Require Import CyclicAxioms.
 Require Import Cyclic31.
+Require Import NSig.
+Require Import NSigNAxioms.
 Require Import NMake.
+Require Import NMinus.
 
-Open Scope int31_scope.
+Module BigN <: NType := NMake.Make Int31Cyclic.
 
-Module BigN := NMake.Make Int31Cyclic.
+(** Module [BigN] implements [NAxiomsSig] *)
 
-Definition bigN := BigN.t.
+Module Export BigNAxiomsMod := NSig_NAxioms BigN.
+Module Export BigNMinusPropMod := NMinusPropFunct BigNAxiomsMod.
+
+(** Notations about [BigN] *)
+
+Notation bigN := BigN.t.
 
 Delimit Scope bigN_scope with bigN.
 Bind Scope bigN_scope with bigN.
 Bind Scope bigN_scope with BigN.t.
 Bind Scope bigN_scope with BigN.t_.
 
-Notation " i + j " := (BigN.add i j) : bigN_scope.
-Notation " i - j " := (BigN.sub i j) : bigN_scope.
-Notation " i * j " := (BigN.mul i j) : bigN_scope.
-Notation " i / j " := (BigN.div i j) : bigN_scope.
-Notation " i ?= j " := (BigN.compare i j) : bigN_scope.
+Notation Local "0" := BigN.zero : bigN_scope. (* temporary notation *)
+Infix "+" := BigN.add : bigN_scope.
+Infix "-" := BigN.sub : bigN_scope.
+Infix "*" := BigN.mul : bigN_scope.
+Infix "/" := BigN.div : bigN_scope.
+Infix "?=" := BigN.compare : bigN_scope.
+Infix "==" := BigN.eq (at level 70, no associativity) : bigN_scope.
+Infix "<" := BigN.lt : bigN_scope.
+Infix "<=" := BigN.le : bigN_scope.
+Notation "[ i ]" := (BigN.to_Z i) : bigN_scope.
 
- Theorem succ_pred: forall q,
-  (0 < BigN.to_Z q -> 
-     BigN.to_Z (BigN.succ (BigN.pred q)) = BigN.to_Z q)%Z.
- intros q Hq.
- rewrite BigN.spec_succ.
- rewrite BigN.spec_pred; auto.
- generalize Hq; set (a := BigN.to_Z q).
- ring_simplify (a - 1 + 1)%Z; auto.
- Qed.
- 
+Open Scope bigN_scope.
+
+(** Example of reasoning about [BigN] *)
+
+Theorem succ_pred: forall q:bigN,
+  0 < q -> BigN.succ (BigN.pred q) == q.
+Proof.
+intros; apply succ_pred.
+intro H'; rewrite H' in H; discriminate.
+Qed.
+
+(** [BigN] is a semi-ring *)
+
+Lemma BigNring : 
+ semi_ring_theory BigN.zero BigN.one BigN.add BigN.mul BigN.eq.
+Proof.
+constructor.
+exact plus_0_l.
+exact plus_comm.
+exact plus_assoc.
+exact times_1_l.
+exact times_0_l.
+exact times_comm.
+exact times_assoc.
+exact times_plus_distr_r.
+Qed.
+
+Add Ring BigNr : BigNring.
+
+(** Todo: tactic translating from [BigN] to [Z] + omega *)
+
+(** Todo: micromega *)

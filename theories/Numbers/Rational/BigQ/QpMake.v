@@ -22,6 +22,9 @@ Require Import Qcanon.
 Require Import Qpower.
 Require Import QMake_base.
 
+Notation Nspec_lt := BigNAxiomsMod.NZOrdAxiomsMod.spec_lt.
+Notation Nspec_le := BigNAxiomsMod.NZOrdAxiomsMod.spec_le.
+
 Module Qp.
 
  (** The notation of a rational number is either an integer x,
@@ -186,20 +189,20 @@ Module Qp.
  rewrite BigZ.spec_div; simpl; rewrite BigN.spec_gcd; auto with zarith.
  rewrite BigN.spec_div; simpl; rewrite BigN.spec_gcd; auto with zarith.
  rewrite Zmult_1_r.
- rewrite BigN.succ_pred; auto with zarith.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  rewrite Z2P_correct; auto with zarith.
  rewrite spec_to_N; intros; rewrite Zgcd_div_swap; auto.
  rewrite H; ring.
  intros H3.
  red; simpl.
  rewrite BigZ.spec_div; simpl; rewrite BigN.spec_gcd; auto with zarith.
- rewrite BigN.succ_pred; auto with zarith.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  assert (F: (0 < BigN.to_Z (q / BigN.gcd (BigZ.to_N p) q)%bigN)%Z).
    rewrite BigN.spec_div; auto with zarith.
    rewrite BigN.spec_gcd.
    apply Zgcd_div_pos; auto.
    rewrite BigN.spec_gcd; auto.
- rewrite BigN.succ_pred; auto with zarith.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  rewrite Z2P_correct; auto.
  rewrite Z2P_correct; auto.
  rewrite BigN.spec_div; simpl; rewrite BigN.spec_gcd; auto with zarith.
@@ -315,7 +318,7 @@ Module Qp.
  simpl.
  repeat rewrite BigZ.spec_add.
  repeat rewrite BigZ.spec_mul; simpl.
- rewrite BigN.succ_pred; try apply Qeq_refl; apply spec_succ_pos.
+ rewrite BigN.succ_pred; try apply Qeq_refl; apply lt_0_succ.
  intros p1 n p2.
  match goal with |- [norm ?X ?Y] == _ =>
   apply Qeq_trans with ([Qq X (BigN.pred Y)]);
@@ -325,8 +328,8 @@ Module Qp.
  simpl.
  repeat rewrite BigZ.spec_add.
  repeat rewrite BigZ.spec_mul; simpl.
- rewrite Zplus_comm.
- rewrite BigN.succ_pred; try apply Qeq_refl; apply spec_succ_pos.
+ rewrite BinInt.Zplus_comm.
+ rewrite BigN.succ_pred; try apply Qeq_refl; apply lt_0_succ.
  intros p1 q1 p2 q2.
  match goal with |- [norm ?X ?Y] == _ =>
   apply Qeq_trans with ([Qq X (BigN.pred Y)]);
@@ -391,12 +394,13 @@ Module Qp.
   apply Qeq_refl; auto.
  assert (F1:= spec_succ_pos dx).
  assert (F2:= spec_succ_pos dy).
- rewrite BigN.succ_pred; rewrite BigN.spec_mul.
- rewrite BigZ.spec_mul.
+ rewrite BigN.succ_pred.
+ rewrite BigN.spec_mul; rewrite BigZ.spec_mul.
  assert (tmp: 
   (forall a b, 0 < a -> 0 < b -> Z2P (a * b) = (Z2P a * Z2P b)%positive)%Z).
   intros [|a|a] [|b|b]; simpl; auto; intros; apply False_ind; auto with zarith.
  rewrite tmp; auto; apply Qeq_refl.
+ rewrite Nspec_lt, BigN.spec_0, BigN.spec_mul; auto.
  apply Zmult_lt_0_compat; apply spec_succ_pos.
  Qed.
 
@@ -496,6 +500,7 @@ Module Qp.
  rewrite (Zmult_comm (BigZ.to_Z p1)).
  repeat rewrite Zmult_assoc.
  rewrite Zgcd_div_swap; auto; try ring.
+ rewrite Nspec_lt, BigN.spec_0; auto.
  apply False_ind; generalize F1.
  rewrite (Zdivide_Zdiv_eq
           (Zgcd (BigN.to_Z (BigZ.to_N p2)) (BigN.to_Z (BigN.succ n)))
@@ -556,6 +561,7 @@ Module Qp.
  rewrite (Zmult_comm (BigZ.to_Z p2)).
  repeat rewrite Zmult_assoc.
  rewrite Zgcd_div_swap; auto; try ring.
+ rewrite Nspec_lt, BigN.spec_0; auto.
  apply False_ind; generalize F1.
  rewrite (Zdivide_Zdiv_eq
           (Zgcd (BigN.to_Z (BigZ.to_N p1)) (BigN.to_Z (BigN.succ n)))
@@ -609,7 +615,7 @@ Module Qp.
  assert (F: (0 < BigN.to_Z x)%Z).
    case (Zle_lt_or_eq _ _ (BigN.spec_pos x)); auto with zarith.
  unfold to_Q; rewrite BigZ.spec_1.
- rewrite BigN.succ_pred; auto.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  red; unfold Qinv; simpl.
  generalize F; case BigN.to_Z; auto with zarith.
  intros p Hp; discriminate Hp.
@@ -621,7 +627,7 @@ Module Qp.
  assert (F: (0 < BigN.to_Z x)%Z).
    case (Zle_lt_or_eq _ _ (BigN.spec_pos x)); auto with zarith.
  red; unfold Qinv; simpl.
- rewrite BigN.succ_pred; auto.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  generalize F; case BigN.to_Z; simpl; auto with zarith.
  intros p Hp; discriminate Hp.
  match goal with  |- context[BigN.eq_bool ?X ?Y] => 
@@ -632,7 +638,7 @@ Module Qp.
  assert (F: (0 < BigN.to_Z nx)%Z).
    case (Zle_lt_or_eq _ _ (BigN.spec_pos nx)); auto with zarith.
  red; unfold Qinv; simpl.
- rewrite BigN.succ_pred; auto.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  rewrite BigN.spec_succ; rewrite Z2P_correct; auto with zarith.
  generalize F; case BigN.to_Z; auto with zarith.
  intros p Hp; discriminate Hp.
@@ -645,12 +651,12 @@ Module Qp.
  assert (F: (0 < BigN.to_Z nx)%Z).
    case (Zle_lt_or_eq _ _ (BigN.spec_pos nx)); auto with zarith.
  red; unfold Qinv; simpl.
- rewrite BigN.succ_pred; auto.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  rewrite BigN.spec_succ; rewrite Z2P_correct; auto with zarith.
  generalize F; case BigN.to_Z; auto with zarith.
- simpl; intros. 
+ simpl; intros.
  match goal with  |- (?X = Zneg ?Y)%Z => 
-   replace (Zneg Y) with (Zopp (Zpos Y));
+   replace (Zneg Y) with (-(Zpos Y))%Z;
    try rewrite Z2P_correct; auto with zarith
  end.
  rewrite Zpos_mult_morphism; 
@@ -704,7 +710,7 @@ Definition inv_norm x :=
    generalize (BigN.spec_eq_bool X Y); case BigN.eq_bool
  end; rewrite BigN.spec_1; intros H1.
  red; simpl.
- rewrite BigN.succ_pred; auto.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  rewrite Z2P_correct; try rewrite H1; auto with zarith.
   apply Qeq_refl.
  match goal with  |- context[BigN.eq_bool ?X ?Y] => 
@@ -717,7 +723,7 @@ Definition inv_norm x :=
    generalize (BigN.spec_eq_bool X Y); case BigN.eq_bool
  end; rewrite BigN.spec_1; intros H1.
  red; simpl.
- rewrite BigN.succ_pred; auto.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  rewrite Z2P_correct; try rewrite H1; auto with zarith.
   apply Qeq_refl.
  case nx; clear nx; intros nx.
@@ -730,6 +736,7 @@ Definition inv_norm x :=
  end; rewrite BigN.spec_1; intros H1.
  red; simpl.
  rewrite BigN.succ_pred; try rewrite H1; auto with zarith.
+ rewrite Nspec_lt, BigN.spec_0, H1; auto with zarith.
  apply Qeq_refl.
  match goal with  |- context[BigN.eq_bool ?X ?Y] => 
    generalize (BigN.spec_eq_bool X Y); case BigN.eq_bool
@@ -740,6 +747,7 @@ Definition inv_norm x :=
  end; rewrite BigN.spec_1; intros H1.
  red; simpl.
  rewrite BigN.succ_pred; try rewrite H1; auto with zarith.
+ rewrite Nspec_lt, BigN.spec_0, H1; auto with zarith.
  apply Qeq_refl.
  Qed.
 
@@ -791,7 +799,7 @@ Definition inv_norm x :=
  assert (F1 : (0 < BigN.to_Z (BigN.square (BigN.succ dx)))%Z).
    rewrite BigN.spec_square; apply Zmult_lt_0_compat;
      auto with zarith.
- rewrite BigN.succ_pred; auto.
+ rewrite BigN.succ_pred by (rewrite Nspec_lt, BigN.spec_0; auto).
  rewrite Zpos_mult_morphism.
  repeat rewrite Z2P_correct; auto with zarith.
  repeat rewrite BigN.spec_succ; auto with zarith.
@@ -837,7 +845,7 @@ Definition inv_norm x :=
  assert (F2: (0 < BigN.to_Z (BigN.succ dx) ^ ' p)%Z).
   unfold Zpower; apply Zpower_pos_pos; auto.
  unfold power_pos; red; simpl.
- rewrite BigN.succ_pred; rewrite BigN.spec_power_pos; auto.
+ rewrite BigN.succ_pred, BigN.spec_power_pos.
  rewrite Z2P_correct; auto.
  generalize (Qpower_decomp p (BigZ.to_Z nx) 
                (Z2P (BigN.to_Z (BigN.succ dx)))).
@@ -846,6 +854,7 @@ Definition inv_norm x :=
  unfold Qeq; simpl; intros HH.
  rewrite HH.
  rewrite BigZ.spec_power_pos; simpl; ring.
+ rewrite Nspec_lt, BigN.spec_0, BigN.spec_power_pos; auto.
  Qed.
 
  Theorem spec_power_posc x p: [[power_pos x p]] = [[x]] ^ nat_of_P p.

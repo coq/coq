@@ -24,6 +24,10 @@ Require Import QMake_base.
 
 Module Qv.
 
+ Import BinInt Zorder.
+ Open Local Scope Q_scope.
+ Open Local Scope Qc_scope.
+
  (** The notation of a rational number is either an integer x,
      interpreted as itself or a pair (x,y) of an integer x and a naturel
      number y interpreted as x/y. All functions maintain the invariant

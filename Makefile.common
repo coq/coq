@@ -685,10 +685,14 @@ NATURALPEANOVO:=$(addprefix theories/Numbers/Natural/Peano/, \
 NATURALBINARYVO:=$(addprefix theories/Numbers/Natural/Binary/, \
  NBinDefs.vo 	NBinary.vo )
 
-NATURALBIGNVO:=$(addprefix theories/Numbers/Natural/BigN/, \
- Nbasic.vo 	NMake.vo 	BigN.vo 	NBigN.vo )
+NATURALSPECVIAZVO:=$(addprefix theories/Numbers/Natural/SpecViaZ/, \
+ NSig.vo	NSigNAxioms.vo )
 
-NATURALVO:=$(NATURALABSTRACTVO) $(NATURALPEANOVO) $(NATURALBINARYVO) $(NATURALBIGNVO)
+NATURALBIGNVO:=$(addprefix theories/Numbers/Natural/BigN/, \
+ Nbasic.vo 	NMake.vo 	BigN.vo )
+
+NATURALVO:=$(NATURALABSTRACTVO) $(NATURALPEANOVO) $(NATURALBINARYVO) \
+ $(NATURALSPECVIAZVO) $(NATURALBIGNVO)
 
 INTEGERABSTRACTVO:=$(addprefix theories/Numbers/Integer/Abstract/, \
  ZAxioms.vo 	ZBase.vo 	ZPlus.vo 	ZTimes.vo 	\
@@ -700,11 +704,14 @@ INTEGERBINARYVO:=$(addprefix theories/Numbers/Integer/Binary/, \
 INTEGERNATPAIRSVO:=$(addprefix theories/Numbers/Integer/NatPairs/, \
  ZNatPairs.vo )
 
+INTEGERSPECVIAZVO:=$(addprefix theories/Numbers/Integer/SpecViaZ/, \
+ ZSig.vo	ZSigZAxioms.vo )
+
 INTEGERBIGZVO:=$(addprefix theories/Numbers/Integer/BigZ/, \
  ZMake.vo 	BigZ.vo )
 
 INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) \
- $(INTEGERBIGZVO)
+ $(INTEGERSPECVIAZVO) $(INTEGERBIGZVO)
 
 RATIONALBIGQVO:=$(addprefix theories/Numbers/Rational/BigQ/, \
  QMake_base.vo	QpMake.vo	QvMake.vo	Q0Make.vo 	\

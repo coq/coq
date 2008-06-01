@@ -79,8 +79,9 @@ let _ =
   pr "Require Import Nbasic.";
   pr "Require Import Wf_nat.";
   pr "Require Import StreamMemo.";
+  pr "Require Import NSig.";
   pr "";
-  pr "Module Make (Import W0:CyclicType).";
+  pr "Module Make (Import W0:CyclicType) <: NType.";
   pr "";
 
   pr " Definition w0 := W0.w.";
@@ -163,8 +164,13 @@ let _ =
 
   pr " Open Scope Z_scope.";
   pr " Notation \"[ x ]\" := (to_Z x).";
-  pr " ";
+  pr "";
 
+  pr " Definition to_N x := Zabs_N (to_Z x).";
+  pr "";
+  
+  pr " Definition eq x y := (to_Z x = to_Z y).";
+  pr "";
 
   pp " (* Regular make op (no karatsuba) *)";
   pp " Fixpoint nmake_op (ww:Type) (ww_op: znz_op ww) (n: nat) : ";
@@ -1315,6 +1321,12 @@ let _ =
   pr "      comparenm).";
   pr "";
 
+  pr " Definition lt n m := compare n m = Lt.";
+  pr " Definition le n m := compare n m <> Gt.";
+  pr " Definition min n m := match compare n m with Gt => m | _ => n end.";
+  pr " Definition max n m := match compare n m with Lt => m | _ => n end.";
+  pr "";
+
   for i = 0 to size do
     pp " Let spec_compare_%i: forall x y," i;
     pp "    match compare_%i x y with " i;
@@ -2395,7 +2407,6 @@ let _ =
   pr "  | Npos p => of_pos p";
   pr "  end.";
   pr "";
-
 
   pr " Theorem spec_of_N: forall x,";
   pr "   [of_N x] = Z_of_N x.";

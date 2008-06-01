@@ -12,94 +12,18 @@
 
 Require Import ZArith.
 Require Import BigNumPrelude.
+Require Import NSig.
+Require Import ZSig.
 
 Open Scope Z_scope.
 
-Module Type NType.
-
- Parameter t : Type.
+(** * ZMake 
  
- Parameter zero : t.
- Parameter one : t.
+  A generic transformation from a structure of natural numbers 
+  [NSig.NType] to a structure of integers [ZSig.ZType].
+*)
 
- Parameter of_N : N -> t.
- Parameter to_Z : t -> Z.
- Parameter spec_pos: forall x, 0 <= to_Z x.
- Parameter spec_0: to_Z zero = 0.
- Parameter spec_1: to_Z one = 1.
- Parameter spec_of_N: forall x, to_Z (of_N x) = Z_of_N x.
-
- Parameter compare : t -> t -> comparison.
-
- Parameter spec_compare: forall x y,
-    match compare x y with
-      Eq => to_Z x = to_Z y
-    | Lt => to_Z x < to_Z y
-    | Gt => to_Z x > to_Z y
-    end.
-
- Parameter eq_bool : t -> t -> bool.
-
- Parameter spec_eq_bool: forall x y,
-    if eq_bool x y then to_Z x = to_Z y else to_Z x <> to_Z y.
- 
- Parameter succ : t -> t.
-
- Parameter spec_succ: forall n, to_Z (succ n) = to_Z n + 1.
-
- Parameter add  : t -> t -> t.
-
- Parameter spec_add: forall x y, to_Z (add x y) = to_Z x +  to_Z y.
-
- Parameter pred : t -> t.
-
- Parameter spec_pred: forall x, 0 < to_Z x -> to_Z (pred x) = to_Z x - 1.
-
- Parameter sub  : t -> t -> t.
-
- Parameter spec_sub: forall x y, to_Z y <= to_Z x ->
-   to_Z (sub x y) = to_Z x - to_Z y.
-
- Parameter mul       : t -> t -> t.
-
- Parameter spec_mul: forall x y, to_Z (mul x y) = to_Z x * to_Z y.
-
- Parameter square    : t -> t.
-
- Parameter spec_square: forall x, to_Z (square x) = to_Z x *  to_Z x.
-
- Parameter power_pos : t -> positive -> t.
-
- Parameter spec_power_pos: forall x n, to_Z (power_pos x n) = to_Z x ^ Zpos n.
-
- Parameter sqrt      : t -> t.
-
- Parameter spec_sqrt: forall x, to_Z (sqrt x) ^ 2 <= to_Z x < (to_Z (sqrt x) + 1) ^ 2.
-
- Parameter div_eucl : t -> t -> t * t.
-
- Parameter spec_div_eucl: forall x y,
-      0 < to_Z y ->
-      let (q,r) := div_eucl x y in (to_Z q, to_Z r) = (Zdiv_eucl (to_Z x) (to_Z y)).
- 
- Parameter div      : t -> t -> t.
-
- Parameter spec_div: forall x y,
-      0 < to_Z y -> to_Z (div x y) = to_Z x / to_Z y.
-
- Parameter modulo   : t -> t -> t.
-
- Parameter spec_modulo:
-   forall x y, 0 < to_Z y -> to_Z (modulo x y) = to_Z x mod to_Z y.
-
- Parameter gcd      : t -> t -> t.
-
- Parameter spec_gcd: forall a b, to_Z (gcd a b) = Zgcd (to_Z a) (to_Z b).
-
-
-End NType.
-
-Module Make (N:NType).
+Module Make (N:NType) <: ZType.
  
  Inductive t_ := 
   | Pos : N.t -> t_
@@ -131,6 +55,7 @@ Module Make (N:NType).
    intros; rewrite N.spec_of_N; auto.
  Qed.
 
+ Definition eq x y := (to_Z x = to_Z y).
 
  Theorem spec_0: to_Z zero = 0.
  exact N.spec_0.
@@ -160,6 +85,10 @@ Module Make (N:NType).
   | Neg nx, Neg ny => N.compare ny nx
   end.
 
+ Definition lt n m := compare n m = Lt.
+ Definition le n m := compare n m <> Gt.
+ Definition min n m := match compare n m with Gt => m | _ => n end.
+ Definition max n m := match compare n m with Lt => m | _ => n end.
 
  Theorem spec_compare: forall x y,
     match compare x y with
