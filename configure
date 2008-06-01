@@ -109,9 +109,7 @@ emacs_spec=no
 camldir_spec=no
 lablgtkdir_spec=no
 coqdocdir_spec=no
-fsets_opt=no
 fsets=all
-reals_opt=no
 reals=all
 arch_spec=no
 coqide_spec=no
@@ -130,7 +128,6 @@ while : ; do
                       prefix="$2"
 		      shift;;
     -local|--local) local=true
-		    reals_opt=yes
 		    reals=all;;
     -src|--src) src_spec=yes
                 COQSRC="$2"
@@ -171,14 +168,12 @@ while : ; do
     -opt|--opt) bytecamlc=ocamlc.opt
                 camlp4oexec=camlp4o  # can't add .opt since dyn load'll be required
                 nativecamlc=ocamlopt.opt;;
-    -fsets|--fsets) fsets_opt=yes
-                    case "$2" in
+    -fsets|--fsets) case "$2" in
 			yes|all) fsets=all;;
 			*) fsets=basic
 		    esac
 		    shift;;
-    -reals|--reals) reals_opt=yes
-	            case "$2" in
+    -reals|--reals) case "$2" in
 			yes|all) reals=all;;
 			*) reals=basic
 		    esac
@@ -711,18 +706,6 @@ case $coqdocdir_spec/$prefix_spec/$local in
 	    "") COQDOCDIR=$coqdocdir_def;;
 	    *) true;;
 	esac;;
-esac
-
-case $reals_opt in
-    no) echo "Should I compile the complete theory of real analysis [Y/N, default is Y] ?"
-	read reals_ans
-
-	case $reals_ans in
-	    "N"|"n"|"No"|"NO"|"no")
-		    reals=basic;;
-		*) reals=all;;
-	esac;;
-    yes) true;;
 esac
 
 # case $emacs_spec in
