@@ -335,8 +335,6 @@ GEXTEND Gram
   orient: 
     [ [ "->" -> true 
       | "<-" -> false
-      | "+" -> true
-      | "-" -> false
       | -> true ]]
   ;
   simple_binder:
