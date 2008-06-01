@@ -20,24 +20,23 @@ Require Export BigZ.
 Require Import QArith.
 Require Import Qcanon.
 Require Import Qpower.
+Require Import QSig.
 Require Import QMake_base.
 
-Module Q0.
+Module Q0 <: QType.
 
  Import BinInt Zorder.
- Open Local Scope Q_scope.
- Open Local Scope Qc_scope.
 
  (** The notation of a rational number is either an integer x,
-     interpreted as itself or a pair (x,y) of an integer x and a naturel
+     interpreted as itself or a pair (x,y) of an integer x and a natural
      number y interpreted as x/y. The pairs (x,0) and (0,y) are all
      interpreted as 0. *)
 
  Definition t := q_type.
 
- Definition zero: t := Qz BigZ.zero.
- Definition one: t := Qz BigZ.one.
- Definition minus_one: t := Qz BigZ.minus_one.
+ (** Specification with respect to [QArith] *) 
+
+ Open Local Scope Q_scope.
 
  Definition of_Z x: t := Qz (BigZ.of_Z x).
 
@@ -46,22 +45,17 @@ Module Q0.
   Qq (BigZ.of_Z x) (BigN.of_N (Npos y))
  end.
 
- Definition of_Qc q := of_Q (this q).
-
  Definition to_Q (q: t) := 
  match q with 
   Qz x => BigZ.to_Z x # 1
- |Qq x y => if BigN.eq_bool y BigN.zero then 0%Q
+ |Qq x y => if BigN.eq_bool y BigN.zero then 0
             else BigZ.to_Z x # Z2P (BigN.to_Z y)
  end.
 
- Definition to_Qc q := !!(to_Q q).
-
- Notation "[[ x ]]" := (to_Qc x).
-
  Notation "[ x ]" := (to_Q x).
 
- Theorem spec_to_Q: forall q: Q, [of_Q q] = q.
+ Theorem strong_spec_of_Q: forall q: Q, [of_Q q] = q.
+ Proof.
  intros (x,y); simpl.
  match goal with  |- context[BigN.eq_bool ?X ?Y] => 
   generalize (BigN.spec_eq_bool X Y); case BigN.eq_bool
@@ -71,10 +65,30 @@ Module Q0.
  rewrite (BigN.spec_of_pos); auto.
  Qed.
 
- Theorem spec_to_Qc: forall q, [[of_Qc q]] = q.
- intros (x, Hx); unfold of_Qc, to_Qc; simpl.
- apply Qc_decomp; simpl.
- intros; rewrite spec_to_Q; auto.
+ Theorem spec_of_Q: forall q: Q, [of_Q q] == q.
+ Proof.
+ intros; rewrite strong_spec_of_Q; red; auto.
+ Qed.
+
+ Definition eq x y := [x] == [y].
+
+ Definition zero: t := Qz BigZ.zero.
+ Definition one: t := Qz BigZ.one.
+ Definition minus_one: t := Qz BigZ.minus_one.
+
+ Lemma spec_0: [zero] == 0.
+ Proof.
+ reflexivity.
+ Qed.
+
+ Lemma spec_1: [one] == 1.
+ Proof.
+ reflexivity.
+ Qed.
+
+ Lemma spec_m1: [minus_one] == -(1).
+ Proof.
+ reflexivity.
  Qed.
 
  Definition opp (x: t): t :=
@@ -83,7 +97,8 @@ Module Q0.
   | Qq nx dx => Qq (BigZ.opp nx) dx
   end.
 
- Theorem spec_opp: forall q, ([opp q] = -[q])%Q.
+ Theorem strong_spec_opp: forall q, [opp q] = -[q].
+ Proof.
  intros [z | x y]; simpl.
  rewrite BigZ.spec_opp; auto.
  match goal with  |- context[BigN.eq_bool ?X ?Y] => 
@@ -92,12 +107,9 @@ Module Q0.
  rewrite BigZ.spec_opp; auto.
  Qed.
 
- Theorem spec_oppc: forall q, [[opp q]] = -[[q]].
- intros q; unfold Qcopp, to_Qc, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- rewrite spec_opp.
- rewrite <- Qred_opp.
- rewrite Qred_involutive; auto.
+ Theorem spec_opp : forall q, [opp q] == -[q].
+ Proof.
+ intros; rewrite strong_spec_opp; red; auto.
  Qed.
 
  Definition compare (x y: t) :=
@@ -118,8 +130,8 @@ Module Q0.
     end
   end.
 
- Theorem spec_compare: forall q1 q2, 
-  compare q1 q2 = ([q1] ?= [q2])%Q.
+ Theorem spec_compare: forall q1 q2, (compare q1 q2) = ([q1] ?= [q2]).
+ Proof.
  intros [z1 | x1 y1] [z2 | x2 y2]; 
    unfold Qcompare, compare, to_Q, Qnum, Qden.
  repeat rewrite Zmult_1_r.
@@ -172,12 +184,10 @@ Module Q0.
  rewrite H; rewrite Zcompare_refl; auto.
  Qed.
 
- Theorem spec_comparec: forall q1 q2,
-  compare q1 q2 = ([[q1]] ?= [[q2]]).
- unfold Qccompare, to_Qc. 
- intros q1 q2; rewrite spec_compare; simpl; auto.
- apply Qcompare_comp; apply Qeq_sym; apply Qred_correct.
- Qed.
+ Definition lt n m := compare n m = Lt.
+ Definition le n m := compare n m <> Gt.
+ Definition min n m := match compare n m with Gt => m | _ => n end.
+ Definition max n m := match compare n m with Lt => m | _ => n end.
 
 (* Je pense que cette fonction normalise bien ... *)
  Definition norm n d: t :=
@@ -195,10 +205,8 @@ Module Q0.
   | Gt => zero (* gcd = 0 => both numbers are 0 *)
   end.
 
-
-
- Theorem spec_norm: forall n q, 
-     ([norm n q] == [Qq n q])%Q.
+ Theorem spec_norm: forall n q, [norm n q] == [Qq n q].
+ Proof.
  intros p q; unfold norm.
  assert (Hp := BigN.spec_pos (BigZ.to_N p)).
  match goal with  |- context[BigN.compare ?X ?Y] => 
@@ -302,8 +310,8 @@ Module Q0.
     end
   end.
 
- Theorem spec_add x y: 
-  ([add x y] == [x] + [y])%Q.
+ Theorem spec_add : forall x y, [add x y] == [x] + [y].
+ Proof.
  intros [x | nx dx] [y | ny dy]; unfold Qplus; simpl.
  rewrite BigZ.spec_add; repeat rewrite Zmult_1_r; auto.
   intros; apply Qeq_refl; auto.
@@ -370,19 +378,6 @@ Module Q0.
  apply Zmult_lt_0_compat; auto.
  Qed.
 
- Theorem spec_addc x y:
-  [[add x y]] = [[x]] + [[y]].
- intros x y; unfold to_Qc.
- apply trans_equal with (!! ([x] + [y])).
- unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete; apply spec_add; auto.
- unfold Qcplus, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete.
- apply Qplus_comp; apply Qeq_sym; apply Qred_correct.
- Qed.
-
  Definition add_norm (x y: t): t :=
   match x with
   | Qz zx =>
@@ -404,10 +399,9 @@ Module Q0.
        norm n d
     end
   end.
- 
 
- Theorem spec_add_norm x y:
-  ([add_norm x y] == [x] + [y])%Q.
+ Theorem spec_add_norm : forall x y, [add_norm x y] == [x] + [y].
+ Proof.
  intros x y; rewrite <- spec_add; auto.
  case x; case y; clear x y; unfold add_norm, add.
   intros; apply Qeq_refl.
@@ -447,45 +441,20 @@ Module Q0.
  apply Qeq_refl.
  Qed.
 
- Theorem spec_add_normc x y:
-  [[add_norm x y]] = [[x]] + [[y]].
- intros x y; unfold to_Qc.
- apply trans_equal with (!! ([x] + [y])).
- unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete; apply spec_add_norm; auto.
- unfold Qcplus, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete.
- apply Qplus_comp; apply Qeq_sym; apply Qred_correct.
- Qed.
-
  Definition sub x y := add x (opp y).
 
-
- Theorem spec_sub x y:
-  ([sub x y] == [x] - [y])%Q.
+ Theorem spec_sub : forall x y, [sub x y] == [x] - [y].
+ Proof.
  intros x y; unfold sub; rewrite spec_add; auto.
  rewrite spec_opp; ring.
  Qed.
 
- Theorem spec_subc x y:  [[sub x y]] = [[x]] - [[y]].
- intros x y; unfold sub; rewrite spec_addc; auto.
- rewrite spec_oppc; ring.
- Qed.
-
  Definition sub_norm x y := add_norm x (opp y).
 
- Theorem spec_sub_norm x y: 
-  ([sub_norm x y] == [x] - [y])%Q.
+ Theorem spec_sub_norm : forall x y, [sub_norm x y] == [x] - [y].
+ Proof.
  intros x y; unfold sub_norm; rewrite spec_add_norm; auto.
  rewrite spec_opp; ring.
- Qed.
-
- Theorem spec_sub_normc x y:
-   [[sub_norm x y]] = [[x]] - [[y]].
- intros x y; unfold sub_norm; rewrite spec_add_normc; auto.
- rewrite spec_oppc; ring.
  Qed.
 
  Definition mul (x y: t): t :=
@@ -496,8 +465,8 @@ Module Q0.
   | Qq nx dx, Qq ny dy => Qq (BigZ.mul nx ny) (BigN.mul dx dy)
   end.
 
-
- Theorem spec_mul x y: ([mul x y] == [x] * [y])%Q.
+ Theorem spec_mul : forall x y, [mul x y] == [x] * [y].
+ Proof.
  intros [x | nx dx] [y | ny dy]; unfold Qmult; simpl.
  rewrite BigZ.spec_mul; repeat rewrite Zmult_1_r; auto.
   intros; apply Qeq_refl; auto.
@@ -545,19 +514,6 @@ Module Q0.
   generalize (BigN.spec_pos dy); auto with zarith.
  Qed.
 
- Theorem spec_mulc x y:
-  [[mul x y]] = [[x]] * [[y]].
- intros x y; unfold to_Qc.
- apply trans_equal with (!! ([x] * [y])).
- unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete; apply spec_mul; auto.
- unfold Qcmult, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete.
- apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
- Qed.
-
 Definition mul_norm (x y: t): t := 
  match x, y with
  | Qz zx, Qz zy => Qz (BigZ.mul zx zy)
@@ -603,8 +559,8 @@ Definition mul_norm (x y: t): t :=
      else Qq (BigZ.mul ny nx) d
  end.
 
- Theorem spec_mul_norm x y:
-  ([mul_norm x y] == [x] * [y])%Q.
+ Theorem spec_mul_norm : forall x y, [mul_norm x y] == [x] * [y].
+ Proof.
  intros x y; rewrite <- spec_mul; auto.
  unfold mul_norm, mul; case x; case y; clear x y.
   intros; apply Qeq_refl.
@@ -872,20 +828,6 @@ Definition mul_norm (x y: t): t :=
  case H1; auto.
  Qed.
 
- Theorem spec_mul_normc x y:
-   [[mul_norm x y]] = [[x]] * [[y]].
- intros x y; unfold to_Qc.
- apply trans_equal with (!! ([x] * [y])).
- unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete; apply spec_mul_norm; auto.
- unfold Qcmult, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete.
- apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
- Qed.
-
-
 
 Definition inv (x: t): t := 
  match x with
@@ -895,8 +837,8 @@ Definition inv (x: t): t :=
  | Qq (BigZ.Neg n) d => Qq (BigZ.Neg d) n
  end.
 
- Theorem spec_inv x:
-   ([inv x] == /[x])%Q.
+ Theorem spec_inv : forall x, [inv x] == /[x].
+ Proof.
  intros [ [x | x] | [nx | nx] dx]; unfold inv, Qinv; simpl.
  match goal with  |- context[BigN.eq_bool ?X ?Y] => 
    generalize (BigN.spec_eq_bool X Y); case BigN.eq_bool
@@ -960,20 +902,6 @@ Definition inv (x: t): t :=
  intros p _ HH; case HH; auto.
  Qed.
 
- Theorem spec_invc x:
-   [[inv x]] =  /[[x]].
- intros x; unfold to_Qc.
- apply trans_equal with (!! (/[x])).
- unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete; apply spec_inv; auto.
- unfold Qcinv, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete.
- apply Qinv_comp; apply Qeq_sym; apply Qred_correct.
- Qed.
-
-
 Definition inv_norm (x: t): t := 
  match x with
  | Qz (BigZ.Pos n) => 
@@ -1000,7 +928,8 @@ Definition inv_norm (x: t): t :=
    end
  end.
 
- Theorem spec_inv_norm x: ([inv_norm x] == /[x])%Q.
+ Theorem spec_inv_norm : forall x, [inv_norm x] == /[x].
+ Proof.
  intros [ [x | x] | [nx | nx] dx]; unfold inv_norm, Qinv.
  match goal with  |- context[BigN.compare ?X ?Y] => 
    generalize (BigN.spec_compare X Y); case BigN.compare
@@ -1147,48 +1076,24 @@ Definition inv_norm (x: t): t :=
  intros p HH; discriminate HH.
  Qed.
 
- Theorem spec_inv_normc x:
-   [[inv_norm x]] =  /[[x]].
- intros x; unfold to_Qc.
- apply trans_equal with (!! (/[x])).
- unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete; apply spec_inv_norm; auto.
- unfold Qcinv, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete.
- apply Qinv_comp; apply Qeq_sym; apply Qred_correct.
- Qed.
-
-
  Definition div x y := mul x (inv y).
 
- Theorem spec_div x y: ([div x y] == [x] / [y])%Q.
+ Theorem spec_div x y: [div x y] == [x] / [y].
+ Proof.
  intros x y; unfold div; rewrite spec_mul; auto.
  unfold Qdiv; apply Qmult_comp.
  apply Qeq_refl.
  apply spec_inv; auto.
  Qed.
 
- Theorem spec_divc x y: [[div x y]] = [[x]] / [[y]].
- intros x y; unfold div; rewrite spec_mulc; auto.
- unfold Qcdiv; apply f_equal2 with (f := Qcmult); auto.
- apply spec_invc; auto. 
- Qed.
-
  Definition div_norm x y := mul_norm x (inv y).
 
- Theorem spec_div_norm x y: ([div_norm x y] == [x] / [y])%Q.
+ Theorem spec_div_norm x y: [div_norm x y] == [x] / [y].
+ Proof.
  intros x y; unfold div_norm; rewrite spec_mul_norm; auto.
  unfold Qdiv; apply Qmult_comp.
  apply Qeq_refl.
  apply spec_inv; auto.
- Qed.
-
- Theorem spec_div_normc x y: [[div_norm x y]] = [[x]] / [[y]].
- intros x y; unfold div_norm; rewrite spec_mul_normc; auto.
- unfold Qcdiv; apply f_equal2 with (f := Qcmult); auto.
- apply spec_invc; auto.
  Qed.
 
  Definition square (x: t): t :=
@@ -1197,7 +1102,8 @@ Definition inv_norm (x: t): t :=
   | Qq nx dx => Qq (BigZ.square nx) (BigN.square dx)
   end.
 
- Theorem spec_square x: ([square x] == [x] ^ 2)%Q.
+ Theorem spec_square : forall x, [square x] == [x] ^ 2.
+ Proof.
  intros [ x | nx dx]; unfold square.
  red; simpl; rewrite BigZ.spec_square; auto with zarith.
  simpl Qpower.
@@ -1227,29 +1133,13 @@ Definition inv_norm (x: t): t :=
  generalize (BigN.spec_pos dx); auto with zarith.
  Qed.
 
- Theorem spec_squarec x: [[square x]] =  [[x]]^2.
- intros x; unfold to_Qc.
- apply trans_equal with (!! ([x]^2)).
- unfold Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete; apply spec_square; auto.
- simpl Qcpower.
- replace (!! [x] * 1) with (!![x]); try ring.
- simpl.
- unfold Qcmult, Q2Qc.
- apply Qc_decomp; intros _ _; unfold this.
- apply Qred_complete.
- apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
- Qed.
-
-
  Definition power_pos (x: t) p: t :=
   match x with
   | Qz zx => Qz (BigZ.power_pos zx p)
   | Qq nx dx => Qq (BigZ.power_pos nx p) (BigN.power_pos dx p)
   end.
 
- Theorem spec_power_pos x p: ([power_pos x p] == [x] ^ Zpos p)%Q.
+ Theorem spec_power_pos : forall x p, [power_pos x p] == [x] ^ Zpos p.
  Proof.
  intros [x | nx dx] p; unfold power_pos.
    unfold power_pos; red; simpl.
@@ -1303,8 +1193,172 @@ Definition inv_norm (x: t): t :=
  rewrite BigZ.spec_power_pos; simpl; ring.
  Qed.
 
+ (** Interaction with [Qcanon.Qc] *)
+ 
+ Open Scope Qc_scope.
+
+ Definition of_Qc q := of_Q (this q).
+
+ Definition to_Qc q := !!(to_Q q).
+
+ Notation "[[ x ]]" := (to_Qc x).
+
+ Theorem spec_of_Qc: forall q, [[of_Qc q]] = q.
+ Proof.
+ intros (x, Hx); unfold of_Qc, to_Qc; simpl.
+ apply Qc_decomp; simpl.
+ intros.
+ rewrite <- H0 at 2; apply Qred_complete.
+ apply spec_of_Q.
+ Qed.
+
+ Theorem spec_oppc: forall q, [[opp q]] = -[[q]].
+ Proof.
+ intros q; unfold Qcopp, to_Qc, Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete.
+ rewrite spec_opp.
+ rewrite <- Qred_opp.
+ rewrite Qred_correct; red; auto.
+ Qed.
+
+ Theorem spec_comparec: forall q1 q2,
+  compare q1 q2 = ([[q1]] ?= [[q2]]).
+ Proof.
+ unfold Qccompare, to_Qc. 
+ intros q1 q2; rewrite spec_compare; simpl; auto.
+ apply Qcompare_comp; apply Qeq_sym; apply Qred_correct.
+ Qed.
+
+ Theorem spec_addc x y:
+  [[add x y]] = [[x]] + [[y]].
+ Proof.
+ intros x y; unfold to_Qc.
+ apply trans_equal with (!! ([x] + [y])).
+ unfold Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete; apply spec_add; auto.
+ unfold Qcplus, Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete.
+ apply Qplus_comp; apply Qeq_sym; apply Qred_correct.
+ Qed.
+
+ Theorem spec_add_normc x y:
+  [[add_norm x y]] = [[x]] + [[y]].
+ Proof.
+ intros x y; unfold to_Qc.
+ apply trans_equal with (!! ([x] + [y])).
+ unfold Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete; apply spec_add_norm; auto.
+ unfold Qcplus, Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete.
+ apply Qplus_comp; apply Qeq_sym; apply Qred_correct.
+ Qed.
+
+ Theorem spec_subc x y:  [[sub x y]] = [[x]] - [[y]].
+ Proof.
+ intros x y; unfold sub; rewrite spec_addc; auto.
+ rewrite spec_oppc; ring.
+ Qed.
+
+ Theorem spec_sub_normc x y:
+   [[sub_norm x y]] = [[x]] - [[y]].
+ intros x y; unfold sub_norm; rewrite spec_add_normc; auto.
+ rewrite spec_oppc; ring.
+ Qed.
+
+ Theorem spec_mulc x y:
+  [[mul x y]] = [[x]] * [[y]].
+ Proof.
+ intros x y; unfold to_Qc.
+ apply trans_equal with (!! ([x] * [y])).
+ unfold Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete; apply spec_mul; auto.
+ unfold Qcmult, Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete.
+ apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
+ Qed.
+
+ Theorem spec_mul_normc x y:
+   [[mul_norm x y]] = [[x]] * [[y]].
+ Proof.
+ intros x y; unfold to_Qc.
+ apply trans_equal with (!! ([x] * [y])).
+ unfold Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete; apply spec_mul_norm; auto.
+ unfold Qcmult, Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete.
+ apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
+ Qed.
+
+ Theorem spec_invc x:
+   [[inv x]] =  /[[x]].
+ Proof.
+ intros x; unfold to_Qc.
+ apply trans_equal with (!! (/[x])).
+ unfold Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete; apply spec_inv; auto.
+ unfold Qcinv, Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete.
+ apply Qinv_comp; apply Qeq_sym; apply Qred_correct.
+ Qed.
+
+ Theorem spec_inv_normc x:
+   [[inv_norm x]] =  /[[x]].
+ Proof.
+ intros x; unfold to_Qc.
+ apply trans_equal with (!! (/[x])).
+ unfold Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete; apply spec_inv_norm; auto.
+ unfold Qcinv, Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete.
+ apply Qinv_comp; apply Qeq_sym; apply Qred_correct.
+ Qed.
+
+ Theorem spec_divc x y: [[div x y]] = [[x]] / [[y]].
+ Proof.
+ intros x y; unfold div; rewrite spec_mulc; auto.
+ unfold Qcdiv; apply f_equal2 with (f := Qcmult); auto.
+ apply spec_invc; auto. 
+ Qed.
+
+ Theorem spec_div_normc x y: [[div_norm x y]] = [[x]] / [[y]].
+ Proof.
+ intros x y; unfold div_norm; rewrite spec_mul_normc; auto.
+ unfold Qcdiv; apply f_equal2 with (f := Qcmult); auto.
+ apply spec_invc; auto.
+ Qed.
+
+ Theorem spec_squarec x: [[square x]] =  [[x]]^2.
+ Proof.
+ intros x; unfold to_Qc.
+ apply trans_equal with (!! ([x]^2)).
+ unfold Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete; apply spec_square; auto.
+ simpl Qcpower.
+ replace (!! [x] * 1) with (!![x]); try ring.
+ simpl.
+ unfold Qcmult, Q2Qc.
+ apply Qc_decomp; intros _ _; unfold this.
+ apply Qred_complete.
+ apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
+ Qed.
+
  Theorem spec_power_posc x p:
    [[power_pos x p]] = [[x]] ^ nat_of_P p.
+ Proof.
  intros x p; unfold to_Qc.
  apply trans_equal with (!! ([x]^Zpos p)).
  unfold Q2Qc.
@@ -1353,5 +1407,6 @@ Definition inv_norm (x: t): t :=
  rewrite F.
  apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
+
 
 End Q0.

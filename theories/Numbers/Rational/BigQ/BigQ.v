@@ -19,9 +19,10 @@ Require Import QbiMake.
 
 (* We choose for Q the implemention with
    multiple representation of 0: 0, 1/0, 2/0 etc *)
-Module BigQ := Q0.
 
-Definition bigQ := BigQ.t.
+Module BigQ <: QSig.QType := Q0.
+
+Notation bigQ := BigQ.t.
 
 Delimit Scope bigQ_scope with bigQ.
 Bind Scope bigQ_scope with bigQ.

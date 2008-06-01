@@ -713,11 +713,14 @@ INTEGERBIGZVO:=$(addprefix theories/Numbers/Integer/BigZ/, \
 INTEGERVO:=$(INTEGERABSTRACTVO) $(INTEGERBINARYVO) $(INTEGERNATPAIRSVO) \
  $(INTEGERSPECVIAZVO) $(INTEGERBIGZVO)
 
+RATIONALSPECVIAQVO:=$(addprefix theories/Numbers/Rational/SpecViaQ/, \
+ QSig.vo )
+
 RATIONALBIGQVO:=$(addprefix theories/Numbers/Rational/BigQ/, \
  QMake_base.vo	QpMake.vo	QvMake.vo	Q0Make.vo 	\
  QifMake.vo 	QbiMake.vo 	BigQ.vo )
 
-RATIONALVO:=$(RATIONALBIGQVO)
+RATIONALVO:=$(RATIONALSPECVIAQVO) $(RATIONALBIGQVO)
 
 NUMBERSVO:= $(NUMBERSCOMMONVO) $(NATURALVO) $(INTEGERVO) $(NATINTVO) $(CYCLICVO) $(RATIONALVO)
 
