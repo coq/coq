@@ -1675,6 +1675,8 @@ either:
 \item a disjunction of lists of patterns:
   {\tt [$p_{11}$ {\ldots} $p_{1m_1}$ | {\ldots} | $p_{11}$ {\ldots} $p_{nm_n}$]}
 \item a conjunction of patterns: {\tt (} $p_1$ {\tt ,} {\ldots} {\tt ,} $p_n$ {\tt )}
+\item a list of patterns {\tt (} $p_1$\ {\tt \&}\ {\ldots}\ {\tt \&}\ $p_n$ {\tt )}
+ for sequence of right-associative binary constructs
 \item the rewriting orientations: {\tt ->} or {\tt <-}
 \end{itemize}
 
@@ -1702,7 +1704,7 @@ introduction pattern $p$:
   number of constructors is $n$ (or over a statement of conclusion a
   similar inductive type ): it destructs the introduced hypothesis as
   {\tt destruct} (see Section~\ref{destruct}) would and applies on
-  each generated subgoal the corresponding tactic
+  each generated subgoal the corresponding tactic;
   \texttt{intros}~$p_{i1}$ {\ldots} $p_{im_i}$; if the disjunctive
   pattern is part of a sequence of patterns and is not the last
   pattern of the sequence, then {\Coq} completes the pattern so as all
@@ -1717,7 +1719,14 @@ introduction pattern $p$:
   would, and applies the patterns $p_1$~\ldots~$p_n$ to the arguments
   of the constructor of $I$ (observe that {\tt ($p_1$, {\ldots},
   $p_n$)} is an alternative notation for {\tt [$p_1$ {\ldots}
-  $p_n$]}).
+  $p_n$]});
+\item introduction via {\tt ( $p_1$ \& \ldots \& $p_n$ )}
+  is a shortcut for introduction via
+  {\tt ($p_1$,(\ldots,(\dots,$p_n$)\ldots))}; it expects the
+  hypothesis to be a sequence of right-associative binary inductive 
+  constructors such as {\tt conj} or {\tt ex\_intro}; for instance, an
+  hypothesis with type {\tt A\verb|/\|exists x, B\verb|/\|C\verb|/\|D} can be
+  introduced via pattern {\tt (a \& x \& b \& c \& d)};
 \item introduction over {\tt ->} (respectively {\tt <-}) expects the
   hypothesis to be an equality and the right-hand-side (respectively
   the left-hand-side) is replaced by the left-hand-side (respectively
@@ -1748,14 +1757,6 @@ Show 2.
 \end{coq_example}
 
 \end{itemize}
-
-\Rem An additional abbreviation is allowed for sequences of rightmost
-binary conjunctions: pattern 
-{\tt \{} $p_1$ {\tt ,} {\ldots} {\tt ,} $p_n$ {\tt \}} 
-is a synonym for pattern 
-{\tt (} $p_1$ {\tt , (} $p_2$ {\tt ,} {\ldots} {\tt (}$p_{n-1}${\tt ,}$p_n${\tt )} {\ldots}  {\tt ))}.
-In particular it can be used to introduce existential hypotheses
-and/or n-ary conjunctions. 
 
 \begin{coq_example}
 Lemma intros_test : forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.

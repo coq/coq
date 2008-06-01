@@ -1876,7 +1876,7 @@ Section Int31_Spec.
  simpl tail031_alt.
  case_eq (firstr x); intros.
  rewrite (inj_S (tail031_alt n (shiftr x))), Zpower_Zsucc; auto with zarith.
- destruct (IHn (shiftr x)) as {y,Hy1,Hy2}.
+ destruct (IHn (shiftr x)) as (y & Hy1 & Hy2).
  
  rewrite phi_nz; rewrite phi_nz in H; contradict H.
  rewrite (sneakl_shiftr x), H1, H; auto.

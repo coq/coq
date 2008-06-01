@@ -806,7 +806,7 @@ Section ZModulo.
 
  clear; induction p.
  exists (Zpos p); simpl; rewrite Pmult_1_r; auto with zarith.
- destruct IHp as {y,Yp,Ye}.
+ destruct IHp as (y & Yp & Ye).
  exists y.
  split; auto.
  change (Zpos p~0) with (2*Zpos p).

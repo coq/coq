@@ -1022,24 +1022,24 @@ Proof.
   induction p as [p IHp| p IHp| ]; intros [q| q| ] H; simpl in *; 
    try discriminate H.
   (* p~1, q~1 *) 
-  destruct (IHp q H) as {r,U,V,W}; exists (r~0); rewrite ?U, ?V; auto.
+  destruct (IHp q H) as (r & U & V & W); exists (r~0); rewrite ?U, ?V; auto.
   repeat split; auto; right.
   destruct (ZL11 r) as [EQ|NE]; [|destruct W as [|W]; [elim NE; auto|]].
   rewrite ZL10; subst; auto.
   rewrite W; simpl; destruct r; auto; elim NE; auto.
   (* p~1, q~0 *)
   destruct (Pcompare_Gt_Gt _ _ H) as [H'|H']; clear H; rename H' into H.
-  destruct (IHp q H) as {r,U,V,W}; exists (r~1); rewrite ?U, ?V; auto.
+  destruct (IHp q H) as (r & U & V & W); exists (r~1); rewrite ?U, ?V; auto.
   exists 1; subst; rewrite Pminus_mask_diag; auto.
   (* p~1, 1 *)
   exists (p~0); auto.
   (* p~0, q~1 *)
-  destruct (IHp q (Pcompare_Lt_Gt _ _ H)) as {r,U,V,W}.
+  destruct (IHp q (Pcompare_Lt_Gt _ _ H)) as (r & U & V & W).
   destruct (ZL11 r) as [EQ|NE]; [|destruct W as [|W]; [elim NE; auto|]].
   exists 1; subst; rewrite ZL10, Pplus_one_succ_r; auto.
   exists ((Ppred r)~1); rewrite W, Pplus_carry_pred_eq_plus, V; auto.
   (* p~0, q~0 *)
-  destruct (IHp q H) as {r,U,V,W}; exists (r~0); rewrite ?U, ?V; auto.
+  destruct (IHp q H) as (r & U & V & W); exists (r~0); rewrite ?U, ?V; auto.
   repeat split; auto; right.
   destruct (ZL11 r) as [EQ|NE]; [|destruct W as [|W]; [elim NE; auto|]].
   rewrite ZL10; subst; auto.
@@ -1052,7 +1052,7 @@ Qed.
 Theorem Pplus_minus :
   forall p q:positive, (p ?= q) Eq = Gt -> q + (p - q) = p.
 Proof.
-  intros p q H; destruct (Pminus_mask_Gt p q H) as {r,U,V,_}.
+  intros p q H; destruct (Pminus_mask_Gt p q H) as (r & U & V & _).
   unfold Pminus; rewrite U; simpl; auto.
 Qed.
 

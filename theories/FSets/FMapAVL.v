@@ -1592,11 +1592,11 @@ intros m; functional induction (map_option f m); simpl; auto; intros.
 inversion H.
 rewrite join_in in H; destruct H as [H|[H|H]].
 exists d; split; auto; rewrite (f_compat d H), e0; discriminate.
-destruct (IHt _ H) as {d0,?,?}; exists d0; auto.
-destruct (IHt0 _ H) as {d0,?,?}; exists d0; auto.
+destruct (IHt _ H) as (d0 & ? & ?); exists d0; auto.
+destruct (IHt0 _ H) as (d0 & ? & ?); exists d0; auto.
 rewrite concat_in in H; destruct H as [H|H].
-destruct (IHt _ H) as {d0,?,?}; exists d0; auto.
-destruct (IHt0 _ H) as {d0,?,?}; exists d0; auto.
+destruct (IHt _ H) as (d0 & ? & ?); exists d0; auto.
+destruct (IHt0 _ H) as (d0 & ? & ?); exists d0; auto.
 Qed.
 
 Lemma map_option_bst : forall m, bst m -> bst (map_option f m).
@@ -1604,10 +1604,10 @@ Proof.
 intros m; functional induction (map_option f m); simpl; auto; intros; 
  inv bst.
 apply join_bst; auto; intros y H; 
- destruct (map_option_2 H) as {d0,?,?}; eauto using MapsTo_In.
+ destruct (map_option_2 H) as (d0 & ? & ?); eauto using MapsTo_In.
 apply concat_bst; auto; intros y y' H H'.
-destruct (map_option_2 H) as {d0,?,?}.
-destruct (map_option_2 H') as {d0',?,?}.
+destruct (map_option_2 H) as (d0 & ? & ?).
+destruct (map_option_2 H') as (d0' & ? & ?).
 eapply X.lt_trans with x; eauto using MapsTo_In.
 Qed.
 Hint Resolve map_option_bst.
@@ -1626,9 +1626,9 @@ intros m; functional induction (map_option f m); simpl; auto; intros;
  try destruct X.compare; simpl; auto.
 rewrite (f_compat d e); auto.
 intros y H;
- destruct (map_option_2 H) as {?,?,?}; eauto using MapsTo_In.
+ destruct (map_option_2 H) as (? & ? & ?); eauto using MapsTo_In.
 intros y H; 
- destruct (map_option_2 H) as {?,?,?}; eauto using MapsTo_In.
+ destruct (map_option_2 H) as (? & ? & ?); eauto using MapsTo_In.
 
 rewrite <- IHt, IHt0; auto; nonify (find x0 r); auto.
 rewrite IHt, IHt0; auto; nonify (find x0 r); nonify (find x0 l); auto.
@@ -1637,8 +1637,8 @@ rewrite <- IHt0, IHt; auto; nonify (find x0 l); auto.
  destruct (find x0 (map_option f r)); auto.
 
 intros y y' H H'.
-destruct (map_option_2 H) as {?,?,?}.
-destruct (map_option_2 H') as {?,?,?}.
+destruct (map_option_2 H) as (? & ? & ?).
+destruct (map_option_2 H') as (? & ? & ?).
 eapply X.lt_trans with x; eauto using MapsTo_In.
 Qed.
 

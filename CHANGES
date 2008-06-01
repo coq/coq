@@ -164,7 +164,8 @@ Tactics
   Some intro patterns don't need space between them. In particular
   intros ?a?b used to be legal and equivalent to intros ? a ? b. Now it
   is still legal but equivalent to intros ?a ?b.
-- New intro pattern "{A,B,C}" synonym to "(A,(B,C))"
+- New intro pattern "(A & ... & Y & Z)" synonym to "(A,....,(Y,Z)))))"
+  for right-associative constructs like /\ or exists.
 - rewrite now supports "by" to solve side-conditions and "at" to select
   occurrences. (DOC TODO)
 - New syntax "rewrite A,B" for "rewrite A; rewrite B"
