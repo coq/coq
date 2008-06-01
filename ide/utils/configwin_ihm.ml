@@ -364,7 +364,7 @@ class string_param_box param (tt:GData.tooltips) =
   let _ = dbg "string_param_box" in
   let hbox = GPack.hbox () in
   let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
-  let wl = GMisc.label ~text: param.string_label ~packing: wev#add () in
+  let _wl = GMisc.label ~text: param.string_label ~packing: wev#add () in
   let we = GEdit.entry
       ~editable: param.string_editable
       ~packing: (hbox#pack ~expand: param.string_expand ~padding: 2)
@@ -396,7 +396,7 @@ class combo_param_box param (tt:GData.tooltips) =
   let _ = dbg "combo_param_box" in
   let hbox = GPack.hbox () in
   let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
-  let wl = GMisc.label ~text: param.combo_label ~packing: wev#add () in
+  let _wl = GMisc.label ~text: param.combo_label ~packing: wev#add () in
   let wc = GEdit.combo
       ~popdown_strings: param.combo_choices
       ~value_in_list: (not param.combo_new_allowed)
@@ -754,9 +754,7 @@ class hotkey_param_box param (tt:GData.tooltips) =
   let _ = dbg "hotkey_param_box" in
   let hbox = GPack.hbox () in
   let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
-  let wl = GMisc.label ~text: param.hk_label
-      ~packing: wev#add ()
-  in
+  let _wl = GMisc.label ~text: param.hk_label ~packing: wev#add () in
   let we = GEdit.entry
       ~editable: false
       ~packing: (hbox#pack ~expand: param.hk_expand ~padding: 2)
@@ -805,9 +803,7 @@ class hotkey_param_box param (tt:GData.tooltips) =
 class modifiers_param_box param =
   let hbox = GPack.hbox () in
   let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
-  let wl = GMisc.label ~text: param.md_label 
-      ~packing: wev#add () 
-  in
+  let _wl = GMisc.label ~text: param.md_label ~packing: wev#add () in
   let we = GEdit.entry
       ~editable: false
       ~packing: (hbox#pack ~expand: param.md_expand ~padding: 2)

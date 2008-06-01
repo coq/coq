@@ -144,7 +144,7 @@ while : ; do
     -mandir|--mandir) mandir_spec=yes
                       mandir="$2"
 		      shift;;
-    -docdir|--mandir) docdir_spec=yes
+    -docdir|--docdir) docdir_spec=yes
                       docdir="$2"
 		      shift;;
     -emacslib|--emacslib) emacslib_spec=yes

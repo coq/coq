@@ -190,7 +190,7 @@ $(CHICKENOPT): checker/check.cmxa checker/main.ml
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -o $@ unix.cma gramlib.cma checker/check.cma checker/main.ml
+	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -custom -o $@ unix.cma gramlib.cma checker/check.cma checker/main.ml
 
 $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
@@ -199,7 +199,7 @@ $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 
 $(COQMKTOPBYTE): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma \
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
 
 $(COQMKTOPOPT): $(COQMKTOPCMX)
@@ -221,7 +221,7 @@ scripts/tolink.ml: Makefile.build Makefile.common
 
 $(COQCBYTE): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQCCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQCCMO) $(OSDEPLIBS)
 
 $(COQCOPT): $(COQCCMX) $(COQTOPOPT) $(BESTCOQTOP)
 	$(SHOW)'OCAMLOPT -o $@'
@@ -612,8 +612,9 @@ $(MINICOQ): $(MINICOQCMO)
 # Installation
 ###########################################################################
 
-COQINSTALLPREFIX=
-OLDROOT=
+#These variables are intended to be set by the caller to make
+#COQINSTALLPREFIX=
+#OLDROOT=
 
   # Can be changed for a local installation (to make packages).
   # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
