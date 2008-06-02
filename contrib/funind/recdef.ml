@@ -623,8 +623,8 @@ let rec introduce_all_values concl_tac is_mes acc_inv func context_fn
     )
  
 	   
-let rec_leaf_terminate concl_tac is_mes acc_inv hrec (func:global_reference) eqs expr =
-  match find_call_occs 0 (mkVar (get_f (constr_of_global func))) expr with
+let rec_leaf_terminate f_constr concl_tac is_mes acc_inv hrec (func:global_reference) eqs expr =
+  match find_call_occs 0 f_constr expr with
   | context_fn, args ->
       observe_tac "introduce_all_values" 
 	(introduce_all_values concl_tac is_mes acc_inv func context_fn eqs  hrec args  [] [])
@@ -839,7 +839,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
 	      (mkVar f_id)
 	      func
 	      base_leaf_terminate 
-	      (rec_leaf_terminate concl_tac)
+	      (rec_leaf_terminate (mkVar f_id) concl_tac)
 	      []
 	      expr
 	   )
