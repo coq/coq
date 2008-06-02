@@ -39,9 +39,9 @@ Definition NZeq (n m : NZ) := [| n |] = [| m |].
 Definition NZ0 := w_op.(znz_0).
 Definition NZsucc := w_op.(znz_succ).
 Definition NZpred := w_op.(znz_pred).
-Definition NZplus := w_op.(znz_add).
+Definition NZadd := w_op.(znz_add).
 Definition NZminus := w_op.(znz_sub).
-Definition NZtimes := w_op.(znz_mul).
+Definition NZmul := w_op.(znz_mul).
 
 Theorem NZeq_equiv : equiv NZ NZeq.
 Proof.
@@ -65,7 +65,7 @@ Proof.
 unfold NZeq; intros n m H. do 2 rewrite w_spec.(spec_pred). now rewrite H.
 Qed.
 
-Add Morphism NZplus with signature NZeq ==> NZeq ==> NZeq as NZplus_wd.
+Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
 Proof.
 unfold NZeq; intros n1 n2 H1 m1 m2 H2. do 2 rewrite w_spec.(spec_add).
 now rewrite H1, H2.
@@ -77,7 +77,7 @@ unfold NZeq; intros n1 n2 H1 m1 m2 H2. do 2 rewrite w_spec.(spec_sub).
 now rewrite H1, H2.
 Qed.
 
-Add Morphism NZtimes with signature NZeq ==> NZeq ==> NZeq as NZtimes_wd.
+Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
 Proof.
 unfold NZeq; intros n1 n2 H1 m1 m2 H2. do 2 rewrite w_spec.(spec_mul).
 now rewrite H1, H2.
@@ -92,9 +92,9 @@ Notation "0" := NZ0 : IntScope.
 Notation "'S'" := NZsucc : IntScope.
 Notation "'P'" := NZpred : IntScope.
 (*Notation "1" := (S 0) : IntScope.*)
-Notation "x + y" := (NZplus x y) : IntScope.
+Notation "x + y" := (NZadd x y) : IntScope.
 Notation "x - y" := (NZminus x y) : IntScope.
-Notation "x * y" := (NZtimes x y) : IntScope.
+Notation "x * y" := (NZmul x y) : IntScope.
 
 Theorem gt_wB_1 : 1 < wB.
 Proof.
@@ -189,15 +189,15 @@ Qed.
 
 End Induction.
 
-Theorem NZplus_0_l : forall n : NZ, 0 + n == n.
+Theorem NZadd_0_l : forall n : NZ, 0 + n == n.
 Proof.
-intro n; unfold NZplus, NZ0, NZeq. rewrite w_spec.(spec_add). rewrite w_spec.(spec_0).
+intro n; unfold NZadd, NZ0, NZeq. rewrite w_spec.(spec_add). rewrite w_spec.(spec_0).
 rewrite Zplus_0_l. rewrite Zmod_small; [reflexivity | apply w_spec.(spec_to_Z)].
 Qed.
 
-Theorem NZplus_succ_l : forall n m : NZ, (S n) + m == S (n + m).
+Theorem NZadd_succ_l : forall n m : NZ, (S n) + m == S (n + m).
 Proof.
-intros n m; unfold NZplus, NZsucc, NZeq. rewrite w_spec.(spec_add).
+intros n m; unfold NZadd, NZsucc, NZeq. rewrite w_spec.(spec_add).
 do 2 rewrite w_spec.(spec_succ). rewrite w_spec.(spec_add).
 rewrite NZsucc_mod_wB. repeat rewrite Zplus_mod_idemp_l; try apply gt_wB_0.
 rewrite <- (Zplus_assoc ([| n |] mod wB) 1 [| m |]). rewrite Zplus_mod_idemp_l.
@@ -219,15 +219,15 @@ rewrite Zminus_mod_idemp_l.
 now replace ([|n|] - ([|m|] + 1))%Z with ([|n|] - [|m|] - 1)%Z by auto with zarith.
 Qed.
 
-Theorem NZtimes_0_l : forall n : NZ, 0 * n == 0.
+Theorem NZmul_0_l : forall n : NZ, 0 * n == 0.
 Proof.
-intro n; unfold NZtimes, NZ0, NZ, NZeq. rewrite w_spec.(spec_mul).
+intro n; unfold NZmul, NZ0, NZ, NZeq. rewrite w_spec.(spec_mul).
 rewrite w_spec.(spec_0). now rewrite Zmult_0_l.
 Qed.
 
-Theorem NZtimes_succ_l : forall n m : NZ, (S n) * m == n * m + m.
+Theorem NZmul_succ_l : forall n m : NZ, (S n) * m == n * m + m.
 Proof.
-intros n m; unfold NZtimes, NZsucc, NZplus, NZeq. rewrite w_spec.(spec_mul).
+intros n m; unfold NZmul, NZsucc, NZadd, NZeq. rewrite w_spec.(spec_mul).
 rewrite w_spec.(spec_add), w_spec.(spec_mul), w_spec.(spec_succ).
 rewrite Zplus_mod_idemp_l, Zmult_mod_idemp_l.
 now rewrite Zmult_plus_distr_l, Zmult_1_l.

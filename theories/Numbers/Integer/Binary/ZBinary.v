@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 Require Import ZTimesOrder.
 Require Import ZArith.
@@ -24,9 +24,9 @@ Definition NZeq := (@eq Z).
 Definition NZ0 := 0.
 Definition NZsucc := Zsucc'.
 Definition NZpred := Zpred'.
-Definition NZplus := Zplus.
+Definition NZadd := Zplus.
 Definition NZminus := Zminus.
-Definition NZtimes := Zmult.
+Definition NZmul := Zmult.
 
 Theorem NZeq_equiv : equiv Z NZeq.
 Proof.
@@ -49,7 +49,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZplus with signature NZeq ==> NZeq ==> NZeq as NZplus_wd.
+Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
 Proof.
 congruence.
 Qed.
@@ -59,7 +59,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZtimes with signature NZeq ==> NZeq ==> NZeq as NZtimes_wd.
+Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
 Proof.
 congruence.
 Qed.
@@ -79,12 +79,12 @@ intros; now apply -> AS.
 intros n H. rewrite <- (Zsucc'_pred' n) in H. now apply <- AS.
 Qed.
 
-Theorem NZplus_0_l : forall n : Z, 0 + n = n.
+Theorem NZadd_0_l : forall n : Z, 0 + n = n.
 Proof.
 exact Zplus_0_l.
 Qed.
 
-Theorem NZplus_succ_l : forall n m : Z, (NZsucc n) + m = NZsucc (n + m).
+Theorem NZadd_succ_l : forall n m : Z, (NZsucc n) + m = NZsucc (n + m).
 Proof.
 intros; do 2 rewrite <- Zsucc_succ'; apply Zplus_succ_l.
 Qed.
@@ -100,12 +100,12 @@ intros; rewrite <- Zsucc_succ'; rewrite <- Zpred_pred';
 apply Zminus_succ_r.
 Qed.
 
-Theorem NZtimes_0_l : forall n : Z, 0 * n = 0.
+Theorem NZmul_0_l : forall n : Z, 0 * n = 0.
 Proof.
 reflexivity.
 Qed.
 
-Theorem NZtimes_succ_l : forall n m : Z, (NZsucc n) * m = n * m + m.
+Theorem NZmul_succ_l : forall n m : Z, (NZsucc n) * m = n * m + m.
 Proof.
 intros; rewrite <- Zsucc_succ'; apply Zmult_succ_l.
 Qed.
@@ -217,18 +217,18 @@ Module Export ZBinTimesOrderPropMod := ZTimesOrderPropFunct ZBinAxiomsMod.
 
 (** Z forms a ring *)
 
-(*Lemma Zring : ring_theory 0 1 NZplus NZtimes NZminus Zopp NZeq.
+(*Lemma Zring : ring_theory 0 1 NZadd NZmul NZminus Zopp NZeq.
 Proof.
 constructor.
-exact Zplus_0_l.
-exact Zplus_comm.
-exact Zplus_assoc.
-exact Ztimes_1_l.
-exact Ztimes_comm.
-exact Ztimes_assoc.
-exact Ztimes_plus_distr_r.
-intros; now rewrite Zplus_opp_minus.
-exact Zplus_opp_r.
+exact Zadd_0_l.
+exact Zadd_comm.
+exact Zadd_assoc.
+exact Zmul_1_l.
+exact Zmul_comm.
+exact Zmul_assoc.
+exact Zmul_add_distr_r.
+intros; now rewrite Zadd_opp_minus.
+exact Zadd_opp_r.
 Qed.
 
 Add Ring ZR : Zring.*)

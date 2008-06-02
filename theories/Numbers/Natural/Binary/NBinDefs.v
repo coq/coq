@@ -27,9 +27,9 @@ Definition NZeq := @eq N.
 Definition NZ0 := N0.
 Definition NZsucc := Nsucc.
 Definition NZpred := Npred.
-Definition NZplus := Nplus.
+Definition NZadd := Nplus.
 Definition NZminus := Nminus.
-Definition NZtimes := Nmult.
+Definition NZmul := Nmult.
 
 Theorem NZeq_equiv : equiv N NZeq.
 Proof (eq_equiv N).
@@ -50,7 +50,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZplus with signature NZeq ==> NZeq ==> NZeq as NZplus_wd.
+Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
 Proof.
 congruence.
 Qed.
@@ -60,7 +60,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZtimes with signature NZeq ==> NZeq ==> NZeq as NZtimes_wd.
+Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
 Proof.
 congruence.
 Qed.
@@ -79,16 +79,16 @@ case_eq (Psucc p); try (intros q H; rewrite <- H; now rewrite Ppred_succ).
 intro H; false_hyp H Psucc_not_one.
 Qed.
 
-Theorem NZplus_0_l : forall n : NZ, N0 + n = n.
+Theorem NZadd_0_l : forall n : NZ, N0 + n = n.
 Proof.
 reflexivity.
 Qed.
 
-Theorem NZplus_succ_l : forall n m : NZ, (NZsucc n) + m = NZsucc (n + m).
+Theorem NZadd_succ_l : forall n m : NZ, (NZsucc n) + m = NZsucc (n + m).
 Proof.
 destruct n; destruct m.
 simpl in |- *; reflexivity.
-unfold NZsucc, NZplus, Nsucc, Nplus. rewrite <- Pplus_one_succ_l; reflexivity.
+unfold NZsucc, NZadd, Nsucc, Nplus. rewrite <- Pplus_one_succ_l; reflexivity.
 simpl in |- *; reflexivity.
 simpl in |- *; rewrite Pplus_succ_permute_l; reflexivity.
 Qed.
@@ -106,12 +106,12 @@ simpl. rewrite Pminus_mask_succ_r, Pminus_mask_carry_spec.
 now destruct (Pminus_mask p q) as [| r |]; [| destruct r |].
 Qed.
 
-Theorem NZtimes_0_l : forall n : NZ, N0 * n = N0.
+Theorem NZmul_0_l : forall n : NZ, N0 * n = N0.
 Proof.
 destruct n; reflexivity.
 Qed.
 
-Theorem NZtimes_succ_l : forall n m : NZ, (NZsucc n) * m = n * m + m.
+Theorem NZmul_succ_l : forall n m : NZ, (NZsucc n) * m = n * m + m.
 Proof.
 destruct n as [| n]; destruct m as [| m]; simpl; try reflexivity.
 now rewrite Pmult_Sn_m, Pplus_comm.

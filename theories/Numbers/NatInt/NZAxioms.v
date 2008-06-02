@@ -19,9 +19,9 @@ Parameter Inline NZeq : NZ -> NZ -> Prop.
 Parameter Inline NZ0 : NZ.
 Parameter Inline NZsucc : NZ -> NZ.
 Parameter Inline NZpred : NZ -> NZ.
-Parameter Inline NZplus : NZ -> NZ -> NZ.
+Parameter Inline NZadd : NZ -> NZ -> NZ.
 Parameter Inline NZminus : NZ -> NZ -> NZ.
-Parameter Inline NZtimes : NZ -> NZ -> NZ.
+Parameter Inline NZmul : NZ -> NZ -> NZ.
 
 (* Unary minus (opp) is not defined on natural numbers, so we have it for
 integers only *)
@@ -35,9 +35,9 @@ as NZeq_rel.
 
 Add Morphism NZsucc with signature NZeq ==> NZeq as NZsucc_wd.
 Add Morphism NZpred with signature NZeq ==> NZeq as NZpred_wd.
-Add Morphism NZplus with signature NZeq ==> NZeq ==> NZeq as NZplus_wd.
+Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
 Add Morphism NZminus with signature NZeq ==> NZeq ==> NZeq as NZminus_wd.
-Add Morphism NZtimes with signature NZeq ==> NZeq ==> NZeq as NZtimes_wd.
+Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
 
 Delimit Scope NatIntScope with NatInt.
 Open Local Scope NatIntScope.
@@ -47,9 +47,9 @@ Notation "0" := NZ0 : NatIntScope.
 Notation S := NZsucc.
 Notation P := NZpred.
 Notation "1" := (S 0) : NatIntScope.
-Notation "x + y" := (NZplus x y) : NatIntScope.
+Notation "x + y" := (NZadd x y) : NatIntScope.
 Notation "x - y" := (NZminus x y) : NatIntScope.
-Notation "x * y" := (NZtimes x y) : NatIntScope.
+Notation "x * y" := (NZmul x y) : NatIntScope.
 
 Axiom NZpred_succ : forall n : NZ, P (S n) == n.
 
@@ -57,14 +57,14 @@ Axiom NZinduction :
   forall A : NZ -> Prop, predicate_wd NZeq A ->
     A 0 -> (forall n : NZ, A n <-> A (S n)) -> forall n : NZ, A n.
 
-Axiom NZplus_0_l : forall n : NZ, 0 + n == n.
-Axiom NZplus_succ_l : forall n m : NZ, (S n) + m == S (n + m).
+Axiom NZadd_0_l : forall n : NZ, 0 + n == n.
+Axiom NZadd_succ_l : forall n m : NZ, (S n) + m == S (n + m).
 
 Axiom NZminus_0_r : forall n : NZ, n - 0 == n.
 Axiom NZminus_succ_r : forall n m : NZ, n - (S m) == P (n - m).
 
-Axiom NZtimes_0_l : forall n : NZ, 0 * n == 0.
-Axiom NZtimes_succ_l : forall n m : NZ, S n * m == n * m + m.
+Axiom NZmul_0_l : forall n : NZ, 0 * n == 0.
+Axiom NZmul_succ_l : forall n m : NZ, S n * m == n * m + m.
 
 End NZAxiomsSig.
 

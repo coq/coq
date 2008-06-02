@@ -41,9 +41,9 @@ Definition NZeq := Z.eq.
 Definition NZ0 := Z.zero.
 Definition NZsucc := Z.succ.
 Definition NZpred := Z.pred.
-Definition NZplus := Z.add.
+Definition NZadd := Z.add.
 Definition NZminus := Z.sub.
-Definition NZtimes := Z.mul.
+Definition NZmul := Z.mul.
 
 Theorem NZeq_equiv : equiv Z.t Z.eq.
 Proof.
@@ -66,7 +66,7 @@ Proof.
 intros; zsimpl; f_equal; assumption.
 Qed.
 
-Add Morphism NZplus with signature Z.eq ==> Z.eq ==> Z.eq as NZplus_wd.
+Add Morphism NZadd with signature Z.eq ==> Z.eq ==> Z.eq as NZadd_wd.
 Proof.
 intros; zsimpl; f_equal; assumption.
 Qed.
@@ -76,7 +76,7 @@ Proof.
 intros; zsimpl; f_equal; assumption.
 Qed.
 
-Add Morphism NZtimes with signature Z.eq ==> Z.eq ==> Z.eq as NZtimes_wd.
+Add Morphism NZmul with signature Z.eq ==> Z.eq ==> Z.eq as NZmul_wd.
 Proof.
 intros; zsimpl; f_equal; assumption.
 Qed.
@@ -144,12 +144,12 @@ Qed.
 
 End Induction.
 
-Theorem NZplus_0_l : forall n, 0 + n == n.
+Theorem NZadd_0_l : forall n, 0 + n == n.
 Proof.
 intros; zsimpl; auto with zarith.
 Qed.
 
-Theorem NZplus_succ_l : forall n m, (Z.succ n) + m == Z.succ (n + m).
+Theorem NZadd_succ_l : forall n m, (Z.succ n) + m == Z.succ (n + m).
 Proof.
 intros; zsimpl; auto with zarith.
 Qed.
@@ -164,12 +164,12 @@ Proof.
 intros; zsimpl; auto with zarith.
 Qed.
 
-Theorem NZtimes_0_l : forall n, 0 * n == 0.
+Theorem NZmul_0_l : forall n, 0 * n == 0.
 Proof.
 intros; zsimpl; auto with zarith.
 Qed.
 
-Theorem NZtimes_succ_l : forall n m, (Z.succ n) * m == n * m + m.
+Theorem NZmul_succ_l : forall n m, (Z.succ n) * m == n * m + m.
 Proof.
 intros; zsimpl; ring.
 Qed.

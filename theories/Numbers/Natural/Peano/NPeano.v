@@ -24,9 +24,9 @@ Definition NZeq := (@eq nat).
 Definition NZ0 := 0.
 Definition NZsucc := S.
 Definition NZpred := pred.
-Definition NZplus := plus.
+Definition NZadd := plus.
 Definition NZminus := minus.
-Definition NZtimes := mult.
+Definition NZmul := mult.
 
 Theorem NZeq_equiv : equiv nat NZeq.
 Proof (eq_equiv nat).
@@ -51,7 +51,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZplus with signature NZeq ==> NZeq ==> NZeq as NZplus_wd.
+Add Morphism NZadd with signature NZeq ==> NZeq ==> NZeq as NZadd_wd.
 Proof.
 congruence.
 Qed.
@@ -61,7 +61,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZtimes with signature NZeq ==> NZeq ==> NZeq as NZtimes_wd.
+Add Morphism NZmul with signature NZeq ==> NZeq ==> NZeq as NZmul_wd.
 Proof.
 congruence.
 Qed.
@@ -78,12 +78,12 @@ Proof.
 reflexivity.
 Qed.
 
-Theorem NZplus_0_l : forall n : nat, 0 + n = n.
+Theorem NZadd_0_l : forall n : nat, 0 + n = n.
 Proof.
 reflexivity.
 Qed.
 
-Theorem NZplus_succ_l : forall n m : nat, (S n) + m = S (n + m).
+Theorem NZadd_succ_l : forall n m : nat, (S n) + m = S (n + m).
 Proof.
 reflexivity.
 Qed.
@@ -98,12 +98,12 @@ Proof.
 intros n m; induction n m using nat_double_ind; simpl; auto. apply NZminus_0_r.
 Qed.
 
-Theorem NZtimes_0_l : forall n : nat, 0 * n = 0.
+Theorem NZmul_0_l : forall n : nat, 0 * n = 0.
 Proof.
 reflexivity.
 Qed.
 
-Theorem NZtimes_succ_l : forall n m : nat, S n * m = n * m + m.
+Theorem NZmul_succ_l : forall n m : nat, S n * m = n * m + m.
 Proof.
 intros n m; now rewrite plus_comm.
 Qed.

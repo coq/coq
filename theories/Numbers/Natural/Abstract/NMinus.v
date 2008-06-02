@@ -58,71 +58,71 @@ intro; rewrite minus_0_r; apply neq_succ_0.
 intros; now rewrite minus_succ.
 Qed.
 
-Theorem plus_minus_assoc : forall n m p : N, p <= m -> n + (m - p) == (n + m) - p.
+Theorem add_minus_assoc : forall n m p : N, p <= m -> n + (m - p) == (n + m) - p.
 Proof.
 intros n m p; induct p.
 intro; now do 2 rewrite minus_0_r.
 intros p IH H. do 2 rewrite minus_succ_r.
 rewrite <- IH by (apply lt_le_incl; now apply -> le_succ_l).
-rewrite plus_pred_r by (apply minus_gt; now apply -> le_succ_l).
+rewrite add_pred_r by (apply minus_gt; now apply -> le_succ_l).
 reflexivity.
 Qed.
 
 Theorem minus_succ_l : forall n m : N, n <= m -> S m - n == S (m - n).
 Proof.
-intros n m H. rewrite <- (plus_1_l m). rewrite <- (plus_1_l (m - n)).
-symmetry; now apply plus_minus_assoc.
+intros n m H. rewrite <- (add_1_l m). rewrite <- (add_1_l (m - n)).
+symmetry; now apply add_minus_assoc.
 Qed.
 
-Theorem plus_minus : forall n m : N, (n + m) - m == n.
+Theorem add_minus : forall n m : N, (n + m) - m == n.
 Proof.
-intros n m. rewrite <- plus_minus_assoc by (apply le_refl).
-rewrite minus_diag; now rewrite plus_0_r.
+intros n m. rewrite <- add_minus_assoc by (apply le_refl).
+rewrite minus_diag; now rewrite add_0_r.
 Qed.
 
-Theorem minus_plus : forall n m : N, n <= m -> (m - n) + n == m.
+Theorem minus_add : forall n m : N, n <= m -> (m - n) + n == m.
 Proof.
-intros n m H. rewrite plus_comm. rewrite plus_minus_assoc by assumption.
-rewrite plus_comm. apply plus_minus.
+intros n m H. rewrite add_comm. rewrite add_minus_assoc by assumption.
+rewrite add_comm. apply add_minus.
 Qed.
 
-Theorem plus_minus_eq_l : forall n m p : N, m + p == n -> n - m == p.
+Theorem add_minus_eq_l : forall n m p : N, m + p == n -> n - m == p.
 Proof.
 intros n m p H. symmetry.
 assert (H1 : m + p - m == n - m) by now rewrite H.
-rewrite plus_comm in H1. now rewrite plus_minus in H1.
+rewrite add_comm in H1. now rewrite add_minus in H1.
 Qed.
 
-Theorem plus_minus_eq_r : forall n m p : N, m + p == n -> n - p == m.
+Theorem add_minus_eq_r : forall n m p : N, m + p == n -> n - p == m.
 Proof.
-intros n m p H; rewrite plus_comm in H; now apply plus_minus_eq_l.
+intros n m p H; rewrite add_comm in H; now apply add_minus_eq_l.
 Qed.
 
 (* This could be proved by adding m to both sides. Then the proof would
-use plus_minus_assoc and minus_0_le, which is proven below. *)
+use add_minus_assoc and minus_0_le, which is proven below. *)
 
-Theorem plus_minus_eq_nz : forall n m p : N, p ~= 0 -> n - m == p -> m + p == n.
+Theorem add_minus_eq_nz : forall n m p : N, p ~= 0 -> n - m == p -> m + p == n.
 Proof.
 intros n m p H; double_induct n m.
 intros m H1; rewrite minus_0_l in H1. symmetry in H1; false_hyp H1 H.
-intro n; rewrite minus_0_r; now rewrite plus_0_l.
+intro n; rewrite minus_0_r; now rewrite add_0_l.
 intros n m IH H1. rewrite minus_succ in H1. apply IH in H1.
-rewrite plus_succ_l; now rewrite H1.
+rewrite add_succ_l; now rewrite H1.
 Qed.
 
-Theorem minus_plus_distr : forall n m p : N, n - (m + p) == (n - m) - p.
+Theorem minus_add_distr : forall n m p : N, n - (m + p) == (n - m) - p.
 Proof.
 intros n m; induct p.
-rewrite plus_0_r; now rewrite minus_0_r.
-intros p IH. rewrite plus_succ_r; do 2 rewrite minus_succ_r. now rewrite IH.
+rewrite add_0_r; now rewrite minus_0_r.
+intros p IH. rewrite add_succ_r; do 2 rewrite minus_succ_r. now rewrite IH.
 Qed.
 
-Theorem plus_minus_swap : forall n m p : N, p <= n -> n + m - p == n - p + m.
+Theorem add_minus_swap : forall n m p : N, p <= n -> n + m - p == n - p + m.
 Proof.
 intros n m p H.
-rewrite (plus_comm n m).
-rewrite <- plus_minus_assoc by assumption.
-now rewrite (plus_comm m (n - p)).
+rewrite (add_comm n m).
+rewrite <- add_minus_assoc by assumption.
+now rewrite (add_comm m (n - p)).
 Qed.
 
 (** Minus and order *)
@@ -144,36 +144,36 @@ intro m; rewrite minus_0_r; split; intro H;
 intros n m H. rewrite <- succ_le_mono. now rewrite minus_succ.
 Qed.
 
-(** Minus and times *)
+(** Minus and mul *)
 
-Theorem times_pred_r : forall n m : N, n * (P m) == n * m - n.
+Theorem mul_pred_r : forall n m : N, n * (P m) == n * m - n.
 Proof.
 intros n m; cases m.
-now rewrite pred_0, times_0_r, minus_0_l.
-intro m; rewrite pred_succ, times_succ_r, <- plus_minus_assoc.
-now rewrite minus_diag, plus_0_r.
+now rewrite pred_0, mul_0_r, minus_0_l.
+intro m; rewrite pred_succ, mul_succ_r, <- add_minus_assoc.
+now rewrite minus_diag, add_0_r.
 now apply eq_le_incl.
 Qed.
 
-Theorem times_minus_distr_r : forall n m p : N, (n - m) * p == n * p - m * p.
+Theorem mul_minus_distr_r : forall n m p : N, (n - m) * p == n * p - m * p.
 Proof.
 intros n m p; induct n.
-now rewrite minus_0_l, times_0_l, minus_0_l.
+now rewrite minus_0_l, mul_0_l, minus_0_l.
 intros n IH. destruct (le_gt_cases m n) as [H | H].
-rewrite minus_succ_l by assumption. do 2 rewrite times_succ_l.
-rewrite (plus_comm ((n - m) * p) p), (plus_comm (n * p) p).
-rewrite <- (plus_minus_assoc p (n * p) (m * p)) by now apply times_le_mono_r.
-now apply <- plus_cancel_l.
+rewrite minus_succ_l by assumption. do 2 rewrite mul_succ_l.
+rewrite (add_comm ((n - m) * p) p), (add_comm (n * p) p).
+rewrite <- (add_minus_assoc p (n * p) (m * p)) by now apply mul_le_mono_r.
+now apply <- add_cancel_l.
 assert (H1 : S n <= m); [now apply <- le_succ_l |].
 setoid_replace (S n - m) with 0 by now apply <- minus_0_le.
-setoid_replace ((S n * p) - m * p) with 0 by (apply <- minus_0_le; now apply times_le_mono_r).
-apply times_0_l.
+setoid_replace ((S n * p) - m * p) with 0 by (apply <- minus_0_le; now apply mul_le_mono_r).
+apply mul_0_l.
 Qed.
 
-Theorem times_minus_distr_l : forall n m p : N, p * (n - m) == p * n - p * m.
+Theorem mul_minus_distr_l : forall n m p : N, p * (n - m) == p * n - p * m.
 Proof.
-intros n m p; rewrite (times_comm p (n - m)), (times_comm p n), (times_comm p m).
-apply times_minus_distr_r.
+intros n m p; rewrite (mul_comm p (n - m)), (mul_comm p n), (mul_comm p m).
+apply mul_minus_distr_r.
 Qed.
 
 End NMinusPropFunct.

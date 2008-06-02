@@ -35,9 +35,9 @@ Definition NZeq := N.eq.
 Definition NZ0 := N.zero.
 Definition NZsucc := N.succ.
 Definition NZpred := N.pred.
-Definition NZplus := N.add.
+Definition NZadd := N.add.
 Definition NZminus := N.sub.
-Definition NZtimes := N.mul.
+Definition NZmul := N.mul.
 
 Theorem NZeq_equiv : equiv N.t N.eq.
 Proof.
@@ -64,7 +64,7 @@ rewrite 2 N.spec_pred0; congruence.
 rewrite 2 N.spec_pred; f_equal; auto; try omega.
 Qed.
 
-Add Morphism NZplus with signature N.eq ==> N.eq ==> N.eq as NZplus_wd.
+Add Morphism NZadd with signature N.eq ==> N.eq ==> N.eq as NZadd_wd.
 Proof.
 unfold N.eq; intros; rewrite 2 N.spec_add; f_equal; auto.
 Qed.
@@ -77,7 +77,7 @@ rewrite 2 N.spec_sub0; f_equal; congruence.
 rewrite 2 N.spec_sub; f_equal; congruence.
 Qed.
 
-Add Morphism NZtimes with signature N.eq ==> N.eq ==> N.eq as NZtimes_wd.
+Add Morphism NZmul with signature N.eq ==> N.eq ==> N.eq as NZmul_wd.
 Proof.
 unfold N.eq; intros; rewrite 2 N.spec_mul; f_equal; auto.
 Qed.
@@ -137,12 +137,12 @@ Qed.
 
 End Induction.
 
-Theorem NZplus_0_l : forall n, 0 + n == n.
+Theorem NZadd_0_l : forall n, 0 + n == n.
 Proof.
 intros; red; rewrite N.spec_add, N.spec_0; auto with zarith.
 Qed.
 
-Theorem NZplus_succ_l : forall n m, (N.succ n) + m == N.succ (n + m).
+Theorem NZadd_succ_l : forall n m, (N.succ n) + m == N.succ (n + m).
 Proof.
 intros; red; rewrite N.spec_add, 2 N.spec_succ, N.spec_add; auto with zarith.
 Qed.
@@ -169,13 +169,13 @@ rewrite N.spec_pred, N.spec_sub; auto with zarith.
 rewrite N.spec_sub; auto with zarith.
 Qed.
 
-Theorem NZtimes_0_l : forall n, 0 * n == 0.
+Theorem NZmul_0_l : forall n, 0 * n == 0.
 Proof.
 intros; red.
 rewrite N.spec_mul, N.spec_0; auto with zarith.
 Qed.
 
-Theorem NZtimes_succ_l : forall n m, (N.succ n) * m == n * m + m.
+Theorem NZmul_succ_l : forall n m, (N.succ n) * m == n * m + m.
 Proof.
 intros; red.
 rewrite N.spec_add, 2 N.spec_mul, N.spec_succ; ring.

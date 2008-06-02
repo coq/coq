@@ -66,14 +66,14 @@ Lemma BigNring :
  semi_ring_theory BigN.zero BigN.one BigN.add BigN.mul BigN.eq.
 Proof.
 constructor.
-exact plus_0_l.
-exact plus_comm.
-exact plus_assoc.
-exact times_1_l.
-exact times_0_l.
-exact times_comm.
-exact times_assoc.
-exact times_plus_distr_r.
+exact add_0_l.
+exact add_comm.
+exact add_assoc.
+exact mul_1_l.
+exact mul_0_l.
+exact mul_comm.
+exact mul_assoc.
+exact mul_add_distr_r.
 Qed.
 
 Add Ring BigNr : BigNring.

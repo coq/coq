@@ -20,13 +20,13 @@ Open Local Scope NatScope.
 (*****************************************************)
 (**                   Addition                       *)
 
-Definition def_plus (x y : N) := recursion y (fun _ p => S p) x.
+Definition def_add (x y : N) := recursion y (fun _ p => S p) x.
 
-Infix Local "++" := def_plus (at level 50, left associativity).
+Infix Local "++" := def_add (at level 50, left associativity).
 
-Add Morphism def_plus with signature Neq ==> Neq ==> Neq as def_plus_wd.
+Add Morphism def_add with signature Neq ==> Neq ==> Neq as def_add_wd.
 Proof.
-unfold def_plus.
+unfold def_add.
 intros x x' Exx' y y' Eyy'.
 apply recursion_wd with (Aeq := Neq).
 assumption.
@@ -34,68 +34,68 @@ unfold fun2_eq; intros _ _ _ p p' Epp'; now rewrite Epp'.
 assumption.
 Qed.
 
-Theorem def_plus_0_l : forall y : N, 0 ++ y == y.
+Theorem def_add_0_l : forall y : N, 0 ++ y == y.
 Proof.
-intro y. unfold def_plus. now rewrite recursion_0.
+intro y. unfold def_add. now rewrite recursion_0.
 Qed.
 
-Theorem def_plus_succ_l : forall x y : N, S x ++ y == S (x ++ y).
+Theorem def_add_succ_l : forall x y : N, S x ++ y == S (x ++ y).
 Proof.
-intros x y; unfold def_plus.
+intros x y; unfold def_add.
 rewrite (@recursion_succ N Neq); try reflexivity.
 unfold fun2_wd. intros _ _ _ m1 m2 H2. now rewrite H2.
 Qed.
 
-Theorem def_plus_plus : forall n m : N, n ++ m == n + m.
+Theorem def_add_add : forall n m : N, n ++ m == n + m.
 Proof.
 intros n m; induct n.
-now rewrite def_plus_0_l, plus_0_l.
-intros n H. now rewrite def_plus_succ_l, plus_succ_l, H.
+now rewrite def_add_0_l, add_0_l.
+intros n H. now rewrite def_add_succ_l, add_succ_l, H.
 Qed.
 
 (*****************************************************)
 (**                  Multiplication                  *)
 
-Definition def_times (x y : N) := recursion 0 (fun _ p => p ++ x) y.
+Definition def_mul (x y : N) := recursion 0 (fun _ p => p ++ x) y.
 
-Infix Local "**" := def_times (at level 40, left associativity).
+Infix Local "**" := def_mul (at level 40, left associativity).
 
-Lemma def_times_step_wd : forall x : N, fun2_wd Neq Neq Neq (fun _ p => def_plus p x).
+Lemma def_mul_step_wd : forall x : N, fun2_wd Neq Neq Neq (fun _ p => def_add p x).
 Proof.
-unfold fun2_wd. intros. now apply def_plus_wd.
+unfold fun2_wd. intros. now apply def_add_wd.
 Qed.
 
-Lemma def_times_step_equal :
+Lemma def_mul_step_equal :
   forall x x' : N, x == x' ->
-    fun2_eq Neq Neq Neq (fun _ p => def_plus p x) (fun x p => def_plus p x').
+    fun2_eq Neq Neq Neq (fun _ p => def_add p x) (fun x p => def_add p x').
 Proof.
-unfold fun2_eq; intros; apply def_plus_wd; assumption.
+unfold fun2_eq; intros; apply def_add_wd; assumption.
 Qed.
 
-Add Morphism def_times with signature Neq ==> Neq ==> Neq as def_times_wd.
+Add Morphism def_mul with signature Neq ==> Neq ==> Neq as def_mul_wd.
 Proof.
-unfold def_times.
+unfold def_mul.
 intros x x' Exx' y y' Eyy'.
 apply recursion_wd with (Aeq := Neq).
-reflexivity. apply def_times_step_equal. assumption. assumption.
+reflexivity. apply def_mul_step_equal. assumption. assumption.
 Qed.
 
-Theorem def_times_0_r : forall x : N, x ** 0 == 0.
+Theorem def_mul_0_r : forall x : N, x ** 0 == 0.
 Proof.
-intro. unfold def_times. now rewrite recursion_0.
+intro. unfold def_mul. now rewrite recursion_0.
 Qed.
 
-Theorem def_times_succ_r : forall x y : N, x ** S y == x ** y ++ x.
+Theorem def_mul_succ_r : forall x y : N, x ** S y == x ** y ++ x.
 Proof.
-intros x y; unfold def_times.
-now rewrite (@recursion_succ N Neq); [| apply def_times_step_wd |].
+intros x y; unfold def_mul.
+now rewrite (@recursion_succ N Neq); [| apply def_mul_step_wd |].
 Qed.
 
-Theorem def_times_times : forall n m : N, n ** m == n * m.
+Theorem def_mul_mul : forall n m : N, n ** m == n * m.
 Proof.
 intros n m; induct m.
-now rewrite def_times_0_r, times_0_r.
-intros m IH; now rewrite def_times_succ_r, times_succ_r, def_plus_plus, IH.
+now rewrite def_mul_0_r, mul_0_r.
+intros m IH; now rewrite def_mul_succ_r, mul_succ_r, def_add_add, IH.
 Qed.
 
 (*****************************************************)

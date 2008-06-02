@@ -18,7 +18,7 @@ Module ZBasePropFunct (Import ZAxiomsMod : ZAxiomsSig).
 
 (* Note: writing "Export" instead of "Import" on the previous line leads to
 some warnings about hiding repeated declarations and results in the loss of
-notations in Zplus and later *)
+notations in Zadd and later *)
 
 Open Local Scope IntScope.
 

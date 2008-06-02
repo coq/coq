@@ -80,7 +80,7 @@ Proof.
 red; intros; zsimpl; auto.
 Qed.
 
-Lemma plus_opp : forall x : bigZ, x + (- x) == 0.
+Lemma add_opp : forall x : bigZ, x + (- x) == 0.
 Proof.
 red; intros; zsimpl; auto with zarith.
 Qed.
@@ -91,15 +91,15 @@ Lemma BigZring :
  ring_theory BigZ.zero BigZ.one BigZ.add BigZ.mul BigZ.sub BigZ.opp BigZ.eq.
 Proof.
 constructor.
-exact Zplus_0_l.
-exact Zplus_comm.
-exact Zplus_assoc.
-exact Ztimes_1_l.
-exact Ztimes_comm.
-exact Ztimes_assoc.
-exact Ztimes_plus_distr_r.
+exact Zadd_0_l.
+exact Zadd_comm.
+exact Zadd_assoc.
+exact Zmul_1_l.
+exact Zmul_comm.
+exact Zmul_assoc.
+exact Zmul_add_distr_r.
 exact sub_opp.
-exact plus_opp.
+exact add_opp.
 Qed.
 
 Add Ring BigZr : BigZring.

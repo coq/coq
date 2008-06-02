@@ -24,8 +24,8 @@ Notation N0 := NZ0.
 Notation N1 := (NZsucc NZ0).
 Notation S := NZsucc.
 Notation P := NZpred.
-Notation plus := NZplus.
-Notation times := NZtimes.
+Notation add := NZadd.
+Notation mul := NZmul.
 Notation minus := NZminus.
 Notation lt := NZlt.
 Notation le := NZle.
@@ -35,9 +35,9 @@ Notation "x == y"  := (Neq x y) (at level 70) : NatScope.
 Notation "x ~= y" := (~ Neq x y) (at level 70) : NatScope.
 Notation "0" := NZ0 : NatScope.
 Notation "1" := (NZsucc NZ0) : NatScope.
-Notation "x + y" := (NZplus x y) : NatScope.
+Notation "x + y" := (NZadd x y) : NatScope.
 Notation "x - y" := (NZminus x y) : NatScope.
-Notation "x * y" := (NZtimes x y) : NatScope.
+Notation "x * y" := (NZmul x y) : NatScope.
 Notation "x < y" := (NZlt x y) : NatScope.
 Notation "x <= y" := (NZle x y) : NatScope.
 Notation "x > y" := (NZlt y x) (only parsing) : NatScope.
