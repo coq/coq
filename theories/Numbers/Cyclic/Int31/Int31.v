@@ -354,114 +354,80 @@ Definition gcd31 (i j:int31) :=
    end)
   (2*size)%nat i j.
 
-(** Very naive square root functions, for easy correctness proofs.
-   TODO: replace them someday by efficient code in the spirit of
-   the code commented afterwards. *)
+(** Square root functions using newton iteration
+    we use a very naive upper-bound on the iteration
+    2^31 instead of the usual 31.
+**)
 
-Definition sqrt31 (i:int31) : int31 := phi_inv (Zsqrt_plain (phi i)).
 
-Definition sqrt312 (i j:int31) : int31*(carry int31) := 
-  let z := ((phi i)*base+(phi j))%Z in 
-  match z with 
-   | Z0 => (On, C0 On)
-   | Zpos p => 
-      let (s,r,_,_) := sqrtrempos p in 
-      (phi_inv s, 
-        if Z_lt_le_dec r base 
-        then C0 (phi_inv r) 
-        else C1 (phi_inv (r-base)))
-   | Zneg _ => (On, C0 On)
+
+Definition sqrt31_step (rec: int31 -> int31 -> int31) (i j: int31)  :=
+Eval lazy delta [Twon] in
+  let (quo,_) := i/j in
+  match quo ?= j with
+    Lt => rec i (fst ((j + quo)/Twon))
+  | _ =>  j
   end.
 
-(*
-Definition sqrt31 (i:int31) : int31 :=
-  match i ?= On with
-  | Eq =>  On
-  | _ =>
-   (fix babylon  (guard:nat) (r:int31) {struct guard} :=
-     match guard with 
-     | 0%nat => r
-     | S p =>
-       let (quo, _) := i/r in
-       match quo ?= r with
-       | Eq => r
-       | _ => let (avrg, _) := (quo+r)/(Twon) in babylon p avrg
-       end
-     end)
-   size (let (approx, _) := (i/Twon) in approx+In) (* approx + 1 > 0 *) 
+Fixpoint iter31_sqrt (n: nat) (rec: int31 -> int31 -> int31) 
+          (i j: int31) {struct n} : int31 :=
+  sqrt31_step 
+   (match n with
+      O =>  rec
+   | S n => (iter31_sqrt n (iter31_sqrt n rec))
+   end) i j.
+
+Definition sqrt31 i := 
+Eval lazy delta [On In Twon] in
+  match compare31 In i with 
+    Gt => On
+  | Eq => In
+  | Lt => iter31_sqrt 31 (fun i j => j) i (fst (i/Twon))
   end.
 
-Definition sqrt312 (ih il:int31) := 
-  match (match ih ?= On with | Eq =>  il ?= On | not0 => not0 end) with 
-  | Eq => (On, C0 On)
-  | _ => let root :=
-     (* invariant lower <= r <= upper *)
-     let closer_to_upper (r upper lower:int31) :=
-	let (quo,_) := (upper-r)/Twon in
-	match quo ?= On with
-        | Eq => upper
-        | _ => r+quo
-       end
-     in
-     let closer_to_lower (r upper lower:int31) :=
-        let (quo,_) := (r-lower)/Twon in r-quo 
-     in
-     (fix dichotomy (guard:nat) (r upper lower:int31) {struct guard} :=
-      match guard with
-      | O => r
-      | S p => 
-         match r*c r with
-           | W0 => dichotomy p  
-                             (closer_to_upper r upper lower) 
-                             upper r             (* because 0 < WW ih il *)
-           | WW jh jl => match (match jh ?= ih with 
-                                  | Eq => jl ?= il
-                                  | noteq => noteq
-                                end)
-                         with
-                           | Eq => r
-                           | Lt =>
-                             match (r + In)*c (r + In) with
-                               | W0 => r (* r = 2^31 - 1 *)
-                               | WW jh1 jl1 => 
-                                 match (match jh1 ?= ih with 
-                                          | Eq => jl1 ?= il 
-                                          | noteq => noteq 
-                                        end) 
-                                 with
-                                   | Eq => r + In
-                                   | Gt => r
-                                   | Lt => dichotomy p
-                                        (closer_to_upper r upper lower)
-                                        upper r
-                                 end
-                             end
-                           | Gt => dichotomy p 
-                                       (closer_to_lower r upper lower) 
-                                       r lower
-                         end
-         end
-      end)
-     size (let (quo,_) := Tn/Twon in quo) Tn On
-     in
-     let square := root *c root in
-     let rem := match square with
-                | W0 => C0 il (* this case should not occure *)
-                | WW sh sl => match il -c sl with
-                              | C0 reml => match ih - sh ?= On with
-                                           | Eq => C0 reml
-                                           | _ => C1 reml
-                                           end
-                              | C1 reml => match ih - sh - In ?= On with
-                                           | Eq => C0 reml
-                                           | _ => C1 reml
-                                           end
-                              end
-                end
-     in
-     (root, rem)
-  end.
-*)
+Definition v30 := Eval compute in (addmuldiv31 (phi_inv (Z_of_nat size - 1)) In On).
+
+Definition sqrt312_step (rec: int31 -> int31 -> int31 -> int31) 
+   (ih il j: int31)  :=
+Eval lazy delta [Twon v30] in
+  match ih ?= j with Eq => j | Gt => j | _ =>
+  let (quo,_) := div3121 ih il j in
+  match quo ?= j with
+    Lt => let m := match j +c quo with
+                    C0 m1 => fst (m1/Twon)
+                  | C1 m1 => fst (m1/Twon) + v30
+                  end in rec ih il m
+  | _ =>  j
+  end end.
+
+Fixpoint iter312_sqrt (n: nat) 
+          (rec: int31  -> int31 -> int31 -> int31) 
+          (ih il j: int31) {struct n} : int31 :=
+  sqrt312_step 
+   (match n with
+      O =>  rec
+   | S n => (iter312_sqrt n (iter312_sqrt n rec))
+   end) ih il j.
+
+Definition sqrt312 ih il := 
+Eval lazy delta [On In] in
+  let s := iter312_sqrt 31 (fun ih il j => j) ih il Tn in
+           match s *c s with
+            W0 => (On, C0 On) (* impossible *)
+          | WW ih1 il1 =>
+             match il -c il1 with
+                C0 il2 => 
+                  match ih ?= ih1 with
+                    Gt => (s, C1 il2)
+                  | _  => (s, C0 il2)
+                  end
+              | C1 il2 => 
+                  match (ih - In) ?= ih1 with (* we could parametrize ih - 1 *)
+                    Gt => (s, C1 il2)
+                  | _  => (s, C0 il2)
+                  end
+              end
+          end.
 
 
 Fixpoint p2i n p : (N*int31)%type := 

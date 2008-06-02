@@ -1896,67 +1896,519 @@ Section Int31_Spec.
     
  (* Sqrt *)
 
+ (* Direct transcription of an old proof
+     of a fortran program in boyer-moore *)
+
+ Lemma quotient_by_2 a: a - 1 <= (a/2) + (a/2).
+ Proof.
+ intros a; case (Z_mod_lt a 2); auto with zarith.
+ intros H1; rewrite Zmod_eq_full; auto with zarith.
+ Qed.
+
+ Lemma sqrt_main_trick j k: 0 <= j -> 0 <= k -> 
+   (j * k) + j <= ((j + k)/2 + 1)  ^ 2.
+ Proof.
+ intros j k Hj; generalize Hj k; pattern j; apply natlike_ind; 
+   auto; clear k j Hj.
+ intros _ k Hk; repeat rewrite Zplus_0_l.
+ apply  Zmult_le_0_compat; generalize (Z_div_pos k 2); auto with zarith.
+ intros j Hj Hrec _ k Hk; pattern k; apply natlike_ind; auto; clear k Hk.
+ rewrite Zmult_0_r, Zplus_0_r, Zplus_0_l.
+ generalize (sqr_pos (Zsucc j / 2)) (quotient_by_2 (Zsucc j)); 
+   unfold Zsucc.
+ rewrite Zpower_2, Zmult_plus_distr_l; repeat rewrite Zmult_plus_distr_r.
+ auto with zarith.
+ intros k Hk _.
+ replace ((Zsucc j + Zsucc k) / 2) with ((j + k)/2 + 1).
+ generalize (Hrec Hj k Hk) (quotient_by_2 (j + k)).
+ unfold Zsucc; repeat rewrite Zpower_2; 
+   repeat rewrite Zmult_plus_distr_l; repeat rewrite Zmult_plus_distr_r.
+ repeat rewrite Zmult_1_l; repeat rewrite Zmult_1_r.
+ auto with zarith.
+ rewrite Zplus_comm, <- Z_div_plus_full_l; auto with zarith.
+ apply f_equal2 with (f := Zdiv); auto with zarith.
+ Qed.
+
+ Lemma sqrt_main i j: 0 <= i -> 0 < j -> i < ((j + (i/j))/2 + 1) ^ 2.
+ Proof.
+ intros i j Hi Hj.
+ assert (Hij: 0 <= i/j) by (apply Z_div_pos; auto with zarith).
+ apply Zlt_le_trans with (2 := sqrt_main_trick _ _ (Zlt_le_weak _ _ Hj) Hij).
+ pattern i at 1; rewrite (Z_div_mod_eq i j); case (Z_mod_lt i j); auto with zarith.
+ Qed.
+
+ Lemma sqrt_init i: 1 < i -> i < (i/2 + 1) ^ 2.
+ Proof.
+ intros i Hi.
+ assert (H1: 0 <= i - 2) by auto with zarith.
+ assert (H2: 1 <= (i / 2) ^ 2); auto with zarith.
+   replace i with (1* 2 + (i - 2)); auto with zarith.
+   rewrite Zpower_2, Z_div_plus_full_l; auto with zarith.
+   generalize (sqr_pos ((i - 2)/ 2)) (Z_div_pos (i - 2) 2).
+   rewrite Zmult_plus_distr_l; repeat rewrite Zmult_plus_distr_r.
+   auto with zarith.
+ generalize (quotient_by_2 i).
+ rewrite Zpower_2 in H2 |- *;
+   repeat (rewrite Zmult_plus_distr_l ||
+           rewrite Zmult_plus_distr_r ||
+           rewrite Zmult_1_l || rewrite Zmult_1_r).
+   auto with zarith.
+ Qed.
+
+ Lemma sqrt_test_true i j: 0 <= i -> 0 < j -> i/j >= j -> j ^ 2 <= i.
+ Proof.
+ intros i j Hi Hj Hd; rewrite Zpower_2.
+ apply Zle_trans with (j * (i/j)); auto with zarith.
+ apply Z_mult_div_ge; auto with zarith.
+ Qed.
+
+ Lemma sqrt_test_false i j: 0 <= i -> 0 < j -> i/j < j ->  (j + (i/j))/2 < j.
+ Proof.
+ intros i j Hi Hj H; case (Zle_or_lt j ((j + (i/j))/2)); auto.
+ intros H1; contradict H; apply Zle_not_lt.
+ assert (2 * j <= j + (i/j)); auto with zarith.
+ apply Zle_trans with (2 * ((j + (i/j))/2)); auto with zarith.
+ apply Z_mult_div_ge; auto with zarith.
+ Qed.
+
+ (* George's trick *)
+ Inductive ZcompareSpec (i j: Z): comparison -> Prop :=
+   ZcompareSpecEq: i = j -> ZcompareSpec i j Eq
+ | ZcompareSpecLt: i < j -> ZcompareSpec i j Lt
+ | ZcompareSpecGt: j < i -> ZcompareSpec i j Gt.
+
+ Lemma Zcompare_spec i j: ZcompareSpec i j (i ?= j).
+ Proof.
+ intros i j; case_eq (Zcompare i j); intros H.
+ apply ZcompareSpecEq; apply Zcompare_Eq_eq; auto.
+ apply ZcompareSpecLt; auto.
+ apply ZcompareSpecGt; apply Zgt_lt; auto.
+ Qed.
+
+ Lemma sqrt31_step_def rec i j:
+   sqrt31_step rec i j = 
+   match (fst (i/j) ?= j)%int31 with
+     Lt => rec i (fst ((j + fst(i/j))/2))%int31
+   | _ =>  j
+   end.
+ Proof.
+ intros rec i j; unfold sqrt31_step; case div31; intros.
+ simpl; case compare31; auto.
+ Qed.
+
+ Lemma div31_phi i j: 0 < [|j|] -> [|fst (i/j)%int31|] = [|i|]/[|j|].
+ intros i j Hj; generalize (spec_div i j Hj).
+ case div31; intros q r; simpl fst.
+ intros (H1,H2); apply Zdiv_unique with [|r|]; auto with zarith.
+ rewrite H1; ring.
+ Qed.
+
+ Lemma sqrt31_step_correct rec i j: 
+  0 < [|i|] -> 0 < [|j|] -> [|i|] < ([|j|] + 1) ^ 2 -> 
+   2 * [|j|] < wB ->
+  (forall j1 : int31,
+    0 < [|j1|] < [|j|] -> [|i|] < ([|j1|] + 1) ^ 2 ->
+    [|rec i j1|] ^ 2 <= [|i|] < ([|rec i j1|] + 1) ^ 2) ->
+  [|sqrt31_step rec i j|] ^ 2 <= [|i|] < ([|sqrt31_step rec i j|] + 1) ^ 2.
+ Proof.
+ assert (Hp2: 0 < [|2|]) by exact (refl_equal Lt).
+ intros rec i j Hi Hj Hij H31 Hrec; rewrite sqrt31_step_def.
+ generalize (spec_compare (fst (i/j)%int31) j); case compare31; 
+   rewrite div31_phi; auto; intros Hc;
+   try (split; auto; apply sqrt_test_true; auto with zarith; fail).
+ apply Hrec; repeat rewrite div31_phi; auto with zarith.
+ replace [|(j + fst (i / j)%int31)|] with ([|j|] + [|i|] / [|j|]).
+ split.
+ case (Zle_lt_or_eq 1 [|j|]); auto with zarith; intros Hj1.
+ replace ([|j|] + [|i|]/[|j|]) with 
+        (1 * 2 + (([|j|] - 2) + [|i|] / [|j|])); try ring.
+ rewrite Z_div_plus_full_l; auto with zarith.
+ assert (0 <= [|i|]/ [|j|]) by (apply Z_div_pos; auto with zarith).
+ assert (0 <= ([|j|] - 2 + [|i|] / [|j|]) / [|2|]) ; auto with zarith.
+ rewrite <- Hj1, Zdiv_1_r.
+ replace (1 + [|i|])%Z with (1 * 2 + ([|i|] - 1))%Z; try ring.
+ rewrite Z_div_plus_full_l; auto with zarith.
+ assert (0 <= ([|i|] - 1) /2)%Z by (apply Z_div_pos; auto with zarith).
+ change ([|2|]) with 2%Z; auto with zarith.
+ apply sqrt_test_false; auto with zarith.
+ rewrite spec_add, div31_phi; auto.
+ apply sym_equal; apply Zmod_small.
+ split; auto with zarith.
+ replace [|j + fst (i / j)%int31|] with ([|j|] + [|i|] / [|j|]).
+ apply sqrt_main; auto with zarith.
+ rewrite spec_add, div31_phi; auto.
+ apply sym_equal; apply Zmod_small.
+ split; auto with zarith.
+ Qed.
+
+ Lemma iter31_sqrt_correct n rec i j: 0 < [|i|] -> 0 < [|j|] ->
+  [|i|] < ([|j|] + 1) ^ 2 -> 2 * [|j|] < 2 ^ (Z_of_nat size) ->
+  (forall j1, 0 < [|j1|] -> 2^(Z_of_nat n) + [|j1|] <= [|j|] ->  
+      [|i|] < ([|j1|] + 1) ^ 2 -> 2 * [|j1|] < 2 ^ (Z_of_nat size) ->
+       [|rec i j1|] ^ 2 <= [|i|] < ([|rec i j1|] + 1) ^ 2) ->
+  [|iter31_sqrt n rec i j|] ^ 2 <= [|i|] < ([|iter31_sqrt n rec i j|] + 1) ^ 2.
+ Proof.
+ intros n; elim n; unfold iter31_sqrt; fold iter31_sqrt; clear n.
+ intros rec i j Hi Hj Hij H31 Hrec; apply sqrt31_step_correct; auto with zarith.
+ intros; apply Hrec; auto with zarith.
+ rewrite Zpower_0_r; auto with zarith.
+ intros n Hrec rec i j Hi Hj Hij H31 HHrec.
+ apply sqrt31_step_correct; auto.
+ intros j1 Hj1  Hjp1; apply Hrec; auto with zarith.
+ intros j2 Hj2 H2j2 Hjp2 Hj31; apply Hrec; auto with zarith.
+ intros j3 Hj3 Hpj3.
+ apply HHrec; auto.
+ rewrite inj_S, Zpower_Zsucc.
+ apply Zle_trans with (2 ^Z_of_nat n + [|j2|]); auto with zarith.
+ apply Zle_0_nat.
+ Qed.
+
+ Lemma spec_sqrt : forall x,
+       [|sqrt31 x|] ^ 2 <= [|x|] < ([|sqrt31 x|] + 1) ^ 2.
+ Proof.
+ intros i; unfold sqrt31.
+ generalize (spec_compare 1 i); case compare31; change [|1|] with 1;
+   intros Hi; auto with zarith.
+ repeat rewrite Zpower_2; auto with zarith.
+ apply iter31_sqrt_correct; auto with zarith.
+  rewrite div31_phi; change ([|2|]) with 2;  auto with zarith.
+  replace ([|i|]) with (1 * 2 + ([|i|] - 2))%Z; try ring.
+  assert (0 <= ([|i|] - 2)/2)%Z by (apply Z_div_pos; auto with zarith).
+  rewrite Z_div_plus_full_l; auto with zarith.
+  rewrite div31_phi; change ([|2|]) with 2; auto with zarith.
+  apply sqrt_init; auto.
+ rewrite div31_phi; change ([|2|]) with 2; auto with zarith.
+ apply Zle_lt_trans with ([|i|]).
+ apply Z_mult_div_ge; auto with zarith.
+ case (phi_bounded i); auto.
+ intros j2 H1 H2; contradict H2; apply Zlt_not_le.
+ rewrite div31_phi; change ([|2|]) with 2; auto with zarith.
+ apply Zle_lt_trans with ([|i|]); auto with zarith.
+ assert (0 <= [|i|]/2)%Z by (apply Z_div_pos; auto with zarith).
+ apply Zle_trans with (2 * ([|i|]/2)); auto with zarith.
+ apply Z_mult_div_ge; auto with zarith.
+ case (phi_bounded i); unfold size; auto with zarith.
+ change [|0|] with 0; auto with zarith.
+ case (phi_bounded i); repeat rewrite Zpower_2; auto with zarith.
+ Qed.
+
+ Lemma sqrt312_step_def rec ih il j:
+   sqrt312_step rec ih il j = 
+   match (ih ?= j)%int31 with
+      Eq => j
+    | Gt => j
+    | _ =>
+       match (fst (div3121 ih il j) ?= j)%int31 with
+         Lt => let m := match j +c fst (div3121 ih il j) with
+                       C0 m1 => fst (m1/2)%int31
+                     | C1 m1 => (fst (m1/2) + v30)%int31
+                     end in rec ih il m
+       | _ =>  j
+       end
+   end.
+ Proof.
+ intros rec ih il j; unfold sqrt312_step; case div3121; intros.
+ simpl; case compare31; auto.
+ Qed.
+
+ Lemma sqrt312_lower_bound ih il j: 
+   phi2 ih  il  < ([|j|] + 1) ^ 2 -> [|ih|] <= [|j|].
+ Proof.
+ intros ih il j H1.
+ case (phi_bounded j); intros Hbj _.
+ case (phi_bounded il); intros Hbil _.
+ case (phi_bounded ih); intros Hbih Hbih1.
+ assert (([|ih|] < [|j|] + 1)%Z); auto with zarith.
+ apply Zlt_square_simpl; auto with zarith.
+ repeat rewrite <-Zpower_2; apply Zle_lt_trans with (2 := H1).
+ apply Zle_trans with ([|ih|] * base)%Z; unfold phi2, base;
+  try rewrite Zpower_2; auto with zarith.
+ Qed.
+
+ Lemma div312_phi ih il j: (2^30 <= [|j|] -> [|ih|] < [|j|] ->
+  [|fst (div3121 ih il j)|] = phi2 ih il/[|j|])%Z.
+ Proof.
+ intros ih il j Hj Hj1.
+ generalize (spec_div21 ih il j Hj Hj1).
+ case div3121; intros q r (Hq, Hr).
+ apply Zdiv_unique with (phi r); auto with zarith.
+ simpl fst; apply trans_equal with (1 := Hq); ring.
+ Qed.
+
+ Lemma sqrt312_step_correct rec ih il j: 
+  2 ^ 29 <= [|ih|] -> 0 < [|j|] -> phi2 ih il < ([|j|] + 1) ^ 2 -> 
+  (forall j1, 0 < [|j1|] < [|j|] ->  phi2 ih il < ([|j1|] + 1) ^ 2 ->
+     [|rec ih il j1|] ^ 2 <= phi2 ih il < ([|rec ih il j1|] + 1) ^ 2) ->
+  [|sqrt312_step rec ih il  j|] ^ 2 <= phi2 ih il 
+      < ([|sqrt312_step rec ih il j|] + 1) ^  2.
+ Proof.
+ assert (Hp2: (0 < [|2|])%Z) by exact (refl_equal Lt).
+ intros rec ih il j Hih Hj Hij Hrec; rewrite sqrt312_step_def.
+ assert (H1: ([|ih|] <= [|j|])%Z) by (apply sqrt312_lower_bound with il; auto).
+ case (phi_bounded ih); intros Hih1 _.
+ case (phi_bounded il); intros Hil1 _.
+ case (phi_bounded j); intros _ Hj1.
+ assert (Hp3: (0 < phi2 ih il)).
+ unfold phi2; apply Zlt_le_trans with ([|ih|] * base)%Z; auto with zarith.
+ apply Zmult_lt_0_compat; auto with zarith.
+ apply Zlt_le_trans with (2:= Hih); auto with zarith.
+ generalize (spec_compare ih j); case compare31; intros Hc1.
+ split; auto.
+ apply sqrt_test_true; auto.
+ unfold phi2, base; auto with zarith.
+ unfold phi2; rewrite Hc1.
+ assert (0 <= [|il|]/[|j|]) by (apply Z_div_pos; auto with zarith).
+ rewrite Zmult_comm, Z_div_plus_full_l; unfold base; auto with zarith.
+ unfold Zpower, Zpower_pos in Hj1; simpl in Hj1; auto with zarith.
+ case (Zle_or_lt (2 ^ 30) [|j|]); intros Hjj.
+ generalize (spec_compare (fst (div3121 ih il j)) j); case compare31;
+  rewrite div312_phi; auto; intros Hc;
+  try (split; auto; apply sqrt_test_true; auto with zarith; fail).
+ apply Hrec.
+ assert (Hf1: 0 <= phi2 ih il/ [|j|]) by (apply Z_div_pos; auto with zarith).
+ case (Zle_lt_or_eq 1 ([|j|])); auto with zarith; intros Hf2.
+ 2: contradict Hc; apply Zle_not_lt; rewrite <- Hf2, Zdiv_1_r; auto with zarith.
+ assert (Hf3: 0 < ([|j|] + phi2 ih il / [|j|]) / 2).
+ replace ([|j|] + phi2 ih il/ [|j|])%Z with 
+        (1 * 2 + (([|j|] - 2) + phi2 ih il / [|j|])); try ring.
+ rewrite Z_div_plus_full_l; auto with zarith.
+ assert (0 <= ([|j|] - 2 + phi2 ih il / [|j|]) / 2) ; auto with zarith.
+ assert (Hf4: ([|j|] + phi2 ih il / [|j|]) / 2 < [|j|]).
+ apply sqrt_test_false; auto with zarith.
+ generalize (spec_add_c j (fst (div3121 ih il j))).
+ unfold interp_carry;  case add31c; intros r;
+  rewrite div312_phi; auto with zarith.
+ rewrite div31_phi; change [|2|] with 2%Z; auto with zarith.
+ intros HH; rewrite HH; clear HH; auto with zarith.
+ rewrite spec_add, div31_phi; change [|2|] with 2%Z; auto.
+ rewrite Zmult_1_l; intros HH.
+ rewrite Zplus_comm, <- Z_div_plus_full_l; auto with zarith.
+ change (phi v30 * 2) with (2 ^ Z_of_nat size).
+ rewrite HH, Zmod_small; auto with zarith.
+ replace (phi
+    match j +c fst (div3121 ih il j) with
+    | C0 m1 => fst (m1 / 2)%int31
+    | C1 m1 => fst (m1 / 2)%int31 + v30
+    end) with ((([|j|] + (phi2 ih il)/([|j|]))/2)).
+ apply sqrt_main; auto with zarith.
+ generalize (spec_add_c j (fst (div3121 ih il j))).
+ unfold interp_carry;  case add31c; intros r;
+  rewrite div312_phi; auto with zarith.
+ rewrite div31_phi; auto with zarith.
+ intros HH; rewrite HH; auto with zarith.
+ intros HH; rewrite <- HH.
+ change (1 * 2 ^ Z_of_nat size) with (phi (v30) * 2).
+ rewrite Z_div_plus_full_l; auto with zarith.
+ rewrite Zplus_comm.
+ rewrite spec_add, Zmod_small.
+ rewrite div31_phi; auto.
+ split; auto with zarith.
+ case (phi_bounded (fst (r/2)%int31));
+   case (phi_bounded v30); auto with zarith.
+ rewrite div31_phi; change (phi 2) with 2%Z; auto.
+ change (2 ^Z_of_nat size) with (base/2 + phi v30).
+ assert (phi r / 2 < base/2); auto with zarith.
+ apply Zmult_gt_0_lt_reg_r with 2; auto with zarith. 
+ change (base/2 * 2) with base.
+ apply Zle_lt_trans with (phi r).
+ rewrite Zmult_comm; apply Z_mult_div_ge; auto with zarith.
+ case (phi_bounded r); auto with zarith.
+ contradict Hij; apply Zle_not_lt.
+ assert ((1 + [|j|]) <= 2 ^ 30); auto with zarith.
+ apply Zle_trans with ((2 ^ 30) * (2 ^ 30)); auto with zarith.
+ assert (0 <= 1 + [|j|]); auto with zarith.
+ apply Zmult_le_compat; auto with zarith.
+ change ((2 ^ 30) * (2 ^ 30)) with ((2 ^ 29) * base).
+ apply Zle_trans with ([|ih|] * base); auto with zarith.
+ unfold phi2, base; auto with zarith.
+ split; auto.
+ apply sqrt_test_true; auto.
+ unfold phi2, base; auto with zarith.
+ apply Zle_ge; apply Zle_trans with (([|j|] * base)/[|j|]).
+ rewrite Zmult_comm, Z_div_mult; auto with zarith.
+ apply Zge_le; apply Z_div_ge; auto with zarith.
+ Qed.
+
+ Lemma iter312_sqrt_correct n rec ih il j: 
+  2^29 <= [|ih|] ->  0 < [|j|] -> phi2 ih il < ([|j|] + 1) ^ 2 -> 
+  (forall j1, 0 < [|j1|] -> 2^(Z_of_nat n) + [|j1|] <= [|j|] ->  
+      phi2 ih il < ([|j1|] + 1) ^ 2 -> 
+       [|rec ih il j1|] ^ 2 <= phi2 ih il < ([|rec ih il j1|] + 1) ^ 2)  ->
+  [|iter312_sqrt n rec ih il j|] ^ 2 <= phi2 ih il 
+      < ([|iter312_sqrt n rec ih il j|] + 1) ^ 2.
+ Proof.
+ intros n; elim n; unfold iter312_sqrt; fold iter312_sqrt; clear n.
+ intros rec ih il j Hi Hj Hij Hrec; apply sqrt312_step_correct; auto with zarith.
+ intros; apply Hrec; auto with zarith.
+ rewrite Zpower_0_r; auto with zarith.
+ intros n Hrec rec ih il j Hi Hj Hij HHrec.
+ apply sqrt312_step_correct; auto.
+ intros j1 Hj1  Hjp1; apply Hrec; auto with zarith.
+ intros j2 Hj2 H2j2 Hjp2; apply Hrec; auto with zarith.
+ intros j3 Hj3 Hpj3.
+ apply HHrec; auto.
+ rewrite inj_S, Zpower_Zsucc.
+ apply Zle_trans with (2 ^Z_of_nat n + [|j2|])%Z; auto with zarith.
+ apply Zle_0_nat.
+ Qed.
+
  Lemma spec_sqrt2 : forall x y,
        wB/ 4 <= [|x|] ->
        let (s,r) := sqrt312 x y in
           [||WW x y||] = [|s|] ^ 2 + [+|r|] /\
           [+|r|] <= 2 * [|s|].
  Proof.
- intros; unfold sqrt312.
- change base with wB.
- simpl zn2z_to_Z; change (Zpower_pos 2 31) with wB.
- remember ([|x|]*wB+[|y|]) as z.
- destruct z.
- auto with zarith.
- destruct sqrtrempos; intros.
- assert (s < wB).
-  destruct (Z_lt_le_dec s wB); auto.
-  assert (wB * wB <= Zpos p).
-   rewrite e.
-   apply Zle_trans with (s*s); try omega.
-   apply Zmult_le_compat; generalize wB_pos; auto with zarith.
-  assert (Zpos p < wB*wB).
-   rewrite Heqz.
-   replace (wB*wB) with ((wB-1)*wB+wB) by ring.
-   apply Zplus_le_lt_compat; auto with zarith.
-   apply Zmult_le_compat; auto with zarith.
-   generalize (phi_bounded x); auto with zarith.
-   generalize (phi_bounded y); auto with zarith.
-  omega.
- destruct Z_lt_le_dec; unfold interp_carry.
- rewrite 2 phi_phi_inv.
- rewrite 2 Zmod_small by (auto with zarith).
- rewrite Zpower_2; auto with zarith.
-
- rewrite 2 phi_phi_inv.
- rewrite 2 Zmod_small by (auto with zarith).
- rewrite Zpower_2; auto with zarith.
- 
- assert (0<=Zneg p).
-  rewrite Heqz; generalize (phi_bounded x)(phi_bounded y);
-   auto with zarith.
- compute in H0; elim H0; auto.
- Qed.
-
- Lemma spec_sqrt : forall x,
-       [|sqrt31 x|] ^ 2 <= [|x|] < ([|sqrt31 x|] + 1) ^ 2.
- Proof.
- intros.
- unfold sqrt31.
- assert (Hx := phi_bounded x). 
- rewrite phi_phi_inv.
- rewrite Zmod_small.
- repeat rewrite Zpower_2.
- apply Zsqrt_interval; auto with zarith.
+ intros ih il Hih; unfold sqrt312.
+ change [||WW ih il||] with (phi2 ih il).
+ assert (Hbin: forall s, s * s + 2* s + 1 = (s + 1) ^ 2) by 
+  (intros s; ring).
+ assert (Hb: 0 <= base) by (red; intros HH; discriminate).
+ assert (Hi2: phi2 ih il < (phi Tn + 1) ^ 2).
+   change ((phi Tn + 1) ^ 2) with (2^62).
+  apply Zle_lt_trans with ((2^31 -1) * base + (2^31 - 1)); auto with zarith.
+  2: simpl; unfold Zpower_pos; simpl; auto with zarith.
+  case (phi_bounded ih); case (phi_bounded il); intros H1 H2 H3 H4.
+  unfold base, Zpower, Zpower_pos in H2,H4; simpl in H2,H4.
+  unfold phi2,Zpower, Zpower_pos; simpl iter_pos; auto with zarith.
+ case (iter312_sqrt_correct 31 (fun _ _ j => j) ih il Tn); auto with zarith.
+ change [|Tn|] with 2147483647; auto with zarith.
+ intros j1 _ HH; contradict HH.
+ apply Zlt_not_le.
+ change [|Tn|] with 2147483647; auto with zarith.
+ change (2 ^ Z_of_nat 31) with 2147483648; auto with zarith.
+ case (phi_bounded j1); auto with zarith.
+ set (s := iter312_sqrt 31 (fun _ _ j : int31 => j) ih il Tn).
+ intros Hs1 Hs2.
+ generalize (spec_mul_c s s); case mul31c.
+ simpl zn2z_to_Z; intros HH.
+ assert ([|s|] = 0).
+ case (Zmult_integral _ _ (sym_equal HH)); auto.
+ contradict Hs2; apply Zle_not_lt; rewrite H.
+ change ((0 + 1) ^ 2) with 1.
+ apply Zle_trans with (2 ^ Z_of_nat size / 4 * base).
+ simpl; auto with zarith.
+ apply Zle_trans with ([|ih|] * base); auto with zarith.
+ unfold phi2; case (phi_bounded il); auto with zarith.
+ intros ih1 il1.
+ change [||WW ih1 il1||] with (phi2 ih1 il1).
+ intros Hihl1.
+ generalize (spec_sub_c il il1).
+ case sub31c; intros il2 Hil2.
+ simpl interp_carry in Hil2.
+ generalize (spec_compare ih ih1); case compare31.
+ unfold interp_carry.
+ intros H1; split.
+ rewrite Zpower_2, <- Hihl1.
+ unfold phi2; ring[Hil2 H1].
+ replace [|il2|] with (phi2 ih il - phi2 ih1 il1).
+ rewrite Hihl1.
+ rewrite <-Hbin in Hs2; auto with zarith.
+ unfold phi2; rewrite H1, Hil2; ring.
+ unfold interp_carry.
+ intros H1; contradict Hs1.
+ apply Zlt_not_le; rewrite Zpower_2, <-Hihl1.
+ unfold phi2.
+ case (phi_bounded il); intros _ H2.
+ apply Zlt_le_trans with (([|ih|] + 1) * base + 0).
+ rewrite Zmult_plus_distr_l, Zplus_0_r; auto with zarith.
+ case (phi_bounded il1); intros H3 _.
+ apply Zplus_le_compat; auto with zarith.
+ unfold interp_carry; change (1 * 2 ^ Z_of_nat size) with base.
+ rewrite Zpower_2, <- Hihl1, Hil2.
+ intros H1.
+ case (Zle_lt_or_eq ([|ih1|] + 1) ([|ih|])); auto with zarith.
+ intros H2; contradict Hs2; apply Zle_not_lt.
+ replace (([|s|] + 1) ^ 2) with (phi2 ih1 il1 + 2 * [|s|] + 1).
+ unfold phi2.
+ case (phi_bounded il); intros Hpil _.
+ assert (Hl1l: [|il1|] <= [|il|]).
+  case (phi_bounded il2); rewrite Hil2; auto with zarith.
+ assert ([|ih1|] * base + 2 * [|s|] + 1 <= [|ih|] * base); auto with zarith.
+ case (phi_bounded s);  change (2 ^ Z_of_nat size) with base; intros _ Hps.
+ case (phi_bounded ih1); intros Hpih1 _; auto with zarith.
+ apply Zle_trans with (([|ih1|] + 2) * base); auto with zarith.
+ rewrite Zmult_plus_distr_l.
+ assert (2 * [|s|] + 1 <= 2 * base); auto with zarith.
+ rewrite Hihl1, Hbin; auto.
+ intros H2; split.
+ unfold phi2; rewrite <- H2; ring.
+ replace (base + ([|il|] - [|il1|])) with (phi2 ih il - ([|s|] * [|s|])).
+ rewrite <-Hbin in Hs2; auto with zarith.
+ rewrite <- Hihl1; unfold phi2; rewrite <- H2; ring.
+ unfold interp_carry in Hil2 |- *.
+ unfold interp_carry; change (1 * 2 ^ Z_of_nat size) with base.
+ assert (Hsih: [|ih - 1|] = [|ih|] - 1).
+  rewrite spec_sub, Zmod_small; auto; change [|1|] with 1.
+  case (phi_bounded ih); intros H1 H2.
+  generalize Hih; change (2 ^ Z_of_nat size / 4) with 536870912.
+  split; auto with zarith.
+ generalize (spec_compare (ih - 1) ih1); case compare31.
+ rewrite Hsih.
+ intros H1; split.
+ rewrite Zpower_2, <- Hihl1.
+ unfold phi2; rewrite <-H1.
+ apply trans_equal with ([|ih|] * base + [|il1|] + ([|il|] - [|il1|])).
+ ring.
+ rewrite <-Hil2.
+ change (2 ^ Z_of_nat size) with base; ring.
+ replace [|il2|] with (phi2 ih il - phi2 ih1 il1).
+ rewrite Hihl1.
+ rewrite <-Hbin in Hs2; auto with zarith.
+ unfold phi2.
+ rewrite <-H1.
+ ring_simplify.
+ apply trans_equal with (base + ([|il|] - [|il1|])).
+ ring.
+ rewrite <-Hil2.
+ change (2 ^ Z_of_nat size) with base; ring.
+ rewrite Hsih; intros H1.
+ assert (He: [|ih|] = [|ih1|]).
+   apply Zle_antisym; auto with zarith.
+   case (Zle_or_lt [|ih1|] [|ih|]); auto; intros H2.
+   contradict Hs1; apply Zlt_not_le; rewrite Zpower_2, <-Hihl1.
+  unfold phi2.
+  case (phi_bounded il); change (2 ^ Z_of_nat size) with base;
+    intros _ Hpil1.
+  apply Zlt_le_trans with (([|ih|] + 1) * base).
+  rewrite Zmult_plus_distr_l, Zmult_1_l; auto with zarith.
+  case (phi_bounded il1); intros Hpil2 _.
+  apply Zle_trans with (([|ih1|]) * base); auto with zarith.
+ rewrite Zpower_2, <-Hihl1; unfold phi2; rewrite <-He.
+ contradict Hs1; apply Zlt_not_le; rewrite Zpower_2, <-Hihl1.
+ unfold phi2; rewrite He.
+ assert (phi il - phi il1 < 0); auto with zarith.
+ rewrite <-Hil2.
+ case (phi_bounded il2); auto with zarith.
+ intros H1.
+ rewrite Zpower_2, <-Hihl1.
+ case (Zle_lt_or_eq ([|ih1|] + 2) [|ih|]); auto with zarith.
+ intros H2; contradict Hs2; apply Zle_not_lt.
+ replace (([|s|] + 1) ^ 2) with (phi2 ih1 il1 + 2 * [|s|] + 1).
+ unfold phi2.
+ assert ([|ih1|] * base + 2 * phi s + 1 <= [|ih|] * base + ([|il|] - [|il1|]));
+  auto with zarith.
+ rewrite <-Hil2.
+ change (-1 * 2 ^ Z_of_nat size) with (-base).
+ case (phi_bounded il2); intros Hpil2 _.
+ apply Zle_trans with ([|ih|] * base + - base); auto with zarith.
+ case (phi_bounded s);  change (2 ^ Z_of_nat size) with base; intros _ Hps.
+ assert (2 * [|s|] + 1 <= 2 * base); auto with zarith.
+ apply Zle_trans with ([|ih1|] * base + 2 * base); auto with zarith.
+ assert (Hi: ([|ih1|] + 3) * base <= [|ih|] * base); auto with zarith.
+ rewrite Zmult_plus_distr_l in Hi; auto with zarith.
+ rewrite Hihl1, Hbin; auto.
+ intros H2; unfold phi2; rewrite <-H2.
  split.
- apply Zsqrt_plain_is_pos; auto with zarith.
-
- cut (Zsqrt_plain [|x|] <= (wB-1)); try omega.
- rewrite <- (Zsqrt_square_id (wB-1)) by (auto with zarith).
- apply Zsqrt_le.
- split; auto with zarith.
- apply Zle_trans with (wB-1); auto with zarith.
- apply Zsquare_le.
+ replace [|il|] with (([|il|] - [|il1|]) + [|il1|]); try ring.
+ rewrite <-Hil2.
+ change (-1 * 2 ^ Z_of_nat size) with (-base); ring.
+ replace (base + [|il2|]) with (phi2 ih il - phi2 ih1 il1).
+ rewrite Hihl1.
+ rewrite <-Hbin in Hs2; auto with zarith.
+ unfold phi2; rewrite <-H2.
+ replace [|il|] with (([|il|] - [|il1|]) + [|il1|]); try ring.
+ rewrite <-Hil2.
+ change (-1 * 2 ^ Z_of_nat size) with (-base); ring.
  Qed.
 
  (** [iszero] *)
