@@ -613,7 +613,7 @@ let make_local_hint_db lems =
   Goal.return (
     Hint_db.add_list hintlist' (Hint_db.add_list hintlist Hint_db.empty)
   )
-  (* arnaud: à restaurer:
+  (* arnaud: original
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g) sign in
   let hintlist' = list_map_append (pf_apply make_resolves g true) lems in

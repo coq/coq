@@ -160,7 +160,7 @@ let tclTRY tac =
 (* [first] tactical *)
 let rec tclFIRST tacs =
   match tacs with
-  | [] -> Proofview.fail (Pp.str "tclFIRST") (* arnaud: améliorer le message d'erreur. *)
+  | [] -> Proofview.tclFAIL (Pp.str "tclFIRST") (* arnaud: améliorer le message d'erreur. *)
   | t::r -> tclORELSE t (tclFIRST r)
 
 (* Wrapper tactical around tclLIST *)
@@ -272,7 +272,7 @@ let assumption =
     let sigma = Evd.evars_of defs in
     let rec arec only_eq = function
       | [] -> 
-          if only_eq then arec false hyps else Proofview.fail (Pp.str "No such assumption")
+          if only_eq then arec false hyps else Proofview.tclFAIL (Pp.str "No such assumption")
       | (id,c,t)::rest -> 
 	  if (only_eq & eq_constr t concl) 
             or (not only_eq & Reductionops.is_conv_leq env sigma t concl)

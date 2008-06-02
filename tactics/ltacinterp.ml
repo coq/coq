@@ -1683,15 +1683,19 @@ let rec other_eval_tactic ist = function
 			   Logic.tclTHEN i_t1
 			                (Logic.tclEXTEND i_a i_t2 i_b)
   | TacThens _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacThens: todo"
-  | TacFirst _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacFirst: todo"
+  | TacFirst l -> let i_l = List.map (other_eval_tactic ist) l in
+                  Logic.tclFIRST i_l
   | TacComplete _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacComplete: todo"
   | TacSolve _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacSolve: todo"
   | TacTry _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacTry: todo"
-  | TacOrelse _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacOrelse: todo"
+  | TacOrelse (t1, t2) -> let i_t1 = other_eval_tactic ist t1 in
+                          let i_t2 = other_eval_tactic ist t2 in
+		          Logic.tclORELSE i_t1 i_t2
   | TacDo _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacDo: todo"
   | TacRepeat _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacRepeat: todo"
   | TacProgress _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacProgress: todo"
   | TacAbstract _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacAbstract: todo"
+  | TacId _ (* arnaud: rebrancher le message *) -> Proofview.tclIDTAC ()
   | _ -> Util.anomaly "Ltacinterp.other_eval_tactic: todo"
 
 let rec val_interp ist (tac:glob_tactic_expr) =
