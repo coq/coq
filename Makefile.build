@@ -657,7 +657,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	cp $(LINKCMO) $(LINKCMOCMXA) $(GRAMMARCMA) $(FULLCOQLIB)
+	cp $(LINKCMO) $(LINKCMX) $(GRAMMARCMA) $(FULLCOQLIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)

@@ -127,8 +127,7 @@ while : ; do
     -prefix|--prefix) prefix_spec=yes
                       prefix="$2"
 		      shift;;
-    -local|--local) local=true
-		    reals=all;;
+    -local|--local) local=true;;
     -src|--src) src_spec=yes
                 COQSRC="$2"
 	        shift;;
