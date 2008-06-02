@@ -158,8 +158,10 @@ let tclTRY tac =
   Proofview.tclORELSE tac (Proofview.tclIDTAC ())
 
 (* [first] tactical *)
-let tclFIRST tacs =
-  Util.anomaly "tclFIRST:todo"
+let rec tclFIRST tacs =
+  match tacs with
+  | [] -> Proofview.fail (Pp.str "tclFIRST") (* arnaud: améliorer le message d'erreur. *)
+  | t::r -> tclORELSE t (tclFIRST r)
 
 (* Wrapper tactical around tclLIST *)
 let tclARRAY tacs =

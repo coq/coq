@@ -426,7 +426,7 @@ let tclSOLVE t env ps =
   let new_result = t env ps in
   match new_result.proof_step.Goal.subgoals with
   | [] -> new_result
-  | _ -> fail (Pp.str "") (* arnaud: améliorer le message d'erreur sans doute :D*)
+  | _ -> fail (Pp.str "tclSOLVE") (* arnaud: améliorer le message d'erreur sans doute :D*)
 
 (* G stands for global, it backtracks on all current goals instead
    of just one.

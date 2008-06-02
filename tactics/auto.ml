@@ -208,22 +208,21 @@ let make_exact_entry (c,cty) =
 	   { pri=0; pat=None; code=Give_exact c })
   *)
 
-let dummy_goal = 
-  {it = make_evar empty_named_context_val mkProp;
-   sigma = empty}
+(* spiwack: this trick is a port of the previous implementation
+   of make_apply_entry. However I can't help thinking there is
+   a better way to do it. *)
+let (dummy_defs, dummy_goal) = 
+  let dummy_info = make_evar empty_named_context_val mkProp in
+  let dummy_sigma = Evd.add Evd.empty 1 dummy_info in
+  (Evd.create_evar_defs dummy_sigma , Goal.build 1)
 
 let make_apply_entry env sigma (eapply,verbose) (c,cty) =
-  Util.anomaly "Auto.make_apply_entry: à restaurer"
-  (* arnaud: à restaurer
   let cty = hnf_constr env sigma cty in
   match kind_of_term cty with
     | Prod _ ->
-	(* arnaud: on pourrait aussi faire un dummy_goal dans la
-	   nouvelle implémentation, mais je ne comprends pas bien 
-	   à quoi ça rime, il serait sans doute de bon goût de porter
-	   la série de fonction qui dépendent de celle là pour 
-	   que leur type ait plus de sens. *)
-        let ce = mk_clenv_from dummy_goal (c,cty) in
+        let ce = Goal.run (mk_clenv_from (c,cty)) 
+	                  Environ.empty_env dummy_defs dummy_goal 
+	in
 	let c' = clenv_type ce in
 	let pat = Pattern.pattern_of_constr c' in
         let hd = (try head_pattern_bound pat
@@ -244,7 +243,6 @@ let make_apply_entry env sigma (eapply,verbose) (c,cty) =
              pat = Some pat;
              code = Res_pf(c,{ce with env=empty_env}) })
     | _ -> failwith "make_apply_entry"
-  *)
  
 (* eap is (e,v) with e=true if eapply and v=true if verbose 
    c is a constr

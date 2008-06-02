@@ -101,7 +101,7 @@ let run t env defs gl =
   let rdefs = ref defs in
   t env rdefs gl info
 
-(* This is a tactic which does nothing. It's main purpose
+(* This is a tactic which does nothing. Its main purpose
    is to enforce a full duality betweens [Proofview.tactic]-s
    and [Goal.tactic]-s.
    Indeed, given this [null] tactic, [Proofview. will know
