@@ -18,18 +18,18 @@ class command_window () =
   let frame = GBin.frame ~label:"Command Pane" ~shadow_type:`IN () in
   let _ = frame#misc#hide () in
   let _ = GtkData.AccelGroup.create () in
-  let vbox = GPack.vbox ~homogeneous:false ~packing:frame#add () in
+  let hbox = GPack.hbox ~homogeneous:false ~packing:frame#add () in
   let toolbar = GButton.toolbar 
-		  ~orientation:`HORIZONTAL 
-		  ~style:`BOTH
+		  ~orientation:`VERTICAL 
+		  ~style:`ICONS
 		  ~tooltips:true 
-		  ~packing:(vbox#pack 
+		  ~packing:(hbox#pack 
 			       ~expand:false
 			       ~fill:false)
 		  ()
   in
   let notebook = GPack.notebook ~scrollable:true 
-		   ~packing:(vbox#pack 
+		   ~packing:(hbox#pack 
 			       ~expand:true
 			       ~fill:true
 			    ) 
@@ -39,7 +39,7 @@ class command_window () =
     toolbar#insert_button
       ~tooltip:"Hide Commands Pane"
       ~text:"Hide Pane"
-      ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `CLOSE)
+      ~icon:(Ideutils.stock_to_widget `CLOSE)
       ~callback:frame#misc#hide
       ()
   in
@@ -47,7 +47,7 @@ class command_window () =
     toolbar#insert_button
       ~tooltip:"New Page"
       ~text:"New Page"
-      ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `NEW)
+      ~icon:(Ideutils.stock_to_widget `NEW)
       ()
   in
 
@@ -55,7 +55,7 @@ class command_window () =
     toolbar#insert_button
       ~tooltip:"Delete Page"
       ~text:"Delete Page"
-      ~icon:(Ideutils.stock_to_widget ~size:`LARGE_TOOLBAR `DELETE)
+      ~icon:(Ideutils.stock_to_widget `DELETE)
       ~callback:(fun () -> notebook#remove_page notebook#current_page)
       ()
   in

@@ -3195,8 +3195,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					      ~packing:(fr_b#add) () in
 					    let command_object = Command_windows.command_window() in
 					    let queries_frame = command_object#frame in
-					      queries_pane#pack2 ~shrink:true ~resize:true (queries_frame#coerce);
-					     
+					      queries_pane#pack2 ~shrink:false ~resize:false (queries_frame#coerce);
 					    let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
 					    let status_bar = GMisc.statusbar ~packing:(lower_hbox#pack ~expand:true) () 
 					    in
