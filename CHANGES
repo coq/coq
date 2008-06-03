@@ -5,7 +5,7 @@ Language
 
 - If a fixpoint is not written with an explicit { struct ... }, then 
   all arguments are tried successively (from left to right) until one is 
-  found that satisfies the structural decreasing condition. (DOC TODO?)
+  found that satisfies the structural decreasing condition.
 - New experimental typeclass system giving ad-hoc polymorphism and 
   overloading based on dependent records and implicit arguments.
 - New syntax "let 'pat := b in c" for let-binding using irrefutable patterns.
@@ -49,11 +49,42 @@ Vernacular commands
 
 Libraries (DOC TO CHECK)
 
-- New arithmetical libraries:
-  - Numbers contains an abstract modular development of natural and integer
-    arithmetics.
-  - Ints contains a library of efficient computational bounded and
-    unbounded integers that can be mapped to processor native arithmetics.
+- Several parts of the libraries are now in Type, in particular FSets,
+  SetoidList, ListSet, Sorting, Zmisc. This may induce a few
+  incompatibilities. In case of trouble while fixing existing development,
+  it may help to simply declare Set as an alias for Type (see file
+  SetIsType). 
+- New arithmetical library in theories/Numbers. It contains: 
+  * an abstract modular development of natural and integer arithmetics 
+    in Numbers/Natural/Abstract and Numbers/Integer/Abstract
+  * an implementation of efficient computational bounded and unbounded 
+    integers that can be mapped to processor native arithmetics.
+    See Numbers/Cyclic/Int31 for 31-bit integers and Numbers/Natural/BigN 
+    for unbounded natural numbers and Numbers/Integer/BigZ for unbounded
+    integers. 
+  * some proofs that both older libraries Arith, ZArith and NArith and
+    newer BigN and BigZ implement the abstract modular development.
+    This allows in particular BigN and BigZ to already come with a 
+    large database of basic lemmas and some generic tactics (ring),
+  This library has still an experimental status, as well as the
+  processor-acceleration mechanism, but both its abstract and its
+  concrete parts are already quite usable and could challenge the use
+  of nat, N and Z in actual developments. Moreover, an extension of 
+  this framework to rational numbers is ongoing, and an efficient
+  Q structure is already provided (see Numbers/Rational/BigQ), but 
+  this part is currently incomplete (no abstract layer and generic 
+  lemmas).
+- Changes in FSets/FMaps:
+  * Improvements: in particular FMap now provides an induction principle 
+    on maps, and some properties about FSets and fold needs less hypotheses.
+    The polymorphic parameter for the fold function is now in Type. 
+  * Loading FSets/FMap used to open unwanted scopes of integer datatypes 
+    (see bug #1347). These scopes may need to be opened manually now.
+  * Hints in FSetInterface.v have been transfered from the "core" database 
+    to a "set" database, and some expensive hints have been downgraded 
+    as "Immediate". A compatibility "oldset" database retains these expensive
+    hints, so using "(e)auto with set oldset" should help porting scripts. 
+    Same for FSetWeakInterface and FMap(Weak)Interface. 
 - Library IntMap, subsumed by FSets/FMaps, has been removed from 
   Coq Standard Library and moved into a user contribution Cachan/IntMap
 - Better computational behavior of some constants (eq_nat_dec and 
@@ -67,29 +98,18 @@ Libraries (DOC TO CHECK)
   at the same position, while the predicate previously called eqlistA 
   is now equivlistA (this one only states that the lists contain the same 
   elements, nothing more). 
-- In ListSet, a few definitions are now in Type (may induce a few
-  incompatibilities).
-- Changes in FSets/FMaps:
-  - Improvements: in particular FMap now provides an induction principle 
-    on maps, and some properties about FSets and fold needs less hypotheses.
-    The polymorphic parameter for the fold function is now in Type. 
-  - Loading FSets/FMap used to open unwanted scopes of integer datatypes 
-    (see bug #1347). These scopes may need to be opened manually now.
-  - Hints in FSetInterface.v have been transfered from the "core" database 
-    to a "set" database, and some expensive hints have been downgraded 
-    as "Immediate". A compatibility "oldset" database retains these expensive
-    hints, so using "(e)auto with set oldset" should help porting scripts. 
-    Same for FSetWeakInterface and FMap(Weak)Interface. 
+- The constructors xI and xO of type positive now have postfix notations 
+  "~1" and "~0" by default (see BinPos.v).
 - Changes in Reals:
-  - Most statement in "sigT" (including the
+  * Most statement in "sigT" (including the
     completeness axiom) are now in "sig" (in case of incompatibility,
     use proj1_sig instead of projT1, sig instead of sigT, etc).
-  - More uniform naming scheme (identifiers in French moved to English,
+  * More uniform naming scheme (identifiers in French moved to English,
     consistent use of 0 -- zero -- instead of O -- letter O --, etc).
-  - Lemma on prod_f_SO is now on prod_f_R0.
-  - Useless hypothesis of ln_exists1 dropped.
-  - New Rlogic.v states a few logical properties about R axioms.
-  - RIneq.v extended and made cleaner.
+  * Lemma on prod_f_SO is now on prod_f_R0.
+  * Useless hypothesis of ln_exists1 dropped.
+  * New Rlogic.v states a few logical properties about R axioms.
+  * RIneq.v extended and made cleaner.
 - Slight restructuration of the Logic library regarding choice and classical
   logic. Addition of files providing intuitionistic axiomatizations of
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v.
