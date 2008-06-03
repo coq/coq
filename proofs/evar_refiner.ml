@@ -28,8 +28,8 @@ let w_refine ev rawc evd =
   let e_info = Evd.find (evars_of evd) ev in
   let env = Evd.evar_env e_info in
   let sigma,typed_c = 
-    try Pretyping.Default.understand_tcc (evars_of evd) env 
-      ~expected_type:e_info.evar_concl rawc 
+    try Pretyping.Default.understand_tcc ~resolve_classes:false
+      (evars_of evd) env ~expected_type:e_info.evar_concl rawc
     with _ -> error ("The term is not well-typed in the environment of " ^
 			string_of_existential ev)
   in

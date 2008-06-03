@@ -98,7 +98,7 @@ sig
      unresolved holes as evars and returning the typing contexts of
      these evars. Work as [understand_gen] for the rest. *)
   
-  val understand_tcc :
+  val understand_tcc : ?resolve_classes:bool ->
     evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
 
   val understand_tcc_evars :
@@ -647,7 +647,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  error_unexpected_type_loc
                     (loc_of_rawconstr c) env (evars_of !evdref) tj.utj_val v
 
-  let pretype_gen evdref env lvar kind c =
+  let pretype_gen_aux evdref env lvar kind c =
     let c' = match kind with
       | OfType exptyp ->
 	  let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
@@ -655,10 +655,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       | IsType ->
 	  (pretype_type empty_valcon env evdref lvar c).utj_val in
     let evd,_ = consider_remaining_unif_problems env !evdref in
-    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:false env (evars_of evd) evd in
-      evdref := evd;
-      nf_evar (evars_of evd) c'
-
+      evdref := evd; c'
+	
+  let pretype_gen evdref env lvar kind c =
+    let c = pretype_gen_aux evdref env lvar kind c in
+      evdref := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:false env !evdref;
+      nf_evar (evars_of !evdref) c
+	
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage
      retourne aussi le nouveau sigma...
@@ -669,7 +672,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     let j = pretype empty_tycon env evdref ([],[]) c in
     let evd,_ = consider_remaining_unif_problems env !evdref in
     let j = j_nf_evar (evars_of evd) j in
-    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env (evars_of evd) evd in
+    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env evd in
     let j = j_nf_evar (evars_of evd) j in
     check_evars env sigma evd (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
     j
@@ -689,7 +692,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     let c = pretype_gen evdref env lvar kind c in
     let evd,_ = consider_remaining_unif_problems env !evdref in
       if fail_evar then 
-	let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env (evars_of evd) evd in
+	let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env evd in
 	let c = Evarutil.nf_isevar evd c in
 	  check_evars env Evd.empty evd c;
 	  evd, c
@@ -712,8 +715,15 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let understand_tcc_evars evdref env kind c =
     pretype_gen evdref env ([],[]) kind c
 
-  let understand_tcc sigma env ?expected_type:exptyp c =
-    let evd, t = ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c in
+  let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
+    let evd, t =
+      if resolve_classes then
+	ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c 
+      else
+	let evdref = ref (Evd.create_evar_defs sigma) in
+	let c = pretype_gen_aux evdref env ([],[]) (OfType exptyp) c in
+	  !evdref, nf_isevar !evdref c
+    in
     Evd.evars_of evd, t
 end
 

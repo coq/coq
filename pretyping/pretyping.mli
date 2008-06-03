@@ -40,7 +40,7 @@ sig
      unresolved holes as evars and returning the typing contexts of
      these evars. Work as [understand_gen] for the rest. *)
   
-  val understand_tcc :
+  val understand_tcc : ?resolve_classes:bool ->
     evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
     
   val understand_tcc_evars :

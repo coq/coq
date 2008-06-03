@@ -394,22 +394,29 @@ let dest_class_app c =
 let ((bool_in : bool -> Dyn.t),
     (bool_out : Dyn.t -> bool)) = Dyn.create "bool"
   
+let bool_false = bool_in false
+
 let is_resolvable evi =
   match evi.evar_extra with
       Some t -> if Dyn.tag t = "bool" then bool_out t else true
     | None -> true
 	
 let mark_unresolvable evi = 
-  { evi with evar_extra = Some (bool_in false) }
-
+  { evi with evar_extra = Some bool_false }
+    
+let mark_unresolvables sigma =
+  Evd.fold (fun ev evi evs ->
+    Evd.add evs ev (mark_unresolvable evi))
+    sigma Evd.empty
+    
 let has_typeclasses evd =
   Evd.fold (fun ev evi has -> has || 
     (evi.evar_body = Evar_empty && class_of_constr evi.evar_concl <> None 
 	&& is_resolvable evi))
     evd false
 
-let resolve_typeclasses ?(onlyargs=false) ?(fail=true) env sigma evd =
-  if not (has_typeclasses sigma) then evd
+let resolve_typeclasses ?(onlyargs=false) ?(fail=true) env evd =
+  if not (has_typeclasses (Evd.evars_of evd)) then evd
   else
     !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) onlyargs fail
 

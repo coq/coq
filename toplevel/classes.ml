@@ -512,8 +512,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
   in
   let env' = push_named_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
-  let sigma = Evd.evars_of !isevars in
-  isevars := resolve_typeclasses env sigma !isevars;
+  isevars := resolve_typeclasses env !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = Typeclasses.nf_substitution sigma subst in
   let imps = 
@@ -569,10 +568,10 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 	let term = Evarutil.nf_isevar !isevars term in
 	let evm = Evd.evars_of (undefined_evars !isevars) in
 	Evarutil.check_evars env Evd.empty !isevars termtype;
-	isevars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env evm !isevars;
 	  if evm = Evd.empty then
 	    declare_instance_constant k pri global imps ?hook id term termtype
-	  else
+	  else begin
+	    isevars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !isevars;
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
 		Command.start_proof id kind termtype 
@@ -584,6 +583,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
 	      Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
 	      id
+	  end
       end
 
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition

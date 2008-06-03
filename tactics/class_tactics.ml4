@@ -357,7 +357,10 @@ let full_eauto debug n lems gls =
   let db_list = List.map searchtable_map dbnames in
     e_search_auto debug n lems db_list gls
 
-let typeclasses_eauto debug n lems gls = 
+let nf_goal (gl, valid) =
+  { gl with sigma = Evarutil.nf_evars gl.sigma }, valid
+
+let typeclasses_eauto debug n lems gls =
   let dbnames = [typeclasses_db] in
   let db_list = List.map
     (fun x -> 
@@ -409,15 +412,17 @@ let resolve_one_typeclass env gl =
       let term = Evarutil.nf_evar (sig_sig gls') t in
 	if occur_existential term then raise Not_found else term
 
-let has_undefined p evd =
+let has_undefined p oevd evd =
   Evd.fold (fun ev evi has -> has ||
-    (evi.evar_body = Evar_empty && p ev evi))
+    (evi.evar_body = Evar_empty && p ev evi && 
+	(try Typeclasses.is_resolvable (Evd.find oevd ev) with _ -> true)))
     (Evd.evars_of evd) false
     
 let resolve_all_evars debug m env p oevd =
+  let oevm = Evd.evars_of oevd in
   try
     let rec aux n evd =
-      if has_undefined p evd then
+      if has_undefined p oevm evd then
 	if n > 0 then
 	  let evd' = resolve_all_evars_once debug m env p evd in
 	    aux (pred n) evd'
@@ -792,7 +797,8 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
       | Some (env', (prf, hypinfo as x)) -> 
 	  let occ = succ occ in
 	    if is_occ occ then (	    
-	      evars := Evd.evar_merge !evars (Evd.evars_of (Evd.undefined_evars env'.evd));
+	      evars := Evd.evar_merge !evars 
+		(Evd.evars_of (Evd.undefined_evars (Evarutil.nf_evar_defs env'.evd)));
 	      match cstr with
 		  None -> Some x, occ
 		| Some _ ->
@@ -905,7 +911,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
     match eq with  
 	Some (p, (_, _, oldt, newt)) -> 
 	  (try 
-	      evars := Typeclasses.resolve_typeclasses env (Evd.evars_of !evars) ~fail:true !evars;
+	      evars := Typeclasses.resolve_typeclasses env ~fail:true !evars;
 	      let p = Evarutil.nf_isevar !evars p in
 	      let newt = Evarutil.nf_isevar !evars newt in
 	      let undef = Evd.undefined_evars !evars in
@@ -957,6 +963,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 let cl_rewrite_clause c left2right occs clause gl =
   init_setoid ();
   let meta = Evarutil.new_meta() in
+  let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in
   let hypinfo = ref (decompose_setoid_eqhyp (pf_env gl) (project gl) c left2right) in
     cl_rewrite_clause_aux hypinfo meta occs clause gl
 

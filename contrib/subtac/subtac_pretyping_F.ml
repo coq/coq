@@ -550,7 +550,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		  error_unexpected_type_loc
                     (loc_of_rawconstr c) env (evars_of !isevars) tj.utj_val v
 
-  let pretype_gen isevars env lvar kind c =
+  let pretype_gen_aux isevars env lvar kind c =
     let c' = match kind with
       | OfType exptyp ->
 	  let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
@@ -558,9 +558,13 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
       | IsType ->
 	  (pretype_type empty_valcon env isevars lvar c).utj_val in
     let evd,_ = consider_remaining_unif_problems env !isevars in
-    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:false env (evars_of evd) evd in
       isevars:=evd;
       nf_evar (evars_of !isevars) c'
+
+  let pretype_gen isevars env lvar kind c =
+    let c = pretype_gen_aux isevars env lvar kind c in
+      isevars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:false env !isevars;
+      nf_evar (evars_of !isevars) c
 
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage
@@ -609,8 +613,15 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let understand_tcc_evars evdref env kind c =
     pretype_gen evdref env ([],[]) kind c 
 
-  let understand_tcc sigma env ?expected_type:exptyp c =
-    let ev, t = ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c in
+  let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
+    let ev, t = 
+      if resolve_classes then
+	ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c 
+      else
+	let isevars = ref (Evd.create_evar_defs sigma) in
+	let c = pretype_gen_aux isevars env ([],[]) (OfType exptyp) c in
+	  !isevars, c
+    in
       Evd.evars_of ev, t
 end
 
