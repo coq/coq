@@ -438,12 +438,16 @@ through the <tt>Require Import</tt> command.</p>
     Support for dependently-typed programming.
   </dt>
   <dd> 
+    theories/Program/Basics.v
     theories/Program/Wf.v
+    theories/Program/Subset.v
     theories/Program/Equality.v
     theories/Program/Tactics.v
     theories/Program/Utils.v
+    theories/Program/Syntax.v
     theories/Program/Program.v
     theories/Program/FunctionalExtensionality.v
+    theories/Program/Combinators.v
   </dd>
 
 </dl>

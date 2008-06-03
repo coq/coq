@@ -22,7 +22,8 @@ Tactics
 - Add Relation and Add Morphism on polymorphic relations should now be
   declared with Add Parametric Relation and Add Parametric Morphism.
 
-- Some bug fixes may lead to incompatibilities.
+- Some bug fixes may lead to incompatibilities (see CHANGES for a detailed
+  account).
 
 Libraries
 

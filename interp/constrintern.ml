@@ -191,30 +191,55 @@ let type_of_global_ref gr =
 	  else if mib.Declarations.mind_finite then "ind"
 	  else "coind"
     | ConstructRef _ -> "constr"
-	
+
+let remove_sections dir =
+  if is_dirpath_prefix_of dir (Lib.cwd ()) then
+    (* Not yet (fully) discharged *)
+    extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
+  else
+    (* Theorem/Lemma outside its outer section of definition *)
+    dir
+
+let add_glob_gen loc sp lib_dp ty =
+  let mod_dp,id = repr_path sp in
+  let mod_dp = remove_sections mod_dp in
+  let mod_dp_trunc = drop_dirpath_prefix lib_dp mod_dp in
+  let filepath = string_of_dirpath lib_dp in
+  let modpath = string_of_dirpath mod_dp_trunc in
+  let ident = string_of_id id in
+    dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
+		    (fst (unloc loc)) filepath modpath ident ty)
+
 let add_glob loc ref = 
   let sp = Nametab.sp_of_global ref in
   let lib_dp = Lib.library_part ref in
-  let mod_dp,id = repr_path sp in
-  let mod_dp_trunc =  drop_dirpath_prefix lib_dp mod_dp in
-  let filepath = string_of_dirpath lib_dp in
-  let fullname = string_of_qualid (make_qualid mod_dp_trunc id) in
   let ty = type_of_global_ref ref in
-    dump_string (Printf.sprintf "R%d %s %s %s\n" 
-		    (fst (unloc loc)) filepath fullname ty)
-
+    add_glob_gen loc sp lib_dp ty
+      
 let add_glob loc ref =
   if !Flags.dump && loc <> dummy_loc then add_glob loc ref
 
+let mp_of_kn kn = 
+  let mp,sec,l = repr_kn kn in 
+    MPdot (mp,l) 
+
 let add_glob_kn loc kn =
   let sp = Nametab.sp_of_syntactic_definition kn in
-  let dp, id = repr_path sp in
-  let fullname = string_of_id id in
-  let filepath = string_of_dirpath dp in
-    dump_string (Printf.sprintf "R%d %s %s syndef\n" (fst (unloc loc)) filepath fullname)
+  let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
+    add_glob_gen loc sp lib_dp "syndef"
 
 let add_glob_kn loc ref =
   if !Flags.dump && loc <> dummy_loc then add_glob_kn loc ref
+
+let add_local loc id = ()
+(*   let mod_dp,id = repr_path sp in *)
+(*   let mod_dp = remove_sections mod_dp in *)
+(*   let mod_dp_trunc = drop_dirpath_prefix lib_dp mod_dp in *)
+(*   let filepath = string_of_dirpath lib_dp in *)
+(*   let modpath = string_of_dirpath mod_dp_trunc in *)
+(*   let ident = string_of_id id in *)
+(*     dump_string (Printf.sprintf "R%d %s %s %s %s\n"  *)
+(* 		    (fst (unloc loc)) filepath modpath ident ty) *)
 
 let dump_binding loc id = ()
       
@@ -473,7 +498,7 @@ let intern_applied_reference intern env lvar args = function
       let r,args2 = intern_qualid loc qid intern env args in
       find_appl_head_data lvar r, args2
   | Ident (loc, id) ->
-      try intern_var env lvar loc id,args
+      try intern_var env lvar loc id, args
       with Not_found -> 
       let qid = make_short_qualid id in
       try

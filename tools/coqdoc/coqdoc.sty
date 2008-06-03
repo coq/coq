@@ -63,8 +63,8 @@
 }
 
 \usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black}
 %\usepackage{color}
-%\hypersetup{colorlinks=true,linkcolor=black}
 %\usepackage{multind}
 %\newcommand{\coqdef}[3]{\hypertarget{coq:#1}{\index{coq}{#1@#2|hyperpage}#3}}
 
@@ -79,7 +79,10 @@
 \newcommand{\coqdefinition}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
 \newcommand{\coqdefinitionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
 
-\newcommand{\coqvariable}[2]{\coqdef{#1}{#2}{\coqdocid{#2}}}
+%\newcommand{\coqvariable}[2]{\coqdef{#1}{#2}{\coqdocid{#2}}}
+%\newcommand{\coqaxiom}[2]{\coqdef{#1}{#2}{\coqdocid{#2}}}
+\newcommand{\coqvariable}[2]{\coqdocid{#2}}
+\newcommand{\coqaxiom}[2]{\coqdocid{#2}}
 
 \newcommand{\coqinductive}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
 \newcommand{\coqinductiveref}[2]{\coqref{#1}{\coqdocind{#2}}}
@@ -107,6 +110,8 @@
 
 \newcommand{\coqprojection}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
 \newcommand{\coqprojectionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+
+\newcommand{\coqnotationref}[2]{\coqref{#1}{\coqdockw{#2}}}
 
 %HEVEA\newcommand{\lnot}{\coqwkw{not}}
 %HEVEA\newcommand{\lor}{\coqwkw{or}}

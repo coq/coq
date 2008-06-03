@@ -21,19 +21,21 @@ Definition id {A} := fun x : A => x.
 
 (** Function composition. *)
 
-Definition compose {A B C} (g : B -> C) (f : A -> B) := fun x : A => g (f x).
+Definition compose {A B C} (g : B -> C) (f : A -> B) := 
+  fun x : A => g (f x).
 
 Hint Unfold compose.
 
-Notation " g ∘ f " := (compose g f)  (at level 40, left associativity) : program_scope.
+Notation " g ∘ f " := (compose g f)  
+  (at level 40, left associativity) : program_scope.
 
 Open Local Scope program_scope.
 
-(** [arrow A B] represents the non-dependent function space between [A] and [B]. *)
+(** The non-dependent function space between [A] and [B]. *)
 
 Definition arrow (A B : Type) := A -> B.
 
-(** [impl A B] represents the logical implication of [B] by [A]. *)
+(** Logical implication. *)
 
 Definition impl (A B : Prop) : Prop := A -> B.
 
@@ -45,7 +47,7 @@ Definition const {A B} (a : A) := fun _ : B => a.
 
 Definition flip {A B C} (f : A -> B -> C) x y := f y x.
 
-(** [apply f x] simply applies [f] to [x]. *)
+(** Application as a combinator. *)
 
 Definition apply {A B} (f : A -> B) (x : A) := f x.
 

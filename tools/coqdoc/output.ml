@@ -36,7 +36,7 @@ let is_keyword =
       "CoInductive"; "Defined"; "Definition"; "End"; "Eval"; "Example"; 
       "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses"; 
-      "Immediate"; "Implicit"; "Import"; "Inductive"; 
+      "Resolve"; "Unfold"; "Immediate"; "Implicit"; "Import"; "Inductive"; 
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac"; 
       "Module"; "Module Type"; "Declare Module"; "Include";
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
@@ -46,18 +46,15 @@ let is_keyword =
       "Notation"; "Reserved Notation"; "Tactic Notation";
       "Delimit"; "Bind"; "Open"; "Scope";
       "Boxed"; "Unboxed";
-      "Arguments";
-      "Instance"; "Class"; "Instantiation";
+      "Arguments"; 
+      "Typeclasses"; "Instance"; "Class"; "Instantiation";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
       "Program Instance";
-      (*i (* correctness *)
-      "array"; "assert"; "begin"; "do"; "done"; "else"; "end"; "if";
-      "in"; "invariant"; "let"; "of"; "ref"; "state"; "then"; "variant";
-      "while"; i*)
       (*i (* coq terms *) *)
-	"match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="
+	"match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; 
+	"if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"
        ]
 
 let is_tactic = 
@@ -65,9 +62,12 @@ let is_tactic =
     [ "intro"; "intros"; "apply"; "rewrite"; "setoid_rewrite";
       "destruct"; "induction"; "elim"; "dependent"; 
       "generalize"; "clear"; "rename"; "move"; "set"; "assert";
-      "cut"; "assumption"; "exact";
-      "unfold"; "red"; "compute"; "at"; "in"; "by";
-      "reflexivity"; "symmetry"; "transitivity" ]
+      "cut"; "assumption"; "exact"; "split"; "try"; "discriminate";
+      "simpl"; "unfold"; "red"; "compute"; "at"; "in"; "by";
+      "reflexivity"; "symmetry"; "transitivity";
+      "replace"; "setoid_replace"; "inversion"; "pattern";
+      "trivial"; "exact"; "tauto"; "firstorder"; "ring";
+      "clapply"; "program_simpl"; "eapply"; "auto"; "eauto" ]
 
 (*s Current Coq module *)
 
@@ -94,6 +94,7 @@ let remove_printing_token = Hashtbl.remove token_pp
 let _ = List.iter 
 	  (fun (s,l) -> Hashtbl.add token_pp s (Some l, None))
 	  [ "*" ,  "\\ensuremath{\\times}";
+	    "|", "\\ensuremath{|}";
 	    "->",  "\\ensuremath{\\rightarrow}";
 	    "->~",  "\\ensuremath{\\rightarrow\\lnot}";
 	    "->~~",  "\\ensuremath{\\rightarrow\\lnot\\lnot}";
@@ -246,8 +247,6 @@ module Latex = struct
   let ident s loc = 
     if is_keyword s then begin
       printf "\\coqdockw{"; raw_ident s; printf "}"
-    end else if is_tactic s then begin
-      printf "\\coqdoctac{"; raw_ident s; printf "}"
     end else begin
       begin
 	try
@@ -261,7 +260,9 @@ module Latex = struct
 	     | Mod _ ->
 		 printf "\\coqdocid{"; raw_ident s; printf "}")
 	with Not_found ->
-	  printf "\\coqdocvar{"; raw_ident s; printf "}"
+	  if is_tactic s then begin
+	    printf "\\coqdoctac{"; raw_ident s; printf "}"
+	  end else begin printf "\\coqdocvar{"; raw_ident s; printf "}" end
       end
     end
 

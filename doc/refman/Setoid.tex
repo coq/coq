@@ -623,10 +623,13 @@ Reset Initial.
 Require Import Setoid.
 \end{coq_eval}
 \begin{coq_example}
-Instance {A : Type} => all_iff_morphism : 
+Instance all_iff_morphism (A : Type) :
   Morphism (pointwise_relation iff ==> iff) (@all A).
 Proof. simpl_relation. 
 \end{coq_example}
+\begin{coq_eval}
+Admitted.
+\end{coq_eval}
 
 One then has to show that if two predicates are equivalent at every
 point, their universal quantifications are equivalent. Once we have
@@ -653,12 +656,13 @@ Inductive list_equiv {A:Type} (eqA : relation A) : relation (list A) :=
   forall l l', list_equiv eqA l l' -> list_equiv eqA (x :: l) (y :: l').
 \end{coq_eval}
 \begin{coq_example*}
-Instance [ Equivalence A eqA, Equivalence B eqB ] => 
+Instance map_morphism [ Equivalence A eqA, Equivalence B eqB ] :
   Morphism ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) 
      (@map A B).
 \end{coq_example*}
 
-where \texttt{list\_equiv} implements an equivalence on lists.
+where \texttt{list\_equiv} implements an equivalence on lists
+parameterized by an equivalence on the elements.
 
 Note that when one does rewriting with a lemma under a binder
 using \texttt{setoid\_rewrite}, the application of the lemma may capture

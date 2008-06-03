@@ -131,6 +131,7 @@ val end_compilation : dir_path -> object_prefix * library_segment
 val library_dp : unit -> dir_path
 
 (* Extract the library part of a name even if in a section *)
+val dp_of_mp : module_path -> dir_path
 val library_part :  global_reference -> dir_path
 val remove_section_part : global_reference -> dir_path
 

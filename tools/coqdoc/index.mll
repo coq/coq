@@ -44,16 +44,20 @@ type index_entry =
 
 let current_type = ref Library
 let current_library = ref ""
-  (** referes to the file being parsed *)
+  (** refers to the file being parsed *)
 
 let table = Hashtbl.create 97
   (** [table] is used to store references and definitions *)
 
-let add_def loc ty id = Hashtbl.add table (!current_library, loc) (Def (id, ty))
+let full_ident sp id =
+  if sp <> "<>" then sp ^ "." ^ id else id
+    
+let add_def loc ty sp id = 
+  Hashtbl.add table (!current_library, loc) (Def (full_ident sp id, ty))
 
-let add_ref m loc m' id ty = 
-  Hashtbl.add table (m, loc) (Ref (m', id, ty))
-
+let add_ref m loc m' sp id ty = 
+  Hashtbl.add table (m, loc) (Ref (m', full_ident sp id, ty))
+    
 let add_mod m loc m' id = Hashtbl.add table (m, loc) (Mod (m', id))
 
 let find m l = Hashtbl.find table (m, l)
@@ -288,7 +292,7 @@ and index_ident = parse
 	      | Lemma -> make_fullid id
 	      | _ -> id 
 	in 
-	  add_def (lexeme_start lexbuf) !current_type fullid }
+	  add_def (lexeme_start lexbuf) !current_type "" fullid }
   | eof    
       { () }
   | _      
@@ -300,7 +304,7 @@ and index_idents = parse
   | space+ | ','
       { index_idents lexbuf }
   | ident  
-      { add_def (lexeme_start lexbuf) !current_type (lexeme lexbuf);
+      { add_def (lexeme_start lexbuf) !current_type "" (lexeme lexbuf);
 	index_idents lexbuf }
   | eof    
       { () }
@@ -380,7 +384,7 @@ and module_ident = parse
       { () }
   | ident
       { let id = lexeme lexbuf in
-	  begin_module id; add_def (lexeme_start lexbuf) !current_type id }
+	  begin_module id; add_def (lexeme_start lexbuf) !current_type "" id }
   | eof
       { () }
   | _
@@ -439,13 +443,13 @@ and module_refs = parse
 		current_library := !cur_mod
 	    | 'R' ->
 		(try
-		    Scanf.sscanf s "R%d %s %s %s"
-		      (fun loc lib_dp full_id ty ->
-			add_ref !cur_mod loc lib_dp full_id (type_of_string ty))
+		    Scanf.sscanf s "R%d %s %s %s %s"
+		      (fun loc lib_dp sp id ty ->
+			add_ref !cur_mod loc lib_dp sp id (type_of_string ty))
 		  with _ -> ())
 	    | _ -> 
-		try Scanf.sscanf s "%s %d %s"
-		  (fun ty loc id -> add_def loc (type_of_string ty) id)
+		try Scanf.sscanf s "%s %d %s %s"
+		  (fun ty loc sp id -> add_def loc (type_of_string ty) sp id)
 		with Scanf.Scan_failure _ -> ()
 	end
       done; assert false

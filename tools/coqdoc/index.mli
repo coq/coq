@@ -60,6 +60,8 @@ type 'a index = {
   idx_entries : (char * (string * 'a) list) list;
   idx_size : int }
 
+val current_library : string ref
+
 val all_entries : unit -> 
       (coq_module * entry_type) index *
       (entry_type * coq_module index) list

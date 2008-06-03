@@ -661,6 +661,7 @@ and printing_token_body = parse
 
   let coq_file f m =
     reset ();
+    Index.current_library := m;
     Output.start_module ();
     let c = open_in f in
     let lb = from_channel c in

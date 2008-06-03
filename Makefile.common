@@ -735,11 +735,16 @@ CLASSESVO:=$(addprefix theories/Classes/, \
  Morphisms_Relations.vo	Functions.vo 	Equivalence.vo  SetoidTactics.vo  \
  SetoidClass.vo 	SetoidAxioms.vo EquivDec.vo 	SetoidDec.vo )
 
+PROGRAMVO:=$(addprefix theories/Program/, \
+ Tactics.vo 	Equality.vo 	Subset.vo	Utils.vo 	\
+ Wf.vo 		Basics.vo	FunctionalExtensionality.vo 	\
+ Combinators.vo	Syntax.vo 	Program.vo )
+
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \
   $(SETOIDSVO) $(LISTSVO) $(STRINGSVO) $(SETSVO) $(FSETSVO) \
   $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)  $(SORTINGVO) $(QARITHVO) \
-  $(NUMBERSVO) $(UNICODEVO) $(CLASSESVO)
+  $(NUMBERSVO) $(UNICODEVO) $(CLASSESVO) $(PROGRAMVO)
 
 THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(ARITHVO)
 
@@ -799,17 +804,12 @@ CCVO:=
 DPVO:=$(addprefix contrib/dp/, \
  Dp.vo )
 
-SUBTACVO:=$(addprefix theories/Program/, \
- Tactics.vo 	Equality.vo 	Subset.vo	Utils.vo 	\
- Wf.vo 		Basics.vo	FunctionalExtensionality.vo 	\
- Combinators.vo	Syntax.vo 	Program.vo )
-
 RTAUTOVO:=$(addprefix contrib/rtauto/, \
  Bintree.vo	Rtauto.vo )
 
 CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) \
-	    $(SUBTACVO) $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO)
+	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO)
 
 ALLVO:= $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 VFILES:= $(ALLVO:.vo=.v)
