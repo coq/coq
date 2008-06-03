@@ -3099,7 +3099,14 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 											      let nb = notebook () in
 												if nb#misc#toplevel#get_oid=w#coerce#get_oid then
 												  begin  
-												    let nw = GWindow.window ~show:true () in
+												    let nw = GWindow.window 
+												      ~width:(!current.window_width*2/3)
+												      ~height:(!current.window_height*2/3)
+												      ~position:`CENTER
+												      ~wm_name:"CoqIDE"
+												      ~wm_class:"CoqIDE"
+												      ~title:"Script" 
+												      ~show:true () in
 												    let parent = Option.get nb#misc#parent in
 												      ignore (nw#connect#destroy 
 														~callback:
@@ -3109,6 +3116,33 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 												  end	      
 											   )))
 					  in
+(*					  let _ = configuration_factory#add_item 
+					    "Detach _Command Pane"
+					    ~callback:
+					    (do_if_not_computing "detach command pane" (sync
+											   (fun () -> 
+											      let command_object = Command_windows.command_window() in
+											      let queries_frame = command_object#frame in
+												if queries_frame#misc#toplevel#get_oid=w#coerce#get_oid then
+												  begin  
+												    let nw = GWindow.window 
+												      ~width:(!current.window_width*2/3)
+												      ~height:(!current.window_height*2/3)
+												      ~wm_name:"CoqIDE"
+												      ~wm_class:"CoqIDE"
+												      ~position:`CENTER 
+												      ~title:"Queries" 
+												      ~show:true () in
+												    let parent = Option.get queries_frame#misc#parent in
+												      ignore (nw#connect#destroy 
+														~callback:
+														(fun () -> queries_frame#misc#reparent parent));
+												      queries_frame#misc#show();
+												      queries_frame#misc#reparent nw#coerce
+												  end	      
+											   )))
+					  in
+*)
 					  let _ = 
 					    configuration_factory#add_item 
 					      "Detach _View"
@@ -3118,8 +3152,9 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						    match get_current_view () with  
 						      | {view=v;analyzed_view=Some av} -> 
 							  let w = GWindow.window ~show:true 
-							    ~width:(!current.window_width/2)
-							    ~height:(!current.window_height)
+							    ~width:(!current.window_width*2/3)
+							    ~height:(!current.window_height*2/3)
+							    ~position:`CENTER
 							    ~title:(match av#filename with
 								      | None -> "*Unnamed*"
 								      | Some f -> f) 
