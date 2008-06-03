@@ -1553,7 +1553,9 @@ let interp_atomic ist = function
       Util.anomaly "Ltacinterp.interp_atomic:TacIntroPattern: à restaurer"
       (* arnaud: à faire proprement cette fois
       do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)) *)
-  | TacIntrosUntil hyp -> Util.anomaly "Ltacinterp.interp_atomic: todo: TacIntrosUntil"
+  | TacIntrosUntil hyp -> let i_hyp = interp_quantified_hypothesis ist hyp in
+                          (* arnaud: intros_until n'a pas besoin de sensitive *)
+                          Intros.intros_until (Goal.return i_hyp)
   | TacIntroMove (ido,ido') ->
       begin
       match ido with
@@ -1671,7 +1673,7 @@ let interp_atomic ist = function
 
 (* arnaud: commenter et renommer *)
 let rec other_eval_tactic ist = function
-  | TacAtom (loc,t) -> interp_atomic ist t
+  | TacAtom (loc,t) -> interp_atomic ist t (* il manque un catch_error ?*)
   (* arnaud: temporairement, je ne fais pas de nouvelles syntaxe,
      ça aidera à rebrancher tout ça plus conservativement. *)
   | TacThen (t1,a,t2,b) -> let a = Array.to_list a in
@@ -1691,8 +1693,11 @@ let rec other_eval_tactic ist = function
   | TacOrelse (t1, t2) -> let i_t1 = other_eval_tactic ist t1 in
                           let i_t2 = other_eval_tactic ist t2 in
 		          Logic.tclORELSE i_t1 i_t2
-  | TacDo _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacDo: todo"
-  | TacRepeat _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacRepeat: todo"
+  | TacDo (n,t) -> let i_n = interp_int_or_var ist n in
+                   let i_t = other_eval_tactic ist t in
+		   Logic.tclDO i_n i_t
+  | TacRepeat t -> let i_t = other_eval_tactic ist t in
+                   Logic.tclREPEAT i_t
   | TacProgress _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacProgress: todo"
   | TacAbstract _ -> Util.anomaly "Ltacinterp.other_eval_tactics: TacAbstract: todo"
   | TacId _ (* arnaud: rebrancher le message *) -> Proofview.tclIDTAC ()

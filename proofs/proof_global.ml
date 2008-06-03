@@ -38,6 +38,7 @@ let start_a_new_proof l return =
 (* arnaud: possible de discarder quand il n'y a pas de preuve ?
    ou tracking pour debugging ? *)
 let discard () = current_proof := None
+let delete_current_proof = discard
 
 
 

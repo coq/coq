@@ -71,13 +71,11 @@ module Pfedit =
   end
 let delete_all_proofs _ = Util.anomaly "Vernacentries.delete_all_proofs: fantome"
 let get_goal_context _ = Util.anomaly "Vernacentries.get_goal_context: fantome"
-let delete_current_proof _ = Util.anomaly "Vernacentries.delete_current_proof: fantome"
 let delete_proof _ = Util.anomaly "Vernacentries.delete_proof: fantome"
 let restart_proof _ = Util.anomaly "Vernacentries.restart_proof: fantome"
 let suspend_proof _ = Util.anomaly "Vernacentries.suspend_proof: fantome"
 let resume_last_proof _ = Util.anomaly "Vernacentries.resume_last_proof: fantome"
 let resume_proof _ = Util.anomaly "Vernacentries.resume_proof: fantome"
-let undo _ = Util.anomaly "Vernacentries.undo: fantome"
 let undo_todepth _ = Util.anomaly "Vernacentries.undo_todepth: fantome"
 let traverse_nth_goal _ = Util.anomaly "Vernacentries.traverse_nth_goal: fantome"
 module Tacmach =
@@ -1106,7 +1104,7 @@ let vernac_goal =
 *)
 let vernac_abort = function
   | None ->
-      delete_current_proof ();
+      Proof_global.delete_current_proof ();
       if_verbose message "Current goal aborted";
       if !pcoq <> None then (Option.get !pcoq).abort ""
   | Some id ->
@@ -1117,7 +1115,7 @@ let vernac_abort = function
 
 let vernac_abort_all () =
   if refining() then begin
-    delete_all_proofs ();
+    (*Proof_global.*)delete_all_proofs ();
     message "Current goals aborted"
   end else
     error "No proof-editing in progress"
@@ -1133,7 +1131,9 @@ let vernac_resume = function
   | Some id -> resume_proof id
 
 let vernac_undo n =
-  undo n;
+  (* arnaud: on ignore n dans un premier temps. 
+  original: undo n; *)
+  Proof.undo (Proof_global.give_me_the_proof ());
   print_subgoals ()
 
 (* backtrack with [naborts] abort, then undo_todepth to [pnum], then

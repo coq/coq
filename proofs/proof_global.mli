@@ -28,6 +28,7 @@ val start_a_new_proof : (Environ.env * Term.types * string option) list ->
                         unit
 
 val discard : unit -> unit
+val delete_current_proof : unit -> unit
 
 
 
