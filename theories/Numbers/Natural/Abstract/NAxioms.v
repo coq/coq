@@ -26,7 +26,7 @@ Notation S := NZsucc.
 Notation P := NZpred.
 Notation add := NZadd.
 Notation mul := NZmul.
-Notation minus := NZminus.
+Notation sub := NZsub.
 Notation lt := NZlt.
 Notation le := NZle.
 Notation min := NZmin.
@@ -36,7 +36,7 @@ Notation "x ~= y" := (~ Neq x y) (at level 70) : NatScope.
 Notation "0" := NZ0 : NatScope.
 Notation "1" := (NZsucc NZ0) : NatScope.
 Notation "x + y" := (NZadd x y) : NatScope.
-Notation "x - y" := (NZminus x y) : NatScope.
+Notation "x - y" := (NZsub x y) : NatScope.
 Notation "x * y" := (NZmul x y) : NatScope.
 Notation "x < y" := (NZlt x y) : NatScope.
 Notation "x <= y" := (NZle x y) : NatScope.

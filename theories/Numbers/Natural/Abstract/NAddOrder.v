@@ -12,7 +12,7 @@
 
 Require Export NOrder.
 
-Module NPlusOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
+Module NAddOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NOrderPropMod := NOrderPropFunct NAxiomsMod.
 Open Local Scope NatScope.
 
@@ -111,4 +111,4 @@ do 2 rewrite <- add_assoc in H4. do 2 apply <- add_lt_mono_l in H4.
 now rewrite (add_comm n' u), (add_comm m' v).
 Qed.
 
-End NPlusOrderPropFunct.
+End NAddOrderPropFunct.

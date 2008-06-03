@@ -11,10 +11,10 @@
 (*i $Id$ i*)
 
 Require Import NZAxioms.
-Require Import NZPlus.
+Require Import NZAdd.
 
-Module NZTimesPropFunct (Import NZAxiomsMod : NZAxiomsSig).
-Module Export NZPlusPropMod := NZPlusPropFunct NZAxiomsMod.
+Module NZMulPropFunct (Import NZAxiomsMod : NZAxiomsSig).
+Module Export NZAddPropMod := NZAddPropFunct NZAxiomsMod.
 Open Local Scope NatIntScope.
 
 Theorem NZmul_0_r : forall n : NZ, n * 0 == 0.
@@ -76,5 +76,5 @@ Proof.
 intro n; rewrite NZmul_comm; apply NZmul_1_l.
 Qed.
 
-End NZTimesPropFunct.
+End NZMulPropFunct.
 

@@ -10,10 +10,10 @@
 
 (*i $Id$ i*)
 
-Require Export NTimes.
+Require Export NMul.
 
 Module NOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
-Module Export NTimesPropMod := NTimesPropFunct NAxiomsMod.
+Module Export NMulPropMod := NMulPropFunct NAxiomsMod.
 Open Local Scope NatScope.
 
 (* The tactics le_less, le_equal and le_elim are inherited from NZOrder.v *)

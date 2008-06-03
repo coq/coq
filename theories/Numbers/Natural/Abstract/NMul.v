@@ -10,10 +10,10 @@
 
 (*i $Id$ i*)
 
-Require Export NPlus.
+Require Export NAdd.
 
-Module NTimesPropFunct (Import NAxiomsMod : NAxiomsSig).
-Module Export NPlusPropMod := NPlusPropFunct NAxiomsMod.
+Module NMulPropFunct (Import NAxiomsMod : NAxiomsSig).
+Module Export NAddPropMod := NAddPropFunct NAxiomsMod.
 Open Local Scope NatScope.
 
 Theorem mul_wd :
@@ -52,7 +52,7 @@ Proof NZmul_1_l.
 Theorem mul_1_r : forall n : N, n * 1 == n.
 Proof NZmul_1_r.
 
-(* Theorems that cannot be proved in NZTimes *)
+(* Theorems that cannot be proved in NZMul *)
 
 (* In proving the correctness of the definition of multiplication on
 integers constructed from pairs of natural numbers, we'll need the
@@ -83,5 +83,5 @@ apply -> add_cancel_r in H3.
 now rewrite (add_comm (a * n') u), (add_comm (a * m') v).
 Qed.
 
-End NTimesPropFunct.
+End NMulPropFunct.
 

@@ -12,7 +12,7 @@
 
 Require Export NBase.
 
-Module NPlusPropFunct (Import NAxiomsMod : NAxiomsSig).
+Module NAddPropFunct (Import NAxiomsMod : NAxiomsSig).
 Module Export NBasePropMod := NBasePropFunct NAxiomsMod.
 
 Open Local Scope NatScope.
@@ -64,7 +64,7 @@ Proof NZadd_cancel_r.
 Theorem eq_add_0 : forall n m : N, n + m == 0 <-> n == 0 /\ m == 0.
 Proof.
 intros n m; induct n.
-(* The next command does not work with the axiom add_0_l from NPlusSig *)
+(* The next command does not work with the axiom add_0_l from NAddSig *)
 rewrite add_0_l. intuition reflexivity.
 intros n IH. rewrite add_succ_l.
 setoid_replace (S (n + m) == 0) with False using relation iff by
@@ -133,10 +133,10 @@ forall n m : N, (exists p : N, p + n == m) \/ (exists p : N, p + m == n)     (1)
 We will need (1) in the proof of induction principle for integers
 constructed as pairs of natural numbers. The formula (1) can be proved
 using properties of order and truncated subtraction. Thus, p would be
-m - n or n - m and (1) would hold by theorem minus_add from Minus.v
+m - n or n - m and (1) would hold by theorem sub_add from Sub.v
 depending on whether n <= m or m <= n. However, in proving induction
 for integers constructed from natural numbers we do not need to
-require implementations of order and minus; it is enough to prove (1)
+require implementations of order and sub; it is enough to prove (1)
 here. *)
 
 Theorem add_dichotomy :
@@ -152,5 +152,5 @@ left; exists p'; rewrite add_succ_r; now rewrite add_succ_l in H.
 right; exists (S p). rewrite add_succ_l; now rewrite H.
 Qed.
 
-End NPlusPropFunct.
+End NAddPropFunct.
 

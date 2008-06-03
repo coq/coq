@@ -40,7 +40,7 @@ Definition NZ0 := w_op.(znz_0).
 Definition NZsucc := w_op.(znz_succ).
 Definition NZpred := w_op.(znz_pred).
 Definition NZadd := w_op.(znz_add).
-Definition NZminus := w_op.(znz_sub).
+Definition NZsub := w_op.(znz_sub).
 Definition NZmul := w_op.(znz_mul).
 
 Theorem NZeq_equiv : equiv NZ NZeq.
@@ -71,7 +71,7 @@ unfold NZeq; intros n1 n2 H1 m1 m2 H2. do 2 rewrite w_spec.(spec_add).
 now rewrite H1, H2.
 Qed.
 
-Add Morphism NZminus with signature NZeq ==> NZeq ==> NZeq as NZminus_wd.
+Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
 Proof.
 unfold NZeq; intros n1 n2 H1 m1 m2 H2. do 2 rewrite w_spec.(spec_sub).
 now rewrite H1, H2.
@@ -93,7 +93,7 @@ Notation "'S'" := NZsucc : IntScope.
 Notation "'P'" := NZpred : IntScope.
 (*Notation "1" := (S 0) : IntScope.*)
 Notation "x + y" := (NZadd x y) : IntScope.
-Notation "x - y" := (NZminus x y) : IntScope.
+Notation "x - y" := (NZsub x y) : IntScope.
 Notation "x * y" := (NZmul x y) : IntScope.
 
 Theorem gt_wB_1 : 1 < wB.
@@ -204,15 +204,15 @@ rewrite <- (Zplus_assoc ([| n |] mod wB) 1 [| m |]). rewrite Zplus_mod_idemp_l.
 rewrite (Zplus_comm 1 [| m |]); now rewrite Zplus_assoc.
 Qed.
 
-Theorem NZminus_0_r : forall n : NZ, n - 0 == n.
+Theorem NZsub_0_r : forall n : NZ, n - 0 == n.
 Proof.
-intro n; unfold NZminus, NZ0, NZeq. rewrite w_spec.(spec_sub).
+intro n; unfold NZsub, NZ0, NZeq. rewrite w_spec.(spec_sub).
 rewrite w_spec.(spec_0). rewrite Zminus_0_r. apply NZ_to_Z_mod.
 Qed.
 
-Theorem NZminus_succ_r : forall n m : NZ, n - (S m) == P (n - m).
+Theorem NZsub_succ_r : forall n m : NZ, n - (S m) == P (n - m).
 Proof.
-intros n m; unfold NZminus, NZsucc, NZpred, NZeq.
+intros n m; unfold NZsub, NZsucc, NZpred, NZeq.
 rewrite w_spec.(spec_pred). do 2 rewrite w_spec.(spec_sub).
 rewrite w_spec.(spec_succ). rewrite Zminus_mod_idemp_r.
 rewrite Zminus_mod_idemp_l.

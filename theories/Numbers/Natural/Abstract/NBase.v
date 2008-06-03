@@ -12,7 +12,7 @@
 
 Require Export Decidable.
 Require Export NAxioms.
-Require Import NZTimesOrder. (* The last property functor on NZ, which subsumes all others *)
+Require Import NZMulOrder. (* The last property functor on NZ, which subsumes all others *)
 
 Module NBasePropFunct (Import NAxiomsMod : NAxiomsSig).
 
@@ -22,16 +22,16 @@ Open Local Scope NatScope.
 ones, to get all properties of NZ at once. This way we will include them
 only one time. *)
 
-Module Export NZTimesOrderMod := NZTimesOrderPropFunct NZOrdAxiomsMod.
+Module Export NZMulOrderMod := NZMulOrderPropFunct NZOrdAxiomsMod.
 
 (* Here we probably need to re-prove all axioms declared in NAxioms.v to
 make sure that the definitions like N, S and add are unfolded in them,
 since unfolding is done only inside a functor. In fact, we'll do it in the
 files that prove the corresponding properties. In those files, we will also
 rename properties proved in NZ files by removing NZ from their names. In
-this way, one only has to consult, for example, NPlus.v to see all
+this way, one only has to consult, for example, NAdd.v to see all
 available properties for add, i.e., one does not have to go to NAxioms.v
-for axioms and NZPlus.v for theorems. *)
+for axioms and NZAdd.v for theorems. *)
 
 Theorem succ_wd : forall n1 n2 : N, n1 == n2 -> S n1 == S n2.
 Proof NZsucc_wd.

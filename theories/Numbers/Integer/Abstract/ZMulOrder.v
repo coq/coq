@@ -10,10 +10,10 @@
 
 (*i $Id$ i*)
 
-Require Export ZPlusOrder.
+Require Export ZAddOrder.
 
-Module ZTimesOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
-Module Export ZPlusOrderPropMod := ZPlusOrderPropFunct ZAxiomsMod.
+Module ZMulOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
+Module Export ZAddOrderPropMod := ZAddOrderPropFunct ZAxiomsMod.
 Open Local Scope IntScope.
 
 Theorem Zmul_lt_pred :
@@ -339,5 +339,5 @@ apply Zmul_lt_mono_nonneg.
 now apply Zlt_le_incl. assumption. apply Zle_0_1. assumption.
 Qed.
 
-End ZTimesOrderPropFunct.
+End ZMulOrderPropFunct.
 

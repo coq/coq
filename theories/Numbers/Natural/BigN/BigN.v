@@ -20,14 +20,14 @@ Require Import Cyclic31.
 Require Import NSig.
 Require Import NSigNAxioms.
 Require Import NMake.
-Require Import NMinus.
+Require Import NSub.
 
 Module BigN <: NType := NMake.Make Int31Cyclic.
 
 (** Module [BigN] implements [NAxiomsSig] *)
 
 Module Export BigNAxiomsMod := NSig_NAxioms BigN.
-Module Export BigNMinusPropMod := NMinusPropFunct BigNAxiomsMod.
+Module Export BigNSubPropMod := NSubPropFunct BigNAxiomsMod.
 
 (** Notations about [BigN] *)
 

@@ -13,7 +13,7 @@
 Require Import NZAxioms.
 Require Import NZBase.
 
-Module NZPlusPropFunct (Import NZAxiomsMod : NZAxiomsSig).
+Module NZAddPropFunct (Import NZAxiomsMod : NZAxiomsSig).
 Module Export NZBasePropMod := NZBasePropFunct NZAxiomsMod.
 Open Local Scope NatIntScope.
 
@@ -82,10 +82,10 @@ intros n m p. rewrite (NZadd_comm n p); rewrite (NZadd_comm m p).
 apply NZadd_cancel_l.
 Qed.
 
-Theorem NZminus_1_r : forall n : NZ, n - 1 == P n.
+Theorem NZsub_1_r : forall n : NZ, n - 1 == P n.
 Proof.
-intro n; rewrite NZminus_succ_r; now rewrite NZminus_0_r.
+intro n; rewrite NZsub_succ_r; now rewrite NZsub_0_r.
 Qed.
 
-End NZPlusPropFunct.
+End NZAddPropFunct.
 

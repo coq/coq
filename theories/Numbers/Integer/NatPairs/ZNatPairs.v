@@ -10,15 +10,15 @@
 
 (*i $Id$ i*)
 
-Require Import NMinus. (* The most complete file for natural numbers *)
-Require Export ZTimesOrder. (* The most complete file for integers *)
+Require Import NSub. (* The most complete file for natural numbers *)
+Require Export ZMulOrder. (* The most complete file for integers *)
 Require Export Ring.
 
 Module ZPairsAxiomsMod (Import NAxiomsMod : NAxiomsSig) <: ZAxiomsSig.
-Module Import NPropMod := NMinusPropFunct NAxiomsMod. (* Get all properties of natural numbers *)
+Module Import NPropMod := NSubPropFunct NAxiomsMod. (* Get all properties of natural numbers *)
 
 (* We do not declare ring in Natural/Abstract for two reasons. First, some
-of the properties proved in NPlus and NTimes are used in the new BinNat,
+of the properties proved in NAdd and NMul are used in the new BinNat,
 and it is in turn used in Ring. Using ring in Natural/Abstract would be
 circular. It is possible, however, not to make BinNat dependent on
 Numbers/Natural and prove the properties necessary for ring from scratch
@@ -62,7 +62,7 @@ canonical values. In that case, we could get rid of setoids and arrive at
 integers as signed natural numbers. *)
 
 Definition Zadd (n m : Z) : Z := ((fst n) + (fst m), (snd n) + (snd m)).
-Definition Zminus (n m : Z) : Z := ((fst n) + (snd m), (snd n) + (fst m)).
+Definition Zsub (n m : Z) : Z := ((fst n) + (snd m), (snd n) + (fst m)).
 
 (* Unfortunately, the elements of the pair keep increasing, even during
 subtraction *)
@@ -81,7 +81,7 @@ Notation "x ~= y" := (~ Zeq x y) (at level 70) : IntScope.
 Notation "0" := Z0 : IntScope.
 Notation "1" := (Zsucc Z0) : IntScope.
 Notation "x + y" := (Zadd x y) : IntScope.
-Notation "x - y" := (Zminus x y) : IntScope.
+Notation "x - y" := (Zsub x y) : IntScope.
 Notation "x * y" := (Zmul x y) : IntScope.
 Notation "x < y" := (Zlt x y) : IntScope.
 Notation "x <= y" := (Zle x y) : IntScope.
@@ -102,7 +102,7 @@ Definition NZ0 := Z0.
 Definition NZsucc := Zsucc.
 Definition NZpred := Zpred.
 Definition NZadd := Zadd.
-Definition NZminus := Zminus.
+Definition NZsub := Zsub.
 Definition NZmul := Zmul.
 
 Theorem ZE_refl : reflexive Z Zeq.
@@ -162,9 +162,9 @@ stepl (fst n1 + snd m1 + (fst n2 + snd m2)) by ring.
 now stepr (fst m1 + snd n1 + (fst m2 + snd n2)) by ring.
 Qed.
 
-Add Morphism NZminus with signature Zeq ==> Zeq ==> Zeq as NZminus_wd.
+Add Morphism NZsub with signature Zeq ==> Zeq ==> Zeq as NZsub_wd.
 Proof.
-unfold Zeq, NZminus; intros n1 m1 H1 n2 m2 H2; simpl.
+unfold Zeq, NZsub; intros n1 m1 H1 n2 m2 H2; simpl.
 symmetry in H2.
 assert (H3 : (fst n1 + snd m1) + (fst m2 + snd n2) == (fst m1 + snd n1) + (fst n2 + snd m2))
 by now apply add_wd.
@@ -243,14 +243,14 @@ Proof.
 intros n m; unfold NZadd, Zeq; simpl. now do 2 rewrite add_succ_l.
 Qed.
 
-Theorem NZminus_0_r : forall n : Z, n - 0 == n.
+Theorem NZsub_0_r : forall n : Z, n - 0 == n.
 Proof.
-intro n; unfold NZminus, Zeq; simpl. now do 2 rewrite add_0_r.
+intro n; unfold NZsub, Zeq; simpl. now do 2 rewrite add_0_r.
 Qed.
 
-Theorem NZminus_succ_r : forall n m : Z, n - (Zsucc m) == Zpred (n - m).
+Theorem NZsub_succ_r : forall n m : Z, n - (Zsucc m) == Zpred (n - m).
 Proof.
-intros n m; unfold NZminus, Zeq; simpl. symmetry; now rewrite add_succ_r.
+intros n m; unfold NZsub, Zeq; simpl. symmetry; now rewrite add_succ_r.
 Qed.
 
 Theorem NZmul_0_l : forall n : Z, 0 * n == 0.
@@ -413,7 +413,7 @@ and get their properties *)
 Require Import NPeano.
 
 Module Export ZPairsPeanoAxiomsMod := ZPairsAxiomsMod NPeanoAxiomsMod.
-Module Export ZPairsTimesOrderPropMod := ZTimesOrderPropFunct ZPairsPeanoAxiomsMod.
+Module Export ZPairsMulOrderPropMod := ZMulOrderPropFunct ZPairsPeanoAxiomsMod.
 
 Open Local Scope IntScope.
 

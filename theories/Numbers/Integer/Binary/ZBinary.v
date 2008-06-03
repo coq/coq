@@ -10,7 +10,7 @@
 
 (*i $Id$ i*)
 
-Require Import ZTimesOrder.
+Require Import ZMulOrder.
 Require Import ZArith.
 
 Open Local Scope Z_scope.
@@ -25,7 +25,7 @@ Definition NZ0 := 0.
 Definition NZsucc := Zsucc'.
 Definition NZpred := Zpred'.
 Definition NZadd := Zplus.
-Definition NZminus := Zminus.
+Definition NZsub := Zminus.
 Definition NZmul := Zmult.
 
 Theorem NZeq_equiv : equiv Z NZeq.
@@ -54,7 +54,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZminus with signature NZeq ==> NZeq ==> NZeq as NZminus_wd.
+Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
 Proof.
 congruence.
 Qed.
@@ -89,12 +89,12 @@ Proof.
 intros; do 2 rewrite <- Zsucc_succ'; apply Zplus_succ_l.
 Qed.
 
-Theorem NZminus_0_r : forall n : Z, n - 0 = n.
+Theorem NZsub_0_r : forall n : Z, n - 0 = n.
 Proof.
 exact Zminus_0_r.
 Qed.
 
-Theorem NZminus_succ_r : forall n m : Z, n - (NZsucc m) = NZpred (n - m).
+Theorem NZsub_succ_r : forall n m : Z, n - (NZsucc m) = NZpred (n - m).
 Proof.
 intros; rewrite <- Zsucc_succ'; rewrite <- Zpred_pred';
 apply Zminus_succ_r.
@@ -213,11 +213,11 @@ Qed.
 
 End ZBinAxiomsMod.
 
-Module Export ZBinTimesOrderPropMod := ZTimesOrderPropFunct ZBinAxiomsMod.
+Module Export ZBinMulOrderPropMod := ZMulOrderPropFunct ZBinAxiomsMod.
 
 (** Z forms a ring *)
 
-(*Lemma Zring : ring_theory 0 1 NZadd NZmul NZminus Zopp NZeq.
+(*Lemma Zring : ring_theory 0 1 NZadd NZmul NZsub Zopp NZeq.
 Proof.
 constructor.
 exact Zadd_0_l.

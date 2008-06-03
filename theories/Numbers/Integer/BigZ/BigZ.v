@@ -11,7 +11,7 @@
 (*i $Id$ i*)
 
 Require Export BigN.
-Require Import ZTimesOrder.
+Require Import ZMulOrder.
 Require Import ZSig.
 Require Import ZSigZAxioms.
 Require Import ZMake.
@@ -21,7 +21,7 @@ Module BigZ <: ZType := ZMake.Make BigN.
 (** Module [BigZ] implements [ZAxiomsSig] *)
 
 Module Export BigZAxiomsMod := ZSig_ZAxioms BigZ.
-Module Export BigZTimesOrderPropMod := ZTimesOrderPropFunct BigZAxiomsMod.
+Module Export BigZMulOrderPropMod := ZMulOrderPropFunct BigZAxiomsMod.
 
 (** Notations about [BigZ] *)
 

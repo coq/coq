@@ -11,11 +11,11 @@
 (*i $Id$ i*)
 
 Require Import NZAxioms.
-Require Import NZTimes.
+Require Import NZMul.
 Require Import Decidable.
 
 Module NZOrderPropFunct (Import NZOrdAxiomsMod : NZOrdAxiomsSig).
-Module Export NZTimesPropMod := NZTimesPropFunct NZAxiomsMod.
+Module Export NZMulPropMod := NZMulPropFunct NZAxiomsMod.
 Open Local Scope NatIntScope.
 
 Ltac le_elim H := rewrite NZlt_eq_cases in H; destruct H as [H | H].

@@ -13,10 +13,10 @@
 (** This file defined the strong (course-of-value, well-founded) recursion
 and proves its properties *)
 
-Require Export NMinus.
+Require Export NSub.
 
 Module NStrongRecPropFunct (Import NAxiomsMod : NAxiomsSig).
-Module Export NMinusPropMod := NMinusPropFunct NAxiomsMod.
+Module Export NSubPropMod := NSubPropFunct NAxiomsMod.
 Open Local Scope NatScope.
 
 Section StrongRecursion.

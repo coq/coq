@@ -36,7 +36,7 @@ Definition NZ0 := N.zero.
 Definition NZsucc := N.succ.
 Definition NZpred := N.pred.
 Definition NZadd := N.add.
-Definition NZminus := N.sub.
+Definition NZsub := N.sub.
 Definition NZmul := N.mul.
 
 Theorem NZeq_equiv : equiv N.t N.eq.
@@ -69,7 +69,7 @@ Proof.
 unfold N.eq; intros; rewrite 2 N.spec_add; f_equal; auto.
 Qed.
 
-Add Morphism NZminus with signature N.eq ==> N.eq ==> N.eq as NZminus_wd.
+Add Morphism NZsub with signature N.eq ==> N.eq ==> N.eq as NZsub_wd.
 Proof.
 unfold N.eq; intros x x' Hx y y' Hy.
 destruct (Z_lt_le_dec [x] [y]).
@@ -147,13 +147,13 @@ Proof.
 intros; red; rewrite N.spec_add, 2 N.spec_succ, N.spec_add; auto with zarith.
 Qed.
 
-Theorem NZminus_0_r : forall n, n - 0 == n.
+Theorem NZsub_0_r : forall n, n - 0 == n.
 Proof.
 intros; red; rewrite N.spec_sub; rewrite N.spec_0; auto with zarith.
 apply N.spec_pos.
 Qed.
 
-Theorem NZminus_succ_r : forall n m, n - (N.succ m) == N.pred (n - m).
+Theorem NZsub_succ_r : forall n m, n - (N.succ m) == N.pred (n - m).
 Proof.
 intros; red.
 destruct (Z_lt_le_dec [n] [N.succ m]) as [H|H].

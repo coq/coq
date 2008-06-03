@@ -12,7 +12,7 @@
 
 Require Export Decidable.
 Require Export ZAxioms.
-Require Import NZTimesOrder.
+Require Import NZMulOrder.
 
 Module ZBasePropFunct (Import ZAxiomsMod : ZAxiomsSig).
 
@@ -22,7 +22,7 @@ notations in Zadd and later *)
 
 Open Local Scope IntScope.
 
-Module Export NZTimesOrderMod := NZTimesOrderPropFunct NZOrdAxiomsMod.
+Module Export NZMulOrderMod := NZMulOrderPropFunct NZOrdAxiomsMod.
 
 Theorem Zsucc_wd : forall n1 n2 : Z, n1 == n2 -> S n1 == S n2.
 Proof NZsucc_wd.

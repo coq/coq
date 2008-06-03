@@ -11,10 +11,10 @@
 (*i $Id$ i*)
 
 Require Import NZAxioms.
-Require Import NZPlusOrder.
+Require Import NZAddOrder.
 
-Module NZTimesOrderPropFunct (Import NZOrdAxiomsMod : NZOrdAxiomsSig).
-Module Export NZPlusOrderPropMod := NZPlusOrderPropFunct NZOrdAxiomsMod.
+Module NZMulOrderPropFunct (Import NZOrdAxiomsMod : NZOrdAxiomsSig).
+Module Export NZAddOrderPropMod := NZAddOrderPropFunct NZOrdAxiomsMod.
 Open Local Scope NatIntScope.
 
 Theorem NZmul_lt_pred :
@@ -307,4 +307,4 @@ now apply -> NZle_succ_l.
 apply NZadd_pos_pos; now apply NZlt_succ_diag_r.
 Qed.
 
-End NZTimesOrderPropFunct.
+End NZMulOrderPropFunct.

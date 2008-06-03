@@ -10,10 +10,10 @@
 
 (*i $Id$ i*)
 
-Require Export ZPlus.
+Require Export ZAdd.
 
-Module ZTimesPropFunct (Import ZAxiomsMod : ZAxiomsSig).
-Module Export ZPlusPropMod := ZPlusPropFunct ZAxiomsMod.
+Module ZMulPropFunct (Import ZAxiomsMod : ZAxiomsSig).
+Module Export ZAddPropMod := ZAddPropFunct ZAxiomsMod.
 Open Local Scope IntScope.
 
 Theorem Zmul_wd :
@@ -74,7 +74,7 @@ Theorem Zmul_pred_r : forall n m : Z, n * (P m) == n * m - n.
 Proof.
 intros n m.
 rewrite <- (Zsucc_pred m) at 2.
-now rewrite Zmul_succ_r, <- Zadd_minus_assoc, Zminus_diag, Zadd_0_r.
+now rewrite Zmul_succ_r, <- Zadd_sub_assoc, Zsub_diag, Zadd_0_r.
 Qed.
 
 Theorem Zmul_pred_l : forall n m : Z, (P n) * m == n * m - m.
@@ -98,18 +98,18 @@ Proof.
 intros n m; now rewrite Zmul_opp_l, Zmul_opp_r, Zopp_involutive.
 Qed.
 
-Theorem Zmul_minus_distr_l : forall n m p : Z, n * (m - p) == n * m - n * p.
+Theorem Zmul_sub_distr_l : forall n m p : Z, n * (m - p) == n * m - n * p.
 Proof.
 intros n m p. do 2 rewrite <- Zadd_opp_r. rewrite Zmul_add_distr_l.
 now rewrite Zmul_opp_r.
 Qed.
 
-Theorem Zmul_minus_distr_r : forall n m p : Z, (n - m) * p == n * p - m * p.
+Theorem Zmul_sub_distr_r : forall n m p : Z, (n - m) * p == n * p - m * p.
 Proof.
 intros n m p; rewrite (Zmul_comm (n - m) p), (Zmul_comm n p), (Zmul_comm m p);
-now apply Zmul_minus_distr_l.
+now apply Zmul_sub_distr_l.
 Qed.
 
-End ZTimesPropFunct.
+End ZMulPropFunct.
 
 

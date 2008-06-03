@@ -10,10 +10,10 @@
 
 (*i $Id$ i*)
 
-Require Export ZTimes.
+Require Export ZMul.
 
 Module ZOrderPropFunct (Import ZAxiomsMod : ZAxiomsSig).
-Module Export ZTimesPropMod := ZTimesPropFunct ZAxiomsMod.
+Module Export ZMulPropMod := ZMulPropFunct ZAxiomsMod.
 Open Local Scope IntScope.
 
 (* Axioms *)

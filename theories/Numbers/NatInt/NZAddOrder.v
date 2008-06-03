@@ -13,7 +13,7 @@
 Require Import NZAxioms.
 Require Import NZOrder.
 
-Module NZPlusOrderPropFunct (Import NZOrdAxiomsMod : NZOrdAxiomsSig).
+Module NZAddOrderPropFunct (Import NZOrdAxiomsMod : NZOrdAxiomsSig).
 Module Export NZOrderPropMod := NZOrderPropFunct NZOrdAxiomsMod.
 Open Local Scope NatIntScope.
 
@@ -162,5 +162,5 @@ Proof.
 intros n m H; apply NZadd_le_cases; now rewrite NZadd_0_l.
 Qed.
 
-End NZPlusOrderPropFunct.
+End NZAddOrderPropFunct.
 

@@ -13,7 +13,7 @@
 Require Import Arith.
 Require Import Min.
 Require Import Max.
-Require Import NMinus.
+Require Import NSub.
 
 Module NPeanoAxiomsMod <: NAxiomsSig.
 Module Export NZOrdAxiomsMod <: NZOrdAxiomsSig.
@@ -25,7 +25,7 @@ Definition NZ0 := 0.
 Definition NZsucc := S.
 Definition NZpred := pred.
 Definition NZadd := plus.
-Definition NZminus := minus.
+Definition NZsub := minus.
 Definition NZmul := mult.
 
 Theorem NZeq_equiv : equiv nat NZeq.
@@ -56,7 +56,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZminus with signature NZeq ==> NZeq ==> NZeq as NZminus_wd.
+Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
 Proof.
 congruence.
 Qed.
@@ -88,14 +88,14 @@ Proof.
 reflexivity.
 Qed.
 
-Theorem NZminus_0_r : forall n : nat, n - 0 = n.
+Theorem NZsub_0_r : forall n : nat, n - 0 = n.
 Proof.
 intro n; now destruct n.
 Qed.
 
-Theorem NZminus_succ_r : forall n m : nat, n - (S m) = pred (n - m).
+Theorem NZsub_succ_r : forall n m : nat, n - (S m) = pred (n - m).
 Proof.
-intros n m; induction n m using nat_double_ind; simpl; auto. apply NZminus_0_r.
+intros n m; induction n m using nat_double_ind; simpl; auto. apply NZsub_0_r.
 Qed.
 
 Theorem NZmul_0_l : forall n : nat, 0 * n = 0.
@@ -216,5 +216,5 @@ End NPeanoAxiomsMod.
 
 (* Now we apply the largest property functor *)
 
-Module Export NPeanoMinusPropMod := NMinusPropFunct NPeanoAxiomsMod.
+Module Export NPeanoSubPropMod := NSubPropFunct NPeanoAxiomsMod.
 

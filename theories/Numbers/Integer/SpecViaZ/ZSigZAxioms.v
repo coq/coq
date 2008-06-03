@@ -42,7 +42,7 @@ Definition NZ0 := Z.zero.
 Definition NZsucc := Z.succ.
 Definition NZpred := Z.pred.
 Definition NZadd := Z.add.
-Definition NZminus := Z.sub.
+Definition NZsub := Z.sub.
 Definition NZmul := Z.mul.
 
 Theorem NZeq_equiv : equiv Z.t Z.eq.
@@ -71,7 +71,7 @@ Proof.
 intros; zsimpl; f_equal; assumption.
 Qed.
 
-Add Morphism NZminus with signature Z.eq ==> Z.eq ==> Z.eq as NZminus_wd.
+Add Morphism NZsub with signature Z.eq ==> Z.eq ==> Z.eq as NZsub_wd.
 Proof.
 intros; zsimpl; f_equal; assumption.
 Qed.
@@ -154,12 +154,12 @@ Proof.
 intros; zsimpl; auto with zarith.
 Qed.
 
-Theorem NZminus_0_r : forall n, n - 0 == n.
+Theorem NZsub_0_r : forall n, n - 0 == n.
 Proof.
 intros; zsimpl; auto with zarith.
 Qed.
 
-Theorem NZminus_succ_r : forall n m, n - (Z.succ m) == Z.pred (n - m).
+Theorem NZsub_succ_r : forall n m, n - (Z.succ m) == Z.pred (n - m).
 Proof.
 intros; zsimpl; auto with zarith.
 Qed.

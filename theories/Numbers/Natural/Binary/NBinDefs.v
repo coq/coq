@@ -12,7 +12,7 @@
 
 Require Import BinPos.
 Require Export BinNat.
-Require Import NMinus.
+Require Import NSub.
 
 Open Local Scope N_scope.
 
@@ -28,7 +28,7 @@ Definition NZ0 := N0.
 Definition NZsucc := Nsucc.
 Definition NZpred := Npred.
 Definition NZadd := Nplus.
-Definition NZminus := Nminus.
+Definition NZsub := Nminus.
 Definition NZmul := Nmult.
 
 Theorem NZeq_equiv : equiv N NZeq.
@@ -55,7 +55,7 @@ Proof.
 congruence.
 Qed.
 
-Add Morphism NZminus with signature NZeq ==> NZeq ==> NZeq as NZminus_wd.
+Add Morphism NZsub with signature NZeq ==> NZeq ==> NZeq as NZsub_wd.
 Proof.
 congruence.
 Qed.
@@ -93,12 +93,12 @@ simpl in |- *; reflexivity.
 simpl in |- *; rewrite Pplus_succ_permute_l; reflexivity.
 Qed.
 
-Theorem NZminus_0_r : forall n : NZ, n - N0 = n.
+Theorem NZsub_0_r : forall n : NZ, n - N0 = n.
 Proof.
 now destruct n.
 Qed.
 
-Theorem NZminus_succ_r : forall n m : NZ, n - (NZsucc m) = NZpred (n - m).
+Theorem NZsub_succ_r : forall n m : NZ, n - (NZsucc m) = NZpred (n - m).
 Proof.
 destruct n as [| p]; destruct m as [| q]; try reflexivity.
 now destruct p.
@@ -242,7 +242,7 @@ Qed.
 
 End NBinaryAxiomsMod.
 
-Module Export NBinaryMinusPropMod := NMinusPropFunct NBinaryAxiomsMod.
+Module Export NBinarySubPropMod := NSubPropFunct NBinaryAxiomsMod.
 
 (* Some fun comparing the efficiency of the generic log defined
 by strong (course-of-value) recursion and the log defined by recursion

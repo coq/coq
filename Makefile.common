@@ -671,12 +671,12 @@ CYCLICVO:=$(CYCLICABSTRACTVO) $(CYCLICINT31VO) $(CYCLICDOUBLECYCLICVO) \
  $(CYCLICZMODULOVO)
 
 NATINTVO:=$(addprefix theories/Numbers/NatInt/, \
- NZAxioms.vo	NZBase.vo	NZPlus.vo	NZTimes.vo	\
- NZOrder.vo 	NZPlusOrder.vo	NZTimesOrder.vo )
+ NZAxioms.vo	NZBase.vo	NZAdd.vo	NZMul.vo	\
+ NZOrder.vo 	NZAddOrder.vo	NZMulOrder.vo )
 
 NATURALABSTRACTVO:=$(addprefix theories/Numbers/Natural/Abstract/, \
- NAxioms.vo 	NBase.vo 	NPlus.vo 	NTimes.vo 	\
- NOrder.vo 	NPlusOrder.vo	NTimesOrder.vo 	NMinus.vo	\
+ NAxioms.vo 	NBase.vo 	NAdd.vo 	NMul.vo 	\
+ NOrder.vo 	NAddOrder.vo	NMulOrder.vo 	NSub.vo	\
  NIso.vo )
 
 NATURALPEANOVO:=$(addprefix theories/Numbers/Natural/Peano/, \
@@ -695,8 +695,8 @@ NATURALVO:=$(NATURALABSTRACTVO) $(NATURALPEANOVO) $(NATURALBINARYVO) \
  $(NATURALSPECVIAZVO) $(NATURALBIGNVO)
 
 INTEGERABSTRACTVO:=$(addprefix theories/Numbers/Integer/Abstract/, \
- ZAxioms.vo 	ZBase.vo 	ZPlus.vo 	ZTimes.vo 	\
- ZLt.vo 	ZPlusOrder.vo 	ZTimesOrder.vo )
+ ZAxioms.vo 	ZBase.vo 	ZAdd.vo 	ZMul.vo 	\
+ ZLt.vo 	ZAddOrder.vo 	ZMulOrder.vo )
 
 INTEGERBINARYVO:=$(addprefix theories/Numbers/Integer/Binary/, \
  ZBinary.vo )

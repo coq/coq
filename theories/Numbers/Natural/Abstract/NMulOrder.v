@@ -10,10 +10,10 @@
 
 (*i $Id$ i*)
 
-Require Export NPlusOrder.
+Require Export NAddOrder.
 
-Module NTimesOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
-Module Export NPlusOrderPropMod := NPlusOrderPropFunct NAxiomsMod.
+Module NMulOrderPropFunct (Import NAxiomsMod : NAxiomsSig).
+Module Export NAddOrderPropMod := NAddOrderPropFunct NAxiomsMod.
 Open Local Scope NatScope.
 
 Theorem mul_lt_pred :
@@ -127,5 +127,5 @@ assert (H3 : 1 < n * m) by now apply (lt_1_l 0 m).
 rewrite H in H3; false_hyp H3 lt_irrefl.
 Qed.
 
-End NTimesOrderPropFunct.
+End NMulOrderPropFunct.
 

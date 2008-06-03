@@ -26,7 +26,7 @@ Notation S := NZsucc.
 Notation P := NZpred.
 Notation Zadd := NZadd.
 Notation Zmul := NZmul.
-Notation Zminus := NZminus.
+Notation Zsub := NZsub.
 Notation Zlt := NZlt.
 Notation Zle := NZle.
 Notation Zmin := NZmin.
@@ -36,7 +36,7 @@ Notation "x ~= y" := (~ NZeq x y) (at level 70) : IntScope.
 Notation "0" := NZ0 : IntScope.
 Notation "1" := (NZsucc NZ0) : IntScope.
 Notation "x + y" := (NZadd x y) : IntScope.
-Notation "x - y" := (NZminus x y) : IntScope.
+Notation "x - y" := (NZsub x y) : IntScope.
 Notation "x * y" := (NZmul x y) : IntScope.
 Notation "x < y" := (NZlt x y) : IntScope.
 Notation "x <= y" := (NZle x y) : IntScope.
