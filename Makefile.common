@@ -428,9 +428,9 @@ PRINTERSCMO:=\
   interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
   library/impargs.cmo\
   interp/constrextern.cmo interp/syntax_def.cmo interp/constrintern.cmo	\
-  proofs/permutation.cmo proofs/goal.cmo proofs/subproof.cmo \
+  proofs/permutation.cmo proofs/goal.cmo proofs/proofview.cmo \
   proofs/proof.cmo proofs/clenv.cmo proofs/logic.cmo \
-  proofs/tacexpr.cmo \
+  proofs/proof_global.cmo proofs/tacexpr.cmo \
   proofs/tactic_debug.cmo \
   proofs/decl_mode.cmo \
   parsing/ppconstr.cmo parsing/extend.cmo parsing/pcoq.cmo \

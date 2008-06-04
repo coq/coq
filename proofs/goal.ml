@@ -465,7 +465,7 @@ and main_process_apply_case_metas ot ty env rdefs goal info =
 	    )
 	    lbrty lf ([] , evars)
 	in
-	({ me = Term.mkCase(k,ic,ip,Array.of_list ilf) ; 
+	({ me = Term.mkCase(k,ip,ic,Array.of_list ilf) ; 
 	   my_evars = new_evars } ,
 	   ty')
   | _ -> 

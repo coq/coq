@@ -96,15 +96,17 @@ open Reserve
 open Syntax_def
 open Topconstr
 
-open Clenvtac
-open Evar_refiner
+(*open Clenvtac
+open Evar_refiner *)
 open Logic
+(*
 open Pfedit
 open Proof_trees
 open Proof_type
 open Redexpr
 open Refiner
 open Tacmach
+*)
 
 open Auto
 open Autorewrite
@@ -169,8 +171,10 @@ open Declarations;;
 
 let constbody_of_string s =
   let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_sp (path_of_string s))) in
-  Util.out_some b.const_body;;
+  Option.get b.const_body;;
 
+
+(*
 (* Get the current goal *)
 
 let getgoal x = top_goal_of_pftreestate (Pfedit.get_pftreestate x);;
@@ -180,6 +184,7 @@ let current_goal () = get_nth_goal 1;;
 
 let pf_e gl s = 
   Constrintern.interp_constr (project gl) (pf_env gl) (parse_constr s);;
+*)
 
 open Toplevel
 let go = loop

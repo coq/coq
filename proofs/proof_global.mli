@@ -18,6 +18,7 @@
 
 
 val there_is_a_proof : unit -> bool
+val check_no_pending_proof : unit -> unit
 
 exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof

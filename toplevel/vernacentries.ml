@@ -49,7 +49,6 @@ let refining () = true
 let  top_of_tree _ = Util.anomaly "Vernacentries.top_of_tree: fantome"
 let is_leaf_proof _ = Util.anomaly "Vernacentries.is_leaf_proof: fantome"
 let by _ = Util.anomaly "Vernacentries.by: fantome"
-let check_no_pending_proofs _ = Util.anomaly "Vernacentries.check_no_pending_proofs: fantome"
 let solve_nth t = Proof_global.db_run_tactic_on (Global.env ()) t (*arnaud: laisser eta-expandé !!! *)
 let get_end_tac _ = Util.anomaly "Vernacentries.get_end_tac: fantome"
 let subtree_solved  () = false (* arnaud: on ne peut plus finir les preuves :') *)
@@ -567,7 +566,7 @@ let vernac_begin_section = Lib.open_section
 let vernac_end_section = Lib.close_section
 
 let vernac_end_segment id =
-  check_no_pending_proofs ();
+  Proof_global.check_no_pending_proof ();
   let o = try Lib.what_is_opened () with 
       Not_found -> error "There is nothing to end." in
     match o with

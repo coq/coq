@@ -18,9 +18,24 @@
 
 (* arnaud: commenter ce module *)
 
+open Pp
+
 let current_proof = ref None
 
 let there_is_a_proof () = Option.has_some !current_proof
+
+let check_no_pending_proof () = 
+  (* arnaud: il faudra prendre en compte les autres preuves quand
+             plus d'une preuve en cours pourront être représentées. *)
+  (* arnaud: rebrancher la partie sur msg_proof peut-être ?*)
+  if not (there_is_a_proof ()) then
+    ()
+  else begin
+    pp_with Format.str_formatter
+      (str"Proof editing in progress" ++ (*(msg_proofs false) ++ *)fnl() ++
+       str"Use \"Abort All\" first or complete proof(s).")   ;
+    Util.error (Format.flush_str_formatter ())
+  end
 
 exception NoCurrentProof
 let give_me_the_proof () = 
