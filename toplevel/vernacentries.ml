@@ -113,7 +113,12 @@ let cl_of_qualid = function
 (* "Show" commands *)
 
 let show_proof () =
-  Util.anomaly "Vernacentries.show_proof: à restaurer" (* arnaud: à restaurer
+  (* arnaud: rebranchement temporaire de Show Proof pour un peu 
+     de debuggage. Il faudra trouver quelque chose de mieux que
+     d'utiliser proofview_of *)
+  let constrs = Proofview.return (Proof.proofview_of (Proof_global.give_me_the_proof ()))  in
+  msgnl (prlist pr_lconstr constrs)
+  (* arnaud: original:
   let pts = get_pftreestate () in
   let cursor = cursor_of_pftreestate pts in
   let evc = evc_of_pftreestate pts in
