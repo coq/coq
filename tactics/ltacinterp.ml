@@ -1669,6 +1669,7 @@ let interp_atomic ist = function
 	Goal.return (interp_intro_pattern ist ids)
       in
       Ntactics.new_destruct (Goal.return ev) i_c i_cbo i_ids
+  | TacSplit ( _ , bl ) -> Ntactics.split (interp_bindings ist bl)
   | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: commenter et renommer *)
