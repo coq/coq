@@ -18,6 +18,8 @@ Language
 - New syntax "Theorem id1:t1 ... with idn:tn" for proving mutually dependent
   statements.
 - Support for sort-polymorphism on constants denoting inductive types.
+- Several evolutions of the module system (handling of module aliases, 
+  functorial module types, an Include feature, etc). (TODO: Say more!)
 
 Vernacular commands
 
@@ -74,17 +76,33 @@ Libraries (DOC TO CHECK)
   Q structure is already provided (see Numbers/Rational/BigQ), but 
   this part is currently incomplete (no abstract layer and generic 
   lemmas).
-- Changes in FSets/FMaps:
-  * Improvements: in particular FMap now provides an induction principle 
-    on maps, and some properties about FSets and fold needs less hypotheses.
-    The polymorphic parameter for the fold function is now in Type. 
-  * Loading FSets/FMap used to open unwanted scopes of integer datatypes 
-    (see bug #1347). These scopes may need to be opened manually now.
-  * Hints in FSetInterface.v have been transfered from the "core" database 
-    to a "set" database, and some expensive hints have been downgraded 
-    as "Immediate". A compatibility "oldset" database retains these expensive
-    hints, so using "(e)auto with set oldset" should help porting scripts. 
-    Same for FSetWeakInterface and FMap(Weak)Interface. 
+- Many changes in FSets/FMaps. In practice, compatibility with earlier
+  version should be fairly good, but some adaptations may be required.
+  * Interfaces of unordered ("weak") and ordered sets has been factorized
+    thanks to new features of Coq modules (in particular Include), see
+    FSetInterface. Same for maps. Hints in these interfaces have been
+    reworked (they are now placed in a "set" database). 
+  * FSetDecide, contributed by Aaron Bohannon, contains a decision
+    procedure allowing to solve basic set-related goals (for instance, 
+    is a point in a particular set ?). See FSetProperties for examples.
+  * Functors of properties have been improved, especially the ones about
+    maps, that now propose some induction principles. Some properties 
+    of fold need less hypothesis. 
+  * More uniformity in implementations of sets and maps: they all use
+    implicit arguments, and no longer export unnecessary scopes (see 
+    bug #1347)
+  * Internal parts of the implementations based on AVL have evolved a
+    lot. The main files FSetAVL and FMapAVL are now much more
+    lightweight now. In particular, minor changes in some functions
+    has allowed to fully separate the proofs of operational
+    correctness from the proofs of well-balancing: well-balancing is
+    critical for efficiency, but not anymore for proving that these
+    trees implement our interfaces, hence we have moved these proofs
+    into appendix files FSetFullAVL and FMapFullAVL. Moreover, a few
+    functions like union and compare have been modified in order to be
+    structural yet efficient. The appendix files also contains
+    alternative versions of these few functions, much closer to the
+    initial Ocaml code and written via the Function framework.
 - Library IntMap, subsumed by FSets/FMaps, has been removed from 
   Coq Standard Library and moved into a user contribution Cachan/IntMap
 - Better computational behavior of some constants (eq_nat_dec and 
@@ -92,14 +110,21 @@ Libraries (DOC TO CHECK)
   transparent, ...) (exceptional source of incompatibilities).
 - Boolean operators moved from module Bool to module Datatypes (may need
   to rename qualified references in script)
+- The constructors xI and xO of type positive now have postfix notations 
+  "~1" and "~0", allowing to write numbers in binary form easily, for instance 
+  6 is 1~1~0 and 4*p is p~0~0 (see BinPos.v).
 - Improvements to NArith (Nminus, Nmin, Nmax), and to QArith (in particular 
-  a better power function). 
+  a better power function).
+- Changes in ZArith: several additional lemmas (used in theories/Numbers), 
+  especially in Zdiv, Znumtheory, Zpower. Moreover, many results in
+  Zdiv have been generalized: the divisor may simply be non-null
+  instead of strictly positive (see lemmas with name ending by
+  "_full"). An alternative file ZOdiv proposes a different behavior
+  (the one of Ocaml) when dividing by negative numbers.
 - In SetoidList, eqlistA now expresses that two lists have similar elements 
   at the same position, while the predicate previously called eqlistA 
   is now equivlistA (this one only states that the lists contain the same 
   elements, nothing more). 
-- The constructors xI and xO of type positive now have postfix notations 
-  "~1" and "~0" by default (see BinPos.v).
 - Changes in Reals:
   * Most statement in "sigT" (including the
     completeness axiom) are now in "sig" (in case of incompatibility,
