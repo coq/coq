@@ -88,13 +88,13 @@ save precious time:
    option. It disables REcalculation of dependencies, not calculation
    of dependencies. In other words, if a .d file does not exist, it is
    still created, but it is not updated every time the source file
-   (e.g. .ml) is changes.
+   (e.g. .ml) is changed.
 
 General speed improvements:
 
  - When building both the native and bytecode versions, the
    KEEP_ML4_PREPROCESSED=1 option may reduce global compilation time
-   by running camp4o only once on every .ml4 file, at the expense of
+   by running camlp4o only once on every .ml4 file, at the expense of
    readability of compilation error messages for .ml4 files.
 
 Dependencies
