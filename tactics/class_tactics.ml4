@@ -948,7 +948,8 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 		  else tclIDTAC
 	      in tclTHENLIST [evartac; rewtac] gl
 	    with 
-	      | TypeClassError (env, (UnsatisfiableConstraints _ as e)) -> 
+	    | Stdpp.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
+	    | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints." 
 			      ++ fnl () ++ Himsg.explain_typeclass_error env e) gl)
 (* 	      | Not_found -> *)
