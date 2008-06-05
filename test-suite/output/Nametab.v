@@ -1,16 +1,16 @@
 Module Q.
   Module N.
     Module K.
-      Definition id := Set.
+      Definition foo := Set.
     End K.
   End N.
 End Q.
 
-(* Bad *) Locate id.
-(* Bad *) Locate K.id.
-(* Bad *) Locate N.K.id.
-(* OK  *) Locate Q.N.K.id.
-(* OK  *) Locate Top.Q.N.K.id.
+(* Bad *) Locate foo.
+(* Bad *) Locate K.foo.
+(* Bad *) Locate N.K.foo.
+(* OK  *) Locate Q.N.K.foo.
+(* OK  *) Locate Top.Q.N.K.foo.
 
 (* Bad *) Locate Module K.
 (* Bad *) Locate Module N.K.
@@ -28,11 +28,11 @@ End Q.
 Import Q.N.
 
 
-(* Bad *) Locate id.
-(* OK  *) Locate K.id.
-(* Bad *) Locate N.K.id.
-(* OK  *) Locate Q.N.K.id.
-(* OK  *) Locate Top.Q.N.K.id.
+(* Bad *) Locate foo.
+(* OK  *) Locate K.foo.
+(* Bad *) Locate N.K.foo.
+(* OK  *) Locate Q.N.K.foo.
+(* OK  *) Locate Top.Q.N.K.foo.
 
 (* OK  *) Locate Module K.
 (* Bad *) Locate Module N.K.
