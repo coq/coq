@@ -411,8 +411,11 @@ let w_coerce_to_type env evd c cty mvty =
     let evd,mvty = pose_all_metas_as_evars env evd mvty in
     let tycon = mk_tycon_type mvty in
     let (evd',j') = inh_conv_coerce_rigid_to dummy_loc env evd j tycon in
-    let evd' = Evd.map_metas_fvalue (nf_evar (evars_of evd')) evd' in
-    (evd',j'.uj_val)
+    let (evd',b) = Evarconv.consider_remaining_unif_problems env evd' in
+    if b then
+      let evd' = Evd.map_metas_fvalue (nf_evar (evars_of evd')) evd' in
+      (evd',j'.uj_val)
+    else (evd,c)
   with e when precatchable_exception e ->
     (evd,c)
 
