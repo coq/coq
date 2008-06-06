@@ -796,15 +796,17 @@ ifeq ($(CHECKEDOUT),git)
 	fi
 endif
 	$(HIDE)set -e; \
-        if test -e revision; then \
+	if test -e revision.new; then \
+          if test -e revision; then \
 	    if test "`cat revision`" = "`cat revision.new`" ; then \
 	       rm -f revision.new; \
             else \
                mv -f revision.new revision; \
             fi; \
-        else \
+          else \
             mv -f revision.new revision; \
-        fi
+          fi \
+	fi
 
 ###########################################################################
 # Default rules
@@ -859,7 +861,7 @@ endif
 
 %.ml: %.mll
 	$(SHOW)'OCAMLLEX  $<'
-	$(HIDE)$(OCAMLLEX) $<
+	$(HIDE)$(OCAMLLEX) "$*.mll" -o $@
 
 %.ml %.mli: %.mly
 	$(SHOW)'OCAMLYACC $<'
@@ -900,27 +902,27 @@ endif
 #Critical section:
 # Nobody (in a make -j) should touch the .ml file here.
 	$(SHOW)'OCAMLDEP4 $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< > $*.ml \
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4USE) $<` `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl $< -o $*.ml \
 	  || ( RV=$$?; rm -f "$*.ml"; exit $${RV} )
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $*.ml > "$@" || ( RV=$$?; rm -f "$@"; exit $${RV} )
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $*.ml | sed '' > "$@" || ( RV=$$?; rm -f "$@"; exit $${RV} )
 	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $*.ml
 #End critical section
 
 checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) $< > "$@"
+	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) "$<" | sed '' > "$@"
 
 checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) $< > "$@"
+	$(HIDE)$(OCAMLDEP) -slash $(LOCALCHKLIBS) "$<" | sed '' > "$@"
 
 %.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILES:.ml4=.ml)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $< > "$@"
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' > "$@"
 
 %.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILES:.ml4=.ml)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) $< > "$@"
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' > "$@"
 
 ## Veerry nasty hack to keep ocamldep happy
 %.ml: | %.ml4

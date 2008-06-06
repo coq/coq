@@ -44,7 +44,7 @@ OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
 MINICOQ:=bin/minicoq$(EXE)
 
-CSDPCERT:=bin/csdpcert
+CSDPCERT:=bin/csdpcert$(EXE)
 
 ###########################################################################
 # tools
