@@ -144,20 +144,21 @@ val conclPattern : constr -> constr_pattern -> Tacexpr.glob_tactic_expr -> unit 
 
 (* The Auto tactic *)
 
-val auto : int -> constr list -> hint_db_name list -> unit tactic
+val auto : int -> constr list Goal.sensitive-> hint_db_name list -> unit tactic
 
 (* auto with default search depth and with the hint database "core" *)
 val default_auto : unit -> unit tactic
 
 (* auto with all hint databases except the "v62" compatibility database *)
-val full_auto : int -> constr list -> unit tactic
+val full_auto : int -> constr list Goal.sensitive -> unit tactic
 
 (* auto with default search depth and with all hint databases 
    except the "v62" compatibility database *)
 val default_full_auto : unit -> unit tactic
 
 (* The generic form of auto (second arg [None] means all bases) *)
-val gen_auto : int option -> constr list -> hint_db_name list option -> unit tactic
+val gen_auto : int option -> constr list Goal.sensitive -> 
+               hint_db_name list option -> unit tactic
 
 (* The hidden version of auto *)
 val h_auto   : int option -> constr list -> hint_db_name list option -> unit tactic

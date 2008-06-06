@@ -1633,7 +1633,10 @@ let interp_atomic ist = function
       let i_l = (Option.map (List.map (interp_hint_base ist)) l) in
       Auto.gen_trivial i_lems i_l
   | TacAuto (n,lems,l) ->
-      Util.anomaly "Ltacinterp.interp_atomic:LetAuto: à restaurer"
+      let i_n = Option.map (interp_int_or_var ist) n in
+      let i_lems = pf_interp_constr_list ist lems in
+      let i_l = Option.map (List.map (interp_hint_base ist)) l in
+      Auto.gen_auto i_n i_lems i_l
   | TacAutoTDB n -> 
       Util.anomaly "Ltacinterp.interp_atomic:LetAutoTDB: à restaurer"
   | TacDestructHyp (b,id) -> 
@@ -1669,7 +1672,7 @@ let interp_atomic ist = function
 	Goal.return (interp_intro_pattern ist ids)
       in
       Ntactics.new_destruct (Goal.return ev) i_c i_cbo i_ids
-  | TacSplit ( _ , bl ) -> Ntactics.split (interp_bindings ist bl)
+  | TacSplit ( _ , bl ) -> Ntactics.split_with_ebindings(interp_bindings ist bl)
   | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: commenter et renommer *)

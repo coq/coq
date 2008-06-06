@@ -700,6 +700,7 @@ let constructor_tac expctdnumopt i lbind =
     Goal.concl >>= fun concl ->
     Goal.env >>= fun env ->
     Goal.defs >>= fun defs ->
+    lbind >>= fun lbind ->
     let (mind,redcl) = 
       Tacred.reduce_to_quantified_ind env (Evd.evars_of defs) concl 
     in
@@ -729,7 +730,7 @@ let one_constructor i = constructor_tac None i
  *)
 
 let any_constructor tacopt =
-  let t = match tacopt with None -> Proofview.tclIDTAC () | Some t -> t in
+  let t = Option.default (Proofview.tclIDTAC ()) tacopt in
   let sensitive_tactic =
     Goal.concl >>= fun concl ->
     Goal.env >>= fun env ->
@@ -743,7 +744,7 @@ let any_constructor tacopt =
     if nconstr = 0 then error "The type has no constructors"; (* arnaud:error ou fail ?*)
     Goal.return (
     Logic.tclFIRST (List.map (fun i -> Logic.tclTHEN (one_constructor i 
-						                    NoBindings)
+						       (Goal.return NoBindings))
 			                             t
 			     ) 
 		             (interval 1 nconstr)
@@ -756,14 +757,17 @@ let left_with_ebindings  = constructor_tac (Some 2) 1
 let right_with_ebindings = constructor_tac (Some 2) 2
 let split_with_ebindings = constructor_tac (Some 1) 1
 
-let left l         = left_with_ebindings (inj_ebindings l)
-let simplest_left  = left NoBindings
+let left l         = left_with_ebindings (l >>= fun l ->
+					  Goal.return (inj_ebindings l))
+let simplest_left  = left (Goal.return NoBindings)
 
-let right l        = right_with_ebindings (inj_ebindings l)
-let simplest_right = right NoBindings
+let right l        = right_with_ebindings (l >>= fun l ->
+                                           Goal.return (inj_ebindings l))
+let simplest_right = right (Goal.return NoBindings)
 
-let split l        = split_with_ebindings (inj_ebindings l)
-let simplest_split = split NoBindings
+let split l        = split_with_ebindings (l >>= fun l ->
+                                           Goal.return (inj_ebindings l))
+let simplest_split = split (Goal.return NoBindings)
 
 
 (********************************************)

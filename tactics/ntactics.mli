@@ -301,13 +301,15 @@ val any_constructor            : tactic option -> tactic
 val left                       : constr bindings -> tactic
 val right                      : constr bindings -> tactic
 *)
-val split                      : Goal.open_constr bindings Goal.sensitive -> unit tactic
+val split                      : constr bindings Goal.sensitive -> unit tactic
 (*
 
 val left_with_ebindings        : Goal.open_constr bindings -> tactic
 val right_with_ebindings       : Goal.open_constr bindings -> tactic
-val split_with_ebindings       : Goal.open_constr bindings -> tactic
-
+*)
+val split_with_ebindings       : Goal.open_constr bindings Goal.sensitive -> 
+                                 unit tactic
+(*
 val simplest_left              : tactic
 val simplest_right             : tactic
 val simplest_split             : tactic

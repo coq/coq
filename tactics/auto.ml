@@ -855,8 +855,7 @@ let search = search_gen 0
 let default_search_depth = ref 5
 
 let auto n lems dbnames =
-  Util.anomaly "Auto.auto: à restaurer"
-  (* arnaud: à restaurer:
+  Proofview.sensitive_tactic (
   let db_list = 
     List.map
       (fun x -> 
@@ -866,23 +865,30 @@ let auto n lems dbnames =
 	   error ("auto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db lems gl) hyps) gl
-  *)
+  Goal.hyps >>= fun hyps ->
+  lems >>= fun lems ->
+  make_local_hint_db lems >>= fun local_db ->
+  Goal.return (  
+  Logic.tclTRY (search n db_list local_db hyps)
+    )
+  )
 
-let default_auto () = auto !default_search_depth [] []
+let default_auto () = auto !default_search_depth Goal.sNil []
 
 let full_auto n lems = 
-  Util.anomaly "Auto.full_auto: à restaurer"
-  (* arnaud: à restaurer
   let dbnames = Hintdbmap.dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
-  let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db lems gl) hyps) gl
-  *)
+  Proofview.sensitive_tactic (
+    Goal.hyps>>= fun hyps -> 
+    lems >>= fun lems ->
+    make_local_hint_db lems >>= fun local_db ->
+    Goal.return (
+      Logic.tclTRY (search n db_list local_db hyps)
+    )
+  )
   
-let default_full_auto () = full_auto !default_search_depth []
+let default_full_auto () = full_auto !default_search_depth Goal.sNil
 
 let gen_auto n lems dbnames =
   let n = match n with None -> !default_search_depth | Some n -> n in
@@ -893,8 +899,11 @@ let gen_auto n lems dbnames =
 let inj_or_var = Option.map (fun n -> ArgArg n)
 
 let h_auto n lems l =
+  Util.anomaly "Auto.h_auto: deprecated"
+  (* arnaud: deprecated ?
   Refiner.abstract_tactic (TacAuto (inj_or_var n,List.map inj_open lems,l))
     (gen_auto n lems l)
+  *)
 
 (**************************************************************************)
 (*                  The "destructing Auto" from Eduardo                   *)
