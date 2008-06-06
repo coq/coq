@@ -120,6 +120,8 @@ let ppuni u = pp(pr_uni u)
 
 let ppuniverses u = pp (str"[" ++ pr_universes u ++ str"]")
 
+let ppconstraints c = pp (pr_constraints c)
+
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e (rel_context e) ++ str "]")

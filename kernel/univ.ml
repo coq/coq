@@ -579,7 +579,15 @@ let pr_universes g =
   let graph = UniverseMap.fold (fun k a l -> (k,a)::l) g [] in
   prlist (function (_,a) -> pr_arc a) graph
     
-
+let pr_constraints c =
+  Constraint.fold (fun (u1,op,u2) pp_std -> 
+		     let op_str = match op with 
+		       | Lt -> " < "
+		       | Leq -> " <= "
+		       | Eq -> " = "
+		     in pp_std ++  pr_uni_level u1 ++ str op_str ++
+			  pr_uni_level u2 ++ fnl () )  c (str "")
+    
 (* Dumping constrains to a file *)
 
 let dump_universes output g = 

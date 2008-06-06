@@ -21,6 +21,7 @@ install_printer Top_printers.pprawconstr
 install_printer Top_printers.ppconstr
 install_printer Top_printers.ppuni
 install_printer Top_printers.ppuniverses
+install_printer Top_printers.ppconstraints
 install_printer Top_printers.pptype
 install_printer Top_printers.ppj
 install_printer Top_printers.ppenv

@@ -355,8 +355,9 @@ let subst_module ((sp,kn),subst,(entry,substobjs,_)) =
 let subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
   let dir,mp = dir_of_sp sp, mp_of_kn kn in
   let (sub,mbids,msid,objs) = substobjs in
-  let sub = update_subst_alias subst (map_msid msid mp) in
-  let subst' = join sub subst in
+  let sub' = update_subst_alias subst (map_msid msid mp) in
+  let subst' = join sub' subst in
+  let subst' = join sub subst' in
   (* substitutive_objects get the new substitution *)
   let substobjs = (subst',mbids,msid,objs) in
   (* if we are not a functor - calculate substitued.

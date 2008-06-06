@@ -80,6 +80,7 @@ val subst_large_constraints :
 
 val pr_uni : universe -> Pp.std_ppcmds
 val pr_universes : universes -> Pp.std_ppcmds
+val pr_constraints : constraints -> Pp.std_ppcmds
 
 (*s Dumping to a file *)
 
