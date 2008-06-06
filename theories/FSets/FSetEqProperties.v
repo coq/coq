@@ -21,7 +21,7 @@ Require Import FSetProperties Zerob Sumbool Omega DecidableTypeEx.
 
 Module WEqProperties (Import E:DecidableType)(M:WSfun E). 
 Module Import MP := WProperties E M.
-Import FM.
+Import FM Dec.F.
 Import M.
 
 Definition Add := MP.Add.

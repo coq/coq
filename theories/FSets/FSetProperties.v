@@ -29,8 +29,8 @@ Hint Extern 1 (Setoid_Theory _ _) => constructor; congruence.
     should take two arguments in order to compensate this. *)
 
 Module WProperties (Import E : DecidableType)(M : WSfun E).
-  Module Import FM := WFacts E M.
   Module Import Dec := WDecide E M.
+  Module Import FM := Dec.F (* FSetFacts.WFacts E M *).
   Import M.
 
   Lemma In_dec : forall x s, {In x s} + {~ In x s}.

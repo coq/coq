@@ -22,6 +22,7 @@ Require Import Decidable DecidableTypeEx FSetFacts.
 (** First, a version for Weak Sets *)
 
 Module WDecide (E : DecidableType)(Import M : WSfun E).
+ Module F := FSetFacts.WFacts E M.
 
 (** * Overview
     This functor defines the tactic [fsetdec], which will
@@ -462,7 +463,7 @@ the above form:
         the predicates [In] and [E.eq] applied only to
         variables.  We are going to use them with [autorewrite].
         *)
-    Module F := FSetFacts.WFacts E M.
+
     Hint Rewrite
       F.empty_iff F.singleton_iff F.add_iff F.remove_iff
       F.union_iff F.inter_iff F.diff_iff
