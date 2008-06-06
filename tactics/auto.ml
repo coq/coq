@@ -432,16 +432,17 @@ let add_hints local dbnames0 h =
       add_trivials env sigma (List.map f lhints) local dbnames
   | HintsUnfold lhints ->
       let f r =
-	let r = Syntax_def.global_with_alias r in
-        let r' = match r with
+	let gr = Syntax_def.global_with_alias r in
+        let r' = match gr with
          | ConstRef c -> EvalConstRef c
          | VarRef c -> EvalVarRef c
          | _ -> 
            errorlabstrm "evalref_of_ref"
-            (str "Cannot coerce" ++ spc () ++ pr_global r ++ spc () ++
+            (str "Cannot coerce" ++ spc () ++ pr_global gr ++ spc () ++
              str "to an evaluable reference")
         in
-	 (r,r') in
+	  if !Flags.dump then Constrintern.add_glob (loc_of_reference r) gr;
+	 (gr,r') in
       add_unfolds (List.map f lhints) local dbnames
   | HintsConstructors lqid ->
       let add_one qid =

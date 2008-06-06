@@ -131,7 +131,7 @@ Implicit Arguments setoid_morphism [[!sa]].
 Existing Instance setoid_morphism.
 
 Program Definition setoid_partial_app_morphism [ sa : Setoid A ] (x : A) : Morphism (equiv ++> iff) (equiv x) :=
-  Reflexive_partial_app_morphism x.
+  Reflexive_partial_app_morphism.
 
 Existing Instance setoid_partial_app_morphism.
 
@@ -148,7 +148,7 @@ Ltac obligations_tactic ::= morphism_tac.
    using [iff_impl_id_morphism] if the proof is in [Prop] and
    [eq_arrow_id_morphism] if it is in Type. *)
 
-Program Instance iff_impl_id_morphism : Morphism (iff ++> impl) id.
+Program Instance iff_impl_id_morphism : Morphism (iff ++> impl) Basics.id.
 
 (* Program Instance eq_arrow_id_morphism : ? Morphism (eq +++> arrow) id. *)
 

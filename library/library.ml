@@ -536,6 +536,10 @@ let require_library qidl export =
     end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
+  if !Flags.dump then List.iter2 (fun (loc, _) dp -> 
+    Flags.dump_string (Printf.sprintf "R%d %s <> <> %s\n" 
+		    (fst (unloc loc)) (string_of_dirpath dp) "lib"))
+    qidl modrefl;
   if !Flags.xml_export then List.iter !xml_require modrefl;
   add_frozen_state ()
 

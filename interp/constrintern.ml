@@ -161,9 +161,9 @@ let type_of_logical_kind = function
       | Method -> "meth")
   | IsAssumption a ->
       (match a with
-      | Definitional -> "def"
-      | Logical -> "prf"
-      | Conjectural -> "prf")
+      | Definitional -> "defax"
+      | Logical -> "prfax"
+      | Conjectural -> "prfax")
   | IsProof th ->
       (match th with
       | Theorem
@@ -200,6 +200,10 @@ let remove_sections dir =
     (* Theorem/Lemma outside its outer section of definition *)
     dir
 
+let dump_reference loc filepath modpath ident ty =
+  dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
+		  (fst (unloc loc)) filepath modpath ident ty)
+
 let add_glob_gen loc sp lib_dp ty =
   let mod_dp,id = repr_path sp in
   let mod_dp = remove_sections mod_dp in
@@ -207,8 +211,7 @@ let add_glob_gen loc sp lib_dp ty =
   let filepath = string_of_dirpath lib_dp in
   let modpath = string_of_dirpath mod_dp_trunc in
   let ident = string_of_id id in
-    dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
-		    (fst (unloc loc)) filepath modpath ident ty)
+    dump_reference loc filepath modpath ident ty
 
 let add_glob loc ref = 
   let sp = Nametab.sp_of_global ref in

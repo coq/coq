@@ -29,6 +29,7 @@ type entry_type =
   | TacticDefinition
   | Abbreviation
   | Notation
+  | Section
 
 val type_name : entry_type -> string
 

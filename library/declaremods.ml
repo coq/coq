@@ -663,7 +663,7 @@ let start_module interp_modtype export id args res_o =
     openmod_info:=(mbids,res_entry_o,sub_body_o);
   let prefix = Lib.start_module export id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
-  Lib.add_frozen_state ()
+  Lib.add_frozen_state (); mp
 
 
 let end_module id =
@@ -717,7 +717,8 @@ let end_module id =
     if mp_of_kn (snd newoname) <> mp then 
       anomaly "Kernel and Library names do not match";
 
-    Lib.add_frozen_state () (* to prevent recaching *)
+    Lib.add_frozen_state () (* to prevent recaching *);
+    mp
 
 
 
@@ -819,7 +820,7 @@ let start_modtype interp_modtype id args =
   openmodtype_info := mbids;
   let prefix = Lib.start_modtype id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
-  Lib.add_frozen_state ()
+  Lib.add_frozen_state (); mp
 
 
 let end_modtype id =
@@ -843,14 +844,15 @@ let end_modtype id =
     anomaly
       "Kernel and Library names do not match";
 
-  Lib.add_frozen_state ()(* to prevent recaching *)
+  Lib.add_frozen_state ()(* to prevent recaching *);
+  ln
 
 
 let declare_modtype interp_modtype id args mty = 
   let fs = Summary.freeze_summaries () in
 
   try
-  let _ = Global.start_modtype id in
+  let mmp = Global.start_modtype id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
   let base_mty = interp_modtype (Global.env()) mty in
@@ -865,7 +867,8 @@ let declare_modtype interp_modtype id args mty =
   (* and declare the module type as a whole *)
   Summary.unfreeze_summaries fs;
     
-  ignore (add_leaf id (in_modtype (Some entry, substobjs)))
+  ignore (add_leaf id (in_modtype (Some entry, substobjs)));
+  mmp
   with e ->
     (* Something wrong: undo the whole process *)
     Summary.unfreeze_summaries fs; raise e
@@ -1017,7 +1020,7 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
   let fs = Summary.freeze_summaries () in
 
   try
-  let _ = Global.start_module id in
+  let mmp = Global.start_module id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
 
   let mty_entry_o, mty_sub_o = match mty_o with
@@ -1073,7 +1076,8 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 		    | _ -> None in
 	   ignore (add_leaf
 		     id
-		     (in_module_alias (Some (entry, mty_sub_o), substobjs, substituted)))
+		     (in_module_alias (Some (entry, mty_sub_o), substobjs, substituted)));
+	   mmp
       | _ ->
 	  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
 	  let (sub,mbids,msid,objs) = substobjs in
@@ -1082,7 +1086,8 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 	  let substituted = subst_substobjs dir mp substobjs in
 	    ignore (add_leaf
 		      id
-		      (in_module (Some (entry, mty_sub_o), substobjs, substituted)))
+		      (in_module (Some (entry, mty_sub_o), substobjs, substituted)));
+	    mmp
 	      
   with e -> 
     (* Something wrong: undo the whole process *)

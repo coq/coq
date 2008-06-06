@@ -273,6 +273,11 @@ let print_located_module r =
 	str "No module is referred to by name ") ++ pr_qualid qid
   in msgnl msg  
 
+let global_with_alias r =
+  let gr = global_with_alias r in
+    if !Flags.dump then Constrintern.add_glob (loc_of_reference r) gr;
+    gr
+
 (**********)
 (* Syntax *)
 
@@ -309,6 +314,10 @@ let dump_definition (loc, id) sec s =
   Flags.dump_string (Printf.sprintf "%s %d %s %s\n" s (fst (unloc loc)) 
 			(string_of_dirpath (current_dirpath sec)) (string_of_id id))
     
+let dump_reference loc modpath ident ty =
+  dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
+		  (fst (unloc loc)) (string_of_dirpath (Lib.library_dp ())) modpath ident ty)
+
 let dump_constraint ((loc, n), _, _) sec ty =
   match n with
     | Name id -> dump_definition (loc, id) sec ty
@@ -408,7 +417,7 @@ let vernac_import export refl =
   List.iter import refl;
   Lib.add_frozen_state ()
 
-let vernac_declare_module export id binders_ast mty_ast_o = 
+let vernac_declare_module export (loc, id) binders_ast mty_ast_o = 
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
@@ -420,13 +429,15 @@ let vernac_declare_module export id binders_ast mty_ast_o =
        "Remove the \"Export\" and \"Import\" keywords from every functor " ^
        "argument.")
      else (idl,ty)) binders_ast in
-  Declaremods.declare_module 
+  let mp = Declaremods.declare_module 
     Modintern.interp_modtype Modintern.interp_modexpr
-     id binders_ast (Some mty_ast_o) None;
+    id binders_ast (Some mty_ast_o) None
+  in 
+  Modintern.dump_moddef loc mp "mod";
   if_verbose message ("Module "^ string_of_id id ^" is declared");
   Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
-let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o = 
+let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o = 
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
   if Lib.sections_are_opened () then
@@ -439,15 +450,17 @@ let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o =
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, (List.map (fun (_,i) -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
-	Declaremods.start_module Modintern.interp_modtype export
-	  id binders_ast mty_ast_o;
-	if_verbose message 
-	  ("Interactive Module "^ string_of_id id ^" started") ;
-        List.iter
-         (fun (export,id) ->
-           Option.iter
-            (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
-         ) argsexport
+       let mp = Declaremods.start_module Modintern.interp_modtype export
+	 id binders_ast mty_ast_o 
+       in
+	 Modintern.dump_moddef loc mp "mod";
+	 if_verbose message 
+	   ("Interactive Module "^ string_of_id id ^" started") ;
+         List.iter
+           (fun (export,id) ->
+             Option.iter
+               (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+           ) argsexport
     | Some _ ->
        let binders_ast = List.map
         (fun (export,idl,ty) ->
@@ -456,21 +469,24 @@ let vernac_define_module export id binders_ast mty_ast_o mexpr_ast_o =
                   " the definition is interactive. Remove the \"Export\" and " ^
                   "\"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
-	Declaremods.declare_module 
+       let mp =	Declaremods.declare_module 
 	  Modintern.interp_modtype Modintern.interp_modexpr
-	  id binders_ast mty_ast_o mexpr_ast_o;
-	if_verbose message 
-	  ("Module "^ string_of_id id ^" is defined");
-        Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
-         export
+	  id binders_ast mty_ast_o mexpr_ast_o 
+       in
+	 Modintern.dump_moddef loc mp "mod";
+	 if_verbose message 
+	   ("Module "^ string_of_id id ^" is defined");
+         Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
+           export
 
-let vernac_end_module export id =
-  Declaremods.end_module id;
+let vernac_end_module export (loc,id) =
+  let mp = Declaremods.end_module id in
+  Modintern.dump_modref loc mp "mod";
   if_verbose message ("Module "^ string_of_id id ^" is defined") ;
   Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 
-let vernac_declare_module_type id binders_ast mty_ast_o =
+let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
   if Lib.sections_are_opened () then
     error "Modules and Module Types are not allowed inside sections";
   
@@ -482,7 +498,8 @@ let vernac_declare_module_type id binders_ast mty_ast_o =
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, List.map (fun (_,i) -> export,i) idl) binders_ast
              ([],[]) in
-	Declaremods.start_modtype Modintern.interp_modtype id binders_ast;
+       let mp = Declaremods.start_modtype Modintern.interp_modtype id binders_ast in
+        Modintern.dump_moddef loc mp "modtype";
 	if_verbose message 
 	  ("Interactive Module Type "^ string_of_id id ^" started");
         List.iter
@@ -499,14 +516,16 @@ let vernac_declare_module_type id binders_ast mty_ast_o =
                   " the definition is interactive. Remove the \"Export\" " ^
                   "and \"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
-	Declaremods.declare_modtype Modintern.interp_modtype 
-	  id binders_ast base_mty;
+       let mp = Declaremods.declare_modtype Modintern.interp_modtype 
+	  id binders_ast base_mty in
+        Modintern.dump_moddef loc mp "modtype";
 	if_verbose message 
 	  ("Module Type "^ string_of_id id ^" is defined")
 
 
-let vernac_end_modtype id =
-  Declaremods.end_modtype id;
+let vernac_end_modtype (loc,id) =
+  let mp = Declaremods.end_modtype id in
+  Modintern.dump_modref loc mp "modtype";
   if_verbose message 
     ("Module Type "^ string_of_id id ^" is defined")
 
@@ -544,20 +563,25 @@ let vernac_record struc binders sort nameopt cfs =
 
   (* Sections *)
 
-let vernac_begin_section id =
+let vernac_begin_section (_, id as lid) =
   check_no_pending_proofs ();
+  if !Flags.dump then dump_definition lid true "sec";
   Lib.open_section id
 
-let vernac_end_section = Lib.close_section
+let vernac_end_section (loc, id) = 
+  if !Flags.dump then 
+    dump_reference loc 
+      (string_of_dirpath (current_dirpath true)) "<>" "sec";
+  Lib.close_section id
 
-let vernac_end_segment id =
+let vernac_end_segment lid =
   check_no_pending_proofs ();
   let o = try Lib.what_is_opened () with 
       Not_found -> error "There is nothing to end." in
     match o with
-      | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export id
-      | _,Lib.OpenedModtype _ -> vernac_end_modtype id
-      | _,Lib.OpenedSection _ -> vernac_end_section id
+      | _,Lib.OpenedModule (export,_,_) -> vernac_end_module export lid
+      | _,Lib.OpenedModtype _ -> vernac_end_modtype lid
+      | _,Lib.OpenedSection _ -> vernac_end_section lid
       | _ -> anomaly "No more opened things"
 
 let vernac_require import _ qidl =
@@ -732,7 +756,7 @@ let vernac_hints = Auto.add_hints
 let vernac_syntactic_definition lid =
   dump_definition lid false "syndef";
   Command.syntax_definition (snd lid)
-
+  
 let vernac_declare_implicits local r = function
   | Some imps ->
       Impargs.declare_manual_implicits local (global_with_alias r) false
@@ -1263,18 +1287,18 @@ let interp c = match c with
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
 
   (* Modules *)
-  | VernacDeclareModule (export,(_,id),bl,mtyo) -> 
-      vernac_declare_module export id bl mtyo
-  | VernacDefineModule (export,(_,id),bl,mtyo,mexpro) -> 
-      vernac_define_module export id bl mtyo mexpro
-  | VernacDeclareModuleType ((_,id),bl,mtyo) -> 
-      vernac_declare_module_type id bl mtyo
+  | VernacDeclareModule (export,lid,bl,mtyo) -> 
+      vernac_declare_module export lid bl mtyo
+  | VernacDefineModule (export,lid,bl,mtyo,mexpro) -> 
+      vernac_define_module export lid bl mtyo mexpro
+  | VernacDeclareModuleType (lid,bl,mtyo) -> 
+      vernac_declare_module_type lid bl mtyo
   | VernacInclude (in_ast) ->
       vernac_include in_ast
   (* Gallina extensions *)
-  | VernacBeginSection (_,id) -> vernac_begin_section id
+  | VernacBeginSection lid -> vernac_begin_section lid
 
-  | VernacEndSegment (_,id) -> vernac_end_segment id
+  | VernacEndSegment lid -> vernac_end_segment lid
 
   | VernacRecord (_,id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
   | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl

@@ -336,7 +336,7 @@ Proof. firstorder. Qed.
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
-Lemma Reflexive_partial_app_morphism [ Morphism (A -> B) (R ==> R') m, Reflexive A R ] (x : A) :
+Lemma Reflexive_partial_app_morphism [ Morphism (A -> B) (R ==> R') m, MorphismProxy A R x ] :
    Morphism R' (m x).
 Proof. simpl_relation. Qed.
 

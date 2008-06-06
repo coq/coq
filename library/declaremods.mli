@@ -40,25 +40,25 @@ val declare_module :
   (env -> 'modtype -> module_struct_entry) -> (env -> 'modexpr -> module_struct_entry) ->
   identifier -> 
   (identifier located list * 'modtype) list -> ('modtype * bool) option -> 
-  'modexpr option -> unit
+  'modexpr option -> module_path
  
 val start_module : (env -> 'modtype -> module_struct_entry) -> 
   bool option -> identifier -> (identifier located list * 'modtype) list ->
-   ('modtype * bool) option -> unit
+   ('modtype * bool) option -> module_path
 
-val end_module : identifier -> unit
+val end_module : identifier -> module_path
 
 
 
 (*s Module types *)
 
 val declare_modtype : (env -> 'modtype -> module_struct_entry) -> 
-  identifier -> (identifier located list * 'modtype) list -> 'modtype -> unit
+  identifier -> (identifier located list * 'modtype) list -> 'modtype -> module_path
 
 val start_modtype : (env -> 'modtype -> module_struct_entry) -> 
-  identifier -> (identifier located list * 'modtype) list -> unit
+  identifier -> (identifier located list * 'modtype) list -> module_path
 
-val end_modtype : identifier -> unit
+val end_modtype : identifier -> module_path
 
 
 (*s Objects of a module. They come in two lists: the substitutive ones

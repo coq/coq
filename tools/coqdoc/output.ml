@@ -36,17 +36,17 @@ let is_keyword =
       "CoInductive"; "Defined"; "Definition"; "End"; "Eval"; "Example"; 
       "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses"; 
-      "Resolve"; "Unfold"; "Immediate"; "Implicit"; "Import"; "Inductive"; 
+      "Resolve"; "Unfold"; "Immediate"; "Extern"; "Implicit"; "Import"; "Inductive"; 
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac"; 
       "Module"; "Module Type"; "Declare Module"; "Include";
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
-      "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
+      "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
       "Set"; "Unset"; "Variable"; "Variables"; 
       "Notation"; "Reserved Notation"; "Tactic Notation";
-      "Delimit"; "Bind"; "Open"; "Scope";
-      "Boxed"; "Unboxed";
-      "Arguments"; 
+      "Delimit"; "Bind"; "Open"; "Scope"; 
+      "Boxed"; "Unboxed"; "Inline";
+      "Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Class"; "Instantiation";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
@@ -65,7 +65,8 @@ let is_tactic =
       "cut"; "assumption"; "exact"; "split"; "try"; "discriminate";
       "simpl"; "unfold"; "red"; "compute"; "at"; "in"; "by";
       "reflexivity"; "symmetry"; "transitivity";
-      "replace"; "setoid_replace"; "inversion"; "pattern";
+      "replace"; "setoid_replace"; "inversion"; "inversion_clear";
+      "pattern"; "intuition"; "congruence";
       "trivial"; "exact"; "tauto"; "firstorder"; "ring";
       "clapply"; "program_simpl"; "eapply"; "auto"; "eauto" ]
 
@@ -190,7 +191,9 @@ module Latex = struct
 
   let start_module () = 
     if not !short then begin
-      printf "\\coqdocmodule{"; 
+      printf "\\coqlibrary{"; 
+      label_ident !current_module; 
+      printf "}{";
       raw_ident !current_module; 
       printf "}\n\n"
     end
@@ -231,13 +234,14 @@ module Latex = struct
 	raw_ident s
     i*)
 
-  let ident_ref m fid typ s = 
+  let ident_ref m fid typ s =
+    let id = if fid <> "" then (m ^ "." ^ fid) else m in
     match find_module m with
       | Local ->
-	  printf "\\coq%sref{" (type_name typ); label_ident (m ^ "." ^ fid); printf "}{"; raw_ident s; printf "}"
+	  printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
       | Coqlib when !externals ->
 	  let _m = Filename.concat !coqlib m in
-	    printf "\\coq%sref{" (type_name typ); label_ident (m ^ "." ^ fid); printf "}{"; raw_ident s; printf "}"
+	    printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
       | Coqlib | Unknown ->
 	  raw_ident s
 

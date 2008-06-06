@@ -44,6 +44,13 @@
 % macro for typesetting constant identifiers
 \newcommand{\coqdoccst}[1]{\textsf{#1}}
 
+% macro for typesetting module identifiers
+\newcommand{\coqdocmod}[1]{\textsc{\textsf{#1}}}
+
+% macro for typesetting module constant identifiers (e.g. Parameters in
+% module types)
+\newcommand{\coqdocax}[1]{\textsl{\textsf{#1}}}
+
 % macro for typesetting inductive type identifiers
 \newcommand{\coqdocind}[1]{\textbf{\textsf{#1}}}
 
@@ -62,13 +69,15 @@
 \newcommand{\coqdocmodule}[1]{\chapter{Module #1}\markboth{Module #1}{}
 }
 
-\usepackage{hyperref}
-\hypersetup{colorlinks=true,linkcolor=black}
+\usepackage[pdftex]{hyperref}
+\hypersetup{raiselinks=true,colorlinks=true,linkcolor=black}
+\usepackage[all]{hypcap}
+\usepackage{xr}
 %\usepackage{color}
 %\usepackage{multind}
 %\newcommand{\coqdef}[3]{\hypertarget{coq:#1}{\index{coq}{#1@#2|hyperpage}#3}}
 
-\newcommand{\coqdef}[3]{\hypertarget{coq:#1}{#3}}
+\newcommand{\coqdef}[3]{\phantomsection\hypertarget{coq:#1}{#3}}
 \newcommand{\coqref}[2]{\hyperlink{coq:#1}{#2}}
 
 \newcommand{\coqdocvar}[1]{{\textit{#1}}}
@@ -82,7 +91,6 @@
 %\newcommand{\coqvariable}[2]{\coqdef{#1}{#2}{\coqdocid{#2}}}
 %\newcommand{\coqaxiom}[2]{\coqdef{#1}{#2}{\coqdocid{#2}}}
 \newcommand{\coqvariable}[2]{\coqdocid{#2}}
-\newcommand{\coqaxiom}[2]{\coqdocid{#2}}
 
 \newcommand{\coqinductive}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
 \newcommand{\coqinductiveref}[2]{\coqref{#1}{\coqdocind{#2}}}
@@ -112,6 +120,25 @@
 \newcommand{\coqprojectionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
 
 \newcommand{\coqnotationref}[2]{\coqref{#1}{\coqdockw{#2}}}
+
+\newcommand{\coqsection}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
+\newcommand{\coqsectionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+
+%\newcommand{\coqlibrary}[2]{\chapter{Library \coqdoccst{#2}}\label{coq:#1}}
+  
+%\newcommand{\coqlibraryref}[2]{\ref{coq:#1}}
+
+\newcommand{\coqlibrary}[2]{\cleardoublepage\phantomsection
+  \hypertarget{coq:#1}{\chapter{Library \coqdoccst{#2}}}}
+  
+\newcommand{\coqlibraryref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+
+\newcommand{\coqaxiom}[2]{\coqdef{#1}{#2}{\coqdocax{#2}}}
+\newcommand{\coqaxiomref}[2]{\coqref{#1}{\coqdocax{#2}}}
+
+\newcommand{\coqmodule}[2]{\coqdef{#1}{#2}{\coqdocmod{#2}}}
+\newcommand{\coqmoduleref}[2]{\coqref{#1}{\coqdocmod{#2}}}
+
 
 %HEVEA\newcommand{\lnot}{\coqwkw{not}}
 %HEVEA\newcommand{\lor}{\coqwkw{or}}

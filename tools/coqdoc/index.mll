@@ -36,6 +36,7 @@ type entry_type =
   | TacticDefinition
   | Abbreviation
   | Notation
+  | Section
 
 type index_entry = 
   | Def of string * entry_type
@@ -50,7 +51,13 @@ let table = Hashtbl.create 97
   (** [table] is used to store references and definitions *)
 
 let full_ident sp id =
-  if sp <> "<>" then sp ^ "." ^ id else id
+  if sp <> "<>" then 
+    if id <> "<>" then 
+      sp ^ "." ^ id 
+    else sp 
+  else if id <> "<>" 
+  then id 
+  else ""
     
 let add_def loc ty sp id = 
   Hashtbl.add table (!current_library, loc) (Def (full_ident sp id, ty))
@@ -195,7 +202,8 @@ let type_name = function
   | TacticDefinition -> "tactic"
   | Abbreviation -> "abbreviation"
   | Notation -> "notation"
-      
+  | Section -> "section"
+
 let all_entries () =
   let gl = ref [] in
   let add_g s m t = gl := (s,(m,t)) :: !gl in
@@ -421,14 +429,15 @@ and module_refs = parse
     | "meth" -> Method
     | "inst" -> Instance
     | "var" -> Variable
-    | "ax" -> Axiom
+    | "defax" | "prfax" | "ax" -> Axiom
     | "syndef" -> Abbreviation
     | "not" -> Notation
+    | "lib" -> Library
+    | "mod" | "modtype" -> Module
+    | "tac" -> TacticDefinition
+    | "sec" -> Section
     | s -> raise (Invalid_argument ("type_of_string:" ^ s))
-(*   | Library *)
-(*   | Module *)
-(*   | TacticDefinition *)
-
+	
   let read_glob f = 
     let c = open_in f in
     let cur_mod = ref "" in
