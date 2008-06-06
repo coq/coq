@@ -78,11 +78,11 @@ val parse_loadpath : string -> string list
 module Stringset : Set.S with type elt = string
 module Stringmap : Map.S with type key = string
 
-type utf8_status = Utf8Letter | Utf8IdentPart | Utf8Symbol
+type utf8_status = UnicodeLetter | UnicodeIdentPart | UnicodeSymbol
 
 exception UnsupportedUtf8
 
-val classify_utf8 : int -> utf8_status
+val classify_unicode : int -> utf8_status
 val check_ident : string -> unit
 val lowercase_first_char_utf8 : string -> string
 

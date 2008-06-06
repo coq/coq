@@ -534,11 +534,13 @@ let rec pr_vernac = function
         | Some cc -> str" :=" ++ spc() ++ cc))
 
   | VernacStartTheoremProof (ki,l,_,_) ->
-      hov 1 (pr_thm_token ki ++ spc() ++ 
-             prlist_with_sep (fun () -> str "with ") (fun (id,(bl,c)) -> hov 0
-               (pr_opt pr_lident id ++ spc() ++
-                (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
-                str":" ++ pr_spc_lconstr c)) l)
+      let pr_statement head (id,(bl,c)) =
+        hov 0
+          (head ++ spc () ++ pr_opt pr_lident id ++ spc() ++
+              (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
+              str":" ++ pr_spc_lconstr c) in
+      hov 1 (pr_statement (pr_thm_token ki) (List.hd l) ++
+             prlist (pr_statement (str "with ")) (List.tl l))
 
   | VernacEndProof Admitted -> str"Admitted"
   | VernacEndProof (Proved (opac,o)) -> (match o with
@@ -821,7 +823,7 @@ let rec pr_vernac = function
   | VernacDeclareImplicits (local,q,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
   | VernacDeclareImplicits (local,q,Some imps) ->
-      hov 1 (str"Implicit Arguments" ++ pr_non_globality local ++
+      hov 1 (str"Implicit Arguments " ++ pr_non_globality local ++
 	spc() ++ pr_reference q ++ spc() ++
 	str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
   | VernacReserve (idl,c) ->

@@ -124,7 +124,7 @@ let lookup_utf8_tail c cs =
 	  (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
       | _ -> error_utf8 cs
     in
-    try classify_utf8 unicode, n
+    try classify_unicode unicode, n
     with UnsupportedUtf8 -> error_unsupported_unicode_character n cs
 	
 let lookup_utf8 cs =
@@ -149,8 +149,8 @@ let check_ident str =
         loop_id true s
     | [< s >] ->
 	match lookup_utf8 s with
-	| Utf8Token (Utf8Letter, n) -> njunk n s; loop_id true s
-	| Utf8Token (Utf8IdentPart, n) when intail -> njunk n s; loop_id true s
+	| Utf8Token (UnicodeLetter, n) -> njunk n s; loop_id true s
+	| Utf8Token (UnicodeIdentPart, n) when intail -> njunk n s; loop_id true s
 	| EmptyStream -> ()
 	| Utf8Token _ | AsciiChar -> bad_token str
   in
@@ -217,7 +217,7 @@ let rec ident_tail len = parser
       ident_tail (store len c) s
   | [< s >] ->
       match lookup_utf8 s with
-      | Utf8Token ((Utf8IdentPart | Utf8Letter), n) ->
+      | Utf8Token ((UnicodeIdentPart | UnicodeLetter), n) ->
 	  ident_tail (nstore n len s) s
       | _ -> len
 
@@ -374,7 +374,7 @@ let parse_after_dot bp c =
       (constructor, get_buff len)
   | [< s >] ->
       match lookup_utf8 s with
-      | Utf8Token (Utf8Letter, n) -> 
+      | Utf8Token (UnicodeLetter, n) -> 
 	  (constructor, get_buff (ident_tail (nstore n 0 s) s))
       | AsciiChar | Utf8Token _ | EmptyStream -> 
 	  fst (process_chars bp c s)
@@ -413,13 +413,13 @@ let rec next_token = parser bp
       t
   | [< s >] ->
       match lookup_utf8 s with
-	| Utf8Token (Utf8Letter, n) ->
+	| Utf8Token (UnicodeLetter, n) ->
 	    let len = ident_tail (nstore n 0 s) s in
 	    let id = get_buff len in
 	    let ep = Stream.count s in
 	    comment_stop bp;
 	    (try ("",find_keyword id) with Not_found -> ("IDENT",id)), (bp, ep)
-	| AsciiChar | Utf8Token ((Utf8Symbol | Utf8IdentPart), _) -> 
+	| AsciiChar | Utf8Token ((UnicodeSymbol | UnicodeIdentPart), _) -> 
 	    let t = process_chars bp (Stream.next s) s in
 	    comment_stop bp; t
 	| EmptyStream ->
