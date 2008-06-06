@@ -35,7 +35,7 @@ type reset_mark =
 type reset_info =
   | NoReset
   | ResetAtSegmentStart of Names.identifier * bool ref 
-  | ResetAtStatement of reset_mark * bool ref
+  | ResetAtStatement of bool ref
   | ResetAtRegisteredObject of reset_mark * bool ref
 
 val compute_reset_info : Vernacexpr.vernac_expr -> reset_info

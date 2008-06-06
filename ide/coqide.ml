@@ -160,7 +160,7 @@ object('self)
   method activate : unit -> unit
   method active_keypress_handler : GdkEvent.Key.t -> bool
   method backtrack_to : GText.iter -> unit
-  method backtrack_to_no_lock : GText.iter -> reset_mark option -> unit
+  method backtrack_to_no_lock : GText.iter -> unit
   method clear_message : unit
   method deactivate : unit -> unit
   method disconnected_keypress_handler : GdkEvent.Key.t -> bool
@@ -507,7 +507,7 @@ let update_on_end_of_proof () =
     | { reset_info = ResetAtRegisteredObject (_, r) } -> 
 	prerr_endline "Toggling Frozen State info to false";
 	r := false
-    | { reset_info = ResetAtStatement (_, r) } when not !r ->
+    | { reset_info = ResetAtStatement r } when not !r ->
 	prerr_endline "Toggling Reset info to true";
 	r := true; raise Exit
     | { ast = _, (VernacAbort _ | VernacAbortAll | VernacGoal _) } -> raise Exit
@@ -519,7 +519,7 @@ let update_on_end_of_segment id =
   let lookup_section = function 
     | { reset_info = ResetAtSegmentStart (id', r) } when id = id' -> raise Exit
     | { reset_info = ResetAtSegmentStart (_, r) } -> r := false
-    | { reset_info = ResetAtStatement (_, r) } -> r := false
+    | { reset_info = ResetAtStatement r } -> r := false
     | { reset_info = ResetAtRegisteredObject (_, r) } -> r := false
     | _ -> ()
   in
@@ -550,6 +550,66 @@ let repush_phrase reset_info x =
   end;
   push x
 
+type backtrack =
+| BacktrackToNextActiveMark
+| BacktrackToMark of reset_mark
+| BacktrackToModSec of Names.identifier
+| NoBacktrack
+
+let add_undo (n,a,b) = (n+1,a,b)
+let add_abort (n,a,b) = (n,a+1,b)
+let add_backtrack (n,a,b) b' = (n,a,b')
+
+let pop_command undos t =
+  let undos = 
+    match t with
+    | {ast=(_,com)} when is_vernac_tactic_command com ->
+        add_undo undos
+    | {reset_info=ResetAtRegisteredObject (mark,{contents=true})} ->
+        add_backtrack undos (BacktrackToMark mark)
+    | {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
+        add_backtrack undos (BacktrackToModSec id)
+    | {reset_info=ResetAtStatement {contents=false}} ->
+	prerr_endline ("Statement " ^ if Pfedit.refining () then "proof" else "none");
+        if Pfedit.refining () then add_abort undos
+        else add_backtrack undos BacktrackToNextActiveMark
+    | {ast=(_,com)} ->
+        if is_vernac_state_preserving_command com then undos
+        else add_backtrack undos BacktrackToNextActiveMark in
+  ignore (pop ());
+  undos
+
+let rec apply_backtrack = function
+  | BacktrackToMark mark -> reset_to mark
+  | NoBacktrack -> ()
+  | BacktrackToModSec id -> reset_to_mod id
+  | BacktrackToNextActiveMark ->
+      (* re-synchronize Coq to the current state of the stack *)
+      if is_empty () then
+        Coq.reset_initial ()
+      else
+        begin
+          let t = top () in
+          let (_,_,b) = pop_command (0,0,BacktrackToNextActiveMark) t in
+          apply_backtrack b;
+          let reset_info = Coq.compute_reset_info (snd t.ast) in
+          interp_last t.ast;
+          repush_phrase reset_info t
+        end
+
+let rec apply_undos (n,a,b) =
+  (* Undos *)
+  if n<>0 then 
+    (prerr_endline ("Applying "^string_of_int n^" undos");
+     try Pfedit.undo n
+     with _ -> apply_undos (n,a,BacktrackToNextActiveMark));
+  (* Aborts *)
+  if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
+  (try Util.repeat a Pfedit.delete_current_proof ()
+   with e ->
+     begin prerr_endline "WARNING : found a closed environment"; raise e end);
+  (* Reset *)
+  apply_backtrack b
 
 (* For electric handlers *)
 exception Found
@@ -1275,71 +1335,28 @@ object(self)
     Coq.reset_initial ()
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
-  method backtrack_to_no_lock i oldest_id_to_reset =
+  method backtrack_to_no_lock i =
     prerr_endline "Backtracking_to iter starts now.";
-    let was_refining = Pfedit.refining () in
-    (* re-synchronize Coq to the current state of the stack *)
-    let rec synchro oldest_decl_in_middle_of_proof inproof =
-      if is_empty () then
-	Coq.reset_initial ()
-      else begin
-	  let t = pop () in
-	    begin match t.reset_info with
-	      | ResetAtSegmentStart (id, {contents=true}) ->
-		  reset_to_mod id
-	      | ResetAtRegisteredObject (mark, {contents=true}) ->
-		  if inproof then synchro (Some mark) inproof
-		  else reset_to mark
-	      | ResetAtStatement (mark, {contents=true}) ->
-		  assert (not inproof);
-		  reset_to (Option.default mark oldest_decl_in_middle_of_proof)
-	      | ResetAtStatement (mark, {contents=false}) ->
-		  if inproof then
-		    if oldest_decl_in_middle_of_proof = None then
-		      match mark with
-		      | ResetToId _ -> synchro None false
-		      | ResetToState _ -> reset_to mark 
-		    else
-		      (* reset oldest decl found before theorem started what *)
-		      (* resets back just before the proof was started *)
-		      reset_to (Option.get oldest_decl_in_middle_of_proof)
-		  else
-		    synchro (Some mark) inproof
-	      | _ ->
-		  synchro oldest_decl_in_middle_of_proof inproof
-	    end;
-	    let reset_info = Coq.compute_reset_info (snd t.ast) in
-	    interp_last t.ast;
-	    repush_phrase reset_info t
-	end
-    in
-    let add_undo t = match t with | Some n -> Some (succ n) | None -> None
-    in
-      (* pop Coq commands until we reach iterator [i] *)
+    (* pop Coq commands until we reach iterator [i] *)
     let  rec pop_commands done_smthg undos =
       if is_empty () then 
 	done_smthg, undos
       else
 	let t = top () in 
-	  if i#compare (input_buffer#get_iter_at_mark t.stop) < 0 then begin
+	if i#compare (input_buffer#get_iter_at_mark t.stop) < 0 then
+          begin
 	    prerr_endline "Popped top command";
-	      ignore (pop ());
-	      let undos =
-		if is_vernac_tactic_command (snd t.ast) then add_undo undos
-		else None in
-	      pop_commands true undos
-	    end else
-	    done_smthg, undos
+	    pop_commands true (pop_command undos t)
+	  end
+        else
+	  done_smthg, undos
     in
-    let done_smthg, undos = pop_commands false (Some 0) in
+    let done_smthg, undos = pop_commands false (0,0,NoBacktrack) in
       prerr_endline "Popped commands";
       if done_smthg then
-	begin 
-	  try 
-	    (match undos with 
-	       | None -> synchro oldest_id_to_reset was_refining
-	       | Some n -> try Pfedit.undo n with _ -> 
-		   synchro oldest_id_to_reset was_refining);
+        begin 
+          try 
+            apply_undos undos;
             sync (fun _ ->
 		    let start =
 		      if is_empty () then input_buffer#start_iter 
@@ -1368,7 +1385,7 @@ Please restart and report NOW.";
   method backtrack_to i = 
     if Mutex.try_lock coq_may_stop then 
       (!push_info "Undoing...";
-       self#backtrack_to_no_lock i None; Mutex.unlock coq_may_stop;
+       self#backtrack_to_no_lock i; Mutex.unlock coq_may_stop;
        !pop_info ())
     else prerr_endline "backtrack_to : discarded (lock is busy)"
 
@@ -1403,38 +1420,9 @@ Please restart and report NOW.";
 	      self#show_goals;
 	      self#clear_message
 	    in
-	      begin match last_command with 
-		| {ast=_,com} when is_vernac_tactic_command com -> 
-		    begin 
-		      try Pfedit.undo 1; ignore (pop ()); sync update_input () 
-		      with _ -> self#backtrack_to_no_lock start None
-		    end
-
-		| {reset_info=ResetAtRegisteredObject (mark,{contents=true})} ->
-		    if Pfedit.refining () then
-		      self#backtrack_to_no_lock start (Some mark)
-		    else
-		      (ignore (pop ()); reset_to mark; sync update_input ())
-		| {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
-		    ignore (pop ());
-		    reset_to_mod id;
-		    sync update_input ()
-		| {reset_info=ResetAtStatement (_, {contents=false})} ->
-		    ignore (pop ());
-		    (try 
-			 Pfedit.delete_current_proof () 
-		     with e ->
-		       begin 
-			 prerr_endline "WARNING : found a closed environment";
-			 raise e
-		       end);
-		    sync update_input ()
-		| { ast = (_, a) } when is_vernac_state_preserving_command a ->
-		    ignore (pop ());
-		    sync update_input ()
-		| _ -> 
-		    self#backtrack_to_no_lock start None
-	      end;
+              let undo = pop_command (0,0,NoBacktrack) last_command in
+              apply_undos undo;
+              sync update_input ()
 	with
 	  | Size 0 -> (* !flash_info "Nothing to Undo"*)()
        );
@@ -2887,40 +2875,39 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  in
 
 					  let _ = ignore (view_factory#add_check_item 
-							    "Toggle printing of _implicit arguments" 
+							    "Display _implicit arguments" 
 							    ~key:GdkKeysyms._i
 							    ~callback:(fun _ -> printing_state.printing_implicit <- not printing_state.printing_implicit; do_or_activate (fun a -> a#show_goals) ())) in
 
 					  let _ = ignore (view_factory#add_check_item 
-							    "Toggle printing of _coercions"
+							    "Display _coercions"
 							    ~key:GdkKeysyms._c
 							    ~callback:(fun _ -> printing_state.printing_coercions <- not printing_state.printing_coercions; do_or_activate (fun a -> a#show_goals) ())) in
 
 					  let _ = ignore (view_factory#add_check_item
-							    "Toggle printing of raw _matching expressions"
+							    "Display raw _matching expressions"
 							    ~key:GdkKeysyms._m
 							    ~callback:(fun _ -> printing_state.printing_raw_matching <- not printing_state.printing_raw_matching; do_or_activate (fun a -> a#show_goals) ())) in
 
 					  let _ = ignore (view_factory#add_check_item  
-							    "Toggle deactivation of _notations"
+							    "Deactivate _notations display"
 							    ~key:GdkKeysyms._n
 							    ~callback:(fun _ -> printing_state.printing_no_notation <- not printing_state.printing_no_notation; do_or_activate (fun a -> a#show_goals) ())) in
 
-					  let _ = ignore (view_factory#add_check_item  
-							    "Toggle _full low-level printing"
-							    ~key:GdkKeysyms._f
-							    ~callback:(fun _ -> printing_state.printing_all <- not printing_state.printing_all; do_or_activate (fun a -> a#show_goals) ())) in 
-					   
 					  let _ = ignore (view_factory#add_check_item     
-							    "Toggle printing of _existential variable instances"
+							    "Display _existential variable instances"
 							    ~key:GdkKeysyms._e
 					    		    ~callback:(fun _ -> printing_state.printing_evar_instances <- not printing_state.printing_evar_instances; do_or_activate (fun a -> a#show_goals) ())) in
 
 					  let _ = ignore (view_factory#add_check_item  
-							    "Toggle printing of _universe levels"
+							    "Display _universe levels"
 							    ~key:GdkKeysyms._u
 					    		    ~callback:(fun _ -> printing_state.printing_universes <- not printing_state.printing_universes; do_or_activate (fun a -> a#show_goals) ())) in
 
+					  let _ = ignore (view_factory#add_check_item  
+							    "Display _all low-level contents"
+							    ~key:GdkKeysyms._a
+							    ~callback:(fun _ -> printing_state.printing_all <- not printing_state.printing_all; do_or_activate (fun a -> a#show_goals) ())) in 
 
 					  (* Unicode *)
 (*
@@ -3073,7 +3060,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  let configuration_menu = factory#add_submenu "_Windows" in
 					  let configuration_factory = new GMenu.factory configuration_menu ~accel_path:"<CoqIde MenuBar>/Windows" ~accel_group
 					  in
-					  let _ = 
+					  let _ =
 					    configuration_factory#add_check_item 
 					      "Show/Hide _Query Pane"
 					      (*

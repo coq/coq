@@ -453,10 +453,14 @@ let configure ?(apply=(fun () -> ())) () =
       (if !current.encoding_use_utf8 then "UTF-8" 
        else if !current.encoding_use_locale then "LOCALE" else !current.encoding_manual)
   in
+  let help_string = 
+    "Press a set of modifiers and an extra key together (needs then a restart to apply!)"
+  in
   let modifier_for_tactics = 
     modifiers
       ~allow:!current.modifiers_valid
       ~f:(fun l -> !current.modifier_for_tactics <- l)
+      ~help:help_string
       "Modifiers for Tactics Menu"
       !current.modifier_for_tactics
   in
@@ -464,6 +468,7 @@ let configure ?(apply=(fun () -> ())) () =
     modifiers
       ~allow:!current.modifiers_valid
       ~f:(fun l -> !current.modifier_for_templates <- l)
+      ~help:help_string
       "Modifiers for Templates Menu"
       !current.modifier_for_templates
   in
@@ -471,6 +476,7 @@ let configure ?(apply=(fun () -> ())) () =
     modifiers
       ~allow:!current.modifiers_valid
       ~f:(fun l -> !current.modifier_for_navigation <- l)
+      ~help:help_string
       "Modifiers for Navigation Menu"
       !current.modifier_for_navigation
   in
@@ -478,6 +484,7 @@ let configure ?(apply=(fun () -> ())) () =
     modifiers
       ~allow:!current.modifiers_valid
       ~f:(fun l -> !current.modifier_for_display <- l)
+      ~help:help_string
       "Modifiers for Display Menu"
       !current.modifier_for_display
   in
@@ -486,12 +493,6 @@ let configure ?(apply=(fun () -> ())) () =
       ~f:(fun l -> !current.modifiers_valid <- l)
       "Allowed modifiers"
       !current.modifiers_valid
-  in
-  let mod_msg = 
-    string
-      "Needs restart to apply!"
-      ~editable:false
-      ""
   in
   let cmd_editor = 
     let predefined = [ "emacs %s"; "vi %s"; "NOTEPAD %s" ] in
@@ -570,7 +571,7 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts",
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_display; modifier_for_navigation;mod_msg]);
+	      modifier_for_templates; modifier_for_display; modifier_for_navigation]);
      Section("Misc",
 	     misc)]
   in

@@ -172,7 +172,7 @@ let make_option_commands () =
   (if p.printing_coercions then [with_printing_coercions] else [])@
   (if p.printing_raw_matching then [with_printing_raw_matching;with_printing_no_synth] else [])@
   (if p.printing_no_notation then [with_printing_no_notation] else [])@
-  (if p.printing_all then [with_printing_all] else [])@
+  (if p.printing_all then [with_printing_all;with_printing_evar_instances;with_printing_universes] else [])@
   (if p.printing_evar_instances then [with_printing_evar_instances] else [])@
   (if p.printing_universes then [with_printing_universes] else [])
 
@@ -353,7 +353,7 @@ type reset_mark =
 type reset_info =
   | NoReset
   | ResetAtSegmentStart of Names.identifier * bool ref 
-  | ResetAtStatement of reset_mark * bool ref
+  | ResetAtStatement of bool ref
   | ResetAtRegisteredObject of reset_mark * bool ref
 
 let reset_mark id = match Lib.has_top_frozen_state () with
@@ -371,13 +371,11 @@ let compute_reset_info = function
   | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
   | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
       ResetAtRegisteredObject (reset_mark id, ref true)
-
-  | VernacDefinition (_, (_,id), ProveBody _, _)
-  | VernacStartTheoremProof (_, [Some (_,id), _], _, _) ->
-      ResetAtStatement (reset_mark id, ref false)
-
   | VernacEndProof _ | VernacExactProof _ | VernacEndSegment _ -> NoReset
-  | com -> if is_vernac_tactic_command com then NoReset else
+  | com when is_vernac_goal_starting_command com ->
+      ResetAtStatement (ref false)
+  | com when is_vernac_tactic_command com -> NoReset
+  | _ ->
       match Lib.has_top_frozen_state () with
       | Some sp -> ResetAtRegisteredObject (ResetToState sp, ref true)
       | None -> NoReset
@@ -389,15 +387,15 @@ let reset_initial () =
 let reset_to = function
   | ResetToId id ->
       prerr_endline ("Reset called with "^(string_of_id id));
-      Vernacentries.abort_refine Lib.reset_name (Util.dummy_loc,id)
+      Lib.reset_name (Util.dummy_loc,id)
   | ResetToState sp ->
       prerr_endline
         ("Reset called with state "^(Libnames.string_of_path (fst sp)));
-      Vernacentries.abort_refine Lib.reset_to_state sp
+      Lib.reset_to_state sp
 
 let reset_to_mod id = 
   prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id)); 
-  Vernacentries.abort_refine Lib.reset_mod (Util.dummy_loc,id)
+  Lib.reset_mod (Util.dummy_loc,id)
 
 let raw_interp s =
   Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s))
@@ -410,14 +408,12 @@ let interp_with_options verbosely options s =
   match pe with 
     | None -> assert false
     | Some((loc,vernac) as last) ->
-	if is_vernac_goal_starting_command vernac & is_in_proof_mode () then
-	  user_error_loc loc (str "CoqIDE do not support nested goals");
 	if is_vernac_debug_command vernac then
 	  user_error_loc loc (str "Debug mode not available within CoqIDE");
 	if is_vernac_navigation_command vernac then
 	  user_error_loc loc (str "Use CoqIDE navigation instead");
 	if is_vernac_known_option_command vernac then
-	  user_error_loc loc (str "Use CoqIDE buttons instead");
+	  user_error_loc loc (str "Use CoqIDE display menu instead");
 	if is_vernac_query_command vernac then 
 	  !flash_info
 	    "Warning: query commands should not be inserted in scripts";
