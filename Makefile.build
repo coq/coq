@@ -658,6 +658,7 @@ install-library:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	cp $(LINKCMO) $(LINKCMX) $(GRAMMARCMA) $(FULLCOQLIB)
+	find . -name \*.cmi -exec cp {} $(FULLCOQLIB) \;
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
