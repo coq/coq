@@ -793,95 +793,96 @@ let default_flags = { under_lambdas = true; on_morphisms = true; }
 let build_new gl env sigma flags occs hypinfo concl cstr evars =
   let is_occ occ = occs = [] || List.mem occ occs in
   let rec aux env t occ cstr =
-    match unify_eqn env sigma hypinfo t with
-      | Some (env', (prf, hypinfo as x)) -> 
-	  let occ = succ occ in
-	    if is_occ occ then (	    
-	      evars := Evd.evar_merge !evars 
-		(Evd.evars_of (Evd.undefined_evars (Evarutil.nf_evar_defs env'.evd)));
-	      match cstr with
-		  None -> Some x, occ
-		| Some _ ->
-		    let (car, r, orig, dest) = hypinfo in
-		    let res = 
-		      resolve_morphism env sigma t ~fnewt:unfold_id
-			(mkApp (Lazy.force coq_id, [| car |]))
-			[| orig |] [| Some x |] cstr evars
-		    in Some res, occ)
-	    else None, occ
-      | None -> 
+    let unif = unify_eqn env sigma hypinfo t in
+    let occ = if unif = None then occ else succ occ in
+      match unif with
+      | Some (env', (prf, hypinfo as x)) when is_occ occ -> 
+	  begin 
+	    evars := Evd.evar_merge !evars 
+	      (Evd.evars_of (Evd.undefined_evars (Evarutil.nf_evar_defs env'.evd)));
+	    match cstr with
+	    | None -> Some x, occ
+	    | Some _ ->
+		let (car, r, orig, dest) = hypinfo in
+		let res = 
+		  resolve_morphism env sigma t ~fnewt:unfold_id
+		    (mkApp (Lazy.force coq_id, [| car |]))
+		    [| orig |] [| Some x |] cstr evars
+		in Some res, occ
+	  end
+      | _ -> 
 	  match kind_of_term t with
-	    | App (m, args) ->
-		let rewrite_args occ = 
-		  let args', occ = 
-		    Array.fold_left 
-		      (fun (acc, occ) arg -> let res, occ = aux env arg occ None in (res :: acc, occ))
-		      ([], occ) args
-		  in
-		  let res =
-		    if List.for_all (fun x -> x = None) args' then None
-		    else 
-		      let args' = Array.of_list (List.rev args') in
-			(Some (resolve_morphism env sigma t m args args' cstr evars))
-		  in res, occ
+	  | App (m, args) ->
+	      let rewrite_args occ = 
+		let args', occ = 
+		  Array.fold_left 
+		    (fun (acc, occ) arg -> let res, occ = aux env arg occ None in (res :: acc, occ))
+		    ([], occ) args
 		in
-		  if flags.on_morphisms then
-		    let m', occ = aux env m occ (lift_cstr env sigma evars args cstr) in
-		      match m' with
-			  None -> rewrite_args occ (* Standard path, try rewrite on arguments *)
-			| Some (prf, (car, rel, c1, c2)) -> 
-			    (* We rewrote the function and get a proof of pointwise rel for the arguments.
-			       We just apply it. *)
-			    let nargs = Array.length args in
-			    let res = 
-			      mkApp (prf, args),
-			      (decomp_prod env (Evd.evars_of !evars) nargs car, 
-			      decomp_pointwise nargs rel, mkApp(c1, args), mkApp(c2, args))
-			    in Some res, occ
-		  else rewrite_args occ
-		    
-	    | Prod (_, x, b) when not (dependent (mkRel 1) b) -> 
-		let x', occ = aux env x occ None in
-		let b = subst1 mkProp b in
-		let b', occ = aux env b occ None in
-		let res = 
-		  if x' = None && b' = None then None
+		let res =
+		  if List.for_all (fun x -> x = None) args' then None
 		  else 
+		    let args' = Array.of_list (List.rev args') in
+		      (Some (resolve_morphism env sigma t m args args' cstr evars))
+		in res, occ
+	      in
+		if flags.on_morphisms then
+		  let m', occ = aux env m occ (lift_cstr env sigma evars args cstr) in
+		    match m' with
+		    | None -> rewrite_args occ (* Standard path, try rewrite on arguments *)
+		    | Some (prf, (car, rel, c1, c2)) -> 
+			(* We rewrote the function and get a proof of pointwise rel for the arguments.
+			   We just apply it. *)
+			let nargs = Array.length args in
+			let res = 
+			  mkApp (prf, args),
+			  (decomp_prod env (Evd.evars_of !evars) nargs car, 
+			  decomp_pointwise nargs rel, mkApp(c1, args), mkApp(c2, args))
+			in Some res, occ
+		else rewrite_args occ
+		  
+	  | Prod (_, x, b) when not (dependent (mkRel 1) b) -> 
+	      let x', occ = aux env x occ None in
+	      let b = subst1 mkProp b in
+	      let b', occ = aux env b occ None in
+	      let res = 
+		if x' = None && b' = None then None
+		else 
+		  Some (resolve_morphism env sigma t
+			   ~fnewt:unfold_impl
+			   (arrow_morphism (Typing.type_of env sigma x) (Typing.type_of env sigma b))
+			   [| x ; b |] [| x' ; b' |]
+			   cstr evars)
+	      in res, occ
+		
+	  | Prod (n, ty, b) ->
+	      let lam = mkLambda (n, ty, b) in
+	      let lam', occ = aux env lam occ None in
+	      let res = 
+		match lam' with
+		| None -> None
+		| Some (prf, (car, rel, c1, c2)) ->
 		    Some (resolve_morphism env sigma t
-			     ~fnewt:unfold_impl
-			     (arrow_morphism (Typing.type_of env sigma x) (Typing.type_of env sigma b))
-			     [| x ; b |] [| x' ; b' |]
+			     ~fnewt:unfold_all
+			     (Lazy.force coq_all) [| ty ; lam |] [| None; lam' |]
 			     cstr evars)
-		in res, occ
-		  
-	    | Prod (n, ty, b) ->
-		let lam = mkLambda (n, ty, b) in
-		let lam', occ = aux env lam occ None in
-		let res = 
-		  match lam' with
-		    | None -> None
-		    | Some (prf, (car, rel, c1, c2)) ->
-			Some (resolve_morphism env sigma t
-				 ~fnewt:unfold_all
-				 (Lazy.force coq_all) [| ty ; lam |] [| None; lam' |]
-				 cstr evars)
-		in res, occ
-		  
-	    | Lambda (n, t, b) when flags.under_lambdas ->
-		let env' = Environ.push_rel (n, None, t) env in
+	      in res, occ
+		
+	  | Lambda (n, t, b) when flags.under_lambdas ->
+	      let env' = Environ.push_rel (n, None, t) env in
 		refresh_hypinfo env' sigma hypinfo;
 		let b', occ = aux env' b occ (unlift_cstr env sigma cstr) in
 		let res =
 		  match b' with
-		      None -> None
-		    | Some (prf, (car, rel, c1, c2)) ->
-			let prf' = mkLambda (n, t, prf) in
-			let car' = mkProd (n, t, car) in
-			let rel' = mkApp (Lazy.force pointwise_relation, [| t; car; rel |]) in
-			let c1' = mkLambda(n, t, c1) and c2' = mkLambda (n, t, c2) in
-			  Some (prf', (car', rel', c1', c2'))
+		  | None -> None
+		  | Some (prf, (car, rel, c1, c2)) ->
+		      let prf' = mkLambda (n, t, prf) in
+		      let car' = mkProd (n, t, car) in
+		      let rel' = mkApp (Lazy.force pointwise_relation, [| t; car; rel |]) in
+		      let c1' = mkLambda(n, t, c1) and c2' = mkLambda (n, t, c2) in
+			Some (prf', (car', rel', c1', c2'))
 		in res, occ
-	    | _ -> None, occ
+	  | _ -> None, occ
   in aux env concl 0 cstr
     
 let resolve_typeclass_evars d p env evd onlyargs =
