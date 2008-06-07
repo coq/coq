@@ -376,6 +376,7 @@ Tools
 - CoqIDE supports Definition/Parameter/Inductive in middle of a proof.
 - Undoing non-tactic commands in CoqIDE works faster.
 - New CoqIDE menu for activating display of various implicit informations.
+- New Open and Save As dialogs in CoqIDE which filter *.v files.
 
 Miscellaneous
 
