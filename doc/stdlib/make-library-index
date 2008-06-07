@@ -7,7 +7,7 @@ FILE=$1
 cp -f $FILE.template tmp
 echo -n Building file index-list.prehtml ...
 
-LIBDIRS="Init Logic Bool Arith NArith ZArith QArith Relations Sets Setoids Lists Sorting Wellfounded FSets Reals Ints Ints/num Ints/Z Program Numbers Numbers/Natural/Abstract Numbers/Natural/Peano Numbers/Natural/Binary Numbers/Integer/Abstract Numbers/Integer/NatPairs Numbers/Integer/Binary Numbers/NatInt Strings" 
+LIBDIRS="Init Logic Bool Arith NArith ZArith QArith Relations Sets Classes Setoids Lists Sorting Wellfounded FSets Reals Program Numbers Numbers/Natural/Abstract Numbers/Natural/Peano Numbers/Natural/Binary Numbers/Natural/BigN Numbers/Natural/SpecViaZ Numbers/Integer/Abstract Numbers/Integer/NatPairs Numbers/Integer/Binary Numbers/Integer/SpecViaZ Numbers/Integer/BigZ Numbers/NatInt Numbers/Cyclic/Abstract Numbers/Cyclic/Int31 Numbers/Cyclic/ZModulo Numbers/Cyclic/DoubleCyclic Numbers/Rational/BigQ Numbers/Rational/SpecViaQ Strings" 
 
 for k in $LIBDIRS; do
     i=theories/$k

@@ -40,6 +40,7 @@ through the <tt>Require Import</tt> command.</p>
       Classical logic and dependent equality
   </dt>
   <dd>
+    theories/Logic/SetIsType.v
     theories/Logic/Classical_Pred_Set.v
     theories/Logic/Classical_Pred_Type.v
     theories/Logic/Classical_Prop.v
@@ -151,6 +152,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zdiv.v
     theories/ZArith/Zlogarithm.v
     (theories/ZArith/ZArith.v)
+    theories/ZArith/Zgcd_alt.v
     theories/ZArith/Zwf.v
     theories/ZArith/Zbinary.v
     theories/ZArith/Znumtheory.v
@@ -180,46 +182,88 @@ through the <tt>Require Import</tt> command.</p>
     A modular axiomatic construction for numbers
   </dt>
   <dd>
-    theories/Numbers/NumPrelude.v
-    theories/Numbers/QRewrite.v
-    theories/Numbers/NatInt/NZBase.v
-    theories/Numbers/NatInt/NZAxioms.v
-    theories/Numbers/NatInt/NZPlus.v
-    theories/Numbers/NatInt/NZTimes.v
-    theories/Numbers/NatInt/NZOrder.v
-    theories/Numbers/NatInt/NZTimesOrder.v
-    theories/Numbers/NatInt/NZPlusOrder.v
+  theories/Numbers/NumPrelude.v
+  theories/Numbers/BigNumPrelude.v
+  theories/Numbers/NaryFunctions.v
+  </dd>
+  
+  <dd>
+theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
+theories/Numbers/Cyclic/Abstract/NZCyclic.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleAdd.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleBase.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleCyclic.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleDiv.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleDivn1.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleLift.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleMul.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleSqrt.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleSub.v
+theories/Numbers/Cyclic/DoubleCyclic/DoubleType.v
+theories/Numbers/Cyclic/Int31/Cyclic31.v
+theories/Numbers/Cyclic/Int31/Int31.v
+theories/Numbers/Cyclic/ZModulo/ZModulo.v
   </dd>
 
   <dd>
-    theories/Numbers/Natural/Abstract/NOrder.v
-    theories/Numbers/Natural/Abstract/NPlus.v
-    theories/Numbers/Natural/Abstract/NMinus.v
-    theories/Numbers/Natural/Abstract/NTimesOrder.v
-    theories/Numbers/Natural/Abstract/NPlusOrder.v
-    theories/Numbers/Natural/Abstract/NIso.v
-    theories/Numbers/Natural/Abstract/NStrongRec.v
-    theories/Numbers/Natural/Abstract/NBase.v
-    theories/Numbers/Natural/Abstract/NAxioms.v
-    theories/Numbers/Natural/Abstract/NTimes.v
-    theories/Numbers/Natural/Abstract/NDefOps.v
-    theories/Numbers/Natural/Peano/NPeano.v
-    theories/Numbers/Natural/Binary/NBinDefs.v
-    theories/Numbers/Natural/Binary/NBinary.v
-    </dd>
+    theories/Numbers/Integer/Abstract/ZAdd.v
+theories/Numbers/Integer/Abstract/ZAddOrder.v
+theories/Numbers/Integer/Abstract/ZAxioms.v
+theories/Numbers/Integer/Abstract/ZBase.v
+theories/Numbers/Integer/Abstract/ZDomain.v
+theories/Numbers/Integer/Abstract/ZLt.v
+theories/Numbers/Integer/Abstract/ZMul.v
+theories/Numbers/Integer/Abstract/ZMulOrder.v
+theories/Numbers/Integer/BigZ/BigZ.v
+theories/Numbers/Integer/BigZ/ZMake.v
+theories/Numbers/Integer/Binary/ZBinary.v
+theories/Numbers/Integer/NatPairs/ZNatPairs.v
+theories/Numbers/Integer/SpecViaZ/ZSig.v
+theories/Numbers/Integer/SpecViaZ/ZSigZAxioms.v
+  </dd>
 
-   <dd>
-    theories/Numbers/Integer/Abstract/ZPlus.v
-    theories/Numbers/Integer/Abstract/ZPlusOrder.v
-    theories/Numbers/Integer/Abstract/ZLt.v
-    theories/Numbers/Integer/Abstract/ZDomain.v
-    theories/Numbers/Integer/Abstract/ZAxioms.v
-    theories/Numbers/Integer/Abstract/ZTimes.v
-    theories/Numbers/Integer/Abstract/ZBase.v
-    theories/Numbers/Integer/Abstract/ZTimesOrder.v
-    theories/Numbers/Integer/Binary/ZBinary.v
-    theories/Numbers/Integer/NatPairs/ZNatPairs.v
-   </dd>
+  <dd>
+theories/Numbers/NatInt/NZAdd.v
+theories/Numbers/NatInt/NZAddOrder.v
+theories/Numbers/NatInt/NZAxioms.v
+theories/Numbers/NatInt/NZBase.v
+theories/Numbers/NatInt/NZMul.v
+theories/Numbers/NatInt/NZMulOrder.v
+theories/Numbers/NatInt/NZOrder.v
+  </dd>
+
+  <dd>
+theories/Numbers/Natural/Abstract/NAdd.v
+theories/Numbers/Natural/Abstract/NAddOrder.v
+theories/Numbers/Natural/Abstract/NAxioms.v
+theories/Numbers/Natural/Abstract/NBase.v
+theories/Numbers/Natural/Abstract/NDefOps.v
+theories/Numbers/Natural/Abstract/NIso.v
+theories/Numbers/Natural/Abstract/NMul.v
+theories/Numbers/Natural/Abstract/NMulOrder.v
+theories/Numbers/Natural/Abstract/NOrder.v
+theories/Numbers/Natural/Abstract/NStrongRec.v
+theories/Numbers/Natural/Abstract/NSub.v
+theories/Numbers/Natural/BigN/BigN.v
+theories/Numbers/Natural/BigN/Nbasic.v
+theories/Numbers/Natural/BigN/NMake.v
+theories/Numbers/Natural/Binary/NBinary.v
+theories/Numbers/Natural/Binary/NBinDefs.v
+theories/Numbers/Natural/Peano/NPeano.v
+theories/Numbers/Natural/SpecViaZ/NSig.v
+theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
+  </dd>
+
+  <dd>
+    theories/Numbers/Rational/BigQ/BigQ.v
+    theories/Numbers/Rational/BigQ/Q0Make.v
+    theories/Numbers/Rational/BigQ/QbiMake.v
+    theories/Numbers/Rational/BigQ/QifMake.v
+    theories/Numbers/Rational/BigQ/QMake_base.v
+    theories/Numbers/Rational/BigQ/QpMake.v
+    theories/Numbers/Rational/BigQ/QvMake.v
+    theories/Numbers/Rational/SpecViaQ/QSig.v
+  </dd>
   
   <dt> <b>Relations</b>:
        Relations (definitions and basic results)
@@ -261,11 +305,24 @@ through the <tt>Require Import</tt> command.</p>
     theories/Sets/Uniset.v
   </dd>
     
+  <dt> <b>Classes</b>:
+  <dd> 
+    theories/Classes/Init.v
+    theories/Classes/RelationClasses.v
+    theories/Classes/Morphisms.v
+    theories/Classes/Morphisms_Prop.v
+    theories/Classes/Morphisms_Relations.v
+    theories/Classes/Equivalence.v
+    theories/Classes/EquivDec.v
+    theories/Classes/SetoidTactics.v
+    theories/Classes/SetoidClass.v
+    theories/Classes/SetoidDec.v
+    theories/Classes/SetoidAxioms.v
+  </dd>
+
   <dt> <b>Setoids</b>:
   <dd> 
     theories/Setoids/Setoid.v
-    theories/Setoids/Setoid_Prop.v
-    theories/Setoids/Setoid_tac.v
   </dd>
     
   <dt> <b>Lists</b>:
@@ -277,6 +334,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Lists/MonoList.v
     theories/Lists/SetoidList.v
     theories/Lists/Streams.v
+    theories/Lists/StreamMemo.v
     theories/Lists/TheoryList.v
     theories/Lists/ListTactics.v
   </dd>
@@ -318,6 +376,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/FSetInterface.v
     theories/FSets/FSetBridge.v
     theories/FSets/FSetFacts.v
+    theories/FSets/FSetDecide.v
     theories/FSets/FSetProperties.v
     theories/FSets/FSetEqProperties.v
     theories/FSets/FSetList.v
@@ -326,11 +385,14 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/FSetAVL.v
     theories/FSets/FSetToFiniteSet.v
     theories/FSets/FMapInterface.v
+    theories/FSets/FMapWeakList.v
     theories/FSets/FMapList.v
     theories/FSets/FMapPositive.v
     theories/FSets/FMapFacts.v
     (theories/FSets/FMaps.v)
     theories/FSets/FMapAVL.v
+    theories/FSets/FSetFullAVL.v
+    theories/FSets/FMapFullAVL.v
   </dd>
 
 <!--  <dt> <b>Strings</b>
@@ -398,41 +460,10 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/SeqProp.v
     theories/Reals/SeqSeries.v
     theories/Reals/Sqrt_reg.v
+    theories/Reals/Rlogic.v
     theories/Reals/LegacyRfield.v
     (theories/Reals/Reals.v)
   </dd>
-
-  <dt> <b>Ints</b>:
-    Machine efficient large integers
-  </dt>
-  <dd> 
-    theories/Ints/Basic_type.v
-    theories/Ints/BigN.v
-    theories/Ints/BigZ.v
-    theories/Ints/Int31.v
-    theories/Ints/Z/ZAux.v
-    theories/Ints/num/GenAdd.v
-    theories/Ints/num/GenBase.v
-    theories/Ints/num/GenDivn1.v
-    theories/Ints/num/GenDiv.v
-    theories/Ints/num/GenLift.v
-    theories/Ints/num/GenMul.v
-    theories/Ints/num/GenSqrt.v
-    theories/Ints/num/GenSub.v
-    theories/Ints/num/Nbasic.v
-    theories/Ints/num/NMake.v
-    theories/Ints/num/ZMake.v
-    theories/Ints/num/Zn2Z.v
-    theories/Ints/num/ZnZ.v
-    theories/Ints/num/BigQ.v
-    theories/Ints/num/QMake_base.v
-    theories/Ints/num/Q0Make.v
-    theories/Ints/num/QbiMake.v
-    theories/Ints/num/QifMake.v
-    theories/Ints/num/QpMake.v
-    theories/Ints/num/QvMake.v
-  </dd>
-
     
   <dt> <b>Program</b>:
     Support for dependently-typed programming.
