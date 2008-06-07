@@ -524,11 +524,13 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
 	    new_evar isevars env relty
       | Some x -> f x
   in
-  let rec aux ty l =
+  let rec aux env ty l =
     let t = Reductionops.whd_betadeltaiota env (Evd.evars_of !isevars) ty in
-    match kind_of_term t, l with
+      match kind_of_term t, l with
       | Prod (na, ty, b), obj :: cstrs -> 
-	  let (b, arg, evars) = aux b cstrs in
+	  if dependent (mkRel 1) ty then 
+	    raise (Invalid_argument "build_signature: cannot handle dependent morphisms");
+	  let (b, arg, evars) = aux (Environ.push_rel (na, None, ty) env) b cstrs in
 	  let ty = Reductionops.nf_betaiota ty in
 	  let relty = mk_relty ty obj in
 	  let arg' = mkApp (Lazy.force respectful, [| ty ; b ; relty ; arg |]) in
@@ -542,7 +544,7 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
 		  t, rel, [t, rel]
 	    | Some codom -> let (t, rel) = Lazy.force codom in
 			      t, rel, [t, rel])
-  in aux m cstrs
+  in aux env m cstrs
 
 let morphism_proof env evars carrier relation x =
   let goal =
