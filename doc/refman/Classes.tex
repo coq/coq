@@ -25,32 +25,33 @@ record syntax of \Coq~and the type classes syntax of \Haskell:
 \def\kw{\texttt}
 \def\classid{\texttt}
 
-\begin{multicols}{2}{
-\medskip
-  \kw{Class} \classid{Id} $(\alpha_1 : \tau_1) \cdots (\alpha_n : \tau_n)$ :=
-  \eol\indent{3.00em}$\cst{f}_1 : \phi_1$ ;
-  \eol\indent{4.00em}\vdots
-  \eol\indent{3.00em}$\cst{f}_m : \phi_m$.
-\medskip}
-{
- 
-  \medskip
-  \kw{Instance} \classid{Id} $t_1 \cdots t_n$ :=
-  \eol\indent{3.00em}$\cst{f}_1 := b_1$ ;
-  \eol\indent{4.00em}\vdots
-  \eol\indent{3.00em}$\cst{f}_m := b_m$.
-  \medskip}
-\end{multicols}
-
+\begin{center}
+\[\begin{array}{l}
+\kw{Class}~\classid{Id}~(\alpha_1 : \tau_1) \cdots (\alpha_n : \tau_n) :=\\
+\begin{array}{p{0em}lcl}
+  & \cst{f}_1 & : & \type_1 ; \\
+  & \vdots & &  \\
+  & \cst{f}_m & : & \type_m.
+\end{array}\end{array}\]
+\end{center}
+\begin{center}
+\[\begin{array}{l}
+\kw{Instance}~\ident~:~\classid{Id}~\term_1 \cdots \term_n :=\\
+\begin{array}{p{0em}lcl}
+  & \cst{f}_1 & := & \term_{f_1} ; \\
+  & \vdots & &  \\
+  & \cst{f}_m & := & \term_{f_m}.
+\end{array}\end{array}\]
+\end{center}
 \begin{coq_eval}
   Reset Initial.
 \end{coq_eval}
 
 The $\tele{\alpha_i : \tau_i}$ variables are called the \emph{parameters}
-of the class and the $\tele{f_k : \phi_k}$ are called the
+of the class and the $\tele{f_k : \type_k}$ are called the
 \emph{methods}. Each class definition gives rise to a corresponding
-record declaration and each instance is a regular definition whose type
-is an instantiation of the record type.
+record declaration and each instance is a regular definition whose name
+is given by $\ident$ and type is an instantiation of the record type.
 
 We'll use the following example class in the rest of the chapter:
 
@@ -64,7 +65,7 @@ This class implements a boolean equality test which is compatible with
 leibniz equality on some type. An example implementation is:
 
 \begin{coq_example*}
-Instance Eq unit :=
+Instance unit_Eq : Eq unit :=
   eq x y := true ;
   eq_leibniz x y H := 
     match x, y return x = y with tt, tt => refl_equal tt end.
@@ -125,12 +126,12 @@ particular support for type classes:
   methods. In the example above, \texttt{A} and \texttt{eqa} should be
   set maximally implicit.
 \item They support implicit quantification on class arguments and
-  partialy applied type classes \S \ref{classes:implicitquant}
-\item They support implicit quantification on superclasses (see section
-  \S \ref{classes:superclasses}
+  partialy applied type classes (\S \ref{classes:impl-quant})
+\item They support implicit quantification on superclasses (\S \ref{classes:superclasses})
 \end{itemize}
 
 \subsection{Implicit quantification}
+\label{classes:impl-quant}
 
 Implicit quantification is an automatic elaboration of a statement with
 free variables into a closed statement where these variables are
@@ -153,7 +154,7 @@ One can declare parameterized instances as in \Haskell simply by giving
 the constraints as a binding context before the instance, e.g.:
 
 \begin{coq_example*}
-Instance [ eqa : Eq A, eqb : Eq B ] => prod_eq : Eq (A * B) :=
+Instance prod_eq [ eqa : Eq A, eqb : Eq B ] : Eq (A * B) :=
   eq x y := match x, y with
   | (la, ra), (lb, rb) => andb (eq la lb) (eq ra rb)
   end.
@@ -167,6 +168,7 @@ These instances are used just as well as lemmas in the instances hint database.
 \asection{Building hierarchies}
 
 \subsection{Superclasses}
+\label{classes:superclasses}
 One can also parameterize classes by other classes, generating a
 hierarchy of classes and superclasses. In the same way, we give the
 superclasses as a binding context:
