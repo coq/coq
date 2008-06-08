@@ -1154,28 +1154,6 @@ let generalize_goal gl i ((occs,c),na) cl =
   let na = generalized_name c t cl' na in
   mkProd (na,t,cl')
 
-(*
-  match kind_of_term cl with
-  | App (f,[|a|]) when isLambda f & eq_constr a c ->
-      (* Assume tactic pattern has been applied first *)
-      let na = match kind_of_term c with Var id -> Name id | _ -> Anonymous in
-      mkProd_name (pf_env gl) (na,t,mkApp (f,[|mkRel 1|]))
-  | _ ->
-    match kind_of_term c with
-    | Var id ->
-	(* The choice of remembering or not a non dependent name has an impact
-	   on the future Intro naming strategy! *)
-	(* if dependent c cl then mkNamedProd id t cl
-	   else mkProd (Anonymous,t,cl) *)
- 	mkNamedProd id t cl
-    | _        -> 
-        let cl' = subst_term c cl in
-        if noccurn 1 cl' then 
-	  mkProd (Anonymous,t,cl)
-        else
-	  mkProd_name (pf_env gl) (Anonymous, t, cl')
-*)
-
 let generalize_dep c gl =
   let env = pf_env gl in
   let sign = pf_hyps gl in

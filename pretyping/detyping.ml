@@ -211,7 +211,7 @@ let lookup_index_as_renamed env t n =
 		   lookup (n-1) (d+1) c'
 	  )
     | Cast (c,_,_) -> lookup n d c
-    | _ -> None
+    | _ -> if n=0 then Some (d-1) else None
   in lookup n 1 t
 
 (**********************************************************************)

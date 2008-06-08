@@ -48,8 +48,8 @@ Definition xorb (b1 b2:bool) : bool :=
 
 Definition negb (b:bool) := if b then false else true.
 
-Infix "||" := orb (at level 50, left associativity) : bool_scope.
-Infix "&&" := andb (at level 40, left associativity) : bool_scope.
+Infix "||" := orb : bool_scope.
+Infix "&&" := andb : bool_scope.
 
 (*******************************)
 (** * Properties of [andb]     *)

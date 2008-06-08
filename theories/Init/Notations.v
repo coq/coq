@@ -49,6 +49,11 @@ Reserved Notation "- x" (at level 35, right associativity).
 Reserved Notation "/ x" (at level 35, right associativity).
 Reserved Notation "x ^ y" (at level 30, right associativity).
 
+(** Notations for booleans *)
+
+Reserved Notation "x || y" (at level 50, left associativity).
+Reserved Notation "x && y" (at level 40, left associativity).
+
 (** Notations for pairs *)
 
 Reserved Notation "( x , y , .. , z )" (at level 0).

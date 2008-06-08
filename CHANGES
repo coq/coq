@@ -109,7 +109,8 @@ Libraries (DOC TO CHECK)
   le_lt_dec more efficient, Z_lt_le_dec and Positive_as_OT.compare 
   transparent, ...) (exceptional source of incompatibilities).
 - Boolean operators moved from module Bool to module Datatypes (may need
-  to rename qualified references in script)
+  to rename qualified references in script and force notations || and &&
+  to be at levels 50 and 40 respectively).
 - The constructors xI and xO of type positive now have postfix notations 
   "~1" and "~0", allowing to write numbers in binary form easily, for instance 
   6 is 1~1~0 and 4*p is p~0~0 (see BinPos.v).
@@ -244,6 +245,8 @@ Tactics
   matching lemma among the components of the conjunction; tactic apply also
   able to apply lemmas of conclusion an empty type.
 - Tactics "set" and "pose" can set functions using notation "(f x1..xn := c)".
+- Tactic firstorder "with" and "using" options have their meaning swapped for
+  consistency with auto/eauto (source of incompatibility).
 - Tactic "generalize" now supports "at" options to specify occurrences
   and "as" options to name the hypothesis.
 - New tactic "specialize H with a" or "specialize (H a)" allows to transform

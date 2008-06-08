@@ -3,15 +3,6 @@ Potential sources of incompatibilities between Coq V8.1 and V8.2
 
 (see also file CHANGES)
 
-Language
-
-- Constants hidding polymorphic inductive types are now polymorphic themselves.
-  This may exceptionally affect the naming of introduction hypotheses if such
-  an inductive type in Type is used on small types such as Prop or
-  Set: the hypothesis names suffix will default to H instead of X.  As
-  a matter of fact, it is recommended to systematically name the
-  hypotheses that are later refered to in the proof script.
-
 Tactics
 
 - The apply tactic now unfolds the constants if needed to succeed.  As
@@ -40,8 +31,24 @@ Tactics
   variable when perform introductions. Changing intros to the
   appropriate intro x x0 ... xn should fix the problem.
 
+- Tactic firstorder "with" and "using" options have their meaning
+  swapped for consistency with auto/eauto. The solution is to swap
+  the use of these options in call to firstorder.
+
+- Introduction patterns are more strict. In "intros [ ... | ... | ... ] H",
+  the names in the brackets are synchronized so that H denotes the same
+  hypothesis in every subgoal.
+
 - Some bug fixes may lead to incompatibilities (see CHANGES for a detailed
   account).
+
+Language
+
+- Constants hidding polymorphic inductive types are now polymorphic
+  themselves. This may exceptionally affect the naming of
+  introduction hypotheses if such an inductive type in Type is used on
+  small types such as Prop or Set: the hypothesis names suffix will
+  default to H instead of X.
 
 Libraries
 
