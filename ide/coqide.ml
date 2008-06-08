@@ -1994,7 +1994,7 @@ let main files =
 	    ignore (saveas_m#connect#activate saveas_f);
 	    
 	    (* File/Save All Menu *)
-	    let saveall_m = file_factory#add_item "Sa_ve All" in
+	    let saveall_m = file_factory#add_item "Sa_ve all" in
 	    let saveall_f () = 
 	      Vector.iter
 		(function 
@@ -2017,7 +2017,7 @@ let main files =
 	      ignore (saveall_m#connect#activate saveall_f);
 	      
 	      (* File/Revert Menu *)
-	      let revert_m = file_factory#add_item "_Revert All Buffers" in
+	      let revert_m = file_factory#add_item "_Revert all buffers" in
 	      let revert_f () = 
 		Vector.iter 
 		  (function 
@@ -2038,7 +2038,7 @@ let main files =
 		
 		(* File/Close Menu *)
 		let close_m =
-                  file_factory#add_item "_Close Buffer" ~key:GdkKeysyms._W in
+                  file_factory#add_item "_Close buffer" ~key:GdkKeysyms._W in
 		let close_f () = 
 		  let v = Option.get !active_view in
 		  let act = get_current_view_page () in
