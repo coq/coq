@@ -11,6 +11,7 @@
 (*i $Id$ i*)
 
 Require Import NaryFunctions.
+Require Import Wf_nat.
 Require Export ZArith.
 Require Export DoubleType.
 

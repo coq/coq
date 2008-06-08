@@ -89,6 +89,7 @@ open Indrec
 open Typing
 open Inductiveops
 open Unification
+open Matching
 
 open Constrextern
 open Constrintern

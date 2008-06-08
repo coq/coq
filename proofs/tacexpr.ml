@@ -27,6 +27,7 @@ type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
 type split_flag = bool     (* true = exists           false = split *)
 type hidden_flag = bool    (* true = internal use     false = user-level *)
+type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 
 type raw_red_flag =
   | FBeta
@@ -147,17 +148,17 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacMutualCofix of hidden_flag * identifier * (identifier * 'constr) list
   | TacCut of 'constr
   | TacAssert of 'tac option * intro_pattern_expr * 'constr
-  | TacGeneralize of 'constr list
+  | TacGeneralize of ('constr with_occurrences * name) list
   | TacGeneralizeDep of 'constr
-  | TacLetTac of name * 'constr * 'id gclause
+  | TacLetTac of name * 'constr * 'id gclause * letin_flag
 
   (* Derived basic tactics *)
   | TacSimpleInduction of quantified_hypothesis
   | TacNewInduction of evars_flag * 'constr with_bindings induction_arg list * 
-      'constr with_bindings option * intro_pattern_expr
+      'constr with_bindings option * intro_pattern_expr * 'id gclause option
   | TacSimpleDestruct of quantified_hypothesis
   | TacNewDestruct of evars_flag * 'constr with_bindings induction_arg list *
-      'constr with_bindings option * intro_pattern_expr
+      'constr with_bindings option * intro_pattern_expr * 'id gclause option
 
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
   | TacDecomposeAnd of 'constr

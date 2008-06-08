@@ -120,7 +120,8 @@ let functional_induction with_clean c princl pat =
 	 princ_infos
 	 args_as_induction_constr
 	 princ'
-	 pat)
+	 pat
+         None)
       subst_and_reduce
       g
       

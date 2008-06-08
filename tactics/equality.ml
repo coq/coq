@@ -1181,7 +1181,7 @@ let subst_one x gl =
   let introtac = function
       (id,None,_) -> intro_using id
     | (id,Some hval,htyp) ->
-        letin_tac true (Name id)
+        letin_tac None (Name id)
 	  (mkCast(replace_term varx rhs hval,DEFAULTcast,
 	          replace_term varx rhs htyp)) nowhere
   in

@@ -26,8 +26,8 @@ Ltac destruct_pairs := repeat (destruct_one_pair).
 (** Destruct one existential package, keeping the name of the hypothesis for the first component. *)
 
 Ltac destruct_one_ex :=
-  let tac H := let ph := fresh "H" in destruct H as [H ph] in
-  let tacT H := let ph := fresh "X" in destruct H as [H ph] in
+  let tac H := let ph := fresh "H" in (destruct H as [H ph]) in
+  let tacT H := let ph := fresh "X" in (destruct H as [H ph]) in
     match goal with
       | [H : (ex _) |- _] => tac H
       | [H : (sig ?P) |- _ ] => tac H
@@ -120,20 +120,20 @@ Ltac on_call f tac :=
 (* Destructs calls to f in hypothesis or conclusion, useful if f creates a subset object. *)
 
 Ltac destruct_call f :=
-  let tac t := destruct t in on_call f tac.
+  let tac t := (destruct t) in on_call f tac.
 
 Ltac destruct_calls f := repeat destruct_call f.
 
 Ltac destruct_call_in f H :=
-  let tac t := destruct t in
+  let tac t := (destruct t) in
   let T := type of H in
     on_application f tac T.
 
 Ltac destruct_call_as f l :=
-  let tac t := destruct t as l in on_call f tac.
+  let tac t := (destruct t as l) in on_call f tac.
 
 Ltac destruct_call_as_in f l H :=
-  let tac t := destruct t as l in
+  let tac t := (destruct t as l) in
   let T := type of H in
     on_application f tac T.
 
@@ -199,8 +199,6 @@ Ltac add_hypothesis H' p :=
       | _ => set (H':=p) ; try (change p with H') ; clearbody H'
     end
   end.
-
-Tactic Notation "pose" constr(c) "as" ident(H) := assert(H:=c).
 
 (** A tactic to replace an hypothesis by another term. *)
 

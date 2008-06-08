@@ -113,6 +113,13 @@ let guess_lpar_coloneq =
 let guess_lpar_colon =
   Gram.Entry.of_parser "guess_lpar_colon" (guess_lpar_ipat ":")
 
+let lookup_at_as_coma =
+  Gram.Entry.of_parser "lookup_at_as_coma"
+    (fun strm ->
+      match Stream.npeek 1 strm with
+	| [("",(","|"at"|"as"))] -> ()
+	| _ -> raise Stream.Failure)
+
 open Constr
 open Prim
 open Tactic
@@ -286,7 +293,7 @@ GEXTEND Gram
       | IDENT "vm_compute" -> CbvVm
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
-      | IDENT "pattern"; pl = LIST1 pattern_occ SEP","-> Pattern pl ] ]
+      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> Pattern pl ] ]
   ;
   (* This is [red_tactic] including possible extensions *)
   red_expr:
@@ -299,7 +306,7 @@ GEXTEND Gram
       | IDENT "vm_compute" -> CbvVm
       | IDENT "unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
-      | IDENT "pattern"; pl = LIST1 pattern_occ -> Pattern pl
+      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> Pattern pl
       | s = IDENT -> ExtraRedExpr s ] ]
   ;
   hypident:
@@ -314,19 +321,27 @@ GEXTEND Gram
   hypident_occ:
     [ [ (id,l)=hypident; occs=occs -> ((occs,id),l) ] ]
   ;
-  clause:
-    [ [ "in"; "*"; occs=occs ->
+  in_clause:
+    [ [ "*"; occs=occs ->
           {onhyps=None; onconcl=true; concl_occs=occs}
-      | "in"; "*"; "|-"; (b,occs)=concl_occ ->
+      | "*"; "|-"; (b,occs)=concl_occ ->
           {onhyps=None; onconcl=b; concl_occs=occs}
-      | "in"; hl=LIST0 hypident_occ SEP","; "|-"; (b,occs)=concl_occ ->
+      | hl=LIST0 hypident_occ SEP","; "|-"; (b,occs)=concl_occ ->
           {onhyps=Some hl; onconcl=b; concl_occs=occs}
-      | "in"; hl=LIST0 hypident_occ SEP"," ->
-          {onhyps=Some hl; onconcl=false; concl_occs=[]}
-      | occs=occs ->
-	  {onhyps=Some[]; onconcl=true; concl_occs=occs}
-      | ->
-	  {onhyps=Some[]; onconcl=true; concl_occs=[]} ] ]
+      | hl=LIST0 hypident_occ SEP"," ->
+          {onhyps=Some hl; onconcl=false; concl_occs=[]} ] ]
+  ;
+  clause_dft_concl:
+    [ [ "in"; cl = in_clause -> cl
+      | occs=occs -> {onhyps=Some[]; onconcl=true; concl_occs=occs}
+      | -> {onhyps=Some[]; onconcl=true; concl_occs=[]} ] ]
+  ;
+  clause_dft_all:
+    [ [ "in"; cl = in_clause -> cl
+      | -> {onhyps=None; onconcl=true; concl_occs=[]} ] ]
+  ;
+  opt_clause:
+    [ [ "in"; cl = in_clause -> Some cl | -> None ] ]
   ;
   concl_occ:
     [ [ "*"; occs = occs -> (true,occs)
@@ -376,6 +391,9 @@ GEXTEND Gram
   ;
   with_names:
     [ [ "as"; ipat = simple_intropattern -> ipat | -> IntroAnonymous ] ]
+  ;
+  as_name:
+    [ [ "as"; id = ident -> Names.Name id | -> Names.Anonymous ] ]
   ;
   by_tactic:
     [ [ IDENT "by"; tac = tactic_expr LEVEL "3" -> TacComplete tac
@@ -451,13 +469,15 @@ GEXTEND Gram
 	  TacMutualCofix (false,id,List.map mk_cofix_tac fd)
 
       | IDENT "pose"; (id,b) = bindings_with_parameters ->
-	  TacLetTac (Names.Name id,b,nowhere)
-      | IDENT "pose"; b = constr ->
-	  TacLetTac (Names.Anonymous,b,nowhere)
-      | IDENT "set"; (id,c) = bindings_with_parameters; p = clause ->
-	  TacLetTac (Names.Name id,c,p)
-      | IDENT "set"; c = constr; p = clause ->
-          TacLetTac (Names.Anonymous,c,p)
+	  TacLetTac (Names.Name id,b,nowhere,true)
+      | IDENT "pose"; b = constr; na = as_name ->
+	  TacLetTac (na,b,nowhere,true)
+      | IDENT "set"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
+	  TacLetTac (Names.Name id,c,p,true)
+      | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
+          TacLetTac (na,c,p,true)
+      | IDENT "remember"; c = constr; na = as_name; p = clause_dft_all ->
+          TacLetTac (na,c,p,false)
 
       (* Begin compatibility *)
       | IDENT "assert"; id = lpar_id_coloneq; c = lconstr; ")" -> 
@@ -472,7 +492,14 @@ GEXTEND Gram
 	  TacAssert (None,ipat,c)
 
       | IDENT "cut"; c = constr -> TacCut c
-      | IDENT "generalize"; lc = LIST1 constr -> TacGeneralize lc
+      | IDENT "generalize"; c = constr ->
+	  TacGeneralize [(([],c),Names.Anonymous)]
+      | IDENT "generalize"; c = constr; l = LIST1 constr ->
+          TacGeneralize (List.map (fun c -> (([],c),Names.Anonymous)) (c::l))
+      | IDENT "generalize"; c = constr; lookup_at_as_coma; nl = occs; 
+          na = as_name; 
+          l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->
+          TacGeneralize (((nl,c),na)::l)
       | IDENT "generalize"; IDENT "dependent"; c = constr -> TacGeneralizeDep c
 
       | IDENT "specialize"; n = OPT natural; lcb = constr_with_bindings ->
@@ -483,17 +510,21 @@ GEXTEND Gram
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
           TacSimpleInduction h
       | IDENT "induction"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewInduction (false,lc,el,ids)
+	  el = OPT eliminator; cl = opt_clause -> 
+	    TacNewInduction (false,lc,el,ids,cl)
       | IDENT "einduction"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewInduction (true,lc,el,ids)
+	  el = OPT eliminator; cl = opt_clause ->
+	    TacNewInduction (true,lc,el,ids,cl)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "simple"; IDENT "destruct"; h = quantified_hypothesis ->
           TacSimpleDestruct h
       | IDENT "destruct"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewDestruct (false,lc,el,ids)
+	  el = OPT eliminator; cl = opt_clause ->
+	    TacNewDestruct (false,lc,el,ids,cl)
       | IDENT "edestruct"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator -> TacNewDestruct (true,lc,el,ids)
+	  el = OPT eliminator; cl = opt_clause ->
+	    TacNewDestruct (true,lc,el,ids,cl)
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 smart_global; "]"; c = constr
@@ -544,14 +575,14 @@ GEXTEND Gram
 
       (* Equivalence relations *)
       | IDENT "reflexivity" -> TacReflexivity
-      | IDENT "symmetry"; cls = clause -> TacSymmetry cls
+      | IDENT "symmetry"; cl = clause_dft_concl -> TacSymmetry cl
       | IDENT "transitivity"; c = constr -> TacTransitivity c
 
       (* Equality and inversion *)
-      | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ","; cl = clause; t=opt_by_tactic ->
-	  TacRewrite (false,l,cl,t)
-      | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ","; cl = clause; t=opt_by_tactic ->
-	  TacRewrite (true,l,cl,t)
+      | IDENT "rewrite"; l = LIST1 oriented_rewriter SEP ","; 
+	  cl = clause_dft_concl; t=opt_by_tactic -> TacRewrite (false,l,cl,t)
+      | IDENT "erewrite"; l = LIST1 oriented_rewriter SEP ","; 
+	  cl = clause_dft_concl; t=opt_by_tactic -> TacRewrite (true,l,cl,t)
       | IDENT "dependent"; k =
 	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
 	  | IDENT "inversion" -> FullInversion
@@ -573,9 +604,10 @@ GEXTEND Gram
 	    TacInversion (InversionUsing (c,cl), hyp)
 
       (* Conversion *)
-      | r = red_tactic; cl = clause -> TacReduce (r, cl)
+      | r = red_tactic; cl = clause_dft_concl -> TacReduce (r, cl)
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
-      | IDENT "change"; (oc,c) = conversion; cl = clause -> TacChange (oc,c,cl)
+      | IDENT "change"; (oc,c) = conversion; cl = clause_dft_concl ->
+	  TacChange (oc,c,cl)
     ] ]
   ;
 END;;

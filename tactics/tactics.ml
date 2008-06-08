@@ -1131,24 +1131,50 @@ let true_cut = assert_tac true
 (*   Generalize tactics   *)
 (**************************)
 
-let generalize_goal gl c cl =
+let generalized_name c t cl = function
+  | Name id as na -> na
+  | Anonymous -> 
+      match kind_of_term c with
+      | Var id ->
+	 (* Keep the name even if not occurring: may be used by intros later *)
+	  Name id
+      | _ ->
+	  if noccurn 1 cl then Anonymous else
+	    (* On ne s'etait pas casse la tete : on avait pris pour nom de 
+               variable la premiere lettre du type, meme si "c" avait ete une
+               constante dont on aurait pu prendre directement le nom *)
+	    named_hd (Global.env()) t Anonymous
+
+let generalize_goal gl i ((occs,c),na) cl =
   let t = pf_type_of gl c in
-  match kind_of_term c with
+  let decls,cl = decompose_prod_n_assum i cl in
+  let dummy_prod = it_mkProd_or_LetIn mkProp decls in
+  let newdecls,_ = decompose_prod_n_assum i (subst_term c dummy_prod) in
+  let cl' = subst_term_occ occs c (it_mkProd_or_LetIn cl newdecls) in
+  let na = generalized_name c t cl' na in
+  mkProd (na,t,cl')
+
+(*
+  match kind_of_term cl with
+  | App (f,[|a|]) when isLambda f & eq_constr a c ->
+      (* Assume tactic pattern has been applied first *)
+      let na = match kind_of_term c with Var id -> Name id | _ -> Anonymous in
+      mkProd_name (pf_env gl) (na,t,mkApp (f,[|mkRel 1|]))
+  | _ ->
+    match kind_of_term c with
     | Var id ->
 	(* The choice of remembering or not a non dependent name has an impact
 	   on the future Intro naming strategy! *)
 	(* if dependent c cl then mkNamedProd id t cl
 	   else mkProd (Anonymous,t,cl) *)
-	mkNamedProd id t cl
+ 	mkNamedProd id t cl
     | _        -> 
         let cl' = subst_term c cl in
         if noccurn 1 cl' then 
 	  mkProd (Anonymous,t,cl)
-          (* On ne se casse pas la tete : on prend pour nom de variable
-             la premiere lettre du type, meme si "ci" est une
-             constante et qu'on pourrait prendre directement son nom *)
-        else 
-	  prod_name (Global.env()) (Anonymous, t, cl')
+        else
+	  mkProd_name (pf_env gl) (Anonymous, t, cl')
+*)
 
 let generalize_dep c gl =
   let env = pf_env gl in
@@ -1171,16 +1197,19 @@ let generalize_dep c gl =
       | _ -> tothin
   in
   let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
-  let cl'' = generalize_goal gl c cl' in
+  let cl'' = generalize_goal gl 0 (([],c),Anonymous) cl' in
   let args = Array.to_list (instance_from_named_context to_quantify_rev) in
   tclTHEN
     (apply_type cl'' (c::args))
     (thin (List.rev tothin'))
     gl
-    
-let generalize lconstr gl = 
-  let newcl = List.fold_right (generalize_goal gl) lconstr (pf_concl gl) in
-  apply_type newcl lconstr gl
+
+let generalize_gen lconstr gl =
+  let newcl =
+    list_fold_right_i (generalize_goal gl) 0 lconstr (pf_concl gl) in
+  apply_type newcl (List.map (fun ((_,c),_) -> c) lconstr) gl
+
+let generalize l = generalize_gen (List.map (fun c -> (([],c),Anonymous)) l)
 
 let revert hyps gl = 
   tclTHEN (generalize (List.map mkVar hyps)) (clear hyps) gl
@@ -1203,7 +1232,7 @@ let quantify lconstr =
 
    [letin_tac b na c (occ_hyp,occ_ccl) gl] transforms
    [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
-   [...x:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
+   [...x:T;Heqx:(x=c);x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
    [...x:=c:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
 
    [occ_hyp,occ_ccl] tells which occurrences of [c] have to be substituted;
@@ -1325,11 +1354,21 @@ let letin_tac with_eq name c occs gl =
 	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in 
   let t = pf_type_of gl c in
-  let newcl = mkNamedLetIn id c t ccl in
+  let newcl,eq_tac = match with_eq with
+    | Some lr ->
+      let heq = fresh_id [] (add_prefix "Heq" id) gl in
+      let eqdata = build_coq_eq_data () in
+      let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
+      let eq = applist (eqdata.eq,args) in
+      let refl = applist (eqdata.refl, [t;mkVar id]) in
+      mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)),
+      tclTHEN (intro_gen (IntroMustBe heq) lastlhyp true) (thin_body [heq;id])
+    | None ->
+	mkNamedLetIn id c t ccl, tclIDTAC in
   tclTHENLIST
     [ convert_concl_no_check newcl DEFAULTcast;
       intro_gen (IntroMustBe id) lastlhyp true;
-      if with_eq then tclIDTAC else thin_body [id];
+      eq_tac;
       tclMAP convert_hyp_no_check depdecls ] gl
   
 (* Tactics "pose proof" (usetac=None) and "assert" (otherwise) *)
@@ -1506,14 +1545,14 @@ let atomize_param_of_ind (indref,nparams) hyp0 gl =
 	| Var id ->
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac true (Name x) (mkVar id) allClauses)
+	      (letin_tac None (Name x) (mkVar id) allClauses)
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
 	| _ ->
 	    let id = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c)
 		       Anonymous in
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac true (Name x) c allClauses)
+	      (letin_tac None (Name x) c allClauses)
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
     else 
       tclIDTAC gl
@@ -2439,18 +2478,19 @@ let induction_without_atomization isrec with_evars elim names lid gl =
   then error "Not the right number of induction arguments"
   else induction_from_context_l isrec with_evars elim_info lid names gl
 
-let new_induct_gen isrec with_evars elim names (c,lbind) gl =
+let new_induct_gen isrec with_evars elim names (c,lbind) cls gl =
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context()))
-	        & lbind = NoBindings & not with_evars ->
+	        & lbind = NoBindings & not with_evars & cls = None ->
 	induction_with_atomization_of_ind_arg
 	  isrec with_evars elim names (id,lbind) gl
     | _        ->
 	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) 
 		  Anonymous in
 	let id = fresh_id [] x gl in
+	let with_eq = if cls <> None then Some (not (isVar c)) else None in
 	tclTHEN
-	  (letin_tac true (Name id) c allClauses)
+	  (letin_tac with_eq (Name id) c (Option.default allClauses cls))
 	  (induction_with_atomization_of_ind_arg
 	     isrec with_evars elim names (id,lbind)) gl
 
@@ -2467,7 +2507,8 @@ let new_induct_gen_l isrec with_evars elim names lc gl =
       | [] -> tclIDTAC gl
       | c::l' ->
 	  match kind_of_term c with
-	    | Var id when not (mem_named_context id (Global.named_context())) -> 
+	    | Var id when not (mem_named_context id (Global.named_context()))
+		& not with_evars -> 
 		let _ = newlc:= id::!newlc in
 		atomize_list l' gl
 
@@ -2480,7 +2521,7 @@ let new_induct_gen_l isrec with_evars elim names lc gl =
 		let _ = newlc:=id::!newlc in
 		let _ = letids:=id::!letids in
 		tclTHEN 
-		  (letin_tac true (Name id) c allClauses)
+		  (letin_tac None (Name id) c allClauses)
 		  (atomize_list newl') gl in
   tclTHENLIST 
     [
@@ -2495,10 +2536,10 @@ let new_induct_gen_l isrec with_evars elim names lc gl =
     gl
 
 
-let induct_destruct_l isrec with_evars lc elim names = 
+let induct_destruct_l isrec with_evars lc elim names cls = 
   (* Several induction hyps: induction scheme is mandatory *)
   let _ = 
-    if elim = None 
+    if elim = None
     then 
       error ("Induction scheme must be given when several induction hypothesis.\n"
       ^ "Example: induction x1 x2 x3 using my_scheme.") in
@@ -2509,6 +2550,9 @@ let induct_destruct_l isrec with_evars lc elim names =
 	  | ElimOnConstr (x,NoBindings) -> x
 	  | _ -> error "don't know where to find some argument")
       lc in
+  if cls <> None then
+    error
+      "'in' clause not supported when several induction hypothesis are given";
   new_induct_gen_l isrec with_evars elim names newlc
 
 
@@ -2517,27 +2561,28 @@ let induct_destruct_l isrec with_evars lc elim names =
    principles). 
    TODO: really unify induction with one and induction with several
    args *)
-let induct_destruct isrec with_evars lc elim names = 
+let induct_destruct isrec with_evars lc elim names cls =
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
   if List.length lc = 1 then (* induction on one arg: use old mechanism *)
     try 
       let c = List.hd lc in
       match c with
-	| ElimOnConstr c -> new_induct_gen isrec with_evars elim names c
+	| ElimOnConstr c -> new_induct_gen isrec with_evars elim names c cls
 	| ElimOnAnonHyp n ->
 	    tclTHEN (intros_until_n n)
 	      (tclLAST_HYP (fun c -> 
-		  new_induct_gen isrec with_evars elim names (c,NoBindings)))
+		new_induct_gen isrec with_evars elim names (c,NoBindings) cls))
 	      (* Identifier apart because id can be quantified in goal and not typable *)
 	| ElimOnIdent (_,id) ->
 	    tclTHEN (tclTRY (intros_until_id id))
-	      (new_induct_gen isrec with_evars elim names (mkVar id,NoBindings))
+	      (new_induct_gen isrec with_evars elim names
+		(mkVar id,NoBindings) cls)
     with (* If this fails, try with new mechanism but if it fails too,
 	    then the exception is the first one. *)
       | x ->
-	  (try induct_destruct_l isrec with_evars lc elim names
+	  (try induct_destruct_l isrec with_evars lc elim names cls
 	   with _  -> raise x)
-  else induct_destruct_l isrec with_evars lc elim names
+  else induct_destruct_l isrec with_evars lc elim names cls
 
 
       

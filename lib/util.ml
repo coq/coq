@@ -42,6 +42,11 @@ let located_iter2 f (_,a) (_,b) = f a b
 
 exception Error_in_file of string * (bool * string * loc) * exn
 
+(* Mapping under pairs *)
+
+let on_fst f (a,b) = (f a,b)
+let on_snd f (a,b) = (a,f b)
+
 (* Projections from triplets *)
 
 let pi1 (a,_,_) = a
@@ -551,6 +556,13 @@ let list_unique_index x =
 	else index_x (succ n) l
     | [] -> raise Not_found 
   in index_x 1
+
+let list_fold_right_i f i l =
+  let rec it_list_f i l a = match l with
+    | [] -> a
+    | b::l -> f (i-1) b (it_list_f (i-1) l a)
+  in 
+  it_list_f (List.length l + i) l
 
 let list_fold_left_i f = 
   let rec it_list_f i a = function
@@ -1169,6 +1181,7 @@ let pr_semicolon () = str ";" ++ spc ()
 let pr_bar () = str "|" ++ spc ()
 let pr_arg pr x = spc () ++ pr x
 let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
+let pr_opt_no_spc pr = function None -> mt () | Some x -> pr x
 
 let nth n = str (ordinal n)
 

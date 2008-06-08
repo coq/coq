@@ -388,7 +388,7 @@ Class [ equ : Equivalence A eqA, PreOrder A R ] => PartialOrder :=
 
 Instance partial_order_antisym [ PartialOrder A eqA R ] : ! Antisymmetric A eqA R.
 Proof with auto.
-  reduce_goal. pose partial_order_equivalence as poe. do 3 red in poe. 
+  reduce_goal. pose proof partial_order_equivalence as poe. do 3 red in poe. 
   apply <- poe. firstorder.
 Qed.
 

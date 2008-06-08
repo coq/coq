@@ -317,7 +317,7 @@ let mkEq typ c1 c2 =
 let poseq_unsafe idunsafe cstr gl =
   let typ = Tacmach.pf_type_of gl cstr in
   tclTHEN
-    (Tactics.letin_tac true (Name idunsafe) cstr allClauses)
+    (Tactics.letin_tac None (Name idunsafe) cstr allClauses)
     (tclTHENFIRST 
       (Tactics.assert_as true IntroAnonymous (mkEq typ (mkVar idunsafe) cstr)) 
       Tactics.reflexivity)

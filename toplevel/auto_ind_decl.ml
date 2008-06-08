@@ -514,12 +514,14 @@ let compute_bl_tact ind lnamesparrec nparrec  =
                      new_induct false [ (Tacexpr.ElimOnConstr ((mkVar freshn),
                                         Rawterm.NoBindings))]
                                 None
-                                Genarg.IntroAnonymous;
+                                Genarg.IntroAnonymous
+		                None;
                      intro_using freshm;
                      new_destruct false [ (Tacexpr.ElimOnConstr ((mkVar freshm),
                                     Rawterm.NoBindings))]
                                 None
-                                Genarg.IntroAnonymous;
+                                Genarg.IntroAnonymous
+		                None;
                      intro_using freshz;
                      intros;
                      tclTRY ( 
@@ -541,7 +543,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                                   None
                                   ( Genarg.IntroOrAndPattern [[
                                     Genarg.IntroIdentifier fresht;
-                                    Genarg.IntroIdentifier freshz]])) gl
+                                    Genarg.IntroIdentifier freshz]]) None) gl
                         ]);
 (*
   Ci a1 ... an = Ci b1 ... bn 
@@ -629,12 +631,14 @@ let compute_lb_tact ind lnamesparrec nparrec =
                      new_induct false [Tacexpr.ElimOnConstr 
                                     ((mkVar freshn),Rawterm.NoBindings)] 
                                 None
-                                Genarg.IntroAnonymous;
+                                Genarg.IntroAnonymous
+		                None;
                      intro_using freshm;
                      new_destruct false [Tacexpr.ElimOnConstr 
                                     ((mkVar freshm),Rawterm.NoBindings)]
                                 None
-                                Genarg.IntroAnonymous;
+                                Genarg.IntroAnonymous
+		                None;
                      intro_using freshz;
                      intros;
                      tclTRY ( 
@@ -748,7 +752,8 @@ let compute_dec_tact ind lnamesparrec nparrec =
                    (new_destruct false [Tacexpr.ElimOnConstr
                                   (eqbnm,Rawterm.NoBindings)]
                                 None
-                                Genarg.IntroAnonymous)
+                                Genarg.IntroAnonymous
+		                None)
                   Auto.default_auto
                 );
       Pfedit.by (
@@ -759,7 +764,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
                                 None
                                 (Genarg.IntroOrAndPattern [
                                     [Genarg.IntroAnonymous];
-                                    [Genarg.IntroIdentifier freshH2]]) 
+                                    [Genarg.IntroIdentifier freshH2]]) None
       );
       let arfresh = Array.of_list fresh_first_intros in
         let xargs = Array.sub arfresh 0 (2*nparrec) in

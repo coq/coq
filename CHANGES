@@ -121,6 +121,8 @@ Libraries (DOC TO CHECK)
   instead of strictly positive (see lemmas with name ending by
   "_full"). An alternative file ZOdiv proposes a different behavior
   (the one of Ocaml) when dividing by negative numbers.
+- Changes in Arith: EqNat and Wf_nat now exported from Arith, some 
+  constructions on nat that were outside Arith are now in (e.g. iter_nat).
 - In SetoidList, eqlistA now expresses that two lists have similar elements 
   at the same position, while the predicate previously called eqlistA 
   is now equivlistA (this one only states that the lists contain the same 
@@ -203,7 +205,11 @@ Tactics
 - Application of "f_equal"-style lemmas works better.
 - Tactics elim, case, destruct and induction now support variants eelim,
   ecase, edestruct and einduction.
-- Tactics destruct and induction now support option "with".
+- Tactics destruct and induction now support the "with" option and the
+  "in" clause option. If the option "in" is used, an equality is added
+  to remember the term to which the induction or case analysis applied
+  (possible source of parsing incompatibilities when destruct or induction is
+   part of a let-in expression in Ltac; extra parentheses are then required).
 - Some new intro patterns: 
   * intro pattern "?A" genererates a fresh name based on A. 
     Caveat about a slight loss of compatibility:
@@ -238,6 +244,8 @@ Tactics
   matching lemma among the components of the conjunction; tactic apply also
   able to apply lemmas of conclusion an empty type.
 - Tactics "set" and "pose" can set functions using notation "(f x1..xn := c)".
+- Tactic "generalize" now supports "at" options to specify occurrences
+  and "as" options to name the hypothesis.
 - New tactic "specialize H with a" or "specialize (H a)" allows to transform
   in-place a universally-quantified hypothesis (H : forall x, T x) into its 
   instantiated form (H : T a). Nota: "specialize" was in fact there in earlier
@@ -247,14 +255,16 @@ Tactics
   If H is already a negation, say ~T, then a proof of T is asked.
   If the current goal is a negation, say ~U, then U is saved in H afterwards,
   hence this new tactic "contradict" extends earlier tactic "swap", which is 
-  now obsolete. 
-- tactics f_equal is now done in ML instead of Ltac: it now works on any 
-  equality of functions, regardless of the arity of the function. 
-- some more debug of reflexive omega (romega), and internal clarifications. 
+  now obsolete.
+- Tactics f_equal is now done in ML instead of Ltac: it now works on any 
+  equality of functions, regardless of the arity of the function.
+- Some more debug of reflexive omega (romega), and internal clarifications. 
   Moreover, romega now has a variant "romega with *" that can be also used
   on non-Z goals (nat, N, positive) via a call to a translation tactic named
   zify (its purpose is to Z-ify your goal...). This zify may also be used
   independantly of romega. 
+- Tactic "remember" now supports an "in" clause to remember only selected 
+  occurrences of a term.
 
 Program
 
@@ -369,23 +379,29 @@ Extraction
   corresponding to decidability of equalities are now linear instead of 
   quadratic.
 
+CoqIDE
+
+- CoqIDE font defaults to monospace so as indentation to be meaningful.
+- CoqIDE supports nested goals and any other kind of declaration in the middle 
+  of a proof.
+- Undoing non-tactic commands in CoqIDE works faster.
+- New CoqIDE menu for activating display of various implicit informations.
+- Added the possibility to choose the location of tabs in coqide:
+  (in Edit->Preferences->Misc)
+- New Open and Save As dialogs in CoqIDE which filter *.v files.
+
 Tools
 
 - New stand-alone .vo files verifier "coqchk".
-- CoqIDE font defaults to monospace so as indentation to be meaningful.
-- CoqIDE supports Definition/Parameter/Inductive in middle of a proof.
-- Undoing non-tactic commands in CoqIDE works faster.
-- New CoqIDE menu for activating display of various implicit informations.
-- New Open and Save As dialogs in CoqIDE which filter *.v files.
 
 Miscellaneous
 
-- Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into
-  "Test Printing Let for ref" and "Test Printing If for ref".
-- Added the possibility to choose the location of tabs in coqide:
-  (in Edit->Preferences->Misc)
+- Coq installation provides enough files so that Ocaml's extensions need not
+  the Coq sources to be compiled.
 - New commands "Set Whelp Server" and "Set Whelp Getter" to customize the
   Whelp search tool.
+- Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into
+  "Test Printing Let for ref" and "Test Printing If for ref".
 - An overhauled build system (new Makefiles); see dev/doc/build-system.txt
 
 Changes from V8.1gamma to V8.1

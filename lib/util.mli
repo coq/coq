@@ -52,6 +52,11 @@ val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
 
 exception Error_in_file of string * (bool * string * loc) * exn
 
+(* Mapping under pairs *)
+
+val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
+val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
+
 (*s Projections from triplets *)
 
 val pi1 : 'a * 'b * 'c -> 'a
@@ -121,6 +126,7 @@ val list_unique_index : 'a -> 'a list -> int
 val list_index0 : 'a -> 'a list -> int
 val list_iter3 : ('a -> 'b -> 'c -> unit) -> 'a list -> 'b list -> 'c list -> unit
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
+val list_fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_fold_right_and_left :
     ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
@@ -257,6 +263,7 @@ val pr_semicolon : unit -> std_ppcmds
 val pr_bar : unit -> std_ppcmds
 val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val pr_opt_no_spc : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
 val nth : int -> std_ppcmds
 
 val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds

@@ -8,6 +8,7 @@
 
 (*i $Id$ i*)
 
+Require Import Wf_nat.
 Require Import ZArith_base.
 Require Export Zpow_def.
 Require Import Omega.

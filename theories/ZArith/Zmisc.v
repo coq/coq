@@ -8,6 +8,7 @@
 
 (*i $Id$ i*)
 
+Require Import Wf_nat.
 Require Import BinInt.
 Require Import Zcompare.
 Require Import Zorder.
@@ -18,11 +19,6 @@ Open Local Scope Z_scope.
 (** Iterators *)
 
 (** [n]th iteration of the function [f] *)
-Fixpoint iter_nat (n:nat) (A:Type) (f:A -> A) (x:A) {struct n} : A :=
-  match n with
-    | O => x
-    | S n' => f (iter_nat n' A f x)
-  end.
 
 Fixpoint iter_pos (n:positive) (A:Type) (f:A -> A) (x:A) {struct n} : A :=
   match n with
@@ -37,15 +33,6 @@ Definition iter (n:Z) (A:Type) (f:A -> A) (x:A) :=
     | Zpos p => iter_pos p A f x
     | Zneg p => x
   end.
-
-Theorem iter_nat_plus :
-  forall (n m:nat) (A:Type) (f:A -> A) (x:A),
-    iter_nat (n + m) A f x = iter_nat n A f (iter_nat m A f x).
-Proof.    
-  simple induction n;
-    [ simpl in |- *; auto with arith
-      | intros; simpl in |- *; apply f_equal with (f := f); apply H ].  
-Qed.
 
 Theorem iter_nat_of_P :
   forall (p:positive) (A:Type) (f:A -> A) (x:A),

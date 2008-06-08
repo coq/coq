@@ -1185,7 +1185,7 @@ let rec natural_ntree ig ntree =
 	  | TacFix (_,n) -> natural_fix ig lh g gs n ltree
 	  | TacSplit (_,_,NoBindings) -> natural_split ig lh g gs ge [] ltree
 	  | TacSplit(_,_,ImplicitBindings l) -> natural_split ig lh g gs ge (List.map snd l) ltree
-	  | TacGeneralize l -> natural_generalize ig lh g gs ge (List.map snd l) ltree
+	  | TacGeneralize l -> natural_generalize ig lh g gs ge l ltree
 	  | TacRight _ -> natural_right ig lh g gs ltree
 	  | TacLeft _ -> natural_left ig lh g gs ltree
 	  | (* "Simpl" *)TacReduce (r,cl)  ->
@@ -1652,7 +1652,7 @@ and natural_split ig lh g gs ge la ltree =
   | _ -> assert false
 and natural_generalize ig lh g gs ge la ltree =
   match la with
-    [arg] ->
+    [(_,(_,arg)),_] ->
       let _env= (gLOB ge) in
       let arg1= (*dbize env*) arg in
       let _type_arg=type_of (Global.env()) Evd.empty arg in

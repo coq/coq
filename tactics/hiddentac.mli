@@ -52,8 +52,10 @@ val h_cofix           : identifier option -> tactic
 
 val h_cut             : constr -> tactic 
 val h_generalize      : constr list -> tactic 
+val h_generalize_gen  : (constr with_occurrences * name) list -> tactic 
 val h_generalize_dep  : constr -> tactic 
-val h_let_tac         : name -> constr -> Tacticals.clause -> tactic
+val h_let_tac         : letin_flag -> name -> constr -> 
+                        Tacticals.clause -> tactic
 val h_instantiate     : int -> Rawterm.rawconstr ->
   (identifier * hyp_location_flag, unit) location -> tactic
 
@@ -63,10 +65,12 @@ val h_simple_induction   : quantified_hypothesis -> tactic
 val h_simple_destruct    : quantified_hypothesis -> tactic
 val h_new_induction   :
   evars_flag -> constr with_ebindings induction_arg list ->
-    constr with_ebindings option -> intro_pattern_expr -> tactic
+    constr with_ebindings option -> intro_pattern_expr ->
+      Tacticals.clause option -> tactic
 val h_new_destruct    :
   evars_flag -> constr with_ebindings induction_arg list ->
-    constr with_ebindings option -> intro_pattern_expr -> tactic
+    constr with_ebindings option -> intro_pattern_expr ->
+      Tacticals.clause option -> tactic
 val h_specialize      : int option -> constr with_ebindings -> tactic
 val h_lapply          : constr -> tactic
 

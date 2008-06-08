@@ -370,6 +370,13 @@ let pr_with_names = function
   | IntroAnonymous -> mt ()
   | ipat -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_intro_pattern ipat)
 
+let pr_as_name = function
+  | Anonymous -> mt ()
+  | Name id -> str "as " ++ pr_lident (dummy_loc,id)
+
+let pr_pose_as_style prc na c =
+  spc() ++ prc c ++ pr_as_name na
+
 let pr_pose prlc prc na c = match na with
   | Anonymous -> spc() ++ prc c
   | Name id -> spc() ++ surround (pr_id id ++ str " :=" ++ spc() ++ prlc c)
@@ -706,14 +713,18 @@ and pr_atom1 = function
              pr_assertion pr_lconstr pr_constr ipat c)
   | TacGeneralize l ->
       hov 1 (str "generalize" ++ spc () ++
-             prlist_with_sep spc pr_constr l)
+             prlist_with_sep pr_coma (fun (cl,na) -> 
+	       pr_with_occurrences pr_constr cl ++ pr_as_name na)
+	     l)
   | TacGeneralizeDep c ->
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_constrarg c)
-  | TacLetTac (na,c,cl) when cl = nowhere ->
+  | TacLetTac (na,c,cl,true) when cl = nowhere ->
       hov 1 (str "pose" ++ pr_pose pr_lconstr pr_constr na c)
-  | TacLetTac (na,c,cl) ->
-      hov 1 (str "set" ++ pr_pose pr_lconstr pr_constr na c ++
+  | TacLetTac (na,c,cl,b) ->
+      hov 1 ((if b then str "set" else str "remember") ++
+             (if b then pr_pose pr_lconstr else pr_pose_as_style)
+	        pr_constr na c ++
              pr_clauses pr_ident cl)
 (*  | TacInstantiate (n,c,ConclLocation ()) ->
       hov 1 (str "instantiate" ++ spc() ++
@@ -728,18 +739,20 @@ and pr_atom1 = function
   (* Derived basic tactics *)
   | TacSimpleInduction h ->
       hov 1 (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewInduction (ev,h,e,ids) ->
+  | TacNewInduction (ev,h,e,ids,cl) ->
       hov 1 (str (with_evars ev "induction") ++ spc () ++
 	     prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++
 	     pr_with_names ids ++
-             pr_opt pr_eliminator e)
+             pr_opt pr_eliminator e ++
+             pr_opt_no_spc (pr_clauses pr_ident) cl)
   | TacSimpleDestruct h ->
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewDestruct (ev,h,e,ids) ->
+  | TacNewDestruct (ev,h,e,ids,cl) ->
       hov 1 (str (with_evars ev "destruct") ++ spc () ++
              prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++ 
 	     pr_with_names ids ++
-             pr_opt pr_eliminator e)
+             pr_opt pr_eliminator e ++
+             pr_opt_no_spc (pr_clauses pr_ident) cl)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++  

@@ -51,11 +51,18 @@ Qed.
 
 (** * Diagonal *)
 
-Lemma minus_n_n : forall n, 0 = n - n.
+Lemma minus_diag : forall n, n - n = 0.
 Proof.
   induction n; simpl in |- *; auto with arith.
 Qed.
-Hint Resolve minus_n_n: arith v62.
+
+Lemma minus_diag_reverse : forall n, 0 = n - n.
+Proof.
+  auto using minus_diag.
+Qed.
+Hint Resolve minus_diag_reverse: arith v62.
+
+Notation minus_n_n := minus_diag_reverse.
 
 (** * Simplification *)
 

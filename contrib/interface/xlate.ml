@@ -1151,9 +1151,12 @@ and xlate_tac =
     | TacSpecialize (nopt, (c,sl)) ->
      CT_specialize (xlate_int_opt nopt, xlate_formula c, xlate_bindings sl)
     | TacGeneralize [] -> xlate_error ""
-    | TacGeneralize (first :: cl) ->
+    | TacGeneralize ((([],first),Anonymous) :: cl)
+	when List.for_all (fun ((o,_),na) -> o = [] & na = Anonymous) cl ->
      CT_generalize
-      (CT_formula_ne_list (xlate_formula first, List.map xlate_formula cl))
+      (CT_formula_ne_list (xlate_formula first, 
+                           List.map (fun ((_,c),_) -> xlate_formula c) cl))
+    | TacGeneralize _ -> xlate_error "TODO: Generalize at and as"
     | TacGeneralizeDep c ->
 	CT_generalize_dependent (xlate_formula c)
     | TacElimType c -> CT_elim_type (xlate_formula c)
@@ -1163,7 +1166,7 @@ and xlate_tac =
     | TacCase (false,(c1,sl)) ->
      CT_casetac (xlate_formula c1, xlate_bindings sl)
     | TacElim (true,_,_) | TacCase (true,_)
-    | TacNewDestruct (true,_,_,_) | TacNewInduction (true,_,_,_) ->
+    | TacNewDestruct (true,_,_,_,_) | TacNewInduction (true,_,_,_,_) ->
 	xlate_error "TODO: eelim, ecase, edestruct, einduction"
     | TacSimpleInduction h -> CT_induction (xlate_quantified_hypothesis h)
     | TacSimpleDestruct h -> CT_destruct (xlate_quantified_hypothesis h)
@@ -1207,24 +1210,27 @@ and xlate_tac =
 	CT_dauto(xlate_int_or_var_opt_to_int_opt a, xlate_int_opt b)
     | TacDAuto (a, b, _) ->
 	xlate_error "TODO: dauto using"
-    | TacNewDestruct(false,a,b,c) ->
+    | TacNewDestruct(false,a,b,c,None) ->
 	CT_new_destruct
 	  (List.map  xlate_int_or_constr a, xlate_using b, 
 	   xlate_with_names c)
-    | TacNewInduction(false,a,b,c) ->
+    | TacNewInduction(false,a,b,c,None) ->
 	CT_new_induction
 	  (List.map xlate_int_or_constr a, xlate_using b,
 	   xlate_with_names c)
+    | TacNewDestruct(false,a,b,c,_) -> xlate_error "TODO: destruct in"
+    | TacNewInduction(false,a,b,c,_) ->xlate_error "TODO: induction in"
     (*| TacInstantiate (a, b, cl) -> 
         CT_instantiate(CT_int a, xlate_formula b,
 		       assert false) *)
-    | TacLetTac (na, c, cl) when cl = nowhere -> 
+    | TacLetTac (na, c, cl, true) when cl = nowhere -> 
         CT_pose(xlate_id_opt_aux na, xlate_formula c)
-    | TacLetTac (na, c, cl) ->
+    | TacLetTac (na, c, cl, true) ->
         CT_lettac(xlate_id_opt ((0,0),na), xlate_formula c, 
 		  (* TODO LATER: This should be shared with Unfold,
 		     but the structures are different *)
 		  xlate_clause cl)
+    | TacLetTac (na, c, cl, false) -> xlate_error "TODO: remember"
     | TacAssert (None, IntroIdentifier id, c) -> 
         CT_assert(xlate_id_opt ((0,0),Name id), xlate_formula c)
     | TacAssert (None, IntroAnonymous, c) -> 

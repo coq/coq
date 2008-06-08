@@ -102,7 +102,8 @@ let init_id = id_of_string "Init"
 let arith_id = id_of_string "Arith"
 let datatypes_id = id_of_string "Datatypes"
 
-let logic_module = make_dir ["Coq";"Init";"Logic"]
+let logic_module_name = ["Coq";"Init";"Logic"]
+let logic_module = make_dir logic_module_name
 let logic_type_module = make_dir ["Coq";"Init";"Logic_Type"]
 let datatypes_module = make_dir ["Coq";"Init";"Datatypes"]
 let arith_module = make_dir ["Coq";"Arith";"Arith"]
@@ -202,7 +203,8 @@ let coq_eq_congr = lazy_init_constant ["Logic"] "f_equal"
 let coq_eq_sym  = lazy_init_constant ["Logic"] "sym_eq"
 let coq_f_equal2 = lazy_init_constant ["Logic"] "f_equal2"
 
-let build_coq_eq_data () = {
+let build_coq_eq_data () =
+  let _ = check_required_library logic_module_name in {
   eq = Lazy.force coq_eq_eq;
   refl = Lazy.force coq_eq_refl;
   ind = Lazy.force coq_eq_ind;

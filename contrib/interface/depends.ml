@@ -295,16 +295,18 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacCut c -> depends_of_'constr c acc
     | TacAssert (taco, _, c) ->
 	Option.fold_right depends_of_'tac taco (depends_of_'constr c acc)
-    | TacGeneralize cl -> list_union_map depends_of_'constr cl acc
+    | TacGeneralize cl ->
+	list_union_map depends_of_'constr (List.map (fun ((_,c),_) -> c) cl)
+	acc
     | TacGeneralizeDep c -> depends_of_'constr c acc
-    | TacLetTac (_,c,_) -> depends_of_'constr c acc
+    | TacLetTac (_,c,_,_) -> depends_of_'constr c acc
 
     (* Derived basic tactics *)
     | TacSimpleInduction _
     | TacSimpleDestruct  _
     | TacDoubleInduction _ -> acc
-    | TacNewInduction (_, cwbial, cwbo, _)
-    | TacNewDestruct (_, cwbial, cwbo, _) ->
+    | TacNewInduction (_, cwbial, cwbo, _, _)
+    | TacNewDestruct (_, cwbial, cwbo, _, _) ->
 	list_union_map (depends_of_'a_induction_arg depends_of_'constr_with_bindings)
 	  cwbial
 	  (Option.fold_right depends_of_'constr_with_bindings cwbo acc)

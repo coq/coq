@@ -166,7 +166,7 @@ let make_pbp_atomic_tactic = function
       TacAtom (zz, TacSplit (false,true,ImplicitBindings [make_pbp_pattern x]))
   | PbpGeneralize (h,args) ->
       let l = List.map make_pbp_pattern args in
-      TacAtom (zz, TacGeneralize [make_app (make_var h) l])
+      TacAtom (zz, TacGeneralize [([],make_app (make_var h) l),Anonymous])
   | PbpLeft -> TacAtom (zz, TacLeft (false,NoBindings))
   | PbpRight -> TacAtom (zz, TacRight (false,NoBindings))
   | PbpIntros l -> TacAtom (zz, TacIntroPattern l)

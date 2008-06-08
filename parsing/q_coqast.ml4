@@ -337,29 +337,30 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacAssert $mlexpr_of_option mlexpr_of_tactic t$ $ipat$ 
 	      $mlexpr_of_constr c$ >>
   | Tacexpr.TacGeneralize cl ->
-      <:expr< Tacexpr.TacGeneralize $mlexpr_of_list mlexpr_of_constr cl$ >>
+      <:expr< Tacexpr.TacGeneralize
+	      $mlexpr_of_list 
+                (mlexpr_of_pair mlexpr_of_occ_constr mlexpr_of_name) cl$ >>
   | Tacexpr.TacGeneralizeDep c ->
       <:expr< Tacexpr.TacGeneralizeDep $mlexpr_of_constr c$ >>
-  | Tacexpr.TacLetTac (na,c,cl) ->
+  | Tacexpr.TacLetTac (na,c,cl,b) ->
       let na = mlexpr_of_name na in
       let cl = mlexpr_of_clause_pattern cl in
-      <:expr< Tacexpr.TacLetTac $na$ $mlexpr_of_constr c$ $cl$ >>
+      <:expr< Tacexpr.TacLetTac $na$ $mlexpr_of_constr c$ $cl$
+	      $mlexpr_of_bool b$ >>
 
   (* Derived basic tactics *)
   | Tacexpr.TacSimpleInduction h ->
       <:expr< Tacexpr.TacSimpleInduction ($mlexpr_of_quantified_hypothesis h$) >>
-  | Tacexpr.TacNewInduction (false,cl,cbo,ids) ->
+  | Tacexpr.TacNewInduction (false,cl,cbo,ids,cls) ->
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
       let ids = mlexpr_of_intro_pattern ids in
-(*       let ids = mlexpr_of_option mlexpr_of_intro_pattern ids in *)
-(*       <:expr< Tacexpr.TacNewInduction $mlexpr_of_induction_arg c$ $cbo$ $ids$>> *)
-      <:expr< Tacexpr.TacNewInduction False $mlexpr_of_list mlexpr_of_induction_arg cl$ $cbo$ $ids$>>
+      <:expr< Tacexpr.TacNewInduction False $mlexpr_of_list mlexpr_of_induction_arg cl$ $cbo$ $ids$ $mlexpr_of_option mlexpr_of_clause cls$ >>
   | Tacexpr.TacSimpleDestruct h ->
       <:expr< Tacexpr.TacSimpleDestruct $mlexpr_of_quantified_hypothesis h$ >>
-  | Tacexpr.TacNewDestruct (false,c,cbo,ids) ->
+  | Tacexpr.TacNewDestruct (false,c,cbo,ids,cls) ->
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
       let ids = mlexpr_of_intro_pattern ids in
-      <:expr< Tacexpr.TacNewDestruct False $mlexpr_of_list mlexpr_of_induction_arg c$ $cbo$ $ids$ >>
+      <:expr< Tacexpr.TacNewDestruct False $mlexpr_of_list mlexpr_of_induction_arg c$ $cbo$ $ids$ $mlexpr_of_option mlexpr_of_clause cls$ >>
 
   (* Context management *)
   | Tacexpr.TacClear (b,l) ->

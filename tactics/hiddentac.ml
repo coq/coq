@@ -61,13 +61,16 @@ let h_mutual_cofix b id l =
     (mutual_cofix id l)
 
 let h_cut c          = abstract_tactic (TacCut (inj_open c)) (cut c)
-let h_generalize cl  =
-  abstract_tactic (TacGeneralize (List.map inj_open cl))
-    (generalize cl)
+let h_generalize_gen cl =
+  abstract_tactic (TacGeneralize (List.map (on_fst inj_occ) cl))
+    (generalize_gen (List.map (on_fst Redexpr.out_with_occurrences) cl))
+let h_generalize cl =
+  h_generalize_gen (List.map (fun c -> (([],c),Names.Anonymous)) cl)
 let h_generalize_dep c =
   abstract_tactic (TacGeneralizeDep (inj_open c))(generalize_dep c)
-let h_let_tac na c cl =
-  abstract_tactic (TacLetTac (na,inj_open c,cl)) (letin_tac true na c cl)
+let h_let_tac b na c cl =
+  let with_eq = if b then None else Some true in
+  abstract_tactic (TacLetTac (na,inj_open c,cl,b)) (letin_tac with_eq na c cl)
 let h_instantiate n c ido = 
 (Evar_tactics.instantiate n c ido)
   (* abstract_tactic (TacInstantiate (n,c,cls))
@@ -78,12 +81,12 @@ let h_simple_induction h =
   abstract_tactic (TacSimpleInduction h) (simple_induct h)
 let h_simple_destruct h  =
   abstract_tactic (TacSimpleDestruct h) (simple_destruct h)
-let h_new_induction ev c e idl =
-  abstract_tactic (TacNewInduction (ev,List.map inj_ia c,Option.map inj_open_wb e,idl))
-    (new_induct ev c e idl)
-let h_new_destruct ev c e idl =
-  abstract_tactic (TacNewDestruct (ev,List.map inj_ia c,Option.map inj_open_wb e,idl))
-    (new_destruct ev c e idl)
+let h_new_induction ev c e idl cl =
+  abstract_tactic (TacNewInduction (ev,List.map inj_ia c,Option.map inj_open_wb e,idl,cl))
+    (new_induct ev c e idl cl)
+let h_new_destruct ev c e idl cl =
+  abstract_tactic (TacNewDestruct (ev,List.map inj_ia c,Option.map inj_open_wb e,idl,cl))
+    (new_destruct ev c e idl cl)
 let h_specialize n d = abstract_tactic (TacSpecialize (n,inj_open_wb d)) (specialize n d)
 let h_lapply c = abstract_tactic (TacLApply (inj_open c)) (cut_and_apply c)
 

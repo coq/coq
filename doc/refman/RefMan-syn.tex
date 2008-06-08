@@ -1002,14 +1002,23 @@ syntax
 %{\tt preident} $|$
 {\tt ident} $|$
 {\tt simple\_intropattern} $|$
-{\tt hyp} \\ & $|$ &
-% {\tt quantified\_hypothesis} $|$
-{\tt reference} $|$
-{\tt constr} \\ & $|$ &
+{\tt reference} \\ & $|$ &
+{\tt hyp} $|$
+{\tt hyp\_list} $|$
+{\tt ne\_hyp\_list} \\ & $|$ &
+% {\tt quantified\_hypothesis} \\ & $|$ &
+{\tt constr} $|$
+{\tt constr\_list} $|$
+{\tt ne\_constr\_list} \\ & $|$ &
 %{\tt castedopenconstr} $|$
 {\tt integer} $|$
-{\tt int\_or\_var} \\ & $|$ &
+{\tt integer\_list} $|$
+{\tt ne\_integer\_list} \\ & $|$ &
+{\tt int\_or\_var} $|$
+{\tt int\_or\_var\_list} $|$
+{\tt ne\_int\_or\_var\_list} \\ & $|$ &
 {\tt tactic} $|$ {\tt tactic$n$} \qquad\mbox{(for $0\leq n\leq 5$)}
+
 \end{tabular}
 \medskip
 
@@ -1034,7 +1043,7 @@ use the corresponding kind of argument.
 \noindent
 \begin{tabular}{l|l|l|l}
 Tactic argument type & parsed as & interpreted as & as in tactic \\
-\hline \\
+\hline & & & \\
 {\tt\small ident} & identifier & a user-given name & {\tt intro} \\
 {\tt\small simple\_intropattern} & intro\_pattern & an intro\_pattern & {\tt intros}\\
 {\tt\small hyp} & identifier & an hypothesis defined in context & {\tt clear}\\
@@ -1046,8 +1055,10 @@ Tactic argument type & parsed as & interpreted as & as in tactic \\
 %%{\tt\small castedopenconstr} & term & a term with its sign. of exist. var. & {\tt refine}\\
 {\tt\small integer} & integer & an integer &  \\
 {\tt\small int\_or\_var} & identifier or integer & an integer & {\tt do} \\
-{\tt\small tactic} & tactic at level 5 & a tactic & \\
+{\tt\small tactic} & tactic at level 5 & a tactic &  \\
 {\tt\small tactic$n$} & tactic at level $n$ & a tactic & \\
+{\tt\small {\nterm{entry}}\_list} & list of {\nterm{entry}} & a list of how {\nterm{entry}} is interpreted & \\
+{\tt\small ne\_{\nterm{entry}}\_list} & non-empty list of {\nterm{entry}} & a list of how {\nterm{entry}} is interpreted& \\
 \end{tabular}
 
 \Rem In order to be bound in tactic definitions, each syntactic entry
@@ -1058,6 +1069,12 @@ for {\tt integer}. This is the reason for introducing a special entry
 {\tt int\_or\_var} which evaluates to integers only but which
 syntactically includes identifiers in order to be usable in tactic
 definitions.
+
+\Rem The {\tt {\nterm{entry}}\_list} and {\tt ne\_{\nterm{entry}}\_list}
+entries can be used in primitive tactics or in other notations at
+places where a list of the underlying entry can be used: {\nterm{entry}} is
+either {\tt\small constr}, {\tt\small hyp}, {\tt\small integer} or
+{\tt\small int\_or\_var}.
 
 % $Id$ 
 
