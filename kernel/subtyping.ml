@@ -254,19 +254,42 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
       let cst = check_type cst env typ1 typ2 in
       let con = make_con (MPself msid1) empty_dirpath l in
       let cst =
-       match cb2.const_body with
-         | None -> cst
-         | Some lc2 ->
-	     let c2 = Declarations.force lc2 in
-	     let c1 = match cb1.const_body with
-	       | Some lc1 -> Declarations.force lc1
-	       | None -> mkConst con
-	     in
-	       check_conv cst conv env c1 c2
+	if cb2.const_opaque then
+	  match cb2.const_body with
+            | None -> cst
+            | Some lc2 ->
+		let c2 = Declarations.force lc2 in
+		let c1 = match cb1.const_body with
+		  | Some lc1 -> 
+		      let c = Declarations.force lc1 in
+			begin
+			  match (kind_of_term c) with
+			      Const n -> 
+				let cb = lookup_constant n env in
+				  (match cb.const_opaque,
+				     cb.const_body with
+				       | true, Some lc1 -> 
+					   Declarations.force lc1
+				       | _,_ -> c)
+			    | _ -> c
+			end
+		  | None -> mkConst con
+		in
+		  check_conv cst conv env c1 c2
+	else
+	  match cb2.const_body with
+            | None -> cst
+            | Some lc2 ->
+		let c2 = Declarations.force lc2 in
+		let c1 = match cb1.const_body with
+		  | Some lc1 -> Declarations.force lc1
+		  | None -> mkConst con
+		in
+		  check_conv cst conv env c1 c2
       in
-       cst
+	cst
    | IndType ((kn,i),mind1) ->
-      ignore (Util.error (
+       ignore (Util.error (
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^
