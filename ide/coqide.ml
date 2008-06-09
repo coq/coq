@@ -3092,15 +3092,15 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  let configuration_factory = new GMenu.factory configuration_menu ~accel_path:"<CoqIde MenuBar>/Windows" ~accel_group
 					  in
 					  let _ =
-					    configuration_factory#add_check_item 
+					    configuration_factory#add_item 
 					      "Show/Hide _Query Pane"
 					      (*
 						~key:GdkKeysyms._F12
 					      *)
-					      ~callback:(fun b -> if b then 
-							   (Command_windows.command_window ())#frame#misc#show ()
+					      ~callback:(fun () -> if (Command_windows.command_window ())#frame#misc#visible then 
+							   (Command_windows.command_window ())#frame#misc#hide ()
 							 else
-							   (Command_windows.command_window ())#frame#misc#hide ())
+							   (Command_windows.command_window ())#frame#misc#show ())
 					  in  
 					  let _ = 
 					    configuration_factory#add_check_item 
