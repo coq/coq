@@ -23,54 +23,54 @@ done
 }
 
 usage () {
-    echo -e "Available options for configure are:\n"
+    echo "Available options for configure are:\n"
     echo "-help"
-    echo -e "\tDisplays this help page\n"
+    printf "\tDisplays this help page\n"
     echo "-prefix <dir>"
-    echo -e "\tSet installation directory to <dir>\n"
+    printf "\tSet installation directory to <dir>\n"
     echo "-local"
-    echo -e "\tSet installation directory to the current source tree\n"
+    printf "\tSet installation directory to the current source tree\n"
     echo "-src"
-    echo -e "\tSpecifies the source directory\n"
+    printf "\tSpecifies the source directory\n"
     echo "-bindir"
     echo "-libdir"
     echo "-mandir"
     echo "-docdir"
-    echo -e "\tSpecifies where to install bin/lib/man/doc files resp.\n"
+    printf "\tSpecifies where to install bin/lib/man/doc files resp.\n"
     echo "-emacslib"
     echo "-emacs"
-    echo -e "\tSpecifies where emacs files are to be installed\n"
+    printf "\tSpecifies where emacs files are to be installed\n"
     echo "-coqdocdir"
-    echo -e "\tSpecifies where Coqdoc style files are to be installed\n"
+    printf "\tSpecifies where Coqdoc style files are to be installed\n"
     echo "-camldir"
-    echo -e "\tSpecifies the path to the OCaml library\n"
+    printf "\tSpecifies the path to the OCaml library\n"
     echo "-lablgtkdir"
-    echo -e "\tSpecifies the path to the Lablgtk library\n"
+    printf "\tSpecifies the path to the Lablgtk library\n"
     echo "-camlp5dir"
-    echo -e "\tSpecifies where to look for the Camlp5 library and tells to use it\n"
+    printf "\tSpecifies where to look for the Camlp5 library and tells to use it\n"
     echo "-arch"
-    echo -e "\tSpecifies the architecture\n"
+    printf "\tSpecifies the architecture\n"
     echo "-opt"
-    echo -e "\tSpecifies whether or not to generate optimized executables\n"
+    printf "\tSpecifies whether or not to generate optimized executables\n"
     echo "-fsets (all|basic)"
     echo "-reals (all|basic)"
-    echo -e "Specifies whether or not to compile full FSets/Reals library\n"
+    printf "\tSpecifies whether or not to compile full FSets/Reals library\n"
     echo "-coqide (opt|byte|no)"
-    echo -e "\tSpecifies whether or not to compile Coqide\n"
+    printf "\tSpecifies whether or not to compile Coqide\n"
     echo "-with-geoproof (yes|no)"
-    echo -e "\tSpecifies whether or not to use Geoproof binding\n"
+    printf "\tSpecifies whether or not to use Geoproof binding\n"
     echo "-with-cc <file>"
     echo "-with-ar <file>"
     echo "-with-ranlib <file>"
-    echo -e "\tTells configure where to find gcc/ar/ranlib executables\n"
+    printf "\tTells configure where to find gcc/ar/ranlib executables\n"
     echo "-byte-only"
-    echo -e "\tCompiles only bytecode version of Coq\n"
+    printf "\tCompiles only bytecode version of Coq\n"
     echo "-debug"
-    echo -e "\tAdd debugging information in the Coq executables\n"
+    printf "\tAdd debugging information in the Coq executables\n"
     echo "-profile"
-    echo -e "\tAdd profiling information in the Coq executables\n"
+    printf "\tAdd profiling information in the Coq executables\n"
     echo "-annotate"
-    echo -e "\tCompiles Coq with -dtypes option"
+    printf "\tCompiles Coq with -dtypes option\n"
 }
 
 
@@ -469,7 +469,7 @@ CAMLP4BIN=${CAMLBIN}
 # do we have a native compiler: test of ocamlopt and its version
 
 if [ "$best_compiler" = "opt" ] ; then
-  if test -e "`which $nativecamlc`" ; then
+  if test -e "$nativecamlc" || test -e "`which $nativecamlc`"; then
       CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
       if [ "`uname -s`" = "Darwin" -a "$ARCH" = "i386" ]; then
 	  case $CAMLOPTVERSION in
@@ -484,7 +484,7 @@ if [ "$best_compiler" = "opt" ] ; then
 	  echo "only the bytecode version of Coq will be available."
       else
         if [ "$CAMLOPTVERSION" != "$CAMLVERSION" ] ; then
-	  echo "Native and bytecode compilers do not have the same version!";
+	  echo "Native and bytecode compilers do not have the same version!"
         fi
         echo "You have native-code compilation. Good!"
       fi

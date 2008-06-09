@@ -108,7 +108,7 @@ let standard sds sps =
   print "\trm -f all.ps all-gal.ps all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
          $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d)\n";
   if !some_mlfile then
-    print "\trm -f $(CMOFILES) $(MLFILES:.ml=.ml.d)\n";
+    print "\trm -f $(CMOFILES) $(MLFILES:.ml=.cmi) $(MLFILES:.ml=.ml.d)\n";
   print "\t- rm -rf html\n";
   List.iter
     (fun (file,_,_) -> print "\t- rm -f "; print file; print "\n")
@@ -184,8 +184,8 @@ let variables l =
     (* Caml executables and relative variables *)
     printf "CAMLC:=$(CAMLBIN)ocamlc -rectypes -c\n";
     printf "CAMLOPTC:=$(CAMLBIN)ocamlopt -rectypes -c\n";
-    printf "CAMLLINK:=$(CAMLBIN)ocamlc\n";
-    printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt\n";
+    printf "CAMLLINK:=$(CAMLBIN)ocamlc -rectypes\n";
+    printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt -rectypes\n";
     print "GRAMMARS:=grammar.cma\n";
     print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
     print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
