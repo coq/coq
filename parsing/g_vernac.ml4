@@ -377,12 +377,10 @@ GEXTEND Gram
       | IDENT "End"; id = identref -> VernacEndSegment id
 
       (* Requiring an already compiled module *)
-      | IDENT "Require"; export = export_token; specif = specif_token;
-        qidl = LIST1 global ->
-          VernacRequire (export, specif, qidl)
-      | IDENT "Require"; export = export_token; specif = specif_token;
-        filename = ne_string -> 
-	  VernacRequireFrom (export, specif, filename)
+      | IDENT "Require"; export = export_token; qidl = LIST1 global ->
+          VernacRequire (export, None, qidl)
+      | IDENT "Require"; export = export_token; filename = ne_string -> 
+	  VernacRequireFrom (export, None, filename)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl) 
       | IDENT "Include"; expr = module_expr -> VernacInclude(CIME(expr))
@@ -391,11 +389,6 @@ GEXTEND Gram
   export_token:
     [ [ IDENT "Import" -> Some false
       | IDENT "Export" -> Some true
-      |  -> None ] ]
-  ;
-  specif_token:
-    [ [ IDENT "Implementation" -> Some false
-      | IDENT "Specification" -> Some true
       |  -> None ] ]
   ;
   of_module_type:

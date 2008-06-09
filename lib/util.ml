@@ -485,6 +485,11 @@ let list_tabulate f len =
   in 
   tabrec 0
 
+let rec list_make n v =
+  if n = 0 then []
+  else if n < 0 then invalid_arg "list_make"
+  else v::list_make (n-1) v
+
 let list_assign l n e = 
   let rec assrec stk = function
     | ((h::t), 0) -> List.rev_append stk (e::t)
@@ -699,6 +704,12 @@ let rec list_filter2 f = function
      let (dp',lp' as p) = list_filter2 f (dp,lp) in
       if f d l then d::dp', l::lp' else p
   | _ -> invalid_arg "list_filter2"
+
+let rec list_map_filter f = function
+  | [] -> []
+  | x::l ->
+      let l' = list_map_filter f l in
+      match f x with None -> l' | Some y -> y::l'
 
 let list_subset l1 l2 =
   let t2 = Hashtbl.create 151 in

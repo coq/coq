@@ -1427,19 +1427,43 @@ let pf_interp_constr ist gl =
 let constr_list_of_VList env = function
   | VList l -> List.map (constr_of_value env) l
   | _ -> raise Not_found
-      
+
+let pf_interp_constr_in_compound_list inj_fun dest_fun interp_fun ist gl l =
+  let env = pf_env gl in
+  let try_expand_ltac_var x =
+    try match dest_fun x with
+    | RVar (_,id), _ ->
+	List.map inj_fun (constr_list_of_VList env (List.assoc id ist.lfun))
+    | _ ->
+	raise Not_found
+    with Not_found ->
+      (*all of dest_fun, List.assoc, constr_list_of_VList may raise Not_found*)
+      [interp_fun ist gl x] in
+  List.flatten (List.map try_expand_ltac_var l)
+
+let pf_interp_constr_list =
+  pf_interp_constr_in_compound_list (fun x -> x) (fun x -> x)
+    (fun ist gl -> interp_constr ist (project gl) (pf_env gl))
+
+(*
 let pf_interp_constr_list_as_list ist gl (c,_ as x) =
   match c with
     | RVar (_,id) ->
         (try constr_list_of_VList (pf_env gl) (List.assoc id ist.lfun)
-        with Not_found -> [interp_constr ist (project gl) (pf_env gl) x])
+        with Not_found -> [])
     | _ -> [interp_constr ist (project gl) (pf_env gl) x]
 
 let pf_interp_constr_list ist gl l =
   List.flatten (List.map (pf_interp_constr_list_as_list ist gl) l)
+*)
 
 let inj_open c = (Evd.empty,c)
 
+let pf_interp_open_constr_list =
+  pf_interp_constr_in_compound_list inj_open (fun x -> x)
+    (fun ist gl -> interp_open_constr None ist (project gl) (pf_env gl))
+
+(*
 let pf_interp_open_constr_list_as_list ist gl (c,_ as x) =
   match c with
     | RVar (_,id) ->
@@ -1452,6 +1476,7 @@ let pf_interp_open_constr_list_as_list ist gl (c,_ as x) =
 
 let pf_interp_open_constr_list ist gl l =
   List.flatten (List.map (pf_interp_open_constr_list_as_list ist gl) l)
+*)
 
 (* Interprets a type expression *)
 let pf_interp_type ist gl =
@@ -1469,6 +1494,14 @@ let interp_pattern ist sigma env (l,c) =
 
 let pf_interp_constr_with_occurrences ist gl =
   interp_pattern ist (project gl) (pf_env gl)
+
+let pf_interp_constr_with_occurrences_and_name_as_list = 
+  pf_interp_constr_in_compound_list
+    (fun c -> (([],c),Anonymous))
+    (function (([],c),Anonymous) -> c | _ -> raise Not_found)
+    (fun ist gl (occ_c,na) ->
+      (interp_pattern ist (project gl) (pf_env gl) occ_c,
+       interp_fresh_name ist gl na))
 
 let interp_red_expr ist sigma env = function
   | Unfold l -> Unfold (List.map (interp_unfold ist env) l)
@@ -2080,9 +2113,7 @@ and interp_atomic ist gl = function
 	  (interp_intro_pattern ist gl ipat) c)
   | TacGeneralize cl ->
       h_generalize_gen
-        (List.map (fun (c,na) ->
-	           pf_interp_constr_with_occurrences ist gl c,
-		   interp_fresh_name ist gl na) cl)
+        (pf_interp_constr_with_occurrences_and_name_as_list ist gl cl)
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (na,c,clp,b) ->
       let clp = interp_clause ist gl clp in

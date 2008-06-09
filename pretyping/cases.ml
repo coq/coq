@@ -118,8 +118,8 @@ let mssg_may_need_inversion () =
   str "Found a matching with no clauses on a term unknown to have an empty inductive type"
 
 (* Utils *)
-let make_anonymous_patvars =
-  list_tabulate (fun _ -> PatVar (dummy_loc,Anonymous)) 
+let make_anonymous_patvars n =
+  list_make n (PatVar (dummy_loc,Anonymous)) 
 
 (* Environment management *)
 let push_rels vars env = List.fold_right push_rel vars env
@@ -345,7 +345,7 @@ let try_find_ind env sigma typ realnames =
   let names =
     match realnames with
       | Some names -> names
-      | None -> list_tabulate (fun _ -> Anonymous) (List.length realargs) in
+      | None -> list_make (List.length realargs) Anonymous in
   IsInd (typ,ind,names)
 
 
@@ -548,16 +548,31 @@ let occur_in_rhs na rhs =
     | Anonymous -> false
     | Name id -> List.mem id rhs.rhs_vars
 
-let is_dep_patt eqn = function
+let is_dep_patt_in eqn = function
   | PatVar (_,name) -> occur_in_rhs name eqn.rhs
   | PatCstr _ -> true
 
-let dependencies_in_rhs nargs eqns =
-  if eqns = [] then list_tabulate (fun _ -> false) nargs (* Only "_" patts *)
-  else
-  let deps = List.map (fun (tms,eqn) -> List.map (is_dep_patt eqn) tms) eqns in
-  let columns = matrix_transpose deps in
-  List.map (List.exists ((=) true)) columns
+let mk_dep_patt_row (pats,eqn) =
+  List.map (is_dep_patt_in eqn) pats
+
+let dependencies_in_pure_rhs nargs eqns =
+  if eqns = [] then list_make nargs false (* Only "_" patts *) else
+  let deps_rows = List.map mk_dep_patt_row eqns in
+  let deps_columns = matrix_transpose deps_rows in
+  List.map (List.exists ((=) true)) deps_columns
+
+let dependent_in_decl b d = 
+  fold_rel_declaration (fun c -> (||) (dependent b c)) d false
+
+let rec dep_in_tomatch n = function
+  | (Pushed _ | Alias _) :: l -> dep_in_tomatch n l
+  | Abstract d :: l -> dependent_in_decl (mkRel n) d or dep_in_tomatch (n+1) l
+  | [] -> false
+
+let dependencies_in_rhs nargs current tms eqns =
+  match kind_of_term current with
+  | Rel n when dep_in_tomatch n tms -> list_make nargs true
+  | _ -> dependencies_in_pure_rhs nargs eqns
 
 let dependent_decl a = function
   | (na,None,t) -> dependent a t
@@ -687,7 +702,7 @@ let merge_name get_name obj = function
 let merge_names get_name = List.map2 (merge_name get_name)
 
 let get_names env sign eqns =
-  let names1 = list_tabulate (fun _ -> Anonymous) (List.length sign) in
+  let names1 = list_make (List.length sign) Anonymous in
   (* If any, we prefer names used in pats, from top to bottom *)
   let names2 = 
     List.fold_right
@@ -1091,7 +1106,8 @@ let build_branch current deps (realnames,dep) pb eqns const_info =
 
   let dep_sign =
     find_dependencies_signature
-      (dependencies_in_rhs const_info.cs_nargs eqns) (List.rev typs) in
+      (dependencies_in_rhs const_info.cs_nargs current pb.tomatch eqns) 
+      (List.rev typs) in
 
   (* The dependent term to subst in the types of the remaining UnPushed 
      terms is relative to the current context enriched by topushs *)
@@ -1655,7 +1671,7 @@ let extract_arity_signature env0 tomatchl tmsign =
 		    or nrealargs <> List.length realnal then
 		      anomaly "Ill-formed 'in' clause in cases";
 		  List.rev realnal
-	      | None -> list_tabulate (fun _ -> Anonymous) nrealargs in
+	      | None -> list_make nrealargs Anonymous in
 	  let arsign = fst (get_arity env0 indf') in
 (* 	  let na =  *)
 (* 	    match na with  *)

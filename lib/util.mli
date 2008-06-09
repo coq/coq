@@ -103,10 +103,12 @@ val list_subtractq : 'a list -> 'a list -> 'a list
 val list_chop : int -> 'a list -> 'a list * 'a list
 (* [list_tabulate f n] builds [[f 0; ...; f (n-1)]] *)
 val list_tabulate : (int -> 'a) -> int -> 'a list
+val list_make : int -> 'a -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
 val list_distinct : 'a list -> bool
 val list_duplicates : 'a list -> 'a list
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
+val list_map_filter : ('a -> 'b option) -> 'a list -> 'b list
 (* [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
    [ f ai == ai], then [list_smartmap f l==l] *)
 val list_smartmap : ('a -> 'a) -> 'a list -> 'a list
