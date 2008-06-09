@@ -3121,8 +3121,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 												      ~width:(!current.window_width*2/3)
 												      ~height:(!current.window_height*2/3)
 												      ~position:`CENTER
-												      ~wm_name:"CoqIDE"
-												      ~wm_class:"CoqIDE"
+												      ~wm_name:"CoqIde"
+												      ~wm_class:"CoqIde"
 												      ~title:"Script" 
 												      ~show:true () in
 												    let parent = Option.get nb#misc#parent in
@@ -3146,8 +3146,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 												    let nw = GWindow.window 
 												      ~width:(!current.window_width*2/3)
 												      ~height:(!current.window_height*2/3)
-												      ~wm_name:"CoqIDE"
-												      ~wm_class:"CoqIDE"
+												      ~wm_name:"CoqIde"
+												      ~wm_class:"CoqIde"
 												      ~position:`CENTER 
 												      ~title:"Queries" 
 												      ~show:true () in
