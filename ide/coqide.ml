@@ -557,7 +557,7 @@ type backtrack =
 | NoBacktrack
 
 let add_undo (n,a,b) = (n+1,a,b)
-let add_abort (n,a,b) = (n,a+1,b)
+let add_abort (n,a,b) = (0,a+1,b)
 let add_backtrack (n,a,b) b' = (n,a,b')
 
 let pop_command undos t =
@@ -598,16 +598,16 @@ let rec apply_backtrack = function
         end
 
 let rec apply_undos (n,a,b) =
+  (* Aborts *)
+  if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
+  (try Util.repeat a Pfedit.delete_current_proof ()
+   with e -> prerr_endline "WARNING : found a closed environment"; raise e);
   (* Undos *)
   if n<>0 then 
     (prerr_endline ("Applying "^string_of_int n^" undos");
      try Pfedit.undo n
-     with _ -> apply_undos (n,a,BacktrackToNextActiveMark));
-  (* Aborts *)
-  if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
-  (try Util.repeat a Pfedit.delete_current_proof ()
-   with e ->
-     begin prerr_endline "WARNING : found a closed environment"; raise e end);
+     with _ -> (* Undo stack exhausted *)
+       apply_backtrack BacktrackToNextActiveMark);
   (* Reset *)
   apply_backtrack b
 

@@ -733,35 +733,6 @@ This tactic applies to any goal. It implements the rule
 \end{Variants}
 
 \SeeAlso \ref{Conversion-tactics}
-\subsection{\tt evar (\ident:\term)
-\tacindex{evar}
-\label{evar}}
-
-The {\tt evar} tactic creates a new local definition named \ident\ with
-type \term\ in the context. The body of this binding is a fresh
-existential variable.
-
-\subsection{\tt instantiate (\num:= \term)
-\tacindex{instantiate}
-\label{instantiate}}
-
-The {\tt instantiate} tactic allows to solve an existential variable
-with the term \term. The \num\  argument is the position of the
-existential variable from right to left in the conclusion. This cannot be
-the number of the existential variable since this number is different
-in every session.
-
-\begin{Variants}
-  \item {\tt instantiate (\num:=\term) in \ident}
-  
-  \item {\tt instantiate (\num:=\term) in (Value of \ident)}
-  
-  \item {\tt instantiate (\num:=\term) in (Type of \ident)}
-
-These allow to refer respectively to existential variables occurring in 
-a hypothesis or in the body or the type of a local definition.  
-
-\end{Variants}
 
 \subsection{\tt fix {\ident} {\num}
 \tacindex{fix}
@@ -833,6 +804,48 @@ simultaneously proved are respectively {\tt forall}
     coinduction hypotheses.
 
 \end{Variants}
+
+\subsection{\tt evar (\ident:\term)
+\tacindex{evar}
+\label{evar}}
+
+The {\tt evar} tactic creates a new local definition named \ident\ with
+type \term\ in the context. The body of this binding is a fresh
+existential variable.
+
+\subsection{\tt instantiate (\num:= \term)
+\tacindex{instantiate}
+\label{instantiate}}
+
+The {\tt instantiate} tactic allows to solve an existential variable
+with the term \term. The \num\  argument is the position of the
+existential variable from right to left in the conclusion. This cannot be
+the number of the existential variable since this number is different
+in every session.
+
+\begin{Variants}
+  \item {\tt instantiate (\num:=\term) in \ident}
+  
+  \item {\tt instantiate (\num:=\term) in (Value of \ident)}
+  
+  \item {\tt instantiate (\num:=\term) in (Type of \ident)}
+
+These allow to refer respectively to existential variables occurring in 
+a hypothesis or in the body or the type of a local definition.  
+
+\end{Variants}
+
+\subsection{Bindings list
+\tacindex{admit}
+\label{admit}}
+
+The {\tt admit} tactic ``solves'' the current subgoal by an
+axiom. This typically allows to temporarily skip a subgoal so as to
+progress further in the rest of the proof. To know if some proof still
+relies on unproved subgoals, one can use the command {\tt Print
+Assumptions} (see Section~\ref{PrintAssumptions}). Admitted subgoals
+have names of the form {\ident}\texttt{\_admitted} possibly followed
+by a number.
 
 \subsection{Bindings list
 \index{Binding list}
@@ -1389,10 +1402,11 @@ equivalent to {\tt intros; apply ci}.
 
 \end{Variants}
 
-\section[Eliminations (Induction and Case Analysis)]{Eliminations (Induction and Case Analysis)\label{Tac-induction}}
-Elimination tactics are useful to prove statements by induction or
-case analysis.  Indeed, they make use of the elimination (or
-induction) principles generated with inductive definitions (see
+\section[Induction and Case Analysis]{Induction and Case Analysis
+\label{Tac-induction}}
+
+The tactics presented in this section implement induction or case
+analysis on inductive or coinductive objects (see
 Section~\ref{Cic-inductive-definitions}).
 
 \subsection{\tt induction \term

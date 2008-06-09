@@ -48,6 +48,8 @@ Vernacular commands
   conversion tests. It generalizes commands Opaque and Transparent by
   introducing a range of levels. Lower levels are assigned to constants
   that should be expanded first.
+- New command "Print Assumptions" to display all variables, parameters
+  or axioms a theorem or definition relies on.
 
 Libraries (DOC TO CHECK)
 

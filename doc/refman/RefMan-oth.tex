@@ -23,7 +23,8 @@ global constant.
 This displays various informations about the object denoted by {\qualid}:
 its kind (module, constant, assumption, inductive,
 constructor, abbreviation\ldots), long name, type, implicit
-arguments and argument scopes.
+arguments and argument scopes. It does not print the body of
+definitions or proofs.
 
 %\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
 %In case \qualid\ denotes an opaque theorem defined in a section,
@@ -83,87 +84,13 @@ displayed as in \Coq\ terms.
 
 \SeeAlso Chapter~\ref{Extraction}.
 
-\subsection[\tt Opaque \qualid$_1$ \dots \qualid$_n$.]{\tt Opaque \qualid$_1$ \dots \qualid$_n$.\comindex{Opaque}\label{Opaque}} This command tells not to unfold
-the constants {\qualid$_1$} \dots {\qualid$_n$} in tactics using
-$\delta$-conversion. Unfolding a constant is replacing it by its
-definition. {\tt Opaque} can only apply on constants originally
-defined as {\tt Transparent}.
+\subsection[\tt Print Assumptions {\qualid}.]{\tt Print Assumptions {\qualid}.\comindex{Print Assumptions}}
+\label{PrintAssumptions}
 
-Constants defined by a proof ended by {\tt Qed} are automatically
-stamped as {\tt Opaque} and can no longer be considered as {\tt
-Transparent}. This is to keep with the usual mathematical practice of
-{\em proof irrelevance}: what matters in a mathematical development is
-the sequence of lemma statements, not their actual proofs. This
-distinguishes lemmas from the usual defined constants, whose actual
-values are of course relevant in general.
-
-\SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
-\ref{Theorem}
-
-\begin{ErrMsgs}
-\item \errindex{The reference \qualid\ was not found in the current
-environment}\\
-    There is no constant referred by {\qualid} in the environment.
-    Nevertheless, if you asked \texttt{Opaque foo bar}
-    and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
-\end{ErrMsgs}
-
-\subsection[\tt Transparent \qualid$_1$ \dots \qualid$_n$.]{\tt Transparent \qualid$_1$ \dots \qualid$_n$.\comindex{Transparent}\label{Transparent}}
-This command is the converse of {\tt Opaque} and can only apply on constants originally defined as {\tt Transparent} to restore their initial behaviour after an {\tt Opaque} command.
-
-The constants automatically declared transparent are the ones defined by a proof ended by {\tt Defined}, or by a {\tt
-  Definition} or {\tt Local} with an explicit body.
-
-\Warning {\tt Transparent} and \texttt{Opaque} are not synchronous
-with the reset mechanism. If a constant was transparent at point A, if
-you set it opaque at point B and reset to point A, you return to state
-of point A with the difference that the constant is still opaque. This
-can cause changes in tactic scripts behaviour.
-
-At section or module closing, a constant recovers the status it got at
-the time of its definition.
-
-\begin{ErrMsgs}
-% \item \errindex{Can not set transparent.}\\
-%     It is a constant from a required module or a parameter.
-\item \errindex{The reference \qualid\ was not found in the current
-environment}\\
-    There is no constant referred by {\qualid} in the environment.
-\end{ErrMsgs}
-
-\SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
-\ref{Theorem}
-
-
-\subsection{\tt Strategy {\it level} [ \qualid$_1$ \dots \qualid$_n$
-  ].\comindex{Strategy}\comindex{Local Strategy}\label{Strategy}}
-This command generalizes the behaviour of {\tt Opaque} and {\tt
-  Transaparent} commands. It is used to fine-tune the strategy for
-unfolding constants, both at the tactic level and at the kernel
-level. This command associates a level to \qualid$_1$ \dots
-\qualid$_n$. Whenever two expressions with two distinct head
-constants are compared (for instance, this comparison can be triggered
-by a type cast), the one with lower level is expanded first. In case
-of a tie, the second one (appearing in the cast type) is expanded.
-
-Levels can be one of the following (higher to lower):
-\begin{description}
-\item[opaque]: level of opaque constants. They cannot be expanded by
-  tactics (behaves like $+\infty$, see next item).
-\item[\num]: levels indexed by an integer. Level $0$ corresponds
-  to the default behaviour, which corresponds to transparent
-  constants. This level can also be referred to as {\bf transparent}.
-  Negative levels correspond to constants to be expanded before normal
-  transparent constants, while positive levels correspond to constants
-  to be expanded after normal transparent constants.
-\item[expand]: level of constants that should be expanded first
-  (behaves like $-\infty$)
-\end{description}
-
-These directives survive section and module closure, unless the
-command is prefixed by {\tt Local}. In the latter case, the behaviour
-regarding sections and modules is the same as for the {\tt
-  Transparent} and {\tt Opaque} commands.
+This commands display all the assumptions (axioms, parameters and
+variables) a theorem or definition depends on.  Especially, it informs
+on the assumptions with respect to which the validity of a theorem
+relies.
 
 \subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
 This command displays the name and type of all theorems of the current
@@ -370,7 +297,7 @@ directly from the {\Coq} toplevel or from {\CoqIDE}, assuming a
 graphical environment is also running. The browser to use can be
 selected by setting the environment variable {\tt
 COQREMOTEBROWSER}. If not explicitly set, it defaults to
-\verb!firefox -remote "OpenURL(%s)"!  or
+\verb!firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s &"!  or
 \verb!C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s!, depending on the
 underlying operating system (in the command, the string \verb!%s!
 serves as metavariable for the url to open).
@@ -477,131 +404,88 @@ successively in each of the directories specified in the {\em
 
 \section[Compiled files]{Compiled files\label{compiled}\index{Compiled files}}
 
-This feature allows to build files for a quick loading. When loaded,
-the commands contained in a compiled file will not be {\em replayed}.
-In particular, proofs will not be replayed. This avoids a useless
-waste of time.
-
-\Rem A module containing an opened section cannot be compiled. 
-
-% \subsection{\tt Compile Module {\ident}.}
-% \index{Modules}
-% \comindex{Compile Module}
-% \index{.vo files}
-% This command loads the file
-% {\ident}{\tt .v} and plays the script it contains. Declarations,
-% definitions and proofs it contains are {\em "packaged"} in a compiled
-% form: the {\em module} named {\ident}.
-% A file {\ident}{\tt .vo} is then created.
-% The file {\ident}{\tt .v} is searched according to the
-% current loadpath.
-% The {\ident}{\tt .vo} is then written in the directory where
-% {\ident}{\tt .v} was found.
-
-% \begin{Variants}
-% \item \texttt{Compile Module {\ident} {\str}.}\\ 
-%   Uses the file {\str}{\tt .v} or {\str} if the previous one does not
-%   exist to build the module {\ident}. In this case, {\str} is any
-%   string giving a filename in the UNIX sense (see section
-%   \ref{Load-str}). 
-%   \Warning The given filename can not contain other caracters than
-%   the caracters of \Coq's identifiers : letters or digits or the
-%   underscore symbol ``\_''.
-
-% \item \texttt{Compile Module Specification {\ident}.}\\
-%   \comindex{Compile Module Specification}
-%   Builds a specification module: only the types of terms are stored
-%   in the module. The bodies (the proofs) are {\em not} written
-%   in the module. In that case, the file created is {\ident}{\tt .vi}.
-%   This is only useful when proof terms take too much place in memory
-%   and are not necessary.
-  
-% \item \texttt{Compile Verbose Module {\ident}.}\\ 
-%   \comindex{Compile Verbose Module}
-%   Verbose version of Compile: shows the contents of the file being
-%   compiled.
-% \end{Variants}
-
-% These different variants can be combined.
-
-
-% \begin{ErrMsgs}
-% \item \texttt{You cannot open a module when there are things other than}\\
-%   \texttt{Modules and Imports in the context.}\\ 
-%   The only commands allowed before a {Compile Module} command are {\tt
-%     Require},\\
-%   {\tt Read Module} and {\tt Import}. Actually, The normal way to
-%   compile modules is by the {\tt coqc} command (see chapter
-%   \ref{Addoc-coqc}).
-% \end{ErrMsgs}
-
-% \SeeAlso sections \ref{Opaque}, \ref{loadpath}, chapter
-% \ref{Addoc-coqc}
-
-%\subsection[\tt Import {\qualid}.]{\tt Import {\qualid}.\comindex{Import}}
-%\label{Import}
+This section describes the commands used to load compiled files (see
+Chapter~\ref{Addoc-coqc} for documentation on how to compile a file).
+A compiled file is a particular case of module called {\em library file}.
 
 %%%%%%%%%%%%
 % Import and Export described in RefMan-mod.tex
 % the minor difference (to avoid multiple Exporting of libraries) in
 % the treatment of normal modules and libraries by Export omitted
 
-
-\subsection[\tt Require {\dirpath}.]{\tt Require {\dirpath}.\label{Require}
+\subsection[\tt Require {\qualid}.]{\tt Require {\qualid}.\label{Require}
 \comindex{Require}}
 
-This command looks in the loadpath for a file containing module
-{\dirpath}, then loads and opens (imports) its contents.
-More precisely, if {\dirpath} splits into a library dirpath {\dirpath'} and a module name {\textsl{ident}}, then the file {\ident}{\tt .vo} is searched in a physical path mapped to the logical path {\dirpath'}.
+This command looks in the loadpath for a file containing
+module {\qualid} and adds the corresponding module to the environment
+of {\Coq}. As library files have dependencies in other library files,
+the command {\tt Require {\qualid}} recursively requires all library
+files the module {\qualid} depends on and adds the corresponding modules to the
+environment of {\Coq} too. {\Coq} assumes that the compiled files have
+been produced by a valid {\Coq} compiler and their contents are then not
+replayed nor rechecked.
 
-TODO: effect on the name table.
-
-% The implementation file ({\ident}{\tt .vo}) is searched first,
-% then the specification file ({\ident}{\tt .vi}) in case of failure.
-If the module required has already been loaded, \Coq\ 
-simply opens it (as {\tt Import {\dirpath}} would do it).
-%If the module required is already loaded and open, \Coq\ 
-%displays the following warning: {\tt {\ident} already imported}.
-
-If a module {\it A} contains a command {\tt Require} {\it B} then the
-command {\tt Require} {\it A} loads the module {\it B} but does not
-open it (See the {\tt Require Export} variant below).
+To locate the file in the file system, {\qualid} is decomposed under
+the form {\dirpath}{\tt .}{\textsl{ident}} and the file {\ident}{\tt
+.vo} is searched in the directory of the physical file system that is
+mapped in {\Coq} loadpath to the logical path {\dirpath} (see
+Section~\ref{Loadpath}).
 
 \begin{Variants}
-\item {\tt Require Export {\qualid}.}\\
+\item {\tt Require Import {\qualid}.}\\ \comindex{Require} 
+
+  This loads and declares the module {\qualid} and its dependencies
+  then imports the contents of {\qualid} as described in
+  Section~\ref{Import}.
+
+  It does not import the modules on which {\qualid} depends unless
+  these modules were itself required in module {\qualid} using {\tt
+  Require Export}, as described below, or recursively required through
+  a sequence of {\tt Require Export}.
+
+  If the module required has already been loaded, {\tt Require Import
+  {\qualid}} simply imports it, as {\tt Import {\qualid}} would.
+
+\item {\tt Require Export {\qualid}.}
   \comindex{Require Export}
-  This command acts as {\tt Require} {\qualid}.  But if a module {\it
-    A} contains a command {\tt Require Export} {\it B}, then the
-  command {\tt Require} {\it A} opens the module {\it B} as if the
-  user would have typed {\tt Require}{\it B}.
-% \item {\tt Require $[$ Implementation $|$ Specification $]$ {\qualid}.}\\
-%   \comindex{Require Implementation}
-%   \comindex{Require Specification}
-%   Is the same as {\tt Require}, but specifying explicitly the
-%   implementation ({\tt.vo} file) or the specification ({\tt.vi}
-%   file).
 
-% Redundant ?
-% \item {\tt Require {\qualid} {\str}.}\\ 
-%   Specifies the file to load as being {\str} but containing module
-%  {\qualid}. 
-% The opened module is still {\ident} and therefore must have been loaded.
-\item {\tt Require {\qualid} {\str}.}\\ 
-  Specifies the file to load as being {\str} but containing module
-  {\qualid} which is then opened.
+  This command acts as {\tt Require Import} {\qualid}, but if a
+  further module, say {\it A}, contains a command {\tt Require
+  Export} {\it B}, then the command {\tt Require Import} {\it A}
+  also imports the module {\it B}.
+
+\item {\tt Require \zeroone{Import {\sl |} Export} {\qualid}$_1$ \ldots {\qualid}$_n$.}
+
+  This loads the modules {\qualid}$_1$, \ldots, {\qualid}$_n$ and
+  their recursive dependencies. If {\tt Import} or {\tt Export} is
+  given, it also imports {\qualid}$_1$, \ldots, {\qualid}$_n$ and all
+  the recursive dependencies that were marked or transitively marked
+  as {\tt Export}.
+
+\item {\tt Require \zeroone{Import {\sl |} Export} {\str}.}
+
+  This shortcuts the resolution of the qualified name into a library
+  file name by directly requiring the module to be found in file
+  {\str}.vo.
 \end{Variants}
-
-These different variants can be combined.
 
 \begin{ErrMsgs}
 
-\item \errindex{Cannot load {\ident}: no physical path bound to {\dirpath}}
+\item \errindex{Cannot load {\qualid}: no physical path bound to {\dirpath}}
 
-\item \errindex{Can't find module toto on loadpath}
+\item \errindex{Cannot find library foo in loadpath}
 
-  The command did not find the file {\tt toto.vo}. Either {\tt
-    toto.v} exists but is not compiled or {\tt toto.vo} is in a directory
+  The command did not find the file {\tt foo.vo}. Either {\tt
+    foo.v} exists but is not compiled or {\tt foo.vo} is in a directory
   which is not in your {\tt LoadPath} (see Section~\ref{loadpath}).
+
+\item \errindex{Compiled library {\ident}.vo makes inconsistent assumptions over library {\qualid}}
+
+  The command tried to load library file {\ident}.vo that depends on
+  some specific version of library {\qualid} which is not the one
+  already loaded in the current {\Coq} session. Probably {\ident}.v
+  was not properly recompiled with the last version of the file
+  containing module {\qualid}.
 
 \item \errindex{Bad magic number}
 
@@ -614,8 +498,10 @@ These different variants can be combined.
 \SeeAlso Chapter~\ref{Addoc-coqc}
 
 \subsection[\tt Print Libraries.]{\tt Print Libraries.\comindex{Print Libraries}}
-This command shows the currently loaded (required) and currently
-imported libraries.
+
+This command displays the list of library files loaded in the current
+{\Coq} session. For each of these libraries, it also tells if it is
+imported.
 
 \subsection[\tt Declare ML Module {\str$_1$} .. {\str$_n$}.]{\tt Declare ML Module {\str$_1$} .. {\str$_n$}.\comindex{Declare ML Module}}
 This commands loads the Objective Caml compiled files {\str$_1$} \dots
@@ -760,7 +646,7 @@ environment (see Chapter~\ref{Proof-handling}). The three numbers
 $\num_1$, $\num_2$ and $\num_3$ represent the following:
 \begin{itemize}
 \item $\num_3$: Number of \texttt{Abort} to perform, i.e. the number
-  of currently opened nested proofs that must be cancelled (see
+  of currently opened nested proofs that must be canceled (see
   Chapter~\ref{Proof-handling}).
 \item $\num_2$: \emph{Proof state number} to unbury once aborts have
   been done. Coq will compute the number of \texttt{Undo} to perform
@@ -804,7 +690,7 @@ suppose the current prompt is:
 \verb!|!goal1\verb!|!goal4\verb!|!goal3\verb!|!goal2\verb!|! 
 \verb!|!8 \verb!< </prompt>!
 
-and we want to backtrack to a state labelled by:
+and we want to backtrack to a state labeled by:
 
 \verb!<! goal2 \verb!<! 32
 \verb!|!goal1\verb!|!goal2
@@ -865,7 +751,7 @@ Objective Caml toplevel. The Objective Caml command:
 \end{flushleft}
 
 \noindent add the right loadpaths and loads some toplevel printers for
-all abstract types of \Coq - section\_path, identfifiers, terms, judgements,
+all abstract types of \Coq - section\_path, identifiers, terms, judgments,
 \dots. You can also use the file \texttt{base\_include} instead,
 that loads only the pretty-printers for section\_paths and
 identifiers.
@@ -887,7 +773,7 @@ go();;
 
 \subsection[\tt Time \textrm{\textsl{command}}.]{\tt Time \textrm{\textsl{command}}.\comindex{Time}
 \label{time}}
-This command executes the vernac command \textrm{\textsl{command}}
+This command executes the vernacular command \textrm{\textsl{command}}
 and display the time needed to execute it.
 
 \section{Controlling display}
@@ -933,17 +819,100 @@ This command displays the current nesting depth used for display.
 %\subsection{\tt Abstraction ...}
 %Not yet documented.
 
-\section{Controlling the conversion algorithm}
+\section{Controlling the reduction strategies and the conversion algorithm}
 
-{\Coq} comes with two algorithms to check the convertibility of types
-(see Section~\ref{convertibility}). The first algorithm lazily
+{\Coq} provides reduction strategies that the tactics can invoke and
+two different algorithms to check the convertibility of types.
+The first conversion algorithm lazily
 compares applicative terms while the other is a brute-force but efficient
 algorithm that first normalizes the terms before comparing them.  The
 second algorithm is based on a bytecode representation of terms
 similar to the bytecode representation used in the ZINC virtual
 machine~\cite{Leroy90}. It is specially useful for intensive
 computation of algebraic values, such as numbers, and for reflexion-based
-tactics.
+tactics. The commands to fine-tune the reduction strategies and the
+lazy conversion algorithm are described first.
+
+\subsection[\tt Opaque \qualid$_1$ \dots \qualid$_n$.]{\tt Opaque \qualid$_1$ \dots \qualid$_n$.\comindex{Opaque}\label{Opaque}} This command tells not to unfold
+the constants {\qualid$_1$} \dots {\qualid$_n$} in tactics using
+$\delta$-conversion. Unfolding a constant is replacing it by its
+definition. {\tt Opaque} can only apply on constants originally
+defined as {\tt Transparent}.
+
+Constants defined by a proof ended by {\tt Qed} are automatically
+stamped as {\tt Opaque} and can no longer be considered as {\tt
+Transparent}. This is to keep with the usual mathematical practice of
+{\em proof irrelevance}: what matters in a mathematical development is
+the sequence of lemma statements, not their actual proofs. This
+distinguishes lemmas from the usual defined constants, whose actual
+values are of course relevant in general.
+
+\SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
+\ref{Theorem}
+
+\begin{ErrMsgs}
+\item \errindex{The reference \qualid\ was not found in the current
+environment}\\
+    There is no constant referred by {\qualid} in the environment.
+    Nevertheless, if you asked \texttt{Opaque foo bar}
+    and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
+\end{ErrMsgs}
+
+\subsection[\tt Transparent \qualid$_1$ \dots \qualid$_n$.]{\tt Transparent \qualid$_1$ \dots \qualid$_n$.\comindex{Transparent}\label{Transparent}}
+This command is the converse of {\tt Opaque} and can only apply on constants originally defined as {\tt Transparent} to restore their initial behavior after an {\tt Opaque} command.
+
+The constants automatically declared transparent are the ones defined by a proof ended by {\tt Defined}, or by a {\tt
+  Definition} or {\tt Local} with an explicit body.
+
+\Warning {\tt Transparent} and \texttt{Opaque} are not synchronous
+with the reset mechanism. If a constant was transparent at point A, if
+you set it opaque at point B and reset to point A, you return to state
+of point A with the difference that the constant is still opaque. This
+can cause changes in tactic scripts behavior.
+
+At section or module closing, a constant recovers the status it got at
+the time of its definition.
+
+\begin{ErrMsgs}
+% \item \errindex{Can not set transparent.}\\
+%     It is a constant from a required module or a parameter.
+\item \errindex{The reference \qualid\ was not found in the current
+environment}\\
+    There is no constant referred by {\qualid} in the environment.
+\end{ErrMsgs}
+
+\SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
+\ref{Theorem}
+
+\subsection{\tt Strategy {\it level} [ \qualid$_1$ \dots \qualid$_n$
+  ].\comindex{Strategy}\comindex{Local Strategy}\label{Strategy}}
+This command generalizes the behavior of {\tt Opaque} and {\tt
+  Transparent} commands. It is used to fine-tune the strategy for
+unfolding constants, both at the tactic level and at the kernel
+level. This command associates a level to \qualid$_1$ \dots
+\qualid$_n$. Whenever two expressions with two distinct head
+constants are compared (for instance, this comparison can be triggered
+by a type cast), the one with lower level is expanded first. In case
+of a tie, the second one (appearing in the cast type) is expanded.
+
+Levels can be one of the following (higher to lower):
+\begin{description}
+\item[opaque]: level of opaque constants. They cannot be expanded by
+  tactics (behaves like $+\infty$, see next item).
+\item[\num]: levels indexed by an integer. Level $0$ corresponds
+  to the default behavior, which corresponds to transparent
+  constants. This level can also be referred to as {\bf transparent}.
+  Negative levels correspond to constants to be expanded before normal
+  transparent constants, while positive levels correspond to constants
+  to be expanded after normal transparent constants.
+\item[expand]: level of constants that should be expanded first
+  (behaves like $-\infty$)
+\end{description}
+
+These directives survive section and module closure, unless the
+command is prefixed by {\tt Local}. In the latter case, the behavior
+regarding sections and modules is the same as for the {\tt
+  Transparent} and {\tt Opaque} commands.
 
 \subsection{\tt Set Virtual Machine
 \label{SetVirtualMachine}

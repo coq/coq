@@ -122,7 +122,6 @@ type library_disk = {
 
 type library_t = {
   library_name : compilation_unit_name;
-  library_filename : System.physical_path;
   library_compiled : compiled_library;
   library_objects : library_objects;
   library_deps : (compilation_unit_name * Digest.t) list;
@@ -138,9 +137,14 @@ module LibraryOrdered =
   end
 
 module LibraryMap = Map.Make(LibraryOrdered)
+module LibraryFilenameMap = Map.Make(LibraryOrdered)
 
 (* This is a map from names to loaded libraries *)
 let libraries_table = ref LibraryMap.empty
+
+(* This is the map of loaded libraries filename *)
+(* (not synchronized so as not to be caught in the states on disk) *)
+let libraries_filename_table = ref LibraryFilenameMap.empty
 
 (* These are the _ordered_ sets of loaded, imported and exported libraries *)
 let libraries_loaded_list = ref []
@@ -175,6 +179,9 @@ let _ =
 
 (* various requests to the tables *)
 
+let exists_library dir =
+  LibraryMap.mem dir !libraries_table
+
 let find_library dir =
   LibraryMap.find dir !libraries_table
 
@@ -183,7 +190,15 @@ let try_find_library dir =
   with Not_found ->
     error ("Unknown library " ^ (string_of_dirpath dir))
 
-let library_full_filename dir = (find_library dir).library_filename
+let register_library_filename dir f =
+  (* Not synchronized: overwrite the previous binding if one existed *)
+  (* from a previous play of the session *)
+  libraries_filename_table := 
+    LibraryFilenameMap.add dir f !libraries_filename_table
+
+let library_full_filename dir =
+  try LibraryFilenameMap.find dir !libraries_filename_table
+  with Not_found -> "unavailable"
 
 let library_is_loaded dir =
   try let _ = find_library dir in true
@@ -309,7 +324,7 @@ let with_magic_number_check f a =
   try f a
   with System.Bad_magic_number fname ->
     errorlabstrm "with_magic_number_check"
-    (str"file " ++ str fname ++ spc () ++ str"has bad magic number." ++
+    (str"File " ++ str fname ++ spc () ++ str"has bad magic number." ++
     spc () ++ str"It is corrupted" ++ spc () ++
     str"or was compiled with another version of Coq.")
 
@@ -351,10 +366,9 @@ let locate_qualified_library qid =
     let path, file = System.where_in_path loadpath name in
     let dir = extend_dirpath (find_logical_path path) base in
     (* Look if loaded *)
-    try 
-      (LibLoaded, dir, library_full_filename dir)      
-    with Not_found ->
-      (LibInPath, dir, file)
+    if exists_library dir then (LibLoaded, dir, library_full_filename dir)
+    (* Otherwise, look for it in the file system *)
+    else (LibInPath, dir, file)
   with Not_found -> raise LibNotFound
 
 let explain_locate_library_error qid = function
@@ -388,9 +402,8 @@ let try_locate_qualified_library (loc,qid) =
 let lighten_library m = 
   if !Flags.dont_load_proofs then lighten_library m else m
 
-let mk_library md f digest = {
+let mk_library md digest = {
   library_name = md.md_name;
-  library_filename = f;
   library_compiled = lighten_library md.md_compiled;
   library_objects = md.md_objects;
   library_deps = md.md_deps;
@@ -402,7 +415,8 @@ let intern_from_file f =
   let md = System.marshal_in ch in
   let digest = System.marshal_in ch in
   close_in ch;
-  mk_library md f digest
+  register_library_filename md.md_name f;
+  mk_library md digest
 
 let rec intern_library needed (dir, f) =
   (* Look if in the current logical environment *)
@@ -426,9 +440,9 @@ and intern_library_deps needed dir m =
 and intern_mandatory_library caller needed (dir,d) =
   let m,needed = intern_library needed (try_locate_absolute_library dir) in
   if d <> m.library_digest then
-    error ("compiled library "^(string_of_dirpath caller)^
-	   " makes inconsistent assumptions over library "
-	   ^(string_of_dirpath dir));
+    errorlabstrm "" (strbrk ("Compiled library "^(string_of_dirpath caller)^
+	   ".vo makes inconsistent assumptions over library "
+	   ^(string_of_dirpath dir)));
   needed
 
 let rec_intern_library needed mref =
@@ -443,17 +457,18 @@ let check_library_short_name f dir = function
   | _ -> ()
 
 let rec_intern_by_filename_only id f =
-  let m = intern_from_file f in
+  let m = try intern_from_file f with Sys_error s -> error s in
   (* Only the base name is expected to match *)
   check_library_short_name f m.library_name id;
   (* We check no other file containing same library is loaded *)
-  try
-    let m' = find_library m.library_name in
-    Flags.if_verbose warning 
-      ((string_of_dirpath m.library_name)^" is already loaded from file "^
-       m'.library_filename);
-    m.library_name, []
-  with Not_found ->
+  if exists_library m.library_name then
+    begin
+      Flags.if_verbose warning 
+	((string_of_dirpath m.library_name)^" is already loaded from file "^
+	library_full_filename m.library_name);
+      m.library_name, []
+    end
+ else
     let needed = intern_library_deps [] m.library_name m in
     m.library_name, needed
 

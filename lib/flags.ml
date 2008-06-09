@@ -129,4 +129,4 @@ let browser_cmd_fmt =
   Not_found ->
    if Sys.os_type = "Win32"
    then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s"
-   else "firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s"
+   else "firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s &"
