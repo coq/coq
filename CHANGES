@@ -247,6 +247,7 @@ Tactics
   matching lemma among the components of the conjunction; tactic apply also
   able to apply lemmas of conclusion an empty type.
 - Tactics "set" and "pose" can set functions using notation "(f x1..xn := c)".
+- New tactic "instantiate" (without argument).
 - Tactic firstorder "with" and "using" options have their meaning swapped for
   consistency with auto/eauto (source of incompatibility).
 - Tactic "generalize" now supports "at" options to specify occurrences

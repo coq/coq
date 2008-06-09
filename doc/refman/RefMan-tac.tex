@@ -833,6 +833,15 @@ in every session.
 These allow to refer respectively to existential variables occurring in 
 a hypothesis or in the body or the type of a local definition.  
 
+  \item {\tt instantiate}
+
+    Without argument, the {\tt instantiate} tactic tries to solve as
+    many existential variables as possible, using information gathered
+    from other tactics in the same tactical. This is automatically
+    done after each complete tactic (i.e. after a dot in proof mode),
+    but not, for example, between each tactic when they are sequenced
+    by semicolons.
+
 \end{Variants}
 
 \subsection{Bindings list
