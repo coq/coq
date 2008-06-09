@@ -504,24 +504,20 @@ let is_empty () = Stack.is_empty processed_stack
 
 let update_on_end_of_proof () =
   let lookup_lemma = function
-    | { reset_info = ResetAtRegisteredObject (_, r) } -> 
+    | { reset_info = ResetAtRegisteredObject _, r } -> 
 	prerr_endline "Toggling Frozen State info to false";
 	r := false
-    | { reset_info = ResetAtStatement r } when not !r ->
+    | { reset_info = ResetAtStatement _, r } ->
 	prerr_endline "Toggling Reset info to true";
 	r := true; raise Exit
-    | { ast = _, (VernacAbort _ | VernacAbortAll | VernacGoal _) } -> raise Exit
     | _ -> ()
   in
     try Stack.iter lookup_lemma processed_stack with Exit -> ()
 
 let update_on_end_of_segment id =
   let lookup_section = function 
-    | { reset_info = ResetAtSegmentStart (id', r) } when id = id' -> raise Exit
-    | { reset_info = ResetAtSegmentStart (_, r) } -> r := false
-    | { reset_info = ResetAtStatement r } -> r := false
-    | { reset_info = ResetAtRegisteredObject (_, r) } -> r := false
-    | _ -> ()
+    | { reset_info = ResetAtSegmentStart id', _ } when id = id' -> raise Exit
+    | { reset_info = _, r } -> r := false
   in
     try Stack.iter lookup_section processed_stack with Exit -> ()
 
@@ -533,9 +529,9 @@ let push_phrase reset_info start_of_phrase_mark end_of_phrase_mark ast =
 	  } in
   begin
     match snd ast with
-      | VernacEndProof _ | VernacExactProof _ -> update_on_end_of_proof ()
-      | VernacEndSegment (_,id) -> update_on_end_of_segment id
-      | _ -> ()
+    | com when is_vernac_proof_ending_command com -> update_on_end_of_proof ()
+    | VernacEndSegment (_,id) -> update_on_end_of_segment id
+    | _ -> ()
   end;
   push x
 
@@ -556,48 +552,58 @@ type backtrack =
 | BacktrackToModSec of Names.identifier
 | NoBacktrack
 
-let add_undo (n,a,b) = (n+1,a,b)
-let add_abort (n,a,b) = (0,a+1,b)
-let add_backtrack (n,a,b) b' = (n,a,b')
+let add_undo = function (n,a,b,p as x) -> if p = 0 then (n+1,a,b,p) else x
+let add_abort = function (n,a,b,0) -> (0,a+1,b,0) | (n,a,b,p) -> (n,a,b,p-1)
+let add_qed (n,a,b,p) = (n,a,b,p+1)
+let add_backtrack (n,a,b,p) b' = (n,a,b',p)
+let add_proof_start (n,a,b,p) b' = (n,a,b',p-1)
 
 let pop_command undos t =
-  let undos = 
+  let undos =
     match t with
+    | {reset_info=ResetAtStatement _,{contents=false}} when Pfedit.refining()->
+	(* An incomplete ongoing proof *)
+        add_abort undos
+    | {reset_info=_, {contents=false}} ->
+	(* An object inside a section *)
+        add_backtrack undos BacktrackToNextActiveMark
     | {ast=(_,com)} when is_vernac_tactic_command com ->
+	(* A tactic, active if not below a Qed *)
         add_undo undos
-    | {reset_info=ResetAtRegisteredObject (mark,{contents=true})} ->
+    | {ast=(_,com)} when is_vernac_proof_ending_command com ->
+	(* Backtracking a Qed *)
+        add_qed undos
+    | {ast=(_,com)} when is_vernac_state_preserving_command com -> undos
+    | {reset_info=ResetAtRegisteredObject mark, _} ->
         add_backtrack undos (BacktrackToMark mark)
-    | {reset_info=ResetAtSegmentStart (id, {contents=true})} ->
+    | {reset_info=ResetAtSegmentStart id, _} ->
         add_backtrack undos (BacktrackToModSec id)
-    | {reset_info=ResetAtStatement {contents=false}} ->
-	prerr_endline ("Statement " ^ if Pfedit.refining () then "proof" else "none");
-        if Pfedit.refining () then add_abort undos
-        else add_backtrack undos BacktrackToNextActiveMark
+    | {reset_info=ResetAtStatement (Some st), _} ->
+        add_proof_start undos (BacktrackToMark (ResetToState st))
     | {ast=(_,com)} ->
-        if is_vernac_state_preserving_command com then undos
-        else add_backtrack undos BacktrackToNextActiveMark in
+        add_backtrack undos BacktrackToNextActiveMark in
   ignore (pop ());
   undos
 
 let rec apply_backtrack = function
-  | BacktrackToMark mark -> reset_to mark
-  | NoBacktrack -> ()
-  | BacktrackToModSec id -> reset_to_mod id
-  | BacktrackToNextActiveMark ->
+  | 0, BacktrackToMark mark -> reset_to mark
+  | 0, NoBacktrack -> ()
+  | 0, BacktrackToModSec id -> reset_to_mod id
+  | p, _ ->
       (* re-synchronize Coq to the current state of the stack *)
       if is_empty () then
         Coq.reset_initial ()
       else
         begin
           let t = top () in
-          let (_,_,b) = pop_command (0,0,BacktrackToNextActiveMark) t in
-          apply_backtrack b;
+          let (_,_,b,p) = pop_command (0,0,BacktrackToNextActiveMark,p) t in
+          apply_backtrack (p,b);
           let reset_info = Coq.compute_reset_info (snd t.ast) in
           interp_last t.ast;
           repush_phrase reset_info t
         end
 
-let rec apply_undos (n,a,b) =
+let rec apply_undos (n,a,b,p) =
   (* Aborts *)
   if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
   (try Util.repeat a Pfedit.delete_current_proof ()
@@ -607,9 +613,9 @@ let rec apply_undos (n,a,b) =
     (prerr_endline ("Applying "^string_of_int n^" undos");
      try Pfedit.undo n
      with _ -> (* Undo stack exhausted *)
-       apply_backtrack BacktrackToNextActiveMark);
+       apply_backtrack (p,BacktrackToNextActiveMark));
   (* Reset *)
-  apply_backtrack b
+  apply_backtrack (p,b)
 
 (* For electric handlers *)
 exception Found
@@ -1351,7 +1357,7 @@ object(self)
         else
 	  done_smthg, undos
     in
-    let done_smthg, undos = pop_commands false (0,0,NoBacktrack) in
+    let done_smthg, undos = pop_commands false (0,0,NoBacktrack,0) in
       prerr_endline "Popped commands";
       if done_smthg then
         begin 
@@ -1420,7 +1426,7 @@ Please restart and report NOW.";
 	      self#show_goals;
 	      self#clear_message
 	    in
-              let undo = pop_command (0,0,NoBacktrack) last_command in
+              let undo = pop_command (0,0,NoBacktrack,0) last_command in
               apply_undos undo;
               sync update_input ()
 	with

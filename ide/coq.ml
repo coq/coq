@@ -184,6 +184,7 @@ let make_option_commands () =
 type command_attribute =
     NavigationCommand | QueryCommand | DebugCommand | KnownOptionCommand
   | OtherStatePreservingCommand | GoalStartingCommand | SolveCommand
+  | ProofEndingCommand
 
 let rec attribute_of_vernac_command = function
   (* Control *)
@@ -205,8 +206,8 @@ let rec attribute_of_vernac_command = function
   | VernacDefinition (_,_,DefineBody _,_) -> []
   | VernacDefinition (_,_,ProveBody _,_) -> [GoalStartingCommand]
   | VernacStartTheoremProof _ -> [GoalStartingCommand]
-  | VernacEndProof _ -> []
-  | VernacExactProof _ -> []
+  | VernacEndProof _ -> [ProofEndingCommand]
+  | VernacExactProof _ -> [ProofEndingCommand]
 
   | VernacAssumption _ -> []
   | VernacInductive _ -> []
@@ -346,15 +347,20 @@ let is_vernac_state_preserving_command com =
 let is_vernac_tactic_command com =
   List.mem SolveCommand (attribute_of_vernac_command com)
 
+let is_vernac_proof_ending_command com =
+  List.mem ProofEndingCommand (attribute_of_vernac_command com)
+
 type reset_mark =
   | ResetToId of Names.identifier
-  | ResetToState of  Libnames.object_name
+  | ResetToState of Libnames.object_name
 
-type reset_info =
+type reset_status =
   | NoReset
-  | ResetAtSegmentStart of Names.identifier * bool ref 
-  | ResetAtStatement of bool ref
-  | ResetAtRegisteredObject of reset_mark * bool ref
+  | ResetAtSegmentStart of Names.identifier
+  | ResetAtStatement of Libnames.object_name option
+  | ResetAtRegisteredObject of reset_mark
+
+type reset_info = reset_status * bool ref
 
 let reset_mark id = match Lib.has_top_frozen_state () with
   | Some sp -> ResetToState sp
@@ -365,20 +371,24 @@ let compute_reset_info = function
   | VernacDefineModule (_,id, _, _, _) 
   | VernacDeclareModule (_,id, _, _)
   | VernacDeclareModuleType (id, _, _) ->
-      ResetAtSegmentStart (snd id, ref true)
+      ResetAtSegmentStart (snd id), ref true
 
   | VernacDefinition (_, (_,id), DefineBody _, _)
   | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
   | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
-      ResetAtRegisteredObject (reset_mark id, ref true)
-  | VernacEndProof _ | VernacExactProof _ | VernacEndSegment _ -> NoReset
+      ResetAtRegisteredObject (reset_mark id), ref true
+
+  | com when is_vernac_proof_ending_command com -> NoReset, ref true
+  | VernacEndSegment _ -> NoReset, ref true
+
   | com when is_vernac_goal_starting_command com ->
-      ResetAtStatement (ref false)
-  | com when is_vernac_tactic_command com -> NoReset
+      ResetAtStatement (Lib.has_top_frozen_state ()), ref false
+
+  | com when is_vernac_tactic_command com -> NoReset, ref true
   | _ ->
-      match Lib.has_top_frozen_state () with
-      | Some sp -> ResetAtRegisteredObject (ResetToState sp, ref true)
-      | None -> NoReset
+      (match Lib.has_top_frozen_state () with
+      | Some sp -> ResetAtRegisteredObject (ResetToState sp)
+      | None -> NoReset), ref true
 
 let reset_initial () = 
   prerr_endline "Reset initial called"; flush stderr;

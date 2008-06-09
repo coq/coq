@@ -32,11 +32,13 @@ type reset_mark =
   | ResetToId of Names.identifier
   | ResetToState of  Libnames.object_name
 
-type reset_info =
+type reset_status =
   | NoReset
-  | ResetAtSegmentStart of Names.identifier * bool ref 
-  | ResetAtStatement of bool ref
-  | ResetAtRegisteredObject of reset_mark * bool ref
+  | ResetAtSegmentStart of Names.identifier
+  | ResetAtStatement of Libnames.object_name option
+  | ResetAtRegisteredObject of reset_mark
+
+type reset_info = reset_status * bool ref
 
 val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
 val reset_initial : unit -> unit
@@ -52,6 +54,7 @@ val interp_and_replace : string ->
 val is_vernac_tactic_command : Vernacexpr.vernac_expr -> bool
 val is_vernac_state_preserving_command : Vernacexpr.vernac_expr -> bool
 val is_vernac_goal_starting_command : Vernacexpr.vernac_expr -> bool
+val is_vernac_proof_ending_command : Vernacexpr.vernac_expr -> bool
 
 (* type hyp = (identifier * constr option * constr) * string *)
 
