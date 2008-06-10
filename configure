@@ -7,7 +7,7 @@
 ##################################
 
 VERSION=trunk
-DATE="Oct. 2007"
+DATE="Jun. 2008"
 
 # a local which command for sh
 which () {
