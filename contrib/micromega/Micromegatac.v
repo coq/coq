@@ -18,7 +18,7 @@ Require Import RMicromega.
 Require Import QArith.
 Require Export Ring_normalize.
 Require Import ZArith.
-Require Import Reals.
+Require Import Raxioms.
 Require Export RingMicromega.
 Require Import VarMap.
 Require Tauto.

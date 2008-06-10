@@ -15,7 +15,7 @@
 Require Import OrderedRing.
 Require Import RingMicromega.
 Require Import Refl.
-Require Import Reals.
+Require Import Raxioms RIneq Rpow_def DiscrR.
 Require Setoid.
 
 Definition Rsrt : ring_theory R0 R1 Rplus Rmult Rminus Ropp (@eq R).
