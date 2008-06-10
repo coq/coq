@@ -2885,6 +2885,24 @@ let tclABSTRACT name_op tac gl =
 
 
 let admit_as_an_axiom gl =
+  let ccl = pf_concl gl in
+  let ids_of_sign = pf_ids_of_hyps gl in
+  let vars = global_vars_set (Global.env ()) ccl in
+  let sign = List.filter (fun (id,_,_) -> Idset.mem id vars) (pf_hyps gl) in
+  let name = add_suffix (get_current_proof_name ()) "_admitted" in
+  let na = next_global_ident_away false name ids_of_sign in
+  let concl = it_mkNamedProd_or_LetIn ccl sign in
+  if occur_existential concl then error "\"admit\" cannot handle existentials";
+  let axiom =
+    let cd = Entries.ParameterEntry (concl,false) in
+    let con = Declare.declare_internal_constant na (cd,IsAssumption Logical) in
+    constr_of_global (ConstRef con)
+  in
+  exact_no_check 
+    (applist (axiom, 
+              List.rev (Array.to_list (instance_from_named_context sign))))
+    gl
+(*
   let current_sign = Global.named_context()
   and global_sign = pf_hyps gl in
   let sign,secsign = 
@@ -2908,3 +2926,4 @@ let admit_as_an_axiom gl =
     (applist (axiom, 
               List.rev (Array.to_list (instance_from_named_context sign))))
     gl
+*)

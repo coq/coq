@@ -561,22 +561,19 @@ let dependencies_in_pure_rhs nargs eqns =
   let deps_columns = matrix_transpose deps_rows in
   List.map (List.exists ((=) true)) deps_columns
 
-let dependent_in_decl b d = 
-  fold_rel_declaration (fun c -> (||) (dependent b c)) d false
+let dependent_decl a = function
+  | (na,None,t) -> dependent a t
+  | (na,Some c,t) -> dependent a t || dependent a c
 
 let rec dep_in_tomatch n = function
   | (Pushed _ | Alias _) :: l -> dep_in_tomatch n l
-  | Abstract d :: l -> dependent_in_decl (mkRel n) d or dep_in_tomatch (n+1) l
+  | Abstract d :: l -> dependent_decl (mkRel n) d or dep_in_tomatch (n+1) l
   | [] -> false
 
 let dependencies_in_rhs nargs current tms eqns =
   match kind_of_term current with
   | Rel n when dep_in_tomatch n tms -> list_make nargs true
   | _ -> dependencies_in_pure_rhs nargs eqns
-
-let dependent_decl a = function
-  | (na,None,t) -> dependent a t
-  | (na,Some c,t) -> dependent a t || dependent a c
 
 (* Computing the matrix of dependencies *)
 

@@ -178,6 +178,13 @@ let get_strength stre ref cls clt =
   let stref = strength_of_global ref in
   strength_min [stre;stres;stret;stref]
 
+let ident_key_of_class = function
+  | CL_FUN -> "Funclass"
+  | CL_SORT -> "Sortclass"
+  | CL_CONST sp -> string_of_label (con_label sp)
+  | CL_IND (sp,_) -> string_of_label (label sp)
+  | CL_SECVAR id -> string_of_id id
+
 (* coercion identité *)
 
 let error_not_transparent source =
@@ -218,8 +225,8 @@ let build_id_coercion idf_opt source =
     match idf_opt with
       | Some idf -> idf
       | None ->
-	  id_of_string ("Id_"^(string_of_class source)^"_"^
-                        (string_of_class (fst (find_class_type t)))) 
+	  id_of_string ("Id_"^(ident_key_of_class source)^"_"^
+                        (ident_key_of_class (fst (find_class_type t)))) 
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
