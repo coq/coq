@@ -104,26 +104,6 @@ Implicit Arguments eq_dep1 [U P].
 
 (** Dependent equality is equivalent to equality on dependent pairs *)
 
-Lemma eq_sigS_eq_dep :
-  forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
-    existT P p x = existT P q y -> eq_dep p x q y.
-Proof.
-  intros.
-  dependent rewrite H.
-  apply eq_dep_intro.
-Qed.
-
-Lemma equiv_eqex_eqdep :
-  forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
-   existS P p x = existS P q y <-> eq_dep p x q y.
-Proof.
-  split. 
-  (* -> *)
-  apply eq_sigS_eq_dep.
-  (* <- *)
-  destruct 1; reflexivity.
-Qed.
-
 Lemma eq_sigT_eq_dep :
   forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
     existT P p x = existT P q y -> eq_dep p x q y.
@@ -131,6 +111,19 @@ Proof.
   intros.
   dependent rewrite H.
   apply eq_dep_intro.
+Qed.
+
+Notation eq_sigS_eq_dep := eq_sigT_eq_dep (only parsing). (* Compatibility *)
+
+Lemma equiv_eqex_eqdep :
+  forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
+   existT P p x = existT P q y <-> eq_dep p x q y.
+Proof.
+  split. 
+  (* -> *)
+  apply eq_sigT_eq_dep.
+  (* <- *)
+  destruct 1; reflexivity.
 Qed.
 
 Lemma eq_dep_eq_sigT :
@@ -258,7 +251,7 @@ Section Corollaries.
  Proof.
    intro eq_dep_eq; red; intros.
    apply eq_dep_eq.
-   apply eq_sigS_eq_dep.
+   apply eq_sigT_eq_dep.
    assumption.
  Qed.
 
