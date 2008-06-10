@@ -9,3 +9,7 @@
 (*i $Id$ i*)
 
 (* Nice syntax for naturals. *)
+
+open Notation
+
+val nat_of_int : Bigint.bigint prim_token_interpreter

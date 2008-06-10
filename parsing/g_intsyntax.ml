@@ -40,15 +40,15 @@ let int31_1 = ConstructRef ((int31_id "digits",0),2)
 
 
 (* bigN stuff*)
-let zn2z_module = ["Coq"; "Numbers"; "Cyclic"; "DoubleCyclic"; "Basic_type"]
+let zn2z_module = ["Coq"; "Numbers"; "Cyclic"; "DoubleCyclic"; "DoubleType"]
 let zn2z_path = make_path zn2z_module "zn2z"
 let zn2z_id = make_kn zn2z_module
 
 let zn2z_W0 = ConstructRef ((zn2z_id "zn2z",0),1)
 let zn2z_WW = ConstructRef ((zn2z_id "zn2z",0),2)
 
-let bigN_module = ["Coq"; "Numbers"; "Natural"; "BigN"; "BigN"]
-let bigN_path = make_path bigN_module "bigN"
+let bigN_module = ["Coq"; "Numbers"; "Natural"; "BigN"; "BigN" ]
+let bigN_path = make_path (bigN_module@["BigN"]) "t"
 (* big ugly hack *)
 let bigN_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigN_module)), 
                              Names.mk_label "BigN")),
@@ -56,7 +56,7 @@ let bigN_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigN_module))
 let bigN_scope = "bigN_scope"
 
 (* number of inlined level of bigN (actually the level 0 to n_inlined-1 are inlined) *)
-let n_inlined = of_string "13"
+let n_inlined = of_string "7"
 let bigN_constructor =
  (* converts a bigint into an int the ugly way *)
   let rec to_int i =
@@ -78,8 +78,8 @@ let bigN_constructor =
 	       )
 
 (*bigZ stuff*)
-let bigZ_module = ["Coq"; "Numbers"; "Integer"; "BigZ"; "BigZ"]
-let bigZ_path = make_path bigZ_module "bigZ"
+let bigZ_module = ["Coq"; "Numbers"; "Integer"; "BigZ"; "BigZ" ]
+let bigZ_path = make_path (bigZ_module@["BigZ"]) "t"
 (* big ugly hack bis *)
 let bigZ_id id = (Obj.magic ((Names.MPdot ((Names.MPfile (make_dir bigZ_module)), 
                              Names.mk_label "BigZ")),
@@ -93,7 +93,7 @@ let bigZ_neg = ConstructRef ((bigZ_id "t_",0),2)
 (*bigQ stuff*)
 let bigQ_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "BigQ"]
 let qmake_module = ["Coq"; "Numbers"; "Rational"; "BigQ"; "QMake_base"]
-let bigQ_path = make_path bigQ_module "bigQ"
+let bigQ_path = make_path (bigQ_module@["BigQ"]) "t"
 (* big ugly hack bis *)
 let bigQ_id = make_kn qmake_module
 let bigQ_scope = "bigQ_scope"
@@ -205,7 +205,7 @@ let bigN_of_pos_bigint dloc n =
   let result h word = RApp (dloc, ref_constructor h, if less_than h n_inlined then
 				                       [word]
 			                             else
-				                      [RHole (dloc, Evd.InternalHole);
+				                      [G_natsyntax.nat_of_int dloc (sub h n_inlined);
 						       word])
   in
   let hght = height n in
