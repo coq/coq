@@ -772,15 +772,15 @@ let h_trivial lems l =
 (**************************************************************************)
 
 let possible_resolve db_list local_db cl =
-  Util.anomaly "Auto.possible_resolve: à restaurer"
-  (* arnaud: à restaurer
   try 
-    let hdconstr = List.hd (head_constr_bound cl []) in
-    List.map snd 
-      (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
-  with Bound | Not_found -> 
-    []
-  *)
+    let hdconstr = List.hd (Ntactics.head_constr_bound cl []) in
+    (my_find_search db_list local_db 
+                    (Goal.return (head_of_constr_reference hdconstr)) 
+		    (Goal.return cl))
+          >>= fun search ->
+    Goal.return (List.map snd search)
+  with Ntactics.Bound | Not_found -> 
+    Goal.sNil
 
 let decomp_unary_term c (* arnaud: zapper je crois: gls*) =
   Util.anomaly "Auto.decomp_unary_term: à restaurer"
@@ -811,43 +811,57 @@ let decomp_empty_term c (* arnaud: zapper je crois: gls *) =
 (* local_db contains the local Hypotheses *)
 
 let rec search_gen decomp n db_list local_db extra_sign =
-  Util.anomaly "Auto.search_gen: à restaurer"
-  (* arnaud: à restaurer
   if n=0 then error "BOUND 2";
+  Proofview.sensitive_tactic begin
+  Goal.hyps >>= fun hyps ->
+  Goal.concl >>= fun concl ->
   let decomp_tacs = match decomp with 
     | 0 -> [] 
     | p -> 
-	(tclTRY_sign decomp_empty_term extra_sign)
+	(Ntacticals.tclTRY_sign decomp_empty_term extra_sign)
 	::
 	(List.map 
-	   (fun id -> tclTHENSEQ
+	   (fun id -> Ntacticals.tclTHENSEQ
                [decomp_unary_term (mkVar id);
-                clear [id];
+                Logic.clear (Goal.return [id]);
 		search_gen decomp p db_list local_db []])
-	   (pf_ids_of_hyps goal)) 
+	   (Termops.ids_of_named_context (Environ.named_context_of_val hyps))) 
   in
-  let intro_tac = 
-    tclTHEN intro 
-      (fun g' -> 
-	 let (hid,_,htyp as d) = pf_last_hyp g' in
+  let searching =
+    Proofview.sensitive_tactic begin
+      Logic.last_hyp >>= fun last_hyp ->
+      Goal.env >>= fun env ->
+      Goal.defs >>= fun defs ->
+      let (hid,_,htyp as d) = last_hyp in
 	 let hintl = 
 	   try 
-	     [make_apply_entry (pf_env g') (project g')
+	     [make_apply_entry env (Evd.evars_of defs)
 		(true,false) 
 		(mkVar hid, htyp)]
 	   with Failure _ -> [] 
 	 in
-         search_gen decomp n db_list (Hint_db.add_list hintl local_db) [d] g') 
+	 Goal.return (
+           search_gen decomp n db_list (Hint_db.add_list hintl local_db) [d]
+	 )
+    end
   in
-  let rec_tacs = 
+  let intro_tac = Logic.tclTHEN Intros.intro searching
+  in
+  begin
+    possible_resolve db_list (Goal.return local_db) concl >>= fun possible ->
+    Goal.return begin
     List.map 
       (fun ntac -> 
-	 tclTHEN ntac
+	 Logic.tclTHEN ntac
 	   (search_gen decomp (n-1) db_list local_db empty_named_context))
-      (possible_resolve db_list local_db (pf_concl goal))
-  in 
-  tclFIRST (assumption::(decomp_tacs@(intro_tac::rec_tacs))) goal
-  *)
+      possible
+    end
+  end
+    >>= fun rec_tacs ->
+  Goal.return (
+    Logic.tclFIRST (Logic.assumption::(decomp_tacs@(intro_tac::rec_tacs)))
+  )
+  end
 
 
 let search = search_gen 0
@@ -869,7 +883,7 @@ let auto n lems dbnames =
   lems >>= fun lems ->
   make_local_hint_db lems >>= fun local_db ->
   Goal.return (  
-  Logic.tclTRY (search n db_list local_db hyps)
+  Logic.tclTRY (search n db_list local_db (Environ.named_context_of_val hyps))
     )
   )
 
@@ -884,7 +898,7 @@ let full_auto n lems =
     lems >>= fun lems ->
     make_local_hint_db lems >>= fun local_db ->
     Goal.return (
-      Logic.tclTRY (search n db_list local_db hyps)
+    Logic.tclTRY (search n db_list local_db (Environ.named_context_of_val hyps))
     )
   )
   
@@ -917,9 +931,10 @@ let default_search_decomp = ref 1
 
 let destruct_auto des_opt lems n = 
   Goal.hyps >>= fun hyps ->
+  make_local_hint_db lems >>= fun local_db ->
   Goal.return (
     search_gen des_opt n (List.map searchtable_map ["core";"extcore"])
-      (make_local_hint_db lems) hyps
+      local_db (Environ.named_context_of_val hyps)
   )
     
 let dautomatic des_opt lems n = 

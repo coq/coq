@@ -119,23 +119,23 @@ let tclNTH_HYP m (tac : constr Goal.sensitive -> 'a Proofview.tactic) =
 
 let tclLAST_HYP tac = tclNTH_HYP (Goal.return 1) tac
 
-let tclTRY_sign _ _ = Util.anomaly "Tacticals.tclTRY_sign: à restaurer"
-(* arnaud: à restaurer
-let tclTRY_sign (tac : constr->tactic) sign gl =
+let tclTRY_sign ftac sign =
   let rec arec = function
     | []      -> tclFAIL 0 (str "no applicable hypothesis")
-    | [s]     -> tac (mkVar s) (*added in order to get useful error messages *)
-    | (s::sl) -> tclORELSE (tac (mkVar s)) (arec sl) 
+    | [s]     -> ftac (mkVar s) (*added in order to get useful error messages *)
+    | (s::sl) -> tclORELSE (ftac (mkVar s)) (arec sl) 
   in 
-  arec (ids_of_named_context sign) gl
-*)
+  arec (ids_of_named_context sign)
 
 let tclTRY_HYPS (tac : constr Goal.sensitive -> 'a Proofview.tactic) = 
+  Util.anomaly "Ntacticals.tclTRY_HYPS: à restaurer"
+  (* arnaud: à restaurer: conflit entre ce type et celui de tclTRY_sign...
   let h =
     Goal.hyps >>= fun hyps ->
     Goal.return (named_context_of_val hyps)
   in
   tclTRY_sign tac h
+  *)
 
 (***************************************)
 (*           Clause Tacticals          *)

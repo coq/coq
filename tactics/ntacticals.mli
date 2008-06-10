@@ -58,8 +58,8 @@ val tclNTH_HYP       : int Goal.sensitive ->
                        'a tactic
 val tclMAP           : ('a -> 'a tactic) -> 'a list -> 'a tactic
 val tclLAST_HYP      : (constr Goal.sensitive -> 'a tactic) -> 'a tactic
-val tclTRY_sign      : (constr Goal.sensitive -> 'a tactic) -> 
-                        named_context Goal.sensitive -> 
+val tclTRY_sign      : (constr -> 'a tactic) -> 
+                        named_context -> 
                         'a tactic
 val tclTRY_HYPS      : (constr Goal.sensitive -> 'a tactic) -> 'a tactic
 
