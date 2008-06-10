@@ -621,32 +621,33 @@ let subst_term = subst_term_gen eq_constr
 
 let replace_term = replace_term_gen eq_constr
 
-(* Substitute only a list of locations locs, the empty list is
-   interpreted as substitute all, if 0 is in the list then no
-   bindings is done. The list may contain only negative occurrences
-   that will not be substituted. *)
+(* Substitute only at a list of locations or excluding a list of
+   locations; in the occurrences list (b,l), b=true means no
+   occurrence except the ones in l and b=false, means all occurrences
+   except the ones in l *)
+
+type occurrences = bool * int list
+let all_occurrences = (false,[])
+let no_occurrences_in_set = (true,[])
 
 let error_invalid_occurrence l =
   errorlabstrm ""
     (str ("Invalid occurrence " ^ plural (List.length l) "number" ^": ") ++ 
      prlist_with_sep spc int l)
 
-let subst_term_occ_gen locs occ c t =
+let subst_term_occ_gen (nowhere_except_in,locs) occ c t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
-  let except = List.exists (fun n -> n<0) locs in
-  if except & (List.exists (fun n -> n>=0) locs) 
-  then error "mixing of positive and negative occurences"
-  else
-   let rec substrec (k,c as kc) t =
-    if (not except) & (!pos > maxocc) then t
+  assert (List.for_all (fun x -> x >= 0) locs);
+  let rec substrec (k,c as kc) t =
+    if nowhere_except_in & !pos > maxocc then t
     else
     if eq_constr c t then
       let r = 
-	if except then 
-	  if List.mem (- !pos) locs then t else (mkRel k)
-	else 
+	if nowhere_except_in then
 	  if List.mem !pos locs then (mkRel k) else t
+	else 
+	  if List.mem !pos locs then t else (mkRel k)
       in incr pos; r
     else
       map_constr_with_binders_left_to_right
@@ -656,28 +657,27 @@ let subst_term_occ_gen locs occ c t =
   let t' = substrec (1,c) t in
   (!pos, t')
 
-let subst_term_occ locs c t = 
-  if locs = [] then subst_term c t
-  else if List.mem 0 locs then 
-    t
+let subst_term_occ (nowhere_except_in,locs as plocs) c t = 
+  if locs = [] then if nowhere_except_in then t else subst_term c t
   else 
-    let (nbocc,t') = subst_term_occ_gen locs 1 c t in
-    let rest = List.filter (fun o -> o >= nbocc or o <= -nbocc) locs in
+    let (nbocc,t') = subst_term_occ_gen plocs 1 c t in
+    let rest = List.filter (fun o -> o >= nbocc) locs in
     if rest <> [] then error_invalid_occurrence rest;
     t'
 
-let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
+let subst_term_occ_decl (nowhere_except_in,locs as plocs) c (id,bodyopt,typ as d) =
   match bodyopt with
-    | None -> (id,None,subst_term_occ locs c typ)
+    | None -> (id,None,subst_term_occ plocs c typ)
     | Some body -> 
 	if locs = [] then
-	  (id,Some (subst_term c body),subst_term c typ)
-	else if List.mem 0 locs then 
-	  d
+	  if nowhere_except_in then
+	    (id,Some (subst_term c body),subst_term c typ)
+	  else
+	    d
 	else 
-	  let (nbocc,body') = subst_term_occ_gen locs 1 c body in
-	  let (nbocc',t') = subst_term_occ_gen locs nbocc c typ in
-	  let rest = List.filter (fun o -> o >= nbocc' or o <= -nbocc') locs in
+	  let (nbocc,body') = subst_term_occ_gen plocs 1 c body in
+	  let (nbocc',t') = subst_term_occ_gen plocs nbocc c typ in
+	  let rest = List.filter (fun o -> o >= nbocc') locs in
 	  if rest <> [] then error_invalid_occurrence rest;
 	  (id,Some body',t')
 

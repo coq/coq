@@ -335,7 +335,14 @@ let all_flags =
 
 type 'a or_var = ArgArg of 'a | ArgVar of identifier located
 
-type 'a with_occurrences = int or_var list * 'a
+type occurrences_expr = bool * int or_var list
+
+let all_occurrences_expr_but l = (false,l)
+let no_occurrences_expr_but l = (true,l)
+let all_occurrences_expr = (false,[])
+let no_occurrences_expr = (true,[])
+
+type 'a with_occurrences = occurrences_expr * 'a
 
 type ('a,'b) red_expr_gen =
   | Red of bool

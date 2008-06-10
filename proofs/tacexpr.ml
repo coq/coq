@@ -94,15 +94,17 @@ type 'id gsimple_clause = ('id raw_hyp_location) option
      [Some l] means on hypothesis belonging to l *)
 type 'id gclause =
   { onhyps : 'id raw_hyp_location list option;
-    onconcl : bool;
-    concl_occs : int or_var list }
+    concl_occs : bool * int or_var list }
 
-let nowhere = {onhyps=Some[]; onconcl=false; concl_occs=[]}
+let nowhere = {onhyps=Some[]; concl_occs=(false,[])}
 
 let simple_clause_of = function
-    { onhyps = Some[scl]; onconcl = false } -> Some scl
-  | { onhyps = Some []; onconcl = true; concl_occs=[] } -> None
-  | _ -> error "not a simple clause (one hypothesis or conclusion)"
+| { onhyps = Some [scl]; concl_occs = occs } when occs = no_occurrences_expr ->
+      Some scl
+| { onhyps = Some []; concl_occs = occs } when occs = all_occurrences_expr ->
+    None
+| _ ->
+    error "not a simple clause (one hypothesis or conclusion)"
 
 type multi = 
   | Precisely of int

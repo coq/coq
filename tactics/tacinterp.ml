@@ -204,7 +204,7 @@ let add_primitive_tactic s tac =
   atomic_mactab := Idmap.add id tac !atomic_mactab
 
 let _ =
-  let nocl = {onhyps=Some[];onconcl=true; concl_occs=[]} in
+  let nocl = {onhyps=Some[];concl_occs=all_occurrences_expr} in
   List.iter
       (fun (s,t) -> add_primitive_tactic s (TacAtom(dloc,t)))
       [ "red", TacReduce(Red false,nocl);
@@ -610,8 +610,8 @@ let intern_inversion_strength lf ist = function
       InversionUsing (intern_constr ist c, List.map (intern_hyp_or_metaid ist) idl)
 
 (* Interprets an hypothesis name *)
-let intern_hyp_location ist ((occs,id),hl) =
-  ((List.map (intern_or_var ist) occs,intern_hyp ist (skip_metaid id)), hl)
+let intern_hyp_location ist (((b,occs),id),hl) =
+  (((b,List.map (intern_or_var ist) occs),intern_hyp ist (skip_metaid id)), hl)
 
 let interp_constrpattern_gen sigma env ?(as_type=false) ltacvar c =
   let c = intern_gen as_type ~allow_patvar:true ~ltacvars:(ltacvar,[])
@@ -672,10 +672,10 @@ let extract_let_names lrc =
     lrc []
 
 let clause_app f = function
-    { onhyps=None; onconcl=b;concl_occs=nl } ->
-      { onhyps=None; onconcl=b; concl_occs=nl }
-  | { onhyps=Some l; onconcl=b;concl_occs=nl } ->
-      { onhyps=Some(List.map f l); onconcl=b;concl_occs=nl}
+    { onhyps=None; concl_occs=nl } ->
+      { onhyps=None; concl_occs=nl }
+  | { onhyps=Some l; concl_occs=nl } ->
+      { onhyps=Some(List.map f l); concl_occs=nl}
 
 (* Globalizes tactics : raw_tactic_expr -> glob_tactic_expr *)
 let rec intern_atomic lf ist x =
@@ -783,7 +783,9 @@ let rec intern_atomic lf ist x =
       TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
   | TacChange (occl,c,cl) ->
       TacChange (Option.map (intern_constr_with_occurrences ist) occl,
-        (if occl = None & cl.onhyps = None & cl.concl_occs = []
+        (if occl = None & (cl.onhyps = None or cl.onhyps = Some []) &
+	    (cl.concl_occs = all_occurrences_expr or
+	     cl.concl_occs = no_occurrences_expr)
          then intern_type ist c else intern_constr ist c),
 	clause_app (intern_hyp_location ist) cl)
 
@@ -1279,13 +1281,15 @@ let interp_evaluable ist env = function
       interp_ltac_var (coerce_to_evaluable_ref env) ist (Some env) locid
 
 (* Interprets an hypothesis name *)
-let interp_hyp_location ist gl ((occs,id),hl) =
-  ((interp_int_or_var_list ist occs,interp_hyp ist gl id),hl)
+let interp_occurrences ist (b,occs) =
+  (b,interp_int_or_var_list ist occs)
 
-let interp_clause ist gl { onhyps=ol; onconcl=b; concl_occs=occs } =
+let interp_hyp_location ist gl ((occs,id),hl) =
+  ((interp_occurrences ist occs,interp_hyp ist gl id),hl)
+
+let interp_clause ist gl { onhyps=ol; concl_occs=occs } =
   { onhyps=Option.map(List.map (interp_hyp_location ist gl)) ol;
-    onconcl=b;
-    concl_occs= interp_int_or_var_list ist occs }
+    concl_occs=interp_occurrences ist occs }
 
 (* Interpretation of constructions *)
 
@@ -1483,22 +1487,23 @@ let pf_interp_type ist gl =
   interp_type ist (project gl) (pf_env gl)
 
 (* Interprets a reduction expression *)
-let interp_unfold ist env (l,qid) =
-  (interp_int_or_var_list ist l,interp_evaluable ist env qid)
+let interp_unfold ist env (occs,qid) =
+  (interp_occurrences ist occs,interp_evaluable ist env qid)
 
 let interp_flag ist env red =
   { red with rConst = List.map (interp_evaluable ist env) red.rConst }
 
-let interp_pattern ist sigma env (l,c) = 
-  (interp_int_or_var_list ist l, interp_constr ist sigma env c)
+let interp_pattern ist sigma env (occs,c) = 
+  (interp_occurrences ist occs, interp_constr ist sigma env c)
 
 let pf_interp_constr_with_occurrences ist gl =
   interp_pattern ist (project gl) (pf_env gl)
 
 let pf_interp_constr_with_occurrences_and_name_as_list = 
   pf_interp_constr_in_compound_list
-    (fun c -> (([],c),Anonymous))
-    (function (([],c),Anonymous) -> c | _ -> raise Not_found)
+    (fun c -> ((all_occurrences_expr,c),Anonymous))
+    (function ((occs,c),Anonymous) when occs = all_occurrences_expr -> c 
+      | _ -> raise Not_found)
     (fun ist gl (occ_c,na) ->
       (interp_pattern ist (project gl) (pf_env gl) occ_c,
        interp_fresh_name ist gl na))
@@ -2189,7 +2194,9 @@ and interp_atomic ist gl = function
       h_reduce (pf_interp_red_expr ist gl r) (interp_clause ist gl cl)
   | TacChange (occl,c,cl) ->
       h_change (Option.map (pf_interp_constr_with_occurrences ist gl) occl)
-        (if occl = None & cl.onhyps = None & cl.concl_occs = []
+        (if occl = None & (cl.onhyps = None or cl.onhyps = Some []) &
+	    (cl.concl_occs = all_occurrences_expr or
+	     cl.concl_occs = no_occurrences_expr)
 	 then pf_interp_type ist gl c 
 	 else pf_interp_constr ist gl c)
         (interp_clause ist gl cl)

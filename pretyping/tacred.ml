@@ -35,16 +35,23 @@ exception ReductionTacticError of reduction_tactic_error
 exception Elimconst
 exception Redelimination
 
-let is_evaluable env ref =
-  match ref with
-      EvalConstRef kn ->
-        is_transparent (ConstKey kn) &&
-        let cb = Environ.lookup_constant kn env in
-        cb.const_body <> None & not cb.const_opaque
-    | EvalVarRef id ->
-        is_transparent (VarKey id) &&
-        let (_,value,_) = Environ.lookup_named id env in
-        value <> None
+let is_evaluable env = function
+  | EvalConstRef kn ->
+      is_transparent (ConstKey kn) &&
+      let cb = Environ.lookup_constant kn env in
+      cb.const_body <> None & not cb.const_opaque
+  | EvalVarRef id ->
+      is_transparent (VarKey id) &&
+      let (_,value,_) = Environ.lookup_named id env in
+      value <> None
+
+let value_of_evaluable_ref env = function
+  | EvalConstRef con -> constant_value env con
+  | EvalVarRef id -> Option.get (pi2 (lookup_named id env))
+
+let constr_of_evaluable_ref = function
+  | EvalConstRef con -> mkConst con
+  | EvalVarRef id -> mkVar id
 
 type evaluable_reference =
   | EvalConst of constant
@@ -627,20 +634,16 @@ let is_head c t =
     | App (f,_) -> f = c
     | _ -> false
 
-let contextually byhead (locs,c) f env sigma t =
+let contextually byhead ((nowhere_except_in,locs),c) f env sigma t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
-  let except = List.exists (fun n -> n<0) locs in
-  if except & (List.exists (fun n -> n>=0) locs) 
-  then error "mixing of positive and negative occurences"
-  else
-   let rec traverse (env,c as envc) t =
-    if locs <> [] & (not except) & (!pos > maxocc) then t
+  let rec traverse (env,c as envc) t =
+    if nowhere_except_in & (!pos > maxocc) then t
     else
     if (not byhead & eq_constr c t) or (byhead & is_head c t) then
       let ok = 
-	if except then not (List.mem (- !pos) locs)
-	else (locs = [] or List.mem !pos locs) in
+	if nowhere_except_in then List.mem !pos locs
+	else not (List.mem !pos locs) in
       incr pos;
       if ok then
 	f env sigma t
@@ -656,112 +659,34 @@ let contextually byhead (locs,c) f env sigma t =
         traverse envc t
   in
   let t' = traverse (env,c) t in
-  if locs <> [] & List.exists (fun o -> o >= !pos or o <= - !pos) locs then
-    error_invalid_occurrence locs;
+  if List.exists (fun o -> o >= !pos) locs then error_invalid_occurrence locs;
   t'
 
 (* linear bindings (following pretty-printer) of the value of name in c.
  * n is the number of the next occurence of name.
  * ol is the occurence list to find. *)
-let rec substlin env name n ol c =
-  match kind_of_term c with
-    | Const kn when EvalConstRef kn = name ->
-        if List.hd ol = n then
-          try 
-	    (n+1, List.tl ol, constant_value env kn)
-          with
-	      NotEvaluableConst _ ->
-		errorlabstrm "substlin"
-		  (pr_con kn ++ str " is not a defined constant")
-        else 
-	  ((n+1), ol, c)
 
-    | Var id when EvalVarRef id = name ->
-        if List.hd ol = n then
-          match lookup_named id env with
-	    | (_,Some c,_) -> (n+1, List.tl ol, c)
-	    | _ -> 
-		errorlabstrm "substlin"
-		  (pr_id id ++ str " is not a defined constant")
-        else 
-	  ((n+1), ol, c)
-
-    (* INEFFICIENT: OPTIMIZE *)
-    | App (c1,cl) ->
-        Array.fold_left 
-	  (fun (n1,ol1,c1') c2 ->
-	     (match ol1 with 
-                | [] -> (n1,[],applist(c1',[c2]))
-                | _  ->
-                    let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-                    (n2,ol2,applist(c1',[c2']))))
-          (substlin env name n ol c1) cl
-
-    | Lambda (na,c1,c2) ->
-        let (n1,ol1,c1') = substlin env name n ol c1 in
-        (match ol1 with 
-           | [] -> (n1,[],mkLambda (na,c1',c2))
-           | _  ->
-               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkLambda (na,c1',c2')))
-
-    | LetIn (na,c1,t,c2) ->
-        let (n1,ol1,c1') = substlin env name n ol c1 in
-        (match ol1 with 
-           | [] -> (n1,[],mkLetIn (na,c1',t,c2))
-           | _  ->
-               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkLetIn (na,c1',t,c2')))
-
-    | Prod (na,c1,c2) ->
-        let (n1,ol1,c1') = substlin env name n ol c1 in
-        (match ol1 with 
-           | [] -> (n1,[],mkProd (na,c1',c2))
-           | _  ->
-               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkProd (na,c1',c2')))
-	
-    | Case (ci,p,d,llf) ->
-        let rec substlist nn oll = function
-          | []     -> (nn,oll,[])
-          | f::lfe ->
-              let (nn1,oll1,f') = substlin env name nn oll f in
-              (match oll1 with
-                 | [] -> (nn1,[],f'::lfe)
-                 | _  ->
-                     let (nn2,oll2,lfe') = substlist nn1 oll1 lfe in
-                     (nn2,oll2,f'::lfe'))
-	in
-	(* p is printed after d in v8 syntax *)
-	let (n1,ol1,d') = substlin env name n ol d in
-        (match ol1 with
-           | [] -> (n1,[],mkCase (ci, p, d', llf))
-           | _  ->
-               let (n2,ol2,p') = substlin env name n1 ol1 p in
-               (match ol2 with
-		  | [] -> (n2,[],mkCase (ci, p', d', llf))
-		  | _  -> 
-	              let (n3,ol3,lf') = substlist n2 ol2 (Array.to_list llf)
-                      in (n3,ol3,mkCase (ci, p', d', Array.of_list lf'))))
-        
-    | Cast (c1,k,c2)   ->
-        let (n1,ol1,c1') = substlin env name n ol c1 in
-        (match ol1 with 
-           | [] -> (n1,[],mkCast (c1',k,c2))
-           | _  -> 
-	       let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkCast (c1',k,c2')))
-
-    | Fix _ -> 
-        (Flags.if_verbose
-	  warning "do not consider occurrences inside fixpoints"; (n,ol,c))
-	
-    | CoFix _ -> 
-        (Flags.if_verbose
-	  warning "do not consider occurrences inside cofixpoints"; (n,ol,c))
-
-    | (Rel _|Meta _|Var _|Sort _
-      |Evar _|Const _|Ind _|Construct _) -> (n,ol,c)
+let substlin env evalref n (nowhere_except_in,locs) c =
+  let maxocc = List.fold_right max locs 0 in
+  let pos = ref n in
+  assert (List.for_all (fun x -> x >= 0) locs);
+  let value = value_of_evaluable_ref env evalref in
+  let term = constr_of_evaluable_ref evalref in
+  let rec substrec () c =
+    if nowhere_except_in & !pos > maxocc then c
+    else if c = term then
+      let ok = 
+	if nowhere_except_in then List.mem !pos locs
+	else not (List.mem !pos locs) in
+      incr pos;
+      if ok then value else c
+    else
+      map_constr_with_binders_left_to_right
+	(fun _ () -> ())
+        substrec () c
+  in
+  let t' = substrec () c in
+  (!pos, t')
 
 let string_of_evaluable_ref env = function
   | EvalVarRef id -> string_of_id id
@@ -779,16 +704,15 @@ let unfold env sigma name =
  * Unfolds the constant name in a term c following a list of occurrences occl.
  * at the occurrences of occ_list. If occ_list is empty, unfold all occurences.
  * Performs a betaiota reduction after unfolding. *)
-let unfoldoccs env sigma (occl,name) c =
-  match occl with
-    | []  -> unfold env sigma name c
-    | l -> 
-        match substlin env name 1 (Sort.list (<) l) c with
-          | (_,[],uc) -> nf_betaiota uc
-          | (1,_,_) ->
-              error ((string_of_evaluable_ref env name)^" does not occur")
-          | (_,l,_) ->
-	      error_invalid_occurrence l
+let unfoldoccs env sigma ((nowhere_except_in,locs as plocs),name) c =
+  if locs = [] then if nowhere_except_in then c else unfold env sigma name c
+  else
+    let (nbocc,uc) = substlin env name 1 plocs c in
+    if nbocc = 1 then 
+      error ((string_of_evaluable_ref env name)^" does not occur");
+    let rest = List.filter (fun o -> o >= nbocc) locs in
+    if rest <> [] then error_invalid_occurrence rest;
+    nf_betaiota uc
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c = 

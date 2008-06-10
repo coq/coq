@@ -677,7 +677,7 @@ and my_find_search_nodelta db_list local_db hdc concl =
 	      tclTHEN 
 		(unify_resolve_nodelta (term,cl)) 
 		(trivial_fail_db false db_list local_db)
-	  | Unfold_nth c -> unfold_in_concl [[],c]
+	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	  | Extern tacast -> 
 	      conclPattern concl (Option.get p) tacast))
     tacl
@@ -717,7 +717,7 @@ and my_find_search_delta db_list local_db hdc concl =
 	      tclTHEN 
 		(unify_resolve st (term,cl)) 
 		(trivial_fail_db true db_list local_db)
-	  | Unfold_nth c -> unfold_in_concl [[],c]
+	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	  | Extern tacast -> 
 	      conclPattern concl (Option.get p) tacast))
       tacl

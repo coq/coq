@@ -26,6 +26,7 @@ open Genarg
 open Tacexpr
 open Nametab
 open Rawterm
+open Termops
 (*i*)
 
 val inj_open : constr -> open_constr
@@ -121,9 +122,9 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
 val reduct_option     : tactic_reduction * cast_kind -> simple_clause -> tactic
 val reduct_in_concl   : tactic_reduction * cast_kind -> tactic
-val change_in_concl   : (int list * constr) option -> constr -> tactic
-val change_in_hyp     : (int list * constr) option -> constr -> hyp_location ->
-  tactic
+val change_in_concl   : (occurrences * constr) option -> constr -> tactic
+val change_in_hyp     : (occurrences * constr) option -> constr -> 
+                        hyp_location -> tactic
 val red_in_concl      : tactic
 val red_in_hyp        : hyp_location        -> tactic
 val red_option        : simple_clause -> tactic
@@ -137,18 +138,19 @@ val normalise_in_concl : tactic
 val normalise_in_hyp  : hyp_location        -> tactic
 val normalise_option  : simple_clause -> tactic
 val normalise_vm_in_concl : tactic
-val unfold_in_concl   : (int list * evaluable_global_reference) list -> tactic
+val unfold_in_concl   :
+  (occurrences * evaluable_global_reference) list -> tactic
 val unfold_in_hyp     : 
-  (int list * evaluable_global_reference) list -> hyp_location -> tactic
+  (occurrences * evaluable_global_reference) list -> hyp_location -> tactic
 val unfold_option     : 
-  (int list * evaluable_global_reference) list -> simple_clause
+  (occurrences * evaluable_global_reference) list -> simple_clause
     -> tactic
-val reduce            : red_expr -> clause -> tactic
 val change            :
-  (int list * constr) option -> constr -> clause -> tactic
-
+  (occurrences * constr) option -> constr -> clause -> tactic
+val pattern_option    : 
+  (occurrences * constr) list -> simple_clause -> tactic
+val reduce            : red_expr -> clause -> tactic
 val unfold_constr     : global_reference -> tactic
-val pattern_option  : (int list * constr) list -> simple_clause -> tactic
 
 (*s Modification of the local context. *)
 
@@ -326,9 +328,9 @@ val forward   : tactic option -> intro_pattern_expr -> constr -> tactic
 val letin_tac : bool option -> name -> constr -> clause -> tactic
 val true_cut                    : name -> constr -> tactic
 val assert_tac                  : bool -> name -> constr -> tactic
-val generalize                  : constr list -> tactic
-val generalize_gen              : ((int list * constr) * name) list -> tactic
-val generalize_dep              : constr  -> tactic
+val generalize      : constr list -> tactic
+val generalize_gen  : ((occurrences * constr) * name) list -> tactic
+val generalize_dep  : constr  -> tactic
 
 val tclABSTRACT : identifier option -> tactic -> tactic
 

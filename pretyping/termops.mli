@@ -131,18 +131,24 @@ val subst_term : constr -> constr -> constr
 (* [replace_term d e c] replaces [d] by [e] in [c] *)
 val replace_term : constr -> constr -> constr -> constr
 
+(* In occurrences sets, false = everywhere except and true = nowhere except *)
+type occurrences = bool * int list
+val all_occurrences : occurrences
+val no_occurrences_in_set : occurrences
+
 (* [subst_term_occ_gen occl n c d] replaces occurrences of [c] at
    positions [occl], counting from [n], by [Rel 1] in [d] *)
-val subst_term_occ_gen : int list -> int -> constr -> types -> int * types
+val subst_term_occ_gen : 
+  occurrences -> int -> constr -> types -> int * types
 
 (* [subst_term_occ occl c d] replaces occurrences of [c] at
    positions [occl] by [Rel 1] in [d] (see also Note OCC) *)
-val subst_term_occ : int list -> constr -> constr -> constr
+val subst_term_occ : occurrences -> constr -> constr -> constr
 
 (* [subst_term_occ_decl occl c decl] replaces occurrences of [c] at
    positions [occl] by [Rel 1] in [decl] *)
 val subst_term_occ_decl :
-  int list -> constr -> named_declaration -> named_declaration
+  occurrences -> constr -> named_declaration -> named_declaration
 
 val error_invalid_occurrence : int list -> 'a
 

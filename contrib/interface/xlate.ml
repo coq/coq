@@ -464,24 +464,31 @@ let (xlate_ident_or_metaid:
     AI (_, x) -> xlate_ident x
   | MetaId(_, x) -> CT_metaid x;;
 
+let nums_of_occs (b,nums) =
+  if b then nums
+  else List.map (function ArgArg x -> ArgArg (-x) | y -> y) nums
+
 let xlate_hyp = function
   | AI (_,id) -> xlate_ident id
   | MetaId _ -> xlate_error "MetaId should occur only in quotations"
 
 let xlate_hyp_location =
  function
-  | (nums, AI (_,id)), InHypTypeOnly ->
-      CT_intype(xlate_ident id, nums_or_var_to_int_list nums)
-  | (nums, AI (_,id)), InHypValueOnly ->
-      CT_invalue(xlate_ident id, nums_or_var_to_int_list nums)
-  | ([], AI (_,id)), InHyp ->
+  | (occs, AI (_,id)), InHypTypeOnly ->
+      CT_intype(xlate_ident id, nums_or_var_to_int_list (nums_of_occs occs))
+  | (occs, AI (_,id)), InHypValueOnly ->
+      CT_invalue(xlate_ident id, nums_or_var_to_int_list (nums_of_occs occs))
+  | ((true,[]), AI (_,id)), InHyp ->
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_coerce_ID_to_UNFOLD (xlate_ident id))
-  | (a::l, AI (_,id)), InHyp ->
+  | ((_,a::l as occs), AI (_,id)), InHyp ->
+      let nums = nums_of_occs occs in
+      let a = List.hd nums and l = List.tl nums in
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_unfold_occ (xlate_ident id, 
 			CT_int_ne_list(num_or_var_to_int a, 
                                        nums_or_var_to_int_list_aux l)))
+  | ((false,[]), AI (_,id)), InHyp -> xlate_error "Unused"
   | (_, MetaId _),_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
@@ -494,7 +501,7 @@ let xlate_clause cls =
       | Some l -> CT_hyp_location_list(List.map xlate_hyp_location l) in
   CT_clause
     (hyps_info, 
-     if cls.onconcl then 
+     if cls.concl_occs <> no_occurrences_expr then 
        CT_coerce_STAR_to_STAR_OPT CT_star
      else
        CT_coerce_NONE_to_STAR_OPT CT_none)
@@ -667,11 +674,13 @@ let xlate_using = function
   | Some (c2,sl2) -> CT_using (xlate_formula c2, xlate_bindings sl2);;
 
 let xlate_one_unfold_block = function
-    ([],qid) -> 
+    ((true,[]),qid) -> 
       CT_coerce_ID_to_UNFOLD(apply_or_by_notation tac_qualid_to_ct_ID qid)
-  | (n::nums, qid) ->
+  | (((_,_::_) as occs), qid) ->
+      let l = nums_of_occs occs in
       CT_unfold_occ(apply_or_by_notation tac_qualid_to_ct_ID qid, 
-                    nums_or_var_to_int_ne_list n nums)
+                    nums_or_var_to_int_ne_list (List.hd l) (List.tl l))
+  | ((false,[]), qid) -> xlate_error "Unused"
 ;;
 
 let xlate_with_names = function
@@ -732,7 +741,8 @@ and xlate_red_tactic =
   | CbvVm -> CT_cbvvm
   | Hnf -> CT_hnf
   | Simpl None -> CT_simpl ctv_PATTERN_OPT_NONE
-  | Simpl (Some (l,c)) -> 
+  | Simpl (Some (occs,c)) -> 
+      let l = nums_of_occs occs in
       CT_simpl 
 	(CT_coerce_PATTERN_to_PATTERN_OPT
 	   (CT_pattern_occ
@@ -751,9 +761,9 @@ and xlate_red_tactic =
   | Fold formula_list -> 
       CT_fold(CT_formula_list(List.map xlate_formula formula_list))
   | Pattern l ->
-     let pat_list = List.map (fun (nums,c) ->
+     let pat_list = List.map (fun (occs,c) ->
           CT_pattern_occ
-           (CT_int_list (nums_or_var_to_int_list_aux nums),
+           (CT_int_list (nums_or_var_to_int_list_aux (nums_of_occs occs)),
             xlate_formula c)) l in
      (match pat_list with
       | first :: others -> CT_pattern (CT_pattern_ne_list (first, others))
@@ -907,6 +917,7 @@ and xlate_tac =
     | TacChange (None, f, b) -> CT_change (xlate_formula f, xlate_clause b)
     | TacChange (Some(l,c), f, b) -> 
 	(* TODO LATER: combine with other constructions of pattern_occ *)
+	let l = nums_of_occs l in
 	CT_change_local(
 	  CT_pattern_occ(CT_int_list(nums_or_var_to_int_list_aux l), 
 			 xlate_formula c),
@@ -1151,8 +1162,9 @@ and xlate_tac =
     | TacSpecialize (nopt, (c,sl)) ->
      CT_specialize (xlate_int_opt nopt, xlate_formula c, xlate_bindings sl)
     | TacGeneralize [] -> xlate_error ""
-    | TacGeneralize ((([],first),Anonymous) :: cl)
-	when List.for_all (fun ((o,_),na) -> o = [] & na = Anonymous) cl ->
+    | TacGeneralize ((((true,[]),first),Anonymous) :: cl)
+	when List.for_all (fun ((o,_),na) -> o = all_occurrences_expr
+	  & na = Anonymous) cl ->
      CT_generalize
       (CT_formula_ne_list (xlate_formula first, 
                            List.map (fun ((_,c),_) -> xlate_formula c) cl))

@@ -637,7 +637,7 @@ let build_proof
 		    [
 		      h_generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
 		      thin dyn_infos.rec_hyps;
-		      pattern_option [[-1],t] None;
+		      pattern_option [(false,[1]),t] None;
 		      h_simplest_case t;
 		      (fun g' -> 
 			 let g'_nb_prod = nb_prod (pf_concl g') in 
@@ -1246,7 +1246,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		 in
 		 let fname = destConst (fst (decompose_app (List.hd (List.rev pte_args)))) in
 		 tclTHENSEQ
-		   [unfold_in_concl [([],Names.EvalConstRef fname)];
+		   [unfold_in_concl [(all_occurrences,Names.EvalConstRef fname)];
 		    let do_prove = 
 		      build_proof 
 			interactive_proof
@@ -1347,11 +1347,10 @@ let build_clause eqs =
   {
     Tacexpr.onhyps = 
       Some (List.map 
-	      (fun id -> ([],id),Tacexpr.InHyp)
+	      (fun id -> (Rawterm.all_occurrences_expr,id),Tacexpr.InHyp)
 	      eqs
 	   );
-    Tacexpr.onconcl = false; 
-    Tacexpr.concl_occs = [] 
+    Tacexpr.concl_occs = Rawterm.no_occurrences_expr 
   }
 
 let rec rewrite_eqs_in_eqs eqs = 
@@ -1364,7 +1363,7 @@ let rec rewrite_eqs_in_eqs eqs =
 	       (fun id gl -> 
 		  observe_tac 
 		    (Format.sprintf "rewrite %s in %s " (string_of_id eq) (string_of_id id)) 
-		    (tclTRY (Equality.general_rewrite_in true [] id (mkVar eq) false))
+		    (tclTRY (Equality.general_rewrite_in true all_occurrences id (mkVar eq) false))
 		    gl
 	       ) 
 	       eqs
@@ -1386,7 +1385,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 		  (fun g -> 
 		     if is_mes 
 		     then 
-		       unfold_in_concl [([], evaluable_of_global_reference (delayed_force ltof_ref))] g 
+		       unfold_in_concl [(all_occurrences, evaluable_of_global_reference (delayed_force ltof_ref))] g 
 		     else tclIDTAC g
 		  );
 		  observe_tac "rew_and_finish"

@@ -44,7 +44,8 @@ let abstract_scheme env c l lname_typ =
 
 let abstract_list_all env evd typ c l =
   let ctxt,_ = decomp_n_prod env (evars_of evd) (List.length l) typ in
-  let p = abstract_scheme env c (List.map (function a -> [],a) l) ctxt in 
+  let l_with_all_occs = List.map (function a -> (all_occurrences,a)) l in
+  let p = abstract_scheme env c l_with_all_occs ctxt in 
   try 
     if is_conv_leq env (evars_of evd) (Typing.mtype_of env evd p) typ then p
     else error "abstract_list_all"

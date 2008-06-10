@@ -23,6 +23,7 @@ open Refiner
 open Tacmach
 open Clenv
 open Clenvtac
+open Rawterm
 open Pattern
 open Matching
 open Evar_refiner
@@ -123,17 +124,21 @@ let tclTRY_HYPS (tac : constr->tactic) gl =
 type simple_clause = identifier gsimple_clause
 type clause = identifier gclause
 
-let allClauses = { onhyps=None; onconcl=true; concl_occs=[] }
-let allHyps = { onhyps=None; onconcl=false; concl_occs=[] }
-let onHyp id = { onhyps=Some[(([],id),InHyp)]; onconcl=false; concl_occs=[] }
-let onConcl = { onhyps=Some[]; onconcl=true; concl_occs=[] }
+let allClauses = { onhyps=None; concl_occs=all_occurrences_expr }
+let allHyps = { onhyps=None; concl_occs=no_occurrences_expr }
+let onConcl = { onhyps=Some[]; concl_occs=all_occurrences_expr }
+let onHyp id =
+  { onhyps=Some[((all_occurrences_expr,id),InHyp)]; concl_occs=no_occurrences_expr }
 
 let simple_clause_list_of cl gls =
   let hyps =
     match cl.onhyps with 
-        None -> List.map (fun id -> Some(([],id),InHyp)) (pf_ids_of_hyps gls)
-      | Some l -> List.map (fun h -> Some h) l in
-  if cl.onconcl then None::hyps else hyps
+    | None ->
+	let f id = Some((all_occurrences_expr,id),InHyp) in
+	List.map f (pf_ids_of_hyps gls)
+    | Some l ->
+	List.map (fun h -> Some h) l in
+  if cl.concl_occs = all_occurrences_expr then None::hyps else hyps
 
 
 (* OR-branch *)

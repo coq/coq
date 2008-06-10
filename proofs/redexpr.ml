@@ -154,8 +154,8 @@ let out_arg = function
   | ArgVar _ -> anomaly "Unevaluated or_var variable"
   | ArgArg x -> x
 
-let out_with_occurrences (l,c) =
-  (List.map out_arg l, c)
+let out_with_occurrences ((b,l),c) =
+  ((b,List.map out_arg l), c)
 
 let reduction_of_red_expr = function
   | Red internal -> 

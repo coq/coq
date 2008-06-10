@@ -125,7 +125,7 @@ and e_my_find_search db_list local_db hdc concl =
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
               tclTHEN (unify_e_resolve st (term,cl)) 
 		(e_trivial_fail_db db_list local_db)
-	  | Unfold_nth c -> unfold_in_concl [[],c]
+	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	  | Extern tacast -> conclPattern concl 
 	      (Option.get p) tacast
       in 
@@ -793,8 +793,10 @@ type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
 
 let default_flags = { under_lambdas = true; on_morphisms = true; }
 
-let build_new gl env sigma flags occs hypinfo concl cstr evars =
-  let is_occ occ = occs = [] || List.mem occ occs in
+let build_new gl env sigma flags loccs hypinfo concl cstr evars =
+  let (nowhere_except_in,occs) = loccs in
+  let is_occ occ = 
+    if nowhere_except_in then List.mem occ occs else not (List.mem occ occs) in
   let rec aux env t occ cstr =
     let unif = unify_eqn env sigma hypinfo t in
     let occ = if unif = None then occ else succ occ in
@@ -899,7 +901,11 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 			Some (prf', (car', rel', c1', c2'))
 		in res, occ
 	  | _ -> None, occ
-  in aux env concl 0 cstr
+  in
+  let eq,nbocc_min_1 = aux env concl 0 cstr in
+  let rest = List.filter (fun o -> o > nbocc_min_1) occs in
+  if rest <> [] then error_invalid_occurrence rest;
+  eq
     
 let resolve_typeclass_evars d p env evd onlyargs =
   let pred = 
@@ -924,7 +930,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
   let evars = ref (Evd.create_evar_defs Evd.empty) in
   let env = pf_env gl in
   let sigma = project gl in
-  let eq, _ = build_new gl env sigma flags occs hypinfo concl (Some (Lazy.lazy_from_val cstr)) evars 
+  let eq = build_new gl env sigma flags occs hypinfo concl (Some (Lazy.lazy_from_val cstr)) evars 
   in
     match eq with  
     | Some (p, (_, _, oldt, newt)) -> 
@@ -993,12 +999,19 @@ let cl_rewrite_clause c left2right occs clause gl =
 open Genarg
 open Extraargs
 
+let occurrences_of = function
+  | n::_ as nl when n < 0 -> (false,List.map abs nl)
+  | nl -> 
+      if List.exists (fun n -> n < 0) nl then
+	error "Illegal negative occurrence number";
+      (true,nl)
+
 TACTIC EXTEND class_rewrite
-| [ "clrewrite" orient(o) constr(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) constr(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o occ (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o [] (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) constr(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o occ None ]
-| [ "clrewrite" orient(o) constr(c) ] -> [ cl_rewrite_clause c o [] None ]
+| [ "clrewrite" orient(o) constr(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) constr(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o all_occurrences (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) constr(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) None ]
+| [ "clrewrite" orient(o) constr(c) ] -> [ cl_rewrite_clause c o all_occurrences None ]
 END
 
 
@@ -1008,7 +1021,7 @@ let clsubstitute o c =
       (fun cl -> 
 	match cl with
 	  | Some ((_,id),_) when is_tac id -> tclIDTAC
-	  | _ -> tclTRY (cl_rewrite_clause c o [] cl))
+	  | _ -> tclTRY (cl_rewrite_clause c o all_occurrences cl))
 
 TACTIC EXTEND substitute
 | [ "substitute" orient(o) constr(c) ] -> [ clsubstitute o c ]
@@ -1098,15 +1111,15 @@ let _ =
   
 TACTIC EXTEND setoid_rewrite
    [ "setoid_rewrite" orient(o) constr(c) ]
-   -> [ cl_rewrite_clause c o [] None ]
+   -> [ cl_rewrite_clause c o all_occurrences None ]
  | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) ] ->
-      [ cl_rewrite_clause c o [] (Some (([],id), []))]
+      [ cl_rewrite_clause c o all_occurrences (Some (([],id), []))]
  | [ "setoid_rewrite" orient(o) constr(c) "at" occurrences(occ) ] ->
-      [ cl_rewrite_clause c o occ None]
+      [ cl_rewrite_clause c o (occurrences_of occ) None]
  | [ "setoid_rewrite" orient(o) constr(c) "at" occurrences(occ) "in" hyp(id)] ->
-      [ cl_rewrite_clause c o occ (Some (([],id), []))]
+      [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), []))]
  | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) "at" occurrences(occ)] ->
-      [ cl_rewrite_clause c o occ (Some (([],id), []))]
+      [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), []))]
 END
 
 (* let solve_obligation lemma =  *)

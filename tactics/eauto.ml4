@@ -140,7 +140,7 @@ and e_my_find_search_nodelta db_list local_db hdc concl =
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve_nodelta (term,cl)) 
 		 (e_trivial_fail_db false db_list local_db)
-	   | Unfold_nth c -> unfold_in_concl [[],c]
+	   | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	   | Extern tacast -> conclPattern concl 
 	       (Option.get p) tacast
        in 
@@ -179,7 +179,7 @@ and e_my_find_search_delta db_list local_db hdc concl =
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve st (term,cl)) 
 		 (e_trivial_fail_db true db_list local_db)
-	   | Unfold_nth c -> unfold_in_concl [[],c]
+	   | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	   | Extern tacast -> conclPattern concl 
 	       (Option.get p) tacast
        in 
@@ -448,7 +448,7 @@ END
 let autosimpl db cl =
   let unfold_of_elts constr (b, elts) =
     if not b then 
-      List.map (fun c -> [], constr c) elts
+      List.map (fun c -> all_occurrences, constr c) elts
     else []
   in
   let unfolds = List.concat (List.map (fun dbname -> 

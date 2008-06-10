@@ -56,6 +56,8 @@ let rec nb_prod x =
       | _ -> n
   in count 0 x
 
+let inj_with_occurrences e = (all_occurrences_expr,e)
+
 let inj_open c = (Evd.empty,c)
 
 let inj_occ (occ,c) = (occ,inj_open c)
@@ -214,7 +216,8 @@ let change_option occl t = function
 
 let change occl c cls =
   (match cls, occl with
-      ({onhyps=(Some(_::_::_)|None)}|{onhyps=Some(_::_);onconcl=true}),
+      ({onhyps=(Some(_::_::_)|None)}
+      |{onhyps=Some(_::_);concl_occs=((false,_)|(true,_::_))}),
       Some _ ->
 	error "No occurrences expected when changing several hypotheses"
     | _ -> ());
@@ -256,8 +259,8 @@ let reduce redexp cl goal =
 (* Unfolding occurrences of a constant *)
 
 let unfold_constr = function 
-  | ConstRef sp -> unfold_in_concl [[],EvalConstRef sp]
-  | VarRef id -> unfold_in_concl [[],EvalVarRef id]
+  | ConstRef sp -> unfold_in_concl [all_occurrences,EvalConstRef sp]
+  | VarRef id -> unfold_in_concl [all_occurrences,EvalVarRef id]
   | _ -> errorlabstrm "unfold_constr" (str "Cannot unfold a non-constant.")
 
 (*******************************************)
@@ -1175,7 +1178,7 @@ let generalize_dep c gl =
       | _ -> tothin
   in
   let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
-  let cl'' = generalize_goal gl 0 (([],c),Anonymous) cl' in
+  let cl'' = generalize_goal gl 0 ((all_occurrences,c),Anonymous) cl' in
   let args = Array.to_list (instance_from_named_context to_quantify_rev) in
   tclTHEN
     (apply_type cl'' (c::args))
@@ -1187,7 +1190,8 @@ let generalize_gen lconstr gl =
     list_fold_right_i (generalize_goal gl) 0 lconstr (pf_concl gl) in
   apply_type newcl (List.map (fun ((_,c),_) -> c) lconstr) gl
 
-let generalize l = generalize_gen (List.map (fun c -> (([],c),Anonymous)) l)
+let generalize l =
+  generalize_gen (List.map (fun c -> ((all_occurrences,c),Anonymous)) l)
 
 let revert hyps gl = 
   tclTHEN (generalize (List.map mkVar hyps)) (clear hyps) gl
@@ -1235,14 +1239,15 @@ let out_arg = function
 let occurrences_of_hyp id cls =
   let rec hyp_occ = function
       [] -> None
-    | ((occs,id'),hl)::_ when id=id' -> Some (List.map out_arg occs)
+    | (((b,occs),id'),hl)::_ when id=id' -> Some (b,List.map out_arg occs)
     | _::l -> hyp_occ l in
   match cls.onhyps with
-      None -> Some []
+      None -> Some (all_occurrences)
     | Some l -> hyp_occ l
 
 let occurrences_of_goal cls =
-  if cls.onconcl then Some (List.map out_arg cls.concl_occs) else None
+  if cls.concl_occs = no_occurrences_expr then None
+  else Some (on_snd (List.map out_arg) cls.concl_occs)
 
 let in_every_hyp cls = (cls.onhyps=None)
 
@@ -1311,7 +1316,7 @@ let letin_abstract id c occs gl =
       | None -> depdecls
       | Some occ ->
           let newdecl = subst_term_occ_decl occ c d in
-          if occ = [] & d = newdecl then
+          if occ = all_occurrences & d = newdecl then
 	    if not (in_every_hyp occs)
 	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
 	    else depdecls
@@ -2297,8 +2302,6 @@ let recolle_clenv scheme lid elimclause gl =
     (List.rev clauses)
     elimclause
 
-
-
 (* Unification of the goal and the principle applied to meta variables:
    (elimc ?i ?j ?k...?l). This solves partly meta variables (and may
     produce new ones). Then refine with the resulting term with holes.
@@ -2364,7 +2367,7 @@ let induction_from_context_l isrec with_evars elim_info lid names gl =
       if deps = [] then tclIDTAC else apply_type tmpcl deps_cstr;
       thin dephyps; (* clear dependent hyps *)
       (* pattern to make the predicate appear. *)
-      reduce (Pattern (List.map (fun e -> ([],e)) lidcstr)) onConcl;
+      reduce (Pattern (List.map inj_with_occurrences lidcstr)) onConcl;
       (* FIXME: Tester ca avec un principe dependant et non-dependant *)
       (if isrec then tclTHENFIRSTn else tclTHENLASTn)
        	(tclTHENLIST [ 

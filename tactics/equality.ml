@@ -109,7 +109,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs (c,l) with_evars gl =
 	      then !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
 	      else error "The term provided does not end with an equation" 
 	  | Some (hdcncl,_) -> 
-	      if occs <> [] then (
+	      if occs <> all_occurrences then (
 		!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl)
 	      else
 		let hdcncls = string_of_inductive hdcncl in 
@@ -145,10 +145,10 @@ let general_rewrite_in l2r occs id c =
   general_rewrite_ebindings_clause (Some id) l2r occs (c,NoBindings)
 
 let general_multi_rewrite l2r with_evars c cl = 
-  let occs = List.fold_left 
+  let occs_of = on_snd (List.fold_left 
     (fun acc ->
       function ArgArg x -> x :: acc | ArgVar _ -> acc)
-    [] cl.concl_occs
+    [])
   in
   match cl.onhyps with 
     | Some l -> 
@@ -156,24 +156,24 @@ let general_multi_rewrite l2r with_evars c cl =
 	   each of these locations. *)
 	let rec do_hyps = function 
 	  | [] -> tclIDTAC
-	  | ((_,id),_) :: l -> 
-	      tclTHENFIRST
-	        (general_rewrite_ebindings_in l2r occs id c with_evars)
-	        (do_hyps l)
+	  | ((occs,id),_) :: l -> 
+	    tclTHENFIRST
+	      (general_rewrite_ebindings_in l2r (occs_of occs) id c with_evars)
+	      (do_hyps l)
 	in 
-	if not cl.onconcl then do_hyps l else
+	if cl.concl_occs = no_occurrences_expr then do_hyps l else
 	  tclTHENFIRST
-	    (general_rewrite_ebindings l2r occs c with_evars)
-	    (do_hyps l)
+	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) c with_evars)
+	   (do_hyps l)
     | None -> 
 	(* Otherwise, if we are told to rewrite in all hypothesis via the 
            syntax "* |-", we fail iff all the different rewrites fail *) 
 	let rec do_hyps_atleastonce = function 
 	  | [] -> (fun gl -> error "Nothing to rewrite.")
 	  | id :: l -> 
-	      tclIFTHENTRYELSEMUST 
-		(general_rewrite_ebindings_in l2r occs id c with_evars) 
-		(do_hyps_atleastonce l)
+	    tclIFTHENTRYELSEMUST 
+	     (general_rewrite_ebindings_in l2r all_occurrences id c with_evars)
+	     (do_hyps_atleastonce l)
 	in 
 	let do_hyps gl = 
 	  (* If the term to rewrite uses an hypothesis H, don't rewrite in H *)
@@ -182,10 +182,10 @@ let general_multi_rewrite l2r with_evars c cl =
 	      Idset.fold (fun id l -> list_remove id l) ids_in_c (pf_ids_of_hyps gl)
 	  in do_hyps_atleastonce ids gl
 	in 
-	  if not cl.onconcl then do_hyps else
-	    tclIFTHENTRYELSEMUST 
-	      (general_rewrite_ebindings l2r occs c with_evars)
-	      do_hyps
+	if cl.concl_occs = no_occurrences_expr then do_hyps else
+	  tclIFTHENTRYELSEMUST 
+	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) c with_evars)
+	   do_hyps
 
 let general_multi_multi_rewrite with_evars l cl tac = 
   let do1 l2r c = 
@@ -212,20 +212,22 @@ let general_multi_multi_rewrite with_evars l cl tac =
    to the resolution of the conditions by a given tactic *)
 
 let conditional_rewrite lft2rgt tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_ebindings lft2rgt [] (c,bl) false)
+  tclTHENSFIRSTn
+    (general_rewrite_ebindings lft2rgt all_occurrences (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
-let rewriteLR_bindings = general_rewrite_bindings true []
-let rewriteRL_bindings = general_rewrite_bindings false []
+let rewriteLR_bindings = general_rewrite_bindings true all_occurrences
+let rewriteRL_bindings = general_rewrite_bindings false all_occurrences
 
-let rewriteLR = general_rewrite true []
-let rewriteRL = general_rewrite false []
+let rewriteLR = general_rewrite true all_occurrences
+let rewriteRL = general_rewrite false all_occurrences
 
-let rewriteLRin_bindings = general_rewrite_bindings_in true []
-let rewriteRLin_bindings = general_rewrite_bindings_in false []
+let rewriteLRin_bindings = general_rewrite_bindings_in true all_occurrences
+let rewriteRLin_bindings = general_rewrite_bindings_in false all_occurrences
 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
-  tclTHENSFIRSTn (general_rewrite_ebindings_in lft2rgt [] id (c,bl) false)
+  tclTHENSFIRSTn
+    (general_rewrite_ebindings_in lft2rgt all_occurrences id (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
 let rewriteRL_clause = function
@@ -1124,7 +1126,8 @@ let unfold_body x gl =
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis") in
   let aft = afterHyp x gl in
-  let hl = List.fold_right (fun (y,yval,_) cl -> (([],y),InHyp) :: cl) aft [] in
+  let hl = List.fold_right 
+    (fun (y,yval,_) cl -> ((all_occurrences_expr,y),InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST

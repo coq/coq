@@ -16,6 +16,7 @@ open Evd
 open Reductionops
 open Closure
 open Rawterm
+open Termops
 (*i*)
 
 type reduction_tactic_error = 
@@ -47,13 +48,13 @@ val hnf_constr : reduction_function
 
 (* Unfold *)
 val unfoldn : 
-  (int list * evaluable_global_reference) list ->  reduction_function
+  (occurrences * evaluable_global_reference) list ->  reduction_function
 
 (* Fold *)
 val fold_commands : constr list ->  reduction_function
 
 (* Pattern *)
-val pattern_occs : (int list * constr) list ->  reduction_function
+val pattern_occs : (occurrences * constr) list ->  reduction_function
 (* Rem: Lazy strategies are defined in Reduction *)
 
 (* Call by value strategy (uses Closures) *)
@@ -81,7 +82,7 @@ val reduce_to_quantified_ref :
 val reduce_to_atomic_ref :
   env ->  evar_map -> Libnames.global_reference -> types -> types
 
-val contextually : bool -> int list * constr -> reduction_function
+val contextually : bool -> occurrences * constr -> reduction_function
   -> reduction_function
 
 (* Compatibility *)

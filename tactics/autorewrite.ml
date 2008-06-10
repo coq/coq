@@ -17,7 +17,9 @@ open Tacticals
 open Tacinterp
 open Tactics
 open Term
+open Termops
 open Util
+open Rawterm
 open Vernacinterp
 open Tacexpr
 open Mod_subst
@@ -80,7 +82,10 @@ let one_base general_rewrite_maybe_in tac_main bas =
 let autorewrite tac_main lbas =
   tclREPEAT_MAIN (tclPROGRESS
     (List.fold_left (fun tac bas -> 
-       tclTHEN tac (one_base (fun dir -> general_rewrite dir []) tac_main bas)) tclIDTAC lbas))
+       tclTHEN tac
+        (one_base (fun dir -> general_rewrite dir all_occurrences)
+	  tac_main bas))
+      tclIDTAC lbas))
 
 let autorewrite_multi_in idl tac_main lbas : tactic =
   fun gl -> 
@@ -96,7 +101,7 @@ let autorewrite_multi_in idl tac_main lbas : tactic =
       | _ -> (* even the hypothesis id is missing *)
              error ("No such hypothesis : " ^ (string_of_id !id))
     in
-    let gl' = general_rewrite_in dir [] !id cstr false gl in
+    let gl' = general_rewrite_in dir all_occurrences !id cstr false gl in
     let gls = (fst gl').Evd.it in
     match gls with
        g::_ ->
@@ -132,7 +137,9 @@ let gen_auto_multi_rewrite tac_main lbas cl =
   let try_do_hyps treat_id l = 
     autorewrite_multi_in (List.map treat_id l) tac_main lbas
   in 
-  if cl.concl_occs <> [] then 
+  if cl.concl_occs <> all_occurrences_expr &
+     cl.concl_occs <> no_occurrences_expr
+  then 
     error "The \"at\" syntax isn't available yet for the autorewrite tactic"
   else 
     let compose_tac t1 t2 = 
@@ -141,7 +148,7 @@ let gen_auto_multi_rewrite tac_main lbas cl =
 	| _ ->      tclTHENFIRST t1 t2
     in
     compose_tac
-	(if cl.onconcl then autorewrite tac_main lbas else tclIDTAC)
+	(if cl.concl_occs <> no_occurrences_expr then autorewrite tac_main lbas else tclIDTAC)
 	(match cl.onhyps with 
 	   | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
 	   | None -> 
@@ -153,11 +160,12 @@ let gen_auto_multi_rewrite tac_main lbas cl =
 
 let auto_multi_rewrite = gen_auto_multi_rewrite Refiner.tclIDTAC
 
-let auto_multi_rewrite_with tac_main lbas cl gl = 
-  match cl.Tacexpr.onconcl,cl.Tacexpr.onhyps with 
+let auto_multi_rewrite_with tac_main lbas cl gl =
+  let onconcl = cl.Tacexpr.concl_occs <> no_occurrences_expr in
+  match onconcl,cl.Tacexpr.onhyps with 
     | false,Some [_] | true,Some [] | false,Some [] ->   
 	(* autorewrite with .... in clause using tac n'est sur que 
-	   si clause reprensente soit le but soit UNE hypothse 
+	   si clause represente soit le but soit UNE hypothese 
 	*)
 	gen_auto_multi_rewrite tac_main  lbas cl gl
     | _ -> 

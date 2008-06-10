@@ -204,8 +204,8 @@ let ll_forall_tac prod backtrack id continue seq=
 let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
 
 let defined_connectives=lazy
-  [[],EvalConstRef (destConst (constant "not"));
-   [],EvalConstRef (destConst (constant "iff"))]
+  [all_occurrences,EvalConstRef (destConst (constant "not"));
+   all_occurrences,EvalConstRef (destConst (constant "iff"))]
 
 let normalize_evaluables=
   onAllClauses
@@ -213,4 +213,4 @@ let normalize_evaluables=
 	 None->unfold_in_concl (Lazy.force defined_connectives)
        | Some ((_,id),_)-> 
 	   unfold_in_hyp (Lazy.force defined_connectives) 
-	   (([],id),Tacexpr.InHypTypeOnly))
+	   ((Rawterm.all_occurrences_expr,id),Tacexpr.InHypTypeOnly))

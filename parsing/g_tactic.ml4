@@ -162,6 +162,10 @@ let mkCLambdaN_simple bl c =
     let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (constr_loc c) in
     mkCLambdaN_simple_loc loc bl c
 
+let map_int_or_var f = function
+  | Rawterm.ArgArg x -> Rawterm.ArgArg (f x)
+  | Rawterm.ArgVar _ as y -> y
+
 (* Auxiliary grammar rules *)
 
 GEXTEND Gram
@@ -171,6 +175,10 @@ GEXTEND Gram
 
   int_or_var:
     [ [ n = integer  -> Rawterm.ArgArg n
+      | id = identref -> Rawterm.ArgVar id ] ]
+  ;
+  nat_or_var:
+    [ [ n = natural  -> Rawterm.ArgArg n
       | id = identref -> Rawterm.ArgVar id ] ]
   ;
   (* An identifier or a quotation meta-variable *)
@@ -203,18 +211,22 @@ GEXTEND Gram
   ;
   conversion:
     [ [ c = constr -> (None, c)
-      | c1 = constr; "with"; c2 = constr -> (Some ([],c1), c2)
-      | c1 = constr; "at"; nl = LIST1 int_or_var; "with"; c2 = constr ->
-	  (Some (nl,c1), c2) ] ]
+      | c1 = constr; "with"; c2 = constr -> (Some (all_occurrences_expr,c1),c2)
+      | c1 = constr; "at"; occs = occs_nums; "with"; c2 = constr ->
+          (Some (occs,c1), c2) ] ]
   ;
   smart_global:
     [ [ c = global -> AN c
       | s = ne_string -> ByNotation (loc,s) ] ]
   ;
+  occs_nums:
+    [ [ nl = LIST1 nat_or_var -> no_occurrences_expr_but nl
+      | "-"; n = nat_or_var; nl = LIST0 int_or_var ->
+	  (* have used int_or_var instead of nat_or_var for compatibility *)
+	   all_occurrences_expr_but (List.map (map_int_or_var abs) (n::nl)) ] ]
+  ; 
   occs:
-    [ [ "at"; nl = LIST1 integer -> List.map (fun x -> Rawterm.ArgArg x) nl
-      | "at"; id = identref -> [Rawterm.ArgVar id]
-      | -> [] ] ]
+    [ [ "at"; occs = occs_nums -> occs | -> all_occurrences_expr_but [] ] ]
   ;
   pattern_occ:
     [ [ c = constr; nl = occs -> (nl,c) ] ]
@@ -323,29 +335,29 @@ GEXTEND Gram
   ;
   in_clause:
     [ [ "*"; occs=occs ->
-          {onhyps=None; onconcl=true; concl_occs=occs}
-      | "*"; "|-"; (b,occs)=concl_occ ->
-          {onhyps=None; onconcl=b; concl_occs=occs}
-      | hl=LIST0 hypident_occ SEP","; "|-"; (b,occs)=concl_occ ->
-          {onhyps=Some hl; onconcl=b; concl_occs=occs}
+          {onhyps=None; concl_occs=occs}
+      | "*"; "|-"; occs=concl_occ ->
+          {onhyps=None; concl_occs=occs}
+      | hl=LIST0 hypident_occ SEP","; "|-"; occs=concl_occ ->
+          {onhyps=Some hl; concl_occs=occs}
       | hl=LIST0 hypident_occ SEP"," ->
-          {onhyps=Some hl; onconcl=false; concl_occs=[]} ] ]
+          {onhyps=Some hl; concl_occs=no_occurrences_expr} ] ]
   ;
   clause_dft_concl:
     [ [ "in"; cl = in_clause -> cl
-      | occs=occs -> {onhyps=Some[]; onconcl=true; concl_occs=occs}
-      | -> {onhyps=Some[]; onconcl=true; concl_occs=[]} ] ]
+      | occs=occs -> {onhyps=Some[]; concl_occs=occs}
+      | -> {onhyps=Some[]; concl_occs=all_occurrences_expr} ] ]
   ;
   clause_dft_all:
     [ [ "in"; cl = in_clause -> cl
-      | -> {onhyps=None; onconcl=true; concl_occs=[]} ] ]
+      | -> {onhyps=None; concl_occs=all_occurrences_expr} ] ]
   ;
   opt_clause:
     [ [ "in"; cl = in_clause -> Some cl | -> None ] ]
   ;
   concl_occ:
-    [ [ "*"; occs = occs -> (true,occs)
-      | -> (false, []) ] ]
+    [ [ "*"; occs = occs -> occs
+      | -> no_occurrences_expr ] ]
   ;
   simple_clause:
     [ [ "in"; idl = LIST1 id_or_meta -> idl
@@ -493,9 +505,10 @@ GEXTEND Gram
 
       | IDENT "cut"; c = constr -> TacCut c
       | IDENT "generalize"; c = constr ->
-	  TacGeneralize [(([],c),Names.Anonymous)]
+	  TacGeneralize [((all_occurrences_expr,c),Names.Anonymous)]
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
-          TacGeneralize (List.map (fun c -> (([],c),Names.Anonymous)) (c::l))
+	  let gen_everywhere c = ((all_occurrences_expr,c),Names.Anonymous) in
+          TacGeneralize (List.map gen_everywhere (c::l))
       | IDENT "generalize"; c = constr; lookup_at_as_coma; nl = occs; 
           na = as_name; 
           l = LIST0 [","; c = pattern_occ; na = as_name -> (c,na)] ->

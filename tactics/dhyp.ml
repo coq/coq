@@ -261,11 +261,13 @@ let add_destructor_hint local na loc pat pri code =
     (inDD (local,na,{ d_pat = pat; d_pri=pri; d_code=code }))
 
 let match_dpat dp cls gls =
+  let onconcl = cls.concl_occs <> no_occurrences_expr in
   match (cls,dp) with
-    | ({onhyps=lo;onconcl=false},HypLocation(_,hypd,concld)) ->
+    | ({onhyps=lo},HypLocation(_,hypd,concld)) when not onconcl ->
         let hl = match lo with
             Some l -> l
-          | None -> List.map (fun id -> (([],id),InHyp)) (pf_ids_of_hyps gls) in
+          | None -> List.map (fun id -> ((all_occurrences_expr,id),InHyp))
+	              (pf_ids_of_hyps gls) in
         if not
           (List.for_all
             (fun ((_,id),hl) ->
@@ -278,7 +280,7 @@ let match_dpat dp cls gls =
               (is_matching concld.d_sort (pf_type_of gls cl)))
             hl)
         then error "No match"
-    | ({onhyps=Some[];onconcl=true},ConclLocation concld) ->
+    | ({onhyps=Some[]},ConclLocation concld) when onconcl ->
         let cl = pf_concl gls in
         if not
           ((is_matching concld.d_typ cl) &

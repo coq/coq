@@ -296,7 +296,7 @@ let  mkCaseEq a  : tactic =
          [h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
           (fun g2 ->
 	    change_in_concl None 
-	      (pattern_occs [([-1], a)] (pf_env g2) Evd.empty (pf_concl g2))
+	     (pattern_occs [((false,[1]), a)] (pf_env g2) Evd.empty (pf_concl g2))
 		  g2);
 	  simplest_case a] g);;
 
@@ -323,7 +323,7 @@ let mkDestructEq :
      [h_generalize new_hyps;
       (fun g2 ->
 	change_in_concl None 
-	  (pattern_occs [([-1], expr)] (pf_env g2) Evd.empty (pf_concl g2)) g2);
+	  (pattern_occs [((false,[1]), expr)] (pf_env g2) Evd.empty (pf_concl g2)) g2);
       simplest_case expr], to_revert
 
 let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
@@ -336,7 +336,7 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 		h_intros thin_intros;
 		
 		tclMAP 
-		  (fun eq -> tclTRY (Equality.general_rewrite_in true [] teq eq false)) 
+		  (fun eq -> tclTRY (Equality.general_rewrite_in true all_occurrences teq eq false)) 
 		  (List.rev eqs);
 		(fun g1 -> 
 		   let ty_teq = pf_type_of g1 (mkVar teq) in 
@@ -397,7 +397,7 @@ let tclUSER tac is_mes l g =
       clear_tac;
       if is_mes 
       then tclTHEN
-             (unfold_in_concl [([], evaluable_of_global_reference
+             (unfold_in_concl [(all_occurrences, evaluable_of_global_reference
                                       (delayed_force ltof_ref))])
              tac
       else tac
@@ -496,7 +496,7 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
 	   Nameops.out_name k_na,Nameops.out_name def_na
 	 in
 	 tclTHENS
-	   (general_rewrite_bindings false []
+	   (general_rewrite_bindings false all_occurrences
 	      (mkVar eq,
 	       ExplicitBindings[dummy_loc, NamedHyp k_id, mkVar k;
 				dummy_loc, NamedHyp def_id, mkVar def]) false)
@@ -531,7 +531,7 @@ let rec introduce_all_equalities func eqs values specs bound le_proofs
 	   observe_tac "intros k h' def" (h_intros [k;h';def]);
 	   observe_tac "simple_iter" (simpl_iter onConcl);
 	   observe_tac "unfold functional" 
-	     (unfold_in_concl[([1],evaluable_of_global_reference func)]);
+	     (unfold_in_concl[((true,[1]),evaluable_of_global_reference func)]);
 	   observe_tac "rewriting equations" 
 	     (list_rewrite true eqs);
            observe_tac ("cond rewrite "^(string_of_id k)) (list_cond_rewrite  k def bound cond_eqs le_proofs);
@@ -1120,7 +1120,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   let x = n_x_id ids nargs in
   tclTHENLIST [
     h_intros x;
-    unfold_in_concl [([], evaluable_of_global_reference f)];
+    unfold_in_concl [(all_occurrences, evaluable_of_global_reference f)];
     observe_tac "simplest_case" 
       (simplest_case (mkApp (terminate_constr,
                              Array.of_list (List.map mkVar x))));
@@ -1144,7 +1144,7 @@ let base_leaf_eq func eqs f_id g =
 		  [|mkApp (delayed_force coq_S, [|mkVar p|]);
 		    mkApp(delayed_force lt_n_Sn, [|mkVar p|]); f_id|])));
       simpl_iter onConcl;
-      tclTRY (unfold_in_concl [([1], evaluable_of_global_reference func)]);
+      tclTRY (unfold_in_concl [((true,[1]), evaluable_of_global_reference func)]);
       list_rewrite true eqs;
       apply (delayed_force refl_equal)] g;;
 
@@ -1160,9 +1160,9 @@ let rec introduce_all_values_eq cont_tac functional termine
 	  [forward None (IntroIdentifier heq2)
              (mkApp(mkVar heq1, [|f_S(f_S(mkVar pmax))|]));
            simpl_iter (onHyp heq2);
-           unfold_in_hyp [([1], evaluable_of_global_reference 
+           unfold_in_hyp [((true,[1]), evaluable_of_global_reference 
                              (global_of_constr functional))]
-             (([], heq2), Tacexpr.InHyp);
+             ((all_occurrences_expr, heq2), Tacexpr.InHyp);
            tclTHENS
 	     (fun gls -> 
 		let t_eq = compute_renamed_type gls (mkVar heq2) in 
@@ -1170,7 +1170,7 @@ let rec introduce_all_values_eq cont_tac functional termine
 		  let _,_,t  = destProd t_eq in let def_na,_,_ = destProd t in 
 		  Nameops.out_name def_na
 		in
-		observe_tac "rewrite heq" (general_rewrite_bindings false []
+		observe_tac "rewrite heq" (general_rewrite_bindings false all_occurrences
 		(mkVar heq2,
 		 ExplicitBindings[dummy_loc,NamedHyp def_id,
 				  f]) false) gls)
@@ -1226,7 +1226,7 @@ let rec introduce_all_values_eq cont_tac functional termine
 			       f_S(mkVar pmax');
 			       dummy_loc, NamedHyp def_id, f])
 			 in
-			   observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false []
+			   observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false all_occurrences
 								       c_b false))
 			     g
 		     )

@@ -95,7 +95,9 @@ let mlexpr_of_or_var f = function
 
 let mlexpr_of_hyp = mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident)
 
-let mlexpr_of_occs = mlexpr_of_list (mlexpr_of_or_var mlexpr_of_int)
+let mlexpr_of_occs =
+  mlexpr_of_pair
+    mlexpr_of_bool (mlexpr_of_list (mlexpr_of_or_var mlexpr_of_int))
 
 let mlexpr_of_occurrences f = mlexpr_of_pair mlexpr_of_occs f
 
@@ -111,7 +113,6 @@ let mlexpr_of_clause cl =
   <:expr< {Tacexpr.onhyps=
              $mlexpr_of_option (mlexpr_of_list mlexpr_of_hyp_location)
                cl.Tacexpr.onhyps$;
-           Tacexpr.onconcl= $mlexpr_of_bool cl.Tacexpr.onconcl$;
            Tacexpr.concl_occs= $mlexpr_of_occs cl.Tacexpr.concl_occs$} >>
 
 let mlexpr_of_red_flags {
@@ -165,8 +166,7 @@ let rec mlexpr_of_constr = function
   | _ -> failwith "mlexpr_of_constr: TODO"
 
 let mlexpr_of_occ_constr =
-  mlexpr_of_pair (mlexpr_of_list (mlexpr_of_or_var mlexpr_of_int))
-    mlexpr_of_constr
+  mlexpr_of_occurrences mlexpr_of_constr
 
 let mlexpr_of_red_expr = function
   | Rawterm.Red b -> <:expr< Rawterm.Red $mlexpr_of_bool b$ >>
@@ -177,9 +177,8 @@ let mlexpr_of_red_expr = function
   | Rawterm.Lazy f ->
       <:expr< Rawterm.Lazy $mlexpr_of_red_flags f$ >>
   | Rawterm.Unfold l ->
-      let f1 = mlexpr_of_list (mlexpr_of_or_var mlexpr_of_int) in
-      let f2 = mlexpr_of_by_notation mlexpr_of_reference in
-      let f = mlexpr_of_list (mlexpr_of_pair f1 f2) in
+      let f1 = mlexpr_of_by_notation mlexpr_of_reference in
+      let f = mlexpr_of_list (mlexpr_of_occurrences f1) in
       <:expr< Rawterm.Unfold $f l$ >>
   | Rawterm.Fold l ->
       <:expr< Rawterm.Fold $mlexpr_of_list mlexpr_of_constr l$ >>

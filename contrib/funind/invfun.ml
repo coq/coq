@@ -16,6 +16,7 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Tacmach
+open Termops
 open Sign
 open Hiddentac
 
@@ -314,7 +315,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 		 | None -> (id::pre_args,pre_tac)
 		 | Some b ->
 		     (pre_args,
-		      tclTHEN (h_reduce (Rawterm.Unfold([[],EvalVarRef id])) allHyps) pre_tac
+		      tclTHEN (h_reduce (Rawterm.Unfold([Rawterm.all_occurrences_expr,EvalVarRef id])) allHyps) pre_tac
 		     )
 		     
 	     else (pre_args,pre_tac)
@@ -687,7 +688,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  h_generalize (List.map mkVar ids);
 	  thin ids
 	]
-      else unfold_in_concl [([],Names.EvalConstRef (destConst f))]
+      else unfold_in_concl [(all_occurrences,Names.EvalConstRef (destConst f))]
     in
     (* The proof of each branche itself *)
     let ind_number = ref 0 in 

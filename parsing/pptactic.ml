@@ -417,14 +417,14 @@ let pr_simple_clause pr_id = function
   | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
 
 let pr_clauses pr_id = function
-    { onhyps=None; onconcl=true; concl_occs=nl } ->
-      pr_in (pr_with_occurrences (fun () -> str " *") (nl,()))
-  | { onhyps=None; onconcl=false } -> pr_in (str " * |-")
-  | { onhyps=Some l; onconcl=true; concl_occs=nl } -> 
-      pr_in (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l
-             ++ pr_with_occurrences (fun () -> str" |- *") (nl,()))
-  | { onhyps=Some l; onconcl=false } ->
-      pr_in (prlist_with_sep (fun()->str",") (pr_hyp_location pr_id) l)
+  | { onhyps=None; concl_occs=occs } ->
+      if occs = no_occurrences_expr then pr_in (str " * |-")
+      else pr_in (pr_with_occurrences (fun () -> str " *") (occs,()))
+  | { onhyps=Some l; concl_occs=occs } ->
+      pr_in
+        (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l ++
+	 (if occs = no_occurrences_expr then mt ()
+	  else pr_with_occurrences (fun () -> str" |- *") (occs,())))
 
 let pr_clause_pattern pr_id = function
   | (None, []) -> mt ()
@@ -829,12 +829,9 @@ and pr_atom1 = function
       hov 1 (str "change" ++ brk (1,1) ++
       (match occ with
           None -> mt()
-        | Some([],c1) -> hov 1 (pr_constr c1 ++ spc() ++ str "with ")
-        | Some(ocl,c1) ->
-            hov 1 (pr_constr c1 ++ spc() ++
-	           str "at " ++ prlist_with_sep spc (pr_or_var int) ocl) ++
-                   spc() ++
-	           str "with ") ++
+        | Some occlc ->
+	    pr_with_occurrences_with_trailer pr_constr occlc 
+	      (spc () ++ str "with ")) ++
       pr_constr c ++ pr_clauses pr_ident h)
 
   (* Equivalence relations *)

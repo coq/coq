@@ -55,6 +55,8 @@ val pr_qualid : qualid -> std_ppcmds
 
 val pr_with_occurrences :
   ('a -> std_ppcmds) -> 'a with_occurrences -> std_ppcmds
+val pr_with_occurrences_with_trailer :
+  ('a -> std_ppcmds) -> 'a with_occurrences -> std_ppcmds -> std_ppcmds
 val pr_red_expr :
   ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) ->
     ('a,'b) red_expr_gen -> std_ppcmds

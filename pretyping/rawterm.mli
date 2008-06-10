@@ -146,7 +146,14 @@ val all_flags : 'a raw_red_flag
 
 type 'a or_var = ArgArg of 'a | ArgVar of identifier located
 
-type 'a with_occurrences = int or_var list * 'a
+type occurrences_expr = bool * int or_var list
+
+val all_occurrences_expr_but : int or_var list -> occurrences_expr
+val no_occurrences_expr_but : int or_var list -> occurrences_expr
+val all_occurrences_expr : occurrences_expr
+val no_occurrences_expr : occurrences_expr
+
+type 'a with_occurrences = occurrences_expr * 'a
 
 type ('a,'b) red_expr_gen =
   | Red of bool

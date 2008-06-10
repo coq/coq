@@ -65,7 +65,8 @@ let h_generalize_gen cl =
   abstract_tactic (TacGeneralize (List.map (on_fst inj_occ) cl))
     (generalize_gen (List.map (on_fst Redexpr.out_with_occurrences) cl))
 let h_generalize cl =
-  h_generalize_gen (List.map (fun c -> (([],c),Names.Anonymous)) cl)
+  h_generalize_gen (List.map (fun c -> ((all_occurrences_expr,c),Names.Anonymous))
+    cl)
 let h_generalize_dep c =
   abstract_tactic (TacGeneralizeDep (inj_open c))(generalize_dep c)
 let h_let_tac b na c cl =

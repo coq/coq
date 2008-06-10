@@ -527,7 +527,8 @@ let compute_bl_tact ind lnamesparrec nparrec  =
                      tclTRY ( 
                       tclORELSE reflexivity (Equality.discr_tac None)
                      );
-                     simpl_in_hyp (([],freshz),Tacexpr.InHyp);
+                     simpl_in_hyp
+		       ((Rawterm.all_occurrences_expr,freshz),Tacexpr.InHyp);
 (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
@@ -798,7 +799,8 @@ let compute_dec_tact ind lnamesparrec nparrec =
             (tclTHENSEQ [apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs));
                       Auto.default_auto
             ]);
-         Pfedit.by (Equality.general_rewrite_bindings_in true []
+         Pfedit.by (Equality.general_rewrite_bindings_in true
+	                      all_occurrences
                               (List.hd !avoid) 
                               ((mkVar (List.hd (List.tl !avoid))),
                                 Rawterm.NoBindings

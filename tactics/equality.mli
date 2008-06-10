@@ -21,14 +21,15 @@ open Pattern
 open Tacticals
 open Tactics
 open Tacexpr
+open Termops
 open Rawterm
 open Genarg
 (*i*)
 
 val general_rewrite_bindings : 
-  bool -> int list -> constr with_bindings -> evars_flag -> tactic
+  bool -> occurrences -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite : 
-  bool -> int list -> constr -> tactic
+  bool -> occurrences -> constr -> tactic
 
 (* Obsolete, use [general_rewrite_bindings l2r]
 [val rewriteLR_bindings       : constr with_bindings -> tactic]
@@ -42,13 +43,13 @@ val rewriteRL   : constr  -> tactic
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
 val register_general_setoid_rewrite_clause :
-  (identifier option ->
-    bool -> int list -> constr -> new_goals:constr list -> tactic) -> unit
+  (identifier option -> bool ->
+    occurrences -> constr -> new_goals:constr list -> tactic) -> unit
 
 val general_rewrite_bindings_in :
-  bool -> int list -> identifier -> constr with_bindings -> evars_flag -> tactic
+  bool -> occurrences -> identifier -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite_in          :
-  bool -> int list -> identifier -> constr -> evars_flag -> tactic
+  bool -> occurrences -> identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite : 
   bool -> evars_flag -> constr with_ebindings -> clause -> tactic
