@@ -481,9 +481,10 @@ let admit () =
 
 *)
 
+(* arnaud: j'ai vu la même fonction autre part, vérifier. *)
 let get_current_context () =
   try Pfedit.get_current_goal_context ()
-  with e when Logic.catchable_exception e -> 
+  with e when Proofview.catchable_exception e -> 
     (Evd.empty, Global.env())
 
 

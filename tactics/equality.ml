@@ -1056,7 +1056,7 @@ let try_rewrite tac gls =
   with 
     | PatternMatchingFailure ->
 	errorlabstrm "try_rewrite" (str "Not a primitive equality here")
-    | e when catchable_exception e -> 
+    | e when Proofview.catchable_exception e -> 
 	errorlabstrm "try_rewrite"
           (str "Cannot find a well-typed generalization of the goal that" ++
              str " makes the proof progress")

@@ -671,7 +671,7 @@ let normalize_equation env (negated,depends,origin,path) (oper,t1,t2) =
     | Gt ->
         mk_step t1 t2 (fun o1 o2 -> Oplus (Oplus(o1,Oint negone),Oopp o2)) 
 	  INEQ
-  with e when Logic.catchable_exception e -> raise e
+  with e when Proofview.catchable_exception e -> raise e
 
 (* \section{Compilation des hypothèses} *)
 

@@ -263,7 +263,7 @@ let parse_logic_rel c =
    | Kimp(t1,t2) -> Rimp (t1,t2)
    | Kapp("iff",[t1;t2]) -> Riff (t1,t2)
    | _ -> Rother
- with e when Logic.catchable_exception e -> Rother
+ with e when Proofview.catchable_exception e -> Rother
 
 
 module type Int = sig
@@ -338,7 +338,7 @@ let parse_term t =
     | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> 
 	(try Tnum (recognize t) with _ -> Tother)
     | _ -> Tother
-  with e when Logic.catchable_exception e -> Tother
+  with e when Proofview.catchable_exception e -> Tother
     
 let parse_rel gl t = 
   try match destructurate t with 
@@ -350,7 +350,7 @@ let parse_rel gl t =
     | Kapp("Zge",[t1;t2]) -> Rge (t1,t2)
     | Kapp("Zgt",[t1;t2]) -> Rgt (t1,t2)
     | _ -> parse_logic_rel t 
-  with e when Logic.catchable_exception e -> Rother
+  with e when Proofview.catchable_exception e -> Rother
 
 let is_scalar t =
   let rec aux t = match destructurate t with

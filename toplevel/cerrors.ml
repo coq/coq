@@ -92,7 +92,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
 	(str "Error:" ++ spc () ++ Himsg.explain_pattern_matching_error env e)
   | Tacred.ReductionTacticError e -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_reduction_tactic_error e)
-  | Logic.RefinerError e -> 
+  | Proofview.RefinerError e -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_refiner_error e)
   | Nametab.GlobalizationError q ->
       hov 0 (str "Error:" ++ spc () ++

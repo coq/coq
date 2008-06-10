@@ -30,7 +30,7 @@ val explain_inductive_error : inductive_error -> std_ppcmds
 
 val explain_recursion_scheme_error : recursion_scheme_error -> std_ppcmds
 
-val explain_refiner_error : refiner_error -> std_ppcmds
+val explain_refiner_error : Proofview.refiner_error -> std_ppcmds
 
 val explain_pattern_matching_error :
   env -> pattern_matching_error -> std_ppcmds

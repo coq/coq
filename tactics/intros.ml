@@ -103,7 +103,8 @@ let find_intro_gen_name name_flag force_flag =
     | LetIn (name,b,t,_) ->
 	find_name (name,Some b,t) name_flag
     | _ -> 
-	if not force_flag then raise (Util.anomaly"Logic.intro_gen: remettre une vrai erreur (IntroNeedsProduct)"(* arnaud:RefinerError IntroNeedsProduct *));
+	if not force_flag then 
+	  raise (Proofview.RefinerError Proofview.IntroNeedsProduct);
 	Util.anomaly "Intro.intro_gen: last case: à restaurer"
 	(* arnaud: à restaurer: original venant de intro_gen
 	try

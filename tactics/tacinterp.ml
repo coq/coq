@@ -407,7 +407,7 @@ let vars_of_ist (lfun,_,_,env) =
 
 let get_current_context () =
     try Pfedit.get_current_goal_context ()
-    with e when Logic.catchable_exception e -> 
+    with e when Proofview.catchable_exception e -> 
       (Evd.empty, Global.env())
 
 let strict_check = ref false
@@ -1043,7 +1043,7 @@ exception Eval_fail of std_ppcmds
 
 let is_match_catchable = function
   | PatternMatchingFailure | Eval_fail _ -> true
-  | e -> Logic.catchable_exception e
+  | e -> Proofview.catchable_exception e
 
 (* Verifies if the matched list is coherent with respect to lcm *)
 let rec verify_metas_coherence gl lcm = function
@@ -1371,7 +1371,7 @@ let solvable_by_tactic env evi (ev,args) src =
 	  by (tclCOMPLETE tac);
 	  let _,(const,_,_) = cook_proof () in 
 	  delete_current_proof (); const.const_entry_body
-	with e when Logic.catchable_exception e -> 
+	with e when Proofview.catchable_exception e -> 
 	  delete_current_proof();
 	  raise Exit
       end

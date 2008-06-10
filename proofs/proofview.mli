@@ -60,7 +60,27 @@ val unfocus : focus_context -> proofview -> proofview
 
 
 
+(*** Exceptions of the proof engine ***)
 
+(* arnaud: il faudra voir si elles ont toutes du sens, et si la classification
+           est encore à l'ordre du jour. Peut-être même faut-il les mettre
+           dans goal.ml. *)
+type refiner_error =
+  (* Errors raised by the refiner *)
+  | BadType of constr * constr * constr
+  | OccurMeta of constr
+  | OccurMetaGoal of constr
+  | CannotApply of constr * constr
+  | NotWellTyped of constr
+  | NonLinearProof of constr
+
+  (* Errors raised by the tactics *)
+  | IntroNeedsProduct
+  | DoesNotOccurIn of constr * Names.identifier
+
+exception RefinerError of refiner_error
+
+val catchable_exception : exn -> bool
 
 (******************************************************************)
 (***                                                            ***)

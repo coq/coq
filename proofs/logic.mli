@@ -144,6 +144,8 @@ val res_pf : ?with_evars:bool ->
              Clenv.clausenv -> 
              Goal.proof_step Goal.sensitive
 
+
+(* arnaud: temporaire*)
 type simple_tactic =
   | Intro of identifier
   | Intro_replacing of identifier
@@ -158,6 +160,9 @@ type simple_tactic =
   | Move of bool * identifier * identifier
   | Rename of identifier * identifier
   | Change_evars
+
+
+(* arnaud: nettoyer
 
 (* arnaud: à virer sans doute ?
 val interprete_simple_tactic_as_single_tactic : simple_tactic -> Goal.tactic (* arnaud: type à changer *)
@@ -183,7 +188,7 @@ exception RefinerError of refiner_error
 
 (* arnaud: à commenter éventuellement*)
 val catchable_exception : exn -> bool
-
+*)
 
 (*** ***)
 (* arnaud: trucs pour débugger *)

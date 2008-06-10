@@ -142,10 +142,35 @@ let unfocus_proof_step c ps =
 let goals { comb = comb } = comb
 
 
+(*** Exceptions of the proof engine ***)
 
+open Term
+type refiner_error =
+  (* Errors raised by the refiner *)
+  | BadType of constr * constr * constr
+  | OccurMeta of constr
+  | OccurMetaGoal of constr
+  | CannotApply of constr * constr
+  | NotWellTyped of constr
+  | NonLinearProof of constr
 
+  (* Errors raised by the tactics *)
+  | IntroNeedsProduct
+  | DoesNotOccurIn of constr * Names.identifier
 
+exception RefinerError of refiner_error
 
+open Pretype_errors
+
+let rec catchable_exception = function
+  | Stdpp.Exc_located(_,e) -> catchable_exception e
+  | Util.UserError _ | Type_errors.TypeError _ 
+  | RefinerError _ | Indrec.RecursionSchemeError _
+  | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
+  (* unification errors *)
+  | PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _|
+      CannotUnifyBindingType _|NotClean _)) -> true
+  | _ -> false
 
 
 
@@ -438,7 +463,7 @@ let tclSOLVE t env ps =
 let tclGORELSE t1 t2 env ps =
   try
     t1 env ps
-  with Util.UserError _ | Failure _ (*arnaud: faudra rattraper les erreurs mieux que ça :). *)->
+  with e when catchable_exception e ->
     t2 env ps
 
 let tclORELSE t1 t2 =

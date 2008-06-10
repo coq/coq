@@ -117,7 +117,7 @@ let debug_prompt lev g tac f =
   try f (if continue then DebugOn (lev+1) else DebugOff)
   with e ->
     skip:=0; allskip:=0;
-    if Logic.catchable_exception e then
+    if Proofview.catchable_exception e then
       ppnl (str "Level " ++ int lev ++ str ": " ++ !explain_logic_error e);
     raise e
 

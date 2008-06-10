@@ -477,6 +477,7 @@ let explain_non_linear_proof c =
   str "cannot refine with term" ++ brk(1,1) ++ pr_lconstr c ++
   spc () ++ str "because a metavariable has several occurrences."
 
+open Proofview
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
   | OccurMeta t -> explain_refiner_occur_meta t

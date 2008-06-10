@@ -268,7 +268,7 @@ let make_resolve_hyp env sigma (hname,_,htyp) =
        (mkVar hname,  htyp)]
   with 
     | Failure _ -> []
-    | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
+    | e when Proofview.catchable_exception e -> anomaly "make_resolve_hyp"
 
 (* REM : in most cases hintname = id *)
 let make_unfold (ref, eref) =

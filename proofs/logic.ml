@@ -27,6 +27,7 @@ open Type_errors
 open Retyping
 open Evarutil*)
 
+(* arnaud: temporaire *)
 type simple_tactic =
   | Intro of identifier
   | Intro_replacing of identifier
@@ -41,34 +42,6 @@ type simple_tactic =
   | Move of bool * identifier * identifier
   | Rename of identifier * identifier
   | Change_evars
- 
-type refiner_error =
-
-  (* Errors raised by the refiner *)
-  | BadType of constr * constr * constr
-  | OccurMeta of constr
-  | OccurMetaGoal of constr
-  | CannotApply of constr * constr
-  | NotWellTyped of constr
-  | NonLinearProof of constr
-
-  (* Errors raised by the tactics *)
-  | IntroNeedsProduct
-  | DoesNotOccurIn of constr * identifier
-
-exception RefinerError of refiner_error
-
-open Pretype_errors
-
-let rec catchable_exception = function
-  | Stdpp.Exc_located(_,e) -> catchable_exception e
-  | Util.UserError _ | Type_errors.TypeError _ 
-  | RefinerError _ | Indrec.RecursionSchemeError _
-  | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
-  (* unification errors *)
-  | PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _|
-      CannotUnifyBindingType _|NotClean _)) -> true
-  | _ -> false
 
 
 (* arnaud: on va faire les règles une par une, puis on fait l'interpréteur *)

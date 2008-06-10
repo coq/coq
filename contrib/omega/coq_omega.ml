@@ -936,7 +936,7 @@ let rec transform p t =
        tac @ tac', t''
    | Kapp(Z_of_nat,[t']) -> default true t'
    | _ -> default false t
-  with e when catchable_exception e -> default false t
+  with e when Proofview.catchable_exception e -> default false t
       
 let shrink_pair p f1 f2 =
   match f1,f2 with
@@ -1386,7 +1386,7 @@ let destructure_omega gl tac_def (id,c) =
 	  normalize_equation
 	    id INEQ (Lazy.force coq_Zgt_left) 2 t t1 t2 tac_def
       | _ -> tac_def
-    with e when catchable_exception e -> tac_def
+    with e when Proofview.catchable_exception e -> tac_def
 
 let reintroduce id =
   (* [id] cannot be cleared if dependent: protect it by a try *)
@@ -1483,7 +1483,7 @@ let nat_inject gl =
 		Kapp(S,[t]) -> is_number t
               | Kapp(O,[]) -> true
               | _ -> false
-            with e when catchable_exception e -> false 
+            with e when Proofview.catchable_exception e -> false 
 	  in
           let rec loop p t =
             try match destructurate_term t with 
@@ -1494,7 +1494,7 @@ let nat_inject gl =
 			((Lazy.force coq_inj_S),[t])) 
 		     (loop (P_APP 1 :: p) t))
               | _ -> explore p t 
-            with e when catchable_exception e -> explore p t 
+            with e when Proofview.catchable_exception e -> explore p t 
 	  in
           if is_number t' then focused_simpl p else loop p t
       | Kapp(Pred,[t]) ->
@@ -1507,7 +1507,7 @@ let nat_inject gl =
             (explore p t_minus_one) 
       | Kapp(O,[]) -> focused_simpl p
       | _ -> tclIDTAC 
-    with e when catchable_exception e -> tclIDTAC 
+    with e when Proofview.catchable_exception e -> tclIDTAC 
 	
   and loop = function
     | [] -> tclIDTAC
@@ -1570,7 +1570,7 @@ let nat_inject gl =
                   ]
 		else loop lit
 	    | _ -> loop lit
-	  with e when catchable_exception e -> loop lit end 
+	  with e when Proofview.catchable_exception e -> loop lit end 
   in
   loop (List.rev (pf_hyps_types gl)) gl
     
@@ -1776,7 +1776,7 @@ let destructure_hyps gl =
 		| _ -> loop lit
               end 
           | _ -> loop lit 
-	with e when catchable_exception e -> loop lit
+	with e when Proofview.catchable_exception e -> loop lit
 	end 
   in
   loop (pf_hyps gl) gl
