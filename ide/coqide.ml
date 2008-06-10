@@ -2894,6 +2894,14 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 								       ())
 					  in
 					  let _ = 
+					    queries_factory#add_item "_Locate" 
+					      ~callback:(fun () -> let term = get_current_word () in
+								     (Command_windows.command_window ())#new_command
+								       ~command:"Locate"
+								       ~term 
+								       ())
+					  in
+					  let _ = 
 					    queries_factory#add_item "_Whelp Locate" 
 					      ~callback:(fun () -> let term = get_current_word () in
 								     (Command_windows.command_window ())#new_command
