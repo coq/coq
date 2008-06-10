@@ -183,6 +183,7 @@ let select_file_for_open ~title ?(dir = last_dir) ?(filename="") () =
     file_chooser#add_select_button_stock `OPEN `OPEN ;
     file_chooser#add_filter (filter_coq_files ());
     file_chooser#add_filter (filter_all_files ());
+    file_chooser#set_default_response `OPEN;
     ignore (file_chooser#set_current_folder !dir);
     begin match file_chooser#run () with
       | `OPEN -> 
@@ -208,6 +209,7 @@ let select_file_for_save ~title ?(dir = last_dir) ?(filename="") () =
   (* this line will be used when a lablgtk >= 2.10.0 is the default on most distributions  
        file_chooser#set_do_overwrite_confirmation true;
      *)
+    file_chooser#set_default_response `SAVE;
     ignore (file_chooser#set_current_folder !dir);
     ignore (file_chooser#set_current_name filename);
     
