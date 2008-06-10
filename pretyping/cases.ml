@@ -555,7 +555,7 @@ let is_dep_patt eqn = function
   | PatVar (_,name) -> occur_in_rhs name eqn.rhs
   | PatCstr _ -> true
 
-let dependencies_in_rhs nargs eqns =
+let dependencies_in_pure_rhs nargs eqns =
   if eqns = [] then list_tabulate (fun _ -> false) nargs (* Only "_" patts *)
   else
   let deps = List.map (fun (tms,eqn) -> List.map (is_dep_patt eqn) tms) eqns in
@@ -565,6 +565,16 @@ let dependencies_in_rhs nargs eqns =
 let dependent_decl a = function
   | (na,None,t) -> dependent a t
   | (na,Some c,t) -> dependent a t || dependent a c
+
+let rec dep_in_tomatch n = function
+  | (Pushed _ | Alias _) :: l -> dep_in_tomatch n l
+  | Abstract d :: l -> dependent_decl (mkRel n) d or dep_in_tomatch (n+1) l
+  | [] -> false
+
+let dependencies_in_rhs nargs current tms eqns =
+  match kind_of_term current with
+  | Rel n when dep_in_tomatch n tms -> list_tabulate (fun _ -> true) nargs
+  | _ -> dependencies_in_pure_rhs nargs eqns
 
 (* Computing the matrix of dependencies *)
 
@@ -1219,7 +1229,8 @@ let build_branch current deps pb eqns const_info =
 
   let dep_sign =
     find_dependencies_signature
-      (dependencies_in_rhs const_info.cs_nargs eqns) (List.rev typs) in
+      (dependencies_in_rhs const_info.cs_nargs current pb.tomatch eqns) 
+      (List.rev typs) in
 
   (* The dependent term to subst in the types of the remaining UnPushed 
      terms is relative to the current context enriched by topushs *)
