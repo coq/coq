@@ -162,25 +162,18 @@ Class PER (carrier : Type) (pequiv : relation carrier) : Prop :=
   PER_Symmetric :> Symmetric pequiv ;
   PER_Transitive :> Transitive pequiv.
 
-(** We can build a PER on the Coq function space if we have PERs on the domain and
-   codomain. *)
-
-Program Instance arrow_per [ PER A (R : relation A), PER B (R' : relation B) ] : PER (A -> B)
-  (fun f g => forall (x y : A), R x y -> R' (f x) (g y)).
-
-  Next Obligation.
-  Proof with auto.
-    assert(R x0 x0). 
-    transitivity y0... symmetry...
-    transitivity (y x0)...
-  Qed.
-
-(** The [Equivalence] typeclass. *)
+(** Equivalence relations. *)
 
 Class Equivalence (carrier : Type) (equiv : relation carrier) : Prop :=
   Equivalence_Reflexive :> Reflexive equiv ;
   Equivalence_Symmetric :> Symmetric equiv ;
   Equivalence_Transitive :> Transitive equiv.
+
+(** An Equivalence is a PER plus reflexivity. *)
+
+Instance Equivalence_PER [ Equivalence A R ] : PER A R :=
+  PER_Symmetric := Equivalence_Symmetric ;
+  PER_Transitive := Equivalence_Transitive.
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 

@@ -512,6 +512,8 @@ let split_head = function
     hd :: tl -> hd, tl
   | [] -> assert(false)
 
+exception DependentMorphism
+
 let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.t option) (f : 'a -> constr) =
   let new_evar isevars env t =
     Evarutil.e_new_evar isevars env
@@ -528,8 +530,7 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
     let t = Reductionops.whd_betadeltaiota env (Evd.evars_of !isevars) ty in
       match kind_of_term t, l with
       | Prod (na, ty, b), obj :: cstrs -> 
-	  if dependent (mkRel 1) ty then 
-	    raise (Invalid_argument "build_signature: cannot handle dependent morphisms");
+	  if dependent (mkRel 1) ty then raise DependentMorphism;
 	  let (b, arg, evars) = aux (Environ.push_rel (na, None, ty) env) b cstrs in
 	  let ty = Reductionops.nf_betaiota ty in
 	  let relty = mk_relty ty obj in
@@ -842,21 +843,34 @@ let build_new gl env sigma flags occs hypinfo concl cstr evars =
 			  decomp_pointwise nargs rel, mkApp(c1, args), mkApp(c2, args))
 			in Some res, occ
 		else rewrite_args occ
-		  
-	  | Prod (_, x, b) when not (dependent (mkRel 1) b) -> 
-	      let x', occ = aux env x occ None in
-	      let b = subst1 mkProp b in
-	      let b', occ = aux env b occ None in
-	      let res = 
-		if x' = None && b' = None then None
-		else 
-		  Some (resolve_morphism env sigma t
-			   ~fnewt:unfold_impl
-			   (arrow_morphism (Typing.type_of env sigma x) (Typing.type_of env sigma b))
-			   [| x ; b |] [| x' ; b' |]
-			   cstr evars)
-	      in res, occ
 		
+	  | Prod (n, x, b) when not (dependent (mkRel 1) b) -> 
+	      let x', occ = aux env x occ None in
+(* 		if x' = None && flags.under_lambdas then *)
+(* 		  let lam = mkLambda (n, x, b) in *)
+(* 		  let lam', occ = aux env lam occ None in *)
+(* 		  let res =  *)
+(* 		    match lam' with *)
+(* 		    | None -> None *)
+(* 		    | Some (prf, (car, rel, c1, c2)) -> *)
+(* 			Some (resolve_morphism env sigma t *)
+(* 				 ~fnewt:unfold_all *)
+(* 				 (Lazy.force coq_all) [| x ; lam |] [| None; lam' |] *)
+(* 				 cstr evars) *)
+(* 		  in res, occ *)
+(* 		else *)
+		  let b = subst1 mkProp b in
+		  let b', occ = aux env b occ None in
+		  let res = 
+		    if x' = None && b' = None then None
+		    else 
+		      Some (resolve_morphism env sigma t
+			       ~fnewt:unfold_impl
+			       (arrow_morphism (Typing.type_of env sigma x) (Typing.type_of env sigma b))
+			       [| x ; b |] [| x' ; b' |]
+			       cstr evars)
+		  in res, occ
+		    
 	  | Prod (n, ty, b) ->
 	      let lam = mkLambda (n, ty, b) in
 	      let lam', occ = aux env lam occ None in
@@ -910,60 +924,65 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
   let evars = ref (Evd.create_evar_defs Evd.empty) in
   let env = pf_env gl in
   let sigma = project gl in
-  let eq, _ = build_new gl env sigma flags occs hypinfo concl (Some (Lazy.lazy_from_val cstr)) evars in
+  let eq, _ = build_new gl env sigma flags occs hypinfo concl (Some (Lazy.lazy_from_val cstr)) evars 
+  in
     match eq with  
-	Some (p, (_, _, oldt, newt)) -> 
-	  (try 
-	      evars := Typeclasses.resolve_typeclasses env ~fail:true !evars;
-	      let p = Evarutil.nf_isevar !evars p in
-	      let newt = Evarutil.nf_isevar !evars newt in
-	      let undef = Evd.undefined_evars !evars in
-	      let abs = Option.map (fun (x, y) -> Evarutil.nf_isevar !evars x,
-		Evarutil.nf_isevar !evars y) !hypinfo.abs in
-	      let rewtac = 
-		match is_hyp with
-		  | Some id -> 
-		      let term = 
-			match abs with
-			    None -> p
-			  | Some (t, ty) -> 
-			      mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
-		      in
-			cut_replacing id newt 
-			  (fun x -> Tactics.refine (mkApp (term, [| mkVar id |])))
-		  | None -> 
-		      (match abs with
-			  None -> 
-			    let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
-			      tclTHENLAST
-				(Tacmach.internal_cut_no_check name newt)
-				(tclTHEN (Tactics.revert [name]) (Tactics.refine p))
-			| Some (t, ty) -> 
-			    Tactics.refine
-			      (mkApp (mkLambda (Name (id_of_string "newt"), newt,
-					       mkLambda (Name (id_of_string "lemma"), ty,
-							mkApp (p, [| mkRel 2 |]))),
-				     [| mkMeta goal_meta; t |])))
-	      in
-	      let evartac = 
-		let evd = Evd.evars_of undef in
-		  if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
-		  else tclIDTAC
-	      in tclTHENLIST [evartac; rewtac] gl
-	    with 
-	    | Stdpp.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
-	    | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
-		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints." 
-			      ++ fnl () ++ Himsg.explain_typeclass_error env e) gl)
-(* 	      | Not_found -> *)
-(* 		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl) *)
-      | None -> 
-	  let {l2r=l2r; c1=x; c2=y} = !hypinfo in
-	    raise (Pretype_errors.PretypeError 
-		      (pf_env gl, 
-		      Pretype_errors.NoOccurrenceFound ((if l2r then x else y), is_hyp)))
-	      (* tclFAIL 1 (str"setoid rewrite failed") gl *)
+    | Some (p, (_, _, oldt, newt)) -> 
+	(try 
+	  evars := Typeclasses.resolve_typeclasses env ~fail:true !evars;
+	  let p = Evarutil.nf_isevar !evars p in
+	  let newt = Evarutil.nf_isevar !evars newt in
+	  let undef = Evd.undefined_evars !evars in
+	  let abs = Option.map (fun (x, y) -> Evarutil.nf_isevar !evars x,
+	    Evarutil.nf_isevar !evars y) !hypinfo.abs in
+	  let rewtac = 
+	    match is_hyp with
+	    | Some id -> 
+		let term = 
+		  match abs with
+		  | None -> p
+		  | Some (t, ty) -> 
+		      mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
+		in
+		  cut_replacing id newt 
+		    (fun x -> Tactics.refine (mkApp (term, [| mkVar id |])))
+	    | None -> 
+		(match abs with
+		| None -> 
+		    let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
+		      tclTHENLAST
+			(Tacmach.internal_cut_no_check name newt)
+			(tclTHEN (Tactics.revert [name]) (Tactics.refine p))
+		| Some (t, ty) -> 
+		    Tactics.refine
+		      (mkApp (mkLambda (Name (id_of_string "newt"), newt,
+				       mkLambda (Name (id_of_string "lemma"), ty,
+						mkApp (p, [| mkRel 2 |]))),
+			     [| mkMeta goal_meta; t |])))
+	  in
+	  let evartac = 
+	    let evd = Evd.evars_of undef in
+	      if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
+	      else tclIDTAC
+	  in tclTHENLIST [evartac; rewtac] gl
+	  with 
+	  | Stdpp.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
+	  | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
+	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints." 
+			  ++ fnl () ++ Himsg.explain_typeclass_error env e) gl)
+	  (* 	      | Not_found -> *)
+	  (* 		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl) *)
+    | None -> 
+	let {l2r=l2r; c1=x; c2=y} = !hypinfo in
+	  raise (Pretype_errors.PretypeError 
+		    (pf_env gl, 
+		    Pretype_errors.NoOccurrenceFound ((if l2r then x else y), is_hyp)))
+	    (* tclFAIL 1 (str"setoid rewrite failed") gl *)
 	  
+let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause gl =
+  try cl_rewrite_clause_aux ~flags hypinfo goal_meta occs clause gl
+  with DependentMorphism -> tclFAIL 0 (str " setoid rewrite failed: cannot handle dependent morphisms") gl
+
 let cl_rewrite_clause c left2right occs clause gl =
   init_setoid ();
   let meta = Evarutil.new_meta() in
@@ -1046,19 +1065,31 @@ VERNAC COMMAND EXTEND Typeclasses_Settings
 END
 
 TACTIC EXTEND typeclasses_eauto
-| [ "typeclasses" "eauto" debug(d) search_mode(s) depth(depth) ] -> [ fun gl ->
-    let env = pf_env gl in
-    let sigma = project gl in
-      if Evd.dom sigma = [] then Refiner.tclIDTAC gl
-      else
-	let evd = Evd.create_evar_defs sigma in
-	let mode = match s with Some t -> t | None -> true in
-	let depth = match depth with Some i -> i | None -> default_eauto_depth in
-	  match resolve_typeclass_evars d (mode, depth) env evd false with
-	    | Some evd' -> Refiner.tclEVARS (Evd.evars_of evd') gl
-	    | None -> tclIDTAC gl
-  ]
+| [ "typeclasses" "eauto" debug(d) search_mode(s) depth(depth) ] -> [ 
+    let mode = match s with Some t -> t | None -> true in
+    let depth = match depth with Some i -> i | None -> default_eauto_depth in
+      fun gl -> 
+	let gls = {it = [sig_it gl]; sigma = project gl} in
+	let vals v = List.hd v in
+	  typeclasses_eauto d (mode, depth) [] (gls, vals) ]
 END
+
+
+(*     fun gl -> *)
+(*     let env = pf_env gl in *)
+(*     let sigma = project gl in *)
+(*     let proj = sig_it gl in *)
+(*     let evd = Evd.create_evar_defs (Evd.add Evd.empty 1 proj) in *)
+(*     let mode = match s with Some t -> t | None -> true in *)
+(*     let depth = match depth with Some i -> i | None -> default_eauto_depth in *)
+(*       match resolve_typeclass_evars d (mode, depth) env evd false with *)
+(*       | Some evd' ->  *)
+(* 	  let goal = Evd.find (Evd.evars_of evd') 1 in *)
+(* 	    (match goal.evar_body with *)
+(* 	    | Evar_empty -> tclIDTAC gl *)
+(* 	    | Evar_defined b -> refine b gl) *)
+(*       | None -> tclIDTAC gl *)
+(*   ] *)
 
 let _ = 
   Classes.refine_ref := Refine.refine
@@ -1316,7 +1347,8 @@ let default_morphism sign m =
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let t = Typing.type_of env Evd.empty m in
   let _, sign, evars =
-    build_signature isevars env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
+    try build_signature isevars env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
+    with DependentMorphism -> error "Cannot infer the signature of dependent morphisms"
   in
   let morph =
     mkApp (Lazy.force morphism_type, [| t; sign; m |])
@@ -1339,7 +1371,9 @@ let add_setoid binders a aeq t n =
 let add_morphism_infer m n =
   init_setoid ();
   let instance_id = add_suffix n "_Morphism" in
-  let instance = build_morphism_signature m in
+  let instance = try build_morphism_signature m 
+    with DependentMorphism -> error "Cannot infer the signature of dependent morphisms"
+  in
     if Lib.is_modtype () then 
       let cst = Declare.declare_internal_constant instance_id
 	(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)

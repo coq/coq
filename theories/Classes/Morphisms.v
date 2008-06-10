@@ -28,6 +28,21 @@ Unset Strict Implicit.
    We now turn to the definition of [Morphism] and declare standard instances. 
    These will be used by the [setoid_rewrite] tactic later. *)
 
+(** A morphism on a relation [R] is an object respecting the relation (in its kernel). 
+   The relation [R] will be instantiated by [respectful] and [A] by an arrow type 
+   for usual morphisms. *)
+
+Class Morphism A (R : relation A) (m : A) : Prop :=
+  respect : R m m.
+
+(** We make the type implicit, it can be infered from the relations. *)
+
+Implicit Arguments Morphism [A].
+
+(** We allow to unfold the [relation] definition while doing morphism search. *)
+
+Typeclasses unfold relation.
+
 (** Respectful morphisms. *)
 
 (** The fully dependent version, not used yet. *)
@@ -49,6 +64,7 @@ Definition respectful (A B : Type)
 (** Notations reminiscent of the old syntax for declaring morphisms. *)
 
 Delimit Scope signature_scope with signature.
+Arguments Scope Morphism [type_scope signature_scope].
 
 Notation " R ++> R' " := (@respectful _ _ (R%signature) (R'%signature)) 
   (right associativity, at level 55) : signature_scope.
@@ -63,22 +79,18 @@ Arguments Scope respectful [type_scope type_scope signature_scope signature_scop
 
 Open Local Scope signature_scope.
 
-(** A morphism on a relation [R] is an object respecting the relation (in its kernel). 
-   The relation [R] will be instantiated by [respectful] and [A] by an arrow type 
-   for usual morphisms. *)
+(** We can build a PER on the Coq function space if we have PERs on the domain and
+   codomain. *)
 
-Class Morphism A (R : relation A) (m : A) : Prop :=
-  respect : R m m.
+Program Instance respectful_per [ PER A (R : relation A), PER B (R' : relation B) ] : 
+  PER (A -> B) (R ==> R').
 
-Arguments Scope Morphism [type_scope signature_scope].
-
-(** We make the type implicit, it can be infered from the relations. *)
-
-Implicit Arguments Morphism [A].
-
-(** We allow to unfold the [relation] definition while doing morphism search. *)
-
-Typeclasses unfold relation.
+  Next Obligation.
+  Proof with auto.
+    assert(R x0 x0). 
+    transitivity y0... symmetry...
+    transitivity (y x0)...
+  Qed.
 
 (** Subrelations induce a morphism on the identity, not used for morphism search yet. *)
 
