@@ -195,13 +195,13 @@ Proof.
   destruct b;trivial;unfold Zgt in z;discriminate z.
 Qed.
 
-Theorem Zmult_power: forall p q r,  0 <= q -> 0 <= r -> 
+Theorem Zmult_power: forall p q r, 0 <= r -> 
   (p*q)^r = p^r * q^r.
 Proof.
-  intros p q r H1 H2; generalize H2; pattern r; apply natlike_ind; auto.
-  intros r1 H3 H4 H5.
+  intros p q r H1; generalize H1; pattern r; apply natlike_ind; auto.
+  clear r H1; intros r H1 H2 H3.
   unfold Zsucc; rewrite Zpower_exp; auto with zarith.
-  rewrite  H4; repeat rewrite Zpower_exp; auto with zarith; ring.
+  rewrite H2; repeat rewrite Zpower_exp; auto with zarith; ring.
 Qed.
 
 Hint Resolve Zpower_ge_0 Zpower_gt_0: zarith.
