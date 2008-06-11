@@ -3087,14 +3087,15 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					  in
 					    (* Windows Menu *)
 					  let configuration_menu = factory#add_submenu "_Windows" in
-					  let configuration_factory = new GMenu.factory configuration_menu ~accel_path:"<CoqIde MenuBar>/Windows" ~accel_group
+					  let configuration_factory = new GMenu.factory configuration_menu 
+					    ~accel_path:"<CoqIde MenuBar>/Windows"
+					    ~accel_modi:[]
+					    ~accel_group
 					  in
 					  let _ =
 					    configuration_factory#add_item 
 					      "Show/Hide _Query Pane"
-					      (*
-						~key:GdkKeysyms._F12
-					      *)
+					      ~key:GdkKeysyms._Escape
 					      ~callback:(fun () -> if (Command_windows.command_window ())#frame#misc#visible then 
 							   (Command_windows.command_window ())#frame#misc#hide ()
 							 else
@@ -3554,17 +3555,6 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 										  w#resize 
 										    ~width:!current.window_width
 										    ~height:!current.window_height);
-							      
-							      ignore (w#event#connect#key_press 
-									~callback:
-									begin fun ev -> 
-									  let key = GdkEvent.Key.keyval ev in
-									    if key = GdkKeysyms._Escape then
-									      queries_frame#misc#hide();
-									    false
-									end);
-							      
-
 
 							      ignore (w#misc#connect#size_allocate 
 									(let old_w = ref 0 
