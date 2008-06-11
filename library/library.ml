@@ -197,8 +197,7 @@ let register_library_filename dir f =
     LibraryFilenameMap.add dir f !libraries_filename_table
 
 let library_full_filename dir =
-  try LibraryFilenameMap.find dir !libraries_filename_table
-  with Not_found -> "unavailable"
+  LibraryFilenameMap.find dir !libraries_filename_table
 
 let library_is_loaded dir =
   try let _ = find_library dir in true
