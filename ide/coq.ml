@@ -350,6 +350,19 @@ let is_vernac_tactic_command com =
 let is_vernac_proof_ending_command com =
   List.mem ProofEndingCommand (attribute_of_vernac_command com)
 
+type undo_info = int * int
+
+let open_proofs = ref [] 
+
+let undo_info () =
+  let current = Pfedit.get_all_proof_names () in
+  let common = list_intersect current !open_proofs in
+  let ncommon = List.length common in
+  let more = List.length current - ncommon in
+  let less = List.length !open_proofs - ncommon in
+  open_proofs := current;
+  (more,less)
+
 type reset_mark =
   | ResetToId of Names.identifier
   | ResetToState of Libnames.object_name
@@ -357,13 +370,14 @@ type reset_mark =
 type reset_status =
   | NoReset
   | ResetAtSegmentStart of Names.identifier
-  | ResetAtStatement of Libnames.object_name option
   | ResetAtRegisteredObject of reset_mark
 
 type reset_info = reset_status * bool ref
 
 let reset_mark id = match Lib.has_top_frozen_state () with
-  | Some sp -> ResetToState sp
+  | Some sp -> 
+      prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
+      ResetToState sp
   | None -> ResetToId id
 
 let compute_reset_info = function 
@@ -381,13 +395,12 @@ let compute_reset_info = function
   | com when is_vernac_proof_ending_command com -> NoReset, ref true
   | VernacEndSegment _ -> NoReset, ref true
 
-  | com when is_vernac_goal_starting_command com ->
-      ResetAtStatement (Lib.has_top_frozen_state ()), ref false
-
   | com when is_vernac_tactic_command com -> NoReset, ref true
   | _ ->
       (match Lib.has_top_frozen_state () with
-      | Some sp -> ResetAtRegisteredObject (ResetToState sp)
+      | Some sp -> 
+	  prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
+	  ResetAtRegisteredObject (ResetToState sp)
       | None -> NoReset), ref true
 
 let reset_initial () = 

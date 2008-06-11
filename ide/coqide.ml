@@ -491,6 +491,7 @@ type info =  {start:GText.mark;
 	      stop:GText.mark;
 	      ast:Util.loc * Vernacexpr.vernac_expr;
 	      reset_info:Coq.reset_info;
+	      undo_info:Coq.undo_info;
 	     }
 
 exception Size of int
@@ -501,18 +502,6 @@ let top () = try Stack.top processed_stack with Stack.Empty -> raise (Size 0)
 let is_empty () = Stack.is_empty processed_stack
 
 (* push a new Coq phrase *)
-
-let update_on_end_of_proof () =
-  let lookup_lemma = function
-    | { reset_info = ResetAtRegisteredObject _, r } -> 
-	prerr_endline "Toggling Frozen State info to false";
-	r := false
-    | { reset_info = ResetAtStatement _, r } ->
-	prerr_endline "Toggling Reset info to true";
-	r := true; raise Exit
-    | _ -> ()
-  in
-    try Stack.iter lookup_lemma processed_stack with Exit -> ()
 
 let update_on_end_of_segment id =
   let lookup_section = function 
@@ -525,11 +514,11 @@ let push_phrase reset_info start_of_phrase_mark end_of_phrase_mark ast =
   let x = {start = start_of_phrase_mark;
 	   stop = end_of_phrase_mark;
 	   ast = ast;
-	   reset_info = reset_info
+	   reset_info = reset_info;
+	   undo_info = Coq.undo_info ()
 	  } in
   begin
     match snd ast with
-    | com when is_vernac_proof_ending_command com -> update_on_end_of_proof ()
     | VernacEndSegment (_,id) -> update_on_end_of_segment id
     | _ -> ()
   end;
@@ -537,10 +526,9 @@ let push_phrase reset_info start_of_phrase_mark end_of_phrase_mark ast =
 
 
 let repush_phrase reset_info x =
-  let x = { x with reset_info = reset_info } in
+  let x = { x with reset_info = reset_info; undo_info = Coq.undo_info () } in
   begin
     match snd x.ast with
-      | VernacEndProof (Proved (_, None)) -> update_on_end_of_proof ()
       | VernacEndSegment (_,id) -> update_on_end_of_segment id
       | _ -> ()
   end;
@@ -554,34 +542,30 @@ type backtrack =
 
 let add_undo = function (n,a,b,p as x) -> if p = 0 then (n+1,a,b,p) else x
 let add_abort = function (n,a,b,0) -> (0,a+1,b,0) | (n,a,b,p) -> (n,a,b,p-1)
-let add_qed (n,a,b,p) = (n,a,b,p+1)
+let add_qed q (n,a,b,p) = (n,a,b,p+q)
 let add_backtrack (n,a,b,p) b' = (n,a,b',p)
-let add_proof_start (n,a,b,p) b' = (n,a,b',p-1)
 
 let pop_command undos t =
   let undos =
-    match t with
-    | {reset_info=ResetAtStatement _,{contents=false}} when Pfedit.refining()->
-	(* An incomplete ongoing proof *)
-        add_abort undos
-    | {reset_info=_, {contents=false}} ->
-	(* An object inside a section *)
-        add_backtrack undos BacktrackToNextActiveMark
-    | {ast=(_,com)} when is_vernac_tactic_command com ->
-	(* A tactic, active if not below a Qed *)
-        add_undo undos
-    | {ast=(_,com)} when is_vernac_proof_ending_command com ->
-	(* Backtracking a Qed *)
-        add_qed undos
-    | {ast=(_,com)} when is_vernac_state_preserving_command com -> undos
-    | {reset_info=ResetAtRegisteredObject mark, _} ->
-        add_backtrack undos (BacktrackToMark mark)
-    | {reset_info=ResetAtSegmentStart id, _} ->
-        add_backtrack undos (BacktrackToModSec id)
-    | {reset_info=ResetAtStatement (Some st), _} ->
-        add_proof_start undos (BacktrackToMark (ResetToState st))
-    | {ast=(_,com)} ->
-        add_backtrack undos BacktrackToNextActiveMark in
+    if !(snd t.reset_info) then
+      let (openproofs,closedproofs) = t.undo_info in
+      let undos = Util.iterate add_abort openproofs undos in
+      let undos = add_qed closedproofs undos in
+      match fst t.reset_info with
+      | _ when is_vernac_tactic_command (snd t.ast) ->
+	  (* A tactic, active if not below a Qed *)
+          add_undo undos
+      | ResetAtRegisteredObject mark ->
+          add_backtrack undos (BacktrackToMark mark)
+      | ResetAtSegmentStart id ->
+          add_backtrack undos (BacktrackToModSec id)
+      | _ when is_vernac_state_preserving_command (snd t.ast) ->
+	  undos
+      | _ ->
+          add_backtrack undos BacktrackToNextActiveMark
+    else
+      (* An object inside a closed section *)
+      add_backtrack undos BacktrackToNextActiveMark in
   ignore (pop ());
   undos
 

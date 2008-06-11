@@ -35,8 +35,11 @@ type reset_mark =
 type reset_status =
   | NoReset
   | ResetAtSegmentStart of Names.identifier
-  | ResetAtStatement of Libnames.object_name option
   | ResetAtRegisteredObject of reset_mark
+
+type undo_info = int * int
+
+val undo_info : unit -> undo_info
 
 type reset_info = reset_status * bool ref
 
