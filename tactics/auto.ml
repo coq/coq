@@ -863,13 +863,12 @@ let rec search_gen decomp n db_list local_db extra_sign =
   )
   end
 
-
 let search = search_gen 0
 
 let default_search_depth = ref 5
 
 let auto n lems dbnames =
-  Proofview.sensitive_tactic (
+  Proofview.sensitive_tactic begin
   let db_list = 
     List.map
       (fun x -> 
@@ -884,8 +883,8 @@ let auto n lems dbnames =
   make_local_hint_db lems >>= fun local_db ->
   Goal.return (  
   Logic.tclTRY (search n db_list local_db (Environ.named_context_of_val hyps))
-    )
   )
+  end
 
 let default_auto () = auto !default_search_depth Goal.sNil []
 

@@ -442,7 +442,7 @@ and main_process_apply_case_metas ot ty env rdefs goal info =
       if not (Reductionops.is_conv_leq env sigma ty ty') then
 	Util.anomaly "Goal.main_process_metas: mettre une vrai erreur(3)"
       else
-	let new_ot = { me = Term.mkApp (ot'.me, l) ;
+	let new_ot = { me = Term.mkApp (ot'.me, (Array.of_list l')) ;
 		       my_evars = o' }
 	in
 	( new_ot , ty')
