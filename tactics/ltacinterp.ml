@@ -919,30 +919,6 @@ let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid
   with Not_found -> Util.anomaly "Detected as ltac var at interning time"
 
-(* arnaud: commenter ? *)
-let coerce_to_intro_pattern env = function
-  | VIntroPattern ipat -> ipat
-  | VConstr c when Term.isVar c ->
-      (* This happens e.g. in definitions like "Tac H = clear H; intro H" *)
-      (* but also in "destruct H as (H,H')" *)
-      IntroIdentifier (Term.destVar c)
-  | v -> raise (CannotCoerceTo "an introduction pattern")
-
-(* arnaud: je comprends pas ce que fait cette fonction... *)
-let interp_intro_pattern_var ist env id =
-  try try_interp_ltac_var (coerce_to_intro_pattern env) ist (Some env)(Util.dummy_loc,id)
-  with Not_found -> IntroIdentifier id
-
-(* arnaud: commenter ces deux fonctions *)
-let rec interp_intro_pattern ist = function
-  | IntroOrAndPattern l -> IntroOrAndPattern (interp_case_intro_pattern ist l)
-  | IntroIdentifier id -> interp_intro_pattern_var ist (Environ.empty_env (* arnaud: corriger ça au plus vite !!!!!!!!!*) ) id
-  | IntroWildcard | IntroAnonymous | IntroFresh _ as x -> x
-
-and interp_case_intro_pattern ist =
-  List.map (List.map (interp_intro_pattern ist))
-
-
 
 (* arnaud: à déplacer ?*)
 (* For tactic_of_value *)
@@ -1431,6 +1407,35 @@ let interp_hint_base ist s =
   try try_interp_ltac_var coerce_to_hint_base ist None (Util.dummy_loc,id_of_string s)
   with Not_found -> s
 
+let coerce_to_intro_pattern env = function
+  | VIntroPattern ipat -> ipat
+  | VConstr c when Term.isVar c ->
+      (* This happens e.g. in definitions like "Tac H = clear H; intro H" *)
+      (* but also in "destruct H as (H,H')" *)
+      IntroIdentifier (Term.destVar c)
+  | v -> raise (CannotCoerceTo "an introduction pattern")
+
+let interp_intro_pattern_var ist env id =
+  try 
+    try_interp_ltac_var (coerce_to_intro_pattern env) ist (Some env) 
+                                                          (Util.dummy_loc,id)
+  with Not_found -> IntroIdentifier id
+
+let rec interp_intro_pattern ist = function
+  | IntroOrAndPattern l -> 
+      interp_case_intro_pattern ist l >>= fun patt ->
+      Goal.return (IntroOrAndPattern patt)
+  | IntroIdentifier id -> 
+      Goal.env >>= fun env ->
+      Goal.return (interp_intro_pattern_var ist env id)
+  | IntroWildcard | IntroAnonymous | IntroFresh _ as x -> Goal.return x
+
+and interp_case_intro_pattern ist l=
+  let s_l_l = (List.map (List.map (interp_intro_pattern ist)) l) in
+  let l_s_l = List.map Goal.sensitive_list s_l_l in
+  Goal.sensitive_list l_s_l
+
+
 (* arnaud: peut-être ne faut-il pas toujours renvoyer un Goal.sensitive,
    certaines tactiques ne dépendente pas des buts, ce qui change largement
    l'interprétation des arguments. Donc peut-être faut il un type de retourn
@@ -1450,10 +1455,8 @@ let rec interp_genarg ist x =
   | PreIdentArgType ->
       Goal.return (in_gen wit_pre_ident (out_gen globwit_pre_ident x))
   | IntroPatternArgType ->
-      Goal.return (
-	in_gen wit_intro_pattern
-          (interp_intro_pattern ist (out_gen globwit_intro_pattern x))
-      )
+      interp_intro_pattern ist (out_gen globwit_intro_pattern x) >>= fun patt ->
+      Goal.return (in_gen wit_intro_pattern patt)
   | IdentArgType ->
       interp_fresh_ident ist (out_gen globwit_ident x) >>= fun id ->
       Goal.return (in_gen wit_ident id)
@@ -1520,7 +1523,9 @@ and interp_genarg_var_list0 ist x = Util.anomaly "" (*arnaud:
 and interp_genarg_var_list1 ist x = Util.anomaly "" (*arnaud:
   let lc = out_gen (wit_list1 globwit_var) x in
   let lc = interp_hyp_list ist lc in
-  in_gen (wit_list1 wit_var) lc*)(*arnaud: très temporary function *)
+  in_gen (wit_list1 wit_var) lc*)
+
+(*arnaud: très temporary function *)
 let unintro_pattern = function
   | IntroIdentifier id -> id
   | _ -> Util.anomaly "Ltacinterp.TacIntroPattern: pour l'instant on ne sait faire que des intro simples"
@@ -1547,12 +1552,12 @@ let interp_induction_arg ist = function
 	)
        )
 
+
 let interp_atomic ist = function
   (* Basic tactics *)
   | TacIntroPattern l ->
-      Util.anomaly "Ltacinterp.interp_atomic:TacIntroPattern: à restaurer"
-      (* arnaud: à faire proprement cette fois
-      do_intro (List.map unintro_pattern (List.map (interp_intro_pattern ist) l)) *)
+      let i_l = Goal.sensitive_list (List.map (interp_intro_pattern ist) l) in
+      Ntactics.intro_patterns i_l
   | TacIntrosUntil hyp -> let i_hyp = interp_quantified_hypothesis ist hyp in
                           (* arnaud: intros_until n'a pas besoin de sensitive *)
                           Intros.intros_until (Goal.return i_hyp)
@@ -1669,7 +1674,7 @@ let interp_atomic ist = function
 	    Goal.return (Some i_cb)
       in
       let i_ids =
-	Goal.return (interp_intro_pattern ist ids)
+	interp_intro_pattern ist ids
       in
       Ntactics.new_destruct (Goal.return ev) i_c i_cbo i_ids
   | TacSplit ( _ , bl ) -> Ntactics.split_with_ebindings(interp_bindings ist bl)

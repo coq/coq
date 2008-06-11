@@ -110,13 +110,18 @@ val intros_clearing      : bool list -> tactic
 
 val try_intros_until :
   (identifier -> tactic) -> quantified_hypothesis -> tactic
-
+*)
 (*s Introduction tactics with eliminations. *)
 
-val intro_pattern     : identifier option -> intro_pattern_expr      -> tactic
-val intro_patterns    : intro_pattern_expr list -> tactic
-val intros_pattern    : identifier option -> intro_pattern_expr list -> tactic
+val intro_pattern     : identifier option Goal.sensitive -> 
+                        intro_pattern_expr -> 
+                        unit tactic
+val intro_patterns    : intro_pattern_expr list Goal.sensitive -> unit tactic
+val intros_pattern    : identifier option Goal.sensitive -> 
+                        intro_pattern_expr list -> 
+                        unit tactic
 
+(*
 (*s Exact tactics. *)
 
 val assumption       : tactic

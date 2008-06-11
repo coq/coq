@@ -194,11 +194,13 @@ let pf_lookup_hypothesis_as_renamed_gen red h =
 	       env sigma ccl)
       | x -> x
   in
+  Goal.concl >>= fun concl ->
+  Goal.return begin
   try 
-    Goal.concl >>= fun concl ->
-    Goal.return (aux concl)
+    aux concl
   with Tacred.Redelimination -> 
-    Goal.sNone
+    None
+  end
 
 let is_quantified_hypothesis id =
   pf_lookup_hypothesis_as_renamed_gen true (Rawterm.NamedHyp id) >>= fun hyp ->

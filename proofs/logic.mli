@@ -133,6 +133,9 @@ val eapply_with_ebindings :
 val apply_with_ebindings_gen : 
      bool -> (Term.constr * Goal.open_constr Rawterm.bindings) Goal.sensitive 
           -> unit tactic
+val goal_apply_with_ebindings_gen :
+    bool -> Term.constr * Goal.open_constr Rawterm.bindings 
+         -> Goal.proof_step Goal.sensitive
 (* [cut] tactic *)
 val cut : Term.constr Goal.sensitive -> unit tactic
 

@@ -809,16 +809,19 @@ let type_clenv_binding wc (c,t) lbind =
 (* arnaud: original
 let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) =
 *)
-let general_elim_clause elimtac cx elimcx =
-  Util.anomaly "Tactics.general_elim_clause: à restaurer"
-  (* arnaud: à restaurer
-  let ct = pf_type_of gl c in
-  let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
-  let indclause  = make_clenv_binding gl (c,t) lbindc  in
-  let elimt      = pf_type_of gl elimc in
-  let elimclause = make_clenv_binding gl (elimc,elimt) lbindelimc in 
-    elimtac elimclause indclause gl
-  *)
+let general_elim_clause elimtac (c,lbindc) (elimc,lbindelimc) =
+  Logic.type_of c >>= fun ct ->
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of defs in
+  Goal.env >>= fun env ->
+  let t = 
+    try snd (reduce_to_quantified_ind env sigma ct) 
+    with UserError _ -> ct 
+  in
+  make_clenv_binding (c,t) lbindc  >>= fun indclause ->
+  Logic.type_of elimc >>= fun elimt ->
+  make_clenv_binding (elimc,elimt) lbindelimc >>= fun elimclause ->
+  elimtac elimclause indclause
 
 let general_elim ?(allow_K=true) with_evars c e  =
   general_elim_clause (elimination_clause_scheme with_evars allow_K) c e
@@ -834,8 +837,8 @@ let find_eliminator c =
   Ntacticals.elimination_sort_of_goal >>= fun s ->
   Goal.return (lookup_eliminator ind s)
 
-let default_elim with_evars cx = 
-  cx >>= fun (c,_) ->
+let default_elim with_evars (c,_ as cx) = 
+(* arnaud:nettoyer  cx >>= fun (c,_) -> *)
   find_eliminator c >>= fun eliminator ->
   general_elim with_evars cx (eliminator,NoBindings)
 
@@ -851,7 +854,7 @@ let elim_in_context with_evars c = function
 
 let elim with_evars cx elim =
   Proofview.sensitive_tactic (
-    cx         >>= fun (c,lbindc) ->
+    cx         >>= fun (c,lbindc as cx) ->
     match kind_of_term c with
     | Var id when lbindc = NoBindings ->
 	Goal.return (
@@ -869,11 +872,14 @@ let elim with_evars cx elim =
 (* The simplest elimination tactic, with no substitutions at all. *)
 
 let simplest_elim c = 
+  default_elim false (c,NoBindings)
+(* arnaud: nettoyer
   let c_nobindings =
     c >>= fun c ->
     Goal.return (c,NoBindings)
   in
   default_elim false c_nobindings
+*)
 
 (* Elimination in hypothesis *)
 (* Typically, elimclause := (eq_ind ?x ?P ?H ?y ?Heq : ?P ?y)
@@ -885,7 +891,7 @@ let simplest_elim c =
    (e.g. it could replace id:A->B->C by id:C, knowing A/\B)
 *)
 
-let elimination_in_clause_scheme with_evars id elimclause indclause gl =
+let elimination_in_clause_scheme with_evars id elimclause indclause =
   Util.anomaly "Tactics.elimination_in_clause_scheme: à restaurer"
   (*arnaud: à restaurer
   let (hypmv,indmv) = 
@@ -1009,9 +1015,13 @@ let intros_pattern = intros_patterns [] []
 
 let intro_pattern destopt pat = intros_patterns [] [] destopt [pat]
 
-let intro_patterns = function 
-  | [] -> Logic.tclREPEAT Intros.intro
-  | l  -> intros_pattern Goal.sNone l
+let intro_patterns l =
+  Proofview.sensitive_tactic begin
+  l >>= fun l ->
+  match l with
+  | [] -> Goal.return (Logic.tclREPEAT Intros.intro)
+  | l  -> Goal.return (intros_pattern Goal.sNone l)
+  end
 
 (**************************)
 (*   Other cut tactics    *)
@@ -2561,13 +2571,10 @@ Proofview.sensitive_tactic begin
     with (* If this fails, try with new mechanism but if it fails too,
 	    then the exception is the first one. *)
       | x ->
-	  Util.anomaly "Ntactics.induct_destruct: restaurer le cas 'x'"
-	  (* arnaud: à restaurer:
 	  (try induct_destruct_l isrec with_evars lc elim names
 	   with _  -> raise x)
-	  *)
-  else Util.anomaly "Ntactics.induct_destruct: restaurer le cas 'else'"
-    (* arnaud: à restaurer: induct_destruct_l isrec with_evars lc elim names*)
+  else 
+    induct_destruct_l isrec with_evars lc elim names
   end
 end
 

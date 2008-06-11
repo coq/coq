@@ -591,13 +591,15 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
-let unify_resolve (c,clenv) = 
-  Util.anomaly "Auto.unify_resolve: à restaurer"
-  (*arnaud: à restaurer
-  let clenv' = connect_clenv gls clenv in
-  let _ = clenv_unique_resolver false clenv' gls in  
-  h_simplest_apply c gls
-  *)
+let goal_unify_resolve (c,clenv) = 
+  connect_clenv clenv >>= fun clenv' ->
+  clenv_unique_resolver false clenv' >>= fun _ ->
+  Logic.goal_apply_with_ebindings_gen false (c,NoBindings)
+
+let unify_resolve cx =
+  Proofview.tactic_of_sensitive_proof_step (
+    goal_unify_resolve cx
+  )
 
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)

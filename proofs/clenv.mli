@@ -71,7 +71,7 @@ val mk_clenv_type_of : evar_info sigma -> constr -> clausenv
 (***************************************************************)
 (* linking of clenvs *)
 
-val connect_clenv : evar_info sigma -> clausenv -> clausenv
+val connect_clenv : clausenv -> clausenv Goal.sensitive
 val clenv_fchain : 
   ?allow_K:bool -> metavariable -> clausenv -> clausenv -> clausenv
 

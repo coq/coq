@@ -309,10 +309,14 @@ let evar_clenv_unique_resolver = clenv_unique_resolver
 
 (******************************************************************)
 
-let connect_clenv gls clenv =
+let connect_clenv clenv =
+  Goal.defs >>= fun defs ->
+  let sigma = Evd.evars_of defs in
+  Goal.hyps >>= fun hyps ->
+  Goal.return
   { clenv with
-    evd = evars_reset_evd gls.sigma clenv.evd;
-    env = Global.env_of_context gls.it.evar_hyps }
+    evd = evars_reset_evd sigma clenv.evd;
+    env = Global.env_of_context hyps }
 
 (* [clenv_fchain mv clenv clenv']
  *
