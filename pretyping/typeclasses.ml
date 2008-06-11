@@ -258,7 +258,7 @@ let instances r =
   let cl = class_info r in instances_of cl
 
 let solve_instanciation_problem = ref (fun _ _ _ _ -> assert false)
-let solve_instanciations_problem = ref (fun _ _ _ _ -> assert false)
+let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
 
 let resolve_typeclass env ev evi (evd, defined as acc) =
   try
@@ -415,10 +415,10 @@ let has_typeclasses evd =
 	&& is_resolvable evi))
     evd false
 
-let resolve_typeclasses ?(onlyargs=false) ?(fail=true) env evd =
+let resolve_typeclasses ?(onlyargs=false) ?(split=true) ?(fail=true) env evd =
   if not (has_typeclasses (Evd.evars_of evd)) then evd
   else
-    !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) onlyargs fail
+    !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) onlyargs split fail
 
 type substitution = (identifier * constr) list
 

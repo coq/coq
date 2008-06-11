@@ -417,19 +417,81 @@ let has_undefined p oevd evd =
     (evi.evar_body = Evar_empty && p ev evi && 
 	(try Typeclasses.is_resolvable (Evd.find oevd ev) with _ -> true)))
     (Evd.evars_of evd) false
-    
-let resolve_all_evars debug m env p oevd =
+
+let evars_of_term init c = 
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) -> Intset.add n acc
+    | _ -> fold_constr evrec acc c
+  in 
+    evrec init c
+
+let intersects s t =
+  Intset.exists (fun el -> Intset.mem el t) s
+
+let rec merge_deps deps = function
+  | [] -> [deps]
+  | hd :: tl -> 
+      if intersects deps hd then 
+	merge_deps (Intset.union deps hd) tl
+      else hd :: merge_deps deps tl
+	
+let split_evars evm =
+  Evd.fold (fun ev evi acc ->
+    let deps = evars_of_term (Intset.singleton ev) evi.evar_concl in
+      merge_deps deps acc)
+    evm []
+
+let select_evars evs evm =
+  Evd.fold (fun ev evi acc ->
+    if Intset.mem ev evs then Evd.add acc ev evi else acc)
+    evm Evd.empty
+
+let resolve_all_evars debug m env p oevd do_split fail =
   let oevm = Evd.evars_of oevd in
-  try
-    let rec aux n evd =
-      if has_undefined p oevm evd then
-	if n > 0 then
-	  let evd' = resolve_all_evars_once debug m env p evd in
-	    aux (pred n) evd'
-	else None
-      else Some evd
-    in aux 3 oevd
-  with Not_found -> None
+  let split = if do_split then split_evars (Evd.evars_of (Evd.undefined_evars oevd)) else [Intset.empty] in
+  let p = if do_split then fun comp ev evi -> Intset.mem ev comp && p ev evi else fun _ -> p in
+  let rec aux n p evd =
+    if has_undefined p oevm evd then
+      if n > 0 then
+	let evd' = resolve_all_evars_once debug m env p evd in
+	  aux (pred n) p evd'
+      else None
+    else Some evd
+  in 
+  let rec docomp evd = function
+    | [] -> evd
+    | comp :: comps ->
+	let res = try aux 3 (p comp) evd with Not_found -> None in
+	  match res with
+	  | None -> 
+	      if fail then 
+		(* Unable to satisfy the constraints. *)
+		let evm = Evd.evars_of evd in
+		let evm = if do_split then select_evars comp evm else evm in
+		let ev = Evd.fold 
+		  (fun ev evi acc -> 
+		    if acc = None then
+		      if class_of_constr evi.evar_concl <> None then Some ev else None 
+		    else acc) evm None
+		in
+		  Typeclasses_errors.unsatisfiable_constraints env (Evd.evars_reset_evd evm evd) ev
+	      else (* Best effort: do nothing *) oevd
+	  | Some evd' -> docomp evd' comps
+  in docomp oevd split
+
+(* let resolve_all_evars debug m env p oevd = *)
+(*   let oevm = Evd.evars_of oevd in *)
+(*   try *)
+(*     let rec aux n evd = *)
+(*       if has_undefined p oevm evd then *)
+(* 	if n > 0 then *)
+(* 	  let evd' = resolve_all_evars_once debug m env p evd in *)
+(* 	    aux (pred n) evd' *)
+(* 	else None *)
+(*       else Some evd *)
+(*     in aux 3 oevd *)
+(*   with Not_found -> None *)
     
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
 | [ "Typeclasses" "unfold" reference_list(cl) ] -> [
@@ -907,14 +969,14 @@ let build_new gl env sigma flags loccs hypinfo concl cstr evars =
   if rest <> [] then error_invalid_occurrence rest;
   eq
     
-let resolve_typeclass_evars d p env evd onlyargs =
+let resolve_typeclass_evars d p env evd onlyargs split fail =
   let pred = 
     if onlyargs then 
       (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
 	class_of_constr evi.Evd.evar_concl <> None)
     else
       (fun ev evi -> class_of_constr evi.Evd.evar_concl <> None)
-  in resolve_all_evars d p env pred evd
+  in resolve_all_evars d p env pred evd split fail
       
 let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
@@ -935,7 +997,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
     match eq with  
     | Some (p, (_, _, oldt, newt)) -> 
 	(try 
-	  evars := Typeclasses.resolve_typeclasses env ~fail:true !evars;
+	  evars := Typeclasses.resolve_typeclasses env ~split:false ~fail:true !evars;
 	  let p = Evarutil.nf_isevar !evars p in
 	  let newt = Evarutil.nf_isevar !evars newt in
 	  let undef = Evd.undefined_evars !evars in
@@ -1055,14 +1117,8 @@ ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
 | [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
 END
 	
-let solve_inst debug mode depth env evd onlyargs fail =
-  match resolve_typeclass_evars debug (mode, depth) env evd onlyargs with 
-    | None -> 
-	if fail then 
-	  (* Unable to satisfy the constraints. *)
-	  Typeclasses_errors.unsatisfiable_constraints env evd
-	else (* Best effort: do nothing *) evd
-    | Some evd -> evd
+let solve_inst debug mode depth env evd onlyargs split fail =
+  resolve_typeclass_evars debug (mode, depth) env evd onlyargs split fail
 
 let _ = 
   Typeclasses.solve_instanciations_problem :=

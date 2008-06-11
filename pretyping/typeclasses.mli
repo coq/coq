@@ -79,10 +79,10 @@ val is_resolvable : evar_info -> bool
 val mark_unresolvable : evar_info -> evar_info
 val mark_unresolvables : evar_map -> evar_map
 
-val resolve_typeclasses : ?onlyargs:bool -> ?fail:bool -> env -> evar_defs -> evar_defs
+val resolve_typeclasses : ?onlyargs:bool -> ?split:bool -> ?fail:bool -> env -> evar_defs -> evar_defs
 
 val solve_instanciation_problem : (env -> evar_defs -> existential_key -> evar_info -> evar_defs * bool) ref
-val solve_instanciations_problem : (env -> evar_defs -> bool -> bool -> evar_defs) ref
+val solve_instanciations_problem : (env -> evar_defs -> bool -> bool -> bool -> evar_defs) ref
 
 type substitution = (identifier * constr) list
 

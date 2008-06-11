@@ -286,7 +286,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       strbrk " not in guarded form (should be a constructor," ++
       strbrk " an abstraction, a match, a cofix or a recursive call)"
   in
-  let pvd, pvdt = pr_ljudge_env fixenv vdefj.(i) in
+  let pvd = pr_lconstr_env fixenv vdefj.(i).uj_val in
   prt_name i ++ str " is ill-formed." ++ fnl () ++
   pr_ne_context_of (str "In environment") env ++
   st ++ str "." ++ fnl () ++
@@ -505,10 +505,19 @@ let explain_no_instance env (_,id) l =
   str "applied to arguments" ++ spc () ++ 
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
-let explain_unsatisfiable_constraints env evd =
-  str"Unable to satisfy the following typeclass constraints:" ++ fnl() ++
-    Evd.pr_evar_map (Evd.evars_of (Evd.undefined_evars evd))
-
+let explain_unsatisfiable_constraints env evd constr =
+  let evm = Evd.evars_of evd in
+  match constr with
+  | None ->
+      str"Unable to satisfy the following typeclass constraints:" ++ fnl() ++
+	Evd.pr_evar_map evm
+  | Some (evi, k) -> 
+      explain_unsolvable_implicit env evi k None ++ fnl () ++
+	if List.length (Evd.to_list evm) > 1 then
+	  str"With the following typeclass constraints:" ++ 
+	    fnl() ++ Evd.pr_evar_map evm 
+	else mt ()
+	
 let explain_mismatched_contexts env c i j = 
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
     hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_named_context env j) ++ fnl () ++ brk (1,1) ++ 
@@ -519,7 +528,7 @@ let explain_typeclass_error env err =
     | NotAClass c -> explain_not_a_class env c
     | UnboundMethod (cid, id) -> explain_unbound_method env cid id
     | NoInstance (id, l) -> explain_no_instance env id l
-    | UnsatisfiableConstraints evm -> explain_unsatisfiable_constraints env evm
+    | UnsatisfiableConstraints (evd, c) -> explain_unsatisfiable_constraints env evd c
     | MismatchedContextInstance (c, i, j) -> explain_mismatched_contexts env c i j
 	
 (* Refiner errors *)
