@@ -96,7 +96,7 @@ type 'id gclause =
   { onhyps : 'id raw_hyp_location list option;
     concl_occs : bool * int or_var list }
 
-let nowhere = {onhyps=Some[]; concl_occs=(false,[])}
+let nowhere = {onhyps=Some[]; concl_occs=no_occurrences_expr}
 
 let simple_clause_of = function
 | { onhyps = Some [scl]; concl_occs = occs } when occs = no_occurrences_expr ->

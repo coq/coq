@@ -670,10 +670,8 @@ let subst_term_occ_decl (nowhere_except_in,locs as plocs) c (id,bodyopt,typ as d
     | None -> (id,None,subst_term_occ plocs c typ)
     | Some body -> 
 	if locs = [] then
-	  if nowhere_except_in then
-	    (id,Some (subst_term c body),subst_term c typ)
-	  else
-	    d
+	  if nowhere_except_in then d
+	  else (id,Some (subst_term c body),subst_term c typ)
 	else 
 	  let (nbocc,body') = subst_term_occ_gen plocs 1 c body in
 	  let (nbocc',t') = subst_term_occ_gen plocs nbocc c typ in
