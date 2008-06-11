@@ -56,7 +56,7 @@ val tclTHENTRY       : 'a tactic -> 'a tactic -> 'a tactic
 val tclNTH_HYP       : int Goal.sensitive -> 
                       (constr Goal.sensitive -> 'a tactic) -> 
                        'a tactic
-val tclMAP           : ('a -> 'a tactic) -> 'a list -> 'a tactic
+val tclMAP           : ('a -> unit tactic) -> 'a list -> unit tactic
 val tclLAST_HYP      : (constr Goal.sensitive -> 'a tactic) -> 'a tactic
 val tclTRY_sign      : (constr -> 'a tactic) -> 
                         named_context -> 
@@ -99,13 +99,17 @@ val afterHyp   : identifier -> named_context Goal.sensitive
 val lastHyp    : identifier Goal.sensitive
 val nLastHyps  : int Goal.sensitive -> named_context Goal.sensitive
 
+
 val onCL           : clause Goal.sensitive -> 
                      (clause -> 'a tactic) -> 'a tactic
 val tryAllClauses  : (simple_clause -> 'a tactic) -> 'a tactic
 val onAllClauses   : (simple_clause -> 'a tactic) -> 'a tactic
 val onClause       : (clause -> 'a tactic) -> clause -> 'a tactic
-val onClauses      : (simple_clause -> 'a tactic) -> clause -> 'a tactic
+*)
+val onClauses      : (simple_clause -> unit tactic) -> clause -> unit tactic
+(*
 val onAllClausesLR : (simple_clause -> 'a tactic) -> 'a tactic
+
 val onNthLastHyp   : int -> (clause -> 'a tactic) -> 'a tactic
 val clauseTacThen  : (clause -> 'a tactic) -> 'a tactic -> clause -> 'a tactic
 val if_tac         : bool Goal.sensitive -> 'a tactic -> 'a tactic -> 'a tactic

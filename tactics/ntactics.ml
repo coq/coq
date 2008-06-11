@@ -243,19 +243,19 @@ let reduct_in_hyp redfun ((_,id),where) =
       convert_hyp_no_check (id,Some b',ty') gl
   *)
 
-let reduct_option redfun = function
+let goal_reduct_option redfun = function
   | Some id -> reduct_in_hyp (fst redfun) id 
   | None    -> reduct_in_concl redfun 
+
+let reduct_option redfun o =
+  Proofview.tactic_of_sensitive_proof_step (goal_reduct_option redfun o)
 
 (* The following tactic determines whether the reduction
    function has to be applied to the conclusion or
    to the hypotheses. *) 
 
 let redin_combinator redfun =
-  Util.anomaly "Ntactics.redin_combinator: à restaurer"
-  (* arnaud: à restaurer
   Ntacticals.onClauses (reduct_option redfun)
-  *)
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb t env sigma c =
@@ -319,8 +319,14 @@ let needs_check = function
   | _ -> false
 
 let reduce redexp cl =
+  Proofview.sensitive_tactic begin
+  redexp >>= fun redexp ->
+  cl >>= fun cl ->
+  Goal.return begin
   (if needs_check redexp then with_check else (fun x -> x))
     (redin_combinator (Redexpr.reduction_of_red_expr redexp) cl)
+  end
+  end
 
 (* Unfolding occurrences of a constant *)
 
@@ -2342,7 +2348,7 @@ Proofview.sensitive_tactic begin
 	if deps = [] then Proofview.tclIDTAC () else apply_type tmpcl deps_cstr;
 	thin (Goal.return dephyps); (* clear dependent hyps *)
 	(* pattern to make the predicate appear. *)
-	reduce (Pattern (List.map (fun e -> ([],e)) lidcstr)) Ntacticals.onConcl;
+	reduce (Goal.return (Pattern (List.map (fun e -> ([],e)) lidcstr))) (Goal.return Ntacticals.onConcl);
 	(* FIXME: Tester ca avec un principe dependant et non-dependant *)
 	(if isrec then Ntacticals.tclTHENFIRSTn else Ntacticals.tclTHENLASTn)
        	  (Logic.tclTHENLIST [ 

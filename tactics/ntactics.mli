@@ -159,7 +159,13 @@ val unfold_in_hyp     :
 val unfold_option     : 
   (int list * evaluable_global_reference) list -> simple_clause
     -> tactic
-val reduce            : red_expr -> clause -> tactic
+*)
+
+val reduce            : red_expr Goal.sensitive ->
+                        clause Goal.sensitive -> 
+                        unit tactic
+
+(*
 val change            :
   (int list * constr) option -> constr -> clause -> tactic
 

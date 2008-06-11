@@ -96,10 +96,7 @@ let tclTHENSEQ l = List.fold_left tclTHEN tclIDTAC l
 (* map_tactical f [x1..xn] = (f x1);(f x2);...(f xn) *)
 (* tclMAP f [x1..xn] = (f x1);(f x2);...(f xn) *)
 let tclMAP tacfun l = 
-  Util.anomaly "Tacticals.tclMAP: à restaurer"
-  (* arnaud: à restaurer
-  List.fold_right (fun x -> (tclTHEN (tacfun x))) l tclIDTAC
-  *)
+  List.fold_right (fun x -> (Logic.tclTHEN (tacfun x))) l (Proofview.tclIDTAC ())
 
 (* apply a tactic to the nth element of the signature  *)
 
@@ -159,30 +156,39 @@ let allHyps = { onhyps=None; onconcl=false; concl_occs=[] }
 let onHyp id = { onhyps=Some[(([],id),InHyp)]; onconcl=false; concl_occs=[] }
 let onConcl = { onhyps=Some[]; onconcl=true; concl_occs=[] }
 
-(* arnaud: débranchement temporaire, restaurer tout ça
-let simple_clause_list_of cl gls =
+let simple_clause_list_of cl =
+  Goal.hyps >>= fun hyps ->
   let hyps =
     match cl.onhyps with 
-        None -> List.map (fun id -> Some(([],id),InHyp)) (pf_ids_of_hyps gls)
+        None -> 
+	  let ids = 
+	    Termops.ids_of_named_context (Environ.named_context_of_val hyps) 
+	  in
+	  List.map (fun id -> Some(([],id),InHyp)) ids
       | Some l -> List.map (fun h -> Some h) l in
-  if cl.onconcl then None::hyps else hyps
+  if cl.onconcl then Goal.return (None::hyps) else Goal.return hyps
 
 
 (* OR-branch *)
-let tryClauses tac cl gls = 
+let tryClauses tac cl = 
+  Proofview.sensitive_tactic begin
   let rec firstrec = function
     | []      -> tclFAIL 0 (str "no applicable hypothesis")
     | [cls]   -> tac cls (* added in order to get a useful error message *)
     | cls::tl -> (tclORELSE (tac cls) (firstrec tl))
   in
-  let hyps = simple_clause_list_of cl gls in
-  firstrec hyps gls
+  simple_clause_list_of cl >>= fun hyps ->
+  Goal.return (firstrec hyps)
+  end
 
 (* AND-branch *)
-let onClauses tac cl gls = 
-  let hyps = simple_clause_list_of cl gls in
-  tclMAP tac hyps gls
+let onClauses tac cl = 
+  Proofview.sensitive_tactic begin
+  simple_clause_list_of cl >>= fun hyps ->
+  Goal.return (tclMAP tac hyps)
+  end
 
+(* arnaud: débranchement temporaire, restaurer tout ça
 (* AND-branch reverse order*)
 let onClausesLR tac cl gls = 
   let hyps = simple_clause_list_of cl gls in

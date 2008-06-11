@@ -1553,6 +1553,25 @@ let interp_induction_arg ist = function
        )
 
 
+
+(* Interprets an hypothesis name *)
+let interp_hyp_location ist ((occs,id),hl) =
+  interp_hyp ist id >>= fun hyp ->
+  Goal.return ((interp_int_or_var_list ist occs,hyp),hl)
+
+let interp_clause ist { onhyps=ol; onconcl=b; concl_occs=occs } =
+  begin match ol with
+  | None -> Goal.sNone
+  | Some l -> 
+      Goal.sensitive_list (List.map (interp_hyp_location ist) l) >>= fun i_l ->
+      Goal.return (Some i_l)
+  end >>= fun i_ol ->
+  Goal.return
+  { onhyps=i_ol;
+    onconcl=b;
+    concl_occs= interp_int_or_var_list ist occs }
+
+
 let interp_atomic ist = function
   (* Basic tactics *)
   | TacIntroPattern l ->
@@ -1678,6 +1697,18 @@ let interp_atomic ist = function
       in
       Ntactics.new_destruct (Goal.return ev) i_c i_cbo i_ids
   | TacSplit ( _ , bl ) -> Ntactics.split_with_ebindings(interp_bindings ist bl)
+  | TacAnyConstructor t ->
+      Util.anomaly "Ltacinterp.interp_atomic:AnyConstructor:à restaurer"
+  | TacConstructor (n,bl) ->
+      Util.anomaly "Ltacinterp.interp_atomic:Constructor:à restaurer"
+
+  (* Conversion *)
+  | TacReduce (r,cl) ->
+      let i_r = pf_interp_red_expr ist r in
+      let i_cl = interp_clause ist cl in
+      Ntactics.reduce i_r i_cl
+  | TacChange (occl,c,cl) ->
+      Util.anomaly "Ltacinterp.interp_atomic:Change:à restaurer"
   | _ -> Util.anomaly "Ltacinterp.interp_atomic: todo"
 
 (* arnaud: commenter et renommer *)
@@ -1693,7 +1724,9 @@ let rec other_eval_tactic ist = function
 			   let i_b = List.map (other_eval_tactic ist) b in
 			   Logic.tclTHEN i_t1
 			                (Logic.tclEXTEND i_a i_t2 i_b)
-  | TacThens _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacThens: todo"
+  | TacThens (t1,tl) -> 
+      Logic.tclTHEN (other_eval_tactic ist t1) 
+	      (Logic.tclLIST (List.map (other_eval_tactic ist) tl))
   | TacFirst l -> let i_l = List.map (other_eval_tactic ist) l in
                   Logic.tclFIRST i_l
   | TacComplete _ -> Util.anomaly "Ltacinterp.other_eval_tactic: TacComplete: todo"
