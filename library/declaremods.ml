@@ -1066,17 +1066,19 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 	mod_entry_expr = Some (MSEident mp) } ->
 	 let dir,mp' = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
 	 let (sub,mbids,msid,objs) = substobjs in
-	 let prefix =  dir,(mp',empty_dirpath) in
 	 let mp1 = Environ.scrape_alias mp env in
+	 let prefix =  dir,(mp1,empty_dirpath) in
 	 let substituted = 
 	   match mbids with
 		    | [] -> 
 			Some (subst_objects prefix 
-				(join sub (join (map_msid msid mp') (map_mp mp' mp1))) objs)
+				(join sub (join (map_msid msid mp1) (map_mp mp' mp1))) objs)
 		    | _ -> None in
 	   ignore (add_leaf
 		     id
-		     (in_module_alias (Some (entry, mty_sub_o), substobjs, substituted)));
+		     (in_module_alias (Some ({mod_entry_type = None;	    
+					      mod_entry_expr = Some (MSEident mp1) }, mty_sub_o), 
+				       substobjs, substituted)));
 	   mmp
       | _ ->
 	  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
