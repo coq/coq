@@ -158,7 +158,9 @@ let variables l =
     section "Variables definitions.";
     print "CAMLP4LIB:=$(shell $(CAMLBIN)camlp5 -where 2> /dev/null || $(CAMLBIN)camlp4 -where)\n";
     print "CAMLP4:=$(notdir $(CAMLP4LIB))\n"; 
-    print "COQSRC:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
+    if Coq_config.local then
+      (print "COQSRC:=$(COQTOP)\n";
+       print "COQSRCLIBS:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
   -I $(COQTOP)/proofs -I $(COQTOP)/tactics \\
@@ -168,8 +170,11 @@ let variables l =
   -I $(COQTOP)/contrib/interface -I $(COQTOP)/contrib/jprover \\
   -I $(COQTOP)/contrib/omega -I $(COQTOP)/contrib/romega \\
   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \\
-  -I $(CAMLP4LIB)\n";
-    print "ZFLAGS:=$(OCAMLLIBS) $(COQSRC)\n";
+  -I $(CAMLP4LIB)\n")
+    else
+      (print "COQSRC:=$(shell $(COQTOP)coqc -where)\n"; 
+       print "COQSRCLIBS:=-I $(COQSRC)\n");
+    print "ZFLAGS:=$(OCAMLLIBS) $(COQSRCLIBS)\n";
     if !opt = "-byte" then 
       print "override OPT:=-byte\n"
     else
@@ -188,7 +193,11 @@ let variables l =
     printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt -rectypes\n";
     print "GRAMMARS:=grammar.cma\n";
     print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
-    print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
+
+    (if Coq_config.local then
+      print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n"
+    else
+      print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQSRC) $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n"); 
     var_aux l;
     print "\n"
 
