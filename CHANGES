@@ -20,6 +20,7 @@ Language
 - Support for sort-polymorphism on constants denoting inductive types.
 - Several evolutions of the module system (handling of module aliases, 
   functorial module types, an Include feature, etc). (TODO: Say more!)
+- Prop now a subtype of Set (predicative and impredicative forms).
 
 Vernacular commands
 
@@ -403,7 +404,7 @@ Tools
 Miscellaneous
 
 - Coq installation provides enough files so that Ocaml's extensions need not
-  the Coq sources to be compiled.
+  the Coq sources to be compiled (this assumes O'Caml 3.10 and Camlp5).
 - New commands "Set Whelp Server" and "Set Whelp Getter" to customize the
   Whelp search tool.
 - Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into

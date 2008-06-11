@@ -53,7 +53,10 @@ Language
 Libraries
 
 - Some changes in the library (as mentioned in the CHANGES file) may
-  imply the need for local adaptations.
+  imply the need for local adaptations. This may particularly be the
+  case with the move from Set to Type in libraries FSets, SetoidList,
+  ListSet, Sorting and Zmisc. In case of trouble it may help to simply
+  declare Set as an alias for Type (see file SetIsType).
 
 For the main changes in the ML interfaces, see file
 dev/doc/changes.txt in the main archive.

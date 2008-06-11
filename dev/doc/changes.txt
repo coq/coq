@@ -2,8 +2,13 @@
 = CHANGES BETWEEN COQ V8.1 AND COQ V8.2 =
 =========================================
 
-A few differences in Coq ML interfaces between Coq V8.0 and V8.1
+A few differences in Coq ML interfaces between Coq V8.1 and V8.2
 ================================================================
+
+** Datatypes
+
+List of occurrences moved from "int list" to "Termops.occurrences" (an
+alias to "bool * int list").
 
 ** Functions
 
