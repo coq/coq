@@ -29,6 +29,10 @@ CHICKENOPT:=bin/coqchk.opt$(EXE)
 BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
 
+INSTALLBIN:=install
+INSTALLLIB:=install -m 644 
+MKDIR:=install -d
+
 COQIDEBYTE:=bin/coqide.byte$(EXE)
 COQIDEOPT:=bin/coqide.opt$(EXE)
 COQIDE:=bin/coqide$(EXE)

@@ -426,21 +426,21 @@ install-ide-no:
 
 install-ide-byte: 
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQIDEBYTE) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQIDEBYTE) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
 
 install-ide-opt:
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
 
 install-ide-files:
 	$(MKDIR) $(FULLIDELIB)
-	cp $(IDEFILES) $(FULLIDELIB)
+	$(INSTALLLIB) $(IDEFILES) $(FULLIDELIB)
 
 install-ide-info:
 	$(MKDIR) $(FULLIDELIB)
-	cp ide/FAQ $(FULLIDELIB)
+	$(INSTALLLIB) ide/FAQ $(FULLIDELIB)
 
 ###########################################################################
 # Pcoq: special binaries for debugging (coq-interface, parser)
@@ -477,15 +477,15 @@ install-pcoq:: install-pcoq-binaries install-pcoq-files install-pcoq-manpages
 
 install-pcoq-binaries::
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQINTERFACE) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQINTERFACE) $(FULLBINDIR)
 
 install-pcoq-files::
 	$(MKDIR) $(FULLCOQLIB)/contrib/interface
-	cp $(INTERFACERC) $(FULLCOQLIB)/contrib/interface
+	$(INSTALLLIB) $(INTERFACERC) $(FULLCOQLIB)/contrib/interface
 
 install-pcoq-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1
-	cp $(PCOQMANPAGES) $(FULLMANDIR)/man1
+	$(INSTALLLIB) $(PCOQMANPAGES) $(FULLMANDIR)/man1
 
 ###########################################################################
 # tests
@@ -632,12 +632,12 @@ install-binaries:: install-$(BEST) install-tools
 
 install-byte::
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqtop.byte$(EXE) coqtop$(EXE)
 
 install-opt::
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE)
 
 install-tools::
@@ -645,52 +645,52 @@ install-tools::
 	# recopie des fichiers de style pour coqide
 	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
 	touch $(FULLCOQLIB)/tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc/coqdoc.css # to have the mode according to umask (bug #1715)
-	cp tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
-	cp $(TOOLS) $(FULLBINDIR)
+	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
+	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(LIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
-	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+	  $(INSTALLLIB) $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
 	$(MKDIR) $(FULLCOQLIB)/states
-	cp states/*.coq $(FULLCOQLIB)/states
+	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	cp $(LINKCMO) $(LINKCMX) $(GRAMMARCMA) $(FULLCOQLIB)
-	find . -name \*.cmi -exec cp {} $(FULLCOQLIB) \;
+	$(INSTALLLIB) $(LINKCMO) $(LINKCMX) $(GRAMMARCMA) $(FULLCOQLIB)
+	find . -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(LIBFILESLIGHT); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
-	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+	  $(INSTALLLIB) $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
 	$(MKDIR) $(FULLCOQLIB)/states
-	cp states/*.coq $(FULLCOQLIB)/states
+	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 
 install-allreals::
 	for f in $(ALLREALS); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
-	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+	  $(INSTALLLIB) $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
 
 install-coq-info: install-coq-manpages install-emacs install-latex
 
 install-coq-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1
-	cp $(MANPAGES) $(FULLMANDIR)/man1
+	$(INSTALLLIB) $(MANPAGES) $(FULLMANDIR)/man1
 
 install-emacs:
 	$(MKDIR) $(FULLEMACSLIB)
-	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
+	$(INSTALLLIB) tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
 # command to update TeX' kpathsea database
 #UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
 
 install-latex:
 	$(MKDIR) $(FULLCOQDOCDIR)
-	cp tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)	
+	$(INSTALLLIB) tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)	
 #	-$(UPDATETEX)
 
 ###########################################################################

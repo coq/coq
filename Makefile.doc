@@ -97,11 +97,11 @@ doc/refman/Reference-Manual.html: doc/refman/headers.hva doc/refman/Reference-Ma
 doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
                         doc/refman/cover.html doc/refman/index.html
 	- rm -rf doc/refman/html
-	mkdir doc/refman/html
-	cp $(REFMANPNGFILES) doc/refman/html
+	$(MKDIR) doc/refman/html
+	$(INSTALLLIB) $(REFMANPNGFILES) doc/refman/html
 	(cd doc/refman/html; hacha -o toc.html ../Reference-Manual.html)
-	cp doc/refman/cover.html doc/refman/menu.html doc/refman/html
-	cp doc/refman/index.html doc/refman/html
+	$(INSTALLLIB) doc/refman/cover.html doc/refman/menu.html doc/refman/html
+	$(INSTALLLIB) doc/refman/index.html doc/refman/html
 
 doc/refman-quick:
 	(cd doc/refman; \
@@ -142,9 +142,9 @@ doc/faq/FAQ.v.html: doc/faq/FAQ.v.dvi # to ensure FAQ.v.bbl
 
 doc/faq/html/index.html: doc/faq/FAQ.v.html
 	- rm -rf doc/faq/html
-	mkdir doc/faq/html
-	cp doc/faq/interval_discr.v doc/faq/axioms.png doc/faq/html
-	cp doc/faq/FAQ.v.html doc/faq/html/index.html
+	$(MKDIR) doc/faq/html
+	$(INSTALLLIB) doc/faq/interval_discr.v doc/faq/axioms.png doc/faq/html
+	$(INSTALLLIB) doc/faq/FAQ.v.html doc/faq/html/index.html
 
 ######################################################################
 # Standard library
@@ -154,7 +154,7 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 
 doc/stdlib/index-body.html: $(THEORIESVO:.vo=.glob)
 	- rm -rf doc/stdlib/html
-	mkdir doc/stdlib/html
+	$(MKDIR) doc/stdlib/html
 	$(COQDOC) -q -d doc/stdlib/html --multi-index --html \
 	  -R theories Coq $(THEORIESVO:.vo=.v)
 	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
@@ -215,26 +215,26 @@ ide/index_urls.txt: doc/refman/html/index.html
 install-doc: install-doc-meta install-doc-html install-doc-printable
 
 install-doc-meta:
-	mkdir $(DOCDIR)
-	cp doc/LICENCE $(DOCDIR)/LICENCE.doc
+	$(MKDIR) $(DOCDIR)
+	$(INSTALLLIB) doc/LICENCE $(DOCDIR)/LICENCE.doc
 
 install-doc-html: doc-html
-	mkdir $(DOCDIR)/html
-	cp -r doc/refman/html $(DOCDIR)/html/refman 
-	cp -r doc/stdlib/html $(DOCDIR)/html/stdlib 
-	cp -r doc/RecTutorial/RecTutorial.html $(DOCDIR)/html/
-	cp -r doc/faq/html $(DOCDIR)/html/faq
-	cp -r doc/tutorial/tutorial.html doc/RecTutorial/RecTutorial.html $(DOCDIR)/html/
+	$(MKDIR) $(DOCDIR)/html
+	$(INSTALLLIB) doc/refman/html $(DOCDIR)/html/refman 
+	$(INSTALLLIB) doc/stdlib/html $(DOCDIR)/html/stdlib 
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.html $(DOCDIR)/html/
+	$(INSTALLLIB) doc/faq/html $(DOCDIR)/html/faq
+	$(INSTALLLIB) doc/tutorial/tutorial.html doc/RecTutorial/RecTutorial.html $(DOCDIR)/html/
 
 install-doc-printable: doc-pdf doc-ps
-	mkdir $(DOCDIR)/ps
-	cp -r doc/refman/Reference-manual.pdf \
+	$(MKDIR) $(DOCDIR)/ps
+	$(INSTALLLIB) doc/refman/Reference-manual.pdf \
 		doc/stdlib/Library.pdf \
 		doc/refman/Reference-manual.ps \
 		doc/stdlib/Library.ps $(DOCDIR)/ps
-	cp -r doc/tutorial/Tutorial.v.pdf $(DOCDIR)/ps/Tutorial.pdf
-	cp -r doc/RecTutorial/RecTutorial.v.pdf $(DOCDIR)/ps/RecTutorial.pdf
-	cp -r doc/faq/FAQ.v.pdf $(DOCDIR)/ps/FAQ.pdf
-	cp -r doc/tutorial/Tutorial.v.ps $(DOCDIR)/ps/Tutorial.ps
-	cp -r doc/RecTutorial/RecTutorial.v.ps $(DOCDIR)/ps/RecTutorial.ps
-	cp -r doc/faq/FAQ.v.ps $(DOCDIR)/ps/FAQ.ps
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(DOCDIR)/ps/Tutorial.pdf
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.pdf $(DOCDIR)/ps/RecTutorial.pdf
+	$(INSTALLLIB) doc/faq/FAQ.v.pdf $(DOCDIR)/ps/FAQ.pdf
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(DOCDIR)/ps/Tutorial.ps
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.ps $(DOCDIR)/ps/RecTutorial.ps
+	$(INSTALLLIB) doc/faq/FAQ.v.ps $(DOCDIR)/ps/FAQ.ps
