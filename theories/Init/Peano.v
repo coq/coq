@@ -164,7 +164,11 @@ Notation mult_succ_r_reverse := mult_n_Sm (only parsing).
 Fixpoint minus (n m:nat) {struct n} : nat :=
   match n, m with
   | O, _ => n
-  | S k, O => S k
+  | S k, O => n
+(*=======
+
+  | O, _ => n
+  | S k, O => S k *)
   | S k, S l => k - l
   end
 
