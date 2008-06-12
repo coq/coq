@@ -1,5 +1,5 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V8.1 SYSTEM
+            INSTALLATION PROCEDURES FOR THE COQ V8.2 SYSTEM
             -----------------------------------------------
 
 WHAT DO YOU NEED ?
@@ -38,13 +38,13 @@ WHAT DO YOU NEED ?
 
      urpmi coq
 
-   Should you need or prefer to compile Coq V8.1 yourself, you need:
+   Should you need or prefer to compile Coq V8.2 yourself, you need:
 
      - Objective Caml version 3.07 or later
        (available at http://caml.inria.fr/)
 
        For Ocaml version >= 3.10.0, you also need to install camlp5
-       (version <= 4.08, or 5.01 transitional)
+       (version <= 4.08, or >= 5.01 transitional)
   
 
      - GNU Make version 3.81 or later

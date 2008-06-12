@@ -1,15 +1,15 @@
-INSTALLATION PROCEDURE FOR THE PRECOMPILED COQ V8.1 SYSTEM UNDER MACOS X
+INSTALLATION PROCEDURE FOR THE PRECOMPILED COQ V8.2 SYSTEM UNDER MACOS X
 ------------------------------------------------------------------------
 
 You can also use fink, or the MacOS X package prepared by the Coq
 team. To use the MacOS X package,:
 
-1) Download archive coq-8.1-macosx-ppc.dmg (for PowerPC-base computer)
-   or coq-8.1-macosx-i386.dmg (for Pentium-based computer).
+1) Download archive coq-8.2-macosx-ppc.dmg (for PowerPC-base computer)
+   or coq-8.2-macosx-i386.dmg (for Pentium-based computer).
 
-2) Double-click on its icon; it mounts a disk volume named "Coq V8.1".
+2) Double-click on its icon; it mounts a disk volume named "Coq V8.2".
 
-3) Open volume "Coq 8.1" and double-click on coq-8.1.pkg to launch the
+3) Open volume "Coq 8.2" and double-click on coq-8.2.pkg to launch the
    installer (you'll need administrator permissions).
 
 4) Coq installs in /usr/local/bin, which should be in your PATH, and
