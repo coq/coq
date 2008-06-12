@@ -179,9 +179,6 @@ let _ =
 
 (* various requests to the tables *)
 
-let exists_library dir =
-  LibraryMap.mem dir !libraries_table
-
 let find_library dir =
   LibraryMap.find dir !libraries_table
 
@@ -197,7 +194,8 @@ let register_library_filename dir f =
     LibraryFilenameMap.add dir f !libraries_filename_table
 
 let library_full_filename dir =
-  LibraryFilenameMap.find dir !libraries_filename_table
+  try LibraryFilenameMap.find dir !libraries_filename_table
+  with Not_found -> "<unavailable filename>"
 
 let library_is_loaded dir =
   try let _ = find_library dir in true
@@ -345,9 +343,9 @@ let locate_absolute_library dir =
     (dir, file)
   with Not_found ->
   (* Last chance, removed from the file system but still in memory *)
-  try
+  if library_is_loaded dir then
     (dir, library_full_filename dir)
-  with Not_found ->
+  else
     raise LibNotFound
 
 let locate_qualified_library qid =
@@ -365,7 +363,7 @@ let locate_qualified_library qid =
     let path, file = System.where_in_path loadpath name in
     let dir = extend_dirpath (find_logical_path path) base in
     (* Look if loaded *)
-    if exists_library dir then (LibLoaded, dir, library_full_filename dir)
+    if library_is_loaded dir then (LibLoaded, dir, library_full_filename dir)
     (* Otherwise, look for it in the file system *)
     else (LibInPath, dir, file)
   with Not_found -> raise LibNotFound
@@ -460,7 +458,7 @@ let rec_intern_by_filename_only id f =
   (* Only the base name is expected to match *)
   check_library_short_name f m.library_name id;
   (* We check no other file containing same library is loaded *)
-  if exists_library m.library_name then
+  if library_is_loaded m.library_name then
     begin
       Flags.if_verbose warning 
 	((string_of_dirpath m.library_name)^" is already loaded from file "^
