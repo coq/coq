@@ -478,7 +478,7 @@ let xlate_hyp_location =
       CT_intype(xlate_ident id, nums_or_var_to_int_list (nums_of_occs occs))
   | (occs, AI (_,id)), InHypValueOnly ->
       CT_invalue(xlate_ident id, nums_or_var_to_int_list (nums_of_occs occs))
-  | ((true,[]), AI (_,id)), InHyp ->
+  | (occs, AI (_,id)), InHyp when occs = all_occurrences_expr ->
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_coerce_ID_to_UNFOLD (xlate_ident id))
   | ((_,a::l as occs), AI (_,id)), InHyp ->
@@ -488,7 +488,7 @@ let xlate_hyp_location =
 	(CT_unfold_occ (xlate_ident id, 
 			CT_int_ne_list(num_or_var_to_int a, 
                                        nums_or_var_to_int_list_aux l)))
-  | ((false,[]), AI (_,id)), InHyp -> xlate_error "Unused"
+  | (_, AI (_,id)), InHyp -> xlate_error "Unused" (* (true,]) *)
   | (_, MetaId _),_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
