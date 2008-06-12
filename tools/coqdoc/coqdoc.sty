@@ -68,22 +68,34 @@
 % macro for typesetting the title of a module implementation
 \newcommand{\coqdocmodule}[1]{\chapter{Module #1}\markboth{Module #1}{}
 }
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage[pdftex]{hyperref}
+  \hypersetup{raiselinks=true,colorlinks=true,linkcolor=black}
+  \usepackage[all]{hypcap}
 
-\usepackage[pdftex]{hyperref}
-\hypersetup{raiselinks=true,colorlinks=true,linkcolor=black}
-\usepackage[all]{hypcap}
+  \newcommand{\coqdef}[3]{\phantomsection\hypertarget{coq:#1}{#3}}
+  \newcommand{\coqref}[2]{\hyperlink{coq:#1}{#2}}
+  \newcommand{\identref}[2]{\hyperlink{coq:#1}{\textsf {#2}}}
+  \newcommand{\coqlibrary}[2]{\cleardoublepage\phantomsection
+    \hypertarget{coq:#1}{\chapter{Library \coqdoccst{#2}}}}
+\else
+  \newcommand{\coqdef}[3]{#3}
+  \newcommand{\coqref}[2]{#2}
+  \newcommand{\identref}[2]{\textsf {#2}}
+  \newcommand{\coqlibrary}[2]{\cleardoublepage\chapter{Library \coqdoccst{#2}}}
+\fi
 \usepackage{xr}
+
 %\usepackage{color}
 %\usepackage{multind}
 %\newcommand{\coqdef}[3]{\hypertarget{coq:#1}{\index{coq}{#1@#2|hyperpage}#3}}
 
-\newcommand{\coqdef}[3]{\phantomsection\hypertarget{coq:#1}{#3}}
-\newcommand{\coqref}[2]{\hyperlink{coq:#1}{#2}}
+  
 
 \newcommand{\coqdocvar}[1]{{\textit{#1}}}
 \newcommand{\coqdoctac}[1]{{\texttt{#1}}}
 
-\newcommand{\identref}[2]{\hyperlink{coq:#1}{\textsf {#2}}}
 
 \newcommand{\coqdefinition}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
 \newcommand{\coqdefinitionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
@@ -128,9 +140,6 @@
   
 %\newcommand{\coqlibraryref}[2]{\ref{coq:#1}}
 
-\newcommand{\coqlibrary}[2]{\cleardoublepage\phantomsection
-  \hypertarget{coq:#1}{\chapter{Library \coqdoccst{#2}}}}
-  
 \newcommand{\coqlibraryref}[2]{\coqref{#1}{\coqdoccst{#2}}}
 
 \newcommand{\coqaxiom}[2]{\coqdef{#1}{#2}{\coqdocax{#2}}}
