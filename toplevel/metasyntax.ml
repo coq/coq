@@ -562,7 +562,7 @@ let is_not_small_constr = function
 let rec define_keywords_aux = function
     NonTerm(_,Some(_,e)) as n1 :: Term("IDENT",k) :: l
       when is_not_small_constr e ->
-      prerr_endline ("Defining '"^k^"' as keyword");
+      message ("Defining '"^k^"' as keyword");
       Lexer.add_token("",k);
       n1 :: Term("",k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
@@ -570,7 +570,7 @@ let rec define_keywords_aux = function
 
 let define_keywords = function
     Term("IDENT",k)::l ->
-      prerr_endline ("Defining '"^k^"' as keyword");
+      message ("Defining '"^k^"' as keyword");
       Lexer.add_token("",k);
       Term("",k) :: define_keywords_aux l
   | l -> define_keywords_aux l
