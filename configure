@@ -228,27 +228,29 @@ esac
 # Architecture
 
 case $arch_spec in
-    no) if test -x /bin/arch ; then
-	    ARCH=`/bin/arch`
-	elif test -x /usr/bin/arch ; then
-	    ARCH=`/usr/bin/arch`
-	elif test -x /usr/ucb/arch ; then
-	    ARCH=`/usr/ucb/arch`
-	elif test -x /bin/uname && (/bin/uname -s | grep -q -i CYGWIN) ; then
-	    ARCH=win32
-	    # cygwin returns a name of the form /cygdrive/c/... 
-	    # that coqc does not understand; need to transform it
-	    COQTOP=`echo $COQTOP | sed -e "s#.*cygdrive.\(.\)#\1:#"`
-	elif test -x /bin/uname ; then
-	    ARCH=`/bin/uname -s`
-	elif test -x /usr/bin/uname ; then
-	    ARCH=`/usr/bin/uname -s`
+    no) 
+    # First we test if we are running a Cygwin system
+    if [ `uname -o` = "Cygwin" ] ; then
+	ARCH="win32"
+    else
+	# If not, we determine the architecture
+	if test -x /bin/arch ; then
+ 	    ARCH=`/bin/arch`
+ 	elif test -x /usr/bin/arch ; then
+ 	    ARCH=`/usr/bin/arch`
+ 	elif test -x /usr/ucb/arch ; then
+ 	    ARCH=`/usr/ucb/arch`
+ 	elif test -x /bin/uname ; then
+ 	    ARCH=`/bin/uname -s`
+ 	elif test -x /usr/bin/uname ; then
+ 	    ARCH=`/usr/bin/uname -s`
 	else
 	    echo "I can not automatically find the name of your architecture"
 	    echo -n\
-              "Give me a name, please [win32 for Win95, Win98 or WinNT]: "
+		"Give me a name, please [win32 for Win95, Win98 or WinNT]: "
 	    read ARCH
-	fi;;
+	fi
+    fi;;
     yes) ARCH=$arch
 esac
 
