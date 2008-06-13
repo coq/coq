@@ -47,7 +47,7 @@ rectutorial:\
 ### Implicit rules
 ######################################################################
 
-%.v.tex: %.tex
+%.v.tex: %.tex $(COQTEX) $(COQTOP) states
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
 
 %.ps: %.dvi
@@ -74,7 +74,7 @@ doc/common/version.tex: config/Makefile
 
 # The second LATEX compilation is necessary otherwise the pages of the index
 # are not correct (don't know why...) - BB
-doc/refman/Reference-Manual.dvi: $(DOCCOMMON) $(REFMANFILES)
+doc/refman/Reference-Manual.dvi: $(DOCCOMMON) $(REFMANFILES) doc/refman/Reference-Manual.tex
 	(cd doc/refman;\
 	$(LATEX) Reference-Manual;\
 	$(BIBTEX) Reference-Manual;\
@@ -86,7 +86,7 @@ doc/refman/Reference-Manual.dvi: $(DOCCOMMON) $(REFMANFILES)
 	$(LATEX) Reference-Manual;\
 	$(LATEX) Reference-Manual)
 
-doc/refman/Reference-Manual.pdf: $(REFMANFILES) doc/refman/Reference-Manual.tex
+doc/refman/Reference-Manual.pdf: $(DOCCOMMON) $(REFMANFILES) doc/refman/Reference-Manual.tex
 	(cd doc/refman; $(PDFLATEX) Reference-Manual.tex)
 
 ### Reference Manual (browsable format)
