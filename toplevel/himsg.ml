@@ -286,11 +286,13 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       strbrk " not in guarded form (should be a constructor," ++
       strbrk " an abstraction, a match, a cofix or a recursive call)"
   in
-  let pvd = pr_lconstr_env fixenv vdefj.(i).uj_val in
   prt_name i ++ str " is ill-formed." ++ fnl () ++
   pr_ne_context_of (str "In environment") env ++
   st ++ str "." ++ fnl () ++
-  str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
+  (try (* May fail with unresolved globals. *)
+      let pvd = pr_lconstr_env fixenv vdefj.(i).uj_val in
+	str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
+    with _ -> mt ())
 
 let explain_ill_typed_rec_body env i names vdefj vargs =
   let env = make_all_name_different env in
