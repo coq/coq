@@ -23,25 +23,26 @@ type printing_state = {
   mutable printing_no_notation : bool;
   mutable printing_all : bool;
   mutable printing_evar_instances : bool;
-  mutable printing_universes : bool
+  mutable printing_universes : bool;
+  mutable printing_full_all : bool
 }
 
 val printing_state : printing_state
 
 type reset_mark =
   | ResetToId of Names.identifier
-  | ResetToState of  Libnames.object_name
+  | ResetToState of Libnames.object_name
 
 type reset_status =
   | NoReset
   | ResetAtSegmentStart of Names.identifier
   | ResetAtRegisteredObject of reset_mark
 
-type undo_info = int * int
+type undo_info = identifier list
 
 val undo_info : unit -> undo_info
 
-type reset_info = reset_status * bool ref
+type reset_info = reset_status * undo_info * bool ref
 
 val compute_reset_info : Vernacexpr.vernac_expr -> reset_info
 val reset_initial : unit -> unit
