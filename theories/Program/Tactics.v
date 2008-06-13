@@ -221,14 +221,14 @@ Ltac refine_hyp c :=
       | ?H _ _ _ _ _ _ _ _ => tac H
     end.
 
-(** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto with *]
-   is overkill and slows things down, better rebind using [Obligations Tactic := tac] in this case, 
+(** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto]
+   is not enough, better rebind using [Obligations Tactic := tac] in this case, 
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
 Ltac program_simplify :=
   simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; autoinjections ; try discriminates ;
     try (solve [ red ; intros ; destruct_conjs ; autoinjections ; discriminates ]).
 
-Ltac program_simpl := program_simplify ; auto with *.
+Ltac program_simpl := program_simplify ; auto.
 
 Ltac obligations_tactic := program_simpl.
