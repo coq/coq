@@ -490,8 +490,7 @@ let with_file name ~f =
 type info =  {start:GText.mark;
 	      stop:GText.mark;
 	      ast:Util.loc * Vernacexpr.vernac_expr;
-	      reset_info:Coq.reset_info;
-	      undo_info:Coq.undo_info;
+	      reset_info:Coq.reset_info
 	     }
 
 exception Size of int
@@ -505,8 +504,8 @@ let is_empty () = Stack.is_empty processed_stack
 
 let update_on_end_of_segment id =
   let lookup_section = function 
-    | { reset_info = ResetAtSegmentStart id', _ } when id = id' -> raise Exit
-    | { reset_info = _, r } -> r := false
+    | { reset_info = ResetAtSegmentStart id',_,_ } when id = id' -> raise Exit
+    | { reset_info = _,_,r } -> r := false
   in
     try Stack.iter lookup_section processed_stack with Exit -> ()
 
@@ -514,22 +513,25 @@ let push_phrase reset_info start_of_phrase_mark end_of_phrase_mark ast =
   let x = {start = start_of_phrase_mark;
 	   stop = end_of_phrase_mark;
 	   ast = ast;
-	   reset_info = reset_info;
-	   undo_info = Coq.undo_info ()
+	   reset_info = reset_info
 	  } in
   begin
     match snd ast with
-    | VernacEndSegment (_,id) -> update_on_end_of_segment id
+    | VernacEndSegment (_,id) -> 
+        prerr_endline "Updating on end of segment 1";
+        update_on_end_of_segment id
     | _ -> ()
   end;
   push x
 
 
 let repush_phrase reset_info x =
-  let x = { x with reset_info = reset_info; undo_info = Coq.undo_info () } in
+  let x = { x with reset_info = reset_info } in
   begin
     match snd x.ast with
-      | VernacEndSegment (_,id) -> update_on_end_of_segment id
+      | VernacEndSegment (_,id) ->
+          prerr_endline "Updating on end of segment 2";
+          update_on_end_of_segment id
       | _ -> ()
   end;
   push x
@@ -540,18 +542,24 @@ type backtrack =
 | BacktrackToModSec of Names.identifier
 | NoBacktrack
 
-let add_undo = function (n,a,b,p as x) -> if p = 0 then (n+1,a,b,p) else x
-let add_abort = function (n,a,b,0) -> (0,a+1,b,0) | (n,a,b,p) -> (n,a,b,p-1)
-let add_qed q (n,a,b,p) = (n,a,b,p+q)
-let add_backtrack (n,a,b,p) b' = (n,a,b',p)
+let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
+let add_abort = function (n,a,b,0,l) -> (0,a+1,b,0,l) | (n,a,b,p,l) -> (n,a,b,p-1,l)
+let add_qed q (n,a,b,p,l) = (n,a,b,p+q,l)
+let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
+
+let update_proofs (n,a,b,p,cur_lems) prev_lems =
+  let ncommon = List.length (Util.list_intersect cur_lems prev_lems) in
+  let openproofs = List.length cur_lems - ncommon in
+  let closedproofs = List.length prev_lems - ncommon in
+  let undos = (n,a,b,p,prev_lems) in
+  add_qed closedproofs (Util.iterate add_abort openproofs undos)
 
 let pop_command undos t =
+  let (state_info,undo_info,section_info) = t.reset_info in
   let undos =
-    if !(snd t.reset_info) then
-      let (openproofs,closedproofs) = t.undo_info in
-      let undos = Util.iterate add_abort openproofs undos in
-      let undos = add_qed closedproofs undos in
-      match fst t.reset_info with
+    if !section_info then
+      let undos = update_proofs undos undo_info in
+      match state_info with
       | _ when is_vernac_tactic_command (snd t.ast) ->
 	  (* A tactic, active if not below a Qed *)
           add_undo undos
@@ -564,12 +572,15 @@ let pop_command undos t =
       | _ ->
           add_backtrack undos BacktrackToNextActiveMark
     else
+      begin 
+        prerr_endline "In section";
       (* An object inside a closed section *)
-      add_backtrack undos BacktrackToNextActiveMark in
+      add_backtrack undos BacktrackToNextActiveMark
+      end in
   ignore (pop ());
   undos
 
-let rec apply_backtrack = function
+let rec apply_backtrack l = function
   | 0, BacktrackToMark mark -> reset_to mark
   | 0, NoBacktrack -> ()
   | 0, BacktrackToModSec id -> reset_to_mod id
@@ -580,14 +591,15 @@ let rec apply_backtrack = function
       else
         begin
           let t = top () in
-          let (_,_,b,p) = pop_command (0,0,BacktrackToNextActiveMark,p) t in
-          apply_backtrack (p,b);
+          let undos = (0,0,BacktrackToNextActiveMark,p,l) in
+          let (_,_,b,p,l) = pop_command undos t in
+          apply_backtrack l (p,b);
           let reset_info = Coq.compute_reset_info (snd t.ast) in
           interp_last t.ast;
           repush_phrase reset_info t
         end
 
-let rec apply_undos (n,a,b,p) =
+let rec apply_undos (n,a,b,p,l) =
   (* Aborts *)
   if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
   (try Util.repeat a Pfedit.delete_current_proof ()
@@ -597,9 +609,9 @@ let rec apply_undos (n,a,b,p) =
     (prerr_endline ("Applying "^string_of_int n^" undos");
      try Pfedit.undo n
      with _ -> (* Undo stack exhausted *)
-       apply_backtrack (p,BacktrackToNextActiveMark));
+       apply_backtrack l (p,BacktrackToNextActiveMark));
   (* Reset *)
-  apply_backtrack (p,b)
+  apply_backtrack l (p,b)
 
 (* For electric handlers *)
 exception Found
@@ -1341,7 +1353,8 @@ object(self)
         else
 	  done_smthg, undos
     in
-    let done_smthg, undos = pop_commands false (0,0,NoBacktrack,0) in
+    let undos = (0,0,NoBacktrack,0,undo_info()) in
+    let done_smthg, undos = pop_commands false undos in
       prerr_endline "Popped commands";
       if done_smthg then
         begin 
@@ -1410,7 +1423,7 @@ Please restart and report NOW.";
 	      self#show_goals;
 	      self#clear_message
 	    in
-              let undo = pop_command (0,0,NoBacktrack,0) last_command in
+              let undo = pop_command (0,0,NoBacktrack,0,undo_info()) last_command in
               apply_undos undo;
               sync update_input ()
 	with
@@ -2923,6 +2936,11 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 							    ~key:GdkKeysyms._n
 							    ~callback:(fun _ -> printing_state.printing_no_notation <- not printing_state.printing_no_notation; do_or_activate (fun a -> a#show_goals) ())) in
 
+					  let _ = ignore (view_factory#add_check_item  
+							    "Display _all basic low-level contents"
+							    ~key:GdkKeysyms._a
+							    ~callback:(fun _ -> printing_state.printing_all <- not printing_state.printing_all; do_or_activate (fun a -> a#show_goals) ())) in 
+
 					  let _ = ignore (view_factory#add_check_item     
 							    "Display _existential variable instances"
 							    ~key:GdkKeysyms._e
@@ -2934,9 +2952,9 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					    		    ~callback:(fun _ -> printing_state.printing_universes <- not printing_state.printing_universes; do_or_activate (fun a -> a#show_goals) ())) in
 
 					  let _ = ignore (view_factory#add_check_item  
-							    "Display _all low-level contents"
-							    ~key:GdkKeysyms._a
-							    ~callback:(fun _ -> printing_state.printing_all <- not printing_state.printing_all; do_or_activate (fun a -> a#show_goals) ())) in 
+							    "Display all _low-level contents"
+							    ~key:GdkKeysyms._l
+							    ~callback:(fun _ -> printing_state.printing_full_all <- not printing_state.printing_full_all; do_or_activate (fun a -> a#show_goals) ())) in 
 
 					  (* Unicode *)
 (*

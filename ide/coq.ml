@@ -122,7 +122,8 @@ type printing_state = {
   mutable printing_no_notation : bool;
   mutable printing_all : bool;
   mutable printing_evar_instances : bool;
-  mutable printing_universes : bool
+  mutable printing_universes : bool;
+  mutable printing_full_all : bool
 }
 
 let printing_state = {
@@ -133,6 +134,7 @@ let printing_state = {
   printing_all = false;
   printing_evar_instances = false;
   printing_universes = false;
+  printing_full_all = false;
 }
 
 let printing_implicit_data = ["Printing";"Implicit"], false
@@ -172,9 +174,10 @@ let make_option_commands () =
   (if p.printing_coercions then [with_printing_coercions] else [])@
   (if p.printing_raw_matching then [with_printing_raw_matching;with_printing_no_synth] else [])@
   (if p.printing_no_notation then [with_printing_no_notation] else [])@
-  (if p.printing_all then [with_printing_all;with_printing_evar_instances;with_printing_universes] else [])@
+  (if p.printing_all then [with_printing_all] else [])@
   (if p.printing_evar_instances then [with_printing_evar_instances] else [])@
-  (if p.printing_universes then [with_printing_universes] else [])
+  (if p.printing_universes then [with_printing_universes] else [])@
+  (if p.printing_full_all then [with_printing_all;with_printing_evar_instances;with_printing_universes] else [])
 
 let make_option_commands () =
   let l = make_option_commands () in
@@ -350,29 +353,21 @@ let is_vernac_tactic_command com =
 let is_vernac_proof_ending_command com =
   List.mem ProofEndingCommand (attribute_of_vernac_command com)
 
-type undo_info = int * int
+type undo_info = identifier list
 
-let open_proofs = ref [] 
-
-let undo_info () =
-  let current = Pfedit.get_all_proof_names () in
-  let common = list_intersect current !open_proofs in
-  let ncommon = List.length common in
-  let more = List.length current - ncommon in
-  let less = List.length !open_proofs - ncommon in
-  open_proofs := current;
-  (more,less)
+let undo_info () = Pfedit.get_all_proof_names ()
 
 type reset_mark =
-  | ResetToId of Names.identifier
-  | ResetToState of Libnames.object_name
+  | ResetToId of Names.identifier     (* Relying on identifiers only *)
+  | ResetToState of Libnames.object_name (* Relying on states if any *)
 
 type reset_status =
   | NoReset
   | ResetAtSegmentStart of Names.identifier
   | ResetAtRegisteredObject of reset_mark
 
-type reset_info = reset_status * bool ref
+type reset_info = reset_status * undo_info * bool ref
+
 
 let reset_mark id = match Lib.has_top_frozen_state () with
   | Some sp -> 
@@ -385,23 +380,23 @@ let compute_reset_info = function
   | VernacDefineModule (_,id, _, _, _) 
   | VernacDeclareModule (_,id, _, _)
   | VernacDeclareModuleType (id, _, _) ->
-      ResetAtSegmentStart (snd id), ref true
+      ResetAtSegmentStart (snd id), undo_info(), ref true
 
   | VernacDefinition (_, (_,id), DefineBody _, _)
   | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
   | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
-      ResetAtRegisteredObject (reset_mark id), ref true
+      ResetAtRegisteredObject (reset_mark id), undo_info(), ref true
 
-  | com when is_vernac_proof_ending_command com -> NoReset, ref true
-  | VernacEndSegment _ -> NoReset, ref true
+  | com when is_vernac_proof_ending_command com -> NoReset, undo_info(), ref true
+  | VernacEndSegment _ -> NoReset, undo_info(), ref true
 
-  | com when is_vernac_tactic_command com -> NoReset, ref true
+  | com when is_vernac_tactic_command com -> NoReset, undo_info(), ref true
   | _ ->
       (match Lib.has_top_frozen_state () with
       | Some sp -> 
 	  prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
 	  ResetAtRegisteredObject (ResetToState sp)
-      | None -> NoReset), ref true
+      | None -> NoReset), undo_info(), ref true
 
 let reset_initial () = 
   prerr_endline "Reset initial called"; flush stderr;
@@ -526,7 +521,8 @@ let process_exn e = let s,loc= print_toplevel_error e in (msgnl s,loc)
 let interp_last last = 
   prerr_string "*";
   try
-    vernac_com (States.with_heavy_rollback Vernacentries.interp) last
+    vernac_com (States.with_heavy_rollback Vernacentries.interp) last;
+    Lib.add_frozen_state()
   with e ->
     let s,_ = process_exn e in prerr_endline ("Replay during undo failed because: "^s);
     raise e
