@@ -76,7 +76,6 @@ let split_modpath mp =
 let dump_moddef loc mp ty =
   if !Flags.dump then
     let (dp, l) = split_modpath mp in
-    let fp = string_of_dirpath dp in
     let mp = string_of_dirpath (make_dirpath l) in
       Flags.dump_string (Printf.sprintf "%s %d %s %s\n" ty (fst (unloc loc)) "<>" mp)
 

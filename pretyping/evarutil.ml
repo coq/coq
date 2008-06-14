@@ -652,9 +652,9 @@ let instance_of_projection f env t evd projs =
 
 let filter_of_projection = function CannotInvert -> false | _ -> true
 
-let filter_along_projs projs v =
+let filter_along f projs v =
   let l = Array.to_list v in
-  let _,l = list_filter2 (fun b c -> filter_of_projection b) (projs,l) in
+  let _,l = list_filter2 (fun b c -> f b) (projs,l) in
   Array.of_list l
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
@@ -670,11 +670,7 @@ let filter_along_projs projs v =
  * such that "hyps' |- ?e : T"
  *)
 
-let do_restrict_hyps evd evk projs =
-  let filter = List.map filter_of_projection projs in
-  if List.for_all (fun x -> x) filter then
-    evd,evk
-  else
+let do_restrict_hyps_virtual evd evk filter =
     (* What to do with dependencies?
        Assume we have x:A, y:B(x), z:C(x,y) |- ?e:T(x,y,z) and restrict on y.
        - If y is in a non-erasable position in C(x,y) (i.e. it is not below an
@@ -691,8 +687,15 @@ let do_restrict_hyps evd evk projs =
     let filter,_ = List.fold_right (fun oldb (l,filter) ->
       if oldb then List.hd filter::l,List.tl filter else (false::l,filter))
       oldfilter ([],List.rev filter) in
-    let evd,nc = new_evar evd env ~src:(evar_source evk evd)
-      ~filter:filter evi.evar_concl in
+    new_evar evd env ~src:(evar_source evk evd)
+      ~filter:filter evi.evar_concl
+
+let do_restrict_hyps evd evk projs =
+  let filter = List.map filter_of_projection projs in
+  if List.for_all (fun x -> x) filter then
+    evd,evk
+  else
+    let evd,nc = do_restrict_hyps_virtual evd evk filter in
     let evd = Evd.evar_define evk nc evd in
     let evk',_ = destEvar nc in
     evd,evk'
@@ -721,9 +724,9 @@ let postpone_evar_term env evd (evk,argsv) rhs =
 
 let postpone_evar_evar env evd projs1 (evk1,args1) projs2 (evk2,args2) =
   (* Leave an equation between (restrictions of) ev1 andv ev2 *)
-  let args1' = filter_along_projs projs1 args1 in
+  let args1' = filter_along filter_of_projection projs1 args1 in
   let evd,evk1' = do_restrict_hyps evd evk1 projs1 in
-  let args2' = filter_along_projs projs2 args2 in
+  let args2' = filter_along filter_of_projection projs2 args2 in
   let evd,evk2' = do_restrict_hyps evd evk2 projs2 in
   let pb = (Reduction.CONV,env,mkEvar(evk1',args1'),mkEvar (evk2',args2')) in
   add_conv_pb pb evd
@@ -805,29 +808,33 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
   let subst = make_projectable_subst (evars_of evd) evi argsv in
 
   (* Projection *)
-  let project_variable env' t_in_env k t_in_env' =
+  let project_variable t =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try 
-      let sols = find_projectable_vars env (evars_of !evdref) t_in_env subst in
+      let sols = find_projectable_vars env (evars_of !evdref) t subst in
       let c, p = filter_solution sols in
-      let ty = lazy (Retyping.get_type_of env (evars_of !evdref) t_in_env) in
+      let ty = lazy (Retyping.get_type_of env (evars_of !evdref) t) in
       let evd = do_projection_effects evar_define env ty !evdref p in
       evdref := evd;
       c
     with
-      | Not_found -> raise (NotInvertibleUsingOurAlgorithm t_in_env')
+      | Not_found -> raise (NotInvertibleUsingOurAlgorithm t)
       | NotUnique ->
 	  if not !progress then raise NotEnoughInformationToProgress;
-	  let (evar,ev'') = extend_evar env' evdref k ev t_in_env' in
-	  let pb = (Reduction.CONV,env',mkEvar ev'',t_in_env') in
-	  evdref := Evd.add_conv_pb pb !evdref;
+	  (* No unique projection but still restrict to where it is possible *)
+	  let filter = array_map_to_list (fun c -> isEvar c or c = t) argsv in
+	  let args' = filter_along (fun x -> x) filter argsv in
+	  let evd,evar = do_restrict_hyps_virtual !evdref evk filter in
+	  let evk',_ = destEvar evar in
+	  let pb = (Reduction.CONV,env,mkEvar(evk',args'),t) in
+	  evdref := Evd.add_conv_pb pb evd;
 	  evar in
 
   let rec imitate (env',k as envk) t =
     let t = whd_evar (evars_of !evdref) t in
     match kind_of_term t with
-    | Rel i when i>k ->	project_variable env' (mkRel (i-k)) k t
-    | Var id -> project_variable env' t k t
+    | Rel i when i>k -> project_variable (mkRel (i-k))
+    | Var id -> project_variable t
     | Evar (evk',args' as ev') ->
         if evk = evk' then error_occur_check env (evars_of evd) evk rhs;
 	(* Evar/Evar problem (but left evar is virtual) *)

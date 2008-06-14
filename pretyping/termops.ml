@@ -631,6 +631,7 @@ let all_occurrences = (false,[])
 let no_occurrences_in_set = (true,[])
 
 let error_invalid_occurrence l =
+  let l = list_uniquize (List.sort Pervasives.compare l) in
   errorlabstrm ""
     (str ("Invalid occurrence " ^ plural (List.length l) "number" ^": ") ++ 
      prlist_with_sep spc int l)
