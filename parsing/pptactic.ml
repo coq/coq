@@ -458,12 +458,16 @@ let pr_lazy lz = if lz then str "lazy " else mt ()
 
 let pr_match_pattern pr_pat = function
   | Term a -> pr_pat a
-  | Subterm (None,a) -> str "context [" ++ pr_pat a ++ str "]"
-  | Subterm (Some id,a) ->
-      str "context " ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
+  | Subterm (b,None,a) -> (if b then str"appcontext [" else str "context [") ++ pr_pat a ++ str "]"
+  | Subterm (b,Some id,a) ->
+      (if b then str"appcontext " else str "context ") ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
 
-let pr_match_hyps pr_pat (Hyp (nal,mp)) =
-  pr_lname nal ++ str ":" ++ pr_match_pattern pr_pat mp
+let pr_match_hyps pr_pat = function
+  | Hyp (nal,mp) ->
+      pr_lname nal ++ str ":" ++ pr_match_pattern pr_pat mp
+  | Def (nal,mv,mp) ->
+      pr_lname nal ++ str ":=" ++ pr_match_pattern pr_pat mv
+      ++ str ":" ++ pr_match_pattern pr_pat mp
 
 let pr_match_rule m pr pr_pat = function
   | Pat ([],mp,t) when m ->

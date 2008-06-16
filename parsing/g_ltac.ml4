@@ -165,11 +165,24 @@ GEXTEND Gram
   match_pattern:
     [ [ IDENT "context";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
-        Subterm (oid, pc)
+        Subterm (false,oid, pc)
+      | IDENT "appcontext";  oid = OPT Constr.ident;
+          "["; pc = Constr.lconstr_pattern; "]" ->
+        Subterm (true,oid, pc)
       | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;
   match_hyps:
-    [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp) ] ]
+    [ [ na = name; ":"; mp =  match_pattern -> Hyp (na, mp) 
+      | na = name; ":="; "["; mpv = match_pattern; "]"; ":"; mpt = match_pattern -> Def (na, mpv, mpt) 
+      | na = name; ":="; mpv = match_pattern -> 
+	  let t, ty =
+	    match mpv with 
+	    | Term t -> (match t with
+	      | CCast (loc, t, CastConv (_, ty)) -> Term t, Some (Term ty)
+	      | _ -> mpv, None)
+	    | _ -> mpv, None
+	  in Def (na, t, Option.default (Term (CHole (dummy_loc, None))) ty)
+    ] ]
   ;
   match_context_rule:
     [ [ largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern;

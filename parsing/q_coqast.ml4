@@ -259,13 +259,16 @@ let mlexpr_of_entry_type = function
 
 let mlexpr_of_match_pattern = function
   | Tacexpr.Term t -> <:expr< Tacexpr.Term $mlexpr_of_pattern_ast t$ >>
-  | Tacexpr.Subterm (ido,t) ->
-      <:expr< Tacexpr.Subterm $mlexpr_of_option mlexpr_of_ident ido$ $mlexpr_of_pattern_ast t$ >>
+  | Tacexpr.Subterm (b,ido,t) ->
+      <:expr< Tacexpr.Subterm $mlexpr_of_bool b$ $mlexpr_of_option mlexpr_of_ident ido$ $mlexpr_of_pattern_ast t$ >>
 
 let mlexpr_of_match_context_hyps = function
   | Tacexpr.Hyp (id,l) ->
       let f = mlexpr_of_located mlexpr_of_name in
       <:expr< Tacexpr.Hyp $f id$ $mlexpr_of_match_pattern l$ >>
+  | Tacexpr.Def (id,v,l) ->
+      let f = mlexpr_of_located mlexpr_of_name in
+      <:expr< Tacexpr.Def $f id$ $mlexpr_of_match_pattern v$ $mlexpr_of_match_pattern l$ >>
 
 let mlexpr_of_match_rule f = function
   | Tacexpr.Pat (l,mp,t) -> <:expr< Tacexpr.Pat $mlexpr_of_list mlexpr_of_match_context_hyps l$ $mlexpr_of_match_pattern mp$ $f t$ >>

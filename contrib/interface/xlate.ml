@@ -643,12 +643,14 @@ let is_tactic_special_case = function
 let xlate_context_pattern = function
   | Term v -> 
       CT_coerce_FORMULA_to_CONTEXT_PATTERN (xlate_formula v)
-  | Subterm (idopt, v) ->
+  | Subterm (b, idopt, v) -> (* TODO: application pattern *)
       CT_context(xlate_ident_opt idopt, xlate_formula v)
 
 
 let xlate_match_context_hyps = function
-  | Hyp (na,b) -> CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b);;
+  | Hyp (na,b) -> CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b)
+  | Def (na,b,t) -> xlate_error "TODO: Let hyps"
+      (* CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b, xlate_context_pattern t);; *)
 
 let xlate_arg_to_id_opt = function
     Some id -> CT_coerce_ID_to_ID_OPT(CT_ident (string_of_id id))

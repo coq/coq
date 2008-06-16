@@ -45,7 +45,7 @@ val db_pattern_rule :
 
 (* Prints a matched hypothesis *)
 val db_matched_hyp :
-  debug_info -> env -> identifier * constr -> name -> unit
+  debug_info -> env -> identifier * constr option * constr -> name -> unit
 
 (* Prints the matched conclusion *)
 val db_matched_concl : debug_info -> env -> constr -> unit

@@ -117,11 +117,12 @@ type pattern_expr = constr_expr
 (* Type of patterns *)
 type 'a match_pattern =
   | Term of 'a
-  | Subterm of identifier option * 'a
+  | Subterm of bool * identifier option * 'a
 
 (* Type of hypotheses for a Match Context rule *)
 type 'a match_context_hyps =
   | Hyp of name located * 'a match_pattern
+  | Def of name located * 'a match_pattern * 'a match_pattern
 
 (* Type of a Match rule for Match Context and Match *)
 type ('a,'t) match_rule =

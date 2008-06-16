@@ -44,6 +44,12 @@ val matches_conv :env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
    It raises PatternMatchingFailure if no such matching exists *)
 val match_subterm : int -> constr_pattern -> constr -> patvar_map * constr
 
+(* [match_appsubterm n pat c] returns the substitution and the context
+   corresponding to the [n+1]th **closed** subterm of [c] matching [pat], 
+   considering application contexts as well;
+   It raises PatternMatchingFailure if no such matching exists *)
+val match_appsubterm : int -> constr_pattern -> constr -> patvar_map * constr
+
 (* [is_matching_conv env sigma pat c] tells if [c] matches against [pat]
    up to conversion for constants in patterns *)
 

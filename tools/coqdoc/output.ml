@@ -66,7 +66,7 @@ let is_tactic =
       "simpl"; "unfold"; "red"; "compute"; "at"; "in"; "by";
       "reflexivity"; "symmetry"; "transitivity";
       "replace"; "setoid_replace"; "inversion"; "inversion_clear";
-      "pattern"; "intuition"; "congruence";
+      "pattern"; "intuition"; "congruence"; "fail"; "fresh";
       "trivial"; "exact"; "tauto"; "firstorder"; "ring";
       "clapply"; "program_simpl"; "eapply"; "auto"; "eauto" ]
 
