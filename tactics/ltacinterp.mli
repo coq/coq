@@ -42,7 +42,6 @@ val out_gen_expr : ('a,'l) Genarg.abstract_argument_type
                       -> 'l Genarg.generic_argument Goal.sensitive
                       -> 'a Goal.sensitive
 
-
 (*** ***)
 (* arnaud: partie pas certaine  *)
 
@@ -60,10 +59,30 @@ type glob_sign = {
   genv : Environ.env }
      (* environement pour typer le reste, normal *)
 
+(* Signature for interpretation: val_interp and interpretation functions *)
+type interp_sign =
+    { lfun : (Names.identifier * value) list;
+      avoid_ids : Names.identifier list; (* ids inherited from the call context
+				      (needed to get fresh ids) *)
+      debug : Tactic_debug.debug_info;
+      last_loc : Util.loc }
+
+
+(* To embed several objects in Coqast.t *)
+val tacticIn : (interp_sign -> Tacexpr.raw_tactic_expr) -> Tacexpr.raw_tactic_expr
+val tacticOut : Tacexpr.raw_tactic_expr -> (interp_sign -> Tacexpr.raw_tactic_expr)
+val valueIn : value -> Tacexpr.raw_tactic_arg
+val valueOut: Tacexpr.raw_tactic_arg -> value
+val constrIn : constr -> Topconstr.constr_expr
+val constrOut : Topconstr.constr_expr -> constr
+
+
 val intern_tactic : 
   glob_sign -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr
 
 val eval_tactic : Tacexpr.glob_tactic_expr -> unit Proofview.tactic
+
+val interp : Tacexpr.raw_tactic_expr -> unit Proofview.tactic
 
 
 (* arnaud: fonction très temporaire *)

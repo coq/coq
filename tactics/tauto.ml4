@@ -15,10 +15,11 @@ open Names
 open Libnames
 open Pp
 open Tacticals
-open Tacinterp
+open Ltacinterp
 open Tactics
 open Util
 
+(* nettoyer:
 (* arnaud: trucs factices *)
 module Refiner =
   struct
@@ -26,6 +27,7 @@ module Refiner =
     let abstract_extended_tactic = Tacticals.abstract_extended_tactic
   end
 (* arnaud: trucs factices *)
+*)
 
 let assoc_last ist =
   match List.assoc (Names.id_of_string "X1") ist.lfun with
@@ -168,19 +170,17 @@ let intuition_gen tac =
 
 let simplif_gen = interp (tacticIn simplif)
 
-let tauto g =
-  try intuition_gen (interp <:tactic<fail>>) g
+let tauto =
+  try intuition_gen (interp <:tactic<fail>>)
   with
-    Refiner.FailError _ | UserError _ ->
+    Proofview.FailError _ | UserError _ ->
       errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let default_intuition_tac = interp <:tactic< auto with * >>
 
-(* arnaud: à restaurer
 TACTIC EXTEND tauto
-| [ "tauto" ] -> [ Util.anomaly "Tauto.tauto: à restaurer" (* arnaud: tauto *) ]
+| [ "tauto" ] -> [ tauto ]
 END
-*)
 
 (* arnaud: problème avec l'argument "tactic"
 TACTIC EXTEND intuition

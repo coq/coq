@@ -196,10 +196,10 @@ let constr_of_id env id =
 (* To embed tactics *)
 let ((tactic_in : (interp_sign -> raw_tactic_expr) -> Dyn.t),
      (tactic_out : Dyn.t -> (interp_sign -> raw_tactic_expr))) =
-  create "tactic"
+  create "old_legacy_tactic"
 
 let ((value_in : value -> Dyn.t),
-     (value_out : Dyn.t -> value)) = create "value"
+     (value_out : Dyn.t -> value)) = create "old_legacy_value"
 
 let tacticIn t = TacArg (TacDynamic (dummy_loc,tactic_in t))
 let tacticOut = function

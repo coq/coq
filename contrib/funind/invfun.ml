@@ -498,6 +498,8 @@ let generalize_depedent_of x hyp g =
        (unfolding, substituting, destructing cases \ldots)
     *)
 let  rec intros_with_rewrite g = 
+  Util.anomaly "Invfun.intros_with_rewrite: à restaurer"
+  (* arnaud: à restaurer
   observe_tac "intros_with_rewrite" intros_with_rewrite_aux g
 and intros_with_rewrite_aux : tactic = 
   fun g -> 
@@ -559,6 +561,7 @@ and intros_with_rewrite_aux : tactic =
 		intros_with_rewrite
 	      ] g
 	  | _ -> tclIDTAC g 
+  *)
   
 let rec reflexivity_with_destruct_cases g = 
   let destruct_case () = 

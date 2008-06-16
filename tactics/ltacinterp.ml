@@ -10,10 +10,6 @@
 
 (*arnaud: commenter le module en général aussi *)
 
-(* arnaud: peut-être faut-il considérer l'idée d'avoir un type des refine-step
-   soit un constr et un environement d'evar, qui pourrait se passer en argument de tactique, plutôt que bêtement raw-constr... 
-   A ce stade de la réflexion, rawconstr paraît mieux*)
-
 open Tacexpr (*arnaud: probablement enlever les références à tacexpr qui restent*)
 open Genarg
 open Names
@@ -36,6 +32,8 @@ type value =
   | VConstr_context of Term.constr (* arnaud: contr ou rawconstr ? *)
   | VList of value list
   | VRec of value ref
+
+
 
 
 
@@ -171,6 +169,47 @@ let lookup_genarg id =
 let lookup_genarg_glob   id = let (f,_,_) = lookup_genarg id in f
 let lookup_interp_genarg id = let (_,f,_) = lookup_genarg id in f
 let lookup_genarg_subst  id = let (_,_,f) = lookup_genarg id in f
+
+
+(* To embed tactics *)
+let ((tactic_in : (interp_sign -> raw_tactic_expr) -> Dyn.t),
+     (tactic_out : Dyn.t -> (interp_sign -> raw_tactic_expr))) =
+  Dyn.create "tactic"
+
+let ((value_in : value -> Dyn.t),
+     (value_out : Dyn.t -> value)) = Dyn.create "value"
+
+let tacticIn t = TacArg (TacDynamic (Util.dummy_loc,tactic_in t))
+let tacticOut = function
+  | TacArg (TacDynamic (_,d)) ->
+    if (Dyn.tag d) = "tactic" then
+      tactic_out d
+    else
+      Util.anomalylabstrm "tacticOut" (str "Dynamic tag should be tactic")
+  | ast ->
+    Util.anomalylabstrm "tacticOut"
+      (str "Not a Dynamic ast: " (* ++ print_ast ast*) )
+
+let valueIn t = TacDynamic (Util.dummy_loc,value_in t)
+let valueOut = function
+  | TacDynamic (_,d) ->
+    if (Dyn.tag d) = "value" then
+      value_out d
+    else
+      Util.anomalylabstrm "valueOut" (str "Dynamic tag should be value")
+  | ast ->
+      Util.anomalylabstrm "valueOut" (str "Not a Dynamic ast: ")
+
+(* To embed constr *)
+let constrIn t = Topconstr.CDynamic (Util.dummy_loc,Pretyping.constr_in t)
+let constrOut = function
+  | Topconstr.CDynamic (_,d) ->
+    if (Dyn.tag d) = "constr" then
+      Pretyping.constr_out d
+    else
+      Util.anomalylabstrm "constrOut" (str "Dynamic tag should be constr")
+  | ast ->
+    Util.anomalylabstrm "constrOut" (str "Not a Dynamic ast")
 
 
 
@@ -1770,6 +1809,16 @@ let interp_tactic ist tac  =
 let eval_tactic t =
   interp_tactic { lfun=[]; avoid_ids=[]; debug=get_debug(); last_loc=Util.dummy_loc } t
 
+(* Initial call for interpretation *)
+let interp_tac_gen lfun avoid_ids debug t =
+  interp_tactic { lfun=lfun; avoid_ids=avoid_ids; debug=debug; last_loc=Util.dummy_loc } 
+    (intern_tactic {
+      ltacvars = (List.map fst lfun, []); ltacrecvars = [];
+     (* arnaud: source d'erreur peut-être *) 
+      gsigma = Evd.empty(* project gl *); genv = Global.env () (* pf_env gl *) } t)
+
+let interp t =
+  interp_tac_gen [] [] (get_debug()) t
 
 
 (* arnaud: fonction très temporaire *)

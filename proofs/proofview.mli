@@ -170,6 +170,9 @@ val sensitive_tactic : unit tactic Goal.sensitive -> unit tactic
 
 (*** tacticals ***)
 
+(* A special exception for levels for the Fail tactic *)
+exception FailError of int * Pp.std_ppcmds
+
 (* Fail if there is some goal *)
 val tclFAIL : Pp.std_ppcmds -> unit tactic
 

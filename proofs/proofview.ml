@@ -302,6 +302,10 @@ let sensitive_tactic st =
 
 (*** tactics ***)
 
+(* A special exception for levels for the Fail tactic *)
+exception FailError of int * Pp.std_ppcmds
+
+(* arnaud: inclure le level dans tclFAIL et raiser FailError à la place*)
 let tclFAIL msg env ps =
   if ps.Goal.subgoals = [] then
     { proof_step = ps; content = () }
