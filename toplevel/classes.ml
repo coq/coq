@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C .. bin/coqtop.byte" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -126,12 +127,12 @@ let declare_implicit_proj c proj imps sub =
 	    aux (succ i) (impl :: List.remove_assoc (ExplByName n) expls) tl
       | (Anonymous,_) :: _ -> assert(false)
     in
-      aux 1 [] ctx
+      aux 1 [] (List.rev ctx)
   in 
   let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
     if sub then 
       declare_instance_cst true (snd proj);
-    Impargs.declare_manual_implicits true (ConstRef (snd proj)) true expls
+    Impargs.declare_manual_implicits false (ConstRef (snd proj)) true expls
       
 let declare_implicits impls subs cl =
   Util.list_iter3 (fun p imps sub -> declare_implicit_proj cl p imps sub)
@@ -147,7 +148,7 @@ let declare_implicits impls subs cl =
 	    | _ -> acc)
       1 [] (List.rev cl.cl_context)
   in
-    Impargs.declare_manual_implicits true cl.cl_impl false indimps
+    Impargs.declare_manual_implicits false cl.cl_impl false indimps
       
 let rel_of_named_context subst l = 
   List.fold_right

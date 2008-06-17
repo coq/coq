@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C .. bin/coqtop.byte" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -106,11 +107,17 @@ let gmap_merge old ne =
 let cmap_union = Cmap.fold Cmap.add
 
 let gmap_cmap_merge old ne =
-  Gmap.fold (fun cl insts acc -> 
-    let oldinsts = try Gmap.find cl old with Not_found -> Cmap.empty in
-      Gmap.add cl (cmap_union oldinsts insts) acc)
-    Gmap.empty ne
-    
+  let ne' = 
+    Gmap.fold (fun cl insts acc -> 
+      let oldinsts = try Gmap.find cl old with Not_found -> Cmap.empty in
+	Gmap.add cl (cmap_union oldinsts insts) acc)
+      Gmap.empty ne
+  in
+    Gmap.fold (fun cl insts acc -> 
+      if Gmap.mem cl ne' then acc
+      else Gmap.add cl insts acc)
+      ne' old
+      
 let add_instance_hint_ref = ref (fun id pri -> assert false)
 let register_add_instance_hint =
   (:=) add_instance_hint_ref
@@ -172,20 +179,36 @@ let discharge (_,(cl,m,inst)) =
   let discharge_named (cl, r) =
     Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b) cl, r
   in
-  let subst_class cl = 
-    { cl with cl_impl = Lib.discharge_global cl.cl_impl;
-      cl_context = list_smartmap discharge_named cl.cl_context;
-      cl_projs = list_smartmap (fun (x, y) -> x, Lib.discharge_con y) cl.cl_projs }
+  let abs_context cl =
+    match cl.cl_impl with
+    | VarRef _ | ConstructRef _ -> assert false
+    | ConstRef cst -> Lib.section_segment_of_constant cst
+    | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind
   in
-  let classes = Gmap.map subst_class cl in
-  let subst_inst insts =
-    Cmap.fold (fun k is acc ->
-      let impl = Lib.discharge_con is.is_impl in
-      let is = { is with is_class = Lib.discharge_global is.is_class; is_impl = impl } in
-	Cmap.add impl is acc)
-      insts Cmap.empty;
+  let subst_class k cl acc = 
+    let cl_impl' = Lib.discharge_global cl.cl_impl in
+    let cl' =
+      if cl_impl' == cl.cl_impl then cl
+      else
+	{ cl with cl_impl = cl_impl';
+	  cl_context = 
+	    List.map (fun x -> None, x) (abs_context cl) @	
+	      (list_smartmap discharge_named cl.cl_context);
+	  cl_projs = list_smartmap (fun (x, y) -> x, Lib.discharge_con y) cl.cl_projs }
+    in Gmap.add cl_impl' cl' acc
   in
-  let instances = Gmap.map subst_inst inst in
+  let classes = Gmap.fold subst_class cl Gmap.empty in
+  let subst_inst k insts acc =
+    let k' = Lib.discharge_global k in
+    let insts' =
+      Cmap.fold (fun k is acc ->
+	let impl = Lib.discharge_con is.is_impl in
+	let is = { is with is_class = k'; is_impl = impl } in
+	  Cmap.add impl is acc)
+	insts Cmap.empty
+    in Gmap.add k' insts' acc
+  in
+  let instances = Gmap.fold subst_inst inst Gmap.empty in
     Some (classes, m, instances)
       
 let rebuild (_,(cl,m,inst)) =
