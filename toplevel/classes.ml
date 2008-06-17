@@ -235,6 +235,10 @@ let decompose_named_assum =
 	let decl = (na,None,substl subst t) in
 	let subst' = mkVar na :: subst in
 	  prodec_rec subst' (add_named_decl decl l) (substl subst' c)
+      | LetIn (Name na, b, t, c) ->
+	let decl = (na,Some (substl subst b),substl subst t) in
+	let subst' = mkVar na :: subst in
+	  prodec_rec subst' (add_named_decl decl l) (substl subst' c)
       | Cast (c,_,_)      -> prodec_rec subst l c
       | _               -> l,c
   in prodec_rec [] []
@@ -492,12 +496,12 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
   let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
   let ctx, avoid = name_typeclass_binders bound ctx in
   let ctx = List.append ctx (List.rev gen_ctx) in
-  let k, ctx', subst = 
+  let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
-    let _imps, c' = interp_type_evars isevars env c in
+    let imps, c' = interp_type_evars isevars env c in
     let ctx, c = decompose_named_assum c' in
     let cl, args = Typeclasses.dest_class_app c in
-      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
+      cl, ctx, imps, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
   in
   let id = 
     match snd instid with
@@ -515,11 +519,6 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
   isevars := resolve_typeclasses env !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = Typeclasses.nf_substitution sigma subst in
-  let imps = 
-    Util.list_map_i 
-      (fun i (na, b, t) -> ExplByPos (i, Some na), (true, true))
-      1 ctx'
-  in
     if Lib.is_modtype () then
       begin
 	let _, ty_constr = instance_constructor k (List.rev_map snd substctx) in
