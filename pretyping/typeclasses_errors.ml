@@ -49,6 +49,7 @@ let unsatisfiable_constraints env evd ev =
     | Some ev ->
 	let evi = Evd.find (Evd.evars_of evd) ev in
 	let loc, kind = Evd.evar_source ev evd in
-	  raise (Stdpp.Exc_located (loc, TypeClassError (env, UnsatisfiableConstraints (evd, Some (evi, kind)))))
+	  raise (Stdpp.Exc_located (loc, TypeClassError
+	    (env, UnsatisfiableConstraints (evd, Some (evi, kind)))))
 	    
 let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))

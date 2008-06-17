@@ -469,11 +469,14 @@ let resolve_all_evars debug m env p oevd do_split fail =
 		(* Unable to satisfy the constraints. *)
 		let evm = Evd.evars_of evd in
 		let evm = if do_split then select_evars comp evm else evm in
-		let ev = Evd.fold 
-		  (fun ev evi acc -> 
-		    if acc = None then
-		      if class_of_constr evi.evar_concl <> None then Some ev else None 
-		    else acc) evm None
+		let _, ev = Evd.fold 
+		  (fun ev evi (b,acc) -> 
+		    (* focus on one instance if only one was searched for *)
+		    if class_of_constr evi.evar_concl <> None then
+		      if not b then
+			true, Some ev 
+		      else b, None
+		    else b, acc) evm (false, None)
 		in
 		  Typeclasses_errors.unsatisfiable_constraints env (Evd.evars_reset_evd evm evd) ev
 	      else (* Best effort: do nothing *) oevd
@@ -1654,18 +1657,32 @@ TACTIC EXTEND try_classes
   [ "try_classes" tactic(t) ] -> [ try_classes (snd t) ]
 END
 
-(* let lift_monad env t = *)
-(*   match kind_of_term t with *)
-(*     | Rel n -> t *)
-(*     | Var id -> t *)
-(*     | App (f, args) -> *)
-(* 	let args' =  *)
-(* 	  List.fold_right *)
-(* 	    (fun arg acc -> *)
-(* 	      let ty = Typing.type_of env arg in *)
-(* 	      let arg' = lift_monad t in *)
-(* 		monad_bind arg'  *)
-(* 		  (mkLambda (Name (id_of_string "x"),  *)
+open Rawterm
+
+let constrexpr = Pcoq.Tactic.open_constr
+type 'a constr_expr_argtype = (open_constr_expr, 'a) Genarg.abstract_argument_type
+
+let (wit_constrexpr : Genarg.tlevel constr_expr_argtype),
+  (globwit_constrexpr : Genarg.glevel constr_expr_argtype),
+  (rawwit_const_expr : Genarg.rlevel constr_expr_argtype) =
+  Genarg.create_arg "constrexpr"
 			    
-			    
-			    
+open Environ
+open Refiner
+
+TACTIC EXTEND apply_typeclasses
+   [ "app" raw(t) ] -> [ fun gl ->
+     let nprod = nb_prod (pf_concl gl) in
+     let env = pf_env gl in
+     let evars = ref (create_evar_defs (project gl)) in
+     let j = Pretyping.Default.understand_judgment_tcc evars env t in
+     let n = nb_prod j.uj_type - nprod in
+       if n<0 then error "Apply_tc: theorem has not enough premisses.";
+       Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !evars))
+	 (fun gl ->
+	   let clause = make_clenv_binding_apply gl (Some n) (j.uj_val,j.uj_type) NoBindings in
+	   let cl' = evar_clenv_unique_resolver true ~flags:default_unify_flags clause gl in
+	   let evd' = Typeclasses.resolve_typeclasses cl'.env ~fail:true cl'.evd in
+	     Clenvtac.clenv_refine true {cl' with evd = evd'} gl) gl
+   ]
+END
