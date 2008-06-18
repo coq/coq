@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C ../.. bin/coqtop.byte" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -221,43 +222,47 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let names = Array.map (fun id -> Name id) names in
 	  (* Note: bodies are not used by push_rec_types, so [||] is safe *)
 	let newenv = push_rec_types (names,ftys,[||]) env in
+	let fixi = match fixkind with RFix (vn, i) -> i | RCoFix i -> i in
 	let vdefj =
 	  array_map2_i 
 	    (fun i ctxt def ->
-               (* we lift nbfix times the type in tycon, because of
-		* the nbfix variables pushed to newenv *)
-               let (ctxt,ty) =
-		 decompose_prod_n_assum (rel_context_length ctxt)
-                   (lift nbfix ftys.(i)) in
-               let nenv = push_rel_context ctxt newenv in
-               let j = pretype (mk_tycon ty) nenv isevars lvar def in
-		 { uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
-		   uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
+	      let fty = 
+		let ty = ftys.(i) in
+		  if i = fixi then (
+		    Option.iter (fun tycon ->
+		      isevars := Coercion.inh_conv_coerces_to loc env !isevars ftys.(i) tycon)
+		      tycon;
+		    nf_isevar !isevars ty)
+		  else ty
+	      in
+              (* we lift nbfix times the type in tycon, because of
+	       * the nbfix variables pushed to newenv *)
+              let (ctxt,ty) =
+		decompose_prod_n_assum (rel_context_length ctxt)
+                  (lift nbfix fty) in
+              let nenv = push_rel_context ctxt newenv in
+              let j = pretype (mk_tycon ty) nenv isevars lvar def in
+		{ uj_val = it_mkLambda_or_LetIn j.uj_val ctxt;
+		  uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
             ctxtv vdef in
 	evar_type_fixpoint loc env isevars names ftys vdefj;
 	let fixj = match fixkind with
 	  | RFix (vn,i) ->
-	      let guard_indexes = Array.mapi 
+	      (* First, let's find the guard indexes. *)
+	      (* If recursive argument was not given by user, we try all args.
+	         An earlier approach was to look only for inductive arguments,
+		 but doing it properly involves delta-reduction, and it finally 
+                 doesn't seem worth the effort (except for huge mutual 
+		 fixpoints ?) *)
+	      let possible_indexes = Array.to_list (Array.mapi 
 		(fun i (n,_) -> match n with 
-		   | Some n -> n 
-		   | None -> 
-		       (* Recursive argument was not given by the user : We
-			  check that there is only one inductive argument *)
-		       let ctx = ctxtv.(i) in 
-		       let isIndApp t = 
-			 isInd (fst (decompose_app (strip_head_cast t))) in
-			 (* This could be more precise (e.g. do some delta) *)
-		       let lb = List.rev_map (fun (_,_,t) -> isIndApp t) ctx in
-		       try (list_unique_index true lb) - 1
-		       with Not_found -> 
-			 Util.user_err_loc
-			   (loc,"pretype",
-			    Pp.str "cannot guess decreasing argument of fix"))
-		vn 
-	      in
-	      let fix = ((guard_indexes, i),(names,ftys,Array.map j_val vdefj)) in
-	      (try check_fix env fix with e -> Stdpp.raise_with_loc loc e);
-	      make_judge (mkFix fix) ftys.(i)
+		   | Some n -> [n]
+		   | None -> list_map_i (fun i _ -> i) 0 ctxtv.(i))
+		vn)
+	      in 
+	      let fixdecls = (names,ftys,Array.map j_val vdefj) in 
+	      let indexes = search_guard loc env possible_indexes fixdecls in 
+	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	  | RCoFix i -> 
 	      let cofix = (i,(names,ftys,Array.map j_val vdefj)) in
 	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);

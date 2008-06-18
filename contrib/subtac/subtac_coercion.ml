@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C ../.. bin/coqtop.byte" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -149,17 +150,17 @@ module Coercion = struct
 		  try isevars := the_conv_x_leq env eqT eqT' !isevars
 		  with Reduction.NotConvertible -> raise NoSubtacCoercion
 		in
+		(* Disallow equalities on arities *)
+		if Reduction.is_arity env eqT then raise NoSubtacCoercion;
 		let restargs = lift_args 1 
 		  (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
 		in 
 		let args = List.rev (restargs @ mkRel 1 :: lift_args 1 tele) in
 		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
 		let eq = mkApp (Lazy.force eq_ind, [| eqT; hdx; hdy |]) in
-(* 		let jmeq = mkApp (Lazy.force jmeq_ind, [| eqT; hdx; eqT; hdy |]) in *)
 		let evar = make_existential loc env isevars eq in
 		let eq_app x = mkApp (Lazy.force eq_rect,
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
-(* 		  trace (str"Inserting coercion at application"); *)
 		  aux (hdy :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	  else Some co
 	in aux [] typ typ' 0 (fun x -> x)
@@ -445,13 +446,6 @@ module Coercion = struct
 
 
   let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
-(*     (try *)
-(*        debug 1 (str "inh_conv_coerce_to_fail called for " ++ *)
-(* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ *)
-(* 	      Termops.print_constr_env env c1 ++ str " with evars: " ++ spc () ++ *)
-(* 	      Subtac_utils.pr_evar_defs evd ++ str " in env: " ++ spc () ++ *)
-(* 	      Termops.print_env env); *)
-(*      with _ -> ()); *)
     try (the_conv_x_leq env t c1 evd, v)
     with Reduction.NotConvertible ->
     try inh_coerce_to_fail env evd rigidonly v t c1
@@ -481,18 +475,14 @@ module Coercion = struct
 
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to_gen rigidonly loc env evd cj ((n, t) as _tycon) =
-(*     (try *)
-(*        trace (str "Subtac_coercion.inh_conv_coerce_to called for " ++ *)
-(* 	      Termops.print_constr_env env cj.uj_type ++ str " and "++ spc () ++ *)
-(* 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++ *)
-(* 	      Subtac_utils.pr_evar_defs evd ++ str " in env: " ++ spc () ++ *)
-(* 	      Termops.print_env env); *)
-(*      with _ -> ()); *)
+    let evd = nf_evar_defs evd in
     match n with
 	None ->
 	  let (evd', val') = 
 	    try 
-	      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
+	      inh_conv_coerce_to_fail loc env evd rigidonly
+		(Some (nf_isevar evd cj.uj_val))
+		(nf_isevar evd cj.uj_type) (nf_isevar evd t)
 	    with NoCoercion ->
 	      let sigma = evars_of evd in
 		try
@@ -509,13 +499,6 @@ module Coercion = struct
   let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true
 
   let inh_conv_coerces_to loc env isevars t ((abs, t') as _tycon) =
-(*     (try *)
-(*        trace (str "Subtac_coercion.inh_conv_coerces_to called for " ++ *)
-(* 	      Termops.print_constr_env env t ++ str " and "++ spc () ++ *)
-(* 	      Evarutil.pr_tycon_type env tycon ++ str " with evars: " ++ spc () ++ *)
-(* 	      Evd.pr_evar_defs isevars ++ str " in env: " ++ spc () ++ *)
-(* 	      Termops.print_env env); *)
-(*      with _ -> ()); *)
     let nabsinit, nabs =
       match abs with
 	  None -> 0, 0

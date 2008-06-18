@@ -1977,6 +1977,47 @@ let nf_evars_env evar_defs (env : env) : env =
     Environ.fold_rel_context (fun e (na, b, t) e' -> Environ.push_rel (na, Option.map nf b, nf t) e')
      ~init:env' env
       
+(* We put the tycon inside the arity signature, possibly discovering dependencies. *)
+
+let prepare_predicate_from_arsign_tycon loc env tomatchs arsign c =
+  let nar = List.fold_left (fun n sign -> List.length sign + n) 0 arsign in
+  let subst, len = 
+    List.fold_left2 (fun (subst, len) (tm, tmtype) sign ->
+      let signlen = List.length sign in
+	match kind_of_term tm with
+	  | Rel n when dependent tm c 
+		&& signlen = 1 (* The term to match is not of a dependent type itself *) ->
+	      ((n, len) :: subst, len - signlen)
+	  | Rel _ when not (dependent tm c)
+		&& signlen > 1 (* The term is of a dependent type but does not appear in 
+				  the tycon, maybe some variable in its type does. *) ->
+	      (match tmtype with
+		  NotInd _ -> (* len - signlen, subst*) assert false (* signlen > 1 *)
+		| IsInd (_, IndType(indf,realargs)) ->
+		    List.fold_left
+		      (fun (subst, len) arg -> 
+			match kind_of_term arg with
+			  | Rel n when dependent arg c ->
+			      ((n, len) :: subst, pred len)
+			  | _ -> (subst, pred len))
+		      (subst, len) realargs)
+	  | _ -> (subst, len - signlen))
+      ([], nar) tomatchs arsign
+  in
+  let rec predicate lift c =
+    match kind_of_term c with
+      | Rel n when n > lift -> 
+	  (try 
+	      (* Make the predicate dependent on the matched variable *)
+	      let idx = List.assoc (n - lift) subst in
+		mkRel (idx + lift)
+	    with Not_found -> 
+	      (* A variable that is not matched, lift over the arsign. *)
+	      mkRel (n + nar))
+      | _ ->
+	  map_constr_with_binders succ predicate lift c 
+  in predicate 0 c
+
 let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =
 
   let typing_fun tycon env = typing_fun tycon env isevars in
@@ -2002,15 +2043,14 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 	  build_dependent_signature env (Evd.evars_of !isevars) avoid tomatchs arsign
 
       in
-      let tycon = 
+      let tycon, arity = 
 	match valcon_of_tycon tycon with
-	| None -> mkExistential env isevars 
-	| Some t -> t
+	| None -> let ev = mkExistential env isevars in ev, ev
+	| Some t -> 
+	    t, prepare_predicate_from_arsign_tycon loc env tomatchs sign (lift tomatchs_len t)
       in
       let arity = 
-	it_mkProd_wo_LetIn
-	  (lift (signlen + neqs + tomatchs_len) tycon)
-	  (context_of_arsign eqs)
+	it_mkProd_or_LetIn (lift neqs arity) (context_of_arsign eqs)
       in
       let lets, matx = 
 	(* Type the rhs under the assumption of equations *)
@@ -2022,17 +2062,11 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
       let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
       let tomatchs = List.map (fun (x, y) -> lift len x, lift_tomatch_type len y) tomatchs in
       let args = List.rev_map (lift len) args in
-      let sign = List.map (lift_rel_context len) sign in	
       let pred = liftn len (succ signlen) arity in
-      (* We build the elimination predicate if any and check its consistency *)
-      (* with the type of arguments to match *)
-      let _signenv = List.fold_right push_rels sign env in
+      let pred = build_initial_predicate true allnames pred in
 
-      let pred =
-	(* prepare_predicate_from_tycon loc typing_fun isevars env tomatchs eqs allnames signlen sign tycon in *)
-	build_initial_predicate true allnames pred in
-	(* We push the initial terms to match and push their alias to rhs' envs *)
-	(* names of aliases will be recovered from patterns (hence Anonymous here) *)
+      (* We push the initial terms to match and push their alias to rhs' envs *)
+      (* names of aliases will be recovered from patterns (hence Anonymous here) *)
       let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
 	
       let pb =
@@ -2054,7 +2088,6 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 	  { uj_val = it_mkLambda_or_LetIn body tomatchs_lets;
 	    uj_type = nf_isevar !isevars tycon; }
 	in j
-(* 	  inh_conv_coerce_to_tycon loc env isevars j tycon0 *)
     else
       (* We build the elimination predicate if any and check its consistency *)
       (* with the type of arguments to match *)
