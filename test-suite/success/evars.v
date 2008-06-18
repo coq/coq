@@ -189,12 +189,12 @@ End Additions_while.
 
 (* Two examples from G. Melquiond (bugs #1878 and #1884) *)
 
-Parameter A B : nat -> Prop.
-Goal forall x : nat, A x -> B x.
+Parameter F1 G1 : nat -> Prop.
+Goal forall x : nat, F1 x -> G1 x.
 refine (fun x H => proj2 (_ x H)).
 Abort.
 
-Goal forall x : nat, A x -> B x.
+Goal forall x : nat, F1 x -> G1 x.
 refine (fun x H => proj2 (_ x H) _).
 Abort.
 
