@@ -186,3 +186,27 @@ refine
 Abort.
 
 End Additions_while.
+
+(* Two examples from G. Melquiond (bugs #1878 and #1884) *)
+
+Parameter F1 G1 : nat -> Prop.
+Goal forall x : nat, F1 x -> G1 x.
+refine (fun x H => proj2 (_ x H)).
+Abort.
+
+Goal forall x : nat, F1 x -> G1 x.
+refine (fun x H => proj2 (_ x H) _).
+Abort.
+
+(* Remark: the following example does not succeed any longer in 8.2 because,
+   the algorithm is more general and does exclude a solution that it should
+   exclude for typing reason. Handling of types and backtracking is still to
+   be done
+
+Section S.
+Variables A B : nat -> Prop.
+Goal forall x : nat, A x -> B x.
+refine (fun x H => proj2 (_ x H) _).
+Abort.
+End S.
+*)

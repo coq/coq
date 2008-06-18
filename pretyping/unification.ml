@@ -406,19 +406,26 @@ let pose_all_metas_as_evars env evd t =
   (* side-effect *)
   (!evdref, c)
 
+let try_to_coerce env evd c cty tycon =
+  let j = make_judge c cty in
+  let (evd',j') = inh_conv_coerce_rigid_to dummy_loc env evd j tycon in
+  let (evd',b) = Evarconv.consider_remaining_unif_problems env evd' in
+  if b then
+    let evd' = Evd.map_metas_fvalue (nf_evar (evars_of evd')) evd' in
+    (evd',j'.uj_val)
+  else
+    error "Cannot solve unification constraints"
+
 let w_coerce_to_type env evd c cty mvty =
-  try
-    let j = make_judge c cty in
-    let evd,mvty = pose_all_metas_as_evars env evd mvty in
-    let tycon = mk_tycon_type mvty in
-    let (evd',j') = inh_conv_coerce_rigid_to dummy_loc env evd j tycon in
-    let (evd',b) = Evarconv.consider_remaining_unif_problems env evd' in
-    if b then
-      let evd' = Evd.map_metas_fvalue (nf_evar (evars_of evd')) evd' in
-      (evd',j'.uj_val)
-    else (evd,c)
+  let evd,mvty = pose_all_metas_as_evars env evd mvty in
+  let tycon = mk_tycon_type mvty in
+  try try_to_coerce env evd c cty tycon
   with e when precatchable_exception e ->
-    (evd,c)
+    (* inh_conv_coerce_rigid_to should have reasoned modulo reduction 
+       but there are cases where it though it was not rigid (like in
+       fst (nat,nat)) and stops while it could have seen that it is rigid *)
+    let cty = Tacred.hnf_constr env (evars_of evd) cty in
+    try_to_coerce env evd c cty tycon
 
 let w_coerce env evd mv c =
   let cty = get_type_of env (evars_of evd) c in

@@ -36,3 +36,22 @@ Theorem Refl : forall P, P <-> P. tauto. Qed.
 Goal True.
 case Refl || ecase Refl.
 Abort.
+
+
+(* Submitted by B. Baydemir (bug #1882) *)
+
+Require Import List.
+
+Definition alist R := list (nat * R)%type.
+
+Section Properties.
+  Variables A : Type.
+  Variables a : A.
+  Variables E : alist A.
+
+  Lemma silly : E = E.
+  Proof.
+    clear. induction E.  (* this fails. *)
+  Abort.
+
+End Properties.

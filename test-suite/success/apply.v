@@ -185,3 +185,19 @@ intro.
 eapply H.
 apply (forall B:Prop,B->B) || (instantiate (1:=True); exact I).
 Defined.
+
+(* Fine-tuning coercion insertion in presence of unfolding (bug #1883) *)
+
+Parameter name : Set.
+Definition atom := name.
+
+Inductive exp : Set :=
+  | var : atom -> exp.
+
+Coercion var : atom >-> exp.
+
+Axiom silly_axiom : forall v : exp, v = v -> False.
+
+Lemma silly_lemma : forall x : atom, False.
+intros x.
+apply silly_axiom with (v := x).  (* fails *)
