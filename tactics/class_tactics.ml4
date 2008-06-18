@@ -1431,15 +1431,15 @@ let default_morphism sign m =
     	  
 let add_setoid binders a aeq t n =
   init_setoid ();
-  let lemma_refl = declare_instance_refl binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in 
-  let lemma_sym = declare_instance_sym binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-  let lemma_trans = declare_instance_trans binders a aeq n (mkappc "Seq_trans" [a;aeq;t])  in
+  let _lemma_refl = declare_instance_refl binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in 
+  let _lemma_sym = declare_instance_sym binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
+  let _lemma_trans = declare_instance_trans binders a aeq n (mkappc "Seq_trans" [a;aeq;t])  in
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in ignore(
     anew_instance binders instance
-      [((dummy_loc,id_of_string "Equivalence_Reflexive"), [], mkIdentC lemma_refl);
-       ((dummy_loc,id_of_string "Equivalence_Symmetric"),  [], mkIdentC lemma_sym);
-       ((dummy_loc,id_of_string "Equivalence_Transitive"),[], mkIdentC lemma_trans)])
+      [((dummy_loc,id_of_string "Equivalence_Reflexive"), [], mkappc "Seq_refl" [a;aeq;t]);
+       ((dummy_loc,id_of_string "Equivalence_Symmetric"),  [], mkappc "Seq_sym" [a;aeq;t]);
+       ((dummy_loc,id_of_string "Equivalence_Transitive"),[], mkappc "Seq_trans" [a;aeq;t])])
 
 let add_morphism_infer m n =
   init_setoid ();
@@ -1672,7 +1672,7 @@ open Environ
 open Refiner
 
 TACTIC EXTEND apply_typeclasses
-   [ "app" raw(t) ] -> [ fun gl ->
+   [ "typeclass_app" raw(t) ] -> [ fun gl ->
      let nprod = nb_prod (pf_concl gl) in
      let env = pf_env gl in
      let evars = ref (create_evar_defs (project gl)) in
