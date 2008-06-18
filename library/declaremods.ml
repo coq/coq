@@ -7,7 +7,6 @@
 (************************************************************************)
 
 (*i $Id$ i*)
-
 open Pp
 open Util
 open Names
@@ -114,6 +113,11 @@ let mp_of_kn kn =
     else
       anomaly ("Non-empty section in module name!" ^ string_of_kn kn)
 
+let is_bound mp =
+  match mp with
+    | MPbound _ -> true
+    | _ -> false
+
 let dir_of_sp sp = 
   let dir,id = repr_path sp in
     extend_dirpath dir id
@@ -147,6 +151,14 @@ let check_subtypes mp sub_mtb =
   in
     ()  (* The constraints are checked and forgot immediately! *) 
 
+let subst_substobjs dir mp (subst,mbids,msid,objs) =
+  match mbids with
+    | [] -> 
+	let prefix = dir,(mp,empty_dirpath) in
+	let subst' = join_alias (map_msid msid mp) subst in
+	let subst = join subst' subst in
+	  Some (subst_objects prefix (join (map_msid msid mp) subst) objs)
+    | _ -> None
 
 (* This function registers the visibility of the module and iterates
    through its components. It is called by plenty module functions *)
@@ -177,36 +189,6 @@ let do_module exists what iter_objects i dir mp substobjs objects =
 	  modtab_objects := MPmap.add mp (prefix,seg) !modtab_objects;
 	  iter_objects (i+1) prefix seg	  
       | None ->  ()
-
-    
-
-let do_module_alias exists what iter_objects i dir mp alias substobjs objects =
-  let prefix = (dir,(alias,empty_dirpath)) in
-  let dirinfo = DirModule (dir,(mp,empty_dirpath)) in
-  let vis = 
-    if exists then 
-      if 
-	try Nametab.locate_dir (qualid_of_dirpath dir) = dirinfo 
-	with Not_found -> false 
-      then
-	Nametab.Exactly i
-      else
-	errorlabstrm (what^"_module") 
-	  (pr_dirpath dir ++ str " should already exist!") 
-    else
-      if Nametab.exists_dir dir then
-	errorlabstrm (what^"_module") (pr_dirpath dir ++ str " already exists")
-      else
-	Nametab.Until i
-  in
-    Nametab.push_dir vis dir dirinfo;
-    modtab_substobjs := MPmap.add mp substobjs !modtab_substobjs;
-    match objects with
-	Some seg -> 
-	  modtab_objects := MPmap.add mp (prefix,seg) !modtab_objects;
-	  iter_objects (i+1) prefix seg	  
-      | None ->  ()
-
 
 let conv_names_do_module exists what iter_objects i 
       (sp,kn) substobjs substituted =
@@ -242,7 +224,132 @@ let cache_module ((sp,kn as oname),(entry,substobjs,substituted)) =
   conv_names_do_module false "cache" load_objects 1 oname substobjs substituted
 
 
-let cache_module_alias ((sp,kn),(entry,substobjs,substituted)) =
+
+
+(* TODO: This check is not essential *)
+let check_empty s = function
+     | None -> ()
+     | Some _ -> 
+	 anomaly ("We should never have full info in " ^ s^"!")
+
+
+(* When this function is called the module itself is already in the
+   environment. This function loads its objects only *)
+
+let load_module i (oname,(entry,substobjs,substituted)) =
+  (* TODO: This check is not essential *)
+  check_empty "load_module" entry;
+  conv_names_do_module false "load" load_objects i oname substobjs substituted
+
+
+let open_module i (oname,(entry,substobjs,substituted)) =
+  (* TODO: This check is not essential *)
+  check_empty "open_module" entry;
+  conv_names_do_module true "open" open_objects i oname substobjs substituted
+
+
+
+let subst_module ((sp,kn),subst,(entry,substobjs,_)) =
+  check_empty "subst_module" entry;
+  let dir,mp = dir_of_sp sp, mp_of_kn kn in
+  let (sub,mbids,msid,objs) = substobjs in
+  let sub = subst_key subst sub in
+  let sub' = update_subst_alias subst sub in
+  let sub' = update_subst_alias sub' (map_msid msid mp) in
+ (* let sub = join_alias sub sub' in*)
+  let sub = join sub' sub in
+  let subst' = join sub subst in
+  (* substitutive_objects get the new substitution *)
+  let substobjs = (subst',mbids,msid,objs) in
+  (* if we are not a functor - calculate substitued.
+     We add "msid |-> mp" to the substitution *)
+  let substituted = subst_substobjs dir mp substobjs
+  in
+    (None,substobjs,substituted)
+
+
+let classify_module (_,(_,substobjs,_)) =
+  Substitute (None,substobjs,None)
+
+
+
+let (in_module,out_module) =
+  declare_object {(default_object "MODULE") with
+    cache_function = cache_module;
+    load_function = load_module;
+    open_function = open_module;
+    subst_function = subst_module;
+    classify_function = classify_module;
+    export_function = (fun _ -> anomaly "No modules in sections!") }
+
+
+let rec replace_alias modalias_obj obj =
+  let rec put_alias (id_alias,obj_alias) l =
+    match l with 
+	[] -> []
+      | (id,o)::r 
+	  when ( object_tag o = "MODULE") ->
+	  if id = id_alias then
+(*	    let (entry,subst_o,substed_o) = out_module_alias obj_alias in
+	    let (entry',subst_o',substed_o') = out_module o in
+	      begin
+		match substed_o,substed_o' with
+		    Some a,Some b ->
+		      (id,in_module_alias 
+			 (entry,subst_o',Some (dump_alias_object a b)))::r*)
+	    (id_alias,obj_alias)::r
+		 (* | _,_ -> (id,o)::r
+	      end*)
+	  else (id,o)::(put_alias (id_alias,obj_alias) r)
+      | e::r -> e::(put_alias (id_alias,obj_alias) r) in
+  let rec choose_obj_alias list_alias list_obj =
+    match list_alias with
+      | [] -> list_obj
+      | o::r ->choose_obj_alias r (put_alias o list_obj) in
+    choose_obj_alias modalias_obj obj
+	  
+and dump_alias_object alias_obj obj =
+  let rec alias_in_obj seg =
+    match seg with
+      | [] -> []
+      | (id,o)::r when (object_tag o = "MODULE ALIAS") -> 
+	  (id,o)::(alias_in_obj r)
+      | e::r -> (alias_in_obj r) in
+  let modalias_obj = alias_in_obj alias_obj in
+    replace_alias modalias_obj obj
+      
+and do_module_alias exists what iter_objects i dir mp alias substobjs objects =
+  let prefix = (dir,(alias,empty_dirpath)) in
+  let alias_objects = 
+    try Some (MPmap.find alias !modtab_objects) with
+	Not_found -> None in
+  let dirinfo = DirModule (dir,(mp,empty_dirpath)) in
+  let vis = 
+    if exists then 
+      if 
+	try Nametab.locate_dir (qualid_of_dirpath dir) = dirinfo 
+	with Not_found -> false 
+      then
+	Nametab.Exactly i
+      else
+	errorlabstrm (what^"_module") 
+	  (pr_dirpath dir ++ str " should already exist!") 
+    else
+      if Nametab.exists_dir dir then
+	errorlabstrm (what^"_module") (pr_dirpath dir ++ str " already exists")
+      else
+	Nametab.Until i
+  in
+    Nametab.push_dir vis dir dirinfo;
+    modtab_substobjs := MPmap.add mp substobjs !modtab_substobjs;
+    match alias_objects,objects with
+	Some (_,seg), Some seg' -> 
+	  let new_seg = dump_alias_object seg seg' in
+	  modtab_objects := MPmap.add mp (prefix,new_seg) !modtab_objects;
+	  iter_objects (i+1) prefix new_seg 	  
+      | _,_->  ()
+
+and cache_module_alias ((sp,kn),(entry,substobjs,substituted)) =
   let dir,mp,alias = match entry with
     | None ->
 	anomaly "You must not recache interactive modules!"
@@ -273,33 +380,8 @@ let cache_module_alias ((sp,kn),(entry,substobjs,substituted)) =
 	      | _ -> anomaly "cache module alias"
   in
     do_module_alias false "cache" load_objects 1 dir mp alias substobjs substituted
-      
 
-(* TODO: This check is not essential *)
-let check_empty s = function
-     | None -> ()
-     | Some _ -> 
-	 anomaly ("We should never have full info in " ^ s^"!")
-
-
-(* When this function is called the module itself is already in the
-   environment. This function loads its objects only *)
-
-let load_module i (oname,(entry,substobjs,substituted)) =
-  (* TODO: This check is not essential *)
-  check_empty "load_module" entry;
-  conv_names_do_module false "load" load_objects i oname substobjs substituted
-
-let subst_substobjs dir mp (subst,mbids,msid,objs) =
-  match mbids with
-    | [] -> 
-	let prefix = dir,(mp,empty_dirpath) in
-	let subst' = join_alias (map_msid msid mp) subst in
-	let subst = join subst' subst in
-	  Some (subst_objects prefix (join (map_msid msid mp) subst) objs)
-    | _ -> None
-
-let load_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
+and load_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
   let dir,mp,alias= 
     match entry with 
       | Some (me,_)->
@@ -314,12 +396,7 @@ let load_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
   in
     do_module_alias false "load" load_objects i dir mp alias substobjs substituted
 
-let open_module i (oname,(entry,substobjs,substituted)) =
-  (* TODO: This check is not essential *)
-  check_empty "open_module" entry;
-  conv_names_do_module true "open" open_objects i oname substobjs substituted
-
-let open_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
+and open_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
   let dir,mp,alias=
     match entry with 
       | Some (me,_)->
@@ -334,25 +411,7 @@ let open_module_alias i ((sp,kn),(entry,substobjs,substituted)) =
   in
     do_module_alias true "open" open_objects i dir mp alias substobjs substituted
 
-
-let subst_module ((sp,kn),subst,(entry,substobjs,_)) =
-  check_empty "subst_module" entry;
-  let dir,mp = dir_of_sp sp, mp_of_kn kn in
-  let (sub,mbids,msid,objs) = substobjs in
-  let sub = subst_key subst sub in
-  let sub' = update_subst_alias subst sub in
-  let sub' = update_subst_alias sub' (map_msid msid mp) in
-  let sub = join sub' sub in
-  let subst' = join sub subst in
-  (* substitutive_objects get the new substitution *)
-  let substobjs = (subst',mbids,msid,objs) in
-  (* if we are not a functor - calculate substitued.
-     We add "msid |-> mp" to the substitution *)
-  let substituted = subst_substobjs dir mp substobjs
-  in
-    (None,substobjs,substituted)
-
-let subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
+and subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
   let dir,mp = dir_of_sp sp, mp_of_kn kn in
   let (sub,mbids,msid,objs) = substobjs in
   let sub' = update_subst_alias subst (map_msid msid mp) in
@@ -362,51 +421,43 @@ let subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
   let substobjs = (subst',mbids,msid,objs) in
   (* if we are not a functor - calculate substitued.
      We add "msid |-> mp" to the substitution *)
-  let prefix = dir,(mp,empty_dirpath) in
     match entry with 
-	 | Some (me,sub)->
+      | Some (me,sub)->
 	  begin
 	    match me with
 	      |{mod_entry_type = None;
 		mod_entry_expr = Some (MSEident mp')} ->
 		 let mp' = subst_mp subst' mp' in
-		 (Some ({mod_entry_type = None;
+		 let mp' = scrape_alias mp' in
+		   (Some ({mod_entry_type = None;
 			 mod_entry_expr = 
-			    Some (MSEident mp')},sub),
-		  substobjs, match mbids with
-		    | [] -> 
-			Some (subst_objects prefix 
-				(join subst' (join (map_msid msid mp')
-						(map_mp mp mp'))) objs)
-		    | _ -> None)
-
+			      Some (MSEident mp')},sub),
+		    substobjs, match mbids with
+		      | [] -> 
+			  Some (subst_objects (dir,(mp',empty_dirpath)) 
+				  (join subst' (join (map_msid msid mp')
+						  (map_mp mp mp'))) objs)
+		      | _ -> None)
+		     
 	      | _ -> anomaly "Modops: Not an alias"
 	  end
       | None -> anomaly "Modops: Empty info"
 
-let classify_module (_,(_,substobjs,_)) =
-  Substitute (None,substobjs,None)
-
-let classify_module_alias (_,(entry,substobjs,_)) =
+and classify_module_alias (_,(entry,substobjs,_)) =
   Substitute (entry,substobjs,None)
-
-let (in_module,out_module) =
-  declare_object {(default_object "MODULE") with
-    cache_function = cache_module;
-    load_function = load_module;
-    open_function = open_module;
-    subst_function = subst_module;
-    classify_function = classify_module;
-    export_function = (fun _ -> anomaly "No modules in sections!") }
-
+	        
 let (in_module_alias,out_module_alias) =
   declare_object {(default_object "MODULE ALIAS") with
-    cache_function = cache_module_alias;
-    load_function = load_module_alias;
-    open_function = open_module_alias;
-    subst_function = subst_module_alias;
-    classify_function = classify_module_alias;
-    export_function = (fun _ -> anomaly "No modules in sections!") }
+		    cache_function = cache_module_alias;
+		    open_function = open_module_alias;
+		    classify_function = classify_module_alias;
+		    subst_function = subst_module_alias;
+		    load_function = load_module_alias;  
+		    export_function = (fun _ -> anomaly "No modules in sections!") }
+    
+
+
+
 
 let cache_keep _ = anomaly "This module should not be cached!"
 
@@ -575,16 +626,15 @@ let rec get_modtype_substobjs env = function
 	    (subst_key (map_msid msid mp) sub_alias)
 	      (map_msid msid mp)
 	| _ -> sub_alias in
-      let sub3=
+    let sub3=
 	if sub1 = empty_subst then
-	  update_subst_alias sub_alias (map_mbid farg_id mp None)
+	  update_subst sub_alias (map_mbid farg_id mp None)
 	else
-	  update_subst_alias sub_alias
-	    (join_alias sub1 (map_mbid farg_id mp None))
+	  let sub1' = join_alias sub1 (map_mbid farg_id mp None) in
+	  let sub_alias' =  update_subst sub_alias sub1' in
+	    join sub1' sub_alias'
       in
-      let sub = if sub_alias = sub3 then
-	join sub1 sub_alias else join (join sub1 sub_alias) sub3 in
-      let sub = join_alias sub (map_mbid farg_id mp None) in
+      let sub3 = join sub3 (update_subst sub_alias (map_mbid farg_id mp None)) in
        let (subst, mbids, msid, objs) = get_modtype_substobjs env mexpr in
 	(match mbids with
 	   | mbid::mbids ->
@@ -594,7 +644,7 @@ let rec get_modtype_substobjs env = function
                     objects (that are all non-logical objects) *)
 		((join 
 		    (join subst (map_mbid mbid mp (Some resolve)))
-		       sub)
+		       sub3)
 		       , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
@@ -792,17 +842,17 @@ let classify_import (_,(export,_ as obj)) =
   if export then Substitute obj else Dispose
 
 let subst_import (_,subst,(export,mp as obj)) =
-  let subst = remove_alias subst in
-  let mp' = subst_mp subst mp in
+  let subst' = remove_alias subst in
+  let mp' = subst_mp subst' mp in
     if mp'==mp then obj else
       (export,mp')
-
+	
 let (in_import,out_import) = 
   declare_object {(default_object "IMPORT MODULE") with
-    cache_function = cache_import;
-    open_function = (fun i o -> if i=1 then cache_import o);
-    subst_function = subst_import;
-    classify_function = classify_import }
+		    cache_function = cache_import;
+		    open_function = (fun i o -> if i=1 then cache_import o);
+		    subst_function = subst_import;
+		    classify_function = classify_import }
 
 
 let import_module export mp = 
@@ -893,13 +943,14 @@ let rec get_module_substobjs env = function
 
       let sub3=
 	if sub1 = empty_subst then
-	  update_subst_alias sub_alias (map_mbid farg_id mp None)
+	  update_subst sub_alias (map_mbid farg_id mp None)
 	else
 	  let sub1' = join_alias sub1 (map_mbid farg_id mp None) in
-	  let sub_alias' =  update_subst_alias sub_alias sub1' in
+	  let sub_alias' =  update_subst sub_alias sub1' in
 	    join sub1' sub_alias'
       in
-       let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
+      let sub3 = join sub3 (update_subst sub_alias (map_mbid farg_id mp None)) in
+      let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(match mbids with
 	   | mbid::mbids ->
                let resolve =

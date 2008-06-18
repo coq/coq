@@ -168,8 +168,13 @@ and subst_module  sub mb =
      (because the signature is "K with Module M := M'") and we are substituting
      M' with some M''. *)
   let me' = Option.smartmap (subst_struct_expr sub) mb.mod_expr in
-  let mb_alias = join_alias mb.mod_alias sub in
-    if mtb'==mb.mod_type && mb.mod_expr == me' 
+  let mb_alias = update_subst sub mb.mod_alias in
+   let mb_alias =  if mb_alias = empty_subst then
+     join_alias mb.mod_alias sub 
+   else 
+     join mb_alias (join_alias mb.mod_alias sub)
+   in
+     if mtb'==mb.mod_type && mb.mod_expr == me' 
       && mb_alias == mb.mod_alias
     then mb else
       { mod_expr = me';
@@ -263,7 +268,7 @@ let rec eval_struct env = function
 	      (subst_key (map_msid msid mp) sub_alias)
 	      (map_msid msid mp)
 	| _ -> sub_alias in
-      let sub_alias1 = update_subst_alias sub_alias 
+      let sub_alias1 = update_subst sub_alias 
 	(map_mbid farg_id mp (None)) in
       let resolve = resolver_of_environment farg_id farg_b mp sub_alias env in
 	eval_struct env (subst_struct_expr 
@@ -316,7 +321,7 @@ and merge_with env mtb with_decl alias=
 	    SFBconst c,None
 	| With_module_body ([id], mp,cst) ->
 	    let mp' = scrape_alias mp env in
-	    let new_alias = update_subst_alias alias (map_mp (mp_rec [id]) mp') in
+	    let new_alias = update_subst alias (map_mp (mp_rec [id]) mp') in
 	      SFBalias (mp,Some cst),
 	    Some(join (map_mp (mp_rec [id]) mp') new_alias)
 	| With_definition_body (_::_,_) 
@@ -335,7 +340,7 @@ and merge_with env mtb with_decl alias=
 	    in
 	    let subst = match subst1 with
 	      | None -> None
-	      | Some s -> Some (join s (update_subst_alias alias s)) in
+	      | Some s -> Some (join s (update_subst alias s)) in
             let modtype,subst_msb = 
               merge_with env (type_of_mb env old) new_with_decl alias in
             let msb =

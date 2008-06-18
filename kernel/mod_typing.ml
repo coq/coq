@@ -164,7 +164,7 @@ and check_with_aux_mod env mtb with_decl now =
 	      in
 		if now then 
 		  let mp' = scrape_alias mp env' in
-		  let up_subst = update_subst_alias mtb'.typ_alias (map_mp (mp_rec [id]) mp') in
+		  let up_subst = update_subst mtb'.typ_alias (map_mp (mp_rec [id]) mp') in
 		    cst, (join (map_mp (mp_rec [id]) mp') up_subst)
 		else
 		cst,empty_subst
@@ -186,7 +186,7 @@ and check_with_aux_mod env mtb with_decl now =
 			if now then 
 			  let mtb' = lookup_modtype mp env' in
 			  let mp' = scrape_alias mp env' in
-			  let up_subst = update_subst_alias 
+			  let up_subst = update_subst 
 			    mtb'.typ_alias (map_mp (mp_rec (List.rev (id::idl))) mp') in
 			    cst, (join (map_mp (mp_rec (List.rev (id::idl))) mp') up_subst)
 		else
