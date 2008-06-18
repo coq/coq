@@ -1,6 +1,6 @@
 (* -*- coq-prog-args: ("-emacs-U" "-debug") -*- *)
 Require Import List.
-Require Import Coq.subtac.Utils.
+Require Import Coq.Program.Program.
 
 Set Implicit Arguments.
 
@@ -23,13 +23,13 @@ Section Map_DependentRecursor.
   Variable f : { x : U | In x l } -> V.
 
   Obligations Tactic := unfold sub_list in * ; 
-    subtac_simpl ; intuition.
+    program_simpl ; intuition.
 
   Program Fixpoint map_rec ( l' : list U | sub_list l' l )
     { measure length l' } : { r : list V | length r = length l' } :=
     match l' with
-    nil => nil
-    | cons x tl => let tl' := map_rec tl in
+      | nil => nil
+      | cons x tl => let tl' := map_rec tl in
 	f x :: tl'
     end.
     

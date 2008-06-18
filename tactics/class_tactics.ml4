@@ -450,7 +450,10 @@ let select_evars evs evm =
 let resolve_all_evars debug m env p oevd do_split fail =
   let oevm = Evd.evars_of oevd in
   let split = if do_split then split_evars (Evd.evars_of (Evd.undefined_evars oevd)) else [Intset.empty] in
-  let p = if do_split then fun comp ev evi -> Intset.mem ev comp && p ev evi else fun _ -> p in
+  let p = if do_split then 
+    fun comp ev evi -> (Intset.mem ev comp || not (Evd.mem oevm ev)) && p ev evi
+    else fun _ -> p 
+  in
   let rec aux n p evd =
     if has_undefined p oevm evd then
       if n > 0 then
@@ -1233,31 +1236,31 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	ignore (declare_instance_refl binders a aeq n lemma1); 
 	ignore (declare_instance_sym binders a aeq n lemma2)
     | (Some lemma1, None, Some lemma3) -> 
-	let lemma_refl = declare_instance_refl binders a aeq n lemma1 in
-	let lemma_trans = declare_instance_trans binders a aeq n lemma3 in
+	let _lemma_refl = declare_instance_refl binders a aeq n lemma1 in
+	let _lemma_trans = declare_instance_trans binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder" 
 	in ignore(
 	    anew_instance binders instance 
-	      [((dummy_loc,id_of_string "PreOrder_Reflexive"), [], mkIdentC lemma_refl);
-	       ((dummy_loc,id_of_string "PreOrder_Transitive"),[], mkIdentC lemma_trans)])
+	      [((dummy_loc,id_of_string "PreOrder_Reflexive"), [], lemma1);
+	       ((dummy_loc,id_of_string "PreOrder_Transitive"),[], lemma3)])
     | (None, Some lemma2, Some lemma3) -> 
-	let lemma_sym = declare_instance_sym binders a aeq n lemma2 in
-	let lemma_trans = declare_instance_trans binders a aeq n lemma3 in
+	let _lemma_sym = declare_instance_sym binders a aeq n lemma2 in
+	let _lemma_trans = declare_instance_trans binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER" 
 	in ignore(
 	    anew_instance binders instance 
-	      [((dummy_loc,id_of_string "PER_Symmetric"),  [], mkIdentC lemma_sym);
-	       ((dummy_loc,id_of_string "PER_Transitive"),[], mkIdentC lemma_trans)])
+	      [((dummy_loc,id_of_string "PER_Symmetric"), [], lemma2);
+	       ((dummy_loc,id_of_string "PER_Transitive"),[], lemma3)])
      | (Some lemma1, Some lemma2, Some lemma3) -> 
-	let lemma_refl = declare_instance_refl binders a aeq n lemma1 in 
-	let lemma_sym = declare_instance_sym binders a aeq n lemma2 in
-	let lemma_trans = declare_instance_trans binders a aeq n lemma3 in
+	let _lemma_refl = declare_instance_refl binders a aeq n lemma1 in 
+	let _lemma_sym = declare_instance_sym binders a aeq n lemma2 in
+	let _lemma_trans = declare_instance_trans binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence" 
 	in ignore(
 	  anew_instance binders instance 
-	    [((dummy_loc,id_of_string "Equivalence_Reflexive"), [], mkIdentC lemma_refl);
-	     ((dummy_loc,id_of_string "Equivalence_Symmetric"),  [], mkIdentC lemma_sym);
-	     ((dummy_loc,id_of_string "Equivalence_Transitive"),[], mkIdentC lemma_trans)])
+	    [((dummy_loc,id_of_string "Equivalence_Reflexive"), [], lemma1);
+	     ((dummy_loc,id_of_string "Equivalence_Symmetric"),  [], lemma2);
+	     ((dummy_loc,id_of_string "Equivalence_Transitive"),[], lemma3)])
 
 type 'a binders_let_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
 
@@ -1407,9 +1410,10 @@ let build_morphism_signature m =
   let morph = 
     mkApp (Lazy.force morphism_type, [| t; sig_; m |])
   in
-  let evd = resolve_all_evars_once false (true, default_eauto_depth) env
-    (fun x evi -> class_of_constr evi.Evd.evar_concl <> None) !isevars in
-    Evarutil.nf_isevar evd morph
+  let evd = 
+    Typeclasses.resolve_typeclasses ~fail:true ~onlyargs:false env !isevars in
+  let m = Evarutil.nf_isevar evd morph in
+    Evarutil.check_evars env Evd.empty evd m; m
 	
 let default_morphism sign m =
   let env = Global.env () in

@@ -353,12 +353,21 @@ let update_obls prg obls rem =
 let is_defined obls x = obls.(x).obl_body <> None
 
 let deps_remaining obls deps = 
-    Intset.fold
-      (fun x acc -> 
-	 if is_defined obls x then acc
-	 else x :: acc)
-      deps []
+  Intset.fold
+    (fun x acc -> 
+      if is_defined obls x then acc
+      else x :: acc)
+    deps []
 
+let has_dependencies obls n =
+  let res = ref false in
+    Array.iteri
+      (fun i obl -> 
+	if i <> n && Intset.mem n obl.obl_deps then
+	  res := true)
+      obls;
+    !res
+      
 let kind_of_opacity o =
   if o then Subtac_utils.goal_proof_kind
   else Subtac_utils.goal_kind
@@ -394,9 +403,10 @@ let rec solve_obligation prg num =
 		   let obls = Array.copy obls in
 		   let _ = obls.(num) <- obl in
 		     match update_obls prg obls (pred rem) with
-			 Remain n when n > 0 ->
+		     | Remain n when n > 0 ->
+			 if has_dependencies obls num then
 			   ignore(auto_solve_obligations (Some prg.prg_name))
-		       | _ -> ());
+		     | _ -> ());
 	      trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		       Subtac_utils.my_print_constr (Global.env ()) obl.obl_type);
 	      Pfedit.by !default_tactic;

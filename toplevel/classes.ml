@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C .. bin/coqtop.byte" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -126,12 +127,12 @@ let declare_implicit_proj c proj imps sub =
 	    aux (succ i) (impl :: List.remove_assoc (ExplByName n) expls) tl
       | (Anonymous,_) :: _ -> assert(false)
     in
-      aux 1 [] ctx
+      aux 1 [] (List.rev ctx)
   in 
   let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
     if sub then 
       declare_instance_cst true (snd proj);
-    Impargs.declare_manual_implicits true (ConstRef (snd proj)) true expls
+    Impargs.declare_manual_implicits false (ConstRef (snd proj)) true expls
       
 let declare_implicits impls subs cl =
   Util.list_iter3 (fun p imps sub -> declare_implicit_proj cl p imps sub)
@@ -147,7 +148,7 @@ let declare_implicits impls subs cl =
 	    | _ -> acc)
       1 [] (List.rev cl.cl_context)
   in
-    Impargs.declare_manual_implicits true cl.cl_impl false indimps
+    Impargs.declare_manual_implicits false cl.cl_impl false indimps
       
 let rel_of_named_context subst l = 
   List.fold_right
@@ -235,6 +236,10 @@ let decompose_named_assum =
 	let decl = (na,None,substl subst t) in
 	let subst' = mkVar na :: subst in
 	  prodec_rec subst' (add_named_decl decl l) (substl subst' c)
+      | LetIn (Name na, b, t, c) ->
+	let decl = (na,Some (substl subst b),substl subst t) in
+	let subst' = mkVar na :: subst in
+	  prodec_rec subst' (add_named_decl decl l) (substl subst' c)
       | Cast (c,_,_)      -> prodec_rec subst l c
       | _               -> l,c
   in prodec_rec [] []
@@ -276,6 +281,7 @@ let new_class id par ar sup props =
   let subs = List.map (fun ((loc, id), b, _) -> b) props in
   (* Instantiate evars and check all are resolved *)
   let isevars,_ = Evarconv.consider_remaining_unif_problems env_props !isevars in
+  let isevars = Typeclasses.resolve_typeclasses env_props isevars in
   let sigma = Evd.evars_of isevars in
   let ctx_params = Evarutil.nf_named_context_evar sigma ctx_params in
   let ctx_props = Evarutil.nf_named_context_evar sigma ctx_props in
@@ -492,12 +498,12 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
   let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
   let ctx, avoid = name_typeclass_binders bound ctx in
   let ctx = List.append ctx (List.rev gen_ctx) in
-  let k, ctx', subst = 
+  let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
-    let _imps, c' = interp_type_evars isevars env c in
+    let imps, c' = interp_type_evars isevars env c in
     let ctx, c = decompose_named_assum c' in
     let cl, args = Typeclasses.dest_class_app c in
-      cl, ctx, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
+      cl, ctx, imps, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
   in
   let id = 
     match snd instid with
@@ -515,11 +521,6 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
   isevars := resolve_typeclasses env !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = Typeclasses.nf_substitution sigma subst in
-  let imps = 
-    Util.list_map_i 
-      (fun i (na, b, t) -> ExplByPos (i, Some na), (true, true))
-      1 ctx'
-  in
     if Lib.is_modtype () then
       begin
 	let _, ty_constr = instance_constructor k (List.rev_map snd substctx) in
