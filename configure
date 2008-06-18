@@ -229,11 +229,6 @@ esac
 
 case $arch_spec in
     no) 
-    # First we test if we are running a Cygwin system
-    if [ `uname -o` = "Cygwin" ] ; then
-	ARCH="win32"
-    else
-	# If not, we determine the architecture
 	if test -x /bin/arch ; then
  	    ARCH=`/bin/arch`
  	elif test -x /usr/bin/arch ; then
@@ -241,16 +236,15 @@ case $arch_spec in
  	elif test -x /usr/ucb/arch ; then
  	    ARCH=`/usr/ucb/arch`
  	elif test -x /bin/uname ; then
- 	    ARCH=`/bin/uname -s`
+ 	    ARCH=`/bin/uname -s | sed -e 's/CYGWIN.*/win32/'`
  	elif test -x /usr/bin/uname ; then
- 	    ARCH=`/usr/bin/uname -s`
+ 	    ARCH=`/usr/bin/uname -s | sed -e 's/CYGWIN.*/win32/'`
 	else
 	    echo "I can not automatically find the name of your architecture"
 	    echo -n\
 		"Give me a name, please [win32 for Win95, Win98 or WinNT]: "
 	    read ARCH
-	fi
-    fi;;
+	fi;;
     yes) ARCH=$arch
 esac
 
