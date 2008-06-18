@@ -765,7 +765,7 @@ let _ =
 
   pp "  Ltac zg_tac := try";
   pp "    (red; simpl Zcompare; auto;";
-  pp "     let t := fresh \"H\" in (intros t; discriminate H)).";
+  pp "     let t := fresh \"H\" in (intros t; discriminate t)).";
   pp "  Lemma spec_iter: forall x y, P [x] [y] (iter x y).";
   pp "  Proof.";
   pp "  intros x; case x; clear x; unfold iter.";

@@ -48,6 +48,8 @@ val e_new_evar :
 val new_evar_instance :
  named_context_val -> evar_defs -> types -> ?src:loc * hole_kind -> ?filter:bool list -> constr list -> evar_defs * constr
 
+val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
+
 (***********************************************************)
 (* Instantiate evars *)
 

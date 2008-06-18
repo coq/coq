@@ -492,10 +492,12 @@ let first_order_unification env evd (ev1,l1) (term2,l2) =
       else
 	solve_simple_eqn evar_conv_x env i (CONV,ev1,t2))]
 
-let choose_less_dependent_instance evk evd =
+let choose_less_dependent_instance evk evd term args =
   let evi = Evd.find (evars_of evd) evk in
-  let ctx = evar_filtered_context evi in
-  Evd.evar_define evk (mkVar (pi1 (List.hd ctx))) evd
+  let subst = make_pure_subst evi args in
+  let subst' = List.filter (fun (id,c) -> c = term) subst in
+  if subst' = [] then error "Too complex unification problem" else
+  Evd.evar_define evk (mkVar (fst (List.hd subst'))) evd
 
 let apply_conversion_problem_heuristic env evd pbty t1 t2 =
   let t1 = apprec_nohdbeta env evd (whd_castappevar (evars_of evd) t1) in
@@ -506,13 +508,13 @@ let apply_conversion_problem_heuristic env evd pbty t1 t2 =
   | Evar (evk1,args1), Rel _ when l1 = [] & l2 = [] ->
       (* The typical kind of constraint coming from patter-matching return
          type inference *)
-      assert (array_for_all ((=) term2) args1);
-      choose_less_dependent_instance evk1 evd, true
+      assert (array_for_all (fun a -> a = term2 or isEvar a) args1);
+      choose_less_dependent_instance evk1 evd term2 args1, true
   | Rel _, Evar (evk2,args2) when l1 = [] & l2 = [] ->
       (* The typical kind of constraint coming from patter-matching return
          type inference *)
       assert (array_for_all ((=) term1) args2);
-      choose_less_dependent_instance evk2 evd, true
+      choose_less_dependent_instance evk2 evd term1 args2, true
   | Evar ev1,_ when List.length l1 <= List.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       first_order_unification env evd (ev1,l1) appr2

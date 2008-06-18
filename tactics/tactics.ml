@@ -2385,12 +2385,7 @@ let induction_from_context_l isrec with_evars elim_info lid names gl =
 
 
 let induction_from_context isrec with_evars elim_info (hyp0,lbind) names gl =
-  (*test suivant sans doute inutile car refait par le letin_tac*)
-  if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
-    errorlabstrm "induction" 
-      (str "Cannot generalize a global variable");
   let indsign,scheme = elim_info in
-
   let indref = match scheme.indref with | None -> assert false | Some x -> x in
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let typ0 = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in

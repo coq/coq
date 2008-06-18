@@ -164,12 +164,15 @@ let variables l =
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
   -I $(COQTOP)/proofs -I $(COQTOP)/tactics \\
-  -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/correctness \\
-  -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
-  -I $(COQTOP)/contrib/fourier \\
+  -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/cc \\
+  -I $(COQTOP)/contrib/dp -I $(COQTOP)/contrib/extraction \\
+  -I $(COQTOP)/contrib/field -I $(COQTOP)/contrib/firstorder \\
+  -I $(COQTOP)/contrib/fourier -I $(COQTOP)/contrib/funind \\
   -I $(COQTOP)/contrib/interface -I $(COQTOP)/contrib/jprover \\
-  -I $(COQTOP)/contrib/omega -I $(COQTOP)/contrib/romega \\
-  -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \\
+  -I $(COQTOP)/contrib/micromega -I $(COQTOP)/contrib/omega \\
+  -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
+  -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
+  -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml \\
   -I $(CAMLP4LIB)\n")
     else
       (print "COQSRC:=$(shell $(COQTOP)coqc -where)\n"; 
