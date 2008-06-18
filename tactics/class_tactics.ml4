@@ -450,7 +450,10 @@ let select_evars evs evm =
 let resolve_all_evars debug m env p oevd do_split fail =
   let oevm = Evd.evars_of oevd in
   let split = if do_split then split_evars (Evd.evars_of (Evd.undefined_evars oevd)) else [Intset.empty] in
-  let p = if do_split then fun comp ev evi -> Intset.mem ev comp && p ev evi else fun _ -> p in
+  let p = if do_split then 
+    fun comp ev evi -> (Intset.mem ev comp || not (Evd.mem oevm ev)) && p ev evi
+    else fun _ -> p 
+  in
   let rec aux n p evd =
     if has_undefined p oevm evd then
       if n > 0 then

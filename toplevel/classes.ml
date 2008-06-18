@@ -281,6 +281,7 @@ let new_class id par ar sup props =
   let subs = List.map (fun ((loc, id), b, _) -> b) props in
   (* Instantiate evars and check all are resolved *)
   let isevars,_ = Evarconv.consider_remaining_unif_problems env_props !isevars in
+  let isevars = Typeclasses.resolve_typeclasses env_props isevars in
   let sigma = Evd.evars_of isevars in
   let ctx_params = Evarutil.nf_named_context_evar sigma ctx_params in
   let ctx_props = Evarutil.nf_named_context_evar sigma ctx_props in
