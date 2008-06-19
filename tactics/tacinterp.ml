@@ -1693,7 +1693,14 @@ and eval_tactic ist = function
   | TacThens (t1,tl) -> tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
   | TacDo (n,tac) -> tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTry tac -> tclTRY (interp_tactic ist tac)
-  | TacInfo tac -> tclINFO (interp_tactic ist tac)
+  | TacInfo tac -> 
+      let t = (interp_tactic ist tac) in
+	tclINFO 
+	  begin
+	    match tac with
+		TacAtom (_,_) -> t
+	      | _ -> abstract_tactic_expr (TacArg (Tacexp tac)) t
+	  end
   | TacRepeat tac -> tclREPEAT (interp_tactic ist tac)
   | TacOrelse (tac1,tac2) ->
         tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
