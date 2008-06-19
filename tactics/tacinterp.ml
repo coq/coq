@@ -1171,7 +1171,8 @@ let coerce_to_int = function
 
 let interp_int ist locid =
   try try_interp_ltac_var coerce_to_int ist None locid
-  with Not_found -> user_err_loc(fst locid,"interp_int",str "Unbound variable")
+  with Not_found -> user_err_loc(fst locid,"interp_int",
+				str "Unbound variable"  ++ pr_id (snd locid))
 
 let interp_int_or_var ist = function
   | ArgVar locid -> interp_int ist locid
