@@ -125,6 +125,10 @@ let vernac_assumption env isevars kind l nl =
 	  else dump_variable lid) idl;
       declare_assumption env isevars idl is_coe kind [] c nl) l
 
+let check_fresh (loc,id) =
+  if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
+    user_err_loc (loc,"",pr_id id ++ str " already exists")
+      
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
@@ -133,111 +137,112 @@ let subtac (loc, command) =
   let isevars = ref (create_evar_defs Evd.empty) in
   try
   match command with
-	VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
-	  dump_definition lid "def";
-	    (match expr with
-	      | ProveBody (bl, t) -> 
-		  if Lib.is_modtype () then
-		    errorlabstrm "Subtac_command.StartProof"
-		      (str "Proof editing mode not supported in module types");
-		  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t) 
-		    (fun _ _ -> ())
-	      | DefineBody (bl, _, c, tycon) -> 
-		   ignore(Subtac_pretyping.subtac_proof defkind env isevars id bl c tycon))
-      | VernacFixpoint (l, b) -> 
-	  List.iter (fun ((lid, _, _, _, _), _) -> dump_definition lid "fix") l;
-	  let _ = trace (str "Building fixpoint") in
-	    ignore(Subtac_command.build_recursive l b)
-
-      | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
-	  if !Flags.dump then dump_definition id "prf";
-	  if not(Pfedit.refining ()) then
-	    if lettop then
-	      errorlabstrm "Subtac_command.StartProof"
-		(str "Let declarations can only be used in proof editing mode");
+  | VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
+      check_fresh lid;
+      dump_definition lid "def";
+      (match expr with
+      | ProveBody (bl, t) -> 
 	  if Lib.is_modtype () then
 	    errorlabstrm "Subtac_command.StartProof"
 	      (str "Proof editing mode not supported in module types");
-	  start_proof_and_print env isevars (Some id) (Global, Proof thkind) (bl,t) hook
+	  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t) 
+	    (fun _ _ -> ())
+      | DefineBody (bl, _, c, tycon) -> 
+	  ignore(Subtac_pretyping.subtac_proof defkind env isevars id bl c tycon))
+  | VernacFixpoint (l, b) -> 
+      List.iter (fun ((lid, _, _, _, _), _) -> 
+	check_fresh lid;
+	dump_definition lid "fix") l;
+      let _ = trace (str "Building fixpoint") in
+	ignore(Subtac_command.build_recursive l b)
+	  
+  | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
+      if !Flags.dump then dump_definition id "prf";
+      if not(Pfedit.refining ()) then
+	if lettop then
+	  errorlabstrm "Subtac_command.StartProof"
+	    (str "Let declarations can only be used in proof editing mode");
+      if Lib.is_modtype () then
+	errorlabstrm "Subtac_command.StartProof"
+	  (str "Proof editing mode not supported in module types");
+      check_fresh id;
+      start_proof_and_print env isevars (Some id) (Global, Proof thkind) (bl,t) hook
+	
+  | VernacAssumption (stre,nl,l) -> 
+      vernac_assumption env isevars stre l nl
+	
+  | VernacInstance (glob, sup, is, props, pri) ->
+      if !Flags.dump then dump_constraint "inst" is;
+      ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
+	
+  | VernacCoFixpoint (l, b) ->
+      List.iter (fun ((lid, _, _, _), _) -> dump_definition lid "cofix") l;
+      ignore(Subtac_command.build_corecursive l b)
+	
+  (*| VernacEndProof e -> 
+    subtac_end_proof e*)
 
-
-      | VernacAssumption (stre,nl,l) -> 
-	  vernac_assumption env isevars stre l nl
-
-      | VernacInstance (glob, sup, is, props, pri) ->
-	  if !Flags.dump then dump_constraint "inst" is;
-	  ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
-
-      | VernacCoFixpoint (l, b) ->
-	  List.iter (fun ((lid, _, _, _), _) -> dump_definition lid "cofix") l;
-	  ignore(Subtac_command.build_corecursive l b)
-
-      (*| VernacEndProof e -> 
-	  subtac_end_proof e*)
-
-      | _ -> user_err_loc (loc,"", str ("Invalid Program command"))
+  | _ -> user_err_loc (loc,"", str ("Invalid Program command"))
   with 
-    | Typing_error e ->
-	msg_warning (str "Type error in Program tactic:");
-	let cmds = 
-	  (match e with
-	     | NonFunctionalApp (loc, x, mux, e) ->
-		 str "non functional application of term " ++ 
-		 e ++ str " to function " ++ x ++ str " of (mu) type " ++ mux
-	     | NonSigma (loc, t) ->
-		 str "Term is not of Sigma type: " ++ t
-	     | NonConvertible (loc, x, y) ->
-		 str "Unconvertible terms:" ++ spc () ++
-		   x ++ spc () ++ str "and" ++ spc () ++ y
-	     | IllSorted (loc, t) ->
-		 str "Term is ill-sorted:" ++ spc () ++ t
-	  )
-	in msg_warning cmds
-	     
-    | Subtyping_error e ->
-	msg_warning (str "(Program tactic) Subtyping error:");
-	let cmds = 
-	  match e with
-	    | UncoercibleInferType (loc, x, y) ->
-		str "Uncoercible terms:" ++ spc ()
-		++ x ++ spc () ++ str "and" ++ spc () ++ y
-	    | UncoercibleInferTerm (loc, x, y, tx, ty) ->
-		str "Uncoercible terms:" ++ spc ()
-		++ tx ++ spc () ++ str "of" ++ spc () ++ str "type" ++ spc () ++ x
-		++ str "and" ++ spc() ++ ty ++ spc () ++ str "of" ++ spc () ++ str "type" ++ spc () ++ y
-	    | UncoercibleRewrite (x, y) ->
-		str "Uncoercible terms:" ++ spc ()
-		++ x ++ spc () ++ str "and" ++ spc () ++ y
-	in msg_warning cmds
+  | Typing_error e ->
+      msg_warning (str "Type error in Program tactic:");
+      let cmds = 
+	(match e with
+	| NonFunctionalApp (loc, x, mux, e) ->
+	    str "non functional application of term " ++ 
+	      e ++ str " to function " ++ x ++ str " of (mu) type " ++ mux
+	| NonSigma (loc, t) ->
+	    str "Term is not of Sigma type: " ++ t
+	| NonConvertible (loc, x, y) ->
+	    str "Unconvertible terms:" ++ spc () ++
+	      x ++ spc () ++ str "and" ++ spc () ++ y
+	| IllSorted (loc, t) ->
+	    str "Term is ill-sorted:" ++ spc () ++ t
+	)
+      in msg_warning cmds
+	
+  | Subtyping_error e ->
+      msg_warning (str "(Program tactic) Subtyping error:");
+      let cmds = 
+	match e with
+	| UncoercibleInferType (loc, x, y) ->
+	    str "Uncoercible terms:" ++ spc ()
+	    ++ x ++ spc () ++ str "and" ++ spc () ++ y
+	| UncoercibleInferTerm (loc, x, y, tx, ty) ->
+	    str "Uncoercible terms:" ++ spc ()
+	    ++ tx ++ spc () ++ str "of" ++ spc () ++ str "type" ++ spc () ++ x
+	    ++ str "and" ++ spc() ++ ty ++ spc () ++ str "of" ++ spc () ++ str "type" ++ spc () ++ y
+	| UncoercibleRewrite (x, y) ->
+	    str "Uncoercible terms:" ++ spc ()
+	    ++ x ++ spc () ++ str "and" ++ spc () ++ y
+      in msg_warning cmds
 
-    | Cases.PatternMatchingError (env, exn) as e ->
-	debug 2 (Himsg.explain_pattern_matching_error env exn);
-	raise e
-    
-    | Type_errors.TypeError (env, exn) as e ->
-	debug 2 (Himsg.explain_type_error env exn);
-	raise e
-	  
-    | Pretype_errors.PretypeError (env, exn) as e ->
-	debug 2 (Himsg.explain_pretype_error env exn);
-	raise e
-	  
-    | (Stdpp.Exc_located (loc, e')) as e ->
-	debug 2 (str "Parsing exception: ");
-	(match e' with
-	   | Type_errors.TypeError (env, exn) ->
-	       debug 2 (Himsg.explain_type_error env exn);
-	       raise e
-		 
-	   | Pretype_errors.PretypeError (env, exn) ->
-	       debug 2 (Himsg.explain_pretype_error env exn);
-	       raise e
+  | Cases.PatternMatchingError (env, exn) as e ->
+      debug 2 (Himsg.explain_pattern_matching_error env exn);
+      raise e
+	
+  | Type_errors.TypeError (env, exn) as e ->
+      debug 2 (Himsg.explain_type_error env exn);
+      raise e
+	
+  | Pretype_errors.PretypeError (env, exn) as e ->
+      debug 2 (Himsg.explain_pretype_error env exn);
+      raise e
+	
+  | (Stdpp.Exc_located (loc, e')) as e ->
+      debug 2 (str "Parsing exception: ");
+      (match e' with
+      | Type_errors.TypeError (env, exn) ->
+	  debug 2 (Himsg.explain_type_error env exn);
+	  raise e
+	    
+      | Pretype_errors.PretypeError (env, exn) ->
+	  debug 2 (Himsg.explain_pretype_error env exn);
+	  raise e
 
-	   | e'' -> msg_warning (str "Unexpected exception: " ++ Cerrors.explain_exn e'');
-	       raise e)
-  
-    | e -> 
-	msg_warning (str "Uncatched exception: " ++ Cerrors.explain_exn e);
-	raise e
-
-
+      | e'' -> msg_warning (str "Unexpected exception: " ++ Cerrors.explain_exn e'');
+	  raise e)
+	
+  | e -> 
+      msg_warning (str "Uncatched exception: " ++ Cerrors.explain_exn e);
+      raise e
