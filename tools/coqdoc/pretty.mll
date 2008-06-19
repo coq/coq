@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C ../.. bin/coqdoc" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -246,6 +247,7 @@ let gallina_ext =
   | "Tactic" space+ "Notation"
   | "Reserved" space+ "Notation"
   | "Section"
+  | "Context"
   | "Variable" 's'?
   | ("Hypothesis" | "Hypotheses")
   | "End"

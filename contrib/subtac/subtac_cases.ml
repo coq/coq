@@ -1979,7 +1979,7 @@ let nf_evars_env evar_defs (env : env) : env =
       
 (* We put the tycon inside the arity signature, possibly discovering dependencies. *)
 
-let prepare_predicate_from_arsign_tycon loc env tomatchs arsign c =
+let prepare_predicate_from_arsign_tycon loc env evm tomatchs arsign c =
   let nar = List.fold_left (fun n sign -> List.length sign + n) 0 arsign in
   let subst, len = 
     List.fold_left2 (fun (subst, len) (tm, tmtype) sign ->
@@ -2016,7 +2016,13 @@ let prepare_predicate_from_arsign_tycon loc env tomatchs arsign c =
 	      mkRel (n + nar))
       | _ ->
 	  map_constr_with_binders succ predicate lift c 
-  in predicate 0 c
+  in
+    try 
+      (* The tycon may be ill-typed after abstraction. *)
+      let pred = predicate 0 c in
+      let env' = push_rel_context (context_of_arsign arsign) env in
+	ignore(Typing.sort_of env' evm pred); pred
+    with _ -> lift nar c
 
 let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =
 
@@ -2047,7 +2053,8 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 	match valcon_of_tycon tycon with
 	| None -> let ev = mkExistential env isevars in ev, ev
 	| Some t -> 
-	    t, prepare_predicate_from_arsign_tycon loc env tomatchs sign (lift tomatchs_len t)
+	    t, prepare_predicate_from_arsign_tycon loc env (Evd.evars_of !isevars)
+	      tomatchs sign (lift tomatchs_len t)
       in
       let arity = 
 	it_mkProd_or_LetIn (lift neqs arity) (context_of_arsign eqs)
