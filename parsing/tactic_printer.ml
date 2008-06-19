@@ -46,7 +46,8 @@ let uses_default_tac = function
 
 (* Does not print change of evars *)
 let pr_rule_dot = function 
-  | Prim Change_evars -> mt ()
+  | Prim Change_evars ->str "PC: ch_evars" ++  mt () 
+      (* PC: this might be redundant *)
   | r ->
       pr_rule r ++ if uses_default_tac r then str "..." else str"."
 
@@ -56,7 +57,8 @@ let pr_rule_dot_fnl = function
       (* Very big hack to not display hidden tactics in "Theorem with" *)
       (* (would not scale!) *)
       mt ()
-  | r -> pr_rule_dot r ++ fnl ()
+   | Prim Change_evars -> mt ()
+   | r -> pr_rule_dot r ++ fnl ()
 
 exception Different
 
@@ -96,7 +98,7 @@ let rec print_decl_script tac_printer nochange sigma pf =
 	 else 
 	   pr_change pf.goal)
 	++ fnl ()
-    | Some (Daimon,[]) -> mt ()
+    | Some (Daimon,[]) -> str "(* Some proof has been skipped here *)"
     | Some (Prim Change_evars,[subpf]) ->   
 	print_decl_script tac_printer nochange sigma subpf
     | Some (Nested(Proof_instr (opened,instr),_) as rule,subprfs) ->
@@ -104,31 +106,31 @@ let rec print_decl_script tac_printer nochange sigma pf =
 	  match instr.instr,subprfs with
 	    Pescape,[{ref=Some(_,subsubprfs)}] ->
 	      hov 7
-		(pr_rule_dot rule ++ fnl () ++
+		(pr_rule_dot_fnl rule ++
 		   prlist_with_sep pr_fnl tac_printer subsubprfs) ++ fnl () ++
 		if opened then mt () else str "return."
 	  | Pclaim _,[body;cont] ->
 	      hov 2
-		(pr_rule_dot rule ++ fnl () ++
+		(pr_rule_dot_fnl rule ++
 		   print_decl_script tac_printer nochange sigma body) ++ 
 		fnl () ++
 		if opened then mt () else str "end claim." ++ fnl () ++
 		  print_decl_script tac_printer nochange sigma cont
 	  | Pfocus _,[body;cont] ->
 	      hov 2 
-		(pr_rule_dot rule ++ fnl () ++
+		(pr_rule_dot_fnl rule ++
 		   print_decl_script tac_printer nochange sigma body) ++ 
 		fnl () ++
 		if opened then mt () else str "end focus." ++ fnl () ++
 		  print_decl_script tac_printer nochange sigma cont
 	  | (Psuppose _ |Pcase (_,_,_)),[body;cont] ->
 	      hov 2 
-		(pr_rule_dot rule ++ fnl () ++
+		(pr_rule_dot_fnl rule ++
 		   print_decl_script tac_printer nochange sigma body) ++ 
 		fnl () ++
 		print_decl_script tac_printer nochange sigma cont 
 	  | _,[next] ->
-	      pr_rule_dot rule ++ fnl () ++
+	      pr_rule_dot_fnl rule ++
 		print_decl_script tac_printer nochange sigma next
 	  | _,[] ->
 	      pr_rule_dot rule		
@@ -197,7 +199,7 @@ let print_treescript nochange sigma pf =
     | Some(r,spfl) ->
         let indent = if List.length spfl >= 2 then 1 else 0 in
         (if nochange then mt () else (pr_change pf.goal ++ fnl ())) ++
-        hv indent (pr_rule_dot_fnl r ++ prlist_with_sep fnl aux spfl)
+        hv indent (pr_rule_dot_fnl r ++ prlist_with_sep mt aux spfl)
   in hov 0 (aux pf)
 
 let rec print_info_script sigma osign pf =
