@@ -225,7 +225,7 @@ Fixpoint index (n : nat) (s1 s2 : string) {struct s2} : option nat :=
       end
   end.
 
-(* Dirty trick to evaluate locally that prefix reduces itself *)
+(* Dirty trick to avoid locally that prefix reduces itself *)
 Opaque prefix.
 
 (** If the result of [index] is [Some m], [s1] in [s2] at position [m] *)
