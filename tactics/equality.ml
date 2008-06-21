@@ -571,8 +571,9 @@ let discr_positions env sigma (lbeq,(t,t1,t2)) eq_clause cpath dirn sort =
   let (pf, absurd_term) = discrimination_pf e (t,t1,t2) discriminator lbeq in
   let pf_ty = mkArrow eqn absurd_term in
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
+  let pf = clenv_value_cast_meta absurd_clause in
   tclTHENS (cut_intro absurd_term)
-    [onLastHyp gen_absurdity; res_pf absurd_clause]
+    [onLastHyp gen_absurdity; refine pf]
 
 let discrEq (lbeq,(t,t1,t2) as u) eq_clause gls =
   let sigma = Evd.evars_of eq_clause.evd in
