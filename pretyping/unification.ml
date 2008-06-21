@@ -461,8 +461,10 @@ let order_metas metas =
 
 let solve_simple_evar_eqn env evd ev rhs =
   let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (CONV,ev,rhs) in
-  if b & snd (extract_all_conv_pbs evd) = [] then evd
-  else error_cannot_unify env (evars_of evd) (mkEvar ev,rhs)
+  if not b then error_cannot_unify env (evars_of evd) (mkEvar ev,rhs);
+  let (evd,b) = Evarconv.consider_remaining_unif_problems env evd in
+  if not b then error "Cannot solve unification constraints";
+  evd
 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]
