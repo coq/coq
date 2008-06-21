@@ -210,6 +210,15 @@ let interp_fields_evars isevars env avoid l =
 	(push_named d env, impl :: uimpls, Idset.add i ids, d::params, ([], data :: snd impls)))
     (env, [], avoid, [], ([], [])) l    
 
+let interp_fields_rel_evars isevars env avoid l =
+  List.fold_left
+    (fun (env, uimpls, ids, params, impls) ((loc, i), _, t) -> 
+      let impl, t' = interp_type_evars isevars env ~impls t in
+      let data = mk_interning_data env i impl t' in
+      let d = (Name i,None,t') in
+	(push_rel d env, impl :: uimpls, Idset.add i ids, d::params, ([], data :: snd impls)))
+    (env, [], avoid, [], ([], [])) l    
+
 let name_typeclass_binder avoid = function
   | LocalRawAssum ([loc, Anonymous], bk, c) ->
       let name = 
@@ -244,8 +253,17 @@ let decompose_named_assum =
       | _               -> l,c
   in prodec_rec [] []
       
-let push_named_context = List.fold_right push_named
+let push_named_context = 
+  List.fold_right push_named
 
+let named_of_rel_context (subst, ids, env as init) ctx =
+  Sign.fold_rel_context
+    (fun (na,c,t) (subst, avoid, env) ->
+      let id = Nameops.next_name_away na avoid in
+      let d = (id,Option.map (substl subst) c,substl subst t) in
+	(mkVar id :: subst, id::avoid, d::env))
+    ctx ~init
+    
 let new_class id par ar sup props =
   let env0 = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
@@ -271,25 +289,24 @@ let new_class id par ar sup props =
     let term = prod_constr_expr (prod_constr_expr arity par) sup in
       interp_type_evars isevars env0 term      
   in
-  let ctx_params, arity = decompose_named_assum fullarity in
-  let env_params = push_named_context ctx_params env0 in
+  let ctx_params, arity = decompose_prod_assum fullarity in
+  let env_params = push_rel_context ctx_params env0 in
     
   (* Interpret the definitions and propositions *)
   let env_props, prop_impls, bound, ctx_props, _ = 
-    interp_fields_evars isevars env_params bound props 
+    interp_fields_rel_evars isevars env_params bound props 
   in
   let subs = List.map (fun ((loc, id), b, _) -> b) props in
   (* Instantiate evars and check all are resolved *)
   let isevars,_ = Evarconv.consider_remaining_unif_problems env_props !isevars in
   let isevars = Typeclasses.resolve_typeclasses env_props isevars in
   let sigma = Evd.evars_of isevars in
-  let ctx_params = Evarutil.nf_named_context_evar sigma ctx_params in
-  let ctx_props = Evarutil.nf_named_context_evar sigma ctx_props in
+  let ctx_params = Evarutil.nf_rel_context_evar sigma ctx_params in
+  let ctx_props = Evarutil.nf_rel_context_evar sigma ctx_props in
   let arity = Reductionops.nf_evar sigma arity in
   let ce t = Evarutil.check_evars env0 Evd.empty isevars t in
   let impl, projs = 
-    let params, subst = rel_of_named_context [] ctx_params in
-    let fields, _ = rel_of_named_context subst ctx_props in
+    let params = ctx_params and fields = ctx_props in
       List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
       match fields with
 	  [(Name proj_name, _, field)] ->
@@ -327,18 +344,21 @@ let new_class id par ar sup props =
 	      IndRef kn, (List.map2 (fun (id, _, _) y -> Nameops.out_name id, Option.get y)
 			     fields (Recordops.lookup_projections kn))
   in
+  let ids = List.map pi1 (named_context env0) in
+  let (subst, ids, named_ctx_params) = named_of_rel_context ([], ids, []) ctx_params in
+  let (_, _, named_ctx_props) = named_of_rel_context (subst, ids, []) ctx_props in
   let ctx_context =
     List.map (fun ((na, b, t) as d) -> 
       match Typeclasses.class_of_constr t with
-	| Some cl -> (Some (cl.cl_impl, List.exists (fun (_, n) -> n = Name na) supnames), d)
-	| None -> (None, d))
-      ctx_params
+      | Some cl -> (Some (cl.cl_impl, List.exists (fun (_, n) -> n = Name na) supnames), d)
+      | None -> (None, d))
+      named_ctx_params
   in
   let k =
     { cl_impl = impl;
       cl_params = List.length par;
       cl_context = ctx_context;
-      cl_props = ctx_props;
+      cl_props = named_ctx_props;
       cl_projs = projs }
   in
     declare_implicits (List.rev prop_impls) subs k;
