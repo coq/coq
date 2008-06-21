@@ -39,8 +39,6 @@ val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
 val free_vars_of_binders :
   ?bound:Idset.t -> Names.identifier list -> local_binder list -> Idset.t * Names.identifier list
 
-val compute_constrs_freevars : Idset.t -> constr_expr list -> identifier list
-val compute_constrs_freevars_binders : Idset.t -> constr_expr list -> (identifier located * constr_expr) list
 val resolve_class_binders : Idset.t -> typeclass_context -> 
   (identifier located * constr_expr) list * typeclass_context
 
@@ -49,20 +47,12 @@ val full_class_binders : Idset.t -> typeclass_context -> typeclass_context
 val generalize_class_binders_raw : Idset.t -> typeclass_context -> 
   (name located * binding_kind * constr_expr) list * (name located * binding_kind * constr_expr) list
 
-val ctx_of_class_binders : Idset.t -> typeclass_context -> local_binder list
-
-val implicits_of_binders : local_binder list -> (Topconstr.explicitation * (bool * bool)) list
-
 val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool)) list
 
 val combine_params : Names.Idset.t ->
-  (Names.Idset.t -> (global_reference * bool) option * (Names.identifier * Term.constr option * Term.types) ->
+  (Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->
     Topconstr.constr_expr * Names.Idset.t) ->
   (Topconstr.constr_expr * Topconstr.explicitation located option) list ->
-  ((global_reference * bool) option * Term.named_declaration) list ->
+  ((global_reference * bool) option * Term.rel_declaration) list ->
   Topconstr.constr_expr list * Names.Idset.t
-
-
-val ids_of_named_context_avoiding :     Names.Idset.t ->
-    Sign.named_context -> Names.Idset.elt list * Names.Idset.t
 

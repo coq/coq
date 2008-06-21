@@ -29,7 +29,7 @@ type typeclass_error =
     | UnboundMethod of global_reference * identifier located (* Class name, method *)
     | NoInstance of identifier located * constr list
     | UnsatisfiableConstraints of evar_defs * (evar_info * hole_kind) option
-    | MismatchedContextInstance of contexts * constr_expr list * named_context (* found, expected *)
+    | MismatchedContextInstance of contexts * constr_expr list * rel_context (* found, expected *)
 
 exception TypeClassError of env * typeclass_error
 

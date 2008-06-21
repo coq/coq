@@ -536,7 +536,7 @@ let explain_unsatisfiable_constraints env evd constr =
 	
 let explain_mismatched_contexts env c i j = 
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
-    hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_named_context env j) ++ fnl () ++ brk (1,1) ++ 
+    hov 1 (str"Expected:" ++ brk (1, 1) ++ pr_rel_context env j) ++ fnl () ++ brk (1,1) ++ 
     hov 1 (str"Found:" ++ brk (1, 1) ++ pr_constr_exprs i)
 
 let explain_typeclass_error env err = 

@@ -23,17 +23,24 @@ open Typeclasses
 open Implicit_quantifiers
 (*i*)
 
+(* Errors *)
+
+val mismatched_params : env -> constr_expr list -> rel_context -> 'a
+
+val mismatched_props : env -> constr_expr list -> rel_context -> 'a
+
 type binder_list = (identifier located * bool * constr_expr) list
 type binder_def_list = (identifier located * identifier located list * constr_expr) list
  
 val binders_of_lidents : identifier located list -> local_binder list
 
+val name_typeclass_binders : Idset.t ->
+    Topconstr.local_binder list ->
+    Topconstr.local_binder list * Idset.t
+
 val declare_implicit_proj : typeclass -> (identifier * constant) -> 
   Impargs.manual_explicitation list -> bool -> unit
-(*
-val infer_super_instances : env -> constr list ->
-  named_context -> named_context -> types list * identifier list * named_context
-*)
+
 val new_class : identifier located ->
   local_binder list ->
   Vernacexpr.sort_expr located option ->
@@ -45,6 +52,10 @@ val new_class : identifier located ->
 val default_on_free_vars : identifier list -> unit
 
 val fail_on_free_vars : identifier list -> unit
+
+(* Instance declaration *)
+
+val declare_instance : bool -> identifier located -> unit
 
 val declare_instance_constant :
   typeclass ->
@@ -69,35 +80,14 @@ val new_instance :
   identifier
 
 (* For generation on names based on classes only *)
+
 val id_of_class : typeclass -> identifier
-    
+
+(* Context command *)    
+
 val context : ?hook:(Libnames.global_reference -> unit) -> typeclass_context -> unit
 
-val declare_instance : bool -> identifier located -> unit
-
-val mismatched_params : env -> constr_expr list -> named_context -> 'a
-
-val mismatched_props : env -> constr_expr list -> named_context -> 'a
-
-val solve_by_tac :     env ->
-    Evd.evar_defs ->
-    Evd.evar ->
-  evar_info ->
-  Proof_type.tactic ->
-    Evd.evar_defs * bool
-
-val solve_evars_by_tac :     env ->
-    Evd.evar_defs ->
-  Proof_type.tactic ->
-  Evd.evar_defs
+(* Forward ref for refine *)
 
 val refine_ref : (open_constr -> Proof_type.tactic) ref
-
-val decompose_named_assum : types -> named_context * types
-
-val push_named_context : named_context -> env -> env
-
-val name_typeclass_binders : Idset.t ->
-    Topconstr.local_binder list ->
-    Topconstr.local_binder list * Idset.t
 

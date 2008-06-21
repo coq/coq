@@ -29,7 +29,6 @@ open Pp
 let ids_of_list l = 
   List.fold_right Idset.add l Idset.empty
 
-
 let locate_reference qid =
   match Nametab.extended_locate qid with
     | TrueGlobal ref -> true
@@ -88,44 +87,17 @@ let rec make_fresh ids env x =
 let freevars_of_ids env ids = 
   List.filter (is_freevar env (Global.env())) ids
 
-let compute_constrs_freevars env constrs =
-  let ids = 
-    List.rev (List.fold_left 
-		 (fun acc x -> free_vars_of_constr_expr x acc) 
-		 [] constrs)
-  in freevars_of_ids env ids
-
-(* let compute_context_freevars env ctx = *)
-(*   let ids = *)
-(*     List.rev *)
-(*       (List.fold_left *)
-(* 	  (fun acc (_,i,x) -> free_vars_of_constr_expr x acc) *)
-(* 	  [] constrs) *)
-(*   in freevars_of_ids ids *)
-
-let compute_constrs_freevars_binders env constrs =
-  let elts = compute_constrs_freevars env constrs in
-    List.map (fun id -> (dummy_loc, id), CHole (dummy_loc, None)) elts
-
 let binder_list_of_ids ids =
   List.map (fun id -> LocalRawAssum ([dummy_loc, Name id], Default Implicit, CHole (dummy_loc, None))) ids
       
 let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
-(*   let rec name_rec id = *)
-(*     if Idset.mem id avoid then name_rec (Nameops.lift_ident id) else id in  *)
-(*   name_rec id  *)
-
-let ids_of_named_context_avoiding avoid l =
-  List.fold_left (fun (ids, avoid) id -> 
-    let id' = next_ident_away_from id avoid in id' :: ids, Idset.add id' avoid) 
-    ([], avoid) (Termops.ids_of_named_context l)
     
 let combine_params avoid fn applied needed =
   let named, applied = 
     List.partition 
       (function
 	  (t, Some (loc, ExplByName id)) -> 
-	    if not (List.exists (fun (_, (id', _, _)) -> id = id') needed) then
+	    if not (List.exists (fun (_, (id', _, _)) -> Name id = id') needed) then
 	      user_err_loc (loc,"",str "Wrong argument name: " ++ Nameops.pr_id id);
 	    true
 	| _ -> false) applied
@@ -138,13 +110,13 @@ let combine_params avoid fn applied needed =
     match app, need with
 	[], [] -> List.rev ids, avoid
 
-      | app, (_, (id, _, _)) :: need when List.mem_assoc id named ->
+      | app, (_, (Name id, _, _)) :: need when List.mem_assoc id named ->
 	  aux (List.assoc id named :: ids) avoid app need
 	    
-      | (x, None) :: app, (None, (id, _, _)) :: need ->
+      | (x, None) :: app, (None, (Name id, _, _)) :: need ->
 	  aux (x :: ids) avoid app need
 	    
-      | _, (Some cl, (id, _, _) as d) :: need -> 
+      | _, (Some cl, (Name id, _, _) as d) :: need -> 
 	  let t', avoid' = fn avoid d in
 	    aux (t' :: ids) avoid' app need
 
@@ -155,12 +127,14 @@ let combine_params avoid fn applied needed =
 	    aux (t' :: ids) avoid' app need
 
       | _ :: _, [] -> failwith "combine_params: overly applied typeclass"
+
+      | _, _ -> raise (Invalid_argument "combine_params")
   in aux [] avoid applied needed
 
 let combine_params_freevar avoid applied needed =
   combine_params avoid
     (fun avoid (_, (id, _, _)) -> 
-      let id' = next_ident_away_from id avoid in
+      let id' = next_ident_away_from (Nameops.out_name id) avoid in
 	(CRef (Ident (dummy_loc, id')), Idset.add id' avoid))
     applied needed
 
@@ -201,19 +175,6 @@ let full_class_binders env l =
 	| Explicit -> (x :: l', avoid))
       ([], avoid) l
   in List.rev l'
-      
-let constr_expr_of_constraint (kind, id) l =
-  match kind with
-    | Implicit -> CAppExpl (fst id, (None, Ident id), l)
-    | Explicit -> CApp (fst id, (None, CRef (Ident id)),
-		       List.map (fun x -> x, None) l)
-
-(*    | CApp of loc * (proj_flag * constr_expr) *  *)
-(*         (constr_expr * explicitation located option) list *)
-
-
-let constrs_of_context l =
-  List.map (fun (_, id, l) -> constr_expr_of_constraint id l) l
 
 let compute_context_freevars env ctx =
   let bound, ids = 
@@ -232,41 +193,12 @@ let resolve_class_binders env l =
   in
     fv_ctx, ctx
 
-let generalize_class_binders env l = 
-  let fv_ctx, cstrs = resolve_class_binders env l in
-    List.map (fun ((loc, id), t) -> LocalRawAssum ([loc, Name id], Default Implicit, t)) fv_ctx,
-  List.map (fun (iid, bk, c) -> LocalRawAssum ([iid], Default Implicit, c)) 
-    cstrs
-
 let generalize_class_binders_raw env l = 
   let env = Idset.union env (Termops.vars_of_env (Global.env())) in
   let fv_ctx, cstrs = resolve_class_binders env l in
     List.map (fun ((loc, id), t) -> ((loc, Name id), Implicit, t)) fv_ctx,
   List.map (fun (iid, bk, c) -> (iid, Implicit, c)) cstrs
-
-let ctx_of_class_binders env l = 
-  let (x, y) = generalize_class_binders env l in x @ y
 	
-let implicits_of_binders l = 
-  let rec aux i l = 
-    match l with 
-	[] -> []
-      | hd :: tl -> 
-	  let res, reslen = 
-	    match hd with
-		LocalRawAssum (nal, Default Implicit, t) -> 
-		  list_map_i (fun i (_,id) ->
-		    let name =
-		      match id with
-			  Name id -> Some id
-			| Anonymous -> None
-		    in ExplByPos (i, name), (true, true))
-		    i nal, List.length nal
-	      | LocalRawAssum (nal, _, _) -> [], List.length nal
-	      | LocalRawDef _ -> [], 1
-	  in res @ (aux (i + reslen) tl)
-  in aux 1 l
-  
 let implicits_of_rawterm l = 
   let rec aux i c = 
     match c with

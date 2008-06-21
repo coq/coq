@@ -1275,23 +1275,6 @@ let intern_ltac isarity ltacvars sigma env c =
 
 type manual_implicits = (explicitation * (bool * bool)) list
 
-let implicits_of_rawterm l = 
-  let rec aux i c = 
-    match c with
-	RProd (loc, na, bk, t, b) | RLambda (loc, na, bk, t, b) -> 
-	  let rest = aux (succ i) b in
-	    if bk = Implicit then
-	      let name =
-		match na with
-		    Name id -> Some id
-		  | Anonymous -> None
-	      in
-		(ExplByPos (i, name), (true, true)) :: rest
-	    else rest
-      | RLetIn (loc, na, t, b) -> aux i b
-      | _ -> []
-  in aux 1 l
-
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
 
@@ -1321,11 +1304,11 @@ let interp_constr_evars_gen_impls ?evdref
   match evdref with 
     | None -> 
 	let c = intern_gen (kind=IsType) ~impls Evd.empty env c in
-	let imps = implicits_of_rawterm c in
+	let imps = Implicit_quantifiers.implicits_of_rawterm c in
 	  Default.understand_gen kind Evd.empty env c, imps
     | Some evdref ->
 	let c = intern_gen (kind=IsType) ~impls (Evd.evars_of !evdref) env c in
-	let imps = implicits_of_rawterm c in
+	let imps = Implicit_quantifiers.implicits_of_rawterm c in
 	  Default.understand_tcc_evars evdref env kind c, imps
 
 let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
