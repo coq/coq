@@ -1183,11 +1183,12 @@ let split_tycon loc env evd tycon =
 		 if cur = 0 then 
 		   let evd', (x, dom, rng) = real_split c in
 		     evd, (Anonymous, 
-			       Some (Some (init, 0), dom), 
-			       Some (Some (init, 0), rng))
+			  Some (None, dom), 
+			  Some (None, rng))
 		 else
-		   evd, (Anonymous, None, Some (Some (init, pred cur), c)))
-
+		   evd, (Anonymous, None, 
+			Some (if cur = 1 then None,c else Some (init, pred cur), c)))
+	    
 let valcon_of_tycon x = 
   match x with
     | Some (None, t) -> Some t

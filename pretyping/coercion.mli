@@ -39,6 +39,10 @@ module type S = sig
      type its base type (the notion depends on the coercion system) *)
   val inh_coerce_to_base : loc ->
     env -> evar_defs -> unsafe_judgment -> evar_defs * unsafe_judgment
+
+  (* [inh_coerce_to_prod env isevars t] coerces [t] to a product type *)
+  val inh_coerce_to_prod : loc ->
+    env -> evar_defs -> type_constraint_type -> evar_defs * type_constraint_type
     
   (* [inh_conv_coerce_to loc env isevars j t] coerces [j] to an object of type 
      [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
