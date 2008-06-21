@@ -43,6 +43,29 @@ intros; injection H as Hyt Hxz.
 exact Hxz.
 Qed.
 
+(* Check the variants of injection *)
+
+Goal forall x y, S x = S y -> True.
+injection 1 as H'.
+Undo.
+intros.
+injection H as H'.
+Undo.
+Ltac f x := injection x.
+f H.
+Abort.
+
+Goal (forall x y : nat, x = y -> S x = S y) -> True.
+intros.
+try injection (H O) || exact I.
+Qed.
+
+Goal (forall x y : nat, x = y -> S x = S y) -> True.
+intros.
+einjection (H O).
+instantiate (1:=O).
+Abort.
+
 (* Injection does not projects at positions in Prop... allow it?
 
 Inductive t (A:Prop) : Set := c : A -> t A.
@@ -53,7 +76,7 @@ Abort.
 
 *)
 
-(* Accept does not project on discriminable positions... allow it?
+(* Injection does not project on discriminable positions... allow it?
 
 Goal 1=2 -> 1=0.
 intro H.
@@ -61,4 +84,4 @@ injection H.
 intro; assumption.
 Qed.
 
- *)
+*)

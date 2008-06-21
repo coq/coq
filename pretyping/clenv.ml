@@ -222,13 +222,24 @@ let dependent_metas clenv mvs conclmetas =
        Metaset.union deps (clenv_metavars clenv.evd mv))
     mvs conclmetas
 
+let duplicated_metas c = 
+  let rec collrec (one,more as acc) c =
+    match kind_of_term c with
+    | Meta mv -> if List.mem mv one then (one,mv::more) else (mv::one,more)
+    | _       -> fold_constr collrec acc c
+  in
+  snd (collrec ([],[]) c)
+
 let clenv_dependent hyps_only clenv =
   let mvs = undefined_metas clenv.evd in
   let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
   let deps = dependent_metas clenv mvs ctyp_mvs in
+  let nonlinear = duplicated_metas (clenv_value clenv) in
+  (* Make the assumption that duplicated metas have internal dependencies *)
   List.filter
-    (fun mv -> Metaset.mem mv deps &&
-               not (hyps_only && Metaset.mem mv ctyp_mvs))
+    (fun mv -> (Metaset.mem mv deps &&
+                not (hyps_only && Metaset.mem mv ctyp_mvs))
+               or List.mem mv nonlinear) 
     mvs
 
 let clenv_missing ce = clenv_dependent true ce

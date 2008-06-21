@@ -9,10 +9,9 @@
 (*i $Id$ i*)
 
 open Proof_type
-open Rawterm
 
-val h_discrHyp : quantified_hypothesis -> tactic
-val h_injHyp : quantified_hypothesis -> tactic
+val h_discrHyp : Names.identifier -> tactic
+val h_injHyp : Names.identifier -> tactic
 
 val refine_tac : Evd.open_constr -> tactic
 

@@ -525,7 +525,7 @@ let compute_bl_tact ind lnamesparrec nparrec  =
                      intro_using freshz;
                      intros;
                      tclTRY ( 
-                      tclORELSE reflexivity (Equality.discr_tac None)
+                      tclORELSE reflexivity (Equality.discr_tac false None)
                      );
                      simpl_in_hyp
 		       ((Rawterm.all_occurrences_expr,freshz),Tacexpr.InHyp);
@@ -643,9 +643,10 @@ let compute_lb_tact ind lnamesparrec nparrec =
                      intro_using freshz;
                      intros;
                      tclTRY ( 
-                      tclORELSE reflexivity (Equality.discr_tac None)
+                      tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Equality.inj [] freshz; intros; simpl_in_concl;
+                     Equality.inj [] false (mkVar freshz,Rawterm.NoBindings);
+		     intros; simpl_in_concl;
                      Auto.default_auto;
                      tclREPEAT (
                       tclTHENSEQ [apply (andb_true_intro());
@@ -806,6 +807,6 @@ let compute_dec_tact ind lnamesparrec nparrec =
                                 Rawterm.NoBindings
                               )
                               true);
-        Pfedit.by (Equality.discr_tac None)
+        Pfedit.by (Equality.discr_tac false None)
         
 

@@ -643,6 +643,20 @@ type unsolvability_explanation = SeveralInstancesFound of int
 (**********************************************************)
 (* Pretty-printing *)
 
+let pr_instance_status (sc,typ) =
+  begin match sc with
+  | IsSubType -> str " [or a subtype of it]"
+  | IsSuperType -> str " [or a supertype of it]"
+  | ConvUpToEta 0 -> mt ()
+  | UserGiven -> mt ()
+  | ConvUpToEta n -> str" [or an eta-expansion up to " ++ int n ++ str" of it]"
+  end ++
+  begin match typ with
+  | CoerceToType -> str " [up to coercion]"
+  | TypeNotProcessed -> mt ()
+  | TypeProcessed -> str " [type is checked]"
+  end
+
 let pr_meta_map mmap =
   let pr_name = function
       Name id -> str"[" ++ pr_id id ++ str"]"
@@ -652,10 +666,10 @@ let pr_meta_map mmap =
       	hov 0 
 	  (pr_meta mv ++ pr_name na ++ str " : " ++
            print_constr b.rebus ++ fnl ())
-    | (mv,Clval(na,(b,_),_)) ->
+    | (mv,Clval(na,(b,s),_)) ->
       	hov 0 
 	  (pr_meta mv ++ pr_name na ++ str " := " ++
-           print_constr b.rebus ++ fnl ())
+           print_constr b.rebus ++ spc () ++ pr_instance_status s ++ fnl ())
   in
   prlist pr_meta_binding (metamap_to_list mmap)
 

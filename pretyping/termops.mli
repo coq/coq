@@ -185,6 +185,9 @@ val mkLambda_or_LetIn_name : env -> constr -> rel_declaration -> constr
 val it_mkProd_or_LetIn_name   : env -> types -> rel_context -> types
 val it_mkLambda_or_LetIn_name : env -> constr -> rel_context -> constr
 
+(* Get the last arg of a constr intended to be nn application *)
+val last_arg : constr -> constr
+
 (* name contexts *)
 type names_context = name list
 val add_name : name -> names_context -> names_context

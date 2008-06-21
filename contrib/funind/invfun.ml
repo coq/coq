@@ -573,9 +573,9 @@ let rec reflexivity_with_destruct_cases g =
 	       match kind_of_term  (pf_type_of g (mkVar id)) with 
 		 | App(eq,[|_;t1;t2|]) when eq_constr eq eq_ind -> 
 		     if Equality.discriminable (pf_env g) (project g) t1 t2 
-		     then Equality.discr id g
+		     then Equality.discrHyp id g
 		     else if Equality.injectable (pf_env g) (project g) t1 t2
-		     then tclTHENSEQ [Equality.inj [] id;thin [id];intros_with_rewrite]  g
+		     then tclTHENSEQ [Equality.injHyp id;thin [id];intros_with_rewrite]  g
 		     else tclIDTAC g
 		 | _ -> tclIDTAC g
     )

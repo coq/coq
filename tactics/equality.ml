@@ -40,6 +40,9 @@ open Vernacexpr
 open Setoid_replace
 open Declarations
 open Indrec
+open Printer
+open Clenv
+open Clenvtac
 
 (* Rewriting tactics *)
 
@@ -550,66 +553,84 @@ exception NotDiscriminable
 
 let eq_baseid = id_of_string "e"
 
-let discr_positions env sigma (lbeq,(t,t1,t2)) id cpath dirn sort =
+let apply_on_clause (f,t) clause =
+  let sigma = Evd.evars_of clause.evd in
+  let f_clause = mk_clenv_from_env clause.env sigma None (f,t) in
+  let argmv = 
+    (match kind_of_term (last_arg f_clause.templval.Evd.rebus) with
+     | Meta mv -> mv
+     | _  -> errorlabstrm "" (str "Ill-formed clause applicator")) in
+  clenv_fchain argmv f_clause clause
+
+let discr_positions env sigma (lbeq,(t,t1,t2)) eq_clause cpath dirn sort =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (e,None,t) env in
+  let eqn = mkApp(lbeq.eq,[|t;t1;t2|]) in
   let discriminator =
     build_discriminator sigma e_env dirn (mkVar e) sort cpath in
   let (pf, absurd_term) = discrimination_pf e (t,t1,t2) discriminator lbeq in
-  tclCOMPLETE 
-    ((tclTHENS (cut_intro absurd_term)
-      [onLastHyp gen_absurdity; 
-       refine (mkApp (pf,[|mkVar id|]))]))
+  let pf_ty = mkArrow eqn absurd_term in
+  let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
+  tclTHENS (cut_intro absurd_term)
+    [onLastHyp gen_absurdity; res_pf absurd_clause]
 
-let discrEq (lbeq,(t,t1,t2) as u) id gls =
-  let sigma = project gls in
+let discrEq (lbeq,(t,t1,t2) as u) eq_clause gls =
+  let sigma = Evd.evars_of eq_clause.evd in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
     | Inr _ ->
-	errorlabstrm "discr" (str" Not a discriminable equality")
+	errorlabstrm "discr" (str"Not a discriminable equality")
     | Inl (cpath, (_,dirn), _) ->
 	let sort = pf_apply get_type_of gls (pf_concl gls) in 
-	discr_positions env sigma u id cpath dirn sort gls
+	discr_positions env sigma u eq_clause cpath dirn sort gls
 
-let onEquality tac id gls =
-  let eqn = pf_whd_betadeltaiota gls (pf_get_hyp_typ gls id) in
+let onEquality with_evars tac (c,lbindc) gls =
+  let t = pf_type_of gls c in
+  let t' = try snd (pf_reduce_to_quantified_ind gls t) with UserError _ -> t in
+  let eq_clause = make_clenv_binding gls (c,t') lbindc in
+  let eq_clause' = clenv_pose_dependent_evars with_evars eq_clause in
+  let eqn = clenv_type eq_clause' in
   let eq =
     try find_eq_data_decompose eqn
     with PatternMatchingFailure ->
-      errorlabstrm "" (pr_id id ++ str": not a primitive equality") 
-  in tac eq id gls
+      errorlabstrm "" (str"No primitive equality found") in
+  tclTHEN
+    (Refiner.tclEVARS (Evd.evars_of eq_clause'.evd)) 
+    (tac eq eq_clause') gls
 
-let onNegatedEquality tac gls =
+let onNegatedEquality with_evars tac gls =
   let ccl = pf_concl gls in
-  let eq =
-    try match kind_of_term (hnf_constr (pf_env gls) (project gls) ccl) with
-      | Prod (_,t,u) when is_empty_type u ->
-          find_eq_data_decompose (pf_whd_betadeltaiota gls t)
-      | _ -> raise PatternMatchingFailure
-    with PatternMatchingFailure ->
+  match kind_of_term (hnf_constr (pf_env gls) (project gls) ccl) with
+  | Prod (_,t,u) when is_empty_type u ->
+      tclTHEN introf
+        (onLastHyp (fun id -> 
+          onEquality with_evars tac (mkVar id,NoBindings))) gls
+  | _ -> 
       errorlabstrm "" (str "Not a negated primitive equality")
-  in tclTHEN introf (onLastHyp (tac eq)) gls
 
-let discrSimpleClause = function
-  | None -> onNegatedEquality discrEq
-  | Some ((_,id),_) -> onEquality discrEq id
+let discrSimpleClause with_evars = function
+  | None -> onNegatedEquality with_evars discrEq
+  | Some ((_,id),_) -> onEquality with_evars discrEq (mkVar id,NoBindings)
 
-let discr = onEquality discrEq
+let discr with_evars = onEquality with_evars discrEq
 
-let discrClause = onClauses discrSimpleClause
+let discrClause with_evars = onClauses (discrSimpleClause with_evars)
 
-let discrEverywhere = 
+let discrEverywhere with_evars = 
   tclORELSE
-    (Tacticals.tryAllClauses discrSimpleClause)
+    (tclTHEN
+      (tclREPEAT introf) 
+      (Tacticals.tryAllHyps
+        (fun id -> tclCOMPLETE (discr with_evars (mkVar id,NoBindings)))))
     (fun gls -> 
        errorlabstrm "DiscrEverywhere" (str"No discriminable equalities"))
 
-let discr_tac = function
-  | None -> discrEverywhere
-  | Some id -> try_intros_until discr id
+let discr_tac with_evars = function
+  | None -> discrEverywhere with_evars
+  | Some c -> onInductionArg (discr with_evars) c
 
-let discrConcl gls  = discrClause onConcl gls
-let discrHyp id gls = discrClause (onHyp id) gls
+let discrConcl gls  = discrClause false onConcl gls
+let discrHyp id gls = discrClause false (onHyp id) gls
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)
@@ -828,7 +849,7 @@ let simplify_args env sigma t =
     | eq, [t1;c1;t2;c2] -> applist (eq,[t1;nf env sigma c1;t2;nf env sigma c2])
     | _ -> t
 
-let inject_at_positions env sigma (eq,(t,t1,t2)) id posns =
+let inject_at_positions env sigma (eq,(t,t1,t2)) eq_clause posns =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (e,None,t) env in
   let injectors =
@@ -837,9 +858,12 @@ let inject_at_positions env sigma (eq,(t,t1,t2)) id posns =
         (* arbitrarily take t1' as the injector default value *)
 	let (injbody,resty) = build_injector sigma e_env t1' (mkVar e) cpath in
 	let injfun = mkNamedLambda e t injbody in
-	let pf = applist(eq.congr,[t;resty;injfun;t1;t2;mkVar id]) in
-	let ty = simplify_args env sigma (get_type_of env sigma pf) in
-	  (pf,ty))
+	let pf = applist(eq.congr,[t;resty;injfun;t1;t2]) in
+	let pf_typ = get_type_of env sigma pf in
+	let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
+        let pf = clenv_value_cast_meta inj_clause in
+	let ty = simplify_args env sigma (clenv_type inj_clause) in
+	(pf,ty))
       posns in
   if injectors = [] then
     errorlabstrm "Equality.inj" (str "Failed to decompose the equality");
@@ -850,14 +874,13 @@ let inject_at_positions env sigma (eq,(t,t1,t2)) id posns =
 exception Not_dep_pair
 
 
-let injEq ipats (eq,(t,t1,t2)) id gls =
-  let sigma = project gls in
-  let env = pf_env gls in
+let injEq ipats (eq,(t,t1,t2)) eq_clause =
+  let sigma = Evd.evars_of eq_clause.evd in
+  let env = eq_clause.env in
   match find_positions env sigma t1 t2 with
     | Inl _ ->
 	errorlabstrm "Inj"
-	  (str (string_of_id id) ++
-	    str" is not a projectable equality but a discriminable one")
+	  (str"Not a projectable equality but a discriminable one")
     | Inr [] ->
 	errorlabstrm "Equality.inj" 
 	   (str"Nothing to do, it is an equality between convertible terms")
@@ -895,45 +918,44 @@ let injEq ipats (eq,(t,t1,t2)) id gls =
                         [|ar1.(0);Ind_tables.find_eq_dec_proof ind;
                           ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
                   )) (Auto.trivial [] [])
-                ] gls
+                ]
 (* not a dep eq or no decidable type found *)
             ) else (raise Not_dep_pair) 
-        ) with _ -> (
-	tclTHEN 
-	  (inject_at_positions env sigma (eq,(t,t1,t2)) id posns)
+        ) with _ ->
+	tclTHEN
+	  (inject_at_positions env sigma (eq,(t,t1,t2)) eq_clause posns)
 	  (intros_pattern None ipats)
-	  gls
-        )
 
-let inj ipats = onEquality (injEq ipats)
+let inj ipats with_evars = onEquality with_evars (injEq ipats)
 
-let injClause ipats = function
-  | None -> onNegatedEquality (injEq ipats)
-  | Some id -> try_intros_until (inj ipats) id
+let injClause ipats with_evars = function
+  | None -> onNegatedEquality with_evars (injEq ipats)
+  | Some c -> onInductionArg (inj ipats with_evars) c
 
-let injConcl gls  = injClause [] None gls
-let injHyp id gls = injClause [] (Some id) gls
+let injConcl gls  = injClause [] false None gls
+let injHyp id gls = injClause [] false (Some (ElimOnIdent (dummy_loc,id))) gls
 
-let decompEqThen ntac (lbeq,(t,t1,t2) as u) id gls =
+let decompEqThen ntac (lbeq,(t,t1,t2) as u) clause gls =
   let sort = pf_apply get_type_of gls (pf_concl gls) in 
-  let sigma = project gls in
+  let sigma = Evd.evars_of clause.evd in
   let env = pf_env gls in 
   match find_positions env sigma t1 t2 with
     | Inl (cpath, (_,dirn), _) ->
-	discr_positions env sigma u id cpath dirn sort gls
+	discr_positions env sigma u clause cpath dirn sort gls
     | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
         ntac 0 gls
     | Inr posns ->
 	tclTHEN
-	  (inject_at_positions env sigma (lbeq,(t,t1,t2)) id (List.rev posns))
+	  (inject_at_positions env sigma (lbeq,(t,t1,t2)) clause
+	    (List.rev posns))
 	  (ntac (List.length posns))
 	  gls
 
-let dEqThen ntac = function
-  | None -> onNegatedEquality (decompEqThen ntac)
-  | Some id -> try_intros_until (onEquality (decompEqThen ntac)) id
+let dEqThen with_evars ntac = function
+  | None -> onNegatedEquality with_evars (decompEqThen ntac)
+  | Some c -> onInductionArg (onEquality with_evars (decompEqThen ntac)) c
 
-let dEq = dEqThen (fun x -> tclIDTAC)
+let dEq with_evars = dEqThen with_evars (fun x -> tclIDTAC)
 
 let rewrite_msg = function 
   | None -> str "passed term is not a primitive equality" 

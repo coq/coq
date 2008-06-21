@@ -469,6 +469,21 @@ let rec intros_rmove = function
  		    move_to_rhyp destopt;
 		    intros_rmove rest ]
 
+(* Apply a tactic on a quantified hypothesis, an hypothesis in context
+   or a term with bindings *)
+
+let onInductionArg tac = function
+  | ElimOnConstr (c,lbindc as cbl) -> 
+      if isVar c & lbindc = NoBindings then 
+	tclTHEN (tclTRY (intros_until_id (destVar c))) (tac cbl)
+      else
+	tac cbl
+  | ElimOnAnonHyp n ->
+      tclTHEN (intros_until_n n) (tclLAST_HYP (fun c -> tac (c,NoBindings)))
+  | ElimOnIdent (_,id) ->
+      (*Identifier apart because id can be quantified in goal and not typable*)
+      tclTHEN (tclTRY (intros_until_id id)) (tac (mkVar id,NoBindings))
+
 (**************************)
 (*  Refinement tactics    *)
 (**************************)
@@ -2531,7 +2546,6 @@ let induct_destruct_l isrec with_evars lc elim names cls =
       "'in' clause not supported when several induction hypothesis are given";
   new_induct_gen_l isrec with_evars elim names newlc
 
-
 (* Induction either over a term, over a quantified premisse, or over
    several quantified premisses (like with functional induction
    principles). 
@@ -2540,19 +2554,10 @@ let induct_destruct_l isrec with_evars lc elim names cls =
 let induct_destruct isrec with_evars lc elim names cls =
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
   if List.length lc = 1 then (* induction on one arg: use old mechanism *)
-    try 
-      let c = List.hd lc in
-      match c with
-	| ElimOnConstr c -> new_induct_gen isrec with_evars elim names c cls
-	| ElimOnAnonHyp n ->
-	    tclTHEN (intros_until_n n)
-	      (tclLAST_HYP (fun c -> 
-		new_induct_gen isrec with_evars elim names (c,NoBindings) cls))
-	      (* Identifier apart because id can be quantified in goal and not typable *)
-	| ElimOnIdent (_,id) ->
-	    tclTHEN (tclTRY (intros_until_id id))
-	      (new_induct_gen isrec with_evars elim names
-		(mkVar id,NoBindings) cls)
+    try
+      onInductionArg
+	(fun c -> new_induct_gen isrec with_evars elim names c cls)
+	(List.hd lc)
     with (* If this fails, try with new mechanism but if it fails too,
 	    then the exception is the first one. *)
       | x ->

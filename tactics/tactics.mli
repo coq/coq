@@ -101,6 +101,13 @@ val intros_clearing      : bool list -> tactic
 val try_intros_until :
   (identifier -> tactic) -> quantified_hypothesis -> tactic
 
+(* Apply a tactic on a quantified hypothesis, an hypothesis in context
+   or a term with bindings *)
+
+val onInductionArg : 
+  (constr with_ebindings -> tactic) ->
+    constr with_ebindings induction_arg -> tactic
+
 (*s Introduction tactics with eliminations. *)
 
 val intro_pattern     : identifier option -> intro_pattern_expr      -> tactic
