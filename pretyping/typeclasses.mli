@@ -28,8 +28,8 @@ type typeclass = {
      the class is a singleton. This acts as the classe's global identifier. *)
   cl_impl : global_reference; 
 
-  (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. The boolean indicates if the 
-     typeclass argument is a direct superclass. *)
+  (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. 
+     The boolean indicates if the typeclass argument is a direct superclass. *)
   cl_context : ((global_reference * bool) option * named_declaration) list; 
 
   cl_params : int; (* This is the length of the suffix of the context which should be considered explicit parameters. *)
