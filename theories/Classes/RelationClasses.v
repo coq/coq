@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.RelationClasses") -*- *)
+(* -*- coq-prog-name: "coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.RelationClasses") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -91,7 +91,7 @@ Program Instance Reflexive_complement_Irreflexive [ Reflexive A (R : relation A)
     unfold complement.
     red. intros H.
     intros H' ; apply H'.
-    apply (reflexivity H).
+    apply reflexivity.
   Qed.
 
 
@@ -129,7 +129,7 @@ Ltac simpl_relation :=
   unfold flip, impl, arrow ; try reduce ; program_simpl ;
     try ( solve [ intuition ]).
 
-Ltac obligations_tactic ::= simpl_relation.
+Ltac obligation_tactic ::= simpl_relation.
 
 (** Logical implication. *)
 
@@ -171,7 +171,7 @@ Class Equivalence (carrier : Type) (equiv : relation carrier) : Prop :=
 
 (** An Equivalence is a PER plus reflexivity. *)
 
-Instance Equivalence_PER [ Equivalence A R ] : PER A R :=
+Instance Equivalence_PER [ Equivalence A R ] : PER A R | 10 :=
   PER_Symmetric := Equivalence_Symmetric ;
   PER_Transitive := Equivalence_Transitive.
 

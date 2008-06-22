@@ -290,6 +290,7 @@ Program
   which argument decreases structurally.
 - Program Lemma, Axiom etc... now permit to have obligations in the statement 
   iff they can be automatically solved by the default tactic.
+- Renamed "Obligations Tactic" command to "Obligation Tactic".
 - New command "Preterm [ of id ]" to see the actual term fed to Coq for
   debugging purposes.
 - New option "Transparent Obligations" to control the declaration of 

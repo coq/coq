@@ -142,7 +142,7 @@ Program Instance type_equivalence : Equivalence Type type_eq.
 
 Ltac morphism_tac := try red ; unfold arrow ; intros ; program_simpl ; try tauto.
 
-Ltac obligations_tactic ::= morphism_tac.
+Ltac obligation_tactic ::= morphism_tac.
 
 (** These are morphisms used to rewrite at the top level of a proof, 
    using [iff_impl_id_morphism] if the proof is in [Prop] and
@@ -178,4 +178,4 @@ Infix "=~=" := pequiv (at level 70, no associativity) : type_scope.
 
 (** Reset the default Program tactic. *)
 
-Ltac obligations_tactic ::= program_simpl.
+Ltac obligation_tactic ::= program_simpl.

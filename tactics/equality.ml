@@ -76,14 +76,9 @@ let elimination_sort_of_clause = function
 
 (* The next function decides in particular whether to try a regular 
   rewrite or a setoid rewrite. 
-
-  Old approach was: 
-   break everything, if [eq] appears in head position 
-   then regular rewrite else try setoid rewrite
- 
-  New approach is: 
-   if head position is a known setoid relation then setoid rewrite
-   else back to the old approach
+  Approach is to break everything, if [eq] appears in head position 
+  then regular rewrite else try setoid rewrite. 
+  If occurrences are set, use setoid_rewrite.
 *)
 
 let general_s_rewrite_clause = function
@@ -95,43 +90,37 @@ let register_general_setoid_rewrite_clause = (:=) general_setoid_rewrite_clause
 
 let general_rewrite_ebindings_clause cls lft2rgt occs (c,l) with_evars gl =
   let ctype = pf_apply get_type_of gl c in 
-  (* A delta-reduction would be here too strong, since it would 
-     break search for a defined setoid relation in head position. *)
-  let t = snd (decompose_prod (whd_betaiotazeta ctype)) in 
-  let head = if isApp t then fst (destApp t) else t in 
-    if relation_table_mem head && l = NoBindings then 
-      !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
-    else 
-      (* Original code. In particular, [splay_prod] performs delta-reduction. *)
-      let env = pf_env gl in
-      let sigma = project gl in 
-      let _,t = splay_prod env sigma ctype in
-	match match_with_equation t with
-	  | None -> 
-	      if l = NoBindings
-	      then !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
-	      else error "The term provided does not end with an equation" 
-	  | Some (hdcncl,_) -> 
-	      if occs <> all_occurrences then (
-		!general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl)
-	      else
-		let hdcncls = string_of_inductive hdcncl in 
-		let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
-		let dir = if cls=None then lft2rgt else not lft2rgt in
-		let rwr_thm = if dir then hdcncls^suffix^"_r" else hdcncls^suffix in
-		let elim =
-		  try pf_global gl (id_of_string rwr_thm)
-		  with Not_found ->
-		    error ("Cannot find rewrite principle "^rwr_thm)
-		in 
-		  try general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
-		  with e -> 
-		    let eq = build_coq_eq () in
-		      if not (eq_constr eq head) then
-			try !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
-			with _ -> raise e
-		      else raise e
-			
+  let env = pf_env gl in
+  let sigma = project gl in 
+  let _,t = splay_prod env sigma ctype in
+    match match_with_equation t with
+    | None -> 
+	if l = NoBindings
+	then !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
+	else error "The term provided does not end with an equation" 
+    | Some (hdcncl,_) -> 
+	if occs <> all_occurrences then (
+	  !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl)
+	else
+	  let hdcncls = string_of_inductive hdcncl in 
+	  let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
+	  let dir = if cls=None then lft2rgt else not lft2rgt in
+	  let rwr_thm = if dir then hdcncls^suffix^"_r" else hdcncls^suffix in
+	  let elim =
+	    try pf_global gl (id_of_string rwr_thm)
+	    with Not_found ->
+	      error ("Cannot find rewrite principle "^rwr_thm)
+	  in 
+	    try general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
+	    with e -> 
+	      let eq = build_coq_eq () in
+	      let t = snd (decompose_prod (whd_betaiotazeta ctype)) in 
+	      let head = if isApp t then fst (destApp t) else t in 
+		if not (eq_constr eq head) then
+		  try !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
+		  with _ -> raise e
+		else raise e
+		  
 let general_rewrite_ebindings = 
   general_rewrite_ebindings_clause None
 let general_rewrite_bindings l2r occs (c,bl) = 

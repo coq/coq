@@ -222,7 +222,7 @@ Ltac refine_hyp c :=
     end.
 
 (** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto]
-   is not enough, better rebind using [Obligations Tactic := tac] in this case, 
+   is not enough, better rebind using [Obligation Tactic := tac] in this case, 
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
 Ltac program_simplify :=
@@ -231,4 +231,4 @@ Ltac program_simplify :=
 
 Ltac program_simpl := program_simplify ; auto.
 
-Ltac obligations_tactic := program_simpl.
+Ltac obligation_tactic := program_simpl.

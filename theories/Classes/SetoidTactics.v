@@ -174,3 +174,5 @@ Ltac default_add_morphism_tactic :=
   end.
 
 Ltac add_morphism_tactic := default_add_morphism_tactic.
+
+Ltac obligation_tactic ::= program_simpl.
