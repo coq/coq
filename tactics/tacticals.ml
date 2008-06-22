@@ -325,10 +325,6 @@ let elimination_sort_of_hyp id gl =
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
 
-let last_arg c = match kind_of_term c with
-  | App (f,cl) -> array_last cl
-  | _ -> anomaly "last_arg"
-
 let general_elim_then_using mk_elim 
   isrec allnames tac predicate (indbindings,elimbindings) 
   ind indclause gl =

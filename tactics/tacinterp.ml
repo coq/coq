@@ -1111,7 +1111,7 @@ let debugging_exception_step ist signal_anomaly e pp =
 let error_ltac_variable loc id env v s =
    user_err_loc (loc, "", str "Ltac variable " ++ pr_id id ++ 
    str " is bound to" ++ spc () ++ pr_value env v ++ spc () ++ 
-   str "which cannot be coerced to " ++ str s)
+   strbrk "which cannot be coerced to " ++ str s)
 
 exception CannotCoerceTo of string
 

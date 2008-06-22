@@ -331,7 +331,7 @@ let projectAndApply thin id eqname names depids gls =
   substHypIfVariable
     (* If no immediate variable in the equation, try to decompose it *)
     (* and apply a trailer which again try to substitute *)
-    (fun id -> dEqThen (deq_trailer id) (Some (NamedHyp id)))
+    (fun id -> dEqThen false (deq_trailer id) (Some (ElimOnIdent (dummy_loc,id))))
     id
     gls
 

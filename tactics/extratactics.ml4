@@ -16,6 +16,8 @@ open Genarg
 open Extraargs
 open Mod_subst
 open Names
+open Tacexpr
+open Rawterm
 
 (* Equality *)
 open Equality
@@ -41,25 +43,93 @@ TACTIC EXTEND replace_term
   -> [ replace_multi_term None c (glob_in_arg_hyp_to_clause in_hyp) ]
 END
 
+let induction_arg_of_quantified_hyp = function
+  | AnonHyp n -> ElimOnAnonHyp n
+  | NamedHyp id -> ElimOnIdent (Util.dummy_loc,id)
+
+(* Versions *_main must come first!! so that "1" is interpreted as a
+   ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a
+   ElimOnIdent and not as "constr" *)
+
+TACTIC EXTEND simplify_eq_main
+| [ "simplify_eq" constr_with_bindings(c) ] ->
+    [ dEq false (Some (ElimOnConstr c)) ]
+END
 TACTIC EXTEND simplify_eq
-  [ "simplify_eq" quantified_hypothesis_opt(h) ] -> [ dEq h ]
+  [ "simplify_eq" ] -> [ dEq false None ]
+| [ "simplify_eq" quantified_hypothesis(h) ] ->
+    [ dEq false (Some (induction_arg_of_quantified_hyp h)) ]
+END
+TACTIC EXTEND esimplify_eq_main
+| [ "esimplify_eq" constr_with_bindings(c) ] ->
+    [ dEq true (Some (ElimOnConstr c)) ]
+END
+TACTIC EXTEND esimplify_eq
+| [ "esimplify_eq" ] -> [ dEq true None ]
+| [ "esimplify_eq" quantified_hypothesis(h) ] ->
+    [ dEq true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
+TACTIC EXTEND discriminate_main
+| [ "discriminate" constr_with_bindings(c) ] ->
+    [ discr_tac false (Some (ElimOnConstr c)) ]
+END
 TACTIC EXTEND discriminate
-  [ "discriminate" quantified_hypothesis_opt(h) ] -> [ discr_tac h ]
+| [ "discriminate" ] -> [ discr_tac false None ]
+| [ "discriminate" quantified_hypothesis(h) ] ->
+    [ discr_tac false (Some (induction_arg_of_quantified_hyp h)) ]
+END
+TACTIC EXTEND ediscriminate_main
+| [ "ediscriminate" constr_with_bindings(c) ] ->
+    [ discr_tac true (Some (ElimOnConstr c)) ]
+END
+TACTIC EXTEND ediscriminate
+| [ "ediscriminate" ] -> [ discr_tac true None ]
+| [ "ediscriminate" quantified_hypothesis(h) ] ->
+    [ discr_tac true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-let h_discrHyp id = h_discriminate (Some id)
+let h_discrHyp id = h_discriminate_main (Term.mkVar id,NoBindings)
 
+TACTIC EXTEND injection_main
+| [ "injection" constr_with_bindings(c) ] ->
+    [ injClause [] false (Some (ElimOnConstr c)) ]
+END 
 TACTIC EXTEND injection
-  [ "injection" quantified_hypothesis_opt(h) ] -> [ injClause [] h ]
+| [ "injection" ] -> [ injClause [] false None ]
+| [ "injection" quantified_hypothesis(h) ] -> 
+    [ injClause [] false (Some (induction_arg_of_quantified_hyp h)) ]
+END
+TACTIC EXTEND einjection_main
+| [ "einjection" constr_with_bindings(c) ] ->
+    [ injClause [] true (Some (ElimOnConstr c)) ]
+END
+TACTIC EXTEND einjection
+| [ "einjection" ] -> [ injClause [] true None ]
+| [ "einjection" quantified_hypothesis(h) ] -> [ injClause [] true (Some (induction_arg_of_quantified_hyp h)) ]
+END 
+TACTIC EXTEND injection_as_main
+| [ "injection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
+    [ injClause ipat false (Some (ElimOnConstr c)) ]
 END 
 TACTIC EXTEND injection_as
-  [ "injection" quantified_hypothesis_opt(h) 
-    "as" simple_intropattern_list(ipat)] -> [ injClause ipat h ]
+| [ "injection" "as" simple_intropattern_list(ipat)] ->
+    [ injClause ipat false None ]
+| [ "injection" quantified_hypothesis(h) "as" simple_intropattern_list(ipat) ] ->
+    [ injClause ipat false (Some (induction_arg_of_quantified_hyp h)) ]
+END 
+TACTIC EXTEND einjection_as_main
+| [ "einjection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
+    [ injClause ipat true (Some (ElimOnConstr c)) ]
+END 
+TACTIC EXTEND einjection_as
+| [ "einjection" "as" simple_intropattern_list(ipat)] ->
+    [ injClause ipat true None ]
+| [ "einjection" quantified_hypothesis(h) "as" simple_intropattern_list(ipat) ] ->
+    [ injClause ipat true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-let h_injHyp id = h_injection (Some id)
+let h_injHyp id = h_injection_main (Term.mkVar id,NoBindings)
 
 TACTIC EXTEND conditional_rewrite
 | [ "conditional" tactic(tac) "rewrite" orient(b) constr_with_bindings(c) ]

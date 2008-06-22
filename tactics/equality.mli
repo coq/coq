@@ -67,18 +67,22 @@ val replace_in : identifier -> constr -> constr -> tactic
 val replace_by : constr -> constr -> tactic -> tactic
 val replace_in_by : identifier -> constr -> constr -> tactic -> tactic
 
-val discr        : identifier -> tactic
+val discr        : evars_flag -> constr with_ebindings -> tactic
 val discrConcl   : tactic
-val discrClause  : clause -> tactic
+val discrClause  : evars_flag -> clause -> tactic
 val discrHyp     : identifier -> tactic
-val discrEverywhere     : tactic
-val discr_tac    : quantified_hypothesis option -> tactic
-val inj          : intro_pattern_expr list -> identifier -> tactic
-val injClause    : intro_pattern_expr list -> quantified_hypothesis option ->
-                   tactic
+val discrEverywhere : evars_flag -> tactic
+val discr_tac    : evars_flag -> 
+  constr with_ebindings induction_arg option -> tactic
+val inj          : intro_pattern_expr list -> evars_flag ->
+  constr with_ebindings -> tactic
+val injClause    : intro_pattern_expr list -> evars_flag -> 
+  constr with_ebindings induction_arg option -> tactic
+val injHyp       : identifier -> tactic
+val injConcl     : tactic
 
-val dEq : quantified_hypothesis option -> tactic
-val dEqThen : (int -> tactic) -> quantified_hypothesis option -> tactic
+val dEq : evars_flag -> constr with_ebindings induction_arg option -> tactic
+val dEqThen : evars_flag -> (int -> tactic) -> constr with_ebindings induction_arg option -> tactic
 
 val make_iterated_tuple : 
   env -> evar_map -> constr -> (constr * types) -> constr * constr * constr

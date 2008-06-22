@@ -202,6 +202,9 @@ Tactics
 - Slight improvement of the hnf and simpl tactics when applied on
   expressions with explicit occurrences of match or fix.
 - New tactics "eapply in", "erewrite", "erewrite in".
+- New tactics "ediscriminate", "einjection", "esimplify_eq".
+- Tactics "discriminate", "injection", "simplify_eq" now support any
+  term as argument. Clause "with" is also supported.
 - Unfoldable references can be given by notation's string rather than by name 
   in unfold.
 - The "with" arguments are now typed using informations from the current goal:

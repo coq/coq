@@ -75,7 +75,7 @@ let mkBranches c1 c2 =
 let solveNoteqBranch side = 
   tclTHEN (choose_noteq side)
     (tclTHEN (intro_force true)
-      (onLastHyp (fun id -> Extratactics.h_discrHyp (Rawterm.NamedHyp id))))
+      (onLastHyp (fun id -> Extratactics.h_discrHyp id)))
 
 let h_solveNoteqBranch side =
   Refiner.abstract_extended_tactic "solveNoteqBranch" [] 
@@ -115,7 +115,7 @@ let diseqCase eqonleft =
   (tclTHEN  red_in_concl
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (h_simplest_apply (mkVar diseq))
-  (tclTHEN  (Extratactics.h_injHyp (Rawterm.NamedHyp absurd))
+  (tclTHEN  (Extratactics.h_injHyp absurd)
             (full_trivial [])))))))
 
 let solveArg eqonleft op a1 a2 tac g = 

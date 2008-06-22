@@ -275,6 +275,11 @@ let rec strip_head_cast c = match kind_of_term c with
   | Cast (c,_,_) -> strip_head_cast c
   | _ -> c
 
+(* Get the last arg of an application *)
+let last_arg c = match kind_of_term c with
+  | App (f,cl) -> array_last cl
+  | _ -> anomaly "last_arg"
+
 (* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
    subterms of [c]; it carries an extra data [l] (typically a name
    list) which is processed by [g na] (which typically cons [na] to

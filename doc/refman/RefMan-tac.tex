@@ -993,7 +993,7 @@ The proof of {\tt False} is searched in the hypothesis named \ident.
 \tacindex{contradict}
 
 This tactic allows to manipulate negated hypothesis and goals. The
-name \ident\ should correspond to an hypothesis. With 
+name \ident\ should correspond to a hypothesis. With 
 {\tt contradict H}, the current goal and context is transformed in
 the following way: 
 \begin{itemize}
@@ -2395,17 +2395,20 @@ of an inductive datatype. If $G$ is the current goal, it leaves the sub-goals
 of \term$_1$ and \term$_2$ must satisfy the same restrictions as in the tactic
 \texttt{decide equality}.
 
-\subsection{\tt discriminate {\ident}
+\subsection{\tt discriminate {\term}
 \label{discriminate}
-\tacindex{discriminate}}
+\tacindex{discriminate}
+\tacindex{ediscriminate}}
 
-This tactic proves any goal from an absurd hypothesis stating that two
+This tactic proves any goal from an assumption stating that two
 structurally different terms of an inductive set are equal. For
-example, from the hypothesis {\tt (S (S O))=(S O)} we can derive by
-absurdity any proposition.  Let {\ident} be a hypothesis of type
-{\tt{\term$_1$} = {\term$_2$}} in the local context, {\term$_1$} and
+example, from {\tt (S (S O))=(S O)} we can derive by absurdity any
+proposition.
+
+The argument {\term} is assumed to be a proof of a statement
+of conclusion {\tt{\term$_1$} = {\term$_2$}} with {\term$_1$} and
 {\term$_2$} being elements of an inductive set.  To build the proof,
-the tactic traverses the normal forms\footnote{Recall: opaque
+the tactic traverses the normal forms\footnote{Reminder: opaque
   constants will not be expanded by $\delta$ reductions} of
 {\term$_1$} and {\term$_2$} looking for a couple of subterms {\tt u}
 and {\tt w} ({\tt u} subterm of the normal form of {\term$_1$} and
@@ -2414,26 +2417,39 @@ positions and whose head symbols are two different constructors. If
 such a couple of subterms exists, then the proof of the current goal
 is completed, otherwise the tactic fails.
 
-\Rem If {\ident} does not denote an hypothesis in the local context
-but refers to an hypothesis quantified in the goal, then the
-latter is first introduced in the local context using
-\texttt{intros until \ident}.
+\Rem The syntax {\tt discriminate {\ident}} can be used to refer to a
+hypothesis quantified in the goal. In this case, the quantified
+hypothesis whose name is {\ident} is first introduced in the local
+context using \texttt{intros until \ident}.
 
 \begin{ErrMsgs}
-\item {\ident} \errindex{Not a discriminable equality} \\
-  occurs when the type of the specified hypothesis is not an equation.
+\item \errindex{No primitive equality found}
+\item \errindex{Not a discriminable equality}
 \end{ErrMsgs}  
 
 \begin{Variants}
-\item \texttt{discriminate} \num\\
-  This does the same thing as \texttt{intros until \num} then
-\texttt{discriminate \ident} where {\ident} is the identifier for the last
-introduced hypothesis.
-\item {\tt discriminate}\\
-  It applies to a goal of the form {\tt
-    \verb=~={\term$_1$}={\term$_2$}} and it is equivalent to: 
-  {\tt unfold not; intro {\ident}}; {\tt discriminate
-    {\ident}}.
+\item \texttt{discriminate} \num
+
+  This does the same thing as \texttt{intros until \num} followed by
+  \texttt{discriminate \ident} where {\ident} is the identifier for
+  the last introduced hypothesis.
+
+\item \texttt{discriminate} {\term} {\tt with} {\bindinglist}
+
+  This does the same thing as \texttt{discriminate {\term}} but using
+the given bindings to instantiate parameters or hypotheses of {\term}.
+
+\item \texttt{ediscriminate} \num\\
+      \texttt{ediscriminate} {\term} \zeroone{{\tt with} {\bindinglist}}
+
+  This works the same as {\tt discriminate} but if the type of {\term},
+  or the type of the hypothesis referred to by {\num}, has uninstantiated
+  parameters, these parameters are left as existential variables.
+
+\item \texttt{discriminate}
+
+  This looks for a quantified or not quantified hypothesis {\ident} on
+  which {\tt discriminate {\ident}} is applicable.
 
   \begin{ErrMsgs}
   \item \errindex{No discriminable equalities} \\
@@ -2441,9 +2457,10 @@ introduced hypothesis.
   \end{ErrMsgs}
 \end{Variants}
 
-\subsection{\tt injection {\ident}
+\subsection{\tt injection {\term}
 \label{injection}
-\tacindex{injection}}
+\tacindex{injection}
+\tacindex{einjection}}
 
 The {\tt injection} tactic is based on the fact that constructors of
 inductive sets are injections. That means that if $c$ is a constructor
@@ -2451,10 +2468,11 @@ of an inductive set, and if $(c~\vec{t_1})$ and $(c~\vec{t_2})$ are two
 terms that are equal then $~\vec{t_1}$ and $~\vec{t_2}$ are equal
 too.
 
-If {\ident} is an hypothesis of type {\tt {\term$_1$} = {\term$_2$}},
-then {\tt injection} behaves as applying injection as deep as possible to
+If {\term} is a proof of a statement of conclusion
+ {\tt {\term$_1$} = {\term$_2$}},
+then {\tt injection} applies injectivity as deep as possible to
 derive the equality of all the subterms of {\term$_1$} and {\term$_2$}
-placed in the same positions. For example, from the hypothesis {\tt (S
+placed in the same positions. For example, from {\tt (S
   (S n))=(S (S (S m))} we may derive {\tt n=(S m)}.  To use this
 tactic {\term$_1$} and {\term$_2$} should be elements of an inductive
 set and they should be neither explicitly equal, nor structurally
@@ -2462,7 +2480,7 @@ different. We mean by this that, if {\tt n$_1$} and {\tt n$_2$} are
 their respective normal forms, then:
 \begin{itemize}
 \item {\tt n$_1$} and {\tt n$_2$} should not be syntactically equal,
-\item there must not exist any couple of subterms {\tt u} and {\tt w},
+\item there must not exist any pair of subterms {\tt u} and {\tt w},
   {\tt u} subterm of {\tt n$_1$} and {\tt w} subterm of {\tt n$_2$} ,
   placed in the same positions and having different constructors as
   head symbols.
@@ -2501,59 +2519,70 @@ the projection on the second one, and so {\tt injection} will work fine.
 To define such an equality, you have to use the {\tt Scheme} command 
 (see \ref{Scheme}).
 
-\Rem If {\ident} does not denote an hypothesis in the local context
-but refers to an hypothesis quantified in the goal, then the
-latter is first introduced in the local context using
-\texttt{intros until \ident}.
+\Rem If some quantified hypothesis of the goal is named {\ident}, then
+{\tt injection {\ident}} first introduces the hypothesis in the local
+context using \texttt{intros until \ident}.
 
 \begin{ErrMsgs}
-\item {\ident} \errindex{is not a projectable equality} 
-  occurs when the type of
-  the hypothesis $id$ does not verify the preconditions.
-\item \errindex{Not an equation} occurs when the type of the
-  hypothesis $id$ is not an equation.
+\item \errindex{Not a projectable equality but a discriminable one}
+\item \errindex{Nothing to do, it is an equality between convertible terms}
+\item \errindex{Not a primitive equality}
 \end{ErrMsgs}
 
 \begin{Variants}
 \item \texttt{injection} \num{}
 
-  This does the same thing as \texttt{intros until \num} then
+  This does the same thing as \texttt{intros until \num} followed by
 \texttt{injection \ident} where {\ident} is the identifier for the last
 introduced hypothesis.
 
-\item{\tt injection}\tacindex{injection} 
+\item \texttt{injection} \term{} {\tt with} {\bindinglist}
+
+  This does the same as \texttt{injection {\term}} but using
+  the given bindings to instantiate parameters or hypotheses of {\term}.
+
+\item \texttt{einjection} \num\\
+      \texttt{einjection} \term{} \zeroone{{\tt with} {\bindinglist}}
+
+  This works the same as {\tt injection} but if the type of {\term},
+  or the type of the hypothesis referred to by {\num}, has uninstantiated
+  parameters, these parameters are left as existential variables.
+
+\item{\tt injection}
   
   If the current goal is of the form {\term$_1$} {\tt <>} {\term$_2$},
-  the tactic computes the head normal form of the goal and then
-  behaves as the sequence: {\tt unfold not; intro {\ident}; injection
-  {\ident}}.
+  this behaves as {\tt intro {\ident}; injection {\ident}}.
   
   \ErrMsg \errindex{goal does not satisfy the expected preconditions}
 
-\item \texttt{injection} \ident{} \texttt{as} \nelist{\intropattern}{}\\
+\item \texttt{injection} \term{} \zeroone{{\tt with} {\bindinglist}} \texttt{as} \nelist{\intropattern}{}\\
 \texttt{injection} \num{} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
 \texttt{injection} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
+\texttt{einjection} \term{} \zeroone{{\tt with} {\bindinglist}} \texttt{as} \nelist{\intropattern}{}\\
+\texttt{einjection} \num{} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
+\texttt{einjection} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
 \tacindex{injection \ldots{} as}
  
-These variants apply \texttt{intros} \nelist{\intropattern}{} after the call to \texttt{injection}.
+These variants apply \texttt{intros} \nelist{\intropattern}{} after
+the call to \texttt{injection} or \texttt{einjection}.
 
 \end{Variants}
 
-\subsection{\tt simplify\_eq {\ident}
+\subsection{\tt simplify\_eq {\term}
 \tacindex{simplify\_eq}
+\tacindex{esimplify\_eq}
 \label{simplify-eq}}
 
-Let {\ident} be the name of an hypothesis of type {\tt
-  {\term$_1$}={\term$_2$}} in the local context. If {\term$_1$} and
+Let {\term} be the proof of a statement of conclusion {\tt
+  {\term$_1$}={\term$_2$}}. If {\term$_1$} and
 {\term$_2$} are structurally different (in the sense described for the
 tactic {\tt discriminate}), then the tactic {\tt simplify\_eq} behaves as {\tt
-  discriminate {\ident}} otherwise it behaves as {\tt injection
-  {\ident}}.
+  discriminate {\term}}, otherwise it behaves as {\tt injection
+  {\term}}.
 
-\Rem If {\ident} does not denote an hypothesis in the local context
-but refers to an hypothesis quantified in the goal, then the
-latter is first introduced in the local context using
-\texttt{intros until \ident}.
+\Rem If some quantified hypothesis of the goal is named {\ident}, then
+{\tt simplify\_eq {\ident}} first introduces the hypothesis in the local
+context using \texttt{intros until \ident}.
 
 \begin{Variants}
 \item \texttt{simplify\_eq} \num
@@ -2561,9 +2590,23 @@ latter is first introduced in the local context using
   This does the same thing as \texttt{intros until \num} then
 \texttt{simplify\_eq \ident} where {\ident} is the identifier for the last
 introduced hypothesis.
+
+\item \texttt{simplify\_eq} \term{} {\tt with} {\bindinglist}
+
+  This does the same as \texttt{simplify\_eq {\term}} but using
+  the given bindings to instantiate parameters or hypotheses of {\term}.
+
+\item \texttt{esimplify\_eq} \num\\
+      \texttt{esimplify\_eq} \term{} \zeroone{{\tt with} {\bindinglist}}
+
+  This works the same as {\tt simplify\_eq} but if the type of {\term},
+  or the type of the hypothesis referred to by {\num}, has uninstantiated
+  parameters, these parameters are left as existential variables.
+
 \item{\tt simplify\_eq}
-If the current goal has form $\verb=~=t_1=t_2$, then this tactic does 
-\texttt{hnf; intro {\ident}; simplify\_eq {\ident}}.
+
+If the current goal has form $t_1\verb=<>=t_2$, it behaves as
+\texttt{intro {\ident}; simplify\_eq {\ident}}.
 \end{Variants}
 
 \subsection{\tt dependent rewrite -> {\ident}
@@ -2599,8 +2642,8 @@ constructor $c_i$ of $(I~\vec{t})$, {\bf all} the necessary
 conditions that should hold for the instance $(I~\vec{t})$ to be
 proved by $c_i$.
 
-\Rem If {\ident} does not denote an hypothesis in the local context
-but refers to an hypothesis quantified in the goal, then the
+\Rem If {\ident} does not denote a hypothesis in the local context
+but refers to a hypothesis quantified in the goal, then the
 latter is first introduced in the local context using
 \texttt{intros until \ident}.
 
@@ -3242,7 +3285,7 @@ equalities with uninterpreted symbols. It also include the constructor theory
 (see \ref{injection} and \ref{discriminate}).
 If the goal is a non-quantified equality, {\tt congruence} tries to
 prove it with non-quantified equalities in the context. Otherwise it
-tries to infer a discriminable equality from those in the context. Alternatively, congruence tries to prove that an hypothesis is equal to the goal or to the negation of another hypothesis.
+tries to infer a discriminable equality from those in the context. Alternatively, congruence tries to prove that a hypothesis is equal to the goal or to the negation of another hypothesis.
 
 {\tt congruence} is also able to take advantage of hypotheses stating quantified equalities, you have to provide a bound for the number of extra equalities generated that way. Please note that one of the members of the equality must contain all the quantified variables in order for {\tt congruence} to match against it. 
 
