@@ -1,3 +1,10 @@
+Changes since V8.2
+==================
+
+- "discriminate" now performs intros before trying to discriminate an
+  hypothesis of the goal (previously it applied intro only if the goal
+  had the form t1<>t2).
+
 Changes from V8.1 to V8.2
 =========================
 
