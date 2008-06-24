@@ -999,11 +999,14 @@ let build_combined_scheme name schemes =
 	| App (ind, args) -> ctx, destInd ind, Array.length args
 	| _ -> ctx, destInd last, 0
   in
-  let defs = 
+  let defs =  
     List.map (fun x -> 
 		let refe = Ident x in
 		let qualid = qualid_of_reference refe in
-		let cst = Nametab.locate_constant (snd qualid) in
+		let cst = try 
+                    Nametab.locate_constant (snd qualid) 
+                with Not_found -> error ((string_of_qualid (snd qualid))^" is not declared")
+                in
 		let ty = Typeops.type_of_constant env cst in
 		  qualid, cst, ty)
       schemes
@@ -1035,7 +1038,6 @@ let build_combined_scheme name schemes =
 	     const_entry_boxed = Flags.boxed_definitions() } in
   let _ = declare_constant (snd name) (DefinitionEntry ce, IsDefinition Scheme) in
     if_verbose ppnl (recursive_message Fixpoint None [snd name])
-
 (* 4| Goal declaration *)
 
 (* 4.1| Support for mutually proved theorems *)
