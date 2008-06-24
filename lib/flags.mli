@@ -59,9 +59,11 @@ val is_unsafe : string -> bool
 
 (* Dump of globalization (to be used by coqdoc) *)
 
+val noglob : bool ref
 val dump : bool ref
 val dump_into_file : string -> unit
 val dump_string : string -> unit
+val dump_it : unit -> unit
 
 (* Options for the virtual machine *)
 

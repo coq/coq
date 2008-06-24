@@ -357,8 +357,8 @@ COQIDECMX:=$(COQIDECMO:.cmo=.cmx)
 COQMKTOPCMO:=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
 
 COQMKTOPCMX:=config/coq_config.cmx scripts/tolink.cmx scripts/coqmktop.cmx 
-COQCCMO:=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
-COQCCMX:=config/coq_config.cmx toplevel/usage.cmx scripts/coqc.cmx
+COQCCMO:=$(CONFIG) toplevel/usage.cmo lib/pp_control.cmo lib/pp.cmo scripts/coqc.cmo
+COQCCMX:=config/coq_config.cmx toplevel/usage.cmx lib/pp_control.cmx lib/pp.cmx scripts/coqc.cmx
 
 INTERFACE:=\
   contrib/interface/vtp.cmo contrib/interface/xlate.cmo \

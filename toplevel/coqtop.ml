@@ -113,6 +113,10 @@ let compile_files () =
       (fun (v,f) ->
 	 States.unfreeze init_state;
 	 Constrintern.coqdoc_unfreeze coqdoc_init_state;
+	 if !Flags.noglob then
+	   Flags.dump := false
+	 else
+	   Flags.dump_into_file (f^".glob");
 	 if Flags.do_translate () then
 	   with_option translate_file (Vernac.compile v) f
 	 else
@@ -231,8 +235,8 @@ let parse_args is_ide =
     | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
     | "-load-vernac-object" :: []       -> usage ()
 
-    | "-dump-glob" :: f :: rem -> dump_into_file f; parse rem
-    | "-dump-glob" :: []       -> usage ()
+    | "-dump-glob" :: _ :: rem -> warning "option -dumpglob is obsolete"; parse rem
+    | ("-no-glob" | "-noglob") :: rem -> Flags.noglob := true; parse rem
 
     | "-require" :: f :: rem -> add_require f; parse rem
     | "-require" :: []       -> usage ()

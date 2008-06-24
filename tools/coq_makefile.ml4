@@ -136,15 +136,15 @@ let implicit () =
     print "%.ml.d: %.ml\n";
     print "\t$(CAMLBIN)ocamldep -slash $(ZFLAGS) $(PP) \"$<\" > \"$@\"\n\n"
   and v_rule () =
-    print "%.vo %.glob: %.v\n\t$(COQC) -dump-glob $*.glob $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.g: %.v\n\t$(GALLINA) $<\n\n";
     print "%.tex: %.v\n\t$(COQDOC) -latex $< -o $@\n\n";
-    print "%.html: %.v %.glob\n\t$(COQDOC) -glob-from $*.glob  -html $< -o $@\n\n";
+    print "%.html: %.v %.glob\n\t$(COQDOC) -html $< -o $@\n\n";
     print "%.g.tex: %.v\n\t$(COQDOC) -latex -g $< -o $@\n\n";
-    print "%.g.html: %.v %.glob\n\t$(COQDOC) -glob-from $*.glob -html -g $< -o $@\n\n";
+    print "%.g.html: %.v %.glob\n\t$(COQDOC) -html -g $< -o $@\n\n";
     print "%.v.d: %.v\n";
-    print "\t$(COQDEP) -glob -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+    print "\t$(COQDEP) -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
   in
     if !some_mlfile then ml_rules ();
     if !some_vfile then v_rule ()

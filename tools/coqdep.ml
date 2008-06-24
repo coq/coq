@@ -22,7 +22,7 @@ let option_D = ref false
 let option_w = ref false
 let option_i = ref false
 let option_sort = ref false
-let option_glob = ref false
+let option_noglob = ref false
 let option_slash = ref false
 let option_boot = ref false
 
@@ -375,7 +375,7 @@ let mL_dependencies () =
 let coq_dependencies () =
   List.iter
     (fun (name,_) ->
-       let glob = if !option_glob then " "^name^".glob" else "" in 
+       let glob = if !option_noglob then "" else " "^name^".glob" in 
        printf "%s%s%s: %s.v" name !suffixe glob name;
        traite_fichier_Coq true (name ^ ".v");
        printf "\n";
@@ -503,7 +503,7 @@ let rec parse = function
   | "-i" :: ll -> option_i := true; parse ll
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
-  | "-glob" :: ll -> option_glob := true; parse ll
+  | "-noglob" :: ll | "-no-glob" :: ll -> option_noglob := true; parse ll
   | "-I" :: r :: ll -> add_dir add_known r []; parse ll
   | "-I" :: [] -> usage ()
   | "-R" :: r :: ln :: ll -> add_rec_dir add_known r [ln]; parse ll

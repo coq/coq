@@ -141,7 +141,7 @@ let parse_args () =
     | ("-I"|"-include"|"-outputstate"
       |"-inputstate"|"-is"|"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
-      |"-init-file"|"-dump-glob" as o) :: rem ->
+      |"-init-file" as o) :: rem ->
 	begin
 	  match rem with
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
@@ -151,13 +151,16 @@ let parse_args () =
 
     | ("-notactics"|"-debug"|"-nolib"
       | "-debugVM"|"-alltransp"|"-VMno"
-      |"-batch"|"-nois"
+      |"-batch"|"-nois" | "-noglob" | "-no-glob"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-translate" |"-strict-implicit"
       |"-dont-load-proofs"|"-impredicative-set"|"-vm" 
       | "-unboxed-values" | "-unboxed-definitions" | "-draw-vm-instr" 
 	  as o) :: rem ->
 	parse (cfiles,o::args) rem
+
+    | "-dump-glob" :: _ :: rem -> Pp.msg_warning (Pp.str "option -dumpglob is obsolete"); parse (cfiles,args) rem
+
     | "-where" :: _ -> 
 	let coqlib = 
 	  try Sys.getenv "COQLIB" with Not_found -> Coq_config.coqlib 

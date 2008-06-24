@@ -226,11 +226,17 @@ let load_vernac verb file =
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
   let ldir,long_f_dot_v = Library.start_library f in
-  if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-  if !Flags.xml_export then !xml_start_library ();
-  let _ = load_vernac verbosely long_f_dot_v in
-  if Pfedit.get_all_proof_names () <> [] then
-    (message "Error: There are pending proofs"; exit 1);
-  if !Flags.xml_export then !xml_end_library ();
-  Library.save_library_to ldir (long_f_dot_v ^ "o")
+  let dumpstate = !Flags.dump in
+    if not !Flags.noglob then
+      (Flags.dump_into_file (f ^ ".glob");
+       Flags.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n"));
+    if !Flags.xml_export then !xml_start_library ();
+    let _ = load_vernac verbosely long_f_dot_v in
+     if Pfedit.get_all_proof_names () <> [] then
+	(message "Error: There are pending proofs"; exit 1);
+      if !Flags.xml_export then !xml_end_library ();
+      if !Flags.dump then Flags.dump_it ();
+      Flags.dump := dumpstate;
+      Library.save_library_to ldir (long_f_dot_v ^ "o")
+
 
