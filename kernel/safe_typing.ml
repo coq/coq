@@ -102,7 +102,10 @@ let env_of_senv = env_of_safe_env
 
 
 
-
+let add_constraints cst senv = 
+  {senv with
+    env = Environ.add_constraints cst senv.env;
+    univ = Univ.Constraint.union cst senv.univ }
 
 
 (*spiwack: functions for safe retroknowledge *)
@@ -166,15 +169,15 @@ let safe_push_named (id,_,_ as d) env =
 
 let push_named_def (id,b,topt) senv =
   let (c,typ,cst) = translate_local_def senv.env (b,topt) in
-  let env' = add_constraints cst senv.env in
-  let env'' = safe_push_named (id,Some c,typ) env' in
-  (cst, {senv with env=env''})
+  let senv' = add_constraints cst senv in
+  let env'' = safe_push_named (id,Some c,typ) senv'.env in
+  (cst, {senv' with env=env''})
 
 let push_named_assum (id,t) senv =
   let (t,cst) = translate_local_assum senv.env t in
-  let env' = add_constraints cst senv.env in
-  let env'' = safe_push_named (id,None,t) env' in
-  (cst, {senv with env=env''})
+  let senv' = add_constraints cst senv in
+  let env'' = safe_push_named (id,None,t) senv'.env in
+  (cst, {senv' with env=env''})
 
 
 (* Insertion of constants and parameters in environment. *)
@@ -209,18 +212,18 @@ let add_constant dir l decl senv =
 	  let cb = translate_recipe senv.env kn r in
 	    if dir = empty_dirpath then hcons_constant_body cb else cb
   in
-  let env' = Environ.add_constraints cb.const_constraints senv.env in
-  let env'' = Environ.add_constant kn cb env' in
-    kn, { old = senv.old;
+  let senv' = add_constraints cb.const_constraints senv in
+  let env'' = Environ.add_constant kn cb senv'.env in
+    kn, { old = senv'.old;
 	  env = env'';
-	  modinfo = senv.modinfo;
-	  labset = Labset.add l senv.labset;
-	  revstruct = (l,SFBconst cb)::senv.revstruct;
-          univ = senv.univ;
-          engagement = senv.engagement;
-	  imports = senv.imports;
-	  loads = senv.loads ;
-	  local_retroknowledge = senv.local_retroknowledge }
+	  modinfo = senv'.modinfo;
+	  labset = Labset.add l senv'.labset;
+	  revstruct = (l,SFBconst cb)::senv'.revstruct;
+          univ = senv'.univ;
+          engagement = senv'.engagement;
+	  imports = senv'.imports;
+	  loads = senv'.loads ;
+	  local_retroknowledge = senv'.local_retroknowledge }
     
 
 (* Insertion of inductive types. *)
@@ -237,26 +240,19 @@ let add_mind dir l mie senv =
     (* TODO: when we will allow reorderings we will have to verify 
        all labels *)
   let mib = translate_mind senv.env mie in
-  let env' = Environ.add_constraints mib.mind_constraints senv.env in
+  let senv' = add_constraints mib.mind_constraints senv in
   let kn = make_kn senv.modinfo.modpath dir l in
-  let env'' = Environ.add_mind kn mib env' in
-  kn, { old = senv.old;
+  let env'' = Environ.add_mind kn mib senv'.env in
+  kn, { old = senv'.old;
 	env = env'';
-	modinfo = senv.modinfo;
-	labset = Labset.add l senv.labset;  (* TODO: the same as above *)
-	revstruct = (l,SFBmind mib)::senv.revstruct;
-        univ = senv.univ;
-        engagement = senv.engagement;
-	imports = senv.imports;
-	loads = senv.loads;
-        local_retroknowledge = senv.local_retroknowledge }
-
-(* Insertion of orphaned universe constraints *)
-
-let add_constraints cst senv = 
-  {senv with
-    env = Environ.add_constraints cst senv.env;
-    univ = Univ.Constraint.union cst senv.univ }
+	modinfo = senv'.modinfo;
+	labset = Labset.add l senv'.labset;  (* TODO: the same as above *)
+	revstruct = (l,SFBmind mib)::senv'.revstruct;
+        univ = senv'.univ;
+        engagement = senv'.engagement;
+	imports = senv'.imports;
+	loads = senv'.loads;
+        local_retroknowledge = senv'.local_retroknowledge }
 
 (* Insertion of module types *)
 
@@ -266,60 +262,64 @@ let add_modtype l mte senv =
   let mtb = { typ_expr = mtb_expr;
 	      typ_strength = None;
 	      typ_alias = sub} in
-  let env' = add_modtype_constraints senv.env mtb in
+  let senv' = add_constraints 
+    (struct_expr_constraints mtb_expr) senv in
   let mp = MPdot(senv.modinfo.modpath, l) in
-  let env'' = Environ.add_modtype mp mtb env' in
-  mp, { old = senv.old;
+  let env'' = Environ.add_modtype mp mtb senv'.env in
+  mp, { old = senv'.old;
 	env = env'';
-	modinfo = senv.modinfo;
-	labset = Labset.add l senv.labset;
-	revstruct = (l,SFBmodtype mtb)::senv.revstruct;
-        univ = senv.univ;
-        engagement = senv.engagement;
-	imports = senv.imports;
-	loads = senv.loads;
-        local_retroknowledge = senv.local_retroknowledge }
+	modinfo = senv'.modinfo;
+	labset = Labset.add l senv'.labset;
+	revstruct = (l,SFBmodtype mtb)::senv'.revstruct;
+        univ = senv'.univ;
+        engagement = senv'.engagement;
+	imports = senv'.imports;
+	loads = senv'.loads;
+        local_retroknowledge = senv'.local_retroknowledge }
 
 
 (* full_add_module adds module with universes and constraints *)
-let full_add_module mp mb env =
-  let env = add_module_constraints env mb in
-  let env = Modops.add_module mp mb env in
-    env
-
+let full_add_module mp mb senv =
+  let senv = add_constraints (module_constraints mb) senv in
+  let env = Modops.add_module mp mb senv.env in
+    {senv with env = env}
+      
 (* Insertion of modules *)
-
+      
 let add_module l me senv = 
   check_label l senv.labset; 
   let mb = translate_module senv.env me in
   let mp = MPdot(senv.modinfo.modpath, l) in
-  let env' = full_add_module mp mb senv.env in
-  let is_functor,sub = Modops.update_subst senv.env mb mp in
-  mp, { old = senv.old;
-	env = env';
+  let senv' = full_add_module mp mb senv in
+  let is_functor,sub = Modops.update_subst senv'.env mb mp in
+  mp, { old = senv'.old;
+	env = senv'.env;
 	modinfo = 
       if is_functor then
-	senv.modinfo
+	senv'.modinfo
       else
-	{senv.modinfo with 
-	   alias_subst = join senv.modinfo.alias_subst sub};
-	labset = Labset.add l senv.labset;
-	revstruct = (l,SFBmodule mb)::senv.revstruct;
-        univ = senv.univ;
-        engagement = senv.engagement;
-	imports = senv.imports;
-	loads = senv.loads;
-        local_retroknowledge = senv.local_retroknowledge }
-
+	{senv'.modinfo with 
+	   alias_subst = join senv'.modinfo.alias_subst sub};
+	labset = Labset.add l senv'.labset;
+	revstruct = (l,SFBmodule mb)::senv'.revstruct;
+        univ = senv'.univ;
+        engagement = senv'.engagement;
+	imports = senv'.imports;
+	loads = senv'.loads;
+        local_retroknowledge = senv'.local_retroknowledge }
+    
 let add_alias l mp senv =
   check_label l senv.labset; 
   let mp' = MPdot(senv.modinfo.modpath, l) in
-  (* we get all updated alias substitutions that comes from mp *)
-  let _,sub = Modops.update_subst senv.env (lookup_module mp senv.env) mp in
-   (* we add the new one *)
   let mp1 = scrape_alias mp senv.env in
-  let sub = update_subst sub (map_mp mp' mp) in
-  let sub = join (map_mp mp' mp1) sub in
+    (* we get all updated alias substitution {mp1.K\M}  that comes from mp1 *)
+  let _,sub = Modops.update_subst senv.env (lookup_module mp1 senv.env) mp1 in
+    (* transformation of {mp1.K\M} to {mp.K\M}*)
+  let sub = update_subst sub (map_mp mp' mp1) in
+   (* transformation of {mp.K\M}  to {mp.K\M'} where M'=M{mp1\mp'}*)
+  let sub = join_alias sub (map_mp mp' mp1) in
+    (* we add the alias substitution  *)
+  let sub = add_mp mp' mp1 sub in
   let env' = register_alias mp' mp senv.env in
     mp', { old = senv.old;
 	env = env';
@@ -406,14 +406,16 @@ let end_module l restype senv =
   let mp = MPdot (oldsenv.modinfo.modpath, l) in
   let newenv = oldsenv.env in
   let newenv = set_engagement_opt senv.engagement newenv in
-  let newenv = 
+  let senv'= {senv with env=newenv} in
+  let senv' = 
     List.fold_left
       (fun env (mp,mb) -> full_add_module mp mb env) 
-      newenv
-      (List.rev senv.loads)
+      senv'
+      (List.rev senv'.loads)
   in
+  let newenv = Environ.add_constraints cst senv'.env in
   let newenv = 
-    full_add_module mp mb newenv
+    Modops.add_module mp mb newenv
   in 
   let is_functor,subst = Modops.update_subst newenv mb mp in
   let newmodinfo = 
@@ -430,12 +432,12 @@ let end_module l restype senv =
 	modinfo = newmodinfo;
 	labset = Labset.add l oldsenv.labset;
 	revstruct = (l,SFBmodule mb)::oldsenv.revstruct;
-        univ = oldsenv.univ;
+        univ = Univ.Constraint.union senv'.univ oldsenv.univ;
         (* engagement is propagated to the upper level *)
-        engagement = senv.engagement;
-	imports = senv.imports;
-	loads = senv.loads@oldsenv.loads;
-	local_retroknowledge = senv.local_retroknowledge@oldsenv.local_retroknowledge }
+        engagement = senv'.engagement;
+	imports = senv'.imports;
+	loads = senv'.loads@oldsenv.loads;
+	local_retroknowledge = senv'.local_retroknowledge@oldsenv.local_retroknowledge }
 
 
 (* Include for module and module type*)
@@ -453,61 +455,68 @@ let end_module l restype senv =
      match elem with
        | SFBconst cb ->
 	   let con = make_con mp_sup empty_dirpath l in
-	   let env' = Environ.add_constraints cb.const_constraints senv.env in
-	   let env'' = Environ.add_constant con cb env' in
-	     { old = senv.old;
+	   let senv' = add_constraints cb.const_constraints senv in
+	   let env'' = Environ.add_constant con cb senv'.env in
+	     { old = senv'.old;
 	       env = env'';
-	       modinfo = senv.modinfo;
-	       labset = Labset.add l senv.labset;
-	       revstruct = (l,SFBconst cb)::senv.revstruct;
-               univ = senv.univ;
-               engagement = senv.engagement;
-	       imports = senv.imports;
-	       loads = senv.loads ;
-	       local_retroknowledge = senv.local_retroknowledge }
+	       modinfo = senv'.modinfo;
+	       labset = Labset.add l senv'.labset;
+	       revstruct = (l,SFBconst cb)::senv'.revstruct;
+               univ = senv'.univ;
+               engagement = senv'.engagement;
+	       imports = senv'.imports;
+	       loads = senv'.loads ;
+	       local_retroknowledge = senv'.local_retroknowledge }
 	       	     
        | SFBmind mib ->
 	   let kn = make_kn mp_sup empty_dirpath l in
-	   let env' = Environ.add_constraints mib.mind_constraints senv.env in
-	   let env'' = Environ.add_mind kn mib env' in
-	     { old = senv.old;
+	   let senv' = add_constraints mib.mind_constraints senv in
+	   let env'' = Environ.add_mind kn mib senv'.env in
+	     { old = senv'.old;
 	       env = env'';
-	       modinfo = senv.modinfo;
-	       labset = Labset.add l senv.labset;  
-	       revstruct = (l,SFBmind mib)::senv.revstruct;
-               univ = senv.univ;
-               engagement = senv.engagement;
-	       imports = senv.imports;
-	       loads = senv.loads;
-               local_retroknowledge = senv.local_retroknowledge }
+	       modinfo = senv'.modinfo;
+	       labset = Labset.add l senv'.labset;  
+	       revstruct = (l,SFBmind mib)::senv'.revstruct;
+               univ = senv'.univ;
+               engagement = senv'.engagement;
+	       imports = senv'.imports;
+	       loads = senv'.loads;
+               local_retroknowledge = senv'.local_retroknowledge }
 	       
        | SFBmodule mb ->
 	   let mp = MPdot(senv.modinfo.modpath, l) in
 	   let is_functor,sub = Modops.update_subst senv.env mb mp in
-	   let env' = full_add_module mp mb senv.env in
-	     { old = senv.old;
-	       env = env';
+	   let senv' = full_add_module mp mb senv in
+	     { old = senv'.old;
+	       env = senv'.env;
 	       modinfo = 
 		 if is_functor then
-		   senv.modinfo
+		   senv'.modinfo
 		 else
-		   {senv.modinfo with 
-		      alias_subst = join senv.modinfo.alias_subst sub};
-	       labset = Labset.add l senv.labset;
-	       revstruct = (l,SFBmodule mb)::senv.revstruct;
-	       univ = senv.univ;
-	       engagement = senv.engagement;
-	       imports = senv.imports;
-	       loads = senv.loads;
-	       local_retroknowledge = senv.local_retroknowledge }
+		   {senv'.modinfo with 
+		      alias_subst = join senv'.modinfo.alias_subst sub};
+	       labset = Labset.add l senv'.labset;
+	       revstruct = (l,SFBmodule mb)::senv'.revstruct;
+	       univ = senv'.univ;
+	       engagement = senv'.engagement;
+	       imports = senv'.imports;
+	       loads = senv'.loads;
+	       local_retroknowledge = senv'.local_retroknowledge }
        | SFBalias (mp',cst) ->
 	   let env' = Option.fold_right 
 	     Environ.add_constraints cst senv.env in
 	   let mp = MPdot(senv.modinfo.modpath, l) in
+	   let mp1 = scrape_alias mp' senv.env in
+	   let _,sub = Modops.update_subst senv.env (lookup_module mp1 senv.env) mp1 in
+	   let sub = update_subst sub (map_mp mp mp1) in
+	   let sub = join_alias sub (map_mp mp mp1) in
+	   let sub = add_mp mp mp1 sub in
 	   let env' = register_alias mp mp' env' in
 	     { old = senv.old;
 	       env = env';
-	       modinfo = senv.modinfo;
+	       modinfo =  { senv.modinfo with 
+			      alias_subst = join 
+		   senv.modinfo.alias_subst sub};
 	       labset = Labset.add l senv.labset;
 	       revstruct = (l,SFBalias (mp',cst))::senv.revstruct;
                univ = senv.univ;
@@ -541,7 +550,7 @@ let add_module_parameter mbid mte senv =
   let mtb = {typ_expr = mtb_expr;
 	    typ_strength = None;
 	    typ_alias = sub} in
-  let env = full_add_module (MPbound mbid) (module_body_of_type mtb) senv.env 
+  let senv = full_add_module (MPbound mbid) (module_body_of_type mtb) senv 
   in
   let new_variant = match senv.modinfo.variant with
     | STRUCT params -> STRUCT ((mbid,mtb) :: params)
@@ -550,7 +559,7 @@ let add_module_parameter mbid mte senv =
 	anomaly "Module parameters can only be added to modules or signatures"
   in
   { old = senv.old;
-    env = env;
+    env = senv.env;
     modinfo = { senv.modinfo with variant = new_variant };
     labset = senv.labset;
     revstruct = [];
@@ -612,10 +621,11 @@ let end_modtype l senv =
      they are propagated to the upper level *)
   let newenv = Environ.add_constraints senv.univ  newenv in
   let newenv = set_engagement_opt senv.engagement newenv in
-  let newenv = 
+  let senv = {senv with env=newenv} in
+  let senv = 
     List.fold_left
       (fun env (mp,mb) -> full_add_module mp mb env) 
-      newenv
+      senv
       (List.rev senv.loads)
   in
   let subst = senv.modinfo.alias_subst in
@@ -623,13 +633,10 @@ let end_modtype l senv =
 	    typ_strength = None;
 	    typ_alias = subst} in
   let newenv = 
-    add_modtype_constraints newenv mtb
-  in
-  let newenv = 
-    Environ.add_modtype mp mtb newenv
+    Environ.add_modtype mp mtb senv.env
   in 
-  mp, { old = oldsenv.old;
-	env = newenv;
+    mp, { old = oldsenv.old;
+	  env = newenv;
 	modinfo = oldsenv.modinfo;
 	labset = Labset.add l oldsenv.labset;
 	revstruct = (l,SFBmodtype mtb)::oldsenv.revstruct;
@@ -758,8 +765,10 @@ let import (dp,mb,depends,engmt) digest senv =
   check_engagement senv.env engmt;
   let mp = MPfile dp in
   let env = senv.env in
+  let env = Environ.add_constraints mb.mod_constraints env in
+  let env = Modops.add_module mp mb env in
   mp, { senv with 
-	  env = full_add_module mp mb env; 
+	  env = env; 
 	  imports = (dp,digest)::senv.imports;
 	  loads = (mp,mb)::senv.loads }
 
