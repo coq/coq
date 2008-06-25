@@ -377,3 +377,4 @@ and modtype_constraints cst mtb =
       
 
 let struct_expr_constraints = struct_expr_constraints Univ.Constraint.empty
+let module_constraints = module_constraints Univ.Constraint.empty
