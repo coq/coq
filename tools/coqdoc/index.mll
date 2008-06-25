@@ -238,7 +238,9 @@ let firstchar =
 let identchar = 
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
      '\'' '0'-'9']
-let ident = firstchar identchar*
+let id = firstchar identchar*
+let pfx_id = (id '.')*
+let ident = id | pfx_id id
 
 let begin_hide = "(*" space* "begin" space+ "hide" space* "*)"
 let end_hide = "(*" space* "end" space+ "hide" space* "*)"
@@ -405,10 +407,11 @@ and module_refs = parse
       { module_refs lexbuf }
   | ident  
       { let id =  lexeme lexbuf in
-	  (try
-	      add_mod !current_library (lexeme_start lexbuf) (Hashtbl.find modules id) id
-	    with
-		Not_found -> ()
+	  (Printf.eprintf "DEBUG: id = %s\n" id; 
+	   try
+	     add_mod !current_library (lexeme_start lexbuf) (Hashtbl.find modules id) id
+	   with
+	       Not_found -> ()
 	  ); 
 	module_refs lexbuf }
   | eof    

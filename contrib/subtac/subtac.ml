@@ -107,7 +107,8 @@ let declare_assumption env isevars idl is_coe k bl c nl =
 	(str "Cannot declare an assumption while in proof editing mode.")
 
 let dump_definition (loc, id) s =
-  Flags.dump_string (Printf.sprintf "%s %d %s\n" s (fst (unloc loc)) (string_of_id id))
+  Dumpglob.dump_string (Printf.sprintf "%s %d %s\n" s (fst (unloc loc)) 
+			   (string_of_id id))
 
 let dump_constraint ty ((loc, n), _, _) =
   match n with

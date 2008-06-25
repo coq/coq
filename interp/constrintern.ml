@@ -124,150 +124,6 @@ let error_inductive_parameter_not_implicit loc =
     "the 'return' clauses; they must be replaced by '_' in the 'in' clauses."))
 
 (**********************************************************************)
-(* Dump of globalization (to be used by coqdoc)                       *)
-let token_number = ref 0
-let last_pos = ref 0
-
-type coqdoc_state = Lexer.location_table * int * int
-
-let coqdoc_freeze () =
-  let lt = Lexer.location_table() in
-  let state = (lt,!token_number,!last_pos) in
-    token_number := 0;
-    last_pos := 0;
-    state
-
-let coqdoc_unfreeze (lt,tn,lp) =
-  Lexer.restore_location_table lt;
-  token_number := tn;
-  last_pos := lp
-
-open Decl_kinds
-
-let type_of_logical_kind = function
-  | IsDefinition def -> 
-      (match def with
-      | Definition -> "def"
-      | Coercion -> "coe"
-      | SubClass -> "subclass"
-      | CanonicalStructure -> "canonstruc"
-      | Example -> "ex"
-      | Fixpoint -> "def"
-      | CoFixpoint -> "def"
-      | Scheme -> "scheme"
-      | StructureComponent -> "proj"
-      | IdentityCoercion -> "coe"
-      | Instance -> "inst"
-      | Method -> "meth")
-  | IsAssumption a ->
-      (match a with
-      | Definitional -> "defax"
-      | Logical -> "prfax"
-      | Conjectural -> "prfax")
-  | IsProof th ->
-      (match th with
-      | Theorem
-      | Lemma
-      | Fact
-      | Remark
-      | Property
-      | Proposition
-      | Corollary -> "thm")
-
-let type_of_global_ref gr =
-  if Typeclasses.is_class gr then
-    "class"
-  else
-    match gr with
-    | ConstRef cst -> 
-	type_of_logical_kind (Decls.constant_kind cst)
-    | VarRef v ->
-	"var" ^ type_of_logical_kind (Decls.variable_kind v)
-    | IndRef ind ->
-	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
-	  if mib.Declarations.mind_record then
-	    if mib.Declarations.mind_finite then "rec"
-	    else "corec"
-	  else if mib.Declarations.mind_finite then "ind"
-	  else "coind"
-    | ConstructRef _ -> "constr"
-
-let remove_sections dir =
-  if is_dirpath_prefix_of dir (Lib.cwd ()) then
-    (* Not yet (fully) discharged *)
-    extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
-  else
-    (* Theorem/Lemma outside its outer section of definition *)
-    dir
-
-let dump_reference loc filepath modpath ident ty =
-  dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
-		  (fst (unloc loc)) filepath modpath ident ty)
-
-let add_glob_gen loc sp lib_dp ty =
-  let mod_dp,id = repr_path sp in
-  let mod_dp = remove_sections mod_dp in
-  let mod_dp_trunc = drop_dirpath_prefix lib_dp mod_dp in
-  let filepath = string_of_dirpath lib_dp in
-  let modpath = string_of_dirpath mod_dp_trunc in
-  let ident = string_of_id id in
-    dump_reference loc filepath modpath ident ty
-
-let add_glob loc ref = 
-  let sp = Nametab.sp_of_global ref in
-  let lib_dp = Lib.library_part ref in
-  let ty = type_of_global_ref ref in
-    add_glob_gen loc sp lib_dp ty
-      
-let add_glob loc ref =
-  if !Flags.dump && loc <> dummy_loc then add_glob loc ref
-
-let mp_of_kn kn = 
-  let mp,sec,l = repr_kn kn in 
-    MPdot (mp,l) 
-
-let add_glob_kn loc kn =
-  let sp = Nametab.sp_of_syntactic_definition kn in
-  let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
-    add_glob_gen loc sp lib_dp "syndef"
-
-let add_glob_kn loc ref =
-  if !Flags.dump && loc <> dummy_loc then add_glob_kn loc ref
-
-let add_local loc id = ()
-(*   let mod_dp,id = repr_path sp in *)
-(*   let mod_dp = remove_sections mod_dp in *)
-(*   let mod_dp_trunc = drop_dirpath_prefix lib_dp mod_dp in *)
-(*   let filepath = string_of_dirpath lib_dp in *)
-(*   let modpath = string_of_dirpath mod_dp_trunc in *)
-(*   let ident = string_of_id id in *)
-(*     dump_string (Printf.sprintf "R%d %s %s %s %s\n"  *)
-(* 		    (fst (unloc loc)) filepath modpath ident ty) *)
-
-let dump_binding loc id = ()
-      
-let loc_of_notation f loc args ntn =
-  if args=[] or ntn.[0] <> '_' then fst (unloc loc)
-  else snd (unloc (f (List.hd args)))
-
-let ntn_loc = loc_of_notation constr_loc
-let patntn_loc = loc_of_notation cases_pattern_expr_loc
-
-let dump_notation_location pos ((path,df),sc) =
-  let rec next growing =
-    let loc = Lexer.location_function !token_number in
-    let (bp,_) = unloc loc in
-      if growing then if bp >= pos then loc else (incr token_number;next true)
-      else if bp = pos then loc
-      else if bp > pos then (decr token_number;next false)
-      else (incr token_number;next true) in
-  let loc = next (pos >= !last_pos) in
-    last_pos := pos;
-    let path = string_of_dirpath path in
-    let _sc = match sc with Some sc -> " "^sc | None -> "" in
-      dump_string (Printf.sprintf "R%d %s \"%s\" not\n" (fst (unloc loc)) path df)
-
-(**********************************************************************)
 (* Contracting "{ _ }" in notations *)
 
 let rec wildcards ntn n =
@@ -394,9 +250,9 @@ let rec subst_aconstr_in_rawconstr loc interp subst (renaming,(ids,_,scopes)) =
 let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ntn,args = contract_notation ntn args in
   let ((ids,c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
-  if !dump then dump_notation_location (ntn_loc loc args ntn) df;
-  let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
-  subst_aconstr_in_rawconstr loc intern subst ([],env) c
+    if !Flags.dump then Dumpglob.dump_notation_location (Dumpglob.ntn_loc loc args ntn) df;
+    let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
+      subst_aconstr_in_rawconstr loc intern subst ([],env) c
 
 let set_type_scope (ids,tmp_scope,scopes) =
   (ids,Some Notation.type_scope,scopes)
@@ -476,10 +332,10 @@ let check_no_explicitation l =
 let intern_qualid loc qid intern env args =
   try match Nametab.extended_locate qid with
   | TrueGlobal ref ->
-      add_glob loc ref;
+      Dumpglob.add_glob loc ref;
       RRef (loc, ref), args
   | SyntacticDef sp ->
-      add_glob_kn loc sp;
+      Dumpglob.add_glob_kn loc sp;
       let (ids,c) = Syntax_def.search_syntactic_definition loc sp in
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments loc;
@@ -709,7 +565,7 @@ let find_constructor ref f aliases pats scopes =
 	    let v = Environ.constant_value (Global.env()) cst in
 	    unf (global_of_constr v)
         | ConstructRef cstr -> 
-	    add_glob loc r; 
+	    Dumpglob.add_glob loc r; 
 	    cstr, [], pats
         | _ -> raise Not_found
       in unf r
@@ -760,7 +616,7 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
       let ((ids',c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
-      if !dump then dump_notation_location (patntn_loc loc args ntn) df;
+      if !Flags.dump then Dumpglob.dump_notation_location (Dumpglob.patntn_loc loc args ntn) df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
       let ids'',pl = subst_cases_pattern loc (alias_of aliases) intern_pat subst scopes 
 	c
@@ -769,7 +625,7 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
       let a = alias_of aliases in
       let (c,df) = Notation.interp_prim_token_cases_pattern loc p a 
 	(tmp_scope,scopes) in
-      if !dump then dump_notation_location (fst (unloc loc)) df;
+      if !Flags.dump then Dumpglob.dump_notation_location (fst (unloc loc)) df;
       (ids,[subst,c])
   | CPatDelimiters (loc, key, e) ->
       intern_pat (find_delimiters_scope loc key::scopes) aliases None e
@@ -829,7 +685,7 @@ let push_loc_name_env lvar (ids,tmpsc,scopes as env) loc = function
   | Anonymous -> env 
   | Name id -> 
       check_hidden_implicit_parameters id lvar;
-      dump_binding loc id;
+      Dumpglob.dump_binding loc id;
       (Idset.add id ids,tmpsc,scopes)
 
 let intern_typeclass_binders intern_type lvar env bl =
@@ -1029,7 +885,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         intern_notation intern env loc ntn args
     | CPrim (loc, p) ->
 	let c,df = Notation.interp_prim_token loc p (tmp_scope,scopes) in
-	if !dump then dump_notation_location (fst (unloc loc)) df;
+	if !Flags.dump then Dumpglob.dump_notation_location (fst (unloc loc)) df;
 	c
     | CDelimiters (loc, key, e) ->
 	intern (ids,None,find_delimiters_scope loc key::scopes) e

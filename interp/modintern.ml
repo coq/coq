@@ -61,34 +61,6 @@ let lookup_qualid (modtype:bool) qid =
 *)
 
 
-let split_modpath mp =
-  let rec aux = function
-    | MPfile dp -> dp, []
-    | MPbound mbid -> 
-	Lib.library_dp (), [id_of_mbid mbid]
-    | MPself msid -> Lib.library_dp (), [id_of_msid msid]
-    | MPdot (mp,l) -> let (mp', lab) = aux mp in
-			(mp', id_of_label l :: lab)
-  in 
-  let (mp, l) = aux mp in
-    mp, l
-			
-let dump_moddef loc mp ty =
-  if !Flags.dump then
-    let (dp, l) = split_modpath mp in
-    let mp = string_of_dirpath (make_dirpath l) in
-      Flags.dump_string (Printf.sprintf "%s %d %s %s\n" ty (fst (unloc loc)) "<>" mp)
-
-let rec drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> hd :: drop_last tl
-
-let dump_modref loc mp ty =
-  if !Flags.dump then
-    let (dp, l) = split_modpath mp in
-    let fp = string_of_dirpath dp in
-    let mp = string_of_dirpath (make_dirpath (drop_last l)) in
-      Flags.dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
-			    (fst (unloc loc)) fp mp "<>" ty)
-
 (* Search for the head of [qid] in [binders]. 
    If found, returns the module_path/kernel_name created from the dirpath
    and the basename. Searches Nametab otherwise.
@@ -96,14 +68,14 @@ let dump_modref loc mp ty =
 let lookup_module (loc,qid) =
   try
     let mp = Nametab.locate_module qid in
-      dump_modref loc mp "modtype"; mp
+      Dumpglob.dump_modref loc mp "modtype"; mp
   with
     | Not_found -> Modops.error_not_a_module_loc loc (string_of_qualid qid)
 	
 let lookup_modtype (loc,qid) =
   try
     let mp = Nametab.locate_modtype qid in
-      dump_modref loc mp "mod"; mp
+      Dumpglob.dump_modref loc mp "mod"; mp
   with
     | Not_found -> 
 	Modops.error_not_a_modtype_loc loc (string_of_qualid qid)

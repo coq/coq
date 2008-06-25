@@ -18,7 +18,6 @@ open Safe_typing
 open Libobject
 open Lib
 open Nametab
-open Declaremods
 
 (*************************************************************************)
 (*s Load path. Mapping from physical to logical paths etc.*)
@@ -113,7 +112,7 @@ type compilation_unit_name = dir_path
 type library_disk = { 
   md_name : compilation_unit_name;
   md_compiled : compiled_library;
-  md_objects : library_objects;
+  md_objects : Declaremods.library_objects;
   md_deps : (compilation_unit_name * Digest.t) list;
   md_imports : compilation_unit_name list }
 
@@ -123,7 +122,7 @@ type library_disk = {
 type library_t = {
   library_name : compilation_unit_name;
   library_compiled : compiled_library;
-  library_objects : library_objects;
+  library_objects : Declaremods.library_objects;
   library_deps : (compilation_unit_name * Digest.t) list;
   library_imports : compilation_unit_name list;
   library_digest : Digest.t }
@@ -540,19 +539,16 @@ let require_library qidl export =
   let modrefl = List.map try_locate_qualified_library qidl in
   let needed = List.rev (List.fold_left rec_intern_library [] modrefl) in
   let modrefl = List.map fst modrefl in
-    if Lib.is_modtype () || Lib.is_module () then begin
-      add_anonymous_leaf (in_require (needed,modrefl,None));
-      Option.iter (fun exp ->
-	List.iter (fun dir -> add_anonymous_leaf (in_import(dir,exp))) modrefl)
-	export
-    end
+    if Lib.is_modtype () || Lib.is_module () then 
+      begin
+	add_anonymous_leaf (in_require (needed,modrefl,None));
+	Option.iter (fun exp ->
+	  List.iter (fun dir -> add_anonymous_leaf (in_import(dir,exp))) modrefl)
+	  export
+      end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
-  if !Flags.dump then List.iter2 (fun (loc, _) dp -> 
-    Flags.dump_string (Printf.sprintf "R%d %s <> <> %s\n" 
-		    (fst (unloc loc)) (string_of_dirpath dp) "lib"))
-    qidl modrefl;
-  if !Flags.xml_export then List.iter !xml_require modrefl;
+    if !Flags.xml_export then List.iter !xml_require modrefl;
   add_frozen_state ()
 
 let require_library_from_file idopt file export =
@@ -573,18 +569,18 @@ let require_library_from_file idopt file export =
 let import_module export (loc,qid) =
   try
     match Nametab.locate_module qid with
-	MPfile dir -> 
+      | MPfile dir -> 
 	  if Lib.is_modtype () || Lib.is_module () || not export then
 	    add_anonymous_leaf (in_import (dir, export))
 	  else
 	    add_anonymous_leaf (in_require ([],[dir], Some export))
       | mp ->
-	  import_module export mp
+	  Declaremods.import_module export mp
   with
       Not_found ->
 	user_err_loc
-        (loc,"import_library",
-	 str ((string_of_qualid qid)^" is not a module"))
+          (loc,"import_library",
+	  str ((string_of_qualid qid)^" is not a module"))
   
 (************************************************************************)
 (*s Initializing the compilation of a library. *)

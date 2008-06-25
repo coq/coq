@@ -48,6 +48,7 @@ type mod_self_id
 (* The first argument is a file name - to prevent conflict between 
    different files *)
 val make_msid : dir_path -> string -> mod_self_id
+val repr_msid : mod_self_id -> int * string * dir_path
 val id_of_msid : mod_self_id -> identifier
 val label_of_msid : mod_self_id -> label
 val refresh_msid : mod_self_id -> mod_self_id
@@ -58,6 +59,7 @@ val string_of_msid : mod_self_id -> string
 type mod_bound_id
 
 val make_mbid : dir_path -> string -> mod_bound_id
+val repr_mbid : mod_bound_id -> int * string * dir_path
 val id_of_mbid : mod_bound_id -> identifier
 val label_of_mbid : mod_bound_id -> label
 val debug_string_of_mbid : mod_bound_id -> string
@@ -81,7 +83,6 @@ type module_path =
   | MPself of mod_self_id 
   | MPdot of module_path * label
 (*i  | MPapply of module_path * module_path    in the future (maybe) i*)
-
 
 val string_of_mp : module_path -> string
 
