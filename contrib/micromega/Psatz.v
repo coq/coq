@@ -23,57 +23,76 @@ Require Export RingMicromega.
 Require Import VarMap.
 Require Tauto.
 
-Ltac micromegac dom d :=
+Ltac xpsatz dom d :=
   let tac := lazymatch dom with
   | Z => 
-    micromegap d ;
+    psatz_Z d ;
     intros __wit __varmap __ff ; 
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
     apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | R =>
-    rmicromegap d ;
+    psatz_R d ;
     intros __wit __varmap __ff ; 
     change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ; 
     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity
+  | Q =>
+    cbv beta in *;
+    psatz_Q d ;
+    intros __wit __varmap __ff ; 
+    change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ; 
+    apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | _ => fail "Unsupported domain"
   end in tac.
 
-Tactic Notation "micromega" constr(dom) int_or_var(n) := micromegac dom n.
-Tactic Notation "micromega" constr(dom) := micromegac dom ltac:-1.
+Tactic Notation "psatz" constr(dom) int_or_var(n) := xpsatz dom n.
+Tactic Notation "psatz" constr(dom) := xpsatz dom ltac:-1.
 
-Ltac zfarkas :=  omicronp ;
-  intros __wit __varmap __ff ; 
-  change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
-  apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
-
-Ltac omicron dom :=
+Ltac psatzl dom :=
   let tac := lazymatch dom with
   | Z =>
-    zomicronp ;
+    psatzl_Z ;
     intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
     apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | Q =>
-    qomicronp ; 
+    cbv beta in *;
+    psatzl_Q ; 
     intros __wit __varmap __ff ; 
     change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ; 
     apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | R => 
-    romicronp ;
+    psatzl_R ;
     intros __wit __varmap __ff ;
     change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ; 
     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | _ => fail "Unsupported domain"
   end in tac.
 
+
 Ltac sos dom :=
   let tac := lazymatch dom with
   | Z =>
-    sosp ;
+    sos_Z ;
     intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
     apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
+  | Q =>
+    cbv beta in *;
+    sos_Q ;
+    intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ; 
+    apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity
+  | R =>
+    sos_R ;
+    intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ; 
+    apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | _ => fail "Unsupported domain"
   end in tac.
 
 
+Ltac lia := 
+  xlia ;
+  intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
+      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.

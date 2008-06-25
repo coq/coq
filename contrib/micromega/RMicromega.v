@@ -97,9 +97,34 @@ Definition INZ (n:N) : R :=
 Definition Reval_expr := eval_pexpr  Rplus Rmult Rminus Ropp IZR Nnat.nat_of_N pow.
 
 
-Definition Reval_formula :=
+Definition Reval_op2 (o:Op2) : R -> R -> Prop :=
+    match o with
+      | OpEq =>  @eq R
+      | OpNEq => fun x y  => ~ x = y
+      | OpLe => Rle
+      | OpGe => Rge
+      | OpLt => Rlt
+      | OpGt => Rgt
+    end.
+
+
+Definition Reval_formula (e: PolEnv R) (ff : Formula Z) :=
+  let (lhs,o,rhs) := ff in Reval_op2 o (Reval_expr e lhs) (Reval_expr e rhs).
+
+Definition Reval_formula' :=
   eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IZR Nnat.nat_of_N pow.
 
+Lemma Reval_formula_compat : forall env f, Reval_formula env f <-> Reval_formula' env f.
+Proof.
+  intros.
+  unfold Reval_formula.
+  destruct f.
+  unfold Reval_formula'.
+  unfold Reval_expr.
+  split ; destruct Fop ; simpl ; auto.
+  apply Rge_le.
+  apply Rle_ge.
+Qed.
 
 Definition Reval_nformula :=
   eval_nformula 0 Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IZR Nnat.nat_of_N pow.
@@ -139,8 +164,9 @@ Proof.
   unfold RTautoChecker.
   apply (tauto_checker_sound  Reval_formula Reval_nformula).
   apply Reval_nformula_dec.
-  intros. unfold Reval_formula. now apply (cnf_normalise_correct Rsor).
-  intros. unfold Reval_formula. now apply (cnf_negate_correct Rsor).
+  intros. rewrite Reval_formula_compat.
+  unfold Reval_formula'. now apply (cnf_normalise_correct Rsor).
+  intros. rewrite Reval_formula_compat. unfold Reval_formula. now apply (cnf_negate_correct Rsor).
   intros t w0.
   apply RWeakChecker_sound.
 Qed.

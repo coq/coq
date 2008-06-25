@@ -1,0 +1,186 @@
+\achapter{Micromega : tactics for solving arithmetics goals over ordered rings}
+\aauthor{Frédéric Besson and Evgeny Makarov}
+\newtheorem{theorem}{Theorem}
+
+For using the tactics out-of-the-box, jump to Section~\ref{sec:psatz-hurry}.
+%
+Section~\ref{sec:psatz-back} presents some background explaining the proof principle for solving polynomials goals.
+%
+Section~\ref{sec:lia} explains how to get a complete procedure for linear integer arithmetic.
+
+\section{The {\tt psatz} tactic in a hurry}
+\label{sec:psatz-hurry}
+Load the {\tt Psatz} module ({\tt Require Psatz}.).  This module defines the tactics:
+{\tt lia}, {\tt psatzl D}, {\tt sos D} and {\tt psatz D n} where {\tt D} is {\tt Z}, {\tt Q} or {\tt R} and
+  and {\tt n} is an optional integer limiting the proof search depth.
+  % 
+  \begin{itemize}
+  \item The {\tt psatzl} tactic solves linear goals using an embedded (naive) linear programming prover \emph{i.e.},
+    fourier elimination.
+  \item The {\tt psatz} tactic solves polynomial goals using an external prover {\tt cspd}\footnote{Source and binaries can be found at \url{https://projects.coin-or.org/Csdp}}. Note that the {\tt csdp} driver is generating 
+    a \emph{proof cache} thus allowing to rerun scripts even without {\tt csdp}. 
+  \item The {\tt lia} (linear integer arithmetic) tactic is specialised to solve linear goals over $\mathbb{Z}$.
+    It extends {\tt psatzl Z} and exploits the discreetness of $\mathbb{Z}$.
+  \item The {\tt sos} tactic is another driver to the {\tt csdp} prover.  In theory, it is less general than
+    {\tt psatz}. In practice, even when {\tt psatz} fails, it can be worth a try -- see
+    Section~\ref{sec:psatz-back} for details.
+  \end{itemize}
+
+These tactics solve propositional formulae parameterised by atomic arithmetics expressions
+interpreted over a domain $D \in \{\mathbb{Z}, \mathbb{Q}, \mathbb{R} \}$.
+The syntax of the formulae is the following:
+\[
+\begin{array}{lcl}
+ F &::=&  A \mid P \mid \mathit{True} \mid \mathit{False} \mid F_1 \land F_2 \mid F_1 \lor F_2 \mid F_1 \leftrightarrow F_2 \mid F_1 \to F_2 \mid \sim F\\
+ A &::=& p_1 = p_2 \mid  p_1 > p_2 \mid p_1 < p_2 \mid p_1 \ge p_2 \mid p_1 \le p_2 \\
+ p &::=& c \mid x \mid {-}p \mid p_1 - p_2 \mid p_1 + p_2 \mid p_1 \times p_2 \mid p \verb!^! n
+ \end{array}
+ \]
+ where $c$ is a numeric constant ($c \in \mbox{ if } D = \mathbb{R} \mbox{ then } R1^*R0 \mbox{ else } D$),
+ $x\in D$ is a numeric variable and the operators $-$, $+$, $\times$, are
+ respectively subtraction, addition, product, $p \verb!^!n $ is exponentiation by a constant $n$, $P$ is an
+ arbitrary proposition. %that is mostly ignored.
+ 
+
+
+\section{\emph{Positivstellensatz} refutations}
+\label{sec:psatz-back}
+
+The name {\tt psatz} is an abbreviation for \emph{positivstellensatz} -- literally positivity theorem -- which
+generalises Hilbert's \emph{nullstellensatz}.
+%
+It relies on the notion of $\mathit{Cone}$. Given  a (finite) set of polynomials $S$, $Cone(S)$ is
+inductively defined as the smallest set of polynomials closed under the following rules:
+\[
+\begin{array}{l}
+\dfrac{p \in S}{p \in Cone(S)} \quad 
+\dfrac{}{p^2 \in Cone(S)} \quad
+\dfrac{p_1 \in Cone(S) \quad p_2 \in Cone(S) \quad \Join \in \{+,*\}} {p_1 \Join p_2 \in Cone(S)}\\
+\end{array}
+\]
+The following theorem provides a proof principle for checking that a set of polynomial inequalities do not have solutions\footnote{Variants deal with equalities and strict inequalities.}:
+\begin{theorem}
+  \label{thm:psatz}
+  Let $S$ be a set of polynomials.\\
+  If ${-}1$ belongs to $Cone(S)$ then the conjunction $\bigwedge_{p \in S} p\ge 0$ is unsatisfiable.
+\end{theorem}
+A proof based on this theorem is called a \emph{positivstellensatz} refutation.
+%
+The tactics work as follows. Formulae are normalised into conjonctive normal form $\bigwedge_i C_i$ where
+$C_i$ has the general form $(\bigwedge_{j\in S_i} p_j \Join 0) \to \mathit{False})$ and $\Join \in \{>,\ge,=\}$ for $D\in
+\{\mathbb{Q},\mathbb{R}\}$ and $\Join \in \{\ge, =\}$ for $\mathbb{Z}$.
+%
+For each conjunct $C_i$, the tactic calls a prover which searches for $-1$ within the cone.
+%
+Upon success, the prover returns a \emph{cone expression} that is normalised by {\tt ring} and checked to be
+$-1$.
+
+To illustrate the working of the tactic, consider we wish to prove the following Coq goal.\\
+\begin{coq_eval}
+  Require Import ZArith Psatz.
+  Open Scope Z_scope.
+\end{coq_eval}
+\begin{coq_example*}
+  Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
+\end{coq_example*}
+\begin{coq_eval}
+Proof.
+intro; psatz Z;
+Qed.
+\end{coq_eval}
+Such a goal is solved by {\tt intro ; psatz Z}. The prover returns the cone expression $2 \times
+(\mathbf{x-1}) + (x-1)^2 + \mathbf{-x^2}$ (polynomial hypotheses are printed in bold). By construction, this
+expression belongs to $Cone(\{-x^2, x -1\})$.  Moreover, by running {\tt ring} we obtain $-1$. By
+Theorem~\ref{thm:psatz}, the goal is valid.
+%
+
+\paragraph{The {\tt psatzl} tactic} is searching for \emph{linear} refutations using a fourier
+elimination\footnote{More efficient linear programming techniques could equally be employed}.
+As a result, this tactic explore a subset of the $Cone$  defined as:
+\[
+LinCone(S) =\left\{ \left. \sum_{p \in S} \alpha_p \times p\ \right|\ \alpha_p \mbox{ are positive constants} \right\}
+\]
+Basically, the deductive power of {\tt psatzl} is the combined deductive power of {\tt ring\_simplify} and {\tt fourier}.
+
+\paragraph{The {\tt psatz} tactic} explores the $Cone$ by increasing degrees -- hence the depth parameter $n$.
+In theory, such a proof search is complete -- if the goal is provable the search eventually stops.
+Unfortunately, the external prover is using numeric (approximate) optimisation techniques that might miss a
+refutation. 
+
+\paragraph{The {\tt sos} tactic} -- where {\tt sos} stands for \emph{sum of squares} -- tries to prove that a
+single polynomial $p$ is positive by expressing it as a sum of squares \emph{i.e.,} $\sum_{i\in S} p_i^2$.
+This amounts to searching for $p$ in the cone without generators \emph{i.e.}, $Cone(\{\})$.
+%
+
+\section{ {\tt lia} : the linear integer arithmetic tactic }
+\label{sec:lia}
+Compared to the {\tt omega} tactic, {\tt lia} should run faster and be more complete.
+What is for sure is that {\tt lia} solves the following \emph{omega nightmare} (see Omega's paper)
+\begin{coq_example*}
+  Goal forall x y, 
+       27 <= 11 * x + 13 * y <= 45 -> 
+       -10 <= 7 * x - 9 * y <= 4 ->   False
+\end{coq_example*}
+\begin{coq_eval}
+Proof.
+intro; lia;
+Qed.
+\end{coq_eval}
+whereas the {\tt omega} tactic fails -- this part of the algorithm is not implemented in Coq.
+
+\paragraph{High level view of {\tt lia}.}
+Over $\mathbb{R}$,  \emph{positivstellensatz} refutations are a complete proof principle.
+%
+However, this is not the case over $\mathbb{Z}$.
+%
+Actually, \emph{positivstellensatz} refutations are not even sufficient to decide linear \emph{integer} 
+arithmetics.
+%
+The canonic exemple is {\tt 2 * x = 1 -> False} which is a theorem of $\mathbb{Z}$ but not a theorem of $\mathbb{R}$.
+%
+To remedy this weakness, the {\tt lia} tactic is using recursively a combination of:
+%
+\begin{itemize}
+\item linear \emph{positivstellensatz} refutations \emph{i.e.}, {\tt psatzl Z};
+\item cutting plane proofs;
+\item case split.
+\end{itemize}
+
+\paragraph{Cutting plane proofs} are a way to take into account the discreetness of $\mathbb{Z}$ by rounding up
+(rational) constants up-to the closest integer. 
+%
+\begin{theorem}
+  Let $p$ be a linear integer expression and $c$ an integer constant.
+  \[
+  p \ge c \Rightarrow p \ge \lceil c \rceil
+  \]
+\end{theorem}
+For instance, from $2 * x = 1$ we can deduce 
+\begin{itemize}
+\item $x \ge 1/2$ which cut plane is $ x \ge \lceil 1/2 \rceil = 1$;
+\item $ x \le 1/2$ which cut plane is $ x \le \lfloor 1/2 \rfloor = 0$.
+\end{itemize}
+By combining these two facts (in normal form) $x - 1 \ge 0$ and $-x \ge 0$, we conclude by exhibiting a
+\emph{positivstellensatz} refutation ($-1 \equiv \mathbf{x-1} + \mathbf{-x}  \in Cone(\{x-1,x\})$).
+
+Cutting plane proofs and linear \emph{positivstellensatz} refutations are a complete proof principle for integer linear arithmetic.
+
+\paragraph{Case split} allow to enumerate over the possible values of an expression. 
+\begin{theorem}
+  Let $p$ be a linear integer expression and $c$ an integer constant.
+  \[
+  c_1 \le p \le c_2 \Rightarrow \bigvee_{x \in [c_1,c_2]} p = x
+  \]
+\end{theorem}
+Our current prover tries to find an expression $e$ with a small range $[c_1,c_2]$.
+%
+We generate $c_2 - c_1$ subgoals which contexts are enriched with an equation $e = i$ for $i \in [c_1,c_2]$ and
+recursively search for a proof.
+
+% This technique is used to solve so-called \emph{Omega nightmare}
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

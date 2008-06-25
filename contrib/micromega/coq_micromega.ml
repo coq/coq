@@ -1235,8 +1235,8 @@ let lift_ratproof prover l =
   | Some c -> Some (Mc.RatProof c)
 
 
-type csdpcert = Certificate.Mc.z Certificate.Mc.coneMember option
-type micromega_polys = (Micromega.z Mc.pExpr, Mc.op1) Micromega.prod list
+type csdpcert = Sos.positivstellensatz option
+type micromega_polys = (Micromega.q Mc.pExpr, Mc.op1) Micromega.prod list
 type provername = string * int option
 
 let call_csdpcert provername poly =
@@ -1255,36 +1255,84 @@ let call_csdpcert provername poly =
   close_in ch_from; Sys.remove tmp_from;
   cert
 
-let omicron gl = 
+let rec z_to_q_expr e = 
+ match e with
+  | Mc.PEc z   -> Mc.PEc {Mc.qnum = z ; Mc.qden = Mc.XH}
+  | Mc.PEX x   -> Mc.PEX x
+  | Mc.PEadd(e1,e2) -> Mc.PEadd(z_to_q_expr e1, z_to_q_expr e2)
+  | Mc.PEsub(e1,e2) -> Mc.PEsub(z_to_q_expr e1, z_to_q_expr e2)
+  | Mc.PEmul(e1,e2) -> Mc.PEmul(z_to_q_expr e1, z_to_q_expr e2)
+  | Mc.PEopp(e) -> Mc.PEopp(z_to_q_expr e)
+  | Mc.PEpow(e,n) -> Mc.PEpow(z_to_q_expr e,n)
+
+
+let call_csdpcert_q provername poly = 
+ match call_csdpcert provername poly with
+  | None -> None
+  | Some cert -> 
+     let cert = Certificate.q_cert_of_pos cert in
+      match Mc.qWeakChecker (CamlToCoq.list (fun x -> x) poly)  cert with
+       | Mc.True -> Some cert
+       | Mc.False ->  (print_string "buggy certificate" ; flush stdout) ;None
+
+
+let call_csdpcert_z provername poly = 
+ let l = List.map (fun (Mc.Pair(e,o)) -> (Mc.Pair(z_to_q_expr e,o))) poly in
+  match call_csdpcert provername l with
+   | None -> None
+   | Some cert -> 
+      let cert = Certificate.z_cert_of_pos cert in
+       match Mc.zWeakChecker (CamlToCoq.list (fun x -> x) poly)  cert with
+	| Mc.True -> Some cert
+	| Mc.False ->  (print_string "buggy certificate" ; flush stdout) ;None
+
+
+
+
+let psatzl_Z gl = 
  micromega_gen parse_zarith  Mc.negate Mc.normalise zz_domain_spec
   [lift_ratproof 
     (Certificate.linear_prover Certificate.z_spec), "fourier refutation" ] gl
 
 
-let qomicron gl = 
+let psatzl_Q gl = 
  micromega_gen  parse_qarith Mc.cnf_negate Mc.cnf_normalise qq_domain_spec 
   [ Certificate.linear_prover Certificate.q_spec, "fourier refutation" ]   gl
 
-let romicron gl = 
+let psatz_Q i gl = 
+ micromega_gen parse_qarith Mc.cnf_negate Mc.cnf_normalise qq_domain_spec
+  [ call_csdpcert_q ("real_nonlinear_prover", Some i), "fourier refutation" ]  gl
+
+let psatzl_R gl = 
  micromega_gen  parse_rarith Mc.cnf_negate Mc.cnf_normalise rz_domain_spec 
   [ Certificate.linear_prover Certificate.z_spec, "fourier refutation" ]   gl
 
 
-let rmicromega i gl = 
- micromega_gen parse_rarith Mc.negate Mc.normalise rz_domain_spec
-  [ call_csdpcert ("real_nonlinear_prover", Some i), "fourier refutation" ]  gl
+let psatz_R i gl = 
+ micromega_gen parse_rarith Mc.cnf_negate Mc.cnf_normalise rz_domain_spec
+  [ call_csdpcert_z  ("real_nonlinear_prover", Some i), "fourier refutation" ]  gl
 
   
-let micromega i gl = 
+let psatz_Z i gl = 
  micromega_gen parse_zarith Mc.negate Mc.normalise zz_domain_spec 
- [lift_ratproof (call_csdpcert ("real_nonlinear_prover",Some i)), 
+ [lift_ratproof (call_csdpcert_z ("real_nonlinear_prover",Some i)), 
   "fourier refutation" ] gl
 
 
-let sos gl = 
+let sos_Z gl = 
  micromega_gen parse_zarith Mc.negate Mc.normalise  zz_domain_spec 
-  [lift_ratproof (call_csdpcert ("pure_sos", None)), "pure sos refutation"]  gl
+  [lift_ratproof (call_csdpcert_z ("pure_sos", None)), "pure sos refutation"]  gl
 
-let zomicron gl = 
+let sos_Q gl = 
+ micromega_gen parse_qarith Mc.cnf_negate Mc.cnf_normalise  qq_domain_spec 
+  [call_csdpcert_q ("pure_sos", None), "pure sos refutation"]  gl
+
+let sos_R gl = 
+ micromega_gen parse_rarith Mc.cnf_negate Mc.cnf_normalise  rz_domain_spec 
+  [call_csdpcert_z ("pure_sos", None), "pure sos refutation"]  gl
+
+
+
+let xlia gl = 
  micromega_gen parse_zarith Mc.negate Mc.normalise   zz_domain_spec 
   [Certificate.zlinear_prover, "zprover"] gl

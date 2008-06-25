@@ -765,7 +765,7 @@ MICROMEGAVO:=$(addprefix contrib/micromega/, \
   Env.vo                RingMicromega.vo \
   EnvRing.vo            VarMap.vo \
   OrderedRing.vo        ZCoeff.vo \
-  Micromegatac.vo       ZMicromega.vo \
+  Psatz.vo	       ZMicromega.vo \
   QMicromega.vo         RMicromega.vo \
   Tauto.vo )
 
