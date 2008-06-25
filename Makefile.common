@@ -72,6 +72,8 @@ LATEX:=latex
 BIBTEX:=bibtex -min-crossrefs=10
 MAKEINDEX:=makeindex
 PDFLATEX:=pdflatex
+HEVEA:=hevea
+HEVEAOPTS:=-fix -exec xxdate.exe
 HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 export TEXINPUTS:=$(COQSRC)/doc:$(HEVEALIB):
 COQTEXOPTS:=-n 72 -image $(COQSRC)/$(COQTOP) -v -sl -small
