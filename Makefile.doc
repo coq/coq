@@ -152,7 +152,7 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 
 ### Standard library (browsable html format)
 
-doc/stdlib/index-body.html: $(THEORIESVO:.vo=.glob)
+doc/stdlib/index-body.html: $(THEORIESVO:.vo=.glob) $(COQDOC)
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
 	$(COQDOC) -q -d doc/stdlib/html --multi-index --html \
@@ -169,7 +169,7 @@ doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.htm
 
 ### Standard library (light version, full version is definitely too big)
 
-doc/stdlib/Library.coqdoc.tex: $(THEORIESLIGHTVO:.vo=.glob)
+doc/stdlib/Library.coqdoc.tex: $(THEORIESLIGHTVO:.vo=.glob) $(COQDOC)
 	$(COQSRC)/$(COQDOC) -q --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 
@@ -219,22 +219,22 @@ install-doc-meta:
 	$(INSTALLLIB) doc/LICENCE $(DOCDIR)/LICENCE.doc
 
 install-doc-html: doc-html
-	$(MKDIR) $(DOCDIR)/html
-	$(INSTALLLIB) doc/refman/html $(DOCDIR)/html/refman 
-	$(INSTALLLIB) doc/stdlib/html $(DOCDIR)/html/stdlib 
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.html $(DOCDIR)/html/
-	$(INSTALLLIB) doc/faq/html $(DOCDIR)/html/faq
-	$(INSTALLLIB) doc/tutorial/tutorial.html doc/RecTutorial/RecTutorial.html $(DOCDIR)/html/
+	$(MKDIR) $(addprefix $(DOCDIR)/html/, refman stdlib faq)
+	$(INSTALLLIB) doc/refman/html/* $(DOCDIR)/html/refman 
+	$(INSTALLLIB) doc/stdlib/html/* $(DOCDIR)/html/stdlib 
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.html $(DOCDIR)/html/RecTutorial.html
+	$(INSTALLLIB) doc/faq/html/* $(DOCDIR)/html/faq
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(DOCDIR)/html/Tutorial.html
 
 install-doc-printable: doc-pdf doc-ps
-	$(MKDIR) $(DOCDIR)/ps
-	$(INSTALLLIB) doc/refman/Reference-manual.pdf \
-		doc/stdlib/Library.pdf \
-		doc/refman/Reference-manual.ps \
+	$(MKDIR) $(DOCDIR)/ps $(DOCDIR)/pdf
+	$(INSTALLLIB) doc/refman/Reference-Manual.pdf \
+		doc/stdlib/Library.pdf $(DOCDIR)/pdf
+	$(INSTALLLIB) doc/refman/Reference-Manual.ps \
 		doc/stdlib/Library.ps $(DOCDIR)/ps
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(DOCDIR)/ps/Tutorial.pdf
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.pdf $(DOCDIR)/ps/RecTutorial.pdf
-	$(INSTALLLIB) doc/faq/FAQ.v.pdf $(DOCDIR)/ps/FAQ.pdf
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(DOCDIR)/pdf/Tutorial.pdf
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.pdf $(DOCDIR)/pdf/RecTutorial.pdf
+	$(INSTALLLIB) doc/faq/FAQ.v.pdf $(DOCDIR)/pdf/FAQ.pdf
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(DOCDIR)/ps/Tutorial.ps
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.ps $(DOCDIR)/ps/RecTutorial.ps
 	$(INSTALLLIB) doc/faq/FAQ.v.ps $(DOCDIR)/ps/FAQ.ps
