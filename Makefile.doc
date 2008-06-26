@@ -47,7 +47,7 @@ rectutorial:\
 ### Implicit rules
 ######################################################################
 
-%.v.tex: %.tex $(COQTEX) $(COQTOP) states
+%.v.tex: %.tex coq
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
 
 %.ps: %.dvi
