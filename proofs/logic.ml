@@ -53,7 +53,8 @@ let rec catchable_exception = function
   (* unification errors *)
   | PretypeError(_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
 		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
-		   |CannotFindWellTypedAbstraction _)) -> true
+		   |CannotFindWellTypedAbstraction _
+		   |UnsolvableImplicit _)) -> true
   | _ -> false
 
 (* Tells if the refiner should check that the submitted rules do not
