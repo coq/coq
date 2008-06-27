@@ -28,13 +28,19 @@ val add : ('lbl,'pat,'inf) t -> ('lbl,'pat) decompose_fun -> 'pat * 'inf
 val rmv : ('lbl,'pat,'inf) t -> ('lbl,'pat) decompose_fun -> 'pat * 'inf 
   -> ('lbl,'pat,'inf) t
 
+type 'res lookup_res = Label of 'res | Nothing | Everything
+    
+type ('lbl,'tree) lookup_fun = 'tree -> ('lbl * 'tree list) lookup_res
+
 (* [lookup t f tree] looks for trees (and their associated
    information) in table [t] such that the structured object [tree]
    matches against them; [f] is used to translated [tree] into its
    prefix decomposition: [f] must decompose any tree into a label
    characterizing its root node and the list of its subtree *)
 
-val lookup : ('lbl,'pat,'inf) t -> ('lbl,'term) decompose_fun -> 'term
+val lookup : ('lbl,'pat,'inf) t -> ('lbl,'term) lookup_fun -> 'term
   -> ('pat * 'inf) list
 
 val app : (('pat * 'inf) -> unit) -> ('lbl,'pat,'inf) t -> unit
+
+val skip_arg : int -> ('lbl,'pat,'inf) t -> (('lbl,'pat,'inf) t * bool) list

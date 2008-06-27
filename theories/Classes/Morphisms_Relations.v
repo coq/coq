@@ -48,3 +48,11 @@ Proof. intro. apply (predicate_equivalence_pointwise (cons A (cons A nil))). Qed
 Instance subrelation_pointwise :
   Morphism (subrelation ==> pointwise_relation (A:=A) (pointwise_relation (A:=A) impl)) id.
 Proof. intro. apply (predicate_implication_pointwise (cons A (cons A nil))). Qed.
+
+
+Lemma inverse_pointwise_relation A (R : relation A) : 
+  relation_equivalence (pointwise_relation (inverse R)) (inverse (pointwise_relation (A:=A) R)).
+Proof. intros. split; firstorder. Qed.
+
+
+

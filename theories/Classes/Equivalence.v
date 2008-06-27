@@ -134,8 +134,8 @@ End Respecting.
 
 (** The default equivalence on function spaces, with higher-priority than [eq]. *)
 
-Program Instance pointwise_equivalence [ Equivalence A eqA ] :
-  Equivalence (B -> A) (pointwise_relation eqA) | 9.
+Program Instance pointwise_equivalence [ Equivalence B eqB ] :
+  Equivalence (A -> B) (pointwise_relation eqB) | 9.
 
   Next Obligation.
   Proof.

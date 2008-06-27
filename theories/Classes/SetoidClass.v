@@ -41,13 +41,13 @@ Typeclasses unfold equiv.
 (** Shortcuts to make proof search easier. *)
 
 Definition setoid_refl [ sa : Setoid A ] : Reflexive equiv.
-Proof. eauto with typeclass_instances. Qed.
+Proof. typeclasses eauto. Qed.
 
 Definition setoid_sym [ sa : Setoid A ] : Symmetric equiv.
-Proof. eauto with typeclass_instances. Qed.
+Proof. typeclasses eauto. Qed.
 
 Definition setoid_trans [ sa : Setoid A ] : Transitive equiv.
-Proof. eauto with typeclass_instances. Qed.
+Proof. typeclasses eauto. Qed.
 
 Existing Instance setoid_refl.
 Existing Instance setoid_sym.
@@ -123,7 +123,7 @@ Ltac setoidify := repeat setoidify_tac.
 (** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
 Program Definition setoid_morphism [ sa : Setoid A ] : Morphism (equiv ++> equiv ++> iff) equiv :=
-  trans_sym_morphism.
+  PER_morphism.
 
 (** Add this very useful instance in the database. *)
 

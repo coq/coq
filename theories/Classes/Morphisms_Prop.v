@@ -29,7 +29,7 @@ Program Instance not_iff_morphism :
 
 (** Logical conjunction. *)
 
-Program Instance and_impl_iff_morphism :
+Program Instance and_impl_morphism :
   Morphism (impl ==> impl ==> impl) and.
 
 (* Program Instance and_impl_iff_morphism :  *)
@@ -49,7 +49,7 @@ Program Instance and_iff_morphism :
 
 (** Logical disjunction. *)
 
-Program Instance or_impl_iff_morphism : 
+Program Instance or_impl_morphism : 
   Morphism (impl ==> impl ==> impl) or.
 
 (* Program Instance or_impl_iff_morphism :  *)

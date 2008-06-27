@@ -21,12 +21,13 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
 Require Export Coq.Relations.Relation_Definitions.
 
+(** We allow to unfold the [relation] definition while doing morphism search. *)
+
+Typeclasses unfold relation.
+
 Notation inverse R := (flip (R:relation _) : relation _).
 
 Definition complement {A} (R : relation A) : relation A := fun x y => R x y -> False.
-
-Definition pointwise_relation {A B : Type} (R : relation B) : relation (A -> B) := 
-  fun f g => forall x : A, R (f x) (g x).
 
 (** These are convertible. *)
 
@@ -394,7 +395,3 @@ Program Instance subrelation_partial_order :
   Proof.
     unfold relation_equivalence in *. firstorder.
   Qed.
-
-Lemma inverse_pointwise_relation A (R : relation A) : 
-  relation_equivalence (pointwise_relation (inverse R)) (inverse (pointwise_relation (A:=A) R)).
-Proof. reflexivity. Qed.

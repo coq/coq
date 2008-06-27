@@ -139,7 +139,7 @@ let _ =
   pr "";
   pr " Definition %s := %s_." t t;
   pr "";
-
+  pr " Typeclasses unfold %s." t;
   pr " Definition w_0 := w0_op.(znz_0).";
   pr "";
 

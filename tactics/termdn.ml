@@ -41,43 +41,53 @@ let decomp_pat =
   decrec []   
 
 let constr_pat_discr t =
-  if not (occur_meta_pattern t) then 
+  if not (occur_meta_pattern t) then
     None
   else
     match decomp_pat t with
-      | PRef ((IndRef _) as ref), args
-      | PRef ((ConstructRef _ ) as ref), args
-      | PRef ((VarRef _) as ref), args -> Some(ref,args)
-      | _ -> None
-
-let constr_val_discr t =
-  let c, l = decomp t in
-  match kind_of_term c with
-    (* Const _,_) -> Some(TERM c,l) *)
-    | Ind ind_sp -> Some(IndRef ind_sp,l)
-    | Construct cstr_sp -> Some(ConstructRef cstr_sp,l)
-    | Var id -> Some(VarRef id,l)
+    | PRef ((IndRef _) as ref), args
+    | PRef ((ConstructRef _ ) as ref), args -> Some (ref,args)
+    | PRef ((VarRef v) as ref), args -> Some(ref,args)
     | _ -> None
 
-(* Les deux fonctions suivantes ecrasaient les precedentes, 
-   ajout d'un suffixe _nil CP 16/08 *) 
+let constr_pat_discr_st (idpred,cpred) t =
+  match decomp_pat t with
+  | PRef ((IndRef _) as ref), args
+  | PRef ((ConstructRef _ ) as ref), args -> Some (ref,args)
+  | PRef ((VarRef v) as ref), args when not (Idpred.mem v idpred) -> 
+      Some(ref,args)
+  | PVar v, args when not (Idpred.mem v idpred) ->
+      Some(VarRef v,args)
+  | PRef ((ConstRef c) as ref), args when not (Cpred.mem c cpred) ->
+      Some (ref, args)
+  | _ -> None
 
-let constr_pat_discr_nil t =
-  match constr_pat_discr t with
-    | None -> None
-    | Some (c,_) -> Some(c,[])
+open Dn
 
-let constr_val_discr_nil t =
-  match constr_val_discr t with
-    | None -> None
-    | Some (c,_) -> Some(c,[])
+let constr_val_discr t =  
+  let c, l = decomp t in
+    match kind_of_term c with
+    | Ind ind_sp -> Label(IndRef ind_sp,l)
+    | Construct cstr_sp -> Label((ConstructRef cstr_sp),l)
+    | Var id -> Label(VarRef id,l)
+    | _ -> Nothing
+	
+let constr_val_discr_st (idpred,cpred) t =  
+  let c, l = decomp t in
+    match kind_of_term c with
+    | Const c -> if Cpred.mem c cpred then Everything else Label(ConstRef c,l)
+    | Ind ind_sp -> Label(IndRef ind_sp,l)
+    | Construct cstr_sp -> Label((ConstructRef cstr_sp),l)
+    | Var id when not (Idpred.mem id idpred) -> Label(VarRef id,l)
+    | Evar _ -> Everything
+    | _ -> Nothing
 
 let create = Dn.create 
 
-let add dn = Dn.add dn constr_pat_discr
+let add dn st = Dn.add dn (constr_pat_discr_st st)
 
-let rmv dn = Dn.rmv dn constr_pat_discr
+let rmv dn st = Dn.rmv dn (constr_pat_discr_st st)
 
-let lookup dn t = Dn.lookup dn constr_val_discr t
-
+let lookup dn st t = Dn.lookup dn (constr_val_discr_st st) t
+  
 let app f dn = Dn.app f dn
