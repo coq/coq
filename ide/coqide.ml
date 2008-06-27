@@ -3521,24 +3521,33 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
        \n"
 							    in
 							    let initial_about (b:GText.buffer) =
-							      (try 
-								let image = lib_ide_file "coq.png" in
-								let startup_image = GdkPixbuf.from_file image in
-								b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
-								b#insert ~iter:b#start_iter "\t\t   "
-							       with _ -> ());
+							      let initial_string = "Welcome to CoqIDE, an Integrated Development Environment for Coq\n" in
 							      let coq_version = Coq.short_version () in
-							      b#insert ~iter:b#start_iter "\n\n";
-							      if Glib.Utf8.validate coq_version then b#insert ~iter:b#start_iter coq_version;
-							      b#insert ~iter:b#start_iter "\n   "
+								b#insert ~iter:b#start_iter "\n\n";
+								if Glib.Utf8.validate ("You are running " ^ coq_version) then b#insert ~iter:b#start_iter ("You are running " ^ coq_version);
+								if Glib.Utf8.validate initial_string then b#insert ~iter:b#start_iter initial_string;
+								(try 
+								    let image = lib_ide_file "coq.png" in
+								    let startup_image = GdkPixbuf.from_file image in
+								      b#insert ~iter:b#start_iter "\n\n";
+								      b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
+								      b#insert ~iter:b#start_iter "\n\n\t\t   "
+								  with _ -> ())
 							    in
 
 							    let about (b:GText.buffer) =
-							      if Glib.Utf8.validate about_full_string
-							      then b#insert about_full_string;
-							      let coq_version = Coq.version () in
-							      if Glib.Utf8.validate coq_version
-							      then b#insert coq_version
+							      (try 
+								  let image = lib_ide_file "coq.png" in
+								  let startup_image = GdkPixbuf.from_file image in
+								    b#insert ~iter:b#start_iter "\n\n";
+								    b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
+								    b#insert ~iter:b#start_iter "\n\n\t\t   "
+								with _ -> ());
+								if Glib.Utf8.validate about_full_string
+								then b#insert about_full_string;
+								let coq_version = Coq.version () in
+								  if Glib.Utf8.validate coq_version
+								  then b#insert coq_version
 
 							    in
 							      initial_about tv2#buffer;
