@@ -277,7 +277,7 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Qed.
 
 
- Lemma shift_unshift_mod_2 : forall n p a, (0<=p<=n)%Z -> 
+ Lemma shift_unshift_mod_2 : forall n p a, 0 <= p <= n -> 
    ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) = 
    a mod 2 ^ p.
  Proof.
@@ -379,6 +379,20 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  destruct (Z_eq_dec (Zgcd a b) 0) as [H'|H']; auto.
  rewrite Z_div_mult_full; auto.
  intros; subst k; simpl in *; subst b; elim H0; auto.
+ Qed.
+
+ Lemma Zgcd_1 : forall z, Zgcd z 1 = 1.
+ Proof.
+ intros; apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
+ Qed.
+ Hint Resolve Zgcd_1.
+
+ Lemma Zgcd_mult_rel_prime : forall a b c, 
+  Zgcd a c = 1 -> Zgcd b c = 1 -> Zgcd (a*b) c = 1.
+ Proof.
+ intros.
+ rewrite Zgcd_1_rel_prime in *.
+ apply rel_prime_sym; apply rel_prime_mult; apply rel_prime_sym; auto.
  Qed.
 
  Lemma Zcompare_gt : forall (A:Type)(a a':A)(p q:Z),

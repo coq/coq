@@ -14,9 +14,6 @@ Require Import BigNumPrelude ROmega.
 Require Import QArith Qcanon Qpower.
 Require Import NSig ZSig QSig.
 
-(* TODO : prove more precise results concerning add_norm and other
-   ..._norm functions, namely that they return reduced results. *)
-
 Module Type NType_ZType (N:NType)(Z:ZType).
  Parameter Z_of_N : N.t -> Z.t.
  Parameter spec_Z_of_N : forall n, Z.to_Z (Z_of_N n) = N.to_Z n.
@@ -92,27 +89,6 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Lemma spec_m1: [minus_one] == -(1).
  Proof.
  simpl; rewrite Z.spec_m1; reflexivity.
- Qed.
-
- Definition opp (x: t): t :=
-  match x with
-  | Qz zx => Qz (Z.opp zx)
-  | Qq nx dx => Qq (Z.opp nx) dx
-  end.
-
- Theorem strong_spec_opp: forall q, [opp q] = -[q].
- Proof.
- intros [z | x y]; simpl.
- rewrite Z.spec_opp; auto.
- match goal with  |- context[N.eq_bool ?X ?Y] => 
-  generalize (N.spec_eq_bool X Y); case N.eq_bool
- end; auto; rewrite N.spec_0.
- rewrite Z.spec_opp; auto.
- Qed.
-
- Theorem spec_opp : forall q, [opp q] == -[q].
- Proof.
- intros; rewrite strong_spec_opp; red; auto.
  Qed.
 
  Definition compare (x y: t) :=
@@ -222,6 +198,8 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  intros H H'; rewrite H in H'; discriminate.
  Qed.
 
+ (** Normalisation function *)
+
  Definition norm n d : t :=
   let gcd := N.gcd (Zabs_N n) d in 
   match N.compare N.one gcd with
@@ -292,8 +270,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  (* Lt *)
  simpl_ndiv.
  destr_zcompare.
- qsimpl.
- apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
+ qsimpl; auto.
  qsimpl.
  qsimpl.
  simpl_zdiv; nzsimpl.
@@ -306,10 +283,11 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  apply Zgcd_is_gcd.
  replace (N.to_Z q) with 0%Z in * by romega.
  rewrite Zdiv_0_l in H0; discriminate.
- (* Gt *) 
- simpl.
- apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
+ (* Gt *)
+ simpl; auto.
  Qed.
+
+ (** Reduction function : producing irreducible fractions *) 
 
  Definition red (x : t) : t := 
   match x with 
@@ -317,10 +295,12 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
    | Qq n d => norm n d
   end.
 
+ Definition Reduced x := [red x] = [x].
+
  Theorem spec_red : forall x, [red x] == [x].
  Proof.
  intros [ z | n d ].
- apply Qeq_refl.
+ auto with qarith.
  unfold red.
  apply spec_norm.
  Qed.
@@ -329,10 +309,8 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Proof.
  intros [ z | n d ].
  unfold red.
- symmetry; apply Qred_identity; simpl.
- apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
- unfold red.
- apply strong_spec_norm.
+ symmetry; apply Qred_identity; simpl; auto.
+ unfold red; apply strong_spec_norm.
  Qed.
    
  Definition add (x y: t): t :=
@@ -403,6 +381,52 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  destr_neq_bool; auto using Qeq_refl, spec_norm.
  Qed.
 
+ Theorem strong_spec_add_norm : forall x y : t, 
+   Reduced x -> Reduced y -> Reduced (add_norm x y).
+ Proof.
+ unfold Reduced; intros.
+ rewrite strong_spec_red.
+ rewrite <- (Qred_complete [add x y]); 
+  [ | rewrite spec_add, spec_add_norm; apply Qeq_refl ].
+ rewrite <- strong_spec_red.
+ destruct x as [zx|nx dx]; destruct y as [zy|ny dy].
+ simpl in *; auto.
+ simpl; intros.
+ destr_neq_bool; nzsimpl; simpl; auto.
+ simpl; intros.
+ destr_neq_bool; nzsimpl; simpl; auto.
+ simpl; intros.
+ destr_neq_bool; nzsimpl; simpl; auto.
+ Qed.
+
+ Definition opp (x: t): t :=
+  match x with
+  | Qz zx => Qz (Z.opp zx)
+  | Qq nx dx => Qq (Z.opp nx) dx
+  end.
+
+ Theorem strong_spec_opp: forall q, [opp q] = -[q].
+ Proof.
+ intros [z | x y]; simpl.
+ rewrite Z.spec_opp; auto.
+ match goal with  |- context[N.eq_bool ?X ?Y] => 
+  generalize (N.spec_eq_bool X Y); case N.eq_bool
+ end; auto; rewrite N.spec_0.
+ rewrite Z.spec_opp; auto.
+ Qed.
+
+ Theorem spec_opp : forall q, [opp q] == -[q].
+ Proof.
+ intros; rewrite strong_spec_opp; red; auto.
+ Qed.
+
+ Theorem strong_spec_opp_norm : forall q, Reduced q -> Reduced (opp q).
+ Proof.
+ unfold Reduced; intros.
+ rewrite strong_spec_opp, <- H, !strong_spec_red, <- Qred_opp.
+ apply Qred_complete; apply spec_opp.
+ Qed.
+
  Definition sub x y := add x (opp y).
 
  Theorem spec_sub : forall x y, [sub x y] == [x] - [y].
@@ -417,6 +441,15 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Proof.
  intros x y; unfold sub_norm; rewrite spec_add_norm; auto.
  rewrite spec_opp; ring.
+ Qed.
+
+ Theorem strong_spec_sub_norm : forall x y, 
+  Reduced x -> Reduced y -> Reduced (sub_norm x y).
+ Proof.
+ intros.
+ unfold sub_norm.
+ apply strong_spec_add_norm; auto.
+ apply strong_spec_opp_norm; auto.
  Qed.
 
  Definition mul (x y: t): t :=
@@ -457,20 +490,30 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
      | _ => (n, d)
    end.
 
- Lemma spec_irred : forall n d, 
-   let (n',d') := irred n d in 
-   (Z.to_Z n * N.to_Z d' = Z.to_Z n' * N.to_Z d)%Z. 
+ Lemma spec_irred : forall n d, exists g, 
+  let (n',d') := irred n d in 
+  (Z.to_Z n' * g = Z.to_Z n)%Z /\ (N.to_Z d' * g = N.to_Z d)%Z.
  Proof.
  intros.
- unfold irred.
- nzsimpl.
- destr_zcompare; auto.
- simpl_ndiv; simpl_zdiv; nzsimpl.
- destruct (Z_eq_dec (N.to_Z d) 0).
- rewrite e; simpl; rewrite Zdiv_0_l; nzsimpl; auto.
- rewrite Zgcd_div_swap0; auto.
- auto with zarith.
- generalize (N.spec_pos d); romega.
+ unfold irred; nzsimpl; simpl.
+ destr_zcompare.
+ exists 1%Z; nzsimpl; auto.
+ exists 0%Z; nzsimpl.
+ assert (Zgcd (Z.to_Z n) (N.to_Z d) = 0%Z).
+  generalize (Zgcd_is_pos (Z.to_Z n) (N.to_Z d)); romega.
+ clear H.
+ split.
+ symmetry; apply (Zgcd_inv_0_l _ _ H0).
+ symmetry; apply (Zgcd_inv_0_r _ _ H0).
+ exists (Zgcd (Z.to_Z n) (N.to_Z d)).
+ simpl.
+ split.
+ simpl_zdiv; nzsimpl.
+ destruct (Zgcd_is_gcd (Z.to_Z n) (N.to_Z d)).
+ rewrite Zmult_comm; symmetry; apply Zdivide_Zdiv_eq; auto with zarith.
+ simpl_ndiv; nzsimpl.
+ destruct (Zgcd_is_gcd (Z.to_Z n) (N.to_Z d)).
+ rewrite Zmult_comm; symmetry; apply Zdivide_Zdiv_eq; auto with zarith.
  Qed.
 
  Lemma spec_irred_zero : forall n d, 
@@ -495,6 +538,25 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
   compute; auto.
  discriminate.
  compute in H1; elim H1; auto.
+ Qed.
+
+ Lemma strong_spec_irred : forall n d, 
+  (N.to_Z d <> 0%Z) -> 
+  let (n',d') := irred n d in Zgcd (Z.to_Z n') (N.to_Z d') = 1%Z.
+ Proof.
+ unfold irred; intros.
+ nzsimpl.
+ destr_zcompare; simpl; auto.
+ elim H.
+ apply (Zgcd_inv_0_r (Z.to_Z n)).
+ generalize (Zgcd_is_pos (Z.to_Z n) (N.to_Z d)); romega.
+
+ simpl_ndiv; simpl_zdiv; nzsimpl.
+ rewrite Zgcd_1_rel_prime.
+ apply Zis_gcd_rel_prime.
+ generalize (N.spec_pos d); romega.
+ generalize (Zgcd_is_pos (Z.to_Z n) (N.to_Z d)); romega.
+ apply Zgcd_is_gcd; auto.
  Qed.
 
  Definition mul_norm_Qz_Qq z n d := 
@@ -542,6 +604,64 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite <- Zgcd_div_swap0; auto with zarith; ring.
  Qed.
 
+ Lemma strong_spec_mul_norm_Qz_Qq : forall z n d, 
+   Reduced (Qq n d) -> Reduced (mul_norm_Qz_Qq z n d).
+ Proof.
+ unfold Reduced; intros z n d.
+ rewrite 2 strong_spec_red, 2 Qred_iff.
+ simpl; nzsimpl.
+ destr_neq_bool; intros Hd H; simpl in *; nzsimpl.
+ 
+ unfold mul_norm_Qz_Qq; nzsimpl; rewrite Zcompare_gt.
+ destr_zeq_bool; intros Hz; simpl; nzsimpl; simpl; auto.
+ destruct Z_le_gt_dec.
+ simpl; nzsimpl.
+ destr_neq_bool; simpl; nzsimpl; auto.
+ intros H'; elim H'; auto.
+ destr_neq_bool; simpl; nzsimpl.
+ simpl_ndiv; nzsimpl; rewrite Hd, Zdiv_0_l; discriminate.
+ intros _.
+ destr_neq_bool; simpl; nzsimpl; auto.
+ simpl_ndiv; nzsimpl; rewrite Hd, Zdiv_0_l; intro H'; elim H'; auto.
+
+ rewrite N_to_Z2P in H; auto.
+ unfold mul_norm_Qz_Qq; nzsimpl; rewrite Zcompare_gt.
+ destr_zeq_bool; intros Hz; simpl; nzsimpl; simpl; auto.
+ destruct Z_le_gt_dec as [H'|H'].
+ simpl; nzsimpl.
+ destr_neq_bool; simpl; nzsimpl; auto.
+ intros.
+ rewrite N_to_Z2P; auto.
+ apply Zgcd_mult_rel_prime; auto.
+  generalize (Zgcd_inv_0_l (Z.to_Z z) (N.to_Z d))
+    (Zgcd_is_pos (Z.to_Z z) (N.to_Z d)); romega.
+ destr_neq_bool; simpl; nzsimpl; auto.
+ simpl_ndiv; simpl_zdiv; nzsimpl.
+ intros.
+ destr_neq_bool; simpl; nzsimpl; auto.
+ simpl_ndiv in *; nzsimpl.
+ intros.
+ rewrite Z2P_correct.
+ apply Zgcd_mult_rel_prime.
+ rewrite Zgcd_1_rel_prime.
+ apply Zis_gcd_rel_prime.
+ generalize (N.spec_pos d); romega.
+ generalize (Zgcd_is_pos (Z.to_Z z) (N.to_Z d)); romega.
+ apply Zgcd_is_gcd.
+ destruct (Zgcd_is_gcd (Z.to_Z z) (N.to_Z d)) as [ (z0,Hz0) (d0,Hd0) Hzd].
+ replace (N.to_Z d / Zgcd (Z.to_Z z) (N.to_Z d))%Z with d0.
+ rewrite Zgcd_1_rel_prime in *.
+ apply bezout_rel_prime.
+ destruct (rel_prime_bezout _ _ H) as [u v Huv].
+ apply Bezout_intro with u (v*(Zgcd (Z.to_Z z) (N.to_Z d)))%Z.
+ rewrite <- Huv; rewrite Hd0 at 2; ring.
+ rewrite Hd0 at 1.
+ symmetry; apply Z_div_mult_full; auto with zarith.
+ apply Zgcd_div_pos.
+ generalize (N.spec_pos d); romega.
+ generalize (Zgcd_is_pos (Z.to_Z z) (N.to_Z d)); romega.
+ Qed.
+
  Theorem spec_mul_norm : forall x y, [mul_norm x y] == [x] * [y].
  Proof.
  intros x y; rewrite <- spec_mul; auto.
@@ -551,31 +671,86 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite spec_mul_norm_Qz_Qq; qsimpl; ring.
 
  rename t0 into nx, t3 into dy, t2 into ny, t1 into dx.
- generalize (spec_irred nx dy) (spec_irred ny dx)
-   (spec_irred_zero nx dy) (spec_irred_zero ny dx).
+ destruct (spec_irred nx dy) as (g & Hg).
+ destruct (spec_irred ny dx) as (g' & Hg').
+ assert (Hz := spec_irred_zero nx dy).
+ assert (Hz':= spec_irred_zero ny dx).
  destruct irred as (n1,d1); destruct irred as (n2,d2). 
- simpl fst; simpl snd; intros.
+ simpl snd in *; destruct Hg as [Hg1 Hg2]; destruct Hg' as [Hg1' Hg2'].
  rewrite norm_denum.
  qsimpl.
 
- elim H3; destruct (Zmult_integral _ _ H4) as [Eq|Eq].
- rewrite <- H2 in Eq; rewrite Eq; simpl; auto.
- rewrite <- H1 in Eq; rewrite Eq; nzsimpl; auto.
+ elim H; destruct (Zmult_integral _ _ H0) as [Eq|Eq].
+ rewrite <- Hz' in Eq; rewrite Eq; simpl; auto.
+ rewrite <- Hz in Eq; rewrite Eq; nzsimpl; auto.
 
- elim H4; destruct (Zmult_integral _ _ H3) as [Eq|Eq].
- rewrite H2 in Eq; rewrite Eq; simpl; auto.
- rewrite H1 in Eq; rewrite Eq; nzsimpl; auto.
+ elim H0; destruct (Zmult_integral _ _ H) as [Eq|Eq].
+ rewrite Hz' in Eq; rewrite Eq; simpl; auto.
+ rewrite Hz in Eq; rewrite Eq; nzsimpl; auto.
 
  rewrite 2 Z2P_correct.
- rewrite Zmult_permute, <- Zmult_assoc, <- H.
- rewrite Zmult_permute, Zmult_assoc, <- H0.
- ring.
+ rewrite <- Hg1, <- Hg2, <- Hg1', <- Hg2'; ring.
 
  assert (0 <= N.to_Z d2 * N.to_Z d1)%Z 
   by (apply Zmult_le_0_compat; apply N.spec_pos).
  romega.
  assert (0 <= N.to_Z dx * N.to_Z dy)%Z 
   by (apply Zmult_le_0_compat; apply N.spec_pos).
+ romega.
+ Qed.
+
+ Theorem strong_spec_mul_norm : forall x y,
+  Reduced x -> Reduced y -> Reduced (mul_norm x y).
+ Proof.
+ unfold Reduced; intros.
+ rewrite strong_spec_red, Qred_iff.
+ destruct x as [zx|nx dx]; destruct y as [zy|ny dy].
+ simpl in *; auto.
+ simpl.
+ rewrite <- Qred_iff, <- strong_spec_red, strong_spec_mul_norm_Qz_Qq; auto.
+ simpl.
+ rewrite <- Qred_iff, <- strong_spec_red, strong_spec_mul_norm_Qz_Qq; auto.
+ simpl.
+ destruct (spec_irred nx dy) as [g Hg].
+ destruct (spec_irred ny dx) as [g' Hg'].
+ assert (Hz := spec_irred_zero nx dy).
+ assert (Hz':= spec_irred_zero ny dx).
+ assert (Hgc := strong_spec_irred nx dy).
+ assert (Hgc' := strong_spec_irred ny dx).
+ destruct irred as (n1,d1); destruct irred as (n2,d2). 
+ simpl snd in *; destruct Hg as [Hg1 Hg2]; destruct Hg' as [Hg1' Hg2'].
+ destr_neq_bool; simpl; nzsimpl; intros.
+ apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
+ destr_neq_bool; simpl; nzsimpl; intros.
+ auto.
+
+ revert H H0.
+ rewrite 2 strong_spec_red, 2 Qred_iff; simpl.
+ destr_neq_bool; simpl; nzsimpl; intros.
+ rewrite Hz in H; rewrite H in H2; nzsimpl; elim H2; auto.
+ rewrite Hz' in H0; rewrite H0 in H2; nzsimpl; elim H2; auto.
+ rewrite Hz in H; rewrite H in H2; nzsimpl; elim H2; auto.
+
+ rewrite N_to_Z2P in *; auto.
+ rewrite Z2P_correct.
+
+ apply Zgcd_mult_rel_prime; rewrite Zgcd_sym; 
+  apply Zgcd_mult_rel_prime; rewrite Zgcd_sym; auto.
+ 
+ rewrite Zgcd_1_rel_prime in *.
+ apply bezout_rel_prime.
+ destruct (rel_prime_bezout _ _ H4) as [u v Huv].
+ apply Bezout_intro with (u*g')%Z (v*g)%Z.
+ rewrite <- Huv, <- Hg1', <- Hg2. ring.
+
+ rewrite Zgcd_1_rel_prime in *.
+ apply bezout_rel_prime.
+ destruct (rel_prime_bezout _ _ H3) as [u v Huv].
+ apply Bezout_intro with (u*g)%Z (v*g')%Z.
+ rewrite <- Huv, <- Hg2', <- Hg1. ring.
+
+ assert (0 <= N.to_Z d2 * N.to_Z d1)%Z.
+  apply Zmult_le_0_compat; apply N.spec_pos.
  romega.
  Qed.
 
@@ -664,18 +839,11 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
      | Qz z => 
        match Z.compare Z.zero z with 
          | Eq => zero
-         | Lt => 
-           match Z.compare z Z.one with 
-             | Gt => Qq Z.one (Zabs_N z)
-             | _ => x
-           end
-         | Gt => 
-           match Z.compare z Z.minus_one with 
-             | Lt => Qq Z.minus_one (Zabs_N z)
-             | _ => x
-           end
+         | Lt => Qq Z.one (Zabs_N z)
+         | Gt => Qq Z.minus_one (Zabs_N z)
        end
      | Qq n d => 
+       if N.eq_bool d N.zero then zero else 
        match Z.compare Z.zero n with 
          | Eq => zero
          | Lt => 
@@ -698,38 +866,78 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  destruct x as [ z | n d ].
  (* Qz z *)
  simpl.
- rewrite Zcompare_spec_alt; destr_zcompare; try apply Qeq_refl.
- (* 0 < z *)
- rewrite Zcompare_spec_alt; destr_zcompare; try apply Qeq_refl.
- red; simpl; nzsimpl.
- rewrite H0; simpl.
- destr_neq_bool; nzsimpl; [ intros; rewrite Zabs_eq in *; romega | intros _ ].
- simpl; auto.
- nzsimpl; romega.
- (* 0 > z *)
- rewrite Zcompare_spec_alt; destr_zcompare; try apply Qeq_refl.
- red; simpl; nzsimpl.
- rewrite H0; simpl.
- destr_neq_bool; nzsimpl; [ intros; rewrite Zabs_non_eq in *; romega | intros _ ].
- simpl; auto.
- nzsimpl; romega.
+ rewrite Zcompare_spec_alt; destr_zcompare; auto with qarith.
  (* Qq n d *)
- simpl.
- rewrite Zcompare_spec_alt; destr_zcompare; try apply Qeq_refl.
+ simpl; nzsimpl; destr_neq_bool.
+ destr_zcompare; simpl; auto with qarith.
+ destr_neq_bool; nzsimpl; auto with qarith.
+ intros _ Hd; rewrite Hd; auto with qarith.
+ destr_neq_bool; nzsimpl; auto with qarith.
+ intros _ Hd; rewrite Hd; auto with qarith.
  (* 0 < n *)
- rewrite Zcompare_spec_alt; destr_zcompare; try apply Qeq_refl.
- red; simpl; nzsimpl.
- rewrite H0; simpl.
+ destr_zcompare; auto with qarith.
+ destr_zcompare; nzsimpl; simpl; auto with qarith; intros.
  destr_neq_bool; nzsimpl; [ intros; rewrite Zabs_eq in *; romega | intros _ ].
- simpl; auto.
- nzsimpl; romega.
+ rewrite H0; auto with qarith.
+ romega.
  (* 0 > n *)
- rewrite Zcompare_spec_alt; destr_zcompare; try apply Qeq_refl.
- red; simpl; nzsimpl.
- rewrite H0; simpl.
+ destr_zcompare; nzsimpl; simpl; auto with qarith.
  destr_neq_bool; nzsimpl; [ intros; rewrite Zabs_non_eq in *; romega | intros _ ].
- simpl; auto.
- nzsimpl; romega.
+ rewrite H0; auto with qarith.
+ romega.
+ Qed.
+
+ Theorem strong_spec_inv_norm : forall x, Reduced x -> Reduced (inv_norm x).
+ Proof.
+ unfold Reduced. 
+ intros.
+ destruct x as [ z | n d ].
+ (* Qz *)
+ simpl; nzsimpl.
+ rewrite strong_spec_red, Qred_iff.
+ destr_zcompare; simpl; nzsimpl; auto.
+ destr_neq_bool; nzsimpl; simpl; auto.
+ destr_neq_bool; nzsimpl; simpl; auto.
+ (* Qq n d *)
+ rewrite strong_spec_red, Qred_iff in H; revert H.
+ simpl; nzsimpl.
+ destr_neq_bool; nzsimpl; auto with qarith.
+ destr_zcompare; simpl; nzsimpl; auto; intros.
+ (* 0 < n *)
+ destr_zcompare; simpl; nzsimpl; auto.
+ destr_neq_bool; nzsimpl; simpl; auto.
+ rewrite Zabs_eq; romega.
+ intros _.
+ rewrite strong_spec_norm; simpl; nzsimpl.
+ destr_neq_bool; nzsimpl.
+ rewrite Zabs_eq; romega.
+ intros _.
+ rewrite Qred_iff.
+ simpl.
+ rewrite Zabs_eq; auto with zarith.
+ rewrite N_to_Z2P in *; auto.
+ rewrite Z2P_correct; auto with zarith.
+ rewrite Zgcd_sym; auto.
+ (* 0 > n *)
+ destr_neq_bool; nzsimpl; simpl; auto; intros.
+ destr_zcompare; simpl; nzsimpl; auto.
+ destr_neq_bool; nzsimpl.
+ rewrite Zabs_non_eq; romega.
+ intros _.
+ rewrite strong_spec_norm; simpl; nzsimpl.
+ destr_neq_bool; nzsimpl.
+ rewrite Zabs_non_eq; romega.
+ intros _.
+ rewrite Qred_iff.
+ simpl.
+ rewrite N_to_Z2P in *; auto.
+ rewrite Z2P_correct; auto with zarith.
+ intros.
+ rewrite Zgcd_sym, Zgcd_Zabs, Zgcd_sym.
+ apply Zis_gcd_gcd; auto with zarith.
+ apply Zis_gcd_minus.
+ rewrite Zopp_involutive, <- H1; apply Zgcd_is_gcd.
+ rewrite Zabs_non_eq; romega.
  Qed.
 
  Definition div x y := mul x (inv y).
@@ -742,14 +950,22 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  apply spec_inv; auto.
  Qed.
 
- Definition div_norm x y := mul_norm x (inv y).
+ Definition div_norm x y := mul_norm x (inv_norm y).
 
  Theorem spec_div_norm x y: [div_norm x y] == [x] / [y].
  Proof.
  intros x y; unfold div_norm; rewrite spec_mul_norm; auto.
  unfold Qdiv; apply Qmult_comp.
  apply Qeq_refl.
- apply spec_inv; auto.
+ apply spec_inv_norm; auto.
+ Qed.
+ 
+ Theorem strong_spec_div_norm : forall x y, 
+   Reduced x -> Reduced y -> Reduced (div_norm x y).
+ Proof.
+ intros; unfold div_norm.
+ apply strong_spec_mul_norm; auto.
+ apply strong_spec_inv_norm; auto.
  Qed.
 
  Definition square (x: t): t :=
@@ -810,6 +1026,27 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  rewrite N.spec_power_pos. auto.
  Qed.
 
+ Theorem strong_spec_power_pos : forall x p, 
+  Reduced x -> Reduced (power_pos x p).
+ Proof.
+ destruct x as [z | n d]; simpl; intros.
+ red; simpl; auto.
+ red; simpl; intros.
+ rewrite strong_spec_norm; simpl.
+ destr_neq_bool; nzsimpl; intros.
+ simpl; auto.
+ rewrite Qred_iff.
+ revert H.
+ unfold Reduced; rewrite strong_spec_red, Qred_iff; simpl.
+ destr_neq_bool; nzsimpl; simpl; intros.
+ rewrite N.spec_power_pos in H0.
+ elim H0; rewrite H; rewrite Zpower_0_l; auto; discriminate.
+ rewrite N_to_Z2P in *; auto.
+ rewrite N.spec_power_pos, Z.spec_power_pos; auto.
+ rewrite Zgcd_1_rel_prime in *.
+ apply rel_prime_Zpower; auto with zarith.
+ Qed.
+
  Definition power (x : t) (z : Z) : t := 
    match z with 
      | Z0 => one
@@ -825,6 +1062,34 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  simpl.
  rewrite spec_inv, spec_power_pos; apply Qeq_refl.
  Qed.
+
+ Definition power_norm (x : t) (z : Z) : t := 
+   match z with 
+     | Z0 => one
+     | Zpos p => power_pos x p
+     | Zneg p => inv_norm (power_pos x p)
+   end.
+
+ Theorem spec_power_norm : forall x z, [power_norm x z] == [x]^z.
+ Proof.
+ destruct z.
+ simpl; nzsimpl; red; auto.
+ apply spec_power_pos.
+ simpl.
+ rewrite spec_inv_norm, spec_power_pos; apply Qeq_refl.
+ Qed.
+
+ Theorem strong_spec_power_norm : forall x z, 
+   Reduced x -> Reduced (power_norm x z).
+ Proof.
+ destruct z; simpl.
+ intros _; unfold Reduced; rewrite strong_spec_red.
+ unfold one.
+ simpl to_Q; nzsimpl; auto.
+ intros; apply strong_spec_power_pos; auto.
+ intros; apply strong_spec_inv_norm; apply strong_spec_power_pos; auto.
+ Qed.
+
 
  (** Interaction with [Qcanon.Qc] *)
  
@@ -969,7 +1234,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Proof.
  intros x y; unfold div_norm; rewrite spec_mul_normc; auto.
  unfold Qcdiv; apply f_equal2 with (f := Qcmult); auto.
- apply spec_invc; auto.
+ apply spec_inv_normc; auto.
  Qed.
 
  Theorem spec_squarec x: [[square x]] =  [[x]]^2.
