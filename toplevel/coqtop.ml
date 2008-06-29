@@ -72,10 +72,12 @@ let check_coq_overwriting p =
   if string_of_id (list_last (repr_dirpath p)) = "Coq" then
     error "The \"Coq\" logical root directory is reserved for the Coq library"
 
-let set_include d p = push_include (d,p)
-let set_rec_include d p = check_coq_overwriting p; push_rec_include (d,p)
-let set_default_include d = set_include d Nameops.default_root_prefix
-let set_default_rec_include d = set_rec_include d Nameops.default_root_prefix
+let set_default_include d = push_include (d,Nameops.default_root_prefix)
+let set_default_rec_include d = push_rec_include(d,Nameops.default_root_prefix)
+let set_include d p =
+  let p = dirpath_of_string p in check_coq_overwriting p; push_include (d,p)
+let set_rec_include d p =
+  let p = dirpath_of_string p in check_coq_overwriting p; push_rec_include(d,p)
  
 let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =
@@ -187,14 +189,21 @@ let parse_args is_ide =
     | "-impredicative-set" :: rem -> 
         set_engagement Declarations.ImpredicativeSet; parse rem
 
+    | ("-I"|"-include") :: d :: "-as" :: p :: rem -> set_include d p; parse rem
+    | ("-I"|"-include") :: d :: "-as" :: [] -> usage ()
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: p :: rem ->set_rec_include d (dirpath_of_string p);parse rem
+    | "-R" :: d :: "-as" :: p :: rem -> set_rec_include d p;parse rem
+    | "-R" :: d :: "-as" :: [] -> usage ()
+    | "-R" :: d :: p :: rem -> set_rec_include d p;parse rem
     | "-R" :: ([] | [_]) -> usage ()
 
     | "-top" :: d :: rem -> set_toplevel_name (dirpath_of_string d); parse rem
     | "-top" :: [] -> usage ()
+
+    | "-exclude-dir" :: f :: rem -> exclude_search_in_dirname f; parse rem
+    | "-exclude-dir" :: [] -> usage ()
 
     | "-notop" :: rem -> unset_toplevel_name (); parse rem
     | "-q" :: rem -> no_load_rc (); parse rem

@@ -180,12 +180,12 @@ let show_match id =
 (* "Print" commands *)
 
 let print_path_entry (s,l) =
-  (str s ++ str " " ++ tbrk (0,2) ++ str (string_of_dirpath l))
+  (str (string_of_dirpath l) ++ str " " ++ tbrk (0,0) ++ str s)
 
 let print_loadpath () =
   let l = Library.get_full_load_paths () in
-  msgnl (Pp.t (str "Physical path:                                 " ++
-		 tab () ++ str "Logical Path:" ++ fnl () ++ 
+  msgnl (Pp.t (str "Logical Path:                 " ++
+		 tab () ++ str "Physical path:" ++ fnl () ++
 		 prlist_with_sep pr_fnl print_path_entry l))
 
 let print_modules () =
@@ -232,7 +232,7 @@ let dump_universes s =
 
 let locate_file f =
   try
-    let _,file = System.where_in_path (Library.get_load_paths ()) f in
+    let _,file = System.where_in_path false (Library.get_load_paths ()) f in
     msgnl (str file)
   with Not_found -> 
     msgnl (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
@@ -240,24 +240,25 @@ let locate_file f =
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
-      msgnl(pr_dirpath fulldir ++ str " has been loaded from file" ++ fnl () ++
-      str file)
+      msgnl (hov 0
+	(pr_dirpath fulldir ++ strbrk " has been loaded from file " ++
+	 str file))
   | Library.LibInPath, fulldir, file ->
-      msgnl(pr_dirpath fulldir ++ str " is bound to file " ++ str file)
+      msgnl (hov 0
+	(pr_dirpath fulldir ++ strbrk " is bound to file " ++ str file))
 let msg_notfound_library loc qid = function
   | Library.LibUnmappedDir ->
       let dir = fst (repr_qualid qid) in
       user_err_loc (loc,"locate_library",
-        str "Cannot find a physical path bound to logical path " ++
+        strbrk "Cannot find a physical path bound to logical path " ++
            pr_dirpath dir ++ fnl ())
   | Library.LibNotFound ->
-      msgnl (hov 0 
-	(str"Unable to locate library" ++ spc () ++ pr_qualid qid))
+      msgnl (hov 0 (strbrk "Unable to locate library " ++ pr_qualid qid))
   | e -> assert false
 
 let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
-  try msg_found_library (Library.locate_qualified_library qid)
+  try msg_found_library (Library.locate_qualified_library false qid)
   with e -> msg_notfound_library loc qid e
 
 let print_located_module r = 
@@ -570,7 +571,7 @@ let vernac_end_segment lid =
 
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
-  let modrefl = List.map (fun (_, qid) -> let (_, dp, _) = (Library.locate_qualified_library qid) in dp) qidl in
+  let modrefl = List.map (fun (_, qid) -> let (_, dp, _) = (Library.locate_qualified_library false qid) in dp) qidl in
     List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref loc dp "lib") qidl modrefl;
     Library.require_library qidl import
 
