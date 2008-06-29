@@ -198,6 +198,11 @@ Goal forall x : nat, F1 x -> G1 x.
 refine (fun x H => proj2 (_ x H) _).
 Abort.
 
+(* First-order unification between beta-redex (is it useful ?) *)
+
+Check fun (y: (forall x:((fun y:Type => bool) nat), True))
+          (z: (fun z:Type => bool) _) => y z.
+
 (* Remark: the following example does not succeed any longer in 8.2 because,
    the algorithm is more general and does exclude a solution that it should
    exclude for typing reason. Handling of types and backtracking is still to
