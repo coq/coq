@@ -506,12 +506,12 @@ let apply_conversion_problem_heuristic env evd pbty t1 t2 =
   let (term2,l2 as appr2) = decompose_app t2 in
   match kind_of_term term1, kind_of_term term2 with
   | Evar (evk1,args1), (Rel _|Var _) when l1 = [] & l2 = [] ->
-      (* The typical kind of constraint coming from patter-matching return
+      (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       assert (array_for_all (fun a -> a = term2 or isEvar a) args1);
       choose_less_dependent_instance evk1 evd term2 args1, true
   | (Rel _|Var _), Evar (evk2,args2) when l1 = [] & l2 = [] ->
-      (* The typical kind of constraint coming from patter-matching return
+      (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       assert (array_for_all ((=) term1) args2);
       choose_less_dependent_instance evk2 evd term1 args2, true
