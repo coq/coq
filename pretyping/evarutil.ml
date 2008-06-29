@@ -1057,22 +1057,7 @@ let check_evars env initial_sigma evd c =
 	  if not (Evd.mem initial_sigma evk) then
             let (loc,k) = evar_source evk evd in
 	    let evi = nf_evar_info sigma (Evd.find sigma evk) in
-	    let explain =
-	      let f (_,_,t1,t2) =
-		(try head_evar t1 = evk with Failure _ -> false)
-		or (try head_evar t2 = evk with Failure _ -> false) in
-	      let check_several c inst =
-		let _,argsv = destEvar c in
-		let l = List.filter (eq_constr inst) (Array.to_list argsv) in
-		let n = List.length l in
-		(* Maybe should we select one instead of failing ... *)
-		if n >= 2 then Some (SeveralInstancesFound n) else None in
-	      match List.filter f (snd (extract_all_conv_pbs evd)) with
-	      | (_,_,t1,t2)::_ ->
-		  if isEvar t2 then check_several t2 t1 
-		  else check_several t1 t2
-	      | [] -> None
-	    in  error_unsolvable_implicit loc env sigma evi k explain
+	    error_unsolvable_implicit loc env sigma evi k None
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
