@@ -928,23 +928,26 @@ and xlate_tac =
     | TacExtend (_,"contradiction",[]) -> CT_contradiction
     | TacDoubleInduction (n1, n2) ->
 	CT_tac_double (xlate_quantified_hypothesis n1, xlate_quantified_hypothesis n2)
-    | TacExtend (_,"discriminate", [idopt]) ->
+    | TacExtend (_,"discriminate", []) ->
+     CT_discriminate_eq (CT_coerce_ID_OPT_to_ID_OR_INT_OPT ctv_ID_OPT_NONE)
+    | TacExtend (_,"discriminate", [id]) ->
      CT_discriminate_eq
          (xlate_quantified_hypothesis_opt
-	    (out_gen (wit_opt rawwit_quant_hyp) idopt))
-    | TacExtend (_,"simplify_eq", [idopt]) ->
-	let idopt1 = out_gen (wit_opt rawwit_quant_hyp) idopt in
-	let idopt2 = match idopt1 with
-	    None -> CT_coerce_ID_OPT_to_ID_OR_INT_OPT
-		(CT_coerce_NONE_to_ID_OPT CT_none)
-	  | Some v ->
-	      CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT
-	      	(xlate_quantified_hypothesis v) in
-	  CT_simplify_eq idopt2
-    | TacExtend (_,"injection", [idopt]) ->
+	    (Some (out_gen rawwit_quant_hyp id)))
+    | TacExtend (_,"simplify_eq", []) ->
+	  CT_simplify_eq (CT_coerce_ID_OPT_to_ID_OR_INT_OPT
+		(CT_coerce_NONE_to_ID_OPT CT_none))
+    | TacExtend (_,"simplify_eq", [id]) ->
+	let id1 = out_gen rawwit_quant_hyp id in
+	let id2 = CT_coerce_ID_OR_INT_to_ID_OR_INT_OPT
+	      	(xlate_quantified_hypothesis id1) in
+	  CT_simplify_eq id2
+    | TacExtend (_,"injection", []) ->
+     CT_injection_eq (CT_coerce_ID_OPT_to_ID_OR_INT_OPT ctv_ID_OPT_NONE)
+    | TacExtend (_,"injection", [id]) ->
      CT_injection_eq
          (xlate_quantified_hypothesis_opt
-	    (out_gen (wit_opt rawwit_quant_hyp) idopt))
+	    (Some (out_gen rawwit_quant_hyp id)))
     | TacExtend (_,"injection_as", [idopt;ipat]) ->
 	xlate_error "TODO: injection as"
     | TacFix (idopt, n) ->
