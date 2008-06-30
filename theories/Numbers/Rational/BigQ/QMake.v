@@ -40,28 +40,32 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Definition of_Z x: t := Qz (Z.of_Z x).
 
- Definition of_Q q: t := 
- match q with x # y =>
-  Qq (Z.of_Z x) (N.of_N (Npos y))
- end.
+ Definition of_Q (q:Q) : t := 
+  let (x,y) := q in 
+  match y with 
+    | 1%positive => Qz (Z.of_Z x)
+    | _ => Qq (Z.of_Z x) (N.of_N (Npos y))
+  end.
 
  Definition to_Q (q: t) := 
  match q with 
-  Qz x => Z.to_Z x # 1
- |Qq x y => if N.eq_bool y N.zero then 0
-            else Z.to_Z x # Z2P (N.to_Z y)
+   | Qz x => Z.to_Z x # 1
+   | Qq x y => if N.eq_bool y N.zero then 0
+               else Z.to_Z x # Z2P (N.to_Z y)
  end.
 
  Notation "[ x ]" := (to_Q x).
 
  Theorem strong_spec_of_Q: forall q: Q, [of_Q q] = q.
  Proof.
- intros (x,y); simpl.
- match goal with  |- context[N.eq_bool ?X ?Y] => 
-  generalize (N.spec_eq_bool X Y); case N.eq_bool
- end; auto; rewrite N.spec_0.
-   rewrite N.spec_of_N; intros HH; discriminate HH.
- rewrite Z.spec_of_Z; simpl.
+ intros(x,y); destruct y; simpl; rewrite Z.spec_of_Z; auto.
+ generalize (N.spec_eq_bool (N.of_N (Npos y~1)) N.zero); 
+  case N.eq_bool; auto; rewrite N.spec_0.
+ rewrite N.spec_of_N; discriminate.
+ rewrite N.spec_of_N; auto.
+ generalize (N.spec_eq_bool (N.of_N (Npos y~0)) N.zero); 
+  case N.eq_bool; auto; rewrite N.spec_0.
+ rewrite N.spec_of_N; discriminate.
  rewrite N.spec_of_N; auto.
  Qed.
 
@@ -1097,17 +1101,26 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Definition of_Qc q := of_Q (this q).
 
- Definition to_Qc q := !!(to_Q q).
+ Definition to_Qc q := !! [q].
 
  Notation "[[ x ]]" := (to_Qc x).
 
+ Theorem strong_spec_of_Qc : forall q, [of_Qc q] = q.
+ Proof.
+ intros (q,Hq); intros.
+ unfold of_Qc; rewrite strong_spec_of_Q; auto.
+ Qed.
+
+ Lemma strong_spec_of_Qc_bis : forall q, Reduced (of_Qc q).
+ Proof.
+ intros; red; rewrite strong_spec_red, strong_spec_of_Qc.
+ destruct q; simpl; auto.
+ Qed.
+
  Theorem spec_of_Qc: forall q, [[of_Qc q]] = q.
  Proof.
- intros (x, Hx); unfold of_Qc, to_Qc; simpl.
- apply Qc_decomp; simpl.
- intros.
- rewrite <- H0 at 2; apply Qred_complete.
- apply spec_of_Q.
+ intros; apply Qc_decomp; simpl; intros.
+ rewrite strong_spec_of_Qc; auto.
  Qed.
 
  Theorem spec_oppc: forall q, [[opp q]] = -[[q]].
@@ -1117,6 +1130,15 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  apply Qred_complete.
  rewrite spec_opp, <- Qred_opp, Qred_correct.
  apply Qeq_refl.
+ Qed.
+
+ Theorem spec_oppc_bis : forall q : Qc, [opp (of_Qc q)] = - q.
+ Proof.
+ intros.
+ rewrite <- strong_spec_opp_norm by apply strong_spec_of_Qc_bis.
+ rewrite strong_spec_red.
+ symmetry; apply (Qred_complete (-q)%Q).
+ rewrite spec_opp, strong_spec_of_Qc; auto with qarith.
  Qed.
 
  Theorem spec_comparec: forall q1 q2,
@@ -1155,6 +1177,16 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  apply Qplus_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
 
+ Theorem spec_add_normc_bis : forall x y : Qc, 
+   [add_norm (of_Qc x) (of_Qc y)] = x+y.
+ Proof.
+ intros.
+ rewrite <- strong_spec_add_norm by apply strong_spec_of_Qc_bis.
+ rewrite strong_spec_red.
+ symmetry; apply (Qred_complete (x+y)%Q).
+ rewrite spec_add_norm, ! strong_spec_of_Qc; auto with qarith.
+ Qed.
+
  Theorem spec_subc x y:  [[sub x y]] = [[x]] - [[y]].
  Proof.
  intros x y; unfold sub; rewrite spec_addc; auto.
@@ -1163,8 +1195,20 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
 
  Theorem spec_sub_normc x y:
    [[sub_norm x y]] = [[x]] - [[y]].
+ Proof.
  intros x y; unfold sub_norm; rewrite spec_add_normc; auto.
  rewrite spec_oppc; ring.
+ Qed.
+
+ Theorem spec_sub_normc_bis : forall x y : Qc, 
+   [sub_norm (of_Qc x) (of_Qc y)] = x-y.
+ Proof.
+ intros.
+ rewrite <- strong_spec_sub_norm by apply strong_spec_of_Qc_bis.
+ rewrite strong_spec_red.
+ symmetry; apply (Qred_complete (x+(-y)%Qc)%Q).
+ rewrite spec_sub_norm, ! strong_spec_of_Qc.
+ unfold Qcopp, Q2Qc; rewrite Qred_correct; auto with qarith.
  Qed.
 
  Theorem spec_mulc x y:
@@ -1195,6 +1239,16 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  apply Qmult_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
 
+ Theorem spec_mul_normc_bis : forall x y : Qc, 
+   [mul_norm (of_Qc x) (of_Qc y)] = x*y.
+ Proof.
+ intros.
+ rewrite <- strong_spec_mul_norm by apply strong_spec_of_Qc_bis.
+ rewrite strong_spec_red.
+ symmetry; apply (Qred_complete (x*y)%Q).
+ rewrite spec_mul_norm, ! strong_spec_of_Qc; auto with qarith.
+ Qed.
+
  Theorem spec_invc x:
    [[inv x]] =  /[[x]].
  Proof.
@@ -1223,6 +1277,16 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  apply Qinv_comp; apply Qeq_sym; apply Qred_correct.
  Qed.
 
+ Theorem spec_inv_normc_bis : forall x : Qc, 
+   [inv_norm (of_Qc x)] = /x.
+ Proof.
+ intros.
+ rewrite <- strong_spec_inv_norm by apply strong_spec_of_Qc_bis.
+ rewrite strong_spec_red.
+ symmetry; apply (Qred_complete (/x)%Q).
+ rewrite spec_inv_norm, ! strong_spec_of_Qc; auto with qarith.
+ Qed.
+
  Theorem spec_divc x y: [[div x y]] = [[x]] / [[y]].
  Proof.
  intros x y; unfold div; rewrite spec_mulc; auto.
@@ -1235,6 +1299,17 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  intros x y; unfold div_norm; rewrite spec_mul_normc; auto.
  unfold Qcdiv; apply f_equal2 with (f := Qcmult); auto.
  apply spec_inv_normc; auto.
+ Qed.
+
+ Theorem spec_div_normc_bis : forall x y : Qc, 
+   [div_norm (of_Qc x) (of_Qc y)] = x/y.
+ Proof.
+ intros.
+ rewrite <- strong_spec_div_norm by apply strong_spec_of_Qc_bis.
+ rewrite strong_spec_red.
+ symmetry; apply (Qred_complete (x*(/y)%Qc)%Q).
+ rewrite spec_div_norm, ! strong_spec_of_Qc.
+ unfold Qcinv, Q2Qc; rewrite Qred_correct; auto with qarith.
  Qed.
 
  Theorem spec_squarec x: [[square x]] =  [[x]]^2.
