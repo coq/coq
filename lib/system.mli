@@ -16,9 +16,11 @@
 type physical_path = string
 type load_path = physical_path list
 
+val exclude_search_in_dirname : string -> unit
+
 val all_subdirs : unix_path:string -> (physical_path * string list) list
 val is_in_path : load_path -> string -> bool
-val where_in_path : load_path -> string -> physical_path * string
+val where_in_path : bool -> load_path -> string -> physical_path * string
 
 val physical_path_of_string : string -> physical_path
 val string_of_physical_path : physical_path -> string

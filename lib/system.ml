@@ -68,6 +68,14 @@ let string_of_physical_path p = p
 let exists_dir dir =
   try let _ = opendir dir in true with Unix_error _ -> false
 
+let skipped_dirnames = ref ["CVS"; "_darcs"]
+
+let exclude_search_in_dirname f = skipped_dirnames := f :: !skipped_dirnames
+
+let ok_dirname f = 
+  f <> "" && f.[0] <> '.' && not (List.mem f !skipped_dirnames) &&
+  try ignore (check_ident f); true with _ -> false
+
 let all_subdirs ~unix_path:root =
   let l = ref [] in
   let add f rel = l := (f, rel) :: !l in
@@ -76,8 +84,7 @@ let all_subdirs ~unix_path:root =
     try
       while true do
 	let f = readdir dirh in
-	if f <> "" && f.[0] <> '.' && (not Coq_config.local or (f <> "CVS"))
-        then
+	if ok_dirname f then
 	  let file = Filename.concat dir f in
 	  try 
 	    if (stat file).st_kind = S_DIR then begin
@@ -90,52 +97,44 @@ let all_subdirs ~unix_path:root =
     with End_of_file ->
       closedir dirh
   in
-  if exists_dir root then
-   begin
-     add root [];
-     traverse root []
-   end ;
+  if exists_dir root then traverse root [];
   List.rev !l
 
-let where_in_path path filename =
-  let rec search acc = function
+let where_in_path warn path filename =
+  let rec search = function
     | lpe :: rem ->
 	let f = Filename.concat lpe filename in
 	  if Sys.file_exists f 
-	  then (search ((lpe,f)::acc) rem) 
-	  else search acc rem
-    | [] -> acc in
-  let rec check_and_warn cont acc l = 
+	  then (lpe,f) :: search rem
+	  else search rem
+    | [] -> [] in
+  let rec check_and_warn l =
     match l with
-      | [] -> if cont then assert false else raise Not_found
-      | [ (lpe, f) ] -> 
-	  if cont then begin
-	      warning (acc ^ (string_of_physical_path lpe) ^ " ]");
-	      warning ("Loading " ^ f)
-	    end;
-	  (lpe, f)
+      | [] -> raise Not_found
       | (lpe, f) :: l' -> 
-	  if cont then
-	    check_and_warn true (acc ^ (string_of_physical_path lpe) ^ "; ") l'
-	  else
-	    check_and_warn true 
-	      (filename ^ " has been found in [ " ^ (string_of_physical_path lpe) ^ "; ") l' 
-  in
-    check_and_warn false "" (search [] path)
-  
+	  if warn & l' <> [] then
+	    msg_warning
+	      (str filename ++ str " has been found in" ++ spc () ++
+	       hov 0 (str "[ " ++
+	         hv 0 (prlist_with_sep pr_semicolon (fun (lpe,_) -> str lpe) l)
+	         ++ str " ];") ++ fnl () ++
+	       str "loading " ++ str f);
+	  (lpe, f) in
+  check_and_warn (search path)
+
 let find_file_in_path paths filename =
   if not (Filename.is_implicit filename) then
     let root = Filename.dirname filename in
     root, filename
   else 
-    try where_in_path paths filename
+    try where_in_path true paths filename
     with Not_found ->
       errorlabstrm "System.find_file_in_path"
 	(hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++ 
 		str "on loadpath"))
 
 let is_in_path lpath filename =
-  try ignore (where_in_path lpath filename); true
+  try ignore (where_in_path false lpath filename); true
   with Not_found -> false
 
 let make_suffix name suffix =

@@ -423,7 +423,7 @@ let try_locate_absolute_library dir =
 
 let try_locate_qualified_library (loc,qid) =
   try
-    let (_,dir,f) = locate_qualified_library true qid in
+    let (_,dir,f) = locate_qualified_library (Flags.is_verbose()) qid in
     dir,f
   with e -> 
     explain_locate_library_error qid e
@@ -641,9 +641,9 @@ let current_reexports () =
 
 let error_recursively_dependent_library dir =
   errorlabstrm ""
-    (str "Unable to use logical name" ++ spc() ++ pr_dirpath dir ++ spc() ++ 
-     str "to save current library" ++ spc() ++ str"because" ++ spc() ++ 
-     str "it already depends on a library of this name.")
+    (strbrk "Unable to use logical name " ++ pr_dirpath dir ++ 
+     strbrk " to save current library because" ++
+     strbrk " it already depends on a library of this name.")
 
 let save_library_to dir f =
   let cenv, seg = Declaremods.end_library dir in
