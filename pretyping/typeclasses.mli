@@ -45,6 +45,7 @@ type instance
 
 val instances : global_reference -> instance list
 val typeclasses : unit -> typeclass list
+val all_instances : unit -> instance list
 
 val add_class : typeclass -> unit
 

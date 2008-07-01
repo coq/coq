@@ -148,7 +148,11 @@ module Coercion = struct
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
 		  aux (hdy :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	  else Some co
-	in aux [] typ typ' 0 (fun x -> x)
+	in 
+	  if isEvar c || isEvar c' then
+	    (* Second-order unification needed. *)
+	    raise NoSubtacCoercion;
+	  aux [] typ typ' 0 (fun x -> x)
       in
 	match (kind_of_term x, kind_of_term y) with
 	  | Sort s, Sort s' -> 
@@ -485,7 +489,7 @@ module Coercion = struct
       try let rels, rng = decompose_prod_n nabs t in
 	(* The final range free variables must have been replaced by evars, we accept only that evars
 	   in rng are applied to free vars. *)
-	if noccur_with_meta 0 (succ nabs) rng then (
+	if noccur_with_meta 1 (succ nabs) rng then (
 	  let env', t, t' =
 	    let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
 	      env', rng, lift nabs t'

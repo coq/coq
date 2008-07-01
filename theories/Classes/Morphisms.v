@@ -75,7 +75,7 @@ Arguments Scope respectful [type_scope type_scope signature_scope signature_scop
 
 Open Local Scope signature_scope.
 
-(** Pointwise lifting is just respect with leibnize equality on the left. *)
+(** Pointwise lifting is just respect with leibniz equality on the left. *)
 
 Definition pointwise_relation {A B : Type} (R : relation B) : relation (A -> B) := 
   fun f g => forall x : A, R (f x) (g x).
@@ -222,8 +222,8 @@ Program Instance trans_sym_contra_impl_morphism
     transitivity x0... symmetry...
   Qed.
 
-Program Instance equivalence_partial_app_morphism
-  [ Equivalence A R ] : Morphism (R ==> iff) (R x) | 1.
+Program Instance per_partial_app_morphism
+  [ PER A R ] : Morphism (R ==> iff) (R x) | 1.
 
   Next Obligation.
   Proof with auto.

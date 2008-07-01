@@ -2056,8 +2056,10 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 	    t, prepare_predicate_from_arsign_tycon loc env (Evd.evars_of !isevars)
 	      tomatchs sign (lift tomatchs_len t)
       in
-      let arity = 
-	it_mkProd_or_LetIn (lift neqs arity) (context_of_arsign eqs)
+      let neqs, arity = 
+	let ctx = context_of_arsign eqs in
+	let neqs = List.length ctx in
+	  neqs, it_mkProd_or_LetIn (lift neqs arity) ctx
       in
       let lets, matx = 
 	(* Type the rhs under the assumption of equations *)

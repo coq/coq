@@ -75,6 +75,7 @@ let type_ctx_instance isevars env ctx inst subst =
     (fun (subst, instctx) (na, _, t) ce ->
       let t' = substl subst t in
       let c = interp_casted_constr_evars isevars env ce t' in
+      isevars := resolve_typeclasses ~onlyargs:true ~fail:true env !isevars;
       let d = na, Some c, t' in
 	c :: subst, d :: instctx)
     (subst, []) (List.rev ctx) inst

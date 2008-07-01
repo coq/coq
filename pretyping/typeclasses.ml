@@ -111,13 +111,13 @@ let gmap_cmap_merge old ne =
     Gmap.fold (fun cl insts acc -> 
       let oldinsts = try Gmap.find cl old with Not_found -> Cmap.empty in
 	Gmap.add cl (cmap_union oldinsts insts) acc)
-      Gmap.empty ne
+      ne Gmap.empty
   in
     Gmap.fold (fun cl insts acc -> 
       if Gmap.mem cl ne' then acc
       else Gmap.add cl insts acc)
-      ne' old
-      
+      old ne'
+
 let add_instance_hint_ref = ref (fun id pri -> assert false)
 let register_add_instance_hint =
   (:=) add_instance_hint_ref
@@ -284,9 +284,14 @@ let add_instance i =
   add_instance_hint i.is_impl i.is_pri;
   update ()
 
+let all_instances () = 
+  Gmap.fold (fun k v acc -> 
+    Cmap.fold (fun k v acc -> v :: acc) v acc)
+    !instances []
+
 let instances r = 
   let cl = class_info r in instances_of cl
-
+    
 let method_typeclass ref = 
   match ref with 
     | ConstRef c -> 

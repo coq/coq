@@ -128,6 +128,8 @@ let ppenv e = pp
 
 let pptac = (fun x -> pp(Pptactic.pr_glob_tactic (Global.env()) x))
 
+let ppinsts c = pp (pr_instance_gmap c)
+
 let ppobj obj = Format.print_string (Libobject.object_tag obj)
 
 let cnt = ref 0
