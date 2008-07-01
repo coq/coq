@@ -90,11 +90,11 @@ Evaluation of structures to weak head normal form:
 \inference{%
   \frac{
     \begin{array}{c}
-    \WEV{E}{S}{\functor{X}{S_1}{S_2}}\\
-    \WTM{E}{p}{S_3}\qquad \WS{E}{\overline{S_3}}{\overline{S_1}}
+    \WEV{E}{S}{\functor{X}{S_1}{S_2}}~~~~~\WEV{E}{S_1}{\overline{S_1}}\\
+    \WTM{E}{p}{S_3}\qquad \WS{E}{S_3}{\overline{S_1}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{S\,p}{S\{p/X,t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}}
+    \WEV{E}{S\,p}{S_2\{p/X,t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}}
   }
 }
 \end{description}
@@ -106,8 +106,8 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
 \inference{%
   \frac{
     \begin{array}{c}
-    \WEV{E}{S}{\structe{\ModS{X}{S_1}}}\\
-    \WTM{E}{p}{S_2}\qquad \WS{E;\elem_1;\ldots;\elem_i}{\overline{S_2}}{\overline{S_1}}
+    \WEV{E}{S}{\structe{\ModS{X}{S_1}}}~~~~~\WEV{E;\elem_1;\ldots;\elem_i}{S_1}{\overline{S_1}}\\
+    \WTM{E}{p}{S_2}\qquad \WS{E;\elem_1;\ldots;\elem_i}{S_2}{\overline{S_1}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \begin{array}{c}
@@ -158,14 +158,20 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
 \item[WEVAL-PATH-MOD]
 \inference{%
   \frac{
-    \WEV{E}{p}{\structe{ \Mod{X}{S}{S_1}}}
+    \begin{array}{c}
+    \WEV{E}{p}{\structe{ \Mod{X}{S}{S_1}}}\\
+    \WEV{E;\elem_1;\ldots;\elem_i}{S}{\overline{S}}
+   \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WEV{E}{p.X}{\overline{S}}
   }
 }
 \inference{%
   \frac{
-    \WF{E}{}~~~~~~\Mod{X}{S}{S_1}\in E
+    \begin{array}{c}
+    \WF{E}{}~~~~~~\Mod{X}{S}{S_1}\in E\\
+    \WEV{E}{S}{\overline{S}}
+   \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WEV{E}{X}{\overline{S}}
   }
@@ -175,7 +181,7 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
   \frac{
     \begin{array}{c}
     \WEV{E}{p}{\structe{\ModA{X}{p_1}}}\\
-    \WEV{E}{p_1}{\overline{S}}
+    \WEV{E;\elem_1;\ldots;\elem_i}{p_1}{\overline{S}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WEV{E}{p.X}{\overline{S}}
@@ -194,7 +200,10 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
 \item[WEVAL-PATH-TYPE]
 \inference{%
   \frac{
-    \WEV{E}{p}{\structe{\ModType{Y}{S}}}
+    \begin{array}{c}
+    \WEV{E}{p}{\structe{\ModType{Y}{S}}}\\
+    \WEV{E;\elem_1;\ldots;\elem_i}{S}{\overline{S}}
+    \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WEV{E}{p.Y}{\overline{S}}
   }
@@ -202,7 +211,10 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
 \item[WEVAL-PATH-TYPE]
 \inference{%
   \frac{
-    \WF{E}{}~~~~~~~\ModType{Y}{S}\in E
+    \begin{array}{c}
+    \WF{E}{}~~~~~~~\ModType{Y}{S}\in E\\
+    \WEV{E}{S}{\overline{S}}
+    \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WEV{E}{Y}{\overline{S}}
   }
@@ -242,7 +254,7 @@ meaning:
   \item $\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$
   \item $\Indpstr{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}{p} ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}$
   \end{itemize}
-\item if $S\lra\funsig{X}{S'}{S''}$ then $S/p=S$
+\item if $S\lra\functor{X}{S'}{S''}$ then $S/p=S$
 \end{itemize}
 The notation $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$ denotes an
 inductive definition that is definitionally equal to the inductive
