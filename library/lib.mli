@@ -173,6 +173,7 @@ val section_segment_of_constant : Names.constant -> Sign.named_context
 val section_segment_of_mutual_inductive: Names.mutual_inductive -> Sign.named_context
 
 val section_instance : Libnames.global_reference -> Names.identifier array
+val is_in_section : Libnames.global_reference -> bool
 
 val add_section_variable : Names.identifier -> bool -> Term.types option -> unit
 val add_section_constant : Names.constant -> Sign.named_context -> unit

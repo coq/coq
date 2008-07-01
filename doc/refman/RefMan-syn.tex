@@ -742,6 +742,21 @@ arguments of {\qualid} are built from a notation, then this notation
 is interpreted in the scope stack extended by the scopes bound (if any)
 to these arguments.
 
+\begin{Variants}
+\item {\tt Arguments Scope Global} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+
+This behaves like {\tt Arguments Scope} {\qualid} {\tt [
+\nelist{\optscope}{} ]} but survives when a section is closed instead
+of stopping working at section closing.
+
+\item {\tt Arguments Scope Local} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+
+This is a synonym of {\tt Arguments Scope} {\qualid} {\tt [
+\nelist{\optscope}{} ]}: if in a section, the effect of the command
+stops when the section it belongs to ends.
+\end{Variants}
+
+
 \SeeAlso The command to show the scopes bound to the arguments of a
 function is described in Section~\ref{About}.
 

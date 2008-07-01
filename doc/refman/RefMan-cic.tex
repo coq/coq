@@ -422,6 +422,7 @@ convertibility into an order inductively defined by:
 \item if $i \leq j$ then $\WTEGLECONV{\Type(i)}{\Type(j)}$,
 \item for any $i$, $\WTEGLECONV{\Prop}{\Type(i)}$,
 \item for any $i$, $\WTEGLECONV{\Set}{\Type(i)}$,
+\item $\WTEGLECONV{\Prop}{\Set}$,
 \item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{\forall~x:T,T'}{\forall~x:U,U'}$.
 \end{enumerate}
 

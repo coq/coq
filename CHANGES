@@ -31,7 +31,7 @@ Language
 
 Vernacular commands
 
-- Added option Global to "Arguments Scope" for section surviving. (DOC TODO)
+- Added option Global to "Arguments Scope" for section surviving.
 - Added option "Unset Elimination Schemes" to deactivate the automatic
   generation of elimination schemes.
 - Modification of the Scheme command so you can ask for the name to be
