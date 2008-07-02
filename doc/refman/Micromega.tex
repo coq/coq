@@ -17,11 +17,11 @@ Load the {\tt Psatz} module ({\tt Require Psatz}.).  This module defines the tac
   \begin{itemize}
   \item The {\tt psatzl} tactic solves linear goals using an embedded (naive) linear programming prover \emph{i.e.},
     fourier elimination.
-  \item The {\tt psatz} tactic solves polynomial goals using an external prover {\tt cspd}\footnote{Source and binaries can be found at \url{https://projects.coin-or.org/Csdp}}. Note that the {\tt csdp} driver is generating 
+  \item The {\tt psatz} tactic solves polynomial goals using John Harrison's Hol light driver to the external prover {\tt cspd}\footnote{Source and binaries can be found at \url{https://projects.coin-or.org/Csdp}}. Note that the {\tt csdp} driver is generating 
     a \emph{proof cache} thus allowing to rerun scripts even without {\tt csdp}. 
   \item The {\tt lia} (linear integer arithmetic) tactic is specialised to solve linear goals over $\mathbb{Z}$.
     It extends {\tt psatzl Z} and exploits the discreetness of $\mathbb{Z}$.
-  \item The {\tt sos} tactic is another driver to the {\tt csdp} prover.  In theory, it is less general than
+  \item The {\tt sos} tactic is another Hol light driver to the {\tt csdp} prover.  In theory, it is less general than
     {\tt psatz}. In practice, even when {\tt psatz} fails, it can be worth a try -- see
     Section~\ref{sec:psatz-back} for details.
   \end{itemize}

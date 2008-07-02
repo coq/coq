@@ -12,7 +12,7 @@ Require Import Ring_normalize.
 
 Open Scope R_scope.
 
-Lemma plus_minus : forall x y, 
+Lemma yplus_minus : forall x y, 
   0 = x + y -> 0 =  x -y -> 0 = x /\ 0 = y.
 Proof.
   intros.
@@ -74,10 +74,4 @@ Qed.
 
 Lemma l1 : forall x y z : R, Rabs (x - z) <= Rabs (x - y) + Rabs (y - z).
 intros; split_Rabs; psatzl R.
-Qed.
- 
-Lemma l2 :
- forall x y : R, x < Rabs y -> y < 1 -> x >= 0 -> - y <= 1 -> Rabs x <= 1.
-intros.
-split_Rabs; psatzl R.
 Qed.

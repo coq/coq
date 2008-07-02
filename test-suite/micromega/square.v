@@ -11,7 +11,7 @@ Open Scope Z_scope.
 
 Lemma Zabs_square : forall x,  (Zabs  x)^2 = x^2.
 Proof.
- intros ; case (Zabs_dec x) ; intros ; psatz Z.
+ intros ; case (Zabs_dec x) ; intros ; psatz Z 2.
 Qed.
 Hint Resolve Zabs_pos Zabs_square.
 
@@ -21,11 +21,11 @@ intros [n [p [Heq Hnz]]]; pose (n' := Zabs n); pose (p':=Zabs p).
 assert (facts : 0 <= Zabs n /\ 0 <= Zabs p /\ Zabs n^2=n^2
          /\ Zabs p^2 = p^2) by auto.
 assert (H : (0 < n' /\ 0 <= p' /\ n' ^2 = 2* p' ^2)) by 
-  (destruct facts as [Hf1 [Hf2 [Hf3 Hf4]]]; unfold n', p' ; psatz Z).
+  (destruct facts as [Hf1 [Hf2 [Hf3 Hf4]]]; unfold n', p' ; psatz Z 2).
 generalize p' H; elim n' using (well_founded_ind (Zwf_well_founded 0)); clear.
 intros n IHn p [Hn [Hp Heq]].
-assert (Hzwf : Zwf 0 (2*p-n) n) by (unfold Zwf; psatz Z).
-assert (Hdecr : 0 < 2*p-n /\ 0 <= n-p /\ (2*p-n)^2=2*(n-p)^2) by psatz Z.
+assert (Hzwf : Zwf 0 (2*p-n) n) by (unfold Zwf; psatz Z 2).
+assert (Hdecr : 0 < 2*p-n /\ 0 <= n-p /\ (2*p-n)^2=2*(n-p)^2) by psatz Z 2.
 apply (IHn (2*p-n) Hzwf (n-p) Hdecr).
 Qed.
 
