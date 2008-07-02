@@ -43,7 +43,7 @@ open Evd
 let default_eauto_depth = 100
 let typeclasses_db = "typeclass_instances"
 
-let _ = Auto.auto_init := (fun () -> Auto.create_hint_db false typeclasses_db true)
+let _ = Auto.auto_init := (fun () -> Auto.create_hint_db false typeclasses_db false)
 
 let check_imported_library d =
   let d' = List.map id_of_string d in
@@ -108,13 +108,13 @@ let rec e_trivial_fail_db db_list local_db goal =
 and e_my_find_search db_list local_db hdc concl = 
   let hdc = head_of_constr_reference hdc in
   let hintl =
-(*     if occur_existential concl then *)
-(*       list_map_append *)
-(* 	(fun db -> *)
-(* 	  let st = Hint_db.transparent_state db in *)
-(* 	    List.map (fun x -> (st, x)) (Hint_db.map_all hdc db)) *)
-(* 	(local_db::db_list) *)
-(*     else *)
+    if occur_existential concl then
+      list_map_append
+	(fun db ->
+	  let st = Hint_db.transparent_state db in
+	    List.map (fun x -> (st, x)) (Hint_db.map_all hdc db))
+	(local_db::db_list)
+    else
       list_map_append
 	(fun db -> 
 	  let st = Hint_db.transparent_state db in
@@ -201,12 +201,15 @@ module SearchProblem = struct
 (* 	    if !debug then msg (str"\nTrying tactic: " ++ pptac ++ str"\n"); *)
 	    let (lgls,ptl) = apply_tac_list tac glls in 
 	    let v' p = v (ptl p) in
-(* 	      	      if !debug then *)
-(* 	      		begin *)
-(* 	      		  let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(* 	      		    msg (str"\nOn goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
-(* 	      		    msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")) *)
-(* 	      		end; *)
+(* 	      if !debug then *)
+(* 	      	begin *)
+(* 	      	  let evars = Evarutil.nf_evars (Refiner.project glls) in *)
+(* 	      	  let pptac = str"\nOn goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n" *)
+(* 		    ++ hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n") *)
+(* 		  in *)
+(* 		    ((lgls,v'),pri,pptac) :: aux tacl *)
+(* 	      	end *)
+(* 	      else *)
 	      ((lgls,v'),pri,pptac) :: aux tacl
 	  with e when catchable e -> aux tacl
     in aux l
