@@ -119,18 +119,23 @@ module Coercion = struct
 	with Reduction.NotConvertible -> coerce' env x y
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
+      let dest_prod c =
+	match Reductionops.decomp_n_prod env (evars_of !isevars) 1 c with
+	| [(na,b,t)], c -> (na,t), c
+	| _ -> raise NoSubtacCoercion
+      in
       let rec coerce_application typ typ' c c' l l' =
 	let len = Array.length l in
 	let rec aux tele typ typ' i co = 
 	  if i < len then
 	    let hdx = l.(i) and hdy = l'.(i) in
 	      try isevars := the_conv_x_leq env hdx hdy !isevars;
-		let (n, eqT, restT) = destProd typ in
-		let (n', eqT', restT') = destProd typ' in
+		let (n, eqT), restT = dest_prod typ in
+		let (n', eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
 	      with Reduction.NotConvertible ->
-		let (n, eqT, restT) = destProd typ in
-		let (n', eqT', restT') = destProd typ' in
+		let (n, eqT), restT = dest_prod typ in
+		let (n', eqT'), restT' = dest_prod typ' in
 		let _ = 
 		  try isevars := the_conv_x_leq env eqT eqT' !isevars
 		  with Reduction.NotConvertible -> raise NoSubtacCoercion
@@ -485,13 +490,13 @@ module Coercion = struct
 	  None -> 0, 0
 	| Some (init, cur) -> init, cur
     in
-      (* a little more effort to get products is needed *)
-      try let rels, rng = decompose_prod_n nabs t in
+      try 
+	let rels, rng = Reductionops.decomp_n_prod env (evars_of isevars) nabs t in
 	(* The final range free variables must have been replaced by evars, we accept only that evars
 	   in rng are applied to free vars. *)
 	if noccur_with_meta 1 (succ nabs) rng then (
 	  let env', t, t' =
-	    let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
+	    let env' = push_rel_context rels env in
 	      env', rng, lift nabs t'
 	  in
 	    try
