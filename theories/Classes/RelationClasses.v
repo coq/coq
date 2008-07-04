@@ -43,7 +43,7 @@ Class Reflexive A (R : relation A) :=
   reflexivity : forall x, R x x.
 
 Class Irreflexive A (R : relation A) := 
-  irreflexivity :> Reflexive A (complement R).
+  irreflexivity :> Reflexive (complement R).
 
 Class Symmetric A (R : relation A) := 
   symmetry : forall x y, R x y -> R y x.
@@ -53,12 +53,6 @@ Class Asymmetric A (R : relation A) :=
 
 Class Transitive A (R : relation A) := 
   transitivity : forall x y z, R x y -> R y z -> R x z.
-
-Implicit Arguments Reflexive [A].
-Implicit Arguments Irreflexive [A].
-Implicit Arguments Symmetric [A].
-Implicit Arguments Asymmetric [A].
-Implicit Arguments Transitive [A].
 
 Hint Resolve @irreflexivity : ord.
 
@@ -178,7 +172,7 @@ Instance Equivalence_PER [ Equivalence A R ] : PER A R | 10 :=
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 
-Class [ Equivalence A eqA ] => Antisymmetric (R : relation A) := 
+Class [ equ : Equivalence A eqA ] => Antisymmetric (R : relation A) := 
   antisymmetry : forall x y, R x y -> R y x -> eqA x y.
 
 Program Instance flip_antiSymmetric [ eq : Equivalence A eqA, ! Antisymmetric eq R ] :

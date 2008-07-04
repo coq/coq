@@ -696,11 +696,9 @@ let intern_typeclass_binders intern_type lvar env bl =
 	(env, (na,bk,None,ty)::bl))
     env bl
 
-let intern_typeclass_binder intern_type lvar (env,bl) na b ty =
-  let ctx = (na, b, ty) in
-  let (fvs, bind) = Implicit_quantifiers.generalize_class_binders_raw (pi1 env) [ctx] in
-  let env, ifvs = intern_typeclass_binders intern_type lvar (env,bl) fvs in
-    intern_typeclass_binders intern_type lvar (env,ifvs) bind
+let intern_typeclass_binder intern_type lvar (env,bl) cb =
+  let (ids, fvs, bind) = Implicit_quantifiers.generalize_class_binder_raw (pi1 env) cb in
+    intern_typeclass_binders intern_type lvar (env,bl) (fvs@[bind])
     
 let intern_local_binder_aux intern intern_type lvar ((ids,ts,sc as env),bl) = function
   | LocalRawAssum(nal,bk,ty) ->
@@ -713,8 +711,8 @@ let intern_local_binder_aux intern intern_type lvar ((ids,ts,sc as env),bl) = fu
 		(fun ((ids,ts,sc),bl) (_,na) ->
 		  ((name_fold Idset.add na ids,ts,sc), (na,k,None,ty)::bl))
 		(env,bl) nal
-	| TypeClass b ->
-	    intern_typeclass_binder intern_type lvar (env,bl) (List.hd nal) b ty)
+	| TypeClass (b,b') ->
+	    intern_typeclass_binder intern_type lvar (env,bl) (List.hd nal, (b,b'), ty))
   | LocalRawDef((loc,na),def) ->
       ((name_fold Idset.add na ids,ts,sc),
       (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
@@ -1029,9 +1027,9 @@ let internalise sigma globalenv env allow_patvar lvar c =
     in
       match bk with
 	| Default b -> default env b nal
-	| TypeClass b -> 
+	| TypeClass (b,b') -> 
 	    let env, ibind = intern_typeclass_binder intern_type lvar
-	      (env, []) (List.hd nal) b ty in
+	      (env, []) (List.hd nal,(b,b'),ty) in
 	    let body = intern_type env body in
 	      it_mkRProd ibind body
 					   
@@ -1045,9 +1043,9 @@ let internalise sigma globalenv env allow_patvar lvar c =
       | [] -> intern env body
     in match bk with
       | Default b -> default env b nal
-      | TypeClass b ->	  
+      | TypeClass (b, b') ->	  
 	  let env, ibind = intern_typeclass_binder intern_type lvar
-	    (env, []) (List.hd nal) b ty in
+	    (env, []) (List.hd nal,(b,b'),ty) in
 	  let body = intern env body in
 	    it_mkRLambda ibind body
 	      

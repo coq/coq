@@ -193,6 +193,44 @@ let resolve_class_binders env l =
   in
     fv_ctx, ctx
 
+let full_class_binder env (iid, (bk, bk'), cl as c) = 
+  let avoid = Idset.union env (ids_of_list (compute_context_vars env [c])) in
+  let c, avoid =
+    match bk' with
+    | Implicit -> 
+	let (loc, id, l) = 
+	  try destClassAppExpl cl 
+	  with Not_found -> 
+	    user_err_loc (constr_loc cl, "class_binders", str"Not an applied type class")
+	in
+	let gr = Nametab.global id in
+	  (try
+	      let c = class_info gr in
+	      let args, avoid = combine_params_freevar avoid l (List.rev c.cl_context) in
+		(iid, bk, CAppExpl (loc, (None, id), args)), avoid
+	    with Not_found -> not_a_class (Global.env ()) (constr_of_global gr))
+    | Explicit -> ((iid,bk,cl), avoid)
+  in c
+
+let compute_constraint_freevars env (oid, _, x) =
+  let bound = match snd oid with Name n -> Idset.add n env | Anonymous -> env in
+  let ids = free_vars_of_constr_expr x ~bound [] in
+    freevars_of_ids env (List.rev ids)
+
+let resolve_class_binder env c = 
+  let cstr = full_class_binder env c in
+  let fv_ctx = 
+    let elts = compute_constraint_freevars env cstr in
+      List.map (fun id -> (dummy_loc, id), CHole (dummy_loc, None)) elts
+  in fv_ctx, cstr
+    
+let generalize_class_binder_raw env c = 
+  let env = Idset.union env (Termops.vars_of_env (Global.env())) in
+  let fv_ctx, cstr = resolve_class_binder env c in
+  let ids' = List.fold_left (fun acc ((loc, id), t) -> Idset.add id acc) env fv_ctx in
+  let ctx' = List.map (fun ((loc, id), t) -> ((loc, Name id), Implicit, t)) fv_ctx in
+    ids', ctx', cstr
+
 let generalize_class_binders_raw env l = 
   let env = Idset.union env (Termops.vars_of_env (Global.env())) in
   let fv_ctx, cstrs = resolve_class_binders env l in

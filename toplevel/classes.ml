@@ -110,40 +110,15 @@ let interp_fields_evars isevars env avoid l =
 
 open Topconstr
 
-let declare_implicit_proj c proj imps sub =
-  let len = List.length c.cl_context in
-  let (ctx, _) = decompose_prod_n (len + 1) (Typeops.type_of_constant (Global.env()) (snd proj)) in
-  let expls =
-    let rec aux i expls = function
-	[] -> expls
-      | (Name n, _) :: tl -> 
-	  let impl = ExplByPos (i, Some n), (true, true) in
-	    aux (succ i) (impl :: List.remove_assoc (ExplByName n) expls) tl
-      | (Anonymous,_) :: _ -> assert(false)
-    in
-      aux 1 [] (List.rev ctx)
-  in 
-  let expls = expls @ List.map (function (ExplByPos (i, n), f) -> (ExplByPos (succ len + i, n)), f | _ -> assert(false)) imps in
-    if sub then 
-      declare_instance_cst true (snd proj);
-    Impargs.declare_manual_implicits false (ConstRef (snd proj)) true expls
-      
-let declare_implicits impls subs cl =
-  Util.list_iter3 (fun p imps sub -> declare_implicit_proj cl p imps sub)
-    cl.cl_projs impls subs;
-  let len = List.length cl.cl_context in
-  let indimps = 
-    list_fold_left_i 
-      (fun i acc (is, (na, b, t)) -> 
-	if len - i <= cl.cl_params then acc
-	else 
-	  match is with
-	      None | Some (_, false) -> (ExplByPos (i, Some (Nameops.out_name na)), (false, true)) :: acc
-	    | _ -> acc)
-      1 [] (List.rev cl.cl_context)
-  in
-    Impargs.declare_manual_implicits false cl.cl_impl false indimps
-      
+let implicits_of_context ctx =
+  list_map_i (fun i name ->
+    let explname = 
+      match name with 
+      | Name n -> Some n
+      | Anonymous -> None
+    in ExplByPos (i, explname), (true, true))
+    1 (List.rev (Anonymous :: (List.map pi1 ctx)))
+
 let degenerate_decl (na,b,t) =
   let id = match na with
     | Name id -> id
@@ -151,29 +126,6 @@ let degenerate_decl (na,b,t) =
   match b with
     | None -> (id, Entries.LocalAssum t)
     | Some b -> (id, Entries.LocalDef b)
-
-let declare_structure env id idbuild params arity fields =
-  let nparams = List.length params and nfields = List.length fields in
-  let args = extended_rel_list nfields params in
-  let ind = applist (mkRel (1+nparams+nfields), args) in
-  let type_constructor = it_mkProd_or_LetIn ind fields in
-  let mie_ind =
-    { mind_entry_typename = id;
-      mind_entry_arity = arity;
-      mind_entry_consnames = [idbuild];
-      mind_entry_lc = [type_constructor] } in
-  let mie =
-    { mind_entry_params = List.map degenerate_decl params;
-      mind_entry_record = true;
-      mind_entry_finite = true;
-      mind_entry_inds = [mie_ind] } in
-  let kn = Command.declare_mutual_with_eliminations true mie [] in
-  let rsp = (kn,0) in (* This is ind path of idstruc *)
-  let id = Nameops.next_ident_away id (ids_of_context (Global.env())) in
-  let kinds,sp_projs = Record.declare_projections rsp ~kind:Method ~name:id (List.map (fun _ -> false) fields) fields in
-  let _build = ConstructRef (rsp,1) in
-    Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
-    rsp
 
 let name_typeclass_binder avoid = function
   | LocalRawAssum ([loc, Anonymous], bk, c) ->
@@ -235,6 +187,12 @@ let new_class id par ar sup props =
   let ctx_props = Evarutil.nf_rel_context_evar sigma ctx_props in
   let arity = Reductionops.nf_evar sigma arity in
   let ce t = Evarutil.check_evars env0 Evd.empty isevars t in
+  let fieldimpls = 
+    (* Make the class and all params implicits in the projections *)
+    let ctx_impls = implicits_of_context ctx_params in
+    let len = succ (List.length ctx_params) in
+      List.rev_map (fun x -> ctx_impls @ Impargs.lift_implicits len x) prop_impls
+  in
   let impl, projs = 
     let params = ctx_params and fields = ctx_props in
       List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
@@ -267,12 +225,18 @@ let new_class id par ar sup props =
 	    let proj_cst = Declare.declare_constant proj_name
 	      (DefinitionEntry proj_entry, IsDefinition Definition) 
 	    in
-	      ConstRef cst, [proj_name, proj_cst]
+	    let cref = ConstRef cst in
+	      Impargs.declare_manual_implicits false cref (Impargs.is_implicit_args()) arity_imps;
+	      Impargs.declare_manual_implicits false (ConstRef proj_cst) (Impargs.is_implicit_args()) (List.hd fieldimpls);
+	      cref, [proj_name, proj_cst]
 	| _ ->
 	    let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
-	    let kn = declare_structure env0 (snd id) idb params arity fields in
-	      IndRef kn, (List.map2 (fun (id, _, _) y -> Nameops.out_name id, Option.get y)
-			     fields (Recordops.lookup_projections kn))
+	    let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
+	    let kn = Record.declare_structure (snd id) idb arity_imps
+	      params arity fieldimpls fields ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
+	    in
+	      IndRef (kn,0), (List.map2 (fun (id, _, _) y -> Nameops.out_name id, Option.get y)
+			     fields (Recordops.lookup_projections (kn,0)))
   in
   let ctx_context =
     List.map (fun ((na, b, t) as d) -> 
@@ -283,12 +247,12 @@ let new_class id par ar sup props =
   in
   let k =
     { cl_impl = impl;
-      cl_params = List.length par;
       cl_context = ctx_context;
       cl_props = ctx_props;
       cl_projs = projs }
   in
-    declare_implicits (List.rev prop_impls) subs k;
+    List.iter2 (fun p sub -> if sub then declare_instance_cst true (snd p))
+      k.cl_projs subs;
     add_class k
     
 type binder_def_list = (identifier located * identifier located list * constr_expr) list
@@ -489,12 +453,17 @@ let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
   let avoid = Termops.ids_of_context env in
-  let ctx, l = Implicit_quantifiers.resolve_class_binders (vars_of_env env) l in
-  let env', avoid, ctx = interp_binders_evars isevars env avoid ctx in
-  let env', avoid, l = interp_typeclass_context_evars isevars env' avoid l in
+  let ctx, l = 
+    List.fold_left 
+      (fun (ids, acc) x ->
+	let ids, ctx, cstr = Implicit_quantifiers.generalize_class_binder_raw ids x in
+	  (ids, (cstr :: ctx) @ acc))
+      (vars_of_env env, []) l
+  in
+  let env', avoid, l = interp_typeclass_context_evars isevars env avoid (List.rev l) in
   isevars := Evarutil.nf_evar_defs !isevars;
   let sigma = Evd.evars_of !isevars in
-  let fullctx = Evarutil.nf_named_context_evar sigma (l @ ctx) in
+  let fullctx = Evarutil.nf_named_context_evar sigma l in
     List.iter (function (id,_,t) -> 
       if Lib.is_modtype () then 
 	let cst = Declare.declare_internal_constant id

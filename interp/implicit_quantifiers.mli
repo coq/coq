@@ -43,6 +43,9 @@ val resolve_class_binders : Idset.t -> typeclass_context ->
   (identifier located * constr_expr) list * typeclass_context
 
 val full_class_binders : Idset.t -> typeclass_context -> typeclass_context
+
+val generalize_class_binder_raw : Idset.t -> name located * (binding_kind * binding_kind) * constr_expr -> 
+  Idset.t * typeclass_context * typeclass_constraint
   
 val generalize_class_binders_raw : Idset.t -> typeclass_context -> 
   (name located * binding_kind * constr_expr) list * (name located * binding_kind * constr_expr) list

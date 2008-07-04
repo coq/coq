@@ -32,8 +32,6 @@ type typeclass = {
      The boolean indicates if the typeclass argument is a direct superclass. *)
   cl_context : ((global_reference * bool) option * rel_declaration) list; 
 
-  cl_params : int; (* This is the length of the suffix of the context which should be considered explicit parameters. *)
-
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : rel_context;
 

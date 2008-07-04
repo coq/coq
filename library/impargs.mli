@@ -47,7 +47,6 @@ val is_status_implicit : implicit_status -> bool
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
 val name_of_implicit : implicit_status -> identifier
 val maximal_insertion_of : implicit_status -> bool
-val forced_implicit : implicit_status -> bool
 
 val positions_of_implicits : implicits_list -> int list
 
@@ -83,3 +82,5 @@ val maybe_declare_manual_implicits : bool -> global_reference -> bool ->
   manual_explicitation list -> unit
 
 val implicits_of_global : global_reference -> implicits_list
+
+val lift_implicits : int -> manual_explicitation list -> manual_explicitation list

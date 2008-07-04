@@ -132,6 +132,7 @@ val list_fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_fold_right_and_left :
     ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
+val list_fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
 val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 val list_except : 'a -> 'a list -> 'a list
 val list_remove : 'a -> 'a list -> 'a list

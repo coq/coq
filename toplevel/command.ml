@@ -613,13 +613,6 @@ let _ =
       optread  = (fun () -> !elim_flag) ;
       optwrite = (fun b -> elim_flag := b) }
 
-
-let lift_implicits n = 
-  List.map (fun x -> 
-    match fst x with 
-	ExplByPos (k, id) -> ExplByPos (k + n, id), snd x
-      | _ -> x)
-
 let declare_mutual_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let params = List.length mie.mind_entry_params in

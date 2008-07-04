@@ -37,8 +37,6 @@ type typeclass = {
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
   cl_context : ((global_reference * bool) option * rel_declaration) list; 
 
-  cl_params: int;
-
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : rel_context;
   
@@ -154,7 +152,7 @@ let subst (_,subst,(cl,m,inst)) =
   let do_subst_projs projs = list_smartmap (fun (x, y) -> (x, do_subst_con y)) projs in
   let subst_class k cl classes = 
     let k = do_subst_gr k in
-    let cl' = { cl with cl_impl = k;
+    let cl' = { cl_impl = k;
 		cl_context = do_subst_ctx cl.cl_context;
 		cl_props = do_subst_named cl.cl_props;
 		cl_projs = do_subst_projs cl.cl_projs; }

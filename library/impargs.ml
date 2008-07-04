@@ -88,7 +88,7 @@ let set_maximality imps b =
 
 (*s Computation of implicit arguments *)
 
-(* We remember various information about why an argument is (automatically)
+(* We remember various information about why an argument is
    inferable as implicit
 
 - [DepRigid] means that the implicit argument can be found by
@@ -105,6 +105,8 @@ let set_maximality imps b =
   inferable following a rigid path (useful to know how to print a
   partial application)
 
+- [Manual] means the argument has been explicitely set as implicit.
+
   We also consider arguments inferable from the conclusion but it is
   operational only if [conclusion_matters] is true.
 *)
@@ -117,7 +119,7 @@ type implicit_explanation =
   | DepRigid of argument_position
   | DepFlex of argument_position
   | DepFlexAndRigid of (*flex*) argument_position * (*rig*) argument_position
-  | Manual of bool
+  | Manual
 
 let argument_less = function
   | Hyp n, Hyp n' -> n<n'
@@ -137,7 +139,7 @@ let update pos rig (na,st) =
       | Some (DepFlex fpos) ->
           if argument_less (pos,fpos) or pos=fpos then DepRigid pos
           else DepFlexAndRigid (fpos,pos)
-      | Some (Manual _) -> assert false
+      | Some Manual -> assert false
   else
     match st with
       | None -> DepFlex pos
@@ -147,7 +149,7 @@ let update pos rig (na,st) =
           if argument_less (pos,fpos) then DepFlexAndRigid (pos,rpos) else x
       | Some (DepFlex fpos as x) ->
           if argument_less (pos,fpos) then DepFlex pos else x
-      | Some (Manual _) -> assert false
+      | Some Manual -> assert false
   in na, Some e
 
 (* modified is_rigid_reference with a truncated env *)
@@ -241,10 +243,10 @@ let compute_implicits_flags env f all t =
     f.reversible_pattern f.contextual all env t
     
 let set_implicit id imp insmax =
-  (id,(match imp with None -> Manual false | Some imp -> imp),insmax)
+  (id,(match imp with None -> Manual | Some imp -> imp),insmax)
 
 let merge_imps f = function 
-    None -> Some (Manual f)
+    None -> Some Manual
   | x -> x
 
 let rec assoc_by_pos k = function
@@ -262,7 +264,7 @@ let compute_manual_implicits env flags t enriching l =
       let (id, (b, f)), l' = assoc_by_pos k l in
 	if f then
 	  let id = match id with Some id -> id | None -> id_of_string ("arg_" ^ string_of_int k) in
-	    l', Some (id,Manual f,b)
+	    l', Some (id,Manual,b)
 	else l, None
     with Not_found -> l, None
   in
@@ -333,10 +335,6 @@ let maximal_insertion_of = function
   | Some (_,_,b) -> b
   | None -> anomaly "Not an implicit argument"
 
-let forced_implicit = function
-  | Some (_,Manual b,_) -> b
-  | _ -> false
-
 (* [in_ctx] means we know the expected type, [n] is the index of the argument *)
 let is_inferable_implicit in_ctx n = function
   | None -> false
@@ -346,7 +344,7 @@ let is_inferable_implicit in_ctx n = function
   | Some (_,DepRigid Conclusion,_) -> in_ctx
   | Some (_,DepFlex Conclusion,_) -> false
   | Some (_,DepFlexAndRigid (_,Conclusion),_) -> in_ctx
-  | Some (_,Manual _,_) -> true
+  | Some (_,Manual,_) -> true
 
 let positions_of_implicits =
   let rec aux n = function
@@ -418,8 +416,11 @@ let list_split_at index l =
   in aux 0 [] l
     
 let merge_impls oimpls impls =
-  let oimpls, _ = list_split_at (List.length oimpls - List.length impls) oimpls in
-    oimpls @ impls
+  let oimpls, newimpls = list_split_at (List.length oimpls - List.length impls) oimpls in
+    oimpls @ (List.map2 (fun orig ni ->
+      match orig with
+      | Some (_, Manual, _) -> orig
+      | _ -> ni) impls newimpls)
 
 (* Caching implicits *)
 
@@ -544,6 +545,12 @@ let declare_manual_implicits local ref enriching l =
 let maybe_declare_manual_implicits local ref enriching l =
   if l = [] then ()
   else declare_manual_implicits local ref enriching l
+
+let lift_implicits n = 
+  List.map (fun x -> 
+    match fst x with 
+	ExplByPos (k, id) -> ExplByPos (k + n, id), snd x
+      | _ -> x)
 
 (*s Registration as global tables *)
 

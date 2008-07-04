@@ -38,8 +38,8 @@ val name_typeclass_binders : Idset.t ->
     Topconstr.local_binder list ->
     Topconstr.local_binder list * Idset.t
 
-val declare_implicit_proj : typeclass -> (identifier * constant) -> 
-  Impargs.manual_explicitation list -> bool -> unit
+(* val declare_implicit_proj : typeclass -> (identifier * constant) ->  *)
+(*   Impargs.manual_explicitation list -> bool -> unit *)
 
 val new_class : identifier located ->
   local_binder list ->
@@ -85,7 +85,9 @@ val id_of_class : typeclass -> identifier
 
 (* Context command *)    
 
-val context : ?hook:(Libnames.global_reference -> unit) -> typeclass_context -> unit
+val context : ?hook:(Libnames.global_reference -> unit) -> 
+  (Names.name Util.located * (Rawterm.binding_kind * Rawterm.binding_kind) *
+  Topconstr.constr_expr) list -> unit
 
 (* Forward ref for refine *)
 

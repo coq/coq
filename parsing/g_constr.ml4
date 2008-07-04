@@ -409,17 +409,19 @@ GEXTEND Gram
   ;
   typeclass_constraint_binder:
     [ [ tc = typeclass_constraint ->
-      let (n,bk,t) = tc in
-	LocalRawAssum ([n], TypeClass bk, t)
+      let (n,(b,b'),t) = tc in
+	LocalRawAssum ([n], TypeClass (b,b'), t)
     ] ]
   ;
 
   typeclass_constraint:
-    [ [ "!" ; c = operconstr LEVEL "200" -> (loc, Anonymous), Explicit, c
-    | iid=ident_colon ; expl = [ "!" -> Explicit | -> Implicit ] ; c = operconstr LEVEL "200" ->
-	(loc, Name iid), expl, c
-    | c = operconstr LEVEL "200" ->
-	(loc, Anonymous), Implicit, c
+    [ [ "!" ; c = operconstr LEVEL "200" -> (loc, Anonymous), (Implicit, Explicit), c
+      | "{"; id = name; "}"; ":" ; expl = [ "!" -> Explicit | -> Implicit ] ; c = operconstr LEVEL "200" ->
+	  id, (Implicit, expl), c
+      | iid=ident_colon ; expl = [ "!" -> Explicit | -> Implicit ] ; c = operconstr LEVEL "200" ->
+	  (loc, Name iid), (Explicit, expl), c
+      | c = operconstr LEVEL "200" ->
+	  (loc, Anonymous), (Implicit, Implicit), c
     ] ]
   ;
   

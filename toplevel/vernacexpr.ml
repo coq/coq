@@ -239,7 +239,9 @@ type vernac_expr =
 	(lident * lident list * constr_expr) list * (* props *)
 	int option (* Priority *)
 
-  | VernacContext of typeclass_context
+  | VernacContext of 
+      (Names.name Util.located * (Rawterm.binding_kind * Rawterm.binding_kind) *
+	  Topconstr.constr_expr) list
 	
   | VernacDeclareInstance of
       lident (* instance name *)

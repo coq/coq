@@ -321,11 +321,11 @@ Class MorphismProxy A (R : relation A) (m : A) : Prop :=
   respect_proxy : R m m.
 
 Instance reflexive_morphism_proxy
-  [ Reflexive A R ] (x : A) : MorphismProxy A R x | 1.
+  [ Reflexive A R ] (x : A) : MorphismProxy R x | 1.
 Proof. firstorder. Qed.
 
 Instance morphism_morphism_proxy
-  [ Morphism A R x ] : MorphismProxy A R x | 2.
+  [ Morphism A R x ] : MorphismProxy R x | 2.
 Proof. firstorder. Qed.
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
@@ -376,17 +376,17 @@ Class (A : Type) => Normalizes (m : relation A) (m' : relation A) : Prop :=
   normalizes : relation_equivalence m m'.
 
 Instance inverse_respectful_norm : 
-  Normalizes (A -> B) (inverse R ==> inverse R') (inverse (R ==> R')) .
+  ! Normalizes (A -> B) (inverse R ==> inverse R') (inverse (R ==> R')) .
 Proof. firstorder. Qed.
 
 (* If not an inverse on the left, do a double inverse. *)
 
 Instance not_inverse_respectful_norm : 
-  Normalizes (A -> B) (R ==> inverse R') (inverse (inverse R ==> R')) | 4.
+  ! Normalizes (A -> B) (R ==> inverse R') (inverse (inverse R ==> R')) | 4.
 Proof. firstorder. Qed.
 
 Instance inverse_respectful_rec_norm [ Normalizes B R' (inverse R'') ] :
-  Normalizes (A -> B) (inverse R ==> R') (inverse (R ==> R'')).
+  ! Normalizes (A -> B) (inverse R ==> R') (inverse (R ==> R'')).
 Proof. red ; intros. 
   assert(r:=normalizes).
   setoid_rewrite r.
