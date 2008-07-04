@@ -42,25 +42,27 @@ Infix "?=" := BigZ.compare : bigZ_scope.
 Infix "==" := BigZ.eq (at level 70, no associativity) : bigZ_scope.
 Infix "<" := BigZ.lt : bigZ_scope.
 Infix "<=" := BigZ.le : bigZ_scope.
+Notation "x > y" := (BigZ.lt y x)(only parsing) : bigZ_scope.
+Notation "x >= y" := (BigZ.le y x)(only parsing) : bigZ_scope.
 Notation "[ i ]" := (BigZ.to_Z i) : bigZ_scope.
 
 Open Scope bigZ_scope.
 
 (** Some additional results about [BigZ] *)
 
-Theorem spec_to_Z: forall n:bigZ, 
+Theorem spec_to_Z: forall n:bigZ,
   BigN.to_Z (BigZ.to_N n) = ((Zsgn [n]) * [n])%Z.
 Proof.
-intros n; case n; simpl; intros p; 
+intros n; case n; simpl; intros p;
   generalize (BigN.spec_pos p); case (BigN.to_Z p); auto.
 intros p1 H1; case H1; auto.
 intros p1 H1; case H1; auto.
 Qed.
 
-Theorem spec_to_N n: 
+Theorem spec_to_N n:
  ([n] = Zsgn [n] * (BigN.to_Z (BigZ.to_N n)))%Z.
 Proof.
-intros n; case n; simpl; intros p; 
+intros n; case n; simpl; intros p;
   generalize (BigN.spec_pos p); case (BigN.to_Z p); auto.
 intros p1 H1; case H1; auto.
 intros p1 H1; case H1; auto.
@@ -69,7 +71,7 @@ Qed.
 Theorem spec_to_Z_pos: forall n, (0 <= [n])%Z ->
   BigN.to_Z (BigZ.to_N n) = [n].
 Proof.
-intros n; case n; simpl; intros p; 
+intros n; case n; simpl; intros p;
   generalize (BigN.spec_pos p); case (BigN.to_Z p); auto.
 intros p1 _ H1; case H1; auto.
 intros p1 H1; case H1; auto.
@@ -87,7 +89,7 @@ Qed.
 
 (** [BigZ] is a ring *)
 
-Lemma BigZring : 
+Lemma BigZring :
  ring_theory BigZ.zero BigZ.one BigZ.add BigZ.mul BigZ.sub BigZ.opp BigZ.eq.
 Proof.
 constructor.

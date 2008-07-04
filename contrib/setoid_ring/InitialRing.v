@@ -38,14 +38,6 @@ Proof.
  exact Zmult_plus_distr_l. trivial. exact Zminus_diag.
 Qed.
 
- Lemma Zeqb_ok : forall x y, Zeq_bool x y = true -> x = y.
- Proof.
-  intros x y.
-  assert (H := Zcompare_Eq_eq x y);unfold Zeq_bool;
-  destruct (Zcompare x y);intros H1;auto;discriminate H1.
- Qed.
-
-
 (** Two generic morphisms from Z to (abrbitrary) rings, *)
 (**second one is more convenient for proofs but they are ext. equal*)
 Section ZMORPHISM.
@@ -174,7 +166,7 @@ Section ZMORPHISM.
    Zeq_bool x y = true -> [x] == [y].
  Proof.
   intros x y H.
-  assert (H1 := Zeqb_ok x y H);unfold IDphi in H1.
+  assert (H1 := Zeq_bool_eq x y H);unfold IDphi in H1.
   rewrite H1;rrefl.
  Qed.
   

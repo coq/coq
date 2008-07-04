@@ -54,7 +54,9 @@ Infix "?=" := BigQ.compare : bigQ_scope.
 Infix "==" := BigQ.eq : bigQ_scope.
 Infix "<" := BigQ.lt : bigQ_scope.
 Infix "<=" := BigQ.le : bigQ_scope.
-Notation "[ q ]" := (BigQ.to_Q q) : bigQ_scope. 
+Notation "x > y" := (BigQ.lt y x)(only parsing) : bigQ_scope.
+Notation "x >= y" := (BigQ.le y x)(only parsing) : bigQ_scope.
+Notation "[ q ]" := (BigQ.to_Q q) : bigQ_scope.
 
 Open Scope bigQ_scope.
 
@@ -97,16 +99,16 @@ Proof.
 Qed.
 
 (* TODO : fix this. For the moment it's useless (horribly slow)
-Hint Rewrite 
+Hint Rewrite
  BigQ.spec_0 BigQ.spec_1 BigQ.spec_m1 BigQ.spec_compare
- BigQ.spec_red BigQ.spec_add BigQ.spec_sub BigQ.spec_opp 
+ BigQ.spec_red BigQ.spec_add BigQ.spec_sub BigQ.spec_opp
  BigQ.spec_mul BigQ.spec_inv BigQ.spec_div BigQ.spec_power_pos
  BigQ.spec_square : bigq. *)
 
 
 (** [BigQ] is a field *)
 
-Lemma BigQfieldth : 
+Lemma BigQfieldth :
  field_theory BigQ.zero BigQ.one BigQ.add BigQ.mul BigQ.sub BigQ.opp BigQ.div BigQ.inv BigQ.eq.
 Proof.
 constructor.
@@ -128,7 +130,7 @@ rewrite BigQ.spec_mul, BigQ.spec_inv, BigQ.spec_1; field.
 rewrite <- BigQ.spec_0; auto.
 Qed.
 
-Lemma BigQpowerth : 
+Lemma BigQpowerth :
  power_theory BigQ.one BigQ.mul BigQ.eq Z_of_N BigQ.power.
 Proof.
 constructor.
@@ -141,13 +143,13 @@ induction p; simpl; auto; try rewrite !BigQ.spec_mul, !IHp; apply Qeq_refl.
 destruct n; reflexivity.
 Qed.
 
-Lemma BigQ_eq_bool_correct : 
+Lemma BigQ_eq_bool_correct :
  forall x y, BigQ.eq_bool x y = true -> x==y.
 Proof.
 intros; generalize (BigQ.spec_eq_bool x y); rewrite H; auto.
 Qed.
 
-Lemma BigQ_eq_bool_complete : 
+Lemma BigQ_eq_bool_complete :
  forall x y, x==y -> BigQ.eq_bool x y = true.
 Proof.
 intros; generalize (BigQ.spec_eq_bool x y).
@@ -156,16 +158,16 @@ Qed.
 
 (* TODO : improve later the detection of constants ... *)
 
-Ltac BigQcst t := 
- match t with 
+Ltac BigQcst t :=
+ match t with
    | BigQ.zero => BigQ.zero
    | BigQ.one => BigQ.one
    | BigQ.minus_one => BigQ.minus_one
-   | _ => NotConstant 
+   | _ => NotConstant
  end.
 
-Add Field BigQfield : BigQfieldth 
- (decidable BigQ_eq_bool_correct, 
+Add Field BigQfield : BigQfieldth
+ (decidable BigQ_eq_bool_correct,
   completeness BigQ_eq_bool_complete,
   constants [BigQcst],
   power_tac BigQpowerth [Qpow_tac]).

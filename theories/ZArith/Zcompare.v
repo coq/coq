@@ -40,6 +40,15 @@ Proof.
 	    | destruct ((x' ?= y')%positive Eq); reflexivity || discriminate ] ].
 Qed.
 
+Ltac destr_zcompare := 
+ match goal with |- context [Zcompare ?x ?y] => 
+  let H := fresh "H" in 
+  case_eq (Zcompare x y); intro H;
+   [generalize (Zcompare_Eq_eq _ _ H); clear H; intro H |
+    change (x<y)%Z in H | 
+    change (x>y)%Z in H ]
+ end.
+
 Lemma Zcompare_Eq_iff_eq : forall n m:Z, (n ?= m) = Eq <-> n = m.
 Proof.
   intros x y; split; intro E;

@@ -39,15 +39,6 @@ Proof.
   apply Zmult_lt_0_compat ; auto.
 Qed.
 
-Lemma Zeq_bool_neq : forall x y, Zeq_bool x y = false -> x <> y.
-Proof.
-  red ; intros.
-  subst.
-  unfold Zeq_bool in H.
-  rewrite Zcompare_refl  in H.
-  discriminate.
-Qed.
-
 Lemma ZSORaddon :
   SORaddon 0 1 Zplus Zmult Zminus Zopp  (@eq Z) Zle (* ring elements *)
   0%Z 1%Z Zplus Zmult Zminus Zopp (* coefficients *)
@@ -56,7 +47,7 @@ Lemma ZSORaddon :
 Proof.
   constructor.
   constructor ; intros ; try reflexivity.
-  apply Zeqb_ok ; auto.
+  apply Zeq_bool_eq ; auto.
   constructor.
   reflexivity.
   intros x y.

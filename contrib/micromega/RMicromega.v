@@ -76,12 +76,12 @@ Proof.
   apply mult_IZR.
   apply Ropp_Ropp_IZR.
   apply IZR_eq.
-  apply Zeqb_ok ; auto.
+  apply Zeq_bool_eq ; auto.
   apply R_power_theory.
   intros x y.
   intro.
   apply IZR_neq.
-  apply ZMicromega.Zeq_bool_neq ; auto.
+  apply Zeq_bool_neq ; auto.
   intros. apply IZR_le.  apply Zle_bool_imp_le. auto.
 Qed.
 
