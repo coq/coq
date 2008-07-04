@@ -723,8 +723,7 @@ RATIONALSPECVIAQVO:=$(addprefix theories/Numbers/Rational/SpecViaQ/, \
  QSig.vo )
 
 RATIONALBIGQVO:=$(addprefix theories/Numbers/Rational/BigQ/, \
- QMake_base.vo	QpMake.vo	QvMake.vo	Q0Make.vo 	\
- QifMake.vo 	QbiMake.vo 	BigQ.vo )
+ QMake.vo	BigQ.vo )
 
 RATIONALVO:=$(RATIONALSPECVIAQVO) $(RATIONALBIGQVO)
 

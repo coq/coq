@@ -277,7 +277,7 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Qed.
 
 
- Lemma shift_unshift_mod_2 : forall n p a, (0<=p<=n)%Z -> 
+ Lemma shift_unshift_mod_2 : forall n p a, 0 <= p <= n -> 
    ((a * 2 ^ (n - p)) mod (2^n) / 2 ^ (n - p)) mod (2^n) = 
    a mod 2 ^ p.
  Proof.
@@ -329,7 +329,7 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Qed.
 
  Theorem Zgcd_div_pos a b:
-   (0 < b)%Z -> (0 < Zgcd a b)%Z -> (0 < b / Zgcd a b)%Z.
+   0 < b -> 0 < Zgcd a b -> 0 < b / Zgcd a b.
  Proof.
  intros a b Ha Hg.
  case (Zle_lt_or_eq 0 (b/Zgcd a b)); auto.
@@ -338,6 +338,72 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  pattern b at 1; rewrite (Zdivide_Zdiv_eq (Zgcd a b) b); auto.
  rewrite <- H; auto with zarith.
  assert (F := (Zgcd_is_gcd a b)); inversion F; auto.
+ Qed.
+
+ Theorem Zdiv_neg a b:
+   a < 0 -> 0 < b -> a / b < 0.
+ Proof.
+ intros a b Ha Hb.
+ assert (b > 0) by omega.
+ generalize (Z_mult_div_ge a _ H); intros.
+ assert (b * (a / b) < 0)%Z.
+  apply Zle_lt_trans with a; auto with zarith.
+ destruct b; try (compute in Hb; discriminate).
+ destruct (a/Zpos p)%Z.
+ compute in H1; discriminate.
+ compute in H1; discriminate.
+ compute; auto.
+ Qed.
+ 
+ Lemma Zgcd_Zabs : forall z z', Zgcd (Zabs z) z' = Zgcd z z'.
+ Proof.
+ destruct z; simpl; auto.
+ Qed.
+
+ Lemma Zgcd_sym : forall p q, Zgcd p q = Zgcd q p.
+ Proof.
+ intros.
+ apply Zis_gcd_gcd.
+ apply Zgcd_is_pos.
+ apply Zis_gcd_sym.
+ apply Zgcd_is_gcd.
+ Qed.
+
+ Lemma Zdiv_gcd_zero : forall a b, b / Zgcd a b = 0 -> b <> 0 -> 
+  Zgcd a b = 0.
+ Proof.
+ intros.
+ generalize (Zgcd_is_gcd a b); destruct 1.
+ destruct H2 as (k,Hk).
+ generalize H; rewrite Hk at 1.
+ destruct (Z_eq_dec (Zgcd a b) 0) as [H'|H']; auto.
+ rewrite Z_div_mult_full; auto.
+ intros; subst k; simpl in *; subst b; elim H0; auto.
+ Qed.
+
+ Lemma Zgcd_1 : forall z, Zgcd z 1 = 1.
+ Proof.
+ intros; apply Zis_gcd_gcd; auto with zarith; apply Zis_gcd_1.
+ Qed.
+ Hint Resolve Zgcd_1.
+
+ Lemma Zgcd_mult_rel_prime : forall a b c, 
+  Zgcd a c = 1 -> Zgcd b c = 1 -> Zgcd (a*b) c = 1.
+ Proof.
+ intros.
+ rewrite Zgcd_1_rel_prime in *.
+ apply rel_prime_sym; apply rel_prime_mult; apply rel_prime_sym; auto.
+ Qed.
+
+ Lemma Zcompare_gt : forall (A:Type)(a a':A)(p q:Z),
+  match (p?=q)%Z with Gt => a | _ => a' end = 
+  if Z_le_gt_dec p q then a' else a.
+ Proof.
+ intros.
+ destruct Z_le_gt_dec as [H|H].
+ red in H.
+ destruct (p?=q)%Z; auto; elim H; auto.
+ rewrite H; auto.
  Qed.
 
 Theorem Zbounded_induction :
