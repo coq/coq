@@ -14,23 +14,8 @@ Require Import NArithRing.
 
 (** * field and ring tactics for rational numbers *)
 
-Definition Qeq_bool (x y : Q) :=
-  if Qeq_dec x y then true else false.
-
-Lemma Qeq_bool_correct : forall x y : Q, Qeq_bool x y = true -> x==y.
+Definition Qsrt : ring_theory 0 1 Qplus Qmult Qminus Qopp Qeq.
 Proof.
-  intros x y; unfold Qeq_bool in |- *; case (Qeq_dec x y); simpl in |- *; auto.
-  intros _ H; inversion H.
-Qed.
-
-Lemma Qeq_bool_complete : forall x y : Q, x==y -> Qeq_bool x y = true.
-Proof.
-  intros x y; unfold Qeq_bool in |- *; case (Qeq_dec x y); simpl in |- *; auto.
-Qed.
-
-Definition Qsft : field_theory 0 1 Qplus Qmult Qminus Qopp Qdiv Qinv Qeq.
-Proof.
-  constructor.
   constructor.
   exact Qplus_0_l.
   exact Qplus_comm.
@@ -41,6 +26,12 @@ Proof.
   exact Qmult_plus_distr_l.
   reflexivity.
   exact Qplus_opp_r.
+Qed.
+
+Definition Qsft : field_theory 0 1 Qplus Qmult Qminus Qopp Qdiv Qinv Qeq.
+Proof.
+  constructor.
+  exact Qsrt.
   discriminate.
   reflexivity.
   intros p Hp.
@@ -83,8 +74,8 @@ Ltac Qpow_tac t :=
   end.
 
 Add Field Qfield : Qsft 
- (decidable Qeq_bool_correct, 
-  completeness Qeq_bool_complete,
+ (decidable Qeq_bool_eq, 
+  completeness Qeq_eq_bool,
   constants [Qcst], 
   power_tac Qpower_theory [Qpow_tac]).
 

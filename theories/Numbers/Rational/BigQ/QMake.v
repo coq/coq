@@ -155,15 +155,6 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
    generalize (Z.spec_eq_bool x y); case Z.eq_bool
   end).
 
- Ltac destr_zcompare := 
- match goal with |- context [Zcompare ?x ?y] => 
-  let H := fresh "H" in 
-  case_eq (Zcompare x y); intro H;
-   [generalize (Zcompare_Eq_eq _ _ H); clear H; intro H |
-    change (x<y)%Z in H | 
-    change (x>y)%Z in H ]
- end.
-
  Ltac simpl_ndiv := rewrite N.spec_div by (nzsimpl; romega).
  Tactic Notation "simpl_ndiv" "in" "*" := 
    rewrite N.spec_div in * by (nzsimpl; romega).

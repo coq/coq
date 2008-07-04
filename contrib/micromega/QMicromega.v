@@ -16,38 +16,11 @@ Require Import OrderedRing.
 Require Import RingMicromega.
 Require Import Refl.
 Require Import QArith.
-Require Import Qring.
-
-(* Qsrt has been removed from the library ? *)
-Definition Qsrt : ring_theory 0 1 Qplus Qmult Qminus Qopp Qeq.
-Proof.
-  constructor.
-  exact Qplus_0_l.
-  exact Qplus_comm.
-  exact Qplus_assoc.
-  exact Qmult_1_l.
-  exact Qmult_comm.
-  exact Qmult_assoc.
-  exact Qmult_plus_distr_l.
-  reflexivity.
-  exact Qplus_opp_r.
-Qed.
-
-
-Add Ring Qring : Qsrt.
-
-Lemma Qmult_neutral : forall x , 0 * x == 0.
-Proof.
-  intros.
-  compute.
-  reflexivity.
-Qed.
-
-(* Is there any qarith database ? *)
+Require Import Qfield.
 
 Lemma Qsor : SOR 0 1 Qplus Qmult Qminus Qopp Qeq  Qle Qlt.
 Proof.
-  constructor; intros ; subst ; try (intuition (subst; auto  with qarith)).
+  constructor; intros ; subst ; try (intuition (subst; auto with qarith)).
   apply Q_Setoid.
   rewrite H ; rewrite H0 ; reflexivity.
   rewrite H ; rewrite H0 ; reflexivity.
@@ -67,44 +40,11 @@ Proof.
   destruct(Q_dec n m) as [[H1 |H1] | H1 ] ; tauto.
   apply (Qplus_le_compat  p p n m  (Qle_refl p) H).
   generalize (Qmult_lt_compat_r 0 n m H0 H).
-  rewrite Qmult_neutral.
+  rewrite Qmult_0_l.
   auto.
   compute in H.
   discriminate.
 Qed.
-
-Definition Qeq_bool (p q : Q) : bool := Zeq_bool (Qnum p * ' Qden q)%Z  (Qnum q * ' Qden p)%Z.
-
-Definition Qle_bool (x y : Q) : bool := Zle_bool (Qnum x * ' Qden y)%Z (Qnum y * ' Qden x)%Z.
-
-Require ZMicromega.
-
-Lemma Qeq_bool_ok : forall x y, Qeq_bool x y = true -> x == y.
-Proof.
-  intros.
-  unfold Qeq_bool in H.
-  unfold Qeq.
-  apply (Zeqb_ok  _ _ H).
-Qed.
-
-
-Lemma Qeq_bool_neq : forall x y, Qeq_bool x y = false -> ~ x == y.
-Proof.
-  unfold Qeq_bool,Qeq.
-  red ; intros ; subst.
-  rewrite H0 in H.
-  apply  (ZMicromega.Zeq_bool_neq _ _ H).
-  reflexivity.
-Qed.
-
-Lemma Qle_bool_imp_le : forall x y : Q, Qle_bool x y = true -> x <= y.
-Proof.
-  unfold Qle_bool, Qle.
-  intros.
-  apply Zle_bool_imp_le ; auto.
-Qed.
-  
-
 
 
 Lemma QSORaddon :
@@ -115,7 +55,7 @@ Lemma QSORaddon :
 Proof.
   constructor.
   constructor ; intros ; try reflexivity.
-  apply Qeq_bool_ok ; auto.
+  apply Qeq_bool_eq; auto.
   constructor.
   reflexivity.
   intros x y.
@@ -173,9 +113,9 @@ match o with
 | OpEq =>  Qeq
 | OpNEq => fun x y  => ~ x == y
 | OpLe => Qle
-| OpGe => Qge
+| OpGe => fun x y => Qle y x
 | OpLt => Qlt
-| OpGt => Qgt
+| OpGt => fun x y => Qlt y x
 end.
 
 Definition Qeval_formula (e:PolEnv Q) (ff : Formula Q) :=

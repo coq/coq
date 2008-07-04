@@ -50,7 +50,7 @@ Ltac Zpower_neg :=
   end.   
 
 Add Ring Zr : Zth
-  (decidable Zeqb_ok, constants [Zcst], preprocess [Zpower_neg;unfold Zsucc],
+  (decidable Zeq_bool_eq, constants [Zcst], preprocess [Zpower_neg;unfold Zsucc],
    power_tac Zpower_theory [Zpow_tac],
     (* The two following option are not needed, it is the default chose when the set of 
         coefficiant is usual ring Z *)
