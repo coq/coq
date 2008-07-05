@@ -84,7 +84,8 @@ only for developers that are writing their own tactics and are using
 you move the \Coq\ binaries and library after installation.
 
 \section[Options]{Options\index{Options of the command line}
-\label{vmoption}}
+\label{vmoption}
+\label{coqoptions}}
 
 The following command-line options are recognized by the commands {\tt
   coqc} and {\tt coqtop}, unless stated otherwise:
@@ -100,19 +101,47 @@ The following command-line options are recognized by the commands {\tt
 
 \item[{\tt -I} {\em directory}, {\tt -include} {\em directory}]\ 
 
-  Add {\em directory} to the searched directories when looking for a
-  file.
+  Add physical path {\em directory} to the list of directories where to
+  look for a file and bind it to the empty logical directory. The
+  subdirectory structure of {\em directory} is recursively available
+  from {\Coq} using absolute names (see Section~\ref{LongNames}).
 
-\item[{\tt -R} {\em directory} {\dirpath}]\ 
+\item[{\tt -I} {\em directory} {\tt -as} {\em dirpath}]\ 
 
-  This maps the subdirectory structure of physical {\em directory} to
-  logical {\dirpath} and adds {\em directory} and its subdirectories
-  to the searched directories when looking for a file.
+  Add physical path {\em directory} to the list of directories where to
+  look for a file and bind it to the logical directory {\dirpath}.  The
+  subdirectory structure of {\em directory} is recursively available
+  from {\Coq} using absolute names extending the {\dirpath} prefix.
+
+  \SeeAlso {\tt Add LoadPath} in Section~\ref{AddLoadPath} and logical
+  paths in Section~\ref{Libraries}.
+
+\item[{\tt -R} {\em directory} {\dirpath}, {\tt -R} {\em directory} {\tt -as} {\dirpath}]\
+
+  Do as {\tt -I} {\em directory} {\tt -as} {\dirpath} but make the
+  subdirectory structure of {\em directory} recursively visible so
+  that the recursive contents of physical {\em directory} is available
+  from {\Coq} using short or partially qualified names.
+  
+  \SeeAlso {\tt Add Rec LoadPath} in Section~\ref{AddRecLoadPath} and logical
+  paths in Section~\ref{Libraries}.
 
 \item[{\tt -top} {\dirpath}]\ 
 
   This sets the toplevel module name to {\dirpath} instead of {\tt
   Top}. Not valid for {\tt coqc}.
+
+\item[{\tt -notop} {\dirpath}]\ 
+
+  This sets the toplevel module name to the empty logical dirpath. Not
+  valid for {\tt coqc}.
+
+\item[{\tt -exclude-dir} {\em subdirectory}]\ 
+
+  This tells to exclude any subdirectory named {\em subdirectory}
+  while processing option {\tt -R}. Without this option only the
+  conventional version control management subdirectories named {\tt
+  CVS} and {\tt \_darcs} are excluded.
 
 \item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}]\ 
 

@@ -53,5 +53,6 @@ val cs_pattern_of_constr : constr -> cs_pattern * int * constr list
  
 val lookup_canonical_conversion : (global_reference * cs_pattern) -> obj_typ
 val declare_canonical_structure : global_reference -> unit
+val is_canonical_projection : constr -> bool
 val canonical_projections : unit -> 
   ((global_reference * cs_pattern) * obj_typ) list

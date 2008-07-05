@@ -108,7 +108,7 @@ let dir_ml_load s =
 	 * if this code section starts to use a module not used elsewhere
 	 * in this file, the Makefile dependency logic needs to be updated.
 	 *)
-        let _,gname = where_in_path !coq_mlpath_copy s in
+        let _,gname = where_in_path true !coq_mlpath_copy s in
         try
           Dynlink.loadfile gname;
 	  Dynlink.add_interfaces 
@@ -145,7 +145,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
   if exists_dir dir then
     begin
       add_ml_dir dir;
-      Library.add_load_path (dir,coq_dirpath)
+      Library.add_load_path true (dir,coq_dirpath)
     end
   else
     msg_warning [< str ("Cannot open " ^ dir) >]
@@ -159,19 +159,18 @@ let convert_string d =
     failwith "caught"
 
 let add_rec_path ~unix_path:dir ~coq_root:coq_dirpath =
-  let dirs = all_subdirs dir in
-  let prefix = Names.repr_dirpath coq_dirpath in
-  if dirs <> [] then
+  if exists_dir dir then
+    let dirs = all_subdirs dir in
+    let prefix = Names.repr_dirpath coq_dirpath in
     let convert_dirs (lp,cp) =
-      (lp,Names.make_dirpath
-            ((List.map convert_string (List.rev cp))@prefix)) in
+      (lp,Names.make_dirpath (List.map convert_string (List.rev cp)@prefix)) in
     let dirs = map_succeed convert_dirs dirs in
-    begin
-      List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;
-      List.iter Library.add_load_path dirs
-    end
+    List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;
+    add_ml_dir dir;
+    List.iter (Library.add_load_path false) dirs;
+    Library.add_load_path true (dir,Names.make_dirpath prefix)
   else
-    msg_warning [< str ("Cannot open " ^ dir) >]
+    msg_warning (str ("Cannot open " ^ dir))
 
 (* convertit un nom quelconque en nom de fichier ou de module *) 
 let mod_of_name name =

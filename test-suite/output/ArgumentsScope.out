@@ -1,0 +1,56 @@
+a : bool -> bool
+
+Argument scope is [bool_scope]
+Expands to: Variable a
+b : bool -> bool
+
+Argument scope is [bool_scope]
+Expands to: Variable b
+negb'' : bool -> bool
+
+Argument scope is [bool_scope]
+negb'' is transparent
+Expands to: Constant Top.A.B.negb''
+negb' : bool -> bool
+
+Argument scope is [bool_scope]
+negb' is transparent
+Expands to: Constant Top.A.negb'
+negb : bool -> bool
+
+Argument scope is [bool_scope]
+negb is transparent
+Expands to: Constant Coq.Init.Datatypes.negb
+a : bool -> bool
+
+Expands to: Variable a
+b : bool -> bool
+
+Expands to: Variable b
+negb : bool -> bool
+
+negb is transparent
+Expands to: Constant Coq.Init.Datatypes.negb
+negb' : bool -> bool
+
+negb' is transparent
+Expands to: Constant Top.A.negb'
+negb'' : bool -> bool
+
+negb'' is transparent
+Expands to: Constant Top.A.B.negb''
+a : bool -> bool
+
+Expands to: Variable a
+negb : bool -> bool
+
+negb is transparent
+Expands to: Constant Coq.Init.Datatypes.negb
+negb' : bool -> bool
+
+negb' is transparent
+Expands to: Constant Top.negb'
+negb'' : bool -> bool
+
+negb'' is transparent
+Expands to: Constant Top.negb''

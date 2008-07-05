@@ -464,8 +464,8 @@ let subst_arguments_scope (_,subst,(req,r,scl)) =
   (ArgsScopeNoDischarge,fst (subst_global subst r),scl)
 
 let discharge_arguments_scope (_,(req,r,l)) =
-  if req = ArgsScopeNoDischarge then None
-  else Some (req,pop_global_reference r,l)
+  if req = ArgsScopeNoDischarge or (isVarRef r & Lib.is_in_section r) then None
+  else Some (req,Lib.discharge_global r,l)
 
 let rebuild_arguments_scope (_,(req,r,l)) =
   match req with
@@ -493,8 +493,7 @@ let declare_arguments_scope_gen req r scl =
   Lib.add_anonymous_leaf (inArgumentsScope (req,r,scl))
 
 let declare_arguments_scope local ref scl =
-  let req =
-    if local or isVarRef ref then ArgsScopeNoDischarge else ArgsScopeManual in
+  let req = if local then ArgsScopeNoDischarge else ArgsScopeManual in
   declare_arguments_scope_gen req ref scl
 
 let find_arguments_scope r =
@@ -503,8 +502,7 @@ let find_arguments_scope r =
 
 let declare_ref_arguments_scope ref =
   let t = Global.type_of_global ref in
-  let req = if isVarRef ref then ArgsScopeNoDischarge else ArgsScopeAuto in
-  declare_arguments_scope_gen req ref (compute_arguments_scope t)
+  declare_arguments_scope_gen ArgsScopeAuto ref (compute_arguments_scope t)
 
 (********************************)
 (* Encoding notations as string *)

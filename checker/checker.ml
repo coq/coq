@@ -73,16 +73,14 @@ let convert_string d =
     failwith "caught"
 
 let add_rec_path ~unix_path:dir ~coq_root:coq_dirpath =
-  let dirs = all_subdirs dir in
-  let prefix = repr_dirpath coq_dirpath in
-  if dirs <> [] then
+  if exists_dir dir then
+    let dirs = all_subdirs dir in
+    let prefix = repr_dirpath coq_dirpath in
     let convert_dirs (lp,cp) =
-      (lp,Names.make_dirpath
-            ((List.map convert_string (List.rev cp))@prefix)) in
+      (lp,make_dirpath (List.map convert_string (List.rev cp)@prefix)) in
     let dirs = map_succeed convert_dirs dirs in
-    begin
-      List.iter Check.add_load_path dirs
-    end
+    List.iter Check.add_load_path dirs;
+    Check.add_load_path (dir,coq_dirpath)
   else
     msg_warning (str ("Cannot open " ^ dir))
 
@@ -101,6 +99,14 @@ let set_default_rec_include d =
   let p = Check.default_root_prefix in
   check_coq_overwriting p; 
   push_rec_include (d, p)
+let set_include d p =
+  let p = dirpath_of_string p in
+  check_coq_overwriting p;
+  push_include (d,p)
+let set_rec_include d p =
+  let p = dirpath_of_string p in
+  check_coq_overwriting p;
+  push_rec_include(d,p)
 
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
@@ -174,9 +180,11 @@ let print_usage_channel co command =
   output_string co command;
   output_string co "Coq options are:\n";
   output_string co
-"  -I dir                 add directory dir in the include path
+"  -I dir -as coqdir      map physical dir to logical coqdir
+  -I dir                 map directory dir to the empty logical path
   -include dir           (idem)
-  -R dir coqdir          recursively map physical dir to logical coqdir 
+  -R dir -as coqdir      recursively map physical dir to logical coqdir 
+  -R dir coqdir          (idem)
 
   -admit module          load module and dependencies without checking
   -norec module          check module but admit dependencies without checking
@@ -297,11 +305,14 @@ let parse_args() =
    | "-impredicative-set" :: rem -> 
        set_engagement Declarations.ImpredicativeSet; parse rem
 
+    | ("-I"|"-include") :: d :: "-as" :: p :: rem -> set_include d p; parse rem
+    | ("-I"|"-include") :: d :: "-as" :: [] -> usage ()
     | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: p :: rem ->
-        push_rec_include (d, dirpath_of_string p);parse rem
+    | "-R" :: d :: "-as" :: p :: rem -> set_rec_include d p;parse rem
+    | "-R" :: d :: "-as" :: [] -> usage ()
+    | "-R" :: d :: p :: rem -> set_rec_include d p;parse rem
     | "-R" :: ([] | [_]) -> usage ()
 
     | "-debug" :: rem -> set_debug (); parse rem

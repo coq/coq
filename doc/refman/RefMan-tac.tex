@@ -1543,7 +1543,7 @@ induction n.
   This syntax is used for selecting which occurrences of {\term} the
   induction has to be carried on. The {\tt in {\atoccurrences}} clause is an
   occurrence clause whose syntax and behavior is described in
-  Section~\ref{Occurrences clause}.
+  Section~\ref{Occurrences clauses}.
 
   When an occurrence clause is given, an equation between {\term} and
   the value it gets in each case of the induction is added to the
@@ -2448,8 +2448,10 @@ the given bindings to instantiate parameters or hypotheses of {\term}.
 
 \item \texttt{discriminate}
 
-  This looks for a quantified or not quantified hypothesis {\ident} on
-  which {\tt discriminate {\ident}} is applicable.
+  This behaves like {\tt discriminate {\ident}} if {\ident} is the
+  name of an hypothesis to which {\tt discriminate} is applicable; if
+  the current goal is of the form {\term$_1$} {\tt <>} {\term$_2$},
+  this behaves as {\tt intro {\ident}; injection {\ident}}.
 
   \begin{ErrMsgs}
   \item \errindex{No discriminable equalities} \\

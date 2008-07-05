@@ -851,106 +851,87 @@ section is closed.
 \subsection{Names of libraries and files
 \label{Libraries}
 \index{Libraries}
+\index{Physical paths}
 \index{Logical paths}}
 
 \paragraph{Libraries}
 
-The theories developed in {\Coq} are stored in {\em libraries}.  A
-library is characterized by a name called {\it root} of the
-library. The standard library of {\Coq} has root name {\tt Coq} and is
-known by default when a {\Coq} session starts.
+The theories developed in {\Coq} are stored in {\em library files}
+which are hierarchically classified into {\em libraries} and {\em
+sublibraries}. To express this hierarchy, library names are
+represented by qualified identifiers {\qualid}, i.e. as list of
+identifiers separated by dots (see Section~\ref{qualid}). For
+instance, the library file {\tt Mult} of the standard {\Coq} library
+{\tt Arith} has name {\tt Coq.Arith.Mult}. The identifier
+that starts the name of a library is called a {\em library root}.
+All library files of the standard library of {\Coq} have reserved root
+{\tt Coq} but library file names based on other roots can be obtained
+by using {\tt coqc} options {\tt -I} or {\tt -R} (see
+Section~\ref{coqoptions}). Also, when an interactive {\Coq} session
+starts, a library of root {\tt Top} is started, unless option {\tt
+-top} or {\tt -notop} is set (see Section~\ref{coqoptions}).
 
-Libraries have a tree structure. E.g., the {\tt Coq} library
-contains the sub-libraries {\tt Init}, {\tt Logic}, {\tt Arith}, {\tt
-Lists}, ... The ``dot notation'' is used to separate the different
-component of a library name. For instance, the {\tt Arith} library of
-{\Coq} standard library is written ``{\tt Coq.Arith}''.
-
-\medskip
-\Rem no blank is allowed between the dot and the identifier on its
-right, otherwise the dot is interpreted as the full stop (period) of
-the command!
-\medskip
-
-\paragraph{Physical paths vs logical paths}
-
-Libraries and sub-libraries are denoted by {\em logical directory
-paths} (written {\dirpath} and of which the syntax is the same as
-{\qualid}, see \ref{qualid}). Logical directory
-paths can be mapped to physical directories of the
-operating system using the command (see \ref{AddLoadPath})
-\begin{quote}
-{\tt Add LoadPath {\it physical\_path} as {\dirpath}}.
-\end{quote}
-A library can inherit the tree structure of a physical directory by
-using the {\tt -R} option to {\tt coqtop} or the
-command (see \ref{AddRecLoadPath})
-\begin{quote}
-{\tt Add Rec LoadPath {\it physical\_path} as {\dirpath}}.
-\end{quote}
-
-\Rem When used interactively with {\tt coqtop} command, {\Coq} opens a
-library called {\tt Top}.
-
-\paragraph{The file level}
-
-At some point, (sub-)libraries contain {\it modules} which coincide
-with files at the physical level.  As for sublibraries, the dot
-notation is used to denote a specific module of a library. Typically,
-{\tt Coq.Init.Logic} is the logical path associated to the file {\tt
-  Logic.v} of {\Coq} standard library.  Notice that compilation (see
-\ref{Addoc-coqc}) is done at the level of files.
-
-If the physical directory where a file {\tt File.v} lies is mapped to
-the empty logical directory path (which is the default when using the
-simple form of {\tt Add LoadPath} or {\tt -I} option to coqtop), then
-the name of the module it defines is {\tt File}.
+As library files are stored on the file system of the underlying
+operating system, a translation from file-system names to {\Coq} names
+is needed. In this translation, names in the file system are called
+{\em physical} paths while {\Coq} names are contrastingly called {\em
+logical} names. Logical names are mapped to physical paths using the
+commands {\tt Add LoadPath} or {\tt Add Rec LoadPath} (see
+Sections~\ref{AddLoadPath} and~\ref{AddRecLoadPath}).
 
 \subsection{Qualified names
 \label{LongNames}
 \index{Qualified identifiers}
 \index{Absolute names}}
 
-Modules contain constructions (sub-modules, axioms, parameters,
-definitions, lemmas, theorems, remarks or facts). The (full) name of a
-construction starts with the logical name of the module in which it is defined
-followed by the (short) name of the construction.
-Typically, the full name {\tt Coq.Init.Logic.eq} denotes Leibniz' equality
-defined in the module {\tt Logic} in the sublibrary {\tt Init} of the
-standard library of \Coq.
+Library files are modules which possibly contain submodules which
+eventually contain constructions (axioms, parameters, definitions,
+lemmas, theorems, remarks or facts). The {\em absolute name}, or {\em
+full name}, of a construction in some library file is a qualified
+identifier starting with the logical name of the library file,
+followed by the sequence of submodules names encapsulating the
+construction and ended by the proper name of the construction.
+Typically, the absolute name {\tt Coq.Init.Logic.eq} denotes Leibniz'
+equality defined in the module {\tt Logic} in the sublibrary {\tt
+Init} of the standard library of \Coq.
 
-\paragraph{Absolute, partially qualified and short names}
-
-The full name of a library, module, section, definition, theorem,
-... is its {\it absolute name}.  The last identifier ({\tt eq} in the
-previous example) is its {\it short name} (or sometimes {\it base
-name}). Any suffix of the absolute name is a {\em partially qualified
-name} (e.g. {\tt Logic.eq} is a partially qualified name for {\tt
-Coq.Init.Logic.eq}). Partially qualified names (shortly {\em
-qualified name}) are also built from identifiers separated by dots.
-They are written {\qualid} in the documentation.
+The proper name that ends the name of a construction is the {\it short
+name} (or sometimes {\it base name}) of the construction (for
+instance, the short name of {\tt Coq.Init.Logic.eq} is {\tt eq}). Any
+partial suffix of the absolute name is a {\em partially qualified name}
+(e.g. {\tt Logic.eq} is a partially qualified name for {\tt
+Coq.Init.Logic.eq}).  Especially, the short name of a construction is
+its shortest partially qualified name.
 
 {\Coq} does not accept two constructions (definition, theorem, ...)
 with the same absolute name but different constructions can have the
 same short name (or even same partially qualified names as soon as the
 full names are different).
 
+Notice that the notion of absolute, partially qualified and
+short names also applies to library file names.
+
 \paragraph{Visibility}
 
-{\Coq} maintains a {\it name table} mapping qualified names to absolute
-names. This table is modified by the commands {\tt Require} (see
-\ref{Require}), {\tt Import} and {\tt Export} (see \ref{Import}) and
-also each time a new declaration is added to the context.
+{\Coq} maintains a table called {\it name table} which maps partially
+qualified names of constructions to absolute names. This table is
+updated by the commands {\tt Require} (see \ref{Require}), {\tt
+Import} and {\tt Export} (see \ref{Import}) and also each time a new
+declaration is added to the context. An absolute name is called {\it
+visible} from a given short or partially qualified name when this
+latter name is enough to denote it. This means that the short or
+partially qualified name is mapped to the absolute name in {\Coq} name
+table.
 
-An absolute name is called {\it visible} from a given short or
-partially qualified name when this name suffices to denote it. This
-means that the short or partially qualified name is mapped to the absolute
-name in {\Coq} name table.
+A similar table exists for library file names. It is updated by the
+vernacular commands {\tt Add LoadPath} and {\tt Add Rec LoadPath} (or
+their equivalent as options of the {\Coq} executables, {\tt -I} and
+{\tt -R}).
 
 It may happen that a visible name is hidden by the short name or a
 qualified name of another construction. In this case, the name that
 has been hidden must be referred to using one more level of
-qualification. Still, to ensure that a construction always remains
+qualification. To ensure that a construction always remains
 accessible, absolute names can never be hidden.
 
 Examples:
@@ -965,14 +946,8 @@ Check Datatypes.nat.
 Locate nat.
 \end{coq_example}
 
-\Rem There is also a name table for sublibraries, modules and sections.
-
-\Rem In versions prior to {\Coq} 7.4, lemmas declared with {\tt
-Remark} and {\tt Fact} kept in their full name the names of the
-sections in which they were defined. Since {\Coq} 7.4, they strictly
-behaves as {\tt Theorem} and {\tt Lemma} do.
-
-\SeeAlso Command {\tt Locate} in Section~\ref{Locate}.
+\SeeAlso Command {\tt Locate} in Section~\ref{Locate} and {\tt Locate
+Library} in Section~\ref{Locate Library}.
 
 %% \paragraph{The special case of remarks and facts}
 %% 
@@ -984,16 +959,6 @@ behaves as {\tt Theorem} and {\tt Lemma} do.
 %% name of the innermost section is dropped from the full name. Then, if
 %% a fact {\tt F} is defined in subsection {\tt S2} of section {\tt S1}
 %% in module {\tt M}, then its absolute name is {\tt M.S1.F}.
-
-
-\paragraph{Requiring a file}
-
-A module compiled in a ``.vo'' file comes with a logical names (e.g. 
-physical file \verb!theories/Init/Datatypes.vo! in the {\Coq} installation directory is bound to the logical module {\tt Coq.Init.Datatypes}). 
-When requiring the file, the mapping between physical directories and logical library should be consistent with the mapping used to compile the file (for modules of the standard library, this is automatic -- check it by typing {\tt Print LoadPath}).
-
-The command {\tt Add Rec LoadPath} is also available from {\tt coqtop}
-and {\tt coqc} by using option~\verb=-R=.
 
 \section{Implicit arguments
 \index{Implicit arguments}

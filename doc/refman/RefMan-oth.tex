@@ -427,12 +427,14 @@ replayed nor rechecked.
 
 To locate the file in the file system, {\qualid} is decomposed under
 the form {\dirpath}{\tt .}{\textsl{ident}} and the file {\ident}{\tt
-.vo} is searched in the directory of the physical file system that is
+.vo} is searched in the physical directory of the file system that is
 mapped in {\Coq} loadpath to the logical path {\dirpath} (see
-Section~\ref{Loadpath}).
+Section~\ref{loadpath}). The mapping between physical directories and
+logical names at the time of requiring the file must be consistent
+with the mapping used to compile the file.
 
 \begin{Variants}
-\item {\tt Require Import {\qualid}.}\\ \comindex{Require} 
+\item {\tt Require Import {\qualid}.} \comindex{Require} 
 
   This loads and declares the module {\qualid} and its dependencies
   then imports the contents of {\qualid} as described in
@@ -493,6 +495,15 @@ Section~\ref{Loadpath}).
   The file {\tt{\ident}.vo} was found but either it is not a \Coq\
   compiled module, or it was compiled with an older and incompatible
   version of \Coq.
+
+\item \errindex{The file {\ident}.vo contains library {\dirpath} and not
+  library {\dirpath'}}
+
+  The library file {\dirpath'} is indirectly required by the {\tt
+  Require} command but it is bound in the current loadpath to the file
+  {\ident}.vo which was bound to a different library name {\dirpath}
+  at the time it was compiled.
+
 \end{ErrMsgs}
 
 \SeeAlso Chapter~\ref{Addoc-coqc}
@@ -546,10 +557,13 @@ which can be any valid path.
 
 \subsection[\tt Add LoadPath {\str} as {\dirpath}.]{\tt Add LoadPath {\str} as {\dirpath}.\comindex{Add LoadPath}\label{AddLoadPath}}
 
-This command adds the path {\str} to the current {\Coq} loadpath and
-maps it to the logical directory {\dirpath}, which means that every
-file {\tt M.v} physically lying in directory {\str} becomes accessible
-through logical name ``{\dirpath}{\tt{.M}}''. 
+This command adds the physical directory {\str} to the current {\Coq}
+loadpath and maps it to the logical directory {\dirpath}, which means
+that every file \textrm{\textsl{dirname}}/\textrm{\textsl{basename.v}}
+physically lying in subdirectory {\str}/\textrm{\textsl{dirname}}
+becomes accessible in {\Coq} through absolute logical name
+{\dirpath}{\tt .}\textrm{\textsl{dirname}}{\tt
+.}\textrm{\textsl{basename}}.
 
 \Rem {\tt Add LoadPath} also adds {\str} to the current ML loadpath.
 
@@ -559,8 +573,27 @@ Performs as {\tt Add LoadPath {\str} as {\dirpath}} but for the empty directory 
 \end{Variants}
 
 \subsection[\tt Add Rec LoadPath {\str} as {\dirpath}.]{\tt Add Rec LoadPath {\str} as {\dirpath}.\comindex{Add Rec LoadPath}\label{AddRecLoadPath}}
-This command adds the directory {\str} and all its subdirectories 
-to the current \Coq\ loadpath. The top directory {\str} is mapped to the logical directory {\dirpath} while any subdirectory {\textsl{pdir}} is mapped to logical directory {\dirpath}{\tt{.pdir}} and so on.
+This command adds the physical directory {\str} and all its subdirectories to
+the current \Coq\ loadpath. The top directory {\str} is mapped to the
+logical directory {\dirpath} and any subdirectory {\textsl{pdir}} of it is
+mapped to logical name {\dirpath}{\tt .}\textsl{pdir} and
+recursively. Subdirectories corresponding to invalid {\Coq}
+identifiers are skipped, and, by convention, subdirectories named {\tt
+CVS} or {\tt \_darcs} are skipped too.
+
+Otherwise, said, {\tt Add Rec LoadPath {\str} as {\dirpath}} behaves
+as {\tt Add LoadPath {\str} as {\dirpath}} excepts that files lying in
+validly named subdirectories of {\str} need not be qualified to be
+found.
+
+In case of files with identical base name, files lying in most recently
+declared {\dirpath} are found first and explicit qualification is
+required to refer to the other files of same base name.
+
+If several files with identical base name are present in different
+subdirectories of a recursive loadpath declared via a single instance of
+{\tt Add Rec LoadPath}, which of these files is found first is
+system-dependent and explicit qualification is recommended.
 
 \Rem {\tt Add Rec LoadPath} also recursively adds {\str} to the current ML loadpath.
 
@@ -600,7 +633,7 @@ command {\tt Declare ML Module} in the section
 This command displays the location of file {\str} in the current loadpath.
 Typically, {\str} is a \texttt{.cmo} or \texttt{.vo} or \texttt{.v} file.
 
-\subsection[\tt Locate Library {\dirpath}.]{\tt Locate Library {\dirpath}.\comindex{Locate Library}}
+\subsection[\tt Locate Library {\dirpath}.]{\tt Locate Library {\dirpath}.\comindex{Locate Library}\label{Locate Library}}
 This command gives the status of the \Coq\ module {\dirpath}. It tells if the
 module is loaded and if not searches in the load path for a module
 of logical name {\dirpath}.

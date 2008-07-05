@@ -25,9 +25,9 @@ open Declaremods
 
 type logical_path = dir_path
 
-let load_paths = ref ([],[] : System.physical_path list * logical_path list)
+let load_paths = ref ([] : (System.physical_path * logical_path * bool) list)
 
-let get_load_paths () = fst !load_paths
+let get_load_paths () = List.map pi1 !load_paths
 
 (* Hints to partially detects if two paths refer to the same repertory *)
 let rec remove_path_dot p = 
@@ -57,12 +57,12 @@ let canonical_path_name p =
     (* We give up to find a canonical name and just simplify it... *)
     strip_path p
 
-let find_logical_path phys_dir = 
+let find_logical_path phys_dir =
   let phys_dir = canonical_path_name phys_dir in
-  match list_filter2 (fun p d -> p = phys_dir) !load_paths with
-  | _,[dir] -> dir
-  | _,[] -> Nameops.default_root_prefix
-  | _,l -> anomaly ("Two logical paths are associated to "^phys_dir)
+  match List.filter (fun (p,d,_) -> p = phys_dir) !load_paths with
+  | [_,dir,_] -> dir
+  | [] -> Nameops.default_root_prefix
+  | l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
 let is_in_load_paths phys_dir =
   let dir = canonical_path_name phys_dir in
@@ -71,12 +71,12 @@ let is_in_load_paths phys_dir =
     List.exists check_p lp 
 
 let remove_load_path dir =
-  load_paths := list_filter2 (fun p d -> p <> dir) !load_paths
+  load_paths := List.filter (fun (p,d,_) -> p <> dir) !load_paths
 
-let add_load_path (phys_path,coq_path) =
+let add_load_path isroot (phys_path,coq_path) =
   let phys_path = canonical_path_name phys_path in
-    match list_filter2 (fun p d -> p = phys_path) !load_paths with
-      | _,[dir] ->
+    match List.filter (fun (p,d,_) -> p = phys_path) !load_paths with
+      | [_,dir,_] ->
 	  if coq_path <> dir 
             (* If this is not the default -I . to coqtop *)
             && not
@@ -91,18 +91,54 @@ let add_load_path (phys_path,coq_path) =
 		   pr_dirpath dir ++ strbrk "; it is remapped to " ++
 		   pr_dirpath coq_path);
 	      remove_load_path phys_path;
-	      load_paths := (phys_path::fst !load_paths, coq_path::snd !load_paths)
+	      load_paths := (phys_path,coq_path,isroot) :: !load_paths;
 	    end
-      | _,[] ->
-	  load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
+      | [] ->
+	  load_paths := (phys_path,coq_path,isroot) :: !load_paths;
       | _ -> anomaly ("Two logical paths are associated to "^phys_path)
 
 let physical_paths (dp,lp) = dp
 
-let load_paths_of_dir_path dir =
-  fst (list_filter2 (fun p d -> d = dir) !load_paths)
-    
-let get_full_load_paths () = List.combine (fst !load_paths) (snd !load_paths)
+let extend_path_with_dirpath p dir =
+  List.fold_left Filename.concat p 
+    (List.map string_of_id (List.rev (repr_dirpath dir)))
+
+let root_paths_matching_dir_path dir =
+  let rec aux = function
+  | [] -> []
+  | (p,d,true) :: l when is_dirpath_prefix_of d dir ->
+      let suffix = drop_dirpath_prefix d dir in
+      extend_path_with_dirpath p suffix :: aux l
+  | _ :: l -> aux l in
+  aux !load_paths
+
+(* Root p is bound to A.B.C.D and we require file C.D.E.F *)
+(* We may mean A.B.C.D.E.F, or A.B.C.D.C.D.E.F *)
+
+(* Root p is bound to A.B.C.C and we require file C.C.E.F *)
+(* We may mean A.B.C.C.E.F, or A.B.C.C.C.E.F, or A.B.C.C.C.C.E.F *)
+
+let intersections d1 d2 =
+  let rec aux d1 =
+    if d1 = empty_dirpath then [d2] else
+      let rest = aux (snd (chop_dirpath 1 d1)) in
+      if is_dirpath_prefix_of d1 d2 then drop_dirpath_prefix d1 d2 :: rest
+      else rest in
+  aux d1
+
+let loadpaths_matching_dir_path dir =
+  let rec aux = function
+  | [] -> []
+  | (p,d,true) :: l ->
+      let inters = intersections d dir in
+      List.map (fun tl -> (extend_path_with_dirpath p tl,append_dirpath d tl))
+	inters @
+	aux l
+  | (p,d,_) :: l ->
+      (extend_path_with_dirpath p dir,append_dirpath d dir) :: aux l in
+  aux !load_paths
+
+let get_full_load_paths () = List.map (fun (a,b,c) -> (a,b)) !load_paths
 
 (************************************************************************)
 (*s Modules on disk contain the following informations (after the magic 
@@ -196,6 +232,12 @@ let register_library_filename dir f =
 let library_full_filename dir =
   try LibraryFilenameMap.find dir !libraries_filename_table
   with Not_found -> "<unavailable filename>"
+
+let overwrite_library_filenames f =
+  let f =
+    if Filename.is_relative f then Filename.concat (Sys.getcwd ()) f else f in
+  LibraryMap.iter (fun dir _ -> register_library_filename dir f)
+    !libraries_table
 
 let library_is_loaded dir =
   try let _ = find_library dir in true
@@ -335,11 +377,11 @@ type library_location = LibLoaded | LibInPath
 let locate_absolute_library dir =
   (* Search in loadpath *)
   let pref, base = split_dirpath dir in
-  let loadpath = load_paths_of_dir_path pref in
+  let loadpath = root_paths_matching_dir_path pref in
   if loadpath = [] then raise LibUnmappedDir;
   try
     let name = (string_of_id base)^".vo" in
-    let _, file = System.where_in_path loadpath name in
+    let _, file = System.where_in_path false loadpath name in
     (dir, file)
   with Not_found ->
   (* Last chance, removed from the file system but still in memory *)
@@ -348,20 +390,15 @@ let locate_absolute_library dir =
   else
     raise LibNotFound
 
-let locate_qualified_library qid =
+let locate_qualified_library warn qid =
   try
     (* Search library in loadpath *)
-    let dir, base = repr_qualid qid in 
-    let loadpath =
-      if repr_dirpath dir = [] then get_load_paths ()
-      else 
-        (* we assume dir is an absolute dirpath *)
-	load_paths_of_dir_path dir
-    in
+    let dir, base = repr_qualid qid in
+    let loadpath = loadpaths_matching_dir_path dir in
     if loadpath = [] then raise LibUnmappedDir;
-    let name =  (string_of_id base)^".vo" in
-    let path, file = System.where_in_path loadpath name in
-    let dir = extend_dirpath (find_logical_path path) base in
+    let name = string_of_id base ^ ".vo" in
+    let lpath, file = System.where_in_path warn (List.map fst loadpath) name in
+    let dir = extend_dirpath (List.assoc lpath loadpath) base in
     (* Look if loaded *)
     if library_is_loaded dir then (LibLoaded, dir, library_full_filename dir)
     (* Otherwise, look for it in the file system *)
@@ -387,7 +424,7 @@ let try_locate_absolute_library dir =
 
 let try_locate_qualified_library (loc,qid) =
   try
-    let (_,dir,f) = locate_qualified_library qid in
+    let (_,dir,f) = locate_qualified_library (Flags.is_verbose()) qid in
     dir,f
   with e -> 
     explain_locate_library_error qid e
@@ -590,8 +627,7 @@ let import_module export (loc,qid) =
 (*s Initializing the compilation of a library. *)
 
 let start_library f = 
-  let _,longf = 
-    System.find_file_in_path (get_load_paths ()) (f^".v") in
+  let _,longf = System.find_file_in_path (get_load_paths ()) (f^".v") in
   let ldir0 = find_logical_path (Filename.dirname longf) in
   let id = id_of_string (Filename.basename f) in
   let ldir = extend_dirpath ldir0 id in
@@ -609,9 +645,9 @@ let current_reexports () =
 
 let error_recursively_dependent_library dir =
   errorlabstrm ""
-    (str "Unable to use logical name" ++ spc() ++ pr_dirpath dir ++ spc() ++ 
-     str "to save current library" ++ spc() ++ str"because" ++ spc() ++ 
-     str "it already depends on a library of this name.")
+    (strbrk "Unable to use logical name " ++ pr_dirpath dir ++ 
+     strbrk " to save current library because" ++
+     strbrk " it already depends on a library of this name.")
 
 let save_library_to dir f =
   let cenv, seg = Declaremods.end_library dir in

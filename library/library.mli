@@ -52,6 +52,9 @@ val opened_libraries : unit -> dir_path list
   (* - Return the full filename of a loaded library. *)
 val library_full_filename : dir_path -> string
 
+  (* - Overwrite the filename of all libraries (used when restoring a state) *)
+val overwrite_library_filenames : string -> unit
+
 (*s Hook for the xml exportation of libraries *)
 val set_xml_require : (dir_path -> unit) -> unit
 
@@ -61,11 +64,10 @@ val set_xml_require : (dir_path -> unit) -> unit
 
 val get_load_paths : unit -> System.physical_path list
 val get_full_load_paths : unit -> (System.physical_path * dir_path) list
-val add_load_path : System.physical_path * dir_path -> unit
+val add_load_path : bool -> System.physical_path * dir_path -> unit
 val remove_load_path : System.physical_path -> unit
 val find_logical_path : System.physical_path -> dir_path
 val is_in_load_paths : System.physical_path -> bool
-val load_paths_of_dir_path : dir_path -> System.physical_path list
 
 (*s Locate a library in the load paths *)
 exception LibUnmappedDir
@@ -73,7 +75,7 @@ exception LibNotFound
 type library_location = LibLoaded | LibInPath
 
 val locate_qualified_library :
-  qualid -> library_location * dir_path * System.physical_path
+  bool -> qualid -> library_location * dir_path * System.physical_path
 
 (*s Statistics: display the memory use of a library. *)
 val mem : dir_path -> Pp.std_ppcmds

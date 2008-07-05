@@ -98,7 +98,7 @@ let is_in_loadpath dir =
 let is_in_coq_path f = 
   try 
   let base = Filename.chop_extension (Filename.basename f) in
-  let _ = Library.locate_qualified_library 
+  let _ = Library.locate_qualified_library false
 	    (Libnames.make_qualid Names.empty_dirpath 
 	       (Names.id_of_string base)) in
   prerr_endline (f ^ " is in coq path");

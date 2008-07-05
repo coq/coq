@@ -51,6 +51,8 @@ Vernacular commands
   that should be expanded first.
 - New command "Print Assumptions" to display all variables, parameters
   or axioms a theorem or definition relies on.
+- "Add Rec LoadPath" now provides references to libraries using partially
+  qualified names (this holds also for coqtop/coqc option -R).
 
 Libraries (DOC TO CHECK)
 
@@ -403,6 +405,8 @@ CoqIDE
 Tools
 
 - New stand-alone .vo files verifier "coqchk".
+- Extended -I coqtop/coqc option to specify a logical dir: "-I dir -as coqdir".
+- New coqtop/coqc option -exclude-dir to exclude subdirs for option -R.
 
 Miscellaneous
 

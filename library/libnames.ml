@@ -89,6 +89,8 @@ let drop_dirpath_prefix d1 d2 =
   let d = Util.list_drop_prefix (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2)) in
     make_dirpath (List.rev d)
 
+let append_dirpath d1 d2 = make_dirpath (repr_dirpath d2 @ repr_dirpath d1)
+
 (* To know how qualified a name should be to be understood in the current env*)
 let add_dirpath_prefix id d = make_dirpath (repr_dirpath d @ [id])
 

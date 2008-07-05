@@ -126,10 +126,11 @@ type cs_pattern =
   | Sort_cs of sorts_family
   | Default_cs
 
-let object_table =
-  (ref [] : ((global_reference * cs_pattern) * obj_typ) list ref)
+let object_table = ref (Refmap.empty : (cs_pattern * obj_typ) list Refmap.t)
 
-let canonical_projections () = !object_table
+let canonical_projections () = 
+  Refmap.fold (fun x -> List.fold_right (fun (y,c) acc -> ((x,y),c)::acc))
+    !object_table []
 
 let keep_true_projections projs kinds =
   map_succeed (function (p,true) -> p | _ -> failwith "")
@@ -183,9 +184,10 @@ let compute_canonical_projections (con,ind) =
 let open_canonical_structure i (_,o) =
   if i=1 then
     let lo = compute_canonical_projections o in
-    List.iter (fun (o,_ as x) ->
-      if not (List.mem_assoc o !object_table) then
-	object_table := x :: (!object_table)) lo
+    List.iter (fun ((proj,cs_pat),s) ->
+      let l = try Refmap.find proj !object_table with Not_found -> [] in
+      let l' = list_add_set (cs_pat,s) l in
+      object_table := Refmap.add proj l' !object_table) lo
 
 let cache_canonical_structure o =
   open_canonical_structure 1 o
@@ -241,7 +243,12 @@ let declare_canonical_structure ref =
 
 let outCanonicalStructure x = fst (outCanonStruct x)
 
-let lookup_canonical_conversion o = List.assoc o !object_table
+let lookup_canonical_conversion (proj,pat) =
+  List.assoc pat (Refmap.find proj !object_table)
+
+let is_canonical_projection c =
+  try Refmap.mem (global_of_constr c) !object_table
+  with Not_found -> false
 
 let freeze () =
   !structure_table, !projection_table, !object_table
@@ -251,7 +258,7 @@ let unfreeze (s,p,o) =
 
 let init () =
   structure_table := Indmap.empty; projection_table := Cmap.empty;
-  object_table:=[]
+  object_table := Refmap.empty
 
 let _ = init()
 

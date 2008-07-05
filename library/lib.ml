@@ -482,12 +482,21 @@ let section_segment_of_constant con =
 let section_segment_of_mutual_inductive kn =
   KNmap.find kn (snd (pi3 (List.hd !sectab)))
 
+let rec list_mem_assoc_in_triple x = function
+    [] -> raise Not_found
+  | (a,_,_)::l -> compare a x = 0 or list_mem_assoc_in_triple x l
+
 let section_instance = function
-  | VarRef id -> [||]
+  | VarRef id ->
+      if list_mem_assoc_in_triple id (pi1 (List.hd !sectab)) then [||]
+      else raise Not_found
   | ConstRef con ->
       Cmap.find con (fst (pi2 (List.hd !sectab)))
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
       KNmap.find kn (snd (pi2 (List.hd !sectab)))
+
+let is_in_section ref =
+  try ignore (section_instance ref); true with Not_found -> false
 
 let init_sectab () = sectab := []
 let freeze_sectab () = !sectab
