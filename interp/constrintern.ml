@@ -250,7 +250,7 @@ let rec subst_aconstr_in_rawconstr loc interp subst (renaming,(ids,_,scopes)) =
 let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ntn,args = contract_notation ntn args in
   let ((ids,c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
-    if !Flags.dump then Dumpglob.dump_notation_location (Dumpglob.ntn_loc loc args ntn) df;
+    if !Flags.dump then Dumpglob.dump_notation_location (Topconstr.ntn_loc loc args ntn) df;
     let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
       subst_aconstr_in_rawconstr loc intern subst ([],env) c
 
@@ -616,7 +616,7 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
       let ((ids',c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
-      if !Flags.dump then Dumpglob.dump_notation_location (Dumpglob.patntn_loc loc args ntn) df;
+      if !Flags.dump then Dumpglob.dump_notation_location (Topconstr.patntn_loc loc args ntn) df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
       let ids'',pl = subst_cases_pattern loc (alias_of aliases) intern_pat subst scopes 
 	c

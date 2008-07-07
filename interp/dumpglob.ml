@@ -207,13 +207,6 @@ let dump_libref loc dp ty =
     dump_string (Printf.sprintf "R%d %s <> <> %s\n" 
 			     (fst (Util.unloc loc)) (Names.string_of_dirpath dp) ty)
 
-let loc_of_notation f loc args ntn =
-  if args=[] or ntn.[0] <> '_' then fst (Util.unloc loc)
-  else snd (Util.unloc (f (List.hd args)))
-
-let ntn_loc = loc_of_notation Topconstr.constr_loc
-let patntn_loc = loc_of_notation Topconstr.cases_pattern_expr_loc
-
 let dump_notation_location pos ((path,df),sc) =
   let rec next growing =
     let loc = Lexer.location_function !token_number in

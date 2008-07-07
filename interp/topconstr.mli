@@ -240,3 +240,5 @@ type include_ast =
   | CIMTE of module_type_ast
   | CIME of module_ast
 
+val ntn_loc : Util.loc -> constr_expr list -> string -> int
+val patntn_loc : Util.loc -> cases_pattern_expr list -> string -> int
