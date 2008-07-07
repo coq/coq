@@ -134,6 +134,10 @@ module Hint_db = struct
     let st = if db.use_dn then Some db.hintdb_state else None in
       lookup_tacs (k,c) st (find k db)
 
+  let is_exact = function 
+    | Give_exact _ -> true
+    | _ -> false
+
   let add_one (k,v) db =
     let st',rebuild =
       match v.code with
@@ -150,7 +154,7 @@ module Hint_db = struct
       else None, db
     in
     let oval = find k db in
-    let pat = if not db.use_dn && v.pri = 0 then None else v.pat in
+    let pat = if not db.use_dn && is_exact v.code then None else v.pat in
       { db with hintdb_map = Constr_map.add k (add_tac pat v dnst oval) db.hintdb_map;
 	hintdb_state = st' }
 	

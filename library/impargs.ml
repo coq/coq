@@ -276,11 +276,11 @@ let compute_manual_implicits env flags t enriching l =
       let l',imp,m =
 	try 
 	  let (b, f) = List.assoc (ExplByName id) l in
-	  List.remove_assoc (ExplByName id) l, merge_imps f imp,Some b
+	  List.remove_assoc (ExplByName id) l, (Some Manual), (Some b)
 	with Not_found ->
 	try 
 	  let (id, (b, f)), l' = assoc_by_pos k l in
-	    l', merge_imps f imp,Some b
+	    l', (Some Manual), (Some b)
 	with Not_found ->
 	  l,imp, if enriching && imp <> None then Some flags.maximal else None
       in
@@ -415,12 +415,12 @@ let list_split_at index l =
     | [] -> failwith "list_split_at: Invalid argument"
   in aux 0 [] l
     
-let merge_impls oimpls impls =
-  let oimpls, newimpls = list_split_at (List.length oimpls - List.length impls) oimpls in
-    oimpls @ (List.map2 (fun orig ni ->
+let merge_impls newimpls oldimpls =
+  let before, after = list_split_at (List.length newimpls - List.length oldimpls) newimpls in
+    before @ (List.map2 (fun orig ni ->
       match orig with
       | Some (_, Manual, _) -> orig
-      | _ -> ni) impls newimpls)
+      | _ -> ni) oldimpls after)
 
 (* Caching implicits *)
 
