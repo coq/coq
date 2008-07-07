@@ -69,7 +69,7 @@ Qed.
 
 Lemma motzkin' : forall x y, (x^2+y^2+1)*(x^2*y^4 + x^4*y^2 + 1 - (3 ) *x^2*y^2) >= 0.
 Proof.
-  intros ; sos R.
+  intros ; psatz R.
 Qed.
 
 Lemma l1 : forall x y z : R, Rabs (x - z) <= Rabs (x - y) + Rabs (y - z).

@@ -333,7 +333,7 @@ Qed.
 
 Lemma motzkin' : forall x y, (x^2+y^2+1)*(x^2*y^4 + x^4*y^2 + 1 - 3*x^2*y^2) >= 0.
 Proof.
-  intros ; sos Z.
+  intros ; psatz Z.
 Qed.
 
 

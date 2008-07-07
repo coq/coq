@@ -26,18 +26,17 @@ Require Tauto.
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
   | Z => 
-    psatz_Z d ;
+    (sos_Z || psatz_Z d) ;
     intros __wit __varmap __ff ; 
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
     apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | R =>
-    psatz_R d ;
+    (sos_R || psatz_R d) ;
     intros __wit __varmap __ff ; 
     change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ; 
     apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | Q =>
-    cbv beta in *;
-    psatz_Q d ;
+      (sos_Q || psatz_Q d) ;
     intros __wit __varmap __ff ; 
     change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ; 
     apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity
@@ -55,7 +54,6 @@ Ltac psatzl dom :=
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
     apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
   | Q =>
-    cbv beta in *;
     psatzl_Q ; 
     intros __wit __varmap __ff ; 
     change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ; 
@@ -68,27 +66,6 @@ Ltac psatzl dom :=
   | _ => fail "Unsupported domain"
   end in tac.
 
-
-Ltac sos dom :=
-  let tac := lazymatch dom with
-  | Z =>
-    sos_Z ;
-    intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ; 
-    apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity
-  | Q =>
-    cbv beta in *;
-    sos_Q ;
-    intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ; 
-    apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity
-  | R =>
-    sos_R ;
-    intros __wit __varmap __ff ;
-    change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ; 
-    apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity
-  | _ => fail "Unsupported domain"
-  end in tac.
 
 
 Ltac lia := 

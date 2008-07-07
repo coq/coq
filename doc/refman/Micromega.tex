@@ -2,7 +2,7 @@
 \aauthor{Frédéric Besson and Evgeny Makarov}
 \newtheorem{theorem}{Theorem}
 
-For using the tactics out-of-the-box, jump to Section~\ref{sec:psatz-hurry}.
+For using the tactics out-of-the-box, read Section~\ref{sec:psatz-hurry}.
 %
 Section~\ref{sec:psatz-back} presents some background explaining the proof principle for solving polynomials goals.
 %
@@ -11,8 +11,8 @@ Section~\ref{sec:lia} explains how to get a complete procedure for linear intege
 \section{The {\tt psatz} tactic in a hurry}
 \label{sec:psatz-hurry}
 Load the {\tt Psatz} module ({\tt Require Psatz}.).  This module defines the tactics:
-{\tt lia}, {\tt psatzl D}, {\tt sos D} and {\tt psatz D n} where {\tt D} is {\tt Z}, {\tt Q} or {\tt R} and
-  and {\tt n} is an optional integer limiting the proof search depth.
+{\tt lia}, {\tt psatzl D}, %{\tt sos D} 
+and {\tt psatz D n} where {\tt D} is {\tt Z}, {\tt Q} or {\tt R} and {\tt n} is an optional integer limiting the proof search depth.
   % 
   \begin{itemize}
   \item The {\tt psatzl} tactic solves linear goals using an embedded (naive) linear programming prover \emph{i.e.},
@@ -21,14 +21,14 @@ Load the {\tt Psatz} module ({\tt Require Psatz}.).  This module defines the tac
     a \emph{proof cache} thus allowing to rerun scripts even without {\tt csdp}. 
   \item The {\tt lia} (linear integer arithmetic) tactic is specialised to solve linear goals over $\mathbb{Z}$.
     It extends {\tt psatzl Z} and exploits the discreetness of $\mathbb{Z}$.
-  \item The {\tt sos} tactic is another Hol light driver to the {\tt csdp} prover.  In theory, it is less general than
-    {\tt psatz}. In practice, even when {\tt psatz} fails, it can be worth a try -- see
-    Section~\ref{sec:psatz-back} for details.
+%%   \item The {\tt sos} tactic is another Hol light driver to the {\tt csdp} prover.  In theory, it is less general than
+%%     {\tt psatz}. In practice, even when {\tt psatz} fails, it can be worth a try -- see
+%%     Section~\ref{sec:psatz-back} for details.
   \end{itemize}
 
-These tactics solve propositional formulae parameterised by atomic arithmetics expressions
+These tactics solve propositional formulas parameterised by atomic arithmetics expressions
 interpreted over a domain $D \in \{\mathbb{Z}, \mathbb{Q}, \mathbb{R} \}$.
-The syntax of the formulae is the following:
+The syntax of the formulas is the following:
 \[
 \begin{array}{lcl}
  F &::=&  A \mid P \mid \mathit{True} \mid \mathit{False} \mid F_1 \land F_2 \mid F_1 \lor F_2 \mid F_1 \leftrightarrow F_2 \mid F_1 \to F_2 \mid \sim F\\
@@ -66,13 +66,13 @@ The following theorem provides a proof principle for checking that a set of poly
 \end{theorem}
 A proof based on this theorem is called a \emph{positivstellensatz} refutation.
 %
-The tactics work as follows. Formulae are normalised into conjonctive normal form $\bigwedge_i C_i$ where
+The tactics work as follows. Formulas are normalised into conjonctive normal form $\bigwedge_i C_i$ where
 $C_i$ has the general form $(\bigwedge_{j\in S_i} p_j \Join 0) \to \mathit{False})$ and $\Join \in \{>,\ge,=\}$ for $D\in
 \{\mathbb{Q},\mathbb{R}\}$ and $\Join \in \{\ge, =\}$ for $\mathbb{Z}$.
 %
 For each conjunct $C_i$, the tactic calls a prover which searches for $-1$ within the cone.
 %
-Upon success, the prover returns a \emph{cone expression} that is normalised by {\tt ring} and checked to be
+Upon success, the prover returns a \emph{cone expression} that is normalised by the {\tt ring} tactic (see chapter~\ref{ring}) and checked to be
 $-1$.
 
 To illustrate the working of the tactic, consider we wish to prove the following Coq goal.\\
@@ -107,15 +107,17 @@ In theory, such a proof search is complete -- if the goal is provable the search
 Unfortunately, the external prover is using numeric (approximate) optimisation techniques that might miss a
 refutation. 
 
-\paragraph{The {\tt sos} tactic} -- where {\tt sos} stands for \emph{sum of squares} -- tries to prove that a
-single polynomial $p$ is positive by expressing it as a sum of squares \emph{i.e.,} $\sum_{i\in S} p_i^2$.
-This amounts to searching for $p$ in the cone without generators \emph{i.e.}, $Cone(\{\})$.
+%% \paragraph{The {\tt sos} tactic} -- where {\tt sos} stands for \emph{sum of squares} -- tries to prove that a
+%% single polynomial $p$ is positive by expressing it as a sum of squares \emph{i.e.,} $\sum_{i\in S} p_i^2$.
+%% This amounts to searching for $p$ in the cone without generators \emph{i.e.}, $Cone(\{\})$.
 %
 
 \section{ {\tt lia} : the linear integer arithmetic tactic }
 \label{sec:lia}
-Compared to the {\tt omega} tactic, {\tt lia} should run faster and be more complete.
-What is for sure is that {\tt lia} solves the following \emph{omega nightmare} (see Omega's paper)
+
+The tactic {\tt lia} offers an alternative to the {\tt omega} and {\tt romega} tactic (see
+Chapter \label{OmegaChapter}). It solves goals that {\tt omega} and {\tt romega} do not solve, such as the
+following so-called \emph{omega nightmare}~\cite{TheOmegaPaper}.
 \begin{coq_example*}
   Goal forall x y, 
        27 <= 11 * x + 13 * y <= 45 -> 
@@ -126,7 +128,8 @@ Proof.
 intro; lia;
 Qed.
 \end{coq_eval}
-whereas the {\tt omega} tactic fails -- this part of the algorithm is not implemented in Coq.
+The estimation of the relative efficiency of lia \emph{vs} {\tt omega}
+and {\tt romega} is under evaluation.
 
 \paragraph{High level view of {\tt lia}.}
 Over $\mathbb{R}$,  \emph{positivstellensatz} refutations are a complete proof principle.
@@ -136,7 +139,7 @@ However, this is not the case over $\mathbb{Z}$.
 Actually, \emph{positivstellensatz} refutations are not even sufficient to decide linear \emph{integer} 
 arithmetics.
 %
-The canonic exemple is {\tt 2 * x = 1 -> False} which is a theorem of $\mathbb{Z}$ but not a theorem of $\mathbb{R}$.
+The canonical exemple is {\tt 2 * x = 1 -> False} which is a theorem of $\mathbb{Z}$ but not a theorem of $\mathbb{R}$.
 %
 To remedy this weakness, the {\tt lia} tactic is using recursively a combination of:
 %
@@ -167,7 +170,7 @@ Cutting plane proofs and linear \emph{positivstellensatz} refutations are a comp
 
 \paragraph{Case split} allow to enumerate over the possible values of an expression. 
 \begin{theorem}
-  Let $p$ be a linear integer expression and $c$ an integer constant.
+  Let $p$ be a linear integer expression and $c_1$ and $c_2$  integer constants.
   \[
   c_1 \le p \le c_2 \Rightarrow \bigvee_{x \in [c_1,c_2]} p = x
   \]
