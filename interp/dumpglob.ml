@@ -177,6 +177,17 @@ let dump_constraint ((loc, n), _, _) sec ty =
     | Names.Name id -> dump_definition (loc, id) sec ty
     | Names.Anonymous -> ()
 
+let dump_name (loc, n) sec ty =
+  match n with
+  | Names.Name id -> dump_definition (loc, id) sec ty
+  | Names.Anonymous -> ()
+
+let dump_local_binder b sec ty =
+  match b with
+  | Topconstr.LocalRawAssum (nl, _, _) -> 
+      List.iter (fun x -> dump_name x sec ty) nl
+  | Topconstr.LocalRawDef _ -> ()
+
 let dump_modref loc mp ty =
   if !Flags.dump then
     let (dp, l) = Lib.split_modpath mp in

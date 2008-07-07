@@ -191,7 +191,7 @@ let new_class id par ar sup props =
     (* Make the class and all params implicits in the projections *)
     let ctx_impls = implicits_of_context ctx_params in
     let len = succ (List.length ctx_params) in
-      List.rev_map (fun x -> ctx_impls @ Impargs.lift_implicits len x) prop_impls
+      List.map (fun x -> ctx_impls @ Impargs.lift_implicits len x) prop_impls
   in
   let impl, projs = 
     let params = ctx_params and fields = ctx_props in
@@ -261,13 +261,26 @@ let binders_of_lidents l =
   List.map (fun (loc, id) -> LocalRawAssum ([loc, Name id], Default Rawterm.Implicit, CHole (loc, None))) l
 
 let type_ctx_instance isevars env ctx inst subst =
-  List.fold_left2
-    (fun (subst, instctx) (na, _, t) ce ->
-      let t' = substl subst t in
-      let c = interp_casted_constr_evars isevars env ce t' in
-      let d = na, Some c, t' in
-	c :: subst, d :: instctx)
-    (subst, []) (List.rev ctx) inst
+  let (s, _) = 
+    List.fold_left2
+      (fun (subst, instctx) (na, _, t) ce ->
+	let t' = substl subst t in
+	let c = interp_casted_constr_evars isevars env ce t' in
+	let d = na, Some c, t' in
+	  c :: subst, d :: instctx)
+      (subst, []) (List.rev ctx) inst
+  in s
+
+(* let type_ctx_instance isevars env ctx inst subst = *)
+(*   let (s, _, _) =  *)
+(*     List.fold_left2 *)
+(*       (fun (s, env, n) (na, _, t) ce -> *)
+(* 	let t' = substnl subst n t in *)
+(* 	let c = interp_casted_constr_evars isevars env ce t' in *)
+(* 	let d = na, Some c, t' in *)
+(* 	  (substl s c :: s, push_rel d env, succ n)) *)
+(*       ([], env, 0) (List.rev ctx) inst *)
+(*   in s @ subst *)
 
 let refine_ref = ref (fun _ -> assert(false))
 
@@ -397,7 +410,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
       end
     else
       begin
-	let subst, _propsctx = 
+	let subst = 
 	  let props = 
 	    List.map (fun (x, l, d) -> 
 	      x, Topconstr.abstract_constr_expr d (binders_of_lidents l))
@@ -449,21 +462,26 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 	  end
       end
 
+let named_of_rel_context l =
+  let acc, ctx = 
+    List.fold_right 
+      (fun (na, b, t) (subst, ctx) ->
+	let id = match na with Anonymous -> raise (Invalid_argument "named_of_rel_context") | Name id -> id in
+	let d = (id, Option.map (substl subst) b, substl subst t) in
+	  (mkVar id :: subst, d :: ctx))
+      l ([], [])
+  in ctx
+
 let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in
-  let isevars = ref (Evd.create_evar_defs Evd.empty) in
-  let avoid = Termops.ids_of_context env in
-  let ctx, l = 
-    List.fold_left 
-      (fun (ids, acc) x ->
-	let ids, ctx, cstr = Implicit_quantifiers.generalize_class_binder_raw ids x in
-	  (ids, (cstr :: ctx) @ acc))
-      (vars_of_env env, []) l
+  let evars = ref (Evd.create_evar_defs Evd.empty) in
+  let (env', fullctx), impls = interp_context_evars evars env l in
+  let fullctx = Evarutil.nf_rel_context_evar (Evd.evars_of !evars) fullctx in
+  let ce t = Evarutil.check_evars env Evd.empty !evars t in
+  List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;
+  let ctx = try named_of_rel_context fullctx with _ -> 
+    error "Anonymous variables not allowed in contexts"
   in
-  let env', avoid, l = interp_typeclass_context_evars isevars env avoid (List.rev l) in
-  isevars := Evarutil.nf_evar_defs !isevars;
-  let sigma = Evd.evars_of !isevars in
-  let fullctx = Evarutil.nf_named_context_evar sigma l in
     List.iter (function (id,_,t) -> 
       if Lib.is_modtype () then 
 	let cst = Declare.declare_internal_constant id
@@ -480,4 +498,4 @@ let context ?(hook=fun _ -> ()) l =
 	 match class_of_constr t with
 	     None -> ()
 	   | Some tc -> hook (VarRef id)))
-      (List.rev fullctx)
+      (List.rev ctx)

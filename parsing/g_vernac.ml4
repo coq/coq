@@ -491,7 +491,7 @@ GEXTEND Gram
 	 props = typeclass_field_types ->
 	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
 	     
-      | IDENT "Context"; c = typeclass_context -> 
+      | IDENT "Context"; c = binders_let -> 
 	  VernacContext c
 	    
       | global = [ IDENT "Global" -> true | -> false ];

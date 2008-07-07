@@ -602,7 +602,7 @@ let vernac_instance glob sup inst props pri =
   ignore(Classes.new_instance ~global:glob sup inst props pri)
 
 let vernac_context l =
-  if !Flags.dump then List.iter (fun x -> Dumpglob.dump_constraint x true "var") l;
+  if !Flags.dump then List.iter (fun x -> Dumpglob.dump_local_binder x true "var") l;
   Classes.context l
 
 let vernac_declare_instance id =

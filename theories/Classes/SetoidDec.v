@@ -32,7 +32,7 @@ Class DecidableSetoid A [ Setoid A ] :=
 
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
-Class [ s : Setoid A ] => EqDec :=
+Class (( s : Setoid A )) => EqDec :=
   equiv_dec : forall x y : A, { x == y } + { x =/= y }.
 
 (** We define the [==] overloaded notation for deciding equality. It does not take precedence

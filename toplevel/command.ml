@@ -556,12 +556,18 @@ let interp_mutual paramsl indl notations finite =
     mind_entry_consnames = cnames;
     mind_entry_lc = ctypes
   }) indl arities constructors in
-
+  let impls = 
+    let len = List.length ctx_params in
+      List.map (fun (_,_,impls) ->
+	userimpls, List.map (fun impls -> 
+	  userimpls @ (lift_implicits len impls)) impls) constructors
+  in
   (* Build the mutual inductive entry *)
   { mind_entry_params = List.map prepare_param ctx_params;
     mind_entry_record = false; 
     mind_entry_finite = finite; 
-    mind_entry_inds = entries }, (List.map (fun (_,_,impls) -> userimpls, impls) constructors)
+    mind_entry_inds = entries }, 
+    impls
 
 let eq_constr_expr c1 c2 =
   try let _ = Constrextern.check_same_type c1 c2 in true with _ -> false
@@ -615,14 +621,15 @@ let _ =
 
 let declare_mutual_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let params = List.length mie.mind_entry_params in
   let (_,kn) = declare_mind isrecord mie in    
     list_iter_i (fun i (indimpls, constrimpls) -> 
       let ind = (kn,i) in
+	maybe_declare_manual_implicits false (IndRef ind)
+	  (is_implicit_args()) indimpls;
 	list_iter_i
 	  (fun j impls -> 
 	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j))
-	      (is_implicit_args()) (indimpls @ (lift_implicits params impls)))
+	      (is_implicit_args()) impls)
 	  constrimpls)
       impls;
     if_verbose ppnl (minductive_message names);

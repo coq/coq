@@ -398,7 +398,12 @@ GEXTEND Gram
         [LocalRawAssum ([id],Default Implicit,c)]
     | "{"; id=name; idl=LIST1 name; "}" -> 
         List.map (fun id -> LocalRawAssum ([id],Default Implicit,CHole (loc, None))) (id::idl)
-    | "["; tc = LIST1 typeclass_constraint_binder SEP ","; "]" -> tc
+    | "("; "("; tc = LIST1 typeclass_constraint SEP "," ; ")"; ")" ->
+	List.map (fun (n, b, t) -> LocalRawAssum ([n], TypeClass (Explicit, b), t)) tc
+    | "{"; "{"; tc = LIST1 typeclass_constraint SEP "," ; "}"; "}" ->
+	List.map (fun (n, b, t) -> LocalRawAssum ([n], TypeClass (Implicit, b), t)) tc
+    | "["; tc = LIST1 typeclass_constraint SEP ","; "]" -> 
+	List.map (fun (n, b, t) -> LocalRawAssum ([n], TypeClass (Implicit, b), t)) tc
     ] ]
   ;
   binder:
@@ -407,21 +412,14 @@ GEXTEND Gram
       | "{"; idl=LIST1 name; ":"; c=lconstr; "}" -> (idl,Default Implicit,c) 
     ] ]
   ;
-  typeclass_constraint_binder:
-    [ [ tc = typeclass_constraint ->
-      let (n,(b,b'),t) = tc in
-	LocalRawAssum ([n], TypeClass (b,b'), t)
-    ] ]
-  ;
-
   typeclass_constraint:
-    [ [ "!" ; c = operconstr LEVEL "200" -> (loc, Anonymous), (Implicit, Explicit), c
+    [ [ "!" ; c = operconstr LEVEL "200" -> (loc, Anonymous), Explicit, c
       | "{"; id = name; "}"; ":" ; expl = [ "!" -> Explicit | -> Implicit ] ; c = operconstr LEVEL "200" ->
-	  id, (Implicit, expl), c
+	  id, expl, c
       | iid=ident_colon ; expl = [ "!" -> Explicit | -> Implicit ] ; c = operconstr LEVEL "200" ->
-	  (loc, Name iid), (Explicit, expl), c
+	  (loc, Name iid), expl, c
       | c = operconstr LEVEL "200" ->
-	  (loc, Anonymous), (Implicit, Implicit), c
+	  (loc, Anonymous), Implicit, c
     ] ]
   ;
   

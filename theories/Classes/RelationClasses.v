@@ -172,11 +172,11 @@ Instance Equivalence_PER [ Equivalence A R ] : PER A R | 10 :=
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 
-Class [ equ : Equivalence A eqA ] => Antisymmetric (R : relation A) := 
+Class Antisymmetric ((equ : Equivalence A eqA)) (R : relation A) := 
   antisymmetry : forall x y, R x y -> R y x -> eqA x y.
 
-Program Instance flip_antiSymmetric [ eq : Equivalence A eqA, ! Antisymmetric eq R ] :
-  Antisymmetric eq (flip R).
+Program Instance flip_antiSymmetric {{Antisymmetric A eqA R}} :
+  ! Antisymmetric A eqA (flip R).
 
 (** Leibinz equality [eq] is an equivalence relation.
    The instance has low priority as it is always applicable 

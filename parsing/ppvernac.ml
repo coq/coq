@@ -403,9 +403,6 @@ let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
 let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
-let pr_lname_lident_constr (oi,bk,a) = 
-  (match snd oi with Anonymous -> mt () | Name id -> pr_lident (fst oi, id) ++ spc () ++ str":" ++ spc ()) 
-  ++ pr_lconstr a in
 let pr_instance_def sep (i,l,c) = pr_lident i ++ prlist_with_sep spc pr_lident l 
   ++ sep ++ pr_constrarg c in
 
@@ -717,8 +714,7 @@ let rec pr_vernac = function
  | VernacContext l ->
      hov 1 (
        str"Context" ++ spc () ++ str"[" ++ spc () ++
-	 prlist_with_sep (fun () -> str"," ++ spc()) pr_lname_lident_constr l ++
-	 spc () ++ str "]")
+	 pr_and_type_binders_arg l ++ spc () ++ str "]")
 	      
 
  | VernacDeclareInstance id ->

@@ -86,8 +86,7 @@ val id_of_class : typeclass -> identifier
 (* Context command *)    
 
 val context : ?hook:(Libnames.global_reference -> unit) -> 
-  (Names.name Util.located * (Rawterm.binding_kind * Rawterm.binding_kind) *
-  Topconstr.constr_expr) list -> unit
+  local_binder list -> unit
 
 (* Forward ref for refine *)
 
