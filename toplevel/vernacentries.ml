@@ -571,9 +571,10 @@ let vernac_end_segment lid =
 
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
-  let modrefl = List.map (fun qid -> let (dp, _) = (Library.try_locate_qualified_library qid) in dp) qidl in
-    List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref loc dp "lib") qidl modrefl;
-    Library.require_library qidl import
+  let modrefl = List.map Library.try_locate_qualified_library qidl in
+(*   let modrefl = List.map (fun qid -> let (dp, _) = (Library.try_locate_qualified_library qid) in dp) qidl in *)
+    List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref loc dp "lib") qidl (List.map fst modrefl);
+    Library.require_library_from_dirpath modrefl import
 
 let vernac_canonical r =
   Recordops.declare_canonical_structure (global_with_alias r)

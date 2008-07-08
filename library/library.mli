@@ -26,6 +26,7 @@ open Libobject
 (*s Require = load in the environment + open (if the optional boolean
     is not [None]); mark also for export if the boolean is [Some true] *)
 val require_library : qualid located list -> bool option -> unit
+val require_library_from_dirpath : (dir_path * string) list -> bool option -> unit
 val require_library_from_file :
   identifier option -> System.physical_path -> bool option -> unit
 

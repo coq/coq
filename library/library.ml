@@ -572,8 +572,7 @@ let (in_require, out_require) =
 let xml_require = ref (fun d -> ())
 let set_xml_require f = xml_require := f
 
-let require_library qidl export =
-  let modrefl = List.map try_locate_qualified_library qidl in
+let require_library_from_dirpath modrefl export =
   let needed = List.rev (List.fold_left rec_intern_library [] modrefl) in
   let modrefl = List.map fst modrefl in
     if Lib.is_modtype () || Lib.is_module () then 
@@ -587,6 +586,10 @@ let require_library qidl export =
       add_anonymous_leaf (in_require (needed,modrefl,export));
     if !Flags.xml_export then List.iter !xml_require modrefl;
   add_frozen_state ()
+
+let require_library qidl export =
+  let modrefl = List.map try_locate_qualified_library qidl in
+    require_library_from_dirpath modrefl export
 
 let require_library_from_file idopt file export =
   let modref,needed = rec_intern_library_from_file idopt file in
