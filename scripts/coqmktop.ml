@@ -318,7 +318,6 @@ let main () =
 	   (string_of_int (String.length command)) ^ " characters)");
 	flush Pervasives.stdout 
       end;
-    print_string command;
     let retcode = Sys.command command in
     clean main_file;
     (* command gives the exit code in HSB, and signal in LSB !!! *)
