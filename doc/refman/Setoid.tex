@@ -40,7 +40,7 @@ the previous implementation in several ways:
   solution to a set of constraints which can be as fast as linear in the
   size of the term, and the size of the proof term is linear
   in the size of the original term. Besides, the extensibility allows the
-  user customize the proof-search if necessary.
+  user to customize the proof-search if necessary.
 \end{itemize}
 
 \asection{Relations and morphisms}
@@ -693,6 +693,14 @@ any rewriting constraints arising from a rewrite using \texttt{iff},
 
 Sub-relations are implemented in \texttt{Classes.Morphisms} and are a 
 prime example of a completely user-space extension of the algorithm.
+
+\asection{Constant unfolding}
+
+The resolution tactic is based on type classes and regards user-defined 
+constants as opaque by default to avoid unwanted unfoldings. This may also
+prevent some desirable unifications, so the command \texttt{Typeclasses
+  unfold} (see \S \ref{TypeclassesUnfold}) can be used to declare a constant as unfoldable
+during resolution.
 
 %%% Local Variables: 
 %%% mode: latex
