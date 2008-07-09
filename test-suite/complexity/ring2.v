@@ -1,7 +1,7 @@
 (* This example, checks the efficiency of the abstract machine used by ring *)
 (* Expected time < 1.00s *)
 
-Require Import BinInt.
+Require Import BinInt Zbool.
 
 Definition Zplus x y :=
 match x with
@@ -42,7 +42,7 @@ Ltac Zcst t :=
   end.
 
 Add Ring Zr : Zth
-  (decidable Zeqb_ok, constants [Zcst]).
+  (decidable Zeq_bool_eq, constants [Zcst]).
 
 Open Scope Z_scope.
 Infix "+" := Zplus : Z_scope.
