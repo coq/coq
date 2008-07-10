@@ -543,8 +543,11 @@ type backtrack =
 | NoBacktrack
 
 let add_undo = function (n,a,b,p,l as x) -> if p = 0 then (n+1,a,b,p,l) else x
-let add_abort = function (n,a,b,0,l) -> (0,a+1,b,0,l) | (n,a,b,p,l) -> (n,a,b,p-1,l)
-let add_qed q (n,a,b,p,l) = (n,a,b,p+q,l)
+let add_abort = function
+  | (n,a,b,0,l) -> (0,a+1,b,0,l)
+  | (n,a,b,p,l) -> (n,a,b,p-1,l)
+let add_qed q (n,a,b,p,l as x) =
+  if q = 0 then x else (n,a,BacktrackToNextActiveMark,p+q,l)
 let add_backtrack (n,a,b,p,l) b' = (n,a,b',p,l)
 
 let update_proofs (n,a,b,p,cur_lems) prev_lems =
@@ -580,38 +583,46 @@ let pop_command undos t =
   ignore (pop ());
   undos
 
-let rec apply_backtrack l = function
-  | 0, BacktrackToMark mark -> reset_to mark
-  | 0, NoBacktrack -> ()
-  | 0, BacktrackToModSec id -> reset_to_mod id
-  | p, _ ->
-      (* re-synchronize Coq to the current state of the stack *)
-      if is_empty () then
-        Coq.reset_initial ()
-      else
-        begin
-          let t = top () in
-          let undos = (0,0,BacktrackToNextActiveMark,p,l) in
-          let (_,_,b,p,l) = pop_command undos t in
-          apply_backtrack l (p,b);
-          let reset_info = Coq.compute_reset_info (snd t.ast) in
-          interp_last t.ast;
-          repush_phrase reset_info t
-        end
-
-let rec apply_undos (n,a,b,p,l) =
-  (* Aborts *)
+let apply_aborts a =
   if a <> 0 then prerr_endline ("Applying "^string_of_int a^" aborts");
-  (try Util.repeat a Pfedit.delete_current_proof ()
-   with e -> prerr_endline "WARNING : found a closed environment"; raise e);
-  (* Undos *)
-  if n<>0 then 
+  try Util.repeat a Pfedit.delete_current_proof ()
+  with e -> prerr_endline "WARNING : found a closed environment"; raise e
+
+exception UndoStackExhausted
+
+let apply_tactic_undo n =
+  if n<>0 then
     (prerr_endline ("Applying "^string_of_int n^" undos");
-     try Pfedit.undo n
-     with _ -> (* Undo stack exhausted *)
-       apply_backtrack l (p,BacktrackToNextActiveMark));
-  (* Reset *)
-  apply_backtrack l (p,b)
+     try Pfedit.undo n with _ -> raise UndoStackExhausted)
+
+let apply_reset = function
+  | BacktrackToMark mark -> reset_to mark
+  | BacktrackToModSec id -> reset_to_mod id
+  | NoBacktrack -> ()
+  | BacktrackToNextActiveMark -> assert false
+
+let rec apply_undos (n,a,b,p,l as undos) =
+  if p = 0 & b <> BacktrackToNextActiveMark then
+    begin
+      apply_aborts a;
+      try
+	apply_tactic_undo n;
+	apply_reset b
+      with UndoStackExhausted ->
+	apply_undos (n,0,BacktrackToNextActiveMark,p,l)
+    end
+  else
+    (* re-synchronize Coq to the current state of the stack *)
+    if is_empty () then
+      Coq.reset_initial ()
+    else
+      begin
+        let t = top () in
+        apply_undos (pop_command undos t);
+        let reset_info = Coq.compute_reset_info (snd t.ast) in
+        interp_last t.ast;
+        repush_phrase reset_info t
+      end
 
 (* For electric handlers *)
 exception Found
