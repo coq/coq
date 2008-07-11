@@ -614,13 +614,13 @@ let rec list_mem_assoc_triple x = function
   | [] -> false
   | (a,b,c) :: l -> a = x or list_mem_assoc_triple x l
 
-let register_empty_levels forpat symbs =
-  map_succeed (function
-    | Gramext.Snterml (_,n) when
-	let levels = (if forpat then snd else fst) (List.hd !level_stack) in
-	not (list_mem_assoc_triple (int_of_string n) levels) ->
-	find_position_gen forpat true None (Some (int_of_string n))
-    | _ -> failwith "") symbs
+let register_empty_levels forpat levels =
+  map_succeed (fun n ->
+    let levels = (if forpat then snd else fst) (List.hd !level_stack) in
+    if not (list_mem_assoc_triple n levels) then
+      find_position_gen forpat true None (Some n)
+    else
+      failwith "") levels
 
 let find_position forpat assoc level =
   find_position_gen forpat false assoc level
