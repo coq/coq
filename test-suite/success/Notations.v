@@ -21,3 +21,8 @@ Definition marker := O.
 Notation "x +1" := (S x) (at level 8, left associativity).
 Reset marker.
 Notation "x +1" := (S x) (at level 8, right associativity).
+
+(* Check that empty levels (here 8 and 2 in pattern) are added in the
+   right order *)
+
+Notation "' 'C_' G ( A )" := (A,G) (at level 8, G at level 2).
