@@ -23,6 +23,16 @@ open Nametab
 
 let local_make_qualid l id = make_qualid (make_dirpath l) id
 
+let my_int_of_string loc s =
+  try
+    let n = int_of_string s in
+    (* To avoid Array.make errors (that e.g. Undo uses), we set a *)
+    (* more restricted limit than int_of_string does *)
+    if n > 1024 * 2048 then raise Exit;
+    n
+  with Failure _ | Exit ->
+    Util.user_err_loc (loc,"",Pp.str "cannot support a so large number.")
+
 GEXTEND Gram
   GLOBAL: 
     bigint natural integer identref name ident var preident
@@ -90,11 +100,11 @@ GEXTEND Gram
     [ [ s = STRING -> s ] ]
   ;
   integer:
-    [ [ i = INT      -> int_of_string i
-      | "-"; i = INT -> - int_of_string i ] ]
+    [ [ i = INT      -> my_int_of_string loc i
+      | "-"; i = INT -> - my_int_of_string loc i ] ]
   ;
   natural:
-    [ [ i = INT -> int_of_string i ] ]
+    [ [ i = INT -> my_int_of_string loc i ] ]
   ;
   bigint: (* Negative numbers are dealt with specially *)
     [ [ i = INT -> (Bigint.of_string i) ] ]

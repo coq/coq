@@ -44,6 +44,8 @@ let init () =
      messages *)
 (**)
   Flags.make_silent true;
+  (* don't set a too large undo stack because Edit.create allocates an array *)
+  Pfedit.set_undo (Some 5000);
 (**)
   Coqtop.init_ide ()
 

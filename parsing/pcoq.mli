@@ -229,7 +229,7 @@ val find_position :
 
 val synchronize_level_positions : unit -> unit
 
-val register_empty_levels : bool -> Compat.token Gramext.g_symbol list ->
+val register_empty_levels : bool -> int list ->
     (Gramext.position option * Gramext.g_assoc option *
      string option * Gramext.g_assoc option) list
 
