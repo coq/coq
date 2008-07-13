@@ -17,7 +17,7 @@ and {\tt psatz D n} where {\tt D} is {\tt Z}, {\tt Q} or {\tt R} and {\tt n} is 
   \begin{itemize}
   \item The {\tt psatzl} tactic solves linear goals using an embedded (naive) linear programming prover \emph{i.e.},
     fourier elimination.
-  \item The {\tt psatz} tactic solves polynomial goals using John Harrison's Hol light driver to the external prover {\tt cspd}\footnote{Source and binaries can be found at \url{https://projects.coin-or.org/Csdp}}. Note that the {\tt csdp} driver is generating 
+  \item The {\tt psatz} tactic solves polynomial goals using John Harrison's Hol light driver to the external prover {\tt cspd}\footnote{Sources and binaries can be found at \url{https://projects.coin-or.org/Csdp}}. Note that the {\tt csdp} driver is generating 
     a \emph{proof cache} thus allowing to rerun scripts even without {\tt csdp}. 
   \item The {\tt lia} (linear integer arithmetic) tactic is specialised to solve linear goals over $\mathbb{Z}$.
     It extends {\tt psatzl Z} and exploits the discreetness of $\mathbb{Z}$.
@@ -36,12 +36,23 @@ The syntax of the formulas is the following:
  p &::=& c \mid x \mid {-}p \mid p_1 - p_2 \mid p_1 + p_2 \mid p_1 \times p_2 \mid p \verb!^! n
  \end{array}
  \]
- where $c$ is a numeric constant ($c \in \mbox{ if } D = \mathbb{R} \mbox{ then } R1^*R0 \mbox{ else } D$),
- $x\in D$ is a numeric variable and the operators $-$, $+$, $\times$, are
+ where $c$ is a numeric constant, $x\in D$ is a numeric variable and the operators $-$, $+$, $\times$, are
  respectively subtraction, addition, product, $p \verb!^!n $ is exponentiation by a constant $n$, $P$ is an
  arbitrary proposition. %that is mostly ignored.
- 
-
+%%
+%% Over $\mathbb{Z}$, $c$ is an integer ($c \in \mathtt{Z}$), over $\mathbb{Q}$, $c$ is 
+The following table details for each domain $D \in \{\mathbb{Z},\mathbb{Q},\mathbb{R}\}$ the range of constants $c$ and exponent $n$.
+\[
+\begin{array}{|c|c|c|c|}
+  \hline
+  &\mathbb{Z} & \mathbb{Q} & \mathbb{R} \\
+  \hline
+  c &\mathtt{Z} & \mathtt{Q} & \{R1, R0\} \\
+  \hline
+  n &\mathtt{Z} & \mathtt{Z} & \mathtt{nat}\\
+  \hline
+\end{array}
+\]
 
 \section{\emph{Positivstellensatz} refutations}
 \label{sec:psatz-back}
@@ -70,9 +81,9 @@ The tactics work as follows. Formulas are normalised into conjonctive normal for
 $C_i$ has the general form $(\bigwedge_{j\in S_i} p_j \Join 0) \to \mathit{False})$ and $\Join \in \{>,\ge,=\}$ for $D\in
 \{\mathbb{Q},\mathbb{R}\}$ and $\Join \in \{\ge, =\}$ for $\mathbb{Z}$.
 %
-For each conjunct $C_i$, the tactic calls a prover which searches for $-1$ within the cone.
+For each conjunct $C_i$, the tactic calls a oracle which searches for $-1$ within the cone.
 %
-Upon success, the prover returns a \emph{cone expression} that is normalised by the {\tt ring} tactic (see chapter~\ref{ring}) and checked to be
+Upon success, the oracle returns a \emph{cone expression} that is normalised by the {\tt ring} tactic (see chapter~\ref{ring}) and checked to be
 $-1$.
 
 To illustrate the working of the tactic, consider we wish to prove the following Coq goal.\\
@@ -84,12 +95,10 @@ To illustrate the working of the tactic, consider we wish to prove the following
   Goal forall x, -x^2 >= 0 -> x - 1 >= 0 -> False.
 \end{coq_example*}
 \begin{coq_eval}
-Proof.
-intro; psatz Z;
-Qed.
+intro x; psatz Z.
 \end{coq_eval}
-Such a goal is solved by {\tt intro ; psatz Z}. The prover returns the cone expression $2 \times
-(\mathbf{x-1}) + (x-1)^2 + \mathbf{-x^2}$ (polynomial hypotheses are printed in bold). By construction, this
+Such a goal is solved by {\tt intro x; psatz Z}. The oracle returns the cone expression $2 \times
+(\mathbf{x-1}) + \mathbf{x-1}\times\mathbf{x-1} + \mathbf{-x^2}$ (polynomial hypotheses are printed in bold). By construction, this
 expression belongs to $Cone(\{-x^2, x -1\})$.  Moreover, by running {\tt ring} we obtain $-1$. By
 Theorem~\ref{thm:psatz}, the goal is valid.
 %
@@ -104,7 +113,7 @@ Basically, the deductive power of {\tt psatzl} is the combined deductive power o
 
 \paragraph{The {\tt psatz} tactic} explores the $Cone$ by increasing degrees -- hence the depth parameter $n$.
 In theory, such a proof search is complete -- if the goal is provable the search eventually stops.
-Unfortunately, the external prover is using numeric (approximate) optimisation techniques that might miss a
+Unfortunately, the external oracle is using numeric (approximate) optimisation techniques that might miss a
 refutation. 
 
 %% \paragraph{The {\tt sos} tactic} -- where {\tt sos} stands for \emph{sum of squares} -- tries to prove that a
@@ -116,23 +125,21 @@ refutation.
 \label{sec:lia}
 
 The tactic {\tt lia} offers an alternative to the {\tt omega} and {\tt romega} tactic (see
-Chapter \label{OmegaChapter}). It solves goals that {\tt omega} and {\tt romega} do not solve, such as the
+Chapter~\ref{OmegaChapter}). It solves goals that {\tt omega} and {\tt romega} do not solve, such as the
 following so-called \emph{omega nightmare}~\cite{TheOmegaPaper}.
 \begin{coq_example*}
   Goal forall x y, 
        27 <= 11 * x + 13 * y <= 45 -> 
-       -10 <= 7 * x - 9 * y <= 4 ->   False
+       -10 <= 7 * x - 9 * y <= 4 ->   False.
 \end{coq_example*}
 \begin{coq_eval}
-Proof.
-intro; lia;
-Qed.
+intro x; lia;
 \end{coq_eval}
 The estimation of the relative efficiency of lia \emph{vs} {\tt omega}
 and {\tt romega} is under evaluation.
 
 \paragraph{High level view of {\tt lia}.}
-Over $\mathbb{R}$,  \emph{positivstellensatz} refutations are a complete proof principle.
+Over $\mathbb{R}$,  \emph{positivstellensatz} refutations are a complete proof principle\footnote{In practice, the oracle might fail to produce such a refutation.}.
 %
 However, this is not the case over $\mathbb{Z}$.
 %
@@ -153,7 +160,7 @@ To remedy this weakness, the {\tt lia} tactic is using recursively a combination
 (rational) constants up-to the closest integer. 
 %
 \begin{theorem}
-  Let $p$ be a linear integer expression and $c$ an integer constant.
+  Let $p$ be an integer and $c$ a rational constant.
   \[
   p \ge c \Rightarrow p \ge \lceil c \rceil
   \]
@@ -170,12 +177,12 @@ Cutting plane proofs and linear \emph{positivstellensatz} refutations are a comp
 
 \paragraph{Case split} allow to enumerate over the possible values of an expression. 
 \begin{theorem}
-  Let $p$ be a linear integer expression and $c_1$ and $c_2$  integer constants.
+  Let $p$ be an integer and $c_1$ and $c_2$  integer constants.
   \[
   c_1 \le p \le c_2 \Rightarrow \bigvee_{x \in [c_1,c_2]} p = x
   \]
 \end{theorem}
-Our current prover tries to find an expression $e$ with a small range $[c_1,c_2]$.
+Our current oracle tries to find an expression $e$ with a small range $[c_1,c_2]$.
 %
 We generate $c_2 - c_1$ subgoals which contexts are enriched with an equation $e = i$ for $i \in [c_1,c_2]$ and
 recursively search for a proof.
