@@ -119,7 +119,7 @@ Qed.
 
 *)
 
-Definition inhabited (A:Prop) := A.
+Notation Local inhabited A := A.
 
 Lemma prop_ext_A_eq_A_imp_A :
   prop_extensionality -> forall A:Prop, inhabited A -> (A -> A) = A.
@@ -513,8 +513,6 @@ Qed.
     Investigation of Intuitionistic Arithmetic and Analysis, volume
     344 of Lecture Notes in Mathematics, Springer-Verlag, 1973.
 *)
-
-Notation Local "'inhabited' A" := A (at level 10, only parsing).
 
 Definition IndependenceOfGeneralPremises :=
   forall (A:Type) (P:A -> Prop) (Q:Prop),

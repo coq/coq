@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 (** This module proves the constructive description schema, which
 infers the sigma-existence (i.e., [Set]-existence) of a witness to a
@@ -53,7 +53,7 @@ of our searching algorithm. *)
 
 Let R (x y : nat) : Prop := x = S y /\ ~ P y.
 
-Notation Local "'acc' x" := (Acc R x) (at level 10).
+Notation Local acc x := (Acc R x).
 
 Lemma P_implies_acc : forall x : nat, P x -> acc x.
 Proof.

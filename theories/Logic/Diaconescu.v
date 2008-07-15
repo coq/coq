@@ -267,7 +267,7 @@ End ProofIrrel_RelChoice_imp_EqEM.
 
 (** Proof sketch from Bell [Bell93] (with thanks to P. Castéran) *)
 
-Notation Local "'inhabited' A" := A (at level 10, only parsing).
+Notation Local inhabited A := A.
 
 Section ExtensionalEpsilon_imp_EM.
 

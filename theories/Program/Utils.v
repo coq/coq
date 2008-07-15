@@ -42,8 +42,8 @@ Notation dec := sumbool_of_bool.
 
 (** Hide proofs and generates obligations when put in a term. *)
 
-Notation "'in_left'" := (@left _ _ _) : program_scope.
-Notation "'in_right'" := (@right _ _ _) : program_scope.
+Notation in_left := (@left _ _ _).
+Notation in_right := (@right _ _ _).
 
 (** Extraction directives *)
 (*
