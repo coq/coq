@@ -203,6 +203,9 @@ Tactic Language
   "let ... in ..." into a lazy one.
 - Patterns for hypotheses types in "match goal" are now interpreted in
   type_scope.
+- A bound variable whose name is not used elsewhere now serves as
+  metavariable in "match" and it gets instantiated by an identifier
+  (allow e.g. to extract the name of a statement like "exists x, P x").
 
 Tactics
 

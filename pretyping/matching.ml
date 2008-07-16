@@ -44,15 +44,37 @@ open Pattern
 
  *)
 
+type bound_ident_map = (identifier * identifier) list
+
 exception PatternMatchingFailure
 
-let constrain (n,m) sigma =
-  if List.mem_assoc n sigma then
-    if eq_constr m (List.assoc n sigma) then sigma
+let constrain (n,m) (names,terms as subst) =
+  try
+    if eq_constr m (List.assoc n terms) then subst
     else raise PatternMatchingFailure
-  else 
-    (n,m)::sigma
-    
+  with
+      Not_found ->
+        if List.mem_assoc n names then
+          Flags.if_verbose Pp.warning
+              ("Collision between bound variable "^string_of_id n^
+                 " and a metavariable of same name.");
+        (names,(n,m)::terms)
+
+let add_binders na1 na2 (names,terms as subst) =
+  match na1, na2 with
+  | Name id1, Name id2 ->
+      if List.mem_assoc id1 names then
+        (Flags.if_verbose Pp.warning
+          ("Collision between bound variables of name"^string_of_id id1);
+         (names,terms))
+      else
+        (if List.mem_assoc id1 terms then
+            Flags.if_verbose Pp.warning
+              ("Collision between bound variable "^string_of_id id1^
+                  " and another bound variable of same name.");
+         ((id1,id2)::names,terms));
+  | _ -> subst
+
 let build_lambda toabstract stk (m : constr) = 
   let rec buildrec m p_0 p_1 = match p_0,p_1 with 
     | (_, []) -> m
@@ -77,7 +99,10 @@ let same_case_structure (_,cs1,ind,_) ci2 br1 br2 =
   | None -> cs1 = ci2.ci_cstr_nargs
 
 let matches_core convert allow_partial_app pat c = 
-  let rec sorec stk sigma p t =
+  let conv = match convert with
+    | None -> eq_constr
+    | Some (env,sigma) -> is_conv env sigma in
+  let rec sorec stk subst p t =
     let cT = strip_outer_cast t in
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
@@ -89,7 +114,7 @@ let matches_core convert allow_partial_app pat c =
 	      args in
 	  let frels = Intset.elements (free_rels cT) in
 	  if list_subset frels relargs then
-	    constrain (n,build_lambda relargs stk cT) sigma
+	    constrain (n,build_lambda relargs stk cT) subst
 	  else
 	    raise PatternMatchingFailure
 
@@ -97,66 +122,63 @@ let matches_core convert allow_partial_app pat c =
 	  let depth = List.length stk in
           if depth = 0 then
             (* Optimisation *)
-            constrain (n,cT) sigma
+            constrain (n,cT) subst
           else
 	    let frels = Intset.elements (free_rels cT) in
             if List.for_all (fun i -> i > depth) frels then
-	      constrain (n,lift (-depth) cT) sigma
+	      constrain (n,lift (-depth) cT) subst
             else 
 	      raise PatternMatchingFailure
 
-      | PMeta None, m -> sigma
+      | PMeta None, m -> subst
 
-      | PRef (VarRef v1), Var v2 when v1 = v2 -> sigma
+      | PRef (VarRef v1), Var v2 when v1 = v2 -> subst
 
-      | PVar v1, Var v2 when v1 = v2 -> sigma
+      | PVar v1, Var v2 when v1 = v2 -> subst
 
-      | PRef ref, _ when constr_of_global ref = cT -> sigma
+      | PRef ref, _ when conv (constr_of_global ref) cT -> subst
 
-      | PRel n1, Rel n2 when n1 = n2 -> sigma
+      | PRel n1, Rel n2 when n1 = n2 -> subst
 
-      | PSort (RProp c1), Sort (Prop c2) when c1 = c2 -> sigma
+      | PSort (RProp c1), Sort (Prop c2) when c1 = c2 -> subst
 
-      | PSort (RType _), Sort (Type _) -> sigma
+      | PSort (RType _), Sort (Type _) -> subst
 
-      | PApp (p, [||]), _ -> sorec stk sigma p t
+      | PApp (p, [||]), _ -> sorec stk subst p t
 
       | PApp (PApp (h, a1), a2), _ ->
-          sorec stk sigma (PApp(h,Array.append a1 a2)) t
+          sorec stk subst (PApp(h,Array.append a1 a2)) t
 
       | PApp (PMeta (Some n),args1), App (c2,args2) when allow_partial_app ->
           let p = Array.length args2 - Array.length args1 in
           if p>=0 then
             let args21, args22 = array_chop p args2 in
-            let sigma =
+            let subst =
 	      let depth = List.length stk in
               let c = mkApp(c2,args21) in
 	      let frels = Intset.elements (free_rels c) in
               if List.for_all (fun i -> i > depth) frels then
-	        constrain (n,lift (-depth) c) sigma
+	        constrain (n,lift (-depth) c) subst
               else
 	        raise PatternMatchingFailure in
-            array_fold_left2 (sorec stk) sigma args1 args22
+            array_fold_left2 (sorec stk) subst args1 args22
           else raise PatternMatchingFailure
 
       | PApp (c1,arg1), App (c2,arg2) ->
-        (try array_fold_left2 (sorec stk) (sorec stk sigma c1 c2) arg1 arg2
+        (try array_fold_left2 (sorec stk) (sorec stk subst c1 c2) arg1 arg2
          with Invalid_argument _ -> raise PatternMatchingFailure)
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
-	  sorec ((na2,c2)::stk) (sorec stk sigma c1 c2) d1 d2
+	  sorec ((na2,c2)::stk)
+            (add_binders na1 na2 (sorec stk subst c1 c2)) d1 d2
 
       | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
-	  sorec ((na2,c2)::stk) (sorec stk sigma c1 c2) d1 d2
+	  sorec ((na2,c2)::stk)
+            (add_binders na1 na2 (sorec stk subst c1 c2)) d1 d2
 
       | PLetIn (na1,c1,d1), LetIn(na2,c2,t2,d2) ->
-	  sorec ((na2,t2)::stk) (sorec stk sigma c1 c2) d1 d2
-
-      | PRef (ConstRef _ as ref), _ when convert <> None ->
-	  let (env,evars) = Option.get convert in
-	  let c = constr_of_global ref in
-	  if is_conv env evars c cT then sigma
-	  else raise PatternMatchingFailure
+	  sorec ((na2,t2)::stk)
+            (add_binders na1 na2 (sorec stk subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
 	  let ctx,b2 = decompose_lam_n_assum ci.ci_cstr_nargs.(0) b2 in
@@ -167,140 +189,129 @@ let matches_core convert allow_partial_app pat c =
 	    let s = List.fold_left (fun l (na,_,t) -> (na,t)::l) stk ctx in
 	    let s' = List.fold_left (fun l (na,_,t) -> (na,t)::l) stk ctx' in
 	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
-  	    sorec s' (sorec s (sorec stk sigma a1 a2) b1 b2) b1' b2'
+  	    sorec s' (sorec s (sorec stk subst a1 a2) b1 b2) b1' b2'
           else
             raise PatternMatchingFailure
 
       | PCase (ci1,p1,a1,br1), Case (ci2,p2,a2,br2) ->
 	  if same_case_structure ci1 ci2 br1 br2 then
   	    array_fold_left2 (sorec stk) 
-	      (sorec stk (sorec stk sigma a1 a2) p1 p2) br1 br2
+	      (sorec stk (sorec stk subst a1 a2) p1 p2) br1 br2
           else
             raise PatternMatchingFailure
 
-      |	PFix c1, Fix _ when eq_constr (mkFix c1) cT -> sigma
-      |	PCoFix c1, CoFix _ when eq_constr (mkCoFix c1) cT -> sigma
+      |	PFix c1, Fix _ when eq_constr (mkFix c1) cT -> subst
+      |	PCoFix c1, CoFix _ when eq_constr (mkCoFix c1) cT -> subst
       | _ -> raise PatternMatchingFailure
 
-  in 
-  Sort.list (fun (a,_) (b,_) -> a<b) (sorec [] [] pat c)
+  in
+  let names,terms = sorec [] ([],[]) pat c in
+  (names,Sort.list (fun (a,_) (b,_) -> a<b) terms)
 
-let matches = matches_core None false
+let extended_matches = matches_core None false
 
-let pmatches = matches_core None true
+let matches c p = snd (matches_core None false c p)
 
-(* To skip to the next occurrence *)
-exception NextOccurrence of int
-
-(* Tells if it is an authorized occurrence and if the instance is closed *)
-let authorized_occ nocc mres =
-  if not (List.for_all (fun (_,c) -> closed0 c) (fst mres)) then
-    raise PatternMatchingFailure;
-  if nocc = 0 then mres
-  else raise (NextOccurrence nocc)
+let pmatches c p = snd (matches_core None true c p)
 
 let special_meta = (-1)
 
+(* Tells if it is an authorized occurrence and if the instance is closed *)
+let authorized_occ sigma mk_ctx next =
+  if not (List.for_all (fun (_,c) -> closed0 c) (snd sigma)) then
+    raise PatternMatchingFailure;
+  sigma, mk_ctx (mkMeta special_meta), next
+
 (* Tries to match a subterm of [c] with [pat] *)
-let rec sub_match ?(partial_app=false) nocc pat c =
+let rec sub_match ?(partial_app=false) pat c =
+  let rec aux c mk_ctx next =
   match kind_of_term c with
   | Cast (c1,k,c2) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
+    (try authorized_occ (extended_matches pat c) mk_ctx next with
     | PatternMatchingFailure ->
-      let (lm,lc) = try_sub_match nocc pat [c1] in
-      (lm,mkCast (List.hd lc, k,c2))
-    | NextOccurrence nocc ->
-      let (lm,lc) = try_sub_match (nocc - 1) pat [c1] in
-      (lm,mkCast (List.hd lc, k,c2)))
- | Lambda (x,c1,c2) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
+      let mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
+      try_aux [c1] mk_ctx next)
+  | Lambda (x,c1,c2) ->
+    (try authorized_occ (extended_matches pat c) mk_ctx next with
     | PatternMatchingFailure ->
-      let (lm,lc) = try_sub_match nocc pat [c1;c2] in
-      (lm,mkLambda (x,List.hd lc,List.nth lc 1))
-    | NextOccurrence nocc ->
-      let (lm,lc) = try_sub_match (nocc - 1) pat [c1;c2] in
-      (lm,mkLambda (x,List.hd lc,List.nth lc 1)))
+      let mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
+      try_aux [c1;c2] mk_ctx next)
   | Prod (x,c1,c2) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
+    (try authorized_occ (extended_matches pat c) mk_ctx next with
     | PatternMatchingFailure ->
-      let (lm,lc) = try_sub_match nocc pat [c1;c2] in
-      (lm,mkProd (x,List.hd lc,List.nth lc 1))
-    | NextOccurrence nocc ->
-      let (lm,lc) = try_sub_match (nocc - 1) pat [c1;c2] in
-      (lm,mkProd (x,List.hd lc,List.nth lc 1)))
-  | LetIn (x,c1,t2,c2) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
+      let mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
+      try_aux [c1;c2] mk_ctx next)
+  | LetIn (x,c1,t1,c2) ->
+    (try authorized_occ (extended_matches pat c) mk_ctx next with
     | PatternMatchingFailure ->
-      let (lm,lc) = try_sub_match nocc pat [c1;t2;c2] in
-      (lm,mkLetIn (x,List.hd lc,List.nth lc 1,List.nth lc 2))
-    | NextOccurrence nocc ->
-      let (lm,lc) = try_sub_match (nocc - 1) pat [c1;t2;c2] in
-      (lm,mkLetIn (x,List.hd lc,List.nth lc 1,List.nth lc 2)))
+      let mk_ctx = function [c1;c2] -> mkLetIn (x,c1,t1,c2) | _ -> assert false
+      in try_aux [c1;c2] mk_ctx next)
   | App (c1,lc) ->
-      let rec aux nocc app args =
-	match args with
-	| [] -> 
-	    let (lm,le) = try_sub_match nocc pat (c1::(Array.to_list lc)) in
-	      (lm,mkApp (List.hd le, Array.of_list (List.tl le)))
-	| arg :: args ->
-	    let app = mkApp (app, [|arg|]) in
-	      try let (lm,ce) = sub_match nocc pat app in
-		    (lm,mkApp (ce, Array.of_list args))
-	      with NextOccurrence nocc ->
-		aux nocc app args
-      in
-	(try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
-	| PatternMatchingFailure ->
-	    if partial_app then
-	      aux nocc c1 (Array.to_list lc)
-	    else
-	      let (lm,le) = try_sub_match nocc pat (c1::(Array.to_list lc)) in
-		(lm,mkApp (List.hd le, Array.of_list (List.tl le)))
-	| NextOccurrence nocc ->
-	    if partial_app then
-	      aux nocc c1 (Array.to_list lc)
-	    else
-	      let (lm,le) = try_sub_match (nocc - 1) pat (c1::(Array.to_list lc)) in
-		(lm,mkApp (List.hd le, Array.of_list (List.tl le))))
+      (try authorized_occ (extended_matches pat c) mk_ctx next with
+      | PatternMatchingFailure ->
+          let topdown = true in
+	  if partial_app then
+            if topdown then
+              let lc1 = Array.sub lc 0 (Array.length lc - 1) in
+              let app = mkApp (c1,lc1) in
+              let mk_ctx = function 
+                | [app';c] -> mk_ctx (mkApp (app',[|c|]))
+                | _ -> assert false in
+	      try_aux [app;array_last lc] mk_ctx next
+            else
+              let rec aux2 app args next =
+                match args with
+                | [] ->
+                  let mk_ctx le =
+                    mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
+	          try_aux (c1::Array.to_list lc) mk_ctx next
+	        | arg :: args ->
+                  let app = mkApp (app,[|arg|]) in
+                  let next () = aux2 app args next in
+                  let mk_ctx ce = mk_ctx (mkApp (ce, Array.of_list args)) in
+                  aux app mk_ctx next in
+              aux2 c1 (Array.to_list lc) next
+          else
+            let mk_ctx le =
+              mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
+	    try_aux (c1::Array.to_list lc) mk_ctx next)
   | Case (ci,hd,c1,lc) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
+    (try authorized_occ (extended_matches pat c) mk_ctx next with
     | PatternMatchingFailure ->
-      let (lm,le) = try_sub_match nocc pat (c1::Array.to_list lc) in
-      (lm,mkCase (ci,hd,List.hd le,Array.of_list (List.tl le)))
-    | NextOccurrence nocc ->
-      let (lm,le) = try_sub_match (nocc - 1) pat (c1::Array.to_list lc) in
-      (lm,mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))))
+      let mk_ctx le = 
+        mk_ctx (mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))) in
+      try_aux (c1::Array.to_list lc) mk_ctx next)
   | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _
   | Rel _|Meta _|Var _|Sort _ ->
-    (try authorized_occ nocc ((matches pat c),mkMeta special_meta) with
-    | PatternMatchingFailure -> raise (NextOccurrence nocc)
-    | NextOccurrence nocc -> raise (NextOccurrence (nocc - 1)))
+    (try authorized_occ (extended_matches pat c) mk_ctx next with
+    | PatternMatchingFailure -> next ())
 
-(* Tries [sub_match] for all terms in the list *)
-and try_sub_match nocc pat lc =
-  let rec try_sub_match_rec nocc pat lacc = function
-    | [] -> raise (NextOccurrence nocc)
-    | c::tl ->
-      (try 
-         let (lm,ce) = sub_match nocc pat c in
-         (lm,lacc@(ce::tl))
-       with
-      | NextOccurrence nocc -> try_sub_match_rec nocc pat (lacc@[c]) tl) in
-  try_sub_match_rec nocc pat [] lc
+  (* Tries [sub_match] for all terms in the list *)
+  and try_aux lc mk_ctx next =
+    let rec try_sub_match_rec lacc = function
+      | [] -> next ()
+      | c::tl ->
+          let mk_ctx ce = mk_ctx (List.rev_append lacc (ce::tl)) in
+          let next () = try_sub_match_rec (c::lacc) tl in
+          aux c mk_ctx next in
+    try_sub_match_rec [] lc in
+  aux c (fun x -> x) (fun () -> raise PatternMatchingFailure)
 
-let match_subterm nocc pat c =
-  try sub_match nocc pat c
-  with NextOccurrence _ -> raise PatternMatchingFailure
+type subterm_matching_result =
+    (bound_ident_map * patvar_map) * constr * (unit -> subterm_matching_result)
 
-let match_appsubterm nocc pat c =
-  try sub_match ~partial_app:true nocc pat c
-  with NextOccurrence _ -> raise PatternMatchingFailure
+let match_subterm pat c = sub_match pat c
+
+let match_appsubterm pat c = sub_match ~partial_app:true pat c
+
+let match_subterm_gen app pat c = sub_match ~partial_app:app pat c
 
 let is_matching pat n =
   try let _ = matches pat n in true
   with PatternMatchingFailure -> false
 
-let matches_conv env sigma = matches_core (Some (env,sigma)) false
+let matches_conv env sigma c p =
+  snd (matches_core (Some (env,sigma)) false c p)
 
 let is_matching_conv env sigma pat n =
   try let _ = matches_conv env sigma pat n in true

@@ -137,6 +137,7 @@ val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 val list_except : 'a -> 'a list -> 'a list
 val list_remove : 'a -> 'a list -> 'a list
 val list_remove_first : 'a -> 'a list -> 'a list
+val list_remove_assoc_in_triple : 'a -> ('a * 'b * 'c) list -> ('a * 'b * 'c) list
 val list_for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
 val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b

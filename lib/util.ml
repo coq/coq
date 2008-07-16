@@ -626,6 +626,10 @@ let rec list_remove_first a = function
   | b::l -> b::list_remove_first a l
   | [] -> raise Not_found
 
+let rec list_remove_assoc_in_triple x = function
+  | [] -> []
+  | (y,_,_ as z)::l -> if x = y then l else z::list_remove_assoc_in_triple x l
+
 let list_add_set x l = if List.mem x l then l else x::l
 
 let list_eq_set l1 l2 =
