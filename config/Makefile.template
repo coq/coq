@@ -141,6 +141,9 @@ DOT=dot
 DOTOPTS=-Tps
 ODOCDOTOPTS=-dot -dot-reduce
 
+# Option to control compilation and installation of the documentation
+WITHDOC=WITHDOCOPT
+
 # make or sed are bogus and believe lines not terminating by a return
 # are inexistent
 

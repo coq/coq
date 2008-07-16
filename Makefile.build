@@ -36,7 +36,12 @@ NOARG: world
 # build and install the three subsystems: coq, coqide, pcoq
 world: revision coq coqide pcoq
 
+ifeq ($(WITHDOC),all)
 install: install-coq install-coqide install-pcoq install-doc
+else
+install: install-coq install-coqide install-pcoq
+endif
+
 #install-manpages: install-coq-manpages install-pcoq-manpages
 
 ###########################################################################
