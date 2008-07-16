@@ -7,7 +7,7 @@
 
  *************************************************************************)
 
-Require Import List Bool Sumbool EqNat Setoid Ring_theory Decidable.
+Require Import List Bool Sumbool EqNat Setoid Ring_theory Decidable ZArith_base.
 Delimit Scope Int_scope with I.
 
 (* Abstract Integers. *)
@@ -81,7 +81,6 @@ End Int.
 
 Module Z_as_Int <: Int.
 
-  Require Import ZArith_base.
   Open Scope Z_scope.
 
   Definition int := Z. 
