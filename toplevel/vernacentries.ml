@@ -95,7 +95,7 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  msgnl_with !Pp_control.deep_ft (print_treescript true evc pf)
+  msgnl_with !Pp_control.deep_ft (print_treescript evc pf)
 
 let show_thesis () =
      msgnl (anomaly "TODO" )
@@ -1206,7 +1206,7 @@ let apply_subproof f occ =
   f evc (Global.named_context()) pf
 
 let explain_proof occ =
-  msg (apply_subproof (fun evd _ -> print_treescript true evd) occ)
+  msg (apply_subproof (fun evd _ -> print_treescript evd) occ)
 
 let explain_tree occ =
   msg (apply_subproof print_proof occ)
