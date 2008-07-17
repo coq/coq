@@ -318,7 +318,7 @@ let rec pr_evars_int i = function
 
 let default_pr_subgoal n =
   let rec prrec p = function
-    | [] -> error "No such goal"
+    | [] -> error "No such goal."
     | g::rest ->
        	if p = 1 then
           let pg = default_pr_goal g in

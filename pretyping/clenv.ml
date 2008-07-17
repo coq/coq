@@ -377,11 +377,11 @@ let check_bindings bl =
     | NamedHyp s :: _ -> 
 	errorlabstrm ""
 	  (str "The variable " ++ pr_id s ++ 
-	   str " occurs more than once in binding list");
+	   str " occurs more than once in binding list.");
     | AnonHyp n :: _ ->
 	errorlabstrm ""
 	  (str "The position " ++ int n ++
-	   str " occurs more than once in binding list")
+	   str " occurs more than once in binding list.")
     | [] -> ()
 
 let meta_of_binder clause loc mvs = function
@@ -389,17 +389,17 @@ let meta_of_binder clause loc mvs = function
   | AnonHyp n ->
       try List.nth mvs (n-1)
       with (Failure _|Invalid_argument _) ->
-        errorlabstrm "" (str "No such binder")
+        errorlabstrm "" (str "No such binder.")
 
 let error_already_defined b =
   match b with
     | NamedHyp id ->
         errorlabstrm ""
           (str "Binder name \"" ++ pr_id id ++
-           str"\" already defined with incompatible value")
+           str"\" already defined with incompatible value.")
     | AnonHyp n ->
         anomalylabstrm ""
-          (str "Position " ++ int n ++ str" already defined")
+          (str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type clenv c t u =
   if isMeta (fst (whd_stack u)) then
@@ -440,7 +440,7 @@ let clenv_constrain_last_binding c clenv =
   let all_mvs = collect_metas clenv.templval.rebus in
   let k =
     try list_last all_mvs 
-    with Failure _ -> error "clenv_constrain_with_bindings" in
+    with Failure _ -> anomaly "clenv_constrain_with_bindings" in
   clenv_assign_binding clenv k (Evd.empty,c)
 
 let clenv_constrain_dep_args hyps_only bl clenv =
@@ -451,8 +451,9 @@ let clenv_constrain_dep_args hyps_only bl clenv =
     if List.length occlist = List.length bl then
       List.fold_left2 clenv_assign_binding clenv occlist bl
     else 
-      error ("Not the right number of missing arguments (expected "
-	     ^(string_of_int (List.length occlist))^")")
+      errorlabstrm "" 
+	(strbrk "Not the right number of missing arguments (expected " ++
+	 int (List.length occlist) ++ str ").")
 
 (****************************************************************)
 (* Clausal environment for an application *)

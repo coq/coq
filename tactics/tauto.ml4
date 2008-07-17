@@ -165,7 +165,7 @@ let tauto g =
   try intuition_gen (interp <:tactic<fail>>) g
   with
     Refiner.FailError _ | UserError _ ->
-      errorlabstrm "tauto" [< str "tauto failed" >]
+      errorlabstrm "tauto" (str "tauto failed.")
 
 let default_intuition_tac = interp <:tactic< auto with * >>
 

@@ -131,15 +131,15 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
       | _, Some x ->
           let ids = List.map snd (List.flatten (List.map pi1 bl)) in
           (try list_index (snd x) ids
-          with Not_found -> error "no such fix variable")
-      | _ -> error "cannot guess decreasing argument of fix" in
+          with Not_found -> error "No such fix variable.")
+      | _ -> error "Cannot guess decreasing argument of fix." in
   (id,n,CProdN(loc,bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
   let _ = Option.map (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofix_tac",
-       Pp.str"Annotation forbidden in cofix expression")) ann in
+       Pp.str"Annotation forbidden in cofix expression.")) ann in
   (id,CProdN(loc,bl,ty))
 
 (* Functions overloaded by quotifier *)

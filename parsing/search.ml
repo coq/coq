@@ -150,7 +150,7 @@ let rec id_from_pattern = function
   | PVar id -> Nametab.locate (make_qualid [] (string_of_id id))
  *)
   | PApp (p,_) -> id_from_pattern p
-  | _ -> error "the pattern is not simple enough"
+  | _ -> error "The pattern is not simple enough."
 	
 let raw_pattern_search extra_filter display_function pat =
   let name = id_from_pattern pat in

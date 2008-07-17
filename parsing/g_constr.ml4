@@ -47,7 +47,7 @@ let rec index_and_rec_order_of_annot loc bl ann =
     | lids, (Some (loc, n), ro) ->
         if List.exists (fun (_, x) -> x = Name n) lids then
 	  Some (loc, n), ro
-        else user_err_loc(loc,"index_of_annot", Pp.str"no such fix variable")
+        else user_err_loc(loc,"index_of_annot", Pp.str"No such fix variable.")
     | _, (None, r) -> None, r
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
@@ -61,7 +61,7 @@ let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
   let _ = Option.map (fun (aloc,_) ->
     Util.user_err_loc
       (aloc,"Constr:mk_cofixb",
-       Pp.str"Annotation forbidden in cofix expression")) (fst ann) in
+       Pp.str"Annotation forbidden in cofix expression.")) (fst ann) in
   let ty = match tyc with
       Some ty -> ty
     | None -> CHole (loc, None) in
@@ -326,7 +326,7 @@ GEXTEND Gram
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
           | _ -> Util.user_err_loc 
               (cases_pattern_expr_loc p, "compound_pattern",
-               Pp.str "Constructor expected"))
+               Pp.str "Constructor expected."))
       | p = pattern; "as"; id = ident ->
 	  CPatAlias (loc, p, id) ]
     | "1" LEFTA

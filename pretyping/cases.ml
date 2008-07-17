@@ -114,8 +114,8 @@ let force_name =
 
 open Pp
 
-let mssg_may_need_inversion () =
-  str "Found a matching with no clauses on a term unknown to have an empty inductive type"
+let msg_may_need_inversion () =
+  strbrk "Found a matching with no clauses on a term unknown to have an empty inductive type."
 
 (* Utils *)
 let make_anonymous_patvars n =
@@ -535,7 +535,7 @@ let set_used_pattern eqn = eqn.used := true
 
 let extract_rhs pb =
   match pb.mat with 
-    | [] -> errorlabstrm "build_leaf" (mssg_may_need_inversion())
+    | [] -> errorlabstrm "build_leaf" (msg_may_need_inversion())
     | eqn::_ ->
 	set_used_pattern eqn;
         eqn.rhs
@@ -1654,7 +1654,7 @@ let extract_arity_signature env0 tomatchl tmsign =
 	    | None -> [na,Option.map (lift n) bo,lift n typ]
 	    | Some (loc,_,_,_) -> 
  	    user_err_loc (loc,"",
-	    str "Unexpected type annotation for a term of non inductive type"))
+	    str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = lift_inductive_family n indf in
 	  let (ind,params) = dest_ind_family indf' in
@@ -1663,7 +1663,7 @@ let extract_arity_signature env0 tomatchl tmsign =
 	    match t with
 	      | Some (loc,ind',nparams,realnal) ->
 		  if ind <> ind' then
-		    user_err_loc (loc,"",str "Wrong inductive type");
+		    user_err_loc (loc,"",str "Wrong inductive type.");
 		  if List.length params <> nparams
 		    or nrealargs <> List.length realnal then
 		      anomaly "Ill-formed 'in' clause in cases";

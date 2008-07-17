@@ -66,7 +66,7 @@ let search_guard loc env possible_indexes fixdefs =
 	    try check_fix env fix; raise (Found indexes) 
 	    with TypeError _ -> ())
 	 (list_combinations possible_indexes); 
-       let errmsg = "cannot guess decreasing argument of fix" in 
+       let errmsg = "Cannot guess decreasing argument of fix." in 
        if loc = dummy_loc then error errmsg else 
 	 user_err_loc (loc,"search_guard", Pp.str errmsg)
      with Found indexes -> indexes)
@@ -244,7 +244,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     try (* To build a nicer ltac error message *)
       match List.assoc id unbndltacvars with
       | None -> user_err_loc (loc,"",
-	  str "variable " ++ pr_id id ++ str " should be bound to a term")
+	  str "Variable " ++ pr_id id ++ str " should be bound to a term.")
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
     with Not_found ->
       error_var_not_found_loc loc id
@@ -461,10 +461,10 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	in
 	let cstrs = get_constructors env indf in
 	  if Array.length cstrs <> 1 then
-            user_err_loc (loc,"",str "Destructing let is only for inductive types with one constructor");
+            user_err_loc (loc,"",str "Destructing let is only for inductive types with one constructor.");
 	  let cs = cstrs.(0) in
 	    if List.length nal <> cs.cs_nargs then
-              user_err_loc (loc,"", str "Destructing let on this type expects " ++ int cs.cs_nargs ++ str " variables");
+              user_err_loc (loc,"", str "Destructing let on this type expects " ++ int cs.cs_nargs ++ str " variables.");
 	    let fsign = List.map2 (fun na (_,c,t) -> (na,c,t))
               (List.rev nal) cs.cs_args in
 	    let env_f = push_rels fsign env in
@@ -527,7 +527,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let cstrs = get_constructors env indf in 
 	  if Array.length cstrs <> 2 then
             user_err_loc (loc,"",
-			  str "If is only for inductive types with two constructors");
+			  str "If is only for inductive types with two constructors.");
 
 	  let arsgn = 
 	    let arsgn,_ = get_arity env indf in
@@ -615,7 +615,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	    j
 	      (*inh_conv_coerce_to_tycon loc env evdref j tycon*)
 	else
-	  user_err_loc (loc,"pretype",(str "Not a constr tagged Dynamic"))
+	  user_err_loc (loc,"pretype",(str "Not a constr tagged Dynamic."))
 
   (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
   and pretype_type valcon env evdref lvar = function

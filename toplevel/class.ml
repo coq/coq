@@ -119,7 +119,7 @@ let class_of_global = function
   | ConstructRef _ as c -> 
       errorlabstrm "class_of_global"
 	(str "Constructors, such as " ++ Printer.pr_global c ++ 
-	   str " cannot be used as class")
+	   str ", cannot be used as a class.")
 
 (* 
 lp est la liste (inverse'e) des arguments de la coercion
@@ -189,7 +189,7 @@ let ident_key_of_class = function
 
 let error_not_transparent source =
   errorlabstrm "build_id_coercion"
-    (pr_class source ++ str " must be a transparent constant")
+    (pr_class source ++ str " must be a transparent constant.")
 
 let build_id_coercion idf_opt source =
   let env = Global.env () in
@@ -218,8 +218,8 @@ let build_id_coercion idf_opt source =
       (Reductionops.is_conv_leq env Evd.empty
 	(Typing.type_of env Evd.empty val_f) typ_f)
     then
-      error ("cannot be defined as coercion - "^
-             "maybe a bad number of arguments") 
+      errorlabstrm "" (strbrk
+	"Cannot be defined as coercion (maybe a bad number of arguments).")
   in
   let idf =
     match idf_opt with
@@ -283,7 +283,8 @@ let add_new_coercion_core coef stre source target isid =
 let try_add_new_coercion_core ref b c d e =
   try add_new_coercion_core ref b c d e
   with CoercionError e ->
-      errorlabstrm "try_add_new_coercion_core" (explain_coercion_error ref e)
+      errorlabstrm "try_add_new_coercion_core"
+        (explain_coercion_error ref e ++ str ".")
 
 let try_add_new_coercion ref stre =
   try_add_new_coercion_core ref stre None None false

@@ -598,13 +598,13 @@ let meta_with_name evd id =
   match mvnodef, mvl with
     | _,[]  -> 
 	errorlabstrm "Evd.meta_with_name"
-          (str"No such bound variable " ++ pr_id id)
+          (str"No such bound variable " ++ pr_id id ++ str".")
     | ([n],_|_,[n]) -> 
 	n
     | _  -> 
 	errorlabstrm "Evd.meta_with_name"
           (str "Binder name \"" ++ pr_id id ++
-           str"\" occurs more than once in clause")
+           strbrk "\" occurs more than once in clause.")
 
 
 let meta_merge evd1 evd2 =

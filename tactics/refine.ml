@@ -229,7 +229,7 @@ let rec compute_metamap env sigma c = match kind_of_term c with
   (* Produit. Est-ce bien exact ? *)
   | Prod (_,_,_) ->
       if occur_meta c then
-	error "Refine: proof term contains metas in a product"
+	error "refine: proof term contains metas in a product."
       else
       	TH (c,[],[])
 
@@ -330,7 +330,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
     | Fix ((ni,_),(fi,ai,_)) , _ ->
 	let out_name = function
 	  | Name id -> id
-          | _ -> error "recursive functions must have names !"
+          | _ -> error "Recursive functions must have names."
 	in
 	let fixes = array_map3 (fun f n c -> (out_name f,succ n,c)) fi ni ai in
 	tclTHENS
@@ -345,7 +345,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
     | CoFix (_,(fi,ai,_)) , _ ->
 	let out_name = function
 	  | Name id -> id
-          | _ -> error "recursive functions must have names !"
+          | _ -> error "Recursive functions must have names."
 	in
 	let cofixes = array_map2 (fun f c -> (out_name f,c)) fi ai in
 	tclTHENS

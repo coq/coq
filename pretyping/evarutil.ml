@@ -451,8 +451,9 @@ let clear_hyps_in_evi evdref hyps concl ids =
 	    None -> None
 	  | Some b -> Some (check_and_clear_in_constr evdref b ids EvkSet.empty)),
 	check_and_clear_in_constr evdref c ids EvkSet.empty)
-      with Dependency_error id' -> error (string_of_id id' ^ " is used in hypothesis "
-					   ^ string_of_id id) 
+      with Dependency_error id' ->
+	errorlabstrm "" (pr_id id' ++ strbrk " is used in hypothesis "
+					   ++ pr_id id ++ str ".")
     in
     let check_value vk =
       match !vk with
@@ -883,7 +884,7 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
 and evar_define env (evk,_ as ev) rhs evd =
   try
     let (evd',body) = invert_definition env evd ev rhs in
-    if occur_meta body then error "Meta cannot occur in evar body";
+    if occur_meta body then error "Meta cannot occur in evar body.";
     (* invert_definition may have instantiate some evars of rhs with evk *)
     (* so we recheck acyclicity *)
     if occur_evar evk body then error_occur_check env (evars_of evd) evk body;

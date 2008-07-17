@@ -206,7 +206,7 @@ EXTEND
         let t, g = Q_util.interp_entry_name loc e sep in
         TacNonTerm (loc, t, g, Some s)
       | s = STRING ->
-	if s = "" then Util.user_err_loc (loc,"",Pp.str "Empty terminal");
+	if s = "" then Util.user_err_loc (loc,"",Pp.str "Empty terminal.");
         TacTerm s
     ] ]
   ;

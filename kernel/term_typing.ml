@@ -60,7 +60,7 @@ let safe_push_named (id,_,_ as d) env =
   let _ =
     try
       let _ = lookup_named id env in 
-      error ("identifier "^string_of_id id^" already defined")
+      error ("Identifier "^string_of_id id^" already defined.")
     with Not_found -> () in
   push_named d env
 

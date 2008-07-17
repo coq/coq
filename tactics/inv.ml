@@ -101,7 +101,7 @@ let make_inv_predicate env sigma indf realargs id status concl =
       | Dep dflt_concl ->
 	  if not (occur_var env id concl) then
 	    errorlabstrm "make_inv_predicate"
-              (str "Current goal does not depend on " ++ pr_id id);
+              (str "Current goal does not depend on " ++ pr_id id ++ str".");
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have
              c also rewritten when the case * will be done *)
@@ -291,7 +291,7 @@ let generalizeRewriteIntros tac depids id gls =
 let rec tclMAP_i n tacfun = function
   | [] -> tclDO n (tacfun None)
   | a::l -> 
-      if n=0 then error "Too much names"
+      if n=0 then error "Too much names."
       else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
 
 let remember_first_eq id x = if !x = None then x := Some id
@@ -377,22 +377,22 @@ let rewrite_equations_gene othin neqns ba gl =
 
 let rec get_names allow_conj = function
   | IntroWildcard ->
-      error "Discarding pattern not allowed for inversion equations"
+      error "Discarding pattern not allowed for inversion equations."
   | IntroAnonymous ->
-      error "Anonymous pattern not allowed for inversion equations"
+      error "Anonymous pattern not allowed for inversion equations."
   | IntroFresh _->
-      error "Fresh pattern not allowed for inversion equations"
+      error "Fresh pattern not allowed for inversion equations."
   | IntroRewrite _->
-      error "Rewriting pattern not allowed for inversion equations"
+      error "Rewriting pattern not allowed for inversion equations."
   | IntroOrAndPattern [l] -> 
       if allow_conj then
 	if l = [] then (None,[]) else
 	  let l = List.map (fun id -> Option.get (fst (get_names false id))) l in
 	  (Some (List.hd l), l)
       else
-	error "Nested conjunctive patterns not allowed for inversion equations"
+	error"Nested conjunctive patterns not allowed for inversion equations."
   | IntroOrAndPattern l ->
-      error "Disjunctive patterns not allowed for inversion equations"
+      error "Disjunctive patterns not allowed for inversion equations."
   | IntroIdentifier id ->
       (Some id,[id])
 
@@ -453,7 +453,7 @@ let raw_inversion inv_kind id status names gl =
     try pf_reduce_to_atomic_ind gl (pf_type_of gl c)
     with UserError _ -> 
       errorlabstrm "raw_inversion"
-	(str ("The type of "^(string_of_id id)^" is not inductive")) in
+	(str ("The type of "^(string_of_id id)^" is not inductive.")) in
   let indclause = mk_clenv_from gl (c,t) in
   let ccl = clenv_type indclause in
   check_no_metas indclause ccl;
@@ -494,7 +494,7 @@ let not_found_message ids =
 let dep_prop_prop_message id =
   errorlabstrm "Inv"
     (str "Inversion on " ++ pr_id id ++
-       str " would needs dependent elimination Prop-Prop")
+       str " would need dependent elimination from Prop to Prop.")
  
 let not_inductive_here id =
   errorlabstrm "mind_specif_of_mind"

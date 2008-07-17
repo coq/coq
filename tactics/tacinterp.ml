@@ -57,7 +57,7 @@ let safe_msgnl s =
 let error_syntactic_metavariables_not_allowed loc =
   user_err_loc 
     (loc,"out_ident",
-     str "Syntactic metavariables allowed only in quotations")
+     str "Syntactic metavariables allowed only in quotations.")
 
 let error_global_not_found_loc (loc,qid) = error_global_not_found_loc loc qid
 
@@ -111,7 +111,7 @@ type interp_sign =
 
 let check_is_value = function
   | VRTactic _ -> (* These are goals produced by Match *)
-   error "Immediate match producing tactics not allowed in local definitions"
+   error "Immediate match producing tactics not allowed in local definitions."
   | _ -> ()
 
 (* For tactic_of_value *)
@@ -121,7 +121,7 @@ exception NotTactic
 let constr_of_VConstr_context = function
   | VConstr_context c -> c
   | _ ->
-    errorlabstrm "constr_of_VConstr_context" (str "not a context variable")
+    errorlabstrm "constr_of_VConstr_context" (str "Not a context variable.")
 
 (* Displays a value *)
 let rec pr_value env = function
@@ -192,7 +192,7 @@ let find_reference env qid =
 let error_not_evaluable s =
   errorlabstrm "evalref_of_ref" 
     (str "Cannot coerce" ++ spc ()  ++ s ++ spc () ++
-     str "to an evaluable reference")
+     str "to an evaluable reference.")
 
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 let atomic_mactab = ref Idmap.empty
@@ -260,7 +260,7 @@ let tac_tab = Hashtbl.create 17
 let add_tactic s t =
   if Hashtbl.mem tac_tab s then
     errorlabstrm ("Refiner.add_tactic: ") 
-      (str ("Cannot redeclare tactic "^s));
+      (str ("Cannot redeclare tactic "^s^"."));
   Hashtbl.add tac_tab s t
 
 let overwriting_add_tactic s t =
@@ -275,7 +275,7 @@ let lookup_tactic s =
     Hashtbl.find tac_tab s
   with Not_found -> 
     errorlabstrm "Refiner.lookup_tactic"
-      (str"The tactic " ++ str s ++ str" is not installed")
+      (str"The tactic " ++ str s ++ str" is not installed.")
 (*
 let vernac_tactic (s,args) =
   let tacfun = lookup_tactic s args in
@@ -312,7 +312,7 @@ let lookup_genarg_subst  id = let (_,_,f) = lookup_genarg id in f
 let coerce_to_tactic loc id = function
   | VTactic _ | VFun _ | VRTactic _ as a -> a
   | _ -> user_err_loc 
-  (loc, "", str "variable " ++  pr_id id ++ str " should be bound to a tactic")
+  (loc, "", str "Variable " ++ pr_id id ++ str " should be bound to a tactic.")
 
 (*****************)
 (* Globalization *)
@@ -641,7 +641,7 @@ let extern_tacarg ch env sigma = function
   | VConstr c -> !print_xml_term ch env sigma c
   | VTactic _ | VRTactic _ | VFun _ | VVoid | VInteger _ | VConstr_context _
   | VIntroPattern _  | VRec _ | VList _ ->
-      error "Only externing of terms is implemented"
+      error "Only externing of terms is implemented."
 
 let extern_request ch req gl la =
   output_string ch "<REQUEST req=\""; output_string ch req;
@@ -679,7 +679,7 @@ let extract_let_names lrc =
     (fun ((loc,name),_) l ->
       if List.mem name l then
 	user_err_loc
-	  (loc, "glob_tactic", str "This variable is bound several times");
+	  (loc, "glob_tactic", str "This variable is bound several times.");
       name::l)
     lrc []
 
@@ -1019,8 +1019,8 @@ let read_pattern lfun = function
 let cons_and_check_name id l =
   if List.mem id l then
     user_err_loc (dloc,"read_match_context_hyps",
-      str ("Hypothesis pattern-matching variable "^(string_of_id id)^
-      " used twice in the same pattern"))
+      strbrk ("Hypothesis pattern-matching variable "^(string_of_id id)^
+      " used twice in the same pattern."))
   else id::l
 
 let rec read_match_context_hyps lfun lidh = function
@@ -1160,8 +1160,8 @@ let debugging_exception_step ist signal_anomaly e pp =
 
 let error_ltac_variable loc id env v s =
    user_err_loc (loc, "", str "Ltac variable " ++ pr_id id ++ 
-   str " is bound to" ++ spc () ++ pr_value env v ++ spc () ++ 
-   strbrk "which cannot be coerced to " ++ str s)
+   strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++ 
+   strbrk "which cannot be coerced to " ++ str s ++ str".")
 
 exception CannotCoerceTo of string
 
@@ -1221,8 +1221,9 @@ let coerce_to_int = function
 
 let interp_int ist locid =
   try try_interp_ltac_var coerce_to_int ist None locid
-  with Not_found -> user_err_loc(fst locid,"interp_int",
-				str "Unbound variable"  ++ pr_id (snd locid))
+  with Not_found ->
+    user_err_loc(fst locid,"interp_int",
+      str "Unbound variable"  ++ pr_id (snd locid) ++ str".")
 
 let interp_int_or_var ist = function
   | ArgVar locid -> interp_int ist locid
@@ -1259,7 +1260,7 @@ let interp_hyp ist gl (loc,id as locid) =
   with Not_found -> 
   (* Then look if bound in the proof context at calling time *)
   if is_variable env id then id
-  else user_err_loc (loc,"eval_variable",pr_id id ++ str " not found")
+  else user_err_loc (loc,"eval_variable",pr_id id ++ str " not found.")
 
 let hyp_list_of_VList env = function
   | VList l -> List.map (coerce_to_hyp env) l
@@ -1277,7 +1278,7 @@ let interp_clause_pattern ist gl (l,occl) =
     | (hyp,l) :: rest ->
 	let hyp = interp_hyp ist gl hyp in
 	if List.mem hyp acc then
-	  error ("Hypothesis "^(string_of_id hyp)^" occurs twice");
+	  error ("Hypothesis "^(string_of_id hyp)^" occurs twice.");
 	(hyp,l)::(check (hyp::acc) rest)
     | [] -> []
   in (l,check [] occl)
@@ -1582,7 +1583,7 @@ let interp_may_eval f ist gl = function
       with
 	| Not_found ->
 	    user_err_loc (loc, "interp_may_eval",
-	    str "Unbound context identifier" ++ pr_id s))
+	    str "Unbound context identifier" ++ pr_id s ++ str"."))
   | ConstrTypeOf c -> pf_type_of gl (f ist gl c)
   | ConstrTerm c -> 
      try 
@@ -1627,7 +1628,7 @@ let rec interp_message ist = function
   | MsgIdent (loc,id) :: l ->
       let v =
 	try List.assoc id ist.lfun
-	with Not_found -> user_err_loc (loc,"",pr_id id ++ str" not found") in
+	with Not_found -> user_err_loc (loc,"",pr_id id ++ str" not found.") in
       pr_arg message_of_value v ++ interp_message ist l
 
 let rec interp_message_nl ist = function
@@ -1832,14 +1833,14 @@ and interp_app ist gl fv largs loc =
         VFun(newlfun@olfun,lvar,body)
     | _ ->
 	user_err_loc (loc, "Tacinterp.interp_app",
-          (str"Illegal tactic application"))
+          (str"Illegal tactic application."))
 
 (* Gives the tactic corresponding to the tactic value *)
 and tactic_of_value vle g =
   match vle with
   | VRTactic res -> res
   | VTactic (loc,tac) -> catch_error loc tac g
-  | VFun _ -> error "A fully applied tactic is expected"
+  | VFun _ -> error "A fully applied tactic is expected."
   | _ -> raise NotTactic
 
 (* Evaluation with FailError catching *)
@@ -1919,7 +1920,7 @@ and interp_match_context ist goal lz lr lmr =
               (v 0 (str "No matching clauses for match goal" ++
 		      (if ist.debug=DebugOff then
 			 fnl() ++ str "(use \"Set Ltac Debug\" for more info)"
-		       else mt())))
+		       else mt()) ++ str"."))
     end in
     apply_match_context ist env goal 0 lmr
       (read_match_rule (fst (constr_list ist env)) lmr)
@@ -2081,7 +2082,7 @@ and interp_match ist g lz constr lmr =
          with PatternMatchingFailure -> apply_match ist csr tl)
     | _ ->
       errorlabstrm "Tacinterp.apply_match" (str
-        "No matching clauses for match") in
+        "No matching clauses for match.") in
   let csr = 
       try interp_ltac_constr ist g constr with e ->
         debugging_exception_step ist true e
@@ -2139,13 +2140,13 @@ and interp_ltac_constr ist gl e =
             | VIntroPattern _ -> str "VIntroPattern"
             | VConstr_context _ -> str "VConstrr_context"
             | VRec _ -> str "VRec"
-            | VList _ -> str "VList"))
+            | VList _ -> str "VList") ++ str".")
 
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac gl =
   try tactic_of_value (val_interp ist gl tac) gl
   with NotTactic ->
-    errorlabstrm "" (str "Must be a command or must give a tactic value")
+    errorlabstrm "" (str "Must be a command or must give a tactic value.")
 
 (* Interprets a primitive tactic *)
 and interp_atomic ist gl = function
@@ -2359,14 +2360,14 @@ and interp_atomic ist gl = function
     | ExtraArgType _ | BindingsArgType 
     | OptArgType _ | PairArgType _ 
     | List0ArgType _ | List1ArgType _ 
-	-> error "This generic type is not supported in alias"
+	-> error "This generic type is not supported in alias."
         
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
     let v = locate_tactic_call loc (val_interp { ist with lfun=lfun } gl body)
     in 
     try tactic_of_value v gl 
-    with NotTactic -> user_err_loc (loc,"",str "not a tactic")
+    with NotTactic -> user_err_loc (loc,"",str "Not a tactic.")
 
 let make_empty_glob_sign () =
   { ltacvars = ([],[]); ltacrecvars = []; 
@@ -2773,7 +2774,7 @@ let print_ltac id =
  with
   Not_found ->
    errorlabstrm "print_ltac"
-    (pr_qualid id ++ spc() ++ str "is not a user defined tactic")
+    (pr_qualid id ++ spc() ++ str "is not a user defined tactic.")
 
 open Libnames
 
@@ -2790,14 +2791,14 @@ let make_absolute_name ident repl =
 	if repl then id, kn
 	else
 	  user_err_loc (loc,"Tacinterp.add_tacdef",
-		       str "There is already an Ltac named " ++ pr_reference ident)
+		       str "There is already an Ltac named " ++ pr_reference ident ++ str".")
       else if is_atomic_kn kn then 
 	user_err_loc (loc,"Tacinterp.add_tacdef",
-		     str "Reserved Ltac name " ++ pr_reference ident)
+		     str "Reserved Ltac name " ++ pr_reference ident ++ str".")
       else id, kn
   with Not_found ->
     user_err_loc (loc,"Tacinterp.add_tacdef",
-		 str "There is no Ltac named " ++ pr_reference ident)
+		 str "There is no Ltac named " ++ pr_reference ident ++ str".")
 
 let rec filter_map f l = 
   let rec aux acc = function

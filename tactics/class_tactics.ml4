@@ -49,7 +49,7 @@ let check_imported_library d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
   if not (Library.library_is_loaded dir) then
-    error ("Library "^(list_last d)^" has to be imported first")
+    error ("Library "^(list_last d)^" has to be imported first.")
       
 let classes_dirpath =
   make_dirpath (List.map id_of_string ["Classes";"Coq"])
@@ -354,7 +354,7 @@ let e_breadth_search debug s =
     let tac = 
       if debug then Search.debug_breadth_first else Search.breadth_first 
     in let s = tac s in s.tacres
-  with Not_found -> error "EAuto: breadth first search failed"
+  with Not_found -> error "eauto: breadth first search failed."
 
 let e_search_auto debug (in_depth,p) lems st db_list gls = 
   let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
@@ -727,13 +727,13 @@ let decompose_setoid_eqhyp env sigma c left2right =
     | [c1;c2] -> [],(c1, c2)
     | x::y::z ->
 	let l,res = split_last_two (y::z) in x::l, res
-    | _ -> error "The term provided is not an applied relation" in
+    | _ -> error "The term provided is not an applied relation." in
   let others,(c1,c2) = split_last_two args in
   let ty1, ty2 = 
     Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
   in
     if not (evd_convertible env eqclause.evd ty1 ty2) then
-      error "The term does not end with an applied homogeneous relation"
+      error "The term does not end with an applied homogeneous relation."
     else
       { cl=eqclause; prf=(Clenv.clenv_value eqclause);
 	car=ty1; rel=mkApp (equiv, Array.of_list others);
@@ -1102,7 +1102,7 @@ let occurrences_of = function
   | n::_ as nl when n < 0 -> (false,List.map abs nl)
   | nl -> 
       if List.exists (fun n -> n < 0) nl then
-	error "Illegal negative occurrence number";
+	error "Illegal negative occurrence number.";
       (true,nl)
 
 TACTIC EXTEND class_rewrite
@@ -1609,7 +1609,7 @@ let relation_of_constr c =
     | App (f, args) when Array.length args >= 2 -> 
 	let relargs, args = array_chop (Array.length args - 2) args in
 	  mkApp (f, relargs), args
-    | _ -> error "Not an applied relation"
+    | _ -> error "Not an applied relation."
 
 let is_loaded d =
   let d' = List.map id_of_string d in
@@ -1656,7 +1656,7 @@ let setoid_symmetry_in id gl =
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)
     | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
-    | _ -> error "The term provided is not an equivalence" 
+    | _ -> error "The term provided is not an equivalence."
   in
   let others,(c1,c2) = split_last_two args in
   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in

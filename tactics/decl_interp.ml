@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 open Util
 open Names
@@ -162,8 +162,8 @@ let decompose_eq env id =
 	App (f,args)->
 	  if eq_constr f _eq && (Array.length args)=3 
 	  then args.(0)
-	  else error "previous step is not an equality"
-      | _ -> error "previous step is not an equality"
+	  else error "Previous step is not an equality."
+      | _ -> error "Previous step is not an equality."
 
 let get_eq_typ info env =
   let typ = decompose_eq env (get_last env) in  
@@ -331,9 +331,9 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
     let expected = mib.Declarations.mind_nparams - num_params in
       if List.length params <> expected then
 	errorlabstrm "suppose it is" 
-	  (str "Wrong number of extra arguments : " ++ 
+	  (str "Wrong number of extra arguments: " ++ 
 	     (if expected = 0 then str "none" else int expected) ++ 
-	     str "expected") in
+	     str "expected.") in
   let app_ind =
     let rind = RRef (dummy_loc,Libnames.IndRef pinfo.per_ind) in
     let rparams = List.map detype_ground pinfo.per_params in 
@@ -400,7 +400,7 @@ let interp_suffices_clause sigma env (hyps,cot)=
 	  let nhyps,nc = interp_hyps_gen fst (fun x _ -> x) sigma env hyps c in
 	  nhyps,This nc
       | Thesis Plain as th  -> interp_hyps sigma env hyps,th
-      | Thesis (For n) -> error "\"thesis for\" is not applicable here" in
+      | Thesis (For n) -> error "\"thesis for\" is not applicable here." in
   let push_one hyp env0 =
     match hyp with
 	(Hprop st | Hvar st) ->

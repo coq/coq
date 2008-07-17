@@ -50,14 +50,14 @@ let declare_instance_cst glob con =
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
       | Some tc -> add_instance (new_instance tc None glob con)
-      | None -> error "Constant does not build instances of a declared type class"
+      | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
 
 let declare_instance glob idl =
   let con = 
     try (match global (Ident idl) with
       | ConstRef x -> x
       | _ -> raise Not_found)
-    with _ -> error "Instance definition not found"
+    with _ -> error "Instance definition not found."
   in declare_instance_cst glob con
 	  
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
@@ -385,7 +385,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 	Name id -> 
 	  let sp = Lib.make_path id in
 	    if Nametab.exists_cci sp then
-	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists");
+	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists.");
 	    id
       | Anonymous -> 
 	  let i = Nameops.add_suffix (id_of_class k) "_instance_0" in
@@ -480,7 +480,7 @@ let context ?(hook=fun _ -> ()) l =
   let ce t = Evarutil.check_evars env Evd.empty !evars t in
   List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;
   let ctx = try named_of_rel_context fullctx with _ -> 
-    error "Anonymous variables not allowed in contexts"
+    error "Anonymous variables not allowed in contexts."
   in
     List.iter (function (id,_,t) -> 
       if Lib.is_modtype () then 

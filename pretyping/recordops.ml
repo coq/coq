@@ -217,7 +217,7 @@ let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 
 let error_not_structure ref =
   errorlabstrm "object_declare"
-    (Nameops.pr_id (id_of_global ref) ++ str" is not a structure object")
+    (Nameops.pr_id (id_of_global ref) ++ str" is not a structure object.")
 
 let check_and_decompose_canonical_structure ref =
   let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in

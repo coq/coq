@@ -115,7 +115,7 @@ let inductive_of = function
   | IndRef ity -> ity
   | r ->
       errorlabstrm "Decompose"
-        (Printer.pr_global r ++ str " is not an inductive type")
+        (Printer.pr_global r ++ str " is not an inductive type.")
 
 let decompose_these c l gls =
   let indl = (*List.map inductive_of*) l in 
@@ -182,7 +182,7 @@ let double_ind h1 h2 gls =
   let (abs_i,abs_j) =
     if abs_i < abs_j then (abs_i,abs_j) else
     if abs_i > abs_j then (abs_j,abs_i) else
-      error "Both hypotheses are the same" in
+      error "Both hypotheses are the same." in
   (tclTHEN (tclDO abs_i intro)
      (onLastHyp
        	(fun id ->

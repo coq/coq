@@ -543,7 +543,7 @@ let try_red_product env sigma c =
 
 let red_product env sigma c = 
   try try_red_product env sigma c
-  with Redelimination -> error "Not reducible"
+  with Redelimination -> error "Not reducible."
 
 (*
 (* This old version of hnf uses betadeltaiota instead of itself (resp 
@@ -698,7 +698,7 @@ let unfold env sigma name =
   if is_evaluable env name then
     clos_norm_flags (unfold_red name) env sigma
   else
-    error (string_of_evaluable_ref env name^" is opaque")
+    error (string_of_evaluable_ref env name^" is opaque.")
 
 (* [unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
@@ -709,7 +709,7 @@ let unfoldoccs env sigma ((nowhere_except_in,locs as plocs),name) c =
   else
     let (nbocc,uc) = substlin env name 1 plocs c in
     if nbocc = 1 then 
-      error ((string_of_evaluable_ref env name)^" does not occur");
+      error ((string_of_evaluable_ref env name)^" does not occur.");
     let rest = List.filter (fun o -> o >= nbocc) locs in
     if rest <> [] then error_invalid_occurrence rest;
     nf_betaiota uc
@@ -722,7 +722,7 @@ let unfoldn loccname env sigma c =
 let fold_one_com com env sigma c =
   let rcom =
     try red_product env sigma com
-    with Redelimination -> error "Not reducible" in
+    with Redelimination -> error "Not reducible." in
   (* Reason first on the beta-iota-zeta normal form of the constant as
      unfold produces it, so that the "unfold f; fold f" configuration works
      to refold fix expressions *)
@@ -757,7 +757,7 @@ let compute = cbv_betadeltaiota
 let abstract_scheme env sigma (locc,a) c =
   let ta = Retyping.get_type_of env sigma a in
   let na = named_hd env ta Anonymous in
-  if occur_meta ta then error "cannot find a type for the generalisation";
+  if occur_meta ta then error "Cannot find a type for the generalisation.";
   if occur_meta a then 
     mkLambda (na,ta,c)
   else 
@@ -785,14 +785,14 @@ let reduce_to_ind_gen allow_product env sigma t =
 	  if allow_product then
 	    elimrec (push_rel (n,None,ty) env) t' ((n,None,ty)::l)
 	  else
-	    errorlabstrm "" (str"Not an inductive definition")
+	    errorlabstrm "" (str"Not an inductive definition.")
       | _ ->
 	  (* Last chance: we allow to bypass the Opaque flag (as it
 	     was partially the case between V5.10 and V8.1 *)
 	  let t' = whd_betadeltaiota env sigma t in
 	  match kind_of_term (fst (decompose_app t')) with
 	    | Ind ind-> (ind, it_mkProd_or_LetIn t' l)
-	    | _ -> errorlabstrm "" (str"Not an inductive product")
+	    | _ -> errorlabstrm "" (str"Not an inductive product.")
   in
   elimrec env t []
 
@@ -843,7 +843,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
     let (mind,t) = reduce_to_ind_gen allow_product env sigma t in
     if IndRef mind <> ref then
       errorlabstrm "" (str "Cannot recognize a statement based on " ++ 
-        Nametab.pr_global_env Idset.empty ref)
+        Nametab.pr_global_env Idset.empty ref ++ str".")
     else
       t
   else
@@ -857,7 +857,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
 	  else 
 	     errorlabstrm "" 
 	       (str "Cannot recognize an atomic statement based on " ++ 
-	        Nametab.pr_global_env Idset.empty ref)
+	        Nametab.pr_global_env Idset.empty ref ++ str".")
       | _ ->
 	  try 
 	    if global_of_constr c = ref 
@@ -870,7 +870,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
           with NotStepReducible ->
 	    errorlabstrm ""
 	      (str "Cannot recognize a statement based on " ++ 
-	       Nametab.pr_global_env Idset.empty ref)
+	       Nametab.pr_global_env Idset.empty ref ++ str".")
   in
   elimrec env t []
 

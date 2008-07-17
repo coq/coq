@@ -246,7 +246,7 @@ let add_destructor_hint local na loc pat pri code =
       | ConclLocation _, _ -> (None, code)
       | _ ->
 	  errorlabstrm "add_destructor_hint"
-          (str "The tactic should be a function of the hypothesis name") end
+          (str "The tactic should be a function of the hypothesis name.") end
   in
   let (_,pat) = Constrintern.interp_constrpattern Evd.empty (Global.env()) pat
   in
@@ -279,13 +279,13 @@ let match_dpat dp cls gls =
               (is_matching concld.d_typ cl) &
               (is_matching concld.d_sort (pf_type_of gls cl)))
             hl)
-        then error "No match"
+        then error "No match."
     | ({onhyps=Some[]},ConclLocation concld) when onconcl ->
         let cl = pf_concl gls in
         if not
           ((is_matching concld.d_typ cl) &
            (is_matching concld.d_sort (pf_type_of gls cl)))
-        then error "No match"
+        then error "No match."
     | _ -> error "ApplyDestructor"
 
 let forward_interp_tactic = 
@@ -304,8 +304,8 @@ let applyDestructor cls discard dd gls =
               ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
             TacLetIn (false, [(dummy_loc, x), arg], tac)
         | None, (None, tac) -> tac
-        | _, (Some _,_) -> error "Destructor expects an hypothesis"
-        | _, (None,_) -> error "Destructor is for conclusion")
+        | _, (Some _,_) -> error "Destructor expects an hypothesis."
+        | _, (None,_) -> error "Destructor is for conclusion.")
       cll in
   let discard_0 =
     List.map (fun cl ->

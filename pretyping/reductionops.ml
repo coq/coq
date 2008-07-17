@@ -773,7 +773,7 @@ let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in
   match kind_of_term c with
     | Sort s -> l,s
-    | _ -> error "not an arity"
+    | _ -> invalid_arg "splay_arity"
 
 let sort_of_arity env c = snd (splay_arity env Evd.empty c)
 
@@ -783,7 +783,7 @@ let decomp_n_prod env sigma n =
       | Prod (n,a,c0) ->
 	  decrec (push_rel (n,None,a) env)
 	    (m-1) (Sign.add_rel_decl (n,None,a) ln) c0
-      | _                      -> error "decomp_n_prod: Not enough products"
+      | _                      -> invalid_arg "decomp_n_prod"
   in 
   decrec env n Sign.empty_rel_context
 

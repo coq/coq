@@ -152,14 +152,14 @@ let decideGralEquality g =
     let rectype =
       match kind_of_term headtyp with
         | Ind mi -> mi
-	| _ -> error "This decision procedure only works for inductive objects"
+	| _ -> error"This decision procedure only works for inductive objects."
     in
     (tclTHEN
       (mkBranches c1 c2)
       (tclORELSE (h_solveNoteqBranch eqonleft) (solveEqBranch rectype)))
     g
   with PatternMatchingFailure ->
-    error "The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}"
+    error "The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}."
 
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 

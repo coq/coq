@@ -122,7 +122,7 @@ let int31_of_pos_bigint dloc n =
   RApp (dloc, ref_construct, List.rev (args 31 n))
 
 let error_negative dloc =
-  Util.user_err_loc (dloc, "interp_int31", Pp.str "int31 are only non-negative numbers")
+  Util.user_err_loc (dloc, "interp_int31", Pp.str "int31 are only non-negative numbers.")
 
 let interp_int31 dloc n = 
   if is_pos_or_zero n then
@@ -212,7 +212,7 @@ let bigN_of_pos_bigint dloc n =
   result hght (word_of_pos_bigint dloc hght n)
   
 let bigN_error_negative dloc =
-  Util.user_err_loc (dloc, "interp_bigN", Pp.str "bigN are only non-negative numbers")
+  Util.user_err_loc (dloc, "interp_bigN", Pp.str "bigN are only non-negative numbers.")
 
 let interp_bigN dloc n = 
   if is_pos_or_zero n then

@@ -22,51 +22,51 @@ open Mod_subst
 
 
 let error_existing_label l = 
-  error ("The label "^string_of_label l^" is already declared")
+  error ("The label "^string_of_label l^" is already declared.")
 
-let error_declaration_not_path _ = error "Declaration is not a path"
+let error_declaration_not_path _ = error "Declaration is not a path."
 
-let error_application_to_not_path _ = error "Application to not path"
+let error_application_to_not_path _ = error "Application to not path."
 
-let error_not_a_functor _ = error "Application of not a functor"
+let error_not_a_functor _ = error "Application of not a functor."
 
-let error_incompatible_modtypes _ _ = error "Incompatible module types"
+let error_incompatible_modtypes _ _ = error "Incompatible module types."
 
-let error_not_equal _ _ = error "Not equal modules"
+let error_not_equal _ _ = error "Non equal modules."
 
-let error_not_match l _ = error ("Signature components for label "^string_of_label l^" do not match")
+let error_not_match l _ = error ("Signature components for label "^string_of_label l^" do not match.")
 
-let error_no_such_label l = error ("No such label "^string_of_label l)
+let error_no_such_label l = error ("No such label "^string_of_label l^".")
 
 let error_incompatible_labels l l' = 
   error ("Opening and closing labels are not the same: "
 	 ^string_of_label l^" <> "^string_of_label l'^" !")
 
 let error_result_must_be_signature () = 
-  error "The result module type must be a signature"
+  error "The result module type must be a signature."
 
 let error_signature_expected mtb =
-  error "Signature expected"
+  error "Signature expected."
 
 let error_no_module_to_end _ = 
-  error "No open module to end"
+  error "No open module to end."
 
 let error_no_modtype_to_end _ =
-  error "No open module type to end"
+  error "No open module type to end."
 
 let error_not_a_modtype_loc loc s = 
-  user_err_loc (loc,"",str ("\""^s^"\" is not a module type"))
+  user_err_loc (loc,"",str ("\""^s^"\" is not a module type."))
 
 let error_not_a_module_loc loc s = 
-  user_err_loc (loc,"",str ("\""^s^"\" is not a module"))
+  user_err_loc (loc,"",str ("\""^s^"\" is not a module."))
 
 let error_not_a_module s = error_not_a_module_loc dummy_loc s
 
 let error_not_a_constant l = 
-  error ("\""^(string_of_label l)^"\" is not a constant")
+  error ("\""^(string_of_label l)^"\" is not a constant.")
 
 let error_with_incorrect l =
-  error ("Incorrect constraint for label \""^(string_of_label l)^"\"")
+  error ("Incorrect constraint for label \""^(string_of_label l)^"\".")
 
 let error_a_generative_module_expected l =
   error ("The module " ^ string_of_label l ^ " is not generative. Only " ^
@@ -79,7 +79,7 @@ let error_local_context lo =
 	error ("The local context is not empty.")
     | (Some l) ->
 	error ("The local context of the component "^
-	       (string_of_label l)^" is not empty")
+	       (string_of_label l)^" is not empty.")
 
 
 let error_no_such_label_sub l l1 l2 =

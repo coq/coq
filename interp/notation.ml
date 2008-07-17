@@ -78,7 +78,7 @@ let declare_scope scope =
 
 let find_scope scope =
   try Gmap.find scope !scope_map
-  with Not_found -> error ("Scope "^scope^" is not declared")
+  with Not_found -> error ("Scope "^scope^" is not declared.")
 
 let check_scope sc = let _ = find_scope sc in ()
 
@@ -159,7 +159,7 @@ let find_delimiters_scope loc key =
   try Gmap.find key !delimiters_map
   with Not_found -> 
     user_err_loc 
-    (loc, "find_delimiters", str ("Unknown scope delimiting key "^key))
+    (loc, "find_delimiters", str ("Unknown scope delimiting key "^key^"."))
 
 (* Uninterpretation tables *)
 
@@ -251,7 +251,7 @@ let check_required_module loc sc (sp,d) =
   with Not_found ->
     user_err_loc (loc,"prim_token_interpreter",
     str ("Cannot interpret in "^sc^" without requiring first module "
-    ^(list_last d)))
+    ^(list_last d)^"."))
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
@@ -348,7 +348,7 @@ let interp_prim_token_gen g loc p local_scopes =
     user_err_loc (loc,"interp_prim_token",
     (match p with
       | Numeral n -> str "No interpretation for numeral " ++ pr_bigint n
-      | String s -> str "No interpretation for string " ++ qs s))
+      | String s -> str "No interpretation for string " ++ qs s) ++ str ".")
 
 let interp_prim_token =
   interp_prim_token_gen (fun x -> x)
@@ -361,7 +361,7 @@ let rec interp_notation loc ntn local_scopes =
   try find_interpretation (find_notation ntn) scopes
   with Not_found ->
     user_err_loc
-    (loc,"",str ("Unknown interpretation for notation \""^ntn^"\""))
+    (loc,"",str ("Unknown interpretation for notation \""^ntn^"\"."))
 
 let uninterp_notations c =
   Gmapl.find (rawconstr_key c) !notations_key_table
@@ -625,12 +625,12 @@ let global_reference_of_notation test (ntn,(sc,c,_)) =
   | _ -> None
 
 let error_ambiguous_notation loc _ntn =
-  user_err_loc (loc,"",str "Ambiguous notation")
+  user_err_loc (loc,"",str "Ambiguous notation.")
 
 let error_notation_not_reference loc ntn =
   user_err_loc (loc,"",
     str "Unable to interpret " ++ quote (str ntn) ++
-    str " as a reference")
+    str " as a reference.")
 
 let interp_notation_as_global_reference loc test ntn =
   let ntns = browse_notation true ntn !scope_map in

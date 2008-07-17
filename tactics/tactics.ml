@@ -98,7 +98,7 @@ let string_of_inductive c =
       let (mib,mip) = Global.lookup_inductive ind_sp in 
       string_of_id mip.mind_typename
   | _ -> raise Bound
-  with Bound -> error "Bound head variable"
+  with Bound -> error "Bound head variable."
 
 let rec head_constr_bound t l =
   let t = strip_outer_cast(collapse_appl t) in
@@ -114,7 +114,7 @@ let rec head_constr_bound t l =
     | _                -> raise Bound
 
 let head_constr c = 
-  try head_constr_bound c [] with Bound -> error "Bound head variable"
+  try head_constr_bound c [] with Bound -> error "Bound head variable."
 
 (*
 let bad_tactic_args s l =
@@ -174,7 +174,7 @@ let reduct_in_hyp redfun ((_,id),where) gl =
   match c with
   | None -> 
       if where = InHypValueOnly then
-	errorlabstrm "" (pr_id id ++ str "has no value");
+	errorlabstrm "" (pr_id id ++ str "has no value.");
       convert_hyp_no_check (id,None,redfun' ty) gl
   | Some b ->
       let b' = if where <> InHypTypeOnly then redfun' b else b in
@@ -197,7 +197,7 @@ let change_and_check cv_pb t env sigma c =
   if is_fconv cv_pb env sigma t c then 
     t
   else 
-    errorlabstrm "convert-check-hyp" (str "Not convertible")
+    errorlabstrm "convert-check-hyp" (str "Not convertible.")
 
 (* Use cumulutavity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb t = function
@@ -219,7 +219,7 @@ let change occl c cls =
       ({onhyps=(Some(_::_::_)|None)}
       |{onhyps=Some(_::_);concl_occs=((false,_)|(true,_::_))}),
       Some _ ->
-	error "No occurrences expected when changing several hypotheses"
+	error "No occurrences expected when changing several hypotheses."
     | _ -> ());
   onClauses (change_option occl c) cls
 
@@ -300,7 +300,7 @@ let find_name decl gl = function
   | IntroBasedOn (id,idl) -> fresh_id idl id gl
   | IntroMustBe id        -> 
       let id' = fresh_id [] id gl in
-      if id' <> id then error ((string_of_id id)^" is already used");
+      if id' <> id then error ((string_of_id id)^" is already used.");
       id'
 
 (* Returns the names that would be created by intros, without doing
@@ -337,7 +337,7 @@ let rec intro_gen name_flag move_flag force_flag gl =
 	    (reduce (Red true) onConcl)
 	    (intro_gen name_flag move_flag force_flag) gl
 	with Redelimination ->
-	  errorlabstrm "Intro" (str "No product even after head-reduction")
+	  errorlabstrm "Intro" (str "No product even after head-reduction.")
 
 let intro_mustbe_force id = intro_gen (IntroMustBe id) None true
 let intro_using id = intro_gen (IntroBasedOn (id,[])) None false
@@ -415,7 +415,8 @@ let depth_of_quantified_hypothesis red h gl =
         errorlabstrm "lookup_quantified_hypothesis" 
           (str "No " ++ msg_quantified_hypothesis h ++
 	  strbrk " in current goal" ++
-	  if red then strbrk " even after head-reduction" else mt ())
+	  (if red then strbrk " even after head-reduction" else mt ()) ++
+	  str".")
 
 let intros_until_gen red h g =
   tclDO (depth_of_quantified_hypothesis red h g) intro g
@@ -515,7 +516,7 @@ let cut c gl =
             (internal_cut_rev id c)
             (tclTHEN (apply_type t [mkVar id]) (thin [id]))
             gl
-    | _  -> error "Not a proposition or a type"
+    | _  -> error "Not a proposition or a type."
 
 let cut_intro t = tclTHENFIRST (cut t) intro
 
@@ -543,7 +544,7 @@ let cut_in_parallel l =
 let error_uninstantiated_metas t clenv =
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
   let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
-  in errorlabstrm "" (str "cannot find an instance for " ++ pr_id id)
+  in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
 let clenv_refine_in with_evars id clenv gl =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
@@ -577,7 +578,7 @@ let elimination_clause_scheme with_evars allow_K elimclause indclause gl =
     (match kind_of_term (last_arg elimclause.templval.rebus) with
        | Meta mv -> mv
        | _  -> errorlabstrm "elimination_clause"
-             (str "The type of elimination clause is not well-formed")) 
+             (str "The type of elimination clause is not well-formed.")) 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause in 
   res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K ~flags:elim_flags
@@ -648,7 +649,7 @@ let elimination_in_clause_scheme with_evars id elimclause indclause gl =
     match clenv_independent elimclause with
         [k1;k2] -> (k1,k2)
       | _  -> errorlabstrm "elimination_clause"
-          (str "The type of elimination clause is not well-formed") in
+          (str "The type of elimination clause is not well-formed.") in
   let elimclause'  = clenv_fchain indmv elimclause indclause in 
   let hyp = mkVar id in
   let hyp_typ = pf_type_of gl hyp in
@@ -658,7 +659,7 @@ let elimination_in_clause_scheme with_evars id elimclause indclause gl =
   let new_hyp_typ  = clenv_type elimclause'' in
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in" 
-      (str "Nothing to rewrite in " ++ pr_id id);
+      (str "Nothing to rewrite in " ++ pr_id id ++ str".");
   clenv_refine_in with_evars id elimclause'' gl
 
 let general_elim_in with_evars id =
@@ -701,7 +702,7 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl =
   let thm_ty0 = nf_betaiota (pf_type_of gl c) in
   let try_apply thm_ty nprod =
     let n = nb_prod thm_ty - nprod in
-    if n<0 then error "Apply: theorem has not enough premisses.";
+    if n<0 then error "Applied theorem has not enough premisses.";
     let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
     Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl in
   try try_apply thm_ty0 concl_nprod
@@ -788,10 +789,10 @@ let find_matching_clause unifier clause =
 
 let progress_with_clause innerclause clause =
   let ordered_metas = List.rev (clenv_independent clause) in
-  if ordered_metas = [] then error "Statement without assumptions";
+  if ordered_metas = [] then error "Statement without assumptions.";
   let f mv = find_matching_clause (clenv_fchain mv clause) innerclause in
   try list_try_find f ordered_metas
-  with Failure _ -> error "Unable to unify"
+  with Failure _ -> error "Unable to unify."
 
 let apply_in_once gl innerclause (d,lbind) =
   let thm = nf_betaiota (pf_type_of gl d) in
@@ -832,7 +833,7 @@ let cut_and_apply c gl =
 	  tclTHENLAST
 	    (apply_type (mkProd (Anonymous,c2,goal_constr)) [mkMeta(new_meta())])
 	    (apply_term c [mkMeta (new_meta())]) gl
-      | _ -> error "Imp_elim needs a non-dependent product"
+      | _ -> error "lapply needs a non-dependent product."
 
 (********************************************************************)
 (*               Exact tactics                                      *)
@@ -844,7 +845,7 @@ let exact_check c gl =
   if pf_conv_x_leq gl ct concl then  
     refine_no_check c gl 
   else 
-    error "Not an exact proof"
+    error "Not an exact proof."
 
 let exact_no_check = refine_no_check
 
@@ -863,7 +864,7 @@ let (assumption : tactic) = fun gl ->
   let hyps = pf_hyps gl in
   let rec arec only_eq = function
     | [] -> 
-        if only_eq then arec false hyps else error "No such assumption"
+        if only_eq then arec false hyps else error "No such assumption."
     | (id,c,t)::rest -> 
 	if (only_eq & eq_constr t concl) 
           or (not only_eq & pf_conv_x_leq gl t concl)
@@ -919,7 +920,8 @@ let specialize mopt (c,lbind) g =
       let term = applist(thd,tstack) in 
       if occur_meta term then
 	errorlabstrm "" (str "Cannot infer an instance for " ++
-          pr_name (meta_name clause.evd (List.hd (collect_metas term))));
+          pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
+	  str ".");
       Some (evars_of clause.evd), term
   in
   tclTHEN 
@@ -955,14 +957,14 @@ let keep hyps gl =
 (************************)
 
 let check_number_of_constructors expctdnumopt i nconstr =
-  if i=0 then error "The constructors are numbered starting from 1";
+  if i=0 then error "The constructors are numbered starting from 1.";
   begin match expctdnumopt with 
     | Some n when n <> nconstr ->
 	error ("Not an inductive goal with "^
-	       string_of_int n^plural n " constructor")
+	       string_of_int n^plural n " constructor"^".")
     | _ -> ()
   end;
-  if i > nconstr then error "Not enough constructors"
+  if i > nconstr then error "Not enough constructors."
 
 let constructor_tac with_evars expctdnumopt i lbind gl =
   let cl = pf_concl gl in 
@@ -987,7 +989,7 @@ let any_constructor with_evars tacopt gl =
   let mind = fst (pf_reduce_to_quantified_ind gl (pf_concl gl)) in
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
-  if nconstr = 0 then error "The type has no constructors";
+  if nconstr = 0 then error "The type has no constructors.";
   tclFIRST
     (List.map
       (fun i -> tclTHEN (constructor_tac with_evars None i NoBindings) t) 
@@ -1033,11 +1035,11 @@ let intro_or_and_pattern ll l' tac =
       | [] when n = 0 or tail -> []
       | [] -> IntroAnonymous :: adjust_names_length tail (n-1) []
       | _ :: _ as l when n = 0 -> 
-	  if tail then l else error "Too many names in some branch"
+	  if tail then l else error "Too many names in some branch."
       | ip :: l -> ip :: adjust_names_length tail (n-1) l in
     let ll = fix_empty_case nv ll in
     if List.length ll <> Array.length nv then
-      error "Not the right number of patterns";
+      error "Not the right number of patterns.";
     tclTHENLASTn
       (tclTHEN case_last clear_last)
       (array_map2 (fun n l -> tac ((adjust_names_length (l'=[]) n l)@l'))
@@ -1140,7 +1142,7 @@ let assert_as first ipat c gl =
       let id,tac = prepare_intros s ipat gl in
       tclTHENS ((if first then internal_cut else internal_cut_rev) id c)
 	(if first then [tclIDTAC; tac] else [tac; tclIDTAC]) gl
-  | _  -> error "Not a proposition or a type"
+  | _  -> error "Not a proposition or a type."
 
 let assert_tac first na = assert_as first (ipat_of_name na)
 let true_cut = assert_tac true 
@@ -1349,7 +1351,7 @@ let letin_tac with_eq name c occs gl =
     let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
     if name = Anonymous then fresh_id [] x gl else
       if not (mem_named_context x (pf_hyps gl)) then x else
-	error ("The variable "^(string_of_id x)^" is already declared") in
+	error ("The variable "^(string_of_id x)^" is already declared.") in
   let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in 
   let t = pf_type_of gl c in
   let newcl,eq_tac = match with_eq with
@@ -1390,7 +1392,7 @@ let unfold_body x gl =
     match Sign.lookup_named x hyps with
         (_,Some xval,_) -> xval
       | _ -> errorlabstrm "unfold_body"
-          (pr_id x ++ str" is not a defined hypothesis") in
+          (pr_id x ++ str" is not a defined hypothesis.") in
   let aft = afterHyp x gl in
   let hl = List.fold_right (fun (y,yval,_) cl -> (([],y),InHyp) :: cl) aft [] in
   let xvar = mkVar x in
@@ -1764,7 +1766,7 @@ let empty_scheme =
    hypothesis on which the induction is made *)
 let induction_tac with_evars (varname,lbind) typ scheme gl =
   let elimc,lbindelimc = 
-    match scheme.elimc with | Some x -> x | None -> error "No definition of the principle" in
+    match scheme.elimc with | Some x -> x | None -> error "No definition of the principle." in
   let elimt = scheme.elimt in
   let indclause = make_clenv_binding gl (mkVar varname,typ) lbind  in
   let elimclause =
@@ -1825,7 +1827,7 @@ let chop_context n l =
 
 let error_ind_scheme s =
   let s = if s <> "" then s^" " else s in
-  error ("Cannot recognise "^s^"an induction schema")
+  error ("Cannot recognize "^s^"an induction scheme.")
 
 let mkEq t x y = 
   mkApp (build_coq_eq (), [| t; x; y |])
@@ -2033,13 +2035,13 @@ let decompose_paramspred_branch_args elimt =
 	  then cut_noccur elimt' ((nme,None,tpe)::acc2)
 	  else let acc3,ccl = decompose_prod_assum elimt in acc2 , acc3 , ccl
       | App(_, _) | Rel _ -> acc2 , [] , elimt
-      | _ -> error "cannot recognise an induction schema" in
+      | _ -> error_ind_scheme "" in
   let rec cut_occur elimt acc1 : rel_context * rel_context * rel_context * types =
     match kind_of_term elimt with
       | Prod(nme,tpe,c) when occur_rel 1 c -> cut_occur c ((nme,None,tpe)::acc1)
       | Prod(nme,tpe,c) -> let acc2,acc3,ccl = cut_noccur elimt [] in acc1,acc2,acc3,ccl
       | App(_, _) | Rel _ -> acc1,[],[],elimt
-      | _ -> error "cannot recognise an induction schema" in
+      | _ -> error_ind_scheme "" in
   let acc1, acc2 , acc3, ccl = cut_occur elimt [] in
   (* Particular treatment when dealing with a dependent empty type elim scheme:
      if there is no branch, then acc1 contains all hyps which is wrong (acc1
@@ -2053,8 +2055,7 @@ let decompose_paramspred_branch_args elimt =
     let hd_ccl_pred,_ = decompose_app ccl in
     match kind_of_term hd_ccl_pred with
       | Rel i  -> let acc3,acc1 = cut_list (i-1) hyps in acc1 , [] , acc3 , ccl
-      | _ -> error "cannot recognize an induction schema"
-
+      | _ -> error_ind_scheme ""
 
 
 let exchange_hd_app subst_hd t =
@@ -2131,7 +2132,7 @@ let compute_elim_sig ?elimc elimt =
     (* 3- Look at last arg: is it the indarg? *)
     ignore (
       match List.hd args_indargs with
-	| hiname,Some _,hi -> error "cannot recognize an induction schema"
+	| hiname,Some _,hi -> error_ind_scheme ""
 	| hiname,None,hi -> 
 	    let hi_ind, hi_args = decompose_app hi in
 	    let hi_is_ind = (* hi est d'un type globalisable *)
@@ -2156,11 +2157,11 @@ let compute_elim_sig ?elimc elimt =
   with Exit -> (* Ending by computing indrev: *)
     match !res.indarg with
       | None -> !res (* No indref *)
-      | Some ( _,Some _,_) -> error "Cannot recognise an induction scheme"
+      | Some ( _,Some _,_) -> error_ind_scheme ""
       | Some ( _,None,ind) -> 
 	  let indhd,indargs = decompose_app ind in
 	  try {!res with indref = Some (global_of_constr indhd) }
-	  with _ -> error "Cannot find the inductive type of the inductive schema";;
+	  with _ -> error "Cannot find the inductive type of the inductive scheme.";;
 
 (* Check that the elimination scheme has a form similar to the 
    elimination schemes built by Coq. Schemes may have the standard
@@ -2174,7 +2175,7 @@ let compute_elim_signature elimc elimt names_info =
   let f,l = decompose_app scheme.concl in
   (* Vérifier que les arguments de Qi sont bien les xi. *)
   match scheme.indarg with
-    | Some (_,Some _,_) -> error "strange letin, cannot recognize an induction schema"
+    | Some (_,Some _,_) -> error "Strange letin, cannot recognize an induction scheme."
     | None -> (* Non standard scheme *)
 	let npred = List.length scheme.predicates in 
 	let is_pred n c = 
@@ -2242,7 +2243,7 @@ let compute_elim_signature elimc elimt names_info =
 		  list_lastn scheme.nargs indargs 
 		  = extended_rel_list 0 scheme.args in
 		if not (ccl_arg_ok & ind_is_ok) then
-		  error "Cannot recognize the conclusion of an induction schema";
+		  error_ind_scheme "the conclusion of";
 		[] 
 	in
 	let indsign = Array.of_list (find_branches 0 (List.rev scheme.branches)) in
@@ -2285,7 +2286,7 @@ let recolle_clenv scheme lid elimclause gl =
 	match kind_of_term x with
 	  | Meta mv -> mv
 	  | _  -> errorlabstrm "elimination_clause"
-              (str "The type of elimination clause is not well-formed"))
+              (str "The type of the elimination clause is not well-formed."))
       arr in
   let nmv = Array.length lindmv in
   let lidparams,lidargs = cut_list (scheme.nparams) lid in
@@ -2324,7 +2325,7 @@ let recolle_clenv scheme lid elimclause gl =
 let induction_tac_felim with_evars indvars (* (elimc,lbindelimc) elimt *) scheme gl = 
   let elimt = scheme.elimt in
   let elimc,lbindelimc = 
-    match scheme.elimc with | Some x -> x | None -> error "No definition of the principle" in
+    match scheme.elimc with | Some x -> x | None -> error "No definition of the principle." in
   (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
   let elimclause =
     make_clenv_binding gl (mkCast (elimc,DEFAULTcast, elimt),elimt) lbindelimc in
@@ -2348,7 +2349,7 @@ let induction_from_context_l isrec with_evars elim_info lid names gl =
     + (if scheme.indarg <> None then 1 else 0) in
   (* Number of given induction args must be exact. *)
   if List.length lid <> nargs_indarg_farg + scheme.nparams then 
-      error "not the right number of arguments given to induction scheme";  
+      error "Not the right number of arguments given to induction scheme.";
   let env = pf_env gl in
   (* hyp0 is used for re-introducing hyps at the right place afterward.
      We chose the first element of the list of variables on which to
@@ -2466,7 +2467,7 @@ let induction_without_atomization isrec with_evars elim names lid gl =
   in
   let nlid = List.length lid in
   if nlid <> awaited_nargs
-  then error "Not the right number of induction arguments"
+  then error "Not the right number of induction arguments."
   else induction_from_context_l isrec with_evars elim_info lid names gl
 
 let new_induct_gen isrec with_evars elim names (c,lbind) cls gl =
@@ -2532,18 +2533,18 @@ let induct_destruct_l isrec with_evars lc elim names cls =
   let _ = 
     if elim = None
     then 
-      error ("Induction scheme must be given when several induction hypothesis.\n"
-      ^ "Example: induction x1 x2 x3 using my_scheme.") in
+      errorlabstrm "" (strbrk "Induction scheme must be given when several induction hypothesis are given.\n" ++ 
+      str "Example: induction x1 x2 x3 using my_scheme.") in
   let newlc = 
     List.map
       (fun x -> 
 	match x with (* FIXME: should we deal with ElimOnIdent? *)
 	  | ElimOnConstr (x,NoBindings) -> x
-	  | _ -> error "don't know where to find some argument")
+	  | _ -> error "Don't know where to find some argument.")
       lc in
   if cls <> None then
     error
-      "'in' clause not supported when several induction hypothesis are given";
+      "'in' clause not supported when several induction hypothesis are given.";
   new_induct_gen_l isrec with_evars elim names newlc
 
 (* Induction either over a term, over a quantified premisse, or over
@@ -2858,7 +2859,7 @@ let abstract_subproof name tac gl =
   let na = next_global_ident_away false name (pf_ids_of_hyps gl) in
   let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
     if occur_existential concl then
-      error "\"abstract\" cannot handle existentials";
+      error "\"abstract\" cannot handle existentials.";
     let lemme =
       start_proof na (Global, Proof Lemma) secsign concl (fun _ _ -> ());
       let _,(const,kind,_) =
@@ -2901,7 +2902,7 @@ let admit_as_an_axiom gl =
   let name = add_suffix (get_current_proof_name ()) "_admitted" in
   let na = next_global_ident_away false name (pf_ids_of_hyps gl) in
   let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
-  if occur_existential concl then error "\"admit\" cannot handle existentials";
+  if occur_existential concl then error"\"admit\" cannot handle existentials.";
   let axiom =
     let cd = Entries.ParameterEntry (concl,false) in
     let con = Declare.declare_internal_constant na (cd,IsAssumption Logical) in

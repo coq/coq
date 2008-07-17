@@ -719,7 +719,7 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
       hov 1 (str "pattern" ++
         pr_arg (prlist_with_sep pr_coma (pr_with_occurrences pr_constr)) l)
         
-  | Red true -> error "Shouldn't be accessible from user"
+  | Red true -> error "Shouldn't be accessible from user."
   | ExtraRedExpr s -> str s
   | CbvVm -> str "vm_compute"
 

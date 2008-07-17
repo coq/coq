@@ -58,7 +58,7 @@ let declare_extra_genarg_pprule (rawwit, f) (globwit, g) (wit, h) =
   let s = match unquote wit with
     | ExtraArgType s -> s 
     | _ -> error
-	"Can declare a pretty-printing rule only for extra argument types"
+	"Can declare a pretty-printing rule only for extra argument types."
   in
   let f prc prlc prtac x = f prc prlc prtac (out_gen rawwit x) in
   let g prc prlc prtac x = g prc prlc prtac (out_gen globwit x) in

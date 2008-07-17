@@ -505,7 +505,7 @@ let choose_less_dependent_instance evk evd term args =
   let evi = Evd.find (evars_of evd) evk in
   let subst = make_pure_subst evi args in
   let subst' = List.filter (fun (id,c) -> c = term) subst in
-  if subst' = [] then error "Too complex unification problem" else
+  if subst' = [] then error "Too complex unification problem." else
   Evd.evar_define evk (mkVar (fst (List.hd subst'))) evd
 
 let apply_conversion_problem_heuristic env evd pbty t1 t2 =

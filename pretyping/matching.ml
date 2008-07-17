@@ -110,7 +110,7 @@ let matches_core convert allow_partial_app pat c =
 	    List.map
 	      (function
 		 | PRel n -> n
-		 | _ -> error "Only bound indices allowed in second order pattern matching")
+		 | _ -> error "Only bound indices allowed in second order pattern matching.")
 	      args in
 	  let frels = Intset.elements (free_rels cT) in
 	  if list_subset frels relargs then

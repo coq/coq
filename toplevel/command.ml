@@ -88,8 +88,8 @@ let rec complete_conclusion a cs = function
       let (has_no_args,name,params) = a in
       if not has_no_args then
 	user_err_loc (loc,"",
-	  str "Cannot infer the non constant arguments of the conclusion of "
-	  ++ pr_id cs);
+	  strbrk"Cannot infer the non constant arguments of the conclusion of "
+	  ++ pr_id cs ++ str ".");
       let args = List.map (fun id -> CRef(Ident(loc,id))) params in
       CAppExpl (loc,(None,Ident(loc,name)),List.rev args)
   | c -> c
@@ -310,7 +310,7 @@ let declare_eq_scheme sp =
           definition_message nam
     done
   with Not_found -> 
-    error "Your type contains Parameters without a boolean equality"
+    error "Your type contains Parameters without a boolean equality."
 
 (* decidability of eq *)
 
@@ -473,7 +473,7 @@ type inductive_expr = {
 }
 
 let minductive_message = function
-  | []  -> error "no inductive definition"
+  | []  -> error "No inductive definition."
   | [x] -> (pr_id x ++ str " is defined")
   | l   -> hov 0  (prlist_with_sep pr_coma pr_id l ++
 		     spc () ++ str "are defined")
@@ -597,7 +597,7 @@ let extract_params indl =
   | [] -> anomaly "empty list of inductive types"
   | params::paramsl ->
       if not (List.for_all (eq_local_binders params) paramsl) then error 
-	"Parameters should be syntactically the same for each inductive type";
+	"Parameters should be syntactically the same for each inductive type.";
       params
 
 let prepare_inductive ntnl indl =
@@ -672,7 +672,7 @@ let recursive_message indexes = function
 		    | None -> mt ())
 
 let corecursive_message _ = function
-  | [] -> error "no corecursive definition"
+  | [] -> error "No corecursive definition."
   | [id] -> pr_id id ++ str " is corecursively defined"
   | l -> hov 0 (prlist_with_sep pr_coma pr_id l ++
                     spc () ++ str "are corecursively defined")
@@ -1005,7 +1005,7 @@ let build_combined_scheme name schemes =
 		let qualid = qualid_of_reference refe in
 		let cst = try 
                     Nametab.locate_constant (snd qualid) 
-                with Not_found -> error ((string_of_qualid (snd qualid))^" is not declared")
+                with Not_found -> error ((string_of_qualid (snd qualid))^" is not declared.")
                 in
 		let ty = Typeops.type_of_constant env cst in
 		  qualid, cst, ty)
@@ -1055,7 +1055,7 @@ let compute_proof_name = function
   | Some (loc,id) ->
       (* We check existence here: it's a bit late at Qed time *)
       if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
-        user_err_loc (loc,"",pr_id id ++ str " already exists");
+        user_err_loc (loc,"",pr_id id ++ str " already exists.");
       id
   | None ->
       next_global_ident_away false (id_of_string "Unnamed_thm")
@@ -1207,7 +1207,7 @@ let start_proof_com kind thms hook =
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
-    error "This command can only be used for unnamed theorem"
+    error "This command can only be used for unnamed theorem."
 (*
     message("Overriding name "^(string_of_id id)^" and using "^save_ident)
 *)

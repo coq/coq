@@ -247,7 +247,7 @@ let get_entry (u, utab) s =
     Hashtbl.find utab s 
   with Not_found -> 
     errorlabstrm "Pcoq.get_entry"
-      (str "unknown grammar entry " ++ str u ++ str ":" ++ str s)
+      (str "Unknown grammar entry " ++ str u ++ str ":" ++ str s ++ str ".")
 
 let new_entry etyp (u, utab) s =
   let ename = u ^ ":" ^ s in
@@ -307,12 +307,12 @@ let get_generic_entry s =
   try
     object_of_typed_entry (Hashtbl.find utab s)
   with Not_found -> 
-    error ("unknown grammar entry "^u^":"^s)
+    error ("Unknown grammar entry "^u^":"^s^".")
 
 let get_generic_entry_type (u,utab) s =
   try type_of_typed_entry (Hashtbl.find utab s)
   with Not_found -> 
-    error ("unknown grammar entry "^u^":"^s)
+    error ("Unknown grammar entry "^u^":"^s^".")
 
 let force_entry_type (u, utab) s etyp =
   try
@@ -578,7 +578,7 @@ let error_level_assoc p current expected =
   errorlabstrm ""
     (str "Level " ++ int p ++ str " is already declared " ++
      pr_assoc current ++ str " associative while it is now expected to be " ++
-     pr_assoc expected ++ str " associative")
+     pr_assoc expected ++ str " associative.")
 
 let find_position_gen forpat ensure assoc lev =
   let ccurrent,pcurrent as current = List.hd !level_stack in
@@ -695,7 +695,7 @@ let compute_entry allow_create adjust forpat = function
   | ETPattern -> weaken_entry Constr.pattern, None, false
   | ETOther ("constr","annot") -> 
       weaken_entry Constr.annot, None, false
-  | ETConstrList _ -> error "List of entries cannot be registered"
+  | ETConstrList _ -> error "List of entries cannot be registered."
   | ETOther (u,n) ->
       let u = get_univ u in
       let e =
@@ -762,6 +762,6 @@ let coerce_reference_to_id = function
   | Ident (_,id) -> id
   | Qualid (loc,_) ->
       user_err_loc (loc, "coerce_reference_to_id",
-        str "This expression should be a simple identifier")
+        str "This expression should be a simple identifier.")
 
 let coerce_global_to_id = coerce_reference_to_id

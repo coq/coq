@@ -85,7 +85,7 @@ let contradiction_term (c,lbind as cl) gl =
 	  (fun id -> simplest_elim (mkApp (mkVar id,[|c|]))) gl
       else
 	raise Not_found
-    with Not_found -> error "Not a contradiction"
+    with Not_found -> error "Not a contradiction."
 
 let contradiction = function
   | None -> tclTHEN intros contradiction_context

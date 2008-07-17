@@ -127,7 +127,7 @@ let print_grammar = function
       Gram.Entry.print Pcoq.Vernac_.gallina;
       msgnl (str "Entry gallina_ext is");
       Gram.Entry.print Pcoq.Vernac_.gallina_ext;
-  | _ -> error "Unknown or unprintable grammar entry"
+  | _ -> error "Unknown or unprintable grammar entry."
 
 (**********************************************************************)
 (* Parse a format (every terminal starting with a letter or a single
@@ -143,11 +143,11 @@ let parse_format (loc,str) =
     if n = 0 then l else push_token (UnpTerminal (String.make n ' ')) l in
   let close_box i b = function
     | a::(_::_ as l) -> push_token (UnpBox (b,a)) l
-    | _ -> error "Non terminated box in format" in
+    | _ -> error "Non terminated box in format." in
   let close_quotation i =
     if i < String.length str & str.[i] = '\'' & (i+1 = l or str.[i+1] = ' ')
     then i+1
-    else error "Incorrectly terminated quoted expression" in
+    else error "Incorrectly terminated quoted expression." in
   let rec spaces n i =
     if i < String.length str & str.[i] = ' ' then spaces (n+1) (i+1)
     else n in
@@ -155,10 +155,10 @@ let parse_format (loc,str) =
     if i < String.length str & str.[i] <> ' ' then
       if str.[i] = '\'' & quoted &
         (i+1 >= String.length str or str.[i+1] = ' ')
-      then if n=0 then error "Empty quoted token" else n
+      then if n=0 then error "Empty quoted token." else n
       else nonspaces quoted (n+1) (i+1)
     else
-      if quoted then error "Spaces are not allowed in (quoted) symbols"
+      if quoted then error "Spaces are not allowed in (quoted) symbols."
       else n in
   let rec parse_non_format i =
     let n = nonspaces false 0 i in
@@ -189,8 +189,8 @@ let parse_format (loc,str) =
 		(* Parse " [ .. ",  *)
 	    | ' ' | '\'' ->
 		parse_box (fun n -> PpHOVB n) (i+1)
-	    | _ -> error "\"v\", \"hv\", \" \" expected after \"[\" in format"
-	  else error "\"v\", \"hv\" or \" \" expected after \"[\" in format"
+	    | _ -> error "\"v\", \"hv\", \" \" expected after \"[\" in format."
+	  else error "\"v\", \"hv\" or \" \" expected after \"[\" in format."
       (* Parse "]"  *)
       | ']' ->
 	  ([] :: parse_token (close_quotation (i+1)))
@@ -201,7 +201,7 @@ let parse_format (loc,str) =
 	    (parse_token (close_quotation (i+n))))
     else
       if n = 0 then []
-      else error "Ending spaces non part of a format annotation"
+      else error "Ending spaces non part of a format annotation."
   and parse_box box i =
     let n = spaces 0 i in
     close_box i (box n) (parse_token (close_quotation (i+n)))
@@ -223,9 +223,9 @@ let parse_format (loc,str) =
   try
     if str <> "" then match parse_token 0 with
       | [l] -> l
-      | _ -> error "Box closed without being opened in format"
+      | _ -> error "Box closed without being opened in format."
     else
-      error "Empty format"
+      error "Empty format."
   with e ->
     Stdpp.raise_with_loc loc e
 
@@ -274,11 +274,11 @@ let rec find_pattern xl = function
   | [NonTerminal x], NonTerminal x' :: l' ->
       (x,x',xl),l'
   | [NonTerminal _], Terminal s :: _ | Terminal s :: _, _ ->
-      error ("The token "^s^" occurs on one side of \"..\" but not on the other side")
+      error ("The token "^s^" occurs on one side of \"..\" but not on the other side.")
   | [NonTerminal _], Break s :: _ | Break s :: _, _ ->
-      error ("A break occurs on one side of \"..\" but not on the other side")
+      error ("A break occurs on one side of \"..\" but not on the other side.")
   | ((SProdList _ | NonTerminal _) :: _ | []), _ -> 
-      error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\"")
+      error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\".")
 
 let rec interp_list_parser hd = function
   | [] -> [], List.rev hd
@@ -320,12 +320,13 @@ let rec raw_analyse_notation_tokens = function
   | String ".." :: sl ->
       let (vars,l) = raw_analyse_notation_tokens sl in
       (list_add_set ldots_var vars, NonTerminal ldots_var :: l)
+  | String "_" :: _ -> error "_ must be quoted."
   | String x :: sl when is_normal_token x ->
       Lexer.check_ident x;
       let id = Names.id_of_string x in
       let (vars,l) = raw_analyse_notation_tokens sl in
       if List.mem id vars then
-	error ("Variable "^x^" occurs more than once");
+	error ("Variable "^x^" occurs more than once.");
       (id::vars, NonTerminal id :: l)
   | String s :: sl ->
       Lexer.check_keyword s;
@@ -481,7 +482,7 @@ let make_hunks etyps symbols from =
 
 (* Build default printing rules from explicit format *)
 
-let error_format () = error "The format does not match the notation"
+let error_format () = error "The format does not match the notation."
 
 let rec split_format_at_ldots hd = function
   | UnpTerminal s :: fmt when id_of_string s = ldots_var -> List.rev hd, fmt
@@ -494,7 +495,7 @@ and check_no_ldots_in_box = function
   | UnpBox (_,fmt) ->
       (try 
         let _ = split_format_at_ldots [] fmt in
-        error ("The special symbol \"..\" must occur at the same formatting depth than the variables of which it is the ellipse")
+        error ("The special symbol \"..\" must occur at the same formatting depth than the variables of which it is the ellipse.")
       with Exit -> ())
   | _ -> ()
 
@@ -512,7 +513,7 @@ let read_recursive_format sl fmt =
   let rec get_tail = function
     | a :: sepfmt, b :: fmt when a = b -> get_tail (sepfmt, fmt)
     | [], tail -> skip_var_in_recursive_format tail
-    | _ -> error "The format is not the same on the right and left hand side of the special token \"..\"" in
+    | _ -> error "The format is not the same on the right and left hand side of the special token \"..\"." in
   let slfmt, fmt = get_head fmt in
   slfmt, get_tail (slfmt, fmt)
 
@@ -594,7 +595,7 @@ let make_production etyps symbols =
 	    let y = match List.assoc x etyps with
               | ETConstr x -> x
               | _ ->
-                  error "Component of recursive patterns in notation must be constr" in
+                  error "Component of recursive patterns in notation must be constr." in
             let typ = ETConstrList (y,sl) in
             NonTerm (typ, Some (x,typ)) :: l)
       symbols [] in
@@ -640,7 +641,7 @@ let error_incompatible_level ntn oldprec prec =
     (str ("Notation "^ntn^" is already defined") ++ spc() ++ 
     pr_level ntn oldprec ++ 
     spc() ++ str "while it is now required to be" ++ spc() ++ 
-    pr_level ntn prec)
+    pr_level ntn prec ++ str ".")
 
 let cache_one_syntax_extension (prec,ntn,gr,pp) =
   try 
@@ -692,34 +693,34 @@ let interp_modifiers modl =
     | SetEntryType (s,typ) :: l ->
 	let id = id_of_string s in
 	if List.mem_assoc id etyps then
-	  error (s^" is already assigned to an entry or constr level");
+	  error (s^" is already assigned to an entry or constr level.");
 	interp assoc level ((id,typ)::etyps) format l
     | SetItemLevel ([],n) :: l ->
 	interp assoc level etyps format l
     | SetItemLevel (s::idl,n) :: l ->
 	let id = id_of_string s in
 	if List.mem_assoc id etyps then
-	  error (s^" is already assigned to an entry or constr level");
+	  error (s^" is already assigned to an entry or constr level.");
 	let typ = ETConstr (n,()) in
 	interp assoc level ((id,typ)::etyps) format (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
-	if level <> None then error "A level is given more than once";
+	if level <> None then error "A level is given more than once.";
 	interp assoc (Some n) etyps format l
     | SetAssoc a :: l ->
-	if assoc <> None then error "An associativity is given more than once";
+	if assoc <> None then error"An associativity is given more than once.";
 	interp (Some a) level etyps format l
     | SetOnlyParsing :: l ->
 	onlyparsing := true;
 	interp assoc level etyps format l
     | SetFormat s :: l ->
-	if format <> None then error "A format is given more than once";
+	if format <> None then error "A format is given more than once.";
 	interp assoc level etyps (Some s) l
   in interp None None [] None modl
 
 let check_infix_modifiers modifiers =
   let (assoc,level,t,b,fmt) = interp_modifiers modifiers in
   if t <> [] then
-    error "explicit entry level or type unexpected in infix notation"
+    error "explicit entry level or type unexpected in infix notation."
 
 let no_syntax_modifiers modifiers = 
   modifiers = [] or modifiers = [SetOnlyParsing]
@@ -739,9 +740,9 @@ let set_entry_type etyps (x,typ) =
 
 let check_rule_productivity l = 
   if List.for_all (function NonTerminal _ -> true | _ -> false) l then
-    error "A notation must include at least one symbol";
+    error "A notation must include at least one symbol.";
   if (match l with SProdList _ :: _ -> true | _ -> false) then
-    error "A recursive notation must start with at least one symbol"
+    error "A recursive notation must start with at least one symbol."
 
 let is_not_printable = function
   | AVar _ -> warning "This notation won't be used for printing as it is bound to a \nsingle variable"; true
@@ -752,38 +753,38 @@ let find_precedence lev etyps symbols =
   | NonTerminal x :: _ ->
       (try match List.assoc x etyps with
 	| ETConstr _ ->
-	    error "The level of the leftmost non-terminal cannot be changed"
+	    error "The level of the leftmost non-terminal cannot be changed."
 	| ETIdent | ETBigint | ETReference -> 
 	    if lev = None then 
-	      Flags.if_verbose msgnl (str "Setting notation at level 0")
+	      Flags.if_verbose msgnl (str "Setting notation at level 0.")
 	    else
 	    if lev <> Some 0 then
-	      error "A notation starting with an atomic expression must be at level 0";
+	      error "A notation starting with an atomic expression must be at level 0.";
 	    0
 	| ETPattern | ETOther _ -> (* Give a default ? *)
 	    if lev = None then
-	      error "Need an explicit level"
+	      error "Need an explicit level."
 	    else Option.get lev
         | ETConstrList _ -> assert false (* internally used in grammar only *)
       with Not_found -> 
 	if lev = None then
-	  error "A left-recursive notation must have an explicit level"
+	  error "A left-recursive notation must have an explicit level."
 	else Option.get lev)
   | Terminal _ ::l when
       (match list_last symbols with Terminal _ -> true |_ -> false)
       -> 
       if lev = None then
-	(Flags.if_verbose msgnl (str "Setting notation at level 0"); 0)
+	(Flags.if_verbose msgnl (str "Setting notation at level 0."); 0)
       else Option.get lev
   | _ ->
-      if lev = None then error "Cannot determine the level";
+      if lev = None then error "Cannot determine the level.";
       Option.get lev
 
 let check_curly_brackets_notation_exists () =
   try let _ = Notation.level_of_notation "{ _ }" in ()
   with Not_found -> 
     error "Notations involving patterns of the form \"{ _ }\" are treated \n\
-specially and require that the notation \"{ _ }\" is already reserved"
+specially and require that the notation \"{ _ }\" is already reserved."
 
 (* Remove patterns of the form "{ _ }", unless it is the "{ _ }" notation *)
 let remove_curly_brackets l = 
@@ -970,7 +971,7 @@ let add_syntax_extension local mv =
 let add_notation_interpretation df names c sc =
   try add_notation_interpretation_core false df names c sc false
   with NoSyntaxRule ->
-    error "Parsing rule for this notation has to be previously declared"
+    error "Parsing rule for this notation has to be previously declared."
 
 (* Main entry point *)
 

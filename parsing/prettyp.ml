@@ -219,7 +219,7 @@ let pr_located_qualid = function
   | ModuleType (qid,_) ->
       str "Module Type" ++ spc () ++ pr_sp (Nametab.full_name_modtype qid)
   | Undefined qid ->    
-      pr_qualid qid ++ str " is not a defined object"
+      pr_qualid qid ++ spc () ++ str "not a defined object."
 
 let print_located_qualid ref =
   let (loc,qid) = qualid_of_reference ref in
@@ -599,12 +599,12 @@ let read_sec_context r =
   let dir =
     try Nametab.locate_section qid
     with Not_found ->
-      user_err_loc (loc,"read_sec_context", str "Unknown section") in
+      user_err_loc (loc,"read_sec_context", str "Unknown section.") in
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
         if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | (_,Lib.ClosedSection _)::rest ->
-        error "Cannot print the contents of a closed section"
+        error "Cannot print the contents of a closed section."
 	(* LEM: Actually, we could if we wanted to. *)
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 
@@ -648,7 +648,7 @@ let print_name ref =
     print_leaf_entry true (oname,lobj)
   with Not_found ->
     errorlabstrm
-      "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object")
+      "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_opaque_name qid = 
   let env = Global.env () in
@@ -658,7 +658,7 @@ let print_opaque_name qid =
         if cb.const_body <> None then
 	  print_constant_with_infos cst
         else 
-	  error "not a defined constant"
+	  error "Not a defined constant."
     | IndRef (sp,_) ->
         print_inductive sp
     | ConstructRef cstr -> 
@@ -736,7 +736,8 @@ let index_of_class cl =
   try 
     fst (class_info cl)
   with _ -> 
-    errorlabstrm "index_of_class" (pr_class cl ++ str" is not a defined class")
+    errorlabstrm "index_of_class"
+      (pr_class cl ++ spc() ++ str "not a defined class.")
 
 let print_path_between cls clt = 
   let i = index_of_class cls in
@@ -746,7 +747,8 @@ let print_path_between cls clt =
       lookup_path_between (i,j) 
     with _ -> 
       errorlabstrm "index_cl_of_id"
-        (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt)
+        (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt
+	 ++ str ".")
   in
   print_path ((i,j),p)
 
