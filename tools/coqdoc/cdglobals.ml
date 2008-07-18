@@ -32,6 +32,13 @@ let open_out_file f =
 let close_out_file () = close_out !out_channel
 
 
+type glob_source_t =
+    | NoGlob
+    | DotGlob
+    | GlobFile of string
+
+let glob_source = ref DotGlob 
+
 let header_trailer = ref true
 let header_file = ref ""
 let header_file_spec = ref false
