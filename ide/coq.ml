@@ -248,9 +248,9 @@ let rec attribute_of_vernac_command = function
   | VernacSolveExistential _ -> [SolveCommand]
 
   (* MMode *)
-  | VernacDeclProof -> []
-  | VernacReturn -> []
-  | VernacProofInstr _ -> []
+  | VernacDeclProof -> [SolveCommand]
+  | VernacReturn -> [SolveCommand]
+  | VernacProofInstr _ -> [SolveCommand]
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom _ -> []

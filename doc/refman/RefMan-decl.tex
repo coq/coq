@@ -101,7 +101,7 @@ Here is a complete formal description of the syntax for DPL commands.
   {\tt per} ({\tt cases}$|${\tt induction}) {\tt on} \term \\
   &  $|$ & {\tt per cases of} type justification \\
   &  $|$ & {\tt suppose} \zeroone{\nelist{ident}{,} {\tt and}}~
-  {\tt is is }pattern\\
+  {\tt it is }pattern\\
   &          & \zeroone{{\tt such that} \nelist{statement} {\tt and} \zeroone{{\tt and} \{{\tt we have}\}-clause}} \\
   &  $|$ & {\tt end} 
   ({\tt proof} $|$ {\tt claim} $|$ {\tt focus} $|$ {\tt cases} $|$ {\tt induction}) \\
@@ -276,7 +276,7 @@ let x be such that H:(x=2).
 Abort.
 \end{coq_eval}
 
-In this example, you can also see the creation of a temporary name {\tt \_hyp}.
+In this example, you can also see the creation of a temporary name {\tt \_fact}.
 
 \subsection{Iterated equalities}
 

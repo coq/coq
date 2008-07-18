@@ -754,9 +754,7 @@ let extract_open_pftreestate pts =
 
 let extract_pftreestate pts =
   if pts.tstack <> [] then
-    errorlabstrm "extract_pftreestate"
-      (str"Cannot extract from a proof-tree in which we have descended;" ++
-         spc () ++ str"Please ascend to the root");
+    errorlabstrm "extract_pftreestate" (str"Proof blocks need to be closed");
   let pfterm,subgoals = extract_open_pftreestate pts in
   let exl = Evarutil.non_instantiated pts.tpfsigma in
   if subgoals <> [] or exl <> [] then
