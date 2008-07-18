@@ -478,7 +478,7 @@ let add_hints local dbnames0 h =
             (str "Cannot coerce" ++ spc () ++ pr_global gr ++ spc () ++
              str "to an evaluable reference.")
         in
-	  if !Flags.dump then Dumpglob.add_glob (loc_of_reference r) gr;
+	  if Dumpglob.dump () then Dumpglob.add_glob (loc_of_reference r) gr;
 	 (gr,r') in
       add_unfolds (List.map f lhints) local dbnames
   | HintsConstructors lqid ->

@@ -50,6 +50,7 @@ let usage () =
   prerr_endline "  --tex <file>         consider <file> as a .tex file";
   prerr_endline "  -p <string>          insert <string> in LaTeX preamble";
   prerr_endline "  --files-from <file>  read file names to process in <file>";
+  prerr_endline "  --glob-from <file>   read globalization information from <file>";
   prerr_endline "  --quiet              quiet mode (default)";
   prerr_endline "  --verbose            verbose mode";  
   prerr_endline "  --no-externals       no links to Coq standard library";
@@ -300,7 +301,7 @@ let parse () =
     | "-R" :: ([] | [_]) ->
 	usage ()
     | ("-glob-from" | "--glob-from") :: f :: rem ->
-	obsolete "glob-from"; parse_rec rem
+	glob_source := GlobFile f; parse_rec rem
     | ("-glob-from" | "--glob-from") :: [] ->
 	usage ()
     | ("--no-externals" | "-no-externals" | "-noexternals") :: rem ->
@@ -436,7 +437,10 @@ let produce_document l =
 	  Filename.concat !output_dir "coqdoc.sty" 
 	else "coqdoc.sty" in
 	copy src dst);
-  let l = List.map read_glob l in
+  (match !Cdglobals.glob_source with
+    | NoGlob -> ()
+    | DotGlob -> ignore (List.map read_glob l)
+    | GlobFile f -> ignore (Index.read_glob f));
   List.iter index_module l;
   match !out_to with
     | StdOut -> 

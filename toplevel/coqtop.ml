@@ -240,8 +240,12 @@ let parse_args is_ide =
     | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
     | "-load-vernac-object" :: []       -> usage ()
 
-    | "-dump-glob" :: _ :: rem -> warning "option -dumpglob is obsolete"; parse rem
-    | ("-no-glob" | "-noglob") :: rem -> Flags.noglob := true; parse rem
+    | "-dump-glob" :: "stdout" :: rem -> Dumpglob.dump_to_stdout (); parse rem
+	  (* À ne pas documenter : l'option 'stdout' n'étant
+	     éventuellement utile que pour le debugging... *)
+    | "-dump-glob" :: f :: rem -> Dumpglob.dump_into_file f; parse rem
+    | "-dump-glob" :: []       -> usage ()
+    | ("-no-glob" | "-noglob") :: rem -> Dumpglob.noglob (); parse rem
 
     | "-require" :: f :: rem -> add_require f; parse rem
     | "-require" :: []       -> usage ()
@@ -265,7 +269,7 @@ let parse_args is_ide =
     | "-emacs" :: rem -> Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
     | "-emacs-U" :: rem -> Flags.print_emacs := true; 
 	Flags.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
-	
+	    
     | "-unicode" :: rem -> Flags.unicode_syntax := true; parse rem
 
     | "-where" :: _ -> print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0

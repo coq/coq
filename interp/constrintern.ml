@@ -252,7 +252,7 @@ let rec subst_aconstr_in_rawconstr loc interp subst (renaming,(ids,_,scopes)) =
 let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
   let ntn,args = contract_notation ntn args in
   let ((ids,c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
-    if !Flags.dump then Dumpglob.dump_notation_location (Topconstr.ntn_loc loc args ntn) df;
+    if Dumpglob.dump () then Dumpglob.dump_notation_location (Topconstr.ntn_loc loc args ntn) df;
     let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
       subst_aconstr_in_rawconstr loc intern subst ([],env) c
 
@@ -334,10 +334,10 @@ let check_no_explicitation l =
 let intern_qualid loc qid intern env args =
   try match Nametab.extended_locate qid with
   | TrueGlobal ref ->
-      Dumpglob.add_glob loc ref;
+      if Dumpglob.dump() then Dumpglob.add_glob loc ref;
       RRef (loc, ref), args
   | SyntacticDef sp ->
-      Dumpglob.add_glob_kn loc sp;
+      if Dumpglob.dump() then Dumpglob.add_glob_kn loc sp;
       let (ids,c) = Syntax_def.search_syntactic_definition loc sp in
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments loc;
@@ -567,7 +567,7 @@ let find_constructor ref f aliases pats scopes =
 	    let v = Environ.constant_value (Global.env()) cst in
 	    unf (global_of_constr v)
         | ConstructRef cstr -> 
-	    Dumpglob.add_glob loc r; 
+	    if Dumpglob.dump() then Dumpglob.add_glob loc r; 
 	    cstr, [], pats
         | _ -> raise Not_found
       in unf r
@@ -618,7 +618,7 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
       let ((ids',c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
-      if !Flags.dump then Dumpglob.dump_notation_location (Topconstr.patntn_loc loc args ntn) df;
+      if Dumpglob.dump () then Dumpglob.dump_notation_location (Topconstr.patntn_loc loc args ntn) df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
       let ids'',pl = subst_cases_pattern loc (alias_of aliases) intern_pat subst scopes 
 	c
@@ -627,7 +627,7 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
       let a = alias_of aliases in
       let (c,df) = Notation.interp_prim_token_cases_pattern loc p a 
 	(tmp_scope,scopes) in
-      if !Flags.dump then Dumpglob.dump_notation_location (fst (unloc loc)) df;
+      if Dumpglob.dump () then Dumpglob.dump_notation_location (fst (unloc loc)) df;
       (ids,[subst,c])
   | CPatDelimiters (loc, key, e) ->
       intern_pat (find_delimiters_scope loc key::scopes) aliases None e
@@ -687,7 +687,7 @@ let push_loc_name_env lvar (ids,tmpsc,scopes as env) loc = function
   | Anonymous -> env 
   | Name id -> 
       check_hidden_implicit_parameters id lvar;
-      Dumpglob.dump_binding loc id;
+      if Dumpglob.dump() then Dumpglob.dump_binding loc id;
       (Idset.add id ids,tmpsc,scopes)
 
 let intern_typeclass_binders intern_type lvar env bl =
@@ -887,7 +887,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         intern_notation intern env loc ntn args
     | CPrim (loc, p) ->
 	let c,df = Notation.interp_prim_token loc p (tmp_scope,scopes) in
-	if !Flags.dump then Dumpglob.dump_notation_location (fst (unloc loc)) df;
+	if Dumpglob.dump () then Dumpglob.dump_notation_location (fst (unloc loc)) df;
 	c
     | CDelimiters (loc, key, e) ->
 	intern (ids,None,find_delimiters_scope loc key::scopes) e

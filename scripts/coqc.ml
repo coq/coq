@@ -141,7 +141,7 @@ let parse_args () =
     | ("-I"|"-include"|"-outputstate"
       |"-inputstate"|"-is"|"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
-      |"-init-file" as o) :: rem ->
+      |"-init-file" | "-dump-glob" as o) :: rem ->
 	begin
 	  match rem with
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'

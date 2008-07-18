@@ -16,7 +16,7 @@ let rec drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> h
 let glob_file = ref Pervasives.stdout
 
 let open_glob_file f =
-  glob_file := Pervasives.open_out(f ^ ".glob")
+  glob_file := Pervasives.open_out f
   
 let close_glob_file () =
   Pervasives.close_out !glob_file
@@ -24,10 +24,29 @@ let close_glob_file () =
 let dump_string s = 
   Pervasives.output_string !glob_file s
 
+type glob_output_t = 
+    | None
+    | StdOut
+    | MultFiles
+    | File of string
+
+let glob_output = ref MultFiles
+
+let dump () = !glob_output != None
+
+let noglob () = glob_output := None
+
+let dump_to_stdout () = glob_output := StdOut
+
+let multi_dump () = !glob_output = MultFiles
+
+let dump_into_file f = glob_output := File f; open_glob_file f
+
+let previous_state = ref MultFiles
+let pause () = previous_state := !glob_output
+let continue () = glob_output := !previous_state
 
 
-(**********************************************************************)
-(* Dump of globalization (to be used by coqdoc)                       *)
 let token_number = ref 0
 let last_pos = ref 0
 
@@ -117,25 +136,21 @@ let add_glob_gen loc sp lib_dp ty =
     dump_ref loc filepath modpath ident ty
 
 let add_glob loc ref = 
-  let sp = Nametab.sp_of_global ref in
-  let lib_dp = Lib.library_part ref in
-  let ty = type_of_global_ref ref in
-    add_glob_gen loc sp lib_dp ty
+  if loc <> Util.dummy_loc then
+    let sp = Nametab.sp_of_global ref in
+    let lib_dp = Lib.library_part ref in
+    let ty = type_of_global_ref ref in
+      add_glob_gen loc sp lib_dp ty
       
-let add_glob loc ref =
-  if !Flags.dump && loc <> Util.dummy_loc then add_glob loc ref
-
 let mp_of_kn kn = 
   let mp,sec,l = Names.repr_kn kn in 
     Names.MPdot (mp,l) 
 
 let add_glob_kn loc kn =
-  let sp = Nametab.sp_of_syntactic_definition kn in
-  let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
-    add_glob_gen loc sp lib_dp "syndef"
-
-let add_glob_kn loc ref =
-  if !Flags.dump && loc <> Util.dummy_loc then add_glob_kn loc ref
+  if loc <> Util.dummy_loc then
+    let sp = Nametab.sp_of_syntactic_definition kn in
+    let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
+      add_glob_gen loc sp lib_dp "syndef"
 
 let add_local loc id = ()
 (*   let mod_dp,id = repr_path sp in *)
@@ -189,23 +204,20 @@ let dump_local_binder b sec ty =
   | Topconstr.LocalRawDef _ -> ()
 
 let dump_modref loc mp ty =
-  if !Flags.dump then
-    let (dp, l) = Lib.split_modpath mp in
-    let fp = Names.string_of_dirpath dp in
-    let mp = Names.string_of_dirpath (Names.make_dirpath (drop_last l)) in
-      dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
-			    (fst (Util.unloc loc)) fp mp "<>" ty)
+  let (dp, l) = Lib.split_modpath mp in
+  let fp = Names.string_of_dirpath dp in
+  let mp = Names.string_of_dirpath (Names.make_dirpath (drop_last l)) in
+    dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
+		    (fst (Util.unloc loc)) fp mp "<>" ty)
 
 let dump_moddef loc mp ty =
-  if !Flags.dump then
-    let (dp, l) = Lib.split_modpath mp in
-    let mp = Names.string_of_dirpath (Names.make_dirpath l) in
-      dump_string (Printf.sprintf "%s %d %s %s\n" ty (fst (Util.unloc loc)) "<>" mp)
+  let (dp, l) = Lib.split_modpath mp in
+  let mp = Names.string_of_dirpath (Names.make_dirpath l) in
+    dump_string (Printf.sprintf "%s %d %s %s\n" ty (fst (Util.unloc loc)) "<>" mp)
 
 let dump_libref loc dp ty =
-  if !Flags.dump then
-    dump_string (Printf.sprintf "R%d %s <> <> %s\n" 
-			     (fst (Util.unloc loc)) (Names.string_of_dirpath dp) ty)
+  dump_string (Printf.sprintf "R%d %s <> <> %s\n" 
+		  (fst (Util.unloc loc)) (Names.string_of_dirpath dp) ty)
 
 let dump_notation_location pos ((path,df),sc) =
   let rec next growing =
@@ -218,7 +230,7 @@ let dump_notation_location pos ((path,df),sc) =
   let loc = next (pos >= !last_pos) in
     last_pos := pos;
     let path = Names.string_of_dirpath path in
-    let _sc = match sc with Some sc -> " "^sc | None -> "" in
+    let _sc = match sc with Some sc -> " "^sc | _ -> "" in
       dump_string (Printf.sprintf "R%d %s \"%s\" not\n" (fst (Util.unloc loc)) path df)
 
 

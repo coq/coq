@@ -82,18 +82,13 @@ let unsafe_set = ref Stringset.empty
 let add_unsafe s = unsafe_set := Stringset.add s !unsafe_set
 let is_unsafe s = Stringset.mem s !unsafe_set
 
-(* Dump of globalization (to be used by coqdoc) *)
-
-let noglob = ref false
-let dump = ref false
-
-(* Flags.for the virtual machine *)
+(* Flags for the virtual machine *)
 
 let boxed_definitions = ref true
 let set_boxed_definitions b = boxed_definitions := b
 let boxed_definitions _ = !boxed_definitions 
  
-(* Flags.for external tools *)
+(* Flags for external tools *)
 
 let subst_command_placeholder s t =
   let buff = Buffer.create (String.length s + String.length t) in

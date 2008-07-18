@@ -120,7 +120,7 @@ let dump_variable lid = ()
 let vernac_assumption env isevars kind l nl =
   let global = fst kind = Global in
     List.iter (fun (is_coe,(idl,c)) -> 
-      if !Flags.dump then
+      if Dumpglob.dump () then
 	List.iter (fun lid -> 
 	  if global then dump_definition lid "ax" 
 	  else dump_variable lid) idl;
@@ -140,7 +140,7 @@ let subtac (loc, command) =
   match command with
   | VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
       check_fresh lid;
-      dump_definition lid "def";
+      if Dumpglob.dump () then dump_definition lid "def";
       (match expr with
       | ProveBody (bl, t) -> 
 	  if Lib.is_modtype () then
@@ -153,12 +153,12 @@ let subtac (loc, command) =
   | VernacFixpoint (l, b) -> 
       List.iter (fun ((lid, _, _, _, _), _) -> 
 	check_fresh lid;
-	dump_definition lid "fix") l;
+	if Dumpglob.dump () then dump_definition lid "fix") l;
       let _ = trace (str "Building fixpoint") in
 	ignore(Subtac_command.build_recursive l b)
 	  
   | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
-      if !Flags.dump then dump_definition id "prf";
+      if Dumpglob.dump () then dump_definition id "prf";
       if not(Pfedit.refining ()) then
 	if lettop then
 	  errorlabstrm "Subtac_command.StartProof"
@@ -173,11 +173,12 @@ let subtac (loc, command) =
       vernac_assumption env isevars stre l nl
 	
   | VernacInstance (glob, sup, is, props, pri) ->
-      if !Flags.dump then dump_constraint "inst" is;
+      if Dumpglob.dump () then dump_constraint "inst" is;
       ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
 	
   | VernacCoFixpoint (l, b) ->
-      List.iter (fun ((lid, _, _, _), _) -> dump_definition lid "cofix") l;
+      if Dumpglob.dump () then 
+	List.iter (fun ((lid, _, _, _), _) -> dump_definition lid "cofix") l;
       ignore(Subtac_command.build_corecursive l b)
 	
   (*| VernacEndProof e -> 
