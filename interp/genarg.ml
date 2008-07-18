@@ -76,7 +76,7 @@ let exists_argtype s = List.mem s !dyntab
 
 type intro_pattern_expr =
   | IntroOrAndPattern of case_intro_pattern_expr
-  | IntroWildcard
+  | IntroWildcard of loc
   | IntroIdentifier of identifier
   | IntroAnonymous
   | IntroRewrite of bool
@@ -85,7 +85,7 @@ and case_intro_pattern_expr = intro_pattern_expr list list
 
 let rec pr_intro_pattern = function
   | IntroOrAndPattern pll -> pr_case_intro_pattern pll
-  | IntroWildcard -> str "_"
+  | IntroWildcard _ -> str "_"
   | IntroIdentifier id -> pr_id id
   | IntroAnonymous -> str "?"
   | IntroRewrite true -> str "->"

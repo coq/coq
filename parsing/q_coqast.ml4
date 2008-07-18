@@ -62,12 +62,16 @@ let mlexpr_of_reference = function
   | Libnames.Qualid (loc,qid) -> <:expr< Libnames.Qualid $dloc$ $mlexpr_of_qualid qid$ >>
   | Libnames.Ident (loc,id) -> <:expr< Libnames.Ident $dloc$ $mlexpr_of_ident id$ >>
 
+let mlexpr_of_located f (loc,x) = <:expr< ($dloc$, $f x$) >>
+
+let mlexpr_of_loc loc = <:expr< $dloc$ >>
+
 let mlexpr_of_by_notation f = function
   | Genarg.AN x -> <:expr< Genarg.AN $f x$ >>
   | Genarg.ByNotation (loc,s) -> <:expr< Genarg.ByNotation $dloc$ $str:s$ >>
 
 let mlexpr_of_intro_pattern = function
-  | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
+  | Genarg.IntroWildcard loc -> <:expr< Genarg.IntroWildcard $mlexpr_of_loc loc$ >>
   | Genarg.IntroAnonymous -> <:expr< Genarg.IntroAnonymous >>
   | Genarg.IntroFresh id -> <:expr< Genarg.IntroFresh (mlexpr_of_ident $dloc$ id) >>
   | Genarg.IntroIdentifier id ->
@@ -84,10 +88,6 @@ let mlexpr_of_or_metaid f = function
 let mlexpr_of_quantified_hypothesis = function
   | Rawterm.AnonHyp n -> <:expr< Rawterm.AnonHyp $mlexpr_of_int n$ >>
   | Rawterm.NamedHyp id ->  <:expr< Rawterm.NamedHyp $mlexpr_of_ident id$ >>
-
-let mlexpr_of_located f (loc,x) = <:expr< ($dloc$, $f x$) >>
-
-let mlexpr_of_loc loc = <:expr< $dloc$ >>
 
 let mlexpr_of_or_var f = function
   | Rawterm.ArgArg x -> <:expr< Rawterm.ArgArg $f x$ >>

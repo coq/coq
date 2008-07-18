@@ -625,7 +625,7 @@ let rec xlate_intro_pattern =
 	   (fun l ->
 	      CT_intro_patt_list(List.map xlate_intro_pattern l))
 	   ll)
-  | IntroWildcard -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
+  | IntroWildcard _ -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
   | IntroAnonymous -> xlate_error "TODO: IntroAnonymous"
   | IntroFresh _ -> xlate_error "TODO: IntroFresh"

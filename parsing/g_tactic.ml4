@@ -251,7 +251,7 @@ GEXTEND Gram
 	    | ([]|[_]|[_;_]) as l -> IntroOrAndPattern [l]
 	    | t::q -> IntroOrAndPattern [[t;pairify q]]
 	  in pairify (si::tc)
-      | "_" -> IntroWildcard
+      | "_" -> IntroWildcard loc
       | prefix = pattern_ident -> IntroFresh prefix
       | "?" -> IntroAnonymous
       | id = ident -> IntroIdentifier id

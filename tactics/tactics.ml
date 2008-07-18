@@ -882,10 +882,23 @@ let (assumption : tactic) = fun gl ->
  * subsequently used in other hypotheses or in the conclusion of the  
  * goal. *)                                                               
 
-let clear ids gl = (* avant seul dyn_clear n'echouait pas en [] *)
-  if ids=[] then tclIDTAC gl else with_check (thin ids) gl
+let clear ids = (* avant seul dyn_clear n'echouait pas en [] *)
+  if ids=[] then tclIDTAC else thin ids
 
 let clear_body = thin_body
+
+let clear_wildcards ids =
+  tclMAP (fun (loc,id) gl ->
+    try with_check (Tacmach.thin_no_check [id]) gl
+    with OccurHypInSimpleClause (id,ido) ->
+      (* Intercept standard [thin] error message *)
+      match ido with
+      | None ->
+	user_err_loc (loc,"",str "_ is used in conclusion.")
+      | Some id -> 
+	user_err_loc
+	  (loc,"",str "_ is used in hypothesis " ++ pr_id id ++ str "."))
+    ids
 
 (*   Takes a list of booleans, and introduces all the variables 
  *  quantified in the goal which are associated with a value
@@ -1056,7 +1069,7 @@ let clear_if_atomic l2r id gl =
 let rec explicit_intro_names = function
 | IntroIdentifier id :: l ->
     id :: explicit_intro_names l
-| (IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _) :: l ->
+| (IntroWildcard _ | IntroAnonymous | IntroFresh _ | IntroRewrite _) :: l ->
     explicit_intro_names l
 | IntroOrAndPattern ll :: l' -> 
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
@@ -1068,13 +1081,13 @@ let rec explicit_intro_names = function
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
 let rec intros_patterns avoid thin destopt = function
-  | IntroWildcard :: l ->
+  | IntroWildcard loc :: l ->
       tclTHEN 
         (intro_gen (IntroAvoid (avoid@explicit_intro_names l)) None true)
         (onLastHyp (fun id ->
 	  tclORELSE
 	    (tclTHEN (clear [id]) (intros_patterns avoid thin destopt l))
-	    (intros_patterns avoid (id::thin) destopt l)))
+	    (intros_patterns avoid ((loc,id)::thin) destopt l)))
   | IntroIdentifier id :: l ->
       tclTHEN
         (intro_gen (IntroMustBe id) destopt true)
@@ -1100,7 +1113,7 @@ let rec intros_patterns avoid thin destopt = function
 	      allClauses;
 	    clear_if_atomic l2r id;
 	    intros_patterns avoid thin destopt l ]))
-  | [] -> clear thin
+  | [] -> clear_wildcards thin
 
 let intros_pattern = intros_patterns [] []
 
@@ -1122,7 +1135,7 @@ let make_id s = fresh_id [] (match s with Prop _ -> hid | Type _ -> xid)
 let prepare_intros s ipat gl = match ipat with
   | IntroAnonymous -> make_id s gl, tclIDTAC
   | IntroFresh id -> fresh_id [] id gl, tclIDTAC
-  | IntroWildcard -> let id = make_id s gl in id, thin [id]
+  | IntroWildcard loc -> let id = make_id s gl in id, clear_wildcards [loc,id]
   | IntroIdentifier id -> id, tclIDTAC
   | IntroRewrite l2r -> 
       let id = make_id s gl in
@@ -1456,7 +1469,7 @@ let rec first_name_buggy = function
   | IntroOrAndPattern [] -> None
   | IntroOrAndPattern ([]::l) -> first_name_buggy (IntroOrAndPattern l)
   | IntroOrAndPattern ((p::_)::_) -> first_name_buggy p
-  | IntroWildcard -> None
+  | IntroWildcard _ -> None
   | IntroRewrite _ -> None
   | IntroIdentifier id -> Some id
   | IntroAnonymous | IntroFresh _ -> assert false
