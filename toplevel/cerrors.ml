@@ -34,17 +34,17 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
   | Stream.Failure -> 
       hov 0 (anomaly_string () ++ str "uncaught Stream.Failure.")
   | Stream.Error txt -> 
-      hov 0 (str "Syntax error: " ++ str txt)
+      hov 0 (str "Syntax error: " ++ str txt ++ str ".")
   | Token.Error txt -> 
-      hov 0 (str "Syntax error: " ++ str txt)
+      hov 0 (str "Syntax error: " ++ str txt ++ str ".")
   | Sys_error msg -> 
       hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ str (guill msg) ++ report_fn ())
   | UserError(s,pps) -> 
       hov 1 (str "User error: " ++ where s ++ pps)
   | Out_of_memory -> 
-      hov 0 (str "Out of memory")
+      hov 0 (str "Out of memory.")
   | Stack_overflow -> 
-      hov 0 (str "Stack overflow")
+      hov 0 (str "Stack overflow.")
   | Anomaly (s,pps) -> 
       hov 1 (anomaly_string () ++ where s ++ pps ++ report_fn ())
   | Match_failure(filename,pos1,pos2) ->
@@ -94,10 +94,11 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Error:" ++ spc () ++
 	       str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
 	       spc () ++ str "was not found" ++ 
-	       spc () ++ str "in the current" ++ spc () ++ str "environment")
+	       spc () ++ str "in the current" ++ spc () ++ str "environment.")
   | Nametab.GlobalizationConstantError q ->
       hov 0 (str "Error:" ++ spc () ++
-	       str "No constant of this name:" ++ spc () ++ Libnames.pr_qualid q)
+	       str "No constant of this name:" ++ spc () ++ 
+               Libnames.pr_qualid q ++ str ".")
   | Refiner.FailError (i,s) ->
       hov 0 (str "Error: Tactic failure" ++ s ++
              if i=0 then mt () else str " (level " ++ int i ++ str").")
@@ -145,7 +146,7 @@ let raise_if_debug e =
 let _ = Tactic_debug.explain_logic_error := explain_exn_default
 
 let _ = Tactic_debug.explain_logic_error_no_anomaly :=
-          explain_exn_default_aux (fun () -> mt()) (fun () -> mt())
+          explain_exn_default_aux (fun () -> mt()) (fun () -> str ".")
 
 let explain_exn_function = ref explain_exn_default
 

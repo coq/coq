@@ -31,7 +31,7 @@ Notation "a # b" := (Qmake a b) (at level 55, no associativity) : Q_scope.
 Definition inject_Z (x : Z) := Qmake x 1.
 Arguments Scope inject_Z [Z_scope].
 
-Notation " 'QDen'  p " := (Zpos (Qden p)) (at level 20, no associativity) : Q_scope.
+Notation QDen p := (Zpos (Qden p)).
 Notation " 0 " := (0#1) : Q_scope.
 Notation " 1 " := (1#1) : Q_scope.
 

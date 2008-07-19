@@ -21,7 +21,7 @@ Set Implicit Arguments.
 Require Export Classical.
 Require Import ChoiceFacts.
 
-Notation Local "'inhabited' A" := A (at level 200, only parsing).
+Notation Local inhabited A := A.
 
 Axiom constructive_definite_description :
   forall (A : Type) (P : A->Prop), (exists! x : A, P x) -> { x : A | P x }.

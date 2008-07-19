@@ -376,7 +376,7 @@ let rewrite_equations_gene othin neqns ba gl =
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
 let rec get_names allow_conj = function
-  | IntroWildcard ->
+  | IntroWildcard _ ->
       error "Discarding pattern not allowed for inversion equations"
   | IntroAnonymous ->
       error "Anonymous pattern not allowed for inversion equations"

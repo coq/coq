@@ -8,6 +8,7 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Names
 open Nameops
@@ -226,10 +227,20 @@ let internal_cut_rev d t = with_check (internal_cut_rev_no_check d t)
 let refine c           = with_check (refine_no_check c)
 let convert_concl d sty = with_check (convert_concl_no_check d sty)
 let convert_hyp d      = with_check (convert_hyp_no_check d)
-let thin l             = with_check (thin_no_check l)
 let thin_body c        = with_check (thin_body_no_check c)
 let move_hyp b id id'  = with_check (move_hyp_no_check b id id') 
 let rename_hyp l       = with_check (rename_hyp_no_check l)
+
+let thin l gl = 
+  try with_check (thin_no_check l) gl
+  with Evarutil.OccurHypInSimpleClause (id,ido) ->
+    match ido with
+    | None ->
+	errorlabstrm "" (pr_id id ++ str " is used in conclusion.")
+    | Some id' -> 
+	errorlabstrm "" 
+	 (pr_id id ++ strbrk " is used in hypothesis " ++ pr_id id' ++ str ".")
+
 
 (* Pretty-printers *)
 

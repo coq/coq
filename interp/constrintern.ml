@@ -50,7 +50,7 @@ let for_grammar f x =
 type internalisation_error =
   | VariableCapture of identifier
   | WrongExplicitImplicit
-  | NegativeMetavariable
+  | IllegalMetavariable
   | NotAConstructor of reference
   | UnboundFixName of bool * identifier
   | NonLinearPattern of identifier
@@ -66,8 +66,8 @@ let explain_wrong_explicit_implicit =
   str "Found an explicitly given implicit argument but was expecting" ++
   fnl () ++ str "a regular one"
 
-let explain_negative_metavariable =
-  str "Metavariable numbers must be positive"
+let explain_illegal_metavariable =
+  str "Metavariables allowed only in patterns"
 
 let explain_not_a_constructor ref =
   str "Unknown constructor: " ++ pr_reference ref
@@ -102,7 +102,7 @@ let explain_bad_explicitation_number n po =
 let explain_internalisation_error = function
   | VariableCapture id -> explain_variable_capture id
   | WrongExplicitImplicit -> explain_wrong_explicit_implicit
-  | NegativeMetavariable -> explain_negative_metavariable
+  | IllegalMetavariable -> explain_illegal_metavariable
   | NotAConstructor ref -> explain_not_a_constructor ref
   | UnboundFixName (iscofix,id) -> explain_unbound_fix_name iscofix id
   | NonLinearPattern id -> explain_non_linear_pattern id
@@ -1086,7 +1086,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
     | CPatVar (loc, n) when allow_patvar ->
 	RPatVar (loc, n)
     | CPatVar (loc, _) ->
-	raise (InternalisationError (loc,NegativeMetavariable))
+	raise (InternalisationError (loc,IllegalMetavariable))
     | CEvar (loc, n, l) ->
 	REvar (loc, n, Option.map (List.map (intern env)) l)
     | CSort (loc, s) ->

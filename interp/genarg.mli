@@ -33,7 +33,7 @@ type 'a with_ebindings = 'a * open_constr bindings
 
 type intro_pattern_expr =
   | IntroOrAndPattern of case_intro_pattern_expr
-  | IntroWildcard
+  | IntroWildcard of loc
   | IntroIdentifier of identifier
   | IntroAnonymous
   | IntroRewrite of bool

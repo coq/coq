@@ -148,6 +148,8 @@ Libraries (DOC TO CHECK)
   descriptions: Epsilon.v, Description.v and IndefiniteDescription.v.
 - Definition of pred and minus made compatible with the structural
   decreasing criterion for use in fixpoints.
+- Files Relations/Rstar.v and Relations/Newman.v moved out to the user
+  contribution repository (contribution CoC_History).
 
 Notations, coercions, implicit arguments and type inference
 

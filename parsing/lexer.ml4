@@ -324,43 +324,49 @@ let rec comment bp = parser bp2
 (* Parse a special token, using the [token_tree] *)
 
 (* Peek as much utf-8 lexemes as possible *)
-(* then look if a special token is obtained *)
-let rec special tt cs =
-  match Stream.peek cs with
-    | Some c -> progress_from_byte 0 tt cs c
-    | None -> tt.node
+(* and retain the longest valid special token obtained *)
+let rec progress_further last nj tt cs =
+  try progress_from_byte last nj tt cs (List.nth (Stream.npeek (nj+1) cs) nj)
+  with Failure _ -> last
 
-  (* nr is the number of char peeked; n the number of char in utf8 block *)
-and progress_utf8 nr n c tt cs =
+and update_longest_valid_token last nj tt cs =
+  match tt.node with
+  | Some _ as last' ->
+      for i=1 to nj do Stream.junk cs done; 
+      progress_further last' 0 tt cs
+  | None ->
+      progress_further last nj tt cs
+
+(* nr is the number of char peeked since last valid token *)
+(* n the number of char in utf8 block *)
+and progress_utf8 last nj n c tt cs =
   try
     let tt = CharMap.find c tt.branch in
-    let tt =
-      if n=1 then tt else
-	match Stream.npeek (n-nr) cs with
-	| l when List.length l = n-nr ->
-	    let l = Util.list_skipn (1-nr) l in
-	    List.iter (check_utf8_trailing_byte cs) l;
-	    List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l
-	| _ -> 
-	    error_utf8 cs
-    in
-    for i=1 to n-nr do Stream.junk cs done;
-    special tt cs
+    if n=1 then
+      update_longest_valid_token last (nj+n) tt cs
+    else
+      match Util.list_skipn (nj+1) (Stream.npeek (nj+n) cs) with
+      | l when List.length l = n-1 ->
+	 List.iter (check_utf8_trailing_byte cs) l;
+	 let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
+	 update_longest_valid_token last (nj+n) tt cs
+      | _ -> 
+	  error_utf8 cs
   with Not_found ->
-    tt.node
+    last
 
-and progress_from_byte nr tt cs = function
+and progress_from_byte last nj tt cs = function
   (* Utf8 leading byte *)
-  | '\x00'..'\x7F' as c -> progress_utf8 nr 1 c tt cs
-  | '\xC0'..'\xDF' as c -> progress_utf8 nr 2 c tt cs
-  | '\xE0'..'\xEF' as c -> progress_utf8 nr 3 c tt cs
-  | '\xF0'..'\xF7' as c -> progress_utf8 nr 4 c tt cs
+  | '\x00'..'\x7F' as c -> progress_utf8 last nj 1 c tt cs
+  | '\xC0'..'\xDF' as c -> progress_utf8 last nj 2 c tt cs
+  | '\xE0'..'\xEF' as c -> progress_utf8 last nj 3 c tt cs
+  | '\xF0'..'\xF7' as c -> progress_utf8 last nj 4 c tt cs
   | _ (* '\x80'..\xBF'|'\xF8'..'\xFF' *) ->
       error_utf8 cs
 
 (* Must be a special token *)
 let process_chars bp c cs =
-  let t = progress_from_byte 1 !token_tree cs c in
+  let t = progress_from_byte None (-1) !token_tree cs c in
   let ep = Stream.count cs in
   match t with
     | Some t -> (("", t), (bp, ep))

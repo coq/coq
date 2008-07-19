@@ -172,7 +172,11 @@ val pr_tycon_type : env -> type_constraint_type -> Pp.std_ppcmds
 val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
 
 
-(**********************************)
-(* Removing hyps in evars'context *)
+(*********************************************************************)
+(* Removing hyps in evars'context;                                   *)
+(* raise OccurHypInSimpleClause if the removal breaks dependencies   *)
+
+exception OccurHypInSimpleClause of identifier * identifier option
+
 val clear_hyps_in_evi : evar_defs ref -> named_context_val -> types ->
   identifier list -> named_context_val * types

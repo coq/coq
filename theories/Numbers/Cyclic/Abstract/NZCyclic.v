@@ -89,8 +89,8 @@ Open Local Scope IntScope.
 Notation "x == y"  := (NZeq x y) (at level 70) : IntScope.
 Notation "x ~= y" := (~ NZeq x y) (at level 70) : IntScope.
 Notation "0" := NZ0 : IntScope.
-Notation "'S'" := NZsucc : IntScope.
-Notation "'P'" := NZpred : IntScope.
+Notation S x := (NZsucc x).
+Notation P x := (NZpred x).
 (*Notation "1" := (S 0) : IntScope.*)
 Notation "x + y" := (NZadd x y) : IntScope.
 Notation "x - y" := (NZsub x y) : IntScope.

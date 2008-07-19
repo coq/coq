@@ -437,12 +437,14 @@ let rec check_and_clear_in_constr evdref c ids hist =
 
       | _ -> map_constr (fun c -> check_and_clear_in_constr evdref c ids hist) c
 
+exception OccurHypInSimpleClause of identifier * identifier option
+
 let clear_hyps_in_evi evdref hyps concl ids =
   (* clear_evar_hyps erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occuring in evi *)
   let nconcl = try check_and_clear_in_constr evdref concl ids EvkSet.empty
-    with Dependency_error id' -> error (string_of_id id' ^ " is used in conclusion") in
+    with Dependency_error id' -> raise (OccurHypInSimpleClause (id',None)) in
   let (nhyps,_) = 
     let check_context (id,ob,c) = 
       try
@@ -451,8 +453,7 @@ let clear_hyps_in_evi evdref hyps concl ids =
 	    None -> None
 	  | Some b -> Some (check_and_clear_in_constr evdref b ids EvkSet.empty)),
 	check_and_clear_in_constr evdref c ids EvkSet.empty)
-      with Dependency_error id' -> error (string_of_id id' ^ " is used in hypothesis "
-					   ^ string_of_id id) 
+      with Dependency_error id' -> raise (OccurHypInSimpleClause (id',Some id))
     in
     let check_value vk =
       match !vk with
