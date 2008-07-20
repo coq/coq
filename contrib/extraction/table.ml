@@ -175,6 +175,7 @@ let info_axioms = ref Refset.empty
 let log_axioms = ref Refset.empty
 let init_axioms () = info_axioms := Refset.empty; log_axioms := Refset.empty
 let add_info_axiom r = info_axioms := Refset.add r !info_axioms
+let remove_info_axiom r = info_axioms := Refset.remove r !info_axioms
 let add_log_axiom r = log_axioms := Refset.add r !log_axioms
 
 (*s Extraction mode: modular or monolithic *)
