@@ -177,8 +177,10 @@ let usage () =
 
 let warning s = msg_warning (str s)
 
+
 let ide_args = ref []
 let parse_args is_ide =
+  let glob_opt = ref false in
   let rec parse = function
     | [] -> ()
     | "-with-geoproof" :: s :: rem -> 
@@ -240,20 +242,20 @@ let parse_args is_ide =
     | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
     | "-load-vernac-object" :: []       -> usage ()
 
-    | "-dump-glob" :: "stdout" :: rem -> Dumpglob.dump_to_stdout (); parse rem
+    | "-dump-glob" :: "stdout" :: rem -> Dumpglob.dump_to_stdout (); glob_opt := true; parse rem
 	  (* À ne pas documenter : l'option 'stdout' n'étant
 	     éventuellement utile que pour le debugging... *)
-    | "-dump-glob" :: f :: rem -> Dumpglob.dump_into_file f; parse rem
+    | "-dump-glob" :: f :: rem -> Dumpglob.dump_into_file f; glob_opt := true; parse rem
     | "-dump-glob" :: []       -> usage ()
-    | ("-no-glob" | "-noglob") :: rem -> Dumpglob.noglob (); parse rem
+    | ("-no-glob" | "-noglob") :: rem -> Dumpglob.noglob (); glob_opt := true; parse rem
 
     | "-require" :: f :: rem -> add_require f; parse rem
     | "-require" :: []       -> usage ()
 
-    | "-compile" :: f :: rem -> add_compile false f; parse rem
+    | "-compile" :: f :: rem -> add_compile false f; if not !glob_opt then Dumpglob.dump_to_dotglob (); parse rem
     | "-compile" :: []       -> usage ()
 
-    | "-compile-verbose" :: f :: rem -> add_compile true f; parse rem
+    | "-compile-verbose" :: f :: rem -> add_compile true f;  if not !glob_opt then Dumpglob.dump_to_dotglob (); parse rem
     | "-compile-verbose" :: []       -> usage ()
 
     | "-dont-load-proofs" :: rem -> Flags.dont_load_proofs := true; parse rem

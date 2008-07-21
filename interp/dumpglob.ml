@@ -25,22 +25,25 @@ let dump_string s =
   Pervasives.output_string !glob_file s
 
 type glob_output_t = 
-    | None
+    | NoGlob
     | StdOut
     | MultFiles
     | File of string
 
-let glob_output = ref MultFiles
+let glob_output = ref NoGlob
 
-let dump () = !glob_output != None
+let dump () = !glob_output != NoGlob
 
-let noglob () = glob_output := None
+let noglob () = glob_output := NoGlob
 
-let dump_to_stdout () = glob_output := StdOut
+let dump_to_stdout () = glob_output := StdOut; glob_file := Pervasives.stdout
 
 let multi_dump () = !glob_output = MultFiles
 
+let dump_to_dotglob f = glob_output := MultFiles
+
 let dump_into_file f = glob_output := File f; open_glob_file f
+
 
 let previous_state = ref MultFiles
 let pause () = previous_state := !glob_output
