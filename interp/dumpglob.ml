@@ -46,7 +46,7 @@ let dump_into_file f = glob_output := File f; open_glob_file f
 
 
 let previous_state = ref MultFiles
-let pause () = previous_state := !glob_output
+let pause () = previous_state := !glob_output; glob_output := NoGlob
 let continue () = glob_output := !previous_state
 
 
