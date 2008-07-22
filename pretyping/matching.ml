@@ -208,7 +208,7 @@ let matches_core convert allow_partial_app pat c =
   let names,terms = sorec [] ([],[]) pat c in
   (names,Sort.list (fun (a,_) (b,_) -> a<b) terms)
 
-let extended_matches = matches_core None false
+let extended_matches = matches_core None true
 
 let matches c p = snd (matches_core None false c p)
 
