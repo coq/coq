@@ -467,7 +467,7 @@ let discharge_arguments_scope (_,(req,r,l)) =
   if req = ArgsScopeNoDischarge or (isVarRef r & Lib.is_in_section r) then None
   else Some (req,Lib.discharge_global r,l)
 
-let rebuild_arguments_scope (_,(req,r,l)) =
+let rebuild_arguments_scope (req,r,l) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->

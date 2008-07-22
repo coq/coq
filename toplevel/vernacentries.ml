@@ -785,6 +785,14 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
+      optname  = "manual implicit arguments";
+      optkey   = (TertiaryTable ("Manual","Implicit","Arguments"));
+      optread  = Impargs.is_manual_implicit_args;
+      optwrite = Impargs.make_manual_implicit_args }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
       optname  = "strict implicit arguments";
       optkey   = (SecondaryTable ("Strict","Implicit"));
       optread  = Impargs.is_strict_implicit_args;

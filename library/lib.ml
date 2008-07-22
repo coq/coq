@@ -216,9 +216,9 @@ let add_leaf id obj =
   add_entry oname (Leaf obj);
   oname
 
-let add_discharged_leaf id varinfo obj =
+let add_discharged_leaf id obj =
   let oname = make_oname id in
-  let newobj = rebuild_object (varinfo, obj) in
+  let newobj = rebuild_object obj in
   cache_object (oname,newobj);
   add_entry oname (Leaf newobj)
 
@@ -439,10 +439,12 @@ let what_is_opened () = find_entry_p is_something_opened
    - the list of substitution to do at section closing 
 *)
 
-type abstr_list = Sign.named_context Names.Cmap.t * Sign.named_context Names.KNmap.t
+type variable_info = Names.identifier * Rawterm.binding_kind * Term.constr option * Term.types
+type variable_context = variable_info list
+type abstr_list = variable_context Names.Cmap.t * variable_context Names.KNmap.t
 
 let sectab =
-  ref ([] : ((Names.identifier * bool * Term.types option) list * Cooking.work_list * abstr_list) list)
+  ref ([] : ((Names.identifier * Rawterm.binding_kind * Term.types option) list * Cooking.work_list * abstr_list) list)
 
 let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.KNmap.empty),(Names.Cmap.empty,Names.KNmap.empty)) :: !sectab
@@ -453,25 +455,34 @@ let add_section_variable id impl keep =
     | (vars,repl,abs)::sl -> sectab := ((id,impl,keep)::vars,repl,abs)::sl
 
 let rec extract_hyps = function
-  | ((id,impl,keep)::idl,(id',_,_ as d)::hyps) when id=id' -> d :: extract_hyps (idl,hyps)
-  | ((id,impl,Some ty)::idl,hyps) -> (id,None,ty) :: extract_hyps (idl,hyps)
+  | ((id,impl,keep)::idl,(id',b,t)::hyps) when id=id' -> (id',impl,b,t) :: extract_hyps (idl,hyps)
+  | ((id,impl,Some ty)::idl,hyps) -> (id,impl,None,ty) :: extract_hyps (idl,hyps)
   | (id::idl,hyps) -> extract_hyps (idl,hyps)
   | [], _ -> []
+
+let instance_from_variable_context sign =
+  let rec inst_rec = function
+    | (id,b,None,_) :: sign -> id :: inst_rec sign
+    | _ :: sign -> inst_rec sign
+    | [] -> [] in
+  Array.of_list (inst_rec sign)
+
+let named_of_variable_context = List.map (fun (id,_,b,t) -> (id,b,t))
 
 let add_section_replacement f g hyps =
   match !sectab with
   | [] -> ()
   | (vars,exps,abs)::sl ->
     let sechyps = extract_hyps (vars,hyps) in
-    let args = Sign.instance_from_named_context (List.rev sechyps) in
-    sectab := (vars,f (Array.map Term.destVar args) exps,g sechyps abs)::sl
+    let args = instance_from_variable_context (List.rev sechyps) in
+    sectab := (vars,f args exps,g sechyps abs)::sl
 	
 let add_section_kn kn =
-  let f = (fun x (l1,l2) -> (l1,Names.KNmap.add kn x l2)) in
+  let f x (l1,l2) = (l1,Names.KNmap.add kn x l2) in
   add_section_replacement f f
 
 let add_section_constant kn =
-  let f = (fun x (l1,l2) -> (Names.Cmap.add kn x l1,l2)) in
+  let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
   add_section_replacement f f
 
 let replacement_context () = pi2 (List.hd !sectab)
@@ -562,10 +573,6 @@ let close_section id =
     with Not_found ->
       error "no opened section"
   in
-  let var_info = List.map
-    (fun (x, y, z) -> (x, y, match z with Some _ -> true | None -> false))
-    (variables_context ())
-  in
   let (secdecls,secopening,before) = split_lib oname in
   lib_stk := before;
   let full_olddir = fst !path_prefix in
@@ -574,7 +581,7 @@ let close_section id =
   if !Flags.xml_export then !xml_close_section id;
   let newdecls = List.map discharge_item secdecls in
   Summary.section_unfreeze_summaries fs;
-  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id var_info o)) newdecls;
+  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
   Cooking.clear_cooking_sharing ();
   Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
 

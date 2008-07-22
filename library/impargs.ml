@@ -27,6 +27,7 @@ open Topconstr
 
 type implicits_flags = {
   main : bool;
+  manual : bool;                     (* automatic or manual only *)
   strict : bool;                   (* true = strict *)
   strongly_strict : bool;            (* true = strongly strict *)
   reversible_pattern : bool;
@@ -38,6 +39,7 @@ type implicits_flags = {
 
 let implicit_args = ref { 
   main = false;
+  manual = false;
   strict = true;
   strongly_strict = false;
   reversible_pattern = false;
@@ -47,6 +49,10 @@ let implicit_args = ref {
 
 let make_implicit_args flag =
   implicit_args := { !implicit_args with main = flag }
+
+let make_manual_implicit_args flag =
+  implicit_args := { !implicit_args with main = if flag then true else !implicit_args.main;
+    manual = flag }
 
 let make_strict_implicit_args flag =
   implicit_args := { !implicit_args with strict = flag }
@@ -64,6 +70,7 @@ let make_maximal_implicit_args flag =
   implicit_args := { !implicit_args with maximal = flag }
 
 let is_implicit_args () = !implicit_args.main
+let is_manual_implicit_args () = !implicit_args.manual
 let is_strict_implicit_args () = !implicit_args.strict
 let is_strongly_strict_implicit_args () = !implicit_args.strongly_strict
 let is_reversible_pattern_implicit_args () = !implicit_args.reversible_pattern
@@ -245,10 +252,6 @@ let compute_implicits_flags env f all t =
 let set_implicit id imp insmax =
   (id,(match imp with None -> Manual | Some imp -> imp),insmax)
 
-let merge_imps f = function 
-    None -> Some Manual
-  | x -> x
-
 let rec assoc_by_pos k = function
     (ExplByPos (k', x), b) :: tl when k = k' -> (x,b), tl
   | hd :: tl -> let (x, tl) = assoc_by_pos k tl in x, hd :: tl
@@ -307,11 +310,15 @@ let compute_manual_implicits env flags t enriching l =
   in
   merge 1 l autoimps
 
+let const v _ = v
+
 let compute_implicits_auto env f manual t =
   match manual with
-      [] -> let l = compute_implicits_flags env f false t in
-	      prepare_implicits f l
-    | _ -> compute_manual_implicits env f t true manual
+  | [] -> 
+      let l = compute_implicits_flags env f false t in
+	if f.manual then List.map (const None) l
+	else prepare_implicits f l
+  | _ -> compute_manual_implicits env f t (not f.manual) manual
 	
 let compute_implicits env t = compute_implicits_auto env !implicit_args [] t
 
@@ -415,12 +422,18 @@ let list_split_at index l =
     | [] -> failwith "list_split_at: Invalid argument"
   in aux 0 [] l
     
-let merge_impls newimpls oldimpls =
-  let before, after = list_split_at (List.length newimpls - List.length oldimpls) newimpls in
+let merge_impls oldimpls newimpls =
+  let (before, news), olds = 
+    let len = List.length newimpls - List.length oldimpls in
+      if len >= 0 then list_split_at len newimpls, oldimpls
+      else 
+	let before, after = list_split_at (-len) oldimpls in
+	  (before, newimpls), after
+  in
     before @ (List.map2 (fun orig ni ->
       match orig with
       | Some (_, Manual, _) -> orig
-      | _ -> ni) oldimpls after)
+      | _ -> ni) olds news)
 
 (* Caching implicits *)
 
@@ -454,34 +467,67 @@ let subst_implicits_decl subst (r,imps as o) =
 let subst_implicits (_,subst,(req,l)) =
   (ImplLocal,list_smartmap (subst_implicits_decl subst) l)
 
+let impls_of_context ctx =
+  List.rev_map (fun (id,impl,_,_) -> if impl = Rawterm.Implicit then Some (id, Manual, true) else None)
+    (List.filter (fun (_,_,b,_) -> b = None) ctx)
+
+let section_segment_of_reference = function
+  | ConstRef con -> section_segment_of_constant con
+  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
+      section_segment_of_mutual_inductive kn
+  | _ -> []
+
 let discharge_implicits (_,(req,l)) =
   match req with
   | ImplLocal -> None
   | ImplInteractive (ref,flags,exp) -> 
-      Some (ImplInteractive (pop_global_reference ref,flags,exp),l)
+      let vars = section_segment_of_reference ref in
+      let ref' = pop_global_reference ref in
+      let l' = [ref', impls_of_context vars @ snd (List.hd l)] in
+      Some (ImplInteractive (ref',flags,exp),l')
   | ImplConstant (con,flags) ->
-      Some (ImplConstant (pop_con con,flags),l)
+      let con' = pop_con con in
+      let l' = [ConstRef con',impls_of_context (section_segment_of_constant con) @ snd (List.hd l)] in
+	Some (ImplConstant (con',flags),l')
   | ImplMutualInductive (kn,flags) ->
-      Some (ImplMutualInductive (pop_kn kn,flags),l)
+      let l' = List.map (fun (gr, l) -> 
+	let vars = section_segment_of_reference gr in
+	  (pop_global_reference gr, impls_of_context vars @ l)) l 
+      in
+	Some (ImplMutualInductive (pop_kn kn,flags),l')
 
-let rebuild_implicits (info,(req,l)) =
-  let manual = List.fold_left (fun acc (id, impl, keep) -> 
-    if impl then (ExplByName id, (true, true)) :: acc else acc)
-    [] info
-  in
+let rebuild_implicits (req,l) =
   let l' = match req with
   | ImplLocal -> assert false
   | ImplConstant (con,flags) -> 
-      [ConstRef con, compute_constant_implicits flags manual con]
+      let oldimpls = snd (List.hd l) in
+      let newimpls = compute_constant_implicits flags [] con in
+      [ConstRef con, merge_impls oldimpls newimpls]
   | ImplMutualInductive (kn,flags) ->
-      compute_all_mib_implicits flags manual kn
+      let newimpls = compute_all_mib_implicits flags [] kn in
+      let rec aux olds news = 
+	match olds, news with
+	| (_, oldimpls) :: old, (gr, newimpls) :: tl ->
+	    (gr, merge_impls oldimpls newimpls) :: aux old tl
+	| [], [] -> []
+	| _, _ -> assert false
+      in aux l newimpls
+
   | ImplInteractive (ref,flags,o) ->
       match o with
-      | ImplAuto -> [ref,compute_global_implicits flags manual ref]
-      | ImplManual l -> 
-	  let auto = compute_global_implicits flags manual ref in
-(* 	  let auto = if flags.main then auto else List.map (fun _ -> None) auto in *)
-	  let l' = merge_impls auto l in [ref,l']
+      | ImplAuto -> 
+	  let oldimpls = snd (List.hd l) in
+	  let newimpls = compute_global_implicits flags [] ref in
+	    [ref,merge_impls oldimpls newimpls]
+      | ImplManual m -> 
+	  let oldimpls = snd (List.hd l) in
+	  let auto = 
+	    if flags.main then
+	      let newimpls = compute_global_implicits flags [] ref in
+		merge_impls oldimpls newimpls
+	    else oldimpls
+	  in
+	  let l' = merge_impls auto m in [ref,l']
   in (req,l')
 
 let export_implicits (req,_ as x) = 

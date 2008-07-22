@@ -2,6 +2,8 @@ Inductive vector {A : Type} : nat -> Type :=
 | vnil : vector 0
 | vcons : A -> forall {n'}, vector n' -> vector (S n').
 
+Implicit Arguments vector [].
+
 Require Import Coq.Program.Program.
 
 Program Definition head {A : Type} {n : nat} (v : vector A (S n)) : vector A n :=

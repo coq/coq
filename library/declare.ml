@@ -57,10 +57,12 @@ let cache_variable ((sp,_),o) =
   let impl,opaq,cst,keep = match d with (* Fails if not well-typed *)
     | SectionLocalAssum (ty, impl, keep) ->
         let cst = Global.push_named_assum (id,ty) in
-        impl, true, cst, (if keep then Some ty else None)
+	let impl = if impl then Rawterm.Implicit else Rawterm.Explicit in
+	let keep = if keep then Some ty else None in
+	impl, true, cst, keep
     | SectionLocalDef (c,t,opaq) -> 
         let cst = Global.push_named_def (id,c,t) in
-        false, opaq, cst, None in
+        Rawterm.Explicit, opaq, cst, None in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl keep;
   Dischargedhypsmap.set_discharged_hyps sp [];
@@ -116,7 +118,7 @@ let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
 
 let discharged_hyps kn sechyps =
   let (_,dir,_) = repr_kn kn in
-  let args = array_map_to_list destVar (instance_from_named_context sechyps) in
+  let args = Array.to_list (instance_from_variable_context sechyps) in
   List.rev (List.map (Libnames.make_path dir) args)
 
 let discharge_constant ((sp,kn),(cdt,dhyps,kind)) =
@@ -124,7 +126,7 @@ let discharge_constant ((sp,kn),(cdt,dhyps,kind)) =
   let cb = Global.lookup_constant con in
   let repl = replacement_context () in
   let sechyps = section_segment_of_constant con in
-  let recipe = { d_from=cb; d_modlist=repl; d_abstract=sechyps } in
+  let recipe = { d_from=cb; d_modlist=repl; d_abstract=named_of_variable_context sechyps } in
   Some (GlobalRecipe recipe,(discharged_hyps kn sechyps)@dhyps,kind)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
@@ -235,7 +237,7 @@ let discharge_inductive ((sp,kn),(dhyps,mie)) =
   let repl = replacement_context () in
   let sechyps = section_segment_of_mutual_inductive kn in
   Some (discharged_hyps kn sechyps,
-        Discharge.process_inductive sechyps repl mie)
+        Discharge.process_inductive (named_of_variable_context sechyps) repl mie)
 
 let dummy_one_inductive_entry mie = {
   mind_entry_typename = mie.mind_entry_typename;

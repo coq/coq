@@ -492,10 +492,12 @@ let context ?(hook=fun _ -> ()) l =
 		add_instance (Typeclasses.new_instance tc None false cst);
 		hook (ConstRef cst)
 	    | None -> ()
-      else
-	(Command.declare_one_assumption false (Local (* global *), Definitional) t
-	    [] true (* implicit *) true (* always kept *) false (* inline *) (dummy_loc, id);
-	 match class_of_constr t with
-	     None -> ()
-	   | Some tc -> hook (VarRef id)))
+      else (
+	let impl = List.exists (fun (x,_) -> match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
+	in
+	  Command.declare_one_assumption false (Local (* global *), Definitional) t
+	    [] impl (* implicit *) true (* always kept *) false (* inline *) (dummy_loc, id);
+	  match class_of_constr t with
+	  | None -> ()
+	  | Some tc -> hook (VarRef id)))
       (List.rev ctx)

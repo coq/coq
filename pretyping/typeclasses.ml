@@ -197,8 +197,8 @@ let discharge (_,(cl,m,inst)) =
 	let ctx = abs_context cl in
 	{ cl with cl_impl = cl_impl';
 	  cl_context = 
-	    List.map (fun (na,b,t) -> None, (Name na,b,t)) ctx @
-	      (discharge_context (List.map pi1 ctx) cl.cl_context);
+	    List.map (fun (na,impl,b,t) -> None, (Name na,b,t)) ctx @
+	      (discharge_context (List.map (fun (na, _, _, _) -> na) ctx) cl.cl_context);
 	  cl_projs = list_smartmap (fun (x, y) -> x, Lib.discharge_con y) cl.cl_projs }
     in Gmap.add cl_impl' cl' acc
   in
@@ -216,7 +216,7 @@ let discharge (_,(cl,m,inst)) =
   let instances = Gmap.fold subst_inst inst Gmap.empty in
     Some (classes, m, instances)
       
-let rebuild (_,(cl,m,inst)) =
+let rebuild (cl,m,inst) =
   let inst = 
     Gmap.map (fun insts -> 
       Cmap.fold (fun k is insts -> 
