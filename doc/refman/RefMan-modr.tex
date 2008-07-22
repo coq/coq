@@ -27,7 +27,7 @@ an access path
 is a structure expression, $p$ and $p'$ are access paths, $t$ is a term 
 and $T$ is the type of $t$.
 \end{itemize}
-
+The symbol $W$ will be used to denote a plain structure or a functor.
 \paragraph{Module definition,} is written $\Mod{X}{S}{S'}$ and
  consists of a module variable $X$, a module type
 $S$ which can be any structure expression and optionally a module implementation $S'$ 
@@ -56,8 +56,8 @@ We also need additional typing judgments:
 \item \WTM{E}{p}{S}, denoting that the module pointed by $p$ has type $S$ in
 environment $E$.
 
-\item \WEV{E}{S}{\overline{S}}, denoting that a structure $S$ is evaluated to 
-a structure $\overline{S}$ in weak head normal form.
+\item \WEV{E}{S}{W}, denoting that a structure $S$ is evaluated to 
+a structure $W$ in weak head normal form.
 
 \item \WS{E}{S_1}{S_2}, denoting that a structure $S_1$ is a subtype of a
 structure $S_2$.
@@ -78,7 +78,7 @@ The rules for forming structures are the following:
 \item[WF-FUN]
 \inference{%
   \frac{
-    \WFT{E;\ModS{X}{S}}{\overline{S'}}
+    \WEV{E;\ModS{X}{S}}{S'}{W}\qquad\WFT{E;\ModS{X}{S}}{W}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WFT{E}{\functor{X}{S}{S'}}
   }
@@ -90,8 +90,8 @@ Evaluation of structures to weak head normal form:
 \inference{%
   \frac{
     \begin{array}{c}
-    \WEV{E}{S}{\functor{X}{S_1}{S_2}}~~~~~\WEV{E}{S_1}{\overline{S_1}}\\
-    \WTM{E}{p}{S_3}\qquad \WS{E}{S_3}{\overline{S_1}}
+    \WEV{E}{S}{\functor{X}{S_1}{S_2}}~~~~~\WEV{E}{S_1}{W_1}\\
+    \WTM{E}{p}{W_3}\qquad \WS{E}{W_3}{W_1}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WEV{E}{S\,p}{S_2\{p/X,t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}}
@@ -100,18 +100,18 @@ Evaluation of structures to weak head normal form:
 \end{description}
 In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
  substitution from the inlining mechanism. We substitute in $S$ the
- inlined fields $p_i.c_i$ form $\ModS{X}{S_1}$ by the corresponding delta-reduced term $t_i$ in $p$.
+ inlined fields $p_i.c_i$ form $\ModS{X}{S_1}$ by the corresponding delta-reduced term $t_i$ in~$p$.
 \begin{description}
 \item[WEVAL-WITH-MOD]
 \inference{%
   \frac{
     \begin{array}{c}
-    \WEV{E}{S}{\structe{\ModS{X}{S_1}}}~~~~~\WEV{E;\elem_1;\ldots;\elem_i}{S_1}{\overline{S_1}}\\
-    \WTM{E}{p}{S_2}\qquad \WS{E;\elem_1;\ldots;\elem_i}{S_2}{\overline{S_1}}
+    \WEV{E}{S}{\structe{\ModS{X}{S_1}}}~~~~~\WEV{E;\elem_1;\ldots;\elem_{i-1}}{S_1}{W_1}\\
+    \WTM{E}{p}{W_2}\qquad \WS{E;\elem_1;\ldots;\elem_{i-1}}{W_2}{W_1}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \begin{array}{c}
-    \WEVT{E}{\with{S}{x}{p}}{\structes{\ModA{X}{p}}{p/X}}
+    \WEVT{E}{\with{S}{x}{p}}{\structes{\ModA{X_1}{p}}{p/X}}
     \end{array}
   }
 }
@@ -120,11 +120,11 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
   \frac{
     \begin{array}{c}
     \WEV{E}{S}{\structe{\ModS{X_1}{S_1}}}\\
-    \WEV{E;\elem_1;\ldots;\elem_i}{\with{S_1}{p}{p_1}}{\overline{S_2}}
+    \WEV{E;\elem_1;\ldots;\elem_{i-1}}{\with{S_1}{p}{p_1}}{W_1}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \begin{array}{c}
-    \WEVT{E}{\with{S}{X_1.p}{p_1}}{\structes{\ModS{X}{\overline{S_2}}}{p_1/X_1.p}}
+    \WEVT{E}{\with{S}{X_1.p}{p_1}}{\structes{\ModS{X_1}{W_1}}{p_1/X_1.p}}
     \end{array}
   }
 }
@@ -133,7 +133,7 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
   \frac{
     \begin{array}{c}
     \WEV{E}{S}{\structe{\Assum{}{c}{T_1}}}\\
-    \WS{E;\elem_1;\ldots;\elem_i}{\Def{}{c}{t}{T}}{\Assum{}{c}{T_1}}
+    \WS{E;\elem_1;\ldots;\elem_{i-1}}{\Def{}{c}{t}{T}}{\Assum{}{c}{T_1}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \begin{array}{c}
@@ -146,11 +146,11 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
   \frac{
     \begin{array}{c}
     \WEV{E}{S}{\structe{\ModS{X_1}{S_1}}}\\
-    \WEV{E;\elem_1;\ldots;\elem_i}{\with{S_1}{p}{p_1}}{\overline{S_2}}
+    \WEV{E;\elem_1;\ldots;\elem_{i_1}}{\with{S_1}{p}{p_1}}{W_1}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \begin{array}{c}
-    \WEVT{E}{\with{S}{X_1.p}{t:T}}{\structe{\ModS{X}{\overline{S_2}}}}
+    \WEVT{E}{\with{S}{X_1.p}{t:T}}{\structe{\ModS{X}{W_1}}}
     \end{array}
   }
 }
@@ -160,20 +160,20 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
   \frac{
     \begin{array}{c}
     \WEV{E}{p}{\structe{ \Mod{X}{S}{S_1}}}\\
-    \WEV{E;\elem_1;\ldots;\elem_i}{S}{\overline{S}}
+    \WEV{E;\elem_1;\ldots;\elem_{i-1}}{S}{W}
    \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{p.X}{\overline{S}}
+    \WEV{E}{p.X}{W}
   }
 }
 \inference{%
   \frac{
     \begin{array}{c}
     \WF{E}{}~~~~~~\Mod{X}{S}{S_1}\in E\\
-    \WEV{E}{S}{\overline{S}}
+    \WEV{E}{S}{W}
    \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{X}{\overline{S}}
+    \WEV{E}{X}{W}
   }
 }
 \item[WEVAL-PATH-ALIAS]
@@ -181,20 +181,20 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
   \frac{
     \begin{array}{c}
     \WEV{E}{p}{\structe{\ModA{X}{p_1}}}\\
-    \WEV{E;\elem_1;\ldots;\elem_i}{p_1}{\overline{S}}
+    \WEV{E;\elem_1;\ldots;\elem_{i-1}}{p_1}{W}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{p.X}{\overline{S}}
+    \WEV{E}{p.X}{W}
   }
 }
 \inference{%
   \frac{
     \begin{array}{c}
       \WF{E}{}~~~~~~~\ModA{X}{p_1}\in E\\
-      \WEV{E}{p_1}{\overline{S}}
+      \WEV{E}{p_1}{W}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{X}{\overline{S}}
+    \WEV{E}{X}{W}
   }
 }
 \item[WEVAL-PATH-TYPE]
@@ -202,10 +202,10 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
   \frac{
     \begin{array}{c}
     \WEV{E}{p}{\structe{\ModType{Y}{S}}}\\
-    \WEV{E;\elem_1;\ldots;\elem_i}{S}{\overline{S}}
+    \WEV{E;\elem_1;\ldots;\elem_{i-1}}{S}{W}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{p.Y}{\overline{S}}
+    \WEV{E}{p.Y}{W}
   }
 }
 \item[WEVAL-PATH-TYPE]
@@ -213,38 +213,31 @@ In the last rule, $\{t_1/p_1.c_1,\ldots,t_n/p_n.c_n\}$ is the resulting
   \frac{
     \begin{array}{c}
     \WF{E}{}~~~~~~~\ModType{Y}{S}\in E\\
-    \WEV{E}{S}{\overline{S}}
+    \WEV{E}{S}{W}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WEV{E}{Y}{\overline{S}}
+    \WEV{E}{Y}{W}
   }
 }
 \end{description}
  Rules for typing module:
 \begin{description}
-\item[MT-EVAL]
+\item[MT-EVAL-STR]
 \inference{%
   \frac{
- \WEV{E}{p}{\overline{S}}
+ \WEV{E}{p}{W}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WTM{E}{p}{\overline{S}}
+    \WTM{E}{p}{W/p}
   }
 }
-\item[MT-STR]
-\inference{%
-  \frac{
-    \WTM{E}{p}{S}
-  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WTM{E}{p}{S/p}
-  }
-}
+
 \end{description}
 The last rule, called strengthening is used to make all module fields
-manifestly equal to themselves. The notation $S/p$ has the following
+manifestly equal to themselves. The notation $W/p$ has the following
 meaning:
 \begin{itemize}
-\item if $S\lra\struct{\elem_1;\dots;\elem_n}$ then
-  $S/p=\struct{\elem_1/p;\dots;\elem_n/p}$ where $\elem/p$ is defined as
+\item if $W\lra\struct{\elem_1;\dots;\elem_n}$ then
+  $W/p=\struct{\elem_1/p;\dots;\elem_n/p}$ where $\elem/p$ is defined as
   follows:
   \begin{itemize}
   \item $\Def{}{c}{t}{T}/p\footnote{Opaque definitions are processed as assumptions.} ~=~ \Def{}{c}{t}{T}$
@@ -254,7 +247,7 @@ meaning:
   \item $\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$
   \item $\Indpstr{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}{p} ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}$
   \end{itemize}
-\item if $S\lra\functor{X}{S'}{S''}$ then $S/p=S$
+\item if $W\lra\functor{X}{S'}{S''}$ then $W/p=W$
 \end{itemize}
 The notation $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$ denotes an
 inductive definition that is definitionally equal to the inductive
@@ -281,7 +274,11 @@ The module subtyping rules:
 \item[MSUB-FUN]
 \inference{%       T_1 -> T_2 <: T_1' -> T_2'
   \frac{
-    \WS{E}{\overline{S_1'}}{\overline{S_1}}~~~~~~~~~~\WS{E;\ModS{X}{S_1'}}{\overline{S_2}}{\overline{S_2'}}
+\begin{array}{c}
+  \WEV{E}{S_1}{W_1}\qquad\WEV{E}{S_1'}{W_1'}\\
+  \WEV{E;\ModS{X}{S_1}}{S_2}{W_2}\qquad \WEV{E;\ModS{X}{S_1'}}{S_2'}{W_2'}\\
+  \WS{E}{W_1'}{W_1}~~~~~~~~~~\WS{E;\ModS{X}{S_1'}}{W_2}{W_2'}
+\end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     \WS{E}{\functor{X}{S_1}{S_2}}{\functor{X}{S_1'}{S_2'}}
   }
@@ -458,7 +455,7 @@ New environment formation rules
   \frac{
     \begin{array}{c}
       \WF{E;\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}}{}\\
-      \WT{E}{}{p:\struct{\elem_1;\dots;\elem_n;\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'};\dots}}\\
+      \WT{E}{}{p:\struct{\elem_1;\dots;\elem_i;\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'};\dots}}\\
       \WS{E}{\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}}{\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}}
     \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

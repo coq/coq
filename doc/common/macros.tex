@@ -421,10 +421,10 @@
 \newcommand{\sig}[1]{\ensuremath{{\sf Sig}~#1~{\sf End}}}
 \newcommand{\struct}[1]{\ensuremath{{\sf Struct}~#1~{\sf End}}}
 \newcommand{\structe}[1]{\ensuremath{
-        {\sf Struct}~\elem_1;\ldots;\elem_i;#1;\elem_{i+2};\ldots
+        {\sf Struct}~\elem_1;\ldots;\elem_{i-1};#1;\elem_{i+2};\ldots
         ;\elem_n~{\sf End}}}
 \newcommand{\structes}[2]{\ensuremath{
-        {\sf Struct}~\elem_1;\ldots;\elem_i;#1;\elem_{i+2}\{#2\}
+        {\sf Struct}~\elem_1;\ldots;\elem_{i-1};#1;\elem_{i+2}\{#2\}
         ;\ldots;\elem_n\{#2\}~{\sf End}}}
 \newcommand{\with}[3]{\ensuremath{#1~{\sf with}~#2 := #3}}
 

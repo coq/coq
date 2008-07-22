@@ -433,10 +433,12 @@ and subst_module_alias ((sp,kn),subst,(entry,substobjs,_)) =
 			 mod_entry_expr = 
 			      Some (MSEident mp')},sub),
 		    substobjs, match mbids with
-		      | [] -> 
+		      | [] -> let subst = update_subst subst' (map_mp mp' mp) in
 			  Some (subst_objects (dir,(mp',empty_dirpath)) 
-				  (join subst' (join (map_msid msid mp')
-						  (map_mp mp mp'))) objs)
+				  (join (join subst' subst) (join (map_msid msid mp')
+						  (map_mp mp mp')))
+				   objs)
+			    
 		      | _ -> None)
 		     
 	      | _ -> anomaly "Modops: Not an alias"
