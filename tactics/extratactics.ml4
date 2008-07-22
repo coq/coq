@@ -504,3 +504,6 @@ TACTIC EXTEND generalize_eqs
 | ["generalize_eqs" hyp(id) ] -> [ abstract_generalize id ]
 END
 
+TACTIC EXTEND conv
+| ["conv" constr(x) constr(y) ] -> [ conv x y ]
+END

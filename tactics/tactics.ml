@@ -689,6 +689,13 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 (*            Resolution tactics                    *)
 (****************************************************)
 
+let resolve_classes gl =
+  let env = pf_env gl and evd = project gl in
+    if evd = Evd.empty then tclIDTAC gl
+    else
+      let evd' = Typeclasses.resolve_typeclasses env (Evd.create_evar_defs evd) in
+	(tclTHEN (tclEVARS (Evd.evars_of evd')) tclNORMEVAR) gl
+
 (* Resolution with missing arguments *)
 
 let general_apply with_delta with_destruct with_evars (c,lbind) gl =
@@ -2925,3 +2932,8 @@ let admit_as_an_axiom gl =
     (applist (axiom, 
               List.rev (Array.to_list (instance_from_named_context sign))))
     gl
+
+let conv x y gl =
+  try let evd = Evarconv.the_conv_x_leq (pf_env gl) x y (Evd.create_evar_defs (project gl)) in
+	tclEVARS (Evd.evars_of evd) gl
+  with _ -> tclFAIL 0 (str"Not convertible") gl

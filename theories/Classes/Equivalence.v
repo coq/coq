@@ -54,6 +54,9 @@ Infix "=~=" := pequiv (at level 70, no associativity) : equiv_scope.
 
 Program Instance equiv_reflexive [ sa : Equivalence A ] : Reflexive equiv.
 
+  Next Obligation.
+  Proof. reflexivity. Qed.
+
 Program Instance equiv_symmetric [ sa : Equivalence A ] : Symmetric equiv.
 
   Next Obligation.
@@ -116,7 +119,7 @@ Section Respecting.
   Definition respecting [ Equivalence A (R : relation A), Equivalence B (R' : relation B) ] : Type := 
     { morph : A -> B | respectful R R' morph morph }.
   
-  Program Instance respecting_equiv [ Equivalence A R, Equivalence B R' ] :
+  Program Instance respecting_equiv [ eqa : Equivalence A R, eqb : Equivalence B R' ] :
     Equivalence respecting
     (fun (f g : respecting) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
 
@@ -124,18 +127,23 @@ Section Respecting.
 
   Next Obligation.
   Proof. 
-    unfold respecting in *. program_simpl. red in H2,H3,H4. 
-    transitivity (y x0) ; auto.
+    unfold respecting in *. program_simpl. destruct eqa ; destruct eqb. red in H2,H1 ; auto.
+  Qed.
+
+  Next Obligation.
+  Proof.
+    unfold respecting in *. program_simpl. destruct eqa ; destruct eqb. red in H2,H3,H4.
     transitivity (y y0) ; auto.
-    symmetry. auto.
   Qed.
 
 End Respecting.
 
 (** The default equivalence on function spaces, with higher-priority than [eq]. *)
 
-Program Instance pointwise_equivalence [ Equivalence B eqB ] :
+Program Instance pointwise_equivalence [ eqb : Equivalence B eqB ] :
   Equivalence (A -> B) (pointwise_relation eqB) | 9.
+
+  Solve Obligations using simpl_relation ; first [ reflexivity | (symmetry ; auto) ].
 
   Next Obligation.
   Proof.

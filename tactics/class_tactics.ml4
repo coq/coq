@@ -760,11 +760,11 @@ let allowK = true
 
 let refresh_hypinfo env sigma hypinfo = 
   if !hypinfo.abs = None then
-    let {l2r=l2r; c = c} = !hypinfo in
+    let {l2r=l2r; c = c;cl=cl} = !hypinfo in
       match c with 
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	    hypinfo := decompose_setoid_eqhyp env sigma c l2r;
+	    hypinfo := decompose_setoid_eqhyp cl.env (Evd.evars_of cl.evd) c l2r;
 	| _ -> ()
   else ()
 
@@ -1721,6 +1721,21 @@ TACTIC EXTEND apply_typeclasses
 	   let evd' = Typeclasses.resolve_typeclasses cl'.env ~fail:true cl'.evd in
 	     Clenvtac.clenv_refine true {cl' with evd = evd'} gl) gl
    ]
+END
+
+let rec head_of_constr t =
+  let t = strip_outer_cast(collapse_appl t) in
+    match kind_of_term t with
+    | Prod (_,_,c2)  -> head_of_constr c2 
+    | LetIn (_,_,_,c2) -> head_of_constr c2
+    | App (f,args)  -> head_of_constr f
+    | _      -> t
+      
+TACTIC EXTEND head_of_constr
+  [ "head_of_constr" ident(h) constr(c) ] -> [
+    let c = head_of_constr c in
+      letin_tac None (Name h) c allHyps
+  ]
 END
 
 (* TACTIC EXTEND solve_evar *)

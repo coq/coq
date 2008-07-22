@@ -339,6 +339,8 @@ val generalize      : constr list -> tactic
 val generalize_gen  : ((occurrences * constr) * name) list -> tactic
 val generalize_dep  : constr  -> tactic
 
+val conv            : constr -> constr -> tactic
+
 val tclABSTRACT : identifier option -> tactic -> tactic
 
 val admit_as_an_axiom : tactic

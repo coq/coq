@@ -367,7 +367,7 @@ Proof. intro A. exact (@predicate_implication_preorder (cons A (cons A nil))). Q
    We give an equivalent definition, up-to an equivalence relation 
    on the carrier. *)
 
-Class [ equ : Equivalence A eqA, PreOrder A R ] => PartialOrder :=
+Class [ equ : Equivalence A eqA, preo : PreOrder A R ] => PartialOrder :=
   partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (inverse R)).
 
 (** The equivalence proof is sufficient for proving that [R] must be a morphism 
