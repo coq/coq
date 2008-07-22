@@ -82,7 +82,7 @@ Ltac simpl_uip :=
 
 (** Simplify equalities appearing in the context and goal. *)
 
-Ltac simpl_eq := simpl ; repeat (elim_eq_rect ; simpl) ; repeat (simpl_uip ; simpl).
+Ltac simpl_eq := simpl ; unfold eq_rec_r, eq_rec ; repeat (elim_eq_rect ; simpl) ; repeat (simpl_uip ; simpl).
 
 (** Try to abstract a proof of equality, if no proof of the same equality is present in the context. *)
 
