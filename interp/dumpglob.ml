@@ -21,9 +21,6 @@ let open_glob_file f =
 let close_glob_file () =
   Pervasives.close_out !glob_file
 
-let dump_string s = 
-  Pervasives.output_string !glob_file s
-
 type glob_output_t = 
     | NoGlob
     | StdOut
@@ -43,6 +40,9 @@ let multi_dump () = !glob_output = MultFiles
 let dump_to_dotglob f = glob_output := MultFiles
 
 let dump_into_file f = glob_output := File f; open_glob_file f
+
+let dump_string s = 
+  if dump () then Pervasives.output_string !glob_file s
 
 
 let previous_state = ref MultFiles

@@ -228,8 +228,7 @@ let compile verbosely f =
   let ldir,long_f_dot_v = Library.start_library f in
     if Dumpglob.multi_dump () then 
       Dumpglob.open_glob_file (f ^ ".glob");
-    if Dumpglob.dump () then
-      Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
+    Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
     if !Flags.xml_export then !xml_start_library ();
     let _ = load_vernac verbosely long_f_dot_v in
      if Pfedit.get_all_proof_names () <> [] then
