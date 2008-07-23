@@ -522,7 +522,7 @@ Lemma Zis_gcd_mult :
   forall a b c d:Z, Zis_gcd a b d -> Zis_gcd (c * a) (c * b) (c * d).
 Proof.
   intros a b c d; simple induction 1; constructor.
-  intuition. intuition. intros. intuition.
+  intuition. intuition. intros.
   elim (Zis_gcd_bezout a b d H). intros.
   elim H3; intros.
   elim H4; intros.
