@@ -27,6 +27,7 @@ Section Well_founded.
  Variable R : A -> A -> Prop.
 
  (** The accessibility predicate is defined to be non-informative *)
+ (** (Acc_rect is automatically defined because Acc is a singleton type) *)
 
  Inductive Acc (x: A) : Prop :=
      Acc_intro : (forall y:A, R y x -> Acc y) -> Acc x.
@@ -34,22 +35,6 @@ Section Well_founded.
  Lemma Acc_inv : forall x:A, Acc x -> forall y:A, R y x -> Acc y.
   destruct 1; trivial.
  Defined.
-
-  (** Informative elimination :
-     [let Acc_rec F = let rec wf x = F x wf in wf] *)
-
- Section AccRecType.
-
-  Variable P : A -> Type.
-  Variable F : forall x:A,
-    (forall y:A, R y x -> Acc y) -> (forall y:A, R y x -> P y) -> P x.
-
-  Fixpoint Acc_rect (x:A) (a:Acc x) {struct a} : P x :=
-    F (Acc_inv a) (fun (y:A) (h:R y x) => Acc_rect (Acc_inv a h)).
-
- End AccRecType.
-
- Definition Acc_rec (P:A -> Set) := Acc_rect P.
 
  (** A relation is well-founded if every element is accessible *)
 

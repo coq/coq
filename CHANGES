@@ -28,6 +28,12 @@ Language
 - Several evolutions of the module system (handling of module aliases, 
   functorial module types, an Include feature, etc). (TODO: Say more!)
 - Prop now a subtype of Set (predicative and impredicative forms).
+- Recursive inductive types in Prop with a single constructor of which
+  all arguments are in Prop is now considered to be a singleton
+  type. It consequently supports all eliminations to Prop, Set and Type.
+  As a consequence, Acc_rect has now a more direct proof [possible source
+  of easily fixed incompatibility in case of manual definition of a recursor
+  in a recursive singleton inductive type].
 
 Vernacular commands
 
