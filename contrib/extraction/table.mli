@@ -77,6 +77,7 @@ val is_projection : global_reference -> bool
 val projection_arity : global_reference -> int
 
 val add_info_axiom : global_reference -> unit
+val remove_info_axiom : global_reference -> unit
 val add_log_axiom : global_reference -> unit
 
 val reset_tables : unit -> unit
