@@ -140,7 +140,7 @@ let subtac (loc, command) =
   match command with
   | VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
       check_fresh lid;
-      if Dumpglob.dump () then dump_definition lid "def";
+      dump_definition lid "def";
       (match expr with
       | ProveBody (bl, t) -> 
 	  if Lib.is_modtype () then
@@ -153,12 +153,12 @@ let subtac (loc, command) =
   | VernacFixpoint (l, b) -> 
       List.iter (fun ((lid, _, _, _, _), _) -> 
 	check_fresh lid;
-	if Dumpglob.dump () then dump_definition lid "fix") l;
+	dump_definition lid "fix") l;
       let _ = trace (str "Building fixpoint") in
 	ignore(Subtac_command.build_recursive l b)
 	  
   | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
-      if Dumpglob.dump () then dump_definition id "prf";
+      dump_definition id "prf";
       if not(Pfedit.refining ()) then
 	if lettop then
 	  errorlabstrm "Subtac_command.StartProof"
@@ -173,7 +173,7 @@ let subtac (loc, command) =
       vernac_assumption env isevars stre l nl
 	
   | VernacInstance (glob, sup, is, props, pri) ->
-      if Dumpglob.dump () then dump_constraint "inst" is;
+      dump_constraint "inst" is;
       ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
 	
   | VernacCoFixpoint (l, b) ->

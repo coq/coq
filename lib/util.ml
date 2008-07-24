@@ -863,6 +863,10 @@ let list_cartesians op init ll =
 
 let list_combinations l = list_cartesians (fun x l -> x::l) [] l
 
+(* Drop the last element of a list *)
+
+let rec list_drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> hd :: list_drop_last tl
+
 (* Arrays *)
 
 let array_exists f v = 

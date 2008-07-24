@@ -9,8 +9,6 @@
 (* $Id$ *)
 
 
-let rec drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> hd :: drop_last tl
-
 (* Dump of globalization (to be used by coqdoc) *)
 
 let glob_file = ref Pervasives.stdout
@@ -130,16 +128,17 @@ let dump_ref loc filepath modpath ident ty =
 		  (fst (Util.unloc loc)) filepath modpath ident ty)
 
 let add_glob_gen loc sp lib_dp ty =
-  let mod_dp,id = Libnames.repr_path sp in
-  let mod_dp = remove_sections mod_dp in
-  let mod_dp_trunc = Libnames.drop_dirpath_prefix lib_dp mod_dp in
-  let filepath = Names.string_of_dirpath lib_dp in
-  let modpath = Names.string_of_dirpath mod_dp_trunc in
-  let ident = Names.string_of_id id in
-    dump_ref loc filepath modpath ident ty
+  if dump () then
+    let mod_dp,id = Libnames.repr_path sp in
+    let mod_dp = remove_sections mod_dp in
+    let mod_dp_trunc = Libnames.drop_dirpath_prefix lib_dp mod_dp in
+    let filepath = Names.string_of_dirpath lib_dp in
+    let modpath = Names.string_of_dirpath mod_dp_trunc in
+    let ident = Names.string_of_id id in
+      dump_ref loc filepath modpath ident ty
 
 let add_glob loc ref = 
-  if loc <> Util.dummy_loc then
+  if dump () && loc <> Util.dummy_loc then
     let sp = Nametab.sp_of_global ref in
     let lib_dp = Lib.library_part ref in
     let ty = type_of_global_ref ref in
@@ -150,7 +149,7 @@ let mp_of_kn kn =
     Names.MPdot (mp,l) 
 
 let add_glob_kn loc kn =
-  if loc <> Util.dummy_loc then
+  if dump () && loc <> Util.dummy_loc then
     let sp = Nametab.sp_of_syntactic_definition kn in
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
       add_glob_gen loc sp lib_dp "syndef"
@@ -167,21 +166,6 @@ let add_local loc id = ()
 
 let dump_binding loc id = ()
       
-(* BEGIN obsolete *)
-
-let dump_modref qid = Pp.warning ("Dumpglob.modref: not yet implemented")
-  
-let dump_def loc ref = 
-  let curr_mp, _ = Lib.current_prefix() in
-  let lib_dp, curr_dp = Lib.split_mp curr_mp in
-  let mod_dp_trunc =  Libnames.drop_dirpath_prefix lib_dp curr_dp in
-
-  let fullname = Libnames.string_of_qualid (Libnames.make_qualid mod_dp_trunc ref) in
-  let filepath = Names.string_of_dirpath lib_dp in
-    dump_string (Printf.sprintf "D%d %s %s\n" (fst (Util.unloc loc)) filepath fullname)
-
-(* END obsolete *)
-
 let dump_definition (loc, id) sec s =
   dump_string (Printf.sprintf "%s %d %s %s\n" s (fst (Util.unloc loc)) 
 			(Names.string_of_dirpath (Lib.current_dirpath sec)) (Names.string_of_id id))
@@ -197,43 +181,47 @@ let dump_constraint ((loc, n), _, _) sec ty =
 
 let dump_name (loc, n) sec ty =
   match n with
-  | Names.Name id -> dump_definition (loc, id) sec ty
-  | Names.Anonymous -> ()
+    | Names.Name id -> dump_definition (loc, id) sec ty
+    | Names.Anonymous -> ()
 
 let dump_local_binder b sec ty =
-  match b with
-  | Topconstr.LocalRawAssum (nl, _, _) -> 
-      List.iter (fun x -> dump_name x sec ty) nl
-  | Topconstr.LocalRawDef _ -> ()
+  if dump () then
+    match b with
+      | Topconstr.LocalRawAssum (nl, _, _) -> 
+	  List.iter (fun x -> dump_name x sec ty) nl
+      | Topconstr.LocalRawDef _ -> ()
 
 let dump_modref loc mp ty =
-  let (dp, l) = Lib.split_modpath mp in
-  let fp = Names.string_of_dirpath dp in
-  let mp = Names.string_of_dirpath (Names.make_dirpath (drop_last l)) in
-    dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
-		    (fst (Util.unloc loc)) fp mp "<>" ty)
+  if dump () then
+    let (dp, l) = Lib.split_modpath mp in
+    let fp = Names.string_of_dirpath dp in
+    let mp = Names.string_of_dirpath (Names.make_dirpath (Util.list_drop_last l)) in
+      dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
+		      (fst (Util.unloc loc)) fp mp "<>" ty)
 
 let dump_moddef loc mp ty =
-  let (dp, l) = Lib.split_modpath mp in
-  let mp = Names.string_of_dirpath (Names.make_dirpath l) in
-    dump_string (Printf.sprintf "%s %d %s %s\n" ty (fst (Util.unloc loc)) "<>" mp)
+  if dump () then
+    let (dp, l) = Lib.split_modpath mp in
+    let mp = Names.string_of_dirpath (Names.make_dirpath l) in
+      dump_string (Printf.sprintf "%s %d %s %s\n" ty (fst (Util.unloc loc)) "<>" mp)
 
 let dump_libref loc dp ty =
   dump_string (Printf.sprintf "R%d %s <> <> %s\n" 
 		  (fst (Util.unloc loc)) (Names.string_of_dirpath dp) ty)
 
 let dump_notation_location pos ((path,df),sc) =
-  let rec next growing =
-    let loc = Lexer.location_function !token_number in
-    let (bp,_) = Util.unloc loc in
-      if growing then if bp >= pos then loc else (incr token_number; next true)
-      else if bp = pos then loc
-      else if bp > pos then (decr token_number;next false)
-      else (incr token_number;next true) in
-  let loc = next (pos >= !last_pos) in
-    last_pos := pos;
-    let path = Names.string_of_dirpath path in
-    let _sc = match sc with Some sc -> " "^sc | _ -> "" in
-      dump_string (Printf.sprintf "R%d %s \"%s\" not\n" (fst (Util.unloc loc)) path df)
+  if dump () then
+    let rec next growing =
+      let loc = Lexer.location_function !token_number in
+      let (bp,_) = Util.unloc loc in
+	if growing then if bp >= pos then loc else (incr token_number; next true)
+	else if bp = pos then loc
+	else if bp > pos then (decr token_number;next false)
+	else (incr token_number;next true) in
+    let loc = next (pos >= !last_pos) in
+      last_pos := pos;
+      let path = Names.string_of_dirpath path in
+      let _sc = match sc with Some sc -> " "^sc | _ -> "" in
+	dump_string (Printf.sprintf "R%d %s \"%s\" not\n" (fst (Util.unloc loc)) path df)
 
 
