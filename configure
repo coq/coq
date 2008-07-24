@@ -7,6 +7,8 @@
 ##################################
 
 VERSION=trunk
+VOMAGIC=08193 
+STATEMAGIC=19764
 DATE="Jun. 2008"
 
 # a local which command for sh
@@ -851,9 +853,10 @@ let best = "$best_compiler"
 let arch = "$ARCH"
 let osdeplibs = "$OSDEPLIBS"
 let version = "$VERSION"
-let versionsi = "$VERSIONSI"
 let date = "$DATE"
 let compile_date = "$COMPILEDATE"
+let vo_magic_number = $VOMAGIC
+let state_magic_number = $STATEMAGIC
 let exec_extension = "$EXE"
 let with_geoproof = ref $with_geoproof
 
