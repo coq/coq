@@ -9,3 +9,4 @@
 Require Import ReflOmegaCore.
 Require Export Setoid.
 Require Export PreOmega.
+Require Export ZArith_base.
