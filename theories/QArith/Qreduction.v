@@ -49,7 +49,7 @@ Proof.
   Open Scope Z_scope.
   intuition.
   rewrite <- H in H0,H1; clear H.
-  rewrite H5; rewrite H6.
+  rewrite H3; rewrite H4.
   assert (0 <> g).
   intro; subst g; discriminate.
   
@@ -57,7 +57,7 @@ Proof.
   apply Zmult_gt_0_lt_0_reg_r with g.
   omega.
   rewrite Zmult_comm.
-  rewrite <- H6; compute; auto.
+  rewrite <- H4; compute; auto.
   rewrite Z2P_correct; auto.
   ring.
   Close Scope Z_scope.
