@@ -156,7 +156,6 @@ let variables l =
     | _ :: r -> var_aux r
   in
     section "Variables definitions.";
-    print "CAMLP4LIB:=$(shell $(CAMLBIN)camlp5 -where 2> /dev/null || $(CAMLBIN)camlp4 -where)\n";
     print "CAMLP4:=$(notdir $(CAMLP4LIB))\n"; 
     if Coq_config.local then
       (print "COQSRC:=$(COQTOP)\n";
@@ -175,7 +174,7 @@ let variables l =
   -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml \\
   -I $(CAMLP4LIB)\n")
     else
-      (print "COQSRC:=$(shell $(COQTOP)coqc -where)\n"; 
+      (print "COQSRC:=$(shell $(COQBIN)coqc -where)\n"; 
        print "COQSRCLIBS:=-I $(COQSRC)\n");
     print "ZFLAGS:=$(OCAMLLIBS) $(COQSRCLIBS)\n";
     if !opt = "-byte" then 
@@ -255,7 +254,8 @@ let include_dirs l =
   let str_i' = parse_includes inc_i' in
   let str_r = parse_includes inc_r in
     section "Libraries definition.";
-    print "OCAMLLIBS:="; print_list "\\\n  " str_i; print "\n";
+    print "CAMLP4LIB:=$(shell $(CAMLBIN)camlp5 -where 2> /dev/null || $(CAMLBIN)camlp4 -where)\n";
+    print "OCAMLLIBS:=-I $(CAMLP4LIB) "; print_list "\\\n  " str_i; print "\n";
     print "COQLIBS:="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " str_r; print "\n\n"
 

@@ -56,6 +56,7 @@
 
   let formatted = ref false
   let brackets = ref 0
+  let comment_level = ref 0
 
   let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos
 
@@ -93,7 +94,8 @@
 
   let reset () =
     formatted := false;
-    brackets := 0
+    brackets := 0;
+    comment_level := 0
 
   (* erasing of Section/End *)
 
@@ -385,6 +387,7 @@ rule coq_bol = parse
   | space* "(**" space+ "printing" space+
       { eprintf "warning: bad 'printing' command at character %d\n" 
 	  (lexeme_start lexbuf); flush stderr;
+	comment_level := 1;
 	ignore (comment lexbuf);
 	coq_bol lexbuf }
   | space* "(**" space+ "remove" space+ "printing" space+ 
@@ -394,10 +397,12 @@ rule coq_bol = parse
   | space* "(**" space+ "remove" space+ "printing" space+
       { eprintf "warning: bad 'remove printing' command at character %d\n" 
 	  (lexeme_start lexbuf); flush stderr;
+	comment_level := 1;
 	ignore (comment lexbuf);
 	coq_bol lexbuf }
   | space* "(*"
-      { let eol = comment lexbuf in
+      { comment_level := 1; 
+	let eol = comment lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
   | eof 
       { () }
@@ -421,7 +426,8 @@ and coq = parse
 	  Output.end_doc (); Output.start_coq (); 
 	  if eol then coq_bol lexbuf else coq lexbuf }
   | "(*"
-      { let eol = comment lexbuf in
+      { comment_level := 1;
+	let eol = comment lexbuf in
 	  if eol then begin Output.line_break(); coq_bol lexbuf end 
           else coq lexbuf
       }
@@ -556,7 +562,7 @@ and escaped_coq = parse
   | "["
       { incr brackets; Output.char '['; escaped_coq lexbuf }
   | "(*"
-      { ignore (comment lexbuf); escaped_coq lexbuf }
+      { comment_level := 1; ignore (comment lexbuf); escaped_coq lexbuf }
   | "*)"
       { (* likely to be a syntax error: we escape *) backtrack lexbuf }
   | eof
@@ -591,16 +597,16 @@ and comments = parse
 (*s Skip comments *)
 
 and comment = parse
-  | "(*" { comment lexbuf }
-  | "*)" space* nl { true }
-  | "*)" { false }
-  | eof  { false }
-  | _    { comment lexbuf }
+  | "(*" { incr comment_level; comment lexbuf }
+  | "*)" space* nl { decr comment_level; if !comment_level > 0 then comment lexbuf else true }
+  | "*)" { decr comment_level; if !comment_level > 0 then comment lexbuf else false }
+  | eof  {  false }
+  | _    {  comment lexbuf }
 
 and skip_to_dot = parse
   | '.' space* nl { true }
   | eof | '.' space+ { false}
-  | "(*" { ignore (comment lexbuf); skip_to_dot lexbuf }
+  | "(*" { comment_level := 1; ignore (comment lexbuf); skip_to_dot lexbuf }
   | _ { skip_to_dot lexbuf }
 
 and body_bol = parse
@@ -616,7 +622,8 @@ and body = parse
   | '.' space* nl | '.' space* eof { Output.char '.'; Output.line_break(); true }      
   | '.' space+ { Output.char '.'; Output.char ' '; false }
   | '"' { Output.char '"'; ignore(notation lexbuf); body lexbuf }
-  | "(*" { let eol = comment lexbuf in 
+  | "(*" { comment_level := 1; 
+	   let eol = comment lexbuf in 
 	     if eol 
 	     then begin Output.line_break(); body_bol lexbuf end
 	     else body lexbuf }

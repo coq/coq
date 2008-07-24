@@ -57,6 +57,8 @@ usage () {
     printf "\tSpecifies whether or not to compile full FSets/Reals library\n"
     echo "-coqide (opt|byte|no)"
     printf "\tSpecifies whether or not to compile Coqide\n"
+    echo "-with-doc (yes|no)"
+    printf "\tSpecifies whether or not to compile the documentation\n"
     echo "-with-geoproof (yes|no)"
     printf "\tSpecifies whether or not to use Geoproof binding\n"
     echo "-with-cc <file>"
@@ -114,6 +116,8 @@ reals=all
 arch_spec=no
 coqide_spec=no
 with_geoproof=false
+with_doc=all
+with_doc_spec=no
 
 COQSRC=`pwd`
 
@@ -181,6 +185,12 @@ while : ; do
 		      case "$2" in
 			  byte|opt) COQIDE=$2;;
 			  *) COQIDE=no
+		      esac
+		      shift;;
+    -with-doc|--with-doc) with_doc_spec=yes
+		      case "$2" in
+			  yes|all) with_doc=all;;
+			  *) with_doc=no
 		      esac
 		      shift;;
     -with-geoproof|--with-geoproof) 
@@ -594,6 +604,24 @@ esac
 #    "") MKTEXLSR=true;;
 #esac
 
+# "
+### Test if documentation can be compiled (latex, hevea)
+
+if test "$with_doc" = "all" 
+then
+    if test "`which latex`" = ""
+    then 
+	echo "latex was not found; documentation will not be available"
+	with_doc=no
+    else
+	if test "`which hevea`" = ""
+	then
+	    with_doc=no
+	    echo "hevea was not found: documentation will not be available"
+	fi
+    fi
+fi
+
 ###########################################
 # bindir, libdir, mandir, docdir, etc.
 
@@ -747,6 +775,11 @@ echo "  Reals theory                      : All"
 else
 echo "  Reals theory                      : Basic"
 fi
+if test "$with_doc" = "all"; then
+echo "  Documentation                     : All"
+else
+echo "  Documentation                     : None"
+fi
 echo "  CoqIde                            : $COQIDE"
 echo ""
 
@@ -895,6 +928,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|REALSOPT|$reals|" \
     -e "s|COQIDEOPT|$COQIDE|" \
     -e "s|CHECKEDOUTSOURCETREE|$checkedout|" \
+    -e "s|WITHDOCOPT|$with_doc|" \
       "$COQSRC/config/Makefile.template" > "$COQSRC/config/Makefile"
 
 chmod a-w "$COQSRC/config/Makefile"
