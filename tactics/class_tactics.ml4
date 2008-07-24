@@ -60,6 +60,17 @@ let init_setoid () =
 
 (** Typeclasses instance search tactic / eauto *)
 
+let evars_of_term init c = 
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) -> Intset.add n acc
+    | _ -> fold_constr evrec acc c
+  in 
+    evrec init c
+
+let intersects s t =
+  Intset.exists (fun el -> Intset.mem el t) s
+
 open Auto
 
 let e_give_exact c gl = 
@@ -153,15 +164,14 @@ let e_possible_resolve db_list local_db gl =
 
 let find_first_goal gls = 
   try first_goal gls with UserError _ -> assert false
-
-
+    
 type search_state = { 
   depth : int; (*r depth of search before failing *)
   tacres : goal list sigma * validation;
   pri : int;
   last_tactic : std_ppcmds;
   dblist : Auto.hint_db list;
-  localdb :  Auto.hint_db list }
+  localdb : (bool ref * bool ref option * Auto.hint_db) list }
     
 let filter_hyp t = 
   match kind_of_term t with
@@ -173,13 +183,34 @@ let rec catchable = function
   | Stdpp.Exc_located (_, e) -> catchable e
   | e -> Logic.catchable_exception e
 
+(* let apply_tac_list tac sigr g1 rest =  *)
+(*   let (gl,p) = apply_sig_tac sigr tac g1 in *)
+(*   let n = List.length gl in  *)
+(*     (gl@rest, fun pfl -> let (pfg,pfrest) = list_chop n pfl in (p pfg)::pfrest) *)
+
+let split_list = function 
+  | [] -> assert false
+  | hd :: tl -> hd, tl
+
+let is_dep gl gls =
+  let evs = evars_of_term Intset.empty gl.evar_concl in
+    if evs = Intset.empty then false
+    else
+      List.fold_left
+	(fun b gl -> 
+	  if b then b 
+	  else
+	    let evs' = evars_of_term Intset.empty gl.evar_concl in
+	      intersects evs evs')
+	false gls
+	
 module SearchProblem = struct
     
   type state = search_state
 
   let debug = ref false
 
-  let success s = (sig_it (fst s.tacres)) = []
+  let success s = sig_it (fst s.tacres) = []
 
   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl)
     
@@ -188,28 +219,14 @@ module SearchProblem = struct
       prlist (pr_ev evars) (sig_it gls)
 	
   let filter_tactics (glls,v) l =
-(*     if !debug then *)
-(*       (let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
-(*       let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(*     	msg (str"Goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n")); *)
     let glls,nv = apply_tac_list tclNORMEVAR glls in
     let v p = v (nv p) in
     let rec aux = function
       | [] -> []
       | (tac,pri,pptac) :: tacl -> 
 	  try 
-(* 	    if !debug then msg (str"\nTrying tactic: " ++ pptac ++ str"\n"); *)
 	    let (lgls,ptl) = apply_tac_list tac glls in 
 	    let v' p = v (ptl p) in
-(* 	      if !debug then *)
-(* 	      	begin *)
-(* 	      	  let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(* 	      	  let pptac = str"\nOn goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n" *)
-(* 		    ++ hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n") *)
-(* 		  in *)
-(* 		    ((lgls,v'),pri,pptac) :: aux tacl *)
-(* 	      	end *)
-(* 	      else *)
 	      ((lgls,v'),pri,pptac) :: aux tacl
 	  with e when catchable e -> aux tacl
     in aux l
@@ -229,64 +246,79 @@ module SearchProblem = struct
 	let pri = s.pri - s'.pri in
 	  if pri <> 0 then pri
 	  else nbgoals s - nbgoals s'
-
+	  
   let branching s = 
     if s.depth = 0 then 
       []
     else      
-      let lg = fst s.tacres in
-      let nbgl = List.length (sig_it lg) in
-      assert (nbgl > 0);
-      let g = find_first_goal lg in
-      let assumption_tacs = 
-	let l = 
-	  filter_tactics s.tacres
-	    (List.map 
-		(fun id -> (Eauto.e_give_exact_constr (mkVar id), 0,
-			   (str "exact" ++ spc () ++ pr_id id)))
-		(List.filter (fun id -> filter_hyp (pf_get_hyp_typ g id))
-		    (pf_ids_of_hyps g)))
-	in
-	  List.map (fun (res,pri,pp) -> { s with tacres = res; pri = 0;
-	    last_tactic = pp; localdb = List.tl s.localdb }) l
-      in
-      let intro_tac =
-	List.map
-	  (fun ((lgls,_) as res,pri,pp) ->
-	     let g' = first_goal lgls in
-	     let hintl =
-	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
-	     in
-             let ldb = Hint_db.add_list hintl (List.hd s.localdb) in
-	       { s with tacres = res;
-		 last_tactic = pp;
-		 pri = pri;
-		 localdb = ldb :: List.tl s.localdb })
-	  (filter_tactics s.tacres [Tactics.intro,1,(str "intro")])
-      in
-      let possible_resolve ((lgls,_) as res, pri, pp) =
-	let nbgl' = List.length (sig_it lgls) in
-	  if nbgl' < nbgl then
-	    { s with 
-	      depth = pred s.depth;
-	      tacres = res; last_tactic = pp; pri = pri;
-	      localdb = List.tl s.localdb }
-	  else 
-	    { s with 
-	      depth = pred s.depth; tacres = res; 
-	      last_tactic = pp; pri = pri;
-	      localdb = 
-		list_addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb }
-      in
-      let concl = Evarutil.nf_evar (project g) (pf_concl g) in
-      let rec_tacs = 
-	let l = 
-	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) concl)
-	in
-	List.map possible_resolve l
-      in
-      List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
-
+      let (cut, do_cut, ldb as hdldb) = List.hd s.localdb in
+	if !cut then []
+	else begin
+	  Option.iter (fun r -> r := true) do_cut;
+	  let {it=gl; sigma=sigma} = fst s.tacres in 
+	  let nbgl = List.length gl in
+	  let g = { it = List.hd gl ; sigma = sigma } in
+	  let new_db, localdb = 
+	    let tl = List.tl s.localdb in
+	      match tl with
+	      | [] -> hdldb, tl
+	      | (cut', do', ldb') :: rest ->
+		  if not (is_dep (Evarutil.nf_evar_info sigma (List.hd gl)) (List.tl gl)) then
+		    let fresh = ref false in
+		      if do' = None then 
+			(fresh, None, ldb), (cut', Some fresh, ldb') :: rest
+		      else 
+			(cut', None, ldb), tl
+		  else hdldb, tl
+	  in let localdb = new_db :: localdb in
+	  let assumption_tacs = 
+	    let l = 
+	      filter_tactics s.tacres
+		(List.map 
+		    (fun id -> (Eauto.e_give_exact_constr (mkVar id), 0,
+			       (str "exact" ++ spc () ++ pr_id id)))
+		    (List.filter (fun id -> filter_hyp (pf_get_hyp_typ g id))
+			(pf_ids_of_hyps g)))
+	    in
+	      List.map (fun (res,pri,pp) -> { s with tacres = res; pri = 0;
+		last_tactic = pp; localdb = List.tl s.localdb }) l
+	  in
+	  let intro_tac =
+	    List.map
+	      (fun ((lgls,_) as res,pri,pp) ->
+		let g' = first_goal lgls in
+		let hintl =
+		  make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
+		in
+		let ldb = Hint_db.add_list hintl ldb in
+		  { s with tacres = res;
+		    last_tactic = pp;
+		    pri = pri;
+		    localdb = (cut, None, ldb) :: List.tl s.localdb })
+	      (filter_tactics s.tacres [Tactics.intro,1,(str "intro")])
+	  in
+	  let possible_resolve ((lgls,_) as res, pri, pp) =
+	    let nbgl' = List.length (sig_it lgls) in
+	      if nbgl' < nbgl then
+		{ s with 
+		  depth = pred s.depth;
+		  tacres = res; last_tactic = pp; pri = pri;
+		  localdb = List.tl localdb }
+	      else 
+		{ s with depth = pred s.depth; tacres = res; 
+		  last_tactic = pp; pri = pri;
+		  localdb = list_tabulate (fun _ -> new_db) (nbgl'-nbgl) @ localdb }
+	  in
+	  let concl = Evarutil.nf_evar (project g) (pf_concl g) in
+	  let rec_tacs = 
+	    let l = 
+	      filter_tactics s.tacres (e_possible_resolve s.dblist ldb concl)
+	    in
+	      List.map possible_resolve l
+	  in
+	    List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
+	end
+	  
   let pp s = 
     msg (hov 0 (str " depth=" ++ int s.depth ++ spc () ++ 
 		  s.last_tactic ++ str "\n"))
@@ -360,7 +392,7 @@ let e_search_auto debug (in_depth,p) lems st db_list gls =
   let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
   let local_dbs = List.map (fun gl -> 
     let db = make_local_hint_db true lems ({it = gl; sigma = sigma}) in
-      Hint_db.set_transparent_state db st) gls' in
+      (ref false, None, Hint_db.set_transparent_state db st)) gls' in
   let state = make_initial_state p gls db_list local_dbs in
   if in_depth then 
     e_depth_search debug state
@@ -427,17 +459,6 @@ let has_undefined p oevd evd =
     (evi.evar_body = Evar_empty && p ev evi && 
 	(try Typeclasses.is_resolvable (Evd.find oevd ev) with _ -> true)))
     (Evd.evars_of evd) false
-
-let evars_of_term init c = 
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (n, _) -> Intset.add n acc
-    | _ -> fold_constr evrec acc c
-  in 
-    evrec init c
-
-let intersects s t =
-  Intset.exists (fun el -> Intset.mem el t) s
 
 let rec merge_deps deps = function
   | [] -> [deps]
