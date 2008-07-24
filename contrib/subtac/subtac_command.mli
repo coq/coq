@@ -42,6 +42,7 @@ val interp_binder :     Evd.evar_defs ref ->
     Environ.env -> Names.name -> Topconstr.constr_expr -> Term.constr
 
 
+
 val build_recursive :
   (fixpoint_expr * decl_notation) list -> bool -> unit
 
