@@ -438,13 +438,14 @@ let what_is_opened () = find_entry_p is_something_opened
    - the list of variables on which each inductive depends in this section
    - the list of substitution to do at section closing 
 *)
+type binding_kind = Explicit | Implicit
 
-type variable_info = Names.identifier * Rawterm.binding_kind * Term.constr option * Term.types
+type variable_info = Names.identifier * binding_kind * Term.constr option * Term.types
 type variable_context = variable_info list
 type abstr_list = variable_context Names.Cmap.t * variable_context Names.KNmap.t
 
 let sectab =
-  ref ([] : ((Names.identifier * Rawterm.binding_kind * Term.types option) list * Cooking.work_list * abstr_list) list)
+  ref ([] : ((Names.identifier * binding_kind * Term.types option) list * Cooking.work_list * abstr_list) list)
 
 let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.KNmap.empty),(Names.Cmap.empty,Names.KNmap.empty)) :: !sectab

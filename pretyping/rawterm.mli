@@ -40,7 +40,7 @@ type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type binder_kind = BProd | BLambda | BLetIn
 
-type binding_kind = Explicit | Implicit
+type binding_kind = Lib.binding_kind = Explicit | Implicit
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
