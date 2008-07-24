@@ -431,7 +431,7 @@ let intern_isolated_global_tactic_reference r =
   | Ident (_,id) -> Tacexp (lookup_atomic id)
   | _ -> raise Not_found
 
-let intern_isolated_tactic_reference ist r =
+let intern_isolated_tactic_reference strict ist r =
   (* An ltac reference *)
   try Reference (intern_ltac_variable ist r)
   with Not_found ->
@@ -439,7 +439,7 @@ let intern_isolated_tactic_reference ist r =
   try intern_isolated_global_tactic_reference r
   with Not_found ->
   (* Tolerance for compatibility, allow not to use "constr:" *)
-  try ConstrMayEval (ConstrTerm (intern_constr_reference true ist r))
+  try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
   with Not_found ->
   (* Reference not found *)
   error_global_not_found_loc (qualid_of_reference r)
@@ -899,7 +899,7 @@ and intern_tacarg strict ist = function
 	if istac then Reference (ArgVar (adjust_loc loc,id))
 	else ConstrMayEval (ConstrTerm (RVar (adjust_loc loc,id), None))
       else error_syntactic_metavariables_not_allowed loc
-  | TacCall (loc,f,[]) -> intern_isolated_tactic_reference ist f
+  | TacCall (loc,f,[]) -> intern_isolated_tactic_reference strict ist f
   | TacCall (loc,f,l) ->
       TacCall (loc,
         intern_applied_tactic_reference ist f,
