@@ -598,7 +598,6 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
 	      poly_level = lev; 
 	    }, all_sorts
       | Inl ((issmall,isunit),ar,s) ->
-	  let isunit = isunit && ntypes = 1 && not (is_recursive recargs.(0)) in
 	  let kelim = allowed_sorts issmall isunit s in
 	    Monomorphic {
 		mind_user_arity = ar;

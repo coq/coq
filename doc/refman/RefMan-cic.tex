@@ -600,12 +600,12 @@ $\Gamma_C$ is such that
 p_1:P_1,\ldots,\forall p_r:P_r,\forall a_1:A_1, \ldots \forall a_n:A_n,
 (I~p_1~\ldots p_r~t_1\ldots t_q)\]
 with $I$ one of the inductive definitions in $\Gamma_I$. 
-We say that $n$ is the number of real arguments of the constructor
+We say that $q$ is the number of real arguments of the constructor
 $c$. 
 \paragraph{Context of parameters.}
 If an inductive definition $\NInd{\Gamma}{\Gamma_I}{\Gamma_C}$ admits 
 $r$ inductive parameters, then there exists a context $\Gamma_P$ of
-size $r$, such that $\Gamma_P=p_1:P_1;\ldots;p_r:P_r$ and 
+size $r$, such that $\Gamma_P=[p_1:P_1;\ldots;p_r:P_r]$ and 
 if $(t:A) \in \Gamma_I,\Gamma_C$ then $A$ can be written as 
 $\forall p_1:P_1,\ldots \forall p_r:P_r,A'$. 
 We call $\Gamma_P$ the context of parameters of the inductive
@@ -788,8 +788,8 @@ to the sort $s$ or to a product $\forall~x:T,U$ with $U$ an arity
 of sort $s$. (For instance $A\ra \Set$ or $\forall~A:\Prop,A\ra
 \Prop$ are arities of sort respectively \Set\ and \Prop).  A {\em type
   of constructor of $I$}\index{Type of constructor} is either a term
-$(I~t_1\ldots ~t_n)$ or $\fa x:T,C$ with $C$ a {\em type of constructor
-  of $I$}.
+$(I~t_1\ldots ~t_n)$ or $\fa x:T,C$ with $C$ recursively 
+a {\em type of constructor of $I$}.
 
 \smallskip
 
@@ -863,18 +863,18 @@ inductive definition.
 \inference{
   \frac{
   (\WTE{\Gamma;\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
-  ~~ (\WTE{\Gamma;\Gamma_I;\Gamma_P}{C_i}{s_{p_i}})_{i=1\ldots  n}
+  ~~ (\WTE{\Gamma;\Gamma_I;\Gamma_P}{C_i}{s_{q_i}})_{i=1\ldots  n}
 }
   {\WF{E;\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
 provided that the following side conditions hold:
 \begin{itemize}
-\item $k>0$, $I_j$, $c_i$ are different names for $j=1\ldots  k$ and $i=1\ldots  n$,
+\item $k>0$ and all of $I_j$ and $c_i$ are distinct names for $j=1\ldots  k$ and $i=1\ldots  n$,
 \item $p$ is the number of parameters of \NInd{\Gamma}{\Gamma_I}{\Gamma_C}
   and $\Gamma_P$ is the context of parameters, 
-\item for $j=1\ldots  k$ we have $A_j$ is an arity of sort $s_j$ and $I_j
+\item for $j=1\ldots  k$ we have that $A_j$ is an arity of sort $s_j$ and $I_j
   \notin \Gamma \cup E$,
-\item for $i=1\ldots  n$ we have $C_i$ is a type of constructor of
-  $I_{p_i}$ which satisfies the positivity condition for $I_1 \ldots  I_k$
+\item for $i=1\ldots  n$ we have that $C_i$ is a type of constructor of
+  $I_{q_i}$ which satisfies the positivity condition for $I_1 \ldots  I_k$
   and $c_i \notin \Gamma \cup E$.
 \end{itemize}
 \end{description}
@@ -928,41 +928,47 @@ by typability of all products in the Calculus of Inductive Constructions.
 The following typing rule is added to the theory.
 
 \begin{description}
-\item[Ind-Family] Let $\Gamma_P$ be a context of parameters
-$[p_1:P_1;\ldots;p_{m'}:P_{m'}]$ and $m\leq m'$ be the length of the
-initial prefix of parameters that occur unchanged in the recursive
-occurrences of the constructor types. Assume that $\Gamma_I$ is
-$[I_1:\forall \Gamma_P,A_1;\ldots;I_k:\forall \Gamma_P,A_k]$ and
-$\Gamma_C$ is $[c_1:\forall \Gamma_P,C_1;\ldots;c_n:\forall
-\Gamma_P,C_n]$.
+\item[Ind-Family] Let $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$ be an
+  inductive definition. Let $\Gamma_P = [p_1:P_1;\ldots;p_{p}:P_{p}]$
+  be its context of parameters, $\Gamma_I = [I_1:\forall
+    \Gamma_P,A_1;\ldots;I_k:\forall \Gamma_P,A_k]$ its context of
+  definitions and $\Gamma_C = [c_1:\forall
+    \Gamma_P,C_1;\ldots;c_n:\forall \Gamma_P,C_n]$ its context of
+  constructors, with $c_i$ a constructor of $I_{q_i}$.
 
-Let $q_1$, \ldots, $q_r$, with $0\leq r\leq m$, be a possibly partial
-instantiation of the parameters in $\Gamma_P$. We have:
+  Let $m \leq p$ be the length of the longest prefix of parameters
+  such that the $m$ first arguments of all occurrences of all $I_j$ in
+  all $C_k$ (even the occurrences in the hypotheses of $C_k$) are
+  exactly applied to $p_1~\ldots~p_m$ ($m$ is the number of {\em
+    recursively uniform parameters} and the $p-m$ remaining parameters
+  are the {\em recursively non-uniform parameters}). Let $q_1$,
+  \ldots, $q_r$, with $0\leq r\leq m$, be a (possibly) partial
+  instantiation of the recursively uniform parameters of
+  $\Gamma_P$. We have:
 
 \inference{\frac
 {\left\{\begin{array}{l}
 \Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C} \in E\\
-(E[\Gamma] \vdash q_s : P'_s)_{s=1\ldots r}\\
-(E[\Gamma] \vdash \WTEGLECONV{P'_s}{\subst{P_s}{x_u}{q_u}_{u=1\ldots s-1}})_{s=1\ldots r}\\
+(E[\Gamma] \vdash q_l : P'_l)_{l=1\ldots r}\\
+(\WTEGLECONV{P'_l}{\subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}})_{l=1\ldots r}\\
 1 \leq j \leq k
 \end{array}
 \right.}
-{(I_j\,q_1\,\ldots\,q_r:\forall \Gamma^{r+1}_p, (A_j)_{/s})}
+{E[\Gamma] \vdash (I_j\,q_1\,\ldots\,q_r:\forall [p_{r+1}:P_{r+1};\ldots;p_{p}:P_{p}], (A_j)_{/s_j})}
 }
 
 provided that the following side conditions hold:
 
 \begin{itemize}
 \item $\Gamma_{P'}$ is the context obtained from $\Gamma_P$ by
-replacing, each $P_s$ that is an arity with the
-sort of $P'_s$, as soon as $1\leq s \leq r$ (notice that
-$P_s$ arity implies $P'_s$ arity since $E[\Gamma]
-\vdash \WTEGLECONV{P'_s}{ \subst{P_s}{x_u}{q_u}_{u=1\ldots s-1}}$);
+replacing each $P_l$ that is an arity with $P'_l$ for $1\leq l \leq r$ (notice that
+$P_l$ arity implies $P'_l$ arity since $\WTEGLECONV{P'_l}{ \subst{P_l}{p_u}{q_u}_{u=1\ldots l-1}}$);
 \item there are sorts $s_i$, for $1 \leq i \leq k$ such that, for
- $\Gamma_{I'}$ obtained from $\Gamma_I$ by changing each $A_i$ by $(A_i)_{/s_i}$,
-we have $(\WTE{\Gamma;\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{p_i}})_{i=1\ldots  n}$;
-\item the sorts are such that all elimination are allowed (see
-section~\ref{elimdep}).
+ $\Gamma_{I'} = [I_1:\forall
+    \Gamma_{P'},(A_1)_{/s_1};\ldots;I_k:\forall \Gamma_{P'},(A_k)_{/s_k}]$
+we have $(\WTE{\Gamma;\Gamma_{I'};\Gamma_{P'}}{C_i}{s_{q_i}})_{i=1\ldots  n}$;
+\item the sorts are such that all eliminations, to {\Prop}, {\Set} and
+  $\Type(j)$, are allowed (see section~\ref{elimdep}).
 \end{itemize}
 \end{description}
 
@@ -971,30 +977,41 @@ Ind-Const} and {\bf App}, then it is typable using the rule {\bf
 Ind-Family}. Conversely, the extended theory is not stronger than the
 theory without {\bf Ind-Family}. We get an equiconsistency result by
 mapping each $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$ occurring into a
-given derivation into as many fresh inductive types and constructors
+given derivation into as many different inductive types and constructors
 as the number of different (partial) replacements of sorts, needed for
-this derivation, in the parameters that are arities. That is, the
-changes in the types of each partial instance $q_1\,\ldots\,q_r$ can
-be characterized by the ordered sets of arity sorts among the types of
-parameters, and to each signature is associated a new inductive
-definition with fresh names. Conversion is preserved as any (partial)
-instance $I_j\,q_1\,\ldots\,q_r$ or $C_i\,q_1\,\ldots\,q_r$ is mapped
-to the names chosen in the specific instance of
-$\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$.
+this derivation, in the parameters that are arities (this is possible
+because $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$ well-formed implies
+that $\Ind{\Gamma}{p}{\Gamma_{I'}}{\Gamma_{C'}}$ is well-formed and
+has the same allowed eliminations, where
+$\Gamma_{I'}$ is defined as above and $\Gamma_{C'} = [c_1:\forall
+\Gamma_{P'},C_1;\ldots;c_n:\forall \Gamma_{P'},C_n]$). That is,
+the changes in the types of each partial instance
+$q_1\,\ldots\,q_r$ can be characterized by the ordered sets of arity
+sorts among the types of parameters, and to each signature is
+associated a new inductive definition with fresh names. Conversion is
+preserved as any (partial) instance $I_j\,q_1\,\ldots\,q_r$ or
+$C_i\,q_1\,\ldots\,q_r$ is mapped to the names chosen in the specific
+instance of $\Ind{\Gamma}{p}{\Gamma_I}{\Gamma_C}$.
 
 \newcommand{\Single}{\mbox{\textsf{Set}}}
 
-In practice, the rule is used by {\Coq} only with in case the
-inductive type is declared with an arity of a sort in the $\Type$
-hierarchy, and, then, the polymorphism is over the parameters whose
-type is an arity in the {\Type} hierarchy. The sort $s_j$ are then
+In practice, the rule {\bf Ind-Family} is used by {\Coq} only when all the
+inductive types of the inductive definition are declared with an arity whose 
+sort is in the $\Type$
+hierarchy. Then, the polymorphism is over the parameters whose
+type is an arity of sort in the {\Type} hierarchy. 
+The sort $s_j$ are
 chosen canonically so that each $s_j$ is minimal with respect to the
-hierarchy ${\Prop_u}\subset{\Set_p}\subset\Type$ where $\Set_p$ is
-predicative {\Set}, and ${\Prop_u}$ is the sort of small singleton
-inductive types (i.e. of inductive types with one single constructor
-and that contains either proofs or inhabitants of singleton types
-only). More precisely, a small singleton inductive family is set in
-{\Prop}, a small non singleton inductive family is set in {\Set} (even
+hierarchy ${\Prop}\subset{\Set_p}\subset\Type$ where $\Set_p$ is
+predicative {\Set}.
+%and ${\Prop_u}$ is the sort of small singleton
+%inductive types (i.e. of inductive types with one single constructor
+%and that contains either proofs or inhabitants of singleton types
+%only). 
+More precisely, an empty or small singleton inductive definition
+(i.e. an inductive definition of which all inductive types are
+singleton -- see paragraph~\ref{singleton}) is set in
+{\Prop}, a small non-singleton inductive family is set in {\Set} (even
 in case {\Set} is impredicative -- see Section~\ref{impredicativity}),
 and otherwise in the {\Type} hierarchy.
 % TODO: clarify the case of a partial application ??
