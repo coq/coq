@@ -51,7 +51,7 @@ rule action = parse
 		cRcpt := 0; action lexbuf }
   | [' ' '\t']* '\n'      { if !cRcpt < 2 then print "\n";
       	       	       	    cRcpt := !cRcpt+1; action lexbuf}
-  | eof       { raise Fin_fichier}
+  | eof       { (raise Fin_fichier : unit)}
   | _         { print (Lexing.lexeme lexbuf); cRcpt := 0; action lexbuf }
 
 and comment = parse
