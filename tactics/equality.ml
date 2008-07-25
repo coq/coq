@@ -88,12 +88,20 @@ let general_s_rewrite_clause = function
 let general_setoid_rewrite_clause = ref general_s_rewrite_clause
 let register_general_setoid_rewrite_clause = (:=) general_setoid_rewrite_clause
 
+let dest_applied_relation t =
+  match kind_of_term t with
+  | App (c, args) when Array.length args >= 2 ->
+      mkApp (c, Array.append (Array.sub args 0 (Array.length args - 2)) [|mkProp;mkProp|])
+  | _ -> t
+
 let general_rewrite_ebindings_clause cls lft2rgt occs (c,l) with_evars gl =
   let ctype = pf_apply get_type_of gl c in 
   let env = pf_env gl in
   let sigma = project gl in 
-  let _,t = splay_prod env sigma ctype in
-    match match_with_equation t with
+  let t = snd (decompose_prod (whd_betaiotazeta ctype)) in 
+  let head = dest_applied_relation t in
+  let _,t' = splay_prod env sigma head in
+    match match_with_equation t' with
     | None -> 
 	if l = NoBindings
 	then !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
@@ -114,7 +122,6 @@ let general_rewrite_ebindings_clause cls lft2rgt occs (c,l) with_evars gl =
 	    try general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
 	    with e -> 
 	      let eq = build_coq_eq () in
-	      let t = snd (decompose_prod (whd_betaiotazeta ctype)) in 
 	      let head = if isApp t then fst (destApp t) else t in 
 		if not (eq_constr eq head) then
 		  try !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
