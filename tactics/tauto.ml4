@@ -56,7 +56,7 @@ let is_binary t =
 	
 let is_conj ist =
   let ind = assoc_last ist in
-    if (is_conjunction ind) && (is_nodep_ind ind) && not (is_record ind) 
+    if (is_conjunction ind) && (is_nodep_ind ind) (* && not (is_record ind)  *)
       && is_binary ind (* for compatibility, as (?X _ _) matches 
 			  applications with 2 or more arguments. *)
     then
@@ -65,7 +65,7 @@ let is_conj ist =
       <:tactic<fail>>
 
 let is_disj ist =
-  if is_disjunction (assoc_last ist) then
+  if is_disjunction (assoc_last ist) && is_binary (assoc_last ist) then
     <:tactic<idtac>>
   else
     <:tactic<fail>>

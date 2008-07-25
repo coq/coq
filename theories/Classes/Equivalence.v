@@ -54,9 +54,6 @@ Infix "=~=" := pequiv (at level 70, no associativity) : equiv_scope.
 
 Program Instance equiv_reflexive [ sa : Equivalence A ] : Reflexive equiv.
 
-  Next Obligation.
-  Proof. reflexivity. Qed.
-
 Program Instance equiv_symmetric [ sa : Equivalence A ] : Symmetric equiv.
 
   Next Obligation.
@@ -127,13 +124,7 @@ Section Respecting.
 
   Next Obligation.
   Proof. 
-    unfold respecting in *. program_simpl. destruct eqa ; destruct eqb. red in H2,H1 ; auto.
-  Qed.
-
-  Next Obligation.
-  Proof.
-    unfold respecting in *. program_simpl. destruct eqa ; destruct eqb. red in H2,H3,H4.
-    transitivity (y y0) ; auto.
+    unfold respecting in *. program_simpl. transitivity (y y0); auto. apply H0. reflexivity.
   Qed.
 
 End Respecting.

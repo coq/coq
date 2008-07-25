@@ -96,11 +96,6 @@ Program Instance respectful_per [ PER A (R : relation A), PER B (R' : relation B
 
   Next Obligation.
   Proof with auto.
-    destruct PER0 ; destruct PER1 ; auto.
-  Qed.
-
-  Next Obligation.
-  Proof with auto. destruct PER0 ; destruct PER1.
     assert(R x0 x0). 
     transitivity y0... symmetry...
     transitivity (y x0)...
