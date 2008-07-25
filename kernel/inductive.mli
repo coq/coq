@@ -47,6 +47,9 @@ val type_of_constructor : constructor -> mind_specif -> types
 (* Return constructor types in normal form *)
 val arities_of_constructors : inductive -> mind_specif -> types array
 
+(* Return constructor types in user form *)
+val type_of_constructors : inductive -> mind_specif -> types array
+
 (* Transforms inductive specification into types (in nf) *)
 val arities_of_specif : mutual_inductive -> mind_specif -> types array 
 

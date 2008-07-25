@@ -76,6 +76,8 @@ val subst_large_constraint : universe -> universe -> universe -> universe
 val subst_large_constraints : 
   (universe * universe) list -> universe -> universe
 
+val no_upper_constraints : universe -> constraints -> bool
+
 (*s Pretty-printing of universes. *)
 
 val pr_uni : universe -> Pp.std_ppcmds

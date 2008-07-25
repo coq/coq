@@ -228,7 +228,9 @@ let arities_of_specif kn (mib,mip) =
 let arities_of_constructors ind specif = 
   arities_of_specif (fst ind) specif
 
-
+let type_of_constructors ind (mib,mip) =
+  let specif = mip.mind_user_lc in
+  Array.map (constructor_instantiate (fst ind) mib) specif
 
 (************************************************************************)
 
