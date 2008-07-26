@@ -183,15 +183,6 @@ let rec catchable = function
   | Stdpp.Exc_located (_, e) -> catchable e
   | e -> Logic.catchable_exception e
 
-(* let apply_tac_list tac sigr g1 rest =  *)
-(*   let (gl,p) = apply_sig_tac sigr tac g1 in *)
-(*   let n = List.length gl in  *)
-(*     (gl@rest, fun pfl -> let (pfg,pfrest) = list_chop n pfl in (p pfg)::pfrest) *)
-
-let split_list = function 
-  | [] -> assert false
-  | hd :: tl -> hd, tl
-
 let is_dep gl gls =
   let evs = evars_of_term Intset.empty gl.evar_concl in
     if evs = Intset.empty then false
@@ -446,13 +437,16 @@ let resolve_all_evars_once debug (mode, depth) env p evd =
 
 exception FoundTerm of constr
 
-let resolve_one_typeclass env gl =
-  let gls = { it = [ Evd.make_evar (Environ.named_context_val env) gl ] ; sigma = Evd.empty } in
-  let valid x = raise (FoundTerm (fst (Refiner.extract_open_proof Evd.empty (List.hd x)))) in
+let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
+  let gls = { it = [ Evd.make_evar (Environ.named_context_val env) gl ] ; sigma = sigma } in
+  let valid x = raise (FoundTerm (fst (Refiner.extract_open_proof sigma (List.hd x)))) in
   let gls', valid' = typeclasses_eauto false (true, default_eauto_depth) [] (gls, valid) in
     try ignore(valid' []); assert false with FoundTerm t -> 
       let term = Evarutil.nf_evar (sig_sig gls') t in
 	if occur_existential term then raise Not_found else term
+
+let _ = 
+  Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
 
 let has_undefined p oevd evd =
   Evd.fold (fun ev evi has -> has ||
@@ -517,18 +511,22 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	  | Some evd' -> docomp evd' comps
   in docomp oevd split
 
-(* let resolve_all_evars debug m env p oevd = *)
-(*   let oevm = Evd.evars_of oevd in *)
-(*   try *)
-(*     let rec aux n evd = *)
-(*       if has_undefined p oevm evd then *)
-(* 	if n > 0 then *)
-(* 	  let evd' = resolve_all_evars_once debug m env p evd in *)
-(* 	    aux (pred n) evd' *)
-(* 	else None *)
-(*       else Some evd *)
-(*     in aux 3 oevd *)
-(*   with Not_found -> None *)
+let resolve_typeclass_evars d p env evd onlyargs split fail =
+  let pred = 
+    if onlyargs then 
+      (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
+	class_of_constr evi.Evd.evar_concl <> None)
+    else
+      (fun ev evi -> class_of_constr evi.Evd.evar_concl <> None)
+  in resolve_all_evars d p env pred evd split fail
+
+let solve_inst debug mode depth env evd onlyargs split fail =
+  resolve_typeclass_evars debug (mode, depth) env evd onlyargs split fail
+
+let _ = 
+  Typeclasses.solve_instanciations_problem :=
+    solve_inst false true default_eauto_depth
+
     
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
 | [ "Typeclasses" "unfold" reference_list(cl) ] -> [
@@ -563,6 +561,7 @@ let try_find_reference dir s =
 let gen_constant dir s = Coqlib.gen_constant "Class_setoid" dir s
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
+let coq_eq = lazy(gen_constant ["Init"; "Logic"] "eq")
 let iff = lazy (gen_constant ["Init"; "Logic"] "iff")
 let coq_all = lazy (gen_constant ["Init"; "Logic"] "all")
 let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
@@ -601,6 +600,8 @@ let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalenc
 let setoid_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv")
 let setoid_morphism = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_morphism")
 let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalence_Reflexive")
+
+let setoid_relation = lazy (gen_constant ["Classes"; "SetoidTactics"] "SetoidRelation")
   
 let arrow_morphism a b = 
   if isprop a && isprop b then
@@ -615,11 +616,24 @@ let morphism_type = lazy (constr_of_global (Lazy.force morphism_class).cl_impl)
 
 let morphism_proxy_type = lazy (constr_of_global (Lazy.force morphism_proxy_class).cl_impl)
 
+let is_applied_setoid_relation t =
+  match kind_of_term t with
+  | App (c, args) when Array.length args >= 2 ->
+      let head = if isApp c then fst (destApp c) else c in 
+	if eq_constr (Lazy.force coq_eq) head then false
+	else (try      
+	    let evd, evar = Evarutil.new_evar (Evd.create_evar_defs Evd.empty) (Global.env()) (new_Type ()) in
+	    let inst = mkApp (Lazy.force setoid_relation, [| evar; c |]) in
+	      ignore(Typeclasses.resolve_one_typeclass (Global.env()) (Evd.evars_of evd) inst);
+	      true
+	  with _ -> false)
+  | _ -> false
+      
+let _ = 
+  Equality.register_is_applied_setoid_relation is_applied_setoid_relation
+
 exception Found of (constr * constr * (types * types) list * constr * constr array *
 		       (constr * (constr * constr * constr * constr)) option array)
-
-let is_equiv env sigma t = 
-  isConst t && Reductionops.is_conv env sigma (Lazy.force setoid_equiv) t
 
 let split_head = function
     hd :: tl -> hd, tl
@@ -1020,16 +1034,7 @@ let build_new gl env sigma flags loccs hypinfo concl cstr evars =
   let rest = List.filter (fun o -> o > nbocc_min_1) occs in
   if rest <> [] then error_invalid_occurrence rest;
   eq
-    
-let resolve_typeclass_evars d p env evd onlyargs split fail =
-  let pred = 
-    if onlyargs then 
-      (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
-	class_of_constr evi.Evd.evar_concl <> None)
-    else
-      (fun ev evi -> class_of_constr evi.Evd.evar_concl <> None)
-  in resolve_all_evars d p env pred evd split fail
-      
+          
 let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
     match clause with
@@ -1174,13 +1179,6 @@ let pr_depth _prc _prlc _prt = function
 ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
 | [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
 END
-	
-let solve_inst debug mode depth env evd onlyargs split fail =
-  resolve_typeclass_evars debug (mode, depth) env evd onlyargs split fail
-
-let _ = 
-  Typeclasses.solve_instanciations_problem :=
-    solve_inst false true default_eauto_depth
       
 VERNAC COMMAND EXTEND Typeclasses_Settings
  | [ "Typeclasses" "eauto" ":=" debug(d) search_mode(s) depth(depth) ] -> [ 
@@ -1278,10 +1276,10 @@ let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyCon
 
 let declare_relation ?(binders=[]) a aeq n refl symm trans = 
   init_setoid ();
+  let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.SetoidTactics.SetoidRelation"
+  in ignore(anew_instance binders instance []);
   match (refl,symm,trans) with 
-      (None, None, None) -> 
-	let instance = declare_instance a aeq n "Coq.Classes.SetoidTactics.DefaultRelation"
-	in ignore(anew_instance binders instance [])
+      (None, None, None) -> ()
     | (Some lemma1, None, None) -> 
 	ignore (declare_instance_refl binders a aeq n lemma1)
     | (None, Some lemma2, None) -> 
@@ -1758,16 +1756,3 @@ TACTIC EXTEND head_of_constr
       letin_tac None (Name h) c allHyps
   ]
 END
-
-(* TACTIC EXTEND solve_evar *)
-(*   [ "solve_evar" int_or_var(n) ] -> [ fun gl -> *)
-(*     let n = match n with ArgArg i -> pred i | _ -> assert false in *)
-(*     let ev, evi = try List.nth (Evd.to_list (project gl)) n with Not_found -> assert false in *)
-(*     let id = pf_get_new_id (add_suffix (id_of_string "evar") (string_of_int n)) gl in *)
-(*       tclTHEN (true_cut (Name id) evi.evar_concl gl) *)
-	
-(*   ] *)
-(* END *)
-
-
-(*      let nprod = nb_prod (pf_concl gl) in *)

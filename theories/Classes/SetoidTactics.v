@@ -24,11 +24,22 @@ Require Export Coq.Relations.Relation_Definitions.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+(** Setoid relation on a given support: declares a relation as a setoid
+   for use with rewrite. It helps choosing if a rewrite should be handled
+   by setoid_rewrite or the regular rewrite using leibniz equality.
+   Users can declare an [SetoidRelation A RA] anywhere to declare default 
+   relations. This is also done automatically by the [Declare Relation A RA]
+   commands. *)
+
+Class SetoidRelation A (R : relation A).
+
+Instance impl_setoid_relation : SetoidRelation impl.
+Instance iff_setoid_relation : SetoidRelation iff.
+
 (** Default relation on a given support. Can be used by tactics
    to find a sensible default relation on any carrier. Users can 
-   declare an [Instance A RA] anywhere to declare default relations.
-   This is also done by the [Declare Relation A RA] command with no
-   parameters for backward compatibility. *)
+   declare an [Instance def : DefaultRelation A RA] anywhere to 
+   declare default relations. *)
 
 Class DefaultRelation A (R : relation A).
 

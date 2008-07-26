@@ -216,7 +216,7 @@ Qed.
 Add Morphism Z.compare with signature Z.eq ==> Z.eq ==> (@eq comparison) as compare_wd.
 Proof. 
 intros x x' Hx y y' Hy.
-rewrite 2 spec_compare_alt; rewrite Hx, Hy; intuition.
+rewrite 2 spec_compare_alt; unfold Z.eq in *; rewrite Hx, Hy; intuition.
 Qed.
 
 Add Morphism Z.lt with signature Z.eq ==> Z.eq ==> iff as NZlt_wd.
