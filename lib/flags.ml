@@ -106,4 +106,7 @@ let browser_cmd_fmt =
   let coq_netscape_remote_var = "COQREMOTEBROWSER" in
   Sys.getenv coq_netscape_remote_var
  with
-  Not_found -> Coq_config.browser
+  Not_found ->
+   if Sys.os_type = "Win32"
+   then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s"
+   else "firefox -remote \"OpenURL(%s,new-tab)\" || firefox %s &"
