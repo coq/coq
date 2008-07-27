@@ -436,6 +436,7 @@ Miscellaneous
 - Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into
   "Test Printing Let for ref" and "Test Printing If for ref".
 - An overhauled build system (new Makefiles); see dev/doc/build-system.txt
+- Add -browser option to configure script
 
 Changes from V8.1gamma to V8.1
 ==============================

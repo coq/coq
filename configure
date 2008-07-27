@@ -25,7 +25,7 @@ done
 }
 
 usage () {
-    echo "Available options for configure are:\n"
+    printf "Available options for configure are:\n"
     echo "-help"
     printf "\tDisplays this help page\n"
     echo "-prefix <dir>"
@@ -59,6 +59,8 @@ usage () {
     printf "\tSpecifies whether or not to compile full FSets/Reals library\n"
     echo "-coqide (opt|byte|no)"
     printf "\tSpecifies whether or not to compile Coqide\n"
+    echo "-browser <command>"
+    printf "\tUse <command> to open URL %%s\n"
     echo "-with-doc (yes|no)"
     printf "\tSpecifies whether or not to compile the documentation\n"
     echo "-with-geoproof (yes|no)"
@@ -117,6 +119,7 @@ fsets=all
 reals=all
 arch_spec=no
 coqide_spec=no
+browser_spec=no
 with_geoproof=false
 with_doc=all
 with_doc_spec=no
@@ -188,6 +191,9 @@ while : ; do
 			  byte|opt) COQIDE=$2;;
 			  *) COQIDE=no
 		      esac
+		      shift;;
+    -browser|--browser) browser_spec=yes
+		      BROWSER=$2
 		      shift;;
     -with-doc|--with-doc) with_doc_spec=yes
 		      case "$2" in
@@ -331,6 +337,15 @@ if [ "$MAKE" != "" ]; then
   esac
 else
   echo "Cannot find GNU Make 3.81"
+fi
+
+# Browser command
+
+if [ "$browser_spec" = "no" ]; then
+    case $ARCH in
+        win32) BROWSER='C:\PROGRA~1\INTERN~1\IEXPLORE %s' ;;
+        *) BROWSER='firefox -remote "OpenURL(%s,new-tab)" || firefox %s &' ;;
+    esac
 fi
 
 #########################################
@@ -783,6 +798,7 @@ else
 echo "  Documentation                     : None"
 fi
 echo "  CoqIde                            : $COQIDE"
+echo "  Web browser                       : $BROWSER"
 echo ""
 
 echo "  Paths for true installation:"
@@ -803,6 +819,10 @@ escape_var () {
   prerr_endline(String.escaped(Sys.getenv"$VAR"));;
 EOF
 }
+
+# Escaped version of browser command
+export BROWSER
+ESCBROWSER=`VAR=BROWSER escape_var`
 
 # damned backslashes under M$Windows
 case $ARCH in
@@ -859,6 +879,7 @@ let vo_magic_number = $VOMAGIC
 let state_magic_number = $STATEMAGIC
 let exec_extension = "$EXE"
 let with_geoproof = ref $with_geoproof
+let browser = "$ESCBROWSER"
 
 END_OF_COQ_CONFIG
 
