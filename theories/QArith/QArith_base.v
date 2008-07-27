@@ -43,9 +43,7 @@ Notation Qge a b := (Qle b a) (only parsing).
 
 Infix "==" := Qeq (at level 70, no associativity) : Q_scope.
 Infix "<" := Qlt : Q_scope.
-Infix ">" := Qgt : Q_scope.
-Infix "<=" := Qle : Q_scope (only parsing).
-Infix ">=" := Qge : Q_scope (only parsing).
+Infix "<=" := Qle : Q_scope.
 Notation "x > y" := (Qlt y x)(only parsing) : Q_scope.
 Notation "x >= y" := (Qle y x)(only parsing) : Q_scope.
 Notation "x <= y <= z" := (x<=y/\y<=z) : Q_scope.
