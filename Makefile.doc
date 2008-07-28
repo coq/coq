@@ -221,26 +221,26 @@ ide/index_urls.txt: doc/refman/html/index.html
 install-doc: install-doc-meta install-doc-html install-doc-printable
 
 install-doc-meta:
-	$(MKDIR) $(DOCDIR)
-	$(INSTALLLIB) doc/LICENCE $(DOCDIR)/LICENCE.doc
+	$(MKDIR) $(FULLDOCDIR)
+	$(INSTALLLIB) doc/LICENCE $(FULLDOCDIR)/LICENCE.doc
 
 install-doc-html: doc-html
-	$(MKDIR) $(addprefix $(DOCDIR)/html/, refman stdlib faq)
-	$(INSTALLLIB) doc/refman/html/* $(DOCDIR)/html/refman 
-	$(INSTALLLIB) doc/stdlib/html/* $(DOCDIR)/html/stdlib 
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.html $(DOCDIR)/html/RecTutorial.html
-	$(INSTALLLIB) doc/faq/html/* $(DOCDIR)/html/faq
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(DOCDIR)/html/Tutorial.html
+	$(MKDIR) $(addprefix $(FULLDOCDIR)/html/, refman stdlib faq)
+	$(INSTALLLIB) doc/refman/html/* $(FULLDOCDIR)/html/refman 
+	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib 
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.html $(FULLDOCDIR)/html/RecTutorial.html
+	$(INSTALLLIB) doc/faq/html/* $(FULLDOCDIR)/html/faq
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(FULLDOCDIR)/html/Tutorial.html
 
 install-doc-printable: doc-pdf doc-ps
-	$(MKDIR) $(DOCDIR)/ps $(DOCDIR)/pdf
+	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/refman/Reference-Manual.pdf \
-		doc/stdlib/Library.pdf $(DOCDIR)/pdf
+		doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/refman/Reference-Manual.ps \
-		doc/stdlib/Library.ps $(DOCDIR)/ps
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(DOCDIR)/pdf/Tutorial.pdf
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.pdf $(DOCDIR)/pdf/RecTutorial.pdf
-	$(INSTALLLIB) doc/faq/FAQ.v.pdf $(DOCDIR)/pdf/FAQ.pdf
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(DOCDIR)/ps/Tutorial.ps
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.ps $(DOCDIR)/ps/RecTutorial.ps
-	$(INSTALLLIB) doc/faq/FAQ.v.ps $(DOCDIR)/ps/FAQ.ps
+		doc/stdlib/Library.ps $(FULLDOCDIR)/ps
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(FULLDOCDIR)/pdf/Tutorial.pdf
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.pdf $(FULLDOCDIR)/pdf/RecTutorial.pdf
+	$(INSTALLLIB) doc/faq/FAQ.v.pdf $(FULLDOCDIR)/pdf/FAQ.pdf
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(FULLDOCDIR)/ps/Tutorial.ps
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.ps $(FULLDOCDIR)/ps/RecTutorial.ps
+	$(INSTALLLIB) doc/faq/FAQ.v.ps $(FULLDOCDIR)/ps/FAQ.ps

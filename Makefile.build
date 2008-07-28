@@ -629,6 +629,7 @@ FULLCOQLIB=$(COQLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLMANDIR=$(MANDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLEMACSLIB=$(EMACSLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLCOQDOCDIR=$(COQDOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLDOCDIR=$(DOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 
 install-coq: install-binaries install-library install-coq-info
 install-coqlight: install-binaries install-library-light
