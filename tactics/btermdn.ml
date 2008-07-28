@@ -52,7 +52,7 @@ let bounded_constr_val_discr (t,depth) =
     match constr_val_discr t with
       | Dn.Label (c,l) -> Dn.Label(c,List.map (fun c -> (c,depth-1)) l)
       | Dn.Nothing -> Dn.Nothing
-      | Dn.Everything -> Dn.Nothing
+      | Dn.Everything -> Dn.Everything
 
 type 'a t = (global_reference,constr_pattern * int,'a) Dn.t
   

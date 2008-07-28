@@ -515,11 +515,10 @@ let resolve_typeclass_evars d p env evd onlyargs split fail =
   let pred = 
     if onlyargs then 
       (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
-	class_of_constr evi.Evd.evar_concl <> None)
-    else
-      (fun ev evi -> class_of_constr evi.Evd.evar_concl <> None)
+	Typeclasses.is_class_evar evi)
+    else (fun ev evi -> Typeclasses.is_class_evar evi)
   in resolve_all_evars d p env pred evd split fail
-
+    
 let solve_inst debug mode depth env evd onlyargs split fail =
   resolve_typeclass_evars debug (mode, depth) env evd onlyargs split fail
 

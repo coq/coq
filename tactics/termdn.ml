@@ -70,6 +70,7 @@ let constr_val_discr t =
     | Ind ind_sp -> Label(IndRef ind_sp,l)
     | Construct cstr_sp -> Label((ConstructRef cstr_sp),l)
     | Var id -> Label(VarRef id,l)
+    | Const _ -> Everything
     | _ -> Nothing
 	
 let constr_val_discr_st (idpred,cpred) t =  
