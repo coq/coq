@@ -340,12 +340,13 @@ val generalize_gen  : ((occurrences * constr) * name) list -> tactic
 val generalize_dep  : constr  -> tactic
 
 val conv            : constr -> constr -> tactic
+val resolve_classes : tactic
 
 val tclABSTRACT : identifier option -> tactic -> tactic
 
 val admit_as_an_axiom : tactic
 
-val abstract_generalize : identifier -> tactic
+val abstract_generalize : identifier -> ?generalize_vars:bool -> tactic
 
 val register_general_multi_rewrite : 
   (bool -> evars_flag -> constr with_ebindings -> clause -> tactic) -> unit

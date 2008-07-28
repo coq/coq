@@ -825,7 +825,7 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
-      optname  = "implicit arguments defensive printing";
+      optname  = "implicit status of reversible patterns";
       optkey   = (TertiaryTable ("Reversible","Pattern","Implicit"));
       optread  = Impargs.is_reversible_pattern_implicit_args;
       optwrite = Impargs.make_reversible_pattern_implicit_args }

@@ -501,9 +501,16 @@ END
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as 
   defined by Conor McBride *)
 TACTIC EXTEND generalize_eqs
-| ["generalize_eqs" hyp(id) ] -> [ abstract_generalize id ]
+| ["generalize_eqs" hyp(id) ] -> [ abstract_generalize id ~generalize_vars:false ]
+END
+TACTIC EXTEND generalize_eqs_vars
+| ["generalize_eqs_vars" hyp(id) ] -> [ abstract_generalize id ~generalize_vars:true ]
 END
 
 TACTIC EXTEND conv
 | ["conv" constr(x) constr(y) ] -> [ conv x y ]
+END
+
+TACTIC EXTEND resolve_classes
+| ["resolve_classes" ] -> [ resolve_classes ]
 END

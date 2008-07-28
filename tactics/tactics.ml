@@ -1972,29 +1972,23 @@ let abstract_args gl id =
 	       dep, succ (List.length ctx), vars)
     | _ -> None
 
-let abstract_generalize id gl =
+let abstract_generalize id ?(generalize_vars=true) gl =
   Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
-(*   let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string "Coq.Logic.JMeq")) in *)
-(*   Library.require_library [qualid] None; *)
   let oldid = pf_get_new_id id gl in
   let newc = abstract_args gl id in
     match newc with
       | None -> tclIDTAC gl
       | Some (newc, dep, n, vars) -> 
-	  if dep then
-	    tclTHENLIST [refine newc;
-			 rename_hyp [(id, oldid)];
-			 tclDO n intro; 
-			 generalize_dep (mkVar oldid);
-			 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars]
-	      gl
-	  else
-	    tclTHENLIST [refine newc;
-			 clear [id];
-			 tclDO n intro; 
-			 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars]
-	      gl
-
+	  let tac =
+	    if dep then
+	      tclTHENLIST [refine newc; rename_hyp [(id, oldid)]; tclDO n intro; 
+			   generalize_dep (mkVar oldid)]	      
+	    else
+	      tclTHENLIST [refine newc; clear [id]; tclDO n intro]
+	  in 
+	    if generalize_vars then
+	      tclTHEN tac (tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars) gl
+	    else tac gl
 
 let occur_rel n c = 
   let res = not (noccurn n c) in
