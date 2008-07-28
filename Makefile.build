@@ -496,7 +496,7 @@ install-pcoq-manpages:
 # tests
 ###########################################################################
 
-check:: world pcoq
+check:: world
 	cd test-suite; \
 	env COQBIN=../bin COQLIB=.. ./check -$(BEST) | tee check.log
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
