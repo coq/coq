@@ -73,26 +73,18 @@ let interp_casted_constr_evars evdref env ?(impls=([],[])) c typ =
 let type_ctx_instance isevars env ctx inst subst =
   List.fold_left2
     (fun (subst, instctx) (na, _, t) ce ->
-      let t' = replace_vars subst t in
+      let t' = substl subst t in
       let c = interp_casted_constr_evars isevars env ce t' in
+      isevars := resolve_typeclasses ~onlyargs:true ~fail:true env !isevars;
       let d = na, Some c, t' in
-	(na, c) :: subst, d :: instctx)
+	c :: subst, d :: instctx)
     (subst, []) (List.rev ctx) inst
-
-(*let superclass_ce = CRef (Ident (dummy_loc, id_of_string ".superclass"))*)
 
 let type_class_instance_params isevars env id n ctx inst subst =
   List.fold_left2
     (fun (subst, instctx) (na, _, t) ce ->
       let t' = replace_vars subst t in
-      let c = 
-(* 	if ce = superclass_ce then *)
-	(* 	  (\* Control over the evars which are direct superclasses to avoid partial instanciations *)
-	(* 	     in instance search. *\) *)
-	(* 	  Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (VarRef id, (n, Some na))) t' *)
-	(* 	else *)
-	interp_casted_constr_evars isevars env ce t' 
-      in
+      let c = interp_casted_constr_evars isevars env ce t' in
       let d = na, Some c, t' in
 	(na, c) :: subst, d :: instctx)
     (subst, []) (List.rev ctx) inst
@@ -140,9 +132,9 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
   let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
     let c', imps = interp_type_evars_impls ~evdref:isevars env c in
-    let ctx, c = Classes.decompose_named_assum c' in
+    let ctx, c = Sign.decompose_prod_assum c' in
     let cl, args = Typeclasses.dest_class_app c in
-      cl, ctx, imps, substitution_of_constrs (List.map snd cl.cl_context) (List.rev (Array.to_list args))
+      cl, ctx, imps, (List.rev (Array.to_list args))
   in
   let id = 
     match snd instid with
@@ -155,11 +147,11 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 	  let i = Nameops.add_suffix (Classes.id_of_class k) "_instance_0" in
 	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in
-  let env' = Classes.push_named_context ctx' env in
+  let env' = push_rel_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
   isevars := resolve_typeclasses ~onlyargs:false ~fail:true env' !isevars;
   let sigma = Evd.evars_of !isevars in
-  let substctx = Typeclasses.nf_substitution sigma subst in
+  let substctx = List.map (Evarutil.nf_evar sigma) subst in
   let subst, _propsctx = 
     let props = 
       List.map (fun (x, l, d) -> 
@@ -172,8 +164,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 	List.fold_left
 	  (fun (props, rest) (id,_,_) -> 
 	    try 
-	      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> id' = id) rest in
-	      let rest' = List.filter (fun ((_,id'), c) -> id' <> id) rest in
+	      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
+	      let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
 		Constrintern.add_glob loc (ConstRef (List.assoc mid k.cl_projs));
 		c :: props, rest'
 	    with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
@@ -184,20 +176,13 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 	else
 	  type_ctx_instance isevars env' k.cl_props props substctx
   in
-  let inst_constr, ty_constr = instance_constructor k (List.rev_map snd subst) in
+  let inst_constr, ty_constr = instance_constructor k (List.rev subst) in
     isevars := Evarutil.nf_evar_defs !isevars;
-    let term = Evarutil.nf_isevar !isevars (it_mkNamedLambda_or_LetIn inst_constr ctx')
-    and termtype = Evarutil.nf_isevar !isevars (it_mkNamedProd_or_LetIn ty_constr ctx') 
+    let term = Evarutil.nf_isevar !isevars (it_mkLambda_or_LetIn inst_constr ctx')
+    and termtype = Evarutil.nf_isevar !isevars (it_mkProd_or_LetIn ty_constr ctx') 
     in
       isevars := undefined_evars !isevars;
       Evarutil.check_evars env Evd.empty !isevars termtype;
-(*   let imps =  *)
-(*     Util.list_map_i  *)
-(*       (fun i binder -> *)
-(* 	match binder with *)
-(* 	ExplByPos (i, Some na), (true, true)) *)
-(*       1 ctx *)
-(*   in *)
       let hook gr = 
 	let cst = match gr with ConstRef kn -> kn | _ -> assert false in
 	let inst = Typeclasses.new_instance k pri global cst in

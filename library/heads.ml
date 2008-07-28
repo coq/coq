@@ -158,7 +158,7 @@ let discharge_head (_,(ref,k)) =
   | EvalConstRef cst -> Some (EvalConstRef (pop_con cst), k)
   | EvalVarRef id -> None
 
-let rebuild_head (info,(ref,k)) =
+let rebuild_head (ref,k) =
   (ref, compute_head ref)
 
 let export_head o = Some o

@@ -688,6 +688,13 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 (*            Resolution tactics                    *)
 (****************************************************)
 
+let resolve_classes gl =
+  let env = pf_env gl and evd = project gl in
+    if evd = Evd.empty then tclIDTAC gl
+    else
+      let evd' = Typeclasses.resolve_typeclasses env (Evd.create_evar_defs evd) in
+	(tclTHEN (tclEVARS (Evd.evars_of evd')) tclNORMEVAR) gl
+
 (* Resolution with missing arguments *)
 
 let general_apply with_delta with_destruct with_evars (c,lbind) gl =
@@ -1963,29 +1970,23 @@ let abstract_args gl id =
 	       dep, succ (List.length ctx), vars)
     | _ -> None
 
-let abstract_generalize id gl =
+let abstract_generalize id ?(generalize_vars=true) gl =
   Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
-(*   let qualid = (dummy_loc, qualid_of_dirpath (dirpath_of_string "Coq.Logic.JMeq")) in *)
-(*   Library.require_library [qualid] None; *)
   let oldid = pf_get_new_id id gl in
   let newc = abstract_args gl id in
     match newc with
       | None -> tclIDTAC gl
       | Some (newc, dep, n, vars) -> 
-	  if dep then
-	    tclTHENLIST [refine newc;
-			 rename_hyp [(id, oldid)];
-			 tclDO n intro; 
-			 generalize_dep (mkVar oldid);
-			 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars]
-	      gl
-	  else
-	    tclTHENLIST [refine newc;
-			 clear [id];
-			 tclDO n intro; 
-			 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars]
-	      gl
-
+	  let tac =
+	    if dep then
+	      tclTHENLIST [refine newc; rename_hyp [(id, oldid)]; tclDO n intro; 
+			   generalize_dep (mkVar oldid)]	      
+	    else
+	      tclTHENLIST [refine newc; clear [id]; tclDO n intro]
+	  in 
+	    if generalize_vars then
+	      tclTHEN tac (tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars) gl
+	    else tac gl
 
 let occur_rel n c = 
   let res = not (noccurn n c) in
@@ -2924,3 +2925,8 @@ let admit_as_an_axiom gl =
     (applist (axiom, 
               List.rev (Array.to_list (instance_from_named_context sign))))
     gl
+
+let conv x y gl =
+  try let evd = Evarconv.the_conv_x_leq (pf_env gl) x y (Evd.create_evar_defs (project gl)) in
+	tclEVARS (Evd.evars_of evd) gl
+  with _ -> tclFAIL 0 (str"Not convertible") gl

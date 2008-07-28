@@ -31,29 +31,46 @@ open Topconstr
 
 (********** definition d'un record (structure) **************)
 
-let interp_decl sigma env = function
-  | Vernacexpr.AssumExpr((_,id),t) -> (id,None,interp_type Evd.empty env t)
-  | Vernacexpr.DefExpr((_,id),c,t) ->
-      let c = match t with
-	| None -> c
-	| Some t -> mkCastC (c, Rawterm.CastConv (DEFAULTcast,t))
-      in
-      let j = interp_constr_judgment Evd.empty env c in
-      (id,Some j.uj_val, refresh_universes j.uj_type)
+let interp_evars evdref env ?(impls=([],[])) k typ =
+  let typ' = intern_gen true ~impls (Evd.evars_of !evdref) env typ in
+  let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
+    imps, Pretyping.Default.understand_tcc_evars evdref env k typ'
+
+let mk_interning_data env na impls typ =
+  let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
+  in (out_name na, ([], impl, Notation.compute_arguments_scope typ))
+    
+let interp_fields_evars isevars env l =
+  List.fold_left
+    (fun (env, uimpls, params, impls) ((loc, i), b, t) ->
+      let impl, t' = interp_evars isevars env ~impls Pretyping.IsType t in
+      let b' = Option.map (fun x -> snd (interp_evars isevars env ~impls (Pretyping.OfType (Some t')) x)) b in
+      let data = mk_interning_data env i impl t' in
+      let d = (i,b',t') in
+	(push_rel d env, impl :: uimpls, d::params, ([], data :: snd impls)))
+    (env, [], [], ([], [])) l    
+
+let binder_of_decl = function
+  | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
+  | Vernacexpr.DefExpr(n,c,t) -> (n,Some c, match t with Some c -> c | None -> CHole (fst n, None))
+
+let binders_of_decls = List.map binder_of_decl
 
 let typecheck_params_and_fields id t ps fs =
   let env0 = Global.env () in
-  let (env1,newps), _ = interp_context Evd.empty env0 ps in
+  let (env1,newps), imps = interp_context Evd.empty env0 ps in
   let fullarity = it_mkProd_or_LetIn t newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
-  let env2,newfs =
-    List.fold_left
-      (fun (env,newfs) d ->
-         let decl = interp_decl Evd.empty env d in
-         (push_rel decl env, decl::newfs))
-      (env_ar,[]) fs
+  let evars = ref (Evd.create_evar_defs Evd.empty) in
+  let env2,impls,newfs,data =
+    interp_fields_evars evars env_ar (binders_of_decls fs)
   in
-  newps, newfs
+  let newps = Evarutil.nf_rel_context_evar (Evd.evars_of !evars) newps in
+  let newfs = Evarutil.nf_rel_context_evar (Evd.evars_of !evars) newfs in
+  let ce t = Evarutil.check_evars env0 Evd.empty !evars t in
+    List.iter (fun (n, b, t) -> Option.iter ce b; ce t) newps;
+    List.iter (fun (n, b, t) -> Option.iter ce b; ce t) newfs;
+    imps, newps, impls, newfs
 
 let degenerate_decl (na,b,t) =
   let id = match na with
@@ -131,7 +148,7 @@ let instantiate_possibly_recursive_type indsp paramdecls fields =
   substl_rel_context (subst@[mkInd indsp]) fields
 
 (* We build projections *)
-let declare_projections indsp ?(kind=StructureComponent) ?name coers fields =
+let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls fields =
   let env = Global.env() in
   let (mib,mip) = Global.lookup_inductive indsp in
   let paramdecls = mib.mind_params_ctxt in
@@ -142,8 +159,8 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fields =
   let fields = instantiate_possibly_recursive_type indsp paramdecls fields in
   let lifted_fields = lift_rel_context 1 fields in
   let (_,kinds,sp_projs,_) =
-    List.fold_left2
-      (fun (nfi,kinds,sp_projs,subst) coe (fi,optci,ti) ->
+    list_fold_left3
+      (fun (nfi,kinds,sp_projs,subst) coe (fi,optci,ti) impls ->
 	let (sp_projs,subst) =
 	  match fi with
 	  | Anonymous ->
@@ -180,6 +197,8 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fields =
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) in
 	      let refi = ConstRef kn in
 	      let constr_fi = mkConst kn in
+	      Impargs.maybe_declare_manual_implicits 
+		false refi (Impargs.is_implicit_args()) impls;
 	      if coe then begin
 	        let cl = Class.class_of_global (IndRef indsp) in
 	        Class.try_add_new_coercion_with_source refi Global cl
@@ -191,8 +210,35 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fields =
 	      warning_or_error coe indsp why;
 	      (None::sp_projs,NoProjection fi::subst) in
       (nfi-1,(optci=None)::kinds,sp_projs,subst))
-      (List.length fields,[],[],[]) coers (List.rev fields)
+      (List.length fields,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
+
+let declare_structure id idbuild paramimpls params arity fieldimpls fields
+    ?(kind=StructureComponent) ?name is_coe coers =
+  let nparams = List.length params and nfields = List.length fields in
+  let args = extended_rel_list nfields params in
+  let ind = applist (mkRel (1+nparams+nfields), args) in
+  let type_constructor = it_mkProd_or_LetIn ind fields in
+  let mie_ind =
+    { mind_entry_typename = id;
+      mind_entry_arity = arity;
+      mind_entry_consnames = [idbuild];
+      mind_entry_lc = [type_constructor] } in
+  let declare_as_coind =
+    (* CoInd if recursive; otherwise Ind to have compat on _ind schemes *) 
+    dependent (mkRel (nparams+1)) (it_mkProd_or_LetIn mkProp fields) in
+  let mie =
+    { mind_entry_params = List.map degenerate_decl params;
+      mind_entry_record = true;
+      mind_entry_finite = not declare_as_coind;
+      mind_entry_inds = [mie_ind] } in
+  let kn = Command.declare_mutual_with_eliminations true mie [(paramimpls,[])] in
+  let rsp = (kn,0) in (* This is ind path of idstruc *)
+  let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in
+  let build = ConstructRef (rsp,1) in
+    if is_coe then Class.try_add_new_coercion build Global;
+    Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
+    kn
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
@@ -205,28 +251,8 @@ let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   (* Now, younger decl in params and fields is on top *)
-  let params,fields = typecheck_params_and_fields idstruc (mkSort s) ps fs in
-  let nparams = List.length params and nfields = List.length fields in
-  let args = extended_rel_list nfields params in
-  let ind = applist (mkRel (1+nparams+nfields), args) in
-  let type_constructor = it_mkProd_or_LetIn ind fields in
-  let mie_ind =
-    { mind_entry_typename = idstruc;
-      mind_entry_arity = mkSort s;
-      mind_entry_consnames = [idbuild];
-      mind_entry_lc = [type_constructor] } in
-  let declare_as_coind =
-    (* CoInd if recursive; otherwise Ind to have compat on _ind schemes *) 
-    dependent (mkRel (nparams+1)) (it_mkProd_or_LetIn mkProp fields) in
-  let mie =
-    { mind_entry_params = List.map degenerate_decl params;
-      mind_entry_record = true;
-      mind_entry_finite = not declare_as_coind;
-      mind_entry_inds = [mie_ind] } in
-  let kn = declare_mutual_with_eliminations true mie [] in
-  let rsp = (kn,0) in (* This is ind path of idstruc *)
-  let kinds,sp_projs = declare_projections rsp coers fields in
-  let build = ConstructRef (rsp,1) in (* This is construct path of idbuild *)
-  if is_coe then Class.try_add_new_coercion build Global;
-  Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
-  kn
+  let implpars, params, implfs, fields = typecheck_params_and_fields idstruc (mkSort s) ps fs in
+  let implfs = List.map 
+    (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs in
+    declare_structure idstruc idbuild implpars params (mkSort s) implfs fields is_coe coers
+  

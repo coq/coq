@@ -41,13 +41,13 @@ Typeclasses unfold equiv.
 (** Shortcuts to make proof search easier. *)
 
 Definition setoid_refl [ sa : Setoid A ] : Reflexive equiv.
-Proof. eauto with typeclass_instances. Qed.
+Proof. typeclasses eauto. Qed.
 
 Definition setoid_sym [ sa : Setoid A ] : Symmetric equiv.
-Proof. eauto with typeclass_instances. Qed.
+Proof. typeclasses eauto. Qed.
 
 Definition setoid_trans [ sa : Setoid A ] : Transitive equiv.
-Proof. eauto with typeclass_instances. Qed.
+Proof. typeclasses eauto. Qed.
 
 Existing Instance setoid_refl.
 Existing Instance setoid_sym.
@@ -123,7 +123,7 @@ Ltac setoidify := repeat setoidify_tac.
 (** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
 Program Definition setoid_morphism [ sa : Setoid A ] : Morphism (equiv ++> equiv ++> iff) equiv :=
-  trans_sym_morphism.
+  PER_morphism.
 
 (** Add this very useful instance in the database. *)
 
@@ -142,7 +142,7 @@ Program Instance type_equivalence : Equivalence Type type_eq.
 
 Ltac morphism_tac := try red ; unfold arrow ; intros ; program_simpl ; try tauto.
 
-Ltac obligations_tactic ::= morphism_tac.
+Ltac obligation_tactic ::= morphism_tac.
 
 (** These are morphisms used to rewrite at the top level of a proof, 
    using [iff_impl_id_morphism] if the proof is in [Prop] and
@@ -178,4 +178,4 @@ Infix "=~=" := pequiv (at level 70, no associativity) : type_scope.
 
 (** Reset the default Program tactic. *)
 
-Ltac obligations_tactic ::= program_simpl.
+Ltac obligation_tactic ::= program_simpl.

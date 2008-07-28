@@ -452,11 +452,14 @@ let (theory_to_obj, obj_to_theory) =
 
 
 let setoid_of_relation env a r =
-  lapp coq_mk_Setoid
-    [|a ; r ; 
-      Class_tactics.reflexive_proof env a r ; 
-      Class_tactics.symmetric_proof env a r ; 
-      Class_tactics.transitive_proof env a r |]
+  try 
+    lapp coq_mk_Setoid
+      [|a ; r ; 
+	Class_tactics.reflexive_proof env a r ; 
+	Class_tactics.symmetric_proof env a r ; 
+	Class_tactics.transitive_proof env a r |]
+  with Not_found ->
+    error "cannot find setoid relation"
 
 let op_morph r add mul opp req m1 m2 m3 =
   lapp coq_mk_reqe [| r; add; mul; opp; req; m1; m2; m3 |]

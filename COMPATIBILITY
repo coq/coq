@@ -39,6 +39,10 @@ Tactics
   the names in the brackets are synchronized so that H denotes the same
   hypothesis in every subgoal.
 
+- Application patterns with a meta variable in function position (?X ?Y) now
+  match arbitrary applications as expected. Use a nested 
+  [match X with (_ _) => fail 1 | _ => ..] to recover the old semantics.
+
 - Some bug fixes may lead to incompatibilities (see CHANGES for a detailed
   account).
 

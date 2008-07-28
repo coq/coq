@@ -1,5 +1,5 @@
 (* -*- coq-prog-args: ("-emacs-U" "-debug") -*- *)
-Require Import Coq.subtac.Utils.
+Require Import Coq.Program.Program.
 Require Import List.
 
 Set Implicit Arguments.
@@ -7,7 +7,7 @@ Set Implicit Arguments.
 Section Accessors.
   Variable A : Set.
 
-  Program Definition myhd : forall { l : list A | length l <> 0 }, A :=  
+  Program Definition myhd : forall (l : list A | length l <> 0), A :=  
     fun l =>
       match l with
         | nil => !
@@ -39,7 +39,7 @@ Section app.
 
   Next Obligation.
     intros.
-    destruct_call app ; subtac_simpl.
+    destruct_call app ; program_simpl.
   Defined.
   
   Program Lemma app_id_l : forall l : list A, l = nil ++ l.
@@ -49,7 +49,7 @@ Section app.
   
   Program Lemma app_id_r : forall l : list A, l = l ++ nil.
   Proof.
-    induction l ; simpl ; auto.
+    induction l ; simpl in * ; auto. 
     rewrite <- IHl ; auto.
   Qed.
 
@@ -70,9 +70,13 @@ Section Nth.
 
   Next Obligation.
   Proof.
-    intros.
-    inversion H.
+    simpl in *. auto with arith. 
   Defined.
+
+  Next Obligation.
+  Proof.
+    inversion H.
+  Qed.
 
   Program Fixpoint nth' (l : list A) (n : nat | n < length l) { struct l } : A := 
     match l, n with
@@ -80,6 +84,10 @@ Section Nth.
       | _ :: tl, S n' => nth' tl n'
       | nil, _ => !
     end.
+  Next Obligation.
+  Proof.
+    simpl in *. auto with arith. 
+  Defined.
 
   Next Obligation.
   Proof.

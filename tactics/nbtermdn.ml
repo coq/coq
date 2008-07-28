@@ -46,14 +46,14 @@ let add dn (na,(pat,valu)) =
   let hkey = Option.map fst (Termdn.constr_pat_discr pat) in 
   dn.table <- Gmap.add na (pat,valu) dn.table;
   let dnm = dn.patterns in
-  dn.patterns <- Gmap.add hkey (Btermdn.add (get_dn dnm hkey) (pat,valu)) dnm
+  dn.patterns <- Gmap.add hkey (Btermdn.add None (get_dn dnm hkey) (pat,valu)) dnm
     
 let rmv dn na =
   let (pat,valu) = Gmap.find na dn.table in
   let hkey = Option.map fst (Termdn.constr_pat_discr pat) in 
   dn.table <- Gmap.remove na dn.table;
   let dnm = dn.patterns in
-  dn.patterns <- Gmap.add hkey (Btermdn.rmv (get_dn dnm hkey) (pat,valu)) dnm
+  dn.patterns <- Gmap.add hkey (Btermdn.rmv None (get_dn dnm hkey) (pat,valu)) dnm
 
 let in_dn dn na = Gmap.mem na dn.table
 			  
@@ -62,8 +62,12 @@ let remap ndn na (pat,valu) =
   add ndn (na,(pat,valu))
 
 let lookup dn valu =
-  let hkey = Option.map fst (Termdn.constr_val_discr valu) in 
-  try Btermdn.lookup (Gmap.find hkey  dn.patterns) valu with Not_found -> []
+  let hkey = 
+    match (Termdn.constr_val_discr valu) with 
+    | Dn.Label(l,_) -> Some l
+    | _ -> None
+  in 
+  try Btermdn.lookup None (Gmap.find hkey dn.patterns) valu with Not_found -> []
 
 let app f dn = Gmap.iter f dn.table
 		       

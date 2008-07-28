@@ -356,7 +356,9 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		   uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
             ctxtv vdef in
 	evar_type_fixpoint loc env evdref names ftys vdefj;
-	let fixj = match fixkind with
+	let ftys = Array.map (nf_evar (evars_of !evdref)) ftys in
+	let fdefs = Array.map (fun x -> nf_evar (evars_of !evdref) (j_val x)) vdefj in
+ 	let fixj = match fixkind with
 	  | RFix (vn,i) ->
 	      (* First, let's find the guard indexes. *)
 	      (* If recursive argument was not given by user, we try all args.
@@ -370,11 +372,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		   | None -> list_map_i (fun i _ -> i) 0 ctxtv.(i))
 		vn)
 	      in 
-	      let fixdecls = (names,ftys,Array.map j_val vdefj) in 
+	      let fixdecls = (names,ftys,fdefs) in 
 	      let indexes = search_guard loc env possible_indexes fixdecls in 
 	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	  | RCoFix i ->
-	      let cofix = (i,(names,ftys,Array.map j_val vdefj)) in
+	      let cofix = (i,(names,ftys,fdefs)) in
 	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon

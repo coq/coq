@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms"); compile-command: "make -C ../.. TIME='time'" -*- *)
+(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms"); compile-command: "make -C ../.. TIME='time'" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -39,10 +39,6 @@ Class Morphism A (R : relation A) (m : A) : Prop :=
 
 Implicit Arguments Morphism [A].
 
-(** We allow to unfold the [relation] definition while doing morphism search. *)
-
-Typeclasses unfold relation.
-
 (** Respectful morphisms. *)
 
 (** The fully dependent version, not used yet. *)
@@ -79,8 +75,21 @@ Arguments Scope respectful [type_scope type_scope signature_scope signature_scop
 
 Open Local Scope signature_scope.
 
+(** Pointwise lifting is just respect with leibniz equality on the left. *)
+
+Definition pointwise_relation {A B : Type} (R : relation B) : relation (A -> B) := 
+  fun f g => forall x : A, R (f x) (g x).
+
+Lemma pointwise_pointwise A B (R : relation B) : 
+  relation_equivalence (pointwise_relation R) (@eq A ==> R).
+Proof. intros. split. simpl_relation. firstorder. Qed.
+
 (** We can build a PER on the Coq function space if we have PERs on the domain and
    codomain. *)
+
+Hint Unfold Reflexive : core.
+Hint Unfold Symmetric : core.
+Hint Unfold Transitive : core.
 
 Program Instance respectful_per [ PER A (R : relation A), PER B (R' : relation B) ] : 
   PER (A -> B) (R ==> R').
@@ -92,24 +101,26 @@ Program Instance respectful_per [ PER A (R : relation A), PER B (R' : relation B
     transitivity (y x0)...
   Qed.
 
-(** Subrelations induce a morphism on the identity, not used for morphism search yet. *)
+(** Subrelations induce a morphism on the identity. *)
 
-Lemma subrelation_id_morphism [ subrelation A R₁ R₂ ] : Morphism (R₁ ==> R₂) id.
+Instance subrelation_id_morphism [ subrelation A R₁ R₂ ] : Morphism (R₁ ==> R₂) id.
 Proof. firstorder. Qed.
 
 (** The subrelation property goes through products as usual. *)
 
-Instance morphisms_subrelation [ sub : subrelation A R₁ R₂ ] :
-  ! subrelation (B -> A) (R ==> R₁) (R ==> R₂).
-Proof. firstorder. Qed.
+Instance morphisms_subrelation_respectful [ subl : subrelation A R₂ R₁, subr : subrelation B S₁ S₂ ] :
+  subrelation (R₁ ==> S₁) (R₂ ==> S₂).
+Proof. simpl_relation. apply subr. apply H. apply subl. apply H0. Qed.
 
-Instance morphisms_subrelation_left [ sub : subrelation A R₂ R₁ ] :
-  ! subrelation (A -> B) (R₁ ==> R) (R₂ ==> R) | 3.
-Proof. firstorder. Qed.
+(** And of course it is reflexive. *)
+
+Instance morphisms_subrelation_refl : ! subrelation A R R | 10.
+Proof. simpl_relation. Qed.
 
 (** [Morphism] is itself a covariant morphism for [subrelation]. *)
 
-Lemma subrelation_morphism [ sub : subrelation A R₁ R₂, mor : Morphism A R₁ m ] : Morphism R₂ m.
+Lemma subrelation_morphism [ mor : Morphism A R₁ m, unc : Unconvertible (relation A) R₁ R₂,
+  sub : subrelation A R₁ R₂ ] : Morphism R₂ m.
 Proof.
   intros. apply sub. apply mor.
 Qed.
@@ -121,8 +132,9 @@ Proof. reduce. subst. firstorder. Qed.
 (** We use an external tactic to manage the application of subrelation, which is otherwise
    always applicable. We allow its use only once per branch. *)
 
-Inductive subrelation_done : Prop :=
-  did_subrelation : subrelation_done.
+Inductive subrelation_done : Prop := did_subrelation : subrelation_done.
+
+Inductive normalization_done : Prop := did_normalization.
 
 Ltac subrelation_tac := 
   match goal with
@@ -131,7 +143,7 @@ Ltac subrelation_tac :=
       set(H:=did_subrelation) ; eapply @subrelation_morphism
   end.
 
-Hint Extern 4 (@Morphism _ _ _) => subrelation_tac : typeclass_instances.
+Hint Extern 5 (@Morphism _ _ _) => subrelation_tac : typeclass_instances.
 
 (** Essential subrelation instances for [iff], [impl] and [pointwise_relation]. *)
 
@@ -181,20 +193,10 @@ Program Instance trans_contra_co_morphism
     transitivity x0...
   Qed.
 
-(* (** Dually... *) *)
-
-(* Program Instance [ Transitive A R ] => *)
-(*   trans_co_contra_inv_impl_morphism : Morphism (R ++> R --> inverse impl) R. *)
-  
-(*   Next Obligation. *)
-(*   Proof with auto. *)
-(*     apply* trans_contra_co_morphism ; eauto. eauto. *)
-(*   Qed. *)
-
 (** Morphism declarations for partial applications. *)
 
 Program Instance trans_contra_inv_impl_morphism
-  [ Transitive A R ] : Morphism (R --> inverse impl) (R x).
+  [ Transitive A R ] : Morphism (R --> inverse impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -202,7 +204,7 @@ Program Instance trans_contra_inv_impl_morphism
   Qed.
 
 Program Instance trans_co_impl_morphism
-  [ Transitive A R ] : Morphism (R ==> impl) (R x).
+  [ Transitive A R ] : Morphism (R ==> impl) (R x) | 3.
 
   Next Obligation.
   Proof with auto.
@@ -210,23 +212,23 @@ Program Instance trans_co_impl_morphism
   Qed.
 
 Program Instance trans_sym_co_inv_impl_morphism
-  [ Transitive A R, Symmetric A R ] : Morphism (R ==> inverse impl) (R x).
+  [ PER A R ] : Morphism (R ==> inverse impl) (R x) | 2.
 
   Next Obligation.
   Proof with auto.
-    transitivity y...
+    transitivity y... symmetry...
   Qed.
 
 Program Instance trans_sym_contra_impl_morphism
-  [ Transitive A R, Symmetric _ R ] : Morphism (R --> impl) (R x).
+  [ PER A R ] : Morphism (R --> impl) (R x) | 2.
 
   Next Obligation.
   Proof with auto.
-    transitivity x0...
+    transitivity x0... symmetry...
   Qed.
 
-Program Instance equivalence_partial_app_morphism
-  [ Equivalence A R ] : Morphism (R ==> iff) (R x).
+Program Instance per_partial_app_morphism
+  [ PER A R ] : Morphism (R ==> iff) (R x) | 1.
 
   Next Obligation.
   Proof with auto.
@@ -240,36 +242,16 @@ Program Instance equivalence_partial_app_morphism
    to get an [R y z] goal. *)
 
 Program Instance trans_co_eq_inv_impl_morphism
-  [ Transitive A R ] : Morphism (R ==> (@eq A) ==> inverse impl) R.
+  [ Transitive A R ] : Morphism (R ==> (@eq A) ==> inverse impl) R | 2.
 
   Next Obligation.
   Proof with auto.
     transitivity y...
   Qed.
 
-(* Program Instance [ Transitive A R ] =>  *)
-(*   trans_contra_eq_impl_morphism : Morphism (R --> (@eq A) ==> impl) R. *)
-
-(*   Next Obligation. *)
-(*   Proof with auto. *)
-(*     transitivity x... *)
-(*   Qed. *)
-
 (** Every Symmetric and Transitive relation gives rise to an equivariant morphism. *)
 
-Program Instance trans_sym_morphism
-  [ Transitive A R, Symmetric _ R ] : Morphism (R ==> R ==> iff) R.
-
-  Next Obligation.
-  Proof with auto.
-    split ; intros.
-    transitivity x0... transitivity x...
-  
-    transitivity y... transitivity y0... 
-  Qed.
-
-Program Instance equiv_morphism [ Equivalence A R ] :
-  Morphism (R ==> R ==> iff) R.
+Program Instance PER_morphism [ PER A R ] : Morphism (R ==> R ==> iff) R | 1.
 
   Next Obligation.
   Proof with auto.
@@ -279,26 +261,20 @@ Program Instance equiv_morphism [ Equivalence A R ] :
     transitivity y... transitivity y0... symmetry...
   Qed.
 
-(** In case the rewrite happens at top level. *)
-
-Program Instance iff_inverse_impl_id :
-  Morphism (iff ==> inverse impl) id.
-
-Program Instance inverse_iff_inverse_impl_id :
-  Morphism (iff --> inverse impl) id.
+Lemma symmetric_equiv_inverse [ Symmetric A R ] : relation_equivalence R (flip R).
+Proof. firstorder. Qed.
   
-Program Instance iff_impl_id :
-  Morphism (iff ==> impl) id.
+Program Instance compose_morphism A B C R₀ R₁ R₂ :
+  Morphism ((R₁ ==> R₂) ==> (R₀ ==> R₁) ==> (R₀ ==> R₂)) (@compose A B C).
 
-Program Instance inverse_iff_impl_id :
-  Morphism (iff --> impl) id.
-  
+  Next Obligation.
+  Proof.
+    simpl_relation.
+    unfold compose. apply H. apply H0. apply H1.
+  Qed.
+
 (** Coq functions are morphisms for leibniz equality, 
    applied only if really needed. *)
-
-(* Instance (A : Type) [ Reflexive B R ] => *)
-(*   eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3. *)
-(* Proof. simpl_relation. Qed. *)
 
 Instance reflexive_eq_dom_reflexive (A : Type) [ Reflexive B R' ] :
   Reflexive (@Logic.eq A ==> R').
@@ -335,16 +311,12 @@ Class MorphismProxy A (R : relation A) (m : A) : Prop :=
   respect_proxy : R m m.
 
 Instance reflexive_morphism_proxy
-  [ Reflexive A R ] (x : A) : MorphismProxy A R x | 1.
+  [ Reflexive A R ] (x : A) : MorphismProxy R x | 1.
 Proof. firstorder. Qed.
 
 Instance morphism_morphism_proxy
-  [ Morphism A R x ] : MorphismProxy A R x | 2.
+  [ Morphism A R x ] : MorphismProxy R x | 2.
 Proof. firstorder. Qed.
-
-(* Instance (A : Type) [ Reflexive B R ] => *)
-(*   eq_reflexive_morphism : Morphism (@Logic.eq A ==> R) m | 3. *)
-(* Proof. simpl_relation. Qed. *)
 
 (** [R] is Reflexive, hence we can build the needed proof. *)
 
@@ -352,32 +324,68 @@ Lemma Reflexive_partial_app_morphism [ Morphism (A -> B) (R ==> R') m, MorphismP
    Morphism R' (m x).
 Proof. simpl_relation. Qed.
 
+Class Params {A : Type} (of : A) (arity : nat).
+
+Class PartialApplication.
+
 Ltac partial_application_tactic := 
-  let tac x :=
-    match type of x with
-      | Type => fail 1
-      | _ => eapply @Reflexive_partial_app_morphism
+  let rec do_partial_apps H m :=
+    match m with
+      | ?m' ?x => eapply @Reflexive_partial_app_morphism ; [do_partial_apps H m'|clear H]
+      | _ => idtac
+    end
+  in
+  let rec do_partial H ar m :=
+    match ar with
+      | 0 => do_partial_apps H m
+      | S ?n' => 
+        match m with
+          ?m' ?x => do_partial H n' m'
+        end
     end
   in
   let on_morphism m :=
-    match m with
-      | ?m' ?x => tac x
-      | ?m' _ ?x => tac x
-      | ?m' _ _ ?x => tac x
-      | ?m' _ _ _ ?x => tac x
-      | ?m' _ _ _ _ ?x => tac x
-      | ?m' _ _ _ _ _ ?x => tac x
-      | ?m' _ _ _ _ _ _ ?x => tac x
-      | ?m' _ _ _ _ _ _ _ ?x => tac x
-      | ?m' _ _ _ _ _ _ _ _ ?x => tac x
-    end
-  in
+    let m' := fresh in head_of_constr m' m ;
+    let n := fresh in evar (n:nat) ;
+    let v := eval compute in n in clear n ;
+    let H := fresh in
+      assert(H:Params m' v) by typeclasses eauto ;
+      let v' := eval compute in v in 
+      do_partial H v' m
+ in
   match goal with
-    | [ |- @Morphism _ _ ?m ] => on_morphism m
+    | [ _ : subrelation_done |- _ ] => fail 1
+    | [ _ : normalization_done |- _ ] => fail 1
+    | [ _ : @Params _ _ _ |- _ ] => fail 1
+    | [ |- @Morphism ?T _ (?m ?x) ] => 
+      match goal with 
+        | [ _ : PartialApplication |- _ ] => 
+          eapply @Reflexive_partial_app_morphism
+        | _ => 
+          on_morphism (m x) || 
+            (eapply @Reflexive_partial_app_morphism ;
+              [ pose Build_PartialApplication | idtac ])
+      end
   end.
 
-(* Program Instance [ Morphism (A -> B) (R ==> R') m, Reflexive A R ] (x : A) => *)
-(*   reflexive_partial_app_morphism : Morphism R' (m x). *)
+Section PartialAppTest.
+  Instance and_ar : Params and 0.
+
+  Goal Morphism (iff) (and True True).
+    partial_application_tactic.
+  Admitted.
+
+  Goal Morphism (iff) (or True True).
+    partial_application_tactic.
+    partial_application_tactic. 
+  Admitted.
+
+  Goal Morphism (iff ==> iff) (iff True).
+    partial_application_tactic.
+    (*partial_application_tactic. *)
+   Admitted.
+
+End PartialAppTest.
 
 Hint Extern 4 (@Morphism _ _ _) => partial_application_tactic : typeclass_instances.
 
@@ -395,19 +403,19 @@ Class (A : Type) => Normalizes (m : relation A) (m' : relation A) : Prop :=
   normalizes : relation_equivalence m m'.
 
 Instance inverse_respectful_norm : 
-  Normalizes (A -> B) (inverse R ==> inverse R') (inverse (R ==> R')) .
+  ! Normalizes (A -> B) (inverse R ==> inverse R') (inverse (R ==> R')) .
 Proof. firstorder. Qed.
 
 (* If not an inverse on the left, do a double inverse. *)
 
 Instance not_inverse_respectful_norm : 
-  Normalizes (A -> B) (R ==> inverse R') (inverse (inverse R ==> R')) | 4.
+  ! Normalizes (A -> B) (R ==> inverse R') (inverse (inverse R ==> R')) | 4.
 Proof. firstorder. Qed.
 
 Instance inverse_respectful_rec_norm [ Normalizes B R' (inverse R'') ] :
-  Normalizes (A -> B) (inverse R ==> R') (inverse (R ==> R'')).
-Proof. red ; intros.  
-  pose normalizes as r.
+  ! Normalizes (A -> B) (inverse R ==> R') (inverse (R ==> R'')).
+Proof. red ; intros. 
+  assert(r:=normalizes).
   setoid_rewrite r.
   setoid_rewrite inverse_respectful.
   reflexivity.
@@ -415,8 +423,14 @@ Qed.
 
 (** Once we have normalized, we will apply this instance to simplify the problem. *)
 
-Program Instance morphism_inverse_morphism
-  [ Morphism A R m ] : Morphism (inverse R) m | 2.
+Definition morphism_inverse_morphism [ mor : Morphism A R m ] : Morphism (inverse R) m := mor.
+
+Ltac morphism_inverse :=
+  match goal with
+    [ |- @Morphism _ (flip _) _ ] => eapply @morphism_inverse_morphism
+  end.
+
+Hint Extern 2 (@Morphism _ _ _) => morphism_inverse : typeclass_instances.
 
 (** Bootstrap !!! *)
 
@@ -434,16 +448,16 @@ Qed.
 Lemma morphism_releq_morphism [ Normalizes A R R', Morphism _ R' m ] : Morphism R m.
 Proof.
   intros.
+
   pose respect as r.
   pose normalizes as norm.
   setoid_rewrite norm.
   assumption.
 Qed.
 
-Inductive normalization_done : Prop := did_normalization.
-
 Ltac morphism_normalization := 
   match goal with
+    | [ _ : subrelation_done |- _ ] => fail 1
     | [ _ : normalization_done |- _ ] => fail 1
     | [ |- @Morphism _ _ _ ] => let H := fresh "H" in
       set(H:=did_normalization) ; eapply @morphism_releq_morphism
@@ -464,4 +478,4 @@ Ltac morphism_reflexive :=
     | [ |- @Morphism _ _ _ ] => eapply @reflexive_morphism
   end.
 
-Hint Extern 4 (@Morphism _ _ _) => morphism_reflexive : typeclass_instances.
+Hint Extern 7 (@Morphism _ _ _) => morphism_reflexive : typeclass_instances.

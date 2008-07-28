@@ -117,7 +117,6 @@ let env_with_binders env isevars l =
   in aux (env, []) l
 
 let subtac_process env isevars id bl c tycon =
-(*   let bl = Implicit_quantifiers.ctx_of_class_binders (vars_of_env env) cbl @ l in *)
   let c = Command.abstract_constr_expr c bl in
   let tycon = 
     match tycon with
@@ -132,12 +131,14 @@ let subtac_process env isevars id bl c tycon =
   let imps = Implicit_quantifiers.implicits_of_rawterm c in
   let coqc, ctyp = interp env isevars c tycon in
   let evm = non_instanciated_map env isevars (evars_of !isevars) in
-    evm, coqc, (match tycon with Some (None, c) -> c | _ -> ctyp), imps
+  let ty = nf_isevar !isevars (match tycon with Some (None, c) -> c | _ -> ctyp) in
+    evm, coqc, ty, imps
 
 open Subtac_obligations
 
 let subtac_proof kind env isevars id bl c tycon =
   let evm, coqc, coqt, imps = subtac_process env isevars id bl c tycon in
-  let evm = Subtac_utils.evars_of_term evm Evd.empty coqc in
-  let evars, def, ty = Eterm.eterm_obligations env id !isevars evm 0 coqc coqt in
+  let evm' = Subtac_utils.evars_of_term evm Evd.empty coqc in
+  let evm' = Subtac_utils.evars_of_term evm evm' coqt in
+  let evars, def, ty = Eterm.eterm_obligations env id !isevars evm' 0 coqc coqt in
     add_definition id def ty ~implicits:imps ~kind:kind evars

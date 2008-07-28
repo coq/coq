@@ -30,6 +30,7 @@ Module Make (N:NType) <: ZType.
   | Neg : N.t -> t_.
  
  Definition t := t_.
+ Typeclasses unfold t.
 
  Definition zero := Pos N.zero.
  Definition one  := Pos N.one.

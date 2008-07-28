@@ -56,17 +56,15 @@ val declare_assumption : identifier located list ->
 val declare_interning_data : 'a * Constrintern.implicits_env ->
     string * Topconstr.constr_expr * Topconstr.scope_name option -> unit
 
-
-val compute_interning_datas :  Environ.env ->
-    'a list ->
-    'b list ->
-    Term.types list ->
-    Impargs.manual_explicitation list list ->
+val compute_interning_datas :  Environ.env -> 'a list -> 'b list ->
+  Term.types list ->Impargs.manual_explicitation list list ->
   'a list *
-    ('b *
-	(Names.identifier list * Impargs.implicits_list *
-	    Topconstr.scope_name option list))
+    ('b * (Names.identifier list * Impargs.implicits_list *
+	      Topconstr.scope_name option list))
     list
+
+val check_mutuality : Environ.env -> definition_object_kind ->
+  (identifier * types) list -> unit
 
 val build_mutual : (inductive_expr * decl_notation) list -> bool -> unit
 
@@ -87,10 +85,10 @@ type fixpoint_expr = {
   fix_type : constr_expr
 }
 
-val recursive_message : Decl_kinds.definition_object_kind ->
-  int array option -> Names.identifier list -> Pp.std_ppcmds
+val recursive_message : definition_object_kind ->
+  int array option -> identifier list -> Pp.std_ppcmds
   
-val declare_fix : bool -> Decl_kinds.definition_object_kind -> identifier ->
+val declare_fix : bool -> definition_object_kind -> identifier ->
   constr -> types -> Impargs.manual_explicitation list -> global_reference
 
 val build_recursive : (Topconstr.fixpoint_expr * decl_notation) list -> bool -> unit

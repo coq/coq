@@ -137,3 +137,5 @@ val set_printer_pr : printer_pr -> unit
 
 val default_printer_pr : printer_pr
 
+val pr_instance_gmap : (global_reference, Typeclasses.instance Names.Cmap.t) Gmap.t ->
+  Pp.std_ppcmds

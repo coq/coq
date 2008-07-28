@@ -43,6 +43,8 @@ open Evd
 let default_eauto_depth = 100
 let typeclasses_db = "typeclass_instances"
 
+let _ = Auto.auto_init := (fun () -> Auto.create_hint_db false typeclasses_db false)
+
 let check_imported_library d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
@@ -57,6 +59,17 @@ let init_setoid () =
   else check_imported_library ["Coq";"Setoids";"Setoid"]
 
 (** Typeclasses instance search tactic / eauto *)
+
+let evars_of_term init c = 
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) -> Intset.add n acc
+    | _ -> fold_constr evrec acc c
+  in 
+    evrec init c
+
+let intersects s t =
+  Intset.exists (fun el -> Intset.mem el t) s
 
 open Auto
 
@@ -98,7 +111,7 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
-	     (add_hint_list hintl local_db) g'))) ::
+	      (Hint_db.add_list hintl local_db) g'))) ::
     (List.map pi1 (e_trivial_resolve db_list local_db (pf_concl goal)) )
   in 
   tclFIRST (List.map tclCOMPLETE tacl) goal 
@@ -108,11 +121,15 @@ and e_my_find_search db_list local_db hdc concl =
   let hintl =
     if occur_existential concl then
       list_map_append
-	(fun (st, db) -> List.map (fun x -> (st, x)) (Hint_db.map_all hdc db))
+	(fun db ->
+	  let st = Hint_db.transparent_state db in
+	    List.map (fun x -> (st, x)) (Hint_db.map_all hdc db))
 	(local_db::db_list)
     else
       list_map_append
-	(fun (st, db) -> List.map (fun x -> (st, x)) (Hint_db.map_auto (hdc,concl) db))
+	(fun db -> 
+	  let st = Hint_db.transparent_state db in
+	    List.map (fun x -> (st, x)) (Hint_db.map_auto (hdc,concl) db))
 	(local_db::db_list)
   in 
   let tac_of_hint = 
@@ -147,15 +164,14 @@ let e_possible_resolve db_list local_db gl =
 
 let find_first_goal gls = 
   try first_goal gls with UserError _ -> assert false
-
-
+    
 type search_state = { 
   depth : int; (*r depth of search before failing *)
   tacres : goal list sigma * validation;
   pri : int;
   last_tactic : std_ppcmds;
   dblist : Auto.hint_db list;
-  localdb :  Auto.hint_db list }
+  localdb : (bool ref * bool ref option * Auto.hint_db) list }
     
 let filter_hyp t = 
   match kind_of_term t with
@@ -167,13 +183,25 @@ let rec catchable = function
   | Stdpp.Exc_located (_, e) -> catchable e
   | e -> Logic.catchable_exception e
 
+let is_dep gl gls =
+  let evs = evars_of_term Intset.empty gl.evar_concl in
+    if evs = Intset.empty then false
+    else
+      List.fold_left
+	(fun b gl -> 
+	  if b then b 
+	  else
+	    let evs' = evars_of_term Intset.empty gl.evar_concl in
+	      intersects evs evs')
+	false gls
+
 module SearchProblem = struct
     
   type state = search_state
 
   let debug = ref false
 
-  let success s = (sig_it (fst s.tacres)) = []
+  let success s = sig_it (fst s.tacres) = []
 
   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl)
     
@@ -182,23 +210,14 @@ module SearchProblem = struct
       prlist (pr_ev evars) (sig_it gls)
 	
   let filter_tactics (glls,v) l =
-(*     if !debug then *)
-(*       (let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
-(*       let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(*     	msg (str"Goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n")); *)
+    let glls,nv = apply_tac_list tclNORMEVAR glls in
+    let v p = v (nv p) in
     let rec aux = function
       | [] -> []
       | (tac,pri,pptac) :: tacl -> 
 	  try 
-(* 	    if !debug then msg (str"\nTrying tactic: " ++ pptac ++ str"\n"); *)
 	    let (lgls,ptl) = apply_tac_list tac glls in 
 	    let v' p = v (ptl p) in
-(* 	      	      if !debug then *)
-(* 	      		begin *)
-(* 	      		  let evars = Evarutil.nf_evars (Refiner.project glls) in *)
-(* 	      		    msg (str"\nOn goal: " ++ pr_ev evars (List.hd (sig_it glls)) ++ str"\n"); *)
-(* 	      		    msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")) *)
-(* 	      		end; *)
 	      ((lgls,v'),pri,pptac) :: aux tacl
 	  with e when catchable e -> aux tacl
     in aux l
@@ -214,65 +233,83 @@ module SearchProblem = struct
       List.length (sig_it (fst s.tacres)) + 
 	nb_empty_evars (sig_sig (fst s.tacres))
     in
-      if d <> 0 && d <> 1 then d else
+      if d <> 0 then d else
 	let pri = s.pri - s'.pri in
 	  if pri <> 0 then pri
 	  else nbgoals s - nbgoals s'
-
+	  
   let branching s = 
     if s.depth = 0 then 
       []
     else      
-      let lg = fst s.tacres in
-      let nbgl = List.length (sig_it lg) in
-      assert (nbgl > 0);
-      let g = find_first_goal lg in
-      let assumption_tacs = 
-	let l = 
-	  filter_tactics s.tacres
-	    (List.map 
-		(fun id -> (Eauto.e_give_exact_constr (mkVar id), 0,
-			   (str "exact" ++ spc () ++ pr_id id)))
-		(List.filter (fun id -> filter_hyp (pf_get_hyp_typ g id))
-		    (pf_ids_of_hyps g)))
-	in
-	  List.map (fun (res,pri,pp) -> { s with tacres = res; pri = 0;
-	    last_tactic = pp; localdb = List.tl s.localdb }) l
-      in
-(*       let intro_tac =  *)
-(* 	List.map  *)
-(* 	  (fun ((lgls,_) as res,pri,pp) ->  *)
-(* 	     let g' = first_goal lgls in  *)
-(* 	     let hintl =  *)
-(* 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g') *)
-(* 	     in	        *)
-(*              let ldb = Hint_db.add_list hintl (match s.localdb with [] -> assert false | hd :: _ -> hd) in *)
-(* 	       { s with tacres = res;  *)
-(* 		 last_tactic = pp; *)
-(* 		 pri = pri; *)
-(* 		 localdb = ldb :: List.tl s.localdb }) *)
-(* 	  (filter_tactics s.tacres [Tactics.intro,1,(str "intro")]) *)
-(*       in *)
-      let possible_resolve ((lgls,_) as res, pri, pp) =
-	let nbgl' = List.length (sig_it lgls) in
-	  if nbgl' < nbgl then
-	    { s with tacres = res; last_tactic = pp; pri = pri;
-	      localdb = List.tl s.localdb }
-	  else 
-	    { s with 
-	      depth = pred s.depth; tacres = res; 
-	      last_tactic = pp; pri = pri;
-	      localdb = 
-		list_addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb }
-      in
-      let rec_tacs = 
-	let l = 
-	  filter_tactics s.tacres (e_possible_resolve s.dblist (List.hd s.localdb) (pf_concl g))
-	in
-	List.map possible_resolve l
-      in
-      List.sort compare (assumption_tacs (* @intro_tac  @ custom_tac *) @ rec_tacs)
-
+      let (cut, do_cut, ldb as hdldb) = List.hd s.localdb in
+	if !cut then []
+	else begin
+	  Option.iter (fun r -> r := true) do_cut;
+	  let {it=gl; sigma=sigma} = fst s.tacres in 
+	  let nbgl = List.length gl in
+	  let g = { it = List.hd gl ; sigma = sigma } in
+	  let new_db, localdb = 
+	    let tl = List.tl s.localdb in
+	      match tl with
+	      | [] -> hdldb, tl
+	      | (cut', do', ldb') :: rest ->
+		  if not (is_dep (Evarutil.nf_evar_info sigma (List.hd gl)) (List.tl gl)) then
+		    let fresh = ref false in
+		      if do' = None then 
+			(fresh, None, ldb), (cut', Some fresh, ldb') :: rest
+		      else 
+			(cut', None, ldb), tl
+		  else hdldb, tl
+	  in let localdb = new_db :: localdb in
+	  let assumption_tacs = 
+	    let l = 
+	      filter_tactics s.tacres
+		(List.map 
+		    (fun id -> (Eauto.e_give_exact_constr (mkVar id), 0,
+			       (str "exact" ++ spc () ++ pr_id id)))
+		    (List.filter (fun id -> filter_hyp (pf_get_hyp_typ g id))
+			(pf_ids_of_hyps g)))
+	    in
+	      List.map (fun (res,pri,pp) -> { s with tacres = res; pri = 0;
+		last_tactic = pp; localdb = List.tl s.localdb }) l
+	  in
+	  let intro_tac =
+	    List.map
+	      (fun ((lgls,_) as res,pri,pp) ->
+		let g' = first_goal lgls in
+		let hintl =
+		  make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
+		in
+		let ldb = Hint_db.add_list hintl ldb in
+		  { s with tacres = res;
+		    last_tactic = pp;
+		    pri = pri;
+		    localdb = (cut, None, ldb) :: List.tl s.localdb })
+	      (filter_tactics s.tacres [Tactics.intro,1,(str "intro")])
+	  in
+	  let possible_resolve ((lgls,_) as res, pri, pp) =
+	    let nbgl' = List.length (sig_it lgls) in
+	      if nbgl' < nbgl then
+		{ s with 
+		  depth = pred s.depth;
+		  tacres = res; last_tactic = pp; pri = pri;
+		  localdb = List.tl localdb }
+	      else 
+		{ s with depth = pred s.depth; tacres = res; 
+		  last_tactic = pp; pri = pri;
+		  localdb = list_tabulate (fun _ -> new_db) (nbgl'-nbgl) @ localdb }
+	  in
+	  let concl = Evarutil.nf_evar (project g) (pf_concl g) in
+	  let rec_tacs = 
+	    let l = 
+	      filter_tactics s.tacres (e_possible_resolve s.dblist ldb concl)
+	    in
+	      List.map possible_resolve l
+	  in
+	    List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
+	end
+	  
   let pp s = 
     msg (hov 0 (str " depth=" ++ int s.depth ++ spc () ++ 
 		  s.last_tactic ++ str "\n"))
@@ -342,9 +379,11 @@ let e_breadth_search debug s =
     in let s = tac s in s.tacres
   with Not_found -> error "EAuto: breadth first search failed"
 
-let e_search_auto debug (in_depth,p) lems db_list gls = 
+let e_search_auto debug (in_depth,p) lems st db_list gls = 
   let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
-  let local_dbs = List.map (fun gl -> make_local_hint_db true lems ({it = gl; sigma = sigma})) gls' in
+  let local_dbs = List.map (fun gl -> 
+    let db = make_local_hint_db true lems ({it = gl; sigma = sigma}) in
+      (ref false, None, Hint_db.set_transparent_state db st)) gls' in
   let state = make_initial_state p gls db_list local_dbs in
   if in_depth then 
     e_depth_search debug state
@@ -355,20 +394,14 @@ let full_eauto debug n lems gls =
   let dbnames = current_db_names () in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
-    e_search_auto debug n lems db_list gls
+    e_search_auto debug n lems empty_transparent_state db_list gls
 
 let nf_goal (gl, valid) =
   { gl with sigma = Evarutil.nf_evars gl.sigma }, valid
 
 let typeclasses_eauto debug n lems gls =
-  let dbnames = [typeclasses_db] in
-  let db_list = List.map
-    (fun x -> 
-      try searchtable_map x 
-      with Not_found -> (empty_transparent_state, Hint_db.empty))
-    dbnames 
-  in
-    e_search_auto debug n lems db_list gls
+  let db = searchtable_map typeclasses_db in
+    e_search_auto debug n lems (Hint_db.transparent_state db) [db] gls
 
 exception Found of evar_map
 
@@ -404,30 +437,22 @@ let resolve_all_evars_once debug (mode, depth) env p evd =
 
 exception FoundTerm of constr
 
-let resolve_one_typeclass env gl =
-  let gls = { it = [ Evd.make_evar (Environ.named_context_val env) gl ] ; sigma = Evd.empty } in
-  let valid x = raise (FoundTerm (fst (Refiner.extract_open_proof Evd.empty (List.hd x)))) in
+let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
+  let gls = { it = [ Evd.make_evar (Environ.named_context_val env) gl ] ; sigma = sigma } in
+  let valid x = raise (FoundTerm (fst (Refiner.extract_open_proof sigma (List.hd x)))) in
   let gls', valid' = typeclasses_eauto false (true, default_eauto_depth) [] (gls, valid) in
     try ignore(valid' []); assert false with FoundTerm t -> 
       let term = Evarutil.nf_evar (sig_sig gls') t in
 	if occur_existential term then raise Not_found else term
+
+let _ = 
+  Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
 
 let has_undefined p oevd evd =
   Evd.fold (fun ev evi has -> has ||
     (evi.evar_body = Evar_empty && p ev evi && 
 	(try Typeclasses.is_resolvable (Evd.find oevd ev) with _ -> true)))
     (Evd.evars_of evd) false
-
-let evars_of_term init c = 
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (n, _) -> Intset.add n acc
-    | _ -> fold_constr evrec acc c
-  in 
-    evrec init c
-
-let intersects s t =
-  Intset.exists (fun el -> Intset.mem el t) s
 
 let rec merge_deps deps = function
   | [] -> [deps]
@@ -486,23 +511,40 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	  | Some evd' -> docomp evd' comps
   in docomp oevd split
 
-(* let resolve_all_evars debug m env p oevd = *)
-(*   let oevm = Evd.evars_of oevd in *)
-(*   try *)
-(*     let rec aux n evd = *)
-(*       if has_undefined p oevm evd then *)
-(* 	if n > 0 then *)
-(* 	  let evd' = resolve_all_evars_once debug m env p evd in *)
-(* 	    aux (pred n) evd' *)
-(* 	else None *)
-(*       else Some evd *)
-(*     in aux 3 oevd *)
-(*   with Not_found -> None *)
+let resolve_typeclass_evars d p env evd onlyargs split fail =
+  let pred = 
+    if onlyargs then 
+      (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
+	Typeclasses.is_class_evar evi)
+    else (fun ev evi -> Typeclasses.is_class_evar evi)
+  in resolve_all_evars d p env pred evd split fail
+    
+let solve_inst debug mode depth env evd onlyargs split fail =
+  resolve_typeclass_evars debug (mode, depth) env evd onlyargs split fail
+
+let _ = 
+  Typeclasses.solve_instanciations_problem :=
+    solve_inst false true default_eauto_depth
+
     
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
 | [ "Typeclasses" "unfold" reference_list(cl) ] -> [
     add_hints false [typeclasses_db] (Vernacexpr.HintsUnfold cl)
   ]
+END
+
+VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings
+| [ "Typeclasses" "rigid" reference_list(cl) ] -> [
+    let db = searchtable_map typeclasses_db in
+    let db' = 
+      List.fold_left (fun acc r -> 
+	let gr = Syntax_def.global_with_alias r in
+	  match gr with
+	  | ConstRef c -> Hint_db.set_rigid acc c 
+	  | _ -> acc) db cl
+    in
+      searchtable_add (typeclasses_db,db')
+ ]
 END
 
 (** Typeclass-based rewriting. *)
@@ -518,6 +560,7 @@ let try_find_reference dir s =
 let gen_constant dir s = Coqlib.gen_constant "Class_setoid" dir s
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
+let coq_eq = lazy(gen_constant ["Init"; "Logic"] "eq")
 let iff = lazy (gen_constant ["Init"; "Logic"] "iff")
 let coq_all = lazy (gen_constant ["Init"; "Logic"] "all")
 let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
@@ -539,7 +582,7 @@ let coq_inverse = lazy (gen_constant (* ["Classes"; "RelationClasses"] "inverse"
 let inverse car rel = mkApp (Lazy.force coq_inverse, [| car ; car; mkProp; rel |])
 
 let complement = lazy (gen_constant ["Classes"; "RelationClasses"] "complement")
-let pointwise_relation = lazy (gen_constant ["Classes"; "RelationClasses"] "pointwise_relation")
+let pointwise_relation = lazy (gen_constant ["Classes"; "Morphisms"] "pointwise_relation")
 
 let respectful_dep = lazy (gen_constant ["Classes"; "Morphisms"] "respectful_dep")
 let respectful = lazy (gen_constant ["Classes"; "Morphisms"] "respectful")
@@ -556,6 +599,8 @@ let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalenc
 let setoid_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv")
 let setoid_morphism = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_morphism")
 let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalence_Reflexive")
+
+let setoid_relation = lazy (gen_constant ["Classes"; "SetoidTactics"] "SetoidRelation")
   
 let arrow_morphism a b = 
   if isprop a && isprop b then
@@ -570,11 +615,24 @@ let morphism_type = lazy (constr_of_global (Lazy.force morphism_class).cl_impl)
 
 let morphism_proxy_type = lazy (constr_of_global (Lazy.force morphism_proxy_class).cl_impl)
 
+let is_applied_setoid_relation t =
+  match kind_of_term t with
+  | App (c, args) when Array.length args >= 2 ->
+      let head = if isApp c then fst (destApp c) else c in 
+	if eq_constr (Lazy.force coq_eq) head then false
+	else (try      
+	    let evd, evar = Evarutil.new_evar (Evd.create_evar_defs Evd.empty) (Global.env()) (new_Type ()) in
+	    let inst = mkApp (Lazy.force setoid_relation, [| evar; c |]) in
+	      ignore(Typeclasses.resolve_one_typeclass (Global.env()) (Evd.evars_of evd) inst);
+	      true
+	  with _ -> false)
+  | _ -> false
+      
+let _ = 
+  Equality.register_is_applied_setoid_relation is_applied_setoid_relation
+
 exception Found of (constr * constr * (types * types) list * constr * constr array *
 		       (constr * (constr * constr * constr * constr)) option array)
-
-let is_equiv env sigma t = 
-  isConst t && Reductionops.is_conv env sigma (Lazy.force setoid_equiv) t
 
 let split_head = function
     hd :: tl -> hd, tl
@@ -736,11 +794,11 @@ let allowK = true
 
 let refresh_hypinfo env sigma hypinfo = 
   if !hypinfo.abs = None then
-    let {l2r=l2r; c = c} = !hypinfo in
+    let {l2r=l2r; c = c;cl=cl} = !hypinfo in
       match c with 
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	    hypinfo := decompose_setoid_eqhyp env sigma c l2r;
+	    hypinfo := decompose_setoid_eqhyp cl.env (Evd.evars_of cl.evd) c l2r;
 	| _ -> ()
   else ()
 
@@ -780,11 +838,12 @@ let unify_eqn env sigma hypinfo t =
 		let mvs = clenv_dependent false env' in
 		  clenv_pose_metas_as_evars env' mvs
 	      in
-	      let c1 = Clenv.clenv_nf_meta env' c1 
-	      and c2 = Clenv.clenv_nf_meta env' c2
-	      and car = Clenv.clenv_nf_meta env' car
-	      and rel = Clenv.clenv_nf_meta env' rel in
-	      let prf = Clenv.clenv_value env' in
+	      let evd' = Typeclasses.resolve_typeclasses env'.env env'.evd in
+	      let env' = { env' with evd = evd' } in
+	      let nf c = Evarutil.nf_evar (Evd.evars_of evd') (Clenv.clenv_nf_meta env' c) in
+	      let c1 = nf c1 and c2 = nf c2
+	      and car = nf car and rel = nf rel 
+	      and prf = nf (Clenv.clenv_value env') in
 	      let ty1 = Typing.mtype_of env'.env env'.evd c1 
 	      and ty2 = Typing.mtype_of env'.env env'.evd c2
 	      in
@@ -974,16 +1033,7 @@ let build_new gl env sigma flags loccs hypinfo concl cstr evars =
   let rest = List.filter (fun o -> o > nbocc_min_1) occs in
   if rest <> [] then error_invalid_occurrence rest;
   eq
-    
-let resolve_typeclass_evars d p env evd onlyargs split fail =
-  let pred = 
-    if onlyargs then 
-      (fun ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
-	class_of_constr evi.Evd.evar_concl <> None)
-    else
-      (fun ev evi -> class_of_constr evi.Evd.evar_concl <> None)
-  in resolve_all_evars d p env pred evd split fail
-      
+          
 let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
     match clause with
@@ -1057,11 +1107,17 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
   try cl_rewrite_clause_aux ~flags hypinfo goal_meta occs clause gl
   with DependentMorphism -> tclFAIL 0 (str " setoid rewrite failed: cannot handle dependent morphisms") gl
 
-let cl_rewrite_clause c left2right occs clause gl =
+let cl_rewrite_clause (evm,c) left2right occs clause gl =
   init_setoid ();
   let meta = Evarutil.new_meta() in
   let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in
-  let hypinfo = ref (decompose_setoid_eqhyp (pf_env gl) (project gl) c left2right) in
+  let env = pf_env gl in
+  let evars = Evd.merge (project gl) evm in
+(*   let c = *)
+(*     let j = Pretyping.Default.understand_judgment_tcc evars env c in *)
+(*       j.Environ.uj_val *)
+(*   in *)
+  let hypinfo = ref (decompose_setoid_eqhyp env evars c left2right) in
     cl_rewrite_clause_aux hypinfo meta occs clause gl
 
 open Genarg
@@ -1075,16 +1131,16 @@ let occurrences_of = function
       (true,nl)
 
 TACTIC EXTEND class_rewrite
-| [ "clrewrite" orient(o) constr(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) constr(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o all_occurrences (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) constr(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) None ]
-| [ "clrewrite" orient(o) constr(c) ] -> [ cl_rewrite_clause c o all_occurrences None ]
+| [ "clrewrite" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) open_constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o all_occurrences (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) open_constr(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) None ]
+| [ "clrewrite" orient(o) open_constr(c) ] -> [ cl_rewrite_clause c o all_occurrences None ]
 END
 
 
 let clsubstitute o c =
-  let is_tac id = match kind_of_term c with Var id' when id' = id -> true | _ -> false in
+  let is_tac id = match kind_of_term (snd c) with Var id' when id' = id -> true | _ -> false in
     Tacticals.onAllClauses 
       (fun cl -> 
 	match cl with
@@ -1092,7 +1148,7 @@ let clsubstitute o c =
 	  | _ -> tclTRY (cl_rewrite_clause c o all_occurrences cl))
 
 TACTIC EXTEND substitute
-| [ "substitute" orient(o) constr(c) ] -> [ clsubstitute o c ]
+| [ "substitute" orient(o) open_constr(c) ] -> [ clsubstitute o c ]
 END
 
 let pr_debug _prc _prlc _prt b =
@@ -1122,13 +1178,6 @@ let pr_depth _prc _prlc _prt = function
 ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
 | [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
 END
-	
-let solve_inst debug mode depth env evd onlyargs split fail =
-  resolve_typeclass_evars debug (mode, depth) env evd onlyargs split fail
-
-let _ = 
-  Typeclasses.solve_instanciations_problem :=
-    solve_inst false true default_eauto_depth
       
 VERNAC COMMAND EXTEND Typeclasses_Settings
  | [ "Typeclasses" "eauto" ":=" debug(d) search_mode(s) depth(depth) ] -> [ 
@@ -1146,7 +1195,8 @@ TACTIC EXTEND typeclasses_eauto
       fun gl -> 
 	let gls = {it = [sig_it gl]; sigma = project gl} in
 	let vals v = List.hd v in
-	  typeclasses_eauto d (mode, depth) [] (gls, vals) ]
+	  try typeclasses_eauto d (mode, depth) [] (gls, vals) 
+	  with Not_found -> tclFAIL 0 (str" typeclasses eauto failed") gl ]
 END
 
 
@@ -1172,15 +1222,15 @@ let _ =
 (* Compatibility with old Setoids *)
   
 TACTIC EXTEND setoid_rewrite
-   [ "setoid_rewrite" orient(o) constr(c) ]
+   [ "setoid_rewrite" orient(o) open_constr(c) ]
    -> [ cl_rewrite_clause c o all_occurrences None ]
- | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) ] ->
+ | [ "setoid_rewrite" orient(o) open_constr(c) "in" hyp(id) ] ->
       [ cl_rewrite_clause c o all_occurrences (Some (([],id), []))]
- | [ "setoid_rewrite" orient(o) constr(c) "at" occurrences(occ) ] ->
+ | [ "setoid_rewrite" orient(o) open_constr(c) "at" occurrences(occ) ] ->
       [ cl_rewrite_clause c o (occurrences_of occ) None]
- | [ "setoid_rewrite" orient(o) constr(c) "at" occurrences(occ) "in" hyp(id)] ->
+ | [ "setoid_rewrite" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id)] ->
       [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), []))]
- | [ "setoid_rewrite" orient(o) constr(c) "in" hyp(id) "at" occurrences(occ)] ->
+ | [ "setoid_rewrite" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ)] ->
       [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), []))]
 END
 
@@ -1225,10 +1275,10 @@ let constr_tac = Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyCon
 
 let declare_relation ?(binders=[]) a aeq n refl symm trans = 
   init_setoid ();
+  let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.SetoidTactics.SetoidRelation"
+  in ignore(anew_instance binders instance []);
   match (refl,symm,trans) with 
-      (None, None, None) -> 
-	let instance = declare_instance a aeq n "Coq.Classes.SetoidTactics.DefaultRelation"
-	in ignore(anew_instance binders instance [])
+      (None, None, None) -> ()
     | (Some lemma1, None, None) -> 
 	ignore (declare_instance_refl binders a aeq n lemma1)
     | (None, Some lemma2, None) -> 
@@ -1689,4 +1739,19 @@ TACTIC EXTEND apply_typeclasses
 	   let evd' = Typeclasses.resolve_typeclasses cl'.env ~fail:true cl'.evd in
 	     Clenvtac.clenv_refine true {cl' with evd = evd'} gl) gl
    ]
+END
+
+let rec head_of_constr t =
+  let t = strip_outer_cast(collapse_appl t) in
+    match kind_of_term t with
+    | Prod (_,_,c2)  -> head_of_constr c2 
+    | LetIn (_,_,_,c2) -> head_of_constr c2
+    | App (f,args)  -> head_of_constr f
+    | _      -> t
+      
+TACTIC EXTEND head_of_constr
+  [ "head_of_constr" ident(h) constr(c) ] -> [
+    let c = head_of_constr c in
+      letin_tac None (Name h) c allHyps
+  ]
 END

@@ -45,6 +45,7 @@ val rewriteRL   : constr  -> tactic
 val register_general_setoid_rewrite_clause :
   (identifier option -> bool ->
     occurrences -> constr -> new_goals:constr list -> tactic) -> unit
+val register_is_applied_setoid_relation : (constr -> bool) -> unit
 
 val general_rewrite_bindings_in :
   bool -> occurrences -> identifier -> constr with_bindings -> evars_flag -> tactic

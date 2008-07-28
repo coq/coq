@@ -27,12 +27,12 @@ Require Export Coq.Classes.SetoidClass.
 
 Require Import Coq.Logic.Decidable.
 
-Class [ Setoid A ] => DecidableSetoid :=
+Class DecidableSetoid A [ Setoid A ] :=
   setoid_decidable : forall x y : A, decidable (x == y).
 
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
-Class [ Setoid A ] => EqDec :=
+Class (( s : Setoid A )) => EqDec :=
   equiv_dec : forall x y : A, { x == y } + { x =/= y }.
 
 (** We define the [==] overloaded notation for deciding equality. It does not take precedence
@@ -75,18 +75,18 @@ Require Import Coq.Arith.Arith.
 
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
-Program Instance eq_setoid : Setoid A :=
+Program Instance eq_setoid A : Setoid A :=
   equiv := eq ; setoid_equiv := eq_equivalence.
 
-Program Instance nat_eq_eqdec : EqDec (@eq_setoid nat) :=
+Program Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
   equiv_dec := eq_nat_dec.
 
 Require Import Coq.Bool.Bool.
 
-Program Instance bool_eqdec : EqDec (@eq_setoid bool) :=
+Program Instance bool_eqdec : EqDec (eq_setoid bool) :=
   equiv_dec := bool_dec.
 
-Program Instance unit_eqdec : EqDec (@eq_setoid unit) :=
+Program Instance unit_eqdec : EqDec (eq_setoid unit) :=
   equiv_dec x y := in_left.
 
   Next Obligation.
@@ -95,7 +95,7 @@ Program Instance unit_eqdec : EqDec (@eq_setoid unit) :=
     reflexivity.
   Qed.
 
-Program Instance prod_eqdec [ ! EqDec (@eq_setoid A), ! EqDec (@eq_setoid B) ] : EqDec (@eq_setoid (prod A B)) :=
+Program Instance prod_eqdec [ ! EqDec (eq_setoid A), ! EqDec (eq_setoid B) ] : EqDec (eq_setoid (prod A B)) :=
   equiv_dec x y := 
     let '(x1, x2) := x in 
     let '(y1, y2) := y in 
@@ -110,7 +110,7 @@ Program Instance prod_eqdec [ ! EqDec (@eq_setoid A), ! EqDec (@eq_setoid B) ] :
 
 Require Import Coq.Program.FunctionalExtensionality.
 
-Program Instance bool_function_eqdec [ ! EqDec (@eq_setoid A) ] : EqDec (@eq_setoid (bool -> A)) :=
+Program Instance bool_function_eqdec [ ! EqDec (eq_setoid A) ] : EqDec (eq_setoid (bool -> A)) :=
   equiv_dec f g := 
     if f true == g true then
       if f false == g false then in_left

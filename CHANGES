@@ -184,6 +184,8 @@ Tactic Language
 
 - Second-order pattern-matching now working in Ltac "match" clauses
   (syntax for second-order unification variable is "@?X").
+- (?X ?Y) patterns now match any application instead of only unary 
+  applications (possible source of incompatibility).
 - Ltac accepts integer arguments (syntax is "ltac:nnn" for nnn an integer).
 - The general sequence tactical "expr_0 ; [ expr_1 | ... | expr_n ]"
   is extended so that at most one expr_i may have the form "expr .."
@@ -293,13 +295,11 @@ Program
   programming (id, apply, flip...)
 - More robust obligation handling, dependent pattern-matching and
   well-founded definitions.
-- New syntax " dest term as pat in term " for destructing objects using
-  an irrefutable pattern while keeping equalities (use this instead of 
-  "let" in Programs).
 - Program CoFixpoint is accepted, Program Fixpoint uses the new way to infer 
   which argument decreases structurally.
 - Program Lemma, Axiom etc... now permit to have obligations in the statement 
   iff they can be automatically solved by the default tactic.
+- Renamed "Obligations Tactic" command to "Obligation Tactic".
 - New command "Preterm [ of id ]" to see the actual term fed to Coq for
   debugging purposes.
 - New option "Transparent Obligations" to control the declaration of 

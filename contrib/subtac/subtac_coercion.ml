@@ -111,41 +111,31 @@ module Coercion = struct
       : (Term.constr -> Term.constr) option 
       =
     let x = nf_evar (evars_of !isevars) x and y = nf_evar (evars_of !isevars) y in
-(*       (try debug 1 (str "Coerce called for " ++ (my_print_constr env x) ++  *)
-(* 		  str " and "++ my_print_constr env y ++  *)
-(* 		  str " with evars: " ++ spc () ++ *)
-(* 		  my_print_evardefs !isevars); *)
-(*        with _ -> ()); *)
     let rec coerce_unify env x y =
-(*       (try debug 1 (str "coerce_unify from " ++ (my_print_constr env x) ++  *)
-(* 		  str " to "++ my_print_constr env y) *)
-(*        with _ -> ()); *)
       let x = hnf env isevars x and y = hnf env isevars y in
 	try 
 	  isevars := the_conv_x_leq env x y !isevars;
-	  (* 	(try debug 1 (str "Unified " ++ (my_print_constr env x) ++  *)
-	  (* 			str " and "++ my_print_constr env y); *)
-	  (* 	 with _ -> ()); *)
 	  None
 	with Reduction.NotConvertible -> coerce' env x y
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
+      let dest_prod c =
+	match Reductionops.decomp_n_prod env (evars_of !isevars) 1 c with
+	| [(na,b,t)], c -> (na,t), c
+	| _ -> raise NoSubtacCoercion
+      in
       let rec coerce_application typ typ' c c' l l' =
 	let len = Array.length l in
 	let rec aux tele typ typ' i co = 
-(* 	  (try trace (str "coerce_application.aux from " ++ (my_print_constr env x) ++ *)
-(* 			 str " to "++ my_print_constr env y *)
-(* 		       ++ str "in env:" ++ my_print_env env); *)
-(* 	    with _ -> ()); *)
 	  if i < len then
 	    let hdx = l.(i) and hdy = l'.(i) in
 	      try isevars := the_conv_x_leq env hdx hdy !isevars;
-		let (n, eqT, restT) = destProd typ in
-		let (n', eqT', restT') = destProd typ' in
+		let (n, eqT), restT = dest_prod typ in
+		let (n', eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
 	      with Reduction.NotConvertible ->
-		let (n, eqT, restT) = destProd typ in
-		let (n', eqT', restT') = destProd typ' in
+		let (n, eqT), restT = dest_prod typ in
+		let (n', eqT'), restT' = dest_prod typ' in
 		let _ = 
 		  try isevars := the_conv_x_leq env eqT eqT' !isevars
 		  with Reduction.NotConvertible -> raise NoSubtacCoercion
@@ -163,12 +153,12 @@ module Coercion = struct
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
 		  aux (hdy :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
 	  else Some co
-	in aux [] typ typ' 0 (fun x -> x)
+	in 
+	  if isEvar c || isEvar c' then
+	    (* Second-order unification needed. *)
+	    raise NoSubtacCoercion;
+	  aux [] typ typ' 0 (fun x -> x)
       in
-(* 	(try trace (str "coerce' from " ++ (my_print_constr env x) ++ *)
-(* 		       str " to "++ my_print_constr env y *)
-(* 		       ++ str "in env:" ++ my_print_env env); *)
-(* 	  with _ -> ()); *)
 	match (kind_of_term x, kind_of_term y) with
 	  | Sort s, Sort s' -> 
 	      (match s, s' with
@@ -179,13 +169,6 @@ module Coercion = struct
 	  | Prod (name, a, b), Prod (name', a', b') ->
 	      let name' = Name (Nameops.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in
 	      let env' = push_rel (name', None, a') env in
-		
-(* 	      let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in *)
-(* 	      let name'' = Name (Nameops.next_ident_away (id_of_string "x'") (Termops.ids_of_context env)) in *)
-(* 	      let env'' = push_rel (name'', Some (app_opt c1 (mkRel 1)), lift 1 a) env' in *)
-(* 	      let c2 = coerce_unify env'' (liftn 1 1 b) (lift 1 b') in *)
-(* 				     mkLetIn (name'', app_opt c1 (mkRel 1), (lift 1 a), *)
-
 	      let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 		(* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
 	      let coec1 = app_opt c1 (mkRel 1) in
@@ -295,7 +278,6 @@ module Coercion = struct
     and subset_coerce env isevars x y =
       match disc_subset x with
 	  Some (u, p) -> 
-	    (* trace (str "Inserting projection ");	     *)
 	    let c = coerce_unify env u y in
 	    let f x = 
 	      app_opt c (mkApp ((Lazy.force sig_).proj1, 
@@ -423,7 +405,11 @@ module Coercion = struct
       isevars, { uj_val = app_opt ct j.uj_val; 
 		 uj_type = typ' }
 
-
+  let inh_coerce_to_prod loc env isevars t =
+    let typ = whd_betadeltaiota env (evars_of isevars) (snd t) in
+    let _, typ' = mu env isevars typ in
+      isevars, (fst t, typ')
+	
   let inh_coerce_to_fail env evd rigidonly v t c1 =
     if rigidonly & not (Heads.is_rigid env c1 && Heads.is_rigid env t)
     then
@@ -504,14 +490,13 @@ module Coercion = struct
 	  None -> 0, 0
 	| Some (init, cur) -> init, cur
     in
-      (* a little more effort to get products is needed *)
-      try let rels, rng = decompose_prod_n nabs t in
+      try 
+	let rels, rng = Reductionops.decomp_n_prod env (evars_of isevars) nabs t in
 	(* The final range free variables must have been replaced by evars, we accept only that evars
 	   in rng are applied to free vars. *)
-	if noccur_with_meta 0 (succ nabsinit) rng then (
-(* 	  trace (str "No occur between 0 and " ++ int (succ nabsinit)); *)
+	if noccur_with_meta 1 (succ nabs) rng then (
 	  let env', t, t' =
-	    let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
+	    let env' = push_rel_context rels env in
 	      env', rng, lift nabs t'
 	  in
 	    try
@@ -523,6 +508,4 @@ module Coercion = struct
 		error_cannot_coerce env' sigma (t, t'))
 	else isevars
       with _ -> isevars
-(*  	trace (str "decompose_prod_n failed"); *)
-(*  	raise (Invalid_argument "Subtac_coercion.inh_conv_coerces_to") *)
 end

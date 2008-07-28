@@ -1619,6 +1619,7 @@ split.
 generalize (PCond_cons_inv_l _ _ _ H1); simpl; auto.
 apply H0.
 generalize (PCond_cons_inv_r _ _ _ H1); simpl; auto.
+clear get_sign get_sign_spec. 
 generalize Hp; case l0; simpl; intuition.
 Qed.
 

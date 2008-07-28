@@ -590,7 +590,7 @@ type notation = string
 
 type explicitation = ExplByPos of int * identifier option | ExplByName of identifier
 
-type binder_kind = Default of binding_kind | TypeClass of binding_kind
+type binder_kind = Default of binding_kind | TypeClass of binding_kind * binding_kind
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 

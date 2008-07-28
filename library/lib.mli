@@ -171,18 +171,24 @@ val reset_initial : unit -> unit
 val set_xml_open_section : (identifier -> unit) -> unit
 val set_xml_close_section : (identifier -> unit) -> unit
 
+type binding_kind = Explicit | Implicit
 
 (*s Section management for discharge *)
+type variable_info = Names.identifier * binding_kind * Term.constr option * Term.types
+type variable_context = variable_info list
 
-val section_segment_of_constant : constant -> Sign.named_context
-val section_segment_of_mutual_inductive: mutual_inductive -> Sign.named_context
+val instance_from_variable_context : variable_context -> Names.identifier array
+val named_of_variable_context : variable_context -> Sign.named_context
 
-val section_instance : global_reference -> identifier array
-val is_in_section : global_reference -> bool
+val section_segment_of_constant : Names.constant -> variable_context
+val section_segment_of_mutual_inductive: Names.mutual_inductive -> variable_context
 
-val add_section_variable : identifier -> bool -> Term.types option -> unit
-val add_section_constant : constant -> Sign.named_context -> unit
-val add_section_kn : kernel_name -> Sign.named_context -> unit
+val section_instance : Libnames.global_reference -> Names.identifier array
+val is_in_section : Libnames.global_reference -> bool
+
+val add_section_variable : Names.identifier -> binding_kind -> Term.types option -> unit
+val add_section_constant : Names.constant -> Sign.named_context -> unit
+val add_section_kn : Names.kernel_name -> Sign.named_context -> unit
 val replacement_context : unit ->
   (identifier array Cmap.t * identifier array KNmap.t)
 

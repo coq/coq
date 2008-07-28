@@ -77,10 +77,10 @@ Ltac clear_dup :=
   match goal with 
     | [ H : ?X |- _ ] => 
       match goal with
-        | [ H' : X |- _ ] =>
-          match H' with
-            | H => fail 2 
-            | _ => clear H' || clear H
+        | [ H' : ?Y |- _ ] =>
+          match H with
+            | H' => fail 2
+            | _ => conv X Y ; (clear H' || clear H)
           end
       end
   end.
@@ -158,14 +158,6 @@ Ltac autoinjection :=
   let tac H := progress (inversion H ; subst ; clear_dups) ; clear H in
     match goal with
       | [ H : ?f ?a = ?f' ?a' |- _ ] => tac H
-      | [ H : ?f ?a ?b = ?f' ?a' ?b'  |- _ ] => tac H
-      | [ H : ?f ?a ?b ?c = ?f' ?a' ?b' ?c' |- _ ] => tac H
-      | [ H : ?f ?a ?b ?c ?d= ?f' ?a' ?b' ?c' ?d' |- _ ] => tac H
-      | [ H : ?f ?a ?b ?c ?d ?e= ?f' ?a' ?b' ?c' ?d' ?e' |- _ ] => tac H
-      | [ H : ?f ?a ?b ?c ?d ?e ?g= ?f' ?a' ?b' ?c' ?d' ?e' ?g'  |- _ ] => tac H
-      | [ H : ?f ?a ?b ?c ?d ?e ?g ?h= ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' |- _ ] => tac H
-      | [ H : ?f ?a ?b ?c ?d ?e ?g ?h ?i = ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' ?i' |- _ ] => tac H
-      | [ H : ?f ?a ?b ?c ?d ?e ?g ?h ?i ?j = ?f' ?a' ?b' ?c' ?d' ?e'?g' ?h' ?i' ?j' |- _ ] => tac H
     end.
 
 Ltac autoinjections := repeat autoinjection.
@@ -222,7 +214,7 @@ Ltac refine_hyp c :=
     end.
 
 (** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto]
-   is not enough, better rebind using [Obligations Tactic := tac] in this case, 
+   is not enough, better rebind using [Obligation Tactic := tac] in this case, 
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
 Ltac program_simplify :=
@@ -231,4 +223,4 @@ Ltac program_simplify :=
 
 Ltac program_simpl := program_simplify ; auto.
 
-Ltac obligations_tactic := program_simpl.
+Ltac obligation_tactic := program_simpl.

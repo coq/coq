@@ -527,3 +527,14 @@ let pr_assumptionset env s =
     in
     (Option.default (mt ()) vars) ++ (Option.default (mt ()) axioms)
 
+let cmap_to_list m = Cmap.fold (fun k v acc -> v :: acc) m []
+
+open Typeclasses
+
+let pr_instance i = 
+  pr_global (ConstRef (instance_impl i))
+    
+let pr_instance_gmap insts =
+  prlist_with_sep fnl (fun (gr, insts) ->
+    prlist_with_sep fnl pr_instance (cmap_to_list insts))
+    (Gmap.to_list insts)

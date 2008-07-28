@@ -616,7 +616,6 @@ let vernac_instance glob sup inst props pri =
   ignore(Classes.new_instance ~global:glob sup inst props pri)
 
 let vernac_context l =
-  if !dump then List.iter (fun x -> dump_constraint x true "var") l;
   Classes.context l
 
 let vernac_declare_instance id =
@@ -794,6 +793,14 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
+      optname  = "manual implicit arguments";
+      optkey   = (TertiaryTable ("Manual","Implicit","Arguments"));
+      optread  = Impargs.is_manual_implicit_args;
+      optwrite = Impargs.make_manual_implicit_args }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
       optname  = "strict implicit arguments";
       optkey   = (SecondaryTable ("Strict","Implicit"));
       optread  = Impargs.is_strict_implicit_args;
@@ -826,7 +833,7 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
-      optname  = "implicit arguments defensive printing";
+      optname  = "implicit status of reversible patterns";
       optkey   = (TertiaryTable ("Reversible","Pattern","Implicit"));
       optread  = Impargs.is_reversible_pattern_implicit_args;
       optwrite = Impargs.make_reversible_pattern_implicit_args }

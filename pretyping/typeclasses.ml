@@ -35,12 +35,10 @@ type typeclass = {
   cl_impl : global_reference; 
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : ((global_reference * bool) option * named_declaration) list; 
-
-  cl_params: int;
+  cl_context : ((global_reference * bool) option * rel_declaration) list; 
 
   (* Context of definitions and properties on defs, will not be shared *)
-  cl_props : named_context;
+  cl_props : rel_context;
   
   (* The method implementaions as projections. *)
   cl_projs : (identifier * constant) list;
@@ -111,13 +109,13 @@ let gmap_cmap_merge old ne =
     Gmap.fold (fun cl insts acc -> 
       let oldinsts = try Gmap.find cl old with Not_found -> Cmap.empty in
 	Gmap.add cl (cmap_union oldinsts insts) acc)
-      Gmap.empty ne
+      ne Gmap.empty
   in
     Gmap.fold (fun cl insts acc -> 
       if Gmap.mem cl ne' then acc
       else Gmap.add cl insts acc)
-      ne' old
-      
+      old ne'
+
 let add_instance_hint_ref = ref (fun id pri -> assert false)
 let register_add_instance_hint =
   (:=) add_instance_hint_ref
@@ -154,7 +152,7 @@ let subst (_,subst,(cl,m,inst)) =
   let do_subst_projs projs = list_smartmap (fun (x, y) -> (x, do_subst_con y)) projs in
   let subst_class k cl classes = 
     let k = do_subst_gr k in
-    let cl' = { cl with cl_impl = k;
+    let cl' = { cl_impl = k;
 		cl_context = do_subst_ctx cl.cl_context;
 		cl_props = do_subst_named cl.cl_props;
 		cl_projs = do_subst_projs cl.cl_projs; }
@@ -176,8 +174,14 @@ let subst (_,subst,(cl,m,inst)) =
     (classes, m, instances)
 
 let discharge (_,(cl,m,inst)) =
-  let discharge_named (cl, r) =
-    Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b) cl, r
+  let discharge_context subst rel =
+    let ctx, _ =
+      List.fold_right
+	(fun (gr, (id, b, t)) (ctx, k) -> 
+	  let gr' = Option.map (fun (gr, b) -> Lib.discharge_global gr, b) gr in
+	    ((gr', (id, Option.map (substn_vars k subst) b, substn_vars k subst t)) :: ctx), succ k)
+	rel ([], 0)
+    in ctx
   in
   let abs_context cl =
     match cl.cl_impl with
@@ -190,10 +194,11 @@ let discharge (_,(cl,m,inst)) =
     let cl' =
       if cl_impl' == cl.cl_impl then cl
       else
+	let ctx = abs_context cl in
 	{ cl with cl_impl = cl_impl';
 	  cl_context = 
-	    List.map (fun x -> None, x) (abs_context cl) @	
-	      (list_smartmap discharge_named cl.cl_context);
+	    List.map (fun (na,impl,b,t) -> None, (Name na,b,t)) ctx @
+	      (discharge_context (List.map (fun (na, _, _, _) -> na) ctx) cl.cl_context);
 	  cl_projs = list_smartmap (fun (x, y) -> x, Lib.discharge_con y) cl.cl_projs }
     in Gmap.add cl_impl' cl' acc
   in
@@ -211,7 +216,7 @@ let discharge (_,(cl,m,inst)) =
   let instances = Gmap.fold subst_inst inst Gmap.empty in
     Some (classes, m, instances)
       
-let rebuild (_,(cl,m,inst)) =
+let rebuild (cl,m,inst) =
   let inst = 
     Gmap.map (fun insts -> 
       Cmap.fold (fun k is insts -> 
@@ -277,49 +282,14 @@ let add_instance i =
   add_instance_hint i.is_impl i.is_pri;
   update ()
 
+let all_instances () = 
+  Gmap.fold (fun k v acc -> 
+    Cmap.fold (fun k v acc -> v :: acc) v acc)
+    !instances []
+
 let instances r = 
   let cl = class_info r in instances_of cl
-
-let solve_instanciation_problem = ref (fun _ _ _ _ -> assert false)
-let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
-
-let resolve_typeclass env ev evi (evd, defined as acc) =
-  try
-    assert(evi.evar_body = Evar_empty);
-    !solve_instanciation_problem env evd ev evi
-  with Exit -> acc
-
-let resolve_one_typeclass env types =
-  try
-    let evi = Evd.make_evar (Environ.named_context_val env) types in
-    let ev = 1 in
-    let evm = Evd.add Evd.empty ev evi in
-    let evd = Evd.create_evar_defs evm in
-    let evd', b = !solve_instanciation_problem env evd ev evi in
-      if b then 
-	let evm' = Evd.evars_of evd' in
-	  match Evd.evar_body (Evd.find evm' ev) with
-	      Evar_empty -> raise Not_found
-	    | Evar_defined c -> c
-      else raise Not_found
-  with Exit -> raise Not_found
-
-let resolve_one_typeclass_evd env evd types =
-  try
-    let ev = Evarutil.e_new_evar evd env types in
-    let (ev,_) = destEvar ev in
-    let evd', b =
-	!solve_instanciation_problem env !evd ev (Evd.find (Evd.evars_of !evd) ev)
-    in
-      evd := evd';
-      if b then 
-	let evm' = Evd.evars_of evd' in
-	  match Evd.evar_body (Evd.find evm' ev) with
-	      Evar_empty -> raise Not_found
-	    | Evar_defined c -> Evarutil.nf_evar evm' c
-      else raise Not_found
-  with Exit -> raise Not_found
-
+    
 let method_typeclass ref = 
   match ref with 
     | ConstRef c -> 
@@ -349,51 +319,6 @@ let is_implicit_arg k =
     | InternalHole -> true
     | _ -> false
 
-let destClassApp c = 
-  match kind_of_term c with
-    | App (ki, args) when isInd ki -> 
-	Some (destInd ki, args)
-    | _ when isInd c -> Some (destInd c, [||])
-    | _ -> None
-
-let is_independent evm ev = 
-  Evd.fold (fun ev' evi indep -> indep && 
-    (ev = ev' || 
-	evi.evar_body <> Evar_empty ||
-	not (Termops.occur_evar ev evi.evar_concl)))
-    evm true
-    
-
-(*   try !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) *)
-(*   with _ -> *)
-(*   let evm = Evd.evars_of evd in *)
-(*   let tc_evars =  *)
-(*     let f ev evi acc = *)
-(*       let (l, k) = Evd.evar_source ev evd in *)
-(* 	if not check || is_implicit_arg k then *)
-(* 	  match destClassApp evi.evar_concl with *)
-(* 	    | Some (i, args) when is_class i ->  *)
-(* 		Evd.add acc ev evi *)
-(* 	    | _ -> acc *)
-(* 	else acc *)
-(*     in Evd.fold f evm Evd.empty *)
-(*   in *)
-(*   let rec sat evars = *)
-(*     let evm = Evd.evars_of evars in *)
-(*     let (evars', progress) =  *)
-(*       Evd.fold  *)
-(* 	(fun ev evi acc ->  *)
-(* 	  if (Evd.mem tc_evars ev || not (Evd.mem evm ev))  *)
-(* 	    && evi.evar_body = Evar_empty then *)
-(* 	    resolve_typeclass env ev evi acc  *)
-(* 	  else acc) *)
-(* 	evm (evars, false)  *)
-(*     in *)
-(*       if not progress then evars' *)
-(*       else *)
-(* 	sat (Evarutil.nf_evar_defs evars') *)
-(*   in sat (Evarutil.nf_evar_defs evd) *)
-  
 let class_of_constr c = 
   let extract_cl c =
     try Some (class_info (global_of_constr c)) with _ -> None
@@ -432,26 +357,26 @@ let mark_unresolvables sigma =
     Evd.add evs ev (mark_unresolvable evi))
     sigma Evd.empty
     
+let rec is_class_type c =
+  match kind_of_term c with
+  | Prod (_, _, t) -> is_class_type t
+  | _ -> class_of_constr c <> None
+
+let is_class_evar evi = 
+  is_class_type evi.Evd.evar_concl
+    
 let has_typeclasses evd =
   Evd.fold (fun ev evi has -> has || 
-    (evi.evar_body = Evar_empty && class_of_constr evi.evar_concl <> None 
-	&& is_resolvable evi))
+    (evi.evar_body = Evar_empty && is_class_evar evi && is_resolvable evi))
     evd false
+
+let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
+let solve_instanciation_problem = ref (fun _ _ _ -> assert false)
 
 let resolve_typeclasses ?(onlyargs=false) ?(split=true) ?(fail=true) env evd =
   if not (has_typeclasses (Evd.evars_of evd)) then evd
   else
     !solve_instanciations_problem env (Evarutil.nf_evar_defs evd) onlyargs split fail
 
-type substitution = (identifier * constr) list
-
-let substitution_of_named_context isevars env id n subst l = 
-  List.fold_right
-    (fun (na, _, t) subst -> 
-      let t' = replace_vars subst t in
-      let b = Evarutil.e_new_evar isevars env ~src:(dummy_loc, ImplicitArg (VarRef id, (n, Some na))) t' in
-	(na, b) :: subst)
-    l subst
-
-let nf_substitution sigma subst = 
-  List.map (function (na, c) -> na, Reductionops.nf_evar sigma c) subst
+let resolve_one_typeclass env evm t =
+  !solve_instanciation_problem env evm t

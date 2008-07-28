@@ -111,7 +111,7 @@ let rec e_trivial_fail_db mod_delta db_list local_db goal =
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db mod_delta db_list
-	     (add_hint_list hintl local_db) g'))) ::
+	      (Hint_db.add_list hintl local_db) g'))) ::
     (List.map fst (e_trivial_resolve mod_delta db_list local_db (pf_concl goal)) )
   in 
   tclFIRST (List.map tclCOMPLETE tacl) goal 
@@ -124,10 +124,9 @@ and e_my_find_search_nodelta db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then 
-      list_map_append (fun (st, db) -> Hint_db.map_all hdc db) (local_db::db_list)
+      list_map_append (Hint_db.map_all hdc) (local_db::db_list)
     else 
-      list_map_append (fun (st, db) -> 
-	Hint_db.map_auto (hdc,concl) db) (local_db::db_list)
+      list_map_append (Hint_db.map_auto (hdc,concl)) (local_db::db_list)
   in 
   let tac_of_hint = 
     fun {pri=b; pat = p; code=t} -> 
@@ -160,12 +159,12 @@ and e_my_find_search_delta db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then 
-      list_map_append (fun (st, db) -> 
-	let flags = {auto_unif_flags with modulo_delta = st} in
+      list_map_append (fun db -> 
+	let flags = {auto_unif_flags with modulo_delta = Hint_db.transparent_state db} in
 	  List.map (fun x -> flags, x) (Hint_db.map_all hdc db)) (local_db::db_list)
     else 
-      list_map_append (fun (st, db) -> 
-	let flags = {auto_unif_flags with modulo_delta = st} in
+      list_map_append (fun db -> 
+	let flags = {auto_unif_flags with modulo_delta = Hint_db.transparent_state db} in
 	  List.map (fun x -> flags, x) (Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
   in 
   let tac_of_hint = 
@@ -285,8 +284,7 @@ module SearchProblem = struct
 	     let hintl = 
 	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
 	     in
-	       
-             let ldb = add_hint_list hintl (List.hd s.localdb) in
+             let ldb = Hint_db.add_list hintl (List.hd s.localdb) in
 	     { depth = s.depth; tacres = res; 
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb })
@@ -452,7 +450,8 @@ let autosimpl db cl =
     else []
   in
   let unfolds = List.concat (List.map (fun dbname -> 
-    let ((ids, csts), _) = searchtable_map dbname in
+    let db = searchtable_map dbname in
+    let (ids, csts) = Hint_db.transparent_state db in
       unfold_of_elts (fun x -> EvalConstRef x) (Cpred.elements csts) @
       unfold_of_elts (fun x -> EvalVarRef x) (Idpred.elements ids)) db)
   in unfold_option unfolds cl

@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.RelationClasses") -*- *)
+(* -*- coq-prog-name: "coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.RelationClasses") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -21,12 +21,13 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
 Require Export Coq.Relations.Relation_Definitions.
 
+(** We allow to unfold the [relation] definition while doing morphism search. *)
+
+Typeclasses unfold relation.
+
 Notation inverse R := (flip (R:relation _) : relation _).
 
 Definition complement {A} (R : relation A) : relation A := fun x y => R x y -> False.
-
-Definition pointwise_relation {A B : Type} (R : relation B) : relation (A -> B) := 
-  fun f g => forall x : A, R (f x) (g x).
 
 (** These are convertible. *)
 
@@ -42,7 +43,7 @@ Class Reflexive A (R : relation A) :=
   reflexivity : forall x, R x x.
 
 Class Irreflexive A (R : relation A) := 
-  irreflexivity :> Reflexive A (complement R).
+  irreflexivity :> Reflexive (complement R).
 
 Class Symmetric A (R : relation A) := 
   symmetry : forall x y, R x y -> R y x.
@@ -52,12 +53,6 @@ Class Asymmetric A (R : relation A) :=
 
 Class Transitive A (R : relation A) := 
   transitivity : forall x y z, R x y -> R y z -> R x z.
-
-Implicit Arguments Reflexive [A].
-Implicit Arguments Irreflexive [A].
-Implicit Arguments Symmetric [A].
-Implicit Arguments Asymmetric [A].
-Implicit Arguments Transitive [A].
 
 Hint Resolve @irreflexivity : ord.
 
@@ -91,7 +86,7 @@ Program Instance Reflexive_complement_Irreflexive [ Reflexive A (R : relation A)
     unfold complement.
     red. intros H.
     intros H' ; apply H'.
-    apply (reflexivity H).
+    apply reflexivity.
   Qed.
 
 
@@ -129,7 +124,7 @@ Ltac simpl_relation :=
   unfold flip, impl, arrow ; try reduce ; program_simpl ;
     try ( solve [ intuition ]).
 
-Ltac obligations_tactic ::= simpl_relation.
+Ltac obligation_tactic ::= simpl_relation.
 
 (** Logical implication. *)
 
@@ -171,17 +166,17 @@ Class Equivalence (carrier : Type) (equiv : relation carrier) : Prop :=
 
 (** An Equivalence is a PER plus reflexivity. *)
 
-Instance Equivalence_PER [ Equivalence A R ] : PER A R :=
+Instance Equivalence_PER [ Equivalence A R ] : PER A R | 10 :=
   PER_Symmetric := Equivalence_Symmetric ;
   PER_Transitive := Equivalence_Transitive.
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 
-Class [ Equivalence A eqA ] => Antisymmetric (R : relation A) := 
+Class Antisymmetric ((equ : Equivalence A eqA)) (R : relation A) := 
   antisymmetry : forall x y, R x y -> R y x -> eqA x y.
 
-Program Instance flip_antiSymmetric [ eq : Equivalence A eqA, ! Antisymmetric eq R ] :
-  Antisymmetric eq (flip R).
+Program Instance flip_antiSymmetric {{Antisymmetric A eqA R}} :
+  ! Antisymmetric A eqA (flip R).
 
 (** Leibinz equality [eq] is an equivalence relation.
    The instance has low priority as it is always applicable 
@@ -372,7 +367,7 @@ Proof. intro A. exact (@predicate_implication_preorder (cons A (cons A nil))). Q
    We give an equivalent definition, up-to an equivalence relation 
    on the carrier. *)
 
-Class [ equ : Equivalence A eqA, PreOrder A R ] => PartialOrder :=
+Class [ equ : Equivalence A eqA, preo : PreOrder A R ] => PartialOrder :=
   partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (inverse R)).
 
 (** The equivalence proof is sufficient for proving that [R] must be a morphism 
@@ -394,7 +389,3 @@ Program Instance subrelation_partial_order :
   Proof.
     unfold relation_equivalence in *. firstorder.
   Qed.
-
-Lemma inverse_pointwise_relation A (R : relation A) : 
-  relation_equivalence (pointwise_relation (inverse R)) (inverse (pointwise_relation (A:=A) R)).
-Proof. reflexivity. Qed.

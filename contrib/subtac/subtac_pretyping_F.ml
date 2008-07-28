@@ -246,6 +246,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		  uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
             ctxtv vdef in
 	evar_type_fixpoint loc env isevars names ftys vdefj;
+	let ftys = Array.map (nf_evar (evars_of !isevars)) ftys in
+	let fdefs = Array.map (fun x -> nf_evar (evars_of !isevars) (j_val x)) vdefj in
 	let fixj = match fixkind with
 	  | RFix (vn,i) ->
 	      (* First, let's find the guard indexes. *)
@@ -260,11 +262,11 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		   | None -> list_map_i (fun i _ -> i) 0 ctxtv.(i))
 		vn)
 	      in 
-	      let fixdecls = (names,ftys,Array.map j_val vdefj) in 
+	      let fixdecls = (names,ftys,fdefs) in 
 	      let indexes = search_guard loc env possible_indexes fixdecls in 
 	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	  | RCoFix i -> 
-	      let cofix = (i,(names,ftys,Array.map j_val vdefj)) in
+	      let cofix = (i,(names,ftys,fdefs)) in
 	      (try check_cofix env cofix with e -> Stdpp.raise_with_loc loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in
 	inh_conv_coerce_to_tycon loc env isevars fixj tycon
@@ -273,13 +275,15 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	inh_conv_coerce_to_tycon loc env isevars (pretype_sort s) tycon
 
     | RApp (loc,f,args) -> 
-	let length = List.length args in	 
+	let length = List.length args in 
 	let ftycon = 
-	  match tycon with
-	      None -> None
+	  if length > 0 then
+	    match tycon with
+	    | None -> None
 	    | Some (None, ty) -> mk_abstr_tycon length ty
 	    | Some (Some (init, cur), ty) ->
 		Some (Some (length + init, length + cur), ty)
+	  else tycon
 	in
 	let fj = pretype ftycon env isevars lvar f in
  	let floc = loc_of_rawconstr f in
@@ -291,23 +295,13 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
               let resty = whd_betadeltaiota env (evars_of !isevars) resj.uj_type in
       		match kind_of_term resty with
 		  | Prod (na,c1,c2) ->
-		      let hj = pretype (mk_tycon c1) env isevars lvar c in
+		      Option.iter (fun ty -> isevars :=
+			Coercion.inh_conv_coerces_to loc env !isevars resty ty) tycon;
+		      let evd, (_, _, tycon) = split_tycon loc env !isevars tycon in
+		      isevars := evd;
+		      let hj = pretype (mk_tycon (nf_isevar !isevars c1)) env isevars lvar c in
 		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
 		      let typ' = nf_isevar !isevars typ in
-		      let tycon = 
-			Option.map 
-			  (fun (abs, ty) ->
-			     match abs with
-				 None ->
-				   isevars := Coercion.inh_conv_coerces_to loc env !isevars typ'
-				     (abs, ty);
-				   (abs, ty)
-			       | Some (init, cur) ->
-				   isevars := Coercion.inh_conv_coerces_to loc env !isevars typ' 
-				     (abs, ty);
-				   (Some (init, pred cur), ty))
-			  tycon
-		      in 
 			apply_rec env (n+1) 
 			  { uj_val = nf_isevar !isevars value;
 			    uj_type = nf_isevar !isevars typ' }
@@ -319,7 +313,6 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 			  (join_loc floc argloc) env (evars_of !isevars)
 	      		  resj [hj]
 	in
-	let ftycon = Option.map (lift_abstr_tycon_type (-1)) ftycon in
 	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj ftycon args) in
 	let resj =
 	  match kind_of_term resj.uj_val with
@@ -332,12 +325,22 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  inh_conv_coerce_to_tycon loc env isevars resj tycon
 
     | RLambda(loc,name,k,c1,c2)      ->
-	let (name',dom,rng) = evd_comb1 (split_tycon loc env) isevars tycon in
+	let tycon' = evd_comb1 
+	  (fun evd tycon -> 
+	    match tycon with 
+	    | None -> evd, tycon 
+	    | Some ty -> 
+		let evd, ty' = Coercion.inh_coerce_to_prod loc env evd ty in
+		  evd, Some ty') 
+	  isevars tycon 
+	in
+	let (name',dom,rng) = evd_comb1 (split_tycon loc env) isevars tycon' in
 	let dom_valcon = valcon_of_tycon dom in
 	let j = pretype_type dom_valcon env isevars lvar c1 in
 	let var = (name,None,j.utj_val) in
 	let j' = pretype rng (push_rel var env) isevars lvar c2 in 
-	  judge_of_abstraction env name j j'
+	let resj = judge_of_abstraction env name j j' in
+	  inh_conv_coerce_to_tycon loc env isevars resj tycon
 
     | RProd(loc,name,k,c1,c2)        ->
 	let j = pretype_type empty_valcon env isevars lvar c1 in

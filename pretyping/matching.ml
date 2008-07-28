@@ -185,7 +185,7 @@ let matches_core convert allow_partial_app pat c =
   in 
   Sort.list (fun (a,_) (b,_) -> a<b) (sorec [] [] pat c)
 
-let matches = matches_core None false
+let matches = matches_core None true
 
 let pmatches = matches_core None true
 

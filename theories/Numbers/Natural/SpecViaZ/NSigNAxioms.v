@@ -223,7 +223,7 @@ Qed.
 Add Morphism N.compare with signature N.eq ==> N.eq ==> (@eq comparison) as compare_wd.
 Proof. 
 intros x x' Hx y y' Hy.
-rewrite 2 spec_compare_alt; rewrite Hx, Hy; intuition.
+rewrite 2 spec_compare_alt. unfold N.eq in *. rewrite Hx, Hy; intuition.
 Qed.
 
 Add Morphism N.lt with signature N.eq ==> N.eq ==> iff as NZlt_wd.

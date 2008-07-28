@@ -1,9 +1,12 @@
 (* -*- coq-prog-args: ("-emacs-U" "-debug") -*- *)
 Require Import JMeq.
 Require Import List.
-Require Import Coq.subtac.Utils.
+Require Import Program.
 
 Set Implicit Arguments.
+Obligations Tactic := idtac.
+
+Print cons.
 
 Program Fixpoint take (A : Set) (l : list A) (n : nat | n <= length l) { struct l } : { l' : list A | length l' = n } :=
   match n with
@@ -16,21 +19,14 @@ Program Fixpoint take (A : Set) (l : list A) (n : nat | n <= length l) { struct 
   end.
 
 Require Import Omega.
-
+Solve All Obligations.
 Next Obligation.
-  intros.
-  simpl in l0.
-  apply le_S_n ; exact l0.
+  destruct_call take ; program_simpl.
 Defined.
 
 Next Obligation.
   intros.
-  destruct_call take ; subtac_simpl.
-Defined.
-
-Next Obligation.
-  intros.
-  inversion l0.
+  inversion H.
 Defined.
 
 

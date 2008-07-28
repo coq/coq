@@ -24,11 +24,22 @@ Require Export Coq.Relations.Relation_Definitions.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+(** Setoid relation on a given support: declares a relation as a setoid
+   for use with rewrite. It helps choosing if a rewrite should be handled
+   by setoid_rewrite or the regular rewrite using leibniz equality.
+   Users can declare an [SetoidRelation A RA] anywhere to declare default 
+   relations. This is also done automatically by the [Declare Relation A RA]
+   commands. *)
+
+Class SetoidRelation A (R : relation A).
+
+Instance impl_setoid_relation : SetoidRelation impl.
+Instance iff_setoid_relation : SetoidRelation iff.
+
 (** Default relation on a given support. Can be used by tactics
    to find a sensible default relation on any carrier. Users can 
-   declare an [Instance A RA] anywhere to declare default relations.
-   This is also done by the [Declare Relation A RA] command with no
-   parameters for backward compatibility. *)
+   declare an [Instance def : DefaultRelation A RA] anywhere to 
+   declare default relations. *)
 
 Class DefaultRelation A (R : relation A).
 
@@ -38,7 +49,7 @@ Definition default_relation [ DefaultRelation A R ] := R.
 
 (** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
 
-Instance equivalence_default [ Equivalence A R ] : DefaultRelation A R | 4.
+Instance equivalence_default [ Equivalence A R ] : DefaultRelation R | 4.
 
 (** The setoid_replace tactics in Ltac, defined in terms of default relations and
    the setoid_rewrite tactic. *)
@@ -174,3 +185,5 @@ Ltac default_add_morphism_tactic :=
   end.
 
 Ltac add_morphism_tactic := default_add_morphism_tactic.
+
+Ltac obligation_tactic ::= program_simpl.

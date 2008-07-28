@@ -219,13 +219,13 @@ let surround_binder k p =
   match k with
       Default Explicit -> hov 1 (str"(" ++ p ++ str")")
     | Default Implicit -> hov 1 (str"{" ++ p ++ str"}")
-    | TypeClass b -> hov 1 (str"[" ++ p ++ str"]")
+    | TypeClass _ -> hov 1 (str"[" ++ p ++ str"]")
 
 let surround_implicit k p =
   match k with
       Default Explicit -> p
     | Default Implicit -> (str"{" ++ p ++ str"}")
-    | TypeClass b -> (str"[" ++ p ++ str"]")
+    | TypeClass _ -> (str"[" ++ p ++ str"]")
 
 let pr_binder many pr (nal,k,t) =
   match t with

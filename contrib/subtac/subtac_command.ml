@@ -350,9 +350,27 @@ let compute_possible_guardness_evidences (n,_) (_, fixctx) fixtype =
 
 let push_named_context = List.fold_right push_named
 
+let check_evars env initial_sigma evd c =
+  let sigma = evars_of evd in
+  let c = nf_evar sigma c in
+  let rec proc_rec c =
+    match kind_of_term c with
+      | Evar (evk,args) ->
+          assert (Evd.mem sigma evk);
+	  if not (Evd.mem initial_sigma evk) then
+            let (loc,k) = evar_source evk evd in
+	      (match k with
+	      | QuestionMark _ -> ()
+	      | _ ->
+		  let evi = nf_evar_info sigma (Evd.find sigma evk) in
+		    Pretype_errors.error_unsolvable_implicit loc env sigma evi k None)
+      | _ -> iter_constr proc_rec c
+  in proc_rec c
+
 let interp_recursive fixkind l boxed =
   let env = Global.env() in
   let fixl, ntnl = List.split l in
+  let kind = if fixkind <> Command.IsCoFixpoint then Fixpoint else CoFixpoint in
   let fixnames = List.map (fun fix -> fix.Command.fix_name) fixl in
 
   (* Interp arities allowing for unresolved types *)
@@ -384,20 +402,17 @@ let interp_recursive fixkind l boxed =
   let rec_sign = nf_named_context_evar (evars_of evd) rec_sign in
     
   let recdefs = List.length rec_sign in
-(*   List.iter (check_evars env_rec Evd.empty evd) fixdefs; *)
-(*   List.iter (check_evars env Evd.empty evd) fixtypes; *)
-(*   check_mutuality env kind (List.combine fixnames fixdefs); *)
+  List.iter (check_evars env_rec Evd.empty evd) fixdefs;
+  List.iter (check_evars env Evd.empty evd) fixtypes;
+  Command.check_mutuality env kind (List.combine fixnames fixdefs);
 
   (* Russell-specific code *)
 
   (* Get the interesting evars, those that were not instanciated *)
   let isevars = Evd.undefined_evars evd in
-  trace (str "got undefined evars" ++ Evd.pr_evar_defs isevars);
   let evm = Evd.evars_of isevars in
-  trace (str "got the evm, recdefs is " ++ int recdefs);
   (* Solve remaining evars *)
   let rec collect_evars id def typ imps = 
-    let _ = try trace (str "In collect evars, isevars is: " ++ Evd.pr_evar_defs isevars) with _ -> () in
       (* Generalize by the recursive prototypes  *)
     let def = 
       Termops.it_mkNamedLambda_or_LetIn def rec_sign

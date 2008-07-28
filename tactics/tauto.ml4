@@ -10,6 +10,7 @@
 
 (*i $Id$ i*)
 
+open Term
 open Hipattern
 open Names
 open Libnames
@@ -36,16 +37,35 @@ let is_unit ist =
     <:tactic<idtac>>
   else
     <:tactic<fail>>
-    
+
+let is_record t =
+  let (hdapp,args) = decompose_app t in
+    match (kind_of_term hdapp) with
+      | Ind ind  -> 
+          let (mib,mip) = Global.lookup_inductive ind in
+	    mib.Declarations.mind_record
+      | _ -> false
+
+let is_binary t =
+  let (hdapp,args) = decompose_app t in
+    match (kind_of_term hdapp) with
+    | Ind ind  -> 
+        let (mib,mip) = Global.lookup_inductive ind in
+	  mib.Declarations.mind_nparams = 2
+    | _ -> false
+	
 let is_conj ist =
   let ind = assoc_last ist in
-    if (is_conjunction ind) && (is_nodep_ind ind) then
+    if (is_conjunction ind) && (is_nodep_ind ind) (* && not (is_record ind)  *)
+      && is_binary ind (* for compatibility, as (?X _ _) matches 
+			  applications with 2 or more arguments. *)
+    then
       <:tactic<idtac>>
     else
       <:tactic<fail>>
 
 let is_disj ist =
-  if is_disjunction (assoc_last ist) then
+  if is_disjunction (assoc_last ist) && is_binary (assoc_last ist) then
     <:tactic<idtac>>
   else
     <:tactic<fail>>

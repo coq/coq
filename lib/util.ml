@@ -576,6 +576,12 @@ let list_fold_left_i f =
   in 
   it_list_f 
 
+let rec list_fold_left3 f accu l1 l2 l3 =
+  match (l1, l2, l3) with
+    ([], [], []) -> accu
+  | (a1::l1, a2::l2, a3::l3) -> list_fold_left3 f (f accu a1 a2 a3) l1 l2 l3
+  | (_, _, _) -> invalid_arg "list_fold_left3"
+
 (* [list_fold_right_and_left f [a1;...;an] hd =
    f (f (... (f (f hd
                    an

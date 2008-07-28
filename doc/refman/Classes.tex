@@ -148,6 +148,12 @@ is equivalent to the one above. One must be careful that \emph{all} the
 free variables are generalized, which may result in confusing errors in
 case of typos. 
 
+The bracket binders [ ] are a shorthand for double-braces \{\{ \}\} binders
+which declare the variables directly bound inside them as implicit
+(maximally-inserted) arguments, whereas double-parens (( )) brackets
+declare them as explicit arguments. Implicitely generalized variables
+are always set as maximally-inserted implicit arguments.
+
 \asection{Parameterized Instances}
 
 One can declare parameterized instances as in \Haskell simply by giving
@@ -163,7 +169,7 @@ Instance prod_eq [ eqa : Eq A, eqb : Eq B ] : Eq (A * B) :=
 Admitted.
 \end{coq_eval}
 
-These instances are used just as well as lemmas in the instances hint database.
+These instances are used just as well as lemmas in the instance hint database.
 
 \asection{Building hierarchies}
 
@@ -174,12 +180,12 @@ hierarchy of classes and superclasses. In the same way, we give the
 superclasses as a binding context:
 
 \begin{coq_example}
-Class [ eqa : Eq A ] => Ord :=
+Class (( Eq A )) => Ord :=
   le : A -> A -> bool.
 \end{coq_example}
 
 This declaration means that any instance of the \texttt{Ord} class must
-have an instance of \texttt{Eq}. The parameters of the subclass contains
+have an instance of \texttt{Eq}. The parameters of the subclass contain
 at least all the parameters of its superclasses in their order of
 appearance (here \texttt{A} is the only one). 
 
@@ -198,13 +204,19 @@ binders, and using the \texttt{!} modifier in class binders. For
 example:
 
 \begin{coq_example*}
-Definition lt [ eqa : Eq A, ! Ord eqA ] (x y : A) :=
+Definition lt [ eqa : Eq A, ! Ord eqa ] (x y : A) :=
   andb (le x y) (neq x y).
 \end{coq_example*}
 
 The \texttt{!} modifier switches the way a binder is parsed back to the
 regular interpretation of Coq. In particular, it uses the implicit
 arguments mechanism if available, as shown in the example.
+
+One can notice that superclasses are in fact equivalent to parameters of
+the class, hence the above declaration is the same as:
+\begin{coq_example*}
+Class Ord ((Eq A)) := le : A -> A -> bool.
+\end{coq_example*}
 
 \subsection{Substructures}
 
@@ -235,7 +247,7 @@ The syntax \texttt{:>} indicates that each \texttt{PreOrder} can be seen
 as a \texttt{Reflexive} relation. So each time a reflexive relation is
 needed, a preorder can be used instead. This is very similar to the
 coercion mechanism of \texttt{Structure} declarations.
-The implementation simply declares the projection as an instance. 
+The implementation simply declares each projection as an instance. 
 
 One can also declare existing objects or structure
 projections using the \texttt{Existing Instance} command to achieve the 
@@ -251,11 +263,11 @@ same effect.
 
 The \texttt{Class} command is used to declare a type class with
 parameters {\binder$_1$} to {\binder$_n$} and fields {\tt field$_1$} to
-{\tt field$_k$}. A optional context of the form {\tt [ C$_1$, \ldots
-  C$_j$ ] =>} can be put before the name of the class to declare
-superclasses.
+{\tt field$_k$}. A optional context of the form {\tt \binder$_1$, \ldots
+  \binder$_j$ :} can be put before the name of the class to declare
+superclasses or other parameters.
 
-\subsection{\tt Instance {\ident} : {Class} {t$_1$ \ldots t$_n$}
+\subsection{\tt Instance {\ident} {\binder$_1$ \ldots \binder$_n$} : {Class} {t$_1$ \ldots t$_n$}
   := field$_1$ := b$_1$ ; \ldots ; field$_i$ := b$_i$}
 \comindex{Instance}
 \label{Instance}
@@ -265,8 +277,8 @@ named {\ident} of the class \emph{Class} with parameters {t$_1$} to {t$_n$} and
 fields {\tt b$_1$} to {\tt b$_i$}, where each field must be a declared
 field of the class. Missing fields must be filled in interactive proof mode.
 
-A arbitrary context of the form {\tt \binder$_1$ \ldots \binder$_n$ =>}
-can be put before the name of the instance to declare a parameterized instance.
+An arbitrary context of the form {\tt \binder$_1$ \ldots \binder$_n$}
+can be put after the name of the instance and before the colon to declare a parameterized instance.
 
 Besides the {\tt Class} and {\tt Instance} vernacular commands, there
 are a few other commands related to type classes.
@@ -288,7 +300,7 @@ instances. This is almost equivalent to {\tt Hint Resolve {\ident} :
 This commands declares {\ident} as an unfoldable constant during type
 class resolution. It is useful when some constants prevent some
 unifications and make resolution fail. It happens in particular when constants are
-used to abbreviate type, like {\tt relation A := A -> A -> Prop}.
+used to abbreviate types, like {\tt relation A := A -> A -> Prop}.
 This is equivalent to {\tt Hint Unfold {\ident} : typeclass\_instances}.
 
 \subsection{\tt Typeclasses eauto := [debug] [dfs | bfs] [\emph{depth}]}

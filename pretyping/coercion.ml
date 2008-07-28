@@ -43,6 +43,10 @@ module type S = sig
   val inh_coerce_to_base : loc ->
     env -> evar_defs -> unsafe_judgment -> evar_defs * unsafe_judgment
     
+  (* [inh_coerce_to_prod env isevars t] coerces [t] to a product type *)
+  val inh_coerce_to_prod : loc ->
+    env -> evar_defs -> type_constraint_type -> evar_defs * type_constraint_type
+
   (* [inh_conv_coerce_to loc env evd j t] coerces [j] to an object of type 
      [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
      [j.uj_type] are convertible; it fails if no coercion is applicable *)
@@ -159,6 +163,8 @@ module Default = struct
 	    inh_tosort_force loc env evd j
 
   let inh_coerce_to_base loc env evd j = (evd, j)
+
+  let inh_coerce_to_prod loc env evd t = (evd, t)
 
   let inh_coerce_to_fail env evd rigidonly v t c1 =
     if rigidonly & not (Heads.is_rigid env c1 && Heads.is_rigid env t)
