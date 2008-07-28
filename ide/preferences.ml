@@ -507,12 +507,11 @@ let configure ?(apply=(fun () -> ())) () =
   in    
   let cmd_browse =
     let predefined = [
+      Coq_config.browser;
       "netscape -remote \"openURL(%s)\"";
       "mozilla -remote \"openURL(%s)\"";
-      "firefox -remote \"openURL(%s,new-tab)\" || firefox %s &";
       "firefox -remote \"openURL(%s,new-windows)\" || firefox %s &";
       "seamonkey -remote \"openURL(%s)\" || seamonkey %s &";
-      "C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s";
       "open -a Safari %s &"
     ] in
     combo 
@@ -585,4 +584,3 @@ let configure ?(apply=(fun () -> ())) () =
   match x with 
     | Return_apply | Return_ok -> save_pref ()
     | Return_cancel -> ()
-
