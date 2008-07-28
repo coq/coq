@@ -160,7 +160,7 @@ let print_location_in_file s inlibrary fname loc =
     try
       let (line, bol) = line_of_pos 1 0 0 in
       close_in ic;
-      (errstrm  ++ str"File " ++ str ("\""^fname^"\"") ++
+      (errstrm ++ fnl () ++ str"File " ++ str ("\""^fname^"\"") ++
          str", line " ++ int line ++
          str", characters " ++ Cerrors.print_loc (make_loc (bp-bol,ep-bol)) ++ str":" ++ fnl ())
     with e -> (close_in ic; (errstrm ++ str", invalid location." ++ fnl ()))
