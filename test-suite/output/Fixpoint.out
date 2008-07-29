@@ -14,10 +14,12 @@ fix even_pos_odd_pos 2
  intros.
  destruct H.
    omega.
+  
    apply odd_pos_even_pos in H.
    omega.
-  intros.
-  destruct H.
-   apply even_pos_odd_pos in H.
-   omega.
   
+ intros.
+ destruct H.
+  apply even_pos_odd_pos in H.
+  omega.
+ 
