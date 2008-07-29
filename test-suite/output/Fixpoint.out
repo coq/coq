@@ -1,6 +1,6 @@
 fix F (A B : Set) (f : A -> B) (l : list A) {struct l} : 
 list B := match l with
-          | nil => nil (A:=B)
+          | nil => nil
           | a :: l0 => f a :: F A B f l0
           end
      : forall A B : Set, (A -> B) -> list A -> list B
@@ -14,12 +14,10 @@ fix even_pos_odd_pos 2
  intros.
  destruct H.
    omega.
-  
    apply odd_pos_even_pos in H.
    omega.
+  intros.
+  destruct H.
+   apply even_pos_odd_pos in H.
+   omega.
   
- intros.
- destruct H.
-  apply even_pos_odd_pos in H.
-  omega.
- 
