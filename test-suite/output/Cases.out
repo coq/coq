@@ -21,7 +21,7 @@ Argument scopes are [nat_scope nat_scope _ _ _]
 foo = 
 fix foo (A : Type) (l : list A) {struct l} : option A :=
   match l with
-  | nil => None (A:=A)
+  | nil => None
   | x0 :: nil => Some x0
   | x0 :: (_ :: _) as l0 => foo A l0
   end
