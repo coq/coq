@@ -407,7 +407,7 @@ In general if $m$ has type $(I~q_1\ldots q_r~t_1\ldots t_s)$ where
 $q_1\ldots q_r$ are parameters, the elimination predicate should be of
 the form~:
 {\tt fun $y_1$\ldots $y_s$ $x$:($I$~$q_1$\ldots $q_r$~$y_1$\ldots
-  $y_s$) => P}. 
+  $y_s$) => Q}.
 
 In the concrete syntax, it should be written~:
 \[ \kw{match}~m~\kw{as}~x~\kw{in}~(I~\_\ldots \_~y_1\ldots y_s)~\kw{return}~Q~\kw{with}~\ldots~\kw{end}\]
@@ -472,7 +472,7 @@ In all the previous examples the elimination predicate does not depend
 on the object(s) matched. But it may depend and the typical case 
 is when we write a proof by induction or a function that yields an
 object of dependent type. An example of proof using \texttt{match} in
-given in Section~\ref{refine-example}
+given in Section~\ref{refine-example}.
 
 For example, we can write 
 the function \texttt{buildlist} that given a natural number
@@ -619,28 +619,28 @@ Here is a summary of the error messages corresponding to each situation:
 
 \begin{ErrMsgs}
 \item \sverb{The constructor } {\sl
-    ident} \sverb{expects } {\sl num} \sverb{arguments}
+    ident} \sverb{ expects } {\sl num} \sverb{ arguments}
   
- \sverb{The variable } {\sl ident} \sverb{is bound several times
+ \sverb{The variable } {\sl ident} \sverb{ is bound several times
     in pattern } {\sl term}
   
- \sverb{Found a constructor of inductive type} {\term}
- \sverb{while a constructor of} {\term} \sverb{is expected}
+ \sverb{Found a constructor of inductive type } {\term}
+ \sverb{ while a constructor of } {\term} \sverb{ is expected}
 
  Patterns are incorrect (because constructors are not applied to
   the correct number of the arguments, because they are not linear or
-  they are wrongly typed)
+  they are wrongly typed).
 
 \item \errindex{Non exhaustive pattern-matching}
 
-the pattern matching is not exhaustive
+The pattern matching is not exhaustive.
 
-\item \sverb{The elimination predicate } {\sl term} \sverb{should be
-    of arity } {\sl num} \sverb{(for non dependent case) or } {\sl
-    num} \sverb{(for dependent case)}
+\item \sverb{The elimination predicate } {\sl term} \sverb{ should be
+    of arity } {\sl num} \sverb{ (for non dependent case) or } {\sl
+    num} \sverb{ (for dependent case)}
 
 The elimination predicate provided to \texttt{match} has not the
-  expected arity
+  expected arity.
 
 
 %\item the whole expression is wrongly typed
@@ -662,9 +662,8 @@ The elimination predicate provided to \texttt{match} has not the
     Either there is a type incompatiblity or the problem involves\\
     dependencies}
  
-  There is a type mismatch between the different branches
-
-  Then the user should provide an elimination predicate.
+  There is a type mismatch between the different branches.
+  The user should provide an elimination predicate.
 
 % Obsolete ?  
 % \item because of nested patterns, it may happen that even though all
