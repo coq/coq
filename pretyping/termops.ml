@@ -838,7 +838,8 @@ let is_imported_ref = function
 let is_global id =
   try 
     let ref = locate (make_short_qualid id) in
-    not (is_imported_ref ref)
+      not (is_imported_ref ref) ||
+	(try ignore(locate (make_qualid (dirpath_of_string "Top") id)); true with _ -> false)
   with Not_found -> 
     false
 
