@@ -817,29 +817,22 @@ let names_of_rel_context env =
 
 (**** Globality of identifiers *)
 
-(* TODO temporary hack!!! *)
 let rec is_imported_modpath = function
-  | MPfile dp -> dp <> (Lib.library_dp ())
-(*  | MPdot (mp,_) -> is_imported_modpath mp *)
-  | _ -> false
+  | MPfile dp -> true
+  | p -> p <> initial_path
 
 let is_imported_ref = function
   | VarRef _ -> false
   | IndRef (kn,_)
-  | ConstructRef ((kn,_),_) 
-(*  | ModTypeRef ln  *) -> 
+  | ConstructRef ((kn,_),_) ->
       let (mp,_,_) = repr_kn kn in is_imported_modpath mp
-(*  | ModRef mp ->
-      is_imported_modpath mp
-*)
   | ConstRef kn ->
       let (mp,_,_) = repr_con kn in is_imported_modpath mp
 
 let is_global id =
   try 
     let ref = locate (make_short_qualid id) in
-      not (is_imported_ref ref) ||
-	(try ignore(locate (make_qualid (dirpath_of_string "Top") id)); true with _ -> false)
+    not (is_imported_ref ref) or Nametab.exists_cci (Lib.make_path id)
   with Not_found -> 
     false
 
