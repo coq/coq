@@ -819,7 +819,7 @@ let names_of_rel_context env =
 
 let rec is_imported_modpath = function
   | MPfile dp -> true
-  | p -> p <> initial_path
+  | p -> false
 
 let is_imported_ref = function
   | VarRef _ -> false
@@ -832,7 +832,7 @@ let is_imported_ref = function
 let is_global id =
   try 
     let ref = locate (make_short_qualid id) in
-    not (is_imported_ref ref) or Nametab.exists_cci (Lib.make_path id)
+    not (is_imported_ref ref)
   with Not_found -> 
     false
 
