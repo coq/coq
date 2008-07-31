@@ -186,8 +186,8 @@ let open_canonical_structure i (_,o) =
     let lo = compute_canonical_projections o in
     List.iter (fun ((proj,cs_pat),s) ->
       let l = try Refmap.find proj !object_table with Not_found -> [] in
-      let l' = list_add_set (cs_pat,s) l in
-      object_table := Refmap.add proj l' !object_table) lo
+      if not (List.mem_assoc cs_pat l) then
+        object_table := Refmap.add proj ((cs_pat,s)::l) !object_table) lo
 
 let cache_canonical_structure o =
   open_canonical_structure 1 o
