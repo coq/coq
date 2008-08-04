@@ -20,6 +20,32 @@ match expr with
   | A -> ...
   | B x -> ...
 
+Remarque : à partir de la 8.2 environ, la tendance est à utiliser le
+format suivant qui permet de limiter l'escalade d'indentation tout en
+produisant un aspect visuel intéressant de bloc :
+
+type t =
+| A 
+| B of machin
+
+match expr with
+| A -> ...
+| B x -> ...
+
+let f expr = match expr with
+| A -> ...
+| B x -> ...
+
+let f expr = function
+| A -> ...
+| B x -> ...
+
+Le deuxième cas est obtenu sous tuareg avec les réglages
+
+  (setq tuareg-with-indent 0)
+  (setq tuareg-function-indent 0)
+  (setq tuareg-let-always-indent nil) /// notons que cette dernière est bien 
+                                      /// pour les let mais pas pour les let-in
 
 Conditionnelles
 ===============

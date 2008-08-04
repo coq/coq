@@ -214,6 +214,7 @@ Tactic Language
 - A bound variable whose name is not used elsewhere now serves as
   metavariable in "match" and it gets instantiated by an identifier
   (allow e.g. to extract the name of a statement like "exists x, P x").
+- New printing of Ltac call trace for better debugging.
 
 Tactics
 
@@ -259,6 +260,9 @@ Tactics
   * "rewrite 3?A" means rewriting A at most three times.
   * "rewrite ?A" means rewriting A as long as possible (possibly never).
   * many of the above extensions can be combined with each other.  
+- Introduction patterns better respect the structure of context in presence of
+  missing or extra names in nested disjunction-conjunction patterns [possible 
+  source of rare incompatibilities].
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
 - New tactics "dependent induction/destruction H [ generalizing id_1 .. id_n ]"
   to do induction-inversion on instantiated inductive families à la BasicElim.
@@ -270,6 +274,7 @@ Tactics
 - Tactic "apply" now able to traverse conjunctions and to select the first 
   matching lemma among the components of the conjunction; tactic apply also
   able to apply lemmas of conclusion an empty type.
+- Tactic "apply" now supports application of several lemmas in a row.
 - Tactics "set" and "pose" can set functions using notation "(f x1..xn := c)".
 - New tactic "instantiate" (without argument).
 - Tactic firstorder "with" and "using" options have their meaning swapped for
@@ -288,6 +293,7 @@ Tactics
   now obsolete.
 - Tactics f_equal is now done in ML instead of Ltac: it now works on any 
   equality of functions, regardless of the arity of the function.
+- New options "before id", "at top", "at bottom" for tactics "move"/"intro".
 - Some more debug of reflexive omega (romega), and internal clarifications. 
   Moreover, romega now has a variant "romega with *" that can be also used
   on non-Z goals (nat, N, positive) via a call to a translation tactic named
@@ -295,6 +301,8 @@ Tactics
   independantly of romega. 
 - Tactic "remember" now supports an "in" clause to remember only selected 
   occurrences of a term.
+- Tactic "pose proof" supports name overwriting in case of specialization of an
+  hypothesis.
 
 Program
 

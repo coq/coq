@@ -930,7 +930,7 @@ let injEq ipats (eq,(t,t1,t2)) eq_clause =
         ) with _ ->
 	tclTHEN
 	  (inject_at_positions env sigma (eq,(t,t1,t2)) eq_clause posns)
-	  (intros_pattern None ipats)
+	  (intros_pattern no_move ipats)
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
 

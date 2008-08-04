@@ -26,7 +26,7 @@ let _ = List.iter (fun s -> Lexer.add_token("",s)) tactic_kw
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
-let lpar_id_coloneq =
+let test_lpar_id_coloneq =
   Gram.Entry.of_parser "lpar_id_coloneq"
     (fun strm ->
       match Stream.npeek 1 strm with
@@ -34,9 +34,7 @@ let lpar_id_coloneq =
             (match Stream.npeek 2 strm with
               | [_; ("IDENT",s)] ->
                   (match Stream.npeek 3 strm with
-	            | [_; _; ("", ":=")] ->
-                        Stream.junk strm; Stream.junk strm; Stream.junk strm;
-                        Names.id_of_string s
+	            | [_; _; ("", ":=")] -> ()
 	            | _ -> raise Stream.Failure)
 	      | _ -> raise Stream.Failure)
 	| _ -> raise Stream.Failure)
@@ -56,7 +54,7 @@ let test_lpar_idnum_coloneq =
         | _ -> raise Stream.Failure)
 
 (* idem for (x:t) *)
-let lpar_id_colon =
+let test_lpar_id_colon =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
       match Stream.npeek 1 strm with
@@ -64,9 +62,7 @@ let lpar_id_colon =
             (match Stream.npeek 2 strm with
               | [_; ("IDENT",id)] ->
                   (match Stream.npeek 3 strm with
-                    | [_; _; ("", ":")] ->
-                        Stream.junk strm; Stream.junk strm; Stream.junk strm;
-                        Names.id_of_string id
+                    | [_; _; ("", ":")] -> ()
                     | _ -> raise Stream.Failure)
               | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
@@ -162,6 +158,8 @@ let mkCLambdaN_simple bl c =
     let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (constr_loc c) in
     mkCLambdaN_simple_loc loc bl c
 
+let loc_of_ne_list l = join_loc (fst (List.hd l)) (fst (list_last l))
+
 let map_int_or_var f = function
   | Rawterm.ArgArg x -> Rawterm.ArgArg (f x)
   | Rawterm.ArgVar _ as y -> y
@@ -237,27 +235,32 @@ GEXTEND Gram
   intropatterns:
     [ [ l = LIST0 simple_intropattern -> l ]]
   ;
-  simple_intropattern:
-    [ [ "["; tc = LIST1 intropatterns SEP "|" ; "]" -> IntroOrAndPattern tc
-      | "()" -> IntroOrAndPattern [[]]
-      | "("; si = simple_intropattern; ")" -> IntroOrAndPattern [[si]]
+  disjunctive_intropattern:
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> loc,IntroOrAndPattern tc
+      | "()" -> loc,IntroOrAndPattern [[]]
+      | "("; si = simple_intropattern; ")" -> loc,IntroOrAndPattern [[si]]
       | "("; si = simple_intropattern; ","; 
              tc = LIST1 simple_intropattern SEP "," ; ")" -> 
-	       IntroOrAndPattern [si::tc]
+	       loc,IntroOrAndPattern [si::tc]
       | "("; si = simple_intropattern; "&"; 
 	     tc = LIST1 simple_intropattern SEP "&" ; ")" -> 
 	  (* (A & B & C) is translated into (A,(B,C)) *)
 	  let rec pairify = function 
 	    | ([]|[_]|[_;_]) as l -> IntroOrAndPattern [l]
-	    | t::q -> IntroOrAndPattern [[t;pairify q]]
-	  in pairify (si::tc)
-      | "_" -> IntroWildcard loc
-      | prefix = pattern_ident -> IntroFresh prefix
-      | "?" -> IntroAnonymous
-      | id = ident -> IntroIdentifier id
-      | "->" -> IntroRewrite true
-      | "<-" -> IntroRewrite false
-      ] ]
+	    | t::q -> IntroOrAndPattern [[t;(loc_of_ne_list q,pairify q)]]
+	  in loc,pairify (si::tc) ] ]
+  ;
+  naming_intropattern:
+    [ [ prefix = pattern_ident -> loc, IntroFresh prefix
+      | "?" -> loc, IntroAnonymous
+      | id = ident -> loc, IntroIdentifier id ] ]
+  ;
+  simple_intropattern:
+    [ [ pat = disjunctive_intropattern -> pat
+      | pat = naming_intropattern -> pat
+      | "_" -> loc, IntroWildcard
+      | "->" -> loc, IntroRewrite true
+      | "<-" -> loc, IntroRewrite false ] ]
   ;
   simple_binding:
     [ [ "("; id = ident; ":="; c = lconstr; ")" -> (loc, NamedHyp id, c)
@@ -402,7 +405,18 @@ GEXTEND Gram
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
   with_names:
-    [ [ "as"; ipat = simple_intropattern -> ipat | -> IntroAnonymous ] ]
+    [ [ "as"; ipat = simple_intropattern -> ipat
+      | -> dummy_loc,IntroAnonymous ] ]
+  ;
+  with_inversion_names:
+    [ [ "as"; ipat = disjunctive_intropattern -> Some ipat
+      | -> None ] ]
+  ;
+  with_induction_names:
+    [ [ "as"; eq = OPT naming_intropattern; ipat = disjunctive_intropattern
+        -> (eq,Some ipat)
+      | "as"; eq = naming_intropattern -> (Some eq,None)
+      | -> (None,None) ] ]
   ;
   as_name:
     [ [ "as"; id = ident -> Names.Name id | -> Names.Anonymous ] ]
@@ -439,30 +453,40 @@ GEXTEND Gram
   oriented_rewriter : 
     [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ; 
+  induction_clause:
+    [ [ lc = LIST1 induction_arg; ipats = with_induction_names; 
+        el = OPT eliminator; cl = opt_clause -> (lc,el,ipats,cl) ] ]
+  ;
+  move_location:
+    [ [ IDENT "after"; id = id_or_meta -> MoveAfter id
+      | IDENT "before"; id = id_or_meta -> MoveBefore id
+      | "at"; IDENT "bottom" -> MoveToEnd true
+      | "at"; IDENT "top" -> MoveToEnd false ] ]
+  ;
   simple_tactic:
     [ [ 
       (* Basic tactics *)
         IDENT "intros"; IDENT "until"; id = quantified_hypothesis -> 
 	  TacIntrosUntil id
       | IDENT "intros"; pl = intropatterns -> TacIntroPattern pl
-      | IDENT "intro"; id = ident; IDENT "after"; id2 = identref ->
-	  TacIntroMove (Some id, Some id2)
-      | IDENT "intro"; IDENT "after"; id2 = identref ->
-	  TacIntroMove (None, Some id2)
-      | IDENT "intro"; id = ident -> TacIntroMove (Some id, None)
-      | IDENT "intro" -> TacIntroMove (None, None)
+      | IDENT "intro"; id = ident; hto = move_location ->
+	  TacIntroMove (Some id, hto)
+      | IDENT "intro"; hto = move_location -> TacIntroMove (None, hto)
+      | IDENT "intro"; id = ident -> TacIntroMove (Some id, no_move)
+      | IDENT "intro" -> TacIntroMove (None, no_move)
 
       | IDENT "assumption" -> TacAssumption
       | IDENT "exact"; c = constr -> TacExact c
       | IDENT "exact_no_check"; c = constr -> TacExactNoCheck c
       | IDENT "vm_cast_no_check"; c = constr -> TacVmCastNoCheck c
 
-      | IDENT "apply"; cl = constr_with_bindings -> TacApply (true,false,cl)
-      | IDENT "eapply"; cl = constr_with_bindings -> TacApply (true,true,cl)
-      | IDENT "simple"; IDENT "apply"; cl = constr_with_bindings -> 
-          TacApply (false,false,cl)
-      | IDENT "simple"; IDENT "eapply"; cl = constr_with_bindings -> 
-          TacApply (false, true,cl)
+      | IDENT "apply"; cl = LIST1 constr_with_bindings SEP "," ->
+	  TacApply (true,false,cl)
+      | IDENT "eapply"; cl = LIST1 constr_with_bindings SEP "," ->
+          TacApply (true,true,cl)
+      | IDENT "simple"; IDENT "apply"; cl = LIST1 constr_with_bindings SEP "," 
+          -> TacApply (false,false,cl)
+      | IDENT "simple"; IDENT "eapply"; cl = LIST1 constr_with_bindings SEP ","           -> TacApply (false,true,cl)
       | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (false,cl,el)
       | IDENT "eelim"; cl = constr_with_bindings; el = OPT eliminator ->
@@ -492,10 +516,12 @@ GEXTEND Gram
           TacLetTac (na,c,p,false)
 
       (* Begin compatibility *)
-      | IDENT "assert"; id = lpar_id_coloneq; c = lconstr; ")" -> 
-	  TacAssert (None,IntroIdentifier id,c)
-      | IDENT "assert"; id = lpar_id_colon; c = lconstr; ")"; tac=by_tactic -> 
-	  TacAssert (Some tac,IntroIdentifier id,c)
+      | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":="; 
+	  c = lconstr; ")" -> 
+	  TacAssert (None,(loc,IntroIdentifier id),c)
+      | IDENT "assert"; test_lpar_id_colon; "("; (loc,id) = identref; ":"; 
+	  c = lconstr; ")"; tac=by_tactic -> 
+	  TacAssert (Some tac,(loc,IntroIdentifier id),c)
       (* End compatibility *)
 
       | IDENT "assert"; c = constr; ipat = with_names; tac = by_tactic ->
@@ -521,23 +547,19 @@ GEXTEND Gram
 
       (* Derived basic tactics *)
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
-          TacSimpleInduction h
-      | IDENT "induction"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator; cl = opt_clause -> 
-	    TacNewInduction (false,lc,el,ids,cl)
-      | IDENT "einduction"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator; cl = opt_clause ->
-	    TacNewInduction (true,lc,el,ids,cl)
+          TacSimpleInductionDestruct (true,h)
+      | IDENT "induction"; ic = induction_clause ->
+	  TacInductionDestruct (true,false,[ic])
+      | IDENT "einduction"; ic = induction_clause ->
+	  TacInductionDestruct(true,true,[ic])
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)
       | IDENT "simple"; IDENT "destruct"; h = quantified_hypothesis ->
-          TacSimpleDestruct h
-      | IDENT "destruct"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator; cl = opt_clause ->
-	    TacNewDestruct (false,lc,el,ids,cl)
-      | IDENT "edestruct"; lc = LIST1 induction_arg; ids = with_names; 
-	  el = OPT eliminator; cl = opt_clause ->
-	    TacNewDestruct (true,lc,el,ids,cl)
+          TacSimpleInductionDestruct (false,h)
+      | IDENT "destruct"; ic = induction_clause ->
+	  TacInductionDestruct(false,false,[ic])
+      | IDENT "edestruct";  ic = induction_clause ->
+	  TacInductionDestruct(false,true,[ic])
       | IDENT "decompose"; IDENT "record" ; c = constr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = constr -> TacDecomposeOr c
       | IDENT "decompose"; "["; l = LIST1 smart_global; "]"; c = constr
@@ -565,8 +587,8 @@ GEXTEND Gram
       | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacClear (true, l)
       | IDENT "clear"; l = LIST0 id_or_meta -> TacClear (l=[], l)
       | IDENT "clearbody"; l = LIST1 id_or_meta -> TacClearBody l
-      | IDENT "move"; id1 = id_or_meta; IDENT "after"; id2 = id_or_meta -> 
-	  TacMove (true,id1,id2)
+      | IDENT "move"; dep = [IDENT "dependent" -> true | -> false]; 
+	  hfrom = id_or_meta; hto = move_location -> TacMove (dep,hfrom,hto)
       | IDENT "rename"; l = LIST1 rename SEP "," -> TacRename l
       | IDENT "revert"; l = LIST1 id_or_meta -> TacRevert l
 
@@ -601,16 +623,19 @@ GEXTEND Gram
 	  | IDENT "inversion" -> FullInversion
 	  | IDENT "inversion_clear" -> FullInversionClear ];
 	  hyp = quantified_hypothesis; 
-	  ids = with_names; co = OPT ["with"; c = constr -> c] ->
+	  ids = with_inversion_names; co = OPT ["with"; c = constr -> c] ->
 	    TacInversion (DepInversion (k,co,ids),hyp)
       | IDENT "simple"; IDENT "inversion";
-	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	  hyp = quantified_hypothesis; ids = with_inversion_names;
+	  cl = simple_clause ->
 	    TacInversion (NonDepInversion (SimpleInversion, cl, ids), hyp)
       | IDENT "inversion"; 
-	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	  hyp = quantified_hypothesis; ids = with_inversion_names;
+	  cl = simple_clause ->
 	    TacInversion (NonDepInversion (FullInversion, cl, ids), hyp)
       | IDENT "inversion_clear"; 
-	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	  hyp = quantified_hypothesis; ids = with_inversion_names; 
+	  cl = simple_clause ->
 	    TacInversion (NonDepInversion (FullInversionClear, cl, ids), hyp)
       | IDENT "inversion"; hyp = quantified_hypothesis; 
 	  "using"; c = constr; cl = simple_clause ->

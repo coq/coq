@@ -8,8 +8,6 @@
 
 (*i $Id$ i*)
 
-open Util
-
 let with_option o f x =
   let old = !o in o:=true;
   try let r = f x in o := old; r
@@ -77,6 +75,8 @@ let print_hyps_limit () = !print_hyps_limit
 
 (* A list of the areas of the system where "unsafe" operation
  * has been requested *)
+
+module Stringset = Set.Make(struct type t = string let compare = compare end)
 
 let unsafe_set = ref Stringset.empty
 let add_unsafe s = unsafe_set := Stringset.add s !unsafe_set

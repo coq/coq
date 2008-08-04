@@ -804,10 +804,7 @@ let rec pr_vernac = function
 	  (Global.env())
 	  body in
       hov 1
-        (((*if !Flags.p1 then
-	  (if rc then str "Recursive " else mt()) ++
-	  str "Tactic Definition " else*)
-	    (* Rec by default *) str "Ltac ") ++
+        ((str "Ltac ") ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacHints (local,dbnames,h) ->
       pr_hints local dbnames h pr_constr pr_pattern_expr

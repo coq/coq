@@ -22,6 +22,7 @@ open Termops
 open Evd
 open Proof_type
 open Rawterm
+open Tacexpr
 (*i*)
 
 (* These are the entry points for printing terms, context, tac, ... *)

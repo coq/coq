@@ -523,6 +523,8 @@ let pr_sort_constraints (_,sm) = pr_sort_cstrs sm
 
 let meta_list evd = metamap_to_list evd.metas
 
+let find_meta evd mv = Metamap.find mv evd.metas
+
 let undefined_metas evd =
   List.sort Pervasives.compare (map_succeed (function
     | (n,Clval(_,_,typ)) -> failwith ""

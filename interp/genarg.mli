@@ -32,16 +32,16 @@ type open_rawconstr = unit * rawconstr_and_expr
 type 'a with_ebindings = 'a * open_constr bindings
 
 type intro_pattern_expr =
-  | IntroOrAndPattern of case_intro_pattern_expr
-  | IntroWildcard of loc
-  | IntroIdentifier of identifier
-  | IntroAnonymous
+  | IntroOrAndPattern of or_and_intro_pattern_expr
+  | IntroWildcard
   | IntroRewrite of bool
+  | IntroIdentifier of identifier
   | IntroFresh of identifier
-and case_intro_pattern_expr = intro_pattern_expr list list
+  | IntroAnonymous
+and or_and_intro_pattern_expr = (loc * intro_pattern_expr) list list
 
-val pr_intro_pattern : intro_pattern_expr -> Pp.std_ppcmds
-val pr_case_intro_pattern : case_intro_pattern_expr -> Pp.std_ppcmds
+val pr_intro_pattern : intro_pattern_expr located -> Pp.std_ppcmds
+val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
 
 (* The route of a generic argument, from parsing to evaluation
 
@@ -128,15 +128,16 @@ val wit_int_or_var : (int or_var,tlevel) abstract_argument_type
 
 val rawwit_string : (string,rlevel) abstract_argument_type
 val globwit_string : (string,glevel) abstract_argument_type
+
 val wit_string : (string,tlevel) abstract_argument_type
 
 val rawwit_pre_ident : (string,rlevel) abstract_argument_type
 val globwit_pre_ident : (string,glevel) abstract_argument_type
 val wit_pre_ident : (string,tlevel) abstract_argument_type
 
-val rawwit_intro_pattern : (intro_pattern_expr,rlevel) abstract_argument_type
-val globwit_intro_pattern : (intro_pattern_expr,glevel) abstract_argument_type
-val wit_intro_pattern : (intro_pattern_expr,tlevel) abstract_argument_type
+val rawwit_intro_pattern : (intro_pattern_expr located,rlevel) abstract_argument_type
+val globwit_intro_pattern : (intro_pattern_expr located,glevel) abstract_argument_type
+val wit_intro_pattern : (intro_pattern_expr located,tlevel) abstract_argument_type
 
 val rawwit_ident : (identifier,rlevel) abstract_argument_type
 val globwit_ident : (identifier,glevel) abstract_argument_type

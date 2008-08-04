@@ -28,6 +28,7 @@ open Refiner
 open Pfedit
 open Ppconstr
 open Constrextern
+open Tacexpr
 
 let emacs_str s alts = 
   match !Flags.print_emacs, !Flags.print_emacs_safechar with
@@ -421,14 +422,14 @@ let pr_prim_rule = function
   | Intro id -> 
       str"intro " ++ pr_id id
 	
-  | Intro_replacing id -> 
-      (str"intro replacing "  ++ pr_id id)
-	
-  | Cut (b,id,t) ->
-      if b then
-        (str"assert " ++ pr_constr t)
-      else
-        (str"cut " ++ pr_constr t ++ str ";[intro " ++ pr_id id ++ str "|idtac]")
+  | Cut (b,replace,id,t) ->
+     if b then
+       (* TODO: express "replace" *)
+       (str"assert " ++ str"(" ++ pr_id id ++ str":" ++ pr_lconstr t ++ str")")
+     else
+       let cl = if replace then str"clear " ++ pr_id id ++ str"; " else mt() in
+       (str"cut " ++ pr_constr t ++ 
+        str ";[" ++ cl ++ str"intro " ++ pr_id id ++ str"|idtac]")
 	
   | FixRule (f,n,[]) ->
       (str"fix " ++ pr_id f ++ str"/" ++ int n)
@@ -472,7 +473,7 @@ let pr_prim_rule = function
       
   | Move (withdep,id1,id2) ->
       (str (if withdep then "dependent " else "") ++
-	 str"move "  ++ pr_id id1 ++ str " after " ++ pr_id id2)
+	 str"move "  ++ pr_id id1 ++ pr_move_location pr_id id2)
 
   | Rename (id1,id2) ->
       (str "rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)

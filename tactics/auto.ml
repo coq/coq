@@ -641,7 +641,7 @@ let unify_resolve_nodelta (c,clenv) gls =
 let unify_resolve flags (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false ~flags clenv' gls in  
-  h_apply true false (c,NoBindings) gls
+  h_apply true false [c,NoBindings] gls
 
 
 (* builds a hint database from a constr signature *)

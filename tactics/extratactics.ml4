@@ -486,16 +486,14 @@ END
 
 
 TACTIC EXTEND apply_in
-| ["apply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in false id [c] ]
-| ["apply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
-   "in" hyp(id) ] -> [ apply_in false id (c::cl) ]
+| ["apply" ne_constr_with_bindings_list_sep(cl,",") "in" hyp(id) ] -> 
+    [ apply_in false id cl ]
 END
 
 
 TACTIC EXTEND eapply_in
-| ["eapply" constr_with_bindings(c) "in" hyp(id) ] -> [ apply_in true id [c] ]
-| ["epply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
-   "in" hyp(id) ] -> [ apply_in true id (c::cl) ]
+| ["eapply" ne_constr_with_bindings_list_sep(cl,",") "in" hyp(id) ] ->
+    [ apply_in true id cl ]
 END
 
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as 

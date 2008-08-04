@@ -374,42 +374,41 @@ let restrict_upon_filter evd evi evk p args =
   else
     evd,evk,args
 
-exception Dependency_error of identifier
+let collect_vars c =
+  let rec collrec acc c =
+    match kind_of_term c with
+    | Var id -> list_add_set id acc
+    | _      -> fold_constr collrec acc c
+  in
+  collrec [] c
 
-module EvkOrd = 
-struct
-  type t = Term.existential_key
-  let compare = Pervasives.compare
-end
+type clear_dependency_error =
+| OccurHypInSimpleClause of identifier option
+| EvarTypingBreak of existential
 
-module EvkSet = Set.Make(EvkOrd)
+exception ClearDependencyError of identifier * clear_dependency_error
 
-let rec check_and_clear_in_constr evdref c ids hist =
+let rec check_and_clear_in_constr evdref err ids c =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
-     evars *)
+     evars) *)
   let check id' = 
     if List.mem id' ids then
-      raise (Dependency_error id')
+      raise (ClearDependencyError (id',err))
   in 
     match kind_of_term c with
-      | ( Rel _ | Meta _ | Sort _ ) -> c
+      | Var id' ->
+	  check id'; c
 
-      | ( Const _ | Ind _ | Construct _ ) -> 
-	  let vars = Environ.vars_of_global (Global.env()) c in
-	    List.iter check vars; c
-
-      | Var id' ->  
-	  check id'; mkVar id'
+      | ( Const _ | Ind _ | Construct _ ) ->
+          let vars = Environ.vars_of_global (Global.env()) c in
+            List.iter check vars; c
 
       | Evar (evk,l as ev) -> 
 	  if Evd.is_defined_evar !evdref ev then
 	    (* If evk is already defined we replace it by its definition *)
-	    let nc = nf_evar (evars_of !evdref) c in 
-	      (check_and_clear_in_constr evdref nc ids hist)
-	  else if EvkSet.mem evk hist then
-	    (* Loop detection => do nothing *)
-	    c
+	    let nc = whd_evar (evars_of !evdref) c in 
+	      (check_and_clear_in_constr evdref err ids nc)
 	  else 
 	    (* We check for dependencies to elements of ids in the
 	       evar_info corresponding to e and in the instance of
@@ -418,16 +417,32 @@ let rec check_and_clear_in_constr evdref c ids hist =
 	       removed *)
 	    let evi = Evd.find (evars_of !evdref) evk in
 	    let ctxt = Evd.evar_filtered_context evi in
-	    let (nhyps,nargs,rids) = 
+	    let (nhyps,nargs,rids) =
 	      List.fold_right2 
 		(fun (rid,ob,c as h) a (hy,ar,ri) ->
-		  match kind_of_term a with
-		    | Var id -> if List.mem id ids then (hy,ar,id::ri) else (h::hy,a::ar,ri)
-		    | _ -> (h::hy,a::ar,ri)
-		) 	      
+		  (* Check if some id to clear occurs in the instance
+		     a of rid in ev and remember the dependency *)
+		  match 
+		    List.filter (fun id -> List.mem id ids) (collect_vars a)
+		  with
+		  | id :: _ -> (hy,ar,(rid,id)::ri)
+		  | _ ->
+		  (* Check if some rid to clear in the context of ev
+		     has dependencies in another hyp of the context of ev
+		     and transitively remember the dependency *)
+		  match List.filter (fun (id,_) -> occur_var_in_decl (Global.env()) id h) ri with
+		  | rid' :: _ -> (hy,ar,(rid,List.assoc rid ri)::ri)
+		  | _ ->
+		  (* No dependency at all, we can keep this ev's context hyp *)
+		      (h::hy,a::ar,ri))
 		ctxt (Array.to_list l) ([],[],[]) in
-	    (* nconcl must be computed ids (non instanciated hyps) *)
-	    let nconcl = check_and_clear_in_constr evdref (evar_concl evi) rids (EvkSet.add evk hist) in
+	    (* Check if some rid to clear in the context of ev has dependencies
+	       in the type of ev and adjust the source of the dependency *)
+	    let nconcl =
+	      try check_and_clear_in_constr evdref (EvarTypingBreak ev)
+		    (List.map fst rids) (evar_concl evi) 
+	      with ClearDependencyError (rid,err) -> 
+		raise (ClearDependencyError (List.assoc rid rids,err)) in
 
 	    let env = Sign.fold_named_context push_named nhyps ~init:(empty_env) in
 	    let ev'= e_new_evar evdref env ~src:(evar_source evk !evdref) nconcl in
@@ -435,25 +450,19 @@ let rec check_and_clear_in_constr evdref c ids hist =
 	      let (evk',_) = destEvar ev' in
 		mkEvar(evk', Array.of_list nargs)
 
-      | _ -> map_constr (fun c -> check_and_clear_in_constr evdref c ids hist) c
-
-exception OccurHypInSimpleClause of identifier * identifier option
+      | _ -> map_constr (check_and_clear_in_constr evdref err ids) c
 
 let clear_hyps_in_evi evdref hyps concl ids =
-  (* clear_evar_hyps erases hypotheses ids in hyps, checking if some
+  (* clear_hyps_in_evi erases hypotheses ids in hyps, checking if some
      hypothesis does not depend on a element of ids, and erases ids in
      the contexts of the evars occuring in evi *)
-  let nconcl = try check_and_clear_in_constr evdref concl ids EvkSet.empty
-    with Dependency_error id' -> raise (OccurHypInSimpleClause (id',None)) in
-  let (nhyps,_) = 
-    let check_context (id,ob,c) = 
-      try
-	(id,
-	(match ob with 
-	    None -> None
-	  | Some b -> Some (check_and_clear_in_constr evdref b ids EvkSet.empty)),
-	check_and_clear_in_constr evdref c ids EvkSet.empty)
-      with Dependency_error id' -> raise (OccurHypInSimpleClause (id',Some id))
+  let nconcl =
+    check_and_clear_in_constr evdref (OccurHypInSimpleClause None) ids concl in
+  let nhyps = 
+    let check_context (id,ob,c) =
+      let err = OccurHypInSimpleClause (Some id) in
+      (id, Option.map (check_and_clear_in_constr evdref err ids) ob,
+	check_and_clear_in_constr evdref err ids c)
     in
     let check_value vk =
       match !vk with
@@ -469,6 +478,7 @@ let clear_hyps_in_evi evdref hyps concl ids =
       remove_hyps ids check_context check_value hyps
   in
   (nhyps,nconcl)
+
 
 (* Expand rels and vars that are bound to other rels or vars so that 
    dependencies in variables are canonically associated to the most ancient

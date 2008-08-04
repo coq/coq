@@ -40,15 +40,15 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
   | Sys_error msg -> 
       hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ str (guill msg) ++ report_fn ())
   | UserError(s,pps) -> 
-      hov 1 (str "User error: " ++ where s ++ pps)
+      hov 0 (str "Error: " ++ where s ++ pps)
   | Out_of_memory -> 
       hov 0 (str "Out of memory.")
   | Stack_overflow -> 
       hov 0 (str "Stack overflow.")
   | Anomaly (s,pps) -> 
-      hov 1 (anomaly_string () ++ where s ++ pps ++ report_fn ())
+      hov 0 (anomaly_string () ++ where s ++ pps ++ report_fn ())
   | Match_failure(filename,pos1,pos2) ->
-      hov 1 (anomaly_string () ++ str "Match failure in file " ++ str (guill filename) ++ 
+      hov 0 (anomaly_string () ++ str "Match failure in file " ++ str (guill filename) ++ 
       if Sys.ocaml_version = "3.06" then
 		   (str " from character " ++ int pos1 ++ 
                     str " to " ++ int pos2)
@@ -83,6 +83,11 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_inductive_error e)
   | RecursionSchemeError e -> 
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_recursion_scheme_error e)
+  | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when s <> mt () ->
+      explain_exn_default_aux anomaly_string report_fn exc
+  | Proof_type.LtacLocated (s,exc) ->
+      hov 0 (Himsg.explain_ltac_call_trace s ++ fnl ()
+             ++ explain_exn_default_aux anomaly_string report_fn exc)
   | Cases.PatternMatchingError (env,e) -> 
       hov 0
 	(str "Error:" ++ spc () ++ Himsg.explain_pattern_matching_error env e)
@@ -100,7 +105,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
 	       str "No constant of this name:" ++ spc () ++ 
                Libnames.pr_qualid q ++ str ".")
   | Refiner.FailError (i,s) ->
-      hov 0 (str "Error: Tactic failure" ++ s ++
+      hov 0 (str "Error: Tactic failure:" ++ s ++
              if i=0 then mt () else str " (level " ++ int i ++ str").")
   | Stdpp.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())

@@ -48,7 +48,7 @@ type pbp_atom =
   | PbpTryClear of identifier list
   | PbpGeneralize of identifier * identifier list
   | PbpLApply of identifier (* = CutAndApply *)
-  | PbpIntros of intro_pattern_expr list
+  | PbpIntros of intro_pattern_expr located list
   | PbpSplit
   (* Existential *)
   | PbpExists of identifier
@@ -93,7 +93,7 @@ type pbp_rule = (identifier list *
                     pbp_sequence option;;
 
 
-let make_named_intro id = PbpIntros [IntroIdentifier id];;
+let make_named_intro id = PbpIntros [zz,IntroIdentifier id];;
 
 let make_clears str_list = PbpThen [PbpTryClear str_list]
 
@@ -171,7 +171,7 @@ let make_pbp_atomic_tactic = function
   | PbpRight -> TacAtom (zz, TacRight (false,NoBindings))
   | PbpIntros l -> TacAtom (zz, TacIntroPattern l)
   | PbpLApply h -> TacAtom (zz, TacLApply (make_var h))
-  | PbpApply h -> TacAtom (zz, TacApply (true,false,(make_var h,NoBindings)))
+  | PbpApply h -> TacAtom (zz, TacApply (true,false,[make_var h,NoBindings]))
   | PbpElim (hyp_name, names) ->
       let bind = List.map (fun s ->(zz,NamedHyp s,make_pbp_pattern s)) names in
       TacAtom
@@ -255,9 +255,9 @@ fun avoid c path -> match kind_of_term c, path with
 	or_and_tree_to_intro_pattern (id2::avoid) cont_expr path in
       let patt_list = 
 	if a = 1 then
-	  [cont_patt; IntroIdentifier id2]
+	  [zz,cont_patt; zz,IntroIdentifier id2]
 	else
-	  [IntroIdentifier id2; cont_patt] in
+	  [zz,IntroIdentifier id2; zz,cont_patt] in
       	(IntroOrAndPattern[patt_list], avoid_names, id, c, path, rank, 
 	 total_branches)
   | (App(oper, [|c1; c2|]), 2::3::path)
@@ -268,7 +268,7 @@ fun avoid c path -> match kind_of_term c, path with
 	     let id1 = next_global_ident x avoid in
 	     let cont_patt, avoid_names, id, c, path, rank, total_branches =
 	       or_and_tree_to_intro_pattern (id1::avoid) body path in
-	     (IntroOrAndPattern[[IntroIdentifier id1; cont_patt]],
+	     (IntroOrAndPattern[[zz,IntroIdentifier id1; zz,cont_patt]],
 	      avoid_names, id, c, path, rank, total_branches)
 	 | _ -> assert false)
   | (App(oper, [|c1; c2|]), 2::a::path)
@@ -282,9 +282,9 @@ fun avoid c path -> match kind_of_term c, path with
       let new_rank = if a = 1 then rank else rank+1 in
       let patt_list =
 	if a = 1 then
-	  [[cont_patt];[IntroIdentifier id2]]
+	  [[zz,cont_patt];[zz,IntroIdentifier id2]]
 	else
-	  [[IntroIdentifier id2];[cont_patt]] in
+	  [[zz,IntroIdentifier id2];[zz,cont_patt]] in
 	(IntroOrAndPattern patt_list, 
 	 avoid_names, id, c, path, new_rank, total_branches+1)
   | (_, path) -> let id = next_global_ident hyp_radix avoid in
@@ -305,13 +305,13 @@ let (imply_intro3: pbp_rule) = function
       let intro_patt, avoid_names, id, c, p, rank, total_branches =
 	or_and_tree_to_intro_pattern avoid prem path in
 	if total_branches = 1 then
-	  Some(chain_tactics [PbpIntros [intro_patt]]
+	  Some(chain_tactics [PbpIntros [zz,intro_patt]]
 		 (f avoid_names clear_names clear_flag (Some id)
 		    (kind_of_term c) path))
 	else
 	  Some
 	    (PbpThens
-	       ([PbpIntros [intro_patt]],
+	       ([PbpIntros [zz,intro_patt]],
 	    	auxiliary_goals clear_names clear_flag id
 		  (rank - 1)
 		  ((f avoid_names clear_names clear_flag (Some id)
@@ -667,7 +667,7 @@ let rec cleanup_clears str_list = function
 
 let rec optim3_aux str_list = function
     (PbpGeneralize (h,l1))::
-    (PbpIntros [IntroIdentifier s])::(PbpGeneralize (h',l2))::others
+    (PbpIntros [zz,IntroIdentifier s])::(PbpGeneralize (h',l2))::others
       when s=h' ->
       optim3_aux (s::str_list) (PbpGeneralize (h,l1@l2)::others)
   | (PbpTryClear names)::other ->

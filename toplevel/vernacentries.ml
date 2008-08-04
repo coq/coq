@@ -1256,7 +1256,7 @@ let vernac_check_guard () =
 	pfterm; 
       (str "The condition holds up to here")
     with UserError(_,s) -> 
-      (str ("Condition violated : ") ++s)
+      (str ("Condition violated: ") ++s)
   in 
   msgnl message
 

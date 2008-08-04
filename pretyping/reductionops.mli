@@ -111,7 +111,6 @@ val whd_betadeltaiota_nolet_stack :  contextual_stack_reduction_function
 val whd_betaetalet_stack : local_stack_reduction_function
 val whd_betalet_stack : local_stack_reduction_function
 
-val whd_state : local_state_reduction_function
 val whd_beta_state : local_state_reduction_function
 val whd_betaiota_state : local_state_reduction_function
 val whd_betaiotazeta_state : local_state_reduction_function

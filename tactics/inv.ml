@@ -294,7 +294,7 @@ let rec tclMAP_i n tacfun = function
       if n=0 then error "Too much names."
       else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
 
-let remember_first_eq id x = if !x = None then x := Some id
+let remember_first_eq id x = if !x = no_move then x := MoveAfter id
 
 (* invariant: ProjectAndApply is responsible for erasing the clause
    which it is given as input
@@ -321,7 +321,7 @@ let projectAndApply thin id eqname names depids gls =
       [(if names <> [] then clear [id] else tclIDTAC);
        (tclMAP_i neqns (fun idopt ->
 	 tclTHEN
-	   (intro_move idopt None)
+	   (intro_move idopt no_move)
 	   (* try again to substitute and if still not a variable after *)
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
 	   (tclTRY (onLastHyp (substHypIfVariable (subst_hyp false)))))
@@ -350,7 +350,7 @@ let rewrite_equations_gene othin neqns ba gl =
                         (onLastHyp
                            (fun id ->
                               tclTRY 
-			        (projectAndApply thin id (ref None)
+			        (projectAndApply thin id (ref no_move)
 				  [] depids))));
                  onHyps (compose List.rev (afterHyp last)) bring_hyps;
                  onHyps (afterHyp last)
@@ -375,12 +375,12 @@ let rewrite_equations_gene othin neqns ba gl =
      None: the equations are introduced, but not rewritten
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
-let rec get_names allow_conj = function
-  | IntroWildcard _ ->
+let rec get_names allow_conj (loc,pat) = match pat with
+  | IntroWildcard ->
       error "Discarding pattern not allowed for inversion equations."
   | IntroAnonymous ->
       error "Anonymous pattern not allowed for inversion equations."
-  | IntroFresh _->
+  | IntroFresh _ ->
       error "Fresh pattern not allowed for inversion equations."
   | IntroRewrite _->
       error "Rewriting pattern not allowed for inversion equations."
@@ -404,7 +404,7 @@ let rewrite_equations othin neqns names ba gl =
   let names = List.map (get_names true) names in
   let (depids,nodepids) = split_dep_and_nodep ba.assums gl in
   let rewrite_eqns =
-    let first_eq = ref None in
+    let first_eq = ref no_move in
     match othin with
       | Some thin ->
           tclTHENSEQ
@@ -413,12 +413,12 @@ let rewrite_equations othin neqns names ba gl =
 	     tclMAP_i neqns (fun o ->
 	       let idopt,names = extract_eqn_names o in
                (tclTHEN
-		 (intro_move idopt None)
+		 (intro_move idopt no_move)
 		 (onLastHyp (fun id ->
 		   tclTRY (projectAndApply thin id first_eq names depids)))))
 	       names;
 	     tclMAP (fun (id,_,_) gl ->
-	       intro_move None (if thin then None else !first_eq) gl)
+	       intro_move None (if thin then no_move else !first_eq) gl)
 	       nodepids;
 	     tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids]
       | None -> tclIDTAC
@@ -524,15 +524,15 @@ open Tacexpr
 
 let inv k = inv_gen false k NoDep
 
-let half_inv_tac id  = inv SimpleInversion IntroAnonymous (NamedHyp id)
-let inv_tac id       = inv FullInversion IntroAnonymous (NamedHyp id)
-let inv_clear_tac id = inv FullInversionClear IntroAnonymous (NamedHyp id)
+let half_inv_tac id  = inv SimpleInversion None (NamedHyp id)
+let inv_tac id       = inv FullInversion None (NamedHyp id)
+let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
 
 let dinv k c = inv_gen false k (Dep c)
 
-let half_dinv_tac id  = dinv SimpleInversion None IntroAnonymous (NamedHyp id)
-let dinv_tac id       = dinv FullInversion None IntroAnonymous (NamedHyp id)
-let dinv_clear_tac id = dinv FullInversionClear None IntroAnonymous (NamedHyp id)
+let half_dinv_tac id  = dinv SimpleInversion None None (NamedHyp id)
+let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
+let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them

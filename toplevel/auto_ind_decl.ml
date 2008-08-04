@@ -55,6 +55,8 @@ let subst_in_constr (_,subst,(ind,const)) =
 exception EqNotFound of string 
 exception EqUnknown of string
 
+let dl = dummy_loc
+
 (* Some pre declaration of constant we are going to use *)
 let bb = constr_of_global Coqlib.glob_bool
 
@@ -514,13 +516,13 @@ let compute_bl_tact ind lnamesparrec nparrec  =
                      new_induct false [ (Tacexpr.ElimOnConstr ((mkVar freshn),
                                         Rawterm.NoBindings))]
                                 None
-                                Genarg.IntroAnonymous
+                                (None,None)
 		                None;
                      intro_using freshm;
                      new_destruct false [ (Tacexpr.ElimOnConstr ((mkVar freshm),
                                     Rawterm.NoBindings))]
                                 None
-                                Genarg.IntroAnonymous
+                                (None,None)
 		                None;
                      intro_using freshz;
                      intros;
@@ -542,9 +544,9 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                             (new_destruct false [Tacexpr.ElimOnConstr
                                       ((mkVar freshz,Rawterm.NoBindings))]
                                   None
-                                  ( Genarg.IntroOrAndPattern [[
-                                    Genarg.IntroIdentifier fresht;
-                                    Genarg.IntroIdentifier freshz]]) None) gl
+                                  (None, Some (dl,Genarg.IntroOrAndPattern [[
+                                    dl,Genarg.IntroIdentifier fresht;
+                                    dl,Genarg.IntroIdentifier freshz]])) None) gl
                         ]);
 (*
   Ci a1 ... an = Ci b1 ... bn 
@@ -632,13 +634,13 @@ let compute_lb_tact ind lnamesparrec nparrec =
                      new_induct false [Tacexpr.ElimOnConstr 
                                     ((mkVar freshn),Rawterm.NoBindings)] 
                                 None
-                                Genarg.IntroAnonymous
+                                (None,None)
 		                None;
                      intro_using freshm;
                      new_destruct false [Tacexpr.ElimOnConstr 
                                     ((mkVar freshm),Rawterm.NoBindings)]
                                 None
-                                Genarg.IntroAnonymous
+                                (None,None)
 		                None;
                      intro_using freshz;
                      intros;
@@ -746,7 +748,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
       Pfedit.by ( tclTHENSEQ [
                         intros_using fresh_first_intros;
                         intros_using [freshn;freshm];
-                        assert_as true (Genarg.IntroIdentifier freshH) (
+                        assert_as true (dl,Genarg.IntroIdentifier freshH) (
                     mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
                   ) ]); 
 (*we do this so we don't have to prove the same goal twice *)
@@ -754,7 +756,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
                    (new_destruct false [Tacexpr.ElimOnConstr
                                   (eqbnm,Rawterm.NoBindings)]
                                 None
-                                Genarg.IntroAnonymous
+                                (None,None)
 		                None)
                   Auto.default_auto
                 );
@@ -764,9 +766,9 @@ let compute_dec_tact ind lnamesparrec nparrec =
                     new_destruct false [Tacexpr.ElimOnConstr 
                                     ((mkVar freshH),Rawterm.NoBindings)] 
                                 None
-                                (Genarg.IntroOrAndPattern [
-                                    [Genarg.IntroAnonymous];
-                                    [Genarg.IntroIdentifier freshH2]]) None
+                                (None,Some (dl,Genarg.IntroOrAndPattern [
+                                    [dl,Genarg.IntroAnonymous];
+                                    [dl,Genarg.IntroIdentifier freshH2]])) None
       );
       let arfresh = Array.of_list fresh_first_intros in
         let xargs = Array.sub arfresh 0 (2*nparrec) in
@@ -793,7 +795,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
                       unfold_constr (Lazy.force Coqlib.coq_not_ref);
                       intro;
                       Equality.subst_all;
-                assert_as true (Genarg.IntroIdentifier freshH3) 
+                assert_as true (dl,Genarg.IntroIdentifier freshH3) 
                 (mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|]))
           ]);
           Pfedit.by 

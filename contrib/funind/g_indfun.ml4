@@ -90,11 +90,6 @@ END
 TACTIC EXTEND newfunind
    ["functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] -> 
      [ 
-       let pat = 
-	 match pat with 
-	   | None -> IntroAnonymous
-	   | Some pat -> pat
-       in
        let c = match cl with 
 	 | [] -> assert false
 	 | [c] -> c 
@@ -106,11 +101,6 @@ END
 TACTIC EXTEND snewfunind
    ["soft" "functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] -> 
      [ 
-       let pat = 
-	 match pat with 
-	   | None -> IntroAnonymous
-	   | Some pat -> pat
-       in
        let c = match cl with 
 	 | [] -> assert false
 	 | [c] -> c 
@@ -319,7 +309,7 @@ let poseq_unsafe idunsafe cstr gl =
   tclTHEN
     (Tactics.letin_tac None (Name idunsafe) cstr allClauses)
     (tclTHENFIRST 
-      (Tactics.assert_as true IntroAnonymous (mkEq typ (mkVar idunsafe) cstr)) 
+      (Tactics.assert_as true (Util.dummy_loc,IntroAnonymous) (mkEq typ (mkVar idunsafe) cstr)) 
       Tactics.reflexivity)
     gl
   
@@ -396,7 +386,7 @@ let finduction (oid:identifier option) (heuristic: fapp_info list -> fapp_info l
 	      fun gl -> 
 		  (functional_induction 
 		    true (applist (info.fname, List.rev !list_constr_largs)) 
-		    None IntroAnonymous) gl)) 
+		    None None) gl)) 
 	  nexttac)) ordered_info_list in
   (* we try each (f t u v) until one does not fail *)
   (* TODO: try also to mix functional schemes *)

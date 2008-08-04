@@ -1157,7 +1157,7 @@ let rec introduce_all_values_eq cont_tac functional termine
       [] ->
        let heq2 = next_global_ident_away true heq_id ids in
 	tclTHENLIST
-	  [forward None (IntroIdentifier heq2)
+	  [forward None (dummy_loc,IntroIdentifier heq2)
              (mkApp(mkVar heq1, [|f_S(f_S(mkVar pmax))|]));
            simpl_iter (onHyp heq2);
            unfold_in_hyp [((true,[1]), evaluable_of_global_reference 

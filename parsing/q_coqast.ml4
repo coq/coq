@@ -71,7 +71,7 @@ let mlexpr_of_by_notation f = function
   | Genarg.ByNotation (loc,s) -> <:expr< Genarg.ByNotation $dloc$ $str:s$ >>
 
 let mlexpr_of_intro_pattern = function
-  | Genarg.IntroWildcard loc -> <:expr< Genarg.IntroWildcard $mlexpr_of_loc loc$ >>
+  | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
   | Genarg.IntroAnonymous -> <:expr< Genarg.IntroAnonymous >>
   | Genarg.IntroFresh id -> <:expr< Genarg.IntroFresh (mlexpr_of_ident $dloc$ id) >>
   | Genarg.IntroIdentifier id ->
@@ -242,6 +242,11 @@ let mlexpr_of_binding = mlexpr_of_pair mlexpr_of_binding_kind mlexpr_of_constr
 let mlexpr_of_constr_with_binding =
   mlexpr_of_pair mlexpr_of_constr mlexpr_of_binding_kind
 
+let mlexpr_of_move_location f = function
+  | Tacexpr.MoveAfter id -> <:expr< Tacexpr.MoveAfter $f id$ >>
+  | Tacexpr.MoveBefore id -> <:expr< Tacexpr.MoveBefore $f id$ >>
+  | Tacexpr.MoveToEnd b -> <:expr< Tacexpr.MoveToEnd $mlexpr_of_bool b$ >>
+
 let mlexpr_of_induction_arg = function
   | Tacexpr.ElimOnConstr c ->
       <:expr< Tacexpr.ElimOnConstr $mlexpr_of_constr_with_binding c$ >>
@@ -282,13 +287,13 @@ let mlexpr_of_message_token = function
 let rec mlexpr_of_atomic_tactic = function
   (* Basic tactics *)
   | Tacexpr.TacIntroPattern pl ->
-      let pl = mlexpr_of_list mlexpr_of_intro_pattern pl in
+      let pl = mlexpr_of_list (mlexpr_of_located mlexpr_of_intro_pattern) pl in
       <:expr< Tacexpr.TacIntroPattern $pl$ >>
   | Tacexpr.TacIntrosUntil h ->
       <:expr< Tacexpr.TacIntrosUntil $mlexpr_of_quantified_hypothesis h$ >>
   | Tacexpr.TacIntroMove (idopt,idopt') ->
       let idopt = mlexpr_of_ident_option idopt in
-      let idopt'=mlexpr_of_option (mlexpr_of_located mlexpr_of_ident) idopt' in
+      let idopt'= mlexpr_of_move_location mlexpr_of_hyp idopt' in
       <:expr< Tacexpr.TacIntroMove $idopt$ $idopt'$ >>
   | Tacexpr.TacAssumption ->
       <:expr< Tacexpr.TacAssumption >>
@@ -299,7 +304,7 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacVmCastNoCheck c ->
       <:expr< Tacexpr.TacVmCastNoCheck $mlexpr_of_constr c$ >>
   | Tacexpr.TacApply (b,false,cb) ->
-      <:expr< Tacexpr.TacApply $mlexpr_of_bool b$ False $mlexpr_of_constr_with_binding cb$ >>
+      <:expr< Tacexpr.TacApply $mlexpr_of_bool b$ False $mlexpr_of_list mlexpr_of_constr_with_binding cb$ >>
   | Tacexpr.TacElim (false,cb,cbo) ->
       let cb = mlexpr_of_constr_with_binding cb in
       let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
@@ -335,7 +340,7 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacCut c ->
       <:expr< Tacexpr.TacCut $mlexpr_of_constr c$ >>
   | Tacexpr.TacAssert (t,ipat,c) ->
-      let ipat = mlexpr_of_intro_pattern ipat in
+      let ipat = mlexpr_of_located mlexpr_of_intro_pattern ipat in
       <:expr< Tacexpr.TacAssert $mlexpr_of_option mlexpr_of_tactic t$ $ipat$ 
 	      $mlexpr_of_constr c$ >>
   | Tacexpr.TacGeneralize cl ->
@@ -351,18 +356,18 @@ let rec mlexpr_of_atomic_tactic = function
 	      $mlexpr_of_bool b$ >>
 
   (* Derived basic tactics *)
-  | Tacexpr.TacSimpleInduction h ->
-      <:expr< Tacexpr.TacSimpleInduction ($mlexpr_of_quantified_hypothesis h$) >>
-  | Tacexpr.TacNewInduction (false,cl,cbo,ids,cls) ->
-      let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
-      let ids = mlexpr_of_intro_pattern ids in
-      <:expr< Tacexpr.TacNewInduction False $mlexpr_of_list mlexpr_of_induction_arg cl$ $cbo$ $ids$ $mlexpr_of_option mlexpr_of_clause cls$ >>
-  | Tacexpr.TacSimpleDestruct h ->
-      <:expr< Tacexpr.TacSimpleDestruct $mlexpr_of_quantified_hypothesis h$ >>
-  | Tacexpr.TacNewDestruct (false,c,cbo,ids,cls) ->
-      let cbo = mlexpr_of_option mlexpr_of_constr_with_binding cbo in
-      let ids = mlexpr_of_intro_pattern ids in
-      <:expr< Tacexpr.TacNewDestruct False $mlexpr_of_list mlexpr_of_induction_arg c$ $cbo$ $ids$ $mlexpr_of_option mlexpr_of_clause cls$ >>
+  | Tacexpr.TacSimpleInductionDestruct (isrec,h) ->
+      <:expr< Tacexpr.TacSimpleInductionDestruct $mlexpr_of_bool isrec$
+                  $mlexpr_of_quantified_hypothesis h$ >>
+  | Tacexpr.TacInductionDestruct (isrec,ev,l) ->
+      <:expr< Tacexpr.TacInductionDestruct $mlexpr_of_bool isrec$ $mlexpr_of_bool ev$ 
+	$mlexpr_of_list (mlexpr_of_quadruple 
+	  (mlexpr_of_list mlexpr_of_induction_arg)
+	  (mlexpr_of_option mlexpr_of_constr_with_binding)
+	  (mlexpr_of_pair
+	    (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern))
+	    (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern)))
+	  (mlexpr_of_option mlexpr_of_clause)) l$ >>
 
   (* Context management *)
   | Tacexpr.TacClear (b,l) ->
@@ -374,7 +379,7 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacMove (dep,id1,id2) ->
       <:expr< Tacexpr.TacMove $mlexpr_of_bool dep$
               $mlexpr_of_hyp id1$
-              $mlexpr_of_hyp id2$ >>
+              $mlexpr_of_move_location mlexpr_of_hyp id2$ >>
 
   (* Constructors *)
   | Tacexpr.TacLeft (ev,l) ->

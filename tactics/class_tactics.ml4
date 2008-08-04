@@ -1075,7 +1075,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 		| None -> 
 		    let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
 		      tclTHENLAST
-			(Tacmach.internal_cut_no_check name newt)
+			(Tacmach.internal_cut_no_check false name newt)
 			(tclTHEN (Tactics.revert [name]) (Tactics.refine p))
 		| Some (t, ty) -> 
 		    Tactics.refine

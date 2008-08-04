@@ -100,6 +100,8 @@ val sig_sig : 'a sigma -> evar_map
 (*********************************************************************)
 (* Meta map *)
 
+module Metamap : Map.S with type key = metavariable
+
 module Metaset : Set.S with type elt = metavariable
 
 val meta_exists : (metavariable -> bool) -> Metaset.t -> bool
@@ -197,6 +199,7 @@ val extract_all_conv_pbs : evar_defs -> evar_defs * evar_constraint list
 
 
 (* Metas *)
+val find_meta : evar_defs -> metavariable -> clbinding
 val meta_list : evar_defs -> (metavariable * clbinding) list
 val meta_defined : evar_defs -> metavariable -> bool
 (* [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if

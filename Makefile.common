@@ -46,8 +46,6 @@ COQBINARIES:= $(COQMKTOP) $(COQC) \
 endif
 OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
-MINICOQ:=bin/minicoq$(EXE)
-
 CSDPCERT:=bin/csdpcert$(EXE)
 
 ###########################################################################
@@ -123,8 +121,8 @@ CONFIG:=\
   config/coq_config.cmo
 
 LIBREP:=\
-  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
-  lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/flags.cmo \
+  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
+  lib/util.cmo lib/bigint.cmo lib/hashcons.cmo lib/dyn.cmo lib/system.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
   lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo
@@ -411,8 +409,8 @@ COQDOCCMO:=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
 MCHECKER:=\
   config/coq_config.cmo \
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo \
-  lib/util.cmo lib/option.cmo lib/hashcons.cmo \
-  lib/system.cmo lib/flags.cmo \
+  lib/flags.cmo lib/util.cmo lib/option.cmo lib/hashcons.cmo \
+  lib/system.cmo \
   lib/predicate.cmo lib/rtree.cmo \
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo checker/term.cmo \
@@ -426,17 +424,11 @@ MCHECKER:=\
   checker/safe_typing.cmo checker/check.cmo \
   checker/check_stat.cmo checker/checker.cmo
 
-# minicoq
-
-MINICOQCMO:=$(CONFIG) $(LIBREP) $(KERNEL) \
-	   parsing/lexer.cmo parsing/g_minicoq.cmo \
-	   toplevel/fhimsg.cmo toplevel/minicoq.cmo
-
 # grammar modules with camlp4
 
 GRAMMARNEEDEDCMO:=\
-  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
-  lib/dyn.cmo lib/flags.cmo lib/hashcons.cmo lib/predicate.cmo \
+  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
+  lib/util.cmo lib/bigint.cmo lib/dyn.cmo lib/hashcons.cmo lib/predicate.cmo \
   lib/rtree.cmo lib/option.cmo \
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
@@ -511,9 +503,9 @@ PRINTERSCMO:=\
   parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
   interp/topconstr.cmo interp/notation.cmo  interp/dumpglob.cmo interp/reserve.cmo		\
   library/impargs.cmo interp/constrextern.cmo \
-  interp/syntax_def.cmo interp/implicit_quantifiers.cmo  interp/constrintern.cmo \
-  proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
-  proofs/tacexpr.cmo \
+  interp/syntax_def.cmo interp/implicit_quantifiers.cmo \
+  interp/constrintern.cmo proofs/proof_trees.cmo proofs/tacexpr.cmo \
+  proofs/proof_type.cmo proofs/logic.cmo proofs/refiner.cmo \
   proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \
   proofs/decl_mode.cmo \
   parsing/ppconstr.cmo parsing/extend.cmo parsing/pcoq.cmo \
@@ -871,7 +863,7 @@ STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   interp parsing pretyping highparsing toplevel hightactics \
   coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \
   pcoq-binaries $(COQINTERFACE) $(CSDPCERT) coqbinaries pcoq $(TOOLS) tools \
-  printers $(MINICOQ) debug
+  printers debug
 VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   fsets allfsets relations wellfounded ints reals allreals \
   setoids sorting natural integer rational numbers noreal \

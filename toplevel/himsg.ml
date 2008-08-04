@@ -424,12 +424,9 @@ let explain_cannot_unify_binding_type env m n =
   str "which should be unifiable with" ++ brk(1,1) ++ pn ++ str "."
 
 let explain_cannot_find_well_typed_abstraction env p l =
-  let la,lc = list_chop (List.length l - 1) l in
   str "Abstracting over the " ++
   str (plural (List.length l) "term") ++ spc () ++ 
-  hov 0 (prlist_with_sep pr_coma (pr_lconstr_env env) la ++
-         (if la<>[] then str " and" ++ spc () else mt()) ++ 
-         pr_lconstr_env env (List.hd lc)) ++ spc () ++
+  hov 0 (pr_enum (pr_lconstr_env env) l) ++ spc () ++
   str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++ 
   str "which is ill-typed."
 
@@ -561,7 +558,7 @@ let explain_refiner_unresolved_bindings l =
   prlist_with_sep pr_coma pr_name l ++ str"."
 
 let explain_refiner_cannot_apply t harg =
-  str "In refiner, a term of type " ++ brk(1,1) ++
+  str "In refiner, a term of type" ++ brk(1,1) ++
   pr_lconstr t ++ spc () ++ str "could not be applied to" ++ brk(1,1) ++
   pr_lconstr harg ++ str "."
 
@@ -784,3 +781,40 @@ let explain_reduction_tactic_error = function
       str "The abstracted term" ++ spc () ++ pr_lconstr_env_at_top env c ++
       spc () ++ str "is not well typed." ++ fnl () ++
       explain_type_error env' e
+
+let explain_ltac_call_trace (last,trace,loc) =
+  let calls = last :: List.rev (List.map snd trace) in
+  let pr_call = function
+  | Proof_type.LtacNotationCall s -> quote (str s)
+  | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
+  | Proof_type.LtacVarCall (id,t) ->
+      quote (Nameops.pr_id id) ++ strbrk " (bound to " ++ 
+      Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
+  | Proof_type.LtacAtomCall (te,otac) -> quote
+      (Pptactic.pr_glob_tactic (Global.env())
+	(Tacexpr.TacAtom (dummy_loc,te)))
+      ++ (match !otac with
+      | Some te' when (Obj.magic te' <> te) ->
+	  strbrk " (expanded to " ++ quote
+	  (Pptactic.pr_tactic (Global.env())
+	    (Tacexpr.TacAtom (dummy_loc,te')))
+	++ str ")"
+      | _ -> mt ())
+  | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
+      let filter =
+	function (id,None) -> None | (id,Some id') -> Some(id,mkVar id') in
+      let unboundvars = list_map_filter filter unboundvars in
+      quote (pr_rawconstr_env (Global.env()) c) ++
+      (if unboundvars <> [] or vars <> [] then
+	strbrk " (with " ++ prlist_with_sep pr_coma (fun (id,c) -> 
+	pr_id id ++ str ":=" ++ Printer.pr_lconstr c)
+	  (List.rev vars @ unboundvars)
+       else mt()) ++ str ")" in
+  if calls <> [] then
+    let kind_of_last_call = match list_last calls with
+    | Proof_type.LtacConstrInterp _ -> ", last term evaluation failed."
+    | _ -> ", last call failed." in
+    hov 0 (str "In nested Ltac calls to " ++ 
+           pr_enum pr_call calls ++ strbrk kind_of_last_call)
+  else
+    mt ()

@@ -615,8 +615,7 @@ let get_flag r =
   (* Rem: EVAR flag obsolète *)
   conv_flags, red_ids
 
-let rec xlate_intro_pattern =
- function
+let rec xlate_intro_pattern (loc,pat) = match pat with
   | IntroOrAndPattern [] -> assert false
   | IntroOrAndPattern (fp::ll) ->
       CT_disj_pattern
@@ -625,7 +624,7 @@ let rec xlate_intro_pattern =
 	   (fun l ->
 	      CT_intro_patt_list(List.map xlate_intro_pattern l))
 	   ll)
-  | IntroWildcard _ -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
+  | IntroWildcard -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
   | IntroAnonymous -> xlate_error "TODO: IntroAnonymous"
   | IntroFresh _ -> xlate_error "TODO: IntroFresh"
@@ -686,8 +685,8 @@ let xlate_one_unfold_block = function
 ;;
 
 let xlate_with_names = function
-    IntroAnonymous -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
-  | fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
+    None -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
+  | Some fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
 
 let rawwit_main_tactic = Pcoq.rawwit_tactic Pcoq.tactic_main_level
 
@@ -972,19 +971,22 @@ and xlate_tac =
 	CT_intros_until (CT_coerce_ID_to_ID_OR_INT (xlate_ident id))
     | TacIntrosUntil (AnonHyp n) -> 
 	CT_intros_until (CT_coerce_INT_to_ID_OR_INT (CT_int n))
-    | TacIntroMove (Some id1, Some (_,id2)) ->
-     CT_intro_after(CT_coerce_ID_to_ID_OPT (xlate_ident id1),xlate_ident id2)
-    | TacIntroMove (None, Some (_,id2)) ->
-	CT_intro_after(CT_coerce_NONE_to_ID_OPT CT_none, xlate_ident id2)
-    | TacMove (true, id1, id2) ->
+    | TacIntroMove (Some id1, MoveAfter id2) ->
+     CT_intro_after(CT_coerce_ID_to_ID_OPT (xlate_ident id1),xlate_hyp id2)
+    | TacIntroMove (None, MoveAfter id2) ->
+	CT_intro_after(CT_coerce_NONE_to_ID_OPT CT_none, xlate_hyp id2)
+    | TacMove (true, id1, MoveAfter id2) ->
 	CT_move_after(xlate_hyp id1, xlate_hyp id2)
     | TacMove (false, id1, id2) -> xlate_error "Non dep Move is only internal"
+    | TacMove _ -> xlate_error "TODO: move before, at top, at bottom"
     | TacIntroPattern patt_list ->
 	CT_intros
 	  (CT_intro_patt_list (List.map xlate_intro_pattern patt_list))
-    | TacIntroMove (Some id, None) ->
+    | TacIntroMove (Some id, MoveToEnd true) ->
      CT_intros (CT_intro_patt_list[CT_coerce_ID_to_INTRO_PATT(xlate_ident id)])
-    | TacIntroMove (None, None) ->  CT_intro (CT_coerce_NONE_to_ID_OPT CT_none)
+    | TacIntroMove (None, MoveToEnd true) ->
+	CT_intro (CT_coerce_NONE_to_ID_OPT CT_none)
+    | TacIntroMove _ -> xlate_error "TODO"
     | TacLeft (false,bindl) -> CT_left (xlate_bindings bindl)
     | TacRight (false,bindl) -> CT_right (xlate_bindings bindl)
     | TacSplit (false,false,bindl) -> CT_split (xlate_bindings bindl)
@@ -1155,11 +1157,12 @@ and xlate_tac =
 	xlate_error "TODO: trivial using"
     | TacReduce (red, l) ->
      CT_reduce (xlate_red_tactic red, xlate_clause l)
-    | TacApply (true,false,(c,bindl)) ->
+    | TacApply (true,false,[c,bindl]) ->
      CT_apply (xlate_formula c, xlate_bindings bindl)
-    | TacApply (true,true,(c,bindl)) ->
+    | TacApply (true,true,[c,bindl]) ->
      CT_eapply (xlate_formula c, xlate_bindings bindl)
-    | TacApply (false,_,_) -> xlate_error "TODO: simple (e)apply"
+    | TacApply (_,_,_) ->
+	xlate_error "TODO: simple (e)apply and iterated apply"
     | TacConstructor (false,n_or_meta, bindl) ->
 	let n = match n_or_meta with AI n -> n | MetaId _ -> xlate_error ""
 	in CT_constructor (CT_int n, xlate_bindings bindl)
@@ -1183,10 +1186,12 @@ and xlate_tac =
     | TacCase (false,(c1,sl)) ->
      CT_casetac (xlate_formula c1, xlate_bindings sl)
     | TacElim (true,_,_) | TacCase (true,_)
-    | TacNewDestruct (true,_,_,_,_) | TacNewInduction (true,_,_,_,_) ->
+    | TacInductionDestruct (_,true,_) ->
 	xlate_error "TODO: eelim, ecase, edestruct, einduction"
-    | TacSimpleInduction h -> CT_induction (xlate_quantified_hypothesis h)
-    | TacSimpleDestruct h -> CT_destruct (xlate_quantified_hypothesis h)
+    | TacSimpleInductionDestruct (true,h) ->
+	CT_induction (xlate_quantified_hypothesis h)
+    | TacSimpleInductionDestruct (false,h) ->
+	CT_destruct (xlate_quantified_hypothesis h)
     | TacCut c -> CT_cut (xlate_formula c)
     | TacLApply c -> CT_use (xlate_formula c)
     | TacDecompose ([],c) ->
@@ -1227,19 +1232,16 @@ and xlate_tac =
 	CT_dauto(xlate_int_or_var_opt_to_int_opt a, xlate_int_opt b)
     | TacDAuto (a, b, _) ->
 	xlate_error "TODO: dauto using"
-    | TacNewDestruct(false,a,b,c,None) ->
+    | TacInductionDestruct(true,false,[a,b,(None,c),None]) ->
 	CT_new_destruct
 	  (List.map  xlate_int_or_constr a, xlate_using b, 
 	   xlate_with_names c)
-    | TacNewInduction(false,a,b,c,None) ->
+    | TacInductionDestruct(false,false,[a,b,(None,c),None]) ->
 	CT_new_induction
 	  (List.map xlate_int_or_constr a, xlate_using b,
 	   xlate_with_names c)
-    | TacNewDestruct(false,a,b,c,_) -> xlate_error "TODO: destruct in"
-    | TacNewInduction(false,a,b,c,_) ->xlate_error "TODO: induction in"
-    (*| TacInstantiate (a, b, cl) -> 
-        CT_instantiate(CT_int a, xlate_formula b,
-		       assert false) *)
+    | TacInductionDestruct(_,false,_) -> 
+	xlate_error "TODO: clause 'in' and full 'as' of destruct/induction"
     | TacLetTac (na, c, cl, true) when cl = nowhere -> 
         CT_pose(xlate_id_opt_aux na, xlate_formula c)
     | TacLetTac (na, c, cl, true) ->
@@ -1248,13 +1250,13 @@ and xlate_tac =
 		     but the structures are different *)
 		  xlate_clause cl)
     | TacLetTac (na, c, cl, false) -> xlate_error "TODO: remember"
-    | TacAssert (None, IntroIdentifier id, c) -> 
+    | TacAssert (None, (_,IntroIdentifier id), c) -> 
         CT_assert(xlate_id_opt ((0,0),Name id), xlate_formula c)
-    | TacAssert (None, IntroAnonymous, c) -> 
+    | TacAssert (None, (_,IntroAnonymous), c) -> 
         CT_assert(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
-    | TacAssert (Some (TacId []), IntroIdentifier id, c) -> 
+    | TacAssert (Some (TacId []), (_,IntroIdentifier id), c) -> 
         CT_truecut(xlate_id_opt ((0,0),Name id), xlate_formula c)
-    | TacAssert (Some (TacId []), IntroAnonymous, c) -> 
+    | TacAssert (Some (TacId []), (_,IntroAnonymous), c) -> 
         CT_truecut(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
     | TacAssert _ ->
 	xlate_error "TODO: assert with 'as' and 'by' and pose proof with 'as'"

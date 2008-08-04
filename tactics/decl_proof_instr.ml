@@ -106,6 +106,9 @@ let clean_tmp gls =
   in
     clean_all (tmp_ids gls) gls
 
+let assert_postpone id t =
+  assert_as true (dummy_loc, Genarg.IntroIdentifier id) t
+
 (* start a proof *)
 
 let start_proof_tac gls=
@@ -524,7 +527,7 @@ let instr_cut mkstat _thus _then cut gls0 =
     if _thus then 
       thus_tac (mkVar c_id) c_stat [] gls
     else tclIDTAC gls in
-    tclTHENS (internal_cut c_id c_stat) 
+    tclTHENS (assert_postpone c_id c_stat) 
       [tclTHEN tcl_erase_info (just_tac _then cut info);
        thus_tac] gls0
 
@@ -572,14 +575,14 @@ let instr_rew _thus rew_side cut gls0 =
     match rew_side with 
 	Lhs ->
 	  let new_eq = mkApp(_eq,[|typ;cut.cut_stat.st_it;rhs|]) in
-	    tclTHENS (internal_cut c_id new_eq) 
+	    tclTHENS (assert_postpone c_id new_eq) 
 	      [tclTHEN tcl_erase_info 
 		 (tclTHENS (transitivity lhs) 
 		    [just_tac;exact_check (mkVar last_id)]);
 	       thus_tac new_eq] gls0
       | Rhs ->
 	  let new_eq = mkApp(_eq,[|typ;lhs;cut.cut_stat.st_it|]) in
-	    tclTHENS (internal_cut c_id new_eq) 
+	    tclTHENS (assert_postpone c_id new_eq) 
 	      [tclTHEN tcl_erase_info 
 		 (tclTHENS (transitivity rhs) 
 		    [exact_check (mkVar last_id);just_tac]);
@@ -600,7 +603,7 @@ let instr_claim _thus st gls0 =
     else tclIDTAC gls in
   let ninfo1 = {pm_stack=
       (if _thus then Focus_claim else Claim)::info.pm_stack} in
-    tclTHENS (internal_cut id st.st_it) 
+    tclTHENS (assert_postpone id st.st_it) 
       [tcl_change_info ninfo1;
        thus_tac] gls0
 
@@ -691,7 +694,7 @@ let instr_suffices _then cut gls0 =
   let c_term = applist (mkVar c_id,List.map mkMeta metas) in  
   let thus_tac gls= 
     thus_tac c_term c_head c_ctx gls in
-   tclTHENS (internal_cut c_id c_stat) 
+   tclTHENS (assert_postpone c_id c_stat) 
      [tclTHENLIST 
 	 [ assume_tac ctx;   
 	   tcl_erase_info;
@@ -777,7 +780,7 @@ let consider_tac c hyps gls =
     | _ -> 
 	let id = pf_get_new_id (id_of_string "_tmp") gls in
 	tclTHEN 
-	  (forward None (Genarg.IntroIdentifier id) c)
+	  (forward None (dummy_loc, Genarg.IntroIdentifier id) c)
  	  (consider_match false [] [id] hyps) gls 
 	  
 
@@ -955,7 +958,7 @@ let suppose_tac hyps gls0 =
   let ninfo1 = {pm_stack=Suppose_case::info.pm_stack} in
   let old_clauses,stack = register_nodep_subcase id info.pm_stack in
   let ninfo2 = {pm_stack=stack} in
-    tclTHENS (internal_cut id clause) 
+    tclTHENS (assert_postpone id clause) 
       [tclTHENLIST [tcl_change_info ninfo1;
 		    assume_tac hyps;
 		    clear old_clauses];
@@ -1161,7 +1164,7 @@ let case_tac params pat_info hyps gls0 =
     register_dep_subcase (id,List.length hyps) (pf_env gls0) per_info 
       pat_info.pat_pat ek in  
   let ninfo2 = {pm_stack=Per(et,per_info,nek,id::old_clauses)::rest} in
-    tclTHENS (internal_cut id clause) 
+    tclTHENS (assert_postpone id clause) 
       [tclTHENLIST 
 	 [tcl_change_info ninfo1; 
 	  assume_st (params@pat_info.pat_vars);

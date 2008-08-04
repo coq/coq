@@ -270,19 +270,28 @@ type branch_args = {
   nassums    : int;         (* the number of assumptions to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=recursive argument, false=constant *)
-  branchnames : intro_pattern_expr list}
+  branchnames : intro_pattern_expr located list}
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
   assums    : named_context}   (* the list of assumptions introduced *)
 
+let check_or_and_pattern_size loc names n =
+  if List.length names <> n then
+    if n = 1 then 
+      user_err_loc (loc,"",str "Expects a conjunctive pattern.")
+    else 
+      user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n 
+	++ str " branches.")
+
 let compute_induction_names n = function
-  | IntroAnonymous ->
+  | None ->
       Array.make n []
-  | IntroOrAndPattern names when List.length names = n ->
+  | Some (loc,IntroOrAndPattern names) ->
+      check_or_and_pattern_size loc names n;
       Array.of_list names
   | _ ->
-      errorlabstrm "" (str "Expects " ++ int n ++ str " lists of names.")
+      error "Unexpected introduction pattern."
 
 let compute_construtor_signatures isrec (_,k as ity) =
   let rec analrec c recargs =
@@ -393,7 +402,7 @@ let elimination_then_using tac predicate bindings c gl =
   let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let indclause  = mk_clenv_from gl (c,t) in
   general_elim_then_using gl_make_elim
-    true IntroAnonymous tac predicate bindings ind indclause gl
+    true None tac predicate bindings ind indclause gl
 
 let case_then_using =
   general_elim_then_using gl_make_case_dep false
