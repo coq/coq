@@ -1052,6 +1052,8 @@ let retrieve_first_recthm = function
               (Option.map Declarations.force body,opaq)
           | _ -> assert false
 
+let default_thm_id = id_of_string "Unnamed_thm"
+
 let compute_proof_name = function
   | Some (loc,id) ->
       (* We check existence here: it's a bit late at Qed time *)
@@ -1059,8 +1061,12 @@ let compute_proof_name = function
         user_err_loc (loc,"",pr_id id ++ str " already exists.");
       id
   | None ->
-      next_global_ident_away false (id_of_string "Unnamed_thm")
- 	(Pfedit.get_all_proof_names ())
+      let rec next avoid id =
+        let id = next_global_ident_away false id avoid in
+        if Nametab.exists_cci (Lib.make_path id) then next (id::avoid) id 
+        else id
+      in
+      next (Pfedit.get_all_proof_names ()) default_thm_id
 
 let save_remaining_recthms (local,kind) body opaq i (id,(t_i,imps)) =
   match body with
