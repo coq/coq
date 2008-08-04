@@ -550,6 +550,11 @@ let subst_large_constraint u u' v =
 let subst_large_constraints =
   List.fold_right (fun (u,u') -> subst_large_constraint u u')
 
+let no_upper_constraints u cst =
+  match u with
+  | Atom u -> Constraint.for_all (fun (u1,_,_) -> u1 <> u) cst
+  | Max _ -> anomaly "no_upper_constraints"
+
 (* Pretty-printing *)
 
 let num_universes g =

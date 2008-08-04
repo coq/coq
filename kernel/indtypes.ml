@@ -254,10 +254,13 @@ let typecheck_inductive env mie =
     array_fold_map2' (fun ((id,full_arity,ar_level),cn,info,lc,_) lev cst ->
       let sign, s = dest_arity env full_arity in
       let status,cst = match s with
-      | Type _ when ar_level <> None (* Explicitly polymorphic *) ->
+      | Type u when ar_level <> None (* Explicitly polymorphic *) 
+            && no_upper_constraints u cst ->
 	  (* The polymorphic level is a function of the level of the *)
 	  (* conclusions of the parameters *)
-	  Inr (param_ccls, lev), cst
+          (* We enforce [u >= lev] in case [lev] has a strict upper *)
+          (* constraints over [u] *)
+	  Inr (param_ccls, lev), enforce_geq u lev cst
       | Type u (* Not an explicit occurrence of Type *) ->
 	  Inl (info,full_arity,s), enforce_geq u lev cst
       | Prop Pos when engagement env <> Some ImpredicativeSet ->

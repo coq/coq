@@ -827,6 +827,7 @@ let interp_recursive fixkind l boxed =
     List.split (List.map (interp_fix_context evdref env) fixl) in
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
+  let fixtypes = List.map (nf_evar (evars_of !evdref)) fixtypes in
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)

@@ -392,7 +392,7 @@ let explain_cannot_unify env m n =
   let pm = pr_lconstr_env env m in
   let pn = pr_lconstr_env env n in
   str "Impossible to unify" ++ brk(1,1) ++ pm ++ spc () ++
-  str "with" ++ brk(1,1) ++ pn
+  str "with" ++ brk(1,1) ++ pn ++ str "."
 
 let explain_cannot_unify_local env m n subn =
   let pm = pr_lconstr_env env m in
@@ -400,24 +400,24 @@ let explain_cannot_unify_local env m n subn =
   let psubn = pr_lconstr_env env subn in
     str "Impossible to unify" ++ brk(1,1) ++ pm ++ spc () ++
       str "with" ++ brk(1,1) ++ pn ++ spc () ++ str "as" ++ brk(1,1) ++
-      psubn ++ str " contains local variables"
+      psubn ++ str " contains local variables."
 
 let explain_refiner_cannot_generalize env ty =
   str "Cannot find a well-typed generalisation of the goal with type: " ++
-  pr_lconstr_env env ty
+  pr_lconstr_env env ty ++ str "."
 
 let explain_no_occurrence_found env c id =
   str "Found no subterm matching " ++ pr_lconstr_env env c ++
   str " in " ++ 
     (match id with
       | Some id -> pr_id id
-      | None -> str"the current goal")
+      | None -> str"the current goal") ++ str "."
 
 let explain_cannot_unify_binding_type env m n =
   let pm = pr_lconstr_env env m in
   let pn = pr_lconstr_env env n in
   str "This binding has type" ++ brk(1,1) ++ pm ++ spc () ++
-  str "which should be unifiable with" ++ brk(1,1) ++ pn
+  str "which should be unifiable with" ++ brk(1,1) ++ pn ++ str "."
 
 let explain_cannot_find_well_typed_abstraction env p l =
   let la,lc = list_chop (List.length l - 1) l in
@@ -427,7 +427,7 @@ let explain_cannot_find_well_typed_abstraction env p l =
          (if la<>[] then str " and" ++ spc () else mt()) ++ 
          pr_lconstr_env env (List.hd lc)) ++ spc () ++
   str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++ 
-  str "which is ill-typed"
+  str "which is ill-typed."
 
 let explain_type_error env err =
   let env = make_all_name_different env in
@@ -487,11 +487,11 @@ let explain_pretype_error env err =
 (* Typeclass errors *)
 
 let explain_not_a_class env c =
-  pr_constr_env env c ++ str" is not a declared type class"
+  pr_constr_env env c ++ str" is not a declared type class."
 
 let explain_unbound_method env cid id =
   str "Unbound method name " ++ Nameops.pr_id (snd id) ++ spc () ++ str"of class" ++ spc () ++ 
-    pr_global cid
+    pr_global cid ++ str "."
 
 let pr_constr_exprs exprs = 
   hv 0 (List.fold_right 
@@ -549,21 +549,20 @@ let explain_refiner_bad_type arg ty conclty =
   str "Refiner was given an argument" ++ brk(1,1) ++
   pr_lconstr arg ++ spc () ++
   str "of type" ++ brk(1,1) ++ pr_lconstr ty ++ spc () ++
-  str "instead of" ++ brk(1,1) ++ pr_lconstr conclty
+  str "instead of" ++ brk(1,1) ++ pr_lconstr conclty ++ str "."
 
 let explain_refiner_unresolved_bindings l =
-  let l = map_succeed (function Name id -> id | _ -> failwith "") l in
   str "Unable to find an instance for the " ++ 
   str (plural (List.length l) "variable") ++ spc () ++
-  prlist_with_sep pr_coma pr_id l
+  prlist_with_sep pr_coma pr_name l ++ str"."
 
 let explain_refiner_cannot_apply t harg =
   str "In refiner, a term of type " ++ brk(1,1) ++
   pr_lconstr t ++ spc () ++ str "could not be applied to" ++ brk(1,1) ++
-  pr_lconstr harg
+  pr_lconstr harg ++ str "."
 
 let explain_refiner_not_well_typed c =
-  str "The term " ++ pr_lconstr c ++ str " is not well-typed"
+  str "The term " ++ pr_lconstr c ++ str " is not well-typed."
 
 let explain_intro_needs_product () =
   str "Introduction tactics needs products."
@@ -706,7 +705,7 @@ let explain_bad_constructor env cstr ind =
   str "is expected."
 
 let decline_string n s =
-  if n = 0 then "no "^s
+  if n = 0 then "no "^s^"s"
   else if n = 1 then "1 "^s
   else (string_of_int n^" "^s^"s")
 

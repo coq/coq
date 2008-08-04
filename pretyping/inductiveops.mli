@@ -22,6 +22,7 @@ val type_of_inductive    : env -> inductive -> types
 
 (* Return type as quoted by the user *)
 val type_of_constructor  : env -> constructor -> types
+val type_of_constructors : env -> inductive -> types array
 
 (* Return constructor types in normal form *)
 val arities_of_constructors : env -> inductive -> types array

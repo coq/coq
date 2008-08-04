@@ -303,7 +303,7 @@ let build_inductive sp tyi =
     | Polymorphic ar ->
 	it_mkProd_or_LetIn (mkSort (Type ar.poly_level)) mip.mind_arity_ctxt in
   let arity = hnf_prod_applist env fullarity args in
-  let cstrtypes = arities_of_constructors env (sp,tyi) in
+  let cstrtypes = type_of_constructors env (sp,tyi) in
   let cstrtypes =
     Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
   let cstrnames = mip.mind_consnames in
