@@ -217,74 +217,70 @@ let pmatches c p = snd (matches_core None true c p)
 let special_meta = (-1)
 
 (* Tells if it is an authorized occurrence and if the instance is closed *)
-let authorized_occ sigma mk_ctx next =
-  if not (List.for_all (fun (_,c) -> closed0 c) (snd sigma)) then
-    raise PatternMatchingFailure;
-  sigma, mk_ctx (mkMeta special_meta), next
+let authorized_occ pat c mk_ctx next =
+  try 
+    let sigma = extended_matches pat c in
+    if not (List.for_all (fun (_,c) -> closed0 c) (snd sigma)) then next ()
+    else sigma, mk_ctx (mkMeta special_meta), next
+  with
+    PatternMatchingFailure -> next ()
 
 (* Tries to match a subterm of [c] with [pat] *)
 let rec sub_match ?(partial_app=false) pat c =
   let rec aux c mk_ctx next =
   match kind_of_term c with
   | Cast (c1,k,c2) ->
-    (try authorized_occ (extended_matches pat c) mk_ctx next with
-    | PatternMatchingFailure ->
-      let mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
-      try_aux [c1] mk_ctx next)
+      authorized_occ pat c mk_ctx (fun () ->
+        let mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
+        try_aux [c1] mk_ctx next)
   | Lambda (x,c1,c2) ->
-    (try authorized_occ (extended_matches pat c) mk_ctx next with
-    | PatternMatchingFailure ->
-      let mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
-      try_aux [c1;c2] mk_ctx next)
+      authorized_occ pat c mk_ctx (fun () ->
+        let mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
+        try_aux [c1;c2] mk_ctx next)
   | Prod (x,c1,c2) ->
-    (try authorized_occ (extended_matches pat c) mk_ctx next with
-    | PatternMatchingFailure ->
-      let mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
-      try_aux [c1;c2] mk_ctx next)
-  | LetIn (x,c1,t1,c2) ->
-    (try authorized_occ (extended_matches pat c) mk_ctx next with
-    | PatternMatchingFailure ->
-      let mk_ctx = function [c1;c2] -> mkLetIn (x,c1,t1,c2) | _ -> assert false
-      in try_aux [c1;c2] mk_ctx next)
+      authorized_occ pat c mk_ctx (fun () ->
+        let mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
+        try_aux [c1;c2] mk_ctx next)
+  | LetIn (x,c1,t,c2) ->
+      authorized_occ pat c mk_ctx (fun () ->
+        let mk_ctx = function [c1;c2] -> mkLetIn (x,c1,t,c2) | _ -> assert false
+        in try_aux [c1;c2] mk_ctx next)
   | App (c1,lc) ->
-      (try authorized_occ (extended_matches pat c) mk_ctx next with
-      | PatternMatchingFailure ->
-          let topdown = true in
-	  if partial_app then
-            if topdown then
-              let lc1 = Array.sub lc 0 (Array.length lc - 1) in
-              let app = mkApp (c1,lc1) in
-              let mk_ctx = function 
-                | [app';c] -> mk_ctx (mkApp (app',[|c|]))
-                | _ -> assert false in
-	      try_aux [app;array_last lc] mk_ctx next
-            else
-              let rec aux2 app args next =
-                match args with
-                | [] ->
+      authorized_occ pat c mk_ctx (fun () ->
+        let topdown = true in
+	if partial_app then
+          if topdown then
+            let lc1 = Array.sub lc 0 (Array.length lc - 1) in
+            let app = mkApp (c1,lc1) in
+            let mk_ctx = function 
+              | [app';c] -> mk_ctx (mkApp (app',[|c|]))
+              | _ -> assert false in
+	    try_aux [app;array_last lc] mk_ctx next
+          else
+            let rec aux2 app args next =
+              match args with
+              | [] ->
                   let mk_ctx le =
                     mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
 	          try_aux (c1::Array.to_list lc) mk_ctx next
-	        | arg :: args ->
+	      | arg :: args ->
                   let app = mkApp (app,[|arg|]) in
                   let next () = aux2 app args next in
                   let mk_ctx ce = mk_ctx (mkApp (ce, Array.of_list args)) in
                   aux app mk_ctx next in
-              aux2 c1 (Array.to_list lc) next
-          else
-            let mk_ctx le =
-              mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
-	    try_aux (c1::Array.to_list lc) mk_ctx next)
+            aux2 c1 (Array.to_list lc) next
+        else
+          let mk_ctx le =
+            mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
+	  try_aux (c1::Array.to_list lc) mk_ctx next)
   | Case (ci,hd,c1,lc) ->
-    (try authorized_occ (extended_matches pat c) mk_ctx next with
-    | PatternMatchingFailure ->
-      let mk_ctx le = 
-        mk_ctx (mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))) in
-      try_aux (c1::Array.to_list lc) mk_ctx next)
+      authorized_occ pat c mk_ctx (fun () ->
+        let mk_ctx le = 
+          mk_ctx (mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))) in
+        try_aux (c1::Array.to_list lc) mk_ctx next)
   | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _
   | Rel _|Meta _|Var _|Sort _ ->
-    (try authorized_occ (extended_matches pat c) mk_ctx next with
-    | PatternMatchingFailure -> next ())
+      authorized_occ pat c mk_ctx next
 
   (* Tries [sub_match] for all terms in the list *)
   and try_aux lc mk_ctx next =
