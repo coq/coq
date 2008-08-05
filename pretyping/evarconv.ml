@@ -104,10 +104,10 @@ let check_conv_record (t1,l1) (t2,l2) =
       with Not_found -> 
 	lookup_canonical_conversion (proji,Default_cs),[]
     in
-    let { o_DEF = c; o_INJ=n; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } 
-	= canon_s in
+    let { o_DEF = c; o_INJ=n; o_TABS = bs; 
+          o_TPARAMS = params; o_NPARAMS = nparams; o_TCOMPS = us } = canon_s in
     let params1, c1, extra_args1 =
-      match list_chop (List.length params) l1 with 
+      match list_chop nparams l1 with 
 	| params1, c1::extra_args1 -> params1, c1, extra_args1
 	| _ -> raise Not_found in
     let us2,extra_args2 = list_chop (List.length us) l2_effective in
@@ -288,7 +288,8 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
              if the first argument is a beta-redex (expand a constant
              only if necessary) or the second argument is potentially
              usable as a canonical projection *)
-	  if isLambda flex1 or is_canonical_projection flex2 then
+	  if isLambda flex1 or is_open_canonical_projection (evars_of i) appr2
+	  then
 	    match eval_flexible_term env flex1 with
 	    | Some v1 ->
 		evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2

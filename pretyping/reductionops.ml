@@ -518,9 +518,11 @@ let whd_eta c = app_stack (local_whd_state_gen eta (c,empty_stack))
 (* Replacing defined evars for error messages *)
 let rec whd_evar sigma c =
   match kind_of_term c with
-    | Evar (ev,args)
-        when Evd.mem sigma ev & Evd.is_defined sigma ev ->
-	whd_evar sigma (Evd.existential_value sigma (ev,args))
+    | Evar ev ->
+	let d = 
+	  try Some (Evd.existential_value sigma ev)
+	  with NotInstantiatedEvar | Not_found -> None in
+	(match d with Some c -> whd_evar sigma c | None -> c)
     | Sort s when is_sort_variable sigma s -> whd_sort_variable sigma c
     | _ -> collapse_appl c
 

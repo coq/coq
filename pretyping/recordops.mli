@@ -47,12 +47,14 @@ type obj_typ = {
   o_INJ : int;      (* position of trivial argument *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
+  o_NPARAMS : int;
   o_TCOMPS : constr list } (* ordered *)
 
 val cs_pattern_of_constr : constr -> cs_pattern * int * constr list
  
 val lookup_canonical_conversion : (global_reference * cs_pattern) -> obj_typ
 val declare_canonical_structure : global_reference -> unit
-val is_canonical_projection : constr -> bool
+val is_open_canonical_projection :
+  Evd.evar_map -> (constr * constr list) -> bool
 val canonical_projections : unit -> 
   ((global_reference * cs_pattern) * obj_typ) list
