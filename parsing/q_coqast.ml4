@@ -470,8 +470,8 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
         $mlexpr_of_bool lz$
         $mlexpr_of_tactic t$
         $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>
-  | Tacexpr.TacMatchContext (lz,lr,l) ->
-      <:expr< Tacexpr.TacMatchContext 
+  | Tacexpr.TacMatchGoal (lz,lr,l) ->
+      <:expr< Tacexpr.TacMatchGoal 
         $mlexpr_of_bool lz$
         $mlexpr_of_bool lr$
         $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>

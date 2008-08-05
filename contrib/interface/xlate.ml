@@ -830,11 +830,11 @@ and xlate_tactic =
                          | [] -> assert false
                          | fst::others ->
                              CT_match_tac_rules(fst, others))
-   | TacMatchContext (_,_,[]) | TacMatchContext (true,_,_) -> failwith ""
-   | TacMatchContext (false,false,rule1::rules) ->
+   | TacMatchGoal (_,_,[]) | TacMatchGoal (true,_,_) -> failwith ""
+   | TacMatchGoal (false,false,rule1::rules) ->
          CT_match_context(xlate_context_rule rule1,
                           List.map xlate_context_rule rules)
-   | TacMatchContext (false,true,rule1::rules) ->
+   | TacMatchGoal (false,true,rule1::rules) ->
          CT_match_context_reverse(xlate_context_rule rule1,
                           List.map xlate_context_rule rules)
    | TacLetIn (false, l, t) ->

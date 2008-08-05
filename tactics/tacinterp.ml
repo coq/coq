@@ -657,17 +657,17 @@ let extend_values_with_bindings (ln,lm) lfun =
      binding of the same name exists *)
   lmatch@lfun@lnames
 
-(* Reads the hypotheses of a Match Context rule *)
-let rec intern_match_context_hyps sigma env lfun = function
+(* Reads the hypotheses of a "match goal" rule *)
+let rec intern_match_goal_hyps sigma env lfun = function
   | (Hyp ((_,na) as locna,mp))::tl ->
       let ido, metas1, pat = intern_pattern sigma env ~as_type:true lfun mp in
-      let lfun, metas2, hyps = intern_match_context_hyps sigma env lfun tl in
+      let lfun, metas2, hyps = intern_match_goal_hyps sigma env lfun tl in
       let lfun' = name_cons na (Option.List.cons ido lfun) in
       lfun', metas1@metas2, Hyp (locna,pat)::hyps
   | (Def ((_,na) as locna,mv,mp))::tl ->
       let ido, metas1, patv = intern_pattern sigma env ~as_type:false lfun mv in
       let ido', metas2, patt = intern_pattern sigma env ~as_type:true lfun mp in
-      let lfun, metas3, hyps = intern_match_context_hyps sigma env lfun tl in
+      let lfun, metas3, hyps = intern_match_goal_hyps sigma env lfun tl in
       let lfun' = name_cons na (Option.List.cons ido' (Option.List.cons ido lfun)) in
       lfun', metas1@metas2@metas3, Def (locna,patv,patt)::hyps
   | [] -> lfun, [], []
@@ -835,8 +835,8 @@ and intern_tactic_seq ist = function
       let l = List.map (fun (n,b) -> 
 	  (n,intern_tacarg !strict_check (if isrec then ist' else ist) b)) l in
       ist.ltacvars, TacLetIn (isrec,l,intern_tactic ist' u)
-  | TacMatchContext (lz,lr,lmr) ->
-      ist.ltacvars, TacMatchContext(lz,lr, intern_match_rule ist lmr)
+  | TacMatchGoal (lz,lr,lmr) ->
+      ist.ltacvars, TacMatchGoal(lz,lr, intern_match_rule ist lmr)
   | TacMatch (lz,c,lmr) ->
       ist.ltacvars, TacMatch (lz,intern_tactic ist c,intern_match_rule ist lmr)
   | TacId l -> ist.ltacvars, TacId (intern_message ist l)
@@ -912,7 +912,7 @@ and intern_match_rule ist = function
       All (intern_tactic ist tc) :: (intern_match_rule ist tl)
   | (Pat (rl,mp,tc))::tl ->
       let {ltacvars=(lfun,l2); gsigma=sigma; genv=env} = ist in
-      let lfun',metas1,hyps = intern_match_context_hyps sigma env lfun rl in
+      let lfun',metas1,hyps = intern_match_goal_hyps sigma env lfun rl in
       let ido,metas2,pat = intern_pattern sigma env lfun mp in
       let metas = list_uniquize (metas1@metas2) in
       let ist' = { ist with ltacvars = (metas@(Option.List.cons ido lfun'),l2) } in
@@ -1012,27 +1012,27 @@ let read_pattern lfun = function
 (* Reads the hypotheses of a Match Context rule *)
 let cons_and_check_name id l =
   if List.mem id l then
-    user_err_loc (dloc,"read_match_context_hyps",
+    user_err_loc (dloc,"read_match_goal_hyps",
       strbrk ("Hypothesis pattern-matching variable "^(string_of_id id)^
       " used twice in the same pattern."))
   else id::l
 
-let rec read_match_context_hyps lfun lidh = function
+let rec read_match_goal_hyps lfun lidh = function
   | (Hyp ((loc,na) as locna,mp))::tl ->
       let lidh' = name_fold cons_and_check_name na lidh in
       Hyp (locna,read_pattern lfun mp)::
-	(read_match_context_hyps lfun lidh' tl)
+	(read_match_goal_hyps lfun lidh' tl)
   | (Def ((loc,na) as locna,mv,mp))::tl ->
       let lidh' = name_fold cons_and_check_name na lidh in
       Def (locna,read_pattern lfun mv, read_pattern lfun mp)::
-	(read_match_context_hyps lfun lidh' tl)
+	(read_match_goal_hyps lfun lidh' tl)
   | [] -> []
 
 (* Reads the rules of a Match Context or a Match *)
 let rec read_match_rule lfun = function
   | (All tc)::tl -> (All tc)::(read_match_rule lfun tl)
   | (Pat (rl,mp,tc))::tl ->
-      Pat (read_match_context_hyps lfun [] rl, read_pattern lfun mp,tc)
+      Pat (read_match_goal_hyps lfun [] rl, read_pattern lfun mp,tc)
       :: read_match_rule lfun tl
   | [] -> []
 
@@ -1724,7 +1724,7 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
   | TacFun (it,body) -> VFun (ist.trace,ist.lfun,it,body)
   | TacLetIn (true,l,u) -> interp_letrec ist gl l u
   | TacLetIn (false,l,u) -> interp_letin ist gl l u
-  | TacMatchContext (lz,lr,lmr) -> interp_match_context ist gl lz lr lmr 
+  | TacMatchGoal (lz,lr,lmr) -> interp_match_goal ist gl lz lr lmr 
   | TacMatch (lz,c,lmr) -> interp_match ist gl lz c lmr
   | TacArg a -> interp_tacarg ist gl a
   (* Delayed evaluation *)
@@ -1746,7 +1746,7 @@ and eval_tactic ist = function
 	(* catch error in the evaluation *)
 	catch_error ((loc,call)::ist.trace) tac gl
   | TacFun _ | TacLetIn _ -> assert false
-  | TacMatchContext _ | TacMatch _ -> assert false
+  | TacMatchGoal _ | TacMatch _ -> assert false
   | TacId s -> tclIDTAC_MESSAGE (interp_message_nl ist s)
   | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) (interp_message ist s)
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
@@ -1890,7 +1890,7 @@ and interp_letin ist gl llc u =
   val_interp ist gl u
 
 (* Interprets the Match Context expressions *)
-and interp_match_context ist goal lz lr lmr =
+and interp_match_goal ist goal lz lr lmr =
   let hyps = pf_hyps goal in
   let hyps = if lr then List.rev hyps else hyps in
   let concl = pf_concl goal in
@@ -1902,7 +1902,7 @@ and interp_match_context ist goal lz lr lmr =
       try apply_hyps_context ist env lz goal mt lctxt lgoal mhyps hyps
       with e when is_match_catchable e -> match_next_pattern find_next' () in
     match_next_pattern (fun () -> match_subterm_gen app c csr) () in
-  let rec apply_match_context ist env goal nrs lex lpt = 
+  let rec apply_match_goal ist env goal nrs lex lpt = 
     begin
       if lex<>[] then db_pattern_rule ist.debug nrs (List.hd lex);
       match lpt with
@@ -1911,7 +1911,7 @@ and interp_match_context ist goal lz lr lmr =
               db_mc_pattern_success ist.debug;
               try eval_with_fail ist lz goal t
               with e when is_match_catchable e ->
-		apply_match_context ist env goal (nrs+1) (List.tl lex) tl
+		apply_match_goal ist env goal (nrs+1) (List.tl lex) tl
 	    end
 	| (Pat (mhyps,mgoal,mt))::tl ->
             let mhyps = List.rev mhyps (* Sens naturel *) in
@@ -1926,20 +1926,20 @@ and interp_match_context ist goal lz lr lmr =
 		       | PatternMatchingFailure -> db_matching_failure ist.debug
 		       | Eval_fail s -> db_eval_failure ist.debug s
 		       | _ -> db_logic_failure ist.debug e);
-		     apply_match_context ist env goal (nrs+1) (List.tl lex) tl)
+		     apply_match_goal ist env goal (nrs+1) (List.tl lex) tl)
 	     | Subterm (b,id,mg) ->
 		 (try apply_goal_sub b ist (id,mg) concl mt mhyps hyps
 		   with
 		     | PatternMatchingFailure ->
-			 apply_match_context ist env goal (nrs+1) (List.tl lex) tl))
+			 apply_match_goal ist env goal (nrs+1) (List.tl lex) tl))
 	| _ ->
-	    errorlabstrm "Tacinterp.apply_match_context"
+	    errorlabstrm "Tacinterp.apply_match_goal"
               (v 0 (str "No matching clauses for match goal" ++
 		      (if ist.debug=DebugOff then
 			 fnl() ++ str "(use \"Set Ltac Debug\" for more info)"
 		       else mt()) ++ str"."))
     end in
-    apply_match_context ist env goal 0 lmr
+    apply_match_goal ist env goal 0 lmr
       (read_match_rule (fst (constr_list ist env)) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
@@ -2498,13 +2498,13 @@ let subst_match_pattern subst = function
   | Subterm (b,ido,pc) -> Subterm (b,ido,subst_pattern subst pc)
   | Term pc -> Term (subst_pattern subst pc)
 
-let rec subst_match_context_hyps subst = function
+let rec subst_match_goal_hyps subst = function
   | Hyp (locs,mp) :: tl ->
       Hyp (locs,subst_match_pattern subst mp)
-      :: subst_match_context_hyps subst tl
+      :: subst_match_goal_hyps subst tl
   | Def (locs,mv,mp) :: tl ->
       Def (locs,subst_match_pattern subst mv, subst_match_pattern subst mp)
-      :: subst_match_context_hyps subst tl
+      :: subst_match_goal_hyps subst tl
   | [] -> []
 
 let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
@@ -2609,8 +2609,8 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacLetIn (r,l,u) ->
       let l = List.map (fun (n,b) -> (n,subst_tacarg subst b)) l in
       TacLetIn (r,l,subst_tactic subst u)
-  | TacMatchContext (lz,lr,lmr) ->
-      TacMatchContext(lz,lr, subst_match_rule subst lmr)
+  | TacMatchGoal (lz,lr,lmr) ->
+      TacMatchGoal(lz,lr, subst_match_rule subst lmr)
   | TacMatch (lz,c,lmr) ->
       TacMatch (lz,subst_tactic subst c,subst_match_rule subst lmr)
   | TacId _ | TacFail _ as x -> x
@@ -2657,7 +2657,7 @@ and subst_match_rule subst = function
   | (All tc)::tl ->
       (All (subst_tactic subst tc))::(subst_match_rule subst tl)
   | (Pat (rl,mp,tc))::tl ->
-      let hyps = subst_match_context_hyps subst rl in
+      let hyps = subst_match_goal_hyps subst rl in
       let pat = subst_match_pattern subst mp in
       Pat (hyps,pat,subst_tactic subst tc)
       ::(subst_match_rule subst tl)

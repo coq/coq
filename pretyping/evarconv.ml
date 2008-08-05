@@ -273,11 +273,10 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | MaybeFlexible flex1, MaybeFlexible flex2 ->
 	let f1 i =
-	  if l1 <> [] && l2 <> [] then
-            ise_list2 i (fun i -> evar_conv_x env i CONV)
-	      (flex1::l1) (flex2::l2)
+	  if flex1 = flex2 then
+	    ise_list2 i (fun i -> evar_conv_x env i CONV) l1 l2
 	  else
-	    (i,false)
+	     (i,false)
 	and f2 i =
 	  (try conv_record env i
              (try check_conv_record appr1 appr2

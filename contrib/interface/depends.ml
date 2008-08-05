@@ -268,7 +268,7 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
 	     igtal
 	     acc)
     | TacMatch (_, tac, tacexpr_mrl) -> failwith "depends_of_tacexpr of a Match not implemented yet"
-    | TacMatchContext (_, _, tacexpr_mrl) -> failwith "depends_of_tacexpr of a Match Context not implemented yet"
+    | TacMatchGoal (_, _, tacexpr_mrl) -> failwith "depends_of_tacexpr of a Match Context not implemented yet"
     | TacFun tacfa -> depends_of_tac_fun_ast tacfa acc
     | TacArg tacarg -> depends_of_tac_arg tacarg acc
   and depends_of_atomic_tacexpr atexpr acc = let depends_of_'constr_with_bindings = depends_of_'a_with_bindings depends_of_'constr in match atexpr with

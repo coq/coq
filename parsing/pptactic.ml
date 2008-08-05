@@ -899,7 +899,7 @@ let rec pr_tac inherited tac =
 	lrul
         ++ fnl() ++ str "end"),
       lmatch
-  | TacMatchContext (lz,lr,lrul) ->
+  | TacMatchGoal (lz,lr,lrul) ->
       hov 0 (pr_lazy lz ++ 
 	str (if lr then "match reverse goal with" else "match goal with")
 	++ prlist

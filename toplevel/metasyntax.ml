@@ -485,7 +485,7 @@ let make_hunks etyps symbols from =
 let error_format () = error "The format does not match the notation."
 
 let rec split_format_at_ldots hd = function
-  | UnpTerminal s :: fmt when id_of_string s = ldots_var -> List.rev hd, fmt
+  | UnpTerminal s :: fmt when s = string_of_id ldots_var -> List.rev hd, fmt
   | u :: fmt -> 
       check_no_ldots_in_box u;
       split_format_at_ldots (u::hd) fmt

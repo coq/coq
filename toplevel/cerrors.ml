@@ -105,8 +105,9 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
 	       str "No constant of this name:" ++ spc () ++ 
                Libnames.pr_qualid q ++ str ".")
   | Refiner.FailError (i,s) ->
-      hov 0 (str "Error: Tactic failure:" ++ s ++
-             if i=0 then mt () else str " (level " ++ int i ++ str").")
+      hov 0 (str "Error: Tactic failure" ++ 
+                (if s <> mt() then str ":" ++ s else mt ()) ++
+                if i=0 then str "." else str " (level " ++ int i ++ str").")
   | Stdpp.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))

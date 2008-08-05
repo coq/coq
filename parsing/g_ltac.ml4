@@ -72,10 +72,10 @@ GEXTEND Gram
       | ta0 = tactic_expr; "||"; ta1 = tactic_expr -> TacOrelse (ta0,ta1) ]
     | "1" RIGHTA
       [ b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
-          TacMatchContext (b,false,mrl)
+          TacMatchGoal (b,false,mrl)
       | b = match_key; IDENT "reverse"; IDENT "goal"; "with";
         mrl = match_context_list; "end" ->
-          TacMatchContext (b,true,mrl)
+          TacMatchGoal (b,true,mrl)
       |	b = match_key; c = tactic_expr; "with"; mrl = match_list; "end" ->
           TacMatch (b,c,mrl)
       | IDENT "first" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
