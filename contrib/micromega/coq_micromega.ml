@@ -106,6 +106,7 @@ struct
      ["Coq" ; "micromega" ; "EnvRing"];
      ["Coq";"QArith"; "QArith_base"];
      ["Coq";"Reals" ; "Rdefinitions"];
+     ["Coq";"Reals" ; "Rpow_def"];
      ["LRing_normalise"]]
    
  let constant = gen_constant_in_modules "ZMicromega" coq_modules
@@ -163,6 +164,9 @@ struct
 
 
  let coq_Qmake = lazy (constant "Qmake")
+ let coq_R0    = lazy (constant "R0")
+ let coq_R1    = lazy (constant "R1")
+
 
  let coq_proofTerm = lazy (constant "ProofTerm")
  let coq_ratProof = lazy (constant "RatProof")
@@ -179,9 +183,35 @@ struct
  let coq_Zminus = lazy (constant "Zminus")
  let coq_Zopp = lazy (constant "Zopp")
  let coq_Zmult = lazy (constant "Zmult")
+ let coq_Zpower = lazy (constant "Zpower")
  let coq_N_of_Z = lazy 
   (gen_constant_in_modules "ZArithRing" 
     [["Coq";"setoid_ring";"ZArithRing"]] "N_of_Z")
+
+ let coq_Qgt = lazy (constant "Qgt")
+ let coq_Qge = lazy (constant "Qge")
+ let coq_Qle = lazy (constant "Qle")
+ let coq_Qlt = lazy (constant "Qlt")
+ let coq_Qeq = lazy (constant "Qeq")
+
+
+ let coq_Qplus = lazy (constant "Qplus")
+ let coq_Qminus = lazy (constant "Qminus")
+ let coq_Qopp = lazy (constant "Qopp")
+ let coq_Qmult = lazy (constant "Qmult")
+ let coq_Qpower = lazy (constant "Qpower")
+
+
+ let coq_Rgt = lazy (constant "Rgt")
+ let coq_Rge = lazy (constant "Rge")
+ let coq_Rle = lazy (constant "Rle")
+ let coq_Rlt = lazy (constant "Rlt")
+
+ let coq_Rplus = lazy (constant "Rplus")
+ let coq_Rminus = lazy (constant "Rminus")
+ let coq_Ropp = lazy (constant "Ropp")
+ let coq_Rmult = lazy (constant "Rmult")
+ let coq_Rpower = lazy (constant "pow")
 
 
  let coq_PEX = lazy (constant "PEX" )
@@ -224,6 +254,7 @@ struct
  let coq_Cstr = lazy 
   (gen_constant_in_modules "RingMicromega" 
     [["Coq" ; "micromega" ; "RingMicromega"] ; ["RingMicromega"] ] "Formula")
+
 
  type parse_error  = 
    | Ukn 
@@ -347,16 +378,11 @@ let dump_q q =
 
 let parse_q term =  
  match Term.kind_of_term term with
-  | Term.App(c, args) -> 
-     (
-      match Term.kind_of_term c with
-	Term.Construct((n,j),i) -> 
-      if Names.string_of_kn n  = "Coq.QArith.QArith_base#<>#Q"
-      then {Mc.qnum = parse_z args.(0) ; Mc.qden = parse_positive args.(1) }
+  | Term.App(c, args) -> if c = Lazy.force coq_Qmake then
+	{Mc.qnum = parse_z args.(0) ; Mc.qden = parse_positive args.(1) }
       else raise ParseError
-       |  _ -> raise ParseError
-     )
-  |   _ -> raise ParseError
+  |  _ -> raise ParseError
+
   
  let rec parse_list parse_elt term = 
   let (i,c) = get_left_construct term in
@@ -466,19 +492,6 @@ let parse_q term =
    pp_cone o e
 
 
-
-
- let rec parse_op term = 
-  let (i,c) = get_left_construct term in
-   match i with
-    | 1 -> Mc.OpEq
-    | 2 -> Mc.OpLe
-    | 3 -> Mc.OpGe
-    | 4 -> Mc.OpGt
-    | 5 -> Mc.OpLt
-    | i -> raise ParseError
-
-
  let rec dump_op = function
   | Mc.OpEq-> Lazy.force coq_OpEq
   | Mc.OpNEq-> Lazy.force coq_OpNEq
@@ -510,68 +523,52 @@ let parse_q term =
 		dump_op o ; 
 		dump_expr typ dump_constant e2|])
 
+ let assoc_const x l = 
+  try 
+  snd (List.find (fun (x',y) -> x = Lazy.force x') l)
+  with
+    Not_found -> raise ParseError
+
+ let zop_table = [ 
+  coq_Zgt, Mc.OpGt ; 
+  coq_Zge, Mc.OpGe ;
+  coq_Zlt, Mc.OpLt ;
+  coq_Zle, Mc.OpLe ]
+
+ let rop_table = [ 
+  coq_Rgt, Mc.OpGt ; 
+  coq_Rge, Mc.OpGe ;
+  coq_Rlt, Mc.OpLt ;
+  coq_Rle, Mc.OpLe ]
+
+ let qop_table = [ 
+  coq_Qlt, Mc.OpLt ;
+  coq_Qle, Mc.OpLe ;
+  coq_Qeq, Mc.OpEq
+ ]
 
 
  let parse_zop (op,args) =
   match kind_of_term op with
-   | Const x -> 
-      (match Names.string_of_con x with
-       | "Coq.ZArith.BinInt#<>#Zgt" -> (Mc.OpGt, args.(0), args.(1))
-       | "Coq.ZArith.BinInt#<>#Zge" -> (Mc.OpGe, args.(0), args.(1))
-       | "Coq.ZArith.BinInt#<>#Zlt" -> (Mc.OpLt, args.(0), args.(1))
-       | "Coq.ZArith.BinInt#<>#Zle" -> (Mc.OpLe, args.(0), args.(1))
-       (*| "Coq.Init.Logic#<>#not"    -> Mc.OpNEq  (* for backward compat *)*)
-       |   s -> raise ParseError
-      )
+   | Const x -> (assoc_const op zop_table, args.(0) , args.(1))
    |  Ind(n,0) -> 
-       (match Names.string_of_kn n with
-	| "Coq.Init.Logic#<>#eq" -> 
-	   if args.(0) <> Lazy.force coq_Z
-	   then raise ParseError
-	   else (Mc.OpEq, args.(1), args.(2))
-	|  _ -> raise ParseError)
+       if op = Lazy.force coq_Eq &&   args.(0) = Lazy.force coq_Z
+       then (Mc.OpEq, args.(1), args.(2))
+       else raise ParseError
    |   _ -> failwith "parse_zop"
 
 
  let parse_rop (op,args) =
-  try 
    match kind_of_term op with
-    | Const x -> 
-       (match Names.string_of_con x with
-	| "Coq.Reals.Rdefinitions#<>#Rgt" -> (Mc.OpGt, args.(0), args.(1))
-	| "Coq.Reals.Rdefinitions#<>#Rge" -> (Mc.OpGe, args.(0), args.(1))
-	| "Coq.Reals.Rdefinitions#<>#Rlt" -> (Mc.OpLt, args.(0), args.(1))
-	| "Coq.Reals.Rdefinitions#<>#Rle" -> (Mc.OpLe, args.(0), args.(1))
-	   (*| "Coq.Init.Logic#<>#not"-> Mc.OpNEq  (* for backward compat *)*)
-       |   s -> raise ParseError
-       )
+    | Const x -> (assoc_const op rop_table, args.(0) , args.(1))
     |  Ind(n,0) -> 
-	(match Names.string_of_kn n with
-	 | "Coq.Init.Logic#<>#eq" -> 
-	    (*   if args.(0) <> Lazy.force coq_R
-		 then raise ParseError
-		 else*) (Mc.OpEq, args.(1), args.(2))
-	 |  _ -> raise ParseError)
-    |   _ -> failwith "parse_rop"
-  with x -> 
-   (Pp.pp (Pp.str "parse_rop failure ") ; 
-    Pp.pp (Printer.prterm op) ; Pp.pp_flush ()) 
-   ; raise x
-
+       if op = Lazy.force coq_Eq &&   args.(0) = Lazy.force coq_R
+       then (Mc.OpEq, args.(1), args.(2))
+       else raise ParseError
+   |   _ -> failwith "parse_zop"
 
  let parse_qop (op,args) =
-  (
-   (match kind_of_term op with
-   | Const x -> 
-      (match Names.string_of_con x with
-       | "Coq.QArith.QArith_base#<>#Qgt" -> Mc.OpGt
-       | "Coq.QArith.QArith_base#<>#Qge" -> Mc.OpGe
-       | "Coq.QArith.QArith_base#<>#Qlt" -> Mc.OpLt
-       | "Coq.QArith.QArith_base#<>#Qle" -> Mc.OpLe
-       | "Coq.QArith.QArith_base#<>#Qeq" -> Mc.OpEq
-       |   s -> raise ParseError
-      )
-   |   _ -> failwith "parse_zop") , args.(0) , args.(1))
+   (assoc_const op qop_table, args.(0) , args.(1))
 
 
  module Env =
@@ -612,6 +609,14 @@ let parse_q term =
    | Ukn of string
 
 
+ let assoc_ops x l = 
+  try 
+    snd (List.find (fun (x',y) -> x = Lazy.force x') l)
+  with
+    Not_found -> Ukn "Oups"
+
+
+
  let parse_expr parse_constant parse_exp ops_spec env term = 
  if debug 
  then (Pp.pp (Pp.str "parse_expr: ");   
@@ -634,7 +639,7 @@ let parse_q term =
 	(
 	 match kind_of_term t with
 	  | Const c -> 
-	     ( match ops_spec (Names.string_of_con c) with
+	     ( match assoc_ops t ops_spec  with
 	      | Binop f -> combine env f (args.(0),args.(1))
 	      | Opp     -> let (expr,env) = parse_expr env args.(0) in
 			    (Mc.PEopp expr, env)
@@ -653,29 +658,29 @@ let parse_q term =
    parse_expr env term
     
 
-let zop_spec = function
- | "Coq.ZArith.BinInt#<>#Zplus"    -> Binop (fun x y -> Mc.PEadd(x,y))
- | "Coq.ZArith.BinInt#<>#Zminus"   -> Binop (fun x y -> Mc.PEsub(x,y)) 
- | "Coq.ZArith.BinInt#<>#Zmult"    -> Binop  (fun x y -> Mc.PEmul (x,y))
-  | "Coq.ZArith.BinInt#<>#Zopp"     ->  Opp
-  | "Coq.ZArith.Zpow_def#<>#Zpower" -> Power
-  |  s                                   -> Ukn s
+ let zop_spec = 
+   [ 
+     coq_Zplus , Binop (fun x y -> Mc.PEadd(x,y)) ;
+     coq_Zminus , Binop (fun x y -> Mc.PEsub(x,y)) ;
+     coq_Zmult  , Binop  (fun x y -> Mc.PEmul (x,y)) ; 
+     coq_Zopp   , Opp ; 
+     coq_Zpower , Power]
 
-let qop_spec = function
- | "Coq.QArith.QArith_base#<>#Qplus"    -> Binop (fun x y -> Mc.PEadd(x,y))
- | "Coq.QArith.QArith_base#<>#Qminus"   -> Binop (fun x y -> Mc.PEsub(x,y)) 
- | "Coq.QArith.QArith_base#<>#Qmult"    -> Binop  (fun x y -> Mc.PEmul (x,y)) 
-  | "Coq.QArith.QArith_base#<>#Qopp"     ->  Opp
-  | "Coq.QArith.QArith_base#<>#Qpower" -> Power
-  |  s                                   -> Ukn s
+let qop_spec = 
+  [
+     coq_Qplus , Binop (fun x y -> Mc.PEadd(x,y)) ;
+     coq_Qminus , Binop (fun x y -> Mc.PEsub(x,y)) ;
+     coq_Qmult  , Binop  (fun x y -> Mc.PEmul (x,y)) ; 
+     coq_Qopp   , Opp ; 
+     coq_Qpower , Power]
 
-let rop_spec = function
- | "Coq.Reals.Rdefinitions#<>#Rplus"    -> Binop (fun x y -> Mc.PEadd(x,y))
- | "Coq.Reals.Rdefinitions#<>#Rminus"   -> Binop (fun x y -> Mc.PEsub(x,y)) 
- | "Coq.Reals.Rdefinitions#<>#Rmult"    -> Binop  (fun x y -> Mc.PEmul (x,y))
- | "Coq.Reals.Rdefinitions#<>#Ropp"     -> Opp
- | "Coq.Reals.Rpow_def#<>#pow"          -> Power
- |  s                                        -> Ukn s
+let rop_spec = 
+  [
+     coq_Rplus , Binop (fun x y -> Mc.PEadd(x,y)) ;
+     coq_Rminus , Binop (fun x y -> Mc.PEsub(x,y)) ;
+     coq_Rmult  , Binop  (fun x y -> Mc.PEmul (x,y)) ; 
+     coq_Ropp   , Opp ; 
+     coq_Rpower , Power]
 
 
 
@@ -691,12 +696,12 @@ let rconstant term =
        Pp.pp (Pp.str "rconstant: ");
        Pp.pp (Printer.prterm  term); Pp.pp_flush ());
  match Term.kind_of_term term with
-  | Const x ->        
-     (match Names.string_of_con x with
-      | "Coq.Reals.Rdefinitions#<>#R0" -> Mc.Z0
-      | "Coq.Reals.Rdefinitions#<>#R1" -> Mc.Zpos Mc.XH
-      | _   -> raise ParseError
-     )
+  | Const x ->  
+      if term = Lazy.force coq_R0
+      then Mc.Z0
+      else if term = Lazy.force coq_R1
+      then Mc.Zpos Mc.XH
+      else raise ParseError
   |  _ -> raise ParseError
 
 
@@ -731,23 +736,6 @@ let parse_rexpr =
   
  (* generic parsing of arithmetic expressions *)
   
- let rec parse_conj parse_arith env term = 
-  match kind_of_term term with
-   | App(l,rst) -> 
-      (match kind_of_term l with
-       | Ind (n,_) -> 
-	  ( match Names.string_of_kn n with
-	   | "Coq.Init.Logic#<>#and" -> 
-	      let (e1,env) = parse_arith env rst.(0) in
-	      let (e2,env) = parse_conj parse_arith env rst.(1) in
-	       (Mc.Cons(e1,e2),env)
-	   |   _ -> (* This might be an equality *) 
-		let (e,env) = parse_arith env term in
-		 (Mc.Cons(e,Mc.Nil),env))
-       |  _ -> (* This is an arithmetic expression *)
-	   let (e,env) = parse_arith env term in
-	    (Mc.Cons(e,Mc.Nil),env))
-   |  _ -> failwith "parse_conj(2)"
 
 
 
@@ -850,46 +838,6 @@ let parse_rexpr =
    xdump f
     
 
- (* Backward compat *)
-
- let rec parse_concl parse_arith env term =
-  match kind_of_term term with
-   | Prod(_,expr,rst) -> (* a -> b *)
-      let (lhs,rhs,env) = parse_concl parse_arith env rst in
-      let (e,env) = parse_arith env expr in
-       (Mc.Cons(e,lhs),rhs,env)
-   | App(_,_) -> 
-      let (conj, env) = parse_conj parse_arith env term in
-       (Mc.Nil,conj,env)
-   |  Ind(n,_) -> 
-       (match (Names.string_of_kn n) with
-	| "Coq.Init.Logic#<>#False" -> (Mc.Nil,Mc.Nil,env)
-	|    s                           -> 
-	      print_string s ; flush stdout;
-	      failwith "parse_concl")
-   |  _ -> failwith "parse_concl"
-
-
- let rec parse_hyps parse_arith env goal_hyps hyps = 
-  match hyps with
-   | [] -> ([],goal_hyps,env)
-   | (i,t)::l -> 
-      let (li,lt,env) = parse_hyps parse_arith env goal_hyps l in
-       try 
-	let (c,env) = parse_arith env  t in
-	 (i::li, Mc.Cons(c,lt), env)
-       with  x -> 
-	(*(if debug then Printf.printf "parse_arith : %s\n" x);*)
-	(li,lt,env)
-
-
- let parse_goal parse_arith env hyps term = 
-  try
-   let (lhs,rhs,env) = parse_concl parse_arith env term in
-   let (li,lt,env) = parse_hyps parse_arith env lhs hyps in
-    (li,lt,rhs,env)
-  with Failure x -> raise ParseError
-   (* backward compat *)
 
 
  (* ! reverse the list of bindings *)
@@ -1235,8 +1183,8 @@ let lift_ratproof prover l =
   | Some c -> Some (Mc.RatProof c)
 
 
-type csdpcert = Certificate.Mc.z Certificate.Mc.coneMember option
-type micromega_polys = (Micromega.z Mc.pExpr, Mc.op1) Micromega.prod list
+type csdpcert = Sos.positivstellensatz option
+type micromega_polys = (Micromega.q Mc.pExpr, Mc.op1) Micromega.prod list
 type provername = string * int option
 
 let call_csdpcert provername poly =
@@ -1255,36 +1203,84 @@ let call_csdpcert provername poly =
   close_in ch_from; Sys.remove tmp_from;
   cert
 
-let omicron gl = 
+let rec z_to_q_expr e = 
+ match e with
+  | Mc.PEc z   -> Mc.PEc {Mc.qnum = z ; Mc.qden = Mc.XH}
+  | Mc.PEX x   -> Mc.PEX x
+  | Mc.PEadd(e1,e2) -> Mc.PEadd(z_to_q_expr e1, z_to_q_expr e2)
+  | Mc.PEsub(e1,e2) -> Mc.PEsub(z_to_q_expr e1, z_to_q_expr e2)
+  | Mc.PEmul(e1,e2) -> Mc.PEmul(z_to_q_expr e1, z_to_q_expr e2)
+  | Mc.PEopp(e) -> Mc.PEopp(z_to_q_expr e)
+  | Mc.PEpow(e,n) -> Mc.PEpow(z_to_q_expr e,n)
+
+
+let call_csdpcert_q provername poly = 
+ match call_csdpcert provername poly with
+  | None -> None
+  | Some cert -> 
+     let cert = Certificate.q_cert_of_pos cert in
+      match Mc.qWeakChecker (CamlToCoq.list (fun x -> x) poly)  cert with
+       | Mc.True -> Some cert
+       | Mc.False ->  (print_string "buggy certificate" ; flush stdout) ;None
+
+
+let call_csdpcert_z provername poly = 
+ let l = List.map (fun (Mc.Pair(e,o)) -> (Mc.Pair(z_to_q_expr e,o))) poly in
+  match call_csdpcert provername l with
+   | None -> None
+   | Some cert -> 
+      let cert = Certificate.z_cert_of_pos cert in
+       match Mc.zWeakChecker (CamlToCoq.list (fun x -> x) poly)  cert with
+	| Mc.True -> Some cert
+	| Mc.False ->  (print_string "buggy certificate" ; flush stdout) ;None
+
+
+
+
+let psatzl_Z gl = 
  micromega_gen parse_zarith  Mc.negate Mc.normalise zz_domain_spec
   [lift_ratproof 
     (Certificate.linear_prover Certificate.z_spec), "fourier refutation" ] gl
 
 
-let qomicron gl = 
+let psatzl_Q gl = 
  micromega_gen  parse_qarith Mc.cnf_negate Mc.cnf_normalise qq_domain_spec 
   [ Certificate.linear_prover Certificate.q_spec, "fourier refutation" ]   gl
 
-let romicron gl = 
+let psatz_Q i gl = 
+ micromega_gen parse_qarith Mc.cnf_negate Mc.cnf_normalise qq_domain_spec
+  [ call_csdpcert_q ("real_nonlinear_prover", Some i), "fourier refutation" ]  gl
+
+let psatzl_R gl = 
  micromega_gen  parse_rarith Mc.cnf_negate Mc.cnf_normalise rz_domain_spec 
   [ Certificate.linear_prover Certificate.z_spec, "fourier refutation" ]   gl
 
 
-let rmicromega i gl = 
- micromega_gen parse_rarith Mc.negate Mc.normalise rz_domain_spec
-  [ call_csdpcert ("real_nonlinear_prover", Some i), "fourier refutation" ]  gl
+let psatz_R i gl = 
+ micromega_gen parse_rarith Mc.cnf_negate Mc.cnf_normalise rz_domain_spec
+  [ call_csdpcert_z  ("real_nonlinear_prover", Some i), "fourier refutation" ]  gl
 
   
-let micromega i gl = 
+let psatz_Z i gl = 
  micromega_gen parse_zarith Mc.negate Mc.normalise zz_domain_spec 
- [lift_ratproof (call_csdpcert ("real_nonlinear_prover",Some i)), 
+ [lift_ratproof (call_csdpcert_z ("real_nonlinear_prover",Some i)), 
   "fourier refutation" ] gl
 
 
-let sos gl = 
+let sos_Z gl = 
  micromega_gen parse_zarith Mc.negate Mc.normalise  zz_domain_spec 
-  [lift_ratproof (call_csdpcert ("pure_sos", None)), "pure sos refutation"]  gl
+  [lift_ratproof (call_csdpcert_z ("pure_sos", None)), "pure sos refutation"]  gl
 
-let zomicron gl = 
+let sos_Q gl = 
+ micromega_gen parse_qarith Mc.cnf_negate Mc.cnf_normalise  qq_domain_spec 
+  [call_csdpcert_q ("pure_sos", None), "pure sos refutation"]  gl
+
+let sos_R gl = 
+ micromega_gen parse_rarith Mc.cnf_negate Mc.cnf_normalise  rz_domain_spec 
+  [call_csdpcert_z ("pure_sos", None), "pure sos refutation"]  gl
+
+
+
+let xlia gl = 
  micromega_gen parse_zarith Mc.negate Mc.normalise   zz_domain_spec 
   [Certificate.zlinear_prover, "zprover"] gl

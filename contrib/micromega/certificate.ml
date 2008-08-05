@@ -108,7 +108,7 @@ struct
   if compare_num v (Int 0) <> 0
   then 
    if Monomial.compare Monomial.const k = 0
-   then 	Printf.fprintf o "%s " (string_of_num v)
+   then         Printf.fprintf o "%s " (string_of_num v)
    else Printf.fprintf o "%s*%a " (string_of_num v) Monomial.pp k) p  
 
  (* Get the coefficient of monomial mn *)
@@ -304,8 +304,8 @@ let factorise_linear_cone c =
       (match pending with
        | None -> rebuild_cone l (Some e) 
        | Some p -> (match factorise p e with
-	  | None -> Mc.S_Add(p, rebuild_cone l (Some e))
-	  | Some f -> rebuild_cone l (Some f) )
+          | None -> Mc.S_Add(p, rebuild_cone l (Some e))
+          | Some f -> rebuild_cone l (Some f) )
       ) in
 
   (rebuild_cone (List.sort Pervasives.compare (cone_list c [])) None)
@@ -387,10 +387,10 @@ let build_linear_system l =
   (* I need at least something strictly positive *)
  let strict = {
   coeffs = Vect.from_list ((Big_int unit_big_int)::
-			    (List.map (fun (x,y) -> 
-			     match y with Mc.Strict -> 
-			      Big_int unit_big_int 
-			      | _ -> Big_int zero_big_int) l));
+                            (List.map (fun (x,y) -> 
+                             match y with Mc.Strict -> 
+                              Big_int unit_big_int 
+                              | _ -> Big_int zero_big_int) l));
   op = Ge ; cst = Big_int unit_big_int } in
   (* Add the positivity constraint *)
   {coeffs = Vect.from_list ([Big_int unit_big_int]) ; 
@@ -414,22 +414,22 @@ let make_certificate n_spec cert li =
       in
       let rec scalar_product cert l =
        match cert with
-	| [] -> Mc.S_Z
-	| c::cert -> match l with
-	   | [] -> failwith "make_certificate(1)"
-	   | i::l ->  
-	      let r = scalar_product cert l in
-	       match compare_big_int c  zero_big_int with
-		| -1 -> Mc.S_Add (
-		   Mc.S_Ideal (Mc.PEc ( bint_to_cst c), Mc.S_In (Ml2C.nat i)), 
-		   r)
-		| 0  -> r
-		| _ ->  Mc.S_Add (
-		   Mc.S_Mult (Mc.S_Pos (bint_to_cst c), Mc.S_In (Ml2C.nat i)),
-		   r) in
+        | [] -> Mc.S_Z
+        | c::cert -> match l with
+           | [] -> failwith "make_certificate(1)"
+           | i::l ->  
+              let r = scalar_product cert l in
+               match compare_big_int c  zero_big_int with
+                | -1 -> Mc.S_Add (
+                   Mc.S_Ideal (Mc.PEc ( bint_to_cst c), Mc.S_In (Ml2C.nat i)), 
+                   r)
+                | 0  -> r
+                | _ ->  Mc.S_Add (
+                   Mc.S_Mult (Mc.S_Pos (bint_to_cst c), Mc.S_In (Ml2C.nat i)),
+                   r) in
        
       Some ((factorise_linear_cone 
-	      (simplify_cone n_spec (Mc.S_Add (cst, scalar_product cert' li)))))
+              (simplify_cone n_spec (Mc.S_Add (cst, scalar_product cert' li)))))
 
 
 exception Found of Monomial.t
@@ -444,7 +444,7 @@ let raw_certificate l =
   with x -> 
    if debug 
    then (Printf.printf "raw certificate %s" (Printexc.to_string x);   
-	 flush stdout) ;
+         flush stdout) ;
    None
 
 
@@ -462,9 +462,9 @@ let linear_prover n_spec l  =
   (fun (x,_) -> if snd' x = Mc.NonEqual then true else false) li in
  let l' = List.map 
   (fun (c,i) -> let (Mc.Pair(x,y)) = c in 
-		 match y with 
-		   Mc.NonEqual -> failwith "cannot happen" 
-		  |  y -> ((dev_form n_spec x, y),i)) l' in
+                 match y with 
+                   Mc.NonEqual -> failwith "cannot happen" 
+                  |  y -> ((dev_form n_spec x, y),i)) l' in
   
   simple_linear_prover n_spec l' 
 
@@ -513,106 +513,228 @@ let rec remove_assoc p x l =
 
 let eq x y = Vect.compare x y = 0
 
-(* Beurk... this code is a shame *)
+let  remove e  l  = List.fold_left (fun l x -> if eq x e then l else x::l) [] l
 
-let rec zlinear_prover sys = xzlinear_prover [] sys
 
-and xzlinear_prover enum l :  (Mc.proofTerm option) = 
- match linear_prover z_spec l with
-  | Some prf ->  Some (Mc.RatProof prf)
-  | None     ->  
+(* The prover is (probably) incomplete --
+   only searching for naive cutting planes *)
+
+let candidates sys = 
+ let ll = List.fold_right (
+  fun (Mc.Pair(e,k)) r -> 
+   match k with 
+    | Mc.NonStrict -> (dev_form z_spec e , Ge)::r
+    | Mc.Equal     ->  (dev_form z_spec e , Eq)::r 
+       (* we already know the bound -- don't compute it again *)
+    | _     -> failwith "Cannot happen candidates") sys [] in
+
+ let (sys,var_mn) = make_linear_system ll in
+ let vars = mapi (fun _ i -> Vect.set i (Int 1) Vect.null) var_mn in
+  (List.fold_left (fun l cstr ->   
+   let gcd = Big_int (Vect.gcd cstr.coeffs) in
+    if gcd =/ (Int 1) && cstr.op = Eq 
+    then l 
+    else  (Vect.mul (Int 1 // gcd) cstr.coeffs)::l) [] sys) @ vars
+
+
+let rec xzlinear_prover planes sys = 
+ match linear_prover z_spec sys with
+  | Some prf -> Some (Mc.RatProof prf)
+  | None     -> (* find the candidate with the smallest range *)
+     (* Grrr - linear_prover is also calling 'make_linear_system' *)
      let ll = List.fold_right (fun (Mc.Pair(e,k)) r -> match k with 
        Mc.NonEqual -> r  
       | k -> (dev_form z_spec e , 
-	     match k with
-	      | Mc.Strict | Mc.NonStrict -> Ge 
-		 (* Loss of precision -- weakness of fourier*)
-	      | Mc.Equal              -> Eq
-	      | Mc.NonEqual -> failwith "Cannot happen") :: r) l [] in
+             match k with
+               Mc.NonStrict -> Ge 
+              | Mc.Equal              -> Eq
+              | Mc.Strict | Mc.NonEqual -> failwith "Cannot happen") :: r) sys [] in
+     let (ll,var) = make_linear_system ll in
+     let candidates = List.fold_left (fun  acc vect -> 
+      match Fourier.optimise vect ll with
+       | None -> acc
+       | Some i -> 
+(*	  Printf.printf "%s in %s\n" (Vect.string vect) (string_of_intrvl i) ; *)
+	  flush stdout ; 
+	  (vect,i) ::acc)  [] planes in
 
-     let (sys,var) = make_linear_system ll in
-     let res = 
-      match Fourier.find_Q_interval sys with
-       | Some(i,x,j) -> if i =/ j 
-	 then Some(i,Vect.set x (Int 1) Vect.null,i) else None 
-       | None -> None in
-     let res = match res with
-      | None ->
-	 begin
-	  let candidates = List.fold_right 
-	   (fun cstr acc -> 
-	    let gcd = Big_int (Vect.gcd cstr.coeffs) in
-	    let vect = Vect.mul (Int 1 // gcd) cstr.coeffs in
-	     if mem eq vect enum then acc
-	     else ((vect,Fourier.optimise vect sys)::acc)) sys [] in
-	  let candidates = List.fold_left (fun l (x,i) -> 
-	   match i with 
-	     None -> (x,Empty)::l 
-	    | Some i ->  (x,i)::l) [] (candidates) in
-	   match List.fold_left (fun (x1,i1) (x2,i2) -> 
-	    if smaller_itv i1 i2 
-	    then (x1,i1) else (x2,i2)) (Vect.null,Itv(None,None)) candidates 
-	   with
-	    | (i,Empty) -> None
-	    | (x,Itv(Some i, Some j))  -> Some(i,x,j)
-	    | (x,Point n) ->  Some(n,x,n)
-	    |   x        ->   match Fourier.find_Q_interval sys with
-		 | None -> None
-		 | Some(i,x,j) -> 
-		    if i =/ j 
-		    then Some(i,Vect.set x (Int 1) Vect.null,i) 
-		    else None 
-	 end
-      |   _ -> res in
-
-      match res with 
+     let smallest_interval = 
+      match List.fold_left (fun (x1,i1) (x2,i2) -> 
+       if smaller_itv i1 i2 
+       then (x1,i1) else (x2,i2)) (Vect.null,Itv(None,None)) candidates 
+      with
+       | (x,Itv(Some i, Some j))  -> Some(i,x,j)
+       | (x,Point n) ->  Some(n,x,n)
+       |   x        ->   None (* This might be a cutting plane *)
+      in
+      match smallest_interval with
        | Some (lb,e,ub) -> 
-	  let (lbn,lbd) = 
-	   (Ml2C.bigint (sub_big_int (numerator lb)  unit_big_int),
-	   Ml2C.bigint (denominator lb)) in
-	  let (ubn,ubd) = 
-	   (Ml2C.bigint (add_big_int unit_big_int (numerator ub)) , 
-	   Ml2C.bigint (denominator ub)) in
-	  let expr = list_to_polynomial var (Vect.to_list e) in
-	   (match 
-	     (*x <= ub ->  x  > ub *)
-	     linear_prover  z_spec 
-	      (Mc.Pair(pplus (pmult (pconst ubd) expr) (popp (pconst  ubn)),
-		      Mc.NonStrict) :: l),
-	    (* lb <= x  -> lb > x *)
-	    linear_prover z_spec 
-	     (Mc.Pair( pplus  (popp (pmult  (pconst lbd) expr)) (pconst lbn) ,  
-		     Mc.NonStrict)::l) 
-	    with
-	     | Some cub , Some clb  ->   
-		(match zlinear_enum (e::enum)   expr 
-		  (ceiling_num lb)  (floor_num ub) l 
-		 with
-		 | None -> None
-		 | Some prf -> 
-		    Some (Mc.EnumProof(Ml2C.q lb,expr,Ml2C.q ub,clb,cub,prf)))
-	     | _ -> None
-	   )
+          let (lbn,lbd) = 
+           (Ml2C.bigint (sub_big_int (numerator lb)  unit_big_int),
+           Ml2C.bigint (denominator lb)) in
+          let (ubn,ubd) = 
+           (Ml2C.bigint (add_big_int unit_big_int (numerator ub)) , 
+           Ml2C.bigint (denominator ub)) in
+          let expr = list_to_polynomial var (Vect.to_list e) in
+           (match 
+             (*x <= ub ->  x  > ub *)
+             linear_prover  z_spec 
+              (Mc.Pair(pplus (pmult (pconst ubd) expr) (popp (pconst  ubn)),
+                      Mc.NonStrict) :: sys),
+            (* lb <= x  -> lb > x *)
+            linear_prover z_spec 
+             (Mc.Pair( pplus  (popp (pmult  (pconst lbd) expr)) (pconst lbn) ,  
+                     Mc.NonStrict)::sys) 
+            with
+             | Some cub , Some clb  ->   
+                (match zlinear_enum  (remove e planes)   expr 
+                  (ceiling_num lb)  (floor_num ub) sys 
+                 with
+                  | None -> None
+                  | Some prf -> 
+                     Some (Mc.EnumProof(Ml2C.q lb,expr,Ml2C.q ub,clb,cub,prf)))
+             | _ -> None
+           )
        |  _ -> None
-and xzlinear_enum enum expr clb cub l = 
+and zlinear_enum  planes expr clb cub l = 
  if clb >/  cub
  then Some Mc.Nil
  else 
   let pexpr = pplus (popp (pconst (Ml2C.bigint (numerator clb)))) expr in
   let sys' = (Mc.Pair(pexpr, Mc.Equal))::l in
-   match xzlinear_prover enum sys' with
+   (*let enum =  *)
+   match xzlinear_prover planes sys' with
     | None -> if debug then print_string "zlp?"; None
     | Some prf -> if debug then print_string "zlp!";
-    match zlinear_enum enum expr (clb +/ (Int 1)) cub l with
+    match zlinear_enum planes expr (clb +/ (Int 1)) cub l with
      | None -> None
      | Some prfl -> Some (Mc.Cons(prf,prfl))
 
-and zlinear_enum enum expr clb cub l = 
- let res = xzlinear_enum enum expr clb cub l in
-  if debug then Printf.printf "zlinear_enum %s %s -> %s\n" 
-   (string_of_num clb) 
-   (string_of_num cub) 
-   (match res with
-    | None -> "None"
-    | Some r -> "Some") ; res
+let zlinear_prover sys =  
+ let candidates = candidates sys in
+ (*  Printf.printf "candidates %d" (List.length candidates) ; *) 
+ xzlinear_prover candidates sys
+
+open Sos
+
+let rec scale_term t = 
+ match t with
+  | Zero    -> unit_big_int , Zero
+  | Const n ->  (denominator n) , Const (Big_int (numerator n))
+  | Var n   -> unit_big_int , Var n
+  | Inv _   -> failwith "scale_term : not implemented"
+  | Opp t   -> let s, t = scale_term t in s, Opp t
+  | Add(t1,t2) -> let s1,y1 = scale_term t1 and s2,y2 = scale_term t2 in
+    let g = gcd_big_int s1 s2 in
+    let s1' = div_big_int s1 g in
+    let s2' = div_big_int s2 g in
+    let e = mult_big_int g (mult_big_int s1' s2') in
+     if (compare_big_int e unit_big_int) = 0
+     then (unit_big_int, Add (y1,y2))
+     else 	e, Add (Mul(Const (Big_int s2'), y1),
+		       Mul (Const (Big_int s1'), y2))
+  | Sub _ -> failwith "scale term: not implemented"
+  | Mul(y,z) ->       let s1,y1 = scale_term y and s2,y2 = scale_term z in
+		       mult_big_int s1 s2 , Mul (y1, y2)
+  |  Pow(t,n) -> let s,t = scale_term t in
+		  power_big_int_positive_int s  n , Pow(t,n)
+  |   _ -> failwith "scale_term : not implemented"
+
+let scale_term t =
+ let (s,t') = scale_term t in
+  s,t'
+
+
+let get_index_of_ith_match f i l  =
+ let rec get j res l =
+  match l with
+   | [] -> failwith "bad index"
+   | e::l -> if f e
+     then 
+       (if j = i then res else get (j+1) (res+1) l )
+     else get j (res+1) l in
+  get 0 0 l
+
+
+let rec scale_certificate pos = match pos with
+ | Axiom_eq i ->  unit_big_int , Axiom_eq i
+ | Axiom_le i ->  unit_big_int , Axiom_le i
+ | Axiom_lt i ->   unit_big_int , Axiom_lt i
+ | Monoid l   -> unit_big_int , Monoid l
+ | Rational_eq n ->  (denominator n) , Rational_eq (Big_int (numerator n))
+ | Rational_le n ->  (denominator n) , Rational_le (Big_int (numerator n))
+ | Rational_lt n ->  (denominator n) , Rational_lt (Big_int (numerator n))
+ | Square t -> let s,t' =  scale_term t in 
+		mult_big_int s s , Square t'
+ | Eqmul (t, y) -> let s1,y1 = scale_term t and s2,y2 = scale_certificate y in
+		    mult_big_int s1 s2 , Eqmul (y1,y2)
+ | Sum (y, z) -> let s1,y1 = scale_certificate y 
+   and s2,y2 = scale_certificate z in
+   let g = gcd_big_int s1 s2 in
+   let s1' = div_big_int s1 g in
+   let s2' = div_big_int s2 g in
+    mult_big_int g (mult_big_int s1' s2'), 
+    Sum (Product(Rational_le (Big_int s2'), y1),
+	Product (Rational_le (Big_int s1'), y2))
+ | Product (y, z) -> 
+    let s1,y1 = scale_certificate y and s2,y2 = scale_certificate z in
+     mult_big_int s1 s2 , Product (y1,y2)
+
+
+open Micromega
+ let rec term_to_q_expr = function
+  | Const n ->  PEc (Ml2C.q n)
+  | Zero   ->  PEc ( Ml2C.q (Int 0))
+  | Var s   ->  PEX (Ml2C.index 
+		      (int_of_string (String.sub s 1 (String.length s - 1))))
+  | Mul(p1,p2) ->  PEmul(term_to_q_expr p1, term_to_q_expr p2)
+  | Add(p1,p2) ->   PEadd(term_to_q_expr p1, term_to_q_expr p2)
+  | Opp p ->   PEopp (term_to_q_expr p)
+  | Pow(t,n) ->  PEpow (term_to_q_expr t,Ml2C.n n)
+  | Sub(t1,t2) ->  PEsub (term_to_q_expr t1,  term_to_q_expr t2)
+  | _ -> failwith "term_to_q_expr: not implemented"
+
+let  q_cert_of_pos  pos = 
+ let rec _cert_of_pos = function
+   Axiom_eq i ->  Mc.S_In (Ml2C.nat i)
+  | Axiom_le i ->  Mc.S_In (Ml2C.nat i)
+  | Axiom_lt i ->  Mc.S_In (Ml2C.nat i)
+  | Monoid l  -> Mc.S_Monoid (Ml2C.list Ml2C.nat l)
+  | Rational_eq n | Rational_le n | Rational_lt n -> 
+     if compare_num n (Int 0) = 0 then Mc.S_Z else
+      Mc.S_Pos (Ml2C.q   n)
+  | Square t -> Mc.S_Square (term_to_q_expr  t)
+  | Eqmul (t, y) -> Mc.S_Ideal(term_to_q_expr t, _cert_of_pos y)
+  | Sum (y, z) -> Mc.S_Add  (_cert_of_pos y, _cert_of_pos z)
+  | Product (y, z) -> Mc.S_Mult (_cert_of_pos y, _cert_of_pos z) in
+  simplify_cone q_spec (_cert_of_pos pos)
+
+
+ let rec term_to_z_expr = function
+  | Const n ->  PEc (Ml2C.bigint (big_int_of_num n))
+  | Zero   ->  PEc ( Z0)
+  | Var s   ->  PEX (Ml2C.index 
+		      (int_of_string (String.sub s 1 (String.length s - 1))))
+  | Mul(p1,p2) ->  PEmul(term_to_z_expr p1, term_to_z_expr p2)
+  | Add(p1,p2) ->   PEadd(term_to_z_expr p1, term_to_z_expr p2)
+  | Opp p ->   PEopp (term_to_z_expr p)
+  | Pow(t,n) ->  PEpow (term_to_z_expr t,Ml2C.n n)
+  | Sub(t1,t2) ->  PEsub (term_to_z_expr t1,  term_to_z_expr t2)
+  | _ -> failwith "term_to_z_expr: not implemented"
+
+let  z_cert_of_pos  pos = 
+ let s,pos = (scale_certificate pos) in
+ let rec _cert_of_pos = function
+   Axiom_eq i ->  Mc.S_In (Ml2C.nat i)
+  | Axiom_le i ->  Mc.S_In (Ml2C.nat i)
+  | Axiom_lt i ->  Mc.S_In (Ml2C.nat i)
+  | Monoid l  -> Mc.S_Monoid (Ml2C.list Ml2C.nat l)
+  | Rational_eq n | Rational_le n | Rational_lt n -> 
+     if compare_num n (Int 0) = 0 then Mc.S_Z else
+      Mc.S_Pos (Ml2C.bigint (big_int_of_num  n))
+  | Square t -> Mc.S_Square (term_to_z_expr  t)
+  | Eqmul (t, y) -> Mc.S_Ideal(term_to_z_expr t, _cert_of_pos y)
+  | Sum (y, z) -> Mc.S_Add  (_cert_of_pos y, _cert_of_pos z)
+  | Product (y, z) -> Mc.S_Mult (_cert_of_pos y, _cert_of_pos z) in
+  simplify_cone z_spec (_cert_of_pos pos)
 

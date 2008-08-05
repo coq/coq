@@ -6,12 +6,12 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZArith Zwf Micromegatac QArith.
+Require Import ZArith Zwf Psatz QArith.
 Open Scope Z_scope.
 
 Lemma Zabs_square : forall x,  (Zabs  x)^2 = x^2.
 Proof.
- intros ; case (Zabs_dec x) ; intros ; micromega Z.
+ intros ; case (Zabs_dec x) ; intros ; psatz Z 2.
 Qed.
 Hint Resolve Zabs_pos Zabs_square.
 
@@ -21,11 +21,11 @@ intros [n [p [Heq Hnz]]]; pose (n' := Zabs n); pose (p':=Zabs p).
 assert (facts : 0 <= Zabs n /\ 0 <= Zabs p /\ Zabs n^2=n^2
          /\ Zabs p^2 = p^2) by auto.
 assert (H : (0 < n' /\ 0 <= p' /\ n' ^2 = 2* p' ^2)) by 
-  (destruct facts as [Hf1 [Hf2 [Hf3 Hf4]]]; unfold n', p' ; micromega Z).
+  (destruct facts as [Hf1 [Hf2 [Hf3 Hf4]]]; unfold n', p' ; psatz Z 2).
 generalize p' H; elim n' using (well_founded_ind (Zwf_well_founded 0)); clear.
 intros n IHn p [Hn [Hp Heq]].
-assert (Hzwf : Zwf 0 (2*p-n) n) by (unfold Zwf; micromega Z).
-assert (Hdecr : 0 < 2*p-n /\ 0 <= n-p /\ (2*p-n)^2=2*(n-p)^2) by micromega Z.
+assert (Hzwf : Zwf 0 (2*p-n) n) by (unfold Zwf; psatz Z 2).
+assert (Hdecr : 0 < 2*p-n /\ 0 <= n-p /\ (2*p-n)^2=2*(n-p)^2) by psatz Z 2.
 apply (IHn (2*p-n) Hzwf (n-p) Hdecr).
 Qed.
 
@@ -44,7 +44,9 @@ Lemma QdenZpower : forall x : Q, ' Qden (x ^ 2)%Q = ('(Qden x) ^ 2) %Z.
 Proof.
   intros.
   destruct x.
-  cbv beta  iota zeta delta - [Pmult].
+  simpl.
+  unfold Zpower_pos.
+  simpl.
   rewrite Pmult_1_r.
   reflexivity.
 Qed.

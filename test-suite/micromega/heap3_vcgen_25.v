@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import ZArith.
-Require Import Micromegatac.
+Require Import Psatz.
 
 Open Scope Z_scope.
 
@@ -34,5 +34,5 @@ Lemma vcgen_25 : forall
   (H13 : 0 <= 121 * i + 810 * j + -7465 * m + 64350),
   (1 = -2 * i + it).
 Proof.
-  intros ; zfarkas.
+  intros ; lia.
 Qed.

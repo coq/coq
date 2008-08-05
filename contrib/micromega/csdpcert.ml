@@ -27,7 +27,7 @@ struct
  open Mc
 
  let rec expr_to_term = function
-  |  PEc z ->  Const  (Big_int (C2Ml.z_big_int z))
+  |  PEc z ->  Const  (C2Ml.q_to_num z)
   |  PEX v ->  Var ("x"^(string_of_int (C2Ml.index v)))
   |  PEmul(p1,p2) -> 
       let p1 = expr_to_term p1 in
@@ -40,25 +40,15 @@ struct
   |  PEopp p ->  Opp (expr_to_term p)
 
       
- let rec term_to_expr = function
-  | Const n ->  PEc (Ml2C.bigint (big_int_of_num n))
-  | Zero   ->  PEc ( Z0)
-  | Var s   ->  PEX (Ml2C.index 
-		      (int_of_string (String.sub s 1 (String.length s - 1))))
-  | Mul(p1,p2) ->  PEmul(term_to_expr p1, term_to_expr p2)
-  | Add(p1,p2) ->   PEadd(term_to_expr p1, term_to_expr p2)
-  | Opp p ->   PEopp (term_to_expr p)
-  | Pow(t,n) ->  PEpow (term_to_expr t,Ml2C.n n)
-  | Sub(t1,t2) ->  PEsub (term_to_expr t1,  term_to_expr t2)
-  | _ -> failwith "term_to_expr: not implemented"
 
- let term_to_expr e =
+
+(* let term_to_expr e =
   let e' = term_to_expr e in
    if debug 
    then Printf.printf "term_to_expr : %s - %s\n"  
     (string_of_poly (poly_of_term  e)) 
     (string_of_poly (poly_of_term (expr_to_term e')));
-   e'
+   e' *)
 
 end 
 open M      
@@ -66,110 +56,8 @@ open M
 open List
 open Mutils 
 
-let rec scale_term t = 
- match t with
-  | Zero    -> unit_big_int , Zero
-  | Const n ->  (denominator n) , Const (Big_int (numerator n))
-  | Var n   -> unit_big_int , Var n
-  | Inv _   -> failwith "scale_term : not implemented"
-  | Opp t   -> let s, t = scale_term t in s, Opp t
-  | Add(t1,t2) -> let s1,y1 = scale_term t1 and s2,y2 = scale_term t2 in
-    let g = gcd_big_int s1 s2 in
-    let s1' = div_big_int s1 g in
-    let s2' = div_big_int s2 g in
-    let e = mult_big_int g (mult_big_int s1' s2') in
-     if (compare_big_int e unit_big_int) = 0
-     then (unit_big_int, Add (y1,y2))
-     else 	e, Add (Mul(Const (Big_int s2'), y1),
-		       Mul (Const (Big_int s1'), y2))
-  | Sub _ -> failwith "scale term: not implemented"
-  | Mul(y,z) ->       let s1,y1 = scale_term y and s2,y2 = scale_term z in
-		       mult_big_int s1 s2 , Mul (y1, y2)
-  |  Pow(t,n) -> let s,t = scale_term t in
-		  power_big_int_positive_int s  n , Pow(t,n)
-  |   _ -> failwith "scale_term : not implemented"
-
-let scale_term t =
- let (s,t') = scale_term t in
-  s,t'
-   
 
 
-
-let rec scale_certificate pos = match pos with
- | Axiom_eq i ->  unit_big_int , Axiom_eq i
- | Axiom_le i ->  unit_big_int , Axiom_le i
- | Axiom_lt i ->   unit_big_int , Axiom_lt i
- | Monoid l   -> unit_big_int , Monoid l
- | Rational_eq n ->  (denominator n) , Rational_eq (Big_int (numerator n))
- | Rational_le n ->  (denominator n) , Rational_le (Big_int (numerator n))
- | Rational_lt n ->  (denominator n) , Rational_lt (Big_int (numerator n))
- | Square t -> let s,t' =  scale_term t in 
-		mult_big_int s s , Square t'
- | Eqmul (t, y) -> let s1,y1 = scale_term t and s2,y2 = scale_certificate y in
-		    mult_big_int s1 s2 , Eqmul (y1,y2)
- | Sum (y, z) -> let s1,y1 = scale_certificate y 
-   and s2,y2 = scale_certificate z in
-   let g = gcd_big_int s1 s2 in
-   let s1' = div_big_int s1 g in
-   let s2' = div_big_int s2 g in
-    mult_big_int g (mult_big_int s1' s2'), 
-    Sum (Product(Rational_le (Big_int s2'), y1),
-	Product (Rational_le (Big_int s1'), y2))
- | Product (y, z) -> 
-    let s1,y1 = scale_certificate y and s2,y2 = scale_certificate z in
-     mult_big_int s1 s2 , Product (y1,y2)
-
-
-let is_eq = function  Mc.Equal -> true | _ -> false
-let is_le = function  Mc.NonStrict -> true | _ -> false
-let is_lt = function  Mc.Strict -> true | _ -> false
-
-let get_index_of_ith_match f i l  =
- let rec get j res l =
-  match l with
-   | [] -> failwith "bad index"
-   | e::l -> if f e
-     then 
-       (if j = i then res else get (j+1) (res+1) l )
-     else get j (res+1) l in
-  get 0 0 l
-
-
-let  cert_of_pos eq le lt ll l pos = 
- let s,pos = (scale_certificate pos) in
- let rec _cert_of_pos = function
-   Axiom_eq i -> let idx = get_index_of_ith_match is_eq i l in
-		  Mc.S_In (Ml2C.nat idx)
-  | Axiom_le i -> let idx = get_index_of_ith_match is_le i l in
-		   Mc.S_In (Ml2C.nat idx)
-  | Axiom_lt i -> let idx = get_index_of_ith_match is_lt i l in
-		   Mc.S_In (Ml2C.nat idx)
-  | Monoid l  -> Mc.S_Monoid (Ml2C.list Ml2C.nat l)
-  | Rational_eq n | Rational_le n | Rational_lt n -> 
-     if compare_num n (Int 0) = 0 then Mc.S_Z else
-      Mc.S_Pos (Ml2C.bigint (big_int_of_num  n))
-  | Square t -> Mc.S_Square (term_to_expr  t)
-  | Eqmul (t, y) -> Mc.S_Ideal(term_to_expr t, _cert_of_pos y)
-  | Sum (y, z) -> Mc.S_Add  (_cert_of_pos y, _cert_of_pos z)
-  | Product (y, z) -> Mc.S_Mult (_cert_of_pos y, _cert_of_pos z) in
-  s, Certificate.simplify_cone Certificate.z_spec (_cert_of_pos pos)
-
-
-let  term_of_cert l pos = 
- let l = List.map fst' l in
- let rec _cert_of_pos = function
-  | Mc.S_In i -> expr_to_term (List.nth l (C2Ml.nat i))
-  | Mc.S_Pos p -> Const (C2Ml.num  p)
-  | Mc.S_Z     -> Const (Int 0)
-  | Mc.S_Square t -> Mul(expr_to_term t, expr_to_term t)
-  | Mc.S_Monoid m -> List.fold_right 
-     (fun x m -> Mul (expr_to_term (List.nth l (C2Ml.nat x)),m)) 
-     (C2Ml.list (fun x -> x) m)  (Const (Int 1))
-  | Mc.S_Ideal (t, y) -> Mul(expr_to_term t, _cert_of_pos y)
-  | Mc.S_Add (y, z) -> Add  (_cert_of_pos y, _cert_of_pos z)
-  | Mc.S_Mult (y, z) -> Mul (_cert_of_pos y, _cert_of_pos z) in
-  (_cert_of_pos pos)
 
 let rec canonical_sum_to_string = function s -> failwith "not implemented"
 
@@ -207,22 +95,6 @@ let rec sets_of_list l =
   | [] -> [[]]
   | e::l -> let s = sets_of_list l in
 	     s@(List.map (fun s0 -> e::s0) s) 
-
-let  cert_of_pos  pos = 
- let s,pos = (scale_certificate pos) in
- let rec _cert_of_pos = function
-   Axiom_eq i ->  Mc.S_In (Ml2C.nat i)
-  | Axiom_le i ->  Mc.S_In (Ml2C.nat i)
-  | Axiom_lt i ->  Mc.S_In (Ml2C.nat i)
-  | Monoid l  -> Mc.S_Monoid (Ml2C.list Ml2C.nat l)
-  | Rational_eq n | Rational_le n | Rational_lt n -> 
-     if compare_num n (Int 0) = 0 then Mc.S_Z else
-      Mc.S_Pos (Ml2C.bigint (big_int_of_num  n))
-  | Square t -> Mc.S_Square (term_to_expr  t)
-  | Eqmul (t, y) -> Mc.S_Ideal(term_to_expr t, _cert_of_pos y)
-  | Sum (y, z) -> Mc.S_Add  (_cert_of_pos y, _cert_of_pos z)
-  | Product (y, z) -> Mc.S_Mult (_cert_of_pos y, _cert_of_pos z) in
-  s, Certificate.simplify_cone Certificate.z_spec (_cert_of_pos pos)
 
 (* The exploration is probably not complete - for simple cases, it works... *)
 let real_nonlinear_prover d l =
@@ -272,15 +144,7 @@ let real_nonlinear_prover d l =
 
   let proof = list_fold_right_elements 
    (fun s t -> Sum(s,t)) (proof_ne :: proofs_ideal @ proofs_cone) in
-   
-  let s,proof' = scale_certificate proof in
-  let cert  = snd (cert_of_pos proof') in
-   if debug 
-   then Printf.printf "cert poly : %s\n" 
-    (string_of_poly (poly_of_term (term_of_cert l cert)));
-   match Mc.zWeakChecker (Ml2C.list (fun x -> x) l)  cert with
-    | Mc.True -> Some cert
-    | Mc.False ->  (print_string "buggy certificate" ; flush stdout) ;None
+   Some proof
  with 
   | Sos.TooDeep -> None
 
@@ -300,16 +164,16 @@ let pure_sos  l =
 		     (term_of_poly p)), rst)) 
 		     polys (Rational_lt (Int 0))) in
   let proof = Sum(Axiom_lt i, pos) in
-  let s,proof' = scale_certificate proof in
-  let cert  = snd (cert_of_pos proof') in
-   Some cert
+(*  let s,proof' = scale_certificate proof in
+  let cert  = snd (cert_of_pos proof') in *)
+   Some proof
  with
   | Not_found -> (* This is no strict inequality *) None
   |  x        -> None
 
 
-type micromega_polys = (Micromega.z Mc.pExpr, Mc.op1) Micromega.prod list
-type csdp_certificate = Certificate.Mc.z Certificate.Mc.coneMember option
+type micromega_polys = (Micromega.q Mc.pExpr, Mc.op1) Micromega.prod list
+type csdp_certificate = Sos.positivstellensatz option
 type provername = string * int option
 
 let main () =

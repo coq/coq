@@ -14,7 +14,7 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id:$ *)
+(* $Id$ *)
 
 open Quote
 open Ring
@@ -26,34 +26,49 @@ let out_arg = function
   | ArgVar _ -> anomaly "Unevaluated or_var variable"
   | ArgArg x -> x
 
-TACTIC EXTEND Micromega
-| [ "micromegap" int_or_var(i) ] -> [ Coq_micromega.micromega (out_arg i) ]
-| [ "micromegap" ] -> [ Coq_micromega.micromega (-1) ]
+TACTIC EXTEND PsatzZ
+| [ "psatz_Z" int_or_var(i) ] -> [ Coq_micromega.psatz_Z (out_arg i) ]
+| [ "psatz_Z" ] -> [ Coq_micromega.psatz_Z (-1) ]
 END
 
-TACTIC EXTEND Sos
-[ "sosp" ] -> [ Coq_micromega.sos]
+TACTIC EXTEND Sos_Z
+| [ "sos_Z" ] -> [ Coq_micromega.sos_Z]
+   END
+
+TACTIC EXTEND Sos_Q
+| [ "sos_Q" ] -> [ Coq_micromega.sos_Q]
+   END
+
+TACTIC EXTEND Sos_R
+| [ "sos_R" ] -> [ Coq_micromega.sos_R]
 END
 
 
 TACTIC EXTEND Omicron
-[ "omicronp"  ] -> [ Coq_micromega.omicron]
+[ "psatzl_Z"  ] -> [ Coq_micromega.psatzl_Z]
 END
 
 TACTIC EXTEND QOmicron
-[ "qomicronp"  ] -> [ Coq_micromega.qomicron]
+[ "psatzl_Q"  ] -> [ Coq_micromega.psatzl_Q]
 END
 
 
 TACTIC EXTEND ZOmicron
-[ "zomicronp"  ] -> [ Coq_micromega.zomicron]
+[ "xlia"  ] -> [ Coq_micromega.xlia]
 END
 
 TACTIC EXTEND ROmicron
-[ "romicronp"  ] -> [ Coq_micromega.romicron]
+[ "psatzl_R"  ] -> [ Coq_micromega.psatzl_R]
 END
 
 TACTIC EXTEND RMicromega
-| [ "rmicromegap" int_or_var(i) ] -> [ Coq_micromega.rmicromega (out_arg i) ]
-| [ "rmicromegap" ] -> [ Coq_micromega.rmicromega (-1) ]
+| [ "psatz_R" int_or_var(i) ] -> [ Coq_micromega.psatz_R (out_arg i) ]
+| [ "psatz_R" ] -> [ Coq_micromega.psatz_R (-1) ]
 END
+
+
+TACTIC EXTEND QMicromega
+| [ "psatz_Q" int_or_var(i) ] -> [ Coq_micromega.psatz_Q (out_arg i) ]
+| [ "psatz_Q" ] -> [ Coq_micromega.psatz_Q (-1) ]
+END
+
