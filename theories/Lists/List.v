@@ -402,6 +402,12 @@ Section Elts.
       | None => default
     end.
 
+  Lemma nth_default_eq :
+    forall n l (d:A), nth_default d l n = nth n l d.
+  Proof.
+    unfold nth_default; induction n; intros [ | ] ?; simpl; auto.
+  Qed.
+
   Lemma nth_In :
     forall (n:nat) (l:list A) (d:A), n < length l -> In (nth n l d) l.
 
@@ -1056,7 +1062,13 @@ Section Map.
   Proof.
     induction l; simpl map; destruct n; firstorder.
   Qed.
-  
+
+  Lemma map_nth_error : forall n l d,
+    nth_error l n = Some d -> nth_error (map l) n = Some (f d).
+  Proof.
+    induction n; intros [ | ] ? Heq; simpl in *; inversion Heq; auto.
+  Qed.
+
   Lemma map_app : forall l l',  
     map (l++l') = (map l)++(map l').
   Proof. 
