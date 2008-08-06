@@ -15,12 +15,7 @@ html files are generated.
 Prerequisite
 ------------
 
-To produce the documents, you need the coqtop, coq-tex, coqdoc and
-gallina tools, with same version number as the current
-documentation. These four tools normally come with any basic Coq
-installation.
-
-In addition, to produce the PostScript documents, the following tools
+To produce the PostScript documents, the following tools
 are needed:
 
   - latex (latex2e)
@@ -38,26 +33,47 @@ To produce the html documents, the following tools are needed:
 
   - hevea (e.g. 1.07 works)
 
-To produce the documentation of the standard library, a source copy of
-the coq distribution is needed.
-
 Compilation
 -----------
 
-To produce all PostScript documents, do:                make all-ps
-To produce all PDF documents, do:                       make all-pdf
-To produce all html documents, do:                      make all-html
-To produce all formats of the Reference Manual, do:     make refman
-To produce all formats of the Tutorial, do:             make tutorial
-To produce all formats of the Coq Standard Library, do: make stdlib
-To produce all formats of the FAQ, do:                  make faq
+To produce all documentation about Coq, just run:
+
+   make doc
+
+
+Alternatively, you can use some specific targets:
+
+   make doc-ps 
+   	to produce all PostScript documents
+
+   make doc-pdf
+        to produce all PDF documents
+
+   make doc-html
+        to produce all html documents
+
+   make refman
+        to produce all formats of the reference manual
+
+   make tutorial
+        to produce all formats of the tutorial
+
+   make rectutorial
+        to produce all formats of the tutorial on recursive types
+
+   make faq
+        to produce all formats of the FAQ
+
+   make stdlib
+   	to produce all formats of the Coq standard library 
+
 
 Installation
 ------------
 
 To install all produced documents, do:
 
-  make DOCDIR=/some/directory/for/documentation install
+  make DOCDIR=/some/directory/for/documentation install-doc
 
 DOCDIR defauts to /usr/share/doc/coq-x.y were x.y is the version number
 
