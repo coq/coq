@@ -222,7 +222,7 @@ val insert_after_hyp : named_context_val -> variable ->
   named_declaration -> 
     (named_context -> unit) -> named_context_val
 
-val remove_hyps : identifier list -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val * identifier list
+val remove_hyps : identifier list -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
 
 
 (* spiwack: functions manipulating the retroknowledge *)

@@ -22,25 +22,28 @@ open Refiner
 
 (* w_tactic pour instantiate *) 
 
-let w_refine ev rawc evd =
-  if Evd.is_defined (evars_of evd) ev then 
+let w_refine evk rawc evd =
+  if Evd.is_defined (evars_of evd) evk then 
     error "Instantiate called on already-defined evar";
-  let e_info = Evd.find (evars_of evd) ev in
+  let e_info = Evd.find (evars_of evd) evk in
   let env = Evd.evar_env e_info in
-  let sigma,typed_c = 
+  let sigma,typed_c =
     try Pretyping.Default.understand_tcc ~resolve_classes:false
       (evars_of evd) env ~expected_type:e_info.evar_concl rawc
-    with _ -> error ("The term is not well-typed in the environment of " ^
-			string_of_existential ev)
+    with _ ->
+      let loc = Rawterm.loc_of_rawconstr rawc in
+      user_err_loc 
+        (loc,"",Pp.str ("Instance is not well-typed in the environment of " ^
+			string_of_existential evk))
   in
-    evar_define ev typed_c (evars_reset_evd sigma evd)
+    evar_define evk typed_c (evars_reset_evd sigma evd)
 
 (* vernac command Existential *)
 
 let instantiate_pf_com n com pfts = 
   let gls = top_goal_of_pftreestate pfts in
   let sigma = gls.sigma in 
-  let (sp,evi) (* as evc *) = 
+  let (evk,evi) = 
     let evl = Evarutil.non_instantiated sigma in
       if (n <= 0) then
 	error "incorrect existential variable index"
@@ -52,5 +55,5 @@ let instantiate_pf_com n com pfts =
   let env = Evd.evar_env evi in
   let rawc = Constrintern.intern_constr sigma env com in 
   let evd = create_goal_evar_defs sigma in
-  let evd' = w_refine sp rawc evd in
+  let evd' = w_refine evk rawc evd in
     change_constraints_pftreestate (evars_of evd') pfts

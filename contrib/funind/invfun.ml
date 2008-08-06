@@ -280,13 +280,13 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       List.map
 	(fun (_,_,br_type) ->
 	   List.map
-	     (fun id -> Genarg.IntroIdentifier id)
+	     (fun id -> dummy_loc, Genarg.IntroIdentifier id)
 	     (generate_fresh_id (id_of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
 	)
 	branches
     in
     (* before building the full intro pattern for the principle *)
-    let pat = Genarg.IntroOrAndPattern intro_pats in
+    let pat = Some (dummy_loc,Genarg.IntroOrAndPattern intro_pats) in
     let eq_ind = Coqlib.build_coq_eq () in
     let eq_construct = mkConstruct((destInd eq_ind),1) in
     (* The next to referencies will be used to find out which constructor to apply in each branch *)
@@ -297,7 +297,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       (* We get the identifiers of this branch *)
       let this_branche_ids =
 	List.fold_right
-	  (fun pat acc ->
+	  (fun (_,pat) acc ->
 	     match pat with
 	       | Genarg.IntroIdentifier id -> Idset.add id acc
 	       | _ -> anomaly "Not an identifier"
@@ -447,7 +447,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       [ observe_tac "intro args_names" (tclMAP h_intro args_names);
 	observe_tac "principle" (forward
 	  (Some (h_exact f_principle))
-	  (Genarg.IntroIdentifier principle_id)
+	  (dummy_loc,Genarg.IntroIdentifier principle_id)
 	  princ_type);
 	tclTHEN_i
 	  (observe_tac "functional_induction" (
@@ -948,7 +948,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 	    h_generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])];
 	    thin [hid];
 	    h_intro hid;
-	    Inv.inv FullInversion Genarg.IntroAnonymous (Rawterm.NamedHyp hid);
+	    Inv.inv FullInversion None (Rawterm.NamedHyp hid);
 	    (fun g ->
 	       let new_ids = List.filter (fun id -> not (Idset.mem id old_ids)) (pf_ids_of_hyps g) in 
 	       tclMAP (revert_graph kn pre_tac)  (hid::new_ids)  g

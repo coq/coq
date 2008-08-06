@@ -80,7 +80,9 @@ let uri_of_dirpath dir =
 
 let error_whelp_unknown_reference ref =
   let qid = Nametab.shortest_qualid_of_global Idset.empty ref in
-  error ("Definitions of the current session not supported in Whelp: " ^ string_of_qualid qid)
+  errorlabstrm ""
+    (strbrk "Definitions of the current session, like " ++ pr_qualid qid ++ 
+     strbrk ", are not supported in Whelp.")
 
 let uri_of_repr_kn ref (mp,dir,l) = 
   match mp with
@@ -104,7 +106,7 @@ let uri_of_ind_pointer l =
 
 let uri_of_global ref =
   match ref with
-  | VarRef id -> error ("Unknown Whelp reference: "^(string_of_id id))
+  | VarRef id -> error ("Unknown Whelp reference: "^(string_of_id id)^".")
   | ConstRef cst ->
       uri_of_repr_kn ref (repr_con cst); url_string ".con"
   | IndRef (kn,i) -> 
@@ -165,7 +167,7 @@ let rec uri_of_constr c =
   | RCast (_,c, CastConv (_,t)) ->
       uri_of_constr c; url_string ":"; uri_of_constr t
   | RRec _ | RIf _ | RLetTuple _ | RCases _ ->
-      error "Whelp does not support pattern-matching and (co-)fixpoint"
+      error "Whelp does not support pattern-matching and (co-)fixpoint."
   | RVar _ | RRef _ | RHole _ | REvar _ | RSort _ | RCast (_,_, CastCoerce) ->
       anomaly "Written w/o parenthesis"
   | RPatVar _ | RDynamic _ -> 

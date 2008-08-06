@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Term
 open Tacmach
@@ -21,20 +22,20 @@ type inversion_status = Dep of constr option | NoDep
 
 val inv_gen :
   bool -> inversion_kind -> inversion_status ->
-    intro_pattern_expr -> quantified_hypothesis -> tactic
+    intro_pattern_expr located option -> quantified_hypothesis -> tactic
 val invIn_gen :
-  inversion_kind -> intro_pattern_expr -> identifier list -> 
+  inversion_kind -> intro_pattern_expr located option -> identifier list -> 
     quantified_hypothesis -> tactic
 
 val inv_clause :
-  inversion_kind -> intro_pattern_expr -> identifier list ->
+  inversion_kind -> intro_pattern_expr located option -> identifier list ->
     quantified_hypothesis -> tactic
 
-val inv : inversion_kind -> intro_pattern_expr ->
+val inv : inversion_kind -> intro_pattern_expr located option ->
   quantified_hypothesis -> tactic
 
-val dinv : inversion_kind -> constr option -> intro_pattern_expr ->
-  quantified_hypothesis -> tactic
+val dinv : inversion_kind -> constr option ->
+  intro_pattern_expr located option -> quantified_hypothesis -> tactic
 
 val half_inv_tac : identifier -> tactic
 val inv_tac : identifier -> tactic

@@ -639,7 +639,7 @@ let error_invalid_occurrence l =
   let l = list_uniquize (List.sort Pervasives.compare l) in
   errorlabstrm ""
     (str ("Invalid occurrence " ^ plural (List.length l) "number" ^": ") ++ 
-     prlist_with_sep spc int l)
+     prlist_with_sep spc int l ++ str ".")
 
 let subst_term_occ_gen (nowhere_except_in,locs) occ c t =
   let maxocc = List.fold_right max locs 0 in

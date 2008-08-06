@@ -65,6 +65,20 @@ type hyp_location_flag = (* To distinguish body and type of local defs *)
 
 type 'a raw_hyp_location = 'a with_occurrences * hyp_location_flag
 
+type 'id move_location =
+  | MoveAfter of 'id
+  | MoveBefore of 'id
+  | MoveToEnd of bool
+
+let no_move = MoveToEnd true
+
+open Pp
+
+let pr_move_location pr_id = function
+  | MoveAfter id -> brk(1,1) ++ str "after " ++ pr_id id
+  | MoveBefore id -> brk(1,1) ++ str "before " ++ pr_id id
+  | MoveToEnd toleft -> str (if toleft then " at bottom" else " at top")
+
 type 'a induction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of identifier located
@@ -76,8 +90,10 @@ type inversion_kind =
   | FullInversionClear
 
 type ('c,'id) inversion_strength =
-  | NonDepInversion of inversion_kind * 'id list * intro_pattern_expr
-  | DepInversion of inversion_kind * 'c option * intro_pattern_expr
+  | NonDepInversion of 
+      inversion_kind * 'id list * intro_pattern_expr located option
+  | DepInversion of
+      inversion_kind * 'c option * intro_pattern_expr located option
   | InversionUsing of 'c * 'id list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
@@ -106,6 +122,11 @@ let simple_clause_of = function
 | _ ->
     error "not a simple clause (one hypothesis or conclusion)"
 
+type ('constr,'id) induction_clause = 
+    ('constr with_bindings induction_arg list * 'constr with_bindings option * 
+     (intro_pattern_expr located option * intro_pattern_expr located option) *
+     'id gclause option)
+
 type multi = 
   | Precisely of int
   | UpTo of int
@@ -130,14 +151,14 @@ type ('a,'t) match_rule =
 
 type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   (* Basic tactics *)
-  | TacIntroPattern of intro_pattern_expr list
+  | TacIntroPattern of intro_pattern_expr located list
   | TacIntrosUntil of quantified_hypothesis
-  | TacIntroMove of identifier option * identifier located option
+  | TacIntroMove of identifier option * 'id move_location
   | TacAssumption
   | TacExact of 'constr
   | TacExactNoCheck of 'constr
   | TacVmCastNoCheck of 'constr
-  | TacApply of advanced_flag * evars_flag * 'constr with_bindings
+  | TacApply of advanced_flag * evars_flag * 'constr with_bindings list
   | TacElim of evars_flag * 'constr with_bindings * 
       'constr with_bindings option
   | TacElimType of 'constr
@@ -149,19 +170,14 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacCofix of identifier option
   | TacMutualCofix of hidden_flag * identifier * (identifier * 'constr) list
   | TacCut of 'constr
-  | TacAssert of 'tac option * intro_pattern_expr * 'constr
+  | TacAssert of 'tac option * intro_pattern_expr located * 'constr
   | TacGeneralize of ('constr with_occurrences * name) list
   | TacGeneralizeDep of 'constr
   | TacLetTac of name * 'constr * 'id gclause * letin_flag
 
   (* Derived basic tactics *)
-  | TacSimpleInduction of quantified_hypothesis
-  | TacNewInduction of evars_flag * 'constr with_bindings induction_arg list * 
-      'constr with_bindings option * intro_pattern_expr * 'id gclause option
-  | TacSimpleDestruct of quantified_hypothesis
-  | TacNewDestruct of evars_flag * 'constr with_bindings induction_arg list *
-      'constr with_bindings option * intro_pattern_expr * 'id gclause option
-
+  | TacSimpleInductionDestruct of rec_flag * quantified_hypothesis
+  | TacInductionDestruct of rec_flag * evars_flag * ('constr,'id) induction_clause list
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
   | TacDecomposeAnd of 'constr
   | TacDecomposeOr of 'constr
@@ -181,7 +197,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   (* Context management *)
   | TacClear of bool * 'id list
   | TacClearBody of 'id list
-  | TacMove of bool * 'id * 'id
+  | TacMove of bool * 'id * 'id move_location
   | TacRename of ('id *'id) list
   | TacRevert of 'id list
 
@@ -236,7 +252,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
   | TacInfo of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
   | TacLetIn of rec_flag * (identifier located * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg) list * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
   | TacMatch of lazy_flag * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr) match_rule list
-  | TacMatchContext of lazy_flag * direction_flag * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr) match_rule list
+  | TacMatchGoal of lazy_flag * direction_flag * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr) match_rule list
   | TacFun of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_fun_ast
   | TacArg of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg
 
@@ -249,7 +265,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | TacVoid
   | MetaIdArg      of loc * bool * string
   | ConstrMayEval  of ('constr,'cst) may_eval
-  | IntroPattern   of intro_pattern_expr
+  | IntroPattern   of intro_pattern_expr located
   | Reference      of 'ref
   | Integer        of int
   | TacCall        of loc *

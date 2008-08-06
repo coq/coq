@@ -234,7 +234,7 @@ let rec interp_entry_name up_level s =
       try get_entry (get_univ "prim") s
       with _ ->
       try get_entry (get_univ "constr") s
-      with _ -> error ("Unknown entry "^s)
+      with _ -> error ("Unknown entry "^s^".")
     in
     let o = object_of_typed_entry e in
     let t = type_of_typed_entry e in
@@ -254,7 +254,7 @@ let get_tactic_entry n =
   else if 1<=n && n<5 then
     weaken_entry Tactic.tactic_expr, Some (Gramext.Level (string_of_int n))
   else 
-    error ("Invalid Tactic Notation level: "^(string_of_int n))
+    error ("Invalid Tactic Notation level: "^(string_of_int n)^".")
 
 (* Declaration of the tactic grammar rule *)
 
@@ -267,7 +267,7 @@ let add_tactic_entry (key,lev,prods,tac) =
   let rules = 
     if lev = 0 then begin
       if not (head_is_ident prods) then
-	error "Notation for simple tactic must start with an identifier";
+	error "Notation for simple tactic must start with an identifier.";
       let mkact s tac loc l =
 	(TacAlias(loc,s,l,tac):raw_atomic_tactic_expr) in
       make_rule univ (mkact key tac) mkprod prods

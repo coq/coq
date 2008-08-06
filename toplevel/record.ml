@@ -87,24 +87,25 @@ type record_error =
 let warning_or_error coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
-	let s,have = if List.length projs > 1 then "s","have" else "","has" in
+	let s,have = if List.length projs > 1 then "s","were" else "","was" in
         (str(string_of_id fi) ++
-	   str" cannot be defined because the projection" ++ str s ++ spc () ++
-           prlist_with_sep pr_coma pr_id projs ++ spc () ++ str have ++ str "n't.")
+	   strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
+           prlist_with_sep pr_coma pr_id projs ++ spc () ++ str have ++ 
+	   strbrk " not defined.")
     | BadTypedProj (fi,ctx,te) ->
 	match te with
 	  | ElimArity (_,_,_,_,Some (_,_,NonInformativeToInformative)) ->
               (pr_id fi ++ 
-		str" cannot be defined because it is informative and " ++
+		strbrk" cannot be defined because it is informative and " ++
 		Printer.pr_inductive (Global.env()) indsp ++
-		str " is not.")   
+		strbrk " is not.")   
 	  | ElimArity (_,_,_,_,Some (_,_,StrongEliminationOnNonSmallType)) ->
 	      (pr_id fi ++ 
-		str" cannot be defined because it is large and " ++
+		strbrk" cannot be defined because it is large and " ++
 		Printer.pr_inductive (Global.env()) indsp ++
-		str " is not.")
+		strbrk " is not.")
 	  | _ -> 
-              (pr_id fi ++ str " cannot be defined because it is not typable")
+              (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
   in
   if coe then errorlabstrm "structure" st;
   Flags.if_verbose ppnl (hov 0 (str"Warning: " ++ st))

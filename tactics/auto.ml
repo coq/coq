@@ -220,7 +220,7 @@ let rec nb_hyp c = match kind_of_term c with
 
 let try_head_pattern c = 
   try head_pattern_bound c
-  with BoundPattern -> error "Bound head variable"
+  with BoundPattern -> error "Bound head variable."
 
 let dummy_goal = 
   {it = make_evar empty_named_context_val mkProp;
@@ -279,8 +279,8 @@ let make_resolves env sigma flags pri c =
   if ents = [] then
     errorlabstrm "Hint" 
       (pr_lconstr c ++ spc() ++ 
-        (if fst flags then str"cannot be used as a hint"
-	else str "can be used as a hint only for eauto"));
+        (if fst flags then str"cannot be used as a hint."
+	else str "can be used as a hint only for eauto."));
   ents
 
 (* used to add an hypothesis to the local hint database *)
@@ -438,7 +438,7 @@ let add_extern pri (patmetas,pat) tacast local dbname =
   match (list_subtract tacmetas patmetas) with
     | i::_ ->
 	errorlabstrm "add_extern" 
-	  (str "The meta-variable ?" ++ pr_patvar i ++ str" is not bound")
+	  (str "The meta-variable ?" ++ pr_patvar i ++ str" is not bound.")
     | []  ->
 	Lib.add_anonymous_leaf
 	  (inAutoHint(local,dbname, UpdateDB [make_extern pri pat tacast]))
@@ -476,7 +476,7 @@ let add_hints local dbnames0 h =
          | _ -> 
            errorlabstrm "evalref_of_ref"
             (str "Cannot coerce" ++ spc () ++ pr_global gr ++ spc () ++
-             str "to an evaluable reference")
+             str "to an evaluable reference.")
         in
 	  if !Flags.dump then Constrintern.add_glob (loc_of_reference r) gr;
 	 (gr,r') in
@@ -571,6 +571,9 @@ let fmt_hint_term cl =
 	 hov 0 (prlist fmt_hints_db valid_dbs))
   with Bound | Match_failure _ | Failure _ -> 
     (str "No hint applicable for current goal")
+
+let error_no_such_hint_database x =
+  error ("No such Hint database: "^x^".")
 	  
 let print_hint_term cl = ppnl (fmt_hint_term cl)
 
@@ -597,13 +600,13 @@ let print_hint_db_by_name dbname =
   try 
     let db = searchtable_map dbname in print_hint_db db
   with Not_found -> 
-    error (dbname^" : No such Hint database")
+    error_no_such_hint_database dbname
   
 (* displays all the hints of all databases *)
 let print_searchtable () =
   Hintdbmap.iter
     (fun name db ->
-       msg (str "In the database " ++ str name ++ fnl ());
+       msg (str "In the database " ++ str name ++ str ":" ++ fnl ());
        print_hint_db db)
     !searchtable
 
@@ -638,7 +641,7 @@ let unify_resolve_nodelta (c,clenv) gls =
 let unify_resolve flags (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false ~flags clenv' gls in  
-  h_apply true false (c,NoBindings) gls
+  h_apply true false [c,NoBindings] gls
 
 
 (* builds a hint database from a constr signature *)
@@ -774,7 +777,7 @@ let trivial lems dbnames gl =
 	 try 
 	   searchtable_map x
 	 with Not_found -> 
-	   error ("trivial: "^x^": No such Hint database"))
+	   error_no_such_hint_database x)
       ("core"::dbnames) 
   in
   tclTRY (trivial_fail_db false db_list (make_local_hint_db false lems gl)) gl 
@@ -813,7 +816,7 @@ let decomp_unary_term c gls =
   if Hipattern.is_conjunction hd then 
     simplest_case c gls 
   else 
-    errorlabstrm "Auto.decomp_unary_term" (str "not a unary type") 
+    errorlabstrm "Auto.decomp_unary_term" (str "Not a unary type.")
 
 let decomp_empty_term c gls = 
   let typc = pf_type_of gls c in 
@@ -821,7 +824,7 @@ let decomp_empty_term c gls =
   if Hipattern.is_empty_type hd then 
     simplest_case c gls 
   else 
-    errorlabstrm "Auto.decomp_empty_term" (str "not an empty type") 
+    errorlabstrm "Auto.decomp_empty_term" (str "Not an empty type.")
 
 
 (* decomp is an natural number giving an indication on decomposition 
@@ -877,7 +880,7 @@ let delta_auto mod_delta n lems dbnames gl =
 	 try 
 	   searchtable_map x
 	 with Not_found -> 
-	   error ("auto: "^x^": No such Hint database"))
+	   error_no_such_hint_database x)
       ("core"::dbnames) 
   in
   let hyps = pf_hyps gl in

@@ -30,8 +30,8 @@ let inj_occ (occ,c) = (occ,inj_open c)
 
 (* Basic tactics *)
 let h_intro_move x y =
-  abstract_tactic (TacIntroMove (x, Option.map inj_id y)) (intro_move x y)
-let h_intro x        = h_intro_move (Some x) None
+  abstract_tactic (TacIntroMove (x, y)) (intro_move x y)
+let h_intro x        = h_intro_move (Some x) no_move
 let h_intros_until x = abstract_tactic (TacIntrosUntil x) (intros_until x)
 let h_assumption     = abstract_tactic TacAssumption assumption
 let h_exact c        = abstract_tactic (TacExact (inj_open c)) (exact_check c)
@@ -40,7 +40,7 @@ let h_exact_no_check c =
 let h_vm_cast_no_check c = 
   abstract_tactic (TacVmCastNoCheck (inj_open c)) (vm_cast_no_check c)
 let h_apply simple ev cb    =
-  abstract_tactic (TacApply (simple,ev,inj_open_wb cb))
+  abstract_tactic (TacApply (simple,ev,List.map inj_open_wb cb))
     (apply_with_ebindings_gen simple ev cb)
 let h_elim ev cb cbo    =
   abstract_tactic (TacElim (ev,inj_open_wb cb,Option.map inj_open_wb cbo))
@@ -70,7 +70,7 @@ let h_generalize cl =
 let h_generalize_dep c =
   abstract_tactic (TacGeneralizeDep (inj_open c))(generalize_dep c)
 let h_let_tac b na c cl =
-  let with_eq = if b then None else Some true in
+  let with_eq = if b then None else Some (true,(dummy_loc,IntroAnonymous)) in
   abstract_tactic (TacLetTac (na,inj_open c,cl,b)) (letin_tac with_eq na c cl)
 let h_instantiate n c ido = 
 (Evar_tactics.instantiate n c ido)
@@ -78,16 +78,19 @@ let h_instantiate n c ido =
     (Evar_refiner.instantiate n c (simple_clause_of cls)) *)
 
 (* Derived basic tactics *)
-let h_simple_induction h =
-  abstract_tactic (TacSimpleInduction h) (simple_induct h)
-let h_simple_destruct h  =
-  abstract_tactic (TacSimpleDestruct h) (simple_destruct h)
-let h_new_induction ev c e idl cl =
-  abstract_tactic (TacNewInduction (ev,List.map inj_ia c,Option.map inj_open_wb e,idl,cl))
-    (new_induct ev c e idl cl)
-let h_new_destruct ev c e idl cl =
-  abstract_tactic (TacNewDestruct (ev,List.map inj_ia c,Option.map inj_open_wb e,idl,cl))
-    (new_destruct ev c e idl cl)
+let h_simple_induction_destruct isrec h =
+  abstract_tactic (TacSimpleInductionDestruct (isrec,h)) 
+    (if isrec then (simple_induct h) else (simple_destruct h))
+let h_simple_induction = h_simple_induction_destruct true
+let h_simple_destruct = h_simple_induction_destruct false
+
+let h_induction_destruct isrec ev l =
+  abstract_tactic (TacInductionDestruct (isrec,ev,List.map (fun (c,e,idl,cl) -> 
+    List.map inj_ia c,Option.map inj_open_wb e,idl,cl) l))
+    (induction_destruct ev isrec l)
+let h_new_induction ev c e idl cl = h_induction_destruct ev true [c,e,idl,cl]
+let h_new_destruct ev c e idl cl = h_induction_destruct ev false [c,e,idl,cl]
+
 let h_specialize n d = abstract_tactic (TacSpecialize (n,inj_open_wb d)) (specialize n d)
 let h_lapply c = abstract_tactic (TacLApply (inj_open c)) (cut_and_apply c)
 
@@ -128,8 +131,8 @@ let h_symmetry c     = abstract_tactic (TacSymmetry c) (intros_symmetry c)
 let h_transitivity c =
   abstract_tactic (TacTransitivity (inj_open c)) (intros_transitivity c)
 
-let h_simplest_apply c  = h_apply false false (c,NoBindings)
-let h_simplest_eapply c = h_apply false true (c,NoBindings)
+let h_simplest_apply c  = h_apply false false [c,NoBindings]
+let h_simplest_eapply c = h_apply false true [c,NoBindings]
 let h_simplest_elim c   = h_elim false (c,NoBindings) None
 let h_simplest_case   c = h_case false (c,NoBindings)
 

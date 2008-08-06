@@ -78,6 +78,8 @@ val pr_extend :
   (tolerability -> glob_tactic_expr -> std_ppcmds) -> int ->
     string -> typed_generic_argument list -> std_ppcmds
 
+val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
+
 val pr_raw_tactic : env -> raw_tactic_expr -> std_ppcmds
 
 val pr_raw_tactic_level : env -> tolerability -> raw_tactic_expr -> std_ppcmds

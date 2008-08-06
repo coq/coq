@@ -26,9 +26,9 @@ open Redexpr
 
 (* Values for interpretation *)
 type value =
-  | VTactic of Util.loc * tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
   | VRTactic of (goal list sigma * validation)
-  | VFun of (identifier * value) list * identifier option list * glob_tactic_expr
+  | VFun of ltac_trace * (identifier*value) list * 
+      identifier option list * glob_tactic_expr
   | VVoid
   | VInteger of int
   | VIntroPattern of intro_pattern_expr
@@ -42,18 +42,16 @@ and interp_sign =
   { lfun : (identifier * value) list;
     avoid_ids : identifier list;
     debug : debug_info;
-    last_loc : loc }
+    trace : ltac_trace }
 
 (* Transforms an id into a constr if possible *)
 val constr_of_id : Environ.env -> identifier -> constr
 
 (* To embed several objects in Coqast.t *)
 val tacticIn : (interp_sign -> raw_tactic_expr) -> raw_tactic_expr
-val tacticOut : raw_tactic_expr -> (interp_sign -> raw_tactic_expr)
+val globTacticIn : (interp_sign -> glob_tactic_expr) -> raw_tactic_expr
 val valueIn : value -> raw_tactic_arg
-val valueOut: raw_tactic_arg -> value
 val constrIn : constr -> constr_expr
-val constrOut : constr_expr -> constr
 
 (* Sets the debugger mode *)
 val set_debug : debug_info -> unit

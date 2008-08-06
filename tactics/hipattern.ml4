@@ -273,7 +273,7 @@ let dest_nf_eq gls eqn =
   try
     snd (first_match (match_eq_nf gls eqn) equalities)
   with PatternMatchingFailure ->
-    error "Not an equality"
+    error "Not an equality."
 
 (*** Sigma-types *)
 

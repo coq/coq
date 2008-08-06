@@ -109,6 +109,7 @@ that maps the pair (Li,ci) to the following data
     o_DEF = c
     o_TABS = B1...Bk
     o_PARAMS = a1...am
+    o_NARAMS = m
     o_TCOMP = ui1...uir
 
 *)
@@ -118,6 +119,7 @@ type obj_typ = {
   o_INJ : int;      (* position of trivial argument (negative= none) *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
+  o_NPARAMS : int;
   o_TCOMPS : constr list } (* ordered *)
 
 type cs_pattern =
@@ -178,7 +180,9 @@ let compute_canonical_projections (con,ind) =
 	   | _ -> l)
       [] lps in
   List.map (fun (refi,c,inj,argj) ->
-    (refi,c),{o_DEF=v; o_INJ=inj; o_TABS=lt; o_TPARAMS=params; o_TCOMPS=argj})
+    (refi,c),
+    {o_DEF=v; o_INJ=inj; o_TABS=lt; 
+     o_TPARAMS=params; o_NPARAMS=List.length params; o_TCOMPS=argj})
     comp
 
 let open_canonical_structure i (_,o) =
@@ -186,8 +190,8 @@ let open_canonical_structure i (_,o) =
     let lo = compute_canonical_projections o in
     List.iter (fun ((proj,cs_pat),s) ->
       let l = try Refmap.find proj !object_table with Not_found -> [] in
-      let l' = list_add_set (cs_pat,s) l in
-      object_table := Refmap.add proj l' !object_table) lo
+      if not (List.mem_assoc cs_pat l) then
+        object_table := Refmap.add proj ((cs_pat,s)::l) !object_table) lo
 
 let cache_canonical_structure o =
   open_canonical_structure 1 o
@@ -217,7 +221,7 @@ let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 
 let error_not_structure ref =
   errorlabstrm "object_declare"
-    (Nameops.pr_id (id_of_global ref) ++ str" is not a structure object")
+    (Nameops.pr_id (id_of_global ref) ++ str" is not a structure object.")
 
 let check_and_decompose_canonical_structure ref =
   let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in
@@ -246,8 +250,11 @@ let outCanonicalStructure x = fst (outCanonStruct x)
 let lookup_canonical_conversion (proj,pat) =
   List.assoc pat (Refmap.find proj !object_table)
 
-let is_canonical_projection c =
-  try Refmap.mem (global_of_constr c) !object_table
+let is_open_canonical_projection sigma (c,args) =
+  try 
+    let l = Refmap.find (global_of_constr c) !object_table in
+    let n = (snd (List.hd l)).o_NPARAMS in
+    try isEvar (whd_evar sigma (List.nth args n)) with Failure _ -> false
   with Not_found -> false
 
 let freeze () =

@@ -214,7 +214,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
        (ids_of_named_context (named_context invEnv)));
   (*
     errorlabstrm "lemma_inversion"
-    (str"Computed inversion goal was not closed in initial signature");
+    (str"Computed inversion goal was not closed in initial signature.");
   *)
   let invSign = named_context_val invEnv in
   let pfs = mk_pftreestate (mk_goal invSign invGoal None) in
@@ -272,7 +272,7 @@ let inversion_lemma_from_goal n na (loc,id) sort dep_option inv_op =
     errorlabstrm "lemma_inversion"
       (str"Cannot compute lemma inversion when there are" ++ spc () ++
 	 str"free variables in the types of an inductive" ++ spc () ++
-	 str"which are not free in its instance"); *)
+	 str"which are not free in its instance."); *)
   add_inversion_lemma na env sigma t sort dep_option inv_op
    
 let add_inversion_lemma_exn na com comsort bool tac =

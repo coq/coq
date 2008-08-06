@@ -74,11 +74,11 @@ let prolog_tac l n gl =
   let n =
     match n with
       |  ArgArg n -> n
-      | _ -> error "Prolog called with a non closed argument"
+      | _ -> error "Prolog called with a non closed argument."
   in
   try (prolog l n gl)
   with UserError ("Refiner.tclFIRST",_) ->
-    errorlabstrm "Prolog.prolog" (str "Prolog failed")
+    errorlabstrm "Prolog.prolog" (str "Prolog failed.")
 
 TACTIC EXTEND prolog
 | [ "prolog" "[" constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
@@ -331,7 +331,7 @@ let e_depth_search debug p db_list local_db gl =
     let tac = if debug then Search.debug_depth_first else Search.depth_first in
     let s = tac (make_initial_state p gl db_list local_db) in
     s.tacres
-  with Not_found -> error "EAuto: depth first search failed"
+  with Not_found -> error "eauto: depth first search failed."
 
 let e_breadth_search debug n db_list local_db gl =
   try
@@ -340,7 +340,7 @@ let e_breadth_search debug n db_list local_db gl =
     in
     let s = tac (make_initial_state n gl db_list local_db) in
     s.tacres
-  with Not_found -> error "EAuto: breadth first search failed"
+  with Not_found -> error "eauto: breadth first search failed."
 
 let e_search_auto debug (in_depth,p) lems db_list gl = 
   let local_db = make_local_hint_db true lems gl in 
@@ -359,7 +359,7 @@ let eauto debug np lems dbnames =
     List.map
       (fun x -> 
 	 try searchtable_map x
-	 with Not_found -> error ("EAuto: "^x^": No such Hint database"))
+	 with Not_found -> error ("No such Hint database: "^x^"."))
       ("core"::dbnames) 
   in
   tclTRY (e_search_auto debug np lems db_list)
@@ -377,12 +377,12 @@ let gen_eauto d np lems = function
 let make_depth = function
   | None -> !default_search_depth 
   | Some (ArgArg d) -> d
-  | _ -> error "EAuto called with a non closed argument"
+  | _ -> error "eauto called with a non closed argument."
 
 let make_dimension n = function
   | None -> (true,make_depth n)
   | Some (ArgArg d) -> (false,d)
-  | _ -> error "EAuto called with a non closed argument"
+  | _ -> error "eauto called with a non closed argument."
 
 open Genarg
 

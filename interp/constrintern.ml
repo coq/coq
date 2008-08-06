@@ -99,7 +99,8 @@ let explain_bad_explicitation_number n po =
       str "Bad explicitation name: found " ++ pr_id id ++ 
       str" but was expecting " ++ s
 
-let explain_internalisation_error = function
+let explain_internalisation_error e =
+  let pp = match e with
   | VariableCapture id -> explain_variable_capture id
   | WrongExplicitImplicit -> explain_wrong_explicit_implicit
   | IllegalMetavariable -> explain_illegal_metavariable
@@ -107,16 +108,17 @@ let explain_internalisation_error = function
   | UnboundFixName (iscofix,id) -> explain_unbound_fix_name iscofix id
   | NonLinearPattern id -> explain_non_linear_pattern id
   | BadPatternsNumber (n1,n2) -> explain_bad_patterns_number n1 n2
-  | BadExplicitationNumber (n,po) -> explain_bad_explicitation_number n po
+  | BadExplicitationNumber (n,po) -> explain_bad_explicitation_number n po in
+  pp ++ str "."
 
 let error_unbound_patvar loc n =
   user_err_loc
     (loc,"glob_qualid_or_patvar", str "?" ++ pr_patvar n ++ 
-      str " is unbound")
+      str " is unbound.")
 
 let error_bad_inductive_type loc =
   user_err_loc (loc,"",str 
-    "This should be an inductive type applied to names or \"_\"")
+    "This should be an inductive type applied to names or \"_\".")
 
 let error_inductive_parameter_not_implicit loc =
   user_err_loc (loc,"", str
@@ -324,7 +326,7 @@ let set_var_scope loc id (_,scopt,scopes) varscopes =
     make_current_scope (Option.get !idscopes)
     <> make_current_scope (scopt,scopes) then
       user_err_loc (loc,"set_var_scope",
-      pr_id id ++ str " already occurs in a different scope")
+      pr_id id ++ str " already occurs in a different scope.")
   else
     idscopes := Some (scopt,scopes)
 
@@ -444,7 +446,7 @@ let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) loc id =
   try
     match List.assoc id unbndltacvars with
       | None -> user_err_loc (loc,"intern_var",
-	  str "variable " ++ pr_id id ++ str " should be bound to a term")
+	  str "variable " ++ pr_id id ++ str " should be bound to a term.")
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
   with Not_found ->
   (* Is [id] a goal or section variable *)
@@ -463,14 +465,14 @@ let find_appl_head_data (_,_,_,(_,impls)) = function
   | x -> x,[],[],[]
 
 let error_not_enough_arguments loc =
-  user_err_loc (loc,"",str "Abbreviation is not applied enough")
+  user_err_loc (loc,"",str "Abbreviation is not applied enough.")
 
 let check_no_explicitation l =
   let l = List.filter (fun (a,b) -> b <> None) l in
   if l <> [] then
     let loc = fst (Option.get (snd (List.hd l))) in
     user_err_loc
-      (loc,"",str"Unexpected explicitation of the argument of an abbreviation")
+     (loc,"",str"Unexpected explicitation of the argument of an abbreviation.")
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid loc qid intern env args =
@@ -580,7 +582,7 @@ let check_number_of_pattern loc n l =
 let check_or_pat_variables loc ids idsl =
   if List.exists (fun ids' -> not (list_eq_set ids ids')) idsl then
     user_err_loc (loc, "", str 
-    "The components of this disjunctive pattern must bind the same variables")
+    "The components of this disjunctive pattern must bind the same variables.")
 
 let check_constructor_length env loc cstr pl pl0 =
   let n = List.length pl + List.length pl0 in
@@ -607,7 +609,7 @@ let message_redundant_alias (id1,id2) =
 (* Expanding notations *)
 
 let error_invalid_pattern_notation loc =
-  user_err_loc (loc,"",str "Invalid notation for pattern")
+  user_err_loc (loc,"",str "Invalid notation for pattern.")
 
 let chop_aconstr_constructor loc (ind,k) args =
   let nparams = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
@@ -815,9 +817,9 @@ let locate_if_isevar loc na = function
 
 let check_hidden_implicit_parameters id (_,_,_,(indnames,_)) =
   if List.mem id indnames then
-    errorlabstrm "" (str "A parameter or name of an inductive type " ++
-    pr_id id ++ str " must not be used as a bound variable in the type \
-of its constructor")
+    errorlabstrm "" (strbrk "A parameter or name of an inductive type " ++
+    pr_id id ++ strbrk " must not be used as a bound variable in the type \
+of its constructor.")
 
 let push_name_env lvar (ids,tmpsc,scopes as env) = function
   | Anonymous -> env 
@@ -878,11 +880,11 @@ let check_projection isproj nargs r =
       (try
 	let n = Recordops.find_projection_nparams ref + 1 in
 	if nargs <> n then
-	  user_err_loc (loc,"",str "Projection has not the right number of explicit parameters");
+	  user_err_loc (loc,"",str "Projection has not the right number of explicit parameters.");
       with Not_found -> 
 	user_err_loc
-	(loc,"",pr_global_env Idset.empty ref ++ str " is not a registered projection"))
-  | _, Some _ -> user_err_loc (loc_of_rawconstr r, "", str "Not a projection")
+	(loc,"",pr_global_env Idset.empty ref ++ str " is not a registered projection."))
+  | _, Some _ -> user_err_loc (loc_of_rawconstr r, "", str "Not a projection.")
   | _, None -> ()
 
 let get_implicit_name n imps =
@@ -907,10 +909,11 @@ let extract_explicit_arg imps args =
 	  let id = match pos with
 	  | ExplByName id ->
 	      if not (exists_implicit_name id imps) then
-		user_err_loc (loc,"",str "Wrong argument name: " ++ pr_id id);
+		user_err_loc
+		  (loc,"",str "Wrong argument name: " ++ pr_id id ++ str ".");
 	      if List.mem_assoc id eargs then
 		user_err_loc (loc,"",str "Argument name " ++ pr_id id
-		++ str " occurs more than once");
+		++ str " occurs more than once.");
 	      id
 	  | ExplByPos (p,_id) ->
 	      let id =
@@ -919,11 +922,12 @@ let extract_explicit_arg imps args =
 		  if not (is_status_implicit imp) then failwith "imp";
 		  name_of_implicit imp
 		with Failure _ (* "nth" | "imp" *) ->
-		  user_err_loc (loc,"",str"Wrong argument position: " ++ int p)
+		  user_err_loc
+		    (loc,"",str"Wrong argument position: " ++ int p ++ str ".")
 	      in
 	      if List.mem_assoc id eargs then
 		user_err_loc (loc,"",str"Argument at position " ++ int p ++
-		  str " is mentioned more than once");
+		  str " is mentioned more than once.");
 	      id in
 	  ((id,(loc,a))::eargs,rargs)
   in aux args
@@ -1147,7 +1151,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	let nal = List.map (function
 	  | RHole loc -> Anonymous
 	  | RVar (_,id) -> Name id
-	  | c -> user_err_loc (loc_of_rawconstr c,"",str "Not a name")) l in
+	  | c -> user_err_loc (loc_of_rawconstr c,"",str "Not a name.")) l in
 	let parnal,realnal = list_chop nparams nal in
 	if List.exists ((<>) Anonymous) parnal then
 	  error_inductive_parameter_not_implicit loc;
@@ -1219,7 +1223,8 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	  if eargs <> [] then 
 	    (let (id,(loc,_)) = List.hd eargs in
 	       user_err_loc (loc,"",str "Not enough non implicit
-	    arguments to accept the argument bound to " ++ pr_id id));
+	    arguments to accept the argument bound to " ++ 
+		 pr_id id ++ str"."));
 	  []
       | ([], rargs) ->
 	  assert (eargs = []);

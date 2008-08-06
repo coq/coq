@@ -133,7 +133,7 @@ let map_pattern f = map_pattern_with_binders (fun () -> ()) (fun () -> f) ()
 
 let rec instantiate_pattern lvar = function
   | PVar id as x -> (try Lazy.force(List.assoc id lvar) with Not_found -> x)
-  | (PFix _ | PCoFix _) -> error ("Not instantiable pattern")
+  | (PFix _ | PCoFix _) -> error ("Non instantiable pattern.")
   | c -> map_pattern (instantiate_pattern lvar) c
 
 let rec liftn_pattern k n = function
@@ -264,7 +264,7 @@ let rec pat_of_raw metas vars = function
              
   | r ->
       let loc = loc_of_rawconstr r in
-      user_err_loc (loc,"pattern_of_rawconstr", Pp.str "Pattern not supported")
+      user_err_loc (loc,"pattern_of_rawconstr", Pp.str"Non supported pattern.")
 
 and pat_of_raw_branch loc metas vars ind brs i =
   let bri = List.filter
@@ -272,23 +272,23 @@ and pat_of_raw_branch loc metas vars ind brs i =
         (_,_,[PatCstr(_,c,lv,Anonymous)],_) -> snd c = i+1
       | (loc,_,_,_) ->
           user_err_loc (loc,"pattern_of_rawconstr",
-                        Pp.str "Not supported pattern")) brs in
+                        Pp.str "Non supported pattern.")) brs in
   match bri with
     | [(_,_,[PatCstr(_,(indsp,_),lv,_)],br)] ->
 	if ind <> None & ind <> Some indsp then
           user_err_loc (loc,"pattern_of_rawconstr",
-            Pp.str "All constructors must be in the same inductive type");
+            Pp.str "All constructors must be in the same inductive type.");
         let lna =
           List.map
             (function PatVar(_,na) -> na
               | PatCstr(loc,_,_,_) ->
                   user_err_loc (loc,"pattern_of_rawconstr",
-                                Pp.str "Not supported pattern")) lv in
+                                Pp.str "Non supported pattern.")) lv in
         let vars' = List.rev lna @ vars in 
 	List.length lv, rev_it_mkPLambda lna (pat_of_raw metas vars' br)
     | _ -> user_err_loc (loc,"pattern_of_rawconstr",
                          str "No unique branch for " ++ int (i+1) ++
-                         str"-th constructor")
+                         str"-th constructor.")
 
 let pattern_of_rawconstr c =
   let metas = ref [] in

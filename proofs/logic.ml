@@ -27,6 +27,7 @@ open Typeops
 open Type_errors
 open Retyping
 open Evarutil
+open Tacexpr
  
 type refiner_error =
 
@@ -47,6 +48,7 @@ open Pretype_errors
 
 let rec catchable_exception = function
   | Stdpp.Exc_located(_,e) -> catchable_exception e
+  | LtacLocated(_,e) -> catchable_exception e
   | Util.UserError _ | TypeError _ 
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
@@ -71,11 +73,10 @@ let with_check = Flags.with_option check
    (instead of iterating on the list of identifier to be removed, which
    forces the user to give them in order). *)
 
-let clear_hyps sigma ids gl =
+let clear_hyps sigma ids sign cl =
   let evdref = ref (Evd.create_goal_evar_defs sigma) in
-  let (hyps,concl) =
-    Evarutil.clear_hyps_in_evi evdref gl.evar_hyps gl.evar_concl ids in
-    (mk_goal hyps concl gl.evar_extra, evars_of !evdref)
+  let (hyps,concl) = Evarutil.clear_hyps_in_evi evdref sign cl ids in
+  (hyps,concl,evars_of !evdref)
 
 (* The ClearBody tactic *)
 
@@ -84,13 +85,13 @@ let clear_hyps sigma ids gl =
 let apply_to_hyp sign id f =
   try apply_to_hyp sign id f 
   with Hyp_not_found -> 
-    if !check then error "No such assumption"
+    if !check then error "No such assumption."
     else sign
 
 let apply_to_hyp_and_dependent_on sign id f g =
   try apply_to_hyp_and_dependent_on sign id f g 
   with Hyp_not_found -> 
-    if !check then error "No such assumption"
+    if !check then error "No such assumption."
     else sign
 
 let check_typability env sigma c =
@@ -110,7 +111,7 @@ let remove_hyp_body env sigma id =
     apply_to_hyp_and_dependent_on (named_context_val env) id
       (fun (_,c,t) _ ->
 	match c with
-	| None -> error ((string_of_id id)^" is not a local definition")
+	| None -> error ((string_of_id id)^" is not a local definition.")
 	| Some c ->(id,None,t))
       (fun (id',c,t as d) sign ->
 	(if !check then
@@ -127,24 +128,42 @@ let remove_hyp_body env sigma id =
 
 (* Auxiliary functions for primitive MOVE tactic
  *
- * [move_after with_dep toleft (left,(hfrom,typfrom),right) hto] moves
- * hyp [hfrom] just after the hyp [hto] which belongs to the hyps on the 
+ * [move_hyp with_dep toleft (left,(hfrom,typfrom),right) hto] moves
+ * hyp [hfrom] at location [hto] which belongs to the hyps on the 
  * left side [left] of the full signature if [toleft=true] or to the hyps 
  * on the right side [right] if [toleft=false].
  * If [with_dep] then dependent hypotheses are moved accordingly. *)
 
+let error_no_such_hypothesis id =
+  error ("No such hypothesis: " ^ string_of_id id ^ ".")
+
+let rec get_hyp_after h = function
+  | [] -> error_no_such_hypothesis h
+  | (hyp,_,_) :: right ->
+      if hyp = h then
+	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveToEnd false
+      else
+       get_hyp_after h right
+
 let split_sign hfrom hto l =
   let rec splitrec left toleft = function
-    | [] -> error ("No such hypothesis : " ^ (string_of_id hfrom))
+    | [] -> error_no_such_hypothesis hfrom
     | (hyp,c,typ) as d :: right ->
       	if hyp = hfrom then 
-	  (left,right,d,toleft) 
-      	else 
-	  splitrec (d::left) (toleft or (hyp = hto)) right
+	  (left,right,d, toleft or hto = MoveToEnd true)
+      	else
+	  splitrec (d::left) 
+	    (toleft or hto = MoveAfter hyp or hto = MoveBefore hyp)
+	    right
   in 
     splitrec [] false l
 
-let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
+let hyp_of_move_location = function
+  | MoveAfter id -> id 
+  | MoveBefore id -> id
+  | _ -> assert false
+
+let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
   let env = Global.env() in
   let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
     if toleft
@@ -152,23 +171,27 @@ let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
     else occur_var_in_decl env hyp d2
   in
   let rec moverec first middle = function
-    | [] -> error ("No such hypothesis : " ^ (string_of_id hto))
+    | [] ->
+	if match hto with MoveToEnd _ -> false | _ -> true then
+	  error_no_such_hypothesis (hyp_of_move_location hto);
+	List.rev first @ List.rev middle
+    | (hyp,_,_) :: _ as right when hto = MoveBefore hyp ->
+	List.rev first @ List.rev middle @ right
     | (hyp,_,_) as d :: right ->
 	let (first',middle') =
       	  if List.exists (test_dep d) middle then 
-	    if with_dep & (hyp <> hto) then 
+	    if with_dep & hto <> MoveAfter hyp then 
 	      (first, d::middle)
             else 
-	      error 
-		("Cannot move "^(string_of_id idfrom)^" after "
-		 ^(string_of_id hto)
-		 ^(if toleft then ": it occurs in " else ": it depends on ")
-		 ^(string_of_id hyp))
-          else 
+	      errorlabstrm "" (str "Cannot move " ++ pr_id idfrom ++
+	        pr_move_location pr_id hto ++ 
+	        str (if toleft then ": it occurs in " else ": it depends on ")
+	        ++ pr_id hyp ++ str ".")
+          else
 	    (d::first, middle)
 	in
-      	if hyp = hto then 
-	  (List.rev first')@(List.rev middle')@right
+      	if hto = MoveAfter hyp then
+	  List.rev first' @ List.rev middle' @ right
       	else 
 	  moverec first' middle' right
   in
@@ -184,52 +207,10 @@ let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
     List.fold_left (fun sign d -> push_named_context_val d sign)
       right left
 
-let check_backward_dependencies sign d =
-  if not (Idset.for_all
-	    (fun id -> mem_named_context id sign)
-	    (global_vars_set_of_decl (Global.env()) d))
-  then
-    error "Can't introduce at that location: free variable conflict"
-
-
-let check_forward_dependencies id tail =
-  let env = Global.env() in
-  List.iter
-    (function (id',_,_ as decl) ->
-       if occur_var_in_decl env id decl then
-	 error ((string_of_id id) ^ " is used in hypothesis " 
-		^ (string_of_id id')))
-    tail
-
-let check_goal_dependency id cl =
-  let env = Global.env() in
-    if Idset.mem id (global_vars_set env cl) then
-      error (string_of_id id^" is used in conclusion")
-
 let rename_hyp id1 id2 sign =
   apply_to_hyp_and_dependent_on sign id1
     (fun (_,b,t) _ -> (id2,b,t))
     (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
-
-let replace_hyp sign id d cl =
-  if !check then
-    check_goal_dependency id cl;
-  apply_to_hyp sign id
-    (fun sign _ tail ->
-      if !check then
-	(check_backward_dependencies sign d;
-	 check_forward_dependencies id tail); 
-      d)
-
-(* why we dont check that id does not appear in tail ??? *)
-let insert_after_hyp sign id d =
-  try 
-    insert_after_hyp sign id d 
-      (fun sign ->
-	if !check then check_backward_dependencies sign d)
-  with Hyp_not_found ->
-    if !check then error "No such assumption"
-    else sign
 
 (************************************************************************)
 (************************************************************************)
@@ -376,19 +357,14 @@ and mk_casegoals sigma goal goalacc p c =
   (acc'',lbrty,conclty)
 
 
-let error_use_instantiate () =
-  errorlabstrm "Logic.prim_refiner"
-    (str"cannot intro when there are open metavars in the domain type" ++
-       spc () ++ str"- use Instantiate")
-
 let convert_hyp sign sigma (id,b,bt as d) =
   apply_to_hyp sign id
     (fun _ (_,c,ct) _ ->
        let env = Global.env_of_context sign in
        if !check && not (is_conv env sigma bt ct) then
-	 error ("Incorrect change of the type of "^(string_of_id id));
+	 error ("Incorrect change of the type of "^(string_of_id id)^".");
        if !check && not (Option.Misc.compare (is_conv env sigma) b c) then
-	 error ("Incorrect change of the body of "^(string_of_id id));
+	 error ("Incorrect change of the body of "^(string_of_id id)^".");
        d)
 
 (* Normalizing evars in a goal. Called by tactic Local_constraints
@@ -421,12 +397,10 @@ let prim_refiner r sigma goal =
 	  error "New variable is already declared";
         (match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,c1,b) ->
-	       if occur_meta c1 then error_use_instantiate();
 	       let sg = mk_goal (push_named_context_val (id,None,c1) sign)
 			  (subst1 (mkVar id) b) in
 	       ([sg], sigma)
 	   | LetIn (_,c1,t1,b) ->
-	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let sg =
 		 mk_goal (push_named_context_val (id,Some c1,t1) sign)
 		   (subst1 (mkVar id) b) in
@@ -434,28 +408,19 @@ let prim_refiner r sigma goal =
 	   | _ ->
 	       raise (RefinerError IntroNeedsProduct))
 	
-    | Intro_replacing id ->
-	(match kind_of_term (strip_outer_cast cl) with
-           | Prod (_,c1,b) ->
-	       if occur_meta c1 then error_use_instantiate();
-	       let sign' = replace_hyp sign id (id,None,c1) cl in
-	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
-	       ([sg], sigma)
-           | LetIn (_,c1,t1,b) ->
-	       if occur_meta c1 then error_use_instantiate();
-	       let sign' = replace_hyp sign id (id,Some c1,t1) cl in
-	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
-	       ([sg], sigma)
-	   | _ ->
-	       raise (RefinerError IntroNeedsProduct))
-	
-    | Cut (b,id,t) ->
-    	if !check && mem_named_context id (named_context_of_val sign) then
-	  error "New variable is already declared";
-        if occur_meta t then error_use_instantiate();
+    | Cut (b,replace,id,t) ->
         let sg1 = mk_goal sign (nf_betaiota t) in
-        let sg2 = mk_goal (push_named_context_val (id,None,t) sign) cl in
-        if b then ([sg1;sg2],sigma) else ([sg2;sg1], sigma)
+	let sign,cl,sigma =
+	  if replace then
+	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
+	    let sign,cl,sigma = clear_hyps sigma [id] sign cl in
+	    move_hyp true false ([],(id,None,t),named_context_of_val sign)
+	      nexthyp,
+	      cl,sigma
+	  else
+	    (push_named_context_val (id,None,t) sign),cl,sigma in
+        let sg2 = mk_goal sign cl in
+        if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
     | FixRule (f,n,rest) ->
      	let rec check_ind env k cl = 
@@ -465,10 +430,10 @@ let prim_refiner r sigma goal =
 		  try 
 		    fst (find_inductive env sigma c1)
 		  with Not_found -> 
-		    error "cannot do a fixpoint on a non inductive type"
+		    error "Cannot do a fixpoint on a non inductive type."
             	else 
 		  check_ind (push_rel (na,None,c1) env) (k-1) b
-            | _ -> error "not enough products"
+            | _ -> error "Not enough products."
 	in
 	let (sp,_) = check_ind env n cl in
 	let all = (f,n,cl)::rest in
@@ -476,10 +441,10 @@ let prim_refiner r sigma goal =
 	  | (f,n,ar)::oth ->
 	      let (sp',_)  = check_ind env n ar in 
 	      if not (sp=sp') then 
-		error ("fixpoints should be on the same " ^ 
-		       "mutual inductive declaration");
+		error ("Fixpoints should be on the same " ^ 
+		       "mutual inductive declaration.");
 	      if !check && mem_named_context f (named_context_of_val sign) then
-		error "name already used in the environment";
+		error "Name already used in the environment";
 	      mk_sign (push_named_context_val (f,None,ar) sign) oth
 	  | [] -> 
 	      List.map (fun (_,_,c) -> mk_goal sign c) all
@@ -496,8 +461,7 @@ let prim_refiner r sigma goal =
 		  let _ = find_coinductive env sigma b in ()
                 with Not_found -> 
 		  error ("All methods must construct elements " ^
-			  "in coinductiv-> goal
-e types")
+			  "in coinductive types.")
 	in
 	let all = (f,cl)::others in
      	List.iter (fun (_,c) -> check_is_coind env c) all;
@@ -505,7 +469,7 @@ e types")
           | (f,ar)::oth ->
 	      (try
                 (let _ = lookup_named_val f sign in
-                error "name already used in the environment")
+                error "Name already used in the environment.")
               with
               |	Not_found ->
                   mk_sign (push_named_context_val (f,None,ar) sign) oth)
@@ -534,8 +498,8 @@ e types")
 
     (* And now the structural rules *)
     | Thin ids -> 
-	let (ngl, nsigma) = clear_hyps sigma ids goal in
-	  ([ngl], nsigma)
+	let (hyps,concl,nsigma) = clear_hyps sigma ids sign cl in
+	  ([mk_goal hyps concl], nsigma)
 	
     | ThinBody ids ->
 	let clear_aux env id =
@@ -551,13 +515,13 @@ e types")
   	let (left,right,declfrom,toleft) = 
 	  split_sign hfrom hto (named_context_of_val sign) in
   	let hyps' = 
-	  move_after withdep toleft (left,declfrom,right) hto in
+	  move_hyp withdep toleft (left,declfrom,right) hto in
   	  ([mk_goal hyps' cl], sigma)
 
     | Rename (id1,id2) ->
         if !check & id1 <> id2 &&
 	  List.mem id2 (ids_of_named_context (named_context_of_val sign)) then
-          error ((string_of_id id2)^" is already used");
+          error ((string_of_id id2)^" is already used.");
         let sign' = rename_hyp id1 id2 sign in
         let cl' = replace_vars [id1,mkVar id2] cl in
           ([mk_goal sign' cl'], sigma)
@@ -618,20 +582,9 @@ let prim_extractor subfun vl pft =
 		let cb = subst_proof_vars vl b in
 		let cty = subst_proof_vars vl ty in
 		  mkLetIn (Name id, cb, cty, subfun (add_proof_var id vl) spf)
-	    | _ -> error "incomplete proof!")
+	    | _ -> error "Incomplete proof!")
 	    
-      | Some (Prim (Intro_replacing id),[spf]) ->
-	  (match kind_of_term (strip_outer_cast cl) with
-	    | Prod (_,ty,_) ->
-		let cty = subst_proof_vars vl ty in
-		  mkLambda (Name id, cty, subfun (add_proof_var id vl) spf)
-	    | LetIn (_,b,ty,_) ->
-		let cb = subst_proof_vars vl b in
-		let cty = subst_proof_vars vl ty in
-		  mkLetIn (Name id, cb, cty, subfun (add_proof_var id vl) spf)
-	    | _ -> error "incomplete proof!")
-
-      | Some (Prim (Cut (b,id,t)),[spf1;spf2]) ->
+      | Some (Prim (Cut (b,_,id,t)),[spf1;spf2]) ->
           let spf1, spf2 = if b then spf1, spf2 else spf2, spf1 in
 	    mkLetIn (Name id,subfun vl spf1,subst_proof_vars vl t,
                     subfun (add_proof_var id vl) spf2)

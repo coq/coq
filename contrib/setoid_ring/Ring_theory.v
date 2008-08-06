@@ -494,7 +494,7 @@ Qed.
  Proof. intros;mrewrite. Qed.
 
  Lemma ARdistr_r : forall x y z, z * (x + y) == z*x + z*y.
- Proof. 
+ Proof.
   intros;mrewrite. 
   repeat rewrite (ARth.(ARmul_comm) z);sreflexivity.
  Qed.

@@ -86,7 +86,7 @@ let tclMAP tacfun l =
 
 let tclNTH_HYP m (tac : constr->tactic) gl =
   tac (try mkVar(let (id,_,_) = List.nth (pf_hyps gl) (m-1) in id) 
-       with Failure _ -> error "No such assumption") gl
+       with Failure _ -> error "No such assumption.") gl
 
 (* apply a tactic to the last element of the signature  *)
 
@@ -94,11 +94,11 @@ let tclLAST_HYP = tclNTH_HYP 1
 
 let tclLAST_NHYPS n tac gl =
   tac (try list_firstn n (pf_ids_of_hyps gl)
-       with Failure _ -> error "No such assumptions") gl
+       with Failure _ -> error "No such assumptions.") gl
 
 let tclTRY_sign (tac : constr->tactic) sign gl =
   let rec arec = function
-    | []      -> tclFAIL 0 (str "no applicable hypothesis")
+    | []      -> tclFAIL 0 (str "No applicable hypothesis.")
     | [s]     -> tac (mkVar s) (*added in order to get useful error messages *)
     | (s::sl) -> tclORELSE (tac (mkVar s)) (arec sl) 
   in 
@@ -218,7 +218,7 @@ let lastHyp gl = List.hd (pf_ids_of_hyps gl)
 
 let nLastHyps n gl =
   try list_firstn n (pf_hyps gl)
-  with Failure "firstn" -> error "Not enough hypotheses in the goal"
+  with Failure "firstn" -> error "Not enough hypotheses in the goal."
 
 
 let onClause t cls gl  = t cls gl
@@ -270,19 +270,28 @@ type branch_args = {
   nassums    : int;         (* the number of assumptions to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=recursive argument, false=constant *)
-  branchnames : intro_pattern_expr list}
+  branchnames : intro_pattern_expr located list}
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
   assums    : named_context}   (* the list of assumptions introduced *)
 
+let check_or_and_pattern_size loc names n =
+  if List.length names <> n then
+    if n = 1 then 
+      user_err_loc (loc,"",str "Expects a conjunctive pattern.")
+    else 
+      user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n 
+	++ str " branches.")
+
 let compute_induction_names n = function
-  | IntroAnonymous ->
+  | None ->
       Array.make n []
-  | IntroOrAndPattern names when List.length names = n ->
+  | Some (loc,IntroOrAndPattern names) ->
+      check_or_and_pattern_size loc names n;
       Array.of_list names
   | _ ->
-      errorlabstrm "" (str "Expects " ++ int n ++ str " lists of names")
+      error "Unexpected introduction pattern."
 
 let compute_construtor_signatures isrec (_,k as ity) =
   let rec analrec c recargs =
@@ -335,7 +344,7 @@ let general_elim_then_using mk_elim
   let indmv = 
     match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
-      | _         -> error "elimination"
+      | _         -> anomaly "elimination"
   in
   let pmv =
     let p, _ = decompose_app elimclause.templtyp.Evd.rebus in
@@ -348,7 +357,7 @@ let general_elim_then_using mk_elim
 	      | Var id -> string_of_id id
 	      | _ -> "\b"
 	  in
-	  error ("The elimination combinator " ^ name_elim ^ " is not known") 
+	  error ("The elimination combinator " ^ name_elim ^ " is unknown.") 
   in
   let elimclause' = clenv_fchain indmv elimclause indclause' in
   let elimclause' = clenv_match_args elimbindings elimclause' in
@@ -393,7 +402,7 @@ let elimination_then_using tac predicate bindings c gl =
   let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let indclause  = mk_clenv_from gl (c,t) in
   general_elim_then_using gl_make_elim
-    true IntroAnonymous tac predicate bindings ind indclause gl
+    true None tac predicate bindings ind indclause gl
 
 let case_then_using =
   general_elim_then_using gl_make_case_dep false
@@ -423,7 +432,7 @@ let make_elim_branch_assumptions ba gl =
 		   id::constargs,
 		   recargs,
 		   indargs) tl idtl
-      | (_, _) -> error "make_elim_branch_assumptions"
+      | (_, _) -> anomaly "make_elim_branch_assumptions"
   in 
   makerec ([],[],[],[],[]) ba.branchsign
     (try list_firstn ba.nassums (pf_hyps gl)
@@ -447,7 +456,7 @@ let make_case_branch_assumptions ba gl =
 		   id::cargs,
 		   recargs,
 		   id::constargs) tl idtl
-      | (_, _) -> error "make_case_branch_assumptions"
+      | (_, _) -> anomaly "make_case_branch_assumptions"
   in 
   makerec ([],[],[],[]) ba.branchsign
     (try list_firstn ba.nassums (pf_hyps gl)

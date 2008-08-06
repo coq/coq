@@ -49,14 +49,14 @@ let encode_bool r =
   let (_,lc as x) = encode_inductive r in
   if not (has_two_constructors lc) then
     user_err_loc (loc_of_reference r,"encode_if",
-      str "This type has not exactly two constructors");
+      str "This type has not exactly two constructors.");
   x
 
 let encode_tuple r =
   let (_,lc as x) = encode_inductive r in
   if not (isomorphic_to_tuple lc) then
     user_err_loc (loc_of_reference r,"encode_tuple",
-      str "This type cannot be seen as a tuple type");
+      str "This type cannot be seen as a tuple type.");
   x
 
 module PrintingCasesMake =

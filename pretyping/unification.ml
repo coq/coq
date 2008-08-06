@@ -239,9 +239,9 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
       | Some c ->
 	  unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
       | None ->
-      error_cannot_unify env sigma (cM,cN)
+      error_cannot_unify curenv sigma (cM,cN)
     else
-      error_cannot_unify env sigma (cM,cN)
+      error_cannot_unify curenv sigma (cM,cN)
 
   in
     if (not(occur_meta m)) &&

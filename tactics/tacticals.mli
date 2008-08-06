@@ -10,6 +10,7 @@
 
 (*i*)
 open Pp
+open Util
 open Names
 open Term
 open Sign
@@ -124,23 +125,30 @@ type branch_args = {
   nassums    : int;         (* the number of assumptions to be introduced *)
   branchsign : bool list;   (* the signature of the branch.
                                true=recursive argument, false=constant *)
-  branchnames : intro_pattern_expr list}
+  branchnames : intro_pattern_expr located list}
 
 type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
   assums    : named_context}   (* the list of assumptions introduced *)
 
+(* [check_disjunctive_pattern_size loc pats n] returns an appropriate *)
+(* error message if |pats| <> n *)
+val check_or_and_pattern_size :
+  Util.loc -> or_and_intro_pattern_expr -> int -> unit 
+
 (* Useful for [as intro_pattern] modifier *)
 val compute_induction_names : 
-  int -> intro_pattern_expr -> intro_pattern_expr list array
+  int -> intro_pattern_expr located option -> 
+    intro_pattern_expr located list array
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
 
 val general_elim_then_using :
-  (inductive -> goal sigma -> constr) -> rec_flag -> intro_pattern_expr ->
-    (branch_args -> tactic) -> constr option -> 
-      (arg_bindings * arg_bindings) -> inductive -> clausenv -> tactic
+  (inductive -> goal sigma -> constr) -> rec_flag ->
+  intro_pattern_expr located option -> (branch_args -> tactic) -> 
+    constr option -> (arg_bindings * arg_bindings) -> inductive -> clausenv ->
+    tactic
 	  
 val elimination_then_using :
   (branch_args -> tactic) -> constr option -> 
@@ -151,12 +159,12 @@ val elimination_then :
     (arg_bindings * arg_bindings) -> constr -> tactic
 
 val case_then_using :
-  intro_pattern_expr -> (branch_args -> tactic) -> 
+  intro_pattern_expr located option -> (branch_args -> tactic) -> 
     constr option -> (arg_bindings * arg_bindings) ->
       inductive -> clausenv -> tactic
 
 val case_nodep_then_using :
-  intro_pattern_expr -> (branch_args -> tactic) -> 
+  intro_pattern_expr located option -> (branch_args -> tactic) -> 
     constr option -> (arg_bindings * arg_bindings) -> 
       inductive -> clausenv -> tactic
 

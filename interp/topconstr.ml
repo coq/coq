@@ -150,7 +150,7 @@ let compare_rawconstr f t1 t2 = match t1,t2 with
     | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _),_
   | _,(RLetIn _ | RCases _ | RRec _ | RDynamic _
       | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _)
-      -> error "Unsupported construction in recursive notations"
+      -> error "Unsupported construction in recursive notations."
   | (RRef _ | RVar _ | RApp _ | RLambda _ | RProd _ | RHole _ | RSort _), _
       -> false
 
@@ -168,13 +168,13 @@ let discriminate_patterns foundvars nl l1 l2 =
   | _ -> compare_rawconstr (aux (n+1)) c1 c2 in
   let l = list_map2_i aux 0 l1 l2 in
   if not (List.for_all ((=) true) l) then
-    error "Both ends of the recursive pattern differ";
+    error "Both ends of the recursive pattern differ.";
   match !diff with
-    | None ->  error "Both ends of the recursive pattern are the same"
+    | None ->  error "Both ends of the recursive pattern are the same."
     | Some (x,y,_ as discr) ->
 	List.iter (fun id ->
           if List.mem id !foundvars
-          then error "Variables used in the recursive part of a pattern are not allowed to occur outside of the recursive part";
+          then errorlabstrm "" (strbrk "Variables used in the recursive part of a pattern are not allowed to occur outside of the recursive part.");
           foundvars := id::!foundvars) [x;y];
 	discr
 
@@ -212,7 +212,7 @@ let aconstr_and_vars_of_rawconstr a =
       Array.iter (fun id -> found := id::!found) idl;
       let dll = Array.map (List.map (fun (na,bk,oc,b) -> 
 	 if bk <> Explicit then 
-	   error "Binders marked as implicit not allowed in notations";
+	   error "Binders marked as implicit not allowed in notations.";
 	 add_name found na; (na,Option.map aux oc,aux b))) dll in
       ARec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | RCast (_,c,k) -> ACast (aux c, 
@@ -223,17 +223,17 @@ let aconstr_and_vars_of_rawconstr a =
   | RRef (_,r) -> ARef r
   | RPatVar (_,(_,n)) -> APatVar n
   | RDynamic _ | REvar _ ->
-      error "Existential variables not allowed in notations"
+      error "Existential variables not allowed in notations."
 
   (* Recognizing recursive notations *)
   and terminator_of_pat f1 ll1 lr1 = function
   | RApp (loc,f2,l2) ->
-      if not (eq_rawconstr f1 f2) then error
-	"Cannot recognize the same head to both ends of the recursive pattern";
+      if not (eq_rawconstr f1 f2) then errorlabstrm ""
+	(strbrk "Cannot recognize the same head to both ends of the recursive pattern.");
       let nl = List.length ll1 in
       let nr = List.length lr1 in
       if List.length l2 <> nl + nr + 1 then
-	error "Both ends of the recursive pattern have different lengths";
+	error "Both ends of the recursive pattern have different lengths.";
       let ll2,l2' = list_chop nl l2 in
       let t = List.hd l2' and lr2 = List.tl l2' in
       let x,y,order = discriminate_patterns found nl (ll1@lr1) (ll2@lr2) in
@@ -241,8 +241,8 @@ let aconstr_and_vars_of_rawconstr a =
         if order then RApp (loc,f2,ll2@RVar (loc,ldots_var)::lr2)
         else RApp (loc,f1,ll1@RVar (loc,ldots_var)::lr1) in
       (if order then y else x),(if order then x else y), aux iter, aux t, order
-  | _ -> error "One end of the recursive pattern is not an application"
-    
+  | _ -> error "One end of the recursive pattern is not an application."
+
   and make_aconstr_list f args =
     let rec find_patterns acc = function
       | RApp(_,RVar (_,a),[c]) :: l when a = ldots_var ->
@@ -250,7 +250,7 @@ let aconstr_and_vars_of_rawconstr a =
 	  let x,y,iter,term,lassoc = terminator_of_pat f (List.rev acc) l c in
 	  AList (x,y,iter,term,lassoc)
       | a::l -> find_patterns (a::acc) l
-      | [] -> error "Ill-formed recursive notation"
+      | [] -> error "Ill-formed recursive notation."
     in find_patterns [] args
 
   in
@@ -262,7 +262,7 @@ let aconstr_of_rawconstr vars a =
   let a,foundvars = aconstr_and_vars_of_rawconstr a in
   let check_type x =
     if not (List.mem x foundvars) then
-      error ((string_of_id x)^" is unbound in the right-hand-side") in
+      error ((string_of_id x)^" is unbound in the right-hand-side.") in
   List.iter check_type vars;
   a
 
@@ -853,7 +853,7 @@ let coerce_to_id = function
   | CRef (Ident (loc,id)) -> (loc,id)
   | a -> user_err_loc
         (constr_loc a,"coerce_to_id",
-         str "This expression should be a simple identifier")
+         str "This expression should be a simple identifier.")
 
 (* Used in correctness and interface *)
 

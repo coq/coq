@@ -591,12 +591,10 @@ let lookup_eliminator ind_sp s =
   try constr_of_global (Nametab.locate (make_short_qualid id))
   with Not_found ->
     errorlabstrm "default_elim"
-      (str "Cannot find the elimination combinator " ++
-       pr_id id ++ spc () ++
-       str "The elimination of the inductive definition " ++
-       pr_id id ++ spc () ++ str "on sort " ++ 
-       spc () ++ pr_sort_family s ++
-       str " is probably not allowed")
+      (strbrk "Cannot find the elimination combinator " ++
+       pr_id id ++ strbrk ", the elimination of the inductive definition " ++
+       pr_id id ++ strbrk " on sort " ++ pr_sort_family s ++
+       strbrk " is probably not allowed.")
 
 
 (*  let env = Global.env() in

@@ -142,7 +142,7 @@ let rec tauto_intuit t_reduce solver ist =
   and t_simplif = tacticIn simplif
   and t_is_disj = tacticIn is_disj
   and t_tauto_intuit = tacticIn (tauto_intuit t_reduce solver) in
-  let t_solver = Tacexpr.TacArg (valueIn (VTactic (dummy_loc,solver))) in
+  let t_solver = globTacticIn (fun _ist -> solver) in
   <:tactic<
    ($t_simplif;$t_axioms
    || match reverse goal with
@@ -165,16 +165,14 @@ let rec tauto_intuit t_reduce solver ist =
     $t_solver
    ) >>
     
-let reduction_not_iff=interp
+let reduction_not_iff _ist =
  <:tactic<repeat 
   match goal with 
   | |- _     => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff 
   | H:_ |- _ => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in H
   end >>
 
-
-let t_reduction_not_iff =
-  Tacexpr.TacArg (valueIn (VTactic (dummy_loc,reduction_not_iff)))
+let t_reduction_not_iff = tacticIn reduction_not_iff
 
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
@@ -182,12 +180,12 @@ let intuition_gen tac =
 let simplif_gen = interp (tacticIn simplif)
 
 let tauto g =
-  try intuition_gen (interp <:tactic<fail>>) g
+  try intuition_gen <:tactic<fail>> g
   with
     Refiner.FailError _ | UserError _ ->
-      errorlabstrm "tauto" [< str "tauto failed" >]
+      errorlabstrm "tauto" (str "tauto failed.")
 
-let default_intuition_tac = interp <:tactic< auto with * >>
+let default_intuition_tac = <:tactic< auto with * >>
 
 TACTIC EXTEND tauto
 | [ "tauto" ] -> [ tauto ]
@@ -195,5 +193,5 @@ END
 
 TACTIC EXTEND intuition
 | [ "intuition" ] -> [ intuition_gen default_intuition_tac ]
-| [ "intuition" tactic(t) ] -> [ intuition_gen (snd t) ]
+| [ "intuition" tactic(t) ] -> [ intuition_gen (fst t) ]
 END

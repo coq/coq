@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Term
 open Environ
@@ -68,7 +69,8 @@ val find_intro_names : rel_context -> goal sigma -> identifier list
 val intro                : tactic
 val introf               : tactic
 val intro_force          : bool -> tactic
-val intro_move           : identifier option -> identifier option -> tactic
+val intro_move        : identifier option -> identifier move_location -> tactic
+
   (* [intro_avoiding idl] acts as intro but prevents the new identifier
      to belong to [idl] *)
 val intro_avoiding       : identifier list -> tactic
@@ -110,9 +112,10 @@ val onInductionArg :
 
 (*s Introduction tactics with eliminations. *)
 
-val intro_pattern     : identifier option -> intro_pattern_expr      -> tactic
-val intro_patterns    : intro_pattern_expr list -> tactic
-val intros_pattern    : identifier option -> intro_pattern_expr list -> tactic
+val intro_pattern  : identifier move_location -> intro_pattern_expr -> tactic
+val intro_patterns : intro_pattern_expr located list -> tactic
+val intros_pattern :
+  identifier move_location -> intro_pattern_expr located list -> tactic
 
 (*s Exact tactics. *)
 
@@ -167,7 +170,7 @@ val keep          : identifier list -> tactic
 
 val specialize    : int option -> constr with_ebindings -> tactic
 
-val move_hyp      : bool -> identifier -> identifier -> tactic
+val move_hyp      : bool -> identifier -> identifier move_location -> tactic
 val rename_hyp    : (identifier * identifier) list -> tactic
 
 val revert        : identifier list -> tactic
@@ -183,7 +186,7 @@ val apply_without_reduce  : constr      -> tactic
 val apply_list            : constr list -> tactic
 
 val apply_with_ebindings_gen : 
-  advanced_flag -> evars_flag -> constr with_ebindings -> tactic
+  advanced_flag -> evars_flag -> constr with_ebindings list -> tactic
 
 val apply_with_bindings   : constr with_bindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
@@ -260,7 +263,9 @@ val elim :
 val simple_induct : quantified_hypothesis -> tactic
 
 val new_induct : evars_flag -> constr with_ebindings induction_arg list -> 
-  constr with_ebindings option -> intro_pattern_expr -> clause option -> tactic
+  constr with_ebindings option -> 
+  intro_pattern_expr located option * intro_pattern_expr located option ->
+  clause option -> tactic
 
 (*s Case analysis tactics. *)
 
@@ -269,7 +274,18 @@ val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
 val new_destruct : evars_flag -> constr with_ebindings induction_arg list -> 
-  constr with_ebindings option -> intro_pattern_expr -> clause option -> tactic
+  constr with_ebindings option -> 
+  intro_pattern_expr located option * intro_pattern_expr located option ->
+  clause option -> tactic
+
+(*s Generic case analysis / induction tactics. *)
+
+val induction_destruct : evars_flag -> rec_flag -> 
+  (constr with_ebindings induction_arg list *
+   constr with_ebindings option *
+   (intro_pattern_expr located option * intro_pattern_expr located option) *
+   clause option) list ->
+    tactic
 
 (*s Eliminations giving the type instead of the proof. *)
 
@@ -330,9 +346,10 @@ val cut_replacing               :
   identifier -> constr -> (tactic -> tactic) -> tactic
 val cut_in_parallel             : constr list -> tactic
 
-val assert_as : bool -> intro_pattern_expr -> constr -> tactic
-val forward   : tactic option -> intro_pattern_expr -> constr -> tactic
-val letin_tac : bool option -> name -> constr -> clause -> tactic
+val assert_as : bool -> intro_pattern_expr located -> constr -> tactic
+val forward   : tactic option -> intro_pattern_expr located -> constr -> tactic
+val letin_tac : (bool * intro_pattern_expr located) option -> name -> 
+  constr -> clause -> tactic
 val true_cut                    : name -> constr -> tactic
 val assert_tac                  : bool -> name -> constr -> tactic
 val generalize      : constr list -> tactic

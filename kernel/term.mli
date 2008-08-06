@@ -230,9 +230,13 @@ val isSort : constr -> bool
 val isCast : constr -> bool
 val isApp : constr -> bool
 val isLambda : constr -> bool
+val isLetIn : constr -> bool
 val isProd : constr -> bool
 val isConst : constr -> bool
 val isConstruct : constr -> bool
+val isFix : constr -> bool
+val isCoFix : constr -> bool
+val isCase : constr -> bool
 
 val is_Prop : constr -> bool
 val is_Set  : constr -> bool

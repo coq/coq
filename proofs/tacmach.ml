@@ -59,7 +59,7 @@ let pf_get_hyp gls id =
   try 
     Sign.lookup_named id (pf_hyps gls)
   with Not_found -> 
-    error ("No such hypothesis : " ^ (string_of_id id))
+    error ("No such hypothesis: " ^ (string_of_id id))
 
 let pf_get_hyp_typ gls id =
   let (_,_,ty)= (pf_get_hyp gls id) in
@@ -176,15 +176,11 @@ let refiner = refiner
 let introduction_no_check id =
   refiner (Prim (Intro id))
 
-(* This does not check that the dependencies are correct *)
-let intro_replacing_no_check whereid gl = 
-  refiner (Prim (Intro_replacing whereid)) gl
+let internal_cut_no_check replace id t gl = 
+  refiner (Prim (Cut (true,replace,id,t))) gl
 
-let internal_cut_no_check id t gl = 
-  refiner (Prim (Cut (true,id,t))) gl
-
-let internal_cut_rev_no_check id t gl = 
-  refiner (Prim (Cut (false,id,t))) gl
+let internal_cut_rev_no_check replace id t gl = 
+  refiner (Prim (Cut (false,replace,id,t))) gl
 
 let refine_no_check c gl = 
   refiner (Prim (Refine c)) gl
@@ -221,26 +217,15 @@ let mutual_cofix f others gl =
 (* Versions with consistency checks *)
 
 let introduction id    = with_check (introduction_no_check id) 
-let intro_replacing id = with_check (intro_replacing_no_check id)
-let internal_cut d t     = with_check (internal_cut_no_check d t)
-let internal_cut_rev d t = with_check (internal_cut_rev_no_check d t)
+let internal_cut b d t = with_check (internal_cut_no_check b d t)
+let internal_cut_rev b d t = with_check (internal_cut_rev_no_check b d t)
 let refine c           = with_check (refine_no_check c)
 let convert_concl d sty = with_check (convert_concl_no_check d sty)
 let convert_hyp d      = with_check (convert_hyp_no_check d)
+let thin c             = with_check (thin_no_check c)
 let thin_body c        = with_check (thin_body_no_check c)
 let move_hyp b id id'  = with_check (move_hyp_no_check b id id') 
 let rename_hyp l       = with_check (rename_hyp_no_check l)
-
-let thin l gl = 
-  try with_check (thin_no_check l) gl
-  with Evarutil.OccurHypInSimpleClause (id,ido) ->
-    match ido with
-    | None ->
-	errorlabstrm "" (pr_id id ++ str " is used in conclusion.")
-    | Some id' -> 
-	errorlabstrm "" 
-	 (pr_id id ++ strbrk " is used in hypothesis " ++ pr_id id' ++ str ".")
-
 
 (* Pretty-printers *)
 

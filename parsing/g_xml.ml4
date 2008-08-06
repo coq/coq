@@ -31,7 +31,7 @@ type xml = XmlTag of loc * string * attribute list * xml list
 let check_tags loc otag ctag =
   if otag <> ctag then
     user_err_loc (loc,"",str "closing xml tag " ++ str ctag ++ 
-      str "does not match open xml tag " ++ str otag)
+      str "does not match open xml tag " ++ str otag ++ str ".")
 
 let xml_eoi = (Gram.Entry.create "xml_eoi" : xml Gram.Entry.e)
 
@@ -55,11 +55,19 @@ GEXTEND Gram
   ;
 END
 
+(* Errors *)
+
+let error_expect_one_argument loc =
+  user_err_loc (loc,"",str "wrong number of arguments (expect one).")
+
+let error_expect_no_argument loc =
+  user_err_loc (loc,"",str "wrong number of arguments (expect none).")
+
 (* Interpreting attributes *)
 
 let nmtoken (loc,a) =
   try int_of_string a
-  with Failure _ -> user_err_loc (loc,"",str "nmtoken expected")
+  with Failure _ -> user_err_loc (loc,"",str "nmtoken expected.")
   
 let interp_xml_attr_qualid = function
   | "uri", s -> qualid_of_string s
@@ -94,7 +102,7 @@ let sort_of_cdata (loc,a) = match a with
   | "Prop" -> RProp Null
   | "Set" -> RProp Pos
   | "Type" -> RType None
-  | _ -> user_err_loc (loc,"",str "sort expected")
+  | _ -> user_err_loc (loc,"",str "sort expected.")
 
 let get_xml_sort al = sort_of_cdata (get_xml_attr "value" al)
 
@@ -188,18 +196,18 @@ let rec interp_xml_constr = function
       RCast (loc, interp_xml_term x1, CastConv (DEFAULTcast, interp_xml_type x2))
   | XmlTag (loc,"SORT",al,[]) ->
       RSort (loc, get_xml_sort al)
-  | XmlTag (loc,s,_,_) -> user_err_loc (loc,"", str "Unexpected tag " ++ str s)
+  | XmlTag (loc,s,_,_) ->
+      user_err_loc (loc,"", str "Unexpected tag " ++ str s ++ str ".")
 
 and interp_xml_tag s = function
   | XmlTag (loc,tag,al,xl) when tag=s -> (loc,al,xl)
   | XmlTag (loc,tag,_,_) -> user_err_loc (loc, "", 
-    str "Expect tag " ++ str s ++ str " but find " ++ str s)
+    str "Expect tag " ++ str s ++ str " but find " ++ str s ++ str ".")
 
 and interp_xml_constr_alias s x =
   match interp_xml_tag s x with
     | (_,_,[x]) -> interp_xml_constr x
-    | (loc,_,_) -> 
-        user_err_loc (loc,"",str "wrong number of arguments (expect one)")
+    | (loc,_,_) -> error_expect_one_argument loc
 
 and interp_xml_term x = interp_xml_constr_alias "term" x
 and interp_xml_type x = interp_xml_constr_alias "type" x
@@ -215,8 +223,7 @@ and interp_xml_substitution x = interp_xml_constr_alias "substitution" x
 and interp_xml_decl_alias s x =
   match interp_xml_tag s x with
     | (_,al,[x]) -> (get_xml_binder al, interp_xml_constr x)
-    | (loc,_,_) -> 
-        user_err_loc (loc,"",str "wrong number of arguments (expect one)")
+    | (loc,_,_) -> error_expect_one_argument loc
 
 and interp_xml_def x = interp_xml_decl_alias "def" x
 and interp_xml_decl x = interp_xml_decl_alias "decl" x
@@ -227,17 +234,17 @@ and interp_xml_recursionOrder x =
     match s with
 	"Structural" -> 
 	  (match l with [] -> RStructRec
-	     | _ -> user_err_loc (loc, "", str "wrong number of arguments (expected none)"))
+	     | _ -> error_expect_no_argument loc)
       | "WellFounded" -> 
 	  (match l with
 	       [c] -> RWfRec (interp_xml_type c)
-	     | _ -> user_err_loc (loc, "", str "wrong number of arguments (expected one)"))
+	     | _ -> error_expect_one_argument loc)
       | "Measure" -> 
 	  (match l with
 	       [c] -> RMeasureRec (interp_xml_type c)
-	     | _ -> user_err_loc (loc, "", str "wrong number of arguments (expected one)"))
+	     | _ -> error_expect_one_argument loc)
       | _ ->
-          user_err_loc (locs,"",str "invalid recursion order")
+          user_err_loc (locs,"",str "Invalid recursion order.")
 
 and interp_xml_FixFunction x =
   match interp_xml_tag "FixFunction" x with
@@ -248,15 +255,15 @@ and interp_xml_FixFunction x =
   | (loc,al,[x1;x2]) ->
       ((Some (nmtoken (get_xml_attr "recIndex" al)), RStructRec),
        (get_xml_name al, interp_xml_type x1, interp_xml_body x2))
-  | (loc,_,_) -> 
-        user_err_loc (loc,"",str "wrong number of arguments (expect one)")
+  | (loc,_,_) ->
+      error_expect_one_argument loc
 
 and interp_xml_CoFixFunction x =
   match interp_xml_tag "CoFixFunction" x with
   | (loc,al,[x1;x2]) ->
       (get_xml_name al, interp_xml_type x1, interp_xml_body x2)
     | (loc,_,_) -> 
-        user_err_loc (loc,"",str "wrong number of arguments (expect one)")
+	error_expect_one_argument loc
 
 (* Interpreting tactic argument *)
 
@@ -266,7 +273,8 @@ let rec interp_xml_tactic_arg = function
   | XmlTag (loc,"CALL",al,xl) ->
       let ltacref = ltacref_of_cdata (get_xml_attr "uri" al) in
       TacCall(loc,ArgArg ltacref,List.map interp_xml_tactic_arg xl)
-  | XmlTag (loc,s,_,_) -> user_err_loc (loc,"", str "Unexpected tag " ++ str s)
+  | XmlTag (loc,s,_,_) ->
+      user_err_loc (loc,"", str "Unexpected tag " ++ str s ++ str ".")
 
 let parse_tactic_arg ch =
   interp_xml_tactic_arg

@@ -57,8 +57,7 @@ let explore_tree pfs =
   and explain_prim = function
     | Refine c -> "Refine " ^ (string_of_ppcmds (Printer.prterm c))
     | Intro identifier -> "Intro"
-    | Intro_replacing identifier -> "Intro_replacing"
-    | Cut (bool, identifier, types) -> "Cut"
+    | Cut (bool, _, identifier, types) -> "Cut"
     | FixRule (identifier, int, l) -> "FixRule"
     | Cofix (identifier, l) -> "Cofix"
     | Convert_concl (types, cast_kind) -> "Convert_concl"
@@ -269,7 +268,7 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
 	     igtal
 	     acc)
     | TacMatch (_, tac, tacexpr_mrl) -> failwith "depends_of_tacexpr of a Match not implemented yet"
-    | TacMatchContext (_, _, tacexpr_mrl) -> failwith "depends_of_tacexpr of a Match Context not implemented yet"
+    | TacMatchGoal (_, _, tacexpr_mrl) -> failwith "depends_of_tacexpr of a Match Context not implemented yet"
     | TacFun tacfa -> depends_of_tac_fun_ast tacfa acc
     | TacArg tacarg -> depends_of_tac_arg tacarg acc
   and depends_of_atomic_tacexpr atexpr acc = let depends_of_'constr_with_bindings = depends_of_'a_with_bindings depends_of_'constr in match atexpr with
@@ -281,7 +280,8 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacExact          c
     | TacExactNoCheck   c
     | TacVmCastNoCheck  c  -> depends_of_'constr c acc
-    | TacApply (_, _, cb) -> depends_of_'constr_with_bindings cb acc
+    | TacApply (_, _, [cb]) -> depends_of_'constr_with_bindings cb acc
+    | TacApply (_, _, _) -> failwith "TODO"
     | TacElim (_, cwb, cwbo) ->
 	depends_of_'constr_with_bindings cwb
 	  (Option.fold_right depends_of_'constr_with_bindings cwbo acc)
@@ -302,14 +302,13 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacLetTac (_,c,_,_) -> depends_of_'constr c acc
 
     (* Derived basic tactics *)
-    | TacSimpleInduction _
-    | TacSimpleDestruct  _
+    | TacSimpleInductionDestruct _
     | TacDoubleInduction _ -> acc
-    | TacNewInduction (_, cwbial, cwbo, _, _)
-    | TacNewDestruct (_, cwbial, cwbo, _, _) ->
+    | TacInductionDestruct (_, _, [cwbial, cwbo, _, _]) ->
 	list_union_map (depends_of_'a_induction_arg depends_of_'constr_with_bindings)
 	  cwbial
 	  (Option.fold_right depends_of_'constr_with_bindings cwbo acc)
+    | TacInductionDestruct (_, _, _) -> failwith "TODO"
     | TacDecomposeAnd c
     | TacDecomposeOr  c -> depends_of_'constr c acc
     | TacDecompose (il, c) -> depends_of_'constr c (list_union_map depends_of_'ind il acc)
@@ -410,8 +409,7 @@ let depends_of_compound_rule cr acc = match cr with
 and depends_of_prim_rule pr acc = match pr with
   | Refine c                     -> depends_of_constr c acc
   | Intro id                     -> acc
-  | Intro_replacing id           -> acc
-  | Cut (_, _, t)                -> depends_of_constr t acc (* TODO: check what 2nd argument contains *)
+  | Cut (_, _, _, t)             -> depends_of_constr t acc (* TODO: check what 3nd argument contains *)
   | FixRule (_, _, l)            -> list_union_map (o depends_of_constr trd_of_3) l acc (* TODO: check what the arguments contain *)
   | Cofix (_, l)                 -> list_union_map (o depends_of_constr snd) l acc (* TODO: check what the arguments contain *)
   | Convert_concl (t, _)         -> depends_of_constr t acc

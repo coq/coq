@@ -113,7 +113,7 @@ let test_plurial_form = function
 
 let no_coercion loc (c,x) =
   if c then Util.user_err_loc
-    (loc,"no_coercion",Pp.str"no coercion allowed here");
+    (loc,"no_coercion",str"No coercion allowed here.");
   x
 
 (* Gallina declarations *)
@@ -271,7 +271,7 @@ GEXTEND Gram
 		    Some (loc, id)
 		    else Util.user_err_loc
                       (loc,"Fixpoint",
-                      Pp.str "No argument named " ++ Nameops.pr_id id))
+                       str "No argument named " ++ Nameops.pr_id id ++ str"."))
               | None -> 
 		  (* If there is only one argument, it is the recursive one, 
 		     otherwise, we search the recursive index later *)
@@ -311,7 +311,7 @@ GEXTEND Gram
           LocalRawAssum(l,ty) -> (l,ty)
         | LocalRawDef _ ->
             Util.user_err_loc
-              (loc,"fix_param",Pp.str"defined binder not allowed here")) ] ]
+              (loc,"fix_param",Pp.str"defined binder not allowed here.")) ] ]
   ;
 *)
   (* ... with coercions *)

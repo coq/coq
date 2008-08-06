@@ -163,7 +163,7 @@ let safe_push_named (id,_,_ as d) env =
   let _ =
     try
       let _ = lookup_named id env in 
-      error ("identifier "^string_of_id id^" already defined")
+      error ("Identifier "^string_of_id id^" already defined.")
     with Not_found -> () in
   Environ.push_named d env
 
@@ -446,7 +446,7 @@ let end_module l restype senv =
    let senv = add_constraints (struct_expr_constraints struct_expr) senv in
    let msid,str = match (eval_struct senv.env struct_expr) with
      | SEBstruct(msid,str_l) -> msid,str_l
-     | _ -> error ("You cannot Include a higher-order Module or Module Type" )
+     | _ -> error ("You cannot Include a higher-order Module or Module Type.")
    in
    let mp_sup = senv.modinfo.modpath in
    let str1 = subst_signature_msid msid mp_sup str in
@@ -660,7 +660,7 @@ let check_engagement env c =
     | Some ImpredicativeSet, Some ImpredicativeSet -> ()
     | _, None -> ()
     | _, Some ImpredicativeSet ->
-        error "Needs option -impredicative-set"
+        error "Needs option -impredicative-set."
 
 let set_engagement c senv =
   {senv with
@@ -739,9 +739,10 @@ let check_imports senv needed =
     try
       let actual_stamp = List.assoc id imports in
       if stamp <> actual_stamp then
-	error ("Inconsistent assumptions over module " ^(string_of_dirpath id))
+	error
+	  ("Inconsistent assumptions over module "^(string_of_dirpath id)^".")
     with Not_found -> 
-      error ("Reference to unknown module " ^ (string_of_dirpath id))
+      error ("Reference to unknown module "^(string_of_dirpath id)^".")
   in
   List.iter check needed
 

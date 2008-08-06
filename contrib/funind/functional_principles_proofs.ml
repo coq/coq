@@ -136,7 +136,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
   fun g -> 
     let prov_id = pf_get_new_id hyp_id g in 
     tclTHENS
-      ((* observe_tac msg *) (forward (Some  (tclCOMPLETE tac)) (Genarg.IntroIdentifier prov_id) t))
+      ((* observe_tac msg *) (forward (Some  (tclCOMPLETE tac)) (dummy_loc,Genarg.IntroIdentifier prov_id) t))
       [tclTHENLIST 
       [	
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
@@ -388,7 +388,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 		     in
 (* 		     observe_tac "rec hyp " *)
 		       (tclTHENS
-		       (assert_as true (Genarg.IntroIdentifier rec_pte_id) t_x)
+		       (assert_as true (dummy_loc, Genarg.IntroIdentifier rec_pte_id) t_x)
 		       [
 			 (* observe_tac "prove rec hyp" *) (prove_rec_hyp eq_hyps);
 (* 			observe_tac "prove rec hyp" *)
@@ -571,7 +571,7 @@ let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id
 	fun g -> 
 	  let prov_hid = pf_get_new_id hid g in
 	  tclTHENLIST[
-	    forward None (Genarg.IntroIdentifier prov_hid) (mkApp(mkVar hid,args));
+	    forward None (dummy_loc,Genarg.IntroIdentifier prov_hid) (mkApp(mkVar hid,args));
 	    thin [hid];
 	    h_rename [prov_hid,hid]
 	  ] g
@@ -1497,7 +1497,7 @@ let prove_principle_for_gen
 	    (tclTHEN
 	       (forward 
 		  (Some ((fun g -> (* observe_tac "prove wf" *) (tclCOMPLETE (wf_tac is_mes)) g)))
-		  (Genarg.IntroIdentifier wf_thm_id)
+		  (dummy_loc,Genarg.IntroIdentifier wf_thm_id)
 		  (mkApp (delayed_force well_founded,[|input_type;relation|])))
 	       (
 		 (* observe_tac  *)
@@ -1561,7 +1561,7 @@ let prove_principle_for_gen
 	);
       (* observe_tac "" *) (forward
 	 (Some (prove_rec_arg_acc))
-	 (Genarg.IntroIdentifier acc_rec_arg_id)
+	 (dummy_loc,Genarg.IntroIdentifier acc_rec_arg_id)
  	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
       );
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));

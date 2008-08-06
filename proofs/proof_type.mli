@@ -28,8 +28,7 @@ open Pattern
 
 type prim_rule =
   | Intro of identifier
-  | Intro_replacing of identifier
-  | Cut of bool * identifier * types
+  | Cut of bool * bool * identifier * types
   | FixRule of identifier * int * (identifier * int * constr) list
   | Cofix of identifier * (identifier * constr) list
   | Refine of constr
@@ -37,7 +36,7 @@ type prim_rule =
   | Convert_hyp of named_declaration
   | Thin of identifier list
   | ThinBody of identifier list
-  | Move of bool * identifier * identifier
+  | Move of bool * identifier * identifier move_location
   | Rename of identifier * identifier
   | Change_evars
 
@@ -128,3 +127,17 @@ and tactic_arg =
      Tacexpr.gen_tactic_arg
 
 type hyp_location = identifier Tacexpr.raw_hyp_location
+
+type ltac_call_kind = 
+  | LtacNotationCall of string
+  | LtacNameCall of ltac_constant
+  | LtacAtomCall of glob_atomic_tactic_expr * atomic_tactic_expr option ref
+  | LtacVarCall of identifier * glob_tactic_expr
+  | LtacConstrInterp of rawconstr *
+      ((identifier * constr) list * (identifier * identifier option) list)
+
+type ltac_trace = (loc * ltac_call_kind) list
+
+exception LtacLocated of (ltac_call_kind * ltac_trace * loc) * exn
+
+val abstract_tactic_box : atomic_tactic_expr option ref ref

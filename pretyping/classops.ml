@@ -376,7 +376,7 @@ let coercion_of_reference r =
   let ref = Nametab.global r in
   if not (coercion_exists ref) then
     errorlabstrm "try_add_coercion" 
-      (Nametab.pr_global_env Idset.empty ref ++ str" is not a coercion");
+      (Nametab.pr_global_env Idset.empty ref ++ str" is not a coercion.");
   ref
 
 module CoercionPrinting =

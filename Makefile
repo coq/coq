@@ -180,7 +180,6 @@ archclean: clean-ide cleantheories
 	rm -f bin/parser.opt$(EXE) bin/coq-interface.opt$(EXE)
 	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' | xargs rm -f
 	rm -f $(TOOLS)
-	rm -f $(MINICOQ)
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)

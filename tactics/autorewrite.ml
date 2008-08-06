@@ -56,7 +56,7 @@ let print_rewrite_hintdb bas =
  with
   Not_found -> 
    errorlabstrm "AutoRewrite" 
-     (str ("Rewriting base "^(bas)^" does not exist"))
+     (str ("Rewriting base "^(bas)^" does not exist."))
 
 type raw_rew_rule = constr * bool * raw_tactic_expr
 
@@ -67,7 +67,7 @@ let one_base general_rewrite_maybe_in tac_main bas =
       Stringmap.find bas !rewtab
     with Not_found ->
       errorlabstrm "AutoRewrite"
-        (str ("Rewriting base "^(bas)^" does not exist"))
+        (str ("Rewriting base "^(bas)^" does not exist."))
   in
   let lrul = List.map (fun (c,_,b,t) -> (c,b,Tacinterp.eval_tactic t)) lrul in
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
@@ -99,7 +99,7 @@ let autorewrite_multi_in idl tac_main lbas : tactic =
      match (Environ.named_context_of_val gl.Evd.it.Evd.evar_hyps) with
         (last_hyp_id,_,_)::_ -> last_hyp_id
       | _ -> (* even the hypothesis id is missing *)
-             error ("No such hypothesis : " ^ (string_of_id !id))
+             error ("No such hypothesis: " ^ (string_of_id !id) ^".")
     in
     let gl' = general_rewrite_in dir all_occurrences !id cstr false gl in
     let gls = (fst gl').Evd.it in
@@ -140,7 +140,7 @@ let gen_auto_multi_rewrite tac_main lbas cl =
   if cl.concl_occs <> all_occurrences_expr &
      cl.concl_occs <> no_occurrences_expr
   then 
-    error "The \"at\" syntax isn't available yet for the autorewrite tactic"
+    error "The \"at\" syntax isn't available yet for the autorewrite tactic."
   else 
     let compose_tac t1 t2 = 
       match cl.onhyps with 
@@ -170,8 +170,7 @@ let auto_multi_rewrite_with tac_main lbas cl gl =
 	gen_auto_multi_rewrite tac_main  lbas cl gl
     | _ -> 
 	    Util.errorlabstrm "autorewrite" 
-	      (str "autorewrite .. in .. using can only be used either with a unique hypothesis or" ++
-		 str " on the conclusion")
+	      (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
 
 (* Functions necessary to the library object declaration *)

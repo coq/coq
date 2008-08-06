@@ -92,7 +92,7 @@ let mis_nf_constructor_type (ind,mib,mip) j =
   and ntypes = mib.mind_ntypes
   and nconstr = Array.length mip.mind_consnames in
   let make_Ik k = mkInd ((fst ind),ntypes-k-1) in 
-  if j > nconstr then error "Not enough constructors in the type";
+  if j > nconstr then error "Not enough constructors in the type.";
   substl (list_tabulate make_Ik ntypes) specif.(j-1)
 
 (* Arity of constructors excluding parameters and local defs *)

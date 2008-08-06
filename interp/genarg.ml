@@ -75,24 +75,24 @@ let create_arg s =
 let exists_argtype s = List.mem s !dyntab
 
 type intro_pattern_expr =
-  | IntroOrAndPattern of case_intro_pattern_expr
-  | IntroWildcard of loc
-  | IntroIdentifier of identifier
-  | IntroAnonymous
+  | IntroOrAndPattern of or_and_intro_pattern_expr
+  | IntroWildcard
   | IntroRewrite of bool
+  | IntroIdentifier of identifier
   | IntroFresh of identifier
-and case_intro_pattern_expr = intro_pattern_expr list list
+  | IntroAnonymous
+and or_and_intro_pattern_expr = (loc * intro_pattern_expr) list list
 
-let rec pr_intro_pattern = function
-  | IntroOrAndPattern pll -> pr_case_intro_pattern pll
-  | IntroWildcard _ -> str "_"
-  | IntroIdentifier id -> pr_id id
-  | IntroAnonymous -> str "?"
+let rec pr_intro_pattern (_,pat) = match pat with
+  | IntroOrAndPattern pll -> pr_or_and_intro_pattern pll
+  | IntroWildcard -> str "_"
   | IntroRewrite true -> str "->"
   | IntroRewrite false -> str "<-"
+  | IntroIdentifier id -> pr_id id
   | IntroFresh id -> str "?" ++ pr_id id
+  | IntroAnonymous -> str "?"
 
-and pr_case_intro_pattern = function
+and pr_or_and_intro_pattern = function
   | [pl] ->
       str "(" ++ hv 0 (prlist_with_sep pr_coma pr_intro_pattern pl) ++ str ")"
   | pll ->

@@ -518,9 +518,11 @@ let whd_eta c = app_stack (local_whd_state_gen eta (c,empty_stack))
 (* Replacing defined evars for error messages *)
 let rec whd_evar sigma c =
   match kind_of_term c with
-    | Evar (ev,args)
-        when Evd.mem sigma ev & Evd.is_defined sigma ev ->
-	whd_evar sigma (Evd.existential_value sigma (ev,args))
+    | Evar ev ->
+	let d = 
+	  try Some (Evd.existential_value sigma ev)
+	  with NotInstantiatedEvar | Not_found -> None in
+	(match d with Some c -> whd_evar sigma c | None -> c)
     | Sort s when is_sort_variable sigma s -> whd_sort_variable sigma c
     | _ -> collapse_appl c
 
@@ -773,7 +775,7 @@ let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in
   match kind_of_term c with
     | Sort s -> l,s
-    | _ -> error "not an arity"
+    | _ -> invalid_arg "splay_arity"
 
 let sort_of_arity env c = snd (splay_arity env Evd.empty c)
 
@@ -783,7 +785,7 @@ let decomp_n_prod env sigma n =
       | Prod (n,a,c0) ->
 	  decrec (push_rel (n,None,a) env)
 	    (m-1) (Sign.add_rel_decl (n,None,a) ln) c0
-      | _                      -> error "decomp_n_prod: Not enough products"
+      | _                      -> invalid_arg "decomp_n_prod"
   in 
   decrec env n Sign.empty_rel_context
 

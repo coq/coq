@@ -274,7 +274,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
 	 ]
       ] gl
   else
-    error "terms do not have convertible types"
+    error "Terms do not have convertible types."
   
 
 let replace c2 c1 gl = multi_replace onConcl c2 c1 false None gl
@@ -499,7 +499,7 @@ let construct_discriminator sigma env dirn c sort =
        *)
       errorlabstrm "Equality.construct_discriminator"
 	(str "Cannot discriminate on inductive constructors with 
-		 dependent types") in
+		 dependent types.") in
   let (ind,_) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
   let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop Null in
@@ -539,7 +539,7 @@ let gen_absurdity id gl =
     simplest_elim (mkVar id) gl
   else
     errorlabstrm "Equality.gen_absurdity" 
-      (str "Not the negation of an equality")
+      (str "Not the negation of an equality.")
 
 (* Precondition: eq is leibniz equality
  
@@ -564,7 +564,7 @@ let apply_on_clause (f,t) clause =
   let argmv = 
     (match kind_of_term (last_arg f_clause.templval.Evd.rebus) with
      | Meta mv -> mv
-     | _  -> errorlabstrm "" (str "Ill-formed clause applicator")) in
+     | _  -> errorlabstrm "" (str "Ill-formed clause applicator.")) in
   clenv_fchain argmv f_clause clause
 
 let discr_positions env sigma (lbeq,(t,t1,t2)) eq_clause cpath dirn sort =
@@ -585,7 +585,7 @@ let discrEq (lbeq,(t,t1,t2) as u) eq_clause gls =
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
     | Inr _ ->
-	errorlabstrm "discr" (str"Not a discriminable equality")
+	errorlabstrm "discr" (str"Not a discriminable equality.")
     | Inl (cpath, (_,dirn), _) ->
 	let sort = pf_apply get_type_of gls (pf_concl gls) in 
 	discr_positions env sigma u eq_clause cpath dirn sort gls
@@ -599,7 +599,7 @@ let onEquality with_evars tac (c,lbindc) gls =
   let eq =
     try find_eq_data_decompose eqn
     with PatternMatchingFailure ->
-      errorlabstrm "" (str"No primitive equality found") in
+      errorlabstrm "" (str"No primitive equality found.") in
   tclTHEN
     (Refiner.tclEVARS (Evd.evars_of eq_clause'.evd)) 
     (tac eq eq_clause') gls
@@ -612,7 +612,7 @@ let onNegatedEquality with_evars tac gls =
         (onLastHyp (fun id -> 
           onEquality with_evars tac (mkVar id,NoBindings))) gls
   | _ -> 
-      errorlabstrm "" (str "Not a negated primitive equality")
+      errorlabstrm "" (str "Not a negated primitive equality.")
 
 let discrSimpleClause with_evars = function
   | None -> onNegatedEquality with_evars discrEq
@@ -627,7 +627,7 @@ let discrEverywhere with_evars =
     (Tacticals.tryAllClauses
       (fun cl -> tclCOMPLETE (discrSimpleClause with_evars cl)))
     (fun gls -> 
-       errorlabstrm "DiscrEverywhere" (str"No discriminable equalities"))
+       errorlabstrm "DiscrEverywhere" (str"No discriminable equalities."))
 
 let discr_tac with_evars = function
   | None -> discrEverywhere with_evars
@@ -728,7 +728,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 	(* the_conv_x had a side-effect on evdref *)
 	dflt
       else
-	error "Cannot solve an unification problem"
+	error "Cannot solve an unification problem."
     else
       let (a,p_i_minus_1) = match whd_beta_stack p_i with
 	| (_sigS,[a;p]) -> (a,p)
@@ -870,7 +870,7 @@ let inject_at_positions env sigma (eq,(t,t1,t2)) eq_clause posns =
 	(pf,ty))
       posns in
   if injectors = [] then
-    errorlabstrm "Equality.inj" (str "Failed to decompose the equality");
+    errorlabstrm "Equality.inj" (str "Failed to decompose the equality.");
   tclMAP
     (fun (pf,ty) -> tclTHENS (cut ty) [tclIDTAC; refine pf])
     injectors
@@ -884,10 +884,10 @@ let injEq ipats (eq,(t,t1,t2)) eq_clause =
   match find_positions env sigma t1 t2 with
     | Inl _ ->
 	errorlabstrm "Inj"
-	  (str"Not a projectable equality but a discriminable one")
+	  (str"Not a projectable equality but a discriminable one.")
     | Inr [] ->
 	errorlabstrm "Equality.inj" 
-	   (str"Nothing to do, it is an equality between convertible terms")
+	   (str"Nothing to do, it is an equality between convertible terms.")
     | Inr posns ->
 (* Est-ce utile à partir du moment où les arguments projetés subissent "nf" ?
 	let t1 = try_delta_expand env sigma t1 in
@@ -928,7 +928,7 @@ let injEq ipats (eq,(t,t1,t2)) eq_clause =
         ) with _ ->
 	tclTHEN
 	  (inject_at_positions env sigma (eq,(t,t1,t2)) eq_clause posns)
-	  (intros_pattern None ipats)
+	  (intros_pattern no_move ipats)
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
 
@@ -991,7 +991,7 @@ let find_elim sort_of_gl lbeq =
         (match lbeq.rect with
            | Some eq_rect -> eq_rect
            | None -> errorlabstrm "find_elim"
-		 (str "this type of substitution is not allowed"))
+		 (str "This type of substitution is not allowed."))
 
 (* Refine from [|- P e2] to [|- P e1] and [|- e1=e2:>t] (body is P (Rel 1)) *)
 
@@ -1091,11 +1091,10 @@ let try_rewrite tac gls =
     tac gls
   with 
     | PatternMatchingFailure ->
-	errorlabstrm "try_rewrite" (str "Not a primitive equality here")
+	errorlabstrm "try_rewrite" (str "Not a primitive equality here.")
     | e when catchable_exception e -> 
 	errorlabstrm "try_rewrite"
-          (str "Cannot find a well-typed generalization of the goal that" ++
-             str " makes the proof progress")
+          (strbrk "Cannot find a well-typed generalization of the goal that makes the proof progress.")
 
 let cutSubstClause l2r eqn cls gls =
   match cls with
@@ -1150,7 +1149,7 @@ let unfold_body x gl =
     match Sign.lookup_named x hyps with
         (_,Some xval,_) -> xval
       | _ -> errorlabstrm "unfold_body"
-          (pr_id x ++ str" is not a defined hypothesis") in
+          (pr_id x ++ str" is not a defined hypothesis.") in
   let aft = afterHyp x gl in
   let hl = List.fold_right 
     (fun (y,yval,_) cl -> ((all_occurrences_expr,y),InHyp) :: cl) aft [] in
@@ -1187,7 +1186,8 @@ let subst_one x gl =
       let test hyp _ = is_eq_x varx hyp in
       Sign.fold_named_context test ~init:() hyps;
       errorlabstrm "Subst"
-        (str "cannot find any non-recursive equality over " ++ pr_id x)
+        (str "Cannot find any non-recursive equality over " ++ pr_id x ++
+	 str".")
     with FoundHyp res -> res
   in
   (* The set of hypotheses using x *)
@@ -1268,7 +1268,7 @@ let cond_eq_term c t gl =
 
 let rewrite_multi_assumption_cond cond_eq_term cl gl = 
   let rec arec = function 
-    | [] -> error "No such assumption"
+    | [] -> error "No such assumption."
     | (id,_,t) ::rest -> 
 	begin 
 	  try 
@@ -1291,7 +1291,7 @@ let replace_multi_term dir_opt c  =
 (* JF. old version 
 let rewrite_assumption_cond faildir gl =
    let rec arec = function
-      | [] -> error "No such assumption"
+      | [] -> error "No such assumption."
       | (id,_,t)::rest ->
 	  (try let dir = faildir t gl in
 	       general_rewrite dir (mkVar id) gl
@@ -1301,7 +1301,7 @@ let rewrite_assumption_cond faildir gl =
 
 let rewrite_assumption_cond_in faildir hyp gl =
    let rec arec = function
-      | [] -> error "No such assumption"
+      | [] -> error "No such assumption."
       | (id,_,t)::rest ->
 	  (try let dir = faildir t gl in
 	       general_rewrite_in dir hyp (mkVar id) gl

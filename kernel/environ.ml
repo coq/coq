@@ -379,17 +379,14 @@ let insert_after_hyp (ctxt,vals) id d check =
 
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value (ctxt, vals) =
-  let ctxt,vals,rmv = 
-    List.fold_right2 (fun (id,_,_ as d) (id',v) (ctxt,vals,rmv) ->
+  List.fold_right2 (fun (id,_,_ as d) (id',v) (ctxt,vals) ->
       if List.mem id ids then 
-	(ctxt,vals,id::rmv)
+	(ctxt,vals)
       else 	  
 	let nd = check_context d in
 	let nv = check_value v in
-	  (nd::ctxt,(id',nv)::vals,rmv))
-		     ctxt vals ([],[],[])
-  in ((ctxt,vals),rmv)
-
+	  (nd::ctxt,(id',nv)::vals))
+		     ctxt vals ([],[])
 
 
 

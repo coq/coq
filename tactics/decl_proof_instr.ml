@@ -106,6 +106,9 @@ let clean_tmp gls =
   in
     clean_all (tmp_ids gls) gls
 
+let assert_postpone id t =
+  assert_as true (dummy_loc, Genarg.IntroIdentifier id) t
+
 (* start a proof *)
 
 let start_proof_tac gls=
@@ -188,7 +191,7 @@ let close_tactic_mode pts =
     let pts1=  
       try goto_current_focus pts 
       with Not_found -> 
-	error "\"return\" cannot be used outside of Declarative Proof Mode" in
+	error "\"return\" cannot be used outside of Declarative Proof Mode." in
     let pts2 = daimon_subtree pts1 in
     let pts3 = mark_as_done pts2 in 
       goto_current_focus pts3 
@@ -207,18 +210,18 @@ let close_block bt pts =
 	B_claim, Claim::_ | B_focus, Focus_claim::_ | B_proof, [] -> 
 	  daimon_subtree (goto_current_focus pts)
       | _, Claim::_ -> 
-	  error "\"end claim\" expected" 
+	  error "\"end claim\" expected."
       | _, Focus_claim::_ -> 
-	  error "\"end focus\" expected" 
+	  error "\"end focus\" expected."
       | _, [] ->
- 	  error "\"end proof\" expected" 
+ 	  error "\"end proof\" expected."
       | _, (Per (et,_,_,_)::_|Suppose_case::Per (et,_,_,_)::_) ->
 	  begin
 	    match et with
-		ET_Case_analysis -> error "\"end cases\" expected"
-	      | ET_Induction ->  error "\"end induction\" expected"
+		ET_Case_analysis -> error "\"end cases\" expected."
+	      | ET_Induction ->  error "\"end induction\" expected."
 	  end
-      | _,_ -> anomaly "lonely suppose on stack"
+      | _,_ -> anomaly "Lonely suppose on stack."
 
 (* utility for suppose / suppose it is *)
 
@@ -284,10 +287,10 @@ let justification tac gls=
       (tclSOLVE [tclTHEN tac assumption]) 
       (fun gls -> 
 	 if get_strictness () then 
-	   error "insufficient justification" 
+	   error "Insufficient justification."
 	 else
 	   begin
-	     msg_warning (str "insufficient justification");  
+	     msg_warning (str "Insufficient justification.");
 	     daimon_tac gls
 	   end) gls
 
@@ -475,7 +478,7 @@ let thus_tac c ctyp submetas gls =
     try
       find_subsubgoal c ctyp 0 submetas gls
     with Not_found -> 
-      error "I could not relate this statement to the thesis" in
+      error "I could not relate this statement to the thesis." in
   if list = [] then
     exact_check proof gls 
   else
@@ -490,7 +493,7 @@ let anon_id_base = id_of_string "__"
 let mk_stat_or_thesis info gls = function  
     This c -> c
   | Thesis (For _ ) -> 
-      error "\"thesis for ...\" is not applicable here" 
+      error "\"thesis for ...\" is not applicable here."
   | Thesis Plain -> pf_concl gls
 
 let just_tac _then cut info gls0 =
@@ -524,7 +527,7 @@ let instr_cut mkstat _thus _then cut gls0 =
     if _thus then 
       thus_tac (mkVar c_id) c_stat [] gls
     else tclIDTAC gls in
-    tclTHENS (internal_cut c_id c_stat) 
+    tclTHENS (assert_postpone c_id c_stat) 
       [tclTHEN tcl_erase_info (just_tac _then cut info);
        thus_tac] gls0
 
@@ -542,12 +545,12 @@ let decompose_eq id gls =
 	  then (args.(0),
 		args.(1), 
 		args.(2)) 
-	  else error "previous step is not an equality"
-      | _ -> error "previous step is not an equality"
+	  else error "Previous step is not an equality."
+      | _ -> error "Previous step is not an equality."
 	  
 let instr_rew _thus rew_side cut gls0 = 
   let last_id = 
-    try get_last (pf_env gls0) with _ -> error "no previous equality" in
+    try get_last (pf_env gls0) with _ -> error "No previous equality." in
   let typ,lhs,rhs = decompose_eq last_id gls0 in  
   let items_tac gls =
     match cut.cut_by with
@@ -572,14 +575,14 @@ let instr_rew _thus rew_side cut gls0 =
     match rew_side with 
 	Lhs ->
 	  let new_eq = mkApp(_eq,[|typ;cut.cut_stat.st_it;rhs|]) in
-	    tclTHENS (internal_cut c_id new_eq) 
+	    tclTHENS (assert_postpone c_id new_eq) 
 	      [tclTHEN tcl_erase_info 
 		 (tclTHENS (transitivity lhs) 
 		    [just_tac;exact_check (mkVar last_id)]);
 	       thus_tac new_eq] gls0
       | Rhs ->
 	  let new_eq = mkApp(_eq,[|typ;lhs;cut.cut_stat.st_it|]) in
-	    tclTHENS (internal_cut c_id new_eq) 
+	    tclTHENS (assert_postpone c_id new_eq) 
 	      [tclTHEN tcl_erase_info 
 		 (tclTHENS (transitivity rhs) 
 		    [exact_check (mkVar last_id);just_tac]);
@@ -600,7 +603,7 @@ let instr_claim _thus st gls0 =
     else tclIDTAC gls in
   let ninfo1 = {pm_stack=
       (if _thus then Focus_claim else Claim)::info.pm_stack} in
-    tclTHENS (internal_cut id st.st_it) 
+    tclTHENS (assert_postpone id st.st_it) 
       [tcl_change_info ninfo1;
        thus_tac] gls0
 
@@ -691,7 +694,7 @@ let instr_suffices _then cut gls0 =
   let c_term = applist (mkVar c_id,List.map mkMeta metas) in  
   let thus_tac gls= 
     thus_tac c_term c_head c_ctx gls in
-   tclTHENS (internal_cut c_id c_stat) 
+   tclTHENS (assert_postpone c_id c_stat) 
      [tclTHENLIST 
 	 [ assume_tac ctx;   
 	   tcl_erase_info;
@@ -730,7 +733,7 @@ let rec consider_match may_intro introduced available expected gls =
   match available,expected with 
       [],[] ->
 	  tclIDTAC gls
-    | _,[] -> error "last statements do not match a complete hypothesis" 
+    | _,[] -> error "Last statements do not match a complete hypothesis."
 	(* should tell which ones *)
     | [],hyps -> 
 	if may_intro then
@@ -740,11 +743,11 @@ let rec consider_match may_intro introduced available expected gls =
 		(intro_mustbe_force id)
 		(consider_match true [] [id] hyps) 
 		(fun _ -> 
-		   error "not enough sub-hypotheses to match statements")
+		   error "Not enough sub-hypotheses to match statements.")
 		gls 
           end 
 	else
-	  error "not enough sub-hypotheses to match statements" 
+	  error "Not enough sub-hypotheses to match statements."
 	    (* should tell which ones *)
     | id::rest_ids,(Hvar st | Hprop st)::rest ->
 	tclIFTHENELSE (convert_hyp (id,None,st.st_it))
@@ -761,7 +764,7 @@ let rec consider_match may_intro introduced available expected gls =
 	    (fun gls -> 
 	       let nhyps =
 		 try conjunction_arity id gls with 
-		     Not_found -> error "matching hypothesis not found" in 
+		     Not_found -> error "Matching hypothesis not found." in 
 		 tclTHENLIST 
 		   [general_case_analysis false (mkVar id,NoBindings);
 		    intron_then nhyps []
@@ -777,7 +780,7 @@ let consider_tac c hyps gls =
     | _ -> 
 	let id = pf_get_new_id (id_of_string "_tmp") gls in
 	tclTHEN 
-	  (forward None (Genarg.IntroIdentifier id) c)
+	  (forward None (dummy_loc, Genarg.IntroIdentifier id) c)
  	  (consider_match false [] [id] hyps) gls 
 	  
 
@@ -818,7 +821,7 @@ let cast_tac id_or_thesis typ gls =
 	let (_,body,_) = pf_get_hyp gls id in
 	  convert_hyp (id,body,typ) gls
     | Thesis (For _ ) -> 
-	error "\"thesis for ...\" is not applicable here" 
+	error "\"thesis for ...\" is not applicable here."
     | Thesis Plain ->    
           convert_concl typ DEFAULTcast gls
       
@@ -884,7 +887,7 @@ let build_per_info etype casee gls =
     try
       destInd hd 
     with _ -> 
-      error "Case analysis must be done on an inductive object" in
+      error "Case analysis must be done on an inductive object." in
   let mind,oind = Global.lookup_inductive ind in
   let nparams,index =
     match etype with
@@ -955,7 +958,7 @@ let suppose_tac hyps gls0 =
   let ninfo1 = {pm_stack=Suppose_case::info.pm_stack} in
   let old_clauses,stack = register_nodep_subcase id info.pm_stack in
   let ninfo2 = {pm_stack=stack} in
-    tclTHENS (internal_cut id clause) 
+    tclTHENS (assert_postpone id clause) 
       [tclTHENLIST [tcl_change_info ninfo1;
 		    assume_tac hyps;
 		    clear old_clauses];
@@ -1042,7 +1045,7 @@ let rec add_branch ((id,_) as cpl) pats tree=
 		      | Split_patt (_,ind0,_) ->
 			  if (ind <> ind0) then error
 			    (* this can happen with coercions *)
-	                    "Case pattern belongs to wrong inductive type";
+	                    "Case pattern belongs to wrong inductive type.";
 			  let mapi i ati bri =
 			    if i = pred cnum then 
 			      let nargs = 
@@ -1083,12 +1086,12 @@ let thesis_for obj typ per_info env=
   let _ = if ind <> per_info.per_ind then
     errorlabstrm "thesis_for" 
       ((Printer.pr_constr_env env obj) ++ spc () ++ 
-	 str "cannot give an induction hypothesis (wrong inductive type)") in  
+	 str"cannot give an induction hypothesis (wrong inductive type).") in  
   let params,args = list_chop per_info.per_nparams all_args in
   let _ = if not (List.for_all2 eq_constr params per_info.per_params) then
     errorlabstrm "thesis_for" 
       ((Printer.pr_constr_env env obj) ++ spc () ++ 
-	 str "cannot give an induction hypothesis (wrong parameters)") in
+	 str "cannot give an induction hypothesis (wrong parameters).") in
   let hd2 = (applist ((lift (List.length rc) per_info.per_pred),args@[obj])) in
     compose_prod rc (whd_beta hd2)
 
@@ -1161,7 +1164,7 @@ let case_tac params pat_info hyps gls0 =
     register_dep_subcase (id,List.length hyps) (pf_env gls0) per_info 
       pat_info.pat_pat ek in  
   let ninfo2 = {pm_stack=Per(et,per_info,nek,id::old_clauses)::rest} in
-    tclTHENS (internal_cut id clause) 
+    tclTHENS (assert_postpone id clause) 
       [tclTHENLIST 
 	 [tcl_change_info ninfo1; 
 	  assume_st (params@pat_info.pat_vars);

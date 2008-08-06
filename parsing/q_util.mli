@@ -20,6 +20,10 @@ val mlexpr_of_triple :
   ('a -> MLast.expr) -> ('b -> MLast.expr) -> ('c -> MLast.expr)
     -> 'a * 'b * 'c -> MLast.expr
 
+val mlexpr_of_quadruple :
+  ('a -> MLast.expr) -> ('b -> MLast.expr) ->
+    ('c -> MLast.expr) -> ('d -> MLast.expr) -> 'a * 'b * 'c * 'd -> MLast.expr
+
 val mlexpr_of_bool : bool -> MLast.expr
 
 val mlexpr_of_int : int -> MLast.expr

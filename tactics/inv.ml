@@ -101,7 +101,7 @@ let make_inv_predicate env sigma indf realargs id status concl =
       | Dep dflt_concl ->
 	  if not (occur_var env id concl) then
 	    errorlabstrm "make_inv_predicate"
-              (str "Current goal does not depend on " ++ pr_id id);
+              (str "Current goal does not depend on " ++ pr_id id ++ str".");
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have
              c also rewritten when the case * will be done *)
@@ -291,10 +291,10 @@ let generalizeRewriteIntros tac depids id gls =
 let rec tclMAP_i n tacfun = function
   | [] -> tclDO n (tacfun None)
   | a::l -> 
-      if n=0 then error "Too much names"
+      if n=0 then error "Too much names."
       else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
 
-let remember_first_eq id x = if !x = None then x := Some id
+let remember_first_eq id x = if !x = no_move then x := MoveAfter id
 
 (* invariant: ProjectAndApply is responsible for erasing the clause
    which it is given as input
@@ -321,7 +321,7 @@ let projectAndApply thin id eqname names depids gls =
       [(if names <> [] then clear [id] else tclIDTAC);
        (tclMAP_i neqns (fun idopt ->
 	 tclTHEN
-	   (intro_move idopt None)
+	   (intro_move idopt no_move)
 	   (* try again to substitute and if still not a variable after *)
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
 	   (tclTRY (onLastHyp (substHypIfVariable (subst_hyp false)))))
@@ -350,7 +350,7 @@ let rewrite_equations_gene othin neqns ba gl =
                         (onLastHyp
                            (fun id ->
                               tclTRY 
-			        (projectAndApply thin id (ref None)
+			        (projectAndApply thin id (ref no_move)
 				  [] depids))));
                  onHyps (compose List.rev (afterHyp last)) bring_hyps;
                  onHyps (afterHyp last)
@@ -375,24 +375,24 @@ let rewrite_equations_gene othin neqns ba gl =
      None: the equations are introduced, but not rewritten
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
-let rec get_names allow_conj = function
-  | IntroWildcard _ ->
-      error "Discarding pattern not allowed for inversion equations"
+let rec get_names allow_conj (loc,pat) = match pat with
+  | IntroWildcard ->
+      error "Discarding pattern not allowed for inversion equations."
   | IntroAnonymous ->
-      error "Anonymous pattern not allowed for inversion equations"
-  | IntroFresh _->
-      error "Fresh pattern not allowed for inversion equations"
+      error "Anonymous pattern not allowed for inversion equations."
+  | IntroFresh _ ->
+      error "Fresh pattern not allowed for inversion equations."
   | IntroRewrite _->
-      error "Rewriting pattern not allowed for inversion equations"
+      error "Rewriting pattern not allowed for inversion equations."
   | IntroOrAndPattern [l] -> 
       if allow_conj then
 	if l = [] then (None,[]) else
 	  let l = List.map (fun id -> Option.get (fst (get_names false id))) l in
 	  (Some (List.hd l), l)
       else
-	error "Nested conjunctive patterns not allowed for inversion equations"
+	error"Nested conjunctive patterns not allowed for inversion equations."
   | IntroOrAndPattern l ->
-      error "Disjunctive patterns not allowed for inversion equations"
+      error "Disjunctive patterns not allowed for inversion equations."
   | IntroIdentifier id ->
       (Some id,[id])
 
@@ -404,7 +404,7 @@ let rewrite_equations othin neqns names ba gl =
   let names = List.map (get_names true) names in
   let (depids,nodepids) = split_dep_and_nodep ba.assums gl in
   let rewrite_eqns =
-    let first_eq = ref None in
+    let first_eq = ref no_move in
     match othin with
       | Some thin ->
           tclTHENSEQ
@@ -413,12 +413,12 @@ let rewrite_equations othin neqns names ba gl =
 	     tclMAP_i neqns (fun o ->
 	       let idopt,names = extract_eqn_names o in
                (tclTHEN
-		 (intro_move idopt None)
+		 (intro_move idopt no_move)
 		 (onLastHyp (fun id ->
 		   tclTRY (projectAndApply thin id first_eq names depids)))))
 	       names;
 	     tclMAP (fun (id,_,_) gl ->
-	       intro_move None (if thin then None else !first_eq) gl)
+	       intro_move None (if thin then no_move else !first_eq) gl)
 	       nodepids;
 	     tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids]
       | None -> tclIDTAC
@@ -453,7 +453,7 @@ let raw_inversion inv_kind id status names gl =
     try pf_reduce_to_atomic_ind gl (pf_type_of gl c)
     with UserError _ -> 
       errorlabstrm "raw_inversion"
-	(str ("The type of "^(string_of_id id)^" is not inductive")) in
+	(str ("The type of "^(string_of_id id)^" is not inductive.")) in
   let indclause = mk_clenv_from gl (c,t) in
   let ccl = clenv_type indclause in
   check_no_metas indclause ccl;
@@ -494,7 +494,7 @@ let not_found_message ids =
 let dep_prop_prop_message id =
   errorlabstrm "Inv"
     (str "Inversion on " ++ pr_id id ++
-       str " would needs dependent elimination Prop-Prop")
+       str " would need dependent elimination from Prop to Prop.")
  
 let not_inductive_here id =
   errorlabstrm "mind_specif_of_mind"
@@ -524,15 +524,15 @@ open Tacexpr
 
 let inv k = inv_gen false k NoDep
 
-let half_inv_tac id  = inv SimpleInversion IntroAnonymous (NamedHyp id)
-let inv_tac id       = inv FullInversion IntroAnonymous (NamedHyp id)
-let inv_clear_tac id = inv FullInversionClear IntroAnonymous (NamedHyp id)
+let half_inv_tac id  = inv SimpleInversion None (NamedHyp id)
+let inv_tac id       = inv FullInversion None (NamedHyp id)
+let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
 
 let dinv k c = inv_gen false k (Dep c)
 
-let half_dinv_tac id  = dinv SimpleInversion None IntroAnonymous (NamedHyp id)
-let dinv_tac id       = dinv FullInversion None IntroAnonymous (NamedHyp id)
-let dinv_clear_tac id = dinv FullInversionClear None IntroAnonymous (NamedHyp id)
+let half_dinv_tac id  = dinv SimpleInversion None None (NamedHyp id)
+let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
+let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them

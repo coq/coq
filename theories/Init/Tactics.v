@@ -115,7 +115,7 @@ lazymatch T with
     evar (a : t); pose proof (H a) as H1; unfold a in H1;
     clear a; clear H; rename H1 into H; find_equiv H
 | ?A <-> ?B => idtac
-| _ => fail "The given statement does not seem to end with an equivalence"
+| _ => fail "The given statement does not seem to end with an equivalence."
 end.
 
 Ltac bapply lemma todo :=
@@ -141,7 +141,7 @@ t;
 match goal with
 | H : _ |- _ => solve [inversion H]
 | _ => solve [trivial | reflexivity | symmetry; trivial | discriminate | split]
-| _ => fail 1 "Cannot solve this goal"
+| _ => fail 1 "Cannot solve this goal."
 end.
 
 (** A tactic to document or check what is proved at some point of a script *)
