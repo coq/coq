@@ -222,7 +222,7 @@ install-doc: install-doc-meta install-doc-html install-doc-printable
 
 install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
-	$(INSTALLLIB) doc/LICENCE $(FULLDOCDIR)/LICENCE.doc
+	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
 
 install-doc-html: doc-html
 	$(MKDIR) $(addprefix $(FULLDOCDIR)/html/, refman stdlib faq)
