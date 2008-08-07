@@ -140,13 +140,15 @@ let print_highlight_location ib loc =
 (* Functions to report located errors in a file. *)
 
 let print_location_in_file s inlibrary fname loc =
-  let errstrm = (str"Error while reading " ++ str s ++ str":") in
-  if loc = dummy_loc then 
-    (errstrm ++ str", unknown location." ++ fnl ())
+  let errstrm = str"Error while reading " ++ str s in
+  if loc = dummy_loc then
+    hov 1 (errstrm ++ spc() ++ str" (unknown location):") ++ fnl ()
   else
+    let errstrm =
+      if s = fname then mt() else errstrm ++ str":" ++ fnl() in
     if inlibrary then
-      (errstrm ++ fnl () ++ str"Module " ++ str ("\""^fname^"\"") ++
-       str" characters " ++ Cerrors.print_loc loc ++ fnl ())
+      hov 0 (errstrm ++ str"Module " ++ str ("\""^fname^"\"") ++ spc() ++
+             str"characters " ++ Cerrors.print_loc loc) ++ fnl ()
     else
     let (bp,ep) = unloc loc in
     let ic = open_in fname in
@@ -160,10 +162,15 @@ let print_location_in_file s inlibrary fname loc =
     try
       let (line, bol) = line_of_pos 1 0 0 in
       close_in ic;
-      (errstrm ++ fnl () ++ str"File " ++ str ("\""^fname^"\"") ++
-         str", line " ++ int line ++
-         str", characters " ++ Cerrors.print_loc (make_loc (bp-bol,ep-bol)) ++ str":" ++ fnl ())
-    with e -> (close_in ic; (errstrm ++ str", invalid location." ++ fnl ()))
+      hov 0
+        (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++ str"," ++ spc() ++
+         hov 0 (str"line " ++ int line ++ str"," ++ spc() ++
+                str"characters " ++
+                Cerrors.print_loc (make_loc (bp-bol,ep-bol))) ++ str":") ++
+      fnl ()
+    with e ->
+      (close_in ic;
+       hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
 	
 let print_command_location ib dloc =
   match dloc with
