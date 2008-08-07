@@ -17,12 +17,52 @@ let debug = false
 let fst' (Micromega.Pair(x,y)) = x
 let snd' (Micromega.Pair(x,y)) = y
 
+let map_option f x = 
+  match x with
+    | None -> None
+    | Some v -> Some (f v)
+
+let from_option = function
+  | None -> failwith "from_option"
+  | Some v -> v  
+
 let rec try_any l x = 
  match l with
   | [] -> None
   | (f,s)::l -> match f x with
      | None -> try_any l x
      | x -> x
+
+let iteri f l =
+ let rec xiter i l = 
+  match l with
+   | [] -> ()
+   | e::l -> f i e ; xiter (i+1) l in
+  xiter 0 l
+
+let mapi f l =
+ let rec xmap i l = 
+  match l with
+   | [] -> []
+   | e::l -> (f i e)::xmap (i+1) l in
+  xmap 0 l
+
+let rec map3 f l1 l2 l3 = 
+  match l1 , l2 ,l3 with
+    | [] , [] , [] -> []
+    | e1::l1 , e2::l2 , e3::l3 -> (f e1 e2 e3)::(map3 f l1 l2 l3)
+    |      _   -> raise (Invalid_argument "map3")
+
+
+let rec is_sublist l1 l2 = 
+  match l1 ,l2 with
+    | [] ,_ -> true
+    | e::l1', [] -> false
+    | e::l1' , e'::l2' -> 
+	if e = e' then is_sublist l1' l2'
+	else is_sublist l1 l2'
+		
+
 
 let list_try_find f =
   let rec try_find_f = function

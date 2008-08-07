@@ -76,7 +76,7 @@ struct
 end
 
 
-module  Poly :
+module Poly :
  (* A polynomial is a map of monomials *)
  (* 
     This is probably a naive implementation 
@@ -96,6 +96,7 @@ sig
  val fold : (Monomial.t -> num -> 'a -> 'a) -> t -> 'a -> 'a
  val pp : out_channel -> t -> unit
  val compare : t -> t -> int
+ val is_null : t -> bool
 end =
 struct
  (*normalisation bug : 0*x ... *)
@@ -155,6 +156,8 @@ struct
   fun p -> map (fun v -> minus_num v) p
 
  let fold = P.fold
+
+ let is_null p = fold (fun mn vl b -> b & sign_num vl = 0) p  true
 
  let compare = compare compare_num
 end
@@ -332,10 +335,10 @@ let factorise_linear_cone c =
 open Mfourier
    (*module Fourier = Fourier(Vector.VList)(SysSet(Vector.VList))*)
    (*module Fourier = Fourier(Vector.VSparse)(SysSetAlt(Vector.VSparse))*)
-module Fourier = Mfourier.Fourier(Vector.VSparse)(*(SysSetAlt(Vector.VMap))*)
+(*module Fourier = Mfourier.Fourier(Vector.VSparse)(*(SysSetAlt(Vector.VMap))*)*)
 
-module Vect = Fourier.Vect
-open Fourier.Cstr
+(*module Vect = Fourier.Vect*)
+(*open Fourier.Cstr*)
 
 (* fold_left followed by a rev ! *)
 
@@ -388,8 +391,8 @@ let build_linear_system l =
  let strict = {
   coeffs = Vect.from_list ((Big_int unit_big_int)::
                             (List.map (fun (x,y) -> 
-                             match y with Mc.Strict -> 
-                              Big_int unit_big_int 
+			      match y with Mc.Strict -> 
+				  Big_int unit_big_int 
                               | _ -> Big_int zero_big_int) l));
   op = Ge ; cst = Big_int unit_big_int } in
   (* Add the positivity constraint *)
@@ -433,19 +436,62 @@ let make_certificate n_spec cert li =
 
 
 exception Found of Monomial.t
- 
-let raw_certificate l = 
+
+exception Strict
+
+let primal l = 
+  let vr = ref 0 in
+  let module Mmn = Map.Make(Monomial) in
+
+  let vect_of_poly map p =
+    Poly.fold (fun mn vl (map,vect) -> 
+      if mn = Monomial.const 
+      then (map,vect)
+      else 
+	let (mn,m) = try (Mmn.find mn map,map) with Not_found -> let res = (!vr, Mmn.add mn !vr map) in incr vr ; res in
+	  (m,if sign_num vl = 0 then vect else (mn,vl)::vect)) p (map,[]) in
+    
+  let op_op = function Mc.NonStrict -> Ge |Mc.Equal -> Eq | _ -> raise Strict in
+
+  let cmp x y = Pervasives.compare (fst x) (fst y) in
+
+   snd (List.fold_right (fun  (p,op) (map,l) -> 
+      let (mp,vect) = vect_of_poly map p in  
+      let cstr = {coeffs = List.sort cmp vect; op = op_op op ; cst = minus_num (Poly.get Monomial.const p)} in
+
+	(mp,cstr::l)) l (Mmn.empty,[]))
+
+let dual_raw_certificate (l:  (Poly.t * Mc.op1) list) = 
+(*  List.iter (fun (p,op) -> Printf.fprintf stdout "%a %s 0\n" Poly.pp p (string_of_op op) ) l ; *)
+    
+    
  let sys = build_linear_system l in
-  try 
+
+   try 
    match Fourier.find_point sys with
-    | None -> None
-    | Some cert ->  Some (rats_to_ints (Vect.to_list cert)) 
+    | Inr _ -> None
+    | Inl cert ->  Some (rats_to_ints (Vect.to_list cert)) 
        (* should not use rats_to_ints *)
   with x -> 
    if debug 
    then (Printf.printf "raw certificate %s" (Printexc.to_string x);   
          flush stdout) ;
    None
+
+
+let raw_certificate l = 
+  try 
+    let p = primal l in
+      match Fourier.find_point p with
+	| Inr prf -> 
+	    if debug then Printf.printf "AProof : %a\n" pp_proof prf ; 
+	    let cert = List.map (fun (x,n) -> x+1,n) (fst (List.hd (Proof.mk_proof p prf))) in
+	      if debug then Printf.printf "CProof : %a" Vect.pp_vect cert ; 
+	      Some (rats_to_ints (Vect.to_list cert))
+	| Inl _   -> None
+  with Strict -> 
+    (* Fourier elimination should handle > *)
+    dual_raw_certificate l 
 
 
 let simple_linear_prover to_constant l =
@@ -495,7 +541,6 @@ let make_linear_system l =
     ,monomials)
 
 
-open Interval 
 let pplus x y = Mc.PEadd(x,y)
 let pmult x y = Mc.PEmul(x,y)
 let pconst x = Mc.PEc x
@@ -560,11 +605,10 @@ let rec xzlinear_prover planes sys =
 
      let smallest_interval = 
       match List.fold_left (fun (x1,i1) (x2,i2) -> 
-       if smaller_itv i1 i2 
-       then (x1,i1) else (x2,i2)) (Vect.null,Itv(None,None)) candidates 
+       if Itv.smaller_itv i1 i2 
+       then (x1,i1) else (x2,i2)) (Vect.null,(None,None)) candidates 
       with
-       | (x,Itv(Some i, Some j))  -> Some(i,x,j)
-       | (x,Point n) ->  Some(n,x,n)
+       | (x,(Some i, Some j))  -> Some(i,x,j)
        |   x        ->   None (* This might be a cutting plane *)
       in
       match smallest_interval with
@@ -613,7 +657,9 @@ and zlinear_enum  planes expr clb cub l =
 let zlinear_prover sys =  
  let candidates = candidates sys in
  (*  Printf.printf "candidates %d" (List.length candidates) ; *) 
- xzlinear_prover candidates sys
+ (*let t0 = Sys.time () in*)
+ let res = xzlinear_prover candidates sys in
+   (*Printf.printf "Time prover : %f" (Sys.time () -. t0) ;*) res
 
 open Sos
 

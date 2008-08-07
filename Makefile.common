@@ -236,7 +236,7 @@ ROMEGACMO:=\
   contrib/romega/refl_omega.cmo contrib/romega/g_romega.cmo
 
 MICROMEGACMO:=\
-  contrib/micromega/mutils.cmo contrib/micromega/vector.cmo \
+  contrib/micromega/mutils.cmo  \
   contrib/micromega/micromega.cmo contrib/micromega/mfourier.cmo \
   contrib/micromega/certificate.cmo \
   contrib/micromega/coq_micromega.cmo contrib/micromega/g_micromega.cmo
@@ -390,8 +390,7 @@ PARSERCMX:= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
 INTERFACERC:= contrib/interface/vernacrc
 
 CSDPCERTCMO:= contrib/micromega/mutils.cmo contrib/micromega/micromega.cmo \
-              contrib/micromega/vector.cmo contrib/micromega/mfourier.cmo \
-              contrib/micromega/certificate.cmo \
+	      contrib/micromega/mfourier.cmo  contrib/micromega/certificate.cmo \
               contrib/micromega/sos.cmo contrib/micromega/csdpcert.cmo
 CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
 

@@ -20,8 +20,9 @@ Proof.
   lia.
 Qed.
 
-Lemma omega_nightmare : forall x y, 27 <= 11 * x + 13 * y <= 45 -> 7 * x - 9 * y = 4 -> -10 <= 7 * x - 9 * y <= 4 -> False.
+Lemma omega_nightmare : forall x y, 27 <= 11 * x + 13 * y <= 45 ->  -10 <= 7 * x - 9 * y <= 4 -> False.
 Proof.
   intros ; intuition auto.
   lia.
 Qed.  
+
