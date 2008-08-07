@@ -28,9 +28,10 @@ val osdeplibs : string  (* OS dependant link options for ocamlc *)
 (* val defined : string list  (* options for lib/ocamlpp *) *)
 
 val version : string    (* version number of Coq *)
-val versionsi : string  (* version number of Coq\_SearchIsos *)
 val date : string       (* release date *)
 val compile_date : string (* compile date *)
+val vo_magic_number : int
+val state_magic_number : int
 
 val theories_dirs : string list
 val contrib_dirs : string list

@@ -354,10 +354,8 @@ let (in_import, out_import) =
 
 (*s Loading from disk to cache (preparation phase) *)
 
-let vo_magic_number = 08020 (* v8.2 *)
-
 let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern vo_magic_number ".vo"
+  System.raw_extern_intern Coq_config.vo_magic_number ".vo"
 
 let with_magic_number_check f a =
   try f a

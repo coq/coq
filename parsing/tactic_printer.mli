@@ -23,6 +23,6 @@ val pr_rule     : rule -> std_ppcmds
 val pr_tactic   : tactic_expr -> std_ppcmds
 val pr_proof_instr : Decl_expr.proof_instr -> Pp.std_ppcmds
 val print_script :
-  bool -> evar_map -> proof_tree -> std_ppcmds
+  ?nochange:bool -> evar_map -> proof_tree -> std_ppcmds
 val print_treescript :
-  bool -> evar_map -> proof_tree -> std_ppcmds
+  ?nochange:bool -> evar_map -> proof_tree -> std_ppcmds

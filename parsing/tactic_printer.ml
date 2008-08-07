@@ -90,7 +90,8 @@ let pr_change gl =
   str"change " ++
   pr_lconstr_env (Global.env_of_context gl.evar_hyps) gl.evar_concl ++ str"."
 
-let rec print_decl_script tac_printer nochange sigma pf =
+let print_decl_script tac_printer ?(nochange=true) sigma pf =
+  let rec print_prf pf =
   match pf.ref with
     | None ->
 	(if nochange then 
@@ -99,46 +100,38 @@ let rec print_decl_script tac_printer nochange sigma pf =
 	   pr_change pf.goal)
 	++ fnl ()
     | Some (Daimon,[]) -> str "(* Some proof has been skipped here *)"
-    | Some (Prim Change_evars,[subpf]) ->   
-	print_decl_script tac_printer nochange sigma subpf
+    | Some (Prim Change_evars,[subpf]) -> print_prf subpf
     | Some (Nested(Proof_instr (opened,instr),_) as rule,subprfs) ->
 	begin
 	  match instr.instr,subprfs with
 	    Pescape,[{ref=Some(_,subsubprfs)}] ->
 	      hov 7
 		(pr_rule_dot_fnl rule ++
-		   prlist_with_sep pr_fnl tac_printer subsubprfs) ++ fnl () ++
-		if opened then mt () else str "return."
+		  prlist_with_sep pr_fnl tac_printer subsubprfs) ++ fnl () ++
+	      if opened then mt () else str "return."
 	  | Pclaim _,[body;cont] ->
-	      hov 2
-		(pr_rule_dot_fnl rule ++
-		   print_decl_script tac_printer nochange sigma body) ++ 
-		fnl () ++
-		if opened then mt () else str "end claim." ++ fnl () ++
-		  print_decl_script tac_printer nochange sigma cont
+	      hov 2 (pr_rule_dot_fnl rule ++ print_prf body) ++ fnl () ++
+	      (if opened then mt () else str "end claim." ++ fnl ()) ++
+	      print_prf cont
 	  | Pfocus _,[body;cont] ->
-	      hov 2 
-		(pr_rule_dot_fnl rule ++
-		   print_decl_script tac_printer nochange sigma body) ++ 
-		fnl () ++
-		if opened then mt () else str "end focus." ++ fnl () ++
-		  print_decl_script tac_printer nochange sigma cont
+	      hov 2 (pr_rule_dot_fnl rule ++ print_prf body) ++ 
+	      fnl () ++
+	      (if opened then mt () else str "end focus." ++ fnl ()) ++
+	      print_prf cont
 	  | (Psuppose _ |Pcase (_,_,_)),[body;cont] ->
-	      hov 2 
-		(pr_rule_dot_fnl rule ++
-		   print_decl_script tac_printer nochange sigma body) ++ 
-		fnl () ++
-		print_decl_script tac_printer nochange sigma cont 
+	      hov 2 (pr_rule_dot_fnl rule ++ print_prf body) ++ fnl () ++
+	      print_prf cont 
 	  | _,[next] ->
-	      pr_rule_dot_fnl rule ++
-		print_decl_script tac_printer nochange sigma next
+	      pr_rule_dot_fnl rule ++ print_prf next
 	  | _,[] ->
 	      pr_rule_dot rule		
 	  | _,_ -> anomaly "unknown branching instruction"
 	end
-    | _ -> anomaly "Not Applicable"
+    | _ -> anomaly "Not Applicable" in
+  print_prf pf
 
-let rec print_script nochange sigma pf =
+let print_script ?(nochange=true) sigma pf =
+  let rec print_prf pf =
   match pf.ref with
     | None ->
         (if nochange then 
@@ -153,26 +146,25 @@ let rec print_script nochange sigma pf =
 	end ++
 	  begin
 	    hov 0 (str "proof." ++ fnl () ++ 
-		     print_decl_script (print_script nochange sigma) 
-		     nochange sigma (List.hd script))
+		     print_decl_script print_prf 
+		     ~nochange sigma (List.hd script))
 	  end ++ fnl () ++
 	  begin
 	    if opened then mt () else (str "end proof." ++ fnl ())
 	  end
     | Some(Daimon,spfl) ->
 	((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
-	   prlist_with_sep pr_fnl
-           (print_script nochange sigma) spfl )
+	   prlist_with_sep pr_fnl print_prf spfl )
     | Some(rule,spfl) ->
 	((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
 	   pr_rule_dot_fnl rule ++
-	   prlist_with_sep pr_fnl
-           (print_script nochange sigma) spfl )	
+	   prlist_with_sep pr_fnl print_prf spfl ) in
+  print_prf pf
 
 (* printed by Show Script command *)
 
-let print_treescript nochange sigma pf =
-  let rec aux pf =
+let print_treescript ?(nochange=true) sigma pf =
+  let rec print_prf pf =
     match pf.ref with
     | None ->
         if nochange then 
@@ -184,23 +176,21 @@ let print_treescript nochange sigma pf =
 	begin
 	  if nochange then mt () else pr_change pf.goal ++ fnl ()
 	end ++
-	  hov 0 
+	hov 0 
 	  begin str "proof." ++ fnl () ++
-	    print_decl_script aux
-	    nochange sigma (List.hd script) 
+	    print_decl_script print_prf ~nochange sigma (List.hd script) 
 	  end ++ fnl () ++ 
-	  begin
-	    if opened then mt () else (str "end proof." ++ fnl ())
-	  end
+	begin
+	  if opened then mt () else (str "end proof." ++ fnl ())
+	end
     | Some(Daimon,spfl) ->
-	((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
-	   prlist_with_sep pr_fnl
-           (print_script nochange sigma) spfl )
+	(if nochange then mt () else pr_change pf.goal ++ fnl ()) ++
+	prlist_with_sep pr_fnl (print_script ~nochange sigma) spfl
     | Some(r,spfl) ->
         let indent = if List.length spfl >= 2 then 1 else 0 in
-        (if nochange then mt () else (pr_change pf.goal ++ fnl ())) ++
-        hv indent (pr_rule_dot_fnl r ++ prlist_with_sep mt aux spfl)
-  in hov 0 (aux pf)
+        (if nochange then mt () else pr_change pf.goal ++ fnl ()) ++
+        hv indent (pr_rule_dot_fnl r ++ prlist_with_sep fnl print_prf spfl)
+  in hov 0 (print_prf pf)
 
 let rec print_info_script sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in

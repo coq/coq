@@ -267,10 +267,8 @@ let try_locate_qualified_library qid =
 
 (*s Loading from disk to cache (preparation phase) *)
 
-let vo_magic_number = 08190 (* trunk *)
-
 let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern vo_magic_number ".vo"
+  System.raw_extern_intern Coq_config.vo_magic_number ".vo"
 
 let with_magic_number_check f a =
   try f a
@@ -323,7 +321,8 @@ let get_deps (dir, f) =
 
 (* Read a compiled library and all dependencies, in reverse order.
    Do not include files that are already in the context. *)
-let rec intern_library (dir, f) needed =
+let rec intern_library seen (dir, f) needed =
+  if LibrarySet.mem dir seen then failwith "Recursive dependencies!";
   (* Look if in the current logical environment *)
   try let _ = find_library dir in needed
   with Not_found ->
@@ -332,28 +331,34 @@ let rec intern_library (dir, f) needed =
   else
     (* [dir] is an absolute name which matches [f] which must be in loadpath *)
     let m = intern_from_file (dir,f) in
-    (dir,m)::List.fold_right intern_mandatory_library m.library_deps needed
-
-(* digest error with checked modules could be a warning *)
-and intern_mandatory_library (dir,_) needed =
-  intern_library (try_locate_absolute_library dir) needed
+    let seen' = LibrarySet.add dir seen in
+    let deps =
+      List.map (fun (d,_) -> try_locate_absolute_library d) m.library_deps in
+    (dir,m) :: List.fold_right (intern_library seen') deps needed
 
 (* Compute the reflexive transitive dependency closure *)
-let rec fold_deps ff (dir,f) s =
-  if  LibrarySet.mem dir s then s
+let rec fold_deps seen ff (dir,f) (s,acc) =
+  if LibrarySet.mem dir seen then failwith "Recursive dependencies!";
+  if LibrarySet.mem dir s then (s,acc)
   else
     let deps = get_deps (dir,f) in
     let deps = List.map (fun (d,_) -> try_locate_absolute_library d) deps in
-    ff dir (List.fold_right (fold_deps ff) deps s)
+    let seen' = LibrarySet.add dir seen in
+    let (s',acc') = List.fold_right (fold_deps seen' ff) deps (s,acc) in
+    (LibrarySet.add dir s', ff dir acc')
 
-and fold_deps_list  ff modl needed =
-  List.fold_right (fold_deps ff) modl needed
+and fold_deps_list seen ff modl needed =
+  List.fold_right (fold_deps seen ff) modl needed
+
+let fold_deps_list ff modl acc =
+  snd (fold_deps_list LibrarySet.empty ff modl (LibrarySet.empty,acc))
 
 let recheck_library ~norec ~admit ~check =
   let ml = List.map try_locate_qualified_library check in
   let nrl = List.map try_locate_qualified_library norec in
   let al =  List.map try_locate_qualified_library admit in
-  let needed = List.rev (List.fold_right intern_library (ml@nrl) []) in
+  let needed = List.rev
+    (List.fold_right (intern_library LibrarySet.empty) (ml@nrl) []) in
   (* first compute the closure of norec, remove closure of check,
      add closure of admit, and finally remove norec and check *)
   let nochk = fold_deps_list LibrarySet.add nrl LibrarySet.empty in
