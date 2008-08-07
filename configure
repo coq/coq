@@ -6,10 +6,10 @@
 # 
 ##################################
 
-VERSION=8.2
+VERSION=8.2beta4
 VOMAGIC=08193 
 STATEMAGIC=19764
-DATE="Jun. 2008"
+DATE="Aug. 2008"
 
 # a local which command for sh
 which () {
