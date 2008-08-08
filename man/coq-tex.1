@@ -15,19 +15,19 @@ coq-tex \- Process Coq phrases embedded in LaTeX files
 .BI \-image \ coq-image
 ]
 [
-.B -w
+.B \-w
 ]
 [
-.B -v
+.B \-v
 ]
 [
-.B -sl
+.B \-sl
 ]
 [
-.B -hrule
+.B \-hrule
 ]
 [
-.B -small
+.B \-small
 ]
 .I input-file ...
 
@@ -75,7 +75,7 @@ typewriter font.
 .TP
 .BI \-o \ output-file
 Specify the name of a file where the LaTeX output is to be stored. A
-dash `-' causes the LaTeX output to be printed on standard output.
+dash `\-' causes the LaTeX output to be printed on standard output.
 .TP
 .BI \-n \ line-width
 Set the line width. The default is 72 characters. The responses of the
@@ -90,23 +90,23 @@ this is the command
 .IR coqtop
 without specifying any path which is used to evaluate the Coq phrases.
 .TP
-.B -w
+.B \-w
 Cause lines to be folded on a space character whenever possible,
 avoiding word cuts in the output. By default, folding occurs at
 the line width, regardless of word cuts.
 .TP
-.B -v
+.B \-v
 Verbose mode. Prints the Coq answers on the standard output.
 Useful to detect errors in Coq phrases.
 .TP
-.B -sl
+.B \-sl
 Slanted mode. The Coq answers are written in a slanted font.
 .TP
-.B -hrule
+.B \-hrule
 Horizontal lines mode. The Coq parts are written between two
 horizontal lines.
 .TP
-.B -small
+.B \-small
 Small font mode. The Coq parts are written in a smaller font.
 
 
