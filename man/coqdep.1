@@ -67,7 +67,7 @@ Prints a warning if a Coq command
 .IR Module \&
 is incorrect. (For instance, you wrote `Declare ML Module "A".',
 but the module A contains #open "B"). The correct command is printed
-(see option -D). The warning is printed on standard error.
+(see option \-D). The warning is printed on standard error.
 .TP
 .BI \-i
 Prints also the dependencies for .vi files (Coq specification modules).
@@ -138,7 +138,7 @@ Z.v contains the commands `Require X' and `Declare ML Module "D"'.
 To get the dependencies of the Coq files:
 .IP
 .B
-example% coqdep -I . *.v
+example% coqdep \-I . *.v
 .RS
 .sp .5
 .nf
@@ -153,7 +153,7 @@ example% coqdep -I . *.v
 With a warning:
 .IP
 .B
-example% coqdep -w -I . *.v
+example% coqdep \-w \-I . *.v
 .RS
 .sp .5
 .nf
@@ -170,7 +170,7 @@ example% coqdep -w -I . *.v
 To get only the Caml dependencies:
 .IP
 .B
-example% coqdep -c -I . *.ml
+example% coqdep \-c \-I . *.ml
 .RS
 .sp .5
 .nf
@@ -190,4 +190,4 @@ example% coqdep -c -I . *.ml
 .SH BUGS
 
 Please report any bug to
-.B coq-bugs@pauillac.inria.fr
+.B coq\-bugs@pauillac.inria.fr
