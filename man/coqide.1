@@ -1,0 +1,166 @@
+.TH COQIDE 1 "July 16, 2004"
+
+.SH NAME
+coqide \- The Coq Proof Assistant graphical interface
+
+
+.SH SYNOPSIS
+.B coqide
+[
+.B options
+]
+
+.SH DESCRIPTION
+
+.B coqtop
+is a gtk graphical interface for the Coq proof assistant.
+
+For command-line-oriented use of Coq, see
+.BR coqide (1)
+; for batch-oriented use of Coq, see 
+.BR coqc (1).
+
+
+.SH OPTIONS
+
+.TP
+.B \-h
+Show the complete list of options accepted by
+.BR coqide .
+.TP
+.BI \-I\  dir ,\ \-include\  dir
+Add directory dir in the include path.
+.TP
+.BI \-R\  dir\ coqdir
+Recursively map physical
+.I dir
+to logical
+.IR coqdir .
+.TP
+.B \-src
+Add source directories in the include path.
+.TP
+.BI \-is\  f ,\ \-inputstate\  f
+Read state from
+.IR f .coq.
+.TP
+.B \-nois
+Start with an empty state.
+.TP
+.BI \-outputstate\  f
+Write state in file
+.IR f .coq.
+.TP
+.BI \-load\-ml\-object\  f
+Load ML object file
+.IR f .
+.TP
+.BI \-load\-ml\-source\  f
+Load ML file
+.IR f .
+.TP
+.BI \-l\  f ,\ \-load\-vernac\-source\  f
+Load Coq file
+.IR f .v
+(Load
+.IR f .).
+.TP
+.BI \-lv\  f ,\ \-load\-vernac\-source\-verbose\  f
+Load Coq file
+.IR f .v
+(Load Verbose
+.IR f .).
+.TP
+.BI \-load\-vernac\-object\  f
+Load Coq object file
+.IR f .vo.
+.TP
+.BI \-require\  f
+Load Coq object file
+.IR f .vo
+and import it (Require
+.IR f .).
+.TP
+.BI \-compile\  f
+Compile Coq file
+.IR f .v
+(implies
+.BR \-batch ).
+.TP
+.BI \-compile\-verbose\  f
+Verbosely compile Coq file
+.IR f .v
+(implies
+.BR -batch ).
+.TP
+.B \-opt
+Run the native-code version of Coq or Coq_SearchIsos.
+.TP
+.B \-byte
+Run the bytecode version of Coq or Coq_SearchIsos.
+.TP
+.B \-where
+Print Coq's standard library location and exit.
+.TP
+.B -v
+Print Coq version and exit.
+.TP
+.B \-q
+Skip loading of rcfile.
+.TP
+.BI \-init\-file\  f
+Set the rcfile to
+.IR f .
+.TP
+.BI \-user\  u
+Use the rcfile of user
+.IR u .
+.TP
+.B \-batch
+Batch mode (exits just after arguments parsing).
+.TP
+.B \-boot
+Boot mode (implies
+.B \-q
+and
+.BR \-batch ).
+.TP
+.B \-emacs
+Tells Coq it is executed under Emacs.
+.TP
+.BI \-dump\-glob\  f
+Dump globalizations in file
+.I f
+(to be used by
+.BR coqdoc (1)).
+.TP
+.B \-impredicative\-set
+Set sort Set impredicative.
+.TP
+.B \-dont\-load\-proofs
+Don't load opaque proofs in memory.
+.TP
+.B \-xml
+Export XML files either to the hierarchy rooted in
+the directory
+.B COQ_XML_LIBRARY_ROOT
+(if set) or to stdout (if unset).
+
+
+.SH SEE ALSO
+
+.BR coqc (1),
+.BR coqtop (1),
+.BR coq-tex (1),
+.BR coqdep (1).
+.br
+.I
+The Coq Reference Manual,
+.I
+The Coq web site: http://coq.inria.fr,
+.I
+/usr/share/doc/coqide/FAQ.
+
+.SH AUTHOR
+This manual page was written by Samuel Mimram <samuel.mimram@ens-lyon.org>,
+for the Debian project (but may be used by others).
