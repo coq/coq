@@ -655,7 +655,10 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	$(INSTALLLIB) $(LINKCMO) $(LINKCMX) $(GRAMMARCMA) $(FULLCOQLIB)
+	$(INSTALLLIB) $(LINKCMO) $(GRAMMARCMA) $(FULLCOQLIB)
+ifeq ($(BEST),opt)
+	$(INSTALLLIB) $(LINKCMX) $(FULLCOQLIB)
+endif
 	find . -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
 
 install-library-light:
@@ -716,7 +719,7 @@ dev/printers.cma: $(PRINTERSCMO)
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
+	$(HIDE)$(OCAMLC) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
