@@ -46,7 +46,7 @@ COQBINARIES:= $(COQMKTOP) $(COQC) \
 endif
 OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
-CSDPCERT:=bin/csdpcert$(EXE)
+CSDPCERT:=contrib/micromega/csdpcert$(EXE)
 
 ###########################################################################
 # tools
