@@ -377,9 +377,9 @@ PARSERREQUIRES:=$(LINKCMO) $(LIBCOQRUN) # Solution de facilité...
 PARSERREQUIRESCMX:=$(LINKCMX)
 
 ifeq ($(BEST),opt)
-  COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE) bin/parser.opt$(EXE)
+  COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/coq-parser$(EXE) bin/coq-parser.opt$(EXE)
 else
-  COQINTERFACE:=bin/coq-interface$(EXE) bin/parser$(EXE)
+  COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 endif
 
 PARSERCODE:=contrib/interface/line_parser.cmo contrib/interface/vtp.cmo \
@@ -823,7 +823,7 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqwc.1 man/coqdoc.1 \
 	man/coq_makefile.1 man/coqmktop.1
 
-PCOQMANPAGES:=man/coq-interface.1 man/parser.1
+PCOQMANPAGES:=man/coq-interface.1 man/coq-parser.1
 
 RECTYPESML:=kernel/term.ml library/nametab.ml proofs/tacexpr.ml \
   parsing/pptactic.ml 
