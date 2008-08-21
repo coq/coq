@@ -539,6 +539,7 @@ let interp_mutual paramsl indl notations finite =
 
   (* Instantiate evars and check all are resolved *)
   let evd,_ = consider_remaining_unif_problems env_params !evdref in
+  let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env_params evd in
   let sigma = evars_of evd in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map (nf_evar sigma) cl,impsl)) constructors in
   let ctx_params = Sign.map_rel_context (nf_evar sigma) ctx_params in

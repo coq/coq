@@ -16,8 +16,6 @@ open Util
 
 val mkMetas : int -> constr list
 
-(* val eterm_term : evar_map -> constr -> types option -> constr * types option * (identifier * types) list *)
-
 (* env, id, evars, number of
    function prototypes to try to clear from evars contexts, object and type *)
 val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> constr -> types -> 

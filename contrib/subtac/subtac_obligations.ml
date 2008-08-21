@@ -562,8 +562,8 @@ let next_obligation n =
   let prg = get_prog_err n in
   let obls, rem = prg.prg_obligations in
   let i = 
-    array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = [])
-      obls
+    try array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = []) obls
+    with Not_found -> anomaly "Could not find a solvable obligation."
   in solve_obligation prg i
       			
 let default_tactic () = !default_tactic

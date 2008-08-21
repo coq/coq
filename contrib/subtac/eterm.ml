@@ -46,7 +46,7 @@ let subst_evar_constr evs n t =
 	  let rec aux hyps args acc =
 	     match hyps, args with
 		 ((_, None, _) :: tlh), (c :: tla) -> 
-		   aux tlh tla ((map_constr_with_binders succfix substrec (depth, fixrels) c) :: acc)
+		   aux tlh tla ((substrec (depth, fixrels) c) :: acc)
 	       | ((_, Some _, _) :: tlh), (_ :: tla) ->
 		   aux tlh tla acc
 	       | [], [] -> acc
@@ -93,8 +93,8 @@ let etype_of_evar evs hyps concl =
 	let trans' = Idset.union trans trans' in
 	  (match copt with
 	      Some c -> 
-		if noccurn 1 rest then lift (-1) rest, s', trans'
-		else
+(* 		if noccurn 1 rest then lift (-1) rest, s', trans' *)
+(* 		else *)
 		  let c', s'', trans'' = subst_evar_constr evs n c in
 		  let c' = subst_vars acc 0 c' in
 		    mkNamedProd_or_LetIn (id, Some c', t'') rest, 
