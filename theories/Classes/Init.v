@@ -18,7 +18,7 @@
 (* Ltac typeclass_instantiation := typeclasses eauto || eauto. *)
 
 Tactic Notation "clapply" ident(c) :=
-  eapply @c ; eauto with typeclass_instances.
+  eapply @c ; typeclasses eauto.
 
 (** The unconvertible typeclass, to test that two objects of the same type are 
    actually different. *)
