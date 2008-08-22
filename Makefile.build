@@ -663,7 +663,7 @@ endif
 	# csdpcert is not meant to be directly called by the user;
 	# we install it with libraries
 	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
-	$(INSTALLBIN) $(CDSPCERT) $(FULLCOQLIB)/contrib/micromega
+	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/contrib/micromega
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
