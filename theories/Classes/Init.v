@@ -20,6 +20,12 @@
 Tactic Notation "clapply" ident(c) :=
   eapply @c ; typeclasses eauto.
 
+(** Hints for the proof search: these combinators should be considered rigid. *)
+
+Require Import Program.Basics.
+
+Typeclasses Opaque id const flip compose arrow impl iff.
+
 (** The unconvertible typeclass, to test that two objects of the same type are 
    actually different. *)
 

@@ -47,7 +47,7 @@ type search_entry = stored_data list * stored_data list * stored_data Btermdn.t
 module Hint_db :
   sig
     type t
-    val empty : bool -> t
+    val empty : transparent_state -> bool -> t
     val find : global_reference -> t -> search_entry
     val map_all : global_reference -> t -> pri_auto_tactic list
     val map_auto : global_reference * constr -> t -> pri_auto_tactic list
@@ -68,7 +68,7 @@ val searchtable_map : hint_db_name -> hint_db
 
 val searchtable_add : (hint_db_name * hint_db) -> unit
 
-val create_hint_db : bool -> hint_db_name -> bool -> unit
+val create_hint_db : bool -> hint_db_name -> transparent_state -> bool -> unit
 
 val current_db_names : unit -> hint_db_name list
 

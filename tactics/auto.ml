@@ -118,9 +118,9 @@ module Hint_db = struct
     hintdb_map : search_entry Constr_map.t
   }
 
-  let empty use_dn = { hintdb_state = empty_transparent_state;
-		       use_dn = use_dn;
-		       hintdb_map = Constr_map.empty }
+  let empty st use_dn = { hintdb_state = st;
+			  use_dn = use_dn;
+			  hintdb_map = Constr_map.empty }
     
   let find key db =
     try Constr_map.find key db.hintdb_map
@@ -328,15 +328,29 @@ let add_hint dbname hintlist =
     let db' = Hint_db.add_list hintlist db in
     searchtable_add (dbname,db')
   with Not_found -> 
-    let db = Hint_db.add_list hintlist (Hint_db.empty false) in
+    let db = Hint_db.add_list hintlist (Hint_db.empty empty_transparent_state false) in
     searchtable_add (dbname,db)
 
-type hint_action = CreateDB of bool | UpdateDB of (global_reference * pri_auto_tactic) list
+let add_transparency dbname grs b =
+  let db = searchtable_map dbname in
+  let st = Hint_db.transparent_state db in
+  let st' = 
+    List.fold_left (fun (ids, csts) gr -> 
+      match gr with
+      | EvalConstRef c -> (ids, (if b then Cpred.add else Cpred.remove) c csts)
+      | EvalVarRef v -> (if b then Idpred.add else Idpred.remove) v ids, csts)
+      st grs
+  in searchtable_add (dbname, Hint_db.set_transparent_state db st')
+    
+type hint_action = | CreateDB of bool * transparent_state
+		   | AddTransparency of evaluable_global_reference list * bool
+		   | AddTactic of (global_reference * pri_auto_tactic) list
 
 let cache_autohint (_,(local,name,hints)) = 
   match hints with
-  | CreateDB b -> searchtable_add (name, Hint_db.empty b)
-  | UpdateDB hints -> add_hint name hints
+  | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty st b)
+  | AddTransparency (grs, b) -> add_transparency name grs b
+  | AddTactic hints -> add_hint name hints
 
 let forward_subst_tactic = 
   ref (fun _ -> failwith "subst_tactic is not installed for auto")
@@ -388,13 +402,16 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
   in
     match hintlist with
     | CreateDB _ -> obj
-    | UpdateDB hintlist ->
+    | AddTransparency (grs, b) -> 
+	let grs' = list_smartmap (subst_evaluable_reference subst) grs in
+	  if grs==grs' then obj else (local, name, AddTransparency (grs', b))
+    | AddTactic hintlist ->
 	let hintlist' = list_smartmap subst_hint hintlist in
 	  if hintlist' == hintlist then obj else
-	    (local,name,UpdateDB hintlist')
+	    (local,name,AddTactic hintlist')
 	      
 let classify_autohint (_,((local,name,hintlist) as obj)) =
-  if local or hintlist = (UpdateDB []) then Dispose else Substitute obj
+  if local or hintlist = (AddTactic []) then Dispose else Substitute obj
 
 let export_autohint ((local,name,hintlist) as obj) =
   if local then None else Some obj
@@ -408,8 +425,8 @@ let (inAutoHint,outAutoHint) =
                     export_function = export_autohint }
 
 
-let create_hint_db l n b = 
-  Lib.add_anonymous_leaf (inAutoHint (l,n,CreateDB b))
+let create_hint_db l n st b = 
+  Lib.add_anonymous_leaf (inAutoHint (l,n,CreateDB (b, st)))
       
 (**************************************************************************)
 (*                     The "Hint" vernacular command                      *)
@@ -419,7 +436,7 @@ let add_resolves env sigma clist local dbnames =
     (fun dbname ->
        Lib.add_anonymous_leaf
 	 (inAutoHint
-	    (local,dbname, UpdateDB
+	    (local,dbname, AddTactic
      	      (List.flatten (List.map (fun (x, y) ->
 		make_resolves env sigma (true,Flags.is_verbose()) x y) clist)))))
     dbnames
@@ -428,7 +445,13 @@ let add_resolves env sigma clist local dbnames =
 let add_unfolds l local dbnames =
   List.iter 
     (fun dbname -> Lib.add_anonymous_leaf 
-       (inAutoHint (local,dbname, UpdateDB (List.map make_unfold l))))
+       (inAutoHint (local,dbname, AddTactic (List.map make_unfold l))))
+    dbnames
+
+let add_transparency l b local dbnames =
+  List.iter 
+    (fun dbname -> Lib.add_anonymous_leaf 
+       (inAutoHint (local,dbname, AddTransparency (l, b))))
     dbnames
 
 let add_extern pri (patmetas,pat) tacast local dbname =
@@ -441,7 +464,7 @@ let add_extern pri (patmetas,pat) tacast local dbname =
 	  (str "The meta-variable ?" ++ pr_patvar i ++ str" is not bound.")
     | []  ->
 	Lib.add_anonymous_leaf
-	  (inAutoHint(local,dbname, UpdateDB [make_extern pri pat tacast]))
+	  (inAutoHint(local,dbname, AddTactic [make_extern pri pat tacast]))
 
 let add_externs pri pat tacast local dbnames = 
   List.iter (add_extern pri pat tacast local) dbnames
@@ -450,7 +473,7 @@ let add_trivials env sigma l local dbnames =
   List.iter
     (fun dbname ->
        Lib.add_anonymous_leaf (
-	 inAutoHint(local,dbname, UpdateDB (List.map (make_trivial env sigma) l))))
+	 inAutoHint(local,dbname, AddTactic (List.map (make_trivial env sigma) l))))
     dbnames
 
 let forward_intern_tac = 
@@ -481,6 +504,20 @@ let add_hints local dbnames0 h =
 	  Dumpglob.add_glob (loc_of_reference r) gr;
 	 (gr,r') in
       add_unfolds (List.map f lhints) local dbnames
+ | HintsTransparency (lhints, b) ->
+      let f r =
+	let gr = Syntax_def.global_with_alias r in
+        let r' = match gr with
+         | ConstRef c -> EvalConstRef c
+         | VarRef c -> EvalVarRef c
+         | _ -> 
+           errorlabstrm "evalref_of_ref"
+            (str "Cannot coerce" ++ spc () ++ pr_global gr ++ spc () ++
+             str "to an evaluable reference.")
+        in
+	  Dumpglob.add_glob (loc_of_reference r) gr;
+	  r' in
+      add_transparency (List.map f lhints) b local dbnames
   | HintsConstructors lqid ->
       let add_one qid =
         let env = Global.env() and sigma = Evd.empty in
@@ -651,7 +688,7 @@ let make_local_hint_db eapply lems g =
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g) sign in
   let hintlist' = list_map_append (pf_apply make_resolves g (eapply,false) None) lems in
-    Hint_db.add_list hintlist' (Hint_db.add_list hintlist (Hint_db.empty false))
+    Hint_db.add_list hintlist' (Hint_db.add_list hintlist (Hint_db.empty empty_transparent_state false))
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
    substitution sans passer par bdize dont l'objectif est de préparer un

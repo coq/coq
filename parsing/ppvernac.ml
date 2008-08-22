@@ -199,6 +199,9 @@ let pr_hints local db h pr_c pr_pat =
         str"Immediate" ++ spc() ++ prlist_with_sep sep pr_c l
     | HintsUnfold l ->
         str "Unfold " ++ prlist_with_sep sep pr_reference l
+    | HintsTransparency (l, b) ->
+        str (if b then "Transparent " else "Opaque ") ++ prlist_with_sep sep 
+	  pr_reference l
     | HintsConstructors c ->
         str"Constructors" ++ spc() ++ prlist_with_sep spc pr_reference c
     | HintsExtern (n,c,tac) ->

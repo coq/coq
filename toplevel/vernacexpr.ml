@@ -115,6 +115,7 @@ type hints =
   | HintsResolve of (int option * constr_expr) list
   | HintsImmediate of constr_expr list
   | HintsUnfold of reference list
+  | HintsTransparency of reference list * bool
   | HintsConstructors of reference list
   | HintsExtern of int * constr_expr * raw_tactic_expr
   | HintsDestruct of identifier *

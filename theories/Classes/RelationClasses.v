@@ -23,11 +23,12 @@ Require Export Coq.Relations.Relation_Definitions.
 
 (** We allow to unfold the [relation] definition while doing morphism search. *)
 
-Typeclasses unfold relation.
-
 Notation inverse R := (flip (R:relation _) : relation _).
 
 Definition complement {A} (R : relation A) : relation A := fun x y => R x y -> False.
+
+(** Opaque for proof-search. *)
+Typeclasses Opaque complement.
 
 (** These are convertible. *)
 

@@ -75,10 +75,17 @@ Arguments Scope respectful [type_scope type_scope signature_scope signature_scop
 
 Open Local Scope signature_scope.
 
-(** Pointwise lifting is just respect with leibniz equality on the left. *)
+(** Dependent pointwise lifting of a relation on the range. *) 
+
+Definition forall_relation {A : Type} {B : A -> Type} (sig : Π a : A, relation (B a)) : relation (Π x : A, B x) :=
+  λ f g, Π a : A, sig a (f a) (g a).
+
+Arguments Scope forall_relation [type_scope type_scope signature_scope].
+
+(** Non-dependent pointwise lifting *)
 
 Definition pointwise_relation {A B : Type} (R : relation B) : relation (A -> B) := 
-  fun f g => forall x : A, R (f x) (g x).
+  Eval compute in forall_relation (B:=λ _, B) (λ _, R).
 
 Lemma pointwise_pointwise A B (R : relation B) : 
   relation_equivalence (pointwise_relation R) (@eq A ==> R).
@@ -91,12 +98,14 @@ Hint Unfold Reflexive : core.
 Hint Unfold Symmetric : core.
 Hint Unfold Transitive : core.
 
+Typeclasses Opaque respectful pointwise_relation forall_relation.
+
 Program Instance respectful_per [ PER A (R : relation A), PER B (R' : relation B) ] : 
   PER (A -> B) (R ==> R').
 
   Next Obligation.
   Proof with auto.
-    assert(R x0 x0). 
+    assert(R x0 x0).
     transitivity y0... symmetry...
     transitivity (y x0)...
   Qed.

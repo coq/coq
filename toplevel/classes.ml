@@ -32,16 +32,20 @@ open Topconstr
 open Decl_kinds
 open Entries
 
-let hint_db = "typeclass_instances"
+let typeclasses_db = "typeclass_instances"
 
 let qualid_of_con c = 
   Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
+
+let set_rigid c = 
+  Auto.add_hints false [typeclasses_db] 
+    (Vernacexpr.HintsTransparency ([qualid_of_con c], false))
 
 let _ =
   Typeclasses.register_add_instance_hint 
     (fun inst pri ->
       Flags.silently (fun () ->      
-	Auto.add_hints false [hint_db] 
+	Auto.add_hints false [typeclasses_db] 
 	  (Vernacexpr.HintsResolve 
 	      [pri, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])])) ())
 
@@ -228,6 +232,7 @@ let new_class id par ar sup props =
 	    let cref = ConstRef cst in
 	      Impargs.declare_manual_implicits false cref (Impargs.is_implicit_args()) arity_imps;
 	      Impargs.declare_manual_implicits false (ConstRef proj_cst) (Impargs.is_implicit_args()) (List.hd fieldimpls);
+	      set_rigid cst;
 	      cref, [proj_name, proj_cst]
 	| _ ->
 	    let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in

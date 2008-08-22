@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -138,6 +137,6 @@ Program Instance pointwise_equivalence [ eqb : Equivalence B eqB ] :
 
   Next Obligation.
   Proof.
-    transitivity (y x0) ; auto.
+    transitivity (y a) ; auto.
   Qed.
 

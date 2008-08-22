@@ -1795,6 +1795,16 @@ let rec xlate_vernac =
 			    CT_id_ne_list(n1, names), dblist)
 	   else	     
              CT_hints(CT_ident "Unfold", CT_id_ne_list(n1, names), dblist)
+        | HintsTransparency (l,b) -> 
+	 let n1, names = match List.map loc_qualid_to_ct_ID l with
+	     n1 :: names -> n1, names
+	   | _  -> failwith "" in
+	 let ty = if b then "Transparent" else "Opaque" in
+	   if local then
+             CT_local_hints(CT_ident ty,
+			    CT_id_ne_list(n1, names), dblist)
+	   else	     
+             CT_hints(CT_ident ty, CT_id_ne_list(n1, names), dblist)
        	| HintsDestruct(id, n, loc, f, t) ->
 	    let dl = match loc with
 		ConclLocation() -> CT_conclusion_location
