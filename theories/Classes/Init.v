@@ -22,7 +22,7 @@ Tactic Notation "clapply" ident(c) :=
 
 (** Hints for the proof search: these combinators should be considered rigid. *)
 
-Require Import Program.Basics.
+Require Import Coq.Program.Basics.
 
 Typeclasses Opaque id const flip compose arrow impl iff.
 
