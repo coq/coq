@@ -39,4 +39,4 @@ val new_instance :
   binder_def_list ->
   ?on_free_vars:(identifier list -> unit) ->
   int option ->
-  identifier
+  identifier * Subtac_obligations.progress

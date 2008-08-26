@@ -191,5 +191,5 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
       in
       let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
       let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
-	ignore(Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls);
-	id
+	id, Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls
+	  
