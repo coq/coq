@@ -44,7 +44,7 @@ let default_eauto_depth = 100
 let typeclasses_db = "typeclass_instances"
 
 let _ = Auto.auto_init := (fun () -> 
-  Auto.create_hint_db false typeclasses_db full_transparent_state false)
+  Auto.create_hint_db false typeclasses_db full_transparent_state true)
 
 let check_imported_library d =
   let d' = List.map id_of_string d in
@@ -122,18 +122,11 @@ let rec e_trivial_fail_db db_list local_db goal =
 and e_my_find_search db_list local_db hdc concl = 
   let hdc = head_of_constr_reference hdc in
   let hintl =
-    if occur_existential concl then
-      list_map_append
-	(fun db ->
-	  let flags = flags_of_state (Hint_db.transparent_state db) in
-	    List.map (fun x -> (flags, x)) (Hint_db.map_all hdc db))
-	(local_db::db_list)
-    else
-      list_map_append
-	(fun db -> 
-	  let flags = flags_of_state (Hint_db.transparent_state db) in
-	    List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db))
-	(local_db::db_list)
+    list_map_append
+      (fun db -> 
+	let flags = flags_of_state (Hint_db.transparent_state db) in
+	  List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db))
+      (local_db::db_list)
   in 
   let tac_of_hint = 
     fun (flags, {pri=b; pat = p; code=t}) -> 
@@ -320,46 +313,6 @@ module SearchProblem = struct
 end
 
 module Search = Explore.Make(SearchProblem)
-
-
-let filter_pat c =
-  try
-    let morg = Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism")) in
-    let morc = constr_of_global morg in
-	match kind_of_term c with
-	  | App(morph, [| t; r; m |]) when eq_constr morph morc ->
-	      (fun y ->
-		(match y.pat with
-		    Some (PApp (PRef mor, [| t'; r'; m' |])) when mor = morg ->
-		      (match m' with
-			| PRef c -> if isConst m then eq_constr (constr_of_global c) m else false
-			| _ -> true)
-		  | _ -> true))
-	  | _ -> fun _ -> true
-  with _ -> fun _ -> true
-
-let morphism_class = 
-  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))))
-
-let morphism_proxy_class = 
-  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.MorphismProxy"))))
-    
-let filter c =
-  try let morc = constr_of_global (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))) in
-	match kind_of_term c with
-	  | App(morph, [| t; r; m |]) when eq_constr morph morc ->
-	      (fun y ->
-		let (_, r) = decompose_prod y in
-		  (match kind_of_term r with
-		      App (morph', [| t'; r'; m' |]) when eq_constr morph' morc ->
-			(match kind_of_term m' with
-			  | Rel n -> true
-			  | Const c -> eq_constr m m'
-			  | App _ -> true
-			  | _ -> false)
-		    | _ -> false))
-	  | _ -> fun _ -> true
-  with _ -> fun _ -> true
 
 let make_initial_state n gls dblist localdbs =
   { depth = n;
@@ -551,6 +504,12 @@ END
 
 (** Typeclass-based rewriting. *)
 
+let morphism_class = 
+  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))))
+
+let morphism_proxy_class = 
+  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.MorphismProxy"))))
+
 let respect_proj = lazy (mkConst (snd (List.hd (Lazy.force morphism_class).cl_projs)))
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
@@ -660,26 +619,28 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
     let t = Reductionops.whd_betadeltaiota env (Evd.evars_of !isevars) ty in
       match kind_of_term t, l with
       | Prod (na, ty, b), obj :: cstrs -> 
-	  let (b, arg, evars) = aux (Environ.push_rel (na, None, ty) env) b cstrs in
-	  let ty = Reductionops.nf_betaiota ty in
-	    if dependent (mkRel 1) ty then
-	      let pred = mkLambda (na, ty, b) in
-	      let liftarg = mkLambda (na, ty, arg) in
-	      let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
-		mkProd(na, ty, b), arg', evars
-	    else
-	      let relty = mk_relty ty obj in
-	      let arg' = mkApp (Lazy.force respectful, [| ty ; b ; relty ; arg |]) in
-		mkProd(na, ty, b), arg', (ty, relty) :: evars
+	  if dependent (mkRel 1) b then
+	    let (b, arg, evars) = aux (Environ.push_rel (na, None, ty) env) b cstrs in
+	    let ty = Reductionops.nf_betaiota ty in
+	    let pred = mkLambda (na, ty, b) in
+	    let liftarg = mkLambda (na, ty, arg) in
+	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
+	      mkProd(na, ty, b), arg', (ty, None) :: evars
+	  else
+	    let (b', arg, evars) = aux env (subst1 mkProp b) cstrs in
+	    let ty = Reductionops.nf_betaiota ty in
+	    let relty = mk_relty ty obj in
+	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
+	      mkProd(na, ty, b), newarg, (ty, Some relty) :: evars
       | _, obj :: _ -> anomaly "build_signature: not enough products"
       | _, [] -> 
 	  (match finalcstr with
 	      None -> 
 		let t = Reductionops.nf_betaiota ty in
 		let rel = mk_relty t None in 
-		  t, rel, [t, rel]
+		  t, rel, [t, Some rel]
 	    | Some codom -> let (t, rel) = Lazy.force codom in
-			      t, rel, [t, rel])
+			      t, rel, [t, Some rel])
   in aux env m cstrs
 
 let morphism_proof env evars carrier relation x =
@@ -687,13 +648,10 @@ let morphism_proof env evars carrier relation x =
     mkApp (Lazy.force morphism_proxy_type, [| carrier ; relation; x |])
   in Evarutil.e_new_evar evars env goal
 
-let find_class_proof proof_type proof_method env carrier relation =
+let find_class_proof proof_type proof_method env evars carrier relation =
   try 
-    let goal =
-      mkApp (Lazy.force proof_type, [| carrier ; relation |])
-    in
-    let inst = resolve_one_typeclass env goal in
-      mkApp (Lazy.force proof_method, [| carrier ; relation ; inst |])
+    let goal = mkApp (Lazy.force proof_type, [| carrier ; relation |]) in
+      Typeclasses.resolve_one_typeclass env evars goal
   with e when Logic.catchable_exception e -> raise Not_found
 
 let reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
@@ -720,28 +678,29 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
     let cl_args = [| appmtype' ; signature ; appm |] in
     let app = mkApp (Lazy.force morphism_type, cl_args) in
     let morph = Evarutil.e_new_evar evars env app in
-    let proj = 
-      mkApp (Lazy.force respect_proj, 
-	    Array.append cl_args [|morph|])
-    in
-      morph, proj, sigargs, appm, morphobjs, morphobjs'
+      morph, morph, sigargs, appm, morphobjs, morphobjs'
   in 
   let projargs, respars, typeargs = 
     array_fold_left2 
       (fun (acc, sigargs, typeargs') x y -> 
 	let (carrier, relation), sigargs = split_head sigargs in
-	  match y with
-	      None ->
-		let proof = morphism_proof env evars carrier relation x in
-		  [ proof ; x ; x ] @ acc, sigargs, x :: typeargs'
-	    | Some (p, (_, _, _, t')) ->
-		[ p ; t'; x ] @ acc, sigargs, t' :: typeargs')
+	  match relation with
+	  | Some relation ->
+	      (match y with
+	      | None ->
+		  let proof = morphism_proof env evars carrier relation x in
+		    [ proof ; x ; x ] @ acc, sigargs, x :: typeargs'
+	      | Some (p, (_, _, _, t')) ->
+		  [ p ; t'; x ] @ acc, sigargs, t' :: typeargs')
+	  | None -> 
+	      if y <> None then error "Cannot rewrite the argument of a dependent function";
+	      x :: acc, sigargs, x :: typeargs')
       ([], sigargs, []) args args'
   in
   let proof = applistc proj (List.rev projargs) in
   let newt = applistc m' (List.rev typeargs) in
     match respars with
-	[ a, r ] -> (proof, (a, r, oldt, fnewt newt))
+	[ a, Some r ] -> (proof, (a, r, oldt, fnewt newt))
       | _ -> assert(false)
 
 (* Adapted from setoid_replace. *)
@@ -864,7 +823,7 @@ let unify_eqn env sigma hypinfo t =
     let res =
       if l2r then (prf, (car, rel, c1, c2))
       else
-	try (mkApp (symmetric_proof env car rel, [| c1 ; c2 ; prf |]), (car, rel, c2, c1))
+	try (mkApp (symmetric_proof env Evd.empty car rel, [| c1 ; c2 ; prf |]), (car, rel, c2, c1))
 	with Not_found ->
 	  (prf, (car, inverse car rel, c2, c1))
     in Some (env', res)
@@ -1123,10 +1082,6 @@ let cl_rewrite_clause (evm,c) left2right occs clause gl =
   let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in
   let env = pf_env gl in
   let evars = Evd.merge (project gl) evm in
-(*   let c = *)
-(*     let j = Pretyping.Default.understand_judgment_tcc evars env c in *)
-(*       j.Environ.uj_val *)
-(*   in *)
   let hypinfo = ref (decompose_setoid_eqhyp env evars c left2right) in
     cl_rewrite_clause_aux hypinfo meta occs clause gl
 
@@ -1466,8 +1421,10 @@ let build_morphism_signature m =
   let t', sig_, evars = build_signature isevars env t cstrs None snd in
   let _ = List.iter
     (fun (ty, rel) -> 
-      let default = mkApp (Lazy.force default_relation, [| ty; rel |]) in
-	ignore (Evarutil.e_new_evar isevars env default))
+      Option.iter (fun rel ->
+	let default = mkApp (Lazy.force default_relation, [| ty; rel |]) in
+	  ignore (Evarutil.e_new_evar isevars env default)) 
+	rel)
     evars
   in
   let morph = 
@@ -1649,34 +1606,32 @@ let not_declared env ty car rel =
   tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++ 
 		str ty ++ str" relation on carrier " ++ Printer.pr_constr_env env car)
     
-let setoid_reflexivity gl =
+let setoid_proof gl ty fn =
   let env = pf_env gl in
   let rel, args = relation_of_constr (pf_concl gl) in
-  let car = pf_type_of gl args.(0) in
-    try
-      apply (reflexive_proof env car rel) gl
-    with Not_found -> not_declared env "reflexive" car rel gl
+(*   let evd, car = Evarutil.new_evar (create_evar_defs Evd.empty) env (new_Type ()) in 
+let evm = Evd.evars_of evd in*)
+  let evm, car = project gl, pf_type_of gl args.(0) in
+    try fn env evm car rel gl
+    with Not_found -> not_declared env ty car rel gl
+
+let setoid_reflexivity gl =
+  setoid_proof gl "reflexive" 
+    (fun env evm car rel gl ->
+      apply (reflexive_proof env evm car rel) gl)
 	  
 let setoid_symmetry gl =
-  let env = pf_env gl in
-  let rel, args = relation_of_constr (pf_concl gl) in
-  let car = pf_type_of gl args.(0) in
-    try
-      apply (symmetric_proof env car rel) gl
-    with Not_found -> 
-      not_declared env "symmetric" car rel gl
+  setoid_proof gl "symmetric" 
+    (fun env evm car rel gl ->
+      apply (symmetric_proof env evm car rel) gl)
 	
 let setoid_transitivity c gl =
-  let env = pf_env gl in
-  let rel, args = relation_of_constr (pf_concl gl) in
-  let car = pf_type_of gl c in
-    try
+  setoid_proof gl "transitive" 
+    (fun env evm car rel gl ->
       apply_with_bindings
-	((transitive_proof env car rel),
-	Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp (id_of_string "y"), c ]) gl
-    with Not_found -> 
-      not_declared env "transitive" car rel gl
-
+	((transitive_proof env evm car rel),
+	Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp (id_of_string "y"), c ]) gl)
+    
 let setoid_symmetry_in id gl =
   let ctype = pf_type_of gl (mkVar id) in
   let binders,concl = Sign.decompose_prod_assum ctype in
