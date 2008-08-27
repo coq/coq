@@ -138,6 +138,9 @@ module Hint_db = struct
     | Give_exact _ -> true
     | _ -> false
 
+  let rebuild_db st' db = 
+    { db with hintdb_map = Constr_map.map (rebuild_dn st') db.hintdb_map }
+
   let add_one (k,v) db =
     let st',rebuild =
       match v.code with
@@ -149,8 +152,8 @@ module Hint_db = struct
       | _ -> db.hintdb_state, false
     in
     let dnst, db = 
-      if db.use_dn then 
-	Some st', { db with hintdb_map = Constr_map.map (rebuild_dn st') db.hintdb_map }
+      if db.use_dn then
+	(Some st', if rebuild then rebuild_db st' db else db)
       else None, db
     in
     let oval = find k db in
@@ -164,11 +167,10 @@ module Hint_db = struct
     
   let transparent_state db = db.hintdb_state
 
-  let set_transparent_state db st = { db with hintdb_state = st }
-
-  let set_rigid db cst = 
-    let (ids,csts) = db.hintdb_state in
-      { db with hintdb_state = (ids, Cpred.remove cst csts) }
+  let set_transparent_state db st =
+    let db = if db.use_dn then rebuild_db st db else db in
+      { db with hintdb_state = st }
+	
 end
 
 module Hintdbmap = Gmap

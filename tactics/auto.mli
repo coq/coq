@@ -57,7 +57,6 @@ module Hint_db :
 
     val transparent_state : t -> transparent_state
     val set_transparent_state : t -> transparent_state -> t
-    val set_rigid : t -> constant -> t
   end
 
 type hint_db_name = string
@@ -67,6 +66,11 @@ type hint_db = Hint_db.t
 val searchtable_map : hint_db_name -> hint_db
 
 val searchtable_add : (hint_db_name * hint_db) -> unit
+
+(* [create_hint_db local name st use_dn]. 
+   [st] is a transparency state for unification using this db
+   [use_dn] switches the use of the discrimination net for all hints 
+   and patterns. *)
 
 val create_hint_db : bool -> hint_db_name -> transparent_state -> bool -> unit
 
