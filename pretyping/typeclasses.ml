@@ -46,14 +46,13 @@ type typeclass = {
 
 type typeclasses = (global_reference, typeclass) Gmap.t
 
-type globality = int option
-
 type instance = {
   is_class: global_reference;
   is_pri: int option;
-  is_global: globality;
   (* Sections where the instance should be redeclared, 
-     Some n for n sections, None for discard at end of section. *)
+     -1 for discard, 0 for none, mutable to avoid redeclarations 
+     when multiple rebuild_object happen. *)
+  is_global: int ref;
   is_impl: constant; 
 }
 
@@ -64,13 +63,13 @@ let instance_impl is = is.is_impl
 let new_instance cl pri glob impl = 
   let global =
     if Lib.sections_are_opened () then 
-      if glob then Some (Lib.sections_depth ())
-      else None
-    else Some 0
+      if glob then Lib.sections_depth ()
+      else -1
+    else 0
   in
     { is_class = cl.cl_impl;
       is_pri = pri ;
-      is_global = global ;
+      is_global = ref global ;
       is_impl = impl }
 	
 let classes : typeclasses ref = ref Gmap.empty
@@ -112,7 +111,7 @@ let gmap_cmap_merge old ne =
       ne Gmap.empty
   in
     Gmap.fold (fun cl insts acc -> 
-      if Gmap.mem cl ne' then acc
+      if Gmap.mem cl acc then acc
       else Gmap.add cl insts acc)
       old ne'
 
@@ -220,13 +219,13 @@ let rebuild (cl,m,inst) =
   let inst = 
     Gmap.map (fun insts -> 
       Cmap.fold (fun k is insts -> 
-	match is.is_global with
-	  | None -> insts
-	  | Some 0 -> Cmap.add k is insts
-	  | Some n -> 
+	match !(is.is_global) with
+	  | -1 -> insts
+	  | 0 -> Cmap.add k is insts
+	  | n -> 
 	      add_instance_hint is.is_impl is.is_pri;
-	      let is' = { is with is_global = Some (pred n) }
-	      in Cmap.add k is' insts) insts Cmap.empty)
+	      is.is_global := pred n;
+	      Cmap.add k is insts) insts Cmap.empty)
       inst
   in (cl, m, inst)
 
