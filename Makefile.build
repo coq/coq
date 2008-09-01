@@ -361,11 +361,11 @@ contrib/contrib.cmxa: $(CONTRIB:.cmo=.cmx)
 ###########################################################################
 
 ifeq ($(BEST),opt)
-bin/csdpcert$(EXE): $(CSDPCERTCMX)
+contrib/micromega/csdpcert$(EXE): $(CSDPCERTCMX)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) nums.cmxa -o $@ $(CSDPCERTCMX)
 else
-bin/csdpcert$(EXE): $(CSDPCERTCMO)
+contrib/micromega/csdpcert$(EXE): $(CSDPCERTCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) -custom $(BYTEFLAGS) nums.cma -o $@ $(CSDPCERTCMO)
 endif
@@ -630,12 +630,12 @@ install-binaries:: install-$(BEST) install-tools
 
 install-byte::
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(CSDPCERT) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqtop.byte$(EXE) coqtop$(EXE)
 
 install-opt::
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(CSDPCERT) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE)
 
 install-tools::
@@ -660,6 +660,10 @@ ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LINKCMX) $(FULLCOQLIB)
 endif
 	find . -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
+	# csdpcert is not meant to be directly called by the user;
+	# we install it with libraries
+	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
+	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/contrib/micromega
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)

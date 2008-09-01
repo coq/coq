@@ -1193,8 +1193,8 @@ let call_csdpcert provername poly =
   output_value ch_to (provername,poly : provername * micromega_polys);
   close_out ch_to;
   let cmdname =
-    Filename.concat Coq_config.bindir
-      ("csdpcert" ^ Coq_config.exec_extension) in
+    List.fold_left Filename.concat Coq_config.coqlib
+      ["contrib"; "micromega"; "csdpcert" ^ Coq_config.exec_extension] in
   let c = Sys.command (cmdname ^" "^ tmp_to ^" "^ tmp_from) in
   (try Sys.remove tmp_to with _ -> ());
   if c <> 0 then Util.error ("Failed to call csdp certificate generator");
