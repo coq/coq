@@ -744,7 +744,7 @@ let print_path_between cls clt =
   let j = index_of_class clt in
   let p = 
     try 
-      lookup_path_between (i,j) 
+      lookup_path_between_class (i,j) 
     with _ -> 
       errorlabstrm "index_cl_of_id"
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt

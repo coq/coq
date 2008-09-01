@@ -29,6 +29,7 @@
 #install_printer  (* qualid *)  ppqualid;;
 #install_printer  (* kernel_name *) ppkn;;
 #install_printer  (* constant *) ppcon;;
+#install_printer  (* cl_index *) ppclindex;;
 #install_printer  (* constr *)  print_pure_constr;; 
 #install_printer  (* patch *) ppripos;;
 #install_printer  (* values *) ppvalues;;

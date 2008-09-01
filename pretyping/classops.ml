@@ -128,6 +128,10 @@ let class_exists cl = Bijint.mem cl !class_tab
 
 let class_info_from_index i = Bijint.map i !class_tab
 
+let cl_fun_index = fst(class_info CL_FUN)
+
+let cl_sort_index = fst(class_info CL_SORT)
+
 (* coercion_info : coe_typ -> coe_info_typ *)
 
 let coercion_info coe = Gmap.find coe !coercion_tab
@@ -136,32 +140,10 @@ let coercion_exists coe = Gmap.mem coe !coercion_tab
 
 let coercion_params coe_info = coe_info.coe_param
 
-let lookup_path_between (s,t) =
-  Gmap.find (s,t) !inheritance_graph
+(* find_class_type : env -> evar_map -> constr -> cl_typ * int *)
 
-let lookup_path_to_fun_from s = 
-  lookup_path_between (s,fst(class_info CL_FUN))
-
-let lookup_path_to_sort_from s = 
-  lookup_path_between (s,fst(class_info CL_SORT))
-
-let lookup_pattern_path_between (s,t) =
-  let l = Gmap.find (s,t) !inheritance_graph in
-  List.map  
-    (fun coe ->
-       let c, _ =
-	 Reductionops.whd_betadeltaiota_stack (Global.env()) Evd.empty 
-	   coe.coe_value
-       in 
-       match kind_of_term c with
-	 | Construct cstr ->
-	     (cstr, Inductiveops.constructor_nrealargs (Global.env()) cstr -1)
-	 | _ -> raise Not_found) l
-
-(* find_class_type : constr -> cl_typ * int *)
-
-let find_class_type t =
-  let t', args = decompose_app (Reductionops.whd_betaiotazeta t) in
+let find_class_type env sigma t =
+  let t', args = Reductionops.whd_betaiotazetaevar_stack env sigma t in
   match kind_of_term t' with
     | Var id -> CL_SECVAR id, args
     | Const sp -> CL_CONST sp, args
@@ -178,7 +160,7 @@ let subst_cl_typ subst ct = match ct with
   | CL_CONST kn -> 
       let kn',t = subst_con subst kn in 
 	if kn' == kn then ct else
-         fst (find_class_type t)
+         fst (find_class_type (Global.env()) Evd.empty t)
   | CL_IND (kn,i) ->
       let kn' = subst_kn subst kn in 
 	if kn' == kn then ct else
@@ -188,19 +170,17 @@ let subst_cl_typ subst ct = match ct with
        to declare any term as a coercion *)
 let subst_coe_typ subst t = fst (subst_global subst t)
 
-(* classe d'un terme *)
-
 (* class_of : Term.constr -> int *)
 
 let class_of env sigma t = 
   let (t, n1, i, args) = 
     try
-      let (cl,args) = find_class_type t in
+      let (cl,args) = find_class_type env sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, args)
     with Not_found ->
       let t = Tacred.hnf_constr env sigma t in
-      let (cl, args) = find_class_type t in 
+      let (cl, args) = find_class_type env sigma t in 
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, args)
   in
@@ -208,7 +188,7 @@ let class_of env sigma t =
 
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
-let class_args_of c = snd (find_class_type c)
+let class_args_of env sigma c = snd (find_class_type env sigma c)
 
 let string_of_class = function
   | CL_FUN -> "Funclass"
@@ -221,6 +201,61 @@ let string_of_class = function
       string_of_qualid (shortest_qualid_of_global Idset.empty (VarRef sp))
 
 let pr_class x = str (string_of_class x)
+
+(* lookup paths *)
+
+let lookup_path_between_class (s,t) =
+  Gmap.find (s,t) !inheritance_graph
+
+let lookup_path_to_fun_from_class s =
+  lookup_path_between_class (s,cl_fun_index)
+
+let lookup_path_to_sort_from_class s =
+  lookup_path_between_class (s,cl_sort_index)
+
+(* advanced path lookup *)
+
+let apply_on_class_of env sigma t cont =
+  try
+    let (cl,args) = find_class_type env sigma t in
+    let (i, { cl_param = n1 } ) = class_info cl in
+    if List.length args <> n1 then raise Not_found;
+    t, cont i
+  with Not_found ->
+    (* Is it worth to be more incremental on the delta steps? *)
+    let t = Tacred.hnf_constr env sigma t in
+    let (cl, args) = find_class_type env sigma t in 
+    let (i, { cl_param = n1 } ) = class_info cl in
+    if List.length args <> n1 then raise Not_found;
+    t, cont i
+
+let lookup_path_between env sigma (s,t) =
+  let (s,(t,p)) =
+    apply_on_class_of env sigma s (fun i ->
+      apply_on_class_of env sigma t (fun j ->
+	lookup_path_between_class (i,j))) in
+  (s,t,p)
+
+let lookup_path_to_fun_from env sigma s =
+  apply_on_class_of env sigma s lookup_path_to_fun_from_class
+
+let lookup_path_to_sort_from env sigma s = 
+  apply_on_class_of env sigma s lookup_path_to_sort_from_class
+
+let get_coercion_constructor coe =
+  let c, _ =
+    Reductionops.whd_betadeltaiota_stack (Global.env()) Evd.empty coe.coe_value
+  in
+  match kind_of_term c with
+  | Construct cstr -> 
+      (cstr, Inductiveops.constructor_nrealargs (Global.env()) cstr -1)
+  | _ ->
+      raise Not_found
+
+let lookup_pattern_path_between (s,t) =
+  let i = inductive_class_of s in
+  let j = inductive_class_of t in
+  List.map get_coercion_constructor (Gmap.find (i,j) !inheritance_graph)
 
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 
@@ -255,11 +290,11 @@ let add_coercion_in_graph (ic,source,target) =
     try 
       if i=j then begin
 	if different_class_params i j then begin
-	  let _ = lookup_path_between ij in
+	  let _ = lookup_path_between_class ij in
           ambig_paths := (ij,p)::!ambig_paths
 	end
       end else begin
-        let _ = lookup_path_between (i,j) in
+        let _ = lookup_path_between_class (i,j) in
         ambig_paths := (ij,p)::!ambig_paths
       end;
       false

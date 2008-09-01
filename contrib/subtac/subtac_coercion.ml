@@ -310,8 +310,6 @@ module Coercion = struct
 
   (* Typing operations dealing with coercions *)
 
-  let class_of1 env sigma t = class_of env sigma (nf_evar sigma t)
-
   (* Here, funj is a coercion therefore already typed in global context *)
   let apply_coercion_args env argl funj =
     let rec apply_rec acc typ = function
@@ -339,19 +337,17 @@ module Coercion = struct
 
   (* raise Not_found if no coercion found *)
   let inh_pattern_coerce_to loc pat ind1 ind2 =
-    let i1 = inductive_class_of ind1 in
-    let i2 = inductive_class_of ind2 in
-    let p = lookup_pattern_path_between (i1,i2) in
+    let p = lookup_pattern_path_between (ind1,ind2) in
       apply_pattern_coercion loc pat p
 
   (* appliquer le chemin de coercions p à hj *)
 
-  let apply_coercion env p hj typ_cl =
+  let apply_coercion env sigma p hj typ_cl =
     try 
       fst (List.fold_left
              (fun (ja,typ_cl) i -> 
 		let fv,isid = coercion_value i in
-		let argl = (class_args_of typ_cl)@[ja.uj_val] in
+		let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
 		let jres = apply_coercion_args env argl fv in
 		  (if isid then 
 		     { uj_val = ja.uj_val; uj_type = jres.uj_type }
@@ -370,9 +366,9 @@ module Coercion = struct
 	      (isevars',{ uj_val = j.uj_val; uj_type = t })
 	| _ ->
        	    (try
- 	       let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
-      	       let p = lookup_path_to_fun_from i1 in
-		 (isevars,apply_coercion env p j t)
+      	       let t,p =
+		 lookup_path_to_fun_from env (evars_of isevars) j.uj_type in
+		 (isevars,apply_coercion env (evars_of isevars) p j t)
 	     with Not_found ->
 	       try 
 		 let coercef, t = mu env isevars t in
@@ -382,9 +378,8 @@ module Coercion = struct
 
   let inh_tosort_force loc env isevars j =
     try
-      let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
-      let p = lookup_path_to_sort_from i1 in
-      let j1 = apply_coercion env p j t in 
+      let t,p = lookup_path_to_sort_from env (evars_of isevars) j.uj_type in
+      let j1 = apply_coercion env (evars_of isevars) p j t in 
 	(isevars,type_judgment env (j_nf_evar (evars_of isevars) j1))
     with Not_found ->
       error_not_a_type_loc loc env (evars_of isevars) j
@@ -417,12 +412,11 @@ module Coercion = struct
     else
     let v', t' =
       try 
-	let t1,i1 = class_of1 env (evars_of evd) c1 in
-	let t2,i2 = class_of1 env (evars_of evd) t in
-	let p = lookup_path_between (i2,i1) in
+	let t2,t1,p = lookup_path_between env (evars_of evd) (t,c1) in
 	  match v with
 	      Some v -> 
-		let j = apply_coercion env p {uj_val = v; uj_type = t} t2 in
+		let j = apply_coercion env (evars_of evd) p
+		  {uj_val = v; uj_type = t} t2 in
 		  Some j.uj_val, j.uj_type
 	    | None -> None, t
       with Not_found -> raise NoCoercion 
