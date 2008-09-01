@@ -448,7 +448,7 @@ install-ide-info:
 	$(INSTALLLIB) ide/FAQ $(FULLIDELIB)
 
 ###########################################################################
-# Pcoq: special binaries for debugging (coq-interface, parser)
+# Pcoq: special binaries for debugging (coq-interface, coq-parser)
 ###########################################################################
 
 # target to build Pcoq
@@ -464,12 +464,12 @@ bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(INTERFACECMX)
 	$(SHOW)'COQMKTOP -o $@'
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 
-bin/parser$(EXE):$(LIBCOQRUN) $(PARSERCMO)
+bin/coq-parser$(EXE):$(LIBCOQRUN) $(PARSERCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) -custom -linkall $(BYTEFLAGS) -o $@ \
 	  dynlink.cma nums.cma $(LIBCOQRUN) $(CMA) $(PARSERCMO)
 
-bin/parser.opt$(EXE): $(LIBCOQRUN) $(PARSERCMX)
+bin/coq-parser.opt$(EXE): $(LIBCOQRUN) $(PARSERCMX)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall $(OPTFLAGS) -o $@ \
 	  $(LIBCOQRUN) nums.cmxa $(CMXA) $(PARSERCMX)

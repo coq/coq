@@ -148,7 +148,7 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(COQCBYTE) bin/coq-interface$(EXE) bin/parser$(EXE)
+	rm -f $(COQTOPBYTE) $(COQCBYTE) bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 	find . -name '*~' -or -name '*.cm[ioa]' | xargs rm -f
 	find contrib -name '*.vo' -or -name '*.glob' | xargs rm -f
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
@@ -177,7 +177,7 @@ docclean:
 archclean: clean-ide cleantheories
 	rm -f $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
 	rm -f $(COQTOP)  $(COQCOPT) $(COQMKTOPOPT)
-	rm -f bin/parser.opt$(EXE) bin/coq-interface.opt$(EXE)
+	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
 	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' | xargs rm -f
 	rm -f $(TOOLS)
 

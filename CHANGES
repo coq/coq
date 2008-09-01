@@ -423,6 +423,7 @@ Tools
 - New stand-alone .vo files verifier "coqchk".
 - Extended -I coqtop/coqc option to specify a logical dir: "-I dir -as coqdir".
 - New coqtop/coqc option -exclude-dir to exclude subdirs for option -R.
+- The binary "parser" has been renamed to "coq-parser".
 
 Miscellaneous
 

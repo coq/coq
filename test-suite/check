@@ -65,7 +65,7 @@ test_output() {
     done
 }
 
-# La fonction suivante teste l'analyseur syntaxique fournit par "parser"
+# La fonction suivante teste l'analyseur syntaxique fournit par "coq-parser"
 # Elle fonctionne comme test_output
 test_parser() {
     if [ -d $1 ]; then
@@ -74,7 +74,7 @@ test_parser() {
         printf "    "$f"..."
         tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
         foutput=`dirname $f`/`basename $f .v`.out
-        echo "parse_file 1 \"$f\"" | ../bin/parser > $tmpoutput 2>&1
+        echo "parse_file 1 \"$f\"" | ../bin/coq-parser > $tmpoutput 2>&1
         perl -ne 'if(/Starting.*Parser Loop/){$printit = 1};print if $printit' \
             $tmpoutput 2>&1 | grep -i error > /dev/null
         if [ $? = 0 ] ; then
