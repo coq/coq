@@ -172,9 +172,7 @@ let inductive_levels arities inds =
 let constraint_list_union =
   List.fold_left Constraint.union Constraint.empty
 
-let infer_constructor_packet env_ar params lc =
-  (* builds the typing context "Gamma, I1:A1, ... In:An, params" *)
-  let env_ar_par = push_rel_context params env_ar in
+let infer_constructor_packet env_ar_par params lc =
   (* type-check the constructors *)
   let jlc,cstl = List.split (List.map (infer_type env_ar_par) lc) in
   let cst = constraint_list_union cstl in
@@ -194,7 +192,6 @@ let typecheck_inductive env mie =
   if mie.mind_entry_inds = [] then anomaly "empty inductive types declaration";
   (* Check unicity of names *)
   mind_check_names mie;
-  mind_check_arities env mie;
   (* Params are typed-checked here *)
   let env_params, params, cst1 = infer_local_decls env mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
@@ -212,7 +209,9 @@ let typecheck_inductive env mie =
 	 let full_arity = it_mkProd_or_LetIn arity.utj_val params in
 	 let cst = Constraint.union cst cst2 in
 	 let id = ind.mind_entry_typename in
-	 let env_ar' = push_rel (Name id, None, full_arity) env_ar in
+	 let env_ar' =
+           push_rel (Name id, None, full_arity)
+             (add_constraints cst2 env_ar) in
 	 let lev =
 	   (* Decide that if the conclusion is not explicitly Type *)
 	   (* then the inductive type is not polymorphic *)
@@ -225,12 +224,16 @@ let typecheck_inductive env mie =
 
   let arity_list = List.rev rev_arity_list in
 
+  (* builds the typing context "Gamma, I1:A1, ... In:An, params" *)
+  let env_ar_par =
+    push_rel_context params (add_constraints cst1 env_arities) in
+
   (* Now, we type the constructors (without params) *)
   let inds,cst =
     List.fold_right2
       (fun ind arity_data (inds,cst) ->
 	 let (info,lc',cstrs_univ,cst') =
-	   infer_constructor_packet env_arities params ind.mind_entry_lc in
+	   infer_constructor_packet env_ar_par params ind.mind_entry_lc in
 	 let consnames = ind.mind_entry_consnames in
 	 let ind' = (arity_data,consnames,info,lc',cstrs_univ) in
 	 (ind'::inds, Constraint.union cst cst'))
@@ -403,7 +406,7 @@ let array_min nmr a = if nmr = 0 then 0 else
 let check_positivity_one (env, _,ntypes,_ as ienv) hyps i nargs lcnames indlc =
   let lparams = rel_context_length hyps in
   let nmr = rel_context_nhyps hyps in
-  (* check the inductive types occur positively in [c] *)
+  (* Checking the (strict) positivity of a constructor argument type [c] *)
   let rec check_pos (env, n, ntypes, ra_env as ienv) nmr c = 
     let x,largs = decompose_app (whd_betadeltaiota env c) in
       match kind_of_term x with
@@ -426,9 +429,9 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i nargs lcnames indlc =
               with Failure _ | Invalid_argument _ -> (nmr,mk_norec))
 	| Ind ind_kn ->
             (* If the inductive type being defined appears in a
-               parameter, then we have an imbricated type *)
+               parameter, then we have a nested indtype *)
             if List.for_all (noccur_between n ntypes) largs then (nmr,mk_norec)
-            else check_positive_imbr ienv nmr (ind_kn, largs)
+            else check_positive_nested ienv nmr (ind_kn, largs)
 	| err -> 
 	    if noccur_between n ntypes x &&
               List.for_all (noccur_between n ntypes) largs 
@@ -436,7 +439,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i nargs lcnames indlc =
 	    else failwith_non_pos_list n ntypes (x::largs)
 
   (* accesses to the environment are not factorised, but is it worth? *)
-  and check_positive_imbr (env,n,ntypes,ra_env as ienv) nmr (mi, largs) =
+  and check_positive_nested (env,n,ntypes,ra_env as ienv) nmr (mi, largs) =
     let (mib,mip) = lookup_mind_specif env mi in
     let auxnpar = mib.mind_nparams_rec in
     let (lpar,auxlargs) =
@@ -593,7 +596,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
     let consnrealargs =
       Array.map (fun (d,_) -> rel_context_length d - rel_context_length params)
 	splayed_lc in
-      (* Elimination sorts *)
+    (* Elimination sorts *)
     let arkind,kelim = match ar_kind with
       | Inr (param_levels,lev) ->
 	  Polymorphic {
@@ -606,6 +609,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
 		mind_user_arity = ar;
 		mind_sort = s; 
 	      }, kelim in
+    (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in 
     let transf num =
       let arity = List.length (dest_subterms recarg).(num) in
