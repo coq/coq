@@ -195,6 +195,12 @@ let in_whnf (t,stk) =
     | (FFlex _ | FProd _ | FEvar _ | FInd _ | FAtom _ | FRel _) -> true
     | FLOCKED -> assert false
 
+let oracle_order fl1 fl2 =
+  match fl1,fl2 with
+      ConstKey c1, ConstKey c2 -> (*height c1 > height c2*)false
+    | _, ConstKey _ -> true
+    | _ -> false
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv univ cv_pb infos lft1 lft2 term1 term2 = 
   eqappr univ cv_pb infos (lft1, (term1,[])) (lft2, (term2,[]))
@@ -247,6 +253,14 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
         with NotConvertible ->
           (* else the oracle tells which constant is to be expanded *)
           let (app1,app2) =
+            if oracle_order fl1 fl2 then
+              match unfold_reference infos fl1 with
+                | Some def1 -> ((lft1, whd_stack infos def1 v1), appr2)
+                | None ->
+                    (match unfold_reference infos fl2 with
+                      | Some def2 -> (appr1, (lft2, whd_stack infos def2 v2))
+                     | None -> raise NotConvertible)
+            else
 	      match unfold_reference infos fl2 with
                 | Some def2 -> (appr1, (lft2, whd_stack infos def2 v2))
                 | None ->

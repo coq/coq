@@ -191,6 +191,11 @@ let print_usage_channel co command =
 
   -where                 print Coq's standard library location and exit
   -v                     print Coq version and exit
+  -boot                  boot mode
+  -o                     print the list of assumptions
+  -m                     print the maximum heap size
+ 
+  -impredicative-set     set sort Set impredicative
 
   -h, --help             print this list of options
 "
@@ -323,10 +328,9 @@ let parse_args() =
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
     | ("-v"|"--version") :: _ -> version ()
-
+    | "-boot" :: rem -> boot := true; parse rem	
     | ("-m" | "--memory") :: rem -> Check_stat.memory_stat := true; parse rem
-
-    | ("-o" | "-output-context") :: rem ->
+    | ("-o" | "--output-context") :: rem ->
         Check_stat.output_context := true; parse rem
 
     | "-no-hash-consing" :: rem -> Flags.hash_cons_proofs := false; parse rem

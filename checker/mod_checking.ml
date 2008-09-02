@@ -26,7 +26,7 @@ let refresh_arity ar =
 
 let check_constant_declaration env kn cb =
   Flags.if_verbose msgnl (str "  checking cst: " ++ prcon kn);
-  let env = add_constraints cb.const_constraints env in
+(*  let env = add_constraints cb.const_constraints env in*)
   let env' = check_named_ctxt env cb.const_hyps in
   (match cb.const_type with
       NonPolymorphicType ty ->
@@ -46,58 +46,6 @@ let check_constant_declaration env kn cb =
 (************************************************************************)
 (* Checking modules *)
 
-
-let rec add_struct_expr_constraints env = function
-  | SEBident _ -> env
-
-  | SEBfunctor (_,mtb,meb) -> 
-      add_struct_expr_constraints 
-	(add_modtype_constraints env mtb) meb
-
-  | SEBstruct (_,structure_body) ->
-      List.fold_left 
-        (fun env (l,item) -> add_struct_elem_constraints env item)
-        env
-        structure_body
-
-  | SEBapply (meb1,meb2,cst) ->
-(*  let g = Univ.merge_constraints cst Univ.initial_universes in
-msgnl(str"ADDING FUNCTOR APPLICATION CONSTRAINTS:"++fnl()++
-      Univ.pr_universes g++str"============="++fnl());      
-*)
-      Environ.add_constraints cst 
-        (add_struct_expr_constraints 
-	  (add_struct_expr_constraints env meb1) 
-	  meb2)
-  | SEBwith(meb,With_definition_body(_,cb))->
-      Environ.add_constraints cb.const_constraints
-	(add_struct_expr_constraints env meb)
-  | SEBwith(meb,With_module_body(_,_,cst))->
-      Environ.add_constraints cst
-	(add_struct_expr_constraints env meb)	
-		
-and add_struct_elem_constraints env = function 
-  | SFBconst cb -> Environ.add_constraints cb.const_constraints env
-  | SFBmind mib -> Environ.add_constraints mib.mind_constraints env
-  | SFBmodule mb -> add_module_constraints env mb
-  | SFBalias (mp,Some cst) -> Environ.add_constraints cst env
-  | SFBalias (mp,None) -> env
-  | SFBmodtype mtb -> add_modtype_constraints env mtb
-
-and add_module_constraints env mb = 
-  let env = match mb.mod_expr with
-    | None -> env
-    | Some meb -> add_struct_expr_constraints env meb
-  in
-  let env = match mb.mod_type with
-    | None -> env
-    | Some mtb -> 
-	add_struct_expr_constraints env mtb
-  in
-    Environ.add_constraints mb.mod_constraints env
-
-and add_modtype_constraints env mtb = 
-  add_struct_expr_constraints env mtb.typ_expr
 
 exception Not_path
 
@@ -307,19 +255,18 @@ and check_module_type env mty =
   check_alias mty.typ_alias sub
 
 and check_module env mb =
-  let env' = add_module_constraints env mb in
   let sub =
     match mb.mod_expr, mb.mod_type with
       | None, None -> 
 	  anomaly "Mod_typing.translate_module: empty type and expr in module entry"
-      | None, Some mtb -> check_modexpr env' mtb
+      | None, Some mtb -> check_modexpr env mtb
 
       | Some mexpr, _ -> 
-	  let sub1 = check_modexpr env' mexpr in
+	  let sub1 = check_modexpr env mexpr in
 	  (match mb.mod_type with
 	    | None ->  sub1
 	    | Some mte -> 
-		let sub2 = check_modexpr env' mte in
+		let sub2 = check_modexpr env mte in
                 check_subtypes env
 		  {typ_expr = mexpr;
 		   typ_strength = None;
@@ -342,21 +289,22 @@ and check_structure_field (s,env) mp lab = function
       let mp1 = MPdot(mp,lab) in
       let is_fun, sub = Modops.update_subst env msb mp1 in
       ((if is_fun then s else join s sub),
-       Modops.add_module (MPdot(mp,lab)) msb
-         (add_module_constraints env msb))
+       Modops.add_module (MPdot(mp,lab)) msb env)
   | SFBalias(mp2,cst) ->
+      (* cf Safe_typing.add_alias *)
       (try
+        let mp' = MPdot(mp,lab) in
         let mp2' = scrape_alias mp2 env in
-        let msb = lookup_module mp2' env in
-        (join s (add_mp (MPdot(mp,lab)) mp2' msb.mod_alias),
-         Option.fold_right add_constraints cst
-           (register_alias (MPdot(mp,lab)) mp2 env))
+        let _,sub = Modops.update_subst env (lookup_module mp2' env) mp2' in
+        let sub = update_subst sub (map_mp mp' mp2') in
+        let sub = join_alias sub (map_mp mp' mp2') in
+        let sub = add_mp mp' mp2' sub in
+        (join s sub, register_alias mp' mp2 env)
       with Not_found -> failwith "unkown aliased module")
   | SFBmodtype mty ->
       let kn = MPdot(mp, lab) in
       check_module_type env mty;
-      (join s mty.typ_alias,
-       add_modtype kn mty (add_modtype_constraints env mty))
+      (join s mty.typ_alias, add_modtype kn mty env)
 
 and check_modexpr env mse = match mse with
   | SEBident mp ->
@@ -396,3 +344,57 @@ and check_modexpr env mse = match mse with
         List.fold_left (fun env (lab,mb) ->
           check_structure_field env mp lab mb) (empty_subst,env) msb in
       sub
+
+(*
+let rec add_struct_expr_constraints env = function
+  | SEBident _ -> env
+
+  | SEBfunctor (_,mtb,meb) -> 
+      add_struct_expr_constraints 
+	(add_modtype_constraints env mtb) meb
+
+  | SEBstruct (_,structure_body) ->
+      List.fold_left 
+        (fun env (l,item) -> add_struct_elem_constraints env item)
+        env
+        structure_body
+
+  | SEBapply (meb1,meb2,cst) ->
+(*  let g = Univ.merge_constraints cst Univ.initial_universes in
+msgnl(str"ADDING FUNCTOR APPLICATION CONSTRAINTS:"++fnl()++
+      Univ.pr_universes g++str"============="++fnl());      
+*)
+      Environ.add_constraints cst 
+        (add_struct_expr_constraints 
+	  (add_struct_expr_constraints env meb1) 
+	  meb2)
+  | SEBwith(meb,With_definition_body(_,cb))->
+      Environ.add_constraints cb.const_constraints
+	(add_struct_expr_constraints env meb)
+  | SEBwith(meb,With_module_body(_,_,cst))->
+      Environ.add_constraints cst
+	(add_struct_expr_constraints env meb)	
+		
+and add_struct_elem_constraints env = function 
+  | SFBconst cb -> Environ.add_constraints cb.const_constraints env
+  | SFBmind mib -> Environ.add_constraints mib.mind_constraints env
+  | SFBmodule mb -> add_module_constraints env mb
+  | SFBalias (mp,Some cst) -> Environ.add_constraints cst env
+  | SFBalias (mp,None) -> env
+  | SFBmodtype mtb -> add_modtype_constraints env mtb
+
+and add_module_constraints env mb = 
+  let env = match mb.mod_expr with
+    | None -> env
+    | Some meb -> add_struct_expr_constraints env meb
+  in
+  let env = match mb.mod_type with
+    | None -> env
+    | Some mtb -> 
+	add_struct_expr_constraints env mtb
+  in
+    Environ.add_constraints mb.mod_constraints env
+
+and add_modtype_constraints env mtb = 
+  add_struct_expr_constraints env mtb.typ_expr
+*)

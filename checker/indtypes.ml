@@ -19,6 +19,21 @@ open Pp
 open Declarations
 open Environ
 
+let rec debug_string_of_mp = function
+  | MPfile sl -> string_of_dirpath sl
+  | MPbound uid -> "bound("^string_of_mbid uid^")"
+  | MPself uid -> "self("^string_of_msid uid^")"
+  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
+
+let rec string_of_mp = function
+  | MPfile sl -> string_of_dirpath sl
+  | MPbound uid -> string_of_mbid uid
+  | MPself uid -> string_of_msid uid
+  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
+
+let string_of_mp mp =
+  if !Flags.debug then debug_string_of_mp mp else string_of_mp mp
+
 let prkn kn =
   let (mp,_,l) = repr_kn kn in
   str(string_of_mp mp ^ "." ^ string_of_label l)
