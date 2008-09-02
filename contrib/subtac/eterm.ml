@@ -53,10 +53,6 @@ let subst_evar_constr evs n t =
 	       | _, _ -> acc (*failwith "subst_evars: invalid argument"*)
 	  in aux hyps args [] 
 	in
-  	  (try trace (str "Evar " ++ int k ++ str " found, applied to " ++ int (List.length args) ++ str "arguments," ++
-			int (List.length hyps) ++ str " hypotheses" ++ spc () ++
-			pp_list (fun x -> my_print_constr (Global.env ()) x) args);
- 	   with _ -> ());
 	  if List.exists (fun x -> match kind_of_term x with Rel n -> List.mem n fixrels | _ -> false) args then
 	    transparent := Idset.add idstr !transparent;
 	  mkApp (mkVar idstr, Array.of_list args)
@@ -124,9 +120,6 @@ let rec chop_product n t =
 let eterm_obligations env name isevars evm fs t ty = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
-  trace (str " In eterm: isevars: " ++ my_print_evardefs isevars);
-  trace (str "Term given to eterm" ++ spc () ++
-	    Termops.print_constr_env (Global.env ()) t);
   let nc = Environ.named_context env in
   let nc_len = Sign.named_context_length nc in
   let evl = List.rev (to_list evm) in
@@ -146,13 +139,7 @@ let eterm_obligations env name isevars evm fs t ty =
 	 let evtyp, deps, transp = etype_of_evar l hyps ev.evar_concl in
 	 let evtyp, hyps, chop = 
 	   match chop_product fs evtyp with
-	       Some t -> 
-		 (try
-		    trace (str "Choped a product: " ++ spc () ++
-			     Termops.print_constr_env (Global.env ()) evtyp ++ str " to " ++ spc () ++
-			     Termops.print_constr_env (Global.env ()) t);
-		  with _ -> ());
-		 t, trunc_named_context fs hyps, fs
+	   Some t -> t, trunc_named_context fs hyps, fs
 	     | None -> evtyp, hyps, 0
 	 in
 	 let loc, k = evar_source id isevars in
@@ -169,26 +156,8 @@ let eterm_obligations env name isevars evm fs t ty =
   let evars = 
     List.map (fun (_, ((_, name), _, opaque, loc, typ, deps)) -> 
       name, typ, loc, not (opaque = None) && not (Idset.mem name transparent), deps) evts
-  in
-    (try
-       trace (str "Term constructed in eterm" ++ spc () ++
-		Termops.print_constr_env (Global.env ()) t');
-       ignore(iter
-		(fun (name, typ, _, _, deps) ->
-		   trace (str "Evar :" ++ spc () ++ str (string_of_id name) ++
-			    Termops.print_constr_env (Global.env ()) typ))
-		evars);
-     with _ -> ());
-    Array.of_list (List.rev evars), t', ty
+  in Array.of_list (List.rev evars), t', ty
 
 let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
-
-(* let eterm evm t (tycon : types option) =  *)
-(*   let t, tycon, evs = eterm_term evm t tycon in *)
-(*     match tycon with *)
-(* 	Some typ -> Tactics.apply_term (mkCast (t, DEFAULTcast, typ)) [] *)
-(*       | None -> Tactics.apply_term t (mkMetas (List.length evs)) *)
-     
-(* open Tacmach *)
 
 let etermtac (evm, t) = assert(false) (*eterm evm t None *)

@@ -260,19 +260,6 @@ let declare_obligation obl body =
     print_message (Subtac_utils.definition_message obl.obl_name);
     { obl with obl_body = Some (mkConst constant) }
       
-let try_tactics obls = 
-  Array.map
-    (fun obl ->
-       match obl.obl_body with
-	   None ->
-	     (try
-		let ev = evar_of_obligation obl in
-		let c = Subtac_utils.solve_by_tac ev Auto.default_full_auto in	       
-		  declare_obligation obl c		  
-	      with _ -> obl)
-	 | _ -> obl)
-    obls
-        
 let red = Reductionops.nf_betaiota
 
 let init_prog_info n b t deps fixkind notations obls impls kind hook =
