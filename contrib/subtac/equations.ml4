@@ -566,7 +566,7 @@ let term_of_tree isevar env (i, delta, ty) tree =
 			Some (Class_tactics.coq_nat_of_int (length before)),
 			Lazy.force Class_tactics.coq_nat)
 	  in
-	  let ty = it_mkLambda_or_LetIn ty [nbbranches;nbdiscr] in
+	  let ty = it_mkLambda_or_LetIn (lift 2 ty) [nbbranches;nbdiscr] in
 	  let term = e_new_evar isevar env ~src:(dummy_loc, QuestionMark true) ty in
 	    term
 	in       
@@ -650,13 +650,35 @@ let define_by_eqs i l t eqs =
   let isevar = ref (create_evar_defs Evd.empty) in
   let (env', sign), impls = interp_context_evars isevar env l in
   let arity = interp_type_evars isevar env' t in
-  let equations = map (interp_eqn isevar env ([],[]) sign arity) eqs in
+  let is_recursive, fixenv = 
+    let occur_eqn (_, _, rhs) =
+      match rhs with
+      | Program c -> occur_var_constr_expr i c
+      | _ -> false
+    in 
+      if exists occur_eqn eqs then 
+	let ty = it_mkProd_or_LetIn arity sign in
+	let fixenv = push_rel (Name i, None, ty) env in
+	  true, fixenv
+      else false, env
+  in
+  let equations = map (interp_eqn isevar fixenv ([],[]) sign arity) eqs in
   let sign = nf_rel_context_evar (Evd.evars_of !isevar) sign in
   let arity = nf_evar (Evd.evars_of !isevar) arity in
   let prob = (i, sign, arity) in
-  let split = make_split env prob equations in
+  let fixenv = nf_env_evar (Evd.evars_of !isevar) fixenv in
+  let split = make_split fixenv prob equations in
     (* if valid_tree prob split then *)
-  let t, ty = term_of_tree isevar env prob split in
+  let t, ty = term_of_tree isevar fixenv prob split in
+  let t = 
+    if is_recursive then
+      let firstsplit = 
+	match split with
+	| Split (ctx, lhs, rel, indf, unif, sp) -> (length ctx - rel)
+	| _ -> 0
+      in mkFix (([|firstsplit|], 0), ([|Name i|], [|ty|], [|t|]))
+    else t
+  in
   let undef = undefined_evars !isevar in
   let obls, t', ty' = Eterm.eterm_obligations env i !isevar (Evd.evars_of undef) 0 t ty in
     ignore(Subtac_obligations.add_definition i t' ty' obls)

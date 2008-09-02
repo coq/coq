@@ -411,7 +411,7 @@ Ltac simplify_method H := clear H ; simplify_dep_elim ; reverse.
 Ltac solve_method :=
   match goal with
     | [ H := ?body : nat |- _ ] => simplify_method H ; solve_empty body
-    | [ H := ?body |- _ ] => simplify_method H ; try_intros body
+    | [ H := ?body |- _ ] => simplify_method H ; (try intro) ; try_intros body
   end.
 
 (** Impossible cases, by splitting on a given target. *)
@@ -421,9 +421,17 @@ Ltac solve_split :=
     | [ |- let split := ?x : nat in _ ] => intros _ ; solve_empty x
   end.
 
+(** If defining recursive functions, the prototypes come first. *)
+
+Ltac intro_prototypes :=
+  match goal with 
+    | [ |- Π x : _, _ ] => intro ; intro_prototypes
+    | _ => idtac
+  end.
+
 (** The [equations] tactic is the toplevel tactic for solving goals generated
    by [Equations]. *)
 
-Ltac equations := 
-  solve [ solve_split ] || solve [solve_equations solve_method] || fail "Unnexpcted equations goal".
+Ltac equations := intro_prototypes ;
+  solve [solve_equations solve_method] || solve [ solve_split ] || fail "Unnexpcted equations goal".
 
