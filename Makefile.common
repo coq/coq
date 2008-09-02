@@ -810,6 +810,12 @@ CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 ALLVO:= $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 VFILES:= $(ALLVO:.vo=.v)
 
+# convert a (stdlib) filename into a module name:
+# remove .vo, replace theories and contrib by Coq, and replace slashes by dots
+vo_to_mod = $(subst /,.,$(patsubst theories/%,Coq.%,$(patsubst contrib/%,Coq.%,$(1:.vo=))))
+
+ALLMODS:=$(call vo_to_mod,$(ALLVO))
+
 LIBFILES:=$(THEORIESVO) $(CONTRIBVO)
 LIBFILESLIGHT:=$(THEORIESLIGHTVO)
 
@@ -871,7 +877,7 @@ VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
 DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq rectutorial refman-quick refman-nodep stdlib-nodep
 STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \
   coqlight states pcoq-files check init theories theories-light contrib \
-  $(DOC_TARGETS) $(VO_TARGETS)
+  $(DOC_TARGETS) $(VO_TARGETS) validate
 
 
 # For emacs: 

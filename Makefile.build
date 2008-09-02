@@ -496,6 +496,10 @@ install-pcoq-manpages:
 # tests
 ###########################################################################
 
+validate:: $(BESTCHICKEN) $(ALLVO)
+	$(SHOW)'COQCHK <theories & contrib>'
+	$(BESTCHICKEN) -boot -o -m $(ALLMODS)
+
 check:: world
 	cd test-suite; \
 	env COQBIN=../bin COQLIB=.. ./check -$(BEST) | tee check.log
@@ -882,8 +886,8 @@ endif
 	$(HIDE)rm -f $*.glob 
 	$(HIDE)$(BOOTCOQTOP) -compile $*
 ifdef VALIDATE
-	$(SHOW)'COQCHK    $(shell basename $*)'
-	$(HIDE)$(BESTCHICKEN) -silent -norec $(shell basename $*) \
+	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
+	$(HIDE)$(BESTCHICKEN) -boot -silent -norec $(call vo_to_mod,$@) \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 endif
 
