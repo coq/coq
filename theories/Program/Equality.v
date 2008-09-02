@@ -30,7 +30,7 @@ Ltac on_JMeq tac :=
 (** Try to apply [JMeq_eq] to get back a regular equality when the two types are equal. *)
 
 Ltac simpl_one_JMeq :=
-  on_JMeq ltac:(fun H => replace_hyp H (JMeq_eq H)).
+  on_JMeq ltac:(fun H => apply JMeq_eq in H).
 
 (** Repeat it for every possible hypothesis. *)
 
@@ -189,29 +189,29 @@ Ltac simplify_eqs :=
 Ltac simpl_IH_eq H :=
   match type of H with
     | @JMeq _ ?x _ _ -> _ =>
-      refine_hyp (H (JMeq_refl x))
+      specialize (H (JMeq_refl x))
     | _ -> @JMeq _ ?x _ _ -> _ =>
-      refine_hyp (H _ (JMeq_refl x))
+      specialize (H _ (JMeq_refl x))
     | _ -> _ -> @JMeq _ ?x _ _ -> _ =>
-      refine_hyp (H _ _ (JMeq_refl x))
+      specialize (H _ _ (JMeq_refl x))
     | _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
-      refine_hyp (H _ _ _ (JMeq_refl x))
+      specialize (H _ _ _ (JMeq_refl x))
     | _ -> _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
-      refine_hyp (H _ _ _ _ (JMeq_refl x))
+      specialize (H _ _ _ _ (JMeq_refl x))
     | _ -> _ -> _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
-      refine_hyp (H _ _ _ _ _ (JMeq_refl x))
+      specialize (H _ _ _ _ _ (JMeq_refl x))
     | ?x = _ -> _ =>
-      refine_hyp (H (refl_equal x))
+      specialize (H (refl_equal x))
     | _ -> ?x = _ -> _ =>
-      refine_hyp (H _ (refl_equal x))
+      specialize (H _ (refl_equal x))
     | _ -> _ -> ?x = _ -> _ =>
-      refine_hyp (H _ _ (refl_equal x))
+      specialize (H _ _ (refl_equal x))
     | _ -> _ -> _ -> ?x = _ -> _ =>
-      refine_hyp (H _ _ _ (refl_equal x))
+      specialize (H _ _ _ (refl_equal x))
     | _ -> _ -> _ -> _ -> ?x = _ -> _ =>
-      refine_hyp (H _ _ _ _ (refl_equal x))
+      specialize (H _ _ _ _ (refl_equal x))
     | _ -> _ -> _ -> _ -> _ -> ?x = _ -> _ =>
-      refine_hyp (H _ _ _ _ _ (refl_equal x))
+      specialize (H _ _ _ _ _ (refl_equal x))
   end.
 
 Ltac simpl_IH_eqs H := repeat simpl_IH_eq H.
@@ -305,4 +305,125 @@ Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) :
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
   do_depind' ltac:(fun hyp => generalize l ; clear l ; induction hyp using c ; intros) H.
+
+(** Support for the [Equations] command.
+   These tactics implement the necessary machinery to solve goals produced by the 
+   [Equations] command relative to dependent pattern-matching. 
+   It is completely inspired from the "Eliminating Dependent Pattern-Matching" paper by
+   Goguen, McBride and McKinna.
+   
+*)
+
+(** Lemmas used by the simplifier, mainly rephrasings of [eq_rect], [eq_ind]. *)
+
+Lemma solution_left : Π A (B : A -> Type) (t : A), B t -> (Π x, x = t -> B x).
+Proof. intros; subst; assumption. Defined.
+
+Lemma solution_right : Π A (B : A -> Type) (t : A), B t -> (Π x, t = x -> B x).
+Proof. intros; subst; assumption. Defined.
+
+Lemma deletion : Π A B (t : A), B -> (t = t -> B).
+Proof. intros; assumption. Defined.
+
+Lemma simplification_heq : Π A B (x y : A), (x = y -> B) -> (JMeq x y -> B).
+Proof. intros; apply X; apply (JMeq_eq H). Defined.
+
+Lemma simplification_existT : Π A (P : A -> Type) B  (p : A) (x y : P p),
+  (x = y -> B) -> (existT P p x = existT P p y -> B).
+Proof. intros. apply X. apply inj_pair2. exact H. Defined.
+
+(** This hint database and the following tactic can be used with [autosimpl] to 
+   unfold everything to [eq_rect]s. *)
+
+Hint Unfold solution_left solution_right deletion simplification_heq simplification_existT : equations.
+Hint Unfold eq_rect_r eq_rec eq_ind : equations.
+
+(** Simply unfold as much as possible. *)
+
+Ltac unfold_equations := repeat progress autosimpl with equations.
+
+(** The tactic [simplify_equations] is to be used when a program generated using [Equations] 
+   is in the goal. It simplifies it as much as possible, possibly using [K] if needed. *) 
+
+Ltac simplify_equations := repeat (unfold_equations ; simplify_eqs). 
+
+(** Using these we can make a simplifier that will perform the unification 
+   steps needed to put the goal in normalised form (provided there are only
+   constructor forms). Compare with the lemma 16 of the paper.
+   We don't have a [noCycle] procedure yet. *) 
+
+Ltac simplify_one_dep_elim_term c :=
+  match c with
+    | @JMeq ?A ?a ?A ?b -> _ => refine (simplification_heq _ _ _ _ _)
+    | ?t = ?t -> _ => intros _
+    | eq (existT ?P ?p _) (existT ?P ?p _) -> _ => refine (simplification_existT _ _ _ _ _ _ _)
+    | ?f ?x = ?f ?y -> _ => let H := fresh in intros H ; injection H ; clear H
+    | ?x = ?y -> _ =>
+      (let hyp := fresh in intros hyp ; 
+        move dependent hyp before x ; 
+          generalize dependent x ; refine (solution_left _ _ _ _) ; intros until 0) ||
+      (let hyp := fresh in intros hyp ; 
+        move dependent hyp before y ; 
+          generalize dependent y ; refine (solution_right _ _ _ _) ; intros until 0)
+    | ?t = ?u -> _ => let hyp := fresh in
+      intros hyp ; elimtype False ; discriminate
+    | _ => intro
+  end.
+
+Ltac simplify_one_dep_elim :=
+  match goal with
+    | [ |- ?gl ] => simplify_one_dep_elim_term gl
+  end.
+
+(** Repeat until no progress is possible. By construction, it should leave the goal with
+   no remaining equalities generated by the [generalize_eqs] tactic. *)
+
+Ltac simplify_dep_elim := repeat simplify_one_dep_elim.
+
+(** To dependent elimination on some hyp. *)
+
+Ltac depelim id :=
+  generalize_eqs id ; destruct id ; simplify_dep_elim.
+
+(** Do dependent elimination of the last hypothesis, but not simplifying yet
+   (used internally). *)
+
+Ltac destruct_last :=
+  on_last_hyp ltac:(fun id => generalize_eqs id ; destruct id).
+
+(** The rest is support tactics for the [Equations] command. *)
+
+(** Do as much as possible to apply a method, trying to get the arguments right. *)
+
+Ltac try_intros m :=
+  (eapply m ; eauto) || (intro ; try_intros m).
+
+(** To solve a goal by inversion on a particular target. *)
+
+Ltac solve_empty target :=
+  do_nat target intro ; elimtype False ; destruct_last ; simplify_dep_elim.
+
+Ltac simplify_method H := clear H ; simplify_dep_elim ; reverse.
+
+(** Solving a method call: we must refine the goal until the body 
+   can be applied or just solve it by splitting on an empty family member. *)
+    
+Ltac solve_method :=
+  match goal with
+    | [ H := ?body : nat |- _ ] => simplify_method H ; solve_empty body
+    | [ H := ?body |- _ ] => simplify_method H ; try_intros body
+  end.
+
+(** Impossible cases, by splitting on a given target. *)
+
+Ltac solve_split :=
+  match goal with 
+    | [ |- let split := ?x : nat in _ ] => intros _ ; solve_empty x
+  end.
+
+(** The [equations] tactic is the toplevel tactic for solving goals generated
+   by [Equations]. *)
+
+Ltac equations := 
+  solve [ solve_split ] || solve [solve_equations solve_method] || fail "Unnexpcted equations goal".
 

@@ -11,6 +11,19 @@
 (** This module implements various tactics used to simplify the goals produced by Program,
    which are also generally useful. *)
 
+(** The [do] tactic but using a Coq-side nat. *)
+
+Ltac do_nat n tac :=
+  match n with
+    | 0 => idtac
+    | S ?n' => tac ; do_nat n' tac
+  end.
+
+(** Do something on the last hypothesis, or fail *)
+
+Ltac on_last_hyp tac :=
+  match goal with [ H : _ |- _ ] => tac H || fail 1 end.
+
 (** Destructs one pair, without care regarding naming. *)
 
 Ltac destruct_one_pair :=

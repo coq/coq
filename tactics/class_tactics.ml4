@@ -206,8 +206,8 @@ module SearchProblem = struct
       prlist (pr_ev evars) (sig_it gls)
 	
   let filter_tactics (glls,v) l =
-    let glls,nv = apply_tac_list tclNORMEVAR glls in
-    let v p = v (nv p) in
+(*     let glls,nv = apply_tac_list tclNORMEVAR glls in *)
+(*     let v p = v (nv p) in *)
     let rec aux = function
       | [] -> []
       | (tac,pri,pptac) :: tacl -> 
@@ -239,10 +239,16 @@ module SearchProblem = struct
       []
     else      
       let (cut, do_cut, ldb as hdldb) = List.hd s.localdb in
-	if !cut then []
+	if !cut then
+(* 	  let {it=gls; sigma=sigma} = fst s.tacres in *)
+(* 	    msg (str"cut:" ++ pr_ev sigma (List.hd gls) ++ str"\n"); *)
+	    []
 	else begin
-	  Option.iter (fun r -> r := true) do_cut;
 	  let {it=gl; sigma=sigma} = fst s.tacres in 
+	    Option.iter (fun r ->
+(*  	      msg (str"do cut:" ++ pr_ev sigma (List.hd gl) ++ str"\n"); *)
+	      r := true) do_cut;
+	  let gl = List.map (Evarutil.nf_evar_info sigma) gl in
 	  let nbgl = List.length gl in
 	  let g = { it = List.hd gl ; sigma = sigma } in
 	  let new_db, localdb = 
@@ -250,12 +256,14 @@ module SearchProblem = struct
 	      match tl with
 	      | [] -> hdldb, tl
 	      | (cut', do', ldb') :: rest ->
-		  if not (is_dep (Evarutil.nf_evar_info sigma (List.hd gl)) (List.tl gl)) then
+		  if not (is_dep (List.hd gl) (List.tl gl)) then
 		    let fresh = ref false in
-		      if do' = None then 
+		      if do' = None then (
+(*  			msg (str"adding a cut:" ++ pr_ev sigma (List.hd gl) ++ str"\n"); *)
 			(fresh, None, ldb), (cut', Some fresh, ldb') :: rest
-		      else 
-			(cut', None, ldb), tl
+		      ) else (
+(* 			msg (str"keeping the previous cut:" ++ pr_ev sigma (List.hd gl) ++ str"\n"); *)
+			(cut', None, ldb), tl )
 		  else hdldb, tl
 	  in let localdb = new_db :: localdb in
 	  let assumption_tacs = 
@@ -1689,21 +1697,23 @@ let (wit_constrexpr : Genarg.tlevel constr_expr_argtype),
 open Environ
 open Refiner
 
+let typeclass_app t gl =
+  let nprod = nb_prod (pf_concl gl) in
+  let env = pf_env gl in
+  let evars = ref (create_evar_defs (project gl)) in
+  let j = Pretyping.Default.understand_judgment_tcc evars env t in
+  let n = nb_prod j.uj_type - nprod in
+    if n<0 then error "Apply_tc: theorem has not enough premisses.";
+    Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !evars))
+      (fun gl ->
+	let clause = make_clenv_binding_apply gl (Some n) (j.uj_val,j.uj_type) NoBindings in
+	let cl' = evar_clenv_unique_resolver true ~flags:default_unify_flags clause gl in
+	let evd' = Typeclasses.resolve_typeclasses cl'.env ~fail:true cl'.evd in
+	  Clenvtac.clenv_refine true {cl' with evd = evd'} gl) gl
+      
 TACTIC EXTEND apply_typeclasses
-   [ "typeclass_app" raw(t) ] -> [ fun gl ->
-     let nprod = nb_prod (pf_concl gl) in
-     let env = pf_env gl in
-     let evars = ref (create_evar_defs (project gl)) in
-     let j = Pretyping.Default.understand_judgment_tcc evars env t in
-     let n = nb_prod j.uj_type - nprod in
-       if n<0 then error "Apply_tc: theorem has not enough premisses.";
-       Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !evars))
-	 (fun gl ->
-	   let clause = make_clenv_binding_apply gl (Some n) (j.uj_val,j.uj_type) NoBindings in
-	   let cl' = evar_clenv_unique_resolver true ~flags:default_unify_flags clause gl in
-	   let evd' = Typeclasses.resolve_typeclasses cl'.env ~fail:true cl'.evd in
-	     Clenvtac.clenv_refine true {cl' with evd = evd'} gl) gl
-   ]
+   [ "typeclass_app" raw(t) ] -> [ typeclass_app t ]
+(*  | [ "app" raw(t) ] -> [ typeclass_app t ] *)
 END
 
 let rec head_of_constr t =
@@ -1735,6 +1745,7 @@ let freevars c =
 
 let coq_zero =  lazy (gen_constant ["Init"; "Datatypes"] "O")
 let coq_succ =  lazy (gen_constant ["Init"; "Datatypes"] "S")
+let coq_nat =  lazy (gen_constant ["Init"; "Datatypes"] "nat")
 
 let rec coq_nat_of_int = function
   | 0 -> Lazy.force coq_zero

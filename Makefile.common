@@ -309,8 +309,8 @@ SUBTACCMO:=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
   contrib/subtac/subtac_obligations.cmo contrib/subtac/subtac_cases.cmo \
   contrib/subtac/subtac_pretyping_F.cmo contrib/subtac/subtac_pretyping.cmo \
   contrib/subtac/subtac_command.cmo contrib/subtac/subtac_classes.cmo \
-  contrib/subtac/subtac.cmo \
-  contrib/subtac/g_subtac.cmo
+  contrib/subtac/subtac.cmo contrib/subtac/g_subtac.cmo \
+  contrib/subtac/equations.cmo
 
 RTAUTOCMO:=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 	contrib/rtauto/g_rtauto.cmo
