@@ -23,8 +23,7 @@ type section_path = {
   dirpath : string list ;
   basename : string }
 let dir_of_path p =
-  make_dirpath
-    (id_of_string p.basename :: List.map id_of_string p.dirpath)
+  make_dirpath (List.map id_of_string p.dirpath)
 let path_of_dirpath dir = 
   match repr_dirpath dir with
       [] -> failwith "path_of_dirpath"
@@ -166,6 +165,9 @@ let remove_load_path dir =
   load_paths := list_filter2 (fun p d -> p <> dir) !load_paths
 
 let add_load_path (phys_path,coq_path) =
+  if !Flags.debug then
+    msgnl (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
+           str phys_path);
   let phys_path = canonical_path_name phys_path in
     match list_filter2 (fun p d -> p = phys_path) !load_paths with
       | _,[dir] ->
@@ -224,7 +226,7 @@ let locate_qualified_library qid =
       (* Search library in loadpath *)
       if qid.dirpath=[] then get_load_paths ()
       else
-        (* we assume dir is an absolute dirpath *)
+        (* we assume qid is an absolute dirpath *)
         load_paths_of_dir_path (dir_of_path qid)
     in
     if loadpath = [] then raise LibUnmappedDir;

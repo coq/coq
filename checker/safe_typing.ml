@@ -31,7 +31,7 @@ let set_engagement c =
 let full_add_module dp mb digest =
   let env = !genv in
   let mp = MPfile dp in
-  let env = add_module_constraints env mb in
+  let env = add_constraints mb.mod_constraints env in
   let env = Modops.add_module mp mb env in
   genv := add_digest env dp digest
 
@@ -121,7 +121,7 @@ let import file (dp,mb,depends,engmt as vo) digest =
   let env = !genv in
   check_imports msg_warning dp env depends;
   check_engagement env engmt;
-  check_module env mb;
+  check_module (add_constraints mb.mod_constraints env) mb;
   stamp_library file digest;
   (* We drop proofs once checked *)
 (*  let mb = lighten_module mb in*)
