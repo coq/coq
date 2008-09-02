@@ -61,3 +61,24 @@ Check fun (H : For_all (fun x => C (f x))) => H : For_all (fun x => D (f x)).
 
 End Q.
 
+(* Combining class lookup and path lookup so that if a lookup fails, another
+   descent in the class can be found (see wish #1934) *)
+
+Record Setoid : Type :=
+{ car :>  Type }.
+
+Record Morphism (X Y:Setoid) : Type :=
+{evalMorphism :> X -> Y}.
+
+Definition extSetoid (X Y:Setoid) : Setoid.
+intros X Y.
+constructor.
+exact (Morphism X Y).
+Defined.
+
+Definition ClaimA := forall (X Y:Setoid) (f: extSetoid X Y) x, f x= f x.
+
+Coercion irrelevent := (fun _ => I) : True -> car (Build_Setoid True).
+
+Definition ClaimB := forall (X Y:Setoid) (f: extSetoid X Y) (x:X), f x= f x.
+

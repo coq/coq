@@ -52,17 +52,17 @@ val class_info : cl_typ -> (cl_index * cl_info_typ)
 val class_exists : cl_typ -> bool
 val class_info_from_index : cl_index -> cl_typ * cl_info_typ
 
-(* [find_class_type c] returns the head reference of c and its
+(* [find_class_type env sigma c] returns the head reference of [c] and its
    arguments *)
-val find_class_type : constr -> cl_typ * constr list
+val find_class_type : env -> evar_map -> types -> cl_typ * constr list
 
 (* raises [Not_found] if not convertible to a class *)
-val class_of : env -> evar_map -> constr -> constr * cl_index
+val class_of : env -> evar_map -> types -> types * cl_index
 
 (* raises [Not_found] if not mapped to a class *)
 val inductive_class_of : inductive -> cl_index
 
-val class_args_of : constr -> constr list
+val class_args_of : env -> evar_map -> types -> constr list
 
 (*s [declare_coercion] adds a coercion in the graph of coercion paths *)
 val declare_coercion : 
@@ -75,11 +75,16 @@ val coercion_exists : coe_typ -> bool
 val coercion_value : coe_index -> (unsafe_judgment * bool)
 
 (*s Lookup functions for coercion paths *)
-val lookup_path_between : cl_index * cl_index -> inheritance_path
-val lookup_path_to_fun_from : cl_index -> inheritance_path
-val lookup_path_to_sort_from : cl_index -> inheritance_path
-val lookup_pattern_path_between :
-  cl_index * cl_index -> (constructor * int) list
+val lookup_path_between_class : cl_index * cl_index -> inheritance_path
+
+val lookup_path_between : env -> evar_map -> types * types -> 
+      types * types * inheritance_path
+val lookup_path_to_fun_from : env -> evar_map -> types ->
+      types * inheritance_path
+val lookup_path_to_sort_from : env -> evar_map -> types -> 
+      types * inheritance_path
+val lookup_pattern_path_between : 
+  inductive * inductive -> (constructor * int) list
 
 (*i Crade *)
 open Pp

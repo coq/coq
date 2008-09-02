@@ -139,7 +139,7 @@ let get_source lp source =
 	let (cl1,lv1) =
           match lp with
 	    | [] -> raise Not_found
-            | t1::_ -> find_class_type t1
+            | t1::_ -> find_class_type (Global.env()) Evd.empty t1
         in 
 	(cl1,lv1,1)
     | Some cl ->
@@ -147,7 +147,7 @@ let get_source lp source =
 	  | [] -> raise Not_found
 	  | t1::lt ->
 	      try 
-		let cl1,lv1 = find_class_type t1 in
+		let cl1,lv1 = find_class_type (Global.env()) Evd.empty t1 in
 		if cl = cl1 then cl1,lv1,(List.length lt+1)
 		else raise Not_found
               with Not_found -> aux lt
@@ -157,7 +157,7 @@ let get_target t ind =
   if (ind > 1) then 
     CL_FUN
   else 
-    fst (find_class_type t)
+    fst (find_class_type (Global.env()) Evd.empty t)
 
 let prods_of t = 
   let rec aux acc d = match kind_of_term d with
@@ -225,8 +225,9 @@ let build_id_coercion idf_opt source =
     match idf_opt with
       | Some idf -> idf
       | None ->
+	  let cl,_ = find_class_type (Global.env()) Evd.empty t in
 	  id_of_string ("Id_"^(ident_key_of_class source)^"_"^
-                        (ident_key_of_class (fst (find_class_type t)))) 
+                        (ident_key_of_class cl))
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry

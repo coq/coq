@@ -233,6 +233,7 @@ let evar = mkflags [fevar]
 let betaevar = mkflags [fevar; fbeta]
 let betaiota = mkflags [fiota; fbeta]
 let betaiotazeta = mkflags [fiota; fbeta;fzeta]
+let betaiotazetaevar = mkflags [fiota; fbeta;fzeta;fevar]
 
 (* Contextual *)
 let delta = mkflags [fdelta;fevar]
@@ -482,6 +483,12 @@ let whd_betaiotazeta_stack x =
   appterm_of_stack (whd_betaiotazeta_state (x, empty_stack))
 let whd_betaiotazeta x =
   app_stack (whd_betaiotazeta_state (x, empty_stack))
+
+let whd_betaiotazetaevar_state = whd_state_gen betaiotazetaevar
+let whd_betaiotazetaevar_stack env sigma x =
+  appterm_of_stack (whd_betaiotazetaevar_state env sigma (x, empty_stack))
+let whd_betaiotazetaevar env sigma x =
+  app_stack (whd_betaiotazetaevar_state env sigma (x, empty_stack))
 
 let whd_betaiotaevar_state e = whd_state_gen betaiotaevar e
 let whd_betaiotaevar_stack env sigma x =

@@ -13,6 +13,7 @@ install_printer Top_printers.ppkn
 install_printer Top_printers.ppcon
 install_printer Top_printers.ppsp
 install_printer Top_printers.ppqualid
+install_printer Top_printers.ppclindex
 install_printer Top_printers.ppbigint
 
 install_printer Top_printers.pppattern
