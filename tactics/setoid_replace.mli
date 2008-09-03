@@ -64,10 +64,10 @@ val general_s_rewrite :
 val general_s_rewrite_in :
   identifier -> bool -> occurrences -> constr -> new_goals:constr list -> tactic
 
-val setoid_reflexivity : tactic
-val setoid_symmetry : tactic
-val setoid_symmetry_in : identifier -> tactic
-val setoid_transitivity : constr -> tactic
+(* val setoid_reflexivity : tactic *)
+(* val setoid_symmetry : tactic *)
+(* val setoid_symmetry_in : identifier -> tactic *)
+(* val setoid_transitivity : constr -> tactic *)
 
 val add_relation :
  Names.identifier -> constr_expr -> constr_expr -> constr_expr option ->

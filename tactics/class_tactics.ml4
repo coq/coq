@@ -522,10 +522,13 @@ let respect_proj = lazy (mkConst (snd (List.hd (Lazy.force morphism_class).cl_pr
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
-let try_find_reference dir s =
+let try_find_global_reference dir s =
   let sp = Libnames.make_path (make_dir ("Coq"::dir)) (id_of_string s) in
-    constr_of_global (Nametab.absolute_reference sp)
-
+    Nametab.absolute_reference sp
+      
+let try_find_reference dir s =
+  constr_of_global (try_find_global_reference dir s)
+    
 let gen_constant dir s = Coqlib.gen_constant "Class_setoid" dir s
 let coq_proj1 = lazy(gen_constant ["Init"; "Logic"] "proj1")
 let coq_proj2 = lazy(gen_constant ["Init"; "Logic"] "proj2")
@@ -537,13 +540,16 @@ let arrow = lazy (gen_constant ["Program"; "Basics"] "arrow")
 let coq_id = lazy (gen_constant ["Program"; "Basics"] "id")
 
 let reflexive_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Reflexive")
+let reflexive_proof_global = lazy (try_find_global_reference ["Classes"; "RelationClasses"] "reflexivity")
 let reflexive_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "reflexivity")
 
 let symmetric_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Symmetric")
 let symmetric_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "symmetry")
+let symmetric_proof_global = lazy (try_find_global_reference ["Classes"; "RelationClasses"] "symmetry")
 
 let transitive_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Transitive")
 let transitive_proof = lazy (try_find_reference ["Classes"; "RelationClasses"] "transitivity")
+let transitive_proof_global = lazy (try_find_global_reference ["Classes"; "RelationClasses"] "transitivity")
 
 let coq_inverse = lazy (gen_constant (* ["Classes"; "RelationClasses"] "inverse" *)
 			   ["Program"; "Basics"] "flip")
@@ -662,9 +668,9 @@ let find_class_proof proof_type proof_method env evars carrier relation =
       Typeclasses.resolve_one_typeclass env evars goal
   with e when Logic.catchable_exception e -> raise Not_found
 
-let reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
-let symmetric_proof env = find_class_proof symmetric_type symmetric_proof env
-let transitive_proof env = find_class_proof transitive_type transitive_proof env
+let get_reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
+let get_symmetric_proof env = find_class_proof symmetric_type symmetric_proof env
+let get_transitive_proof env = find_class_proof transitive_type transitive_proof env
 
 exception FoundInt of int
 
@@ -831,7 +837,7 @@ let unify_eqn env sigma hypinfo t =
     let res =
       if l2r then (prf, (car, rel, c1, c2))
       else
-	try (mkApp (symmetric_proof env Evd.empty car rel, [| c1 ; c2 ; prf |]), (car, rel, c2, c1))
+	try (mkApp (get_symmetric_proof env Evd.empty car rel, [| c1 ; c2 ; prf |]), (car, rel, c2, c1))
 	with Not_found ->
 	  (prf, (car, inverse car rel, c2, c1))
     in Some (env', res)
@@ -1592,15 +1598,6 @@ let general_s_rewrite_clause x =
 	
 let _ = Equality.register_general_setoid_rewrite_clause general_s_rewrite_clause
 
-(* [setoid_]{reflexivity,symmetry,transitivity} tactics *)
-
-let relation_of_constr c = 
-  match kind_of_term c with
-    | App (f, args) when Array.length args >= 2 -> 
-	let relargs, args = array_chop (Array.length args - 2) args in
-	  mkApp (f, relargs), args
-    | _ -> error "Not an applied relation."
-
 let is_loaded d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
@@ -1610,36 +1607,139 @@ let try_loaded f gl =
   if is_loaded ["Coq";"Classes";"RelationClasses"] then f gl
   else tclFAIL 0 (str"You need to require Coq.Classes.RelationClasses first") gl
 
-let not_declared env ty car rel =
-  tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++ 
-		str ty ++ str" relation on carrier " ++ Printer.pr_constr_env env car)
-    
-let setoid_proof gl ty fn =
-  let env = pf_env gl in
-  let rel, args = relation_of_constr (pf_concl gl) in
-(*   let evd, car = Evarutil.new_evar (create_evar_defs Evd.empty) env (new_Type ()) in 
-let evm = Evd.evars_of evd in*)
-  let evm, car = project gl, pf_type_of gl args.(0) in
-    try fn env evm car rel gl
-    with Not_found -> not_declared env ty car rel gl
+let try_classes t gls = 
+  try t gls
+  with (Pretype_errors.PretypeError _) as e -> raise e
 
-let setoid_reflexivity gl =
-  setoid_proof gl "reflexive" 
-    (fun env evm car rel gl ->
-      apply (reflexive_proof env evm car rel) gl)
-	  
-let setoid_symmetry gl =
-  setoid_proof gl "symmetric" 
-    (fun env evm car rel gl ->
-      apply (symmetric_proof env evm car rel) gl)
+TACTIC EXTEND try_classes
+  [ "try_classes" tactic(t) ] -> [ try_classes (snd t) ]
+END
+
+open Rawterm
+open Environ
+open Refiner
+
+let typeclass_app evm gl ?(bindings=NoBindings) c ty =
+  let nprod = nb_prod (pf_concl gl) in
+  let n = nb_prod ty - nprod in
+    if n<0 then error "Apply_tc: theorem has not enough premisses.";
+    Refiner.tclTHEN (Refiner.tclEVARS evm)
+      (fun gl ->
+	let clause = make_clenv_binding_apply gl (Some n) (c,ty) bindings in
+	let cl' = evar_clenv_unique_resolver true ~flags:default_unify_flags clause gl in
+	let evd' = Typeclasses.resolve_typeclasses cl'.env ~fail:true cl'.evd in
+	  tclTHEN (Clenvtac.clenv_refine true {cl' with evd = evd'})
+	    tclNORMEVAR gl) gl
+
+open Tacinterp
+open Pretyping
+
+let my_ist =
+  { lfun = [];
+    avoid_ids = [];
+    debug = Tactic_debug.DebugOff;
+    trace = [] }
+
+let rawconstr_and_expr (evd, c) = c
+  
+let rawconstr_and_expr_of_rawconstr_bindings = function
+  | NoBindings -> NoBindings
+  | ImplicitBindings l -> ImplicitBindings (List.map rawconstr_and_expr l)
+  | ExplicitBindings l -> ExplicitBindings (List.map (fun (l,b,c) -> (l,b,rawconstr_and_expr c)) l)
+      
+let my_glob_sign sigma env = {
+  ltacvars = [], [] ;
+  ltacrecvars = [];
+  gsigma = sigma ;
+  genv = env }
+
+let typeclass_app_constrexpr t ?(bindings=NoBindings) gl =
+  let env = pf_env gl in
+  let evars = ref (create_evar_defs (project gl)) in
+  let gs = my_glob_sign (project gl) env in
+  let t', bl = Tacinterp.intern_constr_with_bindings gs (t,bindings) in
+  let j = Pretyping.Default.understand_judgment_tcc evars env (fst t') in
+  let bindings = Tacinterp.interp_bindings my_ist gl bl in
+    typeclass_app (Evd.evars_of !evars) gl ~bindings:bindings j.uj_val j.uj_type
+
+let typeclass_app_raw t gl =
+  let env = pf_env gl in
+  let evars = ref (create_evar_defs (project gl)) in
+  let j = Pretyping.Default.understand_judgment_tcc evars env t in
+    typeclass_app (Evd.evars_of !evars) gl j.uj_val j.uj_type
+
+let pr_gen prc _prlc _prtac c = prc c
+
+let pr_ceb _prc _prlc _prtac raw = mt ()
+
+let interp_constr_expr_bindings _ _ t = t
+
+let intern_constr_expr_bindings ist t = t
+
+open Pcoq.Tactic
+
+type constr_expr_bindings = constr_expr with_bindings
+
+ARGUMENT EXTEND constr_expr_bindings
+    TYPED AS constr_expr_bindings
+    PRINTED BY pr_ceb
+     
+     INTERPRETED BY interp_constr_expr_bindings	
+    GLOBALIZED BY intern_constr_expr_bindings
+
+     
+  [ constr_with_bindings(c) ] -> [ c ]
+END
+
+TACTIC EXTEND apply_typeclasses
+[ "typeclass_app" constr_expr_bindings(t) ] -> [ typeclass_app_constrexpr (fst t) ~bindings:(snd t) ]
+END
+TACTIC EXTEND apply_typeclasses_abbrev
+[ "tcapp" raw(t) ] -> [ typeclass_app_raw t ]
+END
+
+(* [setoid_]{reflexivity,symmetry,transitivity} tactics *)
+
+let not_declared env ty rel =
+  tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++ 
+		str ty ++ str" relation. Maybe you need to import the Setoid library.")
+
+let relation_of_constr env c = 
+  match kind_of_term c with
+    | App (f, args) when Array.length args >= 2 -> 
+	let relargs, args = array_chop (Array.length args - 2) args in
+	  mkApp (f, relargs), args
+    | _ -> errorlabstrm "relation_of_constr" 
+	(str "The term " ++ Printer.pr_constr_env env c ++ str" is not an applied relation.")
 	
-let setoid_transitivity c gl =
-  setoid_proof gl "transitive" 
-    (fun env evm car rel gl ->
-      apply_with_bindings
-	((transitive_proof env evm car rel),
-	Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp (id_of_string "y"), c ]) gl)
+let setoid_proof gl ty ?(bindings=NoBindings) meth fallback =
+  try
+    typeclass_app_constrexpr 
+      (CRef (Qualid (dummy_loc, Nametab.shortest_qualid_of_global Idset.empty
+	(Lazy.force meth)))) ~bindings gl
+  with Not_found | Typeclasses_errors.TypeClassError (_, _) |
+      Ploc.Exc (_, Typeclasses_errors.TypeClassError (_, _)) -> 
+	match fallback gl with 
+	| Some tac -> tac gl
+	| None ->
+	    let env = pf_env gl in
+	    let rel, args = relation_of_constr env (pf_concl gl) in
+	      not_declared env ty rel gl
+      
+let setoid_reflexivity gl =
+  setoid_proof gl "reflexive" reflexive_proof_global (reflexivity_red true)
     
+let setoid_symmetry gl =
+  setoid_proof gl "symmetric" symmetric_proof_global (symmetry_red true)
+    
+let setoid_transitivity c gl =
+  let binding_name = 
+    next_ident_away (id_of_string "y") (ids_of_named_context (named_context (pf_env gl))) 
+  in
+    setoid_proof gl "transitive" 
+      ~bindings:(Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp binding_name, constrIn c ])
+      transitive_proof_global (transitivity_red true c)
+
 let setoid_symmetry_in id gl =
   let ctype = pf_type_of gl (mkVar id) in
   let binders,concl = Sign.decompose_prod_assum ctype in
@@ -1669,51 +1769,11 @@ TACTIC EXTEND setoid_symmetry
 END
 
 TACTIC EXTEND setoid_reflexivity
-   [ "setoid_reflexivity" ] -> [ setoid_reflexivity ]
+[ "setoid_reflexivity" ] -> [ setoid_reflexivity ]
 END
 
 TACTIC EXTEND setoid_transitivity
-   [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
-END
-
-let try_classes t gls = 
-  try t gls
-  with (Pretype_errors.PretypeError _) as e -> raise e
-
-TACTIC EXTEND try_classes
-  [ "try_classes" tactic(t) ] -> [ try_classes (snd t) ]
-END
-
-open Rawterm
-
-let constrexpr = Pcoq.Tactic.open_constr
-type 'a constr_expr_argtype = (open_constr_expr, 'a) Genarg.abstract_argument_type
-
-let (wit_constrexpr : Genarg.tlevel constr_expr_argtype),
-  (globwit_constrexpr : Genarg.glevel constr_expr_argtype),
-  (rawwit_const_expr : Genarg.rlevel constr_expr_argtype) =
-  Genarg.create_arg "constrexpr"
-			    
-open Environ
-open Refiner
-
-let typeclass_app t gl =
-  let nprod = nb_prod (pf_concl gl) in
-  let env = pf_env gl in
-  let evars = ref (create_evar_defs (project gl)) in
-  let j = Pretyping.Default.understand_judgment_tcc evars env t in
-  let n = nb_prod j.uj_type - nprod in
-    if n<0 then error "Apply_tc: theorem has not enough premisses.";
-    Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !evars))
-      (fun gl ->
-	let clause = make_clenv_binding_apply gl (Some n) (j.uj_val,j.uj_type) NoBindings in
-	let cl' = evar_clenv_unique_resolver true ~flags:default_unify_flags clause gl in
-	let evd' = Typeclasses.resolve_typeclasses cl'.env ~fail:true cl'.evd in
-	  Clenvtac.clenv_refine true {cl' with evd = evd'} gl) gl
-      
-TACTIC EXTEND apply_typeclasses
-   [ "typeclass_app" raw(t) ] -> [ typeclass_app t ]
-(*  | [ "app" raw(t) ] -> [ typeclass_app t ] *)
+[ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
 END
 
 let rec head_of_constr t =

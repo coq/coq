@@ -2794,12 +2794,15 @@ let reflexivity_red allowred gl =
   let concl = if not allowred then pf_concl gl
   else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
   in 
-  match match_with_equation concl with
-    | None -> !setoid_reflexivity gl
-    | Some _ -> one_constructor 1 NoBindings gl
+    match match_with_equation concl with
+    | None -> None
+    | Some _ -> Some (one_constructor 1 NoBindings)
 
-let reflexivity gl = reflexivity_red false gl
-
+let reflexivity gl = 
+  match reflexivity_red false gl with
+  | None -> !setoid_reflexivity gl
+  | Some tac -> tac gl
+      
 let intros_reflexivity  = (tclTHEN intros reflexivity)
 
 (* Symmetry tactics *)
@@ -2819,9 +2822,9 @@ let symmetry_red allowred gl =
   let concl = if not allowred then pf_concl gl
   else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
   in 
-  match match_with_equation concl with
-    | None -> !setoid_symmetry gl
-    | Some (hdcncl,args) ->
+    match match_with_equation concl with
+    | None -> None
+    | Some (hdcncl,args) -> Some (fun gl ->
         let hdcncls = string_of_inductive hdcncl in
         begin 
 	  try 
@@ -2839,9 +2842,12 @@ let symmetry_red allowred gl =
 		  tclLAST_HYP simplest_case;
 		  one_constructor 1 NoBindings ])
 	      gl
-	end
+	end)
 
-let symmetry gl = symmetry_red false gl
+let symmetry gl = 
+  match symmetry_red false gl with
+  | None -> !setoid_symmetry gl
+  | Some tac -> tac gl
 
 let setoid_symmetry_in = ref (fun _ _ -> assert false)
 let register_setoid_symmetry_in f = setoid_symmetry_in := f
@@ -2891,8 +2897,8 @@ let transitivity_red allowred t gl =
   else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
   in 
   match match_with_equation concl with
-    | None -> !setoid_transitivity t gl
-    | Some (hdcncl,args) -> 
+    | None -> None
+    | Some (hdcncl,args) -> Some (fun gl ->
         let hdcncls = string_of_inductive hdcncl in
         begin
 	  try 
@@ -2916,10 +2922,13 @@ let transitivity_red allowred t gl =
 		  [ tclDO 2 intro;
 		    tclLAST_HYP simplest_case;
 		    assumption ])) gl
-        end 
+        end)
 
-let transitivity t gl = transitivity_red false t gl
-
+let transitivity t gl =
+  match transitivity_red false t gl with
+  | None -> !setoid_transitivity t gl
+  | Some tac -> tac gl
+      
 let intros_transitivity  n  = tclTHEN intros (transitivity n)
 
 (* tactical to save as name a subproof such that the generalisation of 

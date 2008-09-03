@@ -69,7 +69,7 @@ Program Instance flip_Irreflexive [ Irreflexive A R ] : Irreflexive (flip R) :=
 
 Program Instance flip_Symmetric [ Symmetric A R ] : Symmetric (flip R).
 
-  Solve Obligations using unfold flip ; program_simpl ; typeclass_app Symmetric.
+  Solve Obligations using unfold flip ; intros ; tcapp symmetry ; assumption.
 
 Program Instance flip_Asymmetric [ Asymmetric A R ] : Asymmetric (flip R).
   
