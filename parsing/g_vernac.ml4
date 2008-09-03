@@ -46,6 +46,7 @@ let noedit_mode = Gram.Entry.create "vernac:noedit_command"
 let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
 let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
+let decl_notation = Gram.Entry.create "vernac:decl_notation"
 let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
 let of_type_with_opt_coercion = Gram.Entry.create "vernac:of_type_with_opt_coercion"
 
@@ -119,7 +120,7 @@ let no_coercion loc (c,x) =
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    typeclass_context typeclass_constraint;
+    typeclass_context typeclass_constraint decl_notation;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)

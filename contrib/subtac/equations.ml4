@@ -579,7 +579,7 @@ open Topconstr
 open Constrintern
 open Decl_kinds
 
-type equation = identifier located * constr_expr list * (constr_expr, identifier located) rhs
+type equation = constr_expr * (constr_expr, identifier located) rhs
 
 let locate_reference qid =
   match Nametab.extended_locate qid with
@@ -612,9 +612,10 @@ let ids_of_patc c ?(bound=Idset.empty) l =
 	fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
     | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
   in aux bound l c
-    
-let interp_pats isevar env impls pats sign =
-  let vars = fold_left (fun acc patc -> ids_of_patc patc acc) [] pats in
+
+let interp_pats i isevar env impls pat sign recu =
+  let bound = Idset.singleton i in
+  let vars = ids_of_patc pat ~bound [] in
   let varsctx, env' = 
     fold_right (fun (loc, id) (ctx, env) ->
       let decl =
@@ -624,19 +625,21 @@ let interp_pats isevar env impls pats sign =
 	decl::ctx, push_rel decl env)
       vars ([], env)
   in
-  let patcs = 
-    fold_left2 (fun subst pat (_, _, ty) -> 
-      let ty = substl subst ty in
-	interp_casted_constr_evars isevar env' ~impls pat ty :: subst)
-      [] pats (List.rev sign)
+  let pats =
+    let patenv = match recu with None -> env' | Some ty -> push_named (i, None, ty) env' in
+    let patt, _ = interp_constr_evars_impls ~evdref:isevar patenv ~impls:([],[]) pat in
+      match kind_of_term patt with
+      | App (m, args) -> Array.to_list args
+      | _ -> user_err_loc (constr_loc pat, "interp_pats",
+			  str "Error parsing pattern: unnexpected left-hand side")
   in
     isevar := nf_evar_defs !isevar;
     (nf_rel_context_evar (Evd.evars_of !isevar) varsctx, 
     nf_env_evar (Evd.evars_of !isevar) env',
-    map (nf_evar (Evd.evars_of !isevar)) patcs)
+    rev_map (nf_evar (Evd.evars_of !isevar)) pats)
       
-let interp_eqn isevar env impls sign arity (idl, pats, rhs) =
-  let ctx, env', patcs = interp_pats isevar env impls pats sign in
+let interp_eqn i isevar env impls sign arity recu (pats, rhs) =
+  let ctx, env', patcs = interp_pats i isevar env impls pats sign recu in
   let rhs' = match rhs with
     | Program p -> 
 	Program (interp_casted_constr_evars isevar env' ~impls p (substl patcs arity))
@@ -645,31 +648,34 @@ let interp_eqn isevar env impls sign arity (idl, pats, rhs) =
 
 open Entries
 
-let define_by_eqs i l t eqs =
+let define_by_eqs i l t nt eqs =
   let env = Global.env () in
   let isevar = ref (create_evar_defs Evd.empty) in
   let (env', sign), impls = interp_context_evars isevar env l in
   let arity = interp_type_evars isevar env' t in
-  let is_recursive, fixenv = 
-    let occur_eqn (_, _, rhs) =
-      match rhs with
-      | Program c -> occur_var_constr_expr i c
-      | _ -> false
-    in 
-      if exists occur_eqn eqs then 
-	let ty = it_mkProd_or_LetIn arity sign in
-	let fixenv = push_rel (Name i, None, ty) env in
-	  true, fixenv
-      else false, env
+  let ty = it_mkProd_or_LetIn arity sign in
+  let data = Command.compute_interning_datas env [] [i] [ty] [impls] in
+  let fixenv = push_rel (Name i, None, ty) env in
+  let equations = 
+    States.with_heavy_rollback (fun () -> 
+      Option.iter (Command.declare_interning_data data) nt;
+      map (interp_eqn i isevar fixenv data sign arity None) eqs) ()
   in
-  let equations = map (interp_eqn isevar fixenv ([],[]) sign arity) eqs in
   let sign = nf_rel_context_evar (Evd.evars_of !isevar) sign in
   let arity = nf_evar (Evd.evars_of !isevar) arity in
   let prob = (i, sign, arity) in
   let fixenv = nf_env_evar (Evd.evars_of !isevar) fixenv in
-  let split = make_split fixenv prob equations in
+  let ce = check_evars fixenv Evd.empty !isevar in
+  let is_recursive, env' =
+    let occur_eqn (ctx, _, rhs) =
+      match rhs with
+      | Program c -> dependent (mkRel (succ (length ctx))) c
+      | _ -> false
+    in if exists occur_eqn equations then true, fixenv else false, env
+  in
+  let split = make_split env' prob equations in
     (* if valid_tree prob split then *)
-  let t, ty = term_of_tree isevar fixenv prob split in
+  let t, ty = term_of_tree isevar env' prob split in
   let t = 
     if is_recursive then
       let firstsplit = 
@@ -681,7 +687,7 @@ let define_by_eqs i l t eqs =
   in
   let undef = undefined_evars !isevar in
   let obls, t', ty' = Eterm.eterm_obligations env i !isevar (Evd.evars_of undef) 0 t ty in
-    ignore(Subtac_obligations.add_definition i t' ty' obls)
+    ignore(Subtac_obligations.add_definition ~implicits:impls i t' ty' obls)
       
 module Gram = Pcoq.Gram
 module Vernac = Pcoq.Vernac_
@@ -694,6 +700,9 @@ struct
   let deppat_equations : equation list Gram.Entry.e = gec "deppat_equations"
 
   let binders_let2 : local_binder list Gram.Entry.e = gec "binders_let2"
+
+(*   let where_decl : decl_notation Gram.Entry.e = gec "where_decl" *)
+
 end
 
 open Rawterm
@@ -702,6 +711,7 @@ open Util
 open Pcoq
 open Prim
 open Constr
+open G_vernac
 
 GEXTEND Gram
   GLOBAL: (* deppat_gallina_loc *) deppat_equations binders_let2;
@@ -715,11 +725,7 @@ GEXTEND Gram
   ;
 
   equation:
-    [ [ c = Constr.lconstr; r=rhs ->
-      match c with
-      | CApp (loc, (None, CRef (Ident lid)), l) ->
-	  (lid, List.map fst l, r)
-      | _ -> error "Error parsing equation" ] ]
+    [ [ c = Constr.lconstr; r=rhs -> (c, r) ] ]
   ;
 
   rhs:
@@ -744,10 +750,19 @@ let (wit_binders_let2 : Genarg.tlevel binders_let2_argtype),
   (rawwit_binders_let2 : Genarg.rlevel binders_let2_argtype) =
   Genarg.create_arg "binders_let2"
 
+type 'a decl_notation_argtype = (Vernacexpr.decl_notation, 'a) Genarg.abstract_argument_type
+
+let (wit_decl_notation : Genarg.tlevel decl_notation_argtype),
+  (globwit_decl_notation : Genarg.glevel decl_notation_argtype),
+  (rawwit_decl_notation : Genarg.rlevel decl_notation_argtype) =
+  Genarg.create_arg "decl_notation"
+
+
 
 VERNAC COMMAND EXTEND Define_equations
-| [ "Equations" ident(i) binders_let2(l) ":" lconstr(t) ":=" deppat_equations(eqs) ] ->
-    [ define_by_eqs i l t eqs ]
+| [ "Equations" ident(i) binders_let2(l) ":" lconstr(t) ":=" deppat_equations(eqs)
+      decl_notation(nt) ] ->
+    [ define_by_eqs i l t nt eqs ]
 END
 
 open Tacmach

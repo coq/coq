@@ -389,7 +389,7 @@ Ltac depelim id :=
    (used internally). *)
 
 Ltac destruct_last :=
-  on_last_hyp ltac:(fun id => generalize_eqs id ; destruct id).
+  on_last_hyp ltac:(fun id => simpl in id ; generalize_eqs id ; destruct id).
 
 (** The rest is support tactics for the [Equations] command. *)
 
