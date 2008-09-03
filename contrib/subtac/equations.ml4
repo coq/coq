@@ -666,6 +666,7 @@ let define_by_eqs i l t nt eqs =
   let prob = (i, sign, arity) in
   let fixenv = nf_env_evar (Evd.evars_of !isevar) fixenv in
   let ce = check_evars fixenv Evd.empty !isevar in
+  List.iter (function (_, _, Program rhs) -> ce rhs | _ -> ()) equations;
   let is_recursive, env' =
     let occur_eqn (ctx, _, rhs) =
       match rhs with

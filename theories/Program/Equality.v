@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -408,10 +407,10 @@ Ltac simplify_method H := clear H ; simplify_dep_elim ; reverse.
 (** Solving a method call: we must refine the goal until the body 
    can be applied or just solve it by splitting on an empty family member. *)
     
-Ltac solve_method :=
+Ltac solve_method rec :=
   match goal with
     | [ H := ?body : nat |- _ ] => simplify_method H ; solve_empty body
-    | [ H := ?body |- _ ] => simplify_method H ; (try intro) ; try_intros body
+    | [ H := ?body |- _ ] => simplify_method H ; rec ; try_intros body
   end.
 
 (** Impossible cases, by splitting on a given target. *)
@@ -429,9 +428,19 @@ Ltac intro_prototypes :=
     | _ => idtac
   end.
 
+Ltac nonrec_equations := 
+  solve [solve_equations (solve_method idtac)] || solve [ solve_split ]
+    || fail "Unnexpected equations goal".
+
+Ltac recursive_equations :=
+  solve [solve_equations (solve_method ltac:intro)] || solve [ solve_split ] 
+    || fail "Unnexpected recursive equations goal".
+
 (** The [equations] tactic is the toplevel tactic for solving goals generated
    by [Equations]. *)
 
-Ltac equations := intro_prototypes ;
-  solve [solve_equations solve_method] || solve [ solve_split ] || fail "Unnexpcted equations goal".
-
+Ltac equations :=
+  match goal with 
+    | [ |- Π x : _, _ ] => intro ; recursive_equations
+    | _ => nonrec_equations
+  end.
