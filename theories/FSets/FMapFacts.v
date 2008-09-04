@@ -975,7 +975,7 @@ Module WProperties (E:DecidableType)(M:WSfun E).
    fold (fun k e b => if f k e then true else b) m false.
 
   Definition partition (f : key -> elt -> bool)(m : t elt) := 
-   (filter f m, filter (fun k e => negb (f k e))).
+   (filter f m, filter (fun k e => negb (f k e)) m).
 
   Section Specs.
   Variable f : key -> elt -> bool.
