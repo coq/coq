@@ -110,30 +110,39 @@ module Constr_map = Map.Make(struct
 			       let compare = Pervasives.compare 
 			     end)
 
+let is_transparent_gr (ids, csts) = function
+  | VarRef id -> Idpred.mem id ids
+  | ConstRef cst -> Cpred.mem cst csts
+  | IndRef _ | ConstructRef _ -> false
+      
 module Hint_db = struct
 
   type t = { 
     hintdb_state : Names.transparent_state;
     use_dn : bool;
-    hintdb_map : search_entry Constr_map.t
+    hintdb_map : search_entry Constr_map.t;
+    (* A list of unindexed entries starting with an unfoldable constant. *)
+    hintdb_transp : stored_data list
   }
 
   let empty st use_dn = { hintdb_state = st;
 			  use_dn = use_dn;
-			  hintdb_map = Constr_map.empty }
+			  hintdb_map = Constr_map.empty;
+			  hintdb_transp = [] }
     
   let find key db =
     try Constr_map.find key db.hintdb_map
     with Not_found -> empty_se
-
+      
   let map_all k db =
     let (l,l',_) = find k db in
-      Sort.merge pri_order l l'
+      Sort.merge pri_order (db.hintdb_transp @ l) l'
    
   let map_auto (k,c) db =
     let st = if db.use_dn then Some db.hintdb_state else None in
-      lookup_tacs (k,c) st (find k db)
-
+    let l' = lookup_tacs (k,c) st (find k db) in
+      Sort.merge pri_order db.hintdb_transp l'
+	
   let is_exact = function 
     | Give_exact _ -> true
     | _ -> false
@@ -153,7 +162,14 @@ module Hint_db = struct
     in
     let dnst, db = 
       if db.use_dn then
-	(Some st', if rebuild then rebuild_db st' db else db)
+	let db' = 
+	  if rebuild then rebuild_db st' db
+	  else (* not an unfold *)
+	    if is_transparent_gr st' k && not (List.mem v db.hintdb_transp) then
+	      { db with hintdb_transp = v :: db.hintdb_transp } 
+	  else db 
+	in
+	  (Some st', db')
       else None, db
     in
     let oval = find k db in
@@ -170,6 +186,8 @@ module Hint_db = struct
   let set_transparent_state db st =
     let db = if db.use_dn then rebuild_db st db else db in
       { db with hintdb_state = st }
+
+  let use_dn db = db.use_dn
 	
 end
 

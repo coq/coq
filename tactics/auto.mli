@@ -55,6 +55,7 @@ module Hint_db :
     val add_list : (global_reference * pri_auto_tactic) list -> t -> t
     val iter : (global_reference -> stored_data list -> unit) -> t -> unit
 
+    val use_dn : t -> bool
     val transparent_state : t -> transparent_state
     val set_transparent_state : t -> transparent_state -> t
   end

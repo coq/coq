@@ -124,8 +124,12 @@ and e_my_find_search db_list local_db hdc concl =
   let hintl =
     list_map_append
       (fun db -> 
-	let flags = flags_of_state (Hint_db.transparent_state db) in
-	  List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db))
+	if Hint_db.use_dn db then 
+	  let flags = flags_of_state (Hint_db.transparent_state db) in
+	    List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db)
+	else
+	  let flags = flags_of_state (Hint_db.transparent_state db) in
+	    List.map (fun x -> (flags, x)) (Hint_db.map_all hdc db))
       (local_db::db_list)
   in 
   let tac_of_hint = 
@@ -266,18 +270,6 @@ module SearchProblem = struct
 			(cut', None, ldb), tl )
 		  else hdldb, tl
 	  in let localdb = new_db :: localdb in
-	  let assumption_tacs = 
-	    let l = 
-	      filter_tactics s.tacres
-		(List.map 
-		    (fun id -> (Eauto.e_give_exact_constr (mkVar id), 0,
-			       (str "exact" ++ spc () ++ pr_id id)))
-		    (List.filter (fun id -> filter_hyp (pf_get_hyp_typ g id))
-			(pf_ids_of_hyps g)))
-	    in
-	      List.map (fun (res,pri,pp) -> { s with tacres = res; pri = 0;
-		last_tactic = pp; localdb = List.tl s.localdb }) l
-	  in
 	  let intro_tac =
 	    List.map
 	      (fun ((lgls,_) as res,pri,pp) ->
@@ -311,7 +303,7 @@ module SearchProblem = struct
 	    in
 	      List.map possible_resolve l
 	  in
-	    List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
+	    List.sort compare (intro_tac @ rec_tacs)
 	end
 	  
   let pp s = 
@@ -343,11 +335,31 @@ let e_breadth_search debug s =
     in let s = tac s in s.tacres
   with Not_found -> error "eauto: breadth first search failed."
 
+
+(* A special one for getting everything into a dnet. *)
+
+let is_transparent_gr (ids, csts) = function
+  | VarRef id -> Idpred.mem id ids
+  | ConstRef cst -> Cpred.mem cst csts
+  | IndRef _ | ConstructRef _ -> false
+
+let make_local_hint_db st eapply lems g =
+  let sign = pf_hyps g in
+  let make_resolve_hyp env evar_map c = 
+    try 
+      let res = make_resolves env evar_map (eapply, false) None (mkVar c) in
+	List.filter (fun (gr, _) -> not (is_transparent_gr st gr)) res
+    with _ -> []
+  in
+  let hintlist = list_map_append (pf_apply make_resolve_hyp g) (ids_of_named_context sign) in
+  let hintlist' = list_map_append (pf_apply make_resolves g (eapply,false) None) lems in
+    Hint_db.add_list hintlist' (Hint_db.add_list hintlist (Hint_db.empty st true))
+
 let e_search_auto debug (in_depth,p) lems st db_list gls = 
   let sigma = Evd.sig_sig (fst gls) and gls' = Evd.sig_it (fst gls) in
   let local_dbs = List.map (fun gl -> 
-    let db = make_local_hint_db true lems ({it = gl; sigma = sigma}) in
-      (ref false, None, Hint_db.set_transparent_state db st)) gls' in
+    let db = make_local_hint_db st true lems ({it = gl; sigma = sigma}) in
+      (ref false, None, db)) gls' in
   let state = make_initial_state p gls db_list local_dbs in
   if in_depth then 
     e_depth_search debug state
@@ -358,7 +370,8 @@ let full_eauto debug n lems gls =
   let dbnames = current_db_names () in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
-    e_search_auto debug n lems empty_transparent_state db_list gls
+  let db = searchtable_map typeclasses_db in
+    e_search_auto debug n lems (Hint_db.transparent_state db) db_list gls
 
 let nf_goal (gl, valid) =
   { gl with sigma = Evarutil.nf_evars gl.sigma }, valid
@@ -1811,7 +1824,7 @@ let rec coq_nat_of_int = function
   | 0 -> Lazy.force coq_zero
   | n -> mkApp (Lazy.force coq_succ, [| coq_nat_of_int (pred n) |])
 
-let varify_constr ty def varh c =
+let varify_constr_list ty def varh c =
   let vars = Idset.elements (freevars c) in
   let mkaccess i = 
     mkApp (Lazy.force coq_List_nth,
@@ -1826,9 +1839,60 @@ let varify_constr ty def varh c =
   in
     l, replace_vars subst c
 
+let coq_varmap_empty =  lazy (gen_constant ["ring"; "Quote"] "Empty_vm")
+let coq_varmap_node =  lazy (gen_constant ["ring"; "Quote"] "Node_vm")
+(*  | Node_vm : A -> varmap -> varmap -> varmap. *)
+  
+let coq_varmap_lookup =  lazy (gen_constant ["ring"; "Quote"] "varmap_find")
+
+let coq_index_left =  lazy (gen_constant ["ring"; "Quote"] "Left_idx")
+let coq_index_right =  lazy (gen_constant ["ring"; "Quote"] "Right_idx")
+let coq_index_end =  lazy (gen_constant ["ring"; "Quote"] "End_idx")
+
+let rec split_interleaved l r = function
+  | hd :: hd' :: tl' ->
+      split_interleaved (hd :: l) (hd' :: r) tl'
+  | hd :: [] -> (List.rev (hd :: l), List.rev r)
+  | [] -> (List.rev l, List.rev r)
+      
+(* let rec mkidx i acc = *)
+(*   if i mod 2 = 0 then *)
+(*     let acc' = mkApp (Lazy.force coq_index_left, [|acc|]) in *)
+(*       if i = 0 then acc' *)
+(*       else mkidx (i / 2) acc' *)
+(*   else *)
+(*     let acc' = mkApp (Lazy.force coq_index_right, [|acc|]) in *)
+(*       if i = 1 then acc' *)
+(*       else mkidx (i / 2) acc' *)
+
+let rec mkidx i p =
+  if i mod 2 = 0 then
+    if i = 0 then mkApp (Lazy.force coq_index_left, [|Lazy.force coq_index_end|])
+    else mkApp (Lazy.force coq_index_left, [|mkidx (i - p) (2 * p)|])
+  else if i = 1 then mkApp (Lazy.force coq_index_right, [|Lazy.force coq_index_end|])
+  else mkApp (Lazy.force coq_index_right, [|mkidx (i - p) (2 * p)|])
+	
+let varify_constr_varmap ty def varh c =
+  let vars = Idset.elements (freevars c) in
+  let mkaccess i = 
+    mkApp (Lazy.force coq_varmap_lookup,
+	  [| ty; def; mkidx i 1; varh |])
+  in
+  let rec vmap_aux l = 
+    match l with 
+    | [] -> mkApp (Lazy.force coq_varmap_empty, [| ty |])
+    | hd :: tl -> 
+	let left, right = split_interleaved [] [] tl in
+	  mkApp (Lazy.force coq_varmap_node, [| ty; hd; vmap_aux left ; vmap_aux right |])
+  in
+  let vmap = vmap_aux (def :: List.map (fun x -> mkVar x) vars) in
+  let subst = list_map_i (fun i id -> (id, mkaccess i)) 0 vars in
+    vmap, replace_vars subst c
+  
+
 TACTIC EXTEND varify
   [ "varify" ident(varh) ident(h') constr(ty) constr(def) constr(c) ] -> [
-    let vars, c' = varify_constr ty def (mkVar varh) c in
+    let vars, c' = varify_constr_varmap ty def (mkVar varh) c in
       tclTHEN (letin_tac None (Name varh) vars allHyps)
 	(letin_tac None (Name h') c' allHyps)
   ]

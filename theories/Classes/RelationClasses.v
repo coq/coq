@@ -392,4 +392,4 @@ Program Instance subrelation_partial_order :
   Qed.
 
 Typeclasses Opaque arrows predicate_implication predicate_equivalence 
-  relation_equivalence.
+  relation_equivalence pointwise_lifting.
