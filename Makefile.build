@@ -834,8 +834,8 @@ checker/%.cmi: checker/%.mli | checker/%.mli.d
 	$(HIDE)$(OCAMLC) -c $(CHKBYTEFLAGS) $<
 
 %.o: %.c
-	$(SHOW)'CC        $<'
-	$(HIDE)$(CC) -o $@ $(CFLAGS) $(CINCLUDES)  -c $<
+	$(SHOW)'OCAMLC    $<'
+	$(HIDE)cd $(dir $<) && $(OCAMLC) -ccopt "$(CFLAGS)" -c $(notdir $<)
 
 ifdef KEEP_ML4_PREPROCESSED
 .PRECIOUS: %.ml4-preprocessed

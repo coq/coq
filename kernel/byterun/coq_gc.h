@@ -10,8 +10,8 @@
 
 #ifndef _COQ_CAML_GC_
 #define _COQ_CAML_GC_
-#include <mlvalues.h>
-#include <alloc.h>
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
 
 typedef void (*scanning_action) (value, value *);
 
