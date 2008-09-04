@@ -24,7 +24,8 @@ body { padding: 0px 0px;
 #main{ display: block;
        padding: 10px;
        overflow: hidden;
-       font-size: 10pt }
+       font-size: 100%;
+       line-height: 80% }
 
 #main  a.idref:visited {color : #416DFF; text-decoration : none; }
 #main  a.idref:link {color : #416DFF; text-decoration : none; }
@@ -39,16 +40,16 @@ body { padding: 0px 0px;
 #main .keyword { color : #cf1d1d }
 #main { color: black }
 
-#main .section { background-color:#899BD6;
-                 font-size : 20pt }
+#main .section { background-color:#90bdff;
+                 font-size : 175% }
 
-#main code { font-family: monospace; 
-             line-height: 50% }
+#main code { font-family: monospace }
 
 #main .doc { margin: 0px;
              padding: 10px;
              font-family: sans-serif;
-             font-size: 11pt;
+             font-size: 100%;
+	     line-height: 100%;
              font-weight:bold;
              color: black;
              background-color: #90bdff;
@@ -58,7 +59,7 @@ body { padding: 0px 0px;
 
 /* Pied de page */
 
-#footer { font-size: 8pt;
+#footer { font-size: 65%;
           font-family: sans-serif; }
 
 #footer a:visited { color: blue; }
