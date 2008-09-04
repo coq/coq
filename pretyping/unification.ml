@@ -490,9 +490,12 @@ let w_merge env with_types flags (metas,evars) evd =
 	      let evd' = mimick_evar evd flags f (Array.length cl) evn in
 	      w_merge_rec evd' metas evars eqns
           | _ ->
-	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs') 
-	        metas evars' eqns
-	  end
+	      let evi = Evd.find (evars_of evd) evn in
+	      let rty = Retyping.get_type_of_with_meta env (evars_of evd) (metas_of evd) rhs' in
+	      let evd', rhs'' = w_coerce_to_type env evd rhs' rty evi.evar_concl in
+	      let evd'' = solve_simple_evar_eqn env evd' ev rhs'' in
+		w_merge_rec evd'' metas evars' eqns
+	end
     | [] -> 
 
     (* Process metas *)

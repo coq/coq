@@ -1718,7 +1718,7 @@ let setoid_proof gl ty ?(bindings=NoBindings) meth fallback =
       (CRef (Qualid (dummy_loc, Nametab.shortest_qualid_of_global Idset.empty
 	(Lazy.force meth)))) ~bindings gl
   with Not_found | Typeclasses_errors.TypeClassError (_, _) |
-      Ploc.Exc (_, Typeclasses_errors.TypeClassError (_, _)) -> 
+      Stdpp.Exc_located (_, Typeclasses_errors.TypeClassError (_, _)) -> 
 	match fallback gl with 
 	| Some tac -> tac gl
 	| None ->
