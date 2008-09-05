@@ -83,6 +83,7 @@ usage () {
 # Default OCaml binaries
 bytecamlc=ocamlc
 nativecamlc=ocamlopt
+ocamlmklib=ocamlmklib
 ocamlexec=ocaml
 ocamldepexec=ocamldep
 ocamldocexec=ocamldoc
@@ -937,6 +938,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|BESTCOMPILER|$best_compiler|" \
     -e "s|EXECUTEEXTENSION|$EXE|" \
     -e "s|BYTECAMLC|$bytecamlc|" \
+    -e "s|OCAMLMKLIBEXEC|$ocamlmklib|" \
     -e "s|NATIVECAMLC|$nativecamlc|" \
     -e "s|OCAMLEXEC|$ocamlexec|" \
     -e "s|OCAMLDEPEXEC|$ocamldepexec|" \

@@ -137,10 +137,11 @@ endif
 
 CINCLUDES= -I $(CAMLHLIB)
 
-# libcoqrun.a 
+# libcoqrun.a, dllcoqrun.so
 
 $(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN) 
-	$(AR) rc $(LIBCOQRUN) $(BYTERUN) 
+	cd $(dir $(LIBCOQRUN)) && \
+	$(OCAMLMKLIB) -oc $(COQRUN) $(foreach u,$(BYTERUN),$(notdir $(u)))
 	$(RANLIB) $(LIBCOQRUN)
 
 #coq_jumptbl.h is required only if you have GCC 2.0 or later

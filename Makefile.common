@@ -111,7 +111,9 @@ REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
 # Object and Source files 
 ###########################################################################
 
-LIBCOQRUN:=kernel/byterun/libcoqrun.a
+COQRUN := coqrun
+LIBCOQRUN:=kernel/byterun/lib$(COQRUN).a
+DLLCOQRUN:=$(dir $(LIBCOQRUN))dll$(COQRUN).so
 
 CLIBS:=unix.cma
 
