@@ -60,10 +60,10 @@ let rec print_module name locals with_body mb =
   in
   let modtype = match mb.mod_type with
       None -> str ""
-    | Some t ->  str": " ++ 
+    | Some t -> spc () ++ str": " ++ 
 	print_modtype locals t
   in
-    hv 2 (str "Module " ++ name ++ spc () ++ modtype ++ body)
+    hv 2 (str "Module " ++ name ++ modtype ++ body)
 
 and print_modtype locals mty = 
   match mty with
@@ -102,7 +102,7 @@ and print_sig locals msid sign =
     | SFBconst {const_opaque=true} -> str "Parameter "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
-    | SFBalias (mp,_) -> str "Module"
+    | SFBalias (mp,_) -> str "Module "
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
   in
     prlist_with_sep spc print_spec sign
@@ -114,7 +114,7 @@ and print_struct locals msid struc =
     | SFBconst {const_body=None} -> str "Parameter "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
-    | SFBalias (mp,_) -> str "Module"
+    | SFBalias (mp,_) -> str "Module "
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
   in
     prlist_with_sep spc print_body struc
@@ -125,9 +125,9 @@ and print_modexpr locals mexpr = match mexpr with
 (*    let env' = Modops.add_module (MPbid mbid) (Modops.body_of_type mtb) env 
       in *)
       let locals' = (mbid, get_new_id locals (id_of_mbid mbid))::locals in
-      hov 2 (str "Functor" ++ spc() ++ str"[" ++ pr_id(id_of_mbid mbid) ++ 
+      hov 2 (str "Functor" ++ spc() ++ str"(" ++ pr_id(id_of_mbid mbid) ++ 
 	     str ":" ++ print_modtype locals mty.typ_expr ++ 
-      str "]" ++ spc () ++ print_modexpr locals' mexpr)
+      str ")" ++ spc () ++ print_modexpr locals' mexpr)
   | SEBstruct (msid, struc) -> 
       hv 2 (str "Struct" ++ spc () ++ print_struct locals msid struc ++ brk (1,-2) ++ str "End")
   | SEBapply (mexpr,marg,_) -> 
