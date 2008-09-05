@@ -289,7 +289,8 @@ let main () =
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
       let ocamlmktoplib = " toplevellib.cma" in
       let ocamlcexec = Filename.concat Coq_config.camldir "ocamlc" in
-      let ocamlccustom = ocamlcexec^" -custom -linkall" in
+      let ocamlccustom = Printf.sprintf "%s %s -linkall "
+        ocamlcexec Coq_config.coqrunbyteflags in
       (if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
   in
   (* files to link *)
