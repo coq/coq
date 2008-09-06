@@ -11,6 +11,9 @@ VOMAGIC=08193
 STATEMAGIC=19764
 DATE="Jun. 2008"
 
+# Create the bin/ directory if non-existent
+test -d bin || mkdir bin
+
 # a local which command for sh
 which () {
 IFS=":" # set words separator in PATH to be ':' (it allows spaces in dirnames)
