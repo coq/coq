@@ -669,6 +669,7 @@ endif
 	# we install it with libraries
 	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
 	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/contrib/micromega
+	$(INSTALLBIN) $(DLLCOQRUN) $(FULLCOQLIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)

@@ -764,10 +764,12 @@ case $coqdocdir_spec/$prefix_spec/$local in
 	esac;;
 esac
 
+BUILDLDPATH="# you might want to set CAML_LD_LIBRARY_PATH by hand!"
 case $coqrunbyteflags_spec/$local in
     yes/*) COQRUNBYTEFLAGS="$coqrunbyteflags";;
-    */true) COQRUNBYTEFLAGS="-custom";;
-    *) COQRUNBYTEFLAGS="-custom";;
+    */true) COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath $COQTOP/kernel/byterun";;
+    *) COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath $LIBDIR"
+       BUILDLDPATH="export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun";;
 esac
 
 # case $emacs_spec in
@@ -932,6 +934,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQVERSION|$VERSION|" \
     -e "s|BINDIRDIRECTORY|$ESCBINDIR|" \
     -e "s|COQLIBDIRECTORY|$ESCLIBDIR|" \
+    -e "s|BUILDLDPATH=|$BUILDLDPATH|" \
     -e "s|MANDIRDIRECTORY|$ESCMANDIR|" \
     -e "s|DOCDIRDIRECTORY|$ESCDOCDIR|" \
     -e "s|EMACSLIBDIRECTORY|$ESCEMACSLIB|" \

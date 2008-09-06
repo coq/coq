@@ -23,6 +23,7 @@ LOCAL=LOCALINSTALLATION
 
 # Bytecode link flags for VM ("-custom" or "-dllib -lcoqrun")
 COQRUNBYTEFLAGS=XCOQRUNBYTEFLAGS
+BUILDLDPATH=
 
 # Paths for true installation
 # BINDIR=path where coqtop, coqc, coqmktop, coq-tex, coqdep, gallina and
