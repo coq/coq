@@ -23,7 +23,7 @@ COQC:=bin/coqc$(EXE)
 COQTOPBYTE:=bin/coqtop.byte$(EXE)
 COQTOPOPT:=bin/coqtop.opt$(EXE)
 BESTCOQTOP:=bin/coqtop.$(BEST)$(EXE)
-COQTOP:=bin/coqtop$(EXE)
+COQTOPEXE:=bin/coqtop$(EXE)
 CHICKENBYTE:=bin/coqchk.byte$(EXE)
 CHICKENOPT:=bin/coqchk.opt$(EXE)
 BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
@@ -39,10 +39,10 @@ COQIDE:=bin/coqide$(EXE)
 
 ifeq ($(BEST),opt)
 COQBINARIES:= $(COQMKTOP) $(COQC) \
-  $(COQTOPBYTE) $(COQTOPOPT) $(COQTOP) $(CHICKENBYTE) $(CHICKENOPT) $(CHICKEN)
+  $(COQTOPBYTE) $(COQTOPOPT) $(COQTOPEXE) $(CHICKENBYTE) $(CHICKENOPT) $(CHICKEN)
 else
 COQBINARIES:= $(COQMKTOP) $(COQC) \
-  $(COQTOPBYTE)              $(COQTOP) $(CHICKENBYTE)               $(CHICKEN)
+  $(COQTOPBYTE)              $(COQTOPEXE) $(CHICKENBYTE)               $(CHICKEN)
 endif
 OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
@@ -74,7 +74,7 @@ HEVEA:=hevea
 HEVEAOPTS:=-fix -exec xxdate.exe
 HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 export TEXINPUTS:=$(COQSRC)/doc:$(HEVEALIB):
-COQTEXOPTS:=-n 72 -image $(COQSRC)/$(COQTOP) -v -sl -small
+COQTEXOPTS:=-n 72 -image $(COQSRC)/$(COQTOPEXE) -v -sl -small
 
 DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex 
 

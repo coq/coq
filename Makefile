@@ -176,7 +176,7 @@ docclean:
 
 archclean: clean-ide cleantheories
 	rm -f $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
-	rm -f $(COQTOP)  $(COQCOPT) $(COQMKTOPOPT)
+	rm -f $(COQTOPEXE)  $(COQCOPT) $(COQMKTOPOPT)
 	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
 	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' | xargs rm -f
 	rm -f $(TOOLS)
