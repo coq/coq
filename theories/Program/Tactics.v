@@ -121,6 +121,26 @@ Ltac on_application f tac T :=
     | context [f ?x ?y] => tac (f x y) 
     | context [f ?x] => tac (f x)
   end.
+
+(** A variant of [apply] using [refine], doing as much conversion as necessary. *)
+
+Ltac rapply p := 
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _ _) ||
+  refine (p _ _ _ _ _) ||
+  refine (p _ _ _ _) ||
+  refine (p _ _ _) ||
+  refine (p _ _) ||
+  refine (p _) ||
+  refine p.
   
 (** Tactical [on_call f tac] applies [tac] on any application of [f] in the hypothesis or goal. *)
 
@@ -212,21 +232,6 @@ Ltac add_hypothesis H' p :=
 Ltac replace_hyp H c :=
   let H' := fresh "H" in
     assert(H' := c) ; clear H ; rename H' into H.
-
-(** A tactic to refine an hypothesis by supplying some of its arguments. *)
-
-Ltac refine_hyp c :=
-  let tac H := replace_hyp H c in
-    match c with
-      | ?H _ => tac H
-      | ?H _ _ => tac H
-      | ?H _ _ _ => tac H
-      | ?H _ _ _ _ => tac H
-      | ?H _ _ _ _ _ => tac H
-      | ?H _ _ _ _ _ _ => tac H
-      | ?H _ _ _ _ _ _ _ => tac H
-      | ?H _ _ _ _ _ _ _ _ => tac H
-    end.
 
 (** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto]
    is not enough, better rebind using [Obligation Tactic := tac] in this case, 

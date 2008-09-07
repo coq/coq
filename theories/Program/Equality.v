@@ -1,3 +1,4 @@
+(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Program.Equality"); compile-command: "make -C ../.. TIME='time'" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -18,6 +19,10 @@ Require Import Coq.Program.Tactics.
 (** Notation for heterogenous equality. *)
 
 Notation " [ x : X ] = [ y : Y ] " := (@JMeq X x Y y) (at level 0, X at next level, Y at next level).
+
+(** Notation for the single element of [x = x] *)
+
+Notation "'refl'" := (@refl_equal _ _).
 
 (** Do something on an heterogeneous equality appearing in the context. *)
 
@@ -309,17 +314,15 @@ Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "
    These tactics implement the necessary machinery to solve goals produced by the 
    [Equations] command relative to dependent pattern-matching. 
    It is completely inspired from the "Eliminating Dependent Pattern-Matching" paper by
-   Goguen, McBride and McKinna.
-   
-*)
+   Goguen, McBride and McKinna. *)
 
 (** Lemmas used by the simplifier, mainly rephrasings of [eq_rect], [eq_ind]. *)
 
 Lemma solution_left : Π A (B : A -> Type) (t : A), B t -> (Π x, x = t -> B x).
-Proof. intros; subst; assumption. Defined.
+Proof. intros; subst. apply X. Defined.
 
 Lemma solution_right : Π A (B : A -> Type) (t : A), B t -> (Π x, t = x -> B x).
-Proof. intros; subst; assumption. Defined.
+Proof. intros; subst; apply X. Defined.
 
 Lemma deletion : Π A B (t : A), B -> (t = t -> B).
 Proof. intros; assumption. Defined.
@@ -330,6 +333,21 @@ Proof. intros; apply X; apply (JMeq_eq H). Defined.
 Lemma simplification_existT : Π A (P : A -> Type) B  (p : A) (x y : P p),
   (x = y -> B) -> (existT P p x = existT P p y -> B).
 Proof. intros. apply X. apply inj_pair2. exact H. Defined.
+
+Lemma simplification_K : Π A (x : A) (B : x = x -> Type), B (refl_equal x) -> (Π p : x = x, B p).
+Proof. intros. rewrite (UIP_refl A). assumption. Defined.
+
+(** The NoConfusionPackage class provides a method for making progress on proving a property
+   [P] implied by an equality on an inductive type [I]. The type of [noConfusion] for a given
+   [P] should be of the form [ Π Δ, (x y : I Δ) (x = y) -> NoConfusion P x y ], where 
+   [NoConfusion P x y] for constructor-headed [x] and [y] will give a formula ending in [P].
+   This gives a general method for simplifying by discrimination or injectivity of constructors.
+   
+   Some actual instances are defined later in the file using the more primitive [discriminate] and
+   [injection] tactics on which we can always fall back.
+   *)
+  
+Class NoConfusionPackage (I : Type) := NoConfusion : Π P : Prop, Type ; noConfusion : Π P, NoConfusion P.
 
 (** This hint database and the following tactic can be used with [autosimpl] to 
    unfold everything to [eq_rect]s. *)
@@ -354,18 +372,20 @@ Ltac simplify_equations := repeat (unfold_equations ; simplify_eqs).
 Ltac simplify_one_dep_elim_term c :=
   match c with
     | @JMeq ?A ?a ?A ?b -> _ => refine (simplification_heq _ _ _ _ _)
-    | ?t = ?t -> _ => intros _
+    | ?t = ?t -> _ => intros _ || refine (simplification_K _ t _ _)
     | eq (existT ?P ?p _) (existT ?P ?p _) -> _ => refine (simplification_existT _ _ _ _ _ _ _)
-    | ?f ?x = ?f ?y -> _ => let H := fresh in intros H ; injection H ; clear H
     | ?x = ?y -> _ =>
-      (let hyp := fresh in intros hyp ; 
-        move dependent hyp before x ; 
+      (let hyp := fresh in intros hyp ;
+        move dependent hyp before x ;
           generalize dependent x ; refine (solution_left _ _ _ _) ; intros until 0) ||
-      (let hyp := fresh in intros hyp ; 
-        move dependent hyp before y ; 
+      (let hyp := fresh in intros hyp ;
+        move dependent hyp before y ;
           generalize dependent y ; refine (solution_right _ _ _ _) ; intros until 0)
+    | @eq ?A ?t ?u -> ?P => apply (noConfusion (I:=A) P)
+    | ?f ?x = ?g ?y -> _ => let H := fresh in intros H ; injection H ; clear H
     | ?t = ?u -> _ => let hyp := fresh in
       intros hyp ; elimtype False ; discriminate
+    | id ?T => fail 1 (* Do not put any part of the rhs in the hyps *)
     | _ => intro
   end.
 
@@ -392,32 +412,59 @@ Ltac destruct_last :=
 
 (** The rest is support tactics for the [Equations] command. *)
 
+(** Notation for inaccessible patterns. *)
+
+Definition inaccessible_pattern {A : Type} (t : A) := t.
+
+Notation "?( t )" := (inaccessible_pattern t).
+
+(** To handle sections, we need to separate the context in two parts:
+   variables introduced by the section and the rest. We introduce a dummy variable 
+   between them to indicate that. *)
+
+CoInductive end_of_section := the_end_of_the_section.
+
+Ltac set_eos := let eos := fresh "eos" in 
+  assert (eos:=the_end_of_the_section).
+
+(** We have a specialized [reverse_local] tactic to reverse the goal until the begining of the
+   section variables *)
+
+Ltac reverse_local :=
+  match goal with
+    | [ H : ?T |- _ ] => 
+      match T with
+        | end_of_section => idtac | _ => revert H ; reverse_local end
+    | _ => idtac
+  end.
+
 (** Do as much as possible to apply a method, trying to get the arguments right. *)
 
-Ltac try_intros m :=
-  (eapply m ; eauto) || (intro ; try_intros m).
+Ltac simpl_apply m := refine m.  (* || apply m || simpl ; apply m. *)
+
+Ltac try_intros m := unfold Datatypes.id ; refine m || apply m.  (* (repeat simpl_apply m || intro). *)
 
 (** To solve a goal by inversion on a particular target. *)
 
 Ltac solve_empty target :=
   do_nat target intro ; elimtype False ; destruct_last ; simplify_dep_elim.
 
-Ltac simplify_method H := clear H ; simplify_dep_elim ; reverse.
+Ltac simplify_method tac := repeat (tac || simplify_one_dep_elim) ; reverse_local.
 
-(** Solving a method call: we must refine the goal until the body 
-   can be applied or just solve it by splitting on an empty family member. *)
+(** Solving a method call: we can solve it by splitting on an empty family member
+   or we must refine the goal until the body can be applied. *)
     
 Ltac solve_method rec :=
   match goal with
-    | [ H := ?body : nat |- _ ] => simplify_method H ; solve_empty body
-    | [ H := ?body |- _ ] => simplify_method H ; rec ; try_intros body
+    | [ H := ?body : nat |- _ ] => subst H ; clear ; abstract (simplify_method idtac ; solve_empty body)
+    | [ H := ?body |- _ ] => clear H ; simplify_method ltac:(exact body) ; rec ; try_intros body
   end.
 
 (** Impossible cases, by splitting on a given target. *)
 
 Ltac solve_split :=
   match goal with 
-    | [ |- let split := ?x : nat in _ ] => intros _ ; solve_empty x
+    | [ |- let split := ?x : nat in _ ] => clear ; abstract (intros _ ; solve_empty x)
   end.
 
 (** If defining recursive functions, the prototypes come first. *)
@@ -428,19 +475,98 @@ Ltac intro_prototypes :=
     | _ => idtac
   end.
 
+Ltac case_last :=
+  match goal with
+    | [ p : ?x = ?x |- ?T ] => change (id T) ; revert p ; refine (simplification_K _ x _ _)
+    | [ p : ?x = ?y |- ?T ] => change (id T) ; revert p
+    | [ p : _ |- ?T ] => simpl in p ; change (id T) ; generalize_eqs p ; destruct p 
+  end.
+
 Ltac nonrec_equations := 
-  solve [solve_equations (solve_method idtac)] || solve [ solve_split ]
+  solve [solve_equations (case_last) (solve_method idtac)] || solve [ solve_split ]
     || fail "Unnexpected equations goal".
 
 Ltac recursive_equations :=
-  solve [solve_equations (solve_method ltac:intro)] || solve [ solve_split ] 
+  solve [solve_equations (case_last) (solve_method ltac:intro)] || solve [ solve_split ] 
     || fail "Unnexpected recursive equations goal".
 
 (** The [equations] tactic is the toplevel tactic for solving goals generated
    by [Equations]. *)
 
-Ltac equations :=
+Ltac equations := set_eos ;
   match goal with 
     | [ |- Π x : _, _ ] => intro ; recursive_equations
     | _ => nonrec_equations
   end.
+
+Equations NoConfusion_nat (P : Prop) (x y : nat) : Prop :=
+NoConfusion_nat P 0 0 := P -> P ;
+NoConfusion_nat P 0 (S y) := P ;
+NoConfusion_nat P (S x) 0 := P ;
+NoConfusion_nat P (S x) (S y) := (x = y -> P) -> P.
+Debug Off.
+  Solve Obligations using equations.
+
+Equations noConfusion_nat (P : Prop) (x y : nat) (H : x = y) : NoConfusion_nat P x y :=
+noConfusion_nat P 0 0 refl := λ p, p ;
+noConfusion_nat P (S n) (S n) refl := λ p : n = n -> P, p refl.
+
+  Solve Obligations using equations.
+
+Instance nat_noconf : NoConfusionPackage nat :=
+  NoConfusion := λ P, Π x y, x = y -> NoConfusion_nat P x y ;
+  noConfusion := λ P x y, noConfusion_nat P x y.
+
+Equations NoConfusion_bool (P : Prop) (x y : bool) : Prop :=
+NoConfusion_bool P true true := P -> P ;
+NoConfusion_bool P false false := P -> P ;
+NoConfusion_bool P true false := P ;
+NoConfusion_bool P false true := P.
+
+  Solve Obligations using equations.
+
+Equations noConfusion_bool (P : Prop) (x y : bool) (H : x = y) : NoConfusion_bool P x y :=
+noConfusion_bool P true true refl := λ p, p ;
+noConfusion_bool P false false refl := λ p, p.
+
+  Solve Obligations using equations.
+
+Instance bool_noconf : NoConfusionPackage bool :=
+  NoConfusion := λ P, Π x y, x = y -> NoConfusion_bool P x y ;
+  noConfusion := λ P x y, noConfusion_bool P x y.
+
+Equations NoConfusion_unit (P : Prop) (x y : unit) : Prop :=
+NoConfusion_unit P tt tt := P -> P.
+
+  Solve Obligations using equations.
+
+Equations noConfusion_unit (P : Prop) (x y : unit) (H : x = y) : NoConfusion_unit P x y :=
+noConfusion_unit P tt tt refl := λ p, p.
+
+  Solve Obligations using equations.
+
+Instance unit_noconf : NoConfusionPackage unit :=
+  NoConfusion := λ P, Π x y, x = y -> NoConfusion_unit P x y ;
+  noConfusion := λ P x y, noConfusion_unit P x y.
+
+Require Import List.
+
+Implicit Arguments nil [[A]].
+
+Equations NoConfusion_list (P : Prop) (A : Type) (x y : list A) : Prop :=
+NoConfusion_list P A nil nil := P -> P ;
+NoConfusion_list P A nil (cons a y) := P ;
+NoConfusion_list P A (cons a x) nil := P ;
+NoConfusion_list P A (cons a x) (cons b y) := (a = b -> x = y -> P) -> P.
+
+  Solve Obligations using equations.
+
+Equations noConfusion_list (P : Prop) A (x y : list A) (H : x = y) : NoConfusion_list P A x y :=
+noConfusion_list P A nil nil refl := λ p, p ;
+noConfusion_list P A (cons a x) (cons a x) refl := λ p : a = a -> x = x -> P, p refl refl.
+
+  Solve Obligations using equations.
+
+Instance list_noconf A : NoConfusionPackage (list A) :=
+  NoConfusion := λ P, Π x y, x = y -> NoConfusion_list P A x y ;
+  noConfusion := λ P x y, noConfusion_list P A x y.

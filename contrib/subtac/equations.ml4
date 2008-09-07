@@ -37,21 +37,27 @@ open Libnames
 type pat =
   | PRel of int
   | PCstr of constructor * pat list
-  | PInnac of constr
-      
-let rec constr_of_pat = function
+  | PInac of constr
+
+let coq_inacc = lazy (Coqlib.gen_constant "equations" ["Program";"Equality"] "inaccessible_pattern")
+  
+let mkInac env c =
+  mkApp (Lazy.force coq_inacc, [| Typing.type_of env Evd.empty c ; c |])
+    
+let rec constr_of_pat ?(inacc=true) env = function
   | PRel i -> mkRel i
   | PCstr (c, p) -> 
       let c' = mkConstruct c in
-	mkApp (c', Array.of_list (constrs_of_pats p))
-  | PInnac r -> r
+	mkApp (c', Array.of_list (constrs_of_pats ~inacc env p))
+  | PInac r -> 
+      if inacc then try mkInac env r with _ -> r else r
       
-and constrs_of_pats l = map constr_of_pat l
+and constrs_of_pats ?(inacc=true) env l = map (constr_of_pat ~inacc env) l
 
 let rec pat_vars = function
   | PRel i -> Intset.singleton i
   | PCstr (c, p) -> pats_vars p
-  | PInnac _ -> Intset.empty
+  | PInac _ -> Intset.empty
 
 and pats_vars l = 
   fold_left (fun vars p -> 
@@ -67,31 +73,50 @@ let rec pats_of_constrs l = map pat_of_constr l
 and pat_of_constr c = 
   match kind_of_term c with
   | Rel i -> PRel i
-  | App (f, args) when isConstruct f -> 
+  | App (f, [| a ; c |]) when eq_constr f (Lazy.force coq_inacc) ->
+      PInac c
+  | App (f, args) when isConstruct f ->
       PCstr (destConstruct f, pats_of_constrs (Array.to_list args))
   | Construct f -> PCstr (f, [])
-  | _ -> PInnac c
+  | _ -> PInac c
 
-let innacs_of_constrs l = map (fun x -> PInnac x) l
+let inaccs_of_constrs l = map (fun x -> PInac x) l
 
 exception Conflict
 
 let rec pmatch p c =
-  match p, kind_of_term c with
-  | PRel i, t -> [i, c]
-  | PCstr (c, pl), App (c', l') when kind_of_term c' = Construct c -> 
-      pmatches pl (Array.to_list l')
-  | PCstr (c, []), Construct c' when c' = c -> []
-  | PInnac _, _ -> []
-  | _, _ -> raise Conflict
+  match p, c with
+  | PRel i, t -> true
+(*   | _, PRel i -> true *)
+  | PCstr (c, pl), PCstr (c', pl') when c = c' -> pmatches pl pl'
+  | PInac _, _ -> true
+  | _, _ -> false
 
 and pmatches pl l =
   match pl, l with
-  | [], [] -> []
-  | hd :: tl, hd' :: tl' -> pmatch hd hd' @ pmatches tl tl'
-  | _ -> raise Conflict
+  | [], [] -> true
+  | hd :: tl, hd' :: tl' -> pmatch hd hd' && pmatches tl tl'
+  | _ -> false
 
 let pattern_matches pl l = pmatches pl l
+
+(* let rec pmatch p c = *)
+(*   match p, kind_of_term c with *)
+(*   | PRel i, t -> true *)
+(*   | t, Rel n -> true *)
+(*   | PCstr (c, pl), App (c', l') when kind_of_term c' = Construct c ->  *)
+(*       pmatches pl (Array.to_list l') *)
+(*   | PCstr (c, []), Construct c' when c' = c -> true *)
+(*   | PInac _, _ -> true *)
+(*   | _, _ -> false *)
+
+(* and pmatches pl l = *)
+(*   match pl, l with *)
+(*   | [], [] -> true *)
+(*   | hd :: tl, hd' :: tl' -> pmatch hd hd' && pmatches tl tl' *)
+(*   | _ -> false *)
+
+(* let pattern_matches pl l = pmatches pl l *)
 
 (** Specialize by a substitution. *)
 
@@ -129,30 +154,30 @@ let rec lift_pat n k p =
       if i >= k then PRel (i + n)
       else p
   | PCstr(c, pl) -> PCstr (c, lift_pats n k pl)
-  | PInnac r -> PInnac (liftn n k r)
+  | PInac r -> PInac (liftn n k r)
       
 and lift_pats n k = map (lift_pat n k)
 
-let rec subst_pat k t p = 
+let rec subst_pat env k t p = 
   match p with
   | PRel i -> 
       if i = k then t
       else if i > k then PRel (pred i)
       else p
   | PCstr(c, pl) ->
-      PCstr (c, subst_pats k t pl)
-  | PInnac r -> PInnac (substnl [constr_of_pat t] k r)
+      PCstr (c, subst_pats env k t pl)
+  | PInac r -> PInac (substnl [constr_of_pat ~inacc:false env t] (pred k) r)
 
-and subst_pats k t = map (subst_pat k t)
+and subst_pats env k t = map (subst_pat env k t)
 
 let rec specialize s p = 
   match p with
   | PRel i -> 
-      if mem_assoc i s then PInnac (assoc i s)
+      if mem_assoc i s then PInac (assoc i s)
       else p
   | PCstr(c, pl) ->
       PCstr (c, specialize_pats s pl)
-  | PInnac r -> PInnac (specialize_constr s r)
+  | PInac r -> PInac (specialize_constr s r)
 
 and specialize_constr s c = subst_rel_subst 0 s c
 and specialize_pats s = map (specialize s)
@@ -170,36 +195,34 @@ type program =
 
 and signature = identifier * rel_context * constr
 
-and clause = rel_context * constr list * (constr, identifier located) rhs
+and clause = lhs * (constr, int) rhs
 
-and lhs = pat list
+and lhs = rel_context * identifier * pat list
 
 and ('a, 'b) rhs = 
   | Program of 'a
   | Empty of 'b
 
 type splitting = 
-  | Compute of rel_context * lhs * (constr, int) rhs
-  | Split of rel_context * lhs * int * inductive_family *
+  | Compute of clause
+  | Split of lhs * int * inductive_family *
       unification_result array * splitting option array
-
+      
 and unification_result = 
-  rel_context * rel_context * constr * pat * substitution option
+  rel_context * int * constr * pat * substitution option
 
 and substitution = (int * constr) list
 
-type problem = rel_context * identifier * pat list
-
-(* let vars_of_tele = map (fun (id, _, _) -> mkVar id) *)
+type problem = identifier * lhs
 
 let rels_of_tele tele = rel_list 0 (List.length tele)
 
 let patvars_of_tele tele = map (fun c -> PRel (destRel c)) (rels_of_tele tele)
 
-let split_solves split (delta, id, pats) =
+let split_solves split prob =
   match split with
-  | Compute (ctx, lhs, rhs) -> delta = ctx && pats = lhs
-  | Split (ctx, lhs, id, indf, us, ls) -> delta = ctx && pats = lhs
+  | Compute (lhs, rhs) -> lhs = prob
+  | Split (lhs, id, indf, us, ls) -> lhs = prob
 
 let ids_of_constr c = 
   let rec aux vars c = 
@@ -244,21 +267,26 @@ let split_tele n ctx =
     | _ -> raise (Invalid_argument "split_tele")
   in aux [] n ctx
 
-let add_var_subst subst n c =
-  if mem_assoc n subst then 
-    if eq_constr (assoc n subst) c then subst
-    else raise Conflict
-  else (n, c) :: subst
+let rec add_var_subst env subst n c =
+  if mem_assoc n subst then
+    let t = assoc n subst in
+      if eq_constr t c then subst
+      else unify env subst t c
+  else 
+    let rel = mkRel n in
+      if rel = c then subst
+      else if dependent rel c then raise Conflict
+      else (n, c) :: subst
     
-let rec unify env subst x y =
+and unify env subst x y =
   match kind_of_term x, kind_of_term y with
-  | Rel n, _ -> add_var_subst subst n y
-  | _, Rel n -> add_var_subst subst n x
+  | Rel n, _ -> add_var_subst env subst n y
+  | _, Rel n -> add_var_subst env subst n x
   | App (c, l), App (c', l') when eq_constr c c' ->
       unify_constrs env subst (Array.to_list l) (Array.to_list l')
   | _, _ -> if eq_constr x y then subst else raise Conflict
 
-and unify_constrs env subst l l' = 
+and unify_constrs (env : env) subst l l' = 
   if List.length l = List.length l' then
     fold_left2 (unify env) subst l l'
   else raise Conflict
@@ -266,7 +294,7 @@ and unify_constrs env subst l l' =
 let substituted_context subst ctx =
   let substitute_in_ctx n c ctx =
     let rec aux k after = function
-      | [] -> assert false
+      | [] -> []
       | decl :: before -> 
 	  if k = n then subst_rel_context 0 c (rev after) @ before
 	  else aux (succ k) (decl :: after) before
@@ -292,7 +320,7 @@ let substituted_context subst ctx =
 	let t' = lift (-k) t in (* caution, not always well defined *)
 	let ctx' = substitute_in_ctx k t' ctx' in
 	let rest' = substitute_in_subst k t' rest in
-	  record_subst (pred k) (lift (-1) t);
+	  record_subst (pred k) (liftn (-1) k t);
 	  aux ctx' rest'
   in
   let ctx' = aux ctx subst in
@@ -304,65 +332,79 @@ let unify_type before ty =
     let envb = push_rel_context before (Global.env()) in
     let IndType (indf, args) = find_rectype envb Evd.empty ty in
     let ind, params = dest_ind_family indf in
-(*     let vs = params @ args in *)
-    let vs = args in
+    let vs = map (Reduction.whd_betadeltaiota envb) args in
     let cstrs = Inductiveops.arities_of_constructors envb ind in
     let cstrs = 
       Array.mapi (fun i ty ->
 	let ty = prod_applist ty params in
 	let ctx, ty = decompose_prod_assum ty in
+	let ctx, ids = 
+	  let ids = ids_of_rel_context ctx in
+	    fold_right (fun (n, b, t as decl) (acc, ids) ->
+	      match n with Name _ -> (decl :: acc), ids
+	      | Anonymous -> let id = next_name_away Anonymous ids in
+			       ((Name id, b, t) :: acc), (id :: ids))
+	      ctx ([], ids)
+	in
 	let env' = push_rel_context ctx (Global.env ()) in
 	let IndType (indf, args) = find_rectype env' Evd.empty ty in
 	let ind, params = dest_ind_family indf in
 	let constr = applist (mkConstruct (ind, succ i), params @ rels_of_tele ctx) in
-	let constrpat = PCstr ((ind, succ i), innacs_of_constrs params @ patvars_of_tele ctx) in
+	let constrpat = PCstr ((ind, succ i), inaccs_of_constrs params @ patvars_of_tele ctx) in
 	  env', ctx, constr, constrpat, (* params @  *)args)
 	cstrs
     in
+    let res = 
       Array.map (fun (env', ctxc, c, cpat, us) -> 
-	let beforelen = length before and ctxclen = length ctxc in
-	let fullctx = (* lift_contextn beforelen 1  *)ctxc @ before in
-(* 	let c = liftn beforelen (succ ctxclen) c and cpat = lift_pat beforelen ctxclen cpat in *)
+	let _beforelen = length before and ctxclen = length ctxc in
+	let fullctx = ctxc @ before in
 	  try
 	    let fullenv = push_rel_context fullctx (Global.env ()) in
-	    let vs' = map (lift ctxclen) vs 
-	    and us' = map (liftn beforelen (succ ctxclen)) us in
-	    let subst = unify_constrs fullenv [] us' vs' in
+	    let vs' = map (lift ctxclen) vs in
+	    let subst = unify_constrs fullenv [] us vs' in
 	    let subst', ctx' = substituted_context subst fullctx in
-	      (ctx', ctxc, c, cpat, Some subst')
+	      (ctx', ctxclen, c, cpat, Some subst')
 	  with Conflict -> 
-	    (fullctx, ctxc, c, cpat, None)) cstrs, indf
+	    (fullctx, ctxclen, c, cpat, None)) cstrs
+    in Some (res, indf)
   with Not_found -> (* not an inductive type *)
-    raise (Invalid_argument "unify_type: Not an inductive type")
+    None
 
 let rec id_of_rel n l =
   match n, l with
   | 0, (Name id, _, _) :: tl -> id
   | n, _ :: tl -> id_of_rel (pred n) tl
   | _, _ -> raise (Invalid_argument "id_of_rel")
+
+let constrs_of_lhs ?(inacc=true) env (ctx, _, pats) = 
+  constrs_of_pats ~inacc (push_rel_context ctx env) pats
       
 let rec valid_splitting (f, delta, t, pats) tree = 
   split_solves tree (delta, f, pats) && 
     valid_splitting_tree (f, delta, t) tree
     
 and valid_splitting_tree (f, delta, t) = function
-  | Compute (ctx, lhs, Program rhs) -> 
-      let subst = constrs_of_pats lhs in 
-	ignore(check_judgment ctx rhs (substl subst t)); true
+  | Compute (lhs, Program rhs) -> 
+      let subst = constrs_of_lhs ~inacc:false (Global.env ()) lhs in 
+	ignore(check_judgment (pi1 lhs) rhs (substl subst t)); true
 
-  | Compute (ctx, lhs, Empty split) -> 
+  | Compute ((ctx, id, lhs), Empty split) -> 
       let before, (x, _, ty), after = split_context split ctx in
-      let unify, _ = unify_type before ty in
+      let unify = 
+	match unify_type before ty with
+	| Some (unify, _) -> unify 
+	| None -> assert false
+      in
 	array_for_all (fun (_, _, _, _, x) -> x = None) unify
 	  
-  | Split (ctx, lhs, rel, indf, unifs, ls) -> 
+  | Split ((ctx, id, lhs), rel, indf, unifs, ls) -> 
       let before, (id, _, ty), after = split_tele (pred rel) ctx in
-      let unify, indf' = unify_type before ty in
+      let unify, indf' = Option.get (unify_type before ty) in
 	assert(indf = indf');
 	if not (array_exists (fun (_, _, _, _, x) -> x <> None) unify) then false
 	else
 	  let ok, splits = 
-	    Array.fold_left (fun (ok, splits as acc) (ctx', ctxc, cstr, cstrpat, subst) -> 
+	    Array.fold_left (fun (ok, splits as acc) (ctx', ctxlen, cstr, cstrpat, subst) -> 
 	      match subst with
 	      | None -> acc
 	      | Some subst ->
@@ -374,13 +416,15 @@ and valid_splitting_tree (f, delta, t) = function
 (* 		  in  *)
 		  let newdelta = 
 		    subst_context subst (subst_rel_context 0 cstr 
-					    (lift_contextn (length ctxc) 0 after)) @ before in
-		  let liftpats = lift_pats (length ctxc) rel lhs in
-		  let newpats = specialize_pats subst (subst_pats rel cstrpat liftpats) in
+					    (lift_contextn ctxlen 0 after)) @ before in
+		  let liftpats = lift_pats ctxlen rel lhs in
+		  let newpats = specialize_pats subst (subst_pats (Global.env ()) rel cstrpat liftpats) in
 		    (ok, (f, newdelta, newpats) :: splits))
 	      (true, []) unify
 	  in
-	  let subst = List.map2 (fun (id, _, _) x -> out_name id, x) delta (constrs_of_pats lhs) in
+	  let subst = List.map2 (fun (id, _, _) x -> out_name id, x) delta 
+	    (constrs_of_pats ~inacc:false (Global.env ()) lhs) 
+	  in
 	  let t' = replace_vars subst t in
 	    ok && for_all 
 	      (fun (f, delta', pats') -> 
@@ -389,23 +433,17 @@ and valid_splitting_tree (f, delta, t) = function
 let valid_tree (f, delta, t) tree = 
   valid_splitting (f, delta, t, patvars_of_tele delta) tree
 
-let find_split curpats patcs =
+let find_split (_, _, curpats : lhs) (_, _, patcs : lhs) =
   let rec find_split_pat curpat patc =
-    match kind_of_term patc with
-    | Rel _ -> (* The pattern's a variable, don't split *) None
-    | App (f, args) when isConstruct f ->
-	let f = destConstruct f in
-	  (match curpat with
-	  | PCstr (f', args') when f = f' -> (* Already split at this level, continue *)
-	      find_split_pats args' (Array.to_list args)
-	  | PRel i -> (* Split on i *) Some i
-	  | _ -> None)
-    | Construct f ->
+    match patc with
+    | PRel _ -> (* The pattern's a variable, don't split *) None
+    | PCstr (f, args) ->
 	(match curpat with
-	| PCstr (f', []) when f = f' -> (* Already split at this level, no args *) None
+	| PCstr (f', args') when f = f' -> (* Already split at this level, continue *)
+	    find_split_pats args' args
 	| PRel i -> (* Split on i *) Some i
 	| _ -> None)
-    | _ -> None
+    | PInac _ -> None
 
   and find_split_pats curpats patcs =
     assert(List.length curpats = List.length patcs);
@@ -424,45 +462,81 @@ let pr_constr_pat env c =
     | App _ -> str "(" ++ pr ++ str ")"
     | _ -> pr
 
-let pr_clause env (delta, patcs, rhs) =
+let pr_pat env c =
+  try 
+    let patc = constr_of_pat env c in
+      try pr_constr_pat env patc with _ -> str"pr_constr_pat raised an exception"
+  with _ -> str"constr_of_pat raised an exception"
+    
+let pr_context env c =
+  let pr_decl (id,b,_) = match id with Name id -> pr_id id | Anonymous -> str"_" in
+    prlist_with_sep pr_spc pr_decl (List.rev c)
+(*   Printer.pr_rel_context env c *)
+
+let pr_lhs env (delta, f, patcs) =
   let env = push_rel_context delta env in
-    prlist_with_sep spc (pr_constr_pat env) patcs 
+  let ctx = pr_context env delta in
+    (if delta = [] then ctx else str "[" ++ ctx ++ str "]" ++ spc ())
+    ++ pr_id f ++ spc () ++ prlist_with_sep spc (pr_pat env) patcs
+
+let pr_rhs env = function
+  | Empty var -> spc () ++ str ":=!" ++ spc () ++ print_constr_env env (mkRel var)
+  | Program rhs -> spc () ++ str ":=" ++ spc () ++ print_constr_env env rhs
+      
+let pr_clause env (lhs, rhs) =
+  pr_lhs env lhs ++ 
+    (let env' = push_rel_context (pi1 lhs) env in
+       pr_rhs env' rhs)
+    
+(* let pr_splitting env = function *)
+(*   | Compute cl -> str "Compute " ++ pr_clause env cl *)
+(*   | Split (lhs, n, indf, results, splits) -> *)
+
+(* let pr_unification_result (ctx, n, c, pat, subst) = *)
+  
+(*       unification_result array * splitting option array *)
 
 let pr_clauses env =
   prlist_with_sep fnl (pr_clause env)
+    
 
-let rec split_on env fdt var delta curpats clauses =
+let lhs_matches (delta, _, patcs : lhs) (delta', _, patcs' : lhs) =
+  pattern_matches patcs patcs'
+
+let rec split_on env var (delta, f, curpats as lhs) clauses =
   let before, (id, _, ty), after = split_tele (pred var) delta in
-  let unify, indf = unify_type before ty in
+  let unify, indf = 
+    match unify_type before ty with 
+    | Some r -> r
+    | None -> assert false (* We decided... so it better be inductive *)
+  in
   let clauses = ref clauses in
   let splits = 
-    Array.map (fun (ctx', ctxc, cstr, cstrpat, s) ->
+    Array.map (fun (ctx', ctxlen, cstr, cstrpat, s) ->
       match s with
       | None -> None
       | Some s -> 
 	  (* ctx' |- s cstr, s cstrpat *)
 	  let newdelta =
 	    subst_context s (subst_rel_context 0 cstr 
-				(lift_contextn (length ctxc) 1 after)) @ ctx' in
+				(lift_contextn ctxlen 1 after)) @ ctx' in
 	  let liftpats = 
 	    (* delta |- curpats -> before; ctxc; id; after |- liftpats *)
-	    lift_pats (length ctxc) (succ var) curpats 
+	    lift_pats ctxlen (succ var) curpats 
 	  in
 	  let liftpat = (* before; ctxc |- cstrpat -> before; ctxc; after |- liftpat *)
 	    lift_pat (pred var) 1 cstrpat
 	  in
 	  let substpat = (* before; ctxc; after |- liftpats[id:=liftpat] *)
-	    subst_pats var liftpat liftpats 
+	    subst_pats env var liftpat liftpats 
 	  in
 	  let lifts = (* before; ctxc |- s : newdelta ->
 			 before; ctxc; after |- lifts : newdelta ; after *)
 	    map (fun (k,x) -> (pred var + k, lift (pred var) x)) s
 	  in
 	  let newpats = specialize_pats lifts substpat in
-	  let matching, rest = partition (fun (delta', patcs, rhs) ->
-	    try ignore(pattern_matches newpats patcs); true with Conflict -> false)
-	    !clauses
-	  in
+	  let newlhs = (newdelta, f, newpats) in
+	  let matching, rest = partition (fun (lhs, rhs) -> lhs_matches newlhs lhs) !clauses in
 	    clauses := rest;
 	    if matching = [] then (
 	      (* Try finding a splittable variable *)
@@ -471,43 +545,61 @@ let rec split_on env fdt var delta curpats clauses =
 		  match accid with 
 		  | Some _ -> (accid, ctx)
 		  | None -> 
-		      let unify, indf = unify_type ctx ty in
-			if array_for_all (fun (_, _, _, _, x) -> x = None) unify then
-			  (Some id, ctx)
-			else (None, decl :: ctx))
+		      match unify_type ctx ty with
+		      | Some (unify, indf) ->
+			  if array_for_all (fun (_, _, _, _, x) -> x = None) unify then
+			    (Some id, ctx)
+			  else (None, decl :: ctx)
+		      | None -> (None, decl :: ctx))
 		  newdelta (None, [])
 	      in 
 		match id with
 		| None ->
 		    errorlabstrm "deppat"
 	      	      (str "Non-exhaustive pattern-matching, no clause found for:" ++ fnl () ++
-	      		  pr_clause env (newdelta, constrs_of_pats newpats, Empty var))
+	      		  pr_lhs env newlhs)
 		| Some id -> 
-		    Some (Compute (newdelta, newpats, 
-				  Empty (fst (lookup_rel_id (out_name id) newdelta))))
+		    Some (Compute (newlhs, Empty (fst (lookup_rel_id (out_name id) newdelta))))
 	    ) else (
-	      let splitting = make_split_aux env fdt newdelta newpats matching in
+	      let splitting = make_split_aux env newlhs matching in
 		Some splitting))
       unify
   in
-    assert(!clauses = []);
-    Split (delta, curpats, var, indf, unify, splits)
+    if !clauses <> [] then
+      errorlabstrm "deppat"
+	(str "Impossible clauses:" ++ fnl () ++ pr_clauses env !clauses);
+    Split (lhs, var, indf, unify, splits)
       
-and make_split_aux env (f, d, t as fdt) delta curpats clauses =
-  match clauses with
-  (delta', patcs, rhs) :: clauses' ->
-    (match find_split curpats patcs with
-    | None -> (* No need to split anymore *)
-	let res = Compute (delta', pats_of_constrs patcs, rhs) in
-	  if clauses' <> [] then 
+and make_split_aux env lhs clauses =
+  let split = 
+    fold_left (fun acc (lhs', rhs) -> 
+      match acc with 
+      | None -> find_split lhs lhs'
+      | _ -> acc) None clauses
+  in 
+    match split with
+    | Some var -> split_on env var lhs clauses
+    | None ->
+	(match clauses with
+	| [] -> error "No clauses left"
+	| [(lhs, rhs)] ->
+	    (* No need to split anymore *)
+	    Compute (lhs, rhs)
+(* 	    (match rhs with *)
+(* 	    | Program _ -> *)
+(* 		Compute (delta', pats_of_constrs patcs, rhs) *)
+(* 	    | Empty split -> (\* TODO : Check unify_type inductive type *\) *)
+(* 		Compute (delta', pats_of_constrs patcs, rhs) *)
+		  (* 	    	errorlabstrm "deppat" *)
+		  (* 		  (str "Splitting on " ++ pr_id x ++ str " of type " ++  *)
+		  (* 		      pr_constr_env (push_rel_context before env)  *)
+		  (* 		      an empty type, on variable)) *)
+	| _ ->
 	    errorlabstrm "make_split_aux"
-	      (str "Overlapping clauses:" ++ fnl () ++ pr_clauses env clauses)
-	  else res
-    | Some var -> split_on env fdt var delta curpats clauses)
-  | [] -> error "No clauses left"
+	      (str "Overlapping clauses:" ++ fnl () ++ pr_clauses env clauses))
 
 let make_split env (f, delta, t) clauses =
-  make_split_aux env (f, delta, t) delta (patvars_of_tele delta) clauses
+  make_split_aux env (delta, f, patvars_of_tele delta) clauses
     
 open Evd
 open Evarutil
@@ -515,29 +607,29 @@ open Evarutil
 let lift_substitution n s = map (fun (k, x) -> (k + n, x)) s
 let map_substitution s t = map (subst_rel_subst 0 s) t
 
-let term_of_tree isevar env (i, delta, ty) tree =
+let term_of_tree status isevar env (i, delta, ty) tree =
   let rec aux = function
-    | Compute (ctx, lhs, Program rhs) -> 
-	let ty' = substl (rev (constrs_of_pats lhs)) ty in
+    | Compute ((ctx, _, pats as lhs), Program rhs) -> 
+	let ty' = substl (rev (constrs_of_lhs ~inacc:false env lhs)) ty in
 	let body = it_mkLambda_or_LetIn rhs ctx and typ = it_mkProd_or_LetIn ty' ctx in
 	  mkCast(body, DEFAULTcast, typ), typ
 
-    | Compute (ctx, lhs, Empty split) ->
-	let ty' = substl (rev (constrs_of_pats lhs)) ty in
+    | Compute ((ctx, _, pats as lhs), Empty split) ->
+	let ty' = substl (rev (constrs_of_lhs ~inacc:false env lhs)) ty in
 	let split = (Name (id_of_string "split"), 
 		    Some (Class_tactics.coq_nat_of_int (1 + (length ctx - split))),
 		    Lazy.force Class_tactics.coq_nat)
 	in
 	let ty' = it_mkProd_or_LetIn ty' ctx in
 	let let_ty' = mkLambda_or_LetIn split (lift 1 ty') in
-	let term = e_new_evar isevar env ~src:(dummy_loc, QuestionMark true) let_ty' in
+	let term = e_new_evar isevar env ~src:(dummy_loc, QuestionMark (Define true)) let_ty' in
 	  term, ty'
 	    
-    | Split (ctx, lhs, rel, indf, unif, sp) -> 
+    | Split ((ctx, _, pats as lhs), rel, indf, unif, sp) -> 
 	let before, decl, after = split_tele (pred rel) ctx in
-	let ty' = substl (rev (constrs_of_pats lhs)) ty in
+	let ty' = substl (rev (constrs_of_lhs ~inacc:false env lhs)) ty in
 	let branches = 
-	  array_map2 (fun (ctx', ctxc, cstr, cstrpat, subst) split -> 
+	  array_map2 (fun (ctx', ctxlen, cstr, cstrpat, subst) split -> 
 	    match split with
 	    | Some s -> aux s
 	    | None -> 
@@ -567,7 +659,7 @@ let term_of_tree isevar env (i, delta, ty) tree =
 			Lazy.force Class_tactics.coq_nat)
 	  in
 	  let ty = it_mkLambda_or_LetIn (lift 2 ty) [nbbranches;nbdiscr] in
-	  let term = e_new_evar isevar env ~src:(dummy_loc, QuestionMark true) ty in
+	  let term = e_new_evar isevar env ~src:(dummy_loc, QuestionMark status) ty in
 	    term
 	in       
 	let casetyp = it_mkProd_or_LetIn ty' ctx in
@@ -644,9 +736,25 @@ let interp_eqn i isevar env impls sign arity recu (pats, rhs) =
     | Program p -> 
 	Program (interp_casted_constr_evars isevar env' ~impls p (substl patcs arity))
     | Empty lid -> Empty (fst (lookup_rel_id (snd lid) ctx))
-  in (ctx, rev patcs, rhs')	
+  in ((ctx, i, pats_of_constrs (rev patcs)), rhs')	
 
 open Entries
+
+open Tacmach
+open Tacexpr
+open Tactics
+open Tacticals
+
+let contrib_tactics_path =
+  make_dirpath (List.map id_of_string ["Equality";"Program";"Coq"])
+
+let tactics_tac s =
+  make_kn (MPfile contrib_tactics_path) (make_dirpath []) (mk_label s)
+    
+let equations_tac = lazy 
+  (Tacinterp.eval_tactic 
+      (TacArg(TacCall(dummy_loc, 
+		     ArgArg(dummy_loc, tactics_tac "equations"), []))))
 
 let define_by_eqs i l t nt eqs =
   let env = Global.env () in
@@ -655,7 +763,8 @@ let define_by_eqs i l t nt eqs =
   let arity = interp_type_evars isevar env' t in
   let ty = it_mkProd_or_LetIn arity sign in
   let data = Command.compute_interning_datas env [] [i] [ty] [impls] in
-  let fixenv = push_rel (Name i, None, ty) env in
+  let fixdecls = [(Name i, None, ty)] in
+  let fixenv = push_rel_context fixdecls env in
   let equations = 
     States.with_heavy_rollback (fun () -> 
       Option.iter (Command.declare_interning_data data) nt;
@@ -665,10 +774,11 @@ let define_by_eqs i l t nt eqs =
   let arity = nf_evar (Evd.evars_of !isevar) arity in
   let prob = (i, sign, arity) in
   let fixenv = nf_env_evar (Evd.evars_of !isevar) fixenv in
-  let ce = check_evars fixenv Evd.empty !isevar in
-  List.iter (function (_, _, Program rhs) -> ce rhs | _ -> ()) equations;
+  let fixdecls = nf_rel_context_evar (Evd.evars_of !isevar) fixdecls in
+    (*   let ce = check_evars fixenv Evd.empty !isevar in *)
+    (*   List.iter (function (_, _, Program rhs) -> ce rhs | _ -> ()) equations; *)
   let is_recursive, env' =
-    let occur_eqn (ctx, _, rhs) =
+    let occur_eqn ((ctx, _, _), rhs) =
       match rhs with
       | Program c -> dependent (mkRel (succ (length ctx))) c
       | _ -> false
@@ -676,19 +786,23 @@ let define_by_eqs i l t nt eqs =
   in
   let split = make_split env' prob equations in
     (* if valid_tree prob split then *)
-  let t, ty = term_of_tree isevar env' prob split in
-  let t = 
-    if is_recursive then
-      let firstsplit = 
-	match split with
-	| Split (ctx, lhs, rel, indf, unif, sp) -> (length ctx - rel)
-	| _ -> 0
-      in mkFix (([|firstsplit|], 0), ([|Name i|], [|ty|], [|t|]))
-    else t
-  in
+  let status = (* if is_recursive then Expand else *) Define false in
+  let t, ty = term_of_tree status isevar env' prob split in
   let undef = undefined_evars !isevar in
-  let obls, t', ty' = Eterm.eterm_obligations env i !isevar (Evd.evars_of undef) 0 t ty in
-    ignore(Subtac_obligations.add_definition ~implicits:impls i t' ty' obls)
+  let t, ty = if is_recursive then 
+    (it_mkLambda_or_LetIn t fixdecls, it_mkProd_or_LetIn ty fixdecls)
+    else t, ty
+  in
+  let obls, t', ty' = 
+    Eterm.eterm_obligations env i !isevar (Evd.evars_of undef) 0 ~status t ty
+  in
+    if is_recursive then
+      ignore(Subtac_obligations.add_mutual_definitions [(i, t', ty', impls, obls)] [] 
+		~tactic:(Lazy.force equations_tac)
+		(Command.IsFixpoint [None, CStructRec]))
+    else
+      ignore(Subtac_obligations.add_definition
+		~implicits:impls i t' ty' ~tactic:(Lazy.force equations_tac) obls)
       
 module Gram = Pcoq.Gram
 module Vernac = Pcoq.Vernac_
@@ -765,28 +879,13 @@ VERNAC COMMAND EXTEND Define_equations
       decl_notation(nt) ] ->
     [ define_by_eqs i l t nt eqs ]
 END
-
-open Tacmach
-open Tacexpr
-open Tactics
-open Tacticals
-
-let contrib_tactics_path =
-  make_dirpath (List.map id_of_string ["Equality";"Program";"Coq"])
-
-let tactics_tac s =
-  lazy(make_kn (MPfile contrib_tactics_path) (make_dirpath []) (mk_label s))
-
-let destruct_last args =
-  Tacinterp.eval_tactic (TacArg(TacCall(dummy_loc, 
-				       ArgArg(dummy_loc, Lazy.force (tactics_tac "destruct_last")),args)))
     
 let rec int_of_coq_nat c = 
   match kind_of_term c with
   | App (f, [| arg |]) -> succ (int_of_coq_nat arg)
   | _ -> 0
 
-let solve_equations_goal tac gl =
+let solve_equations_goal destruct_tac tac gl =
   let concl = pf_concl gl in
   let targetn, branchesn, targ, brs, b =
     match kind_of_term concl with
@@ -811,10 +910,10 @@ let solve_equations_goal tac gl =
   let cleantac = tclTHEN (intros_using ids) (thin ids) in
   let dotac = tclDO (succ targ) intro in
   let subtacs = 
-    tclTHENS (destruct_last [])
+    tclTHENS destruct_tac
       (map (fun (id, br, brt) -> tclTHEN (letin_tac None (Name id) br onConcl) tac) branches)
   in tclTHENLIST [cleantac ; dotac ; subtacs] gl
-      
+    
 TACTIC EXTEND solve_equations
-  [ "solve_equations" tactic(tac) ] -> [ solve_equations_goal (snd tac) ]
+  [ "solve_equations" tactic(destruct) tactic(tac) ] -> [ solve_equations_goal (snd destruct) (snd tac) ]
 END

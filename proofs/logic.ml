@@ -57,6 +57,8 @@ let rec catchable_exception = function
 		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
 		   |CannotFindWellTypedAbstraction _
 		   |UnsolvableImplicit _)) -> true
+  | Typeclasses_errors.TypeClassError 
+      (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
   | _ -> false
 
 (* Tells if the refiner should check that the submitted rules do not
