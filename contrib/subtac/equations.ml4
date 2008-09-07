@@ -721,7 +721,11 @@ let interp_pats i isevar env impls pat sign recu =
     let patenv = match recu with None -> env' | Some ty -> push_named (i, None, ty) env' in
     let patt, _ = interp_constr_evars_impls ~evdref:isevar patenv ~impls:([],[]) pat in
       match kind_of_term patt with
-      | App (m, args) -> Array.to_list args
+      | App (m, args) -> 
+	  if not (eq_constr m (mkRel (succ (length varsctx)))) then
+	    user_err_loc (constr_loc pat, "interp_pats",
+			 str "Expecting a pattern for " ++ pr_id i)
+	  else Array.to_list args
       | _ -> user_err_loc (constr_loc pat, "interp_pats",
 			  str "Error parsing pattern: unnexpected left-hand side")
   in
