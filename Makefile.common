@@ -60,7 +60,7 @@ COQWC:=bin/coqwc$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
 
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
-      $(COQWC) $(COQDOC) $(CSDPCERT)
+      $(COQWC) $(COQDOC)
 
 ###########################################################################
 # Documentation

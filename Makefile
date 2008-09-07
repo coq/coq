@@ -181,7 +181,7 @@ archclean: clean-ide cleantheories
 	rm -f $(COQTOPOPT) $(COQMKTOPOPT) $(COQCOPT) $(CHICKENOPT)
 	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
 	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' -or -name '*.so' | xargs rm -f
-	rm -f $(TOOLS)
+	rm -f $(TOOLS) $(CSDPCERT)
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
