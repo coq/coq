@@ -24,7 +24,14 @@
 # by Emacs' next-error.
 ###########################################################################
 
-FIND_VCS_CLAUSE:='(' -name '{arch}' -or -name '.svn' -or -name '_darcs' -or -name '.git' -or -name "$${GIT_DIR}" ')' -prune -or
+FIND_VCS_CLAUSE:='(' \
+  -name '{arch}' -or \
+  -name '.svn' -or \
+  -name '_darcs' -or \
+  -name '.git' -or \
+  -name 'debian' -or \
+  -name "$${GIT_DIR}" \
+')' -prune -or
 FIND_PRINTF_P:=-print | sed 's|^\./||'
 
 export YACCFILES:=$(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mly' ')' $(FIND_PRINTF_P))
@@ -43,7 +50,7 @@ export MLIFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mli' ')' $(FIN
 export ML4FILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml4' ')' $(FIND_PRINTF_P))
 #export VFILES   := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.v'   ')' $(FIND_PRINTF_P)) \
 #  $(GENVFILES)
-export CFILES   := $(shell find kernel/byterun -name '*.c')
+export CFILES   := $(shell find kernel/byterun $(FIND_VCS_CLAUSE) -name '*.c')
 
 export ML4FILESML:= $(ML4FILES:.ml4=.ml)
 
