@@ -155,7 +155,7 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
+	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
 	rm -f bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 	find . -name '*~' -or -name '*.cm[ioa]' | xargs rm -f
 	find contrib test-suite -name '*.vo' -or -name '*.glob' | xargs rm -f
