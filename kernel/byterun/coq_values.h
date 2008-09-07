@@ -11,8 +11,8 @@
 #ifndef _COQ_VALUES_
 #define _COQ_VALUES_
 
-#include <alloc.h>
-#include <mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/mlvalues.h>
 
 #define Default_tag 0
 #define Accu_tag 0

@@ -21,7 +21,7 @@
 #include "coq_values.h" 
 
 /*spiwack : imports support functions for 64-bit integers */
-#include "config.h"
+#include <caml/config.h>
 #ifdef ARCH_INT64_TYPE
 #include "int64_native.h"
 #else

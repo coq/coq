@@ -433,8 +433,13 @@ Miscellaneous
   Whelp search tool.
 - Syntax of "Test Printing Let ref" and "Test Printing If ref" changed into
   "Test Printing Let for ref" and "Test Printing If for ref".
-- An overhauled build system (new Makefiles); see dev/doc/build-system.txt
-- Add -browser option to configure script
+- An overhauled build system (new Makefiles); see dev/doc/build-system.txt.
+- Add -browser option to configure script.
+- Build a shared library for the C part of Coq, and use it by default.
+  Bytecode executables are now pure. The behaviour is configurable with
+  the -coqrunbyteflags configure option.
+- Complexity tests can be skipped by setting the environment variable
+  COQTEST_SKIPCOMPLEXITY.
 
 Changes from V8.1gamma to V8.1
 ==============================

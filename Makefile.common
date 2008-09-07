@@ -23,7 +23,7 @@ COQC:=bin/coqc$(EXE)
 COQTOPBYTE:=bin/coqtop.byte$(EXE)
 COQTOPOPT:=bin/coqtop.opt$(EXE)
 BESTCOQTOP:=bin/coqtop.$(BEST)$(EXE)
-COQTOP:=bin/coqtop$(EXE)
+COQTOPEXE:=bin/coqtop$(EXE)
 CHICKENBYTE:=bin/coqchk.byte$(EXE)
 CHICKENOPT:=bin/coqchk.opt$(EXE)
 BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
@@ -39,10 +39,10 @@ COQIDE:=bin/coqide$(EXE)
 
 ifeq ($(BEST),opt)
 COQBINARIES:= $(COQMKTOP) $(COQC) \
-  $(COQTOPBYTE) $(COQTOPOPT) $(COQTOP) $(CHICKENBYTE) $(CHICKENOPT) $(CHICKEN)
+  $(COQTOPBYTE) $(COQTOPOPT) $(COQTOPEXE) $(CHICKENBYTE) $(CHICKENOPT) $(CHICKEN)
 else
 COQBINARIES:= $(COQMKTOP) $(COQC) \
-  $(COQTOPBYTE)              $(COQTOP) $(CHICKENBYTE)               $(CHICKEN)
+  $(COQTOPBYTE)              $(COQTOPEXE) $(CHICKENBYTE)               $(CHICKEN)
 endif
 OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
@@ -60,7 +60,7 @@ COQWC:=bin/coqwc$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
 
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
-      $(COQWC) $(COQDOC)
+      $(COQWC) $(COQDOC) $(CSDPCERT)
 
 ###########################################################################
 # Documentation
@@ -74,7 +74,7 @@ HEVEA:=hevea
 HEVEAOPTS:=-fix -exec xxdate.exe
 HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 export TEXINPUTS:=$(COQSRC)/doc:$(HEVEALIB):
-COQTEXOPTS:=-n 72 -image $(COQSRC)/$(COQTOP) -v -sl -small
+COQTEXOPTS:=-n 72 -image $(COQSRC)/$(COQTOPEXE) -v -sl -small
 
 DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex 
 
@@ -111,7 +111,9 @@ REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
 # Object and Source files 
 ###########################################################################
 
-LIBCOQRUN:=kernel/byterun/libcoqrun.a
+COQRUN := coqrun
+LIBCOQRUN:=kernel/byterun/lib$(COQRUN).a
+DLLCOQRUN:=$(dir $(LIBCOQRUN))dll$(COQRUN).so
 
 CLIBS:=unix.cma
 
@@ -827,7 +829,7 @@ INTERFACEVO:=
 
 MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
-	man/coqwc.1 man/coqdoc.1 \
+	man/coqwc.1 man/coqdoc.1 man/coqide.1 \
 	man/coq_makefile.1 man/coqmktop.1
 
 PCOQMANPAGES:=man/coq-interface.1 man/coq-parser.1

@@ -24,6 +24,8 @@ val camlp4lib : string  (* where is the library of Camlp4 *)
 val best : string       (* byte/opt *)
 val arch : string       (* architecture *)
 val osdeplibs : string  (* OS dependant link options for ocamlc *)
+val coqrunbyteflags : string (* -custom/-dllib -lcoqrun *)
+
 
 (* val defined : string list  (* options for lib/ocamlpp *) *)
 

@@ -253,9 +253,8 @@ config/Makefile looks like it contains a lot of unused variables,
 clean that up (are any maybe used by nightly scripts on
 pauillac?). Also, the COQTOP variable from config/Makefile (and used
 in contribs) has a very poorly chosen name, because "coqtop" is the
-name of a Coq executable! For example, in the Coq makefile it is
-immediately clobbered by "bin/coqtop$(EXE)"! Rename it to COQROOT or
-COQTREE or COQDIR or ...
+name of a Coq executable! In the coq Makefiles, $(COQTOPEXE) is used
+to refer to that executable.
 
 Promote the granular .glob handling to official way of doing things
 for Coq developments, that is implement it in coq_makefile and the

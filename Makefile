@@ -148,12 +148,14 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(COQCBYTE) bin/coq-interface$(EXE) bin/coq-parser$(EXE)
+	rm -f $(COQTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
+	rm -f bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 	find . -name '*~' -or -name '*.cm[ioa]' | xargs rm -f
-	find contrib -name '*.vo' -or -name '*.glob' | xargs rm -f
+	find contrib test-suite -name '*.vo' -or -name '*.glob' | xargs rm -f
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
+	rm -f test-suite/check.log
 	rm -f glob.dump
 	rm -f revision
 
@@ -175,10 +177,10 @@ docclean:
 	rm -f doc/coq.tex
 
 archclean: clean-ide cleantheories
-	rm -f $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
-	rm -f $(COQTOP)  $(COQCOPT) $(COQMKTOPOPT)
+	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN)
+	rm -f $(COQTOPOPT) $(COQMKTOPOPT) $(COQCOPT) $(CHICKENOPT)
 	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
-	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' | xargs rm -f
+	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' -or -name '*.so' | xargs rm -f
 	rm -f $(TOOLS)
 
 clean-ide:

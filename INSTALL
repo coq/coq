@@ -2,6 +2,7 @@
             INSTALLATION PROCEDURES FOR THE COQ V8.2 SYSTEM
             -----------------------------------------------
 
+
 WHAT DO YOU NEED ?
 ==================
 
@@ -160,6 +161,10 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 	Disable the Objective Caml compiler warnings. This option has no
 	effect on the result of the compilation.
 
+-browser <command>
+	Use <command> to open an URL in a browser. %s must appear in <command>,
+	and will be replaced by the URL.
+
 5- Still in the root directory, do
 
 	make world
@@ -249,6 +254,7 @@ THE AVAILABLE COMMANDS.
 
    There is also a tutorial and a FAQ; see http://coq.inria.fr/doc1-eng.html
 
+
 COMMON PROBLEMS.
 ================
 
@@ -262,6 +268,9 @@ COMMON PROBLEMS.
     * The `make install' procedure uses mkdirhier, a program that may
    not be present on certain systems. To fix that, try to replace
    mkdirhier with mkdir -p
+
+    * See also section on dynamically loaded libraries.
+
 
 COMPILING FOR DIFFERENT ARCHITECTURES.
 ======================================
@@ -308,3 +317,33 @@ MOVING BINARIES OR LIBRARY.
    the binaries directory) and -libdir (for the standard library directory) :
 
 	coqtop -bindir <new directory> -libdir <new directory>
+
+   See also next section.
+
+
+DYNAMICALLY LOADED LIBRARIES FOR BYTECODE EXECUTABLES.
+======================================================
+
+   Some bytecode executables of Coq use the OCaml runtime, which dynamically
+   loads a shared library (.so or .dll). When it is not installed properly, you
+   can get an error message of this kind:
+
+	Fatal error: cannot load shared library dllcoqrun
+	Reason: dllcoqrun.so: cannot open shared object file: No such file or directory
+
+   In this case, you need either:
+     - to set the CAML_LD_LIBRARY_PATH environment variable to point to the
+       directory where dllcoqrun.so is; this is suitable when you want to run
+       the command a limited number of times in a controlled environment (e.g.
+       during compilation of binary packages);
+     - install dllcoqrun.so in a location listed in the file ld.conf that is in
+       the directory of the standard library of OCaml;
+     - recompile your bytecode executables after reconfiguring the location of
+       of the shared library:
+         ./configure -coqrunbyteflags "-dllib -lcoqrun -dllpath <path>" ...
+       where <path> is the directory where the dllcoqrun.so is installed;
+     - (not recommended) compile bytecode executables with a custom OCaml
+       runtime by using:
+         ./configure -coqrunbyteflags -custom ...
+       be aware that stripping executables generated this way, or performing
+       other executable-specific operations, will make them useless.

@@ -13,11 +13,11 @@
 
 #include <stdio.h>
 #include <stdlib.h> 
-#include <config.h>
-#include <misc.h>
-#include <mlvalues.h>
-#include <fail.h>
-#include <memory.h>
+#include <caml/config.h>
+#include <caml/misc.h>
+#include <caml/mlvalues.h>
+#include <caml/fail.h>
+#include <caml/memory.h>
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
 

@@ -250,8 +250,16 @@ echo "Interactive tests"
 test_interactive interactive
 echo "Micromega tests"
 test_success micromega
-echo "Complexity tests"
-test_complexity complexity
+
+# We give a chance to disable the complexity tests which may cause
+# random build failures on build farms
+if [ -z "$COQTEST_SKIPCOMPLEXITY" ]; then
+  echo "Complexity tests"
+  test_complexity complexity
+else
+  echo "Skipping complexity tests"
+fi
+
 echo "Module tests"
 $coqtop -compile modules/Nat
 $coqtop -compile modules/plik

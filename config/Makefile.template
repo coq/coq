@@ -21,6 +21,10 @@ COQ_CONFIGURED=yes
 # Local use (no installation)
 LOCAL=LOCALINSTALLATION
 
+# Bytecode link flags for VM ("-custom" or "-dllib -lcoqrun")
+COQRUNBYTEFLAGS=XCOQRUNBYTEFLAGS
+BUILDLDPATH=
+
 # Paths for true installation
 # BINDIR=path where coqtop, coqc, coqmktop, coq-tex, coqdep, gallina and
 #        do_Makefile will reside
@@ -28,7 +32,7 @@ LOCAL=LOCALINSTALLATION
 # MANDIR=path where to install manual pages
 # EMACSDIR=path where to put Coq's Emacs mode (coq.el)
 BINDIR="BINDIRDIRECTORY"
-COQLIB="COQLIBDIRECTORY"
+COQLIBINSTALL="COQLIBDIRECTORY"
 MANDIR="MANDIRDIRECTORY"
 DOCDIR="DOCDIRDIRECTORY"
 EMACSLIB="EMACSLIBDIRECTORY"
@@ -58,6 +62,7 @@ COQIDEINCLUDES=LABLGTKINCLUDES
 # Objective-Caml compile command 
 OCAML="OCAMLEXEC"
 OCAMLC="BYTECAMLC"
+OCAMLMKLIB="OCAMLMKLIBEXEC"
 OCAMLOPT="NATIVECAMLC"
 OCAMLDEP="OCAMLDEPEXEC"
 OCAMLDOC="OCAMLDOCEXEC"
