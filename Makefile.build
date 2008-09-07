@@ -668,8 +668,8 @@ ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LINKCMX) $(FULLCOQLIB)
 endif
 	find . -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
-	# csdpcert is not meant to be directly called by the user;
-	# we install it with libraries
+# csdpcert is not meant to be directly called by the user; we install
+# it with libraries
 	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
 	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/contrib/micromega
 	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
