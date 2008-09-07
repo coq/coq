@@ -667,7 +667,7 @@ install-library:
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LINKCMX) $(FULLCOQLIB)
 endif
-	find . -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
+	find . $(FIND_VCS_CLAUSE) -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
 	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
@@ -715,7 +715,8 @@ install-latex:
 
 source-doc:
 	if !(test -d $(SOURCEDOCDIR)); then mkdir $(SOURCEDOCDIR); fi
-	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) `find . -name "*.ml"`
+	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) \
+	  `find . $(FIND_VCS_CLAUSE) -name "*.ml"`
 
 
 ###########################################################################
