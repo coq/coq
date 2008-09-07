@@ -159,7 +159,7 @@ let app_opt c e =
 let print_args env args = 
   Array.fold_right (fun a acc -> my_print_constr env a ++ spc () ++ acc) args (str "")
 
-let make_existential loc ?(opaque = true) env isevars c =
+let make_existential loc ?(opaque = Define true) env isevars c =
   let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark opaque) c in
   let (key, args) = destEvar evar in
     (try trace (str "Constructed evar " ++ int key ++ str " applied to args: " ++
@@ -470,4 +470,3 @@ let tactics_tac s =
 
 let tactics_call tac args =
   TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (tactics_tac tac)),args))
-

@@ -284,7 +284,7 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
 	  mkApp (constr_of_global (Lazy.force fix_sub_ref), 
 		 [| argtyp ;
 		    wf_rel ;
-		    make_existential dummy_loc ~opaque:false env isevars wf_proof ;
+		    make_existential dummy_loc ~opaque:(Define false) env isevars wf_proof ;
 		    lift lift_cst prop ;
 		    lift lift_cst intern_body_lam |])
       | Some f ->

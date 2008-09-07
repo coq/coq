@@ -342,7 +342,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	(fun (loc,(id,_)) -> 
 	   RVar (loc,id)) params in 
     let dum_args= 
-      list_tabulate (fun _ -> RHole (dummy_loc,Evd.QuestionMark false))
+      list_tabulate (fun _ -> RHole (dummy_loc,Evd.QuestionMark (Evd.Define false)))
 	oib.Declarations.mind_nrealargs in
       raw_app(dummy_loc,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in

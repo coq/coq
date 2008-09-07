@@ -940,7 +940,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
         let p' = Option.map (intern_type env'') po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k) -> 
-	RHole (loc, match k with Some k -> k | None -> Evd.QuestionMark true)
+	RHole (loc, match k with Some k -> k | None -> Evd.QuestionMark (Evd.Define true))
     | CPatVar (loc, n) when allow_patvar ->
 	RPatVar (loc, n)
     | CPatVar (loc, _) ->

@@ -16,11 +16,12 @@ open Util
 
 val mkMetas : int -> constr list
 
-(* env, id, evars, number of
-   function prototypes to try to clear from evars contexts, object and type *)
-val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> constr -> types -> 
-  (identifier * types * loc * bool * Intset.t) array * constr * types
+(* env, id, evars, number of function prototypes to try to clear from
+   evars contexts, object and type *)
+val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> 
+  ?status:obligation_definition_status -> constr -> types -> 
+  (identifier * types * loc * obligation_definition_status * Intset.t) array * constr * types
     (* Obl. name, type as product, location of the original evar, 
-       opacity (true = opaque) and dependencies as indexes into the array *)
+       status and dependencies as indexes into the array *)
 
 val etermtac : open_constr -> tactic

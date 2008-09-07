@@ -6,6 +6,7 @@
 *)
 
 open Term
+open Sign
 open Names
 open Evd
 open List
@@ -20,15 +21,26 @@ let trace s =
 let succfix (depth, fixrels) = 
   (succ depth, List.map succ fixrels)
 
+type oblinfo =
+  { ev_name: int * identifier;
+    ev_hyps: named_context;
+    ev_status : obligation_definition_status;
+    ev_chop: int option;
+    ev_loc: Util.loc;
+    ev_typ: types;
+    ev_deps: Intset.t }
+    
 (** Substitute evar references in t using De Bruijn indices, 
   where n binders were passed through. *)
+
 let subst_evar_constr evs n t = 
   let seen = ref Intset.empty in
   let transparent = ref Idset.empty in
   let evar_info id = List.assoc id evs in
   let rec substrec (depth, fixrels) c = match kind_of_term c with
     | Evar (k, args) ->
-	let (id, idstr), hyps, chop, _, _, _ = 
+	let { ev_name = (id, idstr) ; 
+	      ev_hyps = hyps ; ev_chop = chop } =
 	  try evar_info k
 	  with Not_found -> 
 	    anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found")
@@ -117,7 +129,7 @@ let rec chop_product n t =
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
       | _ -> None
 
-let eterm_obligations env name isevars evm fs t ty = 
+let eterm_obligations env name isevars evm fs ?status t ty = 
   (* 'Serialize' the evars, we assume that the types of the existentials
      refer to previous existentials in the list only *)
   let nc = Environ.named_context env in
@@ -139,14 +151,22 @@ let eterm_obligations env name isevars evm fs t ty =
 	 let evtyp, deps, transp = etype_of_evar l hyps ev.evar_concl in
 	 let evtyp, hyps, chop = 
 	   match chop_product fs evtyp with
-	   Some t -> t, trunc_named_context fs hyps, fs
-	     | None -> evtyp, hyps, 0
+	   | Some t -> t, trunc_named_context fs hyps, fs
+	   | None -> evtyp, hyps, 0
 	 in
 	 let loc, k = evar_source id isevars in
-	 let opacity = match k with QuestionMark o -> o | _ -> true in
-	 let opaque = if not opacity || chop <> fs then None else Some chop in
-	 let y' = (id, ((n, nstr), hyps, opaque, loc, evtyp, deps)) in
-	   y' :: l) 
+	 let status = match k with QuestionMark o -> Some o | _ -> status in
+	 let status, chop = match status with 
+	   | Some (Define true as stat) ->
+	       if chop <> fs then Define false, None 
+	       else stat, Some chop
+	   | Some s -> s, None
+	   | None -> Define true, None
+	 in
+	 let info = { ev_name = (n, nstr);
+		      ev_hyps = hyps; ev_status = status; ev_chop = chop;
+		      ev_loc = loc; ev_typ = evtyp ; ev_deps = deps }
+	 in (id, info) :: l) 
       evn []
   in 
   let t', _, transparent = (* Substitute evar refs in the term by variables *)
@@ -154,8 +174,14 @@ let eterm_obligations env name isevars evm fs t ty =
   in
   let ty, _, _ = subst_evar_constr evts 0 ty in
   let evars = 
-    List.map (fun (_, ((_, name), _, opaque, loc, typ, deps)) -> 
-      name, typ, loc, not (opaque = None) && not (Idset.mem name transparent), deps) evts
+    List.map (fun (_, info) ->
+      let { ev_name = (_, name); ev_status = status;
+	    ev_loc = loc; ev_typ = typ; ev_deps = deps } = info
+      in
+      let status = match status with
+	| Define true when Idset.mem name transparent -> Define false
+	| _ -> status
+      in name, typ, loc, status, deps) evts
   in Array.of_list (List.rev evars), t', ty
 
 let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
