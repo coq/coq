@@ -1876,17 +1876,20 @@ let varify_constr_varmap ty def varh c =
   let vars = Idset.elements (freevars c) in
   let mkaccess i = 
     mkApp (Lazy.force coq_varmap_lookup,
-	  [| ty; def; mkidx i 1; varh |])
+	  [| ty; def; i; varh |])
   in
-  let rec vmap_aux l = 
+  let rec vmap_aux l cont = 
     match l with 
-    | [] -> mkApp (Lazy.force coq_varmap_empty, [| ty |])
+    | [] -> [], mkApp (Lazy.force coq_varmap_empty, [| ty |])
     | hd :: tl -> 
 	let left, right = split_interleaved [] [] tl in
-	  mkApp (Lazy.force coq_varmap_node, [| ty; hd; vmap_aux left ; vmap_aux right |])
+	let leftvars, leftmap = vmap_aux left (fun x -> cont (mkApp (Lazy.force coq_index_left, [| x |]))) in
+	let rightvars, rightmap = vmap_aux right (fun x -> cont (mkApp (Lazy.force coq_index_right, [| x |]))) in
+	  (hd, cont (Lazy.force coq_index_end)) :: leftvars @ rightvars, 
+	mkApp (Lazy.force coq_varmap_node, [| ty; hd; leftmap ; rightmap |])
   in
-  let vmap = vmap_aux (def :: List.map (fun x -> mkVar x) vars) in
-  let subst = list_map_i (fun i id -> (id, mkaccess i)) 0 vars in
+  let subst, vmap = vmap_aux (def :: List.map (fun x -> mkVar x) vars) (fun x -> x) in
+  let subst = List.map (fun (id, x) -> (destVar id, mkaccess x)) (List.tl subst) in
     vmap, replace_vars subst c
   
 
