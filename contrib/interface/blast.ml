@@ -473,7 +473,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	 let hintl = 
 	   try 
 	     [make_apply_entry (pf_env g') (project g')
-		(true,false) 
+		(true,true,false) 
 		None
 		(mkVar hid,htyp)]
 	   with Failure _ -> [] 

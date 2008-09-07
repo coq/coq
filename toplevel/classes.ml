@@ -47,7 +47,7 @@ let _ =
       Flags.silently (fun () ->      
 	Auto.add_hints false [typeclasses_db] 
 	  (Vernacexpr.HintsResolve 
-	      [pri, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])])) ())
+	      [pri, false, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])])) ())
 
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in

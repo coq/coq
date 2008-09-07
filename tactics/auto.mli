@@ -95,11 +95,13 @@ val make_exact_entry : int option -> constr * constr -> global_reference * pri_a
 
 (* [make_apply_entry (eapply,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
+   [hnf] should be true if we should expand the head of cty before searching for 
+   products;
    [c] is the term given as an exact proof to solve the goal;
-   [cty] is the type of [hc]. *)
-
+   [cty] is the type of [c]. *)
+  
 val make_apply_entry :
-  env -> evar_map -> bool * bool -> int option -> constr * constr
+  env -> evar_map -> bool * bool * bool -> int option -> constr * constr
       -> global_reference * pri_auto_tactic
 
 (* A constr which is Hint'ed will be:
@@ -110,7 +112,7 @@ val make_apply_entry :
        has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool -> int option -> constr -> 
+  env -> evar_map -> bool * bool * bool -> int option -> constr -> 
       (global_reference * pri_auto_tactic) list
 
 (* [make_resolve_hyp hname htyp].

@@ -192,7 +192,7 @@ let pr_hints local db h pr_c pr_pat =
     match h with
     | HintsResolve l ->
         str "Resolve " ++ prlist_with_sep sep 
-	  (fun (pri, c) -> pr_c c ++ 
+	  (fun (pri, _, c) -> pr_c c ++ 
 	    match pri with Some x -> spc () ++ str"(" ++ int x ++ str")" | None -> mt ())
 	  l
     | HintsImmediate l ->

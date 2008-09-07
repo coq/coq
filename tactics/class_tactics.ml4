@@ -343,16 +343,24 @@ let is_transparent_gr (ids, csts) = function
   | ConstRef cst -> Cpred.mem cst csts
   | IndRef _ | ConstructRef _ -> false
 
+let make_resolve_hyp env sigma st flags pri (id, _, cty) =
+  let ctx, ar = decompose_prod cty in
+  let keep = 
+    match kind_of_term (fst (decompose_app ar)) with
+    | Const c -> is_class (ConstRef c)
+    | Ind i -> is_class (IndRef i)
+    | _ -> false
+  in
+    if keep then let c = mkVar id in
+      map_succeed 
+	(fun f -> f (c,cty)) 
+	[make_exact_entry pri; make_apply_entry env sigma flags pri]
+    else []
+
 let make_local_hint_db st eapply lems g =
   let sign = pf_hyps g in
-  let make_resolve_hyp env evar_map c = 
-    try 
-      let res = make_resolves env evar_map (eapply, false) None (mkVar c) in
-	List.filter (fun (gr, _) -> not (is_transparent_gr st gr)) res
-    with _ -> []
-  in
-  let hintlist = list_map_append (pf_apply make_resolve_hyp g) (ids_of_named_context sign) in
-  let hintlist' = list_map_append (pf_apply make_resolves g (eapply,false) None) lems in
+  let hintlist = list_map_append (pf_apply make_resolve_hyp g st (eapply,false,false) None) sign in
+  let hintlist' = list_map_append (pf_apply make_resolves g (eapply,false,false) None) lems in
     Hint_db.add_list hintlist' (Hint_db.add_list hintlist (Hint_db.empty st true))
 
 let e_search_auto debug (in_depth,p) lems st db_list gls = 
@@ -1715,7 +1723,7 @@ END
 
 let not_declared env ty rel =
   tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++ 
-		str ty ++ str" relation. Maybe you need to import the Setoid library.")
+		str ty ++ str" relation. Maybe you need to import the Setoid library")
 
 let relation_of_constr env c = 
   match kind_of_term c with
@@ -1725,11 +1733,40 @@ let relation_of_constr env c =
     | _ -> errorlabstrm "relation_of_constr" 
 	(str "The term " ++ Printer.pr_constr_env env c ++ str" is not an applied relation.")
 	
-let setoid_proof gl ty ?(bindings=NoBindings) meth fallback =
+let setoid_proof gl ty fn fallback =
+  let env = pf_env gl in
+  let rel, args = relation_of_constr env (pf_concl gl) in
+  let evm, car = project gl, pf_type_of gl args.(0) in
+    try fn env evm car rel gl
+    with Not_found -> 
+      match fallback gl with
+      | Some tac -> tac gl
+      | None -> not_declared env ty rel gl
+	  
+let setoid_reflexivity gl =
+  setoid_proof gl "reflexive" 
+    (fun env evm car rel -> apply (get_reflexive_proof env evm car rel))
+    (reflexivity_red true)
+	  
+let setoid_symmetry gl =
+  setoid_proof gl "symmetric" 
+    (fun env evm car rel -> apply (get_symmetric_proof env evm car rel))
+    (symmetry_red true)
+    
+let setoid_transitivity c gl =
+  setoid_proof gl "transitive" 
+    (fun env evm car rel ->
+      apply_with_bindings
+	((get_transitive_proof env evm car rel),
+	Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp (id_of_string "y"), c ]))
+    (transitivity_red true c)
+    
+(*
+  let setoid_proof gl ty ?(bindings=NoBindings) meth fallback =
   try
-    typeclass_app_constrexpr 
-      (CRef (Qualid (dummy_loc, Nametab.shortest_qualid_of_global Idset.empty
-	(Lazy.force meth)))) ~bindings gl
+  typeclass_app_constrexpr 
+  (CRef (Qualid (dummy_loc, Nametab.shortest_qualid_of_global Idset.empty
+  (Lazy.force meth)))) ~bindings gl
   with Not_found | Typeclasses_errors.TypeClassError (_, _) |
       Stdpp.Exc_located (_, Typeclasses_errors.TypeClassError (_, _)) -> 
 	match fallback gl with 
@@ -1752,7 +1789,7 @@ let setoid_transitivity c gl =
     setoid_proof gl "transitive" 
       ~bindings:(Rawterm.ExplicitBindings [ dummy_loc, Rawterm.NamedHyp binding_name, constrIn c ])
       transitive_proof_global (transitivity_red true c)
-
+*)
 let setoid_symmetry_in id gl =
   let ctype = pf_type_of gl (mkVar id) in
   let binders,concl = Sign.decompose_prod_assum ctype in

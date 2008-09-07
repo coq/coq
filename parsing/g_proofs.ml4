@@ -106,7 +106,7 @@ GEXTEND Gram
   ;
   hint:
     [ [ IDENT "Resolve"; lc = LIST1 constr; n = OPT [ n = natural -> n ] -> 
-          HintsResolve (List.map (fun x -> (n, x)) lc)
+          HintsResolve (List.map (fun x -> (n, true, x)) lc)
       | IDENT "Immediate"; lc = LIST1 constr -> HintsImmediate lc
       | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
       | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc

@@ -1770,7 +1770,7 @@ let rec xlate_vernac =
 		| HintsImmediate _ -> CT_hints_immediate(l', dblist)
 		| _ -> assert false)
         | HintsResolve l -> 
-	 let f1, formulas = match List.map xlate_formula (List.map snd l) with
+	 let f1, formulas = match List.map xlate_formula (List.map pi3 l) with
 	     a :: tl -> a, tl
 	   | _  -> failwith "" in
 	 let l' = CT_formula_ne_list(f1, formulas) in

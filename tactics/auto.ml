@@ -258,15 +258,15 @@ let make_exact_entry pri (c,cty) =
 	(head_of_constr_reference (List.hd (head_constr cty)),
 	   { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
 
-let make_apply_entry env sigma (eapply,verbose) pri (c,cty) =
-  let cty = hnf_constr env sigma cty in
-  match kind_of_term cty with
+let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
+  let cty = if hnf then hnf_constr env sigma cty else cty in
+    match kind_of_term cty with
     | Prod _ ->
         let ce = mk_clenv_from dummy_goal (c,cty) in
 	let c' = clenv_type ce in
 	let pat = Pattern.pattern_of_constr c' in
         let hd = (try head_pattern_bound pat
-                  with BoundPattern -> failwith "make_apply_entry") in
+          with BoundPattern -> failwith "make_apply_entry") in
         let nmiss = List.length (clenv_missing ce) in
 	if nmiss = 0 then 
 	  (hd,
@@ -285,7 +285,7 @@ let make_apply_entry env sigma (eapply,verbose) pri (c,cty) =
         end
     | _ -> failwith "make_apply_entry"
  
-(* flags is (e,v) with e=true if eapply and v=true if verbose 
+(* flags is (e,h,v) with e=true if eapply and h=true if hnf and v=true if verbose 
    c is a constr
    cty is the type of constr *)
 
@@ -299,14 +299,14 @@ let make_resolves env sigma flags pri c =
   if ents = [] then
     errorlabstrm "Hint" 
       (pr_lconstr c ++ spc() ++ 
-        (if fst flags then str"cannot be used as a hint."
+        (if pi1 flags then str"cannot be used as a hint."
 	else str "can be used as a hint only for eauto."));
   ents
 
 (* used to add an hypothesis to the local hint database *)
 let make_resolve_hyp env sigma (hname,_,htyp) = 
   try
-    [make_apply_entry env sigma (true, false) None
+    [make_apply_entry env sigma (true, true, false) None
        (mkVar hname, htyp)]
   with 
     | Failure _ -> []
@@ -457,8 +457,8 @@ let add_resolves env sigma clist local dbnames =
        Lib.add_anonymous_leaf
 	 (inAutoHint
 	    (local,dbname, AddTactic
-     	      (List.flatten (List.map (fun (x, y) ->
-		make_resolves env sigma (true,Flags.is_verbose()) x y) clist)))))
+     	      (List.flatten (List.map (fun (x, hnf, y) ->
+		make_resolves env sigma (true,hnf,Flags.is_verbose()) x y) clist)))))
     dbnames
 
 
@@ -507,7 +507,7 @@ let add_hints local dbnames0 h =
   let f = Constrintern.interp_constr sigma env in
   match h with
   | HintsResolve lhints ->	
-      add_resolves env sigma (List.map (fun (pri, x) -> pri, f x) lhints) local dbnames
+      add_resolves env sigma (List.map (fun (pri, b, x) -> pri, b, f x) lhints) local dbnames
   | HintsImmediate lhints ->
       add_trivials env sigma (List.map f lhints) local dbnames
   | HintsUnfold lhints ->
@@ -544,7 +544,7 @@ let add_hints local dbnames0 h =
         let isp = inductive_of_reference qid in
         let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
         let lcons = list_tabulate
-          (fun i -> None, mkConstruct (isp,i+1)) (Array.length consnames) in
+          (fun i -> None, true, mkConstruct (isp,i+1)) (Array.length consnames) in
         add_resolves env sigma lcons local dbnames in
       List.iter add_one lqid
   | HintsExtern (pri, patcom, tacexp) ->
@@ -707,7 +707,7 @@ let unify_resolve flags (c,clenv) gls =
 let make_local_hint_db eapply lems g =
   let sign = pf_hyps g in
   let hintlist = list_map_append (pf_apply make_resolve_hyp g) sign in
-  let hintlist' = list_map_append (pf_apply make_resolves g (eapply,false) None) lems in
+  let hintlist' = list_map_append (pf_apply make_resolves g (eapply,true,false) None) lems in
     Hint_db.add_list hintlist' (Hint_db.add_list hintlist (Hint_db.empty empty_transparent_state false))
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
@@ -740,6 +740,10 @@ let conclPattern concl pat tac gl =
 (* local_db is a Hint database containing the hypotheses of current goal *)
 (* Papageno : cette fonction a été pas mal simplifiée depuis que la base
   de Hint impérative a été remplacée par plusieurs bases fonctionnelles *)
+
+let flags_of_state st =
+  {auto_unif_flags with 
+    modulo_conv_on_closed_terms = Some st; modulo_delta = st}
 
 let rec trivial_fail_db mod_delta db_list local_db gl =
   let intro_tac = 
@@ -788,19 +792,27 @@ and my_find_search_delta db_list local_db hdc concl =
     if occur_existential concl then 
       list_map_append
 	(fun db -> 
-	  let st = {flags with modulo_delta = Hint_db.transparent_state db} in
-	    List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
+	  if Hint_db.use_dn db then 
+	    let flags = flags_of_state (Hint_db.transparent_state db) in
+	      List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db)
+	  else
+	    let st = {flags with modulo_delta = Hint_db.transparent_state db} in
+	      List.map (fun x -> (st,x)) (Hint_db.map_all hdc db))
 	(local_db::db_list)
     else
       list_map_append (fun db -> 
-	let (ids, csts as st) = Hint_db.transparent_state db in
-	let st, l = 
-	  let l =
-	    if (Idpred.is_empty ids && Cpred.is_empty csts)
-	    then Hint_db.map_auto (hdc,concl) db
-	    else Hint_db.map_all hdc db
-	  in {flags with modulo_delta = st}, l
-	in List.map (fun x -> (st,x)) l)
+	if Hint_db.use_dn db then 
+	  let flags = flags_of_state (Hint_db.transparent_state db) in
+	    List.map (fun x -> (flags, x)) (Hint_db.map_auto (hdc,concl) db)
+	else
+	  let (ids, csts as st) = Hint_db.transparent_state db in
+	  let st, l = 
+	    let l =
+	      if (Idpred.is_empty ids && Cpred.is_empty csts)
+	      then Hint_db.map_auto (hdc,concl) db
+	      else Hint_db.map_all hdc db
+	    in {flags with modulo_delta = st}, l
+	  in List.map (fun x -> (st,x)) l)
       	(local_db::db_list)
   in
     List.map 
@@ -910,7 +922,7 @@ let rec search_gen decomp n mod_delta db_list local_db extra_sign goal =
 	 let hintl = 
 	   try 
 	     [make_apply_entry (pf_env g') (project g')
-		(true,false) None
+		(true,true,false) None
 		(mkVar hid, htyp)]
 	   with Failure _ -> [] 
 	 in
@@ -1009,7 +1021,7 @@ let make_resolve_any_hyp env sigma (id,_,ty) =
   let ents = 
     map_succeed
       (fun f -> f (mkVar id,ty)) 
-      [make_exact_entry None; make_apply_entry env sigma (true,false) None]
+      [make_exact_entry None; make_apply_entry env sigma (true,true,false) None]
   in 
   ents
 
