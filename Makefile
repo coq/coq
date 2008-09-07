@@ -24,14 +24,14 @@
 # by Emacs' next-error.
 ###########################################################################
 
-FIND_VCS_CLAUSE:='(' \
+export FIND_VCS_CLAUSE:='(' \
   -name '{arch}' -or \
   -name '.svn' -or \
   -name '_darcs' -or \
   -name '.git' -or \
   -name 'debian' -or \
   -name "$${GIT_DIR}" \
-')' -prune -or
+')' -prune -type f -or
 FIND_PRINTF_P:=-print | sed 's|^\./||'
 
 export YACCFILES:=$(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mly' ')' $(FIND_PRINTF_P))
@@ -155,7 +155,7 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
+	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
 	rm -f bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 	find . -name '*~' -or -name '*.cm[ioa]' | xargs rm -f
 	find contrib test-suite -name '*.vo' -or -name '*.glob' | xargs rm -f
@@ -203,7 +203,7 @@ ml4depclean:
 	find . -name '*.ml4.d' | xargs rm -f
 
 depclean:
-	find . -name '*.d' | xargs rm -f
+	find . $(FIND_VCS_CLAUSE) -name '*.d' | xargs rm -f
 
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli
