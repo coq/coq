@@ -246,7 +246,7 @@ and fCOMMAND = function
    fNODE "hint_destruct" 6
 | CT_hint_extern(x1, x2, x3, x4) ->
    fINT x1 ++
-   fFORMULA x2 ++
+   fFORMULA_OPT x2 ++
    fTACTIC_COM x3 ++
    fID_LIST x4 ++
    fNODE "hint_extern" 4

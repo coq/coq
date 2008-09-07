@@ -143,8 +143,7 @@ and e_my_find_search db_list local_db hdc concl =
               tclTHEN (unify_e_resolve flags (term,cl)) 
 		(e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
-	  | Extern tacast -> conclPattern concl 
-	      (Option.get p) tacast
+	  | Extern tacast -> conclPattern concl p tacast
       in 
 	(tac,b,fmt_autotactic t)
   in 

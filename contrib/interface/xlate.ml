@@ -1751,7 +1751,10 @@ let rec xlate_vernac =
 	     CT_hints(CT_ident "Constructors",
 		      CT_id_ne_list(n1, names), dblist)
 	| HintsExtern (n, c, t) ->
-	    CT_hint_extern(CT_int n, xlate_formula c, xlate_tactic t, dblist)
+	    let pat = match c with 
+	      | None -> CT_coerce_ID_OPT_to_FORMULA_OPT (CT_coerce_NONE_to_ID_OPT CT_none)
+	      | Some c -> CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula c) 
+	    in CT_hint_extern(CT_int n, pat, xlate_tactic t, dblist)
         | HintsImmediate l -> 
 	 let f1, formulas = match List.map xlate_formula l with
 	     a :: tl -> a, tl

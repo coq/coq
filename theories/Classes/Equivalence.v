@@ -55,11 +55,6 @@ Program Instance equiv_reflexive [ sa : Equivalence A ] : Reflexive equiv.
 
 Program Instance equiv_symmetric [ sa : Equivalence A ] : Symmetric equiv.
 
-  Next Obligation.
-  Proof.
-    symmetry ; auto.
-  Qed.
-
 Program Instance equiv_transitive [ sa : Equivalence A ] : Transitive equiv.
 
   Next Obligation.
@@ -133,10 +128,7 @@ End Respecting.
 Program Instance pointwise_equivalence [ eqb : Equivalence B eqB ] :
   Equivalence (A -> B) (pointwise_relation eqB) | 9.
 
-  Solve Obligations using simpl_relation ; first [ reflexivity | (symmetry ; auto) ].
-
   Next Obligation.
   Proof.
     transitivity (y a) ; auto.
   Qed.
-

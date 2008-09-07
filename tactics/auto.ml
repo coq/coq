@@ -59,6 +59,8 @@ type pri_auto_tactic = {
   code : auto_tactic     (* the tactic to apply when the concl matches pat *)
 }
 
+type hint_entry = global_reference option * pri_auto_tactic
+
 let pri_ord {pri=pri1} {pri=pri2} = pri1 - pri2
 
 let pri_order {pri=pri1} {pri=pri2} = pri1 <= pri2
@@ -121,14 +123,15 @@ module Hint_db = struct
     hintdb_state : Names.transparent_state;
     use_dn : bool;
     hintdb_map : search_entry Constr_map.t;
-    (* A list of unindexed entries starting with an unfoldable constant. *)
-    hintdb_transp : stored_data list
+    (* A list of unindexed entries starting with an unfoldable constant
+       or with no associated pattern. *)
+    hintdb_nopat : stored_data list
   }
 
   let empty st use_dn = { hintdb_state = st;
 			  use_dn = use_dn;
 			  hintdb_map = Constr_map.empty;
-			  hintdb_transp = [] }
+			  hintdb_nopat = [] }
     
   let find key db =
     try Constr_map.find key db.hintdb_map
@@ -136,12 +139,12 @@ module Hint_db = struct
       
   let map_all k db =
     let (l,l',_) = find k db in
-      Sort.merge pri_order (db.hintdb_transp @ l) l'
+      Sort.merge pri_order (db.hintdb_nopat @ l) l'
    
   let map_auto (k,c) db =
     let st = if db.use_dn then Some db.hintdb_state else None in
     let l' = lookup_tacs (k,c) st (find k db) in
-      Sort.merge pri_order db.hintdb_transp l'
+      Sort.merge pri_order db.hintdb_nopat l'
 	
   let is_exact = function 
     | Give_exact _ -> true
@@ -160,26 +163,34 @@ module Hint_db = struct
 	    | EvalConstRef cst -> (ids, Cpred.add cst csts)), true
       | _ -> db.hintdb_state, false
     in
-    let dnst, db = 
+    let dnst, db, k =
       if db.use_dn then
-	let db' = 
-	  if rebuild then rebuild_db st' db
+	let db', k' = 
+	  if rebuild then rebuild_db st' db, k
 	  else (* not an unfold *)
-	    if is_transparent_gr st' k && not (List.mem v db.hintdb_transp) then
-	      { db with hintdb_transp = v :: db.hintdb_transp } 
-	  else db 
+	    (match k with
+	    | Some gr -> db, if is_transparent_gr st' gr then None else k
+	    | None -> db, None)
 	in
-	  (Some st', db')
-      else None, db
+	  (Some st', db', k')
+      else None, db, k
     in
-    let oval = find k db in
     let pat = if not db.use_dn && is_exact v.code then None else v.pat in
-      { db with hintdb_map = Constr_map.add k (add_tac pat v dnst oval) db.hintdb_map;
-	hintdb_state = st' }
+      match k with
+      | None ->
+	  if not (List.mem v db.hintdb_nopat) then
+	    { db with hintdb_nopat = v :: db.hintdb_nopat }
+	  else db
+      | Some gr ->
+	  let oval = find gr db in
+	    { db with hintdb_map = Constr_map.add gr (add_tac pat v dnst oval) db.hintdb_map;
+	      hintdb_state = st' }
 	
   let add_list l db = List.fold_right add_one l db
     
-  let iter f db = Constr_map.iter (fun k (l,l',_) -> f k (l@l')) db.hintdb_map
+  let iter f db = 
+    f None db.hintdb_nopat;
+    Constr_map.iter (fun k (l,l',_) -> f (Some k) (l@l')) db.hintdb_map
     
   let transparent_state db = db.hintdb_state
 
@@ -255,7 +266,7 @@ let make_exact_entry pri (c,cty) =
         let ce = mk_clenv_from dummy_goal (c,cty) in
 	let c' = clenv_type ce in
 	let pat = Pattern.pattern_of_constr c' in
-	(head_of_constr_reference (List.hd (head_constr cty)),
+	(Some (head_of_constr_reference (List.hd (head_constr cty))),
 	   { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
@@ -269,7 +280,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
           with BoundPattern -> failwith "make_apply_entry") in
         let nmiss = List.length (clenv_missing ce) in
 	if nmiss = 0 then 
-	  (hd,
+	  (Some hd,
           { pri = (match pri with None -> nb_hyp cty | Some p -> p);
             pat = Some pat;
             code = Res_pf(c,{ce with env=empty_env}) })
@@ -278,7 +289,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
           if verbose then
 	    warn (str "the hint: eapply " ++ pr_lconstr c ++
 	    str " will only be used by eauto");
-          (hd,
+          (Some hd,
             { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
               pat = Some pat;
               code = ERes_pf(c,{ce with env=empty_env}) })
@@ -314,23 +325,23 @@ let make_resolve_hyp env sigma (hname,_,htyp) =
 
 (* REM : in most cases hintname = id *)
 let make_unfold (ref, eref) =
-  (ref,
+  (Some ref,
    { pri = 4;
      pat = None;
      code = Unfold_nth eref })
 
 let make_extern pri pat tacast = 
-  let hdconstr = try_head_pattern pat in 
+  let hdconstr = Option.map try_head_pattern pat in 
   (hdconstr,
    { pri=pri;
-     pat = Some pat;
+     pat = pat;
      code= Extern tacast })
 
 let make_trivial env sigma c =
   let t = hnf_constr env sigma (type_of env sigma c) in
   let hd = head_of_constr_reference (List.hd (head_constr t)) in
   let ce = mk_clenv_from dummy_goal (c,t) in
-  (hd, { pri=1;
+  (Some hd, { pri=1;
          pat = Some (Pattern.pattern_of_constr (clenv_type ce));
          code=Res_pf_THEN_trivial_fail(c,{ce with env=empty_env}) })
 
@@ -364,7 +375,7 @@ let add_transparency dbname grs b =
     
 type hint_action = | CreateDB of bool * transparent_state
 		   | AddTransparency of evaluable_global_reference list * bool
-		   | AddTactic of (global_reference * pri_auto_tactic) list
+		   | AddTactic of (global_reference option * pri_auto_tactic) list
 
 let cache_autohint (_,(local,name,hints)) = 
   match hints with
@@ -385,11 +396,15 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
 	code = code ;
     }
   in
-  let subst_hint (lab,data as hint) =
-    let lab',elab' = subst_global subst lab in
-    let lab' =
-     try head_of_constr_reference (List.hd (head_constr_bound elab' []))
-     with Tactics.Bound -> lab' in
+  let subst_key gr =
+    let (lab'', elab') = subst_global subst gr in
+    let gr' = 
+      (try head_of_constr_reference (List.hd (head_constr_bound elab' []))
+	with Tactics.Bound -> lab'')
+    in if gr' == gr then gr else gr'
+  in
+  let subst_hint (k,data as hint) =
+    let k' = Option.smartmap subst_key k in
     let data' = match data.code with
       | Res_pf (c, clenv) ->
 	  let c' = subst_mps subst c in
@@ -417,8 +432,8 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
 	    if tac==tac' then data else
 	      trans_data data (Extern tac')
     in
-      if lab' == lab && data' == data then hint else
-	(lab',data')
+      if k' == k && data' == data then hint else
+	(k',data')
   in
     match hintlist with
     | CreateDB _ -> obj
@@ -474,17 +489,22 @@ let add_transparency l b local dbnames =
        (inAutoHint (local,dbname, AddTransparency (l, b))))
     dbnames
 
-let add_extern pri (patmetas,pat) tacast local dbname =
+let add_extern pri pat tacast local dbname =
   (* We check that all metas that appear in tacast have at least
      one occurence in the left pattern pat *)
   let tacmetas = [] in
-  match (list_subtract tacmetas patmetas) with
-    | i::_ ->
-	errorlabstrm "add_extern" 
-	  (str "The meta-variable ?" ++ pr_patvar i ++ str" is not bound.")
-    | []  ->
+    match pat with
+    | Some (patmetas,pat) ->
+	(match (list_subtract tacmetas patmetas) with
+	| i::_ ->
+	    errorlabstrm "add_extern" 
+	      (str "The meta-variable ?" ++ pr_patvar i ++ str" is not bound.")
+	| []  ->
+	    Lib.add_anonymous_leaf
+	      (inAutoHint(local,dbname, AddTactic [make_extern pri (Some pat) tacast])))
+    | None -> 
 	Lib.add_anonymous_leaf
-	  (inAutoHint(local,dbname, AddTactic [make_extern pri pat tacast]))
+	  (inAutoHint(local,dbname, AddTactic [make_extern pri None tacast]))
 
 let add_externs pri pat tacast local dbnames = 
   List.iter (add_extern pri pat tacast local) dbnames
@@ -548,8 +568,8 @@ let add_hints local dbnames0 h =
         add_resolves env sigma lcons local dbnames in
       List.iter add_one lqid
   | HintsExtern (pri, patcom, tacexp) ->
-      let pat =	Constrintern.interp_constrpattern Evd.empty (Global.env()) patcom in
-      let tacexp = !forward_intern_tac (fst pat) tacexp in
+      let pat =	Option.map (Constrintern.interp_constrpattern Evd.empty (Global.env())) patcom in
+      let tacexp = !forward_intern_tac (match pat with None -> [] | Some (l, _) -> l) tacexp in
       add_externs pri pat tacexp local dbnames
   | HintsDestruct(na,pri,loc,pat,code) ->
       if dbnames0<>[] then
@@ -648,9 +668,15 @@ let print_hint_db db =
 	   str"Unfoldable constant definitions: " ++ pr_cpred csts ++ fnl ()));
   Hint_db.iter 
     (fun head hintlist ->
-       msg (hov 0 
-	      (str "For " ++ pr_global head ++ str " -> " ++
-		 fmt_hint_list hintlist)))
+      match head with
+      | Some head ->
+	  msg (hov 0 
+		  (str "For " ++ pr_global head ++ str " -> " ++
+		      fmt_hint_list hintlist))
+      | None ->
+	  msg (hov 0 
+		  (str "For any goal -> " ++
+		      fmt_hint_list hintlist)))
     db
 
 let print_hint_db_by_name dbname =
@@ -728,10 +754,13 @@ let forward_interp_tactic =
 let set_extern_interp f = forward_interp_tactic := f
 
 let conclPattern concl pat tac gl =
-  let constr_bindings =
-    try matches pat concl
-    with PatternMatchingFailure -> error "conclPattern" in
-  !forward_interp_tactic constr_bindings tac gl
+  let constr_bindings = 
+    match pat with 
+    | None -> []
+    | Some pat ->
+	try matches pat concl
+	with PatternMatchingFailure -> error "conclPattern" in
+    !forward_interp_tactic constr_bindings tac gl
 
 (**************************************************************************)
 (*                           The Trivial tactic                           *)
@@ -779,7 +808,7 @@ and my_find_search_nodelta db_list local_db hdc concl =
 		(trivial_fail_db false db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	  | Extern tacast -> 
-	      conclPattern concl (Option.get p) tacast))
+	      conclPattern concl p tacast))
     tacl
 
 and my_find_search mod_delta =
@@ -828,7 +857,7 @@ and my_find_search_delta db_list local_db hdc concl =
 		(trivial_fail_db true db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	  | Extern tacast -> 
-	      conclPattern concl (Option.get p) tacast))
+	      conclPattern concl p tacast))
       tacl
       
 and trivial_resolve mod_delta db_list local_db cl = 

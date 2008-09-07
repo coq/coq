@@ -59,6 +59,16 @@ Hint Resolve @irreflexivity : ord.
 
 Unset Implicit Arguments.
 
+(** A HintDb for relations. *)
+
+Ltac solve_relation :=
+  match goal with 
+  | [ |- ?R ?x ?x ] => reflexivity
+  | [ H : ?R ?x ?y |- ?R ?y ?x ] => symmetry ; exact H
+  end.
+
+Hint Extern 4 => solve_relation : relations.
+
 (** We can already dualize all these properties. *)
 
 Program Instance flip_Reflexive [ Reflexive A R ] : Reflexive (flip R) :=

@@ -110,7 +110,7 @@ GEXTEND Gram
       | IDENT "Immediate"; lc = LIST1 constr -> HintsImmediate lc
       | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
       | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
-      | IDENT "Extern"; n = natural; c = constr_pattern ; "=>";
+      | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
           tac = tactic ->
 	  HintsExtern (n,c,tac)
       | IDENT "Destruct"; 

@@ -204,9 +204,10 @@ let pr_hints local db h pr_c pr_pat =
 	  pr_reference l
     | HintsConstructors c ->
         str"Constructors" ++ spc() ++ prlist_with_sep spc pr_reference c
-    | HintsExtern (n,c,tac) ->
-        str "Extern" ++ spc() ++ int n ++ spc() ++ pr_pat c ++ str" =>" ++
-        spc() ++ pr_raw_tactic tac
+    | HintsExtern (n,c,tac) -> 
+	let pat = match c with None -> mt () | Some pat -> pr_pat pat in
+          str "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
+          spc() ++ pr_raw_tactic tac
     | HintsDestruct(name,i,loc,c,tac) ->
         str "Destruct " ++ pr_id name ++ str" :=" ++ spc() ++
         hov 0 (int i ++ spc() ++ pr_destruct_location loc ++ spc() ++

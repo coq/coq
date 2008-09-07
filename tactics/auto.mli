@@ -44,6 +44,10 @@ type stored_data = pri_auto_tactic
 
 type search_entry = stored_data list * stored_data list * stored_data Btermdn.t
 
+(* The head may not be bound. *)
+
+type hint_entry = global_reference option * pri_auto_tactic
+
 module Hint_db :
   sig
     type t
@@ -51,9 +55,9 @@ module Hint_db :
     val find : global_reference -> t -> search_entry
     val map_all : global_reference -> t -> pri_auto_tactic list
     val map_auto : global_reference * constr -> t -> pri_auto_tactic list
-    val add_one : global_reference * pri_auto_tactic -> t -> t
-    val add_list : (global_reference * pri_auto_tactic) list -> t -> t
-    val iter : (global_reference -> stored_data list -> unit) -> t -> unit
+    val add_one : hint_entry -> t -> t
+    val add_list : (hint_entry) list -> t -> t
+    val iter : (global_reference option -> stored_data list -> unit) -> t -> unit
 
     val use_dn : t -> bool
     val transparent_state : t -> transparent_state
@@ -91,7 +95,7 @@ val print_hint_db_by_name : hint_db_name -> unit
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c]. *)
 
-val make_exact_entry : int option -> constr * constr -> global_reference * pri_auto_tactic
+val make_exact_entry : int option -> constr * constr -> hint_entry
 
 (* [make_apply_entry (eapply,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
@@ -102,7 +106,7 @@ val make_exact_entry : int option -> constr * constr -> global_reference * pri_a
   
 val make_apply_entry :
   env -> evar_map -> bool * bool * bool -> int option -> constr * constr
-      -> global_reference * pri_auto_tactic
+      -> hint_entry
 
 (* A constr which is Hint'ed will be:
    (1) used as an Exact, if it does not start with a product
@@ -113,7 +117,7 @@ val make_apply_entry :
 
 val make_resolves :
   env -> evar_map -> bool * bool * bool -> int option -> constr -> 
-      (global_reference * pri_auto_tactic) list
+      hint_entry list
 
 (* [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;
@@ -121,14 +125,13 @@ val make_resolves :
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
 val make_resolve_hyp : 
-  env -> evar_map -> named_declaration ->
-      (global_reference * pri_auto_tactic) list
+  env -> evar_map -> named_declaration -> hint_entry list
 
 (* [make_extern pri pattern tactic_expr] *)
 
 val make_extern :
-  int -> constr_pattern -> Tacexpr.glob_tactic_expr
-      -> global_reference * pri_auto_tactic
+  int -> constr_pattern option -> Tacexpr.glob_tactic_expr
+      -> hint_entry
 
 val set_extern_interp :
   (patvar_map -> Tacexpr.glob_tactic_expr -> tactic) -> unit
@@ -163,7 +166,7 @@ val unify_resolve : Unification.unify_flags -> (constr * clausenv) -> tactic
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> constr_pattern -> Tacexpr.glob_tactic_expr -> tactic
+val conclPattern : constr -> constr_pattern option -> Tacexpr.glob_tactic_expr -> tactic
 
 (* The Auto tactic *)
 
