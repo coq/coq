@@ -136,7 +136,6 @@ let parse_args () =
     | ("-db"|"-debugger") :: rem ->
         print_string "Warning: option -db/-debugger deprecated\n";flush stdout;
         parse (cfiles,args) rem
-    | "-dump-glob" :: _ :: rem -> Pp.msg_warning (Pp.str "option -dumpglob is obsolete"); parse (cfiles,args) rem
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
     | ("-I"|"-include"|"-outputstate"
