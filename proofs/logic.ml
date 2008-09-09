@@ -420,7 +420,9 @@ let prim_refiner r sigma goal =
 	      nexthyp,
 	      cl,sigma
 	  else
-	    (push_named_context_val (id,None,t) sign),cl,sigma in
+            (if !check && mem_named_context id (named_context_of_val sign) then
+                error "New variable is already declared";
+	     push_named_context_val (id,None,t) sign,cl,sigma) in
         let sg2 = mk_goal sign cl in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
