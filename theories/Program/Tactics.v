@@ -233,6 +233,21 @@ Ltac replace_hyp H c :=
   let H' := fresh "H" in
     assert(H' := c) ; clear H ; rename H' into H.
 
+(** A tactic to refine an hypothesis by supplying some of its arguments. *)
+
+Ltac refine_hyp c :=
+  let tac H := replace_hyp H c in
+    match c with
+      | ?H _ => tac H
+      | ?H _ _ => tac H
+      | ?H _ _ _ => tac H
+      | ?H _ _ _ _ => tac H
+      | ?H _ _ _ _ _ => tac H
+      | ?H _ _ _ _ _ _ => tac H
+      | ?H _ _ _ _ _ _ _ => tac H
+      | ?H _ _ _ _ _ _ _ _ => tac H
+    end.
+
 (** The default simplification tactic used by Program is defined by [program_simpl], sometimes [auto]
    is not enough, better rebind using [Obligation Tactic := tac] in this case, 
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)

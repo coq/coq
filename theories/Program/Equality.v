@@ -189,33 +189,32 @@ Ltac simplify_eqs :=
 (** A tactic that tries to remove trivial equality guards in induction hypotheses coming
    from [dependent induction]/[generalize_eqs] invocations. *)
 
-
 Ltac simpl_IH_eq H :=
   match type of H with
     | @JMeq _ ?x _ _ -> _ =>
-      specialize (H (JMeq_refl x))
+      refine_hyp (H (JMeq_refl x))
     | _ -> @JMeq _ ?x _ _ -> _ =>
-      specialize (H _ (JMeq_refl x))
+      refine_hyp (H _ (JMeq_refl x))
     | _ -> _ -> @JMeq _ ?x _ _ -> _ =>
-      specialize (H _ _ (JMeq_refl x))
+      refine_hyp (H _ _ (JMeq_refl x))
     | _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
-      specialize (H _ _ _ (JMeq_refl x))
+      refine_hyp (H _ _ _ (JMeq_refl x))
     | _ -> _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
-      specialize (H _ _ _ _ (JMeq_refl x))
+      refine_hyp (H _ _ _ _ (JMeq_refl x))
     | _ -> _ -> _ -> _ -> _ -> @JMeq _ ?x _ _ -> _ =>
-      specialize (H _ _ _ _ _ (JMeq_refl x))
+      refine_hyp (H _ _ _ _ _ (JMeq_refl x))
     | ?x = _ -> _ =>
-      specialize (H (refl_equal x))
+      refine_hyp (H (refl_equal x))
     | _ -> ?x = _ -> _ =>
-      specialize (H _ (refl_equal x))
+      refine_hyp (H _ (refl_equal x))
     | _ -> _ -> ?x = _ -> _ =>
-      specialize (H _ _ (refl_equal x))
+      refine_hyp (H _ _ (refl_equal x))
     | _ -> _ -> _ -> ?x = _ -> _ =>
-      specialize (H _ _ _ (refl_equal x))
+      refine_hyp (H _ _ _ (refl_equal x))
     | _ -> _ -> _ -> _ -> ?x = _ -> _ =>
-      specialize (H _ _ _ _ (refl_equal x))
+      refine_hyp (H _ _ _ _ (refl_equal x))
     | _ -> _ -> _ -> _ -> _ -> ?x = _ -> _ =>
-      specialize (H _ _ _ _ _ (refl_equal x))
+      refine_hyp (H _ _ _ _ _ (refl_equal x))
   end.
 
 Ltac simpl_IH_eqs H := repeat simpl_IH_eq H.

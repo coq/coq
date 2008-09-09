@@ -1734,14 +1734,20 @@ let relation_of_constr env c =
 	
 let setoid_proof gl ty fn fallback =
   let env = pf_env gl in
-  let rel, args = relation_of_constr env (pf_concl gl) in
-  let evm, car = project gl, pf_type_of gl args.(0) in
-    try fn env evm car rel gl
-    with Not_found -> 
+    try 
+      let rel, args = relation_of_constr env (pf_concl gl) in
+      let evm, car = project gl, pf_type_of gl args.(0) in
+	fn env evm car rel gl
+    with e -> 
       match fallback gl with
       | Some tac -> tac gl
-      | None -> not_declared env ty rel gl
-	  
+      | None -> 
+	  match e with
+	  | Not_found ->
+	      let rel, args = relation_of_constr env (pf_concl gl) in
+		not_declared env ty rel gl
+	  | _ -> raise e
+	      
 let setoid_reflexivity gl =
   setoid_proof gl "reflexive" 
     (fun env evm car rel -> apply (get_reflexive_proof env evm car rel))
