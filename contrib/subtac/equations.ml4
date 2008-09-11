@@ -86,19 +86,21 @@ exception Conflict
 
 let rec pmatch p c =
   match p, c with
-  | PRel i, t -> true
-(*   | _, PRel i -> true *)
+  | PRel i, t -> [i, t]
+(*   | PCstr _, PRel i -> [] *)
   | PCstr (c, pl), PCstr (c', pl') when c = c' -> pmatches pl pl'
-  | PInac _, _ -> true
-  | _, _ -> false
+  | PInac _, _ -> []
+  | _, PInac _ -> []
+  | _, _ -> raise Conflict
 
 and pmatches pl l =
   match pl, l with
-  | [], [] -> true
-  | hd :: tl, hd' :: tl' -> pmatch hd hd' && pmatches tl tl'
-  | _ -> false
-
-let pattern_matches pl l = pmatches pl l
+  | [], [] -> []
+  | hd :: tl, hd' :: tl' -> 
+      pmatch hd hd' @ pmatches tl tl'
+  | _ -> raise Conflict
+      
+let pattern_matches pl l = try Some (pmatches pl l) with Conflict -> None
 
 (* let rec pmatch p c = *)
 (*   match p, kind_of_term c with *)
@@ -291,11 +293,124 @@ and unify_constrs (env : env) subst l l' =
     fold_left2 (unify env) subst l l'
   else raise Conflict
 
-let substituted_context subst ctx =
+let fold_rel_context_with_binders f ctx init =
+  snd (List.fold_right (fun decl (depth, acc) ->
+    (succ depth, f depth decl acc)) ctx (0, init))
+    
+let dependent_rel_context (ctx : rel_context) k =
+  fold_rel_context_with_binders
+    (fun depth (n,b,t) acc -> 
+      let r = mkRel (depth + k) in
+	acc || dependent r t ||
+	  (match b with
+	  | Some b -> dependent r b
+	  | None -> false))
+    ctx false
+
+let liftn_between n k p c =
+  let rec aux depth c = match kind_of_term c with
+    | Rel i -> 
+	if i <= depth then c
+	else if i-depth > p then c
+	else mkRel (i - n)
+    | _ -> map_constr_with_binders succ aux depth c
+  in aux k c
+    
+let liftn_rel_context n k sign =  
+  let rec liftrec k = function
+    | (na,c,t)::sign ->
+	(na,Option.map (liftn n k) c,liftn n k t)::(liftrec (k-1) sign)
+    | [] -> []
+  in
+    liftrec (k + rel_context_length sign) sign
+
+let substnl_rel_context n l =
+  map_rel_context_with_binders (fun k -> substnl l (n+k-1))
+
+let reduce_rel_context (ctx : rel_context) (subst : (int * int) list) =
+  let _, s, ctx' =
+    fold_left (fun (k, s, ctx') (n, b, t as decl) ->
+      match b with
+      | None -> (succ k, mkRel k :: s, ctx' @ [decl])
+      | Some t -> (k, lift (pred k) t :: map (substnl [t] (pred k)) s, subst_rel_context 0 t ctx'))
+      (1, [], []) ctx
+  in
+  let s = rev s in
+  let s' = map (fun (korig, knew) -> korig, substl s (mkRel knew)) subst in
+    s', ctx'
+    
+(* let substituted_context (subst : (int * constr) list) (ctx : rel_context) = *)
+(*   let substitute_in_ctx n c ctx = *)
+(*     let rec aux k after = function *)
+(*       | [] -> [] *)
+(*       | (name, b, t as decl) :: before -> *)
+(* 	  if k = n then rev after @ (name, Some c, t) :: before *)
+(* 	  else aux (succ k) (decl :: after) before *)
+(*     in aux 1 [] ctx *)
+(*   in *)
+(*   let _, subst =  *)
+(*     fold_left (fun (k, s) _ -> *)
+(*       try let t = assoc k subst in *)
+(* 	    (succ k, (k, (k, t)) :: s) *)
+(*       with Not_found -> *)
+(* 	(succ k, (k, (k, mkRel k)) :: s)) *)
+(*       (1, []) ctx *)
+(*   in *)
+(*   let rec aux ctx' subst' = function *)
+(*     | [] -> ctx', subst' *)
+(*     | (korig, (k, t)) :: rest -> *)
+(* 	if t = mkRel k then  *)
+(* 	  aux ctx' ((korig, k)::subst') rest *)
+(* 	else if noccur_between 0 k t then *)
+(* 	  (\* The term to substitute refers only to previous variables. *\) *)
+(* 	  let t' = lift (-k) t in *)
+(* 	  let ctx' = substitute_in_ctx k t' ctx' in *)
+(* 	    aux ctx' ((korig, k)::subst') rest *)
+(* 	else (\* The term refers to variables declared after [k], so we move [k] *)
+(* 		after them *\) *)
+(* 	  let min = Intset.min_elt (free_rels t) in *)
+(* 	  let before, (n, b, ty), after = split_tele (pred k) ctx' in *)
+(* 	  let afterrest, aftermin = list_chop (pred min) (after : rel_context) in *)
+(* 	  let after' = *)
+(* 	    if dependent_rel_context aftermin 1 then *)
+(* 	      error "Unnable to build a merged context" *)
+(* 	    else substl_rel_context [t] aftermin *)
+(* 	  in *)
+(* 	  let afterrest' = *)
+(* 	    substnl_rel_context (2 + length after') [mkRel min] *)
+(* 	      (liftn_rel_context 2 0 afterrest) *)
+(* 	  in *)
+(* 	  let kdecl' = (n, Some (lift (-min) t), lift (length aftermin) ty) in *)
+(* 	  let ctx' = afterrest' @ (kdecl' :: after') @ before in *)
+(* 	  let substsubst (k', t') = *)
+(* 	    if k' > k then (\* Do nothing *\) (k', t') *)
+(* 	    else  *)
+(* 	      if k' >= min then (succ k, substnl [t] (pred k) t') *)
+(* 	    else *)
+(* 	      (\* Lift to get past the new decl *\) *)
+(* 	      (k, liftn_between 1 0 (length aftermin) t') *)
+(* 	  in  *)
+(* 	  let rest' = map (fun (korig, s) -> korig, substsubst s) rest in *)
+(* 	  let accsubst = map (fun (korig, knew) -> *)
+(* 	    let knew' = *)
+(* 	      if knew > k || knew < min then knew  *)
+(* 	      else if knew = k then min else pred knew  *)
+(* 	    in korig, knew') subst'  *)
+(* 	  in aux ctx' ((korig, min)::accsubst) rest' *)
+(*   in *)
+(*   let ctx', subst' = aux ctx [] subst in *)
+(*     reduce_rel_context ctx' subst' *)
+    
+    
+(*     filter (fun (i, c) -> if isRel c then i <> destRel c else true) *)
+(*       (Array.to_list (Array.mapi (fun i x -> (succ i, x)) recsubst)), ctx' *)
+	
+
+let substituted_context subst (ctx : rel_context) =
   let substitute_in_ctx n c ctx =
     let rec aux k after = function
       | [] -> []
-      | decl :: before -> 
+      | decl :: before ->
 	  if k = n then subst_rel_context 0 c (rev after) @ before
 	  else aux (succ k) (decl :: after) before
     in aux 1 [] ctx
@@ -309,7 +424,7 @@ let substituted_context subst ctx =
   let recsubst = Array.of_list (list_map_i (fun i _ -> mkRel i) 1 ctx) in
   let record_subst k t =
     Array.iteri (fun i c ->
-      if i < k then recsubst.(i) <- substnl [t] (succ (k - i)) c
+      if i < k then recsubst.(i) <- substnl [t] k c
       else if i = k then recsubst.(i) <- t
       else recsubst.(i) <- lift (-1) c)
       recsubst
@@ -317,7 +432,7 @@ let substituted_context subst ctx =
   let rec aux ctx' = function
     | [] -> ctx'
     | (k, t) :: rest ->
-	let t' = lift (-k) t in (* caution, not always well defined *)
+	let t' = lift (-k) t in
 	let ctx' = substitute_in_ctx k t' ctx' in
 	let rest' = substitute_in_subst k t' rest in
 	  record_subst (pred k) (liftn (-1) k t);
@@ -326,7 +441,7 @@ let substituted_context subst ctx =
   let ctx' = aux ctx subst in
     filter (fun (i, c) -> if isRel c then i <> destRel c else true)
       (Array.to_list (Array.mapi (fun i x -> (succ i, x)) recsubst)), ctx'
-    
+	
 let unify_type before ty =
   try
     let envb = push_rel_context before (Global.env()) in
@@ -536,7 +651,13 @@ let rec split_on env var (delta, f, curpats as lhs) clauses =
 	  in
 	  let newpats = specialize_pats lifts substpat in
 	  let newlhs = (newdelta, f, newpats) in
-	  let matching, rest = partition (fun (lhs, rhs) -> lhs_matches newlhs lhs) !clauses in
+	  let matching, rest = 
+	    fold_right (fun (lhs, rhs as clause) (matching, rest) -> 
+	      match lhs_matches newlhs lhs with
+	      | Some _ -> (clause :: matching, rest)
+	      | None -> (matching, clause :: rest))
+	      !clauses ([], [])
+	  in
 	    clauses := rest;
 	    if matching = [] then (
 	      (* Try finding a splittable variable *)
@@ -582,18 +703,17 @@ and make_split_aux env lhs clauses =
     | None ->
 	(match clauses with
 	| [] -> error "No clauses left"
-	| [(lhs, rhs)] ->
-	    (* No need to split anymore *)
+	| [(lhs', rhs)] ->
 	    Compute (lhs, rhs)
-(* 	    (match rhs with *)
-(* 	    | Program _ -> *)
-(* 		Compute (delta', pats_of_constrs patcs, rhs) *)
-(* 	    | Empty split -> (\* TODO : Check unify_type inductive type *\) *)
-(* 		Compute (delta', pats_of_constrs patcs, rhs) *)
-		  (* 	    	errorlabstrm "deppat" *)
-		  (* 		  (str "Splitting on " ++ pr_id x ++ str " of type " ++  *)
-		  (* 		      pr_constr_env (push_rel_context before env)  *)
-		  (* 		      an empty type, on variable)) *)
+	    (* No need to split anymore, fix the environments so that they are correctly aligned. *)
+(* 	    (match lhs_matches lhs' lhs with *)
+(* 	    | Some s ->  *)
+(* 		let s = map (fun (x, p) -> x, constr_of_pat ~inacc:false env p) s in *)
+(* 		let rhs' = match rhs with  *)
+(* 		  | Program c -> Program (specialize_constr s c) *)
+(* 		  | Empty i -> Empty (destRel (assoc i s)) *)
+(* 		in Compute ((pi1 lhs, pi2 lhs, specialize_pats s (pi3 lhs')), rhs') *)
+(* 	    | None -> anomaly "Non-matching clauses at a leaf of the splitting tree") *)
 	| _ ->
 	    errorlabstrm "make_split_aux"
 	      (str "Overlapping clauses:" ++ fnl () ++ pr_clauses env clauses))
@@ -738,7 +858,8 @@ let interp_eqn i isevar env impls sign arity recu (pats, rhs) =
   let ctx, env', patcs = interp_pats i isevar env impls pats sign recu in
   let rhs' = match rhs with
     | Program p -> 
-	Program (interp_casted_constr_evars isevar env' ~impls p (substl patcs arity))
+	let ty = nf_isevar !isevar (substl patcs arity) in
+	  Program (interp_casted_constr_evars isevar env' ~impls p ty)
     | Empty lid -> Empty (fst (lookup_rel_id (snd lid) ctx))
   in ((ctx, i, pats_of_constrs (rev patcs)), rhs')	
 
@@ -766,7 +887,7 @@ let define_by_eqs i l t nt eqs =
   let (env', sign), impls = interp_context_evars isevar env l in
   let arity = interp_type_evars isevar env' t in
   let ty = it_mkProd_or_LetIn arity sign in
-  let data = Command.compute_interning_datas env [] [i] [ty] [impls] in
+  let data = Command.compute_interning_datas env Constrintern.Recursive [] [i] [ty] [impls] in
   let fixdecls = [(Name i, None, ty)] in
   let fixenv = push_rel_context fixdecls env in
   let equations = 
@@ -920,4 +1041,47 @@ let solve_equations_goal destruct_tac tac gl =
     
 TACTIC EXTEND solve_equations
   [ "solve_equations" tactic(destruct) tactic(tac) ] -> [ solve_equations_goal (snd destruct) (snd tac) ]
+    END
+
+let coq_eq = Lazy.lazy_from_fun Coqlib.build_coq_eq
+let coq_eq_refl = lazy ((Coqlib.build_coq_eq_data ()).Coqlib.refl)
+
+let coq_heq = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq")
+let coq_heq_refl = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq_refl")
+
+let simplify_hyp id gl =
+  let env = pf_env gl in
+  let ty = pf_get_hyp_typ gl id in
+  let evars = ref (create_evar_defs (project gl)) in
+  let rec aux in_eqs acc ty =
+    match kind_of_term ty with
+    | Prod (_, t, b) -> 
+	(match kind_of_term t with
+	| App (eq, [| eqty; x; y |]) when eq_constr eq (Lazy.force coq_eq) ->
+	    let pt = mkApp (Lazy.force coq_eq, [| eqty; x; x |]) in
+	    let p = mkApp (Lazy.force coq_eq_refl, [| eqty; x |]) in
+	      if e_conv env evars pt t then
+		aux true (mkApp (acc, [| p |])) (subst1 p b)
+	      else error "Unconvertible members of an homogeneous equality"
+	| App (heq, [| eqty; x; eqty'; y |]) when eq_constr heq (Lazy.force coq_heq) ->
+	    let pt = mkApp (Lazy.force coq_heq, [| eqty; x; eqty; x |]) in
+	    let p = mkApp (Lazy.force coq_heq_refl, [| eqty; x |]) in
+	      if e_conv env evars pt t then
+		aux true (mkApp (acc, [| p |])) (subst1 p b)
+	      else error "Unconvertible members of an heterogeneous equality"
+	| _ -> 
+	    if in_eqs then acc, ty
+	    else 
+	      let e = e_new_evar evars env t in
+		aux false (mkApp (acc, [| e |])) (subst1 e b))
+    | t -> acc, ty
+  in 
+  let acc, ty = aux false (mkVar id) ty in
+  let ty = Evarutil.nf_isevar !evars ty in
+    tclTHENFIRST
+      (fun g -> Tacmach.internal_cut true id ty g)
+      (exact_no_check (Evarutil.nf_isevar !evars acc)) gl
+      
+TACTIC EXTEND simplify_hyp
+[ "simplify_hyp" ident(id) ] -> [ simplify_hyp id ]
 END
