@@ -99,7 +99,7 @@ let interp_type_evars evdref env ?(impls=([],[])) typ =
 
 let mk_interning_data env na impls typ =
   let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
-  in (na, ([], impl, Notation.compute_arguments_scope typ))
+  in (na, (Constrintern.Method, [], impl, Notation.compute_arguments_scope typ))
     
 let interp_fields_evars isevars env avoid l =
   List.fold_left
@@ -160,8 +160,8 @@ let new_class id par ar sup props =
   let supnames = 
     List.fold_left (fun acc b -> 
       match b with
-	  LocalRawAssum (nl, _, _) -> nl @ acc
-	| LocalRawDef _ -> assert(false))
+      | LocalRawAssum (nl, _, _) -> nl @ acc
+      | LocalRawDef _ -> assert(false))
       [] sup
   in
 
@@ -241,7 +241,7 @@ let new_class id par ar sup props =
 	      params arity fieldimpls fields ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
 	    in
 	      IndRef (kn,0), (List.map2 (fun (id, _, _) y -> Nameops.out_name id, Option.get y)
-			     fields (Recordops.lookup_projections (kn,0)))
+				 (List.rev fields) (Recordops.lookup_projections (kn,0)))
   in
   let ctx_context =
     List.map (fun ((na, b, t) as d) -> 

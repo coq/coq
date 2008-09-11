@@ -284,7 +284,7 @@ Definition predicate_implication {l : list Type} :=
 (** Notations for pointwise equivalence and implication of predicates. *)
 
 Infix "<∙>" := predicate_equivalence (at level 95, no associativity) : predicate_scope.
-Infix "-∙>" := predicate_implication (at level 70) : predicate_scope.
+Infix "-∙>" := predicate_implication (at level 70, right associativity) : predicate_scope.
 
 Open Local Scope predicate_scope.
 

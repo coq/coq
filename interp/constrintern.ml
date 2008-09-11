@@ -26,8 +26,10 @@ open Inductiveops
 
 (* To interpret implicits and arg scopes of recursive variables in
    inductive types and recursive definitions *)
+type var_internalisation_type = Inductive | Recursive | Method
+
 type var_internalisation_data =
-    identifier list * Impargs.implicits_list * scope_name option list
+  var_internalisation_type * identifier list * Impargs.implicits_list * scope_name option list
 
 type implicits_env = (identifier * var_internalisation_data) list
 type full_implicits_env = identifier list * implicits_env
@@ -279,13 +281,20 @@ let rec it_mkRLambda env body =
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
+let string_of_ty = function
+  | Inductive -> "ind"
+  | Recursive -> "def"
+  | Method -> "meth"
+
 let intern_var (env,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) loc id =
   let (vars1,unbndltacvars) = ltacvars in
   (* Is [id] an inductive type potentially with implicit *)
   try
-    let l,impl,argsc = List.assoc id impls in
+    let ty, l,impl,argsc = List.assoc id impls in
     let l = List.map 
       (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
+    let tys = string_of_ty ty in
+      Dumpglob.dump_reference loc "<>" (string_of_id id) tys;
     RVar (loc,id), impl, argsc, l
   with Not_found ->
   (* Is [id] bound in current env or is an ltac var bound to constr *)

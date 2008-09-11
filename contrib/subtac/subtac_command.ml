@@ -385,7 +385,7 @@ let interp_recursive fixkind l boxed =
   let env_rec = push_named_context rec_sign env in
 
   (* Get interpretation metadatas *)
-  let impls = Command.compute_interning_datas env [] fixnames fixtypes fiximps in
+  let impls = Command.compute_interning_datas env Constrintern.Recursive [] fixnames fixtypes fiximps in
   let notations = List.fold_right Option.List.cons ntnl [] in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)

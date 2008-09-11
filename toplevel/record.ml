@@ -38,7 +38,7 @@ let interp_evars evdref env ?(impls=([],[])) k typ =
 
 let mk_interning_data env na impls typ =
   let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
-  in (out_name na, ([], impl, Notation.compute_arguments_scope typ))
+  in (out_name na, (Constrintern.Method, [], impl, Notation.compute_arguments_scope typ))
     
 let interp_fields_evars isevars env l =
   List.fold_left

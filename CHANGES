@@ -435,6 +435,10 @@ Tools
 - Extended -I coqtop/coqc option to specify a logical dir: "-I dir -as coqdir".
 - New coqtop/coqc option -exclude-dir to exclude subdirs for option -R.
 - The binary "parser" has been renamed to "coq-parser".
+- Improved coqdoc and dump of globalization information to give more meta-information
+  on identifiers. All categories of Coq definitions are supported, which makes
+  typesetting trivial in the generated documentation. Support for hyperlinking
+  and indexing developments in the tex output has been implemented as well.
 
 Miscellaneous
 

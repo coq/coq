@@ -1,4 +1,4 @@
-(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Program.Equality"); compile-command: "make -C ../.. TIME='time'" -*- *)
+(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U"); compile-command: "make -C ../.. TIME='time'" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -498,12 +498,13 @@ Ltac equations := set_eos ;
     | _ => nonrec_equations
   end.
 
+(*
 Equations NoConfusion_nat (P : Prop) (x y : nat) : Prop :=
 NoConfusion_nat P 0 0 := P -> P ;
 NoConfusion_nat P 0 (S y) := P ;
 NoConfusion_nat P (S x) 0 := P ;
 NoConfusion_nat P (S x) (S y) := (x = y -> P) -> P.
-Debug Off.
+
   Solve Obligations using equations.
 
 Equations noConfusion_nat (P : Prop) (x y : nat) (H : x = y) : NoConfusion_nat P x y :=
@@ -569,3 +570,4 @@ noConfusion_list P A (cons a x) (cons a x) refl := λ p : a = a -> x = x -> P, p
 Instance list_noconf A : NoConfusionPackage (list A) :=
   NoConfusion := λ P, Π x y, x = y -> NoConfusion_list P A x y ;
   noConfusion := λ P x y, noConfusion_list P A x y.
+*)

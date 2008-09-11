@@ -168,7 +168,7 @@ let build_newrecursive
 	  if Impargs.is_implicit_args()
 	  then Impargs.compute_implicits  env0 arity
 	  else [] in
-	let impls' =(recname,([],impl,Notation.compute_arguments_scope arity))::impls in
+	let impls' =(recname,(Constrintern.Recursive,[],impl,Notation.compute_arguments_scope arity))::impls in
         (Environ.push_named (recname,None,arity) env, impls'))
       (env0,[]) lnameargsardef in
   let recdef =

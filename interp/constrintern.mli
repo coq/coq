@@ -39,8 +39,10 @@ open Pretyping
    argument associates a list of implicit positions and scopes to
    identifiers declared in the [rel_context] of [env] *)
 
+type var_internalisation_type = Inductive | Recursive | Method 
+    
 type var_internalisation_data =
-    identifier list * Impargs.implicits_list * scope_name option list
+  var_internalisation_type * identifier list * Impargs.implicits_list * scope_name option list
 
 type implicits_env = (identifier * var_internalisation_data) list
 type full_implicits_env = identifier list * implicits_env

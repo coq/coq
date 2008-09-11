@@ -442,7 +442,7 @@ let declare_eliminations sp =
 
 (* 3b| Mutual inductive definitions *)
 
-let compute_interning_datas env l nal typl impll =
+let compute_interning_datas env ty l nal typl impll =
   let mk_interning_data na typ impls =
     let idl, impl =
       let impl = 
@@ -452,7 +452,7 @@ let compute_interning_datas env l nal typl impll =
       let sub_impl' = List.filter is_status_implicit sub_impl in
 	(List.map name_of_implicit sub_impl', impl)
     in
-      (na, (idl, impl, compute_arguments_scope typ)) in
+      (na, (ty, idl, impl, compute_arguments_scope typ)) in
   (l, list_map3 mk_interning_data nal typl impll)
 
 let declare_interning_data (_,impls) (df,c,scope) =
@@ -526,7 +526,7 @@ let interp_mutual paramsl indl notations finite =
 
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun _ -> userimpls) fullarities in
-  let impls = compute_interning_datas env0 params indnames fullarities indimpls in
+  let impls = compute_interning_datas env0 Inductive params indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
@@ -832,7 +832,7 @@ let interp_recursive fixkind l boxed =
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)
-  let impls = compute_interning_datas env [] fixnames fixtypes fiximps in
+  let impls = compute_interning_datas env Recursive [] fixnames fixtypes fiximps in
   let notations = List.fold_right Option.List.cons ntnl [] in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
