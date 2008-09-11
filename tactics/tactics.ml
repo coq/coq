@@ -1961,35 +1961,33 @@ let ids_of_constr vars c =
 
 let make_abstract_generalize gl id concl dep ctx c eqs args refls = 
   let meta = Evarutil.new_meta() in
-  let cstr =
+  let term, typ = mkVar id, pf_get_hyp_typ gl id in
+  let eqslen = List.length eqs in
+    (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
+  let abshypeq = 
+    if dep then 
+      mkProd (Anonymous, mkHEq (lift 1 c) (mkRel 1) typ term, lift 1 concl)
+    else concl
+  in
     (* Abstract by equalitites *)
-    let eqs = lift_togethern 1 eqs in
-    let abseqs = it_mkProd_or_LetIn ~init:concl (List.map (fun x -> (Anonymous, None, x)) eqs) in
-      (* Abstract by the "generalized" hypothesis and its equality proof *)
-    let term, typ = mkVar id, pf_get_hyp_typ gl id in
-    let abshyp = 
-      let abshypeq = 
-	if dep then 
-	  mkProd (Anonymous, mkHEq (lift 1 c) (mkRel 1) typ term, lift 1 abseqs)
-	else abseqs
-      in
-	mkProd (Name id, c, abshypeq)
-    in
-      (* Abstract by the extension of the context *)
-    let genctyp = it_mkProd_or_LetIn ~init:abshyp ctx in
-      (* The goal will become this product. *)
-    let genc = mkCast (mkMeta meta, DEFAULTcast, genctyp) in      
-      (* Apply the old arguments giving the proper instantiation of the hyp *)
-    let instc = mkApp (genc, Array.of_list args) in
-      (* Then apply to the original instanciated hyp. *)
-    let newc = mkApp (instc, [| mkVar id |]) in
-      (* Apply the reflexivity proof for the original hyp. *)
-    let newc = if dep then mkApp (newc, [| mkHRefl typ term |]) else newc in
-      (* Finaly, apply the remaining reflexivity proofs on the index, to get a term of type gl again *)
-    let appeqs = mkApp (newc, Array.of_list refls) in
-      appeqs
-  in cstr
-    
+  let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
+  let abseqs = it_mkProd_or_LetIn ~init:(lift eqslen abshypeq) (List.map (fun x -> (Anonymous, None, x)) eqs) in
+    (* Abstract by the "generalized" hypothesis. *)
+  let genarg = mkProd (Name id, c, abseqs) in
+    (* Abstract by the extension of the context *)
+  let genctyp = it_mkProd_or_LetIn ~init:genarg ctx in
+    (* The goal will become this product. *)
+  let genc = mkCast (mkMeta meta, DEFAULTcast, genctyp) in      
+    (* Apply the old arguments giving the proper instantiation of the hyp *)
+  let instc = mkApp (genc, Array.of_list args) in
+    (* Then apply to the original instanciated hyp. *)
+  let instc = mkApp (instc, [| mkVar id |]) in
+    (* Apply the reflexivity proofs on the indices. *)
+  let appeqs = mkApp (instc, Array.of_list refls) in
+    (* Finaly, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
+  let newc = if dep then mkApp (appeqs, [| mkHRefl typ term |]) else appeqs in
+    newc
+      
 let abstract_args gl id = 
   let c = pf_get_hyp_typ gl id in
   let sigma = project gl in
@@ -2018,25 +2016,25 @@ let abstract_args gl id =
 	  let liftargty = lift (List.length ctx) argty in
 	  let convertible = Reductionops.is_conv_leq ctxenv sigma liftargty ty in
 	    match kind_of_term arg with
-	      | Var _ | Rel _ | Ind _ when convertible -> 
-		  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, vars, env)
-	      | _ ->
-		  let name = get_id name in
-		  let decl = (Name name, None, ty) in
-		  let ctx = decl :: ctx in
-		  let c' = mkApp (lift 1 c, [|mkRel 1|]) in
-		  let args = arg :: args in
-		  let liftarg = lift (List.length ctx) arg in
-		  let eq, refl = 
-		    if convertible then
-		      mkEq (lift 1 ty) (mkRel 1) liftarg, mkRefl argty arg
-		    else
-		      mkHEq (lift 1 ty) (mkRel 1) liftargty liftarg, mkHRefl argty arg
-		  in
-		  let eqs = eq :: lift_list eqs in
-		  let refls = refl :: refls in
-		  let vars = ids_of_constr vars arg in
-		    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, vars, env)
+	    | Var _ | Rel _ | Ind _ when convertible -> 
+		(subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, vars, env)
+	    | _ ->
+		let name = get_id name in
+		let decl = (Name name, None, ty) in
+		let ctx = decl :: ctx in
+		let c' = mkApp (lift 1 c, [|mkRel 1|]) in
+		let args = arg :: args in
+		let liftarg = lift (List.length ctx) arg in
+		let eq, refl = 
+		  if convertible then
+		    mkEq (lift 1 ty) (mkRel 1) liftarg, mkRefl argty arg
+		  else
+		    mkHEq (lift 1 ty) (mkRel 1) liftargty liftarg, mkHRefl argty arg
+		in
+		let eqs = eq :: lift_list eqs in
+		let refls = refl :: refls in
+		let vars = ids_of_constr vars arg in
+		  (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, vars, env)
 	in 
 	let f, args =
 	  match kind_of_term f with
