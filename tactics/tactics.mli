@@ -349,7 +349,7 @@ val cut_in_parallel             : constr list -> tactic
 val assert_as : bool -> intro_pattern_expr located -> constr -> tactic
 val forward   : tactic option -> intro_pattern_expr located -> constr -> tactic
 val letin_tac : (bool * intro_pattern_expr located) option -> name -> 
-  constr -> clause -> tactic
+  constr -> types option -> clause -> tactic
 val true_cut                    : name -> constr -> tactic
 val assert_tac                  : bool -> name -> constr -> tactic
 val generalize      : constr list -> tactic

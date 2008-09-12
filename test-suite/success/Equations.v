@@ -69,11 +69,16 @@ Require Import Bvector.
 Implicit Arguments Vnil [[A]].
 Implicit Arguments Vcons [[A] [n]].
 
+Ltac do_case p ::= destruct p.
+
+Ltac simpl_intros m := (apply m ; auto) || (intro ; simpl_intros m).
+
+Ltac try_intros m ::= 
+  solve [ intros ; unfold Datatypes.id ; refine m || apply m ] || 
+  solve [ unfold Datatypes.id ; simpl_intros m ].
+
 Equations vhead {A n} (v : vector A (S n)) : A := 
 vhead A n (Vcons a v) := a.
-
-Eval compute in (vhead (Vcons 2 (Vcons 1 Vnil))).
-Eval compute in @vhead.
 
 Equations vmap {A B} (f : A -> B) {n} (v : vector A n) : (vector B n) :=
 vmap A B f 0 Vnil := Vnil ;
@@ -82,73 +87,6 @@ vmap A B f (S n) (Vcons a v) := Vcons (f a) (vmap f v).
 Eval compute in (vmap id (@Vnil nat)).
 Eval compute in (vmap id (@Vcons nat 2 _ Vnil)).
 Eval compute in @vmap.
-
-Record vlast_comp (A : Type) (n : nat) (v : vector A (S n)) : Type := { vlast_return : A }.
-
-Class Comp (comp : Type) :=
-  return_type : comp -> Type ; call : Π c : comp, return_type c.
-
-Instance vlast_Comp A n v : Comp (vlast_comp A n v) :=
-  return_type := λ c, A ;
-  call := λ c, vlast_return A n v c.
-
-Ltac ind v := 
-  intros until v ; generalize_eqs_vars v ; induction v ; simplify_dep_elim.
-
-
-Tactic Notation "rec" ident(v) "as" simple_intropattern(p) :=
-  (try intros until v) ; generalize_eqs_vars v ; induction v as p ; simplify_dep_elim ; 
-    simpl_IH_eqs.
-
-Tactic Notation "rec" hyp(v) :=
-  (try intros until v) ; generalize_eqs_vars v ; induction v ; simplify_dep_elim ; 
-    simpl_IH_eqs.
-
-Tactic Notation "case" "*" hyp(v) "as" simple_intropattern(p) :=
-  (try intros until v) ; generalize_eqs_vars v ; destruct v as p ; simplify_dep_elim.
-
-Tactic Notation "case" "*" hyp(v) :=
-  (try intros until v) ; generalize_eqs_vars v ; destruct v ; simplify_dep_elim.
-
-Tactic Notation "=>" constr(v) := 
-  constructor ; 
-    match goal with
-      | [ |- ?T ] => refine (v:T)
-    end.
-
-Ltac make_refls_term c app :=
-  match c with
-    | _ = _ -> ?c' => make_refls_term (app (@refl_equal _ _))
-    | @JMeq _ _ _ _ -> ?c' => make_refls_term (app (@JMeq_refl _ _))
-    | _ => constr:app
-  end.
-
-Ltac make_refls_IH c app :=
-  match c with
-    | Π x : _, ?c' => make_refls_IH (app _)
-    | _ => make_refls_term c app
-  end.
-
-Ltac simpl_IH H :=
-  let ty := type of H in
-    make_refls_IH ty H.
-
-Ltac move_top H :=
-  match reverse goal with [ H' : _ |- _ ] => move H after H' end.
-
-Ltac simplify_dep_elim_hyp H evhyp :=
-  let ev := eval compute in evhyp in
-    subst evhyp ; intros evhyp ; move_top evhyp ; simplify_dep_elim ; 
-      try clear H ; reverse ; intro evhyp ; eapply evhyp.
-
-(* Tactic Notation "strengthen" hyp(H) := *)
-(*   let strhyp := fresh "H'" in *)
-(*   let ty := type of H in *)
-(*     on_last_hyp ltac:(fun id => *)
-(*       reverse ; evar (strhyp:Type) ; intros until id). *)
-
-(*         assert(strhyp -> ty) ; [ simplify_dep_elim_hyp strhyp | intros ]). *)
-
 
 Equations Below_nat (P : nat -> Type) (n : nat) : Type :=
 Below_nat P 0 := unit ;
@@ -172,14 +110,10 @@ Definition rec_nat (P : nat -> Type) n (step : Π n, Below_nat P n -> P n) : P n
 Fixpoint Below_vector (P : Π A n, vector A n -> Type) A n (v : vector A n) : Type :=
   match v with Vnil => unit | Vcons a n' v' => prod (P A n' v') (Below_vector P A n' v') end.
 
-(* Equations Below_vector (P : Π A n, vector A n -> Type) A n (v : vector A n) : Type := *)
-(* Below_vector P A ?(0) Vnil := unit ; *)
-(* Below_vector P A ?(S n) (Vcons a v) := prod (P A n v) (Below_vector P A n v). *)
-
 Equations below_vector (P : Π A n, vector A n -> Type) A n (v : vector A n)
   (step : Π A n (v : vector A n), Below_vector P A n v -> P A n v) : Below_vector P A n v :=
-below_vector P A 0 Vnil step := tt ;
-below_vector P A (S n) (Vcons a v) step := 
+below_vector P A ?(0) Vnil step := tt ;
+below_vector P A ?(S n) (Vcons a v) step := 
   let rest := below_vector P A n v step in
     (step A n v rest, rest).
 
@@ -214,48 +148,42 @@ Implicit Arguments Below_vector [P A n].
 
 Notation " x ~= y " := (@JMeq _ x _ y) (at level 70, no associativity).
 
-Ltac idify := match goal with [ |- ?T ] => change (id T) end.
+(* Equations trans {n} {i j k : fin n} (p : finle i j) (q : finle j k) : finle i k := *)
+(* trans (S n) (fz) j k leqz q := leqz ; *)
+(* trans (S n) (fs i) (fs j) (fs k) (leqs p) (leqs q) := leqs (trans p q). *)
 
-(*  induction v as [ | a v']; simplify_dep_elim. *)
-(*   on_last_hyp ltac:(fun id => *)
-(*     let strhyp := fresh "H'" in *)
-(*     let ty := type of IHv in *)
-(*       reverse ; evar (strhyp:Type) ; intros ; *)
-(*         let newhyp := fresh "IHv''" in *)
-(*           assert(ty = strhyp) ; [ idtac (* simplify_dep_elim_hyp IHv strhyp *) | idtac ]). *)
-(* (*         subst strhyp ; intros ; try (apply newhyp in IHv) ]). *) *)
+(* Obligation Tactic := idtac. *)
+(* Solve Obligations using unfold trans_comp ; equations. *)
 
-Ltac simpl_rec X :=
-  match type of X with
-    | ?f (?c ?x) =>  
-      let X1 := fresh in
-      let X2 := fresh in
-        hnf in X ; destruct X as [X1 X2] ; simplify_hyp X1
-    | _ => idtac
-  end.
-
-Ltac recur v :=
-  try intros until v ; generalize_eqs_vars v ; reverse ;
-  intros until v ; assert (recv:=rec v) ; simpl in recv ;
-    eapply recv; clear ; simplify_dep_elim.
-
-Definition vlast {A} {n} (v : vector A (S n)) : vlast_comp A n v.
-recur v. case* v0. case* v0. => a. simpl_rec X.
-=> (call H).
-Defined.
+(* Next Obligation. intro recc. *)
+(*   info solve_equations (case_last) idtac. *)
+(*   solve_method intro. *)
+(*   clear m_1 ; clear ; simplify_method idtac.  *)
+(*   unfold Datatypes.id. intros. until p. *)
+(*   case_last ; simplify_dep_elim. simpl. *)
+(* ; solve_empty 2. *)
+(*   solve_method intro. *)
   
-Record trans_comp {n:nat} {i j k : fin n} (p : finle i j) (q : finle j k) :=  {
-  return_comp : finle i k }.
 
-Equations trans {n} {i j k : fin n} (p : finle i j) (q : finle j k) : finle i k :=
-trans (S n) fz j k leqz q := leqz ;
-trans (S n) (fs i) (fs j) (fs k) (leqs p) (leqs q) := leqs (trans p q).
+(*   subst m_1 ; clear. *)
+(*   simplify_method idtac. *)
+(*   intros. generalize_eqs p. case p. *)
+(*  solve_empty 2. *)
 
-Lemma trans_eq1 n (j k : fin (S n)) (q : finle j k) : trans leqz q = leqz.
-Proof. intros. simplify_equations ; reflexivity. Qed.
+(*   simplify_dep_elim. unfold Datatypes.id. intros. *)
+(*   apply m_0. *)
+(*   Debug Off. *)
+(*   pose (m_0:=(λ (H : nat) (j k : fin (S H)) (_ : finle j k), leqz) : Π (H : nat) (j k : fin (S H)), finle j k -> finle fz k). *)
+(*   intros. *)
 
-Lemma trans_eq2 n i j k p q : @trans (S n) (fs i) (fs j) (fs k) (leqs p) (leqs q) = leqs (trans p q).
-Proof. intros. simplify_equations ; reflexivity. Qed.
+(*   solve_method intro. *)
+
+
+(* Lemma trans_eq1 n (j k : fin (S n)) (q : finle j k) : trans leqz q = leqz. *)
+(* Proof. intros. simplify_equations ; reflexivity. Qed. *)
+
+(* Lemma trans_eq2 n i j k p q : @trans (S n) (fs i) (fs j) (fs k) (leqs p) (leqs q) = leqs (trans p q). *)
+(* Proof. intros. simplify_equations ; reflexivity. Qed. *)
 
 Section Image.
   Context {S T : Type}.
@@ -295,7 +223,7 @@ Eval compute in (foo (uarrow ubool ubool) id).
 
 Inductive foobar : Set := bar | baz.
 
-Equations bla f : bool :=
+Equations bla (f : foobar) : bool :=
 bla bar := true ;
 bla baz := false.
 
@@ -327,16 +255,16 @@ tabulate A 0 f := Vnil ;
 tabulate A (S n) f := Vcons (f fz) (tabulate (f ∘ fs)).
 
 Equations vlast' {A} {n} (v : vector A (S n)) : A :=
-vlast' A 0 (Vcons a Vnil) := a ;
-vlast' A (S n) (Vcons a v) := vlast' v.
+vlast' A ?(0) (@Vcons A a 0 Vnil) := a ;
+vlast' A ?(S n) (@Vcons A a (S n) v) := vlast' v.
 
 Lemma vlast_equation1 A (a : A) : vlast' (Vcons a Vnil) = a.
-Proof. intros. compute ; reflexivity. Qed.
+Proof. intros. simplify_equations. reflexivity. Qed.
 
 Lemma vlast_equation2 A n a v : @vlast' A (S n) (Vcons a v) = vlast' v.
-Proof. intros. compute ; reflexivity. Qed.
+Proof. intros. simplify_equations ; reflexivity. Qed.
 
-Print Assumptions vlast.
+Print Assumptions vlast'.
 Print Assumptions nth. 
 Print Assumptions tabulate. 
 
@@ -346,60 +274,69 @@ vliat A (S n) (Vcons a v) := Vcons a (vliat v).
 
 Eval compute in (vliat (Vcons 2 (Vcons 5 (Vcons 4 Vnil)))).
 
-Equations vapp {A} {n m} (v : vector A n) (w : vector A m) : vector A (n + m) :=
-vapp A 0 m Vnil w := w ;
-vapp A (S n) m (Vcons a v) w := Vcons a (vapp v w).
+Equations vapp' {A} {n m} (v : vector A n) (w : vector A m) : vector A (n + m) :=
+vapp' A ?(0) m Vnil w := w ;
+vapp' A ?(S n) m (Vcons a v) w := Vcons a (vapp' v w).
+
+Eval compute in @vapp'.
+
+Fixpoint vapp {A n m} (v : vector A n) (w : vector A m) : vector A (n + m) :=
+  match v with
+    | Vnil => w
+    | Vcons a n' v' => Vcons a (vapp v' w)
+  end.
 
 Lemma JMeq_Vcons_inj A n m a (x : vector A n) (y : vector A m) : n = m -> JMeq x y -> JMeq (Vcons a x) (Vcons a y).
 Proof. intros until y. simplify_dep_elim. reflexivity. Qed.
 
-Equations NoConfusion_fin (P : Prop) {n : nat} (x y : fin n) : Prop :=
-NoConfusion_fin P ?(S n) fz fz := P -> P ;
-NoConfusion_fin P ?(S n) fz (fs y) := P ;
-NoConfusion_fin P ?(S n) (fs x) fz := P ;
-NoConfusion_fin P ?(S n) (fs x) (fs y) := (x = y -> P) -> P.
+Equations_nocomp NoConfusion_fin (P : Prop) {n : nat} (x y : fin n) : Prop :=
+NoConfusion_fin P (S n) fz fz := P -> P ;
+NoConfusion_fin P (S n) fz (fs y) := P ;
+NoConfusion_fin P (S n) (fs x) fz := P ;
+NoConfusion_fin P (S n) (fs x) (fs y) := (x = y -> P) -> P.
+
+Eval compute in NoConfusion_fin.
+Print Assumptions NoConfusion_fin.
 
 Equations noConfusion_fin P (n : nat) (x y : fin n) (H : x = y) : NoConfusion_fin P x y :=
 noConfusion_fin P (S n) fz fz refl := λ p, p ;
 noConfusion_fin P (S n) (fs x) (fs x) refl := λ p : x = x -> P, p refl.
 
-Equations NoConfusion_vect (P : Prop) {A n} (x y : vector A n) : Prop :=
+Equations_nocomp NoConfusion_vect (P : Prop) {A n} (x y : vector A n) : Prop :=
 NoConfusion_vect P A 0 Vnil Vnil := P -> P ;
 NoConfusion_vect P A (S n) (Vcons a x) (Vcons b y) := (a = b -> x = y -> P) -> P.
 
-(* Equations noConfusion_vect (P : Prop) A n (x y : vector A n) (H : x = y) : NoConfusion_vect P x y := *)
-(* noConfusion_vect P A 0 Vnil Vnil refl := λ p, p ; *)
-(* noConfusion_vect P A (S n) (Vcons a v) (Vcons a v) refl := λ p : a = a -> v = v -> P, p refl refl. *)
+Equations noConfusion_vect (P : Prop) A n (x y : vector A n) (H : x = y) : NoConfusion_vect P x y :=
+noConfusion_vect P A 0 Vnil Vnil refl := λ p, p ;
+noConfusion_vect P A (S n) (Vcons a v) (Vcons a v) refl := λ p : a = a -> v = v -> P, p refl refl.
 
-(* Instance fin_noconf n : NoConfusionPackage (fin n) := *)
-(*   NoConfusion := λ P, Π x y, x = y -> NoConfusion_fin P x y ; *)
-(*   noConfusion := λ P x y, noConfusion_fin P n x y. *)
+Instance fin_noconf n : NoConfusionPackage (fin n) :=
+  NoConfusion := λ P, Π x y, x = y -> NoConfusion_fin P x y ;
+  noConfusion := λ P x y, noConfusion_fin P n x y.
 
-(* Instance vect_noconf A n : NoConfusionPackage (vector A n) := *)
-(*   NoConfusion := λ P, Π x y, x = y -> NoConfusion_vect P x y ; *)
-(*   noConfusion := λ P x y, noConfusion_vect P A n x y. *)
+Instance vect_noconf A n : NoConfusionPackage (vector A n) :=
+  NoConfusion := λ P, Π x y, x = y -> NoConfusion_vect P x y ;
+  noConfusion := λ P x y, noConfusion_vect P A n x y.
 
 Equations fog {n} (f : fin n) : nat :=
 fog (S n) fz := 0 ; fog (S n) (fs f) := S (fog f).
-
-About vapp.
 
 Inductive Split {X : Set}{m n : nat} : vector X (m + n) -> Set :=
   append : Π (xs : vector X m)(ys : vector X n), Split (vapp xs ys).
 
 Implicit Arguments Split [[X]].
 
-Equations split {X : Set}(m n : nat) (xs : vector X (m + n)) : Split m n xs :=
-split X 0    n xs := append Vnil xs ;
-split X (S m) n (Vcons x xs) := 
-  let 'append xs' ys' in Split _ _ vec := split m n xs return Split (S m) n (Vcons x vec) in
-    append (Vcons x xs') ys'.
+(* Equations_nocomp split {X : Set}(m n : nat) (xs : vector X (m + n)) : Split m n xs := *)
+(* split X 0    n xs := append Vnil xs ; *)
+(* split X (S m) n (Vcons x xs) := *)
+(*   let 'append xs' ys' in Split _ _ vec := split m n xs return Split (S m) n (Vcons x vec) in *)
+(*     append (Vcons x xs') ys'. *)
 
-Eval compute in (split 0 1 (vapp Vnil (Vcons 2 Vnil))).
-Eval compute in (split _ _ (vapp (Vcons 3 Vnil) (Vcons 2 Vnil))).
+(* Eval compute in (split 0 1 (vapp Vnil (Vcons 2 Vnil))). *)
+(* Eval compute in (split _ _ (vapp (Vcons 3 Vnil) (Vcons 2 Vnil))). *)
 
-Extraction Inline split_obligation_1 split_obligation_2.
+(* Extraction Inline split_obligation_1 split_obligation_2. *)
 
-Recursive Extraction split.
+(* Recursive Extraction split. *)
 
-Eval compute in @split.
+(* Eval compute in @split. *)

@@ -1213,8 +1213,8 @@ let subst_one x gl =
       (id,None,_) -> intro_using id
     | (id,Some hval,htyp) ->
         letin_tac None (Name id)
-	  (mkCast(replace_term varx rhs hval,DEFAULTcast,
-	          replace_term varx rhs htyp)) nowhere
+	  (replace_term varx rhs hval)
+	  (Some (replace_term varx rhs htyp)) nowhere
   in
   let need_rewrite = dephyps <> [] || depconcl in
   tclTHENLIST 

@@ -1404,14 +1404,14 @@ let letin_abstract id c occs gl =
     if depdecls = [] then no_move else MoveAfter(pi1(list_last depdecls)) in
   (depdecls,lastlhyp,ccl)
 
-let letin_tac with_eq name c occs gl =
+let letin_tac with_eq name c ty occs gl =
   let id =
     let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
     if name = Anonymous then fresh_id [] x gl else
       if not (mem_named_context x (pf_hyps gl)) then x else
 	error ("The variable "^(string_of_id x)^" is already declared.") in
   let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in 
-  let t = pf_type_of gl c in
+  let t = match ty with Some t -> t | None -> pf_type_of gl c in
   let newcl,eq_tac = match with_eq with
     | Some (lr,(loc,ido)) ->
       let heq = match ido with
@@ -1618,14 +1618,14 @@ let atomize_param_of_ind (indref,nparams) hyp0 gl =
 	| Var id ->
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac None (Name x) (mkVar id) allClauses)
+	      (letin_tac None (Name x) (mkVar id) None allClauses)
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
 	| _ ->
 	    let id = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c)
 		       Anonymous in
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac None (Name x) c allClauses)
+	      (letin_tac None (Name x) c None allClauses)
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
     else 
       tclIDTAC gl
@@ -2558,7 +2558,7 @@ let new_induct_gen isrec with_evars elim (eqname,names) (c,lbind) cls gl =
 	  | _ ->
 	    if cls <> None then Some (false,(dloc,IntroAnonymous)) else None in
 	tclTHEN
-	  (letin_tac with_eq (Name id) c (Option.default allClauses cls))
+	  (letin_tac with_eq (Name id) c None (Option.default allClauses cls))
 	  (induction_with_atomization_of_ind_arg
 	     isrec with_evars elim names (id,lbind)) gl
 
@@ -2592,7 +2592,7 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc gl =
 		let _ = newlc:=id::!newlc in
 		let _ = letids:=id::!letids in
 		tclTHEN 
-		  (letin_tac None (Name id) c allClauses)
+		  (letin_tac None (Name id) c None allClauses)
 		  (atomize_list newl') gl in
   tclTHENLIST 
     [

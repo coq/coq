@@ -373,7 +373,7 @@ Ltac simplify_one_dep_elim_term c :=
     | @JMeq ?A ?a ?A ?b -> _ => refine (simplification_heq _ _ _ _ _)
     | ?t = ?t -> _ => intros _ || refine (simplification_K _ t _ _)
     | eq (existT ?P ?p _) (existT ?P ?p _) -> _ => refine (simplification_existT _ _ _ _ _ _ _)
-    | ?x = ?y -> _ =>
+    | ?x = ?y -> _ => (* variables case *)
       (let hyp := fresh in intros hyp ;
         move dependent hyp before x ;
           generalize dependent x ; refine (solution_left _ _ _ _) ; intros until 0) ||
@@ -384,6 +384,8 @@ Ltac simplify_one_dep_elim_term c :=
     | ?f ?x = ?g ?y -> _ => let H := fresh in intros H ; injection H ; clear H
     | ?t = ?u -> _ => let hyp := fresh in
       intros hyp ; elimtype False ; discriminate
+    | ?x = ?y -> _ => let hyp := fresh in
+      intros hyp ; case hyp ; clear hyp
     | id ?T => fail 1 (* Do not put any part of the rhs in the hyps *)
     | _ => intro
   end.
@@ -442,6 +444,8 @@ Ltac reverse_local :=
 Ltac simpl_apply m := refine m.  (* || apply m || simpl ; apply m. *)
 
 Ltac try_intros m := unfold Datatypes.id ; refine m || apply m.  (* (repeat simpl_apply m || intro). *)
+(* Ltac try_intros m := intros ; unfold Datatypes.id ;  *)
+(*   repeat (apply m ; intro) ; let meth := fresh in pose(meth:=m). *)
 
 (** To solve a goal by inversion on a particular target. *)
 
@@ -456,7 +460,7 @@ Ltac simplify_method tac := repeat (tac || simplify_one_dep_elim) ; reverse_loca
 Ltac solve_method rec :=
   match goal with
     | [ H := ?body : nat |- _ ] => subst H ; clear ; abstract (simplify_method idtac ; solve_empty body)
-    | [ H := ?body |- _ ] => clear H ; simplify_method ltac:(exact body) ; rec ; try_intros body
+    | [ H := [ ?body ] : ?T |- _ ] => clear H ; simplify_method ltac:(exact body) ; rec ; try_intros (body:T)
   end.
 
 (** Impossible cases, by splitting on a given target. *)
@@ -474,11 +478,13 @@ Ltac intro_prototypes :=
     | _ => idtac
   end.
 
+Ltac do_case p := case p ; clear p.
+
 Ltac case_last :=
   match goal with
     | [ p : ?x = ?x |- ?T ] => change (id T) ; revert p ; refine (simplification_K _ x _ _)
     | [ p : ?x = ?y |- ?T ] => change (id T) ; revert p
-    | [ p : _ |- ?T ] => simpl in p ; change (id T) ; generalize_eqs p ; destruct p 
+    | [ p : _ |- ?T ] => simpl in p ; change (id T) ; generalize_eqs p ; do_case p
   end.
 
 Ltac nonrec_equations := 

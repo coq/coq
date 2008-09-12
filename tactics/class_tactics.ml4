@@ -800,7 +800,7 @@ let refresh_hypinfo env sigma hypinfo =
       match c with 
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	    hypinfo := decompose_setoid_eqhyp cl.env (Evd.evars_of cl.evd) c l2r;
+	    hypinfo := decompose_setoid_eqhyp env (Evd.evars_of cl.evd) c l2r;
 	| _ -> ()
   else ()
 
@@ -1054,7 +1054,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
   let sigma = project gl in
   let eq = build_new gl env sigma flags occs hypinfo concl (Some (Lazy.lazy_from_val cstr)) evars 
   in
-    match eq with  
+    match eq with
     | Some (p, (_, _, oldt, newt)) -> 
 	(try 
 	  evars := Typeclasses.resolve_typeclasses env ~split:false ~fail:true !evars;
@@ -1842,7 +1842,7 @@ let rec head_of_constr t =
 TACTIC EXTEND head_of_constr
   [ "head_of_constr" ident(h) constr(c) ] -> [
     let c = head_of_constr c in
-      letin_tac None (Name h) c allHyps
+      letin_tac None (Name h) c None allHyps
   ]
 END
 
@@ -1938,8 +1938,8 @@ let varify_constr_varmap ty def varh c =
 TACTIC EXTEND varify
   [ "varify" ident(varh) ident(h') constr(ty) constr(def) constr(c) ] -> [
     let vars, c' = varify_constr_varmap ty def (mkVar varh) c in
-      tclTHEN (letin_tac None (Name varh) vars allHyps)
-	(letin_tac None (Name h') c' allHyps)
+      tclTHEN (letin_tac None (Name varh) vars None allHyps)
+	(letin_tac None (Name h') c' None allHyps)
   ]
 END
 

@@ -71,7 +71,7 @@ let h_generalize_dep c =
   abstract_tactic (TacGeneralizeDep (inj_open c))(generalize_dep c)
 let h_let_tac b na c cl =
   let with_eq = if b then None else Some (true,(dummy_loc,IntroAnonymous)) in
-  abstract_tactic (TacLetTac (na,inj_open c,cl,b)) (letin_tac with_eq na c cl)
+  abstract_tactic (TacLetTac (na,inj_open c,cl,b)) (letin_tac with_eq na c None cl)
 let h_instantiate n c ido = 
 (Evar_tactics.instantiate n c ido)
   (* abstract_tactic (TacInstantiate (n,c,cls))
