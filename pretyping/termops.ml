@@ -425,11 +425,11 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
   | Fix (_,(lna,tl,bl)) -> 
       let n' = iterate g (Array.length tl) n in
       let fd = array_map2 (fun t b -> (t,b)) tl bl in
-      Array.fold_left (fun acc (t,b) -> f n (f n' acc t) b) acc fd
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | CoFix (_,(lna,tl,bl)) ->
       let n' = iterate g (Array.length tl) n in
       let fd = array_map2 (fun t b -> (t,b)) tl bl in
-      Array.fold_left (fun acc (t,b) -> f n (f n' acc t) b) acc fd
+      Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
 
 (* [iter_constr_with_full_binders g f acc c] iters [f acc] on the immediate
    subterms of [c]; it carries an extra data [acc] which is processed by [g] at
