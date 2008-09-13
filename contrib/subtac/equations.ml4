@@ -368,16 +368,25 @@ let subst_telescope k cstr ctx =
     (k, []) ctx
   in rev ctx'
 
+let lift_telescope n k sign =
+  let rec liftrec k = function
+    | (na,c,t)::sign ->
+	(na,Option.map (liftn n k) c,liftn n k t)::(liftrec (succ k) sign)
+    | [] -> []
+  in liftrec k sign
+    
 type ('a,'b) either = Inl of 'a | Inr of 'b
-
+  
 let strengthen (ctx : rel_context) (t : constr) : rel_context * rel_context * (int * (int, int) either) list =
   let rels = dependencies_of_term ctx t in
   let len = length ctx in
-  let lifting = len - Intset.cardinal rels in (* Number of variables not linked to t *)
+  let nbdeps = Intset.cardinal rels in
+  let lifting = len - nbdeps in (* Number of variables not linked to t *)
   let rec aux k n acc m rest s = function
     | decl :: ctx' ->
 	if Intset.mem k rels then
-	  aux (succ k) (succ n) (decl :: acc) m (subst_telescope 0 (mkRel (succ n + lifting - m)) rest) ((k, Inl n) :: s) ctx'
+	  let rest' = subst_telescope 0 (mkRel (nbdeps + lifting - pred m)) rest in
+	    aux (succ k) (succ n) (decl :: acc) m rest' ((k, Inl n) :: s) ctx'
 	else aux (succ k) n (subst_telescope 0 mkProp acc) (succ m) (decl :: rest) ((k, Inr m) :: s) ctx'
     | [] -> rev acc, rev rest, s
   in aux 1 1 [] 1 [] [] ctx
@@ -395,16 +404,44 @@ let merge_subst (ctx', rest, s) =
 
 let compose_subst s' s =
   map (fun (k, (b, t)) -> (k, (b, specialize_constr s' t))) s
-      
+
+let substitute_in_ctx n c ctx =
+  let rec aux k after = function
+    | [] -> []
+    | (name, b, t as decl) :: before ->
+	if k = n then rev after @ (name, Some c, t) :: before
+	else aux (succ k) (decl :: after) before
+  in aux 1 [] ctx
+    
+let rec reduce_subst (ctx : rel_context) (substacc : (int * (bool * constr)) list) (cursubst : (int * (bool * constr)) list) =
+  match cursubst with
+  | [] -> ctx, substacc
+  | (k, (b, t)) :: rest ->
+      if t = mkRel k then reduce_subst ctx substacc rest
+      else if noccur_between 1 k t then
+	(* The term to substitute refers only to previous variables. *)
+	let t' = lift (-k) t in
+	let ctx' = substitute_in_ctx k t' ctx in
+	  reduce_subst ctx' substacc rest
+      else (* The term refers to variables declared after [k], so we have 
+	      to move these dependencies before [k]. *)
+	let (minctx, ctxrest, subst as str) = strengthen ctx t in
+	  match assoc k subst with
+	  | Inl _ -> error "Occurs check in substituted_context"
+	  | Inr k' ->
+	      let s = merge_subst str in
+	      let ctx' = ctxrest @ minctx in
+	      let rest' =
+		let substsubst (k', (b, t')) =
+		  match kind_of_term (snd (assoc k' s)) with
+		  | Rel k'' -> (k'', (b, specialize_constr s t'))
+		  | _ -> error "Non-variable substituted for variable by strenghtening"
+		in map substsubst ((k, (b, t)) :: rest)
+	      in
+		reduce_subst ctx' (compose_subst s substacc) rest' (* (compose_subst s ((k, (b, t)) :: rest)) *)
+		  
+		  
 let substituted_context (subst : (int * constr) list) (ctx : rel_context) =
-  let substitute_in_ctx n c ctx =
-    let rec aux k after = function
-      | [] -> []
-      | (name, b, t as decl) :: before ->
-	  if k = n then rev after @ (name, Some c, t) :: before
-	  else aux (succ k) (decl :: after) before
-    in aux 1 [] ctx
-  in
   let _, subst =
     fold_left (fun (k, s) _ ->
       try let t = assoc k subst in
@@ -413,33 +450,7 @@ let substituted_context (subst : (int * constr) list) (ctx : rel_context) =
 	(succ k, ((k, (false, mkRel k)) :: s)))
       (1, []) ctx
   in
-  let rec aux ctx' subst' = function
-    | [] -> ctx', subst'
-    | (k, (b, t)) :: rest ->
-	if t = mkRel k then
-	  aux ctx' subst' rest
-	else if noccur_between 0 k t then
-	  (* The term to substitute refers only to previous variables. *)
-	  let t' = lift (-k) t in
-	  let ctx' = substitute_in_ctx k t' ctx' in
-	    aux ctx' subst' rest
-	else (* The term refers to variables declared after [k], so we have 
-		to move these dependencies before [k]. *)
-	  let (minctx, ctxrest, subst as str) = strengthen ctx' t in
-	    match assoc k subst with
-	    | Inl _ -> error "Occurs check in substituted_context"
-	    | Inr k' ->
-		let s = merge_subst str in
-		let ctx' = ctxrest @ minctx in
-		let rest' = 
-		  let substsubst (k', (b, t')) =
-		    match kind_of_term (snd (assoc k' s)) with
-		    | Rel k'' -> (k'', (b, specialize_constr s t'))
-		    | _ -> error "Non-variable substituted for variable by strenghtening"
-		  in map substsubst ((k, (b, t)) :: rest)
-		in aux ctx' (compose_subst s subst') rest'
-  in
-  let ctx', subst' = aux ctx subst subst in
+  let ctx', subst' = reduce_subst ctx subst subst in
     reduce_rel_context ctx' subst'
     
 let unify_type before ty =

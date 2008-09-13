@@ -315,6 +315,40 @@ Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "
    It is completely inspired from the "Eliminating Dependent Pattern-Matching" paper by
    Goguen, McBride and McKinna. *)
 
+
+(** The NoConfusionPackage class provides a method for making progress on proving a property
+   [P] implied by an equality on an inductive type [I]. The type of [noConfusion] for a given
+   [P] should be of the form [ Π Δ, (x y : I Δ) (x = y) -> NoConfusion P x y ], where 
+   [NoConfusion P x y] for constructor-headed [x] and [y] will give a formula ending in [P].
+   This gives a general method for simplifying by discrimination or injectivity of constructors.
+   
+   Some actual instances are defined later in the file using the more primitive [discriminate] and
+   [injection] tactics on which we can always fall back.
+   *)
+  
+Class NoConfusionPackage (I : Type) := NoConfusion : Π P : Prop, Type ; noConfusion : Π P, NoConfusion P.
+
+(** The [DependentEliminationPackage] provides the default dependent elimination principle to
+   be used by the [equations] resolver. It is especially useful to register the dependent elimination
+   principles for things in [Prop] which are not automatically generated. *)
+
+Class DependentEliminationPackage (A : Type) :=
+  elim_type : Type ; elim : elim_type.
+
+(** A higher-order tactic to apply a registered eliminator. *)
+
+Ltac elim_tac tac p := 
+  let ty := type of p in
+  let eliminator := eval simpl in (elim (A:=ty)) in
+    tac p eliminator.
+
+(** Specialization to do case analysis or induction. 
+   Note: the [equations] tactic tries [case] before [elim_case]: there is no need to register 
+   generated induction principles. *)
+
+Ltac elim_case p := elim_tac ltac:(fun p el => destruct p using el) p.
+Ltac elim_ind p := elim_tac ltac:(fun p el => induction p using el) p.
+
 (** Lemmas used by the simplifier, mainly rephrasings of [eq_rect], [eq_ind]. *)
 
 Lemma solution_left : Π A (B : A -> Type) (t : A), B t -> (Π x, x = t -> B x).
@@ -335,18 +369,6 @@ Proof. intros. apply X. apply inj_pair2. exact H. Defined.
 
 Lemma simplification_K : Π A (x : A) (B : x = x -> Type), B (refl_equal x) -> (Π p : x = x, B p).
 Proof. intros. rewrite (UIP_refl A). assumption. Defined.
-
-(** The NoConfusionPackage class provides a method for making progress on proving a property
-   [P] implied by an equality on an inductive type [I]. The type of [noConfusion] for a given
-   [P] should be of the form [ Π Δ, (x y : I Δ) (x = y) -> NoConfusion P x y ], where 
-   [NoConfusion P x y] for constructor-headed [x] and [y] will give a formula ending in [P].
-   This gives a general method for simplifying by discrimination or injectivity of constructors.
-   
-   Some actual instances are defined later in the file using the more primitive [discriminate] and
-   [injection] tactics on which we can always fall back.
-   *)
-  
-Class NoConfusionPackage (I : Type) := NoConfusion : Π P : Prop, Type ; noConfusion : Π P, NoConfusion P.
 
 (** This hint database and the following tactic can be used with [autosimpl] to 
    unfold everything to [eq_rect]s. *)
@@ -439,13 +461,17 @@ Ltac reverse_local :=
     | _ => idtac
   end.
 
-(** Do as much as possible to apply a method, trying to get the arguments right. *)
+(** Do as much as possible to apply a method, trying to get the arguments right.
+   !!Unsafe!! We use [auto] for the [_nocomp] variant of [Equations], in which case some 
+   non-dependent arguments of the method can remain after [apply]. *)
 
-Ltac simpl_apply m := refine m.  (* || apply m || simpl ; apply m. *)
+Ltac simpl_intros m := ((apply m || refine m) ; auto) || (intro ; simpl_intros m).
 
-Ltac try_intros m := unfold Datatypes.id ; refine m || apply m.  (* (repeat simpl_apply m || intro). *)
-(* Ltac try_intros m := intros ; unfold Datatypes.id ;  *)
-(*   repeat (apply m ; intro) ; let meth := fresh in pose(meth:=m). *)
+(** Hopefully the first branch suffices. *)
+
+Ltac try_intros m :=
+  solve [ intros ; unfold id ; refine m || apply m ] ||
+  solve [ unfold id ; simpl_intros m ].
 
 (** To solve a goal by inversion on a particular target. *)
 
@@ -478,14 +504,18 @@ Ltac intro_prototypes :=
     | _ => idtac
   end.
 
-Ltac do_case p := case p ; clear p.
+Ltac do_case p := destruct p || elim_case p.
 
-Ltac case_last :=
-  match goal with
-    | [ p : ?x = ?x |- ?T ] => change (id T) ; revert p ; refine (simplification_K _ x _ _)
-    | [ p : ?x = ?y |- ?T ] => change (id T) ; revert p
-    | [ p : _ |- ?T ] => simpl in p ; change (id T) ; generalize_eqs p ; do_case p
-  end.
+Ltac idify := match goal with [ |- ?T ] => change (id T) end.
+
+Ltac case_last := idify ;
+  on_last_hyp ltac:(fun p => 
+    let ty := type of p in
+      match ty with
+        | ?x = ?x => revert p ; refine (simplification_K _ x _ _)
+        | ?x = ?y => revert p
+        | _ => simpl in p ; generalize_eqs p ; do_case p
+      end).
 
 Ltac nonrec_equations := 
   solve [solve_equations (case_last) (solve_method idtac)] || solve [ solve_split ]
