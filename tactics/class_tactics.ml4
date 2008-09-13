@@ -557,7 +557,7 @@ let iff = lazy (gen_constant ["Init"; "Logic"] "iff")
 let coq_all = lazy (gen_constant ["Init"; "Logic"] "all")
 let impl = lazy (gen_constant ["Program"; "Basics"] "impl")
 let arrow = lazy (gen_constant ["Program"; "Basics"] "arrow")
-let coq_id = lazy (gen_constant ["Program"; "Basics"] "id")
+let coq_id = lazy (gen_constant ["Init"; "Datatypes"] "id")
 
 let reflexive_type = lazy (try_find_reference ["Classes"; "RelationClasses"] "Reflexive")
 let reflexive_proof_global = lazy (try_find_global_reference ["Classes"; "RelationClasses"] "reflexivity")
