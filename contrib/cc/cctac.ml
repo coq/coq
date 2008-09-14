@@ -48,10 +48,6 @@ let _eq = constant ["Init";"Logic"] "eq"
 
 let _False = constant ["Init";"Logic"] "False"
 
-(* decompose member of equality in an applicative format *)
-
-let sf_of env sigma c = family_of_sort (destSort (type_of env sigma c))
-
 let whd env=
   let infos=Closure.create_clos_infos Closure.betaiotazeta env in
     (fun t -> Closure.whd_val infos (Closure.inject t))
@@ -59,6 +55,10 @@ let whd env=
 let whd_delta env=
    let infos=Closure.create_clos_infos Closure.betadeltaiota env in
     (fun t -> Closure.whd_val infos (Closure.inject t))
+
+(* decompose member of equality in an applicative format *)
+
+let sf_of env sigma c = family_of_sort (destSort (whd_delta env (type_of env sigma c)))
 
 let rec decompose_term env sigma t=
     match kind_of_term (whd env t) with
