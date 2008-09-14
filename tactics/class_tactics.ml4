@@ -539,7 +539,7 @@ let morphism_class =
 let morphism_proxy_class = 
   lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.MorphismProxy"))))
 
-let respect_proj = lazy (mkConst (snd (List.hd (Lazy.force morphism_class).cl_projs)))
+let respect_proj = lazy (mkConst (Option.get (snd (List.hd (Lazy.force morphism_class).cl_projs))))
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 

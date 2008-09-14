@@ -41,7 +41,7 @@ type typeclass = {
   cl_props : rel_context;
   
   (* The method implementaions as projections. *)
-  cl_projs : (identifier * constant) list;
+  cl_projs : (identifier * constant option) list;
 }
 
 type typeclasses = (global_reference, typeclass) Gmap.t
@@ -148,7 +148,7 @@ let subst (_,subst,(cl,m,inst)) =
       (na, Option.smartmap do_subst b, do_subst t)))
       ctx
   in
-  let do_subst_projs projs = list_smartmap (fun (x, y) -> (x, do_subst_con y)) projs in
+  let do_subst_projs projs = list_smartmap (fun (x, y) -> (x, Option.smartmap do_subst_con y)) projs in
   let subst_class k cl classes = 
     let k = do_subst_gr k in
     let cl' = { cl_impl = k;
@@ -177,8 +177,8 @@ let discharge (_,(cl,m,inst)) =
     let ctx, _ =
       List.fold_right
 	(fun (gr, (id, b, t)) (ctx, k) -> 
-	  let gr' = Option.map (fun (gr, b) -> Lib.discharge_global gr, b) gr in
-	    ((gr', (id, Option.map (substn_vars k subst) b, substn_vars k subst t)) :: ctx), succ k)
+	  let gr' = Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b) gr in
+	    ((gr', (id, Option.smartmap (substn_vars k subst) b, substn_vars k subst t)) :: ctx), succ k)
 	rel ([], 0)
     in ctx
   in
@@ -198,7 +198,7 @@ let discharge (_,(cl,m,inst)) =
 	  cl_context = 
 	    List.map (fun (na,impl,b,t) -> None, (Name na,b,t)) ctx @
 	      (discharge_context (List.map (fun (na, _, _, _) -> na) ctx) cl.cl_context);
-	  cl_projs = list_smartmap (fun (x, y) -> x, Lib.discharge_con y) cl.cl_projs }
+	  cl_projs = list_smartmap (fun (x, y) -> x, Option.smartmap Lib.discharge_con y) cl.cl_projs }
     in Gmap.add cl_impl' cl' acc
   in
   let classes = Gmap.fold subst_class cl Gmap.empty in
@@ -246,7 +246,10 @@ let update () =
 
 let add_class c = 
   classes := Gmap.add c.cl_impl c !classes;
-  methods := List.fold_left (fun acc x -> Gmap.add (snd x) c.cl_impl acc) !methods c.cl_projs;
+  methods := List.fold_left (fun acc x -> 
+    match snd x with
+    | Some m -> Gmap.add m c.cl_impl acc
+    | None -> acc) !methods c.cl_projs;
   update ()
     
 let class_info c = 
