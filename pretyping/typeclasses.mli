@@ -52,9 +52,13 @@ val add_instance : instance -> unit
 
 val class_info : global_reference -> typeclass (* raises a UserError if not a class *)
 
-val class_of_constr : constr -> typeclass option
-val dest_class_app : constr -> typeclass * constr array (* raises a UserError if not a class *)
 
+(* These raise a UserError if not a class. *)
+val dest_class_app : env -> constr -> typeclass * constr list
+
+(* Just return None if not a class *)
+val class_of_constr : constr -> typeclass option
+  
 val instance_impl : instance -> constant
 
 val is_class : global_reference -> bool

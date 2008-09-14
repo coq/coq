@@ -361,16 +361,16 @@ let pr_ne_context_of header footer env =
 
 let explain_typeclass_resolution env evi k =
   match k with
-      InternalHole | ImplicitArg _ ->
-	(match Typeclasses.class_of_constr evi.evar_concl with
-	  | Some c -> 
-	      let env = Evd.evar_env evi in
-		fnl () ++ str "Could not find an instance for " ++ 
-		  pr_lconstr_env env evi.evar_concl ++ 
-		  pr_ne_context_of (str " in environment:"++ fnl ()) (str ".") env
-	  | None -> mt())
-    | _ -> mt()
-
+  | InternalHole | ImplicitArg _ ->
+      (match Typeclasses.class_of_constr evi.evar_concl with
+      | Some c -> 
+	  let env = Evd.evar_env evi in
+	    fnl () ++ str "Could not find an instance for " ++ 
+	      pr_lconstr_env env evi.evar_concl ++ 
+	      pr_ne_context_of (str " in environment:"++ fnl ()) (str ".") env
+      | None -> mt())
+  | _ -> mt()
+      
 let explain_unsolvable_implicit env evi k explain =
   str "Cannot infer " ++ explain_hole_kind env k ++ 
   explain_unsolvability explain ++ str "." ++ 

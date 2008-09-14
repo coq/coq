@@ -317,20 +317,16 @@ let is_implicit_arg k =
       ImplicitArg (ref, (n, id)) -> true
     | InternalHole -> true
     | _ -> false
-  
-let class_of_constr c = 
-  let extract_cl c =
-    try Some (class_info (global_of_constr c)) with _ -> None
-  in
-    match kind_of_term c with
-	App (c, _) -> extract_cl c
-      | _ -> extract_cl c
 
-let dest_class_app c =
-  let cl c = class_info (global_of_constr c) in
-    match kind_of_term c with
-	App (c, args) -> cl c, args
-      | _ -> cl c, [||]
+let global_class_of_constr env c = 
+  try class_info (global_of_constr c)
+  with Not_found -> not_a_class env c
+      
+let dest_class_app env c =
+  let cl, args = decompose_app c in
+    global_class_of_constr env cl, args
+
+let class_of_constr c = try Some (fst (dest_class_app (Global.env ()) c)) with _ -> None
 
 (* To embed a boolean for resolvability status.
    This is essentially a hack to mark which evars correspond to 

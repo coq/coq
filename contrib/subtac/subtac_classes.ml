@@ -133,8 +133,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
     let c = Command.generalize_constr_expr tclass ctx in
     let c', imps = interp_type_evars_impls ~evdref:isevars env c in
     let ctx, c = Sign.decompose_prod_assum c' in
-    let cl, args = Typeclasses.dest_class_app c in
-      cl, ctx, imps, (List.rev (Array.to_list args))
+    let cl, args = Typeclasses.dest_class_app (push_rel_context ctx env) c in
+      cl, ctx, imps, (List.rev args)
   in
   let id = 
     match snd instid with
