@@ -230,8 +230,8 @@ let new_class id par ar sup props =
 	    (DefinitionEntry proj_entry, IsDefinition Definition) 
 	  in
 	  let cref = ConstRef cst in
-	    Impargs.declare_manual_implicits false cref (Impargs.is_implicit_args()) arity_imps;
-	    Impargs.declare_manual_implicits false (ConstRef proj_cst) (Impargs.is_implicit_args()) (List.hd fieldimpls);
+	    Impargs.declare_manual_implicits false cref arity_imps;
+	    Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
 	    set_rigid cst;
 	    cref, [proj_name, Some proj_cst]
       | _ ->
@@ -321,7 +321,7 @@ let fail_on_free_vars = function
 	
 let instance_hook k pri global imps ?hook cst = 
   let inst = Typeclasses.new_instance k pri global cst in
-    Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
+    Impargs.maybe_declare_manual_implicits false (ConstRef cst) ~enriching:false imps;
     Typeclasses.add_instance inst;
     (match hook with Some h -> h cst | None -> ())
 

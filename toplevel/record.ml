@@ -198,8 +198,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) in
 	      let refi = ConstRef kn in
 	      let constr_fi = mkConst kn in
-	      Impargs.maybe_declare_manual_implicits 
-		false refi (Impargs.is_implicit_args()) impls;
+	      Impargs.maybe_declare_manual_implicits false refi impls;
 	      if coe then begin
 	        let cl = Class.class_of_global (IndRef indsp) in
 	        Class.try_add_new_coercion_with_source refi Global cl

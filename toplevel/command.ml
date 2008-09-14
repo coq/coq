@@ -136,7 +136,7 @@ let red_constant_entry bl ce = function
 let declare_global_definition ident ce local imps =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition Definition) in
   let gr = ConstRef kn in
-    maybe_declare_manual_implicits false gr (is_implicit_args ()) imps;
+    maybe_declare_manual_implicits false gr imps;
     if local = Local && Flags.is_verbose() then
       msg_warning (pr_id ident ++ str" is declared as a global definition");
     definition_message ident;
@@ -189,7 +189,7 @@ let declare_one_assumption is_coe (local,kind) c imps impl keep nl (_,ident) =
         let kn =
           declare_constant ident (ParameterEntry (c,nl), IsAssumption kind) in
 	let gr = ConstRef kn in
-	  maybe_declare_manual_implicits false gr (is_implicit_args ()) imps;
+	  maybe_declare_manual_implicits false gr imps;
         assumption_message ident;
         if local=Local & Flags.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
@@ -625,12 +625,10 @@ let declare_mutual_with_eliminations isrecord mie impls =
   let (_,kn) = declare_mind isrecord mie in    
     list_iter_i (fun i (indimpls, constrimpls) -> 
       let ind = (kn,i) in
-	maybe_declare_manual_implicits false (IndRef ind)
-	  (is_implicit_args()) indimpls;
+	maybe_declare_manual_implicits false (IndRef ind) indimpls;
 	list_iter_i
 	  (fun j impls -> 
-	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j))
-	      (is_implicit_args()) impls)
+	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
 	  constrimpls)
       impls;
     if_verbose ppnl (minductive_message names);
@@ -785,7 +783,7 @@ let declare_fix boxed kind f def t imps =
   } in
   let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
   let gr = ConstRef kn in
-    maybe_declare_manual_implicits false gr (is_implicit_args ()) imps;
+    maybe_declare_manual_implicits false gr imps;
     gr
       
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
@@ -1209,7 +1207,7 @@ let start_proof_com kind thms hook =
             list_map_i (save_remaining_recthms kind body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
-	  maybe_declare_manual_implicits false ref (is_implicit_args ()) imps;
+	  maybe_declare_manual_implicits false ref imps;
 	  hook strength ref) thms_data in
       start_proof id kind t ?init_tac:rec_tac hook
 

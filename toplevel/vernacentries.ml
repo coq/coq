@@ -751,7 +751,7 @@ let vernac_syntactic_definition lid =
   
 let vernac_declare_implicits local r = function
   | Some imps ->
-      Impargs.declare_manual_implicits local (global_with_alias r) false
+      Impargs.declare_manual_implicits local (global_with_alias r) ~enriching:false
 	(List.map (fun (ex,b,f) -> ex, (b,f)) imps)
   | None -> 
       Impargs.declare_implicits local (global_with_alias r)
