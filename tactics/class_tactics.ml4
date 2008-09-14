@@ -209,8 +209,8 @@ module SearchProblem = struct
       prlist (pr_ev evars) (sig_it gls)
 	
   let filter_tactics (glls,v) l =
-(*     let glls,nv = apply_tac_list tclNORMEVAR glls in *)
-(*     let v p = v (nv p) in *)
+    let glls,nv = apply_tac_list Refiner.tclNORMEVAR glls in
+    let v p = v (nv p) in
     let rec aux = function
       | [] -> []
       | (tac,pri,pptac) :: tacl -> 
@@ -251,9 +251,11 @@ module SearchProblem = struct
 	    Option.iter (fun r ->
 (*  	      msg (str"do cut:" ++ pr_ev sigma (List.hd gl) ++ str"\n"); *)
 	      r := true) do_cut;
+	  let sigma = Evarutil.nf_evars sigma in
 	  let gl = List.map (Evarutil.nf_evar_info sigma) gl in
 	  let nbgl = List.length gl in
-	  let g = { it = List.hd gl ; sigma = sigma } in
+(* 	  let gl' = { it = gl ; sigma = sigma } in *)
+(* 	  let tacres' = gl', snd s.tacres in *)
 	  let new_db, localdb = 
 	    let tl = List.tl s.localdb in
 	      match tl with
@@ -295,10 +297,9 @@ module SearchProblem = struct
 		  last_tactic = pp; pri = pri;
 		  localdb = list_tabulate (fun _ -> new_db) (nbgl'-nbgl) @ localdb }
 	  in
-	  let concl = Evarutil.nf_evar (project g) (pf_concl g) in
 	  let rec_tacs = 
 	    let l = 
-	      filter_tactics s.tacres (e_possible_resolve s.dblist ldb concl)
+	      filter_tactics s.tacres (e_possible_resolve s.dblist ldb (List.hd gl).evar_concl)
 	    in
 	      List.map possible_resolve l
 	  in
