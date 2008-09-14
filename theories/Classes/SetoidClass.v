@@ -30,8 +30,6 @@ Class Setoid A :=
   equiv : relation A ;
   setoid_equiv :> Equivalence equiv.
 
-Typeclasses unfold equiv.
-
 (* Too dangerous instance *)
 (* Program Instance [ eqa : Equivalence A eqA ] =>  *)
 (*   equivalence_setoid : Setoid A := *)

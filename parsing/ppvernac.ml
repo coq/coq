@@ -810,6 +810,8 @@ let rec pr_vernac = function
       hov 1
         ((str "Ltac ") ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
+  | VernacCreateHintDb (local,dbname,b) ->
+      hov 1 (str "Create " ++ pr_locality local ++ str "HintDb " ++ str dbname ++ (if b then str" discriminated" else mt ()))
   | VernacHints (local,dbnames,h) ->
       pr_hints local dbnames h pr_constr pr_pattern_expr
   | VernacSyntacticDefinition (id,(ids,c),local,onlyparsing) ->

@@ -743,6 +743,9 @@ let vernac_backto n = Lib.reset_label n
 
 let vernac_declare_tactic_definition = Tacinterp.add_tacdef
 
+let vernac_create_hintdb local id b = 
+  Auto.create_hint_db local id full_transparent_state b
+
 let vernac_hints = Auto.add_hints
 
 let vernac_syntactic_definition lid =
@@ -1347,6 +1350,7 @@ let interp c = match c with
 
   (* Commands *)
   | VernacDeclareTacticDefinition (x,l) -> vernac_declare_tactic_definition x l
+  | VernacCreateHintDb (local,dbname,b) -> vernac_create_hintdb local dbname b
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
   | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l

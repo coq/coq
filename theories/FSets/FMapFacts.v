@@ -660,8 +660,6 @@ Add Relation key E.eq
  transitivity proved by E.eq_trans 
  as KeySetoid.
 
-Typeclasses unfold key.
-
 Implicit Arguments Equal [[elt]].
 
 Add Parametric Relation (elt : Type) : (t elt) Equal  

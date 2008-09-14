@@ -78,8 +78,6 @@ exact mul_assoc.
 exact mul_add_distr_r.
 Qed.
 
-Typeclasses unfold NZadd NZsub NZmul.
-
 Add Ring BigNr : BigNring.
 
 (** Todo: tactic translating from [BigN] to [Z] + omega *)

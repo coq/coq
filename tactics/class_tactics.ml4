@@ -520,8 +520,8 @@ let _ =
 
     
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
-| [ "Typeclasses" "unfold" reference_list(cl) ] -> [
-    add_hints false [typeclasses_db] (Vernacexpr.HintsUnfold cl)
+| [ "Typeclasses" "Transparent" reference_list(cl) ] -> [
+    add_hints false [typeclasses_db] (Vernacexpr.HintsTransparency (cl, true))
   ]
 END
 	

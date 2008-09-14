@@ -29,8 +29,6 @@ Open Local Scope signature_scope.
 
 Definition equiv [ Equivalence A R ] : relation A := R.
 
-Typeclasses unfold equiv.
-
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
 
 Notation " x === y " := (equiv x y) (at level 70, no associativity) : equiv_scope.
@@ -42,8 +40,6 @@ Open Local Scope equiv_scope.
 (** Overloading for [PER]. *)
 
 Definition pequiv [ PER A R ] : relation A := R.
-
-Typeclasses unfold pequiv.
 
 (** Overloaded notation for partial equivalence. *)
 
