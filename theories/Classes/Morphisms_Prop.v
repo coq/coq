@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -32,18 +31,6 @@ Program Instance not_iff_morphism :
 Program Instance and_impl_morphism :
   Morphism (impl ==> impl ==> impl) and.
 
-(* Program Instance and_impl_iff_morphism :  *)
-(*   Morphism (impl ==> iff ==> impl) and. *)
-
-(* Program Instance and_iff_impl_morphism :  *)
-(*   Morphism (iff ==> impl ==> impl) and. *)
-
-(* Program Instance and_inverse_impl_iff_morphism :  *)
-(*   Morphism (inverse impl ==> iff ==> inverse impl) and. *)
-
-(* Program Instance and_iff_inverse_impl_morphism :  *)
-(*   Morphism (iff ==> inverse impl ==> inverse impl) and. *)
-
 Program Instance and_iff_morphism : 
   Morphism (iff ==> iff ==> iff) and.
 
@@ -51,18 +38,6 @@ Program Instance and_iff_morphism :
 
 Program Instance or_impl_morphism : 
   Morphism (impl ==> impl ==> impl) or.
-
-(* Program Instance or_impl_iff_morphism :  *)
-(*   Morphism (impl ==> iff ==> impl) or. *)
-
-(* Program Instance or_iff_impl_morphism :  *)
-(*   Morphism (iff ==> impl ==> impl) or. *)
-
-(* Program Instance or_inverse_impl_iff_morphism : *)
-(*   Morphism (inverse impl ==> iff ==> inverse impl) or. *)
-
-(* Program Instance or_iff_inverse_impl_morphism :  *)
-(*   Morphism (iff ==> inverse impl ==> inverse impl) or. *)
 
 Program Instance or_iff_morphism : 
   Morphism (iff ==> iff ==> iff) or.
@@ -73,7 +48,7 @@ Program Instance iff_iff_iff_impl_morphism : Morphism (iff ==> iff ==> iff) impl
 
 (** Morphisms for quantifiers *)
 
-Program Instance ex_iff_morphism {A : Type} : Morphism (pointwise_relation iff ==> iff) (@ex A).
+Program Instance ex_iff_morphism {A : Type} : Morphism (pointwise_relation A iff ==> iff) (@ex A).
 
   Next Obligation.
   Proof.
@@ -87,7 +62,7 @@ Program Instance ex_iff_morphism {A : Type} : Morphism (pointwise_relation iff =
   Qed.
 
 Program Instance ex_impl_morphism {A : Type} :
-  Morphism (pointwise_relation impl ==> impl) (@ex A).
+  Morphism (pointwise_relation A impl ==> impl) (@ex A).
 
   Next Obligation.
   Proof.
@@ -96,7 +71,7 @@ Program Instance ex_impl_morphism {A : Type} :
   Qed.
 
 Program Instance ex_inverse_impl_morphism {A : Type} : 
-  Morphism (pointwise_relation (inverse impl) ==> inverse impl) (@ex A).
+  Morphism (pointwise_relation A (inverse impl) ==> inverse impl) (@ex A).
 
   Next Obligation.
   Proof.
@@ -105,7 +80,7 @@ Program Instance ex_inverse_impl_morphism {A : Type} :
   Qed.
 
 Program Instance all_iff_morphism {A : Type} : 
-  Morphism (pointwise_relation iff ==> iff) (@all A).
+  Morphism (pointwise_relation A iff ==> iff) (@all A).
 
   Next Obligation.
   Proof.
@@ -114,7 +89,7 @@ Program Instance all_iff_morphism {A : Type} :
   Qed.
 
 Program Instance all_impl_morphism {A : Type} : 
-  Morphism (pointwise_relation impl ==> impl) (@all A).
+  Morphism (pointwise_relation A impl ==> impl) (@all A).
   
   Next Obligation.
   Proof.
@@ -123,7 +98,7 @@ Program Instance all_impl_morphism {A : Type} :
   Qed.
 
 Program Instance all_inverse_impl_morphism {A : Type} : 
-  Morphism (pointwise_relation (inverse impl) ==> inverse impl) (@all A).
+  Morphism (pointwise_relation A (inverse impl) ==> inverse impl) (@all A).
   
   Next Obligation.
   Proof.

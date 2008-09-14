@@ -40,19 +40,19 @@ Proof. reflexivity. Qed.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Class Reflexive A (R : relation A) :=
+Class Reflexive {A} (R : relation A) :=
   reflexivity : forall x, R x x.
 
-Class Irreflexive A (R : relation A) := 
+Class Irreflexive {A} (R : relation A) := 
   irreflexivity :> Reflexive (complement R).
 
-Class Symmetric A (R : relation A) := 
+Class Symmetric {A} (R : relation A) := 
   symmetry : forall x y, R x y -> R y x.
 
-Class Asymmetric A (R : relation A) := 
+Class Asymmetric {A} (R : relation A) := 
   asymmetry : forall x y, R x y -> R y x -> False.
 
-Class Transitive A (R : relation A) := 
+Class Transitive {A} (R : relation A) := 
   transitivity : forall x y z, R x y -> R y z -> R x z.
 
 Hint Resolve @irreflexivity : ord.
@@ -158,26 +158,26 @@ Program Instance eq_Transitive : Transitive (@eq A).
 
 (** A [PreOrder] is both Reflexive and Transitive. *)
 
-Class PreOrder A (R : relation A) : Prop :=
+Class PreOrder {A} (R : relation A) : Prop :=
   PreOrder_Reflexive :> Reflexive R ;
   PreOrder_Transitive :> Transitive R.
 
 (** A partial equivalence relation is Symmetric and Transitive. *)
 
-Class PER (carrier : Type) (pequiv : relation carrier) : Prop :=
-  PER_Symmetric :> Symmetric pequiv ;
-  PER_Transitive :> Transitive pequiv.
+Class PER {A} (R : relation A) : Prop :=
+  PER_Symmetric :> Symmetric R ;
+  PER_Transitive :> Transitive R.
 
 (** Equivalence relations. *)
 
-Class Equivalence (carrier : Type) (equiv : relation carrier) : Prop :=
-  Equivalence_Reflexive :> Reflexive equiv ;
-  Equivalence_Symmetric :> Symmetric equiv ;
-  Equivalence_Transitive :> Transitive equiv.
+Class Equivalence {A} (R : relation A) : Prop :=
+  Equivalence_Reflexive :> Reflexive R ;
+  Equivalence_Symmetric :> Symmetric R ;
+  Equivalence_Transitive :> Transitive R.
 
 (** An Equivalence is a PER plus reflexivity. *)
 
-Instance Equivalence_PER [ Equivalence A R ] : PER A R | 10 :=
+Instance Equivalence_PER [ Equivalence A R ] : PER R | 10 :=
   PER_Symmetric := Equivalence_Symmetric ;
   PER_Transitive := Equivalence_Transitive.
 
@@ -193,17 +193,17 @@ Program Instance flip_antiSymmetric {{Antisymmetric A eqA R}} :
    The instance has low priority as it is always applicable 
    if only the type is constrained. *)
 
-Program Instance eq_equivalence : Equivalence A (@eq A) | 10.
+Program Instance eq_equivalence : Equivalence (@eq A) | 10.
 
 (** Logical equivalence [iff] is an equivalence relation. *)
 
-Program Instance iff_equivalence : Equivalence Prop iff.
+Program Instance iff_equivalence : Equivalence iff.
 
 (** We now develop a generalization of results on relations for arbitrary predicates.
    The resulting theory can be applied to homogeneous binary relations but also to
    arbitrary n-ary predicates. *)
 
-Require Import List.
+Require Import Coq.Lists.List.
 
 (* Notation " [ ] " := nil : list_scope. *)
 (* Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) (at level 1) : list_scope. *)
@@ -317,7 +317,7 @@ Notation "∙⊥∙" := false_predicate : predicate_scope.
 (** Predicate equivalence is an equivalence, and predicate implication defines a preorder. *)
 
 Program Instance predicate_equivalence_equivalence :
-  Equivalence (predicate l) predicate_equivalence.
+  Equivalence (@predicate_equivalence l).
 
   Next Obligation.
     induction l ; firstorder.
@@ -335,7 +335,7 @@ Program Instance predicate_equivalence_equivalence :
   Qed.
 
 Program Instance predicate_implication_preorder :
-  PreOrder (predicate l) predicate_implication.
+  PreOrder (@predicate_implication l).
 
   Next Obligation.
     induction l ; firstorder.
@@ -367,10 +367,10 @@ Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relatio
 (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
 Instance relation_equivalence_equivalence (A : Type) :
-  Equivalence (relation A) relation_equivalence.
+  Equivalence (@relation_equivalence A).
 Proof. intro A. exact (@predicate_equivalence_equivalence (cons A (cons A nil))). Qed.
 
-Instance relation_implication_preorder : PreOrder (relation A) subrelation.
+Instance relation_implication_preorder : PreOrder (@subrelation A).
 Proof. intro A. exact (@predicate_implication_preorder (cons A (cons A nil))). Qed.
 
 (** *** Partial Order.
@@ -378,7 +378,7 @@ Proof. intro A. exact (@predicate_implication_preorder (cons A (cons A nil))). Q
    We give an equivalent definition, up-to an equivalence relation 
    on the carrier. *)
 
-Class [ equ : Equivalence A eqA, preo : PreOrder A R ] => PartialOrder :=
+Class PartialOrder ((equ : Equivalence A eqA)) ((preo : PreOrder A R)) :=
   partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (inverse R)).
 
 (** The equivalence proof is sufficient for proving that [R] must be a morphism 

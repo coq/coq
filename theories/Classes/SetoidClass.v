@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -29,7 +28,7 @@ Require Import Coq.Classes.Functions.
 
 Class Setoid A :=
   equiv : relation A ;
-  setoid_equiv :> Equivalence A equiv.
+  setoid_equiv :> Equivalence equiv.
 
 Typeclasses unfold equiv.
 
@@ -135,11 +134,6 @@ Program Definition setoid_partial_app_morphism [ sa : Setoid A ] (x : A) : Morph
 
 Existing Instance setoid_partial_app_morphism.
 
-Definition type_eq : relation Type :=
-  fun x y => x = y.
-
-Program Instance type_equivalence : Equivalence Type type_eq.
-
 Ltac morphism_tac := try red ; unfold arrow ; intros ; program_simpl ; try tauto.
 
 Ltac obligation_tactic ::= morphism_tac.
@@ -150,27 +144,11 @@ Ltac obligation_tactic ::= morphism_tac.
 
 Program Instance iff_impl_id_morphism : Morphism (iff ++> impl) id.
 
-(* Program Instance eq_arrow_id_morphism : ? Morphism (eq +++> arrow) id. *)
-
-(* Definition compose_respect (A B C : Type) (R : relation (A -> B)) (R' : relation (B -> C)) *)
-(*   (x y : A -> C) : Prop := forall (f : A -> B) (g : B -> C), R f f -> R' g g. *)
-
-(* Program Instance (A B C : Type) (R : relation (A -> B)) (R' : relation (B -> C)) *)
-(*   [ mg : ? Morphism R' g ] [ mf : ? Morphism R f ] =>  *)
-(*   compose_morphism : ? Morphism (compose_respect R R') (g o f). *)
-
-(* Next Obligation. *)
-(* Proof. *)
-(*   apply (respect (m0:=mg)). *)
-(*   apply (respect (m0:=mf)). *)
-(*   assumption. *)
-(* Qed. *)
-
 (** Partial setoids don't require reflexivity so we can build a partial setoid on the function space. *)
 
-Class PartialSetoid (carrier : Type) :=
-  pequiv : relation carrier ;
-  pequiv_prf :> PER carrier pequiv.
+Class PartialSetoid (A : Type) :=
+  pequiv : relation A ;
+  pequiv_prf :> PER pequiv.
 
 (** Overloaded notation for partial setoid equivalence. *)
 

@@ -111,8 +111,7 @@ Section Respecting.
     { morph : A -> B | respectful R R' morph morph }.
   
   Program Instance respecting_equiv [ eqa : Equivalence A R, eqb : Equivalence B R' ] :
-    Equivalence respecting
-    (fun (f g : respecting) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
+    Equivalence (fun (f g : respecting) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
 
   Solve Obligations using unfold respecting in * ; simpl_relation ; program_simpl.
 
@@ -125,8 +124,8 @@ End Respecting.
 
 (** The default equivalence on function spaces, with higher-priority than [eq]. *)
 
-Program Instance pointwise_equivalence [ eqb : Equivalence B eqB ] :
-  Equivalence (A -> B) (pointwise_relation eqB) | 9.
+Program Instance pointwise_equivalence A ((eqb : Equivalence B eqB)) :
+  Equivalence (pointwise_relation A eqB) | 9.
 
   Next Obligation.
   Proof.
