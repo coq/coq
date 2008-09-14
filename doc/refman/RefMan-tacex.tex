@@ -593,8 +593,8 @@ Reset Initial.
 
 The tactics \depind and \depdestr are another solution for inverting
 inductive predicate instances and potentially doing induction at the
-same time. It is based on the Basic Elim tactic of Conor McBride which
-work by abstracting each argument of an inductive instance by a variable
+same time. It is based on the \texttt{BasicElim} tactic of Conor McBride which
+works by abstracting each argument of an inductive instance by a variable
 and constraining it by equalities afterwards. This way, the usual 
 {\tt induction} and {\tt destruct} tactics can be applied to the
 abstracted instance and after simplification of the equalities we get
@@ -608,6 +608,9 @@ For example, revisiting the first example of the inversion documentation above:
 \begin{coq_example*}
 Require Import Coq.Logic.JMeq.
 \end{coq_example*}
+\begin{coq_eval}
+Require Import Coq.Program.Equality.
+\end{coq_eval}
 
 \begin{coq_eval}
 Inductive Le : nat -> nat -> Set :=
@@ -618,7 +621,7 @@ Variable Q : forall n m:nat, Le n m -> Prop.
 \end{coq_eval}
 
 \begin{coq_example*}
-Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+Goal forall n m:nat, Le (S n) m -> P n m.
 intros n m H.
 \end{coq_example*}
 \begin{coq_example}
@@ -627,45 +630,61 @@ generalize_eqs H.
 
 The index {\tt S n} gets abstracted by a variable here, but a
 corresponding equality is added under the abstract instance so that no
-information is actually lost. The goal is now ammenable to do induction
-or case analysis. Note that the abstract instance is also related to the
-original one using an heterogeneous equality that will become a regular
-one once the equalities are substituted. In the non-dependent case where
-the hypothesis does not appear in the goal, this equality is actually
-not needed and we can make it disappear, along with the original
-hypothesis:
+information is actually lost. The goal is now almost ammenable to do induction
+or case analysis. One should indeed first move {\tt n} into the goal to
+strengthen it before doing induction, or {\tt n} will be fixed in
+the inductive hypotheses (this does not matter for case analysis). 
+As a rule of thumb, all the variables that appear inside constructors in
+the indices of the hypothesis should be generalized. This is exactly
+what the \texttt{generalize\_eqs\_vars} variant does:
 
+\begin{coq_eval} 
+Undo 1.
+\end{coq_eval}
 \begin{coq_example}
-intros gen_x gen_H _ ; clear H.
+generalize_eqs_vars H.
+induction H.
 \end{coq_example}
 
-One drawback is that in the branches one will have to
+As the hypothesis itself did not appear in the goal, we did not need to
+use an heterogeneous equality to relate the new hypothesis to the old
+one (which just disappeared here). However, the tactic works just a well
+in this case, e.g.:
+
+\begin{coq_eval}
+Admitted.
+\end{coq_eval}
+
+\begin{coq_example}
+Goal forall n m (p : Le (S n) m), Q (S n) m p.
+intros n m p ; generalize_eqs_vars p.
+\end{coq_example}
+
+One drawback of this approach is that in the branches one will have to
 substitute the equalities back into the instance to get the right
 assumptions. Sometimes injection of constructors will also be needed to
 recover the needed equalities. Also, some subgoals should be directly
 solved because of inconsistent contexts arising from the constraints on 
  indices. The nice thing is that we can make a tactic based on
-discriminate and injection to automatically do such simplifications in
-any context. This is what the {\tt simpl\_depind} tactic from
-{\tt Coq.Program.Equality} does. For example, compare:
-\begin{coq_example*}
-Require Import Coq.Program.Equality.
-\end{coq_example*}
+discriminate, injection and variants of substitution to automatically 
+do such simplifications (which may involve the K axiom). 
+This is what the {\tt simplify\_dep\_elim} tactic from
+{\tt Coq.Program.Equality} does. For example, we might simplify the
+previous goals considerably:
+% \begin{coq_eval} 
+% Abort.
+% Goal forall n m:nat, Le (S n) m -> P n m.
+% intros n m H ; generalize_eqs_vars H.
+% \end{coq_eval}
+
 \begin{coq_example}
-destruct gen_H.
-\end{coq_example}
-and
-\begin{coq_eval}
-Undo.
-\end{coq_eval}
-\begin{coq_example}
-destruct gen_H ; intros ; simpl_depind.
+induction p ; simplify_dep_elim.
 \end{coq_example}
 
 The higher-order tactic {\tt do\_depind} defined in {\tt
   Coq.Program.Equality} takes a tactic and combines the
-building blocks we've seen with it: generalizing by equalities, cleaning
-the goal if it's not dependent, calling the given tactic with the
+building blocks we've seen with it: generalizing by equalities 
+calling the given tactic with the
 generalized induction hypothesis as argument and cleaning the subgoals
 with respect to equalities. Its most important instantiations are
 \depind and \depdestr that do induction or simply case analysis on the
@@ -715,9 +734,11 @@ generalized hypothesis only when it has a type of the form {\tt vector
  (S n)}, that is only in the second case of the {\tt destruct}. The
 first one is dismissed because {\tt S n <> 0}.
 
-This technique also works with {\tt induction} on inductive
-predicates. We will now develop an example application to the
-theory of simply-typed lambda-calculus in a dependently-typed style:
+\subsection{A larger example}
+
+Let's see how the technique works with {\tt induction} on inductive
+predicates on a real example. We will develop an example application to the
+theory of simply-typed lambda-calculus formalized in a dependently-typed style:
 
 \begin{coq_example*}
 Inductive type : Type :=
@@ -797,9 +818,10 @@ Proof with simpl in * ; simpl_depind ; auto.
 
 This call to \depind has an additional arguments which is a list of
 variables appearing in the instance that should be generalized in the
-goal, so that they can vary in the induction hypotheses. Generally, all
-variables appearing inside constructors of the instantiated hypothesis
-should be generalized. 
+goal, so that they can vary in the induction hypotheses. By default, all
+variables appearing inside constructors (except in a parameter position)
+of the instantiated hypothesis will be generalized automatically but
+one can always give the list explicitely.
 
 \begin{coq_example}
   Show.
@@ -808,9 +830,9 @@ should be generalized.
 The {\tt simpl\_depind} tactic includes an automatic tactic that tries
 to simplify equalities appearing at the beginning of induction
 hypotheses, generally using trivial applications of
-reflexiviy. In some cases though, one must help the automation by giving
-some arguments first, using the {\tt narrow} tactic from  
-{\tt Coq.Init.Tactics}.
+reflexiviy. In cases where the equality is not between constructor
+forms though, one must help the automation by giving
+some arguments, using the {\tt specialize} tactic.
 
 \begin{coq_example*}
 destruct D... apply weak ; apply ax. apply ax.
@@ -820,11 +842,15 @@ destruct D...
 Show.
 \end{coq_example}
 \begin{coq_example}
-  narrow IHterm with G empty.
+  specialize (IHterm G empty).
 \end{coq_example}
 
 Then the automation can find that the needed equality {\tt G = G} to
 narrow the induction hypothesis further. This concludes our example.
+
+\begin{coq_example}
+  simpl_depind.
+\end{coq_example}
 
 \SeeAlso The induction \ref{elim}, case \ref{case} and inversion \ref{inversion} tactics.
 
