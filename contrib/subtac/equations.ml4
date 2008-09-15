@@ -749,7 +749,15 @@ open Evarutil
 let lift_substitution n s = map (fun (k, x) -> (k + n, x)) s
 let map_substitution s t = map (subst_rel_subst 0 s) t
 
-let term_of_tree status isevar env (i, delta, ty) tree =
+let term_of_tree status isevar env (i, delta, ty) ann tree =
+(*   let envrec = match ann with *)
+(*     | None -> [] *)
+(*     | Some (loc, i) ->  *)
+(* 	let (n, t) = lookup_rel_id i delta in *)
+(* 	let t' = lift n t in *)
+	  
+	  
+(*   in *)
   let rec aux = function
     | Compute ((ctx, _, pats as lhs), Program rhs) -> 
 	let ty' = substl (rev (constrs_of_lhs ~inacc:false env lhs)) ty in
@@ -903,7 +911,7 @@ let equations_tac = lazy
       (TacArg(TacCall(dummy_loc, 
 		     ArgArg(dummy_loc, tactics_tac "equations"), []))))
 
-let define_by_eqs with_comp i l t nt eqs =
+let define_by_eqs with_comp i (l,ann) t nt eqs =
   let env = Global.env () in
   let isevar = ref (create_evar_defs Evd.empty) in
   let (env', sign), impls = interp_context_evars isevar env l in
@@ -951,7 +959,7 @@ let define_by_eqs with_comp i l t nt eqs =
   let split = make_split env' prob equations in
     (* if valid_tree prob split then *)
   let status = (* if is_recursive then Expand else *) Define false in
-  let t, ty = term_of_tree status isevar env' prob split in
+  let t, ty = term_of_tree status isevar env' prob ann split in
   let undef = undefined_evars !isevar in
   let t, ty = if is_recursive then 
     (it_mkLambda_or_LetIn t fixdecls, it_mkProd_or_LetIn ty fixdecls)
@@ -978,7 +986,7 @@ struct
 
   let deppat_equations : equation list Gram.Entry.e = gec "deppat_equations"
 
-  let binders_let2 : local_binder list Gram.Entry.e = gec "binders_let2"
+  let binders_let2 : (local_binder list * (identifier located option * recursion_order_expr)) Gram.Entry.e = gec "binders_let2"
 
 (*   let where_decl : decl_notation Gram.Entry.e = gec "where_decl" *)
 
@@ -1000,7 +1008,7 @@ GEXTEND Gram
   ;
 
   binders_let2:
-    [ [ l = binders_let -> l ] ]
+    [ [ l = binders_let_fixannot -> l ] ]
   ;
 
   equation:
@@ -1022,7 +1030,7 @@ let (wit_deppat_equations : Genarg.tlevel deppat_equations_argtype),
   (rawwit_deppat_equations : Genarg.rlevel deppat_equations_argtype) =
   Genarg.create_arg "deppat_equations"
 
-type 'a binders_let2_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
+type 'a binders_let2_argtype = (local_binder list * (identifier located option * recursion_order_expr), 'a) Genarg.abstract_argument_type
 
 let (wit_binders_let2 : Genarg.tlevel binders_let2_argtype),
   (globwit_binders_let2 : Genarg.glevel binders_let2_argtype),
@@ -1096,7 +1104,7 @@ let coq_eq_refl = lazy ((Coqlib.build_coq_eq_data ()).Coqlib.refl)
 let coq_heq = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq")
 let coq_heq_refl = lazy (Coqlib.coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq_refl")
 
-let simplify_hyp id gl =
+let specialize_hyp id gl =
   let env = pf_env gl in
   let ty = pf_get_hyp_typ gl id in
   let evars = ref (create_evar_defs (project gl)) in
@@ -1117,18 +1125,25 @@ let simplify_hyp id gl =
 		aux true (mkApp (acc, [| p |])) (subst1 p b)
 	      else error "Unconvertible members of an heterogeneous equality"
 	| _ -> 
-	    if in_eqs then acc, ty
+	    if in_eqs then acc, in_eqs, ty
 	    else 
 	      let e = e_new_evar evars env t in
 		aux false (mkApp (acc, [| e |])) (subst1 e b))
-    | t -> acc, ty
+    | t -> acc, in_eqs, ty
   in 
-  let acc, ty = aux false (mkVar id) ty in
-  let ty = Evarutil.nf_isevar !evars ty in
-    tclTHENFIRST
-      (fun g -> Tacmach.internal_cut true id ty g)
-      (exact_no_check (Evarutil.nf_isevar !evars acc)) gl
+  try 
+    let acc, worked, ty = aux false (mkVar id) ty in
+    let ty = Evarutil.nf_isevar !evars ty in
+      if worked then
+	tclTHENFIRST
+	  (fun g -> Tacmach.internal_cut true id ty g)
+	  (exact_no_check (Evarutil.nf_isevar !evars acc)) gl
+      else tclFAIL 0 (str "Nothing to do in hypothesis " ++ pr_id id) gl
+  with e -> tclFAIL 0 (Cerrors.explain_exn e) gl
       
-TACTIC EXTEND simplify_hyp
-[ "simplify_hyp" ident(id) ] -> [ simplify_hyp id ]
+TACTIC EXTEND specialize_hyp
+[ "specialize_hypothesis" constr(c) ] -> [ 
+  match kind_of_term c with
+  | Var id -> specialize_hyp id
+  | _ -> tclFAIL 0 (str "Not an hypothesis") ]
 END

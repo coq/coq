@@ -40,7 +40,7 @@ Delimit Scope context_scope with ctx.
 
 Arguments Scope snoc [context_scope].
 
-Notation " Γ , τ " := (snoc Γ τ) (at level 25, t at next level, left associativity) : context_scope.
+Notation " Γ ,, τ " := (snoc Γ τ) (at level 25, t at next level, left associativity).
 
 Fixpoint conc (Δ Γ : ctx) : ctx :=
   match Δ with
@@ -52,42 +52,36 @@ Notation " Γ ;; Δ " := (conc Δ Γ) (at level 25, left associativity) : contex
 
 Inductive term : ctx -> type -> Type :=
 | ax : forall Γ τ, term (snoc Γ τ) τ
-| weak : forall Γ τ, term Γ τ -> forall τ', term (snoc Γ τ') τ
+| weak : forall Γ τ, term Γ τ -> forall τ', term (Γ ,, τ') τ
 | abs : forall Γ τ τ', term (snoc Γ τ) τ' -> term Γ (τ --> τ')
 | app : forall Γ τ τ', term Γ (τ --> τ') -> term Γ τ -> term Γ τ'.
 
-Notation " Γ |- τ " := (term Γ τ) (at level 0).
+Hint Constructors term : lambda.
 
+Notation " Γ |-- τ " := (term Γ τ) (at level 0) : type_scope.
 
 Lemma weakening : forall Γ Δ τ, term (Γ ;; Δ) τ -> 
-  forall τ', term (Γ , τ' ;; Δ) τ.
-Proof with simpl in * ; auto ; simpl_depind.
+  forall τ', term (Γ ,, τ' ;; Δ) τ.
+Proof with simpl in * ; simplify_dep_elim ; simplify_IH_hyps ; eauto with lambda.
   intros Γ Δ τ H.
 
   dependent induction H.
 
   destruct Δ...
-    apply weak ; apply ax.
-    
-    apply ax.
-    
-  destruct Δ...
-    specialize (IHterm empty Γ)... 
-    apply weak... 
-
-    apply weak...
 
   destruct Δ...
-    apply weak. apply abs ; apply H.
 
+  destruct Δ...
     apply abs...
-    specialize (IHterm (Δ, t, τ)%ctx Γ0)...
+    
+    specialize (IHterm (Δ,, t,, τ)%ctx Γ0)...
 
+  intro.
   apply app with τ...
 Qed.
 
-Lemma exchange : forall Γ Δ α β τ, term (Γ, α, β ;; Δ) τ -> term (Γ, β, α ;; Δ) τ.
-Proof with simpl in * ; simpl_depind ; auto.
+Lemma exchange : forall Γ Δ α β τ, term (Γ,, α,, β ;; Δ) τ -> term (Γ,, β,, α ;; Δ) τ.
+Proof with simpl in * ; simplify_dep_elim ; simplify_IH_hyps ; auto.
   intros until 1.
   dependent induction H.
 
@@ -97,12 +91,12 @@ Proof with simpl in * ; simpl_depind ; auto.
     apply ax.
 
   destruct Δ...
-    pose (weakening Γ0 (empty, α))...
+    pose (weakening Γ0 (empty,, α))...
 
     apply weak...
 
-  apply abs...
-  specialize (IHterm (Δ, τ)%ctx Γ0 α β)...
+  apply abs... 
+  specialize (IHterm (Δ ,, τ))...
 
   eapply app with τ...
 Save.
