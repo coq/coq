@@ -256,12 +256,7 @@ theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
 
   <dd>
     theories/Numbers/Rational/BigQ/BigQ.v
-    theories/Numbers/Rational/BigQ/Q0Make.v
-    theories/Numbers/Rational/BigQ/QbiMake.v
-    theories/Numbers/Rational/BigQ/QifMake.v
-    theories/Numbers/Rational/BigQ/QMake_base.v
-    theories/Numbers/Rational/BigQ/QpMake.v
-    theories/Numbers/Rational/BigQ/QvMake.v
+    theories/Numbers/Rational/BigQ/QMake.v
     theories/Numbers/Rational/SpecViaQ/QSig.v
   </dd>
   
@@ -318,11 +313,14 @@ theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
     theories/Classes/SetoidClass.v
     theories/Classes/SetoidDec.v
     theories/Classes/SetoidAxioms.v
+    theories/Classes/Functions.v
   </dd>
 
   <dt> <b>Setoids</b>:
   <dd> 
     theories/Setoids/Setoid.v
+    theories/Setoids/Setoid_Prop.v
+    theories/Setoids/Setoid_tac.v
   </dd>
     
   <dt> <b>Lists</b>:
