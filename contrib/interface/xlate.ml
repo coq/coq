@@ -1737,6 +1737,8 @@ let rec xlate_vernac =
 	  (fst::rest) -> CT_formula_ne_list(fst,rest)
 	| _ -> assert false in
       CT_hintrewrite(ct_orient, f_ne_list, CT_ident base, xlate_tactic t)
+  | VernacCreateHintDb (local,dbname,b) ->
+      xlate_error "TODO: VernacCreateHintDb"
   | VernacHints (local,dbnames,h) ->
       let dblist = CT_id_list(List.map (fun x -> CT_ident x) dbnames) in
       (match h with

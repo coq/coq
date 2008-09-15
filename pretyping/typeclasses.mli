@@ -29,8 +29,9 @@ type typeclass = {
   cl_impl : global_reference; 
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. 
-     The boolean indicates if the typeclass argument is a direct superclass. *)
-  cl_context : ((global_reference * bool) option * rel_declaration) list; 
+     The boolean indicates if the typeclass argument is a direct superclass and the global reference
+     gives a direct link to the class itselft. *)
+  cl_context : (global_reference * bool) option list * rel_context; 
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : rel_context;

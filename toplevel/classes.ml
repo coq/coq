@@ -244,11 +244,11 @@ let new_class id par ar sup props =
 			       (List.rev fields) (Recordops.lookup_projections (kn,0)))
   in
   let ctx_context =
-    List.map (fun ((na, b, t) as d) -> 
+    List.map (fun (na, b, t) -> 
       match Typeclasses.class_of_constr t with
-      | Some cl -> (Some (cl.cl_impl, List.exists (fun (_, n) -> n = na) supnames), d)
-      | None -> (None, d))
-      ctx_params
+      | Some cl -> Some (cl.cl_impl, List.exists (fun (_, n) -> n = na) supnames)
+      | None -> None)
+      ctx_params, ctx_params
   in
   let k =
     { cl_impl = impl;
@@ -352,9 +352,11 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
 	  let k = class_info (Nametab.global id) in
 	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
-	  let needlen = List.fold_left (fun acc (x, y) -> if x = None then succ acc else acc) 0 k.cl_context in
+	  let needlen = List.fold_left (fun acc x -> if x = None then succ acc else acc) 0 (fst k.cl_context) in
 	    if needlen <> applen then 
-	      mismatched_params env (List.map fst par) (List.map snd k.cl_context);
+	      mismatched_params env (List.map fst par) (snd k.cl_context);
+	    let (ci, rd) = k.cl_context in
+	    let pars = List.rev (List.combine ci rd) in
 	    let pars, _ = Implicit_quantifiers.combine_params Idset.empty (* need no avoid *)
 	      (fun avoid (clname, (id, _, t)) -> 
 		match clname with 
@@ -366,7 +368,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 			else CHole (Util.dummy_loc, None)
 		      in t, avoid
 		  | None -> failwith ("new instance: under-applied typeclass"))
-	      par (List.rev k.cl_context)
+	      par pars
 	    in Topconstr.CAppExpl (loc, (None, id), pars)
 
       | Explicit -> cl

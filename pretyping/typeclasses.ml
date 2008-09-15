@@ -35,7 +35,7 @@ type typeclass = {
   cl_impl : global_reference; 
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. *)
-  cl_context : ((global_reference * bool) option * rel_declaration) list; 
+  cl_context : (global_reference * bool) option list * rel_context; 
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : rel_context;
@@ -137,23 +137,21 @@ let subst (_,subst,(cl,m,inst)) =
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr)
   in
-  let do_subst_named ctx = 
+  let do_subst_ctx ctx = 
     list_smartmap (fun (na, b, t) ->
       (na, Option.smartmap do_subst b, do_subst t))
       ctx
   in
-  let do_subst_ctx ctx = 
-    list_smartmap (fun (cl, (na, b, t)) ->
-      (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b) cl,
-      (na, Option.smartmap do_subst b, do_subst t)))
-      ctx
+  let do_subst_context (grs,ctx) = 
+    list_smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
+    do_subst_ctx ctx
   in
   let do_subst_projs projs = list_smartmap (fun (x, y) -> (x, Option.smartmap do_subst_con y)) projs in
   let subst_class k cl classes = 
     let k = do_subst_gr k in
     let cl' = { cl_impl = k;
-		cl_context = do_subst_ctx cl.cl_context;
-		cl_props = do_subst_named cl.cl_props;
+		cl_context = do_subst_context cl.cl_context;
+		cl_props = do_subst_ctx cl.cl_props;
 		cl_projs = do_subst_projs cl.cl_projs; }
     in 
     let cl' = if cl' = cl then cl else cl' in
@@ -172,14 +170,18 @@ let subst (_,subst,(cl,m,inst)) =
   let instances = Gmap.fold subst_inst inst Gmap.empty in
     (classes, m, instances)
 
+let rel_of_variable_context ctx = 
+  List.fold_right (fun (n,_,b,t) (ctx', subst)->
+    let decl = (Name n, Option.map (substn_vars 1 subst) b, substn_vars 1 subst t) in
+      (decl :: ctx', n :: subst)) ctx ([], [])
+    
 let discharge (_,(cl,m,inst)) =
-  let discharge_context subst rel =
+  let discharge_rel_context subst n rel =
     let ctx, _ =
       List.fold_right
-	(fun (gr, (id, b, t)) (ctx, k) -> 
-	  let gr' = Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b) gr in
-	    ((gr', (id, Option.smartmap (substn_vars k subst) b, substn_vars k subst t)) :: ctx), succ k)
-	rel ([], 0)
+	(fun (id, b, t) (ctx, k) -> 
+	  (id, Option.smartmap (substn_vars k subst) b, substn_vars k subst t) :: ctx, succ k)
+	rel ([], n)
     in ctx
   in
   let abs_context cl =
@@ -188,17 +190,22 @@ let discharge (_,(cl,m,inst)) =
     | ConstRef cst -> Lib.section_segment_of_constant cst
     | IndRef (ind,_) -> Lib.section_segment_of_mutual_inductive ind
   in
+  let discharge_context ctx' subst (grs, ctx) =
+    let grs' = List.map (fun _ -> None) subst @ 
+      list_smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
+    in grs', discharge_rel_context subst 1 ctx @ ctx'
+  in
   let subst_class k cl acc = 
     let cl_impl' = Lib.discharge_global cl.cl_impl in
     let cl' =
       if cl_impl' == cl.cl_impl then cl
       else
 	let ctx = abs_context cl in
-	{ cl with cl_impl = cl_impl';
-	  cl_context = 
-	    List.map (fun (na,impl,b,t) -> None, (Name na,b,t)) ctx @
-	      (discharge_context (List.map (fun (na, _, _, _) -> na) ctx) cl.cl_context);
-	  cl_projs = list_smartmap (fun (x, y) -> x, Option.smartmap Lib.discharge_con y) cl.cl_projs }
+	let ctx', subst = rel_of_variable_context ctx in
+	  { cl_impl = cl_impl';
+	    cl_context = discharge_context ctx' subst cl.cl_context;
+	    cl_props = discharge_rel_context subst (succ (List.length (fst cl.cl_context))) cl.cl_props;
+	    cl_projs = list_smartmap (fun (x, y) -> x, Option.smartmap Lib.discharge_con y) cl.cl_projs }
     in Gmap.add cl_impl' cl' acc
   in
   let classes = Gmap.fold subst_class cl Gmap.empty in
@@ -257,7 +264,7 @@ let class_info c =
   with _ -> not_a_class (Global.env()) (constr_of_global c)
 
 let instance_constructor cl args = 
-  let pars = fst (list_chop (List.length cl.cl_context) args) in
+  let pars = fst (list_chop (List.length (fst cl.cl_context)) args) in
     match cl.cl_impl with
       | IndRef ind -> applistc (mkConstruct (ind, 1)) args,
 	  applistc (mkInd ind) pars

@@ -169,7 +169,9 @@ let full_class_binders env l =
 	    let gr = Nametab.global id in
 	      (try
 		  let c = class_info gr in
-		  let args, avoid = combine_params_freevar avoid l (List.rev c.cl_context) in
+		  let (ci, rd) = c.cl_context in
+		  let pars = List.rev (List.combine ci rd) in
+		  let args, avoid = combine_params_freevar avoid l pars in
 		    (iid, bk, CAppExpl (loc, (None, id), args)) :: l', avoid
 		with Not_found -> not_a_class (Global.env ()) (constr_of_global gr))
 	| Explicit -> (x :: l', avoid))
@@ -206,7 +208,9 @@ let full_class_binder env (iid, (bk, bk'), cl as c) =
 	let gr = Nametab.global id in
 	  (try
 	      let c = class_info gr in
-	      let args, avoid = combine_params_freevar avoid l (List.rev c.cl_context) in
+	      let (ci, rd) = c.cl_context in
+	      let pars = List.rev (List.combine ci rd) in
+	      let args, avoid = combine_params_freevar avoid l pars in
 		(iid, bk, CAppExpl (loc, (None, id), args)), avoid
 	    with Not_found -> not_a_class (Global.env ()) (constr_of_global gr))
     | Explicit -> ((iid,bk,cl), avoid)

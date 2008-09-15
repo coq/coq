@@ -103,9 +103,11 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
 	  let k = class_info (Nametab.global id) in
 	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
-	  let needlen = List.fold_left (fun acc (x, y) -> if x = None then succ acc else acc) 0 k.cl_context in
+	  let needlen = List.fold_left (fun acc x -> if x = None then succ acc else acc) 0 (fst k.cl_context) in
 	    if needlen <> applen then 
-	      Classes.mismatched_params env (List.map fst par) (List.map snd k.cl_context);
+	      Classes.mismatched_params env (List.map fst par) (snd k.cl_context);
+	    let (ci, rd) = k.cl_context in
+	    let pars = List.rev (List.combine ci rd) in
 	    let pars, _ = Implicit_quantifiers.combine_params Idset.empty (* need no avoid *)
 	      (fun avoid (clname, (id, _, t)) -> 
 		match clname with 
@@ -117,7 +119,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 			else CHole (Util.dummy_loc, None)
 		      in t, avoid
 		  | None -> failwith ("new instance: under-applied typeclass"))
-	      par (List.rev k.cl_context)
+	      par pars
 	    in Topconstr.CAppExpl (loc, (None, id), pars)
 
       | Explicit -> cl
