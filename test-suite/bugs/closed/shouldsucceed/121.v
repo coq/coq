@@ -4,7 +4,7 @@ Section Setoid_Bug.
 
 Variable X:Type -> Type.
 Variable Xeq : forall A, (X A) -> (X A) -> Prop.
-Hypothesis Xst : forall A, Equivalence (X A) (Xeq A).
+Hypothesis Xst : forall A, Equivalence (Xeq A).
 
 Variable map : forall A B, (A -> B) -> X A -> X B.
 
