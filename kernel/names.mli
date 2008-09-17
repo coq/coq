@@ -82,6 +82,7 @@ type module_path =
   | MPdot of module_path * label
 (*i  | MPapply of module_path * module_path    in the future (maybe) i*)
 
+val check_bound_mp : module_path -> bool
 
 val string_of_mp : module_path -> string
 

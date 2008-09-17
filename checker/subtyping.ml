@@ -63,7 +63,7 @@ let make_label_map mp list =
        add_nameobjects_of_mib (make_kn mp empty_dirpath l) mib map
     | SFBmodule mb -> add_map (Module mb)
     | SFBmodtype mtb -> add_map (Modtype mtb)
-    | SFBalias (mp,cst) -> add_map (Alias mp)
+    | SFBalias (mp,t,cst) -> add_map (Alias mp)
   in
     List.fold_right add_one list Labmap.empty
 
@@ -317,7 +317,7 @@ and check_signatures env (msid1,sig1) alias (msid2,sig2') =
 		    check_modules env msid1 l msb msb2
 		| _ -> error_not_match l spec2
 	    end
-	| SFBalias (mp,_) ->
+	| SFBalias (mp,_,_) ->
 	    begin	
 	      match info1 with
 		| Alias mp1 -> check_modpath_equiv env mp mp1

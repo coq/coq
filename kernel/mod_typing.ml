@@ -37,14 +37,20 @@ let rec list_fold_map2 f e = function
        let e'',t1',t2' = list_fold_map2 f e' t in
 	 e'',h1'::t1',h2'::t2'
 
+let return_opt_type mp env mtb = 
+  if (check_bound_mp mp) then
+    Some (strengthen env mtb.typ_expr mp)
+  else
+    None
+
 let rec check_with env mtb with_decl = 
   match with_decl with
     | With_Definition (id,_) -> 
 	let cb = check_with_aux_def env mtb with_decl in
 	  SEBwith(mtb,With_definition_body(id,cb)),empty_subst
     | With_Module (id,mp) -> 
-	let cst,sub = check_with_aux_mod env mtb with_decl true in
-	  SEBwith(mtb,With_module_body(id,mp,cst)),sub
+	let cst,sub,typ_opt = check_with_aux_mod env mtb with_decl true in
+	  SEBwith(mtb,With_module_body(id,mp,typ_opt,cst)),sub
 
 and check_with_aux_def env mtb with_decl = 
   let msid,sig_b = match (eval_struct env mtb) with 
@@ -140,7 +146,7 @@ and check_with_aux_mod env mtb with_decl now =
 	  | With_Module ([id], mp) ->
 	      let old,alias = match spec with
 		  SFBmodule msb -> Some msb,None
-		| SFBalias (mp',cst) -> None,Some (mp',cst)
+		| SFBalias (mp',_,cst) -> None,Some (mp',cst)
 		| _ -> error_not_a_module (string_of_label l)
 	      in
 	      let mtb' = lookup_modtype mp env' in
@@ -165,9 +171,9 @@ and check_with_aux_mod env mtb with_decl now =
 		if now then 
 		  let mp' = scrape_alias mp env' in
 		  let up_subst = update_subst mtb'.typ_alias (map_mp (mp_rec [id]) mp') in
-		    cst, (join (map_mp (mp_rec [id]) mp') up_subst)
+		    cst, (join (map_mp (mp_rec [id]) mp') up_subst),(return_opt_type mp env' mtb')
 		else
-		cst,empty_subst
+		cst,empty_subst,(return_opt_type mp env' mtb')
         | With_Module (_::_,mp) -> 
 	    let old = match spec with
 		SFBmodule msb -> msb
@@ -180,7 +186,7 @@ and check_with_aux_mod env mtb with_decl now =
 			  With_Definition (_,c) -> 
 			    With_Definition (idl,c)
 			| With_Module (_,c) -> With_Module (idl,c) in
-		      let cst,_ =
+		      let cst,_,typ_opt =
 			check_with_aux_mod env' 
 			  (type_of_mb env old) new_with_decl false in
 			if now then 
@@ -188,9 +194,11 @@ and check_with_aux_mod env mtb with_decl now =
 			  let mp' = scrape_alias mp env' in
 			  let up_subst = update_subst 
 			    mtb'.typ_alias (map_mp (mp_rec (List.rev (id::idl))) mp') in
-			    cst, (join (map_mp (mp_rec (List.rev (id::idl))) mp') up_subst)
+			    cst, 
+		      (join (map_mp (mp_rec (List.rev (id::idl))) mp') up_subst),
+		      typ_opt
 		else
-		cst,empty_subst
+		cst,empty_subst,typ_opt
 		  | Some msb ->
                       error_a_generative_module_expected l
               end
@@ -304,7 +312,7 @@ let rec add_struct_expr_constraints env = function
   | SEBwith(meb,With_definition_body(_,cb))->
       Environ.add_constraints cb.const_constraints
 	(add_struct_expr_constraints env meb)
-  | SEBwith(meb,With_module_body(_,_,cst))->
+  | SEBwith(meb,With_module_body(_,_,_,cst))->
       Environ.add_constraints cst
 	(add_struct_expr_constraints env meb)	
 		
@@ -312,8 +320,8 @@ and add_struct_elem_constraints env = function
   | SFBconst cb -> Environ.add_constraints cb.const_constraints env
   | SFBmind mib -> Environ.add_constraints mib.mind_constraints env
   | SFBmodule mb -> add_module_constraints env mb
-  | SFBalias (mp,Some cst) -> Environ.add_constraints cst env
-  | SFBalias (mp,None) -> env
+  | SFBalias (mp,_,Some cst) -> Environ.add_constraints cst env
+  | SFBalias (mp,_,None) -> env
   | SFBmodtype mtb -> add_modtype_constraints env mtb
 
 and add_module_constraints env mb = 
@@ -352,15 +360,15 @@ let rec struct_expr_constraints cst = function
   | SEBwith(meb,With_definition_body(_,cb))->
       struct_expr_constraints
         (Univ.Constraint.union cb.const_constraints cst) meb
-  | SEBwith(meb,With_module_body(_,_,cst1))->
+  | SEBwith(meb,With_module_body(_,_,_,cst1))->
       struct_expr_constraints (Univ.Constraint.union cst1 cst) meb	
 		
 and struct_elem_constraints cst = function 
   | SFBconst cb -> cst
   | SFBmind mib -> cst
   | SFBmodule mb -> module_constraints cst mb
-  | SFBalias (mp,Some cst1) -> Univ.Constraint.union cst1 cst
-  | SFBalias (mp,None) -> cst
+  | SFBalias (mp,_,Some cst1) -> Univ.Constraint.union cst1 cst
+  | SFBalias (mp,_,None) -> cst
   | SFBmodtype mtb -> modtype_constraints cst mtb
 
 and module_constraints cst mb = 

@@ -312,6 +312,12 @@ let add_alias l mp senv =
   check_label l senv.labset; 
   let mp' = MPdot(senv.modinfo.modpath, l) in
   let mp1 = scrape_alias mp senv.env in
+  let typ_opt = 
+    if check_bound_mp mp then
+      Some (lookup_modtype mp senv.env).typ_expr
+    else
+      None 
+  in
     (* we get all updated alias substitution {mp1.K\M}  that comes from mp1 *)
   let _,sub = Modops.update_subst senv.env (lookup_module mp1 senv.env) mp1 in
     (* transformation of {mp1.K\M} to {mp.K\M}*)
@@ -327,7 +333,7 @@ let add_alias l mp senv =
 		      alias_subst = join 
 	    senv.modinfo.alias_subst sub};
 	labset = Labset.add l senv.labset;
-	revstruct = (l,SFBalias (mp,None))::senv.revstruct;
+	revstruct = (l,SFBalias (mp,typ_opt,None))::senv.revstruct;
         univ = senv.univ;
         engagement = senv.engagement;
 	imports = senv.imports;
@@ -502,7 +508,7 @@ let end_module l restype senv =
 	       imports = senv'.imports;
 	       loads = senv'.loads;
 	       local_retroknowledge = senv'.local_retroknowledge }
-       | SFBalias (mp',cst) ->
+       | SFBalias (mp',typ_opt,cst) ->
 	   let env' = Option.fold_right 
 	     Environ.add_constraints cst senv.env in
 	   let mp = MPdot(senv.modinfo.modpath, l) in
@@ -518,7 +524,7 @@ let end_module l restype senv =
 			      alias_subst = join 
 		   senv.modinfo.alias_subst sub};
 	       labset = Labset.add l senv.labset;
-	       revstruct = (l,SFBalias (mp',cst))::senv.revstruct;
+	       revstruct = (l,SFBalias (mp',typ_opt,cst))::senv.revstruct;
                univ = senv.univ;
                engagement = senv.engagement;
 	       imports = senv.imports;
