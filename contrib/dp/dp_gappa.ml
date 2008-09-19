@@ -160,7 +160,7 @@ let call_gappa hl p =
   let c = open_out gappa_out3 in
   let gappa2 = Filename.chop_suffix (Filename.basename gappa_out2) ".v" in
   Printf.fprintf c 
-    "Require \"%s\". Set Printing Depth 9999999. Print %s.proof." 
+    "Require \"%s\". Set Printing Depth 999999. Print %s.proof." 
     (Filename.chop_suffix gappa_out2 ".v") gappa2;
   close_out c;
   let lambda = temp_file "gappa_lambda" in
