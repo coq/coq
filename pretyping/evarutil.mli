@@ -94,6 +94,10 @@ val is_unification_pattern_evar : env -> existential -> constr list -> bool
 val is_unification_pattern : env -> constr -> constr array -> bool
 val solve_pattern_eqn : env -> constr list -> constr -> constr
 
+val evars_of_term : constr -> Intset.t
+val evars_of_named_context : named_context -> Intset.t
+val evars_of_evar_info : evar_info -> Intset.t
+
 (***********************************************************)
 (* Value/Type constraints *)
 

@@ -1054,7 +1054,28 @@ let solve_simple_eqn conv_algo env evd (pbty,(evk1,args1 as ev1),t2) =
   with e when precatchable_exception e ->
     (evd,false)
 
+let evars_of_term c = 
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) -> Intset.add n acc
+    | _ -> fold_constr evrec acc c
+  in 
+    evrec Intset.empty c
 
+let evars_of_named_context nc =
+  List.fold_right (fun (_, b, t) s ->
+    Option.fold_left (fun s t -> 
+      Intset.union s (evars_of_term t))
+      s b) nc Intset.empty
+
+let evars_of_evar_info evi =
+  Intset.union (evars_of_term evi.evar_concl)
+    (Intset.union 
+	(match evi.evar_body with 
+	| Evar_empty -> Intset.empty
+	| Evar_defined b -> evars_of_term b)
+	(evars_of_named_context (named_context_of_val evi.evar_hyps)))
+    
 (* [check_evars] fails if some unresolved evar remains *)
 (* it assumes that the defined existentials have already been substituted *)
 

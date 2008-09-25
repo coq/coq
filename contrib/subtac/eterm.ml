@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C ../.. bin/coqtop.byte" -*- *)
 (**
    - Get types of existentials ;
    - Flatten dependency tree (prefix order) ;
@@ -129,12 +130,34 @@ let rec chop_product n t =
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
       | _ -> None
 
+let evar_dependencies evm ev =
+  let one_step deps = 
+    Intset.fold (fun ev s -> 
+      let evi = Evd.find evm ev in
+	Intset.union (Evarutil.evars_of_evar_info evi) s)
+      deps deps
+  in 
+  let rec aux deps =
+    let deps' = one_step deps in
+      if Intset.equal deps deps' then deps
+      else aux deps'
+  in aux (Intset.singleton ev)
+
+let sort_dependencies evl =
+  List.sort (fun (_, _, deps) (_, _, deps') -> 
+    if Intset.subset deps deps' then (* deps' depends on deps *) -1
+    else if Intset.subset deps' deps then 1
+    else Intset.compare deps deps')
+    evl
+    
 let eterm_obligations env name isevars evm fs ?status t ty = 
-  (* 'Serialize' the evars, we assume that the types of the existentials
-     refer to previous existentials in the list only *)
+  (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
   let nc_len = Sign.named_context_length nc in
   let evl = List.rev (to_list evm) in
+  let evl = List.map (fun (id, ev) -> (id, ev, evar_dependencies evm id)) evl in
+  let sevl = sort_dependencies evl in
+  let evl = List.map (fun (id, ev, _) -> id, ev) sevl in
   let evn = 
     let i = ref (-1) in
       List.rev_map (fun (id, ev) -> incr i; 

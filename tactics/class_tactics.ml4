@@ -61,14 +61,6 @@ let init_setoid () =
 
 (** Typeclasses instance search tactic / eauto *)
 
-let evars_of_term init c = 
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (n, _) -> Intset.add n acc
-    | _ -> fold_constr evrec acc c
-  in 
-    evrec init c
-
 let intersects s t =
   Intset.exists (fun el -> Intset.mem el t) s
 
@@ -183,14 +175,14 @@ let rec catchable = function
   | e -> Logic.catchable_exception e
 
 let is_dep gl gls =
-  let evs = evars_of_term Intset.empty gl.evar_concl in
+  let evs = Evarutil.evars_of_term gl.evar_concl in
     if evs = Intset.empty then false
     else
       List.fold_left
 	(fun b gl -> 
 	  if b then b 
 	  else
-	    let evs' = evars_of_term Intset.empty gl.evar_concl in
+	    let evs' = Evarutil.evars_of_term gl.evar_concl in
 	      intersects evs evs')
 	false gls
 	
@@ -455,7 +447,7 @@ let rec merge_deps deps = function
 	
 let split_evars evm =
   Evd.fold (fun ev evi acc ->
-    let deps = evars_of_term (Intset.singleton ev) evi.evar_concl in
+    let deps = Intset.union (Intset.singleton ev) (Evarutil.evars_of_term evi.evar_concl) in
       merge_deps deps acc)
     evm []
 

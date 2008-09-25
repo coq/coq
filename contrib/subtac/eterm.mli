@@ -16,6 +16,9 @@ open Util
 
 val mkMetas : int -> constr list
 
+val evar_dependencies : evar_map -> int -> Intset.t
+val sort_dependencies : (int * evar_info * Intset.t) list -> (int * evar_info * Intset.t) list
+
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)
 val eterm_obligations : env -> identifier -> evar_defs -> evar_map -> int -> 
