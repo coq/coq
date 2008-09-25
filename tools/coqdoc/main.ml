@@ -62,6 +62,7 @@ let usage () =
   prerr_endline "  --utf8               set UTF-8 input language";
   prerr_endline "  --charset <string>   set HTML charset";
   prerr_endline "  --inputenc <string>  set LaTeX input encoding";
+  prerr_endline "  --interpolate        try to typeset identifiers in comments using definitions in the same module";
   prerr_endline "";
   exit 1
 
@@ -267,6 +268,9 @@ let parse () =
 	usage ()
     | ("-raw-comments" | "--raw-comments") :: rem ->
 	Cdglobals.raw_comments := true; parse_rec rem
+    | ("-interpolate" | "--interpolate") :: rem ->
+	Cdglobals.interpolate := true; parse_rec rem
+
     | ("-latin1" | "--latin1") :: rem ->
 	Cdglobals.set_latin1 (); parse_rec rem
     | ("-utf8" | "--utf8") :: rem ->
@@ -318,6 +322,7 @@ let parse () =
 	add_file (what_file f); parse_rec rem
   in 
     parse_rec (List.tl (Array.to_list Sys.argv));
+    Output.initialize ();
     List.rev !files
 
       

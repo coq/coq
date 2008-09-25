@@ -40,6 +40,8 @@ type index_entry =
 
 val find : coq_module -> loc -> index_entry
 
+val find_string : coq_module -> string -> index_entry
+
 val add_module : coq_module -> unit
 
 type module_kind = Local | Coqlib | Unknown

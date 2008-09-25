@@ -66,3 +66,29 @@ body { padding: 0px 0px;
 #footer a:link { text-decoration: none; 
                  color: #888888; }
 
+.id { display: inline; }
+
+.id[type="constructor"] { 
+    color: rgb(60%,0%,0%);
+}
+
+.id[type="var"] { 
+    color: rgb(40%,0%,40%);
+}
+
+.id[type="definition"] { 
+    color: rgb(0%,40%,0%);
+}
+
+.id[type="lemma"] { 
+    color: rgb(0%,40%,0%);
+}
+
+.id[type="inductive"] { 
+    color: rgb(0%,0%,80%);
+}
+
+.id[type="keyword"] { 
+ color : #cf1d1d;
+/*     color: black; */
+}
