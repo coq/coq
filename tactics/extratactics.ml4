@@ -505,6 +505,10 @@ TACTIC EXTEND generalize_eqs_vars
 | ["generalize_eqs_vars" hyp(id) ] -> [ abstract_generalize id ~generalize_vars:true ]
 END
 
+TACTIC EXTEND dependent_pattern
+| ["dependent_pattern" constr(c) ] -> [ dependent_pattern c ]
+END
+
 TACTIC EXTEND conv
 | ["conv" constr(x) constr(y) ] -> [ conv x y ]
 END

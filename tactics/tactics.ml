@@ -2073,6 +2073,26 @@ let abstract_generalize id ?(generalize_vars=true) gl =
 			 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars]) gl
 	    else tac gl
 	      
+let dependent_pattern c gl =
+  let cty = pf_type_of gl c in
+  let deps = 
+    match kind_of_term cty with
+    | App (f, args) -> Array.to_list args
+    | _ -> []
+  in
+  let varname c = match kind_of_term c with
+    | Var id -> id
+    | _ -> id_of_string (hdchar (pf_env gl) c)
+  in
+  let mklambda ty (c, id, cty) =
+    let conclvar = subst_term_occ all_occurrences c ty in
+      mkNamedLambda id cty conclvar
+  in
+  let subst = (c, varname c, cty) :: List.map (fun c -> (c, varname c, pf_type_of gl c)) deps in
+  let concllda = List.fold_left mklambda (pf_concl gl) subst in 
+  let conclapp = applistc concllda (List.rev_map pi1 subst) in
+    convert_concl_no_check conclapp DEFAULTcast gl
+      
 let occur_rel n c = 
   let res = not (noccurn n c) in
   res

@@ -359,9 +359,9 @@ Definition block_dep_elim {A : Type} (a : A) := a.
 
 Ltac simplify_one_dep_elim_term c :=
   match c with
-    | @JMeq ?A ?a ?A ?b -> _ => refine (simplification_heq _ _ _ _ _)
+    | @JMeq _ _ _ _ -> _ => refine (simplification_heq _ _ _ _ _)
     | ?t = ?t -> _ => intros _ || refine (simplification_K _ t _ _)
-    | eq (existT ?P ?p _) (existT ?P ?p _) -> _ => refine (simplification_existT _ _ _ _ _ _ _)
+    | eq (existT _ _ _) (existT _ _ _) -> _ => refine (simplification_existT _ _ _ _ _ _ _)
     | ?x = ?y -> _ => (* variables case *)
       (let hyp := fresh in intros hyp ;
         move dependent hyp before x ;
@@ -370,11 +370,12 @@ Ltac simplify_one_dep_elim_term c :=
         move dependent hyp before y ;
           generalize dependent y ; refine (solution_right _ _ _ _) ; intros until 0)
     | @eq ?A ?t ?u -> ?P => apply (noConfusion (I:=A) P)
-    | ?f ?x = ?g ?y -> _ => let H := fresh in intros H ; injection H ; clear H
+    | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; injection H ; clear H)
     | ?t = ?u -> _ => let hyp := fresh in
       intros hyp ; elimtype False ; discriminate
     | ?x = ?y -> _ => let hyp := fresh in
-      intros hyp ; case hyp ; clear hyp
+      intros hyp ; (try (clear hyp ; (* If non dependent, don't clear it! *) fail 1)) ;
+        case hyp ; clear hyp
     | block_dep_elim ?T => fail 1 (* Do not put any part of the rhs in the hyps *)
     | _ => intro
   end.

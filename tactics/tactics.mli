@@ -365,5 +365,7 @@ val admit_as_an_axiom : tactic
 
 val abstract_generalize : identifier -> ?generalize_vars:bool -> tactic
 
+val dependent_pattern : constr -> tactic
+
 val register_general_multi_rewrite : 
   (bool -> evars_flag -> constr with_ebindings -> clause -> tactic) -> unit

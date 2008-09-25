@@ -22,7 +22,7 @@ Require Import Coq.Program.Equality.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** The converse of functional equality. *)
+(** The converse of functional extensionality. *)
 
 Lemma equal_f : forall A B : Type, forall (f g : A -> B), 
   f = g -> forall x, f x = g x.
@@ -32,7 +32,7 @@ Proof.
   auto.
 Qed.
 
-(** Statements of functional equality for simple and dependent functions. *)
+(** Statements of functional extensionality for simple and dependent functions. *)
 
 Axiom fun_extensionality_dep : forall A, forall B : (A -> Type), 
   forall (f g : forall x : A, B x), 
@@ -106,4 +106,18 @@ Proof.
   rewrite H0 ; auto.
 Qed.
 
+(** Tactics to fold/unfold definitions based on [Fix_measure_sub]. *)
 
+Ltac fold_sub f :=
+  match goal with
+    | [ |- ?T ] => 
+      match T with
+        appcontext C [ @Fix_measure_sub _ _ _ _ ?arg ] => 
+        let app := context C [ f arg ] in
+         change app
+      end
+  end.
+
+Ltac unfold_sub f fargs := 
+  set (call:=fargs) ; unfold f in call ; unfold call ; clear call ; 
+  rewrite fix_sub_measure_eq_ext ; repeat fold_sub fargs ; simpl proj1_sig.
