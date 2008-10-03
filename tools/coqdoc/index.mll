@@ -66,18 +66,20 @@ let full_ident sp id =
     
 let add_def loc ty sp id = 
   Hashtbl.add reftable (!current_library, loc) (Def (full_ident sp id, ty));
-  Hashtbl.add deftable (!current_library, id) (Def (full_ident sp id, ty))
+  Hashtbl.add deftable id (Ref (!current_library, full_ident sp id, ty))
     
 let add_ref m loc m' sp id ty = 
-  Hashtbl.add reftable (m, loc) (Ref (m', full_ident sp id, ty))
+  if Hashtbl.mem reftable (m, loc) then ()
+  else
+    Hashtbl.add reftable (m, loc) (Ref (m', full_ident sp id, ty))
     
 let add_mod m loc m' id = 
   Hashtbl.add reftable (m, loc) (Mod (m', id));
-  Hashtbl.add deftable (m, id) (Mod (m', id))
+  Hashtbl.add deftable id (Mod (m', id))
     
 let find m l = Hashtbl.find reftable (m, l)
   
-let find_string m s = Hashtbl.find deftable (m, s)
+let find_string m s = Hashtbl.find deftable s
   
 (*s Manipulating path prefixes *) 
 

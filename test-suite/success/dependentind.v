@@ -58,11 +58,13 @@ Inductive term : ctx -> type -> Type :=
 
 Hint Constructors term : lambda.
 
+Open Local Scope context_scope.
+
 Notation " Γ |-- τ " := (term Γ τ) (at level 0) : type_scope.
 
 Lemma weakening : forall Γ Δ τ, term (Γ ;; Δ) τ -> 
   forall τ', term (Γ ,, τ' ;; Δ) τ.
-Proof with simpl in * ; simplify_dep_elim ; simplify_IH_hyps ; eauto with lambda.
+Proof with simpl in * ; reverse ; simplify_dep_elim ; simplify_IH_hyps ; eauto with lambda.
   intros Γ Δ τ H.
 
   dependent induction H.
@@ -81,7 +83,7 @@ Proof with simpl in * ; simplify_dep_elim ; simplify_IH_hyps ; eauto with lambda
 Qed.
 
 Lemma exchange : forall Γ Δ α β τ, term (Γ,, α,, β ;; Δ) τ -> term (Γ,, β,, α ;; Δ) τ.
-Proof with simpl in * ; simplify_dep_elim ; simplify_IH_hyps ; auto.
+Proof with simpl in * ; subst ; reverse ; simplify_dep_elim ; simplify_IH_hyps ; auto.
   intros until 1.
   dependent induction H.
 

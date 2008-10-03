@@ -375,7 +375,7 @@ let vernac_assumption kind l nl=
 let vernac_inductive f indl = 
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, cstrs), _) ->
-      Dumpglob.dump_definition lid false"ind";
+      Dumpglob.dump_definition lid false "ind";
       List.iter (fun (_, (lid, _)) ->
 	Dumpglob.dump_definition lid false "constr") cstrs)
       indl;

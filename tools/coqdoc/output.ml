@@ -273,8 +273,8 @@ module Latex = struct
 	  end else begin
 	    if !Cdglobals.interpolate then
 	      try reference s (Index.find_string !current_module s)
-	      with _ -> printf "\\coqdocvar{"; raw_ident s; printf "}" 
-	    else printf "\\coqdocvar{"; raw_ident s; printf "}"
+	      with _ -> printf "\\coqdocvar{"; raw_ident s; printf "}"
+	    else (printf "\\coqdocvar{"; raw_ident s; printf "}")
 	  end
       end
     end
