@@ -176,7 +176,7 @@ let variables l =
   in
   section "Variables definitions.";
   print "CAMLP4LIB=`camlp5 -where 2> /dev/null || camlp4 -where`\n";
-  print "CAMLP4=`basename $CAMLP4LIB`\n"; 
+  print "CAMLP4=`basename $(CAMLP4LIB)`\n"; 
   print "COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
