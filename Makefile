@@ -1173,9 +1173,10 @@ $(GALLINA): $(GALLINACMO)
 
 BEFOREDEPEND+= tools/gallina_lexer.ml
 
-$(COQMAKEFILE): tools/coq_makefile.cmo
+COQMAKEFILECMO= config/coq_config.cmo tools/coq_makefile.cmo
+$(COQMAKEFILE): $(COQMAKEFILECMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(COQMAKEFILECMO)
 
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'
@@ -1271,6 +1272,8 @@ OBJECTCMA=lib/lib.cma kernel/kernel.cma library/library.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
         parsing/highparsing.cma tactics/hightactics.cma contrib/contrib.cma
 
+OBJECTCMI=$(OBJSCMO:.cmo=.cmi)
+
 OBJECTCMXA=$(OBJECTCMA:.cma=.cmxa)
 
 install-library:
@@ -1282,7 +1285,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	cp $(OBJECTCMA) $(OBJECTCMXA) $(GRAMMARCMA) $(FULLCOQLIB)
+	cp $(OBJECTCMI) $(OBJECTCMA) $(OBJECTCMXA) $(GRAMMARCMA) $(FULLCOQLIB)
 	find . -name \*.cmi -exec cp {} $(FULLCOQLIB) \;
 
 install-library-light:
