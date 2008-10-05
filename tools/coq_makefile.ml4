@@ -38,6 +38,11 @@ let rec print_list sep = function
   | x :: l -> print x; print sep; print_list sep l
   | [] -> ()
 
+let best_ocamlc = 
+  if Coq_config.best = "opt" then "ocamlc.opt" else "ocamlc"
+let best_ocamlopt =
+  if Coq_config.best = "opt" then "ocamlopt.opt" else "ocamlopt"
+
 let section s =
   let l = String.length s in
   let sep = String.make (l+5) '#'
@@ -175,20 +180,38 @@ let variables l =
     | _ :: r -> var_aux r
   in
   section "Variables definitions.";
-  print "CAMLP4LIB=`camlp5 -where 2> /dev/null || camlp4 -where`\n";
-  print "CAMLP4=`basename $(CAMLP4LIB)`\n"; 
-  print "COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
-  -I $(COQTOP)/library -I $(COQTOP)/parsing \\
-  -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
-  -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
-  -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/correctness \\
-  -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
-  -I $(COQTOP)/contrib/fourier -I $(COQTOP)/contrib/graphs \\
-  -I $(COQTOP)/contrib/interface -I $(COQTOP)/contrib/jprover \\
-  -I $(COQTOP)/contrib/omega -I $(COQTOP)/contrib/romega \\
-  -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/xml \\
-  -I $(CAMLP4LIB)\n";
-  print "ZFLAGS=$(OCAMLLIBS) $(COQSRC)\n";
+  printf "CAMLP4=%s\n" Coq_config.camlp4;
+  print "ifdef CAMLP4BIN\n";
+  print "  CAMLP4LIB=$(shell $(CAMLP4BIN)/$(CAMLP4) -where 2> /dev/null)\n";
+  print "else\n";
+  print "  CAMLP4LIB=$(shell $(CAMLP4) -where 2> /dev/null)\n";
+  print "endif\n";
+  print "COQLIB=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
+  print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
+  print "  COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
+   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
+   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
+   -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
+   -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/cc -I $(COQTOP)/contrib/dp \\
+   -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
+   -I $(COQTOP)/contrib/firstorder -I $(COQTOP)/contrib/fourier \\
+   -I $(COQTOP)/contrib/funind -I $(COQTOP)/contrib/interface \\
+   -I $(COQTOP)/contrib/micromega -I $(COQTOP)/contrib/omega \\
+   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
+   -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
+   -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml\n";
+  print "else ifneq ($(strip $(COQLIB)),)\n";
+  print "  COQSRC=-I $(COQLIB)\n";
+  print "else\n";
+  print "  $(error Cannot find coqtop in path; set variable COQBIN to the directory where coqtop is located)\n";
+  print "endif\n";
+  if List.exists (function ML _ -> true | _ -> false) l then
+    begin
+      print "ifeq ($(strip $(CAMLP4LIB)),)\n";
+      print "  $(error Cannot find $(CAMLP4) in path; set variable CAMLP4BIN to the directory where $(CAMLP4) is located)\n";
+      print "endif\n";
+    end;
+  print "ZFLAGS=$(OCAMLLIBS) $(COQSRC) -I $(CAMLP4LIB)\n";
   if !opt = "-byte" then 
     print "override OPT=-byte\n"
   else
@@ -198,14 +221,15 @@ let variables l =
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=gallina\n";
   print "COQDOC=$(COQBIN)coqdoc\n";
-  print "CAMLC=ocamlc -c\n";
-  print "CAMLOPTC=ocamlopt -c\n";
-  print "CAMLLINK=ocamlc\n";
-  print "CAMLOPTLINK=ocamlopt\n";
+  printf "CAMLC=%s -c\n" best_ocamlc;
+  printf "CAMLOPTC=%s -c\n" best_ocamlopt;
+  printf "CAMLLINK=%s\n" best_ocamlc;
+  printf "CAMLOPTLINK=%s\n" best_ocamlopt;
   print "COQDEP=$(COQBIN)coqdep -c\n";
-  print "GRAMMARS=grammar.cma\n";
   print "CAMLP4EXTEND=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
-  print "PP=-pp \"$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
+  print "GRAMMARS=grammar.cma\n";
+  print "CAMLP4OPTIONS=\n";
+  print "PP=-pp \"$(CAMLP4)o -I . $(COQSRC) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
   var_aux l;
   print "\n"
 
@@ -377,22 +401,21 @@ let rec process_cmd_line = function
       end else
         Subdir f :: (process_cmd_line r)
 
+let centered_coq_version =
+  Coq_config.version ^
+  String.make ((10 - String.length Coq_config.version) / 2) ' ' 
+
 let banner () =
-  print
+  printf
 "##############################################################################
-##                 The Calculus of Inductive Constructions                  ##
 ##                                                                          ##
-##                                Projet Coq                                ##
+##                              Coq Makefile                                ##
 ##                                                                          ##
-##                     INRIA                        ENS-CNRS                ##
-##              Rocquencourt                        Lyon                    ##
-##                                                                          ##
-##                                  Coq V7                                  ##
-##                                                                          ##
+##                               %10s                                 ##
 ##                                                                          ##
 ##############################################################################
 
-"
+" centered_coq_version
 
 let warning () =
   print "# WARNING\n#\n";
