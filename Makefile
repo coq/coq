@@ -1286,7 +1286,6 @@ install-library:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	cp $(OBJECTCMI) $(OBJECTCMA) $(OBJECTCMXA) $(GRAMMARCMA) $(FULLCOQLIB)
-	find . -name \*.cmi -exec cp {} $(FULLCOQLIB) \;
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
