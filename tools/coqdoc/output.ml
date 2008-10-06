@@ -32,7 +32,7 @@ let build_table l =
 
 let is_keyword = 
   build_table
-    [ "AddPath"; "Axiom"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
+    [ "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
       "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example"; 
       "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses"; 
@@ -42,27 +42,31 @@ let is_keyword =
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
       "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
-      "Set"; "Types"; "Unset"; "Variable"; "Variables"; "Context";
+      "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
       "Notation"; "Reserved Notation"; "Tactic Notation";
       "Delimit"; "Bind"; "Open"; "Scope"; 
       "Boxed"; "Unboxed"; "Inline";
       "Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Class"; "Instantiation";
+      "subgoal";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
-      "Program Instance";
+      "Program Instance"; "Equations"; "Equations_nocomp";
       (*i (* coq terms *) *)
       "forall"; "match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; 
-      "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"
+      "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"; "struct"; "wf"; "measure";
+      (* Ltac *)
+      "before"; "after"
        ]
 
 let is_tactic = 
   build_table
-    [ "intro"; "intros"; "apply"; "rewrite"; "setoid_rewrite";
-      "destruct"; "induction"; "elim"; "dependent"; 
-      "generalize"; "clear"; "rename"; "move"; "set"; "assert";
-      "cut"; "assumption"; "exact"; "split"; "try"; "discriminate";
+    [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "injection";
+      "elimtype"; "progress"; "setoid_rewrite";
+      "destruct"; "destruction"; "destruct_call"; "induction"; "elim"; "dependent"; 
+      "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "clear"; "rename"; "move"; "set"; "assert";
+      "cut"; "assumption"; "exact"; "split"; "subst"; "try"; "discriminate";
       "simpl"; "unfold"; "red"; "compute"; "at"; "in"; "by";
       "reflexivity"; "symmetry"; "transitivity";
       "replace"; "setoid_replace"; "inversion"; "inversion_clear";

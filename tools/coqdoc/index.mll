@@ -70,12 +70,14 @@ let add_def loc ty sp id =
     
 let add_ref m loc m' sp id ty = 
   if Hashtbl.mem reftable (m, loc) then ()
-  else
-    Hashtbl.add reftable (m, loc) (Ref (m', full_ident sp id, ty))
+  else Hashtbl.add reftable (m, loc) (Ref (m', full_ident sp id, ty));
+  let idx = if id = "<>" then m' else id in
+    if Hashtbl.mem deftable idx then ()
+    else Hashtbl.add deftable idx (Ref (m', full_ident sp id, ty))  
     
 let add_mod m loc m' id = 
   Hashtbl.add reftable (m, loc) (Mod (m', id));
-  Hashtbl.add deftable id (Mod (m', id))
+  Hashtbl.add deftable m (Mod (m', id))
     
 let find m l = Hashtbl.find reftable (m, l)
   

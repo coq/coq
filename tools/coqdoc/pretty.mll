@@ -190,16 +190,23 @@ let pfx_id = (id '.')*
 let identifier = 
   id | pfx_id id
 
-let symbolchar_no_brackets =
-  ['!' '$' '%' '&' '*' '+' ',' '@' '^' '#'
-   '\\' '/' '-' '<' '>' '|' ':' '?' '=' '~'
-   '{' '}' '(' ')'] |
+let symbolchar_symbol_no_brackets =
+  ['!' '$' '%' '&' '*' '+' ',' '^' '#'
+      '\\' '/' '-' '<' '>' '|' ':' '?' '=' '~' ] |
   (* utf-8 symbols *) 
   '\226' ['\134'-'\143' '\152'-'\155' '\164'-'\165' '\168'-'\171'] _
+let symbolchar_no_brackets = symbolchar_symbol_no_brackets | 
+    [ '@' '{' '}' '(' ')' 'A'-'Z' 'a'-'z' '_']
 let symbolchar = symbolchar_no_brackets | '[' | ']'
-let token_no_brackets = symbolchar_no_brackets+
-let token = symbolchar+ | '[' [^ '[' ']' ':']* ']'
+let token_no_brackets = symbolchar_symbol_no_brackets symbolchar_no_brackets*
+let token = symbolchar_symbol_no_brackets symbolchar* | '[' [^ '[' ']' ':']* ']'
 let printing_token = (token | id)+
+
+(* tokens with balanced brackets *)
+let token_brackets =
+  ( token_no_brackets ('[' token_no_brackets? ']')* 
+  | token_no_brackets? ('[' token_no_brackets? ']')+ )
+  token_no_brackets?
 
 let thm_token = 
   "Theorem" 
@@ -226,6 +233,7 @@ let def_token =
   | "Scheme"
   | "Inductive"
   | "CoInductive"
+  | "Equations"
 
 let decl_token = 
   "Hypothesis" 
@@ -312,12 +320,6 @@ let gallina_kw_to_hide =
   | ("Set" | "Unset") space+ "Printing" space+ "Coercions"
   | "Declare" space+ ("Left" | "Right") space+ "Step" 
 
-
-(* tokens with balanced brackets *)
-let token_brackets =
-  ( symbolchar_no_brackets+ ('[' symbolchar_no_brackets* ']')* 
-  | symbolchar_no_brackets* ('[' symbolchar_no_brackets* ']')+ )
-  symbolchar_no_brackets*
 
 let section = "*" | "**" | "***" | "****"
 
@@ -525,16 +527,15 @@ and doc_bol = parse
 and doc = parse
   | nl
       { Output.char '\n'; doc_bol lexbuf }
+  | "[[" nl
+      { formatted := true; Output.line_break (); Output.start_inline_coq ();
+	let eol = body_bol lexbuf in 
+	  Output.end_inline_coq (); formatted := false;
+	  if eol then doc_bol lexbuf else doc lexbuf}
   | "["
       { brackets := 1; 
 	Output.start_inline_coq (); escaped_coq lexbuf; Output.end_inline_coq ();
 	doc lexbuf }
-  | "[[" nl space*
-      { formatted := true; Output.line_break (); Output.start_inline_coq ();
-	Output.indentation (fst (count_spaces (lexeme lexbuf))); 
-	let eol = body_bol lexbuf in 
-	  Output.end_inline_coq (); formatted := false;
-	  if eol then doc_bol lexbuf else doc lexbuf}
   | '*'* "*)" space* nl
       { true }
   | '*'* "*)"
