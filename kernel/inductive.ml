@@ -147,17 +147,15 @@ let rec make_subst env = function
       let args = match args with _::args -> args | [] -> [] in
       let ctx,subst = make_subst env (sign, exp, args) in
       d::ctx, subst
-  | (na,None,t as d)::sign, Some u::exp, a::args ->
+  | d::sign, Some u::exp, a::args ->
       (* We recover the level of the argument, but we don't change the *)
       (* level in the corresponding type in the arity; this level in the *)
       (* arity is a global level which, at typing time, will be enforce *)
       (* to be greater than the level of the argument; this is probably *)
       (* a useless extra constraint *)
-      let _,ars = dest_arity env a in
-      let s = sort_as_univ ars in
+      let s = sort_as_univ (snd (dest_arity env a)) in
       let ctx,subst = make_subst env (sign, exp, args) in
-      let t = actualize_decl_level env ars t in
-      (na,None,t)::ctx, cons_subst u s subst
+      d::ctx, cons_subst u s subst
   | (na,None,t as d)::sign, Some u::exp, [] ->
       (* No more argument here: we instantiate the type with a fresh level *)
       (* which is first propagated to the corresponding premise in the arity *)

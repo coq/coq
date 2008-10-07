@@ -237,12 +237,6 @@ let check_conv_leq_goal env sigma arg ty conclty =
 let goal_type_of env sigma c =
   (if !check then type_of else Retyping.get_type_of) env sigma c
 
-let refresh_poly_universes c =
-  let (ctx,t) = decompose_prod_assum c in
-  let ctx' = List.map (fun (na,b,ty) -> (na,b,refresh_universes ty)) ctx in
-  let t' = refresh_universes t in
-  it_mkProd_or_LetIn t' ctx'
-
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = evar_env goal in
   let hyps = goal.evar_hyps in
@@ -272,8 +266,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 		when (isInd f or has_polymorphic_type (destConst f)) ->
 		(* Sort-polymorphism of definition and inductive types *)
 		goalacc, 
-		refresh_poly_universes
-                  (type_of_global_reference_knowing_parameters env sigma f [||])
+                type_of_global_reference_knowing_conclusion env sigma f conclty
 	    | _ -> 
 		mk_hdgoals sigma goal goalacc f
 	in

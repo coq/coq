@@ -113,6 +113,11 @@ val make_default_case_info : env -> case_style -> inductive -> case_info
 i*)
 
 (********************)
+
+val type_of_inductive_knowing_conclusion :
+  env -> one_inductive_body -> types -> types
+
+(********************)
 val control_only_guard : env -> types -> unit
 
 val subst_inductive : Mod_subst.substitution -> inductive -> inductive

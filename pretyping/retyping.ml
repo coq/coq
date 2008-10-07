@@ -139,6 +139,20 @@ let get_sort_family_of env sigma c = let _,_,f,_ = retype sigma [] in f env c
 let type_of_global_reference_knowing_parameters env sigma c args =
   let _,_,_,f = retype sigma [] in f env c args
 
+let type_of_global_reference_knowing_conclusion env sigma c conclty =
+  let conclty = nf_evar sigma conclty in
+  match kind_of_term c with
+    | Ind ind ->
+        let (_,mip) = Inductive.lookup_mind_specif env ind in
+        type_of_inductive_knowing_conclusion env mip conclty
+    | Const cst ->
+        let t = constant_type env cst in
+        (* TODO *)
+        Typeops.type_of_constant_knowing_parameters env t [||]
+    | Var id -> type_of_var env id
+    | Construct cstr -> type_of_constructor env cstr
+    | _ -> assert false
+
 (* We are outside the kernel: we take fresh universes *)
 (* to avoid tactics and co to refresh universes themselves *)
 let get_type_of env sigma c =
