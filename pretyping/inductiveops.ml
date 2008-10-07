@@ -393,6 +393,58 @@ let arity_of_case_predicate env (ind,params) dep k =
   it_mkProd_or_LetIn concl arsign
 
 (***********************************************)
+(* Inferring the sort of parameters of a polymorphic inductive type
+   knowing the sort of the conclusion *)
+
+(* Check if u (sort of a parameter) appears in the sort of the
+   inductive (is). This is done by trying to enforce u > u' >= is
+   in the empty univ graph. If an inconsistency appears, then
+   is depends on u. *)  
+let is_constrained is u =
+  try
+    let u' = fresh_local_univ() in
+    let _ =
+      merge_constraints
+        (enforce_geq u (super u')
+          (enforce_geq u' is Constraint.empty))
+        initial_universes in
+    false
+  with UniverseInconsistency _ -> true
+
+(* Compute the inductive argument types: replace the sorts
+   that appear in the type of the inductive by the sort of the
+   conclusion, and the other ones by fresh universes. *)
+let rec instantiate_universes env scl is = function
+  | (_,Some _,_ as d)::sign, exp ->
+      d :: instantiate_universes env scl is (sign, exp)
+  | d::sign, None::exp ->
+      d :: instantiate_universes env scl is (sign, exp)
+  | (na,None,ty)::sign, Some u::exp ->
+      let ctx,_ = Reduction.dest_arity env ty in
+      let s =
+        if is_constrained is u then
+          scl (* constrained sort: replace by scl *)
+        else
+          (* unconstriained sort: replace by fresh universe *)
+          new_Type_sort() in
+      (na,None,mkArity(ctx,s)):: instantiate_universes env scl is (sign, exp)
+  | sign, [] -> sign (* Uniform parameters are exhausted *)
+  | [], _ -> assert false
+
+(* Does not deal with universes, but only with Set/Type distinction *)
+let type_of_inductive_knowing_conclusion env mip conclty =
+  match mip.mind_arity with
+  | Monomorphic s ->
+      s.mind_user_arity
+  | Polymorphic ar ->
+      let _,scl = Reduction.dest_arity env conclty in
+      let ctx = List.rev mip.mind_arity_ctxt in
+      let ctx =
+        instantiate_universes
+          env scl ar.poly_level (ctx,ar.poly_param_levels) in
+      mkArity (List.rev ctx,scl)
+
+(***********************************************)
 (* Guard condition *)
 
 (* A function which checks that a term well typed verifies both

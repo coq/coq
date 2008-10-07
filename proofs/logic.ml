@@ -261,12 +261,10 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	let (acc',hdty) =
 	  match kind_of_term f with
 	    | Ind _ | Const _
-		when not (array_exists occur_meta l) (* we could be finer *)
-		  & (isInd f or has_polymorphic_type (destConst f))
-		  ->
+		when (isInd f or has_polymorphic_type (destConst f)) ->
 		(* Sort-polymorphism of definition and inductive types *)
 		goalacc, 
-		type_of_global_reference_knowing_parameters env sigma f l
+                type_of_global_reference_knowing_conclusion env sigma f conclty
 	    | _ -> 
 		mk_hdgoals sigma goal goalacc f
 	in
