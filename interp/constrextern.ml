@@ -544,15 +544,10 @@ let rec remove_coercions inctx = function
 	      (* We skip a coercion *) 
 	      let l = list_skipn n args in
 	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
-	      let (a,l) =
-                (* Recursively remove the head coercions *)
-                match remove_coercions true a with
-                  | RApp (_,a,l') -> a,l'@l
-                  | a -> a,l in
-              if l = [] then a
-              else
-                (* Recursively remove coercions in arguments *)
-                RApp (loc,a,List.map (remove_coercions true) l)
+              (* Recursively remove the head coercions *)
+              (match remove_coercions true a with
+              | RApp (_,a,l') -> RApp (loc,a,l'@l)
+              | a -> RApp (loc,a,l))
 	  | _ -> c
       with Not_found -> c)
   | c -> c
@@ -694,7 +689,7 @@ let rec extern inctx scopes vars r =
 	    | Name id -> RVar (dummy_loc,id)) nal in
 	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),params@args) in
 	  (extern_typ scopes vars t)) x))) tml in
-      let eqns = List.map (extern_eqn (rtntypopt<>None) scopes vars) eqns in 
+      let eqns = List.map (extern_eqn inctx scopes vars) eqns in 
       CCases (loc,sty,rtntypopt',tml,eqns)
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
@@ -702,13 +697,13 @@ let rec extern inctx scopes vars r =
         (Option.map (fun _ -> na) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
-        extern false scopes (List.fold_left add_vname vars nal) b)
+        extern inctx scopes (List.fold_left add_vname vars nal) b)
 
   | RIf (loc,c,(na,typopt),b1,b2) ->
       CIf (loc,sub_extern false scopes vars c,
         (Option.map (fun _ -> na) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
-        sub_extern false scopes vars b1, sub_extern false scopes vars b2)
+        sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
 
   | RRec (loc,fk,idv,blv,tyv,bv) ->
       let vars' = Array.fold_right Idset.add idv vars in
