@@ -35,7 +35,28 @@ let rec list_fold_map2 f e = function
   |  h::t -> 
        let e',h1',h2' = f e h in
        let e'',t1',t2' = list_fold_map2 f e' t in
+
 	 e'',h1'::t1',h2'::t2'
+let type_of_struct env b meb = 
+  let rec aux env = function 
+  | SEBfunctor (mp,mtb,body) ->
+      let env = add_module (MPbound mp) (module_body_of_type mtb) env in
+	SEBfunctor(mp,mtb, aux env body)
+  | SEBident mp -> 
+      (lookup_modtype mp env).typ_expr
+  | SEBapply _ as mtb -> eval_struct env mtb
+  | str -> str
+  in
+    if b then
+      Some (aux env meb)
+    else
+    None
+
+let rec bounded_str_expr = function
+     | SEBfunctor (mp,mtb,body) -> bounded_str_expr body
+     | SEBident mp -> (check_bound_mp mp)
+     | SEBapply (f,a,_)->(bounded_str_expr f)
+     | _ -> false
 
 let return_opt_type mp env mtb = 
   if (check_bound_mp mp) then
@@ -222,7 +243,9 @@ and translate_module env me =
 	let meb,sub1 = translate_struct_entry env mexpr in
 	let mod_typ,sub,cst =
 	  match me.mod_entry_type with
-	    | None ->  None,sub1,Constraint.empty
+	    | None ->  
+		(type_of_struct env (bounded_str_expr meb) meb)
+		  ,sub1,Constraint.empty
 	    | Some mte -> 
 		let mtb2,sub2 = translate_struct_entry env mte in
                 let cst = check_subtypes env
