@@ -172,7 +172,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	(match flags.modulo_conv_on_closed_terms with
 	    Some flags ->
 	      is_trans_fconv (conv_pb_of pb) flags env sigma m n
-	  | None -> constr_cmp (conv_pb_of cv_pb) m n)
+	  | None -> constr_cmp (conv_pb_of pb) m n)
     | _ -> constr_cmp (conv_pb_of cv_pb) m n in
   let rec unirec_rec curenv pb b ((metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_castappevar sigma curm
@@ -522,9 +522,10 @@ let w_merge env with_types flags (metas,evars) evd =
 	      w_merge_rec evd' metas evars eqns
           | _ ->
 	      let evi = Evd.find (evars_of evd) evn in
-	      let rty = Retyping.get_type_of_with_meta env (evars_of evd) (metas_of evd) rhs' in
-	      let evd', rhs'' = w_coerce_to_type env evd rhs' rty evi.evar_concl in
-	      let evd'' = solve_simple_evar_eqn env evd' ev rhs'' in
+	      let env' = push_rels_assum (List.map (fun (_,t) -> Anonymous,t) evars') env in
+	      let rty = Retyping.get_type_of_with_meta env' (evars_of evd) (metas_of evd) rhs' in
+	      let evd', rhs'' = w_coerce_to_type env' evd rhs' rty evi.evar_concl in
+	      let evd'' = solve_simple_evar_eqn env' evd' ev rhs'' in
 		w_merge_rec evd'' metas evars' eqns
 	end
     | [] -> 
