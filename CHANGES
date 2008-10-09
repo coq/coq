@@ -1,3 +1,15 @@
+Changes from V8.1pl3 to V8.1pl4
+===============================
+
+Bug fixes 
+
+- Many bugs have been fixed (cf coq-bugs web page)
+
+Installation
+
+- .cmi, .cma and .cmxa files are now installed in COQLIB
+
+
 Changes from V8.1pl2 to V8.1pl3
 ===============================
 
