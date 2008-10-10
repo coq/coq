@@ -1423,13 +1423,6 @@ standard library of Coq}
 %======================================================================
 \section{Equational properties of operations}
 
-\itemrule{Associativity of binary operator {\op} on domain
-{\D}}{Dop\_assoc} {forall x y z:D, op x (op y z) = op (op x y) z}
-
-  Remark: symmetric form: \name{Dop\_assoc\_reverse}:
-  \formula{forall x y z:D, op (op x y) z = op x (op y z)}
-
-
 \itemrule{Associativity of binary operator {\op} on domain {\D}}{Dop\_assoc}
 {forall x y z:D, op x (op y z) = op (op x y) z}
 
@@ -1799,6 +1792,10 @@ applications.
 \section{A list of suggested renamings}
 
 \begin{verbatim}
+(* Everywhere *)
+
+plus, mult -> add, mult ou plus,times
+
 (* Logic *)
 refl_equal -> eq_refl
 trans_eq, trans_equal -> eq_trans
@@ -1848,10 +1845,10 @@ left (* OK ? *)                (contrib: 419 in 48 contribs)
 right (* OK ? *)               (contrib: 375 in 48 contribs)
 
 (* Ring *)
-SR_plus_zero_left -> SR_plus_0_l
+SR_plus_zero_left -> SR_add_0_l
 SR_mult_one_left  -> SR_mult_1_l
 SR_mult_zero_left -> SR_mult_0_l
-SR_distr_left     -> SR_mult_plus_distr_l
+SR_distr_left     -> SR_mult_add_distr_l
 
 (* ZArith *)
 Z_le_lt_eq_dec -> Zle_lt_or_eq_dec_inf
@@ -1870,14 +1867,16 @@ lt_plus_trans      : comment nommer ?
 
 (* Arith *)
 (* Peano.v *)
-plus_n_O -> plus_0_r
-plus_O_n -> plus_0_l
+plus_n_O -> add_0_r
+plus_O_n -> add_0_l
 le_n -> le_refl
 le_S -> le_S_trans
 
 O_S -> O_S_discr ? diff_O_S ? diff_0_succ ? (à la fois propriété
   d'inductif -- insistance sur O, S -- et propriété arithmétique --
   insistance sur 0, succ)
+
+implicites dans iter_nat
 
 (* Le.v *)
 le_n_S -> succ_le_monotone ?? succ_le_compat ?? S_le_compat ?? bof...
@@ -1953,6 +1952,8 @@ xorb_
 (* Reals *)
 Rlt_le -> Rlt_le_weak (or Rlt_le_incl, Rlt_incl_le ?)
 
+(* Logic *)
+eq_dep_intro -> eq_dep_refl
 
 Hints:
 
@@ -1994,7 +1995,6 @@ Goal forall x y, x = y => S x = S y.
 \texttt{set} and \texttt{pose} have semantics swapped compared to the
 intuitive one.
 
-
 \texttt{autorewrite using} vs \texttt{auto with}.
 
 Use of commas...
@@ -2008,6 +2008,9 @@ $(x_1,(x_2,\ldots,x_n)\ldots)$ in terms and \texttt{match} patterns.
 How then to extend the notation to nested destructing \texttt{let} or,
 further, to destructing \texttt{fun} (i.e. \texttt{fun ((x,y),(z,t))
 => \ldots} meaning \texttt{fun u => let ((x,y),(z,t)) := u in \ldots}.
+
+Implicit arguments in Bvectors missing. Implicit arguments of
+left/right, inleft/inright etc missing.
 
 \section{Tactic wishes}
 

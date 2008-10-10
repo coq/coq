@@ -1,0 +1,130 @@
+(* List of suggested renaming to be applied automatically *)
+
+(* Logic.v *)
+refl_equal -> eq_refl
+trans_eq, trans_equal -> eq_trans
+sym_eq, sym_equal -> eq_sym
+sym_not_eq, sym_not_equal -> not_eq_sym
+f_equal -> eq_compat (??)
+f_equal2 -> eq_compat2 (??)
+f_equal3 ->
+f_equal4 ->
+f_equal5 ->
+
+(* Ring *)
+SR_plus_zero_left -> SR_plus_0_l
+SR_mult_one_left  -> SR_mult_1_l
+SR_mult_zero_left -> SR_mult_0_l
+SR_distr_left     -> SR_mult_plus_distr_l
+
+(* ZArith *)
+Z_le_lt_eq_dec -> Zle_lt_or_eq_dec_inf
+Z_lt_le_dec -> Zlt_or_le_dec_inf (mais mettre en avant un Zle_or_lt_dec_inf)
+
+dec_eq -> Zeq_dec ??
+dec_Zne -> Zne_dec ??
+dec_Zle -> Zle_dec
+dec_Zge -> Zge_dec
+dec_Zlt -> Zlt_dec
+dec_Zgt -> Zgt_dec
+
+Zle_succ = le_n_Sn : comment nommer ? (le_S ?)
+Zle_le_succ = le_S : comment nommer ? (le_S_trans ?)
+lt_plus_trans      : comment nommer ?
+
+(* Arith *)
+- Peano.v
+plus_n_O -> plus_0_r
+plus_O_n -> plus_0_l
+le_n -> le_refl
+le_S -> le_S_trans
+
+O_S -> O_S_discr ? diff_O_S ? diff_0_succ ? (à la fois propriété
+  d'inductif -- insistance sur O, S -- et propriété arithmétique --
+  insistance sur 0, succ)
+
+- Le.v
+le_n_S -> succ_le_monotone ?? succ_le_compat ?? S_le_compat ?? bof...
+le_S_n -> succ_le_reg ??
+le_lt_dec -> le_or_lt_dec_inf
+le_or_lt -> le_or_lt_dec
+le_lt_eq_dec -> le_lt_or_eq_inf
+le_lt_or_eq -> OK 
+lt_le_S -> lt_le_succ ?
+lt_n_O -> lt_O_minimal ??
+
+- Min.v
+min_SS -> succ_min_distr
+min_l -> ?
+min_r -> ?
+min_dec -> min_irreducible_inf (mais garder le nom intuitif min_dec comme synonyme)
+
+- Max.v
+max_SS -> succ_max_distr
+max_dec -> max_irreducible_inf (mais garder le nom intuitif min_dec comme synonyme)
+
+- Le.v
+le_n_S -> le_succ_mono
+
+- Mult.v
+mult_S_lt_compat_l -> ??
+
+- Peano_dec.v
+eq_nat_dec -> eq_nat_dec_inf (trop long ?)
+
+min_case/Zmin_case (choisir place P)
+
+(**** Bool *****)
+
+demorgan1 -> andb_orb_distrib_r
+demorgan2 -> andb_orb_distrib_l
+demorgan3 -> orb_andb_distrib_r
+demorgan4 -> orb_andb_distrib_l
+absorption_andb -> andb_orb_absorption_l_l
+absorption_orb -> orb_andb_absorption_l_l
+negb_elim -> negb_involutive
+negb_intro -> negb_involutive_reverse
+  (* zero property *)
+orb_b_true -> orb_true_r
+orb_true_b -> orb_true_l
+andb_b_false -> andb_false_r
+andb_false_b -> andb_false_l
+  (* identities *)
+orb_b_false -> orb_false_r
+orb_false_b -> orb_false_l
+andb_b_true -> andb_true_r
+andb_true_b -> andb_true_l
+  (* complementation *)
+orb_neg_b -> orb_negb_r
+andb_neg_b -> andb_negb_r
+
+orb_true_elim -> orb_integral_inf ? (or orb_true_elim_inf)
+orb_prop -> orb_integral_inf ? (or orb_true_elim)
+andb_false_elim -> andb_integral_inf ? (or andb_false_elim_inf)
+
+orb_false_elim -> ??
+
+negb_orb -> orb_de_morgan ??
+negb_andb -> andb_de_morgan ??
+eqb_reflx -> eqb_nilpotent ?? (l'autre nom aussi est suggestif)
+xorb_
+
+
+(* Reals *)
+Rlt_le -> Rlt_le_weak (or Rlt_le_incl, Rlt_incl_le ?)
+
+
+
+Hints:
+
+lt_n_Sm_le: remplacable par le_S_n suivi de lt_le_S (coercion identite).
+gt_le_S:    convertible avec lt_le_S (i.e. c'est une identité)
+le_lt_n_Sm: convertible avec le_n_S via lt_le_S
+lt_n_Sm_le: convertible avec le_S_n via lt_le_S
+gt_Sn_O:    replacer par unfold gt, puis lt_le_S
+le_n_Sn:    remplacable par le_S et le_n
+le_S_gt:    remplacer par unfold gt, unfold lt (i.e. lt_le_S) ?
+
+Rle_lt_0_plus_1
+le_Sn_le
+
