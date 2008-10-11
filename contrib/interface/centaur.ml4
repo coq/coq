@@ -546,7 +546,9 @@ let abort_hook s = output_results_nl (ctf_AbortedMessage !global_request_id s)
 
 let interp_search_about_item = function
   | SearchRef qid -> GlobSearchRef (Nametab.global qid)
-  | SearchString s -> GlobSearchString s
+  | SearchString (s,_) ->
+      warning "Notation case not taken into account";
+      GlobSearchString s
 
 let pcoq_search s l =
   (* LEM: I don't understand why this is done in this way (redoing the
@@ -559,7 +561,7 @@ let pcoq_search s l =
   begin match s with
   | SearchAbout sl -> 
       raw_search_about (filter_by_module_from_list l) add_search
-	(List.map interp_search_about_item sl)
+	(List.map (on_snd interp_search_about_item) sl)
   | SearchPattern c ->
       let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
       raw_pattern_search (filter_by_module_from_list l) add_search pat

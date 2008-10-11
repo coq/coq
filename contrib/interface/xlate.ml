@@ -1927,12 +1927,15 @@ let rec xlate_vernac =
 	| SearchRewrite c ->
 	    CT_search_rewrite(xlate_formula c, translated_restriction)
 	| SearchAbout (a::l) ->
-	    let xlate_search_about_item it =
+	    let xlate_search_about_item (b,it) =
+              if not b then xlate_error "TODO: negative searchabout constraint";
 	      match it with
 		  SearchRef x -> 
 		    CT_coerce_ID_to_ID_OR_STRING(loc_qualid_to_ct_ID x)
-		| SearchString s -> 
-		    CT_coerce_STRING_to_ID_OR_STRING(CT_string s) in
+		| SearchString (s,None) -> 
+		    CT_coerce_STRING_to_ID_OR_STRING(CT_string s)
+		| SearchString (s,_) ->
+                    xlate_error "TODO: notation with explicit scope" in
 	    CT_search_about
 	      (CT_id_or_string_ne_list(xlate_search_about_item a,
 				       List.map xlate_search_about_item l),
