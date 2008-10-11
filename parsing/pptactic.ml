@@ -79,7 +79,7 @@ let pr_and_short_name pr (c,_) = pr c
 
 let pr_or_by_notation f = function
   | AN v -> f v
-  | ByNotation (_,s) -> str s
+  | ByNotation (_,s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
 let pr_located pr (loc,x) = pr x
 

@@ -131,7 +131,7 @@ val level_of_notation : notation -> level (* raise [Not_found] if no level *)
 (*s** Miscellaneous *)
 
 val interp_notation_as_global_reference : loc -> (global_reference -> bool) -> 
-      notation -> global_reference
+      notation -> delimiters option -> global_reference
 
 (* Checks for already existing notations *)
 val exists_notation_in_scope : scope_name option -> notation ->

@@ -375,15 +375,15 @@ let intern_or_var ist = function
 
 let loc_of_by_notation f = function
   | AN c -> f c
-  | ByNotation (loc,s) -> loc
+  | ByNotation (loc,s,_) -> loc
 
 let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 
 let intern_inductive_or_by_notation = function
   | AN r -> Nametab.inductive_of_reference r
-  | ByNotation (loc,ntn) ->
+  | ByNotation (loc,ntn,sc) ->
       destIndRef (Notation.interp_notation_as_global_reference loc
-        (function IndRef ind -> true | _ -> false) ntn)
+        (function IndRef ind -> true | _ -> false) ntn sc)
 
 let intern_inductive ist = function
   | AN (Ident (loc,id)) when find_var id ist -> ArgVar (loc,id)
@@ -565,10 +565,10 @@ let interp_global_reference r =
 
 let intern_evaluable_reference_or_by_notation = function
   | AN r -> evaluable_of_global_reference (interp_global_reference r)
-  | ByNotation (loc,ntn) ->
+  | ByNotation (loc,ntn,sc) ->
       evaluable_of_global_reference
       (Notation.interp_notation_as_global_reference loc
-        (function ConstRef _ | VarRef _ -> true | _ -> false) ntn)
+        (function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
 
 (* Globalizes a reduction expression *)
 let intern_evaluable ist = function

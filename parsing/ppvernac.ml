@@ -133,9 +133,11 @@ let pr_in_out_modules = function
   | SearchOutside [] -> mt()
   | SearchOutside l -> spc() ++ str"outside" ++ spc() ++ prlist_with_sep sep pr_module l
 
-let pr_search_about = function
+let pr_search_about (b,c) = 
+  (if b then str "-" else mt()) ++
+  match c with
   | SearchRef r -> pr_reference r
-  | SearchString s -> qs s
+  | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
 let pr_search a b pr_p = match a with
   | SearchHead qid -> str"Search" ++ spc() ++ pr_reference qid ++ pr_in_out_modules b

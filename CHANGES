@@ -59,6 +59,8 @@ Vernacular commands
   or axioms a theorem or definition relies on.
 - "Add Rec LoadPath" now provides references to libraries using partially
   qualified names (this holds also for coqtop/coqc option -R).
+- SearchAbout supports negated search criteria and reference to logical objects
+  by their notation.
 
 Libraries (DOC TO CHECK)
 

@@ -713,13 +713,13 @@ ways to change the interpretation of subterms are available.
 \comindex{Delimit Scope}}
 
 It is possible to locally extend the interpretation scope stack using
-the syntax ({\term})\%{\nterm{key}} (or simply {\term}\%{\nterm{key}}
-for atomic terms), where {\nterm{key}} is a special identifier called
+the syntax ({\term})\%{\delimkey} (or simply {\term}\%{\delimkey}
+for atomic terms), where {\delimkey} is a special identifier called
 {\em delimiting key} and bound to a given scope.
 
 In such a situation, the term {\term}, and all its subterms, are
 interpreted in the scope stack extended with the scope bound to
-{\nterm{key}}.
+{\delimkey}.
 
 To bind a delimiting key to a scope, use the command
 

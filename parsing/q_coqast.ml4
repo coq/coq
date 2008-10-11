@@ -68,7 +68,8 @@ let mlexpr_of_loc loc = <:expr< $dloc$ >>
 
 let mlexpr_of_by_notation f = function
   | Genarg.AN x -> <:expr< Genarg.AN $f x$ >>
-  | Genarg.ByNotation (loc,s) -> <:expr< Genarg.ByNotation $dloc$ $str:s$ >>
+  | Genarg.ByNotation (loc,s,sco) -> 
+      <:expr< Genarg.ByNotation $dloc$ $str:s$ $mlexpr_of_option mlexpr_of_string sco$ >>
 
 let mlexpr_of_intro_pattern = function
   | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>

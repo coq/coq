@@ -1317,6 +1317,13 @@ with its $\beta\iota$-normal form.
   this notation refers to an unfoldable constant, then the tactic
   unfolds it.
 
+\item {\tt unfold {\qstring}\%{\delimkey}}
+
+  This is variant of {\tt unfold {\qstring}} where {\qstring} gets its
+  interpretation from the scope bound to the delimiting key
+  {\delimkey} instead of its default interpretation (see
+  Section~\ref{scopechange}).
+
 \item {\tt unfold \qualidorstring$_1$ at \num$_1^1$, \dots, \num$_i^1$,
 \dots,\ \qualidorstring$_n$ at \num$_1^n$ \dots\ \num$_j^n$}
 
