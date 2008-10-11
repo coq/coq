@@ -1107,9 +1107,20 @@ let interp_search_restriction = function
 
 open Search
 
+let is_ident s = try ignore (check_ident s); true with UserError _ -> false
+
 let interp_search_about_item = function
   | SearchRef r -> GlobSearchRef (global_with_alias r)
-  | SearchString s -> GlobSearchString s
+  | SearchString (s,None) when is_ident s -> GlobSearchString s
+  | SearchString (s,sc) ->
+      try 
+	let ref =
+	  Notation.interp_notation_as_global_reference dummy_loc
+	    (fun _ -> true) s sc in
+	GlobSearchRef ref
+      with UserError _ -> 
+	error ("Unable to interp \""^s^"\" either as a reference or
+          	as an identifier component")
 
 let vernac_search s r =
   let r = interp_search_restriction r in
@@ -1124,7 +1135,7 @@ let vernac_search s r =
   | SearchHead ref ->
       Search.search_by_head (global_with_alias ref) r
   | SearchAbout sl ->
-      Search.search_about (List.map interp_search_about_item sl) r
+      Search.search_about (List.map (on_snd interp_search_about_item) sl) r
 
 let vernac_locate = function
   | LocateTerm qid -> msgnl (print_located_qualid qid)

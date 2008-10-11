@@ -135,14 +135,34 @@ environment}\\
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{}
+\item {\tt SearchAbout {\str}.}
+
+If {\str} is a valid identifier, this command displays the name and type
+of all objects (theorems, axioms, etc) of the current context whose
+name contains {\str}. If {\str} is a notation's string denoting some
+reference {\qualid} (referred to by its main symbol as in \verb="+"=
+or by its notation's string as in \verb="_ + _"= or \verb="_ 'U' _"=, see
+Section~\ref{Notation}), the command works like {\tt SearchAbout
+{\qualid}}.
+
+\item {\tt SearchAbout {\str}\%{\delimkey}.}
+
+The string {\str} must be a notation or the main symbol of a notation
+which is then interpreted in the scope bound to the delimiting key
+{\delimkey} (see Section~\ref{scopechange}).
+
+\item {\tt SearchAbout [ \nelist{\zeroone{-}\textrm{\textsl{qualid-or-string}}}{}
 ].}\\
 \noindent where {\textrm{\textsl{qualid-or-string}}} is a {\qualid} or
-a {\str}.
+a {\str}, or a {\str} followed by a scope delimiting key 
+{\tt \%{\delimkey}}.
 
-This extension of {\tt SearchAbout} searches for all objects whose
-statement mentions all of {\qualid} of the list and whose name
-contains all {\str} of the list.
+This generalization of {\tt SearchAbout} searches for all objects
+whose statement mentions all of {\qualid} (or {\str} if {\str} is the
+notation for a reference) and whose name contains all {\str} that
+correspond to valid identifiers. If a {\qualid} or a {\str} is
+prefixed by ``-'', the search excludes the objects that mention that
+{\qualid} or that {\str}.
 
 \Example
 

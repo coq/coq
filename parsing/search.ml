@@ -214,7 +214,7 @@ let search_about_item (itemref,typ) = function
 let raw_search_about filter_modules display_function l =
   let filter ref' env typ =
     filter_modules ref' env typ &&
-    List.for_all (search_about_item (ref',typ)) l && 
+    List.for_all (fun (b,i) -> b = search_about_item (ref',typ) i) l && 
     not (string_string_contains (name_of_reference ref') "_subproof")
   in
   gen_filtered_search filter display_function

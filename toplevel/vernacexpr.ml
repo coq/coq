@@ -70,13 +70,13 @@ type printable =
 
 type search_about_item =
   | SearchRef of reference
-  | SearchString of string
+  | SearchString of string * scope_name option
 
 type searchable =
   | SearchPattern of pattern_expr
   | SearchRewrite of pattern_expr
   | SearchHead of reference
-  | SearchAbout of search_about_item list
+  | SearchAbout of (bool * search_about_item) list
 
 type locatable =
   | LocateTerm of reference

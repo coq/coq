@@ -616,9 +616,14 @@ GEXTEND Gram
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchRewrite c, l)
       | IDENT "SearchAbout"; 
-	  sl = [ "["; l = LIST1 [ r = global -> SearchRef r
-                                | s = ne_string -> SearchString s ]; "]" -> l 
-   		 | qid = global -> [SearchRef qid] ];
+	  sl = [ "[";
+	         l = LIST1 [ 
+		   b = positive_search_mark; r = global -> b,SearchRef r
+		 | b = positive_search_mark; s = ne_string; sc = OPT scope
+		   -> b,SearchString (s,sc)
+		 ]; "]" -> l
+   	       | qid = global -> [true,SearchRef qid]
+   	       | s = ne_string; sc = OPT scope -> [true,SearchString (s,sc)] ];
 	  l = in_or_out_modules -> 
 	  VernacSearch (SearchAbout sl, l)
 
@@ -743,6 +748,12 @@ GEXTEND Gram
     [ [ c = constr -> CommentConstr c
       | s = STRING -> CommentString s
       | n = natural -> CommentInt n ] ]
+  ;
+  positive_search_mark:
+    [ [ "-" -> false | -> true ] ]
+  ;
+  scope:
+    [ [ "%"; key = IDENT -> key ] ]
   ;
 END;
 
