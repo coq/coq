@@ -47,7 +47,7 @@ Hint Resolve (f_equal pred): v62.
 
 Theorem pred_Sn : forall n:nat, n = pred (S n).
 Proof.
-  simpl; reflexivity.  
+  simpl; reflexivity.
 Qed.
 
 (** Injectivity of successor *)
@@ -165,16 +165,12 @@ Fixpoint minus (n m:nat) {struct n} : nat :=
   match n, m with
   | O, _ => n
   | S k, O => n
-(*=======
-
-  | O, _ => n
-  | S k, O => S k *)
   | S k, S l => k - l
   end
 
 where "n - m" := (minus n m) : nat_scope.
 
-(** Definition of the usual orders, the basic properties of [le] and [lt] 
+(** Definition of the usual orders, the basic properties of [le] and [lt]
     can be found in files Le and Lt *)
 
 Inductive le (n:nat) : nat -> Prop :=
