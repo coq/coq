@@ -1,8 +1,5 @@
-<HTML>
-
-<HEAD>
-<TITLE>Cover Page</TITLE>
-
+\renewcommand{\@meta}{
+\begin{rawhtml}
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
 <title>Reference Manual | The Coq Proof Assistant</title>
 
@@ -10,21 +7,19 @@
 <style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/modules/node/node.css";</style>
 
 <style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/modules/system/defaults.css";</style>
-
 <style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/modules/system/system.css";</style>
 <style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/modules/user/user.css";</style>
 
 <style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/themes/coq/style.css";</style>
 <style type="text/css" media="all">@import "http://logical.saclay.inria.fr/coq/themes/coq/coqdoc.css";</style>
+\end{rawhtml}}
 
-</HEAD>
+% for HeVeA
 
-<BODY>
-
+\htmlhead{\begin{rawhtml}
 <div id="container">
 <div id="headertop">
 <div id="nav">
-
   <ul class="links-menu">
     <li><a href="http://logical.saclay.inria.fr/coq/" class="active">Home</a></li>
 
@@ -32,7 +27,6 @@
     <li><a href="http://logical.saclay.inria.fr/coq/?q=node/3">Get Coq</a></li>
     <li><a href="http://logical.saclay.inria.fr/coq/?q=node/4">Resources</a></li>
     <li><a href="http://logical.saclay.inria.fr/coq/?q=node/5">Contact</a></li>
-
   </ul>
 </div>
 </div>
@@ -51,41 +45,9 @@
 
 <div id="content">
 
-<br/><br/><br/><br/>
-<h1 style="text-align: center; font-weight:bold; font-size: 300%; line-height: 2ex">Reference Manual</h1>
-  
-<h2 style="text-align:center; font-size: 120%">
-  Version 8.2<a name="text1"></a><a href="#note1"><SUP><span style="font-size: 80%">1</span></SUP></a>
+\end{rawhtml}}
 
-<br/><br/><br/><br/><br/><br/>
-<span style="text-align: center; font-size: 120%; ">The Coq Development Team</span>
-<br/><br/><br/><br/><br/><br/>
-
-
-<div style="text-align: left; font-size: 80%; text-indent: 0pt">
-<ul style="list-style: none; margin-left: 0pt">
-  <li>V7.x © INRIA 1999-2004</li>
-  <li>V8.0 © INRIA 2004-2006</li>
-  <li>V8.1 © INRIA 2006-2008</li>
-  <li>V8.2 © INRIA 2008</li>
-</ul>
-
-<p style="text-indent: 0pt">This material may be distributed only subject to the terms and conditions set forth in the Open Publication License, v1.0 or later (the latest version is presently available at <a href="http://www.opencontent.org/openpub">http://www.opencontent.org/openpub</a>). Options A and B are not elected.</p>
-</div>
-<br/>
-
-<hr width="75%" size=1>
-<div style="text-align: left; font-size: 80%; text-indent: 0pt">
-<dl>
-  <dt><a name="note1" href="toc.html#text1">1</a>
-  <dd>This research was partly supported by IST working group ``Types''</dd>
-</dl>
-</div>
-
-</div>
-
-</div>
-
+\htmlfoot{\begin{rawhtml}
 <div id="sidebarWrapper">
 <div id="sidebar">
 
@@ -96,7 +58,6 @@
 <ul class="menu">
 
 <li class="leaf"><a href="cover.html">Cover</a></li>
-
 <li class="leaf"><a href="toc.html">Table of contents</a></li>
 <li class="leaf">Index
   <ul class="menu">
@@ -105,7 +66,6 @@
   <li><a href="tactic-index.html">Tactics</a></li>
   <li><a href="error-index.html">Errors</a></li>
   </ul>
-
 </li>
 
 </ul>
@@ -117,6 +77,10 @@
 </div>
 
 
+</div>
+
+</div>
+
 <div id="footer">
 <div id="nav-footer">
   <ul class="links-menu-footer">
@@ -126,9 +90,8 @@
   </ul>
 
 </div>
-
 </div>
 
-</body>
+</div>
+\end{rawhtml}}
 
-</html>
