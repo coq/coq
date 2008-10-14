@@ -194,8 +194,9 @@ let dump_local_binder b sec ty =
 let dump_modref loc mp ty =
   if dump () then
     let (dp, l) = Lib.split_modpath mp in
+    let l = if l = [] then l else Util.list_drop_last l in
     let fp = Names.string_of_dirpath dp in
-    let mp = Names.string_of_dirpath (Names.make_dirpath (Util.list_drop_last l)) in
+    let mp = Names.string_of_dirpath (Names.make_dirpath l) in
       dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
 		      (fst (Util.unloc loc)) fp mp "<>" ty)
 
