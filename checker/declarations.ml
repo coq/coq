@@ -562,7 +562,7 @@ type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
-  | SFBalias of module_path * Univ.constraints option
+  | SFBalias of module_path * struct_expr_body option * Univ.constraints option
   | SFBmodtype of module_type_body
 
 and structure_body = (label * structure_field_body) list
@@ -576,7 +576,8 @@ and struct_expr_body =
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
-    With_module_body of identifier list * module_path * Univ.constraints
+    With_module_body of identifier list * module_path *
+      struct_expr_body option * Univ.constraints
   | With_definition_body of  identifier list * constant_body
         
 and module_body = 
@@ -592,13 +593,14 @@ and module_type_body =
       typ_alias : substitution}
 
 	
-let subst_with_body sub = function
-  | With_module_body(id,mp,cst) ->
-      With_module_body(id,subst_mp sub mp,cst)
+let rec subst_with_body sub = function
+  | With_module_body(id,mp,typ_opt,cst) ->
+      With_module_body(id,subst_mp sub mp,
+		       Option.smartmap (subst_struct_expr sub) typ_opt,cst)
   | With_definition_body(id,cb) ->
       With_definition_body( id,subst_const_body sub cb)
 
-let rec subst_modtype sub mtb =
+and subst_modtype sub mtb =
   let typ_expr' = subst_struct_expr sub mtb.typ_expr in
     if typ_expr'==mtb.typ_expr then
       mtb
@@ -616,8 +618,9 @@ and subst_structure sub sign =
 	SFBmodule (subst_module sub mb)
     | SFBmodtype mtb -> 
 	SFBmodtype (subst_modtype sub mtb)
-    | SFBalias (mp,cst) ->
-	SFBalias (subst_mp sub mp,cst)
+ | SFBalias (mp,typ_opt ,cst) ->
+	SFBalias (subst_mp sub mp,
+		  Option.smartmap (subst_struct_expr sub) typ_opt,cst)
   in
     List.map (fun (l,b) -> (l,subst_body b)) sign
 

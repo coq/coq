@@ -117,6 +117,11 @@ type module_path =
   | MPself of mod_self_id 
   | MPdot of module_path * label
 
+let rec check_bound_mp = function
+  | MPbound _ -> true
+  | MPdot(mp,_) ->check_bound_mp mp
+  | _ -> false
+
 let rec string_of_mp = function
   | MPfile sl -> "MPfile (" ^ string_of_dirpath sl ^ ")"
   | MPbound uid -> string_of_uid uid

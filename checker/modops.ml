@@ -145,7 +145,7 @@ let rec eval_struct env = function
 			   (join sub_alias (map_mbid farg_id mp)) fbody_b)
   | SEBwith (mtb,(With_definition_body _ as wdb)) ->
       merge_with env mtb wdb empty_subst
-  | SEBwith (mtb, (With_module_body (_,mp,_) as wdb)) ->
+  | SEBwith (mtb, (With_module_body (_,mp,_,_) as wdb)) ->
       let alias_in_mp =
 	(lookup_modtype mp env).typ_alias in
 	merge_with env mtb wdb alias_in_mp
@@ -167,8 +167,8 @@ and merge_with env mtb with_decl alias=
     | _ -> error_signature_expected mtb
   in
   let id,idl = match with_decl with 
-    | With_definition_body (id::idl,_) | With_module_body (id::idl,_,_) -> id,idl
-    | With_definition_body ([],_) | With_module_body ([],_,_) -> assert false
+    | With_definition_body (id::idl,_) | With_module_body (id::idl,_,_,_) -> id,idl
+    | With_definition_body ([],_) | With_module_body ([],_,_,_) -> assert false
   in
   let l = label_of_id id in
     try
@@ -180,15 +180,15 @@ and merge_with env mtb with_decl alias=
       in 
       let new_spec,subst = match with_decl with
         | With_definition_body ([],_)
-        | With_module_body ([],_,_) -> assert false
+        | With_module_body ([],_,_,_) -> assert false
 	| With_definition_body ([id],c) -> 
 	    SFBconst c,None
-	| With_module_body ([id], mp,cst) ->
+	| With_module_body ([id], mp,typ_opt,cst) ->
 	    let mp' = scrape_alias mp env in
-	      SFBalias (mp,Some cst),
+	      SFBalias (mp,typ_opt,Some cst),
 	    Some(join (map_mp (mp_rec [id]) mp') alias)
 	| With_definition_body (_::_,_) 
-        | With_module_body (_::_,_,_) -> 
+        | With_module_body (_::_,_,_,_) -> 
 	    let old = match spec with
 		SFBmodule msb -> msb
 	      | _ -> error_not_a_module l
@@ -196,8 +196,8 @@ and merge_with env mtb with_decl alias=
             let new_with_decl,subst1 = 
 	      match with_decl with
                   With_definition_body (_,c) -> With_definition_body (idl,c),None
-		| With_module_body (idc,mp,cst) -> 
-		    With_module_body (idl,mp,cst),
+		| With_module_body (idc,mp,t,cst) -> 
+		    With_module_body (idl,mp,t,cst),
 		      Some(map_mp (mp_rec idc) mp) 
 	    in
 	    let subst = Option.fold_right join subst1 alias in
@@ -227,7 +227,7 @@ and add_signature mp sign env =
 	| SFBmodule mb -> 
 	    add_module (MPdot (mp,l)) mb env 
 	      (* adds components as well *)
-	| SFBalias (mp1,cst) -> 
+	| SFBalias (mp1,_,cst) -> 
 	    Environ.register_alias (MPdot(mp,l)) mp1 env
 	| SFBmodtype mtb -> Environ.add_modtype (MPdot(mp,l)) 
 	    mtb env
@@ -257,7 +257,7 @@ and  constants_of_specification env mp sign =
        let new_env =  add_module (MPdot (mp,l)) mb env in 
        new_env,(constants_of_modtype env (MPdot (mp,l))
 		   (type_of_mb env mb)) @ res
-   | SFBalias (mp1,cst) ->
+   | SFBalias (mp1,_,cst) ->
        let new_env =  register_alias (MPdot (mp,l)) mp1 env in 
        new_env,(constants_of_modtype env (MPdot (mp,l))
 		   (eval_struct env (SEBident mp1))) @ res
@@ -323,7 +323,7 @@ and strengthen_sig env msid sign mp = match sign with
 	  (MPdot (MPself msid,l)) mb env in
         let rest' = strengthen_sig env' msid rest mp in
 	item':: rest'
-  | ((l,SFBalias (mp1,cst)) as item) :: rest ->
+  | ((l,SFBalias (mp1,_,cst)) as item) :: rest ->
       let env' = register_alias (MPdot(MPself msid,l)) mp1 env in
       let rest' = strengthen_sig env' msid rest mp in
 	item::rest'

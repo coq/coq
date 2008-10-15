@@ -150,7 +150,7 @@ type structure_field_body =
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
   | SFBmodule of module_body
-  | SFBalias of module_path * Univ.constraints option
+  | SFBalias of module_path * struct_expr_body option * Univ.constraints option
   | SFBmodtype of module_type_body
 
 and structure_body = (label * structure_field_body) list
@@ -164,7 +164,8 @@ and struct_expr_body =
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
-    With_module_body of identifier list * module_path * Univ.constraints
+    With_module_body of identifier list * module_path *
+      struct_expr_body option * Univ.constraints
   | With_definition_body of  identifier list * constant_body
         
 and module_body = 

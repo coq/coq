@@ -165,10 +165,10 @@ let rec extract_sfb_spec env mp = function
   | (l,SFBmodtype mtb) :: msig -> 
       let specs = extract_sfb_spec env mp msig in
       (l,Smodtype (extract_seb_spec env true(*?*) mtb.typ_expr)) :: specs
-  | (l,SFBalias(mp1,_))::msig -> 
+  | (l,SFBalias(mp1,typ_opt,_))::msig -> 
       extract_sfb_spec env mp 
 	((l,SFBmodule {mod_expr = Some (SEBident mp1);
-		      mod_type = None;
+		      mod_type = typ_opt;
 		      mod_constraints = Univ.Constraint.empty;
 		      mod_alias = Mod_subst.empty_subst;
 		      mod_retroknowledge = []})::msig)
@@ -183,7 +183,7 @@ and extract_seb_spec env truetype = function
       (match extract_with_type env cb with (* cb peut contenir des kn  *)
 	 | None ->  mtb''
 	 | Some (vl,typ) -> MTwith(mtb'',ML_With_type(idl,vl,typ)))
-  | SEBwith(mtb',With_module_body(idl,mp,_))-> 
+  | SEBwith(mtb',With_module_body(idl,mp,_,_))-> 
       Visit.add_mp mp;
       MTwith(extract_seb_spec env truetype mtb',
 	     ML_With_module(idl,mp))
@@ -250,13 +250,13 @@ let rec extract_sfb env mp all = function
        if all || Visit.needed_mp mp then 
 	(l,SEmodtype (extract_seb_spec env true(*?*) mtb.typ_expr)) :: ms
       else ms
-  | (l,SFBalias (mp1,cst)) :: msb -> 
+  | (l,SFBalias (mp1,typ_opt,cst)) :: msb -> 
       let ms = extract_sfb env mp all msb in
       let mp = MPdot (mp,l) in 
       if all || Visit.needed_mp mp then 
 	(l,SEmodule (extract_module env mp true 
 		       {mod_expr = Some (SEBident mp1);
-			mod_type = None;
+			mod_type = typ_opt;
 		        mod_constraints= Univ.Constraint.empty;
 			mod_alias = empty_subst;
 			mod_retroknowledge = []})) :: ms

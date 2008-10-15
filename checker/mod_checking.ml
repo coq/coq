@@ -145,9 +145,9 @@ and check_with_aux_def env mtb with_decl =
     | _ -> error_signature_expected mtb
   in
   let id,idl = match with_decl with 
-    | With_definition_body (id::idl,_) | With_module_body (id::idl,_,_) ->
+    | With_definition_body (id::idl,_) | With_module_body (id::idl,_,_,_) ->
                                            id,idl
-    | With_definition_body ([],_) | With_module_body ([],_,_) -> assert false
+    | With_definition_body ([],_) | With_module_body ([],_,_,_) -> assert false
   in
   let l = label_of_id id in
     try
@@ -173,8 +173,8 @@ and check_with_aux_def env mtb with_decl =
 			let new_with_decl = match with_decl with
 			    With_definition_body (_,c) ->
                               With_definition_body (idl,c)
-			  | With_module_body (_,c,cst) ->
-                              With_module_body (idl,c,cst) in 
+			  | With_module_body (_,c,t,cst) ->
+                              With_module_body (idl,c,t,cst) in 
 			  check_with_aux_def env' (type_of_mb env old) new_with_decl
                     | Some msb ->
 			error_a_generative_module_expected l
@@ -192,9 +192,9 @@ and check_with_aux_mod env mtb with_decl =
 	msid,msid',(subst_signature_msid msid (MPself(msid')) sig_b)
     | _ -> error_signature_expected mtb in
   let id,idl = match with_decl with 
-    | With_definition_body (id::idl,_) | With_module_body (id::idl,_,_) ->
+    | With_definition_body (id::idl,_) | With_module_body (id::idl,_,_,_) ->
         id,idl
-    | With_definition_body ([],_) | With_module_body ([],_,_) -> assert false
+    | With_definition_body ([],_) | With_module_body ([],_,_,_) -> assert false
   in
   let l = label_of_id id in
     try
@@ -206,11 +206,11 @@ and check_with_aux_mod env mtb with_decl =
       in 
       let env' = Modops.add_signature (MPself msid) before env in
 	match with_decl with
-          | With_module_body ([],_,_) -> assert false
-	  | With_module_body ([id], mp,_) ->
+          | With_module_body ([],_,_,_) -> assert false
+	  | With_module_body ([id], mp,_,_) ->
 	      let old,alias = match spec with
 		  SFBmodule msb -> Some msb,None
-		| SFBalias (mp',_) -> None,Some mp'
+		| SFBalias (mp',_,_) -> None,Some mp'
 		| _ -> error_not_a_module l
 	      in
 	      let mtb' = lookup_modtype mp env' in
@@ -223,7 +223,7 @@ and check_with_aux_mod env mtb with_decl =
 		      anomaly "Mod_typing:no implementation and no alias"
 	      in
 		join (map_mp (mp_rec [id]) mp) mtb'.typ_alias
-        | With_module_body (_::_,mp,_) -> 
+        | With_module_body (_::_,mp,_,_) -> 
 	    let old = match spec with
 		SFBmodule msb -> msb
 	      | _ -> error_not_a_module l
@@ -234,8 +234,8 @@ and check_with_aux_mod env mtb with_decl =
                       let new_with_decl = match with_decl with
 			  With_definition_body (_,c) -> 
 			    With_definition_body (idl,c)
-			| With_module_body (_,c,cst) ->
-                            With_module_body (idl,c,cst) in
+			| With_module_body (_,c,t,cst) ->
+                            With_module_body (idl,c,t,cst) in
 		      let sub =
 			check_with_aux_mod env' 
 			  (type_of_mb env old) new_with_decl in
@@ -290,7 +290,7 @@ and check_structure_field (s,env) mp lab = function
       let is_fun, sub = Modops.update_subst env msb mp1 in
       ((if is_fun then s else join s sub),
        Modops.add_module (MPdot(mp,lab)) msb env)
-  | SFBalias(mp2,cst) ->
+  | SFBalias(mp2,_,cst) ->
       (* cf Safe_typing.add_alias *)
       (try
         let mp' = MPdot(mp,lab) in

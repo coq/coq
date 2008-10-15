@@ -90,7 +90,7 @@ and print_modtype locals mty =
       let s = (String.concat "." (List.map string_of_id idl)) in
       hov 2 (print_modtype locals seb ++ spc() ++ str "with" ++ spc() ++ 
 	       str "Definition"++ spc() ++ str s ++ spc() ++  str ":="++ spc())
-  | SEBwith(seb,With_module_body(idl,mp,_))->
+  | SEBwith(seb,With_module_body(idl,mp,_,_))->
       let s =(String.concat "." (List.map string_of_id idl)) in
       hov 2 (print_modtype locals seb ++ spc() ++ str "with" ++ spc() ++ 
 	       str "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc())
@@ -102,7 +102,7 @@ and print_sig locals msid sign =
     | SFBconst {const_opaque=true} -> str "Parameter "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
-    | SFBalias (mp,_) -> str "Module "
+    | SFBalias (mp,_,_) -> str "Module "
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
   in
     prlist_with_sep spc print_spec sign
@@ -114,7 +114,7 @@ and print_struct locals msid struc =
     | SFBconst {const_body=None} -> str "Parameter "
     | SFBmind _ -> str "Inductive "
     | SFBmodule _ -> str "Module "
-    | SFBalias (mp,_) -> str "Module "
+    | SFBalias (mp,_,_) -> str "Module "
     | SFBmodtype _ -> str "Module Type ") ++ str (string_of_label l)
   in
     prlist_with_sep spc print_body struc
