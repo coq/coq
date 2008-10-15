@@ -314,7 +314,8 @@ let add_alias l mp senv =
   let mp1 = scrape_alias mp senv.env in
   let typ_opt = 
     if check_bound_mp mp then
-      Some (lookup_modtype mp senv.env).typ_expr
+      Some (strengthen senv.env
+	(lookup_modtype mp senv.env).typ_expr mp)
     else
       None 
   in

@@ -43,7 +43,7 @@ let type_of_struct env b meb =
       let env = add_module (MPbound mp) (module_body_of_type mtb) env in
 	SEBfunctor(mp,mtb, aux env body)
   | SEBident mp -> 
-      (lookup_modtype mp env).typ_expr
+      strengthen env (lookup_modtype mp env).typ_expr mp
   | SEBapply _ as mtb -> eval_struct env mtb
   | str -> str
   in

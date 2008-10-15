@@ -33,7 +33,7 @@ type namedobject =
   | IndConstr of constructor * mutual_inductive_body
   | Module of module_body
   | Modtype of module_type_body
-  | Alias of module_path
+  | Alias of module_path * struct_expr_body option
 
 (* adds above information about one mutual inductive: all types and
    constructors *)
@@ -64,7 +64,7 @@ let make_label_map mp list =
        add_nameobjects_of_mib (make_kn mp empty_dirpath l) mib map
     | SFBmodule mb -> add_map (Module mb)
     | SFBmodtype mtb -> add_map (Modtype mtb)
-    | SFBalias (mp,_,cst) -> add_map (Alias mp)
+    | SFBalias (mp,typ_opt,cst) -> add_map (Alias (mp,typ_opt))
   in
     List.fold_right add_one list Labmap.empty
 
@@ -352,9 +352,9 @@ and check_signatures cst env (msid1,sig1) alias (msid2,sig2') =
 	    begin
 	      match info1 with
 		| Module msb -> check_modules cst env msid1 l msb msb2 alias
-		| Alias mp ->let msb = 
+		| Alias (mp,typ_opt) ->let msb = 
 		    {mod_expr = Some (SEBident mp);
-		     mod_type = Some (eval_struct env (SEBident mp));
+		     mod_type = typ_opt;
 		     mod_constraints = Constraint.empty;
 		     mod_alias = (lookup_modtype mp env).typ_alias;
 		     mod_retroknowledge = []} in
@@ -364,11 +364,11 @@ and check_signatures cst env (msid1,sig1) alias (msid2,sig2') =
 	| SFBalias (mp,typ_opt,_) ->
 	    begin	
 	      match info1 with
-		| Alias mp1 -> check_modpath_equiv env mp mp1; cst
+		| Alias (mp1,_) -> check_modpath_equiv env mp mp1; cst
 		| Module msb -> 
 		    let msb1 = 
 		      {mod_expr = Some (SEBident mp);
-		       mod_type = Some (eval_struct env (SEBident mp));
+		       mod_type = typ_opt;
 		       mod_constraints = Constraint.empty;
 		       mod_alias = (lookup_modtype mp env).typ_alias;
 		       mod_retroknowledge = []} in
