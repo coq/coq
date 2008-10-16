@@ -462,7 +462,7 @@ let pp_ind co kn ind =
     if i >= Array.length ind.ind_packets then mt () 
     else 
       let ip = (kn,i) in 
-      let ip_equiv = ind.ind_equiv, 0 in 
+      let ip_equiv = ind.ind_equiv, i in 
       let p = ind.ind_packets.(i) in 
       if is_custom (IndRef ip) then pp (i+1)
       else begin 
