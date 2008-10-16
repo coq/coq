@@ -163,7 +163,7 @@ let rec extract_sfb_spec env mp = function
       let specs = extract_sfb_spec env mp msig in
       if logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
-  | (l,SFBmind cb) :: msig ->
+  | (l,SFBmind _) :: msig ->
       let kn = make_kn mp empty_dirpath l in
       let s = Sind (kn, extract_inductive env kn) in
       let specs = extract_sfb_spec env mp msig in

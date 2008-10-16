@@ -876,19 +876,17 @@ let extract_constant_spec env kn cb =
 	let t = snd (record_constant_type env kn (Some typ)) in 
 	Sval (r, type_expunge env t)
 
-let extract_with_type env cb = 
-  let typ = Typeops.type_of_constant_type env cb.const_type in 
-  match flag_of_type env typ with 
-    | (_ , Default) -> None
-    | (Logic, TypeScheme) ->Some ([],Tdummy Ktype)
-    | (Info, TypeScheme) -> 
-	let s,vl = type_sign_vl env typ in 
-	  (match cb.const_body with 
-	  | None -> assert false
-	  | Some body -> 
-	      let db = db_from_sign s in 
-	      let t = extract_type_scheme env db (force body) (List.length s)
-	      in Some ( vl, t) )
+let extract_with_type env cb =
+  let typ = Typeops.type_of_constant_type env cb.const_type in
+  match flag_of_type env typ with
+    | (Info, TypeScheme) ->
+	let s,vl = type_sign_vl env typ in
+	let body = Option.get cb.const_body in
+	let db = db_from_sign s in
+	let t = extract_type_scheme env db (force body) (List.length s) in
+	Some (vl, t)
+    | _ -> None
+
 		   
 let extract_inductive env kn = 
   let ind = extract_ind env kn in 
