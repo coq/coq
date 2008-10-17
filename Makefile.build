@@ -34,11 +34,13 @@ endif
 NOARG: world
 
 # build and install the three subsystems: coq, coqide, pcoq
-world: revision coq coqide pcoq
-
 ifeq ($(WITHDOC),all)
+world: revision coq coqide pcoq doc
+
 install: install-coq install-coqide install-pcoq install-doc
 else
+world: revision coq coqide pcoq
+
 install: install-coq install-coqide install-pcoq
 endif
 

@@ -224,7 +224,7 @@ install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
 	$(INSTALLLIB) doc/LICENSE $(FULLDOCDIR)/LICENSE.doc
 
-install-doc-html: doc-html
+install-doc-html: 
 	$(MKDIR) $(addprefix $(FULLDOCDIR)/html/, refman stdlib faq)
 	$(INSTALLLIB) doc/refman/html/* $(FULLDOCDIR)/html/refman 
 	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib 
@@ -232,7 +232,7 @@ install-doc-html: doc-html
 	$(INSTALLLIB) doc/faq/html/* $(FULLDOCDIR)/html/faq
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(FULLDOCDIR)/html/Tutorial.html
 
-install-doc-printable: doc-pdf doc-ps
+install-doc-printable: 
 	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/refman/Reference-Manual.pdf \
 		doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
