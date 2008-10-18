@@ -555,7 +555,9 @@ let pop t = lift (-1) t
 (*  bindings functions *)                         
 (***************************)
 
-type metamap = (metavariable * constr) list 
+type meta_type_map = (metavariable * types) list 
+
+type meta_value_map = (metavariable * constr) list 
 
 let rec subst_meta bl c = 
   match kind_of_term c with

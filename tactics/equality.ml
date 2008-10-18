@@ -565,7 +565,7 @@ let apply_on_clause (f,t) clause =
     (match kind_of_term (last_arg f_clause.templval.Evd.rebus) with
      | Meta mv -> mv
      | _  -> errorlabstrm "" (str "Ill-formed clause applicator.")) in
-  clenv_fchain argmv f_clause clause
+  clenv_expand_metas (clenv_fchain argmv f_clause clause)
 
 let discr_positions env sigma (lbeq,(t,t1,t2)) eq_clause cpath dirn sort =
   let e = next_ident_away eq_baseid (ids_of_context env) in

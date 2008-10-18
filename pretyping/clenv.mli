@@ -43,10 +43,16 @@ val subst_clenv : substitution -> clausenv -> clausenv
 
 (* subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr
+(* subject of clenv (assume it is pre-instantiated) *)
+val clenv_direct_value : clausenv -> constr
 (* type of clenv (instantiated) *)
 val clenv_type      : clausenv -> types
+(* type of clenv (assume it is pre-instantiated) *)
+val clenv_direct_nf_type : clausenv -> types
 (* substitute resolved metas *)
 val clenv_nf_meta   : clausenv -> constr -> constr
+(* substitute resolved metas (assume the metas in clausenv are expanded) *)
+val clenv_direct_nf_meta   : clausenv -> constr -> constr
 (* type of a meta in clenv context *)
 val clenv_meta_type : clausenv -> metavariable -> types
 
@@ -82,6 +88,8 @@ val evar_clenv_unique_resolver :
 val clenv_dependent : bool -> clausenv -> metavariable list
 
 val clenv_pose_metas_as_evars : clausenv -> metavariable list -> clausenv
+
+val clenv_expand_metas : clausenv -> clausenv
 
 (***************************************************************)
 (* Bindings *)

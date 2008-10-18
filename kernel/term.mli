@@ -208,6 +208,7 @@ type ('constr, 'types) kind_of_term =
    term *)
 
 val kind_of_term : constr -> (constr, types) kind_of_term
+val kind_of_term2 : constr -> ((constr,types) kind_of_term,constr) kind_of_term
 
 (* Experimental *)
 type ('constr, 'types) kind_of_type =

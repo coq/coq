@@ -251,7 +251,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   match kind_of_term trm with
     | Meta _ ->
 	if !check && occur_meta conclty then
-	  anomaly "refined called with a dependent meta";
+	  anomaly "refine called with a dependent meta";
 	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
 
     | Cast (t,_, ty) ->
@@ -329,7 +329,7 @@ and mk_hdgoals sigma goal goalacc trm =
 
     | _ ->
 	if !check && occur_meta trm then
-	  anomaly "refined called with a dependent meta";
+	  anomaly "refine called with a dependent meta";
 	goalacc, goal_type_of env sigma trm
 
 and mk_arggoals sigma goal goalacc funty = function

@@ -751,7 +751,7 @@ let evd_convertible env evd x y =
 let decompose_setoid_eqhyp env sigma c left2right =
   let ctype = Typing.type_of env sigma c in
   let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ctype) in
-  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
+  let (equiv, args) = decompose_app (Clenv.clenv_direct_nf_type eqclause) in
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)
     | x::y::z ->
@@ -764,7 +764,7 @@ let decompose_setoid_eqhyp env sigma c left2right =
     if not (evd_convertible env eqclause.evd ty1 ty2) then
       error "The term does not end with an applied homogeneous relation."
     else
-      { cl=eqclause; prf=(Clenv.clenv_value eqclause);
+      { cl=eqclause; prf=(Clenv.clenv_direct_value eqclause);
 	car=ty1; rel=mkApp (equiv, Array.of_list others);
 	l2r=left2right; c1=c1; c2=c2; c=Some c; abs=None }
 
@@ -808,6 +808,7 @@ let unify_eqn env sigma hypinfo t =
 		cl, prf, c1, c2, car, rel
 	      else raise Not_found*)
 	      let env' = clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl in
+	      let env' = clenv_expand_metas env' in
 	      let env' =
 		let mvs = clenv_dependent false env' in
 		  clenv_pose_metas_as_evars env' mvs
@@ -818,7 +819,8 @@ let unify_eqn env sigma hypinfo t =
 	      and rel = Clenv.clenv_nf_meta env' rel in
 		hypinfo := { !hypinfo with
 		  cl = env';
-		  abs = Some (Clenv.clenv_value env', Clenv.clenv_type env') };
+		  abs = Some (Clenv.clenv_direct_value env', 
+		              Clenv.clenv_direct_nf_type env') };
 		env', prf, c1, c2, car, rel
 	  | None ->
 	      let env' =
@@ -829,6 +831,7 @@ let unify_eqn env sigma hypinfo t =
 		  clenv_unify allowK ~flags:rewrite2_unif_flags
 		    CONV left t cl
 	      in
+	      let env' = clenv_expand_metas env' in
 	      let env' = 
 		let mvs = clenv_dependent false env' in
 		  clenv_pose_metas_as_evars env' mvs
@@ -838,7 +841,7 @@ let unify_eqn env sigma hypinfo t =
 	      let nf c = Evarutil.nf_evar (Evd.evars_of evd') (Clenv.clenv_nf_meta env' c) in
 	      let c1 = nf c1 and c2 = nf c2
 	      and car = nf car and rel = nf rel 
-	      and prf = nf (Clenv.clenv_value env') in
+	      and prf = nf (Clenv.clenv_direct_value env') in
 	      let ty1 = Typing.mtype_of env'.env env'.evd c1 
 	      and ty2 = Typing.mtype_of env'.env env'.evd c2
 	      in
@@ -1577,12 +1580,12 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
 	  Unification.w_unify_to_subterm ~flags:rewrite2_unif_flags
 	    (pf_env gl) ((if l2r then c1 else c2),but) cl.evd
   in
-  let cl' = {cl with evd = env'} in
-  let c1 = Clenv.clenv_nf_meta cl' c1 
-  and c2 = Clenv.clenv_nf_meta cl' c2 in
+  let cl' = clenv_expand_metas {cl with evd = env'} in
+  let c1 = Clenv.clenv_direct_nf_meta cl' c1 
+  and c2 = Clenv.clenv_direct_nf_meta cl' c2 in
   check_evar_map_of_evars_defs env';
-  let prf = Clenv.clenv_value cl' in
-  let prfty = Clenv.clenv_type cl' in
+  let prf = Clenv.clenv_direct_value cl' in
+  let prfty = Clenv.clenv_direct_nf_type cl' in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
     {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
 

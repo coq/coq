@@ -467,7 +467,7 @@ let unify_to_type env evd flags c u =
   let sigma = evars_of evd in
   let c = refresh_universes c in
   let t = get_type_of_with_meta env sigma (metas_of evd) c in
-  let t = Tacred.hnf_constr env sigma (nf_betaiota (nf_meta evd t)) in
+  let t = Tacred.hnf_constr env sigma (nf_meta evd t) in
   let u = Tacred.hnf_constr env sigma u in
   try unify_0 env sigma Cumul flags t u
   with e when precatchable_exception e -> ([],[])

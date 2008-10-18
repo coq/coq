@@ -60,7 +60,7 @@ open Tactics
 open Tacticals
 open Printer
 
-type term_with_holes = TH of constr * metamap * sg_proofs
+type term_with_holes = TH of constr * meta_type_map * sg_proofs
 and  sg_proofs       = (term_with_holes option) list
 
 (* pour debugger *)

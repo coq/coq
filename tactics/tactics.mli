@@ -38,9 +38,6 @@ val inj_ebindings : constr bindings -> open_constr bindings
 
 (*s General functions. *)
 
-val type_clenv_binding : goal sigma ->
-  constr * constr -> open_constr bindings  -> constr
-
 val string_of_inductive : constr -> string
 val head_constr       : constr -> constr list
 val head_constr_bound : constr -> constr list -> constr list

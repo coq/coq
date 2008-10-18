@@ -205,7 +205,7 @@ val weak_undo_pftreestate : pftreestate -> pftreestate
 
 val mk_pftreestate : goal -> pftreestate
 val extract_open_proof : evar_map -> proof_tree -> constr * (int * types) list
-val extract_open_pftreestate : pftreestate -> constr * Termops.metamap
+val extract_open_pftreestate : pftreestate -> constr * Termops.meta_type_map
 val extract_pftreestate : pftreestate -> constr
 val first_unproven : pftreestate -> pftreestate
 val last_unproven : pftreestate -> pftreestate

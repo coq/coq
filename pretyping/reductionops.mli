@@ -223,4 +223,5 @@ val whd_betaiota_deltazeta_for_iota_state :  state_reduction_function
 (*s Meta-related reduction functions *)
 val meta_instance : evar_defs -> constr freelisted -> constr
 val nf_meta       : evar_defs -> constr -> constr
+val direct_nf_meta       : evar_defs -> constr -> constr
 val meta_reducible_instance : evar_defs -> constr freelisted -> constr

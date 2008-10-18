@@ -130,15 +130,15 @@ type local_state_reduction_function = state -> state
 (*** Reduction Functions Operators ***)
 (*************************************)
 
-let rec whd_state (x, stack as s) =
+let rec whd_app_state (x, stack as s) =
   match kind_of_term x with
-    | App (f,cl) -> whd_state (f, append_stack cl stack)
-    | Cast (c,_,_)  -> whd_state (c, stack)
+    | App (f,cl) -> whd_app_state (f, append_stack cl stack)
+    | Cast (c,_,_)  -> whd_app_state (c, stack)
     | _             -> s
 
 let appterm_of_stack (f,s) = (f,list_of_stack s)
 
-let whd_stack x = appterm_of_stack (whd_state (x, empty_stack))
+let whd_stack x = appterm_of_stack (whd_app_state (x, empty_stack))
 let whd_castapp_stack = whd_stack
 
 let stack_reduction_of_reduction red_fun env sigma s =
@@ -184,26 +184,6 @@ module type RedFlagsSig = sig
   val red_iota : flags -> bool
   val red_zeta : flags -> bool
 end
-
-(* Naive Implementation 
-module RedFlags = (struct
-  type flag = BETA | DELTA | EVAR | IOTA | ZETA | ETA
-  type flags = flag list
-  let fbeta = BETA 
-  let fdelta = DELTA
-  let fevar = EVAR
-  let fiota = IOTA
-  let fzeta = ZETA
-  let feta = ETA
-  let mkflags l = l
-  let red_beta = List.mem BETA
-  let red_delta = List.mem DELTA
-  let red_evar = List.mem EVAR
-  let red_eta = List.mem ETA
-  let red_iota = List.mem IOTA
-  let red_zeta = List.mem ZETA
-end : RedFlagsSig)
-*)
 
 (* Compact Implementation *)
 module RedFlags = (struct
@@ -531,14 +511,14 @@ let rec whd_evar sigma c =
 	  with NotInstantiatedEvar | Not_found -> None in
 	(match d with Some c -> whd_evar sigma c | None -> c)
     | Sort s when is_sort_variable sigma s -> whd_sort_variable sigma c
-    | _ -> collapse_appl c
+    | _ -> c
 
 let nf_evar sigma =
   local_strong (whd_evar sigma)
 
 (* lazy reduction functions. The infos must be created for each term *)
 let clos_norm_flags flgs env sigma t =
-  norm_val (create_clos_infos flgs env) (inject (nf_evar sigma t))
+  norm_val (create_clos_infos flgs env) (inject ((*nf_evar sigma *)t))
 
 let nf_beta = clos_norm_flags Closure.beta empty_env Evd.empty
 let nf_betaiota = clos_norm_flags Closure.betaiota empty_env Evd.empty
@@ -645,8 +625,8 @@ let is_trans_fconv = function | CONV -> is_trans_conv | CUMUL -> is_trans_conv_l
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-let whd_meta metamap c = match kind_of_term c with
-  | Meta p -> (try List.assoc p metamap with Not_found -> c)
+let whd_meta metasubst c = match kind_of_term c with
+  | Meta p -> (try List.assoc p metasubst with Not_found -> c)
   | _ -> c
 
 (* Try to replace all metas. Does not replace metas in the metas' values
@@ -905,27 +885,18 @@ let meta_value evd mv =
   in 
   valrec mv
 
-let meta_instance env b =
+let meta_instance evd b =
   let c_sigma =
     List.map 
-      (fun mv -> (mv,meta_value env mv)) (Metaset.elements b.freemetas)
+      (fun mv -> (mv,meta_value evd mv)) (Metaset.elements b.freemetas)
   in 
   if c_sigma = [] then b.rebus else instance c_sigma b.rebus
 
-let nf_meta env c = meta_instance env (mk_freelisted c)
+let nf_meta evd c = meta_instance evd (mk_freelisted c)
+
+let direct_nf_meta evd c = instance (mk_meta_subst evd) c
 
 (* Instantiate metas that create beta/iota redexes *)
-
-let meta_value evd mv = 
-  let rec valrec mv =
-    match meta_opt_fvalue evd mv with
-    | Some (b,_) ->
-      instance
-        (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
-        b.rebus
-    | None -> mkMeta mv
-  in 
-  valrec mv
 
 let meta_reducible_instance evd b =
   let fm = Metaset.elements b.freemetas in

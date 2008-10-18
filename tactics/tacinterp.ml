@@ -486,7 +486,9 @@ let rec intern_intro_pattern lf ist = function
       loc, IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
   | loc, IntroIdentifier id ->
       loc, IntroIdentifier (intern_ident lf ist id)
-  | loc, (IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _)
+  | loc, IntroFresh id ->
+      loc, IntroFresh (intern_ident lf ist id)
+  | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _)
       as x -> x
 
 and intern_or_and_intro_pattern lf ist =
@@ -1644,7 +1646,9 @@ let rec interp_intro_pattern ist gl = function
       loc, IntroOrAndPattern (interp_or_and_intro_pattern ist gl l)
   | loc, IntroIdentifier id ->
       loc, interp_intro_pattern_var loc ist (pf_env gl) id
-  | loc, (IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _)
+  | loc, IntroFresh id ->
+      loc, IntroFresh (interp_fresh_ident ist gl id)
+  | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _)
       as x -> x
 
 and interp_or_and_intro_pattern ist gl =

@@ -105,8 +105,11 @@ val free_rels : constr -> Intset.t
 val dependent : constr -> constr -> bool
 val collect_metas : constr -> int list
 (* Substitution of metavariables *)
-type metamap = (metavariable * constr) list 
-val subst_meta : metamap -> constr -> constr
+type meta_value_map = (metavariable * constr) list 
+val subst_meta : meta_value_map -> constr -> constr
+
+(* Type assignment for metavariables *)
+type meta_type_map = (metavariable * types) list 
 
 (* [pop c] lifts by -1 the positive indexes in [c] *)
 val pop : constr -> constr

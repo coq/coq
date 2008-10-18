@@ -261,6 +261,7 @@ let mkFix fix = Fix fix
 let mkCoFix cofix = CoFix cofix
 
 let kind_of_term c = c
+let kind_of_term2 c = c
 
 (************************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
