@@ -201,3 +201,16 @@ Axiom silly_axiom : forall v : exp, v = v -> False.
 Lemma silly_lemma : forall x : atom, False.
 intros x.
 apply silly_axiom with (v := x).  (* fails *)
+reflexivity.
+Qed.
+
+(* Check that unification does not commit too early to a representative
+   of an eta-equivalence class that would be incompatible with other
+   unification constraints *)
+
+Lemma eta : forall f : (forall P, P 1),
+  (forall P, f P = f P) ->
+   forall Q, f (fun x => Q x) = f (fun x => Q x).
+intros.
+apply H. 
+Qed.

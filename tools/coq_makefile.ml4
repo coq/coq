@@ -38,6 +38,11 @@ let rec print_list sep = function
   | x :: l -> print x; print sep; print_list sep l
   | [] -> ()
 
+let best_ocamlc = 
+  if Coq_config.best = "opt" then "ocamlc.opt" else "ocamlc"
+let best_ocamlopt =
+  if Coq_config.best = "opt" then "ocamlopt.opt" else "ocamlopt"
+
 let section s =
   let l = String.length s in
   let sep = String.make (l+5) '#'
@@ -156,27 +161,7 @@ let variables l =
     | _ :: r -> var_aux r
   in
     section "Variables definitions.";
-    print "CAMLP4:=$(notdir $(CAMLP4LIB))\n"; 
-    if Coq_config.local then
-      (print "COQSRC:=$(COQTOP)\n";
-       print "COQSRCLIBS:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
-  -I $(COQTOP)/library -I $(COQTOP)/parsing \\
-  -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
-  -I $(COQTOP)/proofs -I $(COQTOP)/tactics \\
-  -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/cc \\
-  -I $(COQTOP)/contrib/dp -I $(COQTOP)/contrib/extraction \\
-  -I $(COQTOP)/contrib/field -I $(COQTOP)/contrib/firstorder \\
-  -I $(COQTOP)/contrib/fourier -I $(COQTOP)/contrib/funind \\
-  -I $(COQTOP)/contrib/interface -I $(COQTOP)/contrib/jprover \\
-  -I $(COQTOP)/contrib/micromega -I $(COQTOP)/contrib/omega \\
-  -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
-  -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
-  -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml \\
-  -I $(CAMLP4LIB)\n")
-    else
-      (print "COQSRC:=$(shell $(COQBIN)coqc -where)\n"; 
-       print "COQSRCLIBS:=-I $(COQSRC)\n");
-    print "ZFLAGS:=$(OCAMLLIBS) $(COQSRCLIBS)\n";
+    print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n";
     if !opt = "-byte" then 
       print "override OPT:=-byte\n"
     else
@@ -189,17 +174,14 @@ let variables l =
     print "GALLINA:=$(COQBIN)gallina\n";
     print "COQDOC:=$(COQBIN)coqdoc\n";
     (* Caml executables and relative variables *)
-    printf "CAMLC:=$(CAMLBIN)ocamlc -rectypes -c\n";
-    printf "CAMLOPTC:=$(CAMLBIN)ocamlopt -rectypes -c\n";
-    printf "CAMLLINK:=$(CAMLBIN)ocamlc -rectypes\n";
-    printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt -rectypes\n";
+    printf "CAMLC:=$(CAMLBIN)%s -rectypes -c\n" best_ocamlc;
+    printf "CAMLOPTC:=$(CAMLBIN)%s -rectypes -c\n" best_ocamlopt;
+    printf "CAMLLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
+    printf "CAMLOPTLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
     print "GRAMMARS:=grammar.cma\n";
     print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
-
-    (if Coq_config.local then
-      print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n"
-    else
-      print "PP:=-pp \"$(CAMLBIN)$(CAMLP4)o -I . -I $(COQSRC) $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n"); 
+    print "CAMLP4OPTIONS=\n";
+    print "PP:=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
     var_aux l;
     print "\n"
 
@@ -225,6 +207,15 @@ let dir_of_target t =
     | RInclude (dir,_) -> dir
     | Include dir -> dir
     | _ -> assert false
+
+let parameters () =
+  print "# \n";
+  print "# Compilation looks in the path for coqtop; set COQBIN if coqtop is not in path\n";
+  print "# if .ml files have to be compiled, set CAMLBIN if ocamlc is not in path\n";
+  print "# if .ml files have to be compiled, set CAMLP4BIN if camlp4/5 is not in path\n";
+  print "# \n";
+  print "# set COQTOP to a Coq source directory for compiling over Coq compiled sources\n";
+  print "# \n\n"
 
 let include_dirs l =
   let rec split_includes l = 
@@ -253,11 +244,43 @@ let include_dirs l =
   let str_i = parse_includes inc_i in
   let str_i' = parse_includes inc_i' in
   let str_r = parse_includes inc_r in
-    section "Libraries definition.";
-    print "CAMLP4LIB:=$(shell $(CAMLBIN)camlp5 -where 2> /dev/null || $(CAMLBIN)camlp4 -where)\n";
+    section "Libraries definitions.";
+    printf "CAMLP4:=%s\n" Coq_config.camlp4;
+    print "ifdef CAMLP4BIN\n";
+    print "  CAMLP4LIB:=$(shell $(CAMLP4BIN)/$(CAMLP4) -where 2> /dev/null)\n";
+    print "else\n";
+    print "  CAMLP4LIB:=$(shell $(CAMLP4) -where 2> /dev/null)\n";
+    print "endif\n";
     print "OCAMLLIBS:=-I $(CAMLP4LIB) "; print_list "\\\n  " str_i; print "\n";
+    print "COQLIB:=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
+    print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
+    print "  COQBIN:=$(COQTOP)/bin\n";
+    print "  COQSRCLIBS:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
+  -I $(COQTOP)/library -I $(COQTOP)/parsing \\
+  -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
+  -I $(COQTOP)/proofs -I $(COQTOP)/tactics \\
+  -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/cc -I $(COQTOP)/contrib/dp \\
+  -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
+  -I $(COQTOP)/contrib/firstorder -I $(COQTOP)/contrib/fourier \\
+  -I $(COQTOP)/contrib/funind -I $(COQTOP)/contrib/interface \\
+  -I $(COQTOP)/contrib/micromega -I $(COQTOP)/contrib/omega \\
+  -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
+  -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
+  -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml\n";
+    print "else ifneq ($(strip $(COQLIB)),)\n";
+    print "  COQSRCLIBS:=-I $(COQLIB)\n";
+    print "else\n";
+    print "  $(error Cannot find coqtop in path; set variable COQBIN to the directory where coqtop is located)\n";
+    print "endif\n";
+    if List.exists (function ML _ -> true | _ -> false) l then
+      begin
+	print "ifeq ($(strip $(CAMLP4LIB)),)\n";
+	print "  $(error Cannot find $(CAMLP4) in path; set variable CAMLP4BIN to the directory where $(CAMLP4) is located)\n";
+	print "endif\n";
+      end;
     print "COQLIBS:="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " str_r; print "\n\n"
+
 
 let rec special = function
   | [] -> []
@@ -423,10 +446,10 @@ let banner () =
 ##  v      #                  The Coq Proof Assistant                   ##
 ## <O___,, # CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud ##
 ##   \\VV/  #                                                            ##
-##    //   #   Makefile automagically generated by coq_makefile V%s    ##
+##    //   #  Makefile automagically generated by coq_makefile V%s ##
 ##########################################################################
 
-" Coq_config.version)
+" (Coq_config.version ^ String.make (7 - String.length Coq_config.version) ' '))
 
 let warning () =
   print "# WARNING\n#\n";
@@ -467,6 +490,7 @@ let do_makefile args =
     banner ();
     warning ();
     command_line args;
+    parameters ();
     include_dirs l;
     variables l;
     all_target l;
