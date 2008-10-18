@@ -1045,9 +1045,9 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
       | None -> (sort, inverse sort impl)
       | Some _ -> (sort, impl)
   in
-  let evars = ref (Evd.create_evar_defs Evd.empty) in
-  let env = pf_env gl in
   let sigma = project gl in
+  let evars = ref (Evd.create_evar_defs sigma) in
+  let env = pf_env gl in
   let eq = build_new gl env sigma flags occs hypinfo concl (Some (Lazy.lazy_from_val cstr)) evars 
   in
     match eq with
@@ -1084,7 +1084,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 						mkApp (p, [| mkRel 2 |]))),
 			     [| mkMeta goal_meta; t |])))
 	  in
-	  let evartac = 
+	  let evartac =
 	    let evd = Evd.evars_of undef in
 	      if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
 	      else tclIDTAC
