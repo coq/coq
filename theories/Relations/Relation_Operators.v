@@ -8,66 +8,117 @@
 
 (*i $Id$ i*)
 
-(****************************************************************************)
-(*                      Bruno Barras, Cristina Cornes                       *)
-(*                                                                          *)
-(*  Some of these definitons were taken from :                              *)
-(*     Constructing Recursion Operators in Type Theory                      *)
-(*     L. Paulson  JSC (1986) 2, 325-355                                    *)
-(****************************************************************************)
+(************************************************************************)
+(** *                   Bruno Barras, Cristina Cornes                   *)
+(** *                                                                   *)
+(** * Some of these definitions were taken from :                       *)
+(** *    Constructing Recursion Operators in Type Theory                *)
+(** *    L. Paulson  JSC (1986) 2, 325-355                              *)
+(************************************************************************)
 
 Require Import Relation_Definitions.
 Require Import List.
 
-(** Some operators to build relations *)
+(** * Some operators to build relations *)
+
+(** ** Transitive closure *)
 
 Section Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
-  
+
+  (** Definition by direct transitive closure *)
+
   Inductive clos_trans (x: A) : A -> Prop :=
-    | t_step : forall y:A, R x y -> clos_trans x y
-    | t_trans :
-        forall y z:A, clos_trans x y -> clos_trans y z -> clos_trans x z.
+    | t_step (y:A) : R x y -> clos_trans x y
+    | t_trans (y z:A) : clos_trans x y -> clos_trans y z -> clos_trans x z.
+
+  (** Alternative definition by transitive extension on the left *)
+
+  Inductive clos_trans_1n (x: A) : A -> Prop :=
+    | t1n_step (y:A) : R x y -> clos_trans_1n x y
+    | t1n_trans (y z:A) : R x y -> clos_trans_1n y z -> clos_trans_1n x z.
+
+  (** Alternative definition by transitive extension on the right *)
+
+  Inductive clos_trans_n1 (x: A) : A -> Prop :=
+    | tn1_step (y:A) : R x y -> clos_trans_n1 x y
+    | tn1_trans (y z:A) : R y z -> clos_trans_n1 x y -> clos_trans_n1 x z.
+
 End Transitive_Closure.
 
+(** ** Reflexive-transitive closure *)
 
 Section Reflexive_Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
 
-  Inductive clos_refl_trans (x:A) : A -> Prop:=
-    | rt_step : forall y:A, R x y -> clos_refl_trans x y
+  (** Definition by direct reflexive-transitive closure *)
+
+  Inductive clos_refl_trans (x:A) : A -> Prop :=
+    | rt_step (y:A) : R x y -> clos_refl_trans x y
     | rt_refl : clos_refl_trans x x
-    | rt_trans :
-        forall y z:A,
+    | rt_trans (y z:A) :
           clos_refl_trans x y -> clos_refl_trans y z -> clos_refl_trans x z.
+
+  (** Alternative definition by transitive extension on the left *)
+
+  Inductive clos_refl_trans_1n (x: A) : A -> Prop :=
+    | rt1n_refl : clos_refl_trans_1n x x
+    | rt1n_trans (y z:A) : 
+         R x y -> clos_refl_trans_1n y z -> clos_refl_trans_1n x z.
+
+  (** Alternative definition by transitive extension on the right *)
+
+ Inductive clos_refl_trans_n1 (x: A) : A -> Prop :=
+    | rtn1_refl : clos_refl_trans_n1 x x
+    | rtn1_trans (y z:A) :
+        R y z -> clos_refl_trans_n1 x y -> clos_refl_trans_n1 x z.
+
 End Reflexive_Transitive_Closure.
 
+(** ** Reflexive-symmetric-transitive closure *)
 
 Section Reflexive_Symetric_Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
   
-  Inductive clos_refl_sym_trans : relation A :=
-    | rst_step : forall x y:A, R x y -> clos_refl_sym_trans x y
-    | rst_refl : forall x:A, clos_refl_sym_trans x x
-    | rst_sym :
-      forall x y:A, clos_refl_sym_trans x y -> clos_refl_sym_trans y x
-    | rst_trans :
-      forall x y z:A,
+  (** Definition by direct reflexive-symmetric-transitive closure *)
+
+  Inductive clos_refl_sym_trans (x:A) : A -> Prop :=
+    | rst_step (y:A) : R x y -> clos_refl_sym_trans x y
+    | rst_refl : clos_refl_sym_trans x x
+    | rst_sym (y:A) : clos_refl_sym_trans y x -> clos_refl_sym_trans x y
+    | rst_trans (y z:A) :
         clos_refl_sym_trans x y ->
         clos_refl_sym_trans y z -> clos_refl_sym_trans x z.
+
+  (** Alternative definition by symmetric-transitive extension on the left *)
+
+  Inductive clos_refl_sym_trans_1n (x: A) : A -> Prop :=
+    | rts1n_refl : clos_refl_sym_trans_1n x x
+    | rts1n_trans (y z:A) : R x y \/ R y x ->
+         clos_refl_sym_trans_1n y z -> clos_refl_sym_trans_1n x z.
+
+  (** Alternative definition by symmetric-transitive extension on the right *)
+
+  Inductive clos_refl_sym_trans_n1 (x: A) : A -> Prop :=
+    | rtsn1_refl : clos_refl_sym_trans_n1 x x
+    | rtsn1_trans (y z:A) : R y z \/ R z y -> 
+         clos_refl_sym_trans_n1 x y -> clos_refl_sym_trans_n1 x z.
+
 End Reflexive_Symetric_Transitive_Closure.
 
+(** ** Converse of a relation *)
 
-Section Transposee.
+Section Converse.
   Variable A : Type.
   Variable R : relation A.
 
   Definition transp (x y:A) := R y x.
-End Transposee.
+End Converse.
 
+(** ** Union of relations *)
 
 Section Union.
   Variable A : Type.
@@ -76,6 +127,7 @@ Section Union.
   Definition union (x y:A) := R1 x y \/ R2 x y.
 End Union.
 
+(** ** Disjoint union of relations *)
 
 Section Disjoint_Union.
 Variables A B : Type.
@@ -83,16 +135,15 @@ Variable leA : A -> A -> Prop.
 Variable leB : B -> B -> Prop.
 
 Inductive le_AsB : A + B -> A + B -> Prop :=
-  | le_aa : forall x y:A, leA x y -> le_AsB (inl _ x) (inl _ y)
-  | le_ab : forall (x:A) (y:B), le_AsB (inl _ x) (inr _ y)
-  | le_bb : forall x y:B, leB x y -> le_AsB (inr _ x) (inr _ y).
+  | le_aa (x y:A) : leA x y -> le_AsB (inl _ x) (inl _ y)
+  | le_ab (x:A) (y:B) : le_AsB (inl _ x) (inr _ y)
+  | le_bb (x y:B) : leB x y -> le_AsB (inr _ x) (inr _ y).
 
 End Disjoint_Union. 
 
-
+(** ** Lexicographic order on dependent pairs *)
 
 Section Lexicographic_Product.
-  (* Lexicographic order on dependent pairs *)
 
   Variable A : Type.
   Variable B : A -> Type.
@@ -106,8 +157,10 @@ Section Lexicographic_Product.
     | right_lex :
       forall (x:A) (y y':B x),
         leB x y y' -> lexprod (existS B x y) (existS B x y').
+
 End Lexicographic_Product.
 
+(** ** Product of relations *)
 
 Section Symmetric_Product.
   Variable A : Type.
@@ -123,16 +176,15 @@ Section Symmetric_Product.
 
 End Symmetric_Product.
 
+(** ** Multiset of two relations *)
 
 Section Swap.
   Variable A : Type.
   Variable R : A -> A -> Prop.
 
   Inductive swapprod : A * A -> A * A -> Prop :=
-    | sp_noswap : forall x x':A * A, symprod A A R R x x' -> swapprod x x'
-    | sp_swap :
-      forall (x y:A) (p:A * A),
-        symprod A A R R (x, y) p -> swapprod (y, x) p.
+    | sp_noswap x y (p:A * A) : symprod A A R R (x, y) p -> swapprod (x, y) p
+    | sp_swap x y (p:A * A) : symprod A A R R (x, y) p -> swapprod (y, x) p.
 End Swap.
 
 
@@ -144,16 +196,14 @@ Section Lexicographic_Exponentiation.
   Let List := list A.
   
   Inductive Ltl : List -> List -> Prop :=
-    | Lt_nil : forall (a:A) (x:List), Ltl Nil (a :: x)
-    | Lt_hd : forall a b:A, leA a b -> forall x y:list A, Ltl (a :: x) (b :: y)
-    | Lt_tl : forall (a:A) (x y:List), Ltl x y -> Ltl (a :: x) (a :: y).
-
+    | Lt_nil (a:A) (x:List) : Ltl Nil (a :: x)
+    | Lt_hd (a b:A) : leA a b -> forall x y:list A, Ltl (a :: x) (b :: y)
+    | Lt_tl (a:A) (x y:List) : Ltl x y -> Ltl (a :: x) (a :: y).
 
   Inductive Desc : List -> Prop :=
     | d_nil : Desc Nil
-    | d_one : forall x:A, Desc (x :: Nil)
-    | d_conc :
-      forall (x y:A) (l:List),
+    | d_one (x:A) : Desc (x :: Nil)
+    | d_conc (x y:A) (l:List) :
         leA x y -> Desc (l ++ y :: Nil) -> Desc ((l ++ y :: Nil) ++ x :: Nil).
 
   Definition Pow : Set := sig Desc.
