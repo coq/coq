@@ -364,10 +364,10 @@ Ltac simplify_one_dep_elim_term c :=
     | eq (existT _ _ _) (existT _ _ _) -> _ => refine (simplification_existT _ _ _ _ _ _ _)
     | ?x = ?y -> _ => (* variables case *)
       (let hyp := fresh in intros hyp ;
-        move dependent hyp before x ;
+        move hyp before x ;
           generalize dependent x ; refine (solution_left _ _ _ _) ; intros until 0) ||
       (let hyp := fresh in intros hyp ;
-        move dependent hyp before y ;
+        move hyp before y ;
           generalize dependent y ; refine (solution_right _ _ _ _) ; intros until 0)
     | @eq ?A ?t ?u -> ?P => apply (noConfusion (I:=A) P)
     | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; injection H ; clear H)
