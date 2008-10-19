@@ -1304,11 +1304,13 @@ and coerce_genarg_to_TARG x =
 	     (CT_coerce_ID_to_ID_OR_INT id))
   | IntroPatternArgType ->
       xlate_error "TODO"
-  | IdentArgType ->
+  | IdentArgType true ->
       let id = xlate_ident (out_gen rawwit_ident x) in
 	CT_coerce_FORMULA_OR_INT_to_TARG
 	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
 	     (CT_coerce_ID_to_ID_OR_INT id))
+  | IdentArgType false ->
+      xlate_error "TODO"
   | VarArgType ->
       let id = xlate_ident (snd (out_gen rawwit_var x)) in
 	CT_coerce_FORMULA_OR_INT_to_TARG
@@ -1402,11 +1404,13 @@ let coerce_genarg_to_VARG x =
 	        (CT_coerce_ID_to_ID_OPT id))
   | IntroPatternArgType ->
       xlate_error "TODO"
-  | IdentArgType ->
+  | IdentArgType true ->
       let id = xlate_ident (out_gen rawwit_ident x) in
       CT_coerce_ID_OPT_OR_ALL_to_VARG
 	      (CT_coerce_ID_OPT_to_ID_OPT_OR_ALL
 	        (CT_coerce_ID_to_ID_OPT id))
+  | IdentArgType false ->
+      xlate_error "TODO"
   | VarArgType ->
       let id = xlate_ident (snd (out_gen rawwit_var x)) in
       CT_coerce_ID_OPT_OR_ALL_to_VARG
