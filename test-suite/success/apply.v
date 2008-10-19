@@ -214,3 +214,21 @@ Lemma eta : forall f : (forall P, P 1),
 intros.
 apply H. 
 Qed.
+
+(* Test propagation of evars from subgoal to brother subgoals *)
+
+  (* This works because unfold calls clos_norm_flags which calls nf_evar *)
+
+Lemma eapply_evar_unfold : let x:=O in O=x -> 0=O.
+intros x H; eapply trans_equal; 
+[apply H | unfold x;match goal with |- ?x = ?x => reflexivity end].
+Qed.
+
+  (* This does not work (oct 2008) because "match goal" sees "?evar = O" 
+     and not "O = O"
+
+Lemma eapply_evar : O=O -> 0=O.
+intro H; eapply trans_equal; 
+  [apply H | match goal with |- ?x = ?x => reflexivity end].
+Qed.
+*)
