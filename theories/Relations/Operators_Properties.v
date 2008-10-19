@@ -70,7 +70,7 @@ Section Properties.
       apply Build_equivalence.
       exact (rst_refl A R).
       exact (rst_trans A R).
-      exact (fun x y => rst_sym A R y x).
+      exact (rst_sym A R).
     Qed.
 
     (** Idempotency of the reflexive-symmetric-transitive closure operator *)

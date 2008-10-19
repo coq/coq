@@ -85,11 +85,11 @@ Section Reflexive_Symetric_Transitive_Closure.
   
   (** Definition by direct reflexive-symmetric-transitive closure *)
 
-  Inductive clos_refl_sym_trans (x:A) : A -> Prop :=
-    | rst_step (y:A) : R x y -> clos_refl_sym_trans x y
-    | rst_refl : clos_refl_sym_trans x x
-    | rst_sym (y:A) : clos_refl_sym_trans y x -> clos_refl_sym_trans x y
-    | rst_trans (y z:A) :
+  Inductive clos_refl_sym_trans : relation A :=
+    | rst_step (x y:A) : R x y -> clos_refl_sym_trans x y
+    | rst_refl (x:A) : clos_refl_sym_trans x x
+    | rst_sym (x y:A) : clos_refl_sym_trans x y -> clos_refl_sym_trans y x
+    | rst_trans (x y z:A) :
         clos_refl_sym_trans x y ->
         clos_refl_sym_trans y z -> clos_refl_sym_trans x z.
 
