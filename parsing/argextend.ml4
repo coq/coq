@@ -25,7 +25,7 @@ let rec make_rawwit loc = function
   | StringArgType -> <:expr< Genarg.rawwit_string >>
   | PreIdentArgType -> <:expr< Genarg.rawwit_pre_ident >>
   | IntroPatternArgType -> <:expr< Genarg.rawwit_intro_pattern >>
-  | IdentArgType -> <:expr< Genarg.rawwit_ident >>
+  | IdentArgType b -> <:expr< Genarg.rawwit_ident_gen $mlexpr_of_bool b$ >>
   | VarArgType -> <:expr< Genarg.rawwit_var >>
   | RefArgType -> <:expr< Genarg.rawwit_ref >>
   | SortArgType -> <:expr< Genarg.rawwit_sort >>
@@ -50,7 +50,7 @@ let rec make_globwit loc = function
   | StringArgType -> <:expr< Genarg.globwit_string >>
   | PreIdentArgType -> <:expr< Genarg.globwit_pre_ident >>
   | IntroPatternArgType -> <:expr< Genarg.globwit_intro_pattern >>
-  | IdentArgType -> <:expr< Genarg.globwit_ident >>
+  | IdentArgType b -> <:expr< Genarg.globwit_ident_gen $mlexpr_of_bool b$ >>
   | VarArgType -> <:expr< Genarg.globwit_var >>
   | RefArgType -> <:expr< Genarg.globwit_ref >>
   | QuantHypArgType -> <:expr< Genarg.globwit_quant_hyp >>
@@ -75,7 +75,7 @@ let rec make_wit loc = function
   | StringArgType -> <:expr< Genarg.wit_string >>
   | PreIdentArgType -> <:expr< Genarg.wit_pre_ident >>
   | IntroPatternArgType -> <:expr< Genarg.wit_intro_pattern >>
-  | IdentArgType -> <:expr< Genarg.wit_ident >>
+  | IdentArgType b -> <:expr< Genarg.wit_ident_gen $mlexpr_of_bool b$ >>
   | VarArgType -> <:expr< Genarg.wit_var >>
   | RefArgType -> <:expr< Genarg.wit_ref >>
   | QuantHypArgType -> <:expr< Genarg.wit_quant_hyp >>

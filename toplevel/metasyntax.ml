@@ -745,7 +745,7 @@ let check_rule_productivity l =
     error "A recursive notation must start with at least one symbol."
 
 let is_not_printable = function
-  | AVar _ -> warning "This notation won't be used for printing as it is bound to a \nsingle variable"; true
+  | AVar _ -> warning "This notation will not be used for printing as it is bound to a \nsingle variable"; true
   | _ -> false
 
 let find_precedence lev etyps symbols =

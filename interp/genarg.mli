@@ -86,7 +86,8 @@ IntArgType                     int                       int
 IntOrVarArgType                int or_var                int
 StringArgType                  string (parsed w/ "")     string
 PreIdentArgType                string (parsed w/o "")    (vernac only)
-IdentArgType                   identifier                identifier
+IdentArgType true              identifier                identifier
+IdentArgType false             identifier (pattern_ident) identifier
 IntroPatternArgType            intro_pattern_expr        intro_pattern_expr
 VarArgType                     identifier located        identifier
 RefArgType                     reference                 global_reference
@@ -144,6 +145,14 @@ val wit_intro_pattern : (intro_pattern_expr located,tlevel) abstract_argument_ty
 val rawwit_ident : (identifier,rlevel) abstract_argument_type
 val globwit_ident : (identifier,glevel) abstract_argument_type
 val wit_ident : (identifier,tlevel) abstract_argument_type
+
+val rawwit_pattern_ident : (identifier,rlevel) abstract_argument_type
+val globwit_pattern_ident : (identifier,glevel) abstract_argument_type
+val wit_pattern_ident : (identifier,tlevel) abstract_argument_type
+
+val rawwit_ident_gen : bool -> (identifier,rlevel) abstract_argument_type
+val globwit_ident_gen : bool -> (identifier,glevel) abstract_argument_type
+val wit_ident_gen : bool -> (identifier,tlevel) abstract_argument_type
 
 val rawwit_var : (identifier located,rlevel) abstract_argument_type
 val globwit_var : (identifier located,glevel) abstract_argument_type
@@ -257,7 +266,7 @@ type argument_type =
   | StringArgType
   | PreIdentArgType
   | IntroPatternArgType
-  | IdentArgType
+  | IdentArgType of bool
   | VarArgType
   | RefArgType
   (* Specific types *)

@@ -119,7 +119,7 @@ Qed.
 
 *)
 
-Notation Local inhabited A := A.
+Notation Local inhabited A := A (only parsing).
 
 Lemma prop_ext_A_eq_A_imp_A :
   prop_extensionality -> forall A:Prop, inhabited A -> (A -> A) = A.

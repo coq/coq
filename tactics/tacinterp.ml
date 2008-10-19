@@ -937,9 +937,10 @@ and intern_genarg ist x =
       (* how to know which names are bound by the intropattern *)
       in_gen globwit_intro_pattern
         (intern_intro_pattern lf ist (out_gen rawwit_intro_pattern x))
-  | IdentArgType ->
+  | IdentArgType b ->
       let lf = ref ([],[]) in
-      in_gen globwit_ident(intern_ident lf ist (out_gen rawwit_ident x))
+      in_gen (globwit_ident_gen b) 
+	(intern_ident lf ist (out_gen (rawwit_ident_gen b) x))
   | VarArgType ->
       in_gen globwit_var (intern_hyp ist (out_gen rawwit_var x))
   | RefArgType ->
@@ -1994,9 +1995,9 @@ and interp_genarg ist gl x =
   | IntroPatternArgType ->
       in_gen wit_intro_pattern
         (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x))
-  | IdentArgType ->
-      in_gen wit_ident
-        (interp_fresh_ident ist gl (out_gen globwit_ident x))
+  | IdentArgType b ->
+      in_gen (wit_ident_gen b)
+        (interp_fresh_ident ist gl (out_gen (globwit_ident_gen b) x))
   | VarArgType ->
       in_gen wit_var (interp_hyp ist gl (out_gen globwit_var x))
   | RefArgType ->
@@ -2325,10 +2326,10 @@ and interp_atomic ist gl = function
     | IntroPatternArgType ->
 	VIntroPattern 
 	  (snd (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x)))
-    | IdentArgType -> 
+    | IdentArgType b ->
         VIntroPattern 
 	  (IntroIdentifier
-              (interp_fresh_ident ist gl (out_gen globwit_ident x)))
+              (interp_fresh_ident ist gl (out_gen (globwit_ident_gen b) x)))
     | VarArgType ->
         mk_hyp_value ist gl (out_gen globwit_var x)
     | RefArgType -> 
@@ -2676,7 +2677,8 @@ and subst_genarg subst (x:glob_generic_argument) =
   | PreIdentArgType -> in_gen globwit_pre_ident (out_gen globwit_pre_ident x)
   | IntroPatternArgType ->
       in_gen globwit_intro_pattern (out_gen globwit_intro_pattern x)
-  | IdentArgType -> in_gen globwit_ident (out_gen globwit_ident x)
+  | IdentArgType b -> 
+      in_gen (globwit_ident_gen b) (out_gen (globwit_ident_gen b) x)
   | VarArgType -> in_gen globwit_var (out_gen globwit_var x)
   | RefArgType ->
       in_gen globwit_ref (subst_global_reference subst 

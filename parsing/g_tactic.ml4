@@ -588,8 +588,8 @@ GEXTEND Gram
       | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacClear (true, l)
       | IDENT "clear"; l = LIST0 id_or_meta -> TacClear (l=[], l)
       | IDENT "clearbody"; l = LIST1 id_or_meta -> TacClearBody l
-      | IDENT "move"; dep = [IDENT "dependent" -> true | -> false]; 
-	  hfrom = id_or_meta; hto = move_location -> TacMove (dep,hfrom,hto)
+      | IDENT "move"; hfrom = id_or_meta; hto = move_location ->
+	  TacMove (true,hfrom,hto)
       | IDENT "rename"; l = LIST1 rename SEP "," -> TacRename l
       | IDENT "revert"; l = LIST1 id_or_meta -> TacRevert l
 
