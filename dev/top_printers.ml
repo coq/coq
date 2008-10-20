@@ -340,7 +340,8 @@ let rec pr_argument_type = function
   | StringArgType -> str"string"
   | PreIdentArgType -> str"pre-ident"
   | IntroPatternArgType -> str"intro-pattern"
-  | IdentArgType -> str"ident"
+  | IdentArgType true -> str"ident"
+  | IdentArgType false -> str"pattern_ident"
   | VarArgType -> str"var"
   | RefArgType -> str"ref"
   (* Specific types *)

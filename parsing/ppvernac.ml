@@ -146,7 +146,7 @@ let pr_search a b pr_p = match a with
   | SearchAbout sl -> str"SearchAbout" ++ spc() ++ str "[" ++ prlist_with_sep spc pr_search_about sl ++ str "]" ++ pr_in_out_modules b
 
 let pr_locality local = if local then str "Local " else str ""
-let pr_non_globality local = if local then str "" else str "Global "
+let pr_non_locality local = if local then str "" else str "Global "
 
 let pr_explanation (e,b,f) =
   let a = match e with
@@ -482,7 +482,7 @@ let rec pr_vernac = function
   | VernacArgumentsScope (local,q,scl) -> let pr_opt_scope = function 
       |	None -> str"_"
       |	Some sc -> str sc in 
-    str"Arguments Scope" ++ spc() ++ pr_non_globality local ++ pr_reference q 
+    str"Arguments Scope" ++ spc() ++ pr_non_locality local ++ pr_reference q 
     ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
   | VernacInfix (local,(s,mv),q,sn) -> (* A Verifier *)
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
@@ -704,7 +704,7 @@ let rec pr_vernac = function
 	
  | VernacInstance (glob, sup, (instid, bk, cl), props, pri) -> 
      hov 1 (
-       pr_non_globality (not glob) ++
+       pr_non_locality (not glob) ++
        str"Instance" ++ spc () ++ 
 	 pr_and_type_binders_arg sup ++
 	 str"=>" ++ spc () ++ 
@@ -818,7 +818,7 @@ let rec pr_vernac = function
   | VernacDeclareImplicits (local,q,None) ->
       hov 2 (str"Implicit Arguments" ++ spc() ++ pr_reference q)
   | VernacDeclareImplicits (local,q,Some imps) ->
-      hov 1 (str"Implicit Arguments " ++ pr_non_globality local ++
+      hov 1 (str"Implicit Arguments " ++ pr_non_locality local ++
 	spc() ++ pr_reference q ++ spc() ++
 	str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")
   | VernacReserve (idl,c) ->
@@ -826,11 +826,11 @@ let rec pr_vernac = function
         str (if List.length idl > 1 then "s " else " ") ++
         prlist_with_sep spc pr_lident idl ++ str " :" ++ spc () ++
         pr_lconstr c)
-  | VernacSetOpacity(true,[k,l]) when k=Conv_oracle.transparent ->
-      hov 1 (str"Transparent" ++
+  | VernacSetOpacity(b,[k,l]) when k=Conv_oracle.transparent ->
+      hov 1 (str"Transparent" ++ pr_non_locality b ++
              spc() ++ prlist_with_sep sep pr_reference l)
-  | VernacSetOpacity(true,[Conv_oracle.Opaque,l]) ->
-      hov 1 (str"Opaque" ++
+  | VernacSetOpacity(b,[Conv_oracle.Opaque,l]) ->
+      hov 1 (str"Opaque" ++ pr_non_locality b ++
              spc() ++ prlist_with_sep sep pr_reference l)
   | VernacSetOpacity (local,l) ->
       let pr_lev = function

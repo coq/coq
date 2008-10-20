@@ -197,7 +197,7 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.RefArgType -> <:expr< Genarg.RefArgType >>
   | Genarg.PreIdentArgType -> <:expr< Genarg.PreIdentArgType >>
   | Genarg.IntroPatternArgType -> <:expr< Genarg.IntroPatternArgType >>
-  | Genarg.IdentArgType -> <:expr< Genarg.IdentArgType >>
+  | Genarg.IdentArgType b -> <:expr< Genarg.IdentArgType $mlexpr_of_bool b$ >>
   | Genarg.VarArgType -> <:expr< Genarg.VarArgType >>
   | Genarg.StringArgType -> <:expr< Genarg.StringArgType >>
   | Genarg.QuantHypArgType -> <:expr< Genarg.QuantHypArgType >>

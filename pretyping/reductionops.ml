@@ -537,6 +537,8 @@ let nf_evar sigma =
   local_strong (whd_evar sigma)
 
 (* lazy reduction functions. The infos must be created for each term *)
+(* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add
+   a [nf_evar] here *)
 let clos_norm_flags flgs env sigma t =
   norm_val (create_clos_infos flgs env) (inject (nf_evar sigma t))
 

@@ -55,6 +55,7 @@ Vernacular commands
   conversion tests. It generalizes commands Opaque and Transparent by
   introducing a range of levels. Lower levels are assigned to constants
   that should be expanded first.
+- New options Global and Local to Opaque and Transparent.
 - New command "Print Assumptions" to display all variables, parameters
   or axioms a theorem or definition relies on.
 - "Add Rec LoadPath" now provides references to libraries using partially
@@ -157,7 +158,9 @@ Libraries (DOC TO CHECK)
 - Definition of pred and minus made compatible with the structural
   decreasing criterion for use in fixpoints.
 - Files Relations/Rstar.v and Relations/Newman.v moved out to the user
-  contribution repository (contribution CoC_History).
+  contribution repository (contribution CoC_History). New lemmas about 
+  transitive closure added and some bound variables renamed (exceptional
+  risk of incompatibilities).
 
 Notations, coercions, implicit arguments and type inference
 

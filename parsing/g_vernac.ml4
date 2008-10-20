@@ -104,6 +104,15 @@ GEXTEND Gram
   ;
 END
 
+GEXTEND Gram
+  GLOBAL: locality non_locality;
+  locality:
+    [ [ IDENT "Global" -> false | IDENT "Local" -> true | -> false ] ]
+  ;
+  non_locality:
+    [ [ IDENT "Global" -> false | IDENT "Local" -> true | -> true ] ]
+  ;
+END
 
 let test_plurial_form = function
   | [(_,([_],_))] ->
@@ -439,10 +448,10 @@ GEXTEND Gram
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
-        IDENT "Transparent"; l = LIST1 global ->
-          VernacSetOpacity (true,[Conv_oracle.transparent,l])
-      | IDENT "Opaque"; l = LIST1 global ->
-          VernacSetOpacity (true,[Conv_oracle.Opaque, l])
+        IDENT "Transparent"; b = non_locality; l = LIST1 global ->
+          VernacSetOpacity (b,[Conv_oracle.transparent,l])
+      | IDENT "Opaque"; b = non_locality; l = LIST1 global ->
+          VernacSetOpacity (b,[Conv_oracle.Opaque, l])
       | IDENT "Strategy"; l =
           LIST1 [ lev=strategy_level; "["; q=LIST1 global; "]" -> (lev,q)] ->
             VernacSetOpacity (false,l)
@@ -494,8 +503,8 @@ GEXTEND Gram
       | IDENT "Context"; c = binders_let -> 
 	  VernacContext c
 	    
-      | global = [ IDENT "Global" -> true | -> false ];
-	 IDENT "Instance"; name = identref; sup = OPT binders_let; ":";
+      | IDENT "Instance"; local = non_locality; name = identref; 
+	 sup = OPT binders_let; ":";
 	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
 	   let sup =
@@ -507,7 +516,7 @@ GEXTEND Gram
 	     let (loc, id) = name in 
 	       (loc, Name id)
 	   in
-	     VernacInstance (global, sup, (n, expl, t), props, pri)
+	     VernacInstance (not local, sup, (n, expl, t), props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 
@@ -787,7 +796,7 @@ GEXTEND Gram
 ;;
 
 (* Grammar extensions *)
-	  
+
 GEXTEND Gram
   GLOBAL: syntax;
 
@@ -804,7 +813,7 @@ GEXTEND Gram
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with"; 
        refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 
-     | IDENT "Arguments"; IDENT "Scope"; local = non_globality; qid = global;
+     | IDENT "Arguments"; IDENT "Scope"; local = non_locality; qid = global;
        "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (local,qid,scl)
 
      | IDENT "Infix"; local = locality;
@@ -835,12 +844,6 @@ GEXTEND Gram
   ;
   tactic_level:
     [ [ "("; "at"; IDENT "level"; n = natural; ")" -> n | -> 0 ] ]
-  ;
-  locality:
-    [ [ IDENT "Global" -> false | IDENT "Local" -> true | -> false ] ]
-  ;
-  non_globality:
-    [ [ IDENT "Global" -> false | IDENT "Local" -> true | -> true ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> NumLevel n

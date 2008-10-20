@@ -140,6 +140,8 @@ let out_bindings = function
   | ExplicitBindings l -> ExplicitBindings (List.map (fun (loc,id,c) -> (loc,id,snd c)) l)
   | NoBindings -> NoBindings
 
+let if_pattern_ident b pr c = (if b then str "?" else mt()) ++ pr c
+
 let rec pr_raw_generic prc prlc prtac prref (x:Genarg.rlevel Genarg.generic_argument) =
   match Genarg.genarg_tag x with
   | BoolArgType -> str (if out_gen rawwit_bool x then "true" else "false")
@@ -148,7 +150,7 @@ let rec pr_raw_generic prc prlc prtac prref (x:Genarg.rlevel Genarg.generic_argu
   | StringArgType -> str "\"" ++ str (out_gen rawwit_string x) ++ str "\""
   | PreIdentArgType -> str (out_gen rawwit_pre_ident x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen rawwit_intro_pattern x)
-  | IdentArgType -> pr_id (out_gen rawwit_ident x)
+  | IdentArgType b -> if_pattern_ident b pr_id (out_gen rawwit_ident x)
   | VarArgType -> pr_located pr_id (out_gen rawwit_var x)
   | RefArgType -> prref (out_gen rawwit_ref x)
   | SortArgType -> pr_rawsort (out_gen rawwit_sort x)
@@ -190,7 +192,7 @@ let rec pr_glob_generic prc prlc prtac x =
   | StringArgType -> str "\"" ++ str (out_gen globwit_string x) ++ str "\""
   | PreIdentArgType -> str (out_gen globwit_pre_ident x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen globwit_intro_pattern x)
-  | IdentArgType -> pr_id (out_gen globwit_ident x)
+  | IdentArgType b -> if_pattern_ident b pr_id (out_gen globwit_ident x)
   | VarArgType -> pr_located pr_id (out_gen globwit_var x)
   | RefArgType -> pr_or_var (pr_located pr_global) (out_gen globwit_ref x)
   | SortArgType -> pr_rawsort (out_gen globwit_sort x)
@@ -236,7 +238,7 @@ let rec pr_generic prc prlc prtac x =
   | StringArgType -> str "\"" ++ str (out_gen wit_string x) ++ str "\""
   | PreIdentArgType -> str (out_gen wit_pre_ident x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen wit_intro_pattern x)
-  | IdentArgType -> pr_id (out_gen wit_ident x)
+  | IdentArgType b -> if_pattern_ident b pr_id (out_gen wit_ident x)
   | VarArgType -> pr_id (out_gen wit_var x)
   | RefArgType -> pr_global (out_gen wit_ref x)
   | SortArgType -> pr_sort (out_gen wit_sort x)

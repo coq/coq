@@ -56,3 +56,7 @@ val print_grammar : string -> unit
 (* Removes quotes in a notation *)
 
 val standardize_locatable_notation : string -> string
+
+(* Evaluate whether a notation is not printable *)
+
+val is_not_printable : aconstr -> bool

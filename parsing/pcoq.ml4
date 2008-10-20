@@ -407,7 +407,7 @@ module Prim =
 
     let name = Gram.Entry.create "Prim.name"
     let identref = Gram.Entry.create "Prim.identref"
-    let pattern_ident = Gram.Entry.create "pattern_ident"
+    let pattern_ident = gec_gen rawwit_pattern_ident "pattern_ident"
     let pattern_identref = Gram.Entry.create "pattern_identref"
 
     (* A synonym of ident - maybe ident will be located one day *)
@@ -494,6 +494,9 @@ module Tactic =
 module Vernac_ =
   struct
     let gec_vernac s = Gram.Entry.create ("vernac:" ^ s)
+
+    let locality = gec_vernac "locality"
+    let non_locality = gec_vernac "non_locality"
 
     (* The different kinds of vernacular commands *)
     let gallina = gec_vernac "gallina"

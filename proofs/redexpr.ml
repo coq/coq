@@ -46,12 +46,13 @@ let set_strategy_one ref l  =
         Csymtable.set_transparent_const sp
     | _ -> ()
 
-let cache_strategy str =
+let cache_strategy (_,str) =
   List.iter 
     (fun (lev,ql) -> List.iter (fun q -> set_strategy_one q lev) ql)
     str
 
-let subst_strategy (_,subs,obj) =
+let subst_strategy (_,subs,(local,obj)) =
+  local,
   list_smartmap
     (fun (k,ql as entry) ->
       let ql' = list_smartmap (Mod_subst.subst_evaluable_reference subs) ql in
@@ -68,14 +69,16 @@ let map_strategy f l =
               Some q' -> q' :: ql
             | None -> ql) ql [] in
       if ql'=[] then str else (lev,ql')::str) l [] in
-  if l'=[] then None else Some l'
+  if l'=[] then None else Some (false,l')
 
-let export_strategy obj =
+let export_strategy (local,obj) =
+  if local then None else
   map_strategy (function
       EvalVarRef _ -> None
     | EvalConstRef _ as q -> Some q) obj
 
-let classify_strategy (_,obj) = Substitute obj
+let classify_strategy (_,(local,_ as obj)) = 
+  if local then Dispose else Substitute obj
 
 let disch_ref ref =
   match ref with
@@ -84,7 +87,8 @@ let disch_ref ref =
         if c==c' then Some ref else Some (EvalConstRef c')
     | _ -> Some ref
 
-let discharge_strategy (_,obj) =
+let discharge_strategy (_,(local,obj)) =
+  if local then None else
   map_strategy disch_ref obj
 
 let (inStrategy,outStrategy) =
@@ -98,8 +102,7 @@ let (inStrategy,outStrategy) =
 
 
 let set_strategy local str =
-  if local then cache_strategy str
-  else Lib.add_anonymous_leaf (inStrategy str)
+  Lib.add_anonymous_leaf (inStrategy (local,str))
 
 let _ = 
   Summary.declare_summary "Transparent constants and variables"
