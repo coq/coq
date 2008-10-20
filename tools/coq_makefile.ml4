@@ -254,7 +254,7 @@ let include_dirs l =
     print "OCAMLLIBS:=-I $(CAMLP4LIB) "; print_list "\\\n  " str_i; print "\n";
     print "COQLIB:=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
     print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
-    print "  COQBIN:=$(COQTOP)/bin\n";
+    print "  COQBIN:=$(COQTOP)/bin/\n";
     print "  COQSRCLIBS:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
