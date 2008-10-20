@@ -901,66 +901,63 @@ Proof.
   intros; rewrite Zmult_mod, Zmod_mod, <- Zmult_mod; auto.
 Qed.
 
-(** For a specific number n, equality modulo n is hence a nice setoid
-   equivalence, compatible with the usual operations. Due to restrictions 
-   with Coq setoids, we cannot state this in a section, but it works
-   at least with a module. *)
+(** For a specific number N, equality modulo N is hence a nice setoid
+   equivalence, compatible with [+], [-] and [*]. *)
 
-Module Type SomeNumber.
- Parameter n:Z.
-End SomeNumber.
+Definition eqm N a b := (a mod N = b mod N).
 
-Module EqualityModulo (M:SomeNumber).
+Lemma eqm_refl N : forall a, (eqm N) a a.
+Proof. unfold eqm; auto. Qed.
 
- Definition eqm a b := (a mod M.n = b mod M.n).
- Infix "==" := eqm (at level 70).
+Lemma eqm_sym N : forall a b, (eqm N) a b -> (eqm N) b a.
+Proof. unfold eqm; auto. Qed.
 
- Lemma eqm_refl : forall a, a == a.
- Proof. unfold eqm; auto. Qed.
+Lemma eqm_trans N : forall a b c,
+  (eqm N) a b -> (eqm N) b c -> (eqm N) a c.
+Proof. unfold eqm; eauto with *. Qed.
 
- Lemma eqm_sym : forall a b, a == b -> b == a.
- Proof. unfold eqm; auto. Qed.
+Add Parametric Relation N : Z (eqm N)
+  reflexivity proved by (eqm_refl N)
+  symmetry proved by (eqm_sym N)
+  transitivity proved by (eqm_trans N) as eqm_setoid.
 
- Lemma eqm_trans : forall a b c, a == b -> b == c -> a == c.
- Proof. unfold eqm; eauto with *. Qed.
-
- Add Relation Z eqm
- reflexivity proved by eqm_refl
- symmetry proved by eqm_sym
- transitivity proved by eqm_trans as eqm_setoid.
-
- Add Morphism Zplus : Zplus_eqm.
- Proof.
+Add Parametric Morphism N : Zplus
+  with signature (eqm N) ==> (eqm N) ==> (eqm N) as Zplus_eqm.
+Proof.
   unfold eqm; intros; rewrite Zplus_mod, H, H0, <- Zplus_mod; auto.
- Qed.
+Qed.
 
- Add Morphism Zminus : Zminus_eqm.
- Proof.
+Add Parametric Morphism N : Zminus
+  with signature (eqm N) ==> (eqm N) ==> (eqm N) as Zminus_eqm.
+Proof.
   unfold eqm; intros; rewrite Zminus_mod, H, H0, <- Zminus_mod; auto.
- Qed.
+Qed.
 
- Add Morphism Zmult : Zmult_eqm.
- Proof.
+Add Parametric Morphism N : Zmult
+  with signature (eqm N) ==> (eqm N) ==> (eqm N) as Zmult_eqm.
+Proof.
   unfold eqm; intros; rewrite Zmult_mod, H, H0, <- Zmult_mod; auto.
- Qed.
+Qed.
 
- Add Morphism Zopp : Zopp_eqm.
- Proof.
-  intros; change (-x == -y) with (0-x == 0-y).
+Add Parametric Morphism N : Zopp
+  with signature (eqm N) ==> (eqm N) as Zopp_eqm.
+Proof.
+  intros; change ((eqm N) (-x) (-y)) with ((eqm N) (0-x) (0-y)).
   rewrite H; red; auto.
- Qed.
+Qed.
 
- Lemma Zmod_eqm : forall a, a mod M.n == a.
- Proof. 
-  unfold eqm; intros; apply Zmod_mod.
- Qed.
+Lemma Zmod_eqm N : forall a, (eqm N) (a mod N) a.
+Proof.
+  intros; exact (Zmod_mod a N).
+Qed.
 
- (* Zmod and Zdiv are not full morphisms with respect to eqm. 
-    For instance, take n=2. Then 3 == 1 but we don't have 
-    1 mod 3 == 1 mod 1 nor 1/3 == 1/1.
- *)
-
-End EqualityModulo.
+(* NB: Zmod and Zdiv are not morphisms with respect to eqm.
+    For instance, let (==) be (eqm 2). Then we have (3 == 1) but:
+    ~ (3 mod 3 == 1 mod 3)
+    ~ (1 mod 3 == 1 mod 1)
+    ~ (3/3 == 1/3)
+    ~ (1/3 == 1/1)
+*)
 
 Lemma Zdiv_Zdiv : forall a b c, 0<=b -> 0<=c -> (a/b)/c = a/(b*c).
 Proof.
