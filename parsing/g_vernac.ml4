@@ -504,8 +504,8 @@ GEXTEND Gram
       | IDENT "Context"; c = binders_let -> 
 	  VernacContext c
 	    
-      | global = [ IDENT "Global" -> true | -> false ];
-	 IDENT "Instance"; name = identref; sup = OPT binders_let; ":";
+      | IDENT "Instance"; local = non_locality; name = identref; 
+	 sup = OPT binders_let; ":";
 	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
 	   let sup =
@@ -517,7 +517,7 @@ GEXTEND Gram
 	     let (loc, id) = name in 
 	       (loc, Name id)
 	   in
-	     VernacInstance (global, sup, (n, expl, t), props, pri)
+	     VernacInstance (not local, sup, (n, expl, t), props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; is = identref -> VernacDeclareInstance is
 
