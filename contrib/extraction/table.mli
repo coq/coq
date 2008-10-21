@@ -13,13 +13,13 @@ open Libnames
 open Miniml
 open Declarations
 
-val id_of_global : global_reference -> identifier
-val pr_long_global : global_reference -> Pp.std_ppcmds
-
+val safe_id_of_global : global_reference -> identifier
 
 (*s Warning and Error messages. *)
 
 val warning_axioms : unit -> unit
+val warning_both_mod_and_cst :
+ qualid -> module_path -> global_reference -> unit
 val error_axiom_scheme : global_reference -> int -> 'a
 val error_constant : global_reference -> 'a
 val error_inductive : global_reference -> 'a

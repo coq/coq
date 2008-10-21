@@ -197,26 +197,32 @@ let reset_tables () =
    WARNING: for inductive objects, an extract_inductive must have been 
    done before. *)
 
-let id_of_global = function 
+let safe_id_of_global = function 
   | ConstRef kn -> let _,_,l = repr_con kn in id_of_label l
   | IndRef (kn,i) -> (snd (lookup_ind kn)).ind_packets.(i).ip_typename
   | ConstructRef ((kn,i),j) -> 
       (snd (lookup_ind kn)).ind_packets.(i).ip_consnames.(j-1)
   | _ -> assert false
 
-let pr_global r = 
- try Printer.pr_global r 
- with _ -> pr_id (id_of_global r)
+let safe_pr_global r =
+ try Printer.pr_global r
+ with _ -> pr_id (safe_id_of_global r)
 
 (* idem, but with qualification, and only for constants. *)
 
-let pr_long_global r = 
-  try Printer.pr_global r 
+let safe_pr_long_global r =
+  try Printer.pr_global r
   with _ -> match r with
-    | ConstRef kn -> 
-	let mp,_,l = repr_con kn in 
+    | ConstRef kn ->
+	let mp,_,l = repr_con kn in
 	str ((string_of_mp mp)^"."^(string_of_label l))
     | _ -> assert false
+
+let pr_long_mp mp =
+  let lid = repr_dirpath (Nametab.dir_of_mp mp) in
+  str (String.concat "." (List.map string_of_id (List.rev lid)))
+
+let pr_long_global ref = pr_sp (Nametab.sp_of_global ref)
 
 (*S Warning and Error messages. *)
 
@@ -229,7 +235,7 @@ let warning_axioms () =
     let s = if List.length info_axioms = 1 then "axiom" else "axioms" in 
     msg_warning 
       (str ("The following "^s^" must be realized in the extracted code:")
-       ++ hov 1 (spc () ++ prlist_with_sep spc pr_global info_axioms) 
+       ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global info_axioms)
        ++ str "." ++ fnl ())
   end;
   let log_axioms = Refset.elements !log_axioms in 
@@ -239,15 +245,27 @@ let warning_axioms () =
     in 
     msg_warning
       (str ("The following logical "^s^" encountered:") ++
-       hov 1 (spc () ++ prlist_with_sep spc pr_global log_axioms ++ str ".\n") ++
+       hov 1
+         (spc () ++ prlist_with_sep spc safe_pr_global log_axioms ++ str ".\n")
+       ++
        str "Having invalid logical axiom in the environment when extracting" ++
        spc () ++ str "may lead to incorrect or non-terminating ML terms." ++
        fnl ())
   end
 
+let warning_both_mod_and_cst q mp r =
+ msg_warning
+   (str "The name " ++ pr_qualid q ++ str " is ambiguous, " ++
+    str "do you mean module " ++
+    pr_long_mp mp ++
+    str " or object " ++
+    pr_long_global r ++ str " ?" ++ fnl () ++
+    str "First choice is assumed, for the second one please use " ++
+    str "fully qualified name." ++ fnl ())
+
 let error_axiom_scheme r i = 
   err (str "The type scheme axiom " ++ spc () ++
-       pr_global r ++ spc () ++ str "needs " ++ pr_int i ++ 
+       safe_pr_global r ++ spc () ++ str "needs " ++ pr_int i ++ 
        str " type variable(s).") 
 
 let check_inside_module () = 
@@ -265,10 +283,10 @@ let check_inside_section () =
 	 str "Close it and try again.")
 
 let error_constant r = 
-  err (pr_global r ++ str " is not a constant.") 
+  err (safe_pr_global r ++ str " is not a constant.") 
 
 let error_inductive r = 
-  err (pr_global r ++ spc () ++ str "is not an inductive type.")
+  err (safe_pr_global r ++ spc () ++ str "is not an inductive type.")
 
 let error_nb_cons () = 
   err (str "Not the right number of constructors.")
@@ -284,7 +302,7 @@ let error_scheme () =
   err (str "No Scheme modular extraction available yet.")
 
 let error_not_visible r = 
-  err (pr_global r ++ str " is not directly visible.\n" ++
+  err (safe_pr_global r ++ str " is not directly visible.\n" ++
        str "For example, it may be inside an applied functor." ++
        str "Use Recursive Extraction to get the whole environment.")
 
@@ -296,9 +314,9 @@ let error_MPfile_as_mod mp b =
 	    "Monolithic Extraction cannot deal with this situation.\n"^
 	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
 
-let error_record r = 
-  err (str "Record " ++ pr_global r ++ str " has an anonymous field." ++ fnl () ++
-       str "To help extraction, please use an explicit name.") 
+let error_record r =
+  err (str "Record " ++ safe_pr_global r ++ str " has an anonymous field." ++
+       fnl () ++ str "To help extraction, please use an explicit name.")
 
 let check_loaded_modfile mp = match base_mp mp with 
   | MPfile dp -> if not (Library.library_is_loaded dp) then 
@@ -481,11 +499,11 @@ let print_extraction_inline () =
     (str "Extraction Inline:" ++ fnl () ++ 
      Refset.fold
        (fun r p -> 
-	  (p ++ str "  " ++ pr_long_global r ++ fnl ())) i' (mt ()) ++
+	  (p ++ str "  " ++ safe_pr_long_global r ++ fnl ())) i' (mt ()) ++
      str "Extraction NoInline:" ++ fnl () ++ 
      Refset.fold
        (fun r p -> 
-	  (p ++ str "  " ++ pr_long_global r ++ fnl ())) n (mt ()))
+	  (p ++ str "  " ++ safe_pr_long_global r ++ fnl ())) n (mt ()))
 
 (* Reset part *)
 
