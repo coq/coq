@@ -405,7 +405,7 @@ esac
 # ("native-code program cannot do a dynamic load")
 if [ `uname -s` = "FreeBSD" ]; then camlp4oexec=$camlp4oexec.byte; fi
 
-CAMLVERSION=`"$bytecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
+CAMLVERSION=`"$bytecamlc" -version`
 
 case $CAMLVERSION in
     1.*|2.*|3.00|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05|3.06|3.08.0)
@@ -446,9 +446,13 @@ case  $CAMLVERSION in
 	  cflags="$cflags -DOCAML_307";;
 esac
 
-if [ "$CAMLTAG" = "OCAML310" ] && [ "$coq_debug_flag" = "-g" ]; then
-    # Compilation debug flag
-    coq_debug_flag_opt="-g"
+if [ "$coq_debug_flag" = "-g" ]; then
+    case $CAMLTAG in
+        OCAML31*)
+            # Compilation debug flag
+            coq_debug_flag_opt="-g"
+            ;;
+    esac
 fi
 
 # Camlp4 / Camlp5 configuration
@@ -467,26 +471,31 @@ if [ "$camlp5dir" != "" ]; then
 	echo "Please compile Camlp5 in transitional mode."
 	exit 1
     fi
-elif [ "$CAMLTAG" = "OCAML310" ]; then
-    if [ -x "${CAMLLIB}/camlp5" ]; then 
-        CAMLP4LIB=+camlp5
-    elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then 
-        CAMLP4LIB=+site-lib/camlp5
-    else
-	echo "Objective Caml 3.10 found but no Camlp5 installed."
-	echo "Configuration script failed!"
-	exit 1
-    fi
-    CAMLP4=camlp5
-    camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
-    if [ `$camlp4oexec -pmode 2>&1` = "strict" ]; then 
-	echo "Error: Camlp5 found, but in strict mode!"
-	echo "Please compile Camlp5 in transitional mode."
-	exit 1
-    fi
-else 
-    CAMLP4=camlp4
-    CAMLP4LIB=+camlp4
+else
+    case $CAMLTAG in
+        OCAML31*)
+            if [ -x "${CAMLLIB}/camlp5" ]; then
+                CAMLP4LIB=+camlp5
+            elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then
+                CAMLP4LIB=+site-lib/camlp5
+            else
+	        echo "Objective Caml 3.10 found but no Camlp5 installed."
+	        echo "Configuration script failed!"
+	        exit 1
+            fi
+            CAMLP4=camlp5
+            camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
+            if [ `$camlp4oexec -pmode 2>&1` = "strict" ]; then
+	        echo "Error: Camlp5 found, but in strict mode!"
+	        echo "Please compile Camlp5 in transitional mode."
+	        exit 1
+            fi
+            ;;
+        *)
+            CAMLP4=camlp4
+            CAMLP4LIB=+camlp4
+            ;;
+    esac
 fi
 
 if [ "$CAMLP4" = "camlp5" ] && `$camlp4oexec -v 2>&1 | grep -q 5.00`; then
