@@ -427,51 +427,55 @@ let init modular =
   reset ();
   if modular && lang () = Scheme then error_scheme ()
 
+(* From a list of [reference], let's retrieve whether they correspond
+   to modules or [global_reference]. Warn the user if both is possible. *)
+
+let rec locate_ref = function
+  | [] -> [],[]
+  | r::l ->
+      let q = snd (qualid_of_reference r) in
+      let mpo = try Some (Nametab.locate_module q) with Not_found -> None
+      and ro = try Some (Nametab.locate q) with Not_found -> None in
+      match mpo, ro with
+	| None, None -> Nametab.error_global_not_found q
+	| None, Some r -> let refs,mps = locate_ref l in r::refs,mps
+	| Some mp, None -> let refs,mps = locate_ref l in refs,mp::mps
+	| Some mp, Some r ->
+	    warning_both_mod_and_cst q mp r;
+	    let refs,mps = locate_ref l in refs,mp::mps
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. Also used when
     extracting to a file with the command:
     \verb!Extraction "file"! [qualid1] ... [qualidn]. *)
 
-let full_extraction f qualids =
+let full_extr f (refs,mps) =
   init false;
-  let rec find = function
-    | [] -> [],[]
-    | q::l ->
-	let refs,mps = find l in
-	try
-	  let mp = Nametab.locate_module (snd (qualid_of_reference q)) in
-	  if is_modfile mp then error_MPfile_as_mod mp true;
-	  refs,(mp::mps)
-	with Not_found -> (Nametab.global q)::refs, mps
-  in
-  let refs,mps = find qualids in
+  List.iter (fun mp -> if is_modfile mp then error_MPfile_as_mod mp true) mps;
   let struc = optimize_struct refs (mono_environment refs mps) in
   warning_axioms ();
   print_structure_to_file (mono_filename f) struc;
   reset ()
 
+let full_extraction f lr = full_extr f (locate_ref lr)
 
 (*s Simple extraction in the Coq toplevel. The vernacular command
     is \verb!Extraction! [qualid]. *)
 
-let simple_extraction qid =
-  init false;
-  try
-    let mp = Nametab.locate_module (snd (qualid_of_reference qid)) in
-    if is_modfile mp then error_MPfile_as_mod mp true;
-    full_extraction None [qid]
-  with Not_found ->
-    let r = Nametab.global qid in
-    if is_custom r then
-      msgnl (str "User defined extraction:" ++ spc () ++
-	       str (find_custom r) ++ fnl ())
-    else
-      let struc = optimize_struct [r] (mono_environment [r] []) in
-      let d = get_decl_in_structure r struc in
-      warning_axioms ();
-      print_one_decl struc (modpath_of_r r) d;
-      reset ()
+let simple_extraction r = match locate_ref [r] with
+  | ([], [mp]) as p -> full_extr None p
+  | [r],[] ->
+      init false;
+      if is_custom r then
+	msgnl (str "User defined extraction:" ++ spc () ++
+		 str (find_custom r) ++ fnl ())
+      else
+	let struc = optimize_struct [r] (mono_environment [r] []) in
+	let d = get_decl_in_structure r struc in
+	warning_axioms ();
+	print_one_decl struc (modpath_of_r r) d;
+	reset ()
+  | _ -> assert false
 
 
 (*s (Recursive) Extraction of a library. The vernacular command is

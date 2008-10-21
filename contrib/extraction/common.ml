@@ -255,7 +255,7 @@ let rec record_contents_fstlev struc =
   let addterm mp id = add_ext_mpmem Term mp (modular_rename false id) in
   let addmod mp id = add_ext_mpmem Mod mp (modular_rename true id) in 
   let addfix mp r = 
-    add_ext_mpmem Term mp (modular_rename false (id_of_global r))
+    add_ext_mpmem Term mp (modular_rename false (safe_id_of_global r))
   in
   let f mp = function 
     | (l,SEdecl (Dind (_,ind))) -> 
@@ -327,7 +327,7 @@ let create_modular_renamings struc =
   let add upper r = 
     let mp = modpath_of_r r in 
     let l = mp_create_renaming mp in 
-    let s = modular_rename upper (id_of_global r) in 
+    let s = modular_rename upper (safe_id_of_global r) in 
     add_global_ids (id_of_string s);
     add_renaming r (s::l); 
     begin try 
@@ -378,8 +378,8 @@ let create_mono_renamings struc =
     let mycase = if upper then uppercase_id else lowercase_id in 
     let id = 
       if l = [""] then 
-	next_ident_away (mycase (id_of_global r)) (global_ids_list ())
-      else id_of_string (modular_rename upper (id_of_global r))
+	next_ident_away (mycase (safe_id_of_global r)) (global_ids_list ())
+      else id_of_string (modular_rename upper (safe_id_of_global r))
     in 
     add_global_ids id; 
     add_renaming r ((string_of_id id)::l) 
