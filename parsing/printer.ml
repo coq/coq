@@ -20,7 +20,6 @@ open Global
 open Declare
 open Libnames
 open Nametab
-open Ppconstr
 open Evd
 open Proof_type
 open Decl_mode
