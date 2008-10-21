@@ -317,13 +317,14 @@ and merge_with env mtb with_decl alias=
 	| [] -> MPself msid
 	| i::r -> MPdot(mp_rec r,label_of_id i)
       in 
+      let env' = add_signature (MPself msid) before env in
       let new_spec,subst = match with_decl with
         | With_definition_body ([],_)
         | With_module_body ([],_,_,_) -> assert false
 	| With_definition_body ([id],c) -> 
 	    SFBconst c,None
 	| With_module_body ([id], mp,typ_opt,cst) ->
-	    let mp' = scrape_alias mp env in
+	    let mp' = scrape_alias mp env' in
 	    let new_alias = update_subst alias (map_mp (mp_rec [id]) mp') in
 	      SFBalias (mp,typ_opt,Some cst),
 	    Some(join (map_mp (mp_rec [id]) mp') new_alias)
@@ -337,7 +338,7 @@ and merge_with env mtb with_decl alias=
 	      match with_decl with
                   With_definition_body (_,c) -> With_definition_body (idl,c),None
 		| With_module_body (idc,mp,typ_opt,cst) -> 
-		    let mp' = scrape_alias mp env in
+		    let mp' = scrape_alias mp env' in
 		    With_module_body (idl,mp,typ_opt,cst),
 		      Some(map_mp (mp_rec (List.rev idc)) mp') 
 	    in
@@ -345,7 +346,7 @@ and merge_with env mtb with_decl alias=
 	      | None -> None
 	      | Some s -> Some (join s (update_subst alias s)) in
             let modtype,subst_msb = 
-              merge_with env (type_of_mb env old) new_with_decl alias in
+              merge_with env' (type_of_mb env' old) new_with_decl alias in
             let msb =
 	      { mod_expr = None;
 		mod_type = Some modtype; 
