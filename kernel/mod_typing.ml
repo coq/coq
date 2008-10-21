@@ -209,7 +209,7 @@ and check_with_aux_mod env mtb with_decl now =
 			| With_Module (_,c) -> With_Module (idl,c) in
 		      let cst,_,typ_opt =
 			check_with_aux_mod env' 
-			  (type_of_mb env old) new_with_decl false in
+			  (type_of_mb env' old) new_with_decl false in
 			if now then 
 			  let mtb' = lookup_modtype mp env' in
 			  let mp' = scrape_alias mp env' in

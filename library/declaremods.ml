@@ -588,7 +588,8 @@ let rec replace_module_object idl (subst, mbids, msid, lib_stack) modobjs mp =
       let rec replace_idl = function 
 	| _,[] -> [] 
 	| id::idl,(id',obj)::tail when id = id' ->
-	    if object_tag obj = "MODULE" then
+	    let tag = object_tag obj in
+	    if tag = "MODULE" or tag ="MODULE ALIAS" then
               (match idl with
 		   [] -> (id, in_module_alias (Some
 						 ({mod_entry_type = None;
