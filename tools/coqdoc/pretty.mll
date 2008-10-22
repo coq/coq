@@ -217,6 +217,7 @@ let thm_token =
   | "Proposition" 
   | "Property"
   | "Goal"
+  | "Next Obligation"
 
 let def_token = 
   "Definition" 
@@ -229,11 +230,12 @@ let def_token =
   | "CoFixpoint" 
   | "Record" 
   | "Structure" 
-  | "Instance"
   | "Scheme"
   | "Inductive"
   | "CoInductive"
   | "Equations"
+  | "Instance"
+  | "Global Instance"
 
 let decl_token = 
   "Hypothesis" 
@@ -304,6 +306,7 @@ let prog_kw =
 
 let gallina_kw_to_hide =
     "Implicit" space+ "Arguments"
+  | "Next" "Obligation"
   | "Ltac"
   | "Require"
   | "Import"
@@ -315,7 +318,6 @@ let gallina_kw_to_hide =
   | "Delimit"
   | "Transparent"
   | "Opaque"
-  | "Proof" space+ "with"
   | ("Declare" space+ ("Morphism" | "Step") )
   | ("Set" | "Unset") space+ "Printing" space+ "Coercions"
   | "Declare" space+ ("Left" | "Right") space+ "Step" 
@@ -379,22 +381,25 @@ rule coq_bol = parse
 	    in_proof := true;
 	    if eol then coq_bol lexbuf else coq lexbuf }
   | space* "Proof" (space* "." | space+ "with")
-      { let eol = 
+      { in_proof := true;
+	let eol = 
 	if not !Cdglobals.gallina then 
-	  begin backtrack lexbuf; Output.indentation 0; body_bol lexbuf end 
+	  begin backtrack lexbuf; body_bol lexbuf end 
 	else true
 	in if eol then coq_bol lexbuf else coq lexbuf }
   | space* end_kw { 
-      in_proof := false;
       let eol = 
-	if not !Cdglobals.gallina then 
-	  begin backtrack lexbuf; Output.indentation 0; body_bol lexbuf end 
+	if not (!in_proof && !Cdglobals.gallina) then 
+	  begin backtrack lexbuf; body_bol lexbuf end 
 	else
 	  skip_to_dot lexbuf 
       in
+	in_proof := false;
 	if eol then coq_bol lexbuf else coq lexbuf }
   | space* gallina_kw
-      { let s = lexeme lexbuf in 
+      { 
+	in_proof := false;
+	let s = lexeme lexbuf in 
 	let nbsp,isp = count_spaces s in
 	let s = String.sub s isp (String.length s - isp)  in
 	  Output.indentation nbsp;
@@ -402,7 +407,9 @@ rule coq_bol = parse
 	  let eol= body lexbuf in
 	    if eol then coq_bol lexbuf else coq lexbuf }
   | space* prog_kw
-      { let s = lexeme lexbuf in 
+      { 
+	in_proof := false;
+	let s = lexeme lexbuf in 
 	let nbsp,isp = count_spaces s in
 	  Output.indentation nbsp;
 	  let s = String.sub s isp (String.length s - isp)  in
@@ -440,7 +447,7 @@ rule coq_bol = parse
   | _
       { let eol = 
 	  if not !Cdglobals.gallina then 
-	    begin backtrack lexbuf; Output.indentation 0; body_bol lexbuf end 
+	    begin backtrack lexbuf; body_bol lexbuf end 
 	  else 
 	    skip_to_dot lexbuf 
 	in
@@ -479,6 +486,15 @@ and coq = parse
 	      let eol=body lexbuf in 
 		if eol then coq_bol lexbuf else coq lexbuf
 	    end }
+  | end_kw { 
+      let eol = 
+	if not (!in_proof && !Cdglobals.gallina) then 
+	  begin backtrack lexbuf; body lexbuf end 
+	else
+	  skip_to_dot lexbuf 
+      in
+	in_proof := false;
+	if eol then coq_bol lexbuf else coq lexbuf }
   | gallina_kw
       { let s = lexeme lexbuf in 
 	  Output.ident s (lexeme_start lexbuf); 
@@ -494,7 +510,7 @@ and coq = parse
       { () }
   | _ {	let eol = 
 	  if not !Cdglobals.gallina then 
-	    begin backtrack lexbuf; Output.indentation 0; body lexbuf end 
+	    begin backtrack lexbuf; body lexbuf end 
 	  else 
 	    let eol = skip_to_dot lexbuf in
 	      if eol then Output.line_break (); eol
@@ -642,7 +658,7 @@ and skip_to_dot = parse
 and body_bol = parse
   | space+
       { Output.indentation (fst (count_spaces (lexeme lexbuf))); body lexbuf }
-  | _ { backtrack lexbuf; body lexbuf }
+  | _ { backtrack lexbuf; Output.indentation 0; body lexbuf }
 
 and body = parse
   | nl {Output.line_break(); body_bol lexbuf}

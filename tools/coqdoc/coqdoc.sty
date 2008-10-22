@@ -27,6 +27,11 @@
 %HEVEA\renewcommand{\medskip}{}
 %HEVEA\renewcommand{\bigskip}{}
 
+
+%HEVEA\newcommand{\lnot}{\coqwkw{not}}
+%HEVEA\newcommand{\lor}{\coqwkw{or}}
+%HEVEA\newcommand{\land}{\&}
+
 % own name
 \newcommand{\coqdoc}{\textsf{coqdoc}}
 
@@ -39,7 +44,7 @@
 \newcommand{\coqdockw}[1]{\texttt{#1}}
 
 % macro for typesetting variable identifiers
-\newcommand{\coqdocid}[1]{\textit{#1}}
+\newcommand{\coqdocvar}[1]{\textit{#1}}
 
 % macro for typesetting constant identifiers
 \newcommand{\coqdoccst}[1]{\textsf{#1}}
@@ -57,13 +62,31 @@
 % macro for typesetting constructor identifiers
 \newcommand{\coqdocconstr}[1]{\textsf{#1}}
 
+% macro for typesetting tactic identifiers
+\newcommand{\coqdoctac}[1]{\texttt{#1}}
+
+
+% Environment encompassing code fragments
+\newenvironment{coqdoccode}{}{}
+% Environment encompassing documentation fragments
+\newenvironment{coqdocdoc}{}{}
+
+% !!! CAUTION: These environments may have empty contents
+
 % newline and indentation 
 %BEGIN LATEX
-\newcommand{\coqdoceol}{\setlength\parskip{0pt}\par}
-\newcommand{\coqdocindent}[1]{\noindent\kern#1}
-%END LATEX
-%HEVEA\newcommand{\coqdoceol}{\begin{rawhtml}<BR>\end{rawhtml}}
-%HEVEA\newcommand{\coqdocindent}[1]{\hspace{#1}\hspace{#1}}
+% Base indentation length
+\newlength{\coqdocbaseindent}
+\setlength{\coqdocbaseindent}{0em}
+
+% Beginning of a line without any Coq indentation
+\newcommand{\coqdocnoindent}{\noindent\kern\coqdocbaseindent}
+% Beginning of a line with a given Coq indentation
+\newcommand{\coqdocindent}[1]{\noindent\kern\coqdocbaseindent\noindent\kern#1}
+% End-of-the-line
+\newcommand{\coqdoceol}{\hspace*{\fill}\setlength\parskip{0pt}\par}
+% Empty lines (in code only)
+\newcommand{\coqdocemptyline}{\vskip 0.4em plus 0.1em minus 0.1em}
 
 % macro for typesetting the title of a module implementation
 \newcommand{\coqdocmodule}[1]{\chapter{Module #1}\markboth{Module #1}{}
@@ -74,11 +97,15 @@
   \hypersetup{raiselinks=true,colorlinks=true,linkcolor=black}
   \usepackage[all]{hypcap}
 
+  % To do indexing, use something like:
+  % \usepackage{multind}
+  % \newcommand{\coqdef}[3]{\hypertarget{coq:#1}{\index{coq}{#1@#2|hyperpage}#3}}
+
   \newcommand{\coqdef}[3]{\phantomsection\hypertarget{coq:#1}{#3}}
   \newcommand{\coqref}[2]{\hyperlink{coq:#1}{#2}}
   \newcommand{\identref}[2]{\hyperlink{coq:#1}{\textsf {#2}}}
   \newcommand{\coqlibrary}[2]{\cleardoublepage\phantomsection
-    \hypertarget{coq:#1}{\chapter{Library \coqdoccst{#2}}}}
+    \hypertarget{coq:#1}{\chapter{Library \coqdoccst{#2}}}}  
 \else
   \newcommand{\coqdef}[3]{#3}
   \newcommand{\coqref}[2]{#2}
@@ -87,22 +114,43 @@
 \fi
 \usepackage{xr}
 
-%\usepackage{color}
-%\usepackage{multind}
-%\newcommand{\coqdef}[3]{\hypertarget{coq:#1}{\index{coq}{#1@#2|hyperpage}#3}}
+\newif\if@coqdoccolors
+  \@coqdoccolorsfalse
 
-  
+\DeclareOption{color}{\@coqdoccolorstrue}
+\ProcessOptions
 
-\newcommand{\coqdocvar}[1]{{\textit{#1}}}
-\newcommand{\coqdoctac}[1]{{\texttt{#1}}}
+\if@coqdoccolors
+\RequirePackage{xcolor}
+\definecolor{varpurple}{rgb}{0.4,0,0.4}
+\definecolor{constrmaroon}{rgb}{0.6,0,0}
+\definecolor{defgreen}{rgb}{0,0.4,0}
+\definecolor{indblue}{rgb}{0,0,0.8}
+\definecolor{kwred}{rgb}{0.8,0.1,0.1}
 
+\def\coqdocvarcolor{varpurple}
+\def\coqdockwcolor{kwred}
+\def\coqdoccstcolor{defgreen}
+\def\coqdocindcolor{indblue}
+\def\coqdocconstrcolor{constrmaroon}
+\def\coqdocmodcolor{defgreen}
+\def\coqdocaxcolor{varpurple}
+\def\coqdoctaccolor{kwred}
+
+\def\coqdockw#1{{\color{\coqdockwcolor}{\texttt{#1}}}}
+\def\coqdocvar#1{{\color{\coqdocvarcolor}{\textit{#1}}}}
+\def\coqdoccst#1{{\color{\coqdoccstcolor}{\textrm{#1}}}}
+\def\coqdocind#1{{\color{\coqdocindcolor}{\textsf{#1}}}}
+\def\coqdocconstr#1{{\color{\coqdocconstrcolor}{\textsf{#1}}}}
+\def\coqdocmod#1{{{\color{\coqdocmodcolor}{\textsc{\textsf{#1}}}}}}
+\def\coqdocax#1{{{\color{\coqdocaxcolor}{\textsl{\textrm{#1}}}}}}
+\def\coqdoctac#1{{\color{\coqdoctaccolor}{\texttt{kw}}}}
+\fi
 
 \newcommand{\coqdefinition}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
 \newcommand{\coqdefinitionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
 
-%\newcommand{\coqvariable}[2]{\coqdef{#1}{#2}{\coqdocid{#2}}}
-%\newcommand{\coqaxiom}[2]{\coqdef{#1}{#2}{\coqdocid{#2}}}
-\newcommand{\coqvariable}[2]{\coqdocid{#2}}
+\newcommand{\coqvariable}[2]{\coqdocvar{#2}}
 
 \newcommand{\coqinductive}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
 \newcommand{\coqinductiveref}[2]{\coqref{#1}{\coqdocind{#2}}}
@@ -148,8 +196,4 @@
 \newcommand{\coqmodule}[2]{\coqdef{#1}{#2}{\coqdocmod{#2}}}
 \newcommand{\coqmoduleref}[2]{\coqref{#1}{\coqdocmod{#2}}}
 
-
-%HEVEA\newcommand{\lnot}{\coqwkw{not}}
-%HEVEA\newcommand{\lor}{\coqwkw{or}}
-%HEVEA\newcommand{\land}{\&}
-
+\endinput

@@ -39,15 +39,15 @@ let is_keyword =
       "Resolve"; "Unfold"; "Immediate"; "Extern"; "Implicit"; "Import"; "Inductive"; 
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac"; 
       "Module"; "Module Type"; "Declare Module"; "Include";
-      "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
+      "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Proof with"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
       "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
       "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
       "Notation"; "Reserved Notation"; "Tactic Notation";
       "Delimit"; "Bind"; "Open"; "Scope"; 
       "Boxed"; "Unboxed"; "Inline";
-      "Arguments"; "Add"; "Strict";
-      "Typeclasses"; "Instance"; "Class"; "Instantiation";
+      "Implicit Arguments"; "Add"; "Strict";
+      "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
       "subgoal";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
@@ -62,17 +62,18 @@ let is_keyword =
 
 let is_tactic = 
   build_table
-    [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "injection";
+    [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "clear"; "injection";
       "elimtype"; "progress"; "setoid_rewrite";
-      "destruct"; "destruction"; "destruct_call"; "induction"; "elim"; "dependent"; 
-      "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "clear"; "rename"; "move"; "set"; "assert";
+      "destruct"; "destruction"; "destruct_call"; "dependent"; "elim"; "extensionality";
+      "f_equal"; "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "induction"; "rename"; "move"; "omega";
+      "set"; "assert";
       "cut"; "assumption"; "exact"; "split"; "subst"; "try"; "discriminate";
       "simpl"; "unfold"; "red"; "compute"; "at"; "in"; "by";
       "reflexivity"; "symmetry"; "transitivity";
       "replace"; "setoid_replace"; "inversion"; "inversion_clear";
       "pattern"; "intuition"; "congruence"; "fail"; "fresh";
       "trivial"; "exact"; "tauto"; "firstorder"; "ring";
-      "clapply"; "program_simpl"; "eapply"; "auto"; "eauto" ]
+      "clapply"; "program_simpl"; "program_simplify"; "eapply"; "auto"; "eauto" ]
 
 (*s Current Coq module *)
 
@@ -116,8 +117,10 @@ let initialize () =
 	"\\/", "\\ensuremath{\\lor}", if_utf8 "∨";
 	"|-",  "\\ensuremath{\\vdash}", None;
 	"forall", "\\ensuremath{\\forall}", if_utf8 "∀";
-	"exists", "\\ensuremath{\\exists}", if_utf8 "∃"
-	  (* "fun", "\\ensuremath{\\lambda}" ? *)
+	"exists", "\\ensuremath{\\exists}", if_utf8 "∃";
+	"Π", "\\ensuremath{\\Pi}", if_utf8 "Π";
+	"λ", "\\ensuremath{\\lambda}", if_utf8 "λ"
+	(* "fun", "\\ensuremath{\\lambda}" ? *)
       ]
 
 (*s Table of contents *)
@@ -214,7 +217,7 @@ module Latex = struct
 
   let indentation n = 
     if n == 0 then 
-      printf "\\noindent\n"
+      printf "\\coqdocnoindent\n"
     else
       let space = 0.5 *. (float n) in
       printf "\\coqdocindent{%2.2fem}\n" space
@@ -262,7 +265,7 @@ module Latex = struct
     | Ref (m,fullid,typ) -> 
 	ident_ref m fullid typ s
     | Mod _ ->
-	printf "\\coqdocid{"; raw_ident s; printf "}"
+	printf "\\coqdocvar{"; raw_ident s; printf "}"
 
   let ident s loc = 
     if is_keyword s then begin
@@ -303,13 +306,13 @@ module Latex = struct
 
   let stop_item () = reach_item_level 0
 
-  let start_doc () = printf "\n\n\n\\noindent\n"
+  let start_doc () = printf "\\begin{coqdocdoc}\n"
 
-  let end_doc () = stop_item (); printf "\n\n\n"
+  let end_doc () = stop_item (); printf "\\end{coqdocdoc}\n"
 
-  let start_coq () = ()
+  let start_coq () = printf "\\begin{coqdoccode}\n"
 
-  let end_coq () = ()
+  let end_coq () = printf "\\end{coqdoccode}\n"
 
   let start_code () = end_doc (); start_coq ()
 
@@ -331,11 +334,11 @@ module Latex = struct
   let rule () =
     printf "\\par\n\\noindent\\hrulefill\\par\n\\noindent{}"
 
-  let paragraph () = stop_item (); printf "\n\n\\medskip\n"
+  let paragraph () = stop_item (); printf "\n\n"
 
   let line_break () = printf "\\coqdoceol\n"
 
-  let empty_line_of_code () = printf "\n\n\\medskip\n"
+  let empty_line_of_code () = printf "\\coqdocemptyline\n"
 
   let start_inline_coq () = ()
 
