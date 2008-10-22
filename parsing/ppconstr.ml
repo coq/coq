@@ -205,17 +205,23 @@ let begin_of_binders = function
   | b::_ -> begin_of_binder b
   | _ -> 0
 
+let surround_impl k p = 
+  match k with
+  | Explicit -> str"(" ++ p ++ str")"
+  | Implicit -> str"{" ++ p ++ str"}"
+
 let surround_binder k p = 
   match k with
-      Default Explicit -> hov 1 (str"(" ++ p ++ str")")
-    | Default Implicit -> hov 1 (str"{" ++ p ++ str"}")
-    | TypeClass _ -> hov 1 (str"[" ++ p ++ str"]")
-
+  | Default b -> hov 1 (surround_impl b p)
+  | Generalized (b, b', t) -> 
+      hov 1 (surround_impl b' (surround_impl b p))
+	
 let surround_implicit k p =
   match k with
-      Default Explicit -> p
-    | Default Implicit -> (str"{" ++ p ++ str"}")
-    | TypeClass _ -> (str"[" ++ p ++ str"]")
+  | Default Explicit -> p
+  | Default Implicit -> (str"{" ++ p ++ str"}")
+  | Generalized (b, b', t) -> 
+      surround_impl b' (surround_impl b p)
 
 let pr_binder many pr (nal,k,t) =
   match t with

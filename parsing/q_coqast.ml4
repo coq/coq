@@ -140,7 +140,9 @@ let mlexpr_of_binding_kind = function
 
 let mlexpr_of_binder_kind = function
   | Topconstr.Default b -> <:expr< Topconstr.Default $mlexpr_of_binding_kind b$ >>
-  | Topconstr.TypeClass (b,b') -> <:expr< Topconstr.TypeClass $mlexpr_of_pair mlexpr_of_binding_kind mlexpr_of_binding_kind (b,b')$ >>
+  | Topconstr.Generalized (b,b',b'') -> 
+      <:expr< Topconstr.TypeClass $mlexpr_of_binding_kind b$
+	$mlexpr_of_binding_kind b'$ $mlexpr_of_bool b''$ >>
 
 let rec mlexpr_of_constr = function
   | Topconstr.CRef (Libnames.Ident (loc,id)) when is_meta (string_of_id id) ->

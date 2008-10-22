@@ -63,6 +63,72 @@ let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
     | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
   in aux bound l c
 
+let add_name_to_ids set na = 
+  match na with 
+  | Anonymous -> set 
+  | Name id -> Idset.add id set 
+	
+let free_vars_of_rawconstr ?(bound=Idset.empty) =
+  let rec vars bound vs = function
+    | RVar (loc,id) -> 
+	if is_freevar bound (Global.env ()) id then
+	  if List.mem_assoc id vs then vs 
+	  else (id, loc) :: vs
+	else vs
+    | RApp (loc,f,args) -> List.fold_left (vars bound) vs (f::args)
+    | RLambda (loc,na,_,ty,c) | RProd (loc,na,_,ty,c) | RLetIn (loc,na,ty,c) -> 
+	let vs' = vars bound vs ty in 
+	let bound' = add_name_to_ids bound na in 
+	vars bound' vs' c
+    | RCases (loc,sty,rtntypopt,tml,pl) ->
+	let vs1 = vars_option bound vs rtntypopt in 
+	let vs2 = List.fold_left (fun vs (tm,_) -> vars bound vs tm) vs1 tml in 
+	List.fold_left (vars_pattern bound) vs2 pl
+    | RLetTuple (loc,nal,rtntyp,b,c) ->
+	let vs1 = vars_return_type bound vs rtntyp in 
+	let vs2 = vars bound vs1 b in 
+	let bound' = List.fold_left add_name_to_ids bound nal in
+	vars bound' vs2 c
+    | RIf (loc,c,rtntyp,b1,b2) -> 
+	let vs1 = vars_return_type bound vs rtntyp in 
+	let vs2 = vars bound vs1 c in 
+	let vs3 = vars bound vs2 b1 in 
+	vars bound vs3 b2
+    | RRec (loc,fk,idl,bl,tyl,bv) ->
+	let bound' = Array.fold_right Idset.add idl bound in 
+	let vars_fix i vs fid = 
+	  let vs1,bound1 = 
+	    List.fold_left 
+	      (fun (vs,bound) (na,k,bbd,bty) -> 
+		 let vs' = vars_option bound vs bbd in 
+		 let vs'' = vars bound vs' bty in
+		 let bound' = add_name_to_ids bound na in 
+		 (vs'',bound')
+	      )
+	      (vs,bound')
+	      bl.(i)
+	  in
+	  let vs2 = vars bound1 vs1 tyl.(i) in 
+	  vars bound1 vs2 bv.(i)
+	in
+	array_fold_left_i vars_fix vs idl
+    | RCast (loc,c,k) -> let v = vars bound vs c in 
+	(match k with CastConv (_,t) -> vars bound v t | _ -> v)
+    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> vs
+
+  and vars_pattern bound vs (loc,idl,p,c) = 
+    let bound' = List.fold_right Idset.add idl bound  in 
+    vars bound' vs c
+
+  and vars_option bound vs = function None -> vs | Some p -> vars bound vs p
+
+  and vars_return_type bound vs (na,tyopt) = 
+    let bound' = add_name_to_ids bound na in 
+    vars_option bound' vs tyopt
+  in 
+  fun rt -> List.rev (vars bound [] rt)
+      
+
 let ids_of_names l = 
   List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
 
@@ -138,14 +204,10 @@ let combine_params_freevar avoid applied needed =
 	(CRef (Ident (dummy_loc, id')), Idset.add id' avoid))
     applied needed
 
-let compute_context_vars env l =
-  List.fold_left (fun avoid (iid, _, c) -> 
-    (match snd iid with Name i -> [i] | Anonymous -> []) @ (free_vars_of_constr_expr c ~bound:env avoid))
-    [] l
-
 let destClassApp cl =
   match cl with
     | CApp (loc, (None,CRef ref), l) -> loc, ref, List.map fst l
+    | CAppExpl (loc, (None, ref), l) -> loc, ref, l
     | CRef ref -> loc_of_reference ref, ref, []
     | _ -> raise Not_found
       
@@ -155,92 +217,19 @@ let destClassAppExpl cl =
     | CRef ref -> loc_of_reference ref, ref, []
     | _ -> raise Not_found
 
-let full_class_binders env l = 
-  let avoid = Idset.union env (ids_of_list (compute_context_vars env l)) in
-  let l', avoid =
-    List.fold_left (fun (l', avoid) (iid, bk, cl as x) -> 
-      match bk with
-	  Implicit -> 
-	    let (loc, id, l) = 
-	      try destClassAppExpl cl 
-	      with Not_found -> 
-		user_err_loc (constr_loc cl, "class_binders", str"Not an applied type class")
-	    in
-	    let gr = Nametab.global id in
-	      (try
-		  let c = class_info gr in
-		  let (ci, rd) = c.cl_context in
-		  let pars = List.rev (List.combine ci rd) in
-		  let args, avoid = combine_params_freevar avoid l pars in
-		    (iid, bk, CAppExpl (loc, (None, id), args)) :: l', avoid
-		with Not_found -> not_a_class (Global.env ()) (constr_of_global gr))
-	| Explicit -> (x :: l', avoid))
-      ([], avoid) l
-  in List.rev l'
-
-let compute_context_freevars env ctx =
-  let bound, ids = 
-    List.fold_left 
-      (fun (bound, acc) (oid, id, x) -> 
-	let bound = match snd oid with Name n -> Idset.add n bound | Anonymous -> bound in
-	  bound, free_vars_of_constr_expr x ~bound acc)
-      (env,[]) ctx
-  in freevars_of_ids env (List.rev ids)
-
-let resolve_class_binders env l = 
-  let ctx = full_class_binders env l in
-  let fv_ctx = 
-    let elts = compute_context_freevars env ctx in
-      List.map (fun id -> (dummy_loc, id), CHole (dummy_loc, None)) elts
+let full_class_binder env (loc, id, l) gr = 
+  let avoid = 
+    Idset.union env (ids_of_list 
+			(free_vars_of_constr_expr (CApp (loc, (None, mkRefC id), l)) ~bound:env []))
   in
-    fv_ctx, ctx
-
-let full_class_binder env (iid, (bk, bk'), cl as c) = 
-  let avoid = Idset.union env (ids_of_list (compute_context_vars env [c])) in
   let c, avoid =
-    match bk' with
-    | Implicit -> 
-	let (loc, id, l) = 
-	  try destClassAppExpl cl 
-	  with Not_found -> 
-	    user_err_loc (constr_loc cl, "class_binders", str"Not an applied type class")
-	in
-	let gr = Nametab.global id in
-	  (try
-	      let c = class_info gr in
-	      let (ci, rd) = c.cl_context in
-	      let pars = List.rev (List.combine ci rd) in
-	      let args, avoid = combine_params_freevar avoid l pars in
-		(iid, bk, CAppExpl (loc, (None, id), args)), avoid
-	    with Not_found -> not_a_class (Global.env ()) (constr_of_global gr))
-    | Explicit -> ((iid,bk,cl), avoid)
+    let c = class_info gr in
+    let (ci, rd) = c.cl_context in
+    let pars = List.rev (List.combine ci rd) in
+    let args, avoid = combine_params_freevar avoid l pars in
+      CAppExpl (loc, (None, id), args), avoid
   in c
 
-let compute_constraint_freevars env (oid, _, x) =
-  let bound = match snd oid with Name n -> Idset.add n env | Anonymous -> env in
-  let ids = free_vars_of_constr_expr x ~bound [] in
-    freevars_of_ids env (List.rev ids)
-
-let resolve_class_binder env c = 
-  let cstr = full_class_binder env c in
-  let fv_ctx = 
-    let elts = compute_constraint_freevars env cstr in
-      List.map (fun id -> (dummy_loc, id), CHole (dummy_loc, None)) elts
-  in fv_ctx, cstr
-    
-let generalize_class_binder_raw env c = 
-  let env = Idset.union env (Termops.vars_of_env (Global.env())) in
-  let fv_ctx, cstr = resolve_class_binder env c in
-  let ids' = List.fold_left (fun acc ((loc, id), t) -> Idset.add id acc) env fv_ctx in
-  let ctx' = List.map (fun ((loc, id), t) -> ((loc, Name id), Implicit, t)) fv_ctx in
-    ids', ctx', cstr
-
-let generalize_class_binders_raw env l = 
-  let env = Idset.union env (Termops.vars_of_env (Global.env())) in
-  let fv_ctx, cstrs = resolve_class_binders env l in
-    List.map (fun ((loc, id), t) -> ((loc, Name id), Implicit, t)) fv_ctx,
-  List.map (fun (iid, bk, c) -> (iid, Implicit, c)) cstrs
-	
 let implicits_of_rawterm l = 
   let rec aux i c = 
     match c with

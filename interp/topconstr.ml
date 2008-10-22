@@ -502,9 +502,12 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
 	 & List.length eqnl1 = List.length eqnl2 ->
       let rtno1' = abstract_return_type_context_rawconstr tml1 rtno1 in
       let rtno2' = abstract_return_type_context_aconstr tml2 rtno2 in
-      let sigma = Option.fold_left2 (match_ alp metas) sigma rtno1' rtno2' in
+      let sigma = 
+	try Option.fold_left2 (match_ alp metas) sigma rtno1' rtno2' 
+	with Option.Heterogeneous -> raise No_match 
+      in
       let sigma = List.fold_left2 
-       (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
+      (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
       List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
   | RLetTuple (_,nal1,(na1,to1),b1,c1), ALetTuple (nal2,(na2,to2),b2,c2) 
       when List.length nal1 = List.length nal2 ->
@@ -603,7 +606,7 @@ type notation = string
 
 type explicitation = ExplByPos of int * identifier option | ExplByName of identifier
 
-type binder_kind = Default of binding_kind | TypeClass of binding_kind * binding_kind
+type binder_kind = Default of binding_kind | Generalized of binding_kind * binding_kind * bool
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 

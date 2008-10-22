@@ -98,7 +98,11 @@ type notation = string
 
 type explicitation = ExplByPos of int * identifier option | ExplByName of identifier
   
-type binder_kind = Default of binding_kind | TypeClass of binding_kind * binding_kind
+type binder_kind = 
+  | Default of binding_kind 
+  | Generalized of binding_kind * binding_kind * bool
+      (* Inner binding, outer bindings, typeclass-specific flag
+	 for implicit generalization of superclasses *)
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
