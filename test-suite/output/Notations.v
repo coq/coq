@@ -129,3 +129,19 @@ Check Nil.
 
 Notation NIL := nil.
 Check NIL : list nat.
+
+(**********************************************************************)
+(* Check notations with several recursive patterns                    *)
+
+Notation "[| x , y , .. , z ; a , b , .. , c |]" :=
+  (pair (pair .. (pair x y) .. z) (pair .. (pair a b) .. c)).
+Check [|1,2,3;4,5,6|].
+
+(**********************************************************************)
+(* Test recursive notations involving applications                    *)
+(* Caveat: does not work for applied constant because constants are   *)
+(* classified as notations for the particular constant while this     *)
+(* generic application notation is classified as generic              *)
+
+Notation "{| f ; x ; .. ; y |}" := ( .. (f x) .. y).
+Check fun f => {| f; 0; 1; 2 |} : Z.

@@ -202,7 +202,7 @@ GEXTEND Gram
       | "("; c = operconstr LEVEL "200"; ")" ->
           (match c with
               CPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
-                CNotation(loc,"( _ )",[c])
+                CNotation(loc,"( _ )",([c],[]))
             | _ -> c) ] ]
   ;
   forall: 
@@ -337,7 +337,7 @@ GEXTEND Gram
       | "("; p = pattern LEVEL "200"; ")" ->
           (match p with
               CPatPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
-                CPatNotation(loc,"( _ )",[p])
+                CPatNotation(loc,"( _ )",([p],[]))
             | _ -> p)
       | n = INT -> CPatPrim (loc, Numeral (Bigint.of_string n))
       | s = string -> CPatPrim (loc, String s) ] ]

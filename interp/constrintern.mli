@@ -141,8 +141,8 @@ val global_reference_in_absolute_module : dir_path -> identifier -> constr
 
 (* Interprets into a abbreviatable constr *)
 
-val interp_aconstr : implicits_env -> identifier list -> constr_expr ->
-  interpretation
+val interp_aconstr : implicits_env -> identifier list * identifier list 
+  -> constr_expr -> interpretation
 
 (* Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b

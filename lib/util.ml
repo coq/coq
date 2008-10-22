@@ -730,13 +730,21 @@ let list_subset l1 l2 =
   in 
   look l1
 
-let list_splitby p = 
-  let rec splitby_loop x y = 
+let list_split_at p = 
+  let rec split_at_loop x y = 
     match y with 
       | []      -> ([],[])
-      | (a::l)  -> if (p a) then (x,y) else (splitby_loop (x@[a]) l)
+      | (a::l)  -> if (p a) then (x,y) else (split_at_loop (x@[a]) l)
   in 
-  splitby_loop []
+  split_at_loop []
+
+let list_split_by p = 
+  let rec split_loop = function
+  | []      -> ([],[])
+  | (a::l)  ->
+      let (l1,l2) = split_loop l in if (p a) then (a::l1,l2) else (l1,a::l2)
+  in 
+  split_loop
 
 let rec list_split3 = function
   | [] -> ([], [], [])

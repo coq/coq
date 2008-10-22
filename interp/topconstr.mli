@@ -77,11 +77,14 @@ type scope_name = string
 
 type tmp_scope_name = scope_name
 
-type interpretation = 
-    (identifier * (tmp_scope_name option * scope_name list)) list * aconstr
+type subscopes = tmp_scope_name option * scope_name list
+
+type interpretation =
+    (* regular vars of notation    / recursive parts of notation    / body *)
+    ((identifier * subscopes) list * (identifier * subscopes) list) * aconstr
 
 val match_aconstr : rawconstr -> interpretation ->
-      (rawconstr * (tmp_scope_name option * scope_name list)) list
+      (rawconstr * subscopes) list * (rawconstr list * subscopes) list
 
 (**********************************************************************)
 (* Substitution of kernel names in interpretation data                *)
@@ -101,12 +104,15 @@ type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
 type prim_token = Numeral of Bigint.bigint | String of string
 
+type 'a notation_substitution =
+    'a list * (* for recursive notations: *) 'a list list
+
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
   | CPatOr of loc * cases_pattern_expr list
-  | CPatNotation of loc * notation * cases_pattern_expr list
+  | CPatNotation of loc * notation * cases_pattern_expr notation_substitution
   | CPatPrim of loc * prim_token
   | CPatDelimiters of loc * string * cases_pattern_expr
 
@@ -133,7 +139,7 @@ type constr_expr =
   | CEvar of loc * existential_key * constr_expr list option
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr cast_type
-  | CNotation of loc * notation * constr_expr list
+  | CNotation of loc * notation * constr_expr notation_substitution
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
@@ -240,5 +246,5 @@ type include_ast =
   | CIMTE of module_type_ast
   | CIME of module_ast
 
-val ntn_loc : Util.loc -> constr_expr list -> string -> int
-val patntn_loc : Util.loc -> cases_pattern_expr list -> string -> int
+val ntn_loc : Util.loc -> constr_expr notation_substitution -> string -> int
+val patntn_loc : Util.loc -> cases_pattern_expr notation_substitution -> string -> int

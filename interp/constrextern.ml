@@ -190,8 +190,9 @@ let rec check_same_type ty1 ty2 =
       check_same_type b1 b2
   | CCast(_,a1,CastCoerce), CCast(_,a2, CastCoerce) ->
       check_same_type a1 a2
-  | CNotation(_,n1,e1), CNotation(_,n2,e2) when n1=n2 ->
-      List.iter2 check_same_type e1 e2
+  | CNotation(_,n1,(e1,el1)), CNotation(_,n2,(e2,el2)) when n1=n2 ->
+      List.iter2 check_same_type e1 e2;
+      List.iter2 (List.iter2 check_same_type) el1 el2
   | CPrim(_,i1), CPrim(_,i2) when i1=i2 -> ()
   | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when s1=s2 ->
       check_same_type e1 e2
@@ -298,7 +299,7 @@ and spaces ntn n =
   if n = String.length ntn then []
   else if ntn.[n] = ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
 
-let expand_curly_brackets loc mknot ntn l =
+let expand_curly_brackets loc mknot ntn (l,ll) =
   let ntn' = ref ntn in
   let rec expand_ntn i =
     function
@@ -311,12 +312,12 @@ let expand_curly_brackets loc mknot ntn l =
             ntn' := 
               String.sub !ntn' 0 p ^ "_" ^ 
               String.sub !ntn' (p+5) (String.length !ntn' -p-5);
-            mknot (loc,"{ _ }",[a]) end
+            mknot (loc,"{ _ }",([a],[])) end
           else a in
         a' :: expand_ntn (i+1) l in
   let l = expand_ntn 0 l in
   (* side effect *)
-  mknot (loc,!ntn',l)
+  mknot (loc,!ntn',(l,ll))
 
 let destPrim = function CPrim(_,t) -> Some t | _ -> None
 let destPatPrim = function CPatPrim(_,t) -> Some t | _ -> None
@@ -324,18 +325,18 @@ let destPatPrim = function CPatPrim(_,t) -> Some t | _ -> None
 let make_notation_gen loc ntn mknot mkprim destprim l =
   if has_curly_brackets ntn
   then expand_curly_brackets loc mknot ntn l
-  else match ntn,List.map destprim l with
+  else match ntn,List.map destprim (fst l),(snd l) with
     (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
-    | "- _", [Some (Numeral p)] when Bigint.is_strictly_pos p ->
-        mknot (loc,ntn,[mknot (loc,"( _ )",l)])
+    | "- _", [Some (Numeral p)],[] when Bigint.is_strictly_pos p ->
+        mknot (loc,ntn,([mknot (loc,"( _ )",l)],[]))
     | _ -> 
 	match decompose_notation_key ntn, l with
-	| [Terminal "-"; Terminal x], [] ->
+	| [Terminal "-"; Terminal x], ([],[]) ->
 	    (try mkprim (loc, Numeral (Bigint.neg (Bigint.of_string x)))
- 	     with _ -> mknot (loc,ntn,[]))
-	| [Terminal x], [] ->
+ 	     with _ -> mknot (loc,ntn,([],[])))
+	| [Terminal x], ([],[]) ->
 	    (try mkprim (loc, Numeral (Bigint.of_string x))
- 	     with _ -> mknot (loc,ntn,[]))
+ 	     with _ -> mknot (loc,ntn,([],[])))
 	| _ ->
 	    mknot (loc,ntn,l)
 
@@ -351,13 +352,13 @@ let make_pat_notation loc ntn l =
     (fun (loc,p) -> CPatPrim (loc,p))
     destPatPrim l
 
-let bind_env sigma var v =
+let bind_env (sigma,sigmalist as fullsigma) var v =
   try
     let vvar = List.assoc var sigma in
-    if v=vvar then sigma else raise No_match
+    if v=vvar then fullsigma else raise No_match
   with Not_found ->
     (* TODO: handle the case of multiple occs in different scopes *)
-    (var,v)::sigma
+    (var,v)::sigma,sigmalist
 
 let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
@@ -378,15 +379,18 @@ let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
         (* All parameters must be _ *)
         List.iter (function AHole _ -> () | _ -> raise No_match) p2;
 	List.fold_left2 (match_cases_pattern metas) sigma args1 args2
+  (* TODO: use recursive notations *)
   | _ -> raise No_match
 
-let match_aconstr_cases_pattern c (metas_scl,pat) =
-  let subst = match_cases_pattern (List.map fst metas_scl) [] c pat in
+let match_aconstr_cases_pattern c ((metas_scl,metaslist_scl),pat) =
+  let vars = List.map fst metas_scl @ List.map fst metaslist_scl in
+  let subst,substlist = match_cases_pattern vars ([],[]) c pat in
   (* Reorder canonically the substitution *)
   let find x subst =
-    try List.assoc x subst
+    try List.assoc x subst 
     with Not_found -> anomaly "match_aconstr_cases_pattern" in
-  List.map (fun (x,scl) -> (find x subst,scl)) metas_scl
+  List.map (fun (x,scl) -> (find x subst,scl)) metas_scl,
+  List.map (fun (x,scl) -> (find x substlist,scl)) metaslist_scl
 
  (* Better to use extern_rawconstr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
@@ -424,7 +428,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 	  | PatCstr (loc,_,_,na),_ -> loc,na
 	  | PatVar (loc,na),_ -> loc,na in
 	(* Try matching ... *)
-	let subst = match_aconstr_cases_pattern t pat in
+	let subst,substlist = match_aconstr_cases_pattern t pat in
 	(* Try availability of interpretation ... *)
 	let p = match keyrule with
           | NotationRule (sc,ntn) ->
@@ -438,7 +442,13 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 		    List.map (fun (c,(scopt,scl)) ->
 		      extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
                       subst in
-		  insert_pat_delimiters loc (make_pat_notation loc ntn l) key)
+		  let ll =
+		    List.map (fun (c,(scopt,scl)) ->
+		      let subscope = (scopt,scl@scopes') in
+		      List.map (extern_cases_pattern_in_scope subscope vars) c)
+                      substlist in
+		  insert_pat_delimiters loc 
+		    (make_pat_notation loc ntn (l,ll)) key)
           | SynDefRule kn ->
 	      let qid = shortest_qualid_of_syndef vars kn in
               CPatAtom (loc,Some (Qualid (loc, qid))) in
@@ -817,7 +827,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
           | _, None -> t,[]
           | _ -> raise No_match in
 	(* Try matching ... *)
-	let subst = match_aconstr t pat in
+	let subst,substlist = match_aconstr t pat in
 	(* Try availability of interpretation ... *)
         let e =
           match keyrule with
@@ -833,7 +843,11 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 		      extern (* assuming no overloading: *) true
 		        (scopt,scl@scopes') vars c)
                       subst in
-	          insert_delimiters (make_notation loc ntn l) key)
+		  let ll =
+		    List.map (fun (c,(scopt,scl)) ->
+		      List.map (extern true (scopt,scl@scopes') vars) c)
+                      substlist in
+	          insert_delimiters (make_notation loc ntn (l,ll)) key)
           | SynDefRule kn ->
 	      let l =
 		List.map (fun (c,(scopt,scl)) ->

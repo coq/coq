@@ -206,7 +206,7 @@ let onHyps find tac gl = tac (find gl) gl
    after id *)
 
 let afterHyp id gl =
-  fst (list_splitby (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
+  fst (list_split_at (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
     
 
 (* Create a singleton clause list with the last hypothesis from then context *)

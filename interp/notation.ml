@@ -193,10 +193,6 @@ let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
   | ARef ref -> RefKey ref, None
   | _ -> Oth, None
 
-let pattern_key = function
-  | PatCstr (_,cstr,_,_) -> RefKey (ConstructRef cstr)
-  | _ -> Oth
-
 (**********************************************************************)
 (* Interpreting numbers (not in summary because functional objects)   *)
 

@@ -539,11 +539,11 @@ let rec pr_vernac = function
   | VernacStartTheoremProof (ki,l,_,_) ->
       let pr_statement head (id,(bl,c)) =
         hov 0
-          (head ++ spc () ++ pr_opt pr_lident id ++ spc() ++
+          (head ++ pr_opt pr_lident id ++ spc() ++
               (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
               str":" ++ pr_spc_lconstr c) in
       hov 1 (pr_statement (pr_thm_token ki) (List.hd l) ++
-             prlist (pr_statement (str "with ")) (List.tl l))
+             prlist (pr_statement (spc () ++ str "with")) (List.tl l))
 
   | VernacEndProof Admitted -> str"Admitted"
   | VernacEndProof (Proved (opac,o)) -> (match o with

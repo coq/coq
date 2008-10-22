@@ -166,9 +166,9 @@ let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
   hook local r
 
 let syntax_definition ident (vars,c) local onlyparse =
-  let pat = interp_aconstr [] vars c in
-  let onlyparse = onlyparse or Metasyntax.is_not_printable (snd pat) in
-  Syntax_def.declare_syntactic_definition local ident onlyparse pat
+  let ((vars,_),pat) = interp_aconstr [] (vars,[]) c in
+  let onlyparse = onlyparse or Metasyntax.is_not_printable pat in
+  Syntax_def.declare_syntactic_definition local ident onlyparse (vars,pat)
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 

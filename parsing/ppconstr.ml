@@ -62,36 +62,32 @@ let prec_of_prim_token = function
   | Numeral p -> if Bigint.is_pos_or_zero p then lposint else lnegint
   | String _ -> latom
 
-let env_assoc_value v env =
-  try List.nth env (v-1)
-  with Not_found -> anomaly ("Inconsistent environment for pretty-print rule")
-
-let decode_constrlist_value = function
-  | CAppExpl (_,_,l) -> l
-  | CApp (_,_,l) -> List.map fst l
-  | _ -> anomaly "Ill-formed list argument of notation"
-
-let decode_patlist_value = function
-  | CPatCstr (_,_,l) -> l
-  | _ -> anomaly "Ill-formed list argument of notation"
-
 open Notation
 
-let rec print_hunk n decode pr env = function
-  | UnpMetaVar (e,prec) -> pr (n,prec) (env_assoc_value e env)
-  | UnpListMetaVar (e,prec,sl) -> 
-      prlist_with_sep (fun () -> prlist (print_hunk n decode pr env) sl)
-      (pr (n,prec)) (decode (env_assoc_value e env))
-  | UnpTerminal s -> str s
-  | UnpBox (b,sub) -> ppcmd_of_box b (prlist (print_hunk n decode pr env) sub)
-  | UnpCut cut -> ppcmd_of_cut cut
+let print_hunks n pr (env,envlist) unp =
+  let env = ref env and envlist = ref envlist in
+  let pop r = let a = List.hd !r in r := List.tl !r; a in
+  let rec aux = function
+  | [] -> mt ()
+  | UnpMetaVar (_,prec) :: l ->
+      let c = pop env in pr (n,prec) c ++ aux l
+  | UnpListMetaVar (_,prec,sl) :: l ->
+      let cl = pop envlist in
+      let pp1 = prlist_with_sep (fun () -> aux sl) (pr (n,prec)) cl in
+      let pp2 = aux l in
+      pp1 ++ pp2
+  | UnpTerminal s :: l -> str s ++ aux l
+  | UnpBox (b,sub) :: l ->
+      (* Keep order: side-effects *)
+      let pp1 = ppcmd_of_box b (aux sub) in
+      let pp2 = aux l in
+      pp1 ++ pp2
+  | UnpCut cut :: l -> ppcmd_of_cut cut ++ aux l in
+  aux unp
 
-let pr_notation_gen decode pr s env =
+let pr_notation pr s env =
   let unpl, level = find_notation_printing_rule s in
-  prlist (print_hunk level decode pr env) unpl, level
-
-let pr_notation = pr_notation_gen decode_constrlist_value
-let pr_patnotation = pr_notation_gen decode_patlist_value
+  print_hunks level pr env unpl, level
 
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
@@ -179,9 +175,9 @@ let rec pr_patt sep inh p =
   | CPatAtom (_,Some r) -> pr_reference r, latom
   | CPatOr (_,pl) ->
       hov 0 (prlist_with_sep pr_bar (pr_patt spc (lpator,L)) pl), lpator
-  | CPatNotation (_,"( _ )",[p]) ->
+  | CPatNotation (_,"( _ )",([p],[])) ->
       pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
-  | CPatNotation (_,s,env) -> pr_patnotation (pr_patt mt) s env
+  | CPatNotation (_,s,env) -> pr_notation (pr_patt mt) s env
   | CPatPrim (_,p) -> pr_prim_token p, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimple p), 1
   in
@@ -592,7 +588,7 @@ let rec pr sep inherited a =
   | CCast (_,a,CastCoerce) ->
       hv 0 (pr mt (lcast,L) a ++ cut () ++ str ":>"),
       lcast
-  | CNotation (_,"( _ )",[t]) ->
+  | CNotation (_,"( _ )",([t],[])) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) -> pr_notation (pr mt) s env
   | CPrim (_,p) -> pr_prim_token p, prec_of_prim_token p
