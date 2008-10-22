@@ -157,7 +157,12 @@ let binder_list_of_ids ids =
   List.map (fun id -> LocalRawAssum ([dummy_loc, Name id], Default Implicit, CHole (dummy_loc, None))) ids
       
 let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
-    
+
+let next_name_away_from na avoid = 
+  match na with
+  | Anonymous -> make_fresh avoid (Global.env ()) (id_of_string "anon")
+  | Name id -> make_fresh avoid (Global.env ()) id
+
 let combine_params avoid fn applied needed =
   let named, applied = 
     List.partition 
@@ -182,7 +187,7 @@ let combine_params avoid fn applied needed =
       | (x, None) :: app, (None, (Name id, _, _)) :: need ->
 	  aux (x :: ids) avoid app need
 	    
-      | _, (Some cl, (Name id, _, _) as d) :: need -> 
+      | _, (Some cl, (_, _, _) as d) :: need -> 
 	  let t', avoid' = fn avoid d in
 	    aux (t' :: ids) avoid' app need
 
@@ -192,15 +197,14 @@ let combine_params avoid fn applied needed =
 	  let t', avoid' = fn avoid decl in
 	    aux (t' :: ids) avoid' app need
 
-      | _ :: _, [] -> failwith "combine_params: overly applied typeclass"
-
-      | _, _ -> raise (Invalid_argument "combine_params")
+      | (x,_) :: _, [] -> 
+	  user_err_loc (constr_loc x,"",str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
-
+    
 let combine_params_freevar avoid applied needed =
   combine_params avoid
-    (fun avoid (_, (id, _, _)) -> 
-      let id' = next_ident_away_from (Nameops.out_name id) avoid in
+    (fun avoid (_, (na, _, _)) -> 
+      let id' = next_name_away_from na avoid in
 	(CRef (Ident (dummy_loc, id')), Idset.add id' avoid))
     applied needed
 

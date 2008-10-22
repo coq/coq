@@ -123,14 +123,6 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
-let degenerate_decl (na,b,t) =
-  let id = match na with
-    | Name id -> id
-    | Anonymous -> anomaly "Unnamed record variable" in 
-  match b with
-    | None -> (id, Entries.LocalAssum t)
-    | Some b -> (id, Entries.LocalDef b)
-
 let name_typeclass_binder avoid = function
   | LocalRawAssum ([loc, Anonymous], bk, c) ->
       let name = 
@@ -157,6 +149,7 @@ let new_class id par ar sup props =
   let bound, ids = Implicit_quantifiers.free_vars_of_binders ~bound [] (sup @ par) in
   let bound = Idset.union bound (Implicit_quantifiers.ids_of_list ids) in
   let sup, bound = name_typeclass_binders bound sup in
+  let par, bound = name_typeclass_binders bound par in
   let supnames = 
     List.fold_left (fun acc b -> 
       match b with
