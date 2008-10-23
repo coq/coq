@@ -946,6 +946,9 @@ let internalise sigma globalenv env allow_patvar lvar c =
           (* Now compact "(f args') args" *)
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
+    | CRecord (loc, w, fs) ->
+	RRecord (loc, Option.map (intern env) w, 
+		List.map (fun (id, c) -> (id, intern env c)) fs)
     | CCases (loc, sty, rtnpo, tms, eqns) ->
         let tms,env' = List.fold_right
           (fun citm (inds,env) ->

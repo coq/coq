@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id:$ i*)
+(*i $Id$ i*)
 
 (** Module implementing basic combinators for OCaml option type.
    It tries follow closely the style of OCaml standard library.
@@ -97,6 +97,10 @@ let fold_right f x a =
   | Some y -> f y a
   | _ -> a
 
+(** [cata f a x] is [a] if [x] is [None] and [f y] if [x] is [Some y]. *)
+let cata f a = function
+  | Some c -> f c
+  | None -> a
 
 (** {6 More Specific operations} ***)
 

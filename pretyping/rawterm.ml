@@ -62,6 +62,7 @@ type rawconstr =
   | RLambda of loc * name * binding_kind * rawconstr * rawconstr
   | RProd of loc * name * binding_kind * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
+  | RRecord of loc * rawconstr option * ((loc * identifier) * rawconstr) list
   | RCases of loc * case_style * rawconstr option * tomatch_tuples * cases_clauses
   | RLetTuple of loc * name list * (name * rawconstr option) * 
       rawconstr * rawconstr
@@ -114,6 +115,7 @@ let map_rawconstr f = function
   | RLambda (loc,na,bk,ty,c) -> RLambda (loc,na,bk,f ty,f c)
   | RProd (loc,na,bk,ty,c) -> RProd (loc,na,bk,f ty,f c)
   | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
+  | RRecord (loc,c,l) -> RRecord (loc,Option.map f c,List.map (fun (id,c) -> id, f c) l)
   | RCases (loc,sty,rtntypopt,tml,pl) ->
       RCases (loc,sty,Option.map f rtntypopt,
         List.map (fun (tm,x) -> (f tm,x)) tml,
@@ -174,6 +176,8 @@ let occur_rawconstr id =
     | RLambda (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RProd (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
+    | RRecord (loc,w,l) -> Option.cata occur false w
+	or List.exists (fun (_, c) -> occur c) l
     | RCases (loc,sty,rtntypopt,tml,pl) ->
 	(occur_option rtntypopt)
         or (List.exists (fun (tm,_) -> occur tm) tml)
@@ -219,7 +223,9 @@ let free_rawvars  =
     | RLambda (loc,na,_,ty,c) | RProd (loc,na,_,ty,c) | RLetIn (loc,na,ty,c) -> 
 	let vs' = vars bounded vs ty in 
 	let bounded' = add_name_to_ids bounded na in 
-	vars bounded' vs' c
+       vars bounded' vs' c
+    | RRecord (loc,f,args) -> 
+	List.fold_left (vars bounded) vs (Option.List.cons f (List.map snd args))
     | RCases (loc,sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bounded vs rtntypopt in 
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bounded vs tm) vs1 tml in 
@@ -280,6 +286,7 @@ let loc_of_rawconstr = function
   | RLambda (loc,_,_,_,_) -> loc
   | RProd (loc,_,_,_,_) -> loc
   | RLetIn (loc,_,_,_) -> loc
+  | RRecord (loc,_,_) -> loc
   | RCases (loc,_,_,_,_) -> loc
   | RLetTuple (loc,_,_,_,_) -> loc
   | RIf (loc,_,_,_,_) -> loc

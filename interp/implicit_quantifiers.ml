@@ -63,6 +63,24 @@ let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
     | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
   in aux bound l c
 
+let ids_of_names l = 
+  List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
+
+let free_vars_of_binders ?(bound=Idset.empty) l (binders : local_binder list) = 
+  let rec aux bdvars l c = match c with
+      ((LocalRawAssum (n, _, c)) :: tl) ->
+	let bound = ids_of_names n in
+	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
+	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
+
+    | ((LocalRawDef (n, c)) :: tl) -> 
+	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
+	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
+	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
+	
+    | [] -> bdvars, l
+  in aux bound l binders
+
 let add_name_to_ids set na = 
   match na with 
   | Anonymous -> set 
@@ -80,6 +98,8 @@ let free_vars_of_rawconstr ?(bound=Idset.empty) =
 	let vs' = vars bound vs ty in 
 	let bound' = add_name_to_ids bound na in 
 	vars bound' vs' c
+    | RRecord (loc,w,l) -> List.fold_left (vars bound) vs 
+	(Option.List.cons w (List.map snd l))
     | RCases (loc,sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bound vs rtntypopt in 
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bound vs tm) vs1 tml in 
@@ -128,33 +148,11 @@ let free_vars_of_rawconstr ?(bound=Idset.empty) =
   in 
   fun rt -> List.rev (vars bound [] rt)
       
-
-let ids_of_names l = 
-  List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
-
-let free_vars_of_binders ?(bound=Idset.empty) l (binders : local_binder list) = 
-  let rec aux bdvars l c = match c with
-      ((LocalRawAssum (n, _, c)) :: tl) ->
-	let bound = ids_of_names n in
-	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
-
-    | ((LocalRawDef (n, c)) :: tl) -> 
-	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
-	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
-	
-    | [] -> bdvars, l
-  in aux bound l binders
-
 let rec make_fresh ids env x =
   if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_ident x)
 
 let freevars_of_ids env ids = 
   List.filter (is_freevar env (Global.env())) ids
-
-let binder_list_of_ids ids =
-  List.map (fun id -> LocalRawAssum ([dummy_loc, Name id], Default Implicit, CHole (dummy_loc, None))) ids
       
 let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id
 

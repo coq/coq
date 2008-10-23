@@ -583,6 +583,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 		*)
 		build_entry_lc env funnames avoid (mkRApp(b,args))
 	    | RRec _ -> error "Not handled RRec"
+	    | RRecord _ -> error "Not handled RRecord"
 	    | RProd _ -> error "Cannot apply a type"
 	end (* end of the application treatement *) 
 
@@ -685,6 +686,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 
 	end
     | RRec _ -> error "Not handled RRec"
+    | RRecord _ -> error "Not handled RRecord"
     | RCast(_,b,_) -> 
 	build_entry_lc env funnames  avoid b
     | RDynamic _ -> error "Not handled RDynamic"
@@ -1024,7 +1026,7 @@ let rec compute_cst_params relnames params = function
 		 discriminitation ones *)
   | RSort _ -> params
   | RHole _ -> params
-  | RIf _ | RRec _ | RCast _ | RDynamic _  ->
+  | RIf _ | RRecord _ | RRec _ | RCast _ | RDynamic _  ->
       raise (UserError("compute_cst_params", str "Not handled case"))
 and compute_cst_params_from_app acc (params,rtl) = 
   match params,rtl with 

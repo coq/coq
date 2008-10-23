@@ -552,6 +552,17 @@ let rec pr sep inherited a =
       else
 	p, lproj
   | CApp (_,(None,a),l) -> pr_app (pr mt) a l, lapp
+  | CRecord (_,w,l) ->
+      let beg = 
+	match w with
+	| None -> spc () 
+	| Some t -> spc () ++ pr spc ltop t ++ spc () ++ str"with" ++ spc ()
+      in
+	hv 0 (str"{" ++ beg ++	       
+		 prlist_with_sep (fun () -> spc () ++ str";" ++ spc ())
+		 (fun ((_,id), c) -> pr_id id ++ spc () ++ str":=" ++ spc () ++ pr spc ltop c)
+		 l), latom
+
   | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
       hv 0 (
 	str "let '" ++ 

@@ -25,7 +25,7 @@ let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for"; 
     "end"; "as"; "let"; "if"; "then"; "else"; "return";
     "Prop"; "Set"; "Type"; ".("; "_"; "..";
-    "`{"; "`("; ]
+    "`{"; "`("; "{|"; "|}" ]
 
 let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
 
@@ -125,6 +125,18 @@ let ident_colon =
               | _ -> raise Stream.Failure)
         | _ -> raise Stream.Failure)
 
+let ident_with =
+  Gram.Entry.of_parser "ident_with"
+    (fun strm ->
+      match Stream.npeek 1 strm with
+      | [("IDENT",s)] ->
+          (match Stream.npeek 2 strm with
+          | [_; ("", "with")] ->
+              Stream.junk strm; Stream.junk strm;
+              Names.id_of_string s
+          | _ -> raise Stream.Failure)
+      | _ -> raise Stream.Failure)
+    
 let aliasvar = function CPatAlias (_, _, id) -> Some (Name id) | _ -> None
 
 GEXTEND Gram
@@ -205,6 +217,7 @@ GEXTEND Gram
               CPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
                 CNotation(loc,"( _ )",([c],[]))
             | _ -> c)
+      | "{|"; c = record_declaration; "|}" -> c
       | "`{"; c = operconstr LEVEL "200"; "}" ->
 	  CGeneralization (loc, Implicit, None, c)
       | "`("; c = operconstr LEVEL "200"; ")" ->
@@ -220,6 +233,15 @@ GEXTEND Gram
     [ [ "fun" -> () 
     | IDENT "λ" -> ()
     ] ]
+  ;
+  record_declaration:
+    [ [ fs = LIST1 record_field_declaration SEP ";" -> CRecord (loc, None, fs)
+      | c = lconstr; "with"; fs = LIST1 record_field_declaration SEP ";" ->
+	  CRecord (loc, Some c, fs)
+    ] ]
+  ;
+  record_field_declaration:
+    [ [ id = identref; ":="; c = lconstr -> (id, c) ] ]
   ;
   binder_constr:
     [ [ forall; bl = binder_list; ","; c = operconstr LEVEL "200" ->

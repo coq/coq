@@ -210,6 +210,8 @@ let rec depends_of_rawconstr rc acc = match rc with
   | RLambda (_, _, _, rct, rcb)
   | RProd   (_, _, _, rct, rcb)
   | RLetIn  (_, _, rct, rcb) -> depends_of_rawconstr rcb (depends_of_rawconstr rct acc)
+  | RRecord (_, w, l) -> depends_of_rawconstr_list (List.map snd l)
+      (Option.fold_right depends_of_rawconstr w acc)
   | RCases  (_, _, rco, tmt, cc) ->
       (* LEM TODO: handle the cc *)
       (Option.fold_right depends_of_rawconstr rco

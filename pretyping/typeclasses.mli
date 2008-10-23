@@ -25,7 +25,7 @@ open Util
 (* This module defines type-classes *)
 type typeclass = {
   (* The class implementation: a record parameterized by the context with defs in it or a definition if 
-     the class is a singleton. This acts as the classe's global identifier. *)
+     the class is a singleton. This acts as the class' global identifier. *)
   cl_impl : global_reference; 
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. 

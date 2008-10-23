@@ -676,6 +676,11 @@ let rec extern inctx scopes vars r =
       let t = extern_typ scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
       CLambdaN (loc,[(dummy_loc,na)::idl,Default bk,t],c)
+	
+  | RRecord (loc,w,l) ->
+      let t' = Option.map (extern inctx scopes vars) w in
+      let l' = List.map (fun (id, c) -> (id, extern inctx scopes vars c)) l in
+      CRecord (loc, t', l')
 
   | RCases (loc,sty,rtntypopt,tml,eqns) ->
       let vars' = 

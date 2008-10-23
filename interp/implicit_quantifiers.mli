@@ -28,18 +28,19 @@ val ids_of_list : identifier list -> Idset.t
 val destClassApp : constr_expr -> loc * reference * constr_expr list
 val destClassAppExpl : constr_expr -> loc * reference * (constr_expr * explicitation located option) list
 
-val free_vars_of_constr_expr :     Topconstr.constr_expr ->
-    ?bound:Idset.t ->
-  Names.identifier list -> Names.identifier list
+(* Fragile, should be used only for construction a set of identifiers to avoid *)
 
-val free_vars_of_rawconstr : ?bound:Idset.t -> rawconstr -> (Names.identifier * loc) list
-
-val binder_list_of_ids : identifier list -> local_binder list
-
-val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
+val free_vars_of_constr_expr : constr_expr -> ?bound:Idset.t ->
+  identifier list -> identifier list
 
 val free_vars_of_binders :
   ?bound:Idset.t -> Names.identifier list -> local_binder list -> Idset.t * Names.identifier list
+
+(* Returns the free ids in left-to-right order with the location of their first occurence *)
+
+val free_vars_of_rawconstr : ?bound:Idset.t -> rawconstr -> (Names.identifier * loc) list
+
+val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
 
 val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool)) list
 

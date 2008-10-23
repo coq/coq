@@ -37,6 +37,7 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
+  | ARecord of aconstr option * (identifier * aconstr) list
   | ACases of case_style * aconstr option *
       (aconstr * (name * (inductive * int * name list) option)) list *
       (cases_pattern list * aconstr) list
@@ -82,6 +83,8 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let e,na = name_fold_map g e na in RProd (loc,na,Explicit,f e ty,f e c)
   | ALetIn (na,b,c) ->
       let e,na = name_fold_map g e na in RLetIn (loc,na,f e b,f e c)
+  | ARecord (b,l) ->
+      RRecord (loc, Option.map (f e) b, List.map (fun (id, x) -> ((loc,id),f e x)) l)
   | ACases (sty,rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
@@ -146,7 +149,7 @@ let compare_rawconstr f t1 t2 = match t1,t2 with
       f ty1 ty2 & f c1 c2
   | RHole _, RHole _ -> true
   | RSort (_,s1), RSort (_,s2) -> s1 = s2
-  | (RLetIn _ | RCases _ | RRec _ | RDynamic _
+  | (RLetIn _ | RRecord _ | RCases _ | RRec _ | RDynamic _
     | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _),_
   | _,(RLetIn _ | RCases _ | RRec _ | RDynamic _
       | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _)
@@ -192,6 +195,7 @@ let aconstr_and_vars_of_rawconstr a =
   | RLambda (_,na,bk,ty,c) -> add_name found na; ALambda (na,aux ty,aux c)
   | RProd (_,na,bk,ty,c) -> add_name found na; AProd (na,aux ty,aux c)
   | RLetIn (_,na,b,c) -> add_name found na; ALetIn (na,aux b,aux c)
+  | RRecord (_,w,l) -> ARecord (Option.map aux w,List.map (fun ((_,id), x) -> id, aux x) l)
   | RCases (_,sty,rtntypopt,tml,eqnl) ->
       let f (_,idl,pat,rhs) = found := idl@(!found); (pat,aux rhs) in
       ACases (sty,Option.map aux rtntypopt,
@@ -318,6 +322,12 @@ let rec subst_aconstr subst bound raw =
       and r2' = subst_aconstr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
 	  ALetIn (n,r1',r2')
+
+  | ARecord (r1,r2) -> 
+      let r1' = Option.smartmap (subst_aconstr subst bound) r1 
+      and r2' = list_smartmap (fun (id, x) -> id,subst_aconstr subst bound x) r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  ARecord (r1',r2')
 
   | ACases (sty,rtntypopt,rl,branches) -> 
       let rtntypopt' = Option.smartmap (subst_aconstr subst bound) rtntypopt
@@ -637,6 +647,7 @@ type constr_expr =
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
       (constr_expr * explicitation located option) list
+  | CRecord of loc * constr_expr option * (identifier located * constr_expr) list
   | CCases of loc * case_style * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list
@@ -709,6 +720,7 @@ let constr_loc = function
   | CLetIn (loc,_,_,_) -> loc
   | CAppExpl (loc,_,_) -> loc
   | CApp (loc,_,_) -> loc
+  | CRecord (loc,_,_) -> loc
   | CCases (loc,_,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
   | CIf (loc,_,_,_,_) -> loc
@@ -806,6 +818,7 @@ let fold_constr_expr_with_binders g f n acc = function
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _  | CRef _ ->
       acc
+  | CRecord (loc,_,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
   | CCases (loc,sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (List.fold_right g ids n)) acc rtnpo in
@@ -919,6 +932,7 @@ let map_constr_expr_with_binders g f e = function
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 
   | CPrim _ | CDynamic _ | CRef _ as x -> x
+  | CRecord (loc,p,l) -> CRecord (loc,p,List.map (fun (id, c) -> (id, f e c)) l)
   | CCases (loc,sty,rtnpo,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in

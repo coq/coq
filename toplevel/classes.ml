@@ -257,7 +257,9 @@ let new_class id par ar sup props =
 type binder_def_list = (identifier located * identifier located list * constr_expr) list
 
 let binders_of_lidents l =
-  List.map (fun (loc, id) -> LocalRawAssum ([loc, Name id], Default Rawterm.Implicit, CHole (loc, None))) l
+  List.map (fun (loc, id) -> 
+    LocalRawAssum ([loc, Name id], Default Rawterm.Explicit, 
+		  CHole (loc, Some (BinderType (Name id))))) l
 
 let type_ctx_instance isevars env ctx inst subst =
   let (s, _) = 
@@ -312,7 +314,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
   let tclass = 
     match bk with
     | Implicit ->
-	Implicit_quantifiers.implicit_application Idset.empty
+	Implicit_quantifiers.implicit_application Idset.empty ~allow_partial:false
 	  (fun avoid (clname, (id, _, t)) -> 
 	    match clname with 
 	    | Some (cl, b) -> 
