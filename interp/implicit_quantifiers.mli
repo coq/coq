@@ -43,13 +43,11 @@ val free_vars_of_binders :
 
 val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool)) list
 
-val combine_params : Names.Idset.t ->
+val combine_params_freevar :
+  Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->
+  Topconstr.constr_expr * Names.Idset.t
+
+val implicit_application : Idset.t -> ?allow_partial:bool ->
   (Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->
     Topconstr.constr_expr * Names.Idset.t) ->
-  (Topconstr.constr_expr * Topconstr.explicitation located option) list ->
-  ((global_reference * bool) option * Term.rel_declaration) list ->
-  Topconstr.constr_expr list * Names.Idset.t
-
-val full_class_binder : Idset.t -> 
-  loc * reference * (constr_expr * explicitation located option) list ->
-  global_reference -> constr_expr
+  constr_expr -> constr_expr

@@ -24,7 +24,8 @@ open Util
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for"; 
     "end"; "as"; "let"; "if"; "then"; "else"; "return";
-    "Prop"; "Set"; "Type"; ".("; "_"; ".." ]
+    "Prop"; "Set"; "Type"; ".("; "_"; "..";
+    "`{"; "`("; ]
 
 let _ = List.iter (fun s -> Lexer.add_token("",s)) constr_kw
 
@@ -203,7 +204,12 @@ GEXTEND Gram
           (match c with
               CPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
                 CNotation(loc,"( _ )",([c],[]))
-            | _ -> c) ] ]
+            | _ -> c)
+      | "`{"; c = operconstr LEVEL "200"; "}" ->
+	  CGeneralization (loc, Implicit, None, c)
+      | "`("; c = operconstr LEVEL "200"; ")" ->
+	  CGeneralization (loc, Explicit, None, c)
+      ] ]
   ;
   forall: 
     [ [ "forall" -> () 
@@ -400,8 +406,12 @@ GEXTEND Gram
         List.map (fun id -> LocalRawAssum ([id],Default Implicit,CHole (loc, None))) (id::idl)
     | "("; "("; tc = LIST1 typeclass_constraint SEP "," ; ")"; ")" ->
 	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Explicit, Explicit, b), t)) tc
+    | "{"; "("; tc = LIST1 typeclass_constraint SEP "," ; ")"; "}" ->
+	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
     | "{"; "{"; tc = LIST1 typeclass_constraint SEP "," ; "}"; "}" ->
 	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
+    | "("; "{"; tc = LIST1 typeclass_constraint SEP "," ; "}"; ")" ->
+	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Explicit, Implicit, b), t)) tc
     | "["; tc = LIST1 typeclass_constraint SEP ","; "]" ->
 	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
     ] ]

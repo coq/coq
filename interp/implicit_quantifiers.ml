@@ -200,14 +200,12 @@ let combine_params avoid fn applied needed =
       | (x,_) :: _, [] -> 
 	  user_err_loc (constr_loc x,"",str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
-    
-let combine_params_freevar avoid applied needed =
-  combine_params avoid
-    (fun avoid (_, (na, _, _)) -> 
-      let id' = next_name_away_from na avoid in
-	(CRef (Ident (dummy_loc, id')), Idset.add id' avoid))
-    applied needed
 
+let combine_params_freevar =
+  fun avoid (_, (na, _, _)) -> 
+    let id' = next_name_away_from na avoid in
+      (CRef (Ident (dummy_loc, id')), Idset.add id' avoid)
+	
 let destClassApp cl =
   match cl with
     | CApp (loc, (None,CRef ref), l) -> loc, ref, List.map fst l
@@ -221,19 +219,34 @@ let destClassAppExpl cl =
     | CRef ref -> loc_of_reference ref, ref, []
     | _ -> raise Not_found
 
-let full_class_binder env (loc, id, l) gr = 
-  let avoid = 
-    Idset.union env (ids_of_list 
-			(free_vars_of_constr_expr (CApp (loc, (None, mkRefC id), l)) ~bound:env []))
-  in
-  let c, avoid =
-    let c = class_info gr in
-    let (ci, rd) = c.cl_context in
-    let pars = List.rev (List.combine ci rd) in
-    let args, avoid = combine_params_freevar avoid l pars in
-      CAppExpl (loc, (None, id), args), avoid
-  in c
-
+let implicit_application env ?(allow_partial=true) f ty = 
+  let is_class =
+    try
+      let (loc, r, _ as clapp) = destClassAppExpl ty in
+      let (loc, qid) = qualid_of_reference r in
+      let gr = Nametab.locate qid in
+	if Typeclasses.is_class gr then Some (clapp, gr) else None
+    with Not_found -> None
+  in 
+    match is_class with
+    | None -> ty
+    | Some ((loc, id, par), gr) -> 
+	let avoid = Idset.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
+	let c, avoid =
+	  let c = class_info gr in
+	  let (ci, rd) = c.cl_context in
+	  if not allow_partial then
+	    begin 
+	      let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
+	      let needlen = List.fold_left (fun acc x -> if x = None then succ acc else acc) 0 ci in
+		if needlen <> applen then 
+		  Typeclasses_errors.mismatched_ctx_inst (Global.env ()) Parameters (List.map fst par) rd
+	    end;
+	  let pars = List.rev (List.combine ci rd) in
+	  let args, avoid = combine_params avoid f par pars in
+	    CAppExpl (loc, (None, id), args), avoid
+	in c
+	  
 let implicits_of_rawterm l = 
   let rec aux i c = 
     match c with

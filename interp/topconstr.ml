@@ -608,6 +608,8 @@ type explicitation = ExplByPos of int * identifier option | ExplByName of identi
 
 type binder_kind = Default of binding_kind | Generalized of binding_kind * binding_kind * bool
 
+type abstraction_kind = AbsLambda | AbsPi
+
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
 type prim_token = Numeral of Bigint.bigint | String of string
@@ -648,6 +650,7 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_expr notation_substitution
+  | CGeneralization of loc * binding_kind * abstraction_kind option * constr_expr
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
@@ -715,6 +718,7 @@ let constr_loc = function
   | CSort (loc,_) -> loc
   | CCast (loc,_,_) -> loc
   | CNotation (loc,_,_) -> loc
+  | CGeneralization (loc,_,_,_) -> loc
   | CPrim (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
   | CDynamic _ -> dummy_loc
@@ -798,6 +802,7 @@ let fold_constr_expr_with_binders g f n acc = function
   | CCast (loc,a,CastConv(_,b)) -> f n (f n acc a) b
   | CCast (loc,a,CastCoerce) -> f n acc a
   | CNotation (_,_,(l,ll)) -> List.fold_left (f n) acc (l@List.flatten ll)
+  | CGeneralization (_,_,_,c) -> f n acc c
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _  | CRef _ ->
       acc
@@ -910,6 +915,7 @@ let map_constr_expr_with_binders g f e = function
   | CCast (loc,a,CastCoerce) -> CCast (loc,f e a,CastCoerce)
   | CNotation (loc,n,(l,ll)) ->
       CNotation (loc,n,(List.map (f e) l,List.map (List.map (f e)) ll))
+  | CGeneralization (loc,b,a,c) -> CGeneralization (loc,b,a,f e c)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 
   | CPrim _ | CDynamic _ | CRef _ as x -> x

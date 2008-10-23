@@ -93,21 +93,12 @@ Program Instance Reflexive_complement_Irreflexive [ Reflexive A (R : relation A)
    : Irreflexive (complement R).
 
   Next Obligation. 
-  Proof. 
-    unfold complement.
-    red. intros H.
-    intros H' ; apply H'.
-    apply reflexivity.
-  Qed.
-
+  Proof. firstorder. Qed.
 
 Program Instance complement_Symmetric [ Symmetric A (R : relation A) ] : Symmetric (complement R).
 
   Next Obligation.
-  Proof.
-    red ; intros H'.
-    apply (H (symmetry H')).
-  Qed.
+  Proof. firstorder. Qed.
 
 (** * Standard instances. *)
 

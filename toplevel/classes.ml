@@ -270,17 +270,6 @@ let type_ctx_instance isevars env ctx inst subst =
       (subst, []) (List.rev ctx) inst
   in s
 
-(* let type_ctx_instance isevars env ctx inst subst = *)
-(*   let (s, _, _) =  *)
-(*     List.fold_left2 *)
-(*       (fun (s, env, n) (na, _, t) ce -> *)
-(* 	let t' = substnl subst n t in *)
-(* 	let c = interp_casted_constr_evars isevars env ce t' in *)
-(* 	let d = na, Some c, t' in *)
-(* 	  (substl s c :: s, push_rel d env, succ n)) *)
-(*       ([], env, 0) (List.rev ctx) inst *)
-(*   in s @ subst *)
-
 let refine_ref = ref (fun _ -> assert(false))
 
 let id_of_class cl =
@@ -294,23 +283,6 @@ let id_of_class cl =
 open Pp
 
 let ($$) g f = fun x -> g (f x)
-
-let default_on_free_vars =
-  Flags.if_verbose
-    (fun fvs ->
-      match fvs with
-	  [] -> ()
-	| l -> msgnl (str"Implicitly generalizing " ++ 
-			 prlist_with_sep (fun () -> str", ") Nameops.pr_id l ++ str"."))
-
-let fail_on_free_vars = function
-    [] -> ()
-  | [fv] ->
-      errorlabstrm "Classes" 
-	(str"Unbound variable " ++ Nameops.pr_id fv ++ str".")
-  | fvs -> errorlabstrm "Classes" 
-      (str"Unbound variables " ++
-	  prlist_with_sep (fun () -> str", ") Nameops.pr_id fvs ++ str".")
 	
 let instance_hook k pri global imps ?hook cst = 
   let inst = Typeclasses.new_instance k pri global cst in
@@ -333,47 +305,24 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
     instance_hook k pri global imps ?hook kn;
     id
 
-let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars) 
+let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
-  let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
-  let bound, fvs = Implicit_quantifiers.free_vars_of_binders ~bound [] ctx in
   let tclass = 
     match bk with
-      | Implicit ->
-	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
-	  let k = class_info (Nametab.global id) in
-	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
-	  let needlen = List.fold_left (fun acc x -> if x = None then succ acc else acc) 0 (fst k.cl_context) in
-	    if needlen <> applen then 
-	      mismatched_params env (List.map fst par) (snd k.cl_context);
-	    let (ci, rd) = k.cl_context in
-	    let pars = List.rev (List.combine ci rd) in
-	    let pars, _ = Implicit_quantifiers.combine_params Idset.empty (* need no avoid *)
-	      (fun avoid (clname, (id, _, t)) -> 
-		match clname with 
-		    Some (cl, b) -> 
-		      let t = 
-			if b then 
-			  let _k = class_info cl in
-			    CHole (Util.dummy_loc, Some (Evd.ImplicitArg (k.cl_impl, (1, None))))
-			else CHole (Util.dummy_loc, None)
-		      in t, avoid
-		  | None -> failwith ("new instance: under-applied typeclass"))
-	      par pars
-	    in Topconstr.CAppExpl (loc, (None, id), pars)
-
-      | Explicit -> cl
+    | Implicit ->
+	Implicit_quantifiers.implicit_application Idset.empty
+	  (fun avoid (clname, (id, _, t)) -> 
+	    match clname with 
+	    | Some (cl, b) -> 
+		let t = CHole (Util.dummy_loc, None) in
+		  t, avoid
+	    | None -> failwith ("new instance: under-applied typeclass"))
+	  cl
+    | Explicit -> cl
   in
-  let ctx_bound = Idset.union bound (Implicit_quantifiers.ids_of_list fvs) in
-  let gen_ids = Implicit_quantifiers.free_vars_of_constr_expr ~bound:ctx_bound tclass [] in
-  on_free_vars (List.rev fvs @ List.rev gen_ids);
-  let gen_idset = Implicit_quantifiers.ids_of_list gen_ids in
-  let bound = Idset.union gen_idset ctx_bound in
-  let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
-  let ctx, avoid = name_typeclass_binders bound ctx in
-  let ctx = List.append ctx (List.rev gen_ctx) in
+  let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
     let imps, c' = interp_type_evars isevars env c in

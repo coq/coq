@@ -696,17 +696,8 @@ let push_loc_name_env lvar (ids,unb,tmpsc,scopes as env) loc = function
 let intern_generalized_binder intern_type lvar (ids,unb,tmpsc,sc as env) bl (loc, na) b b' t ty =
   let ty = 
     if t then ty else
-      let is_class =
-	try
-	  let (loc, r, _ as clapp) = Implicit_quantifiers.destClassAppExpl ty in
-	  let (loc, qid) = qualid_of_reference r in
-	  let gr = Nametab.locate qid in
-	    if Typeclasses.is_class gr then Some (clapp, gr) else None
-	with Not_found -> None
-      in 
-	match is_class with
-	| None -> ty
-	| Some (clapp, gr) -> Implicit_quantifiers.full_class_binder ids clapp gr
+      Implicit_quantifiers.implicit_application ids
+	Implicit_quantifiers.combine_params_freevar ty
   in
   let ty = intern_type (ids,true,tmpsc,sc) ty in
   let fvs = Implicit_quantifiers.free_vars_of_rawconstr ~bound:ids ty in
@@ -730,6 +721,30 @@ let intern_local_binder_aux intern intern_type lvar ((ids,unb,ts,sc as env),bl) 
   | LocalRawDef((loc,na),def) ->
       ((name_fold Idset.add na ids,unb,ts,sc),
       (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
+
+let intern_generalization intern (ids,unb,tmp_scope,scopes as env) lvar loc bk ak c =
+  let c = intern (ids,true,tmp_scope,scopes) c in
+  let fvs = Implicit_quantifiers.free_vars_of_rawconstr ~bound:ids c in
+  let env', c' = 
+    let abs = 
+      let pi = 
+	match ak with
+	| Some AbsPi -> true
+	| None when tmp_scope = Some Notation.type_scope 
+	    || List.mem Notation.type_scope scopes -> true
+	| _ -> false
+      in 
+	if pi then
+	  (fun (id, loc') acc ->
+	    RProd (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
+	else
+	  (fun (id, loc') acc -> 
+	    RLambda (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
+    in
+      List.fold_right (fun (id, loc as lid) (env, acc) -> 
+	let env' = push_loc_name_env lvar env loc (Name id) in
+	  (env', abs lid acc)) fvs (env,c) 
+  in c'
 
 (**********************************************************************)
 (* Utilities for application                                          *)
@@ -897,6 +912,8 @@ let internalise sigma globalenv env allow_patvar lvar c =
     | CNotation (_,"( _ )",([a],[])) -> intern env a
     | CNotation (loc,ntn,args) ->
         intern_notation intern env loc ntn args
+    | CGeneralization (loc,b,a,c) ->
+        intern_generalization intern env lvar loc b a c
     | CPrim (loc, p) ->
 	let c,df = Notation.interp_prim_token loc p (tmp_scope,scopes) in
 	Dumpglob.dump_notation_location (fst (unloc loc)) df;

@@ -104,6 +104,8 @@ type binder_kind =
       (* Inner binding, outer bindings, typeclass-specific flag
 	 for implicit generalization of superclasses *)
 
+type abstraction_kind = AbsLambda | AbsPi
+
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
 type prim_token = Numeral of Bigint.bigint | String of string
@@ -144,6 +146,7 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_expr notation_substitution
+  | CGeneralization of loc * binding_kind * abstraction_kind option * constr_expr
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t

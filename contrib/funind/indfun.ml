@@ -613,6 +613,7 @@ let rec add_args id new_args b =
   | CCast(loc,b1,CastCoerce) ->
       CCast(loc,add_args id new_args b1,CastCoerce)
   | CNotation _ -> anomaly "add_args : CNotation"
+  | CGeneralization _ -> anomaly "add_args : CGeneralization"
   | CPrim _ -> b
   | CDelimiters _ -> anomaly "add_args : CDelimiters"
   | CDynamic _ -> anomaly "add_args : CDynamic"

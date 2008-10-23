@@ -92,6 +92,14 @@ let pr_notation pr s env =
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
+let pr_generalization bk ak c =
+  let hd, tl =
+    match bk with 
+    | Implicit -> "{", "}"
+    | Explicit -> "(", ")"
+  in (* TODO: syntax Abstraction Kind *) 
+    str "`" ++ str hd ++ c ++ str tl
+
 let pr_com_at n =
   if Flags.do_translate() && n <> 0 then comment n 
   else mt()
@@ -597,6 +605,7 @@ let rec pr sep inherited a =
   | CNotation (_,"( _ )",([t],[])) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) -> pr_notation (pr mt) s env
+  | CGeneralization (_,bk,ak,c) -> pr_generalization bk ak (pr mt lsimple c), latom
   | CPrim (_,p) -> pr_prim_token p, prec_of_prim_token p
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr mt lsimple a), 1
   | CDynamic _ -> str "<dynamic>", latom

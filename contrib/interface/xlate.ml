@@ -396,6 +396,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
    | CNotation(_, s,(l,[])) -> notation_to_formula s (List.map xlate_formula l)
    | CNotation(_, s,(l,_)) -> xlate_error "CNotation (recursive): TODO"
+   | CGeneralization(_,_,_,_) -> xlate_error "CGeneralization: TODO"
    | CPrim (_, Numeral i) -> 
        CT_coerce_NUM_to_FORMULA(CT_int_encapsulator(Bigint.to_string i))
    | CPrim (_, String _) -> xlate_error "CPrim (String): TODO"

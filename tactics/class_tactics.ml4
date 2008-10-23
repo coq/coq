@@ -1243,9 +1243,7 @@ let declare_an_instance n s args =
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance binders instance fields = 
-  new_instance binders instance fields 
-    ~on_free_vars:Classes.fail_on_free_vars
-    None
+  new_instance binders instance fields ~generalize:false None
 
 let require_library dirpath =
   let qualid = (dummy_loc, Libnames.qualid_of_dirpath (Libnames.dirpath_of_string dirpath)) in
@@ -1524,8 +1522,7 @@ let add_morphism binders m s n =
   in	  
   let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
     ignore(new_instance binders instance []
-	      ~on_free_vars:Classes.fail_on_free_vars
-	      ~tac ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst))
+	      ~generalize:false ~tac ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst))
 	      None)
 
 VERNAC COMMAND EXTEND AddSetoid1
