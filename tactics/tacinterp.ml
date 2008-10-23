@@ -2183,7 +2183,7 @@ and interp_atomic ist gl = function
   | TacExactNoCheck c -> h_exact_no_check (pf_interp_constr ist gl c)
   | TacVmCastNoCheck c -> h_vm_cast_no_check (pf_interp_constr ist gl c)
   | TacApply (a,ev,cb) ->
-      h_apply a ev (List.map (interp_constr_with_bindings ist gl) cb)
+      h_apply a ev (List.map (interp_open_constr_with_bindings ist gl) cb)
   | TacElim (ev,cb,cbo) ->
       h_elim ev (interp_constr_with_bindings ist gl cb)
                 (Option.map (interp_constr_with_bindings ist gl) cbo)
