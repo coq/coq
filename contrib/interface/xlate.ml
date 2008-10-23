@@ -375,6 +375,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 		 (xlate_formula f, List.map xlate_formula_expl l'))
    | CApp(_, (_,f), l) -> 
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
+   | CRecord (_,_,_) -> xlate_error "CRecord: TODO"
    | CCases (_, _, _, [], _) -> assert false
    | CCases (_, _, ret_type, tm::tml, eqns)->
        CT_cases(CT_matched_formula_ne_list(xlate_matched_formula tm,

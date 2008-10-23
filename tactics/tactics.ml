@@ -719,52 +719,70 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl =
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
   let concl_nprod = nb_prod (pf_concl gl) in
+  let evm, c = c in
+  let origsigm = gl.sigma in
+  let check_evars sigm =
+    let rest = 
+      Evd.fold (fun ev evi acc -> 
+	if Evd.mem sigm ev && not (Evd.mem origsigm ev) && not (Evd.is_defined sigm ev) then
+	  Evd.add acc ev evi
+	else acc) evm Evd.empty
+    in 
+      if not (rest = Evd.empty) then
+	errorlabstrm "apply" (str"Uninstantiated existential variables: " ++ fnl () ++
+				 pr_evar_map rest)
+  in
   let rec try_main_apply c gl =
-  let thm_ty0 = nf_betaiota (pf_type_of gl c) in
-  let try_apply thm_ty nprod =
-    let n = nb_prod thm_ty - nprod in
-    if n<0 then error "Applied theorem has not enough premisses.";
-    let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
-    Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl in
-  try try_apply thm_ty0 concl_nprod
-  with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
-    let rec try_red_apply thm_ty =
-      try 
-        (* Try to head-reduce the conclusion of the theorem *)
-        let red_thm = try_red_product (pf_env gl) (project gl) thm_ty in
-        try try_apply red_thm concl_nprod
-        with PretypeError _|RefinerError _|UserError _|Failure _ ->
-          try_red_apply red_thm
-      with Redelimination -> 
-        (* Last chance: if the head is a variable, apply may try
-	   second order unification *)
-	try if concl_nprod <> 0 then try_apply thm_ty 0 else raise Exit
-	with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
-	  if with_destruct then
-	   try
-	    let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-	    match match_with_conjunction (snd (decompose_prod t)) with
-	    | Some _ ->
-	      let n = (mis_constr_nargs mind).(0) in
-	      let sort = elimination_sort_of_goal gl in
-	      let elim = pf_apply make_case_gen gl mind sort in
-	      tclTHENLAST
-		(general_elim with_evars (c,NoBindings) (elim,NoBindings))
-		(tclTHENLIST [
-		  tclDO n intro;
-		  tclLAST_NHYPS n (fun l ->
-		    tclFIRST
-		      (List.map (fun id ->
-			tclTHEN (try_main_apply (mkVar id)) (thin l)) l))
-		]) gl
-	    | None ->
-		raise Exit
-	   with RefinerError _|UserError _|Exit -> raise exn 
-	  else
-	    raise exn
- in
-    try_red_apply thm_ty0 in
-  try_main_apply c gl
+    let thm_ty0 = nf_betaiota (pf_type_of gl c) in
+    let try_apply thm_ty nprod =
+      let n = nb_prod thm_ty - nprod in
+	if n<0 then error "Applied theorem has not enough premisses.";
+	let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
+	let res = Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl in
+	  if not with_evars then check_evars (fst res).sigma; 
+	  res
+    in
+      try try_apply thm_ty0 concl_nprod
+      with PretypeError _|RefinerError _|UserError _|Failure _ as exn ->
+	let rec try_red_apply thm_ty =
+	  try 
+            (* Try to head-reduce the conclusion of the theorem *)
+            let red_thm = try_red_product (pf_env gl) (project gl) thm_ty in
+              try try_apply red_thm concl_nprod
+              with PretypeError _|RefinerError _|UserError _|Failure _ ->
+		try_red_apply red_thm
+	  with Redelimination -> 
+            (* Last chance: if the head is a variable, apply may try
+	       second order unification *)
+	    try if concl_nprod <> 0 then try_apply thm_ty 0 else raise Exit
+	    with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
+	      if with_destruct then
+		try
+		  let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+		    match match_with_conjunction (snd (decompose_prod t)) with
+		    | Some _ ->
+			let n = (mis_constr_nargs mind).(0) in
+			let sort = elimination_sort_of_goal gl in
+			let elim = pf_apply make_case_gen gl mind sort in
+			  tclTHENLAST
+			    (general_elim with_evars (c,NoBindings) (elim,NoBindings))
+			    (tclTHENLIST [
+			      tclDO n intro;
+			      tclLAST_NHYPS n (fun l ->
+				tclFIRST
+				  (List.map (fun id ->
+				    tclTHEN (try_main_apply (mkVar id)) (thin l)) l))
+			    ]) gl
+		    | None ->
+			raise Exit
+		with RefinerError _|UserError _|Exit -> raise exn 
+	      else
+		raise exn
+	in try_red_apply thm_ty0 
+  in
+    if evm = Evd.empty then try_main_apply c gl
+    else
+      tclTHEN (tclEVARS (Evd.merge gl.sigma evm)) (try_main_apply c) gl
 
 let rec apply_with_ebindings_gen b e = function
   | [] ->
@@ -778,13 +796,13 @@ let apply_with_ebindings cb = apply_with_ebindings_gen false false [cb]
 let eapply_with_ebindings cb = apply_with_ebindings_gen false true [cb]
 
 let apply_with_bindings (c,bl) =
-  apply_with_ebindings (c,inj_ebindings bl)
+  apply_with_ebindings (inj_open c,inj_ebindings bl)
 
 let eapply_with_bindings (c,bl) =
-  apply_with_ebindings_gen false true [c,inj_ebindings bl]
+  apply_with_ebindings_gen false true [inj_open c,inj_ebindings bl]
 
 let apply c =
-  apply_with_ebindings (c,NoBindings)
+  apply_with_ebindings (inj_open c,NoBindings)
 
 let apply_list = function 
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
@@ -1009,7 +1027,7 @@ let constructor_tac with_evars expctdnumopt i lbind gl =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   check_number_of_constructors expctdnumopt i nconstr;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
-  let apply_tac = general_apply true false with_evars (cons,lbind) in
+  let apply_tac = general_apply true false with_evars (inj_open cons,lbind) in
   (tclTHENLIST 
      [convert_concl_no_check redcl DEFAULTcast; intros; apply_tac]) gl
 
