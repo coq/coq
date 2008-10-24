@@ -473,7 +473,7 @@ Section~\ref{pattern} to transform the goal so that it gets the form
   {\bindinglist$_1$}} {\tt ,} \ldots {\tt ,} {\term$_n$} \zeroone{{\tt with}
   {\bindinglist$_n$}}
 
-  This summarizes the difference syntaxes for {\tt apply}.
+  This summarizes the different syntaxes for {\tt apply}.
 
 \item {\tt lapply {\term}} \tacindex{lapply} 
 
@@ -647,7 +647,7 @@ hypothesis of the context.  The tactic {\tt apply {\term} in {\ident}}
 tries to match the conclusion of the type of {\ident} against a non
 dependent premises of the type of {\term}, trying them from right to
 left.  If it succeeds, the statement of hypothesis {\ident} is
-replaced by the conclusion of the type of {\ident}. The tactic also
+replaced by the conclusion of the type of {\term}. The tactic also
 returns as many subgoals as the number of other non dependent premises
 in the type of {\term} and of the non dependent premises of the type
 of {\ident}.  The tactic {\tt apply} relies on first-order
