@@ -54,6 +54,7 @@ type refiner_error =
   | CannotApply of constr * constr
   | NotWellTyped of constr
   | NonLinearProof of constr
+  | MetaInType of constr
 
   (*i Errors raised by the tactics i*)
   | IntroNeedsProduct

@@ -54,7 +54,8 @@ let clenv_cast_meta clenv =
 	  (match Evd.find_meta clenv.evd mv with
 	  | Clval (_,(body,_),_) -> body.rebus
 	  | Cltyp (_,typ) -> 
-	      assert (not (occur_meta typ.rebus));
+	      if occur_meta typ.rebus then
+		raise (RefinerError (MetaInType typ.rebus));
 	      mkCast (mkMeta mv, DEFAULTcast, typ.rebus))
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
       | Case(ci,p,c,br) -> mkCase (ci, crec p, crec_hd c, Array.map crec br)

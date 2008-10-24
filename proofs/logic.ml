@@ -37,6 +37,7 @@ type refiner_error =
   | CannotApply of constr * constr
   | NotWellTyped of constr
   | NonLinearProof of constr
+  | MetaInType of constr
 
   (* Errors raised by the tactics *)
   | IntroNeedsProduct
@@ -251,7 +252,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   match kind_of_term trm with
     | Meta _ ->
 	if !check && occur_meta conclty then
-	  anomaly "refine called with a dependent meta";
+	  raise (RefinerError (MetaInType conclty));
 	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
 
     | Cast (t,_, ty) ->
