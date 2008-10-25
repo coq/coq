@@ -1438,7 +1438,7 @@ let solve_remaining_evars env initial_sigma evd c =
 	      Pretype_errors.error_unsolvable_implicit loc env sigma evi src None)
       | _ -> map_constr proc_rec c      
   in
-  proc_rec c
+  proc_rec (Evarutil.nf_isevar !evdref c)
 
 let interp_gen kind ist sigma env (c,ce) =
   let (ltacvars,unbndltacvars as vars) = constr_list ist env in
@@ -1464,6 +1464,10 @@ let interp_econstr kind ist sigma env cc =
 (* Interprets an open constr *)
 let interp_open_constr ccl ist sigma env cc =
   let evd,c = interp_gen (OfType ccl) ist sigma env cc in
+  (evars_of evd,c)
+
+let interp_open_type ccl ist sigma env cc =
+  let evd,c = interp_gen IsType ist sigma env cc in
   (evars_of evd,c)
 
 let interp_constr = interp_econstr (OfType None)
@@ -2200,7 +2204,7 @@ and interp_atomic ist gl = function
       h_mutual_cofix b (interp_fresh_ident ist gl id) (List.map f l)
   | TacCut c -> h_cut (pf_interp_type ist gl c)
   | TacAssert (t,ipat,c) ->
-      let c = (if t=None then pf_interp_constr else pf_interp_type) ist gl c in
+      let c = (if t=None then interp_constr else interp_type) ist (project gl) (pf_env gl) c in
       abstract_tactic (TacAssert (t,ipat,inj_open c))
         (Tactics.forward (Option.map (interp_tactic ist) t)
 	  (interp_intro_pattern ist gl ipat) c)

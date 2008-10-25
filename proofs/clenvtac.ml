@@ -77,8 +77,11 @@ let clenv_pose_dependent_evars with_evars clenv =
 let clenv_refine with_evars clenv gls =
   let clenv = clenv_expand_metas clenv in
   let clenv = clenv_pose_dependent_evars with_evars clenv in
+  let evd' = Typeclasses.resolve_typeclasses ~fail:(not with_evars)
+    clenv.env clenv.evd 
+  in
   tclTHEN
-    (tclEVARS (evars_of clenv.evd)) 
+    (tclEVARS (evars_of evd')) 
     (refine (clenv_value_cast_meta clenv))
     gls
 
