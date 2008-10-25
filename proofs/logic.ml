@@ -251,9 +251,10 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 *)
   match kind_of_term trm with
     | Meta _ ->
-	if !check && occur_meta conclty then
-	  raise (RefinerError (MetaInType conclty));
-	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
+	let conclty = nf_betaiota conclty in
+	  if !check && occur_meta conclty then
+	    raise (RefinerError (MetaInType conclty));
+	  (mk_goal hyps conclty)::goalacc, conclty
 
     | Cast (t,_, ty) ->
 	check_typability env sigma ty;
