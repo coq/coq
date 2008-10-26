@@ -67,11 +67,8 @@
 
 
 % Environment encompassing code fragments
+% !!! CAUTION: This environment may have empty contents
 \newenvironment{coqdoccode}{}{}
-% Environment encompassing documentation fragments
-\newenvironment{coqdocdoc}{}{}
-
-% !!! CAUTION: These environments may have empty contents
 
 % newline and indentation 
 %BEGIN LATEX
@@ -93,9 +90,9 @@
 }
 \usepackage{ifpdf}
 \ifpdf
-  \usepackage[pdftex]{hyperref}
+  \RequirePackage{hyperref}
   \hypersetup{raiselinks=true,colorlinks=true,linkcolor=black}
-  \usepackage[all]{hypcap}
+  \RequirePackage{hypcap}
 
   % To do indexing, use something like:
   % \usepackage{multind}
@@ -135,7 +132,7 @@
 \def\coqdocconstrcolor{constrmaroon}
 \def\coqdocmodcolor{defgreen}
 \def\coqdocaxcolor{varpurple}
-\def\coqdoctaccolor{kwred}
+\def\coqdoctaccolor{black}
 
 \def\coqdockw#1{{\color{\coqdockwcolor}{\texttt{#1}}}}
 \def\coqdocvar#1{{\color{\coqdocvarcolor}{\textit{#1}}}}
@@ -144,7 +141,7 @@
 \def\coqdocconstr#1{{\color{\coqdocconstrcolor}{\textsf{#1}}}}
 \def\coqdocmod#1{{{\color{\coqdocmodcolor}{\textsc{\textsf{#1}}}}}}
 \def\coqdocax#1{{{\color{\coqdocaxcolor}{\textsl{\textrm{#1}}}}}}
-\def\coqdoctac#1{{\color{\coqdoctaccolor}{\texttt{kw}}}}
+\def\coqdoctac#1{{\color{\coqdoctaccolor}{\texttt{#1}}}}
 \fi
 
 \newcommand{\coqdefinition}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
@@ -181,8 +178,8 @@
 
 \newcommand{\coqnotationref}[2]{\coqref{#1}{\coqdockw{#2}}}
 
-\newcommand{\coqsection}[2]{\coqdef{#1}{#2}{\coqdoccst{#2}}}
-\newcommand{\coqsectionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
+\newcommand{\coqsection}[2]{\coqdef{sec:#1}{#2}{\coqdoccst{#2}}}
+\newcommand{\coqsectionref}[2]{\coqref{sec:#1}{\coqdoccst{#2}}}
 
 %\newcommand{\coqlibrary}[2]{\chapter{Library \coqdoccst{#2}}\label{coq:#1}}
   
@@ -193,7 +190,7 @@
 \newcommand{\coqaxiom}[2]{\coqdef{#1}{#2}{\coqdocax{#2}}}
 \newcommand{\coqaxiomref}[2]{\coqref{#1}{\coqdocax{#2}}}
 
-\newcommand{\coqmodule}[2]{\coqdef{#1}{#2}{\coqdocmod{#2}}}
-\newcommand{\coqmoduleref}[2]{\coqref{#1}{\coqdocmod{#2}}}
+\newcommand{\coqmodule}[2]{\coqdef{mod:#1}{#2}{\coqdocmod{#2}}}
+\newcommand{\coqmoduleref}[2]{\coqref{mod:#1}{\coqdocmod{#2}}}
 
 \endinput

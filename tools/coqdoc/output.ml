@@ -66,7 +66,7 @@ let is_tactic =
       "elimtype"; "progress"; "setoid_rewrite";
       "destruct"; "destruction"; "destruct_call"; "dependent"; "elim"; "extensionality";
       "f_equal"; "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "induction"; "rename"; "move"; "omega";
-      "set"; "assert";
+      "set"; "assert"; "do"; "repeat";
       "cut"; "assumption"; "exact"; "split"; "subst"; "try"; "discriminate";
       "simpl"; "unfold"; "red"; "compute"; "at"; "in"; "by";
       "reflexivity"; "symmetry"; "transitivity";
@@ -306,9 +306,9 @@ module Latex = struct
 
   let stop_item () = reach_item_level 0
 
-  let start_doc () = printf "\\begin{coqdocdoc}\n"
+  let start_doc () = ()
 
-  let end_doc () = stop_item (); printf "\\end{coqdocdoc}\n"
+  let end_doc () = stop_item ()
 
   let start_coq () = printf "\\begin{coqdoccode}\n"
 
