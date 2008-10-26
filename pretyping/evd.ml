@@ -610,17 +610,11 @@ let meta_with_name evd id =
           (str "Binder name \"" ++ pr_id id ++
            strbrk "\" occurs more than once in clause.")
 
-let mk_meta_subst evd =
-  Metamap.fold (fun mv cl subst -> match cl with
-    | Clval(_,(b,_),typ) -> (mv, b.rebus) :: subst
-    | Cltyp (_,typ)  -> subst) evd.metas []
 
 let meta_merge evd1 evd2 =
   {evd2 with
     metas = List.fold_left (fun m (n,v) -> Metamap.add n v m) 
       evd2.metas (metamap_to_list evd1.metas) }
-
-let replace_metas metas evd = { evd with metas = metas }
 
 type metabinding = metavariable * constr * instance_status
 

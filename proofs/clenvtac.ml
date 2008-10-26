@@ -40,31 +40,29 @@ open Clenv
 
 let clenv_cast_meta clenv = 
   let rec crec u =
-    match kind_of_term2 u with
+    match kind_of_term u with
       | App _ | Case _ -> crec_hd u
-      | Cast (Meta mv,_,_) | Meta mv ->
-	  (match Evd.meta_opt_fvalue clenv.evd mv with
-	  | Some (c,_) -> c.rebus
-	  | None -> u)
+      | Cast (c,_,_) when isMeta c -> u
       | _  -> map_constr crec u
 	    
   and crec_hd u =
     match kind_of_term (strip_outer_cast u) with
       | Meta mv ->
-	  (match Evd.find_meta clenv.evd mv with
-	  | Clval (_,(body,_),_) -> body.rebus
-	  | Cltyp (_,typ) -> 
-	      if occur_meta typ.rebus then
-		raise (RefinerError (MetaInType typ.rebus));
-	      mkCast (mkMeta mv, DEFAULTcast, typ.rebus))
+	  (try 
+            let b = Typing.meta_type clenv.evd mv in
+	    assert (not (occur_meta b));
+	    if occur_meta b then u
+            else mkCast (mkMeta mv, DEFAULTcast, b)
+	  with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
-      | Case(ci,p,c,br) -> mkCase (ci, crec p, crec_hd c, Array.map crec br)
+      | Case(ci,p,c,br) ->
+	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
       | _ -> u
   in 
   crec
 
 let clenv_value_cast_meta clenv =
-  clenv_cast_meta clenv (clenv_direct_value clenv)
+    clenv_cast_meta clenv (clenv_value clenv)
 
 let clenv_pose_dependent_evars with_evars clenv =
   let dep_mvs = clenv_dependent false clenv in
@@ -75,14 +73,13 @@ let clenv_pose_dependent_evars with_evars clenv =
 
 
 let clenv_refine with_evars clenv gls =
-  let clenv = clenv_expand_metas clenv in
   let clenv = clenv_pose_dependent_evars with_evars clenv in
   let evd' = Typeclasses.resolve_typeclasses ~fail:(not with_evars)
     clenv.env clenv.evd 
   in
   tclTHEN
     (tclEVARS (evars_of evd')) 
-    (refine (clenv_value_cast_meta clenv))
+    (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 
 let dft = Unification.default_unify_flags

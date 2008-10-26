@@ -54,77 +54,11 @@ let subst_clenv sub clenv =
     env = clenv.env }
 
 let clenv_nf_meta clenv c = nf_meta clenv.evd c
-let clenv_direct_nf_meta clenv c = direct_nf_meta clenv.evd c
 let clenv_term clenv c = meta_instance clenv.evd c
 let clenv_meta_type clenv mv = Typing.meta_type clenv.evd mv
 let clenv_value clenv = meta_instance clenv.evd clenv.templval
-let clenv_direct_value clenv = nf_betaiota clenv.templval.rebus
 let clenv_type clenv = meta_instance clenv.evd clenv.templtyp
-let clenv_direct_nf_type clenv = nf_betaiota clenv.templtyp.rebus
 
-let plain_instance find c =
-  let rec irec u = match kind_of_term u with
-  | Meta p -> find p
-  | App (f,l) when isCast f ->
-      let (f,_,t) = destCast f in
-      let l' = Array.map irec l in 
-      (match kind_of_term f with
-      | Meta p ->
-	  (* Don't flatten application nodes: this is used to extract a
-             proof-term from a proof-tree and we want to keep the structure
-             of the proof-tree *)
-	  let g = find p in
-	  (match kind_of_term g with
-          | App _ -> 
-              let h = id_of_string "H" in
-              mkLetIn (Name h,g,t,mkApp(mkRel 1,Array.map (lift 1) l'))
-          | _ -> mkApp (g,l'))
-      | _ -> mkApp (irec f,l'))	
-  | Cast (m,_,_) when isMeta m -> find (destMeta m)
-  | _ -> map_constr irec u
-  in 
-  local_strong whd_betaiota
-    (if c.freemetas = Metaset.empty then c.rebus else irec c.rebus)
-
-let clenv_expand_metas clenv =
-  let seen = ref Metamap.empty in
-  let ongoing = ref Metaset.empty in
-  let todo = ref (meta_list clenv.evd) in
-
-  let rec process_all () = match !todo with
-  | [] -> ()
-  | (mv,cl)::_ -> let _ = process_meta mv cl in process_all ()
-
-  and process_meta mv cl =
-    ongoing := Metaset.add mv !ongoing;
-    let (body,typ) = match cl with
-    | Clval (na,(body,status),typ) ->
-	let body = plain_instance instance_of_meta body in
-	let typ = plain_instance instance_of_meta typ in
-	(body,Clval(na,(mk_freelisted body,status),mk_freelisted typ))
-    | Cltyp (na,typ) -> 
-	let typ = plain_instance instance_of_meta typ in
-        (mkMeta mv,Cltyp(na,mk_freelisted typ)) in
-    ongoing := Metaset.remove mv !ongoing;
-    seen := Metamap.add mv (body,typ) !seen;
-    todo := List.remove_assoc mv !todo;
-    body
-
-  and instance_of_meta mv =
-    try fst (Metamap.find mv !seen)
-    with Not_found ->
-      if Metaset.mem mv !ongoing then 
-	error "Cannot instantiate an existential variable with a term which depends on itself";
-    process_meta mv (find_meta clenv.evd mv) in
-
-    process_all ();
-
-    { clenv with
-      evd = replace_metas (Metamap.map snd !seen) clenv.evd;
-      templtyp = mk_freelisted(plain_instance instance_of_meta clenv.templtyp);
-      templval = mk_freelisted(plain_instance instance_of_meta clenv.templval)}
-
-let instantiated_clenv_template clenv = (clenv.templval,clenv.templtyp)
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
@@ -134,8 +68,7 @@ let clenv_get_type_of ce c =
 exception NotExtensibleClause
 
 let clenv_push_prod cl =
-  let typ =
-    whd_betadeltaiota (cl_env cl) (cl_sigma cl) (clenv_direct_nf_type cl) in
+  let typ = whd_betadeltaiota (cl_env cl) (cl_sigma cl) (clenv_type cl) in
   let rec clrec typ = match kind_of_term typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
@@ -280,9 +213,13 @@ let clenv_wtactic f clenv = {clenv with evd = f clenv.evd }
  * returns a list of the metavars which appear in the type of
  * the metavar mv.  The list is unordered. *)
 
+let clenv_metavars evd mv =
+  (mk_freelisted (meta_instance evd (meta_ftype evd mv))).freemetas
+
 let dependent_metas clenv mvs conclmetas =
   List.fold_right
-    (fun mv deps -> Metaset.union deps (meta_ftype clenv.evd mv).freemetas)
+    (fun mv deps ->
+       Metaset.union deps (clenv_metavars clenv.evd mv))
     mvs conclmetas
 
 let duplicated_metas c = 
@@ -294,14 +231,14 @@ let duplicated_metas c =
   snd (collrec ([],[]) c)
 
 let clenv_dependent hyps_only clenv =
-  let (body,typ) = instantiated_clenv_template clenv in
   let mvs = undefined_metas clenv.evd in
-  let deps = dependent_metas clenv mvs typ.freemetas in
-  let nonlinear = duplicated_metas body.rebus in
+  let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
+  let deps = dependent_metas clenv mvs ctyp_mvs in
+  let nonlinear = duplicated_metas (clenv_value clenv) in
   (* Make the assumption that duplicated metas have internal dependencies *)
   List.filter
     (fun mv -> (Metaset.mem mv deps &&
-                not (hyps_only && Metaset.mem mv typ.freemetas))
+                not (hyps_only && Metaset.mem mv ctyp_mvs))
                or List.mem mv nonlinear) 
     mvs
 
@@ -430,9 +367,9 @@ type arg_bindings = open_constr explicit_bindings
  * of cval, ctyp. *)
 
 let clenv_independent clenv =
-  let (body,typ) = instantiated_clenv_template clenv in
-  let mvs = Metaset.elements body.freemetas in
-  let deps = dependent_metas clenv mvs typ.freemetas in
+  let mvs = collect_metas (clenv_value clenv) in
+  let ctyp_mvs = (mk_freelisted (clenv_type clenv)).freemetas in
+  let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
 let check_bindings bl =

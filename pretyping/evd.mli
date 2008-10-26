@@ -218,7 +218,6 @@ val meta_declare   :
   metavariable -> types -> ?name:name -> evar_defs -> evar_defs
 val meta_assign    : metavariable -> constr * instance_status -> evar_defs -> evar_defs
 val meta_reassign  : metavariable -> constr * instance_status -> evar_defs -> evar_defs
-val mk_meta_subst  : evar_defs -> meta_value_map
 
 (* [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : evar_defs -> evar_defs -> evar_defs
@@ -226,7 +225,6 @@ val meta_merge : evar_defs -> evar_defs -> evar_defs
 val undefined_metas : evar_defs -> metavariable list
 val metas_of : evar_defs -> meta_type_map
 val map_metas_fvalue : (constr -> constr) -> evar_defs -> evar_defs
-val replace_metas : clbinding Metamap.t -> evar_defs -> evar_defs
 
 type metabinding = metavariable * constr * instance_status
 

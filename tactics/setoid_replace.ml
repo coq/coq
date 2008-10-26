@@ -1815,7 +1815,7 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
 let analyse_hypothesis gl c =
  let ctype = pf_type_of gl c in
  let eqclause  = Clenv.make_clenv_binding gl (c,ctype) Rawterm.NoBindings in
- let (equiv, args) = decompose_app (Clenv.clenv_direct_nf_type eqclause) in
+ let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
  let rec split_last_two = function
    | [c1;c2] -> [],(c1, c2)
    | x::y::z ->

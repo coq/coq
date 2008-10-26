@@ -560,12 +560,11 @@ let error_uninstantiated_metas t clenv =
   in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
 let clenv_refine_in with_evars id clenv gl =
-  let clenv = clenv_expand_metas clenv in
   let clenv = clenv_pose_dependent_evars with_evars clenv in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars & occur_meta new_hyp_typ then 
     error_uninstantiated_metas new_hyp_typ clenv;
-  let new_hyp_prf = clenv_value_cast_meta clenv in
+  let new_hyp_prf = clenv_value clenv in
   tclTHEN
     (tclEVARS (evars_of clenv.evd))
     (cut_replacing id new_hyp_typ
@@ -960,8 +959,7 @@ let specialize mopt (c,lbind) g =
     else 
       let clause = make_clenv_binding g (c,pf_type_of g c) lbind in
       let clause = clenv_unify_meta_types clause in
-      let clause = clenv_expand_metas clause in
-      let (thd,tstack) = whd_stack (clenv_direct_value clause) in
+      let (thd,tstack) = whd_stack (clenv_value clause) in
       let nargs = List.length tstack in
       let tstack = match mopt with 
 	| Some m -> 

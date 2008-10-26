@@ -887,18 +887,27 @@ let meta_value evd mv =
   in 
   valrec mv
 
-let meta_instance evd b =
+let meta_instance env b =
   let c_sigma =
     List.map 
-      (fun mv -> (mv,meta_value evd mv)) (Metaset.elements b.freemetas)
+      (fun mv -> (mv,meta_value env mv)) (Metaset.elements b.freemetas)
   in 
   if c_sigma = [] then b.rebus else instance c_sigma b.rebus
 
-let nf_meta evd c = meta_instance evd (mk_freelisted c)
-
-let direct_nf_meta evd c = instance (mk_meta_subst evd) c
+let nf_meta env c = meta_instance env (mk_freelisted c)
 
 (* Instantiate metas that create beta/iota redexes *)
+
+let meta_value evd mv = 
+  let rec valrec mv =
+    match meta_opt_fvalue evd mv with
+    | Some (b,_) ->
+      instance
+        (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
+        b.rebus
+    | None -> mkMeta mv
+  in 
+  valrec mv
 
 let meta_reducible_instance evd b =
   let fm = Metaset.elements b.freemetas in

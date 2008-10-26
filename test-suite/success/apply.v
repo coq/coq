@@ -224,11 +224,18 @@ intros x H; eapply trans_equal;
 [apply H | unfold x;match goal with |- ?x = ?x => reflexivity end].
 Qed.
 
-  (* This does not work (oct 2008) because "match goal" sees "?evar = O" 
-     and not "O = O"
+(* Test non-regression of (temporary) bug 1981 *)
 
-Lemma eapply_evar : O=O -> 0=O.
-intro H; eapply trans_equal; 
-  [apply H | match goal with |- ?x = ?x => reflexivity end].
+Goal exists n : nat, True.
+eapply ex_intro.
+exact O.
+trivial.
 Qed.
-*)
+
+(* Test non-regression of (temporary) bug 1980 *)
+
+Goal True.
+try eapply ex_intro.
+trivial.
+Qed.
+

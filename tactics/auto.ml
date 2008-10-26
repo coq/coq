@@ -264,7 +264,7 @@ let make_exact_entry pri (c,cty) =
 	failwith "make_exact_entry"
     | _ ->
         let ce = mk_clenv_from dummy_goal (c,cty) in
-	let c' = clenv_direct_nf_type ce in
+	let c' = clenv_type ce in
 	let pat = Pattern.pattern_of_constr c' in
 	(Some (head_of_constr_reference (List.hd (head_constr cty))),
 	   { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
@@ -274,7 +274,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
     match kind_of_term cty with
     | Prod _ ->
         let ce = mk_clenv_from dummy_goal (c,cty) in
-	let c' = clenv_direct_nf_type ce in
+	let c' = clenv_type ce in
 	let pat = Pattern.pattern_of_constr c' in
         let hd = (try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry") in
@@ -342,7 +342,7 @@ let make_trivial env sigma c =
   let hd = head_of_constr_reference (List.hd (head_constr t)) in
   let ce = mk_clenv_from dummy_goal (c,t) in
   (Some hd, { pri=1;
-         pat = Some (Pattern.pattern_of_constr (clenv_direct_nf_type ce));
+         pat = Some (Pattern.pattern_of_constr (clenv_type ce));
          code=Res_pf_THEN_trivial_fail(c,{ce with env=empty_env}) })
 
 open Vernacexpr
