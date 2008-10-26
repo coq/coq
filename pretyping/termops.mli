@@ -150,8 +150,15 @@ val subst_term_occ : occurrences -> constr -> constr -> constr
 
 (* [subst_term_occ_decl occl c decl] replaces occurrences of [c] at
    positions [occl] by [Rel 1] in [decl] *)
+
+type hyp_location_flag = (* To distinguish body and type of local defs *)
+  | InHyp
+  | InHypTypeOnly
+  | InHypValueOnly
+
 val subst_term_occ_decl :
-  occurrences -> constr -> named_declaration -> named_declaration
+  occurrences * hyp_location_flag -> constr -> named_declaration -> 
+      named_declaration
 
 val error_invalid_occurrence : int list -> 'a
 

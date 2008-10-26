@@ -1,3 +1,4 @@
+
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -19,6 +20,7 @@ open Tacexpr
 open Rawterm
 open Evd
 open Clenv
+open Termops
 (*i*)
 
 (* Tactics for the interpreter. They left a trace in the proof tree

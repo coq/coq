@@ -13,6 +13,7 @@ open Term
 open Names
 open Proof_type
 open Topconstr
+open Termops
 open Rawterm
 
 val rawwit_orient : bool raw_abstract_argument_type

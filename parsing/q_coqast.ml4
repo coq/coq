@@ -103,12 +103,12 @@ let mlexpr_of_occs =
 let mlexpr_of_occurrences f = mlexpr_of_pair mlexpr_of_occs f
 
 let mlexpr_of_hyp_location = function
-  | occs, Tacexpr.InHyp ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Tacexpr.InHyp) >>
-  | occs, Tacexpr.InHypTypeOnly ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Tacexpr.InHypTypeOnly) >>
-  | occs, Tacexpr.InHypValueOnly ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Tacexpr.InHypValueOnly) >>
+  | occs, Termops.InHyp ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHyp) >>
+  | occs, Termops.InHypTypeOnly ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHypTypeOnly) >>
+  | occs, Termops.InHypValueOnly ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHypValueOnly) >>
 
 let mlexpr_of_clause cl =
   <:expr< {Tacexpr.onhyps=

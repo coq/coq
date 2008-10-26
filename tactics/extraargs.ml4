@@ -16,6 +16,7 @@ open Genarg
 open Names
 open Tacexpr
 open Tacinterp
+open Termops
 
 (* Rewriting orientation *)
 
@@ -288,7 +289,7 @@ let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : Tacticals.clause =
    Option.map 
      (fun l -> 
 	List.map 
-	  (fun id -> ( (all_occurrences_expr,trad_id id) ,Tacexpr.InHyp))
+	  (fun id -> ( (all_occurrences_expr,trad_id id),InHyp))
 	  l
      )
      hyps;

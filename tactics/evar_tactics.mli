@@ -11,6 +11,7 @@
 open Tacmach
 open Names
 open Tacexpr
+open Termops
 
 val instantiate : int -> Rawterm.rawconstr -> 
   (identifier * hyp_location_flag, unit) location -> tactic

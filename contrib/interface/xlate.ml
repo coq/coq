@@ -7,6 +7,7 @@ open Names;;
 open Ascent;;
 open Genarg;;
 open Rawterm;;
+open Termops;;
 open Tacexpr;;
 open Vernacexpr;;
 open Decl_kinds;;

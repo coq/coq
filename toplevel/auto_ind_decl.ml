@@ -530,13 +530,13 @@ let compute_bl_tact ind lnamesparrec nparrec  =
                       tclORELSE reflexivity (Equality.discr_tac false None)
                      );
                      simpl_in_hyp
-		       ((Rawterm.all_occurrences_expr,freshz),Tacexpr.InHyp);
+		       ((Rawterm.all_occurrences_expr,freshz),InHyp);
 (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
                     tclREPEAT (
                       tclTHENSEQ [
-                         apply_in false freshz [(andb_prop()),Rawterm.NoBindings];
+                         apply_in false freshz [(andb_prop()),Rawterm.NoBindings] None;
                          fun gl ->
                            let fresht = fresh_id (!avoid) (id_of_string "Z") gsig 
                            in

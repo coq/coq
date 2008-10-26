@@ -213,4 +213,4 @@ let normalize_evaluables=
 	 None->unfold_in_concl (Lazy.force defined_connectives)
        | Some ((_,id),_)-> 
 	   unfold_in_hyp (Lazy.force defined_connectives) 
-	   ((Rawterm.all_occurrences_expr,id),Tacexpr.InHypTypeOnly))
+	   ((Rawterm.all_occurrences_expr,id),InHypTypeOnly))
