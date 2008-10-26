@@ -962,11 +962,6 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 		       let ids' = pf_ids_of_hyps g in 
 		       lid := List.rev (list_subtract ids' ids);
 		       if !lid = [] then lid := [hid];
-(* 		       list_iter_i  *)
-(* 			 (fun i v ->  *)
-(* 			    msgnl (str "hyp" ++ int i ++ str " " ++  *)
-(* 				     Nameops.pr_id v ++ fnl () ++ fnl())) *)
-(* 			      !lid; *)
 		       tclIDTAC g
 		    )
 		    g
@@ -991,22 +986,25 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     sign
     gls_type 
     hook ;
-  by (
+  if Indfun_common.is_strict_tcc  ()
+  then
+    by (tclIDTAC) 
+  else by (
     fun g -> 
       tclTHEN 
 	(decompose_and_tac)
 	(tclORELSE 
-	(tclFIRST 
-	   (List.map
-	      (fun c -> 
-		 tclTHENSEQ
-		   [intros; 
-		    h_simplest_apply (interp_constr Evd.empty (Global.env()) c); 
-		    tclCOMPLETE Auto.default_auto
-		   ]
-	      )
-	      using_lemmas)
-	) tclIDTAC)
+	   (tclFIRST 
+	      (List.map
+		 (fun c -> 
+		    tclTHENSEQ
+		      [intros; 
+		       h_simplest_apply (interp_constr Evd.empty (Global.env()) c); 
+		       tclCOMPLETE Auto.default_auto
+		      ]
+		 )
+		 using_lemmas)
+	   ) tclIDTAC)
 	g);
   try
     by tclIDTAC; (* raises UserError _ if the proof is complete *)

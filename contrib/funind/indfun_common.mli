@@ -115,3 +115,4 @@ val do_observe : unit -> bool
 exception Building_graph of exn 
 exception Defining_principle of exn
 
+val is_strict_tcc : unit -> bool

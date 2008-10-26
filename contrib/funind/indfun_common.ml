@@ -508,5 +508,19 @@ let do_observe () =
       
       
     
+let strict_tcc = ref false
+let is_strict_tcc () = !strict_tcc 
+let strict_tcc_sig =
+  {
+    optsync = false;
+    optname = "Raw Function Tcc";
+    optkey =  PrimaryTable("Function_raw_tcc");
+    optread = (fun () -> !strict_tcc);
+    optwrite = (fun b -> strict_tcc := b)
+  }
+
+let _ = declare_bool_option strict_tcc_sig
+
+
 exception Building_graph of exn 
 exception Defining_principle of exn
