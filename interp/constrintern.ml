@@ -717,7 +717,8 @@ let intern_local_binder_aux intern intern_type lvar ((ids,unb,ts,sc as env),bl) 
 		((name_fold Idset.add na ids,unb,ts,sc), (na,k,None,ty)::bl))
 	      (env,bl) nal
       | Generalized (b,b',t) ->
-	  intern_generalized_binder intern_type lvar env bl (List.hd nal) b b' t ty)
+	  let env, b = intern_generalized_binder intern_type lvar env bl (List.hd nal) b b' t ty in
+	    env, b @ bl)
   | LocalRawDef((loc,na),def) ->
       ((name_fold Idset.add na ids,unb,ts,sc),
       (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
