@@ -352,9 +352,9 @@ let analyse_notation_tokens l =
 let remove_extravars extrarecvars (vars,recvars) =
   let vars =
     List.fold_right (fun (x,y) l ->
-      if List.mem_assoc x l <> List.mem_assoc y recvars then
+      if List.assoc x l <> List.assoc y recvars then
 	error
-	  "Two end variables of a recursive notation are not in the same scope"
+	 "Two end variables of a recursive notation are not in the same scope."
       else
 	List.remove_assoc x l) 
       extrarecvars (List.remove_assoc ldots_var vars) in
