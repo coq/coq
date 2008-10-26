@@ -248,9 +248,10 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 *)
   match kind_of_term trm with
     | Meta _ ->
-	if !check && occur_meta conclty then
+        let conclty = nf_betaiota conclty in
+        if !check && occur_meta conclty then
 	  anomaly "refined called with a dependent meta";
-	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
+	(mk_goal hyps conclty)::goalacc, conclty
 
     | Cast (t,_, ty) ->
 	check_typability env sigma ty;

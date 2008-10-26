@@ -201,3 +201,18 @@ Axiom silly_axiom : forall v : exp, v = v -> False.
 Lemma silly_lemma : forall x : atom, False.
 intros x.
 apply silly_axiom with (v := x).  (* fails *)
+
+(* Test non-regression of (temporary) bug 1981 *)
+
+Goal exists n : nat, True.
+eapply ex_intro.
+exact O.
+trivial.
+Qed.
+
+(* Test non-regression of (temporary) bug 1980 *)
+
+Goal True.
+try eapply ex_intro.
+trivial.
+Qed.
