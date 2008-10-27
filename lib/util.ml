@@ -871,6 +871,16 @@ let list_cartesians op init ll =
 
 let list_combinations l = list_cartesians (fun x l -> x::l) [] l
 
+(* Keep only those products that do not return None *)
+
+let rec list_cartesian_filter op l1 l2 = 
+  list_map_append (fun x -> list_map_filter (op x) l2) l1
+
+(* Keep only those products that do not return None *)
+
+let rec list_cartesians_filter op init ll = 
+  List.fold_right (list_cartesian_filter op) ll [init]
+
 (* Drop the last element of a list *)
 
 let rec list_drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> hd :: list_drop_last tl

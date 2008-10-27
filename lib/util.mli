@@ -178,6 +178,11 @@ val list_cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 val list_cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
 (* list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
 val list_combinations : 'a list list -> 'a list list
+(* Keep only those products that do not return None *)
+val list_cartesian_filter :
+  ('a -> 'b -> 'c option) -> 'a list -> 'b list -> 'c list
+val list_cartesians_filter :
+  ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
 
 val list_union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 

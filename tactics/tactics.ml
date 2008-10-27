@@ -1250,8 +1250,11 @@ let apply_in with_evars id lemmas ipat gl =
 (*   Generalize tactics   *)
 (**************************)
 
-let generalized_name c t cl = function
-  | Name id as na -> na
+let generalized_name c t ids cl = function
+  | Name id as na ->
+      if List.mem id ids then
+	errorlabstrm "" (pr_id id ++ str " is already used"); 
+      na
   | Anonymous -> 
       match kind_of_term c with
       | Var id ->
@@ -1270,7 +1273,7 @@ let generalize_goal gl i ((occs,c),na) cl =
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ = decompose_prod_n_assum i (subst_term c dummy_prod) in
   let cl' = subst_term_occ occs c (it_mkProd_or_LetIn cl newdecls) in
-  let na = generalized_name c t cl' na in
+  let na = generalized_name c t (pf_ids_of_hyps gl) cl' na in
   mkProd (na,t,cl')
 
 let generalize_dep c gl =
