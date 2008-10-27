@@ -58,12 +58,7 @@ let make_red_flag =
   add_flag
     {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []} 
 
-type hyp_location_flag = (* To distinguish body and type of local defs *)
-  | InHyp
-  | InHypTypeOnly
-  | InHypValueOnly
-
-type 'a raw_hyp_location = 'a with_occurrences * hyp_location_flag
+type 'a raw_hyp_location = 'a with_occurrences * Termops.hyp_location_flag
 
 type 'id move_location =
   | MoveAfter of 'id

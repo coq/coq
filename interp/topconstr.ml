@@ -389,8 +389,9 @@ let rec subst_aconstr subst bound raw =
 	      if r1' == r1 then raw else
 		ACast (r1',CastCoerce)
 		  
-let subst_interpretation subst (metas,pat) = 
-  (metas,subst_aconstr subst (List.map fst metas) pat)
+let subst_interpretation subst (metas,pat) =
+  let bound = List.map fst (fst metas @ snd metas) in
+  (metas,subst_aconstr subst bound pat)
 
 let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
 
@@ -427,16 +428,16 @@ let rec alpha_var id1 id2 = function
 
 let alpha_eq_val (x,y) = x = y
 
-let bind_env alp sigma var v =
+let bind_env alp (sigma,sigmalist as fullsigma) var v =
   try
     let vvar = List.assoc var sigma in
-    if alpha_eq_val (v,vvar) then sigma
+    if alpha_eq_val (v,vvar) then fullsigma
     else raise No_match
   with Not_found ->
     (* Check that no capture of binding variables occur *)
     if List.exists (fun (id,_) ->occur_rawconstr id v) alp then raise No_match;
     (* TODO: handle the case of multiple occs in different scopes *)
-    (var,v)::sigma
+    ((var,v)::sigma,sigmalist)
 
 let match_fix_kind fk1 fk2 =
   match (fk1,fk2) with
@@ -467,6 +468,10 @@ let rec match_cases_pattern metas acc pat1 pat2 =
 	(match_names metas acc na1 na2) patl1 patl2
   | _ -> raise No_match
 
+let adjust_application_n n loc f l =
+  let l1,l2 = list_chop (List.length l - n) l in
+  if l1 = [] then f,l else RApp (loc,f,l1), l2
+
 let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env alp sigma id2 r1
   | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
@@ -481,8 +486,9 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
 	  let l11,l12 = list_chop (n1-n2) l1 in RApp (loc,f1,l11),l12, f2,l2
 	else f1,l1, f2, l2 in
       List.fold_left2 (match_ alp metas) (match_ alp metas sigma f1 f2) l1 l2
-  | RApp (_,f1,l1), AList (x,_,(AApp (f2,l2) as iter),termin,lassoc) 
-      when List.length l1 = List.length l2 ->
+  | RApp (loc,f1,l1), AList (x,_,(AApp (f2,l2) as iter),termin,lassoc) 
+      when List.length l1 >= List.length l2 ->
+      let f1,l1 = adjust_application_n (List.length l2) loc f1 l1 in
       match_alist alp metas sigma (f1::l1) (f2::l2) x iter termin lassoc
   | RLambda (_,na1,_,t1,b1), ALambda (na2,t2,b2) ->
      match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
@@ -538,24 +544,26 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
 
 and match_alist alp metas sigma l1 l2 x iter termin lassoc =
   (* match the iterator at least once *)
-  let sigma = List.fold_left2 (match_ alp (ldots_var::metas)) sigma l1 l2 in
+  let sigmavar,sigmalist =
+    List.fold_left2 (match_ alp (ldots_var::metas)) sigma l1 l2 in
   (* Recover the recursive position *)
-  let rest = List.assoc ldots_var sigma in
+  let rest = List.assoc ldots_var sigmavar in
   (* Recover the first element *)
-  let t1 = List.assoc x sigma in
-  let sigma = List.remove_assoc x (List.remove_assoc ldots_var sigma) in
+  let t1 = List.assoc x sigmavar in
+  let sigmavar = List.remove_assoc x (List.remove_assoc ldots_var sigmavar) in
   (* try to find the remaining elements or the terminator *)
   let rec match_alist_tail alp metas sigma acc rest =
     try 
-      let sigma = match_ alp (ldots_var::metas) sigma rest iter in
-      let rest = List.assoc ldots_var sigma in
-      let t = List.assoc x sigma in
-      let sigma = List.remove_assoc x (List.remove_assoc ldots_var sigma) in
-      match_alist_tail alp metas sigma (t::acc) rest
+      let sigmavar,sigmalist = match_ alp (ldots_var::metas) sigma rest iter in
+      let rest = List.assoc ldots_var sigmavar in
+      let t = List.assoc x sigmavar in
+      let sigmavar =
+	List.remove_assoc x (List.remove_assoc ldots_var sigmavar) in
+      match_alist_tail alp metas (sigmavar,sigmalist) (t::acc) rest
     with No_match ->
-      List.rev acc, match_ alp metas sigma rest termin in
-  let tl,sigma = match_alist_tail alp metas sigma [t1] rest in
-  (x,encode_list_value (if lassoc then List.rev tl else tl))::sigma
+      List.rev acc, match_ alp metas (sigmavar,sigmalist) rest termin in
+  let tl,(sigmavar,sigmalist) = match_alist_tail alp metas sigma [t1] rest in
+  (sigmavar, (x,if lassoc then List.rev tl else tl)::sigmalist)
 
 and match_binders alp metas na1 na2 sigma b1 b2 =
   let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
@@ -572,19 +580,24 @@ type scope_name = string
 
 type tmp_scope_name = scope_name
 
-type interpretation = 
-    (identifier * (tmp_scope_name option * scope_name list)) list * aconstr
+type subscopes = tmp_scope_name option * scope_name list
 
-let match_aconstr c (metas_scl,pat) =
-  let subst = match_ [] (List.map fst metas_scl) [] c pat in
+type interpretation =
+    (* regular vars of notation    / recursive parts of notation    / body *)
+    ((identifier * subscopes) list * (identifier * subscopes) list) * aconstr
+
+let match_aconstr c ((metas_scl,metaslist_scl),pat) =
+  let vars = List.map fst metas_scl @ List.map fst metaslist_scl in
+  let subst,substlist = match_ [] vars ([],[]) c pat in
   (* Reorder canonically the substitution *)
-  let find x subst =
+  let find x =
     try List.assoc x subst
     with Not_found ->
       (* Happens for binders bound to Anonymous *)
       (* Find a better way to propagate Anonymous... *)
       RVar (dummy_loc,x) in
-  List.map (fun (x,scl) -> (find x subst,scl)) metas_scl
+  List.map (fun (x,scl) -> (find x,scl)) metas_scl,
+  List.map (fun (x,scl) -> (List.assoc x substlist,scl)) metaslist_scl
 
 (**********************************************************************)
 (*s Concrete syntax for terms *)
@@ -599,12 +612,15 @@ type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
 type prim_token = Numeral of Bigint.bigint | String of string
 
+type 'a notation_substitution =
+    'a list * (* for recursive notations: *) 'a list list
+
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
   | CPatOr of loc * cases_pattern_expr list
-  | CPatNotation of loc * notation * cases_pattern_expr list
+  | CPatNotation of loc * notation * cases_pattern_expr notation_substitution
   | CPatPrim of loc * prim_token
   | CPatDelimiters of loc * string * cases_pattern_expr
 
@@ -631,7 +647,7 @@ type constr_expr =
   | CEvar of loc * existential_key * constr_expr list option
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr cast_type
-  | CNotation of loc * notation * constr_expr list
+  | CNotation of loc * notation * constr_expr notation_substitution
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
@@ -721,7 +737,7 @@ let ids_of_cases_indtype =
   let rec vars_of = function
     (* We deal only with the regular cases *)
     | CApp (_,_,l) -> List.fold_left add_var [] (List.map fst l)
-    | CNotation (_,_,l)
+    | CNotation (_,_,(l,[])) 
     (* assume the ntn is applicative and does not instantiate the head !! *)
     | CAppExpl (_,_,l) -> List.fold_left add_var [] l
     | CDelimiters(_,_,c) -> vars_of c
@@ -741,8 +757,10 @@ let is_constructor id =
  
 let rec cases_pattern_fold_names f a = function
   | CPatAlias (_,pat,id) -> f id a
-  | CPatCstr (_,_,patl) | CPatOr (_,patl) | CPatNotation (_,_,patl) ->
+  | CPatCstr (_,_,patl) | CPatOr (_,patl) ->
       List.fold_left (cases_pattern_fold_names f) a patl
+  | CPatNotation (_,_,(patl,patll)) ->
+      List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)
   | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f a pat
   | CPatAtom (_,Some (Ident (_,id))) when not (is_constructor id) -> f id a
   | CPatPrim _ | CPatAtom _ -> a
@@ -779,7 +797,7 @@ let fold_constr_expr_with_binders g f n acc = function
   | CLetIn (_,na,a,b) -> fold_constr_expr_binders g f n acc b [[na],default_binder_kind,a]
   | CCast (loc,a,CastConv(_,b)) -> f n (f n acc a) b
   | CCast (loc,a,CastCoerce) -> f n acc a
-  | CNotation (_,_,l) -> List.fold_left (f n) acc l
+  | CNotation (_,_,(l,ll)) -> List.fold_left (f n) acc (l@List.flatten ll)
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _  | CRef _ ->
       acc
@@ -890,7 +908,8 @@ let map_constr_expr_with_binders g f e = function
   | CLetIn (loc,na,a,b) -> CLetIn (loc,na,f e a,f (name_fold g (snd na) e) b)
   | CCast (loc,a,CastConv (k,b)) -> CCast (loc,f e a,CastConv(k, f e b))
   | CCast (loc,a,CastCoerce) -> CCast (loc,f e a,CastCoerce)
-  | CNotation (loc,n,l) -> CNotation (loc,n,List.map (f e) l)
+  | CNotation (loc,n,(l,ll)) ->
+      CNotation (loc,n,(List.map (f e) l,List.map (List.map (f e)) ll))
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 
   | CPrim _ | CDynamic _ | CRef _ as x -> x

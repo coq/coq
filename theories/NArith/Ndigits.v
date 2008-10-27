@@ -511,7 +511,7 @@ Lemma Nless_trans :
    Nless a a' = true -> Nless a' a'' = true -> Nless a a'' = true.
 Proof.
   induction a as [|a IHa|a IHa] using N_ind_double; intros a' a'' H H0.
-    destruct (Nless N0 a'') in *. trivial.
+    destruct (Nless N0 a'') as Heqb in *. trivial.
      rewrite (N0_less_2 a'' Heqb), (Nless_z a') in H0. discriminate H0.
     induction a' as [|a' _|a' _] using N_ind_double.
       rewrite (Nless_z (Ndouble a)) in H. discriminate H.
@@ -539,10 +539,10 @@ Lemma Nless_total :
  forall a a', {Nless a a' = true} + {Nless a' a = true} + {a = a'}.
 Proof.
   induction a using N_rec_double; intro a'.
-    destruct (Nless N0 a') in *. left. left. auto.
+    destruct (Nless N0 a') as Heqb in *. left. left. auto.
      right. rewrite (N0_less_2 a' Heqb). reflexivity.
     induction a' as [|a' _|a' _] using N_rec_double.
-      destruct (Nless N0 (Ndouble a)) in *. left. right. auto.
+      destruct (Nless N0 (Ndouble a)) as Heqb in *. left. right. auto.
        right. exact (N0_less_2 _  Heqb).
       rewrite 2!Nless_def_1. destruct (IHa a') as [ | ->].
         left. assumption.

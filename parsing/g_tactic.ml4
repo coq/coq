@@ -18,6 +18,7 @@ open Rawterm
 open Genarg
 open Topconstr
 open Libnames
+open Termops
 
 let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
 

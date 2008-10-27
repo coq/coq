@@ -58,7 +58,7 @@ let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
   in
   let rec aux bdvars l c = match c with
     | CRef (Ident (_,id)) -> found id bdvars l
-    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id))) :: _) when not (Idset.mem id bdvars) ->
+    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [])) when not (Idset.mem id bdvars) ->
 	fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
     | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
   in aux bound l c

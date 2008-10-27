@@ -235,6 +235,7 @@ Tactics
   to remember the term to which the induction or case analysis applied
   (possible source of parsing incompatibilities when destruct or induction is
    part of a let-in expression in Ltac; extra parentheses are then required).
+- New support for "as" clause in tactics "apply in" and "eapply in".
 - Some new intro patterns: 
   * intro pattern "?A" genererates a fresh name based on A. 
     Caveat about a slight loss of compatibility:
@@ -277,7 +278,7 @@ Tactics
 - Tactic firstorder "with" and "using" options have their meaning swapped for
   consistency with auto/eauto (source of incompatibility).
 - Tactic "generalize" now supports "at" options to specify occurrences
-  and "as" options to name the hypothesis.
+  and "as" options to name the quantified hypotheses.
 - New tactic "specialize H with a" or "specialize (H a)" allows to transform
   in-place a universally-quantified hypothesis (H : forall x, T x) into its 
   instantiated form (H : T a). Nota: "specialize" was in fact there in earlier

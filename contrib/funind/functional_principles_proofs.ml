@@ -1347,7 +1347,7 @@ let build_clause eqs =
   {
     Tacexpr.onhyps = 
       Some (List.map 
-	      (fun id -> (Rawterm.all_occurrences_expr,id),Tacexpr.InHyp)
+	      (fun id -> (Rawterm.all_occurrences_expr,id),InHyp)
 	      eqs
 	   );
     Tacexpr.concl_occs = Rawterm.no_occurrences_expr 

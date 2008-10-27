@@ -671,10 +671,18 @@ let subst_term_occ (nowhere_except_in,locs as plocs) c t =
     if rest <> [] then error_invalid_occurrence rest;
     t'
 
-let subst_term_occ_decl (nowhere_except_in,locs as plocs) c (id,bodyopt,typ as d) =
-  match bodyopt with
-    | None -> (id,None,subst_term_occ plocs c typ)
-    | Some body -> 
+type hyp_location_flag = (* To distinguish body and type of local defs *)
+  | InHyp
+  | InHypTypeOnly
+  | InHypValueOnly
+
+let subst_term_occ_decl ((nowhere_except_in,locs as plocs),hloc) c (id,bodyopt,typ as d) =
+  match bodyopt,hloc with
+  | None, InHypValueOnly -> errorlabstrm "" (pr_id id ++ str " has no value")
+  | None, _ -> (id,None,subst_term_occ plocs c typ)
+  | Some body, InHypTypeOnly -> (id,Some body,subst_term_occ plocs c typ)
+  | Some body, InHypValueOnly -> (id,Some (subst_term_occ plocs c body),typ)
+  | Some body, InHyp ->
 	if locs = [] then
 	  if nowhere_except_in then d
 	  else (id,Some (subst_term c body),subst_term c typ)
@@ -684,7 +692,6 @@ let subst_term_occ_decl (nowhere_except_in,locs as plocs) c (id,bodyopt,typ as d
 	  let rest = List.filter (fun o -> o >= nbocc') locs in
 	  if rest <> [] then error_invalid_occurrence rest;
 	  (id,Some body',t')
-
 
 (* First character of a constr *)
 

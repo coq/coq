@@ -103,12 +103,12 @@ let mlexpr_of_occs =
 let mlexpr_of_occurrences f = mlexpr_of_pair mlexpr_of_occs f
 
 let mlexpr_of_hyp_location = function
-  | occs, Tacexpr.InHyp ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Tacexpr.InHyp) >>
-  | occs, Tacexpr.InHypTypeOnly ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Tacexpr.InHypTypeOnly) >>
-  | occs, Tacexpr.InHypValueOnly ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Tacexpr.InHypValueOnly) >>
+  | occs, Termops.InHyp ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHyp) >>
+  | occs, Termops.InHypTypeOnly ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHypTypeOnly) >>
+  | occs, Termops.InHypValueOnly ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHypValueOnly) >>
 
 let mlexpr_of_clause cl =
   <:expr< {Tacexpr.onhyps=
@@ -159,9 +159,11 @@ let rec mlexpr_of_constr = function
   | Topconstr.CCases (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CHole (loc, None) -> <:expr< Topconstr.CHole $dloc$ None >>
   | Topconstr.CHole (loc, Some _) -> failwith "mlexpr_of_constr: TODO CHole (Some _)"
-  | Topconstr.CNotation(_,ntn,l) ->
+  | Topconstr.CNotation(_,ntn,subst) ->
       <:expr< Topconstr.CNotation $dloc$ $mlexpr_of_string ntn$
-                $mlexpr_of_list mlexpr_of_constr l$ >>
+              $mlexpr_of_pair 
+                (mlexpr_of_list mlexpr_of_constr)
+                (mlexpr_of_list (mlexpr_of_list mlexpr_of_constr)) subst$ >>
   | Topconstr.CPatVar (loc,n) -> 
       <:expr< Topconstr.CPatVar $dloc$ $mlexpr_of_pair mlexpr_of_bool mlexpr_of_ident n$ >>
   | _ -> failwith "mlexpr_of_constr: TODO"

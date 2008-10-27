@@ -52,153 +52,91 @@ Qed.
 
 (** * Facts about [even] & [odd] wrt. [plus] *)
 
-Lemma even_plus_aux :
-  forall n m,
+Lemma even_plus_split : forall n m, 
+  (even (n + m) -> even n /\ even m \/ odd n /\ odd m)
+with odd_plus_split : forall n m, 
+  odd (n + m) -> odd n /\ even m \/ even n /\ odd m.
+Proof.
+intros. clear even_plus_split. destruct n; simpl in *.
+ auto with arith.
+ inversion_clear H;
+   apply odd_plus_split in H0 as [(H0,?)|(H0,?)]; auto with arith.
+intros. clear odd_plus_split. destruct n; simpl in *.
+ auto with arith.
+ inversion_clear H;
+   apply even_plus_split in H0 as [(H0,?)|(H0,?)]; auto with arith.
+Qed.
+
+Lemma even_even_plus : forall n m, even n -> even m -> even (n + m)
+with odd_plus_l : forall n m, odd n -> even m -> odd (n + m).
+Proof.
+intros n m [|] ?. trivial. apply even_S, odd_plus_l; trivial.
+intros n m [] ?. apply odd_S, even_even_plus; trivial.
+Qed.
+
+Lemma odd_plus_r : forall n m, even n -> odd m -> odd (n + m)
+with odd_even_plus : forall n m, odd n -> odd m -> even (n + m).
+Proof.
+intros n m [|] ?. trivial. apply odd_S, odd_even_plus; trivial.
+intros n m [] ?. apply even_S, odd_plus_r; trivial.
+Qed.
+
+Lemma even_plus_aux : forall n m,
     (odd (n + m) <-> odd n /\ even m \/ even n /\ odd m) /\
     (even (n + m) <-> even n /\ even m \/ odd n /\ odd m).
 Proof.
-  intros n; elim n; simpl in |- *; auto with arith.
-  intros m; split; auto.
-  split.
-  intros H; right; split; auto with arith.
-  intros H'; case H'; auto with arith.
-  intros H'0; elim H'0; intros H'1 H'2; inversion H'1.
-  intros H; elim H; auto.
-  split; auto with arith.
-  intros H'; elim H'; auto with arith.
-  intros H; elim H; auto.
-  intros H'0; elim H'0; intros H'1 H'2; inversion H'1.
-  intros n0 H' m; elim (H' m); intros H'1 H'2; elim H'1; intros E1 E2; elim H'2;
-    intros E3 E4; clear H'1 H'2.
-  split; split.
-  intros H'0; case E3.
-  inversion H'0; auto.
-  intros H; elim H; intros H0 H1; clear H; auto with arith.
-  intros H; elim H; intros H0 H1; clear H; auto with arith.
-  intros H'0; case H'0; intros C0; case C0; intros C1 C2.
-  apply odd_S.
-  apply E4; left; split; auto with arith.
-  inversion C1; auto.
-  apply odd_S.
-  apply E4; right; split; auto with arith.
-  inversion C1; auto.
-  intros H'0.
-  case E1.
-  inversion H'0; auto.
-  intros H; elim H; intros H0 H1; clear H; auto with arith.
-  intros H; elim H; intros H0 H1; clear H; auto with arith.
-  intros H'0; case H'0; intros C0; case C0; intros C1 C2.
-  apply even_S.
-  apply E2; left; split; auto with arith.
-  inversion C1; auto.
-  apply even_S.
-  apply E2; right; split; auto with arith.
-  inversion C1; auto.
-Qed.
- 
-Lemma even_even_plus : forall n m, even n -> even m -> even (n + m).
-Proof.
-  intros n m; case (even_plus_aux n m).
-  intros H H0; case H0; auto.
-Qed.
- 
-Lemma odd_even_plus : forall n m, odd n -> odd m -> even (n + m).
-Proof.
-  intros n m; case (even_plus_aux n m).
-  intros H H0; case H0; auto.
+split; split; auto using odd_plus_split, even_plus_split.
+intros [[]|[]]; auto using odd_plus_r, odd_plus_l.
+intros [[]|[]]; auto using even_even_plus, odd_even_plus.
 Qed.
 
 Lemma even_plus_even_inv_r : forall n m, even (n + m) -> even n -> even m.
 Proof.
-  intros n m H; case (even_plus_aux n m).
-  intros H' H'0; elim H'0.
-  intros H'1; case H'1; auto.
-  intros H0; elim H0; auto.
-  intros H0 H1 H2; case (not_even_and_odd n); auto.
-  case H0; auto.
+  intros n m H; destruct (even_plus_split n m) as [[]|[]]; auto.
+  intro; destruct (not_even_and_odd n); auto.
 Qed.
  
 Lemma even_plus_even_inv_l : forall n m, even (n + m) -> even m -> even n.
 Proof.
-  intros n m H; case (even_plus_aux n m).
-  intros H' H'0; elim H'0.
-  intros H'1; case H'1; auto.
-  intros H0; elim H0; auto.
-  intros H0 H1 H2; case (not_even_and_odd m); auto.
-  case H0; auto.
+  intros n m H; destruct (even_plus_split n m) as [[]|[]]; auto.
+  intro; destruct (not_even_and_odd m); auto.
 Qed.
 
 Lemma even_plus_odd_inv_r : forall n m, even (n + m) -> odd n -> odd m.
 Proof.
-  intros n m H; case (even_plus_aux n m).
-  intros H' H'0; elim H'0.
-  intros H'1; case H'1; auto.
-  intros H0 H1 H2; case (not_even_and_odd n); auto.
-  case H0; auto.
-  intros H0; case H0; auto.
+  intros n m H; destruct (even_plus_split n m) as [[]|[]]; auto.
+  intro; destruct (not_even_and_odd n); auto.
 Qed.
 
 Lemma even_plus_odd_inv_l : forall n m, even (n + m) -> odd m -> odd n.
 Proof.
-  intros n m H; case (even_plus_aux n m).
-  intros H' H'0; elim H'0.
-  intros H'1; case H'1; auto.
-  intros H0 H1 H2; case (not_even_and_odd m); auto.
-  case H0; auto.
-  intros H0; case H0; auto.
+  intros n m H; destruct (even_plus_split n m) as [[]|[]]; auto.
+  intro; destruct (not_even_and_odd m); auto.
 Qed.
 Hint Resolve even_even_plus odd_even_plus: arith.
 
-Lemma odd_plus_l : forall n m, odd n -> even m -> odd (n + m).
-Proof.
-  intros n m; case (even_plus_aux n m).
-  intros H; case H; auto.
-Qed.
- 
-Lemma odd_plus_r : forall n m, even n -> odd m -> odd (n + m).
-Proof.
-  intros n m; case (even_plus_aux n m).
-  intros H; case H; auto.
-Qed.
- 
 Lemma odd_plus_even_inv_l : forall n m, odd (n + m) -> odd m -> even n.
 Proof.
-  intros n m H; case (even_plus_aux n m).
-  intros H' H'0; elim H'.
-  intros H'1; case H'1; auto.
-  intros H0 H1 H2; case (not_even_and_odd m); auto.
-  case H0; auto.
-  intros H0; case H0; auto.
+  intros n m H; destruct (odd_plus_split n m) as [[]|[]]; auto.
+  intro; destruct (not_even_and_odd m); auto.
 Qed.
  
 Lemma odd_plus_even_inv_r : forall n m, odd (n + m) -> odd n -> even m.
 Proof.
-  intros n m H; case (even_plus_aux n m).
-  intros H' H'0; elim H'.
-  intros H'1; case H'1; auto.
-  intros H0; case H0; auto.
-  intros H0 H1 H2; case (not_even_and_odd n); auto.
-  case H0; auto.
+  intros n m H; destruct (odd_plus_split n m) as [[]|[]]; auto.
+  intro; destruct (not_even_and_odd n); auto.
 Qed.
  
 Lemma odd_plus_odd_inv_l : forall n m, odd (n + m) -> even m -> odd n.
 Proof.
-  intros n m H; case (even_plus_aux n m).
-  intros H' H'0; elim H'.
-  intros H'1; case H'1; auto.
-  intros H0; case H0; auto.
-  intros H0 H1 H2; case (not_even_and_odd m); auto.
-  case H0; auto.
+  intros n m H; destruct (odd_plus_split n m) as [[]|[]]; auto.
+  intro; destruct (not_even_and_odd m); auto.
 Qed.
 
 Lemma odd_plus_odd_inv_r : forall n m, odd (n + m) -> even n -> odd m.
 Proof.
-  intros n m H; case (even_plus_aux n m).
-  intros H' H'0; elim H'.
-  intros H'1; case H'1; auto.
-  intros H0 H1 H2; case (not_even_and_odd n); auto.
-  case H0; auto.
-  intros H0; case H0; auto.
+  intros n m H; destruct (odd_plus_split n m) as [[]|[]]; auto.
+  intro; destruct (not_even_and_odd n); auto.
 Qed.
 Hint Resolve odd_plus_l odd_plus_r: arith.
 

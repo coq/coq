@@ -50,3 +50,7 @@ Nil
      : forall A : Type, list A
 NIL:list nat
      : list nat
+[|1, 2, 3; 4, 5, 6|]
+     : Z * Z * Z * (Z * Z * Z)
+fun f : Z -> Z -> Z -> Z => {|f; 0; 1; 2|}:Z
+     : (Z -> Z -> Z -> Z) -> Z

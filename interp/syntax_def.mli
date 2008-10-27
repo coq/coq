@@ -18,10 +18,12 @@ open Libnames
 
 (* Syntactic definitions. *)
 
-val declare_syntactic_definition : bool -> identifier -> bool -> interpretation
-  -> unit
+type syndef_interpretation = (identifier * subscopes) list * aconstr
 
-val search_syntactic_definition : loc -> kernel_name -> interpretation
+val declare_syntactic_definition : bool -> identifier -> bool -> 
+  syndef_interpretation -> unit
+
+val search_syntactic_definition : loc -> kernel_name -> syndef_interpretation
 
 (* [locate_global_with_alias] locates global reference possibly following
    a notation if this notation has a role of aliasing; raise Not_found

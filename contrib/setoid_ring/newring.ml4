@@ -19,6 +19,7 @@ open Environ
 open Libnames
 open Tactics
 open Rawterm
+open Termops
 open Tacticals
 open Tacexpr
 open Pcoq

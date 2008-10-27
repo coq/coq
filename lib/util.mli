@@ -145,7 +145,8 @@ val list_uniquize : 'a list -> 'a list
 (* merges two sorted lists and preserves the uniqueness property: *)
 val list_merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
-val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
+val list_split_at : ('a -> bool) -> 'a list -> 'a list * 'a list
+val list_split_by : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 val list_partition_by : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val list_firstn : int -> 'a list -> 'a list
@@ -175,6 +176,11 @@ val list_cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 val list_cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
 (* list_combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
 val list_combinations : 'a list list -> 'a list list
+(* Keep only those products that do not return None *)
+val list_cartesian_filter :
+  ('a -> 'b -> 'c option) -> 'a list -> 'b list -> 'c list
+val list_cartesians_filter :
+  ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
 
 val list_union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 

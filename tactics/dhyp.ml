@@ -131,6 +131,7 @@ open Pattern
 open Matching
 open Pcoq
 open Tacexpr
+open Termops
 open Libnames
 
 (* two patterns - one for the type, and one for the type of the type *)

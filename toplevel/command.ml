@@ -166,9 +166,9 @@ let declare_definition ident (local,boxed,dok) bl red_option c typopt hook =
   hook local r
 
 let syntax_definition ident (vars,c) local onlyparse =
-  let pat = interp_aconstr [] vars c in
-  let onlyparse = onlyparse or Metasyntax.is_not_printable (snd pat) in
-  Syntax_def.declare_syntactic_definition local ident onlyparse pat
+  let ((vars,_),pat) = interp_aconstr [] (vars,[]) c in
+  let onlyparse = onlyparse or Metasyntax.is_not_printable pat in
+  Syntax_def.declare_syntactic_definition local ident onlyparse (vars,pat)
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
@@ -346,7 +346,20 @@ let start_proof id kind c ?init_tac hook =
   !start_hook c;
   Pfedit.start_proof id kind sign c ?init_tac:init_tac hook
 
+let adjust_guardness_conditions const =
+  (* Try all combinations... not optimal *)
+  match kind_of_term const.const_entry_body with
+  | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
+      let possible_indexes =
+	List.map (fun c ->
+	  interval 0 (List.length (fst (Sign.decompose_lam_assum c))))
+	  (Array.to_list fixdefs) in
+      let indexes = search_guard dummy_loc (Global.env()) possible_indexes fixdecls in 
+      { const with const_entry_body = mkFix ((indexes,0),fixdecls) }
+  | c -> const
+
 let save id const (locality,kind) hook =
+  let const = adjust_guardness_conditions const in
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
@@ -1045,13 +1058,12 @@ let build_combined_scheme name schemes =
 (* 4.1| Support for mutually proved theorems *)
 
 let retrieve_first_recthm = function
-          | VarRef id -> 
-              (pi2 (Global.lookup_named id),variable_opacity id)
-          | ConstRef cst -> 
-              let {const_body=body;const_opaque=opaq} =
-                Global.lookup_constant cst in
-              (Option.map Declarations.force body,opaq)
-          | _ -> assert false
+  | VarRef id -> 
+      (pi2 (Global.lookup_named id),variable_opacity id)
+  | ConstRef cst -> 
+      let {const_body=body;const_opaque=opaq} =	Global.lookup_constant cst in
+      (Option.map Declarations.force body,opaq)
+  | _ -> assert false
 
 let default_thm_id = id_of_string "Unnamed_thm"
 
@@ -1114,14 +1126,14 @@ let look_for_mutual_statements thms =
         (fun i c -> fst (whd_betadeltaiota_stack (Global.env()) Evd.empty (lift i c)))
         hyps in
       let ind_hyps =
-        List.filter ((<>) None) (list_map_i (fun i (_,b,t) ->
+        List.flatten (list_map_i (fun i (_,b,t) ->
           match kind_of_term t with
           | Ind (kn,_ as ind) when
                 let mind = Global.lookup_mind kn in
-                mind.mind_ntypes = n & mind.mind_finite & b = None ->
-              Some (ind,x,i)
+                mind.mind_finite & b = None ->
+              [ind,x,i]
           | _ ->
-              None) 1 whnf_hyp_hds) in
+              []) 1 (List.rev whnf_hyp_hds)) in
       let ind_ccl =
         let cclenv = push_rel_context hyps (Global.env()) in
         let whnf_ccl,_ = whd_betadeltaiota_stack cclenv Evd.empty ccl in
@@ -1129,53 +1141,45 @@ let look_for_mutual_statements thms =
         | Ind (kn,_ as ind) when
               let mind = Global.lookup_mind kn in
               mind.mind_ntypes = n & not mind.mind_finite ->
-            Some (ind,x,0)
+            [ind,x,0]
         | _ ->
-            None in
+            [] in
       ind_hyps,ind_ccl) thms in
     let inds_hyps,ind_ccls = List.split inds in
-    let is_same_ind kn = function Some ((kn',_),_,_) -> kn = kn' | _ -> false in
-    let compare_kn ((kn,i),_,_) ((kn,i'),_,_) = i - i' in
+    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> kn = kn' in
     (* Check if all conclusions are coinductive in the same type *)
+    (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
-      match ind_ccls with
-      | (Some ((kn,_),_,_ as x))::rest when List.for_all (is_same_ind kn) rest
-            -> Some (x :: List.map Option.get rest)
-      | _ -> None in
+      list_cartesians_filter (fun hyp oks ->
+	if List.for_all (of_same_mutind hyp) oks 
+	then Some (hyp::oks) else None) [] ind_ccls in
+    let ordered_same_indccl =
+      List.filter (list_for_all_i (fun i ((kn,j),_,_) -> i=j) 0) same_indccl in
     (* Check if some hypotheses are inductive in the same type *)
     let common_same_indhyp =
-      let rec find_same_ind inds = 
-        match inds with
-        | []::_ ->
-            []
-        | (Some ((kn,_),_,_) as x :: hyps_thms1)::other_thms ->
-            let others' = List.map (List.filter (is_same_ind kn)) other_thms in
-            (x,others')::find_same_ind (hyps_thms1::other_thms)
-        | (None::hyps_thm1)::other_thms ->
-            find_same_ind (hyps_thm1::other_thms)
-      | [] ->
-          assert false in
-      find_same_ind inds_hyps in
-    let common_inds,finite =
-      match same_indccl, common_same_indhyp with
-      | None, [(x,rest)] when List.for_all (fun l -> List.length l = 1) rest ->
-        (* One occurrence of common inductive hyps and no common coind ccls *)
-          Option.get x::List.map (fun x -> Option.get (List.hd x)) rest,
-          false
-      | Some indccl, [] ->
-        (* One occurrence of common coind ccls and no common inductive hyps *)
+      list_cartesians_filter (fun hyp oks ->
+	if List.for_all (of_same_mutind hyp) oks
+	then Some (hyp::oks) else None) [] inds_hyps in
+    let ordered_inds,finite =
+      match ordered_same_indccl, common_same_indhyp with
+      | indccl::rest, _ ->
+	  assert (rest=[]);
+          (* One occ. of common coind ccls and no common inductive hyps *)
+	  if common_same_indhyp <> [] then 
+	    if_verbose warning "Assuming mutual coinductive statements.";
+	  flush_all ();
           indccl, true
-      | _ -> 
-          error
-            ("Cannot find a common mutual inductive premise or coinductive" ^
-             " conclusion in the statements") in
-    let ordered_inds = List.sort compare_kn common_inds in
-    list_iter_i (fun i' ((kn,i),_,_) -> 
-      if i <> i' then
-        error
-          ("Cannot find distinct (co)inductive types of the same family" ^ 
-              "of mutual (co)inductive types"))
-              ordered_inds;
+      | [], _::_ ->
+	  if same_indccl <> [] &&
+	     list_distinct (List.map pi1 (List.hd same_indccl)) then
+	    if_verbose warn (strbrk "Coinductive statements do not follow the order of definition, assume the proof to be by induction."); flush_all ();
+	  (* assume the largest indices as possible *)
+	  list_last common_same_indhyp, false
+      | _, [] ->
+	  error
+            ("Cannot find common (mutual) inductive premises or coinductive" ^
+             " conclusions in the statements.")
+    in
     let nl,thms = List.split (List.map (fun (_,x,i) -> (i,x)) ordered_inds) in
     let rec_tac =
       if finite then
@@ -1183,6 +1187,7 @@ let look_for_mutual_statements thms =
         | (id,_)::l -> Hiddentac.h_mutual_cofix true id l
         | _ -> assert false
       else
+	(* nl is dummy: it will be recomputed at Qed-time *)
         match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
         | (id,n,_)::l -> Hiddentac.h_mutual_fix true id n l
         | _ -> assert false in

@@ -52,58 +52,56 @@ type prod_item =
   | NonTerm of constr_production_entry * 
       (Names.identifier * constr_production_entry) option
 
-type 'a action_env = (identifier * 'a) list
+type 'a action_env = 'a list * 'a list list
 
 let make_constr_action
   (f : loc -> constr_expr action_env -> constr_expr) pil =
-  let rec make (env : constr_expr action_env) = function
+  let rec make (env,envlist as fullenv : constr_expr action_env) = function
     | [] ->
-	Gramext.action (fun loc -> f loc env)
+	Gramext.action (fun loc -> f loc fullenv)
     | None :: tl -> (* parse a non-binding item *)
-        Gramext.action (fun _ -> make env tl)
+        Gramext.action (fun _ -> make fullenv tl)
     | Some (p, (ETConstr _| ETOther _)) :: tl -> (* constr non-terminal *)
-        Gramext.action (fun (v:constr_expr) -> make ((p,v) :: env) tl)
+        Gramext.action (fun (v:constr_expr) -> make (v :: env, envlist) tl)
     | Some (p, ETReference) :: tl -> (* non-terminal *)
-        Gramext.action (fun (v:reference) -> make ((p,CRef v) :: env) tl)
+        Gramext.action (fun (v:reference) -> make (CRef v :: env, envlist) tl)
     | Some (p, ETIdent) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:identifier) ->
-	  make ((p,CRef (Ident (dummy_loc,v))) :: env) tl)
+	  make (CRef (Ident (dummy_loc,v)) :: env, envlist) tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:Bigint.bigint) ->
-	  make ((p,CPrim (dummy_loc,Numeral v)) :: env) tl)
+	  make (CPrim (dummy_loc,Numeral v) :: env, envlist) tl)
     | Some (p, ETConstrList _) :: tl ->
-        Gramext.action (fun (v:constr_expr list) ->
-          let dummyid = Ident (dummy_loc,id_of_string "_") in
-	  make ((p,CAppExpl (dummy_loc,(None,dummyid),v)) :: env) tl)
+        Gramext.action (fun (v:constr_expr list) -> make (env, v::envlist) tl)
     | Some (p, ETPattern) :: tl -> 
 	failwith "Unexpected entry of type cases pattern" in
-  make [] (List.rev pil)
+  make ([],[]) (List.rev pil)
 
 let make_cases_pattern_action
   (f : loc -> cases_pattern_expr action_env -> cases_pattern_expr) pil =
-  let rec make (env : cases_pattern_expr action_env) = function
+  let rec make (env,envlist as fullenv : cases_pattern_expr action_env) = function
     | [] ->
-	Gramext.action (fun loc -> f loc env)
+	Gramext.action (fun loc -> f loc fullenv)
     | None :: tl -> (* parse a non-binding item *)
-        Gramext.action (fun _ -> make env tl)
+        Gramext.action (fun _ -> make fullenv tl)
     | Some (p, ETConstr _) :: tl -> (* pattern non-terminal *)
-        Gramext.action (fun (v:cases_pattern_expr) -> make ((p,v) :: env) tl)
+        Gramext.action (fun (v:cases_pattern_expr) -> make (v::env,envlist) tl)
     | Some (p, ETReference) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:reference) ->
-	  make ((p,CPatAtom (dummy_loc,Some v)) :: env) tl)
+	  make (CPatAtom (dummy_loc,Some v) :: env, envlist) tl)
     | Some (p, ETIdent) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:identifier) ->
-	  make ((p,CPatAtom (dummy_loc,Some (Ident (dummy_loc,v)))) :: env) tl)
+	  make 
+	    (CPatAtom (dummy_loc,Some (Ident (dummy_loc,v)))::env, envlist) tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:Bigint.bigint) ->
-	  make ((p,CPatPrim (dummy_loc,Numeral v)) :: env) tl)
+	  make (CPatPrim (dummy_loc,Numeral v) :: env, envlist) tl)
     | Some (p, ETConstrList _) :: tl ->
         Gramext.action (fun (v:cases_pattern_expr list) ->
-          let dummyid = Ident (dummy_loc,id_of_string "_") in
-	  make ((p,CPatCstr (dummy_loc,dummyid,v)) :: env) tl)
+	  make (env, v :: envlist) tl)
     | Some (p, (ETPattern | ETOther _)) :: tl -> 
 	failwith "Unexpected entry of type cases pattern or other" in
-  make [] (List.rev pil)
+  make ([],[]) (List.rev pil)
 
 let make_constr_prod_item univ assoc from forpat = function
   | Term tok -> (Gramext.Stoken tok, None)
@@ -133,11 +131,11 @@ let extend_constr (entry,level) (n,assoc) mkact forpat pt =
 
 let extend_constr_notation (n,assoc,ntn,rule) =
   (* Add the notation in constr *)
-  let mkact loc env = CNotation (loc,ntn,List.map snd env) in
+  let mkact loc env = CNotation (loc,ntn,env) in
   let e = get_constr_entry false (ETConstr (n,())) in
   extend_constr e (ETConstr(n,()),assoc) (make_constr_action mkact) false rule;
   (* Add the notation in cases_pattern *)
-  let mkact loc env = CPatNotation (loc,ntn,List.map snd env) in
+  let mkact loc env = CPatNotation (loc,ntn,env) in
   let e = get_constr_entry true (ETConstr (n,())) in
   extend_constr e (ETConstr (n,()),assoc) (make_cases_pattern_action mkact)
     true rule

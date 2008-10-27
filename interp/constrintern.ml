@@ -289,31 +289,31 @@ let expand_notation_string ntn n =
 
 (* This contracts the special case of "{ _ }" for sumbool, sumor notations *)
 (* Remark: expansion of squash at definition is done in metasyntax.ml *)
-let contract_notation ntn l =
+let contract_notation ntn (l,ll) =
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | CNotation (_,"{ _ }",[a]) :: l -> 
+    | CNotation (_,"{ _ }",([a],[])) :: l -> 
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
         a::contract_squash (n+1) l in
   let l = contract_squash 0 l in
   (* side effect; don't inline *)
-  !ntn',l
+  !ntn',(l,ll)
 
-let contract_pat_notation ntn l =
+let contract_pat_notation ntn (l,ll) =
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | CPatNotation (_,"{ _ }",[a]) :: l -> 
+    | CPatNotation (_,"{ _ }",([a],[])) :: l -> 
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
         a::contract_squash (n+1) l in
   let l = contract_squash 0 l in
   (* side effect; don't inline *)
-  !ntn',l
+  !ntn',(l,ll)
 
 (**********************************************************************)
 (* Remembering the parsing scope of variables in notations            *)
@@ -333,7 +333,7 @@ let set_var_scope loc id (_,scopt,scopes) varscopes =
 (**********************************************************************)
 (* Syntax extensions                                                  *)
 
-let traverse_binder subst (renaming,(ids,tmpsc,scopes as env)) id =
+let traverse_binder (subst,substlist) (renaming,(ids,tmpsc,scopes as env)) id =
   try
     (* Binders bound in the notation are considered first-order objects *)
     let _,id' = coerce_to_id (fst (List.assoc id subst)) in
@@ -342,22 +342,21 @@ let traverse_binder subst (renaming,(ids,tmpsc,scopes as env)) id =
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
     let fvs1 = List.map (fun (_,(c,_)) -> free_vars_of_constr_expr c) subst in
-    let fvs2 = List.map snd renaming in
-    let fvs = List.flatten (List.map Idset.elements fvs1) @ fvs2 in
+    let fvs2 = List.flatten (List.map (fun (_,(l,_)) -> List.map free_vars_of_constr_expr l) substlist) in
+    let fvs3 = List.map snd renaming in
+    let fvs = List.flatten (List.map Idset.elements (fvs1@fvs2)) @ fvs3 in
     let id' = next_ident_away id fvs in
     let renaming' = if id=id' then renaming else (id,id')::renaming in
     (renaming',env), id'
-
-let decode_constrlist_value = function
-  | CAppExpl (_,_,l) -> l
-  | _ -> anomaly "Ill-formed list argument of notation"
 
 let rec subst_iterator y t = function
   | RVar (_,id) as x -> if id = y then t else x
   | x -> map_rawconstr (subst_iterator y t) x
 
-let rec subst_aconstr_in_rawconstr loc interp subst (renaming,(ids,_,scopes)) =
-  function
+let rec subst_aconstr_in_rawconstr loc interp (subst,substlist as sub) infos c =
+  let (renaming,(ids,_,scopes)) = infos in
+  let subinfos = renaming,(ids,None,scopes) in
+  match c with
   | AVar id ->
       begin
 	(* subst remembers the delimiters stack in the interpretation *)
@@ -375,30 +374,27 @@ let rec subst_aconstr_in_rawconstr loc interp subst (renaming,(ids,_,scopes)) =
   | AList (x,_,iter,terminator,lassoc) ->
       (try 
         (* All elements of the list are in scopes (scopt,subscopes) *)
-	let (a,(scopt,subscopes)) = List.assoc x subst in
+	let (l,(scopt,subscopes)) = List.assoc x substlist in
         let termin = 
-          subst_aconstr_in_rawconstr loc interp subst 
-	    (renaming,(ids,None,scopes)) terminator in
-        let l = decode_constrlist_value a in
+          subst_aconstr_in_rawconstr loc interp sub subinfos terminator in
 	List.fold_right (fun a t -> 
           subst_iterator ldots_var t
             (subst_aconstr_in_rawconstr loc interp 
-              ((x,(a,(scopt,subscopes)))::subst)
-	      (renaming,(ids,None,scopes)) iter))
+              ((x,(a,(scopt,subscopes)))::subst,substlist) subinfos iter))
             (if lassoc then List.rev l else l) termin
       with Not_found -> 
           anomaly "Inconsistent substitution of recursive notation")
   | t ->
-      rawconstr_of_aconstr_with_binders loc (traverse_binder subst)
-      (subst_aconstr_in_rawconstr loc interp subst)
-      (renaming,(ids,None,scopes)) t
+      rawconstr_of_aconstr_with_binders loc (traverse_binder sub)
+      (subst_aconstr_in_rawconstr loc interp sub) subinfos t
 
-let intern_notation intern (_,tmp_scope,scopes as env) loc ntn args =
-  let ntn,args = contract_notation ntn args in
-  let ((ids,c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
+let intern_notation intern (_,tmp_scope,scopes as env) loc ntn fullargs =
+  let ntn,(args,argslist) = contract_notation ntn fullargs in
+  let (((ids,idsl),c),df) = interp_notation loc ntn (tmp_scope,scopes) in
   if !dump then dump_notation_location (ntn_loc loc args ntn) df;
   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
-  subst_aconstr_in_rawconstr loc intern subst ([],env) c
+  let substlist = List.map2 (fun (id,scl) a -> (id,(a,scl))) idsl argslist in
+  subst_aconstr_in_rawconstr loc intern (subst,substlist) ([],env) c
 
 let set_type_scope (ids,tmp_scope,scopes) =
   (ids,Some Notation.type_scope,scopes)
@@ -488,7 +484,7 @@ let intern_qualid loc qid intern env args =
       let args1,args2 = list_chop nids args in
       check_no_explicitation args1;
       let subst = List.map2 (fun (id,scl) a -> (id,(fst a,scl))) ids args1 in
-      subst_aconstr_in_rawconstr loc intern subst ([],env) c, args2
+      subst_aconstr_in_rawconstr loc intern (subst,[]) ([],env) c, args2
   with Not_found ->
     error_global_not_found_loc loc qid
 
@@ -595,8 +591,8 @@ let check_constructor_length env loc cstr pl pl0 =
 
   (* [merge_aliases] returns the sets of all aliases encountered at this
      point and a substitution mapping extra aliases to the first one *)
-let merge_aliases (ids,subst as _aliases) id =
-  ids@[id], if ids=[] then subst else (id, List.hd ids)::subst
+let merge_aliases (ids,asubst as _aliases) id =
+  ids@[id], if ids=[] then asubst else (id, List.hd ids)::asubst
 
 let alias_of = function
   | ([],_) -> Anonymous
@@ -618,10 +614,6 @@ let chop_aconstr_constructor loc (ind,k) args =
     | _ -> error_invalid_pattern_notation loc) params;
   args
 
-let decode_patlist_value = function
-  | CPatCstr (_,_,l) -> l
-  | _ -> anomaly "Ill-formed list argument of notation"
-
 let rec subst_pat_iterator y t (subst,p) = match p with
   | PatVar (_,id) as x ->
       if id = Name y then t else [subst,x]
@@ -630,8 +622,8 @@ let rec subst_pat_iterator y t (subst,p) = match p with
       let pl = simple_product_of_cases_patterns l' in
       List.map (fun (subst',pl) -> subst'@subst,PatCstr (loc,id,pl,alias)) pl
 
-let subst_cases_pattern loc alias intern subst scopes a =
-  let rec aux alias subst = function
+let subst_cases_pattern loc alias intern fullsubst scopes a =
+  let rec aux alias (subst,substlist as fullsubst) = function
   | AVar id ->
       begin
 	(* subst remembers the delimiters stack in the interpretation *)
@@ -653,30 +645,29 @@ let subst_cases_pattern loc alias intern subst scopes a =
       ([],[[], PatCstr (loc,c, [], alias)])
   | AApp (ARef (ConstructRef cstr),args) ->
       let args = chop_aconstr_constructor loc cstr args in
-      let idslpll = List.map (aux Anonymous subst) args in
+      let idslpll = List.map (aux Anonymous fullsubst) args in
       let ids',pll = product_of_cases_patterns [] idslpll in
-      let pl' = List.map (fun (subst,pl) -> 
-        subst,PatCstr (loc,cstr,pl,alias)) pll in
+      let pl' = List.map (fun (asubst,pl) -> 
+        asubst,PatCstr (loc,cstr,pl,alias)) pll in
 	ids', pl'
   | AList (x,_,iter,terminator,lassoc) ->
       (try 
         (* All elements of the list are in scopes (scopt,subscopes) *)
-	let (a,(scopt,subscopes)) = List.assoc x subst in
-        let termin = aux Anonymous subst terminator in
-        let l = decode_patlist_value a in
+	let (l,(scopt,subscopes)) = List.assoc x substlist in
+        let termin = aux Anonymous fullsubst terminator in
         let idsl,v =
 	  List.fold_right (fun a (tids,t) -> 
-            let uids,u = aux Anonymous ((x,(a,(scopt,subscopes)))::subst) iter in
+            let uids,u = aux Anonymous ((x,(a,(scopt,subscopes)))::subst,substlist) iter in
             let pll = List.map (subst_pat_iterator ldots_var t) u in
             tids@uids, List.flatten pll)
             (if lassoc then List.rev l else l) termin in
-        idsl, List.map (fun ((subst, pl) as x) -> 
-	  match pl with PatCstr (loc, c, pl, Anonymous) -> (subst, PatCstr (loc, c, pl, alias)) | _ -> x) v
+        idsl, List.map (fun ((asubst, pl) as x) ->
+	  match pl with PatCstr (loc, c, pl, Anonymous) -> (asubst, PatCstr (loc, c, pl, alias)) | _ -> x) v
       with Not_found -> 
           anomaly "Inconsistent substitution of recursive notation")
   | t -> error_invalid_pattern_notation loc
-  in aux alias subst a
-    
+  in aux alias fullsubst a
+
 (* Differentiating between constructors and matching variables *)
 type pattern_qualid_kind =
   | ConstrPat of constructor * (identifier list * 
@@ -701,7 +692,7 @@ let find_constructor ref f aliases pats scopes =
 	   if List.length pats < nvars then error_not_enough_arguments loc;
 	   let pats1,pats2 = list_chop nvars pats in
 	   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
-	   let idspl1 = List.map (subst_cases_pattern loc (alias_of aliases) f subst scopes) args in
+	   let idspl1 = List.map (subst_cases_pattern loc (alias_of aliases) f (subst,[]) scopes) args in
 	   cstr, idspl1, pats2
        | _ -> raise Not_found)
       
@@ -739,7 +730,7 @@ let mustbe_constructor loc ref f aliases patl scopes =
   with (Environ.NotEvaluableConst _ | Not_found) ->
     raise (InternalisationError (loc,NotAConstructor ref))
 
-let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
+let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
   let intern_pat = intern_cases_pattern genv in 
   match pat with
   | CPatAlias (loc, p, id) ->
@@ -751,28 +742,30 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
       let argscs2 = find_remaining_constructor_scopes idslpl1 pl2 c in
       let idslpl2 = List.map2 (intern_pat scopes ([],[])) argscs2 pl2 in
       let (ids',pll) = product_of_cases_patterns ids (idslpl1@idslpl2) in
-      let pl' = List.map (fun (subst,pl) ->
-        (subst, PatCstr (loc,c,pl,alias_of aliases))) pll in
+      let pl' = List.map (fun (asubst,pl) ->
+        (asubst, PatCstr (loc,c,pl,alias_of aliases))) pll in
       ids',pl'
-  | CPatNotation (loc,"- _",[CPatPrim(_,Numeral p)]) 
+  | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]))
       when Bigint.is_strictly_pos p ->
       intern_pat scopes aliases tmp_scope (CPatPrim(loc,Numeral(Bigint.neg p)))
-  | CPatNotation (_,"( _ )",[a]) ->
+  | CPatNotation (_,"( _ )",([a],[])) ->
       intern_pat scopes aliases tmp_scope a
-  | CPatNotation (loc, ntn, args) ->
-      let ntn,args = contract_pat_notation ntn args in
-      let ((ids',c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
+  | CPatNotation (loc, ntn, fullargs) ->
+      let ntn,(args,argsl) = contract_pat_notation ntn fullargs in
+      let (((ids',idsl'),c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
       if !dump then dump_notation_location (patntn_loc loc args ntn) df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
-      let ids'',pl = subst_cases_pattern loc (alias_of aliases) intern_pat subst scopes 
-	c
+      let substlist = List.map2 (fun (id,scl) a -> (id,(a,scl))) idsl' argsl in
+      let ids'',pl =
+	subst_cases_pattern loc (alias_of aliases) intern_pat (subst,substlist)
+	  scopes c
       in ids@ids'', pl
   | CPatPrim (loc, p) ->
       let a = alias_of aliases in
       let (c,df) = Notation.interp_prim_token_cases_pattern loc p a 
 	(tmp_scope,scopes) in
       if !dump then dump_notation_location (fst (unloc loc)) df;
-      (ids,[subst,c])
+      (ids,[asubst,c])
   | CPatDelimiters (loc, key, e) ->
       intern_pat (find_delimiters_scope loc key::scopes) aliases None e
   | CPatAtom (loc, Some head) ->
@@ -780,13 +773,13 @@ let rec intern_cases_pattern genv scopes (ids,subst as aliases) tmp_scope pat =
 	 | ConstrPat (c,idspl) ->
 	     check_constructor_length genv loc c idspl [];
 	     let (ids',pll) = product_of_cases_patterns ids idspl in
-	     (ids,List.map (fun (subst,pl) ->
-	       (subst, PatCstr (loc,c,pl,alias_of aliases))) pll)
+	     (ids,List.map (fun (asubst,pl) ->
+	       (asubst, PatCstr (loc,c,pl,alias_of aliases))) pll)
 	 | VarPat id ->
-	     let ids,subst = merge_aliases aliases id in
-	     (ids,[subst, PatVar (loc,alias_of (ids,subst))]))
+	     let ids,asubst = merge_aliases aliases id in
+	     (ids,[asubst, PatVar (loc,alias_of (ids,asubst))]))
   | CPatAtom (loc, None) ->
-      (ids,[subst, PatVar (loc,alias_of aliases)])
+      (ids,[asubst, PatVar (loc,alias_of aliases)])
   | CPatOr (loc, pl) ->
       assert (pl <> []);
       let pl' = List.map (intern_pat scopes aliases tmp_scope) pl in
@@ -1023,10 +1016,10 @@ let internalise sigma globalenv env allow_patvar lvar c =
     | CLetIn (loc,(loc1,na),c1,c2) ->
 	RLetIn (loc, na, intern (reset_tmp_scope env) c1,
           intern (push_loc_name_env lvar env loc1 na) c2)
-    | CNotation (loc,"- _",[CPrim (_,Numeral p)])
+    | CNotation (loc,"- _",([CPrim (_,Numeral p)],[]))
 	when Bigint.is_strictly_pos p -> 
 	intern env (CPrim (loc,Numeral (Bigint.neg p)))
-    | CNotation (_,"( _ )",[a]) -> intern env a
+    | CNotation (_,"( _ )",([a],[])) -> intern env a
     | CNotation (loc,ntn,args) ->
         intern_notation intern env loc ntn args
     | CPrim (loc, p) ->
@@ -1050,8 +1043,8 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	let (c,impargs,args_scopes,l),args =
           match f with
             | CRef ref -> intern_applied_reference intern env lvar args ref
-            | CNotation (loc,ntn,[]) ->
-                let c = intern_notation intern env loc ntn [] in
+            | CNotation (loc,ntn,([],[])) ->
+                let c = intern_notation intern env loc ntn ([],[]) in
                 find_appl_head_data lvar c, args
             | x -> (intern env f,[],[],[]), args in
 	let args = 
@@ -1127,9 +1120,9 @@ let internalise sigma globalenv env allow_patvar lvar c =
     (* Linearity implies the order in ids is irrelevant *)
     check_linearity lhs eqn_ids;
     let env_ids = List.fold_right Idset.add eqn_ids ids in
-    List.map (fun (subst,pl) ->
-      let rhs = replace_vars_constr_expr subst rhs in
-      List.iter message_redundant_alias subst;
+    List.map (fun (asubst,pl) ->
+      let rhs = replace_vars_constr_expr asubst rhs in
+      List.iter message_redundant_alias asubst;
       let rhs' = intern (env_ids,tmp_scope,scopes) rhs in
       (loc,eqn_ids,pl,rhs')) pll
 
@@ -1343,19 +1336,19 @@ type ltac_sign = identifier list * unbound_ltac_var_map
 let interp_constrpattern sigma env c =
   pattern_of_rawconstr (intern_gen false sigma env ~allow_patvar:true c)
 
-let interp_aconstr impls vars a =
+let interp_aconstr impls (vars,varslist) a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
-  let vl = List.map (fun id -> (id,ref None)) vars in
+  let vl = List.map (fun id -> (id,ref None)) (vars@varslist) in
   let c = internalise Evd.empty (Global.env()) (extract_ids env, None, [])
     false (([],[]),Environ.named_context env,vl,([],impls)) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)
   (* Variables occurring in binders have no relevant scope since bound *)
-  List.map
-    (fun (id,r) -> (id,match !r with None -> None,[] | Some (a,l) -> a,l)) vl,
-  a
+  let vl = List.map (fun (id,r) -> 
+    (id,match !r with None -> None,[] | Some (a,l) -> a,l)) vl in
+  list_chop (List.length vars) vl, a
 
 (* Interpret binders and contexts  *)
 

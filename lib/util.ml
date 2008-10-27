@@ -726,13 +726,21 @@ let list_subset l1 l2 =
   in 
   look l1
 
-let list_splitby p = 
-  let rec splitby_loop x y = 
+let list_split_at p = 
+  let rec split_at_loop x y = 
     match y with 
       | []      -> ([],[])
-      | (a::l)  -> if (p a) then (x,y) else (splitby_loop (x@[a]) l)
+      | (a::l)  -> if (p a) then (x,y) else (split_at_loop (x@[a]) l)
   in 
-  splitby_loop []
+  split_at_loop []
+
+let list_split_by p = 
+  let rec split_loop = function
+  | []      -> ([],[])
+  | (a::l)  ->
+      let (l1,l2) = split_loop l in if (p a) then (a::l1,l2) else (l1,a::l2)
+  in 
+  split_loop
 
 let rec list_split3 = function
   | [] -> ([], [], [])
@@ -858,6 +866,16 @@ let list_cartesians op init ll =
 (* list_combinations [[a;b];[c;d]] gives [[a;c];[a;d];[b;c];[b;d]] *)
 
 let list_combinations l = list_cartesians (fun x l -> x::l) [] l
+
+(* Keep only those products that do not return None *)
+
+let rec list_cartesian_filter op l1 l2 = 
+  list_map_append (fun x -> list_map_filter (op x) l2) l1
+
+(* Keep only those products that do not return None *)
+
+let rec list_cartesians_filter op init ll = 
+  List.fold_right (list_cartesian_filter op) ll [init]
 
 (* Arrays *)
 

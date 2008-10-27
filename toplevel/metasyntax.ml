@@ -281,22 +281,22 @@ let rec find_pattern xl = function
       error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\".")
 
 let rec interp_list_parser hd = function
-  | [] -> [], List.rev hd
+  | [] -> [], [], List.rev hd
   | NonTerminal id :: tl when id = ldots_var ->
       let ((x,y,sl),tl') = find_pattern [] (hd,tl) in
-      let yl,tl'' = interp_list_parser [] tl' in
-      (* We remember the second copy of each recursive part variable to *)
-      (* remove it afterwards *)
-      y::yl, SProdList (x,sl) :: tl''
+      let yl,xl,tl'' = interp_list_parser [] tl' in
+      (* We remember each pair of variable denoting a recursive part to *)
+      (* remove the second copy of it afterwards *)
+      (y,x)::yl, x::xl, SProdList (x,sl) :: tl''
   | (Terminal _ | Break _) as s :: tl ->
       if hd = [] then 
-        let yl,tl' = interp_list_parser [] tl in
-        yl, s :: tl'
+        let yl,xl,tl' = interp_list_parser [] tl in
+        yl, xl, s :: tl'
       else
         interp_list_parser (s::hd) tl
   | NonTerminal _ as x :: tl ->
-      let yl,tl' = interp_list_parser [x] tl in
-      yl, List.rev_append hd tl'
+      let yl,xl,tl' = interp_list_parser [x] tl in
+      yl, xl, List.rev_append hd tl'
   | SProdList _ :: _ -> anomaly "Unexpected SProdList in interp_list_parser"
 
 (* Find non-terminal tokens of notation *)
@@ -345,10 +345,20 @@ let is_numeral symbs =
 
 let analyse_notation_tokens l =
   let vars,l = raw_analyse_notation_tokens l in
-  let recvars,l = interp_list_parser [] l in
-  ((if recvars = [] then [] else ldots_var::recvars), vars, l)
+  let extrarecvars,recvars,l = interp_list_parser [] l in
+  (if extrarecvars = [] then [], [], vars, l
+   else extrarecvars, recvars, list_subtract vars recvars, l)
 
-let remove_vars = List.fold_right List.remove_assoc
+let remove_extravars extrarecvars (vars,recvars) =
+  let vars =
+    List.fold_right (fun (x,y) l ->
+      if List.assoc x l <> List.assoc y recvars then
+	error
+	 "Two end variables of a recursive notation are not in the same scope."
+      else
+	List.remove_assoc x l) 
+      extrarecvars (List.remove_assoc ldots_var vars) in
+  (vars,recvars)
  
 (**********************************************************************)
 (* Build pretty-printing rules                                        *)
@@ -422,7 +432,7 @@ let make_hunks etyps symbols from =
     | NonTerminal m :: prods ->
 	let i = list_index m vars in
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
-	let u = UnpMetaVar (i ,prec) in
+	let u = UnpMetaVar (i,prec) in
 	if prods <> [] && is_non_terminal (List.hd prods) then
 	  u :: add_break 1 (make CanBreak prods)
 	else
@@ -814,7 +824,7 @@ let compute_syntax_data (df,modifiers) =
   (* Notation defaults to NONA *)
   let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
   let toks = split_notation_string df in
-  let (recvars,vars,symbols) = analyse_notation_tokens toks in
+  let (extrarecvars,recvars,vars,symbols) = analyse_notation_tokens toks in
   let ntn_for_interp = make_notation_key symbols in
   let symbols' = remove_curly_brackets symbols in
   let need_squash = (symbols <> symbols') in
@@ -833,7 +843,7 @@ let compute_syntax_data (df,modifiers) =
   let prec = (n,List.map (assoc_of_type n) typs) in
   let sy_data = (ntn_for_grammar,prec,need_squash,(n,typs,symbols',fmt)) in
   let df' = (Lib.library_dp(),df) in
-  let i_data = (onlyparse,recvars,vars,(ntn_for_interp,df')) in
+  let i_data = (onlyparse,extrarecvars,recvars,vars,(ntn_for_interp,df')) in
   (i_data,sy_data)
 
 (**********************************************************************)
@@ -939,14 +949,15 @@ let add_notation_in_scope local df c mods scope =
   let sy_rules = make_syntax_rules sy_data in
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules));
   (* Declare interpretation *)
-  let (onlyparse,recvars,vars,df') = i_data in
-  let (acvars,ac) = interp_aconstr [] vars c in
-  let a = (remove_vars recvars acvars,ac) (* For recursive parts *) in
+  let (onlyparse,extrarecvars,recvars,vars,df') = i_data in
+  let (acvars,ac) = interp_aconstr [] (vars,recvars) c in
+  let a = (remove_extravars extrarecvars acvars,ac) in
   let onlyparse = onlyparse or is_not_printable ac in
-  Lib.add_anonymous_leaf (inNotation(local,scope,a,onlyparse,df'))
+  Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'))
 
 let add_notation_interpretation_core local df names c scope onlyparse =
-  let (recs,vars,symbs) = analyse_notation_tokens (split_notation_string df) in
+  let dfs = split_notation_string df in
+  let (extrarecvars,recvars,vars,symbs) = analyse_notation_tokens dfs in
   (* Redeclare pa/pp rules *)
   if not (is_numeral symbs) then begin
     let sy_rules = recover_notation_syntax (make_notation_key symbs) in
@@ -954,10 +965,10 @@ let add_notation_interpretation_core local df names c scope onlyparse =
   end;
   (* Declare interpretation *)
   let df' = (make_notation_key symbs,(Lib.library_dp(),df)) in
-  let (acvars,ac) = interp_aconstr names vars c in
-  let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
+  let (acvars,ac) = interp_aconstr names (vars,recvars) c in
+  let a = (remove_extravars extrarecvars acvars,ac) in
   let onlyparse = onlyparse or is_not_printable ac in
-  Lib.add_anonymous_leaf (inNotation(local,scope,a,onlyparse,df'))
+  Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'))
 
 (* Notations without interpretation (Reserved Notation) *)
 

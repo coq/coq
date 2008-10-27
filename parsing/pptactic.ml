@@ -21,6 +21,7 @@ open Pattern
 open Ppextend
 open Ppconstr
 open Printer
+open Termops
 
 let pr_global x = Nametab.pr_global_env Idset.empty x
 
