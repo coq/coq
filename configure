@@ -455,6 +455,13 @@ if [ "$coq_debug_flag" = "-g" ]; then
     esac
 fi
 
+# Native dynlink
+if test -f `"$CAMLC" -where`/dynlink.cmxa; then
+    HASNATDYNLINK=true
+else
+    HASNATDYNLINK=false
+fi
+
 # Camlp4 / Camlp5 configuration
 
 if [ "$camlp5dir" != "" ]; then
@@ -900,6 +907,7 @@ let camlp4 = "$CAMLP4"
 let camlp4lib = "$ESCCAMLP4LIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
+let has_natdynlink = $HASNATDYNLINK
 let osdeplibs = "$OSDEPLIBS"
 let version = "$VERSION"
 let date = "$DATE"
@@ -985,6 +993,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQIDEOPT|$COQIDE|" \
     -e "s|CHECKEDOUTSOURCETREE|$checkedout|" \
     -e "s|WITHDOCOPT|$with_doc|" \
+    -e "s|HASNATIVEDYNLINK|$HASNATDYNLINK|" \
       "$COQSRC/config/Makefile.template" > "$COQSRC/config/Makefile"
 
 chmod a-w "$COQSRC/config/Makefile"

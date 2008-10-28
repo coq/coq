@@ -96,6 +96,7 @@ BEST=BESTCOMPILER
 # Your architecture
 # Can be obtain by UNIX command arch
 ARCH=ARCHITECTURE
+HASNATDYNLINK=HASNATIVEDYNLINK
 
 # Your C compiler and co
 CC="CCEXEC"

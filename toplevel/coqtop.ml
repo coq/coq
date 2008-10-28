@@ -132,7 +132,7 @@ let set_opt () = re_exec_version := "opt"
 
 let re_exec is_ide =
   let s = !re_exec_version in
-  let is_native = (Mltop.get()) = Mltop.Native in
+  let is_native = Mltop.is_native in
   (* Unix.readlink is not implemented on Windows architectures :-(
      let prog =
        try Unix.readlink "/proc/self/exe"

@@ -29,6 +29,11 @@ CHICKENOPT:=bin/coqchk.opt$(EXE)
 BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
 
+ifeq ($(HASNATDYNLINK),true)
+  DYNLINKCMXA:=dynlink.cmxa
+  NATDYNLINKDEF:=-DHasDynlink
+endif
+
 INSTALLBIN:=install
 INSTALLLIB:=install -m 644 
 MKDIR:=install -d

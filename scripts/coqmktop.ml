@@ -83,7 +83,8 @@ let module_of_file name =
 
 (* Build the list of files to link and the list of modules names *)
 let files_to_link userfiles =
-  let dyn_objs = if not !opt then dynobjs else [] in
+  let dyn_objs =
+    if not !opt || Coq_config.has_natdynlink then dynobjs else [] in
   let toplevel_objs =
     if !top then topobjs else if !opt then notopobjs else [] in
   let ide_objs = if !coqide then 
@@ -240,17 +241,15 @@ let tmp_dynlink()=
 
 (* Initializes the kind of loading in the main program *)
 let declare_loading_string () =
-  if !opt then
-    "Mltop.set Mltop.Native;;\n"
-  else if not !top then
-    "Mltop.set Mltop.WithoutTop;;\n"
+  if not !top then
+    "Mltop.remove ();;"
   else
     "let ppf = Format.std_formatter;;
-     Mltop.set (Mltop.WithTop
+     Mltop.set_top
        {Mltop.load_obj=Topdirs.dir_load ppf;
         Mltop.use_file=Topdirs.dir_use ppf;
         Mltop.add_dir=Topdirs.dir_directory;
-        Mltop.ml_loop=(fun () -> Toploop.loop ppf) });;\n"
+        Mltop.ml_loop=(fun () -> Toploop.loop ppf) };;\n"
 
 (* create a temporary main file to link *)
 let create_tmp_main_file modules =

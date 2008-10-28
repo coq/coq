@@ -62,17 +62,18 @@ type toplevel = {
 type kind_load =
   | WithTop of toplevel
   | WithoutTop
-  | Native
 
 (* Must be always initialized *)
-let load = ref Native
+let load = ref WithoutTop
 
-(* Sets and initializes the kind of loading *)
-let set kload = load := kload
-let get () = !load
+(* Are we in a native version of Coq? *)
+let is_native = IFDEF Byte THEN false ELSE true END
 
-(* Resets load *)
-let remove ()= load := Native
+(* Sets and initializes a toplevel (if any) *)
+let set_top toplevel = load := WithTop toplevel
+
+(* Removes the toplevel (if any) *)
+let remove ()= load := WithoutTop
 
 (* Tests if an Ocaml toplevel runs under Coq *)
 let is_ocaml_top () =
@@ -81,10 +82,7 @@ let is_ocaml_top () =
     |_ -> false
 
 (* Tests if we can load ML files *)
-let enable_load () =
-  match !load with
-    | WithTop _ | WithoutTop -> true
-    |_ -> false
+let has_dynlink = IFDEF HasDynlink THEN true ELSE false END
 
 (* Runs the toplevel loop of Ocaml *)
 let ocaml_toploop () =
@@ -103,7 +101,7 @@ let dir_ml_load s =
                 str s ++ str" to Coq code."))
 (* TO DO: .cma loading without toplevel *)
     | WithoutTop ->
-      IFDEF Byte THEN
+      IFDEF HasDynlink THEN
 	(* WARNING
 	 * if this code section starts to use a module not used elsewhere
 	 * in this file, the Makefile dependency logic needs to be updated.
@@ -117,10 +115,10 @@ let dir_ml_load s =
 	    [Filename.dirname gname]
 	with | Dynlink.Error a ->
           errorlabstrm "Mltop.load_object" (str (Dynlink.error_message a))
-      ELSE () END
-    | Native ->
-	errorlabstrm "Mltop.no_load_object"
-          (str"Loading of ML object file forbidden in a native Coq.")
+      ELSE
+        errorlabstrm "Mltop.no_load_object"
+            (str"Loading of ML object file forbidden in a native Coq.")
+      END
 
 (* Dynamic interpretation of .ml *)
 let dir_ml_use s =
@@ -132,7 +130,7 @@ let dir_ml_use s =
 let add_ml_dir s =
   match !load with
     | WithTop t -> t.add_dir s; keep_copy_mlpath s
-    | WithoutTop -> keep_copy_mlpath s
+    | WithoutTop when has_dynlink -> keep_copy_mlpath s
     | _ -> ()
 
 (* For Rec Add ML Path *)
@@ -182,15 +180,44 @@ let mod_of_name name =
   in 
   String.capitalize base
 
-let file_of_name name =
-  let bname = String.uncapitalize name in
-  let fname = make_suffix bname ".cmo" in
-  if (is_in_path !coq_mlpath_copy fname) then fname
-  else let fname=make_suffix bname ".cma" in
-  if (is_in_path !coq_mlpath_copy fname) then fname
+let get_ml_object_suffix name =
+  if Filename.check_suffix name ".cmo" then
+    Some ".cmo"
+  else if Filename.check_suffix name ".cma" then
+    Some ".cma"
+  else if Filename.check_suffix name ".cmxs" then
+    Some ".cmxs"
   else
+    None
+
+let file_of_name name =
+  let name = String.uncapitalize name in
+  let suffix = get_ml_object_suffix name in
+  let fail s =
     errorlabstrm "Mltop.load_object"
-      (str"File not found on loadpath : " ++ str (bname^".cm[oa]"))
+      (str"File not found on loadpath : " ++ str s) in
+  if is_native then
+    let name = match suffix with
+      | Some ((".cmo"|".cma") as suffix) ->
+          (Filename.chop_suffix name suffix) ^ ".cmxs"
+      | Some ".cmxs" -> name
+      | _ -> name ^ ".cmxs"
+    in
+    if is_in_path !coq_mlpath_copy name then name else fail name
+  else
+    let (full, base) = match suffix with
+      | Some ".cmo" | Some ".cma" -> true, name
+      | Some ".cmxs" -> false, Filename.chop_suffix name ".cmxs"
+      | _ -> false, name
+    in
+    if full then
+      if is_in_path !coq_mlpath_copy base then base else fail base
+    else
+      let name = base ^ ".cmo" in
+      if is_in_path !coq_mlpath_copy name then name else
+        let name = base ^ ".cma" in
+        if is_in_path !coq_mlpath_copy name then name else
+          fail (base ^ ".cm[oa]")
 
 (* TODO: supprimer ce hack, si possible *)
 (* Initialisation of ML modules that need the state (ex: tactics like
@@ -242,7 +269,7 @@ let unfreeze_ml_modules x =
     (fun name ->
        let mname = mod_of_name name in
        if not (module_is_known mname) then
-         if enable_load() then
+         if has_dynlink then
            let fname = file_of_name mname in
            load_object mname fname
          else 
