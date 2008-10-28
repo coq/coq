@@ -1,18 +1,18 @@
 1 subgoal
-
+  
   y1 := 0 : nat
   x := 0 + 0 : nat
   ============================
    x = x
 1 subgoal
-
+  
   y1 := 0 : nat
   y2 := 0 : nat
   x := y2 + 0 : nat
   ============================
    x = x
 1 subgoal
-
+  
   y1 := 0 : nat
   y2 := 0 : nat
   y3 := 0 : nat
