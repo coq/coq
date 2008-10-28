@@ -235,15 +235,19 @@ let add_retroknowledge msid mp =
 
 
 let strengthen_const env mp l cb = 
-  let const = mkConst (make_con mp empty_dirpath l) in 
-  let const_subs = Some (Declarations.from_val const) in
-    {cb with 
-       const_body = const_subs;
-       const_opaque = false;
-       const_body_code = Cemitcodes.from_val
-        (compile_constant_body env const_subs false false)
-    }
-      
+  match cb.const_opaque, cb.const_body with
+  | false, Some _ -> cb
+  | true, Some _ 
+  | _, None ->
+      let const = mkConst (make_con mp empty_dirpath l) in 
+      let const_subs = Some (Declarations.from_val const) in
+	{cb with 
+	   const_body = const_subs;
+	   const_opaque = false;
+	   const_body_code = Cemitcodes.from_val
+            (compile_constant_body env const_subs false false)
+	}
+	  
 let strengthen_mind env mp l mib = match mib.mind_equiv with
   | Some _ -> mib
   | None -> {mib with mind_equiv = Some (make_kn mp empty_dirpath l)}
