@@ -35,8 +35,13 @@ let rec list_fold_map2 f e = function
   |  h::t -> 
        let e',h1',h2' = f e h in
        let e'',t1',t2' = list_fold_map2 f e' t in
-
 	 e'',h1'::t1',h2'::t2'
+
+let rec rebuild_mp mp l =
+  match l with
+      []-> mp
+    | i::r -> rebuild_mp (MPdot(mp,i)) r 
+
 let type_of_struct env b meb = 
   let rec aux env = function 
   | SEBfunctor (mp,mtb,body) ->
@@ -191,37 +196,48 @@ and check_with_aux_mod env mtb with_decl now =
 	      in
 		if now then 
 		  let mp' = scrape_alias mp env' in
-		  let up_subst = update_subst mtb'.typ_alias (map_mp (mp_rec [id]) mp') in
+		  let _,sub = Modops.update_subst env' (module_body_of_type mtb') mp' in
+		  let up_subst = update_subst sub (map_mp (mp_rec [id]) mp') in
 		    cst, (join (map_mp (mp_rec [id]) mp') up_subst),(return_opt_type mp env' mtb')
 		else
 		cst,empty_subst,(return_opt_type mp env' mtb')
         | With_Module (_::_,mp) -> 
-	    let old = match spec with
-		SFBmodule msb -> msb
+	    let old,alias = match spec with
+		SFBmodule msb -> Some msb, None
+	      | SFBalias (mpold,typ_opt,cst)->None, Some mpold
 	      | _ -> error_not_a_module (string_of_label l)
 	    in
 	      begin
-		match old.mod_expr with
-                    None ->
-                      let new_with_decl = match with_decl with
-			  With_Definition (_,c) -> 
-			    With_Definition (idl,c)
-			| With_Module (_,c) -> With_Module (idl,c) in
-		      let cst,_,typ_opt =
-			check_with_aux_mod env' 
-			  (type_of_mb env' old) new_with_decl false in
-			if now then 
-			  let mtb' = lookup_modtype mp env' in
-			  let mp' = scrape_alias mp env' in
-			  let up_subst = update_subst 
-			    mtb'.typ_alias (map_mp (mp_rec (List.rev (id::idl))) mp') in
-			    cst, 
-		      (join (map_mp (mp_rec (List.rev (id::idl))) mp') up_subst),
-		      typ_opt
+		if alias = None then
+		  let old = Option.get old in
+		    match old.mod_expr with
+			None ->
+			  let new_with_decl = match with_decl with
+			      With_Definition (_,c) -> 
+				With_Definition (idl,c)
+			    | With_Module (_,c) -> With_Module (idl,c) in
+			  let cst,_,typ_opt =
+			    check_with_aux_mod env' 
+			      (type_of_mb env' old) new_with_decl false in
+			    if now then 
+			    let mtb' = lookup_modtype mp env' in
+			    let mp' = scrape_alias mp env' in
+			    let _,sub = Modops.update_subst env' (module_body_of_type mtb') mp' in
+			    let up_subst = update_subst 
+			      sub (map_mp (mp_rec (List.rev (id::idl))) mp') in
+			      cst, 
+			  (join (map_mp (mp_rec (List.rev (id::idl))) mp') up_subst),
+			  typ_opt
+			    else
+			      cst,empty_subst,typ_opt
+		      | Some msb ->
+			  error_a_generative_module_expected l
 		else
-		cst,empty_subst,typ_opt
-		  | Some msb ->
-                      error_a_generative_module_expected l
+		  let mpold =  Option.get alias in 
+		  let mpnew = rebuild_mp mpold (List.map label_of_id idl) in
+		    check_modpath_equiv env' mpnew mp;
+		    let mtb' = lookup_modtype mp env' in
+		      Constraint.empty,empty_subst,(return_opt_type mp env' mtb')
               end
 	| _ -> anomaly "Modtyping:incorrect use of with"
     with

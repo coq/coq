@@ -596,9 +596,13 @@ let rec replace_module_object idl (subst, mbids, msid, lib_stack) modobjs mp =
 						   mod_entry_expr = Some (MSEident mp)},None)
 						 ,modobjs,None))::tail
 		 | _ ->
-		     let (_,substobjs,_) = out_module obj in
+		     let (a,substobjs,_) = if tag =  "MODULE ALIAS" then
+		       out_module_alias obj else out_module obj in
                      let substobjs' = replace_module_object idl substobjs modobjs mp in
-                       (id, in_module (None,substobjs',None))::tail
+  		       if tag =  "MODULE ALIAS" then
+			 (id, in_module_alias (a,substobjs',None))::tail
+		       else
+			 (id, in_module (None,substobjs',None))::tail
               )
 	    else error "MODULE expected!"
 	| idl,lobj::tail -> lobj::replace_idl (idl,tail)

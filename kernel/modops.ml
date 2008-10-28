@@ -113,16 +113,18 @@ let module_body_of_type mtb =
     mod_retroknowledge = []}
 
 let module_type_of_module mp mb =
-  {typ_expr = 
+  let mp1,expr = 
       (match mb.mod_type with
-	| Some expr -> expr
+	| Some expr -> mp,expr
 	| None -> (match mb.mod_expr with
-		     | Some expr -> expr
+		     | Some (SEBident mp') ->(Some mp'),(SEBident mp')
+		     | Some expr -> mp,expr
 		     | None -> 
-			 anomaly "Modops: empty expr and type"));
-   typ_alias = mb.mod_alias;
-   typ_strength = mp
-  }
+			 anomaly "Modops: empty expr and type")) in
+    {typ_expr = expr;
+      typ_alias = mb.mod_alias;
+      typ_strength = mp1
+    }
 
 let rec check_modpath_equiv env mp1 mp2 = 
   if mp1=mp2 then () else
@@ -329,35 +331,41 @@ and merge_with env mtb with_decl alias=
 	    Some(join (map_mp (mp_rec [id]) mp') new_alias)
 	| With_definition_body (_::_,_) 
         | With_module_body (_::_,_,_,_) -> 
-	    let old = match spec with
-		SFBmodule msb -> msb
+	    let old,aliasold = match spec with
+		SFBmodule msb -> Some msb, None
+	      | SFBalias (mpold,typ_opt,cst) ->None, Some (mpold,typ_opt,cst)
 	      | _ -> error_not_a_module (string_of_label l)
 	    in
-            let new_with_decl,subst1 = 
-	      match with_decl with
-                  With_definition_body (_,c) -> With_definition_body (idl,c),None
-		| With_module_body (idc,mp,typ_opt,cst) -> 
-		    let mp' = scrape_alias mp env' in
-		    With_module_body (idl,mp,typ_opt,cst),
-		      Some(map_mp (mp_rec (List.rev idc)) mp') 
-	    in
-	    let subst = match subst1 with
-	      | None -> None
-	      | Some s -> Some (join s (update_subst alias s)) in
-            let modtype,subst_msb = 
-              merge_with env' (type_of_mb env' old) new_with_decl alias in
-            let msb =
-	      { mod_expr = None;
-		mod_type = Some modtype; 
-		mod_constraints = old.mod_constraints;
-		mod_alias = begin 
-		  match subst_msb with
-		    |None -> empty_subst
-		    |Some s -> s
-		end;
-		mod_retroknowledge = old.mod_retroknowledge}
-	    in
-	      (SFBmodule msb),subst
+	      if aliasold = None then
+		let old = Option.get old in
+		let new_with_decl,subst1 = 
+		  match with_decl with
+                      With_definition_body (_,c) -> With_definition_body (idl,c),None
+		    | With_module_body (idc,mp,typ_opt,cst) -> 
+			let mp' = scrape_alias mp env' in
+			  With_module_body (idl,mp,typ_opt,cst),
+			Some(map_mp (mp_rec (List.rev idc)) mp') 
+		in
+		let subst = match subst1 with
+		  | None -> None
+		  | Some s -> Some (join s (update_subst alias s)) in
+		let modtype,subst_msb = 
+		  merge_with env' (type_of_mb env' old) new_with_decl alias in
+		let msb =
+		  { mod_expr = None;
+		    mod_type = Some modtype; 
+		    mod_constraints = old.mod_constraints;
+		    mod_alias = begin 
+		      match subst_msb with
+			|None -> empty_subst
+			|Some s -> s
+		    end;
+		    mod_retroknowledge = old.mod_retroknowledge}
+		in
+		  (SFBmodule msb),subst
+	      else 
+		let mpold,typ_opt,cst =  Option.get aliasold in 
+		  SFBalias (mpold,typ_opt,cst),None
       in
 	SEBstruct(msid,  before@(l,new_spec)::
 		    (Option.fold_right subst_structure subst after)),subst
