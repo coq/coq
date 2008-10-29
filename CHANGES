@@ -69,6 +69,9 @@ Vernacular commands
   qualified names (this holds also for coqtop/coqc option -R).
 - SearchAbout supports negated search criteria and reference to logical objects
   by their notation.
+- "Declare ML Module" now allows to import .cmxs files when Coq is
+  compiled in native code with a version of OCaml that supports native
+  Dynlink (>= 3.11).
 
 Libraries (DOC TO CHECK)
 
