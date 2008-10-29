@@ -109,10 +109,6 @@ let dir_ml_load s =
         let _,gname = where_in_path true !coq_mlpath_copy s in
         try
           Dynlink.loadfile gname;
-	  Dynlink.add_interfaces 
-	    [(String.capitalize (Filename.chop_suffix
-				(Filename.basename gname) ".cmo"))] 
-	    [Filename.dirname gname]
 	with | Dynlink.Error a ->
           errorlabstrm "Mltop.load_object" (str (Dynlink.error_message a))
       ELSE
