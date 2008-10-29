@@ -27,19 +27,13 @@ doc-ps:\
   doc/tutorial/Tutorial.v.ps doc/refman/Reference-Manual.ps \
   doc/faq/FAQ.v.ps doc/stdlib/Library.ps doc/RecTutorial/RecTutorial.v.ps
 
-refman: coq
-	$(MAKE) -f Makefile.stage3 refman-nodep
-
-refman-nodep:\
+refman: \
   doc/refman/html/index.html doc/refman/Reference-Manual.ps doc/refman/Reference-Manual.pdf
 
-tutorial:\
+tutorial: \
   doc/tutorial/Tutorial.v.html doc/tutorial/Tutorial.v.ps doc/tutorial/Tutorial.v.pdf
 
-stdlib: $(THEORIESVO) $(COQDOC)
-	$(MAKE) -f Makefile.stage3 stdlib-nodep
-
-stdlib-nodep:\
+stdlib: \
   doc/stdlib/html/index.html doc/stdlib/Library.ps doc/stdlib/Library.pdf
 
 faq:\
@@ -53,7 +47,7 @@ rectutorial:\
 ### Implicit rules
 ######################################################################
 
-%.v.tex: %.tex
+%.v.tex: %.tex | $(COQTEX) $(COQTOPEXE) coqlib
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
 
 %.ps: %.dvi
@@ -158,7 +152,7 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 
 ### Standard library (browsable html format)
 
-doc/stdlib/index-body.html: 
+doc/stdlib/index-body.html: | $(COQDOC) $(THEORIESVO)
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
 	$(COQDOC) -q -d doc/stdlib/html --multi-index --html \
@@ -175,7 +169,7 @@ doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.htm
 
 ### Standard library (light version, full version is definitely too big)
 
-doc/stdlib/Library.coqdoc.tex: 
+doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
 	$(COQSRC)/$(COQDOC) -q --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 
