@@ -45,7 +45,7 @@ GEXTEND Gram
     [ [ s = IDENT -> id_of_string s ] ]
   ;
   pattern_ident:
-    [ [ s = PATTERNIDENT -> id_of_string s ] ]
+    [ [ s = LEFTQMARK; id = ident -> id ] ]
   ;
   pattern_identref:
     [ [ id = pattern_ident -> (loc, id) ] ]

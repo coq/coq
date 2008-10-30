@@ -435,19 +435,10 @@ GEXTEND Gram
     [ [ id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> (id1,id2) ] ]
   ;
   rewriter : 
-    [ [ 
-    (* hack for allowing "rewrite ?t" and "rewrite NN?t" that normally 
-       produce a pattern_ident *)
-        c = pattern_ident -> 
-	  let c = (CRef (Ident (loc,c)), NoBindings) in  
-	  (RepeatStar, c)
-      | n = natural; c = pattern_ident -> 
-	  let c = (CRef (Ident (loc,c)), NoBindings) in  
-	  (UpTo n, c)
-      | "!"; c = constr_with_bindings -> (RepeatPlus,c)
-      |	"?"; c = constr_with_bindings -> (RepeatStar,c)
+    [ [ "!"; c = constr_with_bindings -> (RepeatPlus,c)
+      | ["?"| LEFTQMARK]; c = constr_with_bindings -> (RepeatStar,c)
       | n = natural; "!"; c = constr_with_bindings -> (Precisely n,c)
-      |	n = natural; "?"; c = constr_with_bindings -> (UpTo n,c)
+      |	n = natural; ["?" | LEFTQMARK]; c = constr_with_bindings -> (UpTo n,c)
       | n = natural; c = constr_with_bindings -> (Precisely n,c)
       | c = constr_with_bindings -> (Precisely 1, c)
       ] ]
