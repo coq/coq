@@ -175,7 +175,7 @@ let add_keyword str =
 (* Adding a new token (keyword or special token). *)
 let add_token (con, str) = match con with
   | "" -> add_keyword str
-  | "METAIDENT" | "PATTERNIDENT" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI"
+  | "METAIDENT" | "LEFTQMARK" | "IDENT" | "FIELD" | "INT" | "STRING" | "EOI"
       -> ()
   | _ ->
       raise (Token.Error ("\
@@ -374,16 +374,25 @@ let process_chars bp c cs =
 
 (* Parse what follows a dot/question mark *)
 let parse_after_dot bp c =
-  let constructor = if c = '?' then "PATTERNIDENT" else "FIELD" in
   parser
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c); len = ident_tail (store 0 c) >] ->
-      (constructor, get_buff len)
+      ("FIELD", get_buff len)
   | [< s >] ->
       match lookup_utf8 s with
       | Utf8Token (UnicodeLetter, n) -> 
-	  (constructor, get_buff (ident_tail (nstore n 0 s) s))
+	  ("FIELD", get_buff (ident_tail (nstore n 0 s) s))
       | AsciiChar | Utf8Token _ | EmptyStream -> 
 	  fst (process_chars bp c s)
+
+(* Parse what follows a question mark *)
+let parse_after_qmark bp s =
+  match Stream.peek s with
+    |Some ('a'..'z' | 'A'..'Z') -> ("LEFTQMARK", "")
+    |None -> ("","?")
+    | _ ->
+	match lookup_utf8 s with
+	  | Utf8Token (UnicodeLetter, _) -> ("LEFTQMARK", "")
+	  | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp '?' s)
 
 (* Parse a token in a char stream *)
 let rec next_token = parser bp
@@ -393,10 +402,12 @@ let rec next_token = parser bp
       len = ident_tail (store 0 c) >] ep -> 
       comment_stop bp;
       (("METAIDENT", get_buff len), (bp,ep))
-  | [< ' ('.' | '?') as c; t = parse_after_dot bp c >] ep ->
+  | [< ''.' as c; t = parse_after_dot bp c >] ep ->
       comment_stop bp;
       if Flags.do_translate() & t=("",".") then between_com := true;
       (t, (bp,ep))
+  | [< ''?'; s >] ep ->
+      let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c);
        len = ident_tail (store 0 c) >] ep ->
       let id = get_buff len in 
