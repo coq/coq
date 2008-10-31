@@ -544,7 +544,8 @@ searched into the current Objective Caml loadpath (see the command {\tt
 Add ML Path} in the Section~\ref{loadpath}).  Loading of Objective Caml
 files is only possible under the bytecode version of {\tt coqtop}
 (i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
-\ref{Addoc-coqc}).
+\ref{Addoc-coqc}), or when Coq has been compiled with a version of
+Objective Caml that supports native {\tt Dynlink} ($\ge$ 3.11).
 
 \begin{ErrMsgs}
 \item \errindex{File not found on loadpath : \str}

@@ -83,7 +83,8 @@ let module_of_file name =
 
 (* Build the list of files to link and the list of modules names *)
 let files_to_link userfiles =
-  let dyn_objs = if not !opt then dynobjs else [] in
+  let dyn_objs =
+    if not !opt || Coq_config.has_natdynlink then dynobjs else [] in
   let toplevel_objs =
     if !top then topobjs else if !opt then notopobjs else [] in
   let ide_objs = if !coqide then 
@@ -198,59 +199,23 @@ let clean file =
     rm (basename ^ ".cmx")
   end
 
-(* Gives all modules in [dir]. Uses [.cmi] suffixes. Uses [Unix]. *)
-let all_modules_in_dir dir =
-  try
-    let lst = ref []
-    and dh = Unix.opendir dir in
-    try
-      while true do
-	let stg = Unix.readdir dh in
-        if (Filename.check_suffix stg ".cmi") then
-          lst := !lst @ [String.capitalize (Filename.chop_suffix stg ".cmi")]
-      done;
-      []
-    with End_of_file -> 
-      Unix.closedir dh; !lst
-  with Unix.Unix_error (_,"opendir",_) ->
-    failwith ("all_modules_in_dir: directory "^dir^" not found")
-
-(* Gives a part of command line (corresponding to dir) for [extract_crc] *)
-let crc_cmd dir =
-  " -I "^dir^(List.fold_right (fun x y -> " "^x^y) (all_modules_in_dir dir)
-  "")
-
-(* Same as [crc_cmd] but recursively *)
-let rec_crc_cmd dir =
-  List.fold_right (fun x y -> x^y) (List.map crc_cmd (all_subdirs dir)) ""
-
 (* Creates another temporary file for Dynlink if needed *)
 let tmp_dynlink()=
   let tmp = Filename.temp_file "coqdynlink" ".ml" in
   let _ = Sys.command ("echo \"Dynlink.init();;\" > "^tmp) in
-  let _ = Sys.command (Coq_config.camllib^"/extract_crc"^(crc_cmd
-      Coq_config.camllib)^(crc_cmd Coq_config.camlp4lib)^(rec_crc_cmd
-      Coq_config.coqtop)^" >> "^tmp) in
-  let _ = Sys.command ("echo \";;\" >> "^tmp) in
-  let _ = 
-    Sys.command ("echo \"Dynlink.add_available_units crc_unit_list;;\" >> "^
-		 tmp)
-  in
   tmp
 
 (* Initializes the kind of loading in the main program *)
 let declare_loading_string () =
-  if !opt then
-    "Mltop.set Mltop.Native;;\n"
-  else if not !top then
-    "Mltop.set Mltop.WithoutTop;;\n"
+  if not !top then
+    "Mltop.remove ();;"
   else
     "let ppf = Format.std_formatter;;
-     Mltop.set (Mltop.WithTop
+     Mltop.set_top
        {Mltop.load_obj=Topdirs.dir_load ppf;
         Mltop.use_file=Topdirs.dir_use ppf;
         Mltop.add_dir=Topdirs.dir_directory;
-        Mltop.ml_loop=(fun () -> Toploop.loop ppf) });;\n"
+        Mltop.ml_loop=(fun () -> Toploop.loop ppf) };;\n"
 
 (* create a temporary main file to link *)
 let create_tmp_main_file modules =

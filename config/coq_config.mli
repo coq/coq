@@ -44,3 +44,5 @@ val with_geoproof : bool ref (* to (de)activate functions specific to Geoproof w
 val browser : string
 (** default web browser to use, may be overriden by environment
     variable COQREMOTEBROWSER *)
+
+val has_natdynlink : bool

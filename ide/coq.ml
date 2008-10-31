@@ -79,7 +79,7 @@ let version () =
       ver date
       Coq_config.arch Sys.os_type
       (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
-    (if Mltop.get () = Mltop.Native then "native" else "bytecode") 
+    (if Mltop.is_native then "native" else "bytecode") 
     (if Coq_config.best="opt" then "native" else "bytecode") 
 
 let is_in_coq_lib dir = 
