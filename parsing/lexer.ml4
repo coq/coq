@@ -372,7 +372,7 @@ let process_chars bp c cs =
     | Some t -> (("", t), (bp, ep))
     | None -> err (bp, ep) Undefined_token
 
-(* Parse what follows a dot/question mark *)
+(* Parse what follows a dot *)
 let parse_after_dot bp c =
   parser
   | [< ' ('a'..'z' | 'A'..'Z' | '_' as c); len = ident_tail (store 0 c) >] ->
@@ -387,7 +387,7 @@ let parse_after_dot bp c =
 (* Parse what follows a question mark *)
 let parse_after_qmark bp s =
   match Stream.peek s with
-    |Some ('a'..'z' | 'A'..'Z') -> ("LEFTQMARK", "")
+    |Some ('a'..'z' | 'A'..'Z' | '_') -> ("LEFTQMARK", "")
     |None -> ("","?")
     | _ ->
 	match lookup_utf8 s with
