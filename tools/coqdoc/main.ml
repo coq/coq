@@ -30,6 +30,7 @@ let usage () =
   prerr_endline "  --html               produce a HTML document (default)";
   prerr_endline "  --latex              produce a LaTeX document";
   prerr_endline "  --texmacs            produce a TeXmacs document";
+  prerr_endline "  --raw                produce a text document";
   prerr_endline "  --dvi                output the DVI";
   prerr_endline "  --ps                 output the PostScript";
   prerr_endline "  --pdf                output the Pdf";
@@ -81,6 +82,7 @@ let banner () =
 let target_full_name f = 
   match !Cdglobals.target_language with
     | HTML -> f ^ ".html"
+    | Raw -> f ^ ".txt"
     | _ -> f ^ ".tex"
 	
 (*s \textbf{Separation of files.} Files given on the command line are
@@ -257,6 +259,8 @@ let parse () =
 	Cdglobals.target_language := HTML; parse_rec rem
     | ("-texmacs" | "--texmacs") :: rem ->
 	Cdglobals.target_language := TeXmacs; parse_rec rem
+    | ("-raw" | "--raw") :: rem ->
+	Cdglobals.target_language := Raw; parse_rec rem
     | ("-charset" | "--charset") :: s :: rem ->
 	Cdglobals.charset := s; parse_rec rem
     | ("-charset" | "--charset") :: [] ->
