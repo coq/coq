@@ -49,7 +49,7 @@ CAMLP4BIN="CAMLP4BINDIRECTORY"
 CAMLVERSION=CAMLTAG
 
 # Ocaml .h directory
-CAMLHLIB="CAMLLIBDIRECTORY"/caml
+CAMLHLIB="CAMLLIBDIRECTORY"
 
 # Camlp4 library directory (avoid CAMLP4LIB used on Windows)
 CAMLP4O=CAMLP4TOOL
@@ -152,4 +152,3 @@ WITHDOC=WITHDOCOPT
 
 # make or sed are bogus and believe lines not terminating by a return
 # are inexistent
-
