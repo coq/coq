@@ -84,6 +84,10 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 [--help]: equivalent to [-h]\n";
   exit 1
 
+let is_genrule r =
+    let genrule = Str.regexp("%") in
+      Str.string_match genrule r 0
+
 let standard sds sps =
   print "byte:\n";
   print "\t$(MAKE) all \"OPT:=-byte\"\n\n";
@@ -116,7 +120,9 @@ let standard sds sps =
     print "\trm -f $(CMOFILES) $(MLFILES:.ml=.cmi) $(MLFILES:.ml=.ml.d)\n";
   print "\t- rm -rf html\n";
   List.iter
-    (fun (file,_,_) -> print "\t- rm -f "; print file; print "\n")
+    (fun (file,_,_) -> 
+       if not (is_genrule file) then
+	 (print "\t- rm -f "; print file; print "\n"))
     sps;
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) clean)\n")
@@ -138,6 +144,8 @@ let implicit () =
     print "%.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
     print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
+    print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
+    print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.ml.d: %.ml\n";
     print "\t$(CAMLBIN)ocamldep -slash $(ZFLAGS) $(PP) \"$<\" > \"$@\"\n\n"
   and v_rule () =
@@ -314,14 +322,18 @@ let subdirs l =
     print "\n\n";
     sds
 
-
 let all_target l =
   let rec parse_arguments l = 
     match l with
       | ML n :: r -> let v,m,o = parse_arguments r in (v,n::m,o)
       | Subdir n :: r -> let v,m,o = parse_arguments r in (v,m,n::o)
       | V n :: r -> let v,m,o = parse_arguments r in (n::v,m,o)
-      | Special (n,_,_) :: r -> let v,m,o = parse_arguments r in (v,m,n::o)
+      | Special (n,_,_) :: r -> 
+	  let v,m,o = parse_arguments r in 
+	    if is_genrule n then
+	      (v,m,o)
+	    else
+	      (v,m,n::o)
       | Include _ :: r -> parse_arguments r
       | RInclude _ :: r -> parse_arguments r
       | Def _ :: r -> parse_arguments r
@@ -406,7 +418,7 @@ let rec process_cmd_line = function
       let check_dep f =
 	if Filename.check_suffix f ".v" then
           some_vfile := true
-	else if Filename.check_suffix f ".ml" then
+	else if (Filename.check_suffix f ".ml") || (Filename.check_suffix f ".ml4") then
           some_mlfile := true
 	else
 	  () 
@@ -434,7 +446,7 @@ let rec process_cmd_line = function
       if Filename.check_suffix f ".v" then begin
           some_vfile := true; 
 	  V f :: (process_cmd_line r)
-	end else if Filename.check_suffix f ".ml" then begin
+	end else if (Filename.check_suffix f ".ml") || (Filename.check_suffix f ".ml4") then begin
             some_mlfile := true; 
 	    ML f :: (process_cmd_line r)
       end else
