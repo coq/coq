@@ -117,3 +117,8 @@ refine
 	let fn := fact_rec (n-1) _ in
         n * fn).
 Abort.
+
+(* Wish 1988: that fun forces unfold in refine *)
+
+Goal (forall A : Prop, A -> ~~A).
+Proof. refine(fun A a f => _).

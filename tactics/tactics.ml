@@ -2870,7 +2870,9 @@ let symmetry_red allowred gl =
         let hdcncls = string_of_inductive hdcncl in
         begin 
 	  try 
-	    (apply (pf_parse_const gl ("sym_"^hdcncls)) gl)
+            tclTHEN
+              (convert_concl_no_check concl DEFAULTcast)
+	      (apply (pf_parse_const gl ("sym_"^hdcncls))) gl
           with  _ ->
             let symc = match args with 
 	      | [t1; c1; t2; c2] -> mkApp (hdcncl, [| t2; c2; t1; c1 |])
