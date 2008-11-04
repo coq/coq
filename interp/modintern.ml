@@ -84,8 +84,9 @@ let rec drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> h
 let dump_modref loc mp ty =
   if !Flags.dump then
     let (dp, l) = split_modpath mp in
+    let l = if l = [] then l else drop_last l in
     let fp = string_of_dirpath dp in
-    let mp = string_of_dirpath (make_dirpath (drop_last l)) in
+    let mp = string_of_dirpath (make_dirpath l) in
       Flags.dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
 			    (fst (unloc loc)) fp mp "<>" ty)
 
