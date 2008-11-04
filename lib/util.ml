@@ -83,6 +83,9 @@ let rec is_sub gdzie gl gi co cl ci =
    (is_sub gdzie gl (gi+1) co cl (ci+1)))
 
 let rec raw_str_index i gdzie l c co cl = 
+  (* First adapt to ocaml 3.11 new semantics of index_from *)
+  if (i+cl > l) then raise Not_found;
+  (* Then proceed as in ocaml < 3.11 *)
   let i' = String.index_from gdzie i c in
     if (i'+cl <= l) && (is_sub gdzie l i' co cl 0) then i' else
       raw_str_index (i'+1) gdzie l c co cl

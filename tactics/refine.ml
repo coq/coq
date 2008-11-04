@@ -275,7 +275,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
     | Lambda (Name id,_,m), _ ->
 	assert (isMeta (strip_outer_cast m));
 	begin match sgp with
-	  | [None] -> introduction id gl
+	  | [None] -> intro_mustbe_force id gl
 	  | [Some th] ->
               tclTHEN (introduction id)
                 (onLastHyp (fun id -> tcc_aux (mkVar id::subst) th)) gl
