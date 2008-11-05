@@ -103,12 +103,12 @@ Section Respecting.
   (** Here we build an equivalence instance for functions which relates respectful ones only, 
      we do not export it. *)
 
-  Definition respecting [ Equivalence A (R : relation A), Equivalence B (R' : relation B) ] : Type := 
+  Definition respecting {( eqa : Equivalence A (R : relation A), eqb : Equivalence B (R' : relation B) )} : Type := 
     { morph : A -> B | respectful R R' morph morph }.
   
   Program Instance respecting_equiv [ eqa : Equivalence A R, eqb : Equivalence B R' ] :
-    Equivalence (fun (f g : respecting) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
-
+    Equivalence (fun (f g : respecting eqa eqb) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
+  
   Solve Obligations using unfold respecting in * ; simpl_relation ; program_simpl.
 
   Next Obligation.

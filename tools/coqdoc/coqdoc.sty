@@ -92,7 +92,6 @@
 \ifpdf
   \RequirePackage{hyperref}
   \hypersetup{raiselinks=true,colorlinks=true,linkcolor=black}
-  \RequirePackage{hypcap}
 
   % To do indexing, use something like:
   % \usepackage{multind}
@@ -148,6 +147,7 @@
 \newcommand{\coqdefinitionref}[2]{\coqref{#1}{\coqdoccst{#2}}}
 
 \newcommand{\coqvariable}[2]{\coqdocvar{#2}}
+\newcommand{\coqvariableref}[2]{\coqref{#1}{\coqdocvar{#2}}}
 
 \newcommand{\coqinductive}[2]{\coqdef{#1}{#2}{\coqdocind{#2}}}
 \newcommand{\coqinductiveref}[2]{\coqref{#1}{\coqdocind{#2}}}

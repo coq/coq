@@ -178,7 +178,7 @@ Ltac reverse_arrows x :=
   end.
 
 Ltac default_add_morphism_tactic :=
-  intros ;
+  unfold flip ; intros ;
   (try destruct_morphism) ;
   match goal with
     | [ |- (?x ==> ?y) _ _ ] => red_subst_eq_morphism (x ==> y) ; reverse_arrows (x ==> y)
