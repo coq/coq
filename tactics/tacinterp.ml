@@ -2297,7 +2297,7 @@ and interp_atomic ist gl = function
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) -> 
       Equality.general_multi_multi_rewrite ev
-	(List.map (fun (b,m,c) -> (b,m,interp_constr_with_bindings ist gl c)) l)
+	(List.map (fun (b,m,c) -> (b,m,interp_open_constr_with_bindings ist gl c)) l)
 	(interp_clause ist gl cl)
 	(Option.map (interp_tactic ist) by)
   | TacInversion (DepInversion (k,c,ids),hyp) ->

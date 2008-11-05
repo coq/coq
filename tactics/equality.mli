@@ -45,7 +45,7 @@ val rewriteRL   : constr  -> tactic
 
 val register_general_setoid_rewrite_clause :
   (identifier option -> bool ->
-    occurrences -> constr -> new_goals:constr list -> tactic) -> unit
+    occurrences -> open_constr -> new_goals:constr list -> tactic) -> unit
 val register_is_applied_setoid_relation : (constr -> bool) -> unit
 
 val general_rewrite_bindings_in :
@@ -54,14 +54,14 @@ val general_rewrite_in          :
   bool -> occurrences -> identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite : 
-  bool -> evars_flag -> constr with_ebindings -> clause -> tactic
+  bool -> evars_flag -> open_constr with_bindings -> clause -> tactic
 val general_multi_multi_rewrite : 
-  evars_flag -> (bool * multi * constr with_ebindings) list -> clause -> 
+  evars_flag -> (bool * multi * open_constr with_bindings) list -> clause -> 
   tactic option -> tactic
 
-val conditional_rewrite : bool -> tactic -> constr with_ebindings -> tactic
+val conditional_rewrite : bool -> tactic -> open_constr with_bindings -> tactic
 val conditional_rewrite_in :
-  bool -> identifier -> tactic -> constr with_ebindings -> tactic
+  bool -> identifier -> tactic -> open_constr with_bindings -> tactic
 
 val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic
 val replace    : constr -> constr -> tactic

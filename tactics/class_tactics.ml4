@@ -66,13 +66,13 @@ let intersects s t =
 
 open Auto
 
-let e_give_exact c gl = 
+let e_give_exact flags c gl = 
   let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
-  if occur_existential t1 or occur_existential t2 then 
-     tclTHEN (Clenvtac.unify t1) (exact_check c) gl
-  else exact_check c gl
-
-let assumption id = e_give_exact (mkVar id)
+    if occur_existential t1 or occur_existential t2 then 
+      tclTHEN (Clenvtac.unify (* ~flags *) t1) (exact_check c) gl
+    else exact_check c gl
+      
+let assumption flags id = e_give_exact flags (mkVar id)
 
 open Unification
 
@@ -130,7 +130,7 @@ and e_my_find_search db_list local_db hdc concl =
 	match t with
 	  | Res_pf (term,cl) -> unify_resolve flags (term,cl)
 	  | ERes_pf (term,cl) -> unify_e_resolve flags (term,cl)
-	  | Give_exact (c) -> e_give_exact c
+	  | Give_exact (c) -> e_give_exact flags c
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
               tclTHEN (unify_e_resolve flags (term,cl)) 
 		(e_trivial_fail_db db_list local_db)
@@ -812,6 +812,8 @@ let unify_eqn env sigma hypinfo t =
 		let mvs = clenv_dependent false env' in
 		  clenv_pose_metas_as_evars env' mvs
 	      in
+	      let evd' = Typeclasses.resolve_typeclasses ~fail:false env'.env env'.evd in
+	      let env' = { env' with evd = evd' } in
 	      let c1 = Clenv.clenv_nf_meta env' c1
 	      and c2 = Clenv.clenv_nf_meta env' c2
 	      and car = Clenv.clenv_nf_meta env' car
@@ -833,7 +835,7 @@ let unify_eqn env sigma hypinfo t =
 		let mvs = clenv_dependent false env' in
 		  clenv_pose_metas_as_evars env' mvs
 	      in
-	      let evd' = Typeclasses.resolve_typeclasses env'.env env'.evd in
+	      let evd' = Typeclasses.resolve_typeclasses ~fail:false env'.env env'.evd in
 	      let env' = { env' with evd = evd' } in
 	      let nf c = Evarutil.nf_evar (Evd.evars_of evd') (Clenv.clenv_nf_meta env' c) in
 	      let c1 = nf c1 and c2 = nf c2
@@ -1066,16 +1068,16 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 		      mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
 		in
 		  cut_replacing id newt 
-		    (fun x -> Tactics.refine (mkApp (term, [| mkVar id |])))
+		    (fun x -> Tacmach.refine_no_check (mkApp (term, [| mkVar id |])))
 	    | None -> 
 		(match abs with
 		| None -> 
 		    let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
 		      tclTHENLAST
 			(Tacmach.internal_cut_no_check false name newt)
-			(tclTHEN (Tactics.revert [name]) (Tactics.refine p))
+			(tclTHEN (Tactics.revert [name]) (Tacmach.refine_no_check p))
 		| Some (t, ty) -> 
-		    Tactics.refine
+		    Tacmach.refine_no_check
 		      (mkApp (mkLambda (Name (id_of_string "newt"), newt,
 				       mkLambda (Name (id_of_string "lemma"), ty,
 						mkApp (p, [| mkRel 2 |]))),
@@ -1584,27 +1586,27 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
     {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
 
 let get_hyp gl c clause l2r = 
-  let hi = decompose_setoid_eqhyp (pf_env gl) (project gl) c l2r in
+  let hi = decompose_setoid_eqhyp (pf_env gl) (fst c) (snd c) l2r in
   let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
     unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
 	
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = false }
 
-let general_s_rewrite l2r occs c ~new_goals gl =
+let general_s_rewrite cl l2r occs c ~new_goals gl =
   let meta = Evarutil.new_meta() in
-  let hypinfo = ref (get_hyp gl c None l2r) in
-    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta occs None gl
-
-let general_s_rewrite_in id l2r occs c ~new_goals gl =
-  let meta = Evarutil.new_meta() in
-  let hypinfo = ref (get_hyp gl c (Some id) l2r) in
-    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta occs (Some (([],id), [])) gl
+  let hypinfo = ref (get_hyp gl c cl l2r) in
+  let cl' = Option.map (fun id -> (([],id), [])) cl in
+    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta occs cl' gl
+(*     if fst c = Evd.empty || fst c == project gl then tac gl *)
+(*     else *)
+(*       let evars = Evd.merge (fst c) (project gl) in *)
+(* 	tclTHEN (Refiner.tclEVARS evars) tac gl *)
 
 let general_s_rewrite_clause x =
   init_setoid ();
   match x with
-    | None -> general_s_rewrite
-    | Some id -> general_s_rewrite_in id
+    | None -> general_s_rewrite None
+    | Some id -> general_s_rewrite (Some id)
 	
 let _ = Equality.register_general_setoid_rewrite_clause general_s_rewrite_clause
 

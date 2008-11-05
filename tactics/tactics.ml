@@ -535,6 +535,13 @@ let bring_hyps hyps =
       let f = mkCast (Evarutil.mk_new_meta(),DEFAULTcast, newcl) in
       refine_no_check (mkApp (f, instance_from_named_context hyps)) gl)
 
+let resolve_classes gl =
+  let env = pf_env gl and evd = project gl in
+    if evd = Evd.empty then tclIDTAC gl
+    else
+      let evd' = Typeclasses.resolve_typeclasses env (Evd.create_evar_defs evd) in
+	(tclTHEN (tclEVARS (Evd.evars_of evd')) tclNORMEVAR) gl
+
 (**************************)
 (*     Cut tactics        *)
 (**************************)
@@ -718,13 +725,6 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 (****************************************************)
 (*            Resolution tactics                    *)
 (****************************************************)
-
-let resolve_classes gl =
-  let env = pf_env gl and evd = project gl in
-    if evd = Evd.empty then tclIDTAC gl
-    else
-      let evd' = Typeclasses.resolve_typeclasses env (Evd.create_evar_defs evd) in
-	(tclTHEN (tclEVARS (Evd.evars_of evd')) tclNORMEVAR) gl
 
 (* Resolution with missing arguments *)
 
@@ -1172,8 +1172,8 @@ let rec intros_patterns b avoid thin destopt = function
       tclTHEN 
         (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l)) no_move true)
         (onLastHyp (fun id ->
-	  tclTHENLIST [
-	    !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) 
+	  tclTHENLIST [ 
+	    !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings)
 	      allClauses;
 	    clear_if_atomic l2r id;
 	    intros_patterns b avoid thin destopt l ]))
@@ -1200,7 +1200,7 @@ let prepare_intros s (loc,ipat) gl = match ipat with
   | IntroWildcard -> let id = make_id s gl in id, clear_wildcards [dloc,id]
   | IntroRewrite l2r -> 
       let id = make_id s gl in
-      id, !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allClauses
+      id, !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allClauses
   | IntroOrAndPattern ll -> make_id s gl, 
       intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
 
@@ -1231,7 +1231,7 @@ let true_cut = assert_tac true
 
 let as_tac id ipat = match ipat with
   | Some (loc,IntroRewrite l2r) -> 
-      !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allClauses
+      !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allClauses
   | Some (loc,IntroOrAndPattern ll) ->
       intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
   | Some (loc,

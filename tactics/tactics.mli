@@ -366,4 +366,4 @@ val abstract_generalize : identifier -> ?generalize_vars:bool -> tactic
 val dependent_pattern : constr -> tactic
 
 val register_general_multi_rewrite : 
-  (bool -> evars_flag -> constr with_ebindings -> clause -> tactic) -> unit
+  (bool -> evars_flag -> open_constr with_bindings -> clause -> tactic) -> unit
