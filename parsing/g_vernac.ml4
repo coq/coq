@@ -224,7 +224,7 @@ GEXTEND Gram
       | "CoInductive" -> false ] ]
   ;
   record_token:
-    [ [ IDENT "Record" -> true | IDENT "Structure" -> false ] ]
+    [ [ IDENT "Record" -> (true,true) | IDENT "Structure" -> (false,true) ]]
   ;
   (* Simple definitions *)
   def_body:
@@ -249,13 +249,18 @@ GEXTEND Gram
   inductive_definition:
     [ [ id = identref; indpar = binders_let; 
         c = [ ":"; c = lconstr -> c | -> CSort (loc,Rawterm.RType None) ];
-        ":="; lc = constructor_list; ntn = decl_notation ->
-	  ((id,indpar,c,lc),ntn) ] ]
+        ":="; lc = constructor_list_or_record_decl; ntn = decl_notation ->
+	   ((id,indpar,c,lc),ntn) ] ]
   ;
-  constructor_list:
-    [ [ "|"; l = LIST1 constructor SEP "|" -> l
-      | l = LIST1 constructor SEP "|" -> l
-      |  -> [] ] ]
+  constructor_list_or_record_decl:
+    [ [ "|"; l = LIST1 constructor SEP "|" -> Constructors l
+      | id = identref ; c = constructor_type; "|"; l = LIST0 constructor SEP "|" -> 
+	      Constructors ((c id)::l)
+      | id = identref ; c = constructor_type -> Constructors [ c id ]
+      | cstr = identref; "{"; fs = LIST0 record_field SEP ";"; "}" -> 
+	     RecordDecl (Some cstr,fs) 
+      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (None,fs) 
+      |  -> Constructors [] ] ]
   ;
 (*
   csort:
@@ -346,12 +351,19 @@ GEXTEND Gram
     [ [ idl = LIST1 identref; oc = of_type_with_opt_coercion; c = lconstr -> 
         (oc,(idl,c)) ] ]
   ;
+
+  constructor_type:
+    [[ l = binders_let; 
+      t= [ coe = of_type_with_opt_coercion; c = lconstr ->
+	            fun l id -> (coe,(id,mkCProdN loc l c))
+            |  ->
+		 fun l id -> (false,(id,mkCProdN loc l (CHole (loc, None)))) ]
+	 -> t l
+     ]]
+;
+
   constructor:
-    [ [ id = identref; l = binders_let; 
-        coe = of_type_with_opt_coercion; c = lconstr ->
-	  (coe,(id,mkCProdN loc l c))
-      | id = identref; l = binders_let ->
-	  (false,(id,mkCProdN loc l (CHole (loc, None)))) ] ]
+    [ [ id = identref; c=constructor_type -> c id ] ]
   ;
   of_type_with_opt_coercion:
     [ [ ":>" -> true

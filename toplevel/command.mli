@@ -67,7 +67,8 @@ val compute_interning_datas : Environ.env -> Constrintern.var_internalisation_ty
 val check_mutuality : Environ.env -> definition_object_kind ->
   (identifier * types) list -> unit
 
-val build_mutual : (inductive_expr * decl_notation) list -> bool -> unit
+val build_mutual : ((lident * local_binder list * constr_expr * constructor_expr list) * 
+		                decl_notation) list -> bool -> unit
 
 val declare_mutual_with_eliminations :
   bool -> Entries.mutual_inductive_entry -> 

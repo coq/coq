@@ -230,7 +230,7 @@ let new_class id par ar sup props =
       | _ ->
 	  let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
 	  let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
-	  let kn = Record.declare_structure (snd id) idb arity_imps
+	  let kn = Record.declare_structure false (snd id) idb arity_imps
 	    params arity fieldimpls fields ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
 	  in
 	    IndRef (kn,0), (List.map2 (fun (id, _, _) y -> (Nameops.out_name id, y))

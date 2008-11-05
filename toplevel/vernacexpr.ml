@@ -146,14 +146,6 @@ type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
 
 type sort_expr = Rawterm.rawsort
 
-type decl_notation = (string * constr_expr * scope_name option) option
-type simple_binder = lident list  * constr_expr
-type class_binder = lident * constr_expr list
-type 'a with_coercion = coercion_flag * 'a
-type constructor_expr = (lident * constr_expr) with_coercion
-type inductive_expr =
-     lident * local_binder list * constr_expr * constructor_expr list
-
 type definition_expr =
   | ProveBody of local_binder list * constr_expr
   | DefineBody of local_binder list * raw_red_expr option * constr_expr
@@ -162,6 +154,17 @@ type definition_expr =
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
   | DefExpr of lname * constr_expr * constr_expr option
+
+type decl_notation = (string * constr_expr * scope_name option) option
+type simple_binder = lident list  * constr_expr
+type class_binder = lident * constr_expr list
+type 'a with_coercion = coercion_flag * 'a
+type constructor_expr = (lident * constr_expr) with_coercion
+type constructor_list_or_record_decl_expr =
+  | Constructors of constructor_expr list
+  | RecordDecl of lident option * local_decl_expr with_coercion list
+type inductive_expr =
+     lident * local_binder list * constr_expr * constructor_list_or_record_decl_expr
 
 type module_binder = bool option * lident list * module_type_ast
 
@@ -212,7 +215,7 @@ type vernac_expr =
   | VernacCombinedScheme of lident * lident list
 
   (* Gallina extensions *)
-  | VernacRecord of bool (* = Record or Structure *)
+  | VernacRecord of (bool*bool) (* = Record or Structure * Inductive or CoInductive *)
       * lident with_coercion * local_binder list
       * constr_expr * lident option * local_decl_expr with_coercion list
   | VernacBeginSection of lident

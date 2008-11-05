@@ -20,8 +20,8 @@ Language
   arguments in terms.
 - Sort of Record/Structure, Inductive and CoInductive defaults to Type
   if omitted.
-- Record/Structure now usable for defining coinductive types
-  (e.g. "Record stream := { hd : nat; tl : stream }.")
+- (Co)Inductive types can be defined as records 
+  (e.g. "CoInductive stream := { hd : nat; tl : stream }.")
 - New syntax "Theorem id1:t1 ... with idn:tn" for proving mutually dependent
   statements.
 - Support for sort-polymorphism on constants denoting inductive types.
