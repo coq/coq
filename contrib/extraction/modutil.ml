@@ -19,7 +19,8 @@ open Mlutil
 open Mod_subst
 
 (*S Functions upon ML modules. *)
-let rec  msid_of_mt = function
+
+let rec msid_of_mt = function
   | MTident mp -> begin
       match Modops.eval_struct (Global.env()) (SEBident mp) with
 	| SEBstruct(msid,_) -> MPself msid
@@ -27,12 +28,7 @@ let rec  msid_of_mt = function
     end
   | MTwith(mt,_)-> msid_of_mt mt
   | _ -> anomaly "Extraction:the With operator isn't applied to a name"
-      
-let  make_mp_with mp idl =
-  let idl_rev = List.rev idl in
-  let idl' = List.rev (List.tl idl_rev) in
-    (List.fold_left (fun mp id -> MPdot(mp,label_of_id id))
-       mp idl')
+
 (*s Apply some functions upon all [ml_decl] and [ml_spec] found in a 
    [ml_structure]. *) 
 
@@ -42,13 +38,12 @@ let struct_iter do_decl do_spec s =
     | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
     | MTwith (mt,ML_With_type(idl,l,t))->
 	let mp_mt = msid_of_mt mt in
-      let mp = make_mp_with mp_mt idl in
-      let gr = ConstRef (
-	(make_con mp empty_dirpath
-	  (label_of_id ( 
-	    List.hd (List.rev idl))))) in
-	mt_iter mt;do_decl 
-	  (Dtype(gr,l,t))
+	let l',idl' = list_sep_last idl in
+	let mp_w =
+	  List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
+	in
+	let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l')) in
+	mt_iter mt; do_decl (Dtype(r,l,t))
     | MTwith (mt,_)->mt_iter mt
     | MTsig (_, sign) -> List.iter spec_iter sign
   and spec_iter = function 
@@ -127,41 +122,6 @@ let spec_iter_references do_term do_cons do_type = function
   | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
   | Stype (r,_,ot) -> do_type r; Option.iter (type_iter_references do_type) ot
   | Sval (r,t) -> do_term r; type_iter_references do_type t
-
-let struct_iter_references do_term do_cons do_type = 
-  struct_iter 
-    (decl_iter_references do_term do_cons do_type) 
-    (spec_iter_references do_term do_cons do_type) 
-
-(*s Get all references used in one [ml_structure], either in [list] or [set]. *)
-
-type 'a kinds = { mutable typ : 'a ; mutable trm : 'a; mutable cons : 'a }
-
-let struct_get_references empty add struc = 
-  let o = { typ = empty ; trm = empty ; cons = empty } in 
-  let do_type r = o.typ <- add r o.typ in 
-  let do_term r = o.trm <- add r o.trm in
-  let do_cons r = o.cons <- add r o.cons in 
-  struct_iter_references do_term do_cons do_type struc; o
-
-let struct_get_references_set = struct_get_references Refset.empty Refset.add
-
-module Orefset = struct 
-  type t = { set : Refset.t ; list : global_reference list }
-  let empty = { set = Refset.empty ; list = [] }
-  let add r o = 
-    if Refset.mem r o.set then o 
-    else { set = Refset.add r o.set ; list = r :: o.list }
-  let set o = o.set
-  let list o = o.list
-end
-
-let struct_get_references_list struc = 
-  let o = struct_get_references Orefset.empty Orefset.add struc in 
-  { typ = Orefset.list o.typ; 
-    trm = Orefset.list o.trm; 
-    cons = Orefset.list o.cons }
-
 
 (*s Searching occurrences of a particular term (no lifting done). *)
 
@@ -396,6 +356,7 @@ let optimize_struct to_appear struc =
   let opt_struc =
     List.map (fun (mp,lse) -> (mp, optim_se true to_appear subst lse)) struc
   in
+  let opt_struc = List.filter (fun (_,lse) -> lse<>[]) opt_struc in
   try
     if modular () then raise NoDepCheck;
     reset_needed ();

@@ -24,11 +24,6 @@ val pr_binding : identifier list -> std_ppcmds
 
 val rename_id : identifier -> Idset.t -> identifier
 
-val lowercase_id : identifier -> identifier
-val uppercase_id : identifier -> identifier
-
-val pr_upper_id : identifier -> std_ppcmds
-
 type env = identifier list * Idset.t
 val empty_env : unit -> env
 
@@ -37,9 +32,12 @@ val rename_tvars: Idset.t -> identifier list -> identifier list
 val push_vars : identifier list -> env -> identifier list * env
 val get_db_name : int -> env -> identifier
 
-val record_contents_fstlev : ml_structure -> unit
+type phase = Pre | Impl | Intf
 
-val create_renamings : ml_structure -> module_path list
+val set_phase : phase -> unit
+val get_phase : unit -> phase
+
+val opened_libraries : unit -> module_path list
 
 type kind = Term | Type | Cons | Mod
 
@@ -47,14 +45,12 @@ val pp_global : kind -> global_reference -> string
 val pp_module : module_path -> string
 
 val top_visible_mp : unit -> module_path
-val push_visible : module_path -> unit
+val push_visible : module_path -> mod_self_id option -> unit
 val pop_visible : unit -> unit
-
-val add_subst : mod_self_id -> module_path -> unit
 
 val check_duplicate : module_path -> label -> string
 
-type reset_kind = OnlyLocal | AllButExternal | Everything
+type reset_kind = AllButExternal | Everything
 
 val reset_renaming_tables : reset_kind -> unit
 
