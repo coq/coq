@@ -212,7 +212,6 @@ let rec is_rec names =
     | RRef _ | REvar _ | RPatVar _ | RSort _ |  RHole _ | RDynamic _ -> false
     | RCast(_,b,_) -> lookup names b
     | RRec _ -> error "RRec not handled"
-    | RRecord _ -> error "Not handled RRecord"
     | RIf(_,b,_,lhs,rhs) -> 
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
     | RLetIn(_,na,t,b) | RLambda(_,na,_,t,b) | RProd(_,na,_,t,b)  -> 

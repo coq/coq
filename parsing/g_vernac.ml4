@@ -172,11 +172,6 @@ GEXTEND Gram
 	":="; cstr = OPT identref; "{";
         fs = LIST0 record_field SEP ";"; "}" ->
 	  VernacRecord (b,(oc,name),ps,s,cstr,fs)
-(* Non porté ?
-      | f = finite_token; s = csort; id = identref;
-        indpar = LIST0 simple_binder; ":="; lc = constructor_list -> 
-          VernacInductive (f,[id,None,indpar,s,lc])
-*)
     ] ]
   ;
   typeclass_context:
@@ -331,6 +326,9 @@ GEXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
+    [ [ bd = record_binder; ntn = decl_notation -> bd,ntn ] ]
+  ;
+  record_binder:
     [ [ id = name -> (false,AssumExpr(id,CHole (loc, None)))
       | id = name; oc = of_type_with_opt_coercion; t = lconstr ->
          (oc,AssumExpr (id,t))

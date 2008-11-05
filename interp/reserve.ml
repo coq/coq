@@ -57,7 +57,6 @@ let rec unloc = function
   | RLambda (_,na,bk,ty,c) -> RLambda (dummy_loc,na,bk,unloc ty,unloc c)
   | RProd (_,na,bk,ty,c) -> RProd (dummy_loc,na,bk,unloc ty,unloc c)
   | RLetIn (_,na,b,c) -> RLetIn (dummy_loc,na,unloc b,unloc c)
-  | RRecord (_,w,l) -> RRecord (dummy_loc,w,l)
   | RCases (_,sty,rtntypopt,tml,pl) ->
       RCases (dummy_loc,sty,
         (Option.map unloc rtntypopt),

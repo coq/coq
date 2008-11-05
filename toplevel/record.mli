@@ -24,7 +24,7 @@ open Impargs
 val declare_projections :
   inductive -> ?kind:Decl_kinds.definition_object_kind -> ?name:identifier ->
   bool list -> manual_explicitation list list -> rel_context -> 
-  bool list * constant option list
+  (name * bool) list * constant option list
 
 val declare_structure : bool (*coinductive?*)-> identifier -> identifier -> 
   manual_explicitation list -> rel_context -> (* params *)
@@ -37,4 +37,4 @@ val declare_structure : bool (*coinductive?*)-> identifier -> identifier ->
 
 val definition_structure :
   bool (*coinductive?*)*lident with_coercion * local_binder list *
-  (local_decl_expr with_coercion) list * identifier * sorts -> kernel_name
+  (local_decl_expr with_coercion with_notation) list * identifier * sorts -> kernel_name

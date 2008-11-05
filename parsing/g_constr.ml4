@@ -42,6 +42,11 @@ let loc_of_binder_let = function
   | LocalRawDef ((loc,_),_)::_ -> loc
   | _ -> dummy_loc
 
+let binders_of_lidents l =
+  List.map (fun (loc, id) -> 
+    LocalRawAssum ([loc, Name id], Default Rawterm.Explicit, 
+		  CHole (loc, Some (Evd.BinderType (Name id))))) l
+    
 let rec index_and_rec_order_of_annot loc bl ann =
   match names_of_local_assums bl,ann with
     | [loc,Name id], (None, r) -> Some (loc, id), r
@@ -241,7 +246,8 @@ GEXTEND Gram
     ] ]
   ;
   record_field_declaration:
-    [ [ id = identref; ":="; c = lconstr -> (id, c) ] ]
+    [ [ id = identref; params = LIST0 identref; ":="; c = lconstr -> 
+      (id, Topconstr.abstract_constr_expr c (binders_of_lidents params)) ] ]
   ;
   binder_constr:
     [ [ forall; bl = binder_list; ","; c = operconstr LEVEL "200" ->

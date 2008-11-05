@@ -37,7 +37,6 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
-  | ARecord of aconstr option * (identifier * aconstr) list
   | ACases of case_style * aconstr option *
       (aconstr * (name * (inductive * int * name list) option)) list *
       (cases_pattern list * aconstr) list
@@ -83,8 +82,6 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let e,na = name_fold_map g e na in RProd (loc,na,Explicit,f e ty,f e c)
   | ALetIn (na,b,c) ->
       let e,na = name_fold_map g e na in RLetIn (loc,na,f e b,f e c)
-  | ARecord (b,l) ->
-      RRecord (loc, Option.map (f e) b, List.map (fun (id, x) -> ((loc,id),f e x)) l)
   | ACases (sty,rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
@@ -149,7 +146,7 @@ let compare_rawconstr f t1 t2 = match t1,t2 with
       f ty1 ty2 & f c1 c2
   | RHole _, RHole _ -> true
   | RSort (_,s1), RSort (_,s2) -> s1 = s2
-  | (RLetIn _ | RRecord _ | RCases _ | RRec _ | RDynamic _
+  | (RLetIn _ | RCases _ | RRec _ | RDynamic _
     | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _),_
   | _,(RLetIn _ | RCases _ | RRec _ | RDynamic _
       | RPatVar _ | REvar _ | RLetTuple _ | RIf _ | RCast _)
@@ -195,7 +192,6 @@ let aconstr_and_vars_of_rawconstr a =
   | RLambda (_,na,bk,ty,c) -> add_name found na; ALambda (na,aux ty,aux c)
   | RProd (_,na,bk,ty,c) -> add_name found na; AProd (na,aux ty,aux c)
   | RLetIn (_,na,b,c) -> add_name found na; ALetIn (na,aux b,aux c)
-  | RRecord (_,w,l) -> ARecord (Option.map aux w,List.map (fun ((_,id), x) -> id, aux x) l)
   | RCases (_,sty,rtntypopt,tml,eqnl) ->
       let f (_,idl,pat,rhs) = found := idl@(!found); (pat,aux rhs) in
       ACases (sty,Option.map aux rtntypopt,
@@ -322,12 +318,6 @@ let rec subst_aconstr subst bound raw =
       and r2' = subst_aconstr subst bound r2 in
 	if r1' == r1 && r2' == r2 then raw else
 	  ALetIn (n,r1',r2')
-
-  | ARecord (r1,r2) -> 
-      let r1' = Option.smartmap (subst_aconstr subst bound) r1 
-      and r2' = list_smartmap (fun (id, x) -> id,subst_aconstr subst bound x) r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  ARecord (r1',r2')
 
   | ACases (sty,rtntypopt,rl,branches) -> 
       let rtntypopt' = Option.smartmap (subst_aconstr subst bound) rtntypopt

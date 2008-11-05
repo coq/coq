@@ -98,8 +98,6 @@ let free_vars_of_rawconstr ?(bound=Idset.empty) =
 	let vs' = vars bound vs ty in 
 	let bound' = add_name_to_ids bound na in 
 	vars bound' vs' c
-    | RRecord (loc,w,l) -> List.fold_left (vars bound) vs 
-	(Option.List.cons w (List.map snd l))
     | RCases (loc,sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bound vs rtntypopt in 
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bound vs tm) vs1 tml in 

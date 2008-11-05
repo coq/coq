@@ -176,7 +176,6 @@ let change_vars =
 	      change_vars mapping lhs,
 	      change_vars mapping rhs
 	     )
-      | RRecord _ -> error "Records are not supported"
       | RRec _ -> error "Local (co)fixes are not supported"
       | RSort _ -> rt 
       | RHole _ -> rt 
@@ -359,7 +358,6 @@ let rec alpha_rt excluded rt =
 	    alpha_rt excluded rhs
 	   )
     | RRec _ -> error "Not handled RRec"
-    | RRecord _ -> error "Not handled RRecord"
     | RSort _ -> rt 
     | RHole _ -> rt 
     | RCast (loc,b,CastConv (k,t)) -> 
@@ -411,7 +409,6 @@ let is_free_in id =
 	  
     | RIf(_,cond,_,br1,br2) ->
 	is_free_in cond || is_free_in br1 || is_free_in br2
-    | RRecord _ -> raise (UserError ("", str "Not handled RRecord"))
     | RRec _ -> raise (UserError("",str "Not handled RRec"))
     | RSort _ -> false
     | RHole _ -> false
@@ -510,7 +507,6 @@ let replace_var_by_term x_id term =
 	      replace_var_by_pattern rhs
 	     )
       | RRec _ -> raise (UserError("",str "Not handled RRec"))
-      | RRecord _ -> raise (UserError("",str "Not handled RRecord"))
       | RSort _ -> rt 
       | RHole _ -> rt 
       | RCast(loc,b,CastConv(k,t)) -> 
@@ -608,8 +604,6 @@ let ids_of_rawterm c =
       | RCases (loc,sty,rtntypopt,tml,brchl) -> 
 	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_rawterm [] c) brchl)
       | RRec _ -> failwith "Fix inside a constructor branch"
-      | RRecord (loc,w,l) -> Option.cata (ids_of_rawterm []) [] w @ 
-	  List.flatten (List.map (fun ((_,id), x) -> id :: ids_of_rawterm [] x) l)
       | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> []
   in
   (* build the set *)
@@ -667,7 +661,6 @@ let zeta_normalize =
 	      zeta_normalize_term lhs,
 	      zeta_normalize_term rhs
 	     )
-      | RRecord _ -> raise (UserError("",str "Not handled RRecord"))
       | RRec _ -> raise (UserError("",str "Not handled RRec"))
       | RSort _ -> rt 
       | RHole _ -> rt 
@@ -712,7 +705,6 @@ let expand_as =
       | RIf(loc,e,(na,po),br1,br2) ->
 	  RIf(loc,expand_as map e,(na,Option.map (expand_as map) po),
 	      expand_as map br1, expand_as map br2)
-      | RRecord _ ->  error "Not handled RRecord"
       | RRec _ ->  error "Not handled RRec"
       | RDynamic _ -> error "Not handled RDynamic"
       | RCast(loc,b,CastConv(kind,t)) -> RCast(loc,expand_as map b,CastConv(kind,expand_as map t))

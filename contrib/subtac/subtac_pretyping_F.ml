@@ -501,45 +501,6 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  in
 	    { uj_val = v; uj_type = p }
 
-    | RRecord (loc,w,l) ->
-	let cw = Option.map (pretype tycon env isevars lvar) w in
-	let cj = match cw with
-	  | None -> 
-	      (match tycon with
-	      | None -> user_err_loc (loc,"pretype",(str "Unnable to infer the record type."))
-	      | Some (_, ty) -> {uj_val=ty;uj_type=ty})
-	  | Some cj -> cj
-	in
-	let constructor = 
-	  let (IndType (indf,realargs)) = 
-	    try find_rectype env (evars_of !isevars) cj.uj_type
-	    with Not_found ->
-	      error_case_not_inductive_loc loc env (evars_of !isevars) cj
-	  in
-	  let cstrs = get_constructors env indf in 
-	    if Array.length cstrs <> 1 then 
-	      user_err_loc (loc,"pretype",(str "Inductive is not a singleton."))
-	    else
-	      let info = cstrs.(0) in
-	      let fields, rest = 
-		List.fold_left (fun (args, rest as acc) (na, b, t) ->
-		  if b = None then 
-		    try 
-		      let id = out_name na in
-		      let _, t = List.assoc id rest in
-			t :: args, List.remove_assoc id rest
-		    with _ -> RHole (loc, Evd.QuestionMark (Evd.Define false)) :: args, rest
-		  else acc) ([], List.map (fun ((loc, id), t) -> id, (loc, t)) l) info.cs_args
-	      in
-		if rest <> [] then 
-		  let id, (loc, t) = List.hd rest in
-		    user_err_loc (loc,"pretype",(str "Unknown field name " ++ pr_id id))
-		else
-		  RApp (loc,
-		       RDynamic (loc, constr_in (applistc (mkConstruct info.cs_cstr) info.cs_params)),
-		       fields)
-	in pretype tycon env isevars lvar constructor
-
     | RCases (loc,sty,po,tml,eqns) ->
 	Cases.compile_cases loc sty
 	  ((fun vtyc env isevars -> pretype vtyc env isevars lvar),isevars)

@@ -948,8 +948,38 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
     | CRecord (loc, w, fs) ->
-	RRecord (loc, Option.map (intern env) w, 
-		List.map (fun (id, c) -> (id, intern env c)) fs)
+	let id, _ = List.hd fs in
+	let record = 
+	  let (id,_,_,_),_ = intern_applied_reference intern env lvar [] (Ident id) in
+	    match id with
+	    | RRef (loc, ref) -> 
+		(try Recordops.find_projection ref
+		  with Not_found -> user_err_loc (loc, "intern", str"Not a projection"))
+	    | c -> user_err_loc (loc_of_rawconstr id, "intern", str"Not a projection")
+	in
+	let args =
+	  let pars = list_make record.Recordops.s_EXPECTEDPARAM (CHole (loc, None)) in	    
+	  let fields, rest = 
+	    List.fold_left (fun (args, rest as acc) (na, b) ->
+	      if b then 
+		try 
+		  let id = out_name na in
+		  let _, t = List.assoc id rest in
+		    t :: args, List.remove_assoc id rest
+		with _ -> CHole (loc, Some (Evd.QuestionMark (Evd.Define true))) :: args, rest
+	      else acc) ([], List.map (fun ((loc, id), t) -> id, (loc, t)) fs) record.Recordops.s_PROJKIND
+	  in 
+	    if rest <> [] then 
+	      let id, (loc, t) = List.hd rest in
+		user_err_loc (loc,"intern",(str "Unknown field name " ++ pr_id id))
+	    else pars @ List.rev fields
+	in
+	let constrname = 
+	  Qualid (loc, shortest_qualid_of_global Idset.empty (ConstructRef record.Recordops.s_CONST)) 
+	in
+	let app = CAppExpl (loc, (None, constrname), args) in
+	  intern env app
+
     | CCases (loc, sty, rtnpo, tms, eqns) ->
         let tms,env' = List.fold_right
           (fun citm (inds,env) ->

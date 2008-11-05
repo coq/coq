@@ -40,9 +40,9 @@ let mk_interning_data env na impls typ =
   let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
   in (na, (Constrintern.Method, [], impl, Notation.compute_arguments_scope typ))
     
-let interp_fields_evars isevars env l =
-  List.fold_left
-    (fun (env, uimpls, params, impls) ((loc, i), b, t) ->
+let interp_fields_evars isevars env nots l =
+  List.fold_left2
+    (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
       let impl, t' = interp_evars isevars env ~impls Pretyping.IsType t in
       let b' = Option.map (fun x -> snd (interp_evars isevars env ~impls (Pretyping.OfType (Some t')) x)) b in
       let impls = 
@@ -51,8 +51,10 @@ let interp_fields_evars isevars env l =
 	| Name na -> (fst impls, mk_interning_data env na impl t' :: snd impls)
       in
       let d = (i,b',t') in
+	(* Temporary declaration of notations and scopes *)
+	Option.iter (declare_interning_data impls) no;
 	(push_rel d env, impl :: uimpls, d::params, impls))
-    (env, [], [], ([], [])) l    
+    (env, [], [], ([], [])) nots l
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
@@ -60,14 +62,14 @@ let binder_of_decl = function
 
 let binders_of_decls = List.map binder_of_decl
 
-let typecheck_params_and_fields id t ps fs =
+let typecheck_params_and_fields id t ps nots fs =
   let env0 = Global.env () in
   let (env1,newps), imps = interp_context Evd.empty env0 ps in
   let fullarity = it_mkProd_or_LetIn t newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
   let evars = ref (Evd.create_evar_defs Evd.empty) in
   let env2,impls,newfs,data =
-    interp_fields_evars evars env_ar (binders_of_decls fs)
+    interp_fields_evars evars env_ar nots (binders_of_decls fs)
   in
   let newps = Evarutil.nf_rel_context_evar (Evd.evars_of !evars) newps in
   let newfs = Evarutil.nf_rel_context_evar (Evd.evars_of !evars) newfs in
@@ -213,7 +215,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
             with NotDefinable why ->
 	      warning_or_error coe indsp why;
 	      (None::sp_projs,NoProjection fi::subst) in
-      (nfi-1,(optci=None)::kinds,sp_projs,subst))
+      (nfi-1,(fi, optci=None)::kinds,sp_projs,subst))
       (List.length fields,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
 
@@ -239,12 +241,13 @@ let declare_structure finite id idbuild paramimpls params arity fieldimpls field
   let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in
   let build = ConstructRef (rsp,1) in
     if is_coe then Class.try_add_new_coercion build Global;
-    Recordops.declare_structure(rsp,idbuild,List.rev kinds,List.rev sp_projs);
+    Recordops.declare_structure(rsp,(rsp,1),List.rev kinds,List.rev sp_projs);
     kn
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
 let definition_structure (finite,(is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
+  let cfs,notations = List.split cfs in
   let coers,fs = List.split cfs in
   let extract_name acc = function
       Vernacexpr.AssumExpr((_,Name id),_) -> id::acc
@@ -253,8 +256,11 @@ let definition_structure (finite,(is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   (* Now, younger decl in params and fields is on top *)
-  let implpars, params, implfs, fields = typecheck_params_and_fields idstruc (mkSort s) ps fs in
-  let implfs = List.map 
-    (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs in
-    declare_structure finite idstruc idbuild implpars params (mkSort s) implfs fields is_coe coers
-  
+  let implpars, params, implfs, fields = 
+    States.with_heavy_rollback (fun () ->
+      typecheck_params_and_fields idstruc (mkSort s) ps notations fs) ()
+  in
+  let implfs = 
+    List.map (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
+  in declare_structure finite idstruc idbuild implpars params (mkSort s) implfs fields is_coe coers
+      

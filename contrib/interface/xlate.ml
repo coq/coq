@@ -1501,7 +1501,7 @@ let build_constructors l =
  CT_constr_list (List.map f l)
 
 let build_record_field_list l =
- let build_record_field (coe,d) = match d with
+ let build_record_field ((coe,d),not) = match d with
   | AssumExpr (id,c) ->
       if coe then CT_recconstr_coercion (xlate_id_opt id, xlate_formula c)
       else

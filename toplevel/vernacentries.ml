@@ -387,7 +387,7 @@ let vernac_record finite struc binders sort nameopt cfs =
         (constr_loc sort,"definition_structure", str "Sort expected.") in
     if Dumpglob.dump () then (
       Dumpglob.dump_definition (snd struc) false "rec";
-      List.iter (fun (_, x) ->
+      List.iter (fun ((_, x), _) ->
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);

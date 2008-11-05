@@ -411,23 +411,22 @@ let pr_intarg n = spc () ++ int n in
 let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
 let pr_instance_def sep (i,l,c) = pr_lident i ++ prlist_with_sep spc pr_lident l 
   ++ sep ++ pr_constrarg c in
-
- let pr_record_field = function
-   | (oc,AssumExpr (id,t)) ->
-       hov 1 (pr_lname id ++
-		(if oc then str" :>" else str" :") ++ spc() ++
-		pr_lconstr_expr t)
-   | (oc,DefExpr(id,b,opt)) -> 
-       (match opt with
-	  | Some t ->
-	      hov 1 (pr_lname id ++
-		       (if oc then str" :>" else str" :") ++ spc() ++
-		       pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
-	  | None ->
-	      hov 1 (pr_lname id ++ str" :=" ++ spc() ++
-		       pr_lconstr b))
+let pr_record_field (x, ntn) = 
+  let prx = match x with
+    | (oc,AssumExpr (id,t)) ->
+	hov 1 (pr_lname id ++
+		  (if oc then str" :>" else str" :") ++ spc() ++
+		  pr_lconstr_expr t)
+    | (oc,DefExpr(id,b,opt)) -> (match opt with
+      | Some t ->
+          hov 1 (pr_lname id ++
+                    (if oc then str" :>" else str" :") ++ spc() ++
+                    pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
+      | None ->
+          hov 1 (pr_lname id ++ str" :=" ++ spc() ++
+                    pr_lconstr b)) in
+    prx ++ pr_decl_notation pr_constr ntn
 in
-
 let pr_record_decl c fs = 
     pr_opt pr_lident c ++ str"{"  ++
     hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
@@ -708,7 +707,7 @@ let rec pr_vernac = function
 (* 	  prlist_with_sep (spc) (pr_lident_constr (spc() ++ str ":" ++ spc())) par ++  *)
 	  pr_and_type_binders_arg par ++
 	  (match ar with Some ar -> spc () ++ str":" ++ spc() ++ pr_rawsort (snd ar) | None -> mt()) ++
-	  spc () ++ str"where" ++ spc () ++
+	  spc () ++ str":=" ++ spc () ++
 	  prlist_with_sep (fun () -> str";" ++ spc()) 
 	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props )
 	
@@ -720,7 +719,7 @@ let rec pr_vernac = function
 	 str"=>" ++ spc () ++ 
 	 (match snd instid with Name id -> pr_lident (fst instid, id) ++ spc () ++ str":" ++ spc () | Anonymous -> mt ()) ++
 	 pr_constr_expr cl ++ spc () ++
-	 spc () ++ str"where" ++ spc () ++
+	 spc () ++ str":=" ++ spc () ++
 	 prlist_with_sep (fun () -> str";" ++ spc()) (pr_instance_def (spc () ++ str":=" ++ spc())) props)
 
  | VernacContext l ->

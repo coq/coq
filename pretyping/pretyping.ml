@@ -586,45 +586,6 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	      mkCase (ci, pred, cj.uj_val, [|b1;b2|])
 	  in
 	    { uj_val = v; uj_type = p }
-	
-    | RRecord (loc,w,l) ->
-	let cw = Option.map (pretype tycon env evdref lvar) w in
-	let cj = match cw with
-	  | None -> 
-	      (match tycon with
-	      | None -> user_err_loc (loc,"pretype",(str "Unnable to infer the record type."))
-	      | Some (_, ty) -> {uj_val=ty;uj_type=ty})
-	  | Some cj -> cj
-	in
-	let constructor = 
-	  let (IndType (indf,realargs)) = 
-	    try find_rectype env (evars_of !evdref) cj.uj_type
-	    with Not_found ->
-	      error_case_not_inductive_loc loc env (evars_of !evdref) cj
-	  in
-	  let cstrs = get_constructors env indf in 
-	    if Array.length cstrs <> 1 then 
-	      user_err_loc (loc,"pretype",(str "Inductive is not a singleton."))
-	    else
-	      let info = cstrs.(0) in
-	      let fields, rest = 
-		List.fold_left (fun (args, rest as acc) (na, b, t) ->
-		  if b = None then 
-		    try 
-		      let id = out_name na in
-		      let _, t = List.assoc id rest in
-			t :: args, List.remove_assoc id rest
-		    with _ -> RHole (loc, Evd.QuestionMark (Evd.Define false)) :: args, rest
-		  else acc) ([], List.map (fun ((loc, id), t) -> id, (loc, t)) l) info.cs_args
-	      in
-		if rest <> [] then 
-		  let id, (loc, t) = List.hd rest in
-		    user_err_loc (loc,"pretype",(str "Unknown field name " ++ pr_id id))
-		else
-		  RApp (loc,
-		       RDynamic (loc, constr_in (applistc (mkConstruct info.cs_cstr) info.cs_params)),
-		       fields)
-	in pretype tycon env evdref lvar constructor
 	  
     | RCases (loc,sty,po,tml,eqns) ->
 	Cases.compile_cases loc sty
@@ -644,8 +605,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  (* ... except for Correctness *)
 		let v = mkCast (cj.uj_val, k, tj.utj_val) in
 		  { uj_val = v; uj_type = tj.utj_val }
-	in
-	  inh_conv_coerce_to_tycon loc env evdref cj tycon
+	in inh_conv_coerce_to_tycon loc env evdref cj tycon
 
     | RDynamic (loc,d) ->
 	if (tag d) = "constr" then
@@ -732,13 +692,12 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let ise_pretype_gen fail_evar sigma env lvar kind c =
     let evdref = ref (Evd.create_evar_defs sigma) in
     let c = pretype_gen_aux evdref env lvar kind c in
-    let evd,_ = consider_remaining_unif_problems env !evdref in
       if fail_evar then 
-	let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env evd in
+	let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env !evdref in
 	let c = Evarutil.nf_isevar evd c in
 	  check_evars env Evd.empty evd c;
 	  evd, c
-      else evd, c
+      else !evdref, c
 
   (** Entry points of the high-level type synthesis algorithm *)
 

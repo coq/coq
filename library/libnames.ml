@@ -24,6 +24,11 @@ type global_reference =
 
 let isVarRef = function VarRef _ -> true | _ -> false
 
+let subst_constructor subst ((kn,i),j as ref) =
+  let kn' = subst_kn subst kn in 
+    if kn==kn' then ref, mkConstruct ref
+    else ((kn',i),j), mkConstruct ((kn',i),j)
+      
 let subst_global subst ref = match ref with
   | VarRef var -> ref, mkVar var
   | ConstRef kn ->
@@ -32,10 +37,9 @@ let subst_global subst ref = match ref with
   | IndRef (kn,i) ->
       let kn' = subst_kn subst kn in
       if kn==kn' then ref, mkInd (kn,i) else IndRef(kn',i), mkInd (kn',i)
-  | ConstructRef ((kn,i),j) ->
-      let kn' = subst_kn subst kn in 
-      if kn==kn' then ref, mkConstruct ((kn,i),j)
-      else ConstructRef ((kn',i),j), mkConstruct ((kn',i),j)
+  | ConstructRef ((kn,i),j as c) ->
+      let c',t = subst_constructor subst c in
+	if c'==c then ref,t else ConstructRef c', t
 
 let global_of_constr c = match kind_of_term c with
   | Const sp -> ConstRef sp

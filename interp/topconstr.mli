@@ -33,7 +33,6 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
-  | ARecord of aconstr option * (identifier * aconstr) list
   | ACases of case_style * aconstr option *
       (aconstr * (name * (inductive * int * name list) option)) list *
       (cases_pattern list * aconstr) list

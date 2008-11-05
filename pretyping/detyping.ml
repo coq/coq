@@ -603,12 +603,6 @@ let rec subst_rawconstr subst raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  RLetIn (loc,n,r1',r2')
 
-  | RRecord (loc,w,rl) ->
-      let w' = Option.smartmap (subst_rawconstr subst) w 
-      and rl' = list_smartmap (fun (id, x) -> (id, subst_rawconstr subst x)) rl in
-	if w == w' && rl == rl' then raw else
-	  RRecord (loc,w',rl')
-
   | RCases (loc,sty,rtno,rl,branches) -> 
       let rtno' = Option.smartmap (subst_rawconstr subst) rtno
       and rl' = list_smartmap (fun (a,x as y) ->
