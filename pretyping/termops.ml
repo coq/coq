@@ -473,6 +473,13 @@ let occur_existential c =
     | _ -> iter_constr occrec c
   in try occrec c; false with Occur -> true
 
+let occur_meta_or_existential c = 
+  let rec occrec c = match kind_of_term c with
+    | Evar _ -> raise Occur
+    | Meta _ -> raise Occur
+    | _ -> iter_constr occrec c
+  in try occrec c; false with Occur -> true
+
 let occur_const s c = 
   let rec occur_rec c = match kind_of_term c with
     | Const sp when sp=s -> raise Occur

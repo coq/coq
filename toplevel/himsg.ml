@@ -316,7 +316,13 @@ let explain_occur_check env ev rhs =
   str "Cannot define " ++ str id ++ str " with term" ++ brk(1,1) ++
   pt ++ spc () ++ str "that would depend on itself."
 
-let explain_hole_kind env = function
+let pr_ne_context_of header footer env =
+  if Environ.rel_context env = empty_rel_context &
+    Environ.named_context env = empty_named_context
+  then footer
+  else pr_ne_context_of header env
+
+let explain_hole_kind env evi = function
   | QuestionMark _ -> str "this placeholder"
   | CasesType ->
       str "the type of this pattern-matching problem"
@@ -330,7 +336,12 @@ let explain_hole_kind env = function
       pr_id id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Idset.empty c
   | InternalHole ->
-      str "an internal placeholder"
+      str "an internal placeholder" ++
+	Option.cata (fun evi ->
+	  let env = Evd.evar_env evi in
+	    str " of type "  ++ pr_lconstr_env env evi.evar_concl ++
+	      pr_ne_context_of (str " in environment:"++ fnl ()) (mt ()) env)
+	(mt ()) evi
   | TomatchTypeParameter (tyi,n) ->
       str "the " ++ nth n ++
       str " argument of the inductive type (" ++ pr_inductive env tyi ++
@@ -344,7 +355,7 @@ let explain_not_clean env ev t k =
   let env = make_all_name_different env in
   let id = Evd.string_of_existential ev in
   let var = pr_lconstr_env env t in
-  str "Tried to instantiate " ++ explain_hole_kind env k ++
+  str "Tried to instantiate " ++ explain_hole_kind env None k ++
   str " (" ++ str id ++ str ")" ++ spc () ++
   str "with a term using variable " ++ var ++ spc () ++
   str "which is not in its scope."
@@ -354,14 +365,9 @@ let explain_unsolvability = function
   | Some (SeveralInstancesFound n) ->
       strbrk " (several distinct possible instances found)"
 
-let pr_ne_context_of header footer env =
-  if Environ.rel_context env = empty_rel_context &
-    Environ.named_context env = empty_named_context  then footer
-  else pr_ne_context_of header env
-
 let explain_typeclass_resolution env evi k =
   match k with
-  | InternalHole | ImplicitArg _ ->
+  | GoalEvar | InternalHole | ImplicitArg _ ->
       (match Typeclasses.class_of_constr evi.evar_concl with
       | Some c -> 
 	  let env = Evd.evar_env evi in
@@ -372,7 +378,7 @@ let explain_typeclass_resolution env evi k =
   | _ -> mt()
       
 let explain_unsolvable_implicit env evi k explain =
-  str "Cannot infer " ++ explain_hole_kind env k ++ 
+  str "Cannot infer " ++ explain_hole_kind env (Some evi) k ++ 
   explain_unsolvability explain ++ str "." ++ 
   explain_typeclass_resolution env evi k
 

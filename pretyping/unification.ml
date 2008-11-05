@@ -521,12 +521,8 @@ let w_merge env with_types flags (metas,evars) evd =
 	      let evd' = mimick_evar evd flags f (Array.length cl) evn in
 	      w_merge_rec evd' metas evars eqns
           | _ ->
-	      let evi = Evd.find (evars_of evd) evn in
-	      let env' = push_rels_assum (List.map (fun (_,t) -> Anonymous,t) evars') env in
-	      let rty = Retyping.get_type_of_with_meta env' (evars_of evd) (metas_of evd) rhs' in
-	      let evd', rhs'' = w_coerce_to_type env' evd rhs' rty evi.evar_concl in
-	      let evd'' = solve_simple_evar_eqn env' evd' ev rhs'' in
-		w_merge_rec evd'' metas evars' eqns
+	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs')
+		metas evars' eqns
 	end
     | [] -> 
 
@@ -694,7 +690,7 @@ let w_unify_to_subterm_list env flags allow_K oplist t evd =
       if isMeta op then
 	if allow_K then (evd,op::l)
 	else error "Match_subterm"
-      else if occur_meta op then
+      else if occur_meta_or_existential op then
         let (evd',cl) =
           try 
 	    (* This is up to delta for subterms w/o metas ... *)
