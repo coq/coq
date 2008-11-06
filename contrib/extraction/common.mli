@@ -19,7 +19,7 @@ val space_if : bool -> std_ppcmds
 val sec_space_if : bool -> std_ppcmds
 
 val pp_par : bool -> std_ppcmds -> std_ppcmds
-val pp_apply : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds 
+val pp_apply : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds
 val pr_binding : identifier list -> std_ppcmds
 
 val rename_id : identifier -> Idset.t -> identifier
@@ -28,7 +28,7 @@ type env = identifier list * Idset.t
 val empty_env : unit -> env
 
 val rename_vars: Idset.t -> identifier list -> env
-val rename_tvars: Idset.t -> identifier list -> identifier list 
+val rename_tvars: Idset.t -> identifier list -> identifier list
 val push_vars : identifier list -> env -> identifier list * env
 val get_db_name : int -> env -> identifier
 

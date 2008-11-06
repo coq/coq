@@ -20,7 +20,7 @@ open Mod_subst
 val struct_ast_search : (ml_ast -> bool) -> ml_structure -> bool
 val struct_type_search : (ml_type -> bool) -> ml_structure -> bool
 
-type do_ref = global_reference -> unit 
+type do_ref = global_reference -> unit
 
 val decl_iter_references : do_ref -> do_ref -> do_ref -> ml_decl -> unit
 val spec_iter_references : do_ref -> do_ref -> do_ref -> ml_spec -> unit

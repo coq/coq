@@ -8,5 +8,5 @@
 
 (*i $Id$ i*)
 
-val ocaml_descr : Miniml.language_descr 
+val ocaml_descr : Miniml.language_descr
 

@@ -24,12 +24,12 @@ val error_axiom_scheme : global_reference -> int -> 'a
 val error_constant : global_reference -> 'a
 val error_inductive : global_reference -> 'a
 val error_nb_cons : unit -> 'a
-val error_module_clash : string -> 'a 
+val error_module_clash : string -> 'a
 val error_unknown_module : qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
 val error_MPfile_as_mod : module_path -> bool -> 'a
-val error_record : global_reference -> 'a 
+val error_record : global_reference -> 'a
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
 val check_loaded_modfile : module_path -> unit
@@ -44,9 +44,9 @@ val label_of_r : global_reference -> label
 val current_toplevel : unit -> module_path
 val base_mp : module_path -> module_path
 val is_modfile : module_path -> bool
-val string_of_modfile : module_path -> string 
+val string_of_modfile : module_path -> string
 val is_toplevel : module_path -> bool
-val at_toplevel : module_path -> bool 
+val at_toplevel : module_path -> bool
 val visible_kn : kernel_name -> bool
 val visible_con : constant -> bool
 val mp_length : module_path -> int
@@ -69,10 +69,10 @@ val add_ind : kernel_name -> mutual_inductive_body -> ml_ind -> unit
 val lookup_ind : kernel_name -> mutual_inductive_body * ml_ind
 
 val add_recursors : Environ.env -> kernel_name -> unit
-val is_recursor : global_reference -> bool 
+val is_recursor : global_reference -> bool
 
 val add_projection : int -> constant -> unit
-val is_projection : global_reference -> bool 
+val is_projection : global_reference -> bool
 val projection_arity : global_reference -> int
 
 val add_info_axiom : global_reference -> unit
@@ -81,18 +81,18 @@ val add_log_axiom : global_reference -> unit
 
 val reset_tables : unit -> unit
 
-(*s AutoInline parameter *) 
+(*s AutoInline parameter *)
 
 val auto_inline : unit -> bool
 
-(*s TypeExpand parameter *) 
+(*s TypeExpand parameter *)
 
 val type_expand : unit -> bool
 
-(*s Optimize parameter *) 
+(*s Optimize parameter *)
 
-type opt_flag = 
-    { opt_kill_dum : bool; (* 1 *) 
+type opt_flag =
+    { opt_kill_dum : bool; (* 1 *)
       opt_fix_fun : bool;   (* 2 *)
       opt_case_iot : bool;  (* 4 *)
       opt_case_idr : bool;  (* 8 *)
@@ -109,14 +109,14 @@ val optims :  unit -> opt_flag
 (*s Target language. *)
 
 type lang = Ocaml | Haskell | Scheme
-val lang : unit -> lang 
+val lang : unit -> lang
 
 (*s Extraction mode: modular or monolithic *)
 
 val set_modular : bool -> unit
-val modular : unit -> bool 
+val modular : unit -> bool
 
-(*s Table for custom inlining *) 
+(*s Table for custom inlining *)
 
 val to_inline : global_reference -> bool
 val to_keep : global_reference -> bool
@@ -137,7 +137,7 @@ val extraction_language : lang -> unit
 val extraction_inline : bool -> reference list -> unit
 val print_extraction_inline : unit -> unit
 val reset_extraction_inline : unit -> unit
-val extract_constant_inline : 
+val extract_constant_inline :
   bool -> reference -> string list -> string -> unit
 val extract_inductive : reference -> string * string list -> unit
 

@@ -33,31 +33,31 @@ let pr_binding = function
   | [] -> mt ()
   | l  -> str " " ++ prlist_with_sep (fun () -> str " ") pr_id l
 
-let fnl2 () = fnl () ++ fnl () 
+let fnl2 () = fnl () ++ fnl ()
 
 let space_if = function true -> str " " | false -> mt ()
 
 let sec_space_if = function true -> spc () | false -> mt ()
 
-let is_digit = function 
+let is_digit = function
   | '0'..'9' -> true
   | _ -> false
 
-let begins_with_CoqXX s = 
-  let n = String.length s in 
+let begins_with_CoqXX s =
+  let n = String.length s in
   n >= 4 && s.[0] = 'C' && s.[1] = 'o' && s.[2] = 'q' &&
-  let i = ref 3 in 
+  let i = ref 3 in
   try while !i < n do
     if s.[!i] = '_' then i:=n (*Stop*)
-    else if is_digit s.[!i] then incr i 
+    else if is_digit s.[!i] then incr i
     else raise Not_found
   done; true
   with Not_found -> false
-  
-let unquote s = 
-  if lang () <> Scheme then s 
-  else 
-    let s = String.copy s in 
+
+let unquote s =
+  if lang () <> Scheme then s
+  else
+    let s = String.copy s in
     for i=0 to String.length s - 1 do if s.[i] = '\'' then s.[i] <- '~' done;
     s
 
@@ -91,11 +91,11 @@ type env = identifier list * Idset.t
 
 (*s Generic renaming issues for local variable names. *)
 
-let rec rename_id id avoid = 
+let rec rename_id id avoid =
   if Idset.mem id avoid then rename_id (lift_ident id) avoid else id
 
 let rec rename_vars avoid = function
-  | [] -> 
+  | [] ->
       [], avoid
   | id :: idl when id == dummy_name ->
       (* we don't rename dummy binders *)
@@ -106,12 +106,12 @@ let rec rename_vars avoid = function
       let id = rename_id (lowercase_id id) avoid in
       (id :: idl, Idset.add id avoid)
 
-let rename_tvars avoid l = 
-  let rec rename avoid = function 
-    | [] -> [],avoid 
-    | id :: idl -> 
-	let id = rename_id (lowercase_id id) avoid in 
-	let idl, avoid = rename (Idset.add id avoid) idl in 
+let rename_tvars avoid l =
+  let rec rename avoid = function
+    | [] -> [],avoid
+    | id :: idl ->
+	let id = rename_id (lowercase_id id) avoid in
+	let idl, avoid = rename (Idset.add id avoid) idl in
 	(id :: idl, avoid) in
   fst (rename avoid l)
 
@@ -119,8 +119,8 @@ let push_vars ids (db,avoid) =
   let ids',avoid' = rename_vars avoid ids in
   ids', (ids' @ db, avoid')
 
-let get_db_name n (db,_) = 
-  let id = List.nth db (pred n) in 
+let get_db_name n (db,_) =
+  let id = List.nth db (pred n) in
   if id = dummy_name then id_of_string "__" else id
 
 
@@ -175,14 +175,14 @@ let mpfiles_add, mpfiles_mem, mpfiles_list, mpfiles_clear =
 (*s table indicating the visible horizon at a precise moment,
     i.e. the stack of structures we are inside.
 
-  - The sequence of [mp] parts should have the following form: 
-  [X.Y; X; A.B.C; A.B; A; ...], i.e. each addition should either 
-  be a [MPdot] over the last entry, or something new, mainly 
+  - The sequence of [mp] parts should have the following form:
+  [X.Y; X; A.B.C; A.B; A; ...], i.e. each addition should either
+  be a [MPdot] over the last entry, or something new, mainly
   [MPself], or [MPfile] at the beginning.
 
   - The [content] part is used to recoard all the names already
   seen at this level.
-  
+
   - The [subst] part is here mainly for printing signature
   (in which names are still short, i.e. relative to a [msid]).
 *)
@@ -234,9 +234,9 @@ let reset_renaming_tables flag =
 
 (*S Renaming functions *)
 
-(* This function creates from [id] a correct uppercase/lowercase identifier. 
-   This is done by adding a [Coq_] or [coq_] prefix. To avoid potential clashes 
-   with previous [Coq_id] variable, these prefixes are duplicated if already 
+(* This function creates from [id] a correct uppercase/lowercase identifier.
+   This is done by adding a [Coq_] or [coq_] prefix. To avoid potential clashes
+   with previous [Coq_id] variable, these prefixes are duplicated if already
    existing. *)
 
 let modular_rename k id =
@@ -250,7 +250,7 @@ let modular_rename k id =
   then prefix ^ s
   else s
 
-(*s For monolithic extraction, first-level modules might have to be renamed 
+(*s For monolithic extraction, first-level modules might have to be renamed
     with unique numbers *)
 
 let modfstlev_rename =
@@ -318,8 +318,8 @@ let ref_renaming =
 
 (* [visible_clash mp0 (k,s)] checks if [mp0-s] of kind [k]
    can be printed as [s] in the current context of visible
-   modules. More precisely, we check if there exists a 
-   visible [mp] that contains [s]. 
+   modules. More precisely, we check if there exists a
+   visible [mp] that contains [s].
    The verification stops if we encounter [mp=mp0]. *)
 
 let rec clash mem mp0 ks = function
@@ -362,8 +362,8 @@ let opened_libraries () =
 (*s On-the-fly qualification issues for both monolithic or modular extraction. *)
 
 (* First, a function that factorize the printing of both [global_reference]
-   and module names for ocaml. When [k=Mod] then [olab=None], otherwise it 
-   contains the label of the reference to print. 
+   and module names for ocaml. When [k=Mod] then [olab=None], otherwise it
+   contains the label of the reference to print.
    Invariant: [List.length ls >= 2], simpler situations are handled elsewhere. *)
 
 let pp_gen k mp ls olab =
@@ -376,7 +376,7 @@ let pp_gen k mp ls olab =
     (* Reference r / module path mp is of the form [<prefix>.s.<List.rev ls'>].
        Difficulty: in ocaml the prefix part cannot be used for
        qualification (we are inside it) and the rest of the long
-       name may be hidden. 
+       name may be hidden.
        Solution: we duplicate the _definition_ of r / mp in a Coq__XXX module *)
     let k' = if ls' = [] then k else Mod in
     if visible_clash prefix (k',s) then

@@ -201,8 +201,8 @@ and extract_seb_spec env = function
       MTwith(extract_seb_spec env mtb',
 	     ML_With_module(idl,mp))
 (* TODO: On pourrait peut-etre oter certaines eta-expansion, du genre:
-   | SEBfunctor(mbid,_,SEBapply(m,SEBident (MPbound mbid2),_)) 
-     when mbid = mbid2 -> extract_seb_spec env m 
+   | SEBfunctor(mbid,_,SEBapply(m,SEBident (MPbound mbid2),_))
+     when mbid = mbid2 -> extract_seb_spec env m
    (* faudrait alors ajouter un test de non-apparition de mbid dans mb *)
 *)
   | SEBfunctor (mbid, mtb, mtb') ->

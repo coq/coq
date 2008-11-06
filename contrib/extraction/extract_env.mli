@@ -19,5 +19,5 @@ val extraction_library : bool -> identifier -> unit
 
 (* For debug / external output via coqtop.byte + Drop : *)
 
-val mono_environment : 
+val mono_environment :
  global_reference list -> module_path list -> Miniml.ml_structure
