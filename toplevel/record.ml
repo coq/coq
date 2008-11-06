@@ -218,7 +218,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
       (List.length fields,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
 
-let declare_structure id idbuild paramimpls params arity fieldimpls fields
+let declare_structure finite id idbuild paramimpls params arity fieldimpls fields
     ?(kind=StructureComponent) ?name is_coe coers =
   let nparams = List.length params and nfields = List.length fields in
   let args = extended_rel_list nfields params in
@@ -228,14 +228,12 @@ let declare_structure id idbuild paramimpls params arity fieldimpls fields
     { mind_entry_typename = id;
       mind_entry_arity = arity;
       mind_entry_consnames = [idbuild];
-      mind_entry_lc = [type_constructor] } in
-  let declare_as_coind =
-    (* CoInd if recursive; otherwise Ind to have compat on _ind schemes *) 
-    dependent (mkRel (nparams+1)) (it_mkProd_or_LetIn mkProp fields) in
+      mind_entry_lc = [type_constructor] }
+  in
   let mie =
     { mind_entry_params = List.map degenerate_decl params;
       mind_entry_record = true;
-      mind_entry_finite = not declare_as_coind;
+      mind_entry_finite = finite;
       mind_entry_inds = [mie_ind] } in
   let kn = Command.declare_mutual_with_eliminations true mie [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
@@ -247,7 +245,7 @@ let declare_structure id idbuild paramimpls params arity fieldimpls fields
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
-let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
+let definition_structure (finite,(is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in
   let extract_name acc = function
       Vernacexpr.AssumExpr((_,Name id),_) -> id::acc
@@ -259,5 +257,5 @@ let definition_structure ((is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let implpars, params, implfs, fields = typecheck_params_and_fields idstruc (mkSort s) ps fs in
   let implfs = List.map 
     (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs in
-    declare_structure idstruc idbuild implpars params (mkSort s) implfs fields is_coe coers
+    declare_structure finite idstruc idbuild implpars params (mkSort s) implfs fields is_coe coers
   

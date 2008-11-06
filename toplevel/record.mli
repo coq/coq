@@ -26,7 +26,7 @@ val declare_projections :
   bool list -> manual_explicitation list list -> rel_context -> 
   bool list * constant option list
 
-val declare_structure : identifier -> identifier -> 
+val declare_structure : bool (*coinductive?*)-> identifier -> identifier -> 
   manual_explicitation list -> rel_context -> (* params *)
   Term.constr -> (* arity *)
   Impargs.manual_explicitation list list -> Sign.rel_context -> (* fields *)
@@ -36,5 +36,5 @@ val declare_structure : identifier -> identifier ->
   mutual_inductive
 
 val definition_structure :
-  lident with_coercion * local_binder list *
+  bool (*coinductive?*)*lident with_coercion * local_binder list *
   (local_decl_expr with_coercion) list * identifier * sorts -> kernel_name

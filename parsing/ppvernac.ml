@@ -408,6 +408,27 @@ let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
 let pr_instance_def sep (i,l,c) = pr_lident i ++ prlist_with_sep spc pr_lident l 
   ++ sep ++ pr_constrarg c in
 
+ let pr_record_field = function
+   | (oc,AssumExpr (id,t)) ->
+       hov 1 (pr_lname id ++
+		(if oc then str" :>" else str" :") ++ spc() ++
+		pr_lconstr_expr t)
+   | (oc,DefExpr(id,b,opt)) -> 
+       (match opt with
+	  | Some t ->
+	      hov 1 (pr_lname id ++
+		       (if oc then str" :>" else str" :") ++ spc() ++
+		       pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
+	  | None ->
+	      hov 1 (pr_lname id ++ str" :=" ++ spc() ++
+		       pr_lconstr b))
+in
+
+let pr_record_decl c fs = 
+    pr_opt pr_lident c ++ str"{"  ++
+    hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
+in
+
 let rec pr_vernac = function
   
   (* Proof management *)
@@ -561,12 +582,15 @@ let rec pr_vernac = function
                (if coe then str":>" else str":") ++
                 pr_spc_lconstr c) in
       let pr_constructor_list l = match l with
-        | [] -> mt()
-        | _ ->
+        | Constructors [] -> mt()
+        | Constructors l ->
             pr_com_at (begin_of_inductive l) ++
             fnl() ++
             str (if List.length l = 1 then "   " else " | ") ++
-            prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l in
+            prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l 
+       | RecordDecl (c,fs) ->   
+	    spc() ++
+	    pr_record_decl c fs in
       let pr_oneind key ((id,indpar,s,lc),ntn) =
 	hov 0 (
           str key ++ spc() ++
@@ -640,30 +664,12 @@ let rec pr_vernac = function
 	
 
   (* Gallina extensions *)
-  | VernacRecord (b,(oc,name),ps,s,c,fs) ->
-      let pr_record_field = function
-        | (oc,AssumExpr (id,t)) ->
-            hov 1 (pr_lname id ++
-            (if oc then str" :>" else str" :") ++ spc() ++
-            pr_lconstr_expr t)
-        | (oc,DefExpr(id,b,opt)) -> (match opt with
-	    | Some t ->
-                hov 1 (pr_lname id ++
-                (if oc then str" :>" else str" :") ++ spc() ++
-                pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
-	    | None ->
-                hov 1 (pr_lname id ++ str" :=" ++ spc() ++
-                pr_lconstr b)) in
+  | VernacRecord ((b,coind),(oc,name),ps,s,c,fs) ->
       hov 2
         (str (if b then "Record" else "Structure") ++
          (if oc then str" > " else str" ") ++ pr_lident name ++ 
           pr_and_type_binders_arg ps ++ str" :" ++ spc() ++ 
-	  pr_lconstr_expr s ++ str" := " ++
-         (match c with
-           | None -> mt()
-           | Some sc -> pr_lident sc) ++
-	spc() ++ str"{"  ++
-        hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}"))
+	  pr_lconstr_expr s ++ str" := " ++ pr_record_decl c fs)
   | VernacBeginSection id -> hov 2 (str"Section" ++ spc () ++ pr_lident id)
   | VernacEndSegment id -> hov 2 (str"End" ++ spc() ++ pr_lident id)
   | VernacRequire (exp,spe,l) -> hov 2

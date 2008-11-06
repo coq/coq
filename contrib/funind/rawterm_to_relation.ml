@@ -1224,9 +1224,14 @@ let do_build_inductive
     | UserError(s,msg) as e ->
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
+	let repacked_rel_inds = 
+	  List.map  (fun ((a , b , c , l),ntn) -> (a , b, c , Vernacexpr.Constructors l),ntn )
+	                  rel_inds
+	in
 	let msg = 		     
 	  str "while trying to define"++ spc () ++
-	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () ++
+	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,repacked_rel_inds))
+	    ++ fnl () ++
 	    msg
 	in
 	observe (msg);
@@ -1234,9 +1239,14 @@ let do_build_inductive
     | e -> 
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
+	let repacked_rel_inds = 
+	  List.map  (fun ((a , b , c , l),ntn) -> (a , b, c , Vernacexpr.Constructors l),ntn )
+	                  rel_inds
+	in
 	let msg = 		     
 	  str "while trying to define"++ spc () ++
-	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,rel_inds)) ++ fnl () ++
+	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(true,repacked_rel_inds)) 
+	    ++ fnl () ++
 	    Cerrors.explain_exn e
 	in
  	observe msg;

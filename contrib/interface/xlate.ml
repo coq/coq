@@ -1964,11 +1964,13 @@ let rec xlate_vernac =
          build_record_field_list field_list)
    | VernacInductive (isind, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
-      let strip_mutind (((_,s), parameters, c, constructors), notopt) =
+      let strip_mutind = function 
+	  (((_,s), parameters, c, Constructors constructors), notopt) ->
           CT_ind_spec
             (xlate_ident s, xlate_binder_list parameters, xlate_formula c,
              build_constructors constructors,
-	     translate_opt_notation_decl notopt) in
+	     translate_opt_notation_decl notopt) 
+	| _ -> xlate_error "TODO: Record notation in (Co)Inductive" in
         CT_mind_decl
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
