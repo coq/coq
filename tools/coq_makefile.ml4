@@ -188,9 +188,9 @@ let variables l =
     printf "CAMLOPTLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
     print "GRAMMARS:=grammar.cma\n";
     print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
-    print "CAMLP4OPTIONS=\n";
-    print "PP:=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
+    print "CAMLP4OPTIONS:=\n";
     var_aux l;
+    print "PP:=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
     print "\n"
 
 let absolute_dir dir =
