@@ -76,24 +76,15 @@ let rec prefixes_mp mp = match mp with
   | MPdot (mp',_) -> MPset.add mp (prefixes_mp mp')
   | _ -> MPset.singleton mp 
 
-let rec get_nth_label_mp n mp = match mp with 
-  | MPdot (mp,l) -> if n=1 then l else get_nth_label_mp (n-1) mp 
+let rec get_nth_label_mp n = function
+  | MPdot (mp,l) -> if n=1 then l else get_nth_label_mp (n-1) mp
   | _ -> failwith "get_nth_label: not enough MPdot"
 
-let get_nth_label n r = 
-  if n=0 then label_of_r r else get_nth_label_mp n (modpath_of_r r)
-
-let rec common_prefix prefixes_mp1 mp2 = 
-  if MPset.mem mp2 prefixes_mp1 then mp2 
-  else match mp2 with 
-    | MPdot (mp,_) -> common_prefix prefixes_mp1 mp 
-    | _ -> raise Not_found
-
 let common_prefix_from_list mp0 mpl = 
-  let prefixes_mp0 = prefixes_mp mp0 in 
+  let prefixes = prefixes_mp mp0 in 
   let rec f = function 
     | [] -> raise Not_found
-    | mp1 :: l -> try common_prefix prefixes_mp0 mp1 with Not_found -> f l
+    | mp :: l -> if MPset.mem mp prefixes then mp else f l 
   in f mpl
 
 let rec parse_labels ll = function 

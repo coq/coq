@@ -25,22 +25,6 @@ open Declarations
 
 (*s Some utility functions. *)
 
-let rec  msid_of_mt = function
-  | MTident mp -> begin
-      match Modops.eval_struct (Global.env()) (SEBident mp) with
-	| SEBstruct(msid,_) -> MPself msid
-	| _ -> anomaly "Extraction:the With can't be applied to a funsig"
-    end
-  | MTwith(mt,_)-> msid_of_mt mt
-  | _ -> anomaly "Extraction:the With operator isn't applied to a name"
-
-let  make_mp_with mp idl =
-  let idl_rev = List.rev idl in
-  let idl' = List.rev (List.tl idl_rev) in
-    (List.fold_left (fun mp id -> MPdot(mp,label_of_id id))
-       mp idl')
-
-
 let pp_tvar id = 
   let s = string_of_id id in 
   if String.length s < 2 || s.[1]<>'\'' 
@@ -107,11 +91,17 @@ let sig_preamble _ used_modules usf =
 
 (*s The pretty-printer for Ocaml syntax*)
 
-let pp_global k r = 
-  if is_inline_custom r then str (find_custom r) 
+(* Beware of the side-effects of [pp_global] and [pp_modname].
+   They are used to update table of content for modules. Many [let] 
+   below should not be altered since they force evaluation order. 
+*)
+
+let pp_global k r =
+  if is_inline_custom r then str (find_custom r)
   else str (Common.pp_global k r)
 
 let pp_modname mp = str (Common.pp_module mp)
+
 
 let is_infix r = 
   is_inline_custom r && 
@@ -607,52 +597,49 @@ and pp_module_type ol = function
   | MTident kn -> 
       pp_modname kn
   | MTfunsig (mbid, mt, mt') -> 
-      let name = pp_modname (MPbound mbid) in 
       let typ = pp_module_type None mt in 
+      let name = pp_modname (MPbound mbid) in 
       let def = pp_module_type None mt' in 
       str "functor (" ++ name ++ str ":" ++ typ ++ str ") ->" ++ fnl () ++ def
   | MTsig (msid, sign) ->
-      let tvm = top_visible_mp () in 
-      Option.iter (fun l -> add_subst msid (MPdot (tvm, l))) ol; 
-      let mp = MPself msid in
-      push_visible mp; 
+      let tvm = top_visible_mp () in
+      let mp = match ol with None -> MPself msid | Some l -> MPdot (tvm,l) in
+      (* References in [sign] are in short form (relative to [msid]).
+	 In push_visible, [msid-->mp] is added to the current subst. *)
+      push_visible mp (Some msid);
       let l = map_succeed pp_specif sign in 
       pop_visible (); 
       str "sig " ++ fnl () ++ 
       v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++
 	fnl () ++ str "end"
   | MTwith(mt,ML_With_type(idl,vl,typ)) ->
-      let l = rename_tvars keywords vl in 
-      let ids = pp_parameters l in 
+      let ids = pp_parameters (rename_tvars keywords vl) in
       let mp_mt = msid_of_mt mt in
-      let mp = make_mp_with mp_mt idl in
-      let gr = ConstRef (
-	(make_con mp empty_dirpath
-	  (label_of_id ( 
-	    List.hd (List.rev idl))))) in
-	push_visible mp_mt;
-	let s = pp_module_type None mt ++
-	  str " with type " ++
-	  pp_global Type gr ++
-	  ids in
-	  pop_visible();
-	  s ++ str "=" ++ spc () ++
-	  pp_type false  vl typ
+      let l,idl' = list_sep_last idl in
+      let mp_w =
+	List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
+      in
+      let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l))
+      in
+      push_visible mp_mt None;
+      let s =
+	pp_module_type None mt ++ str " with type " ++
+	  pp_global Type r ++ ids
+      in
+      pop_visible();
+      s ++ str "=" ++ spc () ++ pp_type false vl typ
   | MTwith(mt,ML_With_module(idl,mp)) ->
-      let mp_mt=msid_of_mt mt in
-	push_visible mp_mt;
-	let s = 
-	  pp_module_type None mt ++
-	    str " with module " ++
-	    (pp_modname
-	       (List.fold_left (fun mp id -> MPdot(mp,label_of_id id))
-		  mp_mt idl))
-	  ++ str " = "  
-	in
-	  pop_visible ();
-	  s ++ (pp_modname mp)
-	    
-	    
+      let mp_mt = msid_of_mt mt in
+      let mp_w =
+	List.fold_left (fun mp id -> MPdot(mp,label_of_id id)) mp_mt idl
+      in
+      push_visible mp_mt None;
+      let s =
+	pp_module_type None mt ++ str " with module " ++ pp_modname mp_w
+      in
+      pop_visible ();
+      s ++ str " = " ++ pp_modname mp
+
 let is_short = function MEident _ | MEapply _ -> true | _ -> false
   
 let rec pp_structure_elem = function 
@@ -664,10 +651,16 @@ let rec pp_structure_elem = function
 	 pp_alias_decl ren d 
 	with Not_found -> pp_decl d)
   | (l,SEmodule m) ->
+      let typ =
+        (* virtual printing of the type, in order to have a correct mli later*)
+	if Common.get_phase () = Pre then
+	  str ": " ++ pp_module_type (Some l) m.ml_mod_type
+	else mt ()
+      in
       let def = pp_module_expr (Some l) m.ml_mod_expr in 
       let name = pp_modname (MPdot (top_visible_mp (), l)) in 
       hov 1 
-	(str "module " ++ name ++ str " = " ++ 
+	(str "module " ++ name ++ typ ++ str " = " ++ 
 	 (if (is_short m.ml_mod_expr) then mt () else fnl ()) ++ def) ++ 
       (try 
 	 let ren = Common.check_duplicate (top_visible_mp ()) l in 
@@ -694,33 +687,34 @@ and pp_module_expr ol = function
   | MEstruct (msid, sel) -> 
       let tvm = top_visible_mp () in 
       let mp = match ol with None -> MPself msid | Some l -> MPdot (tvm,l) in
-      push_visible mp; 
+      (* No need to update the subst with [Some msid] below : names are
+	 already in long form (see [subst_structure] in [Extract_env]). *)
+      push_visible mp None; 
       let l = map_succeed pp_structure_elem sel in 
       pop_visible (); 
       str "struct " ++ fnl () ++
       v 1 (str " " ++ prlist_with_sep fnl2 identity l) ++ 
       fnl () ++ str "end" 
 
-let pp_struct s =
-  let pp mp s = 
-    push_visible mp; 
-    let p = pp_structure_elem s ++ fnl2 () in 
-    pop_visible (); p
+let do_struct f s =
+  let pp s = try f s ++ fnl2 () with Failure "empty phrase" -> mt ()
   in
-  prlist_strict 
-    (fun (mp,sel) -> prlist_strict identity (map_succeed (pp mp) sel)) s
+  let ppl (mp,sel) =
+    push_visible mp None;
+    let p = prlist_strict pp sel in
+    (* for monolithic extraction, we try to simulate the unavailability
+       of [MPfile] in names by artificially nesting these [MPfile] *)
+    (if modular () then pop_visible ()); p
+  in
+  let p = prlist_strict ppl s in
+  (if not (modular ()) then repeat (List.length s) pop_visible ());
+  p
 
-let pp_signature s = 
-  let pp mp s = 
-    push_visible mp; 
-    let p = pp_specif s ++ fnl2 () in 
-    pop_visible (); p
-  in 
-  prlist_strict
-    (fun (mp,sign) -> prlist_strict identity (map_succeed (pp mp) sign)) s
+let pp_struct s = do_struct pp_structure_elem s
 
-let pp_decl d = 
-  try pp_decl d with Failure "empty phrase" -> mt ()
+let pp_signature s = do_struct pp_specif s
+
+let pp_decl d = try pp_decl d with Failure "empty phrase" -> mt ()
 
 let ocaml_descr = {
   keywords = keywords;  

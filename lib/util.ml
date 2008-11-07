@@ -1230,11 +1230,13 @@ let rec prlist elem l = match l with
   | h::t -> Stream.lapp (fun () -> elem h) (prlist elem t)
 
 (* unlike all other functions below, [prlist] works lazily.
-   if a strict behavior is needed, use [prlist_strict] instead. *)
+   if a strict behavior is needed, use [prlist_strict] instead.
+   evaluation is done from left to right. *)
 
 let rec prlist_strict elem l = match l with 
   | []   -> mt ()
-  | h::t -> (elem h)++(prlist_strict elem t)
+  | h::t ->
+      let e = elem h in let r = prlist_strict elem t in e++r
 
 (* [prlist_with_sep sep pr [a ; ... ; c]] outputs
    [pr a ++ sep() ++ ... ++ sep() ++ pr c] *)

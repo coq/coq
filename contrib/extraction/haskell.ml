@@ -22,6 +22,9 @@ open Common
 
 (*s Haskell renaming issues. *)
 
+let pr_lower_id id = str (String.uncapitalize (string_of_id id))
+let pr_upper_id id = str (String.capitalize (string_of_id id))
+
 let keywords =     
   List.fold_right (fun s -> Idset.add (id_of_string s))
   [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
@@ -61,8 +64,6 @@ let pp_abst = function
   | l  -> (str "\\" ++
              prlist_with_sep (fun () -> (str " ")) pr_id l ++
              str " ->" ++ spc ())
-
-let pr_lower_id id = pr_id (lowercase_id id)
 
 (*s The pretty-printer for haskell syntax *)
 
@@ -313,7 +314,7 @@ let pp_structure_elem = function
 
 let pp_struct = 
   let pp_sel (mp,sel) = 
-    push_visible mp; 
+    push_visible mp None; 
     let p = prlist_strict pp_structure_elem sel in 
     pop_visible (); p
   in 

@@ -30,14 +30,10 @@ type do_ref = global_reference -> unit
 
 val decl_iter_references : do_ref -> do_ref -> do_ref -> ml_decl -> unit
 val spec_iter_references : do_ref -> do_ref -> do_ref -> ml_spec -> unit
-val struct_iter_references : do_ref -> do_ref -> do_ref -> ml_structure -> unit
-
-type 'a kinds = { mutable typ : 'a ; mutable trm : 'a; mutable cons : 'a }
-
-val struct_get_references_set : ml_structure -> Refset.t kinds
-val struct_get_references_list : ml_structure -> global_reference list kinds
 
 val signature_of_structure : ml_structure -> ml_signature
+
+val msid_of_mt : ml_module_type -> module_path
 
 val get_decl_in_structure : global_reference -> ml_structure -> ml_decl
 

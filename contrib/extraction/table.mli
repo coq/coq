@@ -55,7 +55,6 @@ val modfile_of_mp : module_path -> module_path
 val common_prefix_from_list : module_path -> module_path list -> module_path
 val add_labels_mp : module_path -> label list -> module_path
 val get_nth_label_mp : int -> module_path -> label
-val get_nth_label : int -> global_reference -> label
 val labels_of_ref : global_reference -> module_path * label list
 
 (*s Some table-related operations *)

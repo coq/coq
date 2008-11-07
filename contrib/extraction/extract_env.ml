@@ -354,19 +354,20 @@ let module_filename m =
 (*s Extraction of one decl to stdout. *)
 
 let print_one_decl struc mp decl =
-  let d = descr () in 
-  reset_renaming_tables AllButExternal; 
-  ignore (create_renamings struc);
-  push_visible mp; 
-  msgnl (d.pp_decl decl); 
+  let d = descr () in
+  reset_renaming_tables AllButExternal;
+  set_phase Pre;
+  ignore (d.pp_struct struc);
+  set_phase Impl;
+  push_visible mp None;
+  msgnl (d.pp_decl decl);
   pop_visible ()
 
 (*s Extraction of a ml struct to a file. *)
 
-let print_structure_to_file (fn,si,mo) struc =
-  let d = descr () in 
-  reset_renaming_tables AllButExternal; 
-  let used_modules = create_renamings struc in 
+let print_structure_to_file (fn,si,mo) dry struc =
+  let d = descr () in
+  reset_renaming_tables AllButExternal;
   let unsafe_needs = {
     mldummy = struct_ast_search ((=) MLdummy) struc; 
     tdummy = struct_type_search Mlutil.isDummy struc; 
@@ -375,40 +376,42 @@ let print_structure_to_file (fn,si,mo) struc =
       if lang () <> Haskell then false 
       else struct_ast_search (function MLmagic _ -> true | _ -> false) struc }
   in
-  (* print the implementation *)
-  let cout = Option.map open_out fn in 
-  let ft = match cout with 
-    | None -> !Pp_control.std_ft
-    | Some cout -> Pp_control.with_output_to cout in 
-  begin try 
-    msg_with ft (d.preamble mo used_modules unsafe_needs);
-    if lang () = Ocaml then begin 
-      (* for computing objects to duplicate *)
-      let devnull = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
-      msg_with devnull (d.pp_struct struc);
-      reset_renaming_tables OnlyLocal; 
-    end; 
+  let devnull = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
+  (* First, a dry run, for computing objects to rename or duplicate *)
+  set_phase Pre;
+  msg_with devnull (d.pp_struct struc);
+  let opened = opened_libraries () in
+  (* Print the implementation *)
+  let cout = if dry then None else Option.map open_out fn in
+  let ft = if dry then devnull else
+    match cout with
+      | None -> !Pp_control.std_ft
+      | Some cout -> Pp_control.with_output_to cout in
+  begin try
+    (* The real printing of the implementation *)
+    set_phase Impl;
+    msg_with ft (d.preamble mo opened unsafe_needs);
     msg_with ft (d.pp_struct struc);
     Option.iter close_out cout; 
   with e -> 
     Option.iter close_out cout; raise e
   end;
   Option.iter info_file fn;
-  (* print the signature *)
-  Option.iter 
-    (fun si -> 
+  (* Now, let's print the signature *)
+  Option.iter
+    (fun si ->
        let cout = open_out si in
        let ft = Pp_control.with_output_to cout in
-       begin try 
-	 msg_with ft (d.sig_preamble mo used_modules unsafe_needs);
-	 reset_renaming_tables OnlyLocal;
+       begin try
+	 set_phase Intf;
+	 msg_with ft (d.sig_preamble mo opened unsafe_needs);
 	 msg_with ft (d.pp_sig (signature_of_structure struc));
 	 close_out cout;
        with e -> 
 	 close_out cout; raise e 
        end; 
        info_file si)
-    si
+    (if dry then None else si)
 
 
 (*********************************************)
@@ -453,7 +456,7 @@ let full_extr f (refs,mps) =
   List.iter (fun mp -> if is_modfile mp then error_MPfile_as_mod mp true) mps;
   let struc = optimize_struct refs (mono_environment refs mps) in
   warning_axioms ();
-  print_structure_to_file (mono_filename f) struc;
+  print_structure_to_file (mono_filename f) false struc;
   reset ()
 
 let full_extraction f lr = full_extr f (locate_ref lr)
@@ -494,19 +497,16 @@ let extraction_library is_rec m =
     if Visit.needed_mp mp 
     then (mp, unpack (extract_seb env (Some mp) true meb)) :: l 
     else l
-  in 
-  let struc = List.fold_left select [] l in 
-  let struc = optimize_struct [] struc in 
-  warning_axioms (); 
-  record_contents_fstlev struc; 
-  let rec print = function 
-    | [] -> () 
-    | (MPfile dir, _) :: l when not is_rec && dir <> dir_m -> print l 
-    | (MPfile dir, sel) as e :: l -> 
+  in
+  let struc = List.fold_left select [] l in
+  let struc = optimize_struct [] struc in
+  warning_axioms ();
+  let print = function
+    | (MPfile dir, sel) as e ->
+	let dry = not is_rec && dir <> dir_m in
 	let short_m = snd (split_dirpath dir) in
-	print_structure_to_file (module_filename short_m) [e]; 
-	print l 
+	print_structure_to_file (module_filename short_m) dry [e]
     | _ -> assert false
-  in 
-  print struc; 
+  in
+  List.iter print struc;
   reset ()
