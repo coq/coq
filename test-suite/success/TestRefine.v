@@ -9,13 +9,11 @@
 (************************************************************************)
 
 Lemma essai : forall x : nat, x = x.
-
  refine
  ((fun x0 : nat => match x0 with
                    | O => _
                    | S p => _
-                   end)
-  :forall x : nat, x = x).  (* x0=x0 et x0=x0 *)
+                   end)).
 
 Restart.
 
@@ -145,11 +143,10 @@ Lemma essai : forall n : nat, {x : nat | x = S n}.
 Restart.
 
  refine
- ((fun n : nat => match n with
+   (fun n : nat => match n with
                   | O => _
                   | S p => _
-                  end)
-  :forall n : nat, {x : nat | x = S n}).
+                  end).
 
 Restart.
 

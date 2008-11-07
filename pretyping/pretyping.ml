@@ -558,7 +558,6 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
 	  let pred = nf_evar (evars_of !evdref) pred in
 	  let p = nf_evar (evars_of !evdref) p in
-	 (*   msgnl (str "Pred is: " ++ Termops.print_constr_env env pred);*)
 	  let f cs b =
 	    let n = rel_context_length cs.cs_args in
 	    let pi = lift n pred in (* liftn n 2 pred ? *)
@@ -575,7 +574,6 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		cs.cs_args
 	    in
 	    let env_c = push_rels csgn env in 
-(* 	      msgnl (str "Pi is: " ++ Termops.print_constr_env env_c pi); *)
 	    let bj = pretype (mk_tycon pi) env_c evdref lvar b in
 	      it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
 	  let b1 = f cstrs.(0) b1 in
@@ -600,9 +598,12 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  evd_comb1 (Coercion.inh_coerce_to_base loc env) evdref cj
 	    | CastConv (k,t) ->
 		let tj = pretype_type empty_valcon env evdref lvar t in
-		let cj = pretype (mk_tycon tj.utj_val) env evdref lvar c in
-		  (* User Casts are for helping pretyping, experimentally not to be kept*)
-		  (* ... except for Correctness *)
+ 		let cj = pretype empty_tycon env evdref lvar c in
+		let cj = match k with
+		  | VMcast when not (occur_existential cj.uj_type || occur_existential tj.utj_val) ->
+		      ignore (Reduction.vm_conv Reduction.CUMUL env cj.uj_type tj.utj_val); cj
+		  | _ -> inh_conv_coerce_to_tycon loc env evdref cj (mk_tycon tj.utj_val)
+		in
 		let v = mkCast (cj.uj_val, k, tj.utj_val) in
 		  { uj_val = v; uj_type = tj.utj_val }
 	in inh_conv_coerce_to_tycon loc env evdref cj tycon

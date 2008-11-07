@@ -113,11 +113,14 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
           const_entry_opaque = opacity;
 	  const_entry_boxed = boxed }
     | Some comtyp ->
-	(* We use a cast to avoid troubles with evars in comtyp *)
-	(* that can only be resolved knowing com *)
-	let b = abstract_constr_expr (mkCastC (com, Rawterm.CastConv (DEFAULTcast,comtyp))) bl in
-	let b, imps = interp_constr_evars_impls env b in
-	let (body,typ) = destSubCast b in
+	let ty = generalize_constr_expr comtyp bl in
+	let b = abstract_constr_expr com bl in
+	let evdref = ref (Evd.create_evar_defs Evd.empty) in
+	let ty, impls = interp_type_evars_impls ~evdref env ty in
+	let b, imps = interp_casted_constr_evars_impls ~evdref env b ty in
+	let body, typ = nf_isevar !evdref b, nf_isevar !evdref ty in
+	  check_evars env Evd.empty !evdref body;
+	  check_evars env Evd.empty !evdref typ;
 	  imps,
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;

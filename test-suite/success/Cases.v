@@ -31,10 +31,11 @@ Type
 (* Interaction with coercions *)
 Parameter bool2nat : bool -> nat.
 Coercion bool2nat : bool >-> nat.
-Check (fun x => match x with
-                | O => true
-                | S _ => 0
-                end:nat).
+Definition foo : nat -> nat :=
+  fun x => match x with
+             | O => true
+             | S _ => 0
+           end.
 
 (****************************************************************************)
 (* All remaining examples come from Cristina Cornes' V6 TESTS/MultCases.v   *)
