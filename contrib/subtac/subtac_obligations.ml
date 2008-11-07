@@ -15,6 +15,7 @@ open Decl_kinds
 open Util
 open Evd
 open Declare
+open Proof_type
 
 type definition_hook = global_reference -> unit
 
@@ -28,8 +29,9 @@ let explain_no_obligations = function
     Some ident -> str "No obligations for program " ++ str (string_of_id ident)
   | None -> str "No obligations remaining"
 
-type obligation_info = (Names.identifier * Term.types * loc * obligation_definition_status * Intset.t) array
-
+type obligation_info = (Names.identifier * Term.types * loc * obligation_definition_status * Intset.t
+			 * Tacexpr.raw_tactic_expr option) array
+  
 type obligation =
     { obl_name : identifier;
       obl_type : types;
@@ -37,6 +39,7 @@ type obligation =
       obl_body : constr option;
       obl_status : obligation_definition_status;
       obl_deps : Intset.t;
+      obl_tac : Tacexpr.raw_tactic_expr option;
     }
 
 type obligations = (obligation array * int)
@@ -284,11 +287,11 @@ let red = Reductionops.nf_betaiota
 let init_prog_info n b t deps fixkind notations obls impls kind hook =
   let obls' = 
     Array.mapi
-      (fun i (n, t, l, o, d) ->
+      (fun i (n, t, l, o, d, tac) ->
 	 debug 2 (str "Adding obligation " ++ int i ++ str " with deps : " ++ str (string_of_intset d));
          { obl_name = n ; obl_body = None; 
 	   obl_location = l; obl_type = red t; obl_status = o;
-	   obl_deps = d })
+	   obl_deps = d; obl_tac = tac })
       obls
   in
     { prg_name = n ; prg_body = b; prg_type = red t; prg_obligations = (obls', Array.length obls');
@@ -416,7 +419,7 @@ let rec solve_obligation prg num =
 		  match update_obls prg obls (pred rem) with
 		  | Remain n when n > 0 ->
 		      if has_dependencies obls num then
-			ignore(auto_solve_obligations (Some prg.prg_name))
+			ignore(auto_solve_obligations (Some prg.prg_name) None)
 		  | _ -> ());
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		      Subtac_utils.my_print_constr (Global.env ()) obl.obl_type);
@@ -445,6 +448,14 @@ and solve_obligation_by_tac prg obls i tac =
 	(try
 	    if deps_remaining obls obl.obl_deps = [] then
 	     let obl = subst_deps_obl obls obl in
+	     let tac = 
+	       match tac with
+	       | Some t -> t
+	       | None -> 
+		   match obl.obl_tac with
+		   | Some t -> Tacinterp.interp t
+		   | None -> !default_tactic
+	     in
 	     let t = Subtac_utils.solve_by_tac (evar_of_obligation obl) tac in
 	       obls.(i) <- declare_obligation obl t;
 	       true
@@ -481,13 +492,13 @@ and try_solve_obligation n prg tac =
   let obls' = Array.copy obls in
     if solve_obligation_by_tac prg obls' n tac then
       ignore(update_obls prg obls' (pred rem));
-    
+
 and try_solve_obligations n tac = 
   try ignore (solve_obligations n tac) with NoObligations _ -> ()
 
-and auto_solve_obligations n : progress =
+and auto_solve_obligations n tac : progress =
   Flags.if_verbose msgnl (str "Solving obligations automatically...");
-  try solve_obligations n !default_tactic with NoObligations _ -> Dependent
+  try solve_prg_obligations (get_prog_err n) tac with NoObligations _ -> Dependent
       
 open Pp
 let show_obligations ?(msg=true) n =
@@ -501,7 +512,8 @@ let show_obligations ?(msg=true) n =
 		   | None -> 
 		       if !showed > 0 then (
 			 decr showed;
-			 msgnl (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++ str "of" ++ spc() ++ str (string_of_id n) ++ str ":" ++ spc () ++ 
+			 msgnl (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
+				   str "of" ++ spc() ++ str (string_of_id n) ++ str ":" ++ spc () ++ 
 				   hov 1 (my_print_constr (Global.env ()) x.obl_type ++ str "." ++ fnl ())))
 		   | Some _ -> ())
       obls
@@ -509,7 +521,8 @@ let show_obligations ?(msg=true) n =
 let show_term n =
   let prg = get_prog_err n in
   let n = prg.prg_name in
-    msgnl (str (string_of_id n) ++ spc () ++ str":" ++ spc () ++ my_print_constr (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
+    msgnl (str (string_of_id n) ++ spc () ++ str":" ++ spc () ++
+	      my_print_constr (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ my_print_constr (Global.env ()) prg.prg_body)
 
 let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic ?(hook=fun x -> ()) obls =
@@ -525,11 +538,7 @@ let add_definition n b t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     let len = Array.length obls in
     let _ = Flags.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
       from_prg := ProgMap.add n prg !from_prg; 
-      let res =
-	match tactic with
-	| None -> auto_solve_obligations (Some n) 
-	| Some tac -> solve_obligations (Some n) tac
-      in
+      let res = auto_solve_obligations (Some n) tactic in
 	match res with
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
@@ -547,11 +556,7 @@ let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) notations f
       List.fold_left (fun finished x -> 
 	if finished then finished 
 	else
-	  let res =
-	    match tactic with
-	    | None -> auto_solve_obligations (Some x) 
-	    | Some tac -> solve_obligations (Some x) tac
-	  in
+	  let res = auto_solve_obligations (Some x) tactic in
 	    match res with
 	    | Defined _ -> (* If one definition is turned into a constant, the whole block is defined. *) true
 	    | _ -> false) 

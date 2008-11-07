@@ -2,9 +2,13 @@ open Names
 open Util
 open Libnames
 open Evd
+open Proof_type
 
-type obligation_info = (identifier * Term.types * loc * obligation_definition_status * Intset.t) array
-    (* ident, type, location, opaque or transparent, expand or define dependencies *)
+type obligation_info = 
+  (identifier * Term.types * loc * 
+      obligation_definition_status * Intset.t * Tacexpr.raw_tactic_expr option) array
+    (* ident, type, location, (opaque or transparent, expand or define),
+       dependencies, tactic to solve it *)
 
 type progress = (* Resolution status of a program *)
     | Remain of int  (* n obligations remaining *)
@@ -39,14 +43,14 @@ val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr op
 
 val next_obligation : Names.identifier option -> unit
 
-val solve_obligations : Names.identifier option -> Proof_type.tactic -> progress
+val solve_obligations : Names.identifier option -> Proof_type.tactic option -> progress
 (* Number of remaining obligations to be solved for this program *)
 
-val solve_all_obligations : Proof_type.tactic -> unit 
+val solve_all_obligations : Proof_type.tactic option -> unit 
 
-val try_solve_obligation : int -> Names.identifier option -> Proof_type.tactic -> unit
+val try_solve_obligation : int -> Names.identifier option -> Proof_type.tactic option -> unit
 
-val try_solve_obligations : Names.identifier option -> Proof_type.tactic -> unit
+val try_solve_obligations : Names.identifier option -> Proof_type.tactic option -> unit
 
 val show_obligations : ?msg:bool -> Names.identifier option -> unit
 

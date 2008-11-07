@@ -14,6 +14,7 @@ open List
 open Pp
 open Util
 open Subtac_utils
+open Proof_type
 
 let trace s = 
   if !Flags.debug then (msgnl s; msgerr s)
@@ -25,10 +26,11 @@ let succfix (depth, fixrels) =
 type oblinfo =
   { ev_name: int * identifier;
     ev_hyps: named_context;
-    ev_status : obligation_definition_status;
+    ev_status: obligation_definition_status;
     ev_chop: int option;
     ev_loc: Util.loc;
     ev_typ: types;
+    ev_tac: Tacexpr.raw_tactic_expr option;
     ev_deps: Intset.t }
     
 (** Substitute evar references in t using De Bruijn indices, 
@@ -186,9 +188,16 @@ let eterm_obligations env name isevars evm fs ?status t ty =
 	   | Some s -> s, None
 	   | None -> Define true, None
 	 in
+	 let tac = match ev.evar_extra with 
+	   | Some t -> 
+	       if Dyn.tag t = "tactic" then 
+		 Some (Tacinterp.globTacticIn (Tacinterp.tactic_out t))
+	       else None
+	   | None -> None
+	 in
 	 let info = { ev_name = (n, nstr);
 		      ev_hyps = hyps; ev_status = status; ev_chop = chop;
-		      ev_loc = loc; ev_typ = evtyp ; ev_deps = deps }
+		      ev_loc = loc; ev_typ = evtyp ; ev_deps = deps; ev_tac = tac }
 	 in (id, info) :: l) 
       evn []
   in 
@@ -199,12 +208,12 @@ let eterm_obligations env name isevars evm fs ?status t ty =
   let evars = 
     List.map (fun (_, info) ->
       let { ev_name = (_, name); ev_status = status;
-	    ev_loc = loc; ev_typ = typ; ev_deps = deps } = info
+	    ev_loc = loc; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
       in
       let status = match status with
 	| Define true when Idset.mem name transparent -> Define false
 	| _ -> status
-      in name, typ, loc, status, deps) evts
+      in name, typ, loc, status, deps, tac) evts
   in Array.of_list (List.rev evars), t', ty
 
 let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
