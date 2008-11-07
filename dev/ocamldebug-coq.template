@@ -26,4 +26,5 @@ exec $OCAMLDEBUG \
 	-I $COQTOP/contrib/subtac     -I $COQTOP/contrib/funind \
         -I $COQTOP/contrib/rtauto     -I $COQTOP/contrib/setoid_ring \
         -I $COQTOP/contrib/recdef     -I $COQTOP/contrib/dp \
+        -I $COQTOP/ide \
 	$*
