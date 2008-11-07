@@ -102,3 +102,28 @@ Proof with simpl in * ; subst ; reverse ; simplify_dep_elim ; simplify_IH_hyps ;
 
   eapply app with τ...
 Save.
+
+(** Example by Andrew Kenedy, uses simplification of the first component of dependent pairs. *)
+
+Unset Manual Implicit Arguments.
+
+Inductive Ty :=
+ | Nat : Ty
+ | Prod : Ty -> Ty -> Ty.
+
+Inductive Exp : Ty -> Type :=
+| Const : nat -> Exp Nat
+| Pair : forall t1 t2, Exp t1 -> Exp t2 -> Exp (Prod t1 t2)
+| Fst : forall t1 t2, Exp (Prod t1 t2) -> Exp t1.
+
+Inductive Ev : forall t, Exp t -> Exp t -> Prop :=
+| EvConst   : forall n, Ev (Const n) (Const n)
+| EvPair    : forall t1 t2 (e1:Exp t1) (e2:Exp t2) e1' e2',
+               Ev e1 e1' -> Ev e2 e2' -> Ev (Pair e1 e2) (Pair e1' e2')
+| EvFst     : forall t1 t2 (e:Exp (Prod t1 t2)) e1 e2,
+               Ev e (Pair e1 e2) ->
+               Ev (Fst e) e1.
+
+Lemma EvFst_inversion : forall t1 t2 (e:Exp (Prod t1 t2)) e1, Ev (Fst e) e1 -> exists e2, Ev e (Pair e1 e2).
+intros t1 t2 e e1 ev. dependent destruction ev. exists e2 ; assumption. 
+Qed.

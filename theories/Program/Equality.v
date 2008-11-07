@@ -325,18 +325,23 @@ Proof. intros; assumption. Defined.
 Lemma simplification_heq : Π A B (x y : A), (x = y -> B) -> (JMeq x y -> B).
 Proof. intros; apply X; apply (JMeq_eq H). Defined.
 
-Lemma simplification_existT : Π A (P : A -> Type) B  (p : A) (x y : P p),
+Lemma simplification_existT2 : Π A (P : A -> Type) B (p : A) (x y : P p),
   (x = y -> B) -> (existT P p x = existT P p y -> B).
 Proof. intros. apply X. apply inj_pair2. exact H. Defined.
 
+Lemma simplification_existT1 : Π A (P : A -> Type) B (p q : A) (x : P p) (y : P q),
+  (p = q -> existT P p x = existT P q y -> B) -> (existT P p x = existT P q y -> B).
+Proof. intros. injection H. intros ; auto. Defined.
+  
 Lemma simplification_K : Π A (x : A) (B : x = x -> Type), B (refl_equal x) -> (Π p : x = x, B p).
 Proof. intros. rewrite (UIP_refl A). assumption. Defined.
 
 (** This hint database and the following tactic can be used with [autosimpl] to 
    unfold everything to [eq_rect]s. *)
 
-Hint Unfold solution_left solution_right deletion simplification_heq simplification_existT : equations.
-Hint Unfold eq_rect_r eq_rec eq_ind : equations.
+Hint Unfold solution_left solution_right deletion simplification_heq
+  simplification_existT1 simplification_existT2
+  eq_rect_r eq_rec eq_ind : equations.
 
 (** Simply unfold as much as possible. *)
 
@@ -361,7 +366,9 @@ Ltac simplify_one_dep_elim_term c :=
   match c with
     | @JMeq _ _ _ _ -> _ => refine (simplification_heq _ _ _ _ _)
     | ?t = ?t -> _ => intros _ || refine (simplification_K _ t _ _)
-    | eq (existT _ _ _) (existT _ _ _) -> _ => refine (simplification_existT _ _ _ _ _ _ _)
+    | eq (existT _ _ _) (existT _ _ _) -> _ => 
+      refine (simplification_existT2 _ _ _ _ _ _ _) ||
+        refine (simplification_existT1 _ _ _ _ _ _ _ _)
     | ?x = ?y -> _ => (* variables case *)
       (let hyp := fresh in intros hyp ;
         move hyp before x ;
