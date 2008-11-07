@@ -114,7 +114,7 @@ let standard sds sps =
   end;
   print "clean:\n";
   print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) *~\n";
-  print "\trm -f all.ps all-gal.ps all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
+  print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
          $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d)\n";
   if !some_mlfile then
     print "\trm -f $(CMOFILES) $(MLFILES:.ml=.cmi) $(MLFILES:.ml=.ml.d)\n";
@@ -375,6 +375,10 @@ let all_target l =
 	print "all.ps: $(VFILES)\n";
 	print "\t$(COQDOC) -toc -ps $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
 	print "all-gal.ps: $(VFILES)\n";
+	print "\t$(COQDOC) -toc -ps -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+	print "all.pdf: $(VFILES)\n";
+	print "\t$(COQDOC) -toc -pdf $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+	print "all-gal.pdf: $(VFILES)\n";
 	print "\t$(COQDOC) -toc -ps -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
 	print "\n\n"
       end
