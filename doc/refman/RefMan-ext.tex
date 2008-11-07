@@ -20,10 +20,12 @@ construction allows to define ``signatures''.
 {\sentence} & ++= & {\record}\\
   & & \\
 {\record} & ::= &
-   {\tt Record} {\ident} \sequence{\binderlet}{} \zeroone{{\tt :} {\sort}} \verb.:=. \\
+   \inductivitytoken {\ident} \sequence{\binderlet}{} \zeroone{{\tt :} {\sort}} \verb.:=. \\
 && ~~~~\zeroone{\ident}
        \verb!{! \zeroone{\nelist{\field}{;}} \verb!}! \verb:.:\\
   & & \\
+\inductivitytoken & ::= & {\tt Record} $|$ {\tt Structure} $|${\tt Inductive} $|$ {\tt CoInductive} \\
+ & & \\
 {\field} & ::= & {\name} : {\type} \\
  & $|$ & {\name} {\typecstr} := {\term}
 \end{tabular}
@@ -148,6 +150,23 @@ Eval compute in half.(Rat_bottom_cond).
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
+
+\begin{Variants}
+\item
+Records declared with the keyword {\tt Record} (or {\tt Structure} which is
+equivalent to the former) cannot be recursive. However, records can be declared
+using the keyword {\tt CoInductive} (resp. {\tt Inductive}) instead, making them
+coinductive (resp. inductive) types.
+
+As an example, here is how to define a type of streams over a type A as a type
+with a pair of destructors:
+\begin{coq_example}
+CoInductive stream (A:Type) := 
+  {head : A;
+   tail : stream A}.
+\end{coq_example}
+
+\end{Variants}
 
 \begin{Warnings}
 \item {\tt Warning: {\ident$_i$} cannot be defined.}
