@@ -130,6 +130,18 @@ Check Nil.
 Notation NIL := nil.
 Check NIL : list nat.
 
+
+(**********************************************************************)
+(* Test printing of notation with coercions in scope of a coercion    *)
+
+Open Scope nat_scope.
+
+Coercion is_true := fun b => b=true.
+Coercion of_nat n := match n with 0 => true | _ => false end.
+Notation "'I' x" := (of_nat (S x) || true)%bool (at level 10).
+
+Check (false && I 3)%bool /\ I 6.
+
 (**********************************************************************)
 (* Check notations with several recursive patterns                    *)
 
