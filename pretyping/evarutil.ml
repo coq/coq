@@ -1059,7 +1059,7 @@ let solve_simple_eqn conv_algo env evd (pbty,(evk1,args1 as ev1),t2) =
 	      let evc = nf_isevar evd evi.evar_concl in
 	      let body = match evi.evar_body with Evar_defined b -> b | Evar_empty -> assert false in
 	      let ty = nf_isevar evd (Retyping.get_type_of_with_meta evenv evm (metas_of evd) body) in
-		fst (conv_algo evenv evd Reduction.CUMUL ty evc)
+		add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
 	    else evd
     in
     let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
