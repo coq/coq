@@ -599,13 +599,14 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	    | CastConv (k,t) ->
 		let tj = pretype_type empty_valcon env evdref lvar t in
  		let cj = pretype empty_tycon env evdref lvar c in
+		let cty = nf_isevar !evdref cj.uj_type and tval = nf_isevar !evdref tj.utj_val in
 		let cj = match k with
-		  | VMcast when not (occur_existential cj.uj_type || occur_existential tj.utj_val) ->
-		      ignore (Reduction.vm_conv Reduction.CUMUL env cj.uj_type tj.utj_val); cj
-		  | _ -> inh_conv_coerce_to_tycon loc env evdref cj (mk_tycon tj.utj_val)
+		  | VMcast when not (occur_existential cty || occur_existential tval) ->
+		      ignore (Reduction.vm_conv Reduction.CUMUL env cty tval); cj
+		  | _ -> inh_conv_coerce_to_tycon loc env evdref cj (mk_tycon tval)
 		in
-		let v = mkCast (cj.uj_val, k, tj.utj_val) in
-		  { uj_val = v; uj_type = tj.utj_val }
+		let v = mkCast (cj.uj_val, k, tval) in
+		  { uj_val = v; uj_type = tval }
 	in inh_conv_coerce_to_tycon loc env evdref cj tycon
 
     | RDynamic (loc,d) ->
