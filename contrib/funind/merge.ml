@@ -863,7 +863,7 @@ let rawterm_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
     List.map (* zeta_normalize t ? *)
       (fun (id,t) -> false, ((dummy_loc,id),rawterm_to_constr_expr t))
       rawlist in  
-  lident , bindlist , cstr_expr , lcstor_expr
+  lident , bindlist , Some cstr_expr , lcstor_expr
 
 
 

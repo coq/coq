@@ -64,16 +64,19 @@ let binders_of_decls = List.map binder_of_decl
 
 let typecheck_params_and_fields id t ps nots fs =
   let env0 = Global.env () in
-  let (env1,newps), imps = interp_context Evd.empty env0 ps in
-  let fullarity = it_mkProd_or_LetIn t newps in
-  let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
   let evars = ref (Evd.create_evar_defs Evd.empty) in
+  let (env1,newps), imps = interp_context_evars ~fail_anonymous:false evars env0 ps in
+  let fullarity = it_mkProd_or_LetIn (Option.cata (fun x -> x) (new_Type ()) t) newps in
+  let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
   let env2,impls,newfs,data =
     interp_fields_evars evars env_ar nots (binders_of_decls fs)
   in
-  let newps = Evarutil.nf_rel_context_evar (Evd.evars_of !evars) newps in
-  let newfs = Evarutil.nf_rel_context_evar (Evd.evars_of !evars) newfs in
-  let ce t = Evarutil.check_evars env0 Evd.empty !evars t in
+  let evars,_ = Evarconv.consider_remaining_unif_problems env_ar !evars in
+  let evars = Typeclasses.resolve_typeclasses env_ar evars in
+  let sigma = Evd.evars_of evars in
+  let newps = Evarutil.nf_rel_context_evar sigma newps in
+  let newfs = Evarutil.nf_rel_context_evar sigma newfs in
+  let ce t = Evarutil.check_evars env0 Evd.empty evars t in
     List.iter (fun (n, b, t) -> Option.iter ce b; ce t) newps;
     List.iter (fun (n, b, t) -> Option.iter ce b; ce t) newfs;
     imps, newps, impls, newfs
@@ -242,11 +245,105 @@ let declare_structure finite id idbuild paramimpls params arity fieldimpls field
   let build = ConstructRef (rsp,1) in
     if is_coe then Class.try_add_new_coercion build Global;
     Recordops.declare_structure(rsp,(rsp,1),List.rev kinds,List.rev sp_projs);
-    kn
+    kn,0
+
+let implicits_of_context ctx =
+  list_map_i (fun i name ->
+    let explname = 
+      match name with 
+      | Name n -> Some n
+      | Anonymous -> None
+    in ExplByPos (i, explname), (true, true))
+    1 (List.rev (Anonymous :: (List.map pi1 ctx)))
+
+open Typeclasses
+
+let typeclasses_db = "typeclass_instances"
+
+let qualid_of_con c = 
+  Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
+
+let set_rigid c = 
+  Auto.add_hints false [typeclasses_db] 
+    (Vernacexpr.HintsTransparency ([qualid_of_con c], false))
+
+let declare_instance_cst glob con =
+  let instance = Typeops.type_of_constant (Global.env ()) con in
+  let _, r = Sign.decompose_prod_assum instance in
+    match class_of_constr r with
+      | Some tc -> add_instance (new_instance tc None glob con)
+      | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
+
+let declare_class finite id idbuild paramimpls params arity fieldimpls fields
+    ?(kind=StructureComponent) ?name is_coe coers =
+  let fieldimpls = 
+    (* Make the class and all params implicits in the projections *)
+    let ctx_impls = implicits_of_context params in
+    let len = succ (List.length params) in
+      List.map (fun x -> ctx_impls @ Impargs.lift_implicits len x) fieldimpls
+  in
+  let impl, projs =
+    match fields with
+    | [(Name proj_name, _, field)] ->
+	let class_body = it_mkLambda_or_LetIn field params in
+	let class_type = Option.map (fun ar -> it_mkProd_or_LetIn ar params) arity in
+	let class_entry =
+	  { const_entry_body = class_body;
+	    const_entry_type = class_type;
+	    const_entry_opaque = false;
+	    const_entry_boxed = false }
+	in
+	let cst = Declare.declare_constant (snd id)
+	  (DefinitionEntry class_entry, IsDefinition Definition) 
+	in
+	let inst_type = appvectc (mkConst cst) (rel_vect 0 (List.length params)) in
+	let proj_type = it_mkProd_or_LetIn (mkProd(Name (snd id), inst_type, lift 1 field)) params in
+	let proj_body = it_mkLambda_or_LetIn (mkLambda (Name (snd id), inst_type, mkRel 1)) params in
+	let proj_entry = 
+	  { const_entry_body = proj_body;
+	    const_entry_type = Some proj_type;
+	    const_entry_opaque = false;
+	    const_entry_boxed = false }
+	in
+	let proj_cst = Declare.declare_constant proj_name
+	  (DefinitionEntry proj_entry, IsDefinition Definition) 
+	in
+	let cref = ConstRef cst in
+	  Impargs.declare_manual_implicits false cref paramimpls;
+	  Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
+	  set_rigid cst; (* set_rigid proj_cst; *)
+	  cref, [proj_name, Some proj_cst]
+    | _ ->
+	let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
+	let ind = declare_structure true (snd id) idbuild paramimpls
+	  params (Option.cata (fun x -> x) (new_Type ()) arity) fieldimpls fields
+	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
+	in
+	  (* List.iter (Option.iter (declare_interning_data ((),[]))) notations; *)
+	  IndRef ind, (List.map2 (fun (id, _, _) y -> (Nameops.out_name id, y))
+			     (List.rev fields) (Recordops.lookup_projections ind))
+  in
+  let ctx_context =
+    List.map (fun (na, b, t) -> 
+      match Typeclasses.class_of_constr t with
+      | Some cl -> Some (cl.cl_impl, true) (*List.exists (fun (_, n) -> n = na) supnames)*)
+      | None -> None)
+      params, params
+  in
+  let k =
+    { cl_impl = impl;
+      cl_context = ctx_context;
+      cl_props = fields;
+      cl_projs = projs }
+  in
+    List.iter2 (fun p sub -> 
+      if sub then match snd p with Some p -> declare_instance_cst true p | None -> ())
+      k.cl_projs coers;
+    add_class k; impl
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
-let definition_structure (finite,(is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
+let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
   let cfs,notations = List.split cfs in
   let coers,fs = List.split cfs in
   let extract_name acc = function
@@ -256,11 +353,14 @@ let definition_structure (finite,(is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   (* Now, younger decl in params and fields is on top *)
+  let sc = Option.map mkSort s in
   let implpars, params, implfs, fields = 
     States.with_heavy_rollback (fun () ->
-      typecheck_params_and_fields idstruc (mkSort s) ps notations fs) ()
+      typecheck_params_and_fields idstruc sc ps notations fs) ()
   in
-  let implfs = 
-    List.map (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
-  in declare_structure finite idstruc idbuild implpars params (mkSort s) implfs fields is_coe coers
-      
+    if kind then
+      let arity = Option.cata (fun x -> x) (new_Type ()) sc in
+      let implfs = List.map
+	(fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
+      in IndRef (declare_structure finite idstruc idbuild implpars params arity implfs fields is_coe coers)
+    else declare_class finite (loc,idstruc) idbuild implpars params sc implfs fields is_coe coers

@@ -39,4 +39,4 @@ Class EpiMorphism ((m : Morphism (A -> B) (eqA ++> eqB))) :=
 Class IsoMorphism ((m : Morphism (A -> B) (eqA ++> eqB))) :=
   monomorphism :> MonoMorphism m ; epimorphism :> EpiMorphism m.
 
-Class ((m : Morphism (A -> A) (eqA ++> eqA))) [ ! IsoMorphism m ] => AutoMorphism.
+Class ((m : Morphism (A -> A) (eqA ++> eqA))) [ I : ! IsoMorphism m ] => AutoMorphism.

@@ -1192,7 +1192,7 @@ let do_build_inductive
   let rel_ind i ext_rel_constructors = 
     ((dummy_loc,relnames.(i)),
     rel_params,
-    rel_arities.(i),
+    Some rel_arities.(i),
     ext_rel_constructors),None
   in
   let ext_rel_constructors = (Array.mapi rel_ind ext_rels_constructors) in 

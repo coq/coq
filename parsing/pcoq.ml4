@@ -445,6 +445,7 @@ module Constr =
     let binders_let = Gram.Entry.create "constr:binders_let"
     let binders_let_fixannot = Gram.Entry.create "constr:binders_let_fixannot"
     let typeclass_constraint = Gram.Entry.create "constr:typeclass_constraint"
+    let record_declaration = Gram.Entry.create "constr:record_declaration"
     let appl_arg = Gram.Entry.create "constr:appl_arg"
   end
 

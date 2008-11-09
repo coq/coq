@@ -680,44 +680,61 @@ let check_hidden_implicit_parameters id (_,_,_,(indnames,_)) =
     pr_id id ++ strbrk " must not be used as a bound variable in the type \
 of its constructor.")
 
-let push_name_env lvar (ids,unb,tmpsc,scopes as env) = function
-  | Anonymous -> env 
+let push_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) = function
+  | Anonymous -> 
+      if fail_anonymous then errorlabstrm "" (str "Anonymous variables not allowed");
+      env
   | Name id -> 
       check_hidden_implicit_parameters id lvar;
       (Idset.add id ids, unb,tmpsc,scopes)
 
-let push_loc_name_env lvar (ids,unb,tmpsc,scopes as env) loc = function
-  | Anonymous -> env 
+let push_loc_name_env ?(fail_anonymous=false) lvar (ids,unb,tmpsc,scopes as env) loc = function
+  | Anonymous -> 
+      if fail_anonymous then user_err_loc (loc,"", str "Anonymous variables not allowed");
+      env
   | Name id -> 
       check_hidden_implicit_parameters id lvar;
       Dumpglob.dump_binding loc id;
       (Idset.add id ids,unb,tmpsc,scopes)
 
-let intern_generalized_binder intern_type lvar (ids,unb,tmpsc,sc as env) bl (loc, na) b b' t ty =
+let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
+    (ids,unb,tmpsc,sc as env) bl (loc, na) b b' t ty =
   let ty = 
     if t then ty else
       Implicit_quantifiers.implicit_application ids
 	Implicit_quantifiers.combine_params_freevar ty
   in
-  let ty = intern_type (ids,true,tmpsc,sc) ty in
-  let fvs = Implicit_quantifiers.free_vars_of_rawconstr ~bound:ids ty in
-  let env' = List.fold_left (fun env (x, l) -> push_loc_name_env lvar env l (Name x)) env fvs in
+  let ty' = intern_type (ids,true,tmpsc,sc) ty in
+  let fvs = Implicit_quantifiers.free_vars_of_rawconstr ~bound:ids ty' in
+  let env' = List.fold_left (fun env (x, l) -> push_loc_name_env ~fail_anonymous lvar env l (Name x)) env fvs in
   let bl = List.map (fun (id, loc) -> (Name id, b, None, RHole (loc, Evd.BinderType (Name id)))) fvs in
-    (push_loc_name_env lvar env' loc na), (na,b',None,ty) :: List.rev bl
-      
-let intern_local_binder_aux intern intern_type lvar ((ids,unb,ts,sc as env),bl) = function
+  let na = match na with
+    | Anonymous -> 
+	if fail_anonymous then na 
+	else
+	  let name = 
+	    let id = 
+	      match ty with
+	      | CApp (_, (_, CRef (Ident (loc,id))), _) -> id
+	      | _ -> id_of_string "assum"
+	    in Implicit_quantifiers.make_fresh ids (Global.env ()) id
+	  in Name name
+    | _ -> na
+  in (push_loc_name_env ~fail_anonymous lvar env' loc na), (na,b',None,ty') :: List.rev bl
+
+let intern_local_binder_aux ?(fail_anonymous=false) intern intern_type lvar ((ids,unb,ts,sc as env),bl) = function
   | LocalRawAssum(nal,bk,ty) ->
       (match bk with
       | Default k ->
 	  let (loc,na) = List.hd nal in
-	    (* TODO: fail if several names with different implicit types *)
+	  (* TODO: fail if several names with different implicit types *)
 	  let ty = locate_if_isevar loc na (intern_type env ty) in
 	    List.fold_left
 	      (fun ((ids,unb,ts,sc),bl) (_,na) ->
 		((name_fold Idset.add na ids,unb,ts,sc), (na,k,None,ty)::bl))
 	      (env,bl) nal
       | Generalized (b,b',t) ->
-	  let env, b = intern_generalized_binder intern_type lvar env bl (List.hd nal) b b' t ty in
+	  let env, b = intern_generalized_binder ~fail_anonymous intern_type lvar env bl (List.hd nal) b b' t ty in
 	    env, b @ bl)
   | LocalRawDef((loc,na),def) ->
       ((name_fold Idset.add na ids,unb,ts,sc),
@@ -1297,10 +1314,10 @@ let my_intern_constr sigma env lvar acc c =
 
 let my_intern_type sigma env lvar acc c = my_intern_constr sigma env lvar (set_type_scope acc) c
 
-let intern_context sigma env params =
+let intern_context fail_anonymous sigma env params =
   let lvar = (([],[]),Environ.named_context env, [], ([], [])) in
     snd (List.fold_left
-	    (intern_local_binder_aux (my_intern_constr sigma env lvar) (my_intern_type sigma env lvar) lvar)
+	    (intern_local_binder_aux ~fail_anonymous (my_intern_constr sigma env lvar) (my_intern_type sigma env lvar) lvar)
 	    ((extract_ids env,false,None,[]), []) params)
 
 let interp_context_gen understand_type understand_judgment env bl = 
@@ -1322,17 +1339,17 @@ let interp_context_gen understand_type understand_judgment env bl =
 	  | Some b ->
 	      let c = understand_judgment env b in
 	      let d = (na, Some c.uj_val, c.uj_type) in
-		(push_rel d env,d::params, succ n, impls))
+		(push_rel d env, d::params, succ n, impls))
       (env,[],1,[]) (List.rev bl)
   in (env, par), impls
 
-let interp_context sigma env params = 
-  let bl = intern_context sigma env params in
+let interp_context ?(fail_anonymous=false) sigma env params = 
+  let bl = intern_context fail_anonymous sigma env params in
     interp_context_gen (Default.understand_type sigma) 
       (Default.understand_judgment sigma) env bl
     
-let interp_context_evars evdref env params =
-  let bl = intern_context (Evd.evars_of !evdref) env params in
+let interp_context_evars ?(fail_anonymous=false) evdref env params =
+  let bl = intern_context fail_anonymous (Evd.evars_of !evdref) env params in
     interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
       (Default.understand_judgment_tcc evdref) env bl
     

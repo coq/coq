@@ -528,7 +528,9 @@ let interp_mutual paramsl indl notations finite =
   check_all_names_different indl;
   let env0 = Global.env() in
   let evdref = ref (Evd.create_evar_defs Evd.empty) in
-  let (env_params, ctx_params), userimpls = interp_context_evars evdref env0 paramsl in
+  let (env_params, ctx_params), userimpls = 
+    interp_context_evars ~fail_anonymous:false evdref env0 paramsl 
+  in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
 
   (* Names of parameters as arguments of the inductive type (defs removed) *)
@@ -622,7 +624,7 @@ let prepare_inductive ntnl indl =
   let indl =
     List.map (fun ((_,indname),_,ar,lc) -> { 
       ind_name = indname;
-      ind_arity = ar;
+      ind_arity = Option.cata (fun x -> x) (CSort (dummy_loc, Rawterm.RType None)) ar;
       ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
     }) indl in
   List.fold_right Option.List.cons ntnl [], indl

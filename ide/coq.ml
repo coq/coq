@@ -238,7 +238,6 @@ let rec attribute_of_vernac_command = function
   | VernacIdentityCoercion _ -> []
 
   (* Type classes *)
-  | VernacClass _ -> []
   | VernacInstance _ -> []
   | VernacContext _ -> []
   | VernacDeclareInstance _ -> []

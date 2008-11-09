@@ -1979,14 +1979,14 @@ let rec xlate_vernac =
        ((if add_coercion then CT_coercion_atm else
           CT_coerce_NONE_to_COERCION_OPT(CT_none)),
         xlate_ident s, xlate_binder_list binders, 
-	xlate_formula c1, record_constructor,
+	xlate_formula (Option.get c1), record_constructor,
          build_record_field_list field_list)
    | VernacInductive (isind, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
       let strip_mutind = function
           (((_,s), parameters, c, Constructors constructors), notopt) ->
           CT_ind_spec
-            (xlate_ident s, xlate_binder_list parameters, xlate_formula c,
+            (xlate_ident s, xlate_binder_list parameters, xlate_formula (Option.get c),
              build_constructors constructors,
 	     translate_opt_notation_decl notopt)
         | _ -> xlate_error "TODO: Record notation in (Co)Inductive" in
@@ -2148,7 +2148,7 @@ let rec xlate_vernac =
 
     (* Type Classes *) 
    | VernacDeclareInstance _|VernacContext _|
-	 VernacInstance (_, _, _, _, _)|VernacClass (_, _, _, _, _) ->
+	 VernacInstance (_, _, _, _, _) ->
 	   xlate_error "TODO: Type Classes commands"
 
   | VernacResetName id -> CT_reset (xlate_ident (snd id))

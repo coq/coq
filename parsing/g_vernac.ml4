@@ -48,6 +48,7 @@ let thm_token = Gram.Entry.create "vernac:thm_token"
 let def_body = Gram.Entry.create "vernac:def_body"
 let decl_notation = Gram.Entry.create "vernac:decl_notation"
 let typeclass_context = Gram.Entry.create "vernac:typeclass_context"
+let record_field = Gram.Entry.create "vernac:record_field"
 let of_type_with_opt_coercion = Gram.Entry.create "vernac:of_type_with_opt_coercion"
 
 let get_command_entry () =
@@ -129,7 +130,7 @@ let no_coercion loc (c,x) =
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    typeclass_context typeclass_constraint decl_notation;
+    typeclass_context typeclass_constraint record_field decl_notation;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -168,7 +169,7 @@ GEXTEND Gram
   gallina_ext:
     [ [ b = record_token; oc = opt_coercion; name = identref;
         ps = binders_let; 
-	s = [ ":"; s = lconstr -> s | -> CSort (loc,Rawterm.RType None) ];
+	s = OPT [ ":"; s = lconstr -> s ];
 	":="; cstr = OPT identref; "{";
         fs = LIST0 record_field SEP ";"; "}" ->
 	  VernacRecord (b,(oc,name),ps,s,cstr,fs)
@@ -243,7 +244,7 @@ GEXTEND Gram
   (* Inductives and records *)
   inductive_definition:
     [ [ id = identref; indpar = binders_let; 
-        c = [ ":"; c = lconstr -> c | -> CSort (loc,Rawterm.RType None) ];
+        c = OPT [ ":"; c = lconstr -> c ];
         ":="; lc = constructor_list_or_record_decl; ntn = decl_notation ->
 	   ((id,indpar,c,lc),ntn) ] ]
   ;
@@ -253,8 +254,8 @@ GEXTEND Gram
 	      Constructors ((c id)::l)
       | id = identref ; c = constructor_type -> Constructors [ c id ]
       | cstr = identref; "{"; fs = LIST0 record_field SEP ";"; "}" -> 
-	     RecordDecl (Some cstr,fs) 
-      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (None,fs) 
+	     RecordDecl (false,Some cstr,fs) 
+      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (false,None,fs) 
       |  -> Constructors [] ] ]
   ;
 (*
@@ -500,16 +501,17 @@ GEXTEND Gram
 
       (* Type classes, new syntax without artificial sup. *)
       | IDENT "Class"; qid = identref; pars = binders_let;
-	 s = [ ":"; c = sort -> Some (loc, c) | -> None ];
-	 props = typeclass_field_types ->
-	   VernacClass (qid, pars, s, [], props)
+           s = OPT [ ":"; c = lconstr -> c ];
+	   fs = class_fields ->
+	   VernacInductive (false, [((qid,pars,s,RecordDecl (false,None,fs)),None)])
 
       (* Type classes *)
       | IDENT "Class"; sup = OPT [ l = binders_let; "=>" -> l ];
 	 qid = identref; pars = binders_let;
-	 s = [ ":"; c = sort -> Some (loc, c) | -> None ];
-	 props = typeclass_field_types ->
-	   VernacClass (qid, pars, s, (match sup with None -> [] | Some l -> l), props)
+         s = OPT [ ":"; c = lconstr -> c ];
+	 fs = class_fields ->
+	   VernacInductive 
+	     (false, [((qid,Option.cata (fun x -> x) [] sup @ pars,s,RecordDecl (false,None,fs)),None)])
 	     
       | IDENT "Context"; c = binders_let -> 
 	  VernacContext c
@@ -517,7 +519,8 @@ GEXTEND Gram
       | IDENT "Instance"; local = non_locality; name = identref; 
 	 sup = OPT binders_let; ":";
 	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
-	 pri = OPT [ "|"; i = natural -> i ] ; props = typeclass_field_defs ->
+	 pri = OPT [ "|"; i = natural -> i ] ; 
+	 props = [ ":="; decl = record_declaration -> decl | -> CRecord (loc, None, []) ] ->
 	   let sup =
 	     match sup with
 		 None -> []
@@ -542,25 +545,15 @@ GEXTEND Gram
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
   ;
+  class_fields:
+    [ [ ":="; fs = LIST1 record_field SEP ";" -> fs
+      | -> [] ] ]
+  ;
   implicit_name:
     [ [ "!"; id = ident -> (id, false, true)
     | id = ident -> (id,false,false)
     | "["; "!"; id = ident; "]" -> (id,true,true) 
     | "["; id = ident; "]" -> (id,true, false) ] ]
-  ;
-  typeclass_field_type:
-    [ [ id = identref; oc = of_type_with_opt_coercion; t = lconstr -> id, oc, t ] ]
-  ;
-  typeclass_field_def:
-    [ [ id = identref; params = LIST0 identref; ":="; t = lconstr -> id, params, t ] ]
-  ;
-  typeclass_field_types:
-    [ [ ":="; l = LIST1 typeclass_field_type SEP ";" -> l
-    | -> [] ] ]
-  ;
-  typeclass_field_defs:
-    [ [ ":="; l = LIST1 typeclass_field_def SEP ";" -> l
-    | -> [] ] ]
   ;
   strategy_level:
     [ [ IDENT "expand" -> Conv_oracle.Expand

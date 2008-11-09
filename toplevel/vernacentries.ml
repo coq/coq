@@ -372,26 +372,27 @@ let vernac_assumption kind l nl=
 	  else Dumpglob.dump_definition lid true "var") idl;
       declare_assumption idl is_coe kind [] c false false nl) l
 	  
-let vernac_record finite struc binders sort nameopt cfs =
+let vernac_record k finite struc binders sort nameopt cfs =
   let const = match nameopt with 
     | None -> add_prefix "Build_" (snd (snd struc))
     | Some (_,id as lid) ->
 	Dumpglob.dump_definition lid false "constr"; id in
   let sigma = Evd.empty in
   let env = Global.env() in
-  let s = interp_constr sigma env sort in
-  let s = Reductionops.whd_betadeltaiota env sigma s in
-  let s = match kind_of_term s with
-    | Sort s -> s
-    | _ -> user_err_loc
-        (constr_loc sort,"definition_structure", str "Sort expected.") in
+  let s = Option.map (fun x ->
+    let s = Reductionops.whd_betadeltaiota env sigma (interp_constr sigma env x) in
+      match kind_of_term s with
+      | Sort s -> s
+      | _ -> user_err_loc
+          (constr_loc x,"definition_structure", str "Sort expected.")) sort
+  in
     if Dumpglob.dump () then (
       Dumpglob.dump_definition (snd struc) false "rec";
       List.iter (fun ((_, x), _) ->
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
-    ignore(Record.definition_structure (finite,struc,binders,cfs,const,s))
+    ignore(Record.definition_structure (k,finite,struc,binders,cfs,const,s))
       
 let vernac_inductive finite indl = 
   if Dumpglob.dump () then
@@ -404,16 +405,16 @@ let vernac_inductive finite indl =
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
   match indl with
-  | [ ( id , bl , c ,RecordDecl (oc,fs) ), None ] -> 
-            vernac_record finite (false,id) bl c oc fs
+  | [ ( id , bl , c ,RecordDecl (b,oc,fs) ), None ] -> 
+      vernac_record b finite (false,id) bl c oc fs
   | [ ( _ , _ , _ , RecordDecl _ ) , _ ] -> 
-            Util.error "where clause not supported for (co)inductive records"
+      Util.error "where clause not supported for (co)inductive records"
   | _ -> let unpack = function 
-              | ( id , bl , c , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
-	      | _ -> Util.error "Cannot handle mutually (co)inductive records."
-            in
-            let indl = List.map unpack indl in
-            Command.build_mutual indl finite
+      | ( id , bl , c , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
+      | _ -> Util.error "Cannot handle mutually (co)inductive records."
+    in
+    let indl = List.map unpack indl in
+      Command.build_mutual indl finite
 
 let vernac_fixpoint l b = 
   if Dumpglob.dump () then
@@ -609,11 +610,6 @@ let vernac_identity_coercion stre id qids qidt =
   Class.try_add_new_identity_coercion id stre source target
 
 (* Type classes *)
-let vernac_class id par ar sup props =
-  if Dumpglob.dump () then (
-      Dumpglob.dump_definition id false "class";
-      List.iter (fun (lid, _, _) -> Dumpglob.dump_definition lid false "meth") props);
-  Classes.new_class id par ar sup props
  
 let vernac_instance glob sup inst props pri =
   Dumpglob.dump_constraint inst false "inst";
@@ -1327,7 +1323,7 @@ let interp c = match c with
 
   | VernacEndSegment lid -> vernac_end_segment lid
 
-  | VernacRecord ((_,finite),id,bl,s,idopt,fs) -> vernac_record finite id bl s idopt fs
+  | VernacRecord ((k,finite),id,bl,s,idopt,fs) -> vernac_record k finite id bl s idopt fs
   | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
@@ -1335,7 +1331,7 @@ let interp c = match c with
   | VernacIdentityCoercion (str,(_,id),s,t) -> vernac_identity_coercion str id s t
 
   (* Type classes *)
-  | VernacClass (id, par, ar, sup, props) -> vernac_class id par ar sup props
+(*   | VernacClass (id, par, ar, sup, props) -> vernac_class id par ar sup props *)
 
   | VernacInstance (glob, sup, inst, props, pri) -> vernac_instance glob sup inst props pri
   | VernacContext sup -> vernac_context sup

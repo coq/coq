@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -27,12 +26,12 @@ Require Export Coq.Classes.SetoidClass.
 
 Require Import Coq.Logic.Decidable.
 
-Class DecidableSetoid A [ Setoid A ] :=
+Class DecidableSetoid [ S : Setoid A ] :=
   setoid_decidable : forall x y : A, decidable (x == y).
 
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
-Class (( s : Setoid A )) => EqDec :=
+Class (( S : Setoid A )) => EqDec :=
   equiv_dec : forall x y : A, { x == y } + { x =/= y }.
 
 (** We define the [==] overloaded notation for deciding equality. It does not take precedence

@@ -122,58 +122,61 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   in
   let id = 
     match snd instid with
-	Name id -> 
-	  let sp = Lib.make_path id in
-	    if Nametab.exists_cci sp then
-	      errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists");
-	    id
-      | Anonymous -> 
-	  let i = Nameops.add_suffix (Classes.id_of_class k) "_instance_0" in
-	    Termops.next_global_ident_away false i (Termops.ids_of_context env)
+    | Name id -> 
+	let sp = Lib.make_path id in
+	  if Nametab.exists_cci sp then
+	    errorlabstrm "new_instance" (Nameops.pr_id id ++ Pp.str " already exists");
+	  id
+    | Anonymous -> 
+	let i = Nameops.add_suffix (Classes.id_of_class k) "_instance_0" in
+	  Termops.next_global_ident_away false i (Termops.ids_of_context env)
   in
   let env' = push_rel_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
   isevars := resolve_typeclasses ~onlyargs:false ~fail:true env' !isevars;
   let sigma = Evd.evars_of !isevars in
   let substctx = List.map (Evarutil.nf_evar sigma) subst in
-  let subst, _propsctx = 
-    let props = 
-      List.map (fun (x, l, d) -> 
-	x, Topconstr.abstract_constr_expr d (Classes.binders_of_lidents l))
-	props
-    in
+  let subst = 
+    let props = match props with CRecord (loc, _, fs) -> fs | _ -> assert false in
       if List.length props > List.length k.cl_props then 
 	Classes.mismatched_props env' (List.map snd props) k.cl_props;
-      let props, rest = 
-	List.fold_left
-	  (fun (props, rest) (id,_,_) -> 
-	    try 
-	      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
-	      let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
-		Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
-		c :: props, rest'
-	    with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
-	  ([], props) k.cl_props
-      in
-	if rest <> [] then 
-	  unbound_method env' k.cl_impl (fst (List.hd rest))
-	else
-	  type_ctx_instance isevars env' k.cl_props props substctx
+      match k.cl_props with 
+      | [(na,b,ty)] -> 
+	  let term = match props with [] -> CHole (Util.dummy_loc, None) | [(_,f)] -> f | _ -> assert false in
+	  let ty' = substl subst ty in
+	  let c = interp_casted_constr_evars isevars env' term ty' in
+	    c :: subst
+      | _ ->
+	  let props, rest = 
+	    List.fold_left
+	      (fun (props, rest) (id,_,_) -> 
+		try 
+		  let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
+		  let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
+		    Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
+		    c :: props, rest'
+		with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
+	      ([], props) k.cl_props
+	  in
+	    if rest <> [] then 
+	      unbound_method env' k.cl_impl (fst (List.hd rest))
+	    else
+	      fst (type_ctx_instance isevars env' k.cl_props props substctx)
   in
   let inst_constr, ty_constr = instance_constructor k (List.rev subst) in
-    isevars := Evarutil.nf_evar_defs !isevars;
-    let term = Evarutil.nf_isevar !isevars (it_mkLambda_or_LetIn inst_constr ctx')
-    and termtype = Evarutil.nf_isevar !isevars (it_mkProd_or_LetIn ty_constr ctx') 
+  isevars := Evarutil.nf_evar_defs !isevars;
+  let term = Evarutil.nf_isevar !isevars (it_mkLambda_or_LetIn inst_constr ctx')
+  and termtype = Evarutil.nf_isevar !isevars (it_mkProd_or_LetIn ty_constr ctx') 
+  in
+    isevars := undefined_evars !isevars;
+    Evarutil.check_evars env Evd.empty !isevars termtype;
+    let hook gr = 
+      let cst = match gr with ConstRef kn -> kn | _ -> assert false in
+      let inst = Typeclasses.new_instance k pri global cst in
+	Impargs.declare_manual_implicits false gr ~enriching:false imps;
+	Typeclasses.add_instance inst
     in
-      isevars := undefined_evars !isevars;
-      Evarutil.check_evars env Evd.empty !isevars termtype;
-      let hook gr = 
-	let cst = match gr with ConstRef kn -> kn | _ -> assert false in
-	let inst = Typeclasses.new_instance k pri global cst in
-	  Impargs.declare_manual_implicits false gr ~enriching:false imps;
-	  Typeclasses.add_instance inst
-      in
-      let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
-      let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
-	id, Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls
-	  
+    let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
+    let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
+      id, Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls
+	

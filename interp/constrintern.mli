@@ -67,7 +67,7 @@ val intern_pattern : env -> cases_pattern_expr ->
   Names.identifier list *
     ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
 
-val intern_context : evar_map -> env -> local_binder list -> raw_binder list
+val intern_context : bool -> evar_map -> env -> local_binder list -> raw_binder list
 
 (*s Composing internalisation with pretyping *)
 
@@ -126,9 +126,10 @@ val interp_binder_evars : evar_defs ref -> env -> name -> constr_expr -> types
 
 (* Interpret contexts: returns extended env and context *)
 
-val interp_context : evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
+val interp_context : ?fail_anonymous:bool -> 
+  evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
-val interp_context_evars : 
+val interp_context_evars : ?fail_anonymous:bool -> 
   evar_defs ref -> env -> local_binder list -> (env * rel_context) * manual_implicits
 
 (* Locating references of constructions, possibly via a syntactic definition *)

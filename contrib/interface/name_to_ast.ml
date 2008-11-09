@@ -109,7 +109,7 @@ let convert_one_inductive sp tyi =
   let sp = sp_of_global (IndRef (sp, tyi)) in
   (((dummy_loc,basename sp),
    convert_env(List.rev params),
-   (extern_constr true envpar arity),
+   Some (extern_constr true envpar arity),
    Constructors (convert_constructors envpar cstrnames cstrtypes)), None);;
 
 (* This function converts a Mutual inductive definition to a Coqast.t.

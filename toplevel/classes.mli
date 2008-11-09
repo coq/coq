@@ -29,24 +29,6 @@ val mismatched_params : env -> constr_expr list -> rel_context -> 'a
 
 val mismatched_props : env -> constr_expr list -> rel_context -> 'a
 
-type binder_list = (identifier located * bool * constr_expr) list
-type binder_def_list = (identifier located * identifier located list * constr_expr) list
- 
-val binders_of_lidents : identifier located list -> local_binder list
-
-val name_typeclass_binders : Idset.t ->
-    Topconstr.local_binder list ->
-    Topconstr.local_binder list * Idset.t
-
-(* val declare_implicit_proj : typeclass -> (identifier * constant) ->  *)
-(*   Impargs.manual_explicitation list -> bool -> unit *)
-
-val new_class : identifier located ->
-  local_binder list ->
-  Vernacexpr.sort_expr located option ->
-  local_binder list ->
-  binder_list -> unit
-
 (* Instance declaration *)
 
 val declare_instance : bool -> identifier located -> unit
@@ -66,7 +48,7 @@ val new_instance :
   ?global:bool -> (* Not global by default. *)
   local_binder list ->
   typeclass_constraint ->
-  binder_def_list ->
+  constr_expr ->
   ?generalize:bool ->
   ?tac:Proof_type.tactic  ->
   ?hook:(constant -> unit) ->

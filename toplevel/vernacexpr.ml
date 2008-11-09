@@ -163,9 +163,9 @@ type 'a with_notation = 'a * decl_notation
 type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
-  | RecordDecl of lident option * local_decl_expr with_coercion with_notation list
+  | RecordDecl of bool * lident option * local_decl_expr with_coercion with_notation list
 type inductive_expr =
-  lident * local_binder list * constr_expr * constructor_list_or_record_decl_expr
+  lident * local_binder list * constr_expr option * constructor_list_or_record_decl_expr
 
 type module_binder = bool option * lident list * module_type_ast
 
@@ -216,9 +216,9 @@ type vernac_expr =
   | VernacCombinedScheme of lident * lident list
 
   (* Gallina extensions *)
-  | VernacRecord of (bool*bool) (* = Record or Structure * Inductive or CoInductive *)
+  | VernacRecord of (bool*bool) (* = Structure or Class * Inductive or CoInductive *)
       * lident with_coercion * local_binder list
-      * constr_expr * lident option * local_decl_expr with_coercion with_notation list
+      * constr_expr option * lident option * local_decl_expr with_coercion with_notation list
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
@@ -230,18 +230,18 @@ type vernac_expr =
       class_rawexpr * class_rawexpr
 
   (* Type classes *)
-  | VernacClass of
-      lident * (* name *)
-	local_binder list * (* params *)
-	sort_expr located option * (* arity *)
-	local_binder list * (* constraints *)
-	(lident * bool * constr_expr) list (* props, with substructure hints *)
+(*   | VernacClass of *)
+(*       lident * (\* name *\) *)
+(* 	local_binder list * (\* params *\) *)
+(* 	sort_expr located option * (\* arity *\) *)
+(* 	local_binder list * (\* constraints *\) *)
+(* 	(lident * bool * constr_expr) list (\* props, with substructure hints *\) *)
 	
   | VernacInstance of
       bool * (* global *)
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
-	(lident * lident list * constr_expr) list * (* props *)
+	constr_expr * (* props *)
 	int option (* Priority *)
 
   | VernacContext of local_binder list
