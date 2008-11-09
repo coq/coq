@@ -431,6 +431,12 @@ let congruence_tac depth l =
     (tclTHEN (tclREPEAT introf) (cc_tactic depth l)) 
     cc_fail
 
+(* Beware: reflexivity = constructor 1 = apply refl_equal
+   might be slow now, let's rather do something equivalent
+   to a "simple apply refl_equal" *)
+
+let simple_reflexivity () = apply (Lazy.force _refl_equal)
+
 (* The [f_equal] tactic.
 
    It mimics the use of lemmas [f_equal], [f_equal2], etc.
@@ -442,7 +448,8 @@ let f_equal gl =
   let cut_eq c1 c2 = 
     let ty = refresh_universes (pf_type_of gl c1) in 
     tclTHENTRY
-      (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|]))) reflexivity
+      (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
+      (simple_reflexivity ())
   in 
   try match kind_of_term (pf_concl gl) with 
     | App (r,[|_;t;t'|]) when eq_constr r (Lazy.force _eq) -> 
