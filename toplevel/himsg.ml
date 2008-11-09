@@ -655,17 +655,13 @@ let error_not_an_arity id =
 let error_bad_entry () =
   str "Bad inductive definition."
 
-let error_not_allowed_case_analysis dep kind i =
-  str (if dep then "Dependent" else "Non dependent") ++
-  str " case analysis on sort: " ++ pr_sort kind ++ fnl () ++
-  str "is not allowed for inductive definition: " ++
-  pr_inductive (Global.env()) i ++ str "."
+(* Recursion schemes errors *)
 
-let error_bad_induction dep indid kind =
-  str (if dep then "Dependent" else "Non dependent") ++
-  str " induction for type " ++ pr_id indid ++
-  str " and sort " ++ pr_sort kind ++ spc () ++
-  str "is not allowed."
+let error_not_allowed_case_analysis isrec kind i =
+  str (if isrec then "Induction" else "Case analysis") ++
+  strbrk " on sort " ++ pr_sort kind ++ 
+  strbrk " is not allowed for inductive definition " ++
+  pr_inductive (Global.env()) i ++ str "."
 
 let error_not_mutual_in_scheme ind ind' =
   if ind = ind' then
@@ -693,9 +689,8 @@ let explain_inductive_error = function
 (* Recursion schemes errors *)
 
 let explain_recursion_scheme_error = function
-  | NotAllowedCaseAnalysis (dep,k,i) ->
-      error_not_allowed_case_analysis dep k i
-  | BadInduction (dep,indid,kind) -> error_bad_induction dep indid kind
+  | NotAllowedCaseAnalysis (isrec,k,i) ->
+      error_not_allowed_case_analysis isrec k i
   | NotMutualInScheme (ind,ind')-> error_not_mutual_in_scheme ind ind'
 
 (* Pattern-matching errors *)

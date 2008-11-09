@@ -431,7 +431,7 @@ let rec check_and_clear_in_constr evdref err ids c =
 		     has dependencies in another hyp of the context of ev
 		     and transitively remember the dependency *)
 		  match List.filter (fun (id,_) -> occur_var_in_decl (Global.env()) id h) ri with
-		  | rid' :: _ -> (hy,ar,(rid,List.assoc rid ri)::ri)
+		  | (_,id') :: _ -> (hy,ar,(rid,id')::ri)
 		  | _ ->
 		  (* No dependency at all, we can keep this ev's context hyp *)
 		      (h::hy,a::ar,ri))

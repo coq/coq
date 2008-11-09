@@ -20,8 +20,7 @@ open Evd
 (* Errors related to recursors building *)
 
 type recursion_scheme_error =
-  | NotAllowedCaseAnalysis of bool * sorts * inductive
-  | BadInduction of bool * identifier * sorts
+  | NotAllowedCaseAnalysis of (*isrec:*) bool * sorts * inductive
   | NotMutualInScheme of inductive * inductive
 
 exception RecursionSchemeError of recursion_scheme_error

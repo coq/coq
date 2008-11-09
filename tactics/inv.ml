@@ -482,32 +482,14 @@ let raw_inversion inv_kind id status names gl =
   gl
 
 (* Error messages of the inversion tactics *)
-let not_found_message ids =
-  if List.length ids = 1 then
-    (str "the variable" ++ spc () ++ str (string_of_id (List.hd ids)) ++ spc () ++
-      str" was not found in the current environment")
-  else 
-    (str "the variables [" ++ 
-      spc () ++ prlist (fun id -> (str (string_of_id id) ++ spc ())) ids ++
-      str" ] were not found in the current environment")
-
-let dep_prop_prop_message id =
-  errorlabstrm "Inv"
-    (str "Inversion on " ++ pr_id id ++
-       str " would need dependent elimination from Prop to Prop.")
- 
-let not_inductive_here id =
-  errorlabstrm "mind_specif_of_mind"
-    (str "Cannot recognize an inductive predicate in " ++ pr_id id ++
-       str ". If there is one, may be the structure of the arity or of the type of constructors is hidden by constant definitions.")
-
-(* Noms d'errreurs obsolètes ?? *)
 let wrap_inv_error id = function
-  | UserError ("Case analysis",s) -> errorlabstrm "Inv needs Nodep Prop Set" s
-  | UserError("mind_specif_of_mind",_)  -> not_inductive_here id
-  | UserError (a,b)  -> errorlabstrm "Inv" b
-  | Invalid_argument "List.fold_left2" -> dep_prop_prop_message id
-  | Not_found  ->  errorlabstrm "Inv" (not_found_message [id]) 
+  | Indrec.RecursionSchemeError
+      (Indrec.NotAllowedCaseAnalysis (_,(Type _ | Prop Pos as k),i)) ->
+      errorlabstrm ""
+	(strbrk "Inversion would require case analysis on sort " ++
+	pr_sort k ++ 
+	strbrk " which is not allowed for inductive definition " ++
+	pr_inductive (Global.env()) i ++ str ".")
   | e -> raise e
 
 (* The most general inversion tactic *)
