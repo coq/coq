@@ -162,9 +162,9 @@ let pr_rel_decl env (na,c,typ) =
 
 (* Prints a signature, all declarations on the same line if possible *)
 let pr_named_context_of env =
-  hv 0 (fold_named_context
-	  (fun env d pps -> pps ++ ws 2 ++ pr_var_decl env d)
-          env ~init:(mt ()))
+  let make_decl_list env d pps = pr_var_decl env d :: pps in
+  let psl = List.rev (fold_named_context make_decl_list env ~init:[]) in
+  hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
 let pr_named_context env ne_context = 
   hv 0 (Sign.fold_named_context
