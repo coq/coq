@@ -341,6 +341,8 @@ let declare_class finite id idbuild paramimpls params arity fieldimpls fields
       k.cl_projs coers;
     add_class k; impl
 
+open Vernacexpr
+
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
 let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
@@ -358,9 +360,11 @@ let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
     States.with_heavy_rollback (fun () ->
       typecheck_params_and_fields idstruc sc ps notations fs) ()
   in
-    if kind then
-      let arity = Option.cata (fun x -> x) (new_Type ()) sc in
-      let implfs = List.map
-	(fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
-      in IndRef (declare_structure finite idstruc idbuild implpars params arity implfs fields is_coe coers)
-    else declare_class finite (loc,idstruc) idbuild implpars params sc implfs fields is_coe coers
+    match kind with
+    | Record | Structure ->
+	let arity = Option.cata (fun x -> x) (new_Type ()) sc in
+	let implfs = List.map
+	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
+	in IndRef (declare_structure finite idstruc idbuild implpars params arity implfs fields is_coe coers)
+    | Class ->
+	declare_class finite (loc,idstruc) idbuild implpars params sc implfs fields is_coe coers

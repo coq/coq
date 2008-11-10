@@ -220,7 +220,9 @@ GEXTEND Gram
       | "CoInductive" -> false ] ]
   ;
   record_token:
-    [ [ IDENT "Record" -> (true,true) | IDENT "Structure" -> (false,true) ]]
+    [ [ IDENT "Record" -> (Record,true)
+      | IDENT "Structure" -> (Structure,true) 
+      | IDENT "Class" -> (Class,true) ] ]
   ;
   (* Simple definitions *)
   def_body:
@@ -254,8 +256,8 @@ GEXTEND Gram
 	      Constructors ((c id)::l)
       | id = identref ; c = constructor_type -> Constructors [ c id ]
       | cstr = identref; "{"; fs = LIST0 record_field SEP ";"; "}" -> 
-	     RecordDecl (false,Some cstr,fs) 
-      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (false,None,fs) 
+	     RecordDecl (Record,Some cstr,fs) 
+      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (Record,None,fs) 
       |  -> Constructors [] ] ]
   ;
 (*
@@ -503,7 +505,7 @@ GEXTEND Gram
       | IDENT "Class"; qid = identref; pars = binders_let;
            s = OPT [ ":"; c = lconstr -> c ];
 	   fs = class_fields ->
-	   VernacInductive (false, [((qid,pars,s,RecordDecl (false,None,fs)),None)])
+	   VernacInductive (false, [((qid,pars,s,RecordDecl (Class,None,fs)),None)])
 
       (* Type classes *)
       | IDENT "Class"; sup = OPT [ l = binders_let; "=>" -> l ];
@@ -511,7 +513,7 @@ GEXTEND Gram
          s = OPT [ ":"; c = lconstr -> c ];
 	 fs = class_fields ->
 	   VernacInductive 
-	     (false, [((qid,Option.cata (fun x -> x) [] sup @ pars,s,RecordDecl (false,None,fs)),None)])
+	     (false, [((qid,Option.cata (fun x -> x) [] sup @ pars,s,RecordDecl (Class,None,fs)),None)])
 	     
       | IDENT "Context"; c = binders_let -> 
 	  VernacContext c

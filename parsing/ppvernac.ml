@@ -667,7 +667,7 @@ let rec pr_vernac = function
   (* Gallina extensions *)
   | VernacRecord ((b,coind),(oc,name),ps,s,c,fs) ->
       hov 2
-        (str (if b then "Record" else "Class") ++
+        (str (match b with Record -> "Record" | Structure -> "Structure" | Class -> "Class") ++
          (if oc then str" > " else str" ") ++ pr_lident name ++ 
           pr_and_type_binders_arg ps ++ str" :" ++ spc() ++ 
 	  Option.cata pr_lconstr_expr (mt()) s ++ str" := " ++ pr_record_decl b c fs)
