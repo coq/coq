@@ -1942,82 +1942,82 @@ let setoid_replace_in  tac_opt id relation c1 c2 ~new_goals gl =
  
 (* [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
-let setoid_reflexivity gl =
- try
-  let relation_class =
-   relation_class_that_matches_a_constr "Setoid_reflexivity"
-    [] (pf_concl gl) in
-  match relation_class with
-     Leibniz _ -> assert false (* since [] is empty *)
-   | Relation rel ->
-      match rel.rel_refl with
-         None ->
-          errorlabstrm "Setoid_reflexivity"
-           (str "The relation " ++ prrelation rel ++ str " is not reflexive.")
-       | Some refl -> apply refl gl
- with
-  Optimize -> reflexivity_red true gl
+(* let setoid_reflexivity gl = *)
+(*  try *)
+(*   let relation_class = *)
+(*    relation_class_that_matches_a_constr "Setoid_reflexivity" *)
+(*     [] (pf_concl gl) in *)
+(*   match relation_class with *)
+(*      Leibniz _ -> assert false (\* since [] is empty *\) *)
+(*    | Relation rel -> *)
+(*       match rel.rel_refl with *)
+(*          None -> *)
+(*           errorlabstrm "Setoid_reflexivity" *)
+(*            (str "The relation " ++ prrelation rel ++ str " is not reflexive.") *)
+(*        | Some refl -> apply refl gl *)
+(*  with *)
+(*   Optimize -> reflexivity_red true gl gl *)
 
-let setoid_symmetry gl =
- try
-  let relation_class =
-   relation_class_that_matches_a_constr "Setoid_symmetry"
-    [] (pf_concl gl) in
-  match relation_class with
-     Leibniz _ -> assert false (* since [] is empty *)
-   | Relation rel ->
-      match rel.rel_sym with
-         None ->
-          errorlabstrm "Setoid_symmetry"
-           (str "The relation " ++ prrelation rel ++ str " is not symmetric.")
-       | Some sym -> apply sym gl
- with
-  Optimize -> symmetry_red true gl
+(* let setoid_symmetry gl = *)
+(*  try *)
+(*   let relation_class = *)
+(*    relation_class_that_matches_a_constr "Setoid_symmetry" *)
+(*     [] (pf_concl gl) in *)
+(*   match relation_class with *)
+(*      Leibniz _ -> assert false (\* since [] is empty *\) *)
+(*    | Relation rel -> *)
+(*       match rel.rel_sym with *)
+(*          None -> *)
+(*           errorlabstrm "Setoid_symmetry" *)
+(*            (str "The relation " ++ prrelation rel ++ str " is not symmetric.") *)
+(*        | Some sym -> apply sym gl *)
+(*  with *)
+(*   Optimize -> symmetry_red true gl *)
 
-let setoid_symmetry_in id gl =
-  let ctype = pf_type_of gl (mkVar id) in
-  let binders,concl = Sign.decompose_prod_assum ctype in
-  let (equiv, args) = decompose_app concl in
-  let rec split_last_two = function
-    | [c1;c2] -> [],(c1, c2)
-    | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
-    | _ -> error "The term provided is not an equivalence" 
-  in
-  let others,(c1,c2) = split_last_two args in
-  let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
-  let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
-  let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
-  tclTHENS (cut new_hyp)
-    [ intro_replacing id;
-      tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); assumption ] ]
-    gl
+(* let setoid_symmetry_in id gl = *)
+(*   let ctype = pf_type_of gl (mkVar id) in *)
+(*   let binders,concl = Sign.decompose_prod_assum ctype in *)
+(*   let (equiv, args) = decompose_app concl in *)
+(*   let rec split_last_two = function *)
+(*     | [c1;c2] -> [],(c1, c2) *)
+(*     | x::y::z -> let l,res = split_last_two (y::z) in x::l, res *)
+(*     | _ -> error "The term provided is not an equivalence"  *)
+(*   in *)
+(*   let others,(c1,c2) = split_last_two args in *)
+(*   let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in *)
+(*   let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in *)
+(*   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in *)
+(*   tclTHENS (cut new_hyp) *)
+(*     [ intro_replacing id; *)
+(*       tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); assumption ] ] *)
+(*     gl *)
 
-let setoid_transitivity c gl =
- try
-  let relation_class =
-   relation_class_that_matches_a_constr "Setoid_transitivity"
-    [] (pf_concl gl) in
-  match relation_class with
-     Leibniz _ -> assert false (* since [] is empty *)
-   | Relation rel ->
-      let ctyp = pf_type_of gl c in
-      let rel' = unify_relation_carrier_with_type (pf_env gl) rel ctyp in
-       match rel'.rel_trans with
-          None ->
-           errorlabstrm "Setoid_transitivity"
-            (str "The relation " ++ prrelation rel ++ str " is not transitive.")
-        | Some trans ->
-           let transty = nf_betaiota (pf_type_of gl trans) in
-           let argsrev, _ =
-            Reductionops.decomp_n_prod (pf_env gl) Evd.empty 2 transty in
-           let binder =
-            match List.rev argsrev with
-               _::(Name n2,None,_)::_ -> Rawterm.NamedHyp n2
-             | _ -> assert false
-           in
-            apply_with_bindings
-             (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, c ]) gl
- with
-  Optimize -> transitivity_red true c gl
-;;
+(* let setoid_transitivity c gl = *)
+(*  try *)
+(*   let relation_class = *)
+(*    relation_class_that_matches_a_constr "Setoid_transitivity" *)
+(*     [] (pf_concl gl) in *)
+(*   match relation_class with *)
+(*      Leibniz _ -> assert false (\* since [] is empty *\) *)
+(*    | Relation rel -> *)
+(*       let ctyp = pf_type_of gl c in *)
+(*       let rel' = unify_relation_carrier_with_type (pf_env gl) rel ctyp in *)
+(*        match rel'.rel_trans with *)
+(*           None -> *)
+(*            errorlabstrm "Setoid_transitivity" *)
+(*             (str "The relation " ++ prrelation rel ++ str " is not transitive.") *)
+(*         | Some trans -> *)
+(*            let transty = nf_betaiota (pf_type_of gl trans) in *)
+(*            let argsrev, _ = *)
+(*             Reductionops.decomp_n_prod (pf_env gl) Evd.empty 2 transty in *)
+(*            let binder = *)
+(*             match List.rev argsrev with *)
+(*                _::(Name n2,None,_)::_ -> Rawterm.NamedHyp n2 *)
+(*              | _ -> assert false *)
+(*            in *)
+(*             apply_with_bindings *)
+(*              (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, c ]) gl *)
+(*  with *)
+(*   Optimize -> transitivity_red true c gl *)
+(* ;; *)
 

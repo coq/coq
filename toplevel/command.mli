@@ -56,10 +56,11 @@ val declare_assumption : identifier located list ->
 val declare_interning_data : 'a * Constrintern.implicits_env ->
     string * Topconstr.constr_expr * Topconstr.scope_name option -> unit
 
-val compute_interning_datas :  Environ.env -> 'a list -> 'b list ->
+val compute_interning_datas : Environ.env -> Constrintern.var_internalisation_type -> 
+  'a list -> 'b list ->
   Term.types list ->Impargs.manual_explicitation list list ->
   'a list *
-    ('b * (Names.identifier list * Impargs.implicits_list *
+    ('b * (Constrintern.var_internalisation_type * Names.identifier list * Impargs.implicits_list *
 	      Topconstr.scope_name option list))
     list
 

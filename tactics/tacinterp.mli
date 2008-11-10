@@ -48,6 +48,9 @@ and interp_sign =
 val constr_of_id : Environ.env -> identifier -> constr
 
 (* To embed several objects in Coqast.t *)
+val tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t
+val tactic_out : Dyn.t -> (interp_sign -> glob_tactic_expr)
+  
 val tacticIn : (interp_sign -> raw_tactic_expr) -> raw_tactic_expr
 val globTacticIn : (interp_sign -> glob_tactic_expr) -> raw_tactic_expr
 val valueIn : value -> raw_tactic_arg
@@ -99,6 +102,10 @@ val intern_tactic :
 val intern_constr :
   glob_sign -> constr_expr -> rawconstr_and_expr
 
+val intern_constr_with_bindings :
+  glob_sign -> constr_expr * constr_expr Rawterm.bindings -> 
+  rawconstr_and_expr * rawconstr_and_expr Rawterm.bindings
+
 val intern_hyp :
   glob_sign -> identifier Util.located -> identifier Util.located
 
@@ -123,6 +130,9 @@ val interp_tac_gen : (identifier * value) list -> identifier list ->
                  debug_info -> raw_tactic_expr -> tactic
 
 val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
+
+val interp_bindings : interp_sign -> goal sigma -> rawconstr_and_expr Rawterm.bindings -> 
+  Evd.open_constr Rawterm.bindings
 
 (* Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr

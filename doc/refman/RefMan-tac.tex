@@ -3622,10 +3622,44 @@ The hints for \texttt{auto} and \texttt{eauto} are stored in
 databases.  Each database maps head symbols to a list of hints. One can
 use the command \texttt{Print Hint \ident} to display the hints
 associated to the head symbol \ident{} (see \ref{PrintHint}). Each
-hint has a cost that is an nonnegative integer, and a pattern. 
+hint has a cost that is an nonnegative integer, and an optional pattern. 
 The hints with lower cost are tried first. A hint is tried by 
 \texttt{auto} when the conclusion of the current goal
-matches its pattern. The general
+matches its pattern or when it has no pattern. 
+
+\subsubsection*{Creating Hint databases
+  \label{CreateHintDb}\comindex{CreateHintDb}}
+
+One can optionally declare a hint database using the command
+\texttt{Create HintDb}. If a hint is added to an unknown database, it
+will be automatically created. 
+
+\medskip
+\texttt{Create HintDb} {\ident} [\texttt{discriminated}]
+\medskip
+
+This command creates a new database named \ident. There are two
+implementations of hint databases available. One uses a
+discrimination network which is parameterized by transparency information
+for all hints and all goals, including those that contain
+existential variables, the other one uses the discrimination net only on
+goals without existentials, for non-Immediate hints and do not make
+use of transparency hints (the default).
+The performance of discriminated hint databases can be improved by
+adding transparency hints that make the network more constrained
+(c.f. \ref{HintTransparency}).
+
+\begin{Variants}
+\item\texttt{Hint Local} \textsl{hint\_definition} \texttt{:}
+  \ident$_1$ \ldots\ \ident$_n$
+  
+  This is used to declare a hint database that must not be exported to the other
+  modules that require and import the current module. Inside a
+  section, the option {\tt Local} is useless since hints do not
+  survive anyway to the closure of sections.
+\end{Variants}
+
+The general
 command to add a hint to some database \ident$_1$, \dots, \ident$_n$ is:
 \begin{tabbing}
   \texttt{Hint} \textsl{hint\_definition} \texttt{:} \ident$_1$ \ldots\ \ident$_n$
@@ -3745,12 +3779,31 @@ where {\sl hint\_definition} is one of the following expressions:
 
   \end{Variants}
 
-\item \texttt{Extern \num\ \pattern\ => }\textsl{tactic}
+\item \texttt{Transparent},\texttt{Opaque} {\qualid}
+\label{HintTransparency}
+\comindex{Hint Transparent}
+\comindex{Hint Opaque}
+  
+  This adds a transparency hint to the database, making {\tt {\qualid}}
+  a transparent or opaque constant during resolution. This information 
+  is used during unification of the goal with any lemma in the database
+  and inside the discrimination network to relax or constrain it in the
+  case of \texttt{discriminated} databases.
+  
+  \begin{Variants}
+
+    \item \texttt{Transparent},\texttt{Opaque} {\ident$_1$} \dots {\ident$_m$} 
+
+      Declares each {\ident$_i$} as a transparent or opaque constant.
+      
+  \end{Variants}
+
+\item \texttt{Extern \num\ [\pattern]\ => }\textsl{tactic}
 \comindex{Hint Extern}
 
   This hint type is to extend \texttt{auto} with tactics other than
   \texttt{apply} and \texttt{unfold}. For that, we must specify a
-  cost, a pattern and a tactic to execute. Here is an example:
+  cost, an optional pattern and a tactic to execute. Here is an example:
 
 \begin{quotation}
 \begin{verbatim}
@@ -3761,7 +3814,7 @@ Hint Extern 4 ~(?=?) => discriminate.
   Now, when the head of the goal is a disequality, \texttt{auto} will
   try \texttt{discriminate} if it does not succeed to solve the goal
   with hints with a cost less than 4.
-
+  
   One can even use some sub-patterns of the pattern in the tactic
   script. A sub-pattern is a question mark followed by an ident, like
   \texttt{?X1} or \texttt{?X2}. Here is an example:
@@ -3783,8 +3836,9 @@ Abort.
 
 \end{itemize}
 
-\Rem There is currently (in the \coqversion\ release) no way to do
-pattern-matching on hypotheses.
+\Rem One can use an \texttt{Extern} hint with no pattern to do
+pattern-matching on hypotheses using \texttt{match goal with} inside 
+the tactic.
 
 \begin{Variants}
 \item \texttt{Hint} \textsl{hint\_definition} 
@@ -3862,6 +3916,10 @@ databases are non empty and can be used.
 
 \item[\tt sets] contains lemmas about sets and relations from the 
   directories \texttt{Sets} and \texttt{Relations}.
+
+\item[\tt typeclass\_instances] contains all the type class instances
+  declared in the environment, including those used for \texttt{setoid\_rewrite},
+  from the \texttt{Classes} directory.
 \end{description}
 
 There is also a special database called {\tt v62}. It collects all

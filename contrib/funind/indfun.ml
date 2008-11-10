@@ -168,7 +168,7 @@ let build_newrecursive
 	  if Impargs.is_implicit_args()
 	  then Impargs.compute_implicits  env0 arity
 	  else [] in
-	let impls' =(recname,([],impl,Notation.compute_arguments_scope arity))::impls in
+	let impls' =(recname,(Constrintern.Recursive,[],impl,Notation.compute_arguments_scope arity))::impls in
         (Environ.push_named (recname,None,arity) env, impls'))
       (env0,[]) lnameargsardef in
   let recdef =
@@ -612,7 +612,9 @@ let rec add_args id new_args b =
       CCast(loc,add_args id new_args b1,CastConv(ck,add_args id new_args b2))
   | CCast(loc,b1,CastCoerce) ->
       CCast(loc,add_args id new_args b1,CastCoerce)
+  | CRecord _ -> anomaly "add_args : CRecord"
   | CNotation _ -> anomaly "add_args : CNotation"
+  | CGeneralization _ -> anomaly "add_args : CGeneralization"
   | CPrim _ -> b
   | CDelimiters _ -> anomaly "add_args : CDelimiters"
   | CDynamic _ -> anomaly "add_args : CDynamic"

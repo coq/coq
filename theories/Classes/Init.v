@@ -20,6 +20,12 @@
 Tactic Notation "clapply" ident(c) :=
   eapply @c ; typeclasses eauto.
 
+(** Hints for the proof search: these combinators should be considered rigid. *)
+
+Require Import Program.Basics.
+
+Typeclasses Opaque id const flip compose arrow impl iff.
+
 (** The unconvertible typeclass, to test that two objects of the same type are 
    actually different. *)
 
@@ -28,7 +34,7 @@ Class Unconvertible (A : Type) (a b : A).
 Ltac unconvertible :=
   match goal with
     | |- @Unconvertible _ ?x ?y => conv x y ; fail 1 "Convertible"
-    | |- _ => apply Build_Unconvertible 
+    | |- _ => eapply Build_Unconvertible 
   end.
 
 Hint Extern 0 (@Unconvertible _ _ _) => unconvertible : typeclass_instances.

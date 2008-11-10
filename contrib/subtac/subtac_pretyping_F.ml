@@ -276,14 +276,19 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
     | RApp (loc,f,args) -> 
 	let length = List.length args in 
-	let ftycon = 
-	  if length > 0 then
-	    match tycon with
-	    | None -> None
-	    | Some (None, ty) -> mk_abstr_tycon length ty
-	    | Some (Some (init, cur), ty) ->
-		Some (Some (length + init, length + cur), ty)
-	  else tycon
+	let ftycon =
+	  let ty = 
+	    if length > 0 then
+	      match tycon with
+	      | None -> None
+	      | Some (None, ty) -> mk_abstr_tycon length ty
+	      | Some (Some (init, cur), ty) ->
+		  Some (Some (length + init, length + cur), ty)
+ 	    else tycon
+	  in 
+	    match ty with
+	    | Some (_, t) when Subtac_coercion.disc_subset t = None -> ty
+	    | _ -> None
 	in
 	let fj = pretype ftycon env isevars lvar f in
  	let floc = loc_of_rawconstr f in

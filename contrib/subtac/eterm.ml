@@ -1,3 +1,4 @@
+(* -*- compile-command: "make -C ../.. bin/coqtop.byte" -*- *)
 (**
    - Get types of existentials ;
    - Flatten dependency tree (prefix order) ;
@@ -6,12 +7,14 @@
 *)
 
 open Term
+open Sign
 open Names
 open Evd
 open List
 open Pp
 open Util
 open Subtac_utils
+open Proof_type
 
 let trace s = 
   if !Flags.debug then (msgnl s; msgerr s)
@@ -20,15 +23,27 @@ let trace s =
 let succfix (depth, fixrels) = 
   (succ depth, List.map succ fixrels)
 
+type oblinfo =
+  { ev_name: int * identifier;
+    ev_hyps: named_context;
+    ev_status: obligation_definition_status;
+    ev_chop: int option;
+    ev_loc: Util.loc;
+    ev_typ: types;
+    ev_tac: Tacexpr.raw_tactic_expr option;
+    ev_deps: Intset.t }
+    
 (** Substitute evar references in t using De Bruijn indices, 
   where n binders were passed through. *)
+
 let subst_evar_constr evs n t = 
   let seen = ref Intset.empty in
   let transparent = ref Idset.empty in
   let evar_info id = List.assoc id evs in
   let rec substrec (depth, fixrels) c = match kind_of_term c with
     | Evar (k, args) ->
-	let (id, idstr), hyps, chop, _, _, _ = 
+	let { ev_name = (id, idstr) ; 
+	      ev_hyps = hyps ; ev_chop = chop } =
 	  try evar_info k
 	  with Not_found -> 
 	    anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found")
@@ -53,10 +68,6 @@ let subst_evar_constr evs n t =
 	       | _, _ -> acc (*failwith "subst_evars: invalid argument"*)
 	  in aux hyps args [] 
 	in
-  	  (try trace (str "Evar " ++ int k ++ str " found, applied to " ++ int (List.length args) ++ str "arguments," ++
-			int (List.length hyps) ++ str " hypotheses" ++ spc () ++
-			pp_list (fun x -> my_print_constr (Global.env ()) x) args);
- 	   with _ -> ());
 	  if List.exists (fun x -> match kind_of_term x with Rel n -> List.mem n fixrels | _ -> false) args then
 	    transparent := Idset.add idstr !transparent;
 	  mkApp (mkVar idstr, Array.of_list args)
@@ -121,15 +132,34 @@ let rec chop_product n t =
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
       | _ -> None
 
-let eterm_obligations env name isevars evm fs t ty = 
-  (* 'Serialize' the evars, we assume that the types of the existentials
-     refer to previous existentials in the list only *)
-  trace (str " In eterm: isevars: " ++ my_print_evardefs isevars);
-  trace (str "Term given to eterm" ++ spc () ++
-	    Termops.print_constr_env (Global.env ()) t);
+let evar_dependencies evm ev =
+  let one_step deps = 
+    Intset.fold (fun ev s -> 
+      let evi = Evd.find evm ev in
+	Intset.union (Evarutil.evars_of_evar_info evi) s)
+      deps deps
+  in 
+  let rec aux deps =
+    let deps' = one_step deps in
+      if Intset.equal deps deps' then deps
+      else aux deps'
+  in aux (Intset.singleton ev)
+
+let sort_dependencies evl =
+  List.sort (fun (_, _, deps) (_, _, deps') -> 
+    if Intset.subset deps deps' then (* deps' depends on deps *) -1
+    else if Intset.subset deps' deps then 1
+    else Intset.compare deps deps')
+    evl
+    
+let eterm_obligations env name isevars evm fs ?status t ty = 
+  (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
   let nc_len = Sign.named_context_length nc in
   let evl = List.rev (to_list evm) in
+  let evl = List.map (fun (id, ev) -> (id, ev, evar_dependencies evm id)) evl in
+  let sevl = sort_dependencies evl in
+  let evl = List.map (fun (id, ev, _) -> id, ev) sevl in
   let evn = 
     let i = ref (-1) in
       List.rev_map (fun (id, ev) -> incr i; 
@@ -146,20 +176,29 @@ let eterm_obligations env name isevars evm fs t ty =
 	 let evtyp, deps, transp = etype_of_evar l hyps ev.evar_concl in
 	 let evtyp, hyps, chop = 
 	   match chop_product fs evtyp with
-	       Some t -> 
-		 (try
-		    trace (str "Choped a product: " ++ spc () ++
-			     Termops.print_constr_env (Global.env ()) evtyp ++ str " to " ++ spc () ++
-			     Termops.print_constr_env (Global.env ()) t);
-		  with _ -> ());
-		 t, trunc_named_context fs hyps, fs
-	     | None -> evtyp, hyps, 0
+	   | Some t -> t, trunc_named_context fs hyps, fs
+	   | None -> evtyp, hyps, 0
 	 in
 	 let loc, k = evar_source id isevars in
-	 let opacity = match k with QuestionMark o -> o | _ -> true in
-	 let opaque = if not opacity || chop <> fs then None else Some chop in
-	 let y' = (id, ((n, nstr), hyps, opaque, loc, evtyp, deps)) in
-	   y' :: l) 
+	 let status = match k with QuestionMark o -> Some o | _ -> status in
+	 let status, chop = match status with 
+	   | Some (Define true as stat) ->
+	       if chop <> fs then Define false, None 
+	       else stat, Some chop
+	   | Some s -> s, None
+	   | None -> Define true, None
+	 in
+	 let tac = match ev.evar_extra with 
+	   | Some t -> 
+	       if Dyn.tag t = "tactic" then 
+		 Some (Tacinterp.globTacticIn (Tacinterp.tactic_out t))
+	       else None
+	   | None -> None
+	 in
+	 let info = { ev_name = (n, nstr);
+		      ev_hyps = hyps; ev_status = status; ev_chop = chop;
+		      ev_loc = loc; ev_typ = evtyp ; ev_deps = deps; ev_tac = tac }
+	 in (id, info) :: l) 
       evn []
   in 
   let t', _, transparent = (* Substitute evar refs in the term by variables *)
@@ -167,28 +206,16 @@ let eterm_obligations env name isevars evm fs t ty =
   in
   let ty, _, _ = subst_evar_constr evts 0 ty in
   let evars = 
-    List.map (fun (_, ((_, name), _, opaque, loc, typ, deps)) -> 
-      name, typ, loc, not (opaque = None) && not (Idset.mem name transparent), deps) evts
-  in
-    (try
-       trace (str "Term constructed in eterm" ++ spc () ++
-		Termops.print_constr_env (Global.env ()) t');
-       ignore(iter
-		(fun (name, typ, _, _, deps) ->
-		   trace (str "Evar :" ++ spc () ++ str (string_of_id name) ++
-			    Termops.print_constr_env (Global.env ()) typ))
-		evars);
-     with _ -> ());
-    Array.of_list (List.rev evars), t', ty
+    List.map (fun (_, info) ->
+      let { ev_name = (_, name); ev_status = status;
+	    ev_loc = loc; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
+      in
+      let status = match status with
+	| Define true when Idset.mem name transparent -> Define false
+	| _ -> status
+      in name, typ, loc, status, deps, tac) evts
+  in Array.of_list (List.rev evars), t', ty
 
 let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
-
-(* let eterm evm t (tycon : types option) =  *)
-(*   let t, tycon, evs = eterm_term evm t tycon in *)
-(*     match tycon with *)
-(* 	Some typ -> Tactics.apply_term (mkCast (t, DEFAULTcast, typ)) [] *)
-(*       | None -> Tactics.apply_term t (mkMetas (List.length evs)) *)
-     
-(* open Tacmach *)
 
 let etermtac (evm, t) = assert(false) (*eterm evm t None *)

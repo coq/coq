@@ -507,7 +507,7 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
 	with Option.Heterogeneous -> raise No_match
       in
       let sigma = List.fold_left2 
-       (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
+      (fun s (tm1,_) (tm2,_) -> match_ alp metas s tm1 tm2) sigma tml1 tml2 in
       List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
   | RLetTuple (_,nal1,(na1,to1),b1,c1), ALetTuple (nal2,(na2,to2),b2,c2) 
       when List.length nal1 = List.length nal2 ->
@@ -606,7 +606,9 @@ type notation = string
 
 type explicitation = ExplByPos of int * identifier option | ExplByName of identifier
 
-type binder_kind = Default of binding_kind | TypeClass of binding_kind * binding_kind
+type binder_kind = Default of binding_kind | Generalized of binding_kind * binding_kind * bool
+
+type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
@@ -635,6 +637,7 @@ type constr_expr =
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
       (constr_expr * explicitation located option) list
+  | CRecord of loc * constr_expr option * (identifier located * constr_expr) list
   | CCases of loc * case_style * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list
@@ -648,6 +651,7 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_expr notation_substitution
+  | CGeneralization of loc * binding_kind * abstraction_kind option * constr_expr
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t
@@ -706,6 +710,7 @@ let constr_loc = function
   | CLetIn (loc,_,_,_) -> loc
   | CAppExpl (loc,_,_) -> loc
   | CApp (loc,_,_) -> loc
+  | CRecord (loc,_,_) -> loc
   | CCases (loc,_,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
   | CIf (loc,_,_,_,_) -> loc
@@ -715,6 +720,7 @@ let constr_loc = function
   | CSort (loc,_) -> loc
   | CCast (loc,_,_) -> loc
   | CNotation (loc,_,_) -> loc
+  | CGeneralization (loc,_,_,_) -> loc
   | CPrim (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
   | CDynamic _ -> dummy_loc
@@ -798,9 +804,11 @@ let fold_constr_expr_with_binders g f n acc = function
   | CCast (loc,a,CastConv(_,b)) -> f n (f n acc a) b
   | CCast (loc,a,CastCoerce) -> f n acc a
   | CNotation (_,_,(l,ll)) -> List.fold_left (f n) acc (l@List.flatten ll)
+  | CGeneralization (_,_,_,c) -> f n acc c
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _  | CRef _ ->
       acc
+  | CRecord (loc,_,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
   | CCases (loc,sty,rtnpo,al,bl) ->
       let ids = ids_of_cases_tomatch al in
       let acc = Option.fold_left (f (List.fold_right g ids n)) acc rtnpo in
@@ -910,9 +918,11 @@ let map_constr_expr_with_binders g f e = function
   | CCast (loc,a,CastCoerce) -> CCast (loc,f e a,CastCoerce)
   | CNotation (loc,n,(l,ll)) ->
       CNotation (loc,n,(List.map (f e) l,List.map (List.map (f e)) ll))
+  | CGeneralization (loc,b,a,c) -> CGeneralization (loc,b,a,f e c)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _ 
   | CPrim _ | CDynamic _ | CRef _ as x -> x
+  | CRecord (loc,p,l) -> CRecord (loc,p,List.map (fun (id, c) -> (id, f e c)) l)
   | CCases (loc,sty,rtnpo,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)
       let bl = List.map (fun (loc,pat,rhs) -> (loc,pat,f e rhs)) bl in

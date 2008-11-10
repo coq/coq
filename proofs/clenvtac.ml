@@ -48,11 +48,12 @@ let clenv_cast_meta clenv =
   and crec_hd u =
     match kind_of_term (strip_outer_cast u) with
       | Meta mv ->
-	  (try 
-            let b = Typing.meta_type clenv.evd mv in
-	    if occur_meta b then u
-            else mkCast (mkMeta mv, DEFAULTcast, b)
-	  with Not_found -> u)
+	  (match Evd.find_meta clenv.evd mv with
+	  | Clval (_,(body,_),_) -> body.rebus
+	  | Cltyp (_,typ) -> 
+	      if occur_meta typ.rebus then
+		raise (RefinerError (MetaInType typ.rebus));
+	      mkCast (mkMeta mv, DEFAULTcast, typ.rebus))
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
       | Case(ci,p,c,br) ->
 	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
@@ -73,8 +74,11 @@ let clenv_pose_dependent_evars with_evars clenv =
 
 let clenv_refine with_evars clenv gls =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
+  let evd' = Typeclasses.resolve_typeclasses ~fail:(not with_evars)
+    clenv.env clenv.evd 
+  in
   tclTHEN
-    (tclEVARS (evars_of clenv.evd)) 
+    (tclEVARS (evars_of evd')) 
     (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 

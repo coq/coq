@@ -93,6 +93,7 @@ val strip_head_cast : constr -> constr
 exception Occur
 val occur_meta : types -> bool
 val occur_existential : types -> bool
+val occur_meta_or_existential : types -> bool
 val occur_const : constant -> types -> bool
 val occur_evar : existential_key -> types -> bool
 val occur_in_global : env -> identifier -> constr -> unit

@@ -166,11 +166,16 @@ val empty_evar_defs : evar_defs
 val evars_of         : evar_defs -> evar_map
 val evars_reset_evd  : evar_map ->  evar_defs -> evar_defs
 
+(* Should the obligation be defined (opaque or transparent (default)) or
+   defined transparent and expanded in the term? *)
+
+type obligation_definition_status = Define of bool | Expand
+
 (* Evars *)
 type hole_kind =
   | ImplicitArg of global_reference * (int * identifier option)
   | BinderType of name
-  | QuestionMark of bool (* Can it be turned into an obligation ? *)
+  | QuestionMark of obligation_definition_status
   | CasesType
   | InternalHole
   | TomatchTypeParameter of inductive * int

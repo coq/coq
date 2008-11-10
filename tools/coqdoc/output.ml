@@ -32,43 +32,48 @@ let build_table l =
 
 let is_keyword = 
   build_table
-    [ "AddPath"; "Axiom"; "Chapter"; "Check"; "CoFixpoint";
-      "CoInductive"; "Defined"; "Definition"; "End"; "Eval"; "Example"; 
+    [ "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
+      "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example"; 
       "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses"; 
       "Resolve"; "Unfold"; "Immediate"; "Extern"; "Implicit"; "Import"; "Inductive"; 
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac"; 
       "Module"; "Module Type"; "Declare Module"; "Include";
-      "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
+      "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Proof with"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
       "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
-      "Set"; "Unset"; "Variable"; "Variables"; "Context";
+      "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
       "Notation"; "Reserved Notation"; "Tactic Notation";
       "Delimit"; "Bind"; "Open"; "Scope"; 
       "Boxed"; "Unboxed"; "Inline";
-      "Arguments"; "Add"; "Strict";
-      "Typeclasses"; "Instance"; "Class"; "Instantiation";
+      "Implicit Arguments"; "Add"; "Strict";
+      "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
+      "subgoal";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
-      "Program Instance";
+      "Program Instance"; "Equations"; "Equations_nocomp";
       (*i (* coq terms *) *)
-	"match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; 
-	"if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"
+      "forall"; "match"; "as"; "in"; "return"; "with"; "end"; "let"; "dest"; "fun"; 
+      "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"; "struct"; "wf"; "measure";
+      (* Ltac *)
+      "before"; "after"
        ]
 
 let is_tactic = 
   build_table
-    [ "intro"; "intros"; "apply"; "rewrite"; "setoid_rewrite";
-      "destruct"; "induction"; "elim"; "dependent"; 
-      "generalize"; "clear"; "rename"; "move"; "set"; "assert";
-      "cut"; "assumption"; "exact"; "split"; "try"; "discriminate";
+    [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "clear"; "injection";
+      "elimtype"; "progress"; "setoid_rewrite";
+      "destruct"; "destruction"; "destruct_call"; "dependent"; "elim"; "extensionality";
+      "f_equal"; "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "induction"; "rename"; "move"; "omega";
+      "set"; "assert"; "do"; "repeat";
+      "cut"; "assumption"; "exact"; "split"; "subst"; "try"; "discriminate";
       "simpl"; "unfold"; "red"; "compute"; "at"; "in"; "by";
       "reflexivity"; "symmetry"; "transitivity";
       "replace"; "setoid_replace"; "inversion"; "inversion_clear";
-      "pattern"; "intuition"; "congruence";
+      "pattern"; "intuition"; "congruence"; "fail"; "fresh";
       "trivial"; "exact"; "tauto"; "firstorder"; "ring";
-      "clapply"; "program_simpl"; "eapply"; "auto"; "eauto" ]
+      "clapply"; "program_simpl"; "program_simplify"; "eapply"; "auto"; "eauto" ]
 
 (*s Current Coq module *)
 
@@ -92,27 +97,31 @@ let find_printing_token tok =
 let remove_printing_token = Hashtbl.remove token_pp
 
 (* predefined pretty-prints *)
-let _ = List.iter 
-	  (fun (s,l) -> Hashtbl.add token_pp s (Some l, None))
-	  [ "*" ,  "\\ensuremath{\\times}";
-	    "|", "\\ensuremath{|}";
-	    "->",  "\\ensuremath{\\rightarrow}";
-	    "->~",  "\\ensuremath{\\rightarrow\\lnot}";
-	    "->~~",  "\\ensuremath{\\rightarrow\\lnot\\lnot}";
-	    "<-",  "\\ensuremath{\\leftarrow}";
-	    "<->", "\\ensuremath{\\leftrightarrow}";
-	    "=>",  "\\ensuremath{\\Rightarrow}";
-	    "<=",  "\\ensuremath{\\le}";
-	    ">=",  "\\ensuremath{\\ge}";
-	    "<>",  "\\ensuremath{\\not=}";
-	    "~",   "\\ensuremath{\\lnot}";
-	    "/\\", "\\ensuremath{\\land}";
-	    "\\/", "\\ensuremath{\\lor}";
-	    "|-",  "\\ensuremath{\\vdash}";
-	    "forall", "\\ensuremath{\\forall}";
-	    "exists", "\\ensuremath{\\exists}";
-	    (* "fun", "\\ensuremath{\\lambda}" ? *)
-	  ]
+let initialize () = 
+  let if_utf8 = if !Cdglobals.utf8 then fun x -> Some x else fun _ -> None in
+    List.iter 
+      (fun (s,l,l') -> Hashtbl.add token_pp s (Some l, l'))
+      [ "*" ,  "\\ensuremath{\\times}", if_utf8 "×";
+	"|", "\\ensuremath{|}", None;
+	"->",  "\\ensuremath{\\rightarrow}", if_utf8 "→";
+	"->~",  "\\ensuremath{\\rightarrow\\lnot}", None;
+	"->~~",  "\\ensuremath{\\rightarrow\\lnot\\lnot}", None;
+	"<-",  "\\ensuremath{\\leftarrow}", None;
+	"<->", "\\ensuremath{\\leftrightarrow}", if_utf8 "↔";
+	"=>",  "\\ensuremath{\\Rightarrow}", if_utf8 "⇒";
+	"<=",  "\\ensuremath{\\le}", if_utf8 "≤";
+	">=",  "\\ensuremath{\\ge}", if_utf8 "≥";
+	"<>",  "\\ensuremath{\\not=}", if_utf8 "≠";
+	"~",   "\\ensuremath{\\lnot}", if_utf8 "¬";
+	"/\\", "\\ensuremath{\\land}", if_utf8 "∧";
+	"\\/", "\\ensuremath{\\lor}", if_utf8 "∨";
+	"|-",  "\\ensuremath{\\vdash}", None;
+	"forall", "\\ensuremath{\\forall}", if_utf8 "∀";
+	"exists", "\\ensuremath{\\exists}", if_utf8 "∃";
+	"Π", "\\ensuremath{\\Pi}", if_utf8 "Π";
+	"λ", "\\ensuremath{\\lambda}", if_utf8 "λ"
+	(* "fun", "\\ensuremath{\\lambda}" ? *)
+      ]
 
 (*s Table of contents *)
 
@@ -208,7 +217,7 @@ module Latex = struct
 
   let indentation n = 
     if n == 0 then 
-      printf "\\noindent\n"
+      printf "\\coqdocnoindent\n"
     else
       let space = 0.5 *. (float n) in
       printf "\\coqdocindent{%2.2fem}\n" space
@@ -243,10 +252,20 @@ module Latex = struct
 	  let _m = Filename.concat !coqlib m in
 	    printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
       | Coqlib | Unknown ->
-	  raw_ident s
+	  printf "\\coq%sref{" (type_name typ); label_ident id; printf "}{"; raw_ident s; printf "}"
 
   let defref m id ty s =
     printf "\\coq%s{" (type_name ty); label_ident (m ^ "." ^ id); printf "}{"; raw_ident s; printf "}"
+
+  let reference s = function
+    | Def (fullid,typ) -> 
+	defref !current_module fullid typ s
+    | Mod (m,s') when s = s' ->
+	module_ref m s
+    | Ref (m,fullid,typ) -> 
+	ident_ref m fullid typ s
+    | Mod _ ->
+	printf "\\coqdocvar{"; raw_ident s; printf "}"
 
   let ident s loc = 
     if is_keyword s then begin
@@ -254,19 +273,16 @@ module Latex = struct
     end else begin
       begin
 	try
-	  (match Index.find !current_module loc with
-	     | Def (fullid,typ) -> 
-		 defref !current_module fullid typ s
-             | Mod (m,s') when s = s' ->
-		 module_ref m s
-	     | Ref (m,fullid,typ) -> 
-		 ident_ref m fullid typ s
-	     | Mod _ ->
-		 printf "\\coqdocid{"; raw_ident s; printf "}")
+	  reference s (Index.find !current_module loc)
 	with Not_found ->
 	  if is_tactic s then begin
 	    printf "\\coqdoctac{"; raw_ident s; printf "}"
-	  end else begin printf "\\coqdocvar{"; raw_ident s; printf "}" end
+	  end else begin
+	    if !Cdglobals.interpolate then
+	      try reference s (Index.find_string !current_module s)
+	      with _ -> printf "\\coqdocvar{"; raw_ident s; printf "}"
+	    else (printf "\\coqdocvar{"; raw_ident s; printf "}")
+	  end
       end
     end
 
@@ -290,13 +306,13 @@ module Latex = struct
 
   let stop_item () = reach_item_level 0
 
-  let start_doc () = printf "\n\n\n\\noindent\n"
+  let start_doc () = ()
 
-  let end_doc () = stop_item (); printf "\n\n\n"
+  let end_doc () = stop_item ()
 
-  let start_coq () = ()
+  let start_coq () = printf "\\begin{coqdoccode}\n"
 
-  let end_coq () = ()
+  let end_coq () = printf "\\end{coqdoccode}\n"
 
   let start_code () = end_doc (); start_coq ()
 
@@ -318,11 +334,11 @@ module Latex = struct
   let rule () =
     printf "\\par\n\\noindent\\hrulefill\\par\n\\noindent{}"
 
-  let paragraph () = stop_item (); printf "\n\n\\medskip\n"
+  let paragraph () = stop_item (); printf "\n\n"
 
   let line_break () = printf "\\coqdoceol\n"
 
-  let empty_line_of_code () = printf "\n\n\\medskip\n"
+  let empty_line_of_code () = printf "\\coqdocemptyline\n"
 
   let start_inline_coq () = ()
 
@@ -394,7 +410,8 @@ module Html = struct
 
   let line_break () = printf "<br/>\n"
 
-  let empty_line_of_code () = printf "\n<br/>\n"
+  let empty_line_of_code () = 
+    printf "\n<br/>\n"
 
   let char = function
     | '<' -> printf "&lt;"
@@ -429,37 +446,43 @@ module Html = struct
 	raw_ident s
     i*)
 
-  let ident_ref m fid s = 
+  let ident_ref m fid typ s =
     match find_module m with
-      | Local ->
-	  printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s; printf "</a>"
-      | Coqlib when !externals ->
-	  let m = Filename.concat !coqlib m in
-	    printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s; printf "</a>"
-      | Coqlib | Unknown ->
-	  raw_ident s
-
+    | Local ->
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; 
+	printf "<div class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</div></a>"
+    | Coqlib when !externals ->
+	let m = Filename.concat !coqlib m in
+	  printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
+	  printf "<div class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</div></a>"
+    | Coqlib | Unknown ->
+	printf "<div class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</div>"
+	  
   let ident s loc = 
     if is_keyword s then begin
-      printf "<span class=\"keyword\">"; 
+      printf "<div class=\"id\" type=\"keyword\">"; 
       raw_ident s; 
-      printf "</span>"
+      printf "</div>"
     end else 
       begin
 	try
 	  (match Index.find !current_module loc with
-	     | Def (fullid,_) -> 
-		 printf "<a name=\"%s\"></a>" fullid; raw_ident s
+	     | Def (fullid,ty) -> 
+		 printf "<a name=\"%s\">" fullid; 
+		 printf "<div class=\"id\" type=\"%s\">" (type_name ty); raw_ident s; printf "</div></a>"
              | Mod (m,s') when s = s' ->
 		 module_ref m s
 	     | Ref (m,fullid,ty) -> 
-		 ident_ref m fullid s
+		 ident_ref m fullid (type_name ty) s
 	     | Mod _ ->
-		 raw_ident s)
+		 printf "<div class=\"id\" type=\"mod\">"; raw_ident s ; printf "</div>")
 	with Not_found ->
-	  raw_ident s
+	  if is_tactic s then
+	    (printf "<div class=\"id\" type=\"tactic\">"; raw_ident s; printf "</div>")
+	  else
+	    (printf "<div class=\"id\" type=\"var\">"; raw_ident s ; printf "</div>")
       end
-	  
+
   let with_html_printing f tok =
     try 
       (match Hashtbl.find token_pp tok with
@@ -539,7 +562,7 @@ module Html = struct
   let all_letters i = List.iter (letter_index false i.idx_name) i.idx_entries
 
   (* Construction d'une liste des index (1 index global, puis 1
-     index par cat�gorie) *)
+     index par catégorie) *)
   let format_global_index =
     Index.map 
       (fun s (m,t) -> 
@@ -578,7 +601,7 @@ module Html = struct
     printf "</table>\n"
 	
   let make_one_multi_index prt_tbl i =
-    (* Attn: make_one_multi_index cr�� un nouveau fichier... *)
+    (* Attn: make_one_multi_index créé un nouveau fichier... *)
     let idx = i.idx_name in
     let one_letter ((c,l) as cl) =
       open_out_file (sprintf "index_%s_%c.html" idx c);

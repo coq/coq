@@ -32,18 +32,22 @@ open Topconstr
 open Decl_kinds
 open Entries
 
-let hint_db = "typeclass_instances"
+let typeclasses_db = "typeclass_instances"
 
 let qualid_of_con c = 
   Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
+
+let set_rigid c = 
+  Auto.add_hints false [typeclasses_db] 
+    (Vernacexpr.HintsTransparency ([qualid_of_con c], false))
 
 let _ =
   Typeclasses.register_add_instance_hint 
     (fun inst pri ->
       Flags.silently (fun () ->      
-	Auto.add_hints false [hint_db] 
+	Auto.add_hints false [typeclasses_db] 
 	  (Vernacexpr.HintsResolve 
-	      [pri, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])])) ())
+	      [pri, false, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])])) ())
 
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
@@ -95,7 +99,7 @@ let interp_type_evars evdref env ?(impls=([],[])) typ =
 
 let mk_interning_data env na impls typ =
   let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
-  in (na, ([], impl, Notation.compute_arguments_scope typ))
+  in (na, (Constrintern.Method, [], impl, Notation.compute_arguments_scope typ))
     
 let interp_fields_evars isevars env avoid l =
   List.fold_left
@@ -118,14 +122,6 @@ let implicits_of_context ctx =
       | Anonymous -> None
     in ExplByPos (i, explname), (true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
-
-let degenerate_decl (na,b,t) =
-  let id = match na with
-    | Name id -> id
-    | Anonymous -> anomaly "Unnamed record variable" in 
-  match b with
-    | None -> (id, Entries.LocalAssum t)
-    | Some b -> (id, Entries.LocalDef b)
 
 let name_typeclass_binder avoid = function
   | LocalRawAssum ([loc, Anonymous], bk, c) ->
@@ -153,11 +149,12 @@ let new_class id par ar sup props =
   let bound, ids = Implicit_quantifiers.free_vars_of_binders ~bound [] (sup @ par) in
   let bound = Idset.union bound (Implicit_quantifiers.ids_of_list ids) in
   let sup, bound = name_typeclass_binders bound sup in
+  let par, bound = name_typeclass_binders bound par in
   let supnames = 
     List.fold_left (fun acc b -> 
       match b with
-	  LocalRawAssum (nl, _, _) -> nl @ acc
-	| LocalRawDef _ -> assert(false))
+      | LocalRawAssum (nl, _, _) -> nl @ acc
+      | LocalRawDef _ -> assert(false))
       [] sup
   in
 
@@ -197,53 +194,54 @@ let new_class id par ar sup props =
     let params = ctx_params and fields = ctx_props in
       List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
       match fields with
-	  [(Name proj_name, _, field)] ->
-	    let class_body = it_mkLambda_or_LetIn field params in
-	    let class_type = 
-	      match ar with
-		  Some _ -> Some (it_mkProd_or_LetIn arity params)
-		| None -> None
-	    in
-	    let class_entry = 
-	      { const_entry_body = class_body;
-		const_entry_type = class_type;
-		const_entry_opaque = false;
-		const_entry_boxed = false }
-	    in
-	    let cst = Declare.declare_constant (snd id)
-	      (DefinitionEntry class_entry, IsDefinition Definition) 
-	    in
-	    let inst_type = appvectc (mkConst cst) (rel_vect 0 (List.length params)) in
-	    let proj_type = it_mkProd_or_LetIn (mkProd(Name (snd id), inst_type, lift 1 field)) params in
-	    let proj_body = it_mkLambda_or_LetIn (mkLambda (Name (snd id), inst_type, mkRel 1)) params in
-	    let proj_entry = 
-	      { const_entry_body = proj_body;
-		const_entry_type = Some proj_type;
-		const_entry_opaque = false;
-		const_entry_boxed = false }
-	    in
-	    let proj_cst = Declare.declare_constant proj_name
-	      (DefinitionEntry proj_entry, IsDefinition Definition) 
-	    in
-	    let cref = ConstRef cst in
-	      Impargs.declare_manual_implicits false cref (Impargs.is_implicit_args()) arity_imps;
-	      Impargs.declare_manual_implicits false (ConstRef proj_cst) (Impargs.is_implicit_args()) (List.hd fieldimpls);
-	      cref, [proj_name, proj_cst]
-	| _ ->
-	    let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
-	    let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
-	    let kn = Record.declare_structure true (snd id) idb arity_imps
-	      params arity fieldimpls fields ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
-	    in
-	      IndRef (kn,0), (List.map2 (fun (id, _, _) y -> Nameops.out_name id, Option.get y)
-			     fields (Recordops.lookup_projections (kn,0)))
+      | [(Name proj_name, _, field)] ->
+	  let class_body = it_mkLambda_or_LetIn field params in
+	  let class_type = 
+	    match ar with
+	    | Some _ -> Some (it_mkProd_or_LetIn arity params)
+	    | None -> None
+	  in
+	  let class_entry = 
+	    { const_entry_body = class_body;
+	      const_entry_type = class_type;
+	      const_entry_opaque = false;
+	      const_entry_boxed = false }
+	  in
+	  let cst = Declare.declare_constant (snd id)
+	    (DefinitionEntry class_entry, IsDefinition Definition) 
+	  in
+	  let inst_type = appvectc (mkConst cst) (rel_vect 0 (List.length params)) in
+	  let proj_type = it_mkProd_or_LetIn (mkProd(Name (snd id), inst_type, lift 1 field)) params in
+	  let proj_body = it_mkLambda_or_LetIn (mkLambda (Name (snd id), inst_type, mkRel 1)) params in
+	  let proj_entry = 
+	    { const_entry_body = proj_body;
+	      const_entry_type = Some proj_type;
+	      const_entry_opaque = false;
+	      const_entry_boxed = false }
+	  in
+	  let proj_cst = Declare.declare_constant proj_name
+	    (DefinitionEntry proj_entry, IsDefinition Definition) 
+	  in
+	  let cref = ConstRef cst in
+	    Impargs.declare_manual_implicits false cref arity_imps;
+	    Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
+	    set_rigid cst;
+	    cref, [proj_name, Some proj_cst]
+      | _ ->
+	  let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
+	  let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
+	  let kn = Record.declare_structure true (snd id) idb arity_imps
+	    params arity fieldimpls fields ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
+	  in
+	    IndRef (kn,0), (List.map2 (fun (id, _, _) y -> (Nameops.out_name id, y))
+			       (List.rev fields) (Recordops.lookup_projections (kn,0)))
   in
   let ctx_context =
-    List.map (fun ((na, b, t) as d) -> 
+    List.map (fun (na, b, t) -> 
       match Typeclasses.class_of_constr t with
-      | Some cl -> (Some (cl.cl_impl, List.exists (fun (_, n) -> n = na) supnames), d)
-      | None -> (None, d))
-      ctx_params
+      | Some cl -> Some (cl.cl_impl, List.exists (fun (_, n) -> n = na) supnames)
+      | None -> None)
+      ctx_params, ctx_params
   in
   let k =
     { cl_impl = impl;
@@ -251,14 +249,17 @@ let new_class id par ar sup props =
       cl_props = ctx_props;
       cl_projs = projs }
   in
-    List.iter2 (fun p sub -> if sub then declare_instance_cst true (snd p))
+    List.iter2 (fun p sub -> 
+      if sub then match snd p with Some p -> declare_instance_cst true p | None -> ())
       k.cl_projs subs;
     add_class k
     
 type binder_def_list = (identifier located * identifier located list * constr_expr) list
 
 let binders_of_lidents l =
-  List.map (fun (loc, id) -> LocalRawAssum ([loc, Name id], Default Rawterm.Implicit, CHole (loc, None))) l
+  List.map (fun (loc, id) -> 
+    LocalRawAssum ([loc, Name id], Default Rawterm.Explicit, 
+		  CHole (loc, Some (BinderType (Name id))))) l
 
 let type_ctx_instance isevars env ctx inst subst =
   let (s, _) = 
@@ -284,27 +285,10 @@ let id_of_class cl =
 open Pp
 
 let ($$) g f = fun x -> g (f x)
-
-let default_on_free_vars =
-  Flags.if_verbose
-    (fun fvs ->
-      match fvs with
-	  [] -> ()
-	| l -> msgnl (str"Implicitly generalizing " ++ 
-			 prlist_with_sep (fun () -> str", ") Nameops.pr_id l ++ str"."))
-
-let fail_on_free_vars = function
-    [] -> ()
-  | [fv] ->
-      errorlabstrm "Classes" 
-	(str"Unbound variable " ++ Nameops.pr_id fv ++ str".")
-  | fvs -> errorlabstrm "Classes" 
-      (str"Unbound variables " ++
-	  prlist_with_sep (fun () -> str", ") Nameops.pr_id fvs ++ str".")
 	
 let instance_hook k pri global imps ?hook cst = 
   let inst = Typeclasses.new_instance k pri global cst in
-    Impargs.maybe_declare_manual_implicits false (ConstRef cst) false imps;
+    Impargs.maybe_declare_manual_implicits false (ConstRef cst) ~enriching:false imps;
     Typeclasses.add_instance inst;
     (match hook with Some h -> h cst | None -> ())
 
@@ -323,51 +307,30 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
     instance_hook k pri global imps ?hook kn;
     id
 
-let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=default_on_free_vars) 
+let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
-  let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
-  let bound, fvs = Implicit_quantifiers.free_vars_of_binders ~bound [] ctx in
   let tclass = 
     match bk with
-      | Implicit ->
-	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
-	  let k = class_info (Nametab.global id) in
-	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
-	  let needlen = List.fold_left (fun acc (x, y) -> if x = None then succ acc else acc) 0 k.cl_context in
-	    if needlen <> applen then 
-	      mismatched_params env (List.map fst par) (List.map snd k.cl_context);
-	    let pars, _ = Implicit_quantifiers.combine_params Idset.empty (* need no avoid *)
-	      (fun avoid (clname, (id, _, t)) -> 
-		match clname with 
-		    Some (cl, b) -> 
-		      let t = 
-			if b then 
-			  let _k = class_info cl in
-			    CHole (Util.dummy_loc, Some (Evd.ImplicitArg (k.cl_impl, (1, None))))
-			else CHole (Util.dummy_loc, None)
-		      in t, avoid
-		  | None -> failwith ("new instance: under-applied typeclass"))
-	      par (List.rev k.cl_context)
-	    in Topconstr.CAppExpl (loc, (None, id), pars)
-
-      | Explicit -> cl
+    | Implicit ->
+	Implicit_quantifiers.implicit_application Idset.empty ~allow_partial:false
+	  (fun avoid (clname, (id, _, t)) -> 
+	    match clname with 
+	    | Some (cl, b) -> 
+		let t = CHole (Util.dummy_loc, None) in
+		  t, avoid
+	    | None -> failwith ("new instance: under-applied typeclass"))
+	  cl
+    | Explicit -> cl
   in
-  let ctx_bound = Idset.union bound (Implicit_quantifiers.ids_of_list fvs) in
-  let gen_ids = Implicit_quantifiers.free_vars_of_constr_expr ~bound:ctx_bound tclass [] in
-  on_free_vars (List.rev fvs @ List.rev gen_ids);
-  let gen_idset = Implicit_quantifiers.ids_of_list gen_ids in
-  let bound = Idset.union gen_idset ctx_bound in
-  let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
-  let ctx, avoid = name_typeclass_binders bound ctx in
-  let ctx = List.append ctx (List.rev gen_ctx) in
+  let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
     let imps, c' = interp_type_evars isevars env c in
     let ctx, c = decompose_prod_assum c' in
-    let cl, args = Typeclasses.dest_class_app c in
-      cl, ctx, imps, List.rev (Array.to_list args)
+    let cl, args = Typeclasses.dest_class_app (push_rel_context ctx env) c in
+      cl, ctx, imps, List.rev args
   in
   let id = 
     match snd instid with
@@ -413,7 +376,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=defau
 		  try 
 		    let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
 		    let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
-		      Constrintern.add_glob loc (ConstRef (List.assoc mid k.cl_projs));
+		      Option.iter (fun x -> Constrintern.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
 		      c :: props, rest'
 		  with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
 		([], props) k.cl_props

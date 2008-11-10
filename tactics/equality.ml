@@ -43,6 +43,7 @@ open Indrec
 open Printer
 open Clenv
 open Clenvtac
+open Evd
 
 (* Rewriting tactics *)
 
@@ -55,16 +56,17 @@ open Clenvtac
 *)
 
 (* Ad hoc asymmetric general_elim_clause *)
-let general_elim_clause with_evars cls c elim = 
+let general_elim_clause with_evars cls sigma c l elim = 
   try 
     (match cls with
       | None ->
 	  (* was tclWEAK_PROGRESS which only fails for tactics generating one 
              subgoal and did not fail for useless conditional rewritings generating
              an extra condition *)
-	  tclNOTSAMEGOAL (general_elim with_evars c elim ~allow_K:false)
+	  tclNOTSAMEGOAL (tclTHEN (Refiner.tclEVARS sigma)
+			     (general_elim with_evars (c,l) elim ~allow_K:false))
       | Some id ->
-	  general_elim_in with_evars id c elim)
+	  tclTHEN (Refiner.tclEVARS sigma) (general_elim_in with_evars id (c,l) elim))
   with Pretype_errors.PretypeError (env,
 				   (Pretype_errors.NoOccurrenceFound (c', _))) ->
     raise (Pretype_errors.PretypeError
@@ -81,11 +83,7 @@ let elimination_sort_of_clause = function
   If occurrences are set, use setoid_rewrite.
 *)
 
-let general_s_rewrite_clause = function
-  | None -> general_s_rewrite
-  | Some id -> general_s_rewrite_in id
-
-let general_setoid_rewrite_clause = ref general_s_rewrite_clause
+let general_setoid_rewrite_clause = ref (fun _ -> assert false)
 let register_general_setoid_rewrite_clause = (:=) general_setoid_rewrite_clause
 
 let is_applied_setoid_relation = ref (fun _ -> false)
@@ -96,7 +94,7 @@ let is_applied_relation t =
   | App (c, args) when Array.length args >= 2 -> true
   | _ -> false
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl hdcncl =
+let leibniz_rewrite_ebindings_clause cls lft2rgt sigma c l with_evars gl hdcncl =
   let hdcncls = string_of_inductive hdcncl in 
   let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
   let dir = if cls=None then lft2rgt else not lft2rgt in
@@ -105,21 +103,22 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl hdcncl =
     try pf_global gl (id_of_string rwr_thm)
     with Not_found ->
       error ("Cannot find rewrite principle "^rwr_thm^".")
-  in general_elim_clause with_evars cls (c,l) (elim,NoBindings) gl
+  in general_elim_clause with_evars cls sigma c l (elim,NoBindings) gl
 
 let leibniz_eq = Lazy.lazy_from_fun build_coq_eq
 
-let general_rewrite_ebindings_clause cls lft2rgt occs (c,l) with_evars gl =
+let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_bindings) with_evars gl =
   if occs <> all_occurrences then (
     !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl)
   else
-    let ctype = pf_apply get_type_of gl c in 
     let env = pf_env gl in
-    let sigma = project gl in 
+    let sigma, c' = c in
+    let sigma = Evd.merge sigma (project gl) in
+    let ctype = get_type_of env sigma c' in 
     let rels, t = decompose_prod (whd_betaiotazeta ctype) in
       match match_with_equation t with
       | Some (hdcncl,_) -> (* Fast path: direct leibniz rewrite *)
-	  leibniz_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl hdcncl
+	  leibniz_rewrite_ebindings_clause cls lft2rgt sigma c' l with_evars gl hdcncl
       | None ->
 	  let env' = List.fold_left (fun env (n,t) -> push_rel (n, None, t) env) env rels in
 	  let _,t' = splay_prod env' sigma t in (* Search for underlying eq *)
@@ -128,7 +127,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs (c,l) with_evars gl =
 		if l = NoBindings && !is_applied_setoid_relation t then
 		  !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
 		else
-		  (try leibniz_rewrite_ebindings_clause cls lft2rgt (c,l) with_evars gl hdcncl
+		  (try leibniz_rewrite_ebindings_clause cls lft2rgt sigma c' l with_evars gl hdcncl
 		    with e -> 
 		      try !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
 		      with _ -> raise e)
@@ -140,7 +139,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs (c,l) with_evars gl =
 let general_rewrite_ebindings = 
   general_rewrite_ebindings_clause None
 let general_rewrite_bindings l2r occs (c,bl) = 
-  general_rewrite_ebindings_clause None l2r occs (c,inj_ebindings bl)
+  general_rewrite_ebindings_clause None l2r occs (inj_open c,inj_ebindings bl)
 
 let general_rewrite l2r occs c =
   general_rewrite_bindings l2r occs (c,NoBindings) false
@@ -148,9 +147,9 @@ let general_rewrite l2r occs c =
 let general_rewrite_ebindings_in l2r occs id =
   general_rewrite_ebindings_clause (Some id) l2r occs
 let general_rewrite_bindings_in l2r occs id (c,bl) =
-  general_rewrite_ebindings_clause (Some id) l2r occs (c,inj_ebindings bl)
+  general_rewrite_ebindings_clause (Some id) l2r occs (inj_open c,inj_ebindings bl)
 let general_rewrite_in l2r occs id c = 
-  general_rewrite_ebindings_clause (Some id) l2r occs (c,NoBindings)
+  general_rewrite_ebindings_clause (Some id) l2r occs (inj_open c,NoBindings)
 
 let general_multi_rewrite l2r with_evars c cl = 
   let occs_of = on_snd (List.fold_left 
@@ -186,7 +185,7 @@ let general_multi_rewrite l2r with_evars c cl =
 	let do_hyps gl = 
 	  (* If the term to rewrite uses an hypothesis H, don't rewrite in H *)
 	  let ids = 
-	    let ids_in_c = Environ.global_vars_set (Global.env()) (fst c) in
+	    let ids_in_c = Environ.global_vars_set (Global.env()) (snd (fst c)) in
 	      Idset.fold (fun id l -> list_remove id l) ids_in_c (pf_ids_of_hyps gl)
 	  in do_hyps_atleastonce ids gl
 	in 
@@ -265,7 +264,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
     tclTHENS (assert_tac false Anonymous eq)
       [onLastHyp (fun id -> 
 	tclTHEN 
-	  (tclTRY (general_multi_rewrite false false (mkVar id,NoBindings) clause))
+	  (tclTRY (general_multi_rewrite false false (inj_open (mkVar id),NoBindings) clause))
 	  (clear [id]));
        tclFIRST
 	 [assumption;
@@ -1211,8 +1210,8 @@ let subst_one x gl =
       (id,None,_) -> intro_using id
     | (id,Some hval,htyp) ->
         letin_tac None (Name id)
-	  (mkCast(replace_term varx rhs hval,DEFAULTcast,
-	          replace_term varx rhs htyp)) nowhere
+	  (replace_term varx rhs hval)
+	  (Some (replace_term varx rhs htyp)) nowhere
   in
   let need_rewrite = dephyps <> [] || depconcl in
   tclTHENLIST 
@@ -1273,7 +1272,7 @@ let rewrite_multi_assumption_cond cond_eq_term cl gl =
 	begin 
 	  try 
 	    let dir = cond_eq_term t gl in 
-	    general_multi_rewrite dir false (mkVar id,NoBindings) cl gl
+	    general_multi_rewrite dir false (inj_open (mkVar id),NoBindings) cl gl
 	  with | Failure _ | UserError _ -> arec rest
 	end
   in 
@@ -1333,14 +1332,4 @@ let replace_term_in_right t hyp = replace_multi_term (Some false) t (Tacticals.o
 
 let replace_term_in t hyp = replace_multi_term None t (Tacticals.onHyp hyp)
 
-
-
-
-
-
-
-
-
-let _ = Setoid_replace.register_replace (fun tac_opt c2 c1 gl ->  replace_in_clause_maybe_by c2 c1 onConcl tac_opt gl)
-let _ = Setoid_replace.register_general_rewrite general_rewrite
 let _ = Tactics.register_general_multi_rewrite general_multi_rewrite

@@ -264,7 +264,7 @@ let add_justification_hyps keep items gls =
       | _ -> 
 	  let id=pf_get_new_id local_hyp_prefix gls in 
 	    keep:=Idset.add id !keep; 
-	    tclTHEN (letin_tac None (Names.Name id) c Tacexpr.nowhere)
+	    tclTHEN (letin_tac None (Names.Name id) c None Tacexpr.nowhere)
               (thin_body [id]) gls in 
     tclMAP add_aux items gls   
 
@@ -811,7 +811,7 @@ let rec build_function args body =
 
 let define_tac id args body gls =
   let t = build_function args body in
-    letin_tac None (Name id) t Tacexpr.nowhere gls
+    letin_tac None (Name id) t None Tacexpr.nowhere gls
 
 (* tactics for reconsider *)
 

@@ -66,6 +66,8 @@ val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b option -> 'c option -> 'a
 (** [fold_right f x a] is [f y a] if [x] is [Some y], and [a] otherwise. *)
 val fold_right : ('a -> 'b -> 'b) -> 'a option -> 'b -> 'b
 
+(** [cata e f x] is [e] if [x] is [None] and [f a] if [x] is [Some a] *)
+val cata : ('a -> 'b) -> 'b -> 'a option -> 'b
 
 (** {6 More Specific Operations} ***)
 

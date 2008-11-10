@@ -104,8 +104,6 @@ exact sub_opp.
 exact add_opp.
 Qed.
 
-Typeclasses unfold NZadd NZmul NZsub NZeq.
-
 Add Ring BigZr : BigZring.
 
 (** Todo: tactic translating from [BigZ] to [Z] + omega *)

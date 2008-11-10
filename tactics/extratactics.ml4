@@ -18,6 +18,7 @@ open Mod_subst
 open Names
 open Tacexpr
 open Rawterm
+open Tactics
 
 (* Equality *)
 open Equality
@@ -133,10 +134,10 @@ let h_injHyp id = h_injection_main (Term.mkVar id,NoBindings)
 
 TACTIC EXTEND conditional_rewrite
 | [ "conditional" tactic(tac) "rewrite" orient(b) constr_with_bindings(c) ]
-    -> [ conditional_rewrite b (snd tac) c ]
+    -> [ conditional_rewrite b (snd tac) (inj_open (fst c), snd c) ]
 | [ "conditional" tactic(tac) "rewrite" orient(b) constr_with_bindings(c)
     "in" hyp(h) ]
-    -> [ conditional_rewrite_in b h (snd tac) c ]
+    -> [ conditional_rewrite_in b h (snd tac) (inj_open (fst c), snd c) ]
 END
 
 TACTIC EXTEND dependent_rewrite
@@ -509,6 +510,10 @@ TACTIC EXTEND generalize_eqs
 END
 TACTIC EXTEND generalize_eqs_vars
 | ["generalize_eqs_vars" hyp(id) ] -> [ abstract_generalize id ~generalize_vars:true ]
+END
+
+TACTIC EXTEND dependent_pattern
+| ["dependent_pattern" constr(c) ] -> [ dependent_pattern c ]
 END
 
 TACTIC EXTEND conv

@@ -202,7 +202,7 @@ let authorized_occ nocc mres =
 let special_meta = (-1)
 
 (* Tries to match a subterm of [c] with [pat] *)
-let rec sub_match nocc pat c =
+let rec sub_match ?(partial_app=false) nocc pat c =
   match kind_of_term c with
   | Cast (c1,k,c2) ->
     (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
@@ -237,13 +237,31 @@ let rec sub_match nocc pat c =
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1;t2;c2] in
       (lm,mkLetIn (x,List.hd lc,List.nth lc 1,List.nth lc 2)))
   | App (c1,lc) ->
-    (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
-    | PatternMatchingFailure ->
-      let (lm,le) = try_sub_match nocc pat (c1::(Array.to_list lc)) in
-      (lm,mkApp (List.hd le, Array.of_list (List.tl le)))
-    | NextOccurrence nocc ->
-      let (lm,le) = try_sub_match (nocc - 1) pat (c1::(Array.to_list lc)) in
-      (lm,mkApp (List.hd le, Array.of_list (List.tl le))))
+      let rec aux nocc app args =
+	match args with
+	| [] -> 
+	    let (lm,le) = try_sub_match nocc pat (c1::(Array.to_list lc)) in
+	      (lm,mkApp (List.hd le, Array.of_list (List.tl le)))
+	| arg :: args ->
+	    let app = mkApp (app, [|arg|]) in
+	      try let (lm,ce) = sub_match nocc pat app in
+		    (lm,mkApp (ce, Array.of_list args))
+	      with NextOccurrence nocc ->
+		aux nocc app args
+      in
+	(try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
+	| PatternMatchingFailure ->
+	    if partial_app then
+	      aux nocc c1 (Array.to_list lc)
+	    else
+	      let (lm,le) = try_sub_match nocc pat (c1::(Array.to_list lc)) in
+		(lm,mkApp (List.hd le, Array.of_list (List.tl le)))
+	| NextOccurrence nocc ->
+	    if partial_app then
+	      aux nocc c1 (Array.to_list lc)
+	    else
+	      let (lm,le) = try_sub_match (nocc - 1) pat (c1::(Array.to_list lc)) in
+		(lm,mkApp (List.hd le, Array.of_list (List.tl le))))
   | Case (ci,hd,c1,lc) ->
     (try authorized_occ nocc ((matches pat c), mkMeta special_meta) with
     | PatternMatchingFailure ->
@@ -272,6 +290,10 @@ and try_sub_match nocc pat lc =
 
 let match_subterm nocc pat c =
   try sub_match nocc pat c
+  with NextOccurrence _ -> raise PatternMatchingFailure
+
+let match_appsubterm nocc pat c =
+  try sub_match ~partial_app:true nocc pat c
   with NextOccurrence _ -> raise PatternMatchingFailure
 
 let is_matching pat n =

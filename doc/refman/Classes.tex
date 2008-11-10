@@ -56,18 +56,18 @@ is given by $\ident$ and type is an instantiation of the record type.
 We'll use the following example class in the rest of the chapter:
 
 \begin{coq_example*}
-Class Eq (A : Type) :=
-  eq : A -> A -> bool ;
-  eq_leibniz : forall x y, eq x y = true -> x = y.
+Class EqDec (A : Type) :=
+  eqb : A -> A -> bool ;
+  eqb_leibniz : forall x y, eqb x y = true -> x = y.
 \end{coq_example*}
 
 This class implements a boolean equality test which is compatible with
 leibniz equality on some type. An example implementation is:
 
 \begin{coq_example*}
-Instance unit_Eq : Eq unit :=
-  eq x y := true ;
-  eq_leibniz x y H := 
+Instance unit_EqDec : EqDec unit :=
+  eqb x y := true ;
+  eqb_leibniz x y H := 
     match x, y return x = y with tt, tt => refl_equal tt end.
 \end{coq_example*}
 
@@ -76,14 +76,14 @@ declaration, Coq enters the proof-mode and the user is asked to build
 inhabitants of the remaining fields, e.g.:
 
 \begin{coq_example*}
-Instance eq_bool : Eq bool :=
-  eq x y := if x then y else negb y.
+Instance eq_bool : EqDec bool :=
+  eqb x y := if x then y else negb y.
 \end{coq_example*}
 
 \begin{coq_example}
-  Proof. intros x y H.
-  destruct x ; destruct y ; try discriminate ; reflexivity. 
-  Defined.
+Proof. intros x y H.
+  destruct x ; destruct y ; (discriminate || reflexivity). 
+Defined.
 \end{coq_example}
 
 One has to take care that the transparency of every field is determined
@@ -95,17 +95,17 @@ richer facilities for dealing with obligations.
 
 Once a type class is declared, one can use it in class binders:
 \begin{coq_example}
-  Definition neq {A : Type} [ Eq A ] (x y : A) := negb (eq x y).
+  Definition neqb {A : Type} [ EqDec A ] (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 When one calls a class method, a constraint is generated that is
 satisfied only in contexts where the appropriate instances can be
-found. In the example above, a constraint \texttt{Eq A} is generated and
-satisfied by \texttt{[ Eq A ]}. In case no satisfying constraint can be
+found. In the example above, a constraint \texttt{EqDec A} is generated and
+satisfied by \texttt{[ EqDec A ]}. In case no satisfying constraint can be
 found, an error is raised:
 
 \begin{coq_example}
-  Definition neq' (A : Type) (x y : A) := negb (eq x y).
+  Definition neqb' (A : Type) (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 The algorithm used to solve constraints is a variant of the eauto tactic
@@ -115,7 +115,7 @@ local hypotheses as well as declared lemmas in the
 written:
 
 \begin{coq_example}
-  Definition neq' (A : Type) (eqa : Eq A) (x y : A) := negb (eq x y).
+  Definition neqb' (A : Type) (eqa : EqDec A) (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 However, the bracketed binders should be used instead as they have
@@ -136,17 +136,18 @@ particular support for type classes:
 Implicit quantification is an automatic elaboration of a statement with
 free variables into a closed statement where these variables are
 quantified explicitely. Implicit generalization is done only inside
-bracketed binders.
+bracketed binders and the codomain of \texttt{Instance} declarations.
 
 Following the previous example, one can write:
 \begin{coq_example}
-  Definition neq_impl [ eqa : Eq A ] (x y : A) := negb (eq x y).
+  Definition neqb_impl [ eqa : EqDec A ] (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 Here \texttt{A} is implicitely generalized, and the resulting function
 is equivalent to the one above. One must be careful that \emph{all} the
 free variables are generalized, which may result in confusing errors in
-case of typos. 
+case of typos. In such cases, the context will probably contain some
+unexpected generalized variable.
 
 The bracket binders [ ] are a shorthand for double-braces \{\{ \}\} binders
 which declare the variables directly bound inside them as implicit
@@ -159,12 +160,12 @@ are always set as maximally-inserted implicit arguments.
 One can declare parameterized instances as in \Haskell simply by giving
 the constraints as a binding context before the instance, e.g.:
 
-\begin{coq_example*}
-Instance prod_eq [ eqa : Eq A, eqb : Eq B ] : Eq (A * B) :=
-  eq x y := match x, y with
-  | (la, ra), (lb, rb) => andb (eq la lb) (eq ra rb)
+\begin{coq_example}
+Instance prod_eqb [ EA : EqDec A, EB : EqDec B ] : EqDec (A * B) :=
+  eqb x y := match x, y with
+  | (la, ra), (lb, rb) => andb (eqb la lb) (eqb ra rb)
   end.
-\end{coq_example*}
+\end{coq_example}
 \begin{coq_eval}
 Admitted.
 \end{coq_eval}
@@ -180,21 +181,23 @@ hierarchy of classes and superclasses. In the same way, we give the
 superclasses as a binding context:
 
 \begin{coq_example}
-Class (( Eq A )) => Ord :=
+Class (( E : EqDec A )) => Ord :=
   le : A -> A -> bool.
 \end{coq_example}
 
 This declaration means that any instance of the \texttt{Ord} class must
-have an instance of \texttt{Eq}. The parameters of the subclass contain
+have an instance of \texttt{EqDec}. The parameters of the subclass contain
 at least all the parameters of its superclasses in their order of
-appearance (here \texttt{A} is the only one). 
+appearance (here \texttt{A} is the only one). One should always give a
+name to each superclass, but one will be generated automatically if it
+is missing.
 
 Internally, \texttt{Ord} will become a record type with two parameters:
-a type \texttt{A} and an object of type \texttt{Eq A}. However, one can
+a type \texttt{A} and an \texttt{E} of type \texttt{EqDec A}. However, one can
 still use it as if it had a single parameter inside class binders: the
 generalization of superclasses will be done automatically. 
 \begin{coq_example}
-Definition le_eq [ Ord A ] (x y : A) :=
+Definition le_eqb [ Ord A ] (x y : A) :=
   andb (le x y) (le y x).
 \end{coq_example}
 
@@ -203,10 +206,10 @@ explicitely the superclasses. It is is possible to do it directly in regular
 binders, and using the \texttt{!} modifier in class binders. For
 example:
 
-\begin{coq_example*}
-Definition lt [ eqa : Eq A, ! Ord eqa ] (x y : A) :=
-  andb (le x y) (neq x y).
-\end{coq_example*}
+\begin{coq_example}
+Definition lt [ eqa : EqDec A, ! Ord eqa ] (x y : A) :=
+  andb (le x y) (neqb x y).
+\end{coq_example}
 
 The \texttt{!} modifier switches the way a binder is parsed back to the
 regular interpretation of Coq. In particular, it uses the implicit
@@ -215,7 +218,7 @@ arguments mechanism if available, as shown in the example.
 One can notice that superclasses are in fact equivalent to parameters of
 the class, hence the above declaration is the same as:
 \begin{coq_example*}
-Class Ord ((Eq A)) := le : A -> A -> bool.
+Class Ord ((EqDec A)) := le : A -> A -> bool.
 \end{coq_example*}
 
 \subsection{Substructures}
@@ -280,6 +283,16 @@ field of the class. Missing fields must be filled in interactive proof mode.
 An arbitrary context of the form {\tt \binder$_1$ \ldots \binder$_n$}
 can be put after the name of the instance and before the colon to declare a parameterized instance.
 
+\begin{Variants}
+\item {\tt Global Instance} One can use the \texttt{Global} modifier on
+  instances declared in a section so that their generalization is automatically
+  redeclared after the section is closed.
+
+\item {\tt Program Instance} \comindex{Program Instance}
+  Switches the type-checking to \Program~(chapter \ref{Program})
+  and uses the obligation mechanism to manage missing fields.
+\end{Variants}
+
 Besides the {\tt Class} and {\tt Instance} vernacular commands, there
 are a few other commands related to type classes.
 
@@ -293,15 +306,23 @@ instances at the end of sections, or declaring structure projections as
 instances. This is almost equivalent to {\tt Hint Resolve {\ident} :
   typeclass\_instances}.
 
-\subsection{\tt Typeclasses unfold {\ident$_1$ \ldots \ident$_n$}}
-\comindex{Typeclasses unfold}
-\label{TypeclassesUnfold}
+\subsection{\tt Typeclasses Transparent, Opaque {\ident$_1$ \ldots \ident$_n$}}
+\comindex{Typeclasses Transparent}
+\comindex{Typeclasses Opaque}
+\label{TypeclassesTransparency}
 
-This commands declares {\ident} as an unfoldable constant during type
-class resolution. It is useful when some constants prevent some
-unifications and make resolution fail. It happens in particular when constants are
-used to abbreviate types, like {\tt relation A := A -> A -> Prop}.
-This is equivalent to {\tt Hint Unfold {\ident} : typeclass\_instances}.
+This commands defines the transparency of {\ident$_1$ \ldots \ident$_n$} 
+during type class resolution. It is useful when some constants prevent some
+unifications and make resolution fail. It is also useful to declare
+constants which should never be unfolded during proof-search, like
+fixpoints or anything which does not look like an abbreviation. This can
+additionally speed up proof search as the typeclass map can be indexed
+by such rigid constants (see \ref{HintTransparency}).
+By default, all constants and local variables are considered transparent.
+One should take care not to make opaque any constant that is used to
+abbreviate a type, like {\tt relation A := A -> A -> Prop}.
+
+This is equivalent to {\tt Hint Transparent,Opaque} {\ident} {\tt: typeclass\_instances}.
 
 \subsection{\tt Typeclasses eauto := [debug] [dfs | bfs] [\emph{depth}]}
 \comindex{Typeclasses eauto}
@@ -320,5 +341,5 @@ based on a variant of eauto. The flags semantics are:
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% compile-command: "make -C ../.. -f Makefile.stage3 doc/refman/Reference-Manual.pdf"
+%%% compile-command: "BIBINPUTS=\".\" make -C ../.. -f Makefile.stage3 doc/refman/Reference-Manual.pdf"
 %%% End: 

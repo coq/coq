@@ -112,11 +112,12 @@ type comment =
   | CommentInt of int
 
 type hints =
-  | HintsResolve of (int option * constr_expr) list
+  | HintsResolve of (int option * bool * constr_expr) list
   | HintsImmediate of constr_expr list
   | HintsUnfold of reference list
+  | HintsTransparency of reference list * bool
   | HintsConstructors of reference list
-  | HintsExtern of int * constr_expr * raw_tactic_expr
+  | HintsExtern of int * constr_expr option * raw_tactic_expr
   | HintsDestruct of identifier *
       int * (bool,unit) location * constr_expr * raw_tactic_expr
 
@@ -158,12 +159,13 @@ type decl_notation = (string * constr_expr * scope_name option) option
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
+type 'a with_notation = 'a * decl_notation
 type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
-  | RecordDecl of lident option * local_decl_expr with_coercion list
+  | RecordDecl of lident option * local_decl_expr with_coercion with_notation list
 type inductive_expr =
-     lident * local_binder list * constr_expr * constructor_list_or_record_decl_expr
+  lident * local_binder list * constr_expr * constructor_list_or_record_decl_expr
 
 type module_binder = bool option * lident list * module_type_ast
 
@@ -216,7 +218,7 @@ type vernac_expr =
   (* Gallina extensions *)
   | VernacRecord of (bool*bool) (* = Record or Structure * Inductive or CoInductive *)
       * lident with_coercion * local_binder list
-      * constr_expr * lident option * local_decl_expr with_coercion list
+      * constr_expr * lident option * local_decl_expr with_coercion with_notation list
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
@@ -290,6 +292,7 @@ type vernac_expr =
   (* Commands *)
   | VernacDeclareTacticDefinition of
       rec_flag * (reference * bool * raw_tactic_expr) list
+  | VernacCreateHintDb of locality_flag * lstring * bool
   | VernacHints of locality_flag * lstring list * hints
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag

@@ -25,18 +25,20 @@ open Util
 (* This module defines type-classes *)
 type typeclass = {
   (* The class implementation: a record parameterized by the context with defs in it or a definition if 
-     the class is a singleton. This acts as the classe's global identifier. *)
+     the class is a singleton. This acts as the class' global identifier. *)
   cl_impl : global_reference; 
 
   (* Context in which the definitions are typed. Includes both typeclass parameters and superclasses. 
-     The boolean indicates if the typeclass argument is a direct superclass. *)
-  cl_context : ((global_reference * bool) option * rel_declaration) list; 
+     The boolean indicates if the typeclass argument is a direct superclass and the global reference
+     gives a direct link to the class itself. *)
+  cl_context : (global_reference * bool) option list * rel_context; 
 
   (* Context of definitions and properties on defs, will not be shared *)
   cl_props : rel_context;
 
-  (* The methods implementations of the typeclass as projections. *)
-  cl_projs : (identifier * constant) list;
+  (* The methods implementations of the typeclass as projections. Some may be undefinable due to 
+     sorting restrictions. *)
+  cl_projs : (identifier * constant option) list;
 }
 
 type instance
@@ -52,9 +54,13 @@ val add_instance : instance -> unit
 
 val class_info : global_reference -> typeclass (* raises a UserError if not a class *)
 
-val class_of_constr : constr -> typeclass option
-val dest_class_app : constr -> typeclass * constr array (* raises a UserError if not a class *)
 
+(* These raise a UserError if not a class. *)
+val dest_class_app : env -> constr -> typeclass * constr list
+
+(* Just return None if not a class *)
+val class_of_constr : constr -> typeclass option
+  
 val instance_impl : instance -> constant
 
 val is_class : global_reference -> bool

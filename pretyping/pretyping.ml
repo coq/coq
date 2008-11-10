@@ -586,7 +586,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	      mkCase (ci, pred, cj.uj_val, [|b1;b2|])
 	  in
 	    { uj_val = v; uj_type = p }
-	
+	  
     | RCases (loc,sty,po,tml,eqns) ->
 	Cases.compile_cases loc sty
 	  ((fun vtyc env evdref -> pretype vtyc env evdref lvar),evdref)
@@ -605,8 +605,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  (* ... except for Correctness *)
 		let v = mkCast (cj.uj_val, k, tj.utj_val) in
 		  { uj_val = v; uj_type = tj.utj_val }
-	in
-	  inh_conv_coerce_to_tycon loc env evdref cj tycon
+	in inh_conv_coerce_to_tycon loc env evdref cj tycon
 
     | RDynamic (loc,d) ->
 	if (tag d) = "constr" then
@@ -657,12 +656,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       | IsType ->
 	  (pretype_type empty_valcon env evdref lvar c).utj_val in
     let evd,_ = consider_remaining_unif_problems env !evdref in
-      evdref := evd; c'
+      evdref := evd; 
+      nf_isevar !evdref c'
 	
   let pretype_gen evdref env lvar kind c =
     let c = pretype_gen_aux evdref env lvar kind c in
       evdref := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:false env !evdref;
-      nf_evar (evars_of !evdref) c
+      nf_isevar !evdref c
 	
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage
@@ -691,14 +691,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
   let ise_pretype_gen fail_evar sigma env lvar kind c =
     let evdref = ref (Evd.create_evar_defs sigma) in
-    let c = pretype_gen evdref env lvar kind c in
-    let evd,_ = consider_remaining_unif_problems env !evdref in
+    let c = pretype_gen_aux evdref env lvar kind c in
       if fail_evar then 
-	let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env evd in
+	let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env !evdref in
 	let c = Evarutil.nf_isevar evd c in
 	  check_evars env Evd.empty evd c;
 	  evd, c
-      else evd, c
+      else !evdref, c
 
   (** Entry points of the high-level type synthesis algorithm *)
 
@@ -716,17 +715,17 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       
   let understand_tcc_evars evdref env kind c =
     pretype_gen evdref env ([],[]) kind c
-
+      
   let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
     let evd, t =
-      if resolve_classes then
-	ise_pretype_gen false sigma env ([],[]) (OfType exptyp) c 
-      else
-	let evdref = ref (Evd.create_evar_defs sigma) in
-	let c = pretype_gen_aux evdref env ([],[]) (OfType exptyp) c in
-	  !evdref, nf_isevar !evdref c
-    in
-    Evd.evars_of evd, t
+      let evdref = ref (Evd.create_evar_defs sigma) in
+      let c = 
+	if resolve_classes then
+	  pretype_gen evdref env ([],[]) (OfType exptyp) c 
+	else
+	  pretype_gen_aux evdref env ([],[]) (OfType exptyp) c
+      in !evdref, c
+    in Evd.evars_of evd, t
 end
-
+  
 module Default : S = Pretyping_F(Coercion.Default)

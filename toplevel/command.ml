@@ -136,7 +136,7 @@ let red_constant_entry bl ce = function
 let declare_global_definition ident ce local imps =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition Definition) in
   let gr = ConstRef kn in
-    maybe_declare_manual_implicits false gr (is_implicit_args ()) imps;
+    maybe_declare_manual_implicits false gr imps;
     if local = Local && Flags.is_verbose() then
       msg_warning (pr_id ident ++ str" is declared as a global definition");
     definition_message ident;
@@ -190,7 +190,7 @@ let declare_one_assumption is_coe (local,kind) c imps impl keep nl (_,ident) =
         let kn =
           declare_constant ident (ParameterEntry (c,nl), IsAssumption kind) in
 	let gr = ConstRef kn in
-	  maybe_declare_manual_implicits false gr (is_implicit_args ()) imps;
+	  maybe_declare_manual_implicits false gr imps;
         assumption_message ident;
         if local=Local & Flags.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
@@ -456,7 +456,7 @@ let declare_eliminations sp =
 
 (* 3b| Mutual inductive definitions *)
 
-let compute_interning_datas env l nal typl impll =
+let compute_interning_datas env ty l nal typl impll =
   let mk_interning_data na typ impls =
     let idl, impl =
       let impl = 
@@ -466,7 +466,7 @@ let compute_interning_datas env l nal typl impll =
       let sub_impl' = List.filter is_status_implicit sub_impl in
 	(List.map name_of_implicit sub_impl', impl)
     in
-      (na, (idl, impl, compute_arguments_scope typ)) in
+      (na, (ty, idl, impl, compute_arguments_scope typ)) in
   (l, list_map3 mk_interning_data nal typl impll)
 
 let declare_interning_data (_,impls) (df,c,scope) =
@@ -540,7 +540,7 @@ let interp_mutual paramsl indl notations finite =
 
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun _ -> userimpls) fullarities in
-  let impls = compute_interning_datas env0 params indnames fullarities indimpls in
+  let impls = compute_interning_datas env0 Inductive params indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
@@ -639,12 +639,10 @@ let declare_mutual_with_eliminations isrecord mie impls =
   let (_,kn) = declare_mind isrecord mie in    
     list_iter_i (fun i (indimpls, constrimpls) -> 
       let ind = (kn,i) in
-	maybe_declare_manual_implicits false (IndRef ind)
-	  (is_implicit_args()) indimpls;
+	maybe_declare_manual_implicits false (IndRef ind) indimpls;
 	list_iter_i
 	  (fun j impls -> 
-	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j))
-	      (is_implicit_args()) impls)
+	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
 	  constrimpls)
       impls;
     if_verbose ppnl (minductive_message names);
@@ -799,7 +797,7 @@ let declare_fix boxed kind f def t imps =
   } in
   let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
   let gr = ConstRef kn in
-    maybe_declare_manual_implicits false gr (is_implicit_args ()) imps;
+    maybe_declare_manual_implicits false gr imps;
     gr
       
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
@@ -846,7 +844,7 @@ let interp_recursive fixkind l boxed =
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)
-  let impls = compute_interning_datas env [] fixnames fixtypes fiximps in
+  let impls = compute_interning_datas env Recursive [] fixnames fixtypes fiximps in
   let notations = List.fold_right Option.List.cons ntnl [] in
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
@@ -1215,7 +1213,7 @@ let start_proof_com kind thms hook =
             list_map_i (save_remaining_recthms kind body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
-	  maybe_declare_manual_implicits false ref (is_implicit_args ()) imps;
+	  maybe_declare_manual_implicits false ref imps;
 	  hook strength ref) thms_data in
       start_proof id kind t ?init_tac:rec_tac hook
 

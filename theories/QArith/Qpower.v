@@ -221,7 +221,7 @@ repeat rewrite Zpos_mult_morphism.
 repeat rewrite Z2P_correct.
 repeat rewrite Zpower_pos_1_r; ring.
 apply Zpower_pos_pos; red; auto.
-repeat apply Zmult_lt_0_compat; auto;
+repeat apply Zmult_lt_0_compat; red; auto;
  apply Zpower_pos_pos; red; auto.
 (* xO *)
 rewrite IHp, <-Pplus_diag.

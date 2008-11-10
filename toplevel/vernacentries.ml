@@ -405,7 +405,7 @@ let vernac_record finite struc binders sort nameopt cfs =
         (constr_loc sort,"definition_structure", str "Sort expected.") in
     if !dump then (
       dump_definition (snd struc) false "rec";
-      List.iter (fun (_, x) ->
+      List.iter (fun ((_, x), _) ->
 	match x with
 	| AssumExpr ((loc, Name id), _) -> dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
@@ -414,12 +414,12 @@ let vernac_record finite struc binders sort nameopt cfs =
 let vernac_inductive finite indl = 
   if !dump then
     List.iter (fun ((lid, _, _, cstrs), _) ->
-	match cstrs with 
-	  | Constructors cstrs ->
-	      dump_definition lid false"ind";
-	      List.iter (fun (_, (lid, _)) ->
-			   dump_definition lid false "constr") cstrs
- 	  | _ -> () (* dumping is done by vernac_record (called below) *) )
+      match cstrs with 
+      | Constructors cstrs ->
+	  dump_definition lid false"ind";
+	  List.iter (fun (_, (lid, _)) ->
+	    dump_definition lid false "constr") cstrs
+      | _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
   match indl with
     | [ ( id , bl , c ,RecordDecl (oc,fs) ), None ] -> 
@@ -765,6 +765,9 @@ let vernac_backto n = Lib.reset_label n
 
 let vernac_declare_tactic_definition = Tacinterp.add_tacdef
 
+let vernac_create_hintdb local id b = 
+  Auto.create_hint_db local id full_transparent_state b
+
 let vernac_hints = Auto.add_hints
 
 let vernac_syntactic_definition lid =
@@ -773,7 +776,7 @@ let vernac_syntactic_definition lid =
   
 let vernac_declare_implicits local r = function
   | Some imps ->
-      Impargs.declare_manual_implicits local (global_with_alias r) false
+      Impargs.declare_manual_implicits local (global_with_alias r) ~enriching:false
 	(List.map (fun (ex,b,f) -> ex, (b,f)) imps)
   | None -> 
       Impargs.declare_implicits local (global_with_alias r)
@@ -1380,6 +1383,7 @@ let interp c = match c with
 
   (* Commands *)
   | VernacDeclareTacticDefinition (x,l) -> vernac_declare_tactic_definition x l
+  | VernacCreateHintDb (local,dbname,b) -> vernac_create_hintdb local dbname b
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
   | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l

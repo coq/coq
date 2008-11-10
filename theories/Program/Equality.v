@@ -1,4 +1,4 @@
-(* -*- coq-prog-args: ("-emacs-U") -*- *)
+(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U"); compile-command: "make -C ../.. TIME='time'" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -20,6 +20,10 @@ Require Import Coq.Program.Tactics.
 
 Notation " [ x : X ] = [ y : Y ] " := (@JMeq X x Y y) (at level 0, X at next level, Y at next level).
 
+(** Notation for the single element of [x = x] *)
+
+Notation "'refl'" := (@refl_equal _ _).
+
 (** Do something on an heterogeneous equality appearing in the context. *)
 
 Ltac on_JMeq tac := 
@@ -30,7 +34,7 @@ Ltac on_JMeq tac :=
 (** Try to apply [JMeq_eq] to get back a regular equality when the two types are equal. *)
 
 Ltac simpl_one_JMeq :=
-  on_JMeq ltac:(fun H => replace_hyp H (JMeq_eq H)).
+  on_JMeq ltac:(fun H => apply JMeq_eq in H).
 
 (** Repeat it for every possible hypothesis. *)
 
@@ -185,7 +189,6 @@ Ltac simplify_eqs :=
 (** A tactic that tries to remove trivial equality guards in induction hypotheses coming
    from [dependent induction]/[generalize_eqs] invocations. *)
 
-
 Ltac simpl_IH_eq H :=
   match type of H with
     | @JMeq _ ?x _ _ -> _ =>
@@ -256,6 +259,258 @@ Ltac simpl_depind_l := subst_left_no_fail ; autoinjections_left ; try discrimina
 Ltac simpl_depind_r := subst_right_no_fail ; autoinjections_right ; try discriminates ; 
   simpl_JMeq ; simpl_existTs ; simpl_IHs_eqs.
 
+(** Support for the [Equations] command.
+   These tactics implement the necessary machinery to solve goals produced by the 
+   [Equations] command relative to dependent pattern-matching. 
+   It is completely inspired from the "Eliminating Dependent Pattern-Matching" paper by
+   Goguen, McBride and McKinna. *)
+
+
+(** The NoConfusionPackage class provides a method for making progress on proving a property
+   [P] implied by an equality on an inductive type [I]. The type of [noConfusion] for a given
+   [P] should be of the form [ Π Δ, (x y : I Δ) (x = y) -> NoConfusion P x y ], where 
+   [NoConfusion P x y] for constructor-headed [x] and [y] will give a formula ending in [P].
+   This gives a general method for simplifying by discrimination or injectivity of constructors.
+   
+   Some actual instances are defined later in the file using the more primitive [discriminate] and
+   [injection] tactics on which we can always fall back.
+   *)
+  
+Class NoConfusionPackage (I : Type) := NoConfusion : Π P : Prop, Type ; noConfusion : Π P, NoConfusion P.
+
+(** The [DependentEliminationPackage] provides the default dependent elimination principle to
+   be used by the [equations] resolver. It is especially useful to register the dependent elimination
+   principles for things in [Prop] which are not automatically generated. *)
+
+Class DependentEliminationPackage (A : Type) :=
+  elim_type : Type ; elim : elim_type.
+
+(** A higher-order tactic to apply a registered eliminator. *)
+
+Ltac elim_tac tac p := 
+  let ty := type of p in
+  let eliminator := eval simpl in (elim (A:=ty)) in
+    tac p eliminator.
+
+(** Specialization to do case analysis or induction. 
+   Note: the [equations] tactic tries [case] before [elim_case]: there is no need to register 
+   generated induction principles. *)
+
+Ltac elim_case p := elim_tac ltac:(fun p el => destruct p using el) p.
+Ltac elim_ind p := elim_tac ltac:(fun p el => induction p using el) p.
+
+(** The [BelowPackage] class provides the definition of a [Below] predicate for some datatype,
+   allowing to talk about course-of-value recursion on it. *)
+
+Class BelowPackage (A : Type) :=
+  Below : A -> Type ;
+  below : Π (a : A), Below a.
+
+(** The [Recursor] class defines a recursor on a type, based on some definition of [Below]. *)
+
+Class Recursor (A : Type) (BP : BelowPackage A) := 
+  rec_type : A -> Type ; rec : Π (a : A), rec_type a.
+
+(** Lemmas used by the simplifier, mainly rephrasings of [eq_rect], [eq_ind]. *)
+
+Lemma solution_left : Π A (B : A -> Type) (t : A), B t -> (Π x, x = t -> B x).
+Proof. intros; subst. apply X. Defined.
+
+Lemma solution_right : Π A (B : A -> Type) (t : A), B t -> (Π x, t = x -> B x).
+Proof. intros; subst; apply X. Defined.
+
+Lemma deletion : Π A B (t : A), B -> (t = t -> B).
+Proof. intros; assumption. Defined.
+
+Lemma simplification_heq : Π A B (x y : A), (x = y -> B) -> (JMeq x y -> B).
+Proof. intros; apply X; apply (JMeq_eq H). Defined.
+
+Lemma simplification_existT2 : Π A (P : A -> Type) B (p : A) (x y : P p),
+  (x = y -> B) -> (existT P p x = existT P p y -> B).
+Proof. intros. apply X. apply inj_pair2. exact H. Defined.
+
+Lemma simplification_existT1 : Π A (P : A -> Type) B (p q : A) (x : P p) (y : P q),
+  (p = q -> existT P p x = existT P q y -> B) -> (existT P p x = existT P q y -> B).
+Proof. intros. injection H. intros ; auto. Defined.
+  
+Lemma simplification_K : Π A (x : A) (B : x = x -> Type), B (refl_equal x) -> (Π p : x = x, B p).
+Proof. intros. rewrite (UIP_refl A). assumption. Defined.
+
+(** This hint database and the following tactic can be used with [autosimpl] to 
+   unfold everything to [eq_rect]s. *)
+
+Hint Unfold solution_left solution_right deletion simplification_heq
+  simplification_existT1 simplification_existT2
+  eq_rect_r eq_rec eq_ind : equations.
+
+(** Simply unfold as much as possible. *)
+
+Ltac unfold_equations := repeat progress autosimpl with equations.
+
+(** The tactic [simplify_equations] is to be used when a program generated using [Equations] 
+   is in the goal. It simplifies it as much as possible, possibly using [K] if needed. *) 
+
+Ltac simplify_equations := repeat (unfold_equations ; simplify_eqs). 
+
+(** We will use the [block_induction] definition to separate the goal from the 
+   equalities generated by the tactic. *)
+
+Definition block_dep_elim {A : Type} (a : A) := a.
+
+(** Using these we can make a simplifier that will perform the unification 
+   steps needed to put the goal in normalised form (provided there are only
+   constructor forms). Compare with the lemma 16 of the paper.
+   We don't have a [noCycle] procedure yet. *) 
+
+Ltac simplify_one_dep_elim_term c :=
+  match c with
+    | @JMeq _ _ _ _ -> _ => refine (simplification_heq _ _ _ _ _)
+    | ?t = ?t -> _ => intros _ || refine (simplification_K _ t _ _)
+    | eq (existT _ _ _) (existT _ _ _) -> _ => 
+      refine (simplification_existT2 _ _ _ _ _ _ _) ||
+        refine (simplification_existT1 _ _ _ _ _ _ _ _)
+    | ?x = ?y -> _ => (* variables case *)
+      (let hyp := fresh in intros hyp ;
+        move hyp before x ;
+          generalize dependent x ; refine (solution_left _ _ _ _) ; intros until 0) ||
+      (let hyp := fresh in intros hyp ;
+        move hyp before y ;
+          generalize dependent y ; refine (solution_right _ _ _ _) ; intros until 0)
+    | @eq ?A ?t ?u -> ?P => apply (noConfusion (I:=A) P)
+    | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; injection H ; clear H)
+    | ?t = ?u -> _ => let hyp := fresh in
+      intros hyp ; elimtype False ; discriminate
+    | ?x = ?y -> _ => let hyp := fresh in
+      intros hyp ; (try (clear hyp ; (* If non dependent, don't clear it! *) fail 1)) ;
+        case hyp ; clear hyp
+    | block_dep_elim ?T => fail 1 (* Do not put any part of the rhs in the hyps *)
+    | _ => intro
+  end.
+
+Ltac simplify_one_dep_elim :=
+  match goal with
+    | [ |- ?gl ] => simplify_one_dep_elim_term gl
+  end.
+
+(** Repeat until no progress is possible. By construction, it should leave the goal with
+   no remaining equalities generated by the [generalize_eqs] tactic. *)
+
+Ltac simplify_dep_elim := repeat simplify_one_dep_elim.
+
+(** To dependent elimination on some hyp. *)
+
+Ltac depelim id :=
+  generalize_eqs id ; destruct id ; simplify_dep_elim.
+
+(** Do dependent elimination of the last hypothesis, but not simplifying yet
+   (used internally). *)
+
+Ltac destruct_last :=
+  on_last_hyp ltac:(fun id => simpl in id ; generalize_eqs id ; destruct id).
+
+(** The rest is support tactics for the [Equations] command. *)
+
+(** Notation for inaccessible patterns. *)
+
+Definition inaccessible_pattern {A : Type} (t : A) := t.
+
+Notation "?( t )" := (inaccessible_pattern t).
+
+(** To handle sections, we need to separate the context in two parts:
+   variables introduced by the section and the rest. We introduce a dummy variable 
+   between them to indicate that. *)
+
+CoInductive end_of_section := the_end_of_the_section.
+
+Ltac set_eos := let eos := fresh "eos" in 
+  assert (eos:=the_end_of_the_section).
+
+(** We have a specialized [reverse_local] tactic to reverse the goal until the begining of the
+   section variables *)
+
+Ltac reverse_local :=
+  match goal with
+    | [ H : ?T |- _ ] => 
+      match T with
+        | end_of_section => idtac | _ => revert H ; reverse_local end
+    | _ => idtac
+  end.
+
+(** Do as much as possible to apply a method, trying to get the arguments right.
+   !!Unsafe!! We use [auto] for the [_nocomp] variant of [Equations], in which case some 
+   non-dependent arguments of the method can remain after [apply]. *)
+
+Ltac simpl_intros m := ((apply m || refine m) ; auto) || (intro ; simpl_intros m).
+
+(** Hopefully the first branch suffices. *)
+
+Ltac try_intros m :=
+  solve [ intros ; unfold block_dep_elim ; refine m || apply m ] ||
+  solve [ unfold block_dep_elim ; simpl_intros m ].
+
+(** To solve a goal by inversion on a particular target. *)
+
+Ltac solve_empty target :=
+  do_nat target intro ; elimtype False ; destruct_last ; simplify_dep_elim.
+
+Ltac simplify_method tac := repeat (tac || simplify_one_dep_elim) ; reverse_local.
+
+(** Solving a method call: we can solve it by splitting on an empty family member
+   or we must refine the goal until the body can be applied. *)
+    
+Ltac solve_method rec :=
+  match goal with
+    | [ H := ?body : nat |- _ ] => subst H ; clear ; abstract (simplify_method idtac ; solve_empty body)
+    | [ H := [ ?body ] : ?T |- _ ] => clear H ; simplify_method ltac:(exact body) ; rec ; try_intros (body:T)
+  end.
+
+(** Impossible cases, by splitting on a given target. *)
+
+Ltac solve_split :=
+  match goal with 
+    | [ |- let split := ?x : nat in _ ] => clear ; abstract (intros _ ; solve_empty x)
+  end.
+
+(** If defining recursive functions, the prototypes come first. *)
+
+Ltac intro_prototypes :=
+  match goal with 
+    | [ |- Π x : _, _ ] => intro ; intro_prototypes
+    | _ => idtac
+  end.
+
+Ltac do_case p := destruct p || elim_case p || (case p ; clear p).
+
+Ltac dep_elimify := match goal with [ |- ?T ] => change (block_dep_elim T) end.
+
+Ltac un_dep_elimify := unfold block_dep_elim in *.
+
+Ltac case_last := dep_elimify ;
+  on_last_hyp ltac:(fun p => 
+    let ty := type of p in
+      match ty with
+        | ?x = ?x => revert p ; refine (simplification_K _ x _ _)
+        | ?x = ?y => revert p
+        | _ => simpl in p ; generalize_eqs p ; do_case p
+      end).
+
+Ltac nonrec_equations := 
+  solve [solve_equations (case_last) (solve_method idtac)] || solve [ solve_split ]
+    || fail "Unnexpected equations goal".
+
+Ltac recursive_equations :=
+  solve [solve_equations (case_last) (solve_method ltac:intro)] || solve [ solve_split ] 
+    || fail "Unnexpected recursive equations goal".
+
+(** The [equations] tactic is the toplevel tactic for solving goals generated
+   by [Equations]. *)
+
+Ltac equations := set_eos ;
+  match goal with 
+    | [ |- Π x : _, _ ] => intro ; recursive_equations
+    | _ => nonrec_equations
+  end.
+
 (** The following tactics allow to do induction on an already instantiated inductive predicate
    by first generalizing it and adding the proper equalities to the context, in a maner similar to 
    the BasicElim tactic of "Elimination with a motive" by Conor McBride. *)
@@ -264,45 +519,49 @@ Ltac simpl_depind_r := subst_right_no_fail ; autoinjections_right ; try discrimi
    and starts a dependent induction using this tactic. *)
 
 Ltac do_depind tac H :=
-  generalize_eqs_vars H ; tac H ; repeat progress simpl_depind_r ; subst_left_no_fail.
+  (try intros until H) ; dep_elimify ; generalize_eqs_vars H ; tac H ; simplify_dep_elim ; un_dep_elimify.
 
 (** A variant where generalized variables should be given by the user. *)
 
 Ltac do_depind' tac H :=
-  generalize_eqs H ; tac H ; repeat progress simpl_depind_l ; subst_right_no_fail.
+  (try intros until H) ; dep_elimify ; generalize_eqs H ; tac H ; simplify_dep_elim ; un_dep_elimify.
 
 (** Calls [destruct] on the generalized hypothesis, results should be similar to inversion.
    By default, we don't try to generalize the hyp by its variable indices.  *)
 
 Tactic Notation "dependent" "destruction" ident(H) := 
-  do_depind' ltac:(fun hyp => destruct hyp ; intros) H.
+  do_depind' ltac:(fun hyp => destruct hyp) H.
 
 Tactic Notation "dependent" "destruction" ident(H) "using" constr(c) := 
-  do_depind' ltac:(fun hyp => destruct hyp using c ; intros) H.
+  do_depind' ltac:(fun hyp => destruct hyp using c) H.
 
 (** This tactic also generalizes the goal by the given variables before the induction. *)
 
 Tactic Notation "dependent" "destruction" ident(H) "generalizing" ne_hyp_list(l) := 
-  do_depind' ltac:(fun hyp => revert l ; destruct hyp ; intros) H.
+  do_depind' ltac:(fun hyp => revert l ; destruct hyp) H.
 
 Tactic Notation "dependent" "destruction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
-  do_depind' ltac:(fun hyp => revert l ; destruct hyp using c ; intros) H.
+  do_depind' ltac:(fun hyp => revert l ; destruct hyp using c) H.
 
 (** Then we have wrappers for usual calls to induction. One can customize the induction tactic by 
    writting another wrapper calling do_depind. We suppose the hyp has to be generalized before
    calling [induction]. *)
 
 Tactic Notation "dependent" "induction" ident(H) := 
-  do_depind ltac:(fun hyp => induction hyp ; intros) H.
+  do_depind ltac:(fun hyp => induction hyp) H.
 
 Tactic Notation "dependent" "induction" ident(H) "using" constr(c) := 
-  do_depind ltac:(fun hyp => induction hyp using c ; intros) H.
+  do_depind ltac:(fun hyp => induction hyp using c) H.
 
 (** This tactic also generalizes the goal by the given variables before the induction. *)
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) := 
-  do_depind' ltac:(fun hyp => generalize l ; clear l ; induction hyp ; intros) H.
+  do_depind' ltac:(fun hyp => generalize l ; clear l ; induction hyp) H.
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
-  do_depind' ltac:(fun hyp => generalize l ; clear l ; induction hyp using c ; intros) H.
+  do_depind' ltac:(fun hyp => generalize l ; clear l ; induction hyp using c) H.
 
+Ltac simplify_IH_hyps := repeat
+  match goal with
+    | [ hyp : _ |- _ ] => specialize_hypothesis hyp
+  end.

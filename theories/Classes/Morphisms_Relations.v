@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -42,17 +41,14 @@ Proof. do 2 red. unfold predicate_implication. auto. Qed.
 (*    when [R] and [R'] are in [relation_equivalence]. *)
 
 Instance relation_equivalence_pointwise :
-  Morphism (relation_equivalence ==> pointwise_relation (A:=A) (pointwise_relation (A:=A) iff)) id.
+  Morphism (relation_equivalence ==> pointwise_relation A (pointwise_relation A iff)) id.
 Proof. intro. apply (predicate_equivalence_pointwise (cons A (cons A nil))). Qed.
 
 Instance subrelation_pointwise :
-  Morphism (subrelation ==> pointwise_relation (A:=A) (pointwise_relation (A:=A) impl)) id.
+  Morphism (subrelation ==> pointwise_relation A (pointwise_relation A impl)) id.
 Proof. intro. apply (predicate_implication_pointwise (cons A (cons A nil))). Qed.
 
 
 Lemma inverse_pointwise_relation A (R : relation A) : 
-  relation_equivalence (pointwise_relation (inverse R)) (inverse (pointwise_relation (A:=A) R)).
+  relation_equivalence (pointwise_relation A (inverse R)) (inverse (pointwise_relation A R)).
 Proof. intros. split; firstorder. Qed.
-
-
-

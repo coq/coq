@@ -376,6 +376,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 		 (xlate_formula f, List.map xlate_formula_expl l'))
    | CApp(_, (_,f), l) -> 
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
+   | CRecord (_,_,_) -> xlate_error "CRecord: TODO"
    | CCases (_, _, _, [], _) -> assert false
    | CCases (_, _, ret_type, tm::tml, eqns)->
        CT_cases(CT_matched_formula_ne_list(xlate_matched_formula tm,
@@ -397,6 +398,7 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
    | CNotation(_, s,(l,[])) -> notation_to_formula s (List.map xlate_formula l)
    | CNotation(_, s,(l,_)) -> xlate_error "CNotation (recursive): TODO"
+   | CGeneralization(_,_,_,_) -> xlate_error "CGeneralization: TODO"
    | CPrim (_, Numeral i) -> 
        CT_coerce_NUM_to_FORMULA(CT_int_encapsulator(Bigint.to_string i))
    | CPrim (_, String _) -> xlate_error "CPrim (String): TODO"
@@ -646,12 +648,14 @@ let is_tactic_special_case = function
 let xlate_context_pattern = function
   | Term v -> 
       CT_coerce_FORMULA_to_CONTEXT_PATTERN (xlate_formula v)
-  | Subterm (idopt, v) ->
+  | Subterm (b, idopt, v) -> (* TODO: application pattern *)
       CT_context(xlate_ident_opt idopt, xlate_formula v)
 
 
 let xlate_match_context_hyps = function
-  | Hyp (na,b) -> CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b);;
+  | Hyp (na,b) -> CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b)
+  | Def (na,b,t) -> xlate_error "TODO: Let hyps"
+      (* CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b, xlate_context_pattern t);; *)
 
 let xlate_arg_to_id_opt = function
     Some id -> CT_coerce_ID_to_ID_OPT(CT_ident (string_of_id id))
@@ -1497,7 +1501,7 @@ let build_constructors l =
  CT_constr_list (List.map f l)
 
 let build_record_field_list l =
- let build_record_field (coe,d) = match d with
+ let build_record_field ((coe,d),not) = match d with
   | AssumExpr (id,c) ->
       if coe then CT_recconstr_coercion (xlate_id_opt id, xlate_formula c)
       else
@@ -1743,6 +1747,8 @@ let rec xlate_vernac =
 	  (fst::rest) -> CT_formula_ne_list(fst,rest)
 	| _ -> assert false in
       CT_hintrewrite(ct_orient, f_ne_list, CT_ident base, xlate_tactic t)
+  | VernacCreateHintDb (local,dbname,b) ->
+      xlate_error "TODO: VernacCreateHintDb"
   | VernacHints (local,dbnames,h) ->
       let dblist = CT_id_list(List.map (fun x -> CT_ident x) dbnames) in
       (match h with
@@ -1757,7 +1763,10 @@ let rec xlate_vernac =
 	     CT_hints(CT_ident "Constructors",
 		      CT_id_ne_list(n1, names), dblist)
 	| HintsExtern (n, c, t) ->
-	    CT_hint_extern(CT_int n, xlate_formula c, xlate_tactic t, dblist)
+	    let pat = match c with 
+	      | None -> CT_coerce_ID_OPT_to_FORMULA_OPT (CT_coerce_NONE_to_ID_OPT CT_none)
+	      | Some c -> CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula c) 
+	    in CT_hint_extern(CT_int n, pat, xlate_tactic t, dblist)
         | HintsImmediate l -> 
 	 let f1, formulas = match List.map xlate_formula l with
 	     a :: tl -> a, tl
@@ -1776,7 +1785,7 @@ let rec xlate_vernac =
 		| HintsImmediate _ -> CT_hints_immediate(l', dblist)
 		| _ -> assert false)
         | HintsResolve l -> 
-	 let f1, formulas = match List.map xlate_formula (List.map snd l) with
+	 let f1, formulas = match List.map xlate_formula (List.map pi3 l) with
 	     a :: tl -> a, tl
 	   | _  -> failwith "" in
 	 let l' = CT_formula_ne_list(f1, formulas) in
@@ -1801,6 +1810,16 @@ let rec xlate_vernac =
 			    CT_id_ne_list(n1, names), dblist)
 	   else	     
              CT_hints(CT_ident "Unfold", CT_id_ne_list(n1, names), dblist)
+        | HintsTransparency (l,b) -> 
+	 let n1, names = match List.map loc_qualid_to_ct_ID l with
+	     n1 :: names -> n1, names
+	   | _  -> failwith "" in
+	 let ty = if b then "Transparent" else "Opaque" in
+	   if local then
+             CT_local_hints(CT_ident ty,
+			    CT_id_ne_list(n1, names), dblist)
+	   else	     
+             CT_hints(CT_ident ty, CT_id_ne_list(n1, names), dblist)
        	| HintsDestruct(id, n, loc, f, t) ->
 	    let dl = match loc with
 		ConclLocation() -> CT_conclusion_location

@@ -400,10 +400,12 @@ let metamap_to_list m =
 (*************************)
 (* Unification state *)
 
+type obligation_definition_status = Define of bool | Expand
+
 type hole_kind =
   | ImplicitArg of global_reference * (int * identifier option)
   | BinderType of name
-  | QuestionMark of bool
+  | QuestionMark of obligation_definition_status
   | CasesType
   | InternalHole
   | TomatchTypeParameter of inductive * int

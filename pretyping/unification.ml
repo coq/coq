@@ -136,16 +136,33 @@ let default_no_delta_unify_flags = {
   modulo_delta = empty_transparent_state;
 }
 
-let expand_constant env flags c = 
-  match kind_of_term c with
+let expand_key env = function
+  | Some (ConstKey cst) -> constant_opt_value env cst
+  | Some (VarKey id) -> named_body id env
+  | Some (RelKey _) -> None
+  | None -> None
+      
+let key_of flags f =
+  match kind_of_term f with
   | Const cst when is_transparent (ConstKey cst) &&
-                   Cpred.mem cst (snd flags.modulo_delta) ->
-      constant_opt_value env cst
+        Cpred.mem cst (snd flags.modulo_delta) ->
+      Some (ConstKey cst) 
   | Var id when is_transparent (VarKey id) &&
-                Idpred.mem id (fst flags.modulo_delta) ->
-      named_body id env
+        Idpred.mem id (fst flags.modulo_delta) ->
+      Some (VarKey id)
   | _ -> None
-
+      
+let oracle_order env cf1 cf2 =
+  match cf1 with
+  | None ->
+      (match cf2 with 
+      | None -> None
+      | Some k2 -> Some false)
+  | Some k1 -> 
+      match cf2 with
+      | None -> Some true
+      | Some k2 -> Some (Conv_oracle.oracle_order k1 k2)
+	    
 let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
   let nb = nb_rel env in
   let trivial_unify pb (metasubst,_) m n =
@@ -231,15 +248,29 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
   and expand curenv pb b substn cM f1 l1 cN f2 l2 =
     if trivial_unify pb substn cM cN then substn
     else if b then
-      match expand_constant curenv flags f1 with
-      | Some c ->
-	  unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
-      | None ->
-      match expand_constant curenv flags f2 with
-      | Some c ->
-	  unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
-      | None ->
-      error_cannot_unify curenv sigma (cM,cN)
+      let cf1 = key_of flags f1 and cf2 = key_of flags f2 in
+	match oracle_order curenv cf1 cf2 with
+	| None -> error_cannot_unify curenv sigma (cM,cN)
+	| Some true -> 
+	    (match expand_key curenv cf1 with
+	    | Some c ->
+		unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
+	    | None ->
+		(match expand_key curenv cf2 with
+		| Some c ->
+		    unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
+		| None ->
+		    error_cannot_unify curenv sigma (cM,cN)))
+	| Some false ->
+	    (match expand_key curenv cf2 with
+	    | Some c ->
+		unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
+	    | None ->
+		(match expand_key curenv cf1 with
+		| Some c ->
+		    unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
+		| None ->
+		    error_cannot_unify curenv sigma (cM,cN)))
     else
       error_cannot_unify curenv sigma (cM,cN)
 
@@ -490,9 +521,9 @@ let w_merge env with_types flags (metas,evars) evd =
 	      let evd' = mimick_evar evd flags f (Array.length cl) evn in
 	      w_merge_rec evd' metas evars eqns
           | _ ->
-	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs') 
-	        metas evars' eqns
-	  end
+	      w_merge_rec (solve_simple_evar_eqn env evd ev rhs')
+		metas evars' eqns
+	end
     | [] -> 
 
     (* Process metas *)
@@ -559,10 +590,10 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
    [clenv_typed_unify M N clenv] expects in addition that expected
    types of metavars are unifiable with the types of their instances    *)
 
-let check_types env evd subst m n =
+let check_types env evd flags subst m n =
   if isEvar (fst (whd_stack m)) or isEvar (fst (whd_stack n)) then
     unify_0_with_initial_metas subst true env (evars_of evd) topconv 
-      default_unify_flags
+      flags
       (Retyping.get_type_of_with_meta env (evars_of evd) (metas_of evd) m)
       (Retyping.get_type_of_with_meta env (evars_of evd) (metas_of evd) n)
   else
@@ -570,7 +601,7 @@ let check_types env evd subst m n =
 
 let w_unify_core_0 env with_types cv_pb flags m n evd =
   let (mc1,evd') = retract_coercible_metas evd in
-  let subst1 = check_types env evd (mc1,[]) m n in
+  let subst1 = check_types env evd flags (mc1,[]) m n in
   let subst2 =
      unify_0_with_initial_metas subst1 true env (evars_of evd') cv_pb flags m n
   in 
@@ -659,7 +690,7 @@ let w_unify_to_subterm_list env flags allow_K oplist t evd =
       if isMeta op then
 	if allow_K then (evd,op::l)
 	else error "Match_subterm"
-      else if occur_meta op then
+      else if occur_meta_or_existential op then
         let (evd',cl) =
           try 
 	    (* This is up to delta for subterms w/o metas ... *)

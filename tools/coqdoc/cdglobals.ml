@@ -57,6 +57,7 @@ let externals = ref true
 let coqlib = ref "http://coq.inria.fr/library/"
 let coqlib_path = ref Coq_config.coqlib
 let raw_comments = ref false
+let interpolate = ref false
 
 let charset = ref "iso-8859-1"
 let inputenc = ref ""

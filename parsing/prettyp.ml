@@ -784,6 +784,11 @@ let pr_instance env i =
   (* lighter *)
   print_ref false (ConstRef (instance_impl i))
     
+let print_all_instances () =
+  let env = Global.env () in
+  let inst = all_instances () in 
+    prlist_with_sep fnl (pr_instance env) inst
+
 let print_instances r =
   let env = Global.env () in
   let inst = instances r in 

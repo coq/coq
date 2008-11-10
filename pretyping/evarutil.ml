@@ -891,6 +891,12 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
  * context "hyps" and not referring to itself.
  *)
 
+and occur_existential evm c =
+  let rec occrec c = match kind_of_term c with
+    | Evar (e, _) -> if not (is_defined evm e) then raise Occur
+    | _ -> iter_constr occrec c
+  in try occrec c; false with Occur -> true
+
 and evar_define env (evk,_ as ev) rhs evd =
   try
     let (evd',body) = invert_definition env evd ev rhs in
@@ -1045,16 +1051,47 @@ let solve_simple_eqn conv_algo env evd (pbty,(evk1,args1 as ev1),t2) =
 	    then solve_evar_evar evar_define env evd ev1 ev2
 	    else add_conv_pb (pbty,env,mkEvar ev1,t2) evd
       | _ ->
-	  evar_define env ev1 t2 evd in
+	  let evd = evar_define env ev1 t2 evd in
+	  let evm = evars_of evd in
+	  let evi = Evd.find evm evk1 in
+	    if occur_existential evm evi.evar_concl then
+	      let evenv = evar_env evi in
+	      let evc = nf_isevar evd evi.evar_concl in
+	      let body = match evi.evar_body with Evar_defined b -> b | Evar_empty -> assert false in
+	      let ty = nf_isevar evd (Retyping.get_type_of_with_meta evenv evm (metas_of evd) body) in
+		add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
+	    else evd
+    in
     let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
-    List.fold_left
-      (fun (evd,b as p) (pbty,env,t1,t2) ->
-	if b then conv_algo env evd pbty t1 t2 else p) (evd,true)
-      pbs
+      List.fold_left
+	(fun (evd,b as p) (pbty,env,t1,t2) ->
+	  if b then conv_algo env evd pbty t1 t2 else p) (evd,true)
+	pbs
   with e when precatchable_exception e ->
     (evd,false)
 
+let evars_of_term c = 
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) -> Intset.add n acc
+    | _ -> fold_constr evrec acc c
+  in 
+    evrec Intset.empty c
 
+let evars_of_named_context nc =
+  List.fold_right (fun (_, b, t) s ->
+    Option.fold_left (fun s t -> 
+      Intset.union s (evars_of_term t))
+      s b) nc Intset.empty
+
+let evars_of_evar_info evi =
+  Intset.union (evars_of_term evi.evar_concl)
+    (Intset.union 
+	(match evi.evar_body with 
+	| Evar_empty -> Intset.empty
+	| Evar_defined b -> evars_of_term b)
+	(evars_of_named_context (named_context_of_val evi.evar_hyps)))
+    
 (* [check_evars] fails if some unresolved evar remains *)
 (* it assumes that the defined existentials have already been substituted *)
 

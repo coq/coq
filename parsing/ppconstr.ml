@@ -92,6 +92,14 @@ let pr_notation pr s env =
 let pr_delimiters key strm =
   strm ++ str ("%"^key)
 
+let pr_generalization bk ak c =
+  let hd, tl =
+    match bk with 
+    | Implicit -> "{", "}"
+    | Explicit -> "(", ")"
+  in (* TODO: syntax Abstraction Kind *) 
+    str "`" ++ str hd ++ c ++ str tl
+
 let pr_com_at n =
   if Flags.do_translate() && n <> 0 then comment n 
   else mt()
@@ -205,17 +213,23 @@ let begin_of_binders = function
   | b::_ -> begin_of_binder b
   | _ -> 0
 
+let surround_impl k p = 
+  match k with
+  | Explicit -> str"(" ++ p ++ str")"
+  | Implicit -> str"{" ++ p ++ str"}"
+
 let surround_binder k p = 
   match k with
-      Default Explicit -> hov 1 (str"(" ++ p ++ str")")
-    | Default Implicit -> hov 1 (str"{" ++ p ++ str"}")
-    | TypeClass _ -> hov 1 (str"[" ++ p ++ str"]")
-
+  | Default b -> hov 1 (surround_impl b p)
+  | Generalized (b, b', t) -> 
+      hov 1 (surround_impl b' (surround_impl b p))
+	
 let surround_implicit k p =
   match k with
-      Default Explicit -> p
-    | Default Implicit -> (str"{" ++ p ++ str"}")
-    | TypeClass _ -> (str"[" ++ p ++ str"]")
+  | Default Explicit -> p
+  | Default Implicit -> (str"{" ++ p ++ str"}")
+  | Generalized (b, b', t) -> 
+      surround_impl b' (surround_impl b p)
 
 let pr_binder many pr (nal,k,t) =
   match t with
@@ -538,6 +552,17 @@ let rec pr sep inherited a =
       else
 	p, lproj
   | CApp (_,(None,a),l) -> pr_app (pr mt) a l, lapp
+  | CRecord (_,w,l) ->
+      let beg = 
+	match w with
+	| None -> spc () 
+	| Some t -> spc () ++ pr spc ltop t ++ spc () ++ str"with" ++ spc ()
+      in
+	hv 0 (str"{" ++ beg ++	       
+		 prlist_with_sep (fun () -> spc () ++ str";" ++ spc ())
+		 (fun ((_,id), c) -> pr_id id ++ spc () ++ str":=" ++ spc () ++ pr spc ltop c)
+		 l), latom
+
   | CCases (_,LetPatternStyle,rtntypopt,[c,asin],[(_,[(loc,[p])],b)]) ->
       hv 0 (
 	str "let '" ++ 
@@ -591,6 +616,7 @@ let rec pr sep inherited a =
   | CNotation (_,"( _ )",([t],[])) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) -> pr_notation (pr mt) s env
+  | CGeneralization (_,bk,ak,c) -> pr_generalization bk ak (pr mt lsimple c), latom
   | CPrim (_,p) -> pr_prim_token p, prec_of_prim_token p
   | CDelimiters (_,sc,a) -> pr_delimiters sc (pr mt lsimple a), 1
   | CDynamic _ -> str "<dynamic>", latom

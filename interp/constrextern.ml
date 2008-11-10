@@ -676,7 +676,7 @@ let rec extern inctx scopes vars r =
       let t = extern_typ scopes vars (anonymize_if_reserved na t) in
       let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
       CLambdaN (loc,[(dummy_loc,na)::idl,Default bk,t],c)
-
+	
   | RCases (loc,sty,rtntypopt,tml,eqns) ->
       let vars' = 
 	List.fold_right (name_fold Idset.add)

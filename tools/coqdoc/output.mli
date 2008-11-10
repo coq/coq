@@ -11,6 +11,8 @@
 open Cdglobals
 open Index
 
+val initialize : unit -> unit
+
 val add_printing_token : string -> string option * string option -> unit
 val remove_printing_token : string -> unit
 

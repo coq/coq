@@ -28,34 +28,27 @@ val ids_of_list : identifier list -> Idset.t
 val destClassApp : constr_expr -> loc * reference * constr_expr list
 val destClassAppExpl : constr_expr -> loc * reference * (constr_expr * explicitation located option) list
 
-val free_vars_of_constr_expr :     Topconstr.constr_expr ->
-    ?bound:Idset.t ->
-  Names.identifier list -> Names.identifier list
+(* Fragile, should be used only for construction a set of identifiers to avoid *)
 
-val binder_list_of_ids : identifier list -> local_binder list
-
-val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
+val free_vars_of_constr_expr : constr_expr -> ?bound:Idset.t ->
+  identifier list -> identifier list
 
 val free_vars_of_binders :
   ?bound:Idset.t -> Names.identifier list -> local_binder list -> Idset.t * Names.identifier list
 
-val resolve_class_binders : Idset.t -> typeclass_context -> 
-  (identifier located * constr_expr) list * typeclass_context
+(* Returns the free ids in left-to-right order with the location of their first occurence *)
 
-val full_class_binders : Idset.t -> typeclass_context -> typeclass_context
+val free_vars_of_rawconstr : ?bound:Idset.t -> rawconstr -> (Names.identifier * loc) list
 
-val generalize_class_binder_raw : Idset.t -> name located * (binding_kind * binding_kind) * constr_expr -> 
-  Idset.t * typeclass_context * typeclass_constraint
-  
-val generalize_class_binders_raw : Idset.t -> typeclass_context -> 
-  (name located * binding_kind * constr_expr) list * (name located * binding_kind * constr_expr) list
+val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
 
 val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool)) list
 
-val combine_params : Names.Idset.t ->
+val combine_params_freevar :
+  Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->
+  Topconstr.constr_expr * Names.Idset.t
+
+val implicit_application : Idset.t -> ?allow_partial:bool ->
   (Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->
     Topconstr.constr_expr * Names.Idset.t) ->
-  (Topconstr.constr_expr * Topconstr.explicitation located option) list ->
-  ((global_reference * bool) option * Term.rel_declaration) list ->
-  Topconstr.constr_expr list * Names.Idset.t
-
+  constr_expr -> constr_expr

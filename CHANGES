@@ -13,6 +13,7 @@ Language
   arguments in terms.
 - Sort of Record/Structure, Inductive and CoInductive defaults to Type
   if omitted.
+- Support for optional "where" notation clauses for record fields. (DOC TODO)
 - (Co)Inductive types can be defined as records 
   (e.g. "CoInductive stream := { hd : nat; tl : stream }.")
 - New syntax "Theorem id1:t1 ... with idn:tn" for proving mutually dependent
@@ -27,6 +28,11 @@ Language
   As a consequence, Acc_rect has now a more direct proof [possible source
   of easily fixed incompatibility in case of manual definition of a recursor
   in a recursive singleton inductive type].
+- New syntax to do implicit generalization (TODO: still undecided) in binders
+  and in arbitrary terms.
+- New syntax for introduction of record objects without mentioning the 
+  constructor {| field := body; ... |}, turning missing fields into holes
+  (compatible with refine and Program) (DOC TODO).
 
 Vernacular commands
 
@@ -65,6 +71,14 @@ Vernacular commands
 - "Declare ML Module" now allows to import .cmxs files when Coq is
   compiled in native code with a version of OCaml that supports native
   Dynlink (>= 3.11).
+- New command "Create HintDb name [discriminated]" to explicitely declare
+  a new hint database and optionaly turn on a discrimination net 
+  implementation to index all the lemmas in the database.
+- New commands "Hint Transparent" and "Hint Opaque" to set the unfolding
+  status of definitions used by auto. This information is taken into account
+  by the discrimination net and the unification algorithm.
+- "Hint Extern" now takes an optional pattern and applies the given tactic
+  all the time if no pattern is given.
 
 Libraries (DOC TO CHECK)
 
@@ -192,6 +206,8 @@ Tactic Language
 
 - Second-order pattern-matching now working in Ltac "match" clauses
   (syntax for second-order unification variable is "@?X").
+- Matching on let bindings in match context using the usual 
+  [H := body : type] syntax. (DOC TODO)
 - (?X ?Y) patterns now match any application instead of only unary 
   applications (possible source of incompatibility).
 - Ltac accepts integer arguments (syntax is "ltac:nnn" for nnn an integer).
@@ -220,6 +236,8 @@ Tactics
 
 - New tactics "apply -> term", "apply <- term", "apply -> term in
   ident", "apply <- term in ident" for applying equivalences (iff). (DOC TODO)
+- "apply" and "rewrite" now take open terms (terms with undefined existentials) 
+  as input.
 - Slight improvement of the hnf and simpl tactics when applied on
   expressions with explicit occurrences of match or fix.
 - New tactics "eapply in", "erewrite", "erewrite in".
@@ -433,6 +451,19 @@ Tools
 - Extended -I coqtop/coqc option to specify a logical dir: "-I dir -as coqdir".
 - New coqtop/coqc option -exclude-dir to exclude subdirs for option -R.
 - The binary "parser" has been renamed to "coq-parser".
+
+coqdoc
+- Improved coqdoc and dump of globalization information to give more meta-information
+  on identifiers. All categories of Coq definitions are supported, which makes
+  typesetting trivial in the generated documentation. 
+- A "--interpolate" option permits to use typesetting information from the 
+  typechecked part of the file to typeset identifiers appearing in Coq escapings
+  inside the documentation. 
+- Better handling of utf8 ("--utf8" option) and respect of spaces in the source.
+- Support for hyperlinking and indexing developments in the TeX output.
+- New option "color" of the coqdoc style file to render identifiers using colors.
+- Additional macros in the TeX ouput allowing to customize indentation and size of
+  empty lines. New environment "coqdoccode" for Coq code.
 
 Miscellaneous
 

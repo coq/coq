@@ -98,7 +98,13 @@ type notation = string
 
 type explicitation = ExplByPos of int * identifier option | ExplByName of identifier
   
-type binder_kind = Default of binding_kind | TypeClass of binding_kind * binding_kind
+type binder_kind = 
+  | Default of binding_kind 
+  | Generalized of binding_kind * binding_kind * bool
+      (* Inner binding, outer bindings, typeclass-specific flag
+	 for implicit generalization of superclasses *)
+
+type abstraction_kind = AbsLambda | AbsPi
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
@@ -127,6 +133,7 @@ type constr_expr =
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
       (constr_expr * explicitation located option) list
+  | CRecord of loc * constr_expr option * (identifier located * constr_expr) list
   | CCases of loc * case_style * constr_expr option *
       (constr_expr * (name option * constr_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list
@@ -140,6 +147,7 @@ type constr_expr =
   | CSort of loc * rawsort
   | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_expr notation_substitution
+  | CGeneralization of loc * binding_kind * abstraction_kind option * constr_expr
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
   | CDynamic of loc * Dyn.t

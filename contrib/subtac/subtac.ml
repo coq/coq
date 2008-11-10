@@ -52,16 +52,14 @@ open Tacexpr
 let solve_tccs_in_type env id isevars evm c typ =
   if not (evm = Evd.empty) then 
     let stmt_id = Nameops.add_suffix id "_stmt" in
-    let obls, c', t' = eterm_obligations env stmt_id !isevars evm 0 c typ in
-    (** Make all obligations transparent so that real dependencies can be sorted out by the user *)
-    let obls = Array.map (fun (id, t, l, op, d) -> (id, t, l, false, d)) obls in
+    let obls, c', t' = eterm_obligations env stmt_id !isevars evm 0 ~status:Expand c typ in
       match Subtac_obligations.add_definition stmt_id c' typ obls with
-	  Subtac_obligations.Defined cst -> constant_value (Global.env()) 
-	    (match cst with ConstRef kn -> kn | _ -> assert false)
-	| _ -> 
-	    errorlabstrm "start_proof" 
-	      (str "The statement obligations could not be resolved automatically, " ++ spc () ++
-		  str "write a statement definition first.")
+      Subtac_obligations.Defined cst -> constant_value (Global.env()) 
+	(match cst with ConstRef kn -> kn | _ -> assert false)
+      | _ -> 
+	  errorlabstrm "start_proof" 
+	    (str "The statement obligations could not be resolved automatically, " ++ spc () ++
+		str "write a statement definition first.")
   else
     let _ = Typeops.infer_type env c in c
 
@@ -106,12 +104,12 @@ let declare_assumption env isevars idl is_coe k bl c nl =
     errorlabstrm "Command.Assumption"
 	(str "Cannot declare an assumption while in proof editing mode.")
 
-let dump_definition (loc, id) s =
+let dump_definition (loc, id) b s =
   Flags.dump_string (Printf.sprintf "%s %d %s\n" s (fst (unloc loc)) (string_of_id id))
 
 let dump_constraint ty ((loc, n), _, _) =
   match n with
-    | Name id -> dump_definition (loc, id) ty
+    | Name id -> dump_definition (loc, id) false ty
     | Anonymous -> ()
 
 let dump_variable lid = ()
@@ -121,7 +119,7 @@ let vernac_assumption env isevars kind l nl =
     List.iter (fun (is_coe,(idl,c)) -> 
       if !Flags.dump then
 	List.iter (fun lid -> 
-	  if global then dump_definition lid "ax" 
+	  if global then dump_definition lid (not global) "ax"
 	  else dump_variable lid) idl;
       declare_assumption env isevars idl is_coe kind [] c nl) l
 
@@ -139,7 +137,7 @@ let subtac (loc, command) =
   match command with
   | VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
       check_fresh lid;
-      dump_definition lid "def";
+      if !Flags.dump then dump_definition lid false "def";
       (match expr with
       | ProveBody (bl, t) -> 
 	  if Lib.is_modtype () then
@@ -152,12 +150,12 @@ let subtac (loc, command) =
   | VernacFixpoint (l, b) -> 
       List.iter (fun ((lid, _, _, _, _), _) -> 
 	check_fresh lid;
-	dump_definition lid "fix") l;
+	if !Flags.dump then dump_definition lid false "fix") l;
       let _ = trace (str "Building fixpoint") in
 	ignore(Subtac_command.build_recursive l b)
 	  
   | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
-      if !Flags.dump then dump_definition id "prf";
+      if !Flags.dump then dump_definition id false "prf";
       if not(Pfedit.refining ()) then
 	if lettop then
 	  errorlabstrm "Subtac_command.StartProof"
@@ -176,7 +174,8 @@ let subtac (loc, command) =
       ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
 	
   | VernacCoFixpoint (l, b) ->
-      List.iter (fun ((lid, _, _, _), _) -> dump_definition lid "cofix") l;
+      if !Flags.dump then 
+	List.iter (fun ((lid, _, _, _), _) -> dump_definition lid false "cofix") l;
       ignore(Subtac_command.build_corecursive l b)
 	
   (*| VernacEndProof e -> 

@@ -76,7 +76,7 @@ and ct_COMMAND =
   | CT_go of ct_INT_OR_LOCN
   | CT_guarded
   | CT_hint_destruct of ct_ID * ct_INT * ct_DESTRUCT_LOCATION * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
-  | CT_hint_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
+  | CT_hint_extern of ct_INT * ct_FORMULA_OPT * ct_TACTIC_COM * ct_ID_LIST
   | CT_hintrewrite of ct_ORIENTATION * ct_FORMULA_NE_LIST * ct_ID * ct_TACTIC_COM
   | CT_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
   | CT_hints_immediate of ct_FORMULA_NE_LIST * ct_ID_LIST

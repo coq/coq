@@ -309,8 +309,6 @@ Add Relation elt E.eq
  transitivity proved by E.eq_trans 
  as EltSetoid.
 
-Typeclasses unfold elt.
-
 Add Relation t Equal 
  reflexivity proved by eq_refl 
  symmetry proved by eq_sym

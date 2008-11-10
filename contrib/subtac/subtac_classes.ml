@@ -92,49 +92,33 @@ let type_class_instance_params isevars env id n ctx inst subst =
 let substitution_of_constrs ctx cstrs =
   List.fold_right2 (fun c (na, _, _) acc -> (na, c) :: acc) cstrs ctx []
 
-let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Classes.default_on_free_vars) pri =
+let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) pri =
   let env = Global.env() in
   let isevars = ref (Evd.create_evar_defs Evd.empty) in
-  let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env) in
-  let bound, fvs = Implicit_quantifiers.free_vars_of_binders ~bound [] ctx in
   let tclass =
     match bk with
-      | Implicit ->
-	  let loc, id, par = Implicit_quantifiers.destClassAppExpl cl in
-	  let k = class_info (Nametab.global id) in
-	  let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
-	  let needlen = List.fold_left (fun acc (x, y) -> if x = None then succ acc else acc) 0 k.cl_context in
-	    if needlen <> applen then 
-	      Classes.mismatched_params env (List.map fst par) (List.map snd k.cl_context);
-	    let pars, _ = Implicit_quantifiers.combine_params Idset.empty (* need no avoid *)
-	      (fun avoid (clname, (id, _, t)) -> 
-		match clname with 
-		    Some (cl, b) -> 
-		      let t = 
-			if b then 
-			  let _k = class_info cl in
-			    CHole (Util.dummy_loc, Some Evd.InternalHole) (* (Evd.ImplicitArg (IndRef k.cl_impl, (1, None)))) *)
-			else CHole (Util.dummy_loc, None)
-		      in t, avoid
-		  | None -> failwith ("new instance: under-applied typeclass"))
-	      par (List.rev k.cl_context)
-	    in Topconstr.CAppExpl (loc, (None, id), pars)
-
+    | Implicit ->
+	Implicit_quantifiers.implicit_application Idset.empty (* need no avoid *)
+	  ~allow_partial:false (fun avoid (clname, (id, _, t)) -> 
+	    match clname with 
+	    | Some (cl, b) -> 
+		let t = 
+		  if b then 
+		    let _k = class_info cl in
+		      CHole (Util.dummy_loc, Some Evd.InternalHole)
+		  else CHole (Util.dummy_loc, None)
+		in t, avoid
+	    | None -> failwith ("new instance: under-applied typeclass"))
+	  cl
       | Explicit -> cl
   in
-  let ctx_bound = Idset.union bound (Implicit_quantifiers.ids_of_list fvs) in
-  let gen_ids = Implicit_quantifiers.free_vars_of_constr_expr ~bound:ctx_bound tclass [] in
-  let bound = Idset.union (Implicit_quantifiers.ids_of_list gen_ids) ctx_bound in
-  on_free_vars (List.rev (gen_ids @ fvs));
-  let gen_ctx = Implicit_quantifiers.binder_list_of_ids gen_ids in
-  let ctx, avoid = Classes.name_typeclass_binders bound ctx in
-  let ctx = List.append ctx (List.rev gen_ctx) in
+  let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, ctx', imps, subst = 
     let c = Command.generalize_constr_expr tclass ctx in
     let c', imps = interp_type_evars_impls ~evdref:isevars env c in
     let ctx, c = Sign.decompose_prod_assum c' in
-    let cl, args = Typeclasses.dest_class_app c in
-      cl, ctx, imps, (List.rev (Array.to_list args))
+    let cl, args = Typeclasses.dest_class_app (push_rel_context ctx env) c in
+      cl, ctx, imps, (List.rev args)
   in
   let id = 
     match snd instid with
@@ -166,7 +150,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
 	    try 
 	      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
 	      let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
-		Constrintern.add_glob loc (ConstRef (List.assoc mid k.cl_projs));
+		Option.iter (fun x -> Constrintern.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
 		c :: props, rest'
 	    with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
 	  ([], props) k.cl_props
@@ -186,10 +170,10 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(on_free_vars=Class
       let hook gr = 
 	let cst = match gr with ConstRef kn -> kn | _ -> assert false in
 	let inst = Typeclasses.new_instance k pri global cst in
-	  Impargs.declare_manual_implicits false gr false imps;
+	  Impargs.declare_manual_implicits false gr ~enriching:false imps;
 	  Typeclasses.add_instance inst
       in
       let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
       let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
-	ignore(Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls);
-	id
+	id, Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls
+	  

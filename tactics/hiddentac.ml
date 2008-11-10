@@ -40,7 +40,7 @@ let h_exact_no_check c =
 let h_vm_cast_no_check c = 
   abstract_tactic (TacVmCastNoCheck (inj_open c)) (vm_cast_no_check c)
 let h_apply simple ev cb    =
-  abstract_tactic (TacApply (simple,ev,List.map inj_open_wb cb))
+  abstract_tactic (TacApply (simple,ev,cb))
     (apply_with_ebindings_gen simple ev cb)
 let h_elim ev cb cbo    =
   abstract_tactic (TacElim (ev,inj_open_wb cb,Option.map inj_open_wb cbo))
@@ -71,7 +71,7 @@ let h_generalize_dep c =
   abstract_tactic (TacGeneralizeDep (inj_open c))(generalize_dep c)
 let h_let_tac b na c cl =
   let with_eq = if b then None else Some (true,(dummy_loc,IntroAnonymous)) in
-  abstract_tactic (TacLetTac (na,inj_open c,cl,b)) (letin_tac with_eq na c cl)
+  abstract_tactic (TacLetTac (na,inj_open c,cl,b)) (letin_tac with_eq na c None cl)
 let h_instantiate n c ido = 
 (Evar_tactics.instantiate n c ido)
   (* abstract_tactic (TacInstantiate (n,c,cls))
@@ -131,8 +131,8 @@ let h_symmetry c     = abstract_tactic (TacSymmetry c) (intros_symmetry c)
 let h_transitivity c =
   abstract_tactic (TacTransitivity (inj_open c)) (intros_transitivity c)
 
-let h_simplest_apply c  = h_apply false false [c,NoBindings]
-let h_simplest_eapply c = h_apply false true [c,NoBindings]
+let h_simplest_apply c  = h_apply false false [inj_open c,NoBindings]
+let h_simplest_eapply c = h_apply false true [inj_open c,NoBindings]
 let h_simplest_elim c   = h_elim false (c,NoBindings) None
 let h_simplest_case   c = h_case false (c,NoBindings)
 

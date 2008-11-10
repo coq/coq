@@ -90,6 +90,9 @@ GEXTEND Gram
       | IDENT "Go"; IDENT "next" -> VernacGo GoNext
       | IDENT "Guarded" -> VernacCheckGuard
 (* Hints for Auto and EAuto *)
+      | IDENT "Create"; local = locality; IDENT "HintDb" ; 
+	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
+	    VernacCreateHintDb (local, id, b)
       | IDENT "Hint"; local = locality; h = hint;
         dbnames = opt_hintbases ->
 	  VernacHints (local,dbnames, h)
@@ -106,11 +109,13 @@ GEXTEND Gram
   ;
   hint:
     [ [ IDENT "Resolve"; lc = LIST1 constr; n = OPT [ n = natural -> n ] -> 
-          HintsResolve (List.map (fun x -> (n, x)) lc)
+          HintsResolve (List.map (fun x -> (n, true, x)) lc)
       | IDENT "Immediate"; lc = LIST1 constr -> HintsImmediate lc
+      | IDENT "Transparent"; lc = LIST1 global -> HintsTransparency (lc, true)
+      | IDENT "Opaque"; lc = LIST1 global -> HintsTransparency (lc, false)
       | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
       | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
-      | IDENT "Extern"; n = natural; c = constr_pattern ; "=>";
+      | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
           tac = tactic ->
 	  HintsExtern (n,c,tac)
       | IDENT "Destruct"; 

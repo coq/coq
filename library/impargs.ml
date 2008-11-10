@@ -71,6 +71,7 @@ let make_maximal_implicit_args flag =
 
 let is_implicit_args () = !implicit_args.main
 let is_manual_implicit_args () = !implicit_args.manual
+let is_auto_implicit_args () = !implicit_args.main && not (is_manual_implicit_args ())
 let is_strict_implicit_args () = !implicit_args.strict
 let is_strongly_strict_implicit_args () = !implicit_args.strongly_strict
 let is_reversible_pattern_implicit_args () = !implicit_args.reversible_pattern
@@ -577,10 +578,11 @@ type manual_explicitation = Topconstr.explicitation * (bool * bool)
 let compute_implicits_with_manual env typ enriching l = 
   compute_manual_implicits env !implicit_args typ enriching l
 
-let declare_manual_implicits local ref enriching l =
+let declare_manual_implicits local ref ?enriching l =
   let flags = !implicit_args in
   let env = Global.env () in
   let t = Global.type_of_global ref in
+  let enriching = Option.default (is_auto_implicit_args ()) enriching in
   let l' = compute_manual_implicits env flags t enriching l in
   let req =
     if local or isVarRef ref then ImplLocal
@@ -588,9 +590,9 @@ let declare_manual_implicits local ref enriching l =
   in
     add_anonymous_leaf (inImplicits (req,[ref,l']))
 
-let maybe_declare_manual_implicits local ref enriching l =
+let maybe_declare_manual_implicits local ref ?enriching l =
   if l = [] then ()
-  else declare_manual_implicits local ref enriching l
+  else declare_manual_implicits local ref ?enriching l
 
 let lift_implicits n = 
   List.map (fun x -> 

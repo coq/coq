@@ -184,15 +184,15 @@ val bring_hyps : named_context -> tactic
 val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
 val apply_list            : constr list -> tactic
-
+  
 val apply_with_ebindings_gen : 
-  advanced_flag -> evars_flag -> constr with_ebindings list -> tactic
+  advanced_flag -> evars_flag -> open_constr with_ebindings list -> tactic
 
 val apply_with_bindings   : constr with_bindings -> tactic
 val eapply_with_bindings  : constr with_bindings -> tactic
 
-val apply_with_ebindings  : constr with_ebindings -> tactic
-val eapply_with_ebindings : constr with_ebindings -> tactic
+val apply_with_ebindings  : open_constr with_ebindings -> tactic
+val eapply_with_ebindings : open_constr with_ebindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
@@ -325,19 +325,19 @@ val simplest_split       : tactic
 (*s Logical connective tactics. *)
 
 val register_setoid_reflexivity : tactic -> unit
-val reflexivity_red             : bool -> tactic
+val reflexivity_red             : bool -> goal sigma -> tactic option
 val reflexivity                 : tactic
 val intros_reflexivity          : tactic
 
 val register_setoid_symmetry : tactic -> unit
-val symmetry_red                : bool -> tactic
+val symmetry_red                : bool -> goal sigma -> tactic option
 val symmetry                    : tactic
 val register_setoid_symmetry_in : (identifier -> tactic) -> unit
 val symmetry_in                 : identifier -> tactic
 val intros_symmetry             : clause -> tactic
 
 val register_setoid_transitivity : (constr -> tactic) -> unit
-val transitivity_red            : bool -> constr -> tactic
+val transitivity_red            : bool -> constr -> goal sigma -> tactic option
 val transitivity                : constr -> tactic
 val intros_transitivity         : constr -> tactic
 
@@ -350,7 +350,7 @@ val cut_in_parallel             : constr list -> tactic
 val assert_as : bool -> intro_pattern_expr located -> constr -> tactic
 val forward   : tactic option -> intro_pattern_expr located -> constr -> tactic
 val letin_tac : (bool * intro_pattern_expr located) option -> name -> 
-  constr -> clause -> tactic
+  constr -> types option -> clause -> tactic
 val true_cut                    : name -> constr -> tactic
 val assert_tac                  : bool -> name -> constr -> tactic
 val generalize      : constr list -> tactic
@@ -366,5 +366,7 @@ val admit_as_an_axiom : tactic
 
 val abstract_generalize : identifier -> ?generalize_vars:bool -> tactic
 
+val dependent_pattern : constr -> tactic
+
 val register_general_multi_rewrite : 
-  (bool -> evars_flag -> constr with_ebindings -> clause -> tactic) -> unit
+  (bool -> evars_flag -> open_constr with_bindings -> clause -> tactic) -> unit

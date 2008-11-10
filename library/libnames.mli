@@ -25,6 +25,7 @@ type global_reference =
 
 val isVarRef : global_reference -> bool
 
+val subst_constructor : substitution -> constructor -> constructor * constr
 val subst_global : substitution -> global_reference -> global_reference * constr
 
 (* Turn a global reference into a construction *)

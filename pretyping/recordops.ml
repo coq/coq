@@ -32,9 +32,9 @@ open Reductionops
    projection ou bien une fonction constante (associée à un LetIn) *)
 
 type struc_typ = {
-  s_CONST : identifier; 
+  s_CONST : constructor; 
   s_EXPECTEDPARAM : int;
-  s_PROJKIND : bool list;
+  s_PROJKIND : (name * bool) list;
   s_PROJ : constant option list }
 
 let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
@@ -61,8 +61,9 @@ let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) =
      (Option.smartmap (fun kn -> fst (subst_con subst kn)))
     projs
   in
-    if projs' == projs && kn' == kn then obj else
-      ((kn',i),id,kl,projs')
+  let id' = fst (subst_constructor subst id) in
+    if projs' == projs && kn' == kn && id' == id then obj else
+      ((kn',i),id',kl,projs')
 
 let discharge_structure (_,(ind,id,kl,projs)) =
   Some (Lib.discharge_inductive ind, id, kl,
@@ -86,6 +87,10 @@ let lookup_projections indsp = (lookup_structure indsp).s_PROJ
 
 let find_projection_nparams = function
   | ConstRef cst -> (Cmap.find cst !projection_table).s_EXPECTEDPARAM
+  | _ -> raise Not_found
+
+let find_projection = function
+  | ConstRef cst -> Cmap.find cst !projection_table
   | _ -> raise Not_found
 
 
@@ -135,7 +140,7 @@ let canonical_projections () =
     !object_table []
 
 let keep_true_projections projs kinds =
-  map_succeed (function (p,true) -> p | _ -> failwith "")
+  map_succeed (function (p,(_,true)) -> p | _ -> failwith "")
     (List.combine projs kinds)
 
 let cs_pattern_of_constr t =
@@ -237,7 +242,7 @@ let check_and_decompose_canonical_structure ref =
     | Construct (indsp,1) -> indsp
     | _ -> error_not_structure ref in
   let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
-  let ntrue_projs = List.length (List.filter (fun x -> x) s.s_PROJKIND) in
+  let ntrue_projs = List.length (List.filter (fun (_, x) -> x) s.s_PROJKIND) in
   if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
     error_not_structure ref;
   (sp,indsp)

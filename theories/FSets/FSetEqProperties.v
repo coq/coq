@@ -73,7 +73,7 @@ Qed.
 Lemma is_empty_equal_empty: is_empty s = equal s empty.
 Proof. 
 apply bool_1; split; intros.
-rewrite <- (empty_is_empty_1 (s:=empty)); auto with set.
+auto with set.
 rewrite <- is_empty_iff; auto with set.
 Qed.
   

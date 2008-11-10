@@ -15,9 +15,9 @@
 
 (* $Id$ *)
 
-(** The polymorphic identity function. *)
+(** The polymorphic identity function is defined in [Datatypes]. *)
 
-Definition id {A} := fun x : A => x.
+Implicit Arguments id [[A]].
 
 (** Function composition. *)
 

@@ -15,13 +15,12 @@
 
 (* $Id$ *)
 
+Set Manual Implicit Arguments.
+
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
 Require Import Coq.Relations.Relation_Definitions.
 Require Export Coq.Classes.RelationClasses.
-
-Set Implicit Arguments.
-Unset Strict Implicit.
 
 (** * Morphisms.
 
@@ -32,12 +31,8 @@ Unset Strict Implicit.
    The relation [R] will be instantiated by [respectful] and [A] by an arrow type 
    for usual morphisms. *)
 
-Class Morphism A (R : relation A) (m : A) : Prop :=
+Class Morphism {A} (R : relation A) (m : A) : Prop :=
   respect : R m m.
-
-(** We make the type implicit, it can be infered from the relations. *)
-
-Implicit Arguments Morphism [A].
 
 (** Respectful morphisms. *)
 
@@ -53,7 +48,7 @@ Definition respectful_hetero
 
 (** The non-dependent version is an instance where we forget dependencies. *)
 
-Definition respectful (A B : Type) 
+Definition respectful {A B : Type}
   (R : relation A) (R' : relation B) : relation (A -> B) :=
   Eval compute in @respectful_hetero A A (fun _ => B) (fun _ => B) R (fun _ _ => R').
 
@@ -75,13 +70,20 @@ Arguments Scope respectful [type_scope type_scope signature_scope signature_scop
 
 Open Local Scope signature_scope.
 
-(** Pointwise lifting is just respect with leibniz equality on the left. *)
+(** Dependent pointwise lifting of a relation on the range. *) 
 
-Definition pointwise_relation {A B : Type} (R : relation B) : relation (A -> B) := 
-  fun f g => forall x : A, R (f x) (g x).
+Definition forall_relation {A : Type} {B : A -> Type} (sig : Π a : A, relation (B a)) : relation (Π x : A, B x) :=
+  λ f g, Π a : A, sig a (f a) (g a).
+
+Arguments Scope forall_relation [type_scope type_scope signature_scope].
+
+(** Non-dependent pointwise lifting *)
+
+Definition pointwise_relation (A : Type) {B : Type} (R : relation B) : relation (A -> B) := 
+  Eval compute in forall_relation (B:=λ _, B) (λ _, R).
 
 Lemma pointwise_pointwise A B (R : relation B) : 
-  relation_equivalence (pointwise_relation R) (@eq A ==> R).
+  relation_equivalence (pointwise_relation A R) (@eq A ==> R).
 Proof. intros. split. simpl_relation. firstorder. Qed.
 
 (** We can build a PER on the Coq function space if we have PERs on the domain and
@@ -91,12 +93,14 @@ Hint Unfold Reflexive : core.
 Hint Unfold Symmetric : core.
 Hint Unfold Transitive : core.
 
+Typeclasses Opaque respectful pointwise_relation forall_relation.
+
 Program Instance respectful_per [ PER A (R : relation A), PER B (R' : relation B) ] : 
-  PER (A -> B) (R ==> R').
+  PER (R ==> R').
 
   Next Obligation.
   Proof with auto.
-    assert(R x0 x0). 
+    assert(R x0 x0).
     transitivity y0... symmetry...
     transitivity (y x0)...
   Qed.
@@ -153,8 +157,8 @@ Proof. firstorder. Qed.
 Instance iff_inverse_impl_subrelation : subrelation iff (inverse impl).
 Proof. firstorder. Qed.
 
-Instance pointwise_subrelation [ sub : subrelation A R R' ] :
-  subrelation (pointwise_relation (A:=B) R) (pointwise_relation R') | 4.
+Instance pointwise_subrelation A ((sub : subrelation B R R')) :
+  subrelation (pointwise_relation A R) (pointwise_relation A R') | 4.
 Proof. reduce. unfold pointwise_relation in *. apply sub. apply H. Qed.
 
 (** The complement of a relation conserves its morphisms. *)
@@ -307,7 +311,7 @@ Qed.
    to set different priorities in different hint bases and select a particular hint database for
    resolution of a type class constraint.*) 
 
-Class MorphismProxy A (R : relation A) (m : A) : Prop :=
+Class MorphismProxy {A} (R : relation A) (m : A) : Prop :=
   respect_proxy : R m m.
 
 Instance reflexive_morphism_proxy

@@ -471,12 +471,16 @@ let pr_lazy lz = if lz then str "lazy" else mt ()
 
 let pr_match_pattern pr_pat = function
   | Term a -> pr_pat a
-  | Subterm (None,a) -> str "context [" ++ pr_pat a ++ str "]"
-  | Subterm (Some id,a) ->
-      str "context " ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
+  | Subterm (b,None,a) -> (if b then str"appcontext [" else str "context [") ++ pr_pat a ++ str "]"
+  | Subterm (b,Some id,a) ->
+      (if b then str"appcontext " else str "context ") ++ pr_id id ++ str "[" ++ pr_pat a ++ str "]"
 
-let pr_match_hyps pr_pat (Hyp (nal,mp)) =
-  pr_lname nal ++ str ":" ++ pr_match_pattern pr_pat mp
+let pr_match_hyps pr_pat = function
+  | Hyp (nal,mp) ->
+      pr_lname nal ++ str ":" ++ pr_match_pattern pr_pat mp
+  | Def (nal,mv,mp) ->
+      pr_lname nal ++ str ":=" ++ pr_match_pattern pr_pat mv
+      ++ str ":" ++ pr_match_pattern pr_pat mp
 
 let pr_match_rule m pr pr_pat = function
   | Pat ([],mp,t) when m ->
@@ -804,10 +808,9 @@ and pr_atom1 = function
   | TacClearBody l ->
       hov 1 (str "clearbody" ++ spc () ++ prlist_with_sep spc pr_ident l)
   | TacMove (b,id1,id2) ->
-      (* Rem: only b = true is available for users *)
-      assert b;
       hov 1
-        (str "move" ++ brk (1,1) ++ pr_ident id1 ++ 
+        (str "move" ++ (if b then spc () ++ str"dependent" else mt ())
+	  ++ brk (1,1) ++ pr_ident id1 ++ 
 	 pr_move_location pr_ident id2)
   | TacRename l ->
       hov 1

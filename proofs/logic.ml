@@ -37,6 +37,7 @@ type refiner_error =
   | CannotApply of constr * constr
   | NotWellTyped of constr
   | NonLinearProof of constr
+  | MetaInType of constr
 
   (* Errors raised by the tactics *)
   | IntroNeedsProduct
@@ -57,6 +58,8 @@ let rec catchable_exception = function
 		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
 		   |CannotFindWellTypedAbstraction _
 		   |UnsolvableImplicit _)) -> true
+  | Typeclasses_errors.TypeClassError 
+      (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
   | _ -> false
 
 (* Tells if the refiner should check that the submitted rules do not
@@ -248,10 +251,10 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 *)
   match kind_of_term trm with
     | Meta _ ->
-        let conclty = nf_betaiota conclty in
-        if !check && occur_meta conclty then
-	  anomaly "refined called with a dependent meta";
-	(mk_goal hyps conclty)::goalacc, conclty
+	let conclty = nf_betaiota conclty in
+	  if !check && occur_meta conclty then
+	    raise (RefinerError (MetaInType conclty));
+	  (mk_goal hyps conclty)::goalacc, conclty
 
     | Cast (t,_, ty) ->
 	check_typability env sigma ty;

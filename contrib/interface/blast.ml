@@ -190,8 +190,7 @@ and e_my_find_search db_list local_db hdc concl =
                tclTHEN (unify_e_resolve (term,cl)) 
 		 (e_trivial_fail_db db_list local_db)
 	   | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
-	   | Extern tacast -> Auto.conclPattern concl 
-	       (Option.get p) tacast
+	   | Extern tacast -> Auto.conclPattern concl p tacast
        in 
        (free_try tac,fmt_autotactic t))
        (*i
@@ -406,8 +405,7 @@ and my_find_search db_list local_db hdc concl =
 		(unify_resolve st (term,cl)) 
 		(trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
-	  | Extern tacast -> 
-	      conclPattern concl (Option.get p) tacast))
+	  | Extern tacast -> conclPattern concl p tacast))
     tacl
 
 and trivial_resolve db_list local_db cl = 
@@ -473,7 +471,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	 let hintl = 
 	   try 
 	     [make_apply_entry (pf_env g') (project g')
-		(true,false) 
+		(true,true,false) 
 		None
 		(mkVar hid,htyp)]
 	   with Failure _ -> [] 
