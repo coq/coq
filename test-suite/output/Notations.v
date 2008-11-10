@@ -145,6 +145,8 @@ Check (false && I 3)%bool /\ I 6.
 (**********************************************************************)
 (* Check notations with several recursive patterns                    *)
 
+Open Scope Z_scope.
+
 Notation "[| x , y , .. , z ; a , b , .. , c |]" :=
   (pair (pair .. (pair x y) .. z) (pair .. (pair a b) .. c)).
 Check [|1,2,3;4,5,6|].

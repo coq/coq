@@ -99,3 +99,11 @@ Lemma depinv : forall a b, foo a b -> True.
 intros a b H.
 inversion H.
 Abort.
+
+(* Check non-regression of bug #1968 *)
+
+Inductive foo : option nat -> Prop := Foo : forall t, foo (Some t).
+Goal forall o, foo o -> 0 = 1.
+intros.
+eapply trans_eq. 
+inversion H.
