@@ -69,10 +69,10 @@ open Auto
 let e_give_exact flags c gl = 
   let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
     if occur_existential t1 or occur_existential t2 then 
-      tclTHEN (Clenvtac.unify (* ~flags *) t1) (exact_check c) gl
+      tclTHEN (Clenvtac.unify (* ~flags *) t1) (exact_no_check c) gl
     else exact_check c gl
 (*   let t1 = (pf_type_of gl c) in *)
-(*     tclTHEN (Clenvtac.unify ~flags t1) (exact_check c) gl *)
+(*     tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl *)
       
 let assumption flags id = e_give_exact flags (mkVar id)
 
@@ -752,24 +752,32 @@ let evd_convertible env evd x y =
   
 let decompose_setoid_eqhyp env sigma c left2right =
   let ctype = Typing.type_of env sigma c in
-  let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ctype) in
-  let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
-  let rec split_last_two = function
-    | [c1;c2] -> [],(c1, c2)
-    | x::y::z ->
-	let l,res = split_last_two (y::z) in x::l, res
-    | _ -> error "The term provided is not an applied relation." in
-  let others,(c1,c2) = split_last_two args in
-  let ty1, ty2 = 
-    Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
+  let find_rel ty = 
+    let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in
+    let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
+    let rec split_last_two = function
+      | [c1;c2] -> [],(c1, c2)
+      | x::y::z ->
+	  let l,res = split_last_two (y::z) in x::l, res
+      | _ -> error "The term provided is not an applied relation." in
+    let others,(c1,c2) = split_last_two args in
+    let ty1, ty2 = 
+      Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
+    in
+      if not (evd_convertible env eqclause.evd ty1 ty2) then None
+      else
+	Some { cl=eqclause; prf=(Clenv.clenv_value eqclause);
+	       car=ty1; rel=mkApp (equiv, Array.of_list others);
+	       l2r=left2right; c1=c1; c2=c2; c=Some c; abs=None }
   in
-    if not (evd_convertible env eqclause.evd ty1 ty2) then
-      error "The term does not end with an applied homogeneous relation."
-    else
-      { cl=eqclause; prf=(Clenv.clenv_value eqclause);
-	car=ty1; rel=mkApp (equiv, Array.of_list others);
-	l2r=left2right; c1=c1; c2=c2; c=Some c; abs=None }
-
+    match find_rel ctype with
+    | Some c -> c
+    | None -> 
+	let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
+	match find_rel (it_mkProd_or_LetIn t' ctx) with
+	| Some c -> c
+	| None -> error "The term does not end with an applied homogeneous relation."
+	    
 let rewrite_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
   Unification.use_metas_eagerly = true;
@@ -1506,7 +1514,8 @@ let add_morphism_infer m n =
 	    Command.start_proof instance_id kind instance 
 	      (fun _ -> function
 		  Libnames.ConstRef cst -> 
-		    add_instance (Typeclasses.new_instance (Lazy.force morphism_class) None false cst);
+		    add_instance (Typeclasses.new_instance 
+				     (Lazy.force morphism_class) None false cst);
 		    declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false);
 	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
@@ -1523,8 +1532,7 @@ let add_morphism binders m s n =
   in	  
   let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
     ignore(new_instance binders instance (CRecord (dummy_loc,None,[]))
-	      ~generalize:false ~tac ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst))
-	      None)
+	      ~generalize:false ~tac ~hook:(fun cst -> declare_projection n instance_id (ConstRef cst)) None)
 
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
