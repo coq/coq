@@ -91,7 +91,7 @@ Ltac clear_dups := repeat clear_dup.
 
 Ltac subst_no_fail :=
   repeat (match goal with 
-            [ H : ?X = ?Y |- _ ] => subst X || subst Y                  
+            [ H : ?X = ?Y |- _ ] => subst X || subst Y
           end).
 
 Tactic Notation "subst" "*" := subst_no_fail.
@@ -154,13 +154,15 @@ Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) "in" hyp(i
 
 (** Try to inject any potential constructor equality hypothesis. *)
 
-Ltac autoinjection :=
-  let tac H := progress (inversion H ; subst ; clear_dups) ; clear H in
-    match goal with
-      | [ H : ?f ?a = ?f' ?a' |- _ ] => tac H
-    end.
+Ltac autoinjection tac :=
+  match goal with
+    | [ H : ?f ?a = ?f' ?a' |- _ ] => tac H
+  end.
 
-Ltac autoinjections := repeat autoinjection.
+Ltac inject H :=
+  progress (inversion H ; subst* ; clear_dups) ; clear H.
+
+Ltac autoinjections := repeat autoinjection ltac:inject.
 
 (** Destruct an hypothesis by first copying it to avoid dependencies. *)
 

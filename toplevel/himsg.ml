@@ -500,7 +500,7 @@ let explain_no_instance env (_,id) l =
   str "applied to arguments" ++ spc () ++ 
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
-let pr_constraints env evm =
+let pr_constraints printenv env evm =
   let l = Evd.to_list evm in
   let (ev, evi) = List.hd l in
     if List.for_all (fun (ev', evi') ->
@@ -508,7 +508,7 @@ let pr_constraints env evm =
     then
       let pe = pr_ne_context_of (str "In environment:") (mt ()) 
 	(reset_with_named_context evi.evar_hyps env) in
-	pe ++ fnl () ++ 
+	(if printenv then pe ++ fnl () else mt ()) ++
 	  prlist_with_sep (fun () -> fnl ()) 
 	  (fun (ev, evi) -> str(string_of_existential ev)++ str " == " ++ pr_constr evi.evar_concl) l
     else
@@ -518,13 +518,13 @@ let explain_unsatisfiable_constraints env evd constr =
   let evm = Evd.evars_of evd in
   match constr with
   | None ->
-      str"Unable to satisfy the following typeclass constraints:" ++ fnl() ++
-	pr_constraints env evm
+      str"Unable to satisfy the following constraints:" ++ fnl() ++
+	pr_constraints true env evm
   | Some (evi, k) -> 
       explain_unsolvable_implicit env evi k None ++ fnl () ++
 	if List.length (Evd.to_list evm) > 1 then
-	  str"With the following meta variables:" ++ 
-	    fnl() ++ Evd.pr_evar_map evm 
+	  str"With the following constraints:" ++ fnl() ++ 
+	    pr_constraints false env evm
 	else mt ()
 	
 let explain_mismatched_contexts env c i j = 

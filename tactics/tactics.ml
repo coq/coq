@@ -1945,13 +1945,25 @@ let mkEq t x y =
 let mkRefl t x = 
   mkApp ((build_coq_eq_data ()).refl, [| t; x |])
 
-let mkHEq t x u y = 
+let mkHEq t x u y =
   mkApp (coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq",
 	[| t; x; u; y |])
     
-let mkHRefl t x = 
+let mkHRefl t x =
   mkApp (coq_constant "mkHEq" ["Logic";"JMeq"] "JMeq_refl",
 	[| t; x |])
+
+(* let id = lazy (coq_constant "mkHEq" ["Init";"Datatypes"] "id") *)
+
+(* let mkHEq t x u y =  *)
+(*   let ty = new_Type () in *)
+(*   mkApp (coq_constant "mkHEq" ["Logic";"EqdepFacts"] "eq_dep", *)
+(* 	[| ty; mkApp (Lazy.force id, [|ty|]); t; x; u; y |]) *)
+    
+(* let mkHRefl t x =  *)
+(*   let ty = new_Type () in *)
+(*   mkApp (coq_constant "mkHEq" ["Logic";"EqdepFacts"] "eq_dep_intro", *)
+(* 	[| ty; mkApp (Lazy.force id, [|ty|]); t; x |]) *)
 
 let mkCoe a x p px y eq = 
   mkApp (Option.get (build_coq_eq_data ()).rect, [| a; x; p; px; y; eq |])
@@ -1972,6 +1984,14 @@ let ids_of_constr vars c =
   let rec aux vars c = 
     match kind_of_term c with
     | Var id -> if List.mem id vars then vars else id :: vars
+    | App (f, args) -> 
+	(match kind_of_term f with
+	| Construct (ind,_) 
+	| Ind ind ->
+            let (mib,mip) = Global.lookup_inductive ind in
+	      array_fold_left_from mib.Declarations.mind_nparams 
+		aux vars args
+	| _ -> fold_constr aux vars c)
     | _ -> fold_constr aux vars c
   in aux vars c
 
@@ -2054,6 +2074,16 @@ let abstract_args gl id =
 		  let vars = ids_of_constr vars arg in
 		    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, vars, env)
 	in 
+	let f, args =
+	  match kind_of_term f with
+	  | Construct (ind,_) 
+	  | Ind ind ->
+              let (mib,mip) = Global.lookup_inductive ind in
+	      let first = mib.Declarations.mind_nparams in
+	      let pars, args = array_chop first args in
+		mkApp (f, pars), args
+	  | _ -> f, args
+	in
 	let arity, ctx, ctxenv, c', args, eqs, refls, vars, env = 
 	  Array.fold_left aux (pf_type_of gl f,[],env,f,[],[],[],[],env) args
 	in
@@ -2076,10 +2106,11 @@ let abstract_generalize id ?(generalize_vars=true) gl =
 	    else
 	      tclTHENLIST [refine newc; clear [id]; tclDO n intro]
 	  in 
-	    if generalize_vars then
-	      tclTHEN tac (tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars) gl
+	    if generalize_vars then tclTHEN tac 
+	      (tclFIRST [revert (List.rev vars) ;
+			 tclMAP (fun id -> tclTRY (generalize_dep (mkVar id))) vars]) gl
 	    else tac gl
-
+	      
 let occur_rel n c = 
   let res = not (noccurn n c) in
   res

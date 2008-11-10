@@ -224,7 +224,36 @@ Ltac do_simpl_IHs_eqs :=
 
 Ltac simpl_IHs_eqs := repeat do_simpl_IHs_eqs.
 
-Ltac simpl_depind := subst* ; autoinjections ; try discriminates ; 
+(** We split substitution tactics in the two directions depending on which 
+   names we want to keep corresponding to the generalization performed by the
+   [generalize_eqs] tactic. *)
+
+Ltac subst_left_no_fail :=
+  repeat (match goal with 
+            [ H : ?X = ?Y |- _ ] => subst X
+          end).
+
+Ltac subst_right_no_fail :=
+  repeat (match goal with 
+            [ H : ?X = ?Y |- _ ] => subst Y
+          end).
+
+Ltac inject_left H :=
+  progress (inversion H ; subst_left_no_fail ; clear_dups) ; clear H.
+
+Ltac inject_right H :=
+  progress (inversion H ; subst_right_no_fail ; clear_dups) ; clear H.
+
+Ltac autoinjections_left := repeat autoinjection ltac:inject_left.
+Ltac autoinjections_right := repeat autoinjection ltac:inject_right.
+
+Ltac simpl_depind := subst_no_fail ; autoinjections ; try discriminates ; 
+  simpl_JMeq ; simpl_existTs ; simpl_IHs_eqs.
+
+Ltac simpl_depind_l := subst_left_no_fail ; autoinjections_left ; try discriminates ; 
+  simpl_JMeq ; simpl_existTs ; simpl_IHs_eqs.
+
+Ltac simpl_depind_r := subst_right_no_fail ; autoinjections_right ; try discriminates ; 
   simpl_JMeq ; simpl_existTs ; simpl_IHs_eqs.
 
 (** The following tactics allow to do induction on an already instantiated inductive predicate
@@ -235,20 +264,21 @@ Ltac simpl_depind := subst* ; autoinjections ; try discriminates ;
    and starts a dependent induction using this tactic. *)
 
 Ltac do_depind tac H :=
-  generalize_eqs_vars H ; tac H ; repeat progress simpl_depind.
+  generalize_eqs_vars H ; tac H ; repeat progress simpl_depind_r ; subst_left_no_fail.
 
 (** A variant where generalized variables should be given by the user. *)
 
 Ltac do_depind' tac H :=
-  generalize_eqs H ; tac H ; repeat progress simpl_depind.
+  generalize_eqs H ; tac H ; repeat progress simpl_depind_l ; subst_right_no_fail.
 
-(** Calls [destruct] on the generalized hypothesis, results should be similar to inversion. *)
+(** Calls [destruct] on the generalized hypothesis, results should be similar to inversion.
+   By default, we don't try to generalize the hyp by its variable indices.  *)
 
 Tactic Notation "dependent" "destruction" ident(H) := 
-  do_depind ltac:(fun hyp => destruct hyp ; intros) H ; subst*.
+  do_depind' ltac:(fun hyp => destruct hyp ; intros) H.
 
 Tactic Notation "dependent" "destruction" ident(H) "using" constr(c) := 
-  do_depind ltac:(fun hyp => destruct hyp using c ; intros) H.
+  do_depind' ltac:(fun hyp => destruct hyp using c ; intros) H.
 
 (** This tactic also generalizes the goal by the given variables before the induction. *)
 
@@ -259,7 +289,8 @@ Tactic Notation "dependent" "destruction" ident(H) "generalizing" ne_hyp_list(l)
   do_depind' ltac:(fun hyp => revert l ; destruct hyp using c ; intros) H.
 
 (** Then we have wrappers for usual calls to induction. One can customize the induction tactic by 
-   writting another wrapper calling do_depind. *)
+   writting another wrapper calling do_depind. We suppose the hyp has to be generalized before
+   calling [induction]. *)
 
 Tactic Notation "dependent" "induction" ident(H) := 
   do_depind ltac:(fun hyp => induction hyp ; intros) H.
