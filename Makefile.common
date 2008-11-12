@@ -79,7 +79,7 @@ HEVEA:=hevea
 HEVEAOPTS:=-fix -exec xxdate.exe
 HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 export TEXINPUTS:=$(COQSRC)/doc:$(HEVEALIB):
-COQTEXOPTS:=-n 72 -image $(COQSRC)/$(COQTOPEXE) -v -sl -small
+COQTEXOPTS:=-n 72 -image "$(COQSRC)/$(COQTOPEXE) -boot" -v -sl -small
 
 DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex 
 
