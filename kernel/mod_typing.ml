@@ -258,11 +258,13 @@ and translate_module env me =
     | Some mexpr, _ -> 
 	let meb,sub1 = translate_struct_entry env mexpr in
 	let mod_typ,sub,cst =
-	  match me.mod_entry_type with
-	    | None ->  
+	  match me.mod_entry_type,meb with
+	    | None,SEBapply _ ->
+		Some (eval_struct env meb),sub1,Constraint.empty
+	    | None,_ ->  
 		(type_of_struct env (bounded_str_expr meb) meb)
 		  ,sub1,Constraint.empty
-	    | Some mte -> 
+	    | Some mte,_ -> 
 		let mtb2,sub2 = translate_struct_entry env mte in
                 let cst = check_subtypes env
 		  {typ_expr = meb;
