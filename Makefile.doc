@@ -47,7 +47,7 @@ rectutorial:\
 ### Implicit rules
 ######################################################################
 
-%.v.tex: %.tex | $(COQTEX) $(COQTOPEXE) coqlib
+%.v.tex: %.tex | $(COQTEX) $(COQTOPEXE) $(CONTRIBVO) $(CONTRIBCMO) $(THEORIESVO)
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
 
 %.ps: %.dvi
