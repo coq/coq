@@ -47,17 +47,17 @@ let clenv_cast_meta clenv =
 	    
   and crec_hd u =
     match kind_of_term (strip_outer_cast u) with
-      | Meta mv ->
-	  (match Evd.find_meta clenv.evd mv with
-	  | Clval (_,(body,_),_) -> body.rebus
-	  | Cltyp (_,typ) -> 
-	      if occur_meta typ.rebus then
-		raise (RefinerError (MetaInType typ.rebus));
-	      mkCast (mkMeta mv, DEFAULTcast, typ.rebus))
-      | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
-      | Case(ci,p,c,br) ->
-	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
-      | _ -> u
+    | Meta mv ->
+	(try 
+            let b = Typing.meta_type clenv.evd mv in
+	      if occur_meta b then
+		raise (RefinerError (MetaInType b));
+	      mkCast (mkMeta mv, DEFAULTcast, b)
+	  with Not_found -> u)
+    | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
+    | Case(ci,p,c,br) ->
+	mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
+    | _ -> u
   in 
   crec
 
