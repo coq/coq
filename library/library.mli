@@ -76,6 +76,7 @@ type library_location = LibLoaded | LibInPath
 
 val locate_qualified_library :
   bool -> qualid -> library_location * dir_path * System.physical_path
+val try_locate_qualified_library : qualid located -> dir_path * string
 
 (*s Statistics: display the memory use of a library. *)
 val mem : dir_path -> Pp.std_ppcmds

@@ -26,6 +26,3 @@ val interp_modtype : env -> module_type_ast -> module_struct_entry
 val interp_modexpr : env -> module_ast -> module_struct_entry
 
 val lookup_module : qualid located -> module_path
-
-val dump_moddef : loc -> module_path -> string -> unit
-val dump_modref : loc -> module_path -> string -> unit

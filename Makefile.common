@@ -177,7 +177,7 @@ PRETYPING:=\
 
 INTERP:=\
   parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo \
-  interp/notation.cmo \
+  interp/notation.cmo interp/dumpglob.cmo \
   interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
   library/impargs.cmo interp/implicit_quantifiers.cmo interp/constrintern.cmo \
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
@@ -508,7 +508,7 @@ PRINTERSCMO:=\
   pretyping/unification.cmo pretyping/cases.cmo \
   pretyping/pretyping.cmo pretyping/clenv.cmo pretyping/pattern.cmo \
   parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
-  interp/topconstr.cmo interp/notation.cmo interp/reserve.cmo		\
+  interp/topconstr.cmo interp/notation.cmo  interp/dumpglob.cmo interp/reserve.cmo		\
   library/impargs.cmo interp/constrextern.cmo \
   interp/syntax_def.cmo interp/implicit_quantifiers.cmo \
   interp/constrintern.cmo proofs/proof_trees.cmo proofs/tacexpr.cmo \

@@ -541,7 +541,7 @@ let add_hints local dbnames0 h =
             (str "Cannot coerce" ++ spc () ++ pr_global gr ++ spc () ++
              str "to an evaluable reference.")
         in
-	  if !Flags.dump then Constrintern.add_glob (loc_of_reference r) gr;
+	  Dumpglob.add_glob (loc_of_reference r) gr;
 	 (gr,r') in
       add_unfolds (List.map f lhints) local dbnames
  | HintsTransparency (lhints, b) ->
@@ -555,7 +555,7 @@ let add_hints local dbnames0 h =
             (str "Cannot coerce" ++ spc () ++ pr_global gr ++ spc () ++
              str "to an evaluable reference.")
         in
-	  if !Flags.dump then Constrintern.add_glob (loc_of_reference r) gr;
+	  Dumpglob.add_glob (loc_of_reference r) gr;
 	  r' in
       add_transparency (List.map f lhints) b local dbnames
   | HintsConstructors lqid ->

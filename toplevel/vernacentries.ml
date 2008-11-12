@@ -277,7 +277,7 @@ let print_located_module r =
 
 let global_with_alias r =
   let gr = global_with_alias r in
-    if !Flags.dump then Constrintern.add_glob (loc_of_reference r) gr;
+    Dumpglob.add_glob (loc_of_reference r) gr;
     gr
 
 (**********)
@@ -307,49 +307,31 @@ let start_proof_and_print k l hook =
   print_subgoals ();
   if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
-let current_dirpath sec =
-  drop_dirpath_prefix (Lib.library_dp ()) 
-    (if sec then Lib.cwd () 
-      else extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ()))
-    
-let dump_definition (loc, id) sec s =
-  Flags.dump_string (Printf.sprintf "%s %d %s %s\n" s (fst (unloc loc)) 
-			(string_of_dirpath (current_dirpath sec)) (string_of_id id))
-    
-let dump_reference loc modpath ident ty =
-  dump_string (Printf.sprintf "R%d %s %s %s %s\n" 
-		  (fst (unloc loc)) (string_of_dirpath (Lib.library_dp ())) modpath ident ty)
-
-let dump_constraint ((loc, n), _, _) sec ty =
-  match n with
-    | Name id -> dump_definition (loc, id) sec ty
-    | Anonymous -> ()
-
-let vernac_definition (local,_,_ as k) (_,id as lid) def hook =
-  if !Flags.dump then dump_definition lid false "def";
-  match def with
-  | ProveBody (bl,t) ->   (* local binders, typ *)
-      if Lib.is_modtype () then
-	errorlabstrm "Vernacentries.VernacDefinition"
-	  (str "Proof editing mode not supported in module types.")
-      else
-	let hook _ _ = () in
-	start_proof_and_print (local,DefinitionBody Definition)
-                             [Some lid,(bl,t)] hook
-  | DefineBody (bl,red_option,c,typ_opt) ->
-      let red_option = match red_option with
-        | None -> None
-        | Some r -> 
-	    let (evc,env)= Command.get_current_context () in
-	    Some (interp_redexp env evc r) in
-      declare_definition id k bl red_option c typ_opt hook
-
+let vernac_definition (local,_,_ as k) (loc,id as lid) def hook =
+  Dumpglob.dump_definition lid false "def";
+  (match def with
+    | ProveBody (bl,t) ->   (* local binders, typ *)
+ 	if Lib.is_modtype () then
+ 	  errorlabstrm "Vernacentries.VernacDefinition"
+ 	    (str "Proof editing mode not supported in module types")
+ 	else
+ 	  let hook _ _ = () in
+ 	    start_proof_and_print (local,DefinitionBody Definition) 
+	      [Some lid, (bl,t)] hook
+    | DefineBody (bl,red_option,c,typ_opt) ->
+ 	let red_option = match red_option with
+          | None -> None
+          | Some r -> 
+ 	      let (evc,env)= Command.get_current_context () in
+ 		Some (interp_redexp env evc r) in
+ 	  declare_definition id k bl red_option c typ_opt hook)
+ 	      
 let vernac_start_proof kind l lettop hook =
-  if !Flags.dump then
+  if Dumpglob.dump () then
     List.iter (fun (id, _) -> 
       match id with
-      | Some lid -> dump_definition lid false "prf"
-      | None -> ()) l;
+	| Some lid -> Dumpglob.dump_definition lid false "prf"
+	| None -> ()) l;
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
@@ -383,18 +365,18 @@ let vernac_exact_proof c =
   	
 let vernac_assumption kind l nl=
   let global = fst kind = Global in
-  List.iter (fun (is_coe,(idl,c)) -> 
-    if !dump then
-      List.iter (fun lid -> 
-	if global then dump_definition lid false "ax" 
-	else dump_definition lid true "var") idl;
-    declare_assumption idl is_coe kind [] c false false nl) l
-	  
+    List.iter (fun (is_coe,(idl,c)) -> 
+      if Dumpglob.dump () then
+	List.iter (fun lid -> 
+	  if global then Dumpglob.dump_definition lid false "ax" 
+	  else Dumpglob.dump_definition lid true "var") idl;
+      declare_assumption idl is_coe kind [] c false false nl) l
+      
 let vernac_record finite struc binders sort nameopt cfs =
   let const = match nameopt with 
     | None -> add_prefix "Build_" (snd (snd struc))
     | Some (_,id as lid) ->
-	if !dump then dump_definition lid false "constr"; id in
+	if Dumpglob.dump () then Dumpglob.dump_definition lid false "constr"; id in
   let sigma = Evd.empty in
   let env = Global.env() in
   let s = interp_constr sigma env sort in
@@ -403,24 +385,25 @@ let vernac_record finite struc binders sort nameopt cfs =
     | Sort s -> s
     | _ -> user_err_loc
         (constr_loc sort,"definition_structure", str "Sort expected.") in
-    if !dump then (
-      dump_definition (snd struc) false "rec";
-      List.iter (fun ((_, x), _) ->
-	match x with
-	| AssumExpr ((loc, Name id), _) -> dump_definition (loc,id) false "proj"
-	| _ -> ()) cfs);
+    if Dumpglob.dump () then (
+	Dumpglob.dump_definition (snd struc) false "rec";
+	List.iter (fun ((_, x), _) ->
+	  match x with
+	    | AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
+	    | _ -> ()) cfs);
     ignore(Record.definition_structure (finite,struc,binders,cfs,const,s))
 
+
 let vernac_inductive finite indl = 
-  if !dump then
+  if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, cstrs), _) ->
       match cstrs with 
       | Constructors cstrs ->
-	  dump_definition lid false"ind";
+	  Dumpglob.dump_definition lid false"ind";
 	  List.iter (fun (_, (lid, _)) ->
-	    dump_definition lid false "constr") cstrs
+	    Dumpglob.dump_definition lid false "constr") cstrs
       | _ -> () (* dumping is done by vernac_record (called below) *) )
-      indl;
+    indl;
   match indl with
     | [ ( id , bl , c ,RecordDecl (oc,fs) ), None ] -> 
         vernac_record finite (false,id) bl c oc fs
@@ -434,11 +417,13 @@ let vernac_inductive finite indl =
       Command.build_mutual indl finite
 
 let vernac_fixpoint l b = 
-  List.iter (fun ((lid, _, _, _, _), _) -> dump_definition lid false "def") l;
+  if Dumpglob.dump () then
+    List.iter (fun ((lid, _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   build_recursive l b
 
 let vernac_cofixpoint l b =
-  List.iter (fun ((lid, _, _, _), _) -> dump_definition lid false "def") l;
+  if Dumpglob.dump () then
+    List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   build_corecursive l b
 
 let vernac_scheme = build_scheme
@@ -449,9 +434,11 @@ let vernac_combined_scheme = build_combined_scheme
 (* Modules            *)
 
 let vernac_import export refl =
-  let import ref = Library.import_module export (qualid_of_reference ref) in
-  List.iter import refl;
-  Lib.add_frozen_state ()
+  let import ref = 
+    Library.import_module export (qualid_of_reference ref)
+  in
+    List.iter import refl;
+    Lib.add_frozen_state ()
 
 let vernac_declare_module export (loc, id) binders_ast mty_ast_o = 
   (* We check the state of the system (in section, in module type)
@@ -469,9 +456,9 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast_o =
     Modintern.interp_modtype Modintern.interp_modexpr
     id binders_ast (Some mty_ast_o) None
   in 
-  Modintern.dump_moddef loc mp "mod";
-  if_verbose message ("Module "^ string_of_id id ^" is declared");
-  Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+    Dumpglob.dump_moddef loc mp "mod";
+    if_verbose message ("Module "^ string_of_id id ^" is declared");
+    Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o = 
   (* We check the state of the system (in section, in module type)
@@ -489,7 +476,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
        let mp = Declaremods.start_module Modintern.interp_modtype export
 	 id binders_ast mty_ast_o 
        in
-	 Modintern.dump_moddef loc mp "mod";
+	 Dumpglob.dump_moddef loc mp "mod";
 	 if_verbose message 
 	   ("Interactive Module "^ string_of_id id ^" started") ;
          List.iter
@@ -509,7 +496,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
 	  Modintern.interp_modtype Modintern.interp_modexpr
 	  id binders_ast mty_ast_o mexpr_ast_o 
        in
-	 Modintern.dump_moddef loc mp "mod";
+	 Dumpglob.dump_moddef loc mp "mod";
 	 if_verbose message 
 	   ("Module "^ string_of_id id ^" is defined");
          Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
@@ -517,9 +504,9 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_o =
 
 let vernac_end_module export (loc,id) =
   let mp = Declaremods.end_module id in
-  Modintern.dump_modref loc mp "mod";
-  if_verbose message ("Module "^ string_of_id id ^" is defined") ;
-  Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+    Dumpglob.dump_modref loc mp "mod";
+    if_verbose message ("Module "^ string_of_id id ^" is defined") ;
+    Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 
 let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
@@ -535,7 +522,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
            (idl,ty)::args, List.map (fun (_,i) -> export,i) idl) binders_ast
              ([],[]) in
        let mp = Declaremods.start_modtype Modintern.interp_modtype id binders_ast in
-        Modintern.dump_moddef loc mp "modtype";
+        Dumpglob.dump_moddef loc mp "modtype";
 	if_verbose message 
 	  ("Interactive Module Type "^ string_of_id id ^" started");
         List.iter
@@ -545,25 +532,25 @@ let vernac_declare_module_type (loc,id) binders_ast mty_ast_o =
          ) argsexport
 	  
     | Some base_mty ->
-       let binders_ast = List.map
-        (fun (export,idl,ty) ->
-          if export <> None then
-           error ("Arguments of a functor definition can be imported only if" ^
-                  " the definition is interactive. Remove the \"Export\" " ^
-                  "and \"Import\" keywords from every functor argument.")
-          else (idl,ty)) binders_ast in
-       let mp = Declaremods.declare_modtype Modintern.interp_modtype 
+	let binders_ast = List.map
+          (fun (export,idl,ty) ->
+            if export <> None then
+              error ("Arguments of a functor definition can be imported only if" ^
+			" the definition is interactive. Remove the \"Export\" " ^
+			"and \"Import\" keywords from every functor argument.")
+            else (idl,ty)) binders_ast in
+	let mp = Declaremods.declare_modtype Modintern.interp_modtype 
 	  id binders_ast base_mty in
-        Modintern.dump_moddef loc mp "modtype";
-	if_verbose message 
-	  ("Module Type "^ string_of_id id ^" is defined")
+          Dumpglob.dump_moddef loc mp "modtype";
+	  if_verbose message 
+	    ("Module Type "^ string_of_id id ^" is defined")
 
 
 let vernac_end_modtype (loc,id) =
   let mp = Declaremods.end_modtype id in
-  Modintern.dump_modref loc mp "modtype";
-  if_verbose message 
-    ("Module Type "^ string_of_id id ^" is defined")
+    Dumpglob.dump_modref loc mp "modtype";
+    if_verbose message 
+      ("Module Type "^ string_of_id id ^" is defined")
 
 let vernac_include = function
   | CIMTE mty_ast ->
@@ -580,13 +567,13 @@ let vernac_include = function
 
 let vernac_begin_section (_, id as lid) =
   check_no_pending_proofs ();
-  if !Flags.dump then dump_definition lid true "sec";
+  Dumpglob.dump_definition lid true "sec";
   Lib.open_section id
 
 let vernac_end_section (loc, id) = 
-  if !Flags.dump then 
-    dump_reference loc 
-      (string_of_dirpath (current_dirpath true)) "<>" "sec";
+  
+    Dumpglob.dump_reference loc 
+      (string_of_dirpath (Lib.current_dirpath true)) "<>" "sec";
   Lib.close_section id
 
 let vernac_end_segment lid =
@@ -601,7 +588,11 @@ let vernac_end_segment lid =
 
 let vernac_require import _ qidl =
   let qidl = List.map qualid_of_reference qidl in
-  Library.require_library qidl import
+  let modrefl = List.map Library.try_locate_qualified_library qidl in
+(*   let modrefl = List.map (fun qid -> let (dp, _) = (Library.try_locate_qualified_library qid) in dp) qidl in *)
+    if Dumpglob.dump () then
+      List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref loc dp "lib") qidl (List.map fst modrefl);
+    Library.require_library qidl import
 
 let vernac_canonical r =
   Recordops.declare_canonical_structure (global_with_alias r)
@@ -620,20 +611,21 @@ let vernac_identity_coercion stre id qids qidt =
 
 (* Type classes *)
 let vernac_class id par ar sup props =
-  if !dump then (
-    dump_definition id false "class";
-    List.iter (fun (lid, _, _) -> dump_definition lid false "meth") props);
+  if Dumpglob.dump () then (
+      Dumpglob.dump_definition id false "class";
+      List.iter (fun (lid, _, _) -> Dumpglob.dump_definition lid false "meth") props);
   Classes.new_class id par ar sup props
  
 let vernac_instance glob sup inst props pri =
-  if !dump then dump_constraint inst false "inst";
+  Dumpglob.dump_constraint inst false "inst";
   ignore(Classes.new_instance ~global:glob sup inst props pri)
 
 let vernac_context l =
+  List.iter (fun x -> Dumpglob.dump_local_binder x true "var") l;
   Classes.context l
 
 let vernac_declare_instance id =
-  if !dump then dump_definition id false "inst";
+  Dumpglob.dump_definition id false "inst";
   Classes.declare_instance false id
 
 (***********)
@@ -771,7 +763,7 @@ let vernac_create_hintdb local id b =
 let vernac_hints = Auto.add_hints
 
 let vernac_syntactic_definition lid =
-  dump_definition lid false "syndef";
+  Dumpglob.dump_definition lid false "syndef";
   Command.syntax_definition (snd lid)
   
 let vernac_declare_implicits local r = function

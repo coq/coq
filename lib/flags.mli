@@ -57,12 +57,6 @@ val print_hyps_limit : unit -> int option
 val add_unsafe : string -> unit
 val is_unsafe : string -> bool
 
-(* Dump of globalization (to be used by coqdoc) *)
-
-val dump : bool ref
-val dump_into_file : string -> unit
-val dump_string : string -> unit
-
 (* Options for the virtual machine *)
 
 val set_boxed_definitions : bool -> unit

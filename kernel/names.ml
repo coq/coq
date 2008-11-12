@@ -86,6 +86,7 @@ type label = string
 
 type mod_self_id = uniq_ident
 let make_msid = make_uid
+let repr_msid (n, id, dp) = (n, id, dp)
 let debug_string_of_msid = debug_string_of_uid
 let refresh_msid (_,s,dir) = make_uid dir s
 let string_of_msid = string_of_uid
@@ -94,6 +95,7 @@ let label_of_msid (_,s,_) = s
 
 type mod_bound_id = uniq_ident
 let make_mbid = make_uid
+let repr_mbid (n, id, dp) = (n, id, dp)
 let debug_string_of_mbid = debug_string_of_uid
 let string_of_mbid = string_of_uid
 let id_of_mbid (_,s,_) = s
@@ -122,7 +124,7 @@ let rec check_bound_mp = function
   | _ -> false
 
 let rec string_of_mp = function
-  | MPfile sl -> string_of_dirpath sl
+  | MPfile sl -> "MPfile (" ^ string_of_dirpath sl ^ ")"
   | MPbound uid -> string_of_uid uid
   | MPself uid -> string_of_uid uid
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l

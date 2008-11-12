@@ -880,6 +880,10 @@ let rec list_cartesian_filter op l1 l2 =
 let rec list_cartesians_filter op init ll = 
   List.fold_right (list_cartesian_filter op) ll [init]
 
+(* Drop the last element of a list *)
+
+let rec list_drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> hd :: list_drop_last tl
+
 (* Arrays *)
 
 let array_exists f v = 

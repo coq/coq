@@ -110,11 +110,11 @@ let add_compile verbose s =
   compile_list := (verbose,s) :: !compile_list
 let compile_files () =
   let init_state = States.freeze() in
-  let coqdoc_init_state = Constrintern.coqdoc_freeze () in
+  let coqdoc_init_state = Dumpglob.coqdoc_freeze () in
     List.iter
       (fun (v,f) ->
 	 States.unfreeze init_state;
-	 Constrintern.coqdoc_unfreeze coqdoc_init_state;
+	 Dumpglob.coqdoc_unfreeze coqdoc_init_state;
 	 if Flags.do_translate () then
 	   with_option translate_file (Vernac.compile v) f
 	 else
@@ -177,8 +177,10 @@ let usage () =
 
 let warning s = msg_warning (str s)
 
+
 let ide_args = ref []
 let parse_args is_ide =
+  let glob_opt = ref false in
   let rec parse = function
     | [] -> ()
     | "-with-geoproof" :: s :: rem -> 
@@ -240,16 +242,20 @@ let parse_args is_ide =
     | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
     | "-load-vernac-object" :: []       -> usage ()
 
-    | "-dump-glob" :: f :: rem -> dump_into_file f; parse rem
+    | "-dump-glob" :: "stdout" :: rem -> Dumpglob.dump_to_stdout (); glob_opt := true; parse rem
+	  (* À ne pas documenter : l'option 'stdout' n'étant
+	     éventuellement utile que pour le debugging... *)
+    | "-dump-glob" :: f :: rem -> Dumpglob.dump_into_file f; glob_opt := true; parse rem
     | "-dump-glob" :: []       -> usage ()
+    | ("-no-glob" | "-noglob") :: rem -> Dumpglob.noglob (); glob_opt := true; parse rem
 
     | "-require" :: f :: rem -> add_require f; parse rem
     | "-require" :: []       -> usage ()
 
-    | "-compile" :: f :: rem -> add_compile false f; parse rem
+    | "-compile" :: f :: rem -> add_compile false f; if not !glob_opt then Dumpglob.dump_to_dotglob (); parse rem
     | "-compile" :: []       -> usage ()
 
-    | "-compile-verbose" :: f :: rem -> add_compile true f; parse rem
+    | "-compile-verbose" :: f :: rem -> add_compile true f;  if not !glob_opt then Dumpglob.dump_to_dotglob (); parse rem
     | "-compile-verbose" :: []       -> usage ()
 
     | "-dont-load-proofs" :: rem -> Flags.dont_load_proofs := true; parse rem
@@ -265,7 +271,7 @@ let parse_args is_ide =
     | "-emacs" :: rem -> Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
     | "-emacs-U" :: rem -> Flags.print_emacs := true; 
 	Flags.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
-	
+	    
     | "-unicode" :: rem -> Flags.unicode_syntax := true; parse rem
 
     | "-where" :: _ -> print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0

@@ -126,7 +126,7 @@ let rec vernac_com interpfun (loc,com) =
         let cl = !Pp.comments in
         (* end translator state *)
         (* coqdoc state *)
-        let cds = Constrintern.coqdoc_freeze() in
+        let cds = Dumpglob.coqdoc_freeze() in
           if !Flags.translate_file then 
 	    begin
               let _,f = find_file_in_path (Library.get_load_paths ())
@@ -141,13 +141,13 @@ let rec vernac_com interpfun (loc,com) =
               chan_translate := ch;
               Lexer.restore_com_state cs;
               Pp.comments := cl;
-              Constrintern.coqdoc_unfreeze cds
+              Dumpglob.coqdoc_unfreeze cds
 	    with e -> 
 	      if !Flags.translate_file then close_out !chan_translate;
               chan_translate := ch;
               Lexer.restore_com_state cs;
               Pp.comments := cl;
-              Constrintern.coqdoc_unfreeze cds;
+              Dumpglob.coqdoc_unfreeze cds;
 	      raise e
 	  end
 	      
@@ -226,11 +226,14 @@ let load_vernac verb file =
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
   let ldir,long_f_dot_v = Library.start_library f in
-  if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-  if !Flags.xml_export then !xml_start_library ();
-  let _ = load_vernac verbosely long_f_dot_v in
-  if Pfedit.get_all_proof_names () <> [] then
-    (message "Error: There are pending proofs"; exit 1);
-  if !Flags.xml_export then !xml_end_library ();
-  Library.save_library_to ldir (long_f_dot_v ^ "o")
+    if Dumpglob.multi_dump () then 
+      Dumpglob.open_glob_file (f ^ ".glob");
+    Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
+    if !Flags.xml_export then !xml_start_library ();
+    let _ = load_vernac verbosely long_f_dot_v in
+     if Pfedit.get_all_proof_names () <> [] then
+	(message "Error: There are pending proofs"; exit 1);
+      if !Flags.xml_export then !xml_end_library ();
+      if Dumpglob.multi_dump () then Dumpglob.close_glob_file ();
+      Library.save_library_to ldir (long_f_dot_v ^ "o")
 

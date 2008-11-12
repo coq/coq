@@ -979,3 +979,10 @@ type module_type_ast =
 type include_ast =
   | CIMTE of module_type_ast
   | CIME of module_ast
+
+let loc_of_notation f loc args ntn =
+  if args=[] or ntn.[0] <> '_' then fst (Util.unloc loc)
+  else snd (Util.unloc (f (List.hd args)))
+
+let ntn_loc = loc_of_notation constr_loc
+let patntn_loc = loc_of_notation cases_pattern_expr_loc

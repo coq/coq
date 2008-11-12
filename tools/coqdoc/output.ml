@@ -434,17 +434,14 @@ module Html = struct
   let stop_verbatim () = printf "</pre>\n"
 
   let module_ref m s = 
-    printf "<a class=\"modref\" href=\"%s.html\">" m; raw_ident s; printf "</a>"
-    (*i
     match find_module m with
-    | Local ->
-	printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
-    | Coqlib when !externals ->
-	let m = Filename.concat !coqlib m in
-	printf "<a href=\"%s.html\">" m; raw_ident s; printf "</a>"
-    | Coqlib | Unknown ->
-	raw_ident s
-    i*)
+      | Local ->
+	  printf "<a class=\"modref\" href=\"%s.html\">" m; raw_ident s; printf "</a>"
+      | Coqlib when !externals ->
+	  let m = Filename.concat !coqlib m in
+	    printf "<a class=\"modref\" href=\"%s.html\">" m; raw_ident s; printf "</a>"
+      | Coqlib | Unknown ->
+	  raw_ident s
 
   let ident_ref m fid typ s =
     match find_module m with
@@ -465,6 +462,7 @@ module Html = struct
       printf "</div>"
     end else 
       begin
+	Printf.eprintf "DEBUG: looking for (%s, %d)\n" !current_module loc;
 	try
 	  (match Index.find !current_module loc with
 	     | Def (fullid,ty) -> 

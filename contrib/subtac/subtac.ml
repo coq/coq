@@ -105,7 +105,8 @@ let declare_assumption env isevars idl is_coe k bl c nl =
 	(str "Cannot declare an assumption while in proof editing mode.")
 
 let dump_definition (loc, id) b s =
-  Flags.dump_string (Printf.sprintf "%s %d %s\n" s (fst (unloc loc)) (string_of_id id))
+  Dumpglob.dump_string (Printf.sprintf "%s %d %s\n" s (fst (unloc loc)) 
+			   (string_of_id id))
 
 let dump_constraint ty ((loc, n), _, _) =
   match n with
@@ -117,7 +118,7 @@ let dump_variable lid = ()
 let vernac_assumption env isevars kind l nl =
   let global = fst kind = Global in
     List.iter (fun (is_coe,(idl,c)) -> 
-      if !Flags.dump then
+      if Dumpglob.dump () then
 	List.iter (fun lid -> 
 	  if global then dump_definition lid (not global) "ax"
 	  else dump_variable lid) idl;
@@ -137,7 +138,7 @@ let subtac (loc, command) =
   match command with
   | VernacDefinition (defkind, (_, id as lid), expr, hook) -> 
       check_fresh lid;
-      if !Flags.dump then dump_definition lid false "def";
+      dump_definition lid false "def";
       (match expr with
       | ProveBody (bl, t) -> 
 	  if Lib.is_modtype () then
@@ -150,12 +151,12 @@ let subtac (loc, command) =
   | VernacFixpoint (l, b) -> 
       List.iter (fun ((lid, _, _, _, _), _) -> 
 	check_fresh lid;
-	if !Flags.dump then dump_definition lid false "fix") l;
+	dump_definition lid false "fix") l;
       let _ = trace (str "Building fixpoint") in
 	ignore(Subtac_command.build_recursive l b)
 	  
   | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
-      if !Flags.dump then dump_definition id false "prf";
+      dump_definition id "prf";
       if not(Pfedit.refining ()) then
 	if lettop then
 	  errorlabstrm "Subtac_command.StartProof"
@@ -170,11 +171,11 @@ let subtac (loc, command) =
       vernac_assumption env isevars stre l nl
 	
   | VernacInstance (glob, sup, is, props, pri) ->
-      if !Flags.dump then dump_constraint "inst" is;
+      dump_constraint "inst" is;
       ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
 	
   | VernacCoFixpoint (l, b) ->
-      if !Flags.dump then 
+      if Dumpglob.dump () then 
 	List.iter (fun ((lid, _, _, _), _) -> dump_definition lid false "cofix") l;
       ignore(Subtac_command.build_corecursive l b)
 	
