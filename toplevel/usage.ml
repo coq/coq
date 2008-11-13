@@ -49,6 +49,7 @@ let print_usage_channel co command =
   -byte                  run the bytecode version of Coq
 
   -where                 print Coq's standard library location and exit
+  -config                print Coq's configuration information and exit
   -v                     print Coq version and exit
 
   -q                     skip loading of rcfile
@@ -84,3 +85,17 @@ options are:
   -bindir   override the default directory where coqc looks for coqtop
   -image f  specify an alternative executable for Coq
   -t        keep temporary files\n\n"
+
+(* Print the configuration information *)
+
+let print_config () = 
+  if Coq_config.local then Printf.printf "LOCAL=1\n" else Printf.printf "LOCAL=0\n";
+  Printf.printf "COQBIN=%s/\n" Coq_config.bindir;
+  Printf.printf "COQLIB=%s/\n" Coq_config.coqlib;
+  Printf.printf "COQTOP=%s/\n" Coq_config.coqtop;
+  Printf.printf "CAMLBIN=%s/\n" Coq_config.camldir;
+  Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
+  Printf.printf "CAMLP4LIB=%s\n" Coq_config.camlp4lib
+
+
+

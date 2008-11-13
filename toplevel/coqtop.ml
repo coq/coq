@@ -276,6 +276,8 @@ let parse_args is_ide =
 
     | "-where" :: _ -> print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0
 
+    | ("-config"|"--config") :: _ -> Usage.print_config (); exit 0
+
     | ("-quiet"|"-silent") :: rem -> Flags.make_silent true; parse rem
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()

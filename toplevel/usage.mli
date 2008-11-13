@@ -18,3 +18,6 @@ val print_usage : string -> unit
 (*s Prints the usage on the error output. *)
 val print_usage_coqtop : unit -> unit
 val print_usage_coqc : unit -> unit
+
+(*s Prints the configuration information *)
+val print_config : unit -> unit

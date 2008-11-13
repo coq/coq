@@ -89,6 +89,8 @@ let is_genrule r =
       Str.string_match genrule r 0
 
 let standard sds sps =
+  print "Makefile.config:\n";
+  print "\t$(COQBIN)/coqtop -config > $@\n\n";
   print "byte:\n";
   print "\t$(MAKE) all \"OPT:=-byte\"\n\n";
   print "opt:\n";
@@ -113,9 +115,9 @@ let standard sds sps =
     print "\n";
   end;
   print "clean:\n";
-  print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) *~\n";
+  print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) $(MLFILES:.ml=.cmo) $(MLFILES:.ml=.cmx) *~\n";
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
-         $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d)\n";
+         $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d) Makefile.config\n";
   if !some_mlfile then
     print "\trm -f $(CMOFILES) $(MLFILES:.ml=.cmi) $(MLFILES:.ml=.ml.d)\n";
   print "\t- rm -rf html\n";
@@ -135,7 +137,10 @@ let standard sds sps =
     sds;
   print "\n\n"
 
-let includes () =
+let header_includes () =
+  print "include Makefile.config\n.PHONY: Makefile.config\n"
+  
+let footer_includes () = 
   if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
   if !some_mlfile then print "-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n"
 
@@ -218,11 +223,10 @@ let dir_of_target t =
 
 let parameters () =
   print "# \n";
-  print "# Compilation looks in the path for coqtop; set COQBIN if coqtop is not in path\n";
-  print "# if .ml files have to be compiled, set CAMLBIN if ocamlc is not in path\n";
-  print "# if .ml files have to be compiled, set CAMLP4BIN if camlp4/5 is not in path\n";
-  print "# \n";
-  print "# set COQTOP to a Coq source directory for compiling over Coq compiled sources\n";
+  print "# This Makefile looks for coqtop in PATH and in COQBIN to create Makefile.config\n";
+  print "# Once created, Make refers to this file to determine the important paths for Coq\n";
+  print "# and Caml binaries. To change which Coq is used to compile your contribution,\n";
+  print "# delete Makefile.config, and set COQBIN to the desired value.\n";
   print "# \n\n"
 
 let include_dirs l =
@@ -253,16 +257,8 @@ let include_dirs l =
   let str_i' = parse_includes inc_i' in
   let str_r = parse_includes inc_r in
     section "Libraries definitions.";
-    printf "CAMLP4:=%s\n" Coq_config.camlp4;
-    print "ifdef CAMLP4BIN\n";
-    print "  CAMLP4LIB:=$(shell $(CAMLP4BIN)/$(CAMLP4) -where 2> /dev/null)\n";
-    print "else\n";
-    print "  CAMLP4LIB:=$(shell $(CAMLP4) -where 2> /dev/null)\n";
-    print "endif\n";
     print "OCAMLLIBS:=-I $(CAMLP4LIB) "; print_list "\\\n  " str_i; print "\n";
-    print "COQLIB:=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
-    print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
-    print "  COQBIN:=$(COQTOP)/bin/\n";
+    print "ifneq ($(LOCAL),0) # set COQTOP for compiling from Coq sources\n";
     print "  COQSRCLIBS:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing \\
   -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
@@ -275,17 +271,9 @@ let include_dirs l =
   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
   -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
   -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml\n";
-    print "else ifneq ($(strip $(COQLIB)),)\n";
-    print "  COQSRCLIBS:=-I $(COQLIB)\n";
     print "else\n";
-    print "  $(error Cannot find coqtop in path; set variable COQBIN to the directory where coqtop is located)\n";
+    print "  COQSRCLIBS:=-I $(COQLIB)\n";
     print "endif\n";
-    if List.exists (function ML _ -> true | _ -> false) l then
-      begin
-	print "ifeq ($(strip $(CAMLP4LIB)),)\n";
-	print "  $(error Cannot find $(CAMLP4) in path; set variable CAMLP4BIN to the directory where $(CAMLP4) is located)\n";
-	print "endif\n";
-      end;
     print "COQLIBS:="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " str_r; print "\n\n"
 
@@ -504,6 +492,7 @@ let directories_deps l =
 let do_makefile args =
   let l = process_cmd_line args in
     banner ();
+    header_includes ();
     warning ();
     command_line args;
     parameters ();
@@ -516,7 +505,7 @@ let do_makefile args =
 	implicit ();
 	standard sds sps;
 	(* TEST directories_deps l; *)
-	includes ();
+	footer_includes ();
 	warning ();
 	if not (!output_channel == stdout) then close_out !output_channel;
 	exit 0

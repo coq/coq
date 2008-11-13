@@ -164,6 +164,9 @@ let parse_args () =
 	  try Sys.getenv "COQLIB" with Not_found -> Coq_config.coqlib 
 	in
 	  print_endline coqlib; exit 0
+
+    | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0
+
     | ("-v"|"--version") :: _ ->
         Usage.version ()
     | f :: rem -> 
