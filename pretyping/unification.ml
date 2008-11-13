@@ -165,15 +165,18 @@ let oracle_order env cf1 cf2 =
 	    
 let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
   let nb = nb_rel env in
-  let trivial_unify pb (metasubst,_) m n =
+  let trivial_unify curenv pb (metasubst,_) m n =
     let subst = if flags.use_metas_eagerly then metasubst else fst subst in
     match subst_defined_metas subst m with
-    | Some m ->
-	(match flags.modulo_conv_on_closed_terms with
+    | Some m1 ->
+	if (match flags.modulo_conv_on_closed_terms with
 	    Some flags ->
-	      is_trans_fconv (conv_pb_of pb) flags env sigma m n
-	  | None -> constr_cmp (conv_pb_of cv_pb) m n)
-    | _ -> constr_cmp (conv_pb_of cv_pb) m n in
+	      is_trans_fconv (conv_pb_of pb) flags env sigma m1 n
+	  | None -> false) then true else
+        if (not (is_ground_term (create_evar_defs sigma) m1))
+            || occur_meta_or_existential n then false else
+               error_cannot_unify curenv sigma (m, n)
+    | _ -> false in
   let rec unirec_rec curenv pb b ((metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_castappevar sigma curm
     and cN = Evarutil.whd_castappevar sigma curn in 
@@ -238,7 +241,8 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 		with ex when precatchable_exception ex ->
 		  expand curenv pb b substn cM f1 l1 cN f2 l2)
 		
-	| _ -> 
+	| _ ->
+            if constr_cmp (conv_pb_of cv_pb) cM cN then substn else
 	    let (f1,l1) = 
 	      match kind_of_term cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in
 	    let (f2,l2) =
@@ -246,7 +250,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	    expand curenv pb b substn cM f1 l1 cN f2 l2
 
   and expand curenv pb b substn cM f1 l1 cN f2 l2 =
-    if trivial_unify pb substn cM cN then substn
+    if trivial_unify curenv pb substn cM cN then substn
     else if b then
       let cf1 = key_of flags f1 and cf2 = key_of flags f2 in
 	match oracle_order curenv cf1 cf2 with
@@ -275,12 +279,20 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
       error_cannot_unify curenv sigma (cM,cN)
 
   in
-    if (not(occur_meta m)) &&
-      (match flags.modulo_conv_on_closed_terms with
+    if (if occur_meta m then false else
+       if (match flags.modulo_conv_on_closed_terms with
 	  Some flags ->
 	    is_trans_fconv (conv_pb_of cv_pb) flags env sigma m n
-	| None -> constr_cmp (conv_pb_of cv_pb) m n)
-    then 
+	| None -> constr_cmp (conv_pb_of cv_pb) m n) then true else
+      if (not (is_ground_term (create_evar_defs sigma) m))
+          || occur_meta_or_existential n then false else
+      if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
+            | Some (cv_id, cv_k), (dl_id, dl_k) ->
+                Idpred.subset dl_id cv_id && Cpred.subset dl_k cv_k
+            | None,(dl_id, dl_k) ->
+                Idpred.is_empty dl_id && Cpred.is_empty dl_k)
+      then error_cannot_unify env sigma (m, n) else false) 
+    then
       subst
     else 
       unirec_rec env cv_pb conv_at_top subst m n
