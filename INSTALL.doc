@@ -33,6 +33,15 @@ To produce the html documents, the following tools are needed:
 
   - hevea (e.g. 1.07 works)
 
+
+Under Debian based operating systems (Debian, Ubuntu, ...) a
+working set of packages for compiling the documentation for Coq is:
+
+  texlive texlive-latex-extra texlive-math-extra texlive-fonts-extra
+  texlive-lang-french texlive-humanities texlive-pictures latex-xcolor
+  hevea netpbm
+
+
 Compilation
 -----------
 
@@ -75,7 +84,7 @@ To install all produced documents, do:
 
   make DOCDIR=/some/directory/for/documentation install-doc
 
-DOCDIR defauts to /usr/share/doc/coq-x.y were x.y is the version number
+DOCDIR defauts to /usr/share/doc/coq
 
 
 

@@ -439,13 +439,13 @@ let produce_document l =
   (if !target_language=HTML then
     let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.css") in
     let dst = if !output_dir <> "" then Filename.concat !output_dir "coqdoc.css" else "coqdoc.css" in
-      copy src dst);
+      if (Sys.file_exists src) then (copy src dst) else eprintf "Warning: file %s does not exist\n" src);
   (if !target_language=LaTeX then
       let src = (Filename.concat !Cdglobals.coqlib_path "/tools/coqdoc/coqdoc.sty") in
       let dst = if !output_dir <> "" then 
 	  Filename.concat !output_dir "coqdoc.sty" 
 	else "coqdoc.sty" in
-	copy src dst);
+	if Sys.file_exists src then copy src dst else eprintf "Warning: file %s does not exist\n" src);
   (match !Cdglobals.glob_source with
     | NoGlob -> ()
     | DotGlob -> ignore (List.map read_glob l)
