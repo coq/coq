@@ -689,7 +689,7 @@ case $ARCH in
 	 bindir_def=/usr/local/bin
 	 libdir_def=/usr/local/lib/coq
 	 mandir_def=/usr/local/man
-	 docdir_def=/usr/local/share/doc
+	 docdir_def=/usr/local/share/doc/coq
 	 emacslib_def=/usr/local/share/emacs/site-lisp
          coqdocdir_def=/usr/local/share/texmf/tex/latex/misc;;
 esac
@@ -738,7 +738,7 @@ esac
 
 case $docdir_spec/$prefix_spec/$local in
     yes/*/*) DOCDIR=$docdir;;
-    */yes/*) DOCDIR=$prefix/share/doc ;;
+    */yes/*) DOCDIR=$prefix/share/doc/coq ;;
     */*/true) DOCDIR=$COQTOP/man ;;
     *)  echo "Where should I install the Coq documentation [$docdir_def] ?"
         read DOCDIR
@@ -840,7 +840,7 @@ echo "  Paths for true installation:"
 echo "    binaries      will be copied in $BINDIR"
 echo "    library       will be copied in $LIBDIR"
 echo "    man pages     will be copied in $MANDIR"
-echo "    documentation will be copied in $MANDIR"
+echo "    documentation will be copied in $DOCDIR"
 echo "    emacs mode    will be copied in $EMACSLIB"
 echo ""
 
