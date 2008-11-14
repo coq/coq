@@ -43,13 +43,24 @@ type universe_level =
   | Set
   | Level of Names.dir_path * int
 
+(* A specialized comparison function: we compare the [int] part first.
+   This way, most of the time, the [dir_path] part is not considered. *)
+
+let cmp_univ_level u v = match u,v with
+  | Set, Set -> 0
+  | Set, _ -> -1
+  | _, Set -> 1
+  | Level (dp1,i1), Level (dp2,i2) ->
+      let c = compare i1 i2 in
+      if c = 0 then compare dp1 dp2 else c
+
 type universe =
   | Atom of universe_level
   | Max of universe_level list * universe_level list
   
 module UniverseOrdered = struct
   type t = universe_level
-  let compare = Pervasives.compare
+  let compare = cmp_univ_level
 end
 
 let string_of_univ_level = function
@@ -86,7 +97,8 @@ let super = function
    Used to type the products. *)
 let sup u v =
   match u,v with
-    | Atom u, Atom v -> if u = v then Atom u else Max ([u;v],[])
+    | Atom u, Atom v ->
+	if cmp_univ_level u v = 0 then Atom u else Max ([u;v],[])
     | u, Max ([],[]) -> u
     | Max ([],[]), v -> v
     | Atom u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
