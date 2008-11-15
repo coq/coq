@@ -613,12 +613,12 @@ let dump_universes output g =
 	let u_str = string_of_univ_level u in
 	  List.iter 
 	    (fun v -> 
-	       Printf.fprintf output "%s > %s ;\n" u_str
+	       Printf.fprintf output "%s < %s ;\n" u_str
 		 (string_of_univ_level v)) 
 	    lt;
 	  List.iter 
 	    (fun v -> 
-	       Printf.fprintf output "%s >= %s ;\n" u_str
+	       Printf.fprintf output "%s <= %s ;\n" u_str
 		 (string_of_univ_level v)) 
 	    le
     | Equiv (u,v) ->
