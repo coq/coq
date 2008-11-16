@@ -51,8 +51,9 @@ let cmp_univ_level u v = match u,v with
   | Set, _ -> -1
   | _, Set -> 1
   | Level (dp1,i1), Level (dp2,i2) ->
-      let c = compare i1 i2 in
-      if c = 0 then compare dp1 dp2 else c
+      if i1 < i2 then -1
+      else if i1 > i2 then 1
+      else compare dp1 dp2
 
 type universe =
   | Atom of universe_level
