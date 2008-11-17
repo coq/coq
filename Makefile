@@ -1176,7 +1176,7 @@ BEFOREDEPEND+= tools/gallina_lexer.ml
 COQMAKEFILECMO= config/coq_config.cmo tools/coq_makefile.cmo
 $(COQMAKEFILE): $(COQMAKEFILECMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(COQMAKEFILECMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma $(COQMAKEFILECMO)
 
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'

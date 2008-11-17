@@ -2219,6 +2219,8 @@ tactics/termdn.cmx: lib/util.cmx kernel/term.cmx pretyping/rawterm.cmx \
     tactics/termdn.cmi 
 tools/coqdep.cmo: tools/coqdep_lexer.cmo config/coq_config.cmi 
 tools/coqdep.cmx: tools/coqdep_lexer.cmx config/coq_config.cmx 
+tools/coq_makefile.cmo: config/coq_config.cmi 
+tools/coq_makefile.cmx: config/coq_config.cmx 
 tools/gallina.cmo: tools/gallina_lexer.cmo 
 tools/gallina.cmx: tools/gallina_lexer.cmx 
 toplevel/cerrors.cmo: lib/util.cmi kernel/univ.cmi kernel/type_errors.cmi \

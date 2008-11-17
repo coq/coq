@@ -84,6 +84,10 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 [--help]: equivalent to [-h]\n";
   exit 1
 
+let is_genrule r =
+  let genrule = Str.regexp("%") in
+    Str.string_match genrule r 0
+
 let standard sds sps =
   print "byte:\n";
   print "\t$(MAKE) all \"OPT=\"\n\n";
@@ -123,7 +127,9 @@ let standard sds sps =
   print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) *~\n";
   print "\trm -f all.ps all-gal.ps $(HTMLFILES) $(GHTMLFILES)\n";
   List.iter
-    (fun (file,_,_) -> print "\t- rm -f "; print file; print "\n")
+    (fun (file,_,_) -> 
+      if not (is_genrule file) then
+	(print "\t- rm -f "; print file; print "\n"))
     sps;
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) clean)\n")
@@ -188,7 +194,7 @@ let variables l =
   print "endif\n";
   print "COQLIB=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
   print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
-  print "  COQBIN=$(COQTOP)/bin\n";
+  print "  COQBIN=$(COQTOP)/bin/\n";
   print "  COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
    -I $(COQTOP)/library -I $(COQTOP)/parsing \\
    -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
@@ -224,10 +230,10 @@ let variables l =
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=gallina\n";
   print "COQDOC=$(COQBIN)coqdoc\n";
-  printf "CAMLC=%s -c\n" best_ocamlc;
-  printf "CAMLOPTC=%s -c\n" best_ocamlopt;
-  printf "CAMLLINK=%s\n" best_ocamlc;
-  printf "CAMLOPTLINK=%s\n" best_ocamlopt;
+  printf "CAMLC=%s -rectypes -c\n" best_ocamlc;
+  printf "CAMLOPTC=%s -rectypes -c\n" best_ocamlopt;
+  printf "CAMLLINK=%s -rectypes\n" best_ocamlc;
+  printf "CAMLOPTLINK=%s -rectypes\n" best_ocamlopt;
   print "COQDEP=$(COQBIN)coqdep -c\n";
   print "CAMLP4EXTEND=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
   print "GRAMMARS=grammar.cma\n";
@@ -311,7 +317,8 @@ let all_target l =
     | ML n :: r -> n :: (fnames r)
     | Subdir n :: r -> n :: (fnames r)
     | V n :: r -> n :: (fnames r)
-    | Special (n,_,_) :: r -> n :: (fnames r)
+    | Special (n,_,_) :: r -> 
+	if is_genrule n then fnames r else n :: (fnames r)
     | Include _ :: r -> fnames r
     | RInclude _ :: r -> fnames r
     | Def _ :: r -> fnames r
