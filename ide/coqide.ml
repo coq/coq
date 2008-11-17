@@ -2413,8 +2413,8 @@ let main files =
 				       | None -> ()
 				       | Some f ->
 					   save_f ();
-					   let l,r = !current.cmd_editor in
-					   let _ = run_command av#insert_message (l ^ (Filename.quote f) ^ r) in
+					   let com = Options.subst_command_placeholder !current.cmd_editor (Filename.quote f) in
+					   let _ = run_command av#insert_message com in
 					     av#revert)
 			    in
 			    let _ = edit_f#add_separator () in

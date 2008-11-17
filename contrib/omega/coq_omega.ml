@@ -37,6 +37,28 @@ open Libnames
 open Nametab
 open Contradiction
 
+open Profile
+let fkey = declare_profile "clear";;
+let clear = profile1 fkey clear;;
+let fkey = declare_profile "apply";;
+let apply = profile2 fkey apply;;
+let fkey = declare_profile "simplest_elim";;
+let simplest_elim = profile2 fkey simplest_elim;;
+let fkey = declare_profile "generalize";;
+let generalize = profile2 fkey generalize;;
+let fkey = declare_profile "reflexivity";;
+let reflexivity = profile1 fkey reflexivity;;
+let fkey = declare_profile "simpl_in_concl";;
+let simpl_in_concl = profile1 fkey simpl_in_concl;;
+let fkey = declare_profile "absurd";;
+let absurd = profile2 fkey absurd;;
+let fkey = declare_profile "assumption";;
+let assumption = profile1 fkey assumption;;
+let fkey = declare_profile "intros_using";;
+let intros_using = profile2 fkey intros_using;;
+let fkey = declare_profile "cut";;
+let cut = profile2 fkey cut;;
+
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver
 
@@ -47,7 +69,7 @@ let resolve_id id gl = apply (pf_global gl id) gl
 
 let timing timer_name f arg = f arg
 
-let display_time_flag = ref false
+let display_time_flag = ref true
 let display_system_flag = ref false
 let display_action_flag = ref false
 let old_style_flag = ref false
@@ -1589,6 +1611,9 @@ let rec decidability gl t =
     | Kvar _ -> error "Omega: Can't solve a goal with proposition variables"
     | _ -> error "Omega: Unrecognized proposition"
 
+let fkey = declare_profile "coq_omega";;
+let coq_omega = profile1 fkey coq_omega;;
+
 let onClearedName id tac =
   (* We cannot ensure that hyps can be cleared (because of dependencies), *)
   (* so renaming may be necessary *)
@@ -1787,3 +1812,7 @@ let omega_solver gl =
   (* if !display_time_flag then begin text_time (); 
      flush Pervasives.stdout end; *)
   result
+
+open Profile
+let fkey = declare_profile "omega";;
+let omega_solver = profile1 fkey omega_solver;;

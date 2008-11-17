@@ -591,12 +591,12 @@ let make_tuple env sigma (rterm,rty) lind =
 
 let minimal_free_rels env sigma (c,cty) =
   let cty_rels = free_rels cty in
-  let nf_cty = nf_betadeltaiota env sigma cty in
-  let nf_rels = free_rels nf_cty in
-  if Intset.subset cty_rels nf_rels then
+  let cty' = nf env sigma cty in
+  let rels' = free_rels cty' in
+  if Intset.subset cty_rels rels' then
     (cty,cty_rels)
   else
-    (nf_cty,nf_rels)
+    (cty',rels')
 
 (* [sig_clausal_form siglen ty]
     

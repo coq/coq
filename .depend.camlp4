@@ -27,28 +27,3 @@ contrib/funind/indfun_main.ml: parsing/grammar.cma
 contrib/interface/debug_tac.ml: parsing/grammar.cma
 contrib/interface/centaur.ml: parsing/grammar.cma
 parsing/lexer.ml: 
-parsing/pcoq.ml: 
-parsing/q_util.ml: 
-parsing/q_coqast.ml: 
-parsing/g_prim.ml: 
-parsing/g_minicoq.ml: 
-parsing/g_vernac.ml: parsing/grammar.cma
-parsing/g_proofs.ml: 
-parsing/g_xml.ml: 
-parsing/g_constr.ml: 
-parsing/g_tactic.ml: 
-parsing/g_ltac.ml: 
-parsing/argextend.ml: 
-parsing/tacextend.ml: 
-parsing/vernacextend.ml: 
-parsing/q_constr.ml: 
-parsing/g_decl_mode.ml: parsing/grammar.cma
-toplevel/mltop.ml: 
-lib/pp.ml: 
-lib/compat.ml: 
-contrib/xml/xml.ml: 
-contrib/xml/acic2Xml.ml: 
-contrib/xml/proofTree2Xml.ml: 
-contrib/interface/line_parser.ml: 
-tools/coq_makefile.ml: 
-tools/coq-tex.ml: 

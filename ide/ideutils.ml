@@ -266,9 +266,11 @@ let run_command f c =
   (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
 let browse f url =
-  let l,r = !current.cmd_browse in
-  let (_s,_res) = run_command f (l ^ url ^ r) in
-  ()
+  let com = Options.subst_command_placeholder !current.cmd_browse url in
+  let (s,_res) = run_command f com in
+  if s = Unix.WEXITED 127 then
+    prerr_endline
+      ("Could not execute\n  \""^com^"\"\ncheck your preferences for setting a valid browser command")
 
 let url_for_keyword =
   let ht = Hashtbl.create 97 in
@@ -293,7 +295,8 @@ let url_for_keyword =
 
 let browse_keyword f text = 
   try let u = url_for_keyword text in browse f (!current.doc_url ^ u) 
-  with _ -> ()
+  with Not_found ->
+    prerr_endline ("No documentation found for "^text)
 
 
 let underscore = Glib.Utf8.to_unichar "_" (ref 0)

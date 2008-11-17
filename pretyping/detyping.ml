@@ -279,7 +279,7 @@ let extract_nondep_branches test c b n =
       | _ -> assert false in
   if test c n then Some (strip n b) else None
 
-let it_destRLambda_or_LetIn_names n c =
+let it_destRLambda_or_LetIn_names avoid n c =
   let rec aux n nal c =
     if n=0 then (List.rev nal,c) else match c with
       | RLambda (_,na,_,c) -> aux (n-1) (na::nal) c
@@ -310,7 +310,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       match option_map detype p with
         | None -> Anonymous, None, None
         | Some p ->
-            let nl,typ = it_destRLambda_or_LetIn_names k p in
+            let nl,typ = it_destRLambda_or_LetIn_names avoid k p in
 	    let n,typ = match typ with 
               | RLambda (_,x,t,c) -> x, c
 	      | _ -> Anonymous, typ in
@@ -336,7 +336,8 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   match tag with
   | LetStyle when aliastyp = None -> 
       let bl' = Array.map detype bl in
-      let (nal,d) = it_destRLambda_or_LetIn_names consnargsl.(0) bl'.(0) in
+      let (nal,d) = it_destRLambda_or_LetIn_names avoid consnargsl.(0) bl'.(0)
+      in
       RLetTuple (dl,nal,(alias,pred),tomatch,d)
   | IfStyle when aliastyp = None ->
       let bl' = Array.map detype bl in
@@ -647,15 +648,15 @@ let rec subst_rawconstr subst raw =
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)
 
-let simple_cases_matrix_of_branches ind brns brs =
+let simple_cases_matrix_of_branches avoid ind brns brs =
   list_map2_i (fun i n b ->
-      let nal,c = it_destRLambda_or_LetIn_names n b in
+      let nal,c = it_destRLambda_or_LetIn_names avoid n b in
       let mkPatVar na = PatVar (dummy_loc,na) in
       let p = PatCstr (dummy_loc,(ind,i+1),List.map mkPatVar nal,Anonymous) in
       let ids = map_succeed Nameops.out_name nal in
       (dummy_loc,ids,[p],c))
     0 brns brs
 
-let return_type_of_predicate ind nparams n pred =
-  let nal,p = it_destRLambda_or_LetIn_names (n+1) pred in
+let return_type_of_predicate avoid ind nparams n pred =
+  let nal,p = it_destRLambda_or_LetIn_names avoid (n+1) pred in
   (List.hd nal, Some (dummy_loc, ind, nparams, List.tl nal)), Some p

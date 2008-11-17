@@ -2145,7 +2145,7 @@ let rec xlate_vernac =
      VernacMemOption (_, _)|VernacRemoveOption (_, _)
   | VernacBack _ | VernacBacktrack _ |VernacBackTo _|VernacRestoreState _| VernacWriteState _|
     VernacSolveExistential (_, _)|VernacCanonical _ |
-     VernacTacticNotation _)
+     VernacTacticNotation _ | VernacCombinedScheme _)
     -> xlate_error "TODO: vernac";;
 
 let rec xlate_vernac_list =

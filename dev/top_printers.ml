@@ -82,6 +82,7 @@ let genppj f j = let (c,t) = f j in (c ++ str " : " ++ t)
 let ppj j = pp (genppj pr_ljudge j)
 
 (* proof printers *)
+let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map evd)
 let ppevd evd = pp(pr_evar_defs evd)
 let ppclenv clenv = pp(pr_clenv clenv)

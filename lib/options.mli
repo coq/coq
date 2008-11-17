@@ -65,7 +65,8 @@ val boxed_definitions : unit -> bool
 
 (* Options for external tools *)
 
-(* Returns head and tail of printf string format *)
-(* ocaml doesn't allow not applied formats *)
-val browser_cmd_fmt : string * string
+(* Returns string format for default browser to use from Coq or CoqIDE *)
+val browser_cmd_fmt : string
  
+(* Substitute %s in the first chain by the second chain *)
+val subst_command_placeholder : string -> string -> string

@@ -568,3 +568,6 @@ let pr_evar_defs evd =
     if evd.metas = Metamap.empty then mt() else
       str"METAS:"++brk(0,1)++pr_meta_map evd.metas in
   v 0 (pp_evm ++ cstrs ++ pp_met)
+
+let pr_metaset metas = 
+  str "[" ++ prlist_with_sep spc pr_meta (Metaset.elements metas) ++ str "]"

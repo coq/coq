@@ -17,6 +17,7 @@
 #install_printer  (* goal *)  ppgoal;;
 #install_printer  (* sigma goal *)  ppsigmagoal;;
 #install_printer  (* proof *)  pproof;;
+#install_printer  (* metas *)  ppmetas;;
 #install_printer  (* evar_map *)  ppevm;;
 #install_printer  (* evar_defs *)  ppevd;;
 #install_printer  (* clenv *) ppclenv;;

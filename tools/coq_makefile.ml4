@@ -188,6 +188,7 @@ let variables l =
   print "endif\n";
   print "COQLIB=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
   print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
+  print "  COQBIN=$(COQTOP)/bin\n";;
   print "  COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
    -I $(COQTOP)/library -I $(COQTOP)/parsing \\
    -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
@@ -200,10 +201,12 @@ let variables l =
    -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
    -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
    -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml\n";
-  print "else ifneq ($(strip $(COQLIB)),)\n";
+  print "else\n";
+  print "ifneq ($(strip $(COQLIB)),)\n";
   print "  COQSRC=-I $(COQLIB)\n";
   print "else\n";
   print "  $(error Cannot find coqtop in path; set variable COQBIN to the directory where coqtop is located)\n";
+  print "endif\n";
   print "endif\n";
   if List.exists (function ML _ -> true | _ -> false) l then
     begin

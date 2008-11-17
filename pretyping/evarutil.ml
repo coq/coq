@@ -503,13 +503,13 @@ let real_clean env isevars ev evi args rhs =
 
 (* env needed for error messages... *)
 let evar_define env (ev,argsv) rhs isevars =
-  if occur_evar ev rhs
-  then error_occur_check env (evars_of isevars) ev rhs;
   let args = Array.to_list argsv in 
   let evi = Evd.find (evars_of isevars) ev in
   (* the bindings to invert *)
   let worklist = make_subst (evar_env evi) args in
   let (isevars',body) = real_clean env isevars ev evi worklist rhs in
+  if occur_evar ev rhs
+  then error_occur_check env (evars_of isevars) ev rhs;
   if occur_meta body then error "Meta cannot occur in evar body"
   else
     (* needed only if an inferred type *)
