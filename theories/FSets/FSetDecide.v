@@ -509,7 +509,14 @@ the above form:
             | J : _ |- _ => progress (change T with E.t in J)
             | |- _ => progress (change T with E.t)
             end )
-        end).
+        | H : forall x : ?T, _ |- _ =>
+          progress (change T with E.t in H);
+          repeat (
+            match goal with
+            | J : _ |- _ => progress (change T with E.t in J)
+            | |- _ => progress (change T with E.t)
+            end )
+       end).
 
     (** These two tactics take us from Coq's built-in equality
         to [E.eq] (and vice versa) when possible. *)
@@ -747,6 +754,12 @@ the above form:
       In x (singleton x).
     Proof. fsetdec. Qed.
 
+    Lemma test_add_In : forall x y s,
+      In x (add y s) ->
+      ~ E.eq x y ->
+      In x s.
+    Proof. fsetdec. Qed.
+
     Lemma test_Subset_add_remove : forall x s,
       s [<=] (add x (remove x s)).
     Proof. fsetdec. Qed.
@@ -823,6 +836,17 @@ the above form:
     Proof.
       (** [fsetdec] is not intended to solve this directly. *)
       intros until 3. intros g_eq. rewrite <- g_eq. fsetdec.
+    Qed.
+
+    Lemma test_baydemir :
+      forall (f : t -> t),
+      forall (s : t),
+      forall (x y : elt),
+      In x (add y (f s)) ->
+      ~ E.eq x y ->
+      In x (f s).
+    Proof.
+      fsetdec.
     Qed.
 
   End FSetDecideTestCases.
