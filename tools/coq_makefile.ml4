@@ -188,7 +188,7 @@ let variables l =
   print "endif\n";
   print "COQLIB=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
   print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
-  print "  COQBIN=$(COQTOP)/bin\n";;
+  print "  COQBIN=$(COQTOP)/bin\n";
   print "  COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
    -I $(COQTOP)/library -I $(COQTOP)/parsing \\
    -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
