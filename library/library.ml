@@ -316,7 +316,7 @@ let open_libraries export modl =
              (fun l m -> remember_last_of_each l (try_find_library m))
              l m.library_imports
          in remember_last_of_each subimport m)
-      [] modl in
+      [] (List.rev modl) in
   List.iter (open_library export modl) to_open_list
 
 

@@ -592,7 +592,8 @@ let vernac_require import _ qidl =
 (*   let modrefl = List.map (fun qid -> let (dp, _) = (Library.try_locate_qualified_library qid) in dp) qidl in *)
     if Dumpglob.dump () then
       List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref loc dp "lib") qidl (List.map fst modrefl);
-    Library.require_library qidl import
+    Library.require_library (List.rev qidl) import
+
 
 let vernac_canonical r =
   Recordops.declare_canonical_structure (global_with_alias r)
