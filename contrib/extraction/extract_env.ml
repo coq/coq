@@ -83,8 +83,8 @@ module type VISIT = sig
 end
   
 module Visit : VISIT = struct 
-  (* Thanks to C.S.C, what used to be in a single KNset should now be split 
-     into a KNset (for inductives and modules names) and a Cset for constants 
+  (* What used to be in a single KNset should now be split into a KNset
+     (for inductives and modules names) and a Cset for constants
      (and still the remaining MPset) *)
   type must_visit = 
       { mutable kn : KNset.t; mutable con : Cset.t; mutable mp : MPset.t }
@@ -140,6 +140,18 @@ let factor_fix env l cb msb =
     labels, recd, msb''
   end
 
+let build_mb expr typ_opt =
+  { mod_expr = Some expr;
+    mod_type = typ_opt;
+    mod_constraints = Univ.Constraint.empty;
+    mod_alias = Mod_subst.empty_subst;
+    mod_retroknowledge = [] }
+
+let my_type_of_mb env mb =
+  match mb.mod_type with
+    | Some mtb -> mtb
+    | None -> Modops.eval_struct env (Option.get mb.mod_expr)
+
 (* From a [structure_body] (i.e. a list of [structure_field_body])
    to specifications. *)
 
@@ -159,45 +171,51 @@ let rec extract_sfb_spec env mp = function
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmodule mb) :: msig -> 
       let specs = extract_sfb_spec env mp msig in 
-      let mtb = Modops.type_of_mb env mb in 
-      let spec = extract_seb_spec env (mb.mod_type<>None) mtb in 
+      let spec = extract_seb_spec env (my_type_of_mb env mb) in
       (l,Smodule spec) :: specs
   | (l,SFBmodtype mtb) :: msig -> 
       let specs = extract_sfb_spec env mp msig in
-      (l,Smodtype (extract_seb_spec env true(*?*) mtb.typ_expr)) :: specs
+      (l,Smodtype (extract_seb_spec env mtb.typ_expr)) :: specs
   | (l,SFBalias(mp1,typ_opt,_))::msig -> 
-      extract_sfb_spec env mp 
-	((l,SFBmodule {mod_expr = Some (SEBident mp1);
-		      mod_type = typ_opt;
-		      mod_constraints = Univ.Constraint.empty;
-		      mod_alias = Mod_subst.empty_subst;
-		      mod_retroknowledge = []})::msig)
+      let mb = build_mb (SEBident mp1) typ_opt in
+      extract_sfb_spec env mp ((l,SFBmodule mb) :: msig)
 
 (* From [struct_expr_body] to specifications *)
 
+(* Invariant: the [seb] given to [extract_seb_spec] should either come:
+   - from a [mod_type] or [type_expr] field
+   - from the output of [Modops.eval_struct].
+   This way, any encountered [SEBident] should be a true module type.
+   For instance, [my_type_of_mb] ensures this invariant.
+*)
 
-and extract_seb_spec env truetype = function
-  | SEBident kn when truetype -> Visit.add_mp kn; MTident kn 
+and extract_seb_spec env = function
+  | SEBident mp -> Visit.add_mp mp; MTident mp
   | SEBwith(mtb',With_definition_body(idl,cb))->
-      let mtb''= extract_seb_spec env truetype mtb' in
+      let mtb''= extract_seb_spec env mtb' in
       (match extract_with_type env cb with (* cb peut contenir des kn  *)
 	 | None ->  mtb''
 	 | Some (vl,typ) -> MTwith(mtb'',ML_With_type(idl,vl,typ)))
   | SEBwith(mtb',With_module_body(idl,mp,_,_))-> 
       Visit.add_mp mp;
-      MTwith(extract_seb_spec env truetype mtb',
+      MTwith(extract_seb_spec env mtb',
 	     ML_With_module(idl,mp))
+(* TODO: On pourrait peut-etre oter certaines eta-expansion, du genre:
+   | SEBfunctor(mbid,_,SEBapply(m,SEBident (MPbound mbid2),_)) 
+     when mbid = mbid2 -> extract_seb_spec env m 
+   (* faudrait alors ajouter un test de non-apparition de mbid dans mb *)
+*)
   | SEBfunctor (mbid, mtb, mtb') -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in
-	MTfunsig (mbid, extract_seb_spec env true mtb.typ_expr, 
-		  extract_seb_spec env' truetype mtb')
+      MTfunsig (mbid, extract_seb_spec env mtb.typ_expr,
+		extract_seb_spec env' mtb')
   | SEBstruct (msid, msig) -> 
       let mp = MPself msid in 
       let env' = Modops.add_signature mp msig env in 
 	MTsig (msid, extract_sfb_spec env' mp msig) 
-  | (SEBapply _|SEBident _ (*when not truetype*)) as mtb -> 
-      extract_seb_spec env truetype (Modops.eval_struct env mtb)
+  | SEBapply _ as mtb ->
+      extract_seb_spec env (Modops.eval_struct env mtb)
 
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])
@@ -248,19 +266,11 @@ let rec extract_sfb env mp all = function
       let ms = extract_sfb env mp all msb in
       let mp = MPdot (mp,l) in
        if all || Visit.needed_mp mp then 
-	(l,SEmodtype (extract_seb_spec env true(*?*) mtb.typ_expr)) :: ms
+	(l,SEmodtype (extract_seb_spec env mtb.typ_expr)) :: ms
       else ms
-  | (l,SFBalias (mp1,typ_opt,cst)) :: msb -> 
-      let ms = extract_sfb env mp all msb in
-      let mp = MPdot (mp,l) in 
-      if all || Visit.needed_mp mp then 
-	(l,SEmodule (extract_module env mp true 
-		       {mod_expr = Some (SEBident mp1);
-			mod_type = typ_opt;
-		        mod_constraints= Univ.Constraint.empty;
-			mod_alias = empty_subst;
-			mod_retroknowledge = []})) :: ms
-      else ms
+  | (l,SFBalias (mp1,typ_opt,_)) :: msb ->
+      let mb = build_mb (SEBident mp1) typ_opt in
+      extract_sfb env mp all ((l,SFBmodule mb) :: msb)
 
 (* From [struct_expr_body] to implementations *)
 
@@ -274,7 +284,7 @@ and extract_seb env mpo all = function
   | SEBfunctor (mbid, mtb, meb) -> 
       let mp = MPbound mbid in 
       let env' = Modops.add_module mp (Modops.module_body_of_type mtb) env in 
-      MEfunctor (mbid, extract_seb_spec env true mtb.typ_expr, 
+      MEfunctor (mbid, extract_seb_spec env mtb.typ_expr,
 		 extract_seb env' None true meb)
   | SEBstruct (msid, msb) -> 
       let mp,msb = match mpo with 
@@ -288,17 +298,8 @@ and extract_seb env mpo all = function
 and extract_module env mp all mb = 
   (* [mb.mod_expr <> None ], since we look at modules from outside. *)
   (* Example of module with empty [mod_expr] is X inside a Module F [X:SIG]. *)
-  let meb = Option.get mb.mod_expr in
-  let mtb = match mb.mod_type with 
-    | None -> Modops.eval_struct env meb 
-    | Some mt -> mt 
-  in
-  (* Because of the "with" construct, the module type can be [MTBsig] with *)
-  (* a msid different from the one of the module. Here is the patch. *)
-  (* PL 26/02/2008: is this still relevant ?
-  let mtb = replicate_msid meb mtb in *)
-  { ml_mod_expr = extract_seb env (Some mp) all meb;
-    ml_mod_type = extract_seb_spec env (mb.mod_type<>None) mtb }
+  { ml_mod_expr = extract_seb env (Some mp) all (Option.get mb.mod_expr);
+    ml_mod_type = extract_seb_spec env (my_type_of_mb env mb) }
 
 
 let unpack = function MEstruct (_,sel) -> sel | _ -> assert false 

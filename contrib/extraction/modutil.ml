@@ -18,21 +18,6 @@ open Table
 open Mlutil
 open Mod_subst
 
-(*S Functions upon modules missing in [Modops]. *) 
-
-(*s Change a msid in a module type, to follow a module expr. 
-  Because of the "with" construct, the module type of a module can be a 
-  [MTBsig] with a msid different from the one of the module. *)
-
-let rec replicate_msid meb mtb = match meb,mtb with 
-  | SEBfunctor (_, _, meb), SEBfunctor (mbid, mtb1, mtb2) -> 
-      let mtb' = replicate_msid meb mtb2 in 
-      if mtb' == mtb2 then mtb else SEBfunctor (mbid, mtb1, mtb')
-  | SEBstruct (msid, _), SEBstruct (msid1, msig) when msid <> msid1 -> 
-      let msig' = Modops.subst_signature_msid msid1 (MPself msid) msig in
-      if msig' == msig then SEBstruct (msid, msig) else SEBstruct (msid, msig')
-  | _ -> mtb
-
 (*S Functions upon ML modules. *)
 
 let rec msid_of_mt = function

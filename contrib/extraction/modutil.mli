@@ -15,12 +15,6 @@ open Libnames
 open Miniml
 open Mod_subst
 
-(*s Functions upon modules missing in [Modops]. *) 
-
-(* Change a msid in a module type, to follow a module expr. *)
-
-val replicate_msid : struct_expr_body -> struct_expr_body -> struct_expr_body
-
 (*s Functions upon ML modules. *)
 
 val struct_ast_search : (ml_ast -> bool) -> ml_structure -> bool
