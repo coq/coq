@@ -75,8 +75,8 @@ type pref =
       mutable modifier_for_tactics : Gdk.Tags.modifier list;
       mutable modifiers_valid : Gdk.Tags.modifier list;
 
-      mutable cmd_browse : string;
-      mutable cmd_editor : string;
+      mutable cmd_browse : string * string;
+      mutable cmd_editor : string * string;
 
       mutable text_font : Pango.font_description;
 
@@ -126,7 +126,10 @@ let (current:pref ref) =
 
     
     cmd_browse = Options.browser_cmd_fmt;
-    cmd_editor = if Sys.os_type = "Win32" then "NOTEPAD %s" else "emacs %s";
+    cmd_editor = 
+	 if Sys.os_type = "Win32"
+	 then "NOTEPAD ", ""
+	 else "emacs ", "";
     
     text_font = Pango.Font.from_string "sans 12";
 
@@ -191,8 +194,8 @@ let save_pref () =
       (List.map mod_to_str p.modifier_for_tactics) ++
     add "modifiers_valid" 
       (List.map mod_to_str p.modifiers_valid) ++
-    add "cmd_browse" [p.cmd_browse] ++
-    add "cmd_editor" [p.cmd_editor] ++
+    add "cmd_browse" [fst p.cmd_browse; snd p.cmd_browse] ++
+    add "cmd_editor" [fst p.cmd_editor; snd p.cmd_editor] ++
 
     add "text_font" [Pango.Font.to_string p.text_font] ++
 
@@ -223,9 +226,6 @@ let load_pref () =
     let set_bool k f = set_hd k (fun v -> f (bool_of_string v)) in
     let set_int k f = set_hd k (fun v -> f (int_of_string v)) in
     let set_pair k f = set k (function [v1;v2] -> f v1 v2 | _ -> raise Exit) in
-    let set_command_with_pair_compat k f = 
-      set k (function [v1;v2] -> f (v1^"%s"^v2) | [v] -> f v | _ -> raise Exit)
-    in
     set_hd "cmd_coqc" (fun v -> np.cmd_coqc <- v);
     set_hd "cmd_make" (fun v -> np.cmd_make <- v);
     set_hd "cmd_coqmakefile" (fun v -> np.cmd_coqmakefile <- v);
@@ -250,8 +250,8 @@ let load_pref () =
       (fun v -> np.modifier_for_tactics <- List.map str_to_mod v);
     set "modifiers_valid" 
       (fun v -> np.modifiers_valid <- List.map str_to_mod v);
-    set_command_with_pair_compat "cmd_browse" (fun v -> np.cmd_browse <- v);
-    set_command_with_pair_compat "cmd_editor" (fun v -> np.cmd_editor <- v);
+    set_pair "cmd_browse" (fun v1 v2 -> np.cmd_browse <- (v1,v2));
+    set_pair "cmd_editor" (fun v1 v2 -> np.cmd_editor <- (v1,v2));
     set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
     set_hd "doc_url" (fun v -> np.doc_url <- v);
     set_hd "library_url" (fun v -> np.library_url <- v);
@@ -459,35 +459,20 @@ let configure () =
       ~editable:false
       ""
   in
+
   let cmd_editor = 
-    let predefined = [ "emacs %s"; "vi %s"; "NOTEPAD %s" ] in
-    combo
+    string
+      ~f:(fun s -> !current.cmd_editor <- split_string_format s)
       ~help:"(%s for file name)" 
       "External editor"
-      ~f:(fun s -> !current.cmd_editor <- s)
-      ~new_allowed: true
-      (predefined@[if List.mem !current.cmd_editor predefined then ""
-                   else !current.cmd_editor])
-      !current.cmd_editor
+      ((fst !current.cmd_editor)^"%s"^(snd !current.cmd_editor))
   in    
-  let cmd_browse =
-    let predefined = [
-      "netscape -remote \"openURL(%s)\"";
-      "mozilla -remote \"openURL(%s)\"";
-      "firefox -remote \"openURL(%s,new-tab)\" || firefox %s &";
-      "firefox -remote \"openURL(%s,new-windows)\" || firefox %s &";
-      "seamonkey -remote \"openURL(%s)\" || seamonkey %s &";
-      "C:\\PROGRA~1\\INTERN~1\\IEXPLORE %s";
-      "open -a Safari %s &"
-    ] in
-    combo 
+  let cmd_browse = 
+    string
+      ~f:(fun s -> !current.cmd_browse <- split_string_format s)
       ~help:"(%s for url)" 
-      "Browser"
-      ~f:(fun s -> !current.cmd_browse <- s)
-      ~new_allowed: true
-      (predefined@[if List.mem !current.cmd_browse predefined then ""
-                   else !current.cmd_browse])
-      !current.cmd_browse
+      "    Browser"
+      ((fst !current.cmd_browse)^"%s"^(snd !current.cmd_browse))
   in    
   let doc_url = 
     string ~f:(fun s -> !current.doc_url <- s) " Manual URL"  !current.doc_url in

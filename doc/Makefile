@@ -163,7 +163,6 @@ refman/html/index.html: refman/Reference-Manual.html $(REFMANPNGFILES) \
 	(cd refman/html; hacha -o toc.html ../Reference-Manual.html)
 	cp refman/cover.html refman/menu.html refman/html
 	cp refman/index.html refman/html
-	- (cd refman/html; ln -s index.html main.html) # For web server compat
 
 refman-quick:
 	(cd refman; \

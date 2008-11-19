@@ -970,7 +970,7 @@ let internalise sigma globalenv env allow_soapp lvar c =
     let eqn_ids,pll = intern_disjunctive_multiple_pattern scopes loc lhs in
     (* Linearity implies the order in ids is irrelevant *)
     check_linearity lhs eqn_ids;
-    List.iter (check_number_of_pattern loc n) pll;
+    List.map (check_number_of_pattern loc n) pll;
     let env_ids = List.fold_right Idset.add eqn_ids ids in
     List.map (fun (subst,pl) ->
       let rhs = replace_vars_constr_expr subst rhs in

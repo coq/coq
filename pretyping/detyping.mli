@@ -52,11 +52,9 @@ val force_let : case_info -> bool
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)
 
-val it_destRLambda_or_LetIn_names : identifier list -> int -> rawconstr ->
-  name list * rawconstr
+val it_destRLambda_or_LetIn_names : int -> rawconstr -> name list * rawconstr
 val simple_cases_matrix_of_branches : 
-  identifier list -> inductive -> int list -> rawconstr list -> cases_clauses
+  inductive -> int list -> rawconstr list -> cases_clauses
 val return_type_of_predicate :
-  identifier list -> inductive -> int -> int -> rawconstr -> 
-    predicate_pattern * rawconstr option
+  inductive -> int -> int -> rawconstr -> predicate_pattern * rawconstr option
 

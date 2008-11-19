@@ -34,8 +34,8 @@ type pref =
       mutable modifier_for_tactics : Gdk.Tags.modifier list;
       mutable modifiers_valid : Gdk.Tags.modifier list;
 
-      mutable cmd_browse : string;
-      mutable cmd_editor : string;
+      mutable cmd_browse : string * string;
+      mutable cmd_editor : string * string;
 
       mutable text_font : Pango.font_description;
 

@@ -921,8 +921,7 @@ let rec raw_of_pat env = function
       RIf (loc, raw_of_pat env c, (Anonymous,None), 
            raw_of_pat env b1, raw_of_pat env b2)
   | PCase ((LetStyle,[|n|],ind,None),PMeta None,tm,[|b|]) ->
-      let avoid = List.map out_name (List.filter ((<>) Anonymous) env) in
-      let nal,b = it_destRLambda_or_LetIn_names avoid n (raw_of_pat env b) in
+      let nal,b = it_destRLambda_or_LetIn_names n (raw_of_pat env b) in
       RLetTuple (loc,nal,(Anonymous,None),raw_of_pat env tm,b)
   | PCase (_,PMeta None,tm,[||]) ->
       RCases (loc,None,[raw_of_pat env tm,(Anonymous,None)],[])
@@ -931,14 +930,12 @@ let rec raw_of_pat env = function
       let brns = Array.to_list cstr_nargs in
         (* ind is None only if no branch and no return type *)
       let ind = out_some indo in
-      let avoid = List.map out_name (List.filter ((<>) Anonymous) env) in
-      let mat = simple_cases_matrix_of_branches avoid ind brns brs in
+      let mat = simple_cases_matrix_of_branches ind brns brs in
       let indnames,rtn =
 	if p = PMeta None then (Anonymous,None),None
 	else 
 	  let nparams,n = out_some ind_nargs in
-	  let avoid = List.map out_name (List.filter ((<>) Anonymous) env) in
-	  return_type_of_predicate avoid ind nparams n (raw_of_pat env p) in
+	  return_type_of_predicate ind nparams n (raw_of_pat env p) in
       RCases (loc,rtn,[raw_of_pat env tm,indnames],mat)
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)

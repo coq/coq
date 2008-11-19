@@ -565,12 +565,12 @@ ide/config_parser.cmo: lib/util.cmi ide/config_parser.cmi
 ide/config_parser.cmx: lib/util.cmx ide/config_parser.cmi 
 ide/coqide.cmo: toplevel/vernacexpr.cmo lib/util.cmi ide/undo.cmi \
     lib/system.cmi ide/preferences.cmi lib/pp.cmi proofs/pfedit.cmi \
-    lib/options.cmi ide/ideutils.cmi ide/highlight.cmo ide/find_phrase.cmo \
+    ide/ideutils.cmi ide/highlight.cmo ide/find_phrase.cmo \
     proofs/decl_mode.cmi config/coq_config.cmi ide/coq_commands.cmo \
     ide/coq.cmi ide/command_windows.cmi ide/blaster_window.cmo ide/coqide.cmi 
 ide/coqide.cmx: toplevel/vernacexpr.cmx lib/util.cmx ide/undo.cmx \
     lib/system.cmx ide/preferences.cmx lib/pp.cmx proofs/pfedit.cmx \
-    lib/options.cmx ide/ideutils.cmx ide/highlight.cmx ide/find_phrase.cmx \
+    ide/ideutils.cmx ide/highlight.cmx ide/find_phrase.cmx \
     proofs/decl_mode.cmx config/coq_config.cmx ide/coq_commands.cmx \
     ide/coq.cmx ide/command_windows.cmx ide/blaster_window.cmx ide/coqide.cmi 
 ide/coq.cmo: toplevel/vernacexpr.cmo toplevel/vernacentries.cmi \
@@ -1367,8 +1367,8 @@ pretyping/clenv.cmo: lib/util.cmi pretyping/unification.cmi \
     pretyping/typing.cmi pretyping/termops.cmi kernel/term.cmi \
     pretyping/tacred.cmi proofs/tacexpr.cmo kernel/sign.cmi \
     pretyping/retyping.cmi pretyping/reductionops.cmi kernel/reduction.cmi \
-    pretyping/rawterm.cmi lib/profile.cmi pretyping/pretype_errors.cmi \
-    lib/pp.cmi pretyping/pattern.cmi kernel/names.cmi library/nameops.cmi \
+    pretyping/rawterm.cmi pretyping/pretype_errors.cmi lib/pp.cmi \
+    pretyping/pattern.cmi kernel/names.cmi library/nameops.cmi \
     kernel/mod_subst.cmi library/global.cmi pretyping/evd.cmi \
     pretyping/evarutil.cmi kernel/environ.cmi pretyping/coercion.cmi \
     pretyping/clenv.cmi 
@@ -1376,8 +1376,8 @@ pretyping/clenv.cmx: lib/util.cmx pretyping/unification.cmx \
     pretyping/typing.cmx pretyping/termops.cmx kernel/term.cmx \
     pretyping/tacred.cmx proofs/tacexpr.cmx kernel/sign.cmx \
     pretyping/retyping.cmx pretyping/reductionops.cmx kernel/reduction.cmx \
-    pretyping/rawterm.cmx lib/profile.cmx pretyping/pretype_errors.cmx \
-    lib/pp.cmx pretyping/pattern.cmx kernel/names.cmx library/nameops.cmx \
+    pretyping/rawterm.cmx pretyping/pretype_errors.cmx lib/pp.cmx \
+    pretyping/pattern.cmx kernel/names.cmx library/nameops.cmx \
     kernel/mod_subst.cmx library/global.cmx pretyping/evd.cmx \
     pretyping/evarutil.cmx kernel/environ.cmx pretyping/coercion.cmx \
     pretyping/clenv.cmi 
@@ -1537,14 +1537,14 @@ pretyping/recordops.cmx: lib/util.cmx kernel/typeops.cmx \
     pretyping/classops.cmx pretyping/recordops.cmi 
 pretyping/reductionops.cmo: lib/util.cmi kernel/univ.cmi \
     pretyping/termops.cmi kernel/term.cmi kernel/sign.cmi \
-    kernel/reduction.cmi lib/profile.cmi lib/pp.cmi kernel/names.cmi \
-    pretyping/evd.cmi kernel/esubst.cmi kernel/environ.cmi \
-    kernel/declarations.cmi kernel/closure.cmi pretyping/reductionops.cmi 
+    kernel/reduction.cmi lib/pp.cmi kernel/names.cmi pretyping/evd.cmi \
+    kernel/esubst.cmi kernel/environ.cmi kernel/declarations.cmi \
+    kernel/closure.cmi pretyping/reductionops.cmi 
 pretyping/reductionops.cmx: lib/util.cmx kernel/univ.cmx \
     pretyping/termops.cmx kernel/term.cmx kernel/sign.cmx \
-    kernel/reduction.cmx lib/profile.cmx lib/pp.cmx kernel/names.cmx \
-    pretyping/evd.cmx kernel/esubst.cmx kernel/environ.cmx \
-    kernel/declarations.cmx kernel/closure.cmx pretyping/reductionops.cmi 
+    kernel/reduction.cmx lib/pp.cmx kernel/names.cmx pretyping/evd.cmx \
+    kernel/esubst.cmx kernel/environ.cmx kernel/declarations.cmx \
+    kernel/closure.cmx pretyping/reductionops.cmi 
 pretyping/retyping.cmo: lib/util.cmi kernel/univ.cmi kernel/typeops.cmi \
     pretyping/termops.cmi kernel/term.cmi pretyping/reductionops.cmi \
     kernel/names.cmi pretyping/inductiveops.cmi kernel/inductive.cmi \
@@ -1613,7 +1613,7 @@ proofs/clenvtac.cmo: lib/util.cmi pretyping/unification.cmi \
     pretyping/typing.cmi pretyping/termops.cmi kernel/term.cmi \
     proofs/tacmach.cmi proofs/tacexpr.cmo kernel/sign.cmi proofs/refiner.cmi \
     pretyping/reductionops.cmi kernel/reduction.cmi pretyping/rawterm.cmi \
-    proofs/proof_type.cmi proofs/proof_trees.cmi lib/profile.cmi lib/pp.cmi \
+    proofs/proof_type.cmi proofs/proof_trees.cmi lib/pp.cmi \
     pretyping/pattern.cmi kernel/names.cmi library/nameops.cmi \
     proofs/logic.cmi pretyping/evd.cmi pretyping/evarutil.cmi \
     proofs/evar_refiner.cmi kernel/environ.cmi pretyping/clenv.cmi \
@@ -1622,7 +1622,7 @@ proofs/clenvtac.cmx: lib/util.cmx pretyping/unification.cmx \
     pretyping/typing.cmx pretyping/termops.cmx kernel/term.cmx \
     proofs/tacmach.cmx proofs/tacexpr.cmx kernel/sign.cmx proofs/refiner.cmx \
     pretyping/reductionops.cmx kernel/reduction.cmx pretyping/rawterm.cmx \
-    proofs/proof_type.cmx proofs/proof_trees.cmx lib/profile.cmx lib/pp.cmx \
+    proofs/proof_type.cmx proofs/proof_trees.cmx lib/pp.cmx \
     pretyping/pattern.cmx kernel/names.cmx library/nameops.cmx \
     proofs/logic.cmx pretyping/evd.cmx pretyping/evarutil.cmx \
     proofs/evar_refiner.cmx kernel/environ.cmx pretyping/clenv.cmx \
@@ -3485,7 +3485,7 @@ contrib/omega/coq_omega.cmo: lib/util.cmi pretyping/termops.cmi \
     kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
     pretyping/tacred.cmi proofs/tacmach.cmi kernel/sign.cmi \
     kernel/reduction.cmi pretyping/rawterm.cmi proofs/proof_type.cmi \
-    lib/profile.cmi parsing/printer.cmi lib/pp.cmi contrib/omega/omega.cmo \
+    parsing/printer.cmi lib/pp.cmi contrib/omega/omega.cmo \
     library/nametab.cmi kernel/names.cmi library/nameops.cmi proofs/logic.cmi \
     library/libnames.cmi kernel/inductive.cmi library/goptions.cmi \
     library/global.cmi pretyping/evarutil.cmi proofs/evar_refiner.cmi \
@@ -3496,7 +3496,7 @@ contrib/omega/coq_omega.cmx: lib/util.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
     pretyping/tacred.cmx proofs/tacmach.cmx kernel/sign.cmx \
     kernel/reduction.cmx pretyping/rawterm.cmx proofs/proof_type.cmx \
-    lib/profile.cmx parsing/printer.cmx lib/pp.cmx contrib/omega/omega.cmx \
+    parsing/printer.cmx lib/pp.cmx contrib/omega/omega.cmx \
     library/nametab.cmx kernel/names.cmx library/nameops.cmx proofs/logic.cmx \
     library/libnames.cmx kernel/inductive.cmx library/goptions.cmx \
     library/global.cmx pretyping/evarutil.cmx proofs/evar_refiner.cmx \
@@ -4011,8 +4011,6 @@ contrib/xml/xmlentries.cmx: parsing/grammar.cma contrib/xml/xmlcommand.cmx \
     parsing/egrammar.cmx toplevel/cerrors.cmx 
 contrib/xml/xml.cmo: contrib/xml/xml.cmi 
 contrib/xml/xml.cmx: contrib/xml/xml.cmi 
-doc/refman/euclid.cmo: doc/refman/euclid.cmi 
-doc/refman/euclid.cmx: doc/refman/euclid.cmi 
 ide/utils/config_file.cmo: ide/utils/config_file.cmi 
 ide/utils/config_file.cmx: ide/utils/config_file.cmi 
 ide/utils/configwin_html_config.cmo: ide/utils/configwin_types.cmo \

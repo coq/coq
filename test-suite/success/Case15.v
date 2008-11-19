@@ -1,7 +1,7 @@
 (* Check compilation of multiple pattern-matching on terms non
    apparently of inductive type *)
 
-(* Check that the non dependency in y is OK *)
+(* Check that the non dependency in y is OK both in V7 and V8 *)
 Check
   (fun x (y : Prop) z =>
    match x, y, z return (x = x \/ z = z) with
@@ -49,32 +49,3 @@ Check
             end y)
    end.
 *)
-
-Inductive I : Set :=
-        c : forall b : bool, (if b then bool else nat) -> I.
-
-Check (fun x =>
-  match x return bool with
-    c (true as y) (true as z) => if z then y else true
-  | c false O => true
-  | _ => false
-  end).
-
-Check (fun x =>
-  match x with
-    c true true => true
-  | c false O => true
-  | _ => false
-  end).
-
-Check
-   (fun x : I =>
-       match x with
-       | c b z =>
-           (if b as b return ((if b then bool else nat) -> bool)
-            then fun z => if z then true else false
-            else fun z => match z with
-                          | O => true
-                          | S _ => false
-                          end) z
-       end).
