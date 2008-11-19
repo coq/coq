@@ -878,6 +878,14 @@ endif
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c $<
 
+%.cmxs: %.cmxa
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) -linkall -shared -o $@ $<
+
+%.cmxs: %.cmx
+	$(SHOW)'OCAMLOPT  $<'
+	$(HIDE)$(OCAMLOPT) -shared -o $@ $<
+
 %.ml: %.mll
 	$(SHOW)'OCAMLLEX  $<'
 	$(HIDE)$(OCAMLLEX) -o $@ "$*.mll"
