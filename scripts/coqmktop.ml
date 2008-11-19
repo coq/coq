@@ -210,7 +210,17 @@ let declare_loading_string () =
   if not !top then
     "Mltop.remove ();;"
   else
-    "let ppf = Format.std_formatter;;
+    "begin try
+       (* Enable rectypes in the toplevel if it has the directive #rectypes *)
+       begin match Hashtbl.find Toploop.directive_table \"rectypes\" with
+         | Toploop.Directive_none f -> f ()
+         | _ -> ()
+       end
+     with
+       | Not_found -> ()
+     end;;
+
+     let ppf = Format.std_formatter;;
      Mltop.set_top
        {Mltop.load_obj=Topdirs.dir_load ppf;
         Mltop.use_file=Topdirs.dir_use ppf;

@@ -1,12 +1,13 @@
 
 (* File to include to install the pretty-printers in the ocaml toplevel *)
 
-(* clflags.cmi (a ocaml compilation by-product) must be in the library path.
+(* For OCaml 3.10.x:
+   clflags.cmi (a ocaml compilation by-product) must be in the library path.
    On Debian, install ocaml-compiler-libs, and uncomment the following:
    #directory "+compiler-libs/utils";;
+   Clflags.recursive_types := true;;
 *)
 
-(* Clflags.recursive_types := true;;*)
 #cd ".";;
 #use "base_include";;
 
@@ -37,4 +38,3 @@
 #install_printer  (* generic_argument *) pp_generic_argument;;
 
 #install_printer  (* fconstr *) ppfconstr;;
-
