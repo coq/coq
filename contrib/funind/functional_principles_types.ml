@@ -552,13 +552,31 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
       | _ -> anomaly ""
   in
   let (_,(const,_,_)) = 
-    build_functional_principle false
-      first_type
-      (Array.of_list sorts)
-      this_block_funs
-      0
-      (prove_princ_for_struct false 0 (Array.of_list funs))
-      (fun _ _ _ -> ())
+    try
+      build_functional_principle false
+	first_type
+	(Array.of_list sorts)
+	this_block_funs
+	0
+	(prove_princ_for_struct false 0 (Array.of_list funs))
+	(fun _ _ _ -> ())
+  with e -> 
+    begin
+      begin 
+	try 
+	  let id = Pfedit.get_current_proof_name () in 
+	  let s = string_of_id id in 
+	  let n = String.length "___________princ_________" in
+	  if String.length s >= n 
+	  then if String.sub s 0 n = "___________princ_________" 
+	  then Pfedit.delete_current_proof ()
+	  else ()
+	  else ()
+	with _ -> ()
+      end;
+      raise (Defining_principle e)
+    end
+
   in      
   incr i;
   let opacity = 

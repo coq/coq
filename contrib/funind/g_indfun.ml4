@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 (*i camlp4deps: "parsing/grammar.cma" i*)
+open Util
 open Term
 open Names
 open Pp
@@ -201,24 +202,52 @@ VERNAC ARGUMENT EXTEND fun_scheme_args
 | [ fun_scheme_arg(fa) "with" fun_scheme_args(fas) ] -> [fa::fas]
 END 
 
+
+let warning_error names e = 
+  match e with 
+    | Building_graph e -> 
+	Pp.msg_warning 
+	  (str "Cannot define graph(s) for " ++ 
+	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Libnames.pr_reference names) ++
+	     if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ())
+    | Defining_principle e -> 
+	Pp.msg_warning
+	  (str "Cannot define principle(s) for "++ 
+	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Libnames.pr_reference names) ++
+	     if do_observe () then Cerrors.explain_exn e else mt ())
+    | _ -> anomaly ""
+
+
 VERNAC COMMAND EXTEND NewFunctionalScheme
    ["Functional" "Scheme" fun_scheme_args(fas) ] ->
     [
-      try 
-	Functional_principles_types.build_scheme fas
-      with Functional_principles_types.No_graph_found -> 
-	match fas with 
-	  | (_,fun_name,_)::_ -> 
-	      begin
-		begin
-		    make_graph (Nametab.global fun_name)
-		end
-		;
-		try Functional_principles_types.build_scheme fas
-		with Functional_principles_types.No_graph_found -> 
-		  Util.error ("Cannot generate induction principle(s)")
-	      end
-	  | _ -> assert false (* we can only have non empty  list *)
+      begin
+	try 
+	  Functional_principles_types.build_scheme fas
+	with Functional_principles_types.No_graph_found -> 
+	  begin
+	    match fas with 
+	      | (_,fun_name,_)::_ -> 
+		  begin
+		    begin
+		      make_graph (Nametab.global fun_name)
+		    end
+		    ;
+		    try Functional_principles_types.build_scheme fas
+		    with Functional_principles_types.No_graph_found -> 
+		      Util.error ("Cannot generate induction principle(s)")
+    		      | e -> 
+			  let names = List.map (fun (_,na,_) -> na) fas in 
+			  warning_error names e
+			    
+		  end
+	      | _ -> assert false (* we can only have non empty  list *)
+	  end
+    	  | e -> 
+	      let names = List.map (fun (_,na,_) -> na) fas in 
+	      warning_error names e
+
+      end
     ]
 END
 (***** debug only ***)
