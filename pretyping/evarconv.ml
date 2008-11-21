@@ -164,10 +164,9 @@ let rec evar_conv_x env evd pbty term1 term2 =
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]
      could have found, we do it only if the terms are free of evar.
      Note: incomplete heuristic... *)
-  if is_ground_term evd term1 && is_ground_term evd term2 &
-     is_fconv pbty env (evars_of evd) term1 term2
+  if is_ground_term evd term1 && is_ground_term evd term2
   then
-    (evd,true)
+    (evd,is_fconv pbty env (evars_of evd) term1 term2)
   else
   let term1 = apprec_nohdbeta env evd term1 in
   let term2 = apprec_nohdbeta env evd term2 in
