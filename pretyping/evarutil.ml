@@ -258,13 +258,19 @@ let e_new_evar evdref env ?(src=(dummy_loc,InternalHole)) ?filter ty =
  * operations on the evar constraints *
  *------------------------------------*)
 
+let is_pattern inst =
+  array_for_all (fun a -> isRel a || isVar a) inst &&
+  array_distinct inst
+
 (* Pb: defined Rels and Vars should not be considered as a pattern... *)
+(*
 let is_pattern inst =
   let rec is_hopat l = function
       [] -> true
     | t :: tl ->
         (isRel t or isVar t) && not (List.mem t l) && is_hopat (t::l) tl in
   is_hopat [] (Array.to_list inst)
+*)
 
 let evar_well_typed_body evd ev evi body =
   try
@@ -940,6 +946,13 @@ let has_undefined_evars evd t =
 let is_ground_term evd t =
   not (has_undefined_evars evd t)
 
+let is_ground_env evd env =
+  let is_ground_decl = function
+      (_,Some b,_) -> is_ground_term evd b
+    | _ -> true in
+  List.for_all is_ground_decl (rel_context env) &&
+  List.for_all is_ground_decl (named_context env)
+
 let head_evar = 
   let rec hrec c = match kind_of_term c with
     | Evar (evk,_)   -> evk
@@ -957,11 +970,11 @@ let head_evar =
 let is_unification_pattern_evar env (_,args) l =
   let l' = Array.to_list args @ l in
   let l' = List.map (expand_var env) l' in
-  List.for_all (fun a -> isRel a or isVar a) l' & list_distinct l'
+  List.for_all (fun a -> isRel a or isVar a) l' && list_distinct l'
 
 let is_unification_pattern env f l =
   match kind_of_term f with
-    | Meta _ -> array_for_all isRel l & array_distinct l
+    | Meta _ -> array_for_all isRel l && array_distinct l
     | Evar ev -> is_unification_pattern_evar env ev (Array.to_list l)
     | _ -> false
 
