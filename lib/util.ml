@@ -1321,7 +1321,7 @@ let prvect_with_sep sep elem v =
 let prvect elem v = prvect_with_sep mt elem v
 
 let pr_located pr (loc,x) =
-  if Flags.do_translate() && loc<>dummy_loc then
+  if Flags.do_beautify() && loc<>dummy_loc then
     let (b,e) = unloc loc in
     comment b ++ pr x ++ comment e
   else pr x
