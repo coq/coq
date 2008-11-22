@@ -116,7 +116,8 @@ let where_in_path warn path filename =
 	    msg_warning
 	      (str filename ++ str " has been found in" ++ spc () ++
 	       hov 0 (str "[ " ++
-	         hv 0 (prlist_with_sep pr_semicolon (fun (lpe,_) -> str lpe) l)
+	         hv 0 (prlist_with_sep (fun () -> spc() ++ pr_semicolon())
+		   (fun (lpe,_) -> str lpe) l)
 	         ++ str " ];") ++ fnl () ++
 	       str "loading " ++ str f);
 	  (lpe, f) in

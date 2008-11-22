@@ -116,13 +116,13 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_
     let sigma = Evd.merge sigma (project gl) in
     let ctype = get_type_of env sigma c' in 
     let rels, t = decompose_prod (whd_betaiotazeta ctype) in
-      match match_with_equation t with
+      match match_with_equality_type t with
       | Some (hdcncl,_) -> (* Fast path: direct leibniz rewrite *)
 	  leibniz_rewrite_ebindings_clause cls lft2rgt sigma c' l with_evars gl hdcncl
       | None ->
 	  let env' = List.fold_left (fun env (n,t) -> push_rel (n, None, t) env) env rels in
 	  let _,t' = splay_prod env' sigma t in (* Search for underlying eq *)
-	    match match_with_equation t' with
+	    match match_with_equality_type t' with
 	    | Some (hdcncl,_) -> (* Maybe a setoid relation with eq inside *)
 		if l = NoBindings && !is_applied_setoid_relation t then
 		  !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl

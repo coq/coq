@@ -121,8 +121,8 @@ let match_with_unit_type t =
         let constr_types = mip.mind_nf_lc in 
         let nconstr = Array.length mip.mind_consnames in
         let zero_args c =
-          nb_prod c = mib.mind_nparams in  
-	if nconstr = 1 && array_for_all zero_args constr_types then 
+	  nb_prod c = mib.mind_nparams in  
+	if nconstr = 1 && zero_args constr_types.(0) then 
 	  Some hdapp
         else 
 	  None
@@ -156,6 +156,19 @@ let match_with_equation t =
     | _ -> None
 
 let is_equation t = op2bool (match_with_equation  t)
+
+let match_with_equality_type t =
+  let (hdapp,args) = decompose_app t in
+  match (kind_of_term hdapp) with
+    | Ind ind when args <> [] -> 
+        let (mib,mip) = Global.lookup_inductive ind in
+        let nconstr = Array.length mip.mind_consnames in
+	if nconstr = 1 && constructor_nrealargs (Global.env()) (ind,1) = 0
+        then 
+	  Some (hdapp,args)
+        else 
+	  None
+    | _ -> None
 
 let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
 

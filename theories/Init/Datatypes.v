@@ -72,6 +72,10 @@ Hint Resolve andb_true_intro: bool v62.
 
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
 
+(** Technical lemma: identify -> rewriting on eq_true with <- rewriting *)
+
+Definition eq_true_ind_r := eq_true_ind.
+
 (** [nat] is the datatype of natural numbers built from [O] and successor [S];
     note that the constructor name is the letter O.
     Numbers in [nat] can be denoted using a decimal notation; 

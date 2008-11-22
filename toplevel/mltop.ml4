@@ -106,7 +106,7 @@ let dir_ml_load s =
 	 * if this code section starts to use a module not used elsewhere
 	 * in this file, the Makefile dependency logic needs to be updated.
 	 *)
-        let _,gname = where_in_path true !coq_mlpath_copy s in
+        let _,gname = where_in_path true (list_uniquize !coq_mlpath_copy) s in
         try
           Dynlink.loadfile gname;
 	with | Dynlink.Error a ->
