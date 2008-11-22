@@ -808,9 +808,10 @@ and pr_atom1 = function
   | TacClearBody l ->
       hov 1 (str "clearbody" ++ spc () ++ prlist_with_sep spc pr_ident l)
   | TacMove (b,id1,id2) ->
+      (* Rem: only b = true is available for users *)
+      assert b;
       hov 1
-        (str "move" ++ (if b then spc () ++ str"dependent" else mt ())
-	  ++ brk (1,1) ++ pr_ident id1 ++ 
+        (str "move" ++ brk (1,1) ++ pr_ident id1 ++ 
 	 pr_move_location pr_ident id2)
   | TacRename l ->
       hov 1
