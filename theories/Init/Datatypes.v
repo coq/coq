@@ -72,9 +72,25 @@ Hint Resolve andb_true_intro: bool v62.
 
 Inductive eq_true : bool -> Prop := is_eq_true : eq_true true.
 
-(** Technical lemma: identify -> rewriting on eq_true with <- rewriting *)
+(** Additional rewriting lemmas about [eq_true] *)
 
-Definition eq_true_ind_r := eq_true_ind.
+Lemma eq_true_ind_r :
+  forall (P : bool -> Prop) (b : bool), P b -> eq_true b -> P true.
+Proof.
+  intros P b H H0; destruct H0 in H; assumption.
+Defined.
+
+Lemma eq_true_rec_r :
+  forall (P : bool -> Set) (b : bool), P b -> eq_true b -> P true.
+Proof.
+  intros P b H H0; destruct H0 in H; assumption.
+Defined.
+
+Lemma eq_true_rect_r :
+  forall (P : bool -> Type) (b : bool), P b -> eq_true b -> P true.
+Proof.
+  intros P b H H0; destruct H0 in H; assumption.
+Defined.
 
 (** [nat] is the datatype of natural numbers built from [O] and successor [S];
     note that the constructor name is the letter O.
