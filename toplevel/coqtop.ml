@@ -85,8 +85,8 @@ let add_load_vernacular verb s =
 let load_vernacular () =
   List.iter
     (fun (s,b) -> 
-      if Flags.do_translate () then
-	with_option translate_file (Vernac.load_vernac b) s
+      if Flags.do_beautify () then
+	with_option beautify_file (Vernac.load_vernac b) s
       else
 	Vernac.load_vernac b s)
     (List.rev !load_vernacular_list)
@@ -115,8 +115,8 @@ let compile_files () =
       (fun (v,f) ->
 	 States.unfreeze init_state;
 	 Dumpglob.coqdoc_unfreeze coqdoc_init_state;
-	 if Flags.do_translate () then
-	   with_option translate_file (Vernac.compile v) f
+	 if Flags.do_beautify () then
+	   with_option beautify_file (Vernac.compile v) f
 	 else
 	   Vernac.compile v f)
       (List.rev !compile_list)
@@ -260,7 +260,7 @@ let parse_args is_ide =
 
     | "-dont-load-proofs" :: rem -> Flags.dont_load_proofs := true; parse rem
 
-    | "-translate" :: rem -> make_translate true; parse rem
+    | "-beautify" :: rem -> make_beautify true; parse rem
 
     | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
     | "-unsafe" :: []       -> usage ()

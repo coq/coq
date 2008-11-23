@@ -29,11 +29,10 @@ val raw_print : bool ref
 
 val unicode_syntax : bool ref
 
-val translate : bool ref
-val make_translate : bool -> unit
-val do_translate : unit -> bool
-val translate_file : bool ref
-val translate_syntax : bool ref
+val beautify : bool ref
+val make_beautify : bool -> unit
+val do_beautify : unit -> bool
+val beautify_file : bool ref
 
 val make_silent : bool -> unit
 val is_silent : unit -> bool

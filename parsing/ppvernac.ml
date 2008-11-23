@@ -331,7 +331,7 @@ let pr_assumption_token many = function
       str (if many then "Parameters" else "Parameter")
   | (Global,Conjectural) -> str"Conjecture"
   | (Local,Conjectural) -> 
-      anomaly "Don't know how to translate a local conjecture"
+      anomaly "Don't know how to beautify a local conjecture"
 
 let pr_params pr_c (xl,(c,t)) =
   hov 2 (prlist_with_sep sep pr_lident xl ++ spc() ++
@@ -614,7 +614,7 @@ let rec pr_vernac = function
       let pr_onerec = function
         | ((loc,id),(n,ro),bl,type_,def),ntn ->
             let (bl',def,type_) =
-              if Flags.do_translate() then extract_def_binders def type_
+              if Flags.do_beautify() then extract_def_binders def type_
               else ([],def,type_) in
             let bl = bl @ bl' in
             let ids = List.flatten (List.map name_of_binder bl) in
@@ -646,7 +646,7 @@ let rec pr_vernac = function
   | VernacCoFixpoint (corecs,b) ->
       let pr_onecorec (((loc,id),bl,c,def),ntn) =
         let (bl',def,c) =
-              if Flags.do_translate() then extract_def_binders def c
+              if Flags.do_beautify() then extract_def_binders def c
               else ([],def,c) in
         let bl = bl @ bl' in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
@@ -944,19 +944,16 @@ and pr_extend s cl =
     let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
     let start,rl,cl =
       match rl with
-	| Egrammar.TacTerm s :: rl -> str s, rl, cl
-	| Egrammar.TacNonTerm _ :: rl ->
-	    (* Will put an unnecessary extra space in front *)
-	    pr_gen (Global.env()) (List.hd cl), rl, List.tl cl 
-	| [] -> anomaly "Empty entry" in
+      | Egrammar.TacTerm s :: rl -> str s, rl, cl
+      | Egrammar.TacNonTerm _ :: rl -> pr_arg (List.hd cl), rl, List.tl cl 
+      | [] -> anomaly "Empty entry" in
     let (pp,_) =
       List.fold_left
         (fun (strm,args) pi ->
-          match pi with
-              Egrammar.TacNonTerm _ -> 
-                (strm ++ pr_gen (Global.env()) (List.hd args),
-                List.tl args)
-            | Egrammar.TacTerm s -> (strm ++ spc() ++ str s, args))
+          let pp,args = match pi with
+          | Egrammar.TacNonTerm _ -> (pr_arg (List.hd args), List.tl args)
+          | Egrammar.TacTerm s -> (str s, args) in
+          (strm ++ spc() ++ pp), args)
         (start,cl) rl in
     hov 1 pp
   with Not_found ->

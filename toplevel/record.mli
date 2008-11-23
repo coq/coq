@@ -37,4 +37,5 @@ val declare_structure : bool (*coinductive?*)-> identifier -> identifier ->
 
 val definition_structure :
   bool (*coinductive?*)*lident with_coercion * local_binder list *
-  (local_decl_expr with_coercion with_notation) list * identifier * sorts -> kernel_name
+  (local_decl_expr with_coercion with_notation) list * 
+  identifier * constr_expr -> kernel_name

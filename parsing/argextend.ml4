@@ -163,16 +163,27 @@ let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
     end
   >>
 
-let declare_vernac_argument loc s cl =
+let declare_vernac_argument loc s pr cl =
   let se = mlexpr_of_string s in
+  let wit = <:expr< $lid:"wit_"^s$ >> in
   let rawwit = <:expr< $lid:"rawwit_"^s$ >> in
+  let globwit = <:expr< $lid:"globwit_"^s$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
+  let pr_rules = match pr with
+    | None -> <:expr< fun _ _ _ _ -> str $str:"[No printer for "^s^"]"$ >>
+    | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
   <:str_item<
     declare
-      value $lid:"rawwit_"^s$ = let (_,_,x) = Genarg.create_arg $se$ in x;
+      value (($lid:"wit_"^s$:Genarg.abstract_argument_type unit Genarg.tlevel),
+             ($lid:"globwit_"^s$:Genarg.abstract_argument_type unit Genarg.glevel),
+              $lid:"rawwit_"^s$) = Genarg.create_arg $se$;
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$;
       Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None 
         [(None, None, $rules$)];
+      Pptactic.declare_extra_genarg_pprule
+        ($rawwit$, $pr_rules$)
+        ($globwit$, fun _ _ _ _ -> Util.anomaly "vernac argument needs not globwit printer")
+        ($wit$, fun _ _ _ _ -> Util.anomaly "vernac argument needs not wit printer");
     end
   >>
 
@@ -202,11 +213,12 @@ EXTEND
 	    failwith "Argument entry names must be lowercase";
          declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr l
       | "VERNAC"; "ARGUMENT"; "EXTEND"; s = [ UIDENT | LIDENT ];
+        pr = OPT ["PRINTED"; "BY"; pr = LIDENT -> pr];
         OPT "|"; l = LIST1 argrule SEP "|";
         "END" ->
 	  if String.capitalize s = s then
 	    failwith "Argument entry names must be lowercase";
-         declare_vernac_argument loc s l ] ]
+         declare_vernac_argument loc s pr l ] ]
   ;
   argtype:
     [ "2" 

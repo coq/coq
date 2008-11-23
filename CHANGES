@@ -79,6 +79,7 @@ Vernacular commands
   by the discrimination net and the unification algorithm.
 - "Hint Extern" now takes an optional pattern and applies the given tactic
   all the time if no pattern is given.
+- Specific sort constraints on Record now taken into account.
 
 Libraries (DOC TO CHECK)
 

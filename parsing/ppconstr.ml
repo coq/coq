@@ -101,7 +101,7 @@ let pr_generalization bk ak c =
     str "`" ++ str hd ++ c ++ str tl
 
 let pr_com_at n =
-  if Flags.do_translate() && n <> 0 then comment n 
+  if Flags.do_beautify() && n <> 0 then comment n 
   else mt()
 
 let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)

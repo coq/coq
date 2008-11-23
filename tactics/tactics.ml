@@ -2906,7 +2906,7 @@ let reflexivity_red allowred gl =
   let concl = if not allowred then pf_concl gl
   else whd_betadeltaiota (pf_env gl) (project gl) (pf_concl gl) 
   in 
-    match match_with_equation concl with
+    match match_with_equality_type concl with
     | None -> None
     | Some _ -> Some (one_constructor 1 NoBindings)
 

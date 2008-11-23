@@ -33,13 +33,10 @@ let raw_print = ref false
 let unicode_syntax = ref false
 
 (* Translate *)
-let translate = ref false
-let make_translate f = translate := f
-let do_translate () = !translate
-let translate_file = ref false
-
-(* True only when interning from pp*new.ml *)
-let translate_syntax = ref false
+let beautify = ref false
+let make_beautify f = beautify := f
+let do_beautify () = !beautify
+let beautify_file = ref false
 
 (* Silent / Verbose *)
 let silent = ref false

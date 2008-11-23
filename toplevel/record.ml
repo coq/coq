@@ -244,6 +244,12 @@ let declare_structure finite id idbuild paramimpls params arity fieldimpls field
     Recordops.declare_structure(rsp,(rsp,1),List.rev kinds,List.rev sp_projs);
     kn
 
+let interp_and_check_sort sort =
+  let env = Global.env() and sigma = Evd.empty in
+  let s = interp_constr sigma env sort in
+  if isSort (Reductionops.whd_betadeltaiota env sigma s) then s
+  else user_err_loc (constr_loc sort,"", str"Sort expected.")
+
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
 let definition_structure (finite,(is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
@@ -256,11 +262,12 @@ let definition_structure (finite,(is_coe,(_,idstruc)),ps,cfs,idbuild,s) =
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   (* Now, younger decl in params and fields is on top *)
+  let sc = interp_and_check_sort s in
   let implpars, params, implfs, fields = 
     States.with_heavy_rollback (fun () ->
-      typecheck_params_and_fields idstruc (mkSort s) ps notations fs) ()
+      typecheck_params_and_fields idstruc sc ps notations fs) ()
   in
   let implfs = 
     List.map (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
-  in declare_structure finite idstruc idbuild implpars params (mkSort s) implfs fields is_coe coers
+  in declare_structure finite idstruc idbuild implpars params sc implfs fields is_coe coers
       

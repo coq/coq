@@ -69,6 +69,9 @@ val is_unit_type           : testing_function
 val match_with_equation    : (constr * constr list) matching_function
 val is_equation            : testing_function 
 
+(* type with only one constructor, no arguments and at least one dependency *)
+val match_with_equality_type : (constr * constr list) matching_function
+
 val match_with_nottype     : (constr * constr) matching_function
 val is_nottype             : testing_function 
 

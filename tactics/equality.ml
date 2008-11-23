@@ -105,6 +105,15 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt sigma c l with_evars gl hdcncl 
       error ("Cannot find rewrite principle "^rwr_thm^".")
   in general_elim_clause with_evars cls sigma c l (elim,NoBindings) gl
 
+let adjust_rewriting_direction args lft2rgt =
+  if List.length args = 1 then
+    (* equality to a constant, like in eq_true *)
+    (* more natural to see -> as the rewriting to the constant *)
+    not lft2rgt
+  else
+    (* other equality *)
+    lft2rgt
+
 let leibniz_eq = Lazy.lazy_from_fun build_coq_eq
 
 let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_bindings) with_evars gl =
@@ -116,14 +125,16 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_
     let sigma = Evd.merge sigma (project gl) in
     let ctype = get_type_of env sigma c' in 
     let rels, t = decompose_prod (whd_betaiotazeta ctype) in
-      match match_with_equation t with
-      | Some (hdcncl,_) -> (* Fast path: direct leibniz rewrite *)
+      match match_with_equality_type t with
+      | Some (hdcncl,args) -> (* Fast path: direct leibniz rewrite *)
+	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
 	  leibniz_rewrite_ebindings_clause cls lft2rgt sigma c' l with_evars gl hdcncl
       | None ->
 	  let env' = List.fold_left (fun env (n,t) -> push_rel (n, None, t) env) env rels in
 	  let _,t' = splay_prod env' sigma t in (* Search for underlying eq *)
-	    match match_with_equation t' with
-	    | Some (hdcncl,_) -> (* Maybe a setoid relation with eq inside *)
+	    match match_with_equality_type t' with
+	    | Some (hdcncl,args) -> (* Maybe a setoid relation with eq inside *)
+		let lft2rgt = adjust_rewriting_direction args lft2rgt in
 		if l = NoBindings && !is_applied_setoid_relation t then
 		  !general_setoid_rewrite_clause cls lft2rgt occs c ~new_goals:[] gl
 		else

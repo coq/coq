@@ -129,25 +129,52 @@ ARGUMENT EXTEND auto_using'
 | [ ] -> [ [] ]
 END
 
+let pr_rec_annotation2_aux s r id l =
+  str ("{"^s^" ") ++ Ppconstr.pr_constr_expr r ++ 
+    Util.pr_opt Nameops.pr_id id ++ 
+    Pptactic.pr_auto_using Ppconstr.pr_constr_expr l ++ str "}"
+
+let pr_rec_annotation2 = function
+  | Struct id -> str "{struct" ++ Nameops.pr_id id ++ str "}"
+  | Wf(r,id,l) -> pr_rec_annotation2_aux "wf" r id l
+  | Mes(r,id,l) -> pr_rec_annotation2_aux "measure" r id l
+
 VERNAC ARGUMENT EXTEND rec_annotation2
+PRINTED BY pr_rec_annotation2
   [ "{"  "struct" ident(id)  "}"] -> [ Struct id ]
 | [ "{" "wf" constr(r) ident_opt(id) auto_using'(l) "}" ] -> [ Wf(r,id,l) ]
 | [ "{" "measure" constr(r) ident_opt(id) auto_using'(l) "}" ] -> [ Mes(r,id,l) ] 
 END
 
+let pr_binder2 (idl,c) =
+  str "(" ++ Util.prlist_with_sep spc Nameops.pr_id idl ++ spc () ++ 
+    str ": " ++ Ppconstr.pr_lconstr_expr c ++ str ")"
 
 VERNAC ARGUMENT EXTEND binder2
-    [ "(" ne_ident_list(idl) ":" lconstr(c)  ")"] ->
-     [
-       LocalRawAssum (List.map (fun id -> (Util.dummy_loc,Name id)) idl,Topconstr.default_binder_kind,c) ]
+PRINTED BY pr_binder2
+    [ "(" ne_ident_list(idl) ":" lconstr(c)  ")"] -> [ (idl,c) ]
 END
 
+let make_binder2 (idl,c) =
+  LocalRawAssum (List.map (fun id -> (Util.dummy_loc,Name id)) idl,Topconstr.default_binder_kind,c)
+
+let pr_rec_definition2 (id,bl,annot,type_,def) =
+  Nameops.pr_id id ++ spc () ++ Util.prlist_with_sep spc pr_binder2 bl ++ 
+    Util.pr_opt pr_rec_annotation2 annot ++ spc () ++ str ":" ++ spc () ++
+    Ppconstr.pr_lconstr_expr type_ ++ str " :=" ++ spc () ++ 
+    Ppconstr.pr_lconstr_expr def
 
 VERNAC ARGUMENT EXTEND rec_definition2
- [ ident(id)  binder2_list( bl)
-     rec_annotation2_opt(annot) ":" lconstr( type_)
+PRINTED BY pr_rec_definition2
+ [ ident(id)  binder2_list(bl)
+     rec_annotation2_opt(annot) ":" lconstr(type_)
 	":=" lconstr(def)] ->
-    [let names = List.map snd (Topconstr.names_of_local_assums bl) in
+    [ (id,bl,annot,type_,def) ]
+END
+
+let make_rec_definitions2 (id,bl,annot,type_,def) =
+     let bl = List.map make_binder2 bl in
+     let names = List.map snd (Topconstr.names_of_local_assums bl) in
      let check_one_name () =
        if List.length names > 1 then
          Util.user_err_loc
@@ -174,32 +201,25 @@ VERNAC ARGUMENT EXTEND rec_definition2
 	 | Some an ->
 	     check_exists_args an
      in
-     ((Util.dummy_loc,id), ni, bl, type_, def) ]
-      END
-
-
-VERNAC ARGUMENT EXTEND rec_definitions2
-| [ rec_definition2(rd) ] -> [ [rd] ]
-| [ rec_definition2(hd) "with" rec_definitions2(tl) ] -> [ hd::tl ]
-END
+     ((Util.dummy_loc,id), ni, bl, type_, def)
 
 
 VERNAC COMMAND EXTEND Function
-   ["Function" rec_definitions2(recsl)] ->
+   ["Function" ne_rec_definition2_list_sep(recsl,"with")] ->
 	[ 
-	  do_generate_principle false  recsl; 
+	  do_generate_principle false (List.map make_rec_definitions2 recsl); 
 	  
 	]
 END
 
+let pr_fun_scheme_arg (princ_name,fun_name,s) = 
+  Nameops.pr_id princ_name ++ str " :=" ++ spc() ++ str "Induction for " ++ 
+  Libnames.pr_reference fun_name ++ spc() ++ str "Sort " ++ 
+  Ppconstr.pr_rawsort s
 
 VERNAC ARGUMENT EXTEND fun_scheme_arg
+PRINTED BY pr_fun_scheme_arg
 | [ ident(princ_name) ":=" "Induction" "for" reference(fun_name) "Sort" sort(s) ] -> [ (princ_name,fun_name,s) ] 
-END 
-
-VERNAC ARGUMENT EXTEND fun_scheme_args
-| [ fun_scheme_arg(fa) ] -> [ [fa] ] 
-| [ fun_scheme_arg(fa) "with" fun_scheme_args(fas) ] -> [fa::fas]
 END 
 
 
@@ -219,7 +239,7 @@ let warning_error names e =
 
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
-   ["Functional" "Scheme" fun_scheme_args(fas) ] ->
+   ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ] ->
     [
       begin
 	try 
