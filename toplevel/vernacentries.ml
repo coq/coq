@@ -379,20 +379,13 @@ let vernac_record k finite struc binders sort nameopt cfs =
 	Dumpglob.dump_definition lid false "constr"; id in
   let sigma = Evd.empty in
   let env = Global.env() in
-  let s = Option.map (fun x ->
-    let s = Reductionops.whd_betadeltaiota env sigma (interp_constr sigma env x) in
-      match kind_of_term s with
-      | Sort s -> s
-      | _ -> user_err_loc
-          (constr_loc x,"definition_structure", str "Sort expected.")) sort
-  in
     if Dumpglob.dump () then (
       Dumpglob.dump_definition (snd struc) false "rec";
       List.iter (fun ((_, x), _) ->
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
-    ignore(Record.definition_structure (k,finite,struc,binders,cfs,const,s))
+    ignore(Record.definition_structure (k,finite,struc,binders,cfs,const,sort))
       
 let vernac_inductive finite indl = 
   if Dumpglob.dump () then

@@ -43,6 +43,7 @@ Language
   As a consequence, Acc_rect has now a more direct proof [possible source
   of easily fixed incompatibility in case of manual definition of a recursor
   in a recursive singleton inductive type].
+- Specific sort constraints on Record now taken into account.
 
 Vernacular commands
 

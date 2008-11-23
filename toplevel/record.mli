@@ -37,4 +37,5 @@ val declare_structure : bool (*coinductive?*)-> identifier -> identifier ->
 
 val definition_structure :
   record_kind * bool (*coinductive?*)*lident with_coercion * local_binder list *
-  (local_decl_expr with_coercion with_notation) list * identifier * sorts option -> global_reference
+  (local_decl_expr with_coercion with_notation) list * 
+  identifier * constr_expr option -> global_reference

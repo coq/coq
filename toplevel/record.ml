@@ -341,6 +341,13 @@ let declare_class finite id idbuild paramimpls params arity fieldimpls fields
       k.cl_projs coers;
     add_class k; impl
 
+let interp_and_check_sort sort =
+  Option.map (fun sort ->
+    let env = Global.env() and sigma = Evd.empty in
+    let s = interp_constr sigma env sort in
+    if isSort (Reductionops.whd_betadeltaiota env sigma s) then s
+    else user_err_loc (constr_loc sort,"", str"Sort expected.")) sort
+
 open Vernacexpr
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
@@ -355,14 +362,14 @@ let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
   (* Now, younger decl in params and fields is on top *)
-  let sc = Option.map mkSort s in
+  let sc = interp_and_check_sort s in
   let implpars, params, implfs, fields = 
     States.with_heavy_rollback (fun () ->
       typecheck_params_and_fields idstruc sc ps notations fs) ()
   in
     match kind with
     | Record | Structure ->
-	let arity = Option.cata (fun x -> x) (new_Type ()) sc in
+	let arity = Option.default (new_Type ()) sc in
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
 	in IndRef (declare_structure finite idstruc idbuild implpars params arity implfs fields is_coe coers)
