@@ -245,7 +245,11 @@ let traite_fichier_Coq verbose f =
 			addQueue deja_vu_ml s;
                	       try
               		 let mldir = Hashtbl.find mlKnown s in
-              		   printf " %s.cmo" (file_name ([String.uncapitalize s],mldir))
+			 let filename = file_name ([String.uncapitalize s],mldir) in
+              		 if Coq_config.has_natdynlink then
+			   printf " %s.cmo %s.cmxs" filename filename
+			 else
+			   printf " %s.cmo" filename
               	       with Not_found -> ()
 		     end)
 		sl

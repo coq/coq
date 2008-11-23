@@ -323,14 +323,14 @@ let open_libraries export modl =
 (**********************************************************************)
 (* import and export  -  synchronous operations*)
 
-let cache_import (_,(dir,export)) = 
-  open_libraries export [try_find_library dir]
-
-let open_import i (_,(dir,_) as obj) =
+let open_import i (_,(dir,export)) =
   if i=1 then
     (* even if the library is already imported, we re-import it *)
     (* if not (library_is_opened dir) then *)
-      cache_import obj
+      open_libraries export [try_find_library dir]
+
+let cache_import obj = 
+  open_import 1 obj
 
 let subst_import (_,_,o) = o
 
@@ -509,8 +509,8 @@ let rec_intern_library_from_file idopt f =
   rec_intern_by_filename_only idopt f
 
 (**********************************************************************)
-(*s [require_library] loads and opens a library. This is a synchronized
-    operation. It is performed as follows:
+(*s [require_library] loads and possibly opens a library. This is a 
+    synchronized operation. It is performed as follows:
 
   preparation phase: (functions require_library* ) the library and its 
     dependencies are read from to disk (using intern_* )
@@ -523,10 +523,6 @@ let rec_intern_library_from_file idopt f =
     the library is loaded in the environment and Nametab, the objects are 
     registered etc, using functions from Declaremods (via load_library, 
     which recursively loads its dependencies)
-
-
-  The [read_library] operation is very similar, but does not "open"
-    the library
 *)
 
 type library_reference = dir_path list * bool option
@@ -539,14 +535,21 @@ let register_library (dir,m) =
     m.library_digest;
   register_loaded_library m
 
-  (* [needed] is the ordered list of libraries not already loaded *)
-let cache_require (_,(needed,modl,export)) =
-  List.iter register_library needed;
+(* Follow the semantics of Anticipate object:
+   - called at module or module type closing when a Require occurs in 
+     the module or module type
+   - not called from a library (i.e. a module identified with a file) *)
+let load_require _ (_,(needed,modl,_)) =
+  List.iter register_library needed
+
+let open_require i (_,(_,modl,export)) =
   Option.iter (fun exp -> open_libraries exp (List.map find_library modl))
     export
 
-let load_require  _ (_,(needed,modl,_)) =
-  List.iter register_library needed
+  (* [needed] is the ordered list of libraries not already loaded *)
+let cache_require o =
+  load_require 1 o;
+  open_require 1 o
 
   (* keeps the require marker for closed section replay but removes
      OS dependent fields from .vo files for cross-platform compatibility *)
@@ -554,18 +557,19 @@ let export_require (_,l,e) = Some ([],l,e)
 
 let discharge_require (_,o) = Some o
 
+(* open_function is never called from here because an Anticipate object *) 
+
 let (in_require, out_require) =
   declare_object {(default_object "REQUIRE") with
        cache_function = cache_require;
        load_function = load_require;
+       open_function = (fun _ _ -> assert false);
        export_function = export_require;
        discharge_function = discharge_require;
        classify_function = (fun (_,o) -> Anticipate o) }
 
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)
-
-(* read = require without opening *)
 
 let xml_require = ref (fun d -> ())
 let set_xml_require f = xml_require := f

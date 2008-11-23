@@ -90,7 +90,7 @@ let is_genrule r =
 
 let standard sds sps =
   print "Makefile.config:\n";
-  print "\t$(COQBIN)/coqtop -config > $@\n\n";
+  print "\t$(COQBIN)coqtop -config > $@\n\n";
   print "byte:\n";
   print "\t$(MAKE) all \"OPT:=-byte\"\n\n";
   print "opt:\n";
@@ -115,7 +115,7 @@ let standard sds sps =
     print "\n";
   end;
   print "clean:\n";
-  print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) $(MLFILES:.ml=.cmo) $(MLFILES:.ml=.cmx) *~\n";
+  print "\trm -f $(CMOFILES) $(CMIFILES) $(CMXFILES) $(CMXSFILES) $(OFILES) $(VOFILES) $(VIFILES) $(GFILES) $(MLFILES:.ml=.cmo) $(MLFILES:.ml=.cmx) *~\n";
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
          $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d) Makefile.config\n";
   if !some_mlfile then
@@ -147,12 +147,13 @@ let footer_includes () =
 let implicit () =
   let ml_rules () =
     print "%.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
-    print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
-    print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) $<\n\n";
+    print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) -c $(PP) $<\n\n";
+    print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -c $(PP) $<\n\n";
+    print "%.cmxs: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $(PP) $<\n\n";
     print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.ml.d: %.ml\n";
-    print "\t$(CAMLBIN)ocamldep -slash $(ZFLAGS) $(PP) \"$<\" > \"$@\"\n\n"
+    print "\t$(CAMLBIN)ocamldep -slash $(ZFLAGS) $(PP) -impl \"$<\" > \"$@\"\n\n"
   and v_rule () =
     print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -187,8 +188,8 @@ let variables l =
     print "GALLINA:=$(COQBIN)gallina\n";
     print "COQDOC:=$(COQBIN)coqdoc\n";
     (* Caml executables and relative variables *)
-    printf "CAMLC:=$(CAMLBIN)%s -rectypes -c\n" best_ocamlc;
-    printf "CAMLOPTC:=$(CAMLBIN)%s -rectypes -c\n" best_ocamlopt;
+    printf "CAMLC:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
+    printf "CAMLOPTC:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
     printf "CAMLLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
     printf "CAMLOPTLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
     print "GRAMMARS:=grammar.cma\n";
@@ -345,10 +346,15 @@ let all_target l =
       begin
 	print "MLFILES:="; print_list "\\\n  " mlfiles; print "\n";
 	print "CMOFILES:=$(MLFILES:.ml=.cmo)\n";
+	print "CMIFILES:=$(MLFILES:.ml=.cmi)\n";
+	print "CMXFILES:=$(MLFILES:.ml=.cmx)\n";
+	print "CMXSFILES:=$(MLFILES:.ml=.cmxs)\n";
+	print "OFILES:=$(MLFILES:.ml=.o)\n";
       end;
     print "\nall: ";
     if !some_vfile then print "$(VOFILES) ";
     if !some_mlfile then print "$(CMOFILES) ";
+    if Coq_config.has_natdynlink && !some_mlfile then print "$(CMXSFILES) ";
     print_list "\\\n  " other_targets; print "\n";
     if !some_vfile then 
       begin

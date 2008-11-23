@@ -48,6 +48,13 @@ let subst_objects prefix subst seg =
   in
     list_smartmap subst_one seg
 
+let load_and_subst_objects i prefix subst seg =
+  List.rev (List.fold_left (fun seg (id,obj as node) ->
+    let obj' =  subst_object (make_oname prefix id, subst, obj) in
+    let node = if obj == obj' then node else (id, obj') in
+    load_object i (make_oname prefix id, obj');
+    node :: seg) [] seg)
+
 let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
