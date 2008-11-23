@@ -524,3 +524,27 @@ let _ = declare_bool_option strict_tcc_sig
 
 exception Building_graph of exn 
 exception Defining_principle of exn
+exception ToShow of exn
+
+let init_constant dir s = 
+  try 
+    Coqlib.gen_constant "Function" dir s
+  with e -> raise (ToShow e)
+
+let jmeq () =   
+  try 
+    (Coqlib.check_required_library ["Coq";"Logic";"JMeq"]; 
+     init_constant ["Logic";"JMeq"] "JMeq")
+  with e -> raise (ToShow e)
+
+let jmeq_rec () = 
+  try
+    Coqlib.check_required_library ["Coq";"Logic";"JMeq"]; 
+	  init_constant ["Logic";"JMeq"] "JMeq_rec"
+  with e -> raise (ToShow e)
+
+let jmeq_refl () = 
+  try 
+    Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
+    init_constant ["Logic";"JMeq"] "JMeq_refl"
+  with e -> raise (ToShow e)

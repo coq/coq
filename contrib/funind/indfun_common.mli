@@ -45,7 +45,8 @@ val def_of_const : Term.constr -> Term.constr
 val eq : Term.constr Lazy.t
 val refl_equal : Term.constr Lazy.t
 val const_of_id: identifier -> constant
-
+val jmeq : unit -> Term.constr
+val jmeq_refl : unit -> Term.constr 
 
 (* [save_named] is a copy of [Command.save_named] but uses 
    [nf_betaiotazeta] instead of [nf_betaiotaevar_preserving_vm_cast] 
@@ -114,5 +115,6 @@ val do_observe : unit -> bool
 (* To localize pb *)
 exception Building_graph of exn 
 exception Defining_principle of exn
+exception ToShow of exn 
 
 val is_strict_tcc : unit -> bool

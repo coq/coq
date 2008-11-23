@@ -272,26 +272,36 @@ let derive_inversion fix_names =
   with _ -> ()
 
 let warning_error names e = 
+  let e_explain e = 
+    match e with 
+      | ToShow e -> spc () ++ Cerrors.explain_exn e
+      | _ -> if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ()
+  in		
   match e with 
     | Building_graph e -> 
 	Pp.msg_warning 
 	  (str "Cannot define graph(s) for " ++ 
 	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	     if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ())
+	     e_explain e)
     | Defining_principle e -> 
 	Pp.msg_warning
 	  (str "Cannot define principle(s) for "++ 
 	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	     if do_observe () then Cerrors.explain_exn e else mt ())
+	     e_explain e)
     | _ -> anomaly ""
 
 let error_error names e = 
+  let e_explain e = 
+    match e with 
+      | ToShow e -> spc () ++ Cerrors.explain_exn e
+      | _ -> if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ()
+  in
   match e with 
     | Building_graph e -> 
 	errorlabstrm ""  
 	  (str "Cannot define graph(s) for " ++ 
 	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	     if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ())
+	     e_explain e)
     | _ -> anomaly ""
 
 let generate_principle  on_error

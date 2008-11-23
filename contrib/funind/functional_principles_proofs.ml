@@ -59,9 +59,9 @@ let list_chop ?(msg="") n l =
     failwith (msg ^ msg')
   
 
-let make_refl_eq type_of_t t  =
-  let refl_equal_term = Lazy.force refl_equal in
-  mkApp(refl_equal_term,[|type_of_t;t|])
+let make_refl_eq constructor type_of_t t  =
+(*   let refl_equal_term = Lazy.force refl_equal in *)
+  mkApp(constructor,[|type_of_t;t|])
 
 
 type pte_info = 
@@ -109,11 +109,19 @@ let intro_erasing id = tclTHEN (thin [id]) (introduction id)
 let rec_hyp_id = id_of_string "rec_hyp"
 
 let is_trivial_eq t = 
-  match kind_of_term t with 
-    | App(f,[|_;t1;t2|]) when eq_constr f (Lazy.force eq) -> 
-	eq_constr t1 t2
-    | _ -> false 
-
+  let res =   try 
+    begin
+      match kind_of_term t with 
+	| App(f,[|_;t1;t2|]) when eq_constr f (Lazy.force eq) -> 
+	    eq_constr t1 t2
+	| App(f,[|t1;a1;t2;a2|]) when eq_constr f (jmeq ())  ->
+	    eq_constr t1 t2 && eq_constr a1 a2
+	| _ -> false 
+    end
+  with _ -> false
+  in
+(*   observe (str "is_trivial_eq " ++ Printer.pr_lconstr t ++ (if res then str " true" else str " false")); *)
+  res
 
 let rec incompatible_constructor_terms t1 t2 = 
   let c1,arg1 = decompose_app t1 
@@ -127,10 +135,19 @@ let rec incompatible_constructor_terms t1 t2 =
     )
 
 let is_incompatible_eq t = 
-  match kind_of_term t with 
-    | App(f,[|_;t1;t2|]) when eq_constr f (Lazy.force eq) -> 
-	incompatible_constructor_terms t1 t2
-    | _ -> false 
+  let res =
+    try
+      match kind_of_term t with 
+	| App(f,[|_;t1;t2|]) when eq_constr f (Lazy.force eq) -> 
+	    incompatible_constructor_terms t1 t2
+	| App(f,[|u1;t1;u2;t2|]) when eq_constr f (jmeq ()) -> 
+	    (eq_constr u1 u2 &&
+	       incompatible_constructor_terms t1 t2)
+	| _ -> false 
+    with _ -> false
+  in 
+  if res then   observe (str "is_incompatible_eq " ++ Printer.pr_lconstr t);
+  res
 
 let change_hyp_with_using msg hyp_id t tac : tactic = 
   fun g -> 
@@ -146,7 +163,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
 exception TOREMOVE
 
 
-let prove_trivial_eq h_id context (type_of_term,term) = 
+let prove_trivial_eq h_id context (constructor,type_of_term,term) = 
   let nb_intros = List.length context in 
   tclTHENLIST
     [
@@ -156,7 +173,7 @@ let prove_trivial_eq h_id context (type_of_term,term) =
 	   fst (list_chop ~msg:"prove_trivial_eq : " nb_intros (pf_ids_of_hyps g)) 
 	 in
 	 let context_hyps' = 
-	   (mkApp(Lazy.force refl_equal,[|type_of_term;term|]))::
+	   (mkApp(constructor,[|type_of_term;term|]))::
 	     (List.map mkVar context_hyps)
 	 in
 	 let to_refine = applist(mkVar h_id,List.rev context_hyps') in 
@@ -165,10 +182,21 @@ let prove_trivial_eq h_id context (type_of_term,term) =
     ]
 
 
-let isAppConstruct t = 
-  if isApp t 
-  then isConstruct (fst (destApp t))
-  else false 
+
+let find_rectype env c =
+  let (t, l) = decompose_app (Reduction.whd_betadeltaiota env c) in
+  match kind_of_term t with
+  | Ind ind -> (t, l)
+  | Construct _ -> (t,l)
+  | _ -> raise Not_found
+
+
+let isAppConstruct ?(env=Global.env ()) t = 
+  try 
+    let t',l = find_rectype (Global.env ()) t in 
+    observe (str "isAppConstruct : " ++ Printer.pr_lconstr t ++ str " -> " ++ Printer.pr_lconstr (applist  (t',l)));
+    true
+  with Not_found -> false 
 
 let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
   let clos_norm_flags flgs env sigma t =
@@ -176,10 +204,11 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
   clos_norm_flags Closure.betaiotazeta  Environ.empty_env Evd.empty
     
 
+
 let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  = 
-  let nochange msg  = 
+  let nochange ?t' msg  = 
     begin 
-(*       observe (str ("Not treating ( "^msg^" )") ++ pr_lconstr t    ); *)
+      observe (str ("Not treating ( "^msg^" )") ++ pr_lconstr t  ++ str "    " ++ match t' with None -> str "" | Some t -> Printer.pr_lconstr t );
       failwith "NoChange"; 
     end
   in    
@@ -188,12 +217,23 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
   then nochange "dependent"; (* if end_of_type depends on this term we don't touch it  *)
     if not (isApp t) then nochange "not an equality";
     let f_eq,args = destApp t in
-    if not (eq_constr f_eq (Lazy.force eq)) then nochange "not an equality";
-    let t1 = args.(1) 
-    and t2 = args.(2) 
-    and t1_typ = args.(0)
+    let constructor,t1,t2,t1_typ = 
+      try 
+	if (eq_constr f_eq (Lazy.force eq)) 
+	then 
+	  let t1 = (args.(1),args.(0))
+	  and t2 = (args.(2),args.(0)) 
+	  and t1_typ = args.(0)
+	  in
+	  (Lazy.force refl_equal,t1,t2,t1_typ)
+	else
+	  if (eq_constr f_eq (jmeq ())) 
+	  then 
+	    (jmeq_refl (),(args.(1),args.(0)),(args.(3),args.(2)),args.(0))
+	  else nochange "not an equality"
+      with _ -> nochange "not an equality"
     in 
-    if not (closed0 t1) then nochange "not a closed lhs";    
+    if not ((closed0 (fst t1)) && (closed0 (snd t1)))then nochange "not a closed lhs";    
     let rec compute_substitution sub t1 t2 = 
 (*       observe (str "compute_substitution : " ++ pr_lconstr t1 ++ str " === " ++ pr_lconstr t2); *)
       if isRel t2 
@@ -211,16 +251,17 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
       else if isAppConstruct t1 && isAppConstruct t2 
       then 
 	begin
-	  let c1,args1 = destApp t1 
-	  and c2,args2 = destApp t2 
+	  let c1,args1 =  find_rectype env t1
+	  and c2,args2 = find_rectype env t2
 	  in 
-	  if not (eq_constr c1 c2) then anomaly "deconstructing equation";
-	  array_fold_left2 compute_substitution sub args1 args2
+	  if not (eq_constr c1 c2) then nochange "cannot solve (diff)";
+	  List.fold_left2 compute_substitution sub args1 args2
 	end
       else 
-	if (eq_constr t1 t2) then sub else nochange "cannot solve"
+	if (eq_constr t1 t2) then sub else nochange ~t':(make_refl_eq constructor (Reduction.whd_betadeltaiota env t1) t2)  "cannot solve (diff)"
     in
-    let sub = compute_substitution Intmap.empty t1 t2 in 
+    let sub = compute_substitution Intmap.empty (snd t1) (snd t2) in 
+    let sub = compute_substitution sub (fst t1) (fst t2) in
     let end_of_type_with_pop = pop end_of_type in (*the equation will be removed *) 
     let new_end_of_type = 
       (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4 
@@ -234,7 +275,7 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
     in
     let old_context_length = List.length context + 1 in
     let witness_fun = 
-      mkLetIn(Anonymous,make_refl_eq t1_typ t1,t,
+      mkLetIn(Anonymous,make_refl_eq constructor t1_typ (fst t1),t,
 	       mkApp(mkVar hyp_id,Array.init old_context_length (fun i -> mkRel (old_context_length - i)))
 	      )
     in
@@ -450,14 +491,20 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	  let real_type_of_hyp =
 	    it_mkProd_or_LetIn ~init:popped_t' context
 	  in
-	  let _,args = destApp t_x in
+	  let hd,args = destApp t_x in
+	  let get_args hd args = 
+	    if eq_constr hd (Lazy.force eq) 
+	    then (Lazy.force refl_equal,args.(0),args.(1))
+	    else (jmeq_refl (),args.(0),args.(1))
+	  in
 	  tclTHENLIST
 	    [
 	      change_hyp_with_using
 		"prove_trivial_eq"
 		hyp_id
 		real_type_of_hyp
-		((* observe_tac "prove_trivial_eq" *) (prove_trivial_eq hyp_id context (args.(0),args.(1))));
+		((* observe_tac "prove_trivial_eq" *) 
+		  (prove_trivial_eq hyp_id context (get_args hd args)));
 	      scan_type context popped_t'
 	    ] 
 	else 
@@ -631,28 +678,32 @@ let build_proof
 		  let g_nb_prod = nb_prod (pf_concl g) in
 		  let type_of_term = pf_type_of g t in
 		  let term_eq =
-		    make_refl_eq type_of_term t
+		    make_refl_eq (Lazy.force refl_equal) type_of_term t
 		  in
 		  tclTHENSEQ
 		    [
 		      h_generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
 		      thin dyn_infos.rec_hyps;
 		      pattern_option [(false,[1]),t] None;
-		      h_simplest_case t;
-		      (fun g' -> 
-			 let g'_nb_prod = nb_prod (pf_concl g') in 
-			 let nb_instanciate_partial = g'_nb_prod - g_nb_prod in 
-			 		     observe_tac "treat_new_case"
-			 (treat_new_case  
-			    ptes_infos
-			    nb_instanciate_partial 
-			    (build_proof do_finalize) 
-			    t 
-			    dyn_infos)
-			   g'
-		      )
+		      (fun g -> observe_tac "toto" (    
+			 tclTHENSEQ [h_simplest_case t;
+				     (fun g' -> 
+					let g'_nb_prod = nb_prod (pf_concl g') in 
+					let nb_instanciate_partial = g'_nb_prod - g_nb_prod in 
+			 		observe_tac "treat_new_case"
+					  (treat_new_case  
+					     ptes_infos
+					     nb_instanciate_partial 
+					     (build_proof do_finalize) 
+					     t 
+					     dyn_infos)
+					  g'
+				     )
 			
-		    ] g
+				    ]) g
+		      )
+		    ]
+		    g
 	      in
 	      build_proof do_finalize_t {dyn_infos with info = t} g
 	  | Lambda(n,t,b) ->
@@ -1206,7 +1257,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 			    nb_rec_hyps = List.length branches
 			 }
 		       in
-		       (* observe_tac "cleaning" *) (clean_goal_with_heq
+		       observe_tac "cleaning" (clean_goal_with_heq
 			 (Idmap.map prove_rec_hyp ptes_to_fix) 
 			 do_prove 
 			 dyn_infos)

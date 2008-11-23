@@ -328,7 +328,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
   in
   (*    let time2 = System.get_time ()  in *)
   (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
-  (*    observe (str "new_principle_type : " ++ pr_lconstr new_principle_type); *)
+     observe (str "new_principle_type : " ++ pr_lconstr new_principle_type);
   let new_princ_name =
     next_global_ident_away true (id_of_string "___________princ_________") []
   in
@@ -356,6 +356,7 @@ let generate_functional_principle
     old_princ_type sorts new_princ_name funs i proof_tac
     =
   try 
+    
   let f = funs.(i) in
   let type_sort = Termops.new_sort_in_family InType in
   let new_sorts =
@@ -718,9 +719,10 @@ let build_case_scheme fa =
   in
   let princ_name =  (fun (x,_,_) -> x) fa in
   let _ = 
-(*     observe (str "Generating " ++ Ppconstr.pr_id princ_name ++str " with " ++ *)
-(* 	       pr_lconstr scheme_type ++ str " and " ++ (fun a -> prlist_with_sep spc (fun c -> pr_lconstr (mkConst c)) (Array.to_list a)) this_block_funs *)
-(* 	    ); *)
+  (*  Pp.msgnl (str "Generating " ++ Ppconstr.pr_id princ_name ++str " with " ++
+	       pr_lconstr scheme_type ++ str " and " ++ (fun a -> prlist_with_sep spc (fun c -> pr_lconstr (mkConst c)) (Array.to_list a)) this_block_funs
+	    );
+  *)
     generate_functional_principle
       false
       scheme_type
