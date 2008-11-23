@@ -377,8 +377,6 @@ let vernac_record k finite struc binders sort nameopt cfs =
     | None -> add_prefix "Build_" (snd (snd struc))
     | Some (_,id as lid) ->
 	Dumpglob.dump_definition lid false "constr"; id in
-  let sigma = Evd.empty in
-  let env = Global.env() in
     if Dumpglob.dump () then (
       Dumpglob.dump_definition (snd struc) false "rec";
       List.iter (fun ((_, x), _) ->

@@ -43,7 +43,6 @@ Language
   As a consequence, Acc_rect has now a more direct proof [possible source
   of easily fixed incompatibility in case of manual definition of a recursor
   in a recursive singleton inductive type].
-- Specific sort constraints on Record now taken into account.
 
 Vernacular commands
 
@@ -82,6 +81,7 @@ Vernacular commands
 - "Declare ML Module" now allows to import .cmxs files when Coq is
   compiled in native code with a version of OCaml that supports native
   Dynlink (>= 3.11).
+- Specific sort constraints on Record now taken into account.
 
 Libraries (DOC TO CHECK)
 
