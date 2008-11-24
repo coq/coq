@@ -863,6 +863,8 @@ let is_res id =
     String.sub (string_of_id id) 0 3 = "res"
   with Invalid_argument _ -> false 
 
+
+exception Continue
 (* 
    The second phase which reconstruct the real type of the constructor. 
    rebuild the raw constructors expression. 
@@ -908,7 +910,9 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		begin
 		  try 
 		    observe (str "computing new type for eq : " ++ pr_rawconstr rt);
-		    let t' = Pretyping.Default.understand Evd.empty env t in
+		    let t' = 
+		      try Pretyping.Default.understand Evd.empty env t with _ -> raise Continue
+		    in
 		    let is_in_b = is_free_in id b in
 		    let _keep_eq = 
 		      not (List.exists (is_free_in id) args) || is_in_b  || 
@@ -927,7 +931,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			(depth + 1) subst_b
 		    in 
 		    mkRProd(n,t,new_b),id_to_exclude
-		  with _ -> 
+		  with Continue -> 
 		    let jmeq = Libnames.IndRef (destInd (jmeq ())) in 
 		    let ty' = Pretyping.Default.understand Evd.empty env ty in 
 		    let ind,args' = Inductive.find_inductive env ty' in 
