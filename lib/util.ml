@@ -1145,31 +1145,16 @@ let array_fold_map2' f v1 v2 e =
   in
   (v',!e')
 
-(* N.logN *)
 let array_distinct v =
   let visited = Hashtbl.create 23 in
   try
     Array.iter
       (fun x ->
-        if Hashtbl.mem visited h then raise Exit
-        else Hashtbl.add visited h h)
+        if Hashtbl.mem visited x then raise Exit
+        else Hashtbl.add visited x x)
       v;
     true
   with Exit -> false
-
-
-(* quadratic *)
-(*let array_distinct v =
-  try
-    for i=0 to Array.length v-1 do
-      for j=i+1 to Array.length v-1 do
-	if v.(i)=v.(j) then raise Exit
-      done
-    done;
-    true
-  with Exit ->
-    false
-*)
 
 let array_union_map f a acc =
   Array.fold_left
