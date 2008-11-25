@@ -316,7 +316,7 @@ let open_libraries export modl =
              (fun l m -> remember_last_of_each l (try_find_library m))
              l m.library_imports
          in remember_last_of_each subimport m)
-      [] (List.rev modl) in
+      [] modl in
   List.iter (open_library export modl) to_open_list
 
 
@@ -608,7 +608,7 @@ let import_module export (loc,qid) =
 	  if Lib.is_modtype () || Lib.is_module () || not export then
 	    add_anonymous_leaf (in_import (dir, export))
 	  else
-	    add_anonymous_leaf (in_require ([],[dir], Some export))
+	    add_anonymous_leaf (in_import (dir, export))
       | mp ->
 	  Declaremods.import_module export mp
   with
