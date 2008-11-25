@@ -615,7 +615,7 @@ let import_module export (loc,qid) =
 	  if Lib.is_modtype () || Lib.is_module () || not export then
 	    add_anonymous_leaf (in_import (dir, export))
 	  else
-	    add_anonymous_leaf (in_require ([],[dir], Some export))
+	    add_anonymous_leaf (in_import (dir, export))
       | mp ->
 	  Declaremods.import_module export mp
   with
