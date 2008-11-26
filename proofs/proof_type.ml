@@ -37,6 +37,7 @@ type prim_rule =
   | Thin of identifier list
   | ThinBody of identifier list
   | Move of bool * identifier * identifier move_location
+  | Order of identifier list
   | Rename of identifier * identifier
   | Change_evars
 

@@ -202,6 +202,9 @@ let thin_body_no_check ids gl =
 let move_hyp_no_check with_dep id1 id2 gl = 
   refiner (Prim (Move (with_dep,id1,id2))) gl
 
+let order_hyps idl gl =
+  refiner (Prim (Order idl)) gl
+
 let rec rename_hyp_no_check l gl = match l with 
   | [] -> tclIDTAC gl 
   | (id1,id2)::l -> 
