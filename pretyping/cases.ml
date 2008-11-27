@@ -150,8 +150,11 @@ let mkSpecialLetInJudge j (na,(deppat,nondeppat,d,t)) =
     then
       (* The body of pat is not needed to type j - see *)
       (* insert_aliases - and both deppat and nondeppat have the *)
-      (* same type, then one can freely substitute one by the other *)
-      subst1 nondeppat j.uj_val
+      (* same type, then one can freely substitute one by the other. *)
+      (* We use nondeppat only if it's a Rel to preserve sharing. *)
+      if isRel nondeppat then
+        subst1 nondeppat j.uj_val
+      else subst1 deppat j.uj_val
     else
       (* The body of pat is not needed to type j but its value *)
       (* is dependent in the type of j; our choice is to *)
