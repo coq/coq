@@ -133,6 +133,7 @@ val thin_body_no_check        : identifier list -> tactic
 val move_hyp_no_check         :
   bool -> identifier -> identifier move_location -> tactic
 val rename_hyp_no_check       : (identifier*identifier) list -> tactic
+val order_hyps : identifier list -> tactic
 val mutual_fix      :
   identifier -> int -> (identifier * int * constr) list -> tactic
 val mutual_cofix    : identifier -> (identifier * constr) list -> tactic

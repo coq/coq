@@ -252,6 +252,10 @@ val make_all_name_different : env -> env
 val global_vars : env -> constr -> identifier list
 val global_vars_set_of_decl : env -> named_declaration -> Idset.t
 
+(* Gives an ordered list of hypotheses, closed by dependencies,
+   containing a given set *)
+val dependency_closure : env -> named_context -> Idset.t -> identifier list
+
 (* Test if an identifier is the basename of a global reference *)
 val is_section_variable : identifier -> bool
 

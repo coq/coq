@@ -91,6 +91,7 @@ let string_of_prim_rule x = match x with
   | Proof_type.Thin _ -> "Thin"
   | Proof_type.ThinBody _-> "ThinBody"
   | Proof_type.Move (_,_,_) -> "Move"
+  | Proof_type.Order _ -> "Order"
   | Proof_type.Rename (_,_) -> "Rename"
   | Proof_type.Change_evars -> "Change_evars"
 

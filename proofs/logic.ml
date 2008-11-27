@@ -62,26 +62,13 @@ let rec catchable_exception = function
       (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
   | _ -> false
 
+let error_no_such_hypothesis id =
+  error ("No such hypothesis: " ^ string_of_id id ^ ".")
+
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
 let check = ref false
 let with_check = Flags.with_option check
-
-(************************************************************************)
-(************************************************************************)
-(* Implementation of the structural rules (moving and deleting
-   hypotheses around) *)
-
-(* The Clear tactic: it scans the context for hypotheses to be removed
-   (instead of iterating on the list of identifier to be removed, which
-   forces the user to give them in order). *)
-
-let clear_hyps sigma ids sign cl =
-  let evdref = ref (Evd.create_goal_evar_defs sigma) in
-  let (hyps,concl) = Evarutil.clear_hyps_in_evi evdref sign cl ids in
-  (hyps,concl,evars_of !evdref)
-
-(* The ClearBody tactic *)
 
 (* [apply_to_hyp sign id f] splits [sign] into [tail::[id,_,_]::head] and
    returns [tail::(f head (id,_,_) (rev tail))] *)
@@ -99,6 +86,22 @@ let apply_to_hyp_and_dependent_on sign id f g =
 
 let check_typability env sigma c =
   if !check then let _ = type_of env sigma c in () 
+
+(************************************************************************)
+(************************************************************************)
+(* Implementation of the structural rules (moving and deleting
+   hypotheses around) *)
+
+(* The Clear tactic: it scans the context for hypotheses to be removed
+   (instead of iterating on the list of identifier to be removed, which
+   forces the user to give them in order). *)
+
+let clear_hyps sigma ids sign cl =
+  let evdref = ref (Evd.create_goal_evar_defs sigma) in
+  let (hyps,concl) = Evarutil.clear_hyps_in_evi evdref sign cl ids in
+  (hyps,concl,evars_of !evdref)
+
+(* The ClearBody tactic *)
 
 let recheck_typability (what,id) env sigma t =
   try check_typability env sigma t
@@ -129,6 +132,82 @@ let remove_hyp_body env sigma id =
   in
   reset_with_named_context sign env 
 
+(* Reordering of the context *)
+
+(* faire le minimum d'echanges pour que l'ordre donne soit un *)
+(* sous-ordre du resultat. Par exemple, 2 hyps non mentionnee ne sont *)
+(* pas echangees. Choix: les hyps mentionnees ne peuvent qu'etre *)
+(* reculees par rapport aux autres (faire le contraire!) *)
+ 
+let mt_q = (Idmap.empty,[])
+let push_val y = function
+    (_,[] as q) -> q
+  | (m, (x,l)::q) -> (m, (x,Idset.add y l)::q)
+let push_item x v (m,l) =
+  (Idmap.add x v m, (x,Idset.empty)::l)
+let mem_q x (m,_) = Idmap.mem x m
+let rec find_q x (m,q) =
+  let v = Idmap.find x m in
+  let m' = Idmap.remove x m in
+  let rec find accs acc = function
+      [] -> raise Not_found
+    | [(x',l)] ->
+        if x=x' then ((v,Idset.union accs l),(m',List.rev acc))
+        else raise Not_found
+    | (x',l as i)::((x'',l'')::q as itl) ->
+        if x=x' then
+          ((v,Idset.union accs l),
+           (m',List.rev acc@(x'',Idset.add x (Idset.union l l''))::q))
+        else find (Idset.union l accs) (i::acc) itl in
+  find Idset.empty [] q
+
+let occur_vars_in_decl env hyps d =
+  if Idset.is_empty hyps then false else
+    let ohyps = global_vars_set_of_decl env d in
+    Idset.exists (fun h -> Idset.mem h ohyps) hyps
+
+let reorder_context env sign ord =
+  let ords = List.fold_right Idset.add ord Idset.empty in
+  if List.length ord <> Idset.cardinal ords then
+    error "Order list has duplicates";
+  let rec step ord expected ctxt_head moved_hyps ctxt_tail =
+    match ord with
+      | [] -> List.rev ctxt_tail @ ctxt_head
+      | top::ord' when mem_q top moved_hyps ->
+          let ((d,h),mh) = find_q top moved_hyps in
+          if occur_vars_in_decl env h d then
+            errorlabstrm "reorder_context"
+              (str "Cannot move declaration " ++ pr_id top ++ spc() ++
+              str "before " ++
+              prlist_with_sep pr_spc pr_id
+                (Idset.elements (Idset.inter h
+                  (global_vars_set_of_decl env d))));
+          step ord' expected ctxt_head mh (d::ctxt_tail)
+      | _ ->
+          (match ctxt_head with
+            | [] -> error_no_such_hypothesis (List.hd ord)
+            | (x,_,_ as d) :: ctxt ->
+                if Idset.mem x expected then
+                  step ord (Idset.remove x expected)
+                    ctxt (push_item x d moved_hyps) ctxt_tail
+                else
+                  step ord expected
+                    ctxt (push_val x moved_hyps) (d::ctxt_tail)) in
+  step ord ords sign mt_q []
+
+let reorder_val_context env sign ord =
+  val_of_named_context (reorder_context env (named_context_of_val sign) ord)
+
+
+
+
+let check_decl_position env sign (x,_,_ as d) =
+  let needed = global_vars_set_of_decl env d in
+  let deps = dependency_closure env (named_context_of_val sign) needed in
+  if List.mem x deps then
+    error ("Cannot create self-referring hypothesis "^string_of_id x);
+  x::deps
+
 (* Auxiliary functions for primitive MOVE tactic
  *
  * [move_hyp with_dep toleft (left,(hfrom,typfrom),right) hto] moves
@@ -136,9 +215,6 @@ let remove_hyp_body env sigma id =
  * left side [left] of the full signature if [toleft=true] or to the hyps 
  * on the right side [right] if [toleft=false].
  * If [with_dep] then dependent hypotheses are moved accordingly. *)
-
-let error_no_such_hypothesis id =
-  error ("No such hypothesis: " ^ string_of_id id ^ ".")
 
 let rec get_hyp_after h = function
   | [] -> error_no_such_hypothesis h
@@ -360,14 +436,19 @@ and mk_casegoals sigma goal goalacc p c =
 
 
 let convert_hyp sign sigma (id,b,bt as d) =
-  apply_to_hyp sign id
-    (fun _ (_,c,ct) _ ->
-       let env = Global.env_of_context sign in
-       if !check && not (is_conv env sigma bt ct) then
-	 error ("Incorrect change of the type of "^(string_of_id id)^".");
-       if !check && not (Option.Misc.compare (is_conv env sigma) b c) then
-	 error ("Incorrect change of the body of "^(string_of_id id)^".");
-       d)
+  let env = Global.env() in
+  let reorder = ref [] in
+  let sign' =
+    apply_to_hyp sign id
+      (fun _ (_,c,ct) _ ->
+        let env = Global.env_of_context sign in
+        if !check && not (is_conv env sigma bt ct) then
+	  error ("Incorrect change of the type of "^(string_of_id id)^".");
+        if !check && not (Option.Misc.compare (is_conv env sigma) b c) then
+	  error ("Incorrect change of the body of "^(string_of_id id)^".");
+       if !check then reorder := check_decl_position env sign d;
+       d) in
+  reorder_val_context env sign' !reorder
 
 (* Normalizing evars in a goal. Called by tactic Local_constraints
    (i.e. when the sigma of the proof tree changes). Detect if the
@@ -522,6 +603,10 @@ let prim_refiner r sigma goal =
 	  move_hyp withdep toleft (left,declfrom,right) hto in
   	  ([mk_goal hyps' cl], sigma)
 
+    | Order ord ->
+        let hyps' = reorder_val_context env sign ord in
+        ([mk_goal hyps' cl], sigma)
+
     | Rename (id1,id2) ->
         if !check & id1 <> id2 &&
 	  List.mem id2 (ids_of_named_context (named_context_of_val sign)) then
@@ -632,7 +717,7 @@ let prim_extractor subfun vl pft =
       | Some (Prim (ThinBody _),[pf]) ->
 	  subfun vl pf
 	    
-      | Some (Prim (Move _),[pf]) ->
+      | Some (Prim (Move _|Order _),[pf]) ->
 	  subfun vl pf
 
       | Some (Prim (Rename (id1,id2)),[pf]) ->

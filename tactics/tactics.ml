@@ -169,6 +169,8 @@ let internal_cut_rev_replace = internal_cut_rev_gen true
 (* Moving hypotheses *)
 let move_hyp        = Tacmach.move_hyp 
 
+let order_hyps      = Tacmach.order_hyps
+
 (* Renaming hypotheses *)
 let rename_hyp      = Tacmach.rename_hyp
 
@@ -192,6 +194,18 @@ let cofix = function
 
 type tactic_reduction = env -> evar_map -> constr -> constr
 
+let pf_reduce_decl redfun where (id,c,ty) gl =
+  let redfun' = pf_reduce redfun gl in
+  match c with
+  | None -> 
+      if where = InHypValueOnly then
+	errorlabstrm "" (pr_id id ++ str "has no value.");
+      (id,None,redfun' ty)
+  | Some b ->
+      let b' = if where <> InHypTypeOnly then redfun' b else b in
+      let ty' =	if where <> InHypValueOnly then redfun' ty else ty in
+      (id,Some b',ty')
+
 (* The following two tactics apply an arbitrary
    reduction function either to the conclusion or to a 
    certain hypothesis *)
@@ -200,17 +214,8 @@ let reduct_in_concl (redfun,sty) gl =
   convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty gl
 
 let reduct_in_hyp redfun ((_,id),where) gl =
-  let (_,c, ty) = pf_get_hyp gl id in
-  let redfun' = pf_reduce redfun gl in
-  match c with
-  | None -> 
-      if where = InHypValueOnly then
-	errorlabstrm "" (pr_id id ++ str "has no value.");
-      convert_hyp_no_check (id,None,redfun' ty) gl
-  | Some b ->
-      let b' = if where <> InHypTypeOnly then redfun' b else b in
-      let ty' =	if where <> InHypValueOnly then redfun' ty else ty in
-      convert_hyp_no_check (id,Some b',ty') gl
+  convert_hyp_no_check
+    (pf_reduce_decl redfun where (pf_get_hyp gl id) gl) gl 
 
 let reduct_option redfun = function
   | Some id -> reduct_in_hyp (fst redfun) id 
@@ -238,8 +243,8 @@ let change_on_subterm cv_pb t = function
 let change_in_concl occl t =
   reduct_in_concl ((change_on_subterm Reduction.CUMUL t occl),DEFAULTcast)
 
-let change_in_hyp occl t   =
-  reduct_in_hyp (change_on_subterm Reduction.CONV t occl)
+let change_in_hyp occl t id  =
+  with_check (reduct_in_hyp (change_on_subterm Reduction.CONV t occl) id)
 
 let change_option occl t = function
     Some id -> change_in_hyp occl t id
@@ -276,16 +281,18 @@ let pattern_option l = reduct_option (pattern_occs l,DEFAULTcast)
 (* A function which reduces accordingly to a reduction expression,
    as the command Eval does. *)
 
-let needs_check = function
+let checking_fun = function
   (* Expansion is not necessarily well-typed: e.g. expansion of t into x is
      not well-typed in [H:(P t); x:=t |- G] because x is defined after H *)
-  | Fold _ -> true
-  | _ -> false
+  | Fold _ -> with_check
+  | Pattern _ -> with_check
+  | _ -> (fun x -> x)
 
 let reduce redexp cl goal =
-  (if needs_check redexp then with_check else (fun x -> x))
-    (redin_combinator (Redexpr.reduction_of_red_expr redexp) cl)
-    goal
+  let red = Redexpr.reduction_of_red_expr redexp in
+  match redexp with
+      (Fold _|Pattern _) -> with_check (redin_combinator red cl) goal
+    | _ -> redin_combinator red cl goal
 
 (* Unfolding occurrences of a constant *)
 
