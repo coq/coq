@@ -33,3 +33,16 @@ Fixpoint foo (A:Type) (l:list A) : option A :=
   end.
 
 Print foo.
+
+(* Do not duplicate the matched term *)
+
+Axiom A : nat -> bool.
+
+Definition foo' :=
+  match A 0 with
+    | true => true
+    | x => x
+  end.
+
+Print foo'.
+
