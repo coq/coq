@@ -1058,6 +1058,19 @@ let global_vars_set_of_decl env = function
       Idset.union (global_vars_set env t)
         (global_vars_set env c)
 
+let dependency_closure env sign hyps =
+  if Idset.is_empty hyps then [] else
+    let (_,lh) =
+      Sign.fold_named_context_reverse
+        (fun (hs,hl) (x,_,_ as d) ->
+          if Idset.mem x hs then
+            (Idset.union (global_vars_set_of_decl env d) (Idset.remove x hs),
+            x::hl)
+          else (hs,hl))
+        ~init:(hyps,[])
+        sign in
+    List.rev lh
+
 let default_x = id_of_string "x"
 
 let rec next_name_away_in_cases_pattern id avoid =

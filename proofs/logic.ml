@@ -143,8 +143,7 @@ let mt_q = (Idmap.empty,[])
 let push_val y = function
     (_,[] as q) -> q
   | (m, (x,l)::q) -> (m, (x,Idset.add y l)::q)
-let push_item x v q =
-  let (m,l) = push_val x q in
+let push_item x v (m,l) =
   (Idmap.add x v m, (x,Idset.empty)::l)
 let mem_q x (m,_) = Idmap.mem x m
 let rec find_q x (m,q) =
@@ -158,7 +157,7 @@ let rec find_q x (m,q) =
     | (x',l as i)::((x'',l'')::q as itl) ->
         if x=x' then
           ((v,Idset.union accs l),
-           (m',List.rev acc@(x'',Idset.union l l'')::q))
+           (m',List.rev acc@(x'',Idset.add x (Idset.union l l''))::q))
         else find (Idset.union l accs) (i::acc) itl in
   find Idset.empty [] q
 
@@ -200,42 +199,14 @@ let reorder_val_context env sign ord =
   val_of_named_context (reorder_context env (named_context_of_val sign) ord)
 
 
+
+
 let check_decl_position env sign (x,_,_ as d) =
   let needed = global_vars_set_of_decl env d in
-  let deps =
-    list_map_filter (fun (id,_,_) ->
-      if Idset.mem id needed then Some id else None)
-      (named_context_of_val sign) in
+  let deps = dependency_closure env (named_context_of_val sign) needed in
   if List.mem x deps then
     error ("Cannot create self-referring hypothesis "^string_of_id x);
   x::deps
-
-
-(******)
-(* older version (performs more swapping) 
-let reorder_context sign ord =
-  let ords = List.fold_left Idset.add Idset.empty sign in
-  let rec step expected moved_hyps ctxt_head ctxt_tail =
-    if not (Idset.is_empty expected) then
-      match ctxt_head with
-          [] -> failwith "some hyps not found" (* those in expected *)
-        | (x,_,_ as d) :: ctxt ->
-            if Idset.mem x expected then
-              step
-                (Idset.remove x expected)
-                (Idmap.add x (d,Idset.empty) move_hyps)
-                ctxt ctxt_tail
-            else
-              step expected (push_hyp x moved_hyps) ctxt (d::ctxt_tail)
-    else begin
-      (* TODO: check free var constraints *)
-      let ctxt_mid =
-        List.map (fun h -> fst (Idmap.find h moved_hyps)) ords
-
-      in List.rev ctxt_tail @ ctxt_mid @ ctxt_head
-    end in
-  step ords Idmap.empty sign []
-*)
 
 (* Auxiliary functions for primitive MOVE tactic
  *
