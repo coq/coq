@@ -99,10 +99,11 @@ let reference_value sigma env c =
 (* One reuses the name of the function after reduction of the fixpoint  *)
 
 type constant_evaluation = 
-  | EliminationFix of int * (int * (int * constr) list * int)
+  | EliminationFix of int * int * (int * (int * constr) list * int)
   | EliminationMutualFix of
       int * evaluable_reference *
-      (evaluable_reference option array * (int * (int * constr) list * int))
+      ((int*evaluable_reference) option array *
+       (int * (int * constr) list * int))
   | EliminationCases of int
   | NotAnElimination
 
@@ -171,24 +172,33 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
          | _ -> 
 	     raise Elimconst) args
   in
-  if list_distinct (List.map fst li) then 
-    let k = lv.(i) in
-    if k < nargs then
+  if not (list_distinct (List.map fst li)) then 
+    raise Elimconst;
+  (* Recursive calls must be applied enough to avoid eta-expansion *)
+(*  let rec no_partial_app k c =
+    let (h,rcargs) = decompose_app c in
+    if eq_constr h (mkRel (k+nbfix-i)) then
+      if List.length rcargs < nargs then raise Elimconst
+      else List.iter (no_partial_app k) rcargs
+    else iter_constr_with_binders succ no_partial_app k c in
+  Array.iter (no_partial_app 0) bds;
+*)
+  let k = lv.(i) in
+  if k < nargs then
 (*  Such an optimisation would need eta-expansion 
       let p = destRel (List.nth args k) in 
       EliminationFix (n-p+1,(nbfix,li,n))
 *)
-      EliminationFix (n,(nbfix,li,n))
-    else
-      EliminationFix (n-nargs+lv.(i)+1,(nbfix,li,n))
-  else 
-    raise Elimconst
+    EliminationFix (n,nargs,(nbfix,li,n))
+  else
+    EliminationFix (n-nargs+k+1,nargs,(nbfix,li,n))
 
 (* Heuristic to look if global names are associated to other
    components of a mutual fixpoint *)
 
 let invert_name labs l na0 env sigma ref = function
   | Name id -> 
+      let minfxargs = List.length l in
       if na0 <> Name id then
 	let refi = match ref with
 	  | EvalRel _ | EvalEvar _ -> None
@@ -205,9 +215,10 @@ let invert_name labs l na0 env sigma ref = function
 		    let labs',ccl = decompose_lam c in
 		    let _, l' = whd_betalet_stack ccl in
 		    let labs' = List.map snd labs' in
-		    if labs' = labs & l = l' then Some ref else None
+		    if labs' = labs & l = l' then Some (minfxargs,ref)
+                    else None
 	      with Not_found (* Undefined ref *) -> None
-      else Some ref
+      else Some (minfxargs,ref)
   | Anonymous -> None (* Actually, should not occur *)
 
 (* [compute_consteval_direct] expand all constant in a whole, but
@@ -242,7 +253,7 @@ let compute_consteval_mutual_fix sigma env ref =
 	  (match compute_consteval_direct sigma env ref with
 	     | NotAnElimination -> (*Above const was eliminable but this not!*)
 		 NotAnElimination
-	     | EliminationFix (minarg',infos) ->
+	     | EliminationFix (minarg',minfxargs,infos) ->
 		 let refs =
 		   Array.map
 		     (invert_name labs l names.(i) env sigma ref) names in
@@ -263,7 +274,7 @@ let compute_consteval_mutual_fix sigma env ref =
 
 let compute_consteval sigma env ref =
   match compute_consteval_direct sigma env ref with
-    | EliminationFix (_,(nbfix,_,_)) when nbfix <> 1 ->
+    | EliminationFix (_,_,(nbfix,_,_)) when nbfix <> 1 ->
 	compute_consteval_mutual_fix sigma env ref
     | elim -> elim
 	
@@ -323,26 +334,41 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
   fun i ->
     match names.(i) with
       | None -> None
-      | Some ref ->
+      | Some (minargs,ref) ->
           let body = applistc (mkEvalRef ref) la in
           let g = 
             list_fold_left_i (fun q (* j from comment is n+1-q *) c (ij,tij) ->
               let subst = List.map (lift (-q)) (list_firstn (n-ij) la) in
               let tij' = substl (List.rev subst) tij in
 	      mkLambda (x,tij',c)) 1 body (List.rev lv)
-          in Some g
+          in Some (minargs,g)
 
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)]: 
    do so that the reduction uses this extra information *)
 
+let substl_with_arity subst c =
+  let v = Array.of_list subst in
+  let rec subst_total k c =
+    let (h,rcargs) = decompose_app c in
+    match kind_of_term h with
+        Rel i when k<i ->
+          let h' =
+            if i <= k + Array.length v then
+              match v.(i-k-1) with
+                  (_,Some(min,ref)) when List.length rcargs >= min ->
+                    lift k ref
+                | (fx,_) -> lift k fx
+            else mkRel (i - Array.length v) in
+          applist(h',List.map(subst_total k)rcargs)
+      | _ -> map_constr_with_binders succ subst_total k c in
+  subst_total 0 c
+
 let contract_fix_use_function f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies)) =
   let nbodies = Array.length recindices in
-  let make_Fi j = match f j with
-    | None -> mkFix((recindices,j),typedbodies)
-    | Some c -> c in
+  let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
   let lbodies = list_tabulate make_Fi nbodies in
-  substl (List.rev lbodies) bodies.(bodynum)
+  substl_with_arity (List.rev lbodies) bodies.(bodynum)
 
 let reduce_fix_use_function f whfun fix stack =
   match fix_recarg fix stack with
@@ -362,11 +388,9 @@ let reduce_fix_use_function f whfun fix stack =
 
 let contract_cofix_use_function f (bodynum,(_names,_,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
-  let make_Fi j = match f j with
-    | None -> mkCoFix(j,typedbodies)
-    | Some c -> c in
+  let make_Fi j = (mkCoFix(j,typedbodies), f j) in
   let subbodies = list_tabulate make_Fi nbodies in
-  substl (List.rev subbodies) bodies.(bodynum)
+  substl_with_arity (List.rev subbodies) bodies.(bodynum)
 
 let reduce_mind_case_use_function func env mia =
   match kind_of_term mia.mconstr with 
@@ -377,8 +401,9 @@ let reduce_mind_case_use_function func env mia =
 	let build_cofix_name =
 	  if isConst func then
 	    let (mp,dp,_) = repr_con (destConst func) in
+            let minargs = List.length mia.mcargs in
 	    fun i ->
-	      if i = bodynum then Some func
+	      if i = bodynum then Some (minargs,func)
 	      else match names.(i) with
 		| Anonymous -> None
 		| Name id ->
@@ -389,7 +414,8 @@ let reduce_mind_case_use_function func env mia =
 		    let kn = make_con mp dp (label_of_id id) in
 		    try match constant_opt_value env kn with
 		      | None -> None
-		      | Some _ -> Some (mkConst kn)
+                          (* TODO: check kn is correct *)
+		      | Some _ -> Some (minargs,mkConst kn)
 		    with Not_found -> None
 	  else
 	    fun _ -> None in
@@ -432,10 +458,10 @@ let rec red_elim_const env sigma ref largs =
 	let c', lrest = whd_betadelta_state env sigma (c,largs) in
 	let whfun = whd_simpl_state env sigma in
         (special_red_case sigma env whfun (destCase c'), lrest)
-    | EliminationFix (min,infos) when stack_args_size largs >=min ->
+    | EliminationFix (min,minfxargs,infos) when stack_args_size largs >=min ->
 	let c = reference_value sigma env ref in
 	let d, lrest = whd_betadelta_state env sigma (c,largs) in
-	let f = make_elim_fun ([|Some ref|],infos) largs in
+	let f = make_elim_fun ([|Some (minfxargs,ref)|],infos) largs in
 	let whfun = whd_construct_state env sigma in
 	(match reduce_fix_use_function f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
