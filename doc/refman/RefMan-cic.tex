@@ -558,7 +558,7 @@ $\Gamma_C$.
 \paragraph{Examples.}
 The inductive declaration for the type of natural numbers will be:
 \[\NInd{}{\nat:\Set}{\nO:\nat,\nS:\nat\ra\nat}\]
-In a context with a variable $A:\Set$, the lists of elements in $A$ is
+In a context with a variable $A:\Set$, the lists of elements in $A$ are
 represented by:
 \[\NInd{A:\Set}{\List:\Set}{\Nil:\List,\cons : A \ra \List \ra
   \List}\]
@@ -576,8 +576,8 @@ represented by:
 
 We have to slightly complicate the representation above in order to handle
 the delicate problem of parameters. 
-Let us explain that on the example of \List. As they were defined
-above, the type \List\ can only be used in an environment where we
+Let us explain that on the example of \List. With the above definition,
+the type \List\ can only be used in an environment where we
 have a variable $A:\Set$. Generally one want to consider lists of
 elements in different types. For constants this is easily done by abstracting
 the value over the parameter. In the case of inductive definitions we
@@ -585,8 +585,8 @@ have to handle the abstraction over several objects.
 
 One possible way to do that would be to define the type \List\
 inductively as being an inductive family of type $\Set\ra\Set$:
-\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
-  \ra (\List~A) \ra (\List~A)}\]
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set,\List~A),
+  \cons : (\forall A:\Set, A \ra \List~A \ra \List~A)}\]
 There are drawbacks to this point of view. The
 information which says that for any $A$, $(\List~A)$ is an inductively defined
 \Set\ has been lost.
@@ -618,15 +618,15 @@ type $T$ of $t$: these are exactly the $r$ first arguments of $I$ in
 the head normal form of $T$.
 \paragraph{Examples.}
 The \List{} definition has $1$ parameter:
-\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
-  \ra (\List~A) \ra (\List~A)}\]
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set, \List~A),
+  \cons : (\forall A:\Set, A \ra \List~A \ra \List~A)}\]
 This is also the case for this more complex definition where there is
 a recursive argument on a different instance of \List: 
-\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
-           \ra (\List~A\ra A) \ra (\List~A)}\]
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set, \List~A),
+  \cons : (\forall A:\Set, A \ra \List~(A \ra A) \ra \List~A)}\]
 But the following definition has $0$ parameters:
-\[\NInd{}{\List:\Set\ra\Set}{\Nil:(A:\Set)(\List~A),\cons : (A:\Set)A
-           \ra (\List~A) \ra (\List~A*A)}\]
+\[\NInd{}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set, \List~A),
+  \cons : (\forall A:\Set, A \ra \List~A \ra \List~(A*A))}\]
 
 %\footnote{
 %The interested reader may compare the above definition with the two 
@@ -670,8 +670,8 @@ when $p$ is (less or equal than) the number of parameters in
 
 \paragraph{Examples}
 The declaration for parameterized lists is:
-\[\Ind{}{1}{\List:\Set\ra\Set}{\Nil:\forall A:\Set,\List~A,\cons : \forall
-  A:\Set, A \ra \List~A \ra   \List~A}\]
+\[\Ind{}{1}{\List:\Set\ra\Set}{\Nil:(\forall A:\Set,\List~A),\cons :
+  (\forall A:\Set, A \ra \List~A \ra   \List~A)}\]
 
 The declaration for the length of lists is:
 \[\Ind{}{1}{\Length:\forall A:\Set, (\List~A)\ra \nat\ra\Prop}

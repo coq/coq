@@ -629,8 +629,8 @@ let error_bad_ind_parameters env c n v1 v2  =
   let pc = pr_lconstr_env_at_top env c in
   let pv1 = pr_lconstr_env env v1 in
   let pv2 = pr_lconstr_env env v2 in
-  str "The " ++ nth n ++ str " argument of " ++ pv2 ++ brk(1,1) ++
-  str "must be " ++ pv1 ++ str " in" ++ brk(1,1) ++ pc ++ str "."
+  str "Last occurrence of " ++ pv2 ++ str " must have " ++ pv1 ++
+  str " as " ++ nth n ++ str " argument in " ++ brk(1,1) ++ pc ++ str "."
 
 let error_same_names_types id =
   str "The name" ++ spc () ++ pr_id id ++ spc () ++
