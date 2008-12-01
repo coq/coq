@@ -346,7 +346,7 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)]: 
    do so that the reduction uses this extra information *)
 
-let substl_with_arity subst c =
+let substl_with_arity subst constr =
   let v = Array.of_list subst in
   let rec subst_total k c =
     let (h,rcargs) = decompose_app c in
@@ -361,14 +361,14 @@ let substl_with_arity subst c =
             else mkRel (i - Array.length v) in
           applist(h',List.map(subst_total k)rcargs)
       | _ -> map_constr_with_binders succ subst_total k c in
-  subst_total 0 c
+  subst_total 0 constr
 
 let contract_fix_use_function f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies)) =
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
   let lbodies = list_tabulate make_Fi nbodies in
-  substl_with_arity (List.rev lbodies) bodies.(bodynum)
+  substl_with_arity (List.rev lbodies) (nf_beta bodies.(bodynum))
 
 let reduce_fix_use_function f whfun fix stack =
   match fix_recarg fix stack with
