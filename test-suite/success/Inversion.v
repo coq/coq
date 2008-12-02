@@ -102,8 +102,8 @@ Abort.
 
 (* Check non-regression of bug #1968 *)
 
-Inductive foo : option nat -> Prop := Foo : forall t, foo (Some t).
-Goal forall o, foo o -> 0 = 1.
+Inductive foo2 : option nat -> Prop := Foo : forall t, foo2 (Some t).
+Goal forall o, foo2 o -> 0 = 1.
 intros.
 eapply trans_eq. 
 inversion H.
