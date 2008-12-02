@@ -585,7 +585,7 @@ let find_position_gen forpat ensure assoc lev =
 	      raise Exit
             else
               error_level_assoc p a (out_some assoc)
-	| l -> after := q; (n,create_assoc assoc,false)::l
+	| l -> after := q; (n,create_assoc assoc,ensure)::l
       in
       try
 	let updated =
