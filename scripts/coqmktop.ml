@@ -218,6 +218,12 @@ let all_modules_in_dir dir =
   with Unix.Unix_error (_,"opendir",_) ->
     failwith ("all_modules_in_dir: directory "^dir^" not found")
 
+let expand_ocaml_lib dir =
+  if String.length dir > 0 && dir.[0] = '+' then 
+    Coq_config.camllib^"/"^String.sub dir 1 (String.length dir - 1)
+  else
+    dir
+
 (* Gives a part of command line (corresponding to dir) for [extract_crc] *)
 let crc_cmd dir =
   " -I "^dir^(List.fold_right (fun x y -> " "^x^y) (all_modules_in_dir dir)
@@ -225,6 +231,7 @@ let crc_cmd dir =
 
 (* Same as [crc_cmd] but recursively *)
 let rec_crc_cmd dir =
+  let dir = expand_ocaml_lib dir in
   List.fold_right (fun x y -> x^y) (List.map crc_cmd (all_subdirs dir)) ""
 
 (* Creates another temporary file for Dynlink if needed *)
