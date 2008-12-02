@@ -683,7 +683,8 @@ let check_one_fix renv recpos def =
                     List.iter (check_rec_call renv) l
                 | Some c ->
                     try List.iter (check_rec_call renv) l
-                    with FixGuardError _ -> check_rec_call renv (applist(c,l))
+                    with FixGuardError _ ->
+                      check_rec_call renv (applist(lift p c,l))
               end
 
         | Case (ci,p,c_0,lrest) ->

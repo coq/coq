@@ -8,3 +8,14 @@
 
 Fixpoint F (n:nat) : False := F (match F n with end).
 
+(* de Bruijn mix-up *)
+(* If accepted, Eval compute in f 0. loops *)
+Definition f :=
+  let f (f1 f2:nat->nat) := f1 in
+  let _ := 0 in
+  let _ := 0 in
+  let g (f1 f2:nat->nat) := f2 in
+  let h := f in (* h = Rel 4 *)
+  fix F (n:nat) : nat :=
+  h F S n. (* here Rel 4 = g *)
+  
