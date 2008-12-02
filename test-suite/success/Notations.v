@@ -26,3 +26,8 @@ Notation "x +1" := (S x) (at level 8, right associativity).
    right order *)
 
 Notation "' 'C_' G ( A )" := (A,G) (at level 8, G at level 2).
+
+(* Check import of notations from within a section *)
+
+Notation "+1 x" := (S x) (at level 25, x at level 9).
+Section A. Notation Global "'Z'" := O (at level 9). End A.

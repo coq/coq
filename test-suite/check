@@ -9,6 +9,7 @@ else
 fi
 
 command="$coqtop -top Top -load-vernac-source"
+coqc="$coqtop -compile"
 
 # on compte le nombre de tests et de succès
 nbtests=0
@@ -234,8 +235,24 @@ test_features () {
     done
 }
 
+# Compile in advance files needed for tests involving a "Require"
+prepare_tests () {
+    files=`/bin/ls -1 $1/*.v 2> /dev/null`
+    for f in $files; do 
+	printf "    "$f"..."
+	$coqc $1/`basename $f .v` > /dev/null 2>&1 
+	if [ $? != 0 ]; then
+	    echo "could not be prepared"
+        else 
+	    echo "correctly prepared"
+        fi
+    done
+}
+
 # Programme principal
 
+echo "Preparing tests"
+prepare_tests prerequisite
 echo "Success tests"
 test_success success
 echo "Failure tests"
