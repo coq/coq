@@ -174,15 +174,6 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
   in
   if not (list_distinct (List.map fst li)) then 
     raise Elimconst;
-  (* Recursive calls must be applied enough to avoid eta-expansion *)
-(*  let rec no_partial_app k c =
-    let (h,rcargs) = decompose_app c in
-    if eq_constr h (mkRel (k+nbfix-i)) then
-      if List.length rcargs < nargs then raise Elimconst
-      else List.iter (no_partial_app k) rcargs
-    else iter_constr_with_binders succ no_partial_app k c in
-  Array.iter (no_partial_app 0) bds;
-*)
   let k = lv.(i) in
   if k < nargs then
 (*  Such an optimisation would need eta-expansion 
@@ -346,31 +337,95 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)]: 
    do so that the reduction uses this extra information *)
 
-let substl_with_arity subst constr =
+let dummy = mkProp
+let vfx = id_of_string"_expanded_fix_"
+let vfun = id_of_string"_elimminator_function_"
+
+(* Mark every occurrence of substituted vars (associated to a function)
+   as a problem variable: an evar that can be instantiated either by
+   vfx (expanded fixpoint) or vfun (named function). *)
+let substl_with_function subst constr =
+  let cnt = ref 0 in
+  let evd = ref Evd.empty in
+  let minargs = ref Intmap.empty in
   let v = Array.of_list subst in
   let rec subst_total k c =
-    let (h,rcargs) = decompose_app c in
-    match kind_of_term h with
+    match kind_of_term c with
         Rel i when k<i ->
-          let h' =
-            if i <= k + Array.length v then
-              match v.(i-k-1) with
-                  (_,Some(min,ref)) when List.length rcargs >= min ->
-                    lift k ref
-                | (fx,_) -> lift k fx
-            else mkRel (i - Array.length v) in
-          applist(h',List.map(subst_total k)rcargs)
-      | _ -> map_constr_with_binders succ subst_total k c in
-  subst_total 0 constr
+          if i <= k + Array.length v then
+            match v.(i-k-1) with
+              | (fx,Some(min,ref)) ->
+                  decr cnt;
+                  evd := Evd.add !evd !cnt
+                    (Evd.make_evar
+                      (val_of_named_context
+                        [(vfx,None,dummy);(vfun,None,dummy)])
+                      dummy);
+                  minargs := Intmap.add !cnt min !minargs;
+                  lift k (mkEvar(!cnt,[|fx;ref|]))
+              | (fx,None) -> lift k fx
+          else mkRel (i - Array.length v)
+      | _ ->
+          map_constr_with_binders succ subst_total k c in
+  let c = subst_total 0 constr in
+  (c,!evd,!minargs)
 
-let contract_fix_use_function f
+exception Partial
+
+(* each problem variable that cannot be made totally applied even by
+   reduction is solved by the expanded fix term. *)
+let solve_arity_problem env sigma fxminargs c =
+  let evm = ref sigma in
+  let set_fix i = evm := Evd.define !evm i (mkVar vfx) in
+  let rec check strict c =
+    let c' = whd_betaiotazeta c in
+    let (h,rcargs) = decompose_app c' in
+    match kind_of_term h with
+        Evar(i,_) when Intmap.mem i fxminargs && not (Evd.is_defined !evm i) ->
+          let minargs = Intmap.find i fxminargs in
+          if List.length rcargs < minargs then
+            if strict then set_fix i
+            else raise Partial;
+          List.iter (check strict) rcargs
+      | (Var _|Const _) when isEvalRef env h ->
+          (match reference_opt_value sigma env (destEvalRef h) with
+              Some h' ->
+                let bak = !evm in
+                (try List.iter (check false) rcargs
+                with Partial ->
+                  evm := bak;
+                  check strict (applist(h',rcargs)))
+            | None -> List.iter (check strict) rcargs)
+      | _ -> iter_constr (check strict) c' in
+  check true c;
+  !evm
+
+let substl_checking_arity env subst c =
+  (* we initialize the problem: *)
+  let body,sigma,minargs = substl_with_function subst c in
+  (* we collect arity constraints *)
+  let sigma' = solve_arity_problem env sigma minargs body in
+  (* we propagate the constraints: solved problems are substituted;
+     the other ones are replaced by the function symbol *)
+  let rec nf_fix c =
+    match kind_of_term c with
+        Evar(i,[|fx;f|] as ev) when Intmap.mem i minargs ->
+          (match Evd.existential_opt_value sigma' ev with
+              Some c' -> c'
+            | None -> f)
+      | _ -> map_constr nf_fix c in
+  nf_fix body
+
+
+
+let contract_fix_use_function env f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies)) =
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
   let lbodies = list_tabulate make_Fi nbodies in
-  substl_with_arity (List.rev lbodies) (nf_beta bodies.(bodynum))
+  substl_checking_arity env (List.rev lbodies) (nf_beta bodies.(bodynum))
 
-let reduce_fix_use_function f whfun fix stack =
+let reduce_fix_use_function env f whfun fix stack =
   match fix_recarg fix stack with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
@@ -383,14 +438,15 @@ let reduce_fix_use_function f whfun fix stack =
         let stack' = stack_assign stack recargnum (app_stack recarg') in
 	(match kind_of_term recarg'hd with
            | Construct _ ->
-	       Reduced (contract_fix_use_function f fix,stack')
+	       Reduced (contract_fix_use_function env f fix,stack')
 	   | _ -> NotReducible)
 
-let contract_cofix_use_function f (bodynum,(_names,_,bodies as typedbodies)) =
+let contract_cofix_use_function env f
+  (bodynum,(_names,_,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
   let subbodies = list_tabulate make_Fi nbodies in
-  substl_with_arity (List.rev subbodies) bodies.(bodynum)
+  substl_checking_arity env (List.rev subbodies) (nf_beta bodies.(bodynum))
 
 let reduce_mind_case_use_function func env mia =
   match kind_of_term mia.mconstr with 
@@ -419,7 +475,8 @@ let reduce_mind_case_use_function func env mia =
 		    with Not_found -> None
 	  else
 	    fun _ -> None in
-	let cofix_def = contract_cofix_use_function build_cofix_name cofix in
+	let cofix_def =
+          contract_cofix_use_function env build_cofix_name cofix in
 	mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
@@ -463,7 +520,7 @@ let rec red_elim_const env sigma ref largs =
 	let d, lrest = whd_betadelta_state env sigma (c,largs) in
 	let f = make_elim_fun ([|Some (minfxargs,ref)|],infos) largs in
 	let whfun = whd_construct_state env sigma in
-	(match reduce_fix_use_function f whfun (destFix d) lrest with
+	(match reduce_fix_use_function env f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
 	   | Reduced (c,rest) -> (nf_beta c, rest))
     | EliminationMutualFix (min,refgoal,refinfos)
@@ -479,7 +536,7 @@ let rec red_elim_const env sigma ref largs =
 	let d, lrest = whd_betadelta_state env sigma s in
 	let f = make_elim_fun refinfos midargs in
 	let whfun = whd_construct_state env sigma in
-	(match reduce_fix_use_function f whfun (destFix d) lrest with
+	(match reduce_fix_use_function env f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
 	   | Reduced (c,rest) -> (nf_beta c, rest))
     | _ -> raise Redelimination
