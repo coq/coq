@@ -866,7 +866,7 @@ let unify_eqn env sigma hypinfo t =
 	with Not_found ->
 	  (prf, (car, inverse car rel, c2, c1))
     in Some (env', res)
-  with _ -> None
+  with e when catchable e -> None
 
 let unfold_impl t =
   match kind_of_term t with
