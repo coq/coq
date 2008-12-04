@@ -74,7 +74,7 @@ Require Import Coq.Arith.Arith.
 
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
-Program Instance eq_setoid A : Setoid A :=
+Program Instance eq_setoid A : Setoid A | 10 :=
   equiv := eq ; setoid_equiv := eq_equivalence.
 
 Program Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
