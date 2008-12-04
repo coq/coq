@@ -649,11 +649,11 @@ let whd_meta metasubst c = match kind_of_term c with
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
 let plain_instance s c = 
-  let rec irec u = match kind_of_term u with
-    | Meta p -> (try List.assoc p s with Not_found -> u)
+  let rec irec n u = match kind_of_term u with
+    | Meta p -> (try lift n (List.assoc p s) with Not_found -> u)
     | App (f,l) when isCast f ->
         let (f,_,t) = destCast f in
-        let l' = Array.map irec l in 
+        let l' = Array.map (irec n) l in 
         (match kind_of_term f with
         | Meta p ->
 	    (* Don't flatten application nodes: this is used to extract a
@@ -666,12 +666,13 @@ let plain_instance s c =
                 mkLetIn (Name h,g,t,mkApp(mkRel 1,Array.map (lift 1) l'))
             | _ -> mkApp (g,l')
 	    with Not_found -> mkApp (f,l'))
-        | _ -> mkApp (irec f,l'))	
+        | _ -> mkApp (irec n f,l'))	
     | Cast (m,_,_) when isMeta m ->
-	(try List.assoc (destMeta m) s with Not_found -> u)
-    | _ -> map_constr irec u
+	(try lift n (List.assoc (destMeta m) s) with Not_found -> u)
+    | _ ->
+	map_constr_with_binders succ irec n u
   in 
-  if s = [] then c else irec c
+  if s = [] then c else irec 0 c
 
 (* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
    has (unfortunately) different subtle side effects: 

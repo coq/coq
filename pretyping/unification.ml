@@ -86,13 +86,15 @@ let rec subst_meta_instances bl c =
     | Meta i -> (try assoc_pair i bl with Not_found -> c)
     | _ -> map_constr (subst_meta_instances bl) c
 
-let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
+let solve_pattern_eqn_array (env,nb) sigma f l c (metasubst,evarsubst) =
   match kind_of_term f with
     | Meta k -> 
 	let c = solve_pattern_eqn env (Array.to_list l) c in
 	let n = Array.length l - List.length (fst (decompose_lam c)) in
 	let pb = (ConvUpToEta n,TypeNotProcessed) in
-	(k,c,pb)::metasubst,evarsubst
+	  if noccur_between 1 nb c then
+            (k,lift (-nb) c,pb)::metasubst,evarsubst
+	  else error_cannot_unify_local env sigma (mkApp (f, l),c,c)
     | Evar ev ->
       (* Currently unused: incompatible with eauto/eassumption backtracking *)
 	metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
@@ -192,7 +194,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	    (* Here we check that [cN] does not contain any local variables *)
 	    if nb = 0 then
               (k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
-            else if noccurn nb cN then
+            else if noccur_between 1 nb cN then
               (k,lift (-nb) cN,snd (extract_instance_status pb))::metasubst,
               evarsubst
 	    else error_cannot_unify_local curenv sigma (m,n,cN)
@@ -200,7 +202,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	    (* Here we check that [cM] does not contain any local variables *)
 	    if nb = 0 then
               (k,cM,snd (extract_instance_status pb))::metasubst,evarsubst
-	    else if noccurn nb cM
+	    else if noccur_between 1 nb cM
 	    then
               (k,lift (-nb) cM,fst (extract_instance_status pb))::metasubst,
               evarsubst
@@ -224,12 +226,12 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	| App (f1,l1), _ when
 	    isMeta f1 & is_unification_pattern curenv f1 l1 &
 	    not (dependent f1 cN) ->
-	      solve_pattern_eqn_array curenv f1 l1 cN substn
+	      solve_pattern_eqn_array curenvnb sigma f1 l1 cN substn
 
 	| _, App (f2,l2) when
 	    isMeta f2 & is_unification_pattern curenv f2 l2 &
 	    not (dependent f2 cM) ->
-	      solve_pattern_eqn_array curenv f2 l2 cM substn
+	      solve_pattern_eqn_array curenvnb sigma f2 l2 cM substn
 
 	| App (f1,l1), App (f2,l2) ->
 	      let len1 = Array.length l1
