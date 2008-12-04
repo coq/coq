@@ -83,11 +83,15 @@ open Topconstr
 let type_ctx_instance isevars env ctx inst subst =
   let (s, _) = 
     List.fold_left2
-      (fun (subst, instctx) (na, _, t) ce ->
+      (fun (subst, instctx) (na, b, t) ce ->
 	let t' = substl subst t in
-	let c = interp_casted_constr_evars isevars env ce t' in
-	let d = na, Some c, t' in
-	  c :: subst, d :: instctx)
+	let c' = 
+	  match b with 
+	  | None -> interp_casted_constr_evars isevars env ce t'
+	  | Some b -> substl subst b
+	in
+	let d = na, Some c', t' in
+	  c' :: subst, d :: instctx)
       (subst, []) (List.rev ctx) inst
   in s
 
@@ -166,7 +170,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
   isevars := Evarutil.nf_evar_defs !isevars;
   isevars := resolve_typeclasses env !isevars;
   let sigma = Evd.evars_of !isevars in
-  let substctx = List.map (Evarutil.nf_evar sigma) subst in
+  let subst = List.map (Evarutil.nf_evar sigma) subst in
     if Lib.is_modtype () then
       begin
 	let _, ty_constr = instance_constructor k (List.rev subst) in
@@ -182,34 +186,39 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     else
       begin
 	let props = match props with CRecord (loc, _, fs) -> fs | _ -> assert false in
-	  if List.length props > List.length k.cl_props then 
-	    mismatched_props env' (List.map snd props) k.cl_props;
-	  let subst = 
-	    match k.cl_props with 
-	    | [(na,b,ty)] -> 
-		let term = match props with [] -> CHole (Util.dummy_loc, None) 
-		  | [(_,f)] -> f | _ -> assert false in
-		let ty' = substl subst ty in
-		let c = interp_casted_constr_evars isevars env' term ty' in
-		  c :: subst
-	    | _ ->
-		let props, rest = 
-		  List.fold_left
-		    (fun (props, rest) (id,_,_) -> 
-		      try 
-			let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
-			let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
-			  Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
-			  c :: props, rest'
-		      with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
-		    ([], props) k.cl_props
-		in
-		  if rest <> [] then 
-		    unbound_method env' k.cl_impl (fst (List.hd rest))
-		  else
-		    type_ctx_instance isevars env' k.cl_props props substctx
+	if List.length props > List.length k.cl_props then 
+	  mismatched_props env' (List.map snd props) k.cl_props;
+	let subst = 
+	  match k.cl_props with 
+	  | [(na,b,ty)] -> 
+	      let term = match props with [] -> CHole (Util.dummy_loc, None) 
+		| [(_,f)] -> f | _ -> assert false in
+	      let ty' = substl subst ty in
+	      let c = interp_casted_constr_evars isevars env' term ty' in
+		c :: subst
+	  | _ ->
+	      let props, rest = 
+		List.fold_left
+		  (fun (props, rest) (id,b,_) -> 
+		    try 
+		      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
+		      let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
+			Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
+			c :: props, rest'
+		    with Not_found -> 
+		      (CHole (Util.dummy_loc, None) :: props), rest)
+		  ([], props) k.cl_props
+	      in
+		if rest <> [] then 
+		  unbound_method env' k.cl_impl (fst (List.hd rest))
+		else
+		  type_ctx_instance isevars env' k.cl_props props subst
 	in
-	let app, ty_constr = instance_constructor k (List.rev subst) in
+	let subst = List.fold_left2 
+	  (fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
+	  [] subst (k.cl_props @ snd k.cl_context)
+	in
+	let app, ty_constr = instance_constructor k subst in
 	let termtype = 
 	  let t = it_mkProd_or_LetIn ty_constr ctx' in
 	    Evarutil.nf_isevar !isevars t

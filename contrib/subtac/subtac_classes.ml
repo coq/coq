@@ -135,7 +135,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   isevars := Evarutil.nf_evar_defs !isevars;
   isevars := resolve_typeclasses ~onlyargs:false ~fail:true env' !isevars;
   let sigma = Evd.evars_of !isevars in
-  let substctx = List.map (Evarutil.nf_evar sigma) subst in
+  let subst = List.map (Evarutil.nf_evar sigma) subst in
   let subst = 
     let props = match props with CRecord (loc, _, fs) -> fs | _ -> assert false in
       if List.length props > List.length k.cl_props then 
@@ -161,9 +161,13 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	    if rest <> [] then 
 	      unbound_method env' k.cl_impl (fst (List.hd rest))
 	    else
-	      fst (type_ctx_instance isevars env' k.cl_props props substctx)
+	      fst (type_ctx_instance isevars env' k.cl_props props subst)
   in
-  let inst_constr, ty_constr = instance_constructor k (List.rev subst) in
+  let subst = List.fold_left2 
+    (fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
+    [] subst (k.cl_props @ snd k.cl_context)
+  in
+  let inst_constr, ty_constr = instance_constructor k subst in
   isevars := Evarutil.nf_evar_defs !isevars;
   let term = Evarutil.nf_isevar !isevars (it_mkLambda_or_LetIn inst_constr ctx')
   and termtype = Evarutil.nf_isevar !isevars (it_mkProd_or_LetIn ty_constr ctx') 
