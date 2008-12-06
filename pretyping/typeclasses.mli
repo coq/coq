@@ -65,7 +65,6 @@ val instance_impl : instance -> constant
 
 val is_class : global_reference -> bool
 val is_instance : global_reference -> bool
-val is_method : constant -> bool
 
 val is_implicit_arg : hole_kind -> bool
 
