@@ -406,35 +406,45 @@ Qed.
 Class (A : Type) => Normalizes (m : relation A) (m' : relation A) : Prop :=
   normalizes : relation_equivalence m m'.
 
-Instance inverse_respectful_norm : 
-  ! Normalizes (A -> B) (inverse R ==> inverse R') (inverse (R ==> R')) .
-Proof. firstorder. Qed.
+(** Current strategy: add [inverse] everywhere and reduce using [subrelation]
+   afterwards. *)
 
-(* If not an inverse on the left, do a double inverse. *)
-
-Instance not_inverse_respectful_norm : 
-  ! Normalizes (A -> B) (R ==> inverse R') (inverse (inverse R ==> R')) | 4.
-Proof. firstorder. Qed.
-
-Instance inverse_respectful_rec_norm [ Normalizes B R' (inverse R'') ] :
-  ! Normalizes (A -> B) (inverse R ==> R') (inverse (R ==> R'')).
-Proof. red ; intros. 
-  assert(r:=normalizes).
-  setoid_rewrite r.
-  setoid_rewrite inverse_respectful.
-  reflexivity.
+Lemma inverse_atom A R : Normalizes A R (inverse (inverse R)).
+Proof.
+  firstorder.
 Qed.
+
+Lemma inverse_arrow ((NA : Normalizes A R (inverse R'''), NB : Normalizes B R' (inverse R''))) :
+  Normalizes (A -> B) (R ==> R') (inverse (R''' ==> R'')%signature).
+Proof. unfold Normalizes. intros.
+  rewrite NA, NB. firstorder.
+Qed.
+
+Ltac inverse :=   
+  match goal with
+    | [ |- Normalizes _ (respectful _ _) _ ] => eapply @inverse_arrow
+    | _ => eapply @inverse_atom
+  end.
+
+Hint Extern 1 (Normalizes _ _ _) => inverse : typeclass_instances.
+
+(** Treating inverse: can't make them direct instances as we 
+   need at least a [flip] present in the goal. *)
+
+Lemma inverse1 ((subrelation A R' R)) : subrelation (inverse (inverse R')) R.
+Proof. firstorder. Qed.
+
+Lemma inverse2 ((subrelation A R R')) : subrelation R (inverse (inverse R')).
+Proof. firstorder. Qed.
+
+Hint Extern 1 (subrelation (flip _) _) => eapply @inverse1 : typeclass_instances.
+Hint Extern 1 (subrelation _ (flip _)) => eapply @inverse2 : typeclass_instances.
 
 (** Once we have normalized, we will apply this instance to simplify the problem. *)
 
 Definition morphism_inverse_morphism [ mor : Morphism A R m ] : Morphism (inverse R) m := mor.
 
-Ltac morphism_inverse :=
-  match goal with
-    [ |- @Morphism _ (flip _) _ ] => eapply @morphism_inverse_morphism
-  end.
-
-Hint Extern 2 (@Morphism _ _ _) => morphism_inverse : typeclass_instances.
+Hint Extern 2 (@Morphism _ (flip _) _) => eapply @morphism_inverse_morphism : typeclass_instances.
 
 (** Bootstrap !!! *)
 
