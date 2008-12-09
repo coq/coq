@@ -50,6 +50,7 @@ Nil
      : forall A : Type, list A
 NIL:list nat
      : list nat
+Defining 'I' as keyword
 (false && I 3)%bool /\ I 6
      : Prop
 [|1, 2, 3; 4, 5, 6|]

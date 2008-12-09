@@ -182,7 +182,7 @@ let rec pr_raw_generic prc prlc prtac prref (x:Genarg.rlevel Genarg.generic_argu
 	  x)
   | ExtraArgType s -> 
       try pi1 (Stringmap.find s !genarg_pprule) prc prlc prtac x
-      with Not_found -> str " [no printer for " ++ str s ++ str "] "
+      with Not_found -> str "[no printer for " ++ str s ++ str "]"
 
 
 let rec pr_glob_generic prc prlc prtac x =

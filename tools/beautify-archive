@@ -1,0 +1,52 @@
+#!/bin/sh
+
+#This script compiles and beautifies an archive, check the correctness
+#of beautified files, then replace the original files by the
+#beautified ones, keeping a copy of original files in $OLDARCHIVE.
+#The script assumes:
+#- that the archive provides a Makefile built by coq_makefile,
+#- that coqc is in the path or that variables COQTOP and COQBIN are set.
+
+OLDARCHIVE=old_files
+NEWARCHIVE=beautify_files
+BEAUTIFYSUFFIX=.beautified
+
+if [ -e $OLDARCHIVE ]; then
+  echo "Warning: $OLDARCHIVE directory found, the files are maybe already beautified";
+  sleep 5;
+fi
+echo ---- Producing beautified files in the beautification directory -------
+if [ -e $NEWARCHIVE ]; then rm -r $NEWARCHIVE; fi
+if [ -e /tmp/$OLDARCHIVE.$$ ]; then rm -r /tmp/$OLDARCHIVE.$$; fi
+cp -pr . /tmp/$OLDARCHIVE.$$
+cp -pr /tmp/$OLDARCHIVE.$$ $NEWARCHIVE
+cd $NEWARCHIVE
+rm description || true
+make clean
+make COQFLAGS='-beautify -q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)' || \
+ { echo ---- Failed to beautify; exit 1; }
+echo -------- Upgrading files in the beautification directory --------------
+beaufiles=`find . -name \*.v$BEAUTIFYSUFFIX`
+for i in $beaufiles; do
+  j=`dirname $i`/`basename $i .v$BEAUTIFYSUFFIX`.v
+  echo Upgrading $j in the beautification directory
+  mv -u -f $i $j
+done
+echo ---- Recompiling beautified files in the beautification directory -----
+make clean
+make || { echo ---- Failed to recompile; exit 1; }
+echo ----- Saving old files in directory $OLDARCHIVE -------------------------
+/bin/rm -r ../$OLDARCHIVE
+mv /tmp/$OLDARCHIVE.$$ ../$OLDARCHIVE
+echo Saving $OLDARCHIVE files done
+echo --------- Upgrading files in current directory ------------------------
+vfiles=`find . -name \*.v`
+cd ..
+for i in $vfiles; do
+  echo Upgrading $i in current directory
+  mv -u -f $NEWARCHIVE/$i $i
+done
+echo -------- Beautification completed -------------------------------------
+echo Old files are in directory '"$OLDARCHIVE"'
+echo New files are in current directory
+echo You can now remove the beautification directory '"$NEWARCHIVE"'
