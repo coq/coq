@@ -232,7 +232,7 @@ let build_dependent_sum l =
 	  trace (spc () ++ str ("treating evar " ^ string_of_id n));
 	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) hyptype)
 	   with _ -> ());
-	let tac = assert_tac true (Name n) hyptype in
+	let tac = assert_tac (Name n) hyptype in
 	let conttac = 
 	  (fun cont -> 
 	     conttac

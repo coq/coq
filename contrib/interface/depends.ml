@@ -67,6 +67,7 @@ let explore_tree pfs =
     | Move (bool, identifier, identifier') -> "Move"
     | Rename (identifier, identifier') -> "Rename"
     | Change_evars -> "Change_evars"
+    | Order _ -> "Order"
   in
   let pt = proof_of_pftreestate pfs in
     (* We expect 0 *)
@@ -280,8 +281,8 @@ let rec depends_of_gen_tactic_expr depends_of_'constr depends_of_'ind depends_of
     | TacExact          c
     | TacExactNoCheck   c
     | TacVmCastNoCheck  c  -> depends_of_'constr c acc
-    | TacApply (_, _, [cb]) -> depends_of_'constr_with_bindings cb acc
-    | TacApply (_, _, _) -> failwith "TODO"
+    | TacApply (_, _, [cb], None) -> depends_of_'constr_with_bindings cb acc
+    | TacApply (_, _, _, _) -> failwith "TODO"
     | TacElim (_, cwb, cwbo) ->
 	depends_of_'constr_with_bindings cwb
 	  (Option.fold_right depends_of_'constr_with_bindings cwbo acc)
@@ -420,6 +421,7 @@ and depends_of_prim_rule pr acc = match pr with
   | Move _                       -> acc
   | Rename _                     -> acc
   | Change_evars                 -> acc
+  | Order _                      -> acc
 
 let rec depends_of_pftree pt acc =
   match pt.ref with

@@ -486,23 +486,6 @@ END
 
 
 
-TACTIC EXTEND apply_in
-| ["apply" ne_constr_with_bindings_list_sep(cl,",") "in" hyp(id) ] -> 
-    [ apply_in false id cl None ]
-| ["apply" ne_constr_with_bindings_list_sep(cl,",") "in" hyp(id) 
-   "as" simple_intropattern(ipat) ] -> 
-    [ apply_in false id cl (Some ipat) ]
-END
-
-
-TACTIC EXTEND eapply_in
-| ["eapply" ne_constr_with_bindings_list_sep(cl,",") "in" hyp(id) ] ->
-    [ apply_in true id cl None ]
-| ["eapply" ne_constr_with_bindings_list_sep(cl,",") "in" hyp(id) 
-   "as" simple_intropattern(ipat) ] -> 
-    [ apply_in true id cl (Some ipat) ]
-END
-
 (* sozeau: abs/gen for induction on instantiated dependent inductives, using "Ford" induction as 
   defined by Conor McBride *)
 TACTIC EXTEND generalize_eqs

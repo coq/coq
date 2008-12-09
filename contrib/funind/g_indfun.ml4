@@ -358,7 +358,7 @@ let poseq_unsafe idunsafe cstr gl =
   tclTHEN
     (Tactics.letin_tac None (Name idunsafe) cstr None allClauses)
     (tclTHENFIRST 
-      (Tactics.assert_as true (Util.dummy_loc,IntroAnonymous) (mkEq typ (mkVar idunsafe) cstr)) 
+      (Tactics.assert_tac Anonymous (mkEq typ (mkVar idunsafe) cstr)) 
       Tactics.reflexivity)
     gl
   

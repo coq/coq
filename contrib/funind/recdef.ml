@@ -740,7 +740,6 @@ let termination_proof_header is_mes input_type ids args_id relation
 	   (observe_tac 
 	      "first assert" 
 	      (assert_tac 
-		 true (* the assert thm is in first subgoal *)
 		 (Name wf_rec_arg) 
 		 (mkApp (delayed_force acc_rel,
 			 [|input_type;relation;mkVar rec_arg_id|])
@@ -753,7 +752,6 @@ let termination_proof_header is_mes input_type ids args_id relation
 	       (observe_tac 
 		  "second assert" 
 		  (assert_tac 
-		     true 
 		     (Name wf_thm)
 		     (mkApp (delayed_force well_founded,[|input_type;relation|]))
 		  )
@@ -1155,7 +1153,7 @@ let rec introduce_all_values_eq cont_tac functional termine
       [] ->
        let heq2 = next_global_ident_away true heq_id ids in
 	tclTHENLIST
-	  [forward None (dummy_loc,IntroIdentifier heq2)
+	  [pose_proof (Name heq2)
              (mkApp(mkVar heq1, [|f_S(f_S(mkVar pmax))|]));
            simpl_iter (onHyp heq2);
            unfold_in_hyp [((true,[1]), evaluable_of_global_reference 

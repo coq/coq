@@ -98,7 +98,6 @@ type 'id message_token =
   | MsgInt of int
   | MsgIdent of 'id
 
-
 type 'id gsimple_clause = ('id raw_hyp_location) option
 (* onhyps:
      [None] means *on every hypothesis*
@@ -154,7 +153,8 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacExact of 'constr
   | TacExactNoCheck of 'constr
   | TacVmCastNoCheck of 'constr
-  | TacApply of advanced_flag * evars_flag * 'constr with_bindings list
+  | TacApply of advanced_flag * evars_flag * 'constr with_bindings list * 
+      ('id * intro_pattern_expr located option) option
   | TacElim of evars_flag * 'constr with_bindings * 
       'constr with_bindings option
   | TacElimType of 'constr
@@ -166,7 +166,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacCofix of identifier option
   | TacMutualCofix of hidden_flag * identifier * (identifier * 'constr) list
   | TacCut of 'constr
-  | TacAssert of 'tac option * intro_pattern_expr located * 'constr
+  | TacAssert of 'tac option * intro_pattern_expr located option * 'constr
   | TacGeneralize of ('constr with_occurrences * name) list
   | TacGeneralizeDep of 'constr
   | TacLetTac of name * 'constr * 'id gclause * letin_flag

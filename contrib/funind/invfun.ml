@@ -445,10 +445,10 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
     in
     tclTHENSEQ
       [ observe_tac "intro args_names" (tclMAP h_intro args_names);
-	observe_tac "principle" (forward
-	  (Some (h_exact f_principle))
-	  (dummy_loc,Genarg.IntroIdentifier principle_id)
-	  princ_type);
+	observe_tac "principle" (assert_by
+	  (Name principle_id)
+	  princ_type
+	  (h_exact f_principle));
 	tclTHEN_i
 	  (observe_tac "functional_induction" (
 	     fun g -> 

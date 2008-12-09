@@ -314,7 +314,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
        because of evars limitation, use non dependent assert instead *)
     | LetIn (Name id,c1,t1,c2), _ ->
 	tclTHENS
-          (assert_tac true (Name id) t1) 
+          (assert_tac (Name id) t1) 
 	  [(match List.hd sgp with 
 	     | None -> tclIDTAC
 	     | Some th -> onLastHyp (fun id -> tcc_aux (mkVar id::subst) th));

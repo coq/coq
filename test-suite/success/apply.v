@@ -12,6 +12,44 @@ intros; apply Znot_le_gt, Zgt_lt in H.
 apply Zmult_lt_reg_r, Zlt_le_weak in H0; auto.
 Qed.
 
+(* Test application under tuples *)
+
+Goal (forall x, x=0 <-> 0=x) -> 1=0 -> 0=1.
+intros H H'.
+apply H in H'.
+exact H'.
+Qed.
+
+(* Test as clause *)
+
+Goal (forall x, x=0 <-> (0=x /\ True)) -> 1=0 -> True.
+intros H H'.
+apply H in H' as (_,H').
+exact H'.
+Qed.
+
+(* Test application modulo conversion *)
+
+Goal (forall x, id x = 0 -> 0 = x) -> 1 = id 0 -> 0 = 1.
+intros H H'.
+apply H in H'.
+exact H'.
+Qed.
+
+(* Check apply/eapply distinction in presence of open terms *)
+
+Parameter h : forall x y z : nat, x = z -> x = y.
+Implicit Arguments h [[x] [y]].
+Goal 1 = 0 -> True.
+intro H.
+apply h in H || exact I.
+Qed.
+
+Goal False -> 1 = 0.
+intro H.
+apply h || contradiction.
+Qed.
+
 (* Check if it unfolds when there are not enough premises *)
 
 Goal forall n, n = S n -> False.

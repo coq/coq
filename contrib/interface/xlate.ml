@@ -1163,12 +1163,12 @@ and xlate_tac =
 	xlate_error "TODO: trivial using"
     | TacReduce (red, l) ->
      CT_reduce (xlate_red_tactic red, xlate_clause l)
-    | TacApply (true,false,[c,bindl]) ->
+    | TacApply (true,false,[c,bindl],None) ->
      CT_apply (xlate_formula c, xlate_bindings bindl)
-    | TacApply (true,true,[c,bindl]) ->
+    | TacApply (true,true,[c,bindl],None) ->
      CT_eapply (xlate_formula c, xlate_bindings bindl)
-    | TacApply (_,_,_) ->
-	xlate_error "TODO: simple (e)apply and iterated apply"
+    | TacApply (_,_,_,_) ->
+	xlate_error "TODO: simple (e)apply and iterated apply and apply in"
     | TacConstructor (false,n_or_meta, bindl) ->
 	let n = match n_or_meta with AI n -> n | MetaId _ -> xlate_error ""
 	in CT_constructor (CT_int n, xlate_bindings bindl)
@@ -1256,13 +1256,13 @@ and xlate_tac =
 		     but the structures are different *)
 		  xlate_clause cl)
     | TacLetTac (na, c, cl, false) -> xlate_error "TODO: remember"
-    | TacAssert (None, (_,IntroIdentifier id), c) -> 
+    | TacAssert (None, Some (_,IntroIdentifier id), c) -> 
         CT_assert(xlate_id_opt ((0,0),Name id), xlate_formula c)
-    | TacAssert (None, (_,IntroAnonymous), c) -> 
+    | TacAssert (None, None, c) -> 
         CT_assert(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
-    | TacAssert (Some (TacId []), (_,IntroIdentifier id), c) -> 
+    | TacAssert (Some (TacId []), Some (_,IntroIdentifier id), c) -> 
         CT_truecut(xlate_id_opt ((0,0),Name id), xlate_formula c)
-    | TacAssert (Some (TacId []), (_,IntroAnonymous), c) -> 
+    | TacAssert (Some (TacId []), None, c) -> 
         CT_truecut(xlate_id_opt ((0,0),Anonymous), xlate_formula c)
     | TacAssert _ ->
 	xlate_error "TODO: assert with 'as' and 'by' and pose proof with 'as'"

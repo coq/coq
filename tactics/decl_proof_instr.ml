@@ -107,7 +107,7 @@ let clean_tmp gls =
     clean_all (tmp_ids gls) gls
 
 let assert_postpone id t =
-  assert_as true (dummy_loc, Genarg.IntroIdentifier id) t
+  assert_tac (Name id) t
 
 (* start a proof *)
 
@@ -780,7 +780,7 @@ let consider_tac c hyps gls =
     | _ -> 
 	let id = pf_get_new_id (id_of_string "_tmp") gls in
 	tclTHEN 
-	  (forward None (dummy_loc, Genarg.IntroIdentifier id) c)
+	  (forward None (Some (dummy_loc, Genarg.IntroIdentifier id)) c)
  	  (consider_match false [] [id] hyps) gls 
 	  
 

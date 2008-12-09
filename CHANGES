@@ -285,14 +285,14 @@ Tactics
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
 - New tactics "dependent induction/destruction H [ generalizing id_1 .. id_n ]"
   to do induction-inversion on instantiated inductive families à la BasicElim.
-- Tactic "apply" now able to reason modulo unfolding of constants
-  (possible source of incompatibility in situations where apply may fail, 
-  e.g. as argument of a try or a repeat and in a ltac function);
-  version of apply that does not unfold is renamed into "simple apply"
-  (usable for compatibility or for automation).
-- Tactic "apply" now able to traverse conjunctions and to select the first 
-  matching lemma among the components of the conjunction; tactic apply also
-  able to apply lemmas of conclusion an empty type.
+- Tactics "apply" and "apply in" now able to reason modulo unfolding of 
+  constants (possible source of incompatibility in situations where apply 
+  may fail, e.g. as argument of a try or a repeat and in a ltac function);
+  versions that do not unfold are renamed into "simple apply" and 
+  "simple apply in" (usable for compatibility or for automation).
+- Tactics "apply" and "apply in" now able to traverse conjunctions and to 
+  select the first matching lemma among the components of the conjunction; 
+  tactic "apply" also able to apply lemmas of conclusion an empty type.
 - Tactic "apply" now supports application of several lemmas in a row.
 - Tactics "set" and "pose" can set functions using notation "(f x1..xn := c)".
 - New tactic "instantiate" (without argument).
