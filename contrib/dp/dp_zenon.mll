@@ -154,7 +154,7 @@ and read_main_proof = parse
 	     let s = Coq.fun_def_axiom f vars t in
 	     if !debug then Format.eprintf "axiom fun def = %s@." s;
 	     let c = constr_of_string gl s in
-	     assert_tac true (Name (id_of_string id)) c gl)
+	     assert_tac (Name (id_of_string id)) c gl)
 	  [tclTHEN intros reflexivity; tclIDTAC]
 
   let exact_string s gl =
@@ -165,7 +165,7 @@ and read_main_proof = parse
     let interp_lemma l gl =
       let ty = constr_of_string gl l.l_type in
       tclTHENS
-	(assert_tac true (Name (id_of_string l.l_id)) ty)
+	(assert_tac (Name (id_of_string l.l_id)) ty)
 	[exact_string l.l_proof; tclIDTAC]
 	gl
     in
