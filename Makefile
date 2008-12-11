@@ -32,6 +32,8 @@ export FIND_VCS_CLAUSE:='(' \
   -name 'debian' -or \
   -name "$${GIT_DIR}" \
 ')' -prune -type f -or
+export PRUNE_CHECKER := -wholename ./checker/\* -prune -or
+
 FIND_PRINTF_P:=-print | sed 's|^\./||'
 
 export YACCFILES:=$(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mly' ')' $(FIND_PRINTF_P))

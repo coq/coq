@@ -504,7 +504,7 @@ install-pcoq-manpages:
 
 validate:: $(BESTCHICKEN) $(ALLVO)
 	$(SHOW)'COQCHK <theories & contrib>'
-	$(BESTCHICKEN) -boot -o -m $(ALLMODS)
+	$(HIDE)$(BESTCHICKEN) -boot -o -m $(ALLMODS)
 
 check:: world
 	cd test-suite; \
@@ -669,7 +669,7 @@ install-library:
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LINKCMX) $(FULLCOQLIB)
 endif
-	find . $(FIND_VCS_CLAUSE) -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
+	find . $(FIND_VCS_CLAUSE) $(PRUNE_CHECKER) -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
 	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
