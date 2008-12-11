@@ -820,16 +820,21 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
  
   Variable B : Type.
 
-  Fixpoint xmapi (f : positive -> A -> B) (m : t A) (i : positive)
-             {struct m} : t B :=
-     match m with
-      | Leaf => @Leaf B
-      | Node l o r => Node (xmapi f l (append i (xO xH)))
-                           (option_map (f i) o)
-                           (xmapi f r (append i (xI xH)))
-     end.
+  Section Mapi.
 
-  Definition mapi (f : positive -> A -> B) m := xmapi f m xH.
+    Variable f : positive -> A -> B.
+
+    Fixpoint xmapi (m : t A) (i : positive) {struct m} : t B :=
+       match m with
+        | Leaf => @Leaf B
+        | Node l o r => Node (xmapi l (append i (xO xH)))
+                             (option_map (f i) o)
+                             (xmapi r (append i (xI xH)))
+       end.
+
+    Definition mapi m := xmapi m xH.
+
+  End Mapi.
 
   Definition map (f : A -> B) m := mapi (fun _ => f) m.
 
