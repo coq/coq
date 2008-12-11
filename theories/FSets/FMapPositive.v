@@ -988,14 +988,47 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Qed.
 
 
-  Definition fold (A : Type)(B : Type) (f: positive -> A -> B -> B) (tr: t A) (v: B) :=
-     List.fold_left (fun a p => f (fst p) (snd p) a) (elements tr) v.
-  
+  Section Fold.
+
+    Variables A B : Type.
+    Variable f : positive -> A -> B -> B.
+
+    Fixpoint xfoldi (m : t A) (v : B) (i : positive) :=
+      match m with
+        | Leaf => v
+        | Node l (Some x) r =>
+          xfoldi r (f i x (xfoldi l v (append i 2))) (append i 3)
+        | Node l None r =>
+          xfoldi r (xfoldi l v (append i 2)) (append i 3)
+      end.
+
+    Lemma xfoldi_1 :
+      forall m v i,
+      xfoldi m v i = fold_left (fun a p => f (fst p) (snd p) a) (xelements m i) v.
+    Proof.
+      set (F := fun a p => f (fst p) (snd p) a).
+      induction m; intros; simpl; auto.
+      destruct o.
+      rewrite fold_left_app; simpl.
+      rewrite <- IHm1.
+      rewrite <- IHm2.
+      unfold F; simpl; reflexivity.
+      rewrite fold_left_app; simpl.
+      rewrite <- IHm1.
+      rewrite <- IHm2.
+      reflexivity.
+    Qed.
+
+    Definition fold m i := xfoldi m i 1.
+
+  End Fold.
+
   Lemma fold_1 :
     forall (A:Type)(m:t A)(B:Type)(i : B) (f : key -> A -> B -> B),
     fold f m i = fold_left (fun a p => f (fst p) (snd p) a) (elements m) i.
   Proof.
-  intros; unfold fold; auto.
+    intros; unfold fold, elements.
+    rewrite xfoldi_1; reflexivity.
   Qed.
 
   Fixpoint equal (A:Type)(cmp : A -> A -> bool)(m1 m2 : t A) {struct m1} : bool := 
