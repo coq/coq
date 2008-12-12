@@ -4,7 +4,6 @@ Require Import BinPos.
 Require Import Ring_polynom.
 Require Import BinList.
 Require Import InitialRing.
-Declare ML Module "newring".
   
 
 (* adds a definition id' on the normal form of t and an hypothesis id

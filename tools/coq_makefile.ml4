@@ -278,10 +278,12 @@ let include_dirs l =
   -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
   -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
   -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml\n";
-    print "else ifneq ($(strip $(COQLIB)),)\n";
+    print "else\n";
+    print "ifneq ($(strip $(COQLIB)),)\n";
     print "  COQSRCLIBS:=-I $(COQLIB)\n";
     print "else\n";
     print "  $(error Cannot find coqtop in path; set variable COQBIN to the directory where coqtop is located)\n";
+    print "endif\n";
     print "endif\n";
     if List.exists (function ML _ -> true | _ -> false) l then
       begin

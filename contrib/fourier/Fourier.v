@@ -10,12 +10,6 @@
 
 (* "Fourier's method to solve linear inequations/equations systems.".*)
 
-Declare ML Module "quote".
-Declare ML Module "ring".
-Declare ML Module "fourier".
-Declare ML Module "fourierR".
-Declare ML Module "field".
-
 Require Export Fourier_util.
 Require Export LegacyField.
 Require Export DiscrR.
