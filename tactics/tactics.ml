@@ -725,7 +725,7 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 
 (* Apply a tactic below the products of the conclusion of a lemma *) 
 
-let descend_in_conjunctions tac exit c gl =
+let descend_in_conjunctions with_evars tac exit c gl =
   try
     let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     match match_with_conjunction (snd (decompose_prod t)) with
@@ -734,7 +734,7 @@ let descend_in_conjunctions tac exit c gl =
 	let sort = elimination_sort_of_goal gl in
 	let elim = pf_apply make_case_gen gl mind sort in
 	tclTHENLAST
-	  (general_elim true (c,NoBindings) (elim,NoBindings))
+	  (general_elim with_evars (c,NoBindings) (elim,NoBindings))
 	  (tclTHENLIST [
 	    tclDO n intro;
 	    tclLAST_NHYPS n (fun l ->
@@ -796,7 +796,7 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
 	    try if concl_nprod <> 0 then try_apply thm_ty 0 else raise Exit
 	    with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
 	      if with_destruct then
-                descend_in_conjunctions 
+                descend_in_conjunctions with_evars
                   try_main_apply (fun _ -> raise exn) c gl
 	      else
 		raise exn
@@ -883,7 +883,7 @@ let apply_in_once with_delta with_destruct with_evars id ((sigma,d),lbind) gl0 =
       if not with_evars then check_evars (fst res).sigma sigma gl0;
       res
     with exn when with_destruct ->
-      descend_in_conjunctions aux (fun _ -> raise exn) c gl
+      descend_in_conjunctions with_evars aux (fun _ -> raise exn) c gl
   in
     if sigma = Evd.empty then aux d gl0
     else
