@@ -462,7 +462,6 @@ module Html = struct
       printf "</div>"
     end else 
       begin
-	Printf.eprintf "DEBUG: looking for (%s, %d)\n" !current_module loc;
 	try
 	  (match Index.find !current_module loc with
 	     | Def (fullid,ty) -> 

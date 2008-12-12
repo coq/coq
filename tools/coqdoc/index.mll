@@ -421,8 +421,7 @@ and module_refs = parse
       { module_refs lexbuf }
   | ident  
       { let id =  lexeme lexbuf in
-	  (Printf.eprintf "DEBUG: id = %s\n" id; 
-	   try
+	  (try
 	     add_mod !current_library (lexeme_start lexbuf) (Hashtbl.find modules id) id
 	   with
 	       Not_found -> ()
