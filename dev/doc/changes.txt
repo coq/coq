@@ -16,6 +16,8 @@ Eauto: e_resolve_constr, vernac_e_resolve_constr -> simplest_eapply
 Tactics: apply_with_bindings -> apply_with_bindings_wo_evars
 Eauto.simplest_apply -> Hiddentac.h_simplest_apply
 Evarutil.define_evar_as_arrow -> define_evar_as_product
+Old version of Tactics.assert_tac disappears
+Tactics.true_cut renamed into Tactics.assert_tac
 
 ** Universe names (univ.mli)
 

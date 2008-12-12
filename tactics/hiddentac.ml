@@ -39,9 +39,12 @@ let h_exact_no_check c =
   abstract_tactic (TacExactNoCheck (inj_open c)) (exact_no_check c)
 let h_vm_cast_no_check c = 
   abstract_tactic (TacVmCastNoCheck (inj_open c)) (vm_cast_no_check c)
-let h_apply simple ev cb    =
-  abstract_tactic (TacApply (simple,ev,cb))
+let h_apply simple ev cb =
+  abstract_tactic (TacApply (simple,ev,cb,None))
     (apply_with_ebindings_gen simple ev cb)
+let h_apply_in simple ev cb (id,ipat as inhyp) =
+  abstract_tactic (TacApply (simple,ev,cb,Some inhyp))
+    (apply_in simple ev id cb ipat)
 let h_elim ev cb cbo    =
   abstract_tactic (TacElim (ev,inj_open_wb cb,Option.map inj_open_wb cbo))
     (elim ev cb cbo)

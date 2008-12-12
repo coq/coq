@@ -136,7 +136,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
   fun g -> 
     let prov_id = pf_get_new_id hyp_id g in 
     tclTHENS
-      ((* observe_tac msg *) (forward (Some  (tclCOMPLETE tac)) (dummy_loc,Genarg.IntroIdentifier prov_id) t))
+      ((* observe_tac msg *) (assert_by (Name prov_id) t (tclCOMPLETE tac)))
       [tclTHENLIST 
       [	
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
@@ -388,7 +388,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 		     in
 (* 		     observe_tac "rec hyp " *)
 		       (tclTHENS
-		       (assert_as true (dummy_loc, Genarg.IntroIdentifier rec_pte_id) t_x)
+		       (assert_tac (Name rec_pte_id) t_x)
 		       [
 			 (* observe_tac "prove rec hyp" *) (prove_rec_hyp eq_hyps);
 (* 			observe_tac "prove rec hyp" *)
@@ -571,7 +571,7 @@ let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id
 	fun g -> 
 	  let prov_hid = pf_get_new_id hid g in
 	  tclTHENLIST[
-	    forward None (dummy_loc,Genarg.IntroIdentifier prov_hid) (mkApp(mkVar hid,args));
+	    pose_proof (Name prov_hid) (mkApp(mkVar hid,args));
 	    thin [hid];
 	    h_rename [prov_hid,hid]
 	  ] g
@@ -1495,10 +1495,9 @@ let prove_principle_for_gen
       ((* observe_tac "prove_rec_arg_acc"  *)
 	 (tclCOMPLETE
 	    (tclTHEN
-	       (forward 
-		  (Some ((fun g -> (* observe_tac "prove wf" *) (tclCOMPLETE (wf_tac is_mes)) g)))
-		  (dummy_loc,Genarg.IntroIdentifier wf_thm_id)
-		  (mkApp (delayed_force well_founded,[|input_type;relation|])))
+	       (assert_by (Name wf_thm_id)  
+		  (mkApp (delayed_force well_founded,[|input_type;relation|]))
+		  (fun g -> (* observe_tac "prove wf" *) (tclCOMPLETE (wf_tac is_mes)) g))
 	       (
 		 (* observe_tac  *)
 (* 		   "apply wf_thm"  *)
@@ -1559,10 +1558,10 @@ let prove_principle_for_gen
 	(List.rev_map (fun (na,_,_) -> Nameops.out_name na) 
 	   (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
 	);
-      (* observe_tac "" *) (forward
-	 (Some (prove_rec_arg_acc))
-	 (dummy_loc,Genarg.IntroIdentifier acc_rec_arg_id)
+      (* observe_tac "" *) (assert_by
+	 (Name acc_rec_arg_id)
  	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
+	 (prove_rec_arg_acc)
       );
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)

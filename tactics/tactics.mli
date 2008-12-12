@@ -196,7 +196,9 @@ val eapply_with_ebindings : open_constr with_ebindings -> tactic
 
 val cut_and_apply         : constr -> tactic
 
-val apply_in : evars_flag -> identifier -> constr with_ebindings list ->
+val apply_in : 
+  advanced_flag -> evars_flag -> identifier -> 
+  open_constr with_ebindings list ->
   intro_pattern_expr located option -> tactic
 
 (*s Elimination tactics. *)
@@ -347,12 +349,14 @@ val cut_replacing               :
   identifier -> constr -> (tactic -> tactic) -> tactic
 val cut_in_parallel             : constr list -> tactic
 
-val assert_as : bool -> intro_pattern_expr located -> constr -> tactic
-val forward   : tactic option -> intro_pattern_expr located -> constr -> tactic
+val assert_as : bool -> intro_pattern_expr located option -> constr -> tactic
+val forward   : tactic option -> intro_pattern_expr located option -> constr -> tactic
 val letin_tac : (bool * intro_pattern_expr located) option -> name -> 
   constr -> types option -> clause -> tactic
-val true_cut                    : name -> constr -> tactic
-val assert_tac                  : bool -> name -> constr -> tactic
+val assert_tac : name -> types -> tactic
+val assert_by  : name -> types -> tactic -> tactic
+val pose_proof : name -> constr -> tactic
+
 val generalize      : constr list -> tactic
 val generalize_gen  : ((occurrences * constr) * name) list -> tactic
 val generalize_dep  : constr  -> tactic

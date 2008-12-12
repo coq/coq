@@ -594,20 +594,24 @@ let intern_red_expr ist = function
   | Simpl o -> Simpl (Option.map (intern_constr_with_occurrences ist) o)
   | (Red _ | Hnf | ExtraRedExpr _ | CbvVm as r ) -> r
   
+let intern_in_hyp_as ist lf (id,ipat) =
+  (intern_hyp_or_metaid ist id, Option.map (intern_intro_pattern lf ist) ipat)
+
+let intern_hyp_list ist = List.map (intern_hyp_or_metaid ist)
 
 let intern_inversion_strength lf ist = function
   | NonDepInversion (k,idl,ids) ->
-      NonDepInversion (k,List.map (intern_hyp_or_metaid ist) idl,
+      NonDepInversion (k,intern_hyp_list ist idl,
       Option.map (intern_intro_pattern lf ist) ids)
   | DepInversion (k,copt,ids) ->
       DepInversion (k, Option.map (intern_constr ist) copt,
       Option.map (intern_intro_pattern lf ist) ids)
   | InversionUsing (c,idl) ->
-      InversionUsing (intern_constr ist c, List.map (intern_hyp_or_metaid ist) idl)
+      InversionUsing (intern_constr ist c, intern_hyp_list ist idl)
 
 (* Interprets an hypothesis name *)
 let intern_hyp_location ist (((b,occs),id),hl) =
-  (((b,List.map (intern_or_var ist) occs),intern_hyp ist (skip_metaid id)), hl)
+  (((b,List.map (intern_or_var ist) occs),intern_hyp_or_metaid ist id), hl)
 
 let interp_constrpattern_gen sigma env ?(as_type=false) ltacvar c =
   let c = intern_gen as_type ~allow_patvar:true ~ltacvars:(ltacvar,[])
@@ -693,8 +697,9 @@ let rec intern_atomic lf ist x =
   | TacExact c -> TacExact (intern_constr ist c)
   | TacExactNoCheck c -> TacExactNoCheck (intern_constr ist c)
   | TacVmCastNoCheck c -> TacVmCastNoCheck (intern_constr ist c)
-  | TacApply (a,ev,cb) ->
-      TacApply (a,ev,List.map (intern_constr_with_bindings ist) cb)
+  | TacApply (a,ev,cb,inhyp) ->
+      TacApply (a,ev,List.map (intern_constr_with_bindings ist) cb,
+                Option.map (intern_in_hyp_as ist lf) inhyp)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,intern_constr_with_bindings ist cb,
                Option.map (intern_constr_with_bindings ist) cbo)
@@ -712,7 +717,7 @@ let rec intern_atomic lf ist x =
   | TacCut c -> TacCut (intern_type ist c)
   | TacAssert (otac,ipat,c) ->
       TacAssert (Option.map (intern_tactic ist) otac,
-                 intern_intro_pattern lf ist ipat,
+                 Option.map (intern_intro_pattern lf ist) ipat,
                  intern_constr_gen (otac<>None) ist c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (fun (c,na) ->
@@ -1644,6 +1649,9 @@ let rec interp_intro_pattern ist gl = function
 and interp_or_and_intro_pattern ist gl =
   List.map (List.map (interp_intro_pattern ist gl))
 
+let interp_in_hyp_as ist gl (id,ipat) =
+  (interp_hyp ist gl id,Option.map (interp_intro_pattern ist gl) ipat)
+
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
 let coerce_to_quantified_hypothesis = function
@@ -2172,8 +2180,11 @@ and interp_atomic ist gl = function
   | TacExact c -> h_exact (pf_interp_casted_constr ist gl c)
   | TacExactNoCheck c -> h_exact_no_check (pf_interp_constr ist gl c)
   | TacVmCastNoCheck c -> h_vm_cast_no_check (pf_interp_constr ist gl c)
-  | TacApply (a,ev,cb) ->
+  | TacApply (a,ev,cb,None) ->
       h_apply a ev (List.map (interp_open_constr_with_bindings ist gl) cb)
+  | TacApply (a,ev,cb,Some cl) ->
+      h_apply_in a ev (List.map (interp_open_constr_with_bindings ist gl) cb)
+        (interp_in_hyp_as ist gl cl)
   | TacElim (ev,cb,cbo) ->
       h_elim ev (interp_constr_with_bindings ist gl cb)
                 (Option.map (interp_constr_with_bindings ist gl) cbo)
@@ -2193,7 +2204,7 @@ and interp_atomic ist gl = function
       let c = (if t=None then interp_constr else interp_type) ist (project gl) (pf_env gl) c in
       abstract_tactic (TacAssert (t,ipat,inj_open c))
         (Tactics.forward (Option.map (interp_tactic ist) t)
-	  (interp_intro_pattern ist gl ipat) c)
+	  (Option.map (interp_intro_pattern ist gl) ipat) c)
   | TacGeneralize cl ->
       h_generalize_gen
         (pf_interp_constr_with_occurrences_and_name_as_list ist gl cl)
@@ -2509,8 +2520,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacExact c -> TacExact (subst_rawconstr subst c)
   | TacExactNoCheck c -> TacExactNoCheck (subst_rawconstr subst c)
   | TacVmCastNoCheck c -> TacVmCastNoCheck (subst_rawconstr subst c)
-  | TacApply (a,ev,cb) ->
-      TacApply (a,ev,List.map (subst_raw_with_bindings subst) cb)
+  | TacApply (a,ev,cb,cl) ->
+      TacApply (a,ev,List.map (subst_raw_with_bindings subst) cb,cl)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,subst_raw_with_bindings subst cb,
                Option.map (subst_raw_with_bindings subst) cbo)

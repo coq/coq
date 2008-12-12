@@ -1917,7 +1917,7 @@ let general_setoid_replace rewrite_tac try_prove_eq_tac_opt relation c1 c2 ~new_
     let eq_left_to_right = mkApp (relation.rel_aeq, Array.of_list (List.append args [ c1 ; c2 ])) in
     let eq_right_to_left = mkApp (relation.rel_aeq, Array.of_list (List.append args [ c2 ; c1 ])) in
     let replace dir eq =
-      tclTHENS (assert_tac false Anonymous eq)
+      tclTHENS (assert_as false None eq)
 	[onLastHyp (fun id ->
           tclTHEN
             (rewrite_tac dir all_occurrences (mkVar id) ~new_goals)
@@ -1929,7 +1929,7 @@ let general_setoid_replace rewrite_tac try_prove_eq_tac_opt relation c1 c2 ~new_
   with
       Optimize -> (* (!replace tac_opt c1 c2) gl *)
 	let eq =  mkApp (Lazy.force  coq_eq, [| pf_type_of gl c1;c2 ; c1 |]) in 
-	  tclTHENS (assert_tac false Anonymous eq)
+	  tclTHENS (assert_as false None eq)
 	    [onLastHyp (fun id ->
 	      tclTHEN
 		(rewrite_tac false all_occurrences (mkVar id) ~new_goals)

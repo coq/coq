@@ -156,7 +156,7 @@ let subtac (loc, command) =
 	ignore(Subtac_command.build_recursive l b)
 	  
   | VernacStartTheoremProof (thkind, [Some id, (bl, t)], lettop, hook) ->
-      dump_definition id "prf";
+      dump_definition id false "prf";
       if not(Pfedit.refining ()) then
 	if lettop then
 	  errorlabstrm "Subtac_command.StartProof"

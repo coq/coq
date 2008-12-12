@@ -98,6 +98,8 @@ let solve_pattern_eqn_array env f l c (metasubst,evarsubst) =
 	metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 
+let push d (env,n) = (push_rel_assum d env,n+1)
+
 (*******************************)
 
 (* Unification à l'ordre 0 de m et n: [unify_0 env sigma cv_pb m n]
@@ -164,7 +166,6 @@ let oracle_order env cf1 cf2 =
       | Some k2 -> Some (Conv_oracle.oracle_order k1 k2)
 	    
 let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
-  let nb = nb_rel env in
   let trivial_unify curenv pb (metasubst,_) m n =
     let subst = if flags.use_metas_eagerly then metasubst else fst subst in
     match subst_defined_metas subst m with
@@ -177,7 +178,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
             || occur_meta_or_existential n then false else
                error_cannot_unify curenv sigma (m, n)
     | _ -> false in
-  let rec unirec_rec curenv pb b ((metasubst,evarsubst) as substn) curm curn =
+  let rec unirec_rec (curenv,nb as curenvnb) pb b ((metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_castappevar sigma curm
     and cN = Evarutil.whd_castappevar sigma curn in 
       match (kind_of_term cM,kind_of_term cN) with
@@ -189,29 +190,36 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	    else (k2,cM,stM)::metasubst,evarsubst
 	| Meta k, _    -> 
 	    (* Here we check that [cN] does not contain any local variables *)
-	    if (closedn nb cN)
-	    then (k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
+	    if nb = 0 then
+              (k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
+            else if noccur_between 1 nb cN then
+              (k,lift (-nb) cN,snd (extract_instance_status pb))::metasubst,
+              evarsubst
 	    else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Meta k    -> 
 	    (* Here we check that [cM] does not contain any local variables *)
-	    if (closedn nb cM)
-	    then (k,cM,fst (extract_instance_status pb))::metasubst,evarsubst
+	    if nb = 0 then
+              (k,cM,snd (extract_instance_status pb))::metasubst,evarsubst
+	    else if noccur_between 1 nb cM
+	    then
+              (k,lift (-nb) cM,fst (extract_instance_status pb))::metasubst,
+              evarsubst
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
 	| Evar ev, _ -> metasubst,((ev,cN)::evarsubst)
 	| _, Evar ev -> metasubst,((ev,cM)::evarsubst)
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
-	    unirec_rec (push_rel_assum (na,t1) curenv) topconv true
-	      (unirec_rec curenv topconv true substn t1 t2) c1 c2
+	    unirec_rec (push (na,t1) curenvnb) topconv true
+	      (unirec_rec curenvnb topconv true substn t1 t2) c1 c2
 	| Prod (na,t1,c1), Prod (_,t2,c2) ->
-	    unirec_rec (push_rel_assum (na,t1) curenv) (prod_pb pb) true
-	      (unirec_rec curenv topconv true substn t1 t2) c1 c2
-	| LetIn (_,a,_,c), _ -> unirec_rec curenv pb b substn (subst1 a c) cN
-	| _, LetIn (_,a,_,c) -> unirec_rec curenv pb b substn cM (subst1 a c)
+	    unirec_rec (push (na,t1) curenvnb) (prod_pb pb) true
+	      (unirec_rec curenvnb topconv true substn t1 t2) c1 c2
+	| LetIn (_,a,_,c), _ -> unirec_rec curenvnb pb b substn (subst1 a c) cN
+	| _, LetIn (_,a,_,c) -> unirec_rec curenvnb pb b substn cM (subst1 a c)
 	    
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-            array_fold_left2 (unirec_rec curenv topconv true)
-	      (unirec_rec curenv topconv true
-		  (unirec_rec curenv topconv true substn p1 p2) c1 c2) cl1 cl2
+            array_fold_left2 (unirec_rec curenvnb topconv true)
+	      (unirec_rec curenvnb topconv true
+		  (unirec_rec curenvnb topconv true substn p1 p2) c1 c2) cl1 cl2
 
 	| App (f1,l1), _ when
 	    isMeta f1 & is_unification_pattern curenv f1 l1 &
@@ -236,10 +244,10 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 		      let extras,restl1 = array_chop (len1-len2) l1 in 
 		      (appvect (f1,extras), restl1, f2, l2) in
 		  let pb = ConvUnderApp (len1,len2) in
-		  array_fold_left2 (unirec_rec curenv topconv true)
-		    (unirec_rec curenv pb true substn f1 f2) l1 l2
+		  array_fold_left2 (unirec_rec curenvnb topconv true)
+		    (unirec_rec curenvnb pb true substn f1 f2) l1 l2
 		with ex when precatchable_exception ex ->
-		  expand curenv pb b substn cM f1 l1 cN f2 l2)
+		  expand curenvnb pb b substn cM f1 l1 cN f2 l2)
 		
 	| _ ->
             if constr_cmp (conv_pb_of cv_pb) cM cN then substn else
@@ -247,9 +255,9 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	      match kind_of_term cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in
 	    let (f2,l2) =
 	      match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
-	    expand curenv pb b substn cM f1 l1 cN f2 l2
+	    expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
-  and expand curenv pb b substn cM f1 l1 cN f2 l2 =
+  and expand (curenv,_ as curenvnb) pb b substn cM f1 l1 cN f2 l2 =
     if trivial_unify curenv pb substn cM cN then substn
     else if b then
       let cf1 = key_of flags f1 and cf2 = key_of flags f2 in
@@ -258,21 +266,21 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	| Some true -> 
 	    (match expand_key curenv cf1 with
 	    | Some c ->
-		unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
+		unirec_rec curenvnb pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
 	    | None ->
 		(match expand_key curenv cf2 with
 		| Some c ->
-		    unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
+		    unirec_rec curenvnb pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
 		| None ->
 		    error_cannot_unify curenv sigma (cM,cN)))
 	| Some false ->
 	    (match expand_key curenv cf2 with
 	    | Some c ->
-		unirec_rec curenv pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
+		unirec_rec curenvnb pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
 	    | None ->
 		(match expand_key curenv cf1 with
 		| Some c ->
-		    unirec_rec curenv pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
+		    unirec_rec curenvnb pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
 		| None ->
 		    error_cannot_unify curenv sigma (cM,cN)))
     else
@@ -295,7 +303,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
     then
       subst
     else 
-      unirec_rec env cv_pb conv_at_top subst m n
+      unirec_rec (env,0) cv_pb conv_at_top subst m n
 
 let unify_0 = unify_0_with_initial_metas ([],[]) true
 

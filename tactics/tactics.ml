@@ -566,17 +566,11 @@ let cut c gl =
 
 let cut_intro t = tclTHENFIRST (cut t) intro
 
-(* let cut_replacing id t tac = 
-  tclTHENS (cut t)
-    [tclORELSE
-	(intro_replacing id) 
-	(tclORELSE (intro_erasing id) (intro_using id));
-     tac (refine_no_check (mkVar id)) ] *)
-
 (* cut_replacing échoue si l'hypothèse à remplacer apparaît dans le
    but, ou dans une autre hypothèse *)
 let cut_replacing id t tac = 
-  tclTHENS (cut t) [ intro_replacing id; tac (refine_no_check (mkVar id)) ]
+  tclTHENLAST (internal_cut_rev_replace id t)
+    (tac (refine_no_check (mkVar id)))
 
 let cut_in_parallel l = 
   let rec prec = function
@@ -735,32 +729,54 @@ let general_case_analysis with_evars (c,lbindc as cx) =
 
 let simplest_case c = general_case_analysis false (c,NoBindings)
 
+(* Apply a tactic below the products of the conclusion of a lemma *) 
+
+let descend_in_conjunctions with_evars tac exit c gl =
+  try
+    let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+    match match_with_conjunction (snd (decompose_prod t)) with
+    | Some _ ->
+	let n = (mis_constr_nargs mind).(0) in
+	let sort = elimination_sort_of_goal gl in
+	let elim = pf_apply make_case_gen gl mind sort in
+	tclTHENLAST
+	  (general_elim with_evars (c,NoBindings) (elim,NoBindings))
+	  (tclTHENLIST [
+	    tclDO n intro;
+	    tclLAST_NHYPS n (fun l ->
+	      tclFIRST
+		(List.map (fun id -> tclTHEN (tac (mkVar id)) (thin l)) l))])
+          gl
+    | None ->
+	raise Exit
+  with RefinerError _|UserError _|Exit -> exit ()
+
 (****************************************************)
 (*            Resolution tactics                    *)
 (****************************************************)
 
 (* Resolution with missing arguments *)
 
-let general_apply with_delta with_destruct with_evars (c,lbind) gl =
+let check_evars sigma evm gl =
+  let origsigma = gl.sigma in
+  let rest = 
+    Evd.fold (fun ev evi acc -> 
+      if not (Evd.mem origsigma ev) && not (Evd.is_defined sigma ev) 
+      then Evd.add acc ev evi else acc)
+      evm Evd.empty
+  in 
+  if rest <> Evd.empty then
+    errorlabstrm "apply" (str"Uninstantiated existential variables: " ++ 
+      fnl () ++ pr_evar_map rest)
+
+let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
   let flags = 
     if with_delta then default_unify_flags else default_no_delta_unify_flags in
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
-  let concl_nprod = nb_prod (pf_concl gl) in
+  let concl_nprod = nb_prod (pf_concl gl0) in
   let evm, c = c in
-  let origsigm = gl.sigma in
-  let check_evars sigm =
-    let rest = 
-      Evd.fold (fun ev evi acc -> 
-	if Evd.mem sigm ev && not (Evd.mem origsigm ev) && not (Evd.is_defined sigm ev) then
-	  Evd.add acc ev evi
-	else acc) evm Evd.empty
-    in 
-      if not (rest = Evd.empty) then
-	errorlabstrm "apply" (str"Uninstantiated existential variables: " ++ fnl () ++
-				 pr_evar_map rest)
-  in
   let rec try_main_apply c gl =
     let thm_ty0 = nf_betaiota (pf_type_of gl c) in
     let try_apply thm_ty nprod =
@@ -768,7 +784,7 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl =
 	if n<0 then error "Applied theorem has not enough premisses.";
 	let clause = make_clenv_binding_apply gl (Some n) (c,thm_ty) lbind in
 	let res = Clenvtac.res_pf clause ~with_evars:with_evars ~flags:flags gl in
-	  if not with_evars then check_evars (fst res).sigma; 
+	  if not with_evars then check_evars (fst res).sigma evm gl0;
 	  res
     in
       try try_apply thm_ty0 concl_nprod
@@ -786,32 +802,15 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl =
 	    try if concl_nprod <> 0 then try_apply thm_ty 0 else raise Exit
 	    with PretypeError _|RefinerError _|UserError _|Failure _|Exit ->
 	      if with_destruct then
-		try
-		  let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-		    match match_with_conjunction (snd (decompose_prod t)) with
-		    | Some _ ->
-			let n = (mis_constr_nargs mind).(0) in
-			let sort = elimination_sort_of_goal gl in
-			let elim = pf_apply make_case_gen gl mind sort in
-			  tclTHENLAST
-			    (general_elim with_evars (c,NoBindings) (elim,NoBindings))
-			    (tclTHENLIST [
-			      tclDO n intro;
-			      tclLAST_NHYPS n (fun l ->
-				tclFIRST
-				  (List.map (fun id ->
-				    tclTHEN (try_main_apply (mkVar id)) (thin l)) l))
-			    ]) gl
-		    | None ->
-			raise Exit
-		with RefinerError _|UserError _|Exit -> raise exn 
+                descend_in_conjunctions with_evars
+                  try_main_apply (fun _ -> raise exn) c gl
 	      else
 		raise exn
 	in try_red_apply thm_ty0 
   in
-    if evm = Evd.empty then try_main_apply c gl
+    if evm = Evd.empty then try_main_apply c gl0
     else
-      tclTHEN (tclEVARS (Evd.merge gl.sigma evm)) (try_main_apply c) gl
+      tclTHEN (tclEVARS (Evd.merge gl0.sigma evm)) (try_main_apply c) gl0
 
 let rec apply_with_ebindings_gen b e = function
   | [] ->
@@ -861,21 +860,43 @@ let find_matching_clause unifier clause =
     with NotExtensibleClause -> failwith "Cannot apply"
   in find clause
 
-let progress_with_clause innerclause clause =
+let progress_with_clause flags innerclause clause =
   let ordered_metas = List.rev (clenv_independent clause) in
   if ordered_metas = [] then error "Statement without assumptions.";
-  let f mv = find_matching_clause (clenv_fchain mv clause) innerclause in
+  let f mv =
+    find_matching_clause (clenv_fchain mv ~flags clause) innerclause in
   try list_try_find f ordered_metas
   with Failure _ -> error "Unable to unify."
 
-let apply_in_once gl innerclause (d,lbind) =
+let apply_in_once_main flags innerclause (d,lbind) gl =
   let thm = nf_betaiota (pf_type_of gl d) in
   let rec aux clause =
-    try progress_with_clause innerclause clause
+    try progress_with_clause flags innerclause clause
     with err ->
     try aux (clenv_push_prod clause)
-    with NotExtensibleClause -> raise err
-  in aux (make_clenv_binding gl (d,thm) lbind)
+    with NotExtensibleClause -> raise err in 
+  aux (make_clenv_binding gl (d,thm) lbind)
+
+let apply_in_once with_delta with_destruct with_evars id ((sigma,d),lbind) gl0 =
+  let flags = 
+    if with_delta then default_unify_flags else default_no_delta_unify_flags in
+  let t' = pf_get_hyp_typ gl0 id in
+  let innerclause = mk_clenv_from_n gl0 (Some 0) (mkVar id,t') in
+  let rec aux c gl =
+    try
+      let clause = apply_in_once_main flags innerclause (c,lbind) gl in
+      let res = clenv_refine_in with_evars id clause gl in
+      if not with_evars then check_evars (fst res).sigma sigma gl0;
+      res
+    with exn when with_destruct ->
+      descend_in_conjunctions with_evars aux (fun _ -> raise exn) c gl
+  in
+    if sigma = Evd.empty then aux d gl0
+    else
+      tclTHEN (tclEVARS (Evd.merge gl0.sigma sigma)) (aux d) gl0
+
+
+
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
    |- B -> C and |- A
@@ -1206,7 +1227,9 @@ let intro_patterns = function
 
 let make_id s = fresh_id [] (default_id_of_sort s)
 
-let prepare_intros s (loc,ipat) gl = match ipat with
+let prepare_intros s ipat gl = match ipat with
+  | None -> make_id s gl, tclIDTAC
+  | Some (loc,ipat) -> match ipat with
   | IntroIdentifier id -> id, tclIDTAC
   | IntroAnonymous -> make_id s gl, tclIDTAC
   | IntroFresh id -> fresh_id [] id gl, tclIDTAC
@@ -1218,11 +1241,11 @@ let prepare_intros s (loc,ipat) gl = match ipat with
       intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
 
 let ipat_of_name = function
-  | Anonymous -> IntroAnonymous
-  | Name id -> IntroIdentifier id
+  | Anonymous -> None
+  | Name id -> Some (dloc, IntroIdentifier id)
 
 let allow_replace c gl = function (* A rather arbitrary condition... *)
-  | _, IntroIdentifier id ->
+  | Some (_, IntroIdentifier id) ->
       fst (decompose_app (snd (decompose_lam_assum c))) = mkVar id
   | _ ->
       false
@@ -1237,8 +1260,7 @@ let assert_as first ipat c gl =
 	(if first then [tclIDTAC; tac] else [tac; tclIDTAC]) gl
   | _  -> error "Not a proposition or a type."
 
-let assert_tac first na = assert_as first (dloc,ipat_of_name na)
-let true_cut = assert_tac true 
+let assert_tac na = assert_as true (ipat_of_name na)
 
 (* apply in as *)
 
@@ -1252,12 +1274,13 @@ let as_tac id ipat = match ipat with
       user_err_loc (loc,"", str "Disjunctive/conjunctive pattern expected")
   | None -> tclIDTAC
 
-let apply_in with_evars id lemmas ipat gl =
-  let t' = pf_get_hyp_typ gl id in
-  let innermostclause = mk_clenv_from_n gl (Some 0) (mkVar id,t') in
-  let clause = List.fold_left (apply_in_once gl) innermostclause lemmas in
-  tclTHEN (clenv_refine_in with_evars id clause) (as_tac id ipat)
- gl
+let general_apply_in with_delta with_destruct with_evars id lemmas ipat gl =
+  tclTHEN
+    (tclMAP (apply_in_once with_delta with_destruct with_evars id) lemmas)
+    (as_tac id ipat)
+    gl
+
+let apply_in simple with_evars = general_apply_in simple simple with_evars
 
 (**************************)
 (*   Generalize tactics   *)
@@ -1504,6 +1527,9 @@ let forward usetac ipat c gl =
       tclTHENFIRST (assert_as true ipat t) (exact_no_check c) gl
   | Some tac -> 
       tclTHENFIRST (assert_as true ipat c) tac gl
+
+let pose_proof na c = forward None (ipat_of_name na) c
+let assert_by na t tac = forward (Some tac) (ipat_of_name na) t
 
 (*****************************)
 (* Ad hoc unfold             *)

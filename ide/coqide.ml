@@ -2480,7 +2480,7 @@ let main files =
 				(fun () -> 	 
 				   let av = Option.get ((get_current_view()).analyzed_view) in 
 				     match av#filename with
-				       | None -> ()
+				       | None -> warning "Call to external editor available only on named files"
 				       | Some f ->
 					   save_f ();
 					   let com = Flags.subst_command_placeholder !current.cmd_editor (Filename.quote f) in

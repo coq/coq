@@ -33,6 +33,7 @@ type lib_objects = (Names.identifier * Libobject.obj) list
 val open_objects : int -> Libnames.object_prefix -> lib_objects -> unit
 val load_objects : int -> Libnames.object_prefix -> lib_objects -> unit
 val subst_objects : Libnames.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects
+val load_and_subst_objects : int -> Libnames.object_prefix -> Mod_subst.substitution -> lib_objects -> lib_objects
 
 (* [classify_segment seg] verifies that there are no OpenedThings,
    clears ClosedSections and FrozenStates and divides Leafs according

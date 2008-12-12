@@ -317,7 +317,7 @@ let refute_tac c t1 t2 p gls =
 	  [|intype;tt1;tt2|]) in
   let hid=pf_get_new_id (id_of_string "Heq") gls in
   let false_t=mkApp (c,[|mkVar hid|]) in
-    tclTHENS (true_cut (Name hid) neweq)
+    tclTHENS (assert_tac (Name hid) neweq)
       [proof_tac p; simplest_elim false_t] gls
 
 let convert_to_goal_tac c t1 t2 p gls =
@@ -329,14 +329,14 @@ let convert_to_goal_tac c t1 t2 p gls =
   let identity=mkLambda (Name x,sort,mkRel 1) in 
   let endt=mkApp (Lazy.force _eq_rect,
 		  [|sort;tt1;identity;c;tt2;mkVar e|]) in
-    tclTHENS (true_cut (Name e) neweq) 
+    tclTHENS (assert_tac (Name e) neweq) 
       [proof_tac p;exact_check endt] gls
 
 let convert_to_hyp_tac c1 t1 c2 t2 p gls =
   let tt2=constr_of_term t2 in
   let h=pf_get_new_id (id_of_string "H") gls in
   let false_t=mkApp (c2,[|mkVar h|]) in
-    tclTHENS (true_cut (Name h) tt2)
+    tclTHENS (assert_tac (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
        simplest_elim false_t] gls
   
@@ -358,7 +358,7 @@ let discriminate_tac cstr p gls =
   let endt=mkApp (Lazy.force _eq_rect,
 		  [|outtype;trivial;pred;identity;concl;injt|]) in
   let neweq=mkApp(Lazy.force _eq,[|intype;t1;t2|]) in
-    tclTHENS (true_cut (Name hid) neweq) 
+    tclTHENS (assert_tac (Name hid) neweq) 
       [proof_tac p;exact_check endt] gls
       
 (* wrap everything *)

@@ -123,10 +123,6 @@ let pr_with_constr prc = function
   | None -> mt ()
   | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
 
-let pr_with_names = function
-  | None -> mt ()
-  | Some ipat -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_intro_pattern ipat)
-
 let rec pr_message_token prid = function
   | MsgString s -> qs s
   | MsgInt n -> int n
@@ -379,9 +375,9 @@ let pr_with_inversion_names = function
   | None -> mt ()
   | Some ipat -> pr_as_intro_pattern ipat
 
-let pr_with_names = function
-  | _,IntroAnonymous -> mt ()
-  | ipat -> pr_as_intro_pattern ipat
+let pr_as_ipat = function
+  | None -> mt ()
+  | Some ipat -> pr_as_intro_pattern ipat
 
 let pr_as_name = function
   | Anonymous -> mt ()
@@ -400,7 +396,7 @@ let pr_assertion _prlc prc ipat c = match ipat with
       spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
 *)
   | ipat ->
-      spc() ++ prc c ++ pr_with_names ipat
+      spc() ++ prc c ++ pr_as_ipat ipat
 
 let pr_assumption prlc prc ipat c = match ipat with
 (* Use this "optimisation" or use only the general case ?
@@ -408,7 +404,7 @@ let pr_assumption prlc prc ipat c = match ipat with
       spc() ++ surround (pr_intro_pattern ipat ++ str " :" ++ spc() ++ prlc c)
 *)
   | ipat ->
-      spc() ++ prc c ++ pr_with_names ipat
+      spc() ++ prc c ++ pr_as_ipat ipat
 
 let pr_by_tactic prt = function
   | TacId [] -> mt ()
@@ -428,6 +424,10 @@ let pr_in pp = spc () ++ hov 0 (str "in" ++ pp)
 let pr_simple_clause pr_id = function
   | [] -> mt ()
   | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
+
+let pr_in_hyp_as pr_id = function
+  | None -> mt ()
+  | Some (id,ipat) -> pr_simple_clause pr_id [id] ++ pr_as_ipat ipat
 
 let pr_clauses pr_id = function
   | { onhyps=None; concl_occs=occs } ->
@@ -702,10 +702,11 @@ and pr_atom1 = function
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg c)
   | TacExactNoCheck c -> hov 1 (str "exact_no_check" ++ pr_constrarg c)
   | TacVmCastNoCheck c -> hov 1 (str "vm_cast_no_check" ++ pr_constrarg c)
-  | TacApply (a,ev,cb) ->
+  | TacApply (a,ev,cb,inhyp) ->
       hov 1 ((if a then mt() else str "simple ") ++
              str (with_evars ev "apply") ++ spc () ++ 
-             prlist_with_sep pr_coma pr_with_bindings cb)
+             prlist_with_sep pr_coma pr_with_bindings cb ++
+             pr_in_hyp_as pr_ident inhyp)
   | TacElim (ev,cb,cbo) ->
       hov 1 (str (with_evars ev "elim") ++ pr_arg pr_with_bindings cb ++ 
         pr_opt pr_eliminator cbo)
