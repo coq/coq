@@ -289,20 +289,6 @@ case $ARCH in
     *) EXE=""
 esac
 
-# strip command
-
-case $ARCH in
-    win32)
-	# true -> strip : it exists under cygwin !
-	STRIPCOMMAND="strip";; 
-    *)
-    if [ "$coq_profile_flag" = "-p" ] || [ "$coq_debug_flag" = "-g" ]; then
-	STRIPCOMMAND="true"
-    else
-	STRIPCOMMAND="strip"
-    fi
-esac
-
 # Is the source tree checked out from a recognised
 # version control system ?
 if test -e .svn/entries ; then 
@@ -629,12 +615,16 @@ esac
 #CAMLOSTYPE=`config/giveostype`
 #rm config/giveostype
 
+# strip command
+
 case $ARCH in
     win32)
 	# true -> strip : it exists under cygwin !
 	STRIPCOMMAND="strip";; 
     *)
-    if [ "$coq_profile_flag" = "-p" ] || [ "$coq_debug_flag" = "-g" ]; then
+    if [ "$coq_profile_flag" = "-p" ] || [ "$coq_debug_flag" = "-g" ] ||
+       [ "`uname -s`" = "Darwin" -a "$HASNATDYNLINK" = "true" ]
+    then
 	STRIPCOMMAND="true"
     else
 	STRIPCOMMAND="strip"
@@ -700,7 +690,7 @@ case $bindir_spec/$prefix_spec/$local in
     yes/*/*) BINDIR=$bindir ;;
     */yes/*) BINDIR=$prefix/bin ;;
     */*/true) BINDIR=$COQTOP/bin ;;
-    *) echo "Where should I install the Coq binaries [$bindir_def] ?"
+    *) printf "Where should I install the Coq binaries [$bindir_def]? "
         read BINDIR
 	case $BINDIR in
 	    "") BINDIR=$bindir_def;;
@@ -716,7 +706,7 @@ case $libdir_spec/$prefix_spec/$local in
           *)  LIBDIR=$prefix/lib/coq ;;
         esac ;;
     */*/true) LIBDIR=$COQTOP ;;
-    *)  echo "Where should I install the Coq library [$libdir_def] ?"
+    *)  printf "Where should I install the Coq library [$libdir_def]? "
         read LIBDIR
 	case $LIBDIR in
 	    "") LIBDIR=$libdir_def;;
@@ -728,7 +718,7 @@ case $mandir_spec/$prefix_spec/$local in
     yes/*/*) MANDIR=$mandir;;
     */yes/*) MANDIR=$prefix/man ;;
     */*/true) MANDIR=$COQTOP/man ;;
-    *)  echo "Where should I install the Coq man pages [$mandir_def] ?"
+    *)  printf "Where should I install the Coq man pages [$mandir_def]? "
         read MANDIR
 	case $MANDIR in
 	    "") MANDIR=$mandir_def;;
@@ -740,7 +730,7 @@ case $docdir_spec/$prefix_spec/$local in
     yes/*/*) DOCDIR=$docdir;;
     */yes/*) DOCDIR=$prefix/share/doc/coq ;;
     */*/true) DOCDIR=$COQTOP/man ;;
-    *)  echo "Where should I install the Coq documentation [$docdir_def] ?"
+    *)  printf "Where should I install the Coq documentation [$docdir_def]? "
         read DOCDIR
 	case $DOCDIR in
 	    "") DOCDIR=$docdir_def;;
@@ -756,7 +746,7 @@ case $emacslib_spec/$prefix_spec/$local in
           *)  EMACSLIB=$prefix/share/emacs/site-lisp ;;
         esac ;;
     */*/true) EMACSLIB=$COQTOP/tools/emacs ;;
-    *) echo "Where should I install the Coq Emacs mode [$emacslib_def] ?"
+    *) printf "Where should I install the Coq Emacs mode [$emacslib_def]? "
         read EMACSLIB
 	case $EMACSLIB in
 	    "") EMACSLIB=$emacslib_def;;
@@ -772,7 +762,7 @@ case $coqdocdir_spec/$prefix_spec/$local in
           *)  COQDOCDIR=$prefix/share/emacs/site-lisp ;;
         esac ;;
     */*/true) COQDOCDIR=$COQTOP/tools/coqdoc ;;
-    *) echo "Where should I install Coqdoc TeX/LaTeX files [$coqdocdir_def] ?"
+    *) printf "Where should I install Coqdoc TeX/LaTeX files [$coqdocdir_def]? "
         read COQDOCDIR
 	case $COQDOCDIR in
 	    "") COQDOCDIR=$coqdocdir_def;;
@@ -789,7 +779,7 @@ case $coqrunbyteflags_spec/$local in
 esac
 
 # case $emacs_spec in
-#     no) echo "Which Emacs command should I use to compile coq.el [$emacs_def] ?"
+#     no) printf "Which Emacs command should I use to compile coq.el [$emacs_def]? "
 #         read EMACS
 	
 # 	case $EMACS in
