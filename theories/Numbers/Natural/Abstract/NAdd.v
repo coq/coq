@@ -103,7 +103,7 @@ Qed.
 Theorem succ_add_discr : forall n m : N, m ~= S (n + m).
 Proof.
 intro n; induct m.
-apply neq_symm. apply neq_succ_0.
+apply neq_sym. apply neq_succ_0.
 intros m IH H. apply succ_inj in H. rewrite add_succ_r in H.
 unfold not in IH; now apply IH.
 Qed.

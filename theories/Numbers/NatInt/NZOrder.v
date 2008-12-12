@@ -118,7 +118,7 @@ Qed.
 
 Theorem NZneq_succ_diag_r : forall n : NZ, n ~= S n.
 Proof.
-intro n; apply NZneq_symm; apply NZneq_succ_diag_l.
+intro n; apply NZneq_sym; apply NZneq_succ_diag_l.
 Qed.
 
 Theorem NZnlt_succ_diag_l : forall n : NZ, ~ S n < n.
