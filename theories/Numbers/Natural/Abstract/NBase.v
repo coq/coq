@@ -48,14 +48,14 @@ Proof pred_0.
 Theorem Neq_refl : forall n : N, n == n.
 Proof (proj1 NZeq_equiv).
 
-Theorem Neq_symm : forall n m : N, n == m -> m == n.
+Theorem Neq_sym : forall n m : N, n == m -> m == n.
 Proof (proj2 (proj2 NZeq_equiv)).
 
 Theorem Neq_trans : forall n m p : N, n == m -> m == p -> n == p.
 Proof (proj1 (proj2 NZeq_equiv)).
 
-Theorem neq_symm : forall n m : N, n ~= m -> m ~= n.
-Proof NZneq_symm.
+Theorem neq_sym : forall n m : N, n ~= m -> m ~= n.
+Proof NZneq_sym.
 
 Theorem succ_inj : forall n1 n2 : N, S n1 == S n2 -> n1 == n2.
 Proof NZsucc_inj.
@@ -111,7 +111,7 @@ Qed.
 
 Theorem neq_0_succ : forall n : N, 0 ~= S n.
 Proof.
-intro n; apply neq_symm; apply neq_succ_0.
+intro n; apply neq_sym; apply neq_succ_0.
 Qed.
 
 (* Next, we show that all numbers are nonnegative and recover regular induction

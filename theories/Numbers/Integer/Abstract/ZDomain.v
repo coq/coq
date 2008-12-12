@@ -49,7 +49,7 @@ assert (x == y); [rewrite Exx'; now rewrite Eyy' |
 rewrite <- H2; assert (H3 : e x y); [now apply -> eq_equiv_e | now inversion H3]]].
 Qed.
 
-Theorem neq_symm : forall n m, n # m -> m # n.
+Theorem neq_sym : forall n m, n # m -> m # n.
 Proof.
 intros n m H1 H2; symmetry in H2; false_hyp H2 H1.
 Qed.

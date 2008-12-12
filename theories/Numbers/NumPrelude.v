@@ -212,7 +212,7 @@ unfold reflexive, prod_rel.
 destruct x; split; [apply (proj1 EA_equiv) | apply (proj1 EB_equiv)]; simpl.
 Qed.
 
-Lemma prod_rel_symm : symmetric (A * B) prod_rel.
+Lemma prod_rel_sym : symmetric (A * B) prod_rel.
 Proof.
 unfold symmetric, prod_rel.
 destruct x; destruct y;
@@ -229,7 +229,7 @@ Qed.
 
 Theorem prod_rel_equiv : equiv (A * B) prod_rel.
 Proof.
-unfold equiv; split; [exact prod_rel_refl | split; [exact prod_rel_trans | exact prod_rel_symm]].
+unfold equiv; split; [exact prod_rel_refl | split; [exact prod_rel_trans | exact prod_rel_sym]].
 Qed.
 
 End RelationOnProduct.

@@ -243,7 +243,7 @@ Definition E2 := prod_rel Neq Neq.
 
 Add Relation (prod N N) E2
 reflexivity proved by (prod_rel_refl N N Neq Neq E_equiv E_equiv)
-symmetry proved by (prod_rel_symm N N Neq Neq E_equiv E_equiv)
+symmetry proved by (prod_rel_sym N N Neq Neq E_equiv E_equiv)
 transitivity proved by (prod_rel_trans N N Neq Neq E_equiv E_equiv)
 as E2_rel.
 
