@@ -97,9 +97,13 @@ let standard sds sps =
   if !opt = "" then print "\t@echo \"WARNING: opt is disabled\"\n";
   print "\t$(MAKE) all \"OPT:="; print !opt; print "\"\n\n";
   print "install:\n";
-  print "\tmkdir -p `$(COQC) -where`/user-contrib\n";
-  if !some_vfile then print "\tcp -f $(VOFILES) `$(COQC) -where`/user-contrib\n";
-  if !some_mlfile then print "\tcp -f *.cmo `$(COQC) -where`/user-contrib\n";
+  print "\tmkdir -p $(COQLIB)/user-contrib\n";
+  if !some_vfile then
+    print "\tcp -f $(VOFILES) $(COQLIB)/user-contrib\n";
+  if !some_mlfile then
+    print "\tcp -f $(CMOFILES) $(COQLIB)/user-contrib\n";
+  if Coq_config.has_natdynlink && !some_mlfile then
+    print "\tcp -f $(CMXSFILES) $(COQLIB)/user-contrib\n";
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) install)\n")
     sds;
