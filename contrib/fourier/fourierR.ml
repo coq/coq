@@ -259,7 +259,7 @@ let fourier_lineq lineq1 =
    let hvar=Hashtbl.create 50 in (* la table des variables des inéquations *)
    List.iter (fun f ->
                Hashtbl.iter (fun x c ->
-				 try (Hashtbl.find hvar x;())
+				 try (let _ = Hashtbl.find hvar x in ())
 				 with _-> nvar:=(!nvar)+1;
    				          Hashtbl.add hvar x (!nvar))
                             f.hflin.fhom)
