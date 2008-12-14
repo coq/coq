@@ -170,10 +170,11 @@ GEXTEND Gram
     [ [ b = record_token; oc = opt_coercion; name = identref;
         ps = binders_let; 
 	s = OPT [ ":"; s = lconstr -> s ];
-	":="; cstr = OPT identref; "{";
-        fs = LIST0 record_field SEP ";"; "}" ->
-	  VernacRecord (b,(oc,name),ps,s,cstr,fs)
-    ] ]
+	cfs = [ ":="; l = constructor_list_or_record_decl -> l
+	  | -> RecordDecl (None, []) ] ->
+	  let (recf,indf) = b in
+	    VernacInductive (indf,[((oc,name),ps,s,Some recf,cfs),None])
+  ] ]
   ;
   typeclass_context:
     [ [ "["; l=LIST1 typeclass_constraint SEP ","; "]" -> l 
@@ -222,7 +223,7 @@ GEXTEND Gram
   record_token:
     [ [ IDENT "Record" -> (Record,true)
       | IDENT "Structure" -> (Structure,true) 
-      | IDENT "Class" -> (Class,true) ] ]
+      | IDENT "Class" -> (Class true,true) ] ]
   ;
   (* Simple definitions *)
   def_body:
@@ -245,19 +246,19 @@ GEXTEND Gram
     ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = identref; indpar = binders_let; 
+    [ [ id = identref; oc = opt_coercion; indpar = binders_let; 
         c = OPT [ ":"; c = lconstr -> c ];
         ":="; lc = constructor_list_or_record_decl; ntn = decl_notation ->
-	   ((id,indpar,c,lc),ntn) ] ]
+	   (((oc,id),indpar,c,None,lc),ntn) ] ]
   ;
   constructor_list_or_record_decl:
     [ [ "|"; l = LIST1 constructor SEP "|" -> Constructors l
       | id = identref ; c = constructor_type; "|"; l = LIST0 constructor SEP "|" -> 
-	      Constructors ((c id)::l)
+	  Constructors ((c id)::l)
       | id = identref ; c = constructor_type -> Constructors [ c id ]
       | cstr = identref; "{"; fs = LIST0 record_field SEP ";"; "}" -> 
-	     RecordDecl (Record,Some cstr,fs) 
-      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (Record,None,fs) 
+	  RecordDecl (Some cstr,fs) 
+      | "{";fs = LIST0 record_field SEP ";"; "}" -> RecordDecl (None,fs) 
       |  -> Constructors [] ] ]
   ;
 (*
@@ -500,20 +501,6 @@ GEXTEND Gram
       | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
 	  VernacCoercion (Global, qid, s, t)
-
-      (* Type classes, new syntax without artificial sup. *)
-      | IDENT "Class"; qid = identref; pars = binders_let;
-           s = OPT [ ":"; c = lconstr -> c ];
-	   fs = class_fields ->
-	   VernacInductive (false, [((qid,pars,s,RecordDecl (Class,None,fs)),None)])
-
-      (* Type classes *)
-      | IDENT "Class"; sup = OPT [ l = binders_let; "=>" -> l ];
-	 qid = identref; pars = binders_let;
-         s = OPT [ ":"; c = lconstr -> c ];
-	 fs = class_fields ->
-	   VernacInductive 
-	     (false, [((qid,Option.cata (fun x -> x) [] sup @ pars,s,RecordDecl (Class,None,fs)),None)])
 	     
       | IDENT "Context"; c = binders_let -> 
 	  VernacContext c
@@ -546,10 +533,6 @@ GEXTEND Gram
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
 	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
-  ;
-  class_fields:
-    [ [ ":="; fs = LIST1 record_field SEP ";" -> fs
-      | -> [] ] ]
   ;
   implicit_name:
     [ [ "!"; id = ident -> (id, false, true)

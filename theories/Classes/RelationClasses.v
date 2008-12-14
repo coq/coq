@@ -1,4 +1,3 @@
-(* -*- coq-prog-name: "coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.RelationClasses") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -71,31 +70,31 @@ Hint Extern 4 => solve_relation : relations.
 
 (** We can already dualize all these properties. *)
 
-Program Instance flip_Reflexive [ Reflexive A R ] : Reflexive (flip R) :=
+Program Instance flip_Reflexive `(Reflexive A R) : Reflexive (flip R) :=
   reflexivity := reflexivity (R:=R).
 
-Program Instance flip_Irreflexive [ Irreflexive A R ] : Irreflexive (flip R) :=
+Program Instance flip_Irreflexive `(Irreflexive A R) : Irreflexive (flip R) :=
   irreflexivity := irreflexivity (R:=R).
 
-Program Instance flip_Symmetric [ Symmetric A R ] : Symmetric (flip R).
+Program Instance flip_Symmetric `(Symmetric A R) : Symmetric (flip R).
 
   Solve Obligations using unfold flip ; intros ; tcapp symmetry ; assumption.
 
-Program Instance flip_Asymmetric [ Asymmetric A R ] : Asymmetric (flip R).
+Program Instance flip_Asymmetric `(Asymmetric A R) : Asymmetric (flip R).
   
   Solve Obligations using program_simpl ; unfold flip in * ; intros ; typeclass_app asymmetry ; eauto.
 
-Program Instance flip_Transitive [ Transitive A R ] : Transitive (flip R).
+Program Instance flip_Transitive `(Transitive A R) : Transitive (flip R).
 
   Solve Obligations using unfold flip ; program_simpl ; typeclass_app transitivity ; eauto.
 
-Program Instance Reflexive_complement_Irreflexive [ Reflexive A (R : relation A) ]
+Program Instance Reflexive_complement_Irreflexive `(Reflexive A (R : relation A))
    : Irreflexive (complement R).
 
   Next Obligation. 
   Proof. firstorder. Qed.
 
-Program Instance complement_Symmetric [ Symmetric A (R : relation A) ] : Symmetric (complement R).
+Program Instance complement_Symmetric `(Symmetric A (R : relation A)) : Symmetric (complement R).
 
   Next Obligation.
   Proof. firstorder. Qed.
@@ -149,35 +148,35 @@ Program Instance eq_Transitive : Transitive (@eq A).
 
 (** A [PreOrder] is both Reflexive and Transitive. *)
 
-Class PreOrder {A} (R : relation A) : Prop :=
+Class PreOrder {A} (R : relation A) : Prop := {
   PreOrder_Reflexive :> Reflexive R ;
-  PreOrder_Transitive :> Transitive R.
+  PreOrder_Transitive :> Transitive R }.
 
 (** A partial equivalence relation is Symmetric and Transitive. *)
 
-Class PER {A} (R : relation A) : Prop :=
+Class PER {A} (R : relation A) : Prop := {
   PER_Symmetric :> Symmetric R ;
-  PER_Transitive :> Transitive R.
+  PER_Transitive :> Transitive R }.
 
 (** Equivalence relations. *)
 
-Class Equivalence {A} (R : relation A) : Prop :=
+Class Equivalence {A} (R : relation A) : Prop := {
   Equivalence_Reflexive :> Reflexive R ;
   Equivalence_Symmetric :> Symmetric R ;
-  Equivalence_Transitive :> Transitive R.
+  Equivalence_Transitive :> Transitive R }.
 
 (** An Equivalence is a PER plus reflexivity. *)
 
-Instance Equivalence_PER [ Equivalence A R ] : PER R | 10 :=
+Instance Equivalence_PER `(Equivalence A R) : PER R | 10 :=
   PER_Symmetric := Equivalence_Symmetric ;
   PER_Transitive := Equivalence_Transitive.
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 
-Class Antisymmetric ((equ : Equivalence A eqA)) (R : relation A) := 
+Class Antisymmetric A eqA `{equ : Equivalence A eqA} (R : relation A) :=
   antisymmetry : forall x y, R x y -> R y x -> eqA x y.
 
-Program Instance flip_antiSymmetric {{Antisymmetric A eqA R}} :
+Program Instance flip_antiSymmetric `(Antisymmetric A eqA R) :
   ! Antisymmetric A eqA (flip R).
 
 (** Leibinz equality [eq] is an equivalence relation.
@@ -369,14 +368,14 @@ Proof. intro A. exact (@predicate_implication_preorder (cons A (cons A nil))). Q
    We give an equivalent definition, up-to an equivalence relation 
    on the carrier. *)
 
-Class PartialOrder ((equ : Equivalence A eqA)) ((preo : PreOrder A R)) :=
+Class PartialOrder A eqA `{equ : Equivalence A eqA} R `{preo : PreOrder A R} :=
   partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (inverse R)).
 
 (** The equivalence proof is sufficient for proving that [R] must be a morphism 
    for equivalence (see Morphisms).
    It is also sufficient to show that [R] is antisymmetric w.r.t. [eqA] *)
 
-Instance partial_order_antisym [ PartialOrder A eqA R ] : ! Antisymmetric A eqA R.
+Instance partial_order_antisym `(PartialOrder A eqA R) : ! Antisymmetric A eqA R.
 Proof with auto.
   reduce_goal. pose proof partial_order_equivalence as poe. do 3 red in poe. 
   apply <- poe. firstorder.

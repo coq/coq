@@ -276,14 +276,14 @@ Ltac simpl_depind_r := subst_right_no_fail ; autoinjections_right ; try discrimi
    [injection] tactics on which we can always fall back.
    *)
   
-Class NoConfusionPackage (I : Type) := NoConfusion : Π P : Prop, Type ; noConfusion : Π P, NoConfusion P.
+Class NoConfusionPackage (I : Type) := { NoConfusion : Π P : Prop, Type ; noConfusion : Π P, NoConfusion P }.
 
 (** The [DependentEliminationPackage] provides the default dependent elimination principle to
    be used by the [equations] resolver. It is especially useful to register the dependent elimination
    principles for things in [Prop] which are not automatically generated. *)
 
 Class DependentEliminationPackage (A : Type) :=
-  elim_type : Type ; elim : elim_type.
+  { elim_type : Type ; elim : elim_type }.
 
 (** A higher-order tactic to apply a registered eliminator. *)
 
@@ -302,14 +302,14 @@ Ltac elim_ind p := elim_tac ltac:(fun p el => induction p using el) p.
 (** The [BelowPackage] class provides the definition of a [Below] predicate for some datatype,
    allowing to talk about course-of-value recursion on it. *)
 
-Class BelowPackage (A : Type) :=
+Class BelowPackage (A : Type) := {
   Below : A -> Type ;
-  below : Π (a : A), Below a.
+  below : Π (a : A), Below a }.
 
 (** The [Recursor] class defines a recursor on a type, based on some definition of [Below]. *)
 
 Class Recursor (A : Type) (BP : BelowPackage A) := 
-  rec_type : A -> Type ; rec : Π (a : A), rec_type a.
+  { rec_type : A -> Type ; rec : Π (a : A), rec_type a }.
 
 (** Lemmas used by the simplifier, mainly rephrasings of [eq_rect], [eq_ind]. *)
 

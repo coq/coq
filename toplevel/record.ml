@@ -274,7 +274,7 @@ let declare_instance_cst glob con =
       | Some tc -> add_instance (new_instance tc None glob con)
       | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
 
-let declare_class finite id idbuild paramimpls params arity fieldimpls fields
+let declare_class finite def id idbuild paramimpls params arity fieldimpls fields
     ?(kind=StructureComponent) ?name is_coe coers =
   let fieldimpls = 
     (* Make the class and all params implicits in the projections *)
@@ -284,7 +284,7 @@ let declare_class finite id idbuild paramimpls params arity fieldimpls fields
   in
   let impl, projs =
     match fields with
-    | [(Name proj_name, _, field)] ->
+    | [(Name proj_name, _, field)] when def ->
 	let class_body = it_mkLambda_or_LetIn field params in
 	let class_type = Option.map (fun ar -> it_mkProd_or_LetIn ar params) arity in
 	let class_entry =
@@ -373,5 +373,5 @@ let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
 	in IndRef (declare_structure finite idstruc idbuild implpars params arity implfs fields is_coe coers)
-    | Class ->
-	declare_class finite (loc,idstruc) idbuild implpars params sc implfs fields is_coe coers
+    | Class b ->
+	declare_class finite b (loc,idstruc) idbuild implpars params sc implfs fields is_coe coers

@@ -155,7 +155,7 @@ type local_decl_expr =
   | AssumExpr of lname * constr_expr
   | DefExpr of lname * constr_expr * constr_expr option
 
-type record_kind = Record | Structure | Class
+type record_kind = Record | Structure | Class of bool (* true = definitional, false = inductive *)
 type decl_notation = (string * constr_expr * scope_name option) option
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
@@ -164,9 +164,10 @@ type 'a with_notation = 'a * decl_notation
 type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
-  | RecordDecl of record_kind * lident option * local_decl_expr with_coercion with_notation list
+  | RecordDecl of lident option * local_decl_expr with_coercion with_notation list
 type inductive_expr =
-  lident * local_binder list * constr_expr option * constructor_list_or_record_decl_expr
+  lident with_coercion * local_binder list * constr_expr option * record_kind option * 
+    constructor_list_or_record_decl_expr
 
 type module_binder = bool option * lident list * module_type_ast
 
@@ -217,9 +218,6 @@ type vernac_expr =
   | VernacCombinedScheme of lident * lident list
 
   (* Gallina extensions *)
-  | VernacRecord of (record_kind*bool) (* = Structure or Class * Inductive or CoInductive *)
-      * lident with_coercion * local_binder list
-      * constr_expr option * lident option * local_decl_expr with_coercion with_notation list
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of

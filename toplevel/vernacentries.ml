@@ -387,7 +387,7 @@ let vernac_record k finite struc binders sort nameopt cfs =
       
 let vernac_inductive finite indl = 
   if Dumpglob.dump () then
-    List.iter (fun ((lid, _, _, cstrs), _) ->
+    List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
       match cstrs with 
 	| Constructors cstrs ->
 	    Dumpglob.dump_definition lid false "ind";
@@ -396,12 +396,22 @@ let vernac_inductive finite indl =
 	| _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
   match indl with
-  | [ ( id , bl , c ,RecordDecl (b,oc,fs) ), None ] -> 
-      vernac_record b finite (false,id) bl c oc fs
-  | [ ( _ , _ , _ , RecordDecl _ ) , _ ] -> 
+  | [ ( id , bl , c , Some b, RecordDecl (oc,fs) ), None ] -> 
+      vernac_record (match b with Class true -> Class false | _ -> b)
+	finite id bl c oc fs
+  | [ ( id , bl , c , Some (Class true), Constructors [l]), _ ] -> 
+      let f = 
+	let (coe, ((loc, id), ce)) = l in
+	  ((coe, AssumExpr ((loc, Name id), ce)), None)
+      in vernac_record (Class true) finite id bl c None [f]
+  | [ ( id , bl , c , Some (Class true), _), _ ] -> 
+      Util.error "Definitional classes must have a single method"
+  | [ ( id , bl , c , Some (Class false), Constructors _), _ ] ->
+      Util.error "Inductive classes not supported"
+  | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] -> 
       Util.error "where clause not supported for (co)inductive records"
   | _ -> let unpack = function 
-      | ( id , bl , c , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
+      | ( (_, id) , bl , c , _ , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
       | _ -> Util.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
@@ -1314,7 +1324,6 @@ let interp c = match c with
 
   | VernacEndSegment lid -> vernac_end_segment lid
 
-  | VernacRecord ((k,finite),id,bl,s,idopt,fs) -> vernac_record k finite id bl s idopt fs
   | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
@@ -1322,8 +1331,6 @@ let interp c = match c with
   | VernacIdentityCoercion (str,(_,id),s,t) -> vernac_identity_coercion str id s t
 
   (* Type classes *)
-(*   | VernacClass (id, par, ar, sup, props) -> vernac_class id par ar sup props *)
-
   | VernacInstance (glob, sup, inst, props, pri) -> vernac_instance glob sup inst props pri
   | VernacContext sup -> vernac_context sup
   | VernacDeclareInstance id -> vernac_declare_instance id

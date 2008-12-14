@@ -1370,7 +1370,7 @@ let do_build_inductive
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	let repacked_rel_inds = 
-	  List.map  (fun ((a , b , c , l),ntn) -> (a , b, c , Vernacexpr.Constructors l),ntn )
+	  List.map  (fun ((a , b , c , l),ntn) -> ((false,a) , b, c , None, Vernacexpr.Constructors l),ntn )
 	                  rel_inds
 	in
 	let msg = 		     
@@ -1385,7 +1385,7 @@ let do_build_inductive
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	let repacked_rel_inds = 
-	  List.map  (fun ((a , b , c , l),ntn) -> (a , b, c , Vernacexpr.Constructors l),ntn )
+	  List.map  (fun ((a , b , c , l),ntn) -> ((false,a) , b, c , None, Vernacexpr.Constructors l),ntn )
 	                  rel_inds
 	in
 	let msg = 		     

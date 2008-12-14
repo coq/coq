@@ -716,7 +716,7 @@ let intern_generalized_binder ?(fail_anonymous=false) intern_type lvar
 	    let id = 
 	      match ty with
 	      | CApp (_, (_, CRef (Ident (loc,id))), _) -> id
-	      | _ -> id_of_string "assum"
+	      | _ -> id_of_string "H"
 	    in Implicit_quantifiers.make_fresh ids (Global.env ()) id
 	  in Name name
     | _ -> na

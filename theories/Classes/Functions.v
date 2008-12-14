@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -21,22 +20,22 @@ Require Import Coq.Classes.Morphisms.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-Class Injective ((m : Morphism (A -> B) (RA ++> RB) f)) : Prop :=
+Class Injective `(m : Morphism (A -> B) (RA ++> RB) f) : Prop :=
   injective : forall x y : A, RB (f x) (f y) -> RA x y.
 
-Class ((m : Morphism (A -> B) (RA ++> RB) f)) => Surjective : Prop :=
+Class Surjective `(m : Morphism (A -> B) (RA ++> RB) f) : Prop :=
   surjective : forall y, exists x : A, RB y (f x).
 
-Definition Bijective ((m : Morphism (A -> B) (RA ++> RB) (f : A -> B))) :=
+Definition Bijective `(m : Morphism (A -> B) (RA ++> RB) (f : A -> B)) :=
   Injective m /\ Surjective m.
 
-Class MonoMorphism (( m : Morphism (A -> B) (eqA ++> eqB) )) :=
+Class MonoMorphism `(m : Morphism (A -> B) (eqA ++> eqB)) :=
   monic :> Injective m.
 
-Class EpiMorphism ((m : Morphism (A -> B) (eqA ++> eqB))) :=
+Class EpiMorphism `(m : Morphism (A -> B) (eqA ++> eqB)) :=
   epic :> Surjective m.
 
-Class IsoMorphism ((m : Morphism (A -> B) (eqA ++> eqB))) :=
-  monomorphism :> MonoMorphism m ; epimorphism :> EpiMorphism m.
+Class IsoMorphism `(m : Morphism (A -> B) (eqA ++> eqB)) :=
+  { monomorphism :> MonoMorphism m ; epimorphism :> EpiMorphism m }.
 
-Class ((m : Morphism (A -> A) (eqA ++> eqA))) [ I : ! IsoMorphism m ] => AutoMorphism.
+Class AutoMorphism `(m : Morphism (A -> A) (eqA ++> eqA)) {I : IsoMorphism m}.

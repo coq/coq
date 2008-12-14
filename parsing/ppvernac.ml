@@ -582,24 +582,31 @@ let rec pr_vernac = function
         hov 2 (pr_lident id ++ str" " ++
                (if coe then str":>" else str":") ++
                 pr_spc_lconstr c) in
-      let pr_constructor_list l = match l with
+      let pr_constructor_list b l = match l with
         | Constructors [] -> mt()
         | Constructors l ->
             pr_com_at (begin_of_inductive l) ++
             fnl() ++
             str (if List.length l = 1 then "   " else " | ") ++
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l 
-       | RecordDecl (b,c,fs) ->   
+       | RecordDecl (c,fs) ->   
 	    spc() ++
 	    pr_record_decl b c fs in
-      let pr_oneind key ((id,indpar,s,lc),ntn) =
-	hov 0 (
-          str key ++ spc() ++
-          pr_lident id ++ pr_and_type_binders_arg indpar ++ spc() ++ 
-	    Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++ 
-	  str" :=") ++ pr_constructor_list lc ++ 
-	pr_decl_notation pr_constr ntn in
-
+      let pr_oneind key (((coe,id),indpar,s,k,lc),ntn) =
+	let kw =
+	  match k with
+	  | None -> str key
+	  | Some b -> str (match b with Record -> "Record" | Structure -> "Structure" 
+	    | Class b -> if b then "Definitional Class" else "Class")
+	in
+	  hov 0 (
+	    kw ++ spc() ++
+              (if coe then str" > " else str" ") ++ pr_lident id ++
+              pr_and_type_binders_arg indpar ++ spc() ++ 
+	      Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++ 
+	      str" :=") ++ pr_constructor_list k lc ++ 
+	    pr_decl_notation pr_constr ntn 
+      in
       hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
       ++ 
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
@@ -665,12 +672,6 @@ let rec pr_vernac = function
 	
 
   (* Gallina extensions *)
-  | VernacRecord ((b,coind),(oc,name),ps,s,c,fs) ->
-      hov 2
-        (str (match b with Record -> "Record" | Structure -> "Structure" | Class -> "Class") ++
-         (if oc then str" > " else str" ") ++ pr_lident name ++ 
-          pr_and_type_binders_arg ps ++ str" :" ++ spc() ++ 
-	  Option.cata pr_lconstr_expr (mt()) s ++ str" := " ++ pr_record_decl b c fs)
   | VernacBeginSection id -> hov 2 (str"Section" ++ spc () ++ pr_lident id)
   | VernacEndSegment id -> hov 2 (str"End" ++ spc() ++ pr_lident id)
   | VernacRequire (exp,spe,l) -> hov 2
