@@ -72,10 +72,12 @@ let clenv_pose_dependent_evars with_evars clenv =
   clenv_pose_metas_as_evars clenv dep_mvs
 
 
-let clenv_refine with_evars clenv gls =
+let clenv_refine with_evars ?(with_classes=true) clenv gls =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
-  let evd' = Typeclasses.resolve_typeclasses ~fail:(not with_evars)
-    clenv.env clenv.evd 
+  let evd' = 
+    if with_classes then 
+      Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd 
+    else clenv.evd
   in
   tclTHEN
     (tclEVARS (evars_of evd')) 
@@ -109,11 +111,11 @@ let fail_quick_unif_flags = {
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
-let unifyTerms m n gls = 
+let unifyTerms ?(flags=fail_quick_unif_flags) m n gls = 
   let env = pf_env gls in
   let evd = create_goal_evar_defs (project gls) in
-  let evd' = w_unify false env CONV ~flags:fail_quick_unif_flags m n evd in
+  let evd' = w_unify false env CONV ~flags m n evd in
   tclIDTAC {it = gls.it; sigma = evars_of evd'}
 
-let unify m gls =
-  let n = pf_concl gls in unifyTerms m n gls
+let unify ?(flags=fail_quick_unif_flags) m gls =
+  let n = pf_concl gls in unifyTerms ~flags m n gls

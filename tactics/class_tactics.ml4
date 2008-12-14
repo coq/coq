@@ -88,13 +88,13 @@ let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
   let clenv' = clenv_unique_resolver false ~flags clenv' gls 
   in
-    Clenvtac.clenv_refine true clenv' gls
+    Clenvtac.clenv_refine true ~with_classes:false clenv' gls
       
 let unify_resolve flags (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let clenv' = clenv_unique_resolver false ~flags clenv' gls 
   in
-    Clenvtac.clenv_refine false clenv' gls
+    Clenvtac.clenv_refine false ~with_classes:false clenv' gls
 
 let flags_of_state st =
   {auto_unif_flags with 
