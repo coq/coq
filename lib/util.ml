@@ -242,6 +242,8 @@ let classify_unicode unicode =
     end
     | _ ->
     begin match unicode with
+    (* utf-8 CJC Symbols and Punctuation  *)
+    | x when 0x3008 <= x & x <= 0x3020 -> UnicodeSymbol
     (* utf-8 Hiragana U3040-309F and Katakana U30A0-30FF *)
     | x when 0x3040 <= x & x <= 0x30FF -> UnicodeLetter
     (* utf-8 Unified CJK Ideographs U4E00-9FA5 *)
