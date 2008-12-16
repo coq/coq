@@ -507,6 +507,62 @@ let (reset_inline,_) =
 
 let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
+(*s Extraction Blacklist of filenames not to use while extracting *)
+
+let blacklist_table = ref Stringset.empty
+
+let is_blacklisted s =
+ (Stringset.mem (String.capitalize s) !blacklist_table) ||
+ (Stringset.mem (String.uncapitalize s) !blacklist_table)
+
+let string_of_modfile mp =
+  let s = string_of_modfile mp in
+  if is_blacklisted s then "Coq_"^s else s
+
+let add_blacklist_entries l =
+  blacklist_table := List.fold_right Stringset.add l !blacklist_table
+
+(* Registration of operations for rollback. *)
+
+let (blacklist_extraction,_) =
+  declare_object
+    {(default_object "Extraction Blacklist") with
+       cache_function = (fun (_,l) -> add_blacklist_entries l);
+       load_function = (fun _ (_,l) -> add_blacklist_entries l);
+       export_function = (fun x -> Some x);
+       classify_function = (fun (_,o) -> Libobject.Keep o);
+       subst_function = (fun (_,_,x) -> x)
+    }
+
+let _ = declare_summary "Extraction Blacklist"
+	  { freeze_function = (fun () -> !blacklist_table);
+	    unfreeze_function = ((:=) blacklist_table);
+	    init_function = (fun () -> blacklist_table := Stringset.empty);
+	    survive_module = true;
+	    survive_section = true }
+
+(* Grammar entries. *)
+
+let extraction_blacklist l =
+  let l = List.rev_map string_of_id l in
+  Lib.add_anonymous_leaf (blacklist_extraction l)
+
+(* Printing part *)
+
+let print_extraction_blacklist () =
+  msgnl
+    (prlist_with_sep fnl str (Stringset.elements !blacklist_table))
+
+(* Reset part *)
+
+let (reset_blacklist,_) =
+  declare_object
+    {(default_object "Reset Extraction Blacklist") with
+       cache_function = (fun (_,_)-> blacklist_table := Stringset.empty);
+       load_function = (fun _ (_,_)-> blacklist_table := Stringset.empty);
+       export_function = (fun x -> Some x)}
+
+let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
 
 (*s Extract Constant/Inductive. *)
 

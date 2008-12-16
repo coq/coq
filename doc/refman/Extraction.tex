@@ -282,6 +282,30 @@ Extract Inductive list => "list" [ "[]" "(::)" ].
 Extract Inductive prod => "(*)"  [ "(,)" ].
 \end{coq_example}
 
+\asubsection{Avoiding conflicts with existing filenames}
+
+\comindex{Extraction Blaclist}
+
+When using {\tt Extraction Library}, the names of the extracted files
+directly depends from the names of the \Coq\ files. It may happen that
+these filenames are in conflict with already existing files, 
+either in the standard library of the target language or in other
+code that is meant to be linked with the extracted code. 
+For instance the module {\tt List} exists both in \Coq\ and in Ocaml.
+It is possible to instruct the extraction not to use particular filenames.
+
+\begin{description}
+\item{\tt Extraction Blacklist \ident \ldots \ident.} ~\par
+  Instruct the extraction to avoid using these names as filenames
+  for extracted code. 
+\item{\tt Print Extraction Blacklist.} ~\par
+  Show the current list of filenames the extraction should avoid.
+\item{\tt Reset Extraction Blacklist.} ~\par
+  Allow the extraction to use any filename.
+\end{description}
+
+For Ocaml, a typical use of these commands is
+{\tt Extraction Blacklist String List}.
 
 \asection{Differences between \Coq\ and ML type systems}
 

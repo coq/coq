@@ -436,6 +436,9 @@ Extraction
   possible if several branches are identical. For instance, functions
   corresponding to decidability of equalities are now linear instead of 
   quadratic.
+- A new instruction Extraction Blacklist id1 .. idn allows to prevent filename
+  conflits with existing code, for instance when extracting module List
+  to Ocaml. 
 
 CoqIDE
 

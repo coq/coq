@@ -141,6 +141,13 @@ val extract_constant_inline :
   bool -> reference -> string list -> string -> unit
 val extract_inductive : reference -> string * string list -> unit
 
+(*s Table of blacklisted filenames *)
+
+val is_blacklisted : string -> bool
+
+val extraction_blacklist : identifier list -> unit
+val reset_extraction_blacklist : unit -> unit
+val print_extraction_blacklist : unit -> unit
 
 
 
