@@ -346,10 +346,15 @@ let mono_filename f =
 
 (* Builds a suitable filename from a module id *)
 
-let module_filename m = 
-  let d = descr () in 
-  let f = if d.capital_file then String.capitalize else String.uncapitalize in 
-  let fn = f (string_of_id m) in
+let module_filename m =
+  let d = descr () in
+  let fc = String.capitalize (string_of_id m) in
+  let fn =
+    if is_blacklisted fc then
+      if d.capital_file then "Coq_"^fc else "coq_"^fc
+    else
+      if d.capital_file then fc else String.uncapitalize fc
+  in
   Some (fn^d.file_suffix), Option.map ((^) fn) d.sig_suffix, m
 
 (*s Extraction of one decl to stdout. *)

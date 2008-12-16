@@ -89,6 +89,23 @@ VERNAC COMMAND EXTEND ResetExtractionInline
   -> [ reset_extraction_inline () ]
 END
 
+VERNAC COMMAND EXTEND ExtractionBlacklist
+(* Force Extraction to not use some filenames *)
+| [ "Extraction" "Blacklist" ne_ident_list(l) ]
+  -> [ extraction_blacklist l ]
+END
+
+VERNAC COMMAND EXTEND PrintExtractionBlacklist
+| [ "Print" "Extraction" "Blacklist" ]
+  -> [ print_extraction_blacklist () ]
+END
+
+VERNAC COMMAND EXTEND ResetExtractionBlacklist
+| [ "Reset" "Extraction" "Blacklist" ]
+  -> [ reset_extraction_blacklist () ]
+END
+
+
 (* Overriding of a Coq object by an ML one *)
 VERNAC COMMAND EXTEND ExtractionConstant
 | [ "Extract" "Constant" global(x) string_list(idl) "=>" mlname(y) ]
