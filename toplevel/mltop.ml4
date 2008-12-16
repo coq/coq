@@ -289,18 +289,20 @@ let cache_ml_module_object (_,{mnames=mnames}) =
     (fun name ->
        let mname = mod_of_name name in
        if not (module_is_known mname) then
-         let fname = file_of_name mname in
-         begin 
-	   try 
-	     if_verbose 
+	 if has_dynlink then
+           let fname = file_of_name mname in
+	   try
+	     if_verbose
 	       msg (str"[Loading ML file " ++ str fname ++ str" ...");
              load_object mname fname;
-             if_verbose msgnl (str"done]")
-           with e -> 
-	     if_verbose msgnl (str"failed]"); 
+             if_verbose msgnl (str"done]");
+             add_loaded_module mname
+           with e ->
+	     if_verbose msgnl (str"failed]");
 	     raise e
-	 end;
-         add_loaded_module mname)
+	 else
+	   if_verbose
+	     msgnl (str"[Ignoring ML file " ++ str mname ++ str "]"))
     mnames
 
 let export_ml_module_object x = Some x

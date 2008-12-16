@@ -234,33 +234,42 @@ HIGHTACTICS:=\
   tactics/extratactics.cmo tactics/eauto.cmo tactics/class_tactics.cmo \
   tactics/tauto.cmo tactics/eqdecide.cmo
 
+OMEGACMA:=contrib/omega/omega_plugin.cma
 OMEGACMO:=\
   contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
   contrib/omega/g_omega.cmo 
 
+ROMEGACMA:=contrib/romega/romega_plugin.cma
 ROMEGACMO:=\
   contrib/romega/const_omega.cmo \
   contrib/romega/refl_omega.cmo contrib/romega/g_romega.cmo
 
+MICROMEGACMA:=contrib/micromega/micromega_plugin.cma
 MICROMEGACMO:=\
   contrib/micromega/mutils.cmo  \
   contrib/micromega/micromega.cmo contrib/micromega/mfourier.cmo \
   contrib/micromega/certificate.cmo \
   contrib/micromega/coq_micromega.cmo contrib/micromega/g_micromega.cmo
 
+QUOTECMA:=contrib/quote/quote_plugin.cma
+QUOTECMO:=\
+  contrib/quote/quote.cmo contrib/quote/g_quote.cmo
+
+RINGCMA:=contrib/ring/ring_plugin.cma
 RINGCMO:=\
-  contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
   contrib/ring/ring.cmo contrib/ring/g_ring.cmo 
 
-NEWRINGCMO:=\
-  contrib/setoid_ring/newring.cmo
+NEWRINGCMA:=contrib/setoid_ring/newring_plugin.cma
+NEWRINGCMO:=contrib/setoid_ring/newring.cmo
 
+DPCMA:=contrib/dp/dp_plugin.cma
 DPCMO:=contrib/dp/dp_why.cmo contrib/dp/dp_zenon.cmo \
       contrib/dp/dp.cmo contrib/dp/dp_gappa.cmo contrib/dp/g_dp.cmo
 
-FIELDCMO:=\
-  contrib/field/field.cmo 
+FIELDCMO:=contrib/field/field.cmo
+FIELDCMA:=contrib/field/field_plugin.cma
 
+XMLCMA:=contrib/xml/xml_plugin.cma
 XMLCMO:=\
   contrib/xml/unshare.cmo contrib/xml/xml.cmo contrib/xml/acic.cmo \
   contrib/xml/doubleTypeInference.cmo \
@@ -270,10 +279,12 @@ XMLCMO:=\
   contrib/xml/xmlentries.cmo 	contrib/xml/cic2Xml.cmo \
   contrib/xml/dumptree.cmo
 
+FOURIERCMA:=contrib/fourier/fourier_plugin.cma
 FOURIERCMO:=\
   contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
   contrib/fourier/g_fourier.cmo
 
+EXTRACTIONCMA:=contrib/extraction/extraction_plugin.cma
 EXTRACTIONCMO:=\
   contrib/extraction/table.cmo\
   contrib/extraction/mlutil.cmo\
@@ -286,12 +297,14 @@ EXTRACTIONCMO:=\
   contrib/extraction/extract_env.cmo \
   contrib/extraction/g_extraction.cmo
 
+JPROVERCMA:=contrib/jprover/jprover_plugin.cma
 JPROVERCMO:=\
   contrib/jprover/opname.cmo \
   contrib/jprover/jterm.cmo contrib/jprover/jlogic.cmo \
   contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
   contrib/jprover/jprover.cmo
 
+FUNINDCMA:=contrib/funind/recdef_plugin.cma
 FUNINDCMO:=\
   contrib/funind/indfun_common.cmo contrib/funind/rawtermops.cmo \
   contrib/funind/recdef.cmo \
@@ -301,15 +314,18 @@ FUNINDCMO:=\
   contrib/funind/invfun.cmo contrib/funind/indfun.cmo \
   contrib/funind/merge.cmo contrib/funind/g_indfun.cmo
 
+FOCMA:=contrib/firstorder/ground_plugin.cma
 FOCMO:=\
   contrib/firstorder/formula.cmo contrib/firstorder/unify.cmo \
   contrib/firstorder/sequent.cmo contrib/firstorder/rules.cmo \
   contrib/firstorder/instances.cmo contrib/firstorder/ground.cmo \
   contrib/firstorder/g_ground.cmo
 
+CCCMA:=contrib/cc/cc_plugin.cma
 CCCMO:=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo \
   contrib/cc/g_congruence.cmo 
 
+SUBTACCMA:=contrib/subtac/subtac_plugin.cma
 SUBTACCMO:=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
   contrib/subtac/g_eterm.cmo \
   contrib/subtac/subtac_errors.cmo contrib/subtac/subtac_coercion.cmo \
@@ -319,14 +335,28 @@ SUBTACCMO:=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
   contrib/subtac/subtac.cmo contrib/subtac/g_subtac.cmo \
   contrib/subtac/equations.cmo
 
+RTAUTOCMA:=contrib/rtauto/rtauto_plugin.cma
 RTAUTOCMO:=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 	contrib/rtauto/g_rtauto.cmo
 
-CONTRIB:=$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) \
-        $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
-	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
-	$(FUNINDCMO)
+CONTRIBSTATIC:=\
+	$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) \
+        $(QUOTECMO) $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
+        $(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
+        $(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
+        $(FUNINDCMO)
+
+ifeq ($(HASNATDYNLINK),true)
+ CONTRIBSTATIC:=$(SUBTACCMO)
+ INITPLUGINS:=$(EXTRACTIONCMA) $(JPROVERCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
+	$(XMLCMA) $(FUNINDCMA) #$(SUBTACCMA)
+ INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
+ ifeq ($(BEST),opt)
+  INITPLUGINSBEST:=$(INITPLUGINSOPT)
+ else
+  INITPLUGINSBEST:=$(INITPLUGINS)
+ endif
+endif
 
 CMA:=$(CLIBS) $(CAMLP4OBJS)
 CMXA:=$(CMA:.cma=.cmxa)
@@ -346,7 +376,7 @@ LINKCMX:=$(LINKCMOCMXA:.cmo=.cmx)
 # objects known by the toplevel of Coq
 OBJSCMO:=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
         $(PROOFS) $(PARSING) $(TACTICS) $(TOPLEVEL) $(HIGHPARSING) \
-        $(HIGHTACTICS) $(CONTRIB)
+        $(HIGHTACTICS) $(CONTRIBSTATIC)
 
 COQIDECMO:=ide/utils/okey.cmo ide/utils/config_file.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
@@ -753,7 +783,7 @@ THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(ARITHVO)
 ## Contribs
 
 OMEGAVO:=$(addprefix contrib/omega/, \
- PreOmega.vo	OmegaLemmas.vo 	Omega.vo )
+ PreOmega.vo	OmegaLemmas.vo 	OmegaPlugin.vo Omega.vo )
 
 ROMEGAVO:=$(addprefix contrib/romega/, \
  ReflOmegaCore.vo 	ROmega.vo )
@@ -767,12 +797,15 @@ MICROMEGAVO:=$(addprefix contrib/micromega/, \
   QMicromega.vo         RMicromega.vo \
   Tauto.vo )
 
+QUOTEVO:=$(addprefix contrib/quote/, \
+ Quote.vo )
+
 RINGVO:=$(addprefix contrib/ring/, \
  LegacyArithRing.vo	Ring_normalize.vo \
  LegacyRing_theory.vo	LegacyRing.vo \
  LegacyNArithRing.vo    \
  LegacyZArithRing.vo	Ring_abstract.vo \
- Quote.vo		Setoid_ring_normalize.vo \
+ Setoid_ring_normalize.vo \
  Setoid_ring.vo		Setoid_ring_theory.vo )
 
 FIELDVO:=$(addprefix contrib/field/, \
@@ -811,7 +844,7 @@ RTAUTOVO:=$(addprefix contrib/rtauto/, \
 
 CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) \
-	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO)
+	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO)
 
 ALLVO:= $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 VFILES:= $(ALLVO:.vo=.v)

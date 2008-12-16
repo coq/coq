@@ -8,6 +8,8 @@
 
 (* $Id$ *)
 
+Declare ML Module "quote_plugin".
+
 (***********************************************************************
   The "abstract" type index is defined to represent variables.
 

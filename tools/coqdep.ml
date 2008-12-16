@@ -246,11 +246,22 @@ let traite_fichier_Coq verbose f =
                	       try
               		 let mldir = Hashtbl.find mlKnown s in
 			 let filename = file_name ([String.uncapitalize s],mldir) in
-              		 if Coq_config.has_natdynlink then
+			 if Coq_config.has_natdynlink then
 			   printf " %s.cmo %s.cmxs" filename filename
 			 else
 			   printf " %s.cmo" filename
-              	       with Not_found -> ()
+		       with Not_found ->
+			 (** The .cmxs we want to load dynamically may come
+			     from a .cmxa, that has no corresponding .ml file.
+			     Idem with bytecode .cma. What dependency should
+			     we produce then ? For the moment, we suppose the
+			     .cmxs and .cma are at the same location. *)
+			 let mldir = Some (Filename.dirname f) in
+			 let filename = file_name ([String.uncapitalize s],mldir) in
+			 if Coq_config.has_natdynlink then
+			   printf " %s.cma %s.cmxs" filename filename
+			 else
+			   printf " %s.cma" filename
 		     end)
 		sl
 	  | Load str -> 

@@ -177,7 +177,7 @@ assert (Z:  Un_cv (fun N : nat => sum_f_R0 g N) ((1/2)^n)).
   split;
    intros H;
    simpl; unfold g;
-   destruct (eq_nat_dec 0 n); try reflexivity.
+   destruct (eq_nat_dec 0 n) as [t|f]; try reflexivity.
    elim f; auto with *.
   elimtype False; omega.
  destruct IHa as [IHa0 IHa1].

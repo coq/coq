@@ -67,6 +67,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I proofs -I tactics -I pretyping \
               -I interp -I toplevel -I parsing -I ide/utils -I ide \
               -I contrib/omega -I contrib/romega -I contrib/micromega \
+              -I contrib/quote \
 	      -I contrib/ring -I contrib/dp -I contrib/setoid_ring \
               -I contrib/xml -I contrib/extraction \
               -I contrib/interface -I contrib/fourier \
@@ -168,11 +169,13 @@ coqbinaries:: ${COQBINARIES} ${CSDPCERT}
 
 coq: coqlib tools coqbinaries
 
-coqlib:: theories contrib
+coqlib:: initplugins theories contrib
 
-coqlight: theories-light tools coqbinaries
+coqlight: initplugins theories-light tools coqbinaries
 
 states:: states/initial.coq
+
+initplugins: $(INITPLUGINSOPT) $(INITPLUGINS)
 
 $(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
@@ -193,12 +196,12 @@ CHKOPTFLAGS:=$(CHKLIBS) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 
 $(CHICKENOPT): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ unix.cmxa gramlib.cmxa checker/check.cmxa checker/main.ml
+	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ unix.cmxa gramlib.cmxa $^
 	$(STRIP) $@
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -o $@ unix.cma gramlib.cma checker/check.cma checker/main.ml
+	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -o $@ unix.cma gramlib.cma $^
 
 $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
@@ -207,13 +210,11 @@ $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 
 $(COQMKTOPBYTE): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma \
-          $(COQMKTOPCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma $^ $(OSDEPLIBS)
 
 $(COQMKTOPOPT): $(COQMKTOPCMX)
 	$(SHOW)'OCAMLOPT -o $@'	
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa \
-          $(COQMKTOPCMX) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa $^ $(OSDEPLIBS)
 	$(STRIP) $@
 
 $(COQMKTOP): $(ORDER_ONLY_SEP) $(BESTCOQMKTOP)
@@ -258,108 +259,109 @@ hightactics: $(HIGHTACTICS)
 # target for libraries
 
 lib/lib.cma: $(LIBREP)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(LIBREP)
-
 lib/lib.cmxa: $(LIBREP:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(LIBREP:.cmo=.cmx)
 
 kernel/kernel.cma: $(KERNEL)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(KERNEL)
-
 kernel/kernel.cmxa: $(KERNEL:.cmo=.cmx)
+
+library/library.cma: $(LIBRARY)
+library/library.cmxa: $(LIBRARY:.cmo=.cmx)
+
+pretyping/pretyping.cma: $(PRETYPING)
+pretyping/pretyping.cmxa: $(PRETYPING:.cmo=.cmx)
+
+interp/interp.cma: $(INTERP)
+interp/interp.cmxa: $(INTERP:.cmo=.cmx)
+
+parsing/parsing.cma: $(PARSING)
+parsing/parsing.cmxa: $(PARSING:.cmo=.cmx)
+
+proofs/proofs.cma: $(PROOFS)
+proofs/proofs.cmxa: $(PROOFS:.cmo=.cmx)
+
+tactics/tactics.cma: $(TACTICS)
+tactics/tactics.cmxa: $(TACTICS:.cmo=.cmx)
+
+toplevel/toplevel.cma: $(TOPLEVEL)
+toplevel/toplevel.cmxa: $(TOPLEVEL:.cmo=.cmx)
+
+parsing/highparsing.cma: $(HIGHPARSING)
+parsing/highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
+
+tactics/hightactics.cma: $(HIGHTACTICS)
+tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx)
+
+contrib/contrib.cma: $(CONTRIBSTATIC)
+contrib/contrib.cmxa: $(CONTRIBSTATIC:.cmo=.cmx)
+
+$(OMEGACMA): $(OMEGACMO)
+$(OMEGACMA:.cma=.cmxa): $(OMEGACMO:.cmo=.cmx)
+
+$(ROMEGACMA): $(ROMEGACMO)
+$(ROMEGACMA:.cma=.cmxa): $(ROMEGACMO:.cmo=.cmx)
+
+$(MICROMEGACMA): $(MICROMEGACMO)
+$(MICROMEGACMA:.cma=.cmxa): $(MICROMEGACMO:.cmo=.cmx)
+
+$(QUOTACMA): $(QUOTECMO)
+$(QUOTECMA:.cma=.cmxa): $(QUOTECMO:.cmo=.cmx)
+
+$(RINGCMA): $(RINGCMO)
+$(RINGCMA:.cma=.cmxa): $(RINGCMO:.cmo=.cmx)
+
+$(NEWRINGCMA): $(NEWRINGCMO)
+$(NEWRINGCMA:.cma=.cmxa): $(NEWRINGCMO:.cmo=.cmx)
+
+$(FIELDCMA): $(FIELDCMO)
+$(FIELDCMA:.cma=.cmxa): $(FIELDCMO:.cmo=.cmx)
+
+$(XMLCMA): $(XMLCMO)
+$(XMLCMA:.cma=.cmxa): $(XMLCMO:.cmo=.cmx)
+
+$(FOURIERCMA): $(FOURIERCMO)
+$(FOURIERCMA:.cma=.cmxa): $(FOURIERCMO:.cmo=.cmx)
+
+$(EXTRACTIONCMA): $(EXTRACTIONCMO)
+$(EXTRACTIONCMA:.cma=.cmxa): $(EXTRACTIONCMO:.cmo=.cmx)
+
+$(RTAUTOCMA): $(RTAUTOCMO)
+$(RTAUTOCMA:.cma=.cmxa): $(RTAUTOCMO:.cmo=.cmx)
+
+$(JPROVERCMA): $(JPROVERCMO)
+$(JPROVERCMA:.cma=.cmxa): $(JPROVERCMO:.cmo=.cmx)
+
+$(FOCMA): $(FOCMO)
+$(FOCMA:.cma=.cmxa): $(FOCMO:.cmo=.cmx)
+
+$(CCCMA): $(CCCMO)
+$(CCCMA:.cma=.cmxa): $(CCCMO:.cmo=.cmx)
+
+$(DPCMA): $(DPCMO)
+$(DPCMA:.cma=.cmxa): $(DPCMO:.cmo=.cmx)
+
+$(FUNINDCMA): $(FUNINDCMO)
+$(FUNINDCMA:.cma=.cmxa): $(FUNINDCMO:.cmo=.cmx)
+
+$(SUBTACCMA): $(SUBTACCMO)
+$(SUBTACCMA:.cma=.cmxa): $(SUBTACCMO:.cmo=.cmx)
+
+%.cma:
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $^
+
+%.cmxa:
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(KERNEL:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $^
+
+# For the checker, different flags may be used
 
 checker/check.cma: $(MCHECKER)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -a -o $@ $(MCHECKER)
+	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -a -o $@ $^
 
 checker/check.cmxa: $(MCHECKER:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -a -o $@ $(MCHECKER:.cmo=.cmx)
-
-library/library.cma: $(LIBRARY)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(LIBRARY)
-
-library/library.cmxa: $(LIBRARY:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(LIBRARY:.cmo=.cmx)
-
-pretyping/pretyping.cma: $(PRETYPING)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PRETYPING)
-
-pretyping/pretyping.cmxa: $(PRETYPING:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PRETYPING:.cmo=.cmx)
-
-interp/interp.cma: $(INTERP)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(INTERP)
-
-interp/interp.cmxa: $(INTERP:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(INTERP:.cmo=.cmx)
-
-parsing/parsing.cma: $(PARSING)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PARSING)
-
-parsing/parsing.cmxa: $(PARSING:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PARSING:.cmo=.cmx)
-
-proofs/proofs.cma: $(PROOFS)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PROOFS)
-
-proofs/proofs.cmxa: $(PROOFS:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PROOFS:.cmo=.cmx)
-
-tactics/tactics.cma: $(TACTICS)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(TACTICS)
-
-tactics/tactics.cmxa: $(TACTICS:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(TACTICS:.cmo=.cmx)
-
-toplevel/toplevel.cma: $(TOPLEVEL)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(TOPLEVEL)
-
-toplevel/toplevel.cmxa: $(TOPLEVEL:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(TOPLEVEL:.cmo=.cmx)
-
-parsing/highparsing.cma: $(HIGHPARSING)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHPARSING)
-
-parsing/highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSING:.cmo=.cmx)
-
-tactics/hightactics.cma: $(HIGHTACTICS)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHTACTICS)
-
-tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHTACTICS:.cmo=.cmx)
-
-contrib/contrib.cma: $(CONTRIB)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(CONTRIB)
-
-contrib/contrib.cmxa: $(CONTRIB:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(CONTRIB:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -a -o $@ $^
 
 ###########################################################################
 # Csdp to micromega special targets
@@ -368,12 +370,12 @@ contrib/contrib.cmxa: $(CONTRIB:.cmo=.cmx)
 ifeq ($(BEST),opt)
 contrib/micromega/csdpcert$(EXE): $(CSDPCERTCMX)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) nums.cmxa -o $@ $(CSDPCERTCMX)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) nums.cmxa -o $@ $^
 	$(STRIP) $@
 else
 contrib/micromega/csdpcert$(EXE): $(CSDPCERTCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) nums.cma -o $@ $(CSDPCERTCMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) nums.cma -o $@ $^
 endif
 
 ###########################################################################
@@ -421,11 +423,11 @@ ide/%.cmx: ide/%.ml | ide/%.ml.d
 
 ide/ide.cma: $(COQIDECMO)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(COQIDECMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $^
 
 ide/ide.cmxa: $(COQIDECMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(COQIDECMO:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $^
 
 # install targets
 
@@ -551,7 +553,7 @@ noreal: logic arith bool zarith qarith lists sets fsets relations \
 # contribs (interface not included)
 ###########################################################################
 
-contrib: $(CONTRIBVO) $(CONTRIBCMO)
+contrib: $(CONTRIBVO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
 ring: $(RINGVO) $(RINGCMO)
@@ -575,7 +577,7 @@ states/initial.coq: states/MakeInitial.v $(INITVO) $(VO_TOOLS_STRICT) | states/M
 	$(SHOW)'BUILD     $@'
 	$(HIDE)$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
-theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | theories/Init/%.v.d $(VO_TOOLS_ORDER_ONLY)
+theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | theories/Init/%.v.d $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC -nois $<'
 	$(HIDE)rm -f theories/Init/$*.glob
 	$(HIDE)$(BOOTCOQTOP) -nois -compile theories/Init/$*
@@ -593,27 +595,27 @@ tools:: $(TOOLS) $(DEBUGPRINTERS)
 
 $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $^ $(OSDEPLIBS)
 
 $(GALLINA): $(GALLINACMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(GALLINACMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $^
 
-$(COQMAKEFILE): tools/coq_makefile.cmo config/coq_config.cmo
+$(COQMAKEFILE): config/coq_config.cmo tools/coq_makefile.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma config/coq_config.cmo tools/coq_makefile.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma $^
 
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma tools/coq-tex.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma $^
 
 $(COQWC): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ tools/coqwc.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $^
 
 $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma $(COQDOCCMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma $^
 
 ###########################################################################
 # Installation
@@ -730,7 +732,7 @@ dev/printers.cma: $(PRINTERSCMO)
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) gramlib.cma $(PRINTERSCMO) -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(PRINTERSCMO) -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
 
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(SHOW)'Testing $@'

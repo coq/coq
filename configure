@@ -59,6 +59,8 @@ usage () {
     printf "\tSpecifies the architecture\n"
     echo "-opt"
     printf "\tSpecifies whether or not to generate optimized executables\n"
+    echo "-natdynlink (yes|no)"
+    printf "\tSpecifies whether or not to use dynamic loading of native code\n"
     echo "-fsets (all|basic)"
     echo "-reals (all|basic)"
     printf "\tSpecifies whether or not to compile full FSets/Reals library\n"
@@ -104,6 +106,7 @@ coq_profile_flag=
 coq_annotate_flag=
 best_compiler=opt
 cflags="-fno-defer-pop -Wall -Wno-unused"
+natdynlink=yes
 
 gcc_exec=gcc
 ar_exec=ar
@@ -186,6 +189,11 @@ while : ; do
     -opt|--opt) bytecamlc=ocamlc.opt
                 camlp4oexec=camlp4o  # can't add .opt since dyn load'll be required
                 nativecamlc=ocamlopt.opt;;
+    -natdynlink|--natdynlink) case "$2" in
+	                  yes) natdynlink=yes;;
+                          *) natdynlink=no
+                        esac
+                        shift;;
     -fsets|--fsets) case "$2" in
 			yes|all) fsets=all;;
 			*) fsets=basic
@@ -212,7 +220,7 @@ while : ; do
 		      esac
 		      shift;;
     -with-geoproof|--with-geoproof) 
-	  case $2 in
+	  case "$2" in
 	      yes) with_geoproof=true;;
 	      no) with_geoproof=false;;
 	  esac
@@ -442,7 +450,7 @@ if [ "$coq_debug_flag" = "-g" ]; then
 fi
 
 # Native dynlink
-if test -f `"$CAMLC" -where`/dynlink.cmxa; then
+if [ "$natdynlink" = "yes" -a -f `"$CAMLC" -where`/dynlink.cmxa ]; then
     HASNATDYNLINK=true
 else
     HASNATDYNLINK=false

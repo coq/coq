@@ -119,7 +119,7 @@ open Tacexpr
   We do that lazily, because this code can be linked before
   the constants are loaded in the environment *)
 
-let constant dir s = Coqlib.gen_constant "Quote" ("ring"::dir) s
+let constant dir s = Coqlib.gen_constant "Quote" ("quote"::dir) s
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")
@@ -388,7 +388,7 @@ let rec sort_subterm gl l =
   [gl: goal sigma]\\ *)
 
 let quote_terms ivs lc gl =
-  Coqlib.check_required_library ["Coq";"ring";"Quote"];
+  Coqlib.check_required_library ["Coq";"quote";"Quote"];
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)

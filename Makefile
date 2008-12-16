@@ -118,7 +118,7 @@ else
 stage1 $(STAGE1_TARGETS): always
 	$(call stage-template,1)
 
-CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.dep.ps %.dot
+CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
 ifdef CM_STAGE1
 $(CAML_OBJECT_PATTERNS): always
 	$(call stage-template,1)
@@ -189,7 +189,7 @@ archclean: clean-ide cleantheories
 	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN)
 	rm -f $(COQTOPOPT) $(COQMKTOPOPT) $(COQCOPT) $(CHICKENOPT)
 	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
-	find . -name '*.cmx' -or -name '*.cmxa' -or -name '*.[soa]' -or -name '*.so' | xargs rm -f
+	find . -name '*.cmx' -or -name '*.cmxs' -or -name '*.cmxa' -or -name '*.[soa]' -or -name '*.so' | xargs rm -f
 	rm -f $(TOOLS) $(CSDPCERT)
 
 clean-ide:

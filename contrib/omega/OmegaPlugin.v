@@ -8,14 +8,4 @@
 
 (* $Id$ *)
 
-(* "Fourier's method to solve linear inequations/equations systems.".*)
-
-Require Export LegacyRing.
-Require Export LegacyField.
-Require Export DiscrR.
-Require Export Fourier_util.
-Declare ML Module "fourier_plugin".
-
-Ltac fourier := abstract (fourierz; field; discrR).
-
-Ltac fourier_eq := apply Rge_antisym; fourier.
+Declare ML Module "omega_plugin".

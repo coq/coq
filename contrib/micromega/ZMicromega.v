@@ -19,6 +19,7 @@ Require Import Refl.
 Require Import ZArith.
 Require Import List.
 Require Import Bool.
+Declare ML Module "micromega_plugin".
 
 Ltac flatten_bool :=
   repeat match goal with

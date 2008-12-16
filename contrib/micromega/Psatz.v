@@ -22,6 +22,7 @@ Require Import Raxioms.
 Require Export RingMicromega.
 Require Import VarMap.
 Require Tauto.
+Declare ML Module "micromega_plugin".
 
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with

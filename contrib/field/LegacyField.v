@@ -11,5 +11,6 @@
 Require Export LegacyField_Compl.
 Require Export LegacyField_Theory.
 Require Export LegacyField_Tactic.
+Declare ML Module "field_plugin".
 
 (* Command declarations are moved to the ML side *)

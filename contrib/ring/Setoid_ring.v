@@ -11,3 +11,4 @@
 Require Export Setoid_ring_theory.
 Require Export Quote.
 Require Export Setoid_ring_normalize.
+Declare ML Module "ring_plugin".

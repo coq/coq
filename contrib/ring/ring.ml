@@ -752,7 +752,7 @@ let constants_to_unfold =
       "Coq.ring.Ring_normalize.interp_vl";
       "Coq.ring.Ring_abstract.interp_acs";
       "Coq.ring.Ring_abstract.interp_sacs";
-      "Coq.ring.Quote.varmap_find";
+      "Coq.quote.Quote.varmap_find";
       (* anciennement des Local devenus Definition *)
       "Coq.ring.Ring_normalize.ics_aux";
       "Coq.ring.Ring_normalize.ivl_aux";

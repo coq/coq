@@ -14,6 +14,8 @@ Require Export Bintree.
 Require Import Bool.
 Unset Boxed Definitions.
 
+Declare ML Module "rtauto_plugin".
+
 Ltac caseq t := generalize (refl_equal t); pattern t at -1; case t.
 Ltac clean:=try (simpl;congruence).
 

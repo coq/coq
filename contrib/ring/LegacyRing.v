@@ -13,6 +13,7 @@ Require Export LegacyRing_theory.
 Require Export Quote.
 Require Export Ring_normalize.
 Require Export Ring_abstract.
+Declare ML Module "ring_plugin".
 
 (* As an example, we provide an instantation for bool. *)
 (* Other instatiations are given in ArithRing and ZArithRing in the
