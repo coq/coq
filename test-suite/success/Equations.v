@@ -94,7 +94,7 @@ below_nat P (S n) step := let rest := below_nat P n step in
   (step n rest, rest).
 
 Class BelowPack (A : Type) :=
-  Below : Type ; below : Below.
+  { Below : Type ; below : Below }.
 
 Instance nat_BelowPack : BelowPack nat :=
   Below := Π P n step, Below_nat P n ;
@@ -126,7 +126,7 @@ Definition rec_vector (P : Π A n, vector A n -> Type) A n v
   step A n v (below_vector P A n v step).
 
 Class Recursor (A : Type) (BP : BelowPack A) := 
-  rec_type : Π x : A, Type ; rec : Π x : A, rec_type x.
+  { rec_type : Π x : A, Type ; rec : Π x : A, rec_type x }.
 
 Instance nat_Recursor : Recursor nat nat_BelowPack :=
   rec_type := λ n, Π P step, P n ;
