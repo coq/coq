@@ -366,6 +366,15 @@ let print_one_decl struc mp decl =
 
 (*s Extraction of a ml struct to a file. *)
 
+let formatter dry file =
+  if dry then Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ())
+  else match file with
+    | None -> !Pp_control.std_ft
+    | Some cout ->
+	let ft = Pp_control.with_output_to cout in
+	Option.iter (Format.pp_set_margin ft) (Pp_control.get_margin ());
+	ft
+
 let print_structure_to_file (fn,si,mo) dry struc =
   let d = descr () in
   reset_renaming_tables AllButExternal;
@@ -377,17 +386,14 @@ let print_structure_to_file (fn,si,mo) dry struc =
       if lang () <> Haskell then false 
       else struct_ast_search (function MLmagic _ -> true | _ -> false) struc }
   in
-  let devnull = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
   (* First, a dry run, for computing objects to rename or duplicate *)
   set_phase Pre;
+  let devnull = formatter true None in
   msg_with devnull (d.pp_struct struc);
   let opened = opened_libraries () in
   (* Print the implementation *)
   let cout = if dry then None else Option.map open_out fn in
-  let ft = if dry then devnull else
-    match cout with
-      | None -> !Pp_control.std_ft
-      | Some cout -> Pp_control.with_output_to cout in
+  let ft = formatter dry cout in
   begin try
     (* The real printing of the implementation *)
     set_phase Impl;
@@ -402,7 +408,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
   Option.iter
     (fun si ->
        let cout = open_out si in
-       let ft = Pp_control.with_output_to cout in
+       let ft = formatter false (Some cout) in
        begin try
 	 set_phase Intf;
 	 msg_with ft (d.sig_preamble mo opened unsafe_needs);
