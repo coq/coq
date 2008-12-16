@@ -543,7 +543,7 @@ LOGICVO:=$(addprefix theories/Logic/, \
  EqdepFacts.vo            ProofIrrelevanceFacts.vo ClassicalEpsilon.vo 	\
  ClassicalUniqueChoice.vo DecidableType.vo         DecidableTypeEx.vo 	\
  Epsilon.vo               ConstructiveEpsilon.vo   Description.vo 	\
- IndefiniteDescription.vo SetIsType.vo )
+ IndefiniteDescription.vo SetIsType.vo             FunctionalExtensionality.vo )
 
 ARITHVO:=$(addprefix theories/Arith/, \
  Arith.vo	Gt.vo          	Between.vo	Le.vo         	\
@@ -740,8 +740,7 @@ CLASSESVO:=$(addprefix theories/Classes/, \
 
 PROGRAMVO:=$(addprefix theories/Program/, \
  Tactics.vo 	Equality.vo 	Subset.vo	Utils.vo 	\
- Wf.vo 		Basics.vo	FunctionalExtensionality.vo 	\
- Combinators.vo	Syntax.vo 	Program.vo )
+ Wf.vo 		Basics.vo	Combinators.vo	Syntax.vo 	Program.vo )
 
 THEORIESVO:=\
   $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) \

@@ -5,15 +5,16 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+(* $Id$ *)
 
-(* Proofs about standard combinators, exports functional extensionality.
- *
- * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
- *              91405 Orsay, France *)
+(** Proofs about standard combinators, exports functional extensionality.
+
+   Author: Matthieu Sozeau
+   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
+   91405 Orsay, France *)
 
 Require Import Coq.Program.Basics.
-Require Export Coq.Program.FunctionalExtensionality.
+Require Export FunctionalExtensionality.
 
 Open Scope program_scope.
 
@@ -40,7 +41,8 @@ Proof.
   reflexivity.
 Qed.
 
-Hint Rewrite @compose_id_left @compose_id_right @compose_assoc : core.
+Hint Rewrite @compose_id_left @compose_id_right : core.
+Hint Rewrite <- @compose_assoc : core.
 
 (** [flip] is involutive. *)
 

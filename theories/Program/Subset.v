@@ -5,13 +5,14 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+(* $Id$ *)
+
+(** Tactics related to subsets and proof irrelevance. *)
 
 Require Import Coq.Program.Utils.
 Require Import Coq.Program.Equality.
 
 Open Local Scope program_scope.
-
-(** Tactics related to subsets and proof irrelevance. *)
 
 (** The following tactics implement a poor-man's solution for proof-irrelevance: it tries to 
    factorize every proof of the same proposition in a goal so that equality of such proofs becomes trivial. *)

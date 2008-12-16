@@ -107,8 +107,6 @@ Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B)) : Eq
 
 (** Objects of function spaces with countable domains like bool have decidable equality. *)
 
-Require Import Coq.Program.FunctionalExtensionality.
-
 Program Instance bool_function_eqdec `(! EqDec (eq_setoid A)) : EqDec (eq_setoid (bool -> A)) :=
   equiv_dec f g := 
     if f true == g true then

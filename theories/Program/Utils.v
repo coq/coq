@@ -8,6 +8,8 @@
 
 (*i $Id$ i*)
 
+(** Various syntaxic shortands that are useful with [Program]. *)
+
 Require Export Coq.Program.Tactics.
 
 Set Implicit Arguments.

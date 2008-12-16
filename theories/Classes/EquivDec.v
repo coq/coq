@@ -115,9 +115,8 @@ Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
 
   Solve Obligations using unfold complement, equiv ; program_simpl.
 
-(** Objects of function spaces with countable domains like bool have decidable equality. *)
-
-Require Import Coq.Program.FunctionalExtensionality.
+(** Objects of function spaces with countable domains like bool have decidable equality. 
+   Proving the reflection requires functional extensionality though. *)
 
 Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
   equiv_dec f g := 
