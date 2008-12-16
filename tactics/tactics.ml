@@ -3149,7 +3149,14 @@ let admit_as_an_axiom gl =
               List.rev (Array.to_list (instance_from_named_context sign))))
     gl
 
-let conv x y gl =
-  try let evd = Evarconv.the_conv_x_leq (pf_env gl) x y (Evd.create_evar_defs (project gl)) in
-	tclEVARS (Evd.evars_of evd) gl
-  with _ -> tclFAIL 0 (str"Not convertible") gl
+let unify ?(state=full_transparent_state) x y gl =
+  try 
+    let flags = 
+      {default_unify_flags with 
+	modulo_delta = state;
+	modulo_conv_on_closed_terms = Some state}
+    in
+    let evd = w_unify false (pf_env gl) Reduction.CONV 
+      ~flags x y (Evd.create_evar_defs (project gl))
+    in tclEVARS (Evd.evars_of evd) gl
+  with _ -> tclFAIL 0 (str"Not unifiable") gl

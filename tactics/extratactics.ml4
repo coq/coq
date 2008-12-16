@@ -499,10 +499,6 @@ TACTIC EXTEND dependent_pattern
 | ["dependent_pattern" constr(c) ] -> [ dependent_pattern c ]
 END
 
-TACTIC EXTEND conv
-| ["conv" constr(x) constr(y) ] -> [ conv x y ]
-END
-
 TACTIC EXTEND resolve_classes
 | ["resolve_classes" ] -> [ resolve_classes ]
 END

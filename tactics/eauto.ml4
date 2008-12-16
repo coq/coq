@@ -458,3 +458,9 @@ TACTIC EXTEND autosimpl
 | [ "autosimpl" hintbases(db) ] ->
     [ autosimpl (match db with None -> ["core"] | Some x -> "core"::x) None ]
 END
+
+TACTIC EXTEND unify
+| ["unify" constr(x) constr(y) ] -> [ unify x y ]
+| ["unify" constr(x) constr(y) "with" preident(base)  ] -> [ 
+    unify ~state:(Hint_db.transparent_state (searchtable_map base)) x y ]
+END

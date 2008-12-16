@@ -33,7 +33,7 @@ Class Unconvertible (A : Type) (a b : A).
 
 Ltac unconvertible :=
   match goal with
-    | |- @Unconvertible _ ?x ?y => conv x y ; fail 1 "Convertible"
+    | |- @Unconvertible _ ?x ?y => unify x y with typeclass_instances ; fail 1 "Convertible"
     | |- _ => eapply Build_Unconvertible 
   end.
 
