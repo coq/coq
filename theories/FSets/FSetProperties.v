@@ -24,13 +24,11 @@ Unset Strict Implicit.
 Hint Unfold transpose compat_op.
 Hint Extern 1 (Setoid_Theory _ _) => constructor; congruence.
 
-(** First, a functor for Weak Sets. Since the signature [WS] includes
-    an EqualityType and not a stronger DecidableType, this functor
-    should take two arguments in order to compensate this. *)
+(** First, a functor for Weak Sets in functorial version. *)
 
-Module WProperties (Import E : DecidableType)(M : WSfun E).
-  Module Import Dec := WDecide E M.
-  Module Import FM := Dec.F (* FSetFacts.WFacts E M *).
+Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
+  Module Import Dec := WDecide_fun E M.
+  Module Import FM := Dec.F (* FSetFacts.WFacts_fun E M *).
   Import M.
 
   Lemma In_dec : forall x s, {In x s} + {~ In x s}.
@@ -773,18 +771,18 @@ Module WProperties (Import E : DecidableType)(M : WSfun E).
 
   Hint Resolve subset_cardinal union_cardinal add_cardinal_1 add_cardinal_2.
 
-End WProperties.
+End WProperties_fun.
+
+(** Now comes variants for self-contained weak sets and for full sets.
+    For these variants, only one argument is necessary. Thanks to
+    the subtyping [WS<=S], the [Properties] functor which is meant to be
+    used on modules [(M:S)] can simply be an alias of [WProperties]. *)
+
+Module WProperties (M:WS) := WProperties_fun M.E M.
+Module Properties := WProperties.
 
 
-(** A clone of [WProperties] working on full sets. *)
-
-Module Properties (M:S).
-  Module D := OT_as_DT M.E.
-  Include WProperties D M.
-End Properties.
-
-
-(** Now comes some properties specific to the element ordering, 
+(** Now comes some properties specific to the element ordering,
     invalid for Weak Sets. *)
 
 Module OrdProperties (M:S).

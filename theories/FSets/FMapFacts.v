@@ -22,7 +22,7 @@ Unset Strict Implicit.
 
 (** * Facts about weak maps *)
 
-Module WFacts (E:DecidableType)(Import M:WSfun E).
+Module WFacts_fun (E:DecidableType)(Import M:WSfun E).
 
 Notation eq_dec := E.eq_dec.
 Definition eqb x y := if eq_dec x y then true else false.
@@ -741,22 +741,20 @@ Qed.
 (* old name: *)
 Notation not_find_mapsto_iff := not_find_in_iff.
 
-End WFacts.
+End WFacts_fun.
 
-(** * Same facts for full maps *)
+(** * Same facts for self-contained weak sets and for full maps *)
 
-Module Facts (M:S). 
- Module D := OT_as_DT M.E.
- Include WFacts D M.
-End Facts.
+Module WFacts (M:S) := WFacts_fun M.E M.
+Module Facts := WFacts.
 
 (** * Additional Properties for weak maps 
  
     Results about [fold], [elements], induction principles...
 *)
 
-Module WProperties (E:DecidableType)(M:WSfun E).
- Module Import F:=WFacts E M. 
+Module WProperties_fun (E:DecidableType)(M:WSfun E).
+ Module Import F:=WFacts_fun E M. 
  Import M.
 
  Section Elt. 
@@ -1107,14 +1105,12 @@ Module WProperties (E:DecidableType)(M:WSfun E).
  Add Parametric Morphism elt : (@cardinal elt) with signature Equal ==> @Logic.eq _ as cardinal_m.
  Proof. intros; apply Equal_cardinal; auto. Qed.
 
-End WProperties.
+End WProperties_fun.
 
-(** * Same Properties for full maps *)
+(** * Same Properties for self-contained weak maps and for full maps *)
 
-Module Properties (M:S). 
- Module D := OT_as_DT M.E.
- Include WProperties D M.
-End Properties.
+Module WProperties (M:WS) := WProperties_fun M.E M.
+Module Properties := WProperties.
 
 (** * Properties specific to maps with ordered keys *)
 
@@ -1273,7 +1269,7 @@ Module OrdProperties (M:S).
   rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
   rewrite add_mapsto_iff; unfold O.eqke; simpl.
   intuition.
-  destruct (ME.eq_dec x t0); auto.
+  destruct (E.eq_dec x t0); auto.
   elimtype False.
   assert (In t0 m).
    exists e0; auto.
@@ -1303,7 +1299,7 @@ Module OrdProperties (M:S).
   rewrite find_mapsto_iff; rewrite (H0 t0); rewrite <- find_mapsto_iff.
   rewrite add_mapsto_iff; unfold O.eqke; simpl.
   intuition.
-  destruct (ME.eq_dec x t0); auto.
+  destruct (E.eq_dec x t0); auto.
   elimtype False.
   assert (In t0 m).
    exists e0; auto.
@@ -1359,7 +1355,7 @@ Module OrdProperties (M:S).
   inversion_clear H1; [ | inversion_clear H2; eauto ].
   red in H3; simpl in H3; destruct H3.
   destruct p as (p1,p2).
-  destruct (ME.eq_dec p1 x).
+  destruct (E.eq_dec p1 x).
   apply ME.lt_eq with p1; auto.
    inversion_clear H2.
    inversion_clear H5.

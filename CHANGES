@@ -116,6 +116,11 @@ Libraries (DOC TO CHECK)
     thanks to new features of Coq modules (in particular Include), see
     FSetInterface. Same for maps. Hints in these interfaces have been
     reworked (they are now placed in a "set" database). 
+  * To allow full subtyping between weak and ordered sets, a field
+    "eq_dec" has been added to OrderedType. The old version of OrderedType
+    is now called MiniOrderedType and functor MOT_to_OT allow to 
+    convert to the new version. The interfaces and implementations
+    of sets now contain also such a "eq_dec" field.
   * FSetDecide, contributed by Aaron Bohannon, contains a decision
     procedure allowing to solve basic set-related goals (for instance, 
     is a point in a particular set ?). See FSetProperties for examples.

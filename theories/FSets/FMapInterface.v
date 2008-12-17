@@ -55,11 +55,7 @@ Definition Cmp (elt:Type)(cmp:elt->elt->bool) e1 e2 := cmp e1 e2 = true.
     No requirements for an ordering on keys nor elements, only decidability
     of equality on keys. First, a functorial signature: *)
 
-Module Type WSfun (E : EqualityType).
-
-  (** The module E of base objects is meant to be a [DecidableType]
-     (and used to be so). But requiring only an [EqualityType] here
-     allows subtyping between weak and ordered maps. *)
+Module Type WSfun (E : DecidableType).
 
   Definition key := E.t.
 
@@ -261,7 +257,7 @@ End WSfun.
     Similar to [WSfun] but expressed in a self-contained way. *)
 
 Module Type WS. 
-  Declare Module E : EqualityType.
+  Declare Module E : DecidableType.
   Include Type WSfun E.
 End WS.
 

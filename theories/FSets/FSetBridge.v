@@ -20,11 +20,8 @@ Set Firstorder Depth 2.
 
 (** * From non-dependent signature [S] to dependent signature [Sdep]. *)
 
-Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
-  Import M.
+Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
 
-  Module ME := OrderedTypeFacts E.
-   
   Definition empty : {s : t | Empty s}.
   Proof. 
     exists empty; auto with set.
@@ -50,7 +47,7 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
   Proof.
     intros; exists (add x s); auto.
     unfold Add in |- *; intuition.
-    elim (ME.eq_dec x y); auto.
+    elim (E.eq_dec x y); auto.
     intros; right. 
     eapply add_3; eauto.
   Qed. 
@@ -68,7 +65,7 @@ Module DepOfNodep (M: S) <: Sdep with Module E := M.E.
     intros; exists (remove x s); intuition.
     absurd (In x (remove x s)); auto with set.
     apply In_1 with y; auto. 
-    elim (ME.eq_dec x y); intros; auto.
+    elim (E.eq_dec x y); intros; auto.
     absurd (In x (remove x s)); auto with set.
     apply In_1 with y; auto. 
     eauto with set.
@@ -395,6 +392,8 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
     intros s x; unfold mem in |- *; case (M.mem x s); auto.
     intros; discriminate H.
   Qed.
+
+  Definition eq_dec := equal.
 
   Definition equal (s s' : t) : bool :=
     if equal s s' then true else false.

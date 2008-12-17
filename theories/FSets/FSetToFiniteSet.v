@@ -20,7 +20,7 @@ Require Import FSetInterface FSetProperties OrderedTypeEx DecidableTypeEx.
     to the good old [Ensembles] and [Finite_sets] theory. *)
 
 Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
- Module MP:= WProperties U M.
+ Module MP:= WProperties_fun U M.
  Import M MP FM Ensembles Finite_sets.
 
  Definition mkEns : M.t -> Ensemble M.elt := 
@@ -155,9 +155,7 @@ Module WS_to_Finite_set (U:UsualDecidableType)(M: WSfun U).
 End WS_to_Finite_set.
 
 
-Module S_to_Finite_set (U:UsualOrderedType)(M: Sfun U).
-  Module D := OT_as_DT U.
-  Include WS_to_Finite_set D M.
-End S_to_Finite_set.
+Module S_to_Finite_set (U:UsualOrderedType)(M: Sfun U) :=
+  WS_to_Finite_set U M.
 
 

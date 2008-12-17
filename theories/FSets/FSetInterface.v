@@ -44,11 +44,7 @@ Unset Strict Implicit.
     Weak sets are sets without ordering on base elements, only 
     a decidable equality. *)
 
-Module Type WSfun (E : EqualityType).
-
-  (** The module E of base objects is meant to be a [DecidableType]
-     (and used to be so). But requiring only an [EqualityType] here
-     allows subtyping between weak and ordered sets *)
+Module Type WSfun (E : DecidableType).
 
   Definition elt := E.t.
 
@@ -95,12 +91,8 @@ Module Type WSfun (E : EqualityType).
   (** Set difference. *)
 
   Definition eq : t -> t -> Prop := Equal.
-  (** In order to have the subtyping WS < S between weak and ordered 
-   sets, we do not require here an [eq_dec]. This interface is hence 
-   not compatible with [DecidableType], but only with [EqualityType],
-   so in general it may not possible to form weak sets of weak sets.
-   Some particular implementations may allow this nonetheless, in 
-   particular [FSetWeakList.Make]. *)
+
+  Parameter eq_dec : forall s s', { eq s s' } + { ~ eq s s' }.
 
   Parameter equal : t -> t -> bool.
   (** [equal s1 s2] tests whether the sets [s1] and [s2] are
@@ -282,7 +274,7 @@ End WSfun.
     module [E] of base elements is incorporated in the signature. *)
 
 Module Type WS.
-  Declare Module E : EqualityType.
+  Declare Module E : DecidableType.
   Include Type WSfun E.
 End WS.
 
@@ -367,17 +359,16 @@ WSfun ---> WS
  |         |
  |         |
  V         V
-Sfun  ---> S 
+Sfun  ---> S
 
-
-Module S_WS (M : S) <: SW := M.
+Module S_WS (M : S) <: WS := M.
 Module Sfun_WSfun (E:OrderedType)(M : Sfun E) <: WSfun E := M.
-Module S_Sfun (E:OrderedType)(M : S with Module E:=E) <: Sfun E := M.
-Module WS_WSfun (E:EqualityType)(M : WS with Module E:=E) <: WSfun E := M.
+Module S_Sfun (M : S) <: Sfun M.E := M.
+Module WS_WSfun (M : WS) <: WSfun M.E := M.
 >>
 *)
 
-(** * Dependent signature 
+(** * Dependent signature
 
     Signature [Sdep] presents ordered sets using dependent types *)
 
@@ -402,7 +393,7 @@ Module Type Sdep.
   Parameter lt : t -> t -> Prop.
   Parameter compare : forall s s' : t, Compare lt eq s s'.
 
-  Parameter eq_refl : forall s : t, eq s s. 
+  Parameter eq_refl : forall s : t, eq s s.
   Parameter eq_sym : forall s s' : t, eq s s' -> eq s' s.
   Parameter eq_trans : forall s s' s'' : t, eq s s' -> eq s' s'' -> eq s s''.
   Parameter lt_trans : forall s s' s'' : t, lt s s' -> lt s' s'' -> lt s s''.

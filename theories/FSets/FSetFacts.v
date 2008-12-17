@@ -21,11 +21,9 @@ Require Export FSetInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** First, a functor for Weak Sets. Since the signature [WS] includes
-    an EqualityType and not a stronger DecidableType, this functor 
-    should take two arguments in order to compensate this. *)
+(** First, a functor for Weak Sets in functorial version. *)
 
-Module WFacts (Import E : DecidableType)(Import M : WSfun E).
+Module WFacts_fun (Import E : DecidableType)(Import M : WSfun E).
 
 Notation eq_dec := E.eq_dec.
 Definition eqb x y := if eq_dec x y then true else false.
@@ -491,15 +489,14 @@ Qed.
 Add Morphism cardinal ; cardinal_m.
 *)
 
-End WFacts.
+End WFacts_fun.
 
+(** Now comes variants for self-contained weak sets and for full sets.
+    For these variants, only one argument is necessary. Thanks to
+    the subtyping [WS<=S], the [Facts] functor which is meant to be
+    used on modules [(M:S)] can simply be an alias of [WFacts]. *)
 
-(** Now comes a special version dedicated to full sets. For this 
-    one, only one argument [(M:S)] is necessary. *)
+Module WFacts (M:WS) := WFacts_fun M.E M.
+Module Facts := WFacts.
 
-Module Facts (Import M:S).
-  Module D:=OT_as_DT M.E.
-  Include WFacts D M.
-
-End Facts.
 

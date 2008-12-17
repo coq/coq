@@ -34,6 +34,7 @@ Module Type UsualOrderedType.
  Axiom lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
  Axiom lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
  Parameter compare : forall x y : t, Compare lt eq x y.
+ Parameter eq_dec : forall x y : t, { eq x y } + { ~ eq x y }.
 End UsualOrderedType.
 
 (** a [UsualOrderedType] is in particular an [OrderedType]. *)
@@ -68,6 +69,8 @@ Module Nat_as_OT <: UsualOrderedType.
     intro; constructor 3; auto.
   Defined.
 
+  Definition eq_dec := eq_nat_dec.
+
 End Nat_as_OT.
 
 
@@ -98,6 +101,8 @@ Module Z_as_OT <: UsualOrderedType.
     apply LT; unfold lt, Zlt; auto.
     apply GT; unfold lt, Zlt; rewrite <- Zcompare_Gt_Lt_antisym; auto.
   Defined.
+
+  Definition eq_dec := Z_eq_dec.
 
 End Z_as_OT.
 
@@ -138,6 +143,11 @@ Module Positive_as_OT <: UsualOrderedType.
   apply GT; unfold lt.
   replace Eq with (CompOpp Eq); auto.
   rewrite <- Pcompare_antisym; rewrite H; auto.
+  Defined.
+
+  Definition eq_dec : forall x y, { eq x y } + { ~ eq x y }.
+  Proof.
+   intros; unfold eq; decide equality.
   Defined.
 
 End Positive_as_OT.
@@ -181,6 +191,11 @@ Module N_as_OT <: UsualOrderedType.
    generalize (Nleb_Nle x y).
    unfold Nle; destruct (x ?= y)%N; simpl; try discriminate.
    destruct (Nleb x y); intuition.
+  Defined.
+
+  Definition eq_dec : forall x y, { eq x y } + { ~ eq x y }.
+  Proof.
+   intros. unfold eq. decide equality. apply Positive_as_OT.eq_dec.
   Defined.
 
 End N_as_OT.
@@ -241,6 +256,13 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  apply EQ; unfold eq; auto.
  apply GT; unfold lt; auto.
  apply GT; unfold lt; auto.
+ Defined.
+
+ Definition eq_dec : forall x y : t, {eq x y} + {~ eq x y}.
+ Proof.
+ intros; elim (compare x y); intro H; [ right | left | right ]; auto.
+ auto using lt_not_eq.
+ assert (~ eq y x); auto using lt_not_eq, eq_sym.
  Defined.
 
 End PairOrderedType.

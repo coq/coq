@@ -402,7 +402,7 @@ Proof.
  elim (Sort_Inf_NotIn H6 H7).
  destruct H as (e'', hyp); exists e''; auto.
  apply MapsTo_eq with k; auto; order.
- apply H1 with k; destruct (eq_dec x k); auto.
+ apply H1 with k; destruct (X.eq_dec x k); auto.
 
 
  destruct (X.compare x x'); try contradiction; clear y.
