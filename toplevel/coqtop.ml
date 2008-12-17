@@ -79,20 +79,6 @@ let set_include d p =
 let set_rec_include d p =
   let p = dirpath_of_string p in check_coq_overwriting p; push_rec_include(d,p)
 
-let load_initial_plugins () =
-  (** Order matters ! For instance ground_plugin needs cc_plugin *)
-  let initial_plugins =
-    [ "extraction_plugin";
-      "jprover_plugin";
-      "cc_plugin";
-      "ground_plugin";
-      "dp_plugin";
-      "recdef_plugin";
-      (*"subtac_plugin";*)
-      "xml_plugin";
-    ] in
-  if Mltop.has_dynlink then Mltop.declare_ml_modules initial_plugins
-
 let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =
   load_vernacular_list := ((make_suffix s ".v"),verb) :: !load_vernacular_list
@@ -354,7 +340,7 @@ let init is_ide =
       if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then
         Option.iter Declaremods.start_library !toplevel_name;
       init_library_roots ();
-      load_initial_plugins ();
+      Mltop.load_initial_plugins ();
       load_vernac_obj ();
       require ();
       load_rcfile();

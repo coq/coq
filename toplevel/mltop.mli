@@ -48,9 +48,6 @@ val add_rec_ml_dir : string -> unit
 val add_path : unix_path:string -> coq_root:Names.dir_path -> unit
 val add_rec_path : unix_path:string -> coq_root:Names.dir_path -> unit
 
-val add_init_with_state : (unit -> unit) -> unit
-val init_with_state : unit -> unit
-
 (* List of modules linked to the toplevel *)
 val add_known_module : string -> unit
 val module_is_known : string -> bool
@@ -67,6 +64,8 @@ val inMLModule : ml_module_object -> Libobject.obj
 val outMLModule : Libobject.obj -> ml_module_object
 
 val declare_ml_modules : string list -> unit
+val load_initial_plugins : unit -> unit
+
 val print_ml_path : unit -> unit
 
 val print_ml_modules : unit -> unit
