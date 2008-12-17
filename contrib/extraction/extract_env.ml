@@ -408,7 +408,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
   with e -> 
     Option.iter close_out cout; raise e
   end;
-  Option.iter info_file fn;
+  if not dry then Option.iter info_file fn;
   (* Now, let's print the signature *)
   Option.iter
     (fun si ->
