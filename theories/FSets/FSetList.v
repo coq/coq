@@ -1263,6 +1263,14 @@ Module Make (X: OrderedType) <: S with Module E := X.
    auto. 
   Defined.
 
+  Definition eq_dec : { eq s s' } + { ~ eq s s' }.
+  Proof.
+  change eq with Equal.
+  case_eq (equal s s'); intro H; [left | right].
+  apply equal_2; auto.
+  intro H'; rewrite equal_1 in H; auto; discriminate.
+  Qed.
+
  End Spec.
 
 End Make.

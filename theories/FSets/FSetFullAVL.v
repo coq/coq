@@ -913,6 +913,14 @@ Module IntMake (I:Int)(X: OrderedType) <: S with Module E := X.
   change (Raw.Equal s s'); auto.
  Defined.
 
+ Definition eq_dec (s s':t) : { eq s s' } + { ~ eq s s' }.
+ Proof.
+  intros (s,b,a) (s',b',a'); unfold eq; simpl.
+  case_eq (Raw.equal s s'); intro H; [left|right].
+  apply equal_2; auto.
+  intro H'; rewrite equal_1 in H; auto; discriminate.
+ Defined.
+
  (* specs *)
  Section Specs. 
  Variable s s' s'': t. 

@@ -19,8 +19,8 @@
 
 Require Import FSetProperties Zerob Sumbool Omega DecidableTypeEx.
 
-Module WEqProperties (Import E:DecidableType)(M:WSfun E). 
-Module Import MP := WProperties E M.
+Module WEqProperties_fun (Import E:DecidableType)(M:WSfun E).
+Module Import MP := WProperties_fun E M.
 Import FM Dec.F.
 Import M.
 
@@ -281,7 +281,7 @@ Qed.
 Lemma singleton_mem_2: ~E.eq x y -> mem y (singleton x)=false.
 Proof.
 intros; rewrite singleton_b.
-unfold eqb; destruct (eq_dec x y); intuition.
+unfold eqb; destruct (E.eq_dec x y); intuition.
 Qed.
 
 Lemma singleton_mem_3: mem y (singleton x)=true -> E.eq x y.
@@ -927,13 +927,12 @@ Qed.
 
 End Sum.
 
-End WEqProperties.
+End WEqProperties_fun.
 
+(** Now comes variants for self-contained weak sets and for full sets.
+    For these variants, only one argument is necessary. Thanks to
+    the subtyping [WS<=S], the [EqProperties] functor which is meant to be
+    used on modules [(M:S)] can simply be an alias of [WEqProperties]. *)
 
-(** Now comes a special version dedicated to full sets. For this
-    one, only one argument [(M:S)] is necessary. *)
-
-Module EqProperties (M:S).
-  Module D := OT_as_DT M.E.
-  Include WEqProperties D M.
-End EqProperties.
+Module WEqProperties (M:WS) := WEqProperties_fun M.E M.
+Module EqProperties := WEqProperties.

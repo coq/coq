@@ -46,24 +46,16 @@ Module Make_UDT (M:MiniDecidableType) <: UsualDecidableType.
  Definition eq_dec := M.eq_dec.
 End Make_UDT.
 
-(** An OrderedType can be seen as a DecidableType *)
+(** An OrderedType can now directly be seen as a DecidableType *)
 
-Module OT_as_DT (O:OrderedType) <: DecidableType. 
- Module OF := OrderedTypeFacts O.
- Definition t := O.t.
- Definition eq := O.eq. 
- Definition eq_refl := O.eq_refl. 
- Definition eq_sym := O.eq_sym. 
- Definition eq_trans := O.eq_trans. 
- Definition eq_dec := OF.eq_dec. 
-End OT_as_DT.
+Module OT_as_DT (O:OrderedType) <: DecidableType := O.
 
 (** (Usual) Decidable Type for [nat], [positive], [N], [Z] *)
 
-Module Nat_as_DT <: UsualDecidableType := OT_as_DT (Nat_as_OT).
-Module Positive_as_DT <: UsualDecidableType := OT_as_DT (Positive_as_OT).
-Module N_as_DT <: UsualDecidableType := OT_as_DT (N_as_OT).
-Module Z_as_DT <: UsualDecidableType := OT_as_DT (Z_as_OT).
+Module Nat_as_DT <: UsualDecidableType := Nat_as_OT.
+Module Positive_as_DT <: UsualDecidableType := Positive_as_OT.
+Module N_as_DT <: UsualDecidableType := N_as_OT.
+Module Z_as_DT <: UsualDecidableType := Z_as_OT.
 
 (** From two decidable types, we can build a new DecidableType 
    over their cartesian product. *)
@@ -99,7 +91,7 @@ End PairDecidableType.
 
 (** Similarly for pairs of UsualDecidableType *)
 
-Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: DecidableType.
+Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: UsualDecidableType.
  Definition t := prod D1.t D2.t.
  Definition eq := @eq t.
  Definition eq_refl := @refl_equal t.

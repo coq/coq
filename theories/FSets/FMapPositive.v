@@ -111,17 +111,17 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
   apply EQ; red; auto.
   Qed.
 
-End PositiveOrderedTypeBits.
-
-(** Other positive stuff *)
-
-Lemma peq_dec (x y: positive): {x = y} + {x <> y}.
-Proof.
+  Lemma eq_dec (x y: positive): {x = y} + {x <> y}.
+  Proof.
   intros. case_eq ((x ?= y) Eq); intros.
   left. apply Pcompare_Eq_eq; auto.
   right. red. intro. subst y. rewrite (Pcompare_refl x) in H. discriminate.
   right. red. intro. subst y. rewrite (Pcompare_refl x) in H. discriminate.
-Qed.
+  Qed.
+
+End PositiveOrderedTypeBits.
+
+(** Other positive stuff *)
  
 Fixpoint append (i j : positive) {struct i} : positive :=
     match i with
@@ -717,7 +717,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Lemma remove_3 : MapsTo y e (remove x m) -> MapsTo y e m.
   Proof. 
   unfold MapsTo.
-  destruct (peq_dec x y).
+  destruct (E.eq_dec x y).
   subst.
   rewrite grs; intros; discriminate.
   rewrite gro; auto.
@@ -1166,10 +1166,10 @@ Module PositiveMapAdditionalFacts.
   (* Derivable from the Map interface *)
   Theorem gsspec:
     forall (A:Type)(i j: positive) (x: A) (m: t A),
-    find i (add j x m) = if peq_dec i j then Some x else find i m.
+    find i (add j x m) = if E.eq_dec i j then Some x else find i m.
   Proof.
     intros.
-    destruct (peq_dec i j); [ rewrite e; apply gss | apply gso; auto ].
+    destruct (E.eq_dec i j); [ rewrite e; apply gss | apply gso; auto ].
   Qed.
 
    (* Not derivable from the Map interface *)
