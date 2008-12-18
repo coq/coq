@@ -27,10 +27,11 @@ let choose_dest_or_ind scheme_info =
 
 
 let functional_induction with_clean c princl pat =
-  let f,args = decompose_app c in 
-  fun g ->      
-    let princ,bindings, princ_type = 
-      match princl with 
+  Dumpglob.pause ();
+  let res = let f,args = decompose_app c in 
+	      fun g ->      
+		let princ,bindings, princ_type = 
+		  match princl with 
 	| None -> (* No principle is given let's find the good one *)
 	    begin
 	      match kind_of_term f with
@@ -124,6 +125,9 @@ let functional_induction with_clean c princl pat =
          None)
       subst_and_reduce
       g
+  in
+    Dumpglob.continue ();
+    res
       
       
 
@@ -700,7 +704,8 @@ let make_graph (f_ref:global_reference) =
 	| _ -> raise (UserError ("", str "Not a function reference") )
 
   in
-  match c_body.const_body with
+   Dumpglob.pause ();
+  (match c_body.const_body with
     | None -> error "Cannot build a graph over an axiom !"
     | Some b ->
 	let env = Global.env () in
@@ -752,8 +757,9 @@ let make_graph (f_ref:global_reference) =
 	let mp,dp,_ = repr_con c in 
 	List.iter 
 	  (fun ((_,id),_,_,_,_) -> add_Function false (make_con mp dp (label_of_id id))) 
-	  expr_list
-
+	  expr_list);
+  Dumpglob.continue ()
+  
 
 (* let make_graph _ = assert false	 *)
 	  

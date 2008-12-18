@@ -651,6 +651,7 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
     const::other_result
 
 let build_scheme fas = 
+  Dumpglob.pause ();
   let bodies_types = 
     make_scheme 
       (List.map 
@@ -678,8 +679,9 @@ let build_scheme fas =
 	 (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) princ_id
     )
     fas
-    bodies_types
-  
+    bodies_types;
+    Dumpglob.continue ()
+    
 
 
 let build_case_scheme fa = 
