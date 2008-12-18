@@ -990,32 +990,33 @@ devel: $(DEBUGPRINTERS)
 %.dep.ps: %.dot
 	$(DOT) $(DOTOPTS) -o $@ $<
 
-kernel/kernel.dot: $(KERNELMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(KERNELMLI)
+kernel/kernel.dot: $(KERNEL)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(KERNEL:.cmo=.ml)) 
 
-interp/interp.dot: $(INTERPMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(INTERPMLI)
+interp/interp.dot: $(INTERP)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(INTERP:.cmo=.ml)) 
 
-pretyping/pretyping.dot: $(PRETYPINGMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(PRETYPINGMLI)
+pretyping/pretyping.dot: $(PRETYPING)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(PRETYPING:.cmo=.ml)) 
 
-library/library.dot: $(LIBRARYMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(LIBRARYMLI)
+library/library.dot: $(LIBRARY)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(LIBRARY:.cmo=.ml))
 
-parsing/parsing.dot: $(PARSINGMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(PARSINGMLI)
+parsing/parsing.dot: $(PARSING) $(HIGHPARSING)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(PARSING:.cmo=.ml)) $(wildcard $(HIGHPARSING:.cmo=.ml)) 
 
-tactics/tactics.dot: $(TACTICSMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(TACTICSMLI)
+tactics/tactics.dot: $(TACTICS) $(HIGHTACTICS)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(TACTICS:.cmo=.ml)) $(wildcard $(HIGHTACTICS:.cmo=.ml))
 
-proofs/proofs.dot: $(PROOFSMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(PROOFSMLI)
+proofs/proofs.dot: $(PROOFS)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(PROOFS:.cmo=.ml))
 
-toplevel/toplevel.dot: $(TOPLEVELMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(TOPLEVELMLI)
+toplevel/toplevel.dot: $(TOPLEVEL)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(TOPLEVEL:.cmo=.ml))
 
-coq.dot: $(LIBREP:.cmo=.cmi) $(COQMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(LIBREP:.cmo=.mli)) $(COQMLI)
+COQCMO:=$(LIBREP) $(KERNEL) $(INTERP) $(PRETYPING) $(LIBRARY) $(PARSING) $(HIGHPARSING) $(TACTICS) $(HIGHTACTICS) $(PROOFS) $(TOPLEVEL)
+coq.dot: $(COQCMO)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(COQCMO:.cmo=.ml))
 
 
 # For emacs: 
