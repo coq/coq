@@ -311,6 +311,9 @@ Ltac false_order := elimtype False; order.
   Ltac elim_comp_gt x y :=
     elim (elim_compare_gt (x:=x) (y:=y));
      [ intros _1 _2; rewrite _2; clear _1 _2 | auto ].
+
+  (** For compatibility reasons *)
+  Definition eq_dec := eq_dec.
  
   Lemma lt_dec : forall x y : t, {lt x y} + {~ lt x y}.
   Proof.
