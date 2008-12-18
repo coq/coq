@@ -658,8 +658,8 @@ let rec get_modtype_substobjs env = function
 		 (* application outside the kernel, only for substitutive
                     objects (that are all non-logical objects) *)
 		((join 
-		    (join subst (map_mbid mbid mp (Some resolve)))
-		       sub3)
+		    (join subst sub3)
+		    (map_mbid mbid mp (Some resolve)))
 		       , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
@@ -965,8 +965,8 @@ let rec get_module_substobjs env = function
 		 (* application outside the kernel, only for substitutive
                     objects (that are all non-logical objects) *)
 		((join 
-		    (join subst (map_mbid mbid mp (Some resolve)))
-		       sub3)
+		    (join subst sub3)
+		       (map_mbid mbid mp (Some resolve)))
 		       , mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MSEident _  -> error "Application of a non-functor"
