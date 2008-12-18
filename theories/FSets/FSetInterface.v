@@ -58,8 +58,8 @@ Module Type WSfun (E : DecidableType).
   Definition For_all (P : elt -> Prop) s := forall x, In x s -> P x.
   Definition Exists (P : elt -> Prop) s := exists x, In x s /\ P x.
   
-  Notation "s [=] t" := (Equal s t) (at level 70, no associativity).
-  Notation "s [<=] t" := (Subset s t) (at level 70, no associativity).
+  Notation "s  [=]  t" := (Equal s t) (at level 70, no associativity).
+  Notation "s  [<=]  t" := (Subset s t) (at level 70, no associativity).
 
   Parameter empty : t.
   (** The empty set. *)

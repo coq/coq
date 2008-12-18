@@ -124,6 +124,10 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Lemma singleton_equal_add : singleton x [=] add x empty.
   Proof. fsetdec. Qed.
 
+  Lemma remove_singleton_empty :
+   In x s -> remove x s [=] empty -> singleton x [=] s.
+  Proof. fsetdec. Qed.
+
   Lemma union_sym : union s s' [=] union s' s.
   Proof. fsetdec. Qed.
 
@@ -304,21 +308,175 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   rewrite <-elements_Empty; auto with set.
   Qed.
 
-  (** * Alternative (weaker) specifications for [fold] *)
+  (** * Conversions between lists and sets *)
 
-  Section Old_Spec_Now_Properties. 
+  Definition of_list (l : list elt) := List.fold_right add empty l.
+
+  Definition to_list := elements.
+
+  Lemma of_list_1 : forall l x, In x (of_list l) <-> InA E.eq x l.
+  Proof.
+  induction l; simpl; intro x.
+  rewrite empty_iff, InA_nil. intuition.
+  rewrite add_iff, InA_cons, IHl. intuition.
+  Qed.
+
+  Lemma of_list_2 : forall l, equivlistA E.eq (to_list (of_list l)) l.
+  Proof.
+  unfold to_list; red; intros.
+  rewrite <- elements_iff; apply of_list_1.
+  Qed.
+
+  Lemma of_list_3 : forall s, of_list (to_list s) [=] s.
+  Proof.
+  unfold to_list; red; intros.
+  rewrite of_list_1; symmetry; apply elements_iff.
+  Qed.
+
+  (** * Fold *)
+
+  Section Fold.
 
   Notation NoDup := (NoDupA E.eq).
+  Notation InA := (InA E.eq).
+
+  (** ** Induction principles for fold (contributed by S. Lescuyer) *)
+
+  (** In the following lemma, the step hypothesis is deliberately restricted
+      to the precise set s we are considering. *)
+
+  Theorem fold_rec :
+    forall (A:Type)(P : t -> A -> Type)(f : elt -> A -> A)(i:A)(s:t),
+     (forall s', Empty s' -> P s' i) ->
+     (forall x a s' s'', In x s -> ~In x s' -> Add x s' s'' ->
+       P s' a -> P s'' (f x a)) ->
+     P s (fold f s i).
+  Proof.
+  intros A P f i s Pempty Pstep.
+  rewrite fold_1, <- fold_left_rev_right.
+  set (l:=rev (elements s)).
+  assert (Pstep' : forall x a s' s'', InA x l -> ~In x s' -> Add x s' s'' ->
+           P s' a -> P s'' (f x a)).
+   intros; eapply Pstep; eauto.
+   rewrite elements_iff, <- InA_rev; auto.
+  assert (Hdup : NoDup l) by
+    (unfold l; eauto using elements_3w, NoDupA_rev).
+  assert (Hsame : forall x, In x s <-> InA x l) by
+    (unfold l; intros; rewrite elements_iff, InA_rev; intuition).
+  clear Pstep; clearbody l; revert s Hsame; induction l.
+  (* empty *)
+  intros s Hsame; simpl; intros; subst.
+  apply Pempty. intro x. rewrite Hsame, InA_nil; intuition.
+  (* step *)
+  intros s Hsame; simpl; intros.
+  apply Pstep' with (of_list l); auto.
+   inversion_clear Hdup; rewrite of_list_1; auto.
+   red. intros. rewrite Hsame, of_list_1, InA_cons; intuition.
+  apply IHl.
+   intros; eapply Pstep'; eauto.
+   inversion_clear Hdup; auto.
+   exact (of_list_1 l).
+  Qed.
+
+  (** Same, with [empty] and [add] instead of [Empty] and [Add]. In this
+      case, [P] must be compatible with equality of sets *)
+
+  Theorem fold_rec_bis :
+    forall (A:Type)(P : t -> A -> Type)(f : elt -> A -> A)(i:A)(s:t),
+     (forall s s' a, s[=]s' -> P s a -> P s' a) ->
+     (P empty i) ->
+     (forall x a s', In x s -> ~In x s' -> P s' a -> P (add x s') (f x a)) ->
+     P s (fold f s i).
+  Proof.
+  intros A P f i s Pmorphism Pempty Pstep.
+  apply fold_rec; intros.
+  apply Pmorphism with empty; auto with set.
+  rewrite Add_Equal in H1; auto with set.
+  apply Pmorphism with (add x s'); auto with set.
+  Qed.
+
+  Lemma fold_rec_nodep :
+    forall (A:Type)(P : A -> Type)(f : elt -> A -> A)(i:A)(s:t),
+     P i -> (forall x a, In x s -> P a -> P (f x a)) ->
+     P (fold f s i).
+  Proof.
+  intros; apply fold_rec_bis with (P:=fun _ => P); auto.
+  Qed.
+
+  (** [fold_rec_weak] is a weaker principle than [fold_rec_bis] :
+      the step hypothesis must here be applicable to any [x].
+      At the same time, it looks more like an induction principle,
+      and hence can be easier to use. *)
+
+  Lemma fold_rec_weak :
+    forall (A:Type)(P : t -> A -> Type)(f : elt -> A -> A)(i:A),
+    (forall s s' a, s[=]s' -> P s a -> P s' a) ->
+    P empty i ->
+    (forall x a s, ~In x s -> P s a -> P (add x s) (f x a)) ->
+    forall s, P s (fold f s i).
+  Proof.
+  intros; apply fold_rec_bis; auto.
+  Qed.
+
+  Lemma fold_rel :
+    forall (A B:Type)(R : A -> B -> Type)
+     (f : elt -> A -> A)(g : elt -> B -> B)(i : A)(j : B)(s : t),
+     R i j ->
+     (forall x a b, In x s -> R a b -> R (f x a) (g x b)) ->
+     R (fold f s i) (fold g s j).
+  Proof.
+  intros A B R f g i j s Rempty Rstep.
+  do 2 rewrite fold_1, <- fold_left_rev_right.
+  set (l:=rev (elements s)).
+  assert (Rstep' : forall x a b, InA x l -> R a b -> R (f x a) (g x b)) by
+    (intros; apply Rstep; auto; rewrite elements_iff, <- InA_rev; auto).
+  clearbody l; clear Rstep s.
+  induction l; simpl; auto.
+  Qed.
+
+  (** From the induction principle on [fold], we can deduce some general
+      induction principles on sets. *)
+
+  Lemma set_induction :
+   forall P : t -> Type,
+   (forall s, Empty s -> P s) ->
+   (forall s s', P s -> forall x, ~In x s -> Add x s s' -> P s') ->
+   forall s, P s.
+  Proof.
+  intros. apply (@fold_rec _ (fun s _ => P s) (fun _ _ => tt) tt s); eauto.
+  Qed.
+
+  Lemma set_induction_bis :
+   forall P : t -> Type,
+   (forall s s', s [=] s' -> P s -> P s') ->
+   P empty ->
+   (forall x s, ~In x s -> P s -> P (add x s)) ->
+   forall s, P s.
+  Proof.
+  intros.
+  apply (@fold_rec_bis _ (fun s _ => P s) (fun _ _ => tt) tt s); eauto.
+  Qed.
+
+  (** [fold] can be used to reconstruct the same initial set. *)
+
+  Lemma fold_identity : forall s, fold add s empty [=] s.
+  Proof.
+  intros.
+  apply fold_rec with (P:=fun s acc => acc[=]s); auto with set.
+  intros. rewrite H2; rewrite Add_Equal in H1; auto with set.
+  Qed.
+
+  (** ** Alternative (weaker) specifications for [fold] *)
 
   (** When [FSets] was first designed, the order in which Ocaml's [Set.fold]
         takes the set elements was unspecified. This specification reflects this fact: 
   *)
 
-  Lemma fold_0 : 
+  Lemma fold_0 :
       forall s (A : Type) (i : A) (f : elt -> A -> A),
       exists l : list elt,
         NoDup l /\
-        (forall x : elt, In x s <-> InA E.eq x l) /\
+        (forall x : elt, In x s <-> InA x l) /\
         fold f s i = fold_right f i l.
   Proof.
   intros; exists (rev (elements s)); split.
@@ -377,121 +535,32 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   rewrite elements_Empty in H; rewrite H; simpl; auto.
   Qed.
 
-  (** Similar specifications for [cardinal]. *)
+  Section Fold_More.
 
-  Lemma cardinal_fold : forall s, cardinal s = fold (fun _ => S) s 0.
-  Proof.
-  intros; rewrite cardinal_1; rewrite M.fold_1.
-  symmetry; apply fold_left_length; auto.
-  Qed.
-
-  Lemma cardinal_0 :
-     forall s, exists l : list elt,
-        NoDupA E.eq l /\
-        (forall x : elt, In x s <-> InA E.eq x l) /\ 
-        cardinal s = length l.
-  Proof. 
-  intros; exists (elements s); intuition; apply cardinal_1.
-  Qed.
-
-  Lemma cardinal_1 : forall s, Empty s -> cardinal s = 0.
-  Proof.
-  intros; rewrite cardinal_fold; apply fold_1; auto.
-  Qed.
-
-  Lemma cardinal_2 :
-    forall s s' x, ~ In x s -> Add x s s' -> cardinal s' = S (cardinal s).
-  Proof.
-  intros; do 2 rewrite cardinal_fold.
-  change S with ((fun _ => S) x).
-  apply fold_2; auto.
-  Qed.
-
-  End Old_Spec_Now_Properties.
-
-  (** * Induction principle over sets *)
-
-  Lemma cardinal_Empty : forall s, Empty s <-> cardinal s = 0.
-  Proof.
-  intros.
-  rewrite elements_Empty, M.cardinal_1.
-  destruct (elements s); intuition; discriminate.
-  Qed.
-
-  Lemma cardinal_inv_1 : forall s, cardinal s = 0 -> Empty s. 
-  Proof.
-  intros; rewrite cardinal_Empty; auto. 
-  Qed.
-  Hint Resolve cardinal_inv_1.
- 
-  Lemma cardinal_inv_2 :
-   forall s n, cardinal s = S n -> { x : elt | In x s }.
-  Proof. 
-  intros; rewrite M.cardinal_1 in H.
-  generalize (elements_2 (s:=s)).
-  destruct (elements s); try discriminate. 
-  exists e; auto.
-  Qed.
-
-  Lemma cardinal_inv_2b :
-   forall s, cardinal s <> 0 -> { x : elt | In x s }.
-  Proof.
-  intro; generalize (@cardinal_inv_2 s); destruct cardinal; 
-   [intuition|eauto].
-  Qed.
-
-  Lemma Equal_cardinal : forall s s', s[=]s' -> cardinal s = cardinal s'.
-  Proof. 
-  symmetry.
-  remember (cardinal s) as n; symmetry in Heqn; revert s s' Heqn H.
-  induction n; intros.
-  apply cardinal_1; rewrite <- H; auto.
-  destruct (cardinal_inv_2 Heqn) as (x,H2).
-  revert Heqn.
-  rewrite (cardinal_2 (s:=remove x s) (s':=s) (x:=x)); auto with set.
-  rewrite (cardinal_2 (s:=remove x s') (s':=s') (x:=x)); eauto with set.
-  Qed.    
-
-  Add Morphism cardinal : cardinal_m.
-  Proof.
-  exact Equal_cardinal.
-  Qed.
-
-  Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal.
-
-  Lemma set_induction :
-   forall P : t -> Type,
-   (forall s : t, Empty s -> P s) ->
-   (forall s s' : t, P s -> forall x : elt, ~In x s -> Add x s s' -> P s') ->
-   forall s : t, P s.
-  Proof.
-  intros; remember (cardinal s) as n; revert s Heqn; induction n; intros; auto.
-  destruct (cardinal_inv_2 (sym_eq Heqn)) as (x,H0). 
-  apply X0 with (remove x s) x; auto with set.
-  apply IHn; auto.
-  assert (S n = S (cardinal (remove x s))).
-    rewrite Heqn; apply cardinal_2 with x; auto with set.
-  inversion H; auto.
-  Qed.
-
-  (** Other properties of [fold]. *)
-
-  Section Fold. 
   Variables (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
   Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f)(Ass:transpose eqA f).
 
-  Section Fold_1. 
-  Variable i i':A.
+  Lemma fold_commutes : forall i s x, 
+   eqA (fold f s (f x i)) (f x (fold f s i)).
+  Proof.
+  intros.
+  apply fold_rel with (R:=fun u v => eqA u (f x v)); intros.
+  refl_st.
+  trans_st (f x0 (f x b)).
+  Qed.
 
-  Lemma fold_empty : (fold f empty i) = i.
-  Proof. 
-  apply fold_1b; auto with set.
+  (** ** Fold is a morphism *)
+
+  Lemma fold_init : forall i i' s, eqA i i' -> 
+   eqA (fold f s i) (fold f s i').
+  Proof.
+  intros. apply fold_rel with (R:=eqA); auto.
   Qed.
 
   Lemma fold_equal : 
-   forall s s', s[=]s' -> eqA (fold f s i) (fold f s' i).
+   forall i s s', s[=]s' -> eqA (fold f s i) (fold f s' i).
   Proof. 
-  intros s; pattern s; apply set_induction; clear s; intros.
+  intros i s; pattern s; apply set_induction; clear s; intros.
   trans_st i.
   apply fold_1; auto.
   sym_st; apply fold_1; auto.
@@ -502,20 +571,27 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   unfold Add in *; intros.
   rewrite <- H2; auto.
   Qed.
+
+  (** ** Fold and other set operators *)
+
+  Lemma fold_empty : forall i, (fold f empty i) = i.
+  Proof. 
+  intros i; apply fold_1b; auto with set.
+  Qed.
    
-  Lemma fold_add : forall s x, ~In x s -> 
+  Lemma fold_add : forall i s x, ~In x s -> 
    eqA (fold f (add x s) i) (f x (fold f s i)).
   Proof. 
-  intros; apply fold_2 with (eqA := eqA); auto.
+  intros; apply fold_2 with (eqA := eqA); auto with set.
   Qed.
 
-  Lemma add_fold : forall s x, In x s -> 
+  Lemma add_fold : forall i s x, In x s -> 
    eqA (fold f (add x s) i) (fold f s i).
   Proof.
   intros; apply fold_equal; auto with set.
   Qed.
 
-  Lemma remove_fold_1: forall s x, In x s -> 
+  Lemma remove_fold_1: forall i s x, In x s -> 
    eqA (f x (fold f (remove x s) i)) (fold f s i).
   Proof.
   intros.
@@ -523,50 +599,14 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_2 with (eqA:=eqA); auto with set.
   Qed.
 
-  Lemma remove_fold_2: forall s x, ~In x s -> 
+  Lemma remove_fold_2: forall i s x, ~In x s -> 
    eqA (fold f (remove x s) i) (fold f s i).
   Proof.
   intros.
   apply fold_equal; auto with set.
   Qed.
 
-  Lemma fold_commutes : forall s x, 
-   eqA (fold f s (f x i)) (f x (fold f s i)).
-  Proof.
-  intros; pattern s; apply set_induction; clear s; intros.
-  trans_st (f x i).
-  apply fold_1; auto.
-  sym_st.
-  apply Comp; auto.
-  apply fold_1; auto.
-  trans_st (f x0 (fold f s (f x i))).
-  apply fold_2 with (eqA:=eqA); auto.
-  trans_st (f x0 (f x (fold f s i))).
-  trans_st (f x (f x0 (fold f s i))).
-  apply Comp; auto.
-  sym_st.
-  apply fold_2 with (eqA:=eqA); auto.
-  Qed.
-
-  Lemma fold_init : forall s, eqA i i' -> 
-   eqA (fold f s i) (fold f s i').
-  Proof. 
-  intros; pattern s; apply set_induction; clear s; intros.
-  trans_st i.
-  apply fold_1; auto.
-  trans_st i'.
-  sym_st; apply fold_1; auto.
-  trans_st (f x (fold f s i)).
-  apply fold_2 with (eqA:=eqA); auto.
-  trans_st (f x (fold f s i')).
-  sym_st; apply fold_2 with (eqA:=eqA); auto.
-  Qed.
-
-  End Fold_1.
-  Section Fold_2.
-  Variable i:A.
-
-  Lemma fold_union_inter : forall s s',
+  Lemma fold_union_inter : forall i s s',
    eqA (fold f (union s s') (fold f (inter s s') i))
        (fold f s (fold f s' i)).
   Proof.
@@ -603,11 +643,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   sym_st; apply fold_2 with (eqA:=eqA); auto.
   Qed.
 
-  End Fold_2.
-  Section Fold_3.
-  Variable i:A.
-
-  Lemma fold_diff_inter : forall s s', 
+  Lemma fold_diff_inter : forall i s s', 
    eqA (fold f (diff s s') (fold f (inter s s') i)) (fold f s i).
   Proof.
   intros.
@@ -620,7 +656,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_1; auto with set.
   Qed.
 
-  Lemma fold_union: forall s s', 
+  Lemma fold_union: forall i s s', 
    (forall x, ~(In x s/\In x s')) ->
    eqA (fold f (union s s') i) (fold f s (fold f s' i)).
   Proof.
@@ -632,28 +668,103 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_union_inter; auto.
   Qed.
 
-  End Fold_3.
-  End Fold.
+  End Fold_More.
 
   Lemma fold_plus :
    forall s p, fold (fun _ => S) s p = fold (fun _ => S) s 0 + p.
   Proof.
-  assert (st := gen_st nat).
-  assert (fe : compat_op E.eq (@Logic.eq _) (fun _ => S)) by (unfold compat_op; auto). 
-  assert (fp : transpose (@Logic.eq _) (fun _:elt => S)) by (unfold transpose; auto).
-  intros s p; pattern s; apply set_induction; clear s; intros.
-  rewrite (fold_1 st p (fun _ => S) H).
-  rewrite (fold_1 st 0 (fun _ => S) H); trivial.
-  assert (forall p s', Add x s s' -> fold (fun _ => S) s' p = S (fold (fun _ => S) s p)).
-   change S with ((fun _ => S) x).  
-   intros; apply fold_2; auto.
-  rewrite H2; auto.
-  rewrite (H2 0); auto.
-  rewrite H.
-  simpl; auto.
+  intros. apply fold_rel with (R:=fun u v => u = v + p); simpl; auto.
   Qed.
 
-  (** more properties of [cardinal] *)
+  End Fold.
+
+  (** * Cardinal *)
+
+  (** ** Characterization of cardinal in terms of fold *)
+
+  Lemma cardinal_fold : forall s, cardinal s = fold (fun _ => S) s 0.
+  Proof.
+  intros; rewrite cardinal_1; rewrite M.fold_1.
+  symmetry; apply fold_left_length; auto.
+  Qed.
+
+  (** ** Old specifications for [cardinal]. *)
+
+  Lemma cardinal_0 :
+     forall s, exists l : list elt,
+        NoDupA E.eq l /\
+        (forall x : elt, In x s <-> InA E.eq x l) /\ 
+        cardinal s = length l.
+  Proof. 
+  intros; exists (elements s); intuition; apply cardinal_1.
+  Qed.
+
+  Lemma cardinal_1 : forall s, Empty s -> cardinal s = 0.
+  Proof.
+  intros; rewrite cardinal_fold; apply fold_1; auto.
+  Qed.
+
+  Lemma cardinal_2 :
+    forall s s' x, ~ In x s -> Add x s s' -> cardinal s' = S (cardinal s).
+  Proof.
+  intros; do 2 rewrite cardinal_fold.
+  change S with ((fun _ => S) x).
+  apply fold_2; auto.
+  Qed.
+
+  (** ** Cardinal and (non-)emptiness *)
+
+  Lemma cardinal_Empty : forall s, Empty s <-> cardinal s = 0.
+  Proof.
+  intros.
+  rewrite elements_Empty, M.cardinal_1.
+  destruct (elements s); intuition; discriminate.
+  Qed.
+
+  Lemma cardinal_inv_1 : forall s, cardinal s = 0 -> Empty s. 
+  Proof.
+  intros; rewrite cardinal_Empty; auto. 
+  Qed.
+  Hint Resolve cardinal_inv_1.
+ 
+  Lemma cardinal_inv_2 :
+   forall s n, cardinal s = S n -> { x : elt | In x s }.
+  Proof. 
+  intros; rewrite M.cardinal_1 in H.
+  generalize (elements_2 (s:=s)).
+  destruct (elements s); try discriminate. 
+  exists e; auto.
+  Qed.
+
+  Lemma cardinal_inv_2b :
+   forall s, cardinal s <> 0 -> { x : elt | In x s }.
+  Proof.
+  intro; generalize (@cardinal_inv_2 s); destruct cardinal; 
+   [intuition|eauto].
+  Qed.
+
+  (** ** Cardinal is a morphism *)
+
+  Lemma Equal_cardinal : forall s s', s[=]s' -> cardinal s = cardinal s'.
+  Proof. 
+  symmetry.
+  remember (cardinal s) as n; symmetry in Heqn; revert s s' Heqn H.
+  induction n; intros.
+  apply cardinal_1; rewrite <- H; auto.
+  destruct (cardinal_inv_2 Heqn) as (x,H2).
+  revert Heqn.
+  rewrite (cardinal_2 (s:=remove x s) (s':=s) (x:=x)); auto with set.
+  rewrite (cardinal_2 (s:=remove x s') (s':=s') (x:=x)); eauto with set.
+  Qed.
+
+  Add Morphism cardinal : cardinal_m.
+  Proof.
+  exact Equal_cardinal.
+  Qed.
+
+  Hint Resolve Add_add Add_remove Equal_remove cardinal_inv_1 Equal_cardinal.
+
+  (** ** Cardinal and set operators *)
 
   Lemma empty_cardinal : cardinal empty = 0.
   Proof.
