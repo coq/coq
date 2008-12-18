@@ -2651,25 +2651,25 @@ let enforce_eq_name id gl = function
   | x ->
       x
 
+let has_selected_occurrences = function
+  | None -> false
+  | Some cls ->
+      cls.concl_occs <> all_occurrences_expr ||
+	cls.onhyps <> None && List.exists (fun ((occs,_),hl) ->
+          occs <> all_occurrences_expr || hl <> InHyp) (Option.get cls.onhyps)
+
+(* assume that no occurrences are selected *)
 let clear_unselected_context id inhyps cls gl =
   match cls with
   | None -> tclIDTAC gl
   | Some cls ->
-      let error () =
-	error 
-	  "Selection of occurrences not supported when destructing a variable."
-      in
-      if occur_var (pf_env gl) id (pf_concl gl) then
-	if cls.concl_occs = no_occurrences_expr then
-	  errorlabstrm ""
+      if occur_var (pf_env gl) id (pf_concl gl) &&
+	 cls.concl_occs = no_occurrences_expr 
+      then errorlabstrm ""
 	    (str "Conclusion must be mentioned: it depends on " ++ pr_id id
-	     ++ str ".")
-	else if cls.concl_occs <> all_occurrences_expr then
-	  error ();
+	     ++ str ".");
       match cls.onhyps with
       | Some hyps ->
-	  List.iter (fun ((occs,id),hl) ->
-	    if occs <> all_occurrences_expr || hl <> InHyp then error ()) hyps;
 	  let to_erase (id',_,_ as d) =
 	    if List.mem id' inhyps then (* if selected, do not erase *) None
 	    else
@@ -2686,7 +2686,8 @@ let new_induct_gen isrec with_evars elim (eqname,names) (c,lbind) cls gl =
   | _ -> [] in
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context()))
-	        & lbind = NoBindings & not with_evars & eqname = None ->
+	        & lbind = NoBindings & not with_evars & eqname = None 
+                & not (has_selected_occurrences cls) ->
 	tclTHEN
           (clear_unselected_context id inhyps cls)
 	  (induction_with_atomization_of_ind_arg
