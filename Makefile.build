@@ -1014,8 +1014,8 @@ proofs/proofs.dot: $(PROOFSMLI:.mli=.cmi)
 toplevel/toplevel.dot: $(TOPLEVELMLI:.mli=.cmi)
 	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(TOPLEVELMLI)
 
-coq.dot: $(COQMLI:.mli=.cmi)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(COQMLI)
+coq.dot: $(LIBREP:.cmo=.cmi) $(COQMLI:.mli=.cmi)
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(LIBREP:.cmo=.mli)) $(COQMLI)
 
 
 # For emacs: 
