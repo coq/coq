@@ -3,9 +3,9 @@
 # Automatic test of Coq
 
 if [ "$1" = -byte ]; then
-  coqtop="../bin/coqtop.byte -q -batch"
+  coqtop="../bin/coqtop.byte -boot -q -batch"
 else
-  coqtop="../bin/coqtop -q -batch"
+  coqtop="../bin/coqtop -boot -q -batch"
 fi
 
 command="$coqtop -top Top -load-vernac-source"

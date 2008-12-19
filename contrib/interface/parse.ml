@@ -370,7 +370,7 @@ Libobject.relax true;
 (let coqdir = 
    try Sys.getenv "COQDIR"
    with Not_found -> 
-     let coqdir = Coq_config.coqlib in
+     let coqdir = Envars.coqlib () in
        if Sys.file_exists coqdir then
 	 coqdir
        else

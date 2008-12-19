@@ -24,16 +24,8 @@
 
 let environment = Unix.environment ()
 
-let bindir = ref Coq_config.bindir
 let binary = ref ("coqtop." ^ Coq_config.best)
 let image = ref ""
-
-(* the $COQBIN environment variable has priority over the Coq_config value *)
-let _ = 
-  try 
-    let c = Sys.getenv "COQBIN" in
-    if c <> "" then bindir := c
-  with Not_found -> ()
 
 (* coqc options *)
 
@@ -116,12 +108,8 @@ let parse_args () =
     | ("-verbose" | "--verbose") :: rem -> 
 	verbose := true ; parse (cfiles,args) rem
     | "-boot" :: rem ->
-	bindir:= Filename.concat Coq_config.coqtop "bin";
+	Flags.boot := true;
 	parse (cfiles, "-boot"::args) rem
-    | "-bindir" :: d :: rem ->
-	bindir := d ; parse (cfiles,args) rem
-    | "-bindir" :: []       ->
-	usage ()
     | "-byte" :: rem ->
 	binary := "coqtop.byte"; parse (cfiles,args) rem
     | "-opt" :: rem ->
@@ -141,7 +129,7 @@ let parse_args () =
     | ("-I"|"-include"|"-outputstate"
       |"-inputstate"|"-is"|"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
-      |"-init-file" | "-dump-glob" as o) :: rem ->
+      |"-init-file" | "-dump-glob" | "-coqlib" as o) :: rem ->
 	begin
 	  match rem with
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
@@ -158,12 +146,11 @@ let parse_args () =
       |"-unboxed-values"|"-unboxed-definitions"|"-draw-vm-instr"
       |"-no-glob"|"-noglob" as o) :: rem ->
 	parse (cfiles,o::args) rem
-
-    | "-where" :: _ -> 
-	let coqlib = 
-	  try Sys.getenv "COQLIB" with Not_found -> Coq_config.coqlib 
-	in
-	  print_endline coqlib; exit 0
+	    
+    | ("-where") :: _ -> 
+	(try print_endline (Envars.coqlib ())
+	 with Util.UserError(_,pps) -> Pp.msgerrnl (Pp.hov 0 pps));
+	exit 0
 
     | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0
 
@@ -188,14 +175,15 @@ let parse_args () =
 
 let main () =
   let cfiles, args = parse_args () in
-  if cfiles = [] then begin
-    prerr_endline "coqc: too few arguments" ;
-    usage ()
-  end;
-  let coqtopname = 
-    if !image <> "" then !image else Filename.concat !bindir (!binary ^ Coq_config.exec_extension)
-  in
-(*  List.iter (compile coqtopname args) cfiles*)
-  Unix.handle_unix_error (compile coqtopname args) cfiles
+    if cfiles = [] then begin
+      prerr_endline "coqc: too few arguments" ;
+      usage ()
+    end;
+    let coqtopname = 
+      if !image <> "" then !image 
+      else Filename.concat (Envars.coqbin ()) (!binary ^ Coq_config.exec_extension)
+    in
+      (*  List.iter (compile coqtopname args) cfiles*)
+      Unix.handle_unix_error (compile coqtopname args) cfiles
     
 let _ = Printexc.print main (); exit 0

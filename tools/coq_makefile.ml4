@@ -89,8 +89,6 @@ let is_genrule r =
       Str.string_match genrule r 0
 
 let standard sds sps =
-  print "Makefile.config:\n";
-  print "\t$(COQBIN)coqtop -config > $@\n\n";
   print "byte:\n";
   print "\t$(MAKE) all \"OPT:=-byte\"\n\n";
   print "opt:\n";
@@ -121,7 +119,7 @@ let standard sds sps =
   print "clean:\n";
   print "\trm -f $(CMOFILES) $(CMIFILES) $(CMXFILES) $(CMXSFILES) $(OFILES) $(VOFILES) $(VIFILES) $(GFILES) $(MLFILES:.ml=.cmo) $(MLFILES:.ml=.cmx) *~\n";
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
-         $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d) Makefile.config\n";
+         $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d)\n";
   if !some_mlfile then
     print "\trm -f $(CMOFILES) $(MLFILES:.ml=.cmi) $(MLFILES:.ml=.ml.d)\n";
   print "\t- rm -rf html\n";
@@ -139,10 +137,11 @@ let standard sds sps =
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) archclean)\n")
     sds;
-  print "\n\n"
+  print "\n\n";
+  print "printenv: \n\t@echo CAMLC =\t$(CAMLC)\n\t@echo CAMLOPTC =\t$(CAMLOPTC)\n";
+  print "\t@echo CAMLP4LIB =\t$(CAMLP4LIB)\n\n"
 
-let header_includes () =
-  print "include Makefile.config\n.PHONY: Makefile.config\n"
+let header_includes () = ()
   
 let footer_includes () = 
   if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
@@ -187,10 +186,12 @@ let variables l =
     if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
     (* Coq executables and relative variables *)
     print "COQFLAGS:=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
+    print "ifdef CAMLBIN\n  COQMKTOPFLAGS:=-camlbin $(CAMLBIN) -camlp4bin $(CAMLP4BIN)\nendif\n";
     print "COQC:=$(COQBIN)coqc\n";
     print "COQDEP:=$(COQBIN)coqdep -c\n";
     print "GALLINA:=$(COQBIN)gallina\n";
     print "COQDOC:=$(COQBIN)coqdoc\n";
+    print "COQMKTOP:=$(COQBIN)coqmktop\n";
     (* Caml executables and relative variables *)
     printf "CAMLC:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
     printf "CAMLOPTC:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
@@ -228,11 +229,13 @@ let dir_of_target t =
 
 let parameters () =
   print "# \n";
-  print "# This Makefile looks for coqtop in PATH and in COQBIN to create Makefile.config\n";
-  print "# Once created, Make refers to this file to determine the important paths for Coq\n";
-  print "# and Caml binaries. To change which Coq is used to compile your contribution,\n";
-  print "# delete Makefile.config, and set COQBIN to the desired value.\n";
-  print "# \n\n"
+  print "# This Makefile may take 3 arguments passed as environment variables:\n";
+  print "#   - COQBIN to specify the directory where Coq binaries resides;\n";
+  print "#   - CAMLBIN and CAMLP4BIN to give the path for the OCaml and Camlp4/5 binaries.\n";
+  print "COQLIB:=$(shell $(COQBIN)coqtop -where)\n"; 
+  print "CAMLP4:=$(shell $(COQBIN)coqtop -config | awk -F = '/CAMLP4=/{print $$2}')\n"; 
+  print "ifndef CAMLP4BIN\n  CAMLP4BIN:=$(CAMLBIN)\nendif\n\n";
+  print "CAMLP4LIB:=$(shell $(CAMLP4BIN)$(CAMLP4) -where)\n\n"
 
 let include_dirs l =
   let rec split_includes l = 
@@ -263,22 +266,18 @@ let include_dirs l =
   let str_r = parse_includes inc_r in
     section "Libraries definitions.";
     print "OCAMLLIBS:=-I $(CAMLP4LIB) "; print_list "\\\n  " str_i; print "\n";
-    print "ifneq ($(LOCAL),0) # set COQTOP for compiling from Coq sources\n";
-    print "  COQSRCLIBS:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
-  -I $(COQTOP)/library -I $(COQTOP)/parsing \\
-  -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
-  -I $(COQTOP)/proofs -I $(COQTOP)/tactics \\
-  -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/cc -I $(COQTOP)/contrib/dp \\
-  -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
-  -I $(COQTOP)/contrib/firstorder -I $(COQTOP)/contrib/fourier \\
-  -I $(COQTOP)/contrib/funind -I $(COQTOP)/contrib/interface \\
-  -I $(COQTOP)/contrib/micromega -I $(COQTOP)/contrib/omega \\
-  -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
-  -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
-  -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml\n";
-    print "else\n";
-    print "  COQSRCLIBS:=-I $(COQLIB)\n";
-    print "endif\n";
+    print "COQSRCLIBS:=-I $(COQLIB)/kernel -I $(COQLIB)/lib \\
+  -I $(COQLIB)/library -I $(COQLIB)/parsing \\
+  -I $(COQLIB)/pretyping -I $(COQLIB)/interp \\
+  -I $(COQLIB)/proofs -I $(COQLIB)/tactics \\
+  -I $(COQLIB)/toplevel -I $(COQLIB)/contrib/cc -I $(COQLIB)/contrib/dp \\
+  -I $(COQLIB)/contrib/extraction -I $(COQLIB)/contrib/field \\
+  -I $(COQLIB)/contrib/firstorder -I $(COQLIB)/contrib/fourier \\
+  -I $(COQLIB)/contrib/funind -I $(COQLIB)/contrib/interface \\
+  -I $(COQLIB)/contrib/micromega -I $(COQLIB)/contrib/omega \\
+  -I $(COQLIB)/contrib/ring -I $(COQLIB)/contrib/romega \\
+  -I $(COQLIB)/contrib/rtauto -I $(COQLIB)/contrib/setoid_ring \\
+  -I $(COQLIB)/contrib/subtac -I $(COQLIB)/contrib/xml\n";
     print "COQLIBS:="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " str_r; print "\n\n"
 

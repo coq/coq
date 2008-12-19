@@ -58,7 +58,7 @@ let get_version_date () =
     then Coq_config.date
     else "<date not printable>" in
   try
-    let ch = open_in (Coq_config.coqtop^"/revision") in
+    let ch = open_in (Coq_config.coqsrc^"/revision") in
     let ver = input_line ch in
     let rev = input_line ch in
     (ver,rev)
@@ -88,7 +88,7 @@ let is_in_coq_lib dir =
   List.exists 
     (fun s -> 
       let fdir =
-        Filename.concat Coq_config.coqlib (Filename.concat "theories" s) in
+        Filename.concat (Envars.coqlib ()) (Filename.concat "theories" s) in
       prerr_endline (" Comparing to: "^fdir);
       if is_same_file fdir then (prerr_endline " YES";true)
       else (prerr_endline"NO";false))

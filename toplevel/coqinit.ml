@@ -93,16 +93,12 @@ let theories_dirs_map = [
     "theories/Init", "Init"
   ]
 
-(* Initializes the LoadPath according to COQLIB and Coq_config *)
+(* Initializes the LoadPath *)
 let init_load_path () =
-  let coqlib =
-    (* variable COQLIB overrides the default library *)
-    getenv_else "COQLIB"
-      (if Coq_config.local || !Flags.boot then Coq_config.coqtop
-	else Coq_config.coqlib) in
+  let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let dirs = "states" :: ["contrib"] in
-  let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
+  let camlp4 = Envars.camlp4lib () in
     (* first user-contrib *)
     if Sys.file_exists user_contrib then 
       Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
@@ -129,13 +125,13 @@ let init_library_roots () =
 
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
-(* We only assume that the variable COQTOP is set *)
 let init_ocaml_path () =
-  let coqtop = getenv_else "COQTOP" Coq_config.coqtop in
+  let coqsrc = Coq_config.coqsrc in
   let add_subdir dl = 
-    Mltop.add_ml_dir (List.fold_left (/) coqtop dl) 
+    Mltop.add_ml_dir (List.fold_left (/) coqsrc dl) 
   in
-  List.iter add_subdir
-    [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ]; 
-      [ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
-      [ "tactics" ]; [ "toplevel" ]; [ "translate" ]; [ "ide" ] ]
+    Mltop.add_ml_dir (Envars.coqlib ()); 
+    List.iter add_subdir
+      [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ]; 
+	[ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
+	[ "tactics" ]; [ "toplevel" ]; [ "translate" ]; [ "ide" ] ]

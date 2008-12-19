@@ -104,3 +104,16 @@ let browser_cmd_fmt =
   Sys.getenv coq_netscape_remote_var
  with
   Not_found -> Coq_config.browser
+
+(* Options for changing coqlib *)
+let coqlib_spec = ref false
+let coqlib = ref Coq_config.coqlib
+
+(* Options for changing camlbin (used by coqmktop) *)
+let camlbin_spec = ref false
+let camlbin = ref Coq_config.camlbin
+
+(* Options for changing camlp4bin (used by coqmktop) *)
+let camlp4bin_spec = ref false
+let camlp4bin = ref Coq_config.camlp4bin
+

@@ -43,7 +43,7 @@ let (/) = Filename.concat
 
 let get_version_date () =
   try
-    let ch = open_in (Coq_config.coqlib^"/revision") in
+    let ch = open_in (Coq_config.coqsrc ^ "/revision") in
     let ver = input_line ch in
     let rev = input_line ch in
       (ver,rev)
@@ -108,13 +108,9 @@ let set_rec_include d p =
   check_coq_overwriting p;
   push_rec_include(d,p)
 
-(* Initializes the LoadPath according to COQLIB and Coq_config *)
+(* Initializes the LoadPath *)
 let init_load_path () =
-  let coqlib =
-    (* variable COQLIB overrides the default library *)
-    getenv_else "COQLIB"
-      (if Coq_config.local || !Flags.boot then Coq_config.coqtop
-	else Coq_config.coqlib) in
+  let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let contrib = coqlib/"contrib" in
   (* first user-contrib *)
@@ -323,7 +319,7 @@ let parse_args() =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-where" :: _ ->
-        print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0
+        print_endline (Envars.coqlib ()); exit 0
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 

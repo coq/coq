@@ -862,6 +862,7 @@ case $ARCH in
     win32)
 	ESCCOQTOP=`echo $COQTOP |sed -e 's|\\\|\\\\\\\|g'`
 	ESCBINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
+	ESCSRCDIR=`echo $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
 	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLDIR=`echo $CAMLBIN |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
@@ -876,6 +877,7 @@ case $ARCH in
     *)
         ESCCOQTOP="$COQTOP"
 	ESCBINDIR="$BINDIR"
+	ESCSRCDIR="$COQSRC"
 	ESCLIBDIR="$LIBDIR"
 	ESCCAMLDIR="$CAMLBIN"
 	ESCCAMLLIB="$CAMLLIB"
@@ -896,12 +898,12 @@ cat << END_OF_COQ_CONFIG > $mlconfig_file
 
 let local = $local
 let coqrunbyteflags = "$COQRUNBYTEFLAGS"
-let bindir = try Sys.getenv "COQBIN" with Not_found -> "$ESCBINDIR"
-let coqlib = try Sys.getenv "COQLIB" with Not_found -> "$ESCLIBDIR"
-let coqtop = try Sys.getenv "COQTOP" with Not_found -> "$ESCCOQTOP"
-let camldir = "$ESCCAMLDIR"
+let coqlib = "$ESCLIBDIR"
+let coqsrc = "$ESCSRCDIR"
+let camlbin = "$ESCCAMLDIR"
 let camllib = "$ESCCAMLLIB"
 let camlp4 = "$CAMLP4"
+let camlp4bin = "$ESCCAMLP4BIN"
 let camlp4lib = "$ESCCAMLP4LIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
