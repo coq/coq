@@ -48,7 +48,7 @@ let _ =
 	Auto.add_hints false [typeclasses_db] 
 	  (Vernacexpr.HintsResolve 
 	      [pri, false, CAppExpl (dummy_loc, (None, qualid_of_con inst), [])])) ())
-
+    
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
   let _, r = decompose_prod_assum instance in
@@ -71,204 +71,27 @@ type binder_list = (identifier located * bool * constr_expr) list
 
 (* Calls to interpretation functions. *)
 
-let interp_binders_evars isevars env avoid l =
-  List.fold_left
-    (fun (env, ids, params) ((loc, i), t) -> 
-      let n = Name i in
-      let t' = interp_binder_evars isevars env n t in
-      let d = (i,None,t') in
-	(push_named d env, i :: ids, d::params))
-    (env, avoid, []) l
-
-let interp_typeclass_context_evars isevars env avoid l =
-  List.fold_left
-    (fun (env, ids, params) (iid, bk, l) -> 
-      let t' = interp_binder_evars isevars env (snd iid) l in
-      let i = match snd iid with
-	| Anonymous -> Nameops.next_name_away (Termops.named_hd env t' Anonymous) ids
-	| Name id -> id
-      in
-      let d = (i,None,t') in
-	(push_named d env, i :: ids, d::params))
-    (env, avoid, []) l
-
 let interp_type_evars evdref env ?(impls=([],[])) typ =
   let typ' = intern_gen true ~impls (Evd.evars_of !evdref) env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env Pretyping.IsType typ'
-
-let mk_interning_data env na impls typ =
-  let impl = Impargs.compute_implicits_with_manual env typ (Impargs.is_implicit_args()) impls
-  in (na, (Constrintern.Method, [], impl, Notation.compute_arguments_scope typ))
     
-let interp_fields_evars isevars env avoid l =
-  List.fold_left
-    (fun (env, uimpls, ids, params, impls) ((loc, i), _, t) -> 
-      let impl, t' = interp_type_evars isevars env ~impls t in
-      let data = mk_interning_data env i impl t' in
-      let d = (Name i,None,t') in
-	(push_rel d env, impl :: uimpls, Idset.add i ids, d::params, ([], data :: snd impls)))
-    (env, [], avoid, [], ([], [])) l    
-
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
 open Topconstr
-
-let implicits_of_context ctx =
-  list_map_i (fun i name ->
-    let explname = 
-      match name with 
-      | Name n -> Some n
-      | Anonymous -> None
-    in ExplByPos (i, explname), (true, true))
-    1 (List.rev (Anonymous :: (List.map pi1 ctx)))
-
-let name_typeclass_binder avoid = function
-  | LocalRawAssum ([loc, Anonymous], bk, c) ->
-      let name = 
-	let id = 
-	match c with
-	    CApp (_, (_, CRef (Ident (loc,id))), _) -> id
-	  | _ -> id_of_string "assum"
-	in Implicit_quantifiers.make_fresh avoid (Global.env ()) id
-      in LocalRawAssum ([loc, Name name], bk, c), Idset.add name avoid
-  | x -> x, avoid
-
-let name_typeclass_binders avoid l = 
-  let l', avoid = 
-    List.fold_left 
-      (fun (binders, avoid) b -> let b', avoid = name_typeclass_binder avoid b in
-				   b' :: binders, avoid)
-      ([], avoid) l
-  in List.rev l', avoid
-      
-let new_class id par ar sup props =
-  let env0 = Global.env() in
-  let isevars = ref (Evd.create_evar_defs Evd.empty) in
-  let bound = Implicit_quantifiers.ids_of_list (Termops.ids_of_context env0) in
-  let bound, ids = Implicit_quantifiers.free_vars_of_binders ~bound [] (sup @ par) in
-  let bound = Idset.union bound (Implicit_quantifiers.ids_of_list ids) in
-  let sup, bound = name_typeclass_binders bound sup in
-  let par, bound = name_typeclass_binders bound par in
-  let supnames = 
-    List.fold_left (fun acc b -> 
-      match b with
-      | LocalRawAssum (nl, _, _) -> nl @ acc
-      | LocalRawDef _ -> assert(false))
-      [] sup
-  in
-
-  (* Interpret the arity *)
-  let arity_imps, fullarity = 
-    let ar = 
-      match ar with
-	Some ar -> ar | None -> (dummy_loc, Rawterm.RType None)
-    in
-    let arity = CSort (fst ar, snd ar) in
-    let term = prod_constr_expr (prod_constr_expr arity par) sup in
-      interp_type_evars isevars env0 term      
-  in
-  let ctx_params, arity = decompose_prod_assum fullarity in
-  let env_params = push_rel_context ctx_params env0 in
     
-  (* Interpret the definitions and propositions *)
-  let env_props, prop_impls, bound, ctx_props, _ = 
-    interp_fields_evars isevars env_params bound props 
-  in
-  let subs = List.map (fun ((loc, id), b, _) -> b) props in
-  (* Instantiate evars and check all are resolved *)
-  let isevars,_ = Evarconv.consider_remaining_unif_problems env_props !isevars in
-  let isevars = Typeclasses.resolve_typeclasses env_props isevars in
-  let sigma = Evd.evars_of isevars in
-  let ctx_params = Evarutil.nf_rel_context_evar sigma ctx_params in
-  let ctx_props = Evarutil.nf_rel_context_evar sigma ctx_props in
-  let arity = Reductionops.nf_evar sigma arity in
-  let ce t = Evarutil.check_evars env0 Evd.empty isevars t in
-  let fieldimpls = 
-    (* Make the class and all params implicits in the projections *)
-    let ctx_impls = implicits_of_context ctx_params in
-    let len = succ (List.length ctx_params) in
-      List.map (fun x -> ctx_impls @ Impargs.lift_implicits len x) prop_impls
-  in
-  let impl, projs = 
-    let params = ctx_params and fields = ctx_props in
-      List.iter (fun (_,c,t) -> ce t; match c with Some c -> ce c | None -> ()) (params @ fields);
-      match fields with
-      | [(Name proj_name, _, field)] ->
-	  let class_body = it_mkLambda_or_LetIn field params in
-	  let class_type = 
-	    match ar with
-	    | Some _ -> Some (it_mkProd_or_LetIn arity params)
-	    | None -> None
-	  in
-	  let class_entry = 
-	    { const_entry_body = class_body;
-	      const_entry_type = class_type;
-	      const_entry_opaque = false;
-	      const_entry_boxed = false }
-	  in
-	  let cst = Declare.declare_constant (snd id)
-	    (DefinitionEntry class_entry, IsDefinition Definition) 
-	  in
-	  let inst_type = appvectc (mkConst cst) (rel_vect 0 (List.length params)) in
-	  let proj_type = it_mkProd_or_LetIn (mkProd(Name (snd id), inst_type, lift 1 field)) params in
-	  let proj_body = it_mkLambda_or_LetIn (mkLambda (Name (snd id), inst_type, mkRel 1)) params in
-	  let proj_entry = 
-	    { const_entry_body = proj_body;
-	      const_entry_type = Some proj_type;
-	      const_entry_opaque = false;
-	      const_entry_boxed = false }
-	  in
-	  let proj_cst = Declare.declare_constant proj_name
-	    (DefinitionEntry proj_entry, IsDefinition Definition) 
-	  in
-	  let cref = ConstRef cst in
-	    Impargs.declare_manual_implicits false cref arity_imps;
-	    Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
-	    set_rigid cst;
-	    cref, [proj_name, Some proj_cst]
-      | _ ->
-	  let idb = id_of_string ("Build_" ^ (string_of_id (snd id))) in
-	  let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
-	  let kn = Record.declare_structure true (snd id) idb arity_imps
-	    params arity fieldimpls fields ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
-	  in
-	    IndRef (kn,0), (List.map2 (fun (id, _, _) y -> (Nameops.out_name id, y))
-			       (List.rev fields) (Recordops.lookup_projections (kn,0)))
-  in
-  let ctx_context =
-    List.map (fun (na, b, t) -> 
-      match Typeclasses.class_of_constr t with
-      | Some cl -> Some (cl.cl_impl, List.exists (fun (_, n) -> n = na) supnames)
-      | None -> None)
-      ctx_params, ctx_params
-  in
-  let k =
-    { cl_impl = impl;
-      cl_context = ctx_context;
-      cl_props = ctx_props;
-      cl_projs = projs }
-  in
-    List.iter2 (fun p sub -> 
-      if sub then match snd p with Some p -> declare_instance_cst true p | None -> ())
-      k.cl_projs subs;
-    add_class k
-    
-type binder_def_list = (identifier located * identifier located list * constr_expr) list
-
-let binders_of_lidents l =
-  List.map (fun (loc, id) -> 
-    LocalRawAssum ([loc, Name id], Default Rawterm.Explicit, 
-		  CHole (loc, Some (BinderType (Name id))))) l
-
 let type_ctx_instance isevars env ctx inst subst =
   let (s, _) = 
     List.fold_left2
-      (fun (subst, instctx) (na, _, t) ce ->
+      (fun (subst, instctx) (na, b, t) ce ->
 	let t' = substl subst t in
-	let c = interp_casted_constr_evars isevars env ce t' in
-	let d = na, Some c, t' in
-	  c :: subst, d :: instctx)
+	let c' = 
+	  match b with 
+	  | None -> interp_casted_constr_evars isevars env ce t'
+	  | Some b -> substl subst b
+	in
+	let d = na, Some c', t' in
+	  c' :: subst, d :: instctx)
       (subst, []) (List.rev ctx) inst
   in s
 
@@ -347,7 +170,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
   isevars := Evarutil.nf_evar_defs !isevars;
   isevars := resolve_typeclasses env !isevars;
   let sigma = Evd.evars_of !isevars in
-  let substctx = List.map (Evarutil.nf_evar sigma) subst in
+  let subst = List.map (Evarutil.nf_evar sigma) subst in
     if Lib.is_modtype () then
       begin
 	let _, ty_constr = instance_constructor k (List.rev subst) in
@@ -362,31 +185,40 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
       end
     else
       begin
+	let props = match props with CRecord (loc, _, fs) -> fs | _ -> assert false in
+	if List.length props > List.length k.cl_props then 
+	  mismatched_props env' (List.map snd props) k.cl_props;
 	let subst = 
-	  let props = 
-	    List.map (fun (x, l, d) -> 
-	      x, Topconstr.abstract_constr_expr d (binders_of_lidents l))
-	      props
-	  in
-	    if List.length props > List.length k.cl_props then 
-	      mismatched_props env' (List.map snd props) k.cl_props;
-	    let props, rest = 
-	      List.fold_left
-		(fun (props, rest) (id,_,_) -> 
-		  try 
-		    let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
-		    let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
-		      Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
-		      c :: props, rest'
-		  with Not_found -> (CHole (Util.dummy_loc, None) :: props), rest)
-		([], props) k.cl_props
-	    in
-	      if rest <> [] then 
-		unbound_method env' k.cl_impl (fst (List.hd rest))
-	      else
-		type_ctx_instance isevars env' k.cl_props props substctx
+	  match k.cl_props with 
+	  | [(na,b,ty)] -> 
+	      let term = match props with [] -> CHole (Util.dummy_loc, None) 
+		| [(_,f)] -> f | _ -> assert false in
+	      let ty' = substl subst ty in
+	      let c = interp_casted_constr_evars isevars env' term ty' in
+		c :: subst
+	  | _ ->
+	      let props, rest = 
+		List.fold_left
+		  (fun (props, rest) (id,b,_) -> 
+		    try 
+		      let ((loc, mid), c) = List.find (fun ((_,id'), c) -> Name id' = id) rest in
+		      let rest' = List.filter (fun ((_,id'), c) -> Name id' <> id) rest in
+			Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) (List.assoc mid k.cl_projs);
+			c :: props, rest'
+		    with Not_found -> 
+		      (CHole (Util.dummy_loc, None) :: props), rest)
+		  ([], props) k.cl_props
+	      in
+		if rest <> [] then 
+		  unbound_method env' k.cl_impl (fst (List.hd rest))
+		else
+		  type_ctx_instance isevars env' k.cl_props props subst
 	in
-	let app, ty_constr = instance_constructor k (List.rev subst) in
+	let subst = List.fold_left2 
+	  (fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
+	  [] subst (k.cl_props @ snd k.cl_context)
+	in
+	let app, ty_constr = instance_constructor k subst in
 	let termtype = 
 	  let t = it_mkProd_or_LetIn ty_constr ctx' in
 	    Evarutil.nf_isevar !isevars t

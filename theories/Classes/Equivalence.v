@@ -27,7 +27,7 @@ Unset Strict Implicit.
 
 Open Local Scope signature_scope.
 
-Definition equiv [ Equivalence A R ] : relation A := R.
+Definition equiv `{Equivalence A R} : relation A := R.
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
 
@@ -39,7 +39,7 @@ Open Local Scope equiv_scope.
 
 (** Overloading for [PER]. *)
 
-Definition pequiv [ PER A R ] : relation A := R.
+Definition pequiv `{PER A R} : relation A := R.
 
 (** Overloaded notation for partial equivalence. *)
 
@@ -47,11 +47,11 @@ Infix "=~=" := pequiv (at level 70, no associativity) : equiv_scope.
 
 (** Shortcuts to make proof search easier. *)
 
-Program Instance equiv_reflexive [ sa : Equivalence A ] : Reflexive equiv.
+Program Instance equiv_reflexive `(sa : Equivalence A) : Reflexive equiv.
 
-Program Instance equiv_symmetric [ sa : Equivalence A ] : Symmetric equiv.
+Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv.
 
-Program Instance equiv_transitive [ sa : Equivalence A ] : Transitive equiv.
+Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv.
 
   Next Obligation.
   Proof.
@@ -103,10 +103,10 @@ Section Respecting.
   (** Here we build an equivalence instance for functions which relates respectful ones only, 
      we do not export it. *)
 
-  Definition respecting {( eqa : Equivalence A (R : relation A), eqb : Equivalence B (R' : relation B) )} : Type := 
+  Definition respecting `(eqa : Equivalence A (R : relation A), eqb : Equivalence B (R' : relation B)) : Type := 
     { morph : A -> B | respectful R R' morph morph }.
   
-  Program Instance respecting_equiv [ eqa : Equivalence A R, eqb : Equivalence B R' ] :
+  Program Instance respecting_equiv `(eqa : Equivalence A R, eqb : Equivalence B R') :
     Equivalence (fun (f g : respecting eqa eqb) => forall (x y : A), R x y -> R' (proj1_sig f x) (proj1_sig g y)).
   
   Solve Obligations using unfold respecting in * ; simpl_relation ; program_simpl.
@@ -120,7 +120,7 @@ End Respecting.
 
 (** The default equivalence on function spaces, with higher-priority than [eq]. *)
 
-Program Instance pointwise_equivalence A ((eqb : Equivalence B eqB)) :
+Program Instance pointwise_equivalence {A} `(eqb : Equivalence B eqB) :
   Equivalence (pointwise_relation A eqB) | 9.
 
   Next Obligation.

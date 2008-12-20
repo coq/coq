@@ -147,7 +147,7 @@ let aliasvar = function CPatAlias (_, _, id) -> Some (Name id) | _ -> None
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
   constr_pattern lconstr_pattern Constr.ident
-  binder binder_let binders_let
+  binder binder_let binders_let record_declaration
   binders_let_fixannot typeclass_constraint pattern appl_arg;
   Constr.ident:
     [ [ id = Prim.ident -> id
@@ -241,8 +241,8 @@ GEXTEND Gram
   ;
   record_declaration:
     [ [ fs = LIST1 record_field_declaration SEP ";" -> CRecord (loc, None, fs)
-      | c = lconstr; "with"; fs = LIST1 record_field_declaration SEP ";" ->
-	  CRecord (loc, Some c, fs)
+(*       | c = lconstr; "with"; fs = LIST1 record_field_declaration SEP ";" -> *)
+(* 	  CRecord (loc, Some c, fs) *)
     ] ]
   ;
   record_field_declaration:
@@ -432,15 +432,9 @@ GEXTEND Gram
         [LocalRawAssum ([id],Default Implicit,c)]
     | "{"; id=name; idl=LIST1 name; "}" -> 
         List.map (fun id -> LocalRawAssum ([id],Default Implicit,CHole (loc, None))) (id::idl)
-    | "("; "("; tc = LIST1 typeclass_constraint SEP "," ; ")"; ")" ->
-	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Explicit, Explicit, b), t)) tc
-    | "{"; "("; tc = LIST1 typeclass_constraint SEP "," ; ")"; "}" ->
+    | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
 	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
-    | "{"; "{"; tc = LIST1 typeclass_constraint SEP "," ; "}"; "}" ->
-	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
-    | "("; "{"; tc = LIST1 typeclass_constraint SEP "," ; "}"; ")" ->
-	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Explicit, Implicit, b), t)) tc
-    | "["; tc = LIST1 typeclass_constraint SEP ","; "]" ->
+    | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->
 	List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Implicit, b), t)) tc
     ] ]
   ;

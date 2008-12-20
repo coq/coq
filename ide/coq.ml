@@ -230,7 +230,6 @@ let rec attribute_of_vernac_command = function
   (* Gallina extensions *)
   | VernacBeginSection _ -> []
   | VernacEndSegment _ -> []
-  | VernacRecord _ -> []
   | VernacRequire _ -> []
   | VernacImport _ -> []
   | VernacCanonical _ -> []
@@ -238,7 +237,6 @@ let rec attribute_of_vernac_command = function
   | VernacIdentityCoercion _ -> []
 
   (* Type classes *)
-  | VernacClass _ -> []
   | VernacInstance _ -> []
   | VernacContext _ -> []
   | VernacDeclareInstance _ -> []
@@ -387,7 +385,7 @@ let compute_reset_info = function
 
   | VernacDefinition (_, (_,id), DefineBody _, _)
   | VernacAssumption (_,_ ,(_,((_,id)::_,_))::_)
-  | VernacInductive (_, (((_,id),_,_,_),_) :: _) ->
+  | VernacInductive (_, (((_,(_,id)),_,_,_,_),_) :: _) ->
       ResetAtRegisteredObject (reset_mark id), undo_info(), ref true
 
   | com when is_vernac_proof_ending_command com -> NoReset, undo_info(), ref true

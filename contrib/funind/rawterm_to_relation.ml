@@ -1192,7 +1192,7 @@ let do_build_inductive
   let rel_ind i ext_rel_constructors = 
     ((dummy_loc,relnames.(i)),
     rel_params,
-    rel_arities.(i),
+    Some rel_arities.(i),
     ext_rel_constructors),None
   in
   let ext_rel_constructors = (Array.mapi rel_ind ext_rels_constructors) in 
@@ -1225,7 +1225,7 @@ let do_build_inductive
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	let repacked_rel_inds = 
-	  List.map  (fun ((a , b , c , l),ntn) -> (a , b, c , Vernacexpr.Constructors l),ntn )
+	  List.map  (fun ((a , b , c , l),ntn) -> ((false,a) , b, c , None, Vernacexpr.Constructors l),ntn )
 	                  rel_inds
 	in
 	let msg = 		     
@@ -1240,7 +1240,7 @@ let do_build_inductive
 	let _time3 = System.get_time () in
 (* 	Pp.msgnl (str "error : "++ str (string_of_float (System.time_difference time2 time3))); *)
 	let repacked_rel_inds = 
-	  List.map  (fun ((a , b , c , l),ntn) -> (a , b, c , Vernacexpr.Constructors l),ntn )
+	  List.map  (fun ((a , b , c , l),ntn) -> ((false,a) , b, c , None, Vernacexpr.Constructors l),ntn )
 	                  rel_inds
 	in
 	let msg = 		     

@@ -408,9 +408,7 @@ let make_pr_vernac pr_constr pr_lconstr =
 let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
-let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in
-let pr_instance_def sep (i,l,c) = pr_lident i ++ prlist_with_sep spc pr_lident l 
-  ++ sep ++ pr_constrarg c in
+(* let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in *)
 let pr_record_field (x, ntn) = 
   let prx = match x with
     | (oc,AssumExpr (id,t)) ->
@@ -427,7 +425,7 @@ let pr_record_field (x, ntn) =
                     pr_lconstr b)) in
     prx ++ pr_decl_notation pr_constr ntn
 in
-let pr_record_decl c fs = 
+let pr_record_decl b c fs = 
     pr_opt pr_lident c ++ str"{"  ++
     hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
 in
@@ -584,7 +582,7 @@ let rec pr_vernac = function
         hov 2 (pr_lident id ++ str" " ++
                (if coe then str":>" else str":") ++
                 pr_spc_lconstr c) in
-      let pr_constructor_list l = match l with
+      let pr_constructor_list b l = match l with
         | Constructors [] -> mt()
         | Constructors l ->
             pr_com_at (begin_of_inductive l) ++
@@ -593,15 +591,22 @@ let rec pr_vernac = function
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l 
        | RecordDecl (c,fs) ->   
 	    spc() ++
-	    pr_record_decl c fs in
-      let pr_oneind key ((id,indpar,s,lc),ntn) =
-	hov 0 (
-          str key ++ spc() ++
-          pr_lident id ++ pr_and_type_binders_arg indpar ++ spc() ++ str":" ++ 
-	  spc() ++ pr_lconstr_expr s ++ 
-	  str" :=") ++ pr_constructor_list lc ++ 
-	pr_decl_notation pr_constr ntn in
-
+	    pr_record_decl b c fs in
+      let pr_oneind key (((coe,id),indpar,s,k,lc),ntn) =
+	let kw =
+	  match k with
+	  | None -> str key
+	  | Some b -> str (match b with Record -> "Record" | Structure -> "Structure" 
+	    | Class b -> if b then "Definitional Class" else "Class")
+	in
+	  hov 0 (
+	    kw ++ spc() ++
+              (if coe then str" > " else str" ") ++ pr_lident id ++
+              pr_and_type_binders_arg indpar ++ spc() ++ 
+	      Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++ 
+	      str" :=") ++ pr_constructor_list k lc ++ 
+	    pr_decl_notation pr_constr ntn 
+      in
       hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
       ++ 
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
@@ -667,12 +672,6 @@ let rec pr_vernac = function
 	
 
   (* Gallina extensions *)
-  | VernacRecord ((b,coind),(oc,name),ps,s,c,fs) ->
-      hov 2
-        (str (if b then "Record" else "Structure") ++
-         (if oc then str" > " else str" ") ++ pr_lident name ++ 
-          pr_and_type_binders_arg ps ++ str" :" ++ spc() ++ 
-	  pr_lconstr_expr s ++ str" := " ++ pr_record_decl c fs)
   | VernacBeginSection id -> hov 2 (str"Section" ++ spc () ++ pr_lident id)
   | VernacEndSegment id -> hov 2 (str"End" ++ spc() ++ pr_lident id)
   | VernacRequire (exp,spe,l) -> hov 2
@@ -699,17 +698,6 @@ let rec pr_vernac = function
 	  str"Local" ++ spc() | Global -> spc()) ++ pr_lident id ++ 
 	spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++
 	spc() ++ pr_class_rawexpr c2)
-
-
-  | VernacClass (id, par, ar, sup, props) ->
-      hov 1 (
-	str"Class" ++ spc () ++ pr_lident id ++
-(* 	  prlist_with_sep (spc) (pr_lident_constr (spc() ++ str ":" ++ spc())) par ++  *)
-	  pr_and_type_binders_arg par ++
-	  (match ar with Some ar -> spc () ++ str":" ++ spc() ++ pr_rawsort (snd ar) | None -> mt()) ++
-	  spc () ++ str":=" ++ spc () ++
-	  prlist_with_sep (fun () -> str";" ++ spc()) 
-	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props )
 	
  | VernacInstance (glob, sup, (instid, bk, cl), props, pri) -> 
      hov 1 (
@@ -720,7 +708,7 @@ let rec pr_vernac = function
 	 (match snd instid with Name id -> pr_lident (fst instid, id) ++ spc () ++ str":" ++ spc () | Anonymous -> mt ()) ++
 	 pr_constr_expr cl ++ spc () ++
 	 spc () ++ str":=" ++ spc () ++
-	 prlist_with_sep (fun () -> str";" ++ spc()) (pr_instance_def (spc () ++ str":=" ++ spc())) props)
+	 pr_constr_expr props)
 
  | VernacContext l ->
      hov 1 (

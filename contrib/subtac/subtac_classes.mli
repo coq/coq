@@ -34,9 +34,9 @@ val type_ctx_instance :     Evd.evar_defs ref ->
 
 val new_instance : 
   ?global:bool ->
-  Topconstr.local_binder list ->
+  local_binder list ->
   typeclass_constraint ->
-  binder_def_list ->
+  constr_expr ->
   ?generalize:bool ->
   int option ->
   identifier * Subtac_obligations.progress

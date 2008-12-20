@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -15,8 +14,7 @@
 
 (* $Id$ *)
 
-Set Implicit Arguments.
-Unset Strict Implicit.
+Set Manual Implicit Arguments.
 
 (** Export notations. *)
 
@@ -29,12 +27,12 @@ Require Import Coq.Logic.Decidable.
 
 Open Scope equiv_scope.
 
-Class [ equiv : Equivalence A ] => DecidableEquivalence :=
+Class DecidableEquivalence `(equiv : Equivalence A) :=
   setoid_decidable : forall x y : A, decidable (x === y).
 
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
-Class [ equiv : Equivalence A ] => EqDec :=
+Class EqDec A R {equiv : Equivalence R} :=
   equiv_dec : forall x y : A, { x === y } + { x =/= y }.
 
 (** We define the [==] overloaded notation for deciding equality. It does not take precedence
@@ -54,7 +52,7 @@ Open Local Scope program_scope.
 
 (** Invert the branches. *)
 
-Program Definition nequiv_dec [ EqDec A ] (x y : A) : { x =/= y } + { x === y } := swap_sumbool (x == y).
+Program Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x === y } := swap_sumbool (x == y).
 
 (** Overloaded notation for inequality. *)
 
@@ -62,10 +60,10 @@ Infix "<>" := nequiv_dec (no associativity, at level 70) : equiv_scope.
 
 (** Define boolean versions, losing the logical information. *)
 
-Definition equiv_decb [ EqDec A ] (x y : A) : bool :=
+Definition equiv_decb `{EqDec A} (x y : A) : bool :=
   if x == y then true else false.
 
-Definition nequiv_decb [ EqDec A ] (x y : A) : bool :=
+Definition nequiv_decb `{EqDec A} (x y : A) : bool :=
   negb (equiv_decb x y).
 
 Infix "==b" := equiv_decb (no associativity, at level 70).
@@ -77,15 +75,15 @@ Require Import Coq.Arith.Peano_dec.
 
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
-Program Instance nat_eq_eqdec : ! EqDec nat eq :=
+Program Instance nat_eq_eqdec : EqDec nat eq :=
   equiv_dec := eq_nat_dec.
 
 Require Import Coq.Bool.Bool.
 
-Program Instance bool_eqdec : ! EqDec bool eq :=
+Program Instance bool_eqdec : EqDec bool eq :=
   equiv_dec := bool_dec.
 
-Program Instance unit_eqdec : ! EqDec unit eq :=
+Program Instance unit_eqdec : EqDec unit eq :=
   equiv_dec x y := in_left.
 
   Next Obligation.
@@ -94,7 +92,7 @@ Program Instance unit_eqdec : ! EqDec unit eq :=
     reflexivity.
   Qed.
 
-Program Instance prod_eqdec [ EqDec A eq, EqDec B eq ] :
+Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
   ! EqDec (prod A B) eq :=
   equiv_dec x y := 
     let '(x1, x2) := x in 
@@ -106,8 +104,8 @@ Program Instance prod_eqdec [ EqDec A eq, EqDec B eq ] :
 
   Solve Obligations using unfold complement, equiv ; program_simpl.
 
-Program Instance sum_eqdec [ EqDec A eq, EqDec B eq ] :
-  ! EqDec (sum A B) eq :=
+Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
+  EqDec (sum A B) eq :=
   equiv_dec x y := 
     match x, y with
       | inl a, inl b => if a == b then in_left else in_right
@@ -117,11 +115,10 @@ Program Instance sum_eqdec [ EqDec A eq, EqDec B eq ] :
 
   Solve Obligations using unfold complement, equiv ; program_simpl.
 
-(** Objects of function spaces with countable domains like bool have decidable equality. *)
+(** Objects of function spaces with countable domains like bool have decidable equality. 
+   Proving the reflection requires functional extensionality though. *)
 
-Require Import Coq.Program.FunctionalExtensionality.
-
-Program Instance bool_function_eqdec [ EqDec A eq ] : ! EqDec (bool -> A) eq :=
+Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
   equiv_dec f g := 
     if f true == g true then
       if f false == g false then in_left
@@ -138,7 +135,7 @@ Program Instance bool_function_eqdec [ EqDec A eq ] : ! EqDec (bool -> A) eq :=
 
 Require Import List.
 
-Program Instance list_eqdec [ eqa : EqDec A eq ] : ! EqDec (list A) eq :=
+Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
   equiv_dec := 
     fix aux (x : list A) y { struct x } :=
     match x, y with

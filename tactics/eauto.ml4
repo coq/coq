@@ -31,9 +31,9 @@ open Auto
 open Rawterm
 open Hiddentac
 
-let e_give_exact c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
+let e_give_exact ?(flags=Unification.default_unify_flags) c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
   if occur_existential t1 or occur_existential t2 then 
-     tclTHEN (Clenvtac.unify t1) (exact_check c) gl
+     tclTHEN (Clenvtac.unify ~flags t1) (exact_check c) gl
   else exact_check c gl
 
 let assumption id = e_give_exact (mkVar id)
@@ -173,7 +173,7 @@ and e_my_find_search_delta db_list local_db hdc concl =
 	 match t with
 	   | Res_pf (term,cl) -> unify_resolve st (term,cl)
 	   | ERes_pf (term,cl) -> unify_e_resolve st (term,cl)
-	   | Give_exact (c) -> e_give_exact_constr c
+	   | Give_exact (c) -> e_give_exact ~flags:st c
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve st (term,cl)) 
 		 (e_trivial_fail_db true db_list local_db)
@@ -457,4 +457,10 @@ let autosimpl db cl =
 TACTIC EXTEND autosimpl
 | [ "autosimpl" hintbases(db) ] ->
     [ autosimpl (match db with None -> ["core"] | Some x -> "core"::x) None ]
+END
+
+TACTIC EXTEND unify
+| ["unify" constr(x) constr(y) ] -> [ unify x y ]
+| ["unify" constr(x) constr(y) "with" preident(base)  ] -> [ 
+    unify ~state:(Hint_db.transparent_state (searchtable_map base)) x y ]
 END

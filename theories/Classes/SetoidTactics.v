@@ -45,11 +45,11 @@ Class DefaultRelation A (R : relation A).
 
 (** To search for the default relation, just call [default_relation]. *)
 
-Definition default_relation [ DefaultRelation A R ] := R.
+Definition default_relation `{DefaultRelation A R} := R.
 
 (** Every [Equivalence] gives a default relation, if no other is given (lowest priority). *)
 
-Instance equivalence_default [ Equivalence A R ] : DefaultRelation R | 4.
+Instance equivalence_default `(Equivalence A R) : DefaultRelation R | 4.
 
 (** The setoid_replace tactics in Ltac, defined in terms of default relations and
    the setoid_rewrite tactic. *)

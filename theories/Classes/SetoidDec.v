@@ -1,4 +1,3 @@
-(* -*- coq-prog-args: ("-emacs-U" "-nois") -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -27,12 +26,12 @@ Require Export Coq.Classes.SetoidClass.
 
 Require Import Coq.Logic.Decidable.
 
-Class DecidableSetoid A [ Setoid A ] :=
+Class DecidableSetoid `(S : Setoid A) :=
   setoid_decidable : forall x y : A, decidable (x == y).
 
 (** The [EqDec] class gives a decision procedure for a particular setoid equality. *)
 
-Class (( s : Setoid A )) => EqDec :=
+Class EqDec `(S : Setoid A) :=
   equiv_dec : forall x y : A, { x == y } + { x =/= y }.
 
 (** We define the [==] overloaded notation for deciding equality. It does not take precedence
@@ -52,7 +51,7 @@ Open Local Scope program_scope.
 
 (** Invert the branches. *)
 
-Program Definition nequiv_dec [ EqDec A ] (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
+Program Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x == y } := swap_sumbool (x == y).
 
 (** Overloaded notation for inequality. *)
 
@@ -60,10 +59,10 @@ Infix "=/=" := nequiv_dec (no associativity, at level 70).
 
 (** Define boolean versions, losing the logical information. *)
 
-Definition equiv_decb [ EqDec A ] (x y : A) : bool :=
+Definition equiv_decb `{EqDec A} (x y : A) : bool :=
   if x == y then true else false.
 
-Definition nequiv_decb [ EqDec A ] (x y : A) : bool :=
+Definition nequiv_decb `{EqDec A} (x y : A) : bool :=
   negb (equiv_decb x y).
 
 Infix "==b" := equiv_decb (no associativity, at level 70).
@@ -75,7 +74,7 @@ Require Import Coq.Arith.Arith.
 
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
-Program Instance eq_setoid A : Setoid A :=
+Program Instance eq_setoid A : Setoid A | 10 :=
   equiv := eq ; setoid_equiv := eq_equivalence.
 
 Program Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
@@ -95,7 +94,7 @@ Program Instance unit_eqdec : EqDec (eq_setoid unit) :=
     reflexivity.
   Qed.
 
-Program Instance prod_eqdec [ ! EqDec (eq_setoid A), ! EqDec (eq_setoid B) ] : EqDec (eq_setoid (prod A B)) :=
+Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B)) : EqDec (eq_setoid (prod A B)) :=
   equiv_dec x y := 
     let '(x1, x2) := x in 
     let '(y1, y2) := y in 
@@ -108,9 +107,7 @@ Program Instance prod_eqdec [ ! EqDec (eq_setoid A), ! EqDec (eq_setoid B) ] : E
 
 (** Objects of function spaces with countable domains like bool have decidable equality. *)
 
-Require Import Coq.Program.FunctionalExtensionality.
-
-Program Instance bool_function_eqdec [ ! EqDec (eq_setoid A) ] : EqDec (eq_setoid (bool -> A)) :=
+Program Instance bool_function_eqdec `(! EqDec (eq_setoid A)) : EqDec (eq_setoid (bool -> A)) :=
   equiv_dec f g := 
     if f true == g true then
       if f false == g false then in_left

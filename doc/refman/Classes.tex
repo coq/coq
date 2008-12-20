@@ -27,11 +27,12 @@ record syntax of \Coq~and the type classes syntax of \Haskell:
 
 \begin{center}
 \[\begin{array}{l}
-\kw{Class}~\classid{Id}~(\alpha_1 : \tau_1) \cdots (\alpha_n : \tau_n) :=\\
+\kw{Class}~\classid{Id}~(\alpha_1 : \tau_1) \cdots (\alpha_n : \tau_n)
+:= \{\\
 \begin{array}{p{0em}lcl}
   & \cst{f}_1 & : & \type_1 ; \\
   & \vdots & &  \\
-  & \cst{f}_m & : & \type_m.
+  & \cst{f}_m & : & \type_m \}.
 \end{array}\end{array}\]
 \end{center}
 \begin{center}
@@ -56,9 +57,9 @@ is given by $\ident$ and type is an instantiation of the record type.
 We'll use the following example class in the rest of the chapter:
 
 \begin{coq_example*}
-Class EqDec (A : Type) :=
+Class EqDec (A : Type) := {
   eqb : A -> A -> bool ;
-  eqb_leibniz : forall x y, eqb x y = true -> x = y.
+  eqb_leibniz : forall x y, eqb x y = true -> x = y }.
 \end{coq_example*}
 
 This class implements a boolean equality test which is compatible with
@@ -95,13 +96,13 @@ richer facilities for dealing with obligations.
 
 Once a type class is declared, one can use it in class binders:
 \begin{coq_example}
-  Definition neqb {A : Type} [ EqDec A ] (x y : A) := negb (eqb x y).
+  Definition neqb {A : Type} {eqa : EqDec A} (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 When one calls a class method, a constraint is generated that is
 satisfied only in contexts where the appropriate instances can be
 found. In the example above, a constraint \texttt{EqDec A} is generated and
-satisfied by \texttt{[ EqDec A ]}. In case no satisfying constraint can be
+satisfied by \texttt{{eqa : EqDec A}}. In case no satisfying constraint can be
 found, an error is raised:
 
 \begin{coq_example}
@@ -118,7 +119,7 @@ written:
   Definition neqb' (A : Type) (eqa : EqDec A) (x y : A) := negb (eqb x y).
 \end{coq_example}
 
-However, the bracketed binders should be used instead as they have
+However, the generalizing binders should be used instead as they have
 particular support for type classes:
 \begin{itemize}
 \item They automatically set the maximally implicit status for type
@@ -136,11 +137,12 @@ particular support for type classes:
 Implicit quantification is an automatic elaboration of a statement with
 free variables into a closed statement where these variables are
 quantified explicitely. Implicit generalization is done only inside
-bracketed binders and the codomain of \texttt{Instance} declarations.
+binders begining with a backquote \texttt{`} and the codomain of
+\texttt{Instance} declarations.
 
 Following the previous example, one can write:
 \begin{coq_example}
-  Definition neqb_impl [ eqa : EqDec A ] (x y : A) := negb (eqb x y).
+  Definition neqb_impl `{eqa : EqDec A} (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 Here \texttt{A} is implicitely generalized, and the resulting function
@@ -149,11 +151,11 @@ free variables are generalized, which may result in confusing errors in
 case of typos. In such cases, the context will probably contain some
 unexpected generalized variable.
 
-The bracket binders [ ] are a shorthand for double-braces \{\{ \}\} binders
-which declare the variables directly bound inside them as implicit
-(maximally-inserted) arguments, whereas double-parens (( )) brackets
-declare them as explicit arguments. Implicitely generalized variables
-are always set as maximally-inserted implicit arguments.
+The generalizing binders \verb|`{ }| and \verb|`( )| work similarly to 
+their explicit counterparts, only binding the generalized variables
+implicitly, as maximally-inserted arguments. In these binders, 
+the binding name for the bound object is optional, whereas the type is
+mandatory, dually to regular binders.
 
 \asection{Parameterized Instances}
 
@@ -161,7 +163,7 @@ One can declare parameterized instances as in \Haskell simply by giving
 the constraints as a binding context before the instance, e.g.:
 
 \begin{coq_example}
-Instance prod_eqb [ EA : EqDec A, EB : EqDec B ] : EqDec (A * B) :=
+Instance prod_eqb `(EA : EqDec A, EB : EqDec B) : EqDec (A * B) :=
   eqb x y := match x, y with
   | (la, ra), (lb, rb) => andb (eqb la lb) (eqb ra rb)
   end.
@@ -181,23 +183,27 @@ hierarchy of classes and superclasses. In the same way, we give the
 superclasses as a binding context:
 
 \begin{coq_example}
-Class (( E : EqDec A )) => Ord :=
-  le : A -> A -> bool.
+Class Ord `(E : EqDec A) :=
+  { le : A -> A -> bool }.
 \end{coq_example}
+
+Contrary to \Haskell, we have no special syntax for superclasses, but
+this declaration is morally equivalent to:
+\begin{verbatim}
+Class `(E : EqDec A) => Ord A :=
+  { le : A -> A -> bool }.
+\end{verbatim}
 
 This declaration means that any instance of the \texttt{Ord} class must
 have an instance of \texttt{EqDec}. The parameters of the subclass contain
 at least all the parameters of its superclasses in their order of
-appearance (here \texttt{A} is the only one). One should always give a
-name to each superclass, but one will be generated automatically if it
-is missing.
-
-Internally, \texttt{Ord} will become a record type with two parameters:
+appearance (here \texttt{A} is the only one).
+As we have seen, \texttt{Ord} is encoded as a record type with two parameters:
 a type \texttt{A} and an \texttt{E} of type \texttt{EqDec A}. However, one can
-still use it as if it had a single parameter inside class binders: the
+still use it as if it had a single parameter inside generalizing binders: the
 generalization of superclasses will be done automatically. 
 \begin{coq_example}
-Definition le_eqb [ Ord A ] (x y : A) :=
+Definition le_eqb `{Ord A} (x y : A) :=
   andb (le x y) (le y x).
 \end{coq_example}
 
@@ -207,19 +213,13 @@ binders, and using the \texttt{!} modifier in class binders. For
 example:
 
 \begin{coq_example}
-Definition lt [ eqa : EqDec A, ! Ord eqa ] (x y : A) :=
+Definition lt `{eqa : EqDec A, ! Ord eqa} (x y : A) :=
   andb (le x y) (neqb x y).
 \end{coq_example}
 
 The \texttt{!} modifier switches the way a binder is parsed back to the
 regular interpretation of Coq. In particular, it uses the implicit
 arguments mechanism if available, as shown in the example.
-
-One can notice that superclasses are in fact equivalent to parameters of
-the class, hence the above declaration is the same as:
-\begin{coq_example*}
-Class Ord ((EqDec A)) := le : A -> A -> bool.
-\end{coq_example*}
 
 \subsection{Substructures}
 
@@ -242,8 +242,8 @@ These may be used as part of other classes:
 
 \begin{coq_example*}
 Class PreOrder (A : Type) (R : relation A) :=
-  PreOrder_Reflexive :> Reflexive A R ;
-  PreOrder_Transitive :> Transitive A R.
+{ PreOrder_Reflexive :> Reflexive A R ;
+  PreOrder_Transitive :> Transitive A R }.
 \end{coq_example*}
 
 The syntax \texttt{:>} indicates that each \texttt{PreOrder} can be seen
@@ -260,17 +260,32 @@ same effect.
 \label{TypeClassCommands}}
 
 \subsection{\tt Class {\ident} {\binder$_1$ \ldots \binder$_n$} 
-  : \sort := field$_1$ ; \ldots ; field$_k$.}
+  : \sort := \{ field$_1$ ; \ldots ; field$_k$ \}.}
 \comindex{Class}
 \label{Class}
 
 The \texttt{Class} command is used to declare a type class with
 parameters {\binder$_1$} to {\binder$_n$} and fields {\tt field$_1$} to
-{\tt field$_k$}. A optional context of the form {\tt \binder$_1$, \ldots
-  \binder$_j$ :} can be put before the name of the class to declare
-superclasses or other parameters.
+{\tt field$_k$}.
 
-\subsection{\tt Instance {\ident} {\binder$_1$ \ldots \binder$_n$} : {Class} {t$_1$ \ldots t$_n$}
+\begin{Variants}
+\item {\tt Class {\ident} {\binder$_1$ \ldots \binder$_n$} 
+    : \sort := \ident$_1$ : \type$_1$.}
+  This variant declares a \emph{singleton} class whose only method is
+  {\tt \ident$_1$}. This singleton class is a so-called definitional
+  class, represented simply as a definition 
+  {\tt \ident \binder$_1$ \ldots \binder$_n$ := \type$_1$} and whose
+  instances are themselves objects of this type. Definitional classes
+  are not wrapped inside records, and the trivial projection of an
+  instance of such a class is convertible to the instance itself. This can
+  be useful to make instances of existing objects easily and to reduce 
+  proof size by not inserting useless projections. The class
+  constant itself is declared rigid during resolution so that the class 
+  abstraction is maintained.  
+\end{Variants}
+
+\subsection{\tt Instance {\ident} {\binder$_1$ \ldots \binder$_n$} :
+  {Class} {t$_1$ \ldots t$_n$} [| \textit{priority}]
   := field$_1$ := b$_1$ ; \ldots ; field$_i$ := b$_i$}
 \comindex{Instance}
 \label{Instance}
@@ -281,7 +296,10 @@ fields {\tt b$_1$} to {\tt b$_i$}, where each field must be a declared
 field of the class. Missing fields must be filled in interactive proof mode.
 
 An arbitrary context of the form {\tt \binder$_1$ \ldots \binder$_n$}
-can be put after the name of the instance and before the colon to declare a parameterized instance.
+can be put after the name of the instance and before the colon to
+declare a parameterized instance.
+An optional \textit{priority} can be declared, 0 being the highest
+priority as for auto hints.
 
 \begin{Variants}
 \item {\tt Global Instance} One can use the \texttt{Global} modifier on

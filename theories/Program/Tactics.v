@@ -93,7 +93,7 @@ Ltac clear_dup :=
         | [ H' : ?Y |- _ ] =>
           match H with
             | H' => fail 2
-            | _ => conv X Y ; (clear H' || clear H)
+            | _ => unify X Y ; (clear H' || clear H)
           end
       end
   end.

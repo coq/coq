@@ -5,15 +5,15 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-
-(* Standard functions and combinators.
- * Proofs about them require functional extensionality and can be found in [Combinators].
- *
- * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
- *              91405 Orsay, France *)
-
 (* $Id$ *)
+
+(** Standard functions and combinators.
+   
+   Proofs about them require functional extensionality and can be found in [Combinators].
+
+   Author: Matthieu Sozeau
+   Institution: LRI, CNRS UMR 8623 - Université Paris Sud
+   91405 Orsay, France *)
 
 (** The polymorphic identity function is defined in [Datatypes]. *)
 

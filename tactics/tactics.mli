@@ -361,7 +361,7 @@ val generalize      : constr list -> tactic
 val generalize_gen  : ((occurrences * constr) * name) list -> tactic
 val generalize_dep  : constr  -> tactic
 
-val conv            : constr -> constr -> tactic
+val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic
 val resolve_classes : tactic
 
 val tclABSTRACT : identifier option -> tactic -> tactic
