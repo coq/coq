@@ -28,3 +28,5 @@ fix foo (A : Type) (l : list A) {struct l} : option A :=
      : forall A : Type, list A -> option A
 
 Argument scopes are [type_scope list_scope]
+foo' = if A 0 then true else false
+     : bool
