@@ -365,10 +365,10 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
     (unfold l; intros; rewrite elements_iff, InA_rev; intuition).
   clear Pstep; clearbody l; revert s Hsame; induction l.
   (* empty *)
-  intros s Hsame; simpl; intros; subst.
+  intros s Hsame; simpl.
   apply Pempty. intro x. rewrite Hsame, InA_nil; intuition.
   (* step *)
-  intros s Hsame; simpl; intros.
+  intros s Hsame; simpl.
   apply Pstep' with (of_list l); auto.
    inversion_clear Hdup; rewrite of_list_1; auto.
    red. intros. rewrite Hsame, of_list_1, InA_cons; intuition.
@@ -469,7 +469,8 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   (** ** Alternative (weaker) specifications for [fold] *)
 
   (** When [FSets] was first designed, the order in which Ocaml's [Set.fold]
-        takes the set elements was unspecified. This specification reflects this fact: 
+      takes the set elements was unspecified. This specification reflects
+      this fact:
   *)
 
   Lemma fold_0 :
@@ -489,8 +490,8 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   apply fold_1.
   Qed.
 
-  (** An alternate (and previous) specification for [fold] was based on 
-      the recursive structure of a set. It is now lemmas [fold_1] and 
+  (** An alternate (and previous) specification for [fold] was based on
+      the recursive structure of a set. It is now lemmas [fold_1] and
       [fold_2]. *)
 
   Lemma fold_1 :
