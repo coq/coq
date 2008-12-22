@@ -305,7 +305,7 @@ $(ROMEGACMA:.cma=.cmxa): $(ROMEGACMO:.cmo=.cmx)
 $(MICROMEGACMA): $(MICROMEGACMO)
 $(MICROMEGACMA:.cma=.cmxa): $(MICROMEGACMO:.cmo=.cmx)
 
-$(QUOTACMA): $(QUOTECMO)
+$(QUOTECMA): $(QUOTECMO)
 $(QUOTECMA:.cma=.cmxa): $(QUOTECMO:.cmo=.cmx)
 
 $(RINGCMA): $(RINGCMO)
