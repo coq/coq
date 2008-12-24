@@ -17,7 +17,7 @@ type identifier = string
 
 let id_ord = Pervasives.compare
 
-let id_of_string s = check_ident s; String.copy s
+let id_of_string s = check_ident_soft s; String.copy s
 
 let string_of_id id = String.copy id
 

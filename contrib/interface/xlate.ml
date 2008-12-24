@@ -1886,7 +1886,8 @@ let rec xlate_vernac =
 	| PrintHint id ->
 	    CT_print_hint (CT_coerce_ID_to_ID_OPT (loc_qualid_to_ct_ID id))
 	| PrintHintGoal -> CT_print_hint ctv_ID_OPT_NONE
-	| PrintLoadPath -> CT_print_loadpath
+	| PrintLoadPath None -> CT_print_loadpath
+	| PrintLoadPath _ -> xlate_error "TODO: Print LoadPath dir"
 	| PrintMLLoadPath -> CT_ml_print_path
 	| PrintMLModules -> CT_ml_print_modules
 	| PrintGraph -> CT_print_graph

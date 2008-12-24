@@ -82,6 +82,7 @@ Vernacular commands
   compiled in native code with a version of OCaml that supports native
   Dynlink (>= 3.11).
 - Specific sort constraints on Record now taken into account.
+- "Print LoadPath" supports a path argument to filter the display.
 
 Libraries (DOC TO CHECK)
 

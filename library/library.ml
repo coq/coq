@@ -28,43 +28,15 @@ let load_paths = ref ([] : (System.physical_path * logical_path * bool) list)
 
 let get_load_paths () = List.map pi1 !load_paths
 
-(* Hints to partially detects if two paths refer to the same repertory *)
-let rec remove_path_dot p = 
-  let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
-  let n = String.length curdir in
-  if String.length p > n && String.sub p 0 n = curdir then
-    remove_path_dot (String.sub p n (String.length p - n))
-  else
-    p
-
-let strip_path p =
-  let cwd = Filename.concat (Sys.getcwd ()) "" in (* Unix: "`pwd`/" *)
-  let n = String.length cwd in
-  if String.length p > n && String.sub p 0 n = cwd then
-    remove_path_dot (String.sub p n (String.length p - n))
-  else
-    remove_path_dot p
-
-let canonical_path_name p =
-  let current = Sys.getcwd () in
-  try 
-    Sys.chdir p;
-    let p' = Sys.getcwd () in
-    Sys.chdir current;
-    p'
-  with Sys_error _ ->
-    (* We give up to find a canonical name and just simplify it... *)
-    strip_path p
-
 let find_logical_path phys_dir =
-  let phys_dir = canonical_path_name phys_dir in
+  let phys_dir = System.canonical_path_name phys_dir in
   match List.filter (fun (p,d,_) -> p = phys_dir) !load_paths with
   | [_,dir,_] -> dir
   | [] -> Nameops.default_root_prefix
   | l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
 let is_in_load_paths phys_dir =
-  let dir = canonical_path_name phys_dir in
+  let dir = System.canonical_path_name phys_dir in
   let lp = get_load_paths () in
   let check_p = fun p -> (String.compare dir p) == 0 in
     List.exists check_p lp 
@@ -73,13 +45,13 @@ let remove_load_path dir =
   load_paths := List.filter (fun (p,d,_) -> p <> dir) !load_paths
 
 let add_load_path isroot (phys_path,coq_path) =
-  let phys_path = canonical_path_name phys_path in
+  let phys_path = System.canonical_path_name phys_path in
     match List.filter (fun (p,d,_) -> p = phys_path) !load_paths with
       | [_,dir,_] ->
 	  if coq_path <> dir 
             (* If this is not the default -I . to coqtop *)
             && not
-            (phys_path = canonical_path_name Filename.current_dir_name
+            (phys_path = System.canonical_path_name Filename.current_dir_name
 		&& coq_path = Nameops.default_root_prefix)
 	  then
 	    begin
@@ -627,9 +599,15 @@ let import_module export (loc,qid) =
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
 
+let check_coq_overwriting p =
+  let l = repr_dirpath p in
+  if not !Flags.boot && l <> [] && string_of_id (list_last l) = "Coq" then
+    errorlabstrm "" (strbrk ("Name "^string_of_dirpath p^" starts with prefix \"Coq\" which is reserved for the Coq library."))
+
 let start_library f = 
   let _,longf = System.find_file_in_path (get_load_paths ()) (f^".v") in
   let ldir0 = find_logical_path (Filename.dirname longf) in
+  check_coq_overwriting ldir0;
   let id = id_of_string (Filename.basename f) in
   let ldir = extend_dirpath ldir0 id in
   Declaremods.start_library ldir;

@@ -165,13 +165,13 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
-coqbinaries:: ${COQBINARIES} ${CSDPCERT}
+coqbinaries:: ${COQBINARIES} ${CSDPCERT} $(INITPLUGINSOPT) $(INITPLUGINS)
 
 coq: coqlib tools coqbinaries
 
 coqlib:: initplugins theories contrib
 
-coqlight: initplugins theories-light tools coqbinaries
+coqlight: theories-light tools coqbinaries
 
 states:: states/initial.coq
 

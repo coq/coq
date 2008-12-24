@@ -63,6 +63,34 @@ type load_path = physical_path list
 let physical_path_of_string s = s
 let string_of_physical_path p = p
 
+(* Hints to partially detects if two paths refer to the same repertory *)
+let rec remove_path_dot p = 
+  let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
+  let n = String.length curdir in
+  if String.length p > n && String.sub p 0 n = curdir then
+    remove_path_dot (String.sub p n (String.length p - n))
+  else
+    p
+
+let strip_path p =
+  let cwd = Filename.concat (Sys.getcwd ()) "" in (* Unix: "`pwd`/" *)
+  let n = String.length cwd in
+  if String.length p > n && String.sub p 0 n = cwd then
+    remove_path_dot (String.sub p n (String.length p - n))
+  else
+    remove_path_dot p
+
+let canonical_path_name p =
+  let current = Sys.getcwd () in
+  try 
+    Sys.chdir p;
+    let p' = Sys.getcwd () in
+    Sys.chdir current;
+    p'
+  with Sys_error _ ->
+    (* We give up to find a canonical name and just simplify it... *)
+    strip_path p
+
 (* All subdirectories, recursively *)
 
 let exists_dir dir =

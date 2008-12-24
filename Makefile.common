@@ -911,7 +911,7 @@ STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   interp parsing pretyping highparsing toplevel hightactics \
   coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \
   pcoq-binaries $(COQINTERFACE) $(CSDPCERT) coqbinaries pcoq $(TOOLS) tools \
-  printers debug
+  printers debug initplugins
 VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   fsets allfsets relations wellfounded ints reals allreals \
   setoids sorting natural integer rational numbers noreal \
