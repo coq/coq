@@ -320,23 +320,14 @@ let compute_construtor_signatures isrec (_,k as ity) =
   array_map2 analrec lc lrecargs
 
 let elimination_sort_of_goal gl = 
-  match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
-    | Sort s ->
-	(match s with
-	   | Prop Null -> InProp
-	   | Prop Pos -> InSet
-	   | Type _ -> InType)
-    | _        -> anomaly "goal should be a type"
+  pf_apply Retyping.get_sort_family_of gl (pf_concl gl)
 
 let elimination_sort_of_hyp id gl = 
-  match kind_of_term (hnf_type_of gl (pf_get_hyp_typ gl id)) with 
-    | Sort s ->
-	(match s with
-	   | Prop Null -> InProp
-	   | Prop Pos -> InSet
-	   | Type _ -> InType)
-    | _        -> anomaly "goal should be a type"
+  pf_apply Retyping.get_sort_family_of gl (pf_get_hyp_typ gl id)
 
+let elimination_sort_of_clause = function
+  | None -> elimination_sort_of_goal 
+  | Some id -> elimination_sort_of_hyp id
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)

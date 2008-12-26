@@ -146,6 +146,7 @@ val compute_induction_names :
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
+val elimination_sort_of_clause : identifier option -> goal sigma -> sorts_family
 
 val general_elim_then_using :
   (inductive -> goal sigma -> constr) -> rec_flag ->

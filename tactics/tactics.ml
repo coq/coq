@@ -883,7 +883,7 @@ let apply_in_once with_delta with_destruct with_evars id ((sigma,d),lbind) gl0 =
       if not with_evars then check_evars (fst res).sigma sigma gl0;
       res
     with exn when with_destruct ->
-      descend_in_conjunctions with_evars aux (fun _ -> raise exn) c gl
+      descend_in_conjunctions true aux (fun _ -> raise exn) c gl
   in
     if sigma = Evd.empty then aux d gl0
     else

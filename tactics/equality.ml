@@ -93,15 +93,15 @@ let is_applied_relation t =
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
-let find_elim hdcncl lft2rgt gl =
-  let hdcncls = string_of_inductive hdcncl in 
-  let rwr_thm = if lft2rgt then hdcncls^"_rect_r" else hdcncls^"_rect" in
+let find_elim hdcncl lft2rgt cls gl =
+  let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
+  let hdcncls = string_of_inductive hdcncl ^ suffix in 
+  let rwr_thm = if lft2rgt = (cls = None) then hdcncls^"_r" else hdcncls in
   try pf_global gl (id_of_string rwr_thm)
   with Not_found -> error ("Cannot find rewrite principle "^rwr_thm^".")
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt sigma c l with_evars gl hdcncl =
-  let dir = if cls=None then lft2rgt else not lft2rgt in
-  let elim = find_elim hdcncl dir gl in
+  let elim = find_elim hdcncl lft2rgt cls gl in
   general_elim_clause with_evars cls sigma c l (elim,NoBindings) gl
 
 let adjust_rewriting_direction args lft2rgt =
@@ -991,7 +991,7 @@ let swapEquandsInHyp id gls =
 
 let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
   (* find substitution scheme *)
-  let eq_elim = find_elim lbeq.eq false gls in
+  let eq_elim = find_elim lbeq.eq false None gls in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)
