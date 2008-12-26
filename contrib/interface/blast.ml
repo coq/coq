@@ -148,6 +148,8 @@ let pp_string x =
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)
 (***************************************************************************)
 
+let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
+
 let unify_e_resolve  (c,clenv) gls = 
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver false clenv' gls in
@@ -192,9 +194,9 @@ and e_my_find_search db_list local_db hdc concl =
 	   | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	   | Extern tacast -> Auto.conclPattern concl p tacast
        in 
-       (free_try tac,fmt_autotactic t))
+       (free_try tac,pr_autotactic t))
        (*i
-	 fun gls -> pPNL (fmt_autotactic t); Format.print_flush (); 
+	 fun gls -> pPNL (pr_autotactic t); Format.print_flush (); 
                      try tac gls
 		     with e when Logic.catchable_exception(e) -> 
                             (Format.print_string "Fail\n"; 
@@ -206,7 +208,7 @@ and e_my_find_search db_list local_db hdc concl =
     
 and e_trivial_resolve db_list local_db gl = 
   try 
-    Auto.priority 
+    priority 
       (e_my_find_search db_list local_db 
 	 (List.hd (head_constr_bound gl [])) gl)
   with Bound | Not_found -> []
