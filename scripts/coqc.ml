@@ -139,12 +139,11 @@ let parse_args () =
 
     | ("-notactics"|"-debug"|"-nolib"
       |"-debugVM"|"-alltransp"|"-VMno"
-      |"-batch"|"-nois" | "-noglob" | "-no-glob"
+      |"-batch"|"-nois"|"-noglob"|"-no-glob"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
       |"-dont-load-proofs"|"-impredicative-set"|"-vm" 
-      |"-unboxed-values"|"-unboxed-definitions"|"-draw-vm-instr"
-      |"-no-glob"|"-noglob" as o) :: rem ->
+      |"-unboxed-values"|"-unboxed-definitions"|"-draw-vm-instr" as o) :: rem ->
 	parse (cfiles,o::args) rem
 	    
     | ("-where") :: _ -> 

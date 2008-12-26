@@ -8,9 +8,22 @@
 
 (* $Id$ *)
 
+let get_version_date () =
+  try
+    let ch = open_in (Coq_config.coqsrc^"/revision") in
+    let ver = input_line ch in
+    let rev = input_line ch in
+    (ver,rev)
+  with _ -> (Coq_config.version,Coq_config.date)
+
+let print_header () =
+  let (ver,rev) = (get_version_date ()) in
+  Printf.printf "Welcome to Coq %s (%s)\n" ver rev;
+  flush stdout
+
 let version () =
-  Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
-    Coq_config.version Coq_config.date;
+  let (ver,rev) = (get_version_date ()) in
+  Printf.printf "The Coq Proof Assistant, version %s (%s)\n" ver rev;
   Printf.printf "compiled on %s\n" Coq_config.compile_date;
   exit 0
 

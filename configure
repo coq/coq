@@ -9,7 +9,7 @@
 VERSION=trunk
 VOMAGIC=08193 
 STATEMAGIC=19764
-DATE="Jun. 2008"
+DATE="date unspecified"
 
 # Create the bin/ directory if non-existent
 test -d bin || mkdir bin
