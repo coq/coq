@@ -449,7 +449,7 @@ Definition transpose (f : A -> B -> B) :=
 Definition transpose_restr (R : A -> A -> Prop)(f : A -> B -> B) :=
   forall (x y : A) (z : B), R x y -> eqB (f x (f y z)) (f y (f x z)).
 
-Variable st:Setoid_Theory _ eqB.
+Variable st:Equivalence eqB.
 Variable f:A->B->B.
 Variable i:B.
 Variable Comp:compat_op f.
@@ -459,7 +459,7 @@ Lemma fold_right_eqlistA :
    eqB (fold_right f i s) (fold_right f i s').
 Proof.
 induction 1; simpl; auto.
-refl_st.
+reflexivity.
 Qed.
 
 Lemma equivlistA_NoDupA_split : forall l l1 l2 x y, eqA x y -> 
@@ -598,8 +598,8 @@ Lemma fold_right_commutes_restr :
   eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
 Proof.
 induction s1; simpl; auto; intros.
-refl_st.
-trans_st (f a (f x (fold_right f i (s1++s2)))).
+reflexivity.
+transitivity (f a (f x (fold_right f i (s1++s2)))).
 apply Comp; auto.
 apply IHs1.
 inversion_clear H; auto.
@@ -615,7 +615,7 @@ Lemma fold_right_equivlistA_restr :
 Proof.
  simple induction s.
  destruct s'; simpl.
- intros; refl_st; auto.
+ intros; reflexivity.
  unfold equivlistA; intros.
  destruct (H2 a).
  assert (X : InA a nil); auto; inversion X.
@@ -624,16 +624,16 @@ Proof.
   rewrite <- (E x); auto.
  destruct (InA_split H) as (s1,(y,(s2,(H1,H2)))).
  subst s'.
- trans_st (f x (fold_right f i (s1++s2))).
+ transitivity (f x (fold_right f i (s1++s2))).
  apply Comp; auto.
  apply Hrec; auto.
  inversion_clear N; auto.
  eapply NoDupA_split; eauto.
  inversion_clear F; auto.
  eapply equivlistA_NoDupA_split; eauto.
- trans_st (f y (fold_right f i (s1++s2))).
- apply Comp; auto; refl_st.
- sym_st; apply fold_right_commutes_restr.
+ transitivity (f y (fold_right f i (s1++s2))).
+ apply Comp; auto. reflexivity.
+ symmetry; apply fold_right_commutes_restr.
  apply ForallList2_equivlistA with (x::l); auto.
 Qed.
 
@@ -654,8 +654,8 @@ Lemma fold_right_commutes : forall s1 s2 x,
   eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
 Proof.
 induction s1; simpl; auto; intros.
-refl_st.
-trans_st (f a (f x (fold_right f i (s1++s2)))).
+reflexivity.
+transitivity (f a (f x (fold_right f i (s1++s2)))); auto.
 Qed.
 
 Lemma fold_right_equivlistA :

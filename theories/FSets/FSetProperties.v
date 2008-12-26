@@ -22,7 +22,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 
 Hint Unfold transpose compat_op.
-Hint Extern 1 (Setoid_Theory _ _) => constructor; congruence.
+Hint Extern 1 (Equivalence _) => constructor; congruence.
 
 (** First, a functor for Weak Sets in functorial version. *)
 
@@ -495,21 +495,21 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
       [fold_2]. *)
 
   Lemma fold_1 :
-   forall s (A : Type) (eqA : A -> A -> Prop) 
-     (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
+   forall s (A : Type) (eqA : A -> A -> Prop)
+     (st : Equivalence eqA) (i : A) (f : elt -> A -> A),
    Empty s -> eqA (fold f s i) i.
   Proof.
   unfold Empty; intros; destruct (fold_0 s i f) as (l,(H1, (H2, H3))).
   rewrite H3; clear H3.
   generalize H H2; clear H H2; case l; simpl; intros.
-  refl_st.
+  reflexivity.
   elim (H e).
   elim (H2 e); intuition. 
   Qed.
 
   Lemma fold_2 :
    forall s s' x (A : Type) (eqA : A -> A -> Prop)
-     (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
+     (st : Equivalence eqA) (i : A) (f : elt -> A -> A),
    compat_op E.eq eqA f ->
    transpose eqA f ->
    ~ In x s -> Add x s s' -> eqA (fold f s' i) (f x (fold f s i)).
@@ -538,7 +538,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   Section Fold_More.
 
-  Variables (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
+  Variables (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA).
   Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f)(Ass:transpose eqA f).
 
   Lemma fold_commutes : forall i s x, 
@@ -546,8 +546,8 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros.
   apply fold_rel with (R:=fun u v => eqA u (f x v)); intros.
-  refl_st.
-  trans_st (f x0 (f x b)).
+  reflexivity.
+  transitivity (f x0 (f x b)); auto.
   Qed.
 
   (** ** Fold is a morphism *)
@@ -562,24 +562,24 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
    forall i s s', s[=]s' -> eqA (fold f s i) (fold f s' i).
   Proof. 
   intros i s; pattern s; apply set_induction; clear s; intros.
-  trans_st i.
+  transitivity i.
   apply fold_1; auto.
-  sym_st; apply fold_1; auto.
+  symmetry; apply fold_1; auto.
   rewrite <- H0; auto.
-  trans_st (f x (fold f s i)).
+  transitivity (f x (fold f s i)).
   apply fold_2 with (eqA := eqA); auto.
-  sym_st; apply fold_2 with (eqA := eqA); auto.
+  symmetry; apply fold_2 with (eqA := eqA); auto.
   unfold Add in *; intros.
   rewrite <- H2; auto.
   Qed.
 
   (** ** Fold and other set operators *)
 
-  Lemma fold_empty : forall i, (fold f empty i) = i.
+  Lemma fold_empty : forall i, fold f empty i = i.
   Proof. 
   intros i; apply fold_1b; auto with set.
   Qed.
-   
+
   Lemma fold_add : forall i s x, ~In x s -> 
    eqA (fold f (add x s) i) (f x (fold f s i)).
   Proof. 
@@ -596,7 +596,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
    eqA (f x (fold f (remove x s) i)) (fold f s i).
   Proof.
   intros.
-  sym_st.
+  symmetry.
   apply fold_2 with (eqA:=eqA); auto with set.
   Qed.
 
@@ -612,46 +612,48 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
        (fold f s (fold f s' i)).
   Proof.
   intros; pattern s; apply set_induction; clear s; intros.
-  trans_st (fold f s' (fold f (inter s s') i)).
+  transitivity (fold f s' (fold f (inter s s') i)).
   apply fold_equal; auto with set.
-  trans_st (fold f s' i).
+  transitivity (fold f s' i).
   apply fold_init; auto.
   apply fold_1; auto with set.
-  sym_st; apply fold_1; auto.
+  symmetry; apply fold_1; auto.
   rename s'0 into s''.
   destruct (In_dec x s').
   (* In x s' *)   
-  trans_st (fold f (union s'' s') (f x (fold f (inter s s') i))); auto with set.
+  transitivity (fold f (union s'' s') (f x (fold f (inter s s') i))); auto with set.
   apply fold_init; auto.
   apply fold_2 with (eqA:=eqA); auto with set.
   rewrite inter_iff; intuition.
-  trans_st (f x (fold f s (fold f s' i))).
-  trans_st (fold f (union s s') (f x (fold f (inter s s') i))).
+  transitivity (f x (fold f s (fold f s' i))).
+  transitivity (fold f (union s s') (f x (fold f (inter s s') i))).
   apply fold_equal; auto.
   apply equal_sym; apply union_Equal with x; auto with set.
-  trans_st (f x (fold f (union s s') (fold f (inter s s') i))).
+  transitivity (f x (fold f (union s s') (fold f (inter s s') i))).
   apply fold_commutes; auto.
-  sym_st; apply fold_2 with (eqA:=eqA); auto.
+  apply Comp; auto.
+  symmetry; apply fold_2 with (eqA:=eqA); auto.
   (* ~(In x s') *)
-  trans_st (f x (fold f (union s s') (fold f (inter s'' s') i))).
+  transitivity (f x (fold f (union s s') (fold f (inter s'' s') i))).
   apply fold_2 with (eqA:=eqA); auto with set.
-  trans_st (f x (fold f (union s s') (fold f (inter s s') i))).
+  transitivity (f x (fold f (union s s') (fold f (inter s s') i))).
   apply Comp;auto.
   apply fold_init;auto.
   apply fold_equal;auto.
   apply equal_sym; apply inter_Add_2 with x; auto with set.
-  trans_st (f x (fold f s (fold f s' i))).
-  sym_st; apply fold_2 with (eqA:=eqA); auto.
+  transitivity (f x (fold f s (fold f s' i))).
+  apply Comp; auto.
+  symmetry; apply fold_2 with (eqA:=eqA); auto.
   Qed.
 
   Lemma fold_diff_inter : forall i s s', 
    eqA (fold f (diff s s') (fold f (inter s s') i)) (fold f s i).
   Proof.
   intros.
-  trans_st (fold f (union (diff s s') (inter s s')) 
-              (fold f (inter (diff s s') (inter s s')) i)).
-  sym_st; apply fold_union_inter; auto.
-  trans_st (fold f s (fold f (inter (diff s s') (inter s s')) i)).
+  transitivity (fold f (union (diff s s') (inter s s'))
+               (fold f (inter (diff s s') (inter s s')) i)).
+  symmetry; apply fold_union_inter; auto.
+  transitivity (fold f s (fold f (inter (diff s s') (inter s s')) i)).
   apply fold_equal; auto with set.
   apply fold_init; auto.
   apply fold_1; auto with set.
@@ -662,9 +664,9 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
    eqA (fold f (union s s') i) (fold f s (fold f s' i)).
   Proof.
   intros.
-  trans_st (fold f (union s s') (fold f (inter s s') i)).
+  transitivity (fold f (union s s') (fold f (inter s s') i)).
   apply fold_init; auto.
-  sym_st; apply fold_1; auto with set.
+  symmetry; apply fold_1; auto with set.
   unfold Empty; intro a; generalize (H a); set_iff; tauto.
   apply fold_union_inter; auto.
   Qed.
@@ -1083,7 +1085,7 @@ Module OrdProperties (M:S).
 
   Lemma fold_3 :
    forall s s' x (A : Type) (eqA : A -> A -> Prop)
-     (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
+     (st : Equivalence eqA) (i : A) (f : elt -> A -> A),
    compat_op E.eq eqA f ->
    Above x s -> Add x s s' -> eqA (fold f s' i) (f x (fold f s i)).
   Proof.
@@ -1100,7 +1102,7 @@ Module OrdProperties (M:S).
 
   Lemma fold_4 :
    forall s s' x (A : Type) (eqA : A -> A -> Prop)
-     (st : Setoid_Theory A eqA) (i : A) (f : elt -> A -> A),
+     (st : Equivalence eqA) (i : A) (f : elt -> A -> A),
    compat_op E.eq eqA f ->
    Below x s -> Add x s s' -> eqA (fold f s' i) (fold f s (f x i)).
   Proof.
@@ -1120,7 +1122,7 @@ Module OrdProperties (M:S).
     no need for [(transpose eqA f)]. *)
 
   Section FoldOpt. 
-  Variables (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
+  Variables (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA).
   Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f).
 
   Lemma fold_equal : 
@@ -1132,14 +1134,6 @@ Module OrdProperties (M:S).
   apply eqlistA_rev.
   apply sort_equivlistA_eqlistA; auto with set.
   red; intro a; do 2 rewrite <- elements_iff; auto.
-  Qed.
-
-  Lemma fold_init : forall i i' s, eqA i i' -> 
-   eqA (fold f s i) (fold f s i').
-  Proof. 
-  intros; do 2 rewrite M.fold_1.
-  do 2 rewrite <- fold_left_rev_right.
-  induction (rev (elements s)); simpl; auto.
   Qed.
 
   Lemma add_fold : forall i s x, In x s -> 

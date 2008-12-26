@@ -494,7 +494,7 @@ destruct (mem x s); destruct (mem x s'); intuition.
 Qed.
 
 Section Fold. 
-Variables (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA).
+Variables (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA).
 Variables (f:elt->A->A)(Comp:compat_op E.eq eqA f)(Ass:transpose eqA f).
 Variables (i:A).
 Variables (s s':t)(x:elt).
@@ -852,7 +852,7 @@ assert (gc : compat_opL (fun x:elt => plus (g x))). auto.
 assert (gt : transposeL (fun x:elt =>plus (g x))). red; intros; omega.
 assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))). auto.
 assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). red; intros; omega.
-assert (st := gen_st nat).
+assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
 intros s;pattern s; apply set_rec.
 intros.
 rewrite <- (fold_equal _ _ st _ fc ft 0 _ _ H).
@@ -867,7 +867,7 @@ Lemma sum_filter : forall f, (compat_bool E.eq f) ->
   forall s, (sum (fun x => if f x then 1 else 0) s) = (cardinal (filter f s)).
 Proof.
 unfold sum; intros f Hf.
-assert (st := gen_st nat).
+assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
 assert (cc : compat_opL (fun x => plus (if f x then 1 else 0))). 
  red; intros.
  rewrite (Hf x x' H); auto.
@@ -892,7 +892,7 @@ rewrite filter_iff; auto; set_iff; tauto.
 Qed.
 
 Lemma fold_compat : 
-  forall (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory _ eqA)
+  forall (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
   (f g:elt->A->A),
   (compat_op E.eq eqA f) -> (transpose eqA f) -> 
   (compat_op E.eq eqA g) -> (transpose eqA g) -> 
@@ -901,19 +901,19 @@ Lemma fold_compat :
 Proof.
 intros A eqA st f g fc ft gc gt i.
 intro s; pattern s; apply set_rec; intros.
-trans_st (fold f s0 i).
+transitivity (fold f s0 i).
 apply fold_equal with (eqA:=eqA); auto.
 rewrite equal_sym; auto.
-trans_st (fold g s0 i).
+transitivity (fold g s0 i).
 apply H0; intros; apply H1; auto with set.
 elim  (equal_2 H x); auto with set; intros.
 apply fold_equal with (eqA:=eqA); auto with set.
-trans_st (f x (fold f s0 i)).
+transitivity (f x (fold f s0 i)).
 apply fold_add with (eqA:=eqA); auto with set.
-trans_st (g x (fold f s0 i)); auto with set.
-trans_st (g x (fold g s0 i)); auto with set.
-sym_st; apply fold_add with (eqA:=eqA); auto.
-do 2 rewrite fold_empty; refl_st.
+transitivity (g x (fold f s0 i)); auto with set.
+transitivity (g x (fold g s0 i)); auto with set.
+symmetry; apply fold_add with (eqA:=eqA); auto.
+do 2 rewrite fold_empty; reflexivity.
 Qed.
 
 Lemma sum_compat : 

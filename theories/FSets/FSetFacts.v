@@ -291,12 +291,12 @@ End BoolSpec.
 
 (** * [E.eq] and [Equal] are setoid equalities *)
 
-Definition E_ST : Setoid_Theory elt E.eq.
+Definition E_ST : Equivalence E.eq.
 Proof.
 constructor ; red; [apply E.eq_refl|apply E.eq_sym|apply E.eq_trans].
 Qed.
 
-Definition Equal_ST : Setoid_Theory t Equal.
+Definition Equal_ST : Equivalence Equal.
 Proof. 
 constructor ; red; [apply eq_refl | apply eq_sym | apply eq_trans].
 Qed.
@@ -414,18 +414,15 @@ Qed.
 (* [Subset] is a setoid order *)
 
 Lemma Subset_refl : forall s, s[<=]s.
-Proof. red; auto. Defined.
+Proof. red; auto. Qed.
 
 Lemma Subset_trans : forall s s' s'', s[<=]s'->s'[<=]s''->s[<=]s''.
-Proof. unfold Subset; eauto. Defined.
+Proof. unfold Subset; eauto. Qed.
 
-Add Relation t Subset 
+Add Relation t Subset
  reflexivity proved by Subset_refl
  transitivity proved by Subset_trans
  as SubsetSetoid.
-(* NB: for the moment, it is important to use Defined and not Qed in 
-   the two previous lemmas, in order to allow conversion of 
-   SubsetSetoid coming from separate Facts modules. See bug #1738. *)
 
 Instance In_s_m : Morphism (E.eq ==> Subset ++> impl) In | 1.
 Proof.
@@ -490,7 +487,7 @@ Proof.
 unfold Subset; intros; rewrite filter_iff in *; intuition.
 Qed.
 
-(* For [elements], [min_elt], [max_elt] and [choose], we would need setoid 
+(* For [elements], [min_elt], [max_elt] and [choose], we would need setoid
    structures on [list elt] and [option elt]. *)
 
 (* Later:
