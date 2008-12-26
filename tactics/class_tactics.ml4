@@ -139,7 +139,7 @@ and e_my_find_search db_list local_db hdc concl =
 	  | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	  | Extern tacast -> conclPattern concl p tacast
       in 
-	(tac,b,fmt_autotactic t)
+	(tac,b,pr_autotactic t)
   in 
     List.map tac_of_hint hintl
 

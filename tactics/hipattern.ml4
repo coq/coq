@@ -67,7 +67,7 @@ let is_non_recursive_type t = op2bool (match_with_non_recursive_type t)
 (* A general conjunction type is a non-recursive inductive type with
    only one constructor. *)
 
-let match_with_conjunction t =
+let match_with_conjunction_size t =
   let (hdapp,args) = decompose_app t in 
   match kind_of_term hdapp with
     | Ind ind -> 
@@ -76,10 +76,15 @@ let match_with_conjunction t =
 	  && (not (mis_is_recursive (ind,mib,mip)))
           && (mip.mind_nrealargs = 0)
         then 
-	  Some (hdapp,args)
+	  Some (hdapp,args,mip.mind_consnrealdecls.(0))
         else 
 	  None
     | _ -> None
+
+let match_with_conjunction t =
+  match match_with_conjunction_size t with
+  | Some (hd,args,n) -> Some (hd,args)
+  | None -> None
 
 let is_conjunction t = op2bool (match_with_conjunction t)
     

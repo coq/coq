@@ -59,13 +59,13 @@ Proof.
   rewrite Sn_eq_Sm; trivial.
 Qed.
 
-Hint Immediate eq_add_S: core v62.
+Hint Immediate eq_add_S: core.
 
 Theorem not_eq_S : forall n m:nat, n <> m -> S n <> S m.
 Proof.
   red in |- *; auto.
 Qed.
-Hint Resolve not_eq_S: core v62.
+Hint Resolve not_eq_S: core.
 
 Definition IsSucc (n:nat) : Prop :=
   match n with
@@ -80,13 +80,13 @@ Proof.
   unfold not; intros n H.
   inversion H.
 Qed.
-Hint Resolve O_S: core v62.
+Hint Resolve O_S: core.
 
 Theorem n_Sn : forall n:nat, n <> S n.
 Proof.
   induction n; auto.
 Qed.
-Hint Resolve n_Sn: core v62.
+Hint Resolve n_Sn: core.
 
 (** Addition *)
 
@@ -105,7 +105,7 @@ Lemma plus_n_O : forall n:nat, n = n + 0.
 Proof.
   induction n; simpl in |- *; auto.
 Qed.
-Hint Resolve plus_n_O: core v62.
+Hint Resolve plus_n_O: core.
 
 Lemma plus_O_n : forall n:nat, 0 + n = n.
 Proof.
@@ -116,7 +116,7 @@ Lemma plus_n_Sm : forall n m:nat, S (n + m) = n + S m.
 Proof.
   intros n m; induction n; simpl in |- *; auto.
 Qed.
-Hint Resolve plus_n_Sm: core v62.
+Hint Resolve plus_n_Sm: core.
 
 Lemma plus_Sn_m : forall n m:nat, S n + m = S (n + m).
 Proof.
@@ -138,13 +138,13 @@ Fixpoint mult (n m:nat) {struct n} : nat :=
 
 where "n * m" := (mult n m) : nat_scope.
 
-Hint Resolve (f_equal2 mult): core v62.
+Hint Resolve (f_equal2 mult): core.
 
 Lemma mult_n_O : forall n:nat, 0 = n * 0.
 Proof.
   induction n; simpl in |- *; auto.
 Qed.
-Hint Resolve mult_n_O: core v62.
+Hint Resolve mult_n_O: core.
 
 Lemma mult_n_Sm : forall n m:nat, n * m + n = n * S m.
 Proof.
@@ -152,7 +152,7 @@ Proof.
   destruct H; rewrite <- plus_n_Sm; apply (f_equal S).
   pattern m at 1 3 in |- *; elim m; simpl in |- *; auto.
 Qed.
-Hint Resolve mult_n_Sm: core v62.
+Hint Resolve mult_n_Sm: core.
 
 (** Standard associated names *)
 
@@ -179,21 +179,21 @@ Inductive le (n:nat) : nat -> Prop :=
 
 where "n <= m" := (le n m) : nat_scope.
 
-Hint Constructors le: core v62.
-(*i equivalent to : "Hints Resolve le_n le_S : core v62." i*)
+Hint Constructors le: core.
+(*i equivalent to : "Hints Resolve le_n le_S : core." i*)
 
 Definition lt (n m:nat) := S n <= m.
-Hint Unfold lt: core v62.
+Hint Unfold lt: core.
 
 Infix "<" := lt : nat_scope.
 
 Definition ge (n m:nat) := m <= n.
-Hint Unfold ge: core v62.
+Hint Unfold ge: core.
 
 Infix ">=" := ge : nat_scope.
 
 Definition gt (n m:nat) := m < n.
-Hint Unfold gt: core v62.
+Hint Unfold gt: core.
 
 Infix ">" := gt : nat_scope.
 

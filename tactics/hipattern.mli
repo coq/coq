@@ -56,6 +56,7 @@ val match_with_disjunction : (constr * constr list) matching_function
 val is_disjunction         : testing_function 
 
 val match_with_conjunction : (constr * constr list) matching_function
+val match_with_conjunction_size : (constr * constr list * int) matching_function
 val is_conjunction         : testing_function 
 
 val match_with_empty_type  : constr matching_function

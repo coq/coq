@@ -28,6 +28,7 @@ open Tacexpr
 val tclNORMEVAR      : tactic
 val tclIDTAC         : tactic
 val tclIDTAC_MESSAGE : std_ppcmds -> tactic
+val tclORELSE0       : tactic -> tactic -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
 val tclTHENSEQ       : tactic list -> tactic
@@ -57,8 +58,10 @@ val tclNOTSAMEGOAL   : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 
 val tclNTH_HYP       : int -> (constr -> tactic) -> tactic
+val tclNTH_DECL      : int -> (named_declaration -> tactic) -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 val tclLAST_HYP      : (constr -> tactic) -> tactic
+val tclLAST_DECL     : (named_declaration -> tactic) -> tactic
 val tclLAST_NHYPS    : int -> (identifier list -> tactic) -> tactic
 val tclTRY_sign      : (constr -> tactic) -> named_context -> tactic
 val tclTRY_HYPS      : (constr -> tactic) -> tactic

@@ -245,8 +245,8 @@ Implicit Arguments eq_ind [A].
 Implicit Arguments eq_rec [A].
 Implicit Arguments eq_rect [A].
 
-Hint Resolve I conj or_introl or_intror refl_equal: core v62.
-Hint Resolve ex_intro ex_intro2: core v62.
+Hint Resolve I conj or_introl or_intror refl_equal: core.
+Hint Resolve ex_intro ex_intro2: core.
 
 Section Logic_lemmas.
 
@@ -339,7 +339,7 @@ Proof.
   destruct 1; destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
 Qed.
 
-Hint Immediate sym_eq sym_not_eq: core v62.
+Hint Immediate sym_eq sym_not_eq: core.
 
 (** Basic definitions about relations and properties *)
 

@@ -41,6 +41,7 @@ open Tacexpr
 let tclNORMEVAR      = tclNORMEVAR
 let tclIDTAC         = tclIDTAC
 let tclIDTAC_MESSAGE = tclIDTAC_MESSAGE
+let tclORELSE0       = tclORELSE0
 let tclORELSE        = tclORELSE
 let tclTHEN          = tclTHEN
 let tclTHENLIST      = tclTHENLIST
@@ -75,7 +76,7 @@ let tclIFTHENTRYELSEMUST = tclIFTHENTRYELSEMUST
 let unTAC            = unTAC
 
 (* [rclTHENSEQ [t1;..;tn] is equivalent to t1;..;tn *)
-let tclTHENSEQ = List.fold_left tclTHEN tclIDTAC
+let tclTHENSEQ = tclTHENLIST
 
 (* map_tactical f [x1..xn] = (f x1);(f x2);...(f xn) *)
 (* tclMAP f [x1..xn] = (f x1);(f x2);...(f xn) *)
@@ -88,9 +89,15 @@ let tclNTH_HYP m (tac : constr->tactic) gl =
   tac (try mkVar(let (id,_,_) = List.nth (pf_hyps gl) (m-1) in id) 
        with Failure _ -> error "No such assumption.") gl
 
+let tclNTH_DECL m tac gl =
+  tac (try List.nth (pf_hyps gl) (m-1) 
+       with Failure _ -> error "No such assumption.") gl
+
 (* apply a tactic to the last element of the signature  *)
 
 let tclLAST_HYP = tclNTH_HYP 1
+
+let tclLAST_DECL = tclNTH_DECL 1
 
 let tclLAST_NHYPS n tac gl =
   tac (try list_firstn n (pf_ids_of_hyps gl)
