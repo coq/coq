@@ -279,7 +279,7 @@ let make_exact_entry pri (c,cty) =
         let ce = mk_clenv_from dummy_goal (c,cty) in
 	let c' = clenv_type ce in
 	let pat = Pattern.pattern_of_constr c' in
-	(Some (head_of_constr_reference (List.hd (head_constr cty))),
+	(Some (head_of_constr_reference (fst (head_constr cty))),
 	   { pri=(match pri with Some pri -> pri | None -> 0); pat=Some pat; code=Give_exact c })
 
 let make_apply_entry env sigma (eapply,hnf,verbose) pri (c,cty) =
@@ -352,7 +352,7 @@ let make_extern pri pat tacast =
 
 let make_trivial env sigma c =
   let t = hnf_constr env sigma (type_of env sigma c) in
-  let hd = head_of_constr_reference (List.hd (head_constr t)) in
+  let hd = head_of_constr_reference (fst (head_constr t)) in
   let ce = mk_clenv_from dummy_goal (c,t) in
   (Some hd, { pri=1;
          pat = Some (Pattern.pattern_of_constr (clenv_type ce));
@@ -412,8 +412,8 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
   let subst_key gr =
     let (lab'', elab') = subst_global subst gr in
     let gr' = 
-      (try head_of_constr_reference (List.hd (head_constr_bound elab' []))
-	with Tactics.Bound -> lab'')
+      (try head_of_constr_reference (fst (head_constr_bound elab'))
+       with Tactics.Bound -> lab'')
     in if gr' == gr then gr else gr'
   in
   let subst_hint (k,data as hint) =
@@ -637,10 +637,7 @@ let print_hint_ref ref =  ppnl(pr_hint_ref ref)
 
 let pr_hint_term cl = 
   try 
-    let (hdc,args) = match head_constr_bound cl [] with 
-      | hdc::args -> (hdc,args)
-      | [] -> assert false 
-    in
+    let (hdc,args) = head_constr_bound cl in
     let hd = head_of_constr_reference hdc in
     let dbs = Hintdbmap.to_list !searchtable in
     let valid_dbs = 
@@ -864,7 +861,7 @@ and tac_of_hint db_list local_db concl (flags, {pat=p; code=t}) =
       
 and trivial_resolve mod_delta db_list local_db cl = 
   try 
-    let hdconstr = List.hd (head_constr_bound cl []) in
+    let hdconstr,_ = head_constr_bound cl in
     List.map (tac_of_hint db_list local_db cl)
       (priority 
 	(my_find_search mod_delta db_list local_db
@@ -906,7 +903,7 @@ let h_trivial lems l =
 
 let possible_resolve mod_delta db_list local_db cl =
   try 
-    let hdconstr = List.hd (head_constr_bound cl []) in
+    let hdconstr,_ = head_constr_bound cl in
     List.map (tac_of_hint db_list local_db cl)
       (my_find_search mod_delta db_list local_db
         (head_of_constr_reference hdconstr) cl)
@@ -915,15 +912,16 @@ let possible_resolve mod_delta db_list local_db cl =
 
 let decomp_unary_term_then (id,_,typc) kont1 kont2 gl =
   try
-    let hd = List.hd (head_constr typc) in 
-    match Hipattern.match_with_conjunction_size hd with
-    | Some (_,_,n) -> tclTHEN (simplest_case (mkVar id)) (kont1 n) gl
-    | None -> kont2 gl
+    let ccl = applist (head_constr typc) in
+    match Hipattern.match_with_conjunction ccl with
+    | Some (_,args) ->
+	tclTHEN (simplest_case (mkVar id)) (kont1 (List.length args)) gl
+    | None ->
+	kont2 gl
   with UserError _ -> kont2 gl
 
 let decomp_empty_term (id,_,typc) gl = 
-  let (hd,_) = decompose_app typc in 
-  if Hipattern.is_empty_type hd then 
+  if Hipattern.is_empty_type typc then 
     simplest_case (mkVar id) gl 
   else 
     errorlabstrm "Auto.decomp_empty_term" (str "Not an empty type.")

@@ -85,15 +85,6 @@ let dloc = dummy_loc
 (* General functions                    *)
 (****************************************)
 
-(*
-let get_pairs_from_bindings = 
-  let pair_from_binding = function  
-    | [(Bindings binds)] -> binds
-    | _                  -> error "not a binding list!"
-  in 
-  List.map pair_from_binding
-*)
-
 let string_of_inductive c = 
   try match kind_of_term c with
   | Ind ind_sp -> 
@@ -102,26 +93,16 @@ let string_of_inductive c =
   | _ -> raise Bound
   with Bound -> error "Bound head variable."
 
-let rec head_constr_bound t l =
-  let t = strip_outer_cast(collapse_appl t) in
-  match kind_of_term t with
-    | Prod (_,_,c2)  -> head_constr_bound c2 l 
-    | LetIn (_,_,_,c2) -> head_constr_bound c2 l 
-    | App (f,args)  -> 
-	head_constr_bound f (Array.fold_right (fun a l -> a::l) args l)
-    | Const _        -> t::l
-    | Ind _       -> t::l
-    | Construct _ -> t::l
-    | Var _          -> t::l
-    | _                -> raise Bound
+let rec head_constr_bound t =
+  let t = strip_outer_cast t in
+  let _,ccl = decompose_prod_assum t in
+  let hd,args = decompose_app ccl in
+  match kind_of_term hd with
+    | Const _ | Ind _ | Construct _ | Var _ -> (hd,args)
+    | _ -> raise Bound
 
 let head_constr c = 
-  try head_constr_bound c [] with Bound -> error "Bound head variable."
-
-(*
-let bad_tactic_args s l =
-  raise (RefinerError (BadTacticArgs (s,l)))
-*)
+  try head_constr_bound c with Bound -> error "Bound head variable."
 
 (******************************************)
 (*           Primitive tactics            *)

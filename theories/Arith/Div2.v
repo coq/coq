@@ -60,45 +60,38 @@ Hint Resolve lt_div2: arith.
 
 (** Properties related to the parity *)
 
+Lemma even_div2 : forall n, even n -> div2 n = div2 (S n)
+with odd_div2 : forall n, odd n -> S (div2 n) = div2 (S n).
+Proof.
+  destruct n; intro H.
+    (* 0 *) trivial.
+    (* S n *) inversion_clear H. apply odd_div2 in H0 as <-. trivial.
+  destruct n; intro.
+    (* 0 *) inversion H.
+    (* S n *) inversion_clear H. apply even_div2 in H0 as <-. trivial.
+Qed.
+
+Lemma div2_even : forall n, div2 n = div2 (S n) -> even n
+with div2_odd : forall n, S (div2 n) = div2 (S n) -> odd n.
+Proof.
+  destruct n; intro H.
+    (* 0 *) constructor.
+    (* S n *) constructor. apply div2_odd. rewrite H. trivial.
+  destruct n; intro H.
+    (* 0 *) discriminate.
+    (* S n *) constructor. apply div2_even. injection H as <-. trivial.
+Qed.
+
+Hint Resolve even_div2 div2_even odd_div2 div2_odd: arith.
+
 Lemma even_odd_div2 :
   forall n,
     (even n <-> div2 n = div2 (S n)) /\ (odd n <-> S (div2 n) = div2 (S n)).
 Proof.
-  intro n. pattern n in |- *. apply ind_0_1_SS.
-  (* n  = 0 *)
-  split. split; auto with arith. 
-  split. intro H. inversion H.
-  intro H.  absurd (S (div2 0) = div2 1); auto with arith.
-  (* n = 1 *)
-  split. split. intro. inversion H. inversion H1.
-  intro H.  absurd (div2 1 = div2 2).
-  simpl in |- *. discriminate. assumption.
-  split; auto with arith.
-  (* n = (S (S n')) *)
-  intros. decompose [and] H. unfold iff in H0, H1.
-  decompose [and] H0. decompose [and] H1. clear H H0 H1.
-  split; split; auto with arith.
-  intro H. inversion H. inversion H1.
-  change (S (div2 n0) = S (div2 (S n0))) in |- *. auto with arith.
-  intro H. inversion H. inversion H1.
-  change (S (S (div2 n0)) = S (div2 (S n0))) in |- *. auto with arith.
+  auto decomp using div2_odd, div2_even, odd_div2, even_div2.
 Qed.
 
-(** Specializations *)
 
-Lemma even_div2 : forall n, even n -> div2 n = div2 (S n).
-Proof fun n => proj1 (proj1 (even_odd_div2 n)).
-
-Lemma div2_even : forall n, div2 n = div2 (S n) -> even n.
-Proof fun n => proj2 (proj1 (even_odd_div2 n)).
-
-Lemma odd_div2 : forall n, odd n -> S (div2 n) = div2 (S n).
-Proof fun n => proj1 (proj2 (even_odd_div2 n)).
-
-Lemma div2_odd : forall n, S (div2 n) = div2 (S n) -> odd n.
-Proof fun n => proj2 (proj2 (even_odd_div2 n)).
-
-Hint Resolve even_div2 div2_even odd_div2 div2_odd: arith.
 
 (** Properties related to the double ([2n]) *)
 
@@ -132,8 +125,7 @@ Proof.
   split; split; auto with arith.
   intro H. inversion H. inversion H1.
   (* n = (S (S n')) *)
-  intros. decompose [and] H. unfold iff in H0, H1.
-  decompose [and] H0. decompose [and] H1. clear H H0 H1.
+  intros. destruct H as ((IH1,IH2),(IH3,IH4)).
   split; split.
   intro H. inversion H. inversion H1.
   simpl in |- *. rewrite (double_S (div2 n0)). auto with arith.
@@ -142,8 +134,6 @@ Proof.
   simpl in |- *. rewrite (double_S (div2 n0)). auto with arith.
   simpl in |- *. rewrite (double_S (div2 n0)). intro H. injection H. auto with arith.
 Qed.
-
-
 (** Specializations *)
 
 Lemma even_double : forall n, even n -> n = double (div2 n).

@@ -210,12 +210,12 @@ and e_trivial_resolve db_list local_db gl =
   try 
     priority 
       (e_my_find_search db_list local_db 
-	 (List.hd (head_constr_bound gl [])) gl)
+	 (fst (head_constr_bound gl)) gl)
   with Bound | Not_found -> []
 
 let e_possible_resolve db_list local_db gl =
   try List.map snd (e_my_find_search db_list local_db 
-		      (List.hd (head_constr_bound gl [])) gl)
+		      (fst (head_constr_bound gl)) gl)
   with Bound | Not_found -> []
 
 let assumption_tac_list id = apply_tac_list (e_give_exact_constr (mkVar id))
@@ -412,7 +412,7 @@ and my_find_search db_list local_db hdc concl =
 
 and trivial_resolve db_list local_db cl = 
   try 
-    let hdconstr = List.hd (head_constr_bound cl []) in
+    let hdconstr = fst (head_constr_bound cl) in
     priority 
       (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
   with Bound | Not_found -> 
@@ -424,7 +424,7 @@ and trivial_resolve db_list local_db cl =
 
 let possible_resolve db_list local_db cl =
   try 
-    let hdconstr = List.hd (head_constr_bound cl []) in
+    let hdconstr = fst (head_constr_bound cl) in
     List.map snd 
       (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
   with Bound | Not_found -> 
@@ -432,8 +432,8 @@ let possible_resolve db_list local_db cl =
 
 let decomp_unary_term c gls = 
   let typc = pf_type_of gls c in 
-  let hd = List.hd (head_constr typc) in 
-  if Hipattern.is_conjunction hd then 
+  let t = head_constr typc in 
+  if Hipattern.is_conjunction (applist t) then 
     simplest_case c gls 
   else 
     errorlabstrm "Auto.decomp_unary_term" (str "not a unary type")

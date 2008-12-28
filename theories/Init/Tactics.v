@@ -139,18 +139,6 @@ bapply lemma ltac:(fun H => destruct H as [_ H]; apply H in J).
     proofs "in one step" *)
 
 Ltac easy :=
-(*
-  let rec use_hyp H :=
-    match type of H with
-    | _ /\ _ => 
-    | _ => solve [inversion H] 
-    end
-  with destruct_hyp H :=
-    match type of H with
-    | _ /\ _ => case H; do_intro; do_intro
-    | _ => idtac
-    end
-*)
   let rec use_hyp H :=
     match type of H with
     | _ /\ _ => exact H || destruct_hyp H

@@ -198,13 +198,13 @@ and e_trivial_resolve mod_delta db_list local_db gl =
   try 
     priority 
       (e_my_find_search mod_delta db_list local_db 
-	 (List.hd (head_constr_bound gl [])) gl)
+	 (fst (head_constr_bound gl)) gl)
   with Bound | Not_found -> []
 
 let e_possible_resolve mod_delta db_list local_db gl =
   try List.map snd 
     (e_my_find_search mod_delta db_list local_db 
-	(List.hd (head_constr_bound gl [])) gl)
+	(fst (head_constr_bound gl)) gl)
   with Bound | Not_found -> []
 
 let assumption_tac_list id = apply_tac_list (e_give_exact_constr (mkVar id))

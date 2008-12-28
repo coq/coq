@@ -393,10 +393,10 @@ Theorem Ncompare_n_Sm :
 Proof.
 intros n m; split; destruct n as [| p]; destruct m as [| q]; simpl; auto.
 destruct p; simpl; intros; discriminate.
-pose proof (proj1 (Pcompare_p_Sq p q));
+pose proof (Pcompare_p_Sq p q) as (?,_).
 assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
 intros H; destruct H; discriminate.
-pose proof (proj2 (Pcompare_p_Sq p q));
+pose proof (Pcompare_p_Sq p q) as (_,?);
 assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
 Qed.
 

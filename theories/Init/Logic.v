@@ -150,6 +150,16 @@ Proof.
 intros; tauto.
 Qed.
 
+Lemma iff_and : forall A B : Prop, (A <-> B) -> (A -> B) /\ (B -> A).
+Proof.
+intros A B []; split; trivial.
+Qed.
+
+Lemma iff_to_and : forall A B : Prop, (A <-> B) <-> (A -> B) /\ (B -> A).
+Proof.
+intros; tauto.
+Qed.
+
 (** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
     either [P] and [Q], or [~P] and [Q] *)
 

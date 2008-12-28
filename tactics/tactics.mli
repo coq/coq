@@ -39,8 +39,8 @@ val inj_ebindings : constr bindings -> open_constr bindings
 (*s General functions. *)
 
 val string_of_inductive : constr -> string
-val head_constr       : constr -> constr list
-val head_constr_bound : constr -> constr list -> constr list
+val head_constr       : constr -> constr * constr list
+val head_constr_bound : constr -> constr * constr list
 val is_quantified_hypothesis : identifier -> goal sigma -> bool
 
 exception Bound
