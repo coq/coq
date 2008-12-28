@@ -69,10 +69,10 @@ Definition equivlistA l l' := forall x, InA x l <-> InA x l'.
 
 (** lists with same elements modulo [eqA] at the same place *)
 
-Inductive eqlistA : list A -> list A -> Prop := 
-    | eqlistA_nil : eqlistA nil nil
-    | eqlistA_cons : forall x x' l l', 
-         eqA x x' -> eqlistA l l' -> eqlistA (x::l) (x'::l').
+Inductive eqlistA : list A -> list A -> Prop :=
+  | eqlistA_nil : eqlistA nil nil
+  | eqlistA_cons : forall x x' l l',
+      eqA x x' -> eqlistA l l' -> eqlistA (x::l) (x'::l').
 
 Hint Constructors eqlistA.
 
@@ -445,6 +445,10 @@ Definition compat_op (f : A -> B -> B) :=
 Definition transpose (f : A -> B -> B) :=
   forall (x y : A) (z : B), eqB (f x (f y z)) (f y (f x z)). 
 
+(** A version of transpose with restriction on where it should hold *)
+Definition transpose_restr (R : A -> A -> Prop)(f : A -> B -> B) :=
+  forall (x y : A) (z : B), R x y -> eqB (f x (f y z)) (f y (f x z)).
+
 Variable st:Setoid_Theory _ eqB.
 Variable f:A->B->B.
 Variable i:B.
@@ -456,16 +460,6 @@ Lemma fold_right_eqlistA :
 Proof.
 induction 1; simpl; auto.
 refl_st.
-Qed.
-
-Variable Ass:transpose f.
-
-Lemma fold_right_commutes : forall s1 s2 x, 
-  eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
-Proof.
-induction s1; simpl; auto; intros.
-refl_st.
-trans_st (f a (f x (fold_right f i (s1++s2)))).
 Qed.
 
 Lemma equivlistA_NoDupA_split : forall l l1 l2 x y, eqA x y -> 
@@ -490,19 +484,142 @@ Proof.
  destruct H8; auto.
  elim H0.
  destruct H7; [left|right]; eapply InA_eqA; eauto.
-Qed. 
+Qed.
 
-Lemma fold_right_equivlistA :
-  forall s s', NoDupA s -> NoDupA s' ->
+(** [ForallList2] : specifies that a certain binary predicate should
+    always hold when inspecting two different elements of the list. *)
+
+Inductive ForallList2 (R : A -> A -> Prop) : list A -> Prop :=
+  | ForallNil : ForallList2 R nil
+  | ForallCons : forall a l,
+     (forall b, In b l -> R a b) ->
+     ForallList2 R l -> ForallList2 R (a::l).
+Hint Constructors ForallList2.
+
+(** [NoDupA] can be written in terms of [ForallList2] *)
+
+Lemma ForallList2_NoDupA : forall l,
+ ForallList2 (fun a b => ~eqA a b) l <-> NoDupA l.
+Proof.
+ induction l; split; intros; auto.
+ inversion_clear H. constructor; [ | rewrite <- IHl; auto ].
+ rewrite InA_alt; intros (a',(Haa',Ha')).
+ exact (H0 a' Ha' Haa').
+ inversion_clear H. constructor; [ | rewrite IHl; auto ].
+ intros b Hb.
+ contradict H0.
+ rewrite InA_alt; exists b; auto.
+Qed.
+
+Lemma ForallList2_impl : forall (R R':A->A->Prop),
+ (forall a b, R a b -> R' a b) ->
+ forall l, ForallList2 R l -> ForallList2 R' l.
+Proof.
+ induction 2; auto.
+Qed.
+
+(** The following definition is easier to use than [ForallList2]. *)
+
+Definition ForallList2_alt (R:A->A->Prop) l :=
+ forall a b, InA a l -> InA b l -> ~eqA a b -> R a b.
+
+Section Restriction.
+Variable R : A -> A -> Prop.
+
+(** [ForallList2] and [ForallList2_alt] are related, but no completely
+    equivalent. For proving one implication, we need to know that the
+    list has no duplicated elements... *)
+
+Lemma ForallList2_equiv1 : forall l, NoDupA l ->
+ ForallList2_alt R l -> ForallList2 R l.
+Proof.
+ induction l; auto.
+ constructor. intros b Hb.
+ inversion_clear H.
+ apply H0; auto.
+ contradict H1.
+ apply InA_eqA with b; auto.
+ apply IHl.
+ inversion_clear H; auto.
+ intros b c Hb Hc Hneq.
+ apply H0; auto.
+Qed.
+
+(** ... and for proving the other implication, we need to be able
+   to reverse and adapt relation [R] modulo [eqA]. *)
+
+Hypothesis R_sym : forall a b, R a b -> R b a.
+Hypothesis R_compat : forall a, compat_P (R a).
+
+Lemma ForallList2_equiv2 : forall l,
+ ForallList2 R l -> ForallList2_alt R l.
+Proof.
+ induction l.
+ intros _. red. intros a b Ha. inversion Ha.
+ inversion_clear 1 as [|? ? H_R Hl].
+ intros b c Hb Hc Hneq.
+ inversion_clear Hb; inversion_clear Hc.
+ (* b,c = a : impossible *)
+ elim Hneq; eauto.
+ (* b = a, c in l *)
+ rewrite InA_alt in H0; destruct H0 as (d,(Hcd,Hd)).
+ apply R_compat with d; auto.
+ apply R_sym; apply R_compat with a; auto.
+ (* b in l, c = a *)
+ rewrite InA_alt in H; destruct H as (d,(Hcd,Hd)).
+ apply R_compat with a; auto.
+ apply R_sym; apply R_compat with d; auto.
+ (* b,c in l *)
+ apply (IHl Hl); auto.
+Qed.
+
+Lemma ForallList2_equiv : forall l, NoDupA l ->
+ (ForallList2 R l <-> ForallList2_alt R l).
+Proof.
+split; [apply ForallList2_equiv2|apply ForallList2_equiv1]; auto.
+Qed.
+
+Lemma ForallList2_equivlistA : forall l l', NoDupA l' ->
+ equivlistA l l' -> ForallList2 R l -> ForallList2 R l'.
+Proof.
+intros.
+apply ForallList2_equiv1; auto.
+intros a b Ha Hb Hneq.
+red in H0; rewrite <- H0 in Ha,Hb.
+revert a b Ha Hb Hneq.
+change (ForallList2_alt R l).
+apply ForallList2_equiv2; auto.
+Qed.
+
+Variable TraR :transpose_restr R f.
+
+Lemma fold_right_commutes_restr :
+  forall s1 s2 x, ForallList2 R (s1++x::s2) ->
+  eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
+Proof.
+induction s1; simpl; auto; intros.
+refl_st.
+trans_st (f a (f x (fold_right f i (s1++s2)))).
+apply Comp; auto.
+apply IHs1.
+inversion_clear H; auto.
+apply TraR.
+inversion_clear H.
+apply H0.
+apply in_or_app; simpl; auto.
+Qed.
+
+Lemma fold_right_equivlistA_restr :
+  forall s s', NoDupA s -> NoDupA s' -> ForallList2 R s ->
   equivlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
 Proof.
  simple induction s.
  destruct s'; simpl.
  intros; refl_st; auto.
  unfold equivlistA; intros.
- destruct (H1 a).
+ destruct (H2 a).
  assert (X : InA a nil); auto; inversion X.
- intros x l Hrec s' N N' E; simpl in *.
+ intros x l Hrec s' N N' F E; simpl in *.
  assert (InA x s').
   rewrite <- (E x); auto.
  destruct (InA_split H) as (s1,(y,(s2,(H1,H2)))).
@@ -512,16 +629,48 @@ Proof.
  apply Hrec; auto.
  inversion_clear N; auto.
  eapply NoDupA_split; eauto.
+ inversion_clear F; auto.
  eapply equivlistA_NoDupA_split; eauto.
  trans_st (f y (fold_right f i (s1++s2))).
  apply Comp; auto; refl_st.
- sym_st; apply fold_right_commutes.
+ sym_st; apply fold_right_commutes_restr.
+ apply ForallList2_equivlistA with (x::l); auto.
+Qed.
+
+Lemma fold_right_add_restr :
+  forall s' s x, NoDupA s -> NoDupA s' -> ForallList2 R s' -> ~ InA x s ->
+  equivlistA s' (x::s) -> eqB (fold_right f i s') (f x (fold_right f i s)).
+Proof.
+ intros; apply (@fold_right_equivlistA_restr s' (x::s)); auto.
+Qed.
+
+End Restriction.
+
+(** we know state similar results, but without restriction on transpose. *)
+
+Variable Tra :transpose f.
+
+Lemma fold_right_commutes : forall s1 s2 x,
+  eqB (fold_right f i (s1++x::s2)) (f x (fold_right f i (s1++s2))).
+Proof.
+induction s1; simpl; auto; intros.
+refl_st.
+trans_st (f a (f x (fold_right f i (s1++s2)))).
+Qed.
+
+Lemma fold_right_equivlistA :
+  forall s s', NoDupA s -> NoDupA s' ->
+  equivlistA s s' -> eqB (fold_right f i s) (fold_right f i s').
+Proof.
+intros; apply fold_right_equivlistA_restr with (R:=fun _ _ => True);
+ try red; auto.
+apply ForallList2_equiv1; try red; auto.
 Qed.
 
 Lemma fold_right_add :
   forall s' s x, NoDupA s -> NoDupA s' -> ~ InA x s ->
   equivlistA s' (x::s) -> eqB (fold_right f i s') (f x (fold_right f i s)).
-Proof.   
+Proof.
  intros; apply (@fold_right_equivlistA s' (x::s)); auto.
 Qed.
 
@@ -547,7 +696,7 @@ Fixpoint removeA (x : A) (l : list A){struct l} : list A :=
     | y::tl => if (eqA_dec x y) then removeA x tl else y::(removeA x tl)
   end.
 
-Lemma removeA_filter : forall x l, 
+Lemma removeA_filter : forall x l,
   removeA x l = filter (fun y => if eqA_dec x y then false else true) l.
 Proof.
 induction l; simpl; auto.
