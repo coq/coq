@@ -20,6 +20,11 @@ Require Export FMapInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Hint Extern 1 (Equivalence _) => constructor; congruence.
+
+Notation Leibniz := (@eq _) (only parsing).
+
+
 (** * Facts about weak maps *)
 
 Module WFacts_fun (E:DecidableType)(Import M:WSfun E).
@@ -96,7 +101,7 @@ Lemma not_find_in_iff : forall m x, ~In x m <-> find x m = None.
 Proof.
 split; intros.
 rewrite eq_option_alt. intro e. rewrite <- find_mapsto_iff.
-split; try discriminate. intro H'; elim H; exists e; auto.
+split; intro H'; try discriminate. elim H; exists e; auto.
 intros (e,He); rewrite find_mapsto_iff,H in He; discriminate.
 Qed.
 
@@ -641,8 +646,8 @@ Lemma Equal_trans : forall (elt:Type)(m m' m'' : t elt),
  Equal m m' -> Equal m' m'' -> Equal m m''.
 Proof. unfold Equal; congruence. Qed.
 
-Definition Equal_ST : forall elt:Type, Setoid_Theory (t elt) (@Equal _).
-Proof. 
+Definition Equal_ST : forall elt:Type, Equivalence (@Equal elt).
+Proof.
 constructor; red; [apply Equal_refl | apply Equal_sym | apply Equal_trans].
 Qed.
 
@@ -668,7 +673,7 @@ rewrite (In_iff m Hk), in_find_iff, in_find_iff, Hm; intuition.
 Qed.
 
 Add Parametric Morphism elt : (@MapsTo elt)
- with signature E.eq ==> @Logic.eq _ ==> Equal ==> iff as MapsTo_m.
+ with signature E.eq ==> Leibniz ==> Equal ==> iff as MapsTo_m.
 Proof.
 unfold Equal; intros k k' Hk e m m' Hm.
 rewrite (MapsTo_iff m e Hk), find_mapsto_iff, find_mapsto_iff, Hm;
@@ -684,28 +689,28 @@ rewrite Hm in H0; eauto.
 Qed.
 
 Add Parametric Morphism elt : (@is_empty elt)
- with signature Equal ==> @Logic.eq _ as is_empty_m.
+ with signature Equal ==> Leibniz as is_empty_m.
 Proof.
 intros m m' Hm.
 rewrite eq_bool_alt, <-is_empty_iff, <-is_empty_iff, Hm; intuition.
 Qed.
 
 Add Parametric Morphism elt : (@mem elt)
- with signature E.eq ==> Equal ==> @Logic.eq _ as mem_m.
+ with signature E.eq ==> Equal ==> Leibniz as mem_m.
 Proof.
 intros k k' Hk m m' Hm.
 rewrite eq_bool_alt, <- mem_in_iff, <-mem_in_iff, Hk, Hm; intuition.
 Qed.
 
 Add Parametric Morphism elt : (@find elt)
- with signature E.eq ==> Equal ==> @Logic.eq _ as find_m.
+ with signature E.eq ==> Equal ==> Leibniz as find_m.
 Proof.
 intros k k' Hk m m' Hm. rewrite eq_option_alt. intro e.
 rewrite <- 2 find_mapsto_iff, Hk, Hm. split; auto.
 Qed.
 
 Add Parametric Morphism elt : (@add elt)
- with signature E.eq ==> @Logic.eq _ ==> Equal ==> Equal as add_m.
+ with signature E.eq ==> Leibniz ==> Equal ==> Equal as add_m.
 Proof.
 intros k k' Hk e m m' Hm y.
 rewrite add_o, add_o; do 2 destruct eq_dec; auto.
@@ -723,7 +728,7 @@ elim n; rewrite Hk; auto.
 Qed.
 
 Add Parametric Morphism elt elt' : (@map elt elt')
- with signature @Logic.eq _ ==> Equal ==> Equal as map_m.
+ with signature Leibniz ==> Equal ==> Equal as map_m.
 Proof.
 intros f m m' Hm y.
 rewrite map_o, map_o, Hm; auto.
@@ -1018,10 +1023,34 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   rewrite Hadd, 2 add_o, Heq; auto.
   Qed.
 
+  Section Fold_More.
+
   (** ** Additional properties of fold *)
 
   (** When a function [f] is compatible and allows transpositions, we can
       compute [fold f] in any order. *)
+
+  Variables (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)(f:key->elt->A->A).
+
+  (** This is more convenient than a [compat_op eqke ...].
+      In fact, every [compat_op], [compat_bool], etc, should
+      become a [Morphism] someday. *)
+  Hypothesis Comp : Morphism (E.eq==>Leibniz==>eqA==>eqA) f.
+
+  Lemma fold_init :
+   forall m i i', eqA i i' -> eqA (fold f m i) (fold f m i').
+  Proof.
+  intros. apply fold_rel with (R:=eqA); auto.
+  intros. apply Comp; auto.
+  Qed.
+
+  Lemma fold_Empty :
+   forall m i, Empty m -> eqA (fold f m i) i.
+  Proof.
+  intros. apply fold_rec_nodep with (P:=fun a => eqA a i).
+  reflexivity.
+  intros. elim (H k e); auto.
+  Qed.
 
   (** As noticed by P. Casteran, asking for the general [SetoidList.transpose]
       here is too restrictive. Think for instance of [f] being [M.add] :
@@ -1038,16 +1067,26 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
       FSets could also benefit from a restricted [transpose], but for this
       case the gain is unclear. *)
 
-  Definition transpose_neqkey (A:Type)(eqA:A->A->Prop)(f:key->elt->A->A) :=
+  Definition transpose_neqkey :=
     forall k k' e e' a, ~E.eq k k' ->
       eqA (f k e (f k' e' a)) (f k' e' (f k e a)).
 
-  Lemma fold_Equal :
-   forall m1 m2 (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
-   (f:key->elt->A->A)(i:A),
-   compat_op eqke eqA (fun y =>f (fst y) (snd y)) ->
-   transpose_neqkey eqA f ->
-   Equal m1 m2 ->
+  Hypothesis Tra : transpose_neqkey.
+
+  Lemma fold_commutes : forall i m k e, ~In k m ->
+   eqA (fold f m (f k e i)) (f k e (fold f m i)).
+  Proof.
+  intros i m k e Hnotin.
+  apply fold_rel with (R:= fun a b => eqA a (f k e b)); auto.
+  reflexivity.
+  intros.
+  transitivity (f k0 e0 (f k e b)).
+  apply Comp; auto.
+  apply Tra; auto.
+  contradict Hnotin; rewrite <- Hnotin; exists e0; auto.
+  Qed.
+
+  Lemma fold_Equal : forall m1 m2 i, Equal m1 m2 ->
    eqA (fold f m1 i) (fold f m2 i).
   Proof.
   assert (eqke_refl : forall p, eqke p p).
@@ -1060,6 +1099,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
   apply fold_right_equivlistA_restr with
     (R:=fun p p' => ~eqk p p') (eqA:=eqke) (eqB:=eqA); auto.
+  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; simpl in *; apply Comp; auto.
   unfold eq_key; auto.
   intros (k1,e1) (k2,e2) (k3,e3). unfold eq_key_elt, eq_key; simpl.
    intuition eauto.
@@ -1072,16 +1112,11 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   do 2 rewrite InA_rev.
   destruct x; do 2 rewrite <- elements_mapsto_iff.
   do 2 rewrite find_mapsto_iff.
-  rewrite H1; split; auto.
+  rewrite H; split; auto.
   Qed.
 
-  Lemma fold_Add :
-   forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
-   (f:key->elt->A->A)(i:A),
-   compat_op eqke eqA (fun y =>f (fst y) (snd y)) ->
-   transpose_neqkey eqA f ->
-   ~In x m1 -> Add x e m1 m2 ->
-   eqA (fold f m2 i) (f x e (fold f m1 i)).
+  Lemma fold_Add : forall m1 m2 k e i, ~In k m1 -> Add k e m1 m2 ->
+   eqA (fold f m2 i) (f k e (fold f m1 i)).
   Proof.
   assert (eqke_refl : forall p, eqke p p).
    red; auto.
@@ -1092,10 +1127,12 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    intuition; eauto; congruence.
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
-  change (f x e (fold_right f' i (rev (elements m1))))
-   with (f' (x,e) (fold_right f' i (rev (elements m1)))).
+  change (f k e (fold_right f' i (rev (elements m1))))
+   with (f' (k,e) (fold_right f' i (rev (elements m1)))).
   apply fold_right_add_restr with
     (R:=fun p p'=>~eqk p p')(eqA:=eqke)(eqB:=eqA); auto.
+  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *. apply Comp; auto.
+
   unfold eq_key; auto.
   intros (k1,e1) (k2,e2) (k3,e3). unfold eq_key_elt, eq_key; simpl.
    intuition eauto.
@@ -1105,22 +1142,30 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   apply ForallList2_equiv1 with (eqA:=eqk); try red; eauto.
   apply NoDupA_rev; try red; eauto. apply elements_3w.
   rewrite InA_rev.
-  contradict H1.
+  contradict H.
   exists e.
   rewrite elements_mapsto_iff; auto.
   intros a.
   rewrite InA_cons; do 2 rewrite InA_rev;
   destruct a as (a,b); do 2 rewrite <- elements_mapsto_iff.
   do 2 rewrite find_mapsto_iff; unfold eq_key_elt; simpl.
-  rewrite H2.
+  rewrite H0.
   rewrite add_o.
-  destruct (eq_dec x a); intuition.
-  inversion H3; auto.
+  destruct (eq_dec k a); intuition.
+  inversion H1; auto.
   f_equal; auto.
-  elim H1.
+  elim H.
   exists b; apply MapsTo_1 with a; auto with map.
   elim n; auto.
   Qed.
+
+  Lemma fold_add : forall m k e i, ~In k m ->
+   eqA (fold f (add k e m) i) (f k e (fold f m i)).
+  Proof.
+  intros. apply fold_Add; try red; auto.
+  Qed.
+
+  End Fold_More.
 
   (** * Cardinal *)
 
@@ -1143,10 +1188,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
     Equal m m' -> cardinal m = cardinal m'.
   Proof.
   intros; do 2 rewrite cardinal_fold.
-  apply fold_Equal with (eqA:=@eq _); auto.
-  constructor; auto; congruence.
-  red; auto.
-  red; auto.
+  apply fold_Equal with (eqA:=Leibniz); compute; auto.
   Qed.
 
   Lemma cardinal_1 : forall m : t elt, Empty m -> cardinal m = 0.
@@ -1159,10 +1201,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Proof.
   intros; do 2 rewrite cardinal_fold.
   change S with ((fun _ _ => S) x e).
-  apply fold_Add; auto.
-  constructor; intros; auto; congruence.
-  red; simpl; auto.
-  red; simpl; auto.
+  apply fold_Add with (eqA:=Leibniz); compute; auto.
   Qed.
 
   Lemma cardinal_inv_1 : forall m : t elt, 
@@ -1192,6 +1231,15 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   eauto.
   Qed.
 
+  (** * Additional notions over maps *)
+
+  Definition Disjoint (m m' : t elt) :=
+   forall k, ~(In k m /\ In k m').
+
+  Definition Partition (m m1 m2 : t elt) :=
+    Disjoint m1 m2 /\
+    (forall k e, MapsTo k e m <-> MapsTo k e m1 \/ MapsTo k e m2).
+
   (** * Emulation of some functions lacking in the interface *)
 
   Definition filter (f : key -> elt -> bool)(m : t elt) := 
@@ -1206,121 +1254,410 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Definition partition (f : key -> elt -> bool)(m : t elt) := 
    (filter f m, filter (fun k e => negb (f k e)) m).
 
+  (** [update] adds to [m1] all the bindings of [m2]. It can be seen as
+     an [union] operator which gives priority to its 2nd argument
+     in case of binding conflit. *)
+
+  Definition update (m1 m2 : t elt) := fold (@add _) m2 m1.
+
+  (** [restrict] keeps from [m1] only the bindings whose key is in [m2].
+      It can be seen as an [inter] operator, with priority to its 1st argument
+      in case of binding conflit. *)
+
+  Definition restrict (m1 m2 : t elt) := filter (fun k _ => mem k m2) m1.
+
+  (** [diff] erases from [m1] all bindings whose key is in [m2]. *)
+
+  Definition diff (m1 m2 : t elt) := filter (fun k _ => negb (mem k m2)) m1.
+
   Section Specs.
   Variable f : key -> elt -> bool.
-  Hypothesis Hf : forall e, compat_bool E.eq (fun k => f k e).
+  Hypothesis Hf : Morphism (E.eq==>Leibniz==>Leibniz) f.
 
-  Lemma filter_iff : forall m k e, 
+  Lemma filter_iff : forall m k e,
    MapsTo k e (filter f m) <-> MapsTo k e m /\ f k e = true.
   Proof.
-  unfold filter; intros.
-  rewrite fold_1.
-  rewrite <- fold_left_rev_right.
-  rewrite (elements_mapsto_iff m).
-  rewrite <- (InA_rev eqke (k,e) (elements m)).
-  assert (NoDupA eqk (rev (elements m))).
-   apply NoDupA_rev; auto; try apply elements_3w; auto.
-   intros (k1,e1); compute; auto.
-   intros (k1,e1)(k2,e2); compute; auto.
-   intros (k1,e1)(k2,e2)(k3,e3); compute; eauto.
-  induction (rev (elements m)); simpl; auto.
-  
-  rewrite empty_mapsto_iff.
-  intuition.
-  inversion H1.
+  unfold filter.
+  set (f':=fun k e m => if f k e then add k e m else m).
+  intro m. pattern m, (fold f' m (empty _)). apply fold_rec.
 
-  destruct a as (k',e'); simpl.
-  inversion_clear H.
-  case_eq (f k' e'); intros; simpl;
-   try rewrite add_mapsto_iff; rewrite IHl; clear IHl; intuition.
-  constructor; red; auto.
-  rewrite (Hf e' H2),H4 in H; auto.
-  inversion_clear H3.
-  compute in H2; destruct H2; auto.
-  destruct (E.eq_dec k' k); auto.
-  elim H0.
-  rewrite InA_alt in *; destruct H2 as (w,Hw); exists w; intuition.
-  red in H2; red; simpl in *; intuition.
-  rewrite e0; auto.
-  inversion_clear H3; auto.
-  compute in H2; destruct H2.
-  rewrite (Hf e H2),H3,H in H4; discriminate.
+  intros m' Hm' k e. rewrite empty_mapsto_iff. intuition.
+  elim (Hm' k e); auto.
+
+  intros k e acc m1 m2 Hke Hn Hadd IH k' e'.
+  change (Equal m2 (add k e m1)) in Hadd; rewrite Hadd.
+  unfold f'; simpl.
+  case_eq (f k e); intros Hfke; simpl;
+   rewrite !add_mapsto_iff, IH; clear IH; intuition.
+  rewrite <- Hfke; apply Hf; auto.
+  destruct (eq_dec k k') as [Hk|Hk]; [left|right]; auto.
+  elim Hn; exists e'; rewrite Hk; auto.
+  assert (f k e = f k' e') by (apply Hf; auto). congruence.
   Qed.
-  
+
   Lemma for_all_iff : forall m,
    for_all f m = true <-> (forall k e, MapsTo k e m -> f k e = true).
   Proof.
-  cut (forall m : t elt,
-       for_all f m = true <->
-       (forall k e, InA eqke (k,e) (rev (elements m)) -> f k e = true)).
-  intros; rewrite H; split; intros.
-  apply H0; rewrite InA_rev, <- elements_mapsto_iff; auto.
-  apply H0; rewrite InA_rev, <- elements_mapsto_iff in H1; auto.
+  unfold for_all.
+  set (f':=fun k e b => if f k e then b else false).
+  intro m. pattern m, (fold f' m true). apply fold_rec.
 
-  unfold for_all; intros.
-  rewrite fold_1.
-  rewrite <- fold_left_rev_right.
-  assert (NoDupA eqk (rev (elements m))).
-   apply NoDupA_rev; auto; try apply elements_3w; auto.
-   intros (k1,e1); compute; auto.
-   intros (k1,e1)(k2,e2); compute; auto.
-   intros (k1,e1)(k2,e2)(k3,e3); compute; eauto.
-  induction (rev (elements m)); simpl; auto.
-  
-  intuition.
-  inversion H1.
+  intros m' Hm'. split; auto. intros _ k e Hke. elim (Hm' k e); auto.
 
-  destruct a as (k,e); simpl.
-  inversion_clear H.
-  case_eq (f k e); intros; simpl;
-   try rewrite IHl; clear IHl; intuition.
-  inversion_clear H3; auto.
-  compute in H4; destruct H4.
-  rewrite (Hf e0 H3), H4; auto.
-  rewrite <-H, <-(H2 k e); auto.
-  constructor; red; auto.
+  intros k e b m1 m2 _ Hn Hadd IH. clear m.
+  change (Equal m2 (add k e m1)) in Hadd.
+  unfold f'; simpl. case_eq (f k e); intros Hfke.
+  (* f k e = true *)
+  rewrite IH. clear IH. split; intros Hmapsto k' e' Hke'.
+  rewrite Hadd, add_mapsto_iff in Hke'.
+  destruct Hke' as [(?,?)|(?,?)]; auto.
+  rewrite <- Hfke; apply Hf; auto.
+  apply Hmapsto. rewrite Hadd, add_mapsto_iff; right; split; auto.
+  contradict Hn; exists e'; rewrite Hn; auto.
+  (* f k e = false *)
+  split; intros H; try discriminate.
+  rewrite <- Hfke. apply H.
+  rewrite Hadd, add_mapsto_iff; auto.
   Qed.
-  
+
   Lemma exists_iff : forall m,
-   exists_ f m = true <-> 
+   exists_ f m = true <->
    (exists p, MapsTo (fst p) (snd p) m /\ f (fst p) (snd p) = true).
   Proof.
-  cut (forall m : t elt,
-       exists_ f m = true <->
-       (exists p, InA eqke p (rev (elements m)) 
-         /\ f (fst p) (snd p) = true)).
-  intros; rewrite H; split; intros.
-  destruct H0 as ((k,e),Hke); exists (k,e).
-  rewrite InA_rev, <-elements_mapsto_iff in Hke; auto.
-  destruct H0 as ((k,e),Hke); exists (k,e).
-  rewrite InA_rev, <-elements_mapsto_iff; auto.
-  unfold exists_; intros.
-  rewrite fold_1.
-  rewrite <- fold_left_rev_right.
-  assert (NoDupA eqk (rev (elements m))).
-   apply NoDupA_rev; auto; try apply elements_3w; auto.
-   intros (k1,e1); compute; auto.
-   intros (k1,e1)(k2,e2); compute; auto.
-   intros (k1,e1)(k2,e2)(k3,e3); compute; eauto.
-  induction (rev (elements m)); simpl; auto.
-  
-  intuition; try discriminate.
-  destruct H0 as ((k,e),(Hke,_)); inversion Hke.
+  unfold exists_.
+  set (f':=fun k e b => if f k e then true else b).
+  intro m. pattern m, (fold f' m false). apply fold_rec.
 
-  destruct a as (k,e); simpl.
-  inversion_clear H.
-  case_eq (f k e); intros; simpl;
-   try rewrite IHl; clear IHl; intuition.
+  intros m' Hm'. split; try (intros; discriminate).
+  intros ((k,e),(Hke,_)); simpl in *. elim (Hm' k e); auto.
+
+  intros k e b m1 m2 _ Hn Hadd IH. clear m.
+  change (Equal m2 (add k e m1)) in Hadd.
+  unfold f'; simpl. case_eq (f k e); intros Hfke.
+  (* f k e = true *)
+  split; [intros _|auto].
   exists (k,e); simpl; split; auto.
-  constructor; red; auto.
-  destruct H2 as ((k',e'),(Hke',Hf')); exists (k',e'); simpl; auto.
-  destruct H2 as ((k',e'),(Hke',Hf')); simpl in *.
-  inversion_clear Hke'.
-  compute in H2; destruct H2.
-  rewrite (Hf e' H2), H3,H in Hf'; discriminate.
+  rewrite Hadd, add_mapsto_iff; auto.
+  (* f k e = false *)
+  rewrite IH. clear IH. split; intros ((k',e'),(Hke1,Hke2)); simpl in *.
+  exists (k',e'); simpl; split; auto.
+  rewrite Hadd, add_mapsto_iff; right; split; auto.
+  contradict Hn. exists e'; rewrite Hn; auto.
+  rewrite Hadd, add_mapsto_iff in Hke1. destruct Hke1 as [(?,?)|(?,?)].
+  assert (f k' e' = f k e) by (apply Hf; auto). congruence.
   exists (k',e'); auto.
   Qed.
+
   End Specs.
+
+  Lemma Disjoint_alt : forall m m',
+   Disjoint m m' <->
+   (forall k e e', MapsTo k e m -> MapsTo k e' m' -> False).
+  Proof.
+  unfold Disjoint; split.
+  intros H k v v' H1 H2.
+  apply H with k; split.
+  exists v; trivial.
+  exists v'; trivial.
+  intros H k ((v,Hv),(v',Hv')).
+  eapply H; eauto.
+  Qed.
+
+  Section Partition.
+  Variable f : key -> elt -> bool.
+  Hypothesis Hf : Morphism (E.eq==>Leibniz==>Leibniz) f.
+
+  Lemma partition_iff_1 : forall m m1 k e,
+   m1 = fst (partition f m) ->
+   (MapsTo k e m1 <-> MapsTo k e m /\ f k e = true).
+  Proof.
+  unfold partition; simpl; intros. subst m1.
+  apply filter_iff; auto.
+  Qed.
+
+  Lemma partition_iff_2 : forall m m2 k e,
+   m2 = snd (partition f m) ->
+   (MapsTo k e m2 <-> MapsTo k e m /\ f k e = false).
+  Proof.
+  unfold partition; simpl; intros. subst m2.
+  rewrite filter_iff.
+  split; intros (H,H'); split; auto.
+  destruct (f k e); simpl in *; auto.
+  rewrite H'; auto.
+  repeat red; intros. f_equal. apply Hf; auto.
+  Qed.
+
+  Lemma partition_Partition : forall m m1 m2,
+   partition f m = (m1,m2) -> Partition m m1 m2.
+  Proof.
+  intros. split.
+  rewrite Disjoint_alt. intros k e e'.
+  rewrite (@partition_iff_1 m m1), (@partition_iff_2 m m2)
+   by (rewrite H; auto).
+  intros (U,V) (W,Z). rewrite <- (MapsTo_fun U W) in Z; congruence.
+  intros k e.
+  rewrite (@partition_iff_1 m m1), (@partition_iff_2 m m2)
+   by (rewrite H; auto).
+  destruct (f k e); intuition.
+  Qed.
+
+  End Partition.
+
+  Lemma Partition_In : forall m m1 m2 k,
+   Partition m m1 m2 -> In k m -> {In k m1}+{In k m2}.
+  Proof.
+  intros m m1 m2 k Hm Hk.
+  destruct (In_dec m1 k) as [H|H]; [left|right]; auto.
+  destruct Hm as (Hm,Hm').
+  destruct Hk as (e,He); rewrite Hm' in He; destruct He.
+  elim H; exists e; auto.
+  exists e; auto.
+  Defined.
+
+  Lemma Disjoint_sym : forall m1 m2, Disjoint m1 m2 -> Disjoint m2 m1.
+  Proof.
+  intros m1 m2 H k (H1,H2). elim (H k); auto.
+  Qed.
+
+  Lemma Partition_sym : forall m m1 m2,
+   Partition m m1 m2 -> Partition m m2 m1.
+  Proof.
+  intros m m1 m2 (H,H'); split.
+  apply Disjoint_sym; auto.
+  intros; rewrite H'; intuition.
+  Qed.
+
+  Lemma Partition_Empty : forall m m1 m2, Partition m m1 m2 ->
+   (Empty m <-> (Empty m1 /\ Empty m2)).
+  Proof.
+  intros m m1 m2 (Hdisj,Heq). split.
+  intro He.
+  split; intros k e Hke; elim (He k e); rewrite Heq; auto.
+  intros (He1,He2) k e Hke. rewrite Heq in Hke. destruct Hke.
+  elim (He1 k e); auto.
+  elim (He2 k e); auto.
+  Qed.
+
+  Lemma Partition_Add :
+    forall m m' x e , ~In x m -> Add x e m m' ->
+    forall m1 m2, Partition m' m1 m2 ->
+     exists m3, (Add x e m3 m1 /\ Partition m m3 m2 \/
+                 Add x e m3 m2 /\ Partition m m1 m3).
+  Proof.
+  unfold Partition. intros m m' x e Hn Hadd m1 m2 (Hdisj,Hor).
+  assert (Heq : Equal m (remove x m')).
+   change (Equal m' (add x e m)) in Hadd. rewrite Hadd.
+   intro k. rewrite remove_o, add_o.
+   destruct eq_dec as [He|Hne]; auto.
+   rewrite <- He, <- not_find_in_iff; auto.
+  assert (H : MapsTo x e m').
+   change (Equal m' (add x e m)) in Hadd; rewrite Hadd.
+   apply add_1; auto.
+  rewrite Hor in H; destruct H.
+
+  (* first case : x in m1 *)
+  exists (remove x m1); left. split; [|split].
+  (* add *)
+  change (Equal m1 (add x e (remove x m1))).
+  intro k.
+  rewrite add_o, remove_o.
+  destruct eq_dec as [He|Hne]; auto.
+  rewrite <- He; apply find_1; auto.
+  (* disjoint *)
+  intros k (H1,H2). elim (Hdisj k). split; auto.
+  rewrite remove_in_iff in H1; destruct H1; auto.
+  (* mapsto *)
+  intros k' e'.
+  rewrite Heq, 2 remove_mapsto_iff, Hor.
+  intuition.
+  elim (Hdisj x); split; [exists e|exists e']; auto.
+  apply MapsTo_1 with k'; auto.
+
+  (* second case : x in m2 *)
+  exists (remove x m2); right. split; [|split].
+  (* add *)
+  change (Equal m2 (add x e (remove x m2))).
+  intro k.
+  rewrite add_o, remove_o.
+  destruct eq_dec as [He|Hne]; auto.
+  rewrite <- He; apply find_1; auto.
+  (* disjoint *)
+  intros k (H1,H2). elim (Hdisj k). split; auto.
+  rewrite remove_in_iff in H2; destruct H2; auto.
+  (* mapsto *)
+  intros k' e'.
+  rewrite Heq, 2 remove_mapsto_iff, Hor.
+  intuition.
+  elim (Hdisj x); split; [exists e'|exists e]; auto.
+  apply MapsTo_1 with k'; auto.
+  Qed.
+
+  Lemma Partition_fold :
+   forall (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)(f:key->elt->A->A),
+   Morphism (E.eq==>Leibniz==>eqA==>eqA) f ->
+   transpose_neqkey eqA f ->
+   forall m m1 m2 i,
+   Partition m m1 m2 ->
+   eqA (fold f m i) (fold f m1 (fold f m2 i)).
+  Proof.
+  intros A eqA st f Comp Tra.
+  induction m as [m Hm|m m' IH k e Hn Hadd] using map_induction.
+
+  intros m1 m2 i Hp. rewrite (fold_Empty (eqA:=eqA)); auto.
+  rewrite (Partition_Empty Hp) in Hm. destruct Hm.
+  rewrite 2 (fold_Empty (eqA:=eqA)); auto. reflexivity.
+
+  intros m1 m2 i Hp.
+  destruct (Partition_Add Hn Hadd Hp) as (m3,[(Hadd',Hp')|(Hadd',Hp')]).
+  (* fst case: m3 is (k,e)::m1 *)
+  assert (~In k m3).
+   contradict Hn. destruct Hn as (e',He').
+   destruct Hp' as (Hp1,Hp2). exists e'. rewrite Hp2; auto.
+  transitivity (f k e (fold f m i)).
+  apply fold_Add with (eqA:=eqA); auto.
+  symmetry.
+  transitivity (f k e (fold f m3 (fold f m2 i))).
+  apply fold_Add with (eqA:=eqA); auto.
+  apply Comp; auto.
+  symmetry; apply IH; auto.
+  (* snd case: m3 is (k,e)::m2 *)
+  assert (~In k m3).
+   contradict Hn. destruct Hn as (e',He').
+   destruct Hp' as (Hp1,Hp2). exists e'. rewrite Hp2; auto.
+  assert (~In k m1).
+   contradict Hn. destruct Hn as (e',He').
+   destruct Hp' as (Hp1,Hp2). exists e'. rewrite Hp2; auto.
+  transitivity (f k e (fold f m i)).
+  apply fold_Add with (eqA:=eqA); auto.
+  transitivity (f k e (fold f m1 (fold f m3 i))).
+  apply Comp; auto using IH.
+  transitivity (fold f m1 (f k e (fold f m3 i))).
+  symmetry.
+  apply fold_commutes with (eqA:=eqA); auto.
+  apply fold_init with (eqA:=eqA); auto.
+  symmetry.
+  apply fold_Add with (eqA:=eqA); auto.
+  Qed.
+
+  Lemma Partition_cardinal : forall m m1 m2, Partition m m1 m2 ->
+   cardinal m = cardinal m1 + cardinal m2.
+  Proof.
+  intros.
+  rewrite (cardinal_fold m), (cardinal_fold m1).
+  set (f:=fun (_:key)(_:elt)=>S).
+  setoid_replace (fold f m 0) with (fold f m1 (fold f m2 0)).
+  rewrite <- cardinal_fold.
+  intros. apply fold_rel with (R:=fun u v => u = v + cardinal m2); simpl; auto.
+  apply Partition_fold with (eqA:=@Logic.eq _); try red; auto.
+  compute; auto.
+  Qed.
+
+  Lemma Partition_partition : forall m m1 m2, Partition m m1 m2 ->
+    let f := fun k (_:elt) => mem k m1 in
+   Equal m1 (fst (partition f m)) /\ Equal m2 (snd (partition f m)).
+  Proof.
+  intros m m1 m2 Hm f.
+  assert (Hf : Morphism (E.eq==>Leibniz==>Leibniz) f).
+   intros k k' Hk e e' _; unfold f; rewrite Hk; auto.
+  set (m1':= fst (partition f m)).
+  set (m2':= snd (partition f m)).
+  split; rewrite Equal_mapsto_iff; intros k e.
+  rewrite (@partition_iff_1 f Hf m m1') by auto.
+  unfold f.
+  rewrite <- mem_in_iff.
+  destruct Hm as (Hm,Hm').
+  rewrite Hm'.
+  intuition.
+  exists e; auto.
+  elim (Hm k); split; auto; exists e; auto.
+  rewrite (@partition_iff_2 f Hf m m2') by auto.
+  unfold f.
+  rewrite <- not_mem_in_iff.
+  destruct Hm as (Hm,Hm').
+  rewrite Hm'.
+  intuition.
+  elim (Hm k); split; auto; exists e; auto.
+  elim H1; exists e; auto.
+  Qed.
+
+  Lemma update_mapsto_iff : forall m m' k e,
+   MapsTo k e (update m m') <->
+    (MapsTo k e m' \/ (MapsTo k e m /\ ~In k m')).
+  Proof.
+  unfold update.
+  intros m m'.
+  pattern m', (fold (@add _) m' m). apply fold_rec.
+
+  intros m0 Hm0 k e.
+  assert (~In k m0) by (intros (e0,He0); apply (Hm0 k e0); auto).
+  intuition.
+  elim (Hm0 k e); auto.
+
+  intros k e m0 m1 m2 _ Hn Hadd IH k' e'.
+  change (Equal m2 (add k e m1)) in Hadd.
+  rewrite Hadd, 2 add_mapsto_iff, IH, add_in_iff. clear IH. intuition.
+  Qed.
+
+  Lemma update_dec : forall m m' k e, MapsTo k e (update m m') ->
+   { MapsTo k e m' } + { MapsTo k e m /\ ~In k m'}.
+  Proof.
+  intros m m' k e H. rewrite update_mapsto_iff in H.
+  destruct (In_dec m' k) as [H'|H']; [left|right]; intuition.
+  elim H'; exists e; auto.
+  Defined.
+
+  Lemma update_in_iff : forall m m' k,
+   In k (update m m') <-> In k m \/ In k m'.
+  Proof.
+  intros m m' k. split.
+  intros (e,H); rewrite update_mapsto_iff in H.
+  destruct H; [right|left]; exists e; intuition.
+  destruct (In_dec m' k) as [H|H].
+  destruct H as (e,H). intros _; exists e.
+  rewrite update_mapsto_iff; left; auto.
+  destruct 1 as [H'|H']; [|elim H; auto].
+  destruct H' as (e,H'). exists e.
+  rewrite update_mapsto_iff; right; auto.
+  Qed.
+
+  Lemma diff_mapsto_iff : forall m m' k e,
+   MapsTo k e (diff m m') <-> MapsTo k e m /\ ~In k m'.
+  Proof.
+  intros m m' k e.
+  unfold diff.
+  rewrite filter_iff.
+  intuition.
+  rewrite mem_1 in *; auto; discriminate.
+  intros ? ? Hk _ _ _; rewrite Hk; auto.
+  Qed.
+
+  Lemma diff_in_iff : forall m m' k,
+   In k (diff m m') <-> In k m /\ ~In k m'.
+  Proof.
+  intros m m' k. split.
+  intros (e,H); rewrite diff_mapsto_iff in H.
+  destruct H; split; auto. exists e; auto.
+  intros ((e,H),H'); exists e; rewrite diff_mapsto_iff; auto.
+  Qed.
+
+  Lemma restrict_mapsto_iff : forall m m' k e,
+   MapsTo k e (restrict m m') <-> MapsTo k e m /\ In k m'.
+  Proof.
+  intros m m' k e.
+  unfold restrict.
+  rewrite filter_iff.
+  intuition.
+  intros ? ? Hk _ _ _; rewrite Hk; auto.
+  Qed.
+
+  Lemma restrict_in_iff : forall m m' k,
+   In k (restrict m m') <-> In k m /\ In k m'.
+  Proof.
+  intros m m' k. split.
+  intros (e,H); rewrite restrict_mapsto_iff in H.
+  destruct H; split; auto. exists e; auto.
+  intros ((e,H),H'); exists e; rewrite restrict_mapsto_iff; auto.
+  Qed.
 
   (** specialized versions analyzing only keys (resp. elements) *)
 
@@ -1335,8 +1672,78 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
  End Elt.
 
- Add Parametric Morphism elt : (@cardinal elt) with signature Equal ==> @Logic.eq _ as cardinal_m.
+ Add Parametric Morphism elt : (@cardinal elt)
+   with signature Equal ==> Leibniz as cardinal_m.
  Proof. intros; apply Equal_cardinal; auto. Qed.
+
+ Add Parametric Morphism elt : (@Disjoint elt)
+   with signature Equal ==> Equal ==> iff as Disjoint_m.
+ Proof.
+  intros m1 m1' Hm1 m2 m2' Hm2. unfold Disjoint. split; intros.
+  rewrite <- Hm1, <- Hm2; auto.
+  rewrite Hm1, Hm2; auto.
+ Qed.
+
+ Add Parametric Morphism elt : (@Partition elt)
+   with signature Equal ==> Equal ==> Equal ==> iff as Partition_m.
+ Proof.
+  intros m1 m1' Hm1 m2 m2' Hm2 m3 m3' Hm3. unfold Partition.
+  rewrite <- Hm2, <- Hm3.
+  split; intros (H,H'); split; auto; intros.
+  rewrite <- Hm1, <- Hm2, <- Hm3; auto.
+  rewrite Hm1, Hm2, Hm3; auto.
+ Qed.
+
+ Add Parametric Morphism elt : (@update elt)
+   with signature Equal ==> Equal ==> Equal as update_m.
+ Proof.
+  intros m1 m1' Hm1 m2 m2' Hm2.
+  setoid_replace (update m1 m2) with (update m1' m2); unfold update.
+  apply fold_Equal with (eqA:=Equal); auto.
+  intros k k' Hk e e' He m m' Hm; rewrite Hk,He,Hm; red; auto.
+  intros k k' e e' i Hneq x.
+  rewrite !add_o; do 2 destruct eq_dec; auto. elim Hneq; eauto.
+  apply fold_init with (eqA:=Equal); auto.
+  intros k k' Hk e e' He m m' Hm; rewrite Hk,He,Hm; red; auto.
+ Qed.
+
+ Add Parametric Morphism elt : (@restrict elt)
+   with signature Equal ==> Equal ==> Equal as restrict_m.
+ Proof.
+  intros m1 m1' Hm1 m2 m2' Hm2.
+  setoid_replace (restrict m1 m2) with (restrict m1' m2);
+   unfold restrict, filter.
+  apply fold_rel with (R:=Equal); try red; auto.
+   intros k e i i' H Hii' x.
+   pattern (mem k m2); rewrite Hm2. (* UGLY, see with Matthieu *)
+   destruct mem; rewrite Hii'; auto.
+  apply fold_Equal with (eqA:=Equal); auto.
+   intros k k' Hk e e' He m m' Hm; simpl in *.
+   pattern (mem k m2); rewrite Hk. (* idem *)
+   destruct mem; rewrite ?Hk,?He,Hm; red; auto.
+   intros k k' e e' i Hneq x.
+   case_eq (mem k m2); case_eq (mem k' m2); intros; auto.
+   rewrite !add_o; do 2 destruct eq_dec; auto. elim Hneq; eauto.
+ Qed.
+
+ Add Parametric Morphism elt : (@diff elt)
+   with signature Equal ==> Equal ==> Equal as diff_m.
+ Proof.
+  intros m1 m1' Hm1 m2 m2' Hm2.
+  setoid_replace (diff m1 m2) with (diff m1' m2);
+   unfold diff, filter.
+  apply fold_rel with (R:=Equal); try red; auto.
+   intros k e i i' H Hii' x.
+   pattern (mem k m2); rewrite Hm2. (* idem *)
+   destruct mem; simpl; rewrite Hii'; auto.
+  apply fold_Equal with (eqA:=Equal); auto.
+   intros k k' Hk e e' He m m' Hm; simpl in *.
+   pattern (mem k m2); rewrite Hk. (* idem *)
+   destruct mem; simpl; rewrite ?Hk,?He,Hm; red; auto.
+   intros k k' e e' i Hneq x.
+   case_eq (mem k m2); case_eq (mem k' m2); intros; simpl; auto.
+   rewrite !add_o; do 2 destruct eq_dec; auto. elim Hneq; eauto.
+ Qed.
 
 End WProperties_fun.
 
@@ -1378,7 +1785,8 @@ Module OrdProperties (M:S).
 
   Ltac clean_eauto := unfold O.eqke, O.ltk; simpl; intuition; eauto.
 
-  Definition gtb (p p':key*elt) := match E.compare (fst p) (fst p') with GT _ => true | _ => false end.
+  Definition gtb (p p':key*elt) :=
+    match E.compare (fst p) (fst p') with GT _ => true | _ => false end.
   Definition leb p := fun p' => negb (gtb p p'). 
 
   Definition elements_lt p m := List.filter (gtb p) (elements m).
@@ -1740,74 +2148,53 @@ Module OrdProperties (M:S).
   (** The following lemma has already been proved on Weak Maps,
       but with one additionnal hypothesis (some [transpose] fact). *)
 
-  Lemma fold_Equal : forall s1 s2 (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
-   (f:key->elt->A->A)(i:A), 
-   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
-   Equal s1 s2 -> 
-   eqA (fold f s1 i) (fold f s2 i).
+  Lemma fold_Equal : forall m1 m2 (A:Type)(eqA:A->A->Prop)(st:Equivalence  eqA)
+   (f:key->elt->A->A)(i:A),
+   Morphism (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Equal m1 m2 ->
+   eqA (fold f m1 i) (fold f m2 i).
   Proof.
-  intros.
+  intros m1 m2 A eqA st f i Hf Heq.
   do 2 rewrite fold_1.
   do 2 rewrite <- fold_left_rev_right.
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
-  apply eqlistA_rev.
-  apply elements_Equal_eqlistA; auto.
+  intros (k,e) (k',e') a a' (Hk,He) Ha; simpl in *; apply Hf; auto.
+  apply eqlistA_rev. apply elements_Equal_eqlistA. auto.
   Qed.
 
-  Lemma fold_Add : forall s1 s2 x e (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
-   (f:key->elt->A->A)(i:A), 
-   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
-   transpose eqA (fun y =>f (fst y) (snd y)) -> 
-   ~In x s1 -> Add x e s1 s2 -> 
-   eqA (fold f s2 i) (f x e (fold f s1 i)).
+  Lemma fold_Add_Above : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
+   (f:key->elt->A->A)(i:A),
+   Morphism (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Above x m1 -> Add x e m1 m2 ->
+   eqA (fold f m2 i) (f x e (fold f m1 i)).
   Proof.
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
-  change (f x e (fold_right f' i (rev (elements s1))))
-   with (f' (x,e) (fold_right f' i (rev (elements s1)))).
-  trans_st (fold_right f' i 
-              (rev (elements_lt (x, e) s1 ++ (x,e) :: elements_ge (x, e) s1))).
+  transitivity (fold_right f' i (rev (elements m1 ++ (x,e)::nil))).
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
-  apply eqlistA_rev.
-  apply elements_Add; auto.
-  rewrite distr_rev; simpl.
-  rewrite app_ass; simpl.
-  rewrite (elements_split (x,e) s1).
-  rewrite distr_rev; simpl.
-  apply fold_right_commutes with (eqA:=eqke) (eqB:=eqA); auto.
-  Qed.
-
-  Lemma fold_Add_Above : forall s1 s2 x e (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
-   (f:key->elt->A->A)(i:A), 
-   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
-   Above x s1 -> Add x e s1 s2 -> 
-   eqA (fold f s2 i) (f x e (fold f s1 i)).
-  Proof.
-  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
-  set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
-  trans_st (fold_right f' i (rev (elements s1 ++ (x,e)::nil))).
-  apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
+  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *; apply H; auto.
   apply eqlistA_rev.
   apply elements_Add_Above; auto.
   rewrite distr_rev; simpl.
-  refl_st.
+  reflexivity.
   Qed.
 
-  Lemma fold_Add_Below : forall s1 s2 x e (A:Type)(eqA:A->A->Prop)(st:Setoid_Theory A eqA)
-   (f:key->elt->A->A)(i:A), 
-   compat_op eqke eqA (fun y =>f (fst y) (snd y)) -> 
-   Below x s1 -> Add x e s1 s2 -> 
-   eqA (fold f s2 i) (fold f s1 (f x e i)).
+  Lemma fold_Add_Below : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
+   (f:key->elt->A->A)(i:A),
+   Morphism (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Below x m1 -> Add x e m1 m2 ->
+   eqA (fold f m2 i) (fold f m1 (f x e i)).
   Proof.
   intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
   set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
-  trans_st (fold_right f' i (rev (((x,e)::nil)++elements s1))).
+  transitivity (fold_right f' i (rev (((x,e)::nil)++elements m1))).
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
+  intros (k1,e1) (k2,e2) a1 a2 (Hk,He) Ha; unfold f'; simpl in *; apply H; auto.
   apply eqlistA_rev.
   simpl; apply elements_Add_Below; auto.
   rewrite distr_rev; simpl.
   rewrite fold_right_app.
-  refl_st.
+  reflexivity.
   Qed.
 
   End Fold_properties.
@@ -1815,8 +2202,4 @@ Module OrdProperties (M:S).
  End Elt.
 
 End OrdProperties.
-
-
-
-
 
