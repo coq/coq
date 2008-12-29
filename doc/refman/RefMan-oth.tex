@@ -134,6 +134,8 @@ environment}\\
     There is no constant in the environment named \qualid.
 \end{ErrMsgs}
 
+\newcommand{\termpatternorstr}{{\termpattern}\textrm{\textsl{-}}{\str}}
+
 \begin{Variants}
 \item {\tt SearchAbout {\str}.}
 
@@ -151,30 +153,32 @@ The string {\str} must be a notation or the main symbol of a notation
 which is then interpreted in the scope bound to the delimiting key
 {\delimkey} (see Section~\ref{scopechange}).
 
-\item {\tt SearchAbout [ \nelist{\zeroone{-}\textrm{\textsl{qualid-or-string}}}{}
+\item {\tt SearchAbout {\termpattern}.}
+
+This searches for all statements or types of definition that contains
+a subterm that matches the pattern {\termpattern} (holes of the
+pattern are either denoted by ``{\texttt \_}'' or
+by ``{\texttt ?{\ident}}'' when non linear patterns are expected).
+
+\item {\tt SearchAbout [ \nelist{\zeroone{-}{\termpatternorstr}}{}
 ].}\\
-\noindent where {\textrm{\textsl{qualid-or-string}}} is a {\qualid} or
-a {\str}, or a {\str} followed by a scope delimiting key 
-{\tt \%{\delimkey}}.
+
+\noindent where {\termpatternorstr} is a
+{\termpattern} or a {\str}, or a {\str} followed by a scope
+delimiting key {\tt \%{\delimkey}}.
 
 This generalization of {\tt SearchAbout} searches for all objects
-whose statement mentions all of {\qualid} (or {\str} if {\str} is the
-notation for a reference) and whose name contains all {\str} that
-correspond to valid identifiers. If a {\qualid} or a {\str} is
-prefixed by ``-'', the search excludes the objects that mention that
-{\qualid} or that {\str}.
-
-\Example
-
-\begin{coq_example}
-Require Import ZArith.
-SearchAbout [ Zmult Zplus "distr" ].
-\end{coq_example}
+whose statement or type contains a subterm matching {\termpattern} (or
+{\qualid} if {\str} is the notation for a reference {\qualid}) and
+whose name contains all {\str} of the request that correspond to valid
+identifiers. If a {\termpattern} or a {\str} is prefixed by ``-'', the
+search excludes the objects that mention that {\termpattern} or that
+{\str}.
 
 \item
 \begin{tabular}[t]{@{}l}
-  {\tt SearchAbout {\term} inside {\module$_1$} \ldots{} {\module$_n$}.} \\
-  {\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ]
+  {\tt SearchAbout {\termpatternorstr} inside {\module$_1$} \ldots{} {\module$_n$}.} \\
+  {\tt SearchAbout [ \nelist{{\termpatternorstr}}{} ]
     inside {\module$_1$} \ldots{} {\module$_n$}.}
 \end{tabular}
 
@@ -183,8 +187,8 @@ This restricts the search to constructions defined in modules
 
 \item
 \begin{tabular}[t]{@{}l}
-  {\tt SearchAbout {\term} outside {\module$_1$}...{\module$_n$}.} \\
-  {\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ]
+  {\tt SearchAbout {\termpatternorstr} outside {\module$_1$}...{\module$_n$}.} \\
+  {\tt SearchAbout [ \nelist{{\termpatternorstr}}{} ]
      outside {\module$_1$}...{\module$_n$}.}
 \end{tabular}
 
@@ -193,11 +197,25 @@ This restricts the search to constructions not defined in modules
 
 \end{Variants}
 
-\subsection[\tt SearchPattern {\term}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
+\Examples
+
+\begin{coq_example*}
+Require Import ZArith.
+\end{coq_example*}
+\begin{coq_example}
+SearchAbout [ Zmult Zplus "distr" ].
+SearchAbout [ "+"%Z "*"%Z "distr" -positive -Prop].
+SearchAbout (?x * _ + ?x * _)%Z outside OmegaLemmas.
+\end{coq_example}
+
+\subsection[\tt SearchPattern {\termpattern}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
 
 This command displays the name and type of all theorems of the current
 context whose statement's conclusion matches the expression {\term}
-where holes in the latter are denoted by ``{\texttt \_}''.
+where holes in the latter are denoted by ``{\texttt \_}''. It is a
+variant of {\tt SearchAbout {\termpattern}} that does not look for
+subterms but searches for statements whose conclusion has exactly the
+expected form.
 
 \begin{coq_example}
 Require Import Arith.
@@ -215,13 +233,12 @@ SearchPattern (?X1 + _ = _ + ?X1).
 
 \begin{Variants}
 \item {\tt SearchPattern {\term} inside
-{\module$_1$} \ldots{} {\module$_n$}.}\comindex{SearchPattern \ldots{} inside
-\ldots{}}
+{\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
 
-\item {\tt SearchPattern {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}\comindex{SearchPattern \ldots{} outside \ldots{}}
+\item {\tt SearchPattern {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions not defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
@@ -232,7 +249,7 @@ This restricts the search to constructions not defined in modules
 
 This command displays the name and type of all theorems of the current
 context whose statement's conclusion is an equality of which one side matches
-the expression {\term =}. Holes in {\term} are denoted by ``{\texttt \_}''.
+the expression {\term}. Holes in {\term} are denoted by ``{\texttt \_}''.
 
 \begin{coq_example}
 Require Import Arith.

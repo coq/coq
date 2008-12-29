@@ -19,7 +19,7 @@ open Nametab
 (*s Search facilities. *)
 
 type glob_search_about_item =
-  | GlobSearchRef of global_reference
+  | GlobSearchSubPattern of constr_pattern
   | GlobSearchString of string
 
 val search_by_head : global_reference -> dir_path list * bool -> unit

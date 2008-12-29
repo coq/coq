@@ -581,7 +581,7 @@ let add_hints local dbnames0 h =
         add_resolves env sigma lcons local dbnames in
       List.iter add_one lqid
   | HintsExtern (pri, patcom, tacexp) ->
-      let pat =	Option.map (Constrintern.interp_constrpattern Evd.empty (Global.env())) patcom in
+      let pat =	Option.map (Constrintern.intern_constr_pattern Evd.empty (Global.env())) patcom in
       let tacexp = !forward_intern_tac (match pat with None -> [] | Some (l, _) -> l) tacexp in
       add_externs pri pat tacexp local dbnames
   | HintsDestruct(na,pri,loc,pat,code) ->

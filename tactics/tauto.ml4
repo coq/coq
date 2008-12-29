@@ -234,13 +234,18 @@ let rec tauto_intuit t_reduce solver ist =
     ||
     $t_solver
    ) >>
-    
+
+  (* The unfolding of "iff" below is a priori too strong since it
+     reduces all occurrences in subterms even if not necessary to do
+     so. However we cannot renounce to them (even with iff dealt with
+     in "simplif") w/o breaking some intro naming. This is because, a
+     "and" or an "iff" can arrive in the scope of an inductive type,
+     say "{x:A|P x}" and "case"ing on a such an hypothesis will name P
+     x "a" or "i" depending on whether "P" is an "and" or a "iff".
+     (idem for "not" if "simplif" has a primitive treatment *)
+
 let reduction_not _ist =
- <:tactic<repeat 
-  match goal with 
-  | |- _     => progress unfold Coq.Init.Logic.not
-  | H:_ |- _ => progress unfold Coq.Init.Logic.not in H
-  end >>
+ <:tactic< unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in * >>
 
 let t_reduction_not = tacticIn reduction_not
 

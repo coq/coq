@@ -99,7 +99,7 @@ let rec find_cmd (l:(string * dad_rule) list) env constr p p1 p2 =
              with
                 Failure s -> failwith "internal" in
          let _, constr_pat = 
-            interp_constrpattern Evd.empty (Global.env())
+            intern_constr_pattern Evd.empty (Global.env())
                ((*ct_to_ast*) pat) in
          let subst = matches constr_pat term_to_match in
          if (is_prefix p_f (p_r@p1)) & (is_prefix p_l (p_r@p2)) then

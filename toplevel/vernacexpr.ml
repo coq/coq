@@ -69,12 +69,12 @@ type printable =
   | PrintAssumptions of reference
 
 type search_about_item =
-  | SearchRef of reference
+  | SearchSubPattern of constr_pattern_expr
   | SearchString of string * scope_name option
 
 type searchable =
-  | SearchPattern of pattern_expr
-  | SearchRewrite of pattern_expr
+  | SearchPattern of constr_pattern_expr
+  | SearchRewrite of constr_pattern_expr
   | SearchHead of reference
   | SearchAbout of (bool * search_about_item) list
 

@@ -1123,14 +1123,17 @@ open Search
 let is_ident s = try ignore (check_ident s); true with UserError _ -> false
 
 let interp_search_about_item = function
-  | SearchRef r -> GlobSearchRef (global_with_alias r)
-  | SearchString (s,None) when is_ident s -> GlobSearchString s
+  | SearchSubPattern pat ->
+      let _,pat = intern_constr_pattern Evd.empty (Global.env()) pat in
+      GlobSearchSubPattern pat
+  | SearchString (s,None) when is_ident s ->
+      GlobSearchString s
   | SearchString (s,sc) ->
       try 
 	let ref =
 	  Notation.interp_notation_as_global_reference dummy_loc
 	    (fun _ -> true) s sc in
-	GlobSearchRef ref
+	GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ -> 
 	error ("Unable to interp \""^s^"\" either as a reference or
           	as an identifier component")
@@ -1140,10 +1143,10 @@ let vernac_search s r =
   if !pcoq <> None then (Option.get !pcoq).search s r else
   match s with
   | SearchPattern c ->
-      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
+      let _,pat = intern_constr_pattern Evd.empty (Global.env()) c in
       Search.search_pattern pat r
   | SearchRewrite c ->
-      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
+      let _,pat = intern_constr_pattern Evd.empty (Global.env()) c in
       Search.search_rewrite pat r
   | SearchHead ref ->
       Search.search_by_head (global_with_alias ref) r

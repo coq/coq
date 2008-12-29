@@ -69,6 +69,10 @@ val match_appsubterm : constr_pattern -> constr -> subterm_matching_result
 val match_subterm_gen : bool (* true = with app context *) -> 
    constr_pattern -> constr -> subterm_matching_result
 
+(* [is_matching_appsubterm pat c] tells if a subterm of [c] matches
+   against [pat] taking partial subterms into consideration *)
+val is_matching_appsubterm : ?closed:bool -> constr_pattern -> constr -> bool
+
 (* [is_matching_conv env sigma pat c] tells if [c] matches against [pat]
    up to conversion for constants in patterns *)
 val is_matching_conv :

@@ -47,6 +47,7 @@
 \newcommand{\Rem}{\medskip \noindent {\bf Remark: }}
 \newcommand{\Rems}{\medskip \noindent {\bf Remarks: }}
 \newcommand{\Example}{\medskip \noindent {\bf Example: }}
+\newcommand{\Examples}{\medskip \noindent {\bf Examples: }}
 \newcommand{\Warning}{\medskip \noindent {\bf Warning: }}
 \newcommand{\Warns}{\medskip \noindent {\bf Warnings: }}
 \newcounter{ex}
@@ -60,8 +61,6 @@
 \newenvironment{ErrMsgs}{\ErrMsgx\begin{enumerate}}{\end{enumerate}}
 \newenvironment{Remarks}{\Rems\begin{enumerate}}{\end{enumerate}}
 \newenvironment{Warnings}{\Warns\begin{enumerate}}{\end{enumerate}}
-\newenvironment{Examples}{\medskip\noindent{\bf Examples:}
-\begin{enumerate}}{\end{enumerate}}
 
 %\newcommand{\bd}{\noindent\bf}
 %\newcommand{\sbd}{\vspace{8pt}\noindent\bf}
@@ -191,11 +190,12 @@
 \newcommand{\nestedpattern}{\nterm{nested\_pattern}}
 \newcommand{\name}{\nterm{name}}
 \newcommand{\num}{\nterm{num}}
-\newcommand{\pattern}{\nterm{pattern}}
+\newcommand{\pattern}{\nterm{pattern}} % pattern for pattern-matching
 \newcommand{\orpattern}{\nterm{or\_pattern}}
 \newcommand{\intropattern}{\nterm{intro\_pattern}}
 \newcommand{\disjconjintropattern}{\nterm{disj\_conj\_intro\_pattern}}
 \newcommand{\namingintropattern}{\nterm{naming\_intro\_pattern}}
+\newcommand{\termpattern}{\nterm{term\_pattern}} % term with holes
 \newcommand{\pat}{\nterm{pat}}
 \newcommand{\pgs}{\nterm{pgms}}
 \newcommand{\pg}{\nterm{pgm}}

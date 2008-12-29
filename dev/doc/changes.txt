@@ -18,6 +18,9 @@ Eauto.simplest_apply -> Hiddentac.h_simplest_apply
 Evarutil.define_evar_as_arrow -> define_evar_as_product
 Old version of Tactics.assert_tac disappears
 Tactics.true_cut renamed into Tactics.assert_tac
+Constrintern.interp_constrpattern -> intern_constr_pattern
+Hipattern.match_with_conjunction is a bit more restrictive
+Hipattern.match_with_disjunction is a bit more restrictive
 
 ** Universe names (univ.mli)
 

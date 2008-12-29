@@ -1129,12 +1129,29 @@ let intro_or_and_pattern loc b ll l' tac =
 	nv (Array.of_list ll))
       gl)
 
-let clear_if_atomic l2r id gl =
-  let eq = pf_type_of gl (mkVar id) in
-  let (_,lhs,rhs) = snd (find_eq_data_decompose eq) in
-  if l2r & isVar lhs then tclTRY (clear [destVar lhs;id]) gl
-  else if not l2r & isVar rhs then tclTRY (clear [destVar rhs;id]) gl
-  else tclIDTAC gl
+let rewrite_hyp l2r id gl =
+  let rew_on l2r =
+    !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) in
+  let clear_var_and_eq c =
+    tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
+  let t = pf_whd_betadeltaiota gl (pf_type_of gl (mkVar id)) in
+  (* TODO: detect setoid equality? better detect the different equalities *)
+  match match_with_equality_type t with
+  | Some (hdcncl,[_;lhs;rhs]) ->
+      if l2r & isVar lhs & not (occur_var (pf_env gl) (destVar lhs) rhs) then
+	tclTHEN (rew_on l2r allClauses) (clear_var_and_eq lhs) gl
+      else if not l2r & isVar rhs & not (occur_var (pf_env gl) (destVar rhs) lhs) then
+	tclTHEN (rew_on l2r allClauses) (clear_var_and_eq rhs) gl
+      else
+	tclTHEN (rew_on l2r onConcl) (tclTRY (clear [id])) gl
+  | Some (hdcncl,[c]) ->
+      let l2r = not l2r in (* equality of the form eq_true *)
+      if isVar c then
+	tclTHEN (rew_on l2r allClauses) (clear_var_and_eq c) gl
+      else
+	tclTHEN (rew_on l2r onConcl) (tclTRY (clear [id])) gl
+  | _ ->
+      error "Cannot find a known equation."
 
 let rec explicit_intro_names = function
 | (_, IntroIdentifier id) :: l ->
@@ -1181,11 +1198,9 @@ let rec intros_patterns b avoid thin destopt = function
       tclTHEN 
         (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l)) no_move true)
         (onLastHyp (fun id ->
-	  tclTHENLIST [ 
-	    !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings)
-	      allClauses;
-	    clear_if_atomic l2r id;
-	    intros_patterns b avoid thin destopt l ]))
+	  tclTHEN
+	    (rewrite_hyp l2r id)
+	    (intros_patterns b avoid thin destopt l)))
   | [] -> clear_wildcards thin
 
 let intros_pattern = intros_patterns false [] []

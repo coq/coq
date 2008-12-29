@@ -89,14 +89,14 @@ let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Idset.empty t)
 
 let pr_lconstr_pattern_env env c =
-  pr_lconstr_expr (extern_constr_pattern (names_of_rel_context env) c)
+  pr_lconstr_pattern_expr (extern_constr_pattern (names_of_rel_context env) c)
 let pr_constr_pattern_env env c =
-  pr_constr_expr (extern_constr_pattern (names_of_rel_context env) c)
+  pr_constr_pattern_expr (extern_constr_pattern (names_of_rel_context env) c)
 
 let pr_lconstr_pattern t =
-  pr_lconstr_expr (extern_constr_pattern empty_names_context t)
+  pr_lconstr_pattern_expr (extern_constr_pattern empty_names_context t)
 let pr_constr_pattern t =
-  pr_constr_expr (extern_constr_pattern empty_names_context t)
+  pr_constr_pattern_expr (extern_constr_pattern empty_names_context t)
 
 let pr_sort s = pr_rawsort (extern_sort s)
 

@@ -615,18 +615,15 @@ let intern_inversion_strength lf ist = function
 let intern_hyp_location ist (((b,occs),id),hl) =
   (((b,List.map (intern_or_var ist) occs),intern_hyp_or_metaid ist id), hl)
 
-let interp_constrpattern_gen sigma env ?(as_type=false) ltacvar c =
-  let c = intern_gen as_type ~allow_patvar:true ~ltacvars:(ltacvar,[])
-                     sigma env c in
-  pattern_of_rawconstr c
-
 (* Reads a pattern *)
 let intern_pattern sigma env ?(as_type=false) lfun = function
   | Subterm (b,ido,pc) ->
-      let (metas,pat) = interp_constrpattern_gen sigma env lfun pc in
+      let ltacvars = (lfun,[]) in
+      let (metas,pat) = intern_constr_pattern sigma env ~ltacvars pc in
       ido, metas, Subterm (b,ido,pat)
   | Term pc ->
-      let (metas,pat) = interp_constrpattern_gen sigma env ~as_type lfun pc  in
+      let ltacvars = (lfun,[]) in
+      let (metas,pat) = intern_constr_pattern sigma env ~as_type ~ltacvars pc in
       None, metas, Term pat
 
 let intern_constr_may_eval ist = function
