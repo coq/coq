@@ -425,7 +425,10 @@ more uniform names would be no sacrilege.
 \paragraph{Suggested revisions}
 
 \begin{itemize}
-\item Set \term{iff} as \command{hint unfold}.
+\item Set \term{iff} as \command{hint unfold}, or, better, define {\tt
+  iff} as a primitive inductive type (suggestion of Georges Gonthier)
+  and add the constructor as a {\tt hint} (leaving open the problem of
+  destruring inductive types in {\tt auto}).
 \item Add support for reasoning over \name{iff}: either combine
   \tactic{setoid\_rewrite} and \tactic{apply} or make that
   \tactic{apply} on a \texttt{iff} statement automatically select the
@@ -1041,6 +1044,16 @@ equalities. More generally, it is a pity that no tactic exists to
 automatically recognize that such or such goal is possibly provable by
 \tactic{ring}, \tactic{omega}, \tactic{discriminate}, \tactic{tauto},
 \tactic{auto}...
+
+Sometimes {\tt trivial} is not equivalent to {\tt intros; trivial}!!
+Here is a short example:
+
+\begin{verbatim}
+Goal (True -> 1=0) -> (True -> 1=0).
+intros H H'; trivial. (* fails *)
+intro H; trivial (* succeeds *)
+trivial (* succeeds *)
+\end{verbatim}
 
 \subsection{Unification modulo $\delta$}
 
@@ -2017,6 +2030,76 @@ left/right, inleft/inright etc missing.
 That apply and elim default to automatically removing used hypotheses
 ?
 
+\subsection{auto}
+
+{\tt auto} does not handle \texttt{iff}.
+
+\subsection{tauto}
+
+{\tt tauto} is not uniform in how it deals with
+conjunction/disjunction when in contravariant position of an
+implicative hypothesis(in which case, it must be the standard and/prod
+and or/sum/sumbool/sumor) and when in an hypothesis or conclusion,
+where it can be any form of conjunction/disjunction.
+
+It also exceeds the scope of propositional logic by solving
+\texttt{n=n} (due to a too tolerant notion of {\em unit} type.
+
+\subsection{injection}
+
+\texttt{injection} reduces more than necessary. E.g. for
+
+\begin{verbatim}
+Fixpoint div2 n : nat :=
+  match n with
+  | O => 0
+  | S O => 0
+  | S (S n') => S (div2 n')
+  end.
+
+Goal forall n, S (div2 (S n)) = S (div2 n) -> True.
+intros n H. injection H.
+(*
+match n with
+| 0 => 0
+| S n' => S (div2 n')
+end = div2 n -> True.
+*)
+\end{verbatim}
+
+
+
+\subsection{case}
+
+The tactic {\tt case} invents non-robust names for the branches even
+for non-dependent ones. Example:
+
+\begin{verbatim}
+Goal {x : nat | x = x} -> True.
+intros (?,?).
+(*
+  x : nat
+  e : x = x
+  ============================
+   True
+*)
+\end{verbatim}
+
+The problem comes from the {\tt prim\_refiner} which calls {\tt
+  type\_case\_branches\_with\_names} which invents names depending on
+the type of the variable. For instance, the names for {\tt {x:A|P x}
+  are not always the same, since they will depend on the particular
+  instance of {\tt P}.
+
+\subsection{intuition}
+
+\begin{itemize}
+
+\item Explodes too many negations.
+
+\item Do not clear hypotheses of the form \term{False -> A}.
+
+\end{itemize}
 
 \section{Language wishes}
 
