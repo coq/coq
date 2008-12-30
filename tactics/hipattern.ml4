@@ -81,7 +81,9 @@ let has_nodep_prod = has_nodep_prod_after 0
    it is strict if it has the form 
    "Inductive I A1 ... An := C (_:A1) ... (_:An)" *)
 
-let match_with_conjunction ?(strict=false) t =
+(* style: None = record; Some false = conjunction; Some true = strict conj *)
+
+let match_with_one_constructor style t =
   let (hdapp,args) = decompose_app t in 
   match kind_of_term hdapp with
   | Ind ind -> 
@@ -90,28 +92,51 @@ let match_with_conjunction ?(strict=false) t =
 	&& (not (mis_is_recursive (ind,mib,mip)))
         && (mip.mind_nrealargs = 0)
       then
-	let is_nth_argument n (_,b,c) = b=None && c=mkRel(n+mib.mind_nparams) in
-	if strict &&
-	  list_for_all_i is_nth_argument 1 
-	    (fst (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))
-	then
-	  Some (hdapp,args)
+	if style = Some true (* strict conjunction *) then
+	  let ctx = 
+	    fst (decompose_prod_assum (snd 
+	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
+	  if 
+	    List.for_all
+	      (fun (_,b,c) -> b=None && c = mkRel mib.mind_nparams) ctx
+	  then
+	    Some (hdapp,args)
+	  else None
 	else
 	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
 	  let cargs = List.map pi3 (fst (decompose_prod_assum ctyp)) in
-	  if has_nodep_prod ctyp then
+	  if style <> Some false || has_nodep_prod ctyp then
+	    (* Record or non strict conjunction *)
 	    Some (hdapp,List.rev cargs)
-	  else None
-      else None
+	  else
+	      None
+      else
+	None
   | _ -> None
+
+let match_with_conjunction ?(strict=false) t =
+  match_with_one_constructor (Some strict) t
+
+let match_with_record t = 
+  match_with_one_constructor None t
 
 let is_conjunction ?(strict=false) t =
   op2bool (match_with_conjunction ~strict t)
+
+let is_record t =
+  op2bool (match_with_record t)
+
 
 (* A general disjunction type is a non-recursive with-no-indices inductive 
    type with of which all constructors have a single argument;
    it is strict if it has the form 
    "Inductive I A1 ... An := C1 (_:A1) | ... | Cn : (_:An)" *)
+
+let test_strict_disjunction n lc =
+  array_for_all_i (fun i c ->
+    match fst (decompose_prod_assum (snd (decompose_prod_n_assum n c))) with
+    | [_,None,c] -> c = mkRel (n - i)
+    | _ -> false) 0 lc
 
 let match_with_disjunction ?(strict=false) t =
   let (hdapp,args) = decompose_app t in 
@@ -122,12 +147,11 @@ let match_with_disjunction ?(strict=false) t =
       if array_for_all (fun ar -> ar = 1) car &&
 	not (mis_is_recursive (ind,mib,mip))
       then
-	if strict &
-	  array_for_all_i (fun i c -> 
-	    snd (decompose_prod_n_assum mib.mind_nparams c) = mkRel i) 1
-	  mip.mind_nf_lc
-	then
-	  Some (hdapp,args)
+	if strict then
+	  if test_strict_disjunction mib.mind_nparams mip.mind_nf_lc then
+	    Some (hdapp,args)
+	  else
+	    None
 	else
 	  let cargs =
 	    Array.map (fun ar -> pi2 (destProd (prod_applist ar args)))

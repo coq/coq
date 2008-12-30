@@ -87,7 +87,9 @@ let dest_coq_and ct =
             end
       | None -> jp_error "dest_coq_and"
 
-let is_coq_or = HP.is_disjunction
+let is_coq_or ct =
+  HP.is_disjunction ~strict:true ct
+  && List.length (snd (TR.decompose_app ct)) = 2
 
 (* return two subterms *)
 let dest_coq_or ct =
@@ -170,7 +172,7 @@ let sAPP ct t =
 
 
 let is_coq_exists ct =
-  if not (HP.is_conjunction ct) then false
+  if not (HP.is_conjunction ~strict:true ct) then false
   else let (hdapp,args) = TR.decompose_app ct in
      match args with
       | _::la::[] ->
@@ -203,9 +205,8 @@ let dest_coq_exists ct =
 
 
 let is_coq_and ct =
-  if (HP.is_conjunction ct) && not (is_coq_exists ct)
-  && not (is_coq_true ct) then true
-  else false
+  (HP.is_conjunction ~strict:true ct)
+  && List.length (snd (TR.decompose_app ct)) = 2
 
 
 (* Parsing modules: *)

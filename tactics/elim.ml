@@ -128,7 +128,7 @@ let decompose_nonrec c gls =
 
 let decompose_and c gls = 
   general_decompose 
-    (fun (_,t) -> is_conjunction t)
+    (fun (_,t) -> is_record t)
     c gls
 
 let decompose_or c gls = 
