@@ -1425,10 +1425,10 @@ let adjust_to_extended_env_and_remove_deps env extenv subst t =
       match b with
       | Some c ->
 	  assert (isRel c);
-	  let p = n + destRel c in aux p (lookup_rel p (rel_context extenv))
+	  let p = n + destRel c in aux p (lookup_rel p extenv)
       | None ->
 	  (n,ty) in
-    let (p,ty) = aux p (lookup_rel p (rel_context extenv)) in
+    let (p,ty) = aux p (lookup_rel p extenv) in
     if noccur_between_without_evar 1 (n'-p-n+1) ty
     then
       let u = lift (n'-n) u in

@@ -370,7 +370,7 @@ let set_pattern_names env ind brv =
   let arities =
     Array.map
       (fun c ->
-        rel_context_length (fst (decompose_prod_assum c)) -
+        rel_context_length ((prod_assum c)) -
         mib.mind_nparams)
       mip.mind_nf_lc in
   array_map2 (set_names env) arities brv

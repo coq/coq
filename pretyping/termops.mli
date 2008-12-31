@@ -35,27 +35,32 @@ val pr_rel_decl : env -> rel_declaration -> std_ppcmds
 val print_rel_context : env -> std_ppcmds
 val print_env : env -> std_ppcmds
 
-(* iterators on terms *)
-val prod_it : init:types -> (name * types) list -> types
-val lam_it : init:constr -> (name * types) list -> constr
-val rel_vect : int -> int -> constr array
-val rel_list : int -> int -> constr list
-val extended_rel_list : int -> rel_context -> constr list
-val extended_rel_vect : int -> rel_context -> constr array
+(* about contexts *)
 val push_rel_assum : name * types -> env -> env
 val push_rels_assum : (name * types) list -> env -> env
 val push_named_rec_types : name array * types array * 'a -> env -> env
 val lookup_rel_id : identifier -> rel_context -> int * types
+
+(* builds argument lists matching a block of binders or a context *)
+val rel_vect : int -> int -> constr array
+val rel_list : int -> int -> constr list
+val extended_rel_list : int -> rel_context -> constr list
+val extended_rel_vect : int -> rel_context -> constr array
+
+(* iterators/destructors on terms *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
 val mkProd_wo_LetIn : rel_declaration -> types -> types
-val it_mkProd_wo_LetIn : init:types -> rel_context -> types
+val it_mkProd : init:types -> (name * types) list -> types
+val it_mkLambda : init:constr -> (name * types) list -> constr
 val it_mkProd_or_LetIn   : init:types -> rel_context -> types
+val it_mkProd_wo_LetIn : init:types -> rel_context -> types
 val it_mkLambda_or_LetIn : init:constr -> rel_context -> constr
+val it_mkNamedProd_or_LetIn   : init:types -> named_context -> types
+val it_mkNamedProd_wo_LetIn   : init:types -> named_context -> types
+val it_mkNamedLambda_or_LetIn : init:constr -> named_context -> constr
+
 val it_named_context_quantifier :
   (named_declaration -> 'a -> 'a) -> init:'a -> named_context -> 'a
-val it_mkNamedProd_or_LetIn   : init:types -> named_context -> types
-val it_mkNamedLambda_or_LetIn : init:constr -> named_context -> constr
-val it_mkNamedProd_wo_LetIn   : init:types -> named_context -> types
 
 (**********************************************************************)
 (* Generic iterators on constr                                        *)

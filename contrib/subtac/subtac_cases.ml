@@ -812,7 +812,7 @@ let rec unify_clauses k pv =
 let abstract_conclusion typ cs =
   let n = List.length (assums_of_rel_context cs.cs_args) in
   let (sign,p) = decompose_prod_n n typ in
-  lam_it p sign
+  it_mkLambda p sign
 
 let infer_predicate loc env isevars typs cstrs indf =
   (* Il faudra substituer les isevars a un certain moment *)
@@ -1911,7 +1911,7 @@ let build_dependent_signature env evars avoid tomatchs arsign =
 		      let previd, id = 
 			let name = 
 			  match kind_of_term arg with 
-			      Rel n -> pi1 (lookup_rel n (rel_context env))
+			      Rel n -> pi1 (lookup_rel n env)
 			    | _ -> name
 			in
 			  make_prime avoid name 

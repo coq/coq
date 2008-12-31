@@ -41,7 +41,7 @@ let empty_context env =
 
 (* Rel context *)
 let lookup_rel n env =
-  Sign.lookup_rel n env.env_rel_context
+  lookup_rel n env.env_rel_context
 
 let evaluable_rel n env =
   try

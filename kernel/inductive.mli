@@ -66,7 +66,7 @@ val type_case_branches :
     -> types array * types * constraints
 
 (* Return the arity of an inductive type *)
-val mind_arity : one_inductive_body -> Sign.rel_context * sorts_family
+val mind_arity : one_inductive_body -> rel_context * sorts_family
 
 val inductive_sort_family : one_inductive_body -> sorts_family
 
@@ -85,8 +85,8 @@ val type_of_inductive_knowing_parameters :
 
 val max_inductive_sort : sorts array -> universe
 
-val instantiate_universes : env -> Sign.rel_context ->
-    polymorphic_arity -> types array -> Sign.rel_context * sorts
+val instantiate_universes : env -> rel_context ->
+    polymorphic_arity -> types array -> rel_context * sorts
 
 (***************************************************************)
 (* Debug *)

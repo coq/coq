@@ -205,7 +205,7 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
     
 
 
-let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  = 
+let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  = 
   let nochange ?t' msg  = 
     begin 
       observe (str ("Not treating ( "^msg^" )") ++ pr_lconstr t  ++ str "    " ++ match t' with None -> str "" | Some t -> Printer.pr_lconstr t );
@@ -295,7 +295,7 @@ let change_eq env sigma hyp_id (context:Sign.rel_context) x t end_of_type  =
     in
     let new_type_of_hyp = Reductionops.nf_betaiota  new_type_of_hyp in 
     let new_ctxt,new_end_of_type = 
-      Sign.decompose_prod_n_assum ctxt_size new_type_of_hyp 
+      decompose_prod_n_assum ctxt_size new_type_of_hyp 
     in 
     let prove_new_hyp : tactic = 
       tclTHEN
@@ -390,7 +390,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
       let reduced_type_of_hyp = nf_betaiotazeta real_type_of_hyp in 
       (* length of context didn't change ? *)
       let new_context,new_typ_of_hyp = 
-	 Sign.decompose_prod_n_assum (List.length context) reduced_type_of_hyp
+	 decompose_prod_n_assum (List.length context) reduced_type_of_hyp
       in
         tclTHENLIST 
 	[
@@ -858,7 +858,7 @@ let build_proof
 
 (* Proof of principles from structural functions *) 
 let is_pte_type t =
-  isSort (snd (decompose_prod t))
+  isSort ((strip_prod t))
     
 let is_pte (_,_,t) = is_pte_type t
 
@@ -948,7 +948,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 (*   observe (str "f_body_with_params_and_other_fun " ++  pr_lconstr f_body_with_params_and_other_fun); *)
   let eq_rhs = nf_betaiotazeta (mkApp(compose_lam params f_body_with_params_and_other_fun,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i)))) in
 (*   observe (str "eq_rhs " ++  pr_lconstr eq_rhs); *)
-  let type_ctxt,type_of_f = Sign.decompose_prod_n_assum (nb_params + nb_args) 
+  let type_ctxt,type_of_f = decompose_prod_n_assum (nb_params + nb_args) 
     (Typeops.type_of_constant_type (Global.env()) f_def.const_type) in
   let eqn = mkApp(Lazy.force eq,[|type_of_f;eq_lhs;eq_rhs|]) in
   let lemma_type = it_mkProd_or_LetIn ~init:eqn type_ctxt in
@@ -1206,7 +1206,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
     in
     let intros_after_fixes : tactic = 
       fun gl -> 
-	let ctxt,pte_app =  (Sign.decompose_prod_assum (pf_concl gl)) in
+	let ctxt,pte_app =  (decompose_prod_assum (pf_concl gl)) in
 	let pte,pte_args = (decompose_app pte_app) in
 	try
 	  let pte = try destVar pte with _ -> anomaly "Property is not a variable"  in 

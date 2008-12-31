@@ -75,7 +75,7 @@ type constructor_summary = {
   cs_cstr : constructor;
   cs_params : constr list;
   cs_nargs : int;
-  cs_args : Sign.rel_context;
+  cs_args : rel_context;
   cs_concl_realargs : constr array;
 }
 val lift_constructor : int -> constructor_summary -> constructor_summary
@@ -86,7 +86,7 @@ val get_arity        : env -> inductive_family -> rel_context * sorts_family
 val get_constructors : env -> inductive_family -> constructor_summary array
 val build_dependent_constructor : constructor_summary -> constr
 val build_dependent_inductive   : env -> inductive_family -> constr
-val make_arity_signature : env -> bool -> inductive_family -> Sign.rel_context
+val make_arity_signature : env -> bool -> inductive_family -> rel_context
 val make_arity : env -> bool -> inductive_family -> sorts -> types
 val build_branch_type : env -> bool -> constr -> constructor_summary -> types
 

@@ -144,7 +144,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     let s' = mkProd (Anonymous, ind, s) in
     let ccl = lift 1 (decomp n pj.uj_val) in
     let ccl' = mkLambda (Anonymous, ind, ccl) in
-      {uj_val=lam_it ccl' sign; uj_type=prod_it s' sign} 
+      {uj_val=it_mkLambda ccl' sign; uj_type=it_mkProd s' sign} 
 
   (*************************************************************************)
   (* Main pretyping function                                               *)

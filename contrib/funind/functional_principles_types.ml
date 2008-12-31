@@ -63,7 +63,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let env = Global.env () in 
   let env_with_params = Environ.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
-  let rec change_predicates_names (avoid:identifier list) (predicates:Sign.rel_context)  : Sign.rel_context = 
+  let rec change_predicates_names (avoid:identifier list) (predicates:rel_context)  : rel_context = 
     match predicates with 
     | [] -> []
     |(Name x,v,t)::predicates -> 
@@ -433,7 +433,7 @@ exception Not_Rec
 
 let get_funs_constant mp dp = 
   let rec get_funs_constant const e : (Names.constant*int) array = 
-    match kind_of_term (snd (decompose_lam e)) with 
+    match kind_of_term ((strip_lam e)) with 
       | Fix((_,(na,_,_))) -> 
 	  Array.mapi 
 	    (fun i na -> 
@@ -600,20 +600,20 @@ let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_ent
       List.map (compute_new_princ_type_from_rel funs sorts) other_princ_types
     in
     let first_princ_body,first_princ_type = const.Entries.const_entry_body, const.Entries.const_entry_type in 
-    let ctxt,fix = Sign.decompose_lam_assum first_princ_body in (* the principle has for forall ...., fix .*)
+    let ctxt,fix = decompose_lam_assum first_princ_body in (* the principle has for forall ...., fix .*)
     let (idxs,_),(_,ta,_ as decl) = destFix fix in 
     let other_result = 
       List.map (* we can now compute the other principles *)
 	(fun scheme_type -> 
 	   incr i;
 	   observe (Printer.pr_lconstr scheme_type);
-	   let type_concl = snd (Sign.decompose_prod_assum scheme_type) in 
+	   let type_concl = (strip_prod_assum scheme_type) in 
 	   let applied_f = List.hd (List.rev (snd (decompose_app type_concl))) in 
 	   let f = fst (decompose_app applied_f) in
 	   try (* we search the number of the function in the fix block (name of the function) *)
 	     Array.iteri 
 	     (fun j t -> 
-		let t =  snd (Sign.decompose_prod_assum t) in 
+		let t =  (strip_prod_assum t) in 
 		let applied_g = List.hd (List.rev (snd (decompose_app t))) in 
 		let g = fst (decompose_app applied_g) in
 		if eq_constr f g

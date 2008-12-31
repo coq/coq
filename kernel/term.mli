@@ -331,6 +331,18 @@ val fold_named_declaration :
 val fold_rel_declaration :
   (constr -> 'a -> 'a) -> rel_declaration -> 'a -> 'a
 
+(*s Contexts of declarations referred to by de Bruijn indices *)
+
+(* In [rel_context], more recent declaration is on top *)
+type rel_context = rel_declaration list
+
+val empty_rel_context : rel_context
+val add_rel_decl : rel_declaration -> rel_context -> rel_context
+
+val lookup_rel : int -> rel_context -> rel_declaration
+val rel_context_length : rel_context -> int
+val rel_context_nhyps : rel_context -> int
+
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
 val mkNamedProd_or_LetIn : named_declaration -> types -> types
@@ -368,7 +380,7 @@ val lamn : int -> (name * constr) list -> constr -> constr
 
 (* [compose_lam l b] = $[x_1:T_1]..[x_n:T_n]b$
    where $l = [(x_n,T_n);\dots;(x_1,T_1)]$.
-   Inverse of [decompose_lam] *)
+   Inverse of [it_destLam] *)
 val compose_lam : (name * constr) list -> constr -> constr
 
 (* [to_lambda n l] 
@@ -386,6 +398,9 @@ val to_prod : int -> constr -> constr
 (* [prod_appvect] $(x1:B1;...;xn:Bn)B a1...an \rightarrow B[a1...an]$ *)
 val prod_appvect : constr -> constr array -> constr
 val prod_applist : constr -> constr list -> constr
+
+val it_mkLambda_or_LetIn : constr -> rel_context -> constr
+val it_mkProd_or_LetIn : types -> rel_context -> types
 
 (*s Other term destructors. *)
 
@@ -407,12 +422,43 @@ val decompose_prod_n : int -> constr -> (name * constr) list * constr
    $[x_1:T_1]..[x_n:T_n]T$ into the pair $([(x_n,T_n);...;(x_1,T_1)],T)$ *)
 val decompose_lam_n : int -> constr -> (name * constr) list * constr
 
+(* Extract the premisses and the conclusion of a term of the form 
+   "(xi:Ti) ... (xj:=cj:Tj) ..., T" where T is not a product nor a let *)
+val decompose_prod_assum : types -> rel_context * types
+
+(* Idem with lambda's *)
+val decompose_lam_assum : constr -> rel_context * constr
+
+(* Idem but extract the first [n] premisses *)
+val decompose_prod_n_assum : int -> types -> rel_context * types
+val decompose_lam_n_assum : int -> constr -> rel_context * constr
+
 (* [nb_lam] $[x_1:T_1]...[x_n:T_n]c$ where $c$ is not an abstraction
    gives $n$ (casts are ignored) *)
 val nb_lam : constr -> int
 
-(* similar to [nb_lam], but gives the number of products instead *)
+(* Similar to [nb_lam], but gives the number of products instead *)
 val nb_prod : constr -> int
+
+(* Returns the premisses/parameters of a type/term (let-in included) *)
+val prod_assum : types -> rel_context
+val lam_assum : constr -> rel_context
+
+(* Returns the first n-th premisses/parameters of a type/term (let included)*)
+val prod_n_assum : int -> types -> rel_context
+val lam_n_assum : int -> constr -> rel_context
+
+(* Remove the premisses/parameters of a type/term *)
+val strip_prod : types -> types
+val strip_lam : constr -> constr
+
+(* Remove the first n-th premisses/parameters of a type/term *)
+val strip_prod_n : int -> types -> types
+val strip_lam_n : int -> constr -> constr
+
+(* Remove the premisses/parameters of a type/term (including let-in) *)
+val strip_prod_assum : types -> types
+val strip_lam_assum : constr -> constr
 
 (* flattens application lists *)
 val collapse_appl : constr -> constr
@@ -427,6 +473,21 @@ val under_casts : (constr -> constr) -> constr -> constr
 
 (* Apply a function under components of Cast if any *)
 val under_outer_cast : (constr -> constr) -> constr -> constr
+
+(*s An "arity" is a term of the form [[x1:T1]...[xn:Tn]s] with [s] a sort.
+    Such a term can canonically be seen as the pair of a context of types
+    and of a sort *)
+
+type arity = rel_context * sorts
+
+(* Build an "arity" from its canonical form *)
+val mkArity : arity -> types
+
+(* Destructs an "arity" into its canonical form *)
+val destArity : types -> arity
+
+(* Tells if a term has the form of an arity *)
+val isArity : types -> bool
 
 (*s Occur checks *)
 

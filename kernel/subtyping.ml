@@ -115,8 +115,7 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
       | Type _, Type _ -> (* shortcut here *) prop_sort, prop_sort
       | (Prop _, Type _) | (Type _,Prop _) -> error ()
       | _ -> (s1, s2) in
-    check_conv cst conv_leq env 
-      (Sign.mkArity (ctx1,s1)) (Sign.mkArity (ctx2,s2))
+    check_conv cst conv_leq env (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
   in
 
   let check_packet cst p1 p2 =
@@ -210,8 +209,8 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
        Hence they don't have to be checked again *)
 
     let t1,t2 = 
-      if Sign.isArity t2 then
-        let (ctx2,s2) = Sign.destArity t2 in
+      if isArity t2 then
+        let (ctx2,s2) = destArity t2 in
         match s2 with
         | Type v when not (is_univ_variable v) ->
           (* The type in the interface is inferred and is made of algebraic
@@ -222,13 +221,13 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
             | Type u when not (is_univ_variable u) ->
               (* Both types are inferred, no need to recheck them. We
                  cheat and collapse the types to Prop *)
-                Sign.mkArity (ctx1,prop_sort), Sign.mkArity (ctx2,prop_sort)
+                mkArity (ctx1,prop_sort), mkArity (ctx2,prop_sort)
             | Prop _ ->
               (* The type in the interface is inferred, it may be the case
                  that the type in the implementation is smaller because
                  the body is more reduced. We safely collapse the upper
                  type to Prop *)
-                Sign.mkArity (ctx1,prop_sort), Sign.mkArity (ctx2,prop_sort)
+                mkArity (ctx1,prop_sort), mkArity (ctx2,prop_sort)
             | Type _ ->
               (* The type in the interface is inferred and the type in the
                  implementation is not inferred or is inferred but from a

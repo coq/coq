@@ -228,10 +228,10 @@ let build_projection intype outtype (cstr:constructor) special default gls=
   let ci=pred (snd cstr) in
   let branch i=
     let ti=Term.prod_appvect types.(i) argv in
-    let rc=fst (Sign.decompose_prod_assum ti) in
+    let rc=fst (decompose_prod_assum ti) in
     let head=
       if i=ci then special else default in  
-      Sign.it_mkLambda_or_LetIn head rc in
+      it_mkLambda_or_LetIn head rc in
   let branches=Array.init lp branch in
   let casee=mkRel 1 in
   let pred=mkLambda(Anonymous,intype,outtype) in

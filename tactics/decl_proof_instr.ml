@@ -1265,7 +1265,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let gen_arities = Inductive.arities_of_constructors ind spec in
 	let f_ids typ = 
 	  let sign = 
-	    fst (Sign.decompose_prod_assum (Term.prod_applist typ params)) in
+	    (prod_assum (Term.prod_applist typ params)) in
 	    find_intro_names sign gls in
 	let constr_args_ids = Array.map f_ids gen_arities in
 	let case_term =	 

@@ -119,7 +119,7 @@ let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
 let show_intro all =
   let pf = get_pftreestate() in
   let gl = nth_goal_of_pftreestate 1 pf in
-  let l,_= Sign.decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
+  let l,_= decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
   if all 
   then 
     let lid = Tactics.find_intro_names l gl in 

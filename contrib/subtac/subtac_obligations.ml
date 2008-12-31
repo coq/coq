@@ -226,7 +226,7 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
          doesn't seem to worth the effort (except for huge mutual 
 	 fixpoints ?) *)
       let m = Term.nb_prod fixtype in
-      let ctx = fst (Sign.decompose_prod_n_assum m fixtype) in
+      let ctx = fst (decompose_prod_n_assum m fixtype) in
 	list_map_i (fun i _ -> i) 0 ctx
 
 let reduce_fix =
@@ -238,7 +238,7 @@ let declare_mutual_definition l =
     list_split3
       (List.map (fun x -> 
 	let subs, typ = (subst_body false x) in
-	  snd (decompose_lam_n len subs), snd (decompose_prod_n len typ), x.prg_implicits) l)
+	  (strip_lam_n len subs), snd (decompose_prod_n len typ), x.prg_implicits) l)
   in
 (*   let fixdefs = List.map reduce_fix fixdefs in *)
   let fixkind = Option.get (List.hd l).prg_fixkind in

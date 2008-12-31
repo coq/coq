@@ -29,7 +29,7 @@ val declare_projections :
 
 val declare_structure : bool (*coinductive?*)-> identifier -> identifier -> 
   manual_explicitation list -> rel_context -> (* params *) constr -> (* arity *)
-  Impargs.manual_explicitation list list -> Sign.rel_context -> (* fields *)
+  Impargs.manual_explicitation list list -> rel_context -> (* fields *)
   ?kind:Decl_kinds.definition_object_kind -> ?name:identifier ->
   bool -> (* coercion? *)
   bool list -> (* field coercions *)

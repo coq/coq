@@ -215,7 +215,7 @@ let typecheck_inductive env mie =
 	 let lev =
 	   (* Decide that if the conclusion is not explicitly Type *)
 	   (* then the inductive type is not polymorphic *)
-	   match kind_of_term (snd (decompose_prod_assum arity.utj_val)) with
+	   match kind_of_term ((strip_prod_assum arity.utj_val)) with
 	   | Sort (Type u) -> Some u
 	   | _ -> None in
          (cst,env_ar',(id,full_arity,lev)::l))

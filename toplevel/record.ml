@@ -269,7 +269,7 @@ let set_rigid c =
 
 let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
-  let _, r = Sign.decompose_prod_assum instance in
+  let _, r = decompose_prod_assum instance in
     match class_of_constr r with
       | Some tc -> add_instance (new_instance tc None glob con)
       | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")

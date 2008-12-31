@@ -888,7 +888,7 @@ let unfold_all t =
     | _ -> assert false
 
 let decomp_prod env evm n c = 
-  snd (Reductionops.decomp_n_prod env evm n c)
+  snd (Reductionops.splay_prod_n env evm n c)
 
 let rec decomp_pointwise n c =
   if n = 0 then c
@@ -1402,7 +1402,7 @@ open Entries
 open Libnames
 
 let respect_projection r ty =
-  let ctx, inst = Sign.decompose_prod_assum ty in
+  let ctx, inst = decompose_prod_assum ty in
   let mor, args = destApp inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
   let app = mkApp (Lazy.force respect_proj, 
@@ -1414,7 +1414,7 @@ let declare_projection n instance_id r =
   let c = constr_of_global r in
   let term = respect_projection c ty in
   let typ = Typing.type_of (Global.env ()) Evd.empty term in
-  let ctx, typ = Sign.decompose_prod_assum typ in
+  let ctx, typ = decompose_prod_assum typ in
   let typ =
     let n = 
       let rec aux t = 
@@ -1430,7 +1430,7 @@ let declare_projection n instance_id r =
 	  | _ -> typ
       in aux init
     in
-    let ctx,ccl = Reductionops.decomp_n_prod (Global.env()) Evd.empty (3 * n) typ
+    let ctx,ccl = Reductionops.splay_prod_n (Global.env()) Evd.empty (3 * n) typ
     in it_mkProd_or_LetIn ccl ctx 
   in
   let typ = it_mkProd_or_LetIn typ ctx in
@@ -1799,7 +1799,7 @@ let setoid_transitivity c gl =
 *)
 let setoid_symmetry_in id gl =
   let ctype = pf_type_of gl (mkVar id) in
-  let binders,concl = Sign.decompose_prod_assum ctype in
+  let binders,concl = decompose_prod_assum ctype in
   let (equiv, args) = decompose_app concl in
   let rec split_last_two = function
     | [c1;c2] -> [],(c1, c2)

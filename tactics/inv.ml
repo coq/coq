@@ -127,7 +127,7 @@ let make_inv_predicate env sigma indf realargs id status concl =
      push <Ai>(mkRel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of pairs *)
   let rec build_concl eqns n = function
-    | [] -> (prod_it concl eqns,n)
+    | [] -> (it_mkProd concl eqns,n)
     | (ai,(xi,ti))::restlist ->
         let (lhs,eqnty,rhs) =
           if closed0 ti then 

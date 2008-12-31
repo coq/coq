@@ -94,7 +94,7 @@ let match_with_one_constructor style t =
       then
 	if style = Some true (* strict conjunction *) then
 	  let ctx = 
-	    fst (decompose_prod_assum (snd 
+	    (prod_assum (snd 
 	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
 	  if 
 	    List.for_all
@@ -104,7 +104,7 @@ let match_with_one_constructor style t =
 	  else None
 	else
 	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
-	  let cargs = List.map pi3 (fst (decompose_prod_assum ctyp)) in
+	  let cargs = List.map pi3 ((prod_assum ctyp)) in
 	  if style <> Some false || has_nodep_prod ctyp then
 	    (* Record or non strict conjunction *)
 	    Some (hdapp,List.rev cargs)
@@ -134,7 +134,7 @@ let is_record t =
 
 let test_strict_disjunction n lc =
   array_for_all_i (fun i c ->
-    match fst (decompose_prod_assum (snd (decompose_prod_n_assum n c))) with
+    match (prod_assum (snd (decompose_prod_n_assum n c))) with
     | [_,None,c] -> c = mkRel (n - i)
     | _ -> false) 0 lc
 

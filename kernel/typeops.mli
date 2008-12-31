@@ -25,7 +25,7 @@ val infer_type : env -> types        -> unsafe_type_judgment * constraints
 
 val infer_local_decls :
   env -> (identifier * local_entry) list
-    -> env * Sign.rel_context * constraints
+    -> env * rel_context * constraints
 
 (*s Basic operations of the typing machine. *)
 

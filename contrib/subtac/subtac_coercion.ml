@@ -119,7 +119,7 @@ module Coercion = struct
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
       let dest_prod c =
-	match Reductionops.decomp_n_prod env (evars_of !isevars) 1 c with
+	match Reductionops.splay_prod_n env (evars_of !isevars) 1 c with
 	| [(na,b,t)], c -> (na,t), c
 	| _ -> raise NoSubtacCoercion
       in
@@ -484,7 +484,7 @@ module Coercion = struct
 	| Some (init, cur) -> init, cur
     in
       try 
-	let rels, rng = Reductionops.decomp_n_prod env (evars_of isevars) nabs t in
+	let rels, rng = Reductionops.splay_prod_n env (evars_of isevars) nabs t in
 	(* The final range free variables must have been replaced by evars, we accept only that evars
 	   in rng are applied to free vars. *)
 	if noccur_with_meta 1 (succ nabs) rng then (

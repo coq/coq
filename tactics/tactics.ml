@@ -709,7 +709,7 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 let descend_in_conjunctions with_evars tac exit c gl =
   try
     let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-    match match_with_conjunction (snd (decompose_prod t)) with
+    match match_with_conjunction ((strip_prod t)) with
     | Some _ ->
 	let n = (mis_constr_nargs mind).(0) in
 	let sort = elimination_sort_of_goal gl in
@@ -1236,7 +1236,7 @@ let ipat_of_name = function
 
 let allow_replace c gl = function (* A rather arbitrary condition... *)
   | Some (_, IntroIdentifier id) ->
-      fst (decompose_app (snd (decompose_lam_assum c))) = mkVar id
+      fst (decompose_app ((strip_lam_assum c))) = mkVar id
   | _ ->
       false
 
@@ -2086,7 +2086,7 @@ let abstract_args gl id =
 	*)
 	let aux (prod, ctx, ctxenv, c, args, eqs, refls, vars, env) arg =
 	  let (name, _, ty), arity = 
-	    let rel, c = Reductionops.decomp_n_prod env sigma 1 prod in
+	    let rel, c = Reductionops.splay_prod_n env sigma 1 prod in
 	      List.hd rel, c
 	  in
 	  let argty = pf_type_of gl arg in
@@ -2224,7 +2224,7 @@ let decompose_paramspred_branch_args elimt =
   let rec cut_noccur elimt acc2 : rel_context * rel_context * types =
     match kind_of_term elimt with
       | Prod(nme,tpe,elimt') -> 
-	  let hd_tpe,_ = decompose_app (snd (decompose_prod_assum tpe)) in
+	  let hd_tpe,_ = decompose_app ((strip_prod_assum tpe)) in
 	  if not (occur_rel 1 elimt') && isRel hd_tpe	    
 	  then cut_noccur elimt' ((nme,None,tpe)::acc2)
 	  else let acc3,ccl = decompose_prod_assum elimt in acc2 , acc3 , ccl
@@ -2455,7 +2455,7 @@ let find_elim_signature isrec elim hyp0 gl =
 	let elimt = pf_type_of gl elimc in
 	((elimc, NoBindings), elimt), mkInd mind
     | Some (elimc,lbind as e) ->
-	let ind_type_guess,_ = decompose_app (snd (decompose_prod tmptyp0)) in
+	let ind_type_guess,_ = decompose_app ((strip_prod tmptyp0)) in
 	(e, pf_type_of gl elimc), ind_type_guess in
   let indsign,elim_scheme =
     compute_elim_signature elimc elimt hyp0 ind in
@@ -2599,7 +2599,7 @@ let induction_from_context isrec with_evars elim_info (hyp0,lbind) names
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let typ0 = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in
   let indvars =
-    find_atomic_param_of_ind scheme.nparams (snd (decompose_prod typ0)) in
+    find_atomic_param_of_ind scheme.nparams ((strip_prod typ0)) in
   let induct_tac = tclTHENLIST [
     induction_tac with_evars (hyp0,lbind) typ0 scheme;
     tclTRY (unfold_body hyp0);

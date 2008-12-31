@@ -967,7 +967,7 @@ let check_a env a =
 
 let check_eq env a_quantifiers_rev a aeq =
  let typ =
-  Sign.it_mkProd_or_LetIn
+  it_mkProd_or_LetIn
    (mkApp ((Lazy.force coq_relation),[| apply_to_rels a a_quantifiers_rev |]))
    a_quantifiers_rev in
  if
@@ -981,7 +981,7 @@ let check_property env a_quantifiers_rev a aeq strprop coq_prop t =
  if
   not
    (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
-    (Sign.it_mkProd_or_LetIn
+    (it_mkProd_or_LetIn
      (mkApp ((Lazy.force coq_prop),
        [| apply_to_rels a   a_quantifiers_rev ;
           apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
@@ -1002,7 +1002,7 @@ let check_setoid_theory env a_quantifiers_rev a aeq th =
  if
   not
    (is_conv env Evd.empty (Typing.type_of env Evd.empty th)
-    (Sign.it_mkProd_or_LetIn
+    (it_mkProd_or_LetIn
      (mkApp ((Lazy.force coq_Setoid_Theory),
        [| apply_to_rels a   a_quantifiers_rev ;
           apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
@@ -1039,7 +1039,7 @@ let int_add_relation id a aeq refl sym trans =
    Declare.declare_internal_constant id
     (DefinitionEntry
       {const_entry_body =
-        Sign.it_mkLambda_or_LetIn x_relation_class
+        it_mkLambda_or_LetIn x_relation_class
          ([ Name (id_of_string "v"),None,mkRel 1;
             Name (id_of_string "X"),None,mkType (Termops.new_univ ())] @
             a_quantifiers_rev);
@@ -1059,7 +1059,7 @@ let int_add_relation id a aeq refl sym trans =
    Declare.declare_internal_constant id_precise
     (DefinitionEntry
       {const_entry_body =
-        Sign.it_mkLambda_or_LetIn xreflexive_relation_class a_quantifiers_rev;
+        it_mkLambda_or_LetIn xreflexive_relation_class a_quantifiers_rev;
        const_entry_type = None;
        const_entry_opaque = false;
        const_entry_boxed = Flags.boxed_definitions() },
@@ -1119,7 +1119,7 @@ let int_add_relation id a aeq refl sym trans =
       let _ =
        Declare.declare_internal_constant mor_name
         (DefinitionEntry
-          {const_entry_body = Sign.it_mkLambda_or_LetIn lemma a_quantifiers_rev;
+          {const_entry_body = it_mkLambda_or_LetIn lemma a_quantifiers_rev;
            const_entry_type = None;
            const_entry_opaque = false;
           const_entry_boxed = Flags.boxed_definitions()},
@@ -1153,15 +1153,15 @@ let add_setoid id a aeq th =
    let aeq_instance = apply_to_rels aeq a_quantifiers_rev in
    let th_instance = apply_to_rels th a_quantifiers_rev in
    let refl =
-    Sign.it_mkLambda_or_LetIn
+    it_mkLambda_or_LetIn
      (mkApp ((Lazy.force coq_seq_refl),
        [| a_instance; aeq_instance; th_instance |])) a_quantifiers_rev in
    let sym =
-    Sign.it_mkLambda_or_LetIn
+    it_mkLambda_or_LetIn
      (mkApp ((Lazy.force coq_seq_sym),
        [| a_instance; aeq_instance; th_instance |])) a_quantifiers_rev in
    let trans =
-    Sign.it_mkLambda_or_LetIn
+    it_mkLambda_or_LetIn
      (mkApp ((Lazy.force coq_seq_trans),
        [| a_instance; aeq_instance; th_instance |])) a_quantifiers_rev in
    int_add_relation id a aeq (Some refl) (Some sym) (Some trans)
@@ -1976,7 +1976,7 @@ let setoid_replace_in  tac_opt id relation c1 c2 ~new_goals gl =
 
 (* let setoid_symmetry_in id gl = *)
 (*   let ctype = pf_type_of gl (mkVar id) in *)
-(*   let binders,concl = Sign.decompose_prod_assum ctype in *)
+(*   let binders,concl = decompose_prod_assum ctype in *)
 (*   let (equiv, args) = decompose_app concl in *)
 (*   let rec split_last_two = function *)
 (*     | [c1;c2] -> [],(c1, c2) *)
@@ -2009,7 +2009,7 @@ let setoid_replace_in  tac_opt id relation c1 c2 ~new_goals gl =
 (*         | Some trans -> *)
 (*            let transty = nf_betaiota (pf_type_of gl trans) in *)
 (*            let argsrev, _ = *)
-(*             Reductionops.decomp_n_prod (pf_env gl) Evd.empty 2 transty in *)
+(*             Reductionops.splay_prod_n (pf_env gl) Evd.empty 2 transty in *)
 (*            let binder = *)
 (*             match List.rev argsrev with *)
 (*                _::(Name n2,None,_)::_ -> Rawterm.NamedHyp n2 *)

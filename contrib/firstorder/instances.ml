@@ -133,7 +133,7 @@ let mk_open_instance id gl m t=
     Pretyping.Default.understand evmap env (raux m rawt)
   with _ -> 
     error "Untypable instance, maybe higher-order non-prenex quantification" in
-    Sign.decompose_lam_n_assum m ntt
+    decompose_lam_n_assum m ntt
 
 (* tactics   *)
 

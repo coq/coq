@@ -143,7 +143,7 @@ and slot_for_fv env fv =
 	match !rv with
 	| VKvalue (v, _) -> v
 	| VKnone -> 
-	    let (_, b, _) = Sign.lookup_rel i env.env_rel_context in
+	    let (_, b, _) = lookup_rel i env.env_rel_context in
 	    let (v, d) =
 	      match b with 
 		| None -> (val_of_rel i, Idset.empty)

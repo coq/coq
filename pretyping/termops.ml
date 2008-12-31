@@ -180,12 +180,6 @@ let new_sort_in_family = function
 
 
 
-(* prod_it b [xn:Tn;..;x1:T1] = (x1:T1)..(xn:Tn)b *)
-let prod_it ~init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
-
-(* lam_it b [xn:Tn;..;x1:T1] = [x1:T1]..[xn:Tn]b *)
-let lam_it ~init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
-
 (* [Rel (n+m);...;Rel(n+1)] *)
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
 
@@ -232,34 +226,30 @@ let rec lookup_rel_id id sign =
   in 
   lookrec (1,sign)
 
-(* Constructs either [(x:t)c] or [[x=b:t]c] *)
+(* Constructs either [forall x:t, c] or [let x:=b:t in c] *)
 let mkProd_or_LetIn (na,body,t) c =
   match body with
     | None -> mkProd (na, t, c)
     | Some b -> mkLetIn (na, b, t, c)
 
-(* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
+(* Constructs either [forall x:t, c] or [c] in which [x] is replaced by [b] *)
 let mkProd_wo_LetIn (na,body,t) c =
   match body with
     | None -> mkProd (na,  t, c)
     | Some b -> subst1 b c
 
-let it_mkProd_wo_LetIn ~init = 
-  List.fold_left (fun c d -> mkProd_wo_LetIn d c) init
-
-let it_mkProd_or_LetIn ~init = 
-  List.fold_left (fun c d -> mkProd_or_LetIn d c) init
-
-let it_mkLambda_or_LetIn ~init =
-  List.fold_left (fun c d -> mkLambda_or_LetIn d c) init
+let it_mkProd ~init = List.fold_left (fun c (n,t)  -> mkProd (n, t, c)) init
+let it_mkLambda ~init = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c)) init
 
 let it_named_context_quantifier f ~init = 
   List.fold_left (fun c d -> f d c) init
 
+let it_mkProd_or_LetIn = it_named_context_quantifier mkProd_or_LetIn
+let it_mkProd_wo_LetIn = it_named_context_quantifier mkProd_wo_LetIn
+let it_mkLambda_or_LetIn = it_named_context_quantifier mkLambda_or_LetIn
 let it_mkNamedProd_or_LetIn = it_named_context_quantifier mkNamedProd_or_LetIn
-let it_mkNamedLambda_or_LetIn = it_named_context_quantifier mkNamedLambda_or_LetIn
-
 let it_mkNamedProd_wo_LetIn = it_named_context_quantifier mkNamedProd_wo_LetIn
+let it_mkNamedLambda_or_LetIn = it_named_context_quantifier mkNamedLambda_or_LetIn
 
 (* *)
 
@@ -794,9 +784,9 @@ let mkProd_or_LetIn_name env b d = mkProd_or_LetIn (name_assumption env d) b
 let mkLambda_or_LetIn_name env b d = mkLambda_or_LetIn (name_assumption env d)b
 
 let it_mkProd_or_LetIn_name env b hyps =
-  it_mkProd_or_LetIn b (name_context env hyps)
+  it_mkProd_or_LetIn ~init:b (name_context env hyps)
 let it_mkLambda_or_LetIn_name env b hyps =
-  it_mkLambda_or_LetIn b (name_context env hyps)
+  it_mkLambda_or_LetIn ~init:b (name_context env hyps)
 
 (*************************)
 (*   Names environments  *)

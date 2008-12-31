@@ -57,8 +57,8 @@ let ind_hyps nevar ind largs gls=
   let lp=Array.length types in     
   let myhyps i=
     let t1=Term.prod_applist types.(i) largs in
-    let t2=snd (Sign.decompose_prod_n_assum nevar t1) in
-      fst (Sign.decompose_prod_assum t2) in
+    let t2=snd (decompose_prod_n_assum nevar t1) in
+      fst (decompose_prod_assum t2) in
     Array.init lp myhyps
 
 let special_nf gl=

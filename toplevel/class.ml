@@ -199,7 +199,7 @@ let build_id_coercion idf_opt source =
   let c = match constant_opt_value env (destConst vs) with
     | Some c -> c
     | None -> error_not_transparent source in
-  let lams,t = Sign.decompose_lam_assum c in
+  let lams,t = decompose_lam_assum c in
   let val_f =
     it_mkLambda_or_LetIn
       (mkLambda (Name (id_of_string "x"),

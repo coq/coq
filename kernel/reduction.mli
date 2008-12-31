@@ -70,8 +70,8 @@ val hnf_prod_applist : env -> types -> constr list -> types
 (************************************************************************)
 (*s Recognizing products and arities modulo reduction *)
 
-val dest_prod       : env -> types -> Sign.rel_context * types
-val dest_prod_assum : env -> types -> Sign.rel_context * types
+val dest_prod       : env -> types -> rel_context * types
+val dest_prod_assum : env -> types -> rel_context * types
 
-val dest_arity : env -> types -> Sign.arity
+val dest_arity : env -> types -> arity
 val is_arity   : env -> types -> bool

@@ -103,7 +103,7 @@ let push_named_context_val d (ctxt,vals) =
   let rval = ref VKnone in
     Sign.add_named_decl d ctxt, (id,rval)::vals
 
-exception ASSERT of Sign.rel_context
+exception ASSERT of rel_context
 
 let push_named d env = 
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);

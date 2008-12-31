@@ -1081,7 +1081,7 @@ let compileAutoArg contac = function
 	 tclFIRST 
            (List.map 
               (fun (id,_,typ) -> 
-                let cl = snd (decompose_prod typ) in
+                let cl = (strip_prod_assum typ) in
                  if Hipattern.is_conjunction cl
 		 then 
 		   tclTHENSEQ [simplest_elim (mkVar id); clear [id]; contac] 

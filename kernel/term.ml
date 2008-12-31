@@ -654,6 +654,34 @@ let map_rel_declaration = map_named_declaration
 let fold_named_declaration f (_, v, ty) a = f ty (Option.fold_right f v a)
 let fold_rel_declaration = fold_named_declaration
 
+(***************************************************************************)
+(*     Type of local contexts (telescopes)                                 *)
+(***************************************************************************)
+
+(*s Signatures of ordered optionally named variables, intended to be
+   accessed by de Bruijn indices (to represent bound variables) *)
+
+type rel_context = rel_declaration list
+
+let empty_rel_context = []
+
+let add_rel_decl d ctxt = d::ctxt
+
+let rec lookup_rel n sign =
+  match n, sign with
+  | 1, decl :: _ -> decl
+  | n, _ :: sign -> lookup_rel (n-1) sign
+  | _, []        -> raise Not_found
+
+let rel_context_length = List.length
+
+let rel_context_nhyps hyps =
+  let rec nhyps acc = function
+    | [] -> acc
+    | (_,None,_)::hyps -> nhyps (1+acc) hyps
+    | (_,Some _,_)::hyps -> nhyps acc hyps in
+  nhyps 0 hyps
+
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
 (****************************************************************************)
@@ -1049,6 +1077,9 @@ let prod_appvect t nL = Array.fold_left prod_app t nL
 (* prod_applist T [ a1 ; ... ; an ] -> (T a1 ... an) *)
 let prod_applist t nL = List.fold_left prod_app t nL
 
+let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
+let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
+
 (*********************************)
 (* Other term destructors        *)
 (*********************************)
@@ -1099,6 +1130,62 @@ let decompose_lam_n n =
   in 
   lamdec_rec [] n 
 
+(* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
+   ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
+let decompose_prod_assum = 
+  let rec prodec_rec l c =
+    match kind_of_term c with
+    | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) c
+    | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) c
+    | Cast (c,_,_)      -> prodec_rec l c
+    | _               -> l,c
+  in 
+  prodec_rec empty_rel_context
+
+(* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
+   ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
+let decompose_lam_assum = 
+  let rec lamdec_rec l c =
+    match kind_of_term c with
+    | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) c
+    | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) c
+    | Cast (c,_,_)      -> lamdec_rec l c
+    | _               -> l,c
+  in 
+  lamdec_rec empty_rel_context
+
+(* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T 
+   into the pair ([(xn,Tn);...;(x1,T1)],T) *)
+let decompose_prod_n_assum n =
+  if n < 0 then
+    error "decompose_prod_n_assum: integer parameter must be positive";
+  let rec prodec_rec l n c = 
+    if n=0 then l,c
+    else match kind_of_term c with 
+    | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) (n-1) c
+    | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
+    | Cast (c,_,_)      -> prodec_rec l n c
+    | c -> error "decompose_prod_n_assum: not enough assumptions"
+  in 
+  prodec_rec empty_rel_context n
+
+(* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T 
+   into the pair ([(xn,Tn);...;(x1,T1)],T)
+   Lets in between are not expanded but turn into local definitions,
+   but n is the actual number of destructurated lambdas.  *)
+let decompose_lam_n_assum n =
+  if n < 0 then
+    error "decompose_lam_n_assum: integer parameter must be positive";
+  let rec lamdec_rec l n c = 
+    if n=0 then l,c 
+    else match kind_of_term c with 
+    | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) (n-1) c
+    | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) n c
+    | Cast (c,_,_)      -> lamdec_rec l n c
+    | c -> error "decompose_lam_n_assum: not enough abstractions"
+  in 
+  lamdec_rec empty_rel_context n 
+
 (* (nb_lam [na1:T1]...[nan:Tan]c) where c is not an abstraction
  * gives n (casts are ignored) *)
 let nb_lam = 
@@ -1118,7 +1205,47 @@ let nb_prod =
   in 
   nbrec 0
 
-(* Rem: end of import from old module Generic *)
+let prod_assum t = fst (decompose_prod_assum t)
+let prod_n_assum n t = fst (decompose_prod_n_assum n t)
+let strip_prod_assum t = snd (decompose_prod_assum t)
+let strip_prod t = snd (decompose_prod t)
+let strip_prod_n n t = snd (decompose_prod_n n t)
+let lam_assum t = fst (decompose_lam_assum t)
+let lam_n_assum n t = fst (decompose_lam_n_assum n t)
+let strip_lam_assum t = snd (decompose_lam_assum t)
+let strip_lam t = snd (decompose_lam t)
+let strip_lam_n n t = snd (decompose_lam_n n t)
+
+(***************************)
+(* Arities                 *)
+(***************************)
+
+(* An "arity" is a term of the form [[x1:T1]...[xn:Tn]s] with [s] a sort.
+   Such a term can canonically be seen as the pair of a context of types
+   and of a sort *)
+
+type arity = rel_context * sorts
+
+let destArity = 
+  let rec prodec_rec l c =
+    match kind_of_term c with
+    | Prod (x,t,c)    -> prodec_rec ((x,None,t)::l) c
+    | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
+    | Cast (c,_,_)      -> prodec_rec l c
+    | Sort s          -> l,s
+    | _               -> anomaly "destArity: not an arity"
+  in 
+  prodec_rec []
+
+let mkArity (sign,s) = it_mkProd_or_LetIn (mkSort s) sign
+
+let rec isArity c =
+  match kind_of_term c with
+  | Prod (_,_,c)    -> isArity c
+  | LetIn (_,b,_,c) -> isArity (subst1 b c)
+  | Cast (c,_,_)      -> isArity c
+  | Sort _          -> true
+  | _               -> false
 
 (*******************************)
 (*  alpha conversion functions *)                         

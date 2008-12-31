@@ -355,7 +355,7 @@ let adjust_guardness_conditions const =
   | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
       let possible_indexes =
 	List.map (fun c ->
-	  interval 0 (List.length (fst (Sign.decompose_lam_assum c))))
+	  interval 0 (List.length ((lam_assum c))))
 	  (Array.to_list fixdefs) in
       let indexes = search_guard dummy_loc (Global.env()) possible_indexes fixdecls in 
       { const with const_entry_body = mkFix ((indexes,0),fixdecls) }
@@ -1125,7 +1125,7 @@ let look_for_mutual_statements thms =
     (* common coinductive conclusion *)
     let n = List.length thms in
     let inds = List.map (fun (id,(t,_) as x) -> 
-      let (hyps,ccl) = Sign.decompose_prod_assum t in
+      let (hyps,ccl) = decompose_prod_assum t in
       let whnf_hyp_hds = map_rel_context_with_binders
         (fun i c -> fst (whd_betadeltaiota_stack (Global.env()) Evd.empty (lift i c)))
         hyps in

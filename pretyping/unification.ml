@@ -43,7 +43,7 @@ let abstract_scheme env c l lname_typ =
     lname_typ
 
 let abstract_list_all env evd typ c l =
-  let ctxt,_ = decomp_n_prod env (evars_of evd) (List.length l) typ in
+  let ctxt,_ = splay_prod_n env (evars_of evd) (List.length l) typ in
   let l_with_all_occs = List.map (function a -> (all_occurrences,a)) l in
   let p = abstract_scheme env c l_with_all_occs ctxt in 
   try 

@@ -92,7 +92,7 @@ let explain_elim_arity env ind sorts c pj okinds =
 	| WrongArity ->
 	  "wrong arity" in
       let ppar = pr_disjunction (fun s -> quote (pr_sort_family s)) sorts in
-      let ppt = pr_lconstr_env env (snd (decompose_prod_assum pj.uj_type)) in
+      let ppt = pr_lconstr_env env ((strip_prod_assum pj.uj_type)) in
       hov 0
 	(str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
 	 str "while it" ++ spc () ++ str "should be " ++ ppar ++ str ".") ++

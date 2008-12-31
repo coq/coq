@@ -773,7 +773,7 @@ and extract_fix env mle i (fi,ti,ci as recd) mlt =
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
 let rec decomp_lams_eta_n n env c t =
-  let rels = fst (decomp_n_prod env none n t) in
+  let rels = fst (splay_prod_n env none n t) in
   let rels = List.map (fun (id,_,c) -> (id,c)) rels in
   let m = nb_lam c in
   if m >= n then decompose_lam_n n c

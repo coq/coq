@@ -128,7 +128,7 @@ let ll_ind_tac ind largs backtrack id continue seq gl=
        let vars=Array.init p (fun j->mkRel (p-j)) in
        let capply=mkApp ((lift p cstr),vars) in
        let head=mkApp ((lift p (constr_of_global id)),[|capply|]) in
-	 Sign.it_mkLambda_or_LetIn head rc in
+	 it_mkLambda_or_LetIn head rc in
        let lp=Array.length rcs in
        let newhyps=list_tabulate myterm lp in
 	 tclIFTHENELSE

@@ -750,7 +750,7 @@ let splay_prod env sigma =
   in 
   decrec env []
 
-let splay_lambda env sigma = 
+let splay_lam env sigma = 
   let rec decrec env m c =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
@@ -767,14 +767,14 @@ let splay_prod_assum env sigma =
     match kind_of_term t with
     | Prod (x,t,c)  ->
 	prodec_rec (push_rel (x,None,t) env)
-	  (Sign.add_rel_decl (x, None, t) l) c
+	  (add_rel_decl (x, None, t) l) c
     | LetIn (x,b,t,c) ->
 	prodec_rec (push_rel (x, Some b, t) env)
-	  (Sign.add_rel_decl (x, Some b, t) l) c
+	  (add_rel_decl (x, Some b, t) l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> l,t
   in
-  prodec_rec env Sign.empty_rel_context
+  prodec_rec env empty_rel_context
 
 let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in
@@ -784,15 +784,25 @@ let splay_arity env sigma c =
 
 let sort_of_arity env c = snd (splay_arity env Evd.empty c)
 
-let decomp_n_prod env sigma n = 
+let splay_prod_n env sigma n = 
   let rec decrec env m ln c = if m = 0 then (ln,c) else 
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Prod (n,a,c0) ->
 	  decrec (push_rel (n,None,a) env)
-	    (m-1) (Sign.add_rel_decl (n,None,a) ln) c0
-      | _                      -> invalid_arg "decomp_n_prod"
+	    (m-1) (add_rel_decl (n,None,a) ln) c0
+      | _                      -> invalid_arg "splay_prod_n"
   in 
-  decrec env n Sign.empty_rel_context
+  decrec env n empty_rel_context
+
+let splay_lam_n env sigma n = 
+  let rec decrec env m ln c = if m = 0 then (ln,c) else 
+    match kind_of_term (whd_betadeltaiota env sigma c) with
+      | Lambda (n,a,c0) ->
+	  decrec (push_rel (n,None,a) env)
+	    (m-1) (add_rel_decl (n,None,a) ln) c0
+      | _                      -> invalid_arg "splay_lam_n"
+  in 
+  decrec env n empty_rel_context
 
 exception NotASort
 

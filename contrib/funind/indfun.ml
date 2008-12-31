@@ -11,7 +11,7 @@ let is_rec_info scheme_info =
   let test_branche min acc (_,_,br) = 
     acc || (
       let new_branche = 
-	Sign.it_mkProd_or_LetIn mkProp (fst (Sign.decompose_prod_assum br)) in 
+	it_mkProd_or_LetIn mkProp (fst (decompose_prod_assum br)) in 
       let free_rels_in_br = Termops.free_rels new_branche in 
       let max = min + scheme_info.Tactics.npredicates in 
       Util.Intset.exists (fun i -> i >= min && i< max) free_rels_in_br

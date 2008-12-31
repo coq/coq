@@ -471,10 +471,10 @@ let dest_prod env =
     match kind_of_term t with
       | Prod (n,a,c0) ->
           let d = (n,None,a) in
-	  decrec (push_rel d env) (Sign.add_rel_decl d m) c0
+	  decrec (push_rel d env) (add_rel_decl d m) c0
       | _ -> m,t
   in 
-  decrec env Sign.empty_rel_context
+  decrec env empty_rel_context
 
 (* The same but preserving lets *)
 let dest_prod_assum env = 
@@ -483,14 +483,14 @@ let dest_prod_assum env =
     match kind_of_term rty with
     | Prod (x,t,c)  ->
         let d = (x,None,t) in
-	prodec_rec (push_rel d env) (Sign.add_rel_decl d l) c
+	prodec_rec (push_rel d env) (add_rel_decl d l) c
     | LetIn (x,b,t,c) ->
         let d = (x,Some b,t) in
-	prodec_rec (push_rel d env) (Sign.add_rel_decl d l) c
+	prodec_rec (push_rel d env) (add_rel_decl d l) c
     | Cast (c,_,_)    -> prodec_rec env l c
     | _               -> l,rty
   in
-  prodec_rec env Sign.empty_rel_context
+  prodec_rec env empty_rel_context
 
 let dest_arity env c =
   let l, c = dest_prod_assum env c in
