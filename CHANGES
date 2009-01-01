@@ -304,6 +304,9 @@ Tactics
 - New tactic "instantiate" (without argument).
 - Tactic firstorder "with" and "using" options have their meaning swapped for
   consistency with auto/eauto (source of incompatibility).
+- Tactic "intuition" now preserves inner "iff" (exceptional source of 
+  incompatibilities solvable by redefining "intuition" as 
+  "unfold iff in *; intuition".
 - Tactic "generalize" now supports "at" options to specify occurrences
   and "as" options to name the quantified hypotheses.
 - New tactic "specialize H with a" or "specialize (H a)" allows to transform

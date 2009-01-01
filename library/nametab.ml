@@ -419,11 +419,12 @@ let locate_mind qid =
     | TrueGlobal (IndRef (kn,0)) -> kn
     | _ -> raise Not_found
 
-
 let absolute_reference sp =
   match SpTab.find sp !the_ccitab with
     | TrueGlobal ref -> ref
     | _ -> raise Not_found
+
+let extended_absolute_reference sp = SpTab.find sp !the_ccitab
 
 let locate_in_absolute_module dir id =
   absolute_reference (make_path dir id)

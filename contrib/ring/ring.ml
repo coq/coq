@@ -837,7 +837,7 @@ let raw_polynom th op lc gl =
            (tclORELSE
               (tclORELSE
 		 (h_exact c'i_eq_c''i)
-		 (h_exact (mkApp(build_coq_sym_eq (),
+		 (h_exact (mkApp(build_coq_eq_sym (),
 				 [|th.th_a; c'''i; ci; c'i_eq_c''i |]))))
 	      (tclTHENS 
 		 (elim_type 

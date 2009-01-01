@@ -281,7 +281,7 @@ let constant = Coqlib.gen_constant "Fourier"
 
 (* Standard library *)
 open Coqlib
-let coq_sym_eqT = lazy (build_coq_sym_eq ())
+let coq_sym_eqT = lazy (build_coq_eq_sym ())
 let coq_False = lazy (build_coq_False ())
 let coq_not = lazy (build_coq_not ())
 let coq_eq = lazy (build_coq_eq ())

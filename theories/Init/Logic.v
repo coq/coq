@@ -243,7 +243,7 @@ End universal_quantification.
     [A] which is true of [x] is also true of [y] *)
 
 Inductive eq (A:Type) (x:A) : A -> Prop :=
-    refl_equal : x = x :>A
+    eq_refl : x = x :>A
 
 where "x = y :> A" := (@eq A x y) : type_scope.
 
@@ -255,7 +255,7 @@ Implicit Arguments eq_ind [A].
 Implicit Arguments eq_rec [A].
 Implicit Arguments eq_rect [A].
 
-Hint Resolve I conj or_introl or_intror refl_equal: core.
+Hint Resolve I conj or_introl or_intror eq_refl: core.
 Hint Resolve ex_intro ex_intro2: core.
 
 Section Logic_lemmas.
@@ -271,17 +271,17 @@ Section Logic_lemmas.
     Variable f : A -> B.
     Variables x y z : A.
 
-    Theorem sym_eq : x = y -> y = x.
+    Theorem eq_sym : x = y -> y = x.
     Proof.
       destruct 1; trivial.
     Defined.
-    Opaque sym_eq.
+    Opaque eq_sym.
 
-    Theorem trans_eq : x = y -> y = z -> x = z.
+    Theorem eq_trans : x = y -> y = z -> x = z.
     Proof.
       destruct 2; trivial.
     Defined.
-    Opaque trans_eq.
+    Opaque eq_trans.
 
     Theorem f_equal : x = y -> f x = f y.
     Proof.
@@ -289,30 +289,26 @@ Section Logic_lemmas.
     Defined.
     Opaque f_equal.
 
-    Theorem sym_not_eq : x <> y -> y <> x.
+    Theorem not_eq_sym : x <> y -> y <> x.
     Proof.
       red in |- *; intros h1 h2; apply h1; destruct h2; trivial.
     Qed.
-
-    Definition sym_equal := sym_eq.
-    Definition sym_not_equal := sym_not_eq.
-    Definition trans_equal := trans_eq.
 
   End equality.
 
   Definition eq_ind_r :
     forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
-    intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
+    intros A x P H y H0; elim eq_sym with (1 := H0); assumption.
   Defined.
 
   Definition eq_rec_r :
     forall (A:Type) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
-    intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
+    intros A x P H y H0; elim eq_sym with (1 := H0); assumption.
   Defined.
 
   Definition eq_rect_r :
     forall (A:Type) (x:A) (P:A -> Type), P x -> forall y:A, y = x -> P y.
-    intros A x P H y H0; elim sym_eq with (1 := H0); assumption.
+    intros A x P H y H0; elim eq_sym with (1 := H0); assumption.
   Defined.
 End Logic_lemmas.
 
@@ -349,7 +345,18 @@ Proof.
   destruct 1; destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
 Qed.
 
-Hint Immediate sym_eq sym_not_eq: core.
+(* Aliases *)
+
+Notation sym_eq := eq_sym (only parsing).
+Notation trans_eq := eq_trans (only parsing).
+Notation sym_not_eq := not_eq_sym (only parsing).
+
+Notation refl_equal := eq_refl (only parsing).
+Notation sym_equal := eq_sym (only parsing).
+Notation trans_equal := eq_trans (only parsing).
+Notation sym_not_equal := not_eq_sym (only parsing).
+
+Hint Immediate eq_sym not_eq_sym: core.
 
 (** Basic definitions about relations and properties *)
 
@@ -411,7 +418,7 @@ intros A x y z H1 H2. rewrite <- H2; exact H1.
 Qed.
 
 Declare Left Step eq_stepl.
-Declare Right Step trans_eq.
+Declare Right Step eq_trans.
 
 Lemma iff_stepl : forall A B C : Prop, (A <-> B) -> (A <-> C) -> (C <-> B).
 Proof.

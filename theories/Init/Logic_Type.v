@@ -29,22 +29,22 @@ Section identity_is_a_congruence.
 
  Variables x y z : A.
  
- Lemma sym_id : identity x y -> identity y x.
+ Lemma identity_sym : identity x y -> identity y x.
  Proof.
   destruct 1; trivial.
  Defined.
 
- Lemma trans_id : identity x y -> identity y z -> identity x z.
+ Lemma identity_trans : identity x y -> identity y z -> identity x z.
  Proof.
   destruct 2; trivial.
  Defined.
 
- Lemma congr_id : identity x y -> identity (f x) (f y).
+ Lemma identity_congr : identity x y -> identity (f x) (f y).
  Proof.
   destruct 1; trivial.
  Defined.
 
- Lemma sym_not_id : notT (identity x y) -> notT (identity y x).
+ Lemma not_identity_sym : notT (identity x y) -> notT (identity y x).
  Proof.
   red in |- *; intros H H'; apply H; destruct H'; trivial.
  Qed.
@@ -53,17 +53,22 @@ End identity_is_a_congruence.
 
 Definition identity_ind_r :
   forall (A:Type) (a:A) (P:A -> Prop), P a -> forall y:A, identity y a -> P y.
- intros A x P H y H0; case sym_id with (1 := H0); trivial.
+ intros A x P H y H0; case identity_sym with (1 := H0); trivial.
 Defined.
 
 Definition identity_rec_r :
   forall (A:Type) (a:A) (P:A -> Set), P a -> forall y:A, identity y a -> P y.
- intros A x P H y H0; case sym_id with (1 := H0); trivial.
+ intros A x P H y H0; case identity_sym with (1 := H0); trivial.
 Defined.
 
 Definition identity_rect_r :
   forall (A:Type) (a:A) (P:A -> Type), P a -> forall y:A, identity y a -> P y.
- intros A x P H y H0; case sym_id with (1 := H0); trivial.
+ intros A x P H y H0; case identity_sym with (1 := H0); trivial.
 Defined.
 
-Hint Immediate sym_id sym_not_id: core v62.
+Hint Immediate identity_sym not_identity_sym: core v62.
+
+Notation refl_id := identity_refl (only parsing).
+Notation sym_id := identity_sym (only parsing).
+Notation trans_id := identity_trans (only parsing).
+Notation sym_not_id := not_identity_sym (only parsing).

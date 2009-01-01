@@ -267,7 +267,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
   and t2 = pf_apply get_type_of gl c2 in
   if unsafe or (pf_conv_x gl t1 t2) then
     let e = build_coq_eq () in
-    let sym = build_coq_sym_eq () in
+    let sym = build_coq_eq_sym () in
     let eq = applist (e, [t1;c1;c2]) in
     tclTHENS (assert_as false None eq)
       [onLastHyp (fun id -> 

@@ -522,8 +522,6 @@ Ltac ocaml_union_tac :=
   rewrite H; simpl; romega with *
  end.
 
-Import Logic. (* Unhide eq, otherwise Function complains. *)
-
 Function ocaml_union (s : t * t) { measure cardinal2 s } : t  :=
  match s with 
   | (Leaf, Leaf) => s#2

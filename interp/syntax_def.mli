@@ -32,9 +32,11 @@ val search_syntactic_definition : loc -> kernel_name -> syndef_interpretation
 
 val locate_global_with_alias : qualid located -> global_reference
 
+(* Extract a global_reference from a reference that can be an "alias" *)
+val global_of_extended_global : extended_global_reference -> global_reference
+
 (* Locate a reference taking into account possible "alias" notations *)
 val global_with_alias : reference -> global_reference
 
 (* The same for inductive types *)
 val inductive_of_reference_with_alias : reference -> inductive
-

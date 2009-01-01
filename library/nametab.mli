@@ -116,9 +116,10 @@ val locate_module : qualid -> module_path
 
 (* A variant looking up a [section_path] *)
 val absolute_reference : section_path -> global_reference
+val extended_absolute_reference : section_path -> extended_global_reference
 
 
-(*s These function tell if the given absolute name is already taken *)
+(*s These functions tell if the given absolute name is already taken *)
 
 val exists_cci : section_path -> bool
 val exists_modtype : section_path -> bool

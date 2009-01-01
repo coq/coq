@@ -15,6 +15,7 @@ open Term
 open Libnames
 open Pattern
 open Nametab
+open Syntax_def
 
 (************************************************************************)
 (* Generic functions to find Coq objects *)
@@ -25,10 +26,8 @@ let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
 let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (id_of_string s) in
-  try
-    Nametab.absolute_reference sp
-  with Not_found ->
-    anomaly (locstr^": cannot find "^(string_of_path sp))
+  try global_of_extended_global (Nametab.extended_absolute_reference sp)
+  with Not_found -> anomaly (locstr^": cannot find "^(string_of_path sp))
 
 let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
 let coq_constant locstr dir s = constr_of_global (coq_reference locstr dir s)
@@ -40,10 +39,14 @@ let has_suffix_in_dirs dirs ref =
   let dir = dirpath (sp_of_global ref) in
   List.exists (fun d -> is_dirpath_prefix_of d dir) dirs
 
+let global_of_extended q =
+  try Some (global_of_extended_global q) with Not_found -> None
+
 let gen_constant_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
   let id = id_of_string s in
-  let all = Nametab.locate_all (make_short_qualid id) in
+  let all = Nametab.extended_locate_all (make_short_qualid id) in
+  let all = list_uniquize (list_map_filter global_of_extended all) in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
     | [x] -> constr_of_global x
@@ -195,12 +198,12 @@ let lazy_init_constant dir id = lazy (init_constant dir id)
 
 (* Equality on Set *)
 let coq_eq_eq = lazy_init_constant ["Logic"] "eq"
-let coq_eq_refl = lazy_init_constant ["Logic"] "refl_equal"
+let coq_eq_refl = lazy_init_constant ["Logic"] "eq_refl"
 let coq_eq_ind = lazy_init_constant ["Logic"] "eq_ind"
 let coq_eq_rec = lazy_init_constant ["Logic"] "eq_rec"
 let coq_eq_rect = lazy_init_constant ["Logic"] "eq_rect"
 let coq_eq_congr = lazy_init_constant ["Logic"] "f_equal"
-let coq_eq_sym  = lazy_init_constant ["Logic"] "sym_eq"
+let coq_eq_sym  = lazy_init_constant ["Logic"] "eq_sym"
 let coq_f_equal2 = lazy_init_constant ["Logic"] "f_equal2"
 
 let build_coq_eq_data () =
@@ -214,8 +217,10 @@ let build_coq_eq_data () =
   sym = Lazy.force coq_eq_sym }
 
 let build_coq_eq () = Lazy.force coq_eq_eq
-let build_coq_sym_eq () = Lazy.force coq_eq_sym
+let build_coq_eq_sym () = Lazy.force coq_eq_sym
 let build_coq_f_equal2 () = Lazy.force coq_f_equal2
+
+let build_coq_sym_eq = build_coq_eq_sym (* compatibility *)
 
 (* Specif *)
 let coq_sumbool  = lazy_init_constant ["Specif"] "sumbool"
@@ -228,8 +233,8 @@ let coq_identity_refl = lazy_init_constant ["Datatypes"] "refl_identity"
 let coq_identity_ind = lazy_init_constant ["Datatypes"] "identity_ind"
 let coq_identity_rec = lazy_init_constant ["Datatypes"] "identity_rec"
 let coq_identity_rect = lazy_init_constant ["Datatypes"] "identity_rect"
-let coq_identity_congr = lazy_init_constant ["Logic_Type"] "congr_id"
-let coq_identity_sym = lazy_init_constant ["Logic_Type"] "sym_id"
+let coq_identity_congr = lazy_init_constant ["Logic_Type"] "identity_congr"
+let coq_identity_sym = lazy_init_constant ["Logic_Type"] "identity_sym"
 
 let build_coq_identity_data () = {
   eq = Lazy.force coq_identity_eq;

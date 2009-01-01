@@ -83,15 +83,19 @@ let declare_syntactic_definition local id onlyparse pat =
 let search_syntactic_definition loc kn =
   out_pat (KNmap.find kn !syntax_table)
 
-let locate_global_with_alias (loc,qid) =
-  match Nametab.extended_locate qid with
+let global_of_extended_global = function
   | TrueGlobal ref -> ref
   | SyntacticDef kn -> 
   match search_syntactic_definition dummy_loc kn with
   | [],ARef ref -> ref
-  | _ -> 
-      user_err_loc (loc,"",pr_qualid qid ++ 
-        str " is bound to a notation that does not denote a reference")
+  | _ -> raise Not_found
+
+let locate_global_with_alias (loc,qid) =
+  let ref = Nametab.extended_locate qid in
+  try global_of_extended_global ref
+  with Not_found ->
+    user_err_loc (loc,"",pr_qualid qid ++ 
+      str " is bound to a notation that does not denote a reference")
 
 let inductive_of_reference_with_alias r =
   match locate_global_with_alias (qualid_of_reference r) with

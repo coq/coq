@@ -117,7 +117,7 @@ val build_coq_eq_data : coq_leibniz_eq_data delayed
 val build_coq_identity_data : coq_leibniz_eq_data delayed
 
 val build_coq_eq       : constr delayed (* = [(build_coq_eq_data()).eq] *)
-val build_coq_sym_eq   : constr delayed (* = [(build_coq_eq_data()).sym] *)
+val build_coq_eq_sym   : constr delayed (* = [(build_coq_eq_data()).sym] *)
 val build_coq_f_equal2 : constr delayed
 
 (* Specif *)

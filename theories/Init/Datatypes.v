@@ -114,8 +114,8 @@ Inductive Empty_set : Set :=.
     sole inhabitant is denoted [refl_identity A a] *)
 
 Inductive identity (A:Type) (a:A) : A -> Type :=
-  refl_identity : identity (A:=A) a a.
-Hint Resolve refl_identity: core.
+  identity_refl : identity a a.
+Hint Resolve identity_refl: core.
 
 Implicit Arguments identity_ind [A].
 Implicit Arguments identity_rec [A].
