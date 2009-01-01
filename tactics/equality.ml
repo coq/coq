@@ -457,8 +457,9 @@ let injectable env sigma t1 t2 =
 let descend_then sigma env head dirn =
   let IndType (indf,_) =
     try find_rectype env sigma (get_type_of env sigma head)
-    with Not_found -> assert false in
-  let ind,_ = dest_ind_family indf in
+    with Not_found ->
+      error "Cannot project on an inductive type derived from a dependency." in
+   let ind,_ = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
   let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in
@@ -477,7 +478,7 @@ let descend_then sigma env head dirn =
           (interval 1 (Array.length mip.mind_consnames)) in
       let ci = make_case_info env ind RegularStyle in
       mkCase (ci, p, head, Array.of_list brl)))
-  
+
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
 
@@ -828,11 +829,14 @@ let make_iterated_tuple env sigma dflt (z,zty) =
 let rec build_injrec sigma env dflt c = function
   | [] -> make_iterated_tuple env sigma dflt (c,type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
+    try
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
       let (subval,tuplety,dfltval) = build_injrec sigma cnum_env dflt newc l in
       (kont subval (dfltval,tuplety),
-       tuplety,dfltval)
+      tuplety,dfltval)
+    with
+	UserError _ -> failwith "caught"
 
 let build_injector sigma env dflt c cpath =
   let (injcode,resty,_) = build_injrec sigma env dflt c cpath in
