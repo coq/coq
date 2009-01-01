@@ -3,16 +3,24 @@ Changes since V8.2
 
 Tactics
 
-- "discriminate" now performs intros before trying to discriminate an
+- Tactic "discriminate" now performs intros before trying to discriminate an
   hypothesis of the goal (previously it applied intro only if the goal
   had the form t1<>t2).
-- rewrite now supports rewriting on ad hoc equalities such as eq_true.
+- Tactic "rewrite" now supports rewriting on ad hoc equalities such as eq_true.
+- Tactic "intuition" now preserves inner "iff" (exceptional source of 
+  incompatibilities solvable by redefining "intuition" as 
+  "unfold iff in *; intuition".
 
 Tools
 
 - New coqtop/coqc option -beautify to reformat .v files (usable
   e.g. to globally update notations).
 - New tool beautify-archive to beautify a full archive of developments.
+
+Library
+
+- Use "Coq standard" names for the properties of eq and identity
+  (e.g. refl_equal is now eq_refl). Support for compatibility is provided.
 
 Changes from V8.1 to V8.2
 =========================
@@ -304,9 +312,6 @@ Tactics
 - New tactic "instantiate" (without argument).
 - Tactic firstorder "with" and "using" options have their meaning swapped for
   consistency with auto/eauto (source of incompatibility).
-- Tactic "intuition" now preserves inner "iff" (exceptional source of 
-  incompatibilities solvable by redefining "intuition" as 
-  "unfold iff in *; intuition".
 - Tactic "generalize" now supports "at" options to specify occurrences
   and "as" options to name the quantified hypotheses.
 - New tactic "specialize H with a" or "specialize (H a)" allows to transform
