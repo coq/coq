@@ -139,6 +139,10 @@ type branch_assumptions = {
 val check_or_and_pattern_size :
   Util.loc -> or_and_intro_pattern_expr -> int -> unit 
 
+(* Tolerate "[]" to mean a disjunctive pattern of any length *)
+val fix_empty_or_and_pattern : int -> or_and_intro_pattern_expr -> 
+  or_and_intro_pattern_expr
+
 (* Useful for [as intro_pattern] modifier *)
 val compute_induction_names : 
   int -> intro_pattern_expr located option -> 

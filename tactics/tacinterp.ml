@@ -96,7 +96,7 @@ let catch_error call_trace tac g =
     let (loc',c),tail = list_sep_last call_trace in
     let loc,e' = match e with Stdpp.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
     if tail = [] then
-      let loc = if loc' = dloc then loc else loc' in
+      let loc = if loc = dloc then loc' else loc in
       raise (Stdpp.Exc_located(loc,e'))
     else
       raise (Stdpp.Exc_located(loc',LtacLocated((c,tail,loc),e')))

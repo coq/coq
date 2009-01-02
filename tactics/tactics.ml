@@ -1094,11 +1094,6 @@ let register_general_multi_rewrite f =
 let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
 let case_last  = tclLAST_HYP simplest_case
 
-let fix_empty_case nv l =
-  (* The syntax does not distinguish between "[ ]" for one clause with no names
-     and "[ ]" for no clause at all; so we are a bit liberal here *)
-  if Array.length nv = 0 & l = [[]] then [] else l
-
 let error_unexpected_extra_pattern loc nb pat =
   let s1,s2,s3 = match pat with
   | IntroIdentifier _ -> "name", (plural nb " introduction pattern"), "no"
@@ -1121,7 +1116,7 @@ let intro_or_and_pattern loc b ll l' tac =
 	  if bracketed then error_unexpected_extra_pattern loc' nb pat;
 	  l
       | ip :: l -> ip :: adjust_names_length nb (n-1) l in
-    let ll = fix_empty_case nv ll in
+    let ll = fix_empty_or_and_pattern (Array.length nv) ll in
     check_or_and_pattern_size loc ll (Array.length nv);
     tclTHENLASTn
       (tclTHEN case_last clear_last)

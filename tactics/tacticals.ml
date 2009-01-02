@@ -283,6 +283,13 @@ type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
   assums    : named_context}   (* the list of assumptions introduced *)
 
+let fix_empty_or_and_pattern nv l =
+  (* 1- The syntax does not distinguish between "[ ]" for one clause with no 
+     names and "[ ]" for no clause at all *)
+  (* 2- More generally, we admit "[ ]" for any disjunctive pattern of 
+     arbitrary length *)
+  if l = [[]] then list_make nv [] else l
+
 let check_or_and_pattern_size loc names n =
   if List.length names <> n then
     if n = 1 then 
@@ -295,10 +302,11 @@ let compute_induction_names n = function
   | None ->
       Array.make n []
   | Some (loc,IntroOrAndPattern names) ->
+      let names = fix_empty_or_and_pattern n names in
       check_or_and_pattern_size loc names n;
       Array.of_list names
-  | _ ->
-      error "Unexpected introduction pattern."
+  | Some (loc,_) ->
+      user_err_loc (loc,"",str "Disjunctive/conjunctive introduction pattern expected.")
 
 let compute_construtor_signatures isrec (_,k as ity) =
   let rec analrec c recargs =

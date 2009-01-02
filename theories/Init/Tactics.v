@@ -72,6 +72,17 @@ Ltac false_hyp H G :=
 
 Ltac case_eq x := generalize (refl_equal x); pattern x at -1; case x.
 
+(* Similar variants of destruct *)
+
+Tactic Notation "destruct_with_eqn" constr(x) :=
+  destruct x as []_eqn.
+Tactic Notation "destruct_with_eqn" ident(n) := 
+  try intros until n; destruct n as []_eqn.
+Tactic Notation "destruct_with_eqn" ":" ident(H) constr(x) :=
+  destruct x as []_eqn:H.
+Tactic Notation "destruct_with_eqn" ":" ident(H) ident(n) := 
+  try intros until n; destruct n as []_eqn:H.
+
 (* Rewriting in all hypothesis several times everywhere *)
 
 Tactic Notation "rewrite_all" constr(eq) := repeat rewrite eq in *.

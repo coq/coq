@@ -257,6 +257,11 @@ GEXTEND Gram
       | "?" -> loc, IntroAnonymous
       | id = ident -> loc, IntroIdentifier id ] ]
   ;
+  intropattern_modifier:
+    [ [ IDENT "_eqn"; 
+        id = [ ":"; id = naming_intropattern -> id | -> loc, IntroAnonymous ]
+        -> id ] ]
+  ;
   simple_intropattern:
     [ [ pat = disjunctive_intropattern -> pat
       | pat = naming_intropattern -> pat
@@ -415,13 +420,12 @@ GEXTEND Gram
       | -> None ] ]
   ;
   with_inversion_names:
-    [ [ "as"; ipat = disjunctive_intropattern -> Some ipat
+    [ [ "as"; ipat = simple_intropattern -> Some ipat
       | -> None ] ]
   ;
   with_induction_names:
-    [ [ "as"; eq = OPT naming_intropattern; ipat = disjunctive_intropattern
+    [ [ "as"; ipat = simple_intropattern; eq = OPT intropattern_modifier
         -> (eq,Some ipat)
-      | "as"; eq = naming_intropattern -> (Some eq,None)
       | -> (None,None) ] ]
   ;
   as_name:
