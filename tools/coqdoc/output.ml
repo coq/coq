@@ -446,38 +446,40 @@ module Html = struct
   let ident_ref m fid typ s =
     match find_module m with
     | Local ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; 
-	printf "<div class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</div></a>"
+	printf "<span class=\"id\" type=\"%s\">" typ; 
+	printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid; raw_ident s;
+	printf "</a></span>"
     | Coqlib when !externals ->
 	let m = Filename.concat !coqlib m in
+	  printf "<span class=\"id\" type=\"%s\">" typ; 
 	  printf "<a class=\"idref\" href=\"%s.html#%s\">" m fid;
-	  printf "<div class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</div></a>"
+	  raw_ident s; printf "</a></span>"
     | Coqlib | Unknown ->
-	printf "<div class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</div>"
+	printf "<span class=\"id\" type=\"%s\">" typ; raw_ident s; printf "</span>"
 	  
   let ident s loc = 
     if is_keyword s then begin
-      printf "<div class=\"id\" type=\"keyword\">"; 
+      printf "<span class=\"id\" type=\"keyword\">"; 
       raw_ident s; 
-      printf "</div>"
+      printf "</span>"
     end else 
       begin
 	try
 	  (match Index.find !current_module loc with
 	     | Def (fullid,ty) -> 
-		 printf "<a name=\"%s\">" fullid; 
-		 printf "<div class=\"id\" type=\"%s\">" (type_name ty); raw_ident s; printf "</div></a>"
+		 printf "<span class=\"id\" type=\"%s\">" (type_name ty); 
+		 printf "<a name=\"%s\">" fullid; raw_ident s; printf "</a></span>"
              | Mod (m,s') when s = s' ->
 		 module_ref m s
 	     | Ref (m,fullid,ty) -> 
 		 ident_ref m fullid (type_name ty) s
 	     | Mod _ ->
-		 printf "<div class=\"id\" type=\"mod\">"; raw_ident s ; printf "</div>")
+		 printf "<span class=\"id\" type=\"mod\">"; raw_ident s ; printf "</span>")
 	with Not_found ->
 	  if is_tactic s then
-	    (printf "<div class=\"id\" type=\"tactic\">"; raw_ident s; printf "</div>")
+	    (printf "<span class=\"id\" type=\"tactic\">"; raw_ident s; printf "</span>")
 	  else
-	    (printf "<div class=\"id\" type=\"var\">"; raw_ident s ; printf "</div>")
+	    (printf "<span class=\"id\" type=\"var\">"; raw_ident s ; printf "</span>")
       end
 
   let with_html_printing f tok =
@@ -508,9 +510,9 @@ module Html = struct
 
   let stop_item () = reach_item_level 0
 
-  let start_coq () = if not !raw_comments then printf "<code>\n"
+  let start_coq () = if not !raw_comments then printf "<div class=\"code\">\n"
 
-  let end_coq () = if not !raw_comments then printf "</code>\n"
+  let end_coq () = if not !raw_comments then printf "</div>\n"
 
   let start_doc () = 
     if not !raw_comments then
@@ -524,9 +526,9 @@ module Html = struct
 
   let end_code () = end_coq (); start_doc ()
 
-  let start_inline_coq () = printf "<code>"
+  let start_inline_coq () = printf "<span class=\"inlinecode\">"
 
-  let end_inline_coq () = printf "</code>"
+  let end_inline_coq () = printf "</span>"
 
   let paragraph () = stop_item (); printf "\n<br/><br/>\n"
 

@@ -155,7 +155,7 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 doc/stdlib/index-body.html: | $(COQDOC) $(THEORIESVO)
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
-	$(COQDOC) -q -d doc/stdlib/html --multi-index --html \
+	$(COQDOC) -q -d doc/stdlib/html --multi-index --html -g \
 	  -R theories Coq $(THEORIESVO:.vo=.v)
 	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
 

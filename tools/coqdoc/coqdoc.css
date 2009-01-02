@@ -43,8 +43,6 @@ body { padding: 0px 0px;
 #main .section { background-color:#90bdff;
                  font-size : 175% }
 
-#main code { font-family: monospace }
-
 #main .doc { margin: 0px;
              padding: 10px;
              font-family: sans-serif;
@@ -55,7 +53,13 @@ body { padding: 0px 0px;
              background-color: #90bdff;
              border-style: plain}
 
-#main .doc code { font-family: monospace} 
+.inlinecode { 
+    display: inline;
+    font-family: monospace } 
+
+.code { 
+    display: block;
+    font-family: monospace } 
 
 /* Pied de page */
 

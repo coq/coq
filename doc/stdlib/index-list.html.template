@@ -69,6 +69,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/Description.v
     theories/Logic/Epsilon.v
     theories/Logic/IndefiniteDescription.v
+    theories/Logic/FunctionalExtensionality.v
   </dd>
     
   <dt> <b>Bool</b>:
@@ -273,8 +274,6 @@ theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
     theories/Relations/Relation_Operators.v
     theories/Relations/Relations.v
     theories/Relations/Operators_Properties.v
-    theories/Relations/Rstar.v
-    theories/Relations/Newman.v
   </dd>
     
   <dt> <b>Sets</b>:
@@ -477,7 +476,6 @@ theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
     theories/Program/Utils.v
     theories/Program/Syntax.v
     theories/Program/Program.v
-    theories/Program/FunctionalExtensionality.v
     theories/Program/Combinators.v
   </dd>
 
