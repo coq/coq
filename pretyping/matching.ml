@@ -210,16 +210,14 @@ let matches_core convert allow_partial_app pat c =
 
 let extended_matches = matches_core None true
 
-let matches c p = snd (matches_core None false c p)
-
-let pmatches c p = snd (matches_core None true c p)
+let matches c p = snd (matches_core None true c p)
 
 let special_meta = (-1)
 
 (* Tells if it is an authorized occurrence and if the instance is closed *)
-let authorized_occ closed pat c mk_ctx next =
+let authorized_occ partial_app closed pat c mk_ctx next =
   try 
-    let sigma = extended_matches pat c in
+    let sigma = matches_core None partial_app pat c in
     if closed && not (List.for_all (fun (_,c) -> closed0 c) (snd sigma))
     then next ()
     else sigma, mk_ctx (mkMeta special_meta), next
@@ -231,23 +229,23 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
   let rec aux c mk_ctx next =
   match kind_of_term c with
   | Cast (c1,k,c2) ->
-      authorized_occ closed pat c mk_ctx (fun () ->
+      authorized_occ partial_app closed pat c mk_ctx (fun () ->
         let mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
         try_aux [c1] mk_ctx next)
   | Lambda (x,c1,c2) ->
-      authorized_occ closed pat c mk_ctx (fun () ->
+      authorized_occ partial_app closed pat c mk_ctx (fun () ->
         let mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
         try_aux [c1;c2] mk_ctx next)
   | Prod (x,c1,c2) ->
-      authorized_occ closed pat c mk_ctx (fun () ->
+      authorized_occ partial_app closed pat c mk_ctx (fun () ->
         let mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
         try_aux [c1;c2] mk_ctx next)
   | LetIn (x,c1,t,c2) ->
-      authorized_occ closed pat c mk_ctx (fun () ->
+      authorized_occ partial_app closed pat c mk_ctx (fun () ->
         let mk_ctx = function [c1;c2] -> mkLetIn (x,c1,t,c2) | _ -> assert false
         in try_aux [c1;c2] mk_ctx next)
   | App (c1,lc) ->
-      authorized_occ closed pat c mk_ctx (fun () ->
+      authorized_occ partial_app closed pat c mk_ctx (fun () ->
         let topdown = true in
 	if partial_app then
           if topdown then
@@ -275,13 +273,13 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
             mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
 	  try_aux (c1::Array.to_list lc) mk_ctx next)
   | Case (ci,hd,c1,lc) ->
-      authorized_occ closed pat c mk_ctx (fun () ->
+      authorized_occ partial_app closed pat c mk_ctx (fun () ->
         let mk_ctx le = 
           mk_ctx (mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))) in
         try_aux (c1::Array.to_list lc) mk_ctx next)
   | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _
   | Rel _|Meta _|Var _|Sort _ ->
-      authorized_occ closed pat c mk_ctx next
+      authorized_occ partial_app closed pat c mk_ctx next
 
   (* Tries [sub_match] for all terms in the list *)
   and try_aux lc mk_ctx next =
