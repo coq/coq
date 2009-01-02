@@ -136,7 +136,7 @@ let pr_in_out_modules = function
 let pr_search_about (b,c) = 
   (if b then str "-" else mt()) ++
   match c with
-  | SearchRef r -> pr_reference r
+  | SearchSubPattern p -> pr_constr_pattern_expr p
   | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
 let pr_search a b pr_p = match a with
@@ -808,7 +808,7 @@ let rec pr_vernac = function
   | VernacCreateHintDb (local,dbname,b) ->
       hov 1 (str "Create " ++ pr_locality local ++ str "HintDb " ++ str dbname ++ (if b then str" discriminated" else mt ()))
   | VernacHints (local,dbnames,h) ->
-      pr_hints local dbnames h pr_constr pr_pattern_expr
+      pr_hints local dbnames h pr_constr pr_constr_pattern_expr
   | VernacSyntacticDefinition (id,(ids,c),local,onlyparsing) ->
       hov 2
         (str"Notation " ++ pr_locality local ++ pr_lident id ++ 
@@ -901,7 +901,7 @@ let rec pr_vernac = function
          term *)
 	| PrintAssumptions qid -> str"Print Assumptions"++spc()++pr_reference qid
       in pr_printable p
-  | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern_expr
+  | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_constr_pattern_expr
   | VernacLocate loc -> 
       let pr_locate =function
 	| LocateTerm qid ->  pr_reference qid

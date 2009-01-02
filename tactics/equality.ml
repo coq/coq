@@ -459,7 +459,7 @@ let descend_then sigma env head dirn =
     try find_rectype env sigma (get_type_of env sigma head)
     with Not_found ->
       error "Cannot project on an inductive type derived from a dependency." in
-   let ind,_ = dest_ind_family indf in
+  let ind,_ = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
   let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in

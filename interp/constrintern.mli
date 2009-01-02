@@ -113,8 +113,9 @@ val interp_constr_judgment : evar_map -> env -> constr_expr -> unsafe_judgment
 
 (* Interprets constr patterns *)
 
-val interp_constrpattern : 
-  evar_map -> env -> constr_expr -> patvar list * constr_pattern
+val intern_constr_pattern : 
+  evar_map -> env -> ?as_type:bool -> ?ltacvars:ltac_sign -> 
+    constr_pattern_expr -> patvar list * constr_pattern
 
 val interp_reference : ltac_sign -> reference -> rawconstr
 

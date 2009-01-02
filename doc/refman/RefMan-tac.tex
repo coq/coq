@@ -1269,9 +1269,9 @@ $\beta\iota\zeta$-reduction rules.
 \tacindex{hnf}}
 
 This tactic applies to any goal. It replaces the current goal with its
-head normal form according to the $\beta\delta\iota\zeta$-reduction rules.
-{\tt hnf} does not produce a real head normal form but either a
-product or an applicative term in head normal form or a variable.
+head normal form according to the $\beta\delta\iota\zeta$-reduction
+rules, i.e.  it reduces the head of the goal until it becomes a
+product or an irreducible term.
 
 \Example
 The term \verb+forall n:nat, (plus (S n) (S n))+ is not reduced by {\tt hnf}.

@@ -127,8 +127,6 @@ type multi =
   | RepeatStar
   | RepeatPlus
 
-type pattern_expr = constr_expr
-
 (* Type of patterns *)
 type 'a match_pattern =
   | Term of 'a
@@ -283,7 +281,7 @@ and glob_tactic_expr =
 
 type raw_tactic_expr =
     (constr_expr,
-     pattern_expr,
+     constr_pattern_expr,
      reference or_by_notation,
      reference or_by_notation,
      reference,
@@ -292,7 +290,7 @@ type raw_tactic_expr =
 
 type raw_atomic_tactic_expr =
     (constr_expr,                  (* constr *)
-     pattern_expr,                 (* pattern *)
+     constr_pattern_expr,                 (* pattern *)
      reference or_by_notation,     (* evaluable reference *)
      reference or_by_notation,     (* inductive *)
      reference,                    (* ltac reference *)
@@ -301,7 +299,7 @@ type raw_atomic_tactic_expr =
 
 type raw_tactic_arg =
     (constr_expr,
-     pattern_expr,
+     constr_pattern_expr,
      reference or_by_notation,
      reference or_by_notation,
      reference,

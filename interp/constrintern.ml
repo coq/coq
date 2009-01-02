@@ -1327,8 +1327,9 @@ let interp_constr_judgment_evars evdref env c =
 
 type ltac_sign = identifier list * unbound_ltac_var_map
 
-let interp_constrpattern sigma env c =
-  pattern_of_rawconstr (intern_gen false sigma env ~allow_patvar:true c)
+let intern_constr_pattern sigma env ?(as_type=false) ?(ltacvars=([],[])) c =
+  let c = intern_gen as_type ~allow_patvar:true ~ltacvars sigma env c in
+  pattern_of_rawconstr c
 
 let interp_aconstr impls (vars,varslist) a =
   let env = Global.env () in

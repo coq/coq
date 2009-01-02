@@ -1024,7 +1024,7 @@ let rec raw_printers =
     (pr_raw_tactic_level, 
      drop_env pr_constr_expr,
      drop_env pr_lconstr_expr,
-     pr_lpattern_expr,
+     pr_lconstr_pattern_expr,
      drop_env (pr_or_by_notation pr_reference),
      drop_env (pr_or_by_notation pr_reference),
      pr_reference,

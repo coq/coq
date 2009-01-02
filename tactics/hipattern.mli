@@ -58,6 +58,9 @@ val is_disjunction         : ?strict:bool -> testing_function
 val match_with_conjunction : ?strict:bool -> (constr * constr list) matching_function
 val is_conjunction         : ?strict:bool -> testing_function 
 
+val match_with_record      : (constr * constr list) matching_function
+val is_record              : testing_function 
+
 val match_with_empty_type  : constr matching_function
 val is_empty_type          : testing_function 
 

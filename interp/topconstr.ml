@@ -675,6 +675,8 @@ and recursion_order_expr =
   | CWfRec of constr_expr
   | CMeasureRec of constr_expr
 
+type constr_pattern_expr = constr_expr
+
 (***********************)
 (* For binders parsing *)
 

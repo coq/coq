@@ -172,6 +172,8 @@ type typeclass_constraint = name located * binding_kind * constr_expr
 
 and typeclass_context = typeclass_constraint list
 
+type constr_pattern_expr = constr_expr
+
 (**********************************************************************)
 (* Utilities on constr_expr                                           *)
 

@@ -545,7 +545,9 @@ let solve_hook n =
 let abort_hook s = output_results_nl (ctf_AbortedMessage !global_request_id s)
 
 let interp_search_about_item = function
-  | SearchRef qid -> GlobSearchRef (Nametab.global qid)
+  | SearchSubPattern pat ->
+      let _,pat = Constrintern.intern_constr_pattern Evd.empty (Global.env()) pat in
+      GlobSearchSubPattern pat
   | SearchString (s,_) ->
       warning "Notation case not taken into account";
       GlobSearchString s
@@ -563,10 +565,10 @@ let pcoq_search s l =
       raw_search_about (filter_by_module_from_list l) add_search
 	(List.map (on_snd interp_search_about_item) sl)
   | SearchPattern c ->
-      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
+      let _,pat = intern_constr_pattern Evd.empty (Global.env()) c in
       raw_pattern_search (filter_by_module_from_list l) add_search pat
   | SearchRewrite c ->
-      let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
+      let _,pat = intern_constr_pattern Evd.empty (Global.env()) c in
       raw_search_rewrite (filter_by_module_from_list l) add_search pat;
   | SearchHead locqid ->
       filtered_search
@@ -581,7 +583,7 @@ let rec hyp_pattern_filter pat name a c =
       | Prod(_, hyp, c2) -> 
 	  (try
 (*	     let _ = msgnl ((str "WHOLE ") ++ (Printer.pr_lconstr c)) in
-             let _ = msgnl ((str "PAT ") ++ (Printer.pr_pattern pat)) in *)
+             let _ = msgnl ((str "PAT ") ++ (Printer.pr_constr_pattern pat)) in *)
              if Matching.is_matching pat hyp then
 	       (msgnl (str "ok"); true)
 	     else
@@ -591,7 +593,7 @@ let rec hyp_pattern_filter pat name a c =
       | _ -> false;;
 
 let hyp_search_pattern c l =
-  let _, pat = interp_constrpattern Evd.empty (Global.env()) c in
+  let _, pat = intern_constr_pattern Evd.empty (Global.env()) c in
     ctv_SEARCH_LIST := [];
     gen_filtered_search
       (fun s a c -> (filter_by_module_from_list l s a c &&
@@ -640,8 +642,8 @@ let pcoq_term_pr = {
    * Except with right bool/env which I'll get :)
    *)
   pr_lconstr_expr  = (fun c -> fFORMULA (xlate_formula c) ++ str "(pcoq_lconstr_expr of " ++ (default_term_pr.pr_lconstr_expr  c) ++ str ")");
-  pr_pattern_expr  = (fun c -> str "pcoq_pattern_expr\n" ++ (default_term_pr.pr_pattern_expr  c));
-  pr_lpattern_expr = (fun c -> str "pcoq_constr_expr\n"  ++ (default_term_pr.pr_lpattern_expr c))
+  pr_constr_pattern_expr  = (fun c -> str "pcoq_pattern_expr\n" ++ (default_term_pr.pr_constr_pattern_expr  c));
+  pr_lconstr_pattern_expr = (fun c -> str "pcoq_constr_expr\n"  ++ (default_term_pr.pr_lconstr_pattern_expr c))
 }
 
 let start_pcoq_trees () =

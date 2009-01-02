@@ -148,8 +148,9 @@ let apply_dyn_fun deflt f lobj =
 	  if !relax_flag then
 	    failwith "local to_apply_dyn_fun"
 	  else
-	    anomaly
-	      ("Cannot find library functions for an object with tag "^tag) in 
+	    error
+	      ("Cannot find library functions for an object with tag "^tag^
+	       " (maybe a plugin is missing)") in 
 	f dodecl
     with
 	Failure "local to_apply_dyn_fun" -> deflt;;

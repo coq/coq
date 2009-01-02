@@ -934,11 +934,8 @@ let array_for_all4 f v1 v2 v3 v4 =
     allrec (pred lv1) 
 
 let array_for_all_i f i v = 
-  let rec allrec i = function
-    | -1 -> true
-    | n -> (f i v.(n)) && (allrec (i-1) (n-1))
-  in 
-  allrec i ((Array.length v)-1) 
+  let rec allrec i n = n = Array.length v || f i v.(n) && allrec (i+1) (n+1) in 
+  allrec i 0
 
 let array_hd v = 
   match Array.length v with

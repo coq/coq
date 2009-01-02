@@ -66,8 +66,8 @@ val pr_may_eval :
 val pr_rawsort : rawsort -> std_ppcmds
 
 val pr_binders : local_binder list -> std_ppcmds
-val pr_pattern_expr : Tacexpr.pattern_expr -> std_ppcmds
-val pr_lpattern_expr : Tacexpr.pattern_expr -> std_ppcmds
+val pr_constr_pattern_expr : constr_pattern_expr -> std_ppcmds
+val pr_lconstr_pattern_expr : constr_pattern_expr -> std_ppcmds
 val pr_constr_expr : constr_expr -> std_ppcmds
 val pr_lconstr_expr : constr_expr -> std_ppcmds
 val pr_cases_pattern_expr : cases_pattern_expr -> std_ppcmds
@@ -75,8 +75,8 @@ val pr_cases_pattern_expr : cases_pattern_expr -> std_ppcmds
 type term_pr = {
   pr_constr_expr   : constr_expr -> std_ppcmds;
   pr_lconstr_expr  : constr_expr -> std_ppcmds;
-  pr_pattern_expr  : Tacexpr.pattern_expr -> std_ppcmds;
-  pr_lpattern_expr : Tacexpr.pattern_expr -> std_ppcmds
+  pr_constr_pattern_expr  : constr_pattern_expr -> std_ppcmds;
+  pr_lconstr_pattern_expr : constr_pattern_expr -> std_ppcmds
 }
 
 val set_term_pr : term_pr -> unit

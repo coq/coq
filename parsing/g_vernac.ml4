@@ -615,11 +615,12 @@ GEXTEND Gram
       | IDENT "SearchAbout"; 
 	  sl = [ "[";
 	         l = LIST1 [ 
-		   b = positive_search_mark; r = global -> b,SearchRef r
-		 | b = positive_search_mark; s = ne_string; sc = OPT scope
-		   -> b,SearchString (s,sc)
+		   b = positive_search_mark; s = ne_string; sc = OPT scope
+		   -> b, SearchString (s,sc)
+		 | b = positive_search_mark; p = constr_pattern
+		   -> b, SearchSubPattern p
 		 ]; "]" -> l
-   	       | qid = global -> [true,SearchRef qid]
+   	       | p = constr_pattern -> [true,SearchSubPattern p]
    	       | s = ne_string; sc = OPT scope -> [true,SearchString (s,sc)] ];
 	  l = in_or_out_modules -> 
 	  VernacSearch (SearchAbout sl, l)

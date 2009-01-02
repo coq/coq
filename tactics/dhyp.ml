@@ -249,7 +249,7 @@ let add_destructor_hint local na loc pat pri code =
 	  errorlabstrm "add_destructor_hint"
           (str "The tactic should be a function of the hypothesis name.") end
   in
-  let (_,pat) = Constrintern.interp_constrpattern Evd.empty (Global.env()) pat
+  let (_,pat) = Constrintern.intern_constr_pattern Evd.empty (Global.env()) pat
   in
   let pat = match loc with
     | HypLocation b ->

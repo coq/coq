@@ -234,18 +234,14 @@ let rec tauto_intuit t_reduce solver ist =
     ||
     $t_solver
    ) >>
-    
-let reduction_not _ist =
- <:tactic<repeat 
-  match goal with 
-  | |- _     => progress unfold Coq.Init.Logic.not
-  | H:_ |- _ => progress unfold Coq.Init.Logic.not in H
-  end >>
 
-let t_reduction_not = tacticIn reduction_not
+let reduction_not_iff _ist =
+ <:tactic< unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in * >>
+
+let t_reduction_not_iff = tacticIn reduction_not_iff
 
 let intuition_gen tac =
-  interp (tacticIn (tauto_intuit t_reduction_not tac))
+  interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
 
 let simplif_gen = interp (tacticIn simplif)
 
