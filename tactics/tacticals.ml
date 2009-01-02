@@ -41,6 +41,7 @@ open Tacexpr
 let tclNORMEVAR      = tclNORMEVAR
 let tclIDTAC         = tclIDTAC
 let tclIDTAC_MESSAGE = tclIDTAC_MESSAGE
+let tclORELSE0       = tclORELSE0
 let tclORELSE        = tclORELSE
 let tclTHEN          = tclTHEN
 let tclTHENLIST      = tclTHENLIST
@@ -75,7 +76,7 @@ let tclIFTHENTRYELSEMUST = tclIFTHENTRYELSEMUST
 let unTAC            = unTAC
 
 (* [rclTHENSEQ [t1;..;tn] is equivalent to t1;..;tn *)
-let tclTHENSEQ = List.fold_left tclTHEN tclIDTAC
+let tclTHENSEQ = tclTHENLIST
 
 (* map_tactical f [x1..xn] = (f x1);(f x2);...(f xn) *)
 (* tclMAP f [x1..xn] = (f x1);(f x2);...(f xn) *)
@@ -88,9 +89,15 @@ let tclNTH_HYP m (tac : constr->tactic) gl =
   tac (try mkVar(let (id,_,_) = List.nth (pf_hyps gl) (m-1) in id) 
        with Failure _ -> error "No such assumption.") gl
 
+let tclNTH_DECL m tac gl =
+  tac (try List.nth (pf_hyps gl) (m-1) 
+       with Failure _ -> error "No such assumption.") gl
+
 (* apply a tactic to the last element of the signature  *)
 
 let tclLAST_HYP = tclNTH_HYP 1
+
+let tclLAST_DECL = tclNTH_DECL 1
 
 let tclLAST_NHYPS n tac gl =
   tac (try list_firstn n (pf_ids_of_hyps gl)
@@ -276,6 +283,13 @@ type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
   assums    : named_context}   (* the list of assumptions introduced *)
 
+let fix_empty_or_and_pattern nv l =
+  (* 1- The syntax does not distinguish between "[ ]" for one clause with no 
+     names and "[ ]" for no clause at all *)
+  (* 2- More generally, we admit "[ ]" for any disjunctive pattern of 
+     arbitrary length *)
+  if l = [[]] then list_make nv [] else l
+
 let check_or_and_pattern_size loc names n =
   if List.length names <> n then
     if n = 1 then 
@@ -288,10 +302,11 @@ let compute_induction_names n = function
   | None ->
       Array.make n []
   | Some (loc,IntroOrAndPattern names) ->
+      let names = fix_empty_or_and_pattern n names in
       check_or_and_pattern_size loc names n;
       Array.of_list names
-  | _ ->
-      error "Unexpected introduction pattern."
+  | Some (loc,_) ->
+      user_err_loc (loc,"",str "Disjunctive/conjunctive introduction pattern expected.")
 
 let compute_construtor_signatures isrec (_,k as ity) =
   let rec analrec c recargs =
@@ -313,23 +328,14 @@ let compute_construtor_signatures isrec (_,k as ity) =
   array_map2 analrec lc lrecargs
 
 let elimination_sort_of_goal gl = 
-  match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
-    | Sort s ->
-	(match s with
-	   | Prop Null -> InProp
-	   | Prop Pos -> InSet
-	   | Type _ -> InType)
-    | _        -> anomaly "goal should be a type"
+  pf_apply Retyping.get_sort_family_of gl (pf_concl gl)
 
 let elimination_sort_of_hyp id gl = 
-  match kind_of_term (hnf_type_of gl (pf_get_hyp_typ gl id)) with 
-    | Sort s ->
-	(match s with
-	   | Prop Null -> InProp
-	   | Prop Pos -> InSet
-	   | Type _ -> InType)
-    | _        -> anomaly "goal should be a type"
+  pf_apply Retyping.get_sort_family_of gl (pf_get_hyp_typ gl id)
 
+let elimination_sort_of_clause = function
+  | None -> elimination_sort_of_goal 
+  | Some id -> elimination_sort_of_hyp id
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)

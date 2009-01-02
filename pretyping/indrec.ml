@@ -591,7 +591,8 @@ let lookup_eliminator ind_sp s =
     errorlabstrm "default_elim"
       (strbrk "Cannot find the elimination combinator " ++
        pr_id id ++ strbrk ", the elimination of the inductive definition " ++
-       pr_id id ++ strbrk " on sort " ++ pr_sort_family s ++
+       pr_global_env Idset.empty (IndRef ind_sp) ++ 
+       strbrk " on sort " ++ pr_sort_family s ++
        strbrk " is probably not allowed.")
 
 

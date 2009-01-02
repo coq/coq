@@ -91,6 +91,8 @@ open Unification
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)
 (***************************************************************************)
 
+let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
+
 (* no delta yet *)
 
 let unify_e_resolve flags (c,clenv) gls = 
@@ -142,9 +144,9 @@ and e_my_find_search_nodelta db_list local_db hdc concl =
 	   | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	   | Extern tacast -> conclPattern concl p tacast
        in 
-       (tac,fmt_autotactic t))
+       (tac,pr_autotactic t))
        (*i
-	 fun gls -> pPNL (fmt_autotactic t); Format.print_flush (); 
+	 fun gls -> pPNL (pr_autotactic t); Format.print_flush (); 
                      try tac gls
 		     with e when Logic.catchable_exception(e) -> 
                             (Format.print_string "Fail\n"; 
@@ -180,9 +182,9 @@ and e_my_find_search_delta db_list local_db hdc concl =
 	   | Unfold_nth c -> unfold_in_concl [all_occurrences,c]
 	   | Extern tacast -> conclPattern concl p tacast
        in 
-       (tac,fmt_autotactic t))
+       (tac,pr_autotactic t))
        (*i
-	 fun gls -> pPNL (fmt_autotactic t); Format.print_flush (); 
+	 fun gls -> pPNL (pr_autotactic t); Format.print_flush (); 
                      try tac gls
 		     with e when Logic.catchable_exception(e) -> 
                             (Format.print_string "Fail\n"; 
@@ -194,15 +196,15 @@ and e_my_find_search_delta db_list local_db hdc concl =
     
 and e_trivial_resolve mod_delta db_list local_db gl = 
   try 
-    Auto.priority 
+    priority 
       (e_my_find_search mod_delta db_list local_db 
-	 (List.hd (head_constr_bound gl [])) gl)
+	 (fst (head_constr_bound gl)) gl)
   with Bound | Not_found -> []
 
 let e_possible_resolve mod_delta db_list local_db gl =
   try List.map snd 
     (e_my_find_search mod_delta db_list local_db 
-	(List.hd (head_constr_bound gl [])) gl)
+	(fst (head_constr_bound gl)) gl)
   with Bound | Not_found -> []
 
 let assumption_tac_list id = apply_tac_list (e_give_exact_constr (mkVar id))

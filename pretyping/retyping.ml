@@ -111,9 +111,15 @@ let retype sigma metamap =
     | Cast (c,_, s) when isSort s -> family_of_sort (destSort s)
     | Sort (Prop c) -> InType
     | Sort (Type u) -> InType
-    | Prod (name,t,c2) -> sort_family_of (push_rel (name,None,t) env) c2
+    | Prod (name,t,c2) -> 
+	let s2 = sort_family_of (push_rel (name,None,t) env) c2 in
+	if Environ.engagement env <> Some ImpredicativeSet &&
+	   s2 = InSet & sort_family_of env t = InType then InType else s2
+    | App(f,args) when isGlobalRef f ->
+	let t = type_of_global_reference_knowing_parameters env f args in
+        family_of_sort (sort_of_atomic_type env sigma t args)
     | App(f,args) -> 
-       family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
+	family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ ->
         anomaly "sort_of: Not a type (1)"
     | _ -> family_of_sort (decomp_sort env sigma (type_of env t))

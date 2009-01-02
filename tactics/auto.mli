@@ -150,7 +150,7 @@ val set_extern_subst_tactic :
 
 val make_local_hint_db : bool -> constr list -> goal sigma -> hint_db
 
-val priority : (int * 'a) list -> 'a list
+val priority : ('a * pri_auto_tactic) list -> ('a * pri_auto_tactic) list
 
 val default_search_depth : int ref
 
@@ -202,7 +202,7 @@ val gen_trivial : constr list -> hint_db_name list option -> tactic
 val full_trivial : constr list -> tactic
 val h_trivial : constr list -> hint_db_name list option -> tactic
 
-val fmt_autotactic : auto_tactic -> Pp.std_ppcmds
+val pr_autotactic : auto_tactic -> Pp.std_ppcmds
 
 (*s The following is not yet up to date -- Papageno. *)
 

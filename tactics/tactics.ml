@@ -85,15 +85,6 @@ let dloc = dummy_loc
 (* General functions                    *)
 (****************************************)
 
-(*
-let get_pairs_from_bindings = 
-  let pair_from_binding = function  
-    | [(Bindings binds)] -> binds
-    | _                  -> error "not a binding list!"
-  in 
-  List.map pair_from_binding
-*)
-
 let string_of_inductive c = 
   try match kind_of_term c with
   | Ind ind_sp -> 
@@ -102,26 +93,16 @@ let string_of_inductive c =
   | _ -> raise Bound
   with Bound -> error "Bound head variable."
 
-let rec head_constr_bound t l =
-  let t = strip_outer_cast(collapse_appl t) in
-  match kind_of_term t with
-    | Prod (_,_,c2)  -> head_constr_bound c2 l 
-    | LetIn (_,_,_,c2) -> head_constr_bound c2 l 
-    | App (f,args)  -> 
-	head_constr_bound f (Array.fold_right (fun a l -> a::l) args l)
-    | Const _        -> t::l
-    | Ind _       -> t::l
-    | Construct _ -> t::l
-    | Var _          -> t::l
-    | _                -> raise Bound
+let rec head_constr_bound t =
+  let t = strip_outer_cast t in
+  let _,ccl = decompose_prod_assum t in
+  let hd,args = decompose_app ccl in
+  match kind_of_term hd with
+    | Const _ | Ind _ | Construct _ | Var _ -> (hd,args)
+    | _ -> raise Bound
 
 let head_constr c = 
-  try head_constr_bound c [] with Bound -> error "Bound head variable."
-
-(*
-let bad_tactic_args s l =
-  raise (RefinerError (BadTacticArgs (s,l)))
-*)
+  try head_constr_bound c with Bound -> error "Bound head variable."
 
 (******************************************)
 (*           Primitive tactics            *)
@@ -889,7 +870,7 @@ let apply_in_once with_delta with_destruct with_evars id ((sigma,d),lbind) gl0 =
       if not with_evars then check_evars (fst res).sigma sigma gl0;
       res
     with exn when with_destruct ->
-      descend_in_conjunctions with_evars aux (fun _ -> raise exn) c gl
+      descend_in_conjunctions true aux (fun _ -> raise exn) c gl
   in
     if sigma = Evd.empty then aux d gl0
     else
@@ -1119,11 +1100,6 @@ let register_general_multi_rewrite f =
 let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
 let case_last  = tclLAST_HYP simplest_case
 
-let fix_empty_case nv l =
-  (* The syntax does not distinguish between "[ ]" for one clause with no names
-     and "[ ]" for no clause at all; so we are a bit liberal here *)
-  if Array.length nv = 0 & l = [[]] then [] else l
-
 let error_unexpected_extra_pattern loc nb pat =
   let s1,s2,s3 = match pat with
   | IntroIdentifier _ -> "name", (plural nb " introduction pattern"), "no"
@@ -1146,7 +1122,7 @@ let intro_or_and_pattern loc b ll l' tac =
 	  if bracketed then error_unexpected_extra_pattern loc' nb pat;
 	  l
       | ip :: l -> ip :: adjust_names_length nb (n-1) l in
-    let ll = fix_empty_case nv ll in
+    let ll = fix_empty_or_and_pattern (Array.length nv) ll in
     check_or_and_pattern_size loc ll (Array.length nv);
     tclTHENLASTn
       (tclTHEN case_last clear_last)
@@ -2657,25 +2633,25 @@ let enforce_eq_name id gl = function
   | x ->
       x
 
+let has_selected_occurrences = function
+  | None -> false
+  | Some cls ->
+      cls.concl_occs <> all_occurrences_expr ||
+	cls.onhyps <> None && List.exists (fun ((occs,_),hl) ->
+          occs <> all_occurrences_expr || hl <> InHyp) (Option.get cls.onhyps)
+
+(* assume that no occurrences are selected *)
 let clear_unselected_context id inhyps cls gl =
   match cls with
   | None -> tclIDTAC gl
   | Some cls ->
-      let error () =
-	error 
-	  "Selection of occurrences not supported when destructing a variable."
-      in
-      if occur_var (pf_env gl) id (pf_concl gl) then
-	if cls.concl_occs = no_occurrences_expr then
-	  errorlabstrm ""
+      if occur_var (pf_env gl) id (pf_concl gl) &&
+	 cls.concl_occs = no_occurrences_expr 
+      then errorlabstrm ""
 	    (str "Conclusion must be mentioned: it depends on " ++ pr_id id
-	     ++ str ".")
-	else if cls.concl_occs <> all_occurrences_expr then
-	  error ();
+	     ++ str ".");
       match cls.onhyps with
       | Some hyps ->
-	  List.iter (fun ((occs,id),hl) ->
-	    if occs <> all_occurrences_expr || hl <> InHyp then error ()) hyps;
 	  let to_erase (id',_,_ as d) =
 	    if List.mem id' inhyps then (* if selected, do not erase *) None
 	    else
@@ -2692,7 +2668,8 @@ let new_induct_gen isrec with_evars elim (eqname,names) (c,lbind) cls gl =
   | _ -> [] in
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context()))
-	        & lbind = NoBindings & not with_evars & eqname = None ->
+	        & lbind = NoBindings & not with_evars & eqname = None 
+                & not (has_selected_occurrences cls) ->
 	tclTHEN
           (clear_unselected_context id inhyps cls)
 	  (induction_with_atomization_of_ind_arg

@@ -325,9 +325,6 @@ let pr_evaluable_reference_env env = function
   | EvalConstRef sp -> 
       Nametab.pr_global_env (Termops.vars_of_env env) (Libnames.ConstRef sp)
 
-let pr_inductive env ind =
-  Nametab.pr_global_env (Termops.vars_of_env env) (Libnames.IndRef ind)
-
 let pr_quantified_hypothesis = function
   | AnonHyp n -> int n
   | NamedHyp id -> pr_id id 

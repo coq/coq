@@ -72,6 +72,17 @@ Ltac false_hyp H G :=
 
 Ltac case_eq x := generalize (refl_equal x); pattern x at -1; case x.
 
+(* Similar variants of destruct *)
+
+Tactic Notation "destruct_with_eqn" constr(x) :=
+  destruct x as []_eqn.
+Tactic Notation "destruct_with_eqn" ident(n) := 
+  try intros until n; destruct n as []_eqn.
+Tactic Notation "destruct_with_eqn" ":" ident(H) constr(x) :=
+  destruct x as []_eqn:H.
+Tactic Notation "destruct_with_eqn" ":" ident(H) ident(n) := 
+  try intros until n; destruct n as []_eqn:H.
+
 (* Rewriting in all hypothesis several times everywhere *)
 
 Tactic Notation "rewrite_all" constr(eq) := repeat rewrite eq in *.
@@ -135,14 +146,34 @@ bapply lemma ltac:(fun H => destruct H as [H _]; apply H in J).
 Tactic Notation "apply" "<-" constr(lemma) "in" ident(J) :=
 bapply lemma ltac:(fun H => destruct H as [_ H]; apply H in J).
 
-(** A tactic simpler than auto that is useful for ending proofs "in one step" *)
-Tactic Notation "now" tactic(t) :=
-t;
-match goal with
-| H : _ |- _ => solve [inversion H]
-| _ => solve [trivial | reflexivity | symmetry; trivial | discriminate | split]
-| _ => fail 1 "Cannot solve this goal."
-end.
+  Tactic Notation "apply" "<-" constr(lemma) "in" ident(J) :=
+  bapply lemma ltac:(fun H => destruct H as [_ H]; apply H in J).
+  
+(** An experimental tactic simpler than auto that is useful for ending
+    proofs "in one step" *)
+  
+Ltac easy :=
+  let rec use_hyp H :=
+    match type of H with
+    | _ /\ _ => exact H || destruct_hyp H
+    | _ => try solve [inversion H]
+    end
+  with do_intro := let H := fresh in intro H; use_hyp H
+  with destruct_hyp H := case H; clear H; do_intro; do_intro in
+  let rec use_hyps :=
+    match goal with
+    | H : _ /\ _ |- _  => exact H || (destruct_hyp H; use_hyps)
+    | H : _ |- _ => solve [inversion H]
+    | _ => idtac
+    end in
+  let rec do_atom :=
+    solve [reflexivity | symmetry; trivial] ||
+    contradiction ||
+    (split; do_atom)
+  with do_ccl := trivial; repeat do_intro; do_atom in
+  (use_hyps; do_ccl) || fail "Cannot solve this goal".
+
+Tactic Notation "now" tactic(t) := t; easy.
 
 (** A tactic to document or check what is proved at some point of a script *)
 Ltac now_show c := change c.

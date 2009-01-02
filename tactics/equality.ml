@@ -72,10 +72,6 @@ let general_elim_clause with_evars cls sigma c l elim =
     raise (Pretype_errors.PretypeError
 	      (env, (Pretype_errors.NoOccurrenceFound (c', cls))))
       
-let elimination_sort_of_clause = function
-  | None -> elimination_sort_of_goal
-  | Some id -> elimination_sort_of_hyp id
-
 (* The next function decides in particular whether to try a regular 
   rewrite or a setoid rewrite. 
   Approach is to break everything, if [eq] appears in head position 
@@ -94,16 +90,19 @@ let is_applied_relation t =
   | App (c, args) when Array.length args >= 2 -> true
   | _ -> false
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt sigma c l with_evars gl hdcncl =
-  let hdcncls = string_of_inductive hdcncl in 
+(* find_elim determines which elimination principle is necessary to
+   eliminate lbeq on sort_of_gl. *)
+
+let find_elim hdcncl lft2rgt cls gl =
   let suffix = elimination_suffix (elimination_sort_of_clause cls gl) in
-  let dir = if cls=None then lft2rgt else not lft2rgt in
-  let rwr_thm = if dir then hdcncls^suffix^"_r" else hdcncls^suffix in
-  let elim =
-    try pf_global gl (id_of_string rwr_thm)
-    with Not_found ->
-      error ("Cannot find rewrite principle "^rwr_thm^".")
-  in general_elim_clause with_evars cls sigma c l (elim,NoBindings) gl
+  let hdcncls = string_of_inductive hdcncl ^ suffix in 
+  let rwr_thm = if lft2rgt = (cls = None) then hdcncls^"_r" else hdcncls in
+  try pf_global gl (id_of_string rwr_thm)
+  with Not_found -> error ("Cannot find rewrite principle "^rwr_thm^".")
+
+let leibniz_rewrite_ebindings_clause cls lft2rgt sigma c l with_evars gl hdcncl =
+  let elim = find_elim hdcncl lft2rgt cls gl in
+  general_elim_clause with_evars cls sigma c l (elim,NoBindings) gl
 
 let adjust_rewriting_direction args lft2rgt =
   if List.length args = 1 then
@@ -113,8 +112,6 @@ let adjust_rewriting_direction args lft2rgt =
   else
     (* other equality *)
     lft2rgt
-
-let leibniz_eq = Lazy.lazy_from_fun build_coq_eq
 
 let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_bindings) with_evars gl =
   if occs <> all_occurrences then (
@@ -460,8 +457,9 @@ let injectable env sigma t1 t2 =
 let descend_then sigma env head dirn =
   let IndType (indf,_) =
     try find_rectype env sigma (get_type_of env sigma head)
-    with Not_found -> assert false in
-  let ind,_ = dest_ind_family indf in
+    with Not_found ->
+      error "Cannot project on an inductive type derived from a dependency." in
+   let ind,_ = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
   let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in
@@ -480,7 +478,7 @@ let descend_then sigma env head dirn =
           (interval 1 (Array.length mip.mind_consnames)) in
       let ci = make_case_info env ind RegularStyle in
       mkCase (ci, p, head, Array.of_list brl)))
-  
+
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
 
@@ -829,11 +827,14 @@ let make_iterated_tuple env sigma dflt (z,zty) =
 let rec build_injrec sigma env dflt c = function
   | [] -> make_iterated_tuple env sigma dflt (c,type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
+    try
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = mkRel(cnum_nlams-argnum) in
       let (subval,tuplety,dfltval) = build_injrec sigma cnum_env dflt newc l in
       (kont subval (dfltval,tuplety),
-       tuplety,dfltval)
+      tuplety,dfltval)
+    with
+	UserError _ -> failwith "caught"
 
 let build_injector sigma env dflt c cpath =
   let (injcode,resty,_) = build_injrec sigma env dflt c cpath in
@@ -988,26 +989,11 @@ let swapEquandsInHyp id gls =
   cut_replacing id (swap_equands gls (pf_get_hyp_typ gls id))
     (tclTHEN swapEquandsInConcl) gls
 
-(* find_elim determines which elimination principle is necessary to
-   eliminate lbeq on sort_of_gl.
-   This is somehow an artificial choice as we could take eq_rect in
-   all cases (eq_ind - and eq_rec - are instances of eq_rect) [HH 2/4/06].
-*)
-
-let find_elim sort_of_gl lbeq =
-  match kind_of_term sort_of_gl  with
-    | Sort(Prop Null)  (* Prop *)  -> lbeq.ind
-    | _ (* Set/Type *) -> 
-        (match lbeq.rect with
-           | Some eq_rect -> eq_rect
-           | None -> errorlabstrm "find_elim"
-		 (str "This type of substitution is not allowed."))
-
 (* Refine from [|- P e2] to [|- P e1] and [|- e1=e2:>t] (body is P (Rel 1)) *)
 
 let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
   (* find substitution scheme *)
-  let eq_elim = find_elim (pf_apply get_type_of gls (pf_concl gls)) lbeq in
+  let eq_elim = find_elim lbeq.eq false None gls in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)
@@ -1060,14 +1046,16 @@ let subst_tuple_term env sigma dep_pair b =
   let abst_B =
     List.fold_right
       (fun (e,t) body -> lambda_create env (t,subst_term e body)) e_list b in
-  applist(abst_B,proj_list)
-    
+  beta_applist(abst_B,proj_list)
+
 (* Comme "replace" mais decompose les egalites dependantes *)
+
+exception NothingToRewrite
 
 let cutSubstInConcl_RL eqn gls =
   let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose eqn in
   let body = pf_apply subst_tuple_term gls e2 (pf_concl gls) in
-  assert (dependent (mkRel 1) body);
+  if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   bareRevSubstInConcl lbeq body eq gls
 
 (* |- (P e1)
@@ -1085,7 +1073,7 @@ let cutSubstInConcl l2r =if l2r then cutSubstInConcl_LR else cutSubstInConcl_RL
 let cutSubstInHyp_LR eqn id gls =
   let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose eqn in 
   let body = pf_apply subst_tuple_term gls e1 (pf_get_hyp_typ gls id) in
-  assert (dependent (mkRel 1) body);
+  if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   cut_replacing id (subst1 e2 body)
     (tclTHENFIRST (bareRevSubstInConcl lbeq body eq)) gls
 
@@ -1105,6 +1093,9 @@ let try_rewrite tac gls =
     | e when catchable_exception e -> 
 	errorlabstrm "try_rewrite"
           (strbrk "Cannot find a well-typed generalization of the goal that makes the proof progress.")
+    | NothingToRewrite ->
+	errorlabstrm "try_rewrite"
+          (strbrk "Nothing to rewrite.")
 
 let cutSubstClause l2r eqn cls gls =
   match cls with
@@ -1123,31 +1114,20 @@ let rewriteClause l2r c cls = try_rewrite (substClause l2r c cls)
 let rewriteInHyp l2r c id = rewriteClause l2r c (Some id)
 let rewriteInConcl l2r c = rewriteClause l2r c None
 
-(* Renaming scheme correspondence new name (old name)
+(* Naming scheme for rewrite and cutrewrite tactics
 
-      give equality                    give proof of equality
+      give equality        give proof of equality
 
-    / cutSubstClause (subst)          substClause (HypSubst on hyp)
-raw | cutSubstInHyp (substInHyp)      substInHyp (none)
-    \ cutSubstInConcl (substInConcl)  substInConcl (none) 
+    / cutSubstClause       substClause
+raw | cutSubstInHyp        substInHyp
+    \ cutSubstInConcl      substInConcl
 
-    / cutRewriteClause (none)         rewriteClause (none)
-user| cutRewriteInHyp (substHyp)      rewriteInHyp (none)
-    \ cutRewriteInConcl (substConcl)  rewriteInConcl (substHypInConcl on hyp)
+    / cutRewriteClause     rewriteClause
+user| cutRewriteInHyp      rewriteInHyp
+    \ cutRewriteInConcl    rewriteInConcl
 
 raw = raise typing error or PatternMatchingFailure
 user = raise user error specific to rewrite
-*)
-
-(* Summary of obsolete forms
-let substInConcl = cutSubstInConcl
-let substInHyp = cutSubstInHyp
-let hypSubst l2r id = substClause l2r (mkVar id)
-let hypSubst_LR = hypSubst true
-let hypSubst_RL = hypSubst false
-let substHypInConcl l2r id = rewriteInConcl l2r (mkVar id)
-let substConcl = cutRewriteInConcl
-let substHyp = cutRewriteInHyp
 *)
 
 (**********************************************************************)

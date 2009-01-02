@@ -631,6 +631,10 @@ let rec list_remove_first a = function
   | b::l -> b::list_remove_first a l
   | [] -> raise Not_found
 
+let rec list_remove_assoc_in_triple x = function
+  | [] -> []
+  | (y,_,_ as z)::l -> if x = y then l else z::list_remove_assoc_in_triple x l
+
 let list_add_set x l = if List.mem x l then l else x::l
 
 let list_eq_set l1 l2 =
@@ -928,6 +932,13 @@ let array_for_all4 f v1 v2 v3 v4 =
   lv1 = Array.length v3 &&
   lv1 = Array.length v4 &&
     allrec (pred lv1) 
+
+let array_for_all_i f i v = 
+  let rec allrec i = function
+    | -1 -> true
+    | n -> (f i v.(n)) && (allrec (i-1) (n-1))
+  in 
+  allrec i ((Array.length v)-1) 
 
 let array_hd v = 
   match Array.length v with

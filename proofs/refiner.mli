@@ -137,6 +137,7 @@ exception FailError of int * Pp.std_ppcmds
    level or do nothing. *)
 val catch_failerror  : exn -> unit
 
+val tclORELSE0       : tactic -> tactic -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclREPEAT        : tactic -> tactic
 val tclREPEAT_MAIN   : tactic -> tactic

@@ -28,6 +28,7 @@ open Tacexpr
 val tclNORMEVAR      : tactic
 val tclIDTAC         : tactic
 val tclIDTAC_MESSAGE : std_ppcmds -> tactic
+val tclORELSE0       : tactic -> tactic -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
 val tclTHENSEQ       : tactic list -> tactic
@@ -57,8 +58,10 @@ val tclNOTSAMEGOAL   : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 
 val tclNTH_HYP       : int -> (constr -> tactic) -> tactic
+val tclNTH_DECL      : int -> (named_declaration -> tactic) -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 val tclLAST_HYP      : (constr -> tactic) -> tactic
+val tclLAST_DECL     : (named_declaration -> tactic) -> tactic
 val tclLAST_NHYPS    : int -> (identifier list -> tactic) -> tactic
 val tclTRY_sign      : (constr -> tactic) -> named_context -> tactic
 val tclTRY_HYPS      : (constr -> tactic) -> tactic
@@ -136,6 +139,10 @@ type branch_assumptions = {
 val check_or_and_pattern_size :
   Util.loc -> or_and_intro_pattern_expr -> int -> unit 
 
+(* Tolerate "[]" to mean a disjunctive pattern of any length *)
+val fix_empty_or_and_pattern : int -> or_and_intro_pattern_expr -> 
+  or_and_intro_pattern_expr
+
 (* Useful for [as intro_pattern] modifier *)
 val compute_induction_names : 
   int -> intro_pattern_expr located option -> 
@@ -143,6 +150,7 @@ val compute_induction_names :
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
+val elimination_sort_of_clause : identifier option -> goal sigma -> sorts_family
 
 val general_elim_then_using :
   (inductive -> goal sigma -> constr) -> rec_flag ->

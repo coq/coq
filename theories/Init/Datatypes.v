@@ -59,14 +59,14 @@ Lemma andb_prop : forall a b:bool, andb a b = true -> a = true /\ b = true.
 Proof.
   destruct a; destruct b; intros; split; try (reflexivity || discriminate).
 Qed.
-Hint Resolve andb_prop: bool v62.
+Hint Resolve andb_prop: bool.
 
 Lemma andb_true_intro :
   forall b1 b2:bool, b1 = true /\ b2 = true -> andb b1 b2 = true.
 Proof.
   destruct b1; destruct b2; simpl in |- *; tauto || auto with bool.
 Qed.
-Hint Resolve andb_true_intro: bool v62.
+Hint Resolve andb_true_intro: bool.
 
 (** Interpretation of booleans as propositions *)
 
@@ -115,7 +115,7 @@ Inductive Empty_set : Set :=.
 
 Inductive identity (A:Type) (a:A) : A -> Type :=
   refl_identity : identity (A:=A) a a.
-Hint Resolve refl_identity: core v62.
+Hint Resolve refl_identity: core.
 
 Implicit Arguments identity_ind [A].
 Implicit Arguments identity_rec [A].
@@ -164,7 +164,7 @@ Section projections.
                               end.
 End projections. 
 
-Hint Resolve pair inl inr: core v62.
+Hint Resolve pair inl inr: core.
 
 Lemma surjective_pairing :
   forall (A B:Type) (p:A * B), p = pair (fst p) (snd p).

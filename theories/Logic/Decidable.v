@@ -80,6 +80,13 @@ Proof.
 unfold decidable; tauto.
 Qed.
 
+Theorem not_iff : 
+  forall A B:Prop, decidable A -> decidable B -> 
+    ~ (A <-> B) -> (A /\ ~ B) \/ (~ A /\ B).
+Proof.
+unfold decidable; tauto.
+Qed.
+
 (** Results formulated with iff, used in FSetDecide. 
     Negation are expanded since it is unclear whether setoid rewrite 
     will always perform conversion. *)    
