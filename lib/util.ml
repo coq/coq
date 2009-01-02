@@ -109,19 +109,23 @@ let ordinal n =
 
 (* string parsing *)
 
-let parse_loadpath s =
+let split_string_at c s =
   let len = String.length s in
-  let rec decoupe_dirs n =
+  let rec split n =
     try  
-      let pos = String.index_from s n '/' in
-      if pos = n then
-	invalid_arg "parse_loadpath: find an empty dir in loadpath";
+      let pos = String.index_from s n c in
       let dir = String.sub s n (pos-n) in
-      dir :: (decoupe_dirs (succ pos))
+      dir :: split (succ pos)
     with
       | Not_found -> [String.sub s n (len-n)]
   in
-  if len = 0 then [] else decoupe_dirs 0
+  if len = 0 then [] else split 0
+
+let parse_loadpath s =
+  let l = split_string_at '/' s in
+  if List.mem "" l then
+    invalid_arg "parse_loadpath: find an empty dir in loadpath";
+  l
 
 module Stringset = Set.Make(struct type t = string let compare = compare end)
 

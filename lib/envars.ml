@@ -30,8 +30,8 @@ let coqlib () =
     (if !Flags.boot then Coq_config.coqsrc else guess_coqlib ())
 
 let path_to_list p =
-  let sep = Str.regexp_string (if Sys.os_type = "Win32" then ";" else ":") in
-    Str.split sep p 
+  let sep = if Sys.os_type = "Win32" then ';' else ':' in
+    Util.split_string_at sep p 
 
 let rec which l f =
   match l with

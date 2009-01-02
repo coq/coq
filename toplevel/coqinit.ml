@@ -98,7 +98,6 @@ let init_load_path () =
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let dirs = "states" :: ["contrib"] in
-  let camlp4 = Envars.camlp4lib () in
     (* first user-contrib *)
     if Sys.file_exists user_contrib then 
       Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
@@ -110,8 +109,6 @@ let init_load_path () =
     List.iter 
       (fun (s,alias) -> Mltop.add_rec_path (coqlib/s) (Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root])) 
       theories_dirs_map;
-    (* then camlp4lib *)
-    add_ml_include camlp4;
     (* then current directory *)
     Mltop.add_path "." Nameops.default_root_prefix;
     (* additional loadpath, given with -I -include -R options *)
