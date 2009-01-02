@@ -34,16 +34,18 @@ root directory; this includes the modules
 {\tt Datatypes},
 {\tt Specif},
 {\tt Peano},
-and {\tt Wf}.
+{\tt Wf} and 
+{\tt Tactics}.
 Module {\tt Logic\_Type} also makes it in the initial state}.
 
 \subsection[Notations]{Notations\label{Notations}}
 
 This module defines the parsing and pretty-printing of many symbols
-(infixes, prefixes, etc.). However, it does not assign a meaning to these
-notations. The purpose of this is to define precedence and
-associativity of very common notations, and avoid users to use them
-with other precedence, which may be confusing.
+(infixes, prefixes, etc.). However, it does not assign a meaning to
+these notations. The purpose of this is to define and fix once for all
+the precedence and associativity of very common notations. The main
+notations fixed in the initial state are listed on
+Figure~\ref{init-notations}.
 
 \begin{figure}
 \begin{center}
@@ -202,14 +204,14 @@ The following abbreviations are allowed:
   \end{tabular}
 \end{center}
 
-The type annotation \texttt{:A} can be omitted when \texttt{A} can be
+The type annotation ``\texttt{:A}'' can be omitted when \texttt{A} can be
 synthesized by the system.
 
 \subsubsection[Equality]{Equality\label{Equality}
 \index{Equality}}
 
 Then, we find equality, defined as an inductive relation. That is,
-given a \verb:Type: \verb:A: and an \verb:x: of type \verb:A:, the
+given a type \verb:A: and an \verb:x: of type \verb:A:, the
 predicate \verb:(eq A x): is the smallest one which contains \verb:x:.
 This definition, due to Christine Paulin-Mohring, is equivalent to
 define \verb:eq: as the smallest reflexive relation, and it is also
@@ -309,14 +311,14 @@ Abort.
   & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form}  {\tt \&}
   {\form} {\tt \}} & ({\tt sig2})\\
   & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
-    \}} & ({\tt sigS})\\
+    \}} & ({\tt sigT})\\
   & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
-    \&} {\specif} {\tt \}} & ({\tt sigS2})\\
+    \&} {\specif} {\tt \}} & ({\tt sigT2})\\
   &  & & \\
 {\term} & ::= & {\tt (} {\term} {\tt ,} {\term} {\tt )} & ({\tt pair})
 \end{tabular}
 \end{centerframe}
-\caption{Syntax of datatypes and specifications}
+\caption{Syntax of data-types and specifications}
 \label{specif-syntax}
 \end{figure}
 
@@ -355,8 +357,9 @@ Inductive identity (A:Type) (a:A) : A -> Type :=
 Note that zero is the letter \verb:O:, and {\sl not} the numeral
 \verb:0:.
 
-{\tt identity} is logically equivalent to equality but it lives in
-sort {\tt Set}. Computationaly, it behaves like {\tt unit}.
+The predicate {\tt identity} is logically 
+equivalent to equality but it lives in sort {\tt
+  Type}. It is mainly maintained for compatibility.
 
 We then define the disjoint sum of \verb:A+B: of two sets \verb:A: and
 \verb:B:, and their product \verb:A*B:.
@@ -389,21 +392,20 @@ End projections.
 \subsection{Specification}
 
 The following notions\footnote{They are defined in module {\tt
-Specif.v}} allows to build new datatypes and specifications. 
+Specif.v}} allow to build new datatypes and specifications. 
 They are available with the syntax shown on
-Figure~\ref{specif-syntax}\footnote{This syntax can be found in the module
-{\tt SpecifSyntax.v}}.
+Figure~\ref{specif-syntax}.
 
-For instance, given \verb|A:Set| and \verb|P:A->Prop|, the construct
+For instance, given \verb|A:Type| and \verb|P:A->Prop|, the construct
 \verb+{x:A | P x}+ (in abstract syntax \verb+(sig A P)+) is a
-\verb:Set:. We may build elements of this set as \verb:(exist x p):
+\verb:Type:. We may build elements of this set as \verb:(exist x p):
 whenever we have a witness \verb|x:A| with its justification
 \verb|p:P x|.
 
 From such a \verb:(exist x p): we may in turn extract its witness
 \verb|x:A| (using an elimination construct such as \verb:match:) but
 {\sl not} its justification, which stays hidden, like in an abstract
-data type. In technical terms, one says that \verb:sig: is a ``weak
+data-type. In technical terms, one says that \verb:sig: is a ``weak
 (dependent) sum''.  A variant \verb:sig2: with two predicates is also
 provided.
 
@@ -420,32 +422,32 @@ Inductive sig2 (A:Set) (P Q:A -> Prop) : Set :=
   exist2 (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
-A ``strong (dependent) sum'' \verb+{x:A & (P x)}+ may be also defined,
-when the predicate \verb:P: is now defined as a \verb:Set:
-constructor.
+A ``strong (dependent) sum'' \verb+{x:A & P x}+ may be also defined,
+when the predicate \verb:P: is now defined as a 
+constructor of types in \verb:Type:.
 
 \ttindex{\{x:A \& (P x)\}}
 \ttindex{\&}
-\ttindex{sigS}
-\ttindex{existS}
-\ttindex{projS1}
-\ttindex{projS2}
-\ttindex{sigS2}
-\ttindex{existS2}
+\ttindex{sigT}
+\ttindex{existT}
+\ttindex{projT1}
+\ttindex{projT2}
+\ttindex{sigT2}
+\ttindex{existT2}
 
 \begin{coq_example*}
-Inductive sigS (A:Set) (P:A -> Set) : Set := existS (x:A) (_:P x).
-Section sigSprojections.
-Variable A : Set.
-Variable P : A -> Set.
-Definition projS1 (H:sigS A P) := let (x, h) := H in x.
-Definition projS2 (H:sigS A P) :=
-  match H return P (projS1 H) with
-    existS x h => h
+Inductive sigT (A:Type) (P:A -> Type) : Type := existT (x:A) (_:P x).
+Section Projections.
+Variable A : Type.
+Variable P : A -> Type.
+Definition projT1 (H:sigT A P) := let (x, h) := H in x.
+Definition projT2 (H:sigT A P) :=
+  match H return P (projT1 H) with
+    existT x h => h
   end.
-End sigSprojections.
-Inductive sigS2 (A: Set) (P Q:A -> Set) : Set :=
-    existS2 (x:A) (_:P x) (_:Q x).
+End Projections.
+Inductive sigT2 (A: Type) (P Q:A -> Type) : Type :=
+    existT2 (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
 
 A related non-dependent construct is the constructive sum
@@ -461,7 +463,7 @@ Inductive sumbool (A B:Prop) : Set := left (_:A) | right (_:B).
 \end{coq_example*}
 
 This \verb"sumbool" construct may be used as a kind of indexed boolean
-data type. An intermediate between \verb"sumbool" and \verb"sum" is
+data-type. An intermediate between \verb"sumbool" and \verb"sum" is
 the mixed \verb"sumor" which combines \verb"A:Set" and \verb"B:Prop"
 in the \verb"Set" \verb"A+{B}".
 \ttindex{sumor}
@@ -500,7 +502,7 @@ Abort.
 Abort.
 \end{coq_eval}
 
-The next constructs builds a sum between a data type \verb|A:Set| and
+The next construct builds a sum between a data-type \verb|A:Type| and
 an exceptional value encoding errors:
 
 \ttindex{Exc}
@@ -515,23 +517,20 @@ Definition error := None.
 
 
 This module ends with theorems, 
-relating the sorts \verb:Set: and
+relating the sorts \verb:Set: or \verb:Type: and
 \verb:Prop: in a way which is consistent with the realizability
 interpretation.
+\ttindex{False\_rect}
 \ttindex{False\_rec}
-\ttindex{eq\_rec}
-\ttindex{Except}
+\ttindex{eq\_rect}
 \ttindex{absurd\_set}
-\ttindex{and\_rec}
+\ttindex{and\_rect}
 
-%Lemma False_rec : (P:Set)False->P.
-%Lemma False_rect : (P:Type)False->P.
 \begin{coq_example*}
 Definition except := False_rec.
-Notation Except := (except _).
 Theorem absurd_set : forall (A:Prop) (C:Set), A -> ~ A -> C.
-Theorem and_rec :
- forall (A B:Prop) (P:Set), (A -> B -> P) -> A /\ B -> P.
+Theorem and_rect :
+ forall (A B:Prop) (P:Type), (A -> B -> P) -> A /\ B -> P.
 \end{coq_example*}
 %\begin{coq_eval}
 %Abort.
@@ -544,7 +543,7 @@ The basic library includes a few elementary properties of natural
 numbers, together with the definitions of predecessor, addition and
 multiplication\footnote{This is in module {\tt Peano.v}}. It also
 provides a scope {\tt nat\_scope} gathering standard notations for
-common operations (+,*) and a decimal notation for numbers. That is he
+common operations (+, *) and a decimal notation for numbers. That is he
 can write \texttt{3} for \texttt{(S (S (S O)))}. This also works on
 the left hand side of a \texttt{match} expression (see for example
 section~\ref{refine-example}). This scope is opened by default.
@@ -618,10 +617,11 @@ Abort All.
 Fixpoint plus (n m:nat) {struct n} : nat :=
   match n with
   | 0 => m
-  | S p => S (plus p m)
+  | S p => S (p + m)
   end.
-Lemma plus_n_O : forall n:nat, n = plus n 0.
-Lemma plus_n_Sm : forall n m:nat, S (plus n m) = plus n (S m).
+where "n + m" := (plus n m) : nat_scope.
+Lemma plus_n_O : forall n:nat, n = n + 0.
+Lemma plus_n_Sm : forall n m:nat, S (n + m) = n + S m.
 \end{coq_example*}
 \begin{coq_eval}
 Abort All.
@@ -630,10 +630,11 @@ Abort All.
 Fixpoint mult (n m:nat) {struct n} : nat :=
   match n with
   | 0 => 0
-  | S p => m + mult p m
+  | S p => m + p * m
   end.
-Lemma mult_n_O : forall n:nat, 0 = mult n 0.
-Lemma mult_n_Sm : forall n m:nat, plus (mult n m) n = mult n (S m).
+where "n * m" := (mult n m) : nat_scope.
+Lemma mult_n_O : forall n:nat, 0 = n * 0.
+Lemma mult_n_Sm : forall n m:nat, n * m + n = n * (S m).
 \end{coq_example*}
 \begin{coq_eval}
 Abort All.
@@ -652,8 +653,8 @@ Finally, it gives the definition of the usual orderings \verb:le:,
 \begin{coq_example*}
 Inductive le (n:nat) : nat -> Prop :=
   | le_n : le n n
-  | le_S : forall m:nat, le n m -> le n (S m).
-Infix "+" := plus : nat_scope.
+  | le_S : forall m:nat, n <= m -> n <= (S m).
+where "n <= m" := (le n m) : nat_scope.
 Definition lt (n m:nat) := S n <= m.
 Definition ge (n m:nat) := m <= n.
 Definition gt (n m:nat) := m < n.
@@ -694,31 +695,32 @@ well-founded induction\footnote{This is defined in module {\tt Wf.v}}.
 \index{Well founded induction}
 \ttindex{Acc}
 \ttindex{Acc\_inv}
-\ttindex{Acc\_rec}
+\ttindex{Acc\_rect}
 \ttindex{well\_founded}
 
 \begin{coq_example*}
 Section Well_founded.
-Variable A : Set.
+Variable A : Type.
 Variable R : A -> A -> Prop.
-Inductive Acc : A -> Prop :=
-    Acc_intro : forall x:A, (forall y:A, R y x -> Acc y) -> Acc x.
-Lemma Acc_inv : forall x:A, Acc x -> forall y:A, R y x -> Acc y.
+Inductive Acc (x:A) : Prop :=
+    Acc_intro : (forall y:A, R y x -> Acc y) -> Acc x.
+Lemma Acc_inv : Acc x -> forall y:A, R y x -> Acc y.
 \end{coq_example*}
 \begin{coq_eval}
-simple destruct 1; trivial.
+destruct 1; trivial.
 Defined.
 \end{coq_eval}
+%% Acc_rect now primitively defined
+%% Section AccRec.
+%% Variable P : A -> Set.
+%% Variable F :
+%%     forall x:A,
+%%       (forall y:A, R y x -> Acc y) -> (forall y:A, R y x -> P y) -> P x.
+%% Fixpoint Acc_rec (x:A) (a:Acc x) {struct a} : P x :=
+%%   F x (Acc_inv x a)
+%%     (fun (y:A) (h:R y x) => Acc_rec y (Acc_inv x a y h)).
+%% End AccRec.
 \begin{coq_example*}
-Section AccRec.
-Variable P : A -> Set.
-Variable F :
-    forall x:A,
-      (forall y:A, R y x -> Acc y) -> (forall y:A, R y x -> P y) -> P x.
-Fixpoint Acc_rec (x:A) (a:Acc x) {struct a} : P x :=
-  F x (Acc_inv x a)
-    (fun (y:A) (h:R y x) => Acc_rec y (Acc_inv x a y h)).
-End AccRec.
 Definition well_founded := forall a:A, Acc a.
 Hypothesis Rwf : well_founded.
 Theorem well_founded_induction :
@@ -741,7 +743,7 @@ fixpoint equation can be proved.
 \ttindex{Fix\_F\_eq}
 \begin{coq_example*}
 Section FixPoint.
-Variable P : A -> Set.
+Variable P : A -> Type.
 Variable F : forall x:A, (forall y:A, R y x -> P y) -> P x.
 Fixpoint Fix_F (x:A) (r:Acc x) {struct r} : P x :=
   F x (fun (y:A) (p:R y x) => Fix_F y (Acc_inv x r y p)).
@@ -766,7 +768,7 @@ End Well_founded.
 \subsection{Accessing the {\Type} level}
 
 The basic library includes the definitions\footnote{This is in module
-{\tt Logic\_Type.v}} of the counterparts of some datatypes and logical
+{\tt Logic\_Type.v}} of the counterparts of some data-types and logical
 quantifiers at the \verb:Type: level: negation, pair, and properties
 of {\tt identity}.
 
@@ -781,8 +783,12 @@ Definition notT (A:Type) := A -> False.
 Inductive prodT (A B:Type) : Type := pairT (_:A) (_:B).
 \end{coq_example*}
 
+At the end, it defines data-types at the {\Type} level.
 
-At the end, it defines datatypes at the {\Type} level.
+\subsection{Tactics}
+
+A few tactics defined at the user level are provided in the initial
+state\footnote{This is in module {\tt Tactics.v}}.
 
 \section{The standard library}
 
