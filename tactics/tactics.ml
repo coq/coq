@@ -715,7 +715,7 @@ let simplest_case c = general_case_analysis false (c,NoBindings)
 let descend_in_conjunctions with_evars tac exit c gl =
   try
     let (mind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-    match match_with_conjunction (snd (decompose_prod t)) with
+    match match_with_record (snd (decompose_prod t)) with
     | Some _ ->
 	let n = (mis_constr_nargs mind).(0) in
 	let sort = elimination_sort_of_goal gl in

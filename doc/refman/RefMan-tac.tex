@@ -1808,17 +1808,20 @@ last introduced hypothesis.
 %  It is recommended to use this variant of {\tt destruct} for 
 %  robust proof scripts.
 
-\item{\tt destruct {\term} as {\namingintropattern}}
+\item{\tt destruct {\term} as {\disjconjintropattern} \_eqn}
 
   This behaves as {\tt destruct {\term}} but adds an equation between
   {\term} and the value that {\term} takes in each of the possible
-  cases.  The name of the equation is built according to
-  {\namingintropattern} which can be an identifier, a ``?'', etc, as
-  indicated in Section~\ref{intros-pattern}.
+  cases.  The name of the equation is chosen by Coq. If  
+  {\disjconjintropattern} is simply {\tt []}, it is automatically considered
+  as a disjunctive pattern of the appropriate size.
 
-\item{\tt destruct {\term} as {\namingintropattern} {\disjconjintropattern}}
+\item{\tt destruct {\term} as {\disjconjintropattern} \_eqn: {\namingintropattern}}
 
-  This combines the two previous forms.
+  This behaves as {\tt destruct {\term} as
+    {\disjconjintropattern} \_eqn} but use {\namingintropattern} to
+  name the equation (see Section~\ref{intros-pattern}). Note that spaces 
+  can generally be removed around {\tt \_eqn}.
 
 \item{\tt destruct {\term} with \bindinglist}
 
@@ -1852,8 +1855,8 @@ last introduced hypothesis.
   context of the subgoals corresponding to the cases (even
   if no clause {\tt as {\namingintropattern}} is given.
 
-\item{\tt destruct {\term$_1$} with {\bindinglist$_1$} as {\namingintropattern} {\disjconjintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
-     {\tt edestruct {\term$_1$} with {\bindinglist$_1$} as {\namingintropattern} {\disjconjintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
+\item{\tt destruct {\term$_1$} with {\bindinglist$_1$} as {\disjconjintropattern} \_eqn: {\namingintropattern}  using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
+     {\tt edestruct {\term$_1$} with {\bindinglist$_1$} as {\disjconjintropattern} \_eqn: {\namingintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
 
   These are the general forms of {\tt destruct} and {\tt edestruct}.
   It combines the effects of the {\tt with}, {\tt as}, {\tt using},
