@@ -70,8 +70,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I contrib/quote \
 	      -I contrib/ring -I contrib/dp -I contrib/setoid_ring \
               -I contrib/xml -I contrib/extraction \
-              -I contrib/interface -I contrib/fourier \
-	      -I contrib/jprover -I contrib/cc \
+              -I contrib/interface -I contrib/fourier -I contrib/cc \
 	      -I contrib/funind -I contrib/firstorder \
               -I contrib/field -I contrib/subtac -I contrib/rtauto 
 
@@ -329,9 +328,6 @@ $(EXTRACTIONCMA:.cma=.cmxa): $(EXTRACTIONCMO:.cmo=.cmx)
 $(RTAUTOCMA): $(RTAUTOCMO)
 $(RTAUTOCMA:.cma=.cmxa): $(RTAUTOCMO:.cmo=.cmx)
 
-$(JPROVERCMA): $(JPROVERCMO)
-$(JPROVERCMA:.cma=.cmxa): $(JPROVERCMO:.cmo=.cmx)
-
 $(FOCMA): $(FOCMO)
 $(FOCMA:.cma=.cmxa): $(FOCMO:.cmo=.cmx)
 
@@ -565,7 +561,6 @@ xml: $(XMLVO) $(XMLCMO)
 extraction: $(EXTRACTIONCMO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
-jprover: $(JPROVERVO) $(JPROVERCMO)
 funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
 programs subtac: $(SUBTACVO) $(SUBTACCMO)
