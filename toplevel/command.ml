@@ -1220,7 +1220,8 @@ let start_proof_com kind thms hook =
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  hook strength ref) thms_data in
-      start_proof id kind t ?init_tac:rec_tac ~compute_guard:true hook
+      start_proof id kind t ?init_tac:rec_tac
+	~compute_guard:(rec_tac<>None) hook
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
