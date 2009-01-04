@@ -210,7 +210,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
     | Flexible ev1, MaybeFlexible flex2 ->
 	let f1 i =
 	  if 
-	    is_unification_pattern_evar env ev1 l1 & 
+	    is_unification_pattern_evar env ev1 l1 (applist appr2) & 
 	    not (occur_evar (fst ev1) (applist appr2))
 	  then
 	    (* Miller-Pfenning's patterns unification *)
@@ -242,7 +242,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
     | MaybeFlexible flex1, Flexible ev2 ->
 	let f1 i =
 	  if 
-	    is_unification_pattern_evar env ev2 l2 & 
+	    is_unification_pattern_evar env ev2 l2 (applist appr1) & 
 	    not (occur_evar (fst ev2) (applist appr1))
 	  then
 	    (* Miller-Pfenning's patterns unification *)
@@ -310,7 +310,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | Flexible ev1, Rigid _ ->
 	if 
-	  is_unification_pattern_evar env ev1 l1 & 
+	  is_unification_pattern_evar env ev1 l1 (applist appr2) & 
 	  not (occur_evar (fst ev1) (applist appr2))
 	then
 	  (* Miller-Pfenning's patterns unification *)
@@ -325,7 +325,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | Rigid _, Flexible ev2 ->
 	if 
-	  is_unification_pattern_evar env ev2 l2 & 
+	  is_unification_pattern_evar env ev2 l2 (applist appr1) & 
 	  not (occur_evar (fst ev2) (applist appr1))
 	then
 	  (* Miller-Pfenning's patterns unification *)

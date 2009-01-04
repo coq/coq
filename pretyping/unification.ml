@@ -224,12 +224,12 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 		  (unirec_rec curenvnb topconv true substn p1 p2) c1 c2) cl1 cl2
 
 	| App (f1,l1), _ when
-	    isMeta f1 & is_unification_pattern curenv f1 l1 &
+	    isMeta f1 & is_unification_pattern curenvnb f1 l1 cN &
 	    not (dependent f1 cN) ->
 	      solve_pattern_eqn_array curenvnb sigma f1 l1 cN substn
 
 	| _, App (f2,l2) when
-	    isMeta f2 & is_unification_pattern curenv f2 l2 &
+	    isMeta f2 & is_unification_pattern curenvnb f2 l2 cM &
 	    not (dependent f2 cM) ->
 	      solve_pattern_eqn_array curenvnb sigma f2 l2 cM substn
 

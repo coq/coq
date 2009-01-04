@@ -109,7 +109,7 @@ val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val set_start_hook : (types -> unit) -> unit
 
 val start_proof : identifier -> goal_kind -> types ->
-  ?init_tac:Proof_type.tactic -> declaration_hook -> unit
+  ?init_tac:Proof_type.tactic -> ?compute_guard:bool -> declaration_hook -> unit
 
 val start_proof_com : goal_kind -> 
   (lident option * (local_binder list * constr_expr)) list ->
