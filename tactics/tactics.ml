@@ -3096,7 +3096,7 @@ let abstract_subproof name tac gl =
       error "\"abstract\" cannot handle existentials.";
     let lemme =
       start_proof na (Global, Proof Lemma) secsign concl (fun _ _ -> ());
-      let _,(const,kind,_) =
+      let _,(const,_,kind,_) =
 	try
 	  by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 
 	  let r = cook_proof ignore in 

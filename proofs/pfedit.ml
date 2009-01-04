@@ -34,6 +34,7 @@ open Safe_typing
 type proof_topstate = {
   mutable top_end_tac : tactic option;
   top_init_tac : tactic option;
+  top_compute_guard : bool;
   top_goal : goal;
   top_strength : Decl_kinds.goal_kind;
   top_hook : declaration_hook }
@@ -207,7 +208,7 @@ let set_xml_cook_proof f = xml_cook_proof := f
 let cook_proof k =
   let (pfs,ts) = get_state() 
   and ident = get_current_proof_name () in
-  let {evar_concl=concl} = ts.top_goal 
+  let {evar_concl=concl} = ts.top_goal
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in
   !xml_cook_proof (strength,pfs);
@@ -217,7 +218,7 @@ let cook_proof k =
       const_entry_type = Some concl;
       const_entry_opaque = true;
       const_entry_boxed = false},
-    strength, ts.top_hook))
+    ts.top_compute_guard, strength, ts.top_hook))
 
 let current_proof_statement () = 
   let ts = get_topstate() in
@@ -251,11 +252,12 @@ let set_end_tac tac =
 (*              Modifying the current prooftree                      *)
 (*********************************************************************)
 
-let start_proof na str sign concl ?init_tac hook =
+let start_proof na str sign concl ?init_tac ?(compute_guard=false) hook =
   let top_goal = mk_goal sign concl None in
   let ts = { 
     top_end_tac = None;
     top_init_tac = init_tac;
+    top_compute_guard = compute_guard;
     top_goal = top_goal;
     top_strength = str;
     top_hook = hook}

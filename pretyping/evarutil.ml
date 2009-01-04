@@ -490,19 +490,30 @@ let clear_hyps_in_evi evdref hyps concl ids =
    dependencies in variables are canonically associated to the most ancient
    variable in its family of aliased variables *)
 
-let rec expand_var env x = match kind_of_term x with
+let rec expand_var_at_least_once env x = match kind_of_term x with
   | Rel n ->
-      begin try match pi2 (lookup_rel n env) with
-      | Some t when isRel t -> expand_var env (lift n t)
-      | _ -> x
-      with Not_found -> x
+      begin match pi2 (lookup_rel n env) with
+      | Some t when isRel t or isVar t ->
+	  let t = lift n t in
+	  (try expand_var_at_least_once env t with Not_found -> t)
+      | _ ->
+	  raise Not_found
       end
   | Var id ->
       begin match pi2 (lookup_named id env) with
-      | Some t when isVar t -> expand_var env t
-      | _ -> x
+      | Some t when isVar t ->
+	  (try expand_var_at_least_once env t with Not_found -> t)
+      | _ ->
+	  raise Not_found
       end
-  | _ -> x
+  | _ ->
+      raise Not_found
+
+let expand_var env x =
+  try expand_var_at_least_once env x with Not_found -> x
+  
+let expand_var_opt env x =
+  try Some (expand_var_at_least_once env x) with Not_found -> None
 
 let rec expand_vars_in_term env t = match kind_of_term t with
   | Rel _ | Var _ -> expand_var env t
@@ -967,16 +978,71 @@ let head_evar =
    that we don't care whether args itself contains Rel's or even Rel's
    distinct from the ones in l *)
 
-let is_unification_pattern_evar env (_,args) l =
-  let l' = Array.to_list args @ l in
-  let l' = List.map (expand_var env) l' in
-  List.for_all (fun a -> isRel a or isVar a) l' && list_distinct l'
 
-let is_unification_pattern env f l =
+let rec expand_and_check_vars env = function
+  | [] -> []
+  | a::l ->
+      if isRel a or isVar a then
+	let l = expand_and_check_vars env l in
+	match expand_var_opt env a with
+	| None -> a :: l
+	| Some a' when isRel a' or isVar a' -> list_add_set a' l
+	| _ -> raise Exit
+      else
+	raise Exit
+
+(*
+let is_identity_subst env args l =
+  let n = Array.length args in
+  (* Check named context from most recent to oldest declaration *)
+  let rec aux i = function
+  | [] -> i = 0
+  | (id,_,_)::l -> args.(i) = mkVar id && aux (i-1) l in
+  (* Check named context from oldest to most recent declaration *)
+  let rec aux' i = function
+  | [] -> aux i (named_context env)
+  | _::l -> args.(i) = mkRel (n-i) && aux' (i-1) l in
+  List.for_all (fun c -> not (array_exists ((=) (expand_var env c)) args)) l &&
+  aux' (n-1) (rel_context env)
+*)
+
+let is_unification_pattern_evar env (_,args) l t =
+(*
+  (* Optimize the most common case *)
+  List.for_all (fun x -> isRel x || isVar x) l && is_identity_subst env args l
+  ||
+*)
+    let l' = Array.to_list args @ l in
+    let l'' = try Some (expand_and_check_vars env l') with Exit -> None in
+    match l'' with
+    | Some l ->
+	let deps =
+	  if occur_meta_or_existential t then
+	    l
+	  else
+	    let fv_rels = free_rels t in
+	    let fv_ids = global_vars env t in
+	    List.filter (fun c ->
+	      match kind_of_term c with
+	      | Var id -> List.mem id fv_ids
+	      | Rel n -> Intset.mem n fv_rels
+	      | _ -> assert false) l in
+	list_distinct deps
+    | None -> false
+
+(*    
+    Pp.ppnl (prlist_with_sep spc (fun c -> match kind_of_term c with Rel _ | Var _ -> print_constr c | _ -> str "..") l'); Pp.flush_all ();
+*)
+
+let is_unification_pattern (env,nb) f l t =
   match kind_of_term f with
-    | Meta _ -> array_for_all isRel l && array_distinct l
-    | Evar ev -> is_unification_pattern_evar env ev (Array.to_list l)
-    | _ -> false
+    | Meta _ ->
+	array_for_all (fun c -> isRel c && destRel c <= nb) l
+	&& array_distinct l
+    | Evar ev ->
+	is_unification_pattern_evar env ev (Array.to_list l) t
+    | _ ->
+	false
 
 (* From a unification problem "?X l1 = term1 l2" such that l1 is made
    of distinct rel's, build "\x1...xn.(term1 l2)" (patterns unification) *)

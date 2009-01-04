@@ -340,11 +340,11 @@ let (inDec,outDec) =
 let start_hook = ref ignore
 let set_start_hook = (:=) start_hook
 
-let start_proof id kind c ?init_tac hook =
+let start_proof id kind c ?init_tac ?(compute_guard=false) hook =
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
   !start_hook c;
-  Pfedit.start_proof id kind sign c ?init_tac:init_tac hook
+  Pfedit.start_proof id kind sign c ?init_tac ~compute_guard hook
 
 let adjust_guardness_conditions const =
   (* Try all combinations... not optimal *)
@@ -358,8 +358,8 @@ let adjust_guardness_conditions const =
       { const with const_entry_body = mkFix ((indexes,0),fixdecls) }
   | c -> const
 
-let save id const (locality,kind) hook =
-  let const = adjust_guardness_conditions const in
+let save id const do_guard (locality,kind) hook =
+  let const = if do_guard then adjust_guardness_conditions const else const in
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
@@ -380,9 +380,9 @@ let save_hook = ref ignore
 let set_save_hook f = save_hook := f
 
 let save_named opacity =
-  let id,(const,persistence,hook) = Pfedit.cook_proof !save_hook in
+  let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
   let const = { const with const_entry_opaque = opacity } in
-  save id const persistence hook
+  save id const do_guard persistence hook
 
 let make_eq_decidability ind = 
     (* fetching data *)
@@ -1217,7 +1217,8 @@ let start_proof_com kind thms hook =
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
 	  hook strength ref) thms_data in
-      start_proof id kind t ?init_tac:rec_tac hook
+      start_proof id kind t ?init_tac:rec_tac
+	~compute_guard:(rec_tac<>None) hook
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
@@ -1227,17 +1228,17 @@ let check_anonymity id save_ident =
 *)
 
 let save_anonymous opacity save_ident =
-  let id,(const,persistence,hook) = Pfedit.cook_proof !save_hook in
+  let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save save_ident const persistence hook
+  save save_ident const do_guard persistence hook
 
 let save_anonymous_with_strength kind opacity save_ident =
-  let id,(const,_,hook) = Pfedit.cook_proof !save_hook in
+  let id,(const,do_guard,_,hook) = Pfedit.cook_proof !save_hook in
   let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)
-  save save_ident const (Global, Proof kind) hook
+  save save_ident const do_guard (Global, Proof kind) hook
 
 let admit () =
   let (id,k,typ,hook) = Pfedit.current_proof_statement () in
