@@ -313,27 +313,40 @@ let next_utf8 s i =
 
 (* Check the well-formedness of an identifier *)
 
-let check_ident s =
+let check_initial handle j n s =
+  match classify_unicode n with
+  | UnicodeLetter -> ()
+  | _ ->
+      let c = String.sub s 0 j in
+      handle ("Invalid character '"^c^"' at beginning of identifier \""^s^"\".")
+
+let check_trailing handle i j n s =
+  match classify_unicode n with
+  | UnicodeLetter | UnicodeIdentPart -> ()
+  | _ ->
+      let c = String.sub s i j in
+      handle ("Invalid character '"^c^"' in identifier \""^s^"\".")
+
+let check_ident_gen handle s =
   let i = ref 0 in
   if s <> ".." then try
     let j, n = next_utf8 s 0 in
-    match classify_unicode n with
-    | UnicodeLetter ->
-	i := !i + j;
-	begin try
-	  while true do
-	    let j, n = next_utf8 s !i in
-	    match classify_unicode n with
-	    | UnicodeLetter | UnicodeIdentPart -> i := !i + j
-	    | _ -> error
-		("invalid character "^(String.sub s !i j)^" in identifier "^s)
-	  done
-	with End_of_input -> () end
-    | _ -> error (s^": an identifier should start with a letter")
+    check_initial handle j n s;
+    i := !i + j;
+    try
+      while true do
+	let j, n = next_utf8 s !i in
+	check_trailing handle !i j n s;
+	i := !i + j
+      done
+    with End_of_input -> ()
   with 
-  | End_of_input -> error "The empty string is not an identifier"
-  | UnsupportedUtf8 -> error (s^": unsupported character in utf8 sequence")
-  | Invalid_argument _ -> error (s^": invalid utf8 sequence")
+  | End_of_input -> error "The empty string is not an identifier."
+  | UnsupportedUtf8 -> error (s^": unsupported character in utf8 sequence.")
+  | Invalid_argument _ -> error (s^": invalid utf8 sequence.")
+
+let check_ident_soft = check_ident_gen warning
+let check_ident = check_ident_gen error
 
 let lowercase_unicode s unicode =
     match unicode land 0x1F000 with

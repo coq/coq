@@ -676,7 +676,7 @@ GEXTEND Gram
       | IDENT "Grammar"; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
 	  PrintGrammar ent
-      | IDENT "LoadPath" -> PrintLoadPath
+      | IDENT "LoadPath"; dir = OPT dirpath -> PrintLoadPath dir
       | IDENT "Modules" -> 
           error "Print Modules is obsolete; use Print Libraries instead"
       | IDENT "Libraries" -> PrintModules

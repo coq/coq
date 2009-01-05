@@ -80,6 +80,7 @@ Vernacular commands
 - "Hint Extern" now takes an optional pattern and applies the given tactic
   all the time if no pattern is given.
 - Specific sort constraints on Record now taken into account.
+- "Print LoadPath" supports a path argument to filter the display.
 
 Libraries (DOC TO CHECK)
 

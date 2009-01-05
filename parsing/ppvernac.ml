@@ -867,7 +867,7 @@ let rec pr_vernac = function
             str"Print Section" ++ spc() ++ Libnames.pr_reference s
 	| PrintGrammar ent ->
             str"Print Grammar" ++ spc() ++ str ent
-	| PrintLoadPath -> str"Print LoadPath"
+	| PrintLoadPath dir -> str"Print LoadPath" ++ pr_opt pr_dirpath dir
 	| PrintModules -> str"Print Modules"
 	| PrintMLLoadPath -> str"Print ML Path"
 	| PrintMLModules -> str"Print ML Modules"

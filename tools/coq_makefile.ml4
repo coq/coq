@@ -29,6 +29,7 @@ let some_mlfile = ref false
 
 let opt = ref "-opt"
 let impredicative_set = ref false
+let no_install = ref false
 
 let print x = output_string !output_channel x
 let printf x = Printf.fprintf !output_channel x
@@ -37,6 +38,9 @@ let rec print_list sep = function
   | [ x ] -> print x
   | x :: l -> print x; print sep; print_list sep l
   | [] -> ()
+
+let list_iter_i f =
+  let rec aux i = function [] -> () | a::l -> f i a; aux (i+1) l in aux 1
 
 let best_ocamlc = 
   if Coq_config.best = "opt" then "ocamlc.opt" else "ocamlc"
@@ -63,10 +67,11 @@ let usage () =
 
 coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
   command dependencies file] ... [-I dir] ... [-R physicalpath logicalpath]
-  ... [VARIABLE = value] ...  [-opt|-byte] [-f file] [-o file] [-h] [--help]
+  ... [VARIABLE = value] ...  [-opt|-byte] [-impredicative-set] [-no-install]
+  [-f file] [-o file] [-h] [--help]
 
 [file.v]: Coq file to be compiled
-[file.ml]: ML file to be compiled
+[file.ml]: Objective Caml file to be compiled
 [subdirectory] : subdirectory that should be \"made\"
 [-custom command dependencies file]: add target \"file\" with command
   \"command\" and dependencies \"dependencies\"
@@ -78,6 +83,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 [-byte]: compile with byte-code version of coq
 [-opt]: compile with native-code version of coq
 [-impredicative-set]: compile with option -impredicative-set of coq
+[-no-install]: build a makefile with no install target
 [-f file]: take the contents of file as arguments
 [-o file]: output should go in file file 
 [-h]: print this usage summary
@@ -88,24 +94,106 @@ let is_genrule r =
     let genrule = Str.regexp("%") in
       Str.string_match genrule r 0
 
-let standard sds sps =
+let absolute_dir dir =
+  let current = Sys.getcwd () in
+    Sys.chdir dir;
+    let dir' = Sys.getcwd () in
+      Sys.chdir current;
+      dir'
+
+let is_prefix dir1 dir2 =
+  let l1 = String.length dir1 in
+  let l2 = String.length dir2 in
+    dir1 = dir2 or (l1 < l2 & String.sub dir2 0 l1 = dir1 & dir2.[l1] = '/')
+
+let canonize f =
+  let l = String.length f in
+  if l > 2 && f.[0] = '.' && f.[1] = '/' then
+    let n = let i = ref 2 in while !i < l && f.[!i] = '/' do incr i done; !i in
+    String.sub f n (l-n)
+  else f
+
+let is_absolute_prefix dir dir' =
+  is_prefix (absolute_dir dir) (absolute_dir dir')
+
+let is_included dir = function
+  | RInclude (dir',_) -> is_absolute_prefix dir' dir
+  | Include dir' -> absolute_dir dir = absolute_dir dir'
+  | _ -> false
+
+let has_top_file = function
+  | ML s | V s -> s = Filename.basename s
+  | _ -> false
+
+let physical_dir_of_logical_dir ldir =
+  let pdir = String.copy ldir in
+  for i = 0 to String.length ldir - 1 do
+    if pdir.[i] = '.' then pdir.[i] <- '/';
+  done;
+  pdir
+
+let standard ()=
   print "byte:\n";
   print "\t$(MAKE) all \"OPT:=-byte\"\n\n";
   print "opt:\n";
   if !opt = "" then print "\t@echo \"WARNING: opt is disabled\"\n";
-  print "\t$(MAKE) all \"OPT:="; print !opt; print "\"\n\n";
+  print "\t$(MAKE) all \"OPT:="; print !opt; print "\"\n\n"
+
+let is_prefix_of_file dir f =
+  is_prefix dir (absolute_dir (Filename.dirname f))
+
+let classify_files_by_root var files (inc_i,inc_r) =
+  if not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_r) then
+    begin
+      (* Files in the scope of a -R option (assuming they are disjoint) *)
+      list_iter_i (fun i (pdir,ldir,abspdir) ->
+	if List.exists (is_prefix_of_file abspdir) files then
+	  printf "%s%d:=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
+	    var i pdir pdir var)
+	inc_r;
+      (* Files not in the scope of a -R option *)
+      let pat_of_dir (pdir,_,_) = pdir^"/%" in
+      let pdir_patterns = String.concat " " (List.map pat_of_dir inc_r) in
+      printf "%s0:=$(filter-out %s,$(%s))\n" var pdir_patterns var
+    end
+
+let install_include_by_root var files (_,inc_r) =
+  try
+    (* All files caught by a -R . option (assuming it is the only one) *)
+    let ldir = List.assoc "." (List.map (fun (p,l,_) -> (p,l)) inc_r) in
+    let pdir = physical_dir_of_logical_dir ldir in
+    printf "\t(for i in $(%s); do \\\n" var;
+    printf "\t install -D $$i $(COQLIB)/user-contrib/%s/$$i; \\\n" pdir;
+    printf "\t done)\n"
+  with Not_found ->
+    (* Files in the scope of a -R option (assuming they are disjoint) *)
+    list_iter_i (fun i (pdir,ldir,abspdir) ->
+      if List.exists (is_prefix_of_file abspdir) files then
+	begin
+	  let pdir' = physical_dir_of_logical_dir ldir in
+	  printf "\t(cd %s; for i in $(%s%d); do \\\n" pdir var i;
+	  printf "\t install -D $$i $(COQLIB)/user-contrib/%s/$$i; \\\n" pdir';
+	  printf "\t done)\n"
+	end) inc_r;
+    (* Files not in the scope of a -R option *)
+    printf "\t(for i in $(%s0); do \\\n" var;
+    printf "\t install -D $$i $(COQLIB)/user-contrib/$(INSTALLDEFAULTROOT)/$$i; \\\n";
+    printf "\t done)\n"
+
+let install (vfiles,mlfiles,_,sds) inc =
   print "install:\n";
   print "\tmkdir -p $(COQLIB)/user-contrib\n";
-  if !some_vfile then
-    print "\tcp -f $(VOFILES) $(COQLIB)/user-contrib\n";
-  if !some_mlfile then
-    print "\tcp -f $(CMOFILES) $(COQLIB)/user-contrib\n";
+  if !some_vfile then install_include_by_root "VOFILES" vfiles inc;
+  if !some_mlfile then install_include_by_root "CMOFILES" mlfiles inc;
   if Coq_config.has_natdynlink && !some_mlfile then
-    print "\tcp -f $(CMXSFILES) $(COQLIB)/user-contrib\n";
+    install_include_by_root "CMXSFILES" mlfiles inc;
   List.iter
-    (fun x -> print "\t(cd "; print x; print " ; $(MAKE) install)\n")
+    (fun x ->
+      printf "\t(cd %s; $(MAKE) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
     sds;
-  print "\n";
+  print "\n"
+
+let make_makefile sds =
   if !make_name <> "" then begin
     printf "%s: %s\n" !makefile_name !make_name;
     printf "\tmv -f %s %s.bak\n" !makefile_name !makefile_name;
@@ -115,7 +203,9 @@ let standard sds sps =
       (fun x -> print "\t(cd "; print x; print " ; $(MAKE) Makefile)\n")
       sds;
     print "\n";
-  end;
+  end
+
+let clean sds sps =
   print "clean:\n";
   print "\trm -f $(VOFILES) $(VIFILES) $(GFILES) *~\n";
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
@@ -173,12 +263,8 @@ let implicit () =
     if !some_mlfile then ml_rules ();
     if !some_vfile then v_rule ()
 
-let variables l =
-  let rec var_aux = function
-    | [] -> ()
-    | Def(v,def) :: r -> print v; print "="; print def; print "\n"; var_aux r
-    | _ :: r -> var_aux r
-  in
+let variables defs =
+  let var_aux (v,def) = print v; print "="; print def; print "\n" in
     section "Variables definitions.";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n";
     if !opt = "-byte" then 
@@ -202,32 +288,9 @@ let variables l =
     print "GRAMMARS:=grammar.cma\n";
     print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
     print "CAMLP4OPTIONS:=\n";
-    var_aux l;
+    List.iter var_aux defs;
     print "PP:=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
     print "\n"
-
-let absolute_dir dir =
-  let current = Sys.getcwd () in
-    Sys.chdir dir;
-    let dir' = Sys.getcwd () in
-      Sys.chdir current;
-      dir'
-
-let is_prefix dir1 dir2 =
-  let l1 = String.length dir1 in
-  let l2 = String.length dir2 in
-    dir1 = dir2 or (l1 < l2 & String.sub dir2 0 l1 = dir1 & dir2.[l1] = '/')
-
-let is_included dir = function
-  | RInclude (dir',_) -> is_prefix (absolute_dir dir') (absolute_dir dir)
-  | Include dir' -> absolute_dir dir = absolute_dir dir'
-  | _ -> false
-
-let dir_of_target t = 
-  match t with
-    | RInclude (dir,_) -> dir
-    | Include dir -> dir
-    | _ -> assert false
 
 let parameters () =
   print "# \n";
@@ -239,33 +302,16 @@ let parameters () =
   print "ifndef CAMLP4BIN\n  CAMLP4BIN:=$(CAMLBIN)\nendif\n\n";
   print "CAMLP4LIB:=$(shell $(CAMLP4BIN)$(CAMLP4) -where)\n\n"
 
-let include_dirs l =
-  let rec split_includes l = 
-    match l with
-      | [] -> [], []
-      | Include _ as i :: rem ->
-	  let ri, rr = split_includes rem in 
-	    (i :: ri), rr
-      | RInclude _ as r :: rem -> 
-	  let ri, rr = split_includes rem in 
-	    ri, (r :: rr)
-      | _ :: rem -> split_includes rem
-  in
-  let rec parse_includes l = 
-    match l with
-      | [] -> []
-      | Include x :: rem -> ("-I " ^ x) :: parse_includes rem
-      | RInclude (p,l) :: rem ->
-	  let l' = if l = "" then "\"\"" else l in
-            ("-R " ^ p ^ " " ^ l') :: parse_includes rem
-      | _ :: rem -> parse_includes rem
-  in
-  let l' = if List.exists (is_included ".") l then l else Include "." :: l in
-  let inc_i, inc_r = split_includes l' in
-  let inc_i' = List.filter (fun i -> not (List.exists (fun i' -> is_included (dir_of_target i) i') inc_r)) inc_i in 
+let include_dirs (inc_i,inc_r) =
+  let parse_includes l = List.map (fun (x,_) -> "-I " ^ x) l in
+  let parse_rec_includes l =
+    List.map (fun (p,l,_) ->
+      let l' = if l = "" then "\"\"" else l in "-R " ^ p ^ " " ^ l')
+      l in
+  let inc_i' = List.filter (fun (i,_) -> not (List.exists (fun (i',_,_) -> is_absolute_prefix i' i) inc_r)) inc_i in
   let str_i = parse_includes inc_i in
   let str_i' = parse_includes inc_i' in
-  let str_r = parse_includes inc_r in
+  let str_r = parse_rec_includes inc_r in
     section "Libraries definitions.";
     print "OCAMLLIBS:=-I $(CAMLP4LIB) "; print_list "\\\n  " str_i; print "\n";
     print "COQSRCLIBS:=-I $(COQLIB)/kernel -I $(COQLIB)/lib \\
@@ -297,15 +343,10 @@ let custom sps =
     if sps <> [] then section "Custom targets.";
     List.iter pr_sp sps
 
-let subdirs l =
-  let rec subdirs_aux = function
-    | [] -> []
-    | Subdir x :: r -> x :: (subdirs_aux r)
-    | _ :: r -> subdirs_aux r
-  and pr_subdir s =
+let subdirs sds =
+  let pr_subdir s =
     print s; print ":\n\tcd "; print s; print " ; $(MAKE) all\n\n"
   in
-  let sds = subdirs_aux l in
     if sds <> [] then section "Subdirectories.";
     List.iter pr_subdir sds;
     section "Special targets.";
@@ -313,34 +354,31 @@ let subdirs l =
     print_list " "
       ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" 
 	:: "depend" :: "html" :: sds);
-    print "\n\n";
-    sds
+    print "\n\n"
 
-let all_target l =
-  let rec parse_arguments l = 
-    match l with
-      | ML n :: r -> let v,m,o = parse_arguments r in (v,n::m,o)
-      | Subdir n :: r -> let v,m,o = parse_arguments r in (v,m,n::o)
-      | V n :: r -> let v,m,o = parse_arguments r in (n::v,m,o)
-      | Special (n,_,_) :: r -> 
-	  let v,m,o = parse_arguments r in 
-	    if is_genrule n then
-	      (v,m,o)
-	    else
-	      (v,m,n::o)
-      | Include _ :: r -> parse_arguments r
-      | RInclude _ :: r -> parse_arguments r
-      | Def _ :: r -> parse_arguments r
-      | [] -> [],[],[]
-  in
-  let 
-      vfiles, mlfiles, other_targets = parse_arguments l
-  in
-    section "Definition of the \"all\" target.";
+let rec split_arguments = function
+  | V n :: r ->
+      let (v,m,o,s),i,d = split_arguments r in ((canonize n::v,m,o,s),i,d)
+  | ML n :: r ->
+      let (v,m,o,s),i,d = split_arguments r in ((v,canonize n::m,o,s),i,d)
+  | Special (n,dep,c) :: r -> 
+      let (v,m,o,s),i,d = split_arguments r in ((v,m,(n,dep,c)::o,s),i,d)
+  | Subdir n :: r ->
+      let (v,m,o,s),i,d = split_arguments r in ((v,m,o,n::s),i,d)
+  | Include p :: r ->
+      let t,(i,r),d = split_arguments r in (t,((p,absolute_dir p)::i,r),d)
+  | RInclude (p,l) :: r ->
+      let t,(i,r),d = split_arguments r in (t,(i,(p,l,absolute_dir p)::r),d)
+  | Def (v,def) :: r -> 
+      let t,i,d = split_arguments r in (t,i,(v,def)::d)
+  | [] -> ([],[],[],[]),([],[]),[]
+
+let main_targets vfiles mlfiles other_targets inc =
     if !some_vfile then
       begin
 	print "VFILES:="; print_list "\\\n  " vfiles; print "\n";
 	print "VOFILES:=$(VFILES:.v=.vo)\n";
+	classify_files_by_root "VOFILES" vfiles inc;
 	print "GLOBFILES:=$(VFILES:.v=.glob)\n";
 	print "VIFILES:=$(VFILES:.v=.vi)\n";
 	print "GFILES:=$(VFILES:.v=.g)\n";
@@ -351,9 +389,11 @@ let all_target l =
       begin
 	print "MLFILES:="; print_list "\\\n  " mlfiles; print "\n";
 	print "CMOFILES:=$(MLFILES:.ml=.cmo)\n";
+	classify_files_by_root "CMOFILES" mlfiles inc;
 	print "CMIFILES:=$(MLFILES:.ml=.cmi)\n";
 	print "CMXFILES:=$(MLFILES:.ml=.cmx)\n";
 	print "CMXSFILES:=$(MLFILES:.ml=.cmxs)\n";
+	classify_files_by_root "CMXSFILES" mlfiles inc;
 	print "OFILES:=$(MLFILES:.ml=.o)\n";
       end;
     print "\nall: ";
@@ -381,6 +421,14 @@ let all_target l =
 	print "\t$(COQDOC) -toc -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
 	print "\n\n"
       end
+
+let all_target (vfiles, mlfiles, sps, sds) inc =
+  let special_targets = List.filter (fun (n,_,_) -> not (is_genrule n)) sps in
+  let other_targets = List.map (fun x,_,_ -> x) special_targets @ sds in
+  section "Definition of the \"all\" target.";
+  main_targets vfiles mlfiles other_targets inc;
+  custom sps;
+  subdirs sds
       
 let parse f =
   let rec string = parser 
@@ -417,6 +465,8 @@ let rec process_cmd_line = function
       opt := "-opt"; process_cmd_line r
   | "-impredicative-set" :: r ->
       impredicative_set := true; process_cmd_line r
+  | "-no-install" :: r ->
+      no_install := true; process_cmd_line r
   | "-custom" :: com :: dependencies :: file :: r ->
       let check_dep f =
 	if Filename.check_suffix f ".v" then
@@ -500,21 +550,56 @@ let directories_deps l =
   in
     iter ([],[]) l
 
+let ensure_root_dir l =
+  if List.exists (is_included ".") l or not (List.exists has_top_file l) then
+    l
+  else
+    Include "." :: l
+
+let warn_install_at_root_directory (vfiles,mlfiles,_,_) (inc_i,inc_r) =
+  let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
+  let inc_top = List.map (fun (p,_,a) -> (p,a)) inc_r_top @ inc_i in
+  let files = vfiles @ mlfiles in
+  if not !no_install &&
+    List.exists (fun f -> List.mem_assoc (Filename.dirname f) inc_top) files
+  then
+    Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n" 
+      (if inc_r_top = [] then "" else "with non trivial logical root ")
+
+let check_overlapping_include (inc_i,inc_r) =
+  let pwd = Sys.getcwd () in
+  let rec aux = function
+    | [] -> ()
+    | (pdir,_,abspdir)::l ->
+	if not (is_prefix pwd abspdir) then
+	  Printf.eprintf "Warning: in option -R, %s is not a subdirectoty of the current directory\n" pdir;
+	List.iter (fun (pdir',_,abspdir') ->
+	  if is_prefix abspdir abspdir' or is_prefix abspdir' abspdir then
+	    Printf.eprintf "Warning: in options -R, %s and %s overlap\n" pdir pdir') l;
+	List.iter (fun (pdir',abspdir') ->
+	  if is_prefix abspdir abspdir' or is_prefix abspdir' abspdir then
+	    Printf.eprintf "Warning: in option -I, %s overlap with %s in option -R\n" pdir' pdir) inc_i 
+  in aux inc_r
+
 let do_makefile args =
   let l = process_cmd_line args in
+  let l = ensure_root_dir l in
+  let (_,_,sps,sds as targets), inc, defs = split_arguments l in
+  warn_install_at_root_directory targets inc;
+  check_overlapping_include inc;
   banner ();
   header_includes ();
   warning ();
   command_line args;
   parameters ();
-  include_dirs l;
-  variables l;
-  all_target l;
-  let sps = special  l in
-  custom sps;
-  let sds = subdirs l in
+  include_dirs inc;
+  variables defs;
+  all_target targets inc;
   implicit ();
-  standard sds sps;
+  standard ();
+  if not !no_install then install targets inc;
+  clean sds sps;
+  make_makefile sds;
   (* TEST directories_deps l; *)
   footer_includes ();
   warning ();
@@ -529,4 +614,3 @@ let main () =
     do_makefile args
       
 let _ = Printexc.catch main ()
-

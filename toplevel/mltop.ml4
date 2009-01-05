@@ -47,8 +47,10 @@ open Vernacinterp
 
 (* This path is where we look for .cmo *)
 let coq_mlpath_copy = ref ["."]
-let keep_copy_mlpath path = 
-  coq_mlpath_copy := path :: !coq_mlpath_copy
+let keep_copy_mlpath path =
+  let cpath = canonical_path_name path in
+  let filter path' = (cpath <> canonical_path_name path') in
+  coq_mlpath_copy := path :: List.filter filter !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
 type toplevel = { 
@@ -106,7 +108,7 @@ let dir_ml_load s =
 	 * if this code section starts to use a module not used elsewhere
 	 * in this file, the Makefile dependency logic needs to be updated.
 	 *)
-        let _,gname = where_in_path true (list_uniquize !coq_mlpath_copy) s in
+        let _,gname = where_in_path true !coq_mlpath_copy s in
         try
           Dynlink.loadfile gname;
 	with | Dynlink.Error a ->
@@ -295,9 +297,9 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 	     if_verbose 
 	       msg (str"[Loading ML file " ++ str fname ++ str" ...");
              load_object mname fname;
-             if_verbose msgnl (str"done]")
+             if_verbose msgnl (str" done]")
            with e -> 
-	     if_verbose msgnl (str"failed]"); 
+	     if_verbose msgnl (str" failed]"); 
 	     raise e
 	 end;
          add_loaded_module mname)

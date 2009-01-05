@@ -51,7 +51,9 @@ let set_batch_mode () = batch_mode := true
 
 let toplevel_default_name = make_dirpath [id_of_string "Top"]
 let toplevel_name = ref (Some toplevel_default_name)
-let set_toplevel_name dir = toplevel_name := Some dir
+let set_toplevel_name dir =
+  if dir = empty_dirpath then error "Need a non empty toplevel module name";
+  toplevel_name := Some dir
 let unset_toplevel_name () = toplevel_name := None
 
 let remove_top_ml () = Mltop.remove ()
@@ -68,16 +70,16 @@ let outputstate = ref ""
 let set_outputstate s = outputstate:=s
 let outputstate () = if !outputstate <> "" then extern_state !outputstate
 
-let check_coq_overwriting p = 
-  if string_of_id (list_last (repr_dirpath p)) = "Coq" then
-    error "The \"Coq\" logical root directory is reserved for the Coq library"
-
 let set_default_include d = push_include (d,Nameops.default_root_prefix)
 let set_default_rec_include d = push_rec_include(d,Nameops.default_root_prefix)
 let set_include d p =
-  let p = dirpath_of_string p in check_coq_overwriting p; push_include (d,p)
+  let p = dirpath_of_string p in
+  Library.check_coq_overwriting p;
+  push_include (d,p)
 let set_rec_include d p =
-  let p = dirpath_of_string p in check_coq_overwriting p; push_rec_include(d,p)
+  let p = dirpath_of_string p in 
+  Library.check_coq_overwriting p;
+  push_rec_include(d,p)
  
 let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =

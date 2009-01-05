@@ -182,8 +182,11 @@ let show_match id =
 let print_path_entry (s,l) =
   (str (string_of_dirpath l) ++ str " " ++ tbrk (0,0) ++ str s)
 
-let print_loadpath () =
+let print_loadpath dir =
   let l = Library.get_full_load_paths () in
+  let l = match dir with
+    | None -> l
+    | Some dir -> List.filter (fun (s,l) -> is_dirpath_prefix_of dir l) l in
   msgnl (Pp.t (str "Logical Path:                 " ++
 		 tab () ++ str "Physical path:" ++ fnl () ++
 		 prlist_with_sep pr_fnl print_path_entry l))
@@ -1073,7 +1076,7 @@ let vernac_print = function
   | PrintSectionContext qid -> msg (print_sec_context_typ qid)
   | PrintInspect n -> msg (inspect n)
   | PrintGrammar ent -> Metasyntax.print_grammar ent
-  | PrintLoadPath -> (* For compatibility ? *) print_loadpath ()
+  | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintModules -> msg (print_modules ())
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid

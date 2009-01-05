@@ -123,21 +123,21 @@ let path_of_inductive env (sp,tyi) =
 let parse_dir s =
   let len = String.length s in
   let rec decoupe_dirs dirs n =
-    if n>=len then dirs else
+    if n = len && n > 0 then error (s ^ " is an invalid path.");
+    if n >= len then dirs else
     let pos =
       try
 	String.index_from s n '.' 
       with Not_found -> len
     in
+    if pos = n then error (s ^ " is an invalid path.");
     let dir = String.sub s n (pos-n) in
-      decoupe_dirs ((id_of_string dir)::dirs) (pos+1)	  
+    decoupe_dirs ((id_of_string dir)::dirs) (pos+1)	  
   in
     decoupe_dirs [] 0
 
-let dirpath_of_string s = 
-  match parse_dir s with
-      [] -> invalid_arg "dirpath_of_string"
-    | dir -> make_dirpath dir
+let dirpath_of_string s =
+  make_dirpath (if s = "" then [] else parse_dir s)
 
 module Dirset = Set.Make(struct type t = dir_path let compare = compare end)
 module Dirmap = Map.Make(struct type t = dir_path let compare = compare end)

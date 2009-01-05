@@ -646,6 +646,11 @@ This command removes the path {\str} from the current \Coq\ loadpath.
 \subsection[\tt Print LoadPath.]{\tt Print LoadPath.\comindex{Print LoadPath}}
 This command displays the current \Coq\ loadpath.
 
+\begin{Variants}
+\item {\tt Print LoadPath {\dirpath}.}\\
+Works as {\tt Print LoadPath} but displays only the paths that extend the {\dirpath} prefix.
+\end{Variants}
+
 \subsection[\tt Add ML Path {\str}.]{\tt Add ML Path {\str}.\comindex{Add ML Path}}
 This command adds the path {\str} to the current Objective Caml loadpath (see
 the command {\tt Declare ML Module} in the Section~\ref{compiled}).

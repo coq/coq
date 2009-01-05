@@ -38,7 +38,7 @@ type printable =
   | PrintSectionContext of reference
   | PrintInspect of int
   | PrintGrammar of string
-  | PrintLoadPath
+  | PrintLoadPath of dir_path option
   | PrintModules
   | PrintModule of reference
   | PrintModuleType of reference
