@@ -139,9 +139,13 @@ let standard sds sps =
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) archclean)\n")
     sds;
-  print "\n\n"
+  print "\n\n";
+  print "printenv: \n\t@echo CAMLC =\t$(CAMLC)\n\t@echo CAMLOPTC =\t$(CAMLOPTC)\n";
+  print "\t@echo CAMLP4LIB =\t$(CAMLP4LIB)\n\n"
 
-let includes () =
+let header_includes () = ()
+  
+let footer_includes () = 
   if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
   if !some_mlfile then print "-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n"
 
@@ -184,10 +188,12 @@ let variables l =
     if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
     (* Coq executables and relative variables *)
     print "COQFLAGS:=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
+    print "ifdef CAMLBIN\n  COQMKTOPFLAGS:=-camlbin $(CAMLBIN) -camlp4bin $(CAMLP4BIN)\nendif\n";
     print "COQC:=$(COQBIN)coqc\n";
     print "COQDEP:=$(COQBIN)coqdep -c\n";
     print "GALLINA:=$(COQBIN)gallina\n";
     print "COQDOC:=$(COQBIN)coqdoc\n";
+    print "COQMKTOP:=$(COQBIN)coqmktop\n";
     (* Caml executables and relative variables *)
     printf "CAMLC:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
     printf "CAMLOPTC:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
@@ -225,12 +231,13 @@ let dir_of_target t =
 
 let parameters () =
   print "# \n";
-  print "# Compilation looks in the path for coqtop; set COQBIN if coqtop is not in path\n";
-  print "# if .ml files have to be compiled, set CAMLBIN if ocamlc is not in path\n";
-  print "# if .ml files have to be compiled, set CAMLP4BIN if camlp4/5 is not in path\n";
-  print "# \n";
-  print "# set COQTOP to a Coq source directory for compiling over Coq compiled sources\n";
-  print "# \n\n"
+  print "# This Makefile may take 3 arguments passed as environment variables:\n";
+  print "#   - COQBIN to specify the directory where Coq binaries resides;\n";
+  print "#   - CAMLBIN and CAMLP4BIN to give the path for the OCaml and Camlp4/5 binaries.\n";
+  print "COQLIB:=$(shell $(COQBIN)coqtop -where)\n"; 
+  print "CAMLP4:=$(shell $(COQBIN)coqtop -config | awk -F = '/CAMLP4=/{print $$2}')\n"; 
+  print "ifndef CAMLP4BIN\n  CAMLP4BIN:=$(CAMLBIN)\nendif\n\n";
+  print "CAMLP4LIB:=$(shell $(CAMLP4BIN)$(CAMLP4) -where)\n\n"
 
 let include_dirs l =
   let rec split_includes l = 
@@ -260,41 +267,19 @@ let include_dirs l =
   let str_i' = parse_includes inc_i' in
   let str_r = parse_includes inc_r in
     section "Libraries definitions.";
-    printf "CAMLP4:=%s\n" Coq_config.camlp4;
-    print "ifdef CAMLP4BIN\n";
-    print "  CAMLP4LIB:=$(shell $(CAMLP4BIN)/$(CAMLP4) -where 2> /dev/null)\n";
-    print "else\n";
-    print "  CAMLP4LIB:=$(shell $(CAMLP4) -where 2> /dev/null)\n";
-    print "endif\n";
     print "OCAMLLIBS:=-I $(CAMLP4LIB) "; print_list "\\\n  " str_i; print "\n";
-    print "COQLIB:=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
-    print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
-    print "  COQBIN:=$(COQTOP)/bin/\n";
-    print "  COQSRCLIBS:=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
-  -I $(COQTOP)/library -I $(COQTOP)/parsing \\
-  -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
-  -I $(COQTOP)/proofs -I $(COQTOP)/tactics \\
-  -I $(COQTOP)/toplevel -I $(COQTOP)/contrib/cc -I $(COQTOP)/contrib/dp \\
-  -I $(COQTOP)/contrib/extraction -I $(COQTOP)/contrib/field \\
-  -I $(COQTOP)/contrib/firstorder -I $(COQTOP)/contrib/fourier \\
-  -I $(COQTOP)/contrib/funind -I $(COQTOP)/contrib/interface \\
-  -I $(COQTOP)/contrib/micromega -I $(COQTOP)/contrib/omega \\
-  -I $(COQTOP)/contrib/ring -I $(COQTOP)/contrib/romega \\
-  -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
-  -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml\n";
-    print "else\n";
-    print "ifneq ($(strip $(COQLIB)),)\n";
-    print "  COQSRCLIBS:=-I $(COQLIB)\n";
-    print "else\n";
-    print "  $(error Cannot find coqtop in path; set variable COQBIN to the directory where coqtop is located)\n";
-    print "endif\n";
-    print "endif\n";
-    if List.exists (function ML _ -> true | _ -> false) l then
-      begin
-	print "ifeq ($(strip $(CAMLP4LIB)),)\n";
-	print "  $(error Cannot find $(CAMLP4) in path; set variable CAMLP4BIN to the directory where $(CAMLP4) is located)\n";
-	print "endif\n";
-      end;
+    print "COQSRCLIBS:=-I $(COQLIB)/kernel -I $(COQLIB)/lib \\
+  -I $(COQLIB)/library -I $(COQLIB)/parsing \\
+  -I $(COQLIB)/pretyping -I $(COQLIB)/interp \\
+  -I $(COQLIB)/proofs -I $(COQLIB)/tactics \\
+  -I $(COQLIB)/toplevel -I $(COQLIB)/contrib/cc -I $(COQLIB)/contrib/dp \\
+  -I $(COQLIB)/contrib/extraction -I $(COQLIB)/contrib/field \\
+  -I $(COQLIB)/contrib/firstorder -I $(COQLIB)/contrib/fourier \\
+  -I $(COQLIB)/contrib/funind -I $(COQLIB)/contrib/interface \\
+  -I $(COQLIB)/contrib/micromega -I $(COQLIB)/contrib/omega \\
+  -I $(COQLIB)/contrib/ring -I $(COQLIB)/contrib/romega \\
+  -I $(COQLIB)/contrib/rtauto -I $(COQLIB)/contrib/setoid_ring \\
+  -I $(COQLIB)/contrib/subtac -I $(COQLIB)/contrib/xml\n";
     print "COQLIBS:="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " str_r; print "\n\n"
 
@@ -517,23 +502,24 @@ let directories_deps l =
 
 let do_makefile args =
   let l = process_cmd_line args in
-    banner ();
-    warning ();
-    command_line args;
-    parameters ();
-    include_dirs l;
-    variables l;
-    all_target l;
-    let sps = special  l in
-      custom sps;
-      let sds = subdirs l in
-	implicit ();
-	standard sds sps;
-	(* TEST directories_deps l; *)
-	includes ();
-	warning ();
-	if not (!output_channel == stdout) then close_out !output_channel;
-	exit 0
+  banner ();
+  header_includes ();
+  warning ();
+  command_line args;
+  parameters ();
+  include_dirs l;
+  variables l;
+  all_target l;
+  let sps = special  l in
+  custom sps;
+  let sds = subdirs l in
+  implicit ();
+  standard sds sps;
+  (* TEST directories_deps l; *)
+  footer_includes ();
+  warning ();
+  if not (!output_channel == stdout) then close_out !output_channel;
+  exit 0
 	  
 let main () =
   let args =

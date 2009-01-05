@@ -153,7 +153,7 @@ let call_gappa hl p =
   let gappa_out2 = temp_file "gappa2" in
   patch_gappa_proof gappa_out gappa_out2;
   remove_file gappa_out;
-  let cmd = sprintf "%s/coqc %s" Coq_config.bindir gappa_out2 in
+  let cmd = (Filename.concat (Envars.coqbin ()) "coqc") ^ " " ^ gappa_out2 in
   let out = Sys.command cmd in
   if out <> 0 then raise GappaProofFailed;
   let gappa_out3 = temp_file "gappa3" in
@@ -164,7 +164,7 @@ let call_gappa hl p =
     (Filename.chop_suffix gappa_out2 ".v") gappa2;
   close_out c;
   let lambda = temp_file "gappa_lambda" in
-  let cmd = sprintf "%s/coqc %s > %s" Coq_config.bindir gappa_out3 lambda in
+  let cmd = (Filename.concat (Envars.coqbin ()) "coqc") ^ " " ^ gappa_out3 ^ " > " ^ lambda in
   let out = Sys.command cmd in
   if out <> 0 then raise GappaProofFailed;
   remove_file gappa_out2; remove_file gappa_out3;

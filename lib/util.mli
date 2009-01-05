@@ -77,6 +77,7 @@ val string_index_from : string -> int -> string -> int
 val string_string_contains : where:string -> what:string -> bool
 val plural : int -> string -> string
 val ordinal : int -> string
+val split_string_at : char -> string -> string list
 
 val parse_loadpath : string -> string list
 

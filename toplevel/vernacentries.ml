@@ -399,7 +399,7 @@ let vernac_inductive finite indl =
     List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
       match cstrs with 
       | Constructors cstrs ->
-	  Dumpglob.dump_definition lid false"ind";
+	  Dumpglob.dump_definition lid false "ind";
 	  List.iter (fun (_, (lid, _)) ->
 	    Dumpglob.dump_definition lid false "constr") cstrs
       | _ -> () (* dumping is done by vernac_record (called below) *) )

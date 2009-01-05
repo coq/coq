@@ -176,12 +176,12 @@ states:: states/initial.coq
 
 $(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
 $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@
 
 $(COQTOPEXE): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
@@ -193,12 +193,12 @@ CHKOPTFLAGS:=$(CHKLIBS) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 
 $(CHICKENOPT): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ unix.cmxa gramlib.cmxa checker/check.cmxa checker/main.ml
+	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa $^
 	$(STRIP) $@
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -o $@ unix.cma gramlib.cma checker/check.cma checker/main.ml
+	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^
 
 $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
@@ -207,13 +207,13 @@ $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 
 $(COQMKTOPBYTE): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma \
-          $(COQMKTOPCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma\
+          $^ $(OSDEPLIBS)
 
 $(COQMKTOPOPT): $(COQMKTOPCMX)
 	$(SHOW)'OCAMLOPT -o $@'	
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa \
-          $(COQMKTOPCMX) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa\
+          $^ $(OSDEPLIBS)
 	$(STRIP) $@
 
 $(COQMKTOP): $(ORDER_ONLY_SEP) $(BESTCOQMKTOP)
@@ -230,11 +230,11 @@ scripts/tolink.ml: Makefile.build Makefile.common
 
 $(COQCBYTE): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQCCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $(COQCCMO) $(OSDEPLIBS)
 
 $(COQCOPT): $(COQCCMX) $(COQTOPOPT) $(BESTCOQTOP)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ unix.cmxa $(COQCCMX) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa $(COQCCMX) $(OSDEPLIBS)
 	$(STRIP) $@
 
 $(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC)
@@ -397,12 +397,12 @@ coqide-files: $(IDEFILES)
 
 $(COQIDEOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) ide/ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
 $(COQIDEBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) ide/ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -g -ide -top $(BYTEFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -g -ide -top $(BYTEFLAGS) -o $@
 
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
@@ -464,21 +464,21 @@ pcoq-binaries:: $(COQINTERFACE)
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(INTERFACE)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
+	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
 bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(INTERFACECMX)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
+	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 
 bin/coq-parser$(EXE):$(LIBCOQRUN) $(PARSERCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQRUNBYTEFLAGS) -linkall $(BYTEFLAGS) -o $@ \
-	  dynlink.cma nums.cma $(LIBCOQRUN) $(CMA) $(PARSERCMO)
+	  dynlink.cma str.cma nums.cma $(LIBCOQRUN) $(CMA) $(PARSERCMO)
 
 bin/coq-parser.opt$(EXE): $(LIBCOQRUN) $(PARSERCMX)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall $(OPTFLAGS) -o $@ \
-	  $(LIBCOQRUN) $(DYNLINKCMXA) nums.cmxa $(CMXA) $(PARSERCMX)
+	  $(LIBCOQRUN) $(DYNLINKCMXA) str.cmxa nums.cmxa $(CMXA) $(PARSERCMX)
 
 pcoq-files:: $(INTERFACEVO) $(INTERFACERC)
 
@@ -593,7 +593,7 @@ tools:: $(TOOLS) $(DEBUGPRINTERS)
 
 $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^ $(OSDEPLIBS)
 
 $(GALLINA): $(GALLINACMO)
 	$(SHOW)'OCAMLC -o $@'
@@ -665,11 +665,12 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	$(INSTALLLIB) $(LINKCMO) $(GRAMMARCMA) $(FULLCOQLIB)
+	cp --parents $(LINKCMO) $(GRAMMARCMA) $(FULLCOQLIB)
 ifeq ($(BEST),opt)
-	$(INSTALLLIB) $(LINKCMX) $(FULLCOQLIB)
+	cp --parents $(LINKCMX) $(FULLCOQLIB)
 endif
-	find . $(FIND_VCS_CLAUSE) $(PRUNE_CHECKER) -name \*.cmi -exec $(INSTALLLIB) {} $(FULLCOQLIB) \;
+	find . $(FIND_VCS_CLAUSE) \( -name \*.o -o -name \*.a -o -name \*.cmxs \) -exec cp --parents {} $(FULLCOQLIB) \;
+	find . $(FIND_VCS_CLAUSE) -name \*.cmi -exec cp --parents {} $(FULLCOQLIB) \;
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
 	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega

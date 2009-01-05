@@ -160,7 +160,7 @@ doc/stdlib/index-body.html: | $(COQDOC) $(THEORIESVO)
 	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
 
 doc/stdlib/index-list.html: doc/stdlib/index-list.html.template
-	COQTOP=$(COQSRC) ./doc/stdlib/make-library-index doc/stdlib/index-list.html
+	./doc/stdlib/make-library-index doc/stdlib/index-list.html
 
 doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.html doc/stdlib/index-trailer.html
 	cat doc/stdlib/index-list.html > $@
@@ -170,7 +170,7 @@ doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.htm
 ### Standard library (light version, full version is definitely too big)
 
 doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
-	$(COQSRC)/$(COQDOC) -q --gallina --body-only --latex --stdout \
+	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 
 doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex

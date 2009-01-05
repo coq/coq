@@ -81,6 +81,18 @@ let print_usage_coqc () =
   print_usage "Usage: coqc <options> <Coq options> file...\n
 options are:
   -verbose  compile verbosely
-  -bindir   override the default directory where coqc looks for coqtop
   -image f  specify an alternative executable for Coq
   -t        keep temporary files\n\n"
+
+(* Print the configuration information *)
+
+let print_config () = 
+  if Coq_config.local then Printf.printf "LOCAL=1\n" else Printf.printf "LOCAL=0\n";
+  Printf.printf "COQLIB=%s/\n" Coq_config.coqlib;
+  Printf.printf "COQSRC=%s/\n" Coq_config.coqsrc;
+  Printf.printf "CAMLBIN=%s/\n" Coq_config.camlbin;
+  Printf.printf "CAMLLIB=%s/\n" Coq_config.camllib;
+  Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
+  Printf.printf "CAMLP4BIN=%s\n" Coq_config.camlp4bin;
+  Printf.printf "CAMLP4LIB=%s\n" Coq_config.camlp4lib
+

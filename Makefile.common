@@ -1,3 +1,4 @@
+
 #######################################################################
 #  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
 # <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
@@ -130,7 +131,7 @@ CONFIG:=\
 LIBREP:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
   lib/util.cmo lib/bigint.cmo lib/hashcons.cmo lib/dyn.cmo lib/system.cmo \
-  lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
+  lib/envars.cmo lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
   lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo
 # Rem: Cygwin already uses variable LIB 
@@ -361,11 +362,14 @@ COQIDECMO:=ide/utils/okey.cmo ide/utils/config_file.cmo \
 
 COQIDECMX:=$(COQIDECMO:.cmo=.cmx)
 
-COQMKTOPCMO:=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
+COQENVCMO:=$(CONFIG) lib/pp_control.cmo lib/pp.cmo  lib/compat.cmo lib/flags.cmo \
+	lib/util.cmo lib/system.cmo lib/envars.cmo
 
-COQMKTOPCMX:=config/coq_config.cmx scripts/tolink.cmx scripts/coqmktop.cmx 
-COQCCMO:=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
-COQCCMX:=config/coq_config.cmx toplevel/usage.cmx scripts/coqc.cmx
+COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo 
+COQMKTOPCMX:=$(COQMKTOPCMO:.cmo=.cmx)
+
+COQCCMO:=$(COQENVCMO) toplevel/usage.cmo scripts/coqc.cmo
+COQCCMX:=$(COQCCMO:.cmo=.cmx)
 
 INTERFACE:=\
   contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
@@ -404,7 +408,7 @@ CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
-COQDEPCMO:=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
+COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep.cmo
 GALLINACMO:=tools/gallina_lexer.cmo tools/gallina.cmo
 COQDOCCMO:=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
 	tools/coqdoc/index.cmo tools/coqdoc/output.cmo \
@@ -417,7 +421,7 @@ MCHECKER:=\
   config/coq_config.cmo \
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo \
   lib/flags.cmo lib/util.cmo lib/option.cmo lib/hashcons.cmo \
-  lib/system.cmo \
+  lib/system.cmo lib/envars.cmo \
   lib/predicate.cmo lib/rtree.cmo \
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo checker/term.cmo \

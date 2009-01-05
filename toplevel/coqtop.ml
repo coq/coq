@@ -21,7 +21,7 @@ open Coqinit
 
 let get_version_date () =
   try
-    let ch = open_in (Coq_config.coqlib^"/revision") in
+    let ch = open_in (Coq_config.coqsrc^"/revision") in
     let ver = input_line ch in
     let rev = input_line ch in
       (ver,rev)
@@ -274,7 +274,12 @@ let parse_args is_ide =
 	    
     | "-unicode" :: rem -> Flags.unicode_syntax := true; parse rem
 
-    | "-where" :: _ -> print_endline (getenv_else "COQLIB" Coq_config.coqlib); exit 0
+    | "-coqlib" :: d :: rem -> Flags.coqlib_spec:=true; Flags.coqlib:=d; parse rem
+    | "-coqlib" :: [] -> usage ()
+
+    | "-where" :: _ -> print_endline (Envars.coqlib ()); exit 0
+
+    | ("-config"|"--config") :: _ -> Usage.print_config (); exit 0
 
     | ("-quiet"|"-silent") :: rem -> Flags.make_silent true; parse rem
 

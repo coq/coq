@@ -691,7 +691,7 @@ let _ =
        end ;
        Option.iter 
 	(fun fn ->
-	  let coqdoc = Coq_config.bindir^"/coqdoc" in
+	  let coqdoc = Filename.concat (Envars.coqbin ()) ("coqdoc" ^ Coq_config.exec_extension) in
 	  let options = " --html -s --body-only --no-index --latin1 --raw-comments" in
 	  let dir = Option.get xml_library_root in
           let command cmd =
