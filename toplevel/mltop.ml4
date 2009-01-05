@@ -229,9 +229,8 @@ let stdlib_use_plugins = Coq_config.has_natdynlink
     Order matters, for instance ground_plugin needs cc_plugins. *)
 
 let initial_plugins =
-  [ "Extraction_plugin"; "Jprover_plugin"; "Cc_plugin";
-    "Ground_plugin"; "Dp_plugin"; "Recdef_plugin"; (*"subtac_plugin";*)
-    "Xml_plugin"; ]
+  [ "Extraction_plugin"; "Cc_plugin"; "Ground_plugin"; "Dp_plugin"; 
+    "Recdef_plugin"; (*"subtac_plugin";*) "Xml_plugin"; ]
 
 (** Other plugins of the standard library. We need their list
     to avoid trying to load them if they have been statically compiled

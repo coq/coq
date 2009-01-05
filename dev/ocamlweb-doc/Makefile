@@ -8,7 +8,7 @@ LOCALINCLUDES=-I ../../config -I ../../tools -I ../../tools/coqdoc \
 	      -I ../../contrib/ring -I ../../contrib/dp -I ../../contrib/setoid_ring \
               -I ../../contrib/xml -I ../../contrib/extraction \
               -I ../../contrib/interface -I ../../contrib/fourier \
-	      -I ../../contrib/jprover -I ../../contrib/cc \
+	      -I ../../contrib/cc \
 	      -I ../../contrib/funind -I ../../contrib/firstorder \
               -I ../../contrib/field -I ../../contrib/subtac -I ../../contrib/rtauto \
               -I ../../contrib/recdef
