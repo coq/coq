@@ -114,6 +114,7 @@ OSDEPLIBS=OSDEPENDENTLIBS
 #  Unix systems:
 #  Win32 systems : .exe
 EXE=EXECUTEEXTENSION
+DLLEXT=DLLEXTENSION
 
 # the command MKDIR (try to replace it with mkdirhier if you have problems)
 MKDIR=mkdir -p
