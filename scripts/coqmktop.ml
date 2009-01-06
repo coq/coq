@@ -57,10 +57,11 @@ let src_dirs () =
 
 let includes () = 
   let coqlib = Envars.coqlib () in
+  let camlp4lib = Envars.camlp4lib () in
     List.fold_right
       (fun d l -> "-I" :: List.fold_left Filename.concat coqlib d :: l)
       (src_dirs ())
-      (["-I"; "\"" ^ Coq_config.camlp4lib ^ "\""] @ 
+      (["-I"; "\"" ^ camlp4lib ^ "\""] @ 
 	 ["-I"; "\"" ^ coqlib ^ "\""] @
 	 (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
 
