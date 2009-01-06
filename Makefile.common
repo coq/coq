@@ -119,7 +119,7 @@ REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
 
 COQRUN := coqrun
 LIBCOQRUN:=kernel/byterun/lib$(COQRUN).a
-DLLCOQRUN:=$(dir $(LIBCOQRUN))dll$(COQRUN).so
+DLLCOQRUN:=$(dir $(LIBCOQRUN))dll$(COQRUN)$(DLLEXT)
 
 CLIBS:=unix.cma
 
