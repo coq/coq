@@ -287,12 +287,6 @@ EXTRACTIONCMO:=\
   contrib/extraction/extract_env.cmo \
   contrib/extraction/g_extraction.cmo
 
-JPROVERCMO:=\
-  contrib/jprover/opname.cmo \
-  contrib/jprover/jterm.cmo contrib/jprover/jlogic.cmo \
-  contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
-  contrib/jprover/jprover.cmo
-
 FUNINDCMO:=\
   contrib/funind/indfun_common.cmo contrib/funind/rawtermops.cmo \
   contrib/funind/recdef.cmo \
@@ -325,7 +319,7 @@ RTAUTOCMO:=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 
 CONTRIB:=$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) \
         $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
-	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
+	$(FOURIERCMO) $(EXTRACTIONCMO) $(XMLCMO) \
 	$(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
 	$(FUNINDCMO)
 
@@ -804,8 +798,6 @@ FUNINDVO:=
 RECDEFVO:=$(addprefix contrib/funind/, \
  Recdef.vo )
 
-JPROVERVO:= 
-
 CCVO:=
 
 DPVO:=$(addprefix contrib/dp/, \
@@ -815,7 +807,7 @@ RTAUTOVO:=$(addprefix contrib/rtauto/, \
  Bintree.vo	Rtauto.vo )
 
 CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
-	    $(XMLVO) $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) \
+	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
 	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO)
 
 ALLVO:= $(INITVO) $(THEORIESVO) $(CONTRIBVO)
@@ -883,7 +875,7 @@ STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
 VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   fsets allfsets relations wellfounded ints reals allreals \
   setoids sorting natural integer rational numbers noreal \
-  omega micromega ring setoid_ring dp xml extraction field fourier jprover \
+  omega micromega ring setoid_ring dp xml extraction field fourier \
   funind cc programs subtac rtauto
 DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq rectutorial refman-quick refman-nodep stdlib-nodep
 STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \

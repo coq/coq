@@ -332,6 +332,8 @@ Tactics
   occurrences of a term.
 - Tactic "pose proof" supports name overwriting in case of specialization of an
   hypothesis.
+- Semi-decision tactic "jp" for first-order intuitionistic logic moved to user 
+  contributions (subsumed by "firstorder").
 
 Program
 

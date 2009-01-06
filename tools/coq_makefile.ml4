@@ -185,6 +185,7 @@ let install (vfiles,mlfiles,_,sds) inc =
   print "\tmkdir -p $(COQLIB)/user-contrib\n";
   if !some_vfile then install_include_by_root "VOFILES" vfiles inc;
   if !some_mlfile then install_include_by_root "CMOFILES" mlfiles inc;
+  if !some_mlfile then install_include_by_root "CMIFILES" mlfiles inc;
   if Coq_config.has_natdynlink && !some_mlfile then
     install_include_by_root "CMXSFILES" mlfiles inc;
   List.iter
@@ -391,6 +392,7 @@ let main_targets vfiles mlfiles other_targets inc =
 	print "CMOFILES:=$(MLFILES:.ml=.cmo)\n";
 	classify_files_by_root "CMOFILES" mlfiles inc;
 	print "CMIFILES:=$(MLFILES:.ml=.cmi)\n";
+	classify_files_by_root "CMIFILES" mlfiles inc;
 	print "CMXFILES:=$(MLFILES:.ml=.cmx)\n";
 	print "CMXSFILES:=$(MLFILES:.ml=.cmxs)\n";
 	classify_files_by_root "CMXSFILES" mlfiles inc;
@@ -473,8 +475,6 @@ let rec process_cmd_line = function
           some_vfile := true
 	else if (Filename.check_suffix f ".ml") || (Filename.check_suffix f ".ml4") then
           some_mlfile := true
-	else
-	  () 
       in
 	List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies);
 	Special (file,dependencies,com) :: (process_cmd_line r)
@@ -500,10 +500,13 @@ let rec process_cmd_line = function
           some_vfile := true; 
 	  V f :: (process_cmd_line r)
 	end else if (Filename.check_suffix f ".ml") || (Filename.check_suffix f ".ml4") then begin
-            some_mlfile := true; 
-	    ML f :: (process_cmd_line r)
-      end else
-            Subdir f :: (process_cmd_line r)
+          some_mlfile := true; 
+	  ML f :: (process_cmd_line r)
+	end else if (Filename.check_suffix f ".mli") then begin
+	  Printf.eprintf "Warning: no need for .mli files, skipped %s\n" f;
+	  process_cmd_line r
+	end else
+          Subdir f :: (process_cmd_line r)
 	      
 let banner () =
   print

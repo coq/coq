@@ -978,7 +978,6 @@ let head_evar =
    that we don't care whether args itself contains Rel's or even Rel's
    distinct from the ones in l *)
 
-
 let rec expand_and_check_vars env = function
   | [] -> []
   | a::l ->
@@ -991,35 +990,19 @@ let rec expand_and_check_vars env = function
       else
 	raise Exit
 
-(*
-let is_identity_subst env args l =
-  let n = Array.length args in
-  (* Check named context from most recent to oldest declaration *)
-  let rec aux i = function
-  | [] -> i = 0
-  | (id,_,_)::l -> args.(i) = mkVar id && aux (i-1) l in
-  (* Check named context from oldest to most recent declaration *)
-  let rec aux' i = function
-  | [] -> aux i (named_context env)
-  | _::l -> args.(i) = mkRel (n-i) && aux' (i-1) l in
-  List.for_all (fun c -> not (array_exists ((=) (expand_var env c)) args)) l &&
-  aux' (n-1) (rel_context env)
-*)
-
 let is_unification_pattern_evar env (_,args) l t =
-(*
-  (* Optimize the most common case *)
-  List.for_all (fun x -> isRel x || isVar x) l && is_identity_subst env args l
-  ||
-*)
+  List.for_all (fun x -> isRel x || isVar x) l (* common failure case *)
+  &&
     let l' = Array.to_list args @ l in
     let l'' = try Some (expand_and_check_vars env l') with Exit -> None in
     match l'' with
     | Some l ->
 	let deps =
 	  if occur_meta_or_existential t then
+	    (* Probably no restrictions on allowed vars in presence of evars *)
 	    l
 	  else
+	    (* Probably strong restrictions coming from t being evar-closed *)
 	    let fv_rels = free_rels t in
 	    let fv_ids = global_vars env t in
 	    List.filter (fun c ->
@@ -1029,10 +1012,6 @@ let is_unification_pattern_evar env (_,args) l t =
 	      | _ -> assert false) l in
 	list_distinct deps
     | None -> false
-
-(*    
-    Pp.ppnl (prlist_with_sep spc (fun c -> match kind_of_term c with Rel _ | Var _ -> print_constr c | _ -> str "..") l'); Pp.flush_all ();
-*)
 
 let is_unification_pattern (env,nb) f l t =
   match kind_of_term f with
