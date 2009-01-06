@@ -10,8 +10,8 @@
 
 let version () =
   Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
-    Coq_config.version Coq_config.date;
-  Printf.printf "compiled on %s\n" Coq_config.compile_date;
+    Revision.version Revision.revision;
+  Printf.printf "compiled on %s\n" Revision.date;
   exit 0
 
 (* print the usage of coqtop (or coqc) on channel co *)
@@ -94,5 +94,11 @@ let print_config () =
   Printf.printf "CAMLLIB=%s/\n" Coq_config.camllib;
   Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
   Printf.printf "CAMLP4BIN=%s\n" Coq_config.camlp4bin;
-  Printf.printf "CAMLP4LIB=%s\n" Coq_config.camlp4lib
+  Printf.printf "CAMLP4LIB=%s\n" Coq_config.camlp4lib;
+  Printf.printf "coqlib=%s/\n" (Envars.coqlib ());
+  Printf.printf "coqbin=%s/\n" (Envars.coqbin ());
+  Printf.printf "camlbin=%s/\n" (Envars.camlbin ());
+  Printf.printf "camllib=%s/\n" (Envars.camllib ());
+  Printf.printf "camlp4bin=%s\n" (Envars.camlp4bin ());
+  Printf.printf "camlp4lib=%s\n" (Envars.camlp4lib ())
 

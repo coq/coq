@@ -30,7 +30,6 @@ val coqrunbyteflags : string (* -custom/-dllib -lcoqrun *)
 
 val version : string    (* version number of Coq *)
 val date : string       (* release date *)
-val compile_date : string (* compile date *)
 val vo_magic_number : int
 val state_magic_number : int
 
