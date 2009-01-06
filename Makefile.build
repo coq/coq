@@ -663,17 +663,17 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	cp --parents $(LINKCMO) $(GRAMMARCMA) $(FULLCOQLIB)
+	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
+	cp --parents $(CONFIG) $(LINKCMO) $(GRAMMARCMA) $(FULLCOQLIB)
+	cp --parents $(OBJSCMO:.cmo=.cmi) $(FULLCOQLIB)
 ifeq ($(BEST),opt)
-	cp --parents $(LINKCMX) $(FULLCOQLIB)
+	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
+	cp --parents $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a) $(FULLCOQLIB)
 endif
-	find . $(FIND_VCS_CLAUSE) \( -name \*.o -o -name \*.a -o -name \*.cmxs \) -exec cp --parents {} $(FULLCOQLIB) \;
-	find . $(FIND_VCS_CLAUSE) -name \*.cmi -exec cp --parents {} $(FULLCOQLIB) \;
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
 	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
 	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/contrib/micromega
-	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
