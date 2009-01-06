@@ -1012,7 +1012,11 @@ fi
 
 if [ ! "$COQIDE" = "no" ]; then 
     if grep "class view " "$lablgtkdir/gText.mli" | grep -q "\[>" ; then
+       if grep -q "?accepts_tab:bool" "$lablgtkdir/gText.mli" ; then
+        cp -f ide/undo_lablgtk_ge212.mli ide/undo.mli
+       else
 	cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli
+       fi
     else
 	cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
     fi
