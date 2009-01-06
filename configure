@@ -9,7 +9,7 @@
 VERSION=trunk
 VOMAGIC=08193 
 STATEMAGIC=19764
-DATE="date unspecified"
+DATE=`date +"%B %Y"`
 
 # Create the bin/ directory if non-existent
 test -d bin || mkdir bin
@@ -251,15 +251,6 @@ if [ $prefix_spec = yes -a $local = true ] ; then
   echo "Configure script failed!"
   exit 1
 fi
-
-# compile date
-DATEPGM=`which date`
-case $DATEPGM in
-    "") echo "I can't find the program \"date\" in your path."
-        echo "Please give me the current date"
-	read COMPILEDATE;;
-    *)  COMPILEDATE=`date +"%h %d %Y %H:%M:%S"`;;
-esac
 
 # Architecture
 
@@ -884,6 +875,7 @@ case $ARCH in
         ESCCOQTOP="$COQTOP"
 	ESCBINDIR="$BINDIR"
 	ESCSRCDIR="$COQSRC"
+	ESCDOSSRCDIR="$COQSRC"
 	ESCLIBDIR="$LIBDIR"
 	ESCCAMLDIR="$CAMLBIN"
 	ESCCAMLLIB="$CAMLLIB"
@@ -894,6 +886,8 @@ case $ARCH in
    	ESCCAMLP4BIN="$CAMLP4BIN"
    	ESCCAMLP4LIB="$CAMLP4LIB"
 	ESCLABLGTKINCLUDES="$LABLGTKINCLUDES"
+	ESCCOQRUNBYTEFLAGS="$COQRUNBYTEFLAGS"
+	ESCBUILDLDPATH="$BUILDLDPATH"
 	;;
 esac
 
@@ -917,7 +911,6 @@ let has_natdynlink = $HASNATDYNLINK
 let osdeplibs = "$OSDEPLIBS"
 let version = "$VERSION"
 let date = "$DATE"
-let compile_date = "$COMPILEDATE"
 let vo_magic_number = $VOMAGIC
 let state_magic_number = $STATEMAGIC
 let exec_extension = "$EXE"
