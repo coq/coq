@@ -62,7 +62,8 @@ Coq is a system originating in the initial work of Thierry Coquand and
 Gérard Huet on the Calculus of Constructions. Its implementation,
 called CoC, was started in 1984. Version 4.10 of CoC was released in
 1989.  With version 5.6, the underlying logic became the Calculus of
-Inductive Constructions and changed its name to Coq.
+Inductive Constructions and changed its name to Coq. With version 8.0,
+the impredicativity of the sort \term{Set} was abandoned.
 
 The standard library of Coq was first released as such in April 1993
 as part of Coq version 5.8.0. It contained libraries about natural
@@ -74,7 +75,7 @@ empty libraries for sets (SETS), relations (RELATIONS), streams
 (STREAMS) whose purpose was basically to provide examples such as the
 proof of Schroeder-Bernstein theorem, the proof of Newman lemma, and
 the correctness of Eratosthene sieve. A collection of examples of
-algorithm correctness proofs (PROGRAMS) completed this first version.
+algorithms correctness proofs (PROGRAMS) completed this first version.
 
 Formerly, the same collection of results (but poorer) was simply
 released as an informal collection of examples\footnote{For the
@@ -232,7 +233,7 @@ me. Directions to explore before having a better feeling are:
 \item The development of tactics behaving closer and closer to what the
   user has in mind.
 
-\item A rendering based as much on proof script than on the raw
+\item A rendering based as much on the proof script than on the raw
 proof-term, as partly explored by MoWGLI and Loïc Pottier.
 \end{itemize}
 
@@ -247,7 +248,8 @@ Coq is basically text made of Unicode characters.  How far can we go
 in using more involved notations in the interactive proof development,
 starting from three dimensional notations, such as indices, fractions,
 etc.  The Matita~\cite{Matita} project is an interesting project to
-follow on this side.
+follow on this side (see e.g. L. Padovani's work on typing mathematics
+formula).
 
 Alternatively, how to export notations from a Coq file, so that its
 rendering in TeX or HTML benefits of these notations.
@@ -269,7 +271,7 @@ detection of conflicts)?
 
 \subsection{General remarks}
 
-The sources of progress come from the formalisation. The early
+The sources of progress come from the formalisations. The early
 formalisation of category theory by Amokrane Saïbi was a motivation
 for coercions, implicit arguments, canonical structures.
 
@@ -442,6 +444,9 @@ more uniform names would be no sacrilege.
 \begin{itemize}
 \item Merge \term{sum}, \term{sumor} and \term{sumbool} (possible thanks
   to sort polymorphism of inductive types?
+\item Having \term{\~ A} as a notation for \term{A -> False} rather
+than for \term{not A} would avoid all these problems of converting
+\term{A -> False} and \term{not A} [suggested by EM].
 \item If yes, what uniform naming schemes? We need at least uniform
 naming schemes for \name{or} and \name{and} and for \name{prod} and
 \name{sum}/\name{sumor}/\name{sumbool}.
@@ -934,6 +939,15 @@ implementations of the IEEE 754 norm.
 
 Several users asked for such a library.
 
+\subsection{Union-find}
+
+\subsection{Graphs}
+
+Which representation?
+
+\subsection{Bounded/modulo arithmetic}
+
+
 \section{Libraries dedicated to tactics}
 
 \paragraph{Inconsistencies and recommendations}
@@ -1370,7 +1384,7 @@ Variable x : A;>>;;
 <<Discharge A;>>;;
 \end{verbatim}
 
-Just for the record, notice how the use of indentation improved the
+Just for the record, notice how the simple use of indentation improved the
 presentation in version 4.1:
 
 \begin{verbatim}
