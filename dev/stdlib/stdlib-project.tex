@@ -1597,6 +1597,10 @@ forall x y:D, op (op'' x y) = op' (op x) (op y)}
   Remark: The property is sometimes called cancellation (would give
   \name{Dop\_cancel\_l}).
 
+  Remark: Shall a property like $n^p \leq n^q \rightarrow p \leq q$
+  (for $n\geq 1$) be called cancellation or should it be reserved for
+  operators that have an inverse?
+
 \itemrule{Right regularity of binary operator {\op}}{Dop\_reg\_r [or call it Dop\_inj\_r ??]}
 {forall x y z:D, op x z = op y z -> x = y}
 
@@ -2038,6 +2042,16 @@ further, to destructing \texttt{fun} (i.e. \texttt{fun ((x,y),(z,t))
 
 Implicit arguments in Bvectors missing. Implicit arguments of
 left/right, inleft/inright etc missing.
+
+\section{About Hints}
+
+From file {\tt rith/Power.v}, the following hints are liable to be used to simplify hypotheses (some {\tt Hint Assert} (or {\tt Hint Apply in}):
+
+\begin{verbatim}
+Hint Assert power_le_mono_inv : arith2.
+Hint Assert power_lt_mono_inv1 : arith2.
+Hint Assert power_lt_mono_inv2 : arith2.
+\end{verbatim}
 
 \section{Tactic wishes}
 
