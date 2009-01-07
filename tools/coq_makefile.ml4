@@ -249,7 +249,7 @@ let implicit () =
     print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.ml.d: %.ml\n";
-    print "\t$(CAMLBIN)ocamldep -slash $(ZFLAGS) $(PP) -impl \"$<\" > \"$@\"\n\n"
+    print "\t$(CAMLBIN)ocamldep -slash $(COQSRCLIBS) $(PP) -impl \"$<\" > \"$@\"\n\n"
   and v_rule () =
     print "%.vo %.glob: %.v\n\t$(COQC) -dump-glob $*.glob $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -298,8 +298,8 @@ let parameters () =
   print "# This Makefile may take 3 arguments passed as environment variables:\n";
   print "#   - COQBIN to specify the directory where Coq binaries resides;\n";
   print "#   - CAMLBIN and CAMLP4BIN to give the path for the OCaml and Camlp4/5 binaries.\n";
-  print "COQLIB:=$(shell $(COQBIN)coqtop -where)\n"; 
-  print "CAMLP4:=$(shell $(COQBIN)coqtop -config | awk -F = '/CAMLP4=/{print $$2}')\n"; 
+  print "COQLIB:=$(shell $(COQBIN)coqtop -where | sed -e 's/\\\\/\\\\\\\\/g')\n"; 
+  print "CAMLP4:=\"$(shell $(COQBIN)coqtop -config | awk -F = '/CAMLP4=/{print $$2}')\"\n"; 
   print "ifndef CAMLP4BIN\n  CAMLP4BIN:=$(CAMLBIN)\nendif\n\n";
   print "CAMLP4LIB:=$(shell $(CAMLP4BIN)$(CAMLP4) -where)\n\n"
 
