@@ -126,10 +126,7 @@ CLIBS:=unix.cma
 CAMLP4OBJS:=gramlib.cma
 
 CONFIG:=\
-  config/coq_config.cmo
-
-REVISIONML:=config/revision.ml
-REVISIONCMO:=$(REVISIONML:.ml=.cmo)
+  config/coq_config.cmo config/revision.cmo
 
 LIBREP:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
@@ -230,7 +227,7 @@ TOPLEVEL:=\
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/vernacentries.cmo toplevel/whelp.cmo toplevel/vernac.cmo \
   toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
-  toplevel/toplevel.cmo $(REVISIONCMO) toplevel/usage.cmo \
+  toplevel/toplevel.cmo toplevel/usage.cmo \
   toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS:=\
@@ -365,7 +362,7 @@ COQENVCMO:=$(CONFIG) lib/pp_control.cmo lib/pp.cmo  lib/compat.cmo lib/flags.cmo
 COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo 
 COQMKTOPCMX:=$(COQMKTOPCMO:.cmo=.cmx)
 
-COQCCMO:=$(COQENVCMO) $(REVISIONCMO) toplevel/usage.cmo scripts/coqc.cmo
+COQCCMO:=$(COQENVCMO) toplevel/usage.cmo scripts/coqc.cmo
 COQCCMX:=$(COQCCMO:.cmo=.cmx)
 
 INTERFACE:=\
@@ -415,7 +412,7 @@ COQDOCCMO:=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
 # checker
 
 MCHECKER:=\
-  config/coq_config.cmo $(REVISIONCMO) \
+  $(CONFIG) \
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo \
   lib/flags.cmo lib/util.cmo lib/option.cmo lib/hashcons.cmo \
   lib/system.cmo lib/envars.cmo \
@@ -484,7 +481,7 @@ STAGE1_CMO:=$(GRAMMARCMO) parsing/q_constr.cmo
 STAGE1:=parsing/grammar.cma parsing/q_constr.cmo
 
 PRINTERSCMO:=\
-  config/coq_config.cmo lib/lib.cma \
+  $(CONFIG) lib/lib.cma \
   kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo	\
   kernel/mod_subst.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo	\
   kernel/sign.cmo kernel/declarations.cmo kernel/retroknowledge.cmo \
