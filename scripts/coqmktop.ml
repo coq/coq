@@ -16,6 +16,13 @@ open Unix
 
 (* Objects to link *)
 
+(* 0. path to libraries *)
+let coqtop = System.getenv_else "COQTOP" Coq_config.coqtop
+let camlbin = System.getenv_else "CAMLBIN" Coq_config.camldir
+let camllib = System.getenv_else "CAMLLIB" Coq_config.camllib
+let camlp4lib = System.getenv_else "CAMLP4LIB" Coq_config.camlp4lib
+
+
 (* 1. Core objects *)
 let ocamlobjs = ["unix.cma"]
 let dynobjs = ["dynlink.cma"]
@@ -44,7 +51,7 @@ let notopobjs = gramobjs
 (* 4. High-level tactics objects *)
 
 (* environment *)
-let src_coqtop = ref Coq_config.coqtop
+let src_coqtop = ref coqtop
 let opt        = ref false
 let full       = ref false
 let top        = ref false
@@ -63,7 +70,7 @@ let includes () =
   List.fold_right
     (fun d l -> "-I" :: List.fold_left Filename.concat !src_coqtop d :: l)
     (src_dirs ())
-    (["-I"; "\"" ^ Coq_config.camlp4lib ^ "\""] @ 
+    (["-I"; "\"" ^ camlp4lib ^ "\""] @ 
      (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
 
 (* Transform bytecode object file names in native object file names *)
@@ -220,7 +227,7 @@ let all_modules_in_dir dir =
 
 let expand_ocaml_lib dir =
   if String.length dir > 0 && dir.[0] = '+' then 
-    Coq_config.camllib^"/"^String.sub dir 1 (String.length dir - 1)
+    camllib^"/"^String.sub dir 1 (String.length dir - 1)
   else
     dir
 
@@ -238,9 +245,9 @@ let rec_crc_cmd dir =
 let tmp_dynlink()=
   let tmp = Filename.temp_file "coqdynlink" ".ml" in
   let _ = Sys.command ("echo \"Dynlink.init();;\" > "^tmp) in
-  let _ = Sys.command (Coq_config.camllib^"/extract_crc"^(crc_cmd
-      Coq_config.camllib)^(crc_cmd Coq_config.camlp4lib)^(rec_crc_cmd
-      Coq_config.coqtop)^" >> "^tmp) in
+  let _ = Sys.command (camllib^"/extract_crc"^(crc_cmd
+      camllib)^(crc_cmd camlp4lib)^(rec_crc_cmd
+      coqtop)^" >> "^tmp) in
   let _ = Sys.command ("echo \";;\" >> "^tmp) in
   let _ = 
     Sys.command ("echo \"Dynlink.add_available_units crc_unit_list;;\" >> "^
@@ -294,12 +301,12 @@ let main () =
       begin
 	(* native code *)
 	if !top then failwith "no custom toplevel in native code !";
-	let ocamloptexec = Filename.concat Coq_config.camldir "ocamlopt" in
+	let ocamloptexec = Filename.concat camlbin "ocamlopt" in
           (if !caml_inline_0 then ocamloptexec^" -linkall"^" -inline 0" else ocamloptexec^" -linkall")
       end else
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
       let ocamlmktoplib = " toplevellib.cma" in
-      let ocamlcexec = Filename.concat Coq_config.camldir "ocamlc" in
+      let ocamlcexec = Filename.concat camlbin "ocamlc" in
       let ocamlccustom = ocamlcexec^" -custom -linkall" in
 	(if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
   in

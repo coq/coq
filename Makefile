@@ -418,18 +418,19 @@ $(COQTOP):
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
 
 # coqmktop 
-
-COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
-COQMKTOPCMX=config/coq_config.cmx scripts/tolink.cmx scripts/coqmktop.cmx 
+COQENVCMO:=$(CONFIG) lib/pp_control.cmo lib/pp.cmo  lib/compat.cmo \
+	lib/util.cmo lib/system.cmo
+COQMKTOPCMO=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo 
+COQMKTOPCMX=$(COQMKTOPCMO:.cmo=.cmx)
 
 $(COQMKTOPBYTE): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma \
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
 
 $(COQMKTOPOPT): $(COQMKTOPCMX)
 	$(SHOW)'OCAMLOPT -o $@'	
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa \
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa \
           $(COQMKTOPCMX) $(OSDEPLIBS)
 
 $(COQMKTOP): $(BESTCOQMKTOP)
@@ -1285,7 +1286,11 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-	cp $(OBJECTCMI) $(OBJECTCMA) $(OBJECTCMXA) $(GRAMMARCMA) $(FULLCOQLIB)
+	cp $(LIBCOQRUN) $(FULLCOQLIB)
+	cp --parents $(CONFIG) $(OBJECTCMI) $(LINKCMO) $(GRAMMARCMA) $(FULLCOQLIB)
+ifeq ($(BEST),opt)
+	cp --parents $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a) $(FULLCOQLIB)
+endif
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)

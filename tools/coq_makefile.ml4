@@ -125,8 +125,8 @@ let standard sds sps =
   end;
   print "clean:\n";
   print "\trm -f *.cmo *.cmi *.cmx *.o $(VOFILES) $(VIFILES) $(GFILES) *~\n";
-  print "\trm -f all.ps all-gal.ps $(HTMLFILES) $(GHTMLFILES)\n";
-  List.iter
+  print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf $(HTMLFILES) $(GHTMLFILES)\n";
+List.iter
     (fun (file,_,_) -> 
       if not (is_genrule file) then
 	(print "\t- rm -f "; print file; print "\n"))
@@ -194,7 +194,9 @@ let variables l =
   print "endif\n";
   print "COQLIB=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
   print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
+  print "ifndef COQBIN\n";
   print "  COQBIN=$(COQTOP)/bin/\n";
+  print "endif\n";
   print "  COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
    -I $(COQTOP)/library -I $(COQTOP)/parsing \\
    -I $(COQTOP)/pretyping -I $(COQTOP)/interp \\
@@ -343,7 +345,11 @@ let all_target l =
     print "\t$(COQDOC) -ps -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
     print "all-gal.ps: $(VFILES)\n";
     print "\t$(COQDOC) -ps -g -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
-    print "\n\n"
+    print "all.pdf: $(VFILES)\n";
+    print "\t$(COQDOC) -toc -pdf $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+    print "all-gal.pdf: $(VFILES)\n";
+    print "\t$(COQDOC) -toc -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+     print "\n\n"
   end
 
 let parse f =
