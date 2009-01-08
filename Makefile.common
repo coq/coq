@@ -73,7 +73,7 @@ TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
 ###########################################################################
 
 LATEX:=latex
-BIBTEX:=bibtex -min-crossrefs=10
+BIBTEX:=BIBINPUTS=.: bibtex -min-crossrefs=10
 MAKEINDEX:=makeindex
 PDFLATEX:=pdflatex
 HEVEA:=hevea

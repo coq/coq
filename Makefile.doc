@@ -90,7 +90,7 @@ doc/refman/Reference-Manual.pdf: $(REFMANFILES) doc/refman/Reference-Manual.tex
 ### Reference Manual (browsable format)
 
 doc/refman/Reference-Manual.html: doc/refman/styles.hva doc/refman/headers.hva doc/refman/Reference-Manual.dvi # to ensure bbl file
-	(cd doc/refman; $(HEVEA) $(HEVEAOPTS) ./styles.hva ./Reference-Manual.tex)
+	(cd doc/refman; BIBINPUTS=.: $(HEVEA) $(HEVEAOPTS) ./styles.hva ./Reference-Manual.tex)
 
 doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
                         doc/refman/cover.html doc/refman/index.html

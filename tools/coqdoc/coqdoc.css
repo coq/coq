@@ -25,7 +25,7 @@ body { padding: 0px 0px;
        padding: 10px;
        overflow: hidden;
        font-size: 100%;
-       line-height: 80% }
+       line-height: 100% }
 
 #main  a.idref:visited {color : #416DFF; text-decoration : none; }
 #main  a.idref:link {color : #416DFF; text-decoration : none; }

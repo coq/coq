@@ -314,9 +314,7 @@ since the required properties over \texttt{eq\_set} and
 \begin{coq_example*}
 Goal forall (S: set nat),
  eq_set (union (union S empty) S) (union S S).
-Proof.
- intros. rewrite empty_neutral. reflexivity.
-Qed.
+Proof. intros. rewrite empty_neutral. reflexivity. Qed.
 \end{coq_example*}
 
 The tables of relations and morphisms are managed by the type class
@@ -580,7 +578,7 @@ declaration of setoids and morphisms is also accepted.
 \end{quote}
 where \textit{Aeq} is a congruence relation without parameters,
 \textit{A} is its carrier and \textit{ST} is an object of type
-\verb|(Setoid_Theory A Aeq)| (i.e. a record packing together the reflexivity,
+\texttt{(Setoid\_Theory A Aeq)} (i.e. a record packing together the reflexivity,
 symmetry and transitivity lemmas). Notice that the syntax is not completely
 backward compatible since the identifier was not required.
 
@@ -641,9 +639,9 @@ declared such a morphism, it will be used by the setoid rewriting tactic
 each time we try to rewrite under a binder. Indeed, when rewriting under
 a lambda, binding variable $x$, say from $P~x$ to $Q~x$ using the
 relation \texttt{iff}, the tactic will generate a proof of
-\verb|pointwise_relation A iff (fun x => P x) (fun x => Q x)| 
-from the proof of \verb|iff (P x) (Q x)| and a
-constraint of the form \verb|Morphism (pointwise_relation A iff ==> ?) m|
+\texttt{pointwise\_relation A iff (fun x => P x) (fun x => Q x)}
+from the proof of \texttt{iff (P x) (Q x)} and a
+constraint of the form \texttt{Morphism (pointwise\_relation A iff ==> ?) m}
 will be generated for the surrounding morphism \texttt{m}. 
 
 Hence, one can add higher-order combinators as morphisms by providing
@@ -660,7 +658,7 @@ Inductive list_equiv {A:Type} (eqA : relation A) : relation (list A) :=
   forall l l', list_equiv eqA l l' -> list_equiv eqA (x :: l) (y :: l').
 \end{coq_eval}
 \begin{coq_example*}
-Instance map_morphism [ Equivalence A eqA, Equivalence B eqB ] :
+Instance map_morphism `{Equivalence A eqA, Equivalence B eqB} :
   Morphism ((eqA ==> eqB) ==> list_equiv eqA ==> list_equiv eqB) 
      (@map A B).
 \end{coq_example*}
@@ -690,8 +688,8 @@ of signatures for a particular constant. By default, the only declared
 subrelation is \texttt{iff}, which is a subrelation of \texttt{impl}
 and \texttt{inverse impl} (the dual of implication). That's why we can
 declare only two morphisms for conjunction:
-\verb|Morphism (impl ==> impl ==> impl) and| and 
-\verb|Morphism (iff ==> iff ==> iff) and|. This is sufficient to satisfy
+\texttt{Morphism (impl ==> impl ==> impl) and} and 
+\texttt{Morphism (iff ==> iff ==> iff) and}. This is sufficient to satisfy
 any rewriting constraints arising from a rewrite using \texttt{iff},
 \texttt{impl} or \texttt{inverse impl} through \texttt{and}.
 
