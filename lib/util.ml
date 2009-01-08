@@ -59,6 +59,9 @@ let is_letter c = (c >= 'a' && c <= 'z') or (c >= 'A' && c <= 'Z')
 let is_digit c = (c >= '0' && c <= '9')
 let is_ident_tail c =
   is_letter c or is_digit c or c = '\'' or c = '_'
+let is_blank = function
+  | ' ' | '\r' | '\t' | '\n' -> true
+  | _ -> false
 
 (* Strings *)
 
@@ -72,6 +75,21 @@ let explode s =
   explode_rec 0
 
 let implode sl = String.concat "" sl
+
+let strip s =
+  let n = String.length s in
+  let rec lstrip_rec i =
+    if i < n && is_blank s.[i] then
+      lstrip_rec (i+1)
+    else i
+  in
+  let rec rstrip_rec i =
+    if i >= 0 && is_blank s.[i] then
+      rstrip_rec (i-1)
+    else i
+  in
+  let a = lstrip_rec 0 and b = rstrip_rec (n-1) in
+  String.sub s a (b-a+1)
 
 (* substring searching... *)
 

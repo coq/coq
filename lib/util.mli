@@ -68,11 +68,13 @@ val pi3 : 'a * 'b * 'c -> 'c
 val is_letter : char -> bool
 val is_digit : char -> bool
 val is_ident_tail : char -> bool
+val is_blank : char -> bool
 
 (*s Strings. *)
 
 val explode : string -> string list
 val implode : string list -> string
+val strip : string -> string
 val string_index_from : string -> int -> string -> int
 val string_string_contains : where:string -> what:string -> bool
 val plural : int -> string -> string
