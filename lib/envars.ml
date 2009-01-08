@@ -63,7 +63,7 @@ let camllib () =
     let camlbin = camlbin () in 
     let com = (Filename.concat camlbin "ocamlc") ^ " -where" in
     let _,res = System.run_command (fun x -> x) (fun _ -> ()) com in
-      res
+    Util.strip res
 
 (* TODO : essayer aussi camlbin *)
 let camlp4bin () = 
@@ -78,6 +78,6 @@ let camlp4lib () =
     let camlp4bin = camlp4bin () in 
     let com = (Filename.concat camlp4bin Coq_config.camlp4) ^ " -where" in
     let _,res = System.run_command (fun x -> x) (fun _ -> ()) com in
-      res
+    Util.strip res
 
     
