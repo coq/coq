@@ -98,8 +98,8 @@ let standard sds sps =
   print ".depend depend:\n";
   if !some_file then begin
     print "\trm -f .depend\n";
-    print "\t$(COQDEP) -i $(COQLIBS) $(VFILES) *.ml *.mli >.depend\n";
-    print "\t$(COQDEP) $(COQLIBS) -suffix .html $(VFILES) >>.depend\n";
+    print "\t$(COQDEP) -slash -i $(COQLIBS) $(VFILES) *.ml *.mli >.depend\n";
+    print "\t$(COQDEP) -slash $(COQLIBS) -suffix .html $(VFILES) >>.depend\n";
   end;
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) depend)\n")
@@ -342,13 +342,13 @@ let all_target l =
     print "html: $(HTMLFILES)\n\n";
     print "gallinahtml: $(GHTMLFILES)\n\n";
     print "all.ps: $(VFILES)\n";
-    print "\t$(COQDOC) -ps -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+    print "\t$(COQDOC) -ps -o $@ `$(COQDEP) -slash -sort -suffix .v $(VFILES)`\n\n";
     print "all-gal.ps: $(VFILES)\n";
-    print "\t$(COQDOC) -ps -g -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+    print "\t$(COQDOC) -ps -g -o $@ `$(COQDEP) -slash -sort -suffix .v $(VFILES)`\n\n";
     print "all.pdf: $(VFILES)\n";
-    print "\t$(COQDOC) -toc -pdf $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+    print "\t$(COQDOC) -toc -pdf $(COQDOCLIBS) -o $@ `$(COQDEP) -slash -sort -suffix .v $(VFILES)`\n\n";
     print "all-gal.pdf: $(VFILES)\n";
-    print "\t$(COQDOC) -toc -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+    print "\t$(COQDOC) -toc -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -slash -sort -suffix .v $(VFILES)`\n\n";
      print "\n\n"
   end
 
