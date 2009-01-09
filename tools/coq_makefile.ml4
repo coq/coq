@@ -249,7 +249,7 @@ let implicit () =
     print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.ml.d: %.ml\n";
-    print "\t$(CAMLBIN)ocamldep -slash $(COQSRCLIBS) $(PP) -impl \"$<\" > \"$@\"\n\n"
+    print "\t$(CAMLBIN)ocamldep -slash $(COQSRCLIBS) $(PP) \"$<\" > \"$@\"\n\n"
   and v_rule () =
     print "%.vo %.glob: %.v\n\t$(COQC) -dump-glob $*.glob $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
