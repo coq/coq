@@ -474,7 +474,7 @@ else
             elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then
                 CAMLP4LIB=+site-lib/camlp5
             else
-	        echo "Objective Caml 3.10 found but no Camlp5 installed."
+	        echo "Objective Caml $CAMLVERSION found but no Camlp5 installed."
 	        echo "Configuration script failed!"
 	        exit 1
             fi
