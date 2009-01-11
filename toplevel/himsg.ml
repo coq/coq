@@ -655,6 +655,9 @@ let error_not_an_arity id =
 let error_bad_entry () =
   str "Bad inductive definition."
 
+let error_large_non_prop_inductive_not_in_type () =
+  str "Large non-propositional inductive types must be in Type."
+
 (* Recursion schemes errors *)
 
 let error_not_allowed_case_analysis isrec kind i =
@@ -685,6 +688,7 @@ let explain_inductive_error = function
   | SameNamesOverlap idl -> error_same_names_overlap idl
   | NotAnArity id -> error_not_an_arity id
   | BadEntry -> error_bad_entry ()
+  | LargeNonPropInductiveNotInType -> error_large_non_prop_inductive_not_in_type ()
 
 (* Recursion schemes errors *)
 

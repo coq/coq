@@ -445,7 +445,12 @@ fi
 
 # Native dynlink
 if [ "$natdynlink" = "yes" -a -f `"$CAMLC" -where`/dynlink.cmxa ]; then
-    HASNATDYNLINK=true
+    case `uname -s`,`uname -r`,$CAMLVERSION in
+        Darwin,9.*,3.11.0)  # ocaml 3.11.0 dynlink on MacOS 10.5 is buggy
+            HASNATDYNLINK=false;;
+        *)
+            HASNATDYNLINK=true;;
+    esac
 else
     HASNATDYNLINK=false
 fi
