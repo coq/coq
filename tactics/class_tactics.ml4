@@ -814,23 +814,7 @@ let unify_eqn env sigma hypinfo t =
       let left = if l2r then c1 else c2 in
 	match abs with
 	    Some (absprf, absprfty) -> 
-	      (*if convertible env cl.evd left t then
-		cl, prf, c1, c2, car, rel
-	      else raise Not_found*)
 	      let env' = clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl in
-	      let env' =
-		let mvs = clenv_dependent false env' in
-		  clenv_pose_metas_as_evars env' mvs
-	      in
-	      let evd' = Typeclasses.resolve_typeclasses ~fail:false env'.env env'.evd in
-	      let env' = { env' with evd = evd' } in
-	      let c1 = Clenv.clenv_nf_meta env' c1
-	      and c2 = Clenv.clenv_nf_meta env' c2
-	      and car = Clenv.clenv_nf_meta env' car
-	      and rel = Clenv.clenv_nf_meta env' rel in
-		hypinfo := { !hypinfo with
-		  cl = env';
-		  abs = Some (Clenv.clenv_value env', Clenv.clenv_type env') };
 		env', prf, c1, c2, car, rel
 	  | None ->
 	      let env' =
@@ -1573,25 +1557,30 @@ let check_evar_map_of_evars_defs evd =
    ) metas
 
 let unification_rewrite l2r c1 c2 cl car rel but gl = 
-  let (env',c') =
+  let env = pf_env gl in
+  let (evd',c') =
     try
       (* ~flags:(false,true) to allow to mark occurrences that must not be
          rewritten simply by replacing them with let-defined definitions
          in the context *)
-      Unification.w_unify_to_subterm ~flags:rewrite_unif_flags (pf_env gl) ((if l2r then c1 else c2),but) cl.evd
+      Unification.w_unify_to_subterm ~flags:rewrite_unif_flags env ((if l2r then c1 else c2),but) cl.evd
     with
 	Pretype_errors.PretypeError _ ->
 	  (* ~flags:(true,true) to make Ring work (since it really
              exploits conversion) *)
 	  Unification.w_unify_to_subterm ~flags:rewrite2_unif_flags
-	    (pf_env gl) ((if l2r then c1 else c2),but) cl.evd
+	    env ((if l2r then c1 else c2),but) cl.evd
   in
-  let cl' = {cl with evd = env'} in
-  let c1 = Clenv.clenv_nf_meta cl' c1 
-  and c2 = Clenv.clenv_nf_meta cl' c2 in
-  check_evar_map_of_evars_defs env';
-  let prf = Clenv.clenv_value cl' in
-  let prfty = Clenv.clenv_type cl' in
+  let evd' = Typeclasses.resolve_typeclasses ~fail:false env evd' in
+  let cl' = {cl with evd = evd'} in
+  let cl' =
+    let mvs = clenv_dependent false cl' in
+      clenv_pose_metas_as_evars cl' mvs
+  in
+  let nf c = Evarutil.nf_evar (Evd.evars_of cl'.evd) (Clenv.clenv_nf_meta cl' c) in
+  let c1 = nf c1 and c2 = nf c2 and car = nf car and rel = nf rel in
+  check_evar_map_of_evars_defs cl'.evd;
+  let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
     {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
 

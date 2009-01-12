@@ -49,7 +49,7 @@ let retype sigma metamap =
     match kind_of_term cstr with
     | Meta n ->
           (try strip_outer_cast (List.assoc n metamap)
-           with Not_found -> anomaly "type_of: this is not a well-typed term")
+           with Not_found -> anomaly ("type_of: unknown meta " ^ string_of_int n))
     | Rel n ->
         let (_,_,ty) = lookup_rel n env in
         lift n ty
