@@ -192,10 +192,12 @@ let variables l =
   print "else\n";
   print "  CAMLP4LIB=$(shell $(CAMLP4) -where 2> /dev/null)\n";
   print "endif\n";
-  print "COQLIB=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
   print "ifdef COQTOP # set COQTOP for compiling from Coq sources\n";
   print "ifndef COQBIN\n";
   print "  COQBIN=$(COQTOP)/bin/\n";
+  print "endif\n";
+  print "ifndef COQLIB\n";
+  print "  COQLIB=$(COQTOP)\n";
   print "endif\n";
   print "  COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
    -I $(COQTOP)/library -I $(COQTOP)/parsing \\
@@ -210,6 +212,9 @@ let variables l =
    -I $(COQTOP)/contrib/rtauto -I $(COQTOP)/contrib/setoid_ring \\
    -I $(COQTOP)/contrib/subtac -I $(COQTOP)/contrib/xml\n";
   print "else\n";
+  print "ifndef COQLIB\n";
+  print "  COQLIB=$(shell $(COQBIN)coqtop -where 2> /dev/null)\n";
+  print "endif\n";
   print "ifneq ($(strip $(COQLIB)),)\n";
   print "  COQSRC=-I $(COQLIB)\n";
   print "else\n";
@@ -236,7 +241,7 @@ let variables l =
   printf "CAMLOPTC=%s -rectypes -c\n" best_ocamlopt;
   printf "CAMLLINK=%s -rectypes\n" best_ocamlc;
   printf "CAMLOPTLINK=%s -rectypes\n" best_ocamlopt;
-  print "COQDEP=$(COQBIN)coqdep -c\n";
+  print "COQDEP=$(COQBIN)coqdep -c -coqlib $(COQLIB)\n";
   print "CAMLP4EXTEND=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
   print "GRAMMARS=grammar.cma\n";
   print "CAMLP4OPTIONS=\n";
