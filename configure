@@ -9,7 +9,7 @@
 VERSION=trunk
 VOMAGIC=08193 
 STATEMAGIC=19764
-DATE=`date +"%B %Y"`
+DATE=`LANG=C date +"%B %Y"`
 
 # Create the bin/ directory if non-existent
 test -d bin || mkdir bin
