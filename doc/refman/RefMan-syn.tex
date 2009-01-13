@@ -445,13 +445,13 @@ Locate "'exists' _ , _".
 \begin{centerframe}
 \begin{tabular}{lcl}
 {\sentence} & ::= & 
-   \texttt{Notation} \zeroone{\tt Local} {\str} \texttt{:=} {\term} 
+   \zeroone{\tt Local} \texttt{Notation} {\str} \texttt{:=} {\term} 
    \zeroone{\modifiers} \zeroone{:{\scope}} .\\
   & $|$ & 
-   \texttt{Infix} \zeroone{\tt Local} {\str} \texttt{:=} {\qualid} 
+   \zeroone{\tt Local} \texttt{Infix} {\str} \texttt{:=} {\qualid} 
    \zeroone{\modifiers} \zeroone{:{\scope}} .\\
   & $|$ & 
-   \texttt{Reserved Notation} \zeroone{\tt Local} {\str}
+   \zeroone{\tt Local} \texttt{Reserved Notation} {\str}
    \zeroone{\modifiers} .\\
   & $|$ & {\tt Inductive}
    \nelist{{\inductivebody} \zeroone{\declnotation}}{with}{\tt .}\\
@@ -625,7 +625,7 @@ the underlying \verb="{ x }"=-free rule which is \verb="y & z"=).
 \paragraph{Persistence of notations}
 
 Notations do not survive the end of sections. They survive modules
-unless the command {\tt Notation Local} is used instead of {\tt
+unless the command {\tt Local Notation} is used instead of {\tt
 Notation}.
 
 \section[Interpretation scopes]{Interpretation scopes\index{Interpretation scopes}
@@ -693,9 +693,9 @@ exported to the modules that import the module where they occur.
 
 \begin{Variants}
 
-\item {\tt Open Local Scope} {\scope}.
+\item {\tt Local Open Scope} {\scope}.
 
-\item {\tt Close Local Scope} {\scope}.
+\item {\tt Local Close Scope} {\scope}.
 
 These variants are not exported to the modules that import the module
 where they occur, even if outside a section.
@@ -743,13 +743,13 @@ is interpreted in the scope stack extended by the scopes bound (if any)
 to these arguments.
 
 \begin{Variants}
-\item {\tt Arguments Scope Global} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+\item {\tt Global Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}
 
 This behaves like {\tt Arguments Scope} {\qualid} {\tt [
 \nelist{\optscope}{} ]} but survives when a section is closed instead
 of stopping working at section closing.
 
-\item {\tt Arguments Scope Local} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+\item {\tt Local Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}
 
 This is a synonym of {\tt Arguments Scope} {\qualid} {\tt [
 \nelist{\optscope}{} ]}: if in a section, the effect of the command
@@ -973,7 +973,7 @@ abbreviation but at the time it is used. Especially, abbreviations can
 be bound to terms with holes (i.e. with ``\_''). The general syntax
 for abbreviations is
 \begin{quote}
-\texttt{Notation} \zeroone{{\tt Local}} {\ident} \sequence{\ident} {\ident} \texttt{:=} {\term} 
+\zeroone{{\tt Local}} \texttt{Notation} {\ident} \sequence{\ident} {\ident} \texttt{:=} {\term} 
  \zeroone{{\tt (only parsing)}}~\verb=.=
 \end{quote}
 

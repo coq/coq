@@ -1,4 +1,4 @@
-(* A few tests to check Argument Scope Global command *)
+(* A few tests to check Global Argument Scope command *)
 
 Section A.
 Variable a : bool -> bool.
@@ -11,11 +11,11 @@ About b.
 About negb''.
 About negb'.
 About negb.
-Arguments Scope Global negb'' [ _ ].
-Arguments Scope Global negb' [ _ ].
-Arguments Scope Global negb [ _ ].
-Arguments Scope Global a [ _ ].
-Arguments Scope Global b [ _ ].
+Global Arguments Scope negb'' [ _ ].
+Global Arguments Scope negb' [ _ ].
+Global Arguments Scope negb [ _ ].
+Global Arguments Scope a [ _ ].
+Global Arguments Scope b [ _ ].
 About a.
 About b.
 About negb.

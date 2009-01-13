@@ -181,8 +181,8 @@ valid coercion paths are ignored; they are signaled by a warning.
 \end{enumerate}
 
 \begin{Variants}
-\item {\tt Coercion Local {\qualid} : {\class$_1$} >-> {\class$_2$}.}
-\comindex{Coercion Local}\\
+\item {\tt Local Coercion {\qualid} : {\class$_1$} >-> {\class$_2$}.}
+\comindex{Local Coercion}\\
   Declares the construction denoted by {\qualid} as a coercion local to
   the current section.
 
@@ -196,8 +196,8 @@ valid coercion paths are ignored; they are signaled by a warning.
   \texttt{Definition {\ident} : {\type} := {\term}}, and then
   declares {\ident} as a coercion between it source and its target. 
 
-\item {\tt Coercion Local {\ident} := {\term}}\comindex{Coercion Local}\\
-  This defines {\ident} just like \texttt{Local {\ident} :=
+\item {\tt Local Coercion {\ident} := {\term}}\comindex{Local Coercion}\\
+  This defines {\ident} just like \texttt{Let {\ident} :=
     {\term}}, and then declares {\ident} as a coercion between it
   source and its target.
 
@@ -263,7 +263,7 @@ coercion between {\class$_1$} and {\class$_2$}.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Identity Coercion Local {\ident}:{\ident$_1$} >-> {\ident$_2$}.} \\
+\item {\tt Local Identity Coercion {\ident}:{\ident$_1$} >-> {\ident$_2$}.} \\
 Idem but locally to the current section.
 
 \item {\tt SubClass {\ident} := {\type}.} \\

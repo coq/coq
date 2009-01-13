@@ -3680,13 +3680,14 @@ adding transparency hints that make the network more constrained
 (c.f. \ref{HintTransparency}).
 
 \begin{Variants}
-\item\texttt{Hint Local} \textsl{hint\_definition} \texttt{:}
+\item\texttt{Local Hint} \textsl{hint\_definition} \texttt{:}
   \ident$_1$ \ldots\ \ident$_n$
   
   This is used to declare a hint database that must not be exported to the other
   modules that require and import the current module. Inside a
   section, the option {\tt Local} is useless since hints do not
   survive anyway to the closure of sections.
+
 \end{Variants}
 
 The general

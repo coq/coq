@@ -20,12 +20,6 @@ parsing/search.ml)
 	Loïc Pottier, Lemme, INRIA Sophia-Antipolis (contrib/fourier)
 	Claudio Sacerdoti Coen, HELM, University of Bologna, (contrib/xml)
 
-Coq includes a tactic Jp based on JProver, a theorem prover for
-first-order intuitionistic logic.  Jprover was originally implemented
-by Stephan Schmitt and then integrated into MetaPRL by Aleksey
-Nogin. After this, Huang extracted the necessary ML-codes from MetaPRL
-and then integrated it into Coq.
-	
 The file CREDITS contains a list of past contributors
 The credits section in Reference Manual introduction details
 contributions.

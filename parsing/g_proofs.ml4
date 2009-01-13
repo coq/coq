@@ -92,10 +92,10 @@ GEXTEND Gram
 (* Hints for Auto and EAuto *)
       | IDENT "Create"; local = locality; IDENT "HintDb" ; 
 	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
-	    VernacCreateHintDb (local, id, b)
+	    VernacCreateHintDb (enforce_locality_of local, id, b)
       | IDENT "Hint"; local = locality; h = hint;
         dbnames = opt_hintbases ->
-	  VernacHints (local,dbnames, h)
+	  VernacHints (enforce_locality_of local,dbnames, h)
 	  
 
 (*This entry is not commented, only for debug*)

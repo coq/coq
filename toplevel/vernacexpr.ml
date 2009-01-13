@@ -337,3 +337,62 @@ type vernac_expr =
   | VernacExtend of string * raw_generic_argument list
 
 and located_vernac_expr = loc * vernac_expr
+
+(* Managing locality *)
+
+let locality_flag = ref None
+
+let local_of_bool = function true -> Local | false -> Global
+
+let check_locality () =
+  if !locality_flag = Some true then
+    error "This command does not support the \"Local\" prefix";
+  if !locality_flag = Some false then
+    error "This command does not support the \"Global\" prefix"
+
+let use_locality () =
+  let local = match !locality_flag with Some true -> true | _ -> false in
+  locality_flag := None;
+  local
+
+let use_locality_exp () = local_of_bool (use_locality ())
+
+let use_section_locality () =
+  let local = 
+    match !locality_flag with Some b -> b | None -> Lib.sections_are_opened ()
+  in
+  locality_flag := None;
+  local
+
+let use_non_locality () =
+  let local = match !locality_flag with Some false -> false | _ -> true in
+  locality_flag := None;
+  local
+
+let enforce_locality () =
+  let local =
+    match !locality_flag with 
+    | Some false ->
+	error "Cannot be simultaneously Local and Global"
+    | _ -> 
+	Flags.if_verbose Pp.warning "Obsolete syntax: use \"Local\" prefix"; 
+	true in
+  locality_flag := None;
+  local
+
+let enforce_locality_exp () = local_of_bool (enforce_locality ())
+
+let enforce_locality_of local =
+  let local = 
+    match !locality_flag with 
+    | Some false when local ->
+	error "Cannot be simultaneously Local and Global"
+    | Some true when local ->
+	error "Use only prefix \"Local\""
+    | None ->
+	if local then
+	  Flags.if_verbose Pp.warning "Obsolete syntax: use \"Local\" prefix";
+	local
+    | Some b -> b in
+  locality_flag := None;
+  local
