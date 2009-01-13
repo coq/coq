@@ -30,7 +30,7 @@ CHICKENOPT:=bin/coqchk.opt$(EXE)
 BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
 
-ifeq ($(HASNATDYNLINK),true)
+ifneq ($(HASNATDYNLINK),false)
   DYNLINKCMXA:=dynlink.cmxa
   NATDYNLINKDEF:=-DHasDynlink
 endif
@@ -340,7 +340,7 @@ CONTRIBSTATIC:=\
         $(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
         $(FUNINDCMO)
 
-ifeq ($(HASNATDYNLINK),true)
+ifneq ($(HASNATDYNLINK),false)
  CONTRIBSTATIC:=$(SUBTACCMO)
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
 	$(XMLCMA) $(FUNINDCMA) #$(SUBTACCMA)

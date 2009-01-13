@@ -445,15 +445,17 @@ fi
 
 # Native dynlink
 if [ "$natdynlink" = "yes" -a -f `"$CAMLC" -where`/dynlink.cmxa ]; then
-    case `uname -s`,`uname -r`,$CAMLVERSION in
-        Darwin,9.*,3.11.0)  # ocaml 3.11.0 dynlink on MacOS 10.5 is buggy
-            HASNATDYNLINK=false;;
-        *)
-            HASNATDYNLINK=true;;
-    esac
+    HASNATDYNLINK=true
 else
     HASNATDYNLINK=false
 fi
+
+case $HASNATDYNLINK,`uname -s`,`uname -r`,$CAMLVERSION in
+    true,Darwin,9.*,3.11.*)  # ocaml 3.11.0 dynlink on MacOS 10.5 is buggy
+        NATDYNLINKFLAG=os5fixme;;
+    *)
+        NATDYNLINKFLAG=$HASNATDYNLINK;;
+esac
 
 # Camlp4 / Camlp5 configuration
 
@@ -998,7 +1000,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQIDEOPT|$COQIDE|" \
     -e "s|CHECKEDOUTSOURCETREE|$checkedout|" \
     -e "s|WITHDOCOPT|$with_doc|" \
-    -e "s|HASNATIVEDYNLINK|$HASNATDYNLINK|" \
+    -e "s|HASNATIVEDYNLINK|$NATDYNLINKFLAG|" \
       "$COQSRC/config/Makefile.template" > "$COQSRC/config/Makefile"
 
 chmod a-w "$COQSRC/config/Makefile"
