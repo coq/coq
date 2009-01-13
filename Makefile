@@ -1287,9 +1287,9 @@ install-library:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	cp $(LIBCOQRUN) $(FULLCOQLIB)
-	cp --parents $(CONFIG) $(OBJECTCMI) $(LINKCMO) $(GRAMMARCMA) $(FULLCOQLIB)
+	cp --parents $(CONFIG) $(OBJECTCMI) $(LINKCMO) ide/ide.cma $(COQIDECMO:.cmo=.cmi) $(GRAMMARCMA) $(FULLCOQLIB)
 ifeq ($(BEST),opt)
-	cp --parents $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a) $(FULLCOQLIB)
+	cp --parents $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a) ide/ide.cmxa ide/ide.a $(FULLCOQLIB)
 endif
 
 install-library-light:
