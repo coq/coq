@@ -481,7 +481,7 @@ let w_coerce_to_type env evd c cty mvty =
     try_to_coerce env evd c cty tycon
 
 let w_coerce env evd mv c =
-  let cty = get_type_of env (evars_of evd) c in
+  let cty = get_type_of_with_meta env (evars_of evd) (metas_of evd) c in
   let mvty = Typing.meta_type evd mv in
   w_coerce_to_type env evd c cty mvty
 
@@ -496,7 +496,7 @@ let unify_to_type env evd flags c u =
 
 let unify_type env evd flags mv c =
   let mvty = Typing.meta_type evd mv in
-  if occur_meta mvty then
+  if occur_meta_or_existential mvty then
     unify_to_type env evd flags c mvty
   else ([],[])
 
@@ -589,7 +589,7 @@ let w_merge env with_types flags (metas,evars) evd =
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (mc,ec) =
       unify_0 sp_env (evars_of evd') Cumul flags
-        (Retyping.get_type_of sp_env (evars_of evd') c) ev.evar_concl in
+        (Retyping.get_type_of_with_meta sp_env (evars_of evd') (metas_of evd') c) ev.evar_concl in
     let evd'' = w_merge_rec evd' mc ec [] in
     if (evars_of evd') == (evars_of evd'')
     then Evd.evar_define sp c evd''
