@@ -410,7 +410,7 @@ let is_operator s =
   let l = String.length s in l <> 0 &
   (s.[0] = '+' or s.[0] = '*' or s.[0] = '=' or
    s.[0] = '-' or s.[0] = '/' or s.[0] = '<' or s.[0] = '>' or
-   s.[0] = '@' or s.[0] = '\\' or s.[0] = '&' or s.[0] = '~')
+   s.[0] = '@' or s.[0] = '\\' or s.[0] = '&' or s.[0] = '~' or s.[0] = '$')
 
 let is_prod_ident = function
   | Terminal s when is_letter s.[0] or s.[0] = '_' -> true

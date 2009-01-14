@@ -372,6 +372,16 @@ let process_chars bp c cs =
     | Some t -> (("", t), (bp, ep))
     | None -> err (bp, ep) Undefined_token
 
+let parse_after_dollar bp =
+  parser
+  | [< ' ('a'..'z' | 'A'..'Z' | '_' as c); len = ident_tail (store 0 c) >] -> 
+      ("METAIDENT", get_buff len)
+  | [< s >] ->
+      match lookup_utf8 s with
+      | Utf8Token (UnicodeLetter, n) ->
+	  ("METAIDENT", get_buff (ident_tail (nstore n 0 s) s))
+      | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp '$' s)
+
 (* Parse what follows a dot *)
 let parse_after_dot bp c =
   parser
@@ -399,10 +409,8 @@ let parse_after_qmark bp s =
 let rec next_token = parser bp
   | [< '' ' | '\t' | '\n' |'\r' as c; s >] ->
       comm_loc bp; push_char c; next_token s
-  | [< ''$'; ' ('a'..'z' | 'A'..'Z' | '_' as c); 
-      len = ident_tail (store 0 c) >] ep -> 
-      comment_stop bp;
-      (("METAIDENT", get_buff len), (bp,ep))
+  | [< ''$'; t = parse_after_dollar bp >] ep ->
+      comment_stop bp; (t, (ep, bp))
   | [< ''.' as c; t = parse_after_dot bp c >] ep ->
       comment_stop bp;
       if Flags.do_beautify() & t=("",".") then between_com := true;
