@@ -575,11 +575,11 @@ let close_section id =
       | oname,OpenedSection (_,fs) -> 
 	  let id' = basename (fst oname) in 
 	    if id <> id' then 
-	      errorlabstrm "close_section" (str "last opened section is " ++ pr_id id');
+	      errorlabstrm "close_section" (str "Last opened section is " ++ pr_id id' ++ str ".");
 	    (oname,fs)
       | _ -> assert false 
     with Not_found ->
-      error "no opened section"
+      error "No opened section."
   in
   let (secdecls,secopening,before) = split_lib oname in
   lib_stk := before;

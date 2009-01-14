@@ -90,12 +90,12 @@ GEXTEND Gram
       | IDENT "Go"; IDENT "next" -> VernacGo GoNext
       | IDENT "Guarded" -> VernacCheckGuard
 (* Hints for Auto and EAuto *)
-      | IDENT "Create"; local = locality; IDENT "HintDb" ; 
+      | IDENT "Create"; IDENT "HintDb" ; 
 	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
-	    VernacCreateHintDb (local, id, b)
-      | IDENT "Hint"; local = locality; h = hint;
+	    VernacCreateHintDb (use_locality (), id, b)
+      | IDENT "Hint"; local = obsolete_locality; h = hint;
         dbnames = opt_hintbases ->
-	  VernacHints (local,dbnames, h)
+	  VernacHints (enforce_locality_of local,dbnames, h)
 	  
 
 (*This entry is not commented, only for debug*)
@@ -104,7 +104,7 @@ GEXTEND Gram
 	    [Genarg.in_gen Genarg.rawwit_constr c])
       ] ];
 
-  locality:
+  obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]
   ;
   hint:

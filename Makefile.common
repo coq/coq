@@ -466,7 +466,7 @@ GRAMMARSCMO:=\
   parsing/g_prim.cmo parsing/g_tactic.cmo \
   parsing/g_ltac.cmo parsing/g_constr.cmo
 
-GRAMMARCMO:=$(CONFIG) $(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
+GRAMMARCMO:=config/coq_config.cmo $(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
 GRAMMARCMA:=parsing/grammar.cma
 

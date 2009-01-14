@@ -33,6 +33,7 @@ type inductive_error =
   | SameNamesOverlap of identifier list
   | NotAnArity of identifier
   | BadEntry
+  | LargeNonPropInductiveNotInType
 
 exception InductiveError of inductive_error
 

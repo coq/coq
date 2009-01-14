@@ -496,9 +496,6 @@ module Vernac_ =
   struct
     let gec_vernac s = Gram.Entry.create ("vernac:" ^ s)
 
-    let locality = gec_vernac "locality"
-    let non_locality = gec_vernac "non_locality"
-
     (* The different kinds of vernacular commands *)
     let gallina = gec_vernac "gallina"
     let gallina_ext = gec_vernac "gallina_ext"

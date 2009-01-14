@@ -223,7 +223,7 @@ let rec pr_glob_generic prc prlc prtac x =
 	  x)
   | ExtraArgType s -> 
       try pi2 (Stringmap.find s !genarg_pprule) prc prlc prtac x
-      with Not_found -> str "[no printer for " ++ str s ++ str "] "
+      with Not_found -> str "[no printer for " ++ str s ++ str "]"
 
 open Closure
 

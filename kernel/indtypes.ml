@@ -46,6 +46,7 @@ type inductive_error =
   | SameNamesOverlap of identifier list
   | NotAnArity of identifier
   | BadEntry
+  | LargeNonPropInductiveNotInType
 
 exception InductiveError of inductive_error
 
@@ -266,7 +267,7 @@ let typecheck_inductive env mie =
       | Prop Pos when engagement env <> Some ImpredicativeSet ->
 	  (* Predicative set: check that the content is indeed predicative *)
 	  if not (is_type0m_univ lev) & not (is_type0_univ lev) then
-	    error "Large non-propositional inductive types must be in Type.";
+	    raise (InductiveError LargeNonPropInductiveNotInType);
 	  Inl (info,full_arity,s), cst
       | Prop _ ->
 	  Inl (info,full_arity,s), cst in

@@ -11,6 +11,7 @@
 open Pp
 open Line_oriented_parser
 open Vernac
+open Vernacexpr
 
 (* The toplevel parsing loop we propose here is more robust to printing
    errors.  The philosophy is that all commands should be individually wrapped
@@ -130,7 +131,8 @@ let rec parse_one_command_group input_channel =
 			      	!global_request_id !count None)
 		       | Some(rank, e) ->
 			   (match e with 
-                    	      	DuringCommandInterp(a,e1) ->
+                    	     | DuringCommandInterp(a,e1)
+			     | Stdpp.Exc_located (a,DuringSyntaxChecking e1) ->
 				  output_results_nl
 				    (acknowledge_command
 				       !global_request_id rank (Some e1))
@@ -164,7 +166,8 @@ let protected_loop input_chan =
       | End_of_file -> exit 0
       | DuringCommandInterp(loc, Vernacexpr.Quit) -> raise Vernacexpr.Quit
       | DuringCommandInterp(loc, Vernacexpr.Drop) -> raise Vernacexpr.Drop
-      | DuringCommandInterp(loc, e) ->
+      | DuringCommandInterp(loc, e)
+      | Stdpp.Exc_located (loc,DuringSyntaxChecking e) ->
 	  explain_and_restart e
       | e -> explain_and_restart e in
     begin
