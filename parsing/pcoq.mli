@@ -200,8 +200,6 @@ module Tactic :
 module Vernac_ :
   sig
     open Decl_kinds
-    val locality : bool Gram.Entry.e
-    val non_locality : bool Gram.Entry.e
     val gallina : vernac_expr Gram.Entry.e
     val gallina_ext : vernac_expr Gram.Entry.e
     val command : vernac_expr Gram.Entry.e

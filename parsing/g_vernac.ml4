@@ -114,13 +114,6 @@ GEXTEND Gram
   ;
 END
 
-GEXTEND Gram
-  GLOBAL: locality non_locality;
-  locality:
-    [ [ IDENT "Local" -> true | -> false ] ]
-  ;
-END
-
 let test_plurial_form = function
   | [(_,([_],_))] ->
       Flags.if_verbose warning
@@ -789,10 +782,10 @@ GEXTEND Gram
   GLOBAL: syntax;
 
   syntax:
-   [ [ IDENT "Open"; local = locality; IDENT "Scope"; sc = IDENT -> 
+   [ [ IDENT "Open"; local = obsolete_locality; IDENT "Scope"; sc = IDENT -> 
          VernacOpenCloseScope (enforce_locality_of local,true,sc)
 
-     | IDENT "Close"; local = locality; IDENT "Scope"; sc = IDENT -> 
+     | IDENT "Close"; local = obsolete_locality; IDENT "Scope"; sc = IDENT -> 
          VernacOpenCloseScope (enforce_locality_of local,false,sc)
 
      | IDENT "Delimit"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
@@ -805,16 +798,17 @@ GEXTEND Gram
        "["; scl = LIST0 opt_scope; "]" -> 
 	 VernacArgumentsScope (use_non_locality (),qid,scl)
 
-     | IDENT "Infix"; local = locality;
+     | IDENT "Infix"; local = obsolete_locality;
 	 op = ne_string; ":="; p = global; 
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacInfix (enforce_locality_of local,(op,modl),p,sc)
-     | IDENT "Notation"; local = locality; id = identref; idl = LIST0 ident; 
-	 ":="; c = constr;
+     | IDENT "Notation"; local = obsolete_locality; id = identref; 
+	 idl = LIST0 ident; ":="; c = constr;
 	 b = [ "("; IDENT "only"; IDENT "parsing"; ")" -> true | -> false ] ->
            VernacSyntacticDefinition (id,(idl,c),enforce_locality_of local,b)
-     | IDENT "Notation"; local = locality; s = ne_string; ":="; c = constr;
+     | IDENT "Notation"; local = obsolete_locality; s = ne_string; ":="; 
+	 c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
            VernacNotation (enforce_locality_of local,c,(s,modl),sc)
@@ -823,13 +817,17 @@ GEXTEND Gram
 	 pil = LIST1 production_item; ":="; t = Tactic.tactic
          -> VernacTacticNotation (n,pil,t)
 
-     | IDENT "Reserved"; IDENT "Notation"; local = locality; s = ne_string; 
+     | IDENT "Reserved"; IDENT "Notation"; local = obsolete_locality; 
+	 s = ne_string; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (enforce_locality_of local,(s,l))
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
+  ;
+  obsolete_locality:
+    [ [ IDENT "Local" -> true | -> false ] ]
   ;
   tactic_level:
     [ [ "("; "at"; IDENT "level"; n = natural; ")" -> n | -> 0 ] ]

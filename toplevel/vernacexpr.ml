@@ -338,6 +338,14 @@ type vernac_expr =
 
 and located_vernac_expr = loc * vernac_expr
 
+(* Locating errors raised just after the dot is parsed but before the
+   interpretation phase *)
+
+exception DuringSyntaxChecking of exn
+
+let syntax_checking_error s = 
+  raise (DuringSyntaxChecking (UserError ("",Pp.str s)))
+
 (* Managing locality *)
 
 let locality_flag = ref None
@@ -346,9 +354,9 @@ let local_of_bool = function true -> Local | false -> Global
 
 let check_locality () =
   if !locality_flag = Some true then
-    error "This command does not support the \"Local\" prefix";
+    syntax_checking_error "This command does not support the \"Local\" prefix.";
   if !locality_flag = Some false then
-    error "This command does not support the \"Global\" prefix"
+    syntax_checking_error "This command does not support the \"Global\" prefix."
 
 let use_locality () =
   let local = match !locality_flag with Some true -> true | _ -> false in
@@ -373,9 +381,10 @@ let enforce_locality () =
   let local =
     match !locality_flag with 
     | Some false ->
-	error "Cannot be simultaneously Local and Global"
+	error "Cannot be simultaneously Local and Global."
     | _ -> 
-	Flags.if_verbose Pp.warning "Obsolete syntax: use \"Local\" prefix"; 
+	Flags.if_verbose
+	  Pp.warning "Obsolete syntax: use \"Local\" as a prefix."; 
 	true in
   locality_flag := None;
   local
@@ -386,12 +395,13 @@ let enforce_locality_of local =
   let local = 
     match !locality_flag with 
     | Some false when local ->
-	error "Cannot be simultaneously Local and Global"
+	error "Cannot be simultaneously Local and Global."
     | Some true when local ->
-	error "Use only prefix \"Local\""
+	error "Use only prefix \"Local\"."
     | None ->
 	if local then
-	  Flags.if_verbose Pp.warning "Obsolete syntax: use \"Local\" prefix";
+	  Flags.if_verbose
+	    Pp.warning "Obsolete syntax: use \"Local\" as a prefix.";
 	local
     | Some b -> b in
   locality_flag := None;
