@@ -57,16 +57,6 @@ let remove_module_dirpath_from_dirpath ~basedir dir =
 let get_uri_of_var v pvars =
  let module D = Declare in
  let module N = Names in
-  let rec search_in_pvars names =
-   function
-      [] -> None
-    | ((name,l)::tl) ->
-       let names' = name::names in
-        if List.mem v l then
-         Some names'
-        else
-         search_in_pvars names' tl
-  in
   let rec search_in_open_sections =
    function
       [] -> Util.error ("Variable "^v^" not found")
@@ -78,9 +68,10 @@ let get_uri_of_var v pvars =
          search_in_open_sections tl
   in
    let path =
-    match search_in_pvars [] pvars with
-       None -> search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
-     | Some path -> path
+    if List.mem v pvars then
+      []
+    else
+      search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
    in
     "cic:" ^
      List.fold_left
@@ -359,7 +350,7 @@ let source_id_of_id id = "#source#" ^ id;;
 
 let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
  ids_to_father_ids ids_to_inner_sorts ids_to_inner_types
- pvars ?(fake_dependent_products=false) env idrefs evar_map t expectedty
+ ?(fake_dependent_products=false) env idrefs evar_map t expectedty
 =
  let module D = DoubleTypeInference in
  let module E = Environ in
@@ -551,6 +542,8 @@ print_endline "PASSATO" ; flush stdout ;
                 add_inner_type fresh_id'' ;
                A.ARel (fresh_id'', n, List.nth idrefs (n-1), id)
            | T.Var id ->
+	      let pvars = Termops.ids_of_named_context (E.named_context env) in
+	      let pvars = List.map N.string_of_id pvars in
               let path = get_uri_of_var (N.string_of_id id) pvars in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                if is_a_Prop innersort  && expected_available then
@@ -837,6 +830,7 @@ print_endline "PASSATO" ; flush stdout ;
      aux computeinnertypes None [] env idrefs t
 ;;
 
+(* Obsolete [HH 1/2009]
 let acic_of_cic_context metasenv context t =
  let ids_to_terms = Hashtbl.create 503 in
  let constr_to_ids = Acic.CicHash.create 503 in
@@ -848,8 +842,9 @@ let acic_of_cic_context metasenv context t =
     ids_to_inner_sorts ids_to_inner_types metasenv context t,
    ids_to_terms, ids_to_father_ids, ids_to_inner_sorts, ids_to_inner_types
 ;;
+*)
 
-let acic_object_of_cic_object pvars sigma obj =
+let acic_object_of_cic_object sigma obj =
  let module A = Acic in
   let ids_to_terms = Hashtbl.create 503 in
   let constr_to_ids = Acic.CicHash.create 503 in
@@ -863,7 +858,7 @@ let acic_object_of_cic_object pvars sigma obj =
   let seed = ref 0 in
   let acic_term_of_cic_term_context' =
    acic_of_cic_context' true seed ids_to_terms constr_to_ids ids_to_father_ids
-    ids_to_inner_sorts ids_to_inner_types pvars in
+    ids_to_inner_sorts ids_to_inner_types in
 (*CSC: is this the right env to use? Hhmmm. There is a problem: in    *)
 (*CSC: Global.env () the object we are exporting is already defined,  *)
 (*CSC: either in the environment or in the named context (in the case *)

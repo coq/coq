@@ -84,15 +84,6 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 ;;
 
 
-(* A SIMPLE DATA STRUCTURE AND SOME FUNCTIONS TO MANAGE THE CURRENT *)
-(* ENVIRONMENT (= [(name1,l1); ...;(namen,ln)] WHERE li IS THE LIST *)
-(* OF VARIABLES DECLARED IN THE i-th SUPER-SECTION OF THE CURRENT   *)
-(* SECTION, WHOSE PATH IS namei                                     *)
-
-let pvars =
- ref ([Names.id_of_string "",[]] : (Names.identifier * string list) list);;
-let cumenv = ref Environ.empty_env;;
-
 (* filter_params pvars hyps *)
 (* filters out from pvars (which is a list of lists) all the variables *)
 (* that does not belong to hyps (which is a simple list)               *)
@@ -123,24 +114,6 @@ let filter_params pvars hyps =
 type variables_type = 
    Definition of string * Term.constr * Term.types
  | Assumption of string * Term.constr
-;;
-
-let add_to_pvars x =
- let module E = Environ in
-  let v =
-   match x with
-      Definition (v, bod, typ) ->
-       cumenv :=
-         E.push_named (Names.id_of_string v, Some bod, typ) !cumenv ;
-       v
-    | Assumption (v, typ) ->
-       cumenv :=
-         E.push_named (Names.id_of_string v, None, typ) !cumenv ;
-       v
-  in
-   match !pvars with
-      []       -> assert false
-    | ((name,l)::tl) -> pvars := (name,v::l)::tl
 ;;
 
 (* The computation is very inefficient, but we can't do anything *)
@@ -238,7 +211,7 @@ let print_object uri obj sigma proof_tree_infos filename =
        ignore (Unix.system ("gzip " ^ fn' ^ ".xml"))
  in
   let (annobj,_,constr_to_ids,_,ids_to_inner_sorts,ids_to_inner_types,_,_) =
-   Cic2acic.acic_object_of_cic_object !pvars sigma obj in
+   Cic2acic.acic_object_of_cic_object sigma obj in
   let (xml, xml') = Acic2Xml.print_object uri ids_to_inner_sorts annobj in
   let xmltypes =
    Acic2Xml.print_inner_types uri ids_to_inner_sorts ids_to_inner_types in

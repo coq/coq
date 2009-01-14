@@ -31,7 +31,6 @@ let constr_to_xml obj sigma env =
   let ids_to_inner_sorts = Hashtbl.create 503 in
   let ids_to_inner_types = Hashtbl.create 503 in
 
-  let pvars = [] in
   (* named_context holds section variables and local variables *)
   let named_context = Environ.named_context env  in
   (* real_named_context holds only the section variables *)
@@ -54,7 +53,7 @@ let constr_to_xml obj sigma env =
    try
     let annobj =
      Cic2acic.acic_of_cic_context' false seed ids_to_terms constr_to_ids
-      ids_to_father_ids ids_to_inner_sorts ids_to_inner_types pvars rel_env
+      ids_to_father_ids ids_to_inner_sorts ids_to_inner_types rel_env
       idrefs sigma (Unshare.unshare obj') None
     in
      Acic2Xml.print_term ids_to_inner_sorts annobj
