@@ -426,10 +426,10 @@ let read_glob x =
   match x with
     | Vernac_file (f,m) ->   
 	let glob = (Filename.chop_extension f) ^ ".glob" in
-	  (try
+ 	  (try
 	      Vernac_file (f, Index.read_glob glob)
-	    with _ -> 
-	      eprintf "Warning: file %s cannot be opened; links will not be available\n" glob;
+            with e -> 
+              eprintf "Warning: file %s cannot be used; links will not be available: %s\n" glob (Printexc.to_string e);
 	      x)
   | Latex_file _ -> x
 
