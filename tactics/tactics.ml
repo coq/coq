@@ -1220,7 +1220,7 @@ let rec first_name_buggy = function
   | IntroOrAndPattern ((p::_)::_) -> first_name_buggy p
   | IntroWildcard -> None
   | IntroIdentifier id -> Some id
-  | IntroAnonymous -> assert false
+  | IntroAnonymous -> (* buggy *) None
 
 let consume_pattern avoid id gl = function
   | [] -> (IntroIdentifier (fresh_id avoid id gl), [])
