@@ -434,7 +434,7 @@ and module_refs = parse
 
 {
   let type_of_string = function
-    | "def" | "coe" | "subclass" | "canonstruc" 
+    | "def" | "coe" | "subclass" | "canonstruc" | "fix" | "cofix"
     | "ex" | "scheme" -> Definition
     | "prf" | "thm" -> Lemma
     | "ind" | "coind" -> Inductive
