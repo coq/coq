@@ -196,7 +196,9 @@ let subst_instance (_,subst,inst) =
       is_impl = fst (Mod_subst.subst_con subst inst.is_impl) }
 
 let discharge_instance (_,inst) = 
-  { inst with is_class = Lib.discharge_global inst.is_class }
+  { inst with 
+      is_class = Lib.discharge_global inst.is_class;
+      is_impl = Lib.discharge_con inst.is_impl}
 
 let rebuild_instance inst = 
   match !(inst.is_global) with
