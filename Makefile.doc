@@ -47,8 +47,13 @@ rectutorial:\
 ### Implicit rules
 ######################################################################
 
+ifeq ($(QUICK),1)
+%.v.tex: %.tex
+	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
+else
 %.v.tex: %.tex | $(COQTEX) $(COQTOPEXE) $(CONTRIBVO) $(CONTRIBCMO) $(THEORIESVO)
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
+endif
 
 %.ps: %.dvi
 	(cd `dirname $<`; dvips -q -o `basename $@` `basename $<`)
@@ -62,10 +67,6 @@ rectutorial:\
 
 HIDEBIBTEXINFO=| grep -v "^A level-1 auxiliary file"
 SHOWMAKEINDEXERROR=egrep "^!! Input index error|^** Input style error|^   --"
-LATEXEXTRAFILTER=| egrep -v "^LaTeX Font Info|^LaTeX Info|^LaTeX Font Warning"
-#SHOWLATEXERROR=egrep "^Overfull |^LaTeX |^Chapter " 
-SHOWLATEXERROR=grep "^LaTeX " 
-SHOWMANUALLATEXERROR=egrep "^LaTeX |^Chapter " 
 
 ######################################################################
 # Common
@@ -85,7 +86,7 @@ doc/common/version.tex: config/Makefile
 # The second LATEX compilation is necessary otherwise the pages of the index
 # are not correct (don't know why...) - BB
 doc/refman/Reference-Manual.dvi: $(DOCCOMMON) $(REFMANFILES) doc/refman/Reference-Manual.tex
-	- @(cd doc/refman;\
+	@(cd doc/refman;\
 	$(LATEX) -interaction=batchmode Reference-Manual;\
 	$(BIBTEX) -terse Reference-Manual $(HIDEBIBTEXINFO);\
 	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
@@ -99,14 +100,12 @@ doc/refman/Reference-Manual.dvi: $(DOCCOMMON) $(REFMANFILES) doc/refman/Referenc
 	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
 	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
 	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
-	$(SHOWMANUALLATEXERROR) Reference-Manual.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages -no-overfull Reference-Manual.log)
 
 doc/refman/Reference-Manual.pdf: $(DOCCOMMON) $(REFMANFILES) doc/refman/Reference-Manual.tex
 	(cd doc/refman;\
 	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
-	$(SHOWMANUALLATEXERROR) Reference-Manual.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages -no-overfull Reference-Manual.log)
 
 ### Reference Manual (browsable format)
 
@@ -125,9 +124,8 @@ doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 refman-quick:
 	(cd doc/refman;\
 	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
-	$(SHOWLATEXERROR) Reference-Manual.log $(LATEXEXTRAFILTER);\
+	../tools/show_latex_messages -no-overfull Reference-Manual.log && \
 	$(HEVEA) $(HEVEAOPTS) ./Reference-Manual.tex)
-
 
 ######################################################################
 # Tutorial
@@ -136,14 +134,12 @@ refman-quick:
 doc/tutorial/Tutorial.v.dvi: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 	(cd doc/tutorial;\
 	$(LATEX) -interaction=batchmode Tutorial.v;\
-	$(SHOWLATEXERROR) Tutorial.v.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages Tutorial.v.log)
 
 doc/tutorial/Tutorial.v.pdf: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 	(cd doc/tutorial;\
 	$(PDFLATEX) -interaction=batchmode Tutorial.v.tex;\
-	$(SHOWLATEXERROR) Tutorial.v.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages Tutorial.v.log)
 
 doc/tutorial/Tutorial.v.html: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 	(cd doc/tutorial; $(HEVEA) $(HEVEAOPTS) Tutorial.v)
@@ -159,14 +155,12 @@ doc/faq/FAQ.v.dvi: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.tex
 	$(BIBTEX) -terse FAQ.v;\
 	$(LATEX) -interaction=batchmode FAQ.v > /dev/null;\
 	$(LATEX) -interaction=batchmode FAQ.v > /dev/null;\
-	$(SHOWLATEXERROR) FAQ.v.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages FAQ.v.log)
 
 doc/faq/FAQ.v.pdf: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.dvi doc/faq/axioms.png
 	(cd doc/faq;\
         $(PDFLATEX) -interaction=batchmode FAQ.v.tex;\
-	$(SHOWLATEXERROR) FAQ.v.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages FAQ.v.log)
 
 doc/faq/FAQ.v.html: doc/faq/FAQ.v.dvi # to ensure FAQ.v.bbl
 	(cd doc/faq; $(HEVEA) $(HEVEAOPTS) FAQ.v.tex)
@@ -183,12 +177,21 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 
 ### Standard library (browsable html format)
 
+ifeq ($(QUICK),1)
+doc/stdlib/index-body.html:
+	- rm -rf doc/stdlib/html
+	$(MKDIR) doc/stdlib/html
+	$(COQDOC) -q -d doc/stdlib/html --multi-index --html -g \
+	  -R theories Coq $(THEORIESVO:.vo=.v)
+	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
+else
 doc/stdlib/index-body.html: | $(COQDOC) $(THEORIESVO)
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
 	$(COQDOC) -q -d doc/stdlib/html --multi-index --html -g \
 	  -R theories Coq $(THEORIESVO:.vo=.v)
 	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
+endif
 
 doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
 	./doc/stdlib/make-library-index doc/stdlib/index-list.html
@@ -200,22 +203,26 @@ doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.htm
 
 ### Standard library (light version, full version is definitely too big)
 
+ifeq ($(QUICK),1)
+doc/stdlib/Library.coqdoc.tex:
+	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
+            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
+else
 doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
+endif
 
 doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
 	(cd doc/stdlib;\
 	$(LATEX) -interaction=batchmode Library;\
 	$(LATEX) -interaction=batchmode Library > /dev/null;\
-	$(SHOWLATEXERROR) Library.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages Library.log)
 
 doc/stdlib/Library.pdf: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.dvi
 	(cd doc/stdlib;\
 	$(PDFLATEX) -interaction=batchmode Library;\
-	$(SHOWLATEXERROR) Library.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages Library.log)
 
 ######################################################################
 # Tutorial on inductive types
@@ -227,14 +234,12 @@ doc/RecTutorial/RecTutorial.v.dvi: doc/common/version.tex doc/common/title.tex d
 	$(BIBTEX) -terse RecTutorial.v;\
 	$(LATEX) -interaction=batchmode RecTutorial.v > /dev/null;\
 	$(LATEX) -interaction=batchmode RecTutorial.v > /dev/null;\
-	$(SHOWLATEXERROR) RecTutorial.v.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages RecTutorial.v.log)
 
 doc/RecTutorial/RecTutorial.v.pdf: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.v.dvi
 	(cd doc/RecTutorial;\
 	$(PDFLATEX) -interaction=batchmode RecTutorial.v.tex;\
-	$(SHOWLATEXERROR) RecTutorial.v.log $(LATEXEXTRAFILTER);\
-	exit 0)
+	../tools/show_latex_messages RecTutorial.v.log)
 
 doc/RecTutorial/RecTutorial.v.html: doc/RecTutorial/RecTutorial.v.tex
 	(cd doc/RecTutorial; $(HEVEA) $(HEVEAOPTS) RecTutorial.v)

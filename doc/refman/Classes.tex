@@ -2,7 +2,7 @@
 \def\eol{\setlength\parskip{0pt}\par}
 \def\indent#1{\noindent\kern#1}
 \def\cst#1{\textsf{#1}}
-\def\tele#1{$\overrightarrow{#1}$}
+\newcommand\tele[1]{\overrightarrow{#1}}
 
 \achapter{\protect{Type Classes}}
 \aauthor{Matthieu Sozeau}
@@ -48,8 +48,8 @@ record syntax of \Coq~and the type classes syntax of \Haskell:
   Reset Initial.
 \end{coq_eval}
 
-The \tele{$\alpha_i : \tau_i$} variables are called the \emph{parameters}
-of the class and the \tele{$f_k : \type_k$} are called the
+The $\tele{\alpha_i : \tau_i}$ variables are called the \emph{parameters}
+of the class and the $\tele{f_k : \type_k}$ are called the
 \emph{methods}. Each class definition gives rise to a corresponding
 record declaration and each instance is a regular definition whose name
 is given by $\ident$ and type is an instantiation of the record type.
