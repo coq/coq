@@ -215,6 +215,7 @@ val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr 
 val whd_meta : (metavariable * constr) list -> constr -> constr
 val plain_instance : (metavariable * constr) list -> constr -> constr
 val instance : (metavariable * constr) list -> constr -> constr
+val head_unfold_under_prod : transparent_state -> reduction_function
 
 (*s Heuristic for Conversion with Evar *)
 

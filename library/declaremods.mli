@@ -82,6 +82,8 @@ val start_library : library_name -> unit
 val end_library :
   library_name -> Safe_typing.compiled_library * library_objects
 
+(* set a function to be executed at end_library *)
+val set_end_library_hook : (unit -> unit) -> unit
 
 (* [really_import_module mp] opens the module [mp] (in a Caml sense).
    It modifies Nametab and performs the [open_object] function for

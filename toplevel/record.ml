@@ -222,8 +222,24 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
       (List.length fields,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
 
-let declare_structure finite id idbuild paramimpls params arity fieldimpls fields
-    ?(kind=StructureComponent) ?name is_coe coers =
+let structure_signature ctx =
+  let rec deps_to_evar evm l = 
+    match l with [] -> Evd.empty
+      | [(_,_,typ)] -> Evd.add evm (Evarutil.new_untyped_evar()) 
+	  (Evd.make_evar Environ.empty_named_context_val typ)
+      | (_,_,typ)::tl -> 
+	  let ev = Evarutil.new_untyped_evar() in
+	  let evm = Evd.add evm ev (Evd.make_evar Environ.empty_named_context_val typ) in
+	  let new_tl = Util.list_map_i 
+	    (fun pos (n,c,t) -> n,c,
+	       Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) 1 tl in
+	  deps_to_evar evm new_tl in
+  deps_to_evar Evd.empty (List.rev ctx)
+
+open Typeclasses
+
+let declare_structure finite infer id idbuild paramimpls params arity fieldimpls fields 
+    ?(kind=StructureComponent) ?name is_coe coers sign =
   let nparams = List.length params and nfields = List.length fields in
   let args = extended_rel_list nfields params in
   let ind = applist (mkRel (1+nparams+nfields), args) in
@@ -241,11 +257,14 @@ let declare_structure finite id idbuild paramimpls params arity fieldimpls field
       mind_entry_inds = [mie_ind] } in
   let kn = Command.declare_mutual_with_eliminations true mie [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
+  let cstr = (rsp,1) in
   let kinds,sp_projs = declare_projections rsp ~kind ?name coers fieldimpls fields in
-  let build = ConstructRef (rsp,1) in
-    if is_coe then Class.try_add_new_coercion build Global;
-    Recordops.declare_structure(rsp,(rsp,1),List.rev kinds,List.rev sp_projs);
-    kn,0
+  let build = ConstructRef cstr in
+  if is_coe then Class.try_add_new_coercion build Global;
+  Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs);
+  if infer then
+    Evd.fold (fun ev evi () -> Recordops.declare_method (ConstructRef cstr) ev sign) sign ();
+  rsp
 
 let implicits_of_context ctx =
   list_map_i (fun i name ->
@@ -255,8 +274,6 @@ let implicits_of_context ctx =
       | Anonymous -> None
     in ExplByPos (i, explname), (true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
-
-open Typeclasses
 
 let typeclasses_db = "typeclass_instances"
 
@@ -274,8 +291,8 @@ let declare_instance_cst glob con =
       | Some tc -> add_instance (new_instance tc None glob con)
       | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
 
-let declare_class finite def id idbuild paramimpls params arity fieldimpls fields
-    ?(kind=StructureComponent) ?name is_coe coers =
+let declare_class finite def infer id idbuild paramimpls params arity fieldimpls fields
+    ?(kind=StructureComponent) ?name is_coe coers sign =
   let fieldimpls = 
     (* Make the class and all params implicits in the projections *)
     let ctx_impls = implicits_of_context params in
@@ -309,15 +326,16 @@ let declare_class finite def id idbuild paramimpls params arity fieldimpls field
 	  (DefinitionEntry proj_entry, IsDefinition Definition) 
 	in
 	let cref = ConstRef cst in
-	  Impargs.declare_manual_implicits false cref paramimpls;
-	  Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
-	  set_rigid cst; (* set_rigid proj_cst; *)
-	  cref, [proj_name, Some proj_cst]
+	Impargs.declare_manual_implicits false cref paramimpls;
+	Impargs.declare_manual_implicits false (ConstRef proj_cst) (List.hd fieldimpls);
+	set_rigid cst; (* set_rigid proj_cst; *)
+	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
+	cref, [proj_name, Some proj_cst]
     | _ ->
 	let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
-	let ind = declare_structure true (snd id) idbuild paramimpls
+	let ind = declare_structure true infer (snd id) idbuild paramimpls
 	  params (Option.cata (fun x -> x) (new_Type ()) arity) fieldimpls fields
-	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
+	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
 	in
 	  (* List.iter (Option.iter (declare_interning_data ((),[]))) notations; *)
 	  IndRef ind, (List.map2 (fun (id, _, _) y -> (Nameops.out_name id, y))
@@ -339,7 +357,7 @@ let declare_class finite def id idbuild paramimpls params arity fieldimpls field
     List.iter2 (fun p sub -> 
       if sub then match snd p with Some p -> declare_instance_cst true p | None -> ())
       k.cl_projs coers;
-    add_class k; impl
+  add_class k; impl
 
 let interp_and_check_sort sort =
   Option.map (fun sort ->
@@ -349,10 +367,11 @@ let interp_and_check_sort sort =
     else user_err_loc (constr_loc sort,"", str"Sort expected.")) sort
 
 open Vernacexpr
+open Autoinstance
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
-let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
+let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
   let cfs,notations = List.split cfs in
   let coers,fs = List.split cfs in
   let extract_name acc = function
@@ -365,13 +384,18 @@ let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
   let sc = interp_and_check_sort s in
   let implpars, params, implfs, fields = 
     States.with_heavy_rollback (fun () ->
-      typecheck_params_and_fields idstruc sc ps notations fs) ()
-  in
+      typecheck_params_and_fields idstruc sc ps notations fs) () in
+  let sign = structure_signature (fields@params) in
     match kind with
     | Record | Structure ->
 	let arity = Option.default (new_Type ()) sc in
 	let implfs = List.map
-	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
-	in IndRef (declare_structure finite idstruc idbuild implpars params arity implfs fields is_coe coers)
-    | Class b ->
-	declare_class finite b (loc,idstruc) idbuild implpars params sc implfs fields is_coe coers
+	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs in
+	let ind = declare_structure finite infer idstruc idbuild implpars params arity implfs fields is_coe coers sign in
+	if infer then search_record declare_record_instance (ConstructRef (ind,1)) sign;
+	IndRef ind	  
+    | Class def ->
+	let gr = declare_class finite def infer (loc,idstruc) idbuild 
+	  implpars params sc implfs fields is_coe coers sign in
+	if infer then search_record declare_class_instance gr sign;
+	gr

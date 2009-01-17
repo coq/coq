@@ -375,7 +375,7 @@ let vernac_assumption kind l nl=
 	  else Dumpglob.dump_definition lid true "var") idl;
       declare_assumption idl is_coe kind [] c false false nl) l
 	  
-let vernac_record k finite struc binders sort nameopt cfs =
+let vernac_record k finite infer struc binders sort nameopt cfs =
   let const = match nameopt with 
     | None -> add_prefix "Build_" (snd (snd struc))
     | Some (_,id as lid) ->
@@ -386,9 +386,9 @@ let vernac_record k finite struc binders sort nameopt cfs =
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
-    ignore(Record.definition_structure (k,finite,struc,binders,cfs,const,sort))
+    ignore(Record.definition_structure (k,finite,infer,struc,binders,cfs,const,sort))
       
-let vernac_inductive finite indl = 
+let vernac_inductive finite infer indl = 
   if Dumpglob.dump () then
     List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
       match cstrs with 
@@ -401,12 +401,12 @@ let vernac_inductive finite indl =
   match indl with
   | [ ( id , bl , c , Some b, RecordDecl (oc,fs) ), None ] -> 
       vernac_record (match b with Class true -> Class false | _ -> b)
-	finite id bl c oc fs
+	finite infer id bl c oc fs
   | [ ( id , bl , c , Some (Class true), Constructors [l]), _ ] -> 
       let f = 
 	let (coe, ((loc, id), ce)) = l in
 	  ((coe, AssumExpr ((loc, Name id), ce)), None)
-      in vernac_record (Class true) finite id bl c None [f]
+      in vernac_record (Class true) finite infer id bl c None [f]
   | [ ( id , bl , c , Some (Class true), _), _ ] -> 
       Util.error "Definitional classes must have a single method"
   | [ ( id , bl , c , Some (Class false), Constructors _), _ ] ->
@@ -1143,13 +1143,14 @@ let vernac_search s r =
   if !pcoq <> None then (Option.get !pcoq).search s r else
   match s with
   | SearchPattern c ->
-      let _,pat = intern_constr_pattern Evd.empty (Global.env()) c in
-      Search.search_pattern pat r
+      let (_,c) = interp_open_constr_patvar Evd.empty (Global.env()) c in
+      Search.search_pattern c r
   | SearchRewrite c ->
-      let _,pat = intern_constr_pattern Evd.empty (Global.env()) c in
+      let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
       Search.search_rewrite pat r
-  | SearchHead ref ->
-      Search.search_by_head (global_with_alias ref) r
+  | SearchHead c ->
+      let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
+      Search.search_by_head pat r
   | SearchAbout sl ->
       Search.search_about (List.map (on_snd interp_search_about_item) sl) r
 
@@ -1310,7 +1311,7 @@ let interp c = match c with
   | VernacEndProof e -> vernac_end_proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption stre l nl
-  | VernacInductive (finite,l) -> vernac_inductive finite l
+  | VernacInductive (finite,infer,l) -> vernac_inductive finite infer l
   | VernacFixpoint (l,b) -> vernac_fixpoint l b
   | VernacCoFixpoint (l,b) -> vernac_cofixpoint l b
   | VernacScheme l -> vernac_scheme l

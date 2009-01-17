@@ -143,6 +143,7 @@ let declare_global_definition ident ce local imps =
     if local = Local && Flags.is_verbose() then
       msg_warning (pr_id ident ++ str" is declared as a global definition");
     definition_message ident;
+    Autoinstance.search_declaration (ConstRef kn);
     gr
 
 let declare_definition_hook = ref ignore
@@ -198,6 +199,7 @@ let declare_one_assumption is_coe (local,kind) c imps impl keep nl (_,ident) =
         if local=Local & Flags.is_verbose () then
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
           str" because it is at a global level");
+	Autoinstance.search_declaration (ConstRef kn);
         gr in
   if is_coe then Class.try_add_new_coercion r local
 
@@ -374,6 +376,7 @@ let save id const do_guard (locality,kind) hook =
 	(Local, VarRef id)
     | Local | Global ->
         let kn = declare_constant id (DefinitionEntry const, k) in
+	Autoinstance.search_declaration (ConstRef kn);
 	(Global, ConstRef kn) in
   Pfedit.delete_current_proof ();
   definition_message id;
@@ -644,9 +647,11 @@ let declare_mutual_with_eliminations isrecord mie impls =
   let (_,kn) = declare_mind isrecord mie in    
     list_iter_i (fun i (indimpls, constrimpls) -> 
       let ind = (kn,i) in
+        Autoinstance.search_declaration (IndRef ind);
 	maybe_declare_manual_implicits false (IndRef ind) indimpls;
 	list_iter_i
 	  (fun j impls -> 
+(*	    Autoinstance.search_declaration (ConstructRef (ind,j));*)
 	    maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
 	  constrimpls)
       impls;
@@ -802,8 +807,9 @@ let declare_fix boxed kind f def t imps =
   } in
   let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
   let gr = ConstRef kn in
-    maybe_declare_manual_implicits false gr imps;
-    gr
+  Autoinstance.search_declaration (ConstRef kn);
+  maybe_declare_manual_implicits false gr imps;
+  gr
       
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
@@ -1259,5 +1265,4 @@ let get_current_context () =
   try Pfedit.get_current_goal_context ()
   with e when Logic.catchable_exception e -> 
     (Evd.empty, Global.env())
-
 

@@ -1236,6 +1236,24 @@ let interp_casted_constr sigma env ?(impls=([],[])) c typ =
 let interp_open_constr sigma env c =
   Default.understand_tcc sigma env (intern_constr sigma env c)
 
+let interp_open_constr_patvar sigma env c =
+  let raw = intern_gen false sigma env c ~allow_patvar:true in
+  let sigma = ref (Evd.create_evar_defs sigma) in
+  let evars = ref (Gmap.empty : (identifier,rawconstr) Gmap.t) in
+  let rec patvar_to_evar r = match r with
+    | RPatVar (loc,(_,id)) ->
+	( try Gmap.find id !evars 
+	  with Not_found -> 
+	    let ev = Evarutil.e_new_evar sigma env (Termops.new_Type()) in
+	    let ev = Evarutil.e_new_evar sigma env ev in
+	    let rev = REvar (loc,(fst (Term.destEvar ev)),None) (*TODO*) in
+	    evars := Gmap.add id rev !evars;
+	    rev
+	)
+    | _ -> map_rawconstr patvar_to_evar r in
+  let raw = patvar_to_evar raw in
+  Default.understand_tcc (Evd.evars_of !sigma) env raw
+
 let interp_constr_judgment sigma env c =
   Default.understand_judgment sigma env (intern_constr sigma env c)
 

@@ -140,7 +140,7 @@ let pr_search_about (b,c) =
   | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
 let pr_search a b pr_p = match a with
-  | SearchHead qid -> str"Search" ++ spc() ++ pr_reference qid ++ pr_in_out_modules b
+  | SearchHead c -> str"Search" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchPattern c -> str"SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchAbout sl -> str"SearchAbout" ++ spc() ++ str "[" ++ prlist_with_sep spc pr_search_about sl ++ str "]" ++ pr_in_out_modules b
@@ -576,7 +576,7 @@ let rec pr_vernac = function
       hov 2
         (pr_assumption_token (n > 1) stre ++ spc() ++ 
 	 pr_ne_params_list pr_lconstr_expr l)
-  | VernacInductive (f,l) ->
+  | VernacInductive (f,i,l) ->
 
       let pr_constructor (coe,(id,c)) =
         hov 2 (pr_lident id ++ str" " ++
@@ -601,6 +601,7 @@ let rec pr_vernac = function
 	in
 	  hov 0 (
 	    kw ++ spc() ++
+	      (if i then str"Infer" else str"") ++
               (if coe then str" > " else str" ") ++ pr_lident id ++
               pr_and_type_binders_arg indpar ++ spc() ++ 
 	      Option.cata (fun s -> str":" ++ spc() ++ pr_lconstr_expr s) (mt()) s ++ 

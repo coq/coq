@@ -71,7 +71,10 @@ let nf_env_evar sigma env =
 let nf_evar_info evc info =
   { info with 
     evar_concl = Reductionops.nf_evar evc info.evar_concl;
-    evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps}
+    evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps;
+    evar_body = match info.evar_body with
+      | Evar_empty -> Evar_empty
+      | Evar_defined c -> Evar_defined (Reductionops.nf_evar evc c) }
 
 let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
 		     evm Evd.empty

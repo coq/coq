@@ -75,7 +75,7 @@ type search_about_item =
 type searchable =
   | SearchPattern of constr_pattern_expr
   | SearchRewrite of constr_pattern_expr
-  | SearchHead of reference
+  | SearchHead of constr_pattern_expr
   | SearchAbout of (bool * search_about_item) list
 
 type locatable =
@@ -143,6 +143,7 @@ type export_flag    = bool (* true = Export;        false = Import         *)
 type specif_flag    = bool (* true = Specification; false = Implementation *)
 type inductive_flag = bool (* true = Inductive;     false = CoInductive    *)
 type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
+type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
 
 type sort_expr = Rawterm.rawsort
 
@@ -211,7 +212,7 @@ type vernac_expr =
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * bool * simple_binder with_coercion list
-  | VernacInductive of inductive_flag * (inductive_expr * decl_notation) list
+  | VernacInductive of inductive_flag * infer_flag * (inductive_expr * decl_notation) list
   | VernacFixpoint of (fixpoint_expr * decl_notation) list * bool
   | VernacCoFixpoint of (cofixpoint_expr * decl_notation) list * bool
   | VernacScheme of (lident option * scheme) list

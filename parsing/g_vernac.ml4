@@ -151,7 +151,7 @@ GEXTEND Gram
       (* Gallina inductive declarations *)
       | f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
-          VernacInductive (f,indl)
+          VernacInductive (f,false,indl)
       | IDENT "Boxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (recs,true)
       | IDENT "Unboxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -165,13 +165,13 @@ GEXTEND Gram
 	l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l) ] ]
   ;
   gallina_ext:
-    [ [ b = record_token; oc = opt_coercion; name = identref;
+    [ [ b = record_token; infer = infer_token; oc = opt_coercion; name = identref;
         ps = binders_let; 
 	s = OPT [ ":"; s = lconstr -> s ];
 	cfs = [ ":="; l = constructor_list_or_record_decl -> l
 	  | -> RecordDecl (None, []) ] ->
 	  let (recf,indf) = b in
-	    VernacInductive (indf,[((oc,name),ps,s,Some recf,cfs),None])
+	    VernacInductive (indf,infer,[((oc,name),ps,s,Some recf,cfs),None])
   ] ]
   ;
   typeclass_context:
@@ -216,6 +216,9 @@ GEXTEND Gram
   finite_token:
     [ [ "Inductive" -> true
       | "CoInductive" -> false ] ]
+  ;
+  infer_token:
+    [ [ "Infer" -> true | -> false ] ]
   ;
   record_token:
     [ [ IDENT "Record" -> (Record,true)
@@ -597,8 +600,8 @@ GEXTEND Gram
       | IDENT "About"; qid = global -> VernacPrint (PrintAbout qid)
 
       (* Searching the environment *)
-      | IDENT "Search"; qid = global; l = in_or_out_modules -> 
-	  VernacSearch (SearchHead qid, l)
+      | IDENT "Search"; c = constr_pattern; l = in_or_out_modules -> 
+	  VernacSearch (SearchHead c, l)
       | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchPattern c, l)
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->

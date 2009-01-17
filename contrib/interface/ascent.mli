@@ -164,7 +164,7 @@ and ct_COMMAND =
   | CT_resume of ct_ID_OPT
   | CT_save of ct_THM_OPT * ct_ID_OPT
   | CT_scomments of ct_SCOMMENT_CONTENT_LIST
-  | CT_search of ct_ID * ct_IN_OR_OUT_MODULES
+  | CT_search of ct_FORMULA * ct_IN_OR_OUT_MODULES
   | CT_search_about of ct_ID_OR_STRING_NE_LIST * ct_IN_OR_OUT_MODULES
   | CT_search_pattern of ct_FORMULA * ct_IN_OR_OUT_MODULES
   | CT_search_rewrite of ct_FORMULA * ct_IN_OR_OUT_MODULES

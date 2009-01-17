@@ -93,6 +93,58 @@ let find_projection = function
   | ConstRef cst -> Cmap.find cst !projection_table
   | _ -> raise Not_found
 
+(* Management of a field store : each field + argument of the inferred
+ * records are stored in a discrimination tree *)
+
+let subst_id s (gr,ev,evm) = 
+  (fst(subst_global s gr),ev,Evd.subst_evar_map s evm)
+
+module MethodsDnet : Term_dnet.S 
+  with type ident = global_reference * Evd.evar * Evd.evar_map
+  = Term_dnet.Make
+  (struct 
+     type t = global_reference * Evd.evar * Evd.evar_map
+     let compare = Pervasives.compare
+     let subst = subst_id
+     let constr_of (_,ev,evm) = Evd.evar_concl (Evd.find evm ev)
+   end) 
+  (struct 
+     let reduce c = Reductionops.head_unfold_under_prod 
+       Names.full_transparent_state (Global.env()) Evd.empty c 
+     let direction = true
+   end)
+
+let meth_dnet = ref MethodsDnet.empty
+
+open Summary
+
+let _ = 
+  declare_summary "record-methods-state"
+    { freeze_function = (fun () -> !meth_dnet);
+      unfreeze_function = (fun m -> meth_dnet := m);
+      init_function = (fun () -> meth_dnet := MethodsDnet.empty);
+      survive_module = false;
+      survive_section = false }
+
+open Libobject
+
+let load_method (_,(ty,id)) =
+  meth_dnet := MethodsDnet.add ty id !meth_dnet
+
+let (in_method,out_method) = 
+  declare_object
+    { (default_object "RECMETHODS") with
+	load_function = (fun _ -> load_method);
+	cache_function = load_method;
+	subst_function = (fun (_,s,(ty,id)) -> Mod_subst.subst_mps s ty,subst_id s id);
+	export_function = (fun x -> Some x);
+	classify_function = (fun (_,x) -> Substitute x) 
+    }
+
+let methods_matching c = MethodsDnet.search_pattern !meth_dnet c
+
+let declare_method cons ev sign =
+  Lib.add_anonymous_leaf (in_method ((Evd.evar_concl (Evd.find sign ev)),(cons,ev,sign)))
 
 (************************************************************************)
 (*s A canonical structure declares "canonical" conversion hints between *)

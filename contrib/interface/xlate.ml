@@ -1950,8 +1950,8 @@ let rec xlate_vernac =
       (match s with
 	| SearchPattern c ->
 	    CT_search_pattern(xlate_formula c, translated_restriction)
-	| SearchHead id ->
-	    CT_search(loc_qualid_to_ct_ID id, translated_restriction)
+	| SearchHead c ->
+	    CT_search(xlate_formula c, translated_restriction)
 	| SearchRewrite c ->
 	    CT_search_rewrite(xlate_formula c, translated_restriction)
 	| SearchAbout (a::l) ->
@@ -1984,7 +1984,7 @@ let rec xlate_vernac =
 (*         xlate_ident s, xlate_binder_list binders,  *)
 (* 	xlate_formula (Option.get c1), record_constructor, *)
 (*          build_record_field_list field_list) *)
-   | VernacInductive (isind, lmi) ->
+   | VernacInductive (isind, _, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
       let strip_mutind = function
           (((_, (_,s)), parameters, c, _, Constructors constructors), notopt) ->

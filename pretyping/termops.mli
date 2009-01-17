@@ -170,11 +170,27 @@ val error_invalid_occurrence : int list -> 'a
 
 (* Alternative term equalities *)
 val base_sort_cmp : Reduction.conv_pb -> sorts -> sorts -> bool
+val compare_constr_univ : (Reduction.conv_pb -> constr -> constr -> bool) ->
+  Reduction.conv_pb -> constr -> constr -> bool
 val constr_cmp : Reduction.conv_pb -> constr -> constr -> bool
 val eq_constr : constr -> constr -> bool
 
 val eta_reduce_head : constr -> constr
 val eta_eq_constr : constr -> constr -> bool
+
+exception CannotFilter
+
+(* Lightweight first-order filtering procedure. Unification
+   variables ar represented by (untyped) Evars.  
+   [filtering c1 c2] returns the substitution n'th evar ->
+   (context,term), or raises [CannotFilter].
+   Warning: Outer-kernel sort subtyping are taken into account: c1 has
+   to be smaller than c2 wrt. sorts. *)
+type subst = (rel_context*constr) Intmap.t
+val filtering : rel_context -> Reduction.conv_pb -> constr -> constr -> subst
+
+val decompose_prod_letin : constr -> int * rel_context * constr
+val align_prod_letin : constr -> constr -> rel_context * constr
 
 (* finding "intuitive" names to hypotheses *)
 val lowercase_first_char : identifier -> string

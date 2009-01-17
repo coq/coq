@@ -39,6 +39,9 @@ let set_xml_declare_variable f = xml_declare_variable := if_xml f
 let set_xml_declare_constant f = xml_declare_constant := if_xml f
 let set_xml_declare_inductive f = xml_declare_inductive := if_xml f
 
+let cache_hook = ref ignore
+let add_cache_hook f = cache_hook := f
+
 (** Declaration of section variables and local definitions *)
 
 type section_variable_entry =
@@ -87,6 +90,7 @@ let declare_variable id obj =
   !xml_declare_variable oname;
   oname
 
+
 (** Declaration of constants and parameters *)
 
 type constant_declaration = constant_entry * logical_kind
@@ -114,7 +118,8 @@ let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
   add_section_constant kn' (Global.lookup_constant kn').const_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
-  add_constant_kind (constant_of_kn kn) kind
+  add_constant_kind (constant_of_kn kn) kind;
+  !cache_hook sp
 
 let discharged_hyps kn sechyps =
   let (_,dir,_) = repr_kn kn in
@@ -160,11 +165,11 @@ let hcons_constant_declaration = function
 
 let declare_constant_common id dhyps (cd,kind) =
   let (sp,kn) = add_leaf id (inConstant (cd,dhyps,kind)) in
-  let kn = constant_of_kn kn in
-  declare_constant_implicits kn;
-  Heads.declare_head (EvalConstRef kn);
-  Notation.declare_ref_arguments_scope (ConstRef kn);
-  kn
+  let c = constant_of_kn kn in
+  declare_constant_implicits c;
+  Heads.declare_head (EvalConstRef c);
+  Notation.declare_ref_arguments_scope (ConstRef c);
+  c
 
 let declare_constant_gen internal id (cd,kind) =
   let cd = hcons_constant_declaration cd in
@@ -215,7 +220,7 @@ let check_exists_inductive (sp,_) =
 let load_inductive i ((sp,kn),(_,mie)) =
   let names = inductive_names sp kn mie in
   List.iter check_exists_inductive names;
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref) names
+  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
 
 let open_inductive i ((sp,kn),(_,mie)) =
   let names = inductive_names sp kn mie in
@@ -230,7 +235,9 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
   assert (kn'=kn);
   add_section_kn kn (Global.lookup_mind kn').mind_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
+  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names;
+  List.iter (fun (sp,_) -> !cache_hook sp) (inductive_names sp kn mie)
+
 
 let discharge_inductive ((sp,kn),(dhyps,mie)) =
   let mie = Global.lookup_mind kn in

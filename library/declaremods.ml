@@ -824,8 +824,11 @@ let start_library dir =
   Lib.start_compilation dir mp;
   Lib.add_frozen_state ()
 
+let end_library_hook = ref ignore
+let set_end_library_hook f = end_library_hook := f
 
 let end_library dir = 
+  !end_library_hook();
   let prefix, lib_stack = Lib.end_compilation dir in
   let cenv = Global.export dir in
   let msid = msid_of_prefix prefix in

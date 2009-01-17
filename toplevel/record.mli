@@ -27,15 +27,16 @@ val declare_projections :
   bool list -> manual_explicitation list list -> rel_context -> 
   (name * bool) list * constant option list
 
-val declare_structure : bool (*coinductive?*)-> identifier -> identifier -> 
+val declare_structure : bool (*coinductive?*)-> bool (*infer?*) -> identifier -> identifier -> 
   manual_explicitation list -> rel_context -> (* params *) constr -> (* arity *)
   Impargs.manual_explicitation list list -> rel_context -> (* fields *)
   ?kind:Decl_kinds.definition_object_kind -> ?name:identifier ->
   bool -> (* coercion? *)
   bool list -> (* field coercions *)
+  Evd.evar_map ->
   inductive
 
 val definition_structure :
-  record_kind * bool (*coinductive?*)*lident with_coercion * local_binder list *
+  record_kind * bool (*coinductive?*) * bool(*infer?*)* lident with_coercion * local_binder list *
   (local_decl_expr with_coercion with_notation) list * 
   identifier * constr_expr option -> global_reference

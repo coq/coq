@@ -421,11 +421,27 @@ type evar_defs =
       history : (existential_key * (loc * hole_kind)) list;
       metas : clbinding Metamap.t }
 
+let subst_named_context_val s = map_named_val (subst_mps s)
+
+let subst_evar_info s evi = 
+  let subst_evb = function Evar_empty -> Evar_empty
+    | Evar_defined c -> Evar_defined (subst_mps s c) in
+  { evi with
+      evar_concl = subst_mps s evi.evar_concl;
+      evar_hyps = subst_named_context_val s evi.evar_hyps;
+      evar_body = subst_evb evi.evar_body }
+
+let subst_evar_map sub evm = 
+  assert (snd evm = UniverseMap.empty);
+  Evarmap.map (subst_evar_info sub) (fst evm), snd evm
+
 let subst_evar_defs_light sub evd =
-  assert (evd.evars = (Evarmap.empty,UniverseMap.empty));
+  assert (snd evd.evars = UniverseMap.empty);
   assert (evd.conv_pbs = []);
   { evd with
-    metas = Metamap.map (map_clb (subst_mps sub)) evd.metas }
+      metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
+      evars = Evarmap.map (subst_evar_info sub)  (fst evd.evars), snd evd.evars
+  }
 
 let create_evar_defs sigma =
   { evars=sigma; conv_pbs=[]; last_mods = []; history=[]; metas=Metamap.empty }
@@ -715,6 +731,7 @@ let pr_evar_defs evd =
     if evd.evars = empty then mt() else
       str"EVARS:"++brk(0,1)++pr_evar_map evd.evars++fnl() in
   let cstrs =
+    if evd.conv_pbs = [] then mt() else
     str"CONSTRAINTS:"++brk(0,1)++pr_constraints evd.conv_pbs++fnl() in
   let pp_met =
     if evd.metas = Metamap.empty then mt() else

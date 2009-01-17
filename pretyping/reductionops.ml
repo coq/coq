@@ -970,3 +970,21 @@ let meta_reducible_instance evd b =
     | _ -> map_constr irec u
   in 
   if fm = [] then (* nf_betaiota? *) b.rebus else irec b.rebus
+
+
+let head_unfold_under_prod ts env _ c = 
+  let unfold cst = 
+    if Cpred.mem cst (snd ts) then
+      match constant_opt_value env cst with
+	| Some c -> c 
+	| None -> mkConst cst
+    else mkConst cst in
+  let rec aux c =
+    match kind_of_term c with
+      | Prod (n,t,c) -> mkProd (n,aux t, aux c)
+      | _ -> 
+	  let (h,l) = decompose_app c in
+	  match kind_of_term h with
+	    | Const cst -> beta_applist (unfold cst,l)
+	    | _ -> c in
+  aux c

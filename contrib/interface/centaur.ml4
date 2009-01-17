@@ -565,14 +565,14 @@ let pcoq_search s l =
       raw_search_about (filter_by_module_from_list l) add_search
 	(List.map (on_snd interp_search_about_item) sl)
   | SearchPattern c ->
-      let _,pat = intern_constr_pattern Evd.empty (Global.env()) c in
+      let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
       raw_pattern_search (filter_by_module_from_list l) add_search pat
   | SearchRewrite c ->
-      let _,pat = intern_constr_pattern Evd.empty (Global.env()) c in
+      let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
       raw_search_rewrite (filter_by_module_from_list l) add_search pat;
-  | SearchHead locqid ->
-      filtered_search
-	(filter_by_module_from_list l) add_search (Nametab.global locqid)
+  | SearchHead c ->
+      let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
+      raw_search_by_head (filter_by_module_from_list l) add_search pat;
   end;
   search_output_results()
 

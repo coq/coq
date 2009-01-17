@@ -133,7 +133,7 @@ LIBREP:=\
   lib/util.cmo lib/bigint.cmo lib/hashcons.cmo lib/dyn.cmo lib/system.cmo \
   lib/envars.cmo lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo
+  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo lib/dnet.cmo
 # Rem: Cygwin already uses variable LIB 
 
 BYTERUN:=\
@@ -159,7 +159,8 @@ KERNEL:=\
 LIBRARY:=\
   library/nameops.cmo library/libnames.cmo library/libobject.cmo \
   library/summary.cmo library/nametab.cmo library/global.cmo library/lib.cmo \
-  library/declaremods.cmo library/library.cmo library/states.cmo \
+  library/declaremods.cmo library/library.cmo \
+  library/states.cmo \
   library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo \
   library/decls.cmo library/heads.cmo
 
@@ -167,8 +168,10 @@ PRETYPING:=\
   pretyping/termops.cmo pretyping/evd.cmo \
   pretyping/reductionops.cmo pretyping/vnorm.cmo pretyping/inductiveops.cmo \
   pretyping/retyping.cmo pretyping/cbv.cmo \
-  pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
-  pretyping/tacred.cmo pretyping/evarutil.cmo pretyping/evarconv.cmo \
+  pretyping/pretype_errors.cmo \
+  pretyping/typing.cmo pretyping/evarutil.cmo pretyping/term_dnet.cmo \
+  pretyping/recordops.cmo \
+  pretyping/tacred.cmo pretyping/evarconv.cmo \
   pretyping/typeclasses_errors.cmo pretyping/typeclasses.cmo \
   pretyping/classops.cmo pretyping/coercion.cmo \
   pretyping/unification.cmo pretyping/clenv.cmo \
@@ -196,7 +199,7 @@ PARSING:=\
   parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo \
   parsing/ppconstr.cmo parsing/printer.cmo \
   parsing/pptactic.cmo parsing/ppdecl_proof.cmo parsing/tactic_printer.cmo \
-  parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo 
+  parsing/printmod.cmo parsing/prettyp.cmo
 
 HIGHPARSING:=\
   parsing/g_constr.cmo parsing/g_vernac.cmo parsing/g_prim.cmo \
@@ -221,8 +224,8 @@ TACTICS:=\
 TOPLEVEL:=\
   toplevel/himsg.cmo toplevel/cerrors.cmo \
   toplevel/class.cmo toplevel/vernacexpr.cmo toplevel/metasyntax.cmo \
-  toplevel/auto_ind_decl.cmo \
-  toplevel/command.cmo toplevel/record.cmo \
+  toplevel/auto_ind_decl.cmo toplevel/libtypes.cmo toplevel/search.cmo \
+  toplevel/autoinstance.cmo toplevel/command.cmo toplevel/record.cmo \
   parsing/ppvernac.cmo toplevel/classes.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/vernacentries.cmo toplevel/whelp.cmo toplevel/vernac.cmo \
@@ -525,10 +528,11 @@ PRINTERSCMO:=\
   library/libnames.cmo library/nametab.cmo library/libobject.cmo	\
   library/lib.cmo library/goptions.cmo library/decls.cmo library/heads.cmo \
   pretyping/termops.cmo pretyping/evd.cmo pretyping/rawterm.cmo \
-  pretyping/reductionops.cmo pretyping/inductiveops.cmo			    \
-  pretyping/retyping.cmo pretyping/cbv.cmo				    \
-  pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
-  pretyping/evarutil.cmo pretyping/evarconv.cmo pretyping/tacred.cmo \
+  pretyping/reductionops.cmo pretyping/inductiveops.cmo \
+  pretyping/retyping.cmo pretyping/cbv.cmo \
+  pretyping/pretype_errors.cmo pretyping/typing.cmo pretyping/evarutil.cmo \
+  pretyping/term_dnet.cmo pretyping/recordops.cmo \
+  pretyping/evarconv.cmo pretyping/tacred.cmo \
   pretyping/classops.cmo pretyping/typeclasses_errors.cmo pretyping/typeclasses.cmo \
   pretyping/detyping.cmo pretyping/indrec.cmo pretyping/coercion.cmo \
   pretyping/unification.cmo pretyping/cases.cmo \
@@ -883,8 +887,7 @@ LIBRARYMLI:=$(wildcard $(LIBRARY:.cmo=.mli))
 PARSINGMLI:=$(wildcard $(PARSING:.cmo=.mli) $(HIGHPARSING:.cmo=.mli))
 TACTICSMLI:=$(wildcard $(TACTICS:.cmo=.mli) $(HIGHTACTICS:.cmo=.mli))
 COQMLI:=$(KERNELMLI) $(INTERPMLI) $(PRETYPINGMLI) $(TOPLEVELMLI) $(PROOFSMLI) \
-	$(LIBRARYMLI) $(PARSINGMLI) $(TACTICSMLI)
-
+   $(LIBRARYMLI) $(PARSINGMLI) $(TACTICSMLI)
 
 ###########################################################################
 # Miscellaneous

@@ -41,6 +41,15 @@ val find_projection_nparams : global_reference -> int
 (* raise [Not_found] if not a projection *)
 val find_projection : global_reference -> struc_typ
 
+(* we keep an index (dnet) of record's arguments + fields
+   (=methods). Here is how to declare them: *)
+val declare_method :
+  global_reference -> Evd.evar -> Evd.evar_map -> unit
+  (* and here is how to search for methods matched by a given term: *)
+val methods_matching : constr -> 
+  ((global_reference*Evd.evar*Evd.evar_map) * 
+     (constr*existential_key)*Termops.subst) list
+
 (*s A canonical structure declares "canonical" conversion hints between *)
 (*  the effective components of a structure and the projections of the  *)
 (*  structure *)

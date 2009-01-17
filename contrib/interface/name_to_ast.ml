@@ -121,7 +121,7 @@ let mutual_to_ast_list sp mib =
   let _, l =
     Array.fold_right
       (fun mi (n,l) -> (n+1, (convert_one_inductive sp n)::l)) mipv (0, []) in
-  VernacInductive (mib.mind_finite, l)
+  VernacInductive (mib.mind_finite, false, l)
   :: (implicit_args_to_ast_list sp mipv);;
 
 let constr_to_ast v = 

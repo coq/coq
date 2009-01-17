@@ -119,10 +119,9 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
   with No_section_path -> 
     false
 
-let gref_eq =
-  IndRef (Libnames.encode_kn Coqlib.logic_module (id_of_string "eq"), 0)
-let gref_eqT =
-  IndRef (Libnames.encode_kn Coqlib.logic_type_module (id_of_string "eqT"), 0)
+let ref_eq = Libnames.encode_kn Coqlib.logic_module (id_of_string "eq"), 0
+let c_eq = mkInd ref_eq
+let gref_eq = IndRef ref_eq
 
 let mk_rewrite_pattern1 eq pattern =
   PApp (PRef eq, [| PMeta None; pattern; PMeta None |])
@@ -166,25 +165,44 @@ let raw_search_rewrite extra_filter display_function pattern =
        && extra_filter s a c)
     display_function gref_eq
 
+(* 
+ * functions to use the new Libtypes facility
+ *)
+
+let raw_search search_function extra_filter display_function pat =
+  let env = Global.env() in
+  List.iter 
+    (fun (gr,_,_) -> 
+       let typ = Global.type_of_global gr in
+       if extra_filter gr env typ then
+	 display_function gr env typ
+    ) (search_function pat)
+
+let raw_pattern_search = raw_search Libtypes.search_concl
+let raw_search_rewrite = raw_search (Libtypes.search_eq_concl c_eq)
+let raw_search_by_head = raw_search Libtypes.search_head_concl
+
 let text_pattern_search extra_filter =
   raw_pattern_search extra_filter plain_display
-    
+
 let text_search_rewrite extra_filter =
   raw_search_rewrite extra_filter plain_display
+
+let text_search_by_head extra_filter =
+  raw_search_by_head extra_filter plain_display
 
 let filter_by_module_from_list = function
   | [], _ -> (fun _ _ _ -> true)
   | l, outside -> filter_by_module l (not outside)
 
-let search_by_head ref inout = 
-  filtered_search (filter_by_module_from_list inout) plain_display ref
+let search_by_head pat inout = 
+  text_search_by_head (filter_by_module_from_list inout) pat
 
 let search_rewrite pat inout =
   text_search_rewrite (filter_by_module_from_list inout) pat
 
 let search_pattern pat inout =
   text_pattern_search (filter_by_module_from_list inout) pat
-
 
 let gen_filtered_search filter_function display_function =
   gen_crible None

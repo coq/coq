@@ -87,6 +87,8 @@ val interp_type : evar_map -> env -> ?impls:full_implicits_env ->
 
 val interp_open_constr   : evar_map -> env -> constr_expr -> evar_map * constr
 
+val interp_open_constr_patvar   : evar_map -> env -> constr_expr -> evar_map * constr
+
 val interp_casted_constr : evar_map -> env -> ?impls:full_implicits_env -> 
   constr_expr -> types -> constr
 

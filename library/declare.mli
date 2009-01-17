@@ -63,3 +63,6 @@ val declare_mind : bool -> mutual_inductive_entry -> object_name
 val set_xml_declare_variable : (object_name -> unit) -> unit
 val set_xml_declare_constant : (bool * constant -> unit) -> unit
 val set_xml_declare_inductive : (bool * object_name -> unit) -> unit
+
+(* hook for the cache function of constants and inductives *)
+val add_cache_hook : (section_path -> unit) -> unit

@@ -530,7 +530,7 @@ and fCOMMAND = function
    fSCOMMENT_CONTENT_LIST x1 ++
    fNODE "scomments" 1
 | CT_search(x1, x2) ->
-   fID x1 ++
+   fFORMULA x1 ++
    fIN_OR_OUT_MODULES x2 ++
    fNODE "search" 2
 | CT_search_about(x1, x2) ->

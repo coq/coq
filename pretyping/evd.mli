@@ -156,7 +156,8 @@ val map_clb : (constr -> constr) -> clbinding -> clbinding
 (* Unification state *)
 type evar_defs
 
-(* Assume empty [evar_map] and [conv_pbs] *)
+val subst_evar_map : substitution -> evar_map -> evar_map
+(* Assume empty universe constraints in [evar_map] and [conv_pbs] *)
 val subst_evar_defs_light : substitution -> evar_defs -> evar_defs
 
 (* create an [evar_defs] with empty meta map: *)
