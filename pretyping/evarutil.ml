@@ -493,24 +493,24 @@ let clear_hyps_in_evi evdref hyps concl ids =
    dependencies in variables are canonically associated to the most ancient
    variable in its family of aliased variables *)
 
-let rec expand_var_at_least_once env x = match kind_of_term x with
+let expand_var_once env x = match kind_of_term x with
   | Rel n ->
       begin match pi2 (lookup_rel n env) with
-      | Some t when isRel t or isVar t ->
-	  let t = lift n t in
-	  (try expand_var_at_least_once env t with Not_found -> t)
-      | _ ->
-	  raise Not_found
+      | Some t when isRel t or isVar t -> lift n t
+      | _ -> raise Not_found
       end
   | Var id ->
       begin match pi2 (lookup_named id env) with
-      | Some t when isVar t ->
-	  (try expand_var_at_least_once env t with Not_found -> t)
-      | _ ->
-	  raise Not_found
+      | Some t when isVar t -> t
+      | _ -> raise Not_found
       end
   | _ ->
       raise Not_found
+
+let rec expand_var_at_least_once env x =
+  let t = expand_var_once env x in
+  try expand_var_at_least_once env t
+  with Not_found -> t
 
 let expand_var env x =
   try expand_var_at_least_once env x with Not_found -> x
@@ -521,6 +521,13 @@ let expand_var_opt env x =
 let rec expand_vars_in_term env t = match kind_of_term t with
   | Rel _ | Var _ -> expand_var env t
   | _ -> map_constr_with_full_binders push_rel expand_vars_in_term env t
+
+let rec expansions_of_var env x =
+  try 
+    let t = expand_var_once env x in
+    t :: expansions_of_var env t
+  with Not_found ->
+    [x]
 
 (* [find_projectable_vars env sigma y subst] finds all vars of [subst]
  * that project on [y]. It is able to find solutions to the following
@@ -710,8 +717,8 @@ let do_restrict_hyps_virtual evd evk filter =
          unsolvable.
        Computing whether y is erasable or not may be costly and the 
        interest for this early detection in practice is not obvious. We let
-       it for future work. Anyway, thanks to the use of filters, the whole
-       context remains consistent. *)
+       it for future work. In any case, thanks to the use of filters, the whole
+       (unrestricted) context remains consistent. *)
     let evi = Evd.find (evars_of evd) evk in
     let env = evar_unfiltered_env evi in
     let oldfilter = evar_filter evi in
@@ -853,7 +860,9 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
       | NotUnique ->
 	  if not !progress then raise NotEnoughInformationToProgress;
 	  (* No unique projection but still restrict to where it is possible *)
-	  let filter = array_map_to_list (fun c -> isEvar c or c = t) argsv in
+	  let ts = expansions_of_var env t in
+	  let test c = isEvar c or List.mem c ts in
+	  let filter = array_map_to_list test argsv in
 	  let args' = filter_along (fun x -> x) filter argsv in
 	  let evd,evar = do_restrict_hyps_virtual !evdref evk filter in
 	  let evk',_ = destEvar evar in

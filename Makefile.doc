@@ -45,14 +45,26 @@ rectutorial: doc/RecTutorial/RecTutorial.v.html \
 ### Implicit rules
 ######################################################################
 
+ifeq ($(QUICK),1)
+%.v.tex: %.tex
+	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
+else
 %.v.tex: %.tex | $(COQTEX) $(COQTOPEXE) $(CONTRIBVO) $(CONTRIBCMO) $(THEORIESVO) 
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
+endif
 
 %.ps: %.dvi
-	(cd `dirname $<`; dvips -o `basename $@` `basename $<`)
+	(cd `dirname $<`; dvips -q -o `basename $@` `basename $<`)
 
 %.eps: %.png
 	pngtopnm $< | pnmtops -equalpixels -noturn -rle > $@
+
+######################################################################
+# Macros for filtering outputs
+######################################################################
+
+HIDEBIBTEXINFO=| grep -v "^A level-1 auxiliary file"
+SHOWMAKEINDEXERROR=egrep "^!! Input index error|^** Input style error|^   --"
 
 ######################################################################
 # Common
@@ -73,19 +85,26 @@ doc/common/version.tex: config/Makefile
 # The second LATEX compilation is necessary otherwise the pages of the index
 # are not correct (don't know why...) - BB
 doc/refman/Reference-Manual.dvi: $(DOCCOMMON) $(REFMANFILES) doc/refman/Reference-Manual.tex
-	(cd doc/refman;\
-	$(LATEX) Reference-Manual;\
-	$(BIBTEX) Reference-Manual;\
-	$(LATEX) Reference-Manual;\
-	$(MAKEINDEX) Reference-Manual;\
-	$(MAKEINDEX) Reference-Manual.tacidx -o Reference-Manual.tacind;\
-	$(MAKEINDEX) Reference-Manual.comidx -o Reference-Manual.comind;\
-	$(MAKEINDEX) Reference-Manual.erridx -o Reference-Manual.errind;\
-	$(LATEX) Reference-Manual;\
-	$(LATEX) Reference-Manual)
+	@(cd doc/refman;\
+	$(LATEX) -interaction=batchmode Reference-Manual;\
+	$(BIBTEX) -terse Reference-Manual $(HIDEBIBTEXINFO);\
+	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
+	$(MAKEINDEX) -q Reference-Manual;\
+	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
+	$(MAKEINDEX) -q Reference-Manual.tacidx -o Reference-Manual.tacind;\
+	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
+	$(MAKEINDEX) -q Reference-Manual.comidx -o Reference-Manual.comind;\
+	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
+	$(MAKEINDEX) -q Reference-Manual.erridx -o Reference-Manual.errind;\
+	$(SHOWMAKEINDEXERROR) Reference-Manual.ilg;\
+	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
+	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
+ 	../tools/show_latex_messages -no-overfull Reference-Manual.log)
 
 doc/refman/Reference-Manual.pdf: $(REFMANFILES) doc/refman/Reference-Manual.tex
-	(cd doc/refman; $(PDFLATEX) Reference-Manual.tex)
+	(cd doc/refman;\
+	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
+	../tools/show_latex_messages -no-overfull Reference-Manual.log)
 
 ### Reference Manual (browsable format)
 
@@ -102,20 +121,24 @@ doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	$(INSTALLLIB) doc/refman/cover.html doc/refman/html/index.html
 
 refman-quick:
-	(cd doc/refman; \
-	 $(PDFLATEX) Reference-Manual.tex; \
-	 $(HEVEA) $(HEVEAOPTS) ./Reference-Manual.tex)
-
+	(cd doc/refman;\
+	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
+	../tools/show_latex_messages -no-overfull Reference-Manual.log && \
+	$(HEVEA) $(HEVEAOPTS) ./Reference-Manual.tex)
 
 ######################################################################
 # Tutorial
 ######################################################################
 
 doc/tutorial/Tutorial.v.dvi: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
-	(cd doc/tutorial; $(LATEX) Tutorial.v)
+	(cd doc/tutorial;\
+	$(LATEX) -interaction=batchmode Tutorial.v;\
+	../tools/show_latex_messages Tutorial.v.log)
 
 doc/tutorial/Tutorial.v.pdf: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
-	(cd doc/tutorial; $(PDFLATEX) Tutorial.v.tex)
+	(cd doc/tutorial;\
+	$(PDFLATEX) -interaction=batchmode Tutorial.v.tex;\
+	../tools/show_latex_messages Tutorial.v.log)
 
 doc/tutorial/Tutorial.v.html: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 	(cd doc/tutorial; $(HEVEA) $(HEVEAOPTS) Tutorial.v)
@@ -127,13 +150,16 @@ doc/tutorial/Tutorial.v.html: $(DOCCOMMON) doc/tutorial/Tutorial.v.tex
 
 doc/faq/FAQ.v.dvi: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.tex
 	(cd doc/faq;\
-	$(LATEX) FAQ.v;\
-	$(BIBTEX) FAQ.v;\
-	$(LATEX) FAQ.v;\
-	$(LATEX) FAQ.v)
+	$(LATEX) -interaction=batchmode FAQ.v;\
+	$(BIBTEX) -terse FAQ.v;\
+	$(LATEX) -interaction=batchmode FAQ.v > /dev/null;\
+	$(LATEX) -interaction=batchmode FAQ.v > /dev/null;\
+	../tools/show_latex_messages FAQ.v.log)
 
 doc/faq/FAQ.v.pdf: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.dvi doc/faq/axioms.png
-	(cd doc/faq; $(PDFLATEX) FAQ.v.tex)
+	(cd doc/faq;\
+        $(PDFLATEX) -interaction=batchmode FAQ.v.tex;\
+	../tools/show_latex_messages FAQ.v.log)
 
 doc/faq/FAQ.v.html: doc/faq/FAQ.v.dvi # to ensure FAQ.v.bbl
 	(cd doc/faq; $(HEVEA) $(HEVEAOPTS) FAQ.v.tex)
@@ -150,14 +176,23 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 
 ### Standard library (browsable html format)
 
+ifeq ($(QUICK),1)
+doc/stdlib/index-body.html:
+	- rm -rf doc/stdlib/html
+	$(MKDIR) doc/stdlib/html
+	$(COQDOC) -q -d doc/stdlib/html --multi-index --html -g \
+	  -R theories Coq $(THEORIESVO:.vo=.v)
+	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
+else
 doc/stdlib/index-body.html: | $(COQDOC) $(THEORIESVO)
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
 	$(COQDOC) -q -boot -d doc/stdlib/html --multi-index --html -g \
 	  -R theories Coq $(THEORIESVO:.vo=.v)
 	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
+endif
 
-doc/stdlib/index-list.html: doc/stdlib/index-list.html.template
+doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
 	./doc/stdlib/make-library-index doc/stdlib/index-list.html
 
 doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.html doc/stdlib/index-trailer.html
@@ -167,17 +202,26 @@ doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.htm
 
 ### Standard library (light version, full version is definitely too big)
 
+ifeq ($(QUICK),1)
+doc/stdlib/Library.coqdoc.tex:
+	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
+            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
+else
 doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
+endif
 
 doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
 	(cd doc/stdlib;\
-	$(LATEX) Library;\
-	$(LATEX) Library)
+	$(LATEX) -interaction=batchmode Library;\
+	$(LATEX) -interaction=batchmode Library > /dev/null;\
+	../tools/show_latex_messages Library.log)
 
 doc/stdlib/Library.pdf: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.dvi
-	(cd doc/stdlib; $(PDFLATEX) Library)
+	(cd doc/stdlib;\
+	$(PDFLATEX) -interaction=batchmode Library;\
+	../tools/show_latex_messages Library.log)
 
 ######################################################################
 # Tutorial on inductive types
@@ -185,13 +229,16 @@ doc/stdlib/Library.pdf: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Li
 
 doc/RecTutorial/RecTutorial.v.dvi: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.v.tex
 	(cd doc/RecTutorial;\
-	 $(LATEX) RecTutorial.v;\
-	 $(BIBTEX) RecTutorial.v;\
-	 $(LATEX) RecTutorial.v;\
-	 $(LATEX) RecTutorial.v)
+	$(LATEX) -interaction=batchmode RecTutorial.v;\
+	$(BIBTEX) -terse RecTutorial.v;\
+	$(LATEX) -interaction=batchmode RecTutorial.v > /dev/null;\
+	$(LATEX) -interaction=batchmode RecTutorial.v > /dev/null;\
+	../tools/show_latex_messages RecTutorial.v.log)
 
 doc/RecTutorial/RecTutorial.v.pdf: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.v.dvi
-	(cd doc/RecTutorial; $(PDFLATEX) RecTutorial.v.tex)
+	(cd doc/RecTutorial;\
+	$(PDFLATEX) -interaction=batchmode RecTutorial.v.tex;\
+	../tools/show_latex_messages RecTutorial.v.log)
 
 doc/RecTutorial/RecTutorial.v.html: doc/RecTutorial/RecTutorial.v.tex
 	(cd doc/RecTutorial; $(HEVEA) $(HEVEAOPTS) RecTutorial.v)

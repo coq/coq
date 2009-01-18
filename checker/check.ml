@@ -211,7 +211,7 @@ let locate_absolute_library dir =
   if loadpath = [] then raise LibUnmappedDir;
   try
     let name = string_of_id base^".vo" in
-    let _, file = System.where_in_path false loadpath name in
+    let _, file = System.where_in_path ~warn:false loadpath name in
     (dir, file)
   with Not_found ->
   (* Last chance, removed from the file system but still in memory *)
@@ -231,7 +231,7 @@ let locate_qualified_library qid =
     in
     if loadpath = [] then raise LibUnmappedDir;
     let name =  qid.basename^".vo" in
-    let path, file = System.where_in_path true loadpath name in
+    let path, file = System.where_in_path loadpath name in
     let dir =
       extend_dirpath (find_logical_path path) (id_of_string qid.basename) in
     (* Look if loaded *)

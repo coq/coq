@@ -128,7 +128,7 @@ let all_subdirs ~unix_path:root =
   if exists_dir root then traverse root [];
   List.rev !l
 
-let where_in_path warn path filename =
+let where_in_path ?(warn=true) path filename =
   let rec search = function
     | lpe :: rem ->
 	let f = Filename.concat lpe filename in
@@ -144,26 +144,26 @@ let where_in_path warn path filename =
 	    msg_warning
 	      (str filename ++ str " has been found in" ++ spc () ++
 	       hov 0 (str "[ " ++
-	         hv 0 (prlist_with_sep (fun () -> spc() ++ pr_semicolon())
+	         hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
 		   (fun (lpe,_) -> str lpe) l)
 	         ++ str " ];") ++ fnl () ++
 	       str "loading " ++ str f);
 	  (lpe, f) in
   check_and_warn (search path)
 
-let find_file_in_path paths filename =
+let find_file_in_path ?(warn=true) paths filename =
   if not (Filename.is_implicit filename) then
     let root = Filename.dirname filename in
     root, filename
   else 
-    try where_in_path true paths filename
+    try where_in_path ~warn paths filename
     with Not_found ->
       errorlabstrm "System.find_file_in_path"
 	(hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++ 
 		str "on loadpath"))
 
 let is_in_path lpath filename =
-  try ignore (where_in_path false lpath filename); true
+  try ignore (where_in_path ~warn:false lpath filename); true
   with Not_found -> false
 
 let make_suffix name suffix =
@@ -201,7 +201,7 @@ let raw_extern_intern magic suffix =
   in 
   (extern_state,intern_state)
 
-let extern_intern magic suffix =
+let extern_intern ?(warn=true) magic suffix =
   let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
   let extern_state name val_0 = 
     try
@@ -214,7 +214,7 @@ let extern_intern magic suffix =
     with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name = 
     try
-      let _,filename = find_file_in_path paths (make_suffix name suffix) in
+      let _,filename = find_file_in_path ~warn paths (make_suffix name suffix) in
       let channel = raw_intern filename in
       let v = marshal_in channel in
       close_in channel; 

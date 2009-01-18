@@ -20,14 +20,13 @@ let guess_coqlib () =
     then Coq_config.coqlib
     else 
       let prefix = Filename.dirname (Filename.dirname Sys.executable_name) in
-      let coqlib = if Coq_config.local then prefix else 
+      let coqlib = if !Flags.boot || Coq_config.local then prefix else 
 	List.fold_left Filename.concat prefix ["lib";"coq"] in
 	if Sys.file_exists (Filename.concat coqlib file) then coqlib else
 	  Util.error "cannot guess a path for Coq libraries; please use -coqlib option"
 	  
 let coqlib () = 
-  if !Flags.coqlib_spec then !Flags.coqlib else
-    (if !Flags.boot then Coq_config.coqsrc else guess_coqlib ())
+  if !Flags.coqlib_spec then !Flags.coqlib else guess_coqlib ()
 
 let path_to_list p =
   let sep = if Sys.os_type = "Win32" then ';' else ':' in

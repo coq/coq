@@ -13,6 +13,11 @@ let with_option o f x =
   try let r = f x in o := old; r
   with e -> o := old; raise e
 
+let without_option o f x =
+  let old = !o in o:=false;
+  try let r = f x in o := old; r
+  with e -> o := old; raise e
+
 let boot = ref false
 
 let batch_mode = ref false
@@ -44,16 +49,8 @@ let make_silent flag = silent := flag; ()
 let is_silent () = !silent
 let is_verbose () = not !silent
 
-let silently f x =
-  let oldsilent = !silent in
-  try 
-    silent := true;
-    let rslt = f x in
-    silent := oldsilent; 
-    rslt
-  with e -> begin
-    silent := oldsilent; raise e
-  end
+let silently f x = with_option silent f x
+let verbosely f x = without_option silent f x
 
 let if_silent f x = if !silent then f x
 let if_verbose f x = if not !silent then f x

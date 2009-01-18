@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# First argument is the number of lines to treat
+# Second argument is optional and, if it is "no", overfull are not displayed
+
+i=$1
+nooverfull=$2
+error=0
+verbose=0
+chapter=""
+file=""
+while : ; do 
+  read -r line; 
+  case $line in
+    "! "*)
+      echo $line $file;
+      error=1
+      verbose=1
+      ;;
+    "LaTeX Font Info"*|"LaTeX Info"*|"Underfull "*)
+      verbose=0
+      ;;
+    "Overfull "*)
+      verbose=0
+      if [ "$nooverfull" != "no" ]; then echo $line $file; fi
+      ;;
+    "LaTeX "*)
+      verbose=0
+      echo $line $chapter
+      ;;
+    "["*|"Chapter "*)
+      verbose=0
+      ;;
+    "(./"*)
+      file="(file `echo $line | cut -b 4- | cut -d' ' -f 1`)"
+      verbose=0
+      ;;
+    *)
+      if [ $verbose == 1 ]; then echo $line; fi
+  esac;
+  if [ "$i" == "0" ]; then break; else i=`expr $i - 1`; fi; 
+done
+exit $error

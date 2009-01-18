@@ -596,7 +596,7 @@ Proof-irrelevance (in {\Prop}) can be assumed without contradiction in
 form of the proof is. This is in harmony with the common purely
 logical interpretation of {\Prop}. Contrastingly, proof-irrelevance is
 inconsistent in {\Set} since there are types in {\Set}, such as the
-type of booleans, that are provably more than 2 elements.
+type of booleans, that provably have at least two distinct elements.
 
 Proof-irrelevance (in {\Prop}) is a consequence of classical logic
 (see proofs in file \vfile{\LogicClassical}{Classical} and
@@ -1863,9 +1863,9 @@ You can use for instance:
 Notation "x ^2" := (Rmult x x) (at level 20).
 \end{verbatim}
 Note that you can not use:
-\begin{texttt}
+\begin{tt}
 Notation "x $^²$" := (Rmult x x) (at level 20).
-\end{texttt}
+\end{tt}
 because ``$^2$'' is an iso-latin character. If you really want this kind of notation you should use UTF-8.
 
 
@@ -2278,12 +2278,12 @@ and set key \texttt{gtk-key-theme} to \texttt{Emacs} in the category
 \Question{How to use those Forall and Exists pretty symbols?}\label{forallcoqide}
  Thanks to the notation features in \Coq, you just need to insert these
 lines in your {\Coq} buffer:\\
-\begin{texttt}
+\begin{tt}
 Notation "$\forall$ x : t, P" := (forall x:t, P) (at level 200, x ident).
-\end{texttt}\\
-\begin{texttt}
+\end{tt}\\
+\begin{tt}
 Notation "$\exists$ x : t, P" := (exists x:t, P) (at level 200, x ident).
-\end{texttt}
+\end{tt}
 
 Copy/Paste of these lines from this file will not work outside of \CoqIde.
 You need to load a file containing these lines or to enter the $\forall$
@@ -2531,7 +2531,7 @@ theorem proving in \Coq.
 
 %%%%%%%
 \typeout{*********************************************}
-\typeout{********* That makes \thequestion{\space} questions **********}
+\typeout{********* That makes {\thequestion} questions **********}
 \typeout{*********************************************}
 
 \end{document}

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+if [ "$1" == "-no-overfull" ]; then
+  ../tools/latex_filter `wc -l < $2` no < $2
+else
+  ../tools/latex_filter `wc -l < $1` yes < $1
+fi
+

@@ -308,6 +308,7 @@ theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
     theories/Classes/Morphisms_Relations.v
     theories/Classes/Equivalence.v
     theories/Classes/EquivDec.v
+    theories/Classes/Functions.v
     theories/Classes/SetoidTactics.v
     theories/Classes/SetoidClass.v
     theories/Classes/SetoidDec.v

@@ -38,6 +38,7 @@ val make_silent : bool -> unit
 val is_silent : unit -> bool
 val is_verbose : unit -> bool
 val silently : ('a -> 'b) -> 'a -> 'b
+val verbosely : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
@@ -46,8 +47,12 @@ val if_warn : ('a -> unit) -> 'a -> unit
 
 val hash_cons_proofs : bool ref
 
-(* Temporary activate an option ('c must be an atomic type) *)
+(* Temporary activate an option (to activate option [o] on [f x y z],
+   use [with_option o (f x y) z]) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b
+
+(* Temporary deactivate an option *)
+val without_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 
 (* If [None], no limit *)
 val set_print_hyps_limit : int option -> unit

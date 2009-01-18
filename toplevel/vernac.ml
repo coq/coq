@@ -57,7 +57,9 @@ let real_error = function
    the file we parse seems a bit risky to me.  B.B.  *)
 
 let open_file_twice_if verbosely fname =
-  let _,longfname = find_file_in_path (Library.get_load_paths ()) fname in
+  let paths = Library.get_load_paths () in
+  let _,longfname =
+    find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
   let in_chan = open_in longfname in
   let verb_ch = if verbosely then Some (open_in longfname) else None in
   let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
@@ -131,7 +133,8 @@ let rec vernac_com interpfun (loc,com) =
         let cds = Dumpglob.coqdoc_freeze() in
           if !Flags.beautify_file then 
 	    begin
-              let _,f = find_file_in_path (Library.get_load_paths ())
+              let _,f = find_file_in_path ~warn:(Flags.is_verbose())
+		(Library.get_load_paths ())
 		(make_suffix fname ".v") in
 		chan_beautify := open_out (f^beautify_suffix);
 		Pp.comments := []
@@ -227,7 +230,7 @@ let load_vernac verb file =
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
-  let ldir,long_f_dot_v = Library.start_library f in
+  let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
     if Dumpglob.multi_dump () then 
       Dumpglob.open_glob_file (f ^ ".glob");
     Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");

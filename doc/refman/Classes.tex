@@ -2,7 +2,7 @@
 \def\eol{\setlength\parskip{0pt}\par}
 \def\indent#1{\noindent\kern#1}
 \def\cst#1{\textsf{#1}}
-\def\tele#1{\ensuremath{\overrightarrow{#1}}}
+\newcommand\tele[1]{\overrightarrow{#1}}
 
 \achapter{\protect{Type Classes}}
 \aauthor{Matthieu Sozeau}
@@ -306,7 +306,7 @@ priority as for auto hints.
   It does not include curly braces and one need not even mention
   the unique field name.
 
-\item {\tt Instance Global} One can use the \texttt{Global} modifier on
+\item {\tt Global Instance} One can use the \texttt{Global} modifier on
   instances declared in a section so that their generalization is automatically
   redeclared after the section is closed.
 

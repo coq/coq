@@ -31,3 +31,8 @@ Notation "' 'C_' G ( A )" := (A,G) (at level 8, G at level 2).
 
 Notation "+1 x" := (S x) (at level 25, x at level 9).
 Section A. Global Notation "'Z'" := O (at level 9). End A.
+
+(* Check use of "$" (see bug #1961) *)
+
+Notation "$ x" := (id x) (at level 30).
+Check ($ 5).
