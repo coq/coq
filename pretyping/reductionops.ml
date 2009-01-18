@@ -724,8 +724,8 @@ let plain_instance s c =
      If a lemma has the type "(fun x => p) t" then rewriting t may fail
      if the type of the lemma is first beta-reduced (this typically happens
      when rewriting a single variable and the type of the lemma is obtained
-     by meta_instance (with empty map) which itself call instance with this
-     empty map.
+     by meta_instance (with empty map) which itself calls instance with this
+     empty map).
  *)
 
 let instance s c =

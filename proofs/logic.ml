@@ -298,14 +298,23 @@ let rename_hyp id1 id2 sign =
 (* Will only be used on terms given to the Refine rule which have meta 
 variables only in Application and Case *)
 
+let error_unsupported_deep_meta c =
+  errorlabstrm "" (strbrk "Application of lemmas whose beta-iota normal " ++
+    strbrk "form contains metavariables deep inside the term is not " ++
+    strbrk "supported; try \"refine\" instead.")
+
 let collect_meta_variables c = 
-  let rec collrec acc c = match kind_of_term c with
-    | Meta mv -> mv::acc
-    | Cast(c,_,_) -> collrec acc c
-    | (App _| Case _) -> fold_constr collrec acc c
-    | _ -> acc
-  in 
-  List.rev(collrec [] c)
+  let rec collrec deep acc c = match kind_of_term c with
+    | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
+    | Cast(c,_,_) -> collrec deep acc c
+    | (App _| Case _) -> fold_constr (collrec deep) acc c
+    | _ -> fold_constr (collrec true) acc c
+  in
+  List.rev (collrec false [] c)
+
+let check_meta_variables c = 
+  if not (list_distinct (collect_meta_variables c)) then
+    raise (RefinerError (NonLinearProof c))
 
 let check_conv_leq_goal env sigma arg ty conclty =
   if !check & not (is_conv_leq env sigma ty conclty) then 
@@ -366,6 +375,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     | _ -> 
 	if occur_meta trm then
 	  anomaly "refiner called with a meta in non app/case subterm";
+
       	let t'ty = goal_type_of env sigma trm in
 	check_conv_leq_goal env sigma trm t'ty conclty;
         (goalacc,t'ty)
@@ -563,8 +573,7 @@ let prim_refiner r sigma goal =
 	  (mk_sign sign all, sigma)
 
     | Refine c ->
-        if not (list_distinct (collect_meta_variables c)) then
-          raise (RefinerError (NonLinearProof c));
+	check_meta_variables c;
 	let (sgl,cl') = mk_refgoals sigma goal [] cl c in
 	let sgl = List.rev sgl in
 	  (sgl, sigma)

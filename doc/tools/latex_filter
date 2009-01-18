@@ -22,7 +22,7 @@ while : ; do
       ;;
     "Overfull "*)
       verbose=0
-      if [ "$nooverfull" == "no" ]; then echo $line $file; fi
+      if [ "$nooverfull" != "no" ]; then echo $line $file; fi
       ;;
     "LaTeX "*)
       verbose=0
