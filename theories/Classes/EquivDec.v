@@ -9,7 +9,7 @@
 (* Decidable equivalences.
  *
  * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - Universit�copyright Paris Sud
+ * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
  *              91405 Orsay, France *)
 
 (* $Id$ *)
@@ -75,16 +75,13 @@ Require Import Coq.Arith.Peano_dec.
 
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
-Program Instance nat_eq_eqdec : EqDec nat eq :=
-  equiv_dec := eq_nat_dec.
+Program Instance nat_eq_eqdec : EqDec nat eq := eq_nat_dec.
 
 Require Import Coq.Bool.Bool.
 
-Program Instance bool_eqdec : EqDec bool eq :=
-  equiv_dec := bool_dec.
+Program Instance bool_eqdec : EqDec bool eq := bool_dec.
 
-Program Instance unit_eqdec : EqDec unit eq :=
-  equiv_dec x y := in_left.
+Program Instance unit_eqdec : EqDec unit eq := λ x y, in_left.
 
   Next Obligation.
   Proof.
@@ -94,24 +91,24 @@ Program Instance unit_eqdec : EqDec unit eq :=
 
 Program Instance prod_eqdec `(EqDec A eq, EqDec B eq) :
   ! EqDec (prod A B) eq :=
-  equiv_dec x y := 
+  { equiv_dec x y :=
     let '(x1, x2) := x in 
     let '(y1, y2) := y in 
     if x1 == y1 then 
       if x2 == y2 then in_left
       else in_right
-    else in_right.
+    else in_right }.
 
   Solve Obligations using unfold complement, equiv ; program_simpl.
 
 Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
-  EqDec (sum A B) eq :=
+  EqDec (sum A B) eq := {
   equiv_dec x y := 
     match x, y with
       | inl a, inl b => if a == b then in_left else in_right
       | inr a, inr b => if a == b then in_left else in_right
       | inl _, inr _ | inr _, inl _ => in_right
-    end.
+    end }.
 
   Solve Obligations using unfold complement, equiv ; program_simpl.
 
@@ -119,11 +116,11 @@ Program Instance sum_eqdec `(EqDec A eq, EqDec B eq) :
    Proving the reflection requires functional extensionality though. *)
 
 Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
-  equiv_dec f g := 
+  { equiv_dec f g := 
     if f true == g true then
       if f false == g false then in_left
       else in_right
-    else in_right.
+    else in_right }.
 
   Solve Obligations using try red ; unfold equiv, complement ; program_simpl.
 
@@ -136,7 +133,7 @@ Program Instance bool_function_eqdec `(EqDec A eq) : ! EqDec (bool -> A) eq :=
 Require Import List.
 
 Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
-  equiv_dec := 
+  { equiv_dec := 
     fix aux (x : list A) y { struct x } :=
     match x, y with
       | nil, nil => in_left
@@ -145,7 +142,7 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
           if aux tl tl' then in_left else in_right
           else in_right
       | _, _ => in_right
-    end.
+    end }.
 
   Solve Obligations using unfold equiv, complement in * ; program_simpl ; intuition (discriminate || eauto).
 
