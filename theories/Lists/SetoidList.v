@@ -687,7 +687,7 @@ destruct (eqA_dec x a).
 left; auto.
 destruct IHl.
 left; auto.
-right; red; inversion_clear 1; tauto.
+right; red; inversion_clear 1; contradiction. 
 Qed.
 
 Fixpoint removeA (x : A) (l : list A){struct l} : list A :=
