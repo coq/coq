@@ -350,7 +350,7 @@ let locate_absolute_library dir =
   if loadpath = [] then raise LibUnmappedDir;
   try
     let name = (string_of_id base)^".vo" in
-    let _, file = System.where_in_path false loadpath name in
+    let _, file = System.where_in_path ~warn:false loadpath name in
     (dir, file)
   with Not_found ->
   (* Last chance, removed from the file system but still in memory *)
@@ -366,7 +366,7 @@ let locate_qualified_library warn qid =
     let loadpath = loadpaths_matching_dir_path dir in
     if loadpath = [] then raise LibUnmappedDir;
     let name = string_of_id base ^ ".vo" in
-    let lpath, file = System.where_in_path warn (List.map fst loadpath) name in
+    let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name in
     let dir = extend_dirpath (List.assoc lpath loadpath) base in
     (* Look if loaded *)
     if library_is_loaded dir then (LibLoaded, dir, library_full_filename dir)
@@ -477,7 +477,9 @@ let rec_intern_by_filename_only id f =
 
 let rec_intern_library_from_file idopt f =
   (* A name is specified, we have to check it contains library id *)
-  let _, f = System.find_file_in_path (get_load_paths ()) (f^".vo") in
+  let paths = get_load_paths () in
+  let _, f = 
+    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".vo") in
   rec_intern_by_filename_only idopt f
 
 (**********************************************************************)
@@ -602,7 +604,9 @@ let check_coq_overwriting p =
     errorlabstrm "" (strbrk ("Name "^string_of_dirpath p^" starts with prefix \"Coq\" which is reserved for the Coq library."))
 
 let start_library f = 
-  let _,longf = System.find_file_in_path (get_load_paths ()) (f^".v") in
+  let paths = get_load_paths () in
+  let _,longf =
+    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
   let ldir0 = find_logical_path (Filename.dirname longf) in
   check_coq_overwriting ldir0;
   let id = id_of_string (Filename.basename f) in
