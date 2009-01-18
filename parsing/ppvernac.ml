@@ -903,7 +903,6 @@ let rec pr_vernac = function
 	| PrintModuleType qid -> str"Print Module Type" ++ spc() ++ pr_reference qid
 	| PrintModule qid -> str"Print Module" ++ spc() ++ pr_reference qid
 	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
-	| PrintSetoids -> str"Print Setoids"
 	| PrintScopes -> str"Print Scopes"
 	| PrintScope s -> str"Print Scope" ++ spc() ++ str s 
 	| PrintVisibility s -> str"Print Visibility" ++ pr_opt str s 

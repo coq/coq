@@ -98,22 +98,6 @@ ARGUMENT EXTEND occurrences
 | [ var(id) ] -> [ ArgVar id ]
 END
 
-(* For Setoid rewrite *)
-let pr_morphism_signature _ _ _ s =
-  spc () ++ Setoid_replace.pr_morphism_signature s
-
-ARGUMENT EXTEND morphism_signature
- TYPED AS morphism_signature
- PRINTED BY pr_morphism_signature
-  | [ constr(out) ] -> [ [],out ]
-  | [ constr(c) "++>" morphism_signature(s) ] ->
-       [ let l,out = s in (Some true,c)::l,out ]
-  | [ constr(c) "-->" morphism_signature(s) ] ->
-       [ let l,out = s in (Some false,c)::l,out ]
-  | [ constr(c) "==>" morphism_signature(s) ] ->
-       [ let l,out = s in (None,c)::l,out ]
-END
-
 let pr_gen prc _prlc _prtac c = prc c
 
 let pr_rawc _prc _prlc _prtac raw = Printer.pr_rawconstr raw

@@ -25,7 +25,6 @@ open Tacexpr
 open Pcoq
 open Tactic
 open Constr
-open Setoid_replace
 open Proof_type
 open Coqlib
 open Tacmach

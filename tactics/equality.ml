@@ -37,7 +37,6 @@ open Tacred
 open Rawterm
 open Coqlib
 open Vernacexpr
-open Setoid_replace
 open Declarations
 open Indrec
 open Printer
