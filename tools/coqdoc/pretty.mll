@@ -706,7 +706,7 @@ and skip_hide = parse
 (*s Reading token pretty-print *)
 
 and printing_token_body = parse
-  | "*)" | eof 
+  | "*)" nl? | eof 
 	{ let s = Buffer.contents token_buffer in 
 	  Buffer.clear token_buffer;
 	  s }

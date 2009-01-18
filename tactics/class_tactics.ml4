@@ -808,7 +808,8 @@ let refresh_hypinfo env sigma hypinfo =
   else ()
 
 let unify_eqn env sigma hypinfo t = 
-  try 
+  if isEvar t then None
+  else try 
     let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
     let env', prf, c1, c2, car, rel =
       let left = if l2r then c1 else c2 in

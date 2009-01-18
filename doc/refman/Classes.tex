@@ -20,15 +20,15 @@ classes in \Haskell which also applies.
 \asection{Class and Instance declarations}
 \label{ClassesInstances}
 
-The syntax for class and instance declarations is a mix between the
-record syntax of \Coq~and the type classes syntax of \Haskell:
+The syntax for class and instance declarations is the same as
+record syntax of \Coq:
 \def\kw{\texttt}
 \def\classid{\texttt}
 
 \begin{center}
 \[\begin{array}{l}
-\kw{Class}~\classid{Id}~(\alpha_1 : \tau_1) \cdots (\alpha_n : \tau_n)
-:= \{\\
+\kw{Class}~\classid{Id}~(\alpha_1 : \tau_1) \cdots (\alpha_n : \tau_n) 
+[: \sort] := \{\\
 \begin{array}{p{0em}lcl}
   & \cst{f}_1 & : & \type_1 ; \\
   & \vdots & &  \\
@@ -37,11 +37,11 @@ record syntax of \Coq~and the type classes syntax of \Haskell:
 \end{center}
 \begin{center}
 \[\begin{array}{l}
-\kw{Instance}~\ident~:~\classid{Id}~\term_1 \cdots \term_n :=\\
+\kw{Instance}~\ident~:~\classid{Id}~\term_1 \cdots \term_n := \{\\
 \begin{array}{p{0em}lcl}
   & \cst{f}_1 & := & \term_{f_1} ; \\
   & \vdots & &  \\
-  & \cst{f}_m & := & \term_{f_m}.
+  & \cst{f}_m & := & \term_{f_m} \}.
 \end{array}\end{array}\]
 \end{center}
 \begin{coq_eval}
@@ -67,9 +67,9 @@ leibniz equality on some type. An example implementation is:
 
 \begin{coq_example*}
 Instance unit_EqDec : EqDec unit :=
-  eqb x y := true ;
+{ eqb x y := true ;
   eqb_leibniz x y H := 
-    match x, y return x = y with tt, tt => refl_equal tt end.
+    match x, y return x = y with tt, tt => refl_equal tt end }.
 \end{coq_example*}
 
 If one does not give all the members in the \texttt{Instance}
@@ -78,9 +78,8 @@ inhabitants of the remaining fields, e.g.:
 
 \begin{coq_example*}
 Instance eq_bool : EqDec bool :=
-  eqb x y := if x then y else negb y.
+{ eqb x y := if x then y else negb y }.
 \end{coq_example*}
-
 \begin{coq_example}
 Proof. intros x y H.
   destruct x ; destruct y ; (discriminate || reflexivity). 
@@ -96,7 +95,7 @@ richer facilities for dealing with obligations.
 
 Once a type class is declared, one can use it in class binders:
 \begin{coq_example}
-  Definition neqb {A : Type} {eqa : EqDec A} (x y : A) := negb (eqb x y).
+Definition neqb {A} {eqa : EqDec A} (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 When one calls a class method, a constraint is generated that is
@@ -106,7 +105,7 @@ satisfied by \texttt{{eqa : EqDec A}}. In case no satisfying constraint can be
 found, an error is raised:
 
 \begin{coq_example}
-  Definition neqb' (A : Type) (x y : A) := negb (eqb x y).
+Definition neqb' (A : Type) (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 The algorithm used to solve constraints is a variant of the eauto tactic
@@ -116,7 +115,7 @@ local hypotheses as well as declared lemmas in the
 written:
 
 \begin{coq_example}
-  Definition neqb' (A : Type) (eqa : EqDec A) (x y : A) := negb (eqb x y).
+Definition neqb' A (eqa : EqDec A) (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 However, the generalizing binders should be used instead as they have
@@ -142,7 +141,7 @@ binders begining with a backquote \texttt{`} and the codomain of
 
 Following the previous example, one can write:
 \begin{coq_example}
-  Definition neqb_impl `{eqa : EqDec A} (x y : A) := negb (eqb x y).
+Definition neqb_impl `{eqa : EqDec A} (x y : A) := negb (eqb x y).
 \end{coq_example}
 
 Here \texttt{A} is implicitely generalized, and the resulting function
@@ -164,9 +163,9 @@ the constraints as a binding context before the instance, e.g.:
 
 \begin{coq_example}
 Instance prod_eqb `(EA : EqDec A, EB : EqDec B) : EqDec (A * B) :=
-  eqb x y := match x, y with
+{ eqb x y := match x, y with
   | (la, ra), (lb, rb) => andb (eqb la lb) (eqb ra rb)
-  end.
+  end }.
 \end{coq_example}
 \begin{coq_eval}
 Admitted.
@@ -182,10 +181,10 @@ One can also parameterize classes by other classes, generating a
 hierarchy of classes and superclasses. In the same way, we give the
 superclasses as a binding context:
 
-\begin{coq_example}
+\begin{coq_example*}
 Class Ord `(E : EqDec A) :=
   { le : A -> A -> bool }.
-\end{coq_example}
+\end{coq_example*}
 
 Contrary to \Haskell, we have no special syntax for superclasses, but
 this declaration is morally equivalent to:
@@ -202,20 +201,18 @@ As we have seen, \texttt{Ord} is encoded as a record type with two parameters:
 a type \texttt{A} and an \texttt{E} of type \texttt{EqDec A}. However, one can
 still use it as if it had a single parameter inside generalizing binders: the
 generalization of superclasses will be done automatically. 
-\begin{coq_example}
-Definition le_eqb `{Ord A} (x y : A) :=
-  andb (le x y) (le y x).
-\end{coq_example}
+\begin{coq_example*}
+Definition le_eqb `{Ord A} (x y : A) := andb (le x y) (le y x).
+\end{coq_example*}
 
 In some cases, to be able to specify sharing of structures, one may want to give
 explicitely the superclasses. It is is possible to do it directly in regular
 binders, and using the \texttt{!} modifier in class binders. For
 example:
-
-\begin{coq_example}
-Definition lt `{eqa : EqDec A, ! Ord eqa} (x y : A) :=
+\begin{coq_example*}
+Definition lt `{eqa : EqDec A, ! Ord eqa} (x y : A) := 
   andb (le x y) (neqb x y).
-\end{coq_example}
+\end{coq_example*}
 
 The \texttt{!} modifier switches the way a binder is parsed back to the
 regular interpretation of Coq. In particular, it uses the implicit
@@ -237,7 +234,8 @@ Class Transitive (A : Type) (R : relation A) :=
   transitivity : forall x y z, R x y -> R y z -> R x z.
 \end{coq_example*}
 
-This declares singleton classes for reflexive and transitive relations. 
+This declares singleton classes for reflexive and transitive relations,
+(see \ref{SingletonClass} for an explanation).
 These may be used as part of other classes:
 
 \begin{coq_example*}
@@ -259,7 +257,7 @@ same effect.
 \section{Summary of the commands
 \label{TypeClassCommands}}
 
-\subsection{\tt Class {\ident} {\binder$_1$ \ldots \binder$_n$} 
+\subsection{\tt Class {\ident} {\binder$_1$ \ldots~\binder$_n$} 
   : \sort := \{ field$_1$ ; \ldots ; field$_k$ \}.}
 \comindex{Class}
 \label{Class}
@@ -269,7 +267,7 @@ parameters {\binder$_1$} to {\binder$_n$} and fields {\tt field$_1$} to
 {\tt field$_k$}.
 
 \begin{Variants}
-\item {\tt Class {\ident} {\binder$_1$ \ldots \binder$_n$} 
+\item \label{SingletonClass} {\tt Class {\ident} {\binder$_1$ \ldots \binder$_n$} 
     : \sort := \ident$_1$ : \type$_1$.}
   This variant declares a \emph{singleton} class whose only method is
   {\tt \ident$_1$}. This singleton class is a so-called definitional
@@ -286,7 +284,7 @@ parameters {\binder$_1$} to {\binder$_n$} and fields {\tt field$_1$} to
 
 \subsection{\tt Instance {\ident} {\binder$_1$ \ldots \binder$_n$} :
   {Class} {t$_1$ \ldots t$_n$} [| \textit{priority}]
-  := field$_1$ := b$_1$ ; \ldots ; field$_i$ := b$_i$}
+  := \{ field$_1$ := b$_1$ ; \ldots ; field$_i$ := b$_i$ \}}
 \comindex{Instance}
 \label{Instance}
 
@@ -302,6 +300,12 @@ An optional \textit{priority} can be declared, 0 being the highest
 priority as for auto hints.
 
 \begin{Variants}
+\item {\tt Instance {\ident} {\binder$_1$ \ldots \binder$_n$} :
+    {Class} {t$_1$ \ldots t$_n$} [| \textit{priority}] := \term} 
+  This syntax is used for declaration of singleton class instances. 
+  It does not include curly braces and one need not even mention
+  the unique field name.
+
 \item {\tt Global Instance} One can use the \texttt{Global} modifier on
   instances declared in a section so that their generalization is automatically
   redeclared after the section is closed.

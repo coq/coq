@@ -185,9 +185,17 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
       end
     else
       begin
-	let props = match props with CRecord (loc, _, fs) -> fs | _ -> assert false in
-	if List.length props > List.length k.cl_props then 
-	  mismatched_props env' (List.map snd props) k.cl_props;
+	let props = 
+	  match props with
+	  | CRecord (loc, _, fs) -> 
+	      if List.length fs > List.length k.cl_props then 
+		mismatched_props env' (List.map snd fs) k.cl_props;
+	      fs
+	  | _ -> 
+	      if List.length k.cl_props <> 1 then 
+		errorlabstrm "new_instance" (Pp.str "Expected a definition for the instance body")
+	      else [(dummy_loc, Nameops.out_name (pi1 (List.hd k.cl_props))), props]
+	in
 	let subst = 
 	  match k.cl_props with 
 	  | [(na,b,ty)] -> 

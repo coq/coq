@@ -71,10 +71,10 @@ Hint Extern 4 => solve_relation : relations.
 (** We can already dualize all these properties. *)
 
 Program Instance flip_Reflexive `(Reflexive A R) : Reflexive (flip R) :=
-  reflexivity := reflexivity (R:=R).
+  reflexivity (R:=R).
 
 Program Instance flip_Irreflexive `(Irreflexive A R) : Irreflexive (flip R) :=
-  irreflexivity := irreflexivity (R:=R).
+  irreflexivity (R:=R).
 
 Program Instance flip_Symmetric `(Symmetric A R) : Symmetric (flip R).
 
@@ -168,8 +168,8 @@ Class Equivalence {A} (R : relation A) : Prop := {
 (** An Equivalence is a PER plus reflexivity. *)
 
 Instance Equivalence_PER `(Equivalence A R) : PER R | 10 :=
-  PER_Symmetric := Equivalence_Symmetric ;
-  PER_Transitive := Equivalence_Transitive.
+  { PER_Symmetric := Equivalence_Symmetric ;
+    PER_Transitive := Equivalence_Transitive }.
 
 (** We can now define antisymmetry w.r.t. an equivalence relation on the carrier. *)
 

@@ -9,7 +9,7 @@
 (* Decidable setoid equality theory.
  *
  * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - Universit�copyright Paris Sud
+ * Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
  *              91405 Orsay, France *)
 
 (* $Id$ *)
@@ -75,18 +75,18 @@ Require Import Coq.Arith.Arith.
 (** The equiv is burried inside the setoid, but we can recover it by specifying which setoid we're talking about. *)
 
 Program Instance eq_setoid A : Setoid A | 10 :=
-  equiv := eq ; setoid_equiv := eq_equivalence.
+  { equiv := eq ; setoid_equiv := eq_equivalence }.
 
 Program Instance nat_eq_eqdec : EqDec (eq_setoid nat) :=
-  equiv_dec := eq_nat_dec.
+  eq_nat_dec.
 
 Require Import Coq.Bool.Bool.
 
 Program Instance bool_eqdec : EqDec (eq_setoid bool) :=
-  equiv_dec := bool_dec.
+  bool_dec.
 
 Program Instance unit_eqdec : EqDec (eq_setoid unit) :=
-  equiv_dec x y := in_left.
+  λ x y, in_left.
 
   Next Obligation.
   Proof.
@@ -95,7 +95,7 @@ Program Instance unit_eqdec : EqDec (eq_setoid unit) :=
   Qed.
 
 Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B)) : EqDec (eq_setoid (prod A B)) :=
-  equiv_dec x y := 
+  λ x y,
     let '(x1, x2) := x in 
     let '(y1, y2) := y in 
     if x1 == y1 then 
@@ -108,7 +108,7 @@ Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B)) : Eq
 (** Objects of function spaces with countable domains like bool have decidable equality. *)
 
 Program Instance bool_function_eqdec `(! EqDec (eq_setoid A)) : EqDec (eq_setoid (bool -> A)) :=
-  equiv_dec f g := 
+  λ f g,
     if f true == g true then
       if f false == g false then in_left
       else in_right

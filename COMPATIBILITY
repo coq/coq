@@ -51,6 +51,9 @@ Tactics
 
 Language
 
+- Type Class syntax has completely since the 8.2beta versions. See the
+  documentation for the updated syntax.
+
 - Constants hidding polymorphic inductive types are now polymorphic
   themselves. This may exceptionally affect the naming of
   introduction hypotheses if such an inductive type in Type is used on

@@ -1102,7 +1102,6 @@ let vernac_print = function
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintRewriteHintDbName s -> Autorewrite.print_rewrite_hintdb s
   | PrintHintDb -> Auto.print_searchtable ()
-  | PrintSetoids -> Setoid_replace.print_setoids()
   | PrintScopes ->
       pp (Notation.pr_scopes (Constrextern.without_symbols pr_lrawconstr))
   | PrintScope s ->

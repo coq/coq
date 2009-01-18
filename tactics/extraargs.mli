@@ -24,13 +24,6 @@ val occurrences : (int list or_var) Pcoq.Gram.Entry.e
 val rawwit_occurrences : (int list or_var) raw_abstract_argument_type
 val wit_occurrences : (int list) typed_abstract_argument_type
 
-val rawwit_morphism_signature :
- Setoid_replace.morphism_signature raw_abstract_argument_type
-val wit_morphism_signature :
- Setoid_replace.morphism_signature typed_abstract_argument_type
-val morphism_signature :
- Setoid_replace.morphism_signature Pcoq.Gram.Entry.e
-
 val rawwit_raw : constr_expr raw_abstract_argument_type
 val wit_raw : rawconstr typed_abstract_argument_type
 val raw : constr_expr Pcoq.Gram.Entry.e

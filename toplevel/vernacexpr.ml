@@ -60,7 +60,6 @@ type printable =
   | PrintHintDbName of string
   | PrintRewriteHintDbName of string
   | PrintHintDb
-  | PrintSetoids
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option

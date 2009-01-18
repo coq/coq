@@ -13,7 +13,7 @@ Language
   arguments in terms.
 - Sort of Record/Structure, Inductive and CoInductive defaults to Type
   if omitted.
-- Support for optional "where" notation clauses for record fields. (DOC TODO)
+- Support for optional "where" notation clauses for record fields.
 - (Co)Inductive types can be defined as records 
   (e.g. "CoInductive stream := { hd : nat; tl : stream }.")
 - New syntax "Theorem id1:t1 ... with idn:tn" for proving mutually dependent
@@ -28,11 +28,10 @@ Language
   As a consequence, Acc_rect has now a more direct proof [possible source
   of easily fixed incompatibility in case of manual definition of a recursor
   in a recursive singleton inductive type].
-- New syntax to do implicit generalization (TODO: still undecided) in binders
-  and in arbitrary terms.
-- New syntax for introduction of record objects without mentioning the 
-  constructor {| field := body; ... |}, turning missing fields into holes
-  (compatible with refine and Program) (DOC TODO).
+- New syntax to do implicit generalization in binders and inside terms.
+- New tentative syntax for introduction of record objects without mentioning 
+  the constructor {| field := body; ... |}, turning missing fields into holes
+  (compatible with refine and Program).
 
 Vernacular commands
 
@@ -198,8 +197,6 @@ Notations, coercions, implicit arguments and type inference
   Defensive" for controlling inference and use of implicit arguments.
 - New modifier in "Implicit Arguments" to force an implicit argument to
   be maximally inserted.
-- New modifier of "Implicit Arguments" to enrich the set of implicit arguments.
-  (DOC TODO?)
 - New options Global and Local to "Implicit Arguments" for section
   surviving or non export outside module.
 - Level "constr" moved from 9 to 8. (DOC TODO?)
@@ -360,8 +357,8 @@ Type Classes
 
 - New "Class", "Instance" and "Program Instance" commands to define
   classes and instances documented in the reference manual.  
-- New binding construct " [ Class_1 param_1 .. param_n, Class_2 ... ] " 
-  for binding type classes, usable everywhere.  
+- New binding construct "`{Class_1 param_1 .. param_n, Class_2 ...}" 
+  for binding type classes, usable everywhere.
 - New command " Print Classes " and " Print Instances some_class " to
   print tables for typeclasses.  
 - New default eauto hint database "typeclass_instances" used by the default
@@ -385,10 +382,9 @@ Setoid rewriting
   Their introduction may break existing scripts that defined 
   them as notations with different levels.
   
-  - One needs to use [Typeclasses unfold [cst]] if [cst] is used
-  as an abbreviation hiding products in types of morphisms,
-  e.g. if ones redefines [relation] and declares morphisms 
-  whose type mentions [relation].
+  - One can use [Typeclasses Opaque/Transparent [cst]] to indicate
+  that [cst] should not be unfolded during unification for morphism
+  resolution, by default all constants are transparent.
 
   - The [setoid_rewrite]'s semantics change when rewriting with
   a lemma: it can rewrite two different instantiations of the lemma
@@ -408,12 +404,12 @@ Setoid rewriting
   new [Add Parametric] commands, documented in the manual.
 
   - Setoid_Theory is now an alias to Equivalence, scripts building objects
-  of type Setoid_Theory need to unfold (or "red") the definitions
+  of type Setoid_Theory need to unfold (or [red]) the definitions
   of Reflexive, Symmetric and Transitive in order to get the same goals 
   as before. Scripts which introduced variables explicitely will not break.
 
   - The order of subgoals when doing [setoid_rewrite] with side-conditions
-  is always the same: first the new goal, then the conditions.
+  is now always the same: first the new goal, then the conditions.
 
 - New standard library modules Classes.Morphisms declares
   standard morphisms on refl/sym/trans relations.

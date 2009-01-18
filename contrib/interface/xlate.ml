@@ -1906,7 +1906,6 @@ let rec xlate_vernac =
 	    xlate_error "TODO: Print TypeClasses"
 	| PrintInspect n -> CT_inspect (CT_int n)
 	| PrintUniverses opt_s -> CT_print_universes(ctf_STRING_OPT opt_s)
-	| PrintSetoids -> CT_print_setoids
 	| PrintTables -> CT_print_tables
         | PrintModuleType a -> CT_print_module_type (loc_qualid_to_ct_ID a)
         | PrintModule a -> CT_print_module (loc_qualid_to_ct_ID a)

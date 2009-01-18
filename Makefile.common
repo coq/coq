@@ -212,8 +212,7 @@ TACTICS:=\
   tactics/evar_tactics.cmo \
   tactics/hiddentac.cmo tactics/elim.cmo \
   tactics/dhyp.cmo tactics/auto.cmo \
-  toplevel/ind_tables.cmo \
-  tactics/setoid_replace.cmo tactics/equality.cmo \
+  toplevel/ind_tables.cmo tactics/equality.cmo \
   tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
   tactics/tacinterp.cmo tactics/autorewrite.cmo \
   tactics/decl_interp.cmo tactics/decl_proof_instr.cmo

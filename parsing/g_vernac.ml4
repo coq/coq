@@ -502,7 +502,8 @@ GEXTEND Gram
       | IDENT "Instance"; name = identref; sup = OPT binders_let; ":";
 	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ; 
-	 props = [ ":="; decl = record_declaration -> decl | -> CRecord (loc, None, []) ] ->
+	 props = [ ":="; "{"; r = record_declaration; "}" -> r | 
+	     ":="; c = lconstr -> c | -> CRecord (loc, None, []) ] ->
 	   let sup =
 	     match sup with
 		 None -> []
@@ -692,7 +693,6 @@ GEXTEND Gram
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
       | "Rewrite"; IDENT "HintDb"; s = IDENT -> PrintRewriteHintDbName s
-      | IDENT "Setoids" -> PrintSetoids
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
       | IDENT "Visibility"; s = OPT IDENT -> PrintVisibility s

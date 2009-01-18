@@ -307,14 +307,14 @@ let safe_pf_conv_x gl c1 c2 = try pf_conv_x gl c1 c2 with _ -> false
 let implement_theory env t th args =
   is_conv env Evd.empty (Typing.type_of env Evd.empty t) (mkLApp (th, args))
 
-(* The following test checks whether the provided morphism is the default
-   one for the given operation. In principle the test is too strict, since
-   it should possible to provide another proof for the same fact (proof
-   irrelevance). In particular, the error message is be not very explicative. *)
+(* (\* The following test checks whether the provided morphism is the default *)
+(*    one for the given operation. In principle the test is too strict, since *)
+(*    it should possible to provide another proof for the same fact (proof *)
+(*    irrelevance). In particular, the error message is be not very explicative. *\) *)
 let states_compatibility_for env plus mult opp morphs =
- let check op compat =
-  is_conv env Evd.empty (Setoid_replace.default_morphism op).Setoid_replace.lem
-   compat in
+ let check op compat = true in
+(*   is_conv env Evd.empty (Setoid_replace.default_morphism op).Setoid_replace.lem *)
+(*    compat in *)
  check plus morphs.plusm &&
  check mult morphs.multm &&
  (match (opp,morphs.oppm) with
@@ -826,12 +826,10 @@ let raw_polynom th op lc gl =
 				     c'''i; ci; c'i_eq_c''i |]))))
 	      (tclTHENS
 		 (tclORELSE
-                   (Setoid_replace.general_s_rewrite true
-		     Termops.all_occurrences c'i_eq_c''i
-                     ~new_goals:[])
-                   (Setoid_replace.general_s_rewrite false 
-		     Termops.all_occurrences c'i_eq_c''i
-                     ~new_goals:[]))
+                   (Equality.general_rewrite true
+		     Termops.all_occurrences c'i_eq_c''i)
+                   (Equality.general_rewrite false 
+		     Termops.all_occurrences c'i_eq_c''i))
                  [tac]))
 	 else
            (tclORELSE
@@ -881,7 +879,7 @@ let guess_equiv_tac th =
 
 let match_with_equiv c = match (kind_of_term c) with
   | App (e,a) -> 
-      if (List.mem e (Setoid_replace.equiv_list ()))
+      if (List.mem e []) (*  (Setoid_replace.equiv_list ())) *)
       then Some (decompose_app c)
       else None
   | _ -> None

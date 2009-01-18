@@ -482,8 +482,7 @@ can be registered as parametric relations and morphisms.
 \begin{cscexample}[First class setoids]
 
 \begin{coq_example*}
-Require Export Relation_Definitions.
-Require Import Setoid.
+Require Import Relation_Definitions Setoid.
 Record Setoid: Type :=
 { car:Type;
   eq:car->car->Prop;
@@ -494,8 +493,7 @@ Record Setoid: Type :=
 Add Parametric Relation (s : Setoid) : (@car s) (@eq s)
  reflexivity proved by (refl s)
  symmetry proved by (sym s)
- transitivity proved by (trans s)
-as eq_rel.
+ transitivity proved by (trans s) as eq_rel.
 Record Morphism (S1 S2:Setoid): Type :=
 { f:car S1 ->car S2;
   compat: forall (x1 x2: car S1), eq S1 x1 x2 -> eq S2 (f x1) (f x2) }.
@@ -636,13 +634,15 @@ Admitted.
 One then has to show that if two predicates are equivalent at every
 point, their universal quantifications are equivalent. Once we have
 declared such a morphism, it will be used by the setoid rewriting tactic
-each time we try to rewrite under a binder. Indeed, when rewriting under
-a lambda, binding variable $x$, say from $P~x$ to $Q~x$ using the
-relation \texttt{iff}, the tactic will generate a proof of
-\texttt{pointwise\_relation A iff (fun x => P x) (fun x => Q x)}
-from the proof of \texttt{iff (P x) (Q x)} and a
-constraint of the form \texttt{Morphism (pointwise\_relation A iff ==> ?) m}
-will be generated for the surrounding morphism \texttt{m}. 
+each time we try to rewrite under an \texttt{all} application (products
+in \Prop{} are implicitely translated to such applications).
+
+Indeed, when rewriting under a lambda, binding variable $x$, say from
+$P~x$ to $Q~x$ using the relation \texttt{iff}, the tactic will generate
+a proof of \texttt{pointwise\_relation A iff (fun x => P x) (fun x => Q
+x)} from the proof of \texttt{iff (P x) (Q x)} and a constraint of the
+form \texttt{Morphism (pointwise\_relation A iff ==> ?) m} will be
+generated for the surrounding morphism \texttt{m}.
 
 Hence, one can add higher-order combinators as morphisms by providing
 signatures using pointwise extension for the relations on the functional
@@ -694,7 +694,7 @@ any rewriting constraints arising from a rewrite using \texttt{iff},
 \texttt{impl} or \texttt{inverse impl} through \texttt{and}.
 
 Sub-relations are implemented in \texttt{Classes.Morphisms} and are a 
-prime example of a completely user-space extension of the algorithm.
+prime example of a mostly user-space extension of the algorithm.
 
 \asection{Constant unfolding}
 

@@ -56,7 +56,7 @@ Existing Instance setoid_trans.
 (*   equiv := eq ; setoid_equiv := eq_equivalence. *)
 
 Program Instance iff_setoid : Setoid Prop := 
-  equiv := iff ; setoid_equiv := iff_equivalence.
+  { equiv := iff ; setoid_equiv := iff_equivalence }.
 
 (** Overloaded notations for setoid equivalence and inequivalence. Not to be confused with [eq] and [=]. *)
 
@@ -120,10 +120,10 @@ Ltac setoidify := repeat setoidify_tac.
 (** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
 Program Instance setoid_morphism `(sa : Setoid A) : Morphism (equiv ++> equiv ++> iff) equiv :=
-  respect := respect.
+  respect.
 
 Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Morphism (equiv ++> iff) (equiv x) :=
-  respect := respect.
+  respect.
 
 Ltac morphism_tac := try red ; unfold arrow ; intros ; program_simpl ; try tauto.
 
