@@ -140,7 +140,7 @@ type locality_flag  = bool (* true = Local;         false = Global         *)
 type coercion_flag  = bool (* true = AddCoercion;   false = NoCoercion     *)
 type export_flag    = bool (* true = Export;        false = Import         *)
 type specif_flag    = bool (* true = Specification; false = Implementation *)
-type inductive_flag = bool (* true = Inductive;     false = CoInductive    *)
+type inductive_flag = Decl_kinds.recursivity_kind
 type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
 type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
 
@@ -155,7 +155,7 @@ type local_decl_expr =
   | AssumExpr of lname * constr_expr
   | DefExpr of lname * constr_expr * constr_expr option
 
-type record_kind = Record | Structure | Class of bool (* true = definitional, false = inductive *)
+type inductive_kind = Inductive_kw | CoInductive | Record | Structure | Class of bool (* true = definitional, false = inductive *)
 type decl_notation = (string * constr_expr * scope_name option) option
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
@@ -166,7 +166,7 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * local_decl_expr with_coercion with_notation list
 type inductive_expr =
-  lident with_coercion * local_binder list * constr_expr option * record_kind option * 
+  lident with_coercion * local_binder list * constr_expr option * inductive_kind * 
     constructor_list_or_record_decl_expr
 
 type module_binder = bool option * lident list * module_type_ast

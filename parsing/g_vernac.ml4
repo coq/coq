@@ -151,6 +151,8 @@ GEXTEND Gram
       (* Gallina inductive declarations *)
       | f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
+	  let (k,f) = f in
+	  let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
           VernacInductive (f,false,indl)
       | IDENT "Boxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (recs,true)
@@ -171,7 +173,7 @@ GEXTEND Gram
 	cfs = [ ":="; l = constructor_list_or_record_decl -> l
 	  | -> RecordDecl (None, []) ] ->
 	  let (recf,indf) = b in
-	    VernacInductive (indf,infer,[((oc,name),ps,s,Some recf,cfs),None])
+	    VernacInductive (indf,infer,[((oc,name),ps,s,recf,cfs),None])
   ] ]
   ;
   typeclass_context:
@@ -214,16 +216,16 @@ GEXTEND Gram
     [ ["Inline" -> true |  -> false] ]
   ;
   finite_token:
-    [ [ "Inductive" -> true
-      | "CoInductive" -> false ] ]
+    [ [ "Inductive" -> (Inductive_kw,Finite)
+      | "CoInductive" -> (CoInductive,CoFinite) ] ]
   ;
   infer_token:
     [ [ "Infer" -> true | -> false ] ]
   ;
   record_token:
-    [ [ IDENT "Record" -> (Record,true)
-      | IDENT "Structure" -> (Structure,true) 
-      | IDENT "Class" -> (Class true,true) ] ]
+    [ [ IDENT "Record" -> (Record,BiFinite)
+      | IDENT "Structure" -> (Structure,BiFinite) 
+      | IDENT "Class" -> (Class true,BiFinite) ] ]
   ;
   (* Simple definitions *)
   def_body:
@@ -249,7 +251,7 @@ GEXTEND Gram
     [ [ id = identref; oc = opt_coercion; indpar = binders_let; 
         c = OPT [ ":"; c = lconstr -> c ];
         ":="; lc = constructor_list_or_record_decl; ntn = decl_notation ->
-	   (((oc,id),indpar,c,None,lc),ntn) ] ]
+	   (((oc,id),indpar,c,lc),ntn) ] ]
   ;
   constructor_list_or_record_decl:
     [ [ "|"; l = LIST1 constructor SEP "|" -> Constructors l
