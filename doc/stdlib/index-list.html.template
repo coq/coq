@@ -180,86 +180,103 @@ through the <tt>Require Import</tt> command.</p>
   </dd>
 
   <dt> <b>Numbers</b>: 
-    A modular axiomatic construction for numbers
+    An experimental modular architecture for arithmetic
   </dt>
-  <dd>
-  theories/Numbers/NumPrelude.v
-  theories/Numbers/BigNumPrelude.v
-  theories/Numbers/NaryFunctions.v
-  </dd>
-  
-  <dd>
-theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
-theories/Numbers/Cyclic/Abstract/NZCyclic.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleAdd.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleBase.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleCyclic.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleDiv.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleDivn1.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleLift.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleMul.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleSqrt.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleSub.v
-theories/Numbers/Cyclic/DoubleCyclic/DoubleType.v
-theories/Numbers/Cyclic/Int31/Cyclic31.v
-theories/Numbers/Cyclic/Int31/Int31.v
-theories/Numbers/Cyclic/ZModulo/ZModulo.v
-  </dd>
+    <dt> <b>&nbsp;&nbsp;Prelude</b>: 
+    <dd>
+    theories/Numbers/NumPrelude.v
+    theories/Numbers/BigNumPrelude.v
+    theories/Numbers/NaryFunctions.v
+    </dd>
 
-  <dd>
+    <dt> <b>&nbsp;&nbsp;NatInt</b>:
+       Abstract mixed natural/integer/cyclic arithmetic
+    <dd>
+    theories/Numbers/NatInt/NZAdd.v
+    theories/Numbers/NatInt/NZAddOrder.v
+    theories/Numbers/NatInt/NZAxioms.v
+    theories/Numbers/NatInt/NZBase.v
+    theories/Numbers/NatInt/NZMul.v
+    theories/Numbers/NatInt/NZMulOrder.v
+    theories/Numbers/NatInt/NZOrder.v
+    </dd>
+    </dt>
+
+    <dt> <b>&nbsp;&nbsp;Cyclic</b>: 
+       Abstract and 31-bits-based cyclic arithmetic
+    <dd>
+    theories/Numbers/Cyclic/Abstract/CyclicAxioms.v
+    theories/Numbers/Cyclic/Abstract/NZCyclic.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleAdd.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleBase.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleCyclic.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleDiv.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleDivn1.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleLift.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleMul.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleSqrt.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleSub.v
+    theories/Numbers/Cyclic/DoubleCyclic/DoubleType.v
+    theories/Numbers/Cyclic/Int31/Cyclic31.v
+    theories/Numbers/Cyclic/Int31/Int31.v
+    theories/Numbers/Cyclic/ZModulo/ZModulo.v
+    </dd>
+    </dt>
+
+    <dt> <b>&nbsp;&nbsp;Natural</b>: 
+       Abstract and 31-bits-words-based natural arithmetic
+    <dd>
+    theories/Numbers/Natural/Abstract/NAdd.v
+    theories/Numbers/Natural/Abstract/NAddOrder.v
+    theories/Numbers/Natural/Abstract/NAxioms.v
+    theories/Numbers/Natural/Abstract/NBase.v
+    theories/Numbers/Natural/Abstract/NDefOps.v
+    theories/Numbers/Natural/Abstract/NIso.v
+    theories/Numbers/Natural/Abstract/NMul.v
+    theories/Numbers/Natural/Abstract/NMulOrder.v
+    theories/Numbers/Natural/Abstract/NOrder.v
+    theories/Numbers/Natural/Abstract/NStrongRec.v
+    theories/Numbers/Natural/Abstract/NSub.v
+    theories/Numbers/Natural/Binary/NBinary.v
+    theories/Numbers/Natural/Binary/NBinDefs.v
+    theories/Numbers/Natural/Peano/NPeano.v
+    theories/Numbers/Natural/SpecViaZ/NSig.v
+    theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
+    theories/Numbers/Natural/BigN/BigN.v
+    theories/Numbers/Natural/BigN/Nbasic.v
+    theories/Numbers/Natural/BigN/NMake.v
+    </dd>
+    </dt>
+
+    <dt> <b>&nbsp;&nbsp;Integer</b>: 
+       Abstract and concrete (especially 31-bits-words-based) integer arithmetic
+    <dd>
     theories/Numbers/Integer/Abstract/ZAdd.v
-theories/Numbers/Integer/Abstract/ZAddOrder.v
-theories/Numbers/Integer/Abstract/ZAxioms.v
-theories/Numbers/Integer/Abstract/ZBase.v
-theories/Numbers/Integer/Abstract/ZDomain.v
-theories/Numbers/Integer/Abstract/ZLt.v
-theories/Numbers/Integer/Abstract/ZMul.v
-theories/Numbers/Integer/Abstract/ZMulOrder.v
-theories/Numbers/Integer/BigZ/BigZ.v
-theories/Numbers/Integer/BigZ/ZMake.v
-theories/Numbers/Integer/Binary/ZBinary.v
-theories/Numbers/Integer/NatPairs/ZNatPairs.v
-theories/Numbers/Integer/SpecViaZ/ZSig.v
-theories/Numbers/Integer/SpecViaZ/ZSigZAxioms.v
-  </dd>
+    theories/Numbers/Integer/Abstract/ZAddOrder.v
+    theories/Numbers/Integer/Abstract/ZAxioms.v
+    theories/Numbers/Integer/Abstract/ZBase.v
+    theories/Numbers/Integer/Abstract/ZDomain.v
+    theories/Numbers/Integer/Abstract/ZLt.v
+    theories/Numbers/Integer/Abstract/ZMul.v
+    theories/Numbers/Integer/Abstract/ZMulOrder.v
+    theories/Numbers/Integer/Binary/ZBinary.v
+    theories/Numbers/Integer/NatPairs/ZNatPairs.v
+    theories/Numbers/Integer/SpecViaZ/ZSig.v
+    theories/Numbers/Integer/SpecViaZ/ZSigZAxioms.v
+    theories/Numbers/Integer/BigZ/BigZ.v
+    theories/Numbers/Integer/BigZ/ZMake.v
+    </dd>
+    </dt>
 
-  <dd>
-theories/Numbers/NatInt/NZAdd.v
-theories/Numbers/NatInt/NZAddOrder.v
-theories/Numbers/NatInt/NZAxioms.v
-theories/Numbers/NatInt/NZBase.v
-theories/Numbers/NatInt/NZMul.v
-theories/Numbers/NatInt/NZMulOrder.v
-theories/Numbers/NatInt/NZOrder.v
-  </dd>
-
-  <dd>
-theories/Numbers/Natural/Abstract/NAdd.v
-theories/Numbers/Natural/Abstract/NAddOrder.v
-theories/Numbers/Natural/Abstract/NAxioms.v
-theories/Numbers/Natural/Abstract/NBase.v
-theories/Numbers/Natural/Abstract/NDefOps.v
-theories/Numbers/Natural/Abstract/NIso.v
-theories/Numbers/Natural/Abstract/NMul.v
-theories/Numbers/Natural/Abstract/NMulOrder.v
-theories/Numbers/Natural/Abstract/NOrder.v
-theories/Numbers/Natural/Abstract/NStrongRec.v
-theories/Numbers/Natural/Abstract/NSub.v
-theories/Numbers/Natural/BigN/BigN.v
-theories/Numbers/Natural/BigN/Nbasic.v
-theories/Numbers/Natural/BigN/NMake.v
-theories/Numbers/Natural/Binary/NBinary.v
-theories/Numbers/Natural/Binary/NBinDefs.v
-theories/Numbers/Natural/Peano/NPeano.v
-theories/Numbers/Natural/SpecViaZ/NSig.v
-theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
-  </dd>
-
-  <dd>
+    <dt><b>&nbsp;&nbsp;Rational</b>:
+       Abstract and 31-bits-words-based rational arithmetic
+    <dd>
+    theories/Numbers/Rational/SpecViaQ/QSig.v
     theories/Numbers/Rational/BigQ/BigQ.v
     theories/Numbers/Rational/BigQ/QMake.v
-    theories/Numbers/Rational/SpecViaQ/QSig.v
-  </dd>
+    </dd>
+    </dt>
+  </dt>
   
   <dt> <b>Relations</b>:
        Relations (definitions and basic results)
@@ -318,8 +335,6 @@ theories/Numbers/Natural/SpecViaZ/NSigNAxioms.v
   <dt> <b>Setoids</b>:
   <dd> 
     theories/Setoids/Setoid.v
-    theories/Setoids/Setoid_Prop.v
-    theories/Setoids/Setoid_tac.v
   </dd>
     
   <dt> <b>Lists</b>:

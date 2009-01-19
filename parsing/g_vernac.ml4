@@ -852,7 +852,7 @@ GEXTEND Gram
       | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s ] ]
   ;
   syntax_extension_type:
-    [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference
+    [ [ IDENT "ident" -> ETName | IDENT "global" -> ETReference
       | IDENT "bigint" -> ETBigint
     ] ]
   ;

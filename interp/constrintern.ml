@@ -191,11 +191,14 @@ let set_var_scope loc id (_,_,scopt,scopes) varscopes =
 (**********************************************************************)
 (* Syntax extensions                                                  *)
 
-let traverse_binder (subst,substlist) (renaming,(ids,unb,tmpsc,scopes as env)) id =
+let traverse_binder (subst,substlist) (renaming,(ids,unb,tmpsc,scopes as env))=
+ function
+ | Anonymous -> (renaming,env),Anonymous
+ | Name id ->
   try
     (* Binders bound in the notation are considered first-order objects *)
-    let _,id' = coerce_to_id (fst (List.assoc id subst)) in
-    (renaming,(Idset.add id' ids,unb,tmpsc,scopes)), id'
+    let _,na = coerce_to_name (fst (List.assoc id subst)) in
+    (renaming,(name_fold Idset.add na ids,unb,tmpsc,scopes)), na
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
@@ -205,7 +208,7 @@ let traverse_binder (subst,substlist) (renaming,(ids,unb,tmpsc,scopes as env)) i
     let fvs = List.flatten (List.map Idset.elements (fvs1@fvs2)) @ fvs3 in
     let id' = next_ident_away id fvs in
     let renaming' = if id=id' then renaming else (id,id')::renaming in
-    (renaming',env), id'
+    (renaming',env), Name id'
 
 let rec subst_iterator y t = function
   | RVar (_,id) as x -> if id = y then t else x

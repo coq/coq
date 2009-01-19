@@ -690,7 +690,7 @@ let compute_entry allow_create adjust forpat = function
       (if forpat then weaken_entry Constr.pattern
        else weaken_entry Constr.operconstr),
       adjust (n,q), false
-  | ETIdent -> weaken_entry Constr.ident, None, false
+  | ETName -> weaken_entry Prim.name, None, false
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
   | ETPattern -> weaken_entry Constr.pattern, None, false
@@ -722,7 +722,7 @@ let is_self from e =
       ETConstr(n,()), ETConstr(NumLevel n',
         BorderProd(Right, _ (* Some(Gramext.NonA|Gramext.LeftA) *))) -> false
     | ETConstr(n,()), ETConstr(NumLevel n',BorderProd(Left,_)) -> n=n'
-    | (ETIdent,ETIdent | ETReference, ETReference | ETBigint,ETBigint
+    | (ETName,ETName | ETReference, ETReference | ETBigint,ETBigint
       | ETPattern, ETPattern) -> true
     | ETOther(s1,s2), ETOther(s1',s2') -> s1=s1' & s2=s2'
     | _ -> false

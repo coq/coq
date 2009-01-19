@@ -47,6 +47,14 @@ open Vernacexpr
 (**********************************************************************)
 (** Declare Notations grammar rules                                   *)
 
+let constr_expr_of_name (loc,na) = match na with
+  | Anonymous -> CHole (loc,None)
+  | Name id -> CRef (Ident (loc,id))
+
+let cases_pattern_expr_of_name (loc,na) = match na with
+  | Anonymous -> CPatAtom (loc,None)
+  | Name id -> CPatAtom (loc,Some (Ident (loc,id)))
+
 type prod_item =
   | Term of Token.pattern
   | NonTerm of constr_production_entry * 
@@ -65,9 +73,9 @@ let make_constr_action
         Gramext.action (fun (v:constr_expr) -> make (v :: env, envlist) tl)
     | Some (p, ETReference) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:reference) -> make (CRef v :: env, envlist) tl)
-    | Some (p, ETIdent) :: tl -> (* non-terminal *)
-        Gramext.action (fun (v:identifier) ->
-	  make (CRef (Ident (dummy_loc,v)) :: env, envlist) tl)
+    | Some (p, ETName) :: tl -> (* non-terminal *)
+        Gramext.action (fun (na:name located) ->
+	  make (constr_expr_of_name na :: env, envlist) tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:Bigint.bigint) ->
 	  make (CPrim (dummy_loc,Numeral v) :: env, envlist) tl)
@@ -89,10 +97,9 @@ let make_cases_pattern_action
     | Some (p, ETReference) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:reference) ->
 	  make (CPatAtom (dummy_loc,Some v) :: env, envlist) tl)
-    | Some (p, ETIdent) :: tl -> (* non-terminal *)
-        Gramext.action (fun (v:identifier) ->
-	  make 
-	    (CPatAtom (dummy_loc,Some (Ident (dummy_loc,v)))::env, envlist) tl)
+    | Some (p, ETName) :: tl -> (* non-terminal *)
+        Gramext.action (fun (na:name located) ->
+	  make (cases_pattern_expr_of_name na :: env, envlist) tl)
     | Some (p, ETBigint) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:Bigint.bigint) ->
 	  make (CPatPrim (dummy_loc,Numeral v) :: env, envlist) tl)

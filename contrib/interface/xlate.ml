@@ -1588,7 +1588,7 @@ let xlate_syntax_modifier = function
   | Extend.SetEntryType(x,typ) ->
       CT_entry_type(CT_ident x,
 		 match typ with
-		     Extend.ETIdent -> CT_ident "ident"
+		     Extend.ETName -> CT_ident "ident"
 		   | Extend.ETReference -> CT_ident "global"
 		   | Extend.ETBigint -> CT_ident "bigint"
 		   | _ -> xlate_error "syntax_type not parsed")

@@ -92,7 +92,7 @@ Vernacular commands
 - Specific sort constraints on Record now taken into account.
 - "Print LoadPath" supports a path argument to filter the display.
 
-Libraries (DOC TO CHECK)
+Libraries
 
 - Several parts of the libraries are now in Type, in particular FSets,
   SetoidList, ListSet, Sorting, Zmisc. This may induce a few
@@ -195,6 +195,7 @@ Libraries (DOC TO CHECK)
   contribution repository (contribution CoC_History). New lemmas about 
   transitive closure added and some bound variables renamed (exceptional
   risk of incompatibilities).
+- Syntax for binders in terms (e.g. for "exists") supports anonymous names.
 
 Notations, coercions, implicit arguments and type inference
 

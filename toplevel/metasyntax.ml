@@ -743,7 +743,7 @@ let set_entry_type etyps (x,typ) =
       | ETConstr (n,()), (_,BorderProd (left,_)) ->
           ETConstr (n,BorderProd (left,None))
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
-      | (ETPattern | ETIdent | ETBigint | ETOther _ | ETReference as t), _ -> t
+      | (ETPattern | ETName | ETBigint | ETOther _ | ETReference as t), _ -> t
       | (ETConstrList _, _) -> assert false
     with Not_found -> ETConstr typ
   in (x,typ)
@@ -764,7 +764,7 @@ let find_precedence lev etyps symbols =
       (try match List.assoc x etyps with
 	| ETConstr _ ->
 	    error "The level of the leftmost non-terminal cannot be changed."
-	| ETIdent | ETBigint | ETReference -> 
+	| ETName | ETBigint | ETReference -> 
 	    if lev = None then 
 	      Flags.if_verbose msgnl (str "Setting notation at level 0.")
 	    else

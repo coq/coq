@@ -62,7 +62,7 @@ val eq_rawconstr : rawconstr -> rawconstr -> bool
 (* Re-interpret a notation as a rawconstr, taking care of binders     *)
 
 val rawconstr_of_aconstr_with_binders : loc -> 
-  ('a -> identifier -> 'a * identifier) ->
+  ('a -> name -> 'a * name) ->
   ('a -> aconstr -> rawconstr) -> 'a -> aconstr -> rawconstr
 
 val rawconstr_of_aconstr : loc -> aconstr -> rawconstr
@@ -201,6 +201,7 @@ val mkLetInC : name located * constr_expr * constr_expr -> constr_expr
 val mkProdC : name located list * binder_kind * constr_expr * constr_expr -> constr_expr
 
 val coerce_to_id : constr_expr -> identifier located
+val coerce_to_name : constr_expr -> name located
 
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val prod_constr_expr : constr_expr -> local_binder list -> constr_expr

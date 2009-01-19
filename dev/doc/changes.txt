@@ -8,7 +8,8 @@ A few differences in Coq ML interfaces between Coq V8.1 and V8.2
 ** Datatypes
 
 List of occurrences moved from "int list" to "Termops.occurrences" (an
-alias to "bool * int list").
+  alias to "bool * int list")
+ETIdent renamed to ETName
 
 ** Functions
 

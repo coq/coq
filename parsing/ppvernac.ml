@@ -105,7 +105,7 @@ let pr_prec = function
   | None -> mt()
 
 let pr_set_entry_type = function
-  | ETIdent -> str"ident"
+  | ETName -> str"ident"
   | ETReference -> str"global"
   | ETPattern -> str"pattern"
   | ETConstr _ -> str"constr"

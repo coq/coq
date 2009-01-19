@@ -53,11 +53,17 @@ type aconstr =
 (**********************************************************************)
 (* Re-interpret a notation as a rawconstr, taking care of binders     *)
 
+let name_to_ident = function
+  | Anonymous -> error "This expression should be a simple identifier."
+  | Name id -> id 
+
+let to_id g e id = let e,na = g e (Name id) in e,name_to_ident na
+
 let rec cases_pattern_fold_map loc g e = function
   | PatVar (_,na) ->
-      let e',na' = name_fold_map g e na in e', PatVar (loc,na')
+      let e',na' = g e na in e', PatVar (loc,na')
   | PatCstr (_,cstr,patl,na) ->
-      let e',na' = name_fold_map g e na in
+      let e',na' = g e na in
       let e',patl' = list_fold_map (cases_pattern_fold_map loc g) e patl in
       e', PatCstr (loc,cstr,patl',na')
 
@@ -77,38 +83,38 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let outerl = (ldots_var,inner)::(if swap then [x,RVar(loc,y)] else []) in
       subst_rawvars outerl it
   | ALambda (na,ty,c) ->
-      let e,na = name_fold_map g e na in RLambda (loc,na,Explicit,f e ty,f e c)
+      let e,na = g e na in RLambda (loc,na,Explicit,f e ty,f e c)
   | AProd (na,ty,c) ->
-      let e,na = name_fold_map g e na in RProd (loc,na,Explicit,f e ty,f e c)
+      let e,na = g e na in RProd (loc,na,Explicit,f e ty,f e c)
   | ALetIn (na,b,c) ->
-      let e,na = name_fold_map g e na in RLetIn (loc,na,f e b,f e c)
+      let e,na = g e na in RLetIn (loc,na,f e b,f e c)
   | ACases (sty,rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
 	| None -> e',None
 	| Some (ind,npar,nal) -> 
 	  let e',nal' = List.fold_right (fun na (e',nal) -> 
-	      let e',na' = name_fold_map g e' na in e',na'::nal) nal (e',[]) in
+	      let e',na' = g e' na in e',na'::nal) nal (e',[]) in
 	  e',Some (loc,ind,npar,nal') in
-	let e',na' = name_fold_map g e' na in
+	let e',na' = g e' na in
 	(e',(f e tm,(na',t'))::tml')) tml (e,[]) in
-      let fold (idl,e) id = let (e,id) = g e id in ((id::idl,e),id) in
+      let fold (nal,e) na = let (e,na) = g e na in ((name_to_ident na::nal,e),na) in
       let eqnl' = List.map (fun (patl,rhs) ->
 	let ((idl,e),patl) =
 	  list_fold_map (cases_pattern_fold_map loc fold) ([],e) patl in
 	(loc,idl,patl,f e rhs)) eqnl in
       RCases (loc,sty,Option.map (f e') rtntypopt,tml',eqnl')
   | ALetTuple (nal,(na,po),b,c) ->
-      let e,nal = list_fold_map (name_fold_map g) e nal in 
-      let e,na = name_fold_map g e na in
+      let e,nal = list_fold_map g e nal in 
+      let e,na = g e na in
       RLetTuple (loc,nal,(na,Option.map (f e) po),f e b,f e c)
   | AIf (c,(na,po),b1,b2) ->
-      let e,na = name_fold_map g e na in
+      let e,na = g e na in
       RIf (loc,f e c,(na,Option.map (f e) po),f e b1,f e b2)
   | ARec (fk,idl,dll,tl,bl) ->
-      let e,idl = array_fold_map g e idl in
+      let e,idl = array_fold_map (to_id g) e idl in
       let e,dll = array_fold_map (list_fold_map (fun e (na,oc,b) ->
-	  let e,na = name_fold_map g e na in
+	  let e,na = g e na in
 	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
       RRec (loc,fk,idl,dll,Array.map (f e) tl,Array.map (f e) bl)
   | ACast (c,k) -> RCast (loc,f e c, 
@@ -452,9 +458,13 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
   | Some t1, Some t2 -> f sigma t1 t2
   | _ -> raise No_match
 
+let rawconstr_of_name = function
+  | Anonymous -> RHole (dummy_loc,Evd.InternalHole)
+  | Name id -> RVar (dummy_loc,id)
+
 let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
-  | (Name id1,Name id2) when List.mem id2 metas ->
-      alp, bind_env alp sigma id2 (RVar (dummy_loc,id1))
+  | (na,Name id2) when List.mem id2 metas ->
+      alp, bind_env alp sigma id2 (rawconstr_of_name na)
   | (Name id1,Name id2) -> (id1,id2)::alp,sigma
   | (Anonymous,Anonymous) -> alp,sigma
   | _ -> raise No_match
@@ -885,6 +895,13 @@ let coerce_to_id = function
   | a -> user_err_loc
         (constr_loc a,"coerce_to_id",
          str "This expression should be a simple identifier.")
+
+let coerce_to_name = function
+  | CRef (Ident (loc,id)) -> (loc,Name id)
+  | CHole (loc,_) -> (loc,Anonymous)
+  | a -> user_err_loc
+        (constr_loc a,"coerce_to_name",
+         str "This expression should be a name.")
 
 (* Used in correctness and interface *)
 
