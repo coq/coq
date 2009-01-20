@@ -98,7 +98,7 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
 	  e',Some (loc,ind,npar,nal') in
 	let e',na' = g e' na in
 	(e',(f e tm,(na',t'))::tml')) tml (e,[]) in
-      let fold (nal,e) na = let (e,na) = g e na in ((name_to_ident na::nal,e),na) in
+      let fold (idl,e) na = let (e,na) = g e na in ((name_cons na idl,e),na) in
       let eqnl' = List.map (fun (patl,rhs) ->
 	let ((idl,e),patl) =
 	  list_fold_map (cases_pattern_fold_map loc fold) ([],e) patl in
