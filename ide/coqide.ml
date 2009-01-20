@@ -1655,7 +1655,7 @@ Please restart and report NOW.";
                       []
                       (List.map
                          (fun s -> cursor#copy#backward_search s)
-                         ["Theorem";"Lemma";"Definition"])
+                         ["Theorem";"Lemma";"Corollary";"Remark";"Proposition";"Fact";"Property"])
     in
       match stmt_list with
         | stmt_hd::stmt_tl ->
