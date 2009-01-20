@@ -190,7 +190,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	    then (k1,cN,stN)::metasubst,evarsubst
 	    else if k1 = k2 then substn
 	    else (k2,cM,stM)::metasubst,evarsubst
-	| Meta k, _    -> 
+	| Meta k, _ when not (dependent cM cN) -> 
 	    (* Here we check that [cN] does not contain any local variables *)
 	    if nb = 0 then
               (k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
@@ -198,7 +198,7 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
               (k,lift (-nb) cN,snd (extract_instance_status pb))::metasubst,
               evarsubst
 	    else error_cannot_unify_local curenv sigma (m,n,cN)
-	| _, Meta k    -> 
+	| _, Meta k when not (dependent cN cM) -> 
 	    (* Here we check that [cM] does not contain any local variables *)
 	    if nb = 0 then
               (k,cM,snd (extract_instance_status pb))::metasubst,evarsubst
