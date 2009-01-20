@@ -638,16 +638,12 @@ install-coqlight: install-binaries install-library-light
 install-binaries:: install-$(BEST)  install-tools install-plugins-$(BEST)
 
 install-plugins-byte::
-	$(MKDIR) $(FULLBINDIR)
-	ifneq($(HASNATDYNLINK),false)
-	cp --parents $(INITPLUGINS)  $(FULLBINDIR)
-	endif
+	$(MKDIR) $(FULLCOQLIB)
+	if $(HASNATDYNLINK) = true ; then cp --parents $(INITPLUGINS) $(FULLCOQLIB); fi
 
 install-plugins-opt::
-	$(MKDIR) $(FULLBINDIR)
-	ifneq($(HASNATDYNLINK),false)
-	cp --parents $(INITPLUGINSOPT)  $(FULLBINDIR)
-	endif
+	$(MKDIR) $(FULLCOQLIB)
+	if $(HASNATDYNLINK) = false; then cp --parents $(INITPLUGINSOPT) $(FULLCOQLIB); fi
 install-byte::
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
