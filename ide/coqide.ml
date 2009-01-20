@@ -194,6 +194,9 @@ object('self)
   method complete_at_offset : int -> bool
 
   method blaster : unit -> unit
+  method toggle_proof_visibility : GText.iter -> unit
+  method hide_proof_from : GText.iter -> unit
+  method unhide_proof_from : GText.iter -> unit
 end
 
 let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
@@ -673,6 +676,7 @@ object(self)
   val mutable detached_views = []
 
   val mutable auto_complete_on = !current.auto_complete
+  val hidden_proofs = Hashtbl.create 32
 
   method private toggle_auto_complete = 
     auto_complete_on <- not auto_complete_on
@@ -1637,6 +1641,49 @@ Please restart and report NOW.";
     
     browse_keyword (self#insert_message) (get_current_word ())
 
+
+
+  method toggle_proof_visibility (cursor:GText.iter) =
+    let has_tag_by_name (it:GText.iter) name =
+      let tt = new GText.tag_table (input_buffer#tag_table) in
+        match tt#lookup name with
+          | Some named_tag -> it#has_tag (new GText.tag named_tag)
+          | _ -> false
+    in
+    let stmt_list = List.fold_left
+                      (fun acc e -> match e with Some (f,_) -> f::acc | None -> acc)
+                      []
+                      (List.map
+                         (fun s -> cursor#copy#backward_search s)
+                         ["Theorem";"Lemma";"Definition"])
+    in
+      match stmt_list with
+        | stmt_hd::stmt_tl ->
+            let stmt_start = List.fold_left (fun ref it -> if (ref#compare it < 0) then it else ref) stmt_hd stmt_tl in
+              if has_tag_by_name stmt_start "locked"
+              then self#unhide_proof_from stmt_start
+              else self#hide_proof_from stmt_start
+        | _ -> ()
+
+  method hide_proof_from (stmt_start:GText.iter) =
+    let nearest_proof = stmt_start#copy#forward_search "Proof." in
+    let nearest_qed = stmt_start#copy#forward_search "Qed." in
+      match nearest_proof,nearest_qed with
+        | (Some (proof_start,proof_end)),(Some (qed_start,qed_end)) when (proof_end#compare qed_start < 0) ->
+            input_buffer#apply_tag_by_name "hidden" ~start:proof_start ~stop:qed_end;
+            input_buffer#apply_tag_by_name "locked" ~start:stmt_start ~stop:proof_start#backward_char
+        | _ -> ()
+
+  method unhide_proof_from (stmt_start:GText.iter) =
+    let nearest_proof = stmt_start#copy#forward_search "Proof." in
+    let nearest_qed = stmt_start#copy#forward_search "Qed." in
+      match nearest_proof,nearest_qed with
+        | (Some (proof_start,proof_end)),(Some (qed_start,qed_end)) when (proof_end#compare qed_start < 0) ->
+            input_buffer#remove_tag_by_name "hidden" ~start:proof_start ~stop:qed_end;
+            input_buffer#remove_tag_by_name "locked" ~start:stmt_start ~stop:proof_start#backward_char
+        | _ -> ()
+
+
   initializer 
     ignore (message_buffer#connect#insert_text
 	      ~callback:(fun it s -> ignore 
@@ -1736,7 +1783,14 @@ Please restart and report NOW.";
 		   if String.contains s '\n' then begin
 		       prerr_endline "Should recenter : yes";
 		       self#recenter_insert
-		     end))
+		     end));
+
+      ignore ((input_view :> GText.view)#event#connect#button_release
+                (fun b -> if GdkEvent.Button.button b = 3
+                 then let cav = Option.get (get_current_view ()).analyzed_view in
+                   cav#toggle_proof_visibility cav#get_insert; true
+                   else false));
+
 end
 
 let create_input_tab filename =
@@ -1807,6 +1861,12 @@ let create_input_tab filename =
       ignore (tv1#buffer#create_tag 
 		~name:"found" 
 		[`BACKGROUND "blue"; `FOREGROUND "white"]);
+      ignore (tv1#buffer#create_tag
+                ~name:"hidden"
+                [`INVISIBLE true; `EDITABLE false]);
+      ignore (tv1#buffer#create_tag
+                ~name:"locked"
+                [`EDITABLE false; `BACKGROUND "light grey"]);
       tv1
 
 
@@ -2617,6 +2677,13 @@ let main files =
 				    ~key:GdkKeysyms._Break 
 				    ~callback:break
 				    `STOP;
+                                  add_to_menu_toolbar "_Hide"
+                                    ~tooltip:"Hide proof"
+                                    ~key:GdkKeysyms._h
+                                    ~callback:(fun x ->
+                                                 let cav = Option.get (get_current_view ()).analyzed_view in
+                                                   cav#toggle_proof_visibility cav#get_insert)
+                                    `MISSING_IMAGE;
 
 				  (* Tactics Menu *)
 				  let tactics_menu =  factory#add_submenu "_Try Tactics" in

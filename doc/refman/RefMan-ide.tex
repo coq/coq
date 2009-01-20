@@ -103,9 +103,20 @@ the preferences.
 These tactics are general ones, in particular they do not refer to
 particular hypotheses. You may also try specific tactics related to
 the goal or one of the hypotheses, by clicking with the right mouse
-button one the goal or the considered hypothesis. This is the
+button on the goal or the considered hypothesis. This is the
 ``contextual menu on goals'' feature, that may be disabled in the
 preferences if undesirable.
+
+\section{Proof folding}
+
+As your script grows bigger and bigger, it might be useful to hide the proofs
+of your theorems and lemmas.
+
+This feature is toggled via the \texttt{Hide} entry of the \texttt{Navigation}
+menu, or with a mouse right-click. The proof shall be enclosed between \texttt{Proof.}
+and \texttt{Qed.}, both with their final dots. Finally, the proof that shall be hidden
+or revealed is the first one whose \texttt{Lemma},\texttt{Theorem} or \texttt{Definition}
+statement precedes the insert cursor.
  
 \section{Vernacular commands, templates}
 
