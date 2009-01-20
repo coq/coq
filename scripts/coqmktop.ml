@@ -40,7 +40,7 @@ let ide       = split_list Tolink.ide
 (* 3. Toplevel objects *)
 let camlp4topobjs =
   if Coq_config.camlp4 = "camlp5" then
-    ["camlp5_top.cma"; "camlp5o.cma"; "pa_o.cmo"; "pa_op.cmo"; "pa_extend.cmo"]
+    ["camlp5_top.cma"; "pa_o.cmo"; "pa_extend.cmo"]
   else
     ["camlp4_top.cma"; "pa_o.cmo"; "pa_op.cmo"; "pa_extend.cmo"]
 let topobjs = camlp4topobjs
