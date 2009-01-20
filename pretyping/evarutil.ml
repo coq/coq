@@ -564,16 +564,16 @@ type evar_projection =
 | ProjectVar 
 | ProjectEvar of existential * evar_info * identifier * evar_projection
 
-let rec find_projectable_vars env sigma y subst =
+let rec find_projectable_vars with_evars env sigma y subst =
   let is_projectable (id,(idc,y')) =
     let y' = whd_evar sigma y' in
     if y = y' or expand_var env y = expand_var env y'
     then (idc,(y'=y,(id,ProjectVar)))
-    else if isEvar y' then
+    else if with_evars & isEvar y' then
       let (evk,argsv as t) = destEvar y' in
       let evi = Evd.find sigma evk in
       let subst = make_projectable_subst sigma evi argsv in
-      let l = find_projectable_vars env sigma y subst in
+      let l = find_projectable_vars with_evars env sigma y subst in
       match l with 
       | [id',p] -> (idc,(true,(id,ProjectEvar (t,evi,id',p))))
       | _ -> failwith ""
@@ -592,7 +592,7 @@ let filter_solution = function
   | [id,p] -> (mkVar id, p)
 
 let project_with_effects env sigma effects t subst =
-  let c, p = filter_solution (find_projectable_vars env sigma t subst) in
+  let c, p = filter_solution (find_projectable_vars false env sigma t subst) in
   effects := p :: !effects;
   c
 
@@ -846,7 +846,7 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
   let project_variable t =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try 
-      let sols = find_projectable_vars env (evars_of !evdref) t subst in
+      let sols = find_projectable_vars true env (evars_of !evdref) t subst in
       let c, p = filter_solution sols in
       let ty = lazy (Retyping.get_type_of env (evars_of !evdref) t) in
       let evd = do_projection_effects evar_define env ty !evdref p in
