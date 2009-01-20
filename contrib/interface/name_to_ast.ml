@@ -109,7 +109,7 @@ let convert_one_inductive sp tyi =
   let sp = sp_of_global (IndRef (sp, tyi)) in
   (((false,(dummy_loc,basename sp)),
    convert_env(List.rev params),
-   Some (extern_constr true envpar arity), None,
+   Some (extern_constr true envpar arity), Vernacexpr.Inductive_kw ,
    Constructors (convert_constructors envpar cstrnames cstrtypes)), None);;
 
 (* This function converts a Mutual inductive definition to a Coqast.t.
@@ -121,7 +121,7 @@ let mutual_to_ast_list sp mib =
   let _, l =
     Array.fold_right
       (fun mi (n,l) -> (n+1, (convert_one_inductive sp n)::l)) mipv (0, []) in
-  VernacInductive (mib.mind_finite, l)
+  VernacInductive ((if mib.mind_finite then Decl_kinds.Finite else Decl_kinds.CoFinite), l)
   :: (implicit_args_to_ast_list sp mipv);;
 
 let constr_to_ast v = 

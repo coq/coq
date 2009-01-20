@@ -408,17 +408,17 @@ let vernac_inductive finite indl =
       | _ -> () (* dumping is done by vernac_record (called below) *) )
     indl;
   match indl with
-  | [ ( id , bl , c , Some b, RecordDecl (oc,fs) ), None ] -> 
+  | [ ( id , bl , c , b, RecordDecl (oc,fs) ), None ] -> 
       vernac_record (match b with Class true -> Class false | _ -> b)
 	finite id bl c oc fs
-  | [ ( id , bl , c , Some (Class true), Constructors [l]), _ ] -> 
+  | [ ( id , bl , c , Class true, Constructors [l]), _ ] -> 
       let f = 
 	let (coe, ((loc, id), ce)) = l in
 	  ((coe, AssumExpr ((loc, Name id), ce)), None)
       in vernac_record (Class true) finite id bl c None [f]
-  | [ ( id , bl , c , Some (Class true), _), _ ] -> 
+  | [ ( id , bl , c , Class true, _), _ ] -> 
       Util.error "Definitional classes must have a single method"
-  | [ ( id , bl , c , Some (Class false), Constructors _), _ ] ->
+  | [ ( id , bl , c , Class false, Constructors _), _ ] ->
       Util.error "Inductive classes not supported"
   | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] -> 
       Util.error "where clause not supported for (co)inductive records"
@@ -427,7 +427,7 @@ let vernac_inductive finite indl =
       | _ -> Util.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
-      Command.build_mutual indl finite
+      Command.build_mutual indl (recursivity_flag_of_kind finite)
 
 let vernac_fixpoint l b = 
   if Dumpglob.dump () then

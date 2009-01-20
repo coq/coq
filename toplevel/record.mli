@@ -27,7 +27,8 @@ val declare_projections :
   bool list -> manual_explicitation list list -> rel_context -> 
   (name * bool) list * constant option list
 
-val declare_structure : bool (*coinductive?*)-> identifier -> identifier -> 
+val declare_structure : Decl_kinds.recursivity_kind -> 
+  identifier -> identifier -> 
   manual_explicitation list -> rel_context -> (* params *) constr -> (* arity *)
   Impargs.manual_explicitation list list -> Sign.rel_context -> (* fields *)
   ?kind:Decl_kinds.definition_object_kind -> ?name:identifier ->
@@ -36,5 +37,5 @@ val declare_structure : bool (*coinductive?*)-> identifier -> identifier ->
   inductive
 
 val definition_structure :
-  record_kind * bool (*coinductive?*)*lident with_coercion * local_binder list *
+  inductive_kind*Decl_kinds.recursivity_kind *lident with_coercion * local_binder list *
   (local_decl_expr with_coercion with_notation) list * identifier * sorts option -> global_reference

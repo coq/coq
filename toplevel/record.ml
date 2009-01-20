@@ -234,10 +234,19 @@ let declare_structure finite id idbuild paramimpls params arity fieldimpls field
       mind_entry_consnames = [idbuild];
       mind_entry_lc = [type_constructor] }
   in
+  (* spiwack: raises an error if the structure is supposed to be non-recursive,
+        but isn't *)
+  (* there is probably a way to push this to "declare_mutual" *)
+  begin match  finite with
+  | BiFinite -> 
+      if dependent (mkRel (nparams+1)) (it_mkProd_or_LetIn mkProp fields) then
+	error "Records declared with the keyword Record or Structure cannot be recursive. Maybe you meant to define an Inductive or CoInductive record."
+  | _ -> ()
+  end;
   let mie =
     { mind_entry_params = List.map degenerate_decl params;
       mind_entry_record = true;
-      mind_entry_finite = finite;
+      mind_entry_finite = recursivity_flag_of_kind finite;
       mind_entry_inds = [mie_ind] } in
   let kn = Command.declare_mutual_with_eliminations true mie [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)
@@ -315,7 +324,7 @@ let declare_class finite def id idbuild paramimpls params arity fieldimpls field
 	  cref, [proj_name, Some proj_cst]
     | _ ->
 	let idarg = Nameops.next_ident_away (snd id) (ids_of_context (Global.env())) in
-	let ind = declare_structure true (snd id) idbuild paramimpls
+	let ind = declare_structure BiFinite (snd id) idbuild paramimpls
 	  params (Option.cata (fun x -> x) (new_Type ()) arity) fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields)
 	in
@@ -361,10 +370,10 @@ let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
       typecheck_params_and_fields idstruc sc ps notations fs) ()
   in
     match kind with
-    | Record | Structure ->
+    | Class b ->
+	declare_class finite b (loc,idstruc) idbuild implpars params sc implfs fields is_coe coers
+    | _ ->
 	let arity = Option.cata (fun x -> x) (new_Type ()) sc in
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs
 	in IndRef (declare_structure finite idstruc idbuild implpars params arity implfs fields is_coe coers)
-    | Class b ->
-	declare_class finite b (loc,idstruc) idbuild implpars params sc implfs fields is_coe coers

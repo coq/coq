@@ -594,10 +594,9 @@ let rec pr_vernac = function
 	    pr_record_decl b c fs in
       let pr_oneind key (((coe,id),indpar,s,k,lc),ntn) =
 	let kw =
-	  match k with
-	  | None -> str key
-	  | Some b -> str (match b with Record -> "Record" | Structure -> "Structure" 
-	    | Class b -> if b then "Definitional Class" else "Class")
+	  str (match k with Record -> "Record" | Structure -> "Structure"  
+		 | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
+		 | Class b -> if b then "Definitional Class" else "Class")
 	in
 	  hov 0 (
 	    kw ++ spc() ++
@@ -607,7 +606,7 @@ let rec pr_vernac = function
 	      str" :=") ++ pr_constructor_list k lc ++ 
 	    pr_decl_notation pr_constr ntn 
       in
-      hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
+      hov 1 (pr_oneind (if (Decl_kinds.recursivity_flag_of_kind f) then "Inductive" else "CoInductive") (List.hd l))
       ++ 
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
 

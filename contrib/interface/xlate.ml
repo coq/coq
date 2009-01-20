@@ -1984,7 +1984,7 @@ let rec xlate_vernac =
 (* 	xlate_formula (Option.get c1), record_constructor, *)
 (*          build_record_field_list field_list) *)
    | VernacInductive (isind, lmi) ->
-      let co_or_ind = if isind then "Inductive" else "CoInductive" in
+      let co_or_ind = if Decl_kinds.recursivity_flag_of_kind isind then "Inductive" else "CoInductive" in
       let strip_mutind = function
           (((_, (_,s)), parameters, c, _, Constructors constructors), notopt) ->
           CT_ind_spec
