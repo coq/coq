@@ -53,7 +53,7 @@ Notation " 'exists' x y z , p" := (ex (fun x => (ex (fun y => (ex (fun z => p)))
 Notation " 'exists' x y z w , p" := (ex (fun x => (ex (fun y => (ex (fun z => (ex (fun w => p))))))))
   (at level 200, x ident, y ident, z ident, w ident, right associativity) : type_scope.
 
-Tactic Notation "exist" constr(x) := exists x.
-Tactic Notation "exist" constr(x) constr(y) := exists x ; exists y.
-Tactic Notation "exist" constr(x) constr(y) constr(z) := exists x ; exists y ; exists z.
-Tactic Notation "exist" constr(x) constr(y) constr(z) constr(w) := exists x ; exists y ; exists z ; exists w.
+Tactic Notation "exists" constr(x) := exists x.
+Tactic Notation "exists" constr(x) constr(y) := exists x ; exists y.
+Tactic Notation "exists" constr(x) constr(y) constr(z) := exists x ; exists y ; exists z.
+Tactic Notation "exists" constr(x) constr(y) constr(z) constr(w) := exists x ; exists y ; exists z ; exists w.

@@ -217,7 +217,7 @@ let thm_token =
   | "Proposition" 
   | "Property"
   | "Goal"
-  | "Next Obligation"
+  | "Next" space+ "Obligation"
 
 let def_token = 
   "Definition" 
@@ -227,6 +227,7 @@ let def_token =
   | "Example"
   | "Local" 
   | "Fixpoint" 
+  | "Boxed" 
   | "CoFixpoint" 
   | "Record" 
   | "Structure" 
@@ -235,7 +236,7 @@ let def_token =
   | "CoInductive"
   | "Equations"
   | "Instance"
-  | "Global Instance"
+  | "Global" space+ "Instance"
 
 let decl_token = 
   "Hypothesis" 
@@ -289,7 +290,7 @@ let commands =
   | ("Hypothesis" | "Hypotheses")
   | "End"
 
-let end_kw = "Proof" | "Qed" | "Defined" | "Save" | "Admitted"
+let end_kw = "Proof" | "Qed" | "Defined" | "Save" | "Admitted" | "Abort"
 
 let extraction = 
   "Extraction"
