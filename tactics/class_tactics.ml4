@@ -1585,8 +1585,9 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
     {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
 
-let get_hyp gl c clause l2r = 
-  let hi = decompose_setoid_eqhyp (pf_env gl) (fst c) (snd c) l2r in
+let get_hyp gl (evm,c) clause l2r = 
+  let evars = Evd.merge (project gl) evm in
+  let hi = decompose_setoid_eqhyp (pf_env gl) evars c l2r in
   let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
     unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
 	

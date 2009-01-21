@@ -64,7 +64,7 @@ Inductive finle : Π (n : nat) (x : fin n) (y : fin n), Prop :=
 Scheme finle_ind_dep := Induction for finle Sort Prop.
 
 Instance finle_ind_pack n x y : DependentEliminationPackage (finle n x y) :=
-  elim_type := _ ; elim := finle_ind_dep.
+  { elim_type := _ ; elim := finle_ind_dep }.
 
 Implicit Arguments finle [[n]].
 
@@ -97,8 +97,8 @@ Class BelowPack (A : Type) :=
   { Below : Type ; below : Below }.
 
 Instance nat_BelowPack : BelowPack nat :=
-  Below := Π P n step, Below_nat P n ;
-  below := λ P n step, below_nat P n (step P).
+  { Below := Π P n step, Below_nat P n ;
+    below := λ P n step, below_nat P n (step P) }.
 
 Definition rec_nat (P : nat -> Type) n (step : Π n, Below_nat P n -> P n) : P n :=
   step n (below_nat P n step).
@@ -114,12 +114,12 @@ below_vector P A ?(S n) (Vcons a v) step :=
     (step A n v rest, rest).
 
 Instance vector_BelowPack : BelowPack (Π A n, vector A n) :=
-  Below := Π P A n v step, Below_vector P A n v ;
-  below := λ P A n v step, below_vector P A n v (step P).
+  { Below := Π P A n v step, Below_vector P A n v ;
+    below := λ P A n v step, below_vector P A n v (step P) }.
 
 Instance vector_noargs_BelowPack A n : BelowPack (vector A n) :=
-  Below := Π P v step, Below_vector P A n v ;
-  below := λ P v step, below_vector P A n v (step P).
+  { Below := Π P v step, Below_vector P A n v ;
+    below := λ P v step, below_vector P A n v (step P) }.
 
 Definition rec_vector (P : Π A n, vector A n -> Type) A n v
   (step : Π A n (v : vector A n), Below_vector P A n v -> P A n v) : P A n v :=
@@ -129,16 +129,16 @@ Class Recursor (A : Type) (BP : BelowPack A) :=
   { rec_type : Π x : A, Type ; rec : Π x : A, rec_type x }.
 
 Instance nat_Recursor : Recursor nat nat_BelowPack :=
-  rec_type := λ n, Π P step, P n ;
-  rec := λ n P step, rec_nat P n (step P).
+  { rec_type := λ n, Π P step, P n ;
+    rec := λ n P step, rec_nat P n (step P) }.
 
 (* Instance vect_Recursor : Recursor (Π A n, vector A n) vector_BelowPack := *)
 (*   rec_type := Π (P : Π A n, vector A n -> Type) step A n v, P A n v; *)
 (*   rec := λ P step A n v, rec_vector P A n v step. *)
 
 Instance vect_Recursor_noargs A n : Recursor (vector A n) (vector_noargs_BelowPack A n) :=
-  rec_type := λ v, Π (P : Π A n, vector A n -> Type) step, P A n v;
-  rec := λ v P step, rec_vector P A n v step.
+  { rec_type := λ v, Π (P : Π A n, vector A n -> Type) step, P A n v;
+    rec := λ v P step, rec_vector P A n v step }.
 
 Implicit Arguments Below_vector [P A n].
 
@@ -295,8 +295,8 @@ noConfusion_vect P A (S n) (Vcons a v) (Vcons a v) refl := λ p : a = a -> v = v
 (*   noConfusion := λ P x y, noConfusion_fin P n x y. *)
 
 Instance vect_noconf A n : NoConfusionPackage (vector A n) :=
-  NoConfusion := λ P, Π x y, x = y -> NoConfusion_vect P x y ;
-  noConfusion := λ P x y, noConfusion_vect P A n x y.
+  { NoConfusion := λ P, Π x y, x = y -> NoConfusion_vect P x y ;
+    noConfusion := λ P x y, noConfusion_vect P A n x y }.
 
 Equations fog {n} (f : fin n) : nat :=
 fog (S n) fz := 0 ; fog (S n) (fs f) := S (fog f).

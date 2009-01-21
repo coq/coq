@@ -32,7 +32,7 @@ let build_table l =
 
 let is_keyword = 
   build_table
-    [ "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
+    [ "AddPath"; "Axiom"; "Abort"; "Boxed"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
       "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example"; 
       "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses"; 
@@ -138,6 +138,9 @@ let new_label = let r = ref 0 in fun () -> incr r; "lab" ^ string_of_int !r
 (*s LaTeX output *)
 
 module Latex = struct
+
+  let in_title = ref false
+  let in_doc = ref false
 
   (*s Latex preamble *)
 
@@ -266,7 +269,7 @@ module Latex = struct
 	ident_ref m fullid typ s
     | Mod _ ->
 	printf "\\coqdocvar{"; raw_ident s; printf "}"
-
+	  
   let ident s loc = 
     if is_keyword s then begin
       printf "\\coqdockw{"; raw_ident s; printf "}"
@@ -278,16 +281,23 @@ module Latex = struct
 	  if is_tactic s then begin
 	    printf "\\coqdoctac{"; raw_ident s; printf "}"
 	  end else begin
-	    if !Cdglobals.interpolate then
+	    if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) 
+	    then
 	      try reference s (Index.find_string !current_module s)
-	      with _ -> printf "\\coqdocvar{"; raw_ident s; printf "}"
+	      with _ -> (printf "\\coqdocvar{"; raw_ident s; printf "}")
 	    else (printf "\\coqdocvar{"; raw_ident s; printf "}")
 	  end
       end
     end
 
-  let ident s l = with_latex_printing (fun s -> ident s l) s
-
+  let ident s l = 
+    if !in_title then (
+      printf "\\texorpdfstring{";
+      with_latex_printing (fun s -> ident s l) s;
+      printf "}{"; raw_ident s; printf "}")
+    else
+      with_latex_printing (fun s -> ident s l) s
+    
   let symbol = with_latex_printing raw_ident
 
   let rec reach_item_level n = 
@@ -306,9 +316,9 @@ module Latex = struct
 
   let stop_item () = reach_item_level 0
 
-  let start_doc () = ()
+  let start_doc () = in_doc := true
 
-  let end_doc () = stop_item ()
+  let end_doc () = in_doc := false; stop_item ()
 
   let start_coq () = printf "\\begin{coqdoccode}\n"
 
@@ -328,7 +338,7 @@ module Latex = struct
   let section lev f =
     stop_item ();
     output_string (section_kind lev);
-    f ();
+    in_title := true; f (); in_title := false;
     printf "}\n\n"
 
   let rule () =
