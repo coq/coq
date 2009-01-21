@@ -562,7 +562,8 @@ field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
 funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
-programs subtac: $(SUBTACVO) $(SUBTACCMO)
+programs: $(PROGRAMSVO)
+subtac: $(SUBTACVO) $(SUBTACCMO)
 rtauto: $(RTAUTOVO) $(RTAUTOCMO)
 
 ###########################################################################

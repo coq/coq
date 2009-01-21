@@ -36,8 +36,8 @@ while : ; do
       verbose=0
       ;;
     *)
-      if [ $verbose == 1 ]; then echo $line; fi
+      if [ $verbose = 1 ]; then echo $line; fi
   esac;
-  if [ "$i" == "0" ]; then break; else i=`expr $i - 1`; fi; 
+  if [ "$i" = "0" ]; then break; else i=`expr $i - 1`; fi; 
 done
 exit $error
