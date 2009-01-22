@@ -1,0 +1,13 @@
+#footer {
+    border-top: solid black 1pt;
+    text-align: center;
+    text-indent: 0pt;
+}
+
+.menu { }
+.menu li {
+    display: inline;
+    margin: 0pt;
+    padding: .5ex 1em;
+    list-style: none 
+}

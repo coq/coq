@@ -1,0 +1,45 @@
+\renewcommand{\@meta}{
+\begin{rawhtml}
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Reference Manual | The Coq Proof Assistant</title>
+
+<link rel="stylesheet" type="text/css" href="style.css">
+<link rel="stylesheet" type="text/css" href="coqdoc.css">
+
+\end{rawhtml}}
+
+% for HeVeA
+
+\htmlhead{\begin{rawhtml}
+
+<div id="container">
+
+<div id="header">
+<h1>Coq Reference Manual</h1>
+</div>
+
+<div id="content">
+
+\end{rawhtml}}
+
+\htmlfoot{\begin{rawhtml}
+
+<div id="footer">
+
+<div class="content">
+<ul class="menu">
+  <li><a href="index.html">Cover</a></li>
+  <li><a href="toc.html">Table of contents</a></li>
+  <li><a href="general-index.html">General index</a></li>
+  <li><a href="command-index.html">Commands index</a></li>
+  <li><a href="tactic-index.html">Tactics index</a></li>
+  <li><a href="error-index.html">Errors index</a></li>
+</ul>
+
+</div>
+</div>
+
+</div>
+</div>
+\end{rawhtml}}
+
