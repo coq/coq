@@ -52,7 +52,7 @@ let is_modfile = function
   | MPfile _ -> true
   | _ -> false
 
-let string_of_modfile = function
+let raw_string_of_modfile = function
   | MPfile f -> String.capitalize (string_of_id (List.hd (repr_dirpath f)))
   | _ -> assert false
 
@@ -176,12 +176,6 @@ let modular_ref = ref false
 let set_modular b = modular_ref := b
 let modular () = !modular_ref
 
-(*s Tables synchronization. *)
-
-let reset_tables () =
-  init_terms (); init_types (); init_inductives (); init_recursors ();
-  init_projs (); init_axioms ()
-
 (*s Printing. *)
 
 (* The following functions work even on objects not in [Global.env ()].
@@ -300,7 +294,7 @@ let error_not_visible r =
 let error_MPfile_as_mod mp b =
   let s1 = if b then "asked" else "required" in
   let s2 = if b then "extract some objects of this module or\n" else "" in
-  err (str ("Extraction of file "^(string_of_modfile mp)^
+  err (str ("Extraction of file "^(raw_string_of_modfile mp)^
 	    ".v as a module is "^s1^".\n"^
 	    "Monolithic Extraction cannot deal with this situation.\n"^
 	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
@@ -509,18 +503,29 @@ let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 (*s Extraction Blacklist of filenames not to use while extracting *)
 
-let blacklist_table = ref Stringset.empty
+let blacklist_table = ref Idset.empty
 
-let is_blacklisted s =
- (Stringset.mem (String.capitalize s) !blacklist_table) ||
- (Stringset.mem (String.uncapitalize s) !blacklist_table)
+let modfile_ids = ref []
+let modfile_mps = ref MPmap.empty
+
+let reset_modfile () =
+  modfile_ids := Idset.elements !blacklist_table;
+  modfile_mps := MPmap.empty
 
 let string_of_modfile mp =
-  let s = string_of_modfile mp in
-  if is_blacklisted s then "Coq_"^s else s
+  try MPmap.find mp !modfile_mps
+  with Not_found ->
+    let id = id_of_string (raw_string_of_modfile mp) in
+    let id' = next_ident_away id !modfile_ids in
+    let s' = string_of_id id' in
+    modfile_ids := id' :: !modfile_ids;
+    modfile_mps := MPmap.add mp s' !modfile_mps;
+    s'
 
 let add_blacklist_entries l =
-  blacklist_table := List.fold_right Stringset.add l !blacklist_table
+  blacklist_table :=
+    List.fold_right (fun s -> Idset.add (id_of_string (String.capitalize s)))
+      l !blacklist_table
 
 (* Registration of operations for rollback. *)
 
@@ -537,7 +542,7 @@ let (blacklist_extraction,_) =
 let _ = declare_summary "Extraction Blacklist"
 	  { freeze_function = (fun () -> !blacklist_table);
 	    unfreeze_function = ((:=) blacklist_table);
-	    init_function = (fun () -> blacklist_table := Stringset.empty);
+	    init_function = (fun () -> blacklist_table := Idset.empty);
 	    survive_module = true;
 	    survive_section = true }
 
@@ -551,15 +556,15 @@ let extraction_blacklist l =
 
 let print_extraction_blacklist () =
   msgnl
-    (prlist_with_sep fnl str (Stringset.elements !blacklist_table))
+    (prlist_with_sep fnl pr_id (Idset.elements !blacklist_table))
 
 (* Reset part *)
 
 let (reset_blacklist,_) =
   declare_object
     {(default_object "Reset Extraction Blacklist") with
-       cache_function = (fun (_,_)-> blacklist_table := Stringset.empty);
-       load_function = (fun _ (_,_)-> blacklist_table := Stringset.empty);
+       cache_function = (fun (_,_)-> blacklist_table := Idset.empty);
+       load_function = (fun _ (_,_)-> blacklist_table := Idset.empty);
        export_function = (fun x -> Some x)}
 
 let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
@@ -640,3 +645,9 @@ let extract_inductive r (s,l) =
     | _ -> error_inductive g
 
 
+
+(*s Tables synchronization. *)
+
+let reset_tables () =
+  init_terms (); init_types (); init_inductives (); init_recursors ();
+  init_projs (); init_axioms (); reset_modfile ()

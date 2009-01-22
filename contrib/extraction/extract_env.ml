@@ -346,16 +346,11 @@ let mono_filename f =
 
 (* Builds a suitable filename from a module id *)
 
-let module_filename m =
+let module_filename fc =
   let d = descr () in
-  let fc = String.capitalize (string_of_id m) in
-  let fn =
-    if is_blacklisted fc then
-      if d.capital_file then "Coq_"^fc else "coq_"^fc
-    else
-      if d.capital_file then fc else String.uncapitalize fc
+  let fn = if d.capital_file then fc else String.uncapitalize fc
   in
-  Some (fn^d.file_suffix), Option.map ((^) fn) d.sig_suffix, m
+  Some (fn^d.file_suffix), Option.map ((^) fn) d.sig_suffix, id_of_string fc
 
 (*s Extraction of one decl to stdout. *)
 
@@ -513,10 +508,10 @@ let extraction_library is_rec m =
   let struc = optimize_struct [] struc in
   warning_axioms ();
   let print = function
-    | (MPfile dir, sel) as e ->
+    | (MPfile dir as mp, sel) as e ->
 	let dry = not is_rec && dir <> dir_m in
-	let short_m = snd (split_dirpath dir) in
-	print_structure_to_file (module_filename short_m) dry [e]
+	let s = string_of_modfile mp in
+	print_structure_to_file (module_filename s) dry [e]
     | _ -> assert false
   in
   List.iter print struc;
