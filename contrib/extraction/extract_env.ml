@@ -152,6 +152,18 @@ let my_type_of_mb env mb =
     | Some mtb -> mtb
     | None -> Modops.eval_struct env (Option.get mb.mod_expr)
 
+(** Ad-hoc update of environment, inspired by [Mod_type.check_with_aux_def].
+    To check with Elie. *)
+
+let env_for_mtb_with env mtb idl =
+  let msid,sig_b = match Modops.eval_struct env mtb with
+    | SEBstruct(msid,sig_b) -> msid,sig_b
+    | _ -> assert false
+  in
+  let l = label_of_id (List.hd idl) in
+  let before = fst (list_split_at (fun (l',_) -> l=l') sig_b) in
+  Modops.add_signature (MPself msid) before env
+
 (* From a [structure_body] (i.e. a list of [structure_field_body])
    to specifications. *)
 
@@ -192,8 +204,9 @@ let rec extract_sfb_spec env mp = function
 and extract_seb_spec env = function
   | SEBident mp -> Visit.add_mp mp; MTident mp
   | SEBwith(mtb',With_definition_body(idl,cb))->
+      let env' = env_for_mtb_with env mtb' idl in
       let mtb''= extract_seb_spec env mtb' in
-      (match extract_with_type env cb with (* cb peut contenir des kn  *)
+      (match extract_with_type env' cb with (* cb peut contenir des kn  *)
 	 | None ->  mtb''
 	 | Some (vl,typ) -> MTwith(mtb'',ML_With_type(idl,vl,typ)))
   | SEBwith(mtb',With_module_body(idl,mp,_,_))-> 
