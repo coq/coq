@@ -812,8 +812,7 @@ Require Import Coq.Program.Tactics.
 Lemma weakening : forall G D tau, term (G ; D) tau -> 
   forall tau', term (G , tau' ; D) tau.
 Proof with simpl in * ; simpl_depind ; auto.
-  intros G D tau H.
-  dependent induction H generalizing G D.
+  intros G D tau H. dependent induction H generalizing G D ; intros.
 \end{coq_example*}
 
 This call to \depind has an additional arguments which is a list of
@@ -845,8 +844,8 @@ Show.
   specialize (IHterm G empty).
 \end{coq_example}
 
-Then the automation can find that the needed equality {\tt G = G} to
-narrow the induction hypothesis further. This concludes our example.
+Then the automation can find the needed equality {\tt G = G} to narrow
+the induction hypothesis further. This concludes our example.
 
 \begin{coq_example}
   simpl_depind.
