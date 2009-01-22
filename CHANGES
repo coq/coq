@@ -238,7 +238,7 @@ Tactic Language
   metavariable in "match" and it gets instantiated by an identifier
   (allow e.g. to extract the name of a statement like "exists x, P x").
 - New printing of Ltac call trace for better debugging.
-- The C-zar (formerly know as Declarative) proof language is now properly
+- The C-zar (formerly know as declarative) proof language is now properly
   documented. 
 
 Tactics
