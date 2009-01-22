@@ -1,6 +1,6 @@
-\newcommand{\DPL}{Mathematical Proof Language}
+\newcommand{\DPL}{C-zar mathematical proof Language}
 
-\chapter{The \DPL\label{DPL}\index{DPL}}
+\chapter{The \DPL\label{DPL}\index{C-zar}}
 
 \section{Introduction}
 
@@ -12,7 +12,7 @@ here uses the same objects (proof-terms) as Coq, but it differs in the
 way proofs are described. This language was created by Pierre
 Corbineau at the Radboud University of Nijmegen, The Netherlands.
 
-The intent is to provide language where proofs are less formalism-{}
+The intent is to provide a language where proofs are less formalism-{}
 and implementation-{}sensitive, and in the process to ease a bit the
 learning of computer-{}aided proof verification.
 
@@ -26,6 +26,10 @@ intermediate states it goes through.
 The purpose of a declarative proof language is to take the opposite
 approach where intermediate states are always given by the user, but
 the transitions of the system are automated as much as possible.
+
+While not being a purely declarative language, the \DPL{} aims at
+providing a solution for users who wish to edit Coq proofs following
+the declarative philosophy.
 
 \subsection{Well-formedness and Completeness}
 
@@ -77,7 +81,7 @@ However it is not supported by structured editors such as PCoq.
 
 \section{Syntax}
 
-Here is a complete formal description of the syntax for DPL commands.
+Here is a complete formal description of the syntax for C-zar commands.
 
 \begin{figure}[htbp]
 \begin{centerframe}
@@ -135,16 +139,15 @@ Conventions:\begin{itemize}
 
 In proof commands where an optional name is asked for, ommiting the
 name will trigger the creation of a fresh temporary name (e.g. for a
-hypothesis). Temporary names always start with an undescore '\_'
+hypothesis). Temporary names always start with an underscore '\_'
 character (e.g. {\tt \_hyp0}). Temporary names have a lifespan of one
-command: they get erased after the next command. They can however be safely in the step after their creation.
+command: they get erased after the next command. They can however be used safely in the step after their creation.
 
 \section{Language description}
 
 \subsection{Starting and Ending a mathematical proof}
 
-
- The standard way to use the \DPL is to first state a {\texttt{Lemma/Theorem/Definition}} and then use the {\texttt{proof}} command to switch the current subgoal to mathematical mode.  After the proof is completed, the {\texttt{end proof}} command will close the mathematical proof. If any subgoal remains to be proven, they will be displayed using the usual Coq display.
+ The standard way to use the \DPL{} is to first state a {\texttt{Lemma/Theorem/Definition}} and then use the {\texttt{proof}} command to switch the current subgoal to mathematical mode.  After the proof is completed, the {\texttt{end proof}} command will close the mathematical proof. If any subgoal remains to be proven, they will be displayed using the usual Coq display.
 
 \begin{coq_example}
 Theorem this_is_trivial: True.
@@ -803,7 +806,7 @@ is executed to prove the statement. The default is a solver for
 
 \section{More details and Formal Semantics}
 
-I suggest the users looking for more information have a look at the
-paper \cite{corbineau08types}. They will find in that paper a formal
-semantics of the proof state transition induces by mathematical
+The users looking for more information should have a look at the
+paper \cite{corbineau08types}. This paper features a formal
+semantics of proof state transitions corresponding to the mathematical
 commands.
