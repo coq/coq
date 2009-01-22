@@ -126,7 +126,7 @@ CLIBS:=unix.cma
 CAMLP4OBJS:=gramlib.cma
 
 CONFIG:=\
-  config/coq_config.cmo config/revision.cmo
+  config/coq_config.cmo
 
 LIBREP:=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
@@ -411,7 +411,7 @@ COQDOCCMO:=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
 # checker
 
 MCHECKER:=\
-  $(CONFIG) \
+  config/coq_config.cmo \
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo \
   lib/flags.cmo lib/util.cmo lib/option.cmo lib/hashcons.cmo \
   lib/system.cmo lib/envars.cmo \

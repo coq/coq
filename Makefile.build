@@ -784,50 +784,47 @@ $(foreach f,$(RECTYPESML),$(eval $(call rectypes-rules-template,$(f))))
 # source tree
 .PHONY: revision
 
-revision config/revision.ml:
+revision:
 	$(SHOW)'CHECK revision'
 	$(HIDE)rm -f revision.new
 ifeq ($(CHECKEDOUT),svn)
 	$(HIDE)set -e; \
         if test -x "`which svn`"; then \
 	  export LC_ALL=C;\
-	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/let version = "\1"/p' > revision.new; \
-	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/let revision = "\1"/p'>> revision.new; \
+	  svn info . | sed -ne '/URL/s/.*\/\([^\/]\{1,\}\)/\1/p' > revision.new; \
+	  svn info . | sed -ne '/Revision/s/Revision: \([0-9]\{1,\}\)/\1/p'>> revision.new; \
 	fi
 endif
 ifeq ($(CHECKEDOUT),gnuarch)
 	$(HIDE)set -e; \
         if test -x "`which tla`"; then \
 	  LANG=C; export LANG; \
-	  tla tree-version | sed -e 's/\(.*\)/let version = "\1"/' > revision.new ; \
-	  tla tree-revision | sed -ne 's|.*--\(.*\)|let revision = \"\1\"|p' >> revision.new ; \
+	  tla tree-version  >  revision.new ; \
+	  tla tree-revision | sed -ne 's|.*--||p' >> revision.new ; \
 	fi
 endif
 ifeq ($(CHECKEDOUT),git)
 	$(HIDE)set -e; \
 	if test -x "`which git`"; then \
 	  LANG=C; export LANG; \
-	  GIT_BRANCH=$$(git branch -a | sed -ne 's/^\* //p'); \
+	  GIT_BRANCH=$$(git branch -a | sed -ne '/^\* /s/^\* \(.*\)/\1/p'); \
 	  GIT_HOST=$$(hostname --fqdn); \
 	  GIT_PATH=$$(pwd); \
-	  echo "let version = \"$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}\"" > revision.new; \
-	  echo "let revision = \"$$(git show-ref $${GIT_BRANCH}|sed -ne 's/ .*//p')\"" >> revision.new; \
+	  (echo "$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}") > revision.new; \
+	  git log -1 | sed -ne '/^commit /s/^commit[[:space:]]\+\(.*\)/\1/p'  >> revision.new; \
 	fi
 endif
 	$(HIDE)set -e; \
-	if test ! -e revision.new; then \
-	  echo 'let version = Coq_config.version' > revision.new; \
-	  echo 'let revision = Coq_config.date' >> revision.new; \
-	fi; \
-	echo 'let date = "$(shell date +"%h %d %Y %H:%M:%S")"' >> revision.new ; \
-	if test -e config/revision.ml; then \
-	  if test "`head -2 config/revision.ml`" = "`head -2 revision.new`" ; then \
-	    rm -f revision.new; \
-	  else \
-	    mv -f revision.new config/revision.ml; \
-	  fi; \
-	else \
-	  mv -f revision.new config/revision.ml; \
+	if test -e revision.new; then \
+          if test -e revision; then \
+	    if test "`cat revision`" = "`cat revision.new`" ; then \
+	       rm -f revision.new; \
+            else \
+               mv -f revision.new revision; \
+            fi; \
+          else \
+            mv -f revision.new revision; \
+          fi \
 	fi
 
 ###########################################################################
