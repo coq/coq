@@ -90,7 +90,7 @@ usage () {
 # Default OCaml binaries
 bytecamlc=ocamlc
 nativecamlc=ocamlopt
-ocamlmklib=ocamlmklib
+ocamlmklibexec=ocamlmklib
 ocamlexec=ocaml
 ocamldepexec=ocamldep
 ocamldocexec=ocamldoc
@@ -375,6 +375,7 @@ case $camldir_spec in
 	 ocamllexexec=$CAMLBIN/ocamllex
 	 ocamlyaccexec=$CAMLBIN/ocamlyacc
 	 ocamlmktopexec=$CAMLBIN/ocamlmktop
+	 ocamlmklibexec=$CAMLBIN/ocamlmklib
 	 camlp4oexec=$CAMLBIN/camlp4o
 esac
 
@@ -983,7 +984,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|DLLEXTENSION|$DLLEXT|" \
     -e "s|EXECUTEEXTENSION|$EXE|" \
     -e "s|BYTECAMLC|$bytecamlc|" \
-    -e "s|OCAMLMKLIBEXEC|$ocamlmklib|" \
+    -e "s|OCAMLMKLIBEXEC|$ocamlmklibexec|" \
     -e "s|NATIVECAMLC|$nativecamlc|" \
     -e "s|OCAMLEXEC|$ocamlexec|" \
     -e "s|OCAMLDEPEXEC|$ocamldepexec|" \
