@@ -673,11 +673,11 @@ install-library:
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
-	cp --parents $(CONFIG) $(LINKCMO) $(GRAMMARCMA) $(FULLCOQLIB)
-	cp --parents $(OBJSCMO:.cmo=.cmi) $(FULLCOQLIB)
+	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG) $(LINKCMO) $(GRAMMARCMA)
+	$(INSTALLSH)  $(FULLCOQLIB) $(OBJSCMO:.cmo=.cmi)
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
-	cp --parents $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a) $(FULLCOQLIB)
+	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a)
 endif
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
