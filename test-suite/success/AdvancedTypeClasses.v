@@ -47,17 +47,18 @@ Lemma fun_interp' :forall `{ia : interp_pair, ib : interp_pair}, (ia -> ib) = in
 Qed.
 
 Instance ProdCan `(interp_pair a, interp_pair b) : interp_pair (a * b) :=
-  repr := Prod (repr a) (repr b) ; link := prod_interp.
+  { repr := Prod (repr a) (repr b) ; link := prod_interp }.
 
 Instance FunCan `(interp_pair a, interp_pair b) : interp_pair (a -> b) :=
-  link := fun_interp.
+  { link := fun_interp }.
 
-Instance BoolCan : interp_pair bool := repr := Bool ; link := refl_equal _.
+Instance BoolCan : interp_pair bool := 
+  { repr := Bool ; link := refl_equal _ }.
 
-Instance VarCan : interp_pair x | 10 := repr := Var x ; link := refl_equal _.
-Instance SetCan : interp_pair Set := repr := SET ; link := refl_equal _.
-Instance PropCan : interp_pair Prop := repr := PROP ; link := refl_equal _.
-Instance TypeCan : interp_pair Type := repr := TYPE ; link := refl_equal _.
+Instance VarCan : interp_pair x | 10 := { repr := Var x ; link := refl_equal _ }.
+Instance SetCan : interp_pair Set := { repr := SET ; link := refl_equal _ }.
+Instance PropCan : interp_pair Prop := { repr := PROP ; link := refl_equal _ }.
+Instance TypeCan : interp_pair Type := { repr := TYPE ; link := refl_equal _ }.
 
 (* Print Canonical Projections. *)
 

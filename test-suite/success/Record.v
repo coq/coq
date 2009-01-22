@@ -46,7 +46,7 @@ Qed.
 
 (* Correct type inference of record notation. Initial example by Spiwack. *) 
 
-Record Machin := {
+Inductive Machin := {
  Bazar : option Machin
 }.
 
