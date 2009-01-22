@@ -774,7 +774,7 @@ let list_split_at p =
   let rec split_at_loop x y = 
     match y with 
       | []      -> ([],[])
-      | (a::l)  -> if (p a) then (x,y) else (split_at_loop (x@[a]) l)
+      | (a::l)  -> if (p a) then (List.rev x,y) else split_at_loop (a::x) l
   in 
   split_at_loop []
 
