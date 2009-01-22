@@ -21,6 +21,3 @@ val print_usage_coqc : unit -> unit
 
 (*s Prints the configuration information. *)
 val print_config : unit -> unit
-
-(*s Prints the header. *)
-val print_header : unit -> unit

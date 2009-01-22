@@ -8,10 +8,6 @@
 
 (* $Id$ *)
 
-let print_header () =
-  Printf.printf "Welcome to Coq %s (%s)\n" Coq_config.version Coq_config.date;
-  flush stdout
-
 let version () =
   Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
     Coq_config.version Coq_config.date;

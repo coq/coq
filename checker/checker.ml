@@ -43,7 +43,8 @@ let (/) = Filename.concat
 
 let get_version_date () =
   try
-    let ch = open_in (Coq_config.coqsrc ^ "/revision") in
+    let coqlib = Envars.coqlib () in 
+    let ch = open_in (Filename.concat coqlib "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
       (ver,rev)
