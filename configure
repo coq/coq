@@ -6,7 +6,7 @@
 # 
 ##################################
 
-VERSION=8.2
+VERSION=8.2rc1
 VOMAGIC=08193 
 STATEMAGIC=19764
 DATE=`LANG=C date +"%B %Y"`
