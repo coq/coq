@@ -857,8 +857,7 @@ case $ARCH in
     win32)
 	ESCCOQTOP=`echo $COQTOP |sed -e 's|\\\|\\\\\\\|g'`
 	ESCBINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
-	ESCSRCDIR=`echo $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
-	ESCDOSSRCDIR=`cygpath -d $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
+	ESCSRCDIR=`cygpath -d $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
 	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLDIR=`echo $CAMLBIN |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
@@ -886,6 +885,7 @@ case $ARCH in
    	ESCCAMLP4BIN="$CAMLP4BIN"
    	ESCCAMLP4LIB="$CAMLP4LIB"
 	ESCLABLGTKINCLUDES="$LABLGTKINCLUDES"
+	ESCCOQRUNBYTEFLAGS="$COQRUNBYTEFLAGS"
 	;;
 esac
 
@@ -897,7 +897,7 @@ cat << END_OF_COQ_CONFIG > $mlconfig_file
 let local = $local
 let coqrunbyteflags = "$ESCCOQRUNBYTEFLAGS"
 let coqlib = "$ESCLIBDIR"
-let coqsrc = "$ESCDOSSRCDIR"
+let coqsrc = "$ESCSRCDIR"
 let camlbin = "$ESCCAMLDIR"
 let camllib = "$ESCCAMLLIB"
 let camlp4 = "$CAMLP4"
