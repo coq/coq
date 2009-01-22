@@ -37,6 +37,7 @@ endif
 
 INSTALLBIN:=install
 INSTALLLIB:=install -m 644 
+INSTALLSH:=./install.sh
 MKDIR:=install -d
 
 COQIDEBYTE:=bin/coqide.byte$(EXE)
