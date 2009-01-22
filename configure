@@ -58,7 +58,7 @@ usage () {
     echo "-arch"
     printf "\tSpecifies the architecture\n"
     echo "-opt"
-    printf "\tSpecifies whether or not to generate optimized executables\n"
+    printf "\tSpecifies whether or not to use OCaml *.opt optimized compilers\n"
     echo "-fsets (all|basic)"
     echo "-reals (all|basic)"
     printf "\tSpecifies whether or not to compile full FSets/Reals library\n"
