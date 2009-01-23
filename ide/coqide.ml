@@ -1900,7 +1900,7 @@ let main files =
     ~title:"CoqIde" ()
   in
     (try
-	 let icon_image = lib_ide_file "coq.ico" in
+	 let icon_image = lib_ide_file "coq.png" in
 	 let icon = GdkPixbuf.from_file icon_image in
 	   w#set_icon (Some icon)
      with _ -> ());
