@@ -52,6 +52,7 @@ val evar_unfiltered_env :  evar_info -> env
 val evar_env :  evar_info -> env
 
 type evar_map
+val eq_evar_map : evar_map -> evar_map -> bool
 
 val empty : evar_map
 

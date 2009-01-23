@@ -462,7 +462,7 @@ let weak_progress gls ptree =
   (not (same_goal (List.hd gls.it) ptree.it))
 
 let progress gls ptree =
-  (not (ptree.sigma == gls.sigma)) ||
+  (not (eq_evar_map ptree.sigma gls.sigma)) ||
   (weak_progress gls ptree)
 
 
