@@ -84,13 +84,6 @@ let find_with_index x l =
     | [] -> raise Not_found
   in aux 0 l
 
-let list_split_at index l = 
-  let rec aux i acc = function
-      hd :: tl when i = index -> (List.rev acc), tl
-    | hd :: tl -> aux (succ i) (hd :: acc) tl
-    | [] -> failwith "list_split_at: Invalid argument"
-  in aux 0 [] l
-
 open Vernacexpr
 
 let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_constr (evars_of evd) env

@@ -150,8 +150,8 @@ val list_uniquize : 'a list -> 'a list
 (* merges two sorted lists and preserves the uniqueness property: *)
 val list_merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
 val list_subset : 'a list -> 'a list -> bool
-val list_split_at : ('a -> bool) -> 'a list -> 'a list * 'a list
-val list_split_by : ('a -> bool) -> 'a list -> 'a list * 'a list
+val list_split_at : int -> 'a list -> 'a list*'a list
+val list_split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
 val list_partition_by : ('a -> 'a -> bool) -> 'a list -> 'a list list
 val list_firstn : int -> 'a list -> 'a list

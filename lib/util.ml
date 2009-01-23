@@ -770,21 +770,26 @@ let list_subset l1 l2 =
   in 
   look l1
 
-let list_split_at p = 
-  let rec split_at_loop x y = 
+(* [list_split_at i l] splits [l] into two lists [(l1,l2)] such that [l1++l2=l] 
+    and [l1] has length [i].
+    It raises [Failure] when [i] is negative or greater than the length of [l]  *)
+let list_split_at index l = 
+  let rec aux i acc = function
+      tl when i = index -> (List.rev acc), tl
+    | hd :: tl -> aux (succ i) (hd :: acc) tl
+    | [] -> failwith "list_split_at: Invalid argument"
+  in aux 0 [] l
+
+(* [list_split_when p l] splits [l] into two lists [(l1,a::l2)] such that
+    [l1++(a::l2)=l], [p a=true] and [p b = false] for every element [b] of [l1].
+    If there is no such [a], then it returns [(l,[])] instead *)
+let list_split_when p = 
+  let rec split_when_loop x y = 
     match y with 
       | []      -> ([],[])
-      | (a::l)  -> if (p a) then (List.rev x,y) else split_at_loop (a::x) l
+      | (a::l)  -> if (p a) then (List.rev x,y) else split_when_loop (a::x) l
   in 
-  split_at_loop []
-
-let list_split_by p = 
-  let rec split_loop = function
-  | []      -> ([],[])
-  | (a::l)  ->
-      let (l1,l2) = split_loop l in if (p a) then (a::l1,l2) else (l1,a::l2)
-  in 
-  split_loop
+  split_when_loop []
 
 let rec list_split3 = function
   | [] -> ([], [], [])

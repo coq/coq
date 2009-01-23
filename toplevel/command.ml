@@ -1007,7 +1007,7 @@ let list_split_rev_at index l =
   let rec aux i acc = function
       hd :: tl when i = index -> acc, tl
     | hd :: tl -> aux (succ i) (hd :: acc) tl
-    | [] -> failwith "list_split_at: Invalid argument"
+    | [] -> failwith "list_split_when: Invalid argument"
   in aux 0 [] l
 
 let fold_left' f = function 

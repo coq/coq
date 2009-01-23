@@ -161,7 +161,7 @@ let env_for_mtb_with env mtb idl =
     | _ -> assert false
   in
   let l = label_of_id (List.hd idl) in
-  let before = fst (list_split_at (fun (l',_) -> l=l') sig_b) in
+  let before = fst (list_split_when (fun (l',_) -> l=l') sig_b) in
   Modops.add_signature (MPself msid) before env
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])

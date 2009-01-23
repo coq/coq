@@ -35,7 +35,7 @@ type implicits_flags = {
   maximal : bool
 }
 
-(* les implicites sont stricts par défaut en v8 *)
+(* les implicites sont stricts par dÃ©faut en v8 *)
 
 let implicit_args = ref { 
   main = false;
@@ -415,13 +415,6 @@ let compute_global_implicits flags manual = function
       let (_,cimps) = (compute_mib_implicits flags manual kn).(i) in snd cimps.(j-1)
 
 (* Merge a manual explicitation with an implicit_status list *)
-
-let list_split_at index l = 
-  let rec aux i acc = function
-      tl when i = index -> (List.rev acc), tl
-    | hd :: tl -> aux (succ i) (hd :: acc) tl
-    | [] -> failwith "list_split_at: Invalid argument"
-  in aux 0 [] l
     
 let merge_impls oldimpls newimpls =
   let (before, news), olds = 
