@@ -17,15 +17,15 @@ doc: refman faq tutorial rectutorial stdlib ide/index_urls.txt
 
 doc-html:\
   doc/tutorial/Tutorial.v.html doc/refman/html/index.html \
-  doc/faq/html/index.html doc/stdlib/html/index.html doc/RecTutorial/RecTutorial.v.html
+  doc/faq/html/index.html doc/stdlib/html/index.html doc/RecTutorial/RecTutorial.html
 
 doc-pdf:\
   doc/tutorial/Tutorial.v.pdf doc/refman/Reference-Manual.pdf \
-  doc/faq/FAQ.v.pdf doc/stdlib/Library.pdf doc/RecTutorial/RecTutorial.v.pdf
+  doc/faq/FAQ.v.pdf doc/stdlib/Library.pdf doc/RecTutorial/RecTutorial.pdf
 
 doc-ps:\
   doc/tutorial/Tutorial.v.ps doc/refman/Reference-Manual.ps \
-  doc/faq/FAQ.v.ps doc/stdlib/Library.ps doc/RecTutorial/RecTutorial.v.ps
+  doc/faq/FAQ.v.ps doc/stdlib/Library.ps doc/RecTutorial/RecTutorial.ps
 
 refman: \
   doc/refman/html/index.html doc/refman/Reference-Manual.ps doc/refman/Reference-Manual.pdf
@@ -40,8 +40,8 @@ faq:\
   doc/faq/html/index.html doc/faq/FAQ.v.ps doc/faq/FAQ.v.pdf
 
 rectutorial:\
-  doc/RecTutorial/RecTutorial.v.html \
-  doc/RecTutorial/RecTutorial.v.ps doc/RecTutorial/RecTutorial.v.pdf
+  doc/RecTutorial/RecTutorial.html \
+  doc/RecTutorial/RecTutorial.ps doc/RecTutorial/RecTutorial.pdf
 
 ######################################################################
 ### Implicit rules
@@ -66,7 +66,7 @@ endif
 ######################################################################
 
 HIDEBIBTEXINFO=| grep -v "^A level-1 auxiliary file"
-SHOWMAKEINDEXERROR=egrep "^!! Input index error|^** Input style error|^   --"
+SHOWMAKEINDEXERROR=egrep "^!! Input index error|^\*\* Input style error|^   --"
 
 ######################################################################
 # Common
@@ -234,21 +234,21 @@ doc/stdlib/Library.pdf: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Li
 # Tutorial on inductive types
 ######################################################################
 
-doc/RecTutorial/RecTutorial.v.dvi: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.v.tex
+doc/RecTutorial/RecTutorial.dvi: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.tex
 	(cd doc/RecTutorial;\
-	$(LATEX) -interaction=batchmode RecTutorial.v;\
-	$(BIBTEX) -terse RecTutorial.v;\
-	$(LATEX) -interaction=batchmode RecTutorial.v > /dev/null;\
-	$(LATEX) -interaction=batchmode RecTutorial.v > /dev/null;\
-	../tools/show_latex_messages RecTutorial.v.log)
+	$(LATEX) -interaction=batchmode RecTutorial;\
+	$(BIBTEX) -terse RecTutorial;\
+	$(LATEX) -interaction=batchmode RecTutorial > /dev/null;\
+	$(LATEX) -interaction=batchmode RecTutorial > /dev/null;\
+	../tools/show_latex_messages RecTutorial.log)
 
-doc/RecTutorial/RecTutorial.v.pdf: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.v.dvi
+doc/RecTutorial/RecTutorial.pdf: doc/common/version.tex doc/common/title.tex doc/RecTutorial/RecTutorial.dvi
 	(cd doc/RecTutorial;\
-	$(PDFLATEX) -interaction=batchmode RecTutorial.v.tex;\
-	../tools/show_latex_messages RecTutorial.v.log)
+	$(PDFLATEX) -interaction=batchmode RecTutorial.tex;\
+	../tools/show_latex_messages RecTutorial.log)
 
-doc/RecTutorial/RecTutorial.v.html: doc/RecTutorial/RecTutorial.v.tex
-	(cd doc/RecTutorial; $(HEVEA) $(HEVEAOPTS) RecTutorial.v)
+doc/RecTutorial/RecTutorial.html: doc/RecTutorial/RecTutorial.tex
+	(cd doc/RecTutorial; $(HEVEA) $(HEVEAOPTS) RecTutorial)
 
 ######################################################################
 # Index file for CoqIDE
@@ -256,7 +256,7 @@ doc/RecTutorial/RecTutorial.v.html: doc/RecTutorial/RecTutorial.v.tex
 
 # Not robust, improve...
 ide/index_urls.txt: doc/refman/html/index.html
-	- rm ide/index_urls.txt
+	- @ rm ide/index_urls.txt
 	cat doc/refman/html/command-index.html doc/refman/html/tactic-index.html | grep li-indexenv | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > ide/index_urls.txt
 
 
@@ -274,7 +274,7 @@ install-doc-html:
 	$(MKDIR) $(addprefix $(FULLDOCDIR)/html/, refman stdlib faq)
 	$(INSTALLLIB) doc/refman/html/* $(FULLDOCDIR)/html/refman 
 	$(INSTALLLIB) doc/stdlib/html/* $(FULLDOCDIR)/html/stdlib 
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.html $(FULLDOCDIR)/html/RecTutorial.html
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.html $(FULLDOCDIR)/html/RecTutorial.html
 	$(INSTALLLIB) doc/faq/html/* $(FULLDOCDIR)/html/faq
 	$(INSTALLLIB) doc/tutorial/Tutorial.v.html $(FULLDOCDIR)/html/Tutorial.html
 
@@ -284,9 +284,9 @@ install-doc-printable:
 		doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/refman/Reference-Manual.ps \
 		doc/stdlib/Library.ps $(FULLDOCDIR)/ps
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(FULLDOCDIR)/pdf/Tutorial.pdf
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.pdf $(FULLDOCDIR)/pdf/RecTutorial.pdf
+	$(INSTALLLIB) doc/tutorial/Tutorial.pdf $(FULLDOCDIR)/pdf/Tutorial.pdf
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.pdf $(FULLDOCDIR)/pdf/RecTutorial.pdf
 	$(INSTALLLIB) doc/faq/FAQ.v.pdf $(FULLDOCDIR)/pdf/FAQ.pdf
-	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(FULLDOCDIR)/ps/Tutorial.ps
-	$(INSTALLLIB) doc/RecTutorial/RecTutorial.v.ps $(FULLDOCDIR)/ps/RecTutorial.ps
+	$(INSTALLLIB) doc/tutorial/Tutorial.ps $(FULLDOCDIR)/ps/Tutorial.ps
+	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
 	$(INSTALLLIB) doc/faq/FAQ.v.ps $(FULLDOCDIR)/ps/FAQ.ps
