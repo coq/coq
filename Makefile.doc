@@ -284,9 +284,9 @@ install-doc-printable:
 		doc/stdlib/Library.pdf $(FULLDOCDIR)/pdf
 	$(INSTALLLIB) doc/refman/Reference-Manual.ps \
 		doc/stdlib/Library.ps $(FULLDOCDIR)/ps
-	$(INSTALLLIB) doc/tutorial/Tutorial.pdf $(FULLDOCDIR)/pdf/Tutorial.pdf
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.pdf $(FULLDOCDIR)/pdf/Tutorial.pdf
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.pdf $(FULLDOCDIR)/pdf/RecTutorial.pdf
 	$(INSTALLLIB) doc/faq/FAQ.v.pdf $(FULLDOCDIR)/pdf/FAQ.pdf
-	$(INSTALLLIB) doc/tutorial/Tutorial.ps $(FULLDOCDIR)/ps/Tutorial.ps
+	$(INSTALLLIB) doc/tutorial/Tutorial.v.ps $(FULLDOCDIR)/ps/Tutorial.ps
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
 	$(INSTALLLIB) doc/faq/FAQ.v.ps $(FULLDOCDIR)/ps/FAQ.ps

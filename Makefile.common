@@ -860,6 +860,8 @@ COQMLI:=$(KERNELMLI) $(INTERPMLI) $(PRETYPINGMLI) $(TOPLEVELMLI) $(PROOFSMLI) \
 # Miscellaneous
 ###########################################################################
 
+DATE=$(shell LANG=C date +"%B %Y")
+
 SOURCEDOCDIR=dev/source-doc
 
 ## Targets forwarded by Makefile to a specific stage

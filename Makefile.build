@@ -675,7 +675,7 @@ endif
 # it with libraries
 	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
 	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/contrib/micromega
-	$(INSTALLLIB) revision $(FULLCOQLIB)
+	-$(INSTALLLIB) revision $(FULLCOQLIB)
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
@@ -685,7 +685,7 @@ install-library-light:
         done
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
-	$(INSTALLLIB) revision $(FULLCOQLIB)
+	-$(INSTALLLIB) revision $(FULLCOQLIB)
 
 install-allreals::
 	for f in $(ALLREALS); do \
