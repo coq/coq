@@ -165,6 +165,9 @@ let raw_search_rewrite extra_filter display_function pattern =
        && extra_filter s a c)
     display_function gref_eq
 
+let raw_search_by_head extra_filter display_function pattern =
+  Util.todo "raw_search_by_head"
+
 (* 
  * functions to use the new Libtypes facility
  *)
@@ -178,18 +181,14 @@ let raw_search search_function extra_filter display_function pat =
 	 display_function gr env typ
     ) (search_function pat)
 
-let raw_pattern_search = raw_search Libtypes.search_concl
-let raw_search_rewrite = raw_search (Libtypes.search_eq_concl c_eq)
-let raw_search_by_head = raw_search Libtypes.search_head_concl
-
 let text_pattern_search extra_filter =
-  raw_pattern_search extra_filter plain_display
+  raw_search Libtypes.search_concl extra_filter plain_display
 
 let text_search_rewrite extra_filter =
-  raw_search_rewrite extra_filter plain_display
+  raw_search (Libtypes.search_eq_concl c_eq) extra_filter plain_display
 
 let text_search_by_head extra_filter =
-  raw_search_by_head extra_filter plain_display
+  raw_search Libtypes.search_head_concl extra_filter plain_display
 
 let filter_by_module_from_list = function
   | [], _ -> (fun _ _ _ -> true)

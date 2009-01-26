@@ -42,11 +42,11 @@ val gen_filtered_search : (global_reference -> env -> constr -> bool) ->
 val filtered_search : (global_reference -> env -> constr -> bool) -> 
   (global_reference -> env -> constr -> unit) -> global_reference -> unit
 val raw_pattern_search : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> constr -> unit
+  (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
 val raw_search_rewrite : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> constr -> unit
+  (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
 val raw_search_about : (global_reference -> env -> constr -> bool) ->
   (global_reference -> env -> constr -> unit) -> 
       (bool * glob_search_about_item) list -> unit
 val raw_search_by_head : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> constr -> unit
+  (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
