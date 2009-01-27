@@ -724,7 +724,7 @@ for \linebreak ``~\citecoq{ex (fun $x$:$A$ \funarrow{} $B$)}~''.
 \noindent The former quantifier inhabits the universe of propositions.
 As for the conjunction and disjunction connectives, there is also another
 version of existential quantification inhabiting the universes $\Type_i$,
-which is noted \texttt{sig $P$}. The syntax
+which is written \texttt{sig $P$}. The syntax
 ``~\citecoq{\{$x$:$A$ | $B$\}}~'' is an abreviation for ``~\citecoq{sig (fun $x$:$A$ {\funarrow} $B$)}~''.
 
 
@@ -934,7 +934,7 @@ Definition  predecessor : {\prodsym} n:nat, pred_spec n.
 Defined.
 \end{alltt}
 
-If we print the term built by {\coq}, we can observe its dependent pattern-matching structure:
+If we print the term built by {\coq}, its dependent pattern-matching structure can be observed:
 
 \begin{alltt}
 predecessor =  fun n : nat {\funarrow}
@@ -950,8 +950,9 @@ predecessor =  fun n : nat {\funarrow}
 \end{alltt}
 
 
-Notice that there are many variants to the pattern ``~\texttt{intros \dots; case \dots}~''. Look at the reference manual and/or the book: tactics
-\texttt{destruct}, ``~\texttt{intro \emph{pattern}}~'', etc.
+Notice that there are many variants to the pattern ``~\texttt{intros \dots; case \dots}~''. Look at for tactics
+``~\texttt{destruct}~'', ``~\texttt{intro \emph{pattern}}~'', etc. in 
+the reference manual and/or the book. 
 
 \noindent The command \texttt{Extraction} \refmancite{Section
 \ref{ExtractionIdent}} can be used to see the computational
@@ -1240,7 +1241,7 @@ Let $n$ and $p$ be terms of type \citecoq{nat}, and $Q$ a predicate
 of type $\citecoq{nat}\arrow{}\Prop$.
 If $H$ is a proof of ``~\texttt{n {\coqle} p}~'',
 $H_0$ a proof of ``~\texttt{$Q$  n}~'' and
-$H_S$ a proof of ``~\citecoq{{\prodsym}m:nat, n {\coqle}  m {\arrow} Q (S m)}~'',
+$H_S$ a proof of the statement ``~\citecoq{{\prodsym}m:nat, n {\coqle}  m {\arrow} Q (S m)}~'',
 then the term
 \begin{alltt}
 match H in (_ {\coqle} q) return (Q q) with
@@ -2604,8 +2605,8 @@ End Principle_of_Double_Induction.
 \end{alltt}
 
 Changing the type of $P$ into $\nat\rightarrow\nat\rightarrow\Type$,
-another combinator \texttt{nat\_double\_rect} for constructing 
-(certified) programs can be defined in exactly the same way.
+another combinator for constructing 
+(certified) programs, \texttt{nat\_double\_rect}, can be defined in exactly the same way.
 This definition is left as an exercise.\label{natdoublerect}
 
 \iffalse
@@ -2751,8 +2752,8 @@ has a universally quantified formula as conclusion, which confuses
 
 
 Therefore,
-in this case the abstraction must be explicited using the tactic
-\texttt{pattern}. Once the right abstraction is provided, the rest of
+in this case the abstraction must be explicited using the 
+\texttt{pattern} tactic. Once the right abstraction is provided, the rest of
 the proof is immediate:
 
 \begin{alltt}
@@ -2804,8 +2805,8 @@ Defined.
 
 \begin{exercise}
 \begin{enumerate}
-\item Define a recursive  function \emph{nat2itree}
-mapping any natural number $n$ into an infinitely branching
+\item Define a recursive  function of name \emph{nat2itree}
+that maps any natural number $n$ into an infinitely branching
 tree of height $n$.
 \item Provide an elimination combinator for these trees.
 \item Prove that the relation \citecoq{itree\_le} is a preorder 
@@ -2831,7 +2832,7 @@ for all n and p. (\citecoq{le'} is defined in section \ref{parameterstuff}).
 
 Structural induction is a strong elimination rule for inductive types.
 This method can be used to define any function whose termination is
-based on the well-foundedness of certain order relation $R$ decreasing
+a consequence of the well-foundedness of a certain order relation $R$ decreasing
 at each recursive call. What makes this principle so strong is the
 possibility of reasoning by structural induction on the proof that
 certain $R$ is well-founded.  In order to illustrate this we have
@@ -2867,8 +2868,8 @@ let rec div x y =
 \end{verbatim}
 
 
-The equality test on natural numbers can be represented as the
-function \textsl{eq\_nat\_dec} defined page \pageref{iseqpage}. Giving $x$ and
+The equality test on natural numbers can be implemented using the
+function \textsl{eq\_nat\_dec} that is defined page \pageref{iseqpage}. Giving $x$ and
 $y$, this function yields either the value $(\textsl{left}\;p)$ if
 there exists a proof $p:x=y$, or the value $(\textsl{right}\;q)$ if
 there exists $q:a\not = b$. The subtraction function is already
@@ -3112,7 +3113,7 @@ The term "Vnil A" has type "vector A 0" while it is expected to have type
  "vector A n"
 \end{alltt}
 
-In effect, the equality ``~\citecoq{v = Vnil A}~'' is ill typed,
+In effect, the equality ``~\citecoq{v = Vnil A}~'' is ill-typed and this is
 because the type ``~\citecoq{vector A n}~'' is not \emph{convertible}
 with ``~\citecoq{vector A 0}~''.
 
@@ -3264,11 +3265,11 @@ on vectors of same length:
 
 \begin{alltt}
 Definition vector_double_rect : 
-    {\prodsym} (A:Type) (P: {\prodsym} (n:nat),(vector A n){\arrow}(vector A n) {\arrow} Type),
-        P 0 Vnil Vnil {\arrow}
-        ({\prodsym} n (v1 v2 : vector A n) a b, P n v1 v2 {\arrow}
-             P (S n) (Vcons a v1) (Vcons  b v2)) {\arrow}
-        {\prodsym} n (v1 v2 : vector A n), P n v1 v2.
+ {\prodsym} (A:Type) (P: {\prodsym} (n:nat),(vector A n){\arrow}(vector A n) {\arrow} Type),
+     P 0 Vnil Vnil {\arrow}
+     ({\prodsym} n (v1 v2 : vector A n) a b, P n v1 v2 {\arrow}
+          P (S n) (Vcons a v1) (Vcons  b v2)) {\arrow}
+     {\prodsym} n (v1 v2 : vector A n), P n v1 v2.
  induction n.
  intros; rewrite (zero_nil _ v1); rewrite (zero_nil _ v2).
  auto.
@@ -3361,7 +3362,7 @@ CoInductive LList (A: Type) : Type :=
 
 
 It is also possible to define  co-inductive types for the 
-trees with infinite branches (see Chapter 13 of~\cite{coqart}).
+trees with infinitely-many branches (see Chapter 13 of~\cite{coqart}).
 
 Structural induction is the way of expressing that inductive types
 only contain well-founded objects. Hence, this elimination principle
@@ -3555,7 +3556,7 @@ Qed.
 \end{alltt}
 
 \begin{exercise}
-Define a co-inductive type $Nat$ containing non-standard 
+Define a co-inductive type of name $Nat$ that contains non-standard 
 natural numbers --this is, verifying 
 
 $$\exists m  \in \mbox{\texttt{Nat}}, \forall\, n \in \mbox{\texttt{Nat}}, n<m$$.
@@ -3591,8 +3592,8 @@ Proof.
 Qed.
 
 Lemma injection_demo : {\prodsym} (A:Type)(a b : A)(l l': LList A),
-                       LCons a (LCons b l) = LCons b (LCons a l') {\arrow}
-                       a = b {\coqand} l = l'.
+                  LCons a (LCons b l) = LCons b (LCons a l') {\arrow}
+                  a = b {\coqand} l = l'.
 Proof.
  intros A a b l l' e; injection e; auto.
 Qed.

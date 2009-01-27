@@ -108,6 +108,10 @@ $e:\tau(E)$ for the judgment that $e$ is of type $E$.
 You may request \Coq~ to return to you the type of a valid expression by using
 the command \verb:Check::
 
+\begin{coq_eval}
+Set Printing Width 60.
+\end{coq_eval}
+
 \begin{coq_example}
 Check O.
 \end{coq_example}
@@ -169,9 +173,9 @@ arrow function constructor, in order to get a functional type
 \begin{coq_example}
 Check (nat -> Prop).
 \end{coq_example}
-which may be composed again with \verb:nat: in order to obtain the
+which may be composed one more times with \verb:nat: in order to obtain the
 type \verb:nat->nat->Prop: of binary relations over natural numbers.
-Actually \verb:nat->nat->Prop: is an abbreviation for 
+Actually the type \verb:nat->nat->Prop: is an abbreviation for 
 \verb:nat->(nat->Prop):. 
 
 Functional notions may be composed in the usual way. An expression $f$
@@ -213,7 +217,7 @@ argument \verb:m: of type \verb:nat: in order to build its result as
 \begin{coq_example}
 Definition double (m:nat) := plus m m.
 \end{coq_example}
-This definition introduces the constant \texttt{double} defined as the
+This introduces the constant \texttt{double} defined as the
 expression \texttt{fun m:nat => plus m m}.
 The abstraction introduced by \texttt{fun} is explained as follows. The expression
 \verb+fun x:A => e+ is well formed of type \verb+A->B+ in a context
@@ -445,7 +449,6 @@ conjunctive goal into the two subgoals:
 \begin{coq_example}
 split.
 \end{coq_example}
-
 and the proof is now trivial. Indeed, the whole proof is obtainable as follows:
 \begin{coq_example}
 Restart.
@@ -540,7 +543,7 @@ explanations. The \texttt{fun} prefix, such as \verb+fun H:A\/B =>+,
 corresponds
 to \verb:intro H:, whereas a subterm such as 
 \verb:(or_intror: \verb:B H0):
-corresponds to the sequence \verb:apply or_intror; exact H0:. 
+corresponds to the sequence of tactics \verb:apply or_intror; exact H0:. 
 The generic combinator \verb:or_intror: needs to be instantiated by
 the two properties \verb:B: and \verb:A:. Because \verb:A: can be
 deduced from the type of \verb:H0:, only  \verb:B: is printed.
@@ -559,7 +562,7 @@ Qed.
 
 \subsection{Classical reasoning}
 
-\verb:tauto: always comes back with an answer. Here is an example where it 
+The tactic \verb:tauto: always comes back with an answer. Here is an example where it 
 fails:
 \begin{coq_example}
 Lemma Peirce : ((A -> B) -> A) -> A.
@@ -661,6 +664,9 @@ remove a section, or we may return to the initial state using~:
 \begin{coq_example}
 Reset Initial.
 \end{coq_example}
+\begin{coq_eval}
+Set Printing Width 60.
+\end{coq_eval}
 
 We shall now declare a new \verb:Section:, which will allow us to define
 notions local to a well-delimited scope. We start by assuming a domain of
@@ -705,7 +711,7 @@ predicate as argument:
 Check ex.
 \end{coq_example}
 and the notation \verb+(exists x:D, P x)+ is just concrete syntax for 
-\verb+(ex D (fun x:D => P x))+. 
+the expression \verb+(ex D (fun x:D => P x))+. 
 Existential quantification is handled in \Coq~ in a similar
 fashion to the connectives \verb:/\: and \verb:\/: : it is introduced by
 the proof combinator \verb:ex_intro:, which is invoked by the specific 
@@ -842,7 +848,8 @@ elim (EM (exists x, ~ P x)).
 
 We first look at the first case. Let Tom be the non-drinker:
 \begin{coq_example}
-intro Non_drinker; elim Non_drinker; intros Tom Tom_does_not_drink.
+intro Non_drinker; elim Non_drinker;
+  intros Tom Tom_does_not_drink.
 \end{coq_example}
 
 We conclude in that case by considering Tom, since his drinking leads to
@@ -1026,7 +1033,8 @@ predicates over some universe \verb:U:. For instance:
 Variable U : Type.
 Definition set := U -> Prop.
 Definition element (x:U) (S:set) := S x.
-Definition subset (A B:set) := forall x:U, element x A -> element x B.
+Definition subset (A B:set) := 
+  forall x:U, element x A -> element x B.
 \end{coq_example}
 
 Now, assume that we have loaded a module of general properties about
@@ -1151,7 +1159,7 @@ right; trivial.
 \end{coq_example}
 
 Indeed, the whole proof can be done with the combination of the
-\verb:simple induction: tactic, which combines \verb:intro: and \verb:elim:,
+ \verb:simple: \verb:induction:, which combines \verb:intro: and \verb:elim:,
 with good old \verb:auto::
 \begin{coq_example}
 Restart.
@@ -1197,13 +1205,15 @@ an expression to its {\sl normal form}:
 \begin{coq_example}
 Eval cbv beta in
   ((fun _:nat => nat) O ->
-   (forall y:nat, (fun _:nat => nat) y -> (fun _:nat => nat) (S y)) ->
+   (forall y:nat, 
+      (fun _:nat => nat) y -> (fun _:nat => nat) (S y)) ->
    forall n:nat, (fun _:nat => nat) n).
 \end{coq_example}
 
 Let us now show how to program addition with primitive recursion:
 \begin{coq_example}
-Definition addition (n m:nat) := prim_rec m (fun p rec:nat => S rec) n.
+Definition addition (n m:nat) :=
+    prim_rec m (fun p rec:nat => S rec) n.
 \end{coq_example}
 
 That is, we specify that \verb+(addition n m)+ computes by cases on \verb:n:
@@ -1241,6 +1251,9 @@ Reset bool.
 
 \begin{coq_eval}
 Reset Initial.
+\end{coq_eval}
+\begin{coq_eval}
+Set Printing Width 60.
 \end{coq_eval}
 
 Let us now show how to do proofs by structural induction. We start with easy
@@ -1508,13 +1521,13 @@ development is not type-checked again.
 
 \section{Creating your own modules}
 
-You may create your own modules, by writing \Coq~ commands in a file,
+You may create your own module files, by writing {\Coq} commands in a file,
 say \verb:my_module.v:. Such a module may be simply loaded in the current
 context, with command \verb:Load my_module:. It may also be compiled,
 in ``batch'' mode, using the UNIX command
 \verb:coqc:. Compiling the module \verb:my_module.v: creates a 
 file \verb:my_module.vo:{} that can be reloaded with command
-\verb:Require Import my_module:. 
+\verb:Require: \verb:Import: \verb:my_module:. 
 
 If a required module depends on other modules then the latters are
 automatically required beforehand. However their contents is not

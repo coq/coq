@@ -267,11 +267,11 @@ Abort.
 \begin{coq_example*}
 End equality.
 Definition eq_ind_r :
-  forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
+  forall (A:Type) (x:A) (P:A->Prop), P x -> forall y:A, y = x -> P y.
 Definition eq_rec_r :
-  forall (A:Type) (x:A) (P:A -> Set), P x -> forall y:A, y = x -> P y.
+  forall (A:Type) (x:A) (P:A->Set), P x -> forall y:A, y = x -> P y.
 Definition eq_rect_r :
-  forall (A:Type) (x:A) (P:A -> Type), P x -> forall y:A, y = x -> P y.
+  forall (A:Type) (x:A) (P:A->Type), P x -> forall y:A, y = x -> P y.
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
@@ -290,8 +290,9 @@ arguments. The theorem are names {\tt f\_equal2}, {\tt f\_equal3},
 For instance {\tt f\_equal3} is defined the following way.
 \begin{coq_example*}
 Theorem f_equal3 :
- forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B) (x1 y1:A1) (x2 y2:A2)
-   (x3 y3:A3), x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
+ forall (A1 A2 A3 B:Type) (f:A1 -> A2 -> A3 -> B)
+   (x1 y1:A1) (x2 y2:A2) (x3 y3:A3),
+   x1 = y1 -> x2 = y2 -> x3 = y3 -> f x1 x2 x3 = f y1 y2 y3.
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
@@ -478,7 +479,9 @@ in the \verb"Set" \verb"A+{B}".
 \ttindex{A+\{B\}}
 
 \begin{coq_example*}
-Inductive sumor (A:Set) (B:Prop) : Set := inleft (_:A) | inright (_:B).
+Inductive sumor (A:Set) (B:Prop) : Set :=
+| inleft (_:A)
+| inright (_:B).
 \end{coq_example*}
 
 We may define variants of the axiom of choice, like in Martin-Löf's
@@ -675,7 +678,8 @@ induction principle.
 
 \begin{coq_example*}
 Theorem nat_case :
- forall (n:nat) (P:nat -> Prop), P 0 -> (forall m:nat, P (S m)) -> P n.
+ forall (n:nat) (P:nat -> Prop), 
+ P 0 -> (forall m:nat, P (S m)) -> P n.
 \end{coq_example*}
 \begin{coq_eval}
 Abort All.

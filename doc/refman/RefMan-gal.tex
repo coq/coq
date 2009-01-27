@@ -226,7 +226,7 @@ Chapter \ref{Addoc-syntax}.
 
 \begin{figure}[htbp]
 \begin{centerframe}
-\begin{tabular}{lcl@{\qquad}r}
+\begin{tabular}{lcl@{\quad~}r}  % warning: page width exceeded with \qquad 
 {\term} & ::= &
          {\tt forall} {\binderlist} {\tt ,} {\term}  &(\ref{products})\\
  & $|$ & {\tt fun} {\binderlist} {\tt =>} {\term} &(\ref{abstractions})\\
@@ -266,10 +266,10 @@ Chapter \ref{Addoc-syntax}.
 {\binderlist} & ::= & \nelist{\name}{} {\typecstr} & \ref{Binders} \\
  & $|$ & {\binder} \nelist{\binderlet}{} &\\
 &&&\\
-{\binder} & ::= &   {\name} & \ref{Binders} \\
+{\binder} & ::= &   {\name} & (\ref{Binders}) \\
  & $|$ & {\tt (} \nelist{\name}{} {\tt :} {\term} {\tt )} &\\  
 &&&\\
-{\binderlet} & ::= & {\binder} & \ref{Binders} \\
+{\binderlet} & ::= & {\binder} & (\ref{Binders}) \\
  & $|$ & {\tt (} {\name} {\typecstr} {\tt :=} {\term} {\tt )} &\\
 & & &\\
 {\name} & ::= & {\ident} &\\

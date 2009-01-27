@@ -19,7 +19,7 @@
       and Applications (TLCA'95), 1995.
 
     - [Geuvers] "Inconsistency of Classical Logic in Type Theory", 2001
-      (see www.cs.kun.nl/~herman/note.ps.gz).
+      (see http://www.cs.kun.nl/~herman/note.ps.gz).
 *)
 
 Section Paradox.

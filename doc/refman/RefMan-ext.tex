@@ -343,7 +343,7 @@ for all the arguments. For example, the preceding example can be written:
 Reset fst.
 \end{coq_eval}
 \begin{coq_example}
-Definition fst (A B:Set) (p:A * B) := let 'pair x _ := p in x.
+Definition fst (A B:Set) (p:A*B) := let 'pair x _ := p in x.
 \end{coq_example}
 
 This is useful to match deeper inside tuples and also to use notations
@@ -351,10 +351,10 @@ for the pattern, as the syntax {\tt let 'p := t in b} allows arbitrary
 patterns to do the deconstruction. For example:
 
 \begin{coq_example}
-Definition deep_tuple (A : Set) (x : (A * A) * (A * A)) : A * A * A * A :=
+Definition deep_tuple (A:Set) (x:(A*A)*(A*A)) : A*A*A*A :=
   let '((a,b), (c, d)) := x in (a,b,c,d).
 Notation " x 'with' p " := (exist _ x p) (at level 20).
-Definition proj1_sig' (A :Set) (P : A -> Prop) (t:{ x : A | P x }) : A :=
+Definition proj1_sig' (A:Set) (P:A->Prop) (t:{ x:A | P x }) : A :=
   let 'x with p := t in x.
 \end{coq_example}
 
