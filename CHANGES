@@ -191,7 +191,8 @@ Notations, coercions, implicit arguments and type inference
   pattern-matching problems.
 - Experimental allowance for omission of the clauses easily detectable as
   impossible in pattern-matching problems.
-- Improved inference of implicit arguments.
+- Improved inference of implicit arguments, now working inside record
+  declarations.
 - New options "Set Maximal Implicit Insertion", "Set Reversible Pattern
   Implicit", "Set Strongly Strict Implicit" and "Set Printing Implicit
   Defensive" for controlling inference and use of implicit arguments.
