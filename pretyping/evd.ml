@@ -300,6 +300,9 @@ let is_defined (sigma,_) = is_defined sigma
 let existential_value (sigma,_) = existential_value sigma
 let existential_type (sigma,_) = existential_type sigma
 let existential_opt_value (sigma,_) = existential_opt_value sigma
+let eq_evar_map x y = x == y ||
+  (Evarmap.equal eq_evar_info (fst x) (fst y) &&
+      UniverseMap.equal (=) (snd x) (snd y))
 
 let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
 
