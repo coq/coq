@@ -1269,7 +1269,7 @@ Module Make (X: OrderedType) <: S with Module E := X.
   case_eq (equal s s'); intro H; [left | right].
   apply equal_2; auto.
   intro H'; rewrite equal_1 in H; auto; discriminate.
-  Qed.
+  Defined.
 
  End Spec.
 
