@@ -746,53 +746,12 @@ Module Raw (X: DecidableType).
   Definition eq_dec : forall (s s':t)(Hs:NoDup s)(Hs':NoDup s'), 
    { eq s s' }+{ ~eq s s' }.
   Proof.
-  unfold eq.
-  induction s; intros s'.
-  (* nil *)
-   destruct s'; [left|right].
-   firstorder.
-   unfold not, Equal.
-   intros H; generalize (H e); clear H.
-   rewrite InA_nil, InA_cons; intuition.
-  (* cons *)
-   intros.
-   case_eq (mem a s'); intros H; 
-    [ destruct (IHs (remove a s')) as [H'|H']; 
-      [ | | left|right]|right]; 
-    clear IHs.
-   inversion_clear Hs; auto.
-   apply remove_unique; auto.
-   (* In a s' /\ s [=] remove a s' *)
-   generalize (mem_2 H); clear H; intro H.
-   unfold Equal in *; intros b.
-   rewrite InA_cons; split.
-   destruct 1.
-   apply In_eq with a; auto.
-   rewrite H' in H0.
-   apply remove_3 with a; auto.
-   destruct (X.eq_dec b a); [left|right]; auto.
-   rewrite H'.
-   apply remove_2; auto.
-   (* In a s' /\ ~ s [=] remove a s' *)
-   generalize (mem_2 H); clear H; intro H.
-   contradict H'.
-   unfold Equal in *; intros b.
-   split; intros.
-   apply remove_2; auto.
-   inversion_clear Hs.
-   contradict H1; apply In_eq with b; auto.
-   rewrite <- H'; rewrite InA_cons; auto.
-   assert (In b s') by (apply remove_3 with a; auto).
-   rewrite <- H', InA_cons in H1; destruct H1; auto.
-   elim (remove_1 Hs' (X.eq_sym H1) H0).
-   (* ~ In a s' *)
-   assert (~In a s').
-    red; intro H'; rewrite (mem_1 H') in H; discriminate.
-   contradict H0.
-   unfold Equal in *.
-   rewrite <- H0.
-   rewrite InA_cons; auto.
-  Qed.
+  intros.
+  change eq with Equal.
+  case_eq (equal s s'); intro H; [left | right].
+  apply equal_2; auto.
+  intro H'; rewrite equal_1 in H; auto; discriminate.
+  Defined.
 
   End ForNotations.
 End Raw.
@@ -993,6 +952,6 @@ Module Make (X: DecidableType) <: WS with Module E := X.
   { eq s s' }+{ ~eq s s' }.
  Proof. 
   intros s s'; exact (Raw.eq_dec s.(unique) s'.(unique)). 
- Qed.
+ Defined.
 
 End Make.
