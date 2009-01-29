@@ -66,6 +66,11 @@ TACTIC EXTEND eapply
   [ "eapply" constr_with_bindings(c) ] -> [ e_resolve_with_bindings_tac c ]
 END
 
+TACTIC EXTEND simple_eapply (* Forward compatibility with 8.2 *)
+  [ "simple" "eapply" constr_with_bindings(c) ] ->
+    [ e_resolve_with_bindings_tac c ]
+END
+
 let vernac_e_resolve_constr c = h_eapply (c,NoBindings)
 
 let e_constructor_tac boundopt i lbind gl = 

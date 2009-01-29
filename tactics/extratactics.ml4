@@ -405,3 +405,10 @@ TACTIC EXTEND apply_in
 | ["apply" constr_with_bindings(c) "," constr_with_bindings_list_sep(cl,",") 
    "in" hyp(id) ] -> [ apply_in id (c::cl) ]
 END
+
+TACTIC EXTEND simple_apply_in (* Forward compatibility with 8.2 *)
+| ["simple" "apply" constr_with_bindings(c) "in" hyp(id) ] ->
+    [ apply_in id [c] ]
+| ["simple" "apply" constr_with_bindings(c) "," 
+    constr_with_bindings_list_sep(cl,",") "in" hyp(id) ] -> [ apply_in id (c::cl) ]
+END

@@ -312,6 +312,8 @@ GEXTEND Gram
       | IDENT "vm_cast_no_check"; c = constr -> TacVmCastNoCheck c
 
       | IDENT "apply"; cl = constr_with_bindings -> TacApply cl
+      | IDENT "simple"; IDENT "apply"; (* Forward compatibility with 8.2 *)
+	  cl = constr_with_bindings -> TacApply cl
       | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (cl,el)
       | IDENT "elimtype"; c = constr -> TacElimType c
