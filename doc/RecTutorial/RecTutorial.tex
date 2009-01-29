@@ -1890,11 +1890,13 @@ condition ``if $R$ is predicative''.}
 
 
 \begin{center}
-\renewcommand{\multirowsetup}{\centering} \newlength{\LL}
-\settowidth{\LL}{$x : R : s_1$}
+%%% displease hevea less by using * in multirow rather than \LL
+\renewcommand{\multirowsetup}{\centering}
+%\newlength{\LL}
+%\settowidth{\LL}{$x : R : U_2$}
 \begin{tabular}{|c|c|c|c|c|}
 \hline
-\multirow{5}{\LL}{$x : R : U_2$} &
+\multirow{5}*{$x : R : U_2$} &
 \multicolumn{4}{|c|}{$Q : U_1$}\\
 \hline
 &                 &\textsl{Set}      & \textsl{Prop} & \textsl{Type}\\

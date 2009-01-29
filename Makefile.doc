@@ -66,6 +66,9 @@ endif
 HIDEBIBTEXINFO=| grep -v "^A level-1 auxiliary file"
 SHOWMAKEINDEXERROR=egrep "^!! Input index error|^** Input style error|^   --"
 
+# Empty subsection levels in faq are on purpose
+HEVEAFAQFILTER=|& grep -v "^Warning: List with no item"
+
 ######################################################################
 # Common
 ######################################################################
@@ -162,7 +165,7 @@ doc/faq/FAQ.v.pdf: doc/common/version.tex doc/common/title.tex doc/faq/FAQ.v.dvi
 	../tools/show_latex_messages FAQ.v.log)
 
 doc/faq/FAQ.v.html: doc/faq/FAQ.v.dvi # to ensure FAQ.v.bbl
-	(cd doc/faq; $(HEVEA) $(HEVEAOPTS) FAQ.v.tex)
+	(cd doc/faq; ($(HEVEA) $(HEVEAOPTS) FAQ.v.tex $(HEVEAFAQFILTER)))
 
 doc/faq/html/index.html: doc/faq/FAQ.v.html
 	- rm -rf doc/faq/html

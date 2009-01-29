@@ -181,7 +181,7 @@ let simplif ist =
         | id: ?X1 |- _ => $t_is_conj; elim id; do 2 intro; clear id
         | id: (Coq.Init.Logic.iff _ _) |- _ => elim id; do 2 intro; clear id
         | id: ?X1 |- _ => $t_is_disj; elim id; intro; clear id
-        | id0: ?X1-> ?X2, id1: ?X1|- _ =>
+        | id0: ?X1 -> ?X2, id1: ?X1|- _ =>
 	    (* generalize (id0 id1); intro; clear id0 does not work
 	       (see Marco Maggiesi's bug PR#301)
 	    so we instead use Assert and exact. *)
@@ -201,7 +201,7 @@ let simplif ist =
             clear id
         | id: ?X1 -> ?X2|- _ =>
           $t_flatten_contravariant_disj
-	  (* moved from "id:(?A\/?B)->?X2|-" to "?A->?X2|-" and "?B->?X2|-" *)
+	  (* moved from "id:(?A\/?B)->?X2|-" to "?A->?X2,?B->?X2|-" *)
         | |- ?X1 => $t_is_conj; split
         | |- (Coq.Init.Logic.iff _ _) => split
         end;
@@ -216,7 +216,7 @@ let rec tauto_intuit t_reduce solver ist =
   <:tactic<
    ($t_simplif;$t_axioms
    || match reverse goal with
-      | id:(?X1-> ?X2)-> ?X3|- _ =>
+      | id:(?X1 -> ?X2)-> ?X3|- _ =>
 	  cut X3;
 	    [ intro; clear id; $t_tauto_intuit 
 	    | cut (X1 -> X2);
