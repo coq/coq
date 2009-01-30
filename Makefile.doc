@@ -67,7 +67,7 @@ HIDEBIBTEXINFO=| grep -v "^A level-1 auxiliary file"
 SHOWMAKEINDEXERROR=egrep "^!! Input index error|^** Input style error|^   --"
 
 # Empty subsection levels in faq are on purpose
-HEVEAFAQFILTER=|& grep -v "^Warning: List with no item"
+HEVEAFAQFILTER=2>&1 | grep -v "^Warning: List with no item"
 
 ######################################################################
 # Common
