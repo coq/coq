@@ -137,17 +137,18 @@ let all_subdirs dir =
 (* usage *)
 let usage () =
   prerr_endline "Usage: coqmktop <options> <ocaml options> files
-Flags.are:
+Flags are:
   -coqlib dir    Specify where the Coq object files are
   -camlbin dir   Specify where the OCaml binaries are
   -camlp4bin dir Specify where the CAmp4/5 binaries are
   -o exec-file   Specify the name of the resulting toplevel
   -boot          Run in boot mode
-  -opt           Compile in native code
-  -full          Link high level tactics
-  -top           Build Coq on a ocaml toplevel (incompatible with -opt)
-  -searchisos    Build a toplevel for SearchIsos
+  -echo          Print calls to external commands
   -ide           Build a toplevel for the Coq IDE
+  -full          Link high level tactics
+  -opt           Compile in native code
+  -searchisos    Build a toplevel for SearchIsos
+  -top           Build Coq on a OCaml toplevel (incompatible with -opt)
   -R dir         Specify recursively directories for Ocaml\n";
   exit 1
 
