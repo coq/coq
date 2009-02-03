@@ -220,7 +220,7 @@ GEXTEND Gram
       | "CoInductive" -> (CoInductive,CoFinite) ] ]
   ;
   infer_token:
-    [ [ "Infer" -> true | -> false ] ]
+    [ [ IDENT "Infer" -> true | -> false ] ]
   ;
   record_token:
     [ [ IDENT "Record" -> (Record,BiFinite)
