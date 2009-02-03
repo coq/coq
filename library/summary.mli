@@ -28,5 +28,9 @@ val section_unfreeze_summaries : frozen -> unit
 val module_unfreeze_summaries : frozen -> unit
 val init_summaries : unit -> unit
 
-
+(** Beware: if some code is dynamically loaded via dynlink after the
+    initialization of Coq, the init functions of any summary declared
+    by this code may not be run. It is hence the responsability of
+    plugins to initialize themselves properly.
+*)
 

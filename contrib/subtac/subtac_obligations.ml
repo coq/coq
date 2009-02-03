@@ -63,7 +63,7 @@ let assumption_message id =
   Flags.if_verbose message ((string_of_id id) ^ " is assumed")
 
 let default_tactic : Proof_type.tactic ref = ref Refiner.tclIDTAC
-let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Obj.magic ())
+let default_tactic_expr : Tacexpr.glob_tactic_expr ref = ref (Tacexpr.TacId [])
 
 let set_default_tactic t = default_tactic_expr := t; default_tactic := Tacinterp.eval_tactic t
 
@@ -133,6 +133,12 @@ let freeze () = !from_prg, !default_tactic_expr
 let unfreeze (v, t) = from_prg := v; set_default_tactic t
 let init () =
   from_prg := ProgMap.empty; set_default_tactic (Subtac_utils.tactics_call "obligation_tactic" [])
+
+(** Beware: if this code is dynamically loaded via dynlink after the start
+    of Coq, then this [init] function will not be run by [Lib.init ()].
+    Luckily, here we can launch [init] at load-time. *)
+
+let _ = init ()
 
 let _ = 
   Summary.declare_summary "program-tcc-table"
