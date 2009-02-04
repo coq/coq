@@ -290,7 +290,7 @@ let commands =
   | ("Hypothesis" | "Hypotheses")
   | "End"
 
-let end_kw = "Proof" | "Qed" | "Defined" | "Save" | "Admitted" | "Abort"
+let end_kw = "Qed" | "Defined" | "Save" | "Admitted" | "Abort"
 
 let extraction = 
   "Extraction"
@@ -393,7 +393,8 @@ rule coq_bol = parse
 	if not (!in_proof && !Cdglobals.gallina) then 
 	  begin backtrack lexbuf; body_bol lexbuf end 
 	else
-	  skip_to_dot lexbuf 
+	  let eol = skip_to_dot lexbuf in
+	    if eol then Output.line_break (); eol
       in
 	in_proof := false;
 	if eol then coq_bol lexbuf else coq lexbuf }
@@ -492,7 +493,8 @@ and coq = parse
 	if not (!in_proof && !Cdglobals.gallina) then 
 	  begin backtrack lexbuf; body lexbuf end 
 	else
-	  skip_to_dot lexbuf 
+	  let eol = skip_to_dot lexbuf in
+	    if eol then Output.line_break (); eol
       in
 	in_proof := false;
 	if eol then coq_bol lexbuf else coq lexbuf }
@@ -513,8 +515,7 @@ and coq = parse
 	  if not !Cdglobals.gallina then 
 	    begin backtrack lexbuf; body lexbuf end 
 	  else 
-	    let eol = skip_to_dot lexbuf in
-	      if eol then Output.line_break (); eol
+	    skip_to_dot lexbuf
 	in 
 	  if eol then coq_bol lexbuf else coq lexbuf}
       
