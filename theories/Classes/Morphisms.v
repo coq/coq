@@ -118,7 +118,7 @@ Proof. simpl_relation. apply subr. apply H. apply subl. apply H0. Qed.
 
 (** And of course it is reflexive. *)
 
-Instance morphisms_subrelation_refl : ! subrelation A R R | 10.
+Instance morphisms_subrelation_refl : ! subrelation A R R.
 Proof. simpl_relation. Qed.
 
 (** [Morphism] is itself a covariant morphism for [subrelation]. *)
@@ -151,10 +151,10 @@ Hint Extern 5 (@Morphism _ _ _) => subrelation_tac : typeclass_instances.
 
 (** Essential subrelation instances for [iff], [impl] and [pointwise_relation]. *)
 
-Instance iff_impl_subrelation : subrelation iff impl.
+Instance iff_impl_subrelation : subrelation iff impl | 2.
 Proof. firstorder. Qed.
 
-Instance iff_inverse_impl_subrelation : subrelation iff (inverse impl).
+Instance iff_inverse_impl_subrelation : subrelation iff (inverse impl) | 2.
 Proof. firstorder. Qed.
 
 Instance pointwise_subrelation {A} `(sub : subrelation B R R') :
