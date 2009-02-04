@@ -2031,15 +2031,22 @@ let ids_of_constr vars c =
     | _ -> fold_constr aux vars c
   in aux vars c
 
+let mk_term_eq env sigma ty t ty' t' =
+  if Reductionops.is_conv env sigma ty ty' then
+    mkEq ty t t', mkRefl ty' t'
+  else
+    mkHEq ty t ty' t', mkHRefl ty' t'
+
 let make_abstract_generalize gl id concl dep ctx c eqs args refls = 
   let meta = Evarutil.new_meta() in
-  let term, typ = mkVar id, pf_get_hyp_typ gl id in
+  let term, typ = mkVar id, pf_get_hyp_typ gl id (* de Bruijn closed! *) in
   let eqslen = List.length eqs in
     (* Abstract by the "generalized" hypothesis equality proof if necessary. *)
-  let abshypeq = 
+  let abshypeq, abshypt = 
     if dep then 
-      mkProd (Anonymous, mkHEq (lift 1 c) (mkRel 1) typ term, lift 1 concl)
-    else concl
+      let eq, refl = mk_term_eq (push_rel_context ctx (pf_env gl)) (project gl) (lift 1 c) (mkRel 1) typ term in
+	mkProd (Anonymous, eq, lift 1 concl), [| refl |]
+    else concl, [||]
   in
     (* Abstract by equalitites *)
   let eqs = lift_togethern 1 eqs in (* lift together and past genarg *)
@@ -2057,8 +2064,7 @@ let make_abstract_generalize gl id concl dep ctx c eqs args refls =
     (* Apply the reflexivity proofs on the indices. *)
   let appeqs = mkApp (instc, Array.of_list refls) in
     (* Finaly, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
-  let newc = if dep then mkApp (appeqs, [| mkHRefl typ term |]) else appeqs in
-    newc
+    mkApp (appeqs, abshypt)
       
 let abstract_args gl id = 
   let c = pf_get_hyp_typ gl id in
@@ -2118,12 +2124,14 @@ let abstract_args gl id =
 		mkApp (f, pars), args
 	  | _ -> f, args
 	in
-	let arity, ctx, ctxenv, c', args, eqs, refls, vars, env = 
-	  Array.fold_left aux (pf_type_of gl f,[],env,f,[],[],[],[],env) args
-	in
-	let args, refls = List.rev args, List.rev refls in
-	  Some (make_abstract_generalize gl id concl dep ctx c' eqs args refls,
-	       dep, succ (List.length ctx), vars)
+	  (match args with [||] -> None
+	  | _ ->
+	      let arity, ctx, ctxenv, c', args, eqs, refls, vars, env = 
+		Array.fold_left aux (pf_type_of gl f,[],env,f,[],[],[],[],env) args
+	      in
+	      let args, refls = List.rev args, List.rev refls in
+		Some (make_abstract_generalize gl id concl dep ctx c' eqs args refls,
+		     dep, succ (List.length ctx), vars))
     | _ -> None
 
 let abstract_generalize id ?(generalize_vars=true) gl =
