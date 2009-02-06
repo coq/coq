@@ -128,7 +128,6 @@ open Hipattern
 open Inv
 open Leminv
 open Refine
-open Setoid_replace
 open Tacinterp
 open Tacticals
 open Tactics
