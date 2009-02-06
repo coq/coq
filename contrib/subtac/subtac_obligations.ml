@@ -288,7 +288,7 @@ let declare_obligation obl body =
 	print_message (Subtac_utils.definition_message obl.obl_name);
 	{ obl with obl_body = Some (mkConst constant) }
 	  
-let red = Reductionops.nf_betaiota
+let red = Reductionops.nf_betaiota Evd.empty
 
 let init_prog_info n b t deps fixkind notations obls impls kind hook =
   let obls' = 

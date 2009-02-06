@@ -229,7 +229,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
            | None ->
 	       lambda_name env
 		 (n,t,process_constr (push_rel d env) (i+1)
-		    (whd_beta (applist (lift 1 f, [(mkRel 1)])))
+		    (whd_beta Evd.empty (applist (lift 1 f, [(mkRel 1)])))
 		    (cprest,rest))
            | Some(_,f_0) -> 
 	       let nF = lift (i+1+decF) f_0 in
@@ -237,7 +237,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	       let arg = process_pos env' nF (lift 1 t) in 
                lambda_name env
 		 (n,t,process_constr env' (i+1)
-		    (whd_beta (applist (lift 1 f, [(mkRel 1); arg])))
+		    (whd_beta Evd.empty (applist (lift 1 f, [(mkRel 1); arg])))
 		    (cprest,rest)))
     | (n,Some c,t as d)::cprest, rest ->
 	mkLetIn

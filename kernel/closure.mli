@@ -85,7 +85,9 @@ type table_key = id_key
 type 'a infos
 val ref_value_cache: 'a infos -> table_key -> 'a option
 val info_flags: 'a infos -> reds
-val create: ('a infos -> constr -> 'a) -> reds -> env -> 'a infos
+val create: ('a infos -> constr -> 'a) -> reds -> env ->
+  (existential -> constr option) -> 'a infos
+val evar_value : 'a infos -> existential -> constr option
 
 (************************************************************************)
 (*s Lazy reduction. *)
@@ -111,7 +113,7 @@ type fterm =
   | FLambda of int * (name * constr) list * constr * fconstr subs
   | FProd of name * fconstr * fconstr
   | FLetIn of name * fconstr * fconstr * constr * fconstr subs
-  | FEvar of existential_key * fconstr array
+  | FEvar of existential * fconstr subs
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
@@ -156,7 +158,8 @@ val destFLambda :
 
 (* Global and local constant cache *)
 type clos_infos
-val create_clos_infos : reds -> env -> clos_infos
+val create_clos_infos :
+  ?evars:(existential->constr option) -> reds -> env -> clos_infos
 
 (* Reduction function *)
 

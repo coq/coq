@@ -336,7 +336,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 *)
   match kind_of_term trm with
     | Meta _ ->
-	let conclty = nf_betaiota conclty in
+	let conclty = nf_betaiota sigma conclty in
 	  if !check && occur_meta conclty then
 	    raise (RefinerError (MetaInType conclty));
 	  (mk_goal hyps conclty)::goalacc, conclty
@@ -390,7 +390,7 @@ and mk_hdgoals sigma goal goalacc trm =
   match kind_of_term trm with
     | Cast (c,_, ty) when isMeta c ->
 	check_typability env sigma ty;
-	(mk_goal hyps (nf_betaiota ty))::goalacc,ty
+	(mk_goal hyps (nf_betaiota sigma ty))::goalacc,ty
 
     | Cast (t,_, ty) ->
 	check_typability env sigma ty;
@@ -502,7 +502,7 @@ let prim_refiner r sigma goal =
 	       raise (RefinerError IntroNeedsProduct))
 	
     | Cut (b,replace,id,t) ->
-        let sg1 = mk_goal sign (nf_betaiota t) in
+        let sg1 = mk_goal sign (nf_betaiota sigma t) in
 	let sign,cl,sigma =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in

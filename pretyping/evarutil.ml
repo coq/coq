@@ -122,7 +122,7 @@ let evars_to_metas sigma (emap, c) =
   let emap = nf_evars emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let change_exist evar =
-    let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
+    let ty = nf_betaiota emap (existential_type emap evar) in
     let n = new_meta() in
     mkCast (mkMeta n, DEFAULTcast, ty) in
   let rec replace c =
@@ -909,7 +909,7 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
 	map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
 	  imitate envk t in
 
-  let rhs = whd_beta rhs (* heuristic *) in
+  let rhs = whd_beta (evars_of evd) rhs (* heuristic *) in
   let body = imitate (env,0) rhs in
   (!evdref,body)
 
@@ -963,7 +963,7 @@ and evar_define env (evk,_ as ev) rhs evd =
  *)
 
 let has_undefined_evars evd t = 
-  try let _ = local_strong (whd_ise (evars_of evd)) t in false
+  try let _ = local_strong whd_ise (evars_of evd) t in false
   with Uninstantiated_evar _ -> true
 
 let is_ground_term evd t =

@@ -763,7 +763,7 @@ let extract_pftreestate pts =
       else
         str "Attempt to save a proof with existential variables still non-instantiated");
   let env = Global.env_of_context pts.tpf.goal.evar_hyps in
-  nf_betaiotaevar_preserving_vm_cast env pts.tpfsigma pfterm
+  nf_betaiota_preserving_vm_cast env pts.tpfsigma pfterm
   (* strong whd_betaiotaevar env pts.tpfsigma pfterm *)
   (***
   local_strong (Evarutil.whd_ise (ts_it pts.tpfsigma)) pfterm

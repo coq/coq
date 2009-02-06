@@ -293,7 +293,8 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	(new_end_of_type,0,witness_fun)
 	context
     in
-    let new_type_of_hyp = Reductionops.nf_betaiota  new_type_of_hyp in 
+    let new_type_of_hyp =
+      Reductionops.nf_betaiota Evd.empty new_type_of_hyp in 
     let new_ctxt,new_end_of_type = 
       decompose_prod_n_assum ctxt_size new_type_of_hyp 
     in 
@@ -759,7 +760,8 @@ let build_proof
 		  | Const _ ->
 		      do_finalize dyn_infos  g
 		  | Lambda _ -> 
-		      let new_term = Reductionops.nf_beta dyn_infos.info in 
+		      let new_term =
+                        Reductionops.nf_beta Evd.empty dyn_infos.info in 
 		      build_proof do_finalize {dyn_infos with info = new_term} 
 			g
 		  | LetIn _ -> 
@@ -1107,7 +1109,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	    let bodies_with_all_params = 
 	      Array.map 
 		(fun body -> 
-		   Reductionops.nf_betaiota 
+		   Reductionops.nf_betaiota Evd.empty
 		     (applist(substl (List.rev (Array.to_list all_funs_with_full_params)) body,
 			      List.rev_map var_of_decl princ_params))
 		)
@@ -1144,12 +1146,12 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		   let body_with_param,num = 
 		     let body = get_body fnames.(i) in 
 		     let body_with_full_params = 
-		       Reductionops.nf_betaiota (
+		       Reductionops.nf_betaiota Evd.empty (
 			 applist(body,List.rev_map var_of_decl full_params))
 		     in
 		     match kind_of_term body_with_full_params with 
 		       | Fix((_,num),(_,_,bs)) -> 
-			       Reductionops.nf_betaiota
+			       Reductionops.nf_betaiota Evd.empty
 				 (
 				   (applist
 				      (substl 
@@ -1225,7 +1227,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info = 
-		       Reductionops.nf_betaiota 
+		       Reductionops.nf_betaiota Evd.empty
 			 (applist(fix_body,List.rev_map mkVar args_id));
 		     eq_hyps = []
 		   }
@@ -1287,7 +1289,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		     nb_rec_hyps = -100;
 		     rec_hyps = [];
 		     info = 
-		       Reductionops.nf_betaiota 
+		       Reductionops.nf_betaiota Evd.empty 
 			 (applist(fbody_with_full_params,
 				  (List.rev_map var_of_decl princ_params)@
 				    (List.rev_map mkVar args_id)

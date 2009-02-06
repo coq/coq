@@ -120,7 +120,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs ((c,l) : open_constr with_
     let sigma, c' = c in
     let sigma = Evd.merge sigma (project gl) in
     let ctype = get_type_of env sigma c' in 
-    let rels, t = decompose_prod (whd_betaiotazeta ctype) in
+    let rels, t = decompose_prod (whd_betaiotazeta sigma ctype) in
       match match_with_equality_type t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
@@ -739,7 +739,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       else
 	error "Cannot solve an unification problem."
     else
-      let (a,p_i_minus_1) = match whd_beta_stack p_i with
+      let (a,p_i_minus_1) = match whd_beta_stack (evars_of !evdref) p_i with
 	| (_sigS,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausal_form: should be a sigma type" in
       let ev = Evarutil.e_new_evar evdref env a in

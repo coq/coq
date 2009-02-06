@@ -54,17 +54,18 @@ type state = constr * constr stack
 
 type contextual_reduction_function = env -> evar_map -> constr -> constr
 type reduction_function = contextual_reduction_function
-type local_reduction_function = constr -> constr
+type local_reduction_function = evar_map -> constr -> constr
 
 type contextual_stack_reduction_function = 
     env -> evar_map -> constr -> constr * constr list
 type stack_reduction_function = contextual_stack_reduction_function
-type local_stack_reduction_function = constr -> constr * constr list
+type local_stack_reduction_function =
+    evar_map -> constr -> constr * constr list
 
 type contextual_state_reduction_function = 
     env -> evar_map -> state -> state
 type state_reduction_function = contextual_state_reduction_function
-type local_state_reduction_function = state -> state
+type local_state_reduction_function = evar_map -> state -> state
 
 (* Removes cast and put into applicative form *)
 val whd_stack : local_stack_reduction_function
@@ -92,13 +93,12 @@ val nf_betaiota : local_reduction_function
 val nf_betadeltaiota : reduction_function
 val nf_evar : evar_map -> constr -> constr
 
-val nf_betaiotaevar_preserving_vm_cast : reduction_function
+val nf_betaiota_preserving_vm_cast : reduction_function
 (* Lazy strategy, weak head reduction *)
 val whd_evar :  evar_map -> constr -> constr
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function
 val whd_betaiotazeta : local_reduction_function
-val whd_betaiotazetaevar : contextual_reduction_function
 val whd_betadeltaiota :  contextual_reduction_function
 val whd_betadeltaiota_nolet :  contextual_reduction_function
 val whd_betaetalet : local_reduction_function
@@ -106,7 +106,7 @@ val whd_betalet : local_reduction_function
 
 val whd_beta_stack : local_stack_reduction_function
 val whd_betaiota_stack : local_stack_reduction_function
-val whd_betaiotazetaevar_stack : contextual_stack_reduction_function
+val whd_betaiotazeta_stack : local_stack_reduction_function
 val whd_betadeltaiota_stack : contextual_stack_reduction_function
 val whd_betadeltaiota_nolet_stack : contextual_stack_reduction_function
 val whd_betaetalet_stack : local_stack_reduction_function
@@ -114,7 +114,7 @@ val whd_betalet_stack : local_stack_reduction_function
 
 val whd_beta_state : local_state_reduction_function
 val whd_betaiota_state : local_state_reduction_function
-val whd_betaiotazetaevar_state : contextual_state_reduction_function
+val whd_betaiotazeta_state : local_state_reduction_function
 val whd_betadeltaiota_state : contextual_state_reduction_function
 val whd_betadeltaiota_nolet_state : contextual_state_reduction_function
 val whd_betaetalet_state : local_state_reduction_function
@@ -128,12 +128,6 @@ val whd_delta :  reduction_function
 val whd_betadelta_stack :  stack_reduction_function
 val whd_betadelta_state :  state_reduction_function
 val whd_betadelta :  reduction_function
-val whd_betaevar_stack :  stack_reduction_function
-val whd_betaevar_state :  state_reduction_function
-val whd_betaevar :  reduction_function
-val whd_betaiotaevar_stack :  stack_reduction_function
-val whd_betaiotaevar_state :  state_reduction_function
-val whd_betaiotaevar :  reduction_function
 val whd_betadeltaeta_stack :  stack_reduction_function
 val whd_betadeltaeta_state :  state_reduction_function
 val whd_betadeltaeta :  reduction_function
@@ -143,8 +137,9 @@ val whd_betadeltaiotaeta :  reduction_function
 
 val whd_eta : constr -> constr
 
+(* Various reduction functions *)
 
-
+val safe_evar_value : evar_map -> existential -> constr option
 
 val beta_applist : constr * constr list -> constr
 
@@ -187,7 +182,7 @@ val whd_programs :  reduction_function
 type fix_reduction_result = NotReducible | Reduced of state
 
 val fix_recarg : fixpoint -> constr stack -> (int * constr) option
-val reduce_fix : local_state_reduction_function -> fixpoint
+val reduce_fix : local_state_reduction_function -> evar_map -> fixpoint
    -> constr stack -> fix_reduction_result
 
 (*s Querying the kernel conversion oracle: opaque/transparent constants *)

@@ -204,7 +204,7 @@ let invert_name labs l na0 env sigma ref = function
 		| None -> None
 		| Some c -> 
 		    let labs',ccl = decompose_lam c in
-		    let _, l' = whd_betalet_stack ccl in
+		    let _, l' = whd_betalet_stack sigma ccl in
 		    let labs' = List.map snd labs' in
 		    if labs' = labs & l = l' then Some (minfxargs,ref)
                     else None
@@ -234,7 +234,7 @@ let compute_consteval_direct sigma env ref =
 
 let compute_consteval_mutual_fix sigma env ref =
   let rec srec env minarg labs ref c =
-    let c',l = whd_betalet_stack c in
+    let c',l = whd_betalet_stack sigma c in
     let nargs = List.length l in
     match kind_of_term c' with
       | Lambda (na,t,g) when l=[] ->
@@ -378,7 +378,7 @@ let solve_arity_problem env sigma fxminargs c =
   let evm = ref sigma in
   let set_fix i = evm := Evd.define !evm i (mkVar vfx) in
   let rec check strict c =
-    let c' = whd_betaiotazeta c in
+    let c' = whd_betaiotazeta sigma c in
     let (h,rcargs) = decompose_app c' in
     match kind_of_term h with
         Evar(i,_) when Intmap.mem i fxminargs && not (Evd.is_defined !evm i) ->
@@ -418,14 +418,14 @@ let substl_checking_arity env subst c =
 
 
 
-let contract_fix_use_function env f
+let contract_fix_use_function env sigma f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies)) =
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
   let lbodies = list_tabulate make_Fi nbodies in
-  substl_checking_arity env (List.rev lbodies) (nf_beta bodies.(bodynum))
+  substl_checking_arity env (List.rev lbodies) (nf_beta sigma bodies.(bodynum))
 
-let reduce_fix_use_function env f whfun fix stack =
+let reduce_fix_use_function env sigma f whfun fix stack =
   match fix_recarg fix stack with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
@@ -438,17 +438,18 @@ let reduce_fix_use_function env f whfun fix stack =
         let stack' = stack_assign stack recargnum (app_stack recarg') in
 	(match kind_of_term recarg'hd with
            | Construct _ ->
-	       Reduced (contract_fix_use_function env f fix,stack')
+	       Reduced (contract_fix_use_function env sigma f fix,stack')
 	   | _ -> NotReducible)
 
-let contract_cofix_use_function env f
+let contract_cofix_use_function env sigma f
   (bodynum,(_names,_,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
   let subbodies = list_tabulate make_Fi nbodies in
-  substl_checking_arity env (List.rev subbodies) (nf_beta bodies.(bodynum))
+  substl_checking_arity env (List.rev subbodies)
+    (nf_beta sigma bodies.(bodynum))
 
-let reduce_mind_case_use_function func env mia =
+let reduce_mind_case_use_function func env sigma mia =
   match kind_of_term mia.mconstr with 
     | Construct(ind_sp,i) ->
 	let real_cargs = list_skipn mia.mci.ci_npar mia.mcargs in
@@ -476,11 +477,11 @@ let reduce_mind_case_use_function func env mia =
 	  else
 	    fun _ -> None in
 	let cofix_def =
-          contract_cofix_use_function env build_cofix_name cofix in
+          contract_cofix_use_function env sigma build_cofix_name cofix in
 	mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
     | _ -> assert false
 
-let special_red_case sigma env whfun (ci, p, c, lf)  =
+let special_red_case env sigma whfun (ci, p, c, lf)  =
   let rec redrec s = 
     let (constr, cargs) = whfun s in 
     if isEvalRef env constr then
@@ -489,7 +490,7 @@ let special_red_case sigma env whfun (ci, p, c, lf)  =
         | None -> raise Redelimination
         | Some gvalue ->
 	    if reducible_mind_case gvalue then
-	      reduce_mind_case_use_function constr env
+	      reduce_mind_case_use_function constr env sigma
 	        {mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
                 mci=ci; mlf=lf}
 	    else
@@ -514,15 +515,15 @@ let rec red_elim_const env sigma ref largs =
 	let c = reference_value sigma env ref in
 	let c', lrest = whd_betadelta_state env sigma (c,largs) in
 	let whfun = whd_simpl_state env sigma in
-        (special_red_case sigma env whfun (destCase c'), lrest)
+        (special_red_case env sigma whfun (destCase c'), lrest)
     | EliminationFix (min,minfxargs,infos) when stack_args_size largs >=min ->
 	let c = reference_value sigma env ref in
 	let d, lrest = whd_betadelta_state env sigma (c,largs) in
 	let f = make_elim_fun ([|Some (minfxargs,ref)|],infos) largs in
 	let whfun = whd_construct_state env sigma in
-	(match reduce_fix_use_function env f whfun (destFix d) lrest with
+	(match reduce_fix_use_function env sigma f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
-	   | Reduced (c,rest) -> (nf_beta c, rest))
+	   | Reduced (c,rest) -> (nf_beta sigma c, rest))
     | EliminationMutualFix (min,refgoal,refinfos)
 	when stack_args_size largs >= min ->
 	let rec descend ref args =
@@ -530,15 +531,15 @@ let rec red_elim_const env sigma ref largs =
 	  if ref = refgoal then
 	    (c,args)
 	  else
-	    let c', lrest = whd_betalet_state (c,args) in
+	    let c', lrest = whd_betalet_state sigma (c,args) in
 	    descend (destEvalRef c') lrest in
 	let (_, midargs as s) = descend ref largs in
 	let d, lrest = whd_betadelta_state env sigma s in
 	let f = make_elim_fun refinfos midargs in
 	let whfun = whd_construct_state env sigma in
-	(match reduce_fix_use_function env f whfun (destFix d) lrest with
+	(match reduce_fix_use_function env sigma f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
-	   | Reduced (c,rest) -> (nf_beta c, rest))
+	   | Reduced (c,rest) -> (nf_beta sigma c, rest))
     | _ -> raise Redelimination
 
 (* reduce to whd normal form or to an applied constant that does not hide
@@ -556,11 +557,11 @@ and whd_simpl_state env sigma s =
       | Cast (c,_,_) -> redrec (c, stack)
       | Case (ci,p,c,lf) ->
           (try 
-	    redrec (special_red_case sigma env redrec (ci,p,c,lf), stack)
+	    redrec (special_red_case env sigma redrec (ci,p,c,lf), stack)
 	  with
 	      Redelimination -> s)
       | Fix fix ->
-	  (try match reduce_fix (whd_construct_state env sigma) fix stack with
+	  (try match reduce_fix (whd_construct_state env) sigma fix stack with
             | Reduced s' -> redrec s'
 	    | NotReducible -> s
 	  with Redelimination -> s)
@@ -660,7 +661,7 @@ let whd_simpl_orelse_delta_but_fix_old env sigma c =
       | Cast (c,_,_) -> redrec (c, stack)
       | Case (ci,p,d,lf) ->
           (try
-             redrec (special_red_case sigma env whd_all (ci,p,d,lf), stack)
+             redrec (special_red_case env sigma whd_all (ci,p,d,lf), stack)
            with Redelimination -> 
 	     s)
       | Fix fix ->
@@ -795,7 +796,7 @@ let unfoldoccs env sigma ((nowhere_except_in,locs as plocs),name) c =
       error ((string_of_evaluable_ref env name)^" does not occur.");
     let rest = List.filter (fun o -> o >= nbocc) locs in
     if rest <> [] then error_invalid_occurrence rest;
-    nf_betaiota uc
+    nf_betaiota sigma uc
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c = 
@@ -824,10 +825,10 @@ let fold_commands cl env sigma c =
 
 (* call by value reduction functions *)
 let cbv_norm_flags flags env sigma t =
-  cbv_norm (create_cbv_infos flags env) (nf_evar sigma t)
+  cbv_norm (create_cbv_infos flags env sigma) t
 
-let cbv_beta = cbv_norm_flags beta empty_env Evd.empty
-let cbv_betaiota = cbv_norm_flags betaiota empty_env Evd.empty
+let cbv_beta = cbv_norm_flags beta empty_env
+let cbv_betaiota = cbv_norm_flags betaiota empty_env
 let cbv_betadeltaiota env sigma =  cbv_norm_flags betadeltaiota env sigma
 
 let compute = cbv_betadeltaiota
@@ -899,11 +900,11 @@ let one_step_reduce env sigma c =
       | Cast (c,_,_) -> redrec (c,stack)
       | Case (ci,p,c,lf) ->
           (try
-	     (special_red_case sigma env (whd_simpl_state env sigma)
+	     (special_red_case env sigma (whd_simpl_state env sigma)
 	       (ci,p,c,lf), stack)
            with Redelimination -> raise NotStepReducible)
       | Fix fix ->
-	  (match reduce_fix (whd_construct_state env sigma) fix stack with
+	  (match reduce_fix (whd_construct_state env) sigma fix stack with
              | Reduced s' -> s'
 	     | NotReducible -> raise NotStepReducible)
       | _ when isEvalRef env x ->
@@ -932,7 +933,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
   else
   (* lazily reduces to match the head of [t] with the expected [ref] *)
   let rec elimrec env t l = 
-    let c, _ = Reductionops.whd_stack t in
+    let c, _ = Reductionops.whd_stack sigma t in
     match kind_of_term c with
       | Prod (n,ty,t') ->
 	  if allow_product then
@@ -948,7 +949,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
 	    else raise Not_found
 	  with Not_found ->
           try 
-	    let t' = nf_betaiota (one_step_reduce env sigma t) in 
+	    let t' = nf_betaiota sigma (one_step_reduce env sigma t) in 
 	    elimrec env t' l
           with NotStepReducible ->
 	    errorlabstrm ""

@@ -40,15 +40,18 @@ val conv_sort      : sorts conversion_function
 val conv_sort_leq  : sorts conversion_function
 
 val trans_conv_cmp       : conv_pb -> constr trans_conversion_function
-
-val trans_conv           : constr trans_conversion_function
-val trans_conv_leq       : types trans_conversion_function
+val trans_conv           :
+  ?evars:(existential->constr option) -> constr trans_conversion_function
+val trans_conv_leq       :
+  ?evars:(existential->constr option) -> types trans_conversion_function
 
 val conv_cmp       : conv_pb -> constr conversion_function
-
-val conv           : constr conversion_function
-val conv_leq       : types conversion_function
-val conv_leq_vecti : types array conversion_function
+val conv           :
+  ?evars:(existential->constr option) -> constr conversion_function
+val conv_leq       :
+  ?evars:(existential->constr option) -> types conversion_function
+val conv_leq_vecti :
+  ?evars:(existential->constr option) -> types array conversion_function
 
 (* option for conversion *)
 val set_vm_conv : (conv_pb -> types conversion_function) -> unit

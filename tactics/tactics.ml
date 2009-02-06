@@ -753,7 +753,7 @@ let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
   let concl_nprod = nb_prod (pf_concl gl0) in
   let evm, c = c in
   let rec try_main_apply c gl =
-    let thm_ty0 = nf_betaiota (pf_type_of gl c) in
+    let thm_ty0 = nf_betaiota (project gl) (pf_type_of gl c) in
     let try_apply thm_ty nprod =
       let n = nb_prod thm_ty - nprod in
 	if n<0 then error "Applied theorem has not enough premisses.";
@@ -844,7 +844,7 @@ let progress_with_clause flags innerclause clause =
   with Failure _ -> error "Unable to unify."
 
 let apply_in_once_main flags innerclause (d,lbind) gl =
-  let thm = nf_betaiota (pf_type_of gl d) in
+  let thm = nf_betaiota gl.sigma (pf_type_of gl d) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with err ->
@@ -979,7 +979,8 @@ let specialize mopt (c,lbind) g =
     else 
       let clause = make_clenv_binding g (c,pf_type_of g c) lbind in
       let clause = clenv_unify_meta_types clause in
-      let (thd,tstack) = whd_stack (clenv_value clause) in
+      let (thd,tstack) =
+        whd_stack (evars_of clause.evd) (clenv_value clause) in
       let nargs = List.length tstack in
       let tstack = match mopt with 
 	| Some m -> 

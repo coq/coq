@@ -245,9 +245,9 @@ let typeur sigma metamap =
         let Inductiveops.IndType(_,realargs) =
           try Inductiveops.find_rectype env sigma (type_of env c)
           with Not_found -> Util.anomaly "type_of: Bad recursive type" in
-        let t = Reductionops.whd_beta (T.applist (p, realargs)) in
+        let t = Reductionops.whd_beta sigma (T.applist (p, realargs)) in
         (match Term.kind_of_term (DoubleTypeInference.whd_betadeltaiotacprop env sigma (type_of env t)) with
-          | T.Prod _ -> Reductionops.whd_beta (T.applist (t, [c]))
+          | T.Prod _ -> Reductionops.whd_beta sigma (T.applist (t, [c]))
           | _ -> t)
     | T.Lambda (name,c1,c2) ->
           T.mkProd (name, c1, type_of (Environ.push_rel (name,None,c1) env) c2)
@@ -390,7 +390,7 @@ Pp.ppnl (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-ty
           (* We need to refresh the universes because we are doing *)
           (* type inference on an already inferred type.           *)
           {D.synthesized =
-            Reductionops.nf_beta
+            Reductionops.nf_beta evar_map
              (CPropRetyping.get_type_of env evar_map
               (Termops.refresh_universes tt)) ;
            D.expected = None}

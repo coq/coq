@@ -62,7 +62,7 @@ let evar_apprec env evd stack c =
   in aux (c, append_stack_list stack empty_stack)
 
 let apprec_nohdbeta env evd c =
-  match kind_of_term (fst (Reductionops.whd_stack c)) with
+  match kind_of_term (fst (Reductionops.whd_stack (evars_of evd) c)) with
     | (Case _ | Fix _) -> applist (evar_apprec env evd [] c)
     | _ -> c
 

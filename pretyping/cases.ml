@@ -981,7 +981,8 @@ let specialize_predicate newtomatchs (names,(depna,_)) cs tms ccl =
   let copti = if depna<>Anonymous then Some (build_dependent_constructor cs) else None in
   (* The substituends argsi, copti are all defined in gamma, x1...xn *)
   (* We need _parallel_ bindings to get gamma, x1...xn, tms |- ccl'' *)
-  let ccl'' = whd_betaiota (subst_predicate (argsi, copti) ccl' tms) in
+  let ccl'' =
+    whd_betaiota Evd.empty (subst_predicate (argsi, copti) ccl' tms) in
   (* We adjust ccl st: gamma, x1..xn, x1..xn, tms |- ccl'' *)
   let ccl''' = liftn_predicate n (n+1) ccl'' tms in
   (* We finally get gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred'''*)
@@ -989,7 +990,8 @@ let specialize_predicate newtomatchs (names,(depna,_)) cs tms ccl =
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
   let pred= abstract_predicate env (evars_of !evdref) indf current dep tms p in
-  (pred, whd_betaiota (applist (pred, realargs@[current])), new_Type ())
+  (pred, whd_betaiota (evars_of !evdref)
+           (applist (pred, realargs@[current])), new_Type ())
 
 let adjust_predicate_from_tomatch ((_,oldtyp),_,(nadep,_)) typ pb =
   match typ, oldtyp with
@@ -1211,7 +1213,7 @@ and match_current pb tomatch =
 	    find_predicate pb.caseloc pb.env pb.evdref 
 	      pb.pred current indt (names,dep) pb.tomatch in
 	  let ci = make_case_info pb.env mind pb.casestyle in
-	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
+	  let case = mkCase (ci,nf_betaiota Evd.empty pred,current,brvals) in
 	  let inst = List.map mkRel deps in
 	  { uj_val = applist (case, inst);
 	    uj_type = substl inst typ }
@@ -1454,8 +1456,8 @@ let adjust_to_extended_env_and_remove_deps env extenv subst t =
 *)
 
 let abstract_tycon loc env evdref subst _tycon extenv t =
-  let t = nf_betaiota t in (* it helps in some cases to remove K-redex... *)
   let sigma = evars_of !evdref in
+  let t = nf_betaiota sigma t in (* it helps in some cases to remove K-redex *)
   let subst0,t0 = adjust_to_extended_env_and_remove_deps env extenv subst t in
   (* We traverse the type T of the original problem Xi looking for subterms
      that match the non-constructor part of the constraints (this part

@@ -28,7 +28,8 @@ let iota = ref 0
 let prune = ref 0
 
 let reset () =
-  beta := 0; delta := 0; zeta := 0; evar := 0; iota := 0; prune := 0
+  beta := 0; delta := 0; zeta := 0; evar := 0; iota := 0; evar := 0;
+  prune := 0
 
 let stop() =
   msgnl (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
@@ -83,7 +84,6 @@ module RedFlags = (struct
     r_delta : bool;
     r_const : transparent_state;
     r_zeta : bool;
-    r_evar : bool;
     r_iota : bool }
 
   type red_kind = BETA | DELTA | IOTA | ZETA
@@ -99,7 +99,6 @@ module RedFlags = (struct
     r_delta = false;
     r_const = all_opaque;
     r_zeta = false;
-    r_evar = false;
     r_iota = false }
 
   let red_add red = function
@@ -201,6 +200,7 @@ type 'a infos = {
   i_flags : reds;
   i_repr : 'a infos -> constr -> 'a;
   i_env : env;
+  i_sigma : existential -> constr option;
   i_rels : int * (int * constr) list;
   i_vars : (identifier * constr) list;
   i_tab : (table_key, 'a) Hashtbl.t }
@@ -226,6 +226,9 @@ let ref_value_cache info ref =
     | Not_found (* List.assoc *)
     | NotEvaluableConst _ (* Const *)
       -> None
+
+let evar_value info ev =
+  info.i_sigma ev
 
 let defined_vars flags env =
 (*  if red_local_const (snd flags) then*)
@@ -259,10 +262,11 @@ let rec mind_equiv env (kn1,i1) (kn2,i2) =
 
 let mind_equiv_infos info = mind_equiv info.i_env
 
-let create mk_cl flgs env =
+let create mk_cl flgs env evars =
   { i_flags = flgs;
     i_repr = mk_cl;
     i_env = env;
+    i_sigma = evars;
     i_rels = defined_rels flgs env;
     i_vars = defined_vars flgs env;
     i_tab = Hashtbl.create 17 }
@@ -314,7 +318,7 @@ and fterm =
   | FLambda of int * (name * constr) list * constr * fconstr subs
   | FProd of name * fconstr * fconstr
   | FLetIn of name * fconstr * fconstr * constr * fconstr subs
-  | FEvar of existential_key * fconstr array
+  | FEvar of existential * fconstr subs
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
@@ -581,8 +585,8 @@ let mk_clos_deep clos_fun env t =
     | LetIn (n,b,t,c) ->
         { norm = Red;
 	  term = FLetIn (n, clos_fun env b, clos_fun env t, c, env) }
-    | Evar(ev,args) ->
-	{ norm = Whnf; term = FEvar(ev,Array.map (clos_fun env) args) }
+    | Evar ev ->
+	{ norm = Red; term = FEvar(ev,env) }
 
 (* A better mk_clos? *)
 let mk_clos2 = mk_clos_deep mk_clos
@@ -632,7 +636,8 @@ let rec to_constr constr_fun lfts v =
 	mkLetIn (n, constr_fun lfts b,
 	            constr_fun lfts t,
 	            constr_fun (el_lift lfts) fc)
-    | FEvar (ev,args) -> mkEvar(ev,Array.map (constr_fun lfts) args)
+    | FEvar ((ev,args),env) ->
+        mkEvar(ev,Array.map (fun a -> constr_fun lfts (mk_clos2 env a)) args)
     | FLIFT (k,a) -> to_constr constr_fun (el_shft k lfts) a
     | FCLOS (t,env) ->
         let fr = mk_clos2 env t in
@@ -891,6 +896,10 @@ let rec knr info m stk =
         | (_,args,s) -> (m,args@s))
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
       knit info (subs_cons([|v|],e)) bd stk
+  | FEvar(ev,env) ->
+      (match evar_value info ev with
+          Some c -> knit info env c stk
+        | None -> (m,stk))
   | _ -> (m,stk)
 
 (* Computes the weak head normal form of a term *)
@@ -959,7 +968,8 @@ and norm_head info m =
           let fbds =
             Array.map (mk_clos (subs_liftn (Array.length na) e)) bds in
           mkFix(n,(na, Array.map (kl info) ftys, Array.map (kl info) fbds))
-      | FEvar(i,args) -> mkEvar(i, Array.map (kl info) args)
+      | FEvar((i,args),env) ->
+          mkEvar(i, Array.map (fun a -> kl info (mk_clos env a)) args)
       | t -> term_of_fconstr m
 
 (* Initialization and then normalization *)
@@ -982,7 +992,7 @@ let whd_stack infos m stk =
 (* cache of constants: the body is computed only when needed. *)
 type clos_infos = fconstr infos
 
-let create_clos_infos flgs env =
-  create (fun _ -> inject) flgs env
+let create_clos_infos ?(evars=fun _ -> None) flgs env =
+  create (fun _ -> inject) flgs env evars
 
 let unfold_reference = ref_value_cache
