@@ -338,7 +338,15 @@ struct
 end
 
 module EvkSet = Set.Make(EvkOrd)
-	
+
+let collect_vars c =
+  let rec collrec acc c =
+    match kind_of_term c with
+    | Var id -> list_add_set id acc
+    | _      -> fold_constr collrec acc c
+  in
+  collrec [] c
+
 let rec check_and_clear_in_constr evd c ids hist =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
@@ -370,16 +378,28 @@ let rec check_and_clear_in_constr evd c ids hist =
 		   corresponding to e where hypotheses of ids have been
 		   removed *)
 		let evi = Evd.find (evars_of !evd) e in
- 		let (nhyps,nargs,rids) = 
-  		  List.fold_right2 
- 		    (fun (rid,ob,c as h) a (hy,ar,ri) ->
- 		      match kind_of_term a with
- 			| Var id -> if List.mem id ids then (hy,ar,id::ri) else (h::hy,a::ar,ri)
- 			| _ -> (h::hy,a::ar,ri)
-  		    ) 	      
- 		    (Evd.evar_context evi) (Array.to_list l) ([],[],[]) in
+		let ctxt = Evd.evar_context evi in
+		let (nhyps,nargs,rids) =
+		  List.fold_right2 
+		    (fun (rid,ob,c as h) a (hy,ar,ri) ->
+		      (* Check if some id to clear occurs in the instance
+			 a of rid in ev and remember the dependency *)
+		      match 
+			List.filter (fun id -> List.mem id ids) (collect_vars a)
+		      with
+			| id :: _ -> (hy,ar,(rid,id)::ri)
+			| _ ->
+			    (* Check if some rid to clear in the context of ev
+			       has dependencies in another hyp of the context of ev
+			       and transitively remember the dependency *)
+			    match List.filter (fun (id,_) -> occur_var_in_decl (Global.env()) id h) ri with
+			      | (_,id') :: _ -> (hy,ar,(rid,id')::ri)
+			      | _ ->
+				  (* No dependency at all, we can keep this ev's context hyp *)
+				  (h::hy,a::ar,ri))
+		    ctxt (Array.to_list l) ([],[],[]) in
  		  (* nconcl must be computed ids (non instanciated hyps) *)
- 		let nconcl = check_and_clear_in_constr evd (evar_concl evi) rids (EvkSet.add e hist) in
+ 		let nconcl = check_and_clear_in_constr evd (evar_concl evi) (List.map fst rids) (EvkSet.add e hist) in
  		let env = Sign.fold_named_context push_named nhyps ~init:(empty_env) in
 		let ev'= e_new_evar evd env ~src:(evar_source e !evd) nconcl in
 		  evd := Evd.evar_define e ev' !evd;

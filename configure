@@ -6,8 +6,8 @@
 # 
 ##################################
 
-VERSION=8.1pl4
-DATE="Jan. 2008"
+VERSION=8.1
+DATE=`LANG=C date +"%B %Y"`
 
 # a local which command for sh
 which () {
