@@ -555,9 +555,16 @@ let rec remove_coercions inctx = function
 	      let l = list_skipn n args in
 	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
               (* Recursively remove the head coercions *)
-              (match remove_coercions true a with
-              | RApp (_,a,l') -> RApp (loc,a,l'@l)
-              | a -> RApp (loc,a,l))
+	      let a' = remove_coercions true a in
+	      (* Don't flatten App's in case of funclass so that
+		 (atomic) notations on [a] work; should be compatible
+		 since printer does not care whether App's are
+		 collapsed or not and notations with an implicit
+		 coercion using funclass either would have already
+		 been confused with ordinary application or would have need
+                 a surrounding context and the coercion to funclass would
+                 have been made explicit to match *)
+	      if l = [] then a' else RApp (loc,a',l)
 	  | _ -> c
       with Not_found -> c)
   | c -> c
