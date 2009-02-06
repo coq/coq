@@ -1200,7 +1200,7 @@ Hint Resolve Rmult_le_compat: real.
 
 Lemma Rmult_ge_compat :
   forall r1 r2 r3 r4,
-    0 <= r1 -> 0 <= r3 -> r1 <= r2 -> r3 <= r4 -> r1 * r3 <= r2 * r4.
+    r2 >= 0 -> r4 >= 0 -> r1 >= r2 -> r3 >= r4 -> r1 * r3 >= r2 * r4.
 Proof. auto with real rorders. Qed.
 
 Lemma Rmult_gt_0_lt_compat :
