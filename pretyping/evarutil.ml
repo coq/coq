@@ -1015,6 +1015,7 @@ let is_unification_pattern_evar env (_,args) l t =
 	    l
 	  else
 	    (* Probably strong restrictions coming from t being evar-closed *)
+	    let t = expand_vars_in_term env t in
 	    let fv_rels = free_rels t in
 	    let fv_ids = global_vars env t in
 	    List.filter (fun c ->

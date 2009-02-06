@@ -198,6 +198,15 @@ Goal forall x : nat, F1 x -> G1 x.
 refine (fun x H => proj2 (_ x H) _).
 Abort.
 
+
+(* An example from y-not that was failing in 8.2rc1 *)
+
+Fixpoint filter (A:nat->Set) (l:list (sigT A)) : list (sigT A) := 
+  match l with
+  | nil => nil
+  | (existT k v)::l' => (existT _ k v):: (filter A l')
+  end.
+
 (* Remark: the following example does not succeed any longer in 8.2 because,
    the algorithm is more general and does exclude a solution that it should
    exclude for typing reason. Handling of types and backtracking is still to
