@@ -66,8 +66,7 @@ COQTEX:=bin/coq-tex$(EXE)
 COQWC:=bin/coqwc$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
 
-TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
-      $(COQWC) $(COQDOC)
+TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC)
 
 ###########################################################################
 # Documentation
@@ -404,11 +403,15 @@ CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
 COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep.cmo
+COQDEPCMX:=$(COQDEPCMO:.cmo=.cmx)
+
 GALLINACMO:=tools/gallina_lexer.cmo tools/gallina.cmo
+GALLINACMX:=$(GALLINACMO:.cmo=.cmx)
+
 COQDOCCMO:=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
 	tools/coqdoc/index.cmo tools/coqdoc/output.cmo \
 	tools/coqdoc/pretty.cmo tools/coqdoc/main.cmo
-
+COQDOCCMX:=$(COQDOCCMO:.cmo=.cmx)
 
 # checker
 

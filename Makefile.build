@@ -590,29 +590,71 @@ printers: $(DEBUGPRINTERS)
 
 tools:: $(TOOLS) $(DEBUGPRINTERS)
 
+ifeq ($(BEST),opt)
+$(COQDEP): $(COQDEPCMX)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa $^ $(OSDEPLIBS)
+	$(STRIP) $@
+else
 $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^ $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma gramlib.cma $^ $(OSDEPLIBS)
+endif
 
+ifeq ($(BEST),opt)
+$(GALLINA): $(GALLINACMX)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ $(GALLINACMX)
+	$(STRIP) $@
+else
 $(GALLINA): $(GALLINACMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(GALLINACMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
+endif
 
+ifeq ($(BEST),opt)
+$(COQMAKEFILE): tools/coq_makefile.cmx config/coq_config.cmx
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa config/coq_config.cmx tools/coq_makefile.cmx
+	$(STRIP) $@
+else
 $(COQMAKEFILE): tools/coq_makefile.cmo config/coq_config.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma config/coq_config.cmo tools/coq_makefile.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma config/coq_config.cmo tools/coq_makefile.cmo
+endif
 
+ifeq ($(BEST),opt)
+$(COQTEX): tools/coq-tex.cmx
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa tools/coq-tex.cmx
+	$(STRIP) $@
+else
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma tools/coq-tex.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
+endif
 
+ifeq ($(BEST),opt)
+$(COQWC): tools/coqwc.cmx
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ tools/coqwc.cmx
+	$(STRIP) $@
+else
 $(COQWC): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ tools/coqwc.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
+endif
 
+ifeq ($(BEST),opt)
+$(COQDOC): $(COQDOCCMX)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa $(COQDOCCMX)
+	$(STRIP) $@
+else
 $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ str.cma unix.cma $(COQDOCCMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma $(COQDOCCMO)
+endif
 
 ###########################################################################
 # Installation
