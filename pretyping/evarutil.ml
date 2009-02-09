@@ -119,7 +119,7 @@ let evars_to_metas sigma (emap, c) =
   let emap = nf_evars emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let change_exist evar =
-    let ty = nf_betaiota (nf_evar emap (existential_type emap evar)) in
+    let ty = nf_betaiota emap (existential_type emap evar) in
     let n = new_meta() in
     mkCast (mkMeta n, DEFAULTcast, ty) in
   let rec replace c =
@@ -906,7 +906,7 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
 	map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
 	  imitate envk t in
 
-  let rhs = whd_beta rhs (* heuristic *) in
+  let rhs = whd_beta (evars_of evd) rhs (* heuristic *) in
   let body = imitate (env,0) rhs in
   (!evdref,body)
 
@@ -959,9 +959,19 @@ and evar_define env (evk,_ as ev) rhs evd =
 (* Auxiliary functions for the conversion algorithms modulo evars
  *)
 
-let has_undefined_evars evd t = 
-  try let _ = local_strong (whd_ise (evars_of evd)) t in false
-  with Uninstantiated_evar _ -> true
+let has_undefined_evars evd t =
+  let evm = evars_of evd in
+  let rec has_ev t =
+    match kind_of_term t with
+        Evar (ev,args) ->
+          (match evar_body (Evd.find evm ev) with
+            | Evar_defined c ->
+                has_ev c; Array.iter has_ev args
+            | Evar_empty ->
+	        raise NotInstantiatedEvar)
+      | _ -> iter_constr has_ev t in
+  try let _ = has_ev t in false
+  with (Not_found | NotInstantiatedEvar) -> true
 
 let is_ground_term evd t =
   not (has_undefined_evars evd t)
@@ -972,6 +982,9 @@ let is_ground_env evd env =
     | _ -> true in
   List.for_all is_ground_decl (rel_context env) &&
   List.for_all is_ground_decl (named_context env)
+(* Memoization is safe since evar_map and environ are applicative
+   structures *)
+let is_ground_env = memo1_2 is_ground_env
 
 let head_evar = 
   let rec hrec c = match kind_of_term c with

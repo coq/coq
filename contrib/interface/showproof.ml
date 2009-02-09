@@ -1361,7 +1361,7 @@ and natural_cutintro ig lh g gs arg ltree =
                        {ihsg=No_subgoals_hyp;isgintro=""}
                        (List.nth ltree 0))]
         ]
-and whd_betadeltaiota x = whd_betaiotaevar (Global.env()) Evd.empty x
+and whd_betadeltaiota x = whd_betaiota Evd.empty x
 and type_of_ast s c = type_of (Global.env()) Evd.empty (constr_of_ast c)
 and prod_head t =
   match (kind_of_term (strip_outer_cast t)) with 

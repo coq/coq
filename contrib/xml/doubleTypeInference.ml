@@ -163,7 +163,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
            | hj::restjl ->
               match T.kind_of_term (Reduction.whd_betadeltaiota env typ) with
                  T.Prod (_,c1,c2) ->
-                  (Some (Reductionops.nf_beta c1)) ::
+                  (Some (Reductionops.nf_beta sigma c1)) ::
                    (aux (T.subst1 hj c2) restjl)
                | _ -> assert false
          in
@@ -183,7 +183,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
           | Some ety ->
               match T.kind_of_term (Reduction.whd_betadeltaiota env ety) with
                  T.Prod (_,_,expected_target_type) ->
-                  Some (Reductionops.nf_beta expected_target_type)
+                  Some (Reductionops.nf_beta sigma expected_target_type)
                | _ -> assert false
         in
         let j' = execute env1 sigma c2 expectedc2type in 
@@ -214,14 +214,14 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
           Typeops.judge_of_letin env name j1 j2 j3
   
      | T.Cast (c,k,t) ->
-        let cj = execute env sigma c (Some (Reductionops.nf_beta t)) in
+        let cj = execute env sigma c (Some (Reductionops.nf_beta sigma t)) in
         let tj = execute env sigma t None in
 	let tj = type_judgment env sigma tj in
         let j, _ = Typeops.judge_of_cast env cj k tj in
 	 j
     in
      let synthesized = E.j_type judgement in
-     let synthesized' = Reductionops.nf_beta synthesized in
+     let synthesized' = Reductionops.nf_beta sigma synthesized in
       let types,res =
        match expectedty with
           None ->

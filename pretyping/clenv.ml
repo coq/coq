@@ -254,7 +254,7 @@ let clenv_unify_meta_types ?(flags=default_unify_flags) clenv =
   { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
 
 let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
-  if isMeta (fst (whd_stack clenv.templtyp.rebus)) then
+  if isMeta (fst (whd_stack (evars_of clenv.evd) clenv.templtyp.rebus)) then
     clenv_unify allow_K CUMUL ~flags:flags (clenv_type clenv) (pf_concl gl)
       (clenv_unify_meta_types ~flags:flags clenv)
   else
@@ -402,7 +402,7 @@ let error_already_defined b =
           (str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type clenv c t u =
-  if isMeta (fst (whd_stack u)) then
+  if isMeta (fst (whd_stack (evars_of clenv.evd) u)) then
     (* Not enough information to know if some subtyping is needed *)
     CoerceToType, clenv, c
   else
@@ -416,7 +416,7 @@ let clenv_unify_binding_type clenv c t u =
 let clenv_assign_binding clenv k (sigma,c) =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
   let clenv' = { clenv with evd = evar_merge clenv.evd sigma} in
-  let c_typ = nf_betaiota (clenv_get_type_of clenv' c) in
+  let c_typ = nf_betaiota (evars_of clenv'.evd) (clenv_get_type_of clenv' c) in
   let status,clenv'',c = clenv_unify_binding_type clenv' c c_typ k_typ in
   { clenv'' with evd = meta_assign k (c,(UserGiven,status)) clenv''.evd }
 

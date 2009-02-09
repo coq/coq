@@ -650,14 +650,14 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
       | Prod (na, ty, b), obj :: cstrs -> 
 	  if dependent (mkRel 1) b then
 	    let (b, arg, evars) = aux (Environ.push_rel (na, None, ty) env) b cstrs in
-	    let ty = Reductionops.nf_betaiota ty in
+	    let ty = Reductionops.nf_betaiota (Evd.evars_of !isevars) ty in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
 	      mkProd(na, ty, b), arg', (ty, None) :: evars
 	  else
 	    let (b', arg, evars) = aux env (subst1 mkProp b) cstrs in
-	    let ty = Reductionops.nf_betaiota ty in
+	    let ty = Reductionops.nf_betaiota(Evd.evars_of !isevars) ty in
 	    let relty = mk_relty ty obj in
 	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
 	      mkProd(na, ty, b), newarg, (ty, Some relty) :: evars
@@ -665,7 +665,7 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
       | _, [] -> 
 	  (match finalcstr with
 	      None -> 
-		let t = Reductionops.nf_betaiota ty in
+		let t = Reductionops.nf_betaiota(Evd.evars_of !isevars) ty in
 		let rel = mk_relty t None in 
 		  t, rel, [t, Some rel]
 	    | Some codom -> let (t, rel) = Lazy.force codom in

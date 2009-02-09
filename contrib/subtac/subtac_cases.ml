@@ -822,7 +822,7 @@ let infer_predicate loc env isevars typs cstrs indf =
     (* Empiric normalization: p may depend in a irrelevant way on args of the*)
     (* cstr as in [c:{_:Alpha & Beta}] match c with (existS a b)=>(a,b) end *)
     let typs =
-      Array.map (local_strong (whd_betaevar empty_env (Evd.evars_of !isevars))) typs
+      Array.map (local_strong whd_beta (Evd.evars_of !isevars)) typs
     in
     let eqns = array_map2 prepare_unif_pb typs cstrs in
     (* First strategy: no dependencies at all *)
@@ -1042,9 +1042,10 @@ let find_predicate loc env isevars p typs cstrs current
     match p with
       | Some p -> abstract_predicate env (Evd.evars_of !isevars) indf current tms p
       | None -> infer_predicate loc env isevars typs cstrs indf in
-  let typ = whd_beta (applist (pred, realargs)) in
+  let typ = whd_beta (Evd.evars_of !isevars) (applist (pred, realargs)) in
   if dep then
-    (pred, whd_beta (applist (typ, [current])), new_Type ())
+    (pred, whd_beta (Evd.evars_of !isevars) (applist (typ, [current])),
+     new_Type ())
   else
     (pred, typ, new_Type ())
 
@@ -1246,7 +1247,7 @@ and match_current pb tomatch =
 	    find_predicate pb.caseloc pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt pb.tomatch in
 	  let ci = make_case_info pb.env mind pb.casestyle in
-	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
+	  let case = mkCase (ci,nf_betaiota Evd.empty pred,current,brvals) in
 	  let inst = List.map mkRel deps in
 	  { uj_val = applist (case, inst);
 	    uj_type = substl inst typ }

@@ -237,7 +237,8 @@ let inversion_scheme env sigma t sort dep_option inv_op =
       meta_types 
   in
   let invProof = 
-    it_mkNamedLambda_or_LetIn (local_strong (whd_meta mvb) pfterm) ownSign 
+    it_mkNamedLambda_or_LetIn
+      (local_strong (fun _ -> whd_meta mvb) Evd.empty pfterm) ownSign 
   in
   invProof
 

@@ -62,7 +62,7 @@ let evar_apprec env evd stack c =
   in aux (c, append_stack_list stack empty_stack)
 
 let apprec_nohdbeta env evd c =
-  match kind_of_term (fst (Reductionops.whd_stack c)) with
+  match kind_of_term (fst (Reductionops.whd_stack (evars_of evd) c)) with
     | (Case _ | Fix _) -> applist (evar_apprec env evd [] c)
     | _ -> c
 
@@ -164,18 +164,25 @@ let rec evar_conv_x env evd pbty term1 term2 =
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]
      could have found, we do it only if the terms are free of evar.
      Note: incomplete heuristic... *)
-  if is_ground_term evd term1 && is_ground_term evd term2
-    && is_ground_env evd env
-  then (evd, is_fconv pbty env (evars_of evd) term1 term2)
-  else
-  let term1 = apprec_nohdbeta env evd term1 in
-  let term2 = apprec_nohdbeta env evd term2 in
-  if is_undefined_evar evd term1 then
-    solve_simple_eqn evar_conv_x env evd (pbty,destEvar term1,term2)
-  else if is_undefined_evar evd term2 then
-    solve_simple_eqn evar_conv_x env evd (pbty,destEvar term2,term1)
-  else
-    evar_eqappr_x env evd pbty (decompose_app term1) (decompose_app term2)
+  let ground_test =
+    if is_ground_term evd term1 && is_ground_term evd term2 then
+      if is_fconv pbty env (evars_of evd) term1 term2 then
+        Some true
+      else if is_ground_env evd env then Some false
+      else None
+    else None in
+  match ground_test with
+      Some b -> (evd,b)
+    | None ->
+        let term1 = apprec_nohdbeta env evd term1 in
+        let term2 = apprec_nohdbeta env evd term2 in
+        if is_undefined_evar evd term1 then
+          solve_simple_eqn evar_conv_x env evd (pbty,destEvar term1,term2)
+        else if is_undefined_evar evd term2 then
+          solve_simple_eqn evar_conv_x env evd (pbty,destEvar term2,term1)
+        else
+          evar_eqappr_x env evd pbty
+            (decompose_app term1) (decompose_app term2)
 
 and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have whd_ised *)

@@ -629,6 +629,8 @@ let error_recursively_dependent_library dir =
      strbrk " to save current library because" ++
      strbrk " it already depends on a library of this name.")
 
+(* Security weakness: file might have been changed on disk between
+   writing the content and computing the checksum... *) 
 let save_library_to dir f =
   let cenv, seg = Declaremods.end_library dir in
   let md = { 

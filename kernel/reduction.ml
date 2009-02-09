@@ -248,10 +248,12 @@ and eqappr cv_pb infos (lft1,st1) (lft2,st2) cuniv =
 	       then convert_stacks infos lft1 lft2 v1 v2 cuniv
                else raise NotConvertible
 	   | _ -> raise NotConvertible)
-    | (FEvar (ev1,args1), FEvar (ev2,args2)) ->
+    | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
         if ev1=ev2 then
           let u1 = convert_stacks infos lft1 lft2 v1 v2 cuniv in
-          convert_vect infos el1 el2 args1 args2 u1
+          convert_vect infos el1 el2
+            (Array.map (mk_clos env1) args1)
+            (Array.map (mk_clos env2) args2) u1
         else raise NotConvertible
 
     (* 2 index known to be bound to no constant *)
@@ -382,29 +384,29 @@ and convert_vect infos lft1 lft2 v1 v2 cuniv =
     fold 0 cuniv
   else raise NotConvertible
 
-let clos_fconv trans cv_pb env t1 t2 =
-  let infos = trans, create_clos_infos betaiotazeta env in
+let clos_fconv trans cv_pb evars env t1 t2 =
+  let infos = trans, create_clos_infos ~evars betaiotazeta env in
   ccnv cv_pb infos ELID ELID (inject t1) (inject t2) Constraint.empty
 
-let trans_fconv reds cv_pb env t1 t2 =
+let trans_fconv reds cv_pb evars env t1 t2 =
   if eq_constr t1 t2 then Constraint.empty
-  else clos_fconv reds cv_pb env t1 t2
+  else clos_fconv reds cv_pb evars env t1 t2
 
-let trans_conv_cmp conv reds = trans_fconv reds conv
-let trans_conv reds = trans_fconv reds CONV
-let trans_conv_leq reds = trans_fconv reds CUMUL
+let trans_conv_cmp conv reds = trans_fconv reds conv (fun _->None)
+let trans_conv ?(evars=fun _->None) reds = trans_fconv reds CONV evars
+let trans_conv_leq ?(evars=fun _->None) reds = trans_fconv reds CUMUL evars
 
 let fconv = trans_fconv (Idpred.full, Cpred.full)
 
-let conv_cmp = fconv
-let conv = fconv CONV
-let conv_leq = fconv CUMUL
+let conv_cmp cv_pb = fconv cv_pb (fun _->None)
+let conv ?(evars=fun _->None) = fconv CONV evars
+let conv_leq ?(evars=fun _->None) = fconv CUMUL evars
 
-let conv_leq_vecti env v1 v2 =
+let conv_leq_vecti ?(evars=fun _->None) env v1 v2 =
   array_fold_left2_i 
     (fun i c t1 t2 ->
       let c' =
-        try conv_leq env t1 t2 
+        try conv_leq ~evars env t1 t2 
         with NotConvertible -> raise (NotConvertibleVect i) in
       Constraint.union c c')
     Constraint.empty
@@ -413,17 +415,17 @@ let conv_leq_vecti env v1 v2 =
 
 (* option for conversion *)
 
-let vm_conv = ref fconv
+let vm_conv = ref (fun cv_pb -> fconv cv_pb (fun _->None))
 let set_vm_conv f = vm_conv := f
 let vm_conv cv_pb env t1 t2 = 
   try 
     !vm_conv cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
       (* If compilation fails, fall-back to closure conversion *)
-      fconv cv_pb env t1 t2
+      fconv cv_pb (fun _->None) env t1 t2
   
 
-let default_conv = ref fconv 
+let default_conv = ref (fun cv_pb -> fconv cv_pb (fun _->None))
 
 let set_default_conv f = default_conv := f
 
@@ -432,7 +434,7 @@ let default_conv cv_pb env t1 t2 =
     !default_conv cv_pb env t1 t2
   with Not_found | Invalid_argument _ ->
       (* If compilation fails, fall-back to closure conversion *)
-      fconv cv_pb env t1 t2
+      fconv cv_pb (fun _->None) env t1 t2
   
 let default_conv_leq = default_conv CUMUL
 (*

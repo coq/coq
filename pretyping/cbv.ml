@@ -218,6 +218,11 @@ let rec norm_head info env t stack =
 		   cbv_norm_term info env' c) in
 	(VAL(0,normt), stack) (* Considérer une coupure commutative ? *)
 
+  | Evar ev ->
+      (match evar_value info ev with
+          Some c -> norm_head info env c stack
+        | None -> (VAL(0, t), stack))
+
   (* non-neutral cases *)
   | Lambda _ ->
       let ctxt,b = decompose_lam t in
@@ -227,7 +232,7 @@ let rec norm_head info env t stack =
   | Construct c -> (CONSTR(c, [||]), stack)
 
   (* neutral cases *)
-  | (Sort _ | Meta _ | Ind _|Evar _) -> (VAL(0, t), stack)
+  | (Sort _ | Meta _ | Ind _) -> (VAL(0, t), stack)
   | Prod (x,t,c) -> 
       (VAL(0, mkProd (x, cbv_norm_term info env t,
 		      cbv_norm_term info (subs_lift env) c)),
@@ -353,8 +358,9 @@ let cbv_norm infos constr =
 type cbv_infos = cbv_value infos
 
 (* constant bodies are normalized at the first expansion *)
-let create_cbv_infos flgs env =
+let create_cbv_infos flgs env sigma =
   create
     (fun old_info c -> cbv_stack_term old_info TOP (ESID 0) c)
     flgs
     env
+    (Reductionops.safe_evar_value sigma)

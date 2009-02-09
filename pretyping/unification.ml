@@ -268,21 +268,25 @@ let unify_0_with_initial_metas subst conv_at_top env sigma cv_pb flags m n =
 	| Some true -> 
 	    (match expand_key curenv cf1 with
 	    | Some c ->
-		unirec_rec curenvnb pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
+		unirec_rec curenvnb pb b substn
+                  (whd_betaiotazeta sigma (mkApp(c,l1))) cN
 	    | None ->
 		(match expand_key curenv cf2 with
 		| Some c ->
-		    unirec_rec curenvnb pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
+		    unirec_rec curenvnb pb b substn cM
+                      (whd_betaiotazeta sigma (mkApp(c,l2)))
 		| None ->
 		    error_cannot_unify curenv sigma (cM,cN)))
 	| Some false ->
 	    (match expand_key curenv cf2 with
 	    | Some c ->
-		unirec_rec curenvnb pb b substn cM (whd_betaiotazeta (mkApp(c,l2)))
+		unirec_rec curenvnb pb b substn cM
+                  (whd_betaiotazeta sigma (mkApp(c,l2)))
 	    | None ->
 		(match expand_key curenv cf1 with
 		| Some c ->
-		    unirec_rec curenvnb pb b substn (whd_betaiotazeta (mkApp(c,l1))) cN
+		    unirec_rec curenvnb pb b substn
+                      (whd_betaiotazeta sigma (mkApp(c,l1))) cN
 		| None ->
 		    error_cannot_unify curenv sigma (cM,cN)))
     else
@@ -489,7 +493,7 @@ let unify_to_type env evd flags c u =
   let sigma = evars_of evd in
   let c = refresh_universes c in
   let t = get_type_of_with_meta env sigma (metas_of evd) c in
-  let t = Tacred.hnf_constr env sigma (nf_betaiota (nf_meta evd t)) in
+  let t = Tacred.hnf_constr env sigma (nf_betaiota sigma (nf_meta evd t)) in
   let u = Tacred.hnf_constr env sigma u in
   try unify_0 env sigma Cumul flags t u
   with e when precatchable_exception e -> ([],[])
@@ -613,11 +617,12 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
    types of metavars are unifiable with the types of their instances    *)
 
 let check_types env evd flags subst m n =
-  if isEvar (fst (whd_stack m)) or isEvar (fst (whd_stack n)) then
+  let sigma = evars_of evd in
+  if isEvar (fst (whd_stack sigma m)) or isEvar (fst (whd_stack sigma n)) then
     unify_0_with_initial_metas subst true env (evars_of evd) topconv 
       flags
-      (Retyping.get_type_of_with_meta env (evars_of evd) (metas_of evd) m)
-      (Retyping.get_type_of_with_meta env (evars_of evd) (metas_of evd) n)
+      (Retyping.get_type_of_with_meta env sigma (metas_of evd) m)
+      (Retyping.get_type_of_with_meta env sigma (metas_of evd) n)
   else
     subst
 
@@ -738,8 +743,8 @@ let secondOrderAbstraction env flags allow_K typ (p, oplist) evd =
   w_merge env false flags ([p,pred,(ConvUpToEta 0,TypeProcessed)],[]) evd'
 
 let w_unify2 env flags allow_K cv_pb ty1 ty2 evd =
-  let c1, oplist1 = whd_stack ty1 in
-  let c2, oplist2 = whd_stack ty2 in
+  let c1, oplist1 = whd_stack (evars_of evd) ty1 in
+  let c2, oplist2 = whd_stack (evars_of evd) ty2 in
   match kind_of_term c1, kind_of_term c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
@@ -777,8 +782,8 @@ let w_unify2 env flags allow_K cv_pb ty1 ty2 evd =
    Meta(1) had meta-variables in it. *)
 let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
   let cv_pb = of_conv_pb cv_pb in
-  let hd1,l1 = whd_stack ty1 in
-  let hd2,l2 = whd_stack ty2 in
+  let hd1,l1 = whd_stack (evars_of evd) ty1 in
+  let hd2,l2 = whd_stack (evars_of evd) ty2 in
     match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
       (* Pattern case *)
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
