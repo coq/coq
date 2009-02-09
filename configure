@@ -795,10 +795,10 @@ BUILDLDPATH="# you might want to set CAML_LD_LIBRARY_PATH by hand!"
 case $coqrunbyteflags_spec/$local/$custom_spec/$CUSTOM_OS in
     yes/*/*/*) COQRUNBYTEFLAGS="$coqrunbyteflags";;
     */*/yes/*|*/*/*/yes) COQRUNBYTEFLAGS="-custom";;
-    */true/*/*) COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath $COQTOP/kernel/byterun";;
+    */true/*/*) COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath '$COQTOP'/kernel/byterun";;
     *)
-        COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath $LIBDIR"
-        BUILDLDPATH="export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun";;
+        COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath '$LIBDIR'"
+        BUILDLDPATH="export CAML_LD_LIBRARY_PATH='$COQTOP'/kernel/byterun";;
 esac
 case $coqtoolsbyteflags_spec/$custom_spec/$CUSTOM_OS in
     yes/*/*) COQTOOLSBYTEFLAGS="$coqtoolsbyteflags";;
