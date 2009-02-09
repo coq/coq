@@ -344,6 +344,6 @@ DYNAMICALLY LOADED LIBRARIES FOR BYTECODE EXECUTABLES.
        where <path> is the directory where the dllcoqrun.so is installed;
      - (not recommended) compile bytecode executables with a custom OCaml
        runtime by using:
-         ./configure -coqrunbyteflags -custom ...
+         ./configure -custom ...
        be aware that stripping executables generated this way, or performing
        other executable-specific operations, will make them useless.

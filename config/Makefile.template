@@ -23,6 +23,7 @@ LOCAL=LOCALINSTALLATION
 
 # Bytecode link flags for VM ("-custom" or "-dllib -lcoqrun")
 COQRUNBYTEFLAGS=XCOQRUNBYTEFLAGS
+COQTOOLSBYTEFLAGS=XCOQTOOLSBYTEFLAGS
 BUILDLDPATH=
 
 # Paths for true installation

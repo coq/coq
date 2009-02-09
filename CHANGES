@@ -489,9 +489,10 @@ Miscellaneous
   "Test Printing Let for ref" and "Test Printing If for ref".
 - An overhauled build system (new Makefiles); see dev/doc/build-system.txt.
 - Add -browser option to configure script.
-- Build a shared library for the C part of Coq, and use it by default.
-  Bytecode executables are now pure. The behaviour is configurable with
-  the -coqrunbyteflags configure option.
+- Build a shared library for the C part of Coq, and use it by default on
+  non-(Windows or MacOS) systems. Bytecode executables are now pure. The
+  behaviour is configurable with -coqrunbyteflags, -coqtoolsbyteflags and
+  -custom configure options.
 - Complexity tests can be skipped by setting the environment variable
   COQTEST_SKIPCOMPLEXITY.
 

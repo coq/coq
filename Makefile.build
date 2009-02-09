@@ -197,7 +197,7 @@ $(CHICKENOPT): checker/check.cmxa checker/main.ml
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^
+	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^
 
 $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
@@ -598,7 +598,7 @@ $(COQDEP): $(COQDEPCMX)
 else
 $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma gramlib.cma $^ $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^ $(OSDEPLIBS)
 endif
 
 ifeq ($(BEST),opt)
@@ -609,7 +609,7 @@ $(GALLINA): $(GALLINACMX)
 else
 $(GALLINA): $(GALLINACMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(GALLINACMO)
 endif
 
 ifeq ($(BEST),opt)
@@ -620,7 +620,7 @@ $(COQMAKEFILE): tools/coq_makefile.cmx config/coq_config.cmx
 else
 $(COQMAKEFILE): tools/coq_makefile.cmo config/coq_config.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma config/coq_config.cmo tools/coq_makefile.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma config/coq_config.cmo tools/coq_makefile.cmo
 endif
 
 ifeq ($(BEST),opt)
@@ -631,7 +631,7 @@ $(COQTEX): tools/coq-tex.cmx
 else
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma tools/coq-tex.cmo
 endif
 
 ifeq ($(BEST),opt)
@@ -642,7 +642,7 @@ $(COQWC): tools/coqwc.cmx
 else
 $(COQWC): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ tools/coqwc.cmo
 endif
 
 ifeq ($(BEST),opt)
@@ -653,7 +653,7 @@ $(COQDOC): $(COQDOCCMX)
 else
 $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma $(COQDOCCMO)
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma unix.cma $(COQDOCCMO)
 endif
 
 ###########################################################################
