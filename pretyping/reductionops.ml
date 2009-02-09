@@ -598,20 +598,6 @@ let pb_equal = function
 
 let sort_cmp = sort_cmp
 
-
-let nf_red_env sigma env =
-  let nf_decl = function
-      (x,Some t,ty) -> (x,Some (nf_evar sigma t),ty)
-    | d -> d in
-  let sign = named_context env in
-  let ctxt = rel_context env in
-  let env = reset_context env in
-  let env = Sign.fold_named_context
-    (fun d env -> push_named (nf_decl d) env) ~init:env sign in
-  Sign.fold_rel_context
-    (fun d env -> push_rel (nf_decl d) env) ~init:env ctxt
-
-
 let test_conversion (f:?evars:'a->'b) env sigma x y =
   try let _ =
     f ~evars:(safe_evar_value sigma) env x y in true

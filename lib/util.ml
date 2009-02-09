@@ -1359,6 +1359,39 @@ let pr_located pr (loc,x) =
 
 let surround p = hov 1 (str"(" ++ p ++ str")")
 
+(*s Memoization *)
+
+let memo1_eq eq f =
+  let m = ref None in
+  fun x ->
+    match !m with
+        Some(x',y') when eq x x' -> y'
+      | _ -> let y = f x in m := Some(x,y); y
+
+let memo1_1 f = memo1_eq (==) f
+let memo1_2 f =
+  let f' =
+    memo1_eq (fun (x,y) (x',y') -> x==x' && y==y') (fun (x,y) -> f x y) in
+  (fun x y -> f'(x,y))
+
+(* Memorizes the last n distinct calls to f. Since there is no hash,
+   Efficient only for small n. *)
+let memon_eq eq n f =
+  let cache = ref [] in (* the cache: a stack *)
+  let m = ref 0 in      (* usage of the cache *)
+  let rec find x = function
+    | (x',y')::l when eq x x' -> y', l (* cell is moved to the top *)
+    | [] -> (* we assume n>0, so creating one memo cell is OK *)
+        incr m; (f x, [])
+    | [_] when !m>=n -> f x,[] (* cache is full: dispose of last cell *)
+    | p::l (* not(eq x (fst p)) *) -> let (y,l') = find x l in (y, p::l')
+  in
+  (fun x ->
+    let (y,l) = find x !cache in
+    cache := (x,y)::l;
+    y)
+
+
 (*s Size of ocaml values. *)
 
 module Size = struct
