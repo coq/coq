@@ -1,0 +1,86 @@
+.TH COQ 1 "February 9, 2009"
+
+.SH NAME
+coqchk \- The Coq Proof Assistant compiled libraries verifier
+
+
+.SH SYNOPSIS
+.B coqchk
+[
+.B options
+]
+.I files-or-modules
+
+
+.SH DESCRIPTION
+
+.B coqchk
+is the standalone checker of compiled libraries (.vo files produced by
+coqc) for the Coq Proof Assistant. See the Reference Manual for more
+information. It returns with exit code 0 if all the requested tasks
+succeeded. A non-zero return code means that something went wrong: some
+library was not found, corrupted content, type-checking failure, etc.
+
+.IR files-or-modules \&
+is a list of modules to be checked. Modules can be referred to either
+by a filename (without the .vo suffix) or by their (possibly
+qualified) module name.
+
+.SH OPTIONS
+
+.TP
+.BI \-I \ dir, \ \-\-include \ dir
+add directory 
+.I dir
+in the include path
+
+.TP
+.BI \-R \ dir\ coqdir          
+recursively map physical
+.I dir
+to logical
+.I coqdir
+
+.TP
+.BI \-where
+print Coq's standard library location and exit
+
+.TP
+.BI \-silent
+makes coqchk less verbose.
+
+.TP
+.BI \-admit \ file-or-module
+tag the specified module and all its dependencies as trusted, and will
+not be rechecked, unless explicitely requested by other options.
+
+.TP
+.BI \-norec \ file-or-module
+specifies that the given module shall be verified without requesting
+to check its dependencies
+
+.TP
+.BI \-m,\ \-\-memory
+displays a summary of the memory used by the checker
+
+.TP
+.BI \-o,\ \-\-output\-context
+displays a summary of the logical content that have been
+verified: assumptions and usage of impredicativity
+
+.TP
+.BI \-impredicative\-set
+allows the checker to verify libraries that have been compiled with
+this flag.
+
+.SH SEE ALSO
+
+.BR coqtop (1),
+.BR coqc (1),
+.BR coq_makefile (1),
+.BR coqdep (1).
+.br
+.I
+The Coq Reference Manual.
+.I
+The Coq web site: http://coq.inria.fr
