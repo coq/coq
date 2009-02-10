@@ -628,6 +628,7 @@ let rec get_modtype_substobjs env = function
   | MSEwith (mty, With_Definition _) -> get_modtype_substobjs env mty
   | MSEwith (mty, With_Module (idl,mp)) -> 
       let substobjs = get_modtype_substobjs env mty in
+      let mp = Environ.scrape_alias mp env in
       let modobjs = MPmap.find mp !modtab_substobjs in
 	replace_module_object idl substobjs modobjs mp
   | MSEapply (mexpr, MSEident mp) ->
