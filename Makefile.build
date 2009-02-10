@@ -501,11 +501,13 @@ install-pcoq-manpages:
 # tests
 ###########################################################################
 
+VALIDOPTS=-silent -o -m
+
 validate:: $(BESTCHICKEN) $(ALLVO)
 	$(SHOW)'COQCHK <theories & contrib>'
-	$(HIDE)$(BESTCHICKEN) -boot -o -m $(ALLMODS)
+	$(HIDE)$(BESTCHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
 
-check:: world
+check:: world validate
 	cd test-suite; \
 	env COQBIN=../bin COQLIB=.. ./check -$(BEST) | tee check.log
 	if grep -F 'Error!' test-suite/check.log ; then false; fi

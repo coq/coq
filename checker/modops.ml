@@ -125,6 +125,7 @@ let strengthen_mind env mp l mib = match mib.mind_equiv with
 let rec eval_struct env = function 
   | SEBident mp -> 
       begin
+        let mp = scrape_alias mp env in
 	let mtb =lookup_modtype mp env in
 	match mtb.typ_expr,mtb.typ_strength with
 	    mtb,None -> eval_struct env mtb

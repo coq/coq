@@ -55,7 +55,7 @@ let print_context env =
        env_stratification=
         {env_universes=univ; env_engagement=engt}} = env in
     msgnl(hov 0
-      (str"CONTEXT SUMMARY" ++ fnl() ++
+      (fnl() ++ str"CONTEXT SUMMARY" ++ fnl() ++
       str"===============" ++ fnl() ++ fnl() ++
       str "* " ++ hov 0 (pr_engt engt ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_ax csts) ++
@@ -65,5 +65,3 @@ let print_context env =
 let stats () =
   print_context (Safe_typing.get_env());
   print_memory_stat ()
-
-let _ = at_exit stats

@@ -1,0 +1,176 @@
+(* -*-tuareg-*- *)
+
+(* Caml script to include for debugging the checker.
+   Usage: from the checker/ directory launch ocaml toplevel and then
+   type #use"include";;
+   This command loads the relevent modules, defines some pretty
+   printers, and provides functions to interactively check modules
+   (mainly run_l and norec).
+ *)
+
+#cd ".."
+#directory "lib";;
+#directory "kernel";;
+#directory "checker";;
+
+#load "unix.cma";;
+#load "str.cma";;
+#load "gramlib.cma";;
+#load "check.cma";;
+
+open Typeops;;
+open Check;;
+
+
+open Pp;;
+open Util;;
+open Names;;
+open Term;;
+open Environ;;
+open Declarations;;
+open Mod_checking;;
+
+let pr_id id = str(string_of_id id)
+let pr_na = function Name id -> pr_id id | _ -> str"_";;
+let prdp dp = pp(str(string_of_dirpath dp));;
+(*
+let prc c = pp(Himsg.pr_lconstr_env (Check.get_env()) c);;
+let prcs cs = prc (Declarations.force cs);;
+let pru u = pp(str(Univ.string_of_universe u));;*)
+let pru u = pp(Univ.pr_uni u);;
+let prlab l = pp(str(string_of_label l));;
+let prid id = pp(pr_id id);;
+let prcon c = pp(Indtypes.prcon c);;
+let prkn kn = pp(Indtypes.prkn kn);;
+
+
+let prus g = pp(Univ.pr_universes g);;
+
+let prcstrs c =
+  let g = Univ.merge_constraints c Univ.initial_universes in
+  pp(Univ.pr_universes g);;
+(*let prcstrs c = pp(Univ.pr_constraints c);; *)
+(*
+let prenvu e =
+  let u = universes e in
+  let pu =
+  str "UNIVERSES:"++fnl()++str"  "++hov 0 (Univ.pr_universes u) ++fnl() in
+  pp pu;;
+
+let prenv e =
+  let ctx1 = named_context e in
+  let ctx2 = rel_context e in
+  let pe =
+    hov 1 (str"[" ++
+           prlist_with_sep spc (fun (na,_,_) -> pr_id na) (List.rev ctx1)++
+           str"]") ++ spc() ++
+    hov 1 (str"[" ++
+           prlist_with_sep spc (fun (na,_,_) -> pr_na na) (List.rev ctx2)++
+           str"]") in
+  pp pe;;
+*)
+
+let prsub s =
+  let string_of_mp mp =
+    let s = string_of_mp mp in
+    (match mp with MPself _ -> "#self."|MPbound _ -> "#bound."|_->"")^s in 
+  pp (hv 0 
+  (fold_subst
+    (fun msid mp strm ->
+      str "S " ++ str (debug_string_of_msid msid) ++ str " |-> " ++
+      str (string_of_mp mp) ++ fnl() ++ strm)
+    (fun mbid mp strm ->
+      str"B " ++ str (debug_string_of_mbid mbid) ++ str " |-> " ++
+      str (string_of_mp mp) ++ fnl() ++ strm)
+    (fun mp1 mp strm ->
+      str"P " ++ str (string_of_mp mp1) ++ str " |-> " ++
+      str (string_of_mp mp) ++ fnl() ++ strm) s (mt())))
+;;
+
+#install_printer prid;;
+#install_printer prcon;;
+#install_printer prlab;;
+#install_printer prdp;;
+#install_printer prkn;;
+#install_printer pru;;
+(*
+#install_printer prc;;
+#install_printer prcs;;
+*)
+#install_printer prcstrs;;
+(*#install_printer prus;;*)
+(*#install_printer prenv;;*)
+(*#install_printer prenvu;;*)
+#install_printer prsub;;
+
+Checker.init();;
+Flags.make_silent false;;
+Flags.debug := true;;
+Sys.catch_break true;;
+
+let module_of_file f =
+  let (_,mb,_,_) = Obj.magic ((intern_from_file f).library_compiled) in
+  (mb:module_body)
+;;
+let mod_access m fld =
+  match m.mod_expr with
+      Some(SEBstruct(msid,l)) -> List.assoc fld l
+    | _ -> failwith "bad structure type"
+;;
+
+let parse_dp s =
+  make_dirpath(List.map id_of_string (List.rev (Str.split(Str.regexp"\\.") s)))
+;;
+let parse_sp s =
+  let l = List.rev (Str.split(Str.regexp"\\.") s) in
+  {dirpath=List.tl l; basename=List.hd l};;
+let parse_kn s =
+   let l = List.rev (Str.split(Str.regexp"\\.") s) in
+   let dp = make_dirpath(List.map id_of_string(List.tl l)) in
+   make_kn(MPfile dp) empty_dirpath (label_of_id (id_of_string (List.hd l)))
+;;
+let parse_con s =
+   let l = List.rev (Str.split(Str.regexp"\\.") s) in
+   let dp = make_dirpath(List.map id_of_string(List.tl l)) in
+   make_con(MPfile dp) empty_dirpath (label_of_id (id_of_string (List.hd l)))
+;;
+let get_mod dp = 
+  lookup_module dp (Safe_typing.get_env())
+;;
+let get_mod_type dp = 
+  lookup_modtype dp (Safe_typing.get_env())
+;;
+let get_cst kn = 
+  lookup_constant kn (Safe_typing.get_env())
+;;
+
+let read_mod s f = 
+  let lib = intern_from_file (parse_dp s,f) in
+  ((Obj.magic lib.library_compiled):
+    dir_path *
+    module_body *
+    (dir_path * Digest.t) list *
+    engagement option);;
+
+let deref_mod md s =
+  let (Some (SEBstruct(msid,l))) = md.mod_expr in
+  List.assoc (label_of_id(id_of_string s)) l
+;;
+
+let expln f x =
+  try f x
+  with UserError(_,strm) as e ->
+    msgnl strm; raise e
+
+let admit_l l =
+  let l = List.map parse_sp l in
+  Check.recheck_library ~admit:l ~check:l;;
+let run_l l =
+  Check.recheck_library ~admit:[] ~check:(List.map parse_sp l);;
+let norec q =
+  Check.recheck_library ~norec:[parse_sp q] ~admit:[] ~check:[];;
+
+(*
+admit_l["Bool";"OrderedType";"DecidableType"];;
+run_l["FSetInterface"];;
+*)

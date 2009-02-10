@@ -385,4 +385,4 @@ let run () =
     flush_all(); 
     exit 1)
 
-let start () = init(); run(); exit 0
+let start () = init(); run(); Check_stat.stats(); exit 0

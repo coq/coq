@@ -247,7 +247,7 @@ let val_ind_pack = val_tuple "ind_pack"
 
 let rec val_sfb o = val_sum "sfb" 0
   [|[|val_cb|];[|val_ind_pack|];[|val_mod|];
-    [|val_mp;val_opt val_cstrs|];[|val_modty|]|] o
+    [|val_mp;val_opt val_seb;val_opt val_cstrs|];[|val_modty|]|] o
 and val_sb o = val_list (val_tuple"sb"[|val_id;val_sfb|]) o
 and val_seb o = val_sum "seb" 0
   [|[|val_mp|];[|val_uid;val_modty;val_seb|];[|val_uid;val_sb|];

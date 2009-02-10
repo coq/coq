@@ -130,6 +130,12 @@ let check_definition_sub env cb1 cb2 =
 	Reduction.conv env c1 c2
     | _ -> ())
 
+let lookup_modtype mp env =
+  try Environ.lookup_modtype mp env
+  with Not_found ->
+    failwith ("Unknown module type: "^string_of_mp mp)
+
+
 let rec check_with env mtb with_decl = 
   match with_decl with
     | With_definition_body _ -> 
@@ -308,7 +314,8 @@ and check_structure_field (s,env) mp lab = function
 
 and check_modexpr env mse = match mse with
   | SEBident mp ->
-      let mtb = lookup_modtype mp env in 
+      let mp = scrape_alias mp env in
+      let mtb = lookup_modtype mp env in
       mtb.typ_alias
   | SEBfunctor (arg_id, mtb, body) ->
       check_module_type env mtb;
