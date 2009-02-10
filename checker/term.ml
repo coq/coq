@@ -15,6 +15,7 @@ open Pp
 open Names
 open Univ
 open Esubst
+open Validate
 
 (* Coq abstract syntax with deBruijn variables; 'a is the type of sorts *)
 
@@ -35,6 +36,10 @@ type case_info =
     ci_cstr_nargs : int array; (* number of real args of each constructor *)
     ci_pp_info    : case_printing (* not interpreted by the kernel *)
   }
+let val_ci =
+  let val_cstyle = val_enum "case_style" 5 in
+  let val_cprint = val_tuple "case_printing" [|val_int;val_cstyle|] in
+  val_tuple "case_info" [|val_ind;val_int;val_array val_int;val_cprint|]
 
 (* Sorts. *)
 
@@ -51,6 +56,9 @@ let family_of_sort = function
   | Prop Pos -> InSet
   | Type _ -> InType
 
+let val_sort = val_sum "sort" 0 [|[|val_enum "cnt" 2|];[|val_univ|]|]
+let val_sortfam = val_enum "sorts_family" 3
+
 (********************************************************************)
 (*       Constructions as implemented                               *)
 (********************************************************************)
@@ -65,7 +73,16 @@ type 'constr pfixpoint =
 type 'constr pcofixpoint =
     int * 'constr prec_declaration
 
+let val_evar f = val_tuple "pexistential" [|val_int;val_array f|]
+let val_prec f =
+  val_tuple "prec_declaration"[|val_array val_name; val_array f; val_array f|]
+let val_fix f =
+  val_tuple"pfixpoint"
+    [|val_tuple"fix2"[|val_array val_int;val_int|];val_prec f|]
+let val_cofix f = val_tuple"pcofixpoint"[|val_int;val_prec f|]
+
 type cast_kind = VMcast | DEFAULTcast 
+let val_cast = val_enum "cast_kind" 2
 
 (*s*******************************************************************)
 (* The type of constructions *)
@@ -88,10 +105,30 @@ type constr =
   | Fix       of constr pfixpoint
   | CoFix     of constr pcofixpoint
 
+let val_constr = val_rec_sum "constr" 0 (fun val_constr -> [|
+  [|val_int|]; (* Rel *)
+  [|val_id|]; (* Var *)
+  [|val_int|]; (* Meta *)
+  [|val_evar val_constr|]; (* Evar *)
+  [|val_sort|]; (* Sort *)
+  [|val_constr;val_cast;val_constr|]; (* Cast *)
+  [|val_name;val_constr;val_constr|]; (* Prod *)
+  [|val_name;val_constr;val_constr|]; (* Lambda *)
+  [|val_name;val_constr;val_constr;val_constr|]; (* LetIn *)
+  [|val_constr;val_array val_constr|]; (* App *)
+  [|val_kn|]; (* Const *)
+  [|val_ind|]; (* Ind *)
+  [|val_cstr|]; (* Construct *)
+  [|val_ci;val_constr;val_constr;val_array val_constr|]; (* Case *)
+  [|val_fix val_constr|]; (* Fix *)
+  [|val_cofix val_constr|] (* CoFix *)
+|])
+
 type existential = constr pexistential
 type rec_declaration = constr prec_declaration
 type fixpoint = constr pfixpoint
 type cofixpoint = constr pcofixpoint
+
 
 let rec strip_outer_cast c = match c with
   | Cast (c,_,_) -> strip_outer_cast c
@@ -275,6 +312,13 @@ let subst1 lam = substl [lam]
 (*     Type of assumptions and contexts                                    *)
 (***************************************************************************)
 
+let val_ndecl =
+  val_tuple"named_declaration"[|val_id;val_opt val_constr;val_constr|]
+let val_rdecl =
+  val_tuple"rel_declaration"[|val_name;val_opt val_constr;val_constr|]
+let val_nctxt = val_list val_ndecl
+let val_rctxt = val_list val_rdecl
+
 type named_declaration = identifier * constr option * constr
 type rel_declaration = name * constr option * constr
 
@@ -395,6 +439,7 @@ let decompose_prod_n_assum n =
 (***************************)
 
 type arity = rel_context * sorts
+let val_arity = val_tuple"arity"[|val_rctxt;val_constr|]
 
 let mkArity (sign,s) = it_mkProd_or_LetIn (Sort s) sign
 

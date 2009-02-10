@@ -106,6 +106,10 @@ type compiled_library =
     (dir_path * Digest.t) list *
     engagement option
  
+open Validate
+let val_deps = val_list (val_tuple"dep"[|val_dp;no_val|])
+let val_vo = val_tuple "vo" [|val_dp;val_module;val_deps;val_eng|]
+
 (* This function should append a certificate to the .vo file.
    The digest must be part of the certicate to rule out attackers
    that could change the .vo file between the time it was read and
@@ -116,7 +120,7 @@ let stamp_library file digest = ()
 (* When the module is checked, digests do not need to match, but a
    warning is issued in case of mismatch *)
 let import file (dp,mb,depends,engmt as vo) digest = 
-  Validate.val_vo (Obj.repr vo);
+  Validate.apply !Flags.debug val_vo vo;
   Flags.if_verbose msgnl (str "*** vo structure validated ***");
   let env = !genv in
   check_imports msg_warning dp env depends;

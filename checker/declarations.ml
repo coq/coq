@@ -1,6 +1,7 @@
 open Util
 open Names
 open Term
+open Validate
 
 (* Bytecode *)
 type values
@@ -11,23 +12,31 @@ type action
 type retroknowledge
 
 type engagement = ImpredicativeSet
+let val_eng = val_enum "eng" 1
 
 
 type polymorphic_arity = {
   poly_param_levels : Univ.universe option list;
   poly_level : Univ.universe;
 }
+let val_pol_arity =
+  val_tuple"polyorphic_arity"[|val_list(val_opt val_univ);val_univ|]
 
 type constant_type =
   | NonPolymorphicType of constr
   | PolymorphicArity of rel_context * polymorphic_arity
 
+let val_cst_type =
+  val_sum "constant_type" 0 [|[|val_constr|];[|val_rctxt;val_pol_arity|]|]
 
 
 type substitution_domain = 
     MSI of mod_self_id 
   | MBI of mod_bound_id
   | MPI of module_path
+
+let val_subst_dom =
+  val_sum "substitution_domain" 0 [|[|val_uid|];[|val_uid|];[|val_mp|]|]
 
 module Umap = Map.Make(struct 
 			 type t = substitution_domain
@@ -38,6 +47,13 @@ type resolver
 
 type substitution = (module_path * resolver option) Umap.t
 type 'a subst_fun = substitution -> 'a -> 'a
+
+let val_res = val_opt no_val
+
+let val_subst =
+  val_map ~name:"substitution"
+    val_subst_dom (val_tuple "substition range" [|val_mp;val_res|])
+
 
 let fold_subst fs fb fp =
   Umap.fold
@@ -360,6 +376,11 @@ let force_constr = force subst_mps
 
 type constr_substituted = constr substituted
 
+let val_cstr_subst =
+  val_ref
+    (val_sum "constr_substituted" 0
+      [|[|val_constr|];[|val_subst;val_constr|]|])
+
 let subst_constr_subst = subst_substituted
 
 type constant_body = {
@@ -372,6 +393,11 @@ type constant_body = {
     const_opaque : bool; 
     const_inline : bool}
 
+let val_cb = val_tuple "constant_body"
+  [|val_nctxt;val_opt val_cstr_subst; val_cst_type;no_val;val_cstrs;
+    val_bool; val_bool |]
+
+
 let subst_rel_declaration sub (id,copt,t as x) =
   let copt' = Option.smartmap (subst_mps sub) copt in
   let t' = subst_mps sub t in
@@ -383,6 +409,8 @@ type recarg =
   | Norec 
   | Mrec of int 
   | Imbr of inductive
+let val_recarg = val_sum "recarg" 1 (* Norec *)
+  [|[|val_int|] (* Mrec *);[|val_ind|] (* Imbr *)|]
 
 let subst_recarg sub r = match r with
   | Norec | Mrec _  -> r
@@ -390,6 +418,12 @@ let subst_recarg sub r = match r with
       if kn==kn' then r else Imbr (kn',i)
 
 type wf_paths = recarg Rtree.t
+let val_wfp = val_rec_sum "wf_paths" 0
+  (fun val_wfp -> 
+    [|[|val_int;val_int|]; (* Rtree.Param *)
+      [|val_recarg;val_array val_wfp|]; (* Rtree.Node *)
+      [|val_int;val_array val_wfp|] (* Rtree.Rec *)
+    |])
 
 let mk_norec = Rtree.mk_node Norec [||]
 
@@ -417,10 +451,14 @@ type monomorphic_inductive_arity = {
   mind_user_arity : constr;
   mind_sort : sorts;
 }
+let val_mono_ind_arity =
+  val_tuple"monomorphic_inductive_arity"[|val_constr;val_sort|]
 
 type inductive_arity = 
 | Monomorphic of monomorphic_inductive_arity
 | Polymorphic of polymorphic_arity
+let val_ind_arity = val_sum "inductive_arity" 0
+  [|[|val_mono_ind_arity|];[|val_pol_arity|]|]
 
 type one_inductive_body = {
 
@@ -471,6 +509,12 @@ type one_inductive_body = {
     mind_reloc_tbl :  reloc_table; 
   }
 
+let val_one_ind = val_tuple "one_inductive_body"
+  [|val_id;val_rctxt;val_ind_arity;val_array val_id;val_array val_constr;
+    val_int; val_list val_sortfam;val_array val_constr;val_array val_int;
+    val_wfp; val_int; val_int; no_val|]
+
+
 type mutual_inductive_body = {
 
   (* The component of the mutual inductive block *)
@@ -503,6 +547,10 @@ type mutual_inductive_body = {
   (* Source of the inductive block when aliased in a module *)
     mind_equiv : kernel_name option
   }
+let val_ind_pack = val_tuple "mutual_inductive_body"
+  [|val_array val_one_ind;val_bool;val_bool;val_int;val_nctxt;
+    val_int; val_int; val_rctxt;val_cstrs;val_opt val_kn|]
+
 
 let subst_arity sub = function
 | NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
@@ -558,6 +606,8 @@ let subst_mind sub mib =
 
 (* Modules *)
 
+(* Whenever you change these types, please do update the validation
+   functions below *)
 type structure_field_body = 
   | SFBconst of constant_body
   | SFBmind of mutual_inductive_body
@@ -591,6 +641,30 @@ and module_type_body =
     { typ_expr : struct_expr_body;
       typ_strength : module_path option;
       typ_alias : substitution}
+
+(* the validation functions: *)
+let rec val_sfb o = val_sum "struct_field_body" 0
+  [|[|val_cb|];       (* SFBconst *)
+    [|val_ind_pack|]; (* SFBmind *)
+    [|val_module|];   (* SFBmodule *)
+    [|val_mp;val_opt val_seb;val_opt val_cstrs|]; (* SFBalias *)
+    [|val_modtype|]   (* SFBmodtype *)
+  |] o
+and val_sb o = val_list (val_tuple"label*sfb"[|val_id;val_sfb|]) o
+and val_seb o = val_sum "struct_expr_body" 0
+  [|[|val_mp|];                      (* SEBident *)
+    [|val_uid;val_modtype;val_seb|]; (* SEBfunctor *)
+    [|val_uid;val_sb|];              (* SEBstruct *)
+    [|val_seb;val_seb;val_cstrs|];   (* SEBapply *)
+    [|val_seb;val_with|]             (* SEBwith *)
+  |] o
+and val_with o = val_sum "with_declaration_body" 0
+  [|[|val_list val_id;val_mp;val_cstrs|];
+    [|val_list val_id;val_cb|]|] o
+and val_module o = val_tuple "module_body"
+  [|val_opt val_seb;val_opt val_seb;val_cstrs;val_subst;no_val|] o
+and val_modtype o = val_tuple "module_type_body"
+  [|val_seb;val_opt val_mp;val_subst|] o
 
 	
 let rec subst_with_body sub = function

@@ -140,7 +140,10 @@ let type_of_constant env cst =
 
 let judge_of_constant_knowing_parameters env cst paramstyp =
   let c = Const cst in
-  let cb = lookup_constant cst env in
+  let cb =
+    try lookup_constant cst env 
+    with Not_found ->
+      failwith ("Cannot find constant: "^string_of_con cst) in
   let _ = check_args env c cb.const_hyps in 
   type_of_constant_knowing_parameters env cb.const_type paramstyp
 
@@ -222,7 +225,10 @@ let judge_of_cast env (c,cj) k tj =
 
 let judge_of_inductive_knowing_parameters env ind (paramstyp:constr array) =
   let c = Ind ind in
-  let (mib,mip) = lookup_mind_specif env ind in
+  let (mib,mip) =
+    try lookup_mind_specif env ind
+    with Not_found ->
+      failwith ("Cannot find inductive: "^string_of_kn (fst ind)) in
   check_args env c mib.mind_hyps;
   type_of_inductive_knowing_parameters env mip paramstyp
 
@@ -235,7 +241,10 @@ let judge_of_constructor env c =
   let constr = Construct c in
   let _ =
     let ((kn,_),_) = c in
-    let mib = lookup_mind kn env in
+    let mib = 
+      try lookup_mind kn env
+      with Not_found ->
+        failwith ("Cannot find inductive: "^string_of_kn (fst (fst c))) in
     check_args env constr mib.mind_hyps in 
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
   type_of_constructor c specif

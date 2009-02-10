@@ -109,3 +109,10 @@ val destArity : constr -> arity
 val isArity : constr -> bool
 val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 val eq_constr : constr -> constr -> bool
+
+(* Validation *)
+val val_sortfam : Obj.t -> unit
+val val_sort : Obj.t -> unit
+val val_constr : Obj.t -> unit
+val val_rctxt : Obj.t -> unit
+val val_nctxt : Obj.t -> unit

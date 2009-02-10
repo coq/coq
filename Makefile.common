@@ -421,15 +421,15 @@ MCHECKER:=\
   lib/flags.cmo lib/util.cmo lib/option.cmo lib/hashcons.cmo \
   lib/system.cmo lib/envars.cmo \
   lib/predicate.cmo lib/rtree.cmo \
-  kernel/names.cmo kernel/univ.cmo \
-  kernel/esubst.cmo checker/term.cmo \
+  kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
+  checker/validate.cmo \
+  checker/term.cmo \
   checker/declarations.cmo checker/environ.cmo \
   checker/closure.cmo checker/reduction.cmo \
   checker/type_errors.cmo \
   checker/modops.cmo \
   checker/inductive.cmo checker/typeops.cmo \
   checker/indtypes.cmo checker/subtyping.cmo checker/mod_checking.cmo \
-  checker/validate.cmo \
   checker/safe_typing.cmo checker/check.cmo \
   checker/check_stat.cmo checker/checker.cmo
 

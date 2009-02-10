@@ -256,7 +256,7 @@ let rec explain_exn = function
   | Not_found -> 
       hov 0 (anomaly_string () ++ str "uncaught exception Not_found" ++ report ())
   | Failure s -> 
-      hov 0 (anomaly_string () ++ str "uncaught exception Failure " ++ str (guill s) ++ report ())
+      hov 0 (str "Failure: " ++ str s ++ report ())
   | Invalid_argument s -> 
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report ())
   | Sys.Break -> 
