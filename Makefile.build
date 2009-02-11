@@ -807,7 +807,7 @@ ifeq ($(CHECKEDOUT),git)
 	  GIT_HOST=$$(hostname --fqdn); \
 	  GIT_PATH=$$(pwd); \
 	  echo "let version = \"$${GIT_HOST}:$${GIT_PATH},$${GIT_BRANCH}\"" > revision.new; \
-	  echo "let revision = \"$$(git show-ref $${GIT_BRANCH}|sed -ne 's/ .*//p')\"" >> revision.new; \
+	  echo "let revision = \"$$(git log -1 --pretty='format:%H')\"" >> revision.new; \
 	fi
 endif
 	$(HIDE)set -e; \
