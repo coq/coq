@@ -166,7 +166,7 @@ indepclean:
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 	rm -f test-suite/check.log
 	rm -f glob.dump
-	rm -f revision
+	rm -f config/revision.ml
 
 docclean:
 	rm -f doc/*/*.dvi doc/*/*.aux doc/*/*.log doc/*/*.bbl doc/*/*.blg doc/*/*.toc \
