@@ -12,14 +12,15 @@
 let coqbin () = 
   if !Flags.boot || Coq_config.local
   then Filename.concat Coq_config.coqsrc "bin"
-  else Filename.dirname Sys.executable_name
+  else System.canonical_path_name (Filename.dirname Sys.executable_name)
 
 let guess_coqlib () = 
   let file = "states/initial.coq" in
     if Sys.file_exists (Filename.concat Coq_config.coqlib file) 
     then Coq_config.coqlib
     else 
-      let prefix = Filename.dirname (Filename.dirname Sys.executable_name) in
+      let coqbin = System.canonical_path_name (Filename.dirname Sys.executable_name) in
+      let prefix = Filename.dirname coqbin in
       let coqlib = if Coq_config.local then prefix else 
 	List.fold_left Filename.concat prefix ["lib";"coq"] in
 	if Sys.file_exists (Filename.concat coqlib file) then coqlib else
