@@ -36,7 +36,11 @@ usage () {
     echo "-local"
     printf "\tSet installation directory to the current source tree\n"
     echo "-coqrunbyteflags"
-    printf "\tSet link flags for VM-dependent bytecode\n"
+    printf "\tSet link flags for VM-dependent bytecode (coqtop)\n"
+    echo "-coqtoolsbyteflags"
+    printf "\tSet link flags for VM-independant bytecode (coqdep, coqdoc, ...)\n"
+    echo "-custom"
+    printf "\tGenerate all bytecode executables with -custom (not recommended)\n"
     echo "-src"
     printf "\tSpecifies the source directory\n"
     echo "-bindir"
@@ -114,6 +118,8 @@ ranlib_exec=ranlib
 
 local=false
 coqrunbyteflags_spec=no
+coqtoolsbyteflags_spec=no
+custom_spec=no
 src_spec=no
 prefix_spec=no
 bindir_spec=no
@@ -150,6 +156,11 @@ while : ; do
     -coqrunbyteflags|--coqrunbyteflags) coqrunbyteflags_spec=yes
                                         coqrunbyteflags="$2"
                                         shift;;
+    -coqtoolsbyteflags|--coqtoolsbyteflags) coqtoolsbyteflags_spec=yes
+                                            coqtoolsbyteflags="$2"
+                                            shift;;
+    -custom|--custom) custom_spec=yes
+                      shift;;
     -src|--src) src_spec=yes
                 COQSRC="$2"
 	        shift;;
@@ -780,12 +791,25 @@ case $coqdocdir_spec/$prefix_spec/$local in
 	esac;;
 esac
 
+# Determine if we enable -custom by default (Windows and MacOS)
+CUSTOM_OS=no
+if [ "$ARCH" = "win32" ] || [ "`uname -s`" = "Darwin" ]; then
+    CUSTOM_OS=yes
+fi
+
 BUILDLDPATH="# you might want to set CAML_LD_LIBRARY_PATH by hand!"
-case $coqrunbyteflags_spec/$local in
-    yes/*) COQRUNBYTEFLAGS="$coqrunbyteflags";;
-    */true) COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath $COQTOP/kernel/byterun";;
-    *) COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath $LIBDIR"
-       BUILDLDPATH="export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun";;
+case $coqrunbyteflags_spec/$local/$custom_spec/$CUSTOM_OS in
+    yes/*/*/*) COQRUNBYTEFLAGS="$coqrunbyteflags";;
+    */*/yes/*|*/*/*/yes) COQRUNBYTEFLAGS="-custom";;
+    */true/*/*) COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath $COQTOP/kernel/byterun";;
+    *)
+        COQRUNBYTEFLAGS="-dllib -lcoqrun -dllpath $LIBDIR"
+        BUILDLDPATH="export CAML_LD_LIBRARY_PATH=$COQTOP/kernel/byterun";;
+esac
+case $coqtoolsbyteflags_spec/$custom_spec/$CUSTOM_OS in
+    yes/*/*) COQTOOLSBYTEFLAGS="$coqtoolsbyteflags";;
+    */yes/*|*/*/yes) COQTOOLSBYTEFLAGS="-custom";;
+    *) COQTOOLSBYTEFLAGS="";;
 esac
 
 # case $emacs_spec in
@@ -809,6 +833,7 @@ if test ! -z "$OS" ; then
   echo "  Operating system                  : $OS"
 fi
 echo "  Coq VM bytecode link flags        : $COQRUNBYTEFLAGS"
+echo "  Coq tools bytecode link flags     : $COQTOOLSBYTEFLAGS"
 echo "  OS dependent libraries            : $OSDEPLIBS"
 echo "  Objective-Caml/Camlp4 version     : $CAMLVERSION"
 echo "  Objective-Caml/Camlp4 binaries in : $CAMLBIN"
@@ -877,6 +902,7 @@ case $ARCH in
 	ESCCAMLP4LIB=`echo $CAMLP4LIB |sed -e 's|\\\|\\\\\\\|g'`
 	ESCLABLGTKINCLUDES=`echo $LABLGTKINCLUDES |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCOQRUNBYTEFLAGS=`echo $COQRUNBYTEFLAGS |sed -e 's|\\\|\\\\\\\|g'`
+	ESCCOQTOOLSBYTEFLAGS=`echo $COQTOOLSBYTEFLAGS |sed -e 's|\\\|\\\\\\\|g'`
 	ESCBUILDLDPATH=`echo $BUILDLDPATH |sed -e 's|\\\|\\\\\\\|g'`
 ;;
     *)
@@ -895,6 +921,7 @@ case $ARCH in
    	ESCCAMLP4LIB="$CAMLP4LIB"
 	ESCLABLGTKINCLUDES="$LABLGTKINCLUDES"
 	ESCCOQRUNBYTEFLAGS="$COQRUNBYTEFLAGS"
+	ESCCOQTOOLSBYTEFLAGS="$COQTOOLSBYTEFLAGS"
 	ESCBUILDLDPATH="$BUILDLDPATH"
 	;;
 esac
@@ -954,6 +981,7 @@ rm -f "$COQSRC/config/Makefile"
 
 sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|XCOQRUNBYTEFLAGS|$ESCCOQRUNBYTEFLAGS|" \
+    -e "s|XCOQTOOLSBYTEFLAGS|$ESCCOQTOOLSBYTEFLAGS|" \
     -e "s|COQSRCDIRECTORY|$COQSRC|" \
     -e "s|COQVERSION|$VERSION|" \
     -e "s|BINDIRDIRECTORY|$ESCBINDIR|" \
