@@ -24,6 +24,8 @@
 # by Emacs' next-error.
 ###########################################################################
 
+# !! Before using FIND_VCS_CLAUSE, please read how you should in the !!
+# !! FIND_VCS_CLAUSE section of dev/doc/build-system.dev.txt         !!
 export FIND_VCS_CLAUSE:='(' \
   -name '{arch}' -or \
   -name '.svn' -or \

@@ -12,6 +12,7 @@ see build-system.txt .
 happy only. To ensure they are not used for compilation, they contain
 invalid OCaml.
 
+
 multi-stage build
 -----------------
 
@@ -36,6 +37,7 @@ Le Makefile a été séparé en plusieurs fichiers :
 
 The build needs to be cut in stages because make will not take into
 account one include when making another include.
+
 
 Parallélisation
 ---------------
@@ -68,3 +70,62 @@ d'étape pour chaque fichier:
 
 Mais seule la première est gérée explicitement, la seconde est
 implicite.
+
+
+FIND_VCS_CLAUSE
+---------------
+
+The recommended style of using FIND_VCS_CLAUSE is for example
+
+ find . $(FIND_VCS_CLAUSE) '(' -name '*.example' ')' -print
+ find . $(FIND_VCS_CLAUSE) '(' -name '*.example' -or -name '*.foo' ')' -print
+
+1)
+The parentheses even in the one-criteria case is so that if one adds
+other conditions, e.g. change the first example to the second
+
+ find . $(FIND_VCS_CLAUSE) '(' -name '*.example' -and -not -name '*.bak.example' ')' -print
+
+one is not tempted to write
+
+ find . $(FIND_VCS_CLAUSE) -name '*.example' -and -not -name '*.bak.example' -print
+
+because this will not necessarily work as expected; $(FIND_VCS_CLAUSE)
+ends with an -or, and how it combines with what comes later depends on
+operator precedence and all that. Much safer to override it with
+parentheses.
+
+In short, it protects against the -or one doesn't see.
+
+2)
+As to the -print at the end, yes it is necessary. Here's why.
+
+You are used to write:
+ find . -name '*.example'
+and it works fine. But the following will not:
+ find . $(FIND_VCS_CLAUSE) -name '*.example'
+it will also list things directly matched by FIND_VCS_CLAUSE
+(directories we want to prune, in which we don't want to find
+anything). C'est subtil... Il y a effectivement un -print implicite à
+la fin, qui fait que la commande habituelle sans print fonctionne
+bien, mais dès que l'on introduit d'autres commandes dans le lot (le
+-prune de FIND_VCS_CLAUSE), ça se corse à cause d'histoires de
+parenthèses du -print implicite par rapport au parenthésage dans la
+forme recommandée d'utilisation:
+
+Si on explicite le -print et les parenthèses implicites, cela devient:
+
+find . '(' '(' '(' -name .git -or -name debian ')' -prune ')' -or \
+           '(' -name '*.example' ')'
+       ')'
+       -print
+
+Le print agit TOUT ce qui précède, soit sur ce qui matche "'(' -name
+.git -or -name debian ')'" ET sur ce qui matche "'(' -name '*.example' ')'".
+
+alors qu'ajouter le print explicite change cela en
+
+find . '(' '(' -name .git -or -name debian ')' -prune ')' -or \
+       '(' '(' -name '*.example' ')' -print ')'
+
+Le print n'agit plus que sur ce qui matche "'(' -name '*.example' ')'"
