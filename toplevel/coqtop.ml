@@ -19,6 +19,20 @@ open States
 open Toplevel
 open Coqinit
 
+let get_version_date () =
+  try
+    let coqlib = Envars.coqlib () in 
+    let ch = open_in (Filename.concat coqlib "revision") in
+    let ver = input_line ch in
+    let rev = input_line ch in
+      (ver,rev)
+  with _ -> (Coq_config.version,Coq_config.date)
+
+let print_header () =
+  let (ver,rev) = (get_version_date ()) in
+    Printf.printf "Welcome to Coq %s (%s)\n" ver rev;
+    flush stdout
+
 let output_context = ref false
 
 let memory_stat = ref false
@@ -324,7 +338,7 @@ let init is_ide =
     try
       parse_args is_ide;
       re_exec is_ide;
-      if_verbose Usage.print_header ();
+      if_verbose print_header ();
       init_load_path ();
       inputstate ();
       set_vm_opt ();

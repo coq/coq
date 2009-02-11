@@ -78,7 +78,7 @@ let obsolete s =
 
 let banner () =
   eprintf "This is coqdoc version %s, compiled on %s\n"
-    Revision.version Revision.date;
+    Coq_config.version Coq_config.compile_date;
   flush stderr
     
 let target_full_name f = 

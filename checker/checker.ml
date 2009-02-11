@@ -41,8 +41,18 @@ let path_of_string s =
 
 let (/) = Filename.concat
 
+let get_version_date () =
+  try
+    let coqlib = Envars.coqlib () in 
+    let ch = open_in (Filename.concat coqlib "revision") in
+    let ver = input_line ch in
+    let rev = input_line ch in
+      (ver,rev)
+  with _ -> (Coq_config.version,Coq_config.date)
+
 let print_header () =
-    Printf.printf "Welcome to Chicken %s (%s)\n" Revision.version Revision.revision;
+  let (ver,rev) = (get_version_date ()) in
+    Printf.printf "Welcome to Chicken %s (%s)\n" ver rev;
     flush stdout
 
 (* Adding files to Coq loadpath *)
@@ -157,8 +167,8 @@ let compile_files () =
 
 let version () =
   Printf.printf "The Coq Proof Checker, version %s (%s)\n"
-    Revision.version Revision.revision;
-  Printf.printf "compiled on %s\n" Revision.date;
+    Coq_config.version Coq_config.date;
+  Printf.printf "compiled on %s\n" Coq_config.compile_date;
   exit 0
 
 (* print the usage of coqtop (or coqc) on channel co *)

@@ -8,13 +8,10 @@
 
 (* $Id$ *)
 
-let print_header () =
-  Printf.printf "Welcome to Coq %s (%s)\n" Revision.version Revision.revision;
-  flush stdout
-
 let version () =
-  Printf.printf "The Coq Proof Assistant, version %s (%s)\n" Revision.version Revision.revision;
-  Printf.printf "compiled on %s\n" Revision.date;
+  Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
+    Coq_config.version Coq_config.date;
+  Printf.printf "compiled on %s\n" Coq_config.compile_date;
   exit 0
 
 (* print the usage of coqtop (or coqc) on channel co *)
@@ -99,6 +96,5 @@ let print_config () =
   Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
   Printf.printf "CAMLP4BIN=%s\n" Coq_config.camlp4bin;
   Printf.printf "CAMLP4LIB=%s\n" Coq_config.camlp4lib
-
 
 

@@ -263,6 +263,15 @@ if [ $prefix_spec = yes -a $local = true ] ; then
   exit 1
 fi
 
+# compile date
+DATEPGM=`which date`
+case $DATEPGM in
+    "") echo "I can't find the program \"date\" in your path."
+        echo "Please give me the current date"
+	read COMPILEDATE;;
+    *)  COMPILEDATE=`date +"%h %d %Y %H:%M:%S"`;;
+esac
+
 # Architecture
 
 case $arch_spec in
@@ -889,8 +898,7 @@ case $ARCH in
     win32)
 	ESCCOQTOP=`echo $COQTOP |sed -e 's|\\\|\\\\\\\|g'`
 	ESCBINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
-	ESCSRCDIR=`echo $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
-	ESCDOSSRCDIR=`cygpath -d $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
+	ESCSRCDIR=`cygpath -d $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
 	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLDIR=`echo $CAMLBIN |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
@@ -909,7 +917,6 @@ case $ARCH in
         ESCCOQTOP="$COQTOP"
 	ESCBINDIR="$BINDIR"
 	ESCSRCDIR="$COQSRC"
-	ESCDOSSRCDIR="$COQSRC"
 	ESCLIBDIR="$LIBDIR"
 	ESCCAMLDIR="$CAMLBIN"
 	ESCCAMLLIB="$CAMLLIB"
@@ -934,7 +941,7 @@ cat << END_OF_COQ_CONFIG > $mlconfig_file
 let local = $local
 let coqrunbyteflags = "$ESCCOQRUNBYTEFLAGS"
 let coqlib = "$ESCLIBDIR"
-let coqsrc = "$ESCDOSSRCDIR"
+let coqsrc = "$ESCSRCDIR"
 let camlbin = "$ESCCAMLDIR"
 let camllib = "$ESCCAMLLIB"
 let camlp4 = "$CAMLP4"
@@ -946,6 +953,7 @@ let has_natdynlink = $HASNATDYNLINK
 let osdeplibs = "$OSDEPLIBS"
 let version = "$VERSION"
 let date = "$DATE"
+let compile_date = "$COMPILEDATE"
 let vo_magic_number = $VOMAGIC
 let state_magic_number = $STATEMAGIC
 let exec_extension = "$EXE"

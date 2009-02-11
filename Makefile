@@ -210,7 +210,7 @@ depclean:
 	find . $(FIND_VCS_CLAUSE) '(' -name '*.d' ')' -print | xargs rm -f
 
 cleanconfig:
-	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli config/revision.ml
+	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli
 
 distclean: clean cleanconfig
 
