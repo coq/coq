@@ -952,6 +952,7 @@ let arch = "$ARCH"
 let has_natdynlink = $HASNATDYNLINK
 let osdeplibs = "$OSDEPLIBS"
 let version = "$VERSION"
+let caml_version = "$CAMLVERSION"
 let date = "$DATE"
 let compile_date = "$COMPILEDATE"
 let vo_magic_number = $VOMAGIC

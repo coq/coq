@@ -29,6 +29,7 @@ val coqrunbyteflags : string (* -custom/-dllib -lcoqrun *)
 (* val defined : string list  (* options for lib/ocamlpp *) *)
 
 val version : string    (* version number of Coq *)
+val caml_version : string    (* OCaml version used to compile Coq *)
 val date : string       (* release date *)
 val compile_date : string (* compile date *)
 val vo_magic_number : int
