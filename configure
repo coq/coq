@@ -407,7 +407,7 @@ fi
 
 # Under Windows, OCaml only understands Windows filenames (C:\...)
 case $ARCH in
-    win32) CAMLBIN=`cygpath -w ${CAMLBIN}`;;
+    win32) CAMLBIN=`cygpath -m ${CAMLBIN}`;;
 esac
 
 # this fixes a camlp4 bug under FreeBSD
@@ -694,7 +694,7 @@ esac
 
 # OCaml only understand Windows filenames (C:\...)
 case $ARCH in
-    win32) COQTOP=`cygpath -w ${COQTOP}`
+    win32) COQTOP=`cygpath -m ${COQTOP}`
 esac
 
 case $ARCH in
@@ -898,7 +898,7 @@ case $ARCH in
     win32)
 	ESCCOQTOP=`echo $COQTOP |sed -e 's|\\\|\\\\\\\|g'`
 	ESCBINDIR=`echo $BINDIR |sed -e 's|\\\|\\\\\\\|g'`
-	ESCSRCDIR=`cygpath -d $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
+	ESCSRCDIR=`cygpath -m $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
 	ESCLIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLDIR=`echo $CAMLBIN |sed -e 's|\\\|\\\\\\\|g'`
 	ESCCAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
