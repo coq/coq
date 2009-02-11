@@ -114,14 +114,20 @@ doc/refman/Reference-Manual.pdf: $(REFMANFILES) doc/refman/Reference-Manual.tex
 doc/refman/Reference-Manual.html: doc/refman/styles.hva doc/refman/headers.hva doc/refman/Reference-Manual.dvi # to ensure bbl file
 	(cd doc/refman; BIBINPUTS=.: $(HEVEA) $(HEVEAOPTS) ./styles.hva ./Reference-Manual.tex)
 
+doc/refman/cover.html: doc/common/styles/html/$(HTMLSTYLE)/cover.html
+	$(INSTALLLIB) $< doc/refman
+
+doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
+	$(INSTALLLIB) $< doc/refman
+
 doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
-                        doc/refman/cover.html doc/refman/index.html
+                        doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
 	- rm -rf doc/refman/html
 	$(MKDIR) doc/refman/html
 	$(INSTALLLIB) $(REFMANPNGFILES) doc/refman/html
 	(cd doc/refman/html; hacha -nolinks -tocbis -o toc.html ../styles.hva ../Reference-Manual.html)
-	$(INSTALLLIB) doc/refman/cover.html doc/refman/menu.html doc/refman/html
 	$(INSTALLLIB) doc/refman/cover.html doc/refman/html/index.html
+	$(INSTALLLIB) doc/common/styles/html/$(HTMLSTYLE)/*.css doc/refman/html
 
 refman-quick:
 	(cd doc/refman;\
