@@ -714,7 +714,7 @@ install-latex:
 source-doc:
 	if !(test -d $(SOURCEDOCDIR)); then mkdir $(SOURCEDOCDIR); fi
 	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) \
-	  `find . $(FIND_VCS_CLAUSE) -name "*.ml"`
+	  `find . $(FIND_VCS_CLAUSE) '(' -name '*.ml' ')' -print`
 
 
 ###########################################################################

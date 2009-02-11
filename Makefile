@@ -31,7 +31,7 @@ export FIND_VCS_CLAUSE:='(' \
   -name '.git' -or \
   -name 'debian' -or \
   -name "$${GIT_DIR}" \
-')' -prune -type f -or
+')' -prune -or
 export PRUNE_CHECKER := -wholename ./checker/\* -prune -or
 
 FIND_PRINTF_P:=-print | sed 's|^\./||'
@@ -52,7 +52,7 @@ export MLIFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mli' ')' $(FIN
 export ML4FILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml4' ')' $(FIND_PRINTF_P))
 #export VFILES   := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.v'   ')' $(FIND_PRINTF_P)) \
 #  $(GENVFILES)
-export CFILES   := $(shell find kernel/byterun $(FIND_VCS_CLAUSE) -name '*.c')
+export CFILES   := $(shell find kernel/byterun $(FIND_VCS_CLAUSE) '(' -name '*.c' ')' -print)
 
 export ML4FILESML:= $(ML4FILES:.ml4=.ml)
 
@@ -205,7 +205,7 @@ ml4depclean:
 	find . -name '*.ml4.d' | xargs rm -f
 
 depclean:
-	find . $(FIND_VCS_CLAUSE) -name '*.d' | xargs rm -f
+	find . $(FIND_VCS_CLAUSE) '(' -name '*.d' ')' -print | xargs rm -f
 
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli config/revision.ml
