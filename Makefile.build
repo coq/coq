@@ -176,6 +176,8 @@ states:: states/initial.coq
 
 initplugins: $(INITPLUGINSOPT) $(INITPLUGINS)
 
+plugins: $(INITPLUGINSOPT) $(INITPLUGINS) $(PLUGINSOPT) $(PLUGINS)
+
 $(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@
@@ -591,29 +593,71 @@ printers: $(DEBUGPRINTERS)
 
 tools:: $(TOOLS) $(DEBUGPRINTERS)
 
+ifeq ($(BEST),opt)
+$(COQDEP): $(COQDEPCMX)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa gramlib.cmxa $^ $(OSDEPLIBS)
+	$(STRIP) $@
+else
 $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma unix.cma gramlib.cma $^ $(OSDEPLIBS)
+endif
 
+ifeq ($(BEST),opt)
+$(GALLINA): $(GALLINACMX)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ $(GALLINACMX)
+	$(STRIP) $@
+else
 $(GALLINA): $(GALLINACMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $^
+endif
 
+ifeq ($(BEST),opt)
+$(COQMAKEFILE): tools/coq_makefile.cmx config/coq_config.cmx
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa config/coq_config.cmx tools/coq_makefile.cmx
+	$(STRIP) $@
+else
 $(COQMAKEFILE): config/coq_config.cmo tools/coq_makefile.cmo
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma $^
+endif
 
+ifeq ($(BEST),opt)
+$(COQTEX): tools/coq-tex.cmx
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa tools/coq-tex.cmx
+	$(STRIP) $@
+else
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma $^
+endif
 
+ifeq ($(BEST),opt)
+$(COQWC): tools/coqwc.cmx
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ tools/coqwc.cmx
+	$(STRIP) $@
+else
 $(COQWC): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $^
+endif
 
+ifeq ($(BEST),opt)
+$(COQDOC): $(COQDOCCMX)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa unix.cmxa $(COQDOCCMX)
+	$(STRIP) $@
+else
 $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma unix.cma $^
+endif
 
 ###########################################################################
 # Installation
