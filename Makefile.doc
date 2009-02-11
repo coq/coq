@@ -64,7 +64,7 @@ endif
 ######################################################################
 
 HIDEBIBTEXINFO=| grep -v "^A level-1 auxiliary file"
-SHOWMAKEINDEXERROR=egrep "^!! Input index error|^** Input style error|^   --"
+SHOWMAKEINDEXERROR=egrep '^!! Input index error|^\*\* Input style error|^   --'
 
 # Empty subsection levels in faq are on purpose
 HEVEAFAQFILTER=2>&1 | grep -v "^Warning: List with no item"
@@ -252,7 +252,7 @@ doc/RecTutorial/RecTutorial.html: doc/RecTutorial/RecTutorial.tex
 
 # Not robust, improve...
 ide/index_urls.txt: doc/refman/html/index.html
-	- rm ide/index_urls.txt
+	@ rm -f ide/index_urls.txt
 	cat doc/refman/html/command-index.html doc/refman/html/tactic-index.html | grep li-indexenv | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > ide/index_urls.txt
 
 
