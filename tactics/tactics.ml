@@ -565,8 +565,13 @@ let error_uninstantiated_metas t clenv =
   let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
   in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
-let clenv_refine_in with_evars id clenv gl =
+let clenv_refine_in with_evars ?(with_classes=true) id clenv gl =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
+  let clenv = 
+    if with_classes then 
+      { clenv with evd = Typeclasses.resolve_typeclasses ~fail:(not with_evars) clenv.env clenv.evd }
+    else clenv
+  in
   let new_hyp_typ = clenv_type clenv in
   if not with_evars & occur_meta new_hyp_typ then 
     error_uninstantiated_metas new_hyp_typ clenv;
