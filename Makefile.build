@@ -684,13 +684,13 @@ install-binaries:: install-$(BEST)  install-tools
 
 install-byte::
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqtop.byte$(EXE) coqtop$(EXE)
+	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(CHICKEN) $(FULLBINDIR)
+	cd $(FULLBINDIR); ln -sf coqtop.byte$(EXE) coqtop$(EXE); ln -sf coqchk.byte$(EXE) coqchk$(EXE)
 
 install-opt::
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE)
+	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(CHICKEN) $(CHICKENOPT) $(FULLBINDIR)
+	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE); ln -sf coqchk.opt$(EXE) coqchk$(EXE)
 
 install-tools::
 	$(MKDIR) $(FULLBINDIR)
