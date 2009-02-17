@@ -16,5 +16,6 @@ team. To use the MacOS X package,:
    can be used from a Terminal window: the interactive toplevel is
    named coqtop and the compiler is coqc.
 
-If you have any trouble with this installation, please contact:
-coq-bugs@pauillac.inria.fr.
+If you have any trouble with this installation, please consider using
+our bug tracking system to report bug (see
+http://logical.saclay.inria.fr/coq-bugs).
