@@ -3,8 +3,6 @@ Debugging from Coq toplevel using Caml trace mechanism
 
   1. Launch bytecode version of Coq (coqtop.byte or coqtop -byte)
   2. Access Ocaml toplevel using vernacular command 'Drop.'
-  2.5 If with ocaml >= 3.11, use #rectypes to activate the option rectypes 
-     in the toplevel
   3. Install load paths and pretty printers for terms, idents, ... using
      Ocaml command '#use "base_include";;' (use '#use "include";;' for 
      installing the advanced term pretty printers)
