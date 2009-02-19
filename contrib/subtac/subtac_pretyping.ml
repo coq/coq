@@ -74,7 +74,7 @@ let interp env isevars c tycon =
   let evd,_ = consider_remaining_unif_problems env !isevars in
 (*   let unevd = undefined_evars evd in *)
   let unevd' = Typeclasses.resolve_typeclasses ~onlyargs:true ~split:true ~fail:true env evd in
-  let evm = evars_of unevd' in
+  let evm =  unevd' in
     isevars := unevd';
     nf_evar evm j.uj_val, nf_evar evm j.uj_type
 
@@ -86,8 +86,8 @@ let find_with_index x l =
 
 open Vernacexpr
 
-let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_constr (evars_of evd) env
-let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_type (evars_of evd) env
+let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_constr ( evd) env
+let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.rawconstr = Constrintern.intern_type ( evd) env
 
 let env_with_binders env isevars l =
   let rec aux ((env, rels) as acc) = function
@@ -123,7 +123,7 @@ let subtac_process env isevars id bl c tycon =
   let c = coqintern_constr !isevars env c in
   let imps = Implicit_quantifiers.implicits_of_rawterm c in
   let coqc, ctyp = interp env isevars c tycon in
-  let evm = non_instanciated_map env isevars (evars_of !isevars) in
+  let evm = non_instanciated_map env isevars ( !isevars) in
   let ty = nf_isevar !isevars (match tycon with Some (None, c) -> c | _ -> ctyp) in
     evm, coqc, ty, imps
 

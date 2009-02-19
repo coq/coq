@@ -43,30 +43,30 @@ let inductive_type_knowing_parameters env ind jl =
 let rec execute env evd cstr =
   match kind_of_term cstr with
     | Meta n ->
-        { uj_val = cstr; uj_type = nf_evar (evars_of evd) (meta_type evd n) }
+        { uj_val = cstr; uj_type = nf_evar ( evd) (meta_type evd n) }
 
     | Evar ev ->
-        let sigma = Evd.evars_of evd in
+        let sigma =  evd in
 	let ty = Evd.existential_type sigma ev in
-	let jty = execute env evd (nf_evar (evars_of evd) ty) in
+	let jty = execute env evd (nf_evar ( evd) ty) in
 	let jty = assumption_of_judgment env jty in
 	{ uj_val = cstr; uj_type = jty }
 	
     | Rel n -> 
-	j_nf_evar (evars_of evd) (judge_of_relative env n)
+	j_nf_evar ( evd) (judge_of_relative env n)
 
     | Var id -> 
-        j_nf_evar (evars_of evd) (judge_of_variable env id)
+        j_nf_evar ( evd) (judge_of_variable env id)
 	  
     | Const c ->
-        make_judge cstr (nf_evar (evars_of evd) (type_of_constant env c))
+        make_judge cstr (nf_evar ( evd) (type_of_constant env c))
 	  
     | Ind ind ->
-	make_judge cstr (nf_evar (evars_of evd) (type_of_inductive env ind))
+	make_judge cstr (nf_evar ( evd) (type_of_inductive env ind))
 	  
     | Construct cstruct -> 
 	make_judge cstr
-          (nf_evar (evars_of evd) (type_of_constructor env cstruct))
+          (nf_evar ( evd) (type_of_constructor env cstruct))
 
     | Case (ci,p,c,lf) ->
         let cj = execute env evd c in
@@ -101,12 +101,12 @@ let rec execute env evd cstr =
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (inductive_type_knowing_parameters env ind
-		    (jv_nf_evar (evars_of evd) jl))
+		    (jv_nf_evar ( evd) jl))
 	    | Const cst -> 
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (constant_type_knowing_parameters env cst
-		    (jv_nf_evar (evars_of evd) jl))
+		    (jv_nf_evar ( evd) jl))
 	    | _ -> 
 		execute env evd f
 	in
@@ -157,7 +157,7 @@ and execute_array env evd = Array.map (execute env evd)
 and execute_list env evd = List.map (execute env evd)
 
 let mcheck env evd c t =
-  let sigma = Evd.evars_of evd in
+  let sigma =  evd in
   let j = execute env evd (nf_evar sigma c) in
   if not (is_conv_leq env sigma j.uj_type t) then
     error_actual_type env j (nf_evar sigma t)
@@ -165,13 +165,13 @@ let mcheck env evd c t =
 (* Type of a constr *)
  
 let mtype_of env evd c =
-  let j = execute env evd (nf_evar (evars_of evd) c) in
+  let j = execute env evd (nf_evar ( evd) c) in
   (* We are outside the kernel: we take fresh universes *)
   (* to avoid tactics and co to refresh universes themselves *)
   Termops.refresh_universes j.uj_type
 
 let msort_of env evd c =
-  let j = execute env evd (nf_evar (evars_of evd) c) in
+  let j = execute env evd (nf_evar ( evd) c) in
   let a = type_judgment env j in
   a.utj_type
 
@@ -185,5 +185,5 @@ let check env sigma c   =
 (* The typed type of a judgment. *)
 
 let mtype_of_type env evd constr =
-  let j = execute env evd (nf_evar (evars_of evd) constr) in
+  let j = execute env evd (nf_evar ( evd) constr) in
   assumption_of_judgment env j

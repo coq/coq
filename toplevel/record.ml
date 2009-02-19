@@ -32,7 +32,7 @@ open Topconstr
 (********** definition d'un record (structure) **************)
 
 let interp_evars evdref env ?(impls=([],[])) k typ =
-  let typ' = intern_gen true ~impls (Evd.evars_of !evdref) env typ in
+  let typ' = intern_gen true ~impls ( !evdref) env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env k typ'
 
@@ -64,7 +64,7 @@ let binders_of_decls = List.map binder_of_decl
 
 let typecheck_params_and_fields id t ps nots fs =
   let env0 = Global.env () in
-  let evars = ref (Evd.create_evar_defs Evd.empty) in
+  let evars = ref Evd.empty in
   let (env1,newps), imps = interp_context_evars ~fail_anonymous:false evars env0 ps in
   let fullarity = it_mkProd_or_LetIn (Option.cata (fun x -> x) (new_Type ()) t) newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
@@ -73,7 +73,7 @@ let typecheck_params_and_fields id t ps nots fs =
   in
   let evars,_ = Evarconv.consider_remaining_unif_problems env_ar !evars in
   let evars = Typeclasses.resolve_typeclasses env_ar evars in
-  let sigma = Evd.evars_of evars in
+  let sigma =  evars in
   let newps = Evarutil.nf_rel_context_evar sigma newps in
   let newfs = Evarutil.nf_rel_context_evar sigma newfs in
   let ce t = Evarutil.check_evars env0 Evd.empty evars t in

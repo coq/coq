@@ -1255,7 +1255,7 @@ let interp_open_constr_patvar sigma env c =
 	)
     | _ -> map_rawconstr patvar_to_evar r in
   let raw = patvar_to_evar raw in
-  Default.understand_tcc (Evd.evars_of !sigma) env raw
+  Default.understand_tcc ( !sigma) env raw
 
 let interp_constr_judgment sigma env c =
   Default.understand_judgment sigma env (intern_constr sigma env c)
@@ -1268,12 +1268,12 @@ let interp_constr_evars_gen_impls ?evdref
 	let imps = Implicit_quantifiers.implicits_of_rawterm c in
 	  Default.understand_gen kind Evd.empty env c, imps
     | Some evdref ->
-	let c = intern_gen (kind=IsType) ~impls (Evd.evars_of !evdref) env c in
+	let c = intern_gen (kind=IsType) ~impls ( !evdref) env c in
 	let imps = Implicit_quantifiers.implicits_of_rawterm c in
 	  Default.understand_tcc_evars evdref env kind c, imps
 
 let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
-  let c = intern_gen (kind=IsType) ~impls (Evd.evars_of !evdref) env c in
+  let c = intern_gen (kind=IsType) ~impls ( !evdref) env c in
     Default.understand_tcc_evars evdref env kind c
       
 let interp_casted_constr_evars_impls ?evdref
@@ -1294,7 +1294,7 @@ let interp_type_evars evdref env ?(impls=([],[])) c =
 
 let interp_constr_judgment_evars evdref env c =
   Default.understand_judgment_tcc evdref env
-    (intern_constr (Evd.evars_of !evdref) env c)
+    (intern_constr ( !evdref) env c)
 
 type ltac_sign = identifier list * unbound_ltac_var_map
 
@@ -1324,7 +1324,7 @@ let interp_binder sigma env na t =
   Default.understand_type sigma env t'
 
 let interp_binder_evars evdref env na t =
-  let t = intern_gen true (Evd.evars_of !evdref) env t in
+  let t = intern_gen true ( !evdref) env t in
   let t' = locate_if_isevar (loc_of_rawconstr t) na t in
   Default.understand_tcc_evars evdref env IsType t'
 
@@ -1371,7 +1371,7 @@ let interp_context ?(fail_anonymous=false) sigma env params =
       (Default.understand_judgment sigma) env bl
     
 let interp_context_evars ?(fail_anonymous=false) evdref env params =
-  let bl = intern_context fail_anonymous (Evd.evars_of !evdref) env params in
+  let bl = intern_context fail_anonymous ( !evdref) env params in
     interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
       (Default.understand_judgment_tcc evdref) env bl
     

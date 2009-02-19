@@ -149,7 +149,7 @@ let free_vars_of_rawconstr ?(bound=Idset.empty) =
 let rec make_fresh ids env x =
   if is_freevar ids env x then x else make_fresh ids env (Nameops.lift_ident x)
 
-let freevars_of_ids env ids = 
+let fre_ids env ids = 
   List.filter (is_freevar env (Global.env())) ids
       
 let next_ident_away_from id avoid = make_fresh avoid (Global.env ()) id

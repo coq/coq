@@ -123,7 +123,7 @@ module Default = struct
     with _ -> anomaly "apply_coercion"
 
   let inh_app_fun env evd j = 
-    let t = whd_betadeltaiota env (evars_of evd) j.uj_type in
+    let t = whd_betadeltaiota env ( evd) j.uj_type in
       match kind_of_term t with
 	| Prod (_,_,_) -> (evd,j)
 	| Evar ev ->
@@ -132,21 +132,21 @@ module Default = struct
 	| _ ->
        	    (try
       	       let t,p =
-		 lookup_path_to_fun_from env (evars_of evd) j.uj_type in
-		 (evd,apply_coercion env (evars_of evd) p j t)
+		 lookup_path_to_fun_from env ( evd) j.uj_type in
+		 (evd,apply_coercion env ( evd) p j t)
 	     with Not_found -> (evd,j))
 
   let inh_tosort_force loc env evd j =
     try
-      let t,p = lookup_path_to_sort_from env (evars_of evd) j.uj_type in
-      let j1 = apply_coercion env (evars_of evd) p j t in 
-      let j2 = on_judgment_type (whd_evar (evars_of evd)) j1 in
+      let t,p = lookup_path_to_sort_from env ( evd) j.uj_type in
+      let j1 = apply_coercion env ( evd) p j t in 
+      let j2 = on_judgment_type (whd_evar ( evd)) j1 in
         (evd,type_judgment env j2)
     with Not_found ->
-      error_not_a_type_loc loc env (evars_of evd) j
+      error_not_a_type_loc loc env ( evd) j
 
   let inh_coerce_to_sort loc env evd j =
-    let typ = whd_betadeltaiota env (evars_of evd) j.uj_type in
+    let typ = whd_betadeltaiota env ( evd) j.uj_type in
       match kind_of_term typ with
 	| Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
 	| Evar ev when not (is_defined_evar evd ev) ->
@@ -166,11 +166,11 @@ module Default = struct
     else
     let v', t' =
       try 
-	let t2,t1,p = lookup_path_between env (evars_of evd) (t,c1) in
+	let t2,t1,p = lookup_path_between env ( evd) (t,c1) in
 	  match v with
 	      Some v -> 
 		let j =
-		  apply_coercion env (evars_of evd) p
+		  apply_coercion env ( evd) p
 		    {uj_val = v; uj_type = t} t2 in
 		  Some j.uj_val, j.uj_type
 	    | None -> None, t
@@ -185,8 +185,8 @@ module Default = struct
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
     match
-      kind_of_term (whd_betadeltaiota env (evars_of evd) t),
-      kind_of_term (whd_betadeltaiota env (evars_of evd) c1)
+      kind_of_term (whd_betadeltaiota env ( evd) t),
+      kind_of_term (whd_betadeltaiota env ( evd) c1)
     with
     | Prod (name,t1,t2), Prod (_,u1,u2) -> 
         (* Conversion did not work, we may succeed with a coercion. *)
@@ -215,7 +215,7 @@ module Default = struct
 	    try 
 	      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
 	    with NoCoercion ->
-	      let sigma = evars_of evd in
+	      let sigma =  evd in
 		error_actual_type_loc loc env sigma cj t
 	  in
 	  let val' = match val' with Some v -> v | None -> assert(false) in
@@ -253,7 +253,7 @@ module Default = struct
 		  pi1 (inh_conv_coerce_to_fail loc env' evd None t t')
 		with NoCoercion ->
 		  evd) (* Maybe not enough information to unify *)
-	      (*let sigma = evars_of evd in
+	      (*let sigma =  evd in
 		error_cannot_coerce env' sigma (t, t'))*)
 	    else evd
 	with Invalid_argument _ -> evd	  *)

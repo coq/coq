@@ -376,7 +376,7 @@ exception Partial
    reduction is solved by the expanded fix term. *)
 let solve_arity_problem env sigma fxminargs c =
   let evm = ref sigma in
-  let set_fix i = evm := Evd.define !evm i (mkVar vfx) in
+  let set_fix i = evm := Evd.define i (mkVar vfx) !evm in
   let rec check strict c =
     let c' = whd_betaiotazeta sigma c in
     let (h,rcargs) = decompose_app c' in

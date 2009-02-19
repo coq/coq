@@ -149,7 +149,7 @@ let extract_open_proof sigma pf =
    in
     let unsharedconstr =
      let evar_nf_constr =
-      nf_evar (Evd.evars_of !evd)
+      nf_evar ( !evd)
         ~preserve:(function e -> S.mem e !unshared_constrs) constr
      in
       Unshare.unshare
@@ -159,14 +159,14 @@ let extract_open_proof sigma pf =
 (*CSC: debugging stuff to be removed *)
 if ProofTreeHash.mem proof_tree_to_constr node then
  Pp.ppnl (Pp.(++) (Pp.str "#DUPLICATE INSERTION: ")
- (Tactic_printer.print_proof (Evd.evars_of !evd) [] node)) ;
+ (Tactic_printer.print_proof ( !evd) [] node)) ;
      ProofTreeHash.add proof_tree_to_constr node unsharedconstr ;
      unshared_constrs := S.add unsharedconstr !unshared_constrs ;
      unsharedconstr
   in
   let unshared_pf = unshare_proof_tree pf in
   let pfterm = proof_extractor [] unshared_pf in
-   (pfterm, Evd.evars_of !evd, proof_tree_to_constr, proof_tree_to_flattened_proof_tree,
+   (pfterm,  !evd, proof_tree_to_constr, proof_tree_to_flattened_proof_tree,
     unshared_pf)
 ;;
 

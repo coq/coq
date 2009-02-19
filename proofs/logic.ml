@@ -99,7 +99,7 @@ let check_typability env sigma c =
 let clear_hyps sigma ids sign cl =
   let evdref = ref (Evd.create_goal_evar_defs sigma) in
   let (hyps,concl) = Evarutil.clear_hyps_in_evi evdref sign cl ids in
-  (hyps,concl,evars_of !evdref)
+  (hyps,concl, !evdref)
 
 (* The ClearBody tactic *)
 

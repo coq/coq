@@ -204,14 +204,14 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	for i = 0 to lt-1 do 
           if not (e_cumul env evdref (vdefj.(i)).uj_type
 		    (lift lt lar.(i))) then
-            error_ill_typed_rec_body_loc loc env (evars_of !evdref)
+            error_ill_typed_rec_body_loc loc env ( !evdref)
               i lna vdefj lar
 	done
 
   let check_branches_message loc env evdref c (explft,lft) = 
     for i = 0 to Array.length explft - 1 do
       if not (e_cumul env evdref lft.(i) explft.(i)) then 
-	let sigma = evars_of !evdref in
+	let sigma =  !evdref in
 	  error_ill_formed_branch_loc loc env sigma c i lft.(i) explft.(i)
     done
 
@@ -267,7 +267,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       {uj_val=it_mkLambda ccl' sign; uj_type=it_mkProd s' sign} 
 
   let evar_kind_of_term sigma c =
-    kind_of_term (whd_evar (Evd.evars_of sigma) c)
+    kind_of_term (whd_evar ( sigma) c)
 
   (*************************************************************************)
   (* Main pretyping function                                               *)
@@ -299,12 +299,12 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | REvar (loc, evk, instopt) ->
 	(* Ne faudrait-il pas s'assurer que hyps est bien un
 	   sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
-	let hyps = evar_filtered_context (Evd.find (evars_of !evdref) evk) in
+	let hyps = evar_filtered_context (Evd.find ( !evdref) evk) in
 	let args = match instopt with
           | None -> instance_from_named_context hyps
           | Some inst -> failwith "Evar subtitutions not implemented" in
 	let c = mkEvar (evk, args) in
-	let j = (Retyping.get_judgment_of env (evars_of !evdref) c) in
+	let j = (Retyping.get_judgment_of env ( !evdref) c) in
 	  inh_conv_coerce_to_tycon loc env evdref j tycon
 
     | RPatVar (loc,(someta,n)) -> 
@@ -356,8 +356,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		   uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
             ctxtv vdef in
 	evar_type_fixpoint loc env evdref names ftys vdefj;
-	let ftys = Array.map (nf_evar (evars_of !evdref)) ftys in
-	let fdefs = Array.map (fun x -> nf_evar (evars_of !evdref) (j_val x)) vdefj in
+	let ftys = Array.map (nf_evar ( !evdref)) ftys in
+	let fdefs = Array.map (fun x -> nf_evar ( !evdref) (j_val x)) vdefj in
  	let fixj = match fixkind with
 	  | RFix (vn,i) ->
 	      (* First, let's find the guard indexes. *)
@@ -392,7 +392,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  | c::rest ->
 	      let argloc = loc_of_rawconstr c in
 	      let resj = evd_comb1 (Coercion.inh_app_fun env) evdref resj in
-              let resty = whd_betadeltaiota env (evars_of !evdref) resj.uj_type in
+              let resty = whd_betadeltaiota env ( !evdref) resj.uj_type in
       		match kind_of_term resty with
 		  | Prod (na,c1,c2) ->
 		      let hj = pretype (mk_tycon c1) env evdref lvar c in
@@ -404,19 +404,19 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  | _ ->
 		      let hj = pretype empty_tycon env evdref lvar c in
 			error_cant_apply_not_functional_loc 
-			  (join_loc floc argloc) env (evars_of !evdref)
+			  (join_loc floc argloc) env ( !evdref)
 	      		  resj [hj]
 	in
 	let resj = apply_rec env 1 fj args in
 	let resj =
 	  match evar_kind_of_term !evdref resj.uj_val with
 	  | App (f,args) ->
-              let f = whd_evar (Evd.evars_of !evdref) f in
+              let f = whd_evar ( !evdref) f in
               begin match kind_of_term f with
               | Ind _ | Const _
 		  when isInd f or has_polymorphic_type (destConst f)
 		    ->
-	          let sigma = evars_of !evdref in
+	          let sigma =  !evdref in
 		  let c = mkApp (f,Array.map (whd_evar sigma) args) in
 	          let t = Retyping.get_type_of env sigma c in
 		  make_judge c t
@@ -454,10 +454,10 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RLetTuple (loc,nal,(na,po),c,d) ->
 	let cj = pretype empty_tycon env evdref lvar c in
 	let (IndType (indf,realargs)) = 
-	  try find_rectype env (evars_of !evdref) cj.uj_type
+	  try find_rectype env ( !evdref) cj.uj_type
 	  with Not_found ->
 	    let cloc = loc_of_rawconstr c in
-	      error_case_not_inductive_loc cloc env (evars_of !evdref) cj 
+	      error_case_not_inductive_loc cloc env ( !evdref) cj 
 	in
 	let cstrs = get_constructors env indf in
 	  if Array.length cstrs <> 1 then
@@ -488,7 +488,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		       (Array.to_list cs.cs_concl_realargs)
 		       @[build_dependent_constructor cs] in
 		     let lp = lift cs.cs_nargs p in
-		     let fty = hnf_lam_applist env (evars_of !evdref) lp inst in
+		     let fty = hnf_lam_applist env ( !evdref) lp inst in
 		     let fj = pretype (mk_tycon fty) env_f evdref lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 		     let v =
@@ -506,7 +506,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		       if noccur_between 1 cs.cs_nargs ccl then
 			 lift (- cs.cs_nargs) ccl 
 		       else
-			 error_cant_find_case_type_loc loc env (evars_of !evdref) 
+			 error_cant_find_case_type_loc loc env ( !evdref) 
 			   cj.uj_val in
 		     let ccl = refresh_universes ccl in
 		     let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
@@ -520,10 +520,10 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RIf (loc,c,(na,po),b1,b2) ->
 	let cj = pretype empty_tycon env evdref lvar c in
 	let (IndType (indf,realargs)) = 
-	  try find_rectype env (evars_of !evdref) cj.uj_type
+	  try find_rectype env ( !evdref) cj.uj_type
 	  with Not_found ->
 	    let cloc = loc_of_rawconstr c in
-	      error_case_not_inductive_loc cloc env (evars_of !evdref) cj in
+	      error_case_not_inductive_loc cloc env ( !evdref) cj in
 	let cstrs = get_constructors env indf in 
 	  if Array.length cstrs <> 2 then
             user_err_loc (loc,"",
@@ -542,7 +542,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	    | Some p ->
 		let env_p = push_rels psign env in
 		let pj = pretype_type empty_valcon env_p evdref lvar p in
-		let ccl = nf_evar (evars_of !evdref) pj.utj_val in
+		let ccl = nf_evar ( !evdref) pj.utj_val in
 		let pred = it_mkLambda_or_LetIn ccl psign in
 		let typ = lift (- nar) (beta_applist (pred,[cj.uj_val])) in
 		let jtyp = inh_conv_coerce_to_tycon loc env evdref {uj_val = pred;
@@ -556,8 +556,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
                       e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ())
 		in
 		  it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
-	  let pred = nf_evar (evars_of !evdref) pred in
-	  let p = nf_evar (evars_of !evdref) p in
+	  let pred = nf_evar ( !evdref) pred in
+	  let p = nf_evar ( !evdref) p in
 	  let f cs b =
 	    let n = rel_context_length cs.cs_args in
 	    let pi = lift n pred in (* liftn n 2 pred ? *)
@@ -612,7 +612,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | RDynamic (loc,d) ->
 	if (tag d) = "constr" then
 	  let c = constr_out d in
-	  let j = (Retyping.get_judgment_of env (evars_of !evdref) c) in
+	  let j = (Retyping.get_judgment_of env ( !evdref) c) in
 	    j
 	      (*inh_conv_coerce_to_tycon loc env evdref j tycon*)
 	else
@@ -624,7 +624,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	(match valcon with
 	   | Some v ->
                let s =
-		 let sigma = evars_of !evdref in
+		 let sigma =  !evdref in
 		 let t = Retyping.get_type_of env sigma v in
 		   match kind_of_term (whd_betadeltaiota env sigma t) with
                      | Sort s -> s
@@ -648,7 +648,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		if e_cumul env evdref v tj.utj_val then tj
 		else
 		  error_unexpected_type_loc
-                    (loc_of_rawconstr c) env (evars_of !evdref) tj.utj_val v
+                    (loc_of_rawconstr c) env ( !evdref) tj.utj_val v
 
   let pretype_gen_aux evdref env lvar kind c =
     let c' = match kind with
@@ -675,15 +675,15 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     let evdref = ref (create_evar_defs sigma) in
     let j = pretype empty_tycon env evdref ([],[]) c in
     let evd,_ = consider_remaining_unif_problems env !evdref in
-    let j = j_nf_evar (evars_of evd) j in
+    let j = j_nf_evar ( evd) j in
     let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env evd in
-    let j = j_nf_evar (evars_of evd) j in
+    let j = j_nf_evar ( evd) j in
     check_evars env sigma evd (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
     j
 
   let understand_judgment_tcc evdref env c =
     let j = pretype empty_tycon env evdref ([],[]) c in
-    let sigma = evars_of !evdref in
+    let sigma =  !evdref in
     let j = j_nf_evar sigma j in
     j
 
@@ -727,7 +727,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	else
 	  pretype_gen_aux evdref env ([],[]) (OfType exptyp) c
       in !evdref, c
-    in Evd.evars_of evd, t
+    in  evd, t
 end
   
 module Default : S = Pretyping_F(Coercion.Default)

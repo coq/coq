@@ -363,7 +363,7 @@ let unify_tomatch_with_patterns evdref env loc typ pats realnames =
     | None -> NotInd (None,typ)
     | Some (_,(ind,_)) ->
 	inh_coerce_to_ind evdref env typ ind;
-	try try_find_ind env (evars_of !evdref) typ realnames
+	try try_find_ind env ( !evdref) typ realnames
 	with Not_found -> NotInd (None,typ)
 
 let find_tomatch_tycon evdref env loc = function
@@ -377,9 +377,9 @@ let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
   let loc = Some (loc_of_rawconstr tomatch) in
   let tycon,realnames = find_tomatch_tycon evdref env loc indopt in
   let j = typing_fun tycon env evdref tomatch in
-  let typ = nf_evar (evars_of !evdref) j.uj_type in
+  let typ = nf_evar ( !evdref) j.uj_type in
   let t =
-    try try_find_ind env (evars_of !evdref) typ realnames
+    try try_find_ind env ( !evdref) typ realnames
     with Not_found ->
       unify_tomatch_with_patterns evdref env loc typ pats realnames in
   (j.uj_val,t)
@@ -414,7 +414,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
   let typ,names =
     match typ with IsInd(t,_,names) -> t,Some names | NotInd(_,t) -> t,None in
   let typ =
-    try try_find_ind pb.env (evars_of !(pb.evdref)) typ names
+    try try_find_ind pb.env ( !(pb.evdref)) typ names
     with Not_found -> NotInd (None,typ) in
   let tomatch = ((current,typ),deps,dep) in
   match typ with
@@ -432,7 +432,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
 		  pb.evdref (make_judge current typ) (mk_tycon_type indt)).uj_val in
-	    let sigma = evars_of !(pb.evdref) in
+	    let sigma =  !(pb.evdref) in
 	    let typ = try_find_ind pb.env sigma indt names in
 	    ((current,typ),deps,dep))
   | _ -> tomatch
@@ -934,10 +934,10 @@ let expand_arg tms ccl ((_,t),_,na) =
 
 let adjust_impossible_cases pb pred tomatch submat =
   if submat = [] then
-    match kind_of_term (whd_evar (evars_of !(pb.evdref)) pred) with
+    match kind_of_term (whd_evar ( !(pb.evdref)) pred) with
     | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) = ImpossibleCase ->
 	let default = (coq_unit_judge ()).uj_type in
-	pb.evdref := Evd.evar_define evk default !(pb.evdref);
+	pb.evdref := Evd.define evk default !(pb.evdref);
       (* we add an "assert false" case *)
       let pats = List.map (fun _ -> PatVar (dummy_loc,Anonymous)) tomatch in
       let aliasnames =
@@ -989,8 +989,8 @@ let specialize_predicate newtomatchs (names,(depna,_)) cs tms ccl =
   List.fold_left (expand_arg tms) ccl''' newtomatchs
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
-  let pred= abstract_predicate env (evars_of !evdref) indf current dep tms p in
-  (pred, whd_betaiota (evars_of !evdref)
+  let pred= abstract_predicate env ( !evdref) indf current dep tms p in
+  (pred, whd_betaiota ( !evdref)
            (applist (pred, realargs@[current])), new_Type ())
 
 let adjust_predicate_from_tomatch ((_,oldtyp),_,(nadep,_)) typ pb =
@@ -1068,7 +1068,7 @@ let rec generalize_problem names pb = function
 let build_leaf pb =
   let rhs = extract_rhs pb in
   let j = pb.typing_function (mk_tycon pb.pred) rhs.rhs_env pb.evdref rhs.it in
-  j_nf_evar (evars_of !(pb.evdref)) j
+  j_nf_evar ( !(pb.evdref)) j
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem ((current,t),_,(nadep,_)) pb =
@@ -1236,7 +1236,7 @@ and compile_generalization pb d rest =
 and compile_alias pb (deppat,nondeppat,d,t) rest =
   let history = simplify_history pb.history in
   let sign, newenv, mat =
-    insert_aliases pb.env (evars_of !(pb.evdref)) (deppat,nondeppat,d,t) pb.mat in
+    insert_aliases pb.env ( !(pb.evdref)) (deppat,nondeppat,d,t) pb.mat in
   let n = List.length sign in
 
   (* We had Gamma1; x:current; Gamma2 |- tomatch(x) and we rebind x to get *)
@@ -1456,7 +1456,7 @@ let adjust_to_extended_env_and_remove_deps env extenv subst t =
 *)
 
 let abstract_tycon loc env evdref subst _tycon extenv t =
-  let sigma = evars_of !evdref in
+  let sigma =  !evdref in
   let t = nf_betaiota sigma t in (* it helps in some cases to remove K-redex *)
   let subst0,t0 = adjust_to_extended_env_and_remove_deps env extenv subst t in
   (* We traverse the type T of the original problem Xi looking for subterms
@@ -1503,7 +1503,7 @@ let build_tycon loc env tycon_env subst tycon extenv evdref t =
 	  e_new_evar evdref env ~src:(loc,ImpossibleCase) (new_Type ()) in
 	lift (n'-n) impossible_case_type
     | Some t -> abstract_tycon loc tycon_env evdref subst tycon extenv t in
-  get_judgment_of extenv (evars_of !evdref) t
+  get_judgment_of extenv ( !evdref) t
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
  * type T, [build_inversion_problem Gamma Sigma (t1..tn) T] builds a return
@@ -1516,7 +1516,7 @@ let build_tycon loc env tycon_env subst tycon extenv evdref t =
  *)
 
 let build_inversion_problem loc env evdref tms t =
-  let sigma = evars_of !evdref in
+  let sigma =  !evdref in
   let make_patvar t (subst,avoid) =
     let id = next_name_away (named_hd env t Anonymous) avoid in
     PatVar (dummy_loc,Name id), ((id,t)::subst, id::avoid) in

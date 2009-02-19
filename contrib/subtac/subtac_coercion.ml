@@ -83,7 +83,7 @@ module Coercion = struct
       | Type _, Prop Null -> Prop Null
       | _, Type _ -> s2
 
-  let hnf env isevars c = whd_betadeltaiota env (evars_of !isevars) c
+  let hnf env isevars c = whd_betadeltaiota env ( !isevars) c
 
   let lift_args n sign =
     let rec liftrec k = function
@@ -109,7 +109,7 @@ module Coercion = struct
   and coerce loc env isevars (x : Term.constr) (y : Term.constr) 
       : (Term.constr -> Term.constr) option 
       =
-    let x = nf_evar (evars_of !isevars) x and y = nf_evar (evars_of !isevars) y in
+    let x = nf_evar ( !isevars) x and y = nf_evar ( !isevars) y in
     let rec coerce_unify env x y =
       let x = hnf env isevars x and y = hnf env isevars y in
 	try 
@@ -119,7 +119,7 @@ module Coercion = struct
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
       let dest_prod c =
-	match Reductionops.splay_prod_n env (evars_of !isevars) 1 c with
+	match Reductionops.splay_prod_n env ( !isevars) 1 c with
 	| [(na,b,t)], c -> (na,t), c
 	| _ -> raise NoSubtacCoercion
       in
@@ -209,7 +209,7 @@ module Coercion = struct
 				       isevars := evs;
 				       let (n, dom, rng) = destLambda t in
 				       let (domk, args) = destEvar dom in
-					 isevars := evar_define domk a !isevars;
+					 isevars := define domk a !isevars;
 					 t, rng
 				 | _ -> raise NoSubtacCoercion
 			     in
@@ -252,7 +252,7 @@ module Coercion = struct
 			   end
 		       else
 			 if i = i' && len = Array.length l' then
-			   let evm = evars_of !isevars in
+			   let evm =  !isevars in
 			     (try subco () 
 			       with NoSubtacCoercion ->
 				 let typ = Typing.type_of env evm c in
@@ -264,7 +264,7 @@ module Coercion = struct
 			   subco ()
 		 | x, y when x = y ->
 		     if Array.length l = Array.length l' then
-		       let evm = evars_of !isevars in
+		       let evm =  !isevars in
 		       let lam_type = Typing.type_of env evm c in
 		       let lam_type' = Typing.type_of env evm c' in
 (* 			 if not (is_arity env evm lam_type) then ( *)
@@ -357,7 +357,7 @@ module Coercion = struct
     with _ -> anomaly "apply_coercion"
 
   let inh_app_fun env isevars j = 
-    let t = whd_betadeltaiota env (evars_of isevars) j.uj_type in
+    let t = whd_betadeltaiota env ( isevars) j.uj_type in
       match kind_of_term t with
 	| Prod (_,_,_) -> (isevars,j)
 	| Evar ev when not (is_defined_evar isevars ev) ->
@@ -366,8 +366,8 @@ module Coercion = struct
 	| _ ->
        	    (try
       	       let t,p =
-		 lookup_path_to_fun_from env (evars_of isevars) j.uj_type in
-		 (isevars,apply_coercion env (evars_of isevars) p j t)
+		 lookup_path_to_fun_from env ( isevars) j.uj_type in
+		 (isevars,apply_coercion env ( isevars) p j t)
 	     with Not_found ->
 	       try 
 		 let coercef, t = mu env isevars t in
@@ -377,14 +377,14 @@ module Coercion = struct
 
   let inh_tosort_force loc env isevars j =
     try
-      let t,p = lookup_path_to_sort_from env (evars_of isevars) j.uj_type in
-      let j1 = apply_coercion env (evars_of isevars) p j t in 
-	(isevars,type_judgment env (j_nf_evar (evars_of isevars) j1))
+      let t,p = lookup_path_to_sort_from env ( isevars) j.uj_type in
+      let j1 = apply_coercion env ( isevars) p j t in 
+	(isevars,type_judgment env (j_nf_evar ( isevars) j1))
     with Not_found ->
-      error_not_a_type_loc loc env (evars_of isevars) j
+      error_not_a_type_loc loc env ( isevars) j
 
   let inh_coerce_to_sort loc env isevars j =
-    let typ = whd_betadeltaiota env (evars_of isevars) j.uj_type in
+    let typ = whd_betadeltaiota env ( isevars) j.uj_type in
       match kind_of_term typ with
 	| Sort s -> (isevars,{ utj_val = j.uj_val; utj_type = s })
 	| Evar ev when not (is_defined_evar isevars ev) ->
@@ -394,13 +394,13 @@ module Coercion = struct
 	    inh_tosort_force loc env isevars j
 
   let inh_coerce_to_base loc env isevars j =
-    let typ = whd_betadeltaiota env (evars_of isevars) j.uj_type in
+    let typ = whd_betadeltaiota env ( isevars) j.uj_type in
     let ct, typ' = mu env isevars typ in
       isevars, { uj_val = app_opt ct j.uj_val; 
 		 uj_type = typ' }
 
   let inh_coerce_to_prod loc env isevars t =
-    let typ = whd_betadeltaiota env (evars_of isevars) (snd t) in
+    let typ = whd_betadeltaiota env ( isevars) (snd t) in
     let _, typ' = mu env isevars typ in
       isevars, (fst t, typ')
 	
@@ -411,10 +411,10 @@ module Coercion = struct
     else
     let v', t' =
       try 
-	let t2,t1,p = lookup_path_between env (evars_of evd) (t,c1) in
+	let t2,t1,p = lookup_path_between env ( evd) (t,c1) in
 	  match v with
 	      Some v -> 
-		let j = apply_coercion env (evars_of evd) p
+		let j = apply_coercion env ( evd) p
 		  {uj_val = v; uj_type = t} t2 in
 		  Some j.uj_val, j.uj_type
 	    | None -> None, t
@@ -430,8 +430,8 @@ module Coercion = struct
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
     match
-      kind_of_term (whd_betadeltaiota env (evars_of evd) t),
-      kind_of_term (whd_betadeltaiota env (evars_of evd) c1)
+      kind_of_term (whd_betadeltaiota env ( evd) t),
+      kind_of_term (whd_betadeltaiota env ( evd) c1)
     with
     | Prod (name,t1,t2), Prod (_,u1,u2) -> 
         (* Conversion did not work, we may succeed with a coercion. *)
@@ -463,7 +463,7 @@ module Coercion = struct
 		(Some (nf_isevar evd cj.uj_val))
 		(nf_isevar evd cj.uj_type) (nf_isevar evd t)
 	    with NoCoercion ->
-	      let sigma = evars_of evd in
+	      let sigma =  evd in
 		try
 		  coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
 		with NoSubtacCoercion ->
@@ -484,7 +484,7 @@ module Coercion = struct
 	| Some (init, cur) -> init, cur
     in
       try 
-	let rels, rng = Reductionops.splay_prod_n env (evars_of isevars) nabs t in
+	let rels, rng = Reductionops.splay_prod_n env ( isevars) nabs t in
 	(* The final range free variables must have been replaced by evars, we accept only that evars
 	   in rng are applied to free vars. *)
 	if noccur_with_meta 1 (succ nabs) rng then (
@@ -497,7 +497,7 @@ module Coercion = struct
 		   with NoCoercion ->
 		     coerce_itf loc env' isevars None t t')
 	    with NoSubtacCoercion ->
-	      let sigma = evars_of isevars in
+	      let sigma =  isevars in
 		error_cannot_coerce env' sigma (t, t'))
 	else isevars
       with _ -> isevars

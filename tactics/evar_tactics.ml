@@ -54,7 +54,7 @@ let instantiate n rawc ido gl =
     let ev,_ =  destEvar (List.nth evl (n-1)) in
     let evd' = w_refine ev rawc (create_goal_evar_defs sigma) in
       tclTHEN
-        (tclEVARS (evars_of evd'))
+        (tclEVARS ( evd'))
         tclNORMEVAR
         gl
 	
@@ -74,6 +74,6 @@ let instantiate_tac = function
 let let_evar name typ gls =
   let evd = Evd.create_goal_evar_defs gls.sigma in
   let evd',evar = Evarutil.new_evar evd (pf_env gls) typ in
-  Refiner.tclTHEN (Refiner.tclEVARS (evars_of evd'))
+  Refiner.tclTHEN (Refiner.tclEVARS ( evd'))
     (Tactics.letin_tac None name evar None nowhere) gls
  

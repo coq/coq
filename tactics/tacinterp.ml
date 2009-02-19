@@ -1427,14 +1427,14 @@ let solvable_by_tactic env evi (ev,args) src =
 let solve_remaining_evars env initial_sigma evd c =
   let evdref = ref (Typeclasses.resolve_typeclasses ~fail:true env evd) in
   let rec proc_rec c =
-    match kind_of_term (Reductionops.whd_evar (evars_of !evdref) c) with
+    match kind_of_term (Reductionops.whd_evar ( !evdref) c) with
       | Evar (ev,args as k) when not (Evd.mem initial_sigma ev) ->
             let (loc,src) = evar_source ev !evdref in
-	    let sigma = evars_of !evdref in
+	    let sigma =  !evdref in
 	    let evi = Evd.find sigma ev in
 	    (try 
 	      let c = solvable_by_tactic env evi k src in
-	      evdref := Evd.evar_define ev c !evdref;
+	      evdref := Evd.define ev c !evdref;
 	      c
 	    with Exit ->
 	      Pretype_errors.error_unsolvable_implicit loc env sigma evi src None)
@@ -1466,11 +1466,11 @@ let interp_econstr kind ist sigma env cc =
 (* Interprets an open constr *)
 let interp_open_constr ccl ist sigma env cc =
   let evd,c = interp_gen (OfType ccl) ist sigma env cc in
-  (evars_of evd,c)
+  ( evd,c)
 
 let interp_open_type ccl ist sigma env cc =
   let evd,c = interp_gen IsType ist sigma env cc in
-  (evars_of evd,c)
+  ( evd,c)
 
 let interp_constr = interp_econstr (OfType None)
 

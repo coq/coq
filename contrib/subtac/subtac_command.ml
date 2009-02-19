@@ -57,7 +57,7 @@ let evar_nf isevars c =
 let interp_gen kind isevars env 
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
-  let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars (Evd.evars_of !isevars) env c in
+  let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars ( !isevars) env c in
   let c' = SPretyping.pretype_gen isevars env ([],[]) kind c' in
     evar_nf isevars c'
 
@@ -75,14 +75,14 @@ let interp_casted_constr_evars isevars env ?(impls=([],[])) c typ =
 
 let interp_open_constr isevars env c =
     msgnl (str "Pretyping " ++ my_print_constr_expr c);
-  let c = Constrintern.intern_constr (Evd.evars_of !isevars) env c in
+  let c = Constrintern.intern_constr ( !isevars) env c in
   let c' = SPretyping.pretype_gen isevars env ([], []) (OfType None) c in
     evar_nf isevars c'
 
 let interp_constr_judgment isevars env c =
   let j = 
     SPretyping.understand_judgment_tcc isevars env
-      (Constrintern.intern_constr (Evd.evars_of !isevars) env c) 
+      (Constrintern.intern_constr ( !isevars) env c) 
   in
     { uj_val = evar_nf isevars j.uj_val; uj_type = evar_nf isevars j.uj_type }
 
@@ -95,11 +95,11 @@ let locate_if_isevar loc na = function
   | x -> x
 
 let interp_binder sigma env na t =
-  let t = Constrintern.intern_gen true (Evd.evars_of !sigma) env t in
+  let t = Constrintern.intern_gen true ( !sigma) env t in
     SPretyping.pretype_gen sigma env ([], []) IsType (locate_if_isevar (loc_of_rawconstr t) na t)
 
 let interp_context_evars evdref env params = 
-  let bl = Constrintern.intern_context false (Evd.evars_of !evdref) env params in
+  let bl = Constrintern.intern_context false ( !evdref) env params in
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->
@@ -299,8 +299,8 @@ let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
   let typ = it_mkProd_or_LetIn top_arity binders_rel in
   let fullcoqc = Evarutil.nf_isevar !isevars def in
   let fullctyp = Evarutil.nf_isevar !isevars typ in
-  let evm = evars_of_term (Evd.evars_of !isevars) Evd.empty fullctyp in
-  let evm = evars_of_term (Evd.evars_of !isevars) evm fullcoqc in
+  let evm =evars_of_term ( !isevars) Evd.empty fullctyp in
+  let evm = evars_of_term ( !isevars) evm fullcoqc in
   let evm = non_instanciated_map env isevars evm in
   let evars, evars_def, evars_typ = Eterm.eterm_obligations env recname !isevars evm 0 fullcoqc fullctyp in
     Subtac_obligations.add_definition recname evars_def evars_typ ~implicits:impls evars
@@ -351,7 +351,7 @@ let compute_possible_guardness_evidences (n,_) (_, fixctx) fixtype =
 let push_named_context = List.fold_right push_named
 
 let check_evars env initial_sigma evd c =
-  let sigma = evars_of evd in
+  let sigma =  evd in
   let c = nf_evar sigma c in
   let rec proc_rec c =
     match kind_of_term c with
@@ -374,7 +374,7 @@ let interp_recursive fixkind l boxed =
   let fixnames = List.map (fun fix -> fix.Command.fix_name) fixl in
 
   (* Interp arities allowing for unresolved types *)
-  let evdref = ref (Evd.create_evar_defs Evd.empty) in
+  let evdref = ref Evd.empty in
   let fixctxs, fiximps = List.split (List.map (interp_fix_context evdref env) fixl) in
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
@@ -397,9 +397,9 @@ let interp_recursive fixkind l boxed =
 
   (* Instantiate evars and check all are resolved *)
   let evd,_ = Evarconv.consider_remaining_unif_problems env_rec !evdref in
-  let fixdefs = List.map (nf_evar (evars_of evd)) fixdefs in
-  let fixtypes = List.map (nf_evar (evars_of evd)) fixtypes in
-  let rec_sign = nf_named_context_evar (evars_of evd) rec_sign in
+  let fixdefs = List.map (nf_evar ( evd)) fixdefs in
+  let fixtypes = List.map (nf_evar ( evd)) fixtypes in
+  let rec_sign = nf_named_context_evar ( evd) rec_sign in
     
   let recdefs = List.length rec_sign in
   List.iter (check_evars env_rec Evd.empty evd) fixdefs;
@@ -410,7 +410,7 @@ let interp_recursive fixkind l boxed =
 
   (* Get the interesting evars, those that were not instanciated *)
   let isevars = Evd.undefined_evars evd in
-  let evm = Evd.evars_of isevars in
+  let evm =  isevars in
   (* Solve remaining evars *)
   let rec collect_evars id def typ imps = 
       (* Generalize by the recursive prototypes  *)

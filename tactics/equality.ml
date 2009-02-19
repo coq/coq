@@ -566,7 +566,7 @@ exception NotDiscriminable
 let eq_baseid = id_of_string "e"
 
 let apply_on_clause (f,t) clause =
-  let sigma = Evd.evars_of clause.evd in
+  let sigma =  clause.evd in
   let f_clause = mk_clenv_from_env clause.env sigma None (f,t) in
   let argmv = 
     (match kind_of_term (last_arg f_clause.templval.Evd.rebus) with
@@ -588,7 +588,7 @@ let discr_positions env sigma (lbeq,(t,t1,t2)) eq_clause cpath dirn sort =
     [onLastHyp gen_absurdity; refine pf]
 
 let discrEq (lbeq,(t,t1,t2) as u) eq_clause gls =
-  let sigma = Evd.evars_of eq_clause.evd in
+  let sigma =  eq_clause.evd in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
     | Inr _ ->
@@ -608,7 +608,7 @@ let onEquality with_evars tac (c,lbindc) gls =
     with PatternMatchingFailure ->
       errorlabstrm "" (str"No primitive equality found.") in
   tclTHEN
-    (Refiner.tclEVARS (Evd.evars_of eq_clause'.evd)) 
+    (Refiner.tclEVARS ( eq_clause'.evd)) 
     (tac eq eq_clause') gls
 
 let onNegatedEquality with_evars tac gls =
@@ -739,21 +739,21 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       else
 	error "Cannot solve an unification problem."
     else
-      let (a,p_i_minus_1) = match whd_beta_stack (evars_of !evdref) p_i with
+      let (a,p_i_minus_1) = match whd_beta_stack ( !evdref) p_i with
 	| (_sigS,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausal_form: should be a sigma type" in
       let ev = Evarutil.e_new_evar evdref env a in
       let rty = beta_applist(p_i_minus_1,[ev]) in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
       match
-	Evd.existential_opt_value (Evd.evars_of !evdref) 
+	Evd.existential_opt_value ( !evdref) 
 	(destEvar ev)
       with
 	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
 	| None -> anomaly "Not enough components to build the dependent tuple"
   in
   let scf = sigrec_clausal_form siglen ty in
-  Evarutil.nf_evar (Evd.evars_of !evdref) scf
+  Evarutil.nf_evar ( !evdref) scf
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors
@@ -891,7 +891,7 @@ exception Not_dep_pair
 
 
 let injEq ipats (eq,(t,t1,t2)) eq_clause =
-  let sigma = Evd.evars_of eq_clause.evd in
+  let sigma =  eq_clause.evd in
   let env = eq_clause.env in
   match find_positions env sigma t1 t2 with
     | Inl _ ->
@@ -953,7 +953,7 @@ let injHyp id gls = injClause [] false (Some (ElimOnIdent (dummy_loc,id))) gls
 
 let decompEqThen ntac (lbeq,(t,t1,t2) as u) clause gls =
   let sort = pf_apply get_type_of gls (pf_concl gls) in 
-  let sigma = Evd.evars_of clause.evd in
+  let sigma =  clause.evd in
   let env = pf_env gls in 
   match find_positions env sigma t1 t2 with
     | Inl (cpath, (_,dirn), _) ->

@@ -115,7 +115,7 @@ let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
     | Some comtyp ->
 	let ty = generalize_constr_expr comtyp bl in
 	let b = abstract_constr_expr com bl in
-	let evdref = ref (Evd.create_evar_defs Evd.empty) in
+	let evdref = ref Evd.empty in
 	let ty, impls = interp_type_evars_impls ~evdref env ty in
 	let b, imps = interp_casted_constr_evars_impls ~evdref env b ty in
 	let body, typ = nf_isevar !evdref b, nf_isevar !evdref ty in
@@ -509,7 +509,7 @@ let check_all_names_different indl =
   if l <> [] then raise (InductiveError (SameNamesOverlap l))
 
 let mk_mltype_data evdref env assums arity indname =
-  let is_ml_type = is_sort env (evars_of !evdref) arity in
+  let is_ml_type = is_sort env ( !evdref) arity in
   (is_ml_type,indname,assums)
 
 let prepare_param = function
@@ -530,7 +530,7 @@ let interp_cstrs evdref env impls mldata arity ind =
 let interp_mutual paramsl indl notations finite = 
   check_all_names_different indl;
   let env0 = Global.env() in
-  let evdref = ref (Evd.create_evar_defs Evd.empty) in
+  let evdref = ref Evd.empty in
   let (env_params, ctx_params), userimpls = 
     interp_context_evars ~fail_anonymous:false evdref env0 paramsl 
   in
@@ -562,7 +562,7 @@ let interp_mutual paramsl indl notations finite =
   (* Instantiate evars and check all are resolved *)
   let evd,_ = consider_remaining_unif_problems env_params !evdref in
   let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env_params evd in
-  let sigma = evars_of evd in
+  let sigma =  evd in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map (nf_evar sigma) cl,impsl)) constructors in
   let ctx_params = Sign.map_rel_context (nf_evar sigma) ctx_params in
   let arities = List.map (nf_evar sigma) arities in
@@ -846,12 +846,12 @@ let interp_recursive fixkind l boxed =
   let fixnames = List.map (fun fix -> fix.fix_name) fixl in
 
   (* Interp arities allowing for unresolved types *)
-  let evdref = ref (Evd.create_evar_defs Evd.empty) in
+  let evdref = ref Evd.empty in
   let fixctxs, fiximps =
     List.split (List.map (interp_fix_context evdref env) fixl) in
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
-  let fixtypes = List.map (nf_evar (evars_of !evdref)) fixtypes in
+  let fixtypes = List.map (nf_evar ( !evdref)) fixtypes in
   let env_rec = push_named_types env fixnames fixtypes in
 
   (* Get interpretation metadatas *)
@@ -867,8 +867,8 @@ let interp_recursive fixkind l boxed =
 
   (* Instantiate evars and check all are resolved *)
   let evd,_ = consider_remaining_unif_problems env_rec !evdref in
-  let fixdefs = List.map (nf_evar (evars_of evd)) fixdefs in
-  let fixtypes = List.map (nf_evar (evars_of evd)) fixtypes in
+  let fixdefs = List.map (nf_evar ( evd)) fixdefs in
+  let fixtypes = List.map (nf_evar ( evd)) fixtypes in
   let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env evd in
   List.iter (check_evars env_rec Evd.empty evd) fixdefs;
   List.iter (check_evars env Evd.empty evd) fixtypes;

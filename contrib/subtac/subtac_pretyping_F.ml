@@ -79,14 +79,14 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	for i = 0 to lt-1 do 
           if not (e_cumul env isevars (vdefj.(i)).uj_type
 		    (lift lt lar.(i))) then
-            error_ill_typed_rec_body_loc loc env (evars_of !isevars)
+            error_ill_typed_rec_body_loc loc env ( !isevars)
               i lna vdefj lar
 	done
 
   let check_branches_message loc env isevars c (explft,lft) = 
     for i = 0 to Array.length explft - 1 do
       if not (e_cumul env isevars lft.(i) explft.(i)) then 
-	let sigma = evars_of !isevars in
+	let sigma =  !isevars in
 	  error_ill_formed_branch_loc loc env sigma c i lft.(i) explft.(i)
     done
 
@@ -99,7 +99,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 
   (*
     let evar_type_case isevars env ct pt lft p c =
-    let (mind,bty,rslty) = type_case_branches env (evars_of isevars) ct pt p c
+    let (mind,bty,rslty) = type_case_branches env ( isevars) ct pt p c
     in check_branches_message isevars env (c,ct) (bty,lft); (mind,rslty)
   *)
 
@@ -158,7 +158,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RType _ -> judge_of_new_Type ()
 
   (* [pretype tycon env isevars lvar lmeta cstr] attempts to type [cstr] *)
-  (* in environment [env], with existential variables [(evars_of isevars)] and *)
+  (* in environment [env], with existential variables [( isevars)] and *)
   (* the type constraint tycon *)
   let rec pretype (tycon : type_constraint) env isevars lvar c = 
 (*     let _ = try Subtac_utils.trace (str "pretype " ++ Subtac_utils.my_print_rawconstr env c ++ *)
@@ -179,12 +179,12 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | REvar (loc, ev, instopt) ->
 	(* Ne faudrait-il pas s'assurer que hyps est bien un
 	   sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
-	let hyps = evar_context (Evd.find (evars_of !isevars) ev) in
+	let hyps = evar_context (Evd.find ( !isevars) ev) in
 	let args = match instopt with
           | None -> instance_from_named_context hyps
           | Some inst -> failwith "Evar subtitutions not implemented" in
 	let c = mkEvar (ev, args) in
-	let j = (Retyping.get_judgment_of env (evars_of !isevars) c) in
+	let j = (Retyping.get_judgment_of env ( !isevars) c) in
 	  inh_conv_coerce_to_tycon loc env isevars j tycon
 
     | RPatVar (loc,(someta,n)) -> 
@@ -246,8 +246,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		  uj_type = it_mkProd_or_LetIn j.uj_type ctxt })
             ctxtv vdef in
 	evar_type_fixpoint loc env isevars names ftys vdefj;
-	let ftys = Array.map (nf_evar (evars_of !isevars)) ftys in
-	let fdefs = Array.map (fun x -> nf_evar (evars_of !isevars) (j_val x)) vdefj in
+	let ftys = Array.map (nf_evar ( !isevars)) ftys in
+	let fdefs = Array.map (fun x -> nf_evar ( !isevars) (j_val x)) vdefj in
 	let fixj = match fixkind with
 	  | RFix (vn,i) ->
 	      (* First, let's find the guard indexes. *)
@@ -297,7 +297,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  | c::rest ->
 	      let argloc = loc_of_rawconstr c in
 	      let resj = evd_comb1 (Coercion.inh_app_fun env) isevars resj in
-              let resty = whd_betadeltaiota env (evars_of !isevars) resj.uj_type in
+              let resty = whd_betadeltaiota env ( !isevars) resj.uj_type in
       		match kind_of_term resty with
 		  | Prod (na,c1,c2) ->
 		      Option.iter (fun ty -> isevars :=
@@ -315,14 +315,14 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		  | _ ->
 		      let hj = pretype empty_tycon env isevars lvar c in
 			error_cant_apply_not_functional_loc 
-			  (join_loc floc argloc) env (evars_of !isevars)
+			  (join_loc floc argloc) env ( !isevars)
 	      		  resj [hj]
 	in
-	let resj = j_nf_evar (evars_of !isevars) (apply_rec env 1 fj ftycon args) in
+	let resj = j_nf_evar ( !isevars) (apply_rec env 1 fj ftycon args) in
 	let resj =
 	  match kind_of_term resj.uj_val with
 	  | App (f,args) when isInd f or isConst f ->
-	      let sigma = evars_of !isevars in
+	      let sigma =  !isevars in
 	      let c = mkApp (f,Array.map (whd_evar sigma) args) in
 	      let t = Retyping.get_type_of env sigma c in
 	      make_judge c t
@@ -369,10 +369,10 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RLetTuple (loc,nal,(na,po),c,d) ->
 	let cj = pretype empty_tycon env isevars lvar c in
 	let (IndType (indf,realargs)) = 
-	  try find_rectype env (evars_of !isevars) cj.uj_type
+	  try find_rectype env ( !isevars) cj.uj_type
 	  with Not_found ->
 	    let cloc = loc_of_rawconstr c in
-	      error_case_not_inductive_loc cloc env (evars_of !isevars) cj 
+	      error_case_not_inductive_loc cloc env ( !isevars) cj 
 	in
 	let cstrs = get_constructors env indf in
 	if Array.length cstrs <> 1 then
@@ -396,14 +396,14 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		 | Some p ->
 		     let env_p = push_rels psign env in
 		     let pj = pretype_type empty_valcon env_p isevars lvar p in
-		     let ccl = nf_evar (evars_of !isevars) pj.utj_val in
+		     let ccl = nf_evar ( !isevars) pj.utj_val in
 		     let psign = make_arity_signature env true indf in (* with names *)
 		     let p = it_mkLambda_or_LetIn ccl psign in
 		     let inst = 
 		       (Array.to_list cs.cs_concl_realargs)
 		       @[build_dependent_constructor cs] in
 		     let lp = lift cs.cs_nargs p in
-		     let fty = hnf_lam_applist env (evars_of !isevars) lp inst in
+		     let fty = hnf_lam_applist env ( !isevars) lp inst in
 		     let fj = pretype (mk_tycon fty) env_f isevars lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 		     let v =
@@ -416,12 +416,12 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		     let tycon = lift_tycon cs.cs_nargs tycon in
 		     let fj = pretype tycon env_f isevars lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
-		     let ccl = nf_evar (evars_of !isevars) fj.uj_type in
+		     let ccl = nf_evar ( !isevars) fj.uj_type in
 		     let ccl =
 		       if noccur_between 1 cs.cs_nargs ccl then
 			 lift (- cs.cs_nargs) ccl 
 		       else
-			 error_cant_find_case_type_loc loc env (evars_of !isevars) 
+			 error_cant_find_case_type_loc loc env ( !isevars) 
 			   cj.uj_val in
 		     let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
 		     let v =
@@ -434,10 +434,10 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RIf (loc,c,(na,po),b1,b2) ->
 	let cj = pretype empty_tycon env isevars lvar c in
 	let (IndType (indf,realargs)) = 
-	  try find_rectype env (evars_of !isevars) cj.uj_type
+	  try find_rectype env ( !isevars) cj.uj_type
 	  with Not_found ->
 	    let cloc = loc_of_rawconstr c in
-	      error_case_not_inductive_loc cloc env (evars_of !isevars) cj in
+	      error_case_not_inductive_loc cloc env ( !isevars) cj in
 	let cstrs = get_constructors env indf in 
 	  if Array.length cstrs <> 2 then
             user_err_loc (loc,"",
@@ -456,7 +456,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	    | Some p ->
 		let env_p = push_rels psign env in
 		let pj = pretype_type empty_valcon env_p isevars lvar p in
-		let ccl = nf_evar (evars_of !isevars) pj.utj_val in
+		let ccl = nf_evar ( !isevars) pj.utj_val in
 		let pred = it_mkLambda_or_LetIn ccl psign in
 		let typ = lift (- nar) (beta_applist (pred,[cj.uj_val])) in
 		let jtyp = inh_conv_coerce_to_tycon loc env isevars {uj_val = pred;
@@ -470,8 +470,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
                       e_new_evar isevars env ~src:(loc,InternalHole) (new_Type ())
 		in
 		  it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
-	  let pred = nf_evar (evars_of !isevars) pred in
-	  let p = nf_evar (evars_of !isevars) p in
+	  let pred = nf_evar ( !isevars) pred in
+	  let p = nf_evar ( !isevars) p in
 	 (*   msgnl (str "Pred is: " ++ Termops.print_constr_env env pred);*)
 	  let f cs b =
 	    let n = rel_context_length cs.cs_args in
@@ -525,7 +525,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | RDynamic (loc,d) ->
 	if (tag d) = "constr" then
 	  let c = constr_out d in
-	  let j = (Retyping.get_judgment_of env (evars_of !isevars) c) in
+	  let j = (Retyping.get_judgment_of env ( !isevars) c) in
 	    j
 	      (*inh_conv_coerce_to_tycon loc env isevars j tycon*)
 	else
@@ -537,7 +537,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	(match valcon with
 	   | Some v ->
                let s =
-		 let sigma = evars_of !isevars in
+		 let sigma =  !isevars in
 		 let t = Retyping.get_type_of env sigma v in
 		   match kind_of_term (whd_betadeltaiota env sigma t) with
                      | Sort s -> s
@@ -561,7 +561,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		if e_cumul env isevars v tj.utj_val then tj
 		else
 		  error_unexpected_type_loc
-                    (loc_of_rawconstr c) env (evars_of !isevars) tj.utj_val v
+                    (loc_of_rawconstr c) env ( !isevars) tj.utj_val v
 
   let pretype_gen_aux isevars env lvar kind c =
     let c' = match kind with
@@ -572,12 +572,12 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  (pretype_type empty_valcon env isevars lvar c).utj_val in
     let evd,_ = consider_remaining_unif_problems env !isevars in
       isevars:=evd;
-      nf_evar (evars_of !isevars) c'
+      nf_evar ( !isevars) c'
 
   let pretype_gen isevars env lvar kind c =
     let c = pretype_gen_aux isevars env lvar kind c in
       isevars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:false env !isevars;
-      nf_evar (evars_of !isevars) c
+      nf_evar ( !isevars) c
 
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage
@@ -587,14 +587,14 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let understand_judgment sigma env c =
     let isevars = ref (create_evar_defs sigma) in
     let j = pretype empty_tycon env isevars ([],[]) c in
-    let j = j_nf_evar (evars_of !isevars) j in
+    let j = j_nf_evar ( !isevars) j in
     let isevars,_ = consider_remaining_unif_problems env !isevars in
       check_evars env sigma isevars (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
       j
 
   let understand_judgment_tcc isevars env c =
     let j = pretype empty_tycon env isevars ([],[]) c in
-    let sigma = evars_of !isevars in
+    let sigma =  !isevars in
     let j = j_nf_evar sigma j in
       j
 
@@ -635,7 +635,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let c = pretype_gen_aux isevars env ([],[]) (OfType exptyp) c in
 	  !isevars, c
     in
-      Evd.evars_of ev, t
+       ev, t
 end
 
 module Default : S = SubtacPretyping_F(Coercion.Default)

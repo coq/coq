@@ -880,9 +880,9 @@ let interp_pats i isevar env impls pat sign recu =
 			  str "Error parsing pattern: unnexpected left-hand side")
   in
     isevar := nf_evar_defs !isevar;
-    (nf_rel_context_evar (Evd.evars_of !isevar) varsctx, 
-    nf_env_evar (Evd.evars_of !isevar) env',
-    rev_map (nf_evar (Evd.evars_of !isevar)) pats)
+    (nf_rel_context_evar ( !isevar) varsctx, 
+    nf_env_evar ( !isevar) env',
+    rev_map (nf_evar ( !isevar)) pats)
       
 let interp_eqn i isevar env impls sign arity recu (pats, rhs) =
   let ctx, env', patcs = interp_pats i isevar env impls pats sign recu in
@@ -916,8 +916,8 @@ let define_by_eqs with_comp i (l,ann) t nt eqs =
   let isevar = ref (create_evar_defs Evd.empty) in
   let (env', sign), impls = interp_context_evars isevar env l in
   let arity = interp_type_evars isevar env' t in
-  let sign = nf_rel_context_evar (Evd.evars_of !isevar) sign in
-  let arity = nf_evar (Evd.evars_of !isevar) arity in
+  let sign = nf_rel_context_evar ( !isevar) sign in
+  let arity = nf_evar ( !isevar) arity in
   let arity = 
     if with_comp then
       let compid = add_suffix i "_comp" in
@@ -942,11 +942,11 @@ let define_by_eqs with_comp i (l,ann) t nt eqs =
       Option.iter (Command.declare_interning_data data) nt;
       map (interp_eqn i isevar fixenv data sign arity None) eqs) ()
   in
-  let sign = nf_rel_context_evar (Evd.evars_of !isevar) sign in
-  let arity = nf_evar (Evd.evars_of !isevar) arity in
+  let sign = nf_rel_context_evar ( !isevar) sign in
+  let arity = nf_evar ( !isevar) arity in
   let prob = (i, sign, arity) in
-  let fixenv = nf_env_evar (Evd.evars_of !isevar) fixenv in
-  let fixdecls = nf_rel_context_evar (Evd.evars_of !isevar) fixdecls in
+  let fixenv = nf_env_evar ( !isevar) fixenv in
+  let fixdecls = nf_rel_context_evar ( !isevar) fixdecls in
     (*   let ce = check_evars fixenv Evd.empty !isevar in *)
     (*   List.iter (function (_, _, Program rhs) -> ce rhs | _ -> ()) equations; *)
   let is_recursive, env' =
@@ -966,7 +966,7 @@ let define_by_eqs with_comp i (l,ann) t nt eqs =
     else t, ty
   in
   let obls, t', ty' = 
-    Eterm.eterm_obligations env i !isevar (Evd.evars_of undef) 0 ~status t ty
+    Eterm.eterm_obligations env i !isevar ( undef) 0 ~status t ty
   in
     if is_recursive then
       ignore(Subtac_obligations.add_mutual_definitions [(i, t', ty', impls, obls)] [] 

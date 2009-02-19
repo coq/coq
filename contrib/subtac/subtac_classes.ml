@@ -30,7 +30,7 @@ open Util
 module SPretyping = Subtac_pretyping.Pretyping
 
 let interp_binder_evars evdref env na t =
-  let t = Constrintern.intern_gen true (Evd.evars_of !evdref) env t in
+  let t = Constrintern.intern_gen true ( !evdref) env t in
     SPretyping.understand_tcc_evars evdref env IsType t
 
 let interp_binders_evars isevars env avoid l =
@@ -65,7 +65,7 @@ let interp_constrs_evars isevars env avoid l =
     
 let interp_constr_evars_gen evdref env ?(impls=([],[])) kind c =
   SPretyping.understand_tcc_evars evdref env kind
-    (intern_gen (kind=IsType) ~impls (Evd.evars_of !evdref) env c)
+    (intern_gen (kind=IsType) ~impls ( !evdref) env c)
 
 let interp_casted_constr_evars evdref env ?(impls=([],[])) c typ =
   interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c
@@ -94,7 +94,7 @@ let substitution_of_constrs ctx cstrs =
 
 let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) pri =
   let env = Global.env() in
-  let isevars = ref (Evd.create_evar_defs Evd.empty) in
+  let isevars = ref Evd.empty in
   let tclass =
     match bk with
     | Implicit ->
@@ -134,7 +134,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   let env' = push_rel_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
   isevars := resolve_typeclasses ~onlyargs:false ~fail:true env' !isevars;
-  let sigma = Evd.evars_of !isevars in
+  let sigma =  !isevars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in
   let subst = 
     let props = 
@@ -188,7 +188,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	Impargs.declare_manual_implicits false gr ~enriching:false imps;
 	Typeclasses.add_instance inst
     in
-    let evm = Subtac_utils.evars_of_term (Evd.evars_of !isevars) Evd.empty term in
+    let evm = Subtac_utils.evars_of_term ( !isevars) Evd.empty term in
     let obls, constr, typ = Eterm.eterm_obligations env id !isevars evm 0 term termtype in
       id, Subtac_obligations.add_definition id constr typ ~kind:(Global,false,Instance) ~hook obls
 	

@@ -310,7 +310,7 @@ let unify_tomatch_with_patterns isevars env loc typ pats =
     | None -> NotInd (None,typ)
     | Some (_,(ind,_)) ->
 	inh_coerce_to_ind isevars env typ ind;
-	try IsInd (typ,find_rectype env (Evd.evars_of !isevars) typ)
+	try IsInd (typ,find_rectype env ( !isevars) typ)
 	with Not_found -> NotInd (None,typ)
 
 let find_tomatch_tycon isevars env loc = function
@@ -324,9 +324,9 @@ let coerce_row typing_fun isevars env pats (tomatch,(_,indopt)) =
   let j = typing_fun tycon env tomatch in
   let evd, j = Coercion.inh_coerce_to_base (loc_of_rawconstr tomatch) env !isevars j in
   isevars := evd;
-  let typ = nf_evar (Evd.evars_of !isevars) j.uj_type in
+  let typ = nf_evar ( !isevars) j.uj_type in
   let t =
-    try IsInd (typ,find_rectype env (Evd.evars_of !isevars) typ)
+    try IsInd (typ,find_rectype env ( !isevars) typ)
     with Not_found ->
       unify_tomatch_with_patterns isevars env loc typ pats in
   (j.uj_val,t)
@@ -348,7 +348,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps) =
      the first pattern type and forget about the others *)
   let typ = match typ with IsInd (t,_) -> t | NotInd (_,t) -> t in
   let typ =
-    try IsInd (typ,find_rectype pb.env (Evd.evars_of !(pb.isevars)) typ)
+    try IsInd (typ,find_rectype pb.env ( !(pb.isevars)) typ)
     with Not_found -> NotInd (None,typ) in
   let tomatch = ((current,typ),deps) in
   match typ with
@@ -366,7 +366,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps) =
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
 		  pb.isevars (make_judge current typ) (mk_tycon_type indt)).uj_val in
-	    let sigma = Evd.evars_of !(pb.isevars) in
+	    let sigma =  !(pb.isevars) in
 	    let typ = IsInd (indt,find_rectype pb.env sigma indt) in
 	    ((current,typ),deps))
   | _ -> tomatch
@@ -799,7 +799,7 @@ let shift_operator k = function OpLambda _ | OpProd _ -> k+1 | _ -> k
 
 let reloc_operator (k,n) = function OpRel p when p > k -> 
 let rec unify_clauses k pv =
-  let pv'= Array.map (fun (n,sign,_,p) -> n,splay_constr (whd_betaiotaevar (push_rels (List.rev sign) env) (Evd.evars_of isevars)) p) pv in
+  let pv'= Array.map (fun (n,sign,_,p) -> n,splay_constr (whd_betaiotaevar (push_rels (List.rev sign) env) ( isevars)) p) pv in
   let n1,op1 = let (n1,(op1,args1)) = pv'.(0) in n1,op1 in
   if Array.for_all (fun (ni,(opi,_)) -> eq_operator_lift k (n1,ni) (op1,opi)) pv'
   then
@@ -822,7 +822,7 @@ let infer_predicate loc env isevars typs cstrs indf =
     (* Empiric normalization: p may depend in a irrelevant way on args of the*)
     (* cstr as in [c:{_:Alpha & Beta}] match c with (existS a b)=>(a,b) end *)
     let typs =
-      Array.map (local_strong whd_beta (Evd.evars_of !isevars)) typs
+      Array.map (local_strong whd_beta ( !isevars)) typs
     in
     let eqns = array_map2 prepare_unif_pb typs cstrs in
     (* First strategy: no dependencies at all *)
@@ -846,7 +846,7 @@ let infer_predicate loc env isevars typs cstrs indf =
       (true,pred) (* true = dependent -- par défaut *)
     else
 (*
-      let s = get_sort_of env (evars_of isevars) typs.(0) in
+      let s = get_sort_of env ( isevars) typs.(0) in
       let predpred = it_mkLambda_or_LetIn (mkSort s) sign in
       let caseinfo = make_default_case_info mis in
       let brs = array_map2 abstract_conclusion typs cstrs in
@@ -1040,11 +1040,11 @@ let find_predicate loc env isevars p typs cstrs current
   (IndType (indf,realargs)) tms =
   let (dep,pred) =
     match p with
-      | Some p -> abstract_predicate env (Evd.evars_of !isevars) indf current tms p
+      | Some p -> abstract_predicate env ( !isevars) indf current tms p
       | None -> infer_predicate loc env isevars typs cstrs indf in
-  let typ = whd_beta (Evd.evars_of !isevars) (applist (pred, realargs)) in
+  let typ = whd_beta ( !isevars) (applist (pred, realargs)) in
   if dep then
-    (pred, whd_beta (Evd.evars_of !isevars) (applist (typ, [current])),
+    (pred, whd_beta ( !isevars) (applist (typ, [current])),
      new_Type ())
   else
     (pred, typ, new_Type ())
@@ -1271,7 +1271,7 @@ and compile_generalization pb d rest =
 and compile_alias pb (deppat,nondeppat,d,t) rest =
   let history = simplify_history pb.history in
   let sign, newenv, mat =
-    insert_aliases pb.env (Evd.evars_of !(pb.isevars)) (deppat,nondeppat,d,t) pb.mat in
+    insert_aliases pb.env ( !(pb.isevars)) (deppat,nondeppat,d,t) pb.mat in
   let n = List.length sign in
 
   (* We had Gamma1; x:current; Gamma2 |- tomatch(x) and we rebind x to get *)
@@ -1427,14 +1427,14 @@ let oldprepare_predicate_from_tycon loc dep env isevars tomatchs sign c =
   let n, allargs, env, signs = List.fold_left cook (0, [], env, []) tomatchs in
   let names = List.rev (List.map (List.map pi1) signs) in
   let allargs =
-    List.map (fun c -> lift n (nf_betadeltaiota env (Evd.evars_of !isevars) c)) allargs in
+    List.map (fun c -> lift n (nf_betadeltaiota env ( !isevars) c)) allargs in
   let rec build_skeleton env c =
     (* Don't put into normal form, it has effects on the synthesis of evars *)
- (* let c = whd_betadeltaiota env (evars_of isevars) c in *)
+ (* let c = whd_betadeltaiota env ( isevars) c in *)
     (* We turn all subterms possibly dependent into an evar with maximum ctxt*)
     if isEvar c or List.exists (eq_constr c) allargs then
       e_new_evar isevars env  ~src:(loc, Evd.CasesType)
-        (Retyping.get_type_of env (Evd.evars_of !isevars) c)
+        (Retyping.get_type_of env ( !isevars) c)
     else
       map_constr_with_full_binders push_rel build_skeleton env c 
   in
@@ -1595,7 +1595,7 @@ let constr_of_pat env isevars arsign pat avoid =
 	  PatVar (l, name), [name, None, ty] @ realargs, mkRel 1, ty, (List.map (fun x -> mkRel 1) realargs), 1, avoid
     | PatCstr (l,((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
-	let IndType (indf, _) = find_rectype env (Evd.evars_of !isevars) (lift (-(List.length realargs)) ty) in
+	let IndType (indf, _) = find_rectype env ( !isevars) (lift (-(List.length realargs)) ty) in
 	let ind, params = dest_ind_family indf in
 	if ind <> cind then error_bad_constructor_loc l cstr ind;
 	let cstrs = get_constructors env indf in
@@ -1619,8 +1619,8 @@ let constr_of_pat env isevars arsign pat avoid =
 	let cstr = mkConstruct ci.cs_cstr in
 	let app = applistc cstr (List.map (lift (List.length sign)) params) in
 	let app = applistc app args in
-	let apptype = Retyping.get_type_of env (Evd.evars_of !isevars) app in	
-	let IndType (indf, realargs) = find_rectype env (Evd.evars_of !isevars) apptype in
+	let apptype = Retyping.get_type_of env ( !isevars) app in	
+	let IndType (indf, realargs) = find_rectype env ( !isevars) apptype in
 	  match alias with
 	      Anonymous ->
 		pat', sign, app, apptype, realargs, n, avoid
@@ -2047,14 +2047,14 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 	  (* Build the dependent arity signature, the equalities which makes
 	     the first part of the predicate and their instantiations. *)
 	let avoid = [] in
-	  build_dependent_signature env (Evd.evars_of !isevars) avoid tomatchs arsign
+	  build_dependent_signature env ( !isevars) avoid tomatchs arsign
 
       in
       let tycon, arity = 
 	match valcon_of_tycon tycon with
 	| None -> let ev = mkExistential env isevars in ev, ev
 	| Some t -> 
-	    t, prepare_predicate_from_arsign_tycon loc env (Evd.evars_of !isevars)
+	    t, prepare_predicate_from_arsign_tycon loc env ( !isevars)
 	      tomatchs sign (lift tomatchs_len t)
       in
       let neqs, arity = 

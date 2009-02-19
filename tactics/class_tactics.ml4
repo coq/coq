@@ -390,7 +390,7 @@ let valid goals p res_sigma l =
       (fun sigma (ev, evi) prf ->
 	let cstr, obls = Refiner.extract_open_proof !res_sigma prf in
 	  if not (Evd.is_defined sigma ev) then
-	    Evd.define sigma ev cstr
+	    Evd.define ev cstr sigma
 	  else sigma)
       !res_sigma goals l
   in raise (Found evm)
@@ -402,7 +402,7 @@ let is_dependent ev evm =
     evm false
     
 let resolve_all_evars_once debug (mode, depth) env p evd =
-  let evm = Evd.evars_of evd in
+  let evm =  evd in
   let goals, evm' = 
     Evd.fold
       (fun ev evi (gls, evm') ->
@@ -438,7 +438,7 @@ let has_undefined p oevd evd =
   Evd.fold (fun ev evi has -> has ||
     (evi.evar_body = Evar_empty && p ev evi && 
 	(try Typeclasses.is_resolvable (Evd.find oevd ev) with _ -> true)))
-    (Evd.evars_of evd) false
+    ( evd) false
 
 let rec merge_deps deps = function
   | [] -> [deps]
@@ -459,8 +459,8 @@ let select_evars evs evm =
     evm Evd.empty
 
 let resolve_all_evars debug m env p oevd do_split fail =
-  let oevm = Evd.evars_of oevd in
-  let split = if do_split then split_evars (Evd.evars_of (Evd.undefined_evars oevd)) else [Intset.empty] in
+  let oevm =  oevd in
+  let split = if do_split then split_evars ( (Evd.undefined_evars oevd)) else [Intset.empty] in
   let p = if do_split then 
     fun comp ev evi -> (Intset.mem ev comp || not (Evd.mem oevm ev)) && p ev evi
     else fun _ -> p 
@@ -481,7 +481,7 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	  | None -> 
 	      if fail then 
 		(* Unable to satisfy the constraints. *)
-		let evm = Evd.evars_of evd in
+		let evm =  evd in
 		let evm = if do_split then select_evars comp evm else evm in
 		let _, ev = Evd.fold 
 		  (fun ev evi (b,acc) -> 
@@ -615,9 +615,9 @@ let is_applied_setoid_relation t =
       let head = if isApp c then fst (destApp c) else c in 
 	if eq_constr (Lazy.force coq_eq) head then false
 	else (try      
-	    let evd, evar = Evarutil.new_evar (Evd.create_evar_defs Evd.empty) (Global.env()) (new_Type ()) in
+	    let evd, evar = Evarutil.new_evar Evd.empty (Global.env()) (new_Type ()) in
 	    let inst = mkApp (Lazy.force setoid_relation, [| evar; c |]) in
-	      ignore(Typeclasses.resolve_one_typeclass (Global.env()) (Evd.evars_of evd) inst);
+	      ignore(Typeclasses.resolve_one_typeclass (Global.env()) ( evd) inst);
 	      true
 	  with _ -> false)
   | _ -> false
@@ -645,19 +645,19 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
       | Some x -> f x
   in
   let rec aux env ty l =
-    let t = Reductionops.whd_betadeltaiota env (Evd.evars_of !isevars) ty in
+    let t = Reductionops.whd_betadeltaiota env ( !isevars) ty in
       match kind_of_term t, l with
       | Prod (na, ty, b), obj :: cstrs -> 
 	  if dependent (mkRel 1) b then
 	    let (b, arg, evars) = aux (Environ.push_rel (na, None, ty) env) b cstrs in
-	    let ty = Reductionops.nf_betaiota (Evd.evars_of !isevars) ty in
+	    let ty = Reductionops.nf_betaiota ( !isevars) ty in
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
 	      mkProd(na, ty, b), arg', (ty, None) :: evars
 	  else
 	    let (b', arg, evars) = aux env (subst1 mkProp b) cstrs in
-	    let ty = Reductionops.nf_betaiota(Evd.evars_of !isevars) ty in
+	    let ty = Reductionops.nf_betaiota( !isevars) ty in
 	    let relty = mk_relty ty obj in
 	    let newarg = mkApp (Lazy.force respectful, [| ty ; b' ; relty ; arg |]) in
 	      mkProd(na, ty, b), newarg, (ty, Some relty) :: evars
@@ -665,7 +665,7 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
       | _, [] -> 
 	  (match finalcstr with
 	      None -> 
-		let t = Reductionops.nf_betaiota(Evd.evars_of !isevars) ty in
+		let t = Reductionops.nf_betaiota( !isevars) ty in
 		let rel = mk_relty t None in 
 		  t, rel, [t, Some rel]
 	    | Some codom -> let (t, rel) = Lazy.force codom in
@@ -793,7 +793,7 @@ let rewrite2_unif_flags = {
 }
 
 let convertible env evd x y =
-  Reductionops.is_conv env (Evd.evars_of evd) x y
+  Reductionops.is_conv env ( evd) x y
   
 let allowK = true
 
@@ -803,7 +803,7 @@ let refresh_hypinfo env sigma hypinfo =
       match c with 
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	    hypinfo := decompose_setoid_eqhyp env (Evd.evars_of cl.evd) c l2r;
+	    hypinfo := decompose_setoid_eqhyp env ( cl.evd) c l2r;
 	| _ -> ()
   else ()
 
@@ -832,7 +832,7 @@ let unify_eqn env sigma hypinfo t =
 	      in
 	      let evd' = Typeclasses.resolve_typeclasses ~fail:false env'.env env'.evd in
 	      let env' = { env' with evd = evd' } in
-	      let nf c = Evarutil.nf_evar (Evd.evars_of evd') (Clenv.clenv_nf_meta env' c) in
+	      let nf c = Evarutil.nf_evar ( evd') (Clenv.clenv_nf_meta env' c) in
 	      let c1 = nf c1 and c2 = nf c2
 	      and car = nf car and rel = nf rel 
 	      and prf = nf (Clenv.clenv_value env') in
@@ -923,7 +923,7 @@ let build_new gl env sigma flags loccs hypinfo concl cstr evars =
       | Some (env', (prf, hypinfo as x)) when is_occ occ -> 
 	  begin 
 	    evars := Evd.evar_merge !evars 
-	      (Evd.evars_of (Evd.undefined_evars (Evarutil.nf_evar_defs env'.evd)));
+	      ( (Evd.undefined_evars (Evarutil.nf_evar_defs env'.evd)));
 	    match cstr with
 	    | None -> Some x, occ
 	    | Some _ ->
@@ -960,7 +960,7 @@ let build_new gl env sigma flags loccs hypinfo concl cstr evars =
 			let nargs = Array.length args in
 			let res = 
 			  mkApp (prf, args),
-			  (decomp_prod env (Evd.evars_of !evars) nargs car, 
+			  (decomp_prod env ( !evars) nargs car, 
 			  decomp_pointwise nargs rel, mkApp(c1, args), mkApp(c2, args))
 			in Some res, occ
 		else rewrite_args occ
@@ -1079,7 +1079,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 			     [| mkMeta goal_meta; t |])))
 	  in
 	  let evartac =
-	    let evd = Evd.evars_of undef in
+	    let evd =  undef in
 	      if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
 	      else tclIDTAC
 	  in tclTHENLIST [evartac; rewtac] gl
@@ -1198,7 +1198,7 @@ END
 (*     let depth = match depth with Some i -> i | None -> default_eauto_depth in *)
 (*       match resolve_typeclass_evars d (mode, depth) env evd false with *)
 (*       | Some evd' ->  *)
-(* 	  let goal = Evd.find (Evd.evars_of evd') 1 in *)
+(* 	  let goal = Evd.find ( evd') 1 in *)
 (* 	    (match goal.evar_body with *)
 (* 	    | Evar_empty -> tclIDTAC gl *)
 (* 	    | Evar_defined b -> refine b gl) *)
@@ -1431,7 +1431,7 @@ let build_morphism_signature m =
   let env = Global.env () in
   let m = Constrintern.interp_constr Evd.empty env m in
   let t = Typing.type_of env Evd.empty m in
-  let isevars = ref (Evd.create_evar_defs Evd.empty) in
+  let isevars = ref Evd.empty in
   let cstrs = 
     let rec aux t = 
       match kind_of_term t with
@@ -1459,7 +1459,7 @@ let build_morphism_signature m =
 	
 let default_morphism sign m =
   let env = Global.env () in
-  let isevars = ref (Evd.create_evar_defs Evd.empty) in
+  let isevars = ref Evd.empty in
   let t = Typing.type_of env Evd.empty m in
   let _, sign, evars =
     build_signature isevars env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
@@ -1578,7 +1578,7 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
     let mvs = clenv_dependent false cl' in
       clenv_pose_metas_as_evars cl' mvs
   in
-  let nf c = Evarutil.nf_evar (Evd.evars_of cl'.evd) (Clenv.clenv_nf_meta cl' c) in
+  let nf c = Evarutil.nf_evar ( cl'.evd) (Clenv.clenv_nf_meta cl' c) in
   let c1 = nf c1 and c2 = nf c2 and car = nf car and rel = nf rel in
   check_evar_map_of_evars_defs cl'.evd;
   let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
@@ -1673,13 +1673,13 @@ let typeclass_app_constrexpr t ?(bindings=NoBindings) gl =
   let t', bl = Tacinterp.intern_constr_with_bindings gs (t,bindings) in
   let j = Pretyping.Default.understand_judgment_tcc evars env (fst t') in
   let bindings = Tacinterp.interp_bindings my_ist gl bl in
-    typeclass_app (Evd.evars_of !evars) gl ~bindings:bindings j.uj_val j.uj_type
+    typeclass_app ( !evars) gl ~bindings:bindings j.uj_val j.uj_type
 
 let typeclass_app_raw t gl =
   let env = pf_env gl in
   let evars = ref (create_evar_defs (project gl)) in
   let j = Pretyping.Default.understand_judgment_tcc evars env t in
-    typeclass_app (Evd.evars_of !evars) gl j.uj_val j.uj_type
+    typeclass_app ( !evars) gl j.uj_val j.uj_type
 
 let pr_gen prc _prlc _prtac c = prc c
 

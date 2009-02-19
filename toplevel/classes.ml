@@ -72,7 +72,7 @@ type binder_list = (identifier located * bool * constr_expr) list
 (* Calls to interpretation functions. *)
 
 let interp_type_evars evdref env ?(impls=([],[])) typ =
-  let typ' = intern_gen true ~impls (Evd.evars_of !evdref) env typ in
+  let typ' = intern_gen true ~impls ( !evdref) env typ in
   let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env Pretyping.IsType typ'
     
@@ -133,7 +133,7 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
 let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
     ?(tac:Proof_type.tactic option) ?(hook:(Names.constant -> unit) option) pri =
   let env = Global.env() in
-  let isevars = ref (Evd.create_evar_defs Evd.empty) in
+  let isevars = ref Evd.empty in
   let tclass = 
     match bk with
     | Implicit ->
@@ -169,7 +169,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
   let env' = push_rel_context ctx' env in
   isevars := Evarutil.nf_evar_defs !isevars;
   isevars := resolve_typeclasses env !isevars;
-  let sigma = Evd.evars_of !isevars in
+  let sigma =  !isevars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in
     if Lib.is_modtype () then
       begin
@@ -234,9 +234,9 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 	let term = Termops.it_mkLambda_or_LetIn app ctx' in
 	isevars := Evarutil.nf_evar_defs !isevars;
 	let term = Evarutil.nf_isevar !isevars term in
-	let evm = Evd.evars_of (undefined_evars !isevars) in
+	let evm =  (undefined_evars !isevars) in
 	Evarutil.check_evars env Evd.empty !isevars termtype;
-	  if evm = Evd.empty then
+	  if Evd.is_empty evm then
 	    declare_instance_constant k pri global imps ?hook id term termtype
 	  else begin
 	    isevars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !isevars;
@@ -246,7 +246,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true)
 		  (fun _ -> function ConstRef cst -> instance_hook k pri global imps ?hook cst
 		    | _ -> assert false);
 		if props <> [] then 
-		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS (Evd.evars_of !isevars)) *)
+		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS ( !isevars)) *)
 		    (!refine_ref (evm, term));
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
 	      Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
@@ -266,9 +266,9 @@ let named_of_rel_context l =
 
 let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in
-  let evars = ref (Evd.create_evar_defs Evd.empty) in
+  let evars = ref Evd.empty in
   let (env', fullctx), impls = interp_context_evars evars env l in
-  let fullctx = Evarutil.nf_rel_context_evar (Evd.evars_of !evars) fullctx in
+  let fullctx = Evarutil.nf_rel_context_evar ( !evars) fullctx in
   let ce t = Evarutil.check_evars env Evd.empty !evars t in
   List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;
   let ctx = try named_of_rel_context fullctx with _ -> 

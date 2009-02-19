@@ -528,7 +528,7 @@ let resolve_classes gl =
     if evd = Evd.empty then tclIDTAC gl
     else
       let evd' = Typeclasses.resolve_typeclasses env (Evd.create_evar_defs evd) in
-	(tclTHEN (tclEVARS (Evd.evars_of evd')) tclNORMEVAR) gl
+	(tclTHEN (tclEVARS ( evd')) tclNORMEVAR) gl
 
 (**************************)
 (*     Cut tactics        *)
@@ -577,7 +577,7 @@ let clenv_refine_in with_evars ?(with_classes=true) id clenv gl =
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
   tclTHEN
-    (tclEVARS (evars_of clenv.evd))
+    (tclEVARS ( clenv.evd))
     (cut_replacing id new_hyp_typ
       (fun x gl -> refine_no_check new_hyp_prf gl)) gl
 
@@ -747,7 +747,7 @@ let check_evars sigma evm gl =
   in 
   if rest <> Evd.empty then
     errorlabstrm "apply" (str"Uninstantiated existential variables: " ++ 
-      fnl () ++ pr_evar_map rest)
+      fnl () ++ pr_evar_defs rest)
 
 let general_apply with_delta with_destruct with_evars (c,lbind) gl0 =
   let flags = 
@@ -985,7 +985,7 @@ let specialize mopt (c,lbind) g =
       let clause = make_clenv_binding g (c,pf_type_of g c) lbind in
       let clause = clenv_unify_meta_types clause in
       let (thd,tstack) =
-        whd_stack (evars_of clause.evd) (clenv_value clause) in
+        whd_stack ( clause.evd) (clenv_value clause) in
       let nargs = List.length tstack in
       let tstack = match mopt with 
 	| Some m -> 
@@ -1001,7 +1001,7 @@ let specialize mopt (c,lbind) g =
 	errorlabstrm "" (str "Cannot infer an instance for " ++
           pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
 	  str ".");
-      Some (evars_of clause.evd), term
+      Some ( clause.evd), term
   in
   tclTHEN 
     (match evars with Some e -> tclEVARS e | _ -> tclIDTAC)
@@ -3164,5 +3164,5 @@ let unify ?(state=full_transparent_state) x y gl =
     in
     let evd = w_unify false (pf_env gl) Reduction.CONV 
       ~flags x y (Evd.create_evar_defs (project gl))
-    in tclEVARS (Evd.evars_of evd) gl
+    in tclEVARS ( evd) gl
   with _ -> tclFAIL 0 (str"Not unifiable") gl
