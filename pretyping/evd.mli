@@ -195,8 +195,10 @@ val evar_merge : evar_defs -> evar_defs -> evar_defs
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr
 val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
+
+module ExistentialSet : Set.S with type elt = existential_key
 val extract_changed_conv_pbs : evar_defs -> 
-      (existential_key list -> evar_constraint -> bool) ->
+      (ExistentialSet.t -> evar_constraint -> bool) ->
       evar_defs * evar_constraint list
 val extract_all_conv_pbs : evar_defs -> evar_defs * evar_constraint list
 

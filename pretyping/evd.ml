@@ -71,6 +71,7 @@ let eq_evar_info ei1 ei2 =
 *)
 
 module ExistentialMap = Intmap
+module ExistentialSet = Intset
 
 (* This exception is raised by *.existential_value *)	
 exception NotInstantiatedEvar
@@ -423,7 +424,7 @@ type evar_constraint = conv_pb * Environ.env * constr * constr
 type evar_defs =
     { evars : EvarMap.t;
       conv_pbs : evar_constraint list;
-      last_mods : existential_key list;
+      last_mods : ExistentialSet.t;
       history : (existential_key * (loc * hole_kind)) list;
       metas : clbinding Metamap.t }
 
@@ -440,7 +441,7 @@ let merge d1 d2 = {
 (* d1 with evars = EvarMap.merge d1.evars d2.evars*)
   evars = EvarMap.merge d1.evars d2.evars ;
   conv_pbs = List.rev_append d1.conv_pbs d2.conv_pbs ;
-  last_mods = List.rev_append d1.last_mods d2.last_mods ;
+  last_mods = ExistentialSet.union d1.last_mods d2.last_mods ;
   history = List.rev_append d1.history d2.history ;
   metas = Metamap.fold (fun k m r -> Metamap.add k m r) d2.metas d1.metas
 }
@@ -492,14 +493,14 @@ let subst_evar_map = subst_evar_defs_light
 
 (* spiwack: deprecated *)
 let create_evar_defs sigma = { sigma with
-  conv_pbs=[]; last_mods=[]; history=[]; metas=Metamap.empty }
+  conv_pbs=[]; last_mods=ExistentialSet.empty; history=[]; metas=Metamap.empty }
 (* spiwack: tentatively deprecated *)
 let create_goal_evar_defs sigma = { sigma with
-   conv_pbs=[]; last_mods=[]; metas=Metamap.empty }
+   conv_pbs=[]; last_mods=ExistentialSet.empty; metas=Metamap.empty }
 let empty =  { 
   evars=EvarMap.empty; 
   conv_pbs=[]; 
-  last_mods = []; 
+  last_mods = ExistentialSet.empty; 
   history=[]; 
   metas=Metamap.empty 
 }
@@ -517,7 +518,7 @@ let define evk body evd =
     last_mods = 
         match evd.conv_pbs with
 	| [] ->  evd.last_mods
-        | _ -> evk :: evd.last_mods }
+        | _ -> ExistentialSet.add evk evd.last_mods }
 
 let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
   let filter =
@@ -565,7 +566,7 @@ let extract_conv_pbs evd p =
       ([],[])
       evd.conv_pbs
   in
-  {evd with conv_pbs = pbs1; last_mods = []},
+  {evd with conv_pbs = pbs1; last_mods = ExistentialSet.empty},
   pbs
 
 let extract_changed_conv_pbs evd p =
