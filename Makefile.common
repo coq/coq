@@ -855,9 +855,16 @@ DPVO:=$(addprefix contrib/dp/, \
 RTAUTOVO:=$(addprefix contrib/rtauto/, \
  Bintree.vo	Rtauto.vo )
 
+ifneq ($(HASNATDYNLINK),false)
+INTERFACEVO:=contrib/interface/CoqInterface.vo
+else
+INTERFACEVO:=
+endif
+
 CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
-	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO)
+	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
+            $(INTERFACEVO)
 
 ALLVO:= $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 VFILES:= $(ALLVO:.vo=.v)
@@ -872,13 +879,6 @@ LIBFILES:=$(THEORIESVO) $(CONTRIBVO)
 LIBFILESLIGHT:=$(THEORIESLIGHTVO)
 
 ## Specials
-
-ifneq ($(HASNATDYNLINK),false)
-INTERFACEVO:=contrib/interface/CoqInterface.vo
-else
-INTERFACEVO:=
-endif
-
 
 MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
