@@ -418,18 +418,23 @@ INTERFACECMX:=$(INTERFACE:.cmo=.cmx)
 PARSERREQUIRES:=$(LINKCMO) $(LIBCOQRUN) # Solution de facilité...
 PARSERREQUIRESCMX:=$(LINKCMX)
 
+COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 ifeq ($(BEST),opt)
-  COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/coq-parser$(EXE) bin/coq-parser.opt$(EXE)
-else
-  COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-parser$(EXE)
+ifeq ($(HASNATDYNLINK),false)
+  COQINTERFACE:=$(COQINTERFACE) bin/coq-interface.opt$(EXE) bin/coq-parser.opt$(EXE)
+endif
 endif
 
 PARSERCODE:=contrib/interface/line_parser.cmo contrib/interface/vtp.cmo \
-           contrib/interface/xlate.cmo contrib/interface/parse.cmo
+           contrib/interface/xlate.cmo contrib/interface/coqparser.cmo
 PARSERCMO:=$(PARSERREQUIRES) $(PARSERCODE)
 PARSERCMX:= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
 
+ifneq ($(HASNATDYNLINK),false)
 INTERFACERC:= contrib/interface/vernacrc
+else
+INTERFACERC:= contrib/interface/vernacrc contrib/interface/CoqParser.v
+endif
 
 CSDPCERTCMO:= contrib/micromega/mutils.cmo contrib/micromega/micromega.cmo \
 	      contrib/micromega/mfourier.cmo  contrib/micromega/certificate.cmo \
@@ -868,7 +873,11 @@ LIBFILESLIGHT:=$(THEORIESLIGHTVO)
 
 ## Specials
 
+ifneq ($(HASNATDYNLINK),false)
+INTERFACEVO:=contrib/interface/CoqInterface.vo
+else
 INTERFACEVO:=
+endif
 
 
 MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \

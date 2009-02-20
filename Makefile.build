@@ -422,12 +422,8 @@ ide/%.cmx: ide/%.ml | ide/%.ml.d
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
 ide/ide.cma: $(COQIDECMO)
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $^
 
 ide/ide.cmxa: $(COQIDECMO:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $^
 
 # install targets
 
@@ -459,10 +455,11 @@ install-ide-info:
 # Pcoq: special binaries for debugging (coq-interface, coq-parser)
 ###########################################################################
 
-# target to build Pcoq
-pcoq: pcoq-binaries pcoq-files
+ifeq ($(HASNATDYNLINK),false)
 
-pcoq-binaries:: $(COQINTERFACE) 
+# old approach, via coqmktop
+
+PCOQPLUGINS:=
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(INTERFACE)
 	$(SHOW)'COQMKTOP -o $@'
@@ -482,8 +479,39 @@ bin/coq-parser.opt$(EXE): $(LIBCOQRUN) $(PARSERCMX)
 	$(HIDE)$(OCAMLOPT) -linkall $(OPTFLAGS) -o $@ \
 	  $(LIBCOQRUN) $(DYNLINKCMXA) str.cmxa nums.cmxa $(CMXA) $(PARSERCMX)
 
-pcoq-files:: $(INTERFACEVO) $(INTERFACERC)
+else 
 
+# HASNATDYNLINK is available :
+# coq-interface and coq-parser are direct calls to coqtop with some dynlink
+
+PCOQPLUGINS:=contrib/interface/coqinterface_plugin.cma \
+             contrib/interface/coqparser_plugin.cma
+
+contrib/interface/coqinterface_plugin.cma: $(INTERFACE)
+contrib/interface/coqinterface_plugin.cmxa: $(INTERFACE:.cmo=.cmx)
+contrib/interface/coqparser_plugin.cma: $(PARSERCODE)
+contrib/interface/coqparser_plugin.cmxa: $(PARSERCODE:.cmo=.cmx)
+
+bin/coq-interface$(EXE):
+	echo "#!/bin/sh" > $@
+	echo "exec coqtop -require CoqInterface" >> $@
+	chmod +x $@
+
+bin/coq-parser$(EXE):
+	echo "#!/bin/sh" > $@
+	echo "exec coqtop -batch -l CoqParser" >> $@
+	chmod +x $@
+
+endif # of HASNATDYNLINK
+
+PCOQFILES:= $(INTERFACEVO) $(INTERFACERC) $(PCOQPLUGINS) $(PCOQPLUGINS:.cma=.cmxs)
+
+# target to build Pcoq
+pcoq: pcoq-binaries pcoq-files
+
+pcoq-binaries:: $(COQINTERFACE)
+
+pcoq-files:: $(PCOQFILES)
 
 # install targets
 install-pcoq:: install-pcoq-binaries install-pcoq-files install-pcoq-manpages
@@ -494,7 +522,7 @@ install-pcoq-binaries::
 
 install-pcoq-files::
 	$(MKDIR) $(FULLCOQLIB)/contrib/interface
-	$(INSTALLLIB) $(INTERFACERC) $(FULLCOQLIB)/contrib/interface
+	$(INSTALLLIB) $(PCOQFILES) $(FULLCOQLIB)/contrib/interface
 
 install-pcoq-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1
