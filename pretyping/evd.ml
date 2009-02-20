@@ -514,7 +514,10 @@ let evar_source evk d =
 let define evk body evd =
   { evd with
     evars = EvarMap.define evd.evars evk body;
-    last_mods = evk :: evd.last_mods }
+    last_mods = 
+        match evd.conv_pbs with
+	| [] ->  evd.last_mods
+        | _ -> evk :: evd.last_mods }
 
 let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
   let filter =
