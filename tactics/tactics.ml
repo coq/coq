@@ -2460,7 +2460,11 @@ let find_elim_signature isrec elim hyp0 gl =
 	let s = elimination_sort_of_goal gl in
 	let elimc =
 	  if isrec then lookup_eliminator mind s
-	  else pf_apply make_case_gen gl mind s in
+	  else
+	    let case = 
+	      if occur_term (mkVar hyp0) (pf_concl gl) then make_case_dep
+	      else make_case_gen in
+	    pf_apply case gl mind s in
 	let elimt = pf_type_of gl elimc in
 	((elimc, NoBindings), elimt), mkInd mind
     | Some (elimc,lbind as e) ->

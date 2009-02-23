@@ -10,6 +10,8 @@ Tactics
 - Tactic "intuition" now preserves inner "iff" (exceptional source of 
   incompatibilities solvable by redefining "intuition" as 
   "unfold iff in *; intuition".
+- Improved support of dependent goals over objects in dependent types for
+  "destruct".
 
 Tools
 

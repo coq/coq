@@ -1,6 +1,6 @@
 (* Submitted by Robert Schneck *)
 
-Parameter A B C D : Prop.
+Parameters A B C D : Prop.
 Axiom X : A -> B -> C /\ D.
 
 Lemma foo : A -> B -> C.
@@ -45,9 +45,9 @@ Require Import List.
 Definition alist R := list (nat * R)%type.
 
 Section Properties.
-  Variables A : Type.
-  Variables a : A.
-  Variables E : alist A.
+  Variable A : Type.
+  Variable a : A.
+  Variable E : alist A.
 
   Lemma silly : E = E.
   Proof.
@@ -55,3 +55,9 @@ Section Properties.
   Abort.
 
 End Properties.
+
+(* This used not to work before revision 11944 *)
+
+Goal forall P:(forall n, 0=n -> Prop), forall H: 0=0, P 0 H.
+destruct H.
+Abort.
