@@ -212,7 +212,7 @@ let clean sds sps =
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(HTMLFILES) \
          $(GHTMLFILES) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) $(VFILES:.v=.v.d)\n";
   if !some_mlfile then
-    print "\trm -f $(CMOFILES) $(MLFILES:.ml=.cmi) $(MLFILES:.ml=.ml.d)\n";
+    print "\trm -f $(CMOFILES) $(MLFILES:.ml=.cmi) $(MLFILES:.ml=.ml.d) $(MLFILES:.ml=.cmx) $(MLFILES:.ml=.o)\n";
   print "\t- rm -rf html\n";
   List.iter
     (fun (file,_,_) -> 
@@ -248,7 +248,7 @@ let implicit () =
     print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.cmxs: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $(PP) -impl $<\n\n";
     print "%.ml.d: %.ml\n";
-    print "\t$(CAMLBIN)ocamldep -slash $(COQSRCLIBS) $(PP) \"$<\" > \"$@\"\n\n"
+    print "\t$(CAMLBIN)ocamldep -slash $(COQSRCLIBS) $(OCAMLLIBS) $(PP) \"$<\" > \"$@\"\n\n"
   and v_rule () =
     print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -313,7 +313,7 @@ let include_dirs (inc_i,inc_r) =
   let str_i' = parse_includes inc_i' in
   let str_r = parse_rec_includes inc_r in
     section "Libraries definitions.";
-    print "OCAMLLIBS:=-I $(CAMLP4LIB) "; print_list "\\\n  " str_i; print "\n";
+    print "OCAMLLIBS:="; print_list "\\\n  " str_i; print "\n";
     print "COQSRCLIBS:=-I $(COQLIB)/kernel -I $(COQLIB)/lib \\
   -I $(COQLIB)/library -I $(COQLIB)/parsing \\
   -I $(COQLIB)/pretyping -I $(COQLIB)/interp \\
