@@ -343,8 +343,11 @@ CONTRIBSTATIC:=\
         $(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
         $(FUNINDCMO)
 
+CONTRIBCMA:=contrib/contrib.cma
+
 ifneq ($(HASNATDYNLINK),false)
  CONTRIBSTATIC:=
+ CONTRIBCMA:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
 	$(XMLCMA) $(FUNINDCMA) $(SUBTACCMA)
  PLUGINS:=$(INITPLUGINS) \
@@ -371,7 +374,7 @@ CMXA:=$(CMA:.cma=.cmxa)
 LINKCMO:=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
-        parsing/highparsing.cma tactics/hightactics.cma contrib/contrib.cma
+        parsing/highparsing.cma tactics/hightactics.cma $(CONTRIBCMA)
 LINKCMOCMXA:=$(LINKCMO:.cma=.cmxa)
 LINKCMX:=$(LINKCMOCMXA:.cmo=.cmx)
 
