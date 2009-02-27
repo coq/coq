@@ -91,11 +91,11 @@ val clos_norm_flags : Closure.RedFlags.reds -> reduction_function
 val nf_beta : local_reduction_function
 val nf_betaiota : local_reduction_function
 val nf_betadeltaiota : reduction_function
-val nf_evar : evar_map -> constr -> constr
+(* arnaud: val nf_evar : evar_map -> constr -> constr *)
 
 val nf_betaiota_preserving_vm_cast : reduction_function
 (* Lazy strategy, weak head reduction *)
-val whd_evar :  evar_map -> constr -> constr
+(* arnaud: val whd_evar :  evar_map -> constr -> constr*)
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function
 val whd_betaiotazeta : local_reduction_function

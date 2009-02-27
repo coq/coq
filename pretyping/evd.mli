@@ -132,7 +132,6 @@ val add : evar_defs -> evar -> evar_info -> evar_defs
 
 val dom : evar_defs -> evar list
 val find : evar_defs -> evar -> evar_info
-val remove : evar_defs -> evar -> evar_defs
 val mem : evar_defs -> evar -> bool
 val to_list : evar_defs -> (evar * evar_info) list
 val fold : (evar -> evar_info -> 'a -> 'a) -> evar_defs -> 'a -> 'a
@@ -240,6 +239,13 @@ val whd_sort_variable : evar_defs -> constr -> constr
 val set_leq_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
 val define_sort_variable : evar_defs -> sorts -> sorts -> evar_defs
 
+
+(**********************************************************)
+(* Substitution of existential variables  *)
+
+val whd_evar : evar_defs -> constr -> constr
+val nf_evar : evar_defs -> constr -> constr
+
 (*********************************************************************)
 (* constr with holes *)
 type open_constr = evar_defs * constr
@@ -275,4 +281,5 @@ val create_evar_defs      : evar_defs -> evar_defs
 val create_goal_evar_defs : evar_defs -> evar_defs
 val is_defined_evar :  evar_defs -> existential -> bool
 val subst_evar_map : substitution -> evar_defs -> evar_defs
+val unsafe_remove : evar_defs -> evar -> evar_defs
 (*** /Deprecaded ***)

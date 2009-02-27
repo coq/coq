@@ -197,12 +197,12 @@ let extract_pftreestate pts =
 
 let nf_betaiotazeta =
   let clos_norm_flags flgs env sigma t =
-    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
+    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Evd.nf_evar sigma t)) in
   clos_norm_flags Closure.betaiotazeta  
 
 let nf_betaiota =
   let clos_norm_flags flgs env sigma t =
-    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
+    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Evd.nf_evar sigma t)) in
   clos_norm_flags Closure.betaiota  
 
 let cook_proof do_reduce =

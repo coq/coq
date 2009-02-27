@@ -200,7 +200,7 @@ let isAppConstruct ?(env=Global.env ()) t =
 
 let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta  *)
   let clos_norm_flags flgs env sigma t =
-    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Reductionops.nf_evar sigma t)) in
+    Closure.norm_val (Closure.create_clos_infos flgs env) (Closure.inject (Evd.nf_evar sigma t)) in
   clos_norm_flags Closure.betaiotazeta  Environ.empty_env Evd.empty
     
 

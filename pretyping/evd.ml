@@ -65,9 +65,9 @@ let eq_evar_info ei1 ei2 =
 
 (* spiwack: Revised hierarchy :
       - ExistentialMap ( Maps of existential_keys )
-      - EvarInfoMap ( .t = evar_info ExistentialMap.t )
+      - EvarInfoMap ( .t ~ evar_info ExistentialMap.t )
       - EvarMap ( .t = EvarInfoMap.t * sort_constraints )
-      - evar_defs (exported)
+      - evar_defs (= unification states, exported)
 *)
 
 module ExistentialMap = Intmap
@@ -77,24 +77,65 @@ module ExistentialSet = Intset
 exception NotInstantiatedEvar
 
 module EvarInfoMap = struct
-  type t = evar_info ExistentialMap.t
+   (**************************************************************
+    * EvarInfoMap represents maps from [evar] to [evar_info] (that is
+    * a structure which associates to existential variables their type
+    * and possibly their definition (aka body)) plus certain cached
+    * information (values of [whd_evar] and [nf_evar] on those 
+    * existential variables before substituting anything for their 
+    * hypotheses).
+    * Caches are represented as mutable cells (in the type 
+    * [cached_info] which encapsulates [evar_info]) to keep caching 
+    * transparent to the interface. The down side of using mutable 
+    * cells in a persistant data-structure is that mutations influence
+    * past versions of the structure. To ensure that the structure stays
+    * pure we have to  track a "version number" together with the 
+    * cache. If the cache is more recent than the structure then it is
+    * considered inconsistent and discarded.
+    * The price is that we cannot say much about the effect of 
+    * caching in the worst case. Also caching makes [nf_evar]
+    * and [whd_evar] non-tail recursive (because substitution of
+    * the hypotheses is delayed). Which may make them inefficient
+    * in some cases.
+    *************************************************************)
 
-  let empty = ExistentialMap.empty
 
-  let to_list evc = (* Workaround for change in Map.fold behavior *)
+  (* Invariant: whd and nf are [None] while evar_info.evar_body is [Evar_Empty] *)
+  type cached_info = { 
+      evar_info : evar_info ;
+      (* stores the last computed whd of the existential variale. *)
+      mutable whd : (int*constr) option;
+      (* stores the last computed nf (=fully instantiated value) of the existential var.*)
+      mutable nf : (int*constr) option
+  } 
+  let empty_cache ei = { evar_info=ei;whd=None;nf=None }
+
+  (* mapping * version number *)
+  type t = cached_info ExistentialMap.t*int
+
+  let empty = (ExistentialMap.empty,0)
+
+  let to_list (evc,_) = (* Workaround for change in Map.fold behavior *)
     let l = ref [] in 
-    ExistentialMap.iter (fun evk x -> l := (evk,x)::!l) evc;
+    ExistentialMap.iter (fun evk x -> l := (evk,x.evar_info)::!l) evc;
     !l
 
-  let dom evc = ExistentialMap.fold (fun evk _ acc -> evk::acc) evc []
-  let find evc k = ExistentialMap.find k evc
-  let remove evc k = ExistentialMap.remove k evc
-  let mem evc k = ExistentialMap.mem k evc
-  let fold = ExistentialMap.fold
+  let dom (evc,_) = ExistentialMap.fold (fun evk _ acc -> evk::acc) evc []
+  let find (evc,_) k = (ExistentialMap.find k evc).evar_info
+  let mem (evc,_) k = ExistentialMap.mem k evc
 
-  let add evd evk newinfo =  ExistentialMap.add evk newinfo evd
+  let add (evd,v) evk newinfo =  
+    (ExistentialMap.add evk (empty_cache newinfo) evd,v+1)
 
-  let equal = ExistentialMap.equal
+  (* spiwack: this should be considered deprecated *)
+  let unsafe_remove (evc,v) k = (ExistentialMap.remove k evc,v+1)
+
+  let map f (evc,v)= 
+    (ExistentialMap.map (fun ci -> empty_cache (f ci.evar_info)) evc,0)
+  let fold f (evc,_)= ExistentialMap.fold (fun evk ci acc -> f evk ci.evar_info acc) evc
+
+  let equal f (evc1,_) (evc2,_) = 
+    ExistentialMap.equal (fun ci1 ci2 -> f ci1.evar_info ci2.evar_info) evc1 evc2
 
   let define evd evk body = 
     let oldinfo =
@@ -104,7 +145,7 @@ module EvarInfoMap = struct
       { oldinfo with
 	  evar_body = Evar_defined body } in
       match oldinfo.evar_body with
-	| Evar_empty -> ExistentialMap.add evk newinfo evd
+	| Evar_empty -> add evd evk newinfo
 	| _ -> anomaly "Evd.define: cannot define an evar twice"
 
   let is_evar sigma evk = mem sigma evk
@@ -151,18 +192,81 @@ module EvarInfoMap = struct
     let hyps = evar_filtered_context info in
       instantiate_evar hyps info.evar_concl (Array.to_list args)
 
+  let get_evar_body evi =
+    match evar_body evi with
+      | Evar_defined c -> c 
+      | Evar_empty -> raise NotInstantiatedEvar
+    
   let existential_value sigma (n,args) =
     let info = find sigma n in
     let hyps = evar_filtered_context info in
-      match evar_body info with
-	| Evar_defined c ->
-	    instantiate_evar hyps c (Array.to_list args)
-	| Evar_empty ->
-	    raise NotInstantiatedEvar
+    let c = get_evar_body info in
+    instantiate_evar hyps c (Array.to_list args)
 
   let existential_opt_value sigma ev =
     try Some (existential_value sigma ev)
     with NotInstantiatedEvar -> None
+
+  (*** Computing instantiated forms of existential variables. ***)
+
+  let get_whd_cache ci = ci.whd
+  let set_whd_cache ci v c = ci.whd <- Some (v,c)
+  let get_nf_cache ci = ci.nf
+  let set_nf_cache ci v c = ci.nf <- Some (v,c)
+
+  (* [inst_gen] is the prototype for [whd_evar] and [nf_evar]. It takes
+      as additional parameters a pair of arguments [set]/[get] which 
+      are meant to respectively cache a ([constr]) value (together with
+      a version number) and return the value previously cached by [set].
+      It also takes an argument [r] which specifies what to do on non-[Evar]
+      terms. That is "just return it" for [whd_evar], and "operate recursively
+      on subterms" for [nf_evar]. *)
+  let rec inst_gen set get r sigma c =
+    match kind_of_term c with
+      | Evar (e,args) -> 
+	  begin try 
+	    let (c',hyps) = inst_gen_of_evar set get r sigma e in
+	    instantiate_evar hyps c' (Array.to_list args)
+	  with Not_found | NotInstantiatedEvar -> c end
+      | _ -> r c
+  and inst_gen_of_evar set get r ((sigma,v) as evc) e =
+    let oci =  ExistentialMap.find e sigma in
+    let info = oci.evar_info in
+    let hyps = evar_filtered_context info in
+    match get oci with
+      | None ->
+	  (* The cache is empty. 
+	      We call [inst_gen] recursively to construct the cache. *)
+	  let c = get_evar_body info in
+	  let c' = inst_gen set get r evc c in
+	  set oci v c';
+	  (c', hyps)
+      | Some (v',_) when v' > v ->
+	  (* This is a copy of previous case. It'd be better to factorise it somehow,
+	      but "when" clauses cannot operate on operands of or-patterns. *)
+	  (* The cache is inconsistent (comes from a future version
+	      of the map). 
+	      We call [inst_gen] recursively to construct the cache. *)
+	  let c = get_evar_body info in
+	  let c' = inst_gen set get r evc c in
+	  set oci v c';
+	  (c', hyps)
+      | Some (v',c) when v' < v -> 
+	  (* The cache is consistent but not necessarily complete. 
+	      It comes from a past version of the map.
+	      We call [inst_gen] recursively on the cached value, 
+	      and update the cache. *)
+	  let c' = inst_gen set get r evc c in
+	  set oci v c';
+	  (c', hyps)
+      | Some (_,c') (*when v'=v *) ->
+	  (* The cache is fully consistent, as it has been made on
+	      this version of the map. We can simply return it. *)
+	  (c', hyps)
+
+  let  whd_evar = inst_gen set_whd_cache get_whd_cache Util.identity
+  let rec nf_evar sigma c = 
+    inst_gen set_nf_cache get_nf_cache (map_constr  (nf_evar sigma)) sigma c
 
 end
 
@@ -237,6 +341,11 @@ let is_sort_var s scstr =
         with Not_found -> false)
     | _ -> false
 
+let rec nf_sort_var scstr t =
+  match kind_of_term t with
+    | Sort s when is_sort_var s scstr -> whd_sort_var scstr t
+    | _ -> map_constr (nf_sort_var scstr) t
+
 let new_sort_var cstr =
   let u = Termops.new_univ() in
   (u, UniverseMap.add u (SortVar([],[])) cstr)
@@ -305,7 +414,8 @@ module EvarMap = struct
   let add (sigma,sm) k v = (EvarInfoMap.add sigma k v, sm)
   let dom (sigma,_) = EvarInfoMap.dom sigma
   let find (sigma,_) = EvarInfoMap.find sigma
-  let remove (sigma,sm) k = (EvarInfoMap.remove sigma k, sm)
+  (* spiwack: unsafe_remove should be considered deprecated *)
+  let unsafe_remove (sigma,sm) k = (EvarInfoMap.unsafe_remove sigma k, sm)
   let mem (sigma,_) = EvarInfoMap.mem sigma
   let to_list (sigma,_) = EvarInfoMap.to_list sigma
   let fold f (sigma,_) = EvarInfoMap.fold f sigma
@@ -321,6 +431,17 @@ module EvarMap = struct
 
   let merge e e' = fold (fun n v sigma -> add sigma n v) e' e
   
+  let whd_evar (sigma,sm) c =
+    let c = EvarInfoMap.whd_evar sigma c in
+    match kind_of_term c with
+      | Sort s when is_sort_var s sm -> whd_sort_var sm c
+      | _ -> c
+
+
+  let nf_evar (sigma,sm) c =
+    let c = EvarInfoMap.nf_evar sigma c in
+    nf_sort_var sm c
+
 end
  
 (*******************************************************************)
@@ -446,7 +567,8 @@ let merge d1 d2 = {
   metas = Metamap.fold (fun k m r -> Metamap.add k m r) d2.metas d1.metas
 }
 let add d e i = { d with evars=EvarMap.add d.evars e i }
-let remove d e = { d with evars=EvarMap.remove d.evars e }
+(* spiwack: unsafe_remove should be considered deprecated *)
+let unsafe_remove d e = { d with evars=EvarMap.unsafe_remove d.evars e }
 let dom d = EvarMap.dom d.evars
 let find d e = EvarMap.find d.evars e
 let mem d e = EvarMap.mem d.evars e
@@ -486,7 +608,7 @@ let subst_evar_defs_light sub evd =
   assert (evd.conv_pbs = []);
   { evd with
       metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
-      evars = ExistentialMap.map (subst_evar_info sub)  (fst evd.evars), snd evd.evars
+      evars = EvarInfoMap.map (subst_evar_info sub)  (fst evd.evars), snd evd.evars
   }
 
 let subst_evar_map = subst_evar_defs_light
@@ -579,6 +701,8 @@ let extract_all_conv_pbs evd =
 let evar_merge evd evars =
   { evd with evars = EvarMap.merge evd.evars evars.evars }
 
+
+
 (**********************************************************)
 (* Sort variables *)
 
@@ -593,6 +717,12 @@ let set_leq_sort_variable ({evars=(sigma,sm)}as d) u1 u2 =
 let define_sort_variable ({evars=(sigma,sm)}as d) u s =
   { d with evars = (sigma, set_sort_variable u s sm) }
 let pr_sort_constraints {evars=(_,sm)} = pr_sort_cstrs sm
+
+(**********************************************************)
+(* Substitution of existential variables  *)
+
+let whd_evar { evars=em } t = EvarMap.whd_evar em t
+let nf_evar { evars=em } t = EvarMap.nf_evar em t
 
 (**********************************************************)
 (* Accessing metas *)
