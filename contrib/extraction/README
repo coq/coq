@@ -1,21 +1,40 @@
 
-Status of Extraction in Coq version 7.x
-======================================
-
-(* 22 jan 2003 : Updated for version 7.4 *)
+          Coq Extraction
+          ==============
 
 
-J.C. Filliâtre
-P. Letouzey
+What is it ?
+------------
+
+The extraction is a mechanism allowing to produce functional code
+(Ocaml/Haskell/Scheme) out of any Coq terms (either programs or
+proofs).
+
+Who did it ?
+------------
+
+The current implementation (from version 7.0 up to now) has been done
+by P. Letouzey during his PhD, helped by J.C. Filliâtre and supervised
+by C. Paulin. 
+
+An earlier implementation (versions 6.x) was due to B. Werner and
+C. Paulin.
 
 
+Where can we find more information ?
+------------------------------------
+
+- Coq Reference Manual includes a full chapter about extraction
+- P. Letouzey's PhD thesis [3] forms a complete document about
+  both theory and implementation and test-cases of Coq-extraction
+- A more recent article [4] proposes a short overview of extraction
+- earlier documents [1] [2] may also be useful.
+
+
+Why a complete re-implementation ?
+----------------------------------
 
 Extraction code has been completely rewritten since version V6.3. 
-This work is still not finished, but most parts of it are already usable. 
-In consequence it is included in the Coq V7.0 final release. 
-But don't be mistaken: 
-
-	THIS WORK IS STILL EXPERIMENTAL !
 
 1) Principles 
 
@@ -28,7 +47,7 @@ Translation between Coq and ML is based upon the following principles:
 
 - Terms of sort Prop don't have any computational meaning, so they are
 merged into one ML term "__". This part is done according to P. Letouzey's 
-works (*) and (**).
+works [1] and [2].
 
 This dummy constant "__" used to be implemented by the unit (), but 
 we recently found that this constant might be applied in some cases. 
@@ -50,14 +69,11 @@ gives an inductive, etc...
 
 This gives ML code that have no special reason to typecheck, due 
 to the incompatibilities between Coq and ML typing systems. In fact
-most of the time everything goes right. For example, it is sufficient 
-to extract and compile everything in the "theories" directory 
-(cf test subdirectory).
+most of the time everything goes right. 
 
 We now verify during extraction that the produced code is typecheckable, 
 and if it is not we insert unsafe type casting at critical points in the 
-code. For the moment, it is an Ocaml-only feature, using the "Obj.magic"
-function, but the same kind of trick will be soon made in Haskell.
+code, with either "Obj.magic" in Ocaml or "unsafeCoerce" in Haskell.
 
 
 2) Differences with previous extraction (V6.3 and before)
@@ -67,25 +83,25 @@ function, but the same kind of trick will be soon made in Haskell.
 The ability to extract every Coq term, as explain in the previous 
 paragraph. 
 
-The ability to extract from a file an ML module (cf Extraction Module in the 
+The ability to extract from a file an ML module (cf Extraction Library in the 
 documentation)
 
 You can have a taste of extraction directly at the toplevel by 
 using the "Extraction <ident>" or the "Recursive Extraction <ident>".
 This toplevel extraction was already there in V6.3, but was printing 
 Fw terms. It now prints in the language of your choice: 
-Ocaml, Haskell, Scheme, or an Ocaml-like with Coq namings. 
+Ocaml, Haskell or Scheme. 
 
 The optimization done on extracted code has been ported between 
 V6.3 and V7 and enhanced, and in particular the mechanism of automatic
-expansion. 
+expansion.
 
 2.b) The cons 
 
 The presence of some parasite "__" as dummy arguments
 in functions. This denotes the rests of a proof part. The previous 
 extraction was able to remove them totally. The current implementation
-removes a good deal of them (more that in 7.0), but not all. 
+removes a good deal of them, but not all. 
 
 This problem is due to extraction upon Type.
 For example, let's take this pathological term: 
@@ -97,38 +113,30 @@ extraction.
 There is no more "ML import" feature. You can compensate by using 
 Axioms, and then "Extract Constant ..." 
 
-3) Examples 
-
-The file "test-extraction.v" is made of some examples used while debugging.
-
-In the subdirectory "test", you can test extraction on the Coq theories.
-Go there.
-"make tree" to make a local copy of the "theories" tree
-"make" to extract & compile most of the theories file in Ocaml
-"make -f Makefile.haskell" to extract & compile in Haskell
-
-See also Reference Manual for explanation of extraction syntaxes
-and more examples. 
 
 
-(*):
+
+
+[1]:
 Exécution de termes de preuves: une nouvelle méthode d'extraction 
 pour le Calcul des Constructions Inductives, Pierre Letouzey,
 DEA thesis, 2000, 
-http://www.lri.fr/~letouzey/download/rapport_dea.ps.gz
+http://www.pps.jussieu.fr/~letouzey/download/rapport_dea.ps.gz
 
-(**) 
+[2]: 
 A New Extraction for Coq, Pierre Letouzey, 
-Types 2002 Post-Workshop Proceedings, to appear, 
-draft at http://www.lri.fr/~letouzey/download/extraction2002.ps.gz
+Types 2002 Post-Workshop Proceedings. 
+http://www.pps.jussieu.fr/~letouzey/download/extraction2002.ps.gz
 
+[3]: 
+Programmation fonctionnelle certifiée: l'extraction de programmes
+dans l'assistant Coq. Pierre Letouzey, PhD thesis, 2004.
+http://www.pps.jussieu.fr/~letouzey/download/these_letouzey.ps.gz
+http://www.pps.jussieu.fr/~letouzey/download/these_letouzey_English.ps.gz
 
-Any feedback is welcome: 
-Pierre.Letouzey@lri.fr
-Jean.Christophe.Filliatre@lri.fr
-
-
-
+[4]:
+Coq Extraction, An overview. Pierre Letouzey. CiE2008.
+http://www.pps.jussieu.fr/~letouzey/download/letouzey_extr_cie08.pdf
 
 
 
