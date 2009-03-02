@@ -687,6 +687,13 @@ let list_map_i f =
   in 
   map_i_rec
 
+let list_filter_i p =
+  let rec filter_i_rec i = function
+    | [] -> []
+    | x::l -> let l' = filter_i_rec (succ i) l in if p i x then x::l' else l'
+  in
+  filter_i_rec 0
+
 let rec list_sep_last = function
   | [] -> failwith "sep_last"
   | hd::[] -> (hd,[])

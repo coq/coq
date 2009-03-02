@@ -124,6 +124,8 @@ val list_map3 :
   ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
 val list_map4 :
   ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list -> 'd list -> 'e list
+val list_filter_i :
+  (int -> 'a -> bool) -> 'a list -> 'a list
 (* [list_index] returns the 1st index of an element in a list (counting from 1) *)
 val list_index : 'a -> 'a list -> int
 (* [list_unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
