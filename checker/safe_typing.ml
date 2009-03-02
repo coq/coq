@@ -108,7 +108,7 @@ type compiled_library =
  
 open Validate
 let val_deps = val_list (val_tuple"dep"[|val_dp;no_val|])
-let val_vo = val_tuple "vo" [|val_dp;val_module;val_deps;val_eng|]
+let val_vo = val_tuple "vo" [|val_dp;val_module;val_deps;val_opt val_eng|]
 
 (* This function should append a certificate to the .vo file.
    The digest must be part of the certicate to rule out attackers
