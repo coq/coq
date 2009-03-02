@@ -211,3 +211,8 @@ val join_alias : substitution -> substitution -> substitution
 val update_subst_alias : substitution -> substitution -> substitution
 val update_subst : substitution -> substitution -> substitution
 val subst_key : substitution -> substitution -> substitution
+
+(* Validation *)
+val val_eng : Obj.t -> unit
+val val_module : Obj.t -> unit
+val val_modtype : Obj.t -> unit

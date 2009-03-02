@@ -201,6 +201,3 @@ let lookup_module mp env =
 
 let lookup_modtype ln env = 
   MPmap.find ln env.env_globals.env_modtypes
-
-let lookup_alias mp env =
-  MPmap.find mp env.env_globals.env_alias
