@@ -1,3 +1,13 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+(* $Id: coqide.ml 11952 2009-03-02 15:29:08Z vgross $ *)
+
 class ['a] typed_notebook default_build nb =
 object(self)
   inherit GPack.notebook nb as super
@@ -5,7 +15,9 @@ object(self)
   
   method append_typed_page ?(build=default_build) (typed_page:'a) =
     let tab_label,menu_label,page = build typed_page in
-    let real_pos = super#append_page ?tab_label ?menu_label page in
+      (* XXX - Temporary hack to compile with old lablgtk *)
+    ignore (super#append_page ?tab_label ?menu_label page);
+    let real_pos = super#page_num page in
     let lower,higher = Util.list_split_at real_pos typed_page_list in
       typed_page_list <- lower@[typed_page]@higher;
       real_pos
@@ -19,7 +31,9 @@ object(self)
 
   method prepend_typed_page ?(build=default_build) (typed_page:'a) =
     let tab_label,menu_label,page = build typed_page in
-    let real_pos = super#prepend_page ?tab_label ?menu_label page in
+      (* XXX - Temporary hack to compile with old_lablgtk *)
+    ignore (super#prepend_page ?tab_label ?menu_label page);
+    let real_pos = super#page_num page in
     let lower,higher = Util.list_split_at real_pos typed_page_list in
       typed_page_list <- lower@[typed_page]@higher;
       real_pos
