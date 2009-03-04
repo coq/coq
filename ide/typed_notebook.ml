@@ -15,23 +15,23 @@ object(self)
   
   method append_typed_page ?(build=default_build) (typed_page:'a) =
     let tab_label,menu_label,page = build typed_page in
-      (* XXX - Temporary hack to compile with old lablgtk *)
+      (* XXX - Temporary hack to compile with archaic lablgtk *)
     ignore (super#append_page ?tab_label ?menu_label page);
     let real_pos = super#page_num page in
     let lower,higher = Util.list_split_at real_pos typed_page_list in
       typed_page_list <- lower@[typed_page]@higher;
       real_pos
-
+(* XXX - Temporary hack to compile with archaic lablgtk
   method insert_typed_page ?(build=default_build) ?pos (typed_page:'a) =
     let tab_label,menu_label,page = build typed_page in
     let real_pos = super#insert_page ?tab_label ?menu_label ?pos page in
     let lower,higher = Util.list_split_at real_pos typed_page_list in
       typed_page_list <- lower@[typed_page]@higher;
       real_pos
-
+ *)
   method prepend_typed_page ?(build=default_build) (typed_page:'a) =
     let tab_label,menu_label,page = build typed_page in
-      (* XXX - Temporary hack to compile with old_lablgtk *)
+      (* XXX - Temporary hack to compile with archaic lablgtk *)
     ignore (super#prepend_page ?tab_label ?menu_label page);
     let real_pos = super#page_num page in
     let lower,higher = Util.list_split_at real_pos typed_page_list in
