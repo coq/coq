@@ -51,7 +51,7 @@ let real_error = function
   | Error_in_file (_, _, e) -> e
   | e -> e
 
-let timeout_handler _ = error "Timeout!"
+let timeout_handler _ = raise Timeout
 
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.

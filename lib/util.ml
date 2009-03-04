@@ -22,6 +22,8 @@ let errorlabstrm l pps = raise (UserError(l,pps))
 
 let todo s = prerr_string ("TODO: "^s^"\n")
 
+exception Timeout
+
 type loc = Compat.loc
 let dummy_loc = Compat.dummy_loc
 let unloc = Compat.unloc

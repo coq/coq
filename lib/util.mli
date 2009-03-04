@@ -32,6 +32,8 @@ val errorlabstrm : string -> std_ppcmds -> 'a
 
 val todo : string -> unit
 
+exception Timeout
+
 type loc = Compat.loc
 
 type 'a located = loc * 'a

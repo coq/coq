@@ -45,6 +45,8 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Out of memory.")
   | Stack_overflow -> 
       hov 0 (str "Stack overflow.")
+  | Timeout ->
+      hov 0 (str "Timeout!")
   | Anomaly (s,pps) -> 
       hov 0 (anomaly_string () ++ where s ++ pps ++ report_fn ())
   | Match_failure(filename,pos1,pos2) ->
