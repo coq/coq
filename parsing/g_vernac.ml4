@@ -65,8 +65,8 @@ let no_hook _ _ = ()
 GEXTEND Gram
   GLOBAL: vernac gallina_ext tactic_mode proof_mode noedit_mode;
   vernac: FIRST
-    [ [ IDENT "Time"; locality; v = vernac_aux -> 
-          check_locality (); VernacTime v 
+    [ [ IDENT "Time"; v = vernac -> VernacTime v 
+      | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)
       | locality; v = vernac_aux -> 
 	  check_locality (); v ] ]
   ;

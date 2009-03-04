@@ -51,6 +51,8 @@ let real_error = function
   | Error_in_file (_, _, e) -> e
   | e -> e
 
+let timeout_handler _ = error "Timeout!"
+
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.
    Note: we could use only one thanks to seek_in, but seeking on and on in
@@ -159,11 +161,27 @@ let rec vernac_com interpfun (loc,com) =
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 
     | VernacTime v ->
-	let tstart = System.get_time() in
-        if not !just_parsing then interp v;
-	let tend = System.get_time() in
-        msgnl (str"Finished transaction in " ++
-                 System.fmt_time_difference tstart tend)
+	if not !just_parsing then begin
+	  let tstart = System.get_time() in
+          interp v;
+	  let tend = System.get_time() in
+          msgnl (str"Finished transaction in " ++
+                   System.fmt_time_difference tstart tend)
+	end
+
+    | VernacTimeout(n,v) ->
+	if not !just_parsing then begin
+	  let psh =
+	    Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
+	  ignore (Unix.alarm n);
+	  let stop() =
+	    (* stop alarm *)
+	    ignore(Unix.alarm 0);
+	    (* restore handler *)
+	    Sys.set_signal Sys.sigalrm psh in
+	  try interp v; stop()
+	  with e -> stop(); raise e
+	end
 
     | v -> if not !just_parsing then interpfun v
 

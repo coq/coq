@@ -188,6 +188,7 @@ type vernac_expr =
   | VernacList of located_vernac_expr list
   | VernacLoad of verbose_flag * lstring
   | VernacTime of vernac_expr
+  | VernacTimeout of int * vernac_expr
 
   (* Syntax *) 
   | VernacTacticNotation of int * grammar_production list * raw_tactic_expr

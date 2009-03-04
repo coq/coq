@@ -93,13 +93,13 @@ let catch_error call_trace tac g =
   | LtacLocated _ as e -> raise e
   | Stdpp.Exc_located (_,LtacLocated _) as e -> raise e
   | e ->
-    let (loc',c),tail = list_sep_last call_trace in
+    let (nrep,loc',c),tail = list_sep_last call_trace in
     let loc,e' = match e with Stdpp.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
     if tail = [] then
       let loc = if loc = dloc then loc' else loc in
       raise (Stdpp.Exc_located(loc,e'))
     else
-      raise (Stdpp.Exc_located(loc',LtacLocated((c,tail,loc),e')))
+      raise (Stdpp.Exc_located(loc',LtacLocated((nrep,c,tail,loc),e')))
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
@@ -295,10 +295,14 @@ let lookup_genarg_glob   id = let (f,_,_) = lookup_genarg id in f
 let lookup_interp_genarg id = let (_,f,_) = lookup_genarg id in f
 let lookup_genarg_subst  id = let (_,_,f) = lookup_genarg id in f
 
+let push_trace (loc,ck) = function
+  | (n,loc',ck')::trl when ck=ck' -> (n+1,loc,ck)::trl
+  | trl -> (1,loc,ck)::trl
+
 let propagate_trace ist loc id = function
   | VFun (_,lfun,it,b) ->
       let t = if it=[] then b else TacFun (it,b) in
-      VFun ((loc,LtacVarCall (id,t))::ist.trace,lfun,it,b)
+      VFun (push_trace(loc,LtacVarCall (id,t)) ist.trace,lfun,it,b)
   | x -> x
 
 (* Dynamically check that an argument is a tactic *)
@@ -1453,7 +1457,7 @@ let interp_gen kind ist sigma env (c,ce) =
   | Some c ->
       let ltacdata = (List.map fst ltacvars,unbndltacvars) in
       intern_gen (kind = IsType) ~ltacvars:ltacdata sigma env c in
-  let trace = (dloc,LtacConstrInterp (c,vars))::ist.trace in
+  let trace = push_trace (dloc,LtacConstrInterp (c,vars)) ist.trace in
   catch_error trace (understand_ltac sigma env (typs,unbndltacvars) kind) c
 
 (* Interprets a constr and solve remaining evars with default tactic *)
@@ -1756,9 +1760,10 @@ and eval_tactic ist = function
 	let box = ref None in abstract_tactic_box := box;
 	let call = LtacAtomCall (t,box) in
 	let tac = (* catch error in the interpretation *)
-	  catch_error ((dloc,call)::ist.trace) (interp_atomic ist gl) t	in
+	  catch_error (push_trace(dloc,call)ist.trace)
+	    (interp_atomic ist gl) t	in
 	(* catch error in the evaluation *)
-	catch_error ((loc,call)::ist.trace) tac gl
+	catch_error (push_trace(loc,call)ist.trace) tac gl
   | TacFun _ | TacLetIn _ -> assert false
   | TacMatchGoal _ | TacMatch _ -> assert false
   | TacId s -> tclIDTAC_MESSAGE (interp_message_nl ist s)
@@ -1804,7 +1809,7 @@ and interp_ltac_reference loc' mustbetac ist gl = function
       let loc_info = ((if loc' = dloc then loc else loc'),LtacNameCall r) in
       let ist = 
         { lfun=[]; debug=ist.debug; avoid_ids=ids;
-          trace = loc_info::ist.trace } in
+          trace = push_trace loc_info ist.trace } in
       val_interp ist gl (lookup r)
 
 and interp_tacarg ist gl = function
@@ -2392,7 +2397,7 @@ and interp_atomic ist gl = function
         
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
-    let trace = (loc,LtacNotationCall s)::ist.trace in
+    let trace = push_trace (loc,LtacNotationCall s) ist.trace in
     interp_tactic { ist with lfun=lfun; trace=trace } body gl
 
 let make_empty_glob_sign () =

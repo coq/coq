@@ -792,37 +792,44 @@ let explain_reduction_tactic_error = function
       spc () ++ str "is not well typed." ++ fnl () ++
       explain_type_error env' e
 
-let explain_ltac_call_trace (last,trace,loc) =
-  let calls = last :: List.rev (List.map snd trace) in
-  let pr_call = function
-  | Proof_type.LtacNotationCall s -> quote (str s)
-  | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
-  | Proof_type.LtacVarCall (id,t) ->
-      quote (Nameops.pr_id id) ++ strbrk " (bound to " ++ 
-      Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
-  | Proof_type.LtacAtomCall (te,otac) -> quote
-      (Pptactic.pr_glob_tactic (Global.env())
-	(Tacexpr.TacAtom (dummy_loc,te)))
-      ++ (match !otac with
-      | Some te' when (Obj.magic te' <> te) ->
-	  strbrk " (expanded to " ++ quote
-	  (Pptactic.pr_tactic (Global.env())
-	    (Tacexpr.TacAtom (dummy_loc,te')))
-	++ str ")"
-      | _ -> mt ())
-  | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
-      let filter =
-	function (id,None) -> None | (id,Some id') -> Some(id,mkVar id') in
-      let unboundvars = list_map_filter filter unboundvars in
-      quote (pr_rawconstr_env (Global.env()) c) ++
-      (if unboundvars <> [] or vars <> [] then
-	strbrk " (with " ++ prlist_with_sep pr_coma (fun (id,c) -> 
-	pr_id id ++ str ":=" ++ Printer.pr_lconstr c)
-	  (List.rev vars @ unboundvars)
-       else mt()) ++ str ")" in
-  if calls <> [] then
-    let kind_of_last_call = match list_last calls with
-    | Proof_type.LtacConstrInterp _ -> ", last term evaluation failed."
+let explain_ltac_call_trace (nrep,last,trace,loc) =
+  let calls =
+    (nrep,last) :: List.rev (List.map(fun(n,_,ck)->(n,ck))trace) in
+  let pr_call (n,ck) =
+    (match ck with
+       | Proof_type.LtacNotationCall s -> quote (str s)
+       | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
+       | Proof_type.LtacVarCall (id,t) ->
+	   quote (Nameops.pr_id id) ++ strbrk " (bound to " ++ 
+	     Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
+       | Proof_type.LtacAtomCall (te,otac) -> quote
+	   (Pptactic.pr_glob_tactic (Global.env())
+	      (Tacexpr.TacAtom (dummy_loc,te)))
+	   ++ (match !otac with
+		 | Some te' when (Obj.magic te' <> te) ->
+		     strbrk " (expanded to " ++ quote
+		       (Pptactic.pr_tactic (Global.env())
+			  (Tacexpr.TacAtom (dummy_loc,te')))
+		     ++ str ")"
+		 | _ -> mt ())
+       | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
+	   let filter =
+	     function (id,None) -> None | (id,Some id') -> Some(id,mkVar id') in
+	   let unboundvars = list_map_filter filter unboundvars in
+	   quote (pr_rawconstr_env (Global.env()) c) ++
+	     (if unboundvars <> [] or vars <> [] then
+		strbrk " (with " ++
+		  prlist_with_sep pr_coma
+		  (fun (id,c) -> 
+		     pr_id id ++ str ":=" ++ Printer.pr_lconstr c)
+		  (List.rev vars @ unboundvars)
+	      else mt()) ++ str ")") ++
+      (if n=2 then str " (repeated twice)"
+       else if n>2 then str " (repeated "++int n++str" times)"
+       else mt()) in
+    if calls <> [] then
+      let kind_of_last_call = match list_last calls with
+    | (_,Proof_type.LtacConstrInterp _) -> ", last term evaluation failed."
     | _ -> ", last call failed." in
     hov 0 (str "In nested Ltac calls to " ++ 
            pr_enum pr_call calls ++ strbrk kind_of_last_call)

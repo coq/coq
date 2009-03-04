@@ -102,8 +102,8 @@ type ltac_call_kind =
   | LtacConstrInterp of rawconstr *
       ((identifier * constr) list * (identifier * identifier option) list)
 
-type ltac_trace = (loc * ltac_call_kind) list
+type ltac_trace = (int * loc * ltac_call_kind) list
 
-exception LtacLocated of (ltac_call_kind * ltac_trace * loc) * exn
+exception LtacLocated of (int * ltac_call_kind * ltac_trace * loc) * exn
 
 let abstract_tactic_box = ref (ref None)
