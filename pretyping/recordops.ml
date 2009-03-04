@@ -311,7 +311,7 @@ let is_open_canonical_projection sigma (c,args) =
   try 
     let l = Refmap.find (global_of_constr c) !object_table in
     let n = (snd (List.hd l)).o_NPARAMS in
-    try isEvar (Evd.whd_evar sigma (List.nth args n)) with Failure _ -> false
+    try isEvar (whd_evar sigma (List.nth args n)) with Failure _ -> false
   with Not_found -> false
 
 let freeze () =

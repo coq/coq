@@ -46,7 +46,7 @@ let precatchable_exception = function
     Nametab.GlobalizationError _ | PretypeError _)) -> true
   | _ -> false
 
-let nf_evar = Evd.nf_evar
+let nf_evar = Reductionops.nf_evar
 let j_nf_evar sigma j = 
   { uj_val = nf_evar sigma j.uj_val;
     uj_type = nf_evar sigma j.uj_type }

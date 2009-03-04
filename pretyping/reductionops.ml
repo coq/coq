@@ -490,6 +490,18 @@ let whd_eta c = app_stack (local_whd_state_gen eta Evd.empty (c,empty_stack))
 (*                   Reduction Functions                                    *)
 (****************************************************************************)
 
+(* Replacing defined evars for error messages *)
+let rec whd_evar sigma c =
+  match kind_of_term c with
+    | Evar ev ->
+        (match safe_evar_value sigma ev with
+            Some c -> whd_evar sigma c
+          | None -> c)
+    | Sort s when is_sort_variable sigma s -> whd_sort_variable sigma c
+    | _ -> c
+
+let nf_evar =
+  local_strong whd_evar
 
 (* lazy reduction functions. The infos must be created for each term *)
 (* Note by HH [oct 08] : why would it be the job of clos_norm_flags to add

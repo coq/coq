@@ -125,7 +125,7 @@ let retype sigma metamap =
     | _ -> family_of_sort (decomp_sort env sigma (type_of env t))
 
   and type_of_global_reference_knowing_parameters env c args =
-    let argtyps = Array.map (fun c -> Evd.nf_evar sigma (type_of env c)) args in
+    let argtyps = Array.map (fun c -> nf_evar sigma (type_of env c)) args in
     match kind_of_term c with
     | Ind ind ->
       let (_,mip) = lookup_mind_specif env ind in
@@ -146,7 +146,7 @@ let type_of_global_reference_knowing_parameters env sigma c args =
   let _,_,_,f = retype sigma [] in f env c args
 
 let type_of_global_reference_knowing_conclusion env sigma c conclty =
-  let conclty = Evd.nf_evar sigma conclty in
+  let conclty = nf_evar sigma conclty in
   match kind_of_term c with
     | Ind ind ->
         let (_,mip) = Inductive.lookup_mind_specif env ind in

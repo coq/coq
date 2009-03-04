@@ -1427,7 +1427,7 @@ let solvable_by_tactic env evi (ev,args) src =
 let solve_remaining_evars env initial_sigma evd c =
   let evdref = ref (Typeclasses.resolve_typeclasses ~fail:true env evd) in
   let rec proc_rec c =
-    match kind_of_term (Evd.whd_evar ( !evdref) c) with
+    match kind_of_term (Reductionops.whd_evar ( !evdref) c) with
       | Evar (ev,args as k) when not (Evd.mem initial_sigma ev) ->
             let (loc,src) = evar_source ev !evdref in
 	    let sigma =  !evdref in

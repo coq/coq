@@ -260,7 +260,7 @@ let declare_instance (k:global_reference -> rel_context -> constr list -> unit)
   let (evm,gen) = List.fold_right
     (fun ev (evm,gen) -> 
        if Evd.is_defined evm ev 
-       then Evd.unsafe_remove evm ev,gen 
+       then Evd.remove evm ev,gen 
        else evm,(ev::gen))
     gen (evm,[]) in
 (*  msgnl(str"instance complète : ["++Util.prlist_with_sep (fun _ -> str";") Util.pr_int gen++str"] : "++spc()++pr_evar_defs evm);*)
@@ -268,7 +268,7 @@ let declare_instance (k:global_reference -> rel_context -> constr list -> unit)
   let (_,ctx,evm) = List.fold_left
     ( fun (i,ctx,evm) ev -> 
 	let ctx = (Anonymous,None,lift (-i) (Evd.evar_concl(Evd.find evm ev)))::ctx in
-	let evm = subst_evar_in_evm ev (mkRel i) (Evd.unsafe_remove evm ev) in
+	let evm = subst_evar_in_evm ev (mkRel i) (Evd.remove evm ev) in
 	(i-1,ctx,evm)
     ) (ngen,[],evm) gen in
   let fields = List.rev (Evd.fold ( fun ev evi l -> evar_definition evi::l ) evm []) in

@@ -58,10 +58,10 @@ let jv_nf_evar = Pretype_errors.jv_nf_evar
 let tj_nf_evar = Pretype_errors.tj_nf_evar
 
 let nf_named_context_evar sigma ctx = 
-  Sign.map_named_context (Evd.nf_evar sigma) ctx
+  Sign.map_named_context (Reductionops.nf_evar sigma) ctx
 
 let nf_rel_context_evar sigma ctx = 
-  Sign.map_rel_context (Evd.nf_evar sigma) ctx
+  Sign.map_rel_context (Reductionops.nf_evar sigma) ctx
     
 let nf_env_evar sigma env = 
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
@@ -70,11 +70,11 @@ let nf_env_evar sigma env =
 
 let nf_evar_info evc info =
   { info with 
-    evar_concl = Evd.nf_evar evc info.evar_concl;
-    evar_hyps = map_named_val (Evd.nf_evar evc) info.evar_hyps;
+    evar_concl = Reductionops.nf_evar evc info.evar_concl;
+    evar_hyps = map_named_val (Reductionops.nf_evar evc) info.evar_hyps;
     evar_body = match info.evar_body with
       | Evar_empty -> Evar_empty
-      | Evar_defined c -> Evar_defined (Evd.nf_evar evc c) }
+      | Evar_defined c -> Evar_defined (Reductionops.nf_evar evc c) }
 
 let nf_evars evm = Evd.fold (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
 		     evm Evd.empty
@@ -112,7 +112,7 @@ let push_dependent_evars sigma emap =
   Evd.fold (fun ev {evar_concl = ccl} (sigma',emap') ->
     List.fold_left 
       (fun (sigma',emap') ev -> 
-	(Evd.add sigma' ev (Evd.find emap' ev),Evd.unsafe_remove emap' ev))
+	(Evd.add sigma' ev (Evd.find emap' ev),Evd.remove emap' ev))
       (sigma',emap') (collect_evars emap' ccl))
     emap (sigma,emap)
 
