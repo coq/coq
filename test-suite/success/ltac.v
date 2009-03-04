@@ -220,3 +220,11 @@ Z1 O.
 Z2 ltac:O.
 exact I.
 Qed.
+
+(* Illegal application used to make Ltac loop. *)
+
+Section LtacLoopTest.
+  Ltac f x := idtac.
+  Goal True.
+  Timeout 1 try f()().
+End LtacLoopTest.

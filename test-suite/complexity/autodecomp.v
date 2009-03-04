@@ -8,4 +8,4 @@ True/\True->
 True/\True->
 False/\False.
 
-Time auto decomp.
+Timeout 5 Time auto decomp.

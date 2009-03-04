@@ -6,7 +6,7 @@ Require Import Ring_tac.
 
 Open Scope R_scope.
 
-Time Goal forall x1 x2 x3 y1 y2 y3 e1 e2 e3 e4 e5 e6 e7: R,
+Timeout 5 Time Goal forall x1 x2 x3 y1 y2 y3 e1 e2 e3 e4 e5 e6 e7: R,
 (e6 + e7 - 2 * y2 * y3 - x2 * e3 - x3 * e3 - e3 * x1) *
 ((e6 + e7 - 2 * y2 * y3 - x2 * e3 - x3 * e3 - e3 * x1) * 1) *
 ((- (y1 - y2) * (e5 + e6 - 2 * y1 * y2 - x1 * e1 - x2 * e1 - e1 * x1) -

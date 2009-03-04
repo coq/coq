@@ -48,4 +48,4 @@ Goal
    ))))
    ))))
 .
-Time try refine (refl_equal _).
+Timeout 2 Time try refine (refl_equal _).

@@ -48,4 +48,4 @@ Open Scope Z_scope.
 Infix "+" := Zplus : Z_scope.
 
 Goal forall a, a+a+a+a+a+a+a+a+a+a+a+a+a = a*13.
-Time intro; ring.
+Timeout 5 Time intro; ring.

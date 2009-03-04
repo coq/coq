@@ -1846,7 +1846,11 @@ and interp_tacarg ist gl = function
 (* Interprets an application node *)
 and interp_app loc ist gl fv largs =
   match fv with
-    | VFun(trace,olfun,var,body) ->
+      (* if var=[] this means that evaluation of body has been delayed
+         by val_interp, so it is not a tactic that expects arguments.
+         Otherwise Ltac goes into an infinite loop (val_interp puts
+         a VFun back on body, and then interp_app is called again...) *)
+    | VFun(trace,olfun,(_::_ as var),body) ->
       let (newlfun,lvar,lval)=head_with_value (var,largs) in
       if lvar=[] then
 	let v = 

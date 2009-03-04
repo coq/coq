@@ -110,4 +110,4 @@ Lemma test: forall n1 w1 n2 w2, mk_world n1 w1 = mk_world n2 w2 ->
          n1 = n2.
 Proof.
 intros.
-Time injection H.
+Timeout 10 Time injection H.
