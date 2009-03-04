@@ -13,6 +13,11 @@ Tactics
 - Improved support of dependent goals over objects in dependent types for
   "destruct".
 
+Vernacular commands
+
+- New command "Timeout <n> <command>." interprets a command and a timeout
+  interrupts the interpretation after <n> seconds.
+
 Tools
 
 - New coqtop/coqc option -beautify to reformat .v files (usable
