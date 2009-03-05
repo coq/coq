@@ -62,18 +62,7 @@ else
  HIDE = @
 endif
 
-LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
-	      -I scripts -I lib -I kernel -I kernel/byterun -I library \
-              -I proofs -I tactics -I pretyping \
-              -I interp -I toplevel -I parsing -I ide/utils -I ide \
-              -I contrib/omega -I contrib/romega -I contrib/micromega \
-              -I contrib/quote \
-	      -I contrib/ring -I contrib/dp -I contrib/setoid_ring \
-              -I contrib/xml -I contrib/extraction \
-              -I contrib/interface -I contrib/fourier -I contrib/cc \
-	      -I contrib/funind -I contrib/firstorder \
-              -I contrib/field -I contrib/subtac -I contrib/rtauto 
-
+LOCALINCLUDES=$(addprefix -I , $(SRCDIRS) )
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC += $(CAMLFLAGS)
@@ -87,12 +76,12 @@ CAMLP4EXTENDFLAGS=-I . #grammar dependencies are now in camlp4use statements
 CAMLP4DEPS=sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*\*)@\1@p'
 CAMLP4USE=sed -n -e 's/pa_macro.cmo/pa_macro.cmo -D$(CAMLVERSION)/' -e 's@^(\*.*camlp4use: "\(.*\)".*\*)@\1@p'
 
-COQINCLUDES=          # coqtop includes itself the needed paths
+COQINCLUDES=	# coqtop includes itself the needed paths
 COQ_XML=	# is "-xml" when building XML library
-VM=          # is "-no-vm" to not use the vm"
-UNBOXEDVALUES=  # is "-unboxed-values" to use unboxed values
+VM=		# is "-no-vm" to not use the vm"
+UNBOXEDVALUES=	# is "-unboxed-values" to use unboxed values
 COQOPTS=$(COQ_XML) $(VM) $(UNBOXEDVALUES)
-TIME=           # is "'time -p'" to get compilation time of .v 
+TIME=		# is "'time -p'" to get compilation time of .v 
 
 BOOTCOQTOP:=$(TIME) $(BESTCOQTOP) -boot $(COQOPTS)
 
@@ -190,7 +179,7 @@ $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 $(COQTOPEXE): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
 
-LOCALCHKLIBS:=-I checker -I lib -I config -I kernel
+LOCALCHKLIBS:=$(addprefix -I , $(CHKSRCDIRS) )
 CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
 CHKBYTEFLAGS:=$(CHKLIBS) $(CAMLDEBUG) $(USERFLAGS)
 CHKOPTFLAGS:=$(CHKLIBS) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
@@ -344,6 +333,9 @@ $(FUNINDCMA:.cma=.cmxa): $(FUNINDCMO:.cmo=.cmx)
 
 $(SUBTACCMA): $(SUBTACCMO)
 $(SUBTACCMA:.cma=.cmxa): $(SUBTACCMO:.cmo=.cmx)
+
+$(GBCMA): $(GBCMO)
+$(GBCMA:.cma=.cmxa): $(GBCMO:.cmo=.cmx)
 
 %.cma:
 	$(SHOW)'OCAMLC -a -o $@'

@@ -55,6 +55,21 @@ OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
 CSDPCERT:=contrib/micromega/csdpcert$(EXE)
 
+SRCDIRS:=\
+  config 	tools 		tools/coqdoc 	scripts		lib \
+  kernel	kernel/byterun	library 	proofs 		tactics \
+  pretyping	interp		toplevel 	parsing 	ide/utils \
+  ide		\
+  $(addprefix contrib/, \
+    omega	romega 		micromega 	quote		ring	dp \
+    setoid_ring xml 		extraction 	interface 	fourier \
+    cc 		funind 		firstorder 	field 		subtac \
+    rtauto 	groebner )
+
+# Order is relevent here because kernel and checker contain files
+# with the same name
+CHKSRCDIRS:= checker lib config kernel
+
 ###########################################################################
 # tools
 ###########################################################################
@@ -85,25 +100,22 @@ COQTEXOPTS:=-n 72 -image "$(COQSRC)/$(COQTOPEXE) -boot" -sl -small
 
 DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex 
 
-REFMANCOQTEXFILES:=\
-  doc/refman/RefMan-gal.v.tex doc/refman/RefMan-ext.v.tex \
-  doc/refman/RefMan-mod.v.tex doc/refman/RefMan-tac.v.tex \
-  doc/refman/RefMan-cic.v.tex doc/refman/RefMan-lib.v.tex \
-  doc/refman/RefMan-tacex.v.tex doc/refman/RefMan-syn.v.tex \
-  doc/refman/RefMan-oth.v.tex doc/refman/RefMan-ltac.v.tex \
-  doc/refman/RefMan-decl.v.tex \
-  doc/refman/Cases.v.tex doc/refman/Coercion.v.tex doc/refman/Extraction.v.tex \
-  doc/refman/Program.v.tex doc/refman/Omega.v.tex doc/refman/Micromega.v.tex doc/refman/Polynom.v.tex \
-  doc/refman/Setoid.v.tex doc/refman/Helm.tex doc/refman/Classes.v.tex
+REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
+  RefMan-gal.v.tex RefMan-ext.v.tex \
+  RefMan-mod.v.tex RefMan-tac.v.tex \
+  RefMan-cic.v.tex RefMan-lib.v.tex \
+  RefMan-tacex.v.tex RefMan-syn.v.tex \
+  RefMan-oth.v.tex RefMan-ltac.v.tex \
+  RefMan-decl.v.tex \
+  Cases.v.tex Coercion.v.tex Extraction.v.tex \
+  Program.v.tex Omega.v.tex Micromega.v.tex Polynom.v.tex \
+  Setoid.v.tex Helm.tex Classes.v.tex )
 
-REFMANTEXFILES:=\
-  doc/refman/headers.sty \
-  doc/refman/Reference-Manual.tex doc/refman/RefMan-pre.tex \
-  doc/refman/RefMan-int.tex doc/refman/RefMan-pro.tex \
-  doc/refman/RefMan-com.tex \
-  doc/refman/RefMan-uti.tex doc/refman/RefMan-ide.tex \
-  doc/refman/RefMan-add.tex doc/refman/RefMan-modr.tex \
-  doc/refman/ExternalProvers.tex \
+REFMANTEXFILES:=$(addprefix doc/refman/, \
+  headers.sty Reference-Manual.tex \
+  RefMan-pre.tex RefMan-int.tex RefMan-pro.tex RefMan-com.tex \
+  RefMan-uti.tex RefMan-ide.tex RefMan-add.tex RefMan-modr.tex \
+  ExternalProvers.tex ) \
   $(REFMANCOQTEXFILES) \
 
 REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps
@@ -129,56 +141,42 @@ CAMLP4OBJS:=gramlib.cma
 CONFIG:=\
   config/coq_config.cmo
 
-LIBREP:=\
-  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
-  lib/util.cmo lib/bigint.cmo lib/hashcons.cmo lib/dyn.cmo lib/system.cmo \
-  lib/envars.cmo lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
-  lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-  lib/predicate.cmo lib/rtree.cmo lib/heap.cmo lib/option.cmo lib/dnet.cmo
+LIBREP:=$(addprefix lib/, \
+  pp_control.cmo 	pp.cmo 		compat.cmo	flags.cmo \
+  util.cmo 		bigint.cmo 	hashcons.cmo 	dyn.cmo \
+  system.cmo		envars.cmo 	bstack.cmo 	edit.cmo \
+  gset.cmo 		gmap.cmo	tlm.cmo 	gmapl.cmo \
+  profile.cmo 		explore.cmo	predicate.cmo 	rtree.cmo \
+  heap.cmo 		option.cmo 	dnet.cmo )
 # Rem: Cygwin already uses variable LIB 
 
-BYTERUN:=\
-  kernel/byterun/coq_fix_code.o kernel/byterun/coq_memory.o \
-  kernel/byterun/coq_values.o kernel/byterun/coq_interp.o 
+BYTERUN:=$(addprefix kernel/byterun/, \
+  coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
 
-KERNEL:=\
-  kernel/names.cmo kernel/univ.cmo \
-  kernel/esubst.cmo kernel/term.cmo \
-  kernel/mod_subst.cmo kernel/sign.cmo \
-  kernel/cbytecodes.cmo kernel/copcodes.cmo \
-  kernel/cemitcodes.cmo kernel/vm.cmo \
-  kernel/declarations.cmo \
-  kernel/retroknowledge.cmo kernel/pre_env.cmo \
-  kernel/cbytegen.cmo  kernel/environ.cmo  \
-  kernel/csymtable.cmo kernel/conv_oracle.cmo \
-  kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo \
-  kernel/entries.cmo kernel/modops.cmo \
-  kernel/inductive.cmo kernel/vconv.cmo kernel/typeops.cmo \
-  kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
-  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
+KERNEL:=$(addprefix kernel/, \
+  names.cmo 		univ.cmo 	esubst.cmo 	term.cmo \
+  mod_subst.cmo		sign.cmo	cbytecodes.cmo	copcodes.cmo \
+  cemitcodes.cmo	vm.cmo		declarations.cmo \
+  retroknowledge.cmo	pre_env.cmo	cbytegen.cmo 	environ.cmo \
+  csymtable.cmo 	conv_oracle.cmo	closure.cmo	reduction.cmo \
+  type_errors.cmo	entries.cmo	modops.cmo	inductive.cmo \
+  vconv.cmo		typeops.cmo 	indtypes.cmo	cooking.cmo \
+  term_typing.cmo	subtyping.cmo	mod_typing.cmo	safe_typing.cmo )
 
-LIBRARY:=\
-  library/nameops.cmo library/libnames.cmo library/libobject.cmo \
-  library/summary.cmo library/nametab.cmo library/global.cmo library/lib.cmo \
-  library/declaremods.cmo library/library.cmo \
-  library/states.cmo \
-  library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo \
-  library/decls.cmo library/heads.cmo
+LIBRARY:=$(addprefix library/, \
+  nameops.cmo		libnames.cmo	libobject.cmo 	summary.cmo \
+  nametab.cmo		global.cmo	lib.cmo		declaremods.cmo	\
+  library.cmo		states.cmo 	decl_kinds.cmo	dischargedhypsmap.cmo \
+  goptions.cmo		decls.cmo	heads.cmo )
 
-PRETYPING:=\
-  pretyping/termops.cmo pretyping/evd.cmo \
-  pretyping/reductionops.cmo pretyping/vnorm.cmo pretyping/inductiveops.cmo \
-  pretyping/retyping.cmo pretyping/cbv.cmo \
-  pretyping/pretype_errors.cmo \
-  pretyping/typing.cmo pretyping/evarutil.cmo pretyping/term_dnet.cmo \
-  pretyping/recordops.cmo \
-  pretyping/tacred.cmo pretyping/evarconv.cmo \
-  pretyping/typeclasses_errors.cmo pretyping/typeclasses.cmo \
-  pretyping/classops.cmo pretyping/coercion.cmo \
-  pretyping/unification.cmo pretyping/clenv.cmo \
-  pretyping/rawterm.cmo pretyping/pattern.cmo \
-  pretyping/detyping.cmo  pretyping/indrec.cmo\
-  pretyping/cases.cmo pretyping/pretyping.cmo pretyping/matching.cmo
+PRETYPING:=$(addprefix pretyping/, \
+  termops.cmo		evd.cmo 	reductionops.cmo 	vnorm.cmo \
+  inductiveops.cmo 	retyping.cmo 	cbv.cmo 	pretype_errors.cmo \
+  typing.cmo 		evarutil.cmo 	term_dnet.cmo   recordops.cmo \
+  tacred.cmo		evarconv.cmo 	typeclasses_errors.cmo \
+  typeclasses.cmo	classops.cmo 	coercion.cmo 	unification.cmo \
+  clenv.cmo		rawterm.cmo 	pattern.cmo	detyping.cmo \
+  indrec.cmo		cases.cmo	pretyping.cmo 	matching.cmo )
 
 INTERP:=\
   parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo \
@@ -188,26 +186,21 @@ INTERP:=\
   interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
   toplevel/discharge.cmo library/declare.cmo
 
-PROOFS:=\
-  proofs/tacexpr.cmo proofs/proof_type.cmo proofs/redexpr.cmo \
-  proofs/proof_trees.cmo proofs/logic.cmo \
-  proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-  proofs/pfedit.cmo proofs/tactic_debug.cmo \
-  proofs/clenvtac.cmo proofs/decl_mode.cmo
+PROOFS:=$(addprefix proofs/, \
+  tacexpr.cmo		proof_type.cmo 	redexpr.cmo 	proof_trees.cmo	\
+  logic.cmo		refiner.cmo 	evar_refiner.cmo tacmach.cmo \
+  pfedit.cmo		tactic_debug.cmo clenvtac.cmo 	decl_mode.cmo )
 
-PARSING:=\
-  parsing/extend.cmo \
-  parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo \
-  parsing/ppconstr.cmo parsing/printer.cmo \
-  parsing/pptactic.cmo parsing/ppdecl_proof.cmo parsing/tactic_printer.cmo \
-  parsing/printmod.cmo parsing/prettyp.cmo
+PARSING:=$(addprefix parsing/, \
+  extend.cmo	pcoq.cmo 	egrammar.cmo 	g_xml.cmo \
+  ppconstr.cmo	printer.cmo	pptactic.cmo 	ppdecl_proof.cmo \
+  tactic_printer.cmo		printmod.cmo	prettyp.cmo )
 
-HIGHPARSING:=\
-  parsing/g_constr.cmo parsing/g_vernac.cmo parsing/g_prim.cmo \
-  parsing/g_proofs.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo \
-  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-  parsing/g_ascii_syntax.cmo parsing/g_string_syntax.cmo \
-  parsing/g_decl_mode.cmo parsing/g_intsyntax.cmo 
+HIGHPARSING:=$(addprefix parsing/, \
+  g_constr.cmo	g_vernac.cmo	g_prim.cmo	g_proofs.cmo \
+  g_tactic.cmo	g_ltac.cmo	g_natsyntax.cmo g_zsyntax.cmo \
+  g_rsyntax.cmo g_ascii_syntax.cmo 		g_string_syntax.cmo \
+  g_decl_mode.cmo 		g_intsyntax.cmo  )
 
 TACTICS:=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
@@ -233,27 +226,23 @@ TOPLEVEL:=\
   toplevel/toplevel.cmo $(REVISIONCMO) toplevel/usage.cmo \
   toplevel/coqinit.cmo toplevel/coqtop.cmo
 
-HIGHTACTICS:=\
-  tactics/refine.cmo tactics/extraargs.cmo \
-  tactics/extratactics.cmo tactics/eauto.cmo tactics/class_tactics.cmo \
-  tactics/tauto.cmo tactics/eqdecide.cmo
+HIGHTACTICS:=$(addprefix tactics/, \
+  refine.cmo 	extraargs.cmo 		extratactics.cmo \
+  eauto.cmo 	class_tactics.cmo	 tauto.cmo \
+  eqdecide.cmo )
 
 OMEGACMA:=contrib/omega/omega_plugin.cma
-OMEGACMO:=\
-  contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
-  contrib/omega/g_omega.cmo 
+OMEGACMO:=$(addprefix contrib/omega/, \
+  omega.cmo coq_omega.cmo g_omega.cmo )
 
 ROMEGACMA:=contrib/romega/romega_plugin.cma
-ROMEGACMO:=\
-  contrib/romega/const_omega.cmo \
-  contrib/romega/refl_omega.cmo contrib/romega/g_romega.cmo
+ROMEGACMO:=$(addprefix contrib/romega/, \
+  const_omega.cmo refl_omega.cmo g_romega.cmo )
 
 MICROMEGACMA:=contrib/micromega/micromega_plugin.cma
-MICROMEGACMO:=\
-  contrib/micromega/mutils.cmo  \
-  contrib/micromega/micromega.cmo contrib/micromega/mfourier.cmo \
-  contrib/micromega/certificate.cmo \
-  contrib/micromega/coq_micromega.cmo contrib/micromega/g_micromega.cmo
+MICROMEGACMO:=$(addprefix contrib/micromega/, \
+  mutils.cmo micromega.cmo mfourier.cmo certificate.cmo \
+  coq_micromega.cmo g_micromega.cmo )
 
 QUOTECMA:=contrib/quote/quote_plugin.cma
 QUOTECMO:=\
@@ -266,82 +255,69 @@ RINGCMO:=\
 NEWRINGCMA:=contrib/setoid_ring/newring_plugin.cma
 NEWRINGCMO:=contrib/setoid_ring/newring.cmo
 
+GBCMA:=contrib/groebner/groebner_plugin.cma
+GBCMO:=$(addprefix contrib/groebner/, \
+  utile.cmo polynom.cmo ideal.cmo groebner.cmo )
+
 DPCMA:=contrib/dp/dp_plugin.cma
-DPCMO:=contrib/dp/dp_why.cmo contrib/dp/dp_zenon.cmo \
-      contrib/dp/dp.cmo contrib/dp/dp_gappa.cmo contrib/dp/g_dp.cmo
+DPCMO:=$(addprefix contrib/dp/, \
+  dp_why.cmo dp_zenon.cmo dp.cmo dp_gappa.cmo g_dp.cmo )
 
 FIELDCMO:=contrib/field/field.cmo
 FIELDCMA:=contrib/field/field_plugin.cma
 
 XMLCMA:=contrib/xml/xml_plugin.cma
-XMLCMO:=\
-  contrib/xml/unshare.cmo contrib/xml/xml.cmo contrib/xml/acic.cmo \
-  contrib/xml/doubleTypeInference.cmo \
-  contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
-  contrib/xml/proof2aproof.cmo \
-  contrib/xml/xmlcommand.cmo contrib/xml/proofTree2Xml.cmo \
-  contrib/xml/xmlentries.cmo 	contrib/xml/cic2Xml.cmo \
-  contrib/xml/dumptree.cmo
+XMLCMO:=$(addprefix contrib/xml/, \
+  unshare.cmo xml.cmo acic.cmo doubleTypeInference.cmo \
+  cic2acic.cmo acic2Xml.cmo proof2aproof.cmo \
+  xmlcommand.cmo proofTree2Xml.cmo xmlentries.cmo cic2Xml.cmo \
+  dumptree.cmo )
 
 FOURIERCMA:=contrib/fourier/fourier_plugin.cma
-FOURIERCMO:=\
-  contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
-  contrib/fourier/g_fourier.cmo
+FOURIERCMO:=$(addprefix contrib/fourier/, \
+  fourier.cmo fourierR.cmo g_fourier.cmo )
 
 EXTRACTIONCMA:=contrib/extraction/extraction_plugin.cma
-EXTRACTIONCMO:=\
-  contrib/extraction/table.cmo\
-  contrib/extraction/mlutil.cmo\
-  contrib/extraction/modutil.cmo \
-  contrib/extraction/extraction.cmo \
-  contrib/extraction/common.cmo \
-  contrib/extraction/ocaml.cmo \
-  contrib/extraction/haskell.cmo \
-  contrib/extraction/scheme.cmo \
-  contrib/extraction/extract_env.cmo \
-  contrib/extraction/g_extraction.cmo
+EXTRACTIONCMO:=$(addprefix contrib/extraction/, \
+  table.cmo mlutil.cmo modutil.cmo extraction.cmo common.cmo \
+  ocaml.cmo haskell.cmo scheme.cmo extract_env.cmo g_extraction.cmo )
 
 FUNINDCMA:=contrib/funind/recdef_plugin.cma
-FUNINDCMO:=\
-  contrib/funind/indfun_common.cmo contrib/funind/rawtermops.cmo \
-  contrib/funind/recdef.cmo \
-  contrib/funind/rawterm_to_relation.cmo \
-  contrib/funind/functional_principles_proofs.cmo \
-  contrib/funind/functional_principles_types.cmo \
-  contrib/funind/invfun.cmo contrib/funind/indfun.cmo \
-  contrib/funind/merge.cmo contrib/funind/g_indfun.cmo
+FUNINDCMO:=$(addprefix contrib/funind/, \
+  indfun_common.cmo rawtermops.cmo \
+  recdef.cmo rawterm_to_relation.cmo \
+  functional_principles_proofs.cmo \
+  functional_principles_types.cmo \
+  invfun.cmo indfun.cmo merge.cmo g_indfun.cmo )
 
 FOCMA:=contrib/firstorder/ground_plugin.cma
-FOCMO:=\
-  contrib/firstorder/formula.cmo contrib/firstorder/unify.cmo \
-  contrib/firstorder/sequent.cmo contrib/firstorder/rules.cmo \
-  contrib/firstorder/instances.cmo contrib/firstorder/ground.cmo \
-  contrib/firstorder/g_ground.cmo
+FOCMO:=$(addprefix contrib/firstorder/, \
+  formula.cmo unify.cmo sequent.cmo rules.cmo instances.cmo ground.cmo \
+  g_ground.cmo )
 
 CCCMA:=contrib/cc/cc_plugin.cma
-CCCMO:=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo \
-  contrib/cc/g_congruence.cmo 
+CCCMO:=$(addprefix contrib/cc/, \
+  ccalgo.cmo ccproof.cmo cctac.cmo g_congruence.cmo )
 
 SUBTACCMA:=contrib/subtac/subtac_plugin.cma
-SUBTACCMO:=contrib/subtac/subtac_utils.cmo contrib/subtac/eterm.cmo \
-  contrib/subtac/g_eterm.cmo \
-  contrib/subtac/subtac_errors.cmo contrib/subtac/subtac_coercion.cmo \
-  contrib/subtac/subtac_obligations.cmo contrib/subtac/subtac_cases.cmo \
-  contrib/subtac/subtac_pretyping_F.cmo contrib/subtac/subtac_pretyping.cmo \
-  contrib/subtac/subtac_command.cmo contrib/subtac/subtac_classes.cmo \
-  contrib/subtac/subtac.cmo contrib/subtac/g_subtac.cmo \
-  contrib/subtac/equations.cmo
+SUBTACCMO:=$(addprefix contrib/subtac/, \
+  subtac_utils.cmo eterm.cmo g_eterm.cmo \
+  subtac_errors.cmo subtac_coercion.cmo \
+  subtac_obligations.cmo subtac_cases.cmo \
+  subtac_pretyping_F.cmo subtac_pretyping.cmo \
+  subtac_command.cmo subtac_classes.cmo \
+  subtac.cmo g_subtac.cmo equations.cmo )
 
 RTAUTOCMA:=contrib/rtauto/rtauto_plugin.cma
-RTAUTOCMO:=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
-	contrib/rtauto/g_rtauto.cmo
+RTAUTOCMO:=$(addprefix contrib/rtauto/, \
+  proof_search.cmo refl_tauto.cmo g_rtauto.cmo )
 
 CONTRIBSTATIC:=\
 	$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) \
         $(QUOTECMO) $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
         $(FOURIERCMO) $(EXTRACTIONCMO) $(XMLCMO) \
         $(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
-        $(FUNINDCMO)
+        $(FUNINDCMO) $(GBCMO)
 
 CONTRIBCMA:=contrib/contrib.cma
 
@@ -353,7 +329,7 @@ ifneq ($(HASNATDYNLINK),false)
  PLUGINS:=$(INITPLUGINS) \
 	$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
         $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(FIELDCMA) \
-        $(FOURIERCMA) $(RTAUTOCMA)
+        $(FOURIERCMA) $(RTAUTOCMA) $(GBCMA)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
  PLUGINSOPT:=$(PLUGINS:.cma=.cmxs)
  ifeq ($(BEST),opt)
@@ -383,21 +359,23 @@ OBJSCMO:=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
         $(PROOFS) $(PARSING) $(TACTICS) $(TOPLEVEL) $(HIGHPARSING) \
         $(HIGHTACTICS) $(CONTRIBSTATIC)
 
-COQIDECMO:=ide/utils/okey.cmo ide/utils/config_file.cmo \
-	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
-	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
-	  ide/utils/configwin.cmo \
-	  ide/utils/editable_cells.cmo ide/config_parser.cmo \
-	  ide/typed_notebook.cmo \
-	  ide/config_lexer.cmo ide/utf8_convert.cmo ide/preferences.cmo \
-	  ide/ideutils.cmo ide/blaster_window.cmo ide/undo.cmo \
-          ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
-	  ide/coq_tactics.cmo  ide/command_windows.cmo ide/coqide.cmo
+COQIDECMO:=\
+  $(addprefix ide/utils/, \
+    okey.cmo		config_file.cmo		configwin_keys.cmo \
+    configwin_types.cmo configwin_messages.cmo	configwin_ihm.cmo \
+    configwin.cmo	editable_cells.cmo ) \
+  $(addprefix ide/, \
+    config_parser.cmo	typed_notebook.cmo	config_lexer.cmo \
+    utf8_convert.cmo	preferences.cmo		ideutils.cmo \
+    blaster_window.cmo	undo.cmo		highlight.cmo \
+    coq.cmo 		coq_commands.cmo	coq_tactics.cmo \
+    command_windows.cmo coqide.cmo )
 
 COQIDECMX:=$(COQIDECMO:.cmo=.cmx)
 
-COQENVCMO:=$(CONFIG) lib/pp_control.cmo lib/pp.cmo  lib/compat.cmo lib/flags.cmo \
-	lib/util.cmo lib/system.cmo lib/envars.cmo
+COQENVCMO:=$(CONFIG) \
+  lib/pp_control.cmo lib/pp.cmo  lib/compat.cmo lib/flags.cmo \
+  lib/util.cmo lib/system.cmo lib/envars.cmo
 
 COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo 
 COQMKTOPCMX:=$(COQMKTOPCMO:.cmo=.cmx)
@@ -405,16 +383,10 @@ COQMKTOPCMX:=$(COQMKTOPCMO:.cmo=.cmx)
 COQCCMO:=$(COQENVCMO) $(REVISIONCMO) toplevel/usage.cmo scripts/coqc.cmo
 COQCCMX:=$(COQCCMO:.cmo=.cmx)
 
-INTERFACE:=\
-  contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
-  contrib/interface/paths.cmo contrib/interface/translate.cmo \
-  contrib/interface/pbp.cmo \
-  contrib/interface/dad.cmo \
-  contrib/interface/history.cmo \
-  contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
-  contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
-  contrib/interface/blast.cmo contrib/interface/depends.cmo \
-  contrib/interface/centaur.cmo
+INTERFACE:=$(addprefix contrib/interface/, \
+  vtp.cmo xlate.cmo paths.cmo translate.cmo pbp.cmo dad.cmo \
+  history.cmo name_to_ast.cmo debug_tac.cmo showproof_ct.cmo showproof.cmo \
+  blast.cmo depends.cmo centaur.cmo )
 
 INTERFACECMX:=$(INTERFACE:.cmo=.cmx)
 
@@ -439,9 +411,9 @@ else
 INTERFACERC:= contrib/interface/vernacrc contrib/interface/CoqParser.v
 endif
 
-CSDPCERTCMO:= contrib/micromega/mutils.cmo contrib/micromega/micromega.cmo \
-	      contrib/micromega/mfourier.cmo  contrib/micromega/certificate.cmo \
-              contrib/micromega/sos.cmo contrib/micromega/csdpcert.cmo
+CSDPCERTCMO:=$(addprefix contrib/micromega/, \
+  mutils.cmo 	micromega.cmo 	mfourier.cmo 	certificate.cmo \
+  sos.cmo 	csdpcert.cmo )
 CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
@@ -452,15 +424,14 @@ COQDEPCMX:=$(COQDEPCMO:.cmo=.cmx)
 GALLINACMO:=tools/gallina_lexer.cmo tools/gallina.cmo
 GALLINACMX:=$(GALLINACMO:.cmo=.cmx)
 
-COQDOCCMO:=$(CONFIG) tools/coqdoc/cdglobals.cmo tools/coqdoc/alpha.cmo \
-	tools/coqdoc/index.cmo tools/coqdoc/output.cmo \
-	tools/coqdoc/pretty.cmo tools/coqdoc/main.cmo
+COQDOCCMO:=$(CONFIG) $(addprefix tools/coqdoc/, \
+  cdglobals.cmo alpha.cmo index.cmo output.cmo pretty.cmo main.cmo )
 COQDOCCMX:=$(COQDOCCMO:.cmo=.cmx)
 
 # checker
 
 MCHECKER:=\
-  config/coq_config.cmo \
+  $(CONFIG) \
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo \
   lib/flags.cmo lib/util.cmo lib/option.cmo lib/hashcons.cmo \
   lib/system.cmo lib/envars.cmo \
@@ -480,27 +451,22 @@ MCHECKER:=\
 # grammar modules with camlp4
 
 GRAMMARNEEDEDCMO:=\
-  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/flags.cmo \
-  lib/util.cmo lib/bigint.cmo lib/dyn.cmo lib/hashcons.cmo lib/predicate.cmo \
-  lib/rtree.cmo lib/option.cmo \
-  kernel/names.cmo kernel/univ.cmo \
-  kernel/esubst.cmo kernel/term.cmo kernel/mod_subst.cmo kernel/sign.cmo \
-  kernel/cbytecodes.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo \
-  kernel/declarations.cmo \
-  kernel/retroknowledge.cmo kernel/pre_env.cmo \
-  kernel/cbytegen.cmo kernel/conv_oracle.cmo kernel/environ.cmo \
-  kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo\
-  kernel/entries.cmo \
-  kernel/modops.cmo \
-  kernel/inductive.cmo kernel/typeops.cmo \
-  kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
-  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo \
-  library/nameops.cmo library/libnames.cmo library/summary.cmo \
-  library/nametab.cmo library/libobject.cmo library/lib.cmo \
-  library/goptions.cmo library/decl_kinds.cmo library/global.cmo \
-  pretyping/termops.cmo pretyping/evd.cmo pretyping/reductionops.cmo \
-  pretyping/inductiveops.cmo pretyping/rawterm.cmo pretyping/detyping.cmo \
-  pretyping/pattern.cmo \
+  $(addprefix lib/, \
+    pp_control.cmo pp.cmo compat.cmo flags.cmo util.cmo \
+    bigint.cmo dyn.cmo hashcons.cmo predicate.cmo rtree.cmo option.cmo ) \
+  $(addprefix kernel/, \
+    names.cmo univ.cmo esubst.cmo term.cmo mod_subst.cmo sign.cmo \
+    cbytecodes.cmo copcodes.cmo cemitcodes.cmo declarations.cmo \
+    retroknowledge.cmo pre_env.cmo cbytegen.cmo conv_oracle.cmo \
+    environ.cmo closure.cmo reduction.cmo type_errors.cmo entries.cmo \
+    modops.cmo inductive.cmo typeops.cmo indtypes.cmo cooking.cmo \
+    term_typing.cmo subtyping.cmo mod_typing.cmo safe_typing.cmo ) \
+  $(addprefix library/, \
+    nameops.cmo libnames.cmo summary.cmo nametab.cmo libobject.cmo \
+    lib.cmo goptions.cmo decl_kinds.cmo global.cmo ) \
+  $(addprefix pretyping/, \
+    termops.cmo evd.cmo reductionops.cmo inductiveops.cmo rawterm.cmo \
+    detyping.cmo pattern.cmo ) \
   interp/topconstr.cmo interp/genarg.cmo interp/ppextend.cmo \
   proofs/tacexpr.cmo \
   parsing/lexer.cmo parsing/extend.cmo \
@@ -510,9 +476,8 @@ GRAMMARNEEDEDCMO:=\
 CAMLP4EXTENSIONSCMO:=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
 
-GRAMMARSCMO:=\
-  parsing/g_prim.cmo parsing/g_tactic.cmo \
-  parsing/g_ltac.cmo parsing/g_constr.cmo
+GRAMMARSCMO:=$(addprefix parsing/, \
+  g_prim.cmo g_tactic.cmo g_ltac.cmo g_constr.cmo )
 
 GRAMMARCMO:=config/coq_config.cmo $(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
@@ -530,30 +495,23 @@ STAGE1:=parsing/grammar.cma parsing/q_constr.cmo
 
 PRINTERSCMO:=\
   config/coq_config.cmo lib/lib.cma \
-  kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo	\
-  kernel/mod_subst.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo	\
-  kernel/sign.cmo kernel/declarations.cmo kernel/retroknowledge.cmo \
-  kernel/pre_env.cmo \
-  kernel/retroknowledge.cmo kernel/pre_env.cmo \
-  kernel/cbytecodes.cmo kernel/cbytegen.cmo kernel/environ.cmo \
-  kernel/conv_oracle.cmo kernel/closure.cmo kernel/reduction.cmo	\
-  kernel/modops.cmo kernel/type_errors.cmo kernel/inductive.cmo		\
-  kernel/typeops.cmo kernel/subtyping.cmo kernel/indtypes.cmo		\
-  kernel/cooking.cmo 		\
-  kernel/term_typing.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo	\
-  library/summary.cmo library/global.cmo library/nameops.cmo		\
-  library/libnames.cmo library/nametab.cmo library/libobject.cmo	\
-  library/lib.cmo library/goptions.cmo library/decls.cmo library/heads.cmo \
-  pretyping/termops.cmo pretyping/evd.cmo pretyping/rawterm.cmo \
-  pretyping/reductionops.cmo pretyping/inductiveops.cmo \
-  pretyping/retyping.cmo pretyping/cbv.cmo \
-  pretyping/pretype_errors.cmo pretyping/typing.cmo pretyping/evarutil.cmo \
-  pretyping/term_dnet.cmo pretyping/recordops.cmo \
-  pretyping/evarconv.cmo pretyping/tacred.cmo \
-  pretyping/classops.cmo pretyping/typeclasses_errors.cmo pretyping/typeclasses.cmo \
-  pretyping/detyping.cmo pretyping/indrec.cmo pretyping/coercion.cmo \
-  pretyping/unification.cmo pretyping/cases.cmo \
-  pretyping/pretyping.cmo pretyping/clenv.cmo pretyping/pattern.cmo \
+  $(addprefix kernel/, \
+    names.cmo univ.cmo esubst.cmo term.cmo mod_subst.cmo sign.cmo \
+    cbytecodes.cmo copcodes.cmo cemitcodes.cmo declarations.cmo \
+    retroknowledge.cmo pre_env.cmo cbytegen.cmo conv_oracle.cmo \
+    environ.cmo closure.cmo reduction.cmo type_errors.cmo entries.cmo \
+    modops.cmo inductive.cmo typeops.cmo indtypes.cmo cooking.cmo \
+    term_typing.cmo subtyping.cmo mod_typing.cmo safe_typing.cmo ) \
+  $(addprefix library/, \
+    summary.cmo global.cmo nameops.cmo libnames.cmo nametab.cmo \
+    libobject.cmo lib.cmo goptions.cmo decls.cmo heads.cmo ) \
+  $(addprefix pretyping/, \
+    termops.cmo evd.cmo rawterm.cmo reductionops.cmo inductiveops.cmo \
+    retyping.cmo cbv.cmo pretype_errors.cmo typing.cmo evarutil.cmo \
+    term_dnet.cmo recordops.cmo evarconv.cmo tacred.cmo \
+    classops.cmo typeclasses_errors.cmo typeclasses.cmo \
+    detyping.cmo indrec.cmo coercion.cmo unification.cmo cases.cmo \
+    pretyping.cmo clenv.cmo pattern.cmo ) \
   parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
   interp/topconstr.cmo interp/notation.cmo  interp/dumpglob.cmo interp/reserve.cmo		\
   library/impargs.cmo interp/constrextern.cmo \
@@ -840,6 +798,9 @@ NEWRINGVO:=$(addprefix contrib/setoid_ring/, \
  Field_theory.vo	Field_tac.vo \
  Field.vo		RealField.vo )
 
+GBVO:=$(addprefix contrib/groebner/, \
+ GroebnerR.vo		GroebnerZ.vo )
+
 XMLVO:= 
 
 FOURIERVO:=$(addprefix contrib/fourier/, \
@@ -867,7 +828,7 @@ endif
 CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
 	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
-            $(INTERFACEVO)
+            $(INTERFACEVO) $(GBVO)
 
 ALLVO:= $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 VFILES:= $(ALLVO:.vo=.v)
