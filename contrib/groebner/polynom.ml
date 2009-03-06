@@ -11,6 +11,7 @@
   Polynomes récursifs: Z[x1]...[xn].
 *)
 open Utile
+open Util
 
 (***********************************************************************
   1. Opérations sur les coefficients.
@@ -145,7 +146,6 @@ let rec eqP p q =
 		  true)
 	     with _ -> false)
     | (_,_) -> false
-
 
 (* vire les zéros de tête d'un polynôme non normalisé, dont les coefficients
    sont supposés normalisés.
@@ -837,8 +837,9 @@ let factorise =
 (* liste des facteurs sans carré non constants,
    avec coef entier de tête positif *)
 let facteurs2 p =
-  List.map normc (list_select (fun q -> (deg_total q)>0)
-	            (List.flatten (factorise (normc p))))
+  List.map normc
+    (List.filter (fun q -> deg_total q >0)
+       (List.flatten (factorise (normc p))))
 
 
 (* produit des facteurs non constants d'une décomposition sans carré *)
@@ -909,7 +910,7 @@ let rec is_positif p =
     match p with 
 	Pint a -> le_coef coef0 a
       |Prec(x,p1) -> 
-         (array_test is_positif p1)
+         (array_for_all is_positif p1)
 	 && (try (Array.iteri (fun i c -> if (i mod 2)<>0 && not (eqP c cf0)
                                then failwith "pas pair")
 		    p1;

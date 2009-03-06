@@ -36,7 +36,6 @@ open Entries
 open Num
 open Unix
 open Utile
-open Entiers
 open Ideal
 
 let num_0 = Int 0

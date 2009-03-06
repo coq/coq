@@ -19,88 +19,21 @@ let info s =
   output_string stderr s; flush stderr
 
 (**********************************************************************
-      Tableaux 
-*)
-(* compte les occurrences de i dans le tableau t *)
-let compte t i =  
-   let r = ref 0 in 
-   Array.iter (fun x -> if x=i then r:= !r + 1) t;
-   !r ;;
-
-(* maximum d'un tableau d'entiers *)
-let maximum t = 
-   Array.fold_left max 0 t
-;;
-
-
-(* appliquer une fonction a tous les elements d'une matrice *)
-let matrix_map f m=
-  let s=Array.length m in
-  let res=Array.create s [| |] in
-    for i=0 to s-1 do
-      res.(i)<-Array.map f m.(i)
-    done;
-res
-;;
-(* selectionne dans un tableau *)
-let array_select f l =
-  let res = ref [] in
-  Array.iter (fun x -> if (f x) then res:=(!res)@[x]) l;
-  Array.of_list !res
-;;
-(* teste si tous les elements d'un tableau verifient f *)
-let array_test f t =
-   try (Array.iter (fun x -> if not (f x) then failwith "raté") t;
-        true)
-   with _ -> false
-;;
-
-(* cherche a dans t, rend l'indice ou il se trouve ou declenche une exception*)
-let array_find a t =
-  let n = Array.length t in
-  let ok = ref true in
-  let res = ref 0 in
-    while !ok do
-      if (!res = n) then raise Not_found
-else (if t.(!res) = a then ok := false
-      else res := !res +1;)
-    done;
-!res
-;;
-
-(**********************************************************************
   Listes
 *)
-
-let set_of_list l =
-  let r = Hashtbl.create 51 in
-    List.iter (fun x ->
-		 try (Hashtbl.find r x;())
-		 with _ -> Hashtbl.add r x true) l;
-    let res = ref [] in
-      Hashtbl.iter (fun x _ -> res:=x::(!res)) r;
-      !res
 	
 (* appartenance à une liste , on donne l'égalité *)
 let rec list_mem_eq eq x l =
   match l with
     [] -> false
    |y::l1 -> if (eq x y) then true else (list_mem_eq eq x l1)
-;;
 
 (* vire les repetitions d'une liste, on donne l'égalité *)
 let set_of_list_eq eq l =
    let res = ref [] in
    List.iter (fun x -> if not (list_mem_eq eq x (!res)) then res:=x::(!res)) l;
    List.rev !res 
-;;
 
-(* selectionne dans une liste *)
-let list_select f l =
-  let res = ref [] in
-  List.iter (fun x -> if (f x) then res:=(!res)@[x]) l;
-  !res
-;;
 
 (***********************************************************************
  Un outil pour faire une mémo-fonction:
@@ -121,7 +54,7 @@ let memo memoire egal valeur fonction x =
 	memoire:=(x,v)::(!memoire);
 	v)
    with _ -> !res
-;;
+
 
 (* un autre plus efficace, 
    utilisant une fonction intermediaire (utile si on n'a pas
@@ -134,7 +67,7 @@ let memos s memoire print fonction x =
 	      let v = fonction x in
 	      Hashtbl.add memoire (print x) v;
 	      v)
-;;
+
 
 (**********************************************************************
   Eléments minimaux pour un ordre partiel de division.
@@ -150,7 +83,7 @@ let memos s memoire print fonction x =
 *)
 
 let facteurs_liste div constant lp =
-   let lp = list_select (fun x -> not (constant x)) lp in
+   let lp = List.filter (fun x -> not (constant x)) lp in
    let rec factor lmin lp = (* lmin: ne se divisent pas entre eux *)
       match lp with
         [] -> lmin
@@ -179,7 +112,7 @@ let facteurs_liste div constant lp =
           else factor lmin ((!l1)@lp1))
     in
     factor [] lp
-;;
+
 
 (* On suppose que tout élément de A est produit d'éléments de B et d'un de C:
    A et B sont deux tableaux,  rend un tableau de couples
@@ -207,7 +140,7 @@ let factorise_tableau div zero c f l1 =
       res.(i)<-(!r,!li))
      f;
     (l1,res)
-;;   
+   
 
 (* exemples:
 
@@ -215,13 +148,13 @@ let l =  [1;2;6;24;720]
 and div1 = (fun a b -> if a mod b =0 then a/b else failwith "div") 
 and constant = (fun x -> x<2)
 and zero = (fun x -> x=0)
-;;
+
 
 let f = facteurs_liste div1 constant l
-;;
+
 
 factorise_tableau div1 zero 0 (Array.of_list l) (Array.of_list f)
-;;
+
 
 *)
 

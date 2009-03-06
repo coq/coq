@@ -6,19 +6,9 @@ val prt0 : 'a -> unit
 val prt : string -> unit
 val info : string -> unit
 
-(* Array *)
-val compte : 'a array -> 'a -> int
-val maximum : int array -> int
-val matrix_map : ('a -> 'b) -> 'a array array -> 'b array array
-val array_select : ('a -> bool) -> 'a array -> 'a array
-val array_test : ('a -> bool) -> 'a array -> bool
-val array_find : 'a -> 'a array -> int
-
 (* Listes *)
-val set_of_list : 'a list -> 'a list
 val list_mem_eq : ('a -> 'b -> bool) -> 'a -> 'b list -> bool
 val set_of_list_eq : ('a -> 'a -> bool) -> 'a list -> 'a list
-val list_select : ('a -> bool) -> 'a list -> 'a list
 
 (* Memoization *)
 val memo :
