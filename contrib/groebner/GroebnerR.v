@@ -40,7 +40,7 @@ Require Import BinPos.
 Require Import BinList.
 Require Import InitialRing.
 
-Declare ML Module "groebner".
+Declare ML Module "groebner_plugin".
 
 Open Scope R_scope.
 

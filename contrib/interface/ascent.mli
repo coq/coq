@@ -195,6 +195,7 @@ and ct_COMMAND =
   | CT_test_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_theorem_struct of ct_THEOREM_GOAL * ct_PROOF_SCRIPT
   | CT_time of ct_COMMAND
+  | CT_timeout of ct_INT * ct_COMMAND
   | CT_undo of ct_INT_OPT
   | CT_unfocus
   | CT_unset_option of ct_TABLE

@@ -2192,6 +2192,7 @@ let rec xlate_vernac =
   | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)
   | VernacLocate(LocateNotation s) -> CT_locate_notation(CT_string s)
   | VernacTime(v) -> CT_time(xlate_vernac v)
+  | VernacTimeout(n,v) -> CT_timeout(CT_int n,xlate_vernac v)
   | VernacSetOption (Goptions.SecondaryTable ("Implicit", "Arguments"), BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])
   |VernacExactProof f -> CT_proof(xlate_formula f)
   | VernacSetOption (table, BoolValue true) -> 

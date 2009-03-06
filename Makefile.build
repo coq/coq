@@ -943,7 +943,7 @@ endif
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c $<
 
 %.cmxs: %.cmxa
-	$(SHOW)'OCAMLOPT  $<'
+	$(SHOW)'OCAMLOPT -shared -o $@'
 ifneq ($(HASNATDYNLINK),os5fixme)
 	$(HIDE)$(OCAMLOPT) -linkall -shared -o $@ $<
 else
@@ -965,7 +965,7 @@ else
 endif
 
 %.cmxs: %.cmx
-	$(SHOW)'OCAMLOPT  $<'
+	$(SHOW)'OCAMLOPT -shared -o $@'
 	$(HIDE)$(OCAMLOPT) -shared -o $@ $<
 
 %.ml: %.mll

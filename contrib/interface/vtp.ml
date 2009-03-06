@@ -617,6 +617,10 @@ and fCOMMAND = function
 | CT_time(x1) ->
    fCOMMAND x1 ++
    fNODE "time" 1
+| CT_timeout(n,x1) ->
+    fINT n ++
+    fCOMMAND x1 ++
+    fNODE "timeout" 2
 | CT_undo(x1) ->
    fINT_OPT x1 ++
    fNODE "undo" 1
