@@ -6,16 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import ZArith.
-Require Import Zpow_facts.
-Require Import Wf_Z.
-Require Import Znumtheory.
-Require Import List.
+Require Import Reals ZArith.
 Require Export GroebnerR.
 
-
 Open Scope Z_scope.
-
 
 Lemma groebnerZhypR: forall x y:Z, x=y -> IZR x = IZR y.
 Admitted.
