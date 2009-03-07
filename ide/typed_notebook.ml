@@ -11,50 +11,52 @@
 class ['a] typed_notebook default_build nb =
 object(self)
   inherit GPack.notebook nb as super
-  val mutable typed_page_list = []
+  val mutable term_list = []
   
-  method append_typed_page ?(build=default_build) (typed_page:'a) =
-    let tab_label,menu_label,page = build typed_page in
+  method append_term ?(build=default_build) (term:'a) =
+    let tab_label,menu_label,page = build term in
       (* XXX - Temporary hack to compile with archaic lablgtk *)
     ignore (super#append_page ?tab_label ?menu_label page);
     let real_pos = super#page_num page in
-    let lower,higher = Util.list_split_at real_pos typed_page_list in
-      typed_page_list <- lower@[typed_page]@higher;
+    let lower,higher = Util.list_split_at real_pos term_list in
+      term_list <- lower@[term]@higher;
       real_pos
 (* XXX - Temporary hack to compile with archaic lablgtk
-  method insert_typed_page ?(build=default_build) ?pos (typed_page:'a) =
-    let tab_label,menu_label,page = build typed_page in
+  method insert_term ?(build=default_build) ?pos (term:'a) =
+    let tab_label,menu_label,page = build term in
     let real_pos = super#insert_page ?tab_label ?menu_label ?pos page in
-    let lower,higher = Util.list_split_at real_pos typed_page_list in
-      typed_page_list <- lower@[typed_page]@higher;
+    let lower,higher = Util.list_split_at real_pos term_list in
+      term_list <- lower@[term]@higher;
       real_pos
  *)
-  method prepend_typed_page ?(build=default_build) (typed_page:'a) =
-    let tab_label,menu_label,page = build typed_page in
+  method prepend_term ?(build=default_build) (term:'a) =
+    let tab_label,menu_label,page = build term in
       (* XXX - Temporary hack to compile with archaic lablgtk *)
     ignore (super#prepend_page ?tab_label ?menu_label page);
     let real_pos = super#page_num page in
-    let lower,higher = Util.list_split_at real_pos typed_page_list in
-      typed_page_list <- lower@[typed_page]@higher;
+    let lower,higher = Util.list_split_at real_pos term_list in
+      term_list <- lower@[term]@higher;
       real_pos
 
-  method set_typed_page ?(build=default_build) (typed_page:'a) =
-    let tab_label,menu_label,page = build typed_page in
+  method set_term ?(build=default_build) (term:'a) =
+    let tab_label,menu_label,page = build term in
     let real_pos = super#current_page in
-      typed_page_list <- Util.list_map_i (fun i x -> if i = real_pos then typed_page else x) 0 typed_page_list;
+      term_list <- Util.list_map_i (fun i x -> if i = real_pos then term else x) 0 term_list;
       super#set_page ?tab_label ?menu_label page
 
   method remove_page index =
-    typed_page_list <- Util.list_filter_i (fun i x -> i <> index) typed_page_list;
+    term_list <- Util.list_filter_i (fun i x -> i <> index) term_list;
     super#remove_page index
 
-  method get_nth_typed_page i =
-    List.nth typed_page_list i
+  method get_nth_term i =
+    List.nth term_list i
 
-  method typed_page_num p =
-    Util.list_index0 p typed_page_list
+  method term_num p =
+    Util.list_index0 p term_list
 
-  method pages = typed_page_list
+  method pages = term_list
+
+  method current_term = List.nth term_list super#current_page
 end
 
 let create build =

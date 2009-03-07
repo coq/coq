@@ -57,22 +57,15 @@ val print_list : (formatter -> 'a -> unit) -> formatter -> 'a list -> unit
 val run_command : (string -> unit) -> string -> Unix.process_status*string
 
 
-val prime : Glib.unichar
-val underscore : Glib.unichar
-val arobase : Glib.unichar
-val bn : Glib.unichar
-val space : Glib.unichar
-val tab : Glib.unichar
 
-
-val status : GMisc.statusbar option ref 
-val push_info : (string -> unit) ref
-val pop_info : (unit -> unit) ref
-val flash_info : (?delay:int -> string -> unit) ref
+val status : GMisc.statusbar
+val push_info : string -> unit
+val pop_info : unit -> unit
+val flash_info : ?delay:int -> string -> unit
 
 val set_location : (string -> unit) ref
 
-val pulse : (unit -> unit) ref
+val pbar : GRange.progress_bar
 
 
 (*

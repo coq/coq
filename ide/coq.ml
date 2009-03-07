@@ -437,7 +437,7 @@ let interp_with_options verbosely options s =
 	if is_vernac_known_option_command vernac then
 	  user_error_loc loc (str "Use CoqIDE display menu instead");
 	if is_vernac_query_command vernac then 
-	  !flash_info
+	  flash_info
 	    "Warning: query commands should not be inserted in scripts";
 	if not (is_vernac_goal_printing_command vernac) then
 	  (* Verbose if in small step forward and not a tactic *)
@@ -701,3 +701,25 @@ let current_status () =
   try
     path ^ ", proving " ^ (Names.string_of_id (Pfedit.get_current_proof_name ()))
   with _ -> path
+
+
+
+(* analyzed_view's methods that use stuff here
+ *
+ * process_next_phrase
+ * undo_last_step
+ * go_to_insert
+ * reset_initial
+ * process_until_end_or_error
+ * show_goals
+ *)
+
+(* process_next_phrase =>
+ * 
+ * send_to_coq
+ * * interp_and_replace | interp
+ * push_phrase
+ * get_current_goals
+ *)
+
+(* functions called by analyzed_view's method *)

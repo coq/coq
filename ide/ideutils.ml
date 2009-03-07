@@ -15,15 +15,21 @@ exception Forbidden
 
 (* status bar and locations *)
 
-let status = ref None
-let push_info = ref (function s -> failwith "not ready")
-let pop_info = ref (function s -> failwith "not ready")
-let flash_info = ref  (fun ?delay s -> failwith "not ready")
+let status = GMisc.statusbar () 
+
+let push_info,pop_info =
+  let status_context = status#new_context "Messages" in
+    (fun s -> ignore (status_context#push s)),status_context#pop
+
+let flash_info =
+  let flash_context = status#new_context "Flash" in
+    (fun ?(delay=5000) s -> flash_context#flash ~delay s)
+
+
 
 let set_location = ref  (function s -> failwith "not ready")
 
-let pulse = ref (function () -> failwith "not ready")
-
+let pbar = GRange.progress_bar ~pulse_step:0.2 ()
 
 let debug = Flags.debug
 
@@ -69,12 +75,12 @@ let do_convert s =
      end else
        let from_loc () = 
 	 let _,char_set = Glib.Convert.get_charset () in
-	 !flash_info
+	 flash_info
 	   ("Converting from locale ("^char_set^")");
 	 Glib.Convert.convert_with_fallback ~to_codeset:"UTF-8" ~from_codeset:char_set s
        in
        let from_manual () = 
-	 !flash_info 
+	 flash_info 
 	   ("Converting from "^ !current.encoding_manual);
 	 Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:!current.encoding_manual
        in
@@ -330,15 +336,6 @@ let url_for_keyword =
 let browse_keyword f text = 
   try let u = url_for_keyword text in browse f (!current.doc_url ^ u) 
   with Not_found -> f ("No documentation found for "^text)
-
-
-let underscore = Glib.Utf8.to_unichar "_" (ref 0)
-
-let arobase = Glib.Utf8.to_unichar "@" (ref 0)
-let prime = Glib.Utf8.to_unichar "'" (ref 0)
-let bn = Glib.Utf8.to_unichar "\n" (ref 0)
-let space = Glib.Utf8.to_unichar " " (ref 0)
-let tab = Glib.Utf8.to_unichar "\t" (ref 0)
 
 
 (*

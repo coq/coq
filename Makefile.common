@@ -367,7 +367,7 @@ COQIDECMO:=\
   $(addprefix ide/, \
     config_parser.cmo	typed_notebook.cmo	config_lexer.cmo \
     utf8_convert.cmo	preferences.cmo		ideutils.cmo \
-    blaster_window.cmo	undo.cmo		highlight.cmo \
+    gtk_parsing.cmo	undo.cmo		highlight.cmo \
     coq.cmo 		coq_commands.cmo	coq_tactics.cmo \
     command_windows.cmo coqide.cmo )
 
