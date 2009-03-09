@@ -498,10 +498,10 @@ let pr_assumptionset env s =
   if (Environ.ContextObjectMap.is_empty s) then
     str "Closed under the global context"
   else
-    let (vars,axioms) =
-      Environ.ContextObjectMap.fold (fun o typ r ->
-	let (v,a) = r in
-	match o with
+    let (vars,axioms,opaque) =
+      Environ.ContextObjectMap.fold (fun t typ r ->
+	let (v,a,o) = r in
+	match t with
 	| Variable id -> (  Some (
 	                      Option.default (fnl ()) v 
 			   ++ str (string_of_id id)
@@ -510,7 +510,7 @@ let pr_assumptionset env s =
 	                   ++ fnl ()
 			    )
 	                 ,
-	                   a )
+	                   a, o)
 	| Axiom kn    -> ( v ,
 			     Some (
 			      Option.default (fnl ()) a
@@ -519,16 +519,28 @@ let pr_assumptionset env s =
 	                   ++ pr_ltype typ
 	                   ++ fnl ()
 			     )
+			 , o
 			 )
-	)
-	s (None,None)
+	| Opaque kn    -> ( v , a ,
+			     Some (
+			      Option.default (fnl ()) o
+			   ++ (pr_constant env kn)
+	                   ++ str " : "
+	                   ++ pr_ltype typ
+	                   ++ fnl ()
+			     )
+			 )
+      )
+	s (None,None,None)
     in
-    let (vars,axioms) = 
+    let (vars,axioms,opaque) = 
       ( Option.map (fun p -> str "Section Variables:" ++ p) vars ,
-	Option.map (fun p -> str "Axioms:" ++ p) axioms 
+	Option.map (fun p -> str "Axioms:" ++ p) axioms ,
+	Option.map (fun p -> str "Opaque constants:" ++ p) opaque
       )
     in
     (Option.default (mt ()) vars) ++ (Option.default (mt ()) axioms)
+      ++ (Option.default (mt ()) opaque)
 
 let cmap_to_list m = Cmap.fold (fun k v acc -> v :: acc) m []
 

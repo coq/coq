@@ -65,7 +65,7 @@ type printable =
   | PrintVisibility of string option
   | PrintAbout of reference
   | PrintImplicit of reference
-  | PrintAssumptions of reference
+  | PrintAssumptions of bool * reference
 
 type search_about_item =
   | SearchSubPattern of constr_pattern_expr

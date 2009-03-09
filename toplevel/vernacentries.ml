@@ -1100,9 +1100,10 @@ let vernac_print = function
   | PrintAbout qid -> msgnl (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
-  | PrintAssumptions r ->
+  | PrintAssumptions (o,r) ->
       let cstr = constr_of_global (global_with_alias r) in
-      let nassumptions = Environ.assumptions cstr (Global.env ()) in
+      let nassumptions = Environ.assumptions (Conv_oracle.get_transp_state ())
+	~add_opaque:o cstr (Global.env ()) in
       msg (Printer.pr_assumptionset (Global.env ()) nassumptions)
 
 let global_module r =
