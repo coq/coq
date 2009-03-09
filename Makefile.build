@@ -101,7 +101,7 @@ ifndef ORDER_ONLY_SEP
 $(error This Makefile needs GNU Make 3.81 or later (that is a version that supports the order-only dependency feature without major bugs.))
 endif
 
-VO_TOOLS_DEP := $(BESTCOQTOP)
+VO_TOOLS_DEP := $(BESTCOQTOP) $(INITPLUGINSBEST)
 ifdef COQ_XML
  VO_TOOLS_DEP += $(COQDOC)
 endif
@@ -599,7 +599,7 @@ states/initial.coq: states/MakeInitial.v $(INITVO) $(VO_TOOLS_STRICT) | states/M
 	$(SHOW)'BUILD     $@'
 	$(HIDE)$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
-theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | theories/Init/%.v.d $(VO_TOOLS_ORDER_ONLY)
+theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | theories/Init/%.v.d $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC -nois $<'
 	$(HIDE)rm -f theories/Init/$*.glob
 	$(HIDE)$(BOOTCOQTOP) -nois -compile theories/Init/$*
