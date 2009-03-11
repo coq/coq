@@ -649,12 +649,12 @@ $(COQMAKEFILE): config/coq_config.cmo tools/coq_makefile.cmo
 endif
 
 ifeq ($(BEST),opt)
-$(COQTEX): tools/coq-tex.cmx
+$(COQTEX): tools/coq_tex.cmx
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa tools/coq-tex.cmx
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ str.cmxa $^
 	$(STRIP) $@
 else
-$(COQTEX): tools/coq-tex.cmo
+$(COQTEX): tools/coq_tex.cmo
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ str.cma $^
 endif
