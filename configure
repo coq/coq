@@ -639,12 +639,6 @@ case $COQIDE in
     no) LABLGTKINCLUDES="";;
 esac
 
-# Tell on windows if ocaml understands cygwin or windows path formats
-
-#"$CAMLC" -o config/giveostype config/giveostype.ml
-#CAMLOSTYPE=`config/giveostype`
-#rm config/giveostype
-
 # strip command
 
 case $ARCH in
