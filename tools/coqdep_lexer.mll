@@ -18,8 +18,8 @@
   type spec = bool
 		
   type coq_token = 
-    | Require of spec * string list list
-    | RequireString of spec * string
+    | Require of string list list
+    | RequireString of string
     | Declare of string list
     | Load of string
 
@@ -30,9 +30,7 @@
   let module_current_name = ref []
   let module_names = ref []
   let ml_module_name = ref ""
-		      
-  let specif = ref false
-		 
+
   let mllist = ref ([] : string list)
 
   let field_name s = String.sub s 1 (String.length s - 1)
@@ -49,11 +47,11 @@ let dot = '.' ( space+ | eof)
 
 rule coq_action = parse
   | "Require" space+
-      { specif := false; module_names := []; opened_file lexbuf }
+      { module_names := []; opened_file lexbuf }
   | "Require" space+ "Export" space+
-      { specif := false; module_names := []; opened_file lexbuf}
+      { module_names := []; opened_file lexbuf}
   | "Require" space+ "Import" space+
-      { specif := false; module_names := []; opened_file lexbuf}
+      { module_names := []; opened_file lexbuf}
   | "Declare" space+ "ML" space+ "Module" space+
       { mllist := []; modules lexbuf}
   | "Load" space+
@@ -169,10 +167,6 @@ and opened_file = parse
   | "(*" (* "*)" *) { comment_depth := 1; comment lexbuf; opened_file lexbuf }
   | space+
       	       	{ opened_file lexbuf }
-  | "Implementation"
-                { opened_file lexbuf }
-  | "Specification"
-                { specif := true; opened_file lexbuf }
   | coq_ident
        	       	{ module_current_name := [Lexing.lexeme lexbuf];
                   opened_file_fields lexbuf }
@@ -184,7 +178,7 @@ and opened_file = parse
                           if Filename.check_suffix str ".v" then
                             Filename.chop_suffix str ".v"
                           else str in
-			RequireString (!specif, str) }
+			RequireString str }
   | eof         { raise Fin_fichier }
   | _           { opened_file lexbuf }
 
@@ -204,7 +198,7 @@ and opened_file_fields = parse
                   opened_file_fields lexbuf }
   | dot         { module_names :=
                     List.rev !module_current_name :: !module_names;
-                  Require (!specif, List.rev !module_names) }
+                  Require (List.rev !module_names) }
   | eof         { raise Fin_fichier }
   | _           { opened_file_fields lexbuf }
 

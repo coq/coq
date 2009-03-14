@@ -18,13 +18,11 @@ let stdout = Pervasives.stdout
 let option_c = ref false
 let option_D = ref false
 let option_w = ref false
-let option_i = ref false
 let option_sort = ref false
 let option_noglob = ref false
 let option_slash = ref false
 
 let suffixe = ref ".vo"
-let suffixe_spec = ref ".vi"
 
 type dir = string option
 
@@ -184,13 +182,13 @@ let sort () =
       try
 	while true do
 	  match coq_action lb with
-	    | Require (_, sl) ->
+	    | Require sl ->
 		List.iter 
 		  (fun s -> 
 		    try loop (Hashtbl.find vKnown s) 
 		    with Not_found -> ())
 		sl
-	    | RequireString (_, s) -> loop s
+	    | RequireString s -> loop s
 	    | _ -> ()
 	done
       with Fin_fichier ->
@@ -210,26 +208,24 @@ let traite_fichier_Coq verbose f =
       while true do
       	let tok = coq_action buf in
 	match tok with
-	  | Require (spec,strl) ->
+	  | Require strl ->
 	      List.iter (fun str ->
 		if not (List.mem str !deja_vu_v) then begin
 	          addQueue deja_vu_v str;
                   try
                     let file_str = safe_assoc verbose f str in
-                    printf " %s%s" (canonize file_str)
-                      (if spec then !suffixe_spec else !suffixe)
+                    printf " %s%s" (canonize file_str) !suffixe
                   with Not_found -> 
 		    if verbose && not (Hashtbl.mem coqlibKnown str) then
                       warning_module_notfound f str
        		end) strl
-	  | RequireString (spec,s) -> 
+	  | RequireString s -> 
 	      let str = Filename.basename s in
 	      if not (List.mem [str] !deja_vu_v) then begin
 	        addQueue deja_vu_v [str];
                 try
                   let file_str = Hashtbl.find vKnown [str] in
-                  printf " %s%s" (canonize file_str)
-                    (if spec then !suffixe_spec else !suffixe)
+                  printf " %s%s" (canonize file_str) !suffixe
                 with Not_found -> 
 		  if not (Hashtbl.mem coqlibKnown [str]) then
 		    warning_notfound f s
@@ -391,11 +387,6 @@ let coq_dependencies () =
        printf "%s%s%s: %s.v" name !suffixe glob name;
        traite_fichier_Coq true (name ^ ".v");
        printf "\n";
-       if !option_i then begin
-	 printf "%s%s%s: %s.v" name !suffixe_spec glob name;
-	 traite_fichier_Coq false (name ^ ".v");
-	 printf "\n";
-       end;
        flush stdout)
     (List.rev !vAccu)
 
@@ -512,7 +503,6 @@ let rec parse = function
   | "-c" :: ll -> option_c := true; parse ll
   | "-D" :: ll -> option_D := true; parse ll
   | "-w" :: ll -> option_w := true; parse ll
-  | "-i" :: ll -> option_i := true; parse ll
   | "-boot" :: ll -> Flags.boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
   | "-noglob" :: ll | "-no-glob" :: ll -> option_noglob := true; parse ll
@@ -522,7 +512,7 @@ let rec parse = function
   | "-R" :: ([] | [_]) -> usage ()
   | "-coqlib" :: (r :: ll) -> Flags.coqlib_spec := true; Flags.coqlib := r; parse ll
   | "-coqlib" :: [] -> usage ()
-  | "-suffix" :: (s :: ll) -> suffixe := s ; suffixe_spec := s; parse ll
+  | "-suffix" :: (s :: ll) -> suffixe := s ; parse ll
   | "-suffix" :: [] -> usage ()
   | "-slash" :: ll -> option_slash := true; parse ll
   | f :: ll -> treat_file None f; parse ll
