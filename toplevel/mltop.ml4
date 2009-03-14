@@ -226,36 +226,13 @@ let file_of_name name =
 
 let stdlib_use_plugins = Coq_config.has_natdynlink
 
-(** List of plugins we want to dynamically load at launch-time.
-    Order matters, for instance ground_plugin needs cc_plugins. *)
-
-let initial_plugins =
-  [ "Extraction_plugin"; "Cc_plugin"; "Ground_plugin"; "Dp_plugin"; 
-    "Recdef_plugin"; "Subtac_plugin"; "Xml_plugin"; ]
-
-(** Other plugins of the standard library. We need their list
-    to avoid trying to load them if they have been statically compiled
-    into coqtop. Otherwise, they will be loaded automatically when
-    doing the corresponding Require. *)
-
-let other_stdlib_plugins =
-  [ "Omega_plugin"; "Romega_plugin"; "Micromega_plugin"; "Quote_plugin";
-    "Ring_plugin"; "Newring_plugin"; "Field_plugin"; "Fourier_plugin";
-    "Rtauto_plugin" ]
-
-let initially_known_modules =
-  if stdlib_use_plugins then Stringset.empty
-  else
-    let all_plugins = initial_plugins @ other_stdlib_plugins in
-    List.fold_right Stringset.add all_plugins Stringset.empty
-
 (* [known_loaded_module] contains the names of the loaded ML modules
  * (linked or loaded with load_object). It is used not to load a 
  * module twice. It is NOT the list of ML modules Coq knows. *)
 
 type ml_module_object = { mnames : string list }
 
-let known_loaded_modules = ref initially_known_modules
+let known_loaded_modules = ref Stringset.empty
 
 let add_known_module mname =
   known_loaded_modules := Stringset.add mname !known_loaded_modules
@@ -334,9 +311,6 @@ let (inMLModule,outMLModule) =
 
 let declare_ml_modules l =
   Lib.add_anonymous_leaf (inMLModule {mnames=l})
-
-let load_initial_plugins () =
-  if stdlib_use_plugins then declare_ml_modules initial_plugins
 
 let print_ml_path () =
   let l = !coq_mlpath_copy in

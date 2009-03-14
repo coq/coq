@@ -346,7 +346,6 @@ let init is_ide =
       if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then
         Option.iter Declaremods.start_library !toplevel_name;
       init_library_roots ();
-      Mltop.load_initial_plugins ();
       load_vernac_obj ();
       require ();
       load_rcfile();

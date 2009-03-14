@@ -15,3 +15,11 @@ Require Export Specif.
 Require Export Peano.
 Require Export Coq.Init.Wf.
 Require Export Coq.Init.Tactics.
+(* Initially available plugins *)
+Declare ML Module "extraction_plugin".
+Declare ML Module "cc_plugin".
+Declare ML Module "ground_plugin".
+Declare ML Module "dp_plugin".
+Declare ML Module "recdef_plugin".
+Declare ML Module "subtac_plugin".
+Declare ML Module "xml_plugin".

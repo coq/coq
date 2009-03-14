@@ -64,7 +64,6 @@ val inMLModule : ml_module_object -> Libobject.obj
 val outMLModule : Libobject.obj -> ml_module_object
 
 val declare_ml_modules : string list -> unit
-val load_initial_plugins : unit -> unit
 
 val print_ml_path : unit -> unit
 

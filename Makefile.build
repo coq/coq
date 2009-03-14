@@ -101,7 +101,7 @@ ifndef ORDER_ONLY_SEP
 $(error This Makefile needs GNU Make 3.81 or later (that is a version that supports the order-only dependency feature without major bugs.))
 endif
 
-VO_TOOLS_DEP := $(BESTCOQTOP) $(INITPLUGINSBEST)
+VO_TOOLS_DEP := $(BESTCOQTOP)
 ifdef COQ_XML
  VO_TOOLS_DEP += $(COQDOC)
 endif
@@ -153,19 +153,17 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
-coqbinaries:: ${COQBINARIES} ${CSDPCERT} $(INITPLUGINSOPT) $(INITPLUGINS)
+coqbinaries:: ${COQBINARIES} ${CSDPCERT}
 
 coq: coqlib tools coqbinaries
 
-coqlib:: initplugins theories contrib
+coqlib:: theories contrib
 
 coqlight: theories-light tools coqbinaries
 
 states:: states/initial.coq
 
-initplugins: $(INITPLUGINSOPT) $(INITPLUGINS)
-
-plugins: $(INITPLUGINSOPT) $(INITPLUGINS) $(PLUGINSOPT) $(PLUGINS)
+plugins: $(PLUGINSOPT) $(PLUGINS)
 
 $(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
@@ -669,9 +667,7 @@ install-tools::
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES)
-	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINS)
-	$(INSTALLSH) $(FULLCOQLIB) $(PLUGINSOPT)
+	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS) $(PLUGINSOPT)
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
@@ -690,9 +686,7 @@ endif
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILESLIGHT)
-	$(INSTALLSH) $(FULLCOQLIB) $(INITPLUGINS)
-	$(INSTALLSH) $(FULLCOQLIB) $(INITPLUGINSOPT)
+	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILESLIGHT) $(INITPLUGINS) $(INITPLUGINSOPT)
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	-$(INSTALLLIB) revision $(FULLCOQLIB)
