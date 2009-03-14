@@ -36,18 +36,42 @@ let file_concat l =
   if l=[] then "<empty>" else
     List.fold_left (//) (List.hd l) (List.tl l)
 
-let make_ml_module_name filename =
-  (* Computes a ML Module name from its physical name *)
-  let fn = try Filename.chop_extension filename with _ -> filename in
-  let bn = Filename.basename fn in
-    String.capitalize bn
-      
-(* Files specified on the command line *)
-let mlAccu  = ref ([] : (string * string * dir) list) 
-and mliAccu = ref ([] : (string * string * dir) list) 
-and vAccu   = ref ([] : (string * string) list)
+(** [get_extension f l] checks whether [f] has one of the extensions
+    listed in [l]. It returns [f] without its extension, alongside with
+    the extension. When no extension match, [(f,"")] is returned *)
 
-(* Queue operations *)
+let rec get_extension f = function
+  | [] -> (f, "")
+  | s :: _ when Filename.check_suffix f s -> (Filename.chop_suffix f s, s)
+  | _ :: l -> get_extension f l
+
+(** [basename_noext] removes both the directory part and the extension
+    (if necessary) of a filename *)
+
+let basename_noext filename =
+  let fn = Filename.basename filename in
+  try Filename.chop_extension fn with _ -> fn
+
+(** ML Files specified on the command line. In the entries:
+    - the first string is the basename of the file, without extension nor
+      directory part
+    - the second string of [mlAccu] is the extension (either .ml or .ml4)
+    - the [dir] part is the directory, with None used as the current directory
+*)
+
+let mlAccu  = ref ([] : (string * string * dir) list)
+and mliAccu = ref ([] : (string * dir) list)
+and mllibAccu = ref ([] : (string * dir) list)
+
+(** Coq files specifies on the command line:
+    - first string is the full filename, with only its extension removed
+    - second string is the absolute version of the previous (via getcwd)
+*)
+
+let vAccu   = ref ([] : (string * string) list)
+
+(** Queue operations *)
+
 let addQueue q v = q := v :: !q
 
 let safe_hash_add clq q (k,v) =
@@ -61,15 +85,31 @@ let safe_hash_add clq q (k,v) =
       clq := add_clash !clq
   with Not_found -> Hashtbl.add q k v
 
-(* Files found in the loadpaths *)
+(** Files found in the loadpaths.
+    For the ML files, the string is the basename without extension.
+    To allow ML source filename to be potentially capitalized, 
+    we perform a double search.
+*)
 
-let mlKnown = (Hashtbl.create 19 : (string, dir) Hashtbl.t)
-let mliKnown = (Hashtbl.create 19 : (string, dir) Hashtbl.t)
+let mkknown () =
+  let h = (Hashtbl.create 19 : (string, dir) Hashtbl.t) in
+  let add x s = Hashtbl.add h x s
+  and iter f = Hashtbl.iter f h
+  and search x =
+    try Some (Hashtbl.find h (String.uncapitalize x))
+    with Not_found ->
+      try Some (Hashtbl.find h (String.capitalize x))
+      with Not_found -> None
+  in add, iter, search
+
+let add_ml_known, iter_ml_known, search_ml_known = mkknown ()
+let add_mli_known, iter_mli_known, search_mli_known = mkknown ()
+let add_mllib_known, _, search_mllib_known = mkknown ()
+
 let vKnown = (Hashtbl.create 19 : (string list, string) Hashtbl.t)
 let coqlibKnown = (Hashtbl.create 19 : (string list, unit) Hashtbl.t)
 
 let clash_v = ref ([]: (string list * string list) list)
-
 
 let warning_module_notfound f s =
   eprintf "*** Warning : in file %s, library " f;
@@ -80,6 +120,11 @@ let warning_module_notfound f s =
 let warning_notfound f s =
   eprintf "*** Warning : in file %s, the file " f;
   eprintf "%s.v is required and has not been found !\n" s;
+  flush stderr
+
+let warning_declare f s =
+  eprintf "*** Warning : in file %s, Declared ML Module " f;
+  eprintf "%s has not been found !\n" s;
   flush stderr
 
 let warning_clash file dir =
@@ -110,11 +155,25 @@ let absolute_dir dir =
 let absolute_file_name basename odir =
   let dir = match odir with Some dir -> dir | None -> "." in
   absolute_dir dir // basename
-     
-let file_name = function
-  | (s,None)     -> file_concat s 
-  | (s,Some ".") -> file_concat s
-  | (s,Some d)   -> d // file_concat s
+
+let file_name s = function
+  | None     -> s
+  | Some "." -> s
+  | Some d   -> d // s
+
+let depend_ML str =
+  match search_mli_known str, search_ml_known str with
+    | Some mlidir, Some mldir ->
+	let mlifile = file_name str mlidir
+	and mlfile = file_name str mldir in
+	(" "^mlifile^".cmi"," "^mlfile^".cmx")
+    | None, Some mldir ->
+	let mlfile = file_name str mldir in
+	(" "^mlfile^".cmo"," "^mlfile^".cmx")
+    | Some mlidir, None ->
+	let mlifile = file_name str mlidir in
+	(" "^mlifile^".cmi"," "^mlifile^".cmi")
+    | None, None -> "", ""
 
 let traite_fichier_ML md ext =
   try 
@@ -130,33 +189,30 @@ let traite_fichier_ML md ext =
 	  ()
 	else begin
 	  addQueue deja_vu str;
-          begin try
-            let mlidir = Hashtbl.find mliKnown str in
-            let filename = file_name ([str],mlidir) in
-      	    a_faire := !a_faire ^ " " ^ filename ^ ".cmi"; 
-          with Not_found ->
-            try
-              let mldir = Hashtbl.find mlKnown str in
-              let filename = file_name ([str],mldir) in
-              a_faire := !a_faire ^ " " ^ filename ^ ".cmo";
-            with Not_found -> ()
-          end;
-          begin try
-            let mldir =  Hashtbl.find mlKnown str in
-            let filename = file_name ([str],mldir) in
-    	    a_faire_opt := !a_faire_opt ^ " " ^ filename ^ ".cmx"
-          with Not_found ->
-            try
-              let mlidir = Hashtbl.find mliKnown str in
-              let filename = file_name ([str],mlidir) in
-              a_faire_opt := !a_faire_opt ^ " " ^ filename ^ ".cmi"
-            with Not_found -> ()
-          end
+	  let byte,opt = depend_ML str in
+	  a_faire := !a_faire ^ byte;
+	  a_faire_opt := !a_faire_opt ^ opt
 	end
       done
     with Fin_fichier -> ()
     end;
     close_in chan;
+    (!a_faire, !a_faire_opt)
+  with Sys_error _ -> ("","")
+
+let traite_fichier_mllib md ext =
+  try
+    let chan = open_in (md ^ ext) in
+    let list = mllib_list (Lexing.from_channel chan) in
+    let a_faire = ref "" in
+    let a_faire_opt = ref "" in
+    List.iter
+      (fun str -> match search_ml_known str with
+	 | Some mldir ->
+	     let file = file_name str mldir in
+	     a_faire := !a_faire^" "^file^".cmo";
+	     a_faire_opt := !a_faire_opt^" "^file^".cmx"
+	 | None -> ()) list;
     (!a_faire, !a_faire_opt)
   with Sys_error _ -> ("","")
 
@@ -185,7 +241,7 @@ let sort () =
 	    | Require sl ->
 		List.iter 
 		  (fun s -> 
-		    try loop (Hashtbl.find vKnown s) 
+		    try loop (Hashtbl.find vKnown s)
 		    with Not_found -> ())
 		sl
 	    | RequireString s -> loop s
@@ -230,33 +286,26 @@ let traite_fichier_Coq verbose f =
 		  if not (Hashtbl.mem coqlibKnown [str]) then
 		    warning_notfound f s
        	      end
-	  | Declare sl -> 
-	      List.iter 
-		(fun str ->
-		  let s = make_ml_module_name str in
-		    if not (List.mem s !deja_vu_ml) then begin
-			addQueue deja_vu_ml s;
-               	       try
-              		 let mldir = Hashtbl.find mlKnown s in
-			 let filename = file_name ([String.uncapitalize s],mldir) in
-			 if Coq_config.has_natdynlink then
-			   printf " %s.cmo %s.cmxs" filename filename
-			 else
-			   printf " %s.cmo" filename
-		       with Not_found ->
-			 (** The .cmxs we want to load dynamically may come
-			     from a .cmxa, that has no corresponding .ml file.
-			     Idem with bytecode .cma. What dependency should
-			     we produce then ? For the moment, we suppose the
-			     .cmxs and .cma are at the same location. *)
-			 let mldir = Some (Filename.dirname f) in
-			 let filename = file_name ([String.uncapitalize s],mldir) in
-			 if Coq_config.has_natdynlink then
-			   printf " %s.cma %s.cmxs" filename filename
-			 else
-			   printf " %s.cma" filename
-		     end)
-		sl
+	  | Declare sl ->
+	      let declare suff dir s =
+		let base = file_name s dir in
+		let opt =
+		  if Coq_config.has_natdynlink then " "^base^".cmxs" else ""
+		in
+		printf " %s%s%s" base suff opt
+	      in
+	      let decl str =
+                let s = basename_noext str in
+		if not (List.mem s !deja_vu_ml) then begin
+		  addQueue deja_vu_ml s;
+		  match search_mllib_known s with
+		    | Some mldir -> declare ".cma" mldir s
+		    | None ->
+			match search_ml_known s with
+			  | Some mldir -> declare ".cmo" mldir s
+			  | None -> warning_declare f str
+		end
+	      in List.iter decl sl
 	  | Load str -> 
 	      let str = Filename.basename str in
 	      if not (List.mem [str] !deja_vu_v) then begin
@@ -318,16 +367,16 @@ let warning_Declare f dcl =
 let traite_Declare f = 
   let decl_list = ref ([] : string list) in
   let rec treat = function
-    | s :: ll -> 
-	let s' = make_ml_module_name s in
-	  if (Hashtbl.mem mlKnown s') & not (List.mem s' !decl_list) then begin
-       	      let mldir = Hashtbl.find mlKnown s in
-	      let fullname = file_name ([(String.uncapitalize s')],mldir) in
-	      let depl = mL_dep_list s (fullname ^ ".ml") in
-		treat depl;
-		decl_list := s :: !decl_list
-	    end;
-	  treat ll
+    | s :: ll ->
+	let s' = basename_noext s in
+	(match search_ml_known s with
+	   | Some mldir when not (List.mem s' !decl_list) ->
+	       let fullname = file_name (String.uncapitalize s') mldir in
+	       let depl = mL_dep_list s (fullname ^ ".ml") in
+	       treat depl;
+	       decl_list := s :: !decl_list
+	   | _ -> ());
+	treat ll
     | [] -> ()
   in
     try
@@ -355,35 +404,41 @@ let file_mem (f,_,d) =
   let rec loop = function
     | (f1,_,d1) :: l -> (f1 = f && d1 = d) || (loop l)
     | _ -> false
-  in 
+  in
   loop
 
 let mL_dependencies () =
   List.iter 
-    (fun ((name,ext,dirname) as pairname) ->
-       let fullname = file_name ([name],dirname) in
+    (fun (name,ext,dirname) ->
+       let fullname = file_name name dirname in
        let (dep,dep_opt) = traite_fichier_ML fullname ext in
-       printf "%s.cmo: %s%s" fullname fullname ext;
-       if file_mem pairname !mliAccu then printf " %s.cmi" fullname;
-       printf "%s\n" dep;
-       printf "%s.cmx: %s%s" fullname fullname ext;
-       if file_mem pairname !mliAccu then printf " %s.cmi" fullname;
-       printf "%s\n" dep_opt;
+       let intf =
+	 if List.mem (name,dirname) !mliAccu then " "^fullname^".cmi" else ""
+       in
+       printf "%s.cmo: %s%s%s%s\n" fullname fullname ext intf dep;
+       printf "%s.cmx: %s%s%s%s\n" fullname fullname ext intf dep_opt;
        flush stdout)
     (List.rev !mlAccu);
   List.iter
-    (fun ((name,ext,dirname)) ->
-       let fullname = file_name ([name],dirname) in
-       let (dep,_) = traite_fichier_ML fullname ext in
-       printf "%s.cmi: %s%s" fullname fullname ext;
-       printf "%s\n" dep;
+    (fun (name,dirname) ->
+       let fullname = file_name name dirname in
+       let (dep,_) = traite_fichier_ML fullname ".mli" in
+       printf "%s.cmi: %s.mli%s\n" fullname fullname dep;
        flush stdout)
-    (List.rev !mliAccu)
+    (List.rev !mliAccu);
+  List.iter
+    (fun (name,dirname) ->
+       let fullname = file_name name dirname in
+       let (dep,dep_opt) = traite_fichier_mllib fullname ".mllib" in
+       printf "%s.cma:%s\n" fullname dep;
+       printf "%s.cmxa %s.cmxs:%s\n" fullname fullname dep_opt;
+       flush stdout)
+    (List.rev !mllibAccu)
 
 let coq_dependencies () =
   List.iter
     (fun (name,_) ->
-       let glob = if !option_noglob then "" else " "^name^".glob" in 
+       let glob = if !option_noglob then "" else " "^name^".glob" in
        printf "%s%s%s: %s.v" name !suffixe glob name;
        traite_fichier_Coq true (name ^ ".v");
        printf "\n";
@@ -393,24 +448,24 @@ let coq_dependencies () =
 let declare_dependencies () =
   List.iter
     (fun (name,_) ->
-       traite_Declare (name^".v");      
+       traite_Declare (name^".v");
        flush stdout)
     (List.rev !vAccu)
 
-let rec warning_mult suf l = 
+let rec warning_mult suf iter =
   let tab = Hashtbl.create 151 in
-  Hashtbl.iter 
-    (fun f d ->
-       begin try 
-	 let d' = Hashtbl.find tab f in
-	 if (Filename.dirname (file_name ([f],d)))
-      	   <> (Filename.dirname (file_name ([f],d'))) then begin
-	     eprintf "*** Warning : the file %s is defined twice!\n" (f ^ suf);
-	     flush stderr
-	   end
-       with Not_found -> () end;
-       Hashtbl.add tab f d) 
-    l
+  let check f d =
+    begin try
+      let d' = Hashtbl.find tab f in
+      if (Filename.dirname (file_name f d))
+        <> (Filename.dirname (file_name f d')) then begin
+	  eprintf "*** Warning : the file %s is defined twice!\n" (f ^ suf);
+	  flush stderr
+	end
+    with Not_found -> () end;
+    Hashtbl.add tab f d
+  in
+  iter check
 
 let usage () =
   eprintf
@@ -418,24 +473,27 @@ let usage () =
   flush stderr;
   exit 1
 
-let add_coqlib_known phys_dir log_dir f = 
-  if Filename.check_suffix f ".vo" then
-    let basename = Filename.chop_suffix f ".vo" in
-    let name = log_dir@[basename] in
-    Hashtbl.add coqlibKnown [basename] ();
-    Hashtbl.add coqlibKnown name ()
+let add_coqlib_known phys_dir log_dir f =
+  match get_extension f [".vo"] with
+    | (basename,".vo") ->
+	let name = log_dir@[basename] in
+	Hashtbl.add coqlibKnown [basename] ();
+	Hashtbl.add coqlibKnown name ()
+    | _ -> ()
 
-let add_known phys_dir log_dir f = 
-  if (Filename.check_suffix f ".ml" ||  Filename.check_suffix f ".mli" || Filename.check_suffix f ".ml4")  then
-    let basename = make_ml_module_name f in
-      Hashtbl.add mlKnown basename (Some phys_dir)
-  else if Filename.check_suffix f ".v" then
-    let basename = Filename.chop_suffix f ".v" in
-    let name = log_dir@[basename] in
-    let file = phys_dir//basename in
-    let paths = [name;[basename]] in
-    List.iter
-      (fun n -> safe_hash_add clash_v vKnown (n,file)) paths
+
+let add_known phys_dir log_dir f =
+  match get_extension f [".v";".ml";".mli";".ml4";".mllib"] with
+    | (basename,".v") ->
+	let name = log_dir@[basename] in
+	let file = phys_dir//basename in
+	let paths = [name;[basename]] in
+	List.iter
+	  (fun n -> safe_hash_add clash_v vKnown (n,file)) paths
+    | (basename,(".ml"|".ml4")) -> add_ml_known basename (Some phys_dir)
+    | (basename,".mli") -> add_mli_known basename (Some phys_dir)
+    | (basename,".mllib") -> add_mllib_known basename (Some phys_dir)
+    | _ -> ()
 
 (* Visits all the directories under [dir], including [dir], 
    or just [dir] if [recur=false] *)
@@ -470,7 +528,7 @@ let rec treat_file old_dirname old_name =
       | (None,d) -> Some d
       | (Some d1,d2) -> Some (d1//d2) 
   in
-  let complete_name = file_name ([name],dirname) in
+  let complete_name = file_name name dirname in
   match try (stat complete_name).st_kind with _ -> S_BLK with 
     | S_DIR ->
 	(if name.[0] <> '.' then 
@@ -483,20 +541,16 @@ let rec treat_file old_dirname old_name =
 	   try 
 	     while true do treat_file (Some newdirname) (readdir dir) done
 	   with End_of_file -> closedir dir)
-    | S_REG -> 
-	if Filename.check_suffix name ".ml" then
-	  let basename = Filename.chop_suffix name ".ml" in
-	  addQueue mlAccu (basename,".ml",dirname)
-	else if Filename.check_suffix name ".ml4" then
-	  let basename = Filename.chop_suffix name ".ml4" in
-	  addQueue mlAccu (basename,".ml4",dirname)
-	else if Filename.check_suffix name ".mli" then
-	  let basename = Filename.chop_suffix name ".mli" in
-	  addQueue mliAccu (basename,".mli",dirname)
-	else if Filename.check_suffix name ".v" then
-	  let basename = Filename.chop_suffix name ".v" in
-	  let name = file_name ([basename],dirname) in
-	  addQueue vAccu (name, absolute_file_name basename dirname)
+    | S_REG ->
+	(match get_extension name [".v";".ml";".mli";".ml4";".mllib"] with
+	   | (base,".v") ->
+	       let name = file_name base dirname
+	       and absname = absolute_file_name base dirname in
+	       addQueue vAccu (name, absname)
+	   | (base,(".ml"|".ml4" as ext)) -> addQueue mlAccu (base,ext,dirname)
+	   | (base,".mli") -> addQueue mliAccu (base,dirname)
+	   | (base,".mllib") -> addQueue mllibAccu (base,dirname)
+	   | _ -> ())
     | _ -> ()
 
 let rec parse = function
@@ -526,14 +580,15 @@ let coqdep () =
     add_rec_dir add_known "contrib" ["Coq"]
   end else begin
     let coqlib = Envars.coqlib () in
-      add_rec_dir add_coqlib_known (coqlib//"theories") ["Coq"]; 
-      add_rec_dir add_coqlib_known (coqlib//"contrib") ["Coq"];
-      add_dir add_coqlib_known (coqlib//"user-contrib") []
+    add_rec_dir add_coqlib_known (coqlib//"theories") ["Coq"];
+    add_rec_dir add_coqlib_known (coqlib//"contrib") ["Coq"];
+    add_dir add_coqlib_known (coqlib//"user-contrib") []
   end;
-  List.iter (fun (f,_,d) -> Hashtbl.add mliKnown f d) !mliAccu;
-  List.iter (fun (f,_,d) -> Hashtbl.add mlKnown f d) !mlAccu;
-  warning_mult ".mli" mliKnown;
-  warning_mult ".ml" mlKnown;
+  List.iter (fun (f,d) -> add_mli_known f d) !mliAccu;
+  List.iter (fun (f,d) -> add_mllib_known f d) !mllibAccu;
+  List.iter (fun (f,_,d) -> add_ml_known f d) !mlAccu;
+  warning_mult ".mli" iter_mli_known;
+  warning_mult ".ml" iter_ml_known;
   if !option_sort then begin sort (); exit 0 end;
   if !option_c && not !option_D then mL_dependencies ();
   if not !option_D then coq_dependencies ();

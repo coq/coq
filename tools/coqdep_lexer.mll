@@ -225,5 +225,11 @@ and caml_opened_file = parse
   | eof {raise Fin_fichier }
   | _ { caml_action lexbuf }
 
+and mllib_list = parse
+  | coq_ident { let s = String.uncapitalize (Lexing.lexeme lexbuf)
+		in s :: mllib_list lexbuf }
+  | space+ { mllib_list lexbuf }
+  | eof { [] }
+
 
 
