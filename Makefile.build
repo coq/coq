@@ -283,59 +283,13 @@ parsing/highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
 tactics/hightactics.cma: $(HIGHTACTICS)
 tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx)
 
-contrib/contrib.cma: $(CONTRIBSTATIC)
-contrib/contrib.cmxa: $(CONTRIBSTATIC:.cmo=.cmx)
+contrib/%.cma: | contrib/%.mllib.d
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $^
 
-$(OMEGACMA): $(OMEGACMO)
-$(OMEGACMA:.cma=.cmxa): $(OMEGACMO:.cmo=.cmx)
-
-$(ROMEGACMA): $(ROMEGACMO)
-$(ROMEGACMA:.cma=.cmxa): $(ROMEGACMO:.cmo=.cmx)
-
-$(MICROMEGACMA): $(MICROMEGACMO)
-$(MICROMEGACMA:.cma=.cmxa): $(MICROMEGACMO:.cmo=.cmx)
-
-$(QUOTECMA): $(QUOTECMO)
-$(QUOTECMA:.cma=.cmxa): $(QUOTECMO:.cmo=.cmx)
-
-$(RINGCMA): $(RINGCMO)
-$(RINGCMA:.cma=.cmxa): $(RINGCMO:.cmo=.cmx)
-
-$(NEWRINGCMA): $(NEWRINGCMO)
-$(NEWRINGCMA:.cma=.cmxa): $(NEWRINGCMO:.cmo=.cmx)
-
-$(FIELDCMA): $(FIELDCMO)
-$(FIELDCMA:.cma=.cmxa): $(FIELDCMO:.cmo=.cmx)
-
-$(XMLCMA): $(XMLCMO)
-$(XMLCMA:.cma=.cmxa): $(XMLCMO:.cmo=.cmx)
-
-$(FOURIERCMA): $(FOURIERCMO)
-$(FOURIERCMA:.cma=.cmxa): $(FOURIERCMO:.cmo=.cmx)
-
-$(EXTRACTIONCMA): $(EXTRACTIONCMO)
-$(EXTRACTIONCMA:.cma=.cmxa): $(EXTRACTIONCMO:.cmo=.cmx)
-
-$(RTAUTOCMA): $(RTAUTOCMO)
-$(RTAUTOCMA:.cma=.cmxa): $(RTAUTOCMO:.cmo=.cmx)
-
-$(FOCMA): $(FOCMO)
-$(FOCMA:.cma=.cmxa): $(FOCMO:.cmo=.cmx)
-
-$(CCCMA): $(CCCMO)
-$(CCCMA:.cma=.cmxa): $(CCCMO:.cmo=.cmx)
-
-$(DPCMA): $(DPCMO)
-$(DPCMA:.cma=.cmxa): $(DPCMO:.cmo=.cmx)
-
-$(FUNINDCMA): $(FUNINDCMO)
-$(FUNINDCMA:.cma=.cmxa): $(FUNINDCMO:.cmo=.cmx)
-
-$(SUBTACCMA): $(SUBTACCMO)
-$(SUBTACCMA:.cma=.cmxa): $(SUBTACCMO:.cmo=.cmx)
-
-$(GBCMA): $(GBCMO)
-$(GBCMA:.cma=.cmxa): $(GBCMO:.cmo=.cmx)
+contrib/%.cmxa: | contrib/%.mllib.d
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $^
 
 %.cma:
 	$(SHOW)'OCAMLC -a -o $@'
@@ -451,38 +405,29 @@ ifeq ($(HASNATDYNLINK),false)
 
 # old approach, via coqmktop
 
-PCOQPLUGINS:=
-
-bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(INTERFACE)
+bin/coq-interface$(EXE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(INTERFACECMA)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@ $(INTERFACE)
+	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@ $(INTERFACECMA)
 
-bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(INTERFACECMX)
+bin/coq-interface.opt$(EXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(INTERFACECMA:.cma=.cmxa)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
+	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@ $(INTERFACECMA:.cma=.cmxa)
 
-bin/coq-parser$(EXE):$(LIBCOQRUN) $(PARSERCMO)
+bin/coq-parser$(EXE): $(PARSERREQUIRES)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQRUNBYTEFLAGS) -linkall $(BYTEFLAGS) -o $@ \
-	  dynlink.cma str.cma nums.cma $(LIBCOQRUN) $(CMA) $(PARSERCMO)
+	  dynlink.cma str.cma nums.cma $(CMA) $(PARSERREQUIRES)
 
-bin/coq-parser.opt$(EXE): $(LIBCOQRUN) $(PARSERCMX)
+bin/coq-parser.opt$(EXE): $(LIBCOQRUN) $(PARSERREQUIRESCMX)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall $(OPTFLAGS) -o $@ \
-	  $(LIBCOQRUN) $(DYNLINKCMXA) str.cmxa nums.cmxa $(CMXA) $(PARSERCMX)
+	  $(LIBCOQRUN) $(DYNLINKCMXA) str.cmxa nums.cmxa $(CMXA) \
+          $(PARSERREQUIRESCMX)
 
 else 
 
 # HASNATDYNLINK is available :
 # coq-interface and coq-parser are direct calls to coqtop with some dynlink
-
-PCOQPLUGINS:=contrib/interface/coqinterface_plugin.cma \
-             contrib/interface/coqparser_plugin.cma
-
-contrib/interface/coqinterface_plugin.cma: $(INTERFACE)
-contrib/interface/coqinterface_plugin.cmxa: $(INTERFACE:.cmo=.cmx)
-contrib/interface/coqparser_plugin.cma: $(PARSERCODE)
-contrib/interface/coqparser_plugin.cmxa: $(PARSERCODE:.cmo=.cmx)
 
 bin/coq-interface$(EXE):
 	echo "#!/bin/sh" > $@
@@ -576,20 +521,20 @@ noreal: logic arith bool zarith qarith lists sets fsets relations \
 ###########################################################################
 
 contrib: $(CONTRIBVO)
-omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
-micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
-ring: $(RINGVO) $(RINGCMO)
-setoid_ring: $(NEWRINGVO) $(NEWRINGCMO)
-dp: $(DPCMO)
-xml: $(XMLVO) $(XMLCMO)
-extraction: $(EXTRACTIONCMO)
-field: $(FIELDVO) $(FIELDCMO)
-fourier: $(FOURIERVO) $(FOURIERCMO)
-funind: $(FUNINDCMO) $(FUNINDVO)
-cc: $(CCVO) $(CCCMO)
+omega: $(OMEGAVO) $(OMEGACMA) $(ROMEGAVO) $(ROMEGACMA)
+micromega: $(MICROMEGAVO) $(MICROMEGACMA) $(CSDPCERT)
+ring: $(RINGVO) $(RINGCMA)
+setoid_ring: $(NEWRINGVO) $(NEWRINGCMA)
+dp: $(DPCMA)
+xml: $(XMLVO) $(XMLCMA)
+extraction: $(EXTRACTIONCMA)
+field: $(FIELDVO) $(FIELDCMA)
+fourier: $(FOURIERVO) $(FOURIERCMA)
+funind: $(FUNINDCMA) $(FUNINDVO)
+cc: $(CCVO) $(CCCMA)
 programs: $(PROGRAMSVO)
-subtac: $(SUBTACVO) $(SUBTACCMO)
-rtauto: $(RTAUTOVO) $(RTAUTOCMO)
+subtac: $(SUBTACVO) $(SUBTACCMA)
+rtauto: $(RTAUTOVO) $(RTAUTOCMA)
 
 ###########################################################################
 # rules to make theories, contrib and states
@@ -1032,6 +977,11 @@ checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC)
 %.mli.d: $(D_DEPEND_BEFORE_SRC) %.mli $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILES:.ml4=.ml)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' > "$@"
+
+%.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(COQDEP)
+	$(SHOW)'COQDEP  $<'
+	$(HIDE)$(COQDEP) -slash -boot -c "$<" > "$@" \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 ## Veerry nasty hack to keep ocamldep happy
 %.ml: | %.ml4

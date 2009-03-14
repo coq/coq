@@ -231,105 +231,40 @@ HIGHTACTICS:=$(addprefix tactics/, \
   eauto.cmo 	class_tactics.cmo	 tauto.cmo \
   eqdecide.cmo )
 
+# NB: Dependencies of contribs are now in separate files
+#  contrib/*/*_plugin.mllib
+# Format of these files are compatible with ocamlbuild,
+# Even if we don't use it (yet ?)
+
 OMEGACMA:=contrib/omega/omega_plugin.cma
-OMEGACMO:=$(addprefix contrib/omega/, \
-  omega.cmo coq_omega.cmo g_omega.cmo )
-
 ROMEGACMA:=contrib/romega/romega_plugin.cma
-ROMEGACMO:=$(addprefix contrib/romega/, \
-  const_omega.cmo refl_omega.cmo g_romega.cmo )
-
 MICROMEGACMA:=contrib/micromega/micromega_plugin.cma
-MICROMEGACMO:=$(addprefix contrib/micromega/, \
-  mutils.cmo micromega.cmo mfourier.cmo certificate.cmo \
-  coq_micromega.cmo g_micromega.cmo )
-
 QUOTECMA:=contrib/quote/quote_plugin.cma
-QUOTECMO:=\
-  contrib/quote/quote.cmo contrib/quote/g_quote.cmo
-
 RINGCMA:=contrib/ring/ring_plugin.cma
-RINGCMO:=\
-  contrib/ring/ring.cmo contrib/ring/g_ring.cmo 
-
 NEWRINGCMA:=contrib/setoid_ring/newring_plugin.cma
-NEWRINGCMO:=contrib/setoid_ring/newring.cmo
-
 GBCMA:=contrib/groebner/groebner_plugin.cma
-GBCMO:=$(addprefix contrib/groebner/, \
-  utile.cmo polynom.cmo ideal.cmo groebner.cmo )
-
 DPCMA:=contrib/dp/dp_plugin.cma
-DPCMO:=$(addprefix contrib/dp/, \
-  dp_why.cmo dp_zenon.cmo dp.cmo dp_gappa.cmo g_dp.cmo )
-
-FIELDCMO:=contrib/field/field.cmo
 FIELDCMA:=contrib/field/field_plugin.cma
-
 XMLCMA:=contrib/xml/xml_plugin.cma
-XMLCMO:=$(addprefix contrib/xml/, \
-  unshare.cmo xml.cmo acic.cmo doubleTypeInference.cmo \
-  cic2acic.cmo acic2Xml.cmo proof2aproof.cmo \
-  xmlcommand.cmo proofTree2Xml.cmo xmlentries.cmo cic2Xml.cmo \
-  dumptree.cmo )
-
 FOURIERCMA:=contrib/fourier/fourier_plugin.cma
-FOURIERCMO:=$(addprefix contrib/fourier/, \
-  fourier.cmo fourierR.cmo g_fourier.cmo )
-
 EXTRACTIONCMA:=contrib/extraction/extraction_plugin.cma
-EXTRACTIONCMO:=$(addprefix contrib/extraction/, \
-  table.cmo mlutil.cmo modutil.cmo extraction.cmo common.cmo \
-  ocaml.cmo haskell.cmo scheme.cmo extract_env.cmo g_extraction.cmo )
-
 FUNINDCMA:=contrib/funind/recdef_plugin.cma
-FUNINDCMO:=$(addprefix contrib/funind/, \
-  indfun_common.cmo rawtermops.cmo \
-  recdef.cmo rawterm_to_relation.cmo \
-  functional_principles_proofs.cmo \
-  functional_principles_types.cmo \
-  invfun.cmo indfun.cmo merge.cmo g_indfun.cmo )
-
 FOCMA:=contrib/firstorder/ground_plugin.cma
-FOCMO:=$(addprefix contrib/firstorder/, \
-  formula.cmo unify.cmo sequent.cmo rules.cmo instances.cmo ground.cmo \
-  g_ground.cmo )
-
 CCCMA:=contrib/cc/cc_plugin.cma
-CCCMO:=$(addprefix contrib/cc/, \
-  ccalgo.cmo ccproof.cmo cctac.cmo g_congruence.cmo )
-
 SUBTACCMA:=contrib/subtac/subtac_plugin.cma
-SUBTACCMO:=$(addprefix contrib/subtac/, \
-  subtac_utils.cmo eterm.cmo g_eterm.cmo \
-  subtac_errors.cmo subtac_coercion.cmo \
-  subtac_obligations.cmo subtac_cases.cmo \
-  subtac_pretyping_F.cmo subtac_pretyping.cmo \
-  subtac_command.cmo subtac_classes.cmo \
-  subtac.cmo g_subtac.cmo equations.cmo )
-
 RTAUTOCMA:=contrib/rtauto/rtauto_plugin.cma
-RTAUTOCMO:=$(addprefix contrib/rtauto/, \
-  proof_search.cmo refl_tauto.cmo g_rtauto.cmo )
 
-CONTRIBSTATIC:=\
-	$(OMEGACMO) $(ROMEGACMO) $(MICROMEGACMO) \
-        $(QUOTECMO) $(RINGCMO) $(NEWRINGCMO) $(DPCMO) $(FIELDCMO) \
-        $(FOURIERCMO) $(EXTRACTIONCMO) $(XMLCMO) \
-        $(CCCMO)  $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
-        $(FUNINDCMO) $(GBCMO)
-
-CONTRIBCMA:=contrib/contrib.cma
+CONTRIBS:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
+        $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(DPCMA) $(FIELDCMA) \
+        $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
+        $(CCCMA)  $(FOCMA) $(SUBTACCMA) $(RTAUTOCMA) \
+        $(FUNINDCMA) $(GBCMA)
 
 ifneq ($(HASNATDYNLINK),false)
  CONTRIBSTATIC:=
- CONTRIBCMA:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
 	$(XMLCMA) $(FUNINDCMA) $(SUBTACCMA)
- PLUGINS:=$(INITPLUGINS) \
-	$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
-        $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(FIELDCMA) \
-        $(FOURIERCMA) $(RTAUTOCMA) $(GBCMA)
+ PLUGINS:=$(CONTRIBS)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
  PLUGINSOPT:=$(PLUGINS:.cma=.cmxs)
  ifeq ($(BEST),opt)
@@ -337,6 +272,8 @@ ifneq ($(HASNATDYNLINK),false)
  else
   INITPLUGINSBEST:=$(INITPLUGINS)
  endif
+else
+ CONTRIBSTATIC:=$(CONTRIBS)
 endif
 
 CMA:=$(CLIBS) $(CAMLP4OBJS)
@@ -350,14 +287,13 @@ CMXA:=$(CMA:.cma=.cmxa)
 LINKCMO:=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
-        parsing/highparsing.cma tactics/hightactics.cma $(CONTRIBCMA)
-LINKCMOCMXA:=$(LINKCMO:.cma=.cmxa)
-LINKCMX:=$(LINKCMOCMXA:.cmo=.cmx)
+        parsing/highparsing.cma tactics/hightactics.cma $(CONTRIBSTATIC)
+LINKCMX:=$(patsubst %.cma,%.cmxa,$(patsubst %.cmo,%.cmx,$(LINKCMO)))
 
 # objects known by the toplevel of Coq
 OBJSCMO:=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
         $(PROOFS) $(PARSING) $(TACTICS) $(TOPLEVEL) $(HIGHPARSING) \
-        $(HIGHTACTICS) $(CONTRIBSTATIC)
+        $(HIGHTACTICS)
 
 COQIDECMO:=\
   $(addprefix ide/utils/, \
@@ -383,33 +319,28 @@ COQMKTOPCMX:=$(COQMKTOPCMO:.cmo=.cmx)
 COQCCMO:=$(COQENVCMO) $(REVISIONCMO) toplevel/usage.cmo scripts/coqc.cmo
 COQCCMX:=$(COQCCMO:.cmo=.cmx)
 
-INTERFACE:=$(addprefix contrib/interface/, \
-  vtp.cmo xlate.cmo paths.cmo translate.cmo pbp.cmo dad.cmo \
-  history.cmo name_to_ast.cmo debug_tac.cmo showproof_ct.cmo showproof.cmo \
-  blast.cmo depends.cmo centaur.cmo )
-
-INTERFACECMX:=$(INTERFACE:.cmo=.cmx)
-
-PARSERREQUIRES:=$(LINKCMO) $(LIBCOQRUN) # Solution de facilité...
-PARSERREQUIRESCMX:=$(LINKCMX)
+## Pcoq tools : coq-interface, coq-parser
 
 COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-parser$(EXE)
-ifeq ($(BEST),opt)
+
+INTERFACECMA:=contrib/interface/coqinterface_plugin.cma
+PARSERCMA:=contrib/interface/coqparser_plugin.cma
+
 ifeq ($(HASNATDYNLINK),false)
+ ifeq ($(BEST),opt)
   COQINTERFACE:=$(COQINTERFACE) bin/coq-interface.opt$(EXE) bin/coq-parser.opt$(EXE)
-endif
-endif
-
-PARSERCODE:=contrib/interface/line_parser.cmo contrib/interface/vtp.cmo \
-           contrib/interface/xlate.cmo contrib/interface/coqparser.cmo
-PARSERCMO:=$(PARSERREQUIRES) $(PARSERCODE)
-PARSERCMX:= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
-
-ifneq ($(HASNATDYNLINK),false)
-INTERFACERC:= contrib/interface/vernacrc
+ endif
+ INTERFACERC:= contrib/interface/vernacrc
+ PCOQPLUGINS:=
 else
-INTERFACERC:= contrib/interface/vernacrc contrib/interface/CoqParser.v
+ INTERFACERC:= contrib/interface/vernacrc contrib/interface/CoqParser.v
+ PCOQPLUGINS:=$(INTERFACECMA) $(PARSERCMA)
 endif
+
+PARSERREQUIRES:=$(LINKCMO) $(LIBCOQRUN) $(PARSERCMA) # Solution de facilité...
+PARSERREQUIRESCMX:=$(LINKCMX) $(PARSERCMA:.cma=.cmxa)
+
+## Misc
 
 CSDPCERTCMO:=$(addprefix contrib/micromega/, \
   mutils.cmo 	micromega.cmo 	mfourier.cmo 	certificate.cmo \

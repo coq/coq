@@ -51,6 +51,7 @@ export MLFILES  := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml'  ')' $(FIN
   $(GENMLFILES)
 export MLIFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mli' ')' $(FIND_PRINTF_P)) \
   $(GENMLIFILES)
+export MLLIBFILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.mllib' ')' $(FIND_PRINTF_P))
 export ML4FILES := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.ml4' ')' $(FIND_PRINTF_P))
 #export VFILES   := $(shell find . $(FIND_VCS_CLAUSE) '(' -name '*.v'   ')' $(FIND_PRINTF_P)) \
 #  $(GENVFILES)
