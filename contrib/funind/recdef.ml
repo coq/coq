@@ -769,9 +769,9 @@ let termination_proof_header is_mes input_type ids args_id relation
 	     (* rest of the proof *)
 	     tclTHENSEQ 
 	       [observe_tac "generalize" 
-		  (onNLastHyps (nargs+1)
-		     (fun (id,_,_) -> 
-			tclTHEN (h_generalize [mkVar id]) (h_clear false [id])
+		  (onNLastHypsId (nargs+1)
+		     (tclMAP (fun id -> 
+			tclTHEN (h_generalize [mkVar id]) (h_clear false [id]))
 		     ))
 	       ;
 		observe_tac "h_fix" (h_fix (Some hrec) (nargs+1));

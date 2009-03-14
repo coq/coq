@@ -951,7 +951,7 @@ and intros_decomp p kont decls db n =
   if n = 0 then
     decomp_and_register_decls p kont decls db
   else
-    tclTHEN intro (tclLAST_DECL (fun d ->
+    tclTHEN intro (onLastDecl (fun d ->
       (intros_decomp p kont (d::decls) db (n-1))))
 
 (* Decompose hypotheses [hyps] with maximum depth [p] and

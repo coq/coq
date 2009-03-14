@@ -448,8 +448,9 @@ let rec tclTHENLIST = function
     [] -> tclIDTAC
   | t1::tacl -> tclTHEN t1 (tclTHENLIST tacl)
 
-
-
+(* [tclMAP f [x1..xn]] builds [(f x1);(f x2);...(f xn)] *)
+let tclMAP tacfun l = 
+  List.fold_right (fun x -> (tclTHEN (tacfun x))) l tclIDTAC
 
 (* various progress criterions *)
 let same_goal gl subgoal = 

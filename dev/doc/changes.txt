@@ -1,4 +1,20 @@
 =========================================
+= CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
+=========================================
+
+** Cleaning in tactical.mli
+
+tclLAST_HYP -> onLastHyp
+tclLAST_DECL -> onLastDecl
+tclLAST_NHYPS -> onNLastHypsId
+tclNTH_DECL -> onNthDecl
+tclNTH_HYP -> onNthHyp
+onLastHyp -> onLastHypId
+onNLastHyps -> onNLastDecls
+
++ removal of various unused combinators on type "clause"
+
+=========================================
 = CHANGES BETWEEN COQ V8.1 AND COQ V8.2 =
 =========================================
 

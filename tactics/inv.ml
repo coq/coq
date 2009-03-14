@@ -324,7 +324,7 @@ let projectAndApply thin id eqname names depids gls =
 	   (intro_move idopt no_move)
 	   (* try again to substitute and if still not a variable after *)
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
-	   (tclTRY (onLastHyp (substHypIfVariable (subst_hyp false)))))
+	   (tclTRY (onLastHypId (substHypIfVariable (subst_hyp false)))))
 	 names);
        (if names = [] then clear [id] else tclIDTAC)]
   in
@@ -342,12 +342,12 @@ let rewrite_equations_gene othin neqns ba gl =
   let rewrite_eqns =
     match othin with
       | Some thin ->
-          onLastHyp
+          onLastHypId
             (fun last ->
               tclTHENSEQ
                 [tclDO neqns
                      (tclTHEN intro
-                        (onLastHyp
+                        (onLastHypId
                            (fun id ->
                               tclTRY 
 			        (projectAndApply thin id (ref no_move)
@@ -361,8 +361,8 @@ let rewrite_equations_gene othin neqns ba gl =
     [tclDO neqns intro;
      bring_hyps nodepids;
      clear (ids_of_named_context nodepids);
-     onHyps (compose List.rev (nLastHyps neqns)) bring_hyps;
-     onHyps (nLastHyps neqns) (compose clear ids_of_named_context);
+     onHyps (compose List.rev (nLastDecls neqns)) bring_hyps;
+     onHyps (nLastDecls neqns) (compose clear ids_of_named_context);
      rewrite_eqns;
      tclMAP (fun (id,_,_ as d) ->
                (tclORELSE (clear [id])
@@ -408,13 +408,13 @@ let rewrite_equations othin neqns names ba gl =
     match othin with
       | Some thin ->
           tclTHENSEQ
-            [onHyps (compose List.rev (nLastHyps neqns)) bring_hyps;
-             onHyps (nLastHyps neqns) (compose clear ids_of_named_context);
+            [onHyps (compose List.rev (nLastDecls neqns)) bring_hyps;
+             onHyps (nLastDecls neqns) (compose clear ids_of_named_context);
 	     tclMAP_i neqns (fun o ->
 	       let idopt,names = extract_eqn_names o in
                (tclTHEN
 		 (intro_move idopt no_move)
-		 (onLastHyp (fun id ->
+		 (onLastHypId (fun id ->
 		   tclTRY (projectAndApply thin id first_eq names depids)))))
 	       names;
 	     tclMAP (fun (id,_,_) gl ->
@@ -473,7 +473,7 @@ let raw_inversion inv_kind id status names gl =
      [case_tac names 
        (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
        (Some elim_predicate) ([],[]) ind indclause;
-      onLastHyp
+      onLastHypId
         (fun id ->
            (tclTHEN
               (apply_term (mkVar id)

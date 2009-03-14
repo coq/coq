@@ -30,32 +30,29 @@ open Evar_refiner
 open Genarg
 open Tacexpr
 
-(******************************************)
-(*         Basic Tacticals                *)
-(******************************************)
+(************************************************************************)
+(* Tacticals re-exported from the Refiner module                        *)
+(************************************************************************)
 
-(*************************************************)
-(* Tacticals re-exported from the Refiner module.*)
-(*************************************************)
-
-let tclNORMEVAR      = tclNORMEVAR
-let tclIDTAC         = tclIDTAC
-let tclIDTAC_MESSAGE = tclIDTAC_MESSAGE
-let tclORELSE0       = tclORELSE0
-let tclORELSE        = tclORELSE
-let tclTHEN          = tclTHEN
-let tclTHENLIST      = tclTHENLIST
-let tclTHEN_i        = tclTHEN_i
-let tclTHENFIRST     = tclTHENFIRST
-let tclTHENLAST      = tclTHENLAST
-let tclTHENS         = tclTHENS
+let tclNORMEVAR      = Refiner.tclNORMEVAR
+let tclIDTAC         = Refiner.tclIDTAC
+let tclIDTAC_MESSAGE = Refiner.tclIDTAC_MESSAGE
+let tclORELSE0       = Refiner.tclORELSE0
+let tclORELSE        = Refiner.tclORELSE
+let tclTHEN          = Refiner.tclTHEN
+let tclTHENLIST      = Refiner.tclTHENLIST
+let tclMAP           = Refiner.tclMAP
+let tclTHEN_i        = Refiner.tclTHEN_i
+let tclTHENFIRST     = Refiner.tclTHENFIRST
+let tclTHENLAST      = Refiner.tclTHENLAST
+let tclTHENS         = Refiner.tclTHENS
 let tclTHENSV        = Refiner.tclTHENSV
 let tclTHENSFIRSTn   = Refiner.tclTHENSFIRSTn
 let tclTHENSLASTn    = Refiner.tclTHENSLASTn
 let tclTHENFIRSTn    = Refiner.tclTHENFIRSTn
 let tclTHENLASTn     = Refiner.tclTHENLASTn
 let tclREPEAT        = Refiner.tclREPEAT
-let tclREPEAT_MAIN   = tclREPEAT_MAIN
+let tclREPEAT_MAIN   = Refiner.tclREPEAT_MAIN
 let tclFIRST         = Refiner.tclFIRST
 let tclSOLVE         = Refiner.tclSOLVE
 let tclTRY           = Refiner.tclTRY
@@ -67,41 +64,54 @@ let tclDO            = Refiner.tclDO
 let tclPROGRESS      = Refiner.tclPROGRESS
 let tclWEAK_PROGRESS = Refiner.tclWEAK_PROGRESS
 let tclNOTSAMEGOAL   = Refiner.tclNOTSAMEGOAL
-let tclTHENTRY       = tclTHENTRY
-let tclIFTHENELSE    = tclIFTHENELSE
-let tclIFTHENSELSE   = tclIFTHENSELSE
-let tclIFTHENSVELSE   = tclIFTHENSVELSE
-let tclIFTHENTRYELSEMUST = tclIFTHENTRYELSEMUST
+let tclTHENTRY       = Refiner.tclTHENTRY
+let tclIFTHENELSE    = Refiner.tclIFTHENELSE
+let tclIFTHENSELSE   = Refiner.tclIFTHENSELSE
+let tclIFTHENSVELSE   = Refiner.tclIFTHENSVELSE
+let tclIFTHENTRYELSEMUST = Refiner.tclIFTHENTRYELSEMUST
 
-let unTAC            = unTAC
+(* Synonyms *)
 
-(* [rclTHENSEQ [t1;..;tn] is equivalent to t1;..;tn *)
-let tclTHENSEQ = tclTHENLIST
+let tclTHENSEQ       = tclTHENLIST
 
-(* map_tactical f [x1..xn] = (f x1);(f x2);...(f xn) *)
-(* tclMAP f [x1..xn] = (f x1);(f x2);...(f xn) *)
-let tclMAP tacfun l = 
-  List.fold_right (fun x -> (tclTHEN (tacfun x))) l tclIDTAC
+(************************************************************************)
+(* Tacticals applying on hypotheses                                     *)
+(************************************************************************)
 
-(* apply a tactic to the nth element of the signature  *)
+let nthDecl m gl =
+  try List.nth (pf_hyps gl) (m-1) 
+  with Failure _ -> error "No such assumption."
 
-let tclNTH_HYP m (tac : constr->tactic) gl =
-  tac (try mkVar(let (id,_,_) = List.nth (pf_hyps gl) (m-1) in id) 
-       with Failure _ -> error "No such assumption.") gl
+let nthHypId m gl = pi1 (nthDecl m gl)
+let nthHyp m gl   = mkVar (nthHypId m gl)
 
-let tclNTH_DECL m tac gl =
-  tac (try List.nth (pf_hyps gl) (m-1) 
-       with Failure _ -> error "No such assumption.") gl
+let lastDecl gl   = nthDecl 1 gl
+let lastHypId gl  = nthHypId 1 gl
+let lastHyp gl    = nthHyp 1 gl
 
-(* apply a tactic to the last element of the signature  *)
+let nLastDecls n gl =
+  try list_firstn n (pf_hyps gl)
+  with Failure _ -> error "Not enough hypotheses in the goal."
 
-let tclLAST_HYP = tclNTH_HYP 1
+let nLastHypsId n gl = List.map pi1 (nLastDecls n gl)
+let nLastHyps n gl   = List.map mkVar (nLastHypsId n gl)
 
-let tclLAST_DECL = tclNTH_DECL 1
+let onNthDecl m tac gl  = tac (nthDecl m gl) gl
+let onNthHypId m tac gl = tac (nthHypId m gl) gl
+let onNthHyp m tac gl   = tac (nthHyp m gl) gl
 
-let tclLAST_NHYPS n tac gl =
-  tac (try list_firstn n (pf_ids_of_hyps gl)
-       with Failure _ -> error "No such assumptions.") gl
+let onLastDecl  = onNthDecl 1
+let onLastHypId = onNthHypId 1
+let onLastHyp   = onNthHyp 1
+
+let onHyps find tac gl = tac (find gl) gl
+
+let onNLastDecls n tac  = onHyps (nLastDecls n) tac
+let onNLastHypsId n tac = onHyps (nLastHypsId n) tac
+let onNLastHyps n tac   = onHyps (nLastHyps n) tac
+
+let afterHyp id gl =
+  fst (list_split_when (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
 
 let tclTRY_sign (tac : constr->tactic) sign gl =
   let rec arec = function
@@ -147,7 +157,6 @@ let simple_clause_list_of cl gls =
 	List.map (fun h -> Some h) l in
   if cl.concl_occs = all_occurrences_expr then None::hyps else hyps
 
-
 (* OR-branch *)
 let tryClauses tac cl gls = 
   let rec firstrec = function
@@ -168,88 +177,12 @@ let onClausesLR tac cl gls =
   let hyps = simple_clause_list_of cl gls in
   tclMAP tac (List.rev hyps) gls
 
-(* A clause corresponding to the |n|-th hypothesis or None *)
-
-let nth_clause n gl =
-  if n = 0 then 
-    onConcl
-  else if n < 0 then 
-    let id = List.nth (List.rev (pf_ids_of_hyps gl)) (-n-1) in 
-    onHyp id
-  else 
-    let id = List.nth (pf_ids_of_hyps gl) (n-1) in 
-    onHyp id
-
-(* Gets the conclusion or the type of a given hypothesis *)
-
-let clause_type cls gl =
-  match simple_clause_of cls with
-    | None    -> pf_concl gl
-    | Some ((_,id),_) -> pf_get_hyp_typ gl id
-
-(* Functions concerning matching of clausal environments *)
-
-let pf_is_matching gls pat n =
-  is_matching_conv (pf_env gls) (project gls) pat n
-
-let pf_matches gls pat n =
-  matches_conv (pf_env gls) (project gls) pat n
-
-(* [OnCL clausefinder clausetac]
- * executes the clausefinder to find the clauses, and then executes the
- * clausetac on the clause so obtained. *)
-
-let onCL cfind cltac gl = cltac (cfind gl) gl
-
-
-(* [OnHyps hypsfinder hypstac]
- * idem [OnCL] but only for hypotheses, not for conclusion *)
-
-let onHyps find tac gl = tac (find gl) gl
-
-
-
-(* Create a clause list with all the hypotheses from the context, occuring
-   after id *)
-
-let afterHyp id gl =
-  fst (list_split_when (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
-    
-
-(* Create a singleton clause list with the last hypothesis from then context *)
-
-let lastHyp gl = List.hd (pf_ids_of_hyps gl)
-
-
-(* Create a clause list with the n last hypothesis from then context *)
-
-let nLastHyps n gl =
-  try list_firstn n (pf_hyps gl)
-  with Failure "firstn" -> error "Not enough hypotheses in the goal."
-
-
-let onClause t cls gl  = t cls gl
 let tryAllClauses  tac = tryClauses tac allClauses
 let onAllClauses   tac = onClauses tac allClauses
 let onAllClausesLR tac = onClausesLR tac allClauses
-let onNthLastHyp n tac gls = tac (nth_clause n gls) gls
 
 let tryAllHyps     tac =
   tryClauses (function Some((_,id),_) -> tac id | _ -> assert false) allHyps
-let onNLastHyps n  tac     = onHyps (nLastHyps n) (tclMAP tac)
-let onLastHyp      tac gls = tac (lastHyp gls) gls
-
-let clauseTacThen tac continuation =
-  (fun cls -> (tclTHEN (tac cls) continuation))
-
-let if_tac pred tac1 tac2 gl =
-  if pred gl then tac1 gl else tac2 gl
-
-let ifOnClause pred tac1 tac2 cls gl =
-  if pred (cls,clause_type cls gl) then
-    tac1 cls gl
-  else 
-    tac2 cls gl
 
 let ifOnHyp pred tac1 tac2 id gl =
   if pred (id,pf_get_hyp_typ gl id) then
@@ -257,9 +190,9 @@ let ifOnHyp pred tac1 tac2 id gl =
   else 
     tac2 id gl
 
-(***************************************)
-(*         Elimination Tacticals       *)
-(***************************************)
+(************************************************************************)
+(* Elimination Tacticals                                                *)
+(************************************************************************)
 
 (* The following tacticals allow to apply a tactic to the
    branches generated by the application of an elimination

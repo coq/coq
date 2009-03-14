@@ -278,18 +278,18 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	  | [None] -> intro_mustbe_force id gl
 	  | [Some th] ->
               tclTHEN (introduction id)
-                (onLastHyp (fun id -> tcc_aux (mkVar id::subst) th)) gl
+                (onLastHypId (fun id -> tcc_aux (mkVar id::subst) th)) gl
 	  | _ -> assert false
 	end
 
     | Lambda (Anonymous,_,m), _ -> (* if anon vars are allowed in evars *)
         assert (isMeta (strip_outer_cast m));
 	begin match sgp with
-	  | [None] -> tclTHEN intro (onLastHyp (fun id -> clear [id])) gl
+	  | [None] -> tclTHEN intro (onLastHypId (fun id -> clear [id])) gl
 	  | [Some th] ->
               tclTHEN
                 intro
-                (onLastHyp (fun id -> 
+                (onLastHypId (fun id -> 
                   tclTHEN
                     (clear [id])
                     (tcc_aux (mkVar (*dummy*) id::subst) th))) gl
@@ -306,7 +306,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	     | [None] -> introduction id
 	     | [Some th] ->
                  tclTHEN (introduction id)
-                   (onLastHyp (fun id -> tcc_aux (mkVar id::subst) th))
+                   (onLastHypId (fun id -> tcc_aux (mkVar id::subst) th))
 	     | _ -> assert false) 
 	  gl
 
@@ -317,12 +317,12 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
           (assert_tac (Name id) t1) 
 	  [(match List.hd sgp with 
 	     | None -> tclIDTAC
-	     | Some th -> onLastHyp (fun id -> tcc_aux (mkVar id::subst) th));
+	     | Some th -> onLastHypId (fun id -> tcc_aux (mkVar id::subst) th));
            (match List.tl sgp with 
 	     | [] -> refine (subst1 (mkVar id) c2)  (* a complete proof *)
 	     | [None] -> tclIDTAC                   (* a meta *)
 	     | [Some th] ->                         (* a partial proof *)
-                 onLastHyp (fun id -> tcc_aux (mkVar id::subst) th)
+                 onLastHypId (fun id -> tcc_aux (mkVar id::subst) th)
              | _ -> assert false)]
           gl
 

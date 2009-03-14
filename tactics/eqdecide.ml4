@@ -56,7 +56,7 @@ open Coqlib
    Eduardo Gimenez (30/3/98).
 *)
 
-let clear_last = (tclLAST_HYP (fun c -> (clear [destVar c])))
+let clear_last = (onLastHyp (fun c -> (clear [destVar c])))
 
 let choose_eq eqonleft = 
   if eqonleft then h_simplest_left else h_simplest_right
@@ -68,14 +68,14 @@ let mkBranches c1 c2 =
     [generalize [c2];
      h_simplest_elim c1;
      intros;
-     tclLAST_HYP h_simplest_case;
+     onLastHyp h_simplest_case;
      clear_last;
      intros]
 
 let solveNoteqBranch side = 
   tclTHEN (choose_noteq side)
     (tclTHEN (intro_force true)
-      (onLastHyp (fun id -> Extratactics.h_discrHyp id)))
+      (onLastHypId (fun id -> Extratactics.h_discrHyp id)))
 
 let h_solveNoteqBranch side =
   Refiner.abstract_extended_tactic "solveNoteqBranch" [] 
@@ -103,7 +103,7 @@ let mkGenDecideEqGoal rectype g =
 
 let eqCase tac = 
   (tclTHEN intro  
-  (tclTHEN (tclLAST_HYP Equality.rewriteLR)
+  (tclTHEN (onLastHyp Equality.rewriteLR)
   (tclTHEN clear_last 
   tac)))
 
@@ -176,7 +176,7 @@ let compare c1 c2 g =
   let decide  = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g in  
   (tclTHENS (cut decide) 
             [(tclTHEN  intro 
-             (tclTHEN (tclLAST_HYP simplest_case)
+             (tclTHEN (onLastHyp simplest_case)
                        clear_last));
              decideEquality c1 c2]) g
 

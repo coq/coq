@@ -477,7 +477,7 @@ let intros_until_n_wored = intros_until_n_gen false
 
 let try_intros_until tac = function
   | NamedHyp id -> tclTHEN (tclTRY (intros_until_id id)) (tac id)
-  | AnonHyp n -> tclTHEN (intros_until_n n) (onLastHyp tac)
+  | AnonHyp n -> tclTHEN (intros_until_n n) (onLastHypId tac)
 
 let rec intros_move = function
   | [] -> tclIDTAC
@@ -500,7 +500,7 @@ let onInductionArg tac = function
       else
 	tac cbl
   | ElimOnAnonHyp n ->
-      tclTHEN (intros_until_n n) (tclLAST_HYP (fun c -> tac (c,NoBindings)))
+      tclTHEN (intros_until_n n) (onLastHyp (fun c -> tac (c,NoBindings)))
   | ElimOnIdent (_,id) ->
       (*Identifier apart because id can be quantified in goal and not typable*)
       tclTHEN (tclTRY (intros_until_id id)) (tac (mkVar id,NoBindings))
@@ -535,7 +535,7 @@ let resolve_classes gl =
 (**************************)
 
 let cut c gl =
-  match kind_of_term (hnf_type_of gl c) with
+  match kind_of_term (pf_hnf_type_of gl c) with
     | Sort _ ->
         let id=next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
         let t = mkProd (Anonymous, c, pf_concl gl) in
@@ -723,7 +723,7 @@ let descend_in_conjunctions with_evars tac exit c gl =
 	  (general_elim with_evars (c,NoBindings) (elim,NoBindings))
 	  (tclTHENLIST [
 	    tclDO n intro;
-	    tclLAST_NHYPS n (fun l ->
+	    onNLastHypsId n (fun l ->
 	      tclFIRST
 		(List.map (fun id -> tclTHEN (tac (mkVar id)) (thin l)) l))])
           gl
@@ -974,7 +974,7 @@ let rec intros_clearing = function
   | (false::tl) -> tclTHEN intro (intros_clearing tl)
   | (true::tl)  ->
       tclTHENLIST
-        [ intro; onLastHyp (fun id -> clear [id]); intros_clearing tl]
+        [ intro; onLastHypId (fun id -> clear [id]); intros_clearing tl]
 
 (* Modifying/Adding an hypothesis  *)
 
@@ -1097,8 +1097,8 @@ let forward_general_multi_rewrite =
 let register_general_multi_rewrite f =
   forward_general_multi_rewrite := f
 
-let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
-let case_last  = tclLAST_HYP simplest_case
+let clear_last = onLastHyp (fun c -> (clear [destVar c]))
+let case_last  = onLastHyp simplest_case
 
 let error_unexpected_extra_pattern loc nb pat =
   let s1,s2,s3 = match pat with
@@ -1111,7 +1111,7 @@ let error_unexpected_extra_pattern loc nb pat =
       strbrk " expected in the branch).")
 
 let intro_or_and_pattern loc b ll l' tac =
-  tclLAST_HYP (fun c gl ->
+  onLastHyp (fun c gl ->
     let ind,_ = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     let nv = mis_constr_nargs ind in
     let bracketed = b or not (l'=[]) in
@@ -1172,7 +1172,7 @@ let rec intros_patterns b avoid thin destopt = function
   | (loc, IntroWildcard) :: l ->
       tclTHEN 
         (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l)) no_move true)
-        (onLastHyp (fun id ->
+        (onLastHypId (fun id ->
 	  tclORELSE
 	    (tclTHEN (clear [id]) (intros_patterns b avoid thin destopt l))
 	    (intros_patterns b avoid ((loc,id)::thin) destopt l)))
@@ -1198,7 +1198,7 @@ let rec intros_patterns b avoid thin destopt = function
   | (loc, IntroRewrite l2r) :: l ->
       tclTHEN 
         (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l)) no_move true)
-        (onLastHyp (fun id ->
+        (onLastHypId (fun id ->
 	  tclTHEN
 	    (rewrite_hyp l2r id)
 	    (intros_patterns b avoid thin destopt l)))
@@ -1242,7 +1242,7 @@ let allow_replace c gl = function (* A rather arbitrary condition... *)
       false
 
 let assert_as first ipat c gl =
-  match kind_of_term (hnf_type_of gl c) with
+  match kind_of_term (pf_hnf_type_of gl c) with
   | Sort s ->
       let id,tac = prepare_intros s ipat gl in
       let repl = allow_replace c gl ipat in
@@ -2813,8 +2813,8 @@ let new_destruct ev lc e idl cls = induct_destruct false ev (lc,e,idl,cls)
 (* Induction tactics *)
 
 (* This was Induction before 6.3 (induction only in quantified premisses) *)
-let raw_induct s = tclTHEN (intros_until_id s) (tclLAST_HYP simplest_elim)
-let raw_induct_nodep n = tclTHEN (intros_until_n n) (tclLAST_HYP simplest_elim)
+let raw_induct s = tclTHEN (intros_until_id s) (onLastHyp simplest_elim)
+let raw_induct_nodep n = tclTHEN (intros_until_n n) (onLastHyp simplest_elim)
 
 let simple_induct_id hyp = raw_induct hyp
 let simple_induct_nodep = raw_induct_nodep
@@ -2826,9 +2826,9 @@ let simple_induct = function
 (* Destruction tactics *)
 
 let simple_destruct_id s    =
-  (tclTHEN (intros_until_id s) (tclLAST_HYP simplest_case))
+  (tclTHEN (intros_until_id s) (onLastHyp simplest_case))
 let simple_destruct_nodep n =
-  (tclTHEN (intros_until_n n)    (tclLAST_HYP simplest_case))
+  (tclTHEN (intros_until_n n)    (onLastHyp simplest_case))
 
 let simple_destruct = function
   | NamedHyp id -> simple_destruct_id id
@@ -2990,7 +2990,7 @@ let symmetry_red allowred gl =
 	    tclTHENFIRST (cut symc)
               (tclTHENLIST 
 		[ intro;
-		  tclLAST_HYP simplest_case;
+		  onLastHyp simplest_case;
 		  one_constructor 1 NoBindings ])
 	      gl
 	end)
@@ -3071,7 +3071,7 @@ let transitivity_red allowred t gl =
 	      (tclTHENFIRST (cut eq1)
                 (tclTHENLIST
 		  [ tclDO 2 intro;
-		    tclLAST_HYP simplest_case;
+		    onLastHyp simplest_case;
 		    assumption ])) gl
         end)
 

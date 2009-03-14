@@ -1015,7 +1015,7 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
       (tclDO nb_intro_to_do intro)
       (
 	fun g' -> 
-	  let just_introduced = nLastHyps nb_intro_to_do g' in 
+	  let just_introduced = nLastDecls nb_intro_to_do g' in 
 	  let just_introduced_id = List.map (fun (id,_,_) -> id) just_introduced in 
 	  tclTHEN (Equality.rewriteLR equation_lemma) (revert just_introduced_id) g'
       )
@@ -1218,7 +1218,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	    [
 	      (* observe_tac ("introducing args") *) (tclDO nb_args intro);
 	      (fun g -> (* replacement of the function by its body *)
-		 let args = nLastHyps nb_args g in 
+		 let args = nLastDecls nb_args g in 
 		 let fix_body = fix_info.body_with_param in
 (* 		 observe (str "fix_body := "++ pr_lconstr_env (pf_env gl) fix_body); *)
 		 let args_id = List.map (fun (id,_,_) -> id) args in
@@ -1282,7 +1282,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	    [
 	      tclDO nb_args intro;
 	      (fun g -> (* replacement of the function by its body *)
-		 let args = nLastHyps nb_args g in 
+		 let args = nLastDecls nb_args g in 
 		 let args_id = List.map (fun (id,_,_) -> id) args in
 		 let dyn_infos = 
 		   {

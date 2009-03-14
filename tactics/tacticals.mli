@@ -56,13 +56,8 @@ val tclPROGRESS      : tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
 val tclNOTSAMEGOAL   : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
-
-val tclNTH_HYP       : int -> (constr -> tactic) -> tactic
-val tclNTH_DECL      : int -> (named_declaration -> tactic) -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
-val tclLAST_HYP      : (constr -> tactic) -> tactic
-val tclLAST_DECL     : (named_declaration -> tactic) -> tactic
-val tclLAST_NHYPS    : int -> (identifier list -> tactic) -> tactic
+
 val tclTRY_sign      : (constr -> tactic) -> named_context -> tactic
 val tclTRY_HYPS      : (constr -> tactic) -> tactic
 
@@ -72,51 +67,51 @@ val tclIFTHENSVELSE  : tactic -> tactic array -> tactic -> tactic
 
 val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
-val unTAC            : tactic -> goal sigma -> proof_tree sigma
+(*s Tacticals applying to hypotheses *)
 
-(*s Clause tacticals. *)
+val onNthHypId       : int -> (identifier -> tactic) -> tactic
+val onNthHyp         : int -> (constr -> tactic) -> tactic
+val onNthDecl        : int -> (named_declaration -> tactic) -> tactic
+val onLastHypId      : (identifier -> tactic) -> tactic
+val onLastHyp        : (constr -> tactic) -> tactic
+val onLastDecl       : (named_declaration -> tactic) -> tactic
+val onNLastHypsId    : int -> (identifier list -> tactic) -> tactic
+val onNLastHyps      : int -> (constr list -> tactic) -> tactic
+val onNLastDecls     : int -> (named_context -> tactic) -> tactic
+
+val lastHypId   : goal sigma -> identifier
+val lastHyp     : goal sigma -> constr
+val lastDecl    : goal sigma -> named_declaration
+val nLastHypsId : int -> goal sigma -> identifier list
+val nLastHyps   : int -> goal sigma -> constr list
+val nLastDecls  : int -> goal sigma -> named_context
+
+val afterHyp    : identifier -> goal sigma -> named_context
+
+val ifOnHyp     : (identifier * types -> bool) ->
+                  (identifier -> tactic) -> (identifier -> tactic) ->
+		   identifier -> tactic
+
+val onHyps      : (goal sigma -> named_context) -> 
+                  (named_context -> tactic) -> tactic
+
+(* Tacticals applying to hypotheses or goal *)
 
 type simple_clause = identifier gsimple_clause
 type clause = identifier gclause
 
-val allClauses : 'a gclause
-val allHyps : clause
-val onHyp : identifier -> clause
-val onConcl : 'a gclause
+val allClauses : clause
+val allHyps    : clause
+val onHyp      : identifier -> clause
+val onConcl    : clause
 
-val nth_clause  : int -> goal sigma -> clause
-val clause_type : clause -> goal sigma -> constr
 val simple_clause_list_of : clause -> goal sigma -> simple_clause list
 
-val pf_matches : goal sigma -> constr_pattern -> constr -> patvar_map
-val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
-
-val afterHyp   : identifier -> goal sigma -> named_context
-val lastHyp    : goal sigma -> identifier
-val nLastHyps  : int -> goal sigma -> named_context
-
-val onCL           : (goal sigma -> clause) -> 
-                     (clause -> tactic) -> tactic
+val tryAllHyps     : (identifier -> tactic) -> tactic
 val tryAllClauses  : (simple_clause -> tactic) -> tactic
 val onAllClauses   : (simple_clause -> tactic) -> tactic
-val onClause       : (clause -> tactic) -> clause -> tactic
 val onClauses      : (simple_clause -> tactic) -> clause -> tactic
 val onAllClausesLR : (simple_clause -> tactic) -> tactic
-val onNthLastHyp   : int -> (clause -> tactic) -> tactic
-val clauseTacThen  : (clause -> tactic) -> tactic -> clause -> tactic
-val if_tac         : (goal sigma -> bool) -> tactic -> (tactic) -> tactic
-val ifOnClause     : 
-  (clause * types -> bool) ->
-    (clause -> tactic) -> (clause -> tactic) -> clause -> tactic
-val ifOnHyp        : 
-  (identifier * types -> bool) ->
-    (identifier -> tactic) -> (identifier -> tactic) -> identifier -> tactic
-
-val onHyps         : (goal sigma -> named_context) -> 
-                     (named_context -> tactic) -> tactic
-val tryAllHyps     : (identifier -> tactic) -> tactic
-val onNLastHyps    : int -> (named_declaration -> tactic) -> tactic
-val onLastHyp      : (identifier -> tactic) -> tactic
 
 (*s Elimination tacticals. *)
 

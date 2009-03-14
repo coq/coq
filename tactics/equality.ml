@@ -269,7 +269,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
     let sym = build_coq_eq_sym () in
     let eq = applist (e, [t1;c1;c2]) in
     tclTHENS (assert_as false None eq)
-      [onLastHyp (fun id -> 
+      [onLastHypId (fun id -> 
 	tclTHEN 
 	  (tclTRY (general_multi_rewrite false false (inj_open (mkVar id),NoBindings) clause))
 	  (clear [id]));
@@ -541,7 +541,7 @@ let rec build_discriminator sigma env dirn c sort = function
 *)
 
 let gen_absurdity id gl =
-  if is_empty_type (clause_type (onHyp id) gl)
+  if is_empty_type (pf_get_hyp_typ gl id)
   then
     simplest_elim (mkVar id) gl
   else
@@ -585,7 +585,7 @@ let discr_positions env sigma (lbeq,(t,t1,t2)) eq_clause cpath dirn sort =
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
   let pf = clenv_value_cast_meta absurd_clause in
   tclTHENS (cut_intro absurd_term)
-    [onLastHyp gen_absurdity; refine pf]
+    [onLastHypId gen_absurdity; refine pf]
 
 let discrEq (lbeq,(t,t1,t2) as u) eq_clause gls =
   let sigma =  eq_clause.evd in
@@ -616,7 +616,7 @@ let onNegatedEquality with_evars tac gls =
   match kind_of_term (hnf_constr (pf_env gls) (project gls) ccl) with
   | Prod (_,t,u) when is_empty_type u ->
       tclTHEN introf
-        (onLastHyp (fun id -> 
+        (onLastHypId (fun id -> 
           onEquality with_evars tac (mkVar id,NoBindings))) gls
   | _ -> 
       errorlabstrm "" (str "Not a negated primitive equality.")

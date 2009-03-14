@@ -519,15 +519,15 @@ let blast_simpl = (free_try (reduce (Simpl None) onConcl))
 ;;
 let blast_induction1 = 
     (free_try (tclTHEN (tclTRY intro)
-		       (tclTRY (tclLAST_HYP simplest_elim))))
+		       (tclTRY (onLastHyp simplest_elim))))
 ;;
 let blast_induction2 = 
     (free_try (tclTHEN (tclTRY (tclTHEN intro intro))
-		       (tclTRY (tclLAST_HYP simplest_elim))))
+		       (tclTRY (onLastHyp simplest_elim))))
 ;;
 let blast_induction3 = 
     (free_try (tclTHEN (tclTRY (tclTHEN intro (tclTHEN intro intro)))
-		       (tclTRY (tclLAST_HYP simplest_elim))))
+		       (tclTRY (onLastHyp simplest_elim))))
 ;;
 
 blast_tactic :=

@@ -21,6 +21,7 @@ open Refiner
 open Redexpr
 open Tacexpr
 open Rawterm
+open Pattern
 (*i*)
 
 (* Operations for handling terms under a local typing context. *)
@@ -51,7 +52,7 @@ val pf_global             : goal sigma -> identifier -> constr
 val pf_parse_const        : goal sigma -> string -> constr
 val pf_type_of            : goal sigma -> constr -> types
 val pf_check_type         : goal sigma -> constr -> types -> unit
-val hnf_type_of           : goal sigma -> constr -> types
+val pf_hnf_type_of        : goal sigma -> constr -> types
 
 val pf_interp_constr      : goal sigma -> Topconstr.constr_expr -> constr
 val pf_interp_type        : goal sigma -> Topconstr.constr_expr -> types
@@ -85,6 +86,9 @@ val pf_unfoldn    : (Termops.occurrences * evaluable_global_reference) list
 val pf_const_value : goal sigma -> constant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
 val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
+
+val pf_matches     : goal sigma -> constr_pattern -> constr -> patvar_map
+val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 

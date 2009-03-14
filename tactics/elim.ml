@@ -75,9 +75,9 @@ let elimHypThen tac id gl =
   elimination_then tac ([],[]) (mkVar id) gl
 
 let rec general_decompose_on_hyp recognizer =
-  ifOnHyp recognizer (general_decompose recognizer) (fun _ -> tclIDTAC)
+  ifOnHyp recognizer (general_decompose_aux recognizer) (fun _ -> tclIDTAC)
 
-and general_decompose recognizer id =
+and general_decompose_aux recognizer id =
   elimHypThen
     (introElimAssumsThen
        (fun bas ->
@@ -97,8 +97,8 @@ let general_decompose recognizer c gl =
   let typc = pf_type_of gl c in  
   tclTHENSV (cut typc) 
     [| tclTHEN (intro_using tmphyp_name)
-         (onLastHyp
-	    (ifOnHyp recognizer (general_decompose recognizer)
+         (onLastHypId
+	    (ifOnHyp recognizer (general_decompose_aux recognizer)
 	      (fun id -> clear [id])));
        exact_no_check c |] gl
 
@@ -155,12 +155,12 @@ let simple_elimination c gls =
 let induction_trailer abs_i abs_j bargs =
   tclTHEN 
     (tclDO (abs_j - abs_i) intro)
-    (onLastHyp
+    (onLastHypId
        (fun id gls ->
 	  let idty = pf_type_of gls (mkVar id) in
 	  let fvty = global_vars (pf_env gls) idty in
 	  let possible_bring_hyps =
-	    (List.tl (nLastHyps (abs_j - abs_i) gls)) @ bargs.assums
+	    (List.tl (nLastDecls (abs_j - abs_i) gls)) @ bargs.assums
           in
 	  let (hyps,_) =
             List.fold_left 
@@ -184,7 +184,7 @@ let double_ind h1 h2 gls =
     if abs_i > abs_j then (abs_j,abs_i) else
       error "Both hypotheses are the same." in
   (tclTHEN (tclDO abs_i intro)
-     (onLastHyp
+     (onLastHypId
        	(fun id ->
            elimination_then
              (introElimAssumsThen (induction_trailer abs_i abs_j))

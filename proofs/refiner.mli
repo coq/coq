@@ -80,6 +80,9 @@ val tclTHEN          : tactic -> tactic -> tactic
    convenient than [tclTHEN] when [n] is large *)
 val tclTHENLIST      : tactic list -> tactic
 
+(* [tclMAP f [x1..xn]] builds [(f x1);(f x2);...(f xn)] *)
+val tclMAP           : ('a -> tactic) -> 'a list -> tactic
+
 (* [tclTHEN_i tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [(tac2 i)] to the [i]$^{th}$ resulting subgoal (starting from 1) *)
 val tclTHEN_i        : tactic -> (int -> tactic) -> tactic

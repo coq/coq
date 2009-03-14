@@ -111,10 +111,13 @@ let pf_const_value              = pf_reduce (fun env _ -> constant_value env)
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
-let hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_get_type_of gls)
+let pf_hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_get_type_of gls)
 
 let pf_check_type gls c1 c2 = 
   ignore (pf_type_of gls (mkCast (c1, DEFAULTcast, c2)))
+
+let pf_is_matching              = pf_apply Matching.is_matching_conv
+let pf_matches                  = pf_apply Matching.matches_conv
 
 (************************************)
 (* Tactics handling a list of goals *)
