@@ -153,15 +153,19 @@ LIBREP:=$(addprefix lib/, \
 BYTERUN:=$(addprefix kernel/byterun/, \
   coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
 
-KERNEL:=$(addprefix kernel/, \
+KERNEL0:=$(addprefix kernel/, \
   names.cmo 		univ.cmo 	esubst.cmo 	term.cmo \
   mod_subst.cmo		sign.cmo	cbytecodes.cmo	copcodes.cmo \
-  cemitcodes.cmo	vm.cmo		declarations.cmo \
+  cemitcodes.cmo	declarations.cmo \
   retroknowledge.cmo	pre_env.cmo	cbytegen.cmo 	environ.cmo \
-  csymtable.cmo 	conv_oracle.cmo	closure.cmo	reduction.cmo \
+  conv_oracle.cmo	closure.cmo	reduction.cmo \
   type_errors.cmo	entries.cmo	modops.cmo	inductive.cmo \
-  vconv.cmo		typeops.cmo 	indtypes.cmo	cooking.cmo \
+  typeops.cmo 		indtypes.cmo	cooking.cmo \
   term_typing.cmo	subtyping.cmo	mod_typing.cmo	safe_typing.cmo )
+
+KERNEL1:=$(addprefix kernel/, vm.cmo csymtable.cmo vconv.cmo )
+
+KERNEL:=$(KERNEL0) $(KERNEL1)
 
 LIBRARY:=$(addprefix library/, \
   nameops.cmo		libnames.cmo	libobject.cmo 	summary.cmo \
@@ -223,7 +227,7 @@ TOPLEVEL:=\
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/vernacentries.cmo toplevel/whelp.cmo toplevel/vernac.cmo \
   toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
-  toplevel/toplevel.cmo $(REVISIONCMO) toplevel/usage.cmo \
+  toplevel/toplevel.cmo toplevel/usage.cmo \
   toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS:=$(addprefix tactics/, \
@@ -311,7 +315,7 @@ COQENVCMO:=$(CONFIG) \
 COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo 
 COQMKTOPCMX:=$(COQMKTOPCMO:.cmo=.cmx)
 
-COQCCMO:=$(COQENVCMO) $(REVISIONCMO) toplevel/usage.cmo scripts/coqc.cmo
+COQCCMO:=$(COQENVCMO) toplevel/usage.cmo scripts/coqc.cmo
 COQCCMX:=$(COQCCMO:.cmo=.cmx)
 
 ## Pcoq tools : coq-interface, coq-parser
@@ -380,13 +384,7 @@ GRAMMARNEEDEDCMO:=\
   $(addprefix lib/, \
     pp_control.cmo pp.cmo compat.cmo flags.cmo util.cmo \
     bigint.cmo dyn.cmo hashcons.cmo predicate.cmo rtree.cmo option.cmo ) \
-  $(addprefix kernel/, \
-    names.cmo univ.cmo esubst.cmo term.cmo mod_subst.cmo sign.cmo \
-    cbytecodes.cmo copcodes.cmo cemitcodes.cmo declarations.cmo \
-    retroknowledge.cmo pre_env.cmo cbytegen.cmo conv_oracle.cmo \
-    environ.cmo closure.cmo reduction.cmo type_errors.cmo entries.cmo \
-    modops.cmo inductive.cmo typeops.cmo indtypes.cmo cooking.cmo \
-    term_typing.cmo subtyping.cmo mod_typing.cmo safe_typing.cmo ) \
+  $(KERNEL0) \
   $(addprefix library/, \
     nameops.cmo libnames.cmo summary.cmo nametab.cmo libobject.cmo \
     lib.cmo goptions.cmo decl_kinds.cmo global.cmo ) \
@@ -405,7 +403,7 @@ CAMLP4EXTENSIONSCMO:=\
 GRAMMARSCMO:=$(addprefix parsing/, \
   g_prim.cmo g_tactic.cmo g_ltac.cmo g_constr.cmo )
 
-GRAMMARCMO:=config/coq_config.cmo $(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
+GRAMMARCMO:=$(CONFIG) $(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
 GRAMMARCMA:=parsing/grammar.cma
 
@@ -420,14 +418,8 @@ STAGE1_CMO:=$(GRAMMARCMO) parsing/q_constr.cmo
 STAGE1:=parsing/grammar.cma parsing/q_constr.cmo
 
 PRINTERSCMO:=\
-  config/coq_config.cmo lib/lib.cma \
-  $(addprefix kernel/, \
-    names.cmo univ.cmo esubst.cmo term.cmo mod_subst.cmo sign.cmo \
-    cbytecodes.cmo copcodes.cmo cemitcodes.cmo declarations.cmo \
-    retroknowledge.cmo pre_env.cmo cbytegen.cmo conv_oracle.cmo \
-    environ.cmo closure.cmo reduction.cmo type_errors.cmo entries.cmo \
-    modops.cmo inductive.cmo typeops.cmo indtypes.cmo cooking.cmo \
-    term_typing.cmo subtyping.cmo mod_typing.cmo safe_typing.cmo ) \
+  $(CONFIG) lib/lib.cma \
+  $(KERNEL0) \
   $(addprefix library/, \
     summary.cmo global.cmo nameops.cmo libnames.cmo nametab.cmo \
     libobject.cmo lib.cmo goptions.cmo decls.cmo heads.cmo ) \
@@ -776,10 +768,6 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coq_makefile.1 man/coqmktop.1
 
 PCOQMANPAGES:=man/coq-interface.1 man/coq-parser.1
-
-RECTYPESML:=kernel/term.ml library/nametab.ml proofs/tacexpr.ml \
-  parsing/pptactic.ml 
-
 
 #########################################################
 # .mli files by directory (used for dependencies graphs #

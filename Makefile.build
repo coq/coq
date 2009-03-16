@@ -768,21 +768,6 @@ toplevel/mltop.optml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here
 	  $(NATDYNLINKDEF) -impl $< > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
-# files compiled with -rectypes
-
-define rectypes-rules-template
-$(1:.ml=.cmo): $(1) | $(1).d
-	$(SHOW)'OCAMLC   -rectypes $$<' 
-	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $$<
-
-$(1:.ml=.cmx): $(1) | $(1).d
-	$(SHOW)'OCAMLOPT -rectypes $$<'
-	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $$<
-
-endef
-
-$(foreach f,$(RECTYPESML),$(eval $(call rectypes-rules-template,$(f))))
-
 # pretty printing of the revision number when compiling a checked out
 # source tree
 .PHONY: revision
