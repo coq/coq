@@ -8,6 +8,8 @@
 
 include Makefile.stage1
 
+-include $(MLLIBFILES:.mllib=.mllib.d)
+.SECONDARY: $(MLLIBFILES:.mli=.mllib.d)
 -include $(ML4FILES:.ml4=.ml4.ml.d)
 .SECONDARY: $(ML4FILES:.ml4=.ml4.ml.d)
 

@@ -34,14 +34,12 @@ endif
 NOARG: world
 
 # build and install the three subsystems: coq, coqide, pcoq
-ifeq ($(WITHDOC),all)
-world: revision coq coqide pcoq doc
-
-install: install-coq install-coqide install-pcoq install-doc
-else
 world: revision coq coqide pcoq
-
 install: install-coq install-coqide install-pcoq
+
+ifeq ($(WITHDOC),all)
+world: doc
+install: install-doc
 endif
 
 #install-manpages: install-coq-manpages install-pcoq-manpages
@@ -54,7 +52,7 @@ endif
 # or only abbreviated versions. 
 # Quiet mode is ON by default except if VERBOSE=1 option is given to make
 
-ifeq ($(VERBOSE),1)
+ifdef VERBOSE
  SHOW = @true ""
  HIDE = 
 else 
@@ -110,7 +108,9 @@ ifdef VALIDATE
 endif
 ifdef NO_RECOMPILE_LIB
  VO_TOOLS_ORDER_ONLY:=$(VO_TOOLS_DEP)
+ VO_TOOLS_STRICT:=
 else
+ VO_TOOLS_ORDER_ONLY:=
  VO_TOOLS_STRICT:=$(VO_TOOLS_DEP)
 endif
 
@@ -162,8 +162,6 @@ coqlib:: theories contrib
 coqlight: theories-light tools coqbinaries
 
 states:: states/initial.coq
-
-plugins: $(PLUGINSOPT) $(PLUGINS)
 
 $(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
@@ -530,8 +528,7 @@ field: $(FIELDVO) $(FIELDCMA)
 fourier: $(FOURIERVO) $(FOURIERCMA)
 funind: $(FUNINDCMA) $(FUNINDVO)
 cc: $(CCVO) $(CCCMA)
-programs: $(PROGRAMSVO)
-subtac: $(SUBTACVO) $(SUBTACCMA)
+subtac: $(SUBTACCMA)
 rtauto: $(RTAUTOVO) $(RTAUTOCMA)
 
 ###########################################################################
@@ -720,8 +717,7 @@ install-latex:
 
 source-doc:
 	if !(test -d $(SOURCEDOCDIR)); then mkdir $(SOURCEDOCDIR); fi
-	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) \
-	  `find . $(FIND_VCS_CLAUSE) '(' -name '*.ml' ')' -print`
+	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) $(MLFILES)
 
 
 ###########################################################################

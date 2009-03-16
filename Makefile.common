@@ -33,6 +33,9 @@ CHICKEN:=bin/coqchk$(EXE)
 ifneq ($(HASNATDYNLINK),false)
   DYNLINKCMXA:=dynlink.cmxa
   NATDYNLINKDEF:=-DHasDynlink
+else
+  DYNLINKCMXA:=
+  NATDYNLINKDEF:=
 endif
 
 INSTALLBIN:=install
@@ -120,7 +123,7 @@ REFMANTEXFILES:=$(addprefix doc/refman/, \
 
 REFMANEPSFILES:=doc/refman/coqide.eps doc/refman/coqide-queries.eps
 
-REFMANFILES:=$(REFMANTEXFILES) $(COMMON) $(REFMANEPSFILES) doc/refman/biblio.bib
+REFMANFILES:=$(REFMANTEXFILES) $(DOCCOMMON) $(REFMANEPSFILES) doc/refman/biblio.bib
 
 REFMANPNGFILES:=$(REFMANEPSFILES:.eps=.png)
 
@@ -268,11 +271,15 @@ ifneq ($(HASNATDYNLINK),false)
  CONTRIBSTATIC:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
 	$(XMLCMA) $(FUNINDCMA) $(SUBTACCMA)
- PLUGINS:=$(CONTRIBS)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
+ PLUGINS:=$(CONTRIBS)
  PLUGINSOPT:=$(PLUGINS:.cma=.cmxs)
 else
  CONTRIBSTATIC:=$(CONTRIBS)
+ INITPLUGINS:=
+ INITPLUGINSOPT:=
+ PLUGINS:=
+ PLUGINSOPT:=
 endif
 
 CMA:=$(CLIBS) $(CAMLP4OBJS)
@@ -793,27 +800,49 @@ DATE=$(shell LANG=C date +"%B %Y")
 
 SOURCEDOCDIR=dev/source-doc
 
-## Targets forwarded by Makefile to a specific stage
+CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
+
+### Targets forwarded by Makefile to a specific stage:
+
+## Enumeration of targets that require being done at stage1
+
 STAGE1_TARGETS:= $(STAGE1) \
   $(filter-out parsing/q_constr.cmo,$(STAGE1_CMO)) \
   $(STAGE1_CMO:.cmo=.cmi) $(STAGE1_CMO:.cmo=.cmx) $(GENFILES) \
   source-doc revision toplevel/mltop.byteml toplevel/mltop.optml \
-  $(STAGE1_ML4:.ml4=.ml4-preprocessed)
+  $(STAGE1_ML4:.ml4=.ml4-preprocessed) %.o
+
+ifdef CM_STAGE1
+ STAGE1_TARGETS+=$(CAML_OBJECT_PATTERNS)
+endif
+
+## Enumeration of targets that require being done at stage2
+
 STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   interp parsing pretyping highparsing toplevel hightactics \
   coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \
   pcoq-binaries $(COQINTERFACE) $(CSDPCERT) coqbinaries pcoq $(TOOLS) tools \
-  printers debug initplugins plugins
+  printers debug initplugins plugins %.ml4-preprocessed
+
+ifndef CM_STAGE1
+ STAGE2_TARGETS+=$(CAML_OBJECT_PATTERNS)
+endif
+
+## Enumeration of targets that require being done at stage3
+
 VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   fsets allfsets relations wellfounded ints reals allreals \
   setoids sorting natural integer rational numbers noreal \
   omega micromega ring setoid_ring dp xml extraction field fourier \
-  funind cc programs subtac rtauto
-DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq rectutorial refman-quick refman-nodep stdlib-nodep
+  funind cc subtac rtauto
+
+DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq \
+  rectutorial refman-quick refman-nodep stdlib-nodep
+
 STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \
   coqlight states pcoq-files check init theories theories-light contrib \
-  $(DOC_TARGETS) $(VO_TARGETS) validate
-
+  $(DOC_TARGETS) $(VO_TARGETS) validate \
+  %.vo %.glob states/% install-%
 
 # For emacs: 
 # Local Variables: 

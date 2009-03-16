@@ -24,6 +24,50 @@
 # by Emacs' next-error.
 ###########################################################################
 
+
+# Specific command-line options to this Makefile
+#
+# make GOTO_STAGE=N        # perform only stage N (with N=1,2,3)
+# make VERBOSE=1           # restore the raw echoing of commands
+# make NO_RECALC_DEPS=1    # avoid recomputing dependencies
+# make NO_RECOMPILE_LIB=1  # a coqtop rebuild does not trigger a stdlib rebuild
+#
+# Nota: the 1 above can be replaced by any non-empty value
+# More details in dev/doc/build-system*.txt
+
+
+# FAQ: special features used in this Makefile
+#
+# * Order-only dependencies: |
+#
+# Dependencies placed after a bar (|) should be built before
+# the current rule, but having one of them is out-of-date do not
+# trigger a rebuild of the current rule.
+# See http://www.gnu.org/software/make/manual/make.html#Prerequisite-Types
+#
+# * Annotation before commands: +/-/@
+#
+# a command starting by - is always successful (errors are ignored)
+# a command starting by + is runned even if option -n is given to make
+# a command starting by @ is not echoed before being runned
+#
+# * Custom functions
+#
+# Definition via "define foo" followed by commands (arg is $(1) etc)
+# Call via "$(call foo,arg1)"
+#
+# * Useful builtin functions
+#
+# $(subst ...), $(patsubst ...), $(shell ...), $(foreach ...)
+#
+# * Behavior of -include
+#
+# If the file given to -include doesn't exist, make tries to build it,
+# but doesn't care if this build fails. This can be quite surprising,
+# see in particular the -include in Makefile.stage*
+
+
+
 # !! Before using FIND_VCS_CLAUSE, please read how you should in the !!
 # !! FIND_VCS_CLAUSE section of dev/doc/build-system.dev.txt         !!
 export FIND_VCS_CLAUSE:='(' \
@@ -59,6 +103,9 @@ export CFILES   := $(shell find kernel/byterun $(FIND_VCS_CLAUSE) '(' -name '*.c
 
 export ML4FILESML:= $(ML4FILES:.ml4=.ml)
 
+# Nota: do not use the name $(MAKEFLAGS), it has a particular behavior
+MAKEFLGS:=--warn-undefined-variable --no-builtin-rules
+
 include Makefile.common
 
 NOARG: world
@@ -84,7 +131,7 @@ define stage-template
 	@echo '****************** Entering stage$(1) ******************'
 	@echo '*****************************************************'
 	@echo '*****************************************************'
-	+$(MAKE) -f Makefile.stage$(1) "$@"
+	+$(MAKE) $(MAKEFLGS) -f Makefile.stage$(1) "$@"
 endef
 else
 define stage-template
@@ -110,37 +157,26 @@ else
 
 .PHONY: stage1 stage2 stage3 world revision
 
-# This is to remove the built-in rule "%: %.o"
-# Otherwise, "make foo" recurses into stage1, trying to build foo.o .
+stage1 $(STAGE1_TARGETS) : always
+	$(call stage-template,1)
+
+stage2 $(STAGE2_TARGETS) : stage1
+	$(call stage-template,2)
+
+stage3 $(STAGE3_TARGETS) : stage2
+	$(call stage-template,3)
+
+# Nota:
+# - world is one of the targets in $(STAGE3_TARGETS), hence launching 
+# "make" or "make world" leads to recursion into stage{1,2,3}
+# - the aim of stage1 is to build grammar.cma and q_constr.cmo
+# - the aim of stage2 is to build coqdep
+# More details in dev/doc/build-system*.txt
+
+
+# This is to remove the built-in rule "%: %.o" :
 %: %.o
-
-%.o: always
-	$(call stage-template,1)
-
-#STAGE1_TARGETS includes all object files necessary for $(STAGE1)
-stage1 $(STAGE1_TARGETS): always
-	$(call stage-template,1)
-
-CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
-ifdef CM_STAGE1
-$(CAML_OBJECT_PATTERNS): always
-	$(call stage-template,1)
-
-%.ml4-preprocessed: stage1
-	$(call stage-template,2)
-else
-$(CAML_OBJECT_PATTERNS) %.ml4-preprocessed: stage1
-	$(call stage-template,2)
-endif
-
-stage2 $(STAGE2_TARGETS): stage1
-	$(call stage-template,2)
-
-%.vo %.glob states/% install-%: stage2
-	$(call stage-template,3)
-
-stage3 $(STAGE3_TARGETS): stage2
-	$(call stage-template,3)
+# Otherwise, "make foo" recurses into stage1, trying to build foo.o .
 
 endif #GOTO_STAGE
 
