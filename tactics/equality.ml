@@ -623,11 +623,11 @@ let onNegatedEquality with_evars tac gls =
 
 let discrSimpleClause with_evars = function
   | None -> onNegatedEquality with_evars discrEq
-  | Some ((_,id),_) -> onEquality with_evars discrEq (mkVar id,NoBindings)
+  | Some id -> onEquality with_evars discrEq (mkVar id,NoBindings)
 
 let discr with_evars = onEquality with_evars discrEq
 
-let discrClause with_evars = onClauses (discrSimpleClause with_evars)
+let discrClause with_evars = onClause (discrSimpleClause with_evars)
 
 let discrEverywhere with_evars = 
   tclORELSE
@@ -1142,8 +1142,7 @@ let unfold_body x gl =
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis.") in
   let aft = afterHyp x gl in
-  let hl = List.fold_right 
-    (fun (y,yval,_) cl -> ((all_occurrences_expr,y),InHyp) :: cl) aft [] in
+  let hl = List.fold_right (fun (y,yval,_) cl -> (y,InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST

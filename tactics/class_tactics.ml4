@@ -1029,7 +1029,7 @@ let build_new gl env sigma flags loccs hypinfo concl cstr evars =
 let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause gl =
   let concl, is_hyp = 
     match clause with
-	Some ((_, id), _) -> pf_get_hyp_typ gl id, Some id
+	Some id -> pf_get_hyp_typ gl id, Some id
       | None -> pf_concl gl, None
   in
   let cstr = 
@@ -1120,9 +1120,9 @@ let occurrences_of = function
       (true,nl)
 
 TACTIC EXTEND class_rewrite
-| [ "clrewrite" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), [])) ]
-| [ "clrewrite" orient(o) open_constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o all_occurrences (Some (([],id), [])) ]
+| [ "clrewrite" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
+| [ "clrewrite" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
+| [ "clrewrite" orient(o) open_constr(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o all_occurrences (Some id) ]
 | [ "clrewrite" orient(o) open_constr(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) None ]
 | [ "clrewrite" orient(o) open_constr(c) ] -> [ cl_rewrite_clause c o all_occurrences None ]
 END
@@ -1130,10 +1130,10 @@ END
 
 let clsubstitute o c =
   let is_tac id = match kind_of_term (snd c) with Var id' when id' = id -> true | _ -> false in
-    Tacticals.onAllClauses 
+    Tacticals.onAllHypsAndConcl 
       (fun cl -> 
 	match cl with
-	  | Some ((_,id),_) when is_tac id -> tclIDTAC
+	  | Some id when is_tac id -> tclIDTAC
 	  | _ -> tclTRY (cl_rewrite_clause c o all_occurrences cl))
 
 TACTIC EXTEND substitute
@@ -1214,13 +1214,13 @@ TACTIC EXTEND setoid_rewrite
    [ "setoid_rewrite" orient(o) open_constr(c) ]
    -> [ cl_rewrite_clause c o all_occurrences None ]
  | [ "setoid_rewrite" orient(o) open_constr(c) "in" hyp(id) ] ->
-      [ cl_rewrite_clause c o all_occurrences (Some (([],id), []))]
+      [ cl_rewrite_clause c o all_occurrences (Some id)]
  | [ "setoid_rewrite" orient(o) open_constr(c) "at" occurrences(occ) ] ->
       [ cl_rewrite_clause c o (occurrences_of occ) None]
  | [ "setoid_rewrite" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id)] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), []))]
+      [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
  | [ "setoid_rewrite" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ)] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) (Some (([],id), []))]
+      [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
 END
 
 (* let solve_obligation lemma =  *)
@@ -1596,8 +1596,7 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = false }
 let general_s_rewrite cl l2r occs c ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo = ref (get_hyp gl c cl l2r) in
-  let cl' = Option.map (fun id -> (([],id), [])) cl in
-    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta occs cl' gl
+    cl_rewrite_clause_aux ~flags:general_rewrite_flags hypinfo meta occs cl gl
 (*     if fst c = Evd.empty || fst c == project gl then tac gl *)
 (*     else *)
 (*       let evars = Evd.merge (fst c) (project gl) in *)

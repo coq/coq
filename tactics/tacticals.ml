@@ -74,6 +74,13 @@ let tclIFTHENTRYELSEMUST = Refiner.tclIFTHENTRYELSEMUST
 
 let tclTHENSEQ       = tclTHENLIST
 
+(* Experimental *)
+
+let rec tclFIRST_PROGRESS_ON tac = function
+  | []    -> tclFAIL 0 (str "No applicable tactic")
+  | [a]   -> tac a (* so that returned failure is the one from last item *)
+  | a::tl -> tclORELSE (tac a) (tclFIRST_PROGRESS_ON tac tl)
+
 (************************************************************************)
 (* Tacticals applying on hypotheses                                     *)
 (************************************************************************)
@@ -113,17 +120,6 @@ let onNLastHyps n tac   = onHyps (nLastHyps n) tac
 let afterHyp id gl =
   fst (list_split_when (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
 
-let tclTRY_sign (tac : constr->tactic) sign gl =
-  let rec arec = function
-    | []      -> tclFAIL 0 (str "No applicable hypothesis.")
-    | [s]     -> tac (mkVar s) (*added in order to get useful error messages *)
-    | (s::sl) -> tclORELSE (tac (mkVar s)) (arec sl) 
-  in 
-  arec (ids_of_named_context sign) gl
-
-let tclTRY_HYPS (tac : constr->tactic) gl = 
-  tclTRY_sign tac (pf_hyps gl) gl
-
 (***************************************)
 (*           Clause Tacticals          *)
 (***************************************)
@@ -136,59 +132,108 @@ let tclTRY_HYPS (tac : constr->tactic) gl =
    --Eduardo (8/8/97) 
 *)
 
-(* The type of clauses *)
+(* A [simple_clause] is a set of hypotheses, possibly extended with
+   the conclusion (conclusion is represented by None) *)
 
-type simple_clause = identifier gsimple_clause
+type simple_clause = identifier option list
+
+(* An [clause] is the algebraic form of a
+   [concrete_clause]; it may refer to all hypotheses
+   independently of the effective contents of the current goal *)
+
 type clause = identifier gclause
 
 let allClauses = { onhyps=None; concl_occs=all_occurrences_expr }
 let allHyps = { onhyps=None; concl_occs=no_occurrences_expr }
 let onConcl = { onhyps=Some[]; concl_occs=all_occurrences_expr }
 let onHyp id =
-  { onhyps=Some[((all_occurrences_expr,id),InHyp)]; concl_occs=no_occurrences_expr }
+  { onhyps=Some[((all_occurrences_expr,id),InHyp)];
+    concl_occs=no_occurrences_expr }
 
-let simple_clause_list_of cl gls =
+let simple_clause_of cl gls =
+  let error_occurrences () =
+    error "This tactic does not support occurrences selection" in
+  let error_body_selection () =
+    error "This tactic does not support body selection" in
   let hyps =
     match cl.onhyps with 
     | None ->
-	let f id = Some((all_occurrences_expr,id),InHyp) in
-	List.map f (pf_ids_of_hyps gls)
+	List.map Option.make (pf_ids_of_hyps gls)
     | Some l ->
-	List.map (fun h -> Some h) l in
-  if cl.concl_occs = all_occurrences_expr then None::hyps else hyps
+	List.map (fun ((occs,id),w) ->
+	  if occs <> all_occurrences_expr then error_occurrences ();
+	  if w = InHypValueOnly then error_body_selection ();
+	  Some id) l in
+  if cl.concl_occs = no_occurrences_expr then hyps
+  else
+    if cl.concl_occs <> all_occurrences_expr then error_occurrences ()
+    else None :: hyps
 
-(* OR-branch *)
-let tryClauses tac cl gls = 
-  let rec firstrec = function
-    | []      -> tclFAIL 0 (str "no applicable hypothesis")
-    | [cls]   -> tac cls (* added in order to get a useful error message *)
-    | cls::tl -> (tclORELSE (tac cls) (firstrec tl))
-  in
-  let hyps = simple_clause_list_of cl gls in
-  firstrec hyps gls
+let allHypsAndConcl gl = None :: List.map Option.make (pf_ids_of_hyps gl)
 
-(* AND-branch *)
-let onClauses tac cl gls = 
-  let hyps = simple_clause_list_of cl gls in
-  tclMAP tac hyps gls
+let onAllHyps tac gl = tclMAP tac (pf_ids_of_hyps gl) gl
+let onAllHypsAndConcl tac gl = tclMAP tac (allHypsAndConcl gl) gl
+let onAllHypsAndConclLR tac gl = tclMAP tac (List.rev (allHypsAndConcl gl)) gl
 
-(* AND-branch reverse order*)
-let onClausesLR tac cl gls = 
-  let hyps = simple_clause_list_of cl gls in
-  tclMAP tac (List.rev hyps) gls
+let tryAllHyps tac gl = tclFIRST_PROGRESS_ON tac (pf_ids_of_hyps gl) gl
+let tryAllHypsAndConcl tac gl = tclFIRST_PROGRESS_ON tac (allHypsAndConcl gl) gl
+let tryAllHypsAndConclLR tac gl =
+  tclFIRST_PROGRESS_ON tac (List.rev (allHypsAndConcl gl)) gl
 
-let tryAllClauses  tac = tryClauses tac allClauses
-let onAllClauses   tac = onClauses tac allClauses
-let onAllClausesLR tac = onClausesLR tac allClauses
-
-let tryAllHyps     tac =
-  tryClauses (function Some((_,id),_) -> tac id | _ -> assert false) allHyps
+let onClause tac cl gls = tclMAP tac (simple_clause_of cl gls) gls
+let onClauseLR tac cl gls = tclMAP tac (List.rev (simple_clause_of cl gls)) gls
 
 let ifOnHyp pred tac1 tac2 id gl =
   if pred (id,pf_get_hyp_typ gl id) then
     tac1 id gl
   else 
     tac2 id gl
+
+
+(************************************************************************)
+(* An intermediate form of occurrence clause that select components     *)
+(* of a definition, hypotheses and possibly the goal                    *)
+(* (used for reduction tactics)                                         *)
+(************************************************************************)
+
+(* A [hyp_location] is an hypothesis together with a position, in
+   body if any, in type or in both *)
+
+type hyp_location = identifier * hyp_location_flag
+
+(* A [goal_location] is either an hypothesis (together with a position, in
+   body if any, in type or in both) or the goal *)
+
+type goal_location = hyp_location option
+
+(************************************************************************)
+(* An intermediate structure for dealing with occurrence clauses        *)
+(************************************************************************)
+
+(* [clause_atom] refers either to an hypothesis location (i.e. an
+   hypothesis with occurrences and a position, in body if any, in type
+   or in both) or to some occurrences of the conclusion *)
+
+type clause_atom =
+  | OnHyp of identifier * occurrences_expr * hyp_location_flag
+  | OnConcl of occurrences_expr
+
+(* A [concrete_clause] is an effective collection of
+  occurrences in the hypotheses and the conclusion *)
+
+type concrete_clause = clause_atom list
+
+let concrete_clause_of cl gls =
+  let hyps =
+    match cl.onhyps with 
+    | None ->
+	let f id = OnHyp (id,all_occurrences_expr,InHyp) in
+	List.map f (pf_ids_of_hyps gls)
+    | Some l ->
+	List.map (fun ((occs,id),w) -> OnHyp (id,occs,w)) l in
+  if cl.concl_occs = no_occurrences_expr then hyps
+  else 
+    OnConcl cl.concl_occs :: hyps
 
 (************************************************************************)
 (* Elimination Tacticals                                                *)

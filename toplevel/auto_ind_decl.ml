@@ -529,8 +529,7 @@ let compute_bl_tact ind lnamesparrec nparrec  =
                      tclTRY ( 
                       tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     simpl_in_hyp
-		       ((Rawterm.all_occurrences_expr,freshz),InHyp);
+                     simpl_in_hyp (freshz,InHyp);
 (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)

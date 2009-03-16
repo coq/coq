@@ -296,11 +296,11 @@ let set_extern_interp f = forward_interp_tactic := f
 
 let applyDestructor cls discard dd gls =
   match_dpat dd.d_pat cls gls;
-  let cll = simple_clause_list_of cls gls in
+  let cll = simple_clause_of cls gls in
   let tacl =
     List.map (fun cl ->
       match cl, dd.d_code with
-        | Some ((_,id),_), (Some x, tac) -> 
+        | Some id, (Some x, tac) -> 
 	    let arg =
               ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
             TacLetIn (false, [(dummy_loc, x), arg], tac)
@@ -311,7 +311,7 @@ let applyDestructor cls discard dd gls =
   let discard_0 =
     List.map (fun cl ->
       match (cl,dd.d_pat) with
-        | (Some ((_,id),_),HypLocation(discardable,_,_)) ->
+        | (Some id,HypLocation(discardable,_,_)) ->
             if discard & discardable then thin [id] else tclIDTAC
         | (None,ConclLocation _) -> tclIDTAC
         | _ -> error "ApplyDestructor" ) cll in
@@ -357,9 +357,9 @@ let rec search n =
     [intros;
      assumption;
      (tclTHEN  
-        (Tacticals.tryAllClauses 
+        (Tacticals.tryAllHypsAndConcl 
            (function 
-              | Some ((_,id),_) -> (dHyp id)
+              | Some id -> (dHyp id)
               | None    ->  dConcl ))
         (search (n-1)))]
     

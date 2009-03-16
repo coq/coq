@@ -104,8 +104,7 @@ let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None ;;
 
 let protect_tac_in map id =
-  Tactics.reduct_option (protect_red map,DEFAULTcast)
-    (Some((all_occurrences_expr,id),InHyp));;
+  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id,InHyp));;
 
 
 TACTIC EXTEND protect_fv

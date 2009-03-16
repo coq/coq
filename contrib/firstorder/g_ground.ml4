@@ -89,7 +89,7 @@ let defined_connectives=lazy
    [],EvalConstRef (destConst (constant "iff"))]
 
 let normalize_evaluables=
-  onAllClauses
+  onAllHypsAndConcl
     (function 
 	 None->unfold_in_concl (Lazy.force defined_connectives)
        | Some id-> 

@@ -98,23 +98,22 @@ type 'id message_token =
   | MsgInt of int
   | MsgIdent of 'id
 
-type 'id gsimple_clause = ('id raw_hyp_location) option
 (* onhyps:
      [None] means *on every hypothesis*
      [Some l] means on hypothesis belonging to l *)
 type 'id gclause =
   { onhyps : 'id raw_hyp_location list option;
-    concl_occs : bool * int or_var list }
+    concl_occs : occurrences_expr }
 
 let nowhere = {onhyps=Some[]; concl_occs=no_occurrences_expr}
 
-let simple_clause_of = function
+let goal_location_of = function
 | { onhyps = Some [scl]; concl_occs = occs } when occs = no_occurrences_expr ->
       Some scl
 | { onhyps = Some []; concl_occs = occs } when occs = all_occurrences_expr ->
     None
 | _ ->
-    error "not a simple clause (one hypothesis or conclusion)"
+    error "Not a simple \"in\" clause (one hypothesis or the conclusion)"
 
 type ('constr,'id) induction_clause = 
     ('constr with_bindings induction_arg list * 'constr with_bindings option * 

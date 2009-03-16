@@ -565,11 +565,11 @@ let rec reflexivity_with_destruct_cases g =
   in
   let eq_ind =     Coqlib.build_coq_eq () in
   let discr_inject =
-    Tacticals.onAllClauses (
+    Tacticals.onAllHypsAndConcl (
        fun sc g -> 
 	 match sc with 
 	     None -> tclIDTAC g
-	   | Some ((_,id),_) -> 
+	   | Some id -> 
 	       match kind_of_term  (pf_type_of g (mkVar id)) with 
 		 | App(eq,[|_;t1;t2|]) when eq_constr eq eq_ind -> 
 		     if Equality.discriminable (pf_env g) (project g) t1 t2 

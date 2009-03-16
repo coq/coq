@@ -1158,7 +1158,7 @@ let rec introduce_all_values_eq cont_tac functional termine
            simpl_iter (onHyp heq2);
            unfold_in_hyp [((true,[1]), evaluable_of_global_reference 
                              (global_of_constr functional))]
-             ((all_occurrences_expr, heq2), InHyp);
+             (heq2, InHyp);
            tclTHENS
 	     (fun gls -> 
 		let t_eq = compute_renamed_type gls (mkVar heq2) in 

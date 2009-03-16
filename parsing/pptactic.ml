@@ -418,13 +418,13 @@ let pr_hyp_location pr_id = function
 
 let pr_in pp = spc () ++ hov 0 (str "in" ++ pp)
 
-let pr_simple_clause pr_id = function
+let pr_simple_hyp_clause pr_id = function
   | [] -> mt ()
   | l -> pr_in (spc () ++ prlist_with_sep spc pr_id l)
 
 let pr_in_hyp_as pr_id = function
   | None -> mt ()
-  | Some (id,ipat) -> pr_simple_clause pr_id [id] ++ pr_as_ipat ipat
+  | Some (id,ipat) -> pr_simple_hyp_clause pr_id [id] ++ pr_as_ipat ipat
 
 let pr_clauses pr_id = function
   | { onhyps=None; concl_occs=occs } ->
@@ -869,11 +869,11 @@ and pr_atom1 = function
   | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
       hov 1 (pr_induction_kind k ++ spc () ++
       pr_quantified_hypothesis hyp ++
-      pr_with_inversion_names ids ++ pr_simple_clause pr_ident cl)
+      pr_with_inversion_names ids ++ pr_simple_hyp_clause pr_ident cl)
   | TacInversion (InversionUsing (c,cl),hyp) ->
       hov 1 (str "inversion" ++ spc() ++ pr_quantified_hypothesis hyp ++ 
       spc () ++ str "using" ++ spc () ++ pr_constr c ++ 
-      pr_simple_clause pr_ident cl)
+      pr_simple_hyp_clause pr_ident cl)
 
 in
 

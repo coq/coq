@@ -78,7 +78,7 @@ let h_let_tac b na c cl =
 let h_instantiate n c ido = 
 (Evar_tactics.instantiate n c ido)
   (* abstract_tactic (TacInstantiate (n,c,cls))
-    (Evar_refiner.instantiate n c (simple_clause_of cls)) *)
+    (Evar_refiner.instantiate n c (goal_location_of cls)) *)
 
 (* Derived basic tactics *)
 let h_simple_induction_destruct isrec h =

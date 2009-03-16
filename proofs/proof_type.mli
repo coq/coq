@@ -127,8 +127,6 @@ and tactic_arg =
    glob_tactic_expr)
      Tacexpr.gen_tactic_arg
 
-type hyp_location = identifier Tacexpr.raw_hyp_location
-
 type ltac_call_kind = 
   | LtacNotationCall of string
   | LtacNameCall of ltac_constant

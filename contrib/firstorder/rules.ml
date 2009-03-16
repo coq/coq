@@ -208,9 +208,8 @@ let defined_connectives=lazy
    all_occurrences,EvalConstRef (destConst (constant "iff"))]
 
 let normalize_evaluables=
-  onAllClauses
+  onAllHypsAndConcl
     (function 
 	 None->unfold_in_concl (Lazy.force defined_connectives)
-       | Some ((_,id),_)-> 
-	   unfold_in_hyp (Lazy.force defined_connectives) 
-	   ((Rawterm.all_occurrences_expr,id),InHypTypeOnly))
+       | Some id -> 
+	   unfold_in_hyp (Lazy.force defined_connectives) (id,InHypTypeOnly))

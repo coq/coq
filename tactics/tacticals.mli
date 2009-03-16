@@ -21,6 +21,8 @@ open Reduction
 open Pattern
 open Genarg
 open Tacexpr
+open Termops
+open Rawterm
 (*i*)
 
 (* Tacticals i.e. functions from tactics to tactics. *)
@@ -58,14 +60,12 @@ val tclNOTSAMEGOAL   : tactic -> tactic
 val tclTHENTRY       : tactic -> tactic -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 
-val tclTRY_sign      : (constr -> tactic) -> named_context -> tactic
-val tclTRY_HYPS      : (constr -> tactic) -> tactic
-
-val tclIFTHENELSE    : tactic -> tactic -> tactic -> tactic
-val tclIFTHENSELSE   : tactic -> tactic list -> tactic -> tactic
-val tclIFTHENSVELSE  : tactic -> tactic array -> tactic -> tactic
-
+val tclIFTHENELSE        : tactic -> tactic -> tactic -> tactic
+val tclIFTHENSELSE       : tactic -> tactic list -> tactic -> tactic
+val tclIFTHENSVELSE      : tactic -> tactic array -> tactic -> tactic
 val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
+
+val tclFIRST_PROGRESS_ON : ('a -> tactic) -> 'a list -> tactic
 
 (*s Tacticals applying to hypotheses *)
 
@@ -95,23 +95,65 @@ val ifOnHyp     : (identifier * types -> bool) ->
 val onHyps      : (goal sigma -> named_context) -> 
                   (named_context -> tactic) -> tactic
 
-(* Tacticals applying to hypotheses or goal *)
+(*s Tacticals applying to goal components *)
 
-type simple_clause = identifier gsimple_clause
+(* A [simple_clause] is a set of hypotheses, possibly extended with
+   the conclusion (conclusion is represented by None) *)
+
+type simple_clause = identifier option list
+
+(* A [clause] denotes occurrences and hypotheses in a
+   goal; in particular, it can abstractly refer to the set of
+   hypotheses independently of the effective contents of the current goal *)
+
 type clause = identifier gclause
+
+val simple_clause_of : clause -> goal sigma -> simple_clause
 
 val allClauses : clause
 val allHyps    : clause
 val onHyp      : identifier -> clause
 val onConcl    : clause
 
-val simple_clause_list_of : clause -> goal sigma -> simple_clause list
+val tryAllHyps          : (identifier -> tactic) -> tactic
+val tryAllHypsAndConcl  : (identifier option -> tactic) -> tactic
 
-val tryAllHyps     : (identifier -> tactic) -> tactic
-val tryAllClauses  : (simple_clause -> tactic) -> tactic
-val onAllClauses   : (simple_clause -> tactic) -> tactic
-val onClauses      : (simple_clause -> tactic) -> clause -> tactic
-val onAllClausesLR : (simple_clause -> tactic) -> tactic
+val onAllHyps           : (identifier -> tactic) -> tactic
+val onAllHypsAndConcl   : (identifier option -> tactic) -> tactic
+val onAllHypsAndConclLR : (identifier option -> tactic) -> tactic
+
+val onClause   : (identifier option -> tactic) -> clause -> tactic
+val onClauseLR : (identifier option -> tactic) -> clause -> tactic
+
+(*s An intermediate form of occurrence clause with no mention of occurrences *)
+
+(* A [hyp_location] is an hypothesis together with a position, in
+   body if any, in type or in both *)
+
+type hyp_location = identifier * hyp_location_flag
+
+(* A [goal_location] is either an hypothesis (together with a position, in
+   body if any, in type or in both) or the goal *)
+
+type goal_location = hyp_location option
+
+(*s A concrete view of occurrence clauses *)
+
+(* [clause_atom] refers either to an hypothesis location (i.e. an
+   hypothesis with occurrences and a position, in body if any, in type
+   or in both) or to some occurrences of the conclusion *)
+
+type clause_atom =
+  | OnHyp of identifier * occurrences_expr * hyp_location_flag
+  | OnConcl of occurrences_expr
+
+(* A [concrete_clause] is an effective collection of
+  occurrences in the hypotheses and the conclusion *)
+
+type concrete_clause = clause_atom list
+
+(* This interprets an [clause] in a given [goal] context *)
+val concrete_clause_of : clause -> goal sigma -> concrete_clause
 
 (*s Elimination tacticals. *)
 

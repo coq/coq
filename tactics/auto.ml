@@ -1090,10 +1090,10 @@ let compileAutoArg contac = function
 	     ctx) g)
   | UsingTDB ->  
       (tclTHEN  
-         (Tacticals.tryAllClauses 
+         (Tacticals.tryAllHypsAndConcl 
             (function 
-               | Some ((_,id),_) -> Dhyp.h_destructHyp false id
-               | None          -> Dhyp.h_destructConcl))
+               | Some id -> Dhyp.h_destructHyp false id
+               | None    -> Dhyp.h_destructConcl))
          contac)
 
 let compileAutoArgList contac = List.map (compileAutoArg contac)

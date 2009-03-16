@@ -457,7 +457,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
   let decomp_tacs = match decomp with 
     | 0 -> [] 
     | p -> 
-	(tclTRY_sign decomp_empty_term extra_sign)
+	(tclFIRST_PROGRESS_ON decomp_empty_term extra_sign)
 	::
 	(List.map 
 	   (fun id -> tclTHEN (decomp_unary_term (mkVar id)) 
@@ -469,7 +469,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
   let intro_tac = 
     tclTHEN intro 
       (fun g' -> 
-	 let (hid,_,htyp as d) = pf_last_hyp g' in
+	 let (hid,_,htyp) = pf_last_hyp g' in
 	 let hintl = 
 	   try 
 	     [make_apply_entry (pf_env g') (project g')
@@ -479,7 +479,8 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	   with Failure _ -> [] 
 	 in
          (free_try
-	  (search_gen decomp n db_list (Hint_db.add_list hintl local_db) [d])
+	  (search_gen decomp n db_list (Hint_db.add_list hintl local_db)
+	    [mkVar hid])
 	  g'))
   in
   let rec_tacs = 
@@ -487,7 +488,7 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
       (fun ntac -> 
 	 tclTHEN ntac
 	   (free_try
-	    (search_gen decomp (n-1) db_list local_db empty_named_context)))
+	    (search_gen decomp (n-1) db_list local_db [])))
       (possible_resolve db_list local_db (pf_concl goal))
   in 
   tclFIRST (assumption::(decomp_tacs@(intro_tac::rec_tacs))) goal
@@ -501,7 +502,7 @@ let full_auto n gl =
   let dbnames = current_db_names () in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map searchtable_map dbnames in
-  let hyps = pf_hyps gl in
+  let hyps = List.map mkVar (pf_ids_of_hyps gl) in
   tclTRY (search n db_list (make_local_hint_db false [] gl) hyps) gl
   
 let default_full_auto gl = full_auto !default_search_depth gl

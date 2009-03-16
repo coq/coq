@@ -187,6 +187,72 @@ let pf_reduce_decl redfun where (id,c,ty) gl =
       let ty' =	if where <> InHypValueOnly then redfun' ty else ty in
       (id,Some b',ty')
 
+(* Possibly equip a reduction with the occurrences mentioned in an
+   occurrence clause *)
+
+let error_illegal_clause () =
+  error "\"at\" clause not supported in presence of an occurrence clause."
+
+let error_illegal_non_atomic_clause () =
+  error "\"at\" clause not supported in presence of a non atomic \"in\" clause."
+
+let error_illegal_non_atomic_effective_clause () =
+  error "Unsupported in presence of a non atomic \"in\" clause."
+
+let error_occurrences_not_unsupported () =
+  error "Occurrences not supported for this reduction tactic."
+
+let bind_change_occurrences occs nbcl = function
+  | None ->
+      if nbcl > 1 && occs <> all_occurrences_expr then
+	error_illegal_non_atomic_effective_clause ()
+      else
+	None
+  | Some (occl,c) ->
+      if (nbcl > 1 || occs <> all_occurrences_expr) && occl <> all_occurrences
+      then
+	error_illegal_clause ()
+      else
+	Some (Redexpr.out_with_occurrences (occs,c))
+
+let bind_red_expr_occurrences occs nbcl redexp =
+  let has_at_clause = function
+    | Unfold l -> List.exists (fun (occl,_) -> occl <> all_occurrences_expr) l
+    | Pattern l -> List.exists (fun (occl,_) -> occl <> all_occurrences_expr) l
+    | Simpl (Some (occl,_)) -> occl <> all_occurrences_expr
+    | _ -> false in
+  if occs = all_occurrences_expr then
+    if nbcl > 1 && has_at_clause redexp then
+      error_illegal_non_atomic_clause ()
+    else
+      redexp 
+  else
+    match redexp with
+    | Unfold (_::_::_) ->
+	error_illegal_clause ()
+    | Unfold [(occl,c)] ->
+	if occl <> all_occurrences_expr then
+	  error_illegal_clause ()
+	else
+	  Unfold [(occs,c)]
+    | Pattern (_::_::_) ->
+	error_illegal_clause ()
+    | Pattern [(occl,c)] ->
+	if occl <> all_occurrences_expr then
+	  error_illegal_clause ()
+	else
+	  Pattern [(occs,c)]
+    | Simpl (Some (occl,c)) ->
+	if occl <> all_occurrences_expr then
+	  error_illegal_clause ()
+	else
+	  Simpl (Some (occs,c))
+    | Red _ | Hnf | Cbv _ | Lazy _
+    | ExtraRedExpr _ | CbvVm | Fold _ | Simpl None ->
+	error_occurrences_not_unsupported ()
+    | Unfold [] | Pattern [] ->
+	assert false
+
 (* The following two tactics apply an arbitrary
    reduction function either to the conclusion or to a 
    certain hypothesis *)
@@ -194,20 +260,13 @@ let pf_reduce_decl redfun where (id,c,ty) gl =
 let reduct_in_concl (redfun,sty) gl = 
   convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) sty gl
 
-let reduct_in_hyp redfun ((_,id),where) gl =
+let reduct_in_hyp redfun (id,where) gl =
   convert_hyp_no_check
     (pf_reduce_decl redfun where (pf_get_hyp gl id) gl) gl 
 
 let reduct_option redfun = function
   | Some id -> reduct_in_hyp (fst redfun) id 
   | None    -> reduct_in_concl redfun 
-
-(* The following tactic determines whether the reduction
-   function has to be applied to the conclusion or
-   to the hypotheses. *) 
-
-let redin_combinator redfun =
-  onClauses (reduct_option redfun)
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb t env sigma c =
@@ -216,7 +275,7 @@ let change_and_check cv_pb t env sigma c =
   else 
     errorlabstrm "convert-check-hyp" (str "Not convertible.")
 
-(* Use cumulutavity only if changing the conclusion not a subterm *)
+(* Use cumulativity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb t = function
   | None -> change_and_check cv_pb t
   | Some occl -> contextually false occl (change_and_check Reduction.CONV t) 
@@ -228,19 +287,21 @@ let change_in_hyp occl t id  =
   with_check (reduct_in_hyp (change_on_subterm Reduction.CONV t occl) id)
 
 let change_option occl t = function
-    Some id -> change_in_hyp occl t id
+  | Some id -> change_in_hyp occl t id
   | None -> change_in_concl occl t
 
-let change occl c cls =
-  (match cls, occl with
-      ({onhyps=(Some(_::_::_)|None)}
-      |{onhyps=Some(_::_);concl_occs=((false,_)|(true,_::_))}),
-      Some _ ->
-	error "No occurrences expected when changing several hypotheses."
-    | _ -> ());
-  onClauses (change_option occl c) cls
+let change chg c cls gl =
+  let cls = concrete_clause_of cls gl in
+  let nbcl = List.length cls in
+  tclMAP (function
+    | OnHyp (id,occs,where) ->
+       change_option (bind_change_occurrences occs nbcl chg) c (Some (id,where))
+    | OnConcl occs ->
+       change_option (bind_change_occurrences occs nbcl chg) c None)
+    cls gl
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
+let try_red_in_concl    = reduct_in_concl (try_red_product,DEFAULTcast)
 let red_in_concl        = reduct_in_concl (red_product,DEFAULTcast)
 let red_in_hyp          = reduct_in_hyp   red_product
 let red_option          = reduct_option   (red_product,DEFAULTcast)
@@ -269,11 +330,24 @@ let checking_fun = function
   | Pattern _ -> with_check
   | _ -> (fun x -> x)
 
+(* The main reduction function *)
+
+let reduction_clause redexp cl =
+  let nbcl = List.length cl in
+  List.map (function
+    | OnHyp (id,occs,where) ->
+	(Some (id,where), bind_red_expr_occurrences occs nbcl redexp)
+    | OnConcl occs ->
+	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
+
 let reduce redexp cl goal =
-  let red = Redexpr.reduction_of_red_expr redexp in
+  let cl = concrete_clause_of cl goal in
+  let redexps = reduction_clause redexp cl in
+  let tac = tclMAP (fun (where,redexp) ->
+    reduct_option (Redexpr.reduction_of_red_expr redexp) where) redexps in
   match redexp with
-      (Fold _|Pattern _) -> with_check (redin_combinator red cl) goal
-    | _ -> redin_combinator red cl goal
+  | Fold _ | Pattern _ -> with_check tac goal
+  | _ -> tac goal
 
 (* Unfolding occurrences of a constant *)
 
@@ -356,8 +430,7 @@ let rec intro_gen loc name_flag move_flag force_flag gl =
     | _ -> 
 	if not force_flag then raise (RefinerError IntroNeedsProduct);
 	try
-	  tclTHEN
-	    (reduce (Red true) onConcl)
+	  tclTHEN try_red_in_concl
 	    (intro_gen loc name_flag move_flag force_flag) gl
 	with Redelimination ->
 	  user_err_loc(loc,"Intro",str "No product even after head-reduction.")
@@ -1536,7 +1609,7 @@ let unfold_body x gl =
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis.") in
   let aft = afterHyp x gl in
-  let hl = List.fold_right (fun (y,yval,_) cl -> (([],y),InHyp) :: cl) aft [] in
+  let hl = List.fold_right (fun (y,yval,_) cl -> (y,InHyp) :: cl) aft [] in
   let xvar = mkVar x in
   let rfun _ _ c = replace_term xvar xval c in
   tclTHENLIST
@@ -2887,10 +2960,10 @@ let andE id gl =
       (str("Tactic andE expects "^(string_of_id id)^" is a conjunction."))
 
 let dAnd cls =
-  onClauses
+  onClause
     (function
       | None    -> simplest_split
-      | Some ((_,id),_) -> andE id)
+      | Some id -> andE id)
     cls
 
 let orE id gl =
@@ -2902,10 +2975,10 @@ let orE id gl =
       (str("Tactic orE expects "^(string_of_id id)^" is a disjunction."))
 
 let dorE b cls =
-  onClauses
+  onClause
     (function
-      | (Some ((_,id),_)) -> orE id
-      |  None     -> (if b then right else left) NoBindings)
+      | Some id -> orE id
+      | None    -> (if b then right else left) NoBindings)
     cls
 
 let impE id gl =
@@ -2921,10 +2994,10 @@ let impE id gl =
 	      " is a an implication."))
                         
 let dImp cls =
-  onClauses
+  onClause
     (function
       | None    -> intro
-      | Some ((_,id),_) -> impE id)
+      | Some id -> impE id)
     cls
 
 (************************************************)
@@ -3020,10 +3093,10 @@ let symmetry_in id gl =
 	  gl
 
 let intros_symmetry =
-  onClauses
+  onClause
     (function
       | None -> tclTHEN intros symmetry
-      | Some ((_,id),_) -> symmetry_in id)
+      | Some id -> symmetry_in id)
 
 (* Transitivity tactics *)
 
