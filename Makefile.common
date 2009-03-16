@@ -358,9 +358,10 @@ CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
-COQDEPBOOTML:=tools/coqdep_lexer.ml tools/coqdep_boot.ml
+COQDEPBOOTML:=tools/coqdep_lexer.ml tools/coqdep_common.ml tools/coqdep_boot.ml
+COQDEPML:=tools/coqdep_lexer.ml tools/coqdep_common.ml tools/coqdep.ml
 
-COQDEPCMO:=$(COQENVCMO) $(COQDEPBOOTML:.ml=.cmo) tools/coqdep.cmo
+COQDEPCMO:=$(COQENVCMO) $(COQDEPML:.ml=.cmo)
 COQDEPCMX:=$(COQDEPCMO:.cmo=.cmx)
 
 GALLINACMO:=tools/gallina_lexer.cmo tools/gallina.cmo

@@ -10,10 +10,10 @@
 
 open Printf
 open Coqdep_lexer
-open Coqdep_boot
+open Coqdep_common
 
 (** The basic parts of coqdep (i.e. the parts used by [coqdep -boot])
-    are now in [Coqdep_boot]. The code that remains here concerns
+    are now in [Coqdep_common]. The code that remains here concerns
     the other options. Calling this complete coqdep with the [-boot]
     option should be equivalent to calling [coqdep_boot].
 *)

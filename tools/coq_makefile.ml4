@@ -281,8 +281,8 @@ let variables defs =
     print "COQDOC:=$(COQBIN)coqdoc\n";
     print "COQMKTOP:=$(COQBIN)coqmktop\n";
     (* Caml executables and relative variables *)
-    printf "CAMLC:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
-    printf "CAMLOPTC:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
+    printf "CAMLC:=$(CAMLBIN)%s -c -rectypes\n" best_ocamlc;
+    printf "CAMLOPTC:=$(CAMLBIN)%s -c -rectypes\n" best_ocamlopt;
     printf "CAMLLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
     printf "CAMLOPTLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
     print "GRAMMARS:=grammar.cma\n";
