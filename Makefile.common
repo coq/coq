@@ -33,9 +33,11 @@ CHICKEN:=bin/coqchk$(EXE)
 ifneq ($(HASNATDYNLINK),false)
   DYNLINKCMXA:=dynlink.cmxa
   NATDYNLINKDEF:=-DHasDynlink
+  DEPNATDYN:=
 else
   DYNLINKCMXA:=
   NATDYNLINKDEF:=
+  DEPNATDYN:=-natdynlink no
 endif
 
 INSTALLBIN:=install
@@ -78,6 +80,7 @@ CHKSRCDIRS:= checker lib config kernel
 ###########################################################################
 
 COQDEP:=bin/coqdep$(EXE)
+COQDEPBOOT:=bin/coqdep_boot$(EXE)
 COQMAKEFILE:=bin/coq_makefile$(EXE)
 GALLINA:=bin/gallina$(EXE)
 COQTEX:=bin/coq-tex$(EXE)
@@ -355,7 +358,9 @@ CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
-COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep.cmo
+COQDEPBOOTML:=tools/coqdep_lexer.ml tools/coqdep_boot.ml
+
+COQDEPCMO:=$(COQENVCMO) $(COQDEPBOOTML:.ml=.cmo) tools/coqdep.cmo
 COQDEPCMX:=$(COQDEPCMO:.cmo=.cmx)
 
 GALLINACMO:=tools/gallina_lexer.cmo tools/gallina.cmo
@@ -806,7 +811,7 @@ CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
 
 ## Enumeration of targets that require being done at stage1
 
-STAGE1_TARGETS:= $(STAGE1) \
+STAGE1_TARGETS:= $(STAGE1) $(COQDEPBOOT) \
   $(filter-out parsing/q_constr.cmo,$(STAGE1_CMO)) \
   $(STAGE1_CMO:.cmo=.cmi) $(STAGE1_CMO:.cmo=.cmx) $(GENFILES) \
   source-doc revision toplevel/mltop.byteml toplevel/mltop.optml \
@@ -818,18 +823,6 @@ endif
 
 ## Enumeration of targets that require being done at stage2
 
-STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
-  interp parsing pretyping highparsing toplevel hightactics \
-  coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \
-  pcoq-binaries $(COQINTERFACE) $(CSDPCERT) coqbinaries pcoq $(TOOLS) tools \
-  printers debug initplugins plugins %.ml4-preprocessed
-
-ifndef CM_STAGE1
- STAGE2_TARGETS+=$(CAML_OBJECT_PATTERNS)
-endif
-
-## Enumeration of targets that require being done at stage3
-
 VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
   fsets allfsets relations wellfounded ints reals allreals \
   setoids sorting natural integer rational numbers noreal \
@@ -839,10 +832,20 @@ VO_TARGETS:=logic arith bool narith zarith qarith lists strings sets \
 DOC_TARGETS:=doc doc-html doc-ps doc-pdf stdlib refman tutorial faq \
   rectutorial refman-quick refman-nodep stdlib-nodep
 
-STAGE3_TARGETS:=world install coqide coqide-files coq coqlib \
+STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
+  interp parsing pretyping highparsing toplevel hightactics \
+  coqide-binaries coqide-byte coqide-opt $(COQIDEOPT) $(COQIDEBYTE) $(COQIDE) \
+  pcoq-binaries $(COQINTERFACE) $(CSDPCERT) coqbinaries pcoq $(TOOLS) tools \
+  printers debug initplugins plugins \
+  world install coqide coqide-files coq coqlib \
   coqlight states pcoq-files check init theories theories-light contrib \
   $(DOC_TARGETS) $(VO_TARGETS) validate \
-  %.vo %.glob states/% install-%
+  %.vo %.glob states/% install-% %.ml4-preprocessed
+
+ifndef CM_STAGE1
+ STAGE2_TARGETS+=$(CAML_OBJECT_PATTERNS)
+endif
+
 
 # For emacs: 
 # Local Variables: 

@@ -74,7 +74,6 @@ CAMLP4EXTENDFLAGS=-I . #grammar dependencies are now in camlp4use statements
 CAMLP4DEPS=sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*\*)@\1@p'
 CAMLP4USE=sed -n -e 's/pa_macro.cmo/pa_macro.cmo -D$(CAMLVERSION)/' -e 's@^(\*.*camlp4use: "\(.*\)".*\*)@\1@p'
 
-COQINCLUDES=	# coqtop includes itself the needed paths
 COQ_XML=	# is "-xml" when building XML library
 VM=		# is "-no-vm" to not use the vm"
 UNBOXEDVALUES=	# is "-unboxed-values" to use unboxed values
@@ -555,6 +554,20 @@ printers: $(DEBUGPRINTERS)
 
 tools:: $(TOOLS) $(DEBUGPRINTERS)
 
+# coqdep_boot : a basic version of coqdep, with almost no dependencies
+
+$(COQDEPBOOT): $(COQDEPBOOTML)
+ifeq ($(BEST),opt)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ -I tools unix.cmxa $^
+	$(STRIP) $@
+else
+	$(SHOW)'OCAMLC -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ -I tools unix.cma $^
+endif
+
+# the full coqdep
+
 ifeq ($(BEST),opt)
 $(COQDEP): $(COQDEPCMX)
 	$(SHOW)'OCAMLOPT -o $@'
@@ -953,9 +966,9 @@ checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' > "$@"
 
-%.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(COQDEP)
+%.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP  $<'
-	$(HIDE)$(COQDEP) -slash -boot -c "$<" > "$@" \
+	$(HIDE)$(COQDEPBOOT) -slash -boot -c "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 ## Veerry nasty hack to keep ocamldep happy
@@ -964,9 +977,9 @@ checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC)
 	$(HIDE)echo "let keep_ocamldep_happy Do_not_compile_me = assert false" > $@ \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
-%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEP) $(GENVFILES)
+%.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEP) -glob -slash -boot $(COQINCLUDES) "$<" > "$@" \
+	$(HIDE)$(COQDEPBOOT) $(DEPNATDYN) -slash -boot "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)

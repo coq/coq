@@ -27,7 +27,7 @@
 
 # Specific command-line options to this Makefile
 #
-# make GOTO_STAGE=N        # perform only stage N (with N=1,2,3)
+# make GOTO_STAGE=N        # perform only stage N (with N=1,2)
 # make VERBOSE=1           # restore the raw echoing of commands
 # make NO_RECALC_DEPS=1    # avoid recomputing dependencies
 # make NO_RECOMPILE_LIB=1  # a coqtop rebuild does not trigger a stdlib rebuild
@@ -155,7 +155,7 @@ config/Makefile Makefile.common Makefile.build Makefile: ;
 	$(call stage-template,$(GOTO_STAGE))
 else
 
-.PHONY: stage1 stage2 stage3 world revision
+.PHONY: stage1 stage2 world revision
 
 stage1 $(STAGE1_TARGETS) : always
 	$(call stage-template,1)
@@ -163,14 +163,10 @@ stage1 $(STAGE1_TARGETS) : always
 stage2 $(STAGE2_TARGETS) : stage1
 	$(call stage-template,2)
 
-stage3 $(STAGE3_TARGETS) : stage2
-	$(call stage-template,3)
-
 # Nota:
-# - world is one of the targets in $(STAGE3_TARGETS), hence launching 
-# "make" or "make world" leads to recursion into stage{1,2,3}
+# - world is one of the targets in $(STAGE2_TARGETS), hence launching
+# "make" or "make world" leads to recursion into stage1 then stage2
 # - the aim of stage1 is to build grammar.cma and q_constr.cmo
-# - the aim of stage2 is to build coqdep
 # More details in dev/doc/build-system*.txt
 
 
