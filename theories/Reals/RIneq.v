@@ -19,8 +19,8 @@ Require Export ZArithRing.
 Require Import Omega.
 Require Export RealField.
 
-Open Local Scope Z_scope.
-Open Local Scope R_scope.
+Local Open Scope Z_scope.
+Local Open Scope R_scope.
 
 Implicit Type r : R.
 

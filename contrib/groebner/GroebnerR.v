@@ -28,21 +28,17 @@
  19-12-08
 *)
 
-Require Import Reals. (* beware that Reals export Rlist *)
 Require Import List.
-Require Import ZArith.
-Require Import Znumtheory.
-Require Import List.
-Require Import Ring_polynom.
-Require Import Ring_tac.
 Require Import Setoid.
 Require Import BinPos.
 Require Import BinList.
-Require Import InitialRing.
+Require Import Znumtheory.
+Require Import Ring_polynom Ring_tac InitialRing.
+Require Import RealField Rdefinitions Rfunctions RIneq DiscrR.
 
 Declare ML Module "groebner_plugin".
 
-Open Scope R_scope.
+Local Open Scope R_scope.
 
 Lemma psos_r1b: forall x y, x - y = 0 -> x = y.
 intros x y H; replace x with ((x - y) + y);  
@@ -155,25 +151,25 @@ Definition check (lpe:list PEZ) (qe:PEZ) (certif: list (list PEZ) * list PEZ) :=
 
 (* Correction *)
 Definition PhiR : list R -> PolZ -> R := 
-  (Pphi 0%R Rplus Rmult (gen_phiZ 0%R 1%R Rplus Rmult Ropp)).
+  (Pphi 0 Rplus Rmult (gen_phiZ 0 1 Rplus Rmult Ropp)).
 
 Definition PEevalR : list R -> PEZ -> R := 
-   PEeval 0%R Rplus Rmult Rminus Ropp (gen_phiZ 0%R 1%R Rplus Rmult Ropp)
+   PEeval 0 Rplus Rmult Rminus Ropp (gen_phiZ 0 1 Rplus Rmult Ropp)
          Nnat.nat_of_N pow.
 
-Lemma P0Z_correct : forall l, PhiR l P0Z = 0%R.
+Lemma P0Z_correct : forall l, PhiR l P0Z = 0.
 Proof. trivial. Qed.
 
 
 Lemma PolZadd_correct : forall P' P l,
-  PhiR l (PolZadd P P') = (PhiR l P + PhiR l P')%R.
+  PhiR l (PolZadd P P') = (PhiR l P + PhiR l P').
 Proof.
  refine (Padd_ok Rset Rext (Rth_ARth Rset Rext (F_R Rfield))
            (gen_phiZ_morph Rset Rext (F_R Rfield))).
 Qed.
 
 Lemma PolZmul_correct : forall P P' l,
-  PhiR l (PolZmul P P') = (PhiR l P * PhiR l P')%R.
+  PhiR l (PolZmul P P') = (PhiR l P * PhiR l P').
 Proof.
  refine (Pmul_ok Rset Rext (Rth_ARth Rset Rext (F_R Rfield))
            (gen_phiZ_morph Rset Rext (F_R Rfield))).
@@ -198,12 +194,12 @@ Qed.
 Fixpoint Cond0 (A:Type) (Interp:A->R) (l:list A) : Prop :=
   match l with 
   | List.nil => True
-  | a::l => Interp a = 0%R /\ Cond0 A Interp l
+  | a::l => Interp a = 0 /\ Cond0 A Interp l
   end.
 
 Lemma mult_l_correct : forall l la lp, 
   Cond0 PolZ (PhiR l) lp ->
-  PhiR l (mult_l la lp) = 0%R.
+  PhiR l (mult_l la lp) = 0.
 Proof.
  induction la;simpl;intros;trivial.
  destruct lp;trivial.
@@ -224,7 +220,7 @@ Lemma check_correct :
   forall l lpe qe certif,
     check lpe qe certif = true ->
     Cond0 PEZ (PEevalR l) lpe ->
-    PEevalR l qe = 0%R.
+    PEevalR l qe = 0.
 Proof.
  unfold check;intros l lpe qe (lla, lq) H2 H1.
  apply PolZeq_correct with (l:=l) in H2.
@@ -293,20 +289,13 @@ Fixpoint interpret3 t fv {struct t}: R :=
   | (PEX n) => List.nth (pred (nat_of_P n)) fv 0
   end.
 
-Ltac AddFvTail2 a l :=
- match l with
- | (@nil _)          => constr:(cons a l)
- | (cons a _)   => l
- | (cons ?x ?l) => let l' := AddFvTail2 a l in constr:(cons x l')
- end.
-
 (* lp est incluse dans fv. La met en tete. *)
 
 Ltac parametres_en_tete fv lp :=
     match fv with
      | (@nil _)        => lp
      | (@cons _ ?x ?fv1) => 
-       let res := AddFvTail2 x lp in
+       let res := AddFvTail x lp in
          parametres_en_tete fv1 res
     end.
 
@@ -323,106 +312,77 @@ Ltac rev l :=
   end.
 
 (* Pompe sur Ring *)
+Import Ring_tac.
 
-Ltac groebnerR_gen2 Cst_tac CstPow_tac lemma1 req n lH :=
-  let Main lhs rhs R radd rmul rsub ropp rpow C :=
-    let mkFV := FV Cst_tac CstPow_tac radd rmul rsub ropp rpow in
-    let mkPol := mkPolexpr C Cst_tac CstPow_tac radd rmul rsub ropp rpow in
-  match goal with
-  | Hparam: (@eq (@prod (@List.list ?R) (@List.list ?R)) 
-                 (?lparam, ?lvar)
-                 ?lparam2) |- _ =>
-    clear Hparam;
-    generalise_eq_hyps;
-    match goal with 
-      | |- ?t => 
-    let lpol:=lpol_goal t in
-    let rec fv_rec l lv:=
-      match l with
-       |?a::?l1 => 
-          let lv1 := mkFV a lv in
-          fv_rec l1 lv1 
-       | nil => lv
-      end in
-    let fv := 
-       match lvar with
-         | (@nil _) => let fv1 := FV_hypo_tac mkFV req lH in
-                  let fv1 := fv_rec lpol fv1 in
-                  rev fv1
-       (* heuristique: les dernieres variables auront le poid le plus fort *)
-         | _ => lvar
-      end in
-    (*let fv1 := FV_hypo_tac mkFV req lH in
-    let fv := fv_rec lpol fv1 in*)
-    check_fv fv;
-    (*idtac "variables:";idtac fv;*)
-    let nparam := eval compute in (Z_of_nat (List.length lparam)) in
-    let fv := parametres_en_tete fv lparam in
-   (* idtac "variables:"; idtac fv;
+Ltac groebnerR_gen lparam lvar n RNG lH _rl :=
+  get_Pre RNG ();
+  let mkFV := get_RingFV RNG in
+  let mkPol := get_RingMeta RNG in
+  generalise_eq_hyps;
+  let t := Get_goal in
+  let lpol := lpol_goal t in
+  intros;
+  let fv := 
+    match lvar with
+    | nil =>
+        let fv1 := FV_hypo_tac mkFV ltac:(get_Eq RNG) lH in
+        let fv1 := list_fold_right mkFV fv1 lpol in
+        rev fv1
+    (* heuristique: les dernieres variables auront le poid le plus fort *)
+    | _ => lvar
+    end in
+  check_fv fv;
+  (*idtac "variables:";idtac fv;*)
+  let nparam := eval compute in (Z_of_nat (List.length lparam)) in
+  let fv := parametres_en_tete fv lparam in
+ (* idtac "variables:"; idtac fv;
     idtac "nparam:"; idtac nparam;*)
-    let rec mkPol_list lp:=
-       match lp with
-        |?p::?lp1 => 
-            let r := mkPol p fv in
-            let lr := mkPol_list lp1 in
-            constr:(r::lr)
-        | nil =>  constr:(@nil (@PExpr Z))
-       end
-    in 
-    let lpol := mkPol_list lpol in
-    let lpol := eval compute in (List.rev lpol) in
-    let lpol := constr:((@PEc Z nparam)::lpol) in
-    (*idtac lpol;*)
-    groebner_compute lpol;
+  let lpol := list_fold_right
+    ltac:(fun p l => let p' := mkPol p fv in constr:(p'::l))
+    (@nil (PExpr Z))
+    lpol in
+  let lpol := eval compute in (List.rev lpol) in
+  let lpol := constr:(PEc nparam :: lpol) in
+  (*idtac lpol;*)
+  groebner_compute lpol;
+  let OnResult kont :=
     match goal with
-      | |- ?res=?res1 -> _ =>
-    let a1:= eval compute in lpol in
-    match a1 with
-     | ?np::?p2::?lp2 => 
-    match res with
-     | (?p ::?lp0)::(?c::?lq)::?lci => 
-       set (lci1:=lci);
-       set (lq1:=lq);
-       set (p21:=p2) ;
-       let q:= constr:(PEmul c p21) in 
-       set (q1:=q);
-       set (lp21:=lp2);
-       let Hg := fresh "Hg" in 
-     assert (Hg:check lp21 q1 (lci1,lq1) = true);
-     [vm_compute;trivial
-     |intros;
-      let Hg2 := fresh "Hg" in
-      assert (Hg2:(interpret3 q1 fv)=0);
-       [simpl; apply (@check_correct fv lp21 q1 (lci1,lq1) Hg); simpl;
-        repeat (match goal with h:_=0%R |- _ => rewrite h end);
-        repeat split; auto
-       |simpl in Hg2; simpl;
-        apply groebnerR_l3 with (interpret3 c fv);simpl;
-        [discrR; let Hc := fresh "Hg" in
-                 unfold not; intro Hc; ring_simplify in Hc;
-                 generalize Hc; clear Hc
-        |auto]
-       ]
-     ] 
-    end 
-    end 
-    end 
-  end
- end
-  in
-  ParseRingComponents lemma1 ltac:(OnEquation req Main)
-  .
-
-Ltac groebnerR_gen
-  req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl :=
-  pre();groebnerR_gen2 cst_tac pow_tac lemma1 req ring_subst_niter lH .
+    | |- (?p ::_)::(?c::?lq0)::?lci0 = _ -> _ =>
+       intros _;
+       set (lci:=lci0);
+       set (lq:=lq0);
+       kont p c lq lci
+    end in
+  let SplitPolyList kont :=
+    match lpol with
+    | _::?p2::?lp2 => kont p2 lp2
+    end in
+  OnResult ltac:(fun p c lq lci =>
+    SplitPolyList ltac:(fun p2 lp2 =>
+      set (p21:=p2) ;
+      set (lp21:=lp2);
+      set (q := PEmul c p21);
+      let Hg := fresh "Hg" in 
+      assert (Hg:check lp21 q (lci,lq) = true);
+      [ (vm_compute;reflexivity) || idtac "invalid groebner certificate"
+      | let Hg2 := fresh "Hg" in
+        assert (Hg2: interpret3 q fv = 0);
+        [ simpl; apply (@check_correct fv lp21 q (lci,lq) Hg); simpl;
+          repeat (split;[assumption|idtac]); exact I
+        | simpl in Hg2; simpl;
+          apply groebnerR_l3 with (interpret3 c fv);simpl;
+          [ discrR || idtac "could not prove discrimination result"
+          | exact Hg2]
+        ]
+      ])).
 
 Ltac groebnerRpv lparam lvar:=
   groebnerR_begin;
   intros;
-  generalize (refl_equal (lparam,lvar)); intro;
   let G := Get_goal in
-  ring_lookup groebnerR_gen [] G.
+  ring_lookup
+    (PackRing ltac:(groebnerR_gen lparam lvar ring_subst_niter))
+    [] G.
 
 Ltac groebnerR := groebnerRpv (@nil R) (@nil R).
 
@@ -438,7 +398,6 @@ Goal forall x y,
   x^2=0.
 Time groebnerR.
 Qed.
-
 Goal forall x y z u v,
   x+y+z+u+v=0 -> 
   x*y+x*z+x*u+x*v+y*z+y*u+y*v+z*u+z*v+u*v=0->

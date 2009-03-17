@@ -89,10 +89,10 @@ let interp_map l c =
 let interp_map l t =
   try Some(List.assoc t l) with Not_found -> None
 
-let protect_maps = ref ([]:(string*(constr->'a)) list)
-let add_map s m = protect_maps := (s,m) :: !protect_maps
+let protect_maps = ref Stringmap.empty
+let add_map s m = protect_maps := Stringmap.add s m !protect_maps
 let lookup_map map =
-  try List.assoc map !protect_maps
+  try Stringmap.find map !protect_maps
   with Not_found ->
     errorlabstrm"lookup_map"(str"map "++qs map++str"not found")
 
@@ -166,13 +166,24 @@ let decl_constant na c =
       const_entry_boxed = true}, 
     IsProof Lemma))
 
+(* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =
   TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force tac),args))
-let ltac_acall tac (args:glob_tactic_arg list) =
-  TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force tac),args)
 
+(* Calling a locally bound tactic *)
 let ltac_lcall tac args =
   TacArg(TacCall(dummy_loc, ArgVar(dummy_loc, id_of_string tac),args))
+
+let ltac_letin (x, e1) e2 =
+  TacLetIn(false,[(dummy_loc,id_of_string x),e1],e2)
+
+let ltac_apply (f:glob_tactic_expr) (args:glob_tactic_arg list) =
+  Tacinterp.eval_tactic
+    (ltac_letin ("F", Tacexp f) (ltac_lcall "F" args))
+
+let ltac_record flds =
+  TacFun([Some(id_of_string"proj")], ltac_lcall "proj" flds)
+
 
 let carg c = TacDynamic(dummy_loc,Pretyping.constr_in c)
 
@@ -805,14 +816,7 @@ let make_term_list carrier rl =
     (fun x l -> lapp coq_cons [|carrier;x;l|]) rl
     (lapp coq_nil [|carrier|])
 
-
-let ring_lookup (f:glob_tactic_expr) lH rl t gl =
-  let env = pf_env gl in
-  let sigma = project gl in
-  let rl = make_args_list rl t in
-  let e = find_ring_structure env sigma rl None in
-  let rl = carg (make_term_list e.ring_carrier rl) in
-  let lH = carg (make_hyp_list env lH) in
+let ltac_ring_structure e =
   let req = carg e.ring_req in
   let sth = carg e.ring_setoid in
   let ext = carg e.ring_ext in
@@ -824,12 +828,18 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
   let lemma2 = carg e.ring_lemma2 in
   let pretac = Tacexp(TacFun([None],e.ring_pre_tac)) in
   let posttac = Tacexp(TacFun([None],e.ring_post_tac)) in
-  Tacinterp.eval_tactic
-    (TacLetIn
-      (false,[(dummy_loc,id_of_string"f"),Tacexp f],
-       ltac_lcall "f"
-         [req;sth;ext;morph;th;cst_tac;pow_tac;
-          lemma1;lemma2;pretac;posttac;lH;rl])) gl
+  [req;sth;ext;morph;th;cst_tac;pow_tac;
+   lemma1;lemma2;pretac;posttac]
+
+let ring_lookup (f:glob_tactic_expr) lH rl t gl =
+  let env = pf_env gl in
+  let sigma = project gl in
+  let rl = make_args_list rl t in
+  let e = find_ring_structure env sigma rl None in
+  let rl = carg (make_term_list e.ring_carrier rl) in
+  let lH = carg (make_hyp_list env lH) in
+  let ring = ltac_ring_structure e in
+  ltac_apply f (ring@[lH;rl]) gl
 
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
@@ -877,6 +887,11 @@ let _ = add_map "field_cond"
        operations and make recursive call on the var map *)
      my_constant "PCond", (function -1|8|10|13->Eval|12->Rec|_->Prot)]);;
 (*                       (function -1|8|10->Eval|9->Rec|_->Prot)]);;*)
+
+
+let _ = Redexpr.declare_red_expr "simpl_field_expr"
+  (protect_red "field")
+
 
 
 let afield_theory = my_constant "almost_field_theory"
@@ -1141,13 +1156,8 @@ VERNAC COMMAND EXTEND AddSetoidField
     add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign div]
 END
 
-let field_lookup (f:glob_tactic_expr) lH rl t gl =
-  let env = pf_env gl in
-  let sigma = project gl in
-  let rl = make_args_list rl t in
-  let e = find_field_structure env sigma rl None in
-  let rl = carg (make_term_list e.field_carrier rl) in
-  let lH = carg (make_hyp_list env lH) in
+
+let ltac_field_structure e =
   let req = carg e.field_req in
   let cst_tac = Tacexp e.field_cst_tac in
   let pow_tac = Tacexp e.field_pow_tac in
@@ -1158,14 +1168,21 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
   let cond_ok = carg e.field_cond in
   let pretac = Tacexp(TacFun([None],e.field_pre_tac)) in
   let posttac = Tacexp(TacFun([None],e.field_post_tac)) in
-  Tacinterp.eval_tactic
-    (TacLetIn
-      (false,[(dummy_loc,id_of_string"f"),Tacexp f],
-       ltac_lcall "f"
-        [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
-         field_simpl_eq_in_ok;cond_ok;pretac;posttac;lH;rl])) gl
+  [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
+   field_simpl_eq_in_ok;cond_ok;pretac;posttac]
+
+let field_lookup (f:glob_tactic_expr) lH rl t gl =
+  let env = pf_env gl in
+  let sigma = project gl in
+  let rl = make_args_list rl t in
+  let e = find_field_structure env sigma rl None in
+  let rl = carg (make_term_list e.field_carrier rl) in
+  let lH = carg (make_hyp_list env lH) in
+  let field = ltac_field_structure e in
+  ltac_apply f (field@[lH;rl]) gl
+
 
 TACTIC EXTEND field_lookup
-| [ "field_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] -> 
+| [ "field_lookup" tactic(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] -> 
       [ let (t,l) = list_sep_last lt in field_lookup (fst f) lH l t ]
 END

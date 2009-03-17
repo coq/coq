@@ -2057,7 +2057,8 @@ and interp_genarg ist gl x =
       match tactic_genarg_level s with
       | Some n -> 
           (* Special treatment of tactic arguments *)
-          in_gen (wit_tactic n) (out_gen (globwit_tactic n) x)
+          in_gen (wit_tactic n)
+	    (TacArg(valueIn(val_interp ist gl (out_gen (globwit_tactic n) x))))
       | None -> 
           lookup_interp_genarg s ist gl x
 
@@ -2834,20 +2835,11 @@ let make_absolute_name ident repl =
     user_err_loc (loc,"Tacinterp.add_tacdef",
 		 str "There is no Ltac named " ++ pr_reference ident ++ str".")
 
-let rec filter_map f l = 
-  let rec aux acc = function
-      [] -> acc
-    | hd :: tl -> 
-	match f hd with
-	    Some x -> aux (x :: acc) tl
-	  | None -> aux acc tl
-  in aux [] l
-      
 let add_tacdef isrec tacl =
   let rfun = List.map (fun (ident, b, _) -> make_absolute_name ident b) tacl in
   let ist =
     {(make_empty_glob_sign()) with ltacrecvars = 
-	if isrec then filter_map 
+	if isrec then list_map_filter
 	  (function (Some id, qid) -> Some (id, qid) | (None, _) -> None) rfun 
 	else []} in
   let gtacl =

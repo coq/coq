@@ -1600,7 +1600,8 @@ Fixpoint Fcons0 (e:PExpr C) (l:list (PExpr C)) {struct l} : list (PExpr C) :=
  match l with
    nil       => cons e nil
  | cons a l1 =>
-     if Peq ceqb (Nnorm O nil e) (Nnorm O nil a) then l else cons a (Fcons0 e l1)
+     if Peq ceqb (Nnorm O nil e) (Nnorm O nil a) then l
+     else cons a (Fcons0 e l1)
  end.
  
 Theorem PFcons0_fcons_inv:
@@ -1623,6 +1624,7 @@ clear get_sign get_sign_spec.
 generalize Hp; case l0; simpl; intuition.
 Qed.
 
+(* split factorized denominators *)
 Fixpoint Fcons00 (e:PExpr C) (l:list (PExpr C)) {struct e} : list (PExpr C) :=
  match e with
    PEmul e1 e2 => Fcons00 e1 (Fcons00 e2 l)

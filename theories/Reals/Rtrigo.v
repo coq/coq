@@ -19,8 +19,8 @@ Require Export Cos_plus.
 Require Import ZArith_base.
 Require Import Zcomplements.
 Require Import Classical_Prop.
-Open Local Scope nat_scope.
-Open Local Scope R_scope.
+Local Open Scope nat_scope.
+Local Open Scope R_scope.
 
 (** sin_PI2 is the only remaining axiom **)
 Axiom sin_PI2 : sin (PI / 2) = 1.

@@ -8,14 +8,22 @@ Require Import Quote.
 Declare ML Module "newring_plugin".
   
 
-(* adds a definition id' on the normal form of t and an hypothesis id
-   stating that t = id' (tries to produces a proof as small as possible) *)
-Ltac compute_assertion id  id' t :=
-  let t' := eval vm_compute in t in
-  pose (id' := t');
-  assert (id : t = id');
-  [vm_cast_no_check (refl_equal id')|idtac].
-(* [exact_no_check (refl_equal id'<: t = id')|idtac]). *)
+(* adds a definition t' on the normal form of t and an hypothesis id
+   stating that t = t' (tries to produces a proof as small as possible) *)
+Ltac compute_assertion eqn t' t :=
+  let nft := eval vm_compute in t in
+  pose (t' := nft);
+  assert (eqn : t = t');
+  [vm_cast_no_check (refl_equal t')|idtac].
+
+Ltac relation_carrier req :=
+  let ty := type of req in
+  match eval hnf in ty with
+   ?R -> _ => R
+  | _ => fail 1000 "Equality has no relation type"
+  end.
+
+Ltac Get_goal := match goal with [|- ?G] => G end.
 
 (********************************************************************)
 (* Tacticals to build reflexive tactics *)
@@ -23,50 +31,91 @@ Ltac compute_assertion id  id' t :=
 Ltac OnEquation req :=
   match goal with
   | |- req ?lhs ?rhs => (fun f => f lhs rhs)
-  | _ => fail 1 "Goal is not an equation (of expected equality)"
+  | _ => (fun _ => fail "Goal is not an equation (of expected equality)")
   end.
 
+Ltac OnEquationHyp req h :=
+  match type of h with
+  | req ?lhs ?rhs => fun f => f lhs rhs
+  | _ => (fun _ => fail "Hypothesis is not an equation (of expected equality)")
+  end.
+
+(* Note: auxiliary subgoals in reverse order *)
 Ltac OnMainSubgoal H ty :=
   match ty with
   | _ -> ?ty' =>
      let subtac := OnMainSubgoal H ty' in
-     fun tac => lapply H; [clear H; intro H; subtac tac | idtac]
-  | _ => (fun tac => tac)
+     fun kont => lapply H; [clear H; intro H; subtac kont | idtac]
+  | _ => (fun kont => kont())
   end.
 
-Ltac ApplyLemmaThen lemma expr tac :=
-  let nexpr := fresh "expr_nf" in
-  let H := fresh "eq_nf" in
-  let Heq := fresh "thm" in
-  let nf_spec :=
-    match type of (lemma expr) with
-      forall x, ?nf_spec = x -> _ => nf_spec
-    | _ => fail 1 "ApplyLemmaThen: cannot find norm expression"
-    end in
-  compute_assertion H nexpr nf_spec;
-  assert (Heq:=lemma _ _ H) || fail "anomaly: failed to apply lemma";
-  clear H;
-  OnMainSubgoal Heq ltac:(type of Heq) ltac:(tac Heq; clear Heq nexpr).
+(* A generic pattern to have reflexive tactics do some computation:
+   lemmas of the form [forall x', x=x' -> P(x')] is understood as
+   compute the normal form of x, instantiate x' with it, prove
+   hypothesis x=x' with vm_compute and reflexivity, and pass the
+   instantiated lemma to the continuation.
+ *)
+Ltac ProveLemmaHyp lemma :=
+  match type of lemma with
+    forall x', ?x = x' -> _ =>
+      (fun kont => 
+        let x' := fresh "res" in 
+        let H := fresh "res_eq" in
+        compute_assertion H x' x;
+        let lemma' := constr:(lemma x' H) in
+        kont (lemma x' H);
+        (clear x' H||idtac"ProveLemmaHyp: cleanup failed"))
+  | _ => (fun _ => fail "ProveLemmaHyp: lemma not of the expexted form")
+  end.
 
+Ltac ProveLemmaHyps lemma := (* expects a continuation *)
+  let try_step := ProveLemmaHyp lemma in
+  (fun kont =>
+    try_step ltac:(fun lemma' => ProveLemmaHyps lemma' kont) ||
+    kont lemma).
+
+Ltac ApplyLemmaThen lemma expr kont :=
+  let lem := constr:(lemma expr) in
+  ProveLemmaHyp lem ltac:(fun lem' =>
+    let Heq := fresh "thm" in
+    assert (Heq:=lem');
+    OnMainSubgoal Heq ltac:(type of Heq) ltac:(fun _ => kont Heq);
+    (clear Heq||idtac"ApplyLemmaThen: cleanup failed")).
+(*
 Ltac ApplyLemmaThenAndCont lemma expr tac CONT_tac cont_arg :=
-  let npe := fresh "expr_nf" in
-  let H := fresh "eq_nf" in
-  let Heq := fresh "thm" in
-  let npe_spec :=
+  let pe :=
     match type of (lemma expr) with
-      forall npe, ?npe_spec = npe -> _ => npe_spec
+      forall pe', ?pe = pe' -> _ => pe
     | _ => fail 1 "ApplyLemmaThenAndCont: cannot find norm expression"
     end in
-  (compute_assertion H npe npe_spec;
-   (assert (Heq:=lemma _ _ H) || fail "anomaly: failed to apply lemma");
-   clear H;
-   OnMainSubgoal Heq ltac:(type of Heq)
-     ltac:(try tac Heq; clear Heq npe;CONT_tac cont_arg)).
+  let pe' := fresh "expr_nf" in
+  let nf_pe := fresh "pe_eq" in
+  compute_assertion nf_pe pe' pe;
+  let Heq := fresh "thm" in
+  (assert (Heq:=lemma pe pe' H) || fail "anomaly: failed to apply lemma");
+  clear nf_pe;
+  OnMainSubgoal Heq ltac:(type of Heq)
+    ltac:(try tac Heq; clear Heq pe';CONT_tac cont_arg)).
+*)
+Ltac ApplyLemmaThenAndCont lemma expr tac CONT_tac cont_arg :=
+  ApplyLemmaThen lemma expr
+    ltac:(fun lemma' => try tac lemma'; CONT_tac cont_arg).
 
 (* General scheme of reflexive tactics using of correctness lemma
-   that involves normalisation of one expression *)
-
-Ltac ReflexiveRewriteTactic FV_tac SYN_tac MAIN_tac LEMMA_tac fv terms :=
+   that involves normalisation of one expression
+   - [FV_tac term fv] is a tactic that adds the atomic expressions
+       of [term] into [fv]
+   - [SYN_tac term fv] reifies [term] given the list of atomic expressions
+   - [LEMMA_tac fv kont] computes the correctness lemma and passes it to
+       continuation kont
+   - [MAIN_tac H] process H which is the conclusion of the correctness
+       lemma instantiated with each reified term
+   - [fv] is the initial value of atomic expressions (to be completed by
+       the reification of the terms
+   - [terms] the list (a constr of type list) of terms to reify ans process.
+ *)
+Ltac ReflexiveRewriteTactic
+     FV_tac SYN_tac LEMMA_tac MAIN_tac fv terms :=
   (* extend the atom list *)
   let fv := list_fold_left FV_tac fv terms in
   let RW_tac lemma := 
@@ -79,26 +128,72 @@ Ltac ReflexiveRewriteTactic FV_tac SYN_tac MAIN_tac LEMMA_tac fv terms :=
 
 (********************************************************)
 
+Ltac FV_hypo_tac mkFV req lH :=
+  let R := relation_carrier req in
+  let FV_hypo_l_tac h :=
+    match h with @mkhypo (req ?pe _) _ => mkFV pe end in
+  let FV_hypo_r_tac h :=
+    match h with @mkhypo (req _ ?pe) _ => mkFV pe end in
+  let fv := list_fold_right FV_hypo_l_tac (@nil R) lH in
+  list_fold_right FV_hypo_r_tac fv lH.
+
+Ltac mkHyp_tac C req Reify lH :=
+  let mkHyp h res := 
+   match h with 
+   | @mkhypo (req ?r1 ?r2) _ =>
+     let pe1 := Reify r1 in
+     let pe2 := Reify r2 in
+     constr:(cons (pe1,pe2) res)
+   | _ => fail 1 "hypothesis is not a ring equality"
+   end in
+  list_fold_right mkHyp (@nil (PExpr C * PExpr C)) lH.
+
+Ltac proofHyp_tac lH :=
+  let get_proof h :=
+    match h with
+    | @mkhypo _ ?p => p
+    end in
+  let rec bh l :=
+    match l with
+    | nil => constr:(I)
+    | cons ?h nil => get_proof h
+    | cons ?h ?tl => 
+      let l := get_proof h in
+      let r := bh tl in  
+      constr:(conj l r)
+    end in
+  bh lH.
+
+Ltac get_MonPol lemma :=
+  match type of lemma with
+  | context [(mk_monpol_list ?cO ?cI ?cadd ?cmul ?csub ?copp ?cdiv ?ceqb _)] =>
+      constr:(mk_monpol_list cO cI cadd cmul csub copp cdiv ceqb)
+  | _ => fail 1 "ring/field anomaly: bad correctness lemma (get_MonPol)"
+  end.
+
+(********************************************************)
 
 (* Building the atom list of a ring expression *)
 Ltac FV Cst CstPow add mul sub opp pow t fv :=
  let rec TFV t fv :=
+  let f :=
   match Cst t with
   | NotConstant =>
       match t with
-      | (add ?t1 ?t2) => TFV t2 ltac:(TFV t1 fv)
-      | (mul ?t1 ?t2) => TFV t2 ltac:(TFV t1 fv)
-      | (sub ?t1 ?t2) => TFV t2 ltac:(TFV t1 fv)
-      | (opp ?t1) => TFV t1 fv
+      | (add ?t1 ?t2) => fun _ => TFV t2 ltac:(TFV t1 fv)
+      | (mul ?t1 ?t2) => fun _ => TFV t2 ltac:(TFV t1 fv)
+      | (sub ?t1 ?t2) => fun _ => TFV t2 ltac:(TFV t1 fv)
+      | (opp ?t1) => fun _ => TFV t1 fv
       | (pow ?t1 ?n) =>
         match CstPow n with
-        | InitialRing.NotConstant => AddFvTail t fv
-        | _ => TFV t1 fv
+        | InitialRing.NotConstant => fun _ => AddFvTail t fv
+        | _ => fun _ => TFV t1 fv
         end
-      | _ => AddFvTail t fv
+      | _ => fun _ => AddFvTail t fv
       end
-  | _ => fv
-  end
+  | _ => fun _ => fv
+  end in
+  f()
  in TFV t fv.
 
  (* syntaxification of ring expressions *)
@@ -137,157 +232,160 @@ Ltac mkPolexpr C Cst CstPow radd rmul rsub ropp rpow t fv :=
     f ()
  in mkP t.
 
-Ltac ParseRingComponents lemma :=
-  match type of lemma with
-  | context [@PEeval ?R ?rO ?add ?mul ?sub ?opp ?C ?phi ?Cpow ?powphi ?pow _ _] =>
-      (fun f => f R add mul sub opp pow C)
-  | _ => fail 1 "ring anomaly: bad correctness lemma (parse)"
-  end.
+(* packaging the ring structure *)
+
+Ltac PackRing F req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post :=
+  let RNG :=
+    match type of lemma1 with
+    | context
+       [@PEeval ?R ?rO ?add ?mul ?sub ?opp ?C ?phi ?Cpow ?powphi ?pow _ _] =>
+        (fun proj => proj
+             cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2)
+    | _ => fail 1 "field anomaly: bad correctness lemma (parse)"
+    end in
+  F RNG.
+
+Ltac get_Carrier RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            R).
+
+Ltac get_Eq RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            req).
+
+Ltac get_Pre RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            pre).
+
+Ltac get_Post RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            post).
+
+Ltac get_NormLemma RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            lemma1).
+
+Ltac get_SimplifyLemma RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            lemma2).
+
+Ltac get_RingFV RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            FV cst_tac pow_tac add mul sub opp pow).
+
+Ltac get_RingMeta RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            mkPolexpr C cst_tac pow_tac add mul sub opp pow).
+
+Ltac get_RingHypTac RNG :=
+  RNG ltac:(fun cst_tac pow_tac pre post
+             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+       let mkPol := mkPolexpr C cst_tac pow_tac add mul sub opp pow in
+       fun fv lH => mkHyp_tac C req ltac:(fun t => mkPol t fv) lH).
 
 (* ring tactics *)
 
-Ltac relation_carrier req :=
-  let ty := type of req in
-  match eval hnf in ty with
-   ?R -> _ => R
-  | _ => fail 1000 "Equality has no relation type"
-  end.
-
-Ltac FV_hypo_tac mkFV req lH :=
-  let R := relation_carrier req in
-  let FV_hypo_l_tac h :=
-    match h with @mkhypo (req ?pe _) _ => mkFV pe end in
-  let FV_hypo_r_tac h :=
-    match h with @mkhypo (req _ ?pe) _ => mkFV pe end in
-  let fv := list_fold_right FV_hypo_l_tac (@nil R) lH in
-  list_fold_right FV_hypo_r_tac fv lH.
-
-Ltac mkHyp_tac C req mkPE lH :=
-  let mkHyp h res := 
-   match h with 
-   | @mkhypo (req ?r1 ?r2) _ =>
-     let pe1 := mkPE r1 in
-     let pe2 := mkPE r2 in
-     constr:(cons (pe1,pe2) res)
-   | _ => fail 1 "hypothesis is not a ring equality"
-   end in
-  list_fold_right mkHyp (@nil (PExpr C * PExpr C)) lH.
-     
-Ltac proofHyp_tac lH :=
-  let get_proof h :=
-    match h with
-    | @mkhypo _ ?p => p
-    end in
-  let rec bh l :=
-    match l with
-    | nil => constr:(I)
-    | cons ?h nil => get_proof h
-    | cons ?h ?tl => 
-      let l := get_proof h in
-      let r := bh tl in  
-      constr:(conj l r)
-    end in
-  bh lH.
-
 Definition ring_subst_niter := (10*10*10)%nat.
  
-Ltac Ring Cst_tac CstPow_tac lemma1 req n lH :=
-  let Main lhs rhs R radd rmul rsub ropp rpow C :=
-    let mkFV := FV Cst_tac CstPow_tac radd rmul rsub ropp rpow in
-    let mkPol := mkPolexpr C Cst_tac CstPow_tac radd rmul rsub ropp rpow in
-    let fv := FV_hypo_tac mkFV req lH in
+Ltac Ring RNG lemma lH :=
+  let req := get_Eq RNG in
+  OnEquation req ltac:(fun lhs rhs =>
+    let mkFV := get_RingFV RNG in
+    let mkPol := get_RingMeta RNG in
+    let mkHyp := get_RingHypTac RNG in
+    let fv := FV_hypo_tac mkFV ltac:(get_Eq RNG) lH in
     let fv := mkFV lhs fv in
     let fv := mkFV rhs fv in
     check_fv fv;
     let pe1 := mkPol lhs fv in
     let pe2 := mkPol rhs fv in
-    let lpe := mkHyp_tac C req ltac:(fun t => mkPol t fv) lH in
+    let lpe := mkHyp fv lH in
     let vlpe := fresh "hyp_list" in
     let vfv := fresh "fv_list" in
     pose (vlpe := lpe);
     pose (vfv := fv);
-    (apply (lemma1 n vfv vlpe pe1 pe2)
+    (apply (lemma vfv vlpe pe1 pe2)
       || fail "typing error while applying ring");
     [ ((let prh := proofHyp_tac lH in exact prh)
-        || idtac "can not automatically proof hypothesis : maybe a left member of a hypothesis is not a monomial") 
+        || idtac "can not automatically proof hypothesis :";
+           idtac " maybe a left member of a hypothesis is not a monomial")
     | vm_compute;
-      (exact (refl_equal true) || fail "not a valid ring equation")] in
-  ParseRingComponents lemma1 ltac:(OnEquation req Main).
+      (exact (refl_equal true) || fail "not a valid ring equation")]).
 
-Ltac Ring_norm_gen f Cst_tac CstPow_tac lemma2 req n lH rl :=
-  let Main R add mul sub opp pow C :=
-    let mkFV := FV Cst_tac CstPow_tac add mul sub opp pow in
-    let mkPol := mkPolexpr C Cst_tac CstPow_tac add mul sub opp pow in
-    let fv := FV_hypo_tac mkFV req lH in
-    let simpl_ring H := (protect_fv "ring" in H; f H) in
-    let lemma_tac fv RW_tac := 
-      let rr_lemma := fresh "r_rw_lemma" in
-      let lpe := mkHyp_tac C req ltac:(fun t => mkPol t fv) lH in
-      let vlpe := fresh "list_hyp" in
-      let vlmp := fresh "list_hyp_norm" in
-      let vlmp_eq := fresh "list_hyp_norm_eq" in
-      let prh := proofHyp_tac lH in
-      pose (vlpe := lpe);
-      match type of lemma2 with
-      | context [mk_monpol_list ?cO ?cI ?cadd ?cmul ?csub ?copp ?cdiv ?ceqb _]
-            =>
-        compute_assertion vlmp_eq vlmp 
-            (mk_monpol_list cO cI cadd cmul csub copp cdiv ceqb vlpe);
-         (assert (rr_lemma := lemma2 n vlpe fv prh vlmp vlmp_eq)
-          || fail 1 "type error when build the rewriting lemma");   
-         RW_tac rr_lemma;
-         try clear rr_lemma vlmp_eq vlmp vlpe
-      | _ => fail 1 "ring_simplify anomaly: bad correctness lemma"
-      end in
-    ReflexiveRewriteTactic mkFV mkPol simpl_ring lemma_tac fv rl in
-  ParseRingComponents lemma2 Main.
+Ltac Ring_norm_gen f RNG lemma lH rl :=
+  let mkFV := get_RingFV RNG in
+  let mkPol := get_RingMeta RNG in
+  let mkHyp := get_RingHypTac RNG in
+  let mk_monpol := get_MonPol lemma in
+  let fv := FV_hypo_tac mkFV ltac:(get_Eq RNG) lH in
+  let lemma_tac fv kont := 
+    let lpe := mkHyp fv lH in
+    let vlpe := fresh "list_hyp" in
+    let vlmp := fresh "list_hyp_norm" in
+    let vlmp_eq := fresh "list_hyp_norm_eq" in
+    let prh := proofHyp_tac lH in
+    pose (vlpe := lpe);
+    compute_assertion vlmp_eq vlmp (mk_monpol vlpe);
+    let H := fresh "ring_lemma" in
+    (assert (H := lemma vlpe fv prh vlmp vlmp_eq)
+      || fail "type error when build the rewriting lemma");
+    clear vlmp_eq;
+    kont H;
+    (clear H vlmp vlpe||idtac"Ring_norm_gen: cleanup failed") in
+  let simpl_ring H := (protect_fv "ring" in H; f H) in
+  ReflexiveRewriteTactic mkFV mkPol lemma_tac simpl_ring fv rl.
 
-
-Ltac Ring_gen
-  req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl :=
-  pre();Ring cst_tac pow_tac lemma1 req ring_subst_niter lH.
-
-Ltac Get_goal := match goal with [|- ?G] => G end.
+Ltac Ring_gen RNG lH rl :=
+  let lemma := get_NormLemma RNG in
+  get_Pre RNG ();
+  Ring RNG (lemma ring_subst_niter) lH.
 
 Tactic Notation (at level 0) "ring" :=
   let G := Get_goal in
-  ring_lookup Ring_gen [] G.
+  ring_lookup (PackRing Ring_gen) [] G.
 
 Tactic Notation (at level 0) "ring" "[" constr_list(lH) "]" :=
   let G := Get_goal in
-  ring_lookup Ring_gen [lH] G.
+  ring_lookup (PackRing Ring_gen) [lH] G.
 
 (* Simplification *)
 
-Ltac Ring_simplify_gen f :=
-  fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
-     let l := fresh "to_rewrite" in
-     pose (l:= rl);
-     generalize (refl_equal l);
-     unfold l at 2;
-     pre(); 
-     let Tac RL :=
-       let Heq := fresh "Heq" in
-       intros Heq;clear Heq l;
-       Ring_norm_gen f cst_tac pow_tac lemma2 req ring_subst_niter lH RL; 
-       post() in
-     let Main :=
-       match goal with
-       | [|- l = ?RL -> _ ] => (fun f => f RL)
-       | _ => fail 1 "ring_simplify anomaly: bad goal after pre"
-       end in
-     Main Tac.
+Ltac Ring_simplify_gen f RNG lH rl :=
+  let lemma := get_SimplifyLemma RNG in
+  let l := fresh "to_rewrite" in
+  pose (l:= rl);
+  generalize (refl_equal l);
+  unfold l at 2;
+  get_Pre RNG ();
+  let rl :=
+    match goal with
+    | [|- l = ?RL -> _ ] => RL
+    | _ => fail 1 "ring_simplify anomaly: bad goal after pre"
+    end in
+  let Heq := fresh "Heq" in
+  intros Heq;clear Heq l;
+  Ring_norm_gen f RNG (lemma ring_subst_niter) lH rl; 
+  get_Post RNG ().
 
 Ltac Ring_simplify := Ring_simplify_gen ltac:(fun H => rewrite H).
 
 Tactic Notation (at level 0) "ring_simplify" constr_list(rl) := 
   let G := Get_goal in
-  ring_lookup Ring_simplify [] rl G.
+  ring_lookup (PackRing Ring_simplify) [] rl G.
 
 Tactic Notation (at level 0) 
   "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) :=
   let G := Get_goal in
-  ring_lookup Ring_simplify [lH] rl G.
+  ring_lookup (PackRing Ring_simplify) [lH] rl G.
 
 (* MON DIEU QUE C'EST MOCHE !!!!!!!!!!!!! *)
 
@@ -297,7 +395,7 @@ Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=
   let g := fresh "goal" in
   set (g:= G);
   generalize H;clear H;
-  ring_lookup Ring_simplify [] rl t;
+  ring_lookup (PackRing Ring_simplify) [] rl t;
   intro H;
   unfold g;clear g.
 
@@ -308,7 +406,7 @@ Tactic Notation
   let g := fresh "goal" in
   set (g:= G);
   generalize H;clear H;
-  ring_lookup Ring_simplify [lH] rl t;
+  ring_lookup (PackRing Ring_simplify) [lH] rl t;
   intro H;
   unfold g;clear g.
 
