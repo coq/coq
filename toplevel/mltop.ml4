@@ -235,9 +235,11 @@ type ml_module_object = { mnames : string list }
 let known_loaded_modules = ref Stringset.empty
 
 let add_known_module mname =
+  let mname = String.capitalize mname in
   known_loaded_modules := Stringset.add mname !known_loaded_modules
 
-let module_is_known mname = Stringset.mem mname !known_loaded_modules
+let module_is_known mname =
+  Stringset.mem (String.capitalize mname) !known_loaded_modules
 
 let load_object mname fname=
   dir_ml_load fname;
@@ -295,8 +297,8 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 	     if_verbose msgnl (str" failed]");
 	     raise e
 	 else
-	   if_verbose
-	     msgnl (str"[Ignoring ML file " ++ str mname ++ str "]"))
+	     (if_verbose msgnl (str" failed]");
+	      error ("Dynamic link not supported (module "^name^")")))
     mnames
 
 let export_ml_module_object x = Some x

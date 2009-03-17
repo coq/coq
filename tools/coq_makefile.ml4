@@ -318,14 +318,9 @@ let include_dirs (inc_i,inc_r) =
   -I $(COQLIB)/library -I $(COQLIB)/parsing \\
   -I $(COQLIB)/pretyping -I $(COQLIB)/interp \\
   -I $(COQLIB)/proofs -I $(COQLIB)/tactics \\
-  -I $(COQLIB)/toplevel -I $(COQLIB)/contrib/cc -I $(COQLIB)/contrib/dp \\
-  -I $(COQLIB)/contrib/extraction -I $(COQLIB)/contrib/field \\
-  -I $(COQLIB)/contrib/firstorder -I $(COQLIB)/contrib/fourier \\
-  -I $(COQLIB)/contrib/funind -I $(COQLIB)/contrib/interface \\
-  -I $(COQLIB)/contrib/micromega -I $(COQLIB)/contrib/omega \\
-  -I $(COQLIB)/contrib/ring -I $(COQLIB)/contrib/romega \\
-  -I $(COQLIB)/contrib/rtauto -I $(COQLIB)/contrib/setoid_ring \\
-  -I $(COQLIB)/contrib/subtac -I $(COQLIB)/contrib/xml\n";
+  -I $(COQLIB)/toplevel";
+    List.iter (fun c -> print " \\
+  -I $(COQLIB)/contrib/"; print c) Coq_config.contrib_dirs; print "\n";
     print "COQLIBS:="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " str_r; print "\n\n"
 

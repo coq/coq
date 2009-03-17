@@ -842,6 +842,9 @@ echo "  Objective-Caml/Camlp4 version     : $CAMLVERSION"
 echo "  Objective-Caml/Camlp4 binaries in : $CAMLBIN"
 echo "  Objective-Caml library in         : $CAMLLIB"
 echo "  Camlp4 library in                 : $CAMLP4LIB"
+if test "$best_compiler" = opt ; then
+echo "  Native dynamic link support       : $HASNATDYNLINK"
+fi
 if test "$COQIDE" != "no"; then
 echo "  Lablgtk2 library in               : $LABLGTKLIB"
 fi
