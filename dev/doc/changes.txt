@@ -11,6 +11,8 @@ tclNTH_DECL -> onNthDecl
 tclNTH_HYP -> onNthHyp
 onLastHyp -> onLastHypId
 onNLastHyps -> onNLastDecls
+onClauses -> onClause
+allClauses -> allHypsAndConcl
 
 + removal of various unused combinators on type "clause"
 

@@ -1213,15 +1213,15 @@ let rewrite_hyp l2r id gl =
   match match_with_equality_type t with
   | Some (hdcncl,[_;lhs;rhs]) ->
       if l2r & isVar lhs & not (occur_var (pf_env gl) (destVar lhs) rhs) then
-	tclTHEN (rew_on l2r allClauses) (clear_var_and_eq lhs) gl
+	tclTHEN (rew_on l2r allHypsAndConcl) (clear_var_and_eq lhs) gl
       else if not l2r & isVar rhs & not (occur_var (pf_env gl) (destVar rhs) lhs) then
-	tclTHEN (rew_on l2r allClauses) (clear_var_and_eq rhs) gl
+	tclTHEN (rew_on l2r allHypsAndConcl) (clear_var_and_eq rhs) gl
       else
 	tclTHEN (rew_on l2r onConcl) (tclTRY (clear [id])) gl
   | Some (hdcncl,[c]) ->
       let l2r = not l2r in (* equality of the form eq_true *)
       if isVar c then
-	tclTHEN (rew_on l2r allClauses) (clear_var_and_eq c) gl
+	tclTHEN (rew_on l2r allHypsAndConcl) (clear_var_and_eq c) gl
       else
 	tclTHEN (rew_on l2r onConcl) (tclTRY (clear [id])) gl
   | _ ->
@@ -1300,7 +1300,7 @@ let prepare_intros s ipat gl = match ipat with
   | IntroWildcard -> let id = make_id s gl in id, clear_wildcards [dloc,id]
   | IntroRewrite l2r -> 
       let id = make_id s gl in
-      id, !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allClauses
+      id, !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allHypsAndConcl
   | IntroOrAndPattern ll -> make_id s gl, 
       intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
 
@@ -1330,7 +1330,7 @@ let assert_tac na = assert_as true (ipat_of_name na)
 
 let as_tac id ipat = match ipat with
   | Some (loc,IntroRewrite l2r) -> 
-      !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allClauses
+      !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
       intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
   | Some (loc,
@@ -1769,14 +1769,14 @@ let atomize_param_of_ind (indref,nparams) hyp0 gl =
 	| Var id ->
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac None (Name x) (mkVar id) None allClauses)
+	      (letin_tac None (Name x) (mkVar id) None allHypsAndConcl)
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
 	| _ ->
 	    let id = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c)
 		       Anonymous in
 	    let x = fresh_id [] id gl in
 	    tclTHEN
-	      (letin_tac None (Name x) c None allClauses)
+	      (letin_tac None (Name x) c None allHypsAndConcl)
 	      (atomize_one (i-1) ((mkVar x)::avoid)) gl
     else 
       tclIDTAC gl
@@ -2782,7 +2782,7 @@ let new_induct_gen isrec with_evars elim (eqname,names) (c,lbind) cls gl =
 	let with_eq = Option.map (fun eq -> (false,eq)) eqname in
 	(* TODO: if ind has predicate parameters, use JMeq instead of eq *)
 	tclTHEN
-	  (letin_tac_gen with_eq (Name id) c None (Option.default allClauses cls,false))
+	  (letin_tac_gen with_eq (Name id) c None (Option.default allHypsAndConcl cls,false))
 	  (induction_with_atomization_of_ind_arg
 	     isrec with_evars elim names (id,lbind) inhyps) gl
 
@@ -2816,7 +2816,7 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc gl =
 		let _ = newlc:=id::!newlc in
 		let _ = letids:=id::!letids in
 		tclTHEN 
-		  (letin_tac None (Name id) c None allClauses)
+		  (letin_tac None (Name id) c None allHypsAndConcl)
 		  (atomize_list newl') gl in
   tclTHENLIST 
     [

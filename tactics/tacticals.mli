@@ -110,10 +110,10 @@ type clause = identifier gclause
 
 val simple_clause_of : clause -> goal sigma -> simple_clause
 
-val allClauses : clause
-val allHyps    : clause
-val onHyp      : identifier -> clause
-val onConcl    : clause
+val allHypsAndConcl : clause
+val allHyps         : clause
+val onHyp           : identifier -> clause
+val onConcl         : clause
 
 val tryAllHyps          : (identifier -> tactic) -> tactic
 val tryAllHypsAndConcl  : (identifier option -> tactic) -> tactic

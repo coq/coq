@@ -111,7 +111,7 @@ let functional_induction with_clean c princl pat =
 	in
 	Tacticals.tclTHEN
 	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst [id])) idl )
-	  (Hiddentac.h_reduce flag Tacticals.allClauses)	
+	  (Hiddentac.h_reduce flag Tacticals.allHypsAndConcl)	
 	  g
       else Tacticals.tclIDTAC g 
 	

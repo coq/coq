@@ -150,8 +150,7 @@ val unfold_in_concl   :
 val unfold_in_hyp     : 
   (occurrences * evaluable_global_reference) list -> hyp_location -> tactic
 val unfold_option     : 
-  (occurrences * evaluable_global_reference) list -> goal_location
-    -> tactic
+  (occurrences * evaluable_global_reference) list -> goal_location -> tactic
 val change            :
   (occurrences * constr) option -> constr -> clause -> tactic
 val pattern_option    : 

@@ -143,7 +143,7 @@ type simple_clause = identifier option list
 
 type clause = identifier gclause
 
-let allClauses = { onhyps=None; concl_occs=all_occurrences_expr }
+let allHypsAndConcl = { onhyps=None; concl_occs=all_occurrences_expr }
 let allHyps = { onhyps=None; concl_occs=no_occurrences_expr }
 let onConcl = { onhyps=Some[]; concl_occs=all_occurrences_expr }
 let onHyp id =
@@ -169,16 +169,16 @@ let simple_clause_of cl gls =
     if cl.concl_occs <> all_occurrences_expr then error_occurrences ()
     else None :: hyps
 
-let allHypsAndConcl gl = None :: List.map Option.make (pf_ids_of_hyps gl)
+let fullGoal gl = None :: List.map Option.make (pf_ids_of_hyps gl)
 
 let onAllHyps tac gl = tclMAP tac (pf_ids_of_hyps gl) gl
-let onAllHypsAndConcl tac gl = tclMAP tac (allHypsAndConcl gl) gl
-let onAllHypsAndConclLR tac gl = tclMAP tac (List.rev (allHypsAndConcl gl)) gl
+let onAllHypsAndConcl tac gl = tclMAP tac (fullGoal gl) gl
+let onAllHypsAndConclLR tac gl = tclMAP tac (List.rev (fullGoal gl)) gl
 
 let tryAllHyps tac gl = tclFIRST_PROGRESS_ON tac (pf_ids_of_hyps gl) gl
-let tryAllHypsAndConcl tac gl = tclFIRST_PROGRESS_ON tac (allHypsAndConcl gl) gl
+let tryAllHypsAndConcl tac gl = tclFIRST_PROGRESS_ON tac (fullGoal gl) gl
 let tryAllHypsAndConclLR tac gl =
-  tclFIRST_PROGRESS_ON tac (List.rev (allHypsAndConcl gl)) gl
+  tclFIRST_PROGRESS_ON tac (List.rev (fullGoal gl)) gl
 
 let onClause tac cl gls = tclMAP tac (simple_clause_of cl gls) gls
 let onClauseLR tac cl gls = tclMAP tac (List.rev (simple_clause_of cl gls)) gls
