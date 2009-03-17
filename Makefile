@@ -195,6 +195,7 @@ indepclean:
 	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
 	rm -f bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 	find . -name '*~' -or -name '*.cm[ioa]' | xargs rm -f
+	find . -name '*-mod.ml' | xargs rm -f
 	find contrib test-suite -name '*.vo' -or -name '*.glob' | xargs rm -f
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
