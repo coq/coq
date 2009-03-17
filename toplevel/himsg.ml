@@ -814,8 +814,8 @@ let explain_ltac_call_trace (last,trace,loc) =
       (if unboundvars <> [] or vars <> [] then
 	strbrk " (with " ++ prlist_with_sep pr_coma (fun (id,c) -> 
 	pr_id id ++ str ":=" ++ Printer.pr_lconstr c)
-	  (List.rev vars @ unboundvars)
-       else mt()) ++ str ")" in
+	  (List.rev vars @ unboundvars) ++ str ")"
+       else mt()) in
   if calls <> [] then
     let kind_of_last_call = match list_last calls with
     | Proof_type.LtacConstrInterp _ -> ", last term evaluation failed."
