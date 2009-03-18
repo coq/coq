@@ -909,7 +909,7 @@ endif
 	$(SHOW)'OCAMLYACC $<'
 	$(HIDE)$(OCAMLYACC) $<
 
-%-mod.ml: %.mllib
+%_mod.ml: %.mllib
 	sed -e "s/\([^ ]\+\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
 	echo "let _=Mltop.add_known_module\"$(notdir $*)\"" >> $@
 
@@ -974,8 +974,8 @@ checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'COQDEP  $<'
 	$(HIDE)$(COQDEPBOOT) -slash -boot -c "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
-	echo "$*".cma: "$*"-mod.cmo >> "$@"
-	echo "$*".cmxa "$*".cmxs: "$*"-mod.cmx >> "$@"
+	echo "$*".cma: "$*"_mod.cmo >> "$@"
+	echo "$*".cmxa "$*".cmxs: "$*"_mod.cmx >> "$@"
 
 ## Veerry nasty hack to keep ocamldep happy
 %.ml: | %.ml4
