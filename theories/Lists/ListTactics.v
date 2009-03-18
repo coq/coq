@@ -17,13 +17,17 @@ Ltac list_fold_right fcons fnil l :=
   | nil => fnil
   end.
 
+(* A variant of list_fold_right, to prevent the match of list_fold_right
+   from catching errors raised by fcons. *)
 Ltac lazy_list_fold_right fcons fnil l :=
-  match l with
-  | ?x :: ?tl => 
-       let cont := lazy_list_fold_right fcons fnil in
-       fcons x cont tl
-  | nil => fnil 
-  end.
+  let f :=
+    match l with
+    | ?x :: ?tl => 
+         fun _ =>
+         fcons x ltac:(fun _ => lazy_list_fold_right fcons fnil tl)
+    | nil => fun _ => fnil() 
+    end in
+  f().
 
 Ltac list_fold_left fcons fnil l :=
   match l with

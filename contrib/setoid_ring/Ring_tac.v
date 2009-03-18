@@ -50,7 +50,7 @@ Ltac OnMainSubgoal H ty :=
   end.
 
 (* A generic pattern to have reflexive tactics do some computation:
-   lemmas of the form [forall x', x=x' -> P(x')] is understood as
+   lemmas of the form [forall x', x=x' -> P(x')] are understood as:
    compute the normal form of x, instantiate x' with it, prove
    hypothesis x=x' with vm_compute and reflexivity, and pass the
    instantiated lemma to the continuation.
@@ -63,17 +63,33 @@ Ltac ProveLemmaHyp lemma :=
         let H := fresh "res_eq" in
         compute_assertion H x' x;
         let lemma' := constr:(lemma x' H) in
-        kont (lemma x' H);
-        (clear x' H||idtac"ProveLemmaHyp: cleanup failed"))
-  | _ => (fun _ => fail "ProveLemmaHyp: lemma not of the expexted form")
+        kont lemma';
+        (clear H||idtac"ProveLemmaHyp: cleanup failed");
+        subst x')
+  | _ => (fun _ => fail "ProveLemmaHyp: lemma not of the expected form")
   end.
 
+Ltac ProveLemmaHyps lemma :=
+  match type of lemma with
+    forall x', ?x = x' -> _ =>
+      (fun kont => 
+        let x' := fresh "res" in 
+        let H := fresh "res_eq" in
+        compute_assertion H x' x;
+        let lemma' := constr:(lemma x' H) in
+        ProveLemmaHyps lemma' kont;
+        (clear H||idtac"ProveLemmaHyps: cleanup failed");
+        subst x')
+  | _ => (fun kont => kont lemma)
+  end.
+
+(*
 Ltac ProveLemmaHyps lemma := (* expects a continuation *)
   let try_step := ProveLemmaHyp lemma in
   (fun kont =>
     try_step ltac:(fun lemma' => ProveLemmaHyps lemma' kont) ||
     kont lemma).
-
+*)
 Ltac ApplyLemmaThen lemma expr kont :=
   let lem := constr:(lemma expr) in
   ProveLemmaHyp lem ltac:(fun lem' =>
@@ -97,9 +113,9 @@ Ltac ApplyLemmaThenAndCont lemma expr tac CONT_tac cont_arg :=
   OnMainSubgoal Heq ltac:(type of Heq)
     ltac:(try tac Heq; clear Heq pe';CONT_tac cont_arg)).
 *)
-Ltac ApplyLemmaThenAndCont lemma expr tac CONT_tac cont_arg :=
+Ltac ApplyLemmaThenAndCont lemma expr tac CONT_tac :=
   ApplyLemmaThen lemma expr
-    ltac:(fun lemma' => try tac lemma'; CONT_tac cont_arg).
+    ltac:(fun lemma' => try tac lemma'; CONT_tac()).
 
 (* General scheme of reflexive tactics using of correctness lemma
    that involves normalisation of one expression
@@ -119,11 +135,11 @@ Ltac ReflexiveRewriteTactic
   (* extend the atom list *)
   let fv := list_fold_left FV_tac fv terms in
   let RW_tac lemma := 
-     let fcons term CONT_tac cont_arg := 
+     let fcons term CONT_tac :=
       let expr := SYN_tac term fv in
-      (ApplyLemmaThenAndCont lemma expr MAIN_tac CONT_tac cont_arg) in
+      (ApplyLemmaThenAndCont lemma expr MAIN_tac CONT_tac) in
      (* rewrite steps *)
-     lazy_list_fold_right fcons ltac:(idtac) terms in
+     lazy_list_fold_right fcons ltac:(fun _=>idtac) terms in
   LEMMA_tac fv RW_tac.
 
 (********************************************************)
@@ -340,7 +356,8 @@ Ltac Ring_norm_gen f RNG lemma lH rl :=
       || fail "type error when build the rewriting lemma");
     clear vlmp_eq;
     kont H;
-    (clear H vlmp vlpe||idtac"Ring_norm_gen: cleanup failed") in
+    (clear H||idtac"Ring_norm_gen: cleanup failed");
+    subst vlpe vlmp in
   let simpl_ring H := (protect_fv "ring" in H; f H) in
   ReflexiveRewriteTactic mkFV mkPol lemma_tac simpl_ring fv rl.
 
@@ -410,77 +427,3 @@ Tactic Notation
   intro H;
   unfold g;clear g.
 
-
-
-(*     LE RESTE MARCHE PAS DOMMAGE  .....  *)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(*
-
-
-
-
-
-
-
-
-Ltac Ring_simplify_in hyp:= Ring_simplify_gen ltac:(fun H => rewrite H in hyp).
-
-
-Tactic Notation (at level 0) 
-  "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) := 
-  match goal with [|- ?G] => ring_lookup Ring_simplify [lH] rl G end.
-
-Tactic Notation (at level 0) 
-  "ring_simplify" constr_list(rl) := 
-  match goal with [|- ?G] => ring_lookup Ring_simplify [] rl G end.
-
-Tactic Notation (at level 0) 
-  "ring_simplify" "[" constr_list(lH) "]" constr_list(rl) "in" hyp(h):= 
-  let t := type of h in
-  ring_lookup 
-   (fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
-     pre(); 
-     Ring_norm_gen ltac:(fun EQ => rewrite EQ in h) cst_tac pow_tac lemma2 req ring_subst_niter lH rl; 
-     post()) 
-  [lH] rl t. 
-(*  ring_lookup ltac:(Ring_simplify_in h) [lH] rl [t]. NE MARCHE PAS ??? *)
-
-Ltac Ring_simpl_in hyp := Ring_norm_gen ltac:(fun H => rewrite H in hyp).
-
-Tactic Notation (at level 0) 
-  "ring_simplify" constr_list(rl) "in" constr(h):= 
-  let t := type of h in
-  ring_lookup   
-   (fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
-     pre(); 
-     Ring_simpl_in h cst_tac pow_tac lemma2 req ring_subst_niter lH rl; 
-     post())
- [] rl t.
-
-Ltac rw_in H Heq := rewrite Heq in H.
-
-Ltac simpl_in H := 
-  let t := type of H in
-   ring_lookup 
-   (fun req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post lH rl =>
-     pre(); 
-     Ring_norm_gen ltac:(fun Heq => rewrite Heq in H) cst_tac pow_tac lemma2 req ring_subst_niter lH rl; 
-     post()) 
-   [] t.
-
-
-*)

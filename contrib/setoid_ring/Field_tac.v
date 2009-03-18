@@ -243,7 +243,6 @@ Ltac Field_norm_gen f n FLD lH rl :=
   let main_tac H := protect_fv "field" in H; f H in
   (* generate and use equations for each expression *)
   ReflexiveRewriteTactic mkFFV mkFE lemma_tac main_tac fv0 rl;
-  (* simplifying the denominator condition *)
   try simpl_PCond FLD.
 
 Ltac Field_simplify_gen f FLD lH rl := 
@@ -251,7 +250,8 @@ Ltac Field_simplify_gen f FLD lH rl :=
   Field_norm_gen f ring_subst_niter FLD lH rl; 
   get_FldPost FLD ().
 
-Ltac Field_simplify := Field_simplify_gen ltac:(fun H => rewrite H).
+Ltac Field_simplify :=
+  Field_simplify_gen ltac:(fun H => rewrite H).
 
 Tactic Notation (at level 0) "field_simplify" constr_list(rl) :=
   let G := Get_goal in
@@ -267,7 +267,7 @@ Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=
   let t := type of H in   
   let g := fresh "goal" in
   set (g:= G);
-  generalize H;clear H;
+  revert H;
   field_lookup (PackField Field_simplify) [] rl t;
   intro H;
   unfold g;clear g.
@@ -278,7 +278,7 @@ Tactic Notation "field_simplify"
   let t := type of H in   
   let g := fresh "goal" in
   set (g:= G);
-  generalize H;clear H;
+  revert H;
   field_lookup (PackField Field_simplify) [lH] rl t;
   intro H;
   unfold g;clear g.
@@ -323,7 +323,8 @@ Ltac Field_Scheme Simpl_tac n lemma FLD lH :=
               apply ilemma 
                || fail "field anomaly: failed in applying lemma";
               [ Simpl_tac | simpl_PCond FLD]);
-    clear vlpe nlemma in
+    clear nlemma;
+    subst vlpe in
   OnEquation req Main_eq.
 
 (* solve completely a field equation, leaving non-zero conditions to be
@@ -413,6 +414,89 @@ Tactic Notation (at level 0)
   [ try exact I
   |clear H;intro H].
  
+(* More generic tactics to build variants of field *) 
+
+(* This tactic reifies c and pass to F:
+   - the FLD structure gathering all info in the field DB
+   - the atom list
+   - the expression (FExpr)
+ *)
+Ltac gen_with_field F c :=
+  let MetaExpr FLD _ rl :=
+    let R := get_FldCarrier FLD in
+    let mkFFV := get_FFV FLD in
+    let mkFE  := get_Meta FLD in
+    let csr :=
+      match rl with
+      | List.cons ?r _ => r
+      | _ => fail 1 "anomaly: ill-formed list"
+      end in
+    let fv := mkFFV csr (@List.nil R) in
+    let expr := mkFE csr fv in
+    F FLD fv expr in
+  field_lookup (PackField MetaExpr) [] (c=c).
+
+
+(* pushes the equation expr = ope(expr) in the goal, and
+   discharge it with field *)
+Ltac prove_field_eqn ope FLD fv expr :=
+  let res := ope expr in
+  let expr' := fresh "input_expr" in
+  pose (expr' := expr);
+  let res' := fresh "result" in
+  pose (res' := res);
+  let lemma := get_L1 FLD in
+  let lemma :=
+    constr:(lemma O fv List.nil expr' res' I List.nil (refl_equal _)) in
+  let ty := type of lemma in
+  let lhs := match ty with
+    forall _, ?lhs=_ -> _ => lhs
+    end in
+  let rhs := match ty with
+    forall _, _=_ -> forall _, ?rhs=_ -> _ => rhs
+    end in
+  let lhs' := fresh "lhs" in let lhs_eq := fresh "lhs_eq" in
+  let rhs' := fresh "rhs" in let rhs_eq := fresh "rhs_eq" in
+  compute_assertion lhs_eq lhs' lhs;
+  compute_assertion rhs_eq rhs' rhs;
+  let H := fresh "fld_eqn" in
+  refine (_ (lemma lhs' lhs_eq rhs' rhs_eq _ _));
+    (* main goal *)
+    [intro H;protect_fv "field" in H; revert H
+    (* ring-nf(lhs') = ring-nf(rhs') *)
+    | vm_compute; reflexivity || fail "field cannot prove this equality"
+    (* denominator condition *)
+    | simpl_PCond FLD];
+  clear lhs_eq rhs_eq; subst lhs' rhs'.
+
+Ltac prove_with_field ope c :=
+  gen_with_field ltac:(prove_field_eqn ope) c.
+
+(* Prove an equation x=ope(x) and rewrite with it *)
+Ltac prove_rw ope x :=
+  prove_with_field ope x;
+  [ let H := fresh "Heq_maple" in
+    intro H; rewrite H; clear H
+  |..].
+
+(* Apply ope (FExpr->FExpr) on an expression *)
+Ltac reduce_field_expr ope kont FLD fv expr :=
+  let evfun := get_FEeval FLD in
+  let res := ope expr in
+  let c := (eval simpl_field_expr in (evfun fv res)) in
+  kont c.
+
+(* Hack to let a Ltac return a term in the context of a primitive tactic *)
+Ltac return_term x := generalize (refl_equal x).
+
+(* Turn an operation on field expressions (FExpr) into a reduction
+   on terms (in the field carrier). Because of field_lookup,
+   the tactic cannot return a term directly, so it is returned 
+   via the conclusion of the goal (return_term). *)
+Ltac reduce_field_ope ope c :=
+  gen_with_field ltac:(reduce_field_expr ope return_term) c.
+
+
 (* Adding a new field *)
 
 Ltac ring_of_field f :=
