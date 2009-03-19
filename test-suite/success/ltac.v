@@ -152,6 +152,7 @@ Abort.
 Ltac afi tac := intros; tac.
 Goal 1 = 2.
 afi ltac:auto.
+Abort.
 
 (* Tactic Notation avec listes *)
 
@@ -227,4 +228,5 @@ Section LtacLoopTest.
   Ltac f x := idtac.
   Goal True.
   Timeout 1 try f()().
+  Abort.
 End LtacLoopTest.

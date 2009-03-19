@@ -114,9 +114,6 @@ let check_is_value = function
    error "Immediate match producing tactics not allowed in local definitions."
   | _ -> ()
 
-(* For tactic_of_value *)
-exception NotTactic
-
 (* Gives the constr corresponding to a Constr_context tactic_arg *)
 let constr_of_VConstr_context = function
   | VConstr_context c -> c
@@ -1792,7 +1789,7 @@ and eval_tactic ist = function
   | TacFirst l -> tclFIRST (List.map (interp_tactic ist) l)
   | TacSolve l -> tclSOLVE (List.map (interp_tactic ist) l)
   | TacComplete tac -> tclCOMPLETE (interp_tactic ist tac)
-  | TacArg a -> assert false
+  | TacArg a -> interp_tactic ist (TacArg a)
 
 and force_vrec ist gl = function
   | VRec (lfun,body) -> val_interp {ist with lfun = !lfun} gl body
@@ -1846,25 +1843,28 @@ and interp_tacarg ist gl = function
 (* Interprets an application node *)
 and interp_app loc ist gl fv largs =
   match fv with
-      (* if var=[] this means that evaluation of body has been delayed
-         by val_interp, so it is not a tactic that expects arguments.
+     (* if var=[] and body has been delayed by val_interp, then body
+         is not a tactic that expects arguments.
          Otherwise Ltac goes into an infinite loop (val_interp puts
          a VFun back on body, and then interp_app is called again...) *)
-    | VFun(trace,olfun,(_::_ as var),body) ->
-      let (newlfun,lvar,lval)=head_with_value (var,largs) in
-      if lvar=[] then
-	let v = 
-	  try
-	    catch_error trace
-	      (val_interp { ist with lfun=newlfun@olfun; trace=trace } gl) body
-	  with e ->
-            debugging_exception_step ist false e (fun () -> str "evaluation");
-	    raise e in
-        debugging_step ist (fun () ->
-	  str "evaluation returns" ++ fnl() ++ pr_value (Some (pf_env gl)) v);
-        if lval=[] then v else interp_app loc ist gl v lval
-      else
-        VFun(trace,newlfun@olfun,lvar,body)
+    | (VFun(trace,olfun,(_::_ as var),body)
+      |VFun(trace,olfun,([] as var),
+         (TacFun _|TacLetIn _|TacMatchGoal _|TacMatch _| TacArg _ as body))) ->
+	let (newlfun,lvar,lval)=head_with_value (var,largs) in
+	if lvar=[] then
+	  let v = 
+	    try
+	      catch_error trace
+		(val_interp {ist with lfun=newlfun@olfun; trace=trace} gl) body
+	    with e ->
+              debugging_exception_step ist false e (fun () -> str "evaluation");
+	      raise e in
+          debugging_step ist
+	    (fun () ->
+	       str"evaluation returns"++fnl()++pr_value (Some (pf_env gl)) v);
+          if lval=[] then v else interp_app loc ist gl v lval
+	else
+          VFun(trace,newlfun@olfun,lvar,body)
     | _ ->
 	user_err_loc (loc, "Tacinterp.interp_app",
           (str"Illegal tactic application."))
@@ -1876,8 +1876,13 @@ and tactic_of_value ist vle g =
   | VFun (trace,lfun,[],t) ->
       let tac = eval_tactic {ist with lfun=lfun; trace=trace} t in
       catch_error trace tac g
-  | VFun _ -> error "A fully applied tactic is expected."
-  | _ -> raise NotTactic
+  | (VFun _|VRec _) -> error "A fully applied tactic is expected."
+  | VConstr _ -> errorlabstrm "" (str"Value is a term. Expected a tactic.")
+  | VConstr_context _ ->
+      errorlabstrm "" (str"Value is a term context. Expected a tactic.")
+  | VIntroPattern _ ->
+      errorlabstrm "" (str"Value is an intro pattern. Expected a tactic.")
+  | _ -> errorlabstrm "" (str"Expression does not evaluate to a tactic.")
 
 (* Evaluation with FailError catching *)
 and eval_with_fail ist is_lazy goal tac =
@@ -2058,7 +2063,10 @@ and interp_genarg ist gl x =
       | Some n -> 
           (* Special treatment of tactic arguments *)
           in_gen (wit_tactic n)
-	    (TacArg(valueIn(val_interp ist gl (out_gen (globwit_tactic n) x))))
+	    (TacArg(valueIn(VFun(ist.trace,ist.lfun,[],
+				 out_gen (globwit_tactic n) x))))
+(*          in_gen (wit_tactic n)
+	    (TacArg(valueIn(val_interp ist gl (out_gen (globwit_tactic n) x))))*)
       | None -> 
           lookup_interp_genarg s ist gl x
 
@@ -2184,8 +2192,7 @@ and interp_ltac_constr ist gl e =
 
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac gl =
-  try tactic_of_value ist (val_interp ist gl tac) gl
-  with NotTactic -> errorlabstrm "" (str "Not a tactic.")
+  tactic_of_value ist (val_interp ist gl tac) gl
 
 (* Interprets a primitive tactic *)
 and interp_atomic ist gl = function
