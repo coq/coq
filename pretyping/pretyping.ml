@@ -443,7 +443,13 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  inh_conv_coerce_to_tycon loc env evdref resj tycon
 	    
     | RLetIn(loc,name,c1,c2)      ->
-	let j = pretype empty_tycon env evdref lvar c1 in
+	let j = 
+	  match c1 with
+	  | RCast (loc, c, CastConv (DEFAULTcast, t)) ->
+	      let tj = pretype_type empty_valcon env evdref lvar t in		
+		pretype (mk_tycon tj.utj_val) env evdref lvar c
+	  | _ -> pretype empty_tycon env evdref lvar c1
+	in
 	let t = refresh_universes j.uj_type in
 	let var = (name,Some j.uj_val,t) in
         let tycon = lift_tycon 1 tycon in

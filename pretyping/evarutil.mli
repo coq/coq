@@ -53,11 +53,11 @@ val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
 (***********************************************************)
 (* Instantiate evars *)
 
-(* [evar_define env ev c] try to instantiate [ev] with [c] (typed in [env]),
+(* [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
-   some problems that cannot be solved in a unique way;
-   failed if the instance is not valid for the given [ev] *)
-val evar_define : env -> existential -> constr -> evar_defs -> evar_defs
+   some problems that cannot be solved in a unique way (except if choose is
+   true); fails if the instance is not valid for the given [ev] *)
+val evar_define : ?choose:bool -> env -> existential -> constr -> evar_defs -> evar_defs
 
 (***********************************************************)
 (* Evars/Metas switching... *)
@@ -80,7 +80,7 @@ val solve_refl :
     evar_defs
 val solve_simple_eqn :
   (env ->  evar_defs -> conv_pb -> constr -> constr -> evar_defs * bool)
-  -> env ->  evar_defs -> conv_pb * existential * constr ->
+  -> ?choose:bool -> env ->  evar_defs -> conv_pb * existential * constr ->
     evar_defs * bool
 
 (* [check_evars env initial_sigma extended_sigma c] fails if some
