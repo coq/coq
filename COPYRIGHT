@@ -13,12 +13,12 @@ work time rest with the employee. By analogy, it is Lionel's opinion
 that copyright on these changes rests with him.
 
 This product includes also software developed by
-	Yves Bertot, Lemme, INRIA Sophia-Antipolis (contrib/interface,
+	Yves Bertot, Lemme, INRIA Sophia-Antipolis (plugins/interface,
 parsing/search.ml)
-	Pierre Crégut, France Telecom R & D (contrib/omega and contrib/romega)
-	Pierre Courtieu, Lemme (contrib/funind)
-	Loïc Pottier, Lemme, INRIA Sophia-Antipolis (contrib/fourier)
-	Claudio Sacerdoti Coen, HELM, University of Bologna, (contrib/xml)
+	Pierre Crégut, France Telecom R & D (plugins/omega and plugins/romega)
+	Pierre Courtieu, Lemme (plugins/funind)
+	Loïc Pottier, Lemme, INRIA Sophia-Antipolis (plugins/fourier)
+	Claudio Sacerdoti Coen, HELM, University of Bologna, (plugins/xml)
 
 The file CREDITS contains a list of past contributors
 The credits section in Reference Manual introduction details

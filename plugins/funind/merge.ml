@@ -1028,7 +1028,7 @@ let relprinctype_to_funprinctype relprinctype nfuns =
  *)
 (* 
 *** Local Variables: ***
-*** compile-command: "make -C ../.. contrib/funind/merge.cmo" ***
+*** compile-command: "make -C ../.. plugins/funind/merge.cmo" ***
 *** indent-tabs-mode: nil ***
 *** End: ***
 *)

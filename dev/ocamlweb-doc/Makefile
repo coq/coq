@@ -4,14 +4,14 @@ LOCALINCLUDES=-I ../../config -I ../../tools -I ../../tools/coqdoc \
 	      -I ../../scripts -I ../../lib -I ../../kernel -I ../../kernel/byterun -I ../../library \
               -I ../../proofs -I ../../tactics -I ../../pretyping \
               -I ../../interp -I ../../toplevel -I ../../parsing -I ../../ide/utils -I ../../ide \
-              -I ../../contrib/omega -I ../../contrib/romega \
-	      -I ../../contrib/ring -I ../../contrib/dp -I ../../contrib/setoid_ring \
-              -I ../../contrib/xml -I ../../contrib/extraction \
-              -I ../../contrib/interface -I ../../contrib/fourier \
-	      -I ../../contrib/cc \
-	      -I ../../contrib/funind -I ../../contrib/firstorder \
-              -I ../../contrib/field -I ../../contrib/subtac -I ../../contrib/rtauto \
-              -I ../../contrib/recdef
+              -I ../../plugins/omega -I ../../plugins/romega \
+	      -I ../../plugins/ring -I ../../plugins/dp -I ../../plugins/setoid_ring \
+              -I ../../plugins/xml -I ../../plugins/extraction \
+              -I ../../plugins/interface -I ../../plugins/fourier \
+	      -I ../../plugins/cc \
+	      -I ../../plugins/funind -I ../../plugins/firstorder \
+              -I ../../plugins/field -I ../../plugins/subtac -I ../../plugins/rtauto \
+              -I ../../plugins/recdef
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 

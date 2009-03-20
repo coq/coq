@@ -7,7 +7,7 @@
 (*                                                                           *)
 (*****************************************************************************)
 
-The current directory contrib/interface implements Coq support for the
+The current directory plugins/interface implements Coq support for the
 Pcoq Graphical Interface of Coq. It has been developed by Yves Bertot
 with contributions from Loïc Pottier and Laurence Rideau.
 

@@ -49,7 +49,7 @@ ifdef QUICK
 %.v.tex: %.tex
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
 else
-%.v.tex: %.tex | $(COQTEX) $(COQTOPEXE) $(CONTRIBVO) $(THEORIESVO)
+%.v.tex: %.tex | $(COQTEX) $(COQTOPEXE) $(PLUGINSVO) $(THEORIESVO)
 	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
 endif
 

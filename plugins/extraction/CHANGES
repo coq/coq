@@ -79,7 +79,7 @@ but also a few steps toward a more user-friendly extraction:
   were one would have been enough. 
   
   - Examples of code needing those Obj.magic: 
-     * contrib/extraction/test_extraction.v in the Coq source
+     * plugins/extraction/test_extraction.v in the Coq source
      * in the users' contributions: 
 	Lannion
 	Lyon/CIRCUITS

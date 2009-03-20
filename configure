@@ -972,8 +972,8 @@ echo "let theories_dirs = [" >> "$mlconfig_file"
 subdirs theories
 echo "]" >> "$mlconfig_file"
 
-echo "let contrib_dirs = [" >> "$mlconfig_file"
-subdirs contrib
+echo "let plugins_dirs = [" >> "$mlconfig_file"
+subdirs plugins
 echo "]" >> "$mlconfig_file"
 
 chmod a-w "$mlconfig_file"

@@ -1295,7 +1295,7 @@ let call_csdpcert provername poly =
   close_out ch_to;
   let cmdname =
     List.fold_left Filename.concat (Envars.coqlib ())
-      ["contrib"; "micromega"; "csdpcert" ^ Coq_config.exec_extension] in
+      ["plugins"; "micromega"; "csdpcert" ^ Coq_config.exec_extension] in
   let c = Sys.command (cmdname ^" "^ tmp_to ^" "^ tmp_from) in
   (try Sys.remove tmp_to with _ -> ());
   if c <> 0 then Util.error ("Failed to call csdp certificate generator");

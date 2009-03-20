@@ -8,7 +8,7 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  FrÃ©dÃ©ric Besson (Irisa/Inria) 2006-2008                             *)
+(*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -17,25 +17,59 @@ Require Import Coq.Arith.Max.
 Require Import List.
 Set Implicit Arguments.
 
-(* I have addded a Leaf constructor to the varmap data structure (/contrib/ring/Quote.v) 
+(* I have addded a Leaf constructor to the varmap data structure (/plugins/ring/Quote.v) 
    -- this is harmless and spares a lot of Empty.
    This means smaller proof-terms. 
    BTW, by dropping the  polymorphism, I get small (yet noticeable) speed-up.
 *)
 
-Section S.
+Section MakeVarMap.
+  Variable A : Type.
+  Variable default : A.
+  
+  Inductive t  : Type :=
+  | Empty : t 
+  | Leaf : A -> t 
+  | Node : t  -> A -> t  -> t .
+  
+  Fixpoint find   (vm : t ) (p:positive) {struct vm} : A :=
+    match vm with
+      | Empty => default
+      | Leaf i => i
+      | Node l e r => match p with
+                        | xH => e
+                        | xO p => find l p
+                        | xI p => find r p
+                      end
+    end.
 
-  Variable D :Type.
+ (* an off_map (a map with offset) offers the same functionalites  as /plugins/setoid_ring/BinList.v - it is used in EnvRing.v *)
+(*
+  Definition off_map  :=  (option positive *t )%type.
 
-  Definition Env := positive -> D.
 
-  Definition jump  (j:positive) (e:Env) := fun x => e (Pplus x j).
 
-  Definition nth  (n:positive) (e : Env ) := e n.
+  Definition jump  (j:positive) (l:off_map ) := 
+    let (o,m) := l in
+      match o with
+        | None => (Some j,m)
+        | Some j0 => (Some (j+j0)%positive,m)
+      end.
 
-  Definition hd (x:D)  (e: Env)  := nth xH e.
+  Definition nth  (n:positive) (l: off_map ) :=
+    let (o,m) := l in
+      let idx  := match o with
+                    | None => n
+                    | Some i => i + n
+                  end%positive in
+      find  idx m.
 
-  Definition tail (e: Env) := jump xH e.
+
+  Definition hd  (l:off_map) := nth  xH l.
+
+
+  Definition tail (l:off_map ) := jump xH l.
+
 
   Lemma psucc : forall p,  (match p with
                               | xI y' => xO (Psucc y')
@@ -51,20 +85,22 @@ Section S.
   Qed.
 
   Lemma jump_Pplus : forall i j l, 
-    forall x, jump (i + j) l x = jump i (jump j l) x.
+    (jump (i + j) l) = (jump i (jump j l)).
   Proof.
     unfold jump.
-    intros.
+    destruct l.
+    destruct o.
     rewrite Pplus_assoc.
+    reflexivity.
     reflexivity.
   Qed.
 
   Lemma jump_simpl : forall p l,
-    forall x, jump p l x = 
+    jump p l = 
     match p with
-      | xH => tail l x
-      | xO p => jump p (jump p l) x
-      | xI p  => jump p (jump p (tail l)) x
+      | xH => tail l
+      | xO p => jump p (jump p l)
+      | xI p  => jump p (jump p (tail l))
     end.
   Proof.
     destruct p ; unfold tail ; intros ;  repeat rewrite <- jump_Pplus.
@@ -87,7 +123,7 @@ Section S.
         | |- context [jump (xI ?p) ?e] => rewrite (jump_simpl (xI p))
       end.
     
-  Lemma jump_tl : forall j l, forall x, tail (jump j l) x = jump j (tail l) x.
+  Lemma jump_tl : forall j l, tail (jump j l) = jump j (tail l).
   Proof. 
     unfold tail.
     intros.
@@ -97,7 +133,7 @@ Section S.
   Qed.
 
   Lemma jump_Psucc : forall j l, 
-    forall x, (jump (Psucc j) l x) = (jump 1 (jump j l) x).
+    (jump (Psucc j) l) = (jump 1 (jump j l)).
   Proof.
     intros.
     rewrite <- jump_Pplus.
@@ -107,7 +143,7 @@ Section S.
   Qed.
 
   Lemma jump_Pdouble_minus_one : forall i l,
-    forall x, (jump (Pdouble_minus_one i) (tail l)) x = (jump i (jump i l)) x.
+    (jump (Pdouble_minus_one i) (tail l)) = (jump i (jump i l)).
   Proof.
     unfold tail.
     intros.
@@ -118,50 +154,78 @@ Section S.
     reflexivity.
   Qed.
 
-  Lemma jump_x0_tail : forall p l, forall x, jump (xO p) (tail l) x = jump (xI p) l x.
+  Lemma jump_x0_tail : forall p l, jump (xO p) (tail l) = jump (xI p) l.
   Proof.
     intros.
-    unfold jump.
-    unfold tail.
-    unfold jump.
-    rewrite <- Pplus_assoc.
-    simpl.
+    jump_s.
+    repeat rewrite <- jump_Pplus.
     reflexivity.
   Qed.
 
-  Lemma nth_spec : forall p l x, 
+  
+  Lemma nth_spec : forall p l, 
     nth p l = 
     match p with
-      | xH => hd x l
+      | xH => hd  l
       | xO p => nth p (jump p l)
       | xI p => nth p (jump p (tail l))
     end. 
   Proof.
     unfold nth.
-    destruct p.
-    intros.
-    unfold jump, tail.
-    unfold jump.
-    rewrite Pplus_diag.
-    rewrite xI_succ_xO.
+    destruct l.
+    destruct o.
     simpl.
+    rewrite psucc.
+    destruct p.
+    replace (p0 + xI p)%positive with ((p + (p0 + 1) + p))%positive.
     reflexivity.
-    unfold jump.
+    rewrite xI_succ_xO.
+    rewrite Pplus_one_succ_r.
+    rewrite <- Pplus_diag.
+    rewrite Pplus_comm.
+    symmetry.
+    rewrite (Pplus_comm p0).
+    rewrite <- Pplus_assoc.
+    rewrite (Pplus_comm 1)%positive.
+    rewrite <- Pplus_assoc.
+    reflexivity.
+  (**)
+    replace ((p0 + xO p))%positive with (p + p0 + p)%positive.
+    reflexivity.
+    rewrite <- Pplus_diag.
+    rewrite <- Pplus_assoc.
+    rewrite Pplus_comm.
+    rewrite Pplus_assoc.
+    reflexivity.
+    reflexivity.
+    simpl.
+    destruct p.
+    rewrite xI_succ_xO.
+    rewrite Pplus_one_succ_r.
+    rewrite <- Pplus_diag.
+    symmetry.
+    rewrite Pplus_comm.
+    rewrite Pplus_assoc.
+    reflexivity.
     rewrite Pplus_diag.
     reflexivity.
-    unfold hd.
-    unfold nth.
     reflexivity.
   Qed.
 
 
-  Lemma nth_jump : forall p l x, nth p (tail l) = hd x (jump p l).
+  Lemma nth_jump : forall p l, nth p (tail l) = hd (jump p l).
   Proof.
+    destruct l.
     unfold tail.
     unfold hd.
     unfold jump.
     unfold nth.
-    intros.
+    destruct o.
+    symmetry.
+    rewrite Pplus_comm.
+    rewrite <- Pplus_assoc.
+    rewrite (Pplus_comm p0).
+    reflexivity.
     rewrite Pplus_comm.
     reflexivity.
   Qed.
@@ -169,14 +233,26 @@ Section S.
   Lemma nth_Pdouble_minus_one :
     forall p l, nth (Pdouble_minus_one p) (tail l) = nth p (jump p l).
   Proof.
-    intros.
+    destruct l.
     unfold tail.
     unfold nth, jump.
+    destruct o.
+    rewrite ((Pplus_comm p)).
+    rewrite <- (Pplus_assoc p0).
     rewrite Pplus_diag.
     rewrite <- Psucc_o_double_minus_one_eq_xO.
     rewrite Pplus_one_succ_r.
+    rewrite (Pplus_comm (Pdouble_minus_one p)).
+    rewrite Pplus_assoc.
+    rewrite (Pplus_comm p0).
+    reflexivity.
+    rewrite <- Pplus_one_succ_l.
+    rewrite Psucc_o_double_minus_one_eq_xO.
+    rewrite Pplus_diag.
     reflexivity.
   Qed.
 
-End S.
+*)
+
+End MakeVarMap.
 

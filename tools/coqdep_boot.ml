@@ -12,8 +12,8 @@ open Coqdep_common
 
 (** [coqdep_boot] is a stripped-down version of [coqdep], whose
     behavior is the one of [coqdep -boot]. Its only dependencies
-    are [Coqdep_lexer] and [Unix], and it should stay so.
-    If it need someday some additional information, pass it via
+    are [Coqdep_lexer], [Coqdep_common] and [Unix], and it should stay so.
+    If it needs someday some additional information, pass it via
     options (see for instance [option_natdynlk] below).
 *)
 
@@ -29,7 +29,7 @@ let coqdep_boot () =
   if Array.length Sys.argv < 2 then exit 1;
   parse (List.tl (Array.to_list Sys.argv));
   add_rec_dir add_known "theories" ["Coq"];
-  add_rec_dir add_known "contrib" ["Coq"];
+  add_rec_dir add_known "plugins" ["Coq"];
   List.iter (fun (f,d) -> add_mli_known f d) !mliAccu;
   List.iter (fun (f,d) -> add_mllib_known f d) !mllibAccu;
   List.iter (fun (f,_,d) -> add_ml_known f d) !mlAccu;

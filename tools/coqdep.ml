@@ -167,11 +167,11 @@ let coqdep () =
   if not Coq_config.has_natdynlink then option_natdynlk := false;
   if !Flags.boot then begin
     add_rec_dir add_known "theories" ["Coq"];
-    add_rec_dir add_known "contrib" ["Coq"]
+    add_rec_dir add_known "plugins" ["Coq"]
   end else begin
     let coqlib = Envars.coqlib () in
     add_rec_dir add_coqlib_known (coqlib//"theories") ["Coq"];
-    add_rec_dir add_coqlib_known (coqlib//"contrib") ["Coq"];
+    add_rec_dir add_coqlib_known (coqlib//"plugins") ["Coq"];
     add_dir add_coqlib_known (coqlib//"user-contrib") []
   end;
   List.iter (fun (f,d) -> add_mli_known f d) !mliAccu;

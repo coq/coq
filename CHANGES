@@ -1023,7 +1023,7 @@ Tactics
 - Clear now fails when trying to remove a local definition used by
   a constant appearing in the current goal
 
-Extraction (See details in contrib/extraction/CHANGES)
+Extraction (See details in plugins/extraction/CHANGES)
 
 - The old commands: 	(Recursive) Extraction Module M.
   are now:              (Recursive) Extraction Library M. 
@@ -1163,7 +1163,7 @@ Tactics
 - Unfold expects a correct evaluable argument
 - Clear expects existing hypotheses
 
-Extraction (See details in contrib/extraction/CHANGES and README):
+Extraction (See details in plugins/extraction/CHANGES and README):
 
 - An experimental Scheme extraction is provided.
 - Concerning Ocaml, extracted code is now ensured to always type-check, 
@@ -1278,7 +1278,7 @@ Bugs
 - Known bugs related to Inversion and let-in's fixed
 - Bug unexpected Delta with let-in now fixed
 
-Extraction (details in contrib/extraction/CHANGES or documentation)
+Extraction (details in plugins/extraction/CHANGES or documentation)
 
 - Signatures of extracted terms are now mostly expunged from dummy arguments.
 - Haskell extraction is now operational (tested & debugged).  
@@ -1286,7 +1286,7 @@ Extraction (details in contrib/extraction/CHANGES or documentation)
 Standard library
 
 - Some additions in [ZArith]: three files (Zcomplements.v, Zpower.v
-  and Zlogarithms.v) moved from contrib/omega in order to be more
+  and Zlogarithms.v) moved from plugins/omega in order to be more
   visible, one Zsgn function, more induction principles (Wf_Z.v and
   tail of Zcomplements.v), one more general Euclid theorem
 - Peano_dec.v and Compare_dec.v now part of Arith.v
@@ -1349,7 +1349,7 @@ Tactics
 - Slight improvement in naming strategy for NewInduction/NewDestruct
 - Intuition/Tauto do not perform useless unfolding and work up to conversion
 
-Extraction (details in contrib/extraction/CHANGES or documentation)
+Extraction (details in plugins/extraction/CHANGES or documentation)
 
 - Syntax changes: there are no more options inside the extraction commands. 
   New commands for customization and options have been introduced instead. 

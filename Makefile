@@ -196,8 +196,8 @@ indepclean:
 	rm -f bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 	find . -name '*~' -or -name '*.cm[ioa]' | xargs rm -f
 	find . -name '*_mod.ml' | xargs rm -f
-	find contrib test-suite -name '*.vo' -or -name '*.glob' | xargs rm -f
-	rm -f */*.pp[iox] contrib/*/*.pp[iox]
+	find plugins test-suite -name '*.vo' -or -name '*.glob' | xargs rm -f
+	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 	rm -f test-suite/check.log

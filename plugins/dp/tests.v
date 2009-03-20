@@ -160,7 +160,7 @@ simplify.
 Qed.
 
 
-(* Inductive types definitions - call to incontrib/dp/jection function *)
+(* Inductive types definitions - call to dp/injection function *)
 
 Inductive even : Z -> Prop :=
 | even_0 : even 0

@@ -320,7 +320,7 @@ let include_dirs (inc_i,inc_r) =
   -I $(COQLIB)/proofs -I $(COQLIB)/tactics \\
   -I $(COQLIB)/toplevel";
     List.iter (fun c -> print " \\
-  -I $(COQLIB)/contrib/"; print c) Coq_config.contrib_dirs; print "\n";
+  -I $(COQLIB)/plugins/"; print c) Coq_config.plugins_dirs; print "\n";
     print "COQLIBS:="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
     print "COQDOCLIBS:=";   print_list "\\\n  " str_r; print "\n\n"
 

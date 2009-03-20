@@ -23,53 +23,53 @@ The following directories contain independent contributions supported
 by the Coq development team. All of them are released under the terms of
 the GNU Lesser General Public License Version 2.1.
 
-contrib/cc
+plugins/cc
   developed by Pierre Corbineau (ENS Cachan, 2001, LRI, 2001-2005, Radboud
   University at Nijmegen, 2005-2008)
-contrib/correctness
+plugins/correctness
   developed by Jean-Christophe Filliâtre (LRI, 1999-2001)
-contrib/dp
+plugins/dp
   developed by Nicolas Ayache (LRI, 2005-2006) and Jean-Christophe Filliâtre
   (LRI, 2005-2008)
-contrib/extraction
+plugins/extraction
   developed by Pierre Letouzey (LRI, 2000-2004, PPS-Paris7, 2005-now)
-contrib/field
+plugins/field
   developed by David Delahaye and Micaela Mayero (INRIA-LogiCal, 2001)
-contrib/firstorder 
+plugins/firstorder 
   developed by Pierre Corbineau (LRI, 2003-2008)
-contrib/fourier
+plugins/fourier
   developed by Loïc Pottier (INRIA-Lemme, 2001)
-contrib/funind
+plugins/funind
   developed by Pierre Courtieu (INRIA-Lemme, 2003-2004, CNAM, 2004-2008),
   Julien Forest (INRIA-Everest, 2006, CNAM, 2007-2008) 
   and Yves Bertot (INRIA-Marelle, 2005-2006)
-contrib/interface
+plugins/interface
   developed by Yves Bertot with contributions from Loïc Pottier and
   Laurence Rideau as part of the Pcoq project (INRIA-Lemme, 1997-2006);
   extended by Lionel Mamane as part of the TeXMacs project (Radboud university
   at Nijmegen, 2007-2008)
-contrib/omega
+plugins/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
-contrib/recdef
+plugins/recdef
   developed by Yves Bertot (INRIA-Marelle, 2005-2006)
-contrib/ring
+plugins/ring
   developed by Samuel Boutin (INRIA-Coq, 1996) and Patrick 
   Loiseleur (LRI, 1997-1999)
-contrib/romega
+plugins/romega
   developed by Pierre Crégut (France Telecom R&D, 2001-2004)
-contrib/rtauto
+plugins/rtauto
   developed by Pierre Corbineau (LRI, 2005)
-contrib/setoid_ring
+plugins/setoid_ring
   developed by Benjamin Grégoire (INRIA-Everest, 2005-2006), 
   Assia Mahboubi, Laurent Théry (INRIA-Marelle, 2006) 
   and Bruno Barras (INRIA LogiCal, 2005-2006),
-contrib/subtac
+plugins/subtac
   developed by Matthieu Sozeau (LRI, 2005-2008)
-contrib/xml
+plugins/xml
   developed by Claudio Sacerdoti (Univ. Bologna, 2000-2005) 
   as part of the HELM and MoWGLI projects; extension by Cezary Kaliszyk as
   part of the ProofWeb project (Radbout University at Nijmegen, 2008)
-contrib/micromega
+plugins/micromega
   developed by Frédéric Besson (IRISA/INRIA, 2006-2008), with some 
   extensions by Evgeny Makarov (INRIA, 2007); sum-of-squares solver and 
   interface to the csdp solver uses code from John Harrison (University

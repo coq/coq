@@ -156,7 +156,7 @@ coqbinaries:: ${COQBINARIES} ${CSDPCERT}
 
 coq: coqlib tools coqbinaries
 
-coqlib:: theories contrib
+coqlib:: theories plugins
 
 coqlight: theories-light tools coqbinaries
 
@@ -278,11 +278,11 @@ parsing/highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
 tactics/hightactics.cma: $(HIGHTACTICS)
 tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx)
 
-contrib/%.cma: | contrib/%.mllib.d
+plugins/%.cma: | plugins/%.mllib.d
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $^
 
-contrib/%.cmxa: | contrib/%.mllib.d
+plugins/%.cmxa: | plugins/%.mllib.d
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $^
 
@@ -309,12 +309,12 @@ checker/check.cmxa: $(MCHECKER:.cmo=.cmx)
 ###########################################################################
 
 ifeq ($(BEST),opt)
-contrib/micromega/csdpcert$(EXE): $(CSDPCERTCMX)
+plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMX)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) nums.cmxa -o $@ $^
 	$(STRIP) $@
 else
-contrib/micromega/csdpcert$(EXE): $(CSDPCERTCMO)
+plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) nums.cma -o $@ $^
 endif
@@ -453,8 +453,8 @@ install-pcoq-binaries::
 	$(INSTALLBIN) $(COQINTERFACE) $(FULLBINDIR)
 
 install-pcoq-files::
-	$(MKDIR) $(FULLCOQLIB)/contrib/interface
-	$(INSTALLLIB) $(PCOQFILES) $(FULLCOQLIB)/contrib/interface
+	$(MKDIR) $(FULLCOQLIB)/plugins/interface
+	$(INSTALLLIB) $(PCOQFILES) $(FULLCOQLIB)/plugins/interface
 
 install-pcoq-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1
@@ -467,7 +467,7 @@ install-pcoq-manpages:
 VALIDOPTS=-silent -o -m
 
 validate:: $(BESTCHICKEN) $(ALLVO)
-	$(SHOW)'COQCHK <theories & contrib>'
+	$(SHOW)'COQCHK <theories & plugins>'
 	$(HIDE)$(BESTCHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
 
 check:: world validate
@@ -476,7 +476,7 @@ check:: world validate
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
 
 ###########################################################################
-# theories and contrib files
+# theories and plugins files
 ###########################################################################
 
 init: $(INITVO)
@@ -512,10 +512,10 @@ noreal: logic arith bool zarith qarith lists sets fsets relations \
 	wellfounded setoids sorting
 
 ###########################################################################
-# contribs (interface not included)
+# plugins (interface not included)
 ###########################################################################
 
-contrib: $(CONTRIBVO)
+plugins: $(PLUGINSVO)
 omega: $(OMEGAVO) $(OMEGACMA) $(ROMEGAVO) $(ROMEGACMA)
 micromega: $(MICROMEGAVO) $(MICROMEGACMA) $(CSDPCERT)
 ring: $(RINGVO) $(RINGCMA)
@@ -531,7 +531,7 @@ subtac: $(SUBTACCMA)
 rtauto: $(RTAUTOVO) $(RTAUTOCMA)
 
 ###########################################################################
-# rules to make theories, contrib and states
+# rules to make theories, plugins and states
 ###########################################################################
 
 states/initial.coq: states/MakeInitial.v $(INITVO) $(VO_TOOLS_STRICT) | states/MakeInitial.v.d $(VO_TOOLS_ORDER_ONLY)
@@ -690,8 +690,8 @@ ifeq ($(BEST),opt)
 endif
 # csdpcert is not meant to be directly called by the user; we install
 # it with libraries
-	-$(MKDIR) -p $(FULLCOQLIB)/contrib/micromega
-	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/contrib/micromega
+	-$(MKDIR) -p $(FULLCOQLIB)/plugins/micromega
+	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/plugins/micromega
 	-$(INSTALLLIB) revision $(FULLCOQLIB)
 
 install-library-light:

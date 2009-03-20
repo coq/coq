@@ -378,7 +378,7 @@ Libobject.relax true;
      begin
        add_rec_path (Filename.concat coqdir "theories")
 	 (Names.make_dirpath [Nameops.coq_root]);
-       add_rec_path (Filename.concat coqdir "contrib")
+       add_rec_path (Filename.concat coqdir "plugins")
 	 (Names.make_dirpath [Nameops.coq_root])
      end;
 (let vernacrc =
@@ -388,7 +388,7 @@ Libobject.relax true;
        Not_found -> 
 	 List.fold_left 
 	   (fun s1 s2 -> (Filename.concat s1 s2))
-	   coqdir [ "contrib"; "interface"; "vernacrc"] in
+	   coqdir [ "plugins"; "interface"; "vernacrc"] in
    try
      (Gramext.warning_verbose := false;
       coqparser_loop (open_in vernacrc))

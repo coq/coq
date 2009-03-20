@@ -113,12 +113,12 @@ let set_rec_include d p =
 let init_load_path () =
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
-  let contrib = coqlib/"contrib" in
+  let plugins = coqlib/"plugins" in
   (* first user-contrib *)
   if Sys.file_exists user_contrib then 
     add_rec_path user_contrib Check.default_root_prefix;
-  (* then contrib *)
-  add_rec_path contrib (Names.make_dirpath [coq_root]);
+  (* then plugins *)
+  add_rec_path plugins (Names.make_dirpath [coq_root]);
   (* then standard library *)
 (*  List.iter 
     (fun (s,alias) ->

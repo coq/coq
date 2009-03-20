@@ -336,21 +336,21 @@ describes their syntax and effects:
   evaluation function of power coefficient) is the original term, or
   returns {\tt InitialRing.NotConstant} if not a constant coefficient
   (i.e. {\ltac} is the inverse function of {\tt Cp\_phi}).
-  See files {\tt contrib/setoid\_ring/ZArithRing.v} and
-  {\tt contrib/setoid\_ring/RealField.v} for examples.
+  See files {\tt plugins/setoid\_ring/ZArithRing.v} and
+  {\tt plugins/setoid\_ring/RealField.v} for examples.
   By default the tactic does not recognize power expressions as ring
   expressions.
 \item[sign {\term}] allows {\tt ring\_simplify} to use a minus operation
   when outputing its normal form, i.e writing $x - y$ instead of $x + (-y)$. 
   The term {\term} is a proof that a given sign function indicates expressions
    that are signed ({\term} has to be a
-  proof of {\tt Ring\_theory.get\_sign}). See  {\tt contrib/setoid\_ring/IntialRing.v} for examples of sign function.
+  proof of {\tt Ring\_theory.get\_sign}). See  {\tt plugins/setoid\_ring/IntialRing.v} for examples of sign function.
 \item[div {\term}] allows  {\tt ring} and {\tt ring\_simplify} to use moniomals
 with coefficient other than 1 in the rewriting. The term {\term} is a proof that a given division function  satisfies the specification of an euclidean
   division function  ({\term} has to be a
   proof of {\tt Ring\_theory.div\_theory}). For example, this function is
   called when trying to rewrite $7x$ by $2x = z$ to tell that $7 = 3 * 2 + 1$.
-   See  {\tt contrib/setoid\_ring/IntialRing.v} for examples of div function.
+   See  {\tt plugins/setoid\_ring/IntialRing.v} for examples of div function.
   
 \end{description}
 
@@ -490,7 +490,7 @@ constants can be proven different from zero automatically.
 The tactic must be loaded by \texttt{Require Import Field}. New field
 structures can be declared to the system with the \texttt{Add Field}
 command (see below). The field of real numbers is defined in module
-\texttt{RealField} (in texttt{contrib/setoid\_ring}). It is exported
+\texttt{RealField} (in texttt{plugins/setoid\_ring}). It is exported
 by module \texttt{Rbase}, so that requiring \texttt{Rbase} or
 \texttt{Reals} is enough to use the field tactics on real
 numbers. Rational numbers in canonical form are also declared as a
@@ -696,7 +696,7 @@ the file
 
 \begin{quotation}
 \begin{verbatim}
-contrib/ring/Ring_theory.v
+plugins/ring/Ring_theory.v
 \end{verbatim}
 \end{quotation}
 

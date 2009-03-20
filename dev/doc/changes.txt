@@ -344,7 +344,7 @@ Proof_type: subproof field in type proof_tree glued with the ref field
 
 Tacmach: no more echo from functions of module Refiner
 
-Files contrib/*/g_*.ml4 take the place of files contrib/*/*.v.
+Files plugins/*/g_*.ml4 take the place of files plugins/*/*.v.
 Files parsing/{vernac,tac}extend.ml{4,i} implements TACTIC EXTEND andd
   VERNAC COMMAND EXTEND macros
 File syntax/PPTactic.v moved to parsing/pptactic.ml

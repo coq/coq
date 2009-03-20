@@ -58,14 +58,14 @@ COQBINARIES:= $(COQMKTOP) $(COQC) \
 endif
 OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
-CSDPCERT:=contrib/micromega/csdpcert$(EXE)
+CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 
 SRCDIRS:=\
   config 	tools 		tools/coqdoc 	scripts		lib \
   kernel	kernel/byterun	library 	proofs 		tactics \
   pretyping	interp		toplevel 	parsing 	ide/utils \
   ide		\
-  $(addprefix contrib/, \
+  $(addprefix plugins/, \
     omega	romega 		micromega 	quote		ring	dp \
     setoid_ring xml 		extraction 	interface 	fourier \
     cc 		funind 		firstorder 	field 		subtac \
@@ -241,44 +241,44 @@ HIGHTACTICS:=$(addprefix tactics/, \
   eauto.cmo 	class_tactics.cmo	 tauto.cmo \
   eqdecide.cmo )
 
-# NB: Dependencies of contribs are now in separate files
-#  contrib/*/*_plugin.mllib
+# NB: Dependencies of plugins are now in separate files
+#  plugins/*/*_plugin.mllib
 # Format of these files are compatible with ocamlbuild,
 # Even if we don't use it (yet ?)
 
-OMEGACMA:=contrib/omega/omega_plugin.cma
-ROMEGACMA:=contrib/romega/romega_plugin.cma
-MICROMEGACMA:=contrib/micromega/micromega_plugin.cma
-QUOTECMA:=contrib/quote/quote_plugin.cma
-RINGCMA:=contrib/ring/ring_plugin.cma
-NEWRINGCMA:=contrib/setoid_ring/newring_plugin.cma
-GBCMA:=contrib/groebner/groebner_plugin.cma
-DPCMA:=contrib/dp/dp_plugin.cma
-FIELDCMA:=contrib/field/field_plugin.cma
-XMLCMA:=contrib/xml/xml_plugin.cma
-FOURIERCMA:=contrib/fourier/fourier_plugin.cma
-EXTRACTIONCMA:=contrib/extraction/extraction_plugin.cma
-FUNINDCMA:=contrib/funind/recdef_plugin.cma
-FOCMA:=contrib/firstorder/ground_plugin.cma
-CCCMA:=contrib/cc/cc_plugin.cma
-SUBTACCMA:=contrib/subtac/subtac_plugin.cma
-RTAUTOCMA:=contrib/rtauto/rtauto_plugin.cma
+OMEGACMA:=plugins/omega/omega_plugin.cma
+ROMEGACMA:=plugins/romega/romega_plugin.cma
+MICROMEGACMA:=plugins/micromega/micromega_plugin.cma
+QUOTECMA:=plugins/quote/quote_plugin.cma
+RINGCMA:=plugins/ring/ring_plugin.cma
+NEWRINGCMA:=plugins/setoid_ring/newring_plugin.cma
+GBCMA:=plugins/groebner/groebner_plugin.cma
+DPCMA:=plugins/dp/dp_plugin.cma
+FIELDCMA:=plugins/field/field_plugin.cma
+XMLCMA:=plugins/xml/xml_plugin.cma
+FOURIERCMA:=plugins/fourier/fourier_plugin.cma
+EXTRACTIONCMA:=plugins/extraction/extraction_plugin.cma
+FUNINDCMA:=plugins/funind/recdef_plugin.cma
+FOCMA:=plugins/firstorder/ground_plugin.cma
+CCCMA:=plugins/cc/cc_plugin.cma
+SUBTACCMA:=plugins/subtac/subtac_plugin.cma
+RTAUTOCMA:=plugins/rtauto/rtauto_plugin.cma
 
-CONTRIBS:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
+PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
         $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(DPCMA) $(FIELDCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
         $(CCCMA)  $(FOCMA) $(SUBTACCMA) $(RTAUTOCMA) \
         $(FUNINDCMA) $(GBCMA)
 
 ifneq ($(HASNATDYNLINK),false)
- CONTRIBSTATIC:=
+ STATICPLUGINS:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
 	$(XMLCMA) $(FUNINDCMA) $(SUBTACCMA)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
- PLUGINS:=$(CONTRIBS)
- PLUGINSOPT:=$(PLUGINS:.cma=.cmxs)
+ PLUGINS:=$(PLUGINSCMA)
+ PLUGINSOPT:=$(PLUGINSCMA:.cma=.cmxs)
 else
- CONTRIBSTATIC:=$(CONTRIBS)
+ STATICPLUGINS:=$(PLUGINSCMA)
  INITPLUGINS:=
  INITPLUGINSOPT:=
  PLUGINS:=
@@ -296,7 +296,7 @@ CMXA:=$(CMA:.cma=.cmxa)
 LINKCMO:=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
-        parsing/highparsing.cma tactics/hightactics.cma $(CONTRIBSTATIC)
+        parsing/highparsing.cma tactics/hightactics.cma $(STATICPLUGINS)
 LINKCMX:=$(patsubst %.cma,%.cmxa,$(patsubst %.cmo,%.cmx,$(LINKCMO)))
 
 # objects known by the toplevel of Coq
@@ -332,17 +332,17 @@ COQCCMX:=$(COQCCMO:.cmo=.cmx)
 
 COQINTERFACE:=bin/coq-interface$(EXE) bin/coq-parser$(EXE)
 
-INTERFACECMA:=contrib/interface/coqinterface_plugin.cma
-PARSERCMA:=contrib/interface/coqparser_plugin.cma
+INTERFACECMA:=plugins/interface/coqinterface_plugin.cma
+PARSERCMA:=plugins/interface/coqparser_plugin.cma
 
 ifeq ($(HASNATDYNLINK),false)
  ifeq ($(BEST),opt)
   COQINTERFACE:=$(COQINTERFACE) bin/coq-interface.opt$(EXE) bin/coq-parser.opt$(EXE)
  endif
- INTERFACERC:= contrib/interface/vernacrc
+ INTERFACERC:= plugins/interface/vernacrc
  PCOQPLUGINS:=
 else
- INTERFACERC:= contrib/interface/vernacrc contrib/interface/CoqParser.v
+ INTERFACERC:= plugins/interface/vernacrc plugins/interface/CoqParser.v
  PCOQPLUGINS:=$(INTERFACECMA) $(PARSERCMA)
 endif
 
@@ -351,7 +351,7 @@ PARSERREQUIRESCMX:=$(LINKCMX) $(PARSERCMA:.cma=.cmxa)
 
 ## Misc
 
-CSDPCERTCMO:=$(addprefix contrib/micromega/, \
+CSDPCERTCMO:=$(addprefix plugins/micromega/, \
   mutils.cmo 	micromega.cmo 	mfourier.cmo 	certificate.cmo \
   sos.cmo 	csdpcert.cmo )
 CSDPCERTCMX:= $(CSDPCERTCMO:.cmo=.cmx)
@@ -687,15 +687,15 @@ THEORIESVO:=\
 
 THEORIESLIGHTVO:= $(INITVO) $(LOGICVO) $(ARITHVO)
 
-## Contribs
+## Plugins
 
-OMEGAVO:=$(addprefix contrib/omega/, \
+OMEGAVO:=$(addprefix plugins/omega/, \
  PreOmega.vo	OmegaLemmas.vo 	OmegaPlugin.vo Omega.vo )
 
-ROMEGAVO:=$(addprefix contrib/romega/, \
+ROMEGAVO:=$(addprefix plugins/romega/, \
  ReflOmegaCore.vo 	ROmega.vo )
 
-MICROMEGAVO:=$(addprefix contrib/micromega/, \
+MICROMEGAVO:=$(addprefix plugins/micromega/, \
   CheckerMaker.vo       Refl.vo \
   Env.vo                RingMicromega.vo \
   EnvRing.vo            VarMap.vo \
@@ -704,10 +704,10 @@ MICROMEGAVO:=$(addprefix contrib/micromega/, \
   QMicromega.vo         RMicromega.vo \
   Tauto.vo )
 
-QUOTEVO:=$(addprefix contrib/quote/, \
+QUOTEVO:=$(addprefix plugins/quote/, \
  Quote.vo )
 
-RINGVO:=$(addprefix contrib/ring/, \
+RINGVO:=$(addprefix plugins/ring/, \
  LegacyArithRing.vo	Ring_normalize.vo \
  LegacyRing_theory.vo	LegacyRing.vo \
  LegacyNArithRing.vo    \
@@ -715,11 +715,11 @@ RINGVO:=$(addprefix contrib/ring/, \
  Setoid_ring_normalize.vo \
  Setoid_ring.vo		Setoid_ring_theory.vo )
 
-FIELDVO:=$(addprefix contrib/field/, \
+FIELDVO:=$(addprefix plugins/field/, \
  LegacyField_Compl.vo   LegacyField_Theory.vo \
  LegacyField_Tactic.vo  LegacyField.vo )
 
-NEWRINGVO:=$(addprefix contrib/setoid_ring/, \
+NEWRINGVO:=$(addprefix plugins/setoid_ring/, \
  BinList.vo   		Ring_theory.vo \
  Ring_polynom.vo	Ring_tac.vo \
  Ring_base.vo 		InitialRing.vo \
@@ -729,48 +729,48 @@ NEWRINGVO:=$(addprefix contrib/setoid_ring/, \
  Field_theory.vo	Field_tac.vo \
  Field.vo		RealField.vo )
 
-GBVO:=$(addprefix contrib/groebner/, \
+GBVO:=$(addprefix plugins/groebner/, \
  GroebnerR.vo		GroebnerZ.vo )
 
 XMLVO:= 
 
-FOURIERVO:=$(addprefix contrib/fourier/, \
+FOURIERVO:=$(addprefix plugins/fourier/, \
  Fourier_util.vo    	Fourier.vo )
 
 FUNINDVO:= 
 
-RECDEFVO:=$(addprefix contrib/funind/, \
+RECDEFVO:=$(addprefix plugins/funind/, \
  Recdef.vo )
 
 CCVO:=
 
-DPVO:=$(addprefix contrib/dp/, \
+DPVO:=$(addprefix plugins/dp/, \
  Dp.vo )
 
-RTAUTOVO:=$(addprefix contrib/rtauto/, \
+RTAUTOVO:=$(addprefix plugins/rtauto/, \
  Bintree.vo	Rtauto.vo )
 
 ifneq ($(HASNATDYNLINK),false)
-INTERFACEVO:=contrib/interface/CoqInterface.vo
+INTERFACEVO:=plugins/interface/CoqInterface.vo
 else
 INTERFACEVO:=
 endif
 
-CONTRIBVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
+PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
 	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
             $(INTERFACEVO) $(GBVO)
 
-ALLVO:= $(INITVO) $(THEORIESVO) $(CONTRIBVO)
+ALLVO:= $(INITVO) $(THEORIESVO) $(PLUGINSVO)
 VFILES:= $(ALLVO:.vo=.v)
 
 # convert a (stdlib) filename into a module name:
-# remove .vo, replace theories and contrib by Coq, and replace slashes by dots
-vo_to_mod = $(subst /,.,$(patsubst theories/%,Coq.%,$(patsubst contrib/%,Coq.%,$(1:.vo=))))
+# remove .vo, replace theories and plugins by Coq, and replace slashes by dots
+vo_to_mod = $(subst /,.,$(patsubst theories/%,Coq.%,$(patsubst plugins/%,Coq.%,$(1:.vo=))))
 
 ALLMODS:=$(call vo_to_mod,$(ALLVO))
 
-LIBFILES:=$(THEORIESVO) $(CONTRIBVO)
+LIBFILES:=$(THEORIESVO) $(PLUGINSVO)
 LIBFILESLIGHT:=$(THEORIESLIGHTVO)
 
 ## Specials
@@ -839,7 +839,7 @@ STAGE2_TARGETS:=$(COQBINARIES) lib kernel byterun library proofs tactics \
   pcoq-binaries $(COQINTERFACE) $(CSDPCERT) coqbinaries pcoq $(TOOLS) tools \
   printers debug initplugins plugins \
   world install coqide coqide-files coq coqlib \
-  coqlight states pcoq-files check init theories theories-light contrib \
+  coqlight states pcoq-files check init theories theories-light \
   $(DOC_TARGETS) $(VO_TARGETS) validate \
   %.vo %.glob states/% install-% %.ml4-preprocessed
 

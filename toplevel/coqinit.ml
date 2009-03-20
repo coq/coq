@@ -97,11 +97,11 @@ let theories_dirs_map = [
 let init_load_path () =
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
-  let dirs = "states" :: ["contrib"] in
+  let dirs = ["states";"plugins"] in
     (* first user-contrib *)
     if Sys.file_exists user_contrib then 
       Mltop.add_rec_path user_contrib Nameops.default_root_prefix;
-    (* then states, contrib and dev *)
+    (* then states, theories and dev *)
     List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
     (* developer specific directory to open *)
     if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
