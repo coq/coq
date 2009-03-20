@@ -910,7 +910,7 @@ endif
 	$(HIDE)$(OCAMLYACC) $<
 
 %_mod.ml: %.mllib
-	sed -e "s/\([^ ]\+\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
+	sed -e "s/\([^ ]\{1,\}\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
 	echo "let _=Mltop.add_known_module\"$(notdir $*)\"" >> $@
 
 %.ml4-preprocessed: %.ml4 | %.ml4.d
