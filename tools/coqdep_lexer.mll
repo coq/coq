@@ -34,15 +34,18 @@
   let mllist = ref ([] : string list)
 
   let field_name s = String.sub s 1 (String.length s - 1)
+
 }
 
 let space = [' ' '\t' '\n' '\r']
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar = 
+let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let coq_ident = ['a'-'z' '_' '0'-'9' 'A'-'Z']+
 let coq_field = '.'['a'-'z' '_' '0'-'9' 'A'-'Z']+
+let caml_up_ident = uppercase identchar*
+let caml_low_ident = lowercase identchar*
 let dot = '.' ( space+ | eof)
 
 rule coq_action = parse
@@ -66,13 +69,14 @@ rule coq_action = parse
       { coq_action lexbuf }
 
 and caml_action = parse
-  | [' ' '\010' '\013' '\009' '\012'] +
+  | space +
       { caml_action lexbuf }
-  | "open" [' ' '\010' '\013' '\009' '\012']*
-        { caml_opened_file lexbuf }
-  | lowercase identchar*
-      { caml_action lexbuf }
-  | uppercase identchar*
+  | "open" space* (caml_up_ident as id)
+        { Use_module (String.uncapitalize id) }
+  | "module" space+ caml_up_ident
+        { caml_action lexbuf }
+  | caml_low_ident { caml_action lexbuf }
+  | caml_up_ident
       { ml_module_name := Lexing.lexeme lexbuf;
         qual_id lexbuf }
   | ['0'-'9']+
@@ -213,16 +217,9 @@ and modules = parse
   | _   { (Declare (List.rev !mllist)) }   
 
 and qual_id = parse
-  | '.' [^ '.' '(' '['] { Use_module (String.uncapitalize !ml_module_name) }
+  | '.' [^ '.' '(' '['] {
+      Use_module (String.uncapitalize !ml_module_name) }
   | eof { raise Fin_fichier }
-  | _ { caml_action lexbuf }
-
-and caml_opened_file = parse
-  | uppercase identchar*
-      { let lex = (Lexing.lexeme lexbuf) in 
-        let str = String.sub lex 0 (String.length lex) in
-        (Use_module (String.uncapitalize str)) }
-  | eof {raise Fin_fichier }
   | _ { caml_action lexbuf }
 
 and mllib_list = parse

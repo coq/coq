@@ -1,0 +1,44 @@
+
+"romega/g_romega.ml4": use_grammar
+"cc/g_congruence.ml4": use_grammar
+"setoid_ring/newring.ml4": use_grammar
+"dp/g_dp.ml4": use_grammar
+"interface/centaur.ml4": use_grammar
+"interface/debug_tac.ml4": use_grammar
+"quote/g_quote.ml4": use_grammar
+"subtac/equations.ml4": use_grammar
+"subtac/g_eterm.ml4": use_grammar
+"subtac/g_subtac.ml4": use_grammar
+"rtauto/g_rtauto.ml4": use_grammar
+"xml/xmlentries.ml4": use_grammar
+"xml/dumptree.ml4": use_grammar
+"firstorder/g_ground.ml4": use_grammar
+"omega/g_omega.ml4": use_grammar
+"micromega/g_micromega.ml4": use_grammar
+"funind/g_indfun.ml4": use_grammar
+"field/field.ml4": use_grammar
+"extraction/g_extraction.ml4": use_grammar
+"ring/g_ring.ml4": use_grammar
+"fourier/g_fourier.ml4": use_grammar
+"groebner/groebner.ml4": use_grammar
+
+
+"cc": include
+"extraction": include
+"firstorder": include
+"funind": include
+"interface": include
+"micromega": include
+"quote": include
+"romega": include
+"setoid_ring": include
+"xml": include
+"dp": include
+"field": include
+"fourier": include
+"groebner": include
+"jprover": include
+"omega": include
+"ring": include
+"rtauto": include
+"subtac": include

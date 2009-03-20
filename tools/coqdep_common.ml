@@ -27,6 +27,8 @@ let option_noglob = ref false
 let option_slash = ref false
 let option_natdynlk = ref true
 
+let norecdir_list = ref ([]:string list)
+
 let suffixe = ref ".vo"
 
 type dir = string option
@@ -98,7 +100,7 @@ let safe_hash_add clq q (k,v) =
 
 let mkknown () =
   let h = (Hashtbl.create 19 : (string, dir) Hashtbl.t) in
-  let add x s = Hashtbl.add h x s
+  let add x s = if Hashtbl.mem h x then () else Hashtbl.add h x s
   and iter f = Hashtbl.iter f h
   and search x =
     try Some (Hashtbl.find h (String.uncapitalize x))
@@ -302,27 +304,32 @@ let mL_dependencies () =
     (fun (name,ext,dirname) ->
        let fullname = file_name name dirname in
        let (dep,dep_opt) = traite_fichier_ML fullname ext in
-       let intf =
-	 if List.mem (name,dirname) !mliAccu then " "^fullname^".cmi" else ""
+       let intf = match search_mli_known name with
+	 | None -> ""
+	 | Some mldir -> " "^(file_name name mldir)^".cmi"
        in
-       printf "%s.cmo: %s%s%s%s\n" fullname fullname ext intf dep;
-       printf "%s.cmx: %s%s%s%s\n" fullname fullname ext intf dep_opt;
-       flush stdout)
+       if dep<>"" || intf<>"" then begin
+	 printf "%s.cmo:%s%s\n" fullname dep intf;
+	 printf "%s.cmx:%s%s\n" fullname dep_opt intf;
+	 flush stdout;
+       end)
     (List.rev !mlAccu);
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
        let (dep,_) = traite_fichier_ML fullname ".mli" in
-       printf "%s.cmi: %s.mli%s\n" fullname fullname dep;
+       if dep<>"" then printf "%s.cmi:%s\n" fullname dep;
        flush stdout)
     (List.rev !mliAccu);
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
        let (dep,dep_opt) = traite_fichier_mllib fullname ".mllib" in
-       printf "%s.cma:%s\n" fullname dep;
-       printf "%s.cmxa %s.cmxs:%s\n" fullname fullname dep_opt;
-       flush stdout)
+       if dep<>"" then begin
+	 printf "%s.cma:%s\n" fullname dep;
+	 printf "%s.cmxa %s.cmxs:%s\n" fullname fullname dep_opt;
+	 flush stdout
+       end)
     (List.rev !mllibAccu)
 
 let coq_dependencies () =
@@ -382,9 +389,13 @@ let rec add_directory recur add_file phys_dir log_dir =
       let f = readdir dirh in
       (* we avoid . .. and all hidden files and subdirs (e.g. .svn, _darcs) *)
       if f.[0] <> '.' && f.[0] <> '_' then
-        let phys_f = phys_dir//f in
+        let phys_f = if phys_dir = "." then f else phys_dir//f in
 	match try (stat phys_f).st_kind with _ -> S_BLK with
-	  | S_DIR when recur -> add_directory recur add_file phys_f (log_dir@[f])
+	  | S_DIR when recur ->
+	      if List.mem phys_f !norecdir_list then ()
+	      else
+		let log_dir' = if log_dir = [] then ["Coq"] else log_dir@[f] in
+		add_directory recur add_file phys_f log_dir'
 	  | S_REG -> add_file phys_dir log_dir f
 	  | _ -> ()
     done

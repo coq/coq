@@ -1,0 +1,4 @@
+coq_fix_code.o
+coq_memory.o
+coq_values.o
+coq_interp.o

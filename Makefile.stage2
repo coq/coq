@@ -11,8 +11,8 @@ include Makefile.doc
 
 -include $(MLLIBFILES:.mllib=.mllib.d)
 .SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)
--include $(MLLIBFILES:%.mllib=%_mod.ml.d)
-.SECONDARY: $(MLLIBFILES:%.mllib=%_mod.ml.d)
+-include $(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml.d))
+.SECONDARY: $(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml.d))
 -include $(ML4FILES:.ml4=.ml4.ml.d)
 .SECONDARY: $(ML4FILES:.ml4=.ml4.ml.d)
 -include $(VFILES:.v=.v.d)

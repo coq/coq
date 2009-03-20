@@ -22,19 +22,24 @@ let rec parse = function
   | "-natdynlink" :: "no" :: ll -> option_natdynlk := false; parse ll
   | "-c" :: ll -> option_c := true; parse ll
   | "-boot" :: ll -> parse ll (* We're already in boot mode by default *)
+   | "-I" :: r :: ll ->
+       (* To solve conflict (e.g. same filename in kernel and checker)
+          we allow to state an explicit order *)
+       add_dir add_known r [];
+       norecdir_list:=r::!norecdir_list;
+       parse ll
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
 
 let coqdep_boot () =
   if Array.length Sys.argv < 2 then exit 1;
   parse (List.tl (Array.to_list Sys.argv));
-  add_rec_dir add_known "theories" ["Coq"];
-  add_rec_dir add_known "plugins" ["Coq"];
-  List.iter (fun (f,d) -> add_mli_known f d) !mliAccu;
-  List.iter (fun (f,d) -> add_mllib_known f d) !mllibAccu;
-  List.iter (fun (f,_,d) -> add_ml_known f d) !mlAccu;
-  warning_mult ".mli" iter_mli_known;
-  warning_mult ".ml" iter_ml_known;
+  if !option_c then
+    add_rec_dir add_known "." []
+  else begin
+    add_rec_dir add_known "theories" ["Coq"];
+    add_rec_dir add_known "plugins" ["Coq"];
+  end;
   if !option_c then mL_dependencies ();
   coq_dependencies ()
 

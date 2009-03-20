@@ -144,107 +144,20 @@ CLIBS:=unix.cma
 
 CAMLP4OBJS:=gramlib.cma
 
-CONFIG:=\
-  config/coq_config.cmo
-
-LIBREP:=$(addprefix lib/, \
-  pp_control.cmo 	pp.cmo 		compat.cmo	flags.cmo \
-  util.cmo 		bigint.cmo 	hashcons.cmo 	dyn.cmo \
-  system.cmo		envars.cmo 	bstack.cmo 	edit.cmo \
-  gset.cmo 		gmap.cmo	tlm.cmo 	gmapl.cmo \
-  profile.cmo 		explore.cmo	predicate.cmo 	rtree.cmo \
-  heap.cmo 		option.cmo 	dnet.cmo )
-# Rem: Cygwin already uses variable LIB 
+CONFIG:=config/coq_config.cmo
 
 BYTERUN:=$(addprefix kernel/byterun/, \
   coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
 
-KERNEL0:=$(addprefix kernel/, \
-  names.cmo 		univ.cmo 	esubst.cmo 	term.cmo \
-  mod_subst.cmo		sign.cmo	cbytecodes.cmo	copcodes.cmo \
-  cemitcodes.cmo	declarations.cmo \
-  retroknowledge.cmo	pre_env.cmo	cbytegen.cmo 	environ.cmo \
-  conv_oracle.cmo	closure.cmo	reduction.cmo \
-  type_errors.cmo	entries.cmo	modops.cmo	inductive.cmo \
-  typeops.cmo 		indtypes.cmo	cooking.cmo \
-  term_typing.cmo	subtyping.cmo	mod_typing.cmo	safe_typing.cmo )
+# LINK ORDER:
+# Beware that highparsing.cma should appear before hightactics.cma
+# respecting this order is useful for developers that want to load or link
+# the libraries directly
 
-KERNEL1:=$(addprefix kernel/, vm.cmo csymtable.cmo vconv.cmo )
-
-KERNEL:=$(KERNEL0) $(KERNEL1)
-
-LIBRARY:=$(addprefix library/, \
-  nameops.cmo		libnames.cmo	libobject.cmo 	summary.cmo \
-  nametab.cmo		global.cmo	lib.cmo		declaremods.cmo	\
-  library.cmo		states.cmo 	decl_kinds.cmo	dischargedhypsmap.cmo \
-  goptions.cmo		decls.cmo	heads.cmo )
-
-PRETYPING:=$(addprefix pretyping/, \
-  termops.cmo		evd.cmo 	reductionops.cmo 	vnorm.cmo \
-  inductiveops.cmo 	retyping.cmo 	cbv.cmo 	pretype_errors.cmo \
-  typing.cmo 		evarutil.cmo 	term_dnet.cmo   recordops.cmo \
-  tacred.cmo		evarconv.cmo 	typeclasses_errors.cmo \
-  typeclasses.cmo	classops.cmo 	coercion.cmo 	unification.cmo \
-  clenv.cmo		rawterm.cmo 	pattern.cmo	detyping.cmo \
-  indrec.cmo		cases.cmo	pretyping.cmo 	matching.cmo )
-
-INTERP:=\
-  parsing/lexer.cmo interp/topconstr.cmo interp/ppextend.cmo \
-  interp/notation.cmo interp/dumpglob.cmo \
-  interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
-  library/impargs.cmo interp/implicit_quantifiers.cmo interp/constrintern.cmo \
-  interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
-  toplevel/discharge.cmo library/declare.cmo
-
-PROOFS:=$(addprefix proofs/, \
-  tacexpr.cmo		proof_type.cmo 	redexpr.cmo 	proof_trees.cmo	\
-  logic.cmo		refiner.cmo 	evar_refiner.cmo tacmach.cmo \
-  pfedit.cmo		tactic_debug.cmo clenvtac.cmo 	decl_mode.cmo )
-
-PARSING:=$(addprefix parsing/, \
-  extend.cmo	pcoq.cmo 	egrammar.cmo 	g_xml.cmo \
-  ppconstr.cmo	printer.cmo	pptactic.cmo 	ppdecl_proof.cmo \
-  tactic_printer.cmo		printmod.cmo	prettyp.cmo )
-
-HIGHPARSING:=$(addprefix parsing/, \
-  g_constr.cmo	g_vernac.cmo	g_prim.cmo	g_proofs.cmo \
-  g_tactic.cmo	g_ltac.cmo	g_natsyntax.cmo g_zsyntax.cmo \
-  g_rsyntax.cmo g_ascii_syntax.cmo 		g_string_syntax.cmo \
-  g_decl_mode.cmo 		g_intsyntax.cmo  )
-
-TACTICS:=\
-  tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-  tactics/nbtermdn.cmo tactics/tacticals.cmo \
-  tactics/hipattern.cmo tactics/tactics.cmo \
-  tactics/evar_tactics.cmo \
-  tactics/hiddentac.cmo tactics/elim.cmo \
-  tactics/dhyp.cmo tactics/auto.cmo \
-  toplevel/ind_tables.cmo tactics/equality.cmo \
-  tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
-  tactics/tacinterp.cmo tactics/autorewrite.cmo \
-  tactics/decl_interp.cmo tactics/decl_proof_instr.cmo
-
-TOPLEVEL:=\
-  toplevel/himsg.cmo toplevel/cerrors.cmo \
-  toplevel/class.cmo toplevel/vernacexpr.cmo toplevel/metasyntax.cmo \
-  toplevel/auto_ind_decl.cmo toplevel/libtypes.cmo toplevel/search.cmo \
-  toplevel/autoinstance.cmo toplevel/command.cmo toplevel/record.cmo \
-  parsing/ppvernac.cmo toplevel/classes.cmo \
-  toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-  toplevel/vernacentries.cmo toplevel/whelp.cmo toplevel/vernac.cmo \
-  toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
-  toplevel/toplevel.cmo toplevel/usage.cmo \
-  toplevel/coqinit.cmo toplevel/coqtop.cmo
-
-HIGHTACTICS:=$(addprefix tactics/, \
-  refine.cmo 	extraargs.cmo 		extratactics.cmo \
-  eauto.cmo 	class_tactics.cmo	 tauto.cmo \
-  eqdecide.cmo )
-
-# NB: Dependencies of plugins are now in separate files
-#  plugins/*/*_plugin.mllib
-# Format of these files are compatible with ocamlbuild,
-# Even if we don't use it (yet ?)
+CORECMA:=lib/lib.cma kernel/kernel.cma library/library.cma \
+        pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
+        parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
+        parsing/highparsing.cma tactics/hightactics.cma
 
 OMEGACMA:=plugins/omega/omega_plugin.cma
 ROMEGACMA:=plugins/romega/romega_plugin.cma
@@ -288,35 +201,17 @@ endif
 CMA:=$(CLIBS) $(CAMLP4OBJS)
 CMXA:=$(CMA:.cma=.cmxa)
 
-# LINK ORDER:
-# Beware that highparsing.cma should appear before hightactics.cma
-# respecting this order is useful for developers that want to load or link
-# the libraries directly
+LINKCMO:=$(CONFIG) $(CORECMA) $(STATICPLUGINS)
+LINKCMX:=$(CONFIG:.cmo=.cmx) $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
-LINKCMO:=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
-        pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
-        parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
-        parsing/highparsing.cma tactics/hightactics.cma $(STATICPLUGINS)
-LINKCMX:=$(patsubst %.cma,%.cmxa,$(patsubst %.cmo,%.cmx,$(LINKCMO)))
+# modules known by the toplevel of Coq
 
-# objects known by the toplevel of Coq
-OBJSCMO:=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
-        $(PROOFS) $(PARSING) $(TACTICS) $(TOPLEVEL) $(HIGHPARSING) \
-        $(HIGHTACTICS)
+OBJSMOD:=Coq_config \
+ $(foreach lib,$(CORECMA),$(shell cat $(lib:.cma=.mllib)))
 
-COQIDECMO:=\
-  $(addprefix ide/utils/, \
-    okey.cmo		config_file.cmo		configwin_keys.cmo \
-    configwin_types.cmo configwin_messages.cmo	configwin_ihm.cmo \
-    configwin.cmo	editable_cells.cmo ) \
-  $(addprefix ide/, \
-    config_parser.cmo	typed_notebook.cmo	config_lexer.cmo \
-    utf8_convert.cmo	preferences.cmo		ideutils.cmo \
-    gtk_parsing.cmo	undo.cmo		highlight.cmo \
-    coq.cmo 		coq_commands.cmo	coq_tactics.cmo \
-    command_windows.cmo coqide.cmo )
+IDEMOD:=$(shell cat ide/ide.mllib)
 
-COQIDECMX:=$(COQIDECMO:.cmo=.cmx)
+# coqmktop, coqc
 
 COQENVCMO:=$(CONFIG) \
   lib/pp_control.cmo lib/pp.cmo  lib/compat.cmo lib/flags.cmo \
@@ -371,52 +266,7 @@ COQDOCCMO:=$(CONFIG) $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo output.cmo pretty.cmo main.cmo )
 COQDOCCMX:=$(COQDOCCMO:.cmo=.cmx)
 
-# checker
-
-MCHECKER:=\
-  $(CONFIG) \
-  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo \
-  lib/flags.cmo lib/util.cmo lib/option.cmo lib/hashcons.cmo \
-  lib/system.cmo lib/envars.cmo \
-  lib/predicate.cmo lib/rtree.cmo \
-  kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
-  checker/validate.cmo \
-  checker/term.cmo \
-  checker/declarations.cmo checker/environ.cmo \
-  checker/closure.cmo checker/reduction.cmo \
-  checker/type_errors.cmo \
-  checker/modops.cmo \
-  checker/inductive.cmo checker/typeops.cmo \
-  checker/indtypes.cmo checker/subtyping.cmo checker/mod_checking.cmo \
-  checker/safe_typing.cmo checker/check.cmo \
-  checker/check_stat.cmo checker/checker.cmo
-
 # grammar modules with camlp4
-
-GRAMMARNEEDEDCMO:=\
-  $(addprefix lib/, \
-    pp_control.cmo pp.cmo compat.cmo flags.cmo util.cmo \
-    bigint.cmo dyn.cmo hashcons.cmo predicate.cmo rtree.cmo option.cmo ) \
-  $(KERNEL0) \
-  $(addprefix library/, \
-    nameops.cmo libnames.cmo summary.cmo nametab.cmo libobject.cmo \
-    lib.cmo goptions.cmo decl_kinds.cmo global.cmo ) \
-  $(addprefix pretyping/, \
-    termops.cmo evd.cmo reductionops.cmo inductiveops.cmo rawterm.cmo \
-    detyping.cmo pattern.cmo ) \
-  interp/topconstr.cmo interp/genarg.cmo interp/ppextend.cmo \
-  proofs/tacexpr.cmo \
-  parsing/lexer.cmo parsing/extend.cmo \
-  toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_util.cmo \
-  parsing/q_coqast.cmo 
-
-CAMLP4EXTENSIONSCMO:=\
-  parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
-
-GRAMMARSCMO:=$(addprefix parsing/, \
-  g_prim.cmo g_tactic.cmo g_ltac.cmo g_constr.cmo )
-
-GRAMMARCMO:=$(CONFIG) $(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
 GRAMMARCMA:=parsing/grammar.cma
 
@@ -427,37 +277,8 @@ GRAMMARML4:=lib/compat.ml4 lib/pp.ml4 parsing/q_util.ml4 parsing/pcoq.ml4 \
   parsing/lexer.ml4 parsing/q_coqast.ml4
 
 STAGE1_ML4:=$(GRAMMARML4) parsing/q_constr.ml4
-STAGE1_CMO:=$(GRAMMARCMO) parsing/q_constr.cmo
 STAGE1:=parsing/grammar.cma parsing/q_constr.cmo
 
-PRINTERSCMO:=\
-  $(CONFIG) lib/lib.cma \
-  $(KERNEL0) \
-  $(addprefix library/, \
-    summary.cmo global.cmo nameops.cmo libnames.cmo nametab.cmo \
-    libobject.cmo lib.cmo goptions.cmo decls.cmo heads.cmo ) \
-  $(addprefix pretyping/, \
-    termops.cmo evd.cmo rawterm.cmo reductionops.cmo inductiveops.cmo \
-    retyping.cmo cbv.cmo pretype_errors.cmo typing.cmo evarutil.cmo \
-    term_dnet.cmo recordops.cmo evarconv.cmo tacred.cmo \
-    classops.cmo typeclasses_errors.cmo typeclasses.cmo \
-    detyping.cmo indrec.cmo coercion.cmo unification.cmo cases.cmo \
-    pretyping.cmo clenv.cmo pattern.cmo ) \
-  parsing/lexer.cmo interp/ppextend.cmo interp/genarg.cmo \
-  interp/topconstr.cmo interp/notation.cmo  interp/dumpglob.cmo interp/reserve.cmo		\
-  library/impargs.cmo interp/constrextern.cmo \
-  interp/syntax_def.cmo interp/implicit_quantifiers.cmo \
-  interp/constrintern.cmo proofs/proof_trees.cmo proofs/tacexpr.cmo \
-  proofs/proof_type.cmo proofs/logic.cmo proofs/refiner.cmo \
-  proofs/evar_refiner.cmo proofs/pfedit.cmo proofs/tactic_debug.cmo \
-  proofs/decl_mode.cmo \
-  parsing/ppconstr.cmo parsing/extend.cmo parsing/pcoq.cmo \
-  parsing/printer.cmo parsing/pptactic.cmo \
-  parsing/ppdecl_proof.cmo \
-  parsing/tactic_printer.cmo \
-  parsing/egrammar.cmo toplevel/himsg.cmo toplevel/cerrors.cmo \
-  toplevel/vernacexpr.cmo toplevel/vernacinterp.cmo \
-  dev/top_printers.cmo
 
 ###########################################################################
 # vo files
@@ -782,21 +603,6 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 
 PCOQMANPAGES:=man/coq-interface.1 man/coq-parser.1
 
-#########################################################
-# .mli files by directory (used for dependencies graphs #
-#########################################################
-
-# We use wildcard to get rid of .cmo that do not have a .mli 
-KERNELMLI:=$(wildcard $(KERNEL:.cmo=.mli))
-INTERPMLI:=$(wildcard $(INTERP:.cmo=.mli))
-PRETYPINGMLI:=$(wildcard $(PRETYPING:.cmo=.mli))
-TOPLEVELMLI:=$(wildcard $(TOPLEVEL:.cmo=.mli))
-PROOFSMLI:=$(wildcard $(PROOFS:.cmo=.mli))
-LIBRARYMLI:=$(wildcard $(LIBRARY:.cmo=.mli))
-PARSINGMLI:=$(wildcard $(PARSING:.cmo=.mli) $(HIGHPARSING:.cmo=.mli))
-TACTICSMLI:=$(wildcard $(TACTICS:.cmo=.mli) $(HIGHTACTICS:.cmo=.mli))
-COQMLI:=$(KERNELMLI) $(INTERPMLI) $(PRETYPINGMLI) $(TOPLEVELMLI) $(PROOFSMLI) \
-   $(LIBRARYMLI) $(PARSINGMLI) $(TACTICSMLI)
 
 ###########################################################################
 # Miscellaneous
@@ -814,7 +620,7 @@ CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
 
 STAGE1_TARGETS:= $(STAGE1) $(COQDEPBOOT) \
   $(filter-out parsing/q_constr.cmo,$(STAGE1_CMO)) \
-  $(STAGE1_CMO:.cmo=.cmi) $(STAGE1_CMO:.cmo=.cmx) $(GENFILES) \
+  $(GENFILES) \
   source-doc revision toplevel/mltop.byteml toplevel/mltop.optml \
   $(STAGE1_ML4:.ml4=.ml4-preprocessed) %.o
 

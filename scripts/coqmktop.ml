@@ -28,7 +28,7 @@ let split_list l = Str.split spaces l
 let copts     = split_list Tolink.copts
 let core_objs = split_list Tolink.core_objs
 let core_libs = split_list Tolink.core_libs
-let ide       = split_list Tolink.ide 
+let ide       = split_list Tolink.ide
 
 (* 3. Toplevel objects *)
 let camlp4topobjs =
@@ -89,25 +89,21 @@ let files_to_link userfiles =
     if not !opt || Coq_config.has_natdynlink then dynobjs else [] in
   let toplevel_objs =
     if !top then topobjs else if !opt then notopobjs else [] in
-  let ide_objs = if !coqide then 
-    "threads.cma"::"lablgtk.cma"::"gtkThread.cmo"::ide 
-  else [] 
+  let ide_objs =
+    if !coqide then "Threads"::"Lablgtk"::"GtkThread"::ide else []
   in
-  let ide_libs = if !coqide then 
-    ["threads.cma" ; "lablgtk.cma" ; "gtkThread.cmo" ;
-     "ide/ide.cma" ]
-  else [] 
+  let ide_libs =
+    if !coqide then
+      ["threads.cma" ; "lablgtk.cma" ; "gtkThread.cmo" ; "ide/ide.cma" ]
+    else []
   in
-  let objs = dyn_objs @ libobjs @ core_objs @ toplevel_objs @ ide_objs
-  and libs = dyn_objs @ libobjs @ core_libs @ toplevel_objs @ ide_libs in
-  let objstolink,libstolink =
-    if !opt then 
-      ((List.map native_suffix objs) @ userfiles,
-       (List.map native_suffix libs) @ userfiles)
-    else 
-      (objs @ userfiles, libs @ userfiles )
+  let objs = dyn_objs @ libobjs @ core_objs @ toplevel_objs @ ide_objs in
+  let modules = List.map module_of_file (objs @ userfiles)
   in
-  let modules = List.map module_of_file objstolink in
+  let libs = dyn_objs @ libobjs @ core_libs @ toplevel_objs @ ide_libs in
+  let libstolink =
+    (if !opt then List.map native_suffix libs else libs) @ userfiles
+  in
   (modules, libstolink)
 
 (* Gives the list of all the directories under [dir].

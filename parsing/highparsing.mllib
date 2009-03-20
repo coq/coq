@@ -1,0 +1,13 @@
+G_constr
+G_vernac
+G_prim
+G_proofs
+G_tactic
+G_ltac
+G_natsyntax
+G_zsyntax
+G_rsyntax
+G_ascii_syntax
+G_string_syntax
+G_decl_mode
+G_intsyntax

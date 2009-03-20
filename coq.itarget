@@ -1,0 +1,5 @@
+bin/.foo
+scripts/coqmktop.byte
+scripts/coqmktop.native
+bin/coqtop.opt
+bin/coqtop.byte

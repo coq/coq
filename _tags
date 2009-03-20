@@ -1,0 +1,59 @@
+
+## tags for binaries
+
+<scripts/coqmktop.{native,byte}> : use_str, use_unix, use_gramlib
+
+## tags for camlp4 files 
+
+<**/*.ml4>: is_ml4
+
+"toplevel/mltop.ml4": is_mltop, use_macro
+
+"lib/compat.ml4": use_macro
+"parsing/g_xml.ml4": use_extend
+"parsing/q_constr.ml4": use_extend, use_MLast
+"parsing/argextend.ml4": use_extend, use_MLast
+"parsing/tacextend.ml4": use_extend, use_MLast
+"parsing/g_prim.ml4": use_extend
+"parsing/g_ltac.ml4": use_extend
+"parsing/pcoq.ml4": use_extend, use_macro
+"parsing/q_util.ml4": use_MLast
+"parsing/vernacextend.ml4": use_extend, use_MLast
+"parsing/g_constr.ml4": use_extend
+"parsing/g_tactic.ml4": use_extend
+"parsing/g_proofs.ml4": use_extend
+"parsing/q_coqast.ml4": use_MLast, use_macro
+
+"toplevel/whelp.ml4": use_grammar
+"parsing/g_vernac.ml4": use_grammar, use_extend
+"parsing/g_decl_mode.ml4": use_grammar, use_extend, use_MLast
+"tactics/extraargs.ml4": use_grammar
+"tactics/extratactics.ml4": use_grammar
+"tactics/class_tactics.ml4": use_grammar
+"tactics/eauto.ml4": use_grammar
+"tactics/tauto.ml4": use_grammar
+"tactics/eqdecide.ml4": use_grammar
+"tactics/hipattern.ml4": use_grammar, use_constr
+
+
+## sub-directory inclusion
+
+"config": include
+"parsing": include
+"ide": include
+"interp": include
+"kernel": include
+"kernel/byterun": include
+"lib": include
+"library": include
+"parsing": include
+"plugins": include
+"pretyping": include
+"proofs": include
+"scripts": include
+"states": include
+"tactics": include
+"theories": include
+"tools": include
+"toplevel": include
+

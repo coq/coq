@@ -211,8 +211,8 @@ scripts/tolink.ml: Makefile.build Makefile.common
 	$(SHOW)"ECHO... >" $@
 	$(HIDE)echo "let copts = \"-cclib -lcoqrun\"" > $@
 	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" >> $@
-	$(HIDE)echo "let core_objs = \""$(OBJSCMO)"\"" >> $@
-	$(HIDE)echo "let ide = \""$(COQIDECMO)"\"" >> $@
+	$(HIDE)echo "let core_objs = \""$(OBJSMOD)"\"" >> $@
+	$(HIDE)echo "let ide = \""$(IDEMOD)"\"" >> $@
 
 # coqc
 
@@ -228,79 +228,23 @@ $(COQCOPT): $(COQCCMX) $(COQTOPOPT) $(BESTCOQTOP)
 $(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC)
 	cd bin; ln -sf coqc.$(BEST)$(EXE) coqc$(EXE)
 
-# we provide targets for each subdirectory
-
-lib: $(LIBREP)
-kernel: $(KERNEL)
-byterun: $(BYTERUN)
-library: $(LIBRARY)
-proofs: $(PROOFS)
-tactics: $(TACTICS)
-interp: $(INTERP)
-parsing: $(PARSING)
-pretyping: $(PRETYPING)
-highparsing: $(HIGHPARSING)
-toplevel: $(TOPLEVEL)
-hightactics: $(HIGHTACTICS)
-
 # target for libraries
 
-lib/lib.cma: $(LIBREP)
-lib/lib.cmxa: $(LIBREP:.cmo=.cmx)
-
-kernel/kernel.cma: $(KERNEL)
-kernel/kernel.cmxa: $(KERNEL:.cmo=.cmx)
-
-library/library.cma: $(LIBRARY)
-library/library.cmxa: $(LIBRARY:.cmo=.cmx)
-
-pretyping/pretyping.cma: $(PRETYPING)
-pretyping/pretyping.cmxa: $(PRETYPING:.cmo=.cmx)
-
-interp/interp.cma: $(INTERP)
-interp/interp.cmxa: $(INTERP:.cmo=.cmx)
-
-parsing/parsing.cma: $(PARSING)
-parsing/parsing.cmxa: $(PARSING:.cmo=.cmx)
-
-proofs/proofs.cma: $(PROOFS)
-proofs/proofs.cmxa: $(PROOFS:.cmo=.cmx)
-
-tactics/tactics.cma: $(TACTICS)
-tactics/tactics.cmxa: $(TACTICS:.cmo=.cmx)
-
-toplevel/toplevel.cma: $(TOPLEVEL)
-toplevel/toplevel.cmxa: $(TOPLEVEL:.cmo=.cmx)
-
-parsing/highparsing.cma: $(HIGHPARSING)
-parsing/highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
-
-tactics/hightactics.cma: $(HIGHTACTICS)
-tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx)
-
-plugins/%.cma: | plugins/%.mllib.d
+%.cma: | %.mllib.d
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $^
 
-plugins/%.cmxa: | plugins/%.mllib.d
-	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $^
-
-%.cma:
-	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $^
-
-%.cmxa:
+%.cmxa: | %.mllib.d
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $^
 
 # For the checker, different flags may be used
 
-checker/check.cma: $(MCHECKER)
+checker/check.cma: | checker/check.mllib.d
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -a -o $@ $^
 
-checker/check.cmxa: $(MCHECKER:.cmo=.cmx)
+checker/check.cmxa: | checker/check.mllib.d
 	$(SHOW)'OCAMLOPT -a -o $@'
 	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -a -o $@ $^
 
@@ -361,10 +305,6 @@ ide/%.cmi: ide/%.mli | ide/%.mli.d
 ide/%.cmx: ide/%.ml | ide/%.ml.d
 	$(SHOW)'OCAMLOPT  $<'	
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
-
-ide/ide.cma: $(COQIDECMO)
-
-ide/ide.cmxa: $(COQIDECMO:.cmo=.cmx)
 
 # install targets
 
@@ -475,8 +415,25 @@ check:: world validate
 	env COQBIN=../bin COQLIB=.. ./check -$(BEST) | tee check.log
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
 
+##################################################################
+# partial targets: 1) core ML parts
+##################################################################
+
+lib: lib/lib.cma
+kernel: kernel/kernel.cma
+byterun: $(BYTERUN)
+library: library/library.cma
+proofs: proofs/proofs.cma
+tactics: tactics/tactics.cma
+interp: interp/interp.cma
+parsing: parsing/parsing.cma
+pretyping: pretyping/pretyping.cma
+highparsing: parsing/highparsing.cma
+toplevel: toplevel/toplevel.cma
+hightactics: tactics/hightactics.cma
+
 ###########################################################################
-# theories and plugins files
+# 2) theories and plugins files
 ###########################################################################
 
 init: $(INITVO)
@@ -512,7 +469,7 @@ noreal: logic arith bool zarith qarith lists sets fsets relations \
 	wellfounded setoids sorting
 
 ###########################################################################
-# plugins (interface not included)
+# 3) plugins (interface not included)
 ###########################################################################
 
 plugins: $(PLUGINSVO)
@@ -683,7 +640,9 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG) $(LINKCMO) $(GRAMMARCMA)
-	$(INSTALLSH)  $(FULLCOQLIB) $(OBJSCMO:.cmo=.cmi)
+	# reconstitute the list of core .cmi
+	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmi) \
+          `cat $(CORECMA:.cma=.mllib.d) | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.cmi/p"`
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a)
@@ -737,20 +696,20 @@ source-doc:
 ### Special rules
 ###########################################################################
 
-dev/printers.cma: $(PRINTERSCMO)
+dev/printers.cma: | dev/printers.mllib.d
 	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) gramlib.cma $(PRINTERSCMO) -o test-printer
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma gramlib.cma $^ -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) unix.cma $^ -linkall -a -o $@
 
-parsing/grammar.cma: $(GRAMMARCMO)
+parsing/grammar.cma: | parsing/grammar.mllib.d
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(GRAMMARCMO) -impl" -impl test.ml4 -o test-grammar
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $^ -impl" -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
@@ -909,9 +868,12 @@ endif
 	$(SHOW)'OCAMLYACC $<'
 	$(HIDE)$(OCAMLYACC) $<
 
-%_mod.ml: %.mllib
-	sed -e "s/\([^ ]\{1,\}\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
-	echo "let _=Mltop.add_known_module\"$(notdir $*)\"" >> $@
+plugins/%_mod.ml: plugins/%.mllib
+	$(SHOW)'ECHO... > $@'
+	$(HIDE)sed -e "s/\([^ ]\{1,\}\)/let _=Mltop.add_known_module\"\1\" /g" $< > $@
+	$(HIDE)echo "let _=Mltop.add_known_module\"$(notdir $*)\"" >> $@
+
+.SECONDARY: $(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
 
 %.ml4-preprocessed: %.ml4 | %.ml4.d
 	$(SHOW)'CAMLP4O   $<'
@@ -970,12 +932,15 @@ checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'OCAMLDEP  $<'
 	$(HIDE)$(OCAMLDEP) $(DEPFLAGS) "$<" | sed '' > "$@"
 
+checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
+	$(SHOW)'COQDEP  $<'
+	$(HIDE)$(COQDEPBOOT) -slash -boot -I checker -c "$<" > "$@" \
+	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
+
 %.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP  $<'
-	$(HIDE)$(COQDEPBOOT) -slash -boot -c "$<" > "$@" \
+	$(HIDE)$(COQDEPBOOT) -slash -boot -I kernel -I tools/coqdoc -c "$<" > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
-	echo "$*".cma: "$*"_mod.cmo >> "$@"
-	echo "$*".cmxa "$*".cmxs: "$*"_mod.cmx >> "$@"
 
 ## Veerry nasty hack to keep ocamldep happy
 %.ml: | %.ml4
@@ -1005,42 +970,26 @@ devel: $(DEBUGPRINTERS)
 ###########################################################################
 
 
-%.dot: %.mli
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $< 
-
 %.types.dot: %.mli
 	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $< 
 
 %.dep.ps: %.dot
 	$(DOT) $(DOTOPTS) -o $@ $<
 
-kernel/kernel.dot: $(KERNEL)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(KERNEL:.cmo=.ml)) 
+OCAMLDOC_MLLIBD = $(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
+  `cat $| | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.ml/p"`
 
-interp/interp.dot: $(INTERP)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(INTERP:.cmo=.ml)) 
+%.dot: | %.mllib.d
+	$(OCAMLDOC_MLLIBD)
 
-pretyping/pretyping.dot: $(PRETYPING)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(PRETYPING:.cmo=.ml)) 
+parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
+	$(OCAMLDOC_MLLIBD)
 
-library/library.dot: $(LIBRARY)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(LIBRARY:.cmo=.ml))
+tactics/tactics.dot: | tactics/tactics.mllib.d tactics/hightactics.mllib.d
+	$(OCAMLDOC_MLLIBD)
 
-parsing/parsing.dot: $(PARSING) $(HIGHPARSING)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(PARSING:.cmo=.ml)) $(wildcard $(HIGHPARSING:.cmo=.ml)) 
-
-tactics/tactics.dot: $(TACTICS) $(HIGHTACTICS)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(TACTICS:.cmo=.ml)) $(wildcard $(HIGHTACTICS:.cmo=.ml))
-
-proofs/proofs.dot: $(PROOFS)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(PROOFS:.cmo=.ml))
-
-toplevel/toplevel.dot: $(TOPLEVEL)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(TOPLEVEL:.cmo=.ml))
-
-COQCMO:=$(LIBREP) $(KERNEL) $(INTERP) $(PRETYPING) $(LIBRARY) $(PARSING) $(HIGHPARSING) $(TACTICS) $(HIGHTACTICS) $(PROOFS) $(TOPLEVEL)
-coq.dot: $(COQCMO)
-	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $(wildcard $(COQCMO:.cmo=.ml))
+%.dot: %.mli
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $< 
 
 
 # For emacs: 
