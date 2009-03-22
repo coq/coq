@@ -65,6 +65,7 @@ let usage () =
   prerr_endline "  --charset <string>   set HTML charset";
   prerr_endline "  --inputenc <string>  set LaTeX input encoding";
   prerr_endline "  --interpolate        try to typeset identifiers in comments using definitions in the same module";
+  prerr_endline "  --parse-comments     parse regular comments";
   prerr_endline "";
   exit 1
 
@@ -273,6 +274,8 @@ let parse () =
 	usage ()
     | ("-raw-comments" | "--raw-comments") :: rem ->
 	Cdglobals.raw_comments := true; parse_rec rem
+    | ("-parse-comments" | "--parse-comments") :: rem ->
+	Cdglobals.parse_comments := true; parse_rec rem
     | ("-interpolate" | "--interpolate") :: rem ->
 	Cdglobals.interpolate := true; parse_rec rem
 

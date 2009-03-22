@@ -28,6 +28,9 @@ val start_module : unit -> unit
 val start_doc : unit -> unit
 val end_doc : unit -> unit
 
+val start_comment : unit -> unit
+val end_comment : unit -> unit
+
 val start_coq : unit -> unit
 val end_coq : unit -> unit
 
