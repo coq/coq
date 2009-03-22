@@ -542,7 +542,9 @@ let intern_induction_arg ist = function
   | ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	ElimOnConstr (intern_constr ist (CRef (Ident (dloc,id))),NoBindings)
+	match intern_constr ist (CRef (Ident (dloc,id))) with
+	| RVar (loc,id),_ -> ElimOnIdent (loc,id)
+	| c -> ElimOnConstr (c,NoBindings)
       else
 	ElimOnIdent (loc,id)
 
@@ -1722,10 +1724,20 @@ let interp_induction_arg ist gl = function
   | ElimOnConstr c -> ElimOnConstr (interp_constr_with_bindings ist gl c)
   | ElimOnAnonHyp n as x -> x
   | ElimOnIdent (loc,id) ->
-      if Tactics.is_quantified_hypothesis id gl then ElimOnIdent (loc,id)
-      else ElimOnConstr
-	(pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))),
-	 NoBindings)
+      try
+	match List.assoc id ist.lfun with
+	| VInteger n -> ElimOnAnonHyp n
+	| VIntroPattern (IntroIdentifier id) -> ElimOnIdent (loc,id)
+	| VConstr c -> ElimOnConstr (c,NoBindings)
+	| _ -> user_err_loc (loc,"",
+	      strbrk "Cannot coerce " ++ pr_id id ++
+	      strbrk " neither to a quantified hypothesis nor to a term.")
+      with Not_found ->
+	(* Interactive mode *)
+	if Tactics.is_quantified_hypothesis id gl then ElimOnIdent (loc,id)
+	else ElimOnConstr
+	  (pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))),
+	  NoBindings)
 
 let mk_constr_value ist gl c = VConstr (pf_interp_constr ist gl c)
 let mk_hyp_value ist gl c = VConstr (mkVar (interp_hyp ist gl c))

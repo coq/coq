@@ -50,8 +50,6 @@ plugins/interface
   at Nijmegen, 2007-2008)
 plugins/omega
   developed by Pierre Crégut (France Telecom R&D, 1996)
-plugins/recdef
-  developed by Yves Bertot (INRIA-Marelle, 2005-2006)
 plugins/ring
   developed by Samuel Boutin (INRIA-Coq, 1996) and Patrick 
   Loiseleur (LRI, 1997-1999)
@@ -80,16 +78,21 @@ theories/ZArith
   started by Pierre Crégut (France Telecom R&D, 1996)
 theories/IntMap
   developed by Jean Goubault-Larrecq (Dyade, 1998)
+theories/Numbers/Cyclic
+  developed by Benjamin Grégoire (INRIA-Everest, 2007), Laurent Théry
+  (INRIA-Marelle, 2007-2008), Arnaud Spiwack (INRIA-LogiCal, 2007) and
+  Pierre Letouzey (PPS-Paris 7, 2008)
 theories/Strings
   developed by Laurent Théry (INRIA-Lemme, 2003)
 ide/utils
   some files come from Maxence Guesdon's Cameleon tool 
 
-Many discussions within the Démons team at LRI and the LogiCal project
-influenced significantly the design of Coq especially with
+Many discussions within the Démons team at LRI, and the
+LogiCal/TypiCal projects influenced significantly the design of
+components of Coq, especially with
 
-  J. Courant, P. Courtieu, J. Duprat, J. Goubault,
-  A. Miquel, C. Marché, B. Monate, B. Werner.
+  F. Blanqui, J. Courant, P. Courtieu, J. Duprat, S. Glondu, J. Goubault,
+  A. Mahboubi, C. Marché, A. Miquel, B. Monate, P.-Y. Strub, B. Werner.
 
 Intensive users suggested improvements of the system : 
 
@@ -135,9 +138,11 @@ of the Coq Proof assistant during the indicated time :
                             LRI, 1997-now)
   Clément Renard (INRIA, 2001-2004)
   Claudio Sacerdoti Coen (INRIA, 2004-2005)
+  Amokrane Saïbi (INRIA, 1993-1998)
+  Vincent Siles (INRIA, 2007)
+  Élie Soubiran (INRIA, 2007-now)
   Matthieu Sozeau (INRIA, 2005-now)
   Arnaud Spiwack (INRIA, 2006-now)
-  Amokrane Saïbi (INRIA, 1993-1998)
   Benjamin Werner (INRIA, 1989-1994)
 
 ***************************************************************************

@@ -822,8 +822,8 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 		  prlist_with_sep pr_coma
 		  (fun (id,c) -> 
 		     pr_id id ++ str ":=" ++ Printer.pr_lconstr c)
-		  (List.rev vars @ unboundvars)
-	      else mt()) ++ str ")") ++
+		  (List.rev vars @ unboundvars) ++ str ")"
+	      else mt())) ++
       (if n=2 then str " (repeated twice)"
        else if n>2 then str " (repeated "++int n++str" times)"
        else mt()) in

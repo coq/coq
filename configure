@@ -7,8 +7,8 @@
 ##################################
 
 VERSION=trunk
-VOMAGIC=08193 
-STATEMAGIC=19764
+VOMAGIC=08211
+STATEMAGIC=58211
 DATE=`LANG=C date +"%B %Y"`
 
 # Create the bin/ directory if non-existent
