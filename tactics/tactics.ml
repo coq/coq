@@ -2535,7 +2535,7 @@ let find_elim_signature isrec elim hyp0 gl =
 	  if isrec then lookup_eliminator mind s
 	  else
 	    let case = 
-	      if occur_term (mkVar hyp0) (pf_concl gl) then make_case_dep
+	      if dependent_no_evar (mkVar hyp0) (pf_concl gl) then make_case_dep
 	      else make_case_gen in
 	    pf_apply case gl mind s in
 	let elimt = pf_type_of gl elimc in

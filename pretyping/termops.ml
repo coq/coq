@@ -502,12 +502,6 @@ let occur_var_in_decl env hyp (_,c,typ) =
         occur_var env hyp typ ||
         occur_var env hyp body
 
-(* Tests that t is a subterm of c *)
-let occur_term t c = 
-  let eq_constr_fail c = if eq_constr t c then raise Occur
-  in let rec occur_rec c = eq_constr_fail c; iter_constr occur_rec c
-  in try occur_rec c; false with Occur -> true
-
 (* returns the list of free debruijn indices in a term *)
 
 let free_rels m = 
@@ -528,10 +522,10 @@ let collect_metas c =
   in
   List.rev (collrec [] c)
 
-(* (dependent M N) is true iff M is eq_term with a subterm of N 
-   M is appropriately lifted through abstractions of N *)
+(* Tests whether [m] is a subterm of [t]:
+   [m] is appropriately lifted through abstractions of [t] *)
 
-let dependent m t =
+let dependent_main noevar m t =
   let rec deprec m t =
     if eq_constr m t then
       raise Occur
@@ -542,9 +536,17 @@ let dependent m t =
 	    Array.iter (deprec m)
 	      (Array.sub lt 
 		(Array.length lm) ((Array.length lt) - (Array.length lm)))
+	| _, Cast (c,_,_) when noevar & isMeta c -> ()
+	| _, Evar _ when noevar -> ()
 	| _ -> iter_constr_with_binders (lift 1) deprec m t
   in 
   try deprec m t; false with Occur -> true
+
+let dependent = dependent_main false
+let dependent_no_evar = dependent_main true
+
+(* Synonymous *)
+let occur_term = dependent
 
 let pop t = lift (-1) t
 

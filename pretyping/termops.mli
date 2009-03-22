@@ -106,10 +106,12 @@ val occur_var : env -> identifier -> types -> bool
 val occur_var_in_decl :
   env ->
   identifier -> 'a * types option * types -> bool
-val occur_term : constr -> constr -> bool
 val free_rels : constr -> Intset.t
 val dependent : constr -> constr -> bool
+val dependent_no_evar : constr -> constr -> bool
 val collect_metas : constr -> int list
+val occur_term : constr -> constr -> bool (* Synonymous
+ of dependent *)
 (* Substitution of metavariables *)
 type meta_value_map = (metavariable * constr) list 
 val subst_meta : meta_value_map -> constr -> constr
