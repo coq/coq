@@ -72,15 +72,16 @@ let test_lpar_id_colon =
 let check_for_coloneq =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
-      let rec skip_to_rpar n =
+      let rec skip_to_rpar p n =
 	match list_last (Stream.npeek n strm) with
-        | ("",")") -> n+1
+        | ("","(") -> skip_to_rpar (p+1) (n+1)
+        | ("",")") -> if p=0 then n+1 else skip_to_rpar (p-1) (n+1)
 	| ("",".") -> raise Stream.Failure
-	| _ -> skip_to_rpar (n+1) in
+	| _ -> skip_to_rpar p (n+1) in
       let rec skip_names n =
 	match list_last (Stream.npeek n strm) with
         | ("IDENT",_) | ("","_") -> skip_names (n+1)
-	| ("",":") -> skip_to_rpar (n+1) (* skip a constr *)
+	| ("",":") -> skip_to_rpar 0 (n+1) (* skip a constr *)
 	| _ -> raise Stream.Failure in
       let rec skip_binders n =
 	match list_last (Stream.npeek n strm) with

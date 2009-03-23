@@ -11,7 +11,7 @@ Tactics
   incompatibilities solvable by redefining "intuition" as 
   "unfold iff in *; intuition".
 - Improved support of dependent goals over objects in dependent types for
-  "destruct".
+  "destruct" (rare source of incompatibility).
 
 Vernacular commands
 
