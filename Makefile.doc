@@ -125,7 +125,7 @@ doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	$(INSTALLLIB) $(REFMANPNGFILES) doc/refman/html
 	(cd doc/refman/html; hacha -nolinks -tocbis -o toc.html ../styles.hva ../Reference-Manual.html)
 	$(INSTALLLIB) doc/refman/cover.html doc/refman/html/index.html
-	$(INSTALLLIB) doc/common/styles/html/$(HTMLSTYLE)/*.css doc/refman/html
+	-$(INSTALLLIB) doc/common/styles/html/$(HTMLSTYLE)/*.css doc/refman/html
 
 refman-quick:
 	(cd doc/refman;\
@@ -184,40 +184,32 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 ### Standard library (browsable html format)
 
 ifeq ($(QUICK),1)
-doc/stdlib/index-body.html:
-	- rm -rf doc/stdlib/html
-	$(MKDIR) doc/stdlib/html
-	$(COQDOC) -q -d doc/stdlib/html --multi-index --html -g \
-	  -R theories Coq $(THEORIESVO:.vo=.v)
-	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
+doc/stdlib/html/genindex.html:
 else
-doc/stdlib/index-body.html: | $(COQDOC) $(THEORIESVO)
+doc/stdlib/html/genindex.html: | $(COQDOC) $(THEORIESVO)
+endif
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
-	$(COQDOC) -q -d doc/stdlib/html --multi-index --html -g \
+	$(COQDOC) -q -d doc/stdlib/html --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
 	  -R theories Coq $(THEORIESVO:.vo=.v)
-	mv doc/stdlib/html/index.html doc/stdlib/index-body.html
-endif
+	mv doc/stdlib/html/index.html doc/stdlib/html/genindex.html
 
 doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
 	./doc/stdlib/make-library-index doc/stdlib/index-list.html
 
-doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.html doc/stdlib/index-trailer.html
-	cat doc/stdlib/index-list.html > $@
-	sed -n -e '/<table>/,/<\/table>/p' doc/stdlib/index-body.html >> $@
-	cat doc/stdlib/index-trailer.html >> $@
+doc/stdlib/html/index.html: doc/stdlib/html/genindex.html doc/stdlib/index-list.html
+	cat doc/common/styles/html/$(HTMLSTYLE)/header.html doc/stdlib/index-list.html > $@
+	cat doc/common/styles/html/$(HTMLSTYLE)/footer.html >> $@
 
 ### Standard library (light version, full version is definitely too big)
 
 ifeq ($(QUICK),1)
 doc/stdlib/Library.coqdoc.tex:
-	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
-            -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
 else
 doc/stdlib/Library.coqdoc.tex: | $(COQDOC) $(THEORIESLIGHTVO)
+endif
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout \
             -R theories Coq $(THEORIESLIGHTVO:.vo=.v) >> $@
-endif
 
 doc/stdlib/Library.dvi: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Library.tex
 	(cd doc/stdlib;\
