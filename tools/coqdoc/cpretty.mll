@@ -675,8 +675,10 @@ and comments = parse
 (*s Skip comments *)
 
 and comment = parse
-  | "(*" { incr comment_level; comment lexbuf }
-  | "*)" space* nl { 
+  | "(*" { incr comment_level;
+	   if !Cdglobals.parse_comments then Output.start_comment ();
+	   comment lexbuf }
+  | "*)" space* nl {
       if !Cdglobals.parse_comments then
 	(Output.end_comment (); Output.line_break ());
       decr comment_level; if !comment_level > 0 then comment lexbuf else true }
@@ -692,7 +694,7 @@ and comment = parse
       
 and skip_to_dot = parse
   | '.' space* nl { true }
-  | eof | '.' space+ { false}
+  | eof | '.' space+ { false }
   | "(*" { comment_level := 1; ignore (comment lexbuf); skip_to_dot lexbuf }
   | _ { skip_to_dot lexbuf }
 
@@ -712,7 +714,6 @@ and body = parse
   | "(*" { comment_level := 1; 
 	   if !Cdglobals.parse_comments then Output.start_comment ();
 	   let eol = comment lexbuf in 
-	     if !Cdglobals.parse_comments then Output.end_comment ();
 	     if eol 
 	     then begin Output.line_break(); body_bol lexbuf end
 	     else body lexbuf }
