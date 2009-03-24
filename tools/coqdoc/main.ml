@@ -383,7 +383,7 @@ let copy src dst =
 let gen_one_file l =
   let file = function
     | Vernac_file (f,m) -> 
-	Output.set_module m; Pretty.coq_file f m
+	Output.set_module m; Cpretty.coq_file f m
     | Latex_file _ -> ()
   in
     if (!header_trailer) then Output.header ();
@@ -399,7 +399,7 @@ let gen_mult_files l =
 	let hf = target_full_name m in
 	  open_out_file hf;
 	  if (!header_trailer) then Output.header (); 
-	  Pretty.coq_file f m; 
+	  Cpretty.coq_file f m; 
 	  if (!header_trailer) then Output.trailer ();
 	  close_out_file()
     | Latex_file _ -> ()

@@ -263,7 +263,7 @@ GALLINACMO:=tools/gallina_lexer.cmo tools/gallina.cmo
 GALLINACMX:=$(GALLINACMO:.cmo=.cmx)
 
 COQDOCCMO:=$(CONFIG) $(addprefix tools/coqdoc/, \
-  cdglobals.cmo alpha.cmo index.cmo output.cmo pretty.cmo main.cmo )
+  cdglobals.cmo alpha.cmo index.cmo output.cmo cpretty.cmo main.cmo )
 COQDOCCMX:=$(COQDOCCMO:.cmo=.cmx)
 
 # grammar modules with camlp4
