@@ -87,7 +87,7 @@ COQTEX:=bin/coq-tex$(EXE)
 COQWC:=bin/coqwc$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
 
-TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC)
+TOOLS:=$(COQDEP) $(COQDEPBOOT) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC)
 
 ###########################################################################
 # Documentation
@@ -619,7 +619,6 @@ CAML_OBJECT_PATTERNS:=%.cmo %.cmx %.cmi %.cma %.cmxa %.cmxs %.dep.ps %.dot
 ## Enumeration of targets that require being done at stage1
 
 STAGE1_TARGETS:= $(STAGE1) $(COQDEPBOOT) \
-  $(filter-out parsing/q_constr.cmo,$(STAGE1_CMO)) \
   $(GENFILES) \
   source-doc revision toplevel/mltop.byteml toplevel/mltop.optml \
   $(STAGE1_ML4:.ml4=.ml4-preprocessed) %.o

@@ -1,5 +1,11 @@
-bin/.foo
-scripts/coqmktop.byte
-scripts/coqmktop.native
-bin/coqtop.opt
-bin/coqtop.byte
+bin/coqmktop
+bin/coqtop
+bin/coqc
+bin/coqdep
+bin/coqwc
+bin/coq-tex
+bin/coq_makefile
+bin/gallina
+bin/coqdoc
+# for the moment: 
+bin/coqdep_boot

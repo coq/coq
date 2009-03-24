@@ -2,6 +2,12 @@
 ## tags for binaries
 
 <scripts/coqmktop.{native,byte}> : use_str, use_unix, use_gramlib
+<scripts/coqc.{native,byte}> : use_unix, use_gramlib
+<tools/coqdep_boot.{native,byte}> : use_unix
+<tools/coqdep.{native,byte}> : use_unix, use_gramlib
+<tools/coq_tex.{native,byte}> : use_str
+<tools/coq_makefile.{native,byte}> : use_str
+<tools/coqdoc/main.{native,byte}> : use_str
 
 ## tags for camlp4 files 
 
@@ -55,5 +61,6 @@
 "tactics": include
 "theories": include
 "tools": include
+"tools/coqdoc": include
 "toplevel": include
 
