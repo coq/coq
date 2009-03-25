@@ -509,7 +509,7 @@ theories/Numbers/Natural/BigN/NMake.v: theories/Numbers/Natural/BigN/NMake_gen.m
 
 printers: $(DEBUGPRINTERS)
 
-tools:: $(TOOLS) $(DEBUGPRINTERS)
+tools:: $(TOOLS) $(DEBUGPRINTERS) $(COQDEPBOOT)
 
 # coqdep_boot : a basic version of coqdep, with almost no dependencies
 

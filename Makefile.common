@@ -87,7 +87,7 @@ COQTEX:=bin/coq-tex$(EXE)
 COQWC:=bin/coqwc$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
 
-TOOLS:=$(COQDEP) $(COQDEPBOOT) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC)
+TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC)
 
 ###########################################################################
 # Documentation
