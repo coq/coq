@@ -5,28 +5,28 @@ open Ocamlbuild_pack
 open Printf
 open Scanf
 
-(** WARNING !! this is preliminary stuff, able only to build
-    coqtop.opt and coqtop.byte, and only in a precise environment
-    (ocaml 3.11 with natdynlink)
+(** WARNING !! this is preliminary stuff. It should allows you to
+    build coq and its libraries if everything goes right.
+    Support for all the build rules and configuration options
+    is progressively added. Tested only on linux + ocaml 3.11 +
+    natdynlink for now.
 
-    Support for other rules and other configurations will be
-    added later...
+    Usage: 
+     ./configure -local -opt
+     manual addition of /_build to coqlib and coqsrc in config/coq_config.ml
+     ./build   (which launches ocamlbuild coq.otarget)
 
-    Usage: ./build   (which launches ocamlbuild coq.itarget)
-
-    Then you can (hopefully) launch coq (with no input state) via:
+    Then you can (hopefully) launch coq via:
     
-    bin/coqtop.opt -nois -coqlib .
+    _build/bin/coqtop.opt
 
     or
 
     export CAML_LD_LIBRARY_PATH=_build/kernel/byterun 
-    bin/coqtop.byte -nois -coqlib .
+    _build/bin/coqtop.byte -nois
 
-    Apart from binaries in bin/, every created files are in _build.
+    Every created files are in _build.
     A "./build clean" should give you back a clean source tree
- 
-    TODO: understand how to create the right symlinks towards _build ...
 
 *)
 
@@ -78,6 +78,7 @@ let _ = Options.ocamlopt := A(get_env "OCAMLOPT")
 let _ = Options.ocamlyacc := A(get_env "OCAMLYACC")
 let _ = Options.ocamllex := A(get_env "OCAMLLEX")
 
+let ocaml = A(get_env "OCAML")
 let camlp4o = A(get_env "CAMLP4O")
 let camlp4incl = S[A"-I"; A(get_env "MYCAMLP4LIB")]
 let camlp4compat = Sh(get_env "CAMLP4COMPAT")
@@ -93,6 +94,7 @@ let lablgtkincl = Sh(get_env "COQIDEINCLUDES")
 let readable_genml = false
 let readable_flag = if readable_genml then A"pr_o.cmo" else N
 
+let _build = Options.build_dir
 
 
 (** Abbreviations about files *)
@@ -145,8 +147,12 @@ let initialcoq = "states/initial.coq"
 let init_vo = ["theories/Init/Prelude.vo";"theories/Init/Logic_Type.vo"]
 let makeinitial = "states/MakeInitial.v"
 
+let nmake = "theories/Numbers/Natural/BigN/NMake.v"
+let nmakegen = "theories/Numbers/Natural/BigN/NMake_gen.ml"
 
-(** A few common rules *)
+let genvfiles = [nmake]
+
+(** A few common functions *)
 
 let copy_rule src dst =
   rule (src^"_"^dst) ~dep:src ~prod:dst (fun _ _ -> cp src dst)
@@ -162,17 +168,26 @@ let copy_bin_best src dst = copy_rule (src^best_oext) dst
 
 let incl f = Ocaml_utils.ocaml_include_flags f
 
-
-
 (** The real game ... *)
 
 let _ = dispatch begin function
  | After_rules ->  (* Add our rules after the standard ones. *)
 
-(** The _build/bin directory isn't done by default *)
+(** We "pre-create" a few subdirs in _build to please coqtop *)
 
-     if not (Sys.file_exists "_build/bin") then
-       Command.execute ~quiet:true (ln_s "../bin" "_build");
+     Shell.mkdir_p (!_build^"/bin");
+     Shell.mkdir_p (!_build^"/dev");
+
+(** Moreover, we "pre-import" in _build the sources file that will be needed
+    by coqdep_boot *)
+
+     (*TODO: do something nicer than this call to find (maybe with Slurp) *)
+
+     let exclude = "-name _\\$* -or -name .\\* -prune -or" in
+     Command.execute ~quiet:true (Cmd (Sh
+       ("for i in `find theories plugins "^exclude^" -print`; do "^
+	"[ -f $i -a ! -f _build/$i ] && mkdir -p _build/`dirname $i` && cp $i _build/$i; "^
+	"done; true")));
 
 (** Camlp4 extensions *)
 
@@ -301,44 +316,40 @@ let _ = dispatch begin function
 
 (** Coq files dependencies *)
 
-     rule ".v.depends" ~prod:"%.v.depends" ~deps:["%.v";coqdep_boot]
+     rule ".v.d" ~prod:"%.v.depends" ~deps:(["%.v";coqdep_boot]@genvfiles)
        (fun env _ ->
 	  let v = env "%.v" and vd = env "%.v.depends" in
-	  (** All .v files are not necessarily present yet in _build
-	      (could we do something cleaner ?) *)
-	  Cmd (S [Sh "cd .. && ";
-		  P coqdep_boot;dep_dynlink;A"-slash";P v;Sh">";
-		  P ("_build/"^vd)]));
+	  (** NB: this relies on all .v files being already in _build. *)
+	  Cmd (S [P coqdep_boot;dep_dynlink;A"-slash";P v;Sh">";P vd]));
 
 (** Coq files compilation *)
 
-     let check_dep_coq vd v vo vg build =
-       (** NB: this rely on coqdep producing a single Makefile rule
-	   for one .v file *)
-       match string_list_of_file vd with
-	 | vo'::vg'::v'::deps when vo'=vo && vg'=vg^":" && v'=v ->
-	     let d = List.map (fun a -> [a]) deps in
+     let coq_build_dep f build =
+       (** NB: this relies on coqdep producing a single Makefile line
+	   for one .v file, with some specific shape : *)
+       match string_list_of_file (f^".v.depends") with
+	 | vo::vg::v::deps when vo=f^".vo" && vg=f^".glob:" && v=f^".v" ->
+	     let d = List.map (fun x -> [x]) deps in
 	     List.iter Outcome.ignore_good (build d)
-	 | _ -> failwith ("Something wrong with dependencies of "^v)
+	 | _ -> failwith ("Something wrong with dependencies of "^f^".v")
      in
 
-     let coq_v_rule d boot =
-       rule (d^"/.v.vo") ~prods:[d^"%.vo";d^"%.glob"]
-	 ~deps:([d^"%.v";d^"%.v.depends"]@(if boot then [] else [initialcoq]))
+     let coq_v_rule d init =
+       let bootflag = if init then A"-nois" else N in
+       let gendeps = if init then [coqtop] else [coqtop;initialcoq] in
+       rule (d^".v.vo")
+	 ~prods:[d^"%.vo";d^"%.glob"] ~deps:([d^"%.v";d^"%.v.depends"]@gendeps)
 	 (fun env build ->
-	    let v = env (d^"%") and vd = env (d^"%.v.depends") and
-		vo = env (d^"%.vo") and vg = env (d^"%.glob") in
-	    check_dep_coq vd (v^".v") vo vg build;
-	    let bootflag = if boot then S [A"-boot";A"-nois"] else N in
-	    Cmd (S [P coqtop;Sh "-coqlib .";bootflag; A"-compile";P v]))
+	    let f = env (d^"%") in
+	    coq_build_dep f build;
+	    Cmd (S [P coqtop;A"-boot";bootflag;A"-compile";P f]))
      in
      coq_v_rule "theories/Init/" true;
      coq_v_rule "" false;
 
      rule "initial.coq" ~prod:initialcoq ~deps:(makeinitial :: init_vo)
        (fun _ _ ->
-	  Cmd (S [P coqtop;Sh "-coqlib .";
-		  A"-batch";A"-nois";A"-notop";A"-silent";
+	  Cmd (S [P coqtop;A"-boot";A"-batch";A"-nois";A"-notop";A"-silent";
 		  A"-l";P makeinitial; A"-outputstate";P initialcoq]));
 
 (** Generation of _plugin_mod.ml files *)
@@ -357,15 +368,32 @@ let _ = dispatch begin function
 	  Cmd (S [!Options.ocamlopt;A"-linkall";A"-shared";
 		  A"-o";P (env "%.cmxs"); P (env "%.cmxa")]));
 
+(** Generation of NMake.v from NMake_gen.ml *)
+
+     rule "NMake" ~prod:nmake ~dep:nmakegen
+       (fun _ _ -> Cmd (S [ocaml;P nmakegen;Sh ">";P nmake]));
+
  | _ -> ()
 
 end
 
-(** TODO: 
-    * pourquoi certains binaires de bin/ se retrouvent parfois
-       avec une taille a zero ?
-    * les binaires n'ont pas l'air d'etre refait si on touche un fichier
-       (p.ex. coqdep_boot.ml)
-    * on repasse tout en revue sans arret, et c'est long (meme cached)...
+(** TODO / Remarques:
+
+    * L'idée initiale de partager bin/ et _build/bin/ a coup de symlink
+      etait une anerie : ocamlbuild prenait bin/foo comme _source_
+      et le copiait dans _build/bin/ (par dessus foo), ce qui donnait un
+      foo vide.
+
+    ==> Pour l'instant, les binaires sont dans _build/bin uniquement.
+    Une solution serait d'avoir deux repertoires de noms differents:
+    bin/ et _build/binaries/ par exemple.
+
+    * On repasse tout en revue sans arret, et c'est long, meme cached:
+      1 min 25 pour les 2662 targets en cache. 
+      Peut-on mieux faire ?
+
+    * coqdep a besoin dans _build des fichiers dont on depend,
+      mais ils n'y sont pas forcement, d'ou un gros cp au debut.
+      Y-a-t'il mieux à faire ?
 
 *)
