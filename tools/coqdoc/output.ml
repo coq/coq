@@ -292,7 +292,7 @@ module Latex = struct
 
   let ident s l = 
     if !in_title then (
-      printf "\\texorpdfstring{";
+      printf "\\texorpdfstring{\\protect";
       with_latex_printing (fun s -> ident s l) s;
       printf "}{"; raw_ident s; printf "}")
     else
