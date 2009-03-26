@@ -366,12 +366,12 @@ else
 
 bin/coq-interface$(EXE):
 	echo "#!/bin/sh" > $@
-	echo "exec coqtop -require CoqInterface" >> $@
+	echo 'exec '$(BINDIR)'/coqtop -require CoqInterface' >> $@
 	chmod +x $@
 
 bin/coq-parser$(EXE):
 	echo "#!/bin/sh" > $@
-	echo "exec coqtop -batch -l CoqParser" >> $@
+	echo 'exec '$(BINDIR)'/coqtop -batch -l CoqParser' >> $@
 	chmod +x $@
 
 endif # of HASNATDYNLINK
