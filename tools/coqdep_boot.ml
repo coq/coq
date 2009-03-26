@@ -22,7 +22,7 @@ let rec parse = function
   | "-natdynlink" :: "no" :: ll -> option_natdynlk := false; parse ll
   | "-c" :: ll -> option_c := true; parse ll
   | "-boot" :: ll -> parse ll (* We're already in boot mode by default *)
-   | "-I" :: r :: ll ->
+  | "-I" :: r :: ll ->
        (* To solve conflict (e.g. same filename in kernel and checker)
           we allow to state an explicit order *)
        add_dir add_known r [];
