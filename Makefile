@@ -202,7 +202,7 @@ indepclean:
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 	rm -f test-suite/check.log
 	rm -f glob.dump
-	rm -f config/revision.ml
+	rm -f config/revision.ml revision
 
 docclean:
 	rm -f doc/*/*.dvi doc/*/*.aux doc/*/*.log doc/*/*.bbl doc/*/*.blg doc/*/*.toc \
@@ -222,7 +222,7 @@ docclean:
 	rm -f doc/coq.tex
 
 archclean: clean-ide cleantheories
-	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN)
+	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN) $(COQDEPBOOT)
 	rm -f $(COQTOPOPT) $(COQMKTOPOPT) $(COQCOPT) $(CHICKENOPT)
 	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
 	find . -name '*.cmx' -or -name '*.cmxs' -or -name '*.cmxa' -or -name '*.[soa]' -or -name '*.so' | xargs rm -f
