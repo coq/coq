@@ -1,11 +1,12 @@
 bin/coqmktop
 bin/coqtop
+bin/coqide
 bin/coqc
+bin/coqchk
 bin/coqdep
 bin/coqwc
 bin/coq-tex
 bin/coq_makefile
 bin/gallina
 bin/coqdoc
-# for the moment: 
-bin/coqdep_boot
+states/initial.coq

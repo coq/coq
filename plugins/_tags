@@ -6,9 +6,9 @@
 "interface/centaur.ml4": use_grammar
 "interface/debug_tac.ml4": use_grammar
 "quote/g_quote.ml4": use_grammar
-"subtac/equations.ml4": use_grammar
+"subtac/equations.ml4": use_grammar, use_extend
 "subtac/g_eterm.ml4": use_grammar
-"subtac/g_subtac.ml4": use_grammar
+"subtac/g_subtac.ml4": use_grammar, use_extend
 "rtauto/g_rtauto.ml4": use_grammar
 "xml/xmlentries.ml4": use_grammar
 "xml/dumptree.ml4": use_grammar

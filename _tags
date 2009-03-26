@@ -8,6 +8,11 @@
 <tools/coq_tex.{native,byte}> : use_str
 <tools/coq_makefile.{native,byte}> : use_str
 <tools/coqdoc/main.{native,byte}> : use_str
+<checker/main.{native,byte}> : use_str, use_unix, use_gramlib
+
+## tags for ide
+
+<ide/**/*.{ml,mli}>: thread, ide
 
 ## tags for camlp4 files 
 
@@ -44,9 +49,12 @@
 
 ## sub-directory inclusion
 
+# Note: "checker" is deliberately not included
+
 "config": include
 "parsing": include
 "ide": include
+"ide/utils": include
 "interp": include
 "kernel": include
 "kernel/byterun": include
@@ -63,4 +71,3 @@
 "tools": include
 "tools/coqdoc": include
 "toplevel": include
-
