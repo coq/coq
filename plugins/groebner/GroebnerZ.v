@@ -12,16 +12,18 @@ Require Export GroebnerR.
 Open Scope Z_scope.
 
 Lemma groebnerZhypR: forall x y:Z, x=y -> IZR x = IZR y.
-Admitted.
+Proof IZR_eq. (* or f_equal ... *)
 
 Lemma groebnerZconclR: forall x y:Z, IZR x = IZR y -> x = y.
-Admitted.
+Proof eq_IZR.
 
 Lemma groebnerZhypnotR: forall x y:Z, x<>y -> IZR x <> IZR y.
-Admitted.
+Proof IZR_neq.
 
 Lemma groebnerZconclnotR: forall x y:Z, IZR x <> IZR y -> x <> y.
-Admitted.
+Proof.
+intros x y H. contradict H. f_equal. assumption.
+Qed.
 
 Ltac groebnerZversR1 :=
  repeat 
@@ -35,13 +37,23 @@ Ltac groebnerZversR1 :=
    end).
 
 Lemma groebnerZR1: forall x y:Z, IZR(x+y) = (IZR x + IZR y)%R.
-Admitted.
+Proof plus_IZR.
+
 Lemma groebnerZR2: forall x y:Z, IZR(x*y) = (IZR x * IZR y)%R.
-Admitted.
+Proof mult_IZR.
+
 Lemma groebnerZR3: forall x y:Z, IZR(x-y) = (IZR x - IZR y)%R.
-Admitted.
+Proof.
+intros; symmetry. apply Z_R_minus.
+Qed.
+
 Lemma groebnerZR4: forall (x:Z) p, IZR(x ^ Zpos p) = (IZR x ^ nat_of_P p)%R.
-Admitted.
+Proof.
+intros. rewrite pow_IZR.
+do 2 f_equal.
+apply Zpos_eq_Z_of_nat_o_nat_of_P.
+Qed.
+
 Ltac groebnerZversR2:=
   repeat
    (rewrite groebnerZR1 in * ||
