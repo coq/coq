@@ -22,6 +22,29 @@ let option_D = ref false
 let option_w = ref false
 let option_sort = ref false
 
+let rec warning_mult suf iter =
+  let tab = Hashtbl.create 151 in
+  let check f d =
+    begin try
+      let d' = Hashtbl.find tab f in
+      if (Filename.dirname (file_name f d))
+        <> (Filename.dirname (file_name f d')) then begin
+	  eprintf "*** Warning : the file %s is defined twice!\n" (f ^ suf);
+	  flush stderr
+	end
+    with Not_found -> () end;
+    Hashtbl.add tab f d
+  in
+  iter check
+
+let add_coqlib_known phys_dir log_dir f =
+  match get_extension f [".vo"] with
+    | (basename,".vo") ->
+	let name = log_dir@[basename] in
+	Hashtbl.add coqlibKnown [basename] ();
+	Hashtbl.add coqlibKnown name ()
+    | _ -> ()
+
 let sort () = 
   let seen = Hashtbl.create 97 in
   let rec loop file =

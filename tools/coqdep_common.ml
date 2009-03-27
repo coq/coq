@@ -37,12 +37,6 @@ type dir = string option
 let (//) s1 s2 =
   if !option_slash then s1^"/"^s2 else Filename.concat s1 s2
 
-let (/) = Filename.concat
-
-let file_concat l =
-  if l=[] then "<empty>" else
-    List.fold_left (//) (List.hd l) (List.tl l)
-
 (** [get_extension f l] checks whether [f] has one of the extensions
     listed in [l]. It returns [f] without its extension, alongside with
     the extension. When no extension match, [(f,"")] is returned *)
@@ -223,11 +217,6 @@ let traite_fichier_mllib md ext =
     (!a_faire, !a_faire_opt)
   with Sys_error _ -> ("","")
 
-let cut_prefix p s =
-  let lp = String.length p in
-  let ls = String.length s in
-  if ls >= lp && String.sub s 0 lp = p then String.sub s lp (ls - lp) else s
-
 let canonize f =
   let f' = absolute_dir (Filename.dirname f) // Filename.basename f in
   match List.filter (fun (_,full) -> f' = full) !vAccu with
@@ -341,30 +330,6 @@ let coq_dependencies () =
        printf "\n";
        flush stdout)
     (List.rev !vAccu)
-
-let rec warning_mult suf iter =
-  let tab = Hashtbl.create 151 in
-  let check f d =
-    begin try
-      let d' = Hashtbl.find tab f in
-      if (Filename.dirname (file_name f d))
-        <> (Filename.dirname (file_name f d')) then begin
-	  eprintf "*** Warning : the file %s is defined twice!\n" (f ^ suf);
-	  flush stderr
-	end
-    with Not_found -> () end;
-    Hashtbl.add tab f d
-  in
-  iter check
-
-let add_coqlib_known phys_dir log_dir f =
-  match get_extension f [".vo"] with
-    | (basename,".vo") ->
-	let name = log_dir@[basename] in
-	Hashtbl.add coqlibKnown [basename] ();
-	Hashtbl.add coqlibKnown name ()
-    | _ -> ()
-
 
 let add_known phys_dir log_dir f =
   match get_extension f [".v";".ml";".mli";".ml4";".mllib"] with
