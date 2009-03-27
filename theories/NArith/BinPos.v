@@ -10,6 +10,8 @@
 
 Unset Boxed Definitions.
 
+Declare ML Module "z_syntax_plugin".
+
 (**********************************************************************)
 (** Binary positive numbers *)
 

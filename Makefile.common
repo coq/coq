@@ -69,7 +69,7 @@ SRCDIRS:=\
     omega	romega 		micromega 	quote		ring	dp \
     setoid_ring xml 		extraction 	interface 	fourier \
     cc 		funind 		firstorder 	field 		subtac \
-    rtauto 	groebner )
+    rtauto 	groebner        syntax)
 
 # Order is relevent here because kernel and checker contain files
 # with the same name
@@ -176,17 +176,24 @@ FOCMA:=plugins/firstorder/ground_plugin.cma
 CCCMA:=plugins/cc/cc_plugin.cma
 SUBTACCMA:=plugins/subtac/subtac_plugin.cma
 RTAUTOCMA:=plugins/rtauto/rtauto_plugin.cma
+NATSYNTAXCMA:=plugins/syntax/nat_syntax_plugin.cma
+OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
+        z_syntax_plugin.cma \
+        numbers_syntax_plugin.cma \
+        r_syntax_plugin.cma \
+	ascii_syntax_plugin.cma \
+        string_syntax_plugin.cma )
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) \
         $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(DPCMA) $(FIELDCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
         $(CCCMA)  $(FOCMA) $(SUBTACCMA) $(RTAUTOCMA) \
-        $(FUNINDCMA) $(GBCMA)
+        $(FUNINDCMA) $(GBCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
 
 ifneq ($(HASNATDYNLINK),false)
  STATICPLUGINS:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
-	$(XMLCMA) $(FUNINDCMA) $(SUBTACCMA)
+	$(XMLCMA) $(FUNINDCMA) $(SUBTACCMA) $(NATSYNTAXCMA)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
  PLUGINS:=$(PLUGINSCMA)
  PLUGINSOPT:=$(PLUGINSCMA:.cma=.cmxs)

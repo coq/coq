@@ -12,6 +12,7 @@
 (**          Definitions for the axiomatization          *)
 (*********************************************************)
 
+Declare ML Module "r_syntax_plugin".
 Require Export ZArith_base.
 
 Parameter R : Set.

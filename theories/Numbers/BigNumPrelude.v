@@ -21,6 +21,8 @@ Require Export ZArith.
 Require Export Znumtheory.
 Require Export Zpow_facts.
 
+Declare ML Module "numbers_syntax_plugin".
+
 (* *** Nota Bene ***
    All results that were general enough has been moved in ZArith.
    Only remain here specialized lemmas and compatibility elements.

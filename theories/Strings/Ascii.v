@@ -13,6 +13,7 @@
 
 Require Import Bool.
 Require Import BinPos.
+Declare ML Module "ascii_syntax_plugin".
 
 (** * Definition of ascii characters *)
 

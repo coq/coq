@@ -14,7 +14,7 @@ open Names
 open Pcoq
 open Libnames
 open Topconstr
-open G_ascii_syntax
+open Ascii_syntax
 open Rawterm
 open Coqlib
 

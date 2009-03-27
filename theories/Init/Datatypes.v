@@ -12,6 +12,8 @@ Set Implicit Arguments.
 
 Require Import Notations.
 Require Import Logic.
+Declare ML Module "nat_syntax_plugin".
+
 
 (** [unit] is a singleton datatype with sole inhabitant [tt] *)
 

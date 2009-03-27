@@ -205,7 +205,7 @@ let bigN_of_pos_bigint dloc n =
   let result h word = RApp (dloc, ref_constructor h, if less_than h n_inlined then
 				                       [word]
 			                             else
-				                      [G_natsyntax.nat_of_int dloc (sub h n_inlined);
+				                      [Nat_syntax.nat_of_int dloc (sub h n_inlined);
 						       word])
   in
   let hght = height n in
