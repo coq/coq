@@ -30,7 +30,7 @@
    similar to the one of [FSetAVL], but richer.
 *)
 
-Require Import Recdef FSetInterface FSetList ZArith Int FSetAVL.
+Require Import Recdef FSetInterface FSetList ZArith Int FSetAVL ROmega.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -41,6 +41,8 @@ Import Raw.Proofs.
 Module Import II := MoreInt I.
 Open Local Scope pair_scope.
 Open Local Scope Int_scope.
+
+Ltac omega_max := i2z_refl; romega with Z.
 
 (** * AVL trees *)
 

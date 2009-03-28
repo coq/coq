@@ -22,7 +22,6 @@
 *)
 
 Require Import ZArith. 
-Require Import ROmega. 
 Delimit Scope Int_scope with I.
 
 
@@ -135,23 +134,23 @@ Module MoreInt (I:Int).
     | |- (eq (A:=int) ?a ?b) => apply (i2z_eq a b); i2z_gen
     | H : (eq (A:=int) ?a ?b) |- _ => 
        generalize (f_equal i2z H); clear H; i2z_gen
-    | H : (eq (A:=Z) ?a ?b) |- _ => generalize H; clear H; i2z_gen
-    | H : (Zlt ?a ?b) |- _ => generalize H; clear H; i2z_gen
-    | H : (Zle ?a ?b) |- _ => generalize H; clear H; i2z_gen
-    | H : (Zgt ?a ?b) |- _ => generalize H; clear H; i2z_gen
-    | H : (Zge ?a ?b) |- _ => generalize H; clear H; i2z_gen
+    | H : (eq (A:=Z) ?a ?b) |- _ => revert H; i2z_gen
+    | H : (Zlt ?a ?b) |- _ => revert H; i2z_gen
+    | H : (Zle ?a ?b) |- _ => revert H; i2z_gen
+    | H : (Zgt ?a ?b) |- _ => revert H; i2z_gen
+    | H : (Zge ?a ?b) |- _ => revert H; i2z_gen
     | H : _ -> ?X |- _ => 
       (* A [Set] or [Type] part cannot be dealt with easily
          using the [ExprP] datatype. So we forget it, leaving 
          a goal that can be weaker than the original. *)
       match type of X with 
        | Type => clear H; i2z_gen
-       | Prop => generalize H; clear H; i2z_gen
+       | Prop => revert H; i2z_gen
       end
-    | H : _ <-> _ |- _ => generalize H; clear H; i2z_gen
-    | H : _ /\ _ |- _ => generalize H; clear H; i2z_gen
-    | H : _ \/ _ |- _ => generalize H; clear H; i2z_gen
-    | H : ~ _ |- _ => generalize H; clear H; i2z_gen
+    | H : _ <-> _ |- _ => revert H; i2z_gen
+    | H : _ /\ _ |- _ => revert H; i2z_gen
+    | H : _ \/ _ |- _ => revert H; i2z_gen
+    | H : ~ _ |- _ => revert H; i2z_gen
     | _ => idtac
    end.
 
@@ -358,8 +357,6 @@ Module MoreInt (I:Int).
 
   (* i2z_refl can be replaced below by (simpl in *; i2z). 
      The reflexive version improves compilation of AVL files by about 15%  *)
-  
-  Ltac omega_max := i2z_refl; romega with Z.
 
 End MoreInt.
 

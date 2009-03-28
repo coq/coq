@@ -28,7 +28,7 @@
 
 *)
 
-Require Import Recdef FMapInterface FMapList ZArith Int FMapAVL.
+Require Import Recdef FMapInterface FMapList ZArith Int FMapAVL ROmega.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -39,6 +39,8 @@ Module Import II:=MoreInt(I).
 Import Raw.Proofs.
 Open Local Scope pair_scope.
 Open Local Scope Int_scope.
+
+Ltac omega_max := i2z_refl; romega with Z.
 
 Section Elt.
 Variable elt : Type.
