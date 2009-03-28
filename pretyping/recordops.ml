@@ -65,8 +65,11 @@ let subst_structure (_,subst,((kn,i),id,kl,projs as obj)) =
     if projs' == projs && kn' == kn && id' == id then obj else
       ((kn',i),id',kl,projs')
 
+let discharge_constructor (ind, n) = 
+  (Lib.discharge_inductive ind, n)
+
 let discharge_structure (_,(ind,id,kl,projs)) =
-  Some (Lib.discharge_inductive ind, id, kl,
+  Some (Lib.discharge_inductive ind, discharge_constructor id, kl,
         List.map (Option.map Lib.discharge_con) projs)
 
 let (inStruc,outStruc) =
