@@ -2768,6 +2768,7 @@ let bad_tactic_args s =
 
 (* Declaration of the TAC-DEFINITION object *)
 let add (kn,td) = mactab := Gmap.add kn td !mactab
+let replace (kn,td) = mactab := Gmap.add kn td (Gmap.remove kn !mactab)
 
 type tacdef_kind = | NewTac of identifier
 		   | UpdateTac of ltac_constant
@@ -2782,9 +2783,7 @@ let load_md i ((sp,kn),defs) =
 	  let kn = Names.make_kn mp dir (label_of_id id) in
 	    Nametab.push_tactic (Until i) sp kn;
 	    add (kn,t)
-      | UpdateTac kn ->
-	  mactab := Gmap.remove kn !mactab;
-	  add (kn,t)) defs
+      | UpdateTac kn -> replace (kn,t)) defs
     
 let open_md i((sp,kn),defs) =
   let dp,_ = repr_path sp in
@@ -2795,10 +2794,7 @@ let open_md i((sp,kn),defs) =
 	  let sp = Libnames.make_path dp id in
 	  let kn = Names.make_kn mp dir (label_of_id id) in
 	    Nametab.push_tactic (Exactly i) sp kn
-      | UpdateTac kn -> 
-	  let (path, id) = decode_kn kn in
-	  let sp = Libnames.make_path path id in
-	  Nametab.push_tactic (Exactly i) sp kn) defs
+      | UpdateTac kn -> ()) defs
 
 let cache_md x = load_md 1 x
 
