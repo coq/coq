@@ -692,9 +692,6 @@ Definition eval := Zeval_formula.
 
 Definition prod_pos_nat := prod positive nat.
 
-Require Import Int.
-
-
 Definition n_of_Z (z:Z) : BinNat.N :=
   match z with
     | Z0 => N0
