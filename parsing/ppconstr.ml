@@ -406,8 +406,9 @@ let pr_fixdecl pr prd dangling_with_for ((_,id),(n,ro),bl,t,c) =
 	  else mt() 
       | CWfRec c ->
 	  spc () ++ str "{wf " ++ pr lsimple c ++ pr_id (snd (Option.get n)) ++ str"}"
-      | CMeasureRec c ->
-	  spc () ++ str "{measure " ++ pr lsimple c ++ pr_id (snd (Option.get n)) ++ str"}"
+      | CMeasureRec (m,r) ->
+	  spc () ++ str "{measure " ++ pr lsimple m ++ pr_id (snd (Option.get n)) ++ 
+	    (match r with None -> mt() | Some r -> str" on " ++ pr lsimple r) ++ str"}"
   in
     pr_recursive_decl pr prd dangling_with_for id bl annot t c
 

@@ -375,7 +375,7 @@ let rec subst_aconstr subst bound raw =
 
   | APatVar _ | ASort _ -> raw
 
-  | AHole (Evd.ImplicitArg (ref,i)) ->
+  | AHole (Evd.ImplicitArg (ref,i,b)) ->
       let ref',t = subst_global subst ref in 
 	if ref' == ref then raw else
 	  AHole (Evd.InternalHole)
@@ -683,7 +683,7 @@ and cofixpoint_expr =
 and recursion_order_expr = 
   | CStructRec
   | CWfRec of constr_expr
-  | CMeasureRec of constr_expr
+  | CMeasureRec of constr_expr * constr_expr option (* measure, relation *)
 
 type constr_pattern_expr = constr_expr
 

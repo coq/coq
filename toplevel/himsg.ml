@@ -330,7 +330,7 @@ let explain_hole_kind env evi = function
       str "the type of " ++ Nameops.pr_id id
   | BinderType Anonymous ->
       str "the type of this anonymous binder"
-  | ImplicitArg (c,(n,ido)) ->
+  | ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
       str "the implicit parameter " ++
       pr_id id ++ spc () ++ str "of" ++

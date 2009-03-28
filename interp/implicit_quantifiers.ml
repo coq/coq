@@ -254,7 +254,7 @@ let implicits_of_rawterm l =
 		    Name id -> Some id
 		  | Anonymous -> None
 	      in
-		(ExplByPos (i, name), (true, true)) :: rest
+		(ExplByPos (i, name), (true, true, true)) :: rest
 	    else rest
       | RLetIn (loc, na, t, b) -> aux i b
       | _ -> []

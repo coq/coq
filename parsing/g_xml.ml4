@@ -57,6 +57,9 @@ END
 
 (* Errors *)
 
+let error_expect_two_arguments loc =
+  user_err_loc (loc,"",str "wrong number of arguments (expect two).")
+
 let error_expect_one_argument loc =
   user_err_loc (loc,"",str "wrong number of arguments (expect one).")
 
@@ -241,8 +244,8 @@ and interp_xml_recursionOrder x =
 	     | _ -> error_expect_one_argument loc)
       | "Measure" -> 
 	  (match l with
-	       [c] -> RMeasureRec (interp_xml_type c)
-	     | _ -> error_expect_one_argument loc)
+	       [m;r] -> RMeasureRec (interp_xml_type m, Some (interp_xml_type r))
+	     | _ -> error_expect_two_arguments loc)
       | _ ->
           user_err_loc (locs,"",str "Invalid recursion order.")
 

@@ -52,13 +52,14 @@ type implicit_explanation =
   | DepFlexAndRigid of (*flex*) argument_position * (*rig*) argument_position
   | Manual
 
-type implicit_status = (identifier * implicit_explanation * bool) option
+type implicit_status = (identifier * implicit_explanation * (bool * bool)) option
 type implicits_list = implicit_status list
 
 val is_status_implicit : implicit_status -> bool
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
 val name_of_implicit : implicit_status -> identifier
 val maximal_insertion_of : implicit_status -> bool
+val force_inference_of : implicit_status -> bool
 
 val positions_of_implicits : implicits_list -> int list
 
@@ -67,8 +68,8 @@ val positions_of_implicits : implicits_list -> int list
 val compute_implicits : env -> types -> implicits_list
 
 (* A [manual_explicitation] is a tuple of a positional or named explicitation with
-   maximal insertion and forcing flags. *)
-type manual_explicitation = Topconstr.explicitation * (bool * bool)
+   maximal insertion, force inference and force usage flags. *)
+type manual_explicitation = Topconstr.explicitation * (bool * bool * bool)
 
 val compute_implicits_with_manual : env -> types -> bool -> 
   manual_explicitation list -> implicits_list
@@ -111,15 +112,4 @@ type implicit_discharge_request =
   | ImplMutualInductive of kernel_name * implicits_flags
   | ImplInteractive of global_reference * implicits_flags * 
       implicit_interactive_request
-
-val discharge_implicits :     'a *
-    (implicit_discharge_request *
-     (Libnames.global_reference *
-      (Names.identifier * implicit_explanation * bool) option list)
-     list) ->
-    (implicit_discharge_request *
-     (Libnames.global_reference *
-      (Names.identifier * implicit_explanation * bool) option list)
-     list)
-    option
 

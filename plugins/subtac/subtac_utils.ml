@@ -29,12 +29,12 @@ let well_founded_ref = make_ref ["Init";"Wf"] "Well_founded"
 let acc_ref = make_ref  ["Init";"Wf"] "Acc"
 let acc_inv_ref = make_ref  ["Init";"Wf"] "Acc_inv"
 let fix_sub_ref = make_ref fixsub_module "Fix_sub"
+let measure_on_R_ref = make_ref fixsub_module "MR"
 let fix_measure_sub_ref = make_ref fixsub_module "Fix_measure_sub"
-let lt_ref = make_ref ["Init";"Peano"] "lt"
-let lt_wf_ref = make_ref ["Wf_nat"] "lt_wf"
 let refl_ref = make_ref ["Init";"Logic"] "refl_equal"
 
 let make_ref s = Qualid (dummy_loc, qualid_of_string s)
+let lt_ref = make_ref "Init.Peano.lt"
 let sig_ref = make_ref "Init.Specif.sig"
 let proj1_sig_ref = make_ref "Init.Specif.proj1_sig"
 let proj2_sig_ref = make_ref "Init.Specif.proj2_sig"
@@ -199,10 +199,11 @@ let non_instanciated_map env evd evm =
 	 debug 2 (str "evar " ++ int key ++ str " has kind " ++ 
 		    str (string_of_hole_kind k));
 	 match k with 
-	     QuestionMark _ -> Evd.add evm key evi
-	   | _ ->
-	       debug 2 (str " and is an implicit");
-	       Pretype_errors.error_unsolvable_implicit loc env evm (Evarutil.nf_evar_info evm evi) k None)
+	 | QuestionMark _ -> Evd.add evm key evi
+	 | ImplicitArg (_,_,false) -> Evd.add evm key evi
+	 | _ ->
+	     debug 2 (str " and is an implicit");
+	     Pretype_errors.error_unsolvable_implicit loc env evm (Evarutil.nf_evar_info evm evi) k None)
     Evd.empty (Evarutil.non_instantiated evm)
     
 let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition

@@ -169,7 +169,7 @@ type obligation_definition_status = Define of bool | Expand
 
 (* Evars *)
 type hole_kind =
-  | ImplicitArg of global_reference * (int * identifier option)
+  | ImplicitArg of global_reference * (int * identifier option) * bool (* Force inference *)
   | BinderType of name
   | QuestionMark of obligation_definition_status
   | CasesType

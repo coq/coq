@@ -88,7 +88,7 @@ let trd_of_3 (_, _, x) = x
    prooftree will also depend on things like tactic declarations, etc
    so we may need a new type for that. *)
 let rec depends_of_hole_kind hk acc = match hk with
-  | Evd.ImplicitArg (gr,_)            -> gr::acc
+  | Evd.ImplicitArg (gr,_,_)            -> gr::acc
   | Evd.TomatchTypeParameter (ind, _) -> (IndRef ind)::acc
   | Evd.BinderType _
   | Evd.QuestionMark _

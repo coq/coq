@@ -242,7 +242,7 @@ let rec prepare_implicits f = function
   | (Anonymous, Some _)::_ -> anomaly "Unnamed implicit"
   | (Name id, Some imp)::imps -> 
       let imps' = prepare_implicits f imps in
-      Some (id,imp,set_maximality imps' f.maximal) :: imps'
+      Some (id,imp,(set_maximality imps' f.maximal,true)) :: imps'
   | _::imps -> None :: prepare_implicits f imps
 
 let compute_implicits_flags env f all t = 
@@ -265,10 +265,10 @@ let compute_manual_implicits env flags t enriching l =
   let n = List.length autoimps in
   let try_forced k l =
     try 
-      let (id, (b, f)), l' = assoc_by_pos k l in
-	if f then
+      let (id, (b, fi, fo)), l' = assoc_by_pos k l in
+	if fo then
 	  let id = match id with Some id -> id | None -> id_of_string ("arg_" ^ string_of_int k) in
-	    l', Some (id,Manual,b)
+	    l', Some (id,Manual,(b,fi))
 	else l, None
     with Not_found -> l, None
   in
@@ -279,17 +279,17 @@ let compute_manual_implicits env flags t enriching l =
   | (Name id,imp)::imps ->
       let l',imp,m =
 	try 
-	  let (b, f) = List.assoc (ExplByName id) l in
-	  List.remove_assoc (ExplByName id) l, (Some Manual), (Some b)
+	  let (b, fi, fo) = List.assoc (ExplByName id) l in
+	  List.remove_assoc (ExplByName id) l, (Some Manual), (Some (b, fi))
 	with Not_found ->
 	try 
-	  let (id, (b, f)), l' = assoc_by_pos k l in
-	    l', (Some Manual), (Some b)
+	  let (id, (b, fi, fo)), l' = assoc_by_pos k l in
+	    l', (Some Manual), (Some (b,fi))
 	with Not_found ->
-	  l,imp, if enriching && imp <> None then Some flags.maximal else None
+	  l,imp, if enriching && imp <> None then Some (flags.maximal,true) else None
       in
       let imps' = merge (k+1) l' imps in
-      let m = Option.map (set_maximality imps') m in
+      let m = Option.map (fun (b,f) -> set_maximality imps' b, f) m in
       Option.map (set_implicit id imp) m :: imps'
   | (Anonymous,imp)::imps ->
       let l', forced = try_forced k l in
@@ -297,7 +297,7 @@ let compute_manual_implicits env flags t enriching l =
   | [] when l = [] -> []
   | [] ->
       List.iter (function 
-	| ExplByName id,(b,forced) -> 
+	| ExplByName id,(b,fi,forced) -> 
 	    if not forced then
 	      error ("Wrong or not dependent implicit argument name: "^(string_of_id id))
 	| ExplByPos (i,_id),_t ->
@@ -324,10 +324,11 @@ let compute_implicits_auto env f manual t =
 let compute_implicits env t = compute_implicits_auto env !implicit_args [] t
 
 type maximal_insertion = bool (* true = maximal contextual insertion *)
+type force_inference = bool (* true = always infer, never turn into evar/subgoal *)
 
 type implicit_status =
     (* None = Not implicit *)
-    (identifier * implicit_explanation * maximal_insertion) option
+    (identifier * implicit_explanation * (maximal_insertion * force_inference)) option
 
 type implicits_list = implicit_status list
 
@@ -340,7 +341,11 @@ let name_of_implicit = function
   | Some (id,_,_) -> id
 
 let maximal_insertion_of = function
-  | Some (_,_,b) -> b
+  | Some (_,_,(b,_)) -> b
+  | None -> anomaly "Not an implicit argument"
+
+let force_inference_of = function
+  | Some (_, _, (_, b)) -> b
   | None -> anomaly "Not an implicit argument"
 
 (* [in_ctx] means we know the expected type, [n] is the index of the argument *)
@@ -462,7 +467,7 @@ let subst_implicits (_,subst,(req,l)) =
   (ImplLocal,list_smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
-  List.rev_map (fun (id,impl,_,_) -> if impl = Lib.Implicit then Some (id, Manual, true) else None)
+  List.rev_map (fun (id,impl,_,_) -> if impl = Lib.Implicit then Some (id, Manual, (true,true)) else None)
     (List.filter (fun (_,_,b,_) -> b = None) ctx)
 
 let section_segment_of_reference = function
@@ -566,7 +571,7 @@ let declare_mib_implicits kn =
       (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
 (* Declare manual implicits *)
-type manual_explicitation = Topconstr.explicitation * (bool * bool) 
+type manual_explicitation = Topconstr.explicitation * (bool * bool * bool) 
 
 let compute_implicits_with_manual env typ enriching l = 
   compute_manual_implicits env !implicit_args typ enriching l

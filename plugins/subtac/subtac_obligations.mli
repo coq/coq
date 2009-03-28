@@ -24,7 +24,7 @@ val get_proofs_transparency : unit -> bool
 type definition_hook = global_reference -> unit
 
 val add_definition : Names.identifier ->  Term.constr -> Term.types -> 
-  ?implicits:(Topconstr.explicitation * (bool * bool)) list ->
+  ?implicits:(Topconstr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:Proof_type.tactic ->
   ?hook:definition_hook -> obligation_info -> progress
@@ -33,7 +33,7 @@ type notations = (string * Topconstr.constr_expr * Topconstr.scope_name option) 
 
 val add_mutual_definitions : 
   (Names.identifier * Term.constr * Term.types *
-      (Topconstr.explicitation * (bool * bool)) list * obligation_info) list -> 
+      (Topconstr.explicitation * (bool * bool * bool)) list * obligation_info) list -> 
   ?tactic:Proof_type.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   notations ->

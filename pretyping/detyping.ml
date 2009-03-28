@@ -654,7 +654,7 @@ let rec subst_rawconstr subst raw =
 
   | RSort _ -> raw
 
-  | RHole (loc,ImplicitArg (ref,i)) ->
+  | RHole (loc,ImplicitArg (ref,i,b)) ->
       let ref',_ = subst_global subst ref in 
 	if ref' == ref then raw else
 	  RHole (loc,InternalHole)

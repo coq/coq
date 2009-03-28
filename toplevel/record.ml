@@ -281,7 +281,7 @@ let implicits_of_context ctx =
       match name with 
       | Name n -> Some n
       | Anonymous -> None
-    in ExplByPos (i, explname), (true, true))
+    in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
 let typeclasses_db = "typeclass_instances"

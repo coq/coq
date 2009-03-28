@@ -42,7 +42,7 @@ val free_vars_of_rawconstr : ?bound:Idset.t -> rawconstr -> (Names.identifier * 
 
 val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
 
-val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool)) list
+val implicits_of_rawterm : Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool * bool)) list
 
 val combine_params_freevar :
   Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->

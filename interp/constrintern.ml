@@ -289,7 +289,7 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
   let (vars1,unbndltacvars) = ltacvars in
   (* Is [id] an inductive type potentially with implicit *)
   try
-    let ty, l,impl,argsc = List.assoc id impls in
+    let ty,l,impl,argsc = List.assoc id impls in
     let l = List.map 
       (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
     let tys = string_of_ty ty in
@@ -298,8 +298,9 @@ let intern_var (env,unbound_vars,_,_ as genv) (ltacvars,vars2,vars3,(_,impls)) l
   with Not_found ->
   (* Is [id] bound in current env or is an ltac var bound to constr *)
   if Idset.mem id env or List.mem id vars1
-  then
-    RVar (loc,id), [], [], []
+  then (
+    Dumpglob.dump_reference loc "<>" (string_of_id id) "var";
+    RVar (loc,id), [], [], [])
   (* Is [id] a notation variable *)
   else if List.mem_assoc id vars3
   then
@@ -794,9 +795,9 @@ let check_projection isproj nargs r =
 let get_implicit_name n imps =
   Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
-let set_hole_implicit i = function
-  | RRef (loc,r) -> (loc,Evd.ImplicitArg (r,i))
-  | RVar (loc,id) -> (loc,Evd.ImplicitArg (VarRef id,i))
+let set_hole_implicit i b = function
+  | RRef (loc,r) -> (loc,Evd.ImplicitArg (r,i,b))
+  | RVar (loc,id) -> (loc,Evd.ImplicitArg (VarRef id,i,b))
   | _ -> anomaly "Only refs have implicits"
 
 let exists_implicit_name id =
@@ -857,7 +858,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	in
         let idl = Array.map
           (fun (id,(n,order),bl,ty,bd) ->
-	     let intern_ro_arg c f =
+	     let intern_ro_arg f =
 	       let idx = 
 		 match n with
 		     Some (loc, n) -> list_index0 (Name n) (List.map snd (names_of_local_assums bl))
@@ -866,22 +867,18 @@ let internalise sigma globalenv env allow_patvar lvar c =
 	       let before, after = list_chop idx bl in
 	       let ((ids',_,_,_) as env',rbefore) =
 		 List.fold_left intern_local_binder (env,[]) before in
-	       let ro =
-		 match c with 
-		   | None -> RStructRec 
-		   | Some c' -> f (intern (ids', unb, tmp_scope, scopes) c') 
-	       in 
+	       let ro = f (intern (ids', unb, tmp_scope, scopes)) in 
 	       let n' = Option.map (fun _ -> List.length before) n in
 		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
 	     in
 	     let n, ro, ((ids',_,_,_),rbl) =
-	       (match order with
-		 | CStructRec -> 
-		     intern_ro_arg None (fun _ -> RStructRec)
-		 | CWfRec c ->
-		     intern_ro_arg (Some c) (fun r -> RWfRec r)
-		 | CMeasureRec c ->
-		     intern_ro_arg (Some c) (fun r -> RMeasureRec r))
+	       match order with
+	       | CStructRec -> 
+		   intern_ro_arg (fun _ -> RStructRec)
+	       | CWfRec c ->
+		   intern_ro_arg (fun f -> RWfRec (f c))
+	       | CMeasureRec (m,r) ->
+		   intern_ro_arg (fun f -> RMeasureRec (f m, Option.map f r))
 	     in
 	     let ids'' = List.fold_right Idset.add lf ids' in
 	     ((n, ro), List.rev rbl, 
@@ -1153,7 +1150,7 @@ let internalise sigma globalenv env allow_patvar lvar c =
             (* with implicit arguments if maximal insertion is set *)
 	    []
 	  else
-	    RHole (set_hole_implicit (n,get_implicit_name n l) c) :: 
+	    RHole (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c) :: 
 	      aux (n+1) impl' subscopes' eargs rargs
 	  end
       | (imp::impl', a::rargs') ->
@@ -1216,7 +1213,7 @@ let intern_pattern env patt =
 let intern_ltac isarity ltacvars sigma env c =
   intern_gen isarity sigma env ~ltacvars:ltacvars c
 
-type manual_implicits = (explicitation * (bool * bool)) list
+type manual_implicits = (explicitation * (bool * bool * bool)) list
 
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
@@ -1354,7 +1351,7 @@ let interp_context_gen understand_type understand_judgment env bl =
 	      let impls = 
 		if k = Implicit then
 		  let na = match na with Name n -> Some n | Anonymous -> None in
-		    (ExplByPos (n, na), (true, true)) :: impls
+		    (ExplByPos (n, na), (true, true, true)) :: impls
 		else impls
 	      in
 		(push_rel d env, d::params, succ n, impls)

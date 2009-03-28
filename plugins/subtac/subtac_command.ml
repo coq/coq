@@ -111,7 +111,7 @@ let interp_context_evars evdref env params =
 	      let impls = 
 		if k = Implicit then
 		  let na = match na with Name n -> Some n | Anonymous -> None in
-		    (ExplByPos (n, na), (true, true)) :: impls
+		    (ExplByPos (n, na), (true, true, true)) :: impls
 		else impls
 	      in
 		(push_rel d env, d::params, succ n, impls)
@@ -180,123 +180,134 @@ let split_args n rel = match list_chop ((List.length rel) - n) rel with
     (l1, x :: l2) -> l1, x, l2
   | _ -> assert(false)
 
-let build_wellfounded (recname, n, bl,arityc,body) r measure notation boxed =
+open Coqlib
+
+let sigT = Lazy.lazy_from_fun build_sigma_type
+let sigT_info = lazy
+  { ci_ind       = destInd (Lazy.force sigT).typ;
+    ci_npar      = 2;
+    ci_cstr_nargs = [|2|];
+    ci_pp_info   =  { ind_nargs = 0; style = LetStyle }
+  }
+
+let telescope = function
+  | [] -> assert false
+  | [(n, None, t)] -> t, [n, Some (mkRel 1), t], mkRel 1
+  | (n, None, t) :: tl ->
+      let ty, tys, (k, constr) =
+	List.fold_left
+	  (fun (ty, tys, (k, constr)) (n, b, t) -> 
+	    let pred = mkLambda (n, t, ty) in
+	    let sigty = mkApp ((Lazy.force sigT).typ, [|t; pred|]) in
+	    let intro = mkApp ((Lazy.force sigT).intro, [|lift k t; lift k pred; mkRel k; constr|]) in
+	      (sigty, pred :: tys, (succ k, intro)))
+	  (t, [], (2, mkRel 1)) tl
+      in
+      let (last, subst) = List.fold_right2
+	(fun pred (n, b, t) (prev, subst) ->
+	  let proj1 = applistc (Lazy.force sigT).proj1 [t; pred; prev] in
+	  let proj2 = applistc (Lazy.force sigT).proj2 [t; pred; prev] in
+	    (lift 1 proj2, (n, Some proj1, t) :: subst))
+	(List.rev tys) tl (mkRel 1, [])
+      in ty, ((n, Some last, t) :: subst), constr
+      
+  | _ -> raise (Invalid_argument "telescope")
+
+let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let sigma = Evd.empty in
   let isevars = ref (Evd.create_evar_defs sigma) in
   let env = Global.env() in 
-  let pr c = my_print_constr env c in
-  let prr = Printer.pr_rel_context env in
+  let _pr c = my_print_constr env c in
+  let _prr = Printer.pr_rel_context env in
   let _prn = Printer.pr_named_context env in
   let _pr_rel env = Printer.pr_rel_context env in
-(*   let _ =  *)
-(*     try debug 2 (str "In named context: " ++ prn (named_context env) ++ str "Rewriting fixpoint: " ++ Ppconstr.pr_id recname ++  *)
-(* 		 Ppconstr.pr_binders bl ++ str " : " ++  *)
-(* 		 Ppconstr.pr_constr_expr arityc ++ str " := " ++ spc () ++ *)
-(* 		 Ppconstr.pr_constr_expr body) *)
-(*     with _ -> () *)
-    (*   in *)
   let (env', binders_rel), impls = interp_context_evars isevars env bl in
-  let after, ((argname, _, argtyp) as arg), before = 
-    let idx = list_index (Name (snd n)) (List.rev_map (fun (na, _, _) -> na) binders_rel) in
-      split_args idx binders_rel in
-  let before_length, after_length = List.length before, List.length after in
-  let argid = match argname with Name n -> n | _ -> assert(false) in
-  let liftafter = lift_binders 1 after_length after in
-  let envwf = push_rel_context before env in
-  let wf_rel, wf_rel_fun, measure_fn = 
-    let rconstr_body, rconstr = 
-      let app = mkAppC (r, [mkIdentC (id_of_name argname)]) in
-      let env = push_rel_context [arg] envwf in
-      let capp = interp_constr isevars env app in
- 	capp, mkLambda (argname, argtyp, capp)
-    in
-      trace (str"rconstr_body: " ++ pr rconstr_body);
-      if measure then
- 	let lt_rel = constr_of_global (Lazy.force lt_ref) in
- 	let name s = Name (id_of_string s) in
- 	let wf_rel_fun lift x y = (* lift to before_env *)
-	  trace (str"lifter rconstr_body:" ++ pr (liftn lift 2 rconstr_body));
- 	  mkApp (lt_rel, [| subst1 x (liftn lift 2 rconstr_body); 
- 			    subst1 y (liftn lift 2 rconstr_body) |])
-	in
- 	let wf_rel = 
- 	  mkLambda (name "x", argtyp,
- 		    mkLambda (name "y", lift 1 argtyp,
- 			      wf_rel_fun 0 (mkRel 2) (mkRel 1)))
- 	in
- 	  wf_rel, wf_rel_fun , Some rconstr
-       else rconstr, (fun lift x y -> mkApp (rconstr, [|x; y|])), None
-  in
-  let wf_proof = mkApp (Lazy.force well_founded, [| argtyp ; wf_rel |])
-  in
-  let argid' = id_of_string (string_of_id argid ^ "'") in
-  let wfarg len = (Name argid', None,
-  		   mkSubset (Name argid') (lift len argtyp) 
-		     (wf_rel_fun (succ len) (mkRel 1) (mkRel (len + 1))))
-  in
-  let top_bl = after @ (arg :: before) in
-  let top_env = push_rel_context top_bl env in
+  let len = List.length binders_rel in
+  let top_env = push_rel_context binders_rel env in
   let top_arity = interp_type_evars isevars top_env arityc in
-  let intern_bl = wfarg 1 :: arg :: before in
+  let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
+  let argtyp, letbinders, make = telescope binders_rel in
+  let argname = id_of_string "recarg" in
+  let arg = (Name argname, None, argtyp) in
+  let wrapper x = 
+    if List.length binders_rel > 1 then 
+      it_mkLambda_or_LetIn (mkApp (x, [|make|])) binders_rel
+    else x
+  in
+  let binders = letbinders @ [arg] in
+  let binders_env = push_rel_context binders_rel env in
+  let rel = interp_constr isevars env r in
+  let measure = interp_constr isevars binders_env measure in
+  let measure_ty = type_of binders_env !isevars measure in
+  let wf_rel, wf_rel_fun, measure_fn =
+    let measure_body, measure =
+      it_mkLambda_or_LetIn measure letbinders,
+      it_mkLambda_or_LetIn measure binders
+    in
+    let comb = constr_of_global (Lazy.force measure_on_R_ref) in
+    let wf_rel = mkApp (comb, [| argtyp; measure_ty; rel; measure |]) in 
+    let wf_rel_fun x y =
+      mkApp (rel, [| subst1 x measure_body;
+ 		     subst1 y measure_body |])
+    in wf_rel, wf_rel_fun, measure
+  in
+  let wf_proof = mkApp (Lazy.force well_founded, [| argtyp ; wf_rel |]) in
+  let argid' = id_of_string (string_of_id argname ^ "'") in
+  let wfarg len = (Name argid', None,
+  		  mkSubset (Name argid') argtyp
+		    (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
+  in
+  let intern_bl = wfarg 1 :: [arg] in
   let _intern_env = push_rel_context intern_bl env in
   let proj = (Lazy.force sig_).Coqlib.proj1 in
+  let wfargpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
   let projection = (* in wfarg :: arg :: before *)
-    mkApp (proj, [| argtyp ;
-		    (mkLambda (Name argid', argtyp,
-			      (wf_rel_fun 3 (mkRel 1) (mkRel 3)))) ;
-		    mkRel 1
-		 |])
+    mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
   in
-  let intern_arity = it_mkProd_or_LetIn top_arity after in
-  (* Intern arity is in top_env = arg :: before *)
-  let intern_arity = liftn 2 2 intern_arity in
-(*     trace (str "After lifting arity: " ++  *)
-(* 	      my_print_constr (push_rel (Name argid', None, lift 2 argtyp) intern_env) *)
-(* 	      intern_arity); *)
-  (* arity is now in something :: wfarg :: arg :: before 
-     where what refered to arg now refers to something *)
-  let intern_arity = substl [projection] intern_arity in
-  (* substitute the projection of wfarg for something, 
-     now intern_arity is in wfarg :: arg :: before *)
+  let top_arity_let = it_mkLambda_or_LetIn top_arity letbinders in 
+  let intern_arity = substl [projection] top_arity_let in
+  (* substitute the projection of wfarg for something,
+     now intern_arity is in wfarg :: arg *)
   let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfarg 1] in
-  let intern_fun_binder = (Name recname, None, intern_fun_arity_prod) in
-  let fun_bl = liftafter @ (intern_fun_binder :: [arg]) in
-  let fun_env = push_rel_context fun_bl envwf in
-  let fun_arity = interp_type_evars isevars fun_env arityc in
-  let intern_body = interp_casted_constr isevars fun_env body fun_arity in
-  let intern_body_lam = it_mkLambda_or_LetIn intern_body fun_bl in
-  let _ =
-    try trace ((* str "Fun bl: " ++ prr fun_bl ++ spc () ++ *)
-		 str "Intern bl" ++ prr intern_bl ++ spc ())
-(* 		 str "Top bl" ++ prr top_bl ++ spc () ++ *)
-(* 		 str "Intern arity: " ++ pr intern_arity ++ *)
-(* 		 str "Top arity: " ++ pr top_arity ++ spc () ++ *)
-(* 		   str "Intern body " ++ pr intern_body_lam) *)
-    with _ -> ()
+  let intern_fun_binder = (Name (add_suffix recname "'"), None, intern_fun_arity_prod) in
+  let curry_fun = 
+    let wfpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
+    let arg = mkApp ((Lazy.force sig_).intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
+    let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
+    let rcurry = mkApp (rel, [| measure; lift len measure |]) in
+    let lam = (Name (id_of_string "recproof"), None, rcurry) in
+    let body = it_mkLambda_or_LetIn app (lam :: binders_rel) in
+    let ty = it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
+      (Name recname, Some body, ty)
   in
-  let prop = mkLambda (Name argid, argtyp, it_mkProd_or_LetIn top_arity after) in
-    (* Lift to get to constant arguments *)
-(*   let lift_cst = List.length after + 1 in *)
+  let fun_bl = intern_fun_binder :: [arg] in
+  let lift_lets = Termops.lift_rel_context 1 letbinders in
+  let intern_body = 
+    let ctx = (Name recname, None, pi3 curry_fun) :: binders_rel in
+    let impls = Command.compute_interning_datas env Constrintern.Recursive [] [recname] [full_arity] [impls] in
+    let newimpls = 
+      match snd impls with
+      [(p, (r, l, impls, scopes))] ->
+	[(p, (r, l, impls @ [Some (id_of_string "recproof", Impargs.Manual, (true, false))], scopes @ [None]))]
+      | x -> x
+    in interp_casted_constr isevars ~impls:(fst impls,newimpls) 
+      (push_rel_context ctx env) body (lift 1 top_arity)
+  in
+  let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
+  let prop = mkLambda (Name argname, argtyp, top_arity_let) in
   let fix_def =
-    match measure_fn with
-	None ->
-	  mkApp (constr_of_global (Lazy.force fix_sub_ref), 
-		 [| argtyp ;
-		    wf_rel ;
-		    make_existential dummy_loc ~opaque:(Define false) env isevars wf_proof ;
-		    prop ; intern_body_lam |])
-      | Some f ->
-	  mkApp (constr_of_global (Lazy.force fix_measure_sub_ref), 
-		[| argtyp ; f ; prop ; intern_body_lam |])
+    mkApp (constr_of_global (Lazy.force fix_sub_ref),
+	  [| argtyp ; wf_rel ; 
+	     make_existential dummy_loc ~opaque:(Define false) env isevars wf_proof ;
+	     prop ; intern_body_lam |])
   in
-  let def_appl = (* applist (fix_def, gen_rels (after_length + 1)) *) fix_def in
-  let def = it_mkLambda_or_LetIn def_appl before in
+  let def = wrapper fix_def in
   let typ = it_mkProd_or_LetIn top_arity binders_rel in
   let fullcoqc = Evarutil.nf_isevar !isevars def in
   let fullctyp = Evarutil.nf_isevar !isevars typ in
-  let evm =evars_of_term ( !isevars) Evd.empty fullctyp in
-  let evm = evars_of_term ( !isevars) evm fullcoqc in
+  let evm = evars_of_term !isevars Evd.empty fullctyp in
+  let evm = evars_of_term !isevars evm fullcoqc in
   let evm = non_instanciated_map env isevars evm in
   let evars, evars_def, evars_typ = Eterm.eterm_obligations env recname !isevars evm 0 fullcoqc fullctyp in
     Subtac_obligations.add_definition recname evars_def evars_typ ~implicits:impls evars
@@ -442,10 +453,15 @@ let build_recursive l b =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
 	[(n, CWfRec r)], [(((_,id),_,bl,typ,def),ntn)] ->
-	  ignore(build_wellfounded (id, out_n n, bl, typ, def) r false ntn false)
+	  ignore(build_wellfounded (id, n, bl, typ, def) r 
+		    (match n with Some n -> mkIdentC (snd n) | None -> 
+		      errorlabstrm "Subtac_command.build_recursive"
+			(str "Recursive argument required for well-founded fixpoints"))
+		    ntn false)
 
-      | [(n, CMeasureRec r)], [(((_,id),_,bl,typ,def),ntn)] ->
-	  ignore(build_wellfounded (id, out_n n, bl, typ, def) r true ntn false)
+      | [(n, CMeasureRec (m, r))], [(((_,id),_,bl,typ,def),ntn)] ->
+	  ignore(build_wellfounded (id, n, bl, typ, def) (Option.default (CRef lt_ref) r)
+		    m ntn false)
 
       | _, _ when List.for_all (fun (n, ro) -> ro = CStructRec) g ->
 	  let fixl = List.map (fun (((_,id),_,bl,typ,def),ntn) -> 

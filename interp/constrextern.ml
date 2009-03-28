@@ -873,7 +873,8 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 and extern_recursion_order scopes vars = function
     RStructRec -> CStructRec
   | RWfRec c -> CWfRec (extern true scopes vars c)
-  | RMeasureRec c -> CMeasureRec (extern true scopes vars c)
+  | RMeasureRec (m,r) -> CMeasureRec (extern true scopes vars m, 
+				     Option.map (extern true scopes vars) r)
 
 
 let extern_rawconstr vars c =

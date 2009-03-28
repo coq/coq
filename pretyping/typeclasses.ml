@@ -277,7 +277,7 @@ let is_instance = function
 
 let is_implicit_arg k = 
   match k with
-      ImplicitArg (ref, (n, id)) -> true
+      ImplicitArg (ref, (n, id), b) -> true
     | InternalHole -> true
     | _ -> false
 

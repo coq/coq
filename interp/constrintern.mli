@@ -47,7 +47,7 @@ type var_internalisation_data =
 type implicits_env = (identifier * var_internalisation_data) list
 type full_implicits_env = identifier list * implicits_env
 
-type manual_implicits = (explicitation * (bool * bool)) list
+type manual_implicits = (explicitation * (bool * bool * bool)) list
 
 type ltac_sign = identifier list * unbound_ltac_var_map
 

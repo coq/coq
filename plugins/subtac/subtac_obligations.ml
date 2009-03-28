@@ -53,7 +53,7 @@ type program_info = {
   prg_obligations: obligations;
   prg_deps : identifier list;
   prg_fixkind : Command.fixpoint_kind option ;
-  prg_implicits : (Topconstr.explicitation * (bool * bool)) list;
+  prg_implicits : (Topconstr.explicitation * (bool * bool * bool)) list;
   prg_notations : notations ;
   prg_kind : definition_kind;
   prg_hook : definition_hook;

@@ -161,7 +161,7 @@ and cofixpoint_expr =
 and recursion_order_expr = 
   | CStructRec
   | CWfRec of constr_expr
-  | CMeasureRec of constr_expr
+  | CMeasureRec of constr_expr * constr_expr option (* measure, relation *)
 
 (** Anonymous defs allowed ?? *)
 and local_binder =

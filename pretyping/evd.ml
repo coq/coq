@@ -410,7 +410,7 @@ let metamap_to_list m =
 type obligation_definition_status = Define of bool | Expand
 
 type hole_kind =
-  | ImplicitArg of global_reference * (int * identifier option)
+  | ImplicitArg of global_reference * (int * identifier option) * bool
   | BinderType of name
   | QuestionMark of obligation_definition_status
   | CasesType
