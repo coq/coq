@@ -65,7 +65,7 @@ let print_canonical_sum m = Format.print_string (canonical_sum_to_string m)
 
 let print_list_term l = 
  print_string "print_list_term\n";
- List.iter (fun (Mc.Pair(e,k)) -> Printf.printf "q: %s %s ;" 
+ List.iter (fun (e,k) -> Printf.printf "q: %s %s ;"
   (string_of_poly (poly_of_term (expr_to_term e))) 
   (match k with 
     Mc.Equal -> "= " 
@@ -78,7 +78,7 @@ let print_list_term l =
 let partition_expr l = 
  let rec f i = function
   | [] -> ([],[],[])
-  | Mc.Pair(e,k)::l -> 
+  | (e,k)::l ->
      let (eq,ge,neq) = f (i+1) l in
       match k with 
        | Mc.Equal -> ((e,i)::eq,ge,neq)
@@ -155,9 +155,9 @@ let pure_sos  l =
     I should nonetheless be able to try something - over Z  > is equivalent to -1  >= *)
  try 
   let l = List.combine l (interval 0 (length l -1)) in
-  let (lt,i) =  try (List.find (fun (x,_) -> snd' x =  Mc.Strict) l) 
+  let (lt,i) =  try (List.find (fun (x,_) -> snd x =  Mc.Strict) l)
    with Not_found -> List.hd l in
-  let plt = poly_neg (poly_of_term (expr_to_term (fst' lt))) in
+  let plt = poly_neg (poly_of_term (expr_to_term (fst lt))) in
   let (n,polys) = sumofsquares plt in (* n * (ci * pi^2) *)
   let pos = Product (Rational_lt n, 
 		    List.fold_right (fun (c,p) rst -> Sum (Product (Rational_lt c, Square
@@ -172,7 +172,7 @@ let pure_sos  l =
   |  x        -> None
 
 
-type micromega_polys = (Micromega.q Mc.pExpr, Mc.op1) Micromega.prod list
+type micromega_polys = (Micromega.q Mc.pExpr * Mc.op1) list
 type csdp_certificate = Sos.positivstellensatz option
 type provername = string * int option
 
