@@ -1,21 +1,10 @@
 type __ = Obj.t
 
-type bool =
-  | True
-  | False
-
 val negb : bool -> bool
 
 type nat =
   | O
   | S of nat
-
-type 'a option =
-  | Some of 'a
-  | None
-
-type ('a, 'b) prod =
-  | Pair of 'a * 'b
 
 type comparison =
   | Eq
@@ -23,18 +12,6 @@ type comparison =
   | Gt
 
 val compOpp : comparison -> comparison
-
-type sumbool =
-  | Left
-  | Right
-
-type 'a sumor =
-  | Inleft of 'a
-  | Inright
-
-type 'a list =
-  | Nil
-  | Cons of 'a * 'a list
 
 val app : 'a1 list -> 'a1 list -> 'a1 list
 
@@ -105,11 +82,11 @@ val zmult : z -> z -> z
 
 val zcompare : z -> z -> comparison
 
-val dcompare_inf : comparison -> sumbool sumor
+val dcompare_inf : comparison -> bool option
 
 val zcompare_rec : z -> z -> (__ -> 'a1) -> (__ -> 'a1) -> (__ -> 'a1) -> 'a1
 
-val z_gt_dec : z -> z -> sumbool
+val z_gt_dec : z -> z -> bool
 
 val zle_bool : z -> z -> bool
 
@@ -121,9 +98,9 @@ val zeq_bool : z -> z -> bool
 
 val n_of_nat : nat -> n
 
-val zdiv_eucl_POS : positive -> z -> (z, z) prod
+val zdiv_eucl_POS : positive -> z -> z  *  z
 
-val zdiv_eucl : z -> z -> (z, z) prod
+val zdiv_eucl : z -> z -> z  *  z
 
 type 'c pol =
   | Pc of 'c
@@ -257,7 +234,7 @@ type op1 =
   | Strict
   | NonStrict
 
-type 'c nFormula = ('c pExprC, op1) prod
+type 'c nFormula = 'c pExprC  *  op1
 
 type monoidMember = nat list
 
@@ -331,6 +308,10 @@ val qnum : q -> z
 
 val qden : q -> positive
 
+val qeq_bool : q -> q -> bool
+
+val qle_bool : q -> q -> bool
+
 val qplus : q -> q -> q
 
 val qmult : q -> q -> q
@@ -371,7 +352,7 @@ val qceiling : q -> z
 
 val makeLbCut : z pExprC -> q -> z nFormula
 
-val neg_nformula : z nFormula -> (z pExpr, op1) prod
+val neg_nformula : z nFormula -> z pExpr  *  op1
 
 val cutChecker :
   z nFormula list -> z pExpr -> q -> zWitness -> z nFormula option
@@ -385,10 +366,6 @@ val map_cone : (nat -> nat) -> zWitness -> zWitness
 val indexes : zWitness -> nat list
 
 val n_of_Z : z -> n
-
-val qeq_bool : q -> q -> bool
-
-val qle_bool : q -> q -> bool
 
 type qWitness = q coneMember
 

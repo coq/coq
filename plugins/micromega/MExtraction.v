@@ -20,4 +20,22 @@ Require Import VarMap.
 Require Import RingMicromega.
 Require Import NArith.
 
-Extraction "micromega.ml"  List.map simpl_cone map_cone indexes  n_of_Z Nnat.N_of_nat ZTautoChecker QTautoChecker find.
+Extract Inductive prod => "( * )" [ "(,)" ].
+Extract Inductive List.list => list [ "[]" "(::)" ].
+Extract Inductive bool => bool [ true false ].
+Extract Inductive sumbool => bool [ true false ].
+Extract Inductive option => option [ Some None ].
+Extract Inductive sumor => option [ Some None ].
+(** Then, in a ternary alternative { }+{ }+{ },
+   -  leftmost choice (Inleft Left) is (Some true),
+   -  middle choice (Inleft Right) is (Some false),
+   -  rightmost choice (Inright) is (None) *)
+
+
+(** To preserve its laziness, andb is normally expansed.
+    Let's rather use the ocaml && *)
+Extract Inlined Constant andb => "(&&)".
+
+Extraction "micromega.ml"
+  List.map simpl_cone map_cone indexes
+  n_of_Z Nnat.N_of_nat ZTautoChecker QTautoChecker find.

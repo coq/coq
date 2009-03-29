@@ -420,9 +420,10 @@ Qed.
 (* Provides the cone member from the witness, i.e., ConeMember *)
 Fixpoint eval_cone (l : list NFormula) (cm : ConeMember) {struct cm} : NFormula :=
 match cm with
-| S_In n => match nth n l (PEc cO, Equal) with
-            | (_, NonEqual) => (PEc cO, Equal)
-            | f => f
+| S_In n => let f := nth n l (PEc cO, Equal) in
+            match f with
+              | (_, NonEqual) => (PEc cO, Equal)
+              | _ => f
             end
 | S_Ideal p cm' => nformula_times_0 p (eval_cone l cm')
 | S_Square p => (PEmul p p, NonStrict)
@@ -746,9 +747,10 @@ Fixpoint simpl_expr (e:PExprC) : PExprC :=
 
 Definition simpl_cone (e:ConeMember) : ConeMember :=
   match e with
-    | S_Square t => match simpl_expr t with
+    | S_Square t => let x:=simpl_expr t in
+                    match x with
                       | PEc c   => if ceqb cO c then S_Z else S_Pos (ctimes c c)
-                      |       x     => S_Square x
+                      | _ => S_Square x
                     end
     | S_Mult t1 t2 => 
       match t1 , t2 with

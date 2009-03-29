@@ -14,9 +14,6 @@
 
 let debug = false
 
-let fst' (Micromega.Pair(x,y)) = x
-let snd' (Micromega.Pair(x,y)) = y
-
 let map_option f x = 
   match x with
     | None -> None
@@ -225,11 +222,6 @@ struct
 
  let num x = Num.Big_int (z_big_int x)
 
- let rec list elt l =
-  match l with
-   | Nil -> []
-   | Cons(e,l) -> (elt e)::(list elt l)
-
  let q_to_num {qnum = x ; qden = y} = 
   Big_int (z_big_int x) // (Big_int (z_big_int (Zpos y)))
   
@@ -256,10 +248,6 @@ struct
   else if nt = 0 then N0
   else Npos (positive nt)
 
-
-   
-
-   
  let rec index  n =
   if n=1 then XH
   else if n land 1 = 1 then XI (index (n lsr 1))
@@ -278,8 +266,6 @@ struct
     (fun b c -> (if b then XI c else XO c))
     (List.rev (digits_of_int n))
     (XH)
-
-    
 
  let z x = 
   match compare x 0 with
@@ -310,9 +296,6 @@ struct
  let q n = 
   {Micromega.qnum = bigint (numerator n) ; 
    Micromega.qden = positive_big_int (denominator n)}
-
-
- let list elt l = List.fold_right (fun x l -> Cons(elt x, l)) l Nil
 
 end
 

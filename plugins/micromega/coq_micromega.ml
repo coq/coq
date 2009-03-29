@@ -73,14 +73,14 @@ let tt : 'cst cnf = []
 let ff : 'cst cnf = [ [] ]
 
 
-type 'cst mc_cnf = ('cst Micromega.nFormula)  Micromega.list Micromega.list
+type 'cst mc_cnf = ('cst Micromega.nFormula) list list
 
 let cnf (negate: 'cst atom -> 'cst mc_cnf) (normalise:'cst atom -> 'cst mc_cnf) (f:'cst formula) = 
- let negate a t = 
-  CoqToCaml.list (fun cl -> CoqToCaml.list (fun x -> (x,t)) cl) (negate a) in
+ let negate a t =
+  List.map (fun cl -> List.map (fun x -> (x,t)) cl) (negate a) in
 
- let normalise a t = 
-     CoqToCaml.list (fun cl -> CoqToCaml.list (fun x -> (x,t)) cl) (normalise a) in
+ let normalise a t =
+     List.map (fun cl -> List.map (fun x -> (x,t)) cl) (normalise a) in
 
  let and_cnf x y = x @ y in
 
@@ -369,7 +369,7 @@ struct
 
  let rec pp_n o x =  output_string o  (string_of_int (CoqToCaml.n x))
 
- let dump_pair t1 t2 dump_t1 dump_t2 (Mc.Pair (x,y)) =
+ let dump_pair t1 t2 dump_t1 dump_t2 (x,y) =
   Term.mkApp(Lazy.force coq_pair,[| t1 ; t2 ; dump_t1 x ; dump_t2 y|])
 
 
@@ -410,31 +410,24 @@ let parse_q term =
  let rec parse_list parse_elt term = 
   let (i,c) = get_left_construct term in
    match i with
-    | 1 -> Mc.Nil
-    | 2 -> Mc.Cons(parse_elt c.(1), parse_list parse_elt c.(2))
+    | 1 -> []
+    | 2 -> parse_elt c.(1) :: parse_list parse_elt c.(2)
     | i -> raise ParseError
 
 
  let rec dump_list typ dump_elt l =
   match l with
-   | Mc.Nil -> Term.mkApp(Lazy.force coq_nil,[| typ |])
-   | Mc.Cons(e,l) -> Term.mkApp(Lazy.force coq_cons, 
-			       [| typ; dump_elt e;dump_list typ dump_elt l|])
-      
- let rec dump_ml_list typ dump_elt l =
-  match l with
    | [] -> Term.mkApp(Lazy.force coq_nil,[| typ |])
-   | e::l -> Term.mkApp(Lazy.force coq_cons, 
-		       [| typ; dump_elt e;dump_ml_list typ dump_elt l|])
-
+   | e :: l -> Term.mkApp(Lazy.force coq_cons,
+			       [| typ; dump_elt e;dump_list typ dump_elt l|])
 
 
  let pp_list op cl elt o l = 
   let rec _pp  o l = 
    match l with
-    | Mc.Nil -> ()
-    | Mc.Cons(e,Mc.Nil) -> Printf.fprintf o "%a" elt e
-    | Mc.Cons(e,l) -> Printf.fprintf o "%a ,%a" elt e  _pp l in
+    | [] -> ()
+    | [e] -> Printf.fprintf o "%a" elt e
+    | e::l -> Printf.fprintf o "%a ,%a" elt e  _pp l in
    Printf.fprintf o "%s%a%s" op _pp l cl 
 
 
@@ -892,8 +885,6 @@ let rec sig_of_cone = function
  | _  -> []
 
 let same_proof sg cl1 cl2 =
- let cl1 = CoqToCaml.list (fun x -> x) cl1 in
- let cl2 = CoqToCaml.list (fun x -> x) cl2 in
  let rec xsame_proof sg = 
   match sg with
    | [] -> true
@@ -918,20 +909,18 @@ let tags_of_cnf wits cnf =
   Names.Idset.empty wits cnf
 
 
-let find_witness prover  polys1 =
- let l = CoqToCaml.list (fun x -> x) polys1 in
-  try_any prover l
+let find_witness prover polys1 = try_any prover polys1
 
 let rec witness prover   l1 l2 = 
  match l2 with
-  | Micromega.Nil -> Some (Micromega.Nil)
-  | Micromega.Cons(e,l2) -> 
-     match find_witness prover   (Micromega.Cons( e,l1)) with
+  | [] -> Some []
+  | e :: l2 ->
+     match find_witness prover (e::l1) with
       | None -> None
-      | Some w -> 
-	 (match witness prover   l1 l2 with
+      | Some w ->
+	 (match witness prover l1 l2 with
 	  | None -> None
-	  | Some l -> Some (Micromega.Cons (w,l))
+	  | Some l -> Some (w::l)
 	 )
 
 
@@ -1154,14 +1143,14 @@ let witness_list_tags prover l =
 let witness_list prover l = 
  let rec xwitness_list l = 
   match l with
-   | Micromega.Nil -> Some(Micromega.Nil)
-   | Micromega.Cons(e,l) -> 
+   | [] -> Some []
+   | e :: l ->
       match find_witness prover e  with
        | None -> None
-       | Some w -> 
+       | Some w ->
 	  (match xwitness_list l with
 	   | None -> None
-	   | Some l -> Some (Micromega.Cons(w,l))
+	   | Some l -> Some (w :: l)
 	  ) in
   xwitness_list l
 
@@ -1252,7 +1241,7 @@ let micromega_tauto negate normalise spec prover env polys1 polys2  gl =
 
         let (ff',res',ids) = (ff',res',List.map Term.mkVar (ids_of_formula ff')) in
 
-       let res' = dump_ml_list (spec.proof_typ) spec.dump_proof   res' in
+       let res' = dump_list (spec.proof_typ) spec.dump_proof   res' in
         (Tacticals.tclTHENSEQ
           [
            Tactics.generalize ids;
@@ -1285,7 +1274,7 @@ let lift_ratproof prover l =
 
 
 type csdpcert = Sos.positivstellensatz option
-type micromega_polys = (Micromega.q Mc.pExpr, Mc.op1) Micromega.prod list
+type micromega_polys = (Micromega.q Mc.pExpr * Mc.op1) list
 type provername = string * int option
 
 let call_csdpcert provername poly =
@@ -1320,20 +1309,20 @@ let call_csdpcert_q provername poly =
   | None -> None
   | Some cert -> 
      let cert = Certificate.q_cert_of_pos cert in
-      match Mc.qWeakChecker (CamlToCoq.list (fun x -> x) poly)  cert with
-       | Mc.True -> Some cert
-       | Mc.False ->  (print_string "buggy certificate" ; flush stdout) ;None
+     if Mc.qWeakChecker poly cert
+     then Some cert
+     else ((print_string "buggy certificate" ; flush stdout) ;None)
 
 
 let call_csdpcert_z provername poly = 
- let l = List.map (fun (Mc.Pair(e,o)) -> (Mc.Pair(z_to_q_expr e,o))) poly in
+ let l = List.map (fun (e,o) -> (z_to_q_expr e,o)) poly in
   match call_csdpcert provername l with
    | None -> None
    | Some cert -> 
       let cert = Certificate.z_cert_of_pos cert in
-       match Mc.zWeakChecker (CamlToCoq.list (fun x -> x) poly)  cert with
-	| Mc.True -> Some cert
-	| Mc.False ->  (print_string "buggy certificate" ; flush stdout) ;None
+      if Mc.zWeakChecker poly cert
+      then Some cert
+      else ((print_string "buggy certificate" ; flush stdout) ;None)
 
 
 let hyps_of_cone  prf = 
@@ -1342,8 +1331,8 @@ let hyps_of_cone  prf =
     | Mc.S_Pos _ | Mc.S_Z | Mc.S_Square _ -> acc
     | Mc.S_In n -> ISet.add (CoqToCaml.nat n) acc
     | Mc.S_Ideal(_,c) -> xtract  c acc
-    | Mc.S_Monoid Mc.Nil   -> acc
-    | Mc.S_Monoid (Mc.Cons(i,l)) -> xtract (Mc.S_Monoid l) (ISet.add (CoqToCaml.nat i) acc)
+    | Mc.S_Monoid []   -> acc
+    | Mc.S_Monoid (i::l) -> xtract (Mc.S_Monoid l) (ISet.add (CoqToCaml.nat i) acc)
     | Mc.S_Add(e1,e2) |  Mc.S_Mult(e1,e2) -> xtract e1 (xtract e2 acc) in
 
     xtract prf ISet.empty
@@ -1371,7 +1360,6 @@ let hyps_of_pt pt =
       | Mc.RatProof p -> ISet.union acc (translate ofset (hyps_of_cone p))
       | Mc.CutProof(_,_,c,pt) -> xhyps (ofset+1) pt (ISet.union (translate (ofset+1) (hyps_of_cone c)) acc)
       | Mc.EnumProof(_,_,_,c1,c2,l) -> 
-	  let l = CoqToCaml.list (fun x -> x) l in
 	  let s = ISet.union acc (translate (ofset +1) (ISet.union (hyps_of_cone c1) (hyps_of_cone c2))) in
 	    List.fold_left (fun s x -> xhyps (ofset +  1) x s) s l in
     
@@ -1399,7 +1387,7 @@ let linear_prover_Z = {
   hyps    = hyps_of_pt ;
   compact = compact_pt ;
   pp_prf  = pp_proof_term;
-  pp_f    = fun o x -> pp_expr pp_z o (fst' x)
+  pp_f    = fun o x -> pp_expr pp_z o (fst x)
 }
 
 let linear_prover_Q = {
@@ -1408,7 +1396,7 @@ let linear_prover_Q = {
   hyps    = hyps_of_cone ; 
   compact = compact_cone ;
   pp_prf  = pp_cone pp_q ;
-  pp_f   = fun o x -> pp_expr pp_q o  (fst' x)
+  pp_f   = fun o x -> pp_expr pp_q o  (fst x)
 }
 
 let linear_prover_R = {
@@ -1417,7 +1405,7 @@ let linear_prover_R = {
   hyps    = hyps_of_cone ; 
   compact = compact_cone ;
   pp_prf  = pp_cone pp_z ;
-  pp_f    =  fun o x -> pp_expr pp_z o (fst' x)
+  pp_f    =  fun o x -> pp_expr pp_z o (fst x)
 }
 
 let non_linear_prover_Q str o = {
@@ -1426,7 +1414,7 @@ let non_linear_prover_Q str o = {
   hyps    = hyps_of_cone;
   compact = compact_cone ;
   pp_prf  = pp_cone pp_q ;
-  pp_f    = fun o x -> pp_expr pp_q o  (fst' x)
+  pp_f    = fun o x -> pp_expr pp_q o  (fst x)
 }
 
 let non_linear_prover_R str o = {
@@ -1435,7 +1423,7 @@ let non_linear_prover_R str o = {
   hyps    = hyps_of_cone;
   compact = compact_cone;
   pp_prf  = pp_cone pp_z;
-  pp_f    = fun o x -> pp_expr pp_z o  (fst' x)
+  pp_f    = fun o x -> pp_expr pp_z o  (fst x)
 }
 
 let non_linear_prover_Z str o  = {
@@ -1444,7 +1432,7 @@ let non_linear_prover_Z str o  = {
   hyps    = hyps_of_pt;
   compact = compact_pt;
   pp_prf  = pp_proof_term;
-  pp_f    =  fun o x -> pp_expr pp_z o (fst' x)
+  pp_f    =  fun o x -> pp_expr pp_z o (fst x)
 }
 
 let linear_Z =   {
@@ -1453,7 +1441,7 @@ let linear_Z =   {
   hyps   = hyps_of_pt;
   compact = compact_pt;
   pp_prf      = pp_proof_term;
-  pp_f    = fun o x -> pp_expr pp_z o (fst' x)
+  pp_f    = fun o x -> pp_expr pp_z o (fst x)
 }
 
 

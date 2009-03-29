@@ -360,7 +360,7 @@ plugins/interface/CoqInterface.vo
 plugins/micromega/CheckerMaker.vo
 plugins/micromega/EnvRing.vo
 plugins/micromega/Env.vo
-plugins/micromega/MExtraction.vo
+#plugins/micromega/MExtraction.vo  (extraction of micromega.ml)
 plugins/micromega/OrderedRing.vo
 plugins/micromega/Psatz.vo
 plugins/micromega/QMicromega.vo

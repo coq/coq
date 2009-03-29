@@ -169,7 +169,7 @@ type 'a number_spec = {
  zero : 'a;
  unit : 'a;
  mult : 'a -> 'a -> 'a;
- eqb  : 'a -> 'a -> Mc.bool
+ eqb  : 'a -> 'a -> bool
 }
 
 let z_spec = {
@@ -455,7 +455,7 @@ let primal l =
 
   let cmp x y = Pervasives.compare (fst x) (fst y) in
 
-   snd (List.fold_right (fun  (p,op) (map,l) -> 
+   snd (List.fold_right (fun  (p,op) (map,l) ->
       let (mp,vect) = vect_of_poly map p in  
       let cstr = {coeffs = List.sort cmp vect; op = op_op op ; cst = minus_num (Poly.get Monomial.const p)} in
 
@@ -505,11 +505,10 @@ let simple_linear_prover to_constant l =
 let linear_prover n_spec l  =
  let li = List.combine l (interval 0 (List.length l -1)) in
  let (l1,l') = List.partition 
-  (fun (x,_) -> if snd' x = Mc.NonEqual then true else false) li in
+  (fun (x,_) -> if snd x = Mc.NonEqual then true else false) li in
  let l' = List.map 
-  (fun (c,i) -> let (Mc.Pair(x,y)) = c in 
-                 match y with 
-                   Mc.NonEqual -> failwith "cannot happen" 
+  (fun ((x,y),i) -> match y with
+                   Mc.NonEqual -> failwith "cannot happen"
                   |  y -> ((dev_form n_spec x, y),i)) l' in
   
   simple_linear_prover n_spec l' 
@@ -566,7 +565,7 @@ let  remove e  l  = List.fold_left (fun l x -> if eq x e then l else x::l) [] l
 
 let candidates sys = 
  let ll = List.fold_right (
-  fun (Mc.Pair(e,k)) r -> 
+  fun (e,k) r ->
    match k with 
     | Mc.NonStrict -> (dev_form z_spec e , Ge)::r
     | Mc.Equal     ->  (dev_form z_spec e , Eq)::r 
@@ -587,7 +586,7 @@ let rec xzlinear_prover planes sys =
   | Some prf -> Some (Mc.RatProof prf)
   | None     -> (* find the candidate with the smallest range *)
      (* Grrr - linear_prover is also calling 'make_linear_system' *)
-     let ll = List.fold_right (fun (Mc.Pair(e,k)) r -> match k with 
+     let ll = List.fold_right (fun (e,k) r -> match k with
        Mc.NonEqual -> r  
       | k -> (dev_form z_spec e , 
              match k with
@@ -623,11 +622,11 @@ let rec xzlinear_prover planes sys =
            (match 
              (*x <= ub ->  x  > ub *)
              linear_prover  z_spec 
-              (Mc.Pair(pplus (pmult (pconst ubd) expr) (popp (pconst  ubn)),
+              ((pplus (pmult (pconst ubd) expr) (popp (pconst  ubn)),
                       Mc.NonStrict) :: sys),
             (* lb <= x  -> lb > x *)
             linear_prover z_spec 
-             (Mc.Pair( pplus  (popp (pmult  (pconst lbd) expr)) (pconst lbn) ,  
+             ((pplus (popp (pmult  (pconst lbd) expr)) (pconst lbn),
                      Mc.NonStrict)::sys) 
             with
              | Some cub , Some clb  ->   
@@ -642,17 +641,17 @@ let rec xzlinear_prover planes sys =
        |  _ -> None
 and zlinear_enum  planes expr clb cub l = 
  if clb >/  cub
- then Some Mc.Nil
- else 
+ then Some []
+ else
   let pexpr = pplus (popp (pconst (Ml2C.bigint (numerator clb)))) expr in
-  let sys' = (Mc.Pair(pexpr, Mc.Equal))::l in
+  let sys' = (pexpr, Mc.Equal)::l in
    (*let enum =  *)
    match xzlinear_prover planes sys' with
     | None -> if debug then print_string "zlp?"; None
     | Some prf -> if debug then print_string "zlp!";
     match zlinear_enum planes expr (clb +/ (Int 1)) cub l with
      | None -> None
-     | Some prfl -> Some (Mc.Cons(prf,prfl))
+     | Some prfl -> Some (prf :: prfl)
 
 let zlinear_prover sys =  
  let candidates = candidates sys in
@@ -745,7 +744,7 @@ let  q_cert_of_pos  pos =
    Axiom_eq i ->  Mc.S_In (Ml2C.nat i)
   | Axiom_le i ->  Mc.S_In (Ml2C.nat i)
   | Axiom_lt i ->  Mc.S_In (Ml2C.nat i)
-  | Monoid l  -> Mc.S_Monoid (Ml2C.list Ml2C.nat l)
+  | Monoid l  -> Mc.S_Monoid (List.map Ml2C.nat l)
   | Rational_eq n | Rational_le n | Rational_lt n -> 
      if compare_num n (Int 0) = 0 then Mc.S_Z else
       Mc.S_Pos (Ml2C.q   n)
@@ -774,7 +773,7 @@ let  z_cert_of_pos  pos =
    Axiom_eq i ->  Mc.S_In (Ml2C.nat i)
   | Axiom_le i ->  Mc.S_In (Ml2C.nat i)
   | Axiom_lt i ->  Mc.S_In (Ml2C.nat i)
-  | Monoid l  -> Mc.S_Monoid (Ml2C.list Ml2C.nat l)
+  | Monoid l  -> Mc.S_Monoid (List.map Ml2C.nat l)
   | Rational_eq n | Rational_le n | Rational_lt n -> 
      if compare_num n (Int 0) = 0 then Mc.S_Z else
       Mc.S_Pos (Ml2C.bigint (big_int_of_num  n))
