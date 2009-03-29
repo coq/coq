@@ -398,7 +398,7 @@ GEXTEND Gram
     [ [ "{"; IDENT "struct"; id=identref; "}" -> (Some id, CStructRec)
     | "{"; IDENT "wf"; rel=constr; id=OPT identref; "}" -> (id, CWfRec rel)
     | "{"; IDENT "measure"; m=constr; id=OPT identref; 
-	rel = OPT [ "on"; r=constr -> r ]; "}" -> (id, CMeasureRec (m,rel))
+	rel=OPT constr; "}" -> (id, CMeasureRec (m,rel))
     ] ]
   ;
   binders_let_fixannot:

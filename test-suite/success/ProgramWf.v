@@ -3,8 +3,9 @@ Set Implicit Arguments.
 (* Set Printing All. *)
 Print sigT_rect.
 Obligation Tactic := program_simplify ; auto with *.
+About MR.
 
-Program Fixpoint merge (n m : nat) {measure (n + m) on lt} : nat :=
+Program Fixpoint merge (n m : nat) {measure (n + m) (lt)} : nat :=
   match n with
     | 0 => 0
     | S n' => merge n' m
@@ -21,7 +22,7 @@ Print Zwf.
 
 Open Local Scope Z_scope.
 
-Program Fixpoint Zwfrec (n m : Z) {measure (n + m) on (Zwf 0)} : Z :=
+Program Fixpoint Zwfrec (n m : Z) {measure (n + m) (Zwf 0)} : Z :=
   match n ?= m with
     | Lt => Zwfrec n (Zpred m)
     | _ => 0
@@ -91,13 +92,7 @@ Next Obligation. simpl in *; intros.
   apply H. simpl. omega.
 Qed.
 
-Print check_n.
-Print sigT_rect.
-Print check_n.
-
 Program Fixpoint check_n'  (n : nat) (m : nat | m = n) (p : nat) (q : nat | q = p)
   {measure (p - n) p} : nat :=
   _.
-
-Print Opaque Dependencies check_n.
 
