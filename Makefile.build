@@ -836,24 +836,10 @@ endif
 
 %.cmxs: %.cmxa
 	$(SHOW)'OCAMLOPT -shared -o $@'
-ifneq ($(HASNATDYNLINK),os5fixme)
-	$(HIDE)$(OCAMLOPT) -linkall -shared -o $@ $<
+ifeq ($(HASNATDYNLINK),os5fixme)
+	$(HIDE)dev/ocamlopt_shared_os5fix.sh $(OCAMLOPT) $@ $<
 else
-	$(HIDE)$(OCAMLOPT) -dstartup -linkall -shared -o $@ $<
-#	Fix1: add a dummy instruction before the caml generic functions
-#	Fix2: make all caml generic functions private
-	$(HIDE)rm -f $@ $@.startup.fixed.s
-	$(HIDE)cat $@.startup.s | sed \
-	  -e "s/_caml_shared_startup__code_begin:/_caml_shared_startup__code_begin:	ret/" \
-	  -e "s/.globl	_caml_curry/.private_extern	_caml_curry/" \
-	  -e "s/.globl	_caml_apply/.private_extern	_caml_apply/" \
-	  -e "s/.globl	_caml_tuplify/.private_extern	_caml_tuplify/" \
-	  > $@.startup.fixed.s
-#	Recompile fixed startup code
-	$(HIDE)as -o $@.startup.o $@.startup.fixed.s
-#	Build fixed .cmxs (assume plugins are on directory base and include all files)
-	$(HIDE)ld -bundle -flat_namespace -undefined warning -read_only_relocs suppress -o $@ `dirname $@`/*.o
-	$(HIDE)rm $@.startup.o $@.startup.s $@.startup.fixed.s
+	$(HIDE)$(OCAMLOPT) -linkall -shared -o $@ $<
 endif
 
 %.cmxs: %.cmx

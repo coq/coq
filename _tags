@@ -50,8 +50,8 @@
 ## sub-directory inclusion
 
 # Note: "checker" is deliberately not included
+# Note: same for "config" (we create a special coq_config.ml)
 
-"config": include
 "parsing": include
 "ide": include
 "ide/utils": include
