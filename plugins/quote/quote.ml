@@ -10,20 +10,20 @@
 
 (* The `Quote' tactic *)
 
-(* The basic idea is to automatize the inversion of interpetation functions 
-   in 2-level approach 
+(* The basic idea is to automatize the inversion of interpetation functions
+   in 2-level approach
 
    Examples are given in \texttt{theories/DEMOS/DemoQuote.v}
 
-   Suppose you have a langage \texttt{L} of 'abstract terms' 
-   and a type \texttt{A} of 'concrete terms' 
+   Suppose you have a langage \texttt{L} of 'abstract terms'
+   and a type \texttt{A} of 'concrete terms'
    and a function \texttt{f : L -> (varmap A L) -> A}.
 
-   Then, the tactic \texttt{Quote f} will replace an
-   expression \texttt{e} of type \texttt{A} by \texttt{(f vm t)} 
+   Then, the tactic \texttt{quote f} will replace an
+   expression \texttt{e} of type \texttt{A} by \texttt{(f vm t)}
    such that \texttt{e} and \texttt{(f vm t)} are convertible.
 
-   The problem is then inverting the function f.
+   The problem is then inverting the function \texttt{f}.
 
    The tactic works when:
 
@@ -43,24 +43,24 @@
      When there are both a variable leaf and a constant leaf, there is
      an ambiguity on inversion. The term t can be either the
      interpretation of \texttt{(Cconst t)} or the interpretation of
-     (\texttt{Cvar}~$i$) in a variables map containing the binding $i
+     (\texttt{Cvar}~$i$) in a variable map containing the binding $i
      \rightarrow$~\texttt{t}. How to discriminate between these
-     choices ?
-     
-     To solve the dilemma, one gives to \texttt{Quote} a list of
+     choices?
+
+     To solve the dilemma, one gives to \texttt{quote} a list of
      \emph{constant constructors}: a term will be considered as a
-     constant if it is either a constant constructor of the
+     constant if it is either a constant constructor or the
      application of a constant constructor to constants. For example
      the list \verb+[S, O]+ defines the closed natural
      numbers. \texttt{(S (S O))} is a constant when \texttt{(S x)} is
-     not. 
+     not.
 
      The definition of constants vary for each application of the
-     tactic, so it can even be different for two applications of 
-     \texttt{Quote} with the same function.
-     
+     tactic, so it can even be different for two applications of
+     \texttt{quote} with the same function.
+
    \item \texttt{f} is a quite simple fixpoint on
-     \texttt{L}. In particular, \texttt{f} must verify: 
+     \texttt{L}. In particular, \texttt{f} must verify:
 
 \begin{verbatim}
      (f (Cvar i)) = (varmap_find vm default_value i)
@@ -71,18 +71,18 @@
 
      where \texttt{index} and \texttt{varmap\_find} are those defined
      the \texttt{Quote} module. \emph{The tactic won't work with
-     user's own variables map !!}  It is mandatory to use the
-     variables map defined in module \texttt{Quote}.
-     
+     user's own variables map!!}  It is mandatory to use the
+     variable map defined in module \texttt{Quote}.
+
    \end{itemize}
 
    The method to proceed is then clear:
 
    \begin{itemize}
    \item Start with an empty hashtable of "registed leafs"
-      that map constr to integers and a "variable counter" equal to 0.
-    \item Try to match the term with every right hand side of the 
-      definition of f.
+      that maps constr to integers and a "variable counter" equal to 0.
+    \item Try to match the term with every right hand side of the
+      definition of \texttt{f}.
 
       If there is one match, returns the correponding left hand
       side and call yourself recursively to get the arguments of this
@@ -92,17 +92,17 @@
       interpretation of either a variable or a constant.
 
       If it is a constant, return \texttt{Cconst} applied to that
-      constant. 
+      constant.
 
-      If not, it is a variable. Look in the hashtable 
+      If not, it is a variable. Look in the hashtable
       if this leaf has been already encountered. If not, increment
-      the variables counter and add an entry to the hashtable; then
+      the variable counter and add an entry to the hashtable; then
       return \texttt{(Cvar !variables\_counter)}
    \end{itemize}
 *)
 
 
-(*i*) 
+(*i*)
 open Pp
 open Util
 open Names
@@ -134,19 +134,20 @@ let coq_End_idx = lazy (constant ["Quote"] "End_idx")
 For a function like:
 
 \begin{verbatim}
-  Fixpoint interp[vm:(varmap Prop); f:form] :=
-     Cases f of
-     | (f_and f1  f1 f2) => (interp f1)/\(interp f2)
-     | (f_or f1  f1 f2) => (interp f1)\/(interp f2)
-     | (f_var i) => (varmap_find Prop default_v i vm)
-     | (f_const c) => c
+  Fixpoint interp (vm:varmap Prop) (f:form) :=
+     match f with
+       | f_and f1 f1 f2 => (interp f1) /\ (interp f2)
+       | f_or f1 f1 f2 => (interp f1) \/ (interp f2)
+       | f_var i => varmap_find Prop default_v i vm
+       | f_const c => c
+     end.
 \end{verbatim}
 
 With the constant constructors \texttt{C1}, \dots, \texttt{Cn}, the
-corresponding scheme will be: 
+corresponding scheme will be:
 
 \begin{verbatim}
-  {normal_lhs_rhs = 
+  {normal_lhs_rhs =
      [ "(f_and ?1 ?2)", "?1 /\ ?2";
        "(f_or ?1 ?2)", " ?1 \/ ?2";];
    return_type = "Prop";
@@ -156,17 +157,17 @@ corresponding scheme will be:
   }
 \end{verbatim}
 
-If there is no constructor for variables in the type \texttt{form}, 
+If there is no constructor for variables in the type \texttt{form},
 then [variable_lhs] is [None]. Idem for constants and
 [constant_lhs]. Both cannot be equal to [None].
 
-The metas in the RHS must correspond to those in the LHS (one cannot 
-exchange ?1 and ?2 in the example above) 
+The metas in the RHS must correspond to those in the LHS (one cannot
+exchange ?1 and ?2 in the example above)
 
 *)
 
 module ConstrSet = Set.Make(
-  struct 
+  struct
     type t = constr
     let compare = (Pervasives.compare : t->t->int)
   end)
@@ -179,7 +180,7 @@ type inversion_scheme = {
   constant_lhs : constr option }
 
 (*s [compute_ivs gl f cs] computes the inversion scheme associated to
-  [f:constr] with constants list [cs:constr list] in the context of 
+  [f:constr] with constants list [cs:constr list] in the context of
   goal [gl]. This function uses the auxiliary functions
   [i_can't_do_that], [decomp_term], [compute_lhs] and [compute_rhs]. *)
 
@@ -191,7 +192,7 @@ let decomp_term c = kind_of_term (strip_outer_cast c)
   ?2 ?1)}, where \texttt{C} is the [i]-th constructor of inductive
   type [typ] *)
 
-let coerce_meta_out id = 
+let coerce_meta_out id =
   let s = string_of_id id in
   int_of_string (String.sub s 1 (String.length s - 1))
 let coerce_meta_in n =
@@ -199,7 +200,7 @@ let coerce_meta_in n =
 
 let compute_lhs typ i nargsi =
   match kind_of_term typ with
-    | Ind(sp,0) -> 
+    | Ind(sp,0) ->
         let argsi = Array.init nargsi (fun j -> mkMeta (nargsi - j)) in
         mkApp (mkConstruct ((sp,0),i+1), argsi)
     | _ -> i_can't_do_that ()
@@ -208,14 +209,14 @@ let compute_lhs typ i nargsi =
   replaced by meta-variables ?i corresponding to those in the LHS *)
 
 let compute_rhs bodyi index_of_f =
-  let rec aux c = 
+  let rec aux c =
     match kind_of_term c with
-      | App (j, args) when j = mkRel (index_of_f) (* recursive call *) -> 
-          let i = destRel (array_last args) in 
+      | App (j, args) when j = mkRel (index_of_f) (* recursive call *) ->
+          let i = destRel (array_last args) in
 	  PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
           PApp (pattern_of_constr f, Array.map aux args)
-      | Cast (c,_,_) -> aux c 
+      | Cast (c,_,_) -> aux c
       | _ -> pattern_of_constr c
   in
   aux bodyi
@@ -235,34 +236,34 @@ let compute_ivs gl f cs =
               and v_lhs = ref (None : constr option)
               and c_lhs = ref (None : constr option) in
               Array.iteri
-                (fun i ci -> 
+                (fun i ci ->
                    let argsi, bodyi = decompose_lam ci in
                    let nargsi = List.length argsi in
            (* REL (narg3 + nargsi + 1) is f *)
            (* REL nargsi+1 to REL nargsi + nargs3 are arguments of f *)
            (* REL 1 to REL nargsi are argsi (reverse order) *)
            (* First we test if the RHS is the RHS for constants *)
-                   if bodyi = mkRel 1 then 
+                   if bodyi = mkRel 1 then
                      c_lhs := Some (compute_lhs (snd (List.hd args3))
                                       i nargsi)
            (* Then we test if the RHS is the RHS for variables *)
-                   else begin match decompose_app bodyi with 
+                   else begin match decompose_app bodyi with
                      | vmf, [_; _; a3; a4 ]
                          when isRel a3 & isRel a4 &
-			   pf_conv_x gl vmf 
+			   pf_conv_x gl vmf
                            (Lazy.force coq_varmap_find)->
-                             v_lhs := Some (compute_lhs 
+                             v_lhs := Some (compute_lhs
                                               (snd (List.hd args3))
                                               i nargsi)
            (* Third case: this is a normal LHS-RHS *)
-                     | _ -> 
+                     | _ ->
                          n_lhs_rhs :=
                          (compute_lhs (snd (List.hd args3)) i nargsi,
                           compute_rhs bodyi (nargs3 + nargsi + 1))
                          :: !n_lhs_rhs
-                   end) 
+                   end)
                 lci;
-	      
+
               if !c_lhs = None & !v_lhs = None then i_can't_do_that ();
 
 	      (* The Cases predicate is a lambda; we assume no dependency *)
@@ -270,14 +271,14 @@ let compute_ivs gl f cs =
 		| Lambda (_,_,p) -> Termops.pop p
 		| _ -> p
 	      in
-              
+
               { normal_lhs_rhs = List.rev !n_lhs_rhs;
                 variable_lhs = !v_lhs;
                 return_type = p;
                 constants = List.fold_right ConstrSet.add cs ConstrSet.empty;
                 constant_lhs = !c_lhs }
-                     
-              | _ -> i_can't_do_that ()
+
+          | _ -> i_can't_do_that ()
         end
     |_ -> i_can't_do_that ()
 
@@ -287,23 +288,23 @@ let compute_ivs gl f cs =
   function
 \item handle the case of simple mutual inductive (for example terms
   and lists of terms) formulas with the corresponding mutual
-  recursvive interpretation functions. 
+  recursvive interpretation functions.
 \end{itemize}
-*) 
+*)
 
 (*s Stuff to build variables map, currently implemented as complete
 binary search trees (see file \texttt{Quote.v}) *)
 
-(* First the function to distinghish between constants (closed terms) 
+(* First the function to distinghish between constants (closed terms)
    and variables (open terms) *)
 
 let rec closed_under cset t =
   (ConstrSet.mem t cset) or
   (match (kind_of_term t) with
-     | Cast(c,_,_) -> closed_under cset c  
+     | Cast(c,_,_) -> closed_under cset c
      | App(f,l) -> closed_under cset f && array_for_all (closed_under cset) l
      | _ -> false)
-    
+
 (*s [btree_of_array [| c1; c2; c3; c4; c5 |]] builds the complete
    binary search tree containing the [ci], that is:
 
@@ -317,35 +318,35 @@ let rec closed_under cset t =
 
 The second argument is a constr (the common type of the [ci])
 *)
-    
+
 let btree_of_array a ty =
   let size_of_a = Array.length a in
   let semi_size_of_a = size_of_a lsr 1 in
-  let node = Lazy.force coq_Node_vm  
+  let node = Lazy.force coq_Node_vm
   and empty = mkApp (Lazy.force coq_Empty_vm, [| ty |]) in
   let rec aux n =
-    if n > size_of_a 
+    if n > size_of_a
     then empty
-    else if  n > semi_size_of_a 
+    else if  n > semi_size_of_a
     then mkApp (node, [| ty; a.(n-1); empty; empty |])
     else mkApp (node, [| ty; a.(n-1); aux (2*n); aux (2*n+1) |])
-  in 
+  in
   aux 1
 
 (*s [btree_of_array] and [path_of_int] verify the following invariant:\\
-   {\tt (varmap\_find A dv }[(path_of_int n)] [(btree_of_array a ty)] 
+   {\tt (varmap\_find A dv }[(path_of_int n)] [(btree_of_array a ty)]
   = [a.(n)]\\
   [n] must be [> 0] *)
 
-let path_of_int n = 
+let path_of_int n =
   (* returns the list of digits of n in reverse order with
      initial 1 removed *)
   let rec digits_of_int n =
-    if n=1 then [] 
+    if n=1 then []
     else (n mod 2 = 1)::(digits_of_int (n lsr 1))
   in
-  List.fold_right 
-    (fun b c -> mkApp ((if b then Lazy.force coq_Right_idx 
+  List.fold_right
+    (fun b c -> mkApp ((if b then Lazy.force coq_Right_idx
                          else Lazy.force coq_Left_idx),
                          [| c |]))
     (List.rev (digits_of_int n))
@@ -359,29 +360,29 @@ let path_of_int n =
 (* [subterm t t'] tests if constr [t'] occurs in [t] *)
 (* This function does not descend under binders (lambda and Cases) *)
 
-let rec subterm gl (t : constr) (t' : constr) = 
+let rec subterm gl (t : constr) (t' : constr) =
   (pf_conv_x gl t t') or
-  (match (kind_of_term t) with 
+  (match (kind_of_term t) with
      | App (f,args) -> array_exists (fun t -> subterm gl t t') args
      | Cast(t,_,_) -> (subterm gl t t')
      | _ -> false)
-           
+
 (*s We want to sort the list according to reverse subterm order. *)
 (* Since it's a partial order the algoritm of Sort.list won't work !! *)
 
-let rec sort_subterm gl l = 
+let rec sort_subterm gl l =
   let rec insert c = function
     | [] -> [c]
     | (h::t as l) when c = h -> l (* Avoid doing the same work twice *)
-    | h::t -> if subterm gl c h then c::h::t else h::(insert c t)  
-  in 
-  match l with 
+    | h::t -> if subterm gl c h then c::h::t else h::(insert c t)
+  in
+  match l with
     | [] -> []
     | h::t -> insert h (sort_subterm gl t)
 
 (*s Now we are able to do the inversion itself.
   We destructurate the term and use an imperative hashtable
-  to store leafs that are already encountered. 
+  to store leafs that are already encountered.
   The type of arguments is:\\
   [ivs : inversion_scheme]\\
   [lc: constr list]\\
@@ -392,55 +393,55 @@ let quote_terms ivs lc gl =
   let varhash  = (Hashtbl.create 17 : (constr, constr) Hashtbl.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
   let counter = ref 1 in (* number of variables created + 1 *)
-  let rec aux c = 
-    let rec auxl l = 
+  let rec aux c =
+    let rec auxl l =
       match l with
         | (lhs, rhs)::tail ->
-            begin try 
+            begin try
               let s1 = matches rhs c in
               let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux c_i)) s1
 	      in
               Termops.subst_meta s2 lhs
             with PatternMatchingFailure -> auxl tail
-            end 
-        |  [] -> 
-             begin match ivs.variable_lhs with 
-               | None -> 
+            end
+        |  [] ->
+             begin match ivs.variable_lhs with
+               | None ->
                    begin match ivs.constant_lhs with
                      | Some c_lhs -> Termops.subst_meta [1, c] c_lhs
                      | None -> anomaly "invalid inversion scheme for quote"
                    end
-               | Some var_lhs -> 
+               | Some var_lhs ->
                    begin match ivs.constant_lhs with
                      | Some c_lhs when closed_under ivs.constants c ->
 			 Termops.subst_meta [1, c] c_lhs
-                     | _ -> 
-			 begin 
-                           try Hashtbl.find varhash c 
-                           with Not_found -> 
-                             let newvar = 
-                               Termops.subst_meta [1, (path_of_int !counter)] 
+                     | _ ->
+			 begin
+                           try Hashtbl.find varhash c
+                           with Not_found ->
+                             let newvar =
+                               Termops.subst_meta [1, (path_of_int !counter)]
 				 var_lhs in
-                             begin 
+                             begin
                                incr counter;
                                varlist := c :: !varlist;
                                Hashtbl.add varhash c newvar;
                                newvar
                              end
 			 end
-                   end 
+                   end
              end
-    in 
-    auxl ivs.normal_lhs_rhs 
+    in
+    auxl ivs.normal_lhs_rhs
   in
-  let lp = List.map aux lc in 
-  (lp, (btree_of_array (Array.of_list (List.rev !varlist)) 
+  let lp = List.map aux lc in
+  (lp, (btree_of_array (Array.of_list (List.rev !varlist))
           ivs.return_type ))
 
-(*s actually we could "quote" a list of terms instead of the 
-  conclusion of current goal. Ring for example needs that, but Ring doesn't
-  uses Quote yet. *)
- 
+(*s actually we could "quote" a list of terms instead of the conclusion of
+  current goal. Ring for example needs that, but Ring doesn't use Quote
+  yet. *)
+
 let quote f lid gl =
   let f = pf_global gl f in
   let cl = List.map (pf_global gl) lid in
@@ -453,7 +454,7 @@ let quote f lid gl =
     | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast gl
     | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast gl
 
-(*i 
+(*i
 
 Just testing ...
 
@@ -463,13 +464,13 @@ open Quote;;
 let r = raw_constr_of_string;;
 
 let ivs = {
-  normal_lhs_rhs = 
+  normal_lhs_rhs =
    [ r "(f_and ?1 ?2)", r "?1/\?2";
      r "(f_not ?1)", r "~?1"];
   variable_lhs = Some (r "(f_atom ?1)");
   return_type = r "Prop";
   constants = ConstrSet.empty;
-  constant_lhs = (r "nat") 
+  constant_lhs = (r "nat")
 };;
 
 let t1 = r "True/\(True /\ ~False)";;
@@ -479,7 +480,7 @@ quote_term ivs () t1;;
 quote_term ivs () t2;;
 
 let ivs2 =
-  normal_lhs_rhs = 
+  normal_lhs_rhs =
    [ r "(f_and ?1 ?2)", r "?1/\?2";
      r "(f_not ?1)", r "~?1"
      r "True", r "f_true"];

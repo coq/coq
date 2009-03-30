@@ -17,7 +17,7 @@ Declare ML Module "quote_plugin".
   index_eq : index -> bool
   index_eq_prop: (n,m:index)(index_eq n m)=true -> n=m
   index_lt : index -> bool
-  varmap : Type -> Type.	
+  varmap : Type -> Type.
   varmap_find : (A:Type)A -> index -> (varmap A) -> A.
 
   The first arg. of varmap_find is the default value to take
