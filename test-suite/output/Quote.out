@@ -1,0 +1,24 @@
+(interp_f (Node_vm A (Empty_vm Prop) (Empty_vm Prop)) (f_atom End_idx))
+(interp_f (Node_vm B (Empty_vm Prop) (Empty_vm Prop))
+   (f_and (f_const A)
+      (f_and (f_or (f_atom End_idx) (f_const A))
+         (f_or (f_const A) (f_not (f_atom End_idx))))))
+1 subgoal
+  
+  H : interp_f (Node_vm A (Empty_vm Prop) (Empty_vm Prop)) (f_atom End_idx) \/
+      B
+  ============================
+   interp_f
+     (Node_vm B (Node_vm A (Empty_vm Prop) (Empty_vm Prop)) (Empty_vm Prop))
+     (f_and (f_atom (Left_idx End_idx))
+        (f_and (f_or (f_atom End_idx) (f_atom (Left_idx End_idx)))
+           (f_or (f_atom (Left_idx End_idx)) (f_not (f_atom End_idx)))))
+1 subgoal
+  
+  H : interp_f (Node_vm A (Empty_vm Prop) (Empty_vm Prop)) (f_atom End_idx) \/
+      B
+  ============================
+   interp_f (Node_vm B (Empty_vm Prop) (Empty_vm Prop))
+     (f_and (f_const A)
+        (f_and (f_or (f_atom End_idx) (f_const A))
+           (f_or (f_const A) (f_not (f_atom End_idx)))))
