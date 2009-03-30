@@ -12,6 +12,8 @@ Tactics
   "unfold iff in *; intuition".
 - Improved support of dependent goals over objects in dependent types for
   "destruct" (rare source of incompatibility).
+- Tactic "quote" now supports quotation of arbitrary terms (not just the
+  goal).
 
 Vernacular commands
 
