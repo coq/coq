@@ -1082,6 +1082,21 @@ Undo.
 \Warning Since function inversion
 is undecidable in general case, don't expect miracles from it!
 
+\begin{Variants}
+
+\item {\tt quote {\ident} in {\term} using {\tac}}
+
+  \tac\ must be a functional tactic (starting with {\tt fun x =>})
+  and will be called with the quoted version of \term\ according to
+  \ident.
+
+\item {\tt quote {\ident} [ \ident$_1$ \dots\ \ident$_n$ ] in {\term} using {\tac}}
+
+  Same as above, but will use \ident$_1$, \dots, \ident$_n$ to
+  chose which subterms are constants (see above).
+
+\end{Variants}
+
 % \SeeAlso file \texttt{theories/DEMOS/DemoQuote.v}
 
 \SeeAlso comments of source file \texttt{plugins/quote/quote.ml}
