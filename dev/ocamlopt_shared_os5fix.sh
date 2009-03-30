@@ -4,9 +4,15 @@
 
 OCAMLOPT=$1
 CMXS=$2
-CMXA=$3
 
-$OCAMLOPT -dstartup -linkall -shared -o $CMXS $CMXA
+DIR=`dirname $CMXS`
+BASE=`basename $CMXS .cmxs`
+CMXA=$DIR/$BASE.cmxa
+ARC=$DIR/$BASE.a
+# we assume that all object files are at the same place than the rest
+OBJS=`ar t $ARC | sed -e "s|^|$DIR/|"`
+
+"$OCAMLOPT" -dstartup -linkall -shared -o $CMXS $CMXA
 # Fix1: add a dummy instruction before the caml generic functions
 # Fix2: make all caml generic functions private
 rm -f $CMXS $CMXS.startup.fixed.s
@@ -18,6 +24,6 @@ cat $CMXS.startup.s | sed \
  > $CMXS.startup.fixed.s
 # Recompile fixed startup code
 as -o $CMXS.startup.o $CMXS.startup.fixed.s
-# Build fixed .cmxs (assume plugins are on directory base and include all files)
-ld -bundle -flat_namespace -undefined warning -read_only_relocs suppress -o $CMXS `dirname $CMXS`/*.o
+# Build fixed .cmxs (assume all object files are at the same place)
+ld -bundle -flat_namespace -undefined warning -read_only_relocs suppress -o $CMXS $OBJS
 rm $CMXS.startup.o $CMXS.startup.s $CMXS.startup.fixed.s

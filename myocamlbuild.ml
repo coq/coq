@@ -386,10 +386,11 @@ let extra_rules () = begin
 
   rule ".cmxa.cmxs" ~prod:"%.cmxs" ~dep:"%.cmxa"
     (fun env _ ->
-       let prog = if os5fix then
-	 [A"../dev/ocamlopt_shared_os5fix.sh"; !Options.ocamlopt]
-       else [!Options.ocamlopt;A"-linkall";A"-shared";A"-o"]
-       in Cmd (S (prog@[P (env "%.cmxs"); P (env "%.cmxa")])));
+       let cmxs = P (env "%.cmxs") and cmxa = P (env "%.cmxa") in
+       if os5fix then
+	 Cmd (S [A"../dev/ocamlopt_shared_os5fix.sh"; !Options.ocamlopt; cmxs])
+       else
+	 Cmd (S [!Options.ocamlopt;A"-linkall";A"-shared";A"-o";cmxs;cmxa]));
 
 (** Generation of NMake.v from NMake_gen.ml *)
 
