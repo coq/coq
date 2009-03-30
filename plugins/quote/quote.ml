@@ -438,8 +438,8 @@ let quote_terms ivs lc gl =
   (lp, (btree_of_array (Array.of_list (List.rev !varlist))
           ivs.return_type ))
 
-(*s actually we could "quote" a list of terms instead of the conclusion of
-  current goal. Ring for example needs that, but Ring doesn't use Quote
+(*s actually we could "quote" a list of terms instead of a single
+  term. Ring for example needs that, but Ring doesn't use Quote
   yet. *)
 
 let quote f lid gl =
@@ -453,6 +453,18 @@ let quote f lid gl =
   match ivs.variable_lhs with
     | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast gl
     | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast gl
+
+let gen_quote cont c f lid gl =
+  let f = pf_global gl f in
+  let cl = List.map (pf_global gl) lid in
+  let ivs = compute_ivs gl f cl in
+  let (p, vm) = match quote_terms ivs [c] gl with
+    | [p], vm -> (p,vm)
+    | _ -> assert false
+  in
+  match ivs.variable_lhs with
+    | None -> cont (mkApp (f, [| p |])) gl
+    | Some _ -> cont (mkApp (f, [| vm; p |])) gl
 
 (*i
 
