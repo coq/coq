@@ -53,6 +53,7 @@ module Hint_db :
     type t
     val empty : transparent_state -> bool -> t
     val find : global_reference -> t -> search_entry
+    val map_none : t -> pri_auto_tactic list
     val map_all : global_reference -> t -> pri_auto_tactic list
     val map_auto : global_reference * constr -> t -> pri_auto_tactic list
     val add_one : hint_entry -> t -> t

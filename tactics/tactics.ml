@@ -2247,7 +2247,7 @@ let dependent_pattern c gl =
     let conclvar = subst_term_occ all_occurrences c ty in
       mkNamedLambda id cty conclvar
   in
-  let subst = (c, varname c, cty) :: List.map (fun c -> (c, varname c, pf_type_of gl c)) deps in
+  let subst = (c, varname c, cty) :: List.rev_map (fun c -> (c, varname c, pf_type_of gl c)) deps in
   let concllda = List.fold_left mklambda (pf_concl gl) subst in 
   let conclapp = applistc concllda (List.rev_map pi1 subst) in
     convert_concl_no_check conclapp DEFAULTcast gl

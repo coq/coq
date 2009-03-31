@@ -150,10 +150,13 @@ module Hint_db = struct
     try Constr_map.find key db.hintdb_map
     with Not_found -> empty_se
       
+  let map_none db = 
+    Sort.merge pri_order db.hintdb_nopat []
+      
   let map_all k db =
     let (l,l',_) = find k db in
       Sort.merge pri_order (db.hintdb_nopat @ l) l'
-   
+
   let map_auto (k,c) db =
     let st = if db.use_dn then Some db.hintdb_state else None in
     let l' = lookup_tacs (k,c) st (find k db) in
@@ -637,26 +640,24 @@ let print_hint_ref ref =  ppnl(pr_hint_ref ref)
 
 let pr_hint_term cl = 
   try 
-    let (hdc,args) = head_constr_bound cl in
-    let hd = head_of_constr_reference hdc in
     let dbs = Hintdbmap.to_list !searchtable in
     let valid_dbs = 
-      if occur_existential cl then 
-	map_succeed 
-	  (fun (name, db) -> (name, db, Hint_db.map_all hd db)) 
-	  dbs
-      else 
-	map_succeed 
-	  (fun (name, db) -> 
-	     (name, db, Hint_db.map_auto (hd,applist(hdc,args)) db)) 
-	  dbs
-    in 
-    if valid_dbs = [] then 
-      (str "No hint applicable for current goal")
-    else
-      (str "Applicable Hints :" ++ fnl () ++
-	 hov 0 (prlist pr_hints_db valid_dbs))
-  with Bound | Match_failure _ | Failure _ -> 
+      let fn = try 
+	  let (hdc,args) = head_constr_bound cl in
+	  let hd = head_of_constr_reference hdc in
+	    if occur_existential cl then
+	      Hint_db.map_all hd
+	    else Hint_db.map_auto (hd, applist (hdc,args))
+	with Bound -> Hint_db.map_none
+      in
+	map_succeed (fun (name, db) -> (name, db, fn db)) dbs
+    in
+      if valid_dbs = [] then 
+	(str "No hint applicable for current goal")
+      else
+	(str "Applicable Hints :" ++ fnl () ++
+	    hov 0 (prlist pr_hints_db valid_dbs))
+  with Match_failure _ | Failure _ -> 
     (str "No hint applicable for current goal")
 
 let error_no_such_hint_database x =
@@ -795,6 +796,13 @@ let flags_of_state st =
   {auto_unif_flags with 
     modulo_conv_on_closed_terms = Some st; modulo_delta = st}
 
+let hintmap_of hdc concl =
+  match hdc with
+  | None -> Hint_db.map_none
+  | Some hdc ->
+      if occur_existential concl then Hint_db.map_all hdc
+      else Hint_db.map_auto (hdc,concl)
+	
 let rec trivial_fail_db mod_delta db_list local_db gl =
   let intro_tac = 
     tclTHEN intro 
@@ -808,12 +816,8 @@ let rec trivial_fail_db mod_delta db_list local_db gl =
        (trivial_resolve mod_delta db_list local_db (pf_concl gl)))) gl
 
 and my_find_search_nodelta db_list local_db hdc concl =
-  if occur_existential concl then
-    List.map (fun hint -> (None,hint))
-      (list_map_append (Hint_db.map_all hdc) (local_db::db_list))
-  else
-    List.map (fun hint -> (None,hint))
-      (list_map_append (Hint_db.map_auto (hdc,concl)) (local_db::db_list))
+  List.map (fun hint -> (None,hint)) 
+    (list_map_append (hintmap_of hdc concl) (local_db::db_list))
 
 and my_find_search mod_delta =
   if mod_delta then my_find_search_delta
@@ -821,28 +825,31 @@ and my_find_search mod_delta =
     
 and my_find_search_delta db_list local_db hdc concl =
   let flags = {auto_unif_flags with use_metas_eagerly = true} in
+  let f = hintmap_of hdc concl in
     if occur_existential concl then 
       list_map_append
 	(fun db -> 
 	  if Hint_db.use_dn db then 
 	    let flags = flags_of_state (Hint_db.transparent_state db) in
-	      List.map (fun x -> (Some flags, x)) (Hint_db.map_auto (hdc,concl) db)
+	      List.map (fun x -> (Some flags,x)) (f db)
 	  else
 	    let flags = {flags with modulo_delta = Hint_db.transparent_state db} in
-	      List.map (fun x -> (Some flags,x)) (Hint_db.map_all hdc db))
+	      List.map (fun x -> (Some flags,x)) (f db))
 	(local_db::db_list)
     else
       list_map_append (fun db -> 
 	if Hint_db.use_dn db then 
 	  let flags = flags_of_state (Hint_db.transparent_state db) in
-	    List.map (fun x -> (Some flags, x)) (Hint_db.map_auto (hdc,concl) db)
+	    List.map (fun x -> (Some flags, x)) (f db)
 	else
 	  let (ids, csts as st) = Hint_db.transparent_state db in
 	  let flags, l =
 	    let l =
-	      if (Idpred.is_empty ids && Cpred.is_empty csts)
-	      then Hint_db.map_auto (hdc,concl) db
-	      else Hint_db.map_all hdc db
+	      match hdc with None -> Hint_db.map_none db
+	      | Some hdc ->
+		  if (Idpred.is_empty ids && Cpred.is_empty csts)
+		  then Hint_db.map_auto (hdc,concl) db
+		  else Hint_db.map_all hdc db
 	    in {flags with modulo_delta = st}, l
 	  in List.map (fun x -> (Some flags,x)) l)
       	(local_db::db_list)
@@ -861,13 +868,15 @@ and tac_of_hint db_list local_db concl (flags, {pat=p; code=t}) =
       
 and trivial_resolve mod_delta db_list local_db cl = 
   try 
-    let hdconstr,_ = head_constr_bound cl in
-    List.map (tac_of_hint db_list local_db cl)
-      (priority 
-	(my_find_search mod_delta db_list local_db
-	  (head_of_constr_reference hdconstr) cl))
-  with Bound | Not_found -> 
-    []
+    let head = 
+      try let hdconstr,_ = head_constr_bound cl in
+	    Some (head_of_constr_reference hdconstr)
+      with Bound -> None
+    in
+      List.map (tac_of_hint db_list local_db cl)
+	(priority 
+	    (my_find_search mod_delta db_list local_db head cl))
+  with Not_found -> []
 
 let trivial lems dbnames gl =
   let db_list = 
@@ -903,12 +912,14 @@ let h_trivial lems l =
 
 let possible_resolve mod_delta db_list local_db cl =
   try 
-    let hdconstr,_ = head_constr_bound cl in
-    List.map (tac_of_hint db_list local_db cl)
-      (my_find_search mod_delta db_list local_db
-        (head_of_constr_reference hdconstr) cl)
-  with Bound | Not_found -> 
-    []
+    let head = 
+      try let hdconstr,_ = head_constr_bound cl in
+	    Some (head_of_constr_reference hdconstr)
+      with Bound -> None
+    in
+      List.map (tac_of_hint db_list local_db cl)
+	(my_find_search mod_delta db_list local_db head cl)
+  with Not_found -> []
 
 let decomp_unary_term_then (id,_,typc) kont1 kont2 gl =
   try
