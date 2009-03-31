@@ -29,6 +29,7 @@ export FIND_VCS_CLAUSE:='(' \
   -name '.svn' -or \
   -name '_darcs' -or \
   -name '.git' -or \
+  -name '.bzr' -or \
   -name 'debian' -or \
   -name "$${GIT_DIR}" \
 ')' -prune -type f -or
