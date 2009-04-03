@@ -77,7 +77,8 @@ export FIND_VCS_CLAUSE:='(' \
   -name '.git' -or \
   -name '.bzr' -or \
   -name 'debian' -or \
-  -name "$${GIT_DIR}" \
+  -name "$${GIT_DIR}" -or \
+  -name '_build' \
 ')' -prune -or
 export PRUNE_CHECKER := -wholename ./checker/\* -prune -or
 
@@ -228,6 +229,7 @@ archclean: clean-ide cleantheories
 	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
 	find . -name '*.cmx' -or -name '*.cmxs' -or -name '*.cmxa' -or -name '*.[soa]' -or -name '*.so' | xargs rm -f
 	rm -f $(TOOLS) $(CSDPCERT)
+	rm -rf _build myocamlbuild_config.ml
 
 clean-ide:
 	rm -f $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
