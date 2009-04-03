@@ -13,12 +13,26 @@ val local : bool        (* local use (no installation) *)
 val coqlib : string     (* where the std library is installed *)
 val coqsrc : string     (* where are the sources *)
 
+val ocaml : string      (* names of ocaml binaries *)
+val ocamlc : string
+val ocamlopt : string
+val ocamlmklib : string
+val ocamldoc : string
+val ocamldep : string
+val ocamlyacc : string
+val ocamllex : string
+
 val camlbin : string    (* base directory of OCaml binaries *)
 val camllib : string    (* for Dynlink *)
 
 val camlp4 : string     (* exact name of camlp4: either "camlp4" ou "camlp5" *)
+val camlp4o : string    (* name of the camlp4o/camlp5o executable *)
 val camlp4bin : string  (* base directory for Camlp4/5 binaries *)
 val camlp4lib : string  (* where is the library of Camlp4 *)
+val camlp4compat : string (* compatibility argument to camlp4/5 *)
+
+val coqideincl : string (* arguments for building coqide (e.g. lablgtk) *)
+val cflags : string     (* arguments passed to gcc *)
 
 val best : string       (* byte/opt *)
 val arch : string       (* architecture *)
@@ -46,3 +60,4 @@ val browser : string
     variable COQREMOTEBROWSER *)
 
 val has_natdynlink : bool
+val natdynlinkflag : string (* special cases of natdynlink (e.g. MacOS 10.5) *)

@@ -1,2 +1,3 @@
 binaries
-vo.otarget
+plugins/plugins.otarget
+theories/theories.otarget

@@ -21,68 +21,47 @@ open Scanf
 
 *)
 
+
 (** Generic file reader, which produces a list of strings, one per line *)
 
 let read_file f =
-  let ic = open_in f in
-  let lines = ref [] in
-  begin try
-    while true do lines := (input_line ic)::!lines done
-  with End_of_file -> () end;
-  close_in ic;
-  List.rev !lines
-
-(** Parse a config file such as config/Makefile. Valid lines are VAR=def.
-    If def is double-quoted we remove the "..." (first sscanf attempt with %S).
-    Otherwise, def is as long as possible (%s@\n prevents stopping at ' ').
-*)
-
-let read_env f =
-  let lines = read_file f in
-  let add, get = let l = ref [] in (fun x -> l:= x::!l), (fun () -> !l) in
-  let get_var_def s =
-    try sscanf s "%[A-Z0-9_]=%S" (fun v d -> add (v,d))
-    with _ ->
-      try sscanf s "%[A-Z0-9_]=%s@\n" (fun v d -> add (v,d))
-      with _ -> ()
-  in
-  List.iter get_var_def lines; get ()
-
-let env_vars =
-  let f = "config/Makefile" in
-  try read_env f with _ -> (eprintf "Error while reading %s\n" f; exit 1)
-
-let get_env s =
-  try List.assoc s env_vars
-  with Not_found -> (eprintf "Unknown environment variable %s\n" s; exit 1)
-
+  let ic = open_in f and l = ref [] in
+  (try while true do l := (input_line ic)::!l done with End_of_file -> ());
+  close_in ic; List.rev !l
 
 
 (** Configuration *)
 
-let _ = Options.ocamlc := A(get_env "OCAMLC")
-let _ = Options.ocamlopt := A(get_env "OCAMLOPT")
-let _ = Options.ocamlmklib := A(get_env "OCAMLMKLIB")
-let _ = Options.ocamldep := A(get_env "OCAMLDEP")
-let _ = Options.ocamldoc := A(get_env "OCAMLDOC")
-let _ = Options.ocamlopt := A(get_env "OCAMLOPT")
-let _ = Options.ocamlyacc := A(get_env "OCAMLYACC")
-let _ = Options.ocamllex := A(get_env "OCAMLLEX")
+(** First, we access coq_config.ml indirectly : we symlink it to
+    myocamlbuild_config.ml, which is linked with this myocamlbuild.ml *)
 
-let ocaml = A(get_env "OCAML")
-let camlp4o = A(get_env "CAMLP4O")
-let camlp4incl = S[A"-I"; A(get_env "MYCAMLP4LIB")]
-let camlp4compat = Sh(get_env "CAMLP4COMPAT")
-let opt = (get_env "BEST" = "opt")
+module Coq_config = struct include Myocamlbuild_config end
+
+let _ = begin
+  Options.ocamlc := A Coq_config.ocamlc;
+  Options.ocamlopt := A Coq_config.ocamlopt;
+  Options.ocamlmklib := A Coq_config.ocamlmklib;
+  Options.ocamldep := A Coq_config.ocamldep;
+  Options.ocamldoc := A Coq_config.ocamldoc;
+  Options.ocamlyacc := A Coq_config.ocamlyacc;
+  Options.ocamllex := A Coq_config.ocamllex;
+end
+
+let ocaml = A Coq_config.ocaml
+let camlp4o = A Coq_config.camlp4o
+let camlp4incl = S[A"-I"; A Coq_config.camlp4lib]
+let camlp4compat = Sh Coq_config.camlp4compat
+let opt = (Coq_config.best = "opt")
 let best_oext = if opt then ".native" else ".byte"
 let best_ext = if opt then ".opt" else ".byte"
-let hasdynlink = (get_env "HASNATDYNLINK" <> "false")
-let os5fix = (get_env "HASNATDYNLINK" = "os5fixme")
+let hasdynlink = Coq_config.has_natdynlink
+let os5fix = (Coq_config.natdynlinkflag = "os5fixme")
 let flag_dynlink = if hasdynlink then A"-DHasDynlink" else N
 let dep_dynlink = if hasdynlink then N else Sh"-natdynlink no"
-let lablgtkincl = Sh(get_env "COQIDEINCLUDES")
-let local = (get_env "LOCAL" = "true")
-let coqsrc = get_env "COQSRC"
+let lablgtkincl = Sh Coq_config.coqideincl
+let local = Coq_config.local
+let coqsrc = Coq_config.coqsrc
+let cflags = S[A"-ccopt";A Coq_config.cflags]
 
 (** Do we want to inspect .ml generated from .ml4 ? *)
 let readable_genml = false
@@ -130,7 +109,22 @@ let makeinitial = "states/MakeInitial.v"
 let nmake = "theories/Numbers/Natural/BigN/NMake.v"
 let nmakegen = "theories/Numbers/Natural/BigN/NMake_gen.ml"
 
-let genvfiles = [nmake]
+let theoriesv =
+  let vo = string_list_of_file "theories/theories.itarget" in
+  List.map (fun s -> "theories/"^(Filename.chop_suffix s "o")) vo
+
+let contribv =
+  let vo = string_list_of_file "plugins/pluginsvo.itarget" in
+  List.map (fun s -> "plugins/"^(Filename.chop_suffix s "o")) vo
+
+let contribmllib =
+  let cma = string_list_of_file "plugins/pluginsbyte.itarget" in
+  List.map (fun s -> "plugins/"^(Filename.chop_suffix s ".cma")^".mllib") cma
+
+(** for correct execution of coqdep_boot, source files should have
+    been imported in _build (and NMake.v should have been created). *)
+
+let coqdepdeps = theoriesv @ contribv @ contribmllib
 
 let coqtop = "toplevel/coqtop"
 let coqide = "ide/coqide"
@@ -140,19 +134,22 @@ let coqmktop = "scripts/coqmktop"
 (** The list of binaries to build:
     (name of link in bin/, name in _build, install both or only best) *)
 
+type links = Both | Best | BestInPlace
+
 let all_binaries =
- [ "coqtop", coqtop, true;
-   "coqide", coqide, true;
-   "coqmktop", coqmktop, true;
-   "coqc", "scripts/coqc", true;
-   "coqchk", "checker/main", true;
-   "coqdep_boot", coqdepboot, false;
-   "coqdep", "tools/coqdep", false;
-   "coqdoc", "tools/coqdoc/main", false;
-   "coqwc", "tools/coqwc", false;
-   "coq_makefile", "tools/coq_makefile", false;
-   "coq-tex", "tools/coq_tex", false;
-   "gallina", "tools/gallina", false;
+ [ "coqtop", coqtop, Both;
+   "coqide", coqide, Both;
+   "coqmktop", coqmktop, Both;
+   "coqc", "scripts/coqc", Both;
+   "coqchk", "checker/main", Both;
+   "coqdep_boot", coqdepboot, Best;
+   "coqdep", "tools/coqdep", Best;
+   "coqdoc", "tools/coqdoc/main", Best;
+   "coqwc", "tools/coqwc", Best;
+   "coq_makefile", "tools/coq_makefile", Best;
+   "coq-tex", "tools/coq_tex", Best;
+   "gallina", "tools/gallina", Best;
+   "csdpcert", "plugins/micromega/csdpcert", BestInPlace;
  ]
 
 let coqtopbest = coqtop^best_oext
@@ -162,8 +159,8 @@ let coqmktopbest = coqmktop^best_oext
 let binaries_deps =
   let rec deps = function
     | [] -> []
-    | (_,bin,both) :: l ->
-	if opt && both then (bin^".native") :: (bin^".byte") :: deps l
+    | (_,bin,kind) :: l ->
+	if opt && kind=Both then (bin^".native") :: (bin^".byte") :: deps l
 	else (bin^best_oext) :: deps l
   in deps all_binaries
 
@@ -172,13 +169,16 @@ let ln_sf toward f =
 
 let rec make_bin_links = function
   | [] -> ()
-  | (b,ob,true) :: l ->
+  | (b,ob,Both) :: l ->
       ln_sf ("../"^ !_build^"/"^ob^".byte") ("bin/"^b^".byte");
       if opt then ln_sf ("../"^ !_build^"/"^ob^".native") ("bin/"^b^".opt");
       ln_sf (b^best_ext) ("bin/"^b);
       make_bin_links l
-  | (b,ob,false) :: l ->
+  | (b,ob,Best) :: l ->
       ln_sf ("../"^ !_build^"/"^ob^best_oext) ("bin/"^b);
+      make_bin_links l
+  | (b,ob,BestInPlace) :: l ->
+      ln_sf (b^best_oext) ob;
       make_bin_links l
 
 let incl f = Ocaml_utils.ocaml_include_flags f
@@ -189,14 +189,6 @@ let initial_actions () = begin
   make_bin_links all_binaries;
   (** We "pre-create" a few subdirs in _build to please coqtop *)
   Shell.mkdir_p (!_build^"/dev");
-  (** Moreover, we "pre-import" in _build the sources file that will be needed
-      by coqdep_boot *)
-  (*TODO: do something nicer than this call to find (maybe with Slurp) *)
-  let exclude = "-name _\\$* -or -name .\\* -prune -or" in
-  Command.execute ~quiet:true (Cmd (Sh
-   ("for i in `find theories plugins "^exclude^" -print`; do "^
-    "[ -f $i -a ! -f _build/$i ] && mkdir -p _build/`dirname $i` && cp $i _build/$i; "^
-    "done; true")))
 end
 
 let extra_rules () = begin
@@ -275,7 +267,7 @@ let extra_rules () = begin
 (** C code for the VM *)
 
   dep ["compile"; "c"] c_headers;
-  flag ["compile"; "c"] (S[A"-ccopt";A"-fno-defer-pop -Wall -Wno-unused"]);
+  flag ["compile"; "c"] cflags;
   dep ["link"; "ocaml"; "use_libcoqrun"] [libcoqrun];
 
 (** VM: Generation of coq_jumbtbl.h and copcodes.ml from coq_instruct.h *)
@@ -334,7 +326,9 @@ let extra_rules () = begin
 
 (** Coq files dependencies *)
 
-  rule ".v.d" ~prod:"%.v.depends" ~deps:(["%.v";coqdepbest]@genvfiles)
+  rule "coqdepready" ~stamp:"coqdepready" ~deps:coqdepdeps (fun _ _ -> Nop);
+
+  rule ".v.d" ~prod:"%.v.depends" ~deps:["%.v";coqdepbest;"coqdepready"]
     (fun env _ ->
        let v = env "%.v" and vd = env "%.v.depends" in
        (** NB: this relies on all .v files being already in _build. *)

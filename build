@@ -3,14 +3,20 @@
 FLAGS=
 OCAMLBUILD=ocamlbuild
 
+check_config() {
+ [ -f config/coq_config.ml ] || (echo "please run ./configure first"; exit 1)
+ [ -L myocamlbuild_config.ml ] || ln -sf config/coq_config.ml myocamlbuild_config.ml
+}
+
 ocb()
 {
+  check_config
   $OCAMLBUILD $FLAGS $*
 }
 
 rule() {
   case $1 in
-    clean)  ocb -clean && rm -rf bin/*;;
+    clean)  ocb -clean && rm -rf bin/* && rm -f myocamlbuild_config.ml;;
     all)    ocb coq.otarget;;
     *)      ocb $1;;
   esac;
