@@ -21,6 +21,17 @@ open Scanf
 
 *)
 
+(** F.A.Q about ocamlbuild:
+
+* P / Px ?
+
+ Same, except that the second can be use to signal the main target
+ of a rule, in order to get a nicer log (otherwise the full command
+ is used as target name)
+
+*)
+
+
 
 (** Generic file reader, which produces a list of strings, one per line *)
 
@@ -52,8 +63,7 @@ let camlp4o = A Coq_config.camlp4o
 let camlp4incl = S[A"-I"; A Coq_config.camlp4lib]
 let camlp4compat = Sh Coq_config.camlp4compat
 let opt = (Coq_config.best = "opt")
-let best_oext = if opt then ".native" else ".byte"
-let best_ext = if opt then ".opt" else ".byte"
+let ide = Coq_config.has_coqide
 let hasdynlink = Coq_config.has_natdynlink
 let os5fix = (Coq_config.natdynlinkflag = "os5fixme")
 let flag_dynlink = if hasdynlink then A"-DHasDynlink" else N
@@ -134,11 +144,11 @@ let coqmktop = "scripts/coqmktop"
 (** The list of binaries to build:
     (name of link in bin/, name in _build, install both or only best) *)
 
-type links = Both | Best | BestInPlace
+type links = Both | Best | BestInPlace | Ide
 
 let all_binaries =
  [ "coqtop", coqtop, Both;
-   "coqide", coqide, Both;
+   "coqide", coqide, Ide;
    "coqmktop", coqmktop, Both;
    "coqc", "scripts/coqc", Both;
    "coqchk", "checker/main", Both;
@@ -152,6 +162,11 @@ let all_binaries =
    "csdpcert", "plugins/micromega/csdpcert", BestInPlace;
  ]
 
+
+let best_oext = if opt then ".native" else ".byte"
+let best_ext = if opt then ".opt" else ".byte"
+let best_iext = if ide = "opt" then ".opt" else ".byte"
+
 let coqtopbest = coqtop^best_oext
 let coqdepbest = coqdepboot^best_oext
 let coqmktopbest = coqmktop^best_oext
@@ -159,9 +174,12 @@ let coqmktopbest = coqmktop^best_oext
 let binaries_deps =
   let rec deps = function
     | [] -> []
-    | (_,bin,kind) :: l ->
-	if opt && kind=Both then (bin^".native") :: (bin^".byte") :: deps l
-	else (bin^best_oext) :: deps l
+    | (_,bin,Ide)::l ->
+	(if ide = "opt" then [bin^".native"] else []) @
+	(if ide <> "no" then [bin^".byte"] else []) @ deps l
+    | (_,bin,Both)::l when opt ->
+	(bin^".native") :: (bin^".byte") :: deps l
+    | (_,bin,_)::l -> (bin^best_oext) :: deps l
   in deps all_binaries
 
 let ln_sf toward f =
@@ -169,17 +187,21 @@ let ln_sf toward f =
 
 let rec make_bin_links = function
   | [] -> ()
-  | (b,ob,Both) :: l ->
-      ln_sf ("../"^ !_build^"/"^ob^".byte") ("bin/"^b^".byte");
-      if opt then ln_sf ("../"^ !_build^"/"^ob^".native") ("bin/"^b^".opt");
-      ln_sf (b^best_ext) ("bin/"^b);
-      make_bin_links l
-  | (b,ob,Best) :: l ->
-      ln_sf ("../"^ !_build^"/"^ob^best_oext) ("bin/"^b);
-      make_bin_links l
-  | (b,ob,BestInPlace) :: l ->
-      ln_sf (b^best_oext) ob;
-      make_bin_links l
+  | (b,ob,kind)::l ->
+      make_bin_links l;
+      let obd = "../"^ !_build^"/"^ob and bd = "bin/"^b in
+      match kind with
+	| Ide when ide <> "no" ->
+	    ln_sf (obd^".byte") (bd^".byte");
+	    if ide = "opt" then ln_sf (obd^".native") (bd^".opt");
+	    ln_sf (b^best_iext) bd
+	| Ide (* when ide = "no" *) -> ()
+	| Both ->
+	    ln_sf (obd^".byte") (bd^".byte");
+	    if opt then ln_sf (obd^".native") (bd^".opt");
+	    ln_sf (b^best_ext) bd
+	| Best -> ln_sf (obd^best_oext) bd
+	| BestInPlace -> ln_sf (b^best_oext) ob
 
 let incl f = Ocaml_utils.ocaml_include_flags f
 
@@ -223,7 +245,7 @@ let extra_rules () = begin
        let ml4 = env "%.ml4" and ml = env "%.ml" in
        Cmd (S[camlp4o;T(tags_of_pathname ml4 ++ "p4mod");readable_flag;
 	      T(tags_of_pathname ml4 ++ "p4option"); camlp4compat;
-	      A"-o"; P ml; A"-impl"; P ml4]));
+	      A"-o"; Px ml; A"-impl"; P ml4]));
 
   flag ["is_ml4"; "p4mod"; "use_macro"] (A"pa_macro.cmo");
   flag ["is_ml4"; "p4mod"; "use_extend"] (A"pa_extend.cmo");
@@ -317,9 +339,9 @@ let extra_rules () = begin
     let depideo = if is_ide then [ide_cmxa] else [] in
     let depideb = if is_ide then [ide_cma] else [] in
     if opt then rule fo ~prod:fo ~deps:(depsall@depso@depideo) ~insert:`top
-      (cmd [P coqmktopbest;A"-boot";A"-opt";ideflag;incl fo;A"-o";P fo]);
+      (cmd [P coqmktopbest;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
     rule fb ~prod:fb ~deps:(depsall@depsb@depideb) ~insert:`top
-      (cmd [P coqmktopbest;A"-boot";A"-top";ideflag;incl fb;A"-o";P fb]);
+      (cmd [P coqmktopbest;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
   in
   mktop_rule coqtop false;
   mktop_rule coqide true;
@@ -332,7 +354,7 @@ let extra_rules () = begin
     (fun env _ ->
        let v = env "%.v" and vd = env "%.v.depends" in
        (** NB: this relies on all .v files being already in _build. *)
-       Cmd (S [P coqdepbest;dep_dynlink;A"-slash";P v;Sh">";P vd]));
+       Cmd (S [P coqdepbest;dep_dynlink;A"-slash";P v;Sh">";Px vd]));
 
 (** Coq files compilation *)
 
@@ -354,7 +376,7 @@ let extra_rules () = begin
       (fun env build ->
 	 let f = env (d^"%") in
 	 coq_build_dep f build;
-	 Cmd (S [P coqtopbest;A"-boot";bootflag;A"-compile";P f]))
+	 Cmd (S [P coqtopbest;A"-boot";bootflag;A"-compile";Px f]))
   in
   coq_v_rule "theories/Init/" true;
   coq_v_rule "" false;
@@ -363,7 +385,7 @@ let extra_rules () = begin
 
   rule "initial.coq" ~prod:initialcoq ~deps:(makeinitial::init_vo)
     (cmd [P coqtopbest;A"-boot";A"-batch";A"-nois";A"-notop";A"-silent";
-	  A"-l";P makeinitial; A"-outputstate";P initialcoq]);
+	  A"-l";P makeinitial; A"-outputstate";Px initialcoq]);
 
 (** Generation of _plugin_mod.ml files *)
 
@@ -380,7 +402,7 @@ let extra_rules () = begin
 
   rule ".cmxa.cmxs" ~prod:"%.cmxs" ~dep:"%.cmxa"
     (fun env _ ->
-       let cmxs = P (env "%.cmxs") and cmxa = P (env "%.cmxa") in
+       let cmxs = Px (env "%.cmxs") and cmxa = P (env "%.cmxa") in
        if os5fix then
 	 Cmd (S [A"../dev/ocamlopt_shared_os5fix.sh"; !Options.ocamlopt; cmxs])
        else
@@ -389,7 +411,7 @@ let extra_rules () = begin
 (** Generation of NMake.v from NMake_gen.ml *)
 
   rule "NMake" ~prod:nmake ~dep:nmakegen
-    (cmd [ocaml;P nmakegen;Sh ">";P nmake]);
+    (cmd [ocaml;P nmakegen;Sh ">";Px nmake]);
 
 end
 
@@ -402,12 +424,11 @@ end
 
 (** TODO / Remarques:
 
-    * On repasse tout en revue sans arret, et c'est long, meme cached:
-      1 min 25 pour les 2662 targets en cache. 
-      Peut-on mieux faire ?
+    * Apres un premier build, le second prend du temps, meme cached:
+      1 min 25 pour les 2662 targets en cache. Etonnement, refaire
+      coqtop.byte ne prend que ~4s, au lieu des ~40s pour coqtop.opt.
+      A comprendre ...
 
-    * coqdep a besoin dans _build des fichiers dont on depend,
-      mais ils n'y sont pas forcement, d'ou un gros cp au debut.
-      Y-a-t'il mieux à faire ?
+    * Parallelisation: vraiment pas top
 
 *)

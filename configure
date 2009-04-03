@@ -994,6 +994,7 @@ let coqideincl = "$LABLGTKINCLUDES"
 let cflags = "$cflags"
 let best = "$best_compiler"
 let arch = "$ARCH"
+let has_coqide = "$COQIDE"
 let has_natdynlink = $HASNATDYNLINK
 let natdynlinkflag = "$NATDYNLINKFLAG"
 let osdeplibs = "$OSDEPLIBS"

@@ -59,5 +59,7 @@ val browser : string
 (** default web browser to use, may be overriden by environment
     variable COQREMOTEBROWSER *)
 
+val has_coqide : string
+
 val has_natdynlink : bool
 val natdynlinkflag : string (* special cases of natdynlink (e.g. MacOS 10.5) *)
