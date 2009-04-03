@@ -1172,8 +1172,9 @@ let evars_of_named_context nc =
   List.fold_right (fun (_, b, t) s ->
     Option.fold_left (fun s t -> 
       Intset.union s (evars_of_term t))
-      s b) nc Intset.empty
-
+      (Intset.union s (evars_of_term t)) b)
+    nc Intset.empty
+    
 let evars_of_evar_info evi =
   Intset.union (evars_of_term evi.evar_concl)
     (Intset.union 
