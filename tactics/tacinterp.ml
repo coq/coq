@@ -1625,13 +1625,13 @@ let inj_may_eval = function
   | ConstrContext (id,c) -> ConstrContext (id,inj_open c)
   | ConstrTypeOf c -> ConstrTypeOf (inj_open c)
 
-let message_of_value = function
+let rec message_of_value = function
   | VVoid -> str "()"
   | VInteger n -> int n
   | VIntroPattern ipat -> pr_intro_pattern (dloc,ipat)
   | VConstr_context c | VConstr c -> pr_constr c
   | VRec _ | VRTactic _ | VFun _ -> str "<tactic>"
-  | VList _ -> str "<list>"
+  | VList l -> prlist_with_sep spc message_of_value l
 
 let rec interp_message_token ist = function
   | MsgString s -> str s
