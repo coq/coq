@@ -679,12 +679,16 @@ and comment = parse
 	   if !Cdglobals.parse_comments then Output.start_comment ();
 	   comment lexbuf }
   | "*)" space* nl {
-      if !Cdglobals.parse_comments then
-	(Output.end_comment (); Output.line_break ());
+      if !Cdglobals.parse_comments then	(Output.end_comment (); Output.line_break ());
       decr comment_level; if !comment_level > 0 then comment lexbuf else true }
   | "*)" { 
       if !Cdglobals.parse_comments then (Output.end_comment ());
       decr comment_level; if !comment_level > 0 then comment lexbuf else false }
+  | "[" { 
+      if !Cdglobals.parse_comments then (
+	brackets := 1;
+	Output.start_inline_coq (); escaped_coq lexbuf; Output.end_inline_coq ());
+      comment lexbuf }
   | eof  { false }
   | space+ { if !Cdglobals.parse_comments then 
 	Output.indentation (fst (count_spaces (lexeme lexbuf))); comment lexbuf }
@@ -715,7 +719,7 @@ and body = parse
 	   if !Cdglobals.parse_comments then Output.start_comment ();
 	   let eol = comment lexbuf in 
 	     if eol 
-	     then begin Output.line_break(); body_bol lexbuf end
+	     then begin if not !Cdglobals.parse_comments then Output.line_break(); body_bol lexbuf end
 	     else body lexbuf }
   | identifier 
       { let s = lexeme lexbuf in 
