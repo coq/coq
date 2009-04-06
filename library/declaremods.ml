@@ -1145,8 +1145,8 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
       | _ ->
 	  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
 	  let (sub,mbids,msid,objs) = substobjs in
-	  let sub' = subst_key (map_msid msid mp) sub in
-	  let substobjs = (join sub sub',mbids,msid,objs) in
+	  let sub' = join_alias (subst_key (map_msid msid mp) sub) (map_msid msid mp) in
+	  let substobjs = ( sub',mbids,msid,objs) in
 	  let substituted = subst_substobjs dir mp substobjs in
 	    ignore (add_leaf
 		      id
