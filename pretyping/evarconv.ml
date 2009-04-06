@@ -505,7 +505,7 @@ let first_order_unification env evd (ev1,l1) (term2,l2) =
       if is_defined_evar i ev1 then
 	evar_conv_x env i CONV t2 (mkEvar ev1)
       else
-	solve_simple_eqn evar_conv_x env i (CONV,ev1,t2))]
+	solve_simple_eqn ~choose:true evar_conv_x env i (CONV,ev1,t2))]
 
 let choose_less_dependent_instance evk evd term args =
   let evi = Evd.find (evars_of evd) evk in

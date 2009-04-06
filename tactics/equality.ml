@@ -1215,7 +1215,7 @@ let subst_one x gl =
        tclMAP introtac depdecls]) @
      [tclTRY (clear [x;hyp])]) gl
 
-let subst = tclMAP subst_one
+let subst ids = tclTHEN tclNORMEVAR (tclMAP subst_one ids)
 
 let subst_all gl =
   let test (_,c) =

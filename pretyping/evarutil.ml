@@ -836,7 +836,7 @@ let expand_rhs env sigma subst rhs =
 exception NotInvertibleUsingOurAlgorithm of constr
 exception NotEnoughInformationToProgress
 
-let rec invert_definition env evd (evk,argsv as ev) rhs =
+let rec invert_definition choose env evd (evk,argsv as ev) rhs =
   let evdref = ref evd in
   let progress = ref false in
   let evi = Evd.find (evars_of evd) evk in
@@ -847,7 +847,11 @@ let rec invert_definition env evd (evk,argsv as ev) rhs =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try 
       let sols = find_projectable_vars true env (evars_of !evdref) t subst in
-      let c, p = filter_solution sols in
+      let c, p = match sols with
+	| [] -> raise Not_found
+	| [id,p] -> (mkVar id, p)
+	| (id,p)::_::_ -> if choose then (mkVar id, p) else raise NotUnique
+      in
       let ty = lazy (Retyping.get_type_of env (evars_of !evdref) t) in
       let evd = do_projection_effects evar_define env ty !evdref p in
       evdref := evd;
@@ -923,9 +927,9 @@ and occur_existential evm c =
     | _ -> iter_constr occrec c
   in try occrec c; false with Occur -> true
 
-and evar_define env (evk,_ as ev) rhs evd =
+and evar_define ?(choose=false) env (evk,_ as ev) rhs evd =
   try
-    let (evd',body) = invert_definition env evd ev rhs in
+    let (evd',body) = invert_definition choose env evd ev rhs in
     if occur_meta body then error "Meta cannot occur in evar body.";
     (* invert_definition may have instantiate some evars of rhs with evk *)
     (* so we recheck acyclicity *)
@@ -1120,7 +1124,7 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
  * if the problem couldn't be solved. *)
 
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
-let solve_simple_eqn conv_algo env evd (pbty,(evk1,args1 as ev1),t2) =
+let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1),t2) =
   try
     let t2 = whd_evar (evars_of evd) t2 in
     let evd = match kind_of_term t2 with
@@ -1132,15 +1136,18 @@ let solve_simple_eqn conv_algo env evd (pbty,(evk1,args1 as ev1),t2) =
 	    then solve_evar_evar evar_define env evd ev1 ev2
 	    else add_conv_pb (pbty,env,mkEvar ev1,t2) evd
       | _ ->
-	  let evd = evar_define env ev1 t2 evd in
+	  let evd = evar_define ~choose env ev1 t2 evd in
 	  let evm = evars_of evd in
 	  let evi = Evd.find evm evk1 in
 	    if occur_existential evm evi.evar_concl then
 	      let evenv = evar_env evi in
 	      let evc = nf_isevar evd evi.evar_concl in
-	      let body = match evi.evar_body with Evar_defined b -> b | Evar_empty -> assert false in
-	      let ty = nf_isevar evd (Retyping.get_type_of_with_meta evenv evm (metas_of evd) body) in
-		add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
+		match evi.evar_body with 
+		| Evar_defined body -> 
+		    let ty = nf_isevar evd (Retyping.get_type_of_with_meta evenv evm (metas_of evd) body) in
+		      add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
+		| Evar_empty -> (* Resulted in a constraint *) 
+		    evd
 	    else evd
     in
     let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
@@ -1251,8 +1258,8 @@ let define_evar_as_abstraction abs evd (ev,args) =
   let evrng =
     fst (destEvar rng), array_cons (mkRel 1) (Array.map (lift 1) args) in
   let prod' = abs (Name nvar, mkEvar evdom, mkEvar evrng) in
-  (evd3,prod')
-
+    (evd3,prod')
+      
 let define_evar_as_product evd (ev,args) =
   define_evar_as_abstraction (fun t -> mkProd t) evd (ev,args)
 
@@ -1262,7 +1269,6 @@ let define_evar_as_lambda evd (ev,args) =
 let define_evar_as_sort evd (ev,args) =
   let s = new_Type () in
   Evd.evar_define ev s evd, destSort s
-
 
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
@@ -1275,27 +1281,26 @@ let judge_of_new_Type () = Typeops.judge_of_type (new_univ ())
    an evar instantiate it with the product of 2 new evars. *)
 
 let split_tycon loc env evd tycon = 
-  let rec real_split c = 
-    let sigma = evars_of evd in
-    let t = whd_betadeltaiota env sigma c in
+  let rec real_split evd c = 
+    let t = whd_betadeltaiota env (Evd.evars_of evd) c in
       match kind_of_term t with
 	| Prod (na,dom,rng) -> evd, (na, dom, rng)
 	| Evar ev when not (Evd.is_defined_evar evd ev) ->
 	    let (evd',prod) = define_evar_as_product evd ev in
 	    let (_,dom,rng) = destProd prod in
 	      evd',(Anonymous, dom, rng)
-	| _ -> error_not_product_loc loc env sigma c
+	| _ -> error_not_product_loc loc env (Evd.evars_of evd) c
   in
     match tycon with
       | None -> evd,(Anonymous,None,None)
       | Some (abs, c) ->
 	  (match abs with
 	       None -> 
-		 let evd', (n, dom, rng) = real_split c in
+		 let evd', (n, dom, rng) = real_split evd c in
 		   evd', (n, mk_tycon dom, mk_tycon rng)
 	     | Some (init, cur) ->
 		 if cur = 0 then 
-		   let evd', (x, dom, rng) = real_split c in
+		   let evd', (x, dom, rng) = real_split evd c in
 		     evd, (Anonymous, 
 			  Some (None, dom), 
 			  Some (None, rng))
