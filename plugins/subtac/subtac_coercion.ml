@@ -454,7 +454,6 @@ module Coercion = struct
 
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to_gen rigidonly loc env evd cj ((n, t) as _tycon) =
-    let evd = nf_evar_defs evd in
     match n with
 	None ->
 	  let (evd', val') = 
