@@ -466,9 +466,9 @@ let setoid_of_relation env a r =
   try 
     lapp coq_mk_Setoid
       [|a ; r ; 
-	Class_tactics.get_reflexive_proof env evm a r ; 
-	Class_tactics.get_symmetric_proof env evm a r ; 
-	Class_tactics.get_transitive_proof env evm a r |]
+	Rewrite.get_reflexive_proof env evm a r ; 
+	Rewrite.get_symmetric_proof env evm a r ; 
+	Rewrite.get_transitive_proof env evm a r |]
   with Not_found ->
     error "cannot find setoid relation"
 
@@ -544,18 +544,18 @@ let ring_equality (r,add,mul,opp,req) =
 	let setoid = setoid_of_relation (Global.env ()) r req in
 	let signature = [Some (r,req);Some (r,req)],Some(Lazy.lazy_from_val (r,req)) in
 	let add_m, add_m_lem =
-	  try Class_tactics.default_morphism signature add
+	  try Rewrite.default_morphism signature add
           with Not_found ->
             error "ring addition should be declared as a morphism" in
 	let mul_m, mul_m_lem =
-          try Class_tactics.default_morphism signature mul
+          try Rewrite.default_morphism signature mul
           with Not_found ->
             error "ring multiplication should be declared as a morphism" in
         let op_morph =
           match opp with
             | Some opp ->
 		(let opp_m,opp_m_lem =
-		  try Class_tactics.default_morphism ([Some(r,req)],Some(Lazy.lazy_from_val (r,req))) opp
+		  try Rewrite.default_morphism ([Some(r,req)],Some(Lazy.lazy_from_val (r,req))) opp
 		  with Not_found ->
                     error "ring opposite should be declared as a morphism" in
 		let op_morph =
@@ -1057,7 +1057,7 @@ let field_equality r inv req =
 	let _setoid = setoid_of_relation (Global.env ()) r req in
 	let signature = [Some (r,req)],Some(Lazy.lazy_from_val (r,req)) in
 	let inv_m, inv_m_lem =
-	  try Class_tactics.default_morphism signature inv
+	  try Rewrite.default_morphism signature inv
           with Not_found ->
             error "field inverse should be declared as a morphism" in
 	  inv_m_lem

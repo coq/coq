@@ -78,15 +78,15 @@ Program Instance flip_Irreflexive `(Irreflexive A R) : Irreflexive (flip R) :=
 
 Program Instance flip_Symmetric `(Symmetric A R) : Symmetric (flip R).
 
-  Solve Obligations using unfold flip ; intros ; tcapp symmetry ; assumption.
+  Solve Obligations using unfold flip ; intros ; eapply symmetry ; assumption.
 
 Program Instance flip_Asymmetric `(Asymmetric A R) : Asymmetric (flip R).
   
-  Solve Obligations using program_simpl ; unfold flip in * ; intros ; typeclass_app asymmetry ; eauto.
+  Solve Obligations using program_simpl ; unfold flip in * ; intros ; eapply asymmetry ; eauto.
 
 Program Instance flip_Transitive `(Transitive A R) : Transitive (flip R).
 
-  Solve Obligations using unfold flip ; program_simpl ; typeclass_app transitivity ; eauto.
+  Solve Obligations using unfold flip ; program_simpl ; eapply transitivity ; eauto.
 
 Program Instance Reflexive_complement_Irreflexive `(Reflexive A (R : relation A))
    : Irreflexive (complement R).
