@@ -492,15 +492,14 @@ let w_coerce env evd mv c =
 let unify_to_type env evd flags c u =
   let sigma = evars_of evd in
   let c = refresh_universes c in
-  let t = get_type_of_with_meta env sigma (metas_of evd) c in
+  let t = get_type_of_with_meta env sigma (metas_of evd) (nf_meta evd c) in
   let t = Tacred.hnf_constr env sigma (nf_betaiota sigma (nf_meta evd t)) in
   let u = Tacred.hnf_constr env sigma u in
-  try unify_0 env sigma Cumul flags t u
-  with e when precatchable_exception e -> ([],[])
+  unify_0 env sigma Cumul flags t u
 
 let unify_type env evd flags mv c =
   let mvty = Typing.meta_type evd mv in
-  if occur_meta_or_existential mvty then
+  if occur_meta_or_existential mvty or is_arity env (evars_of evd) mvty then
     unify_to_type env evd flags c mvty
   else ([],[])
 

@@ -15,6 +15,7 @@ Tactics
   when used in Ltac.
 - Fixing bad parentheses check in "pose (f binders := ...)" syntax.
 - Fixing unbalanced parenthesis in Ltac debug trace printer.
+- Fixing missing sort unification check in lemma application (bug #2084).
 
 Tools and development
 
