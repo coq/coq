@@ -112,6 +112,19 @@ let dotted_location (b,e) =
   else 
     (String.make (e-b-1) '.', " ")
 
+let blanching_string s i n =
+  let s = String.sub s i n in
+  for i = 0 to String.length s - 1 do
+    let n = Char.code s.[i] in
+    (* Heuristic: assume utf-8 chars are printed using a single
+    fixed-size char and therefore contract all utf-8 code into one
+    space and trailing null chars; in any case, preserve tabulation so
+    that its effective interpretation in terms of spacing is preserved *)
+    if 0xC0 > n && n >= 0x80 then s.[i] <- '\000'
+    else if s.[i] <> '\t' then s.[i] <- ' '
+  done; s
+
+
 let print_highlight_location ib loc =
   let (bp,ep) = unloc loc in
   let bp = bp - ib.start 
@@ -120,7 +133,7 @@ let print_highlight_location ib loc =
     match get_bols_of_loc ib (bp,ep) with
       | ([],(bl,el)) ->  
 	  (str"> " ++ str(String.sub ib.str bl (el-bl-1)) ++ fnl () ++
-             str"> " ++ str(String.make (bp-bl) ' ') ++
+             str"> " ++ str(blanching_string ib.str bl (bp-bl)) ++
              str(String.make (ep-bp) '^'))
       | ((b1,e1)::ml,(bn,en)) ->
           let (d1,s1) = dotted_location (b1,bp) in

@@ -735,7 +735,10 @@ let is_binder_level from e =
 
 let rec symbol_of_production assoc from forpat typ =
   if is_binder_level from typ then
-    Gramext.Snterml (Gram.Entry.obj Constr.operconstr,"200")
+    if forpat then
+      Gramext.Snterml (Gram.Entry.obj Constr.pattern,"200")
+    else
+      Gramext.Snterml (Gram.Entry.obj Constr.operconstr,"200")
   else if is_self from typ then
     Gramext.Sself
   else

@@ -1132,9 +1132,9 @@ let look_for_mutual_statements thms =
     let n = List.length thms in
     let inds = List.map (fun (id,(t,_) as x) -> 
       let (hyps,ccl) = decompose_prod_assum t in
-      let whnf_hyp_hds = map_rel_context_with_binders
-        (fun i c -> fst (whd_betadeltaiota_stack (Global.env()) Evd.empty (lift i c)))
-        hyps in
+      let whnf_hyp_hds = fold_map_rel_context
+        (fun env c -> fst (whd_betadeltaiota_stack env Evd.empty c))
+        (Global.env()) hyps in
       let ind_hyps =
         List.flatten (list_map_i (fun i (_,b,t) ->
           match kind_of_term t with

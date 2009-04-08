@@ -36,3 +36,10 @@ Section A. Global Notation "'Z'" := O (at level 9). End A.
 
 Notation "$ x" := (id x) (at level 30).
 Check ($ 5).
+
+(* Check regression of bug #2087 *)
+
+Notation "'exists' x , P" := (x, P)
+   (at level 200, x ident, right associativity,	only parsing).
+
+Definition foo P := let '(exists x, Q) := P in x = Q :> nat.

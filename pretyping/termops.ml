@@ -1074,6 +1074,15 @@ let assums_of_rel_context sign =
         | None -> (na, t)::l)
     sign ~init:[]
 
+let fold_map_rel_context f env sign =
+  let rec aux env acc = function
+    | d::sign ->
+	aux (push_rel d env) (map_rel_declaration (f env) d :: acc) sign
+    | [] ->
+	acc
+  in
+  aux env [] (List.rev sign)
+
 let map_rel_context_with_binders f sign =
   let rec aux k = function
     | d::sign -> map_rel_declaration (f k) d :: aux (k-1) sign
