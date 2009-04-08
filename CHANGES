@@ -1,3 +1,27 @@
+Changes from V8.2 to forthcoming V8.2pl1
+========================================
+
+Language and commands
+
+- Fixing Not_found bug in Theorem with.
+- Fixing pattern parsing bug #2087.
+- Fixing name aliases bug #2085 with modules.
+- Fixing checker bug #2065 with -impredicative-set option.
+- Complying with 8.1 heuristic when unification returns several solutions.
+
+Tactics
+
+- Fixing correct binding of quantified hypotheses for induction/destruction
+  when used in Ltac.
+- Fixing bad parentheses check in "pose (f binders := ...)" syntax.
+- Fixing unbalanced parenthesis in Ltac debug trace printer.
+
+Tools and development
+
+- Fixing missing -c option in coq_makefile.
+- Temporary hack for coqide.byte "double free or corruption" problem.
+- Added support for code development under Bazaar.
+
 Changes from V8.1 to V8.2
 =========================
 
