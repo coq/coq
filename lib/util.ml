@@ -682,13 +682,6 @@ let list_eq_set l1 l2 =
 
 let list_for_all2eq f l1 l2 = try List.for_all2 f l1 l2 with Failure _ -> false
 
-let list_map_i f = 
-  let rec map_i_rec i = function
-    | [] -> [] 
-    | x::l -> let v = f i x in v::map_i_rec (i+1) l
-  in 
-  map_i_rec
-
 let list_filter_i p =
   let rec filter_i_rec i = function
     | [] -> []
