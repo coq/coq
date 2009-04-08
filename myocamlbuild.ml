@@ -201,7 +201,7 @@ let rec make_bin_links = function
 	    if opt then ln_sf (obd^".native") (bd^".opt");
 	    ln_sf (b^best_ext) bd
 	| Best -> ln_sf (obd^best_oext) bd
-	| BestInPlace -> ln_sf (b^best_oext) ob
+	| BestInPlace -> ln_sf (b^best_oext) (!_build^"/"^ob)
 
 let incl f = Ocaml_utils.ocaml_include_flags f
 
