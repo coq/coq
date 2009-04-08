@@ -238,15 +238,25 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let rel = interp_constr isevars env r in
-  let measure = interp_constr isevars binders_env measure in
-  let measure_ty = type_of binders_env !isevars measure in
+  let relty = type_of env !isevars rel in
+  let relargty = 
+    let ctx, ar = Reductionops.splay_prod_n env !isevars 2 relty in
+      match ctx, kind_of_term ar with
+      | [(_, None, t); (_, None, u)], Sort (Prop Null) 
+	  when Reductionops.is_conv env !isevars t u -> t
+      | _, _ -> 
+	  user_err_loc (constr_loc r,
+		       "Subtac_command.build_wellfounded",
+		       my_print_constr env rel ++ str " is not an homogeneous binary relation.")
+  in
+  let measure = interp_casted_constr isevars binders_env measure relargty in
   let wf_rel, wf_rel_fun, measure_fn =
     let measure_body, measure =
       it_mkLambda_or_LetIn measure letbinders,
       it_mkLambda_or_LetIn measure binders
     in
     let comb = constr_of_global (Lazy.force measure_on_R_ref) in
-    let wf_rel = mkApp (comb, [| argtyp; measure_ty; rel; measure |]) in 
+    let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in 
     let wf_rel_fun x y =
       mkApp (rel, [| subst1 x measure_body;
  		     subst1 y measure_body |])
