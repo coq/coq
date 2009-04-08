@@ -1355,7 +1355,7 @@ SOURCEDOCDIR=dev/source-doc
 .PHONY: source-doc
 
 source-doc:
-	if !(test -d $(SOURCEDOCDIR)); then mkdir $(SOURCEDOCDIR); fi
+	if (test ! -d $(SOURCEDOCDIR)); then mkdir $(SOURCEDOCDIR); fi
 	$(OCAMLDOC) -html -rectypes $(LOCALINCLUDES) -d $(SOURCEDOCDIR) `find . -name "*.ml"`
 
 clean::
