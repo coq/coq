@@ -46,7 +46,7 @@
 "tactics/tauto.ml4": use_grammar
 "tactics/eqdecide.ml4": use_grammar
 "tactics/hipattern.ml4": use_grammar, use_constr
-
+"tactics/rewrite.ml4": use_grammar
 
 ## sub-directory inclusion
 
