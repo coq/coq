@@ -396,7 +396,10 @@ let interp_recursive fixkind l boxed =
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let rec_sign = 
-    List.fold_left2 (fun env id t -> (id,None,t) :: env)
+    List.fold_left2 (fun env' id t ->
+      let sort = Retyping.get_type_of env !evdref t in
+      let fixprot = mkApp (Lazy.force Subtac_utils.fix_proto, [|sort; t|]) in
+	(id,None,fixprot) :: env')
       [] fixnames fixtypes
   in
   let env_rec = push_named_context rec_sign env in

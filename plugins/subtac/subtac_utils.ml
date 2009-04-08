@@ -17,6 +17,7 @@ let fix_sub_module = "Wf"
 let utils_module = "Utils"
 let fixsub_module = subtac_dir @ [fix_sub_module]
 let utils_module = subtac_dir @ [utils_module]
+let tactics_module = subtac_dir @ ["Tactics"]
 let init_constant dir s = gen_constant contrib_name dir s
 let init_reference dir s = gen_reference contrib_name dir s
 
@@ -47,6 +48,8 @@ let build_sig () =
     typ = init_constant ["Init"; "Specif"] "sig" }
 
 let sig_ = lazy (build_sig ())
+
+let fix_proto = lazy (init_constant tactics_module "fix_proto")
 
 let eq_ind = lazy (init_constant ["Init"; "Logic"] "eq")
 let eq_rec = lazy (init_constant ["Init"; "Logic"] "eq_rec")

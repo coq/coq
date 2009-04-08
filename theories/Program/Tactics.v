@@ -185,6 +185,18 @@ Tactic Notation "destruct_call" constr(f) "in" hyp(id) :=
 Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) "in" hyp(id) := 
   destruct_call_as_in f l id.
 
+(** A marker for prototypes to destruct. *)
+
+Definition fix_proto {A : Type} (a : A) := a.
+
+Ltac destruct_rec_calls :=
+  match goal with
+    | [ H : fix_proto _ |- _ ] => destruct_calls H ; clear H
+  end.
+
+Ltac destruct_all_rec_calls := 
+  repeat destruct_rec_calls ; unfold fix_proto in *.
+
 (** Try to inject any potential constructor equality hypothesis. *)
 
 Ltac autoinjection tac :=
@@ -252,7 +264,8 @@ Ltac refine_hyp c :=
    possibly using [program_simplify] to use standard goal-cleaning tactics. *)
 
 Ltac program_simplify :=
-  simpl ; intros ; destruct_conjs ; simpl proj1_sig in * ; subst* ; autoinjections ; try discriminates ;
+  simpl in |- *; intros ; destruct_all_rec_calls ; repeat (destruct_conjs; simpl proj1_sig in *); 
+  subst*; autoinjections ; try discriminates ;
     try (solve [ red ; intros ; destruct_conjs ; autoinjections ; discriminates ]).
 
 Ltac program_simpl := program_simplify ; auto.

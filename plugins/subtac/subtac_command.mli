@@ -42,6 +42,16 @@ val interp_binder :     Evd.evar_defs ref ->
     Environ.env -> Names.name -> Topconstr.constr_expr -> Term.constr
 
 
+val telescope :
+  (Names.name * 'a option * Term.types) list ->
+  Term.types * (Names.name * Term.types option * Term.types) list *
+    Term.constr
+
+val build_wellfounded : 
+           Names.identifier * 'a * Topconstr.local_binder list *
+           Topconstr.constr_expr * Topconstr.constr_expr ->
+           Topconstr.constr_expr ->
+           Topconstr.constr_expr -> 'b -> 'c -> Subtac_obligations.progress
 
 val build_recursive :
   (fixpoint_expr * decl_notation) list -> bool -> unit

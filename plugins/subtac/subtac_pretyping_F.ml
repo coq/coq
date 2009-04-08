@@ -1,4 +1,4 @@
-(* -*- compile-command: "make -C ../.. bin/coqtop.byte" -*- *)
+(* -*- compile-command: "make -C ../.. plugins/subtac/subtac_plugin.cma" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -221,7 +221,14 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let nbfix = Array.length lar in
 	let names = Array.map (fun id -> Name id) names in
 	  (* Note: bodies are not used by push_rec_types, so [||] is safe *)
-	let newenv = push_rec_types (names,ftys,[||]) env in
+	let newenv = 
+	  let marked_ftys = 
+	    Array.map (fun ty -> let sort = Retyping.get_type_of env !isevars ty in
+				   mkApp (Lazy.force Subtac_utils.fix_proto, [| sort; ty |]))
+	      ftys
+	  in
+	    push_rec_types (names,marked_ftys,[||]) env 
+	in
 	let fixi = match fixkind with RFix (vn, i) -> i | RCoFix i -> i in
 	let vdefj =
 	  array_map2_i 

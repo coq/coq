@@ -92,7 +92,6 @@ let subst_vars acc n t =
 (** Rewrite type of an evar ([ H1 : t1, ... Hn : tn |- concl ])
     to a product : forall H1 : t1, ..., forall Hn : tn, concl.
     Changes evars and hypothesis references to variable references.
-    A little optimization: don't include unnecessary let-ins and their dependencies.
 *) 
 let etype_of_evar evs hyps concl =
   let rec aux acc n = function
@@ -104,11 +103,9 @@ let etype_of_evar evs hyps concl =
 	let trans' = Idset.union trans trans' in
 	  (match copt with
 	      Some c -> 
-(* 		if noccurn 1 rest then lift (-1) rest, s', trans' *)
-(* 		else *)
-		  let c', s'', trans'' = subst_evar_constr evs n c in
-		  let c' = subst_vars acc 0 c' in
-		    mkNamedProd_or_LetIn (id, Some c', t'') rest, 
+		let c', s'', trans'' = subst_evar_constr evs n c in
+		let c' = subst_vars acc 0 c' in
+		  mkNamedProd_or_LetIn (id, Some c', t'') rest, 
 		Intset.union s'' s', 
 		Idset.union trans'' trans'
 	    | None -> 
