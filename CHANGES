@@ -21,6 +21,7 @@ Tools and development
 - Fixing missing -c option in coq_makefile.
 - Temporary hack for coqide.byte "double free or corruption" problem.
 - Added support for code development under Bazaar.
+- Added support for compilation under Solaris (thanks to Eric Le Lay, #2078).
 
 Changes from V8.1 to V8.2
 =========================
