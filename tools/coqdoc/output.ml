@@ -554,7 +554,11 @@ module Html = struct
 
   let end_inline_coq () = printf "</span>"
 
-  let paragraph () = stop_item (); printf "\n<br/><br/>\n"
+  let paragraph () = 
+    let i = !item_level in
+      stop_item ();
+      if i > 0 then printf "\n"
+      else printf "\n<br/> <br/>\n"
 
   let section lev f =
     let lab = new_label () in
