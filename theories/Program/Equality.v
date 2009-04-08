@@ -479,8 +479,12 @@ Ltac intro_prototypes :=
     | _ => idtac
   end.
 
-Ltac do_case p := destruct p || elim_case p || (case p ; clear p).
-Ltac do_ind p := induction p || elim_ind p.
+Ltac introduce p := 
+  first [ match p with _ => idtac end (* Already there *)
+    | intros until p | intros ].
+
+Ltac do_case p := introduce p ; (destruct p || elim_case p || (case p ; clear p)).
+Ltac do_ind p := introduce p ; (induction p || elim_ind p).
 
 Ltac dep_elimify := match goal with [ |- ?T ] => change (block_dep_elim T) end.
 
