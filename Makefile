@@ -1,6 +1,6 @@
 #######################################################################
 #  v      #   The Coq Proof Assistant  /  The Coq Development Team    #
-# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              #
+# <O___,, #        INRIA-Rocquencourt  &  LRI-CNRS-osay              #
 #   \VV/  #############################################################
 #    //   #      This file is distributed under the terms of the      #
 #         #       GNU Lesser General Public License Version 2.1       #
@@ -66,21 +66,21 @@
 # but doesn't care if this build fails. This can be quite surprising,
 # see in particular the -include in Makefile.stage*
 
-
+export SHELL:=/bin/bash
 
 # !! Before using FIND_VCS_CLAUSE, please read how you should in the !!
 # !! FIND_VCS_CLAUSE section of dev/doc/build-system.dev.txt         !!
 export FIND_VCS_CLAUSE:='(' \
-  -name '{arch}' -or \
-  -name '.svn' -or \
-  -name '_darcs' -or \
-  -name '.git' -or \
-  -name '.bzr' -or \
-  -name 'debian' -or \
-  -name "$${GIT_DIR}" -or \
+  -name '{arch}' -o \
+  -name '.svn' -o \
+  -name '_darcs' -o \
+  -name '.git' -o \
+  -name '.bzr' -o \
+  -name 'debian' -o \
+  -name "$${GIT_DIR}" -o \
   -name '_build' \
-')' -prune -or
-export PRUNE_CHECKER := -wholename ./checker/\* -prune -or
+')' -prune -o
+export PRUNE_CHECKER := -wholename ./checker/\* -prune -o
 
 FIND_PRINTF_P:=-print | sed 's|^\./||'
 
@@ -189,16 +189,16 @@ clean: objclean cruftclean depclean docclean devdocclean
 objclean: archclean indepclean
 
 cruftclean: ml4clean
-	find . -name '*~' -or -name '*.annot' | xargs rm -f
+	find . -name '*~' -o -name '*.annot' | xargs rm -f
 	rm -f gmon.out core
 
 indepclean:
 	rm -f $(GENFILES)
 	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
 	rm -f bin/coq-interface$(EXE) bin/coq-parser$(EXE)
-	find . -name '*~' -or -name '*.cm[ioa]' | xargs rm -f
+	find . -name '*~' -o -name '*.cm[ioa]' | xargs rm -f
 	find . -name '*_mod.ml' | xargs rm -f
-	find plugins test-suite -name '*.vo' -or -name '*.glob' | xargs rm -f
+	find plugins test-suite -name '*.vo' -o -name '*.glob' | xargs rm -f
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
@@ -227,7 +227,7 @@ archclean: clean-ide cleantheories
 	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN) $(COQDEPBOOT)
 	rm -f $(COQTOPOPT) $(COQMKTOPOPT) $(COQCOPT) $(CHICKENOPT)
 	rm -f bin/coq-parser.opt$(EXE) bin/coq-interface.opt$(EXE)
-	find . -name '*.cmx' -or -name '*.cmxs' -or -name '*.cmxa' -or -name '*.[soa]' -or -name '*.so' | xargs rm -f
+	find . -name '*.cmx' -o -name '*.cmxs' -o -name '*.cmxa' -o -name '*.[soa]' -o -name '*.so' | xargs rm -f
 	rm -f $(TOOLS) $(CSDPCERT)
 	rm -rf _build myocamlbuild_config.ml
 
@@ -254,7 +254,7 @@ distclean: clean cleanconfig
 
 cleantheories:
 	rm -f states/*.coq
-	find theories -name '*.vo' -or -name '*.glob' | xargs rm -f
+	find theories -name '*.vo' -o -name '*.glob' | xargs rm -f
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' -exec rm -f {} \;

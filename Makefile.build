@@ -365,12 +365,12 @@ else
 # coq-interface and coq-parser are direct calls to coqtop with some dynlink
 
 bin/coq-interface$(EXE):
-	echo "#!/bin/sh" > $@
+	echo "#!/bin/bash" > $@
 	echo 'exec '$(BINDIR)'/coqtop -require CoqInterface' >> $@
 	chmod +x $@
 
 bin/coq-parser$(EXE):
-	echo "#!/bin/sh" > $@
+	echo "#!/bin/bash" > $@
 	echo 'exec '$(BINDIR)'/coqtop -batch -l CoqParser' >> $@
 	chmod +x $@
 
@@ -889,7 +889,7 @@ else
 endif
 %.ml4.d: $(D_DEPEND_BEFORE_SRC) %.ml4
 	$(SHOW)'CAMLP4DEPS $<'
-	$(HIDE)( /bin/echo -n '$*.cmo $*.cmx $*.ml4.ml.d $*.ml4-preprocessed: $(SEP)' && $(CAMLP4DEPS) "$<" ) > "$@" \
+	$(HIDE)( printf "%s" '$*.cmo $*.cmx $*.ml4.ml.d $*.ml4-preprocessed: $(SEP)' && $(CAMLP4DEPS) "$<" ) > "$@" \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 
 %.ml4.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml4 $(D_DEPEND_AFTER_SRC) $(GENFILES) $(ML4FILESML) %.ml4.d

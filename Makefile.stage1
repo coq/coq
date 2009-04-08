@@ -6,6 +6,7 @@
 #         #       GNU Lesser General Public License Version 2.1       #
 #######################################################################
 
+export SHELL:=/bin/bash
 include Makefile.build
 
 # All includes must be declared secondary, otherwise make will delete

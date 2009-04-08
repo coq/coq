@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ##################################
 #
@@ -293,7 +293,7 @@ case $arch_spec in
  	    ARCH=`/usr/bin/uname -s`
 	else
 	    echo "I can not automatically find the name of your architecture"
-	    echo -n\
+	    printf "%s"\
 		"Give me a name, please [win32 for Win95, Win98 or WinNT]: "
 	    read ARCH
 	fi
