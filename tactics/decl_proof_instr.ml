@@ -487,9 +487,6 @@ let thus_tac c ctyp submetas gls =
 
 (* general forward step *)
 
-
-let anon_id_base = id_of_string "__" 
-
 let mk_stat_or_thesis info gls = function  
     This c -> c
   | Thesis (For _ ) -> 
@@ -842,12 +839,6 @@ let rec constr_trees (main_ind,wft) ind =
 	  (snd (Global.lookup_inductive ind)).mind_recargs in 
 	  constr_trees (None,itree) ind
     | _,constrs -> main_ind,constrs
-
-let constr_args rp constr =
-  let main_ind,constrs = constr_trees rp (fst constr) in
-  let ctree = constrs.(pred (snd constr)) in
-    array_map_to_list (fun t -> main_ind,t) 
-      (snd (Rtree.dest_node ctree))
 
 let ind_args rp ind =
     let main_ind,constrs = constr_trees rp ind in
@@ -1212,8 +1203,6 @@ let pop_one (id,stack) =
 let pop_stacks stacks =
   List.map pop_one stacks
 
-let patvar_base = id_of_string "__"
-
 let hrec_for fix_id per_info gls obj_id =
   let obj=mkVar obj_id in
   let typ=pf_get_hyp_typ gls obj_id in
@@ -1392,15 +1381,6 @@ let end_tac et2 gls =
 
 (* escape *)
 
-let rec abstract_metas n avoid head = function
-    [] -> 1,head,[]
-  | (meta,typ)::rest -> 
-      let id = next_ident_away (id_of_string "_sbgl") avoid in
-      let p,term,args = abstract_metas (succ n) (id::avoid) head rest in 
-	succ p,mkLambda(Name id,typ,subst_meta [meta,mkRel p] term),
-      (mkMeta n)::args 
-
-    
 let escape_tac gls =  tcl_erase_info gls
 
 (* General instruction engine *)

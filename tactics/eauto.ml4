@@ -207,8 +207,6 @@ let e_possible_resolve mod_delta db_list local_db gl =
 	(fst (head_constr_bound gl)) gl)
   with Bound | Not_found -> []
 
-let assumption_tac_list id = apply_tac_list (e_give_exact_constr (mkVar id))
-
 let find_first_goal gls = 
   try first_goal gls with UserError _ -> assert false
 
@@ -323,8 +321,6 @@ let make_initial_state n gl dblist localdb =
     last_tactic = (mt ());
     dblist = dblist;
     localdb = [localdb] }
-
-let debug_depth_first = Search.debug_depth_first
 
 let e_depth_search debug p db_list local_db gl =
   try

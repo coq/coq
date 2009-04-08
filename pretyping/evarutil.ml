@@ -261,10 +261,6 @@ let e_new_evar evdref env ?(src=(dummy_loc,InternalHole)) ?filter ty =
  * operations on the evar constraints *
  *------------------------------------*)
 
-let is_pattern inst =
-  array_for_all (fun a -> isRel a || isVar a) inst &&
-  array_distinct inst
-
 (* Pb: defined Rels and Vars should not be considered as a pattern... *)
 (*
 let is_pattern inst =
@@ -275,19 +271,6 @@ let is_pattern inst =
   is_hopat [] (Array.to_list inst)
 *)
 
-let evar_well_typed_body evd ev evi body =
-  try
-    let env = evar_unfiltered_env evi in
-    let ty = evi.evar_concl in
-    Typing.check env ( evd) body ty;
-    true
-  with e ->
-    pperrnl
-      (str "Ill-typed evar instantiation: " ++ fnl() ++
-       pr_evar_defs evd ++ fnl() ++
-       str "----> " ++ int ev ++ str " := " ++
-       print_constr body);
-    false
 
 (* We have x1..xq |- ?e1 and had to solve something like 
  * Σ; Γ |- ?e1[u1..uq] = (...\y1 ... \yk ... c), where c is typically some 
@@ -806,12 +789,6 @@ let solve_evar_evar f env evd ev1 ev2 =
   try solve_evar_evar_l2r f env evd ev2 ev1
   with CannotProject projs2 ->
   postpone_evar_evar env evd projs1 ev1 projs2 ev2
-
-let expand_rhs env sigma subst rhs =
-  let d = (named_hd env rhs Anonymous,Some rhs,get_type_of env sigma rhs) in
-  let rhs' = lift 1 rhs in
-  let f (id,(idc,t)) = (id,(idc,replace_term rhs' (mkRel 1) (lift 1 t))) in
-  push_rel d env, List.map f subst, mkRel 1
 
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times

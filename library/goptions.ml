@@ -77,8 +77,7 @@ module MakeTable =
       if List.mem_assoc nick !A.table then
 	error "Sorry, this table name is already used"
 
-    module MyType = struct type t = A.t let compare = Pervasives.compare end
-    module MySet = Set.Make(MyType)
+    module MySet = Set.Make (struct type t = A.t let compare = compare end)
 
     let t = ref (MySet.empty : MySet.t)
 
@@ -219,8 +218,8 @@ type 'a option_sig = {
 
 type option_type = bool * (unit -> value) -> (value -> unit) 
 
-module Key = struct type t = option_name let compare = Pervasives.compare end
-module OptionMap = Map.Make(Key)
+module OptionMap =
+  Map.Make (struct  type t = option_name let compare = compare end)
 
 let value_tab = ref OptionMap.empty
 

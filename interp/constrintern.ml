@@ -113,11 +113,6 @@ let explain_internalisation_error e =
   | BadExplicitationNumber (n,po) -> explain_bad_explicitation_number n po in
   pp ++ str "."
 
-let error_unbound_patvar loc n =
-  user_err_loc
-    (loc,"glob_qualid_or_patvar", str "?" ++ pr_patvar n ++ 
-      str " is unbound.")
-
 let error_bad_inductive_type loc =
   user_err_loc (loc,"",str 
     "This should be an inductive type applied to names or \"_\".")
@@ -389,12 +384,6 @@ let interp_reference vars r =
 let apply_scope_env (ids,unb,_,scopes) = function
   | [] -> (ids,unb,None,scopes), []
   | sc::scl -> (ids,unb,sc,scopes), scl
-
-let rec adjust_scopes env scopes = function
-  | [] -> []
-  | a::args ->
-      let (enva,scopes) = apply_scope_env env scopes in
-      enva :: adjust_scopes env scopes args
 
 let rec simple_adjust_scopes n = function
   | [] -> if n=0 then [] else None :: simple_adjust_scopes (n-1) []
@@ -1210,9 +1199,6 @@ let intern_pattern env patt =
 	user_err_loc (loc,"internalize",explain_internalisation_error e)
 
 
-let intern_ltac isarity ltacvars sigma env c =
-  intern_gen isarity sigma env ~ltacvars:ltacvars c
-
 type manual_implicits = (explicitation * (bool * bool * bool)) list
 
 (*********************************************************************)
@@ -1288,10 +1274,6 @@ let interp_casted_constr_evars evdref env ?(impls=([],[])) c typ =
 
 let interp_type_evars evdref env ?(impls=([],[])) c =
   interp_constr_evars_gen evdref env IsType ~impls c
-
-let interp_constr_judgment_evars evdref env c =
-  Default.understand_judgment_tcc evdref env
-    (intern_constr ( !evdref) env c)
 
 type ltac_sign = identifier list * unbound_ltac_var_map
 

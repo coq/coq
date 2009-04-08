@@ -51,9 +51,6 @@ let load_rcfile() =
   else 
     Flags.if_verbose msgnl (str"Skipping rcfile loading.")
 
-let add_ml_include s =
-  Mltop.add_ml_dir s
-
 (* Puts dir in the path of ML and in the LoadPath *)
 let coq_add_path d s =
   Mltop.add_path d (Names.make_dirpath [Nameops.coq_root;Names.id_of_string s])
@@ -63,11 +60,6 @@ let coq_add_rec_path s = Mltop.add_rec_path s (Names.make_dirpath [Nameops.coq_r
 let includes = ref []
 let push_include (s, alias) = includes := (s,alias,false) :: !includes
 let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
-
-(* Because find puts "./" and the loadpath is not nicely pretty-printed *)
-let hm2 s = 
-  let n = String.length s in
-  if n > 1 && s.[0] = '.' && s.[1] = '/' then String.sub s 2 (n-2) else s
 
 (* The list of all theories in the standard library /!\ order does matter *)
 let theories_dirs_map = [

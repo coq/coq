@@ -77,14 +77,9 @@ type flags = {fastcomputation : bool}
 
 (*A definition of maps from strings to pro_int31, to be able
   to have any amount of coq representation for the 31bits integers *)
-module OrderedField =
-struct
-  type t = field
-  let compare = compare
-end
 
-module Proactive = Map.Make (OrderedField)
-
+module Proactive =
+  Map.Make (struct type t = field let compare = compare end)
 
 type proactive = entry Proactive.t
 
@@ -98,13 +93,8 @@ type proactive = entry Proactive.t
    a finite type describing the fields to the field of proactive retroknowledge
    (and then to make as many functions as needed in environ.ml) *)
 
-module OrderedEntry =
-struct
-  type t = entry
-  let compare = compare
-end
-
-module Reactive = Map.Make (OrderedEntry)
+module Reactive =
+  Map.Make (struct type t = entry let compare = compare end)
 
 type reactive_end = {(*information required by the compiler of the VM *)
   vm_compiling :

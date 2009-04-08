@@ -92,19 +92,6 @@ let insert_pat_alias loc p = function
 (**********************************************************************)
 (* conversion of references                                           *)
 
-let ids_of_ctxt ctxt =
-  Array.to_list
-    (Array.map
-       (function c -> match kind_of_term c with
-	  | Var id -> id
-	  | _ ->
-       error "Arbitrary substitution of references not implemented.")
-     ctxt)
-
-let idopt_of_name = function 
-  | Name id -> Some id
-  | Anonymous -> None
-
 let extern_evar loc n l =
   if !print_evar_arguments then CEvar (loc,n,l) else CEvar (loc,n,None)
 
@@ -574,33 +561,6 @@ let rec rename_rawconstr_var id0 id1 = function
   | RVar(loc,id) when id=id0 -> RVar(loc,id1)
   | c -> map_rawconstr (rename_rawconstr_var id0 id1) c
 
-let rec share_fix_binders n rbl ty def =
-  match ty,def with
-      RProd(_,na0,bk0,t0,b), RLambda(_,na1,bk1,t1,m) ->
-        if not(same_rawconstr t0 t1) then List.rev rbl, ty, def
-        else
-          let (na,b,m) =
-            match na0, na1 with
-                Name id0, Name id1 ->
-                  if id0=id1 then (na0,b,m)
-                  else if not (occur_rawconstr id1 b) then
-                    (na1,rename_rawconstr_var id0 id1 b,m)
-                  else if not (occur_rawconstr id0 m) then
-                    (na1,b,rename_rawconstr_var id1 id0 m)
-                  else (* vraiment pas de chance! *)
-                    failwith "share_fix_binders: capture"
-              | Name id, Anonymous ->
-                  if not (occur_rawconstr id m) then (na0,b,m)
-                  else
-                    failwith "share_fix_binders: capture"
-              | Anonymous, Name id -> 
-                  if not (occur_rawconstr id b) then (na1,b,m)
-                  else
-                    failwith "share_fix_binders: capture"
-              | _ -> (na1,b,m) in
-          share_fix_binders (n-1) ((na,None,t0)::rbl) b m
-    | _ -> List.rev rbl, ty, def
-
 (**********************************************************************)
 (* mapping rawterms to numerals (in presence of coercions, choose the *)
 (* one with no delimiter if possible)                                 *)
@@ -910,13 +870,6 @@ let extern_sort s = extern_rawsort (detype_sort s)
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
 
-let it_destPLambda n c =
-  let rec aux n nal c =
-    if n=0 then (nal,c) else match c with
-      | PLambda (na,_,c) -> aux (n-1) (na::nal) c
-      | _ -> anomaly "it_destPLambda" in
-  aux n [] c
-
 let rec raw_of_pat env = function
   | PRef ref -> RRef (loc,ref)
   | PVar id -> RVar (loc,id)
@@ -964,9 +917,6 @@ let rec raw_of_pat env = function
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)
-
-and raw_of_eqns env constructs consnargsl bl =
-  Array.to_list (array_map3 (raw_of_eqn env) constructs consnargsl bl)
 
 and raw_of_eqn env constr construct_nargs branch =
   let make_pat x env b ids =

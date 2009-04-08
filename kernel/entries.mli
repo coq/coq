@@ -69,14 +69,7 @@ type constant_entry =
 
 (*s Modules *)
 
-type specification_entry = 
-    SPEconst of constant_entry
-  | SPEmind of mutual_inductive_entry
-  | SPEmodule of module_entry
-  | SPEalias of module_path
-  | SPEmodtype of module_struct_entry
-
-and module_struct_entry = 
+type module_struct_entry =
     MSEident of module_path
   | MSEfunctor of mod_bound_id * module_struct_entry * module_struct_entry
   | MSEwith of module_struct_entry * with_declaration
@@ -85,8 +78,6 @@ and module_struct_entry =
 and with_declaration = 
     With_Module of identifier list * module_path
   | With_Definition of identifier list * constr
-
-and module_structure = (label * specification_entry) list
 
 and module_entry = 
     { mod_entry_type : module_struct_entry option;

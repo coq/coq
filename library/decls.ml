@@ -70,7 +70,3 @@ let last_section_hyps dir =
       with Not_found -> sec_ids)
     (Environ.named_context (Global.env()))
     ~init:[]
-
-let is_section_variable = function
-  | VarRef _ -> true
-  | _ -> false

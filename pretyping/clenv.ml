@@ -32,7 +32,6 @@ open Coercion.Default
 
 let pf_env gls = Global.env_of_context gls.it.evar_hyps
 let pf_type_of gls c  = Typing.type_of (pf_env gls) gls.sigma c
-let pf_hnf_constr gls c = hnf_constr (pf_env gls) gls.sigma c
 let pf_concl gl = gl.it.evar_concl
 
 (******************************************************************)
@@ -167,8 +166,6 @@ let mentions clenv mv0 =
     meta_exists menrec mlist
   in menrec
 
-let clenv_defined clenv mv = meta_defined clenv.evd mv
-
 let error_incompatible_inst clenv mv  =
   let na = meta_name clenv.evd mv in
   match na with
@@ -196,8 +193,6 @@ let clenv_assign mv rhs clenv =
   with Not_found -> 
     error "clenv_assign: undefined meta"
 
-
-let clenv_wtactic f clenv = {clenv with evd = f clenv.evd }
 
 
 (* [clenv_dependent hyps_only clenv]

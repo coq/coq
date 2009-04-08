@@ -182,11 +182,6 @@ let interp_constr_or_thesis check_sort sigma env = function
     Thesis n -> Thesis n
   | This c -> This (interp_constr check_sort sigma env c)
 
-let type_tester_var body typ = 
-  raw_app(dummy_loc,
-       RLambda(dummy_loc,Anonymous,Explicit,typ,
-	       RSort (dummy_loc,RProp Null)),body)
-
 let abstract_one_hyp inject h raw = 
   match h with 
       Hvar (loc,(id,None)) ->  

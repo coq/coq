@@ -114,11 +114,6 @@ let mp_of_kn kn =
     else
       anomaly ("Non-empty section in module name!" ^ string_of_kn kn)
 
-let is_bound mp =
-  match mp with
-    | MPbound _ -> true
-    | _ -> false
-
 let dir_of_sp sp = 
   let dir,id = repr_path sp in
     extend_dirpath dir id
@@ -490,7 +485,7 @@ let open_keep i ((sp,kn),seg) =
   let dirpath,mp = dir_of_sp sp, mp_of_kn kn in
     open_objects i (dirpath,(mp,empty_dirpath)) seg
 
-let (in_modkeep,out_modkeep) = 
+let (in_modkeep,_) =
   declare_object {(default_object "MODULE KEEP OBJECTS") with
     cache_function = cache_keep;
     load_function = load_keep;
@@ -575,7 +570,7 @@ let classify_modtype (_,(_,substobjs)) =
   Substitute (None,substobjs)
 
 
-let (in_modtype,out_modtype) =
+let (in_modtype,_) =
     declare_object {(default_object "MODULE TYPE") with
       cache_function = cache_modtype;
       open_function = open_modtype;
@@ -859,7 +854,7 @@ let subst_import (_,subst,(export,mp as obj)) =
     if mp'==mp then obj else
       (export,mp')
 	
-let (in_import,out_import) = 
+let (in_import,_) =
   declare_object {(default_object "IMPORT MODULE") with
 		    cache_function = cache_import;
 		    open_function = (fun i o -> if i=1 then cache_import o);

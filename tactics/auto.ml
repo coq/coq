@@ -61,8 +61,6 @@ type pri_auto_tactic = {
 
 type hint_entry = global_reference option * pri_auto_tactic
 
-let pri_ord {pri=pri1} {pri=pri2} = pri1 - pri2
-
 let pri_order {pri=pri1} {pri=pri2} = pri1 <= pri2
 
 let insert v l = 
@@ -116,19 +114,6 @@ let is_transparent_gr (ids, csts) = function
   | VarRef id -> Idpred.mem id ids
   | ConstRef cst -> Cpred.mem cst csts
   | IndRef _ | ConstructRef _ -> false
-      
-let fmt_autotactic =
-  function
-  | Res_pf (c,clenv) -> (str"apply " ++ pr_lconstr c)
-  | ERes_pf (c,clenv) -> (str"eapply " ++ pr_lconstr c)
-  | Give_exact c -> (str"exact " ++ pr_lconstr c)
-  | Res_pf_THEN_trivial_fail (c,clenv) -> 
-      (str"apply " ++ pr_lconstr c ++ str" ; trivial")
-  | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
-  | Extern tac -> 
-      (str "(external) " ++ Pptactic.pr_glob_tactic (Global.env()) tac)
-
-let pr_autotactic = fmt_autotactic
 
 module Hint_db = struct
 
@@ -467,7 +452,7 @@ let classify_autohint (_,((local,name,hintlist) as obj)) =
 let export_autohint ((local,name,hintlist) as obj) =
   if local then None else Some obj
 
-let (inAutoHint,outAutoHint) =
+let (inAutoHint,_) =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;
 		    load_function = (fun _ -> cache_autohint);
@@ -713,9 +698,6 @@ let print_searchtable () =
 (**************************************************************************)
 
 let priority l = List.filter (fun (_,hint) -> hint.pri = 0) l
-
-let select_unfold_extern =
-  List.filter (function (_,{code = (Unfold_nth _ | Extern _)}) -> true | _ -> false)
 
 (* tell auto not to reuse already instantiated metas in unification (for
    compatibility, since otherwise, apply succeeds oftener) *)
@@ -1081,10 +1063,6 @@ type autoArguments =
   | UsingTDB       
   | Destructing   
 
-let keepAfter tac1 tac2 = 
-  (tclTHEN tac1 
-     (function g -> tac2 [pf_last_hyp g] g))
-
 let compileAutoArg contac = function
   | Destructing -> 
       (function g -> 
@@ -1138,8 +1116,6 @@ let search_superauto n to_add argl g =
 
 let superauto n to_add argl  = 
   tclTRY (tclCOMPLETE (search_superauto n to_add argl))
-
-let default_superauto g = superauto !default_search_depth [] [] g
 
 let interp_to_add gl r =
   let r = Syntax_def.locate_global_with_alias (qualid_of_reference r) in

@@ -68,8 +68,6 @@ module Bijint = struct
 	(let v = Array.make (b.s + 8) (x,y) in Array.blit b.v 0 v 0 b.s; v)
       else b.v in
     v.(b.s) <- (x,y); { v = v; s = b.s+1; inv = Gmap.add x b.s b.inv }
-  let replace n x y b =
-    let v = Array.copy b.v in v.(n) <- (x,y); { b with v = v }
   let dom b = Gmap.dom b.inv
 end
 
@@ -137,8 +135,6 @@ let cl_sort_index = fst(class_info CL_SORT)
 let coercion_info coe = Gmap.find coe !coercion_tab
 
 let coercion_exists coe = Gmap.mem coe !coercion_tab
-
-let coercion_params coe_info = coe_info.coe_param
 
 (* find_class_type : env -> evar_map -> constr -> cl_typ * int *)
 
@@ -383,7 +379,7 @@ let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
 	  discharge_cl clt,
           n + ps)
 
-let (inCoercion,outCoercion) =
+let (inCoercion,_) =
   declare_object {(default_object "COERCION") with 
     load_function = load_coercion;
     cache_function = cache_coercion;
@@ -394,9 +390,6 @@ let (inCoercion,outCoercion) =
 
 let declare_coercion coef stre ~isid ~src:cls ~target:clt ~params:ps =
   Lib.add_anonymous_leaf (inCoercion (coef,stre,isid,cls,clt,ps))
-
-let coercion_strength v = v.coe_strength
-let coercion_identity v = v.coe_is_identity
 
 (* For printing purpose *)
 let get_coercion_value v = v.coe_value

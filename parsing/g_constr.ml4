@@ -33,10 +33,6 @@ let mk_cast = function
     (c,(_,None)) -> c
   | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv (DEFAULTcast, ty))
 
-let mk_lam = function
-    ([],c) -> c
-  | (bl,c) -> CLambdaN(constr_loc c, bl,c)
-
 let loc_of_binder_let = function
   | LocalRawAssum ((loc,_)::_,_,_)::_ -> loc
   | LocalRawDef ((loc,_),_)::_ -> loc

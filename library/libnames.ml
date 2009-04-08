@@ -66,8 +66,6 @@ module RefOrdered =
 module Refset = Set.Make(RefOrdered)
 module Refmap = Map.Make(RefOrdered)
 
-let inductives_table = ref Indmap.empty
-
 (**********************************************)
 
 let pr_dirpath sl = (str (string_of_dirpath sl))

@@ -51,13 +51,7 @@ type name = Name of identifier | Anonymous
 type module_ident = identifier
 type dir_path = module_ident list
 
-module ModIdOrdered = 
-  struct
-    type t = identifier
-    let compare = Pervasives.compare
-  end
-
-module ModIdmap = Map.Make(ModIdOrdered)
+module ModIdmap = Idmap
 
 let make_dirpath x = x
 let repr_dirpath x = x

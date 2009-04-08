@@ -47,9 +47,6 @@ open Mod_subst
 open Evd
 open Decls
 
-let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,default_binder_kind,a,b))
-let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,default_binder_kind,a,b))
-
 let rec abstract_constr_expr c = function
   | [] -> c
   | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_constr_expr c bl)
@@ -72,14 +69,6 @@ let rec under_binders env f n c =
       | LetIn (x,b,t,c) ->
 	  mkLetIn (x,b,t,under_binders (push_rel (x,Some b,t) env) f (n-1) c)
       | _ -> assert false
-
-let rec destSubCast c = match kind_of_term c with
-  | Lambda (x,t,c) -> 
-      let (b,u) = destSubCast c in mkLambda (x,t,b), mkProd (x,t,u)
-  | LetIn (x,b,t,c) ->
-      let (d,u) = destSubCast c in mkLetIn (x,b,t,d), mkLetIn (x,b,t,u)
-  | Cast (b,_, u) -> (b,u)
-  | _ -> assert false
 
 let rec complete_conclusion a cs = function
   | CProdN (loc,bl,c) -> CProdN (loc,bl,complete_conclusion a cs c)
@@ -288,7 +277,7 @@ let _ =
       optwrite = (fun b -> eq_flag := b) }
 
 (* boolean equality *)
-let (inScheme,outScheme) =  
+let (inScheme,_) =  
   declare_object {(default_object "EQSCHEME") with 
                     cache_function = Ind_tables.cache_scheme; 
                     load_function = (fun _ -> Ind_tables.cache_scheme); 
@@ -321,21 +310,21 @@ let declare_eq_scheme sp =
 (* decidability of eq *)
 
 
-let (inBoolLeib,outBoolLeib) =
+let (inBoolLeib,_) =
   declare_object {(default_object "BOOLLIEB") with
                     cache_function = Ind_tables.cache_bl;
                     load_function = (fun _ -> Ind_tables.cache_bl);
                     subst_function = Auto_ind_decl.subst_in_constr;
                     export_function = Ind_tables.export_bool_leib }
 
-let (inLeibBool,outLeibBool) =
+let (inLeibBool,_) =
   declare_object {(default_object "LIEBBOOL") with
                     cache_function = Ind_tables.cache_lb;
                     load_function = (fun _ -> Ind_tables.cache_lb);
                     subst_function = Auto_ind_decl.subst_in_constr;
                     export_function = Ind_tables.export_leib_bool }
 
-let (inDec,outDec) =
+let (inDec,_) =
   declare_object {(default_object "EQDEC") with
                     cache_function = Ind_tables.cache_dec;
                     load_function = (fun _ -> Ind_tables.cache_dec);

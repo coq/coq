@@ -154,16 +154,6 @@ let add_glob_kn loc kn =
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
       add_glob_gen loc sp lib_dp "syndef"
 
-let add_local loc id = ()
-(*   let mod_dp,id = repr_path sp in *)
-(*   let mod_dp = remove_sections mod_dp in *)
-(*   let mod_dp_trunc = drop_dirpath_prefix lib_dp mod_dp in *)
-(*   let filepath = string_of_dirpath lib_dp in *)
-(*   let modpath = string_of_dirpath mod_dp_trunc in *)
-(*   let ident = string_of_id id in *)
-(*     dump_string (Printf.sprintf "R%d %s %s %s %s\n"  *)
-(* 		    (fst (unloc loc)) filepath modpath ident ty) *)
-
 let dump_binding loc id = ()
       
 let dump_definition (loc, id) sec s =

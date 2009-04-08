@@ -16,9 +16,6 @@ open Q_util
 open Q_coqast
 open Argextend
 
-let loc = Util.dummy_loc
-let default_loc = <:expr< Util.dummy_loc >>
-
 type grammar_tactic_production_expr =
   | TacTerm of string
   | TacNonTerm of Util.loc * Genarg.argument_type * MLast.expr * string option

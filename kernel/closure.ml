@@ -379,9 +379,6 @@ let rec decomp_stack = function
         | _ ->
             Some (v.(0), (Zapp (Array.sub v 1 (Array.length v - 1)) :: s)))
   | _ -> None
-let rec decomp_stackn = function
-  | Zapp v :: s -> if Array.length v = 0 then decomp_stackn s else (v, s)
-  | _ -> assert false
 let array_of_stack s =
   let rec stackrec = function
   | [] -> []
@@ -430,8 +427,6 @@ let lift_fconstr k f =
   if k=0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
   if k=0 then v else Array.map (fun f -> lft_fconstr k f) v
-let lift_fconstr_list k l =
-  if k=0 then l else List.map (fun f -> lft_fconstr k f) l
 
 let clos_rel e i =
   match expand_rel i e with
@@ -741,12 +736,6 @@ let get_nth_arg head n stk =
 
 (* Beta reduction: look for an applied argument in the stack.
    Since the encountered update marks are removed, h must be a whnf *)
-let get_arg h stk =
-  let (depth,stk') = strip_update_shift h stk in
-  match  decomp_stack stk' with
-      Some (v, s') -> (Some (depth,v), s')
-    | None -> (None, zshift depth stk')
-
 let rec get_args n tys f e stk =
   match stk with
       Zupdate r :: s ->

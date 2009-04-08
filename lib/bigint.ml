@@ -167,8 +167,6 @@ let less_than m n =
     (Array.length m = Array.length n && less_than_same_size m n 0 0))
 
 let equal m n = (m = n)
-  
-let less_or_equal_than m n = equal m n or less_than m n
 
 let less_than_shift_pos k m n =
   (Array.length m - k < Array.length n)
@@ -335,9 +333,7 @@ let one = big_of_int 1
 let sub_1 n = sub n one
 let add_1 n = add n one
 let two = big_of_int 2
-let neg_two = big_of_int (-2)
 let mult_2 n = add n n
-let is_zero n = n=zero
 
 let div2_with_rest n =
   let (q,b) = euclid n two in

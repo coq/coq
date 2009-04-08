@@ -60,12 +60,6 @@ let push_rel_context ctxt x = Sign.fold_rel_context push_rel ctxt ~init:x
 let push_rec_types (lna,typarray,_) env =
   let ctxt = array_map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
-    
-let reset_rel_context env =
-  { env with
-    env_rel_context = empty_rel_context;
-    env_rel_val = [];
-    env_nb_rel = 0 }
 
 let fold_rel_context f env ~init =
   let rec fold_right env =

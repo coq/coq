@@ -37,10 +37,6 @@ let typeclasses_db = "typeclass_instances"
 let qualid_of_con c = 
   Qualid (dummy_loc, shortest_qualid_of_global Idset.empty (ConstRef c))
 
-let set_rigid c = 
-  Auto.add_hints false [typeclasses_db] 
-    (Vernacexpr.HintsTransparency ([qualid_of_con c], false))
-
 let _ =
   Typeclasses.register_add_instance_hint 
     (fun inst pri ->

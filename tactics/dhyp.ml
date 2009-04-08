@@ -175,10 +175,6 @@ let init () = Nbtermdn.empty tactab
 let freeze () = Nbtermdn.freeze tactab
 let unfreeze fs = Nbtermdn.unfreeze fs tactab
 
-let rollback f x =
-  let fs = freeze() in 
-  try f x with e -> (unfreeze fs; raise e)
-
 let add (na,dd) =
   let pat = match dd.d_pat with
     | HypLocation(_,p,_) -> p.d_typ
@@ -202,8 +198,6 @@ let _ =
 let forward_subst_tactic = 
   ref (fun _ -> failwith "subst_tactic is not installed for DHyp")
 
-let set_extern_subst_tactic f = forward_subst_tactic := f
-
 let cache_dd (_,(_,na,dd)) =
   try 
     add (na,dd)
@@ -223,7 +217,7 @@ let subst_dd (_,subst,(local,na,dd)) =
     d_pri = dd.d_pri; 
     d_code = !forward_subst_tactic subst dd.d_code })
 
-let (inDD,outDD) =
+let (inDD,_) =
   declare_object {(default_object "DESTRUCT-HYP-CONCL-DATA") with
                     cache_function = cache_dd;
 		    open_function = (fun i o -> if i=1 then cache_dd o);
@@ -330,7 +324,6 @@ let destructHyp discard id gls =
   let sorted_ddl = Sort.list (fun dd1 dd2 -> dd1.d_pri > dd2.d_pri) ddl in
   tclFIRST (List.map (applyDestructor (onHyp id) discard) sorted_ddl) gls
 
-let cDHyp id gls = destructHyp true id gls
 let dHyp id gls = destructHyp false id gls
 
 let h_destructHyp b id =
@@ -348,8 +341,6 @@ let dConcl gls =
   tclFIRST (List.map (applyDestructor onConcl false) sorted_ddl) gls
 
 let h_destructConcl = abstract_tactic TacDestructConcl dConcl
-
-let to2Lists (table : t) = Nbtermdn.to2lists table
 
 let rec search n =
   if n=0 then error "Search has reached zero.";

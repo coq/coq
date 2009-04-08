@@ -124,9 +124,6 @@ let make_anonymous_patvars n =
 (* Environment management *)
 let push_rels vars env = List.fold_right push_rel vars env
 
-let push_rel_defs =
-  List.fold_right (fun (x,d,t) e -> push_rel (x,Some d,t) e)
-
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
 
@@ -209,8 +206,6 @@ and pattern_continuation =
   | Result of cases_pattern list
 
 let start_history n = Continuation (n, [], Top)
-
-let initial_history = function Continuation (_,[],Top) -> true | _ -> false
 
 let feed_history arg = function
   | Continuation (n, l, h) when n>=1 ->
@@ -452,9 +447,6 @@ let map_tomatch_type f = function
 let liftn_tomatch_type n depth = map_tomatch_type (liftn n depth)
 let lift_tomatch_type n = liftn_tomatch_type n 1
 
-let lift_tomatch n ((current,typ),info) =
-  ((lift n current,lift_tomatch_type n typ),info)
-
 (**********************************************************************)
 (* Utilities on patterns *)
 
@@ -466,12 +458,6 @@ let current_pattern eqn =
 let alias_of_pat = function
   | PatVar (_,name) -> name
   | PatCstr(_,_,_,name) -> name
-
-let unalias_pat = function
-  | PatVar (c,name) as p ->
-      if name = Anonymous then p else PatVar (c,Anonymous)
-  | PatCstr(a,b,c,name) as p ->
-      if name = Anonymous then p else PatCstr (a,b,c,Anonymous)
 
 let remove_current_pattern eqn =
   match eqn.patterns with
@@ -657,9 +643,6 @@ let replace_tomatch n c =
       Abstract (map_rel_declaration (replace_term n c depth) d)
       :: replrec (depth+1) rest in
   replrec 0
-
-let liftn_rel_declaration n k = map_rel_declaration (liftn n k)
-let substnl_rel_declaration sigma k = map_rel_declaration (substnl sigma k)
 
 let rec liftn_tomatch_stack n depth = function
   | [] -> []
@@ -1283,102 +1266,6 @@ let matx_of_eqns env tomatchl eqns =
       rhs = rhs }
   in List.map build_eqn eqns
 
-(************************************************************************)
-(* preparing the elimination predicate if any                          *)
-
-let build_expected_arity env evdref isdep tomatchl =
-  let cook n = function
-    | _,IsInd (_,IndType(indf,_),_) ->
-        let indf' = lift_inductive_family n indf in
-	Some (build_dependent_inductive env indf', fst (get_arity env indf'))
-    | _,NotInd _ -> None
-  in
-  let rec buildrec n env = function
-    | [] -> new_Type ()
-    | tm::ltm ->
-	match cook n tm with
-	  | None -> buildrec n env ltm
-	  | Some (ty1,aritysign) ->
-	      let rec follow n env = function
-		| d::sign ->
-		    mkProd_or_LetIn_name env
-		      (follow (n+1) (push_rel d env) sign) d
-		| [] ->
-		    if isdep then
-		      mkProd (Anonymous, ty1, 
-			      buildrec (n+1)
-				(push_rel_assum (Anonymous, ty1) env)
-				ltm)
-		    else buildrec n env ltm
-	      in follow n env (List.rev aritysign)
-  in buildrec 0 env tomatchl
-
-let extract_predicate_conclusion isdep tomatchl pred =
-  let cook = function
-    | _,IsInd (_,IndType(_,args),_) -> Some (List.length args)
-    | _,NotInd _ -> None in
-  let rec decomp_lam_force n l p =
-    if n=0 then (l,p) else
-    match kind_of_term p with
-      | Lambda (na,_,c) -> decomp_lam_force (n-1) (na::l) c
-      | _ -> (* eta-expansion *)
-          let na = Name (id_of_string "x") in
-          decomp_lam_force (n-1) (na::l) (applist (lift 1 p, [mkRel 1])) in
-  let rec buildrec allnames p = function
-    | [] -> (List.rev allnames,p)
-    | tm::ltm ->
-	match cook tm with
-	  | None -> 
-              let p = 
-                (* adjust to a sign containing the NotInd's *)
-                if isdep then lift 1 p else p in
-              let names = if isdep then [Anonymous] else [] in
-              buildrec (names::allnames) p ltm
-	  | Some n ->
-              let n = if isdep then n+1 else n in
-              let names,p = decomp_lam_force n [] p in
-              buildrec (names::allnames) p ltm
-  in buildrec [] pred tomatchl
-
-let set_arity_signature dep n arsign tomatchl pred x =
-  (* avoid is not exhaustive ! *)
-  let rec decomp_lam_force n avoid l p =
-    if n = 0 then (List.rev l,p,avoid) else
-    match p with
-      | RLambda (_,(Name id as na),_,_,c) -> 
-          decomp_lam_force (n-1) (id::avoid) (na::l) c
-      | RLambda (_,(Anonymous as na),_,_,c) -> decomp_lam_force (n-1) avoid (na::l) c
-      | _ ->
-          let x = next_ident_away (id_of_string "x") avoid in
-          decomp_lam_force (n-1) (x::avoid) (Name x :: l) 
-          (* eta-expansion *)
-            (let a = RVar (dummy_loc,x) in
-             match p with
-               | RApp (loc,p,l) -> RApp (loc,p,l@[a])
-               | _ -> (RApp (dummy_loc,p,[a]))) in
-  let rec decomp_block avoid p = function
-    | ([], _) -> x := Some p
-    | ((_,IsInd (_,IndType(indf,realargs),_))::l),(y::l')  ->
-	let (ind,params) = dest_ind_family indf in
-        let (nal,p,avoid') = decomp_lam_force (List.length realargs) avoid [] p 
-        in
-        let na,p,avoid' = 
-          if dep then decomp_lam_force 1 avoid' [] p else [Anonymous],p,avoid'
-        in 
-        y :=
-        (List.hd na,
-         if List.for_all ((=) Anonymous) nal then
-           None
-         else
-           Some (dummy_loc, ind, (List.map (fun _ -> Anonymous) params)@nal));
-        decomp_block avoid' p (l,l')
-    | (_::l),(y::l') ->
-        y := (Anonymous,None);
-        decomp_block avoid p (l,l')
-    | _ -> anomaly "set_arity_signature"
-  in
-  decomp_block [] pred (tomatchl,arsign)
-
 (***************** Building an inversion predicate ************************)
 
 (* Let "match t1 in I1 u11..u1n_1 ... tm in Im um1..umn_m with ... end : T"
@@ -1753,11 +1640,6 @@ let prepare_predicate_from_arsign_tycon loc env tomatchs sign arsign c =
  * A type constraint but no annotation case: we try to specialize the
  * tycon to make the predicate if it is not closed.
  *)
-
-let is_dependent_on_rel x t =
-  match kind_of_term x with
-      Rel n -> not (noccur_with_meta n n t)
-    | _ -> false
 
 let prepare_predicate loc typing_fun evdref env tomatchs sign tycon pred =
   match pred with

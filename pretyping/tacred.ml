@@ -109,19 +109,12 @@ type constant_evaluation =
 
 (* We use a cache registered as a global table *)
 
-module CstOrdered =
-  struct
-    type t = constant
-    let compare = Pervasives.compare
-  end
-module Cstmap = Map.Make(CstOrdered)
+let eval_table = ref Cmap.empty
 
-let eval_table = ref Cstmap.empty
-
-type frozen = (int * constant_evaluation) Cstmap.t
+type frozen = (int * constant_evaluation) Cmap.t
 
 let init () =
-  eval_table := Cstmap.empty
+  eval_table := Cmap.empty
 
 let freeze () =
   !eval_table
@@ -272,10 +265,10 @@ let compute_consteval sigma env ref =
 let reference_eval sigma env = function
   | EvalConst cst as ref -> 
       (try
-	 Cstmap.find cst !eval_table
+	 Cmap.find cst !eval_table
        with Not_found -> begin
 	 let v = compute_consteval sigma env ref in
-	 eval_table := Cstmap.add cst v !eval_table;
+	 eval_table := Cmap.add cst v !eval_table;
 	 v
        end)
   | ref -> compute_consteval sigma env ref

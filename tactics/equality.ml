@@ -84,11 +84,6 @@ let register_general_setoid_rewrite_clause = (:=) general_setoid_rewrite_clause
 let is_applied_setoid_relation = ref (fun _ -> false)
 let register_is_applied_setoid_relation = (:=) is_applied_setoid_relation
 
-let is_applied_relation t =
-  match kind_of_term t with
-  | App (c, args) when Array.length args >= 2 -> true
-  | _ -> false
-
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
@@ -230,23 +225,13 @@ let conditional_rewrite lft2rgt tac (c,bl) =
     (general_rewrite_ebindings lft2rgt all_occurrences (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
 
-let rewriteLR_bindings = general_rewrite_bindings true all_occurrences
-let rewriteRL_bindings = general_rewrite_bindings false all_occurrences
-
 let rewriteLR = general_rewrite true all_occurrences
 let rewriteRL = general_rewrite false all_occurrences
-
-let rewriteLRin_bindings = general_rewrite_bindings_in true all_occurrences
-let rewriteRLin_bindings = general_rewrite_bindings_in false all_occurrences
 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
   tclTHENSFIRSTn
     (general_rewrite_ebindings_in lft2rgt all_occurrences id (c,bl) false)
     [|tclIDTAC|] (tclCOMPLETE tac)
-
-let rewriteRL_clause = function
-  | None -> rewriteRL_bindings
-  | Some id -> rewriteRLin_bindings id
 
 (* Replacing tactics *)
 
@@ -973,10 +958,6 @@ let dEqThen with_evars ntac = function
 
 let dEq with_evars = dEqThen with_evars (fun x -> tclIDTAC)
 
-let rewrite_msg = function 
-  | None -> str "passed term is not a primitive equality" 
-  | Some id -> pr_id id ++ str "does not satisfy preconditions "
-
 let swap_equands gls eqn =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in 
   applist(lbeq.eq,[t;e2;e1])
@@ -985,10 +966,6 @@ let swapEquandsInConcl gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose (pf_concl gls) in
   let sym_equal = lbeq.sym in
   refine (applist(sym_equal,[t;e2;e1;Evarutil.mk_new_meta()])) gls
-
-let swapEquandsInHyp id gls =
-  cut_replacing id (swap_equands gls (pf_get_hyp_typ gls id))
-    (tclTHEN swapEquandsInConcl) gls
 
 (* Refine from [|- P e2] to [|- P e1] and [|- e1=e2:>t] (body is P (Rel 1)) *)
 
@@ -1277,50 +1254,5 @@ let replace_multi_term dir_opt c  =
       | Some false -> cond_eq_term_right c
   in 
   rewrite_multi_assumption_cond cond_eq_fun 
-
-(* JF. old version 
-let rewrite_assumption_cond faildir gl =
-   let rec arec = function
-      | [] -> error "No such assumption."
-      | (id,_,t)::rest ->
-	  (try let dir = faildir t gl in
-	       general_rewrite dir (mkVar id) gl
-	   with Failure _ | UserError _  ->  arec rest)
-   in arec (pf_hyps gl)
-
-
-let rewrite_assumption_cond_in faildir hyp gl =
-   let rec arec = function
-      | [] -> error "No such assumption."
-      | (id,_,t)::rest ->
-	  (try let dir = faildir t gl in
-	       general_rewrite_in dir hyp (mkVar id) gl
-	   with Failure _ | UserError _ ->  arec rest)
-   in arec (pf_hyps gl)
-
-let replace_term_left t = rewrite_assumption_cond (cond_eq_term_left t)
-
-let replace_term_right t = rewrite_assumption_cond (cond_eq_term_right t)
-   
-let replace_term t = rewrite_assumption_cond (cond_eq_term t)
-   
-let replace_term_in_left t = rewrite_assumption_cond_in (cond_eq_term_left t)
-
-let replace_term_in_right t = rewrite_assumption_cond_in (cond_eq_term_right t)
-   
-let replace_term_in t = rewrite_assumption_cond_in (cond_eq_term t)
-*)
-
-let replace_term_left t = replace_multi_term (Some true) t Tacticals.onConcl
-
-let replace_term_right t = replace_multi_term (Some false) t Tacticals.onConcl
-
-let replace_term t = replace_multi_term None t Tacticals.onConcl
-
-let replace_term_in_left t hyp = replace_multi_term (Some true) t (Tacticals.onHyp hyp)
-
-let replace_term_in_right t hyp = replace_multi_term (Some false) t (Tacticals.onHyp hyp)
-
-let replace_term_in t hyp = replace_multi_term None t (Tacticals.onHyp hyp)
 
 let _ = Tactics.register_general_multi_rewrite general_multi_rewrite

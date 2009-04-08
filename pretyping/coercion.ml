@@ -73,11 +73,6 @@ module Default = struct
   (* Typing operations dealing with coercions *)
   exception NoCoercion
 
-  let whd_app_evar sigma t =
-    match kind_of_term t with
-      | App (f,l) -> mkApp (whd_evar sigma f,l)
-      | _ -> whd_evar sigma t
-
   (* Here, funj is a coercion therefore already typed in global context *)
   let apply_coercion_args env argl funj =
     let rec apply_rec acc typ = function
@@ -156,7 +151,6 @@ module Default = struct
 	    inh_tosort_force loc env evd j
 
   let inh_coerce_to_base loc env evd j = (evd, j)
-
   let inh_coerce_to_prod loc env evd t = (evd, t)
 
   let inh_coerce_to_fail env evd rigidonly v t c1 =

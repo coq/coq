@@ -177,11 +177,8 @@ type sort_constraint =
   | SortVar of sort_var list * sort_var list (* (leq,geq) *)
   | EqSort of sort_var
 
-module UniverseOrdered = struct
-  type t = Univ.universe
-  let compare = Pervasives.compare
-end
-module UniverseMap = Map.Make(UniverseOrdered)
+module UniverseMap =
+  Map.Make (struct type t = Univ.universe let compare = compare end)
 
 type sort_constraints = sort_constraint UniverseMap.t
 

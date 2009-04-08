@@ -39,12 +39,8 @@ type head_approximation =
 
 (** Registration as global tables and rollback. *)
 
-module Evalreford = struct
-  type t = evaluable_global_reference
-  let compare = Pervasives.compare
-end
-
-module Evalrefmap = Map.Make(Evalreford)
+module Evalrefmap =
+  Map.Make (struct type t = evaluable_global_reference let compare = compare end)
 
 let head_map = ref Evalrefmap.empty
 

@@ -120,11 +120,6 @@ let test_plurial_form = function
    "Keywords Variables/Hypotheses/Parameters expect more than one assumption"
   | _ -> ()
 
-let no_coercion loc (c,x) =
-  if c then Util.user_err_loc
-    (loc,"no_coercion",str"No coercion allowed here.");
-  x
-
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion

@@ -102,7 +102,7 @@ val ident_subst_function : object_name * substitution * 'a -> 'a
 
 type obj
 
-val declare_object : 
+val declare_object :
   'a object_declaration -> ('a -> obj) * (obj -> 'a)
 
 val object_tag : obj -> string

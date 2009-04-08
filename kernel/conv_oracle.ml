@@ -45,14 +45,6 @@ let set_strategy k l =
       else Cmap.add c l !cst_opacity
   | RelKey _ -> Util.error "set_strategy: RelKey"
 
-let set_transparent_const kn =
-  cst_opacity := Cmap.remove kn !cst_opacity
-let set_transparent_var id =
-  var_opacity := Idmap.remove id !var_opacity
-
-let set_opaque_const kn = set_strategy (ConstKey kn) Opaque
-let set_opaque_var id = set_strategy (VarKey id) Opaque
-
 let get_transp_state () =
   (Idmap.fold
     (fun id l ts -> if  l=Opaque then Idpred.remove id ts else ts)

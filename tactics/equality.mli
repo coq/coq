@@ -32,11 +32,6 @@ val general_rewrite_bindings :
 val general_rewrite : 
   bool -> occurrences -> constr -> tactic
 
-(* Obsolete, use [general_rewrite_bindings l2r]
-[val rewriteLR_bindings       : constr with_bindings -> tactic]
-[val rewriteRL_bindings       : constr with_bindings -> tactic]
-*)
-
 (* Equivalent to [general_rewrite l2r] *)
 val rewriteLR   : constr -> tactic
 val rewriteRL   : constr  -> tactic

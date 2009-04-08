@@ -60,7 +60,6 @@ let e_give_exact flags c gl =
     else exact_check c gl
 (*   let t1 = (pf_type_of gl c) in *)
 (*     tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl *)
-      
 let assumption flags id = e_give_exact flags (mkVar id)
 
 open Unification

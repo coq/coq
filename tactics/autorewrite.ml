@@ -214,7 +214,7 @@ let classify_hintrewrite (_,x) = Libobject.Substitute x
 
 
 (* Declaration of the Hint Rewrite library object *)
-let (inHintRewrite,outHintRewrite)=
+let (inHintRewrite,_)=
   Libobject.declare_object {(Libobject.default_object "HINT_REWRITE") with
        Libobject.cache_function = cache_hintrewrite;
        Libobject.load_function = (fun _ -> cache_hintrewrite);

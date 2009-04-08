@@ -55,18 +55,16 @@ let cmp_univ_level u v = match u,v with
       else if i1 > i2 then 1
       else compare dp1 dp2
 
-type universe =
-  | Atom of universe_level
-  | Max of universe_level list * universe_level list
-  
-module UniverseOrdered = struct
-  type t = universe_level
-  let compare = cmp_univ_level
-end
-
 let string_of_univ_level = function
   | Set -> "0"
   | Level (d,n) -> Names.string_of_dirpath d^"."^string_of_int n
+
+module UniverseLMap =
+ Map.Make (struct type t = universe_level let compare = cmp_univ_level end)
+
+type universe =
+  | Atom of universe_level
+  | Max of universe_level list * universe_level list
 
 let make_univ (m,n) = Atom (Level (m,n))
 
@@ -121,18 +119,17 @@ type univ_entry =
     Canonical of canonical_arc
   | Equiv of universe_level * universe_level
 
-module UniverseMap = Map.Make(UniverseOrdered)
 
-type universes = univ_entry UniverseMap.t
-		   
+type universes = univ_entry UniverseLMap.t
+
 let enter_equiv_arc u v g =
-  UniverseMap.add u (Equiv(u,v)) g
+  UniverseLMap.add u (Equiv(u,v)) g
 
 let enter_arc ca g =
-  UniverseMap.add ca.univ (Canonical ca) g
+  UniverseLMap.add ca.univ (Canonical ca) g
 
 let declare_univ u g =
-  if not (UniverseMap.mem u g) then
+  if not (UniverseLMap.mem u g) then
     enter_arc (terminal u) g
   else
     g
@@ -162,7 +159,7 @@ let is_univ_variable = function
 
 let type1_univ = Max ([],[Set])
 
-let initial_universes = UniverseMap.empty
+let initial_universes = UniverseLMap.empty
 
 (* Every universe_level has a unique canonical arc representative *)
 
@@ -171,7 +168,7 @@ let initial_universes = UniverseMap.empty
 let repr g u = 
   let rec repr_rec u =
     let a =
-      try UniverseMap.find u g
+      try UniverseLMap.find u g
       with Not_found -> anomalylabstrm "Univ.repr"
 	  (str"Universe " ++ pr_uni_level u ++ str" undefined") 
     in
@@ -443,7 +440,7 @@ let enforce_univ_relation g = function
 (* Merging 2 universe graphs *)
 (*
 let merge_universes sp u1 u2 =
-  UniverseMap.fold (fun _ a g -> enforce_univ_relation g a) u1 u2
+  UniverseLMap.fold (fun _ a g -> enforce_univ_relation g a) u1 u2
 *)
 
 
@@ -571,14 +568,14 @@ let no_upper_constraints u cst =
 (* Pretty-printing *)
 
 let num_universes g =
-  UniverseMap.fold (fun _ _ -> succ) g 0
+  UniverseLMap.fold (fun _ _ -> succ) g 0
 
 let num_edges g =
   let reln_len = function
     | Equiv _ -> 1
     | Canonical {lt=lt;le=le} -> List.length lt + List.length le
   in
-  UniverseMap.fold (fun _ a n -> n + (reln_len a)) g 0
+  UniverseLMap.fold (fun _ a n -> n + (reln_len a)) g 0
     
 let pr_arc = function 
   | Canonical {univ=u; lt=[]; le=[]} ->
@@ -594,7 +591,7 @@ let pr_arc = function
       pr_uni_level u  ++ str " = " ++ pr_uni_level v ++ fnl ()
 
 let pr_universes g =
-  let graph = UniverseMap.fold (fun k a l -> (k,a)::l) g [] in
+  let graph = UniverseLMap.fold (fun k a l -> (k,a)::l) g [] in
   prlist (function (_,a) -> pr_arc a) graph
     
 let pr_constraints c =
@@ -626,7 +623,7 @@ let dump_universes output g =
 	Printf.fprintf output "%s = %s ;\n"
 	  (string_of_univ_level u) (string_of_univ_level v)
   in
-    UniverseMap.iter dump_arc g 
+    UniverseLMap.iter dump_arc g 
 
 (* Hash-consing *)
 

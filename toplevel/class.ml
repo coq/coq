@@ -29,10 +29,6 @@ open Safe_typing
 
 let strength_min l = if List.mem Local l then Local else Global
 
-let id_of_varid c = match kind_of_term c with
-  | Var id -> id
-  | _ -> anomaly "class__id_of_varid"
-
 (* Errors *)
 
 type coercion_error_kind =
@@ -102,15 +98,6 @@ let uniform_cond nargs lt =
     | _ -> false
   in 
   aux (nargs,lt)
-
-let id_of_cl  = function
-  | CL_FUN -> id_of_string "FUNCLASS"
-  | CL_SORT -> id_of_string "SORTCLASS"
-  | CL_CONST kn -> id_of_label (con_label kn)
-  | CL_IND ind ->
-      let (_,mip) = Global.lookup_inductive ind in
-      mip.mind_typename
-  | CL_SECVAR id -> id
 
 let class_of_global = function
   | ConstRef sp -> CL_CONST sp

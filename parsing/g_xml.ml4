@@ -71,10 +71,6 @@ let error_expect_no_argument loc =
 let nmtoken (loc,a) =
   try int_of_string a
   with Failure _ -> user_err_loc (loc,"",str "nmtoken expected.")
-  
-let interp_xml_attr_qualid = function
-  | "uri", s -> qualid_of_string s
-  | _ -> error "Ill-formed xml attribute"
 
 let get_xml_attr s al = 
   try List.assoc s al
