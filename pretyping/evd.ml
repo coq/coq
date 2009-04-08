@@ -630,15 +630,24 @@ let meta_defined evd mv =
     | Clval _ -> true
     | Cltyp _ -> false
 
-let meta_fvalue evd mv =
+let try_meta_fvalue evd mv =
   match Metamap.find mv evd.metas with
     | Clval(_,b,_) -> b
-    | Cltyp _ -> anomaly "meta_fvalue: meta has no value"
-           
+    | Cltyp _ -> raise Not_found
+
+let meta_fvalue evd mv =
+  try try_meta_fvalue evd mv 
+  with Not_found -> anomaly "meta_fvalue: meta has no value"
+
+let meta_value evd mv =
+  (fst (try_meta_fvalue evd mv)).rebus
+
 let meta_ftype evd mv =
   match Metamap.find mv evd.metas with
     | Cltyp (_,b) -> b
     | Clval(_,_,b) -> b
+
+let meta_type evd mv = (meta_ftype evd mv).rebus
  
 let meta_declare mv v ?(name=Anonymous) evd =
   { evd with metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas }

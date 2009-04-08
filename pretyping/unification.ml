@@ -485,22 +485,21 @@ let w_coerce_to_type env evd c cty mvty =
     try_to_coerce env evd c cty tycon
 
 let w_coerce env evd mv c =
-  let cty = get_type_of_with_meta env ( evd) (metas_of evd) c in
+  let cty = get_type_of env evd c in
   let mvty = Typing.meta_type evd mv in
   w_coerce_to_type env evd c cty mvty
 
 let unify_to_type env evd flags c u =
   let sigma =  evd in
   let c = refresh_universes c in
-  let t = get_type_of_with_meta env sigma (metas_of evd) c in
+  let t = get_type_of env sigma c in
   let t = Tacred.hnf_constr env sigma (nf_betaiota sigma (nf_meta evd t)) in
   let u = Tacred.hnf_constr env sigma u in
-  try unify_0 env sigma Cumul flags t u
-  with e when precatchable_exception e -> ([],[])
+  unify_0 env sigma Cumul flags t u
 
 let unify_type env evd flags mv c =
   let mvty = Typing.meta_type evd mv in
-  if occur_meta_or_existential mvty then
+  if occur_meta_or_existential mvty or is_arity env evd mvty then
     unify_to_type env evd flags c mvty
   else ([],[])
 
@@ -593,7 +592,7 @@ let w_merge env with_types flags (metas,evars) evd =
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (mc,ec) =
       unify_0 sp_env ( evd') Cumul flags
-        (Retyping.get_type_of_with_meta sp_env ( evd') (metas_of evd') c) ev.evar_concl in
+        (Retyping.get_type_of sp_env evd' c) ev.evar_concl in
     let evd'' = w_merge_rec evd' mc ec [] in
     if ( evd') == ( evd'')
     then Evd.define sp c evd''
@@ -621,8 +620,8 @@ let check_types env evd flags subst m n =
   if isEvar (fst (whd_stack sigma m)) or isEvar (fst (whd_stack sigma n)) then
     unify_0_with_initial_metas subst true env ( evd) topconv 
       flags
-      (Retyping.get_type_of_with_meta env sigma (metas_of evd) m)
-      (Retyping.get_type_of_with_meta env sigma (metas_of evd) n)
+      (Retyping.get_type_of env sigma m)
+      (Retyping.get_type_of env sigma n)
   else
     subst
 

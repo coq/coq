@@ -101,7 +101,10 @@ let replace_by_meta env sigma = function
 	| Lambda (Anonymous,c1,c2) when isCast c2 ->
 	    let _,_,t = destCast c2 in mkArrow c1 t
 	| _ -> (* (App _ | Case _) -> *)
-	    Retyping.get_type_of_with_meta env sigma mm c
+	    let sigma' =
+	      List.fold_right (fun (m,t) sigma -> Evd.meta_declare m t sigma)
+		mm sigma in
+	    Retyping.get_type_of env sigma' c
 	(*
 	| Fix ((_,j),(v,_,_)) ->
 	    v.(j) (* en pleine confiance ! *)

@@ -62,8 +62,7 @@ let clenv_type clenv = meta_instance clenv.evd clenv.templtyp
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
-let clenv_get_type_of ce c =
-  Retyping.get_type_of_with_meta (cl_env ce) (cl_sigma ce) (metas_of ce.evd) c
+let clenv_get_type_of ce c = Retyping.get_type_of (cl_env ce) (cl_sigma ce) c
 
 exception NotExtensibleClause
 
@@ -135,10 +134,10 @@ let clenv_conv_leq env sigma t c bound =
 
 let mk_clenv_from_env environ sigma n (c,cty) =
   let evd = create_goal_evar_defs sigma in
-  let (env,args,concl) = clenv_environments evd n cty in
+  let (evd,args,concl) = clenv_environments evd n cty in
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
     templtyp = mk_freelisted concl;
-    evd = env;
+    evd = evd;
     env = environ }
 
 let mk_clenv_from_n gls n (c,cty) =

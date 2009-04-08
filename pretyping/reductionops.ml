@@ -145,6 +145,10 @@ let rec whd_app_state sigma (x, stack as s) =
           | _ -> s)
     | _             -> s
 
+let safe_meta_value sigma ev =
+  try Some (Evd.meta_value sigma ev)
+  with Not_found -> None
+
 let appterm_of_stack (f,s) = (f,list_of_stack s)
 
 let whd_stack sigma x =
@@ -319,6 +323,10 @@ let rec whd_state_gen flags env sigma =
 	  (match safe_evar_value sigma ev with
 	     | Some body -> whrec (body, stack)
 	     | None -> s)
+      | Meta ev ->
+	  (match safe_meta_value sigma ev with
+	     | Some body -> whrec (body, stack)
+	     | None -> s)
       | Const const when red_delta flags ->
 	  (match constant_opt_value env const with
 	     | Some  body -> whrec (body, stack)
@@ -406,6 +414,11 @@ let local_whd_state_gen flags sigma =
 
       | Evar ev ->
           (match safe_evar_value sigma ev with
+              Some c -> whrec (c,stack)
+            | None -> s)
+
+      | Meta ev ->
+          (match safe_meta_value sigma ev with
               Some c -> whrec (c,stack)
             | None -> s)
 

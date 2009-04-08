@@ -209,9 +209,11 @@ val meta_list : evar_defs -> (metavariable * clbinding) list
 val meta_defined : evar_defs -> metavariable -> bool
 (* [meta_fvalue] raises [Not_found] if meta not in map or [Anomaly] if
    meta has no value *)  
+val meta_value     : evar_defs -> metavariable -> constr
 val meta_fvalue    : evar_defs -> metavariable -> constr freelisted * instance_status
 val meta_opt_fvalue : evar_defs -> metavariable -> (constr freelisted * instance_status) option
-val meta_ftype     : evar_defs -> metavariable -> constr freelisted
+val meta_type      : evar_defs -> metavariable -> types
+val meta_ftype     : evar_defs -> metavariable -> types freelisted
 val meta_name      : evar_defs -> metavariable -> name
 val meta_with_name : evar_defs -> identifier -> metavariable
 val meta_declare   :

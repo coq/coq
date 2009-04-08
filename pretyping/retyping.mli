@@ -25,9 +25,6 @@ val get_type_of : env -> evar_map -> constr -> types
 val get_sort_of : env -> evar_map -> types -> sorts
 val get_sort_family_of : env -> evar_map -> types -> sorts_family
 
-val get_type_of_with_meta :
-  env -> evar_map -> Termops.meta_type_map -> constr -> types
-
 (* Makes an assumption from a constr *)
 val get_assumption_of : env -> evar_map -> constr -> types
 

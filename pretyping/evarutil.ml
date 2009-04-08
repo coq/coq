@@ -1146,7 +1146,7 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 	      let evc = nf_isevar evd evi.evar_concl in
 		match evi.evar_body with 
 		| Evar_defined body -> 
-		    let ty = nf_isevar evd (Retyping.get_type_of_with_meta evenv evd (metas_of evd) body) in
+		    let ty = nf_isevar evd (Retyping.get_type_of evenv evd body) in
 		      add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
 		| Evar_empty -> (* Resulted in a constraint *) 
 		    evd
