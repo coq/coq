@@ -712,8 +712,11 @@ and body = parse
   | nl+ space* "]]"
       { if not !formatted then begin symbol lexbuf (lexeme lexbuf); body lexbuf end else true }
   | eof { false }
-  | '.' space* nl | '.' space* eof { Output.char '.'; Output.line_break(); true }      
-  | '.' space+ { Output.char '.'; Output.char ' '; false }
+  | '.' space* nl | '.' space* eof 
+	{ Output.char '.'; Output.line_break(); 
+	  if not !formatted then true else body_bol lexbuf }      
+  | '.' space+ { Output.char '.'; Output.char ' '; 
+	  if not !formatted then false else body lexbuf }
   | '"' { Output.char '"'; ignore(notation lexbuf); body lexbuf }
   | "(*" { comment_level := 1; 
 	   if !Cdglobals.parse_comments then Output.start_comment ();
