@@ -245,11 +245,24 @@ let intuition_gen tac =
 
 let simplif_gen = interp (tacticIn simplif)
 
-let tauto g =
+let tauto_intuitionistic g =
   try intuition_gen <:tactic<fail>> g
   with
     Refiner.FailError _ | UserError _ ->
       errorlabstrm "tauto" (str "tauto failed.")
+
+let coq_nnpp_path =
+  let dir = List.map id_of_string ["Classical_Prop";"Logic";"Coq"] in
+  Libnames.make_path (make_dirpath dir) (id_of_string "NNPP")
+
+let tauto_classical g =
+  try 
+    let nnpp = constr_of_global (Nametab.absolute_reference coq_nnpp_path) in
+    tclTHEN (apply nnpp) tauto_intuitionistic g
+  with Not_found ->
+    tclIDTAC g
+
+let tauto = tclORELSE tauto_intuitionistic tauto_classical
 
 let default_intuition_tac = <:tactic< auto with * >>
 
