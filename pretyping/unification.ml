@@ -495,7 +495,8 @@ let unify_to_type env evd flags c u =
   let t = get_type_of_with_meta env sigma (metas_of evd) (nf_meta evd c) in
   let t = Tacred.hnf_constr env sigma (nf_betaiota sigma (nf_meta evd t)) in
   let u = Tacred.hnf_constr env sigma u in
-  unify_0 env sigma Cumul flags t u
+  try unify_0 env sigma Cumul flags t u
+  with e when precatchable_exception e -> ([],[])
 
 let unify_type env evd flags mv c =
   let mvty = Typing.meta_type evd mv in
