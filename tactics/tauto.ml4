@@ -255,14 +255,18 @@ let coq_nnpp_path =
   let dir = List.map id_of_string ["Classical_Prop";"Logic";"Coq"] in
   Libnames.make_path (make_dirpath dir) (id_of_string "NNPP")
 
-let tauto_classical g =
+let tauto_classical nnpp g =
+  try tclTHEN (apply nnpp) tauto_intuitionistic g
+  with UserError _ -> errorlabstrm "tauto" (str "Classical tauto failed.")
+
+let tauto g =
   try 
     let nnpp = constr_of_global (Nametab.absolute_reference coq_nnpp_path) in
-    tclTHEN (apply nnpp) tauto_intuitionistic g
+    (* try intuitionistic version first to avoid an axiom if possible *)
+    tclORELSE tauto_intuitionistic (tauto_classical nnpp) g
   with Not_found ->
-    tclIDTAC g
+    tauto_intuitionistic g
 
-let tauto = tclORELSE tauto_intuitionistic tauto_classical
 
 let default_intuition_tac = <:tactic< auto with * >>
 
