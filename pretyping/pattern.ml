@@ -221,12 +221,15 @@ let rec pat_of_raw metas vars = function
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
   | RLambda (_,na,bk,c1,c2) ->
+      name_iter (fun n -> metas := n::!metas) na;
       PLambda (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
-  | RProd (_,na,bk,c1,c2) ->
+  | RProd (_,na,bk,c1,c2) -> 
+      name_iter (fun n -> metas := n::!metas) na;
       PProd (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
   | RLetIn (_,na,c1,c2) ->
+      name_iter (fun n -> metas := n::!metas) na;
       PLetIn (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
   | RSort (_,s) ->

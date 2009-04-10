@@ -1,7 +1,6 @@
 Require Import Coq.Program.Program.
 Set Manual Implicit Arguments.
 
-
 Variable A : Set.
 
 Inductive vector : nat -> Type := vnil : vector 0 | vcons : A -> forall {n}, vector n -> vector (S n).
@@ -73,22 +72,20 @@ Proof with simpl in * ; eqns ; eauto with lambda.
 
   dependent induction H.
 
-  destruct Δ as [|Δ τ']...
+  destruct Δ as [|Δ τ'']...
 
   destruct Δ as [|Δ τ'']...
 
   destruct Δ as [|Δ τ'']...
     apply abs.
-
-    specialize (IHterm (Δ, τ'', τ) Γ0)...
+    specialize (IHterm (Δ, τ'', τ0) Γ)...
 
   intro. eapply app...
-Qed.
+Defined.
 
 Lemma exchange : forall Γ Δ α β τ, term (Γ, α, β ; Δ) τ -> term (Γ, β, α ; Δ) τ.
 Proof with simpl in * ; eqns ; eauto.
   intros until 1.
-
   dependent induction H.
 
   destruct Δ ; eqns.
@@ -97,12 +94,12 @@ Proof with simpl in * ; eqns ; eauto.
     apply ax.
 
   destruct Δ...
-    pose (weakening Γ0 (empty, α))...
+    pose (weakening Γ (empty, α))...
 
     apply weak...
 
   apply abs... 
-    specialize (IHterm (Δ, τ))...
+    specialize (IHterm (Δ, τ0))...
 
   eapply app...
 Defined.
@@ -129,5 +126,5 @@ Inductive Ev : forall t, Exp t -> Exp t -> Prop :=
                Ev (Fst e) e1.
 
 Lemma EvFst_inversion : forall t1 t2 (e:Exp (Prod t1 t2)) e1, Ev (Fst e) e1 -> exists e2, Ev e (Pair e1 e2).
-intros t1 t2 e e1 ev. dependent destruction ev. exists e2 ; assumption. 
+intros t1 t2 e e1 ev. dependent destruction ev. exists e3 ; assumption.
 Qed.

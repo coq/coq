@@ -2173,8 +2173,8 @@ let abstract_args gl id =
 	  let liftargty = lift (List.length ctx) argty in
 	  let convertible = Reductionops.is_conv_leq ctxenv sigma liftargty ty in
 	    match kind_of_term arg with
-	    | Var _ | Rel _ | Ind _ when convertible -> 
-		(subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, vars, env)
+(* 	    | Var _ | Rel _ | Ind _ when convertible ->  *)
+(* 		(subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls, vars, env) *)
 	    | _ ->
 		let name = get_id name in
 		let decl = (Name name, None, ty) in

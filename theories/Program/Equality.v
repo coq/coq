@@ -384,6 +384,7 @@ Ltac simplify_one_dep_elim_term c :=
       intros hyp ; (try (clear hyp ; (* If non dependent, don't clear it! *) fail 1)) ;
         case hyp ; clear hyp
     | block_dep_elim ?T => fail 1 (* Do not put any part of the rhs in the hyps *)
+    | forall x, _ => intro x || (let H := fresh x in rename x into H ; intro x) (* Try to keep original names *)
     | _ => intro
   end.
 
@@ -479,9 +480,11 @@ Ltac intro_prototypes :=
     | _ => idtac
   end.
 
-Ltac introduce p := 
-  first [ match p with _ => idtac end (* Already there *)
-    | intros until p | intros ].
+Ltac introduce p := first [ 
+  match p with _ => (* Already there, generalize dependent hyps *) 
+    generalize dependent p ; intros p 
+  end
+  | intros until p | intros ].
 
 Ltac do_case p := introduce p ; (destruct p || elim_case p || (case p ; clear p)).
 Ltac do_ind p := introduce p ; (induction p || elim_ind p).

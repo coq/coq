@@ -143,6 +143,8 @@ let name_fold f na a =
   | Name id -> f id a
   | Anonymous -> a
 
+let name_iter f na = name_fold (fun x () -> f x) na ()
+
 let name_cons na l =
   match na with
   | Anonymous -> l 
