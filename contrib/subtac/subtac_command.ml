@@ -390,7 +390,7 @@ let interp_recursive fixkind l boxed =
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs = 
-    States.with_heavy_rollback (fun () -> 
+    States.with_state_protection (fun () -> 
       List.iter (Command.declare_interning_data impls) notations;
       list_map3 (interp_fix_body evdref env_rec impls) fixctxs fixl fixccls)
       () in

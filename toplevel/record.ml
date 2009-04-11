@@ -366,7 +366,7 @@ let definition_structure (kind,finite,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
   (* Now, younger decl in params and fields is on top *)
   let sc = Option.map mkSort s in
   let implpars, params, implfs, fields = 
-    States.with_heavy_rollback (fun () ->
+    States.with_state_protection (fun () ->
       typecheck_params_and_fields idstruc sc ps notations fs) ()
   in
     match kind with
