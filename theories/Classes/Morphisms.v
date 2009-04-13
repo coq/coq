@@ -1,4 +1,4 @@
-(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms"); compile-command: "make -C ../.. TIME='time'" -*- *)
+(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms"); compile-command: "make -C ../.. TIME='time -p'" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -372,25 +372,6 @@ Ltac partial_application_tactic :=
       end
   end.
 
-Section PartialAppTest.
-  Instance and_ar : Params and 0.
-
-  Goal Morphism (iff) (and True True).
-    partial_application_tactic.
-  Admitted.
-
-  Goal Morphism (iff) (or True True).
-    partial_application_tactic.
-    partial_application_tactic. 
-  Admitted.
-
-  Goal Morphism (iff ==> iff) (iff True).
-    partial_application_tactic.
-    (*partial_application_tactic. *)
-   Admitted.
-
-End PartialAppTest.
-
 Hint Extern 4 (@Morphism _ _ _) => partial_application_tactic : typeclass_instances.
 
 Lemma inverse_respectful : forall (A : Type) (R : relation A) (B : Type) (R' : relation B),
@@ -437,8 +418,8 @@ Proof. firstorder. Qed.
 Lemma inverse2 `(subrelation A R R') : subrelation R (inverse (inverse R')).
 Proof. firstorder. Qed.
 
-Hint Extern 1 (subrelation (flip _) _) => eapply @inverse1 : typeclass_instances.
-Hint Extern 1 (subrelation _ (flip _)) => eapply @inverse2 : typeclass_instances.
+Hint Extern 1 (subrelation (flip (flip _)) _) => eapply @inverse1 : typeclass_instances.
+Hint Extern 1 (subrelation _ (flip (flip _))) => eapply @inverse2 : typeclass_instances.
 
 (** Once we have normalized, we will apply this instance to simplify the problem. *)
 

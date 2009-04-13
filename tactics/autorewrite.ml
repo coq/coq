@@ -28,6 +28,9 @@ open Mod_subst
 (* the type is the statement of the lemma constr. Used to elim duplicates. *)
 type rew_rule = constr * types * bool * glob_tactic_expr
 
+
+
+
 (* Summary and Object declaration *)
 let rewtab =
   ref (Stringmap.empty : rew_rule list Stringmap.t)
@@ -43,21 +46,23 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section   = false }
 
-let print_rewrite_hintdb bas =
- try
-  let hints = Stringmap.find bas !rewtab in
-   ppnl (str "Database " ++ str bas ++ (Pp.cut ()) ++
-    prlist_with_sep Pp.cut
-     (fun (c,typ,d,t) ->
-       str (if d then "rewrite -> " else "rewrite <- ") ++
-       Printer.pr_lconstr c ++ str " of type " ++ Printer.pr_lconstr typ ++
-       str " then use tactic " ++ 
-       Pptactic.pr_glob_tactic (Global.env()) t) hints)
+let find_base bas =
+ try Stringmap.find bas !rewtab
  with
   Not_found -> 
    errorlabstrm "AutoRewrite" 
      (str ("Rewriting base "^(bas)^" does not exist."))
 
+let print_rewrite_hintdb bas =
+  let hints = find_base bas in
+    ppnl (str "Database " ++ str bas ++ (Pp.cut ()) ++
+	     prlist_with_sep Pp.cut
+	     (fun (c,typ,d,t) ->
+	       str (if d then "rewrite -> " else "rewrite <- ") ++
+		 Printer.pr_lconstr c ++ str " of type " ++ Printer.pr_lconstr typ ++
+		 str " then use tactic " ++ 
+		 Pptactic.pr_glob_tactic (Global.env()) t) hints)
+      
 type raw_rew_rule = constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)

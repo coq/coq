@@ -9,6 +9,8 @@
 (*i $Id$ i*)
 
 (*i*)
+open Term
+open Tacexpr
 open Tacmach
 (*i*)
 
@@ -22,6 +24,11 @@ val add_rew_rules : string -> raw_rew_rule list -> unit
 val autorewrite : tactic -> string list -> tactic
 val autorewrite_in : Names.identifier -> tactic -> string list -> tactic
 
+(* Rewriting rules *)
+(* the type is the statement of the lemma constr. Used to elim duplicates. *)
+type rew_rule = constr * types * bool * glob_tactic_expr
+
+val find_base : string -> rew_rule list
 
 val auto_multi_rewrite : string list -> Tacticals.clause -> tactic
 
