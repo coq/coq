@@ -269,10 +269,8 @@ Section DoubleSqrt.
  Let spec_ww_Bm1 : [[wwBm1]] = wwB - 1.
  Proof. refine (spec_ww_Bm1 w_Bm1 w_digits w_to_Z _);auto. Qed.
 
- 
- Hint Rewrite spec_w_0 spec_w_1 w_Bm1 spec_w_WW spec_w_sub 
-              spec_w_div21 spec_w_add_mul_div spec_ww_Bm1
-              spec_w_add_c spec_w_sqrt2: w_rewrite.
+ Hint Rewrite spec_w_0 spec_w_1 spec_w_WW spec_w_sub
+   spec_w_add_mul_div spec_ww_Bm1 spec_w_add_c : w_rewrite.
 
  Lemma spec_ww_is_even : forall x,
       if ww_is_even x then [[x]] mod 2 = 0 else [[x]] mod 2 = 1.

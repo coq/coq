@@ -25,15 +25,45 @@ open Tacexpr
 open Mod_subst
 
 (* Rewriting rules *)
-(* the type is the statement of the lemma constr. Used to elim duplicates. *)
-type rew_rule = constr * types * bool * glob_tactic_expr
+type rew_rule = { rew_lemma: constr;
+		  rew_type: types;
+		  rew_pat: constr;
+		  rew_l2r: bool;
+		  rew_tac: glob_tactic_expr }
 
+let subst_hint subst hint =
+  let cst' = subst_mps subst hint.rew_lemma in
+  let typ' = subst_mps subst hint.rew_type in
+  let pat' = subst_mps subst hint.rew_pat in
+  let t' = Tacinterp.subst_tactic subst hint.rew_tac in
+    if hint.rew_lemma == cst' && hint.rew_tac == t' then hint else
+      { hint with 
+	rew_lemma = cst'; rew_type = typ'; 
+	rew_pat = pat';	rew_tac = t' }
 
+module HintIdent = 
+struct
+  type t = rew_rule
+  
+  let compare t t' =
+    Pervasives.compare t.rew_lemma t'.rew_lemma
 
+  let subst = subst_hint
+
+  let constr_of t = t.rew_pat
+end
+
+module HintOpt =
+struct
+  let reduce c = c
+  let direction = true
+end
+
+module HintDN = Term_dnet.Make(HintIdent)(HintOpt)
 
 (* Summary and Object declaration *)
 let rewtab =
-  ref (Stringmap.empty : rew_rule list Stringmap.t)
+  ref (Stringmap.empty : HintDN.t Stringmap.t)
 
 let _ = 
   let init () = rewtab := Stringmap.empty in
@@ -53,35 +83,36 @@ let find_base bas =
    errorlabstrm "AutoRewrite" 
      (str ("Rewriting base "^(bas)^" does not exist."))
 
+let find_rewrites bas = 
+  HintDN.find_all (find_base bas)
+
+let find_matches bas pat =
+  let base = find_base bas in
+  let res = HintDN.search_pattern base pat in
+    List.map (fun (rew, esubst, subst) -> rew) res
+
 let print_rewrite_hintdb bas =
   let hints = find_base bas in
     ppnl (str "Database " ++ str bas ++ (Pp.cut ()) ++
 	     prlist_with_sep Pp.cut
-	     (fun (c,typ,d,t) ->
-	       str (if d then "rewrite -> " else "rewrite <- ") ++
-		 Printer.pr_lconstr c ++ str " of type " ++ Printer.pr_lconstr typ ++
+	     (fun h ->
+	       str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
+		 Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
 		 str " then use tactic " ++ 
-		 Pptactic.pr_glob_tactic (Global.env()) t) hints)
+		 Pptactic.pr_glob_tactic (Global.env()) h.rew_tac)
+	     (HintDN.find_all hints))
       
-type raw_rew_rule = constr * bool * raw_tactic_expr
+type raw_rew_rule = loc * constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =
-  let lrul =
-    try
-      Stringmap.find bas !rewtab
-    with Not_found ->
-      errorlabstrm "AutoRewrite"
-        (str ("Rewriting base "^(bas)^" does not exist."))
-  in
-  let lrul = List.map (fun (c,_,b,t) -> (c,b,Tacinterp.eval_tactic t)) lrul in
+  let lrul = HintDN.find_all (find_base bas) in
+  let lrul = List.map (fun h -> (h.rew_lemma,h.rew_l2r,Tacinterp.eval_tactic h.rew_tac)) lrul in
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
         (tclREPEAT_MAIN 
 	  (tclTHENSFIRSTn (general_rewrite_maybe_in dir csr) [|tac_main|] tc)))
       tclIDTAC lrul))
-
-
 
 (* The AutoRewrite tactic *)
 let autorewrite tac_main lbas =
@@ -180,38 +211,12 @@ let auto_multi_rewrite_with tac_main lbas cl gl =
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
-  let l = 
-    try 
-      let oldl = Stringmap.find rbase !rewtab in
-      let lrl =
-       List.map
-        (fun (c,dummy,b,t) ->
-          (* here we substitute the dummy value with the right one *)
-          c,Typing.type_of (Global.env ()) Evd.empty c,b,t) lrl in
-      (List.filter
-          (fun (_,typ,_,_) ->
-            not (List.exists (fun (_,typ',_,_) -> Term.eq_constr typ typ') oldl)
-          ) lrl) @ oldl
-    with
-      | Not_found -> lrl
-  in
-    rewtab:=Stringmap.add rbase l !rewtab
+  rewtab:=Stringmap.add rbase lrl !rewtab
 
 let export_hintrewrite x = Some x
 
 let subst_hintrewrite (_,subst,(rbase,list as node)) = 
-  let subst_first (cst,typ,b,t as pair) = 
-    let cst' = subst_mps subst cst in
-    let typ' =
-     (* here we do not have the environment and Global.env () is not the
-        one where cst' lives in. Thus we can just put a dummy value and
-        override it in cache_hintrewrite *)
-     typ (* dummy value, it will be recomputed by cache_hintrewrite *) in
-    let t' = Tacinterp.subst_tactic subst t in
-      if cst == cst' && t == t' then pair else
-	(cst',typ',b,t')
-  in
-  let list' = list_smartmap subst_first list in
+  let list' = HintDN.subst subst list in
     if list' == list then node else
       (rbase,list')
       
@@ -221,18 +226,83 @@ let classify_hintrewrite (_,x) = Libobject.Substitute x
 (* Declaration of the Hint Rewrite library object *)
 let (inHintRewrite,_)=
   Libobject.declare_object {(Libobject.default_object "HINT_REWRITE") with
-       Libobject.cache_function = cache_hintrewrite;
-       Libobject.load_function = (fun _ -> cache_hintrewrite);
-       Libobject.subst_function = subst_hintrewrite;
-       Libobject.classify_function = classify_hintrewrite;
-       Libobject.export_function = export_hintrewrite }
+    Libobject.cache_function = cache_hintrewrite;
+    Libobject.load_function = (fun _ -> cache_hintrewrite);
+    Libobject.subst_function = subst_hintrewrite;
+    Libobject.classify_function = classify_hintrewrite;
+    Libobject.export_function = export_hintrewrite }
 
+
+open Clenv
+
+type hypinfo = {
+  hyp_cl : clausenv;
+  hyp_prf : constr;
+  hyp_ty : types;
+  hyp_car : constr;
+  hyp_rel : constr;
+  hyp_l2r : bool;
+  hyp_left : constr;
+  hyp_right : constr;
+}
+
+let evd_convertible env evd x y =
+  try ignore(Evarconv.the_conv_x env x y evd); true 
+  with _ -> false
+  
+let decompose_applied_relation metas env sigma c ctype left2right =
+  let find_rel ty = 
+    let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in
+    let eqclause = 
+      if metas then eqclause
+      else clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)
+    in
+    let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
+    let rec split_last_two = function
+      | [c1;c2] -> [],(c1, c2)
+      | x::y::z ->
+	  let l,res = split_last_two (y::z) in x::l, res
+      | _ -> raise Not_found
+    in
+      try 
+	let others,(c1,c2) = split_last_two args in
+	let ty1, ty2 = 
+	  Typing.mtype_of env eqclause.evd c1, Typing.mtype_of env eqclause.evd c2
+	in
+	  if not (evd_convertible env eqclause.evd ty1 ty2) then None
+	  else
+	    Some { hyp_cl=eqclause; hyp_prf=(Clenv.clenv_value eqclause); hyp_ty = ty;
+		   hyp_car=ty1; hyp_rel=mkApp (equiv, Array.of_list others);
+		   hyp_l2r=left2right; hyp_left=c1; hyp_right=c2; }
+      with Not_found -> None
+  in
+    match find_rel ctype with
+    | Some c -> Some c
+    | None -> 
+	let ctx,t' = Reductionops.splay_prod_assum env sigma ctype in (* Search for underlying eq *)
+	match find_rel (it_mkProd_or_LetIn t' ctx) with
+	| Some c -> Some c
+	| None -> None
+
+let find_applied_relation metas loc env sigma c left2right =
+  let ctype = Typing.type_of env sigma c in
+    match decompose_applied_relation metas env sigma c ctype left2right with
+    | Some c -> c
+    | None -> 
+	user_err_loc (loc, "decompose_applied_relation", 
+		     str"The type" ++ spc () ++ Printer.pr_constr_env env ctype ++
+		       spc () ++ str"of this term does not end with an applied relation.")
+	
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =
   let lrul =
-   List.rev_map
-    (fun (c,b,t) ->
-      (c,mkProp (* dummy value *), b,Tacinterp.glob_tactic t)
-    ) lrul
-  in
-   Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
+   List.fold_left
+     (fun dn (loc,c,b,t) ->
+       let info = find_applied_relation false loc (Global.env ()) Evd.empty c b in
+       let pat = if b then info.hyp_left else info.hyp_right in
+       let rul = { rew_lemma = c; rew_type = info.hyp_ty;
+		   rew_pat = pat; rew_l2r = b;
+		   rew_tac = Tacinterp.glob_tactic t}
+       in HintDN.add pat rul dn) 
+     (try find_base base with _ -> HintDN.empty) lrul
+  in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))

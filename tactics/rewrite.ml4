@@ -242,7 +242,7 @@ let evd_convertible env evd x y =
   try ignore(Evarconv.the_conv_x env x y evd); true 
   with _ -> false
   
-let decompose_setoid_eqhyp env sigma c left2right =
+let decompose_applied_relation env sigma c left2right =
   let ctype = Typing.type_of env sigma c in
   let find_rel ty = 
     let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in
@@ -295,7 +295,7 @@ let refresh_hypinfo env sigma hypinfo =
       match c with 
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	    hypinfo := decompose_setoid_eqhyp env ( cl.evd) c l2r;
+	    hypinfo := decompose_applied_relation env ( cl.evd) c l2r;
 	| _ -> ()
   else ()
 
@@ -489,7 +489,7 @@ let apply_rule hypinfo loccs : strategy =
 let apply_lemma (evm,c) left2right loccs : strategy =
   fun env sigma ->
     let evars = Evd.merge sigma evm in
-    let hypinfo = ref (decompose_setoid_eqhyp env evars c left2right) in
+    let hypinfo = ref (decompose_applied_relation env evars c left2right) in
       apply_rule hypinfo loccs env sigma
 
 let subterm all flags (s : strategy) : strategy =
@@ -588,11 +588,6 @@ let subterm all flags (s : strategy) : strategy =
 let all_subterms = subterm true default_flags
 let one_subterm = subterm false default_flags
 
-let morphism_proof env evars carrier relation x =
-  let goal =
-    mkApp (Lazy.force morphism_proxy_type, [| carrier ; relation; x |])
-  in Evarutil.e_new_evar evars env goal
-
 (** Requires transitivity of the rewrite step, not tail-recursive. *)
 
 let transitivity env sigma (res : rewrite_result_info) (next : strategy) : rewrite_result option =
@@ -660,10 +655,10 @@ module Strategies =
       seq s (any s)
 
     let bu (s : strategy) : strategy = 
-      fix (fun s' -> choice (seq (all_subterms s') (try_ s')) s)
+      fix (fun s' -> seq (choice (all_subterms s') s) (try_ s'))
 
     let td (s : strategy) : strategy = 
-      fix (fun s' -> choice s (seq (all_subterms s') (try_ s')))
+      fix (fun s' -> seq (choice s (all_subterms s')) (try_ s'))
 
     let innermost (s : strategy) : strategy =
       fix (fun ins -> choice (one_subterm ins) s)
@@ -676,9 +671,15 @@ module Strategies =
 	choice tac (apply_lemma l l2r (false,[])))
 	fail cs
 	
+    let old_hints (db : string) : strategy =
+      let rules = Autorewrite.find_rewrites db in
+	lemmas (List.map (fun hint -> (inj_open hint.Autorewrite.rew_lemma, hint.Autorewrite.rew_l2r)) rules)
+
     let hints (db : string) : strategy =
-      let rules = Autorewrite.find_base db in
-	lemmas (List.map (fun (b,_,l2r,_) -> (inj_open b, l2r)) rules)
+      fun env sigma t ty cstr evars ->
+	let rules = Autorewrite.find_matches db t in
+	  lemmas (List.map (fun hint -> (inj_open hint.Autorewrite.rew_lemma, hint.Autorewrite.rew_l2r)) rules)
+	    env sigma t ty cstr evars
 
 end
 
@@ -693,7 +694,7 @@ let rewrite_strat flags occs hyp =
 let rewrite_with (evm,c) left2right loccs : strategy =
   fun env sigma ->
     let evars = Evd.merge sigma evm in
-    let hypinfo = ref (decompose_setoid_eqhyp env evars c left2right) in
+    let hypinfo = ref (decompose_applied_relation env evars c left2right) in
       rewrite_strat default_flags loccs hypinfo env sigma
 
 let apply_strategy (s : strategy) env sigma concl cstr evars =
@@ -854,6 +855,7 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
   | [ rewstrategy(h) ";" rewstrategy(h') ] -> [ Strategies.seq h h' ]
   | [ "(" rewstrategy(h) ")" ] -> [ h ]
   | [ "choice" rewstrategy(h) rewstrategy(h') ] -> [ Strategies.choice h h' ]
+  | [ "old_hints" preident(h) ] -> [ Strategies.old_hints h ]
   | [ "hints" preident(h) ] -> [ Strategies.hints h ]
   | [ "terms" constr_list(h) ] -> [ fun env sigma -> Strategies.lemmas (interp_constr_list env sigma h) env sigma ]
 END
@@ -1263,7 +1265,7 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
     {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
 
 let get_hyp gl evars (evm,c) clause l2r = 
-  let hi = decompose_setoid_eqhyp (pf_env gl) evars c l2r in
+  let hi = decompose_applied_relation (pf_env gl) evars c l2r in
   let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
     unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
 	
