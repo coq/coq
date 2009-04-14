@@ -102,12 +102,12 @@ Qed.
 
 (** * Additional properties of max *)
 
-Lemma Zmax_irreducible_inf : forall n m:Z, Zmax n m = n \/ Zmax n m = m.
+Lemma Zmax_irreducible_dec : forall n m:Z, {Zmax n m = n} + {Zmax n m = m}.
 Proof.
   intros; apply Zmax_case; auto.
 Qed.
 
-Lemma Zmax_le_prime_inf : forall n m p:Z, p <= Zmax n m -> p <= n \/ p <= m.
+Lemma Zmax_le_prime : forall n m p:Z, p <= Zmax n m -> p <= n \/ p <= m.
 Proof.
   intros n m p; apply Zmax_case; auto.
 Qed.
@@ -121,12 +121,16 @@ Proof.
     elim_compare n m; intros E; rewrite E; auto with arith.
 Qed.
 
+Lemma Zplus_max_distr_l : forall n m p:Z, Zmax (p + n) (p + m) = p + Zmax n m.
+Proof.
+  intros n m p; unfold Zmax.
+  rewrite (Zcompare_plus_compat n m p).
+  destruct (n ?= m); trivial.
+Qed.
+
 Lemma Zplus_max_distr_r : forall n m p:Z, Zmax (n + p) (m + p) = Zmax n m + p.
 Proof.
-  intros x y n; unfold Zmax in |- *.
-  rewrite (Zplus_comm x n); rewrite (Zplus_comm y n);
-    rewrite (Zcompare_plus_compat x y n).
-  case (x ?= y); apply Zplus_comm.
+  intros n m p; repeat rewrite (Zplus_comm _ p); apply Zplus_max_distr_l.
 Qed.
 
 (** * Maximum and Zpos *)
@@ -164,3 +168,8 @@ Proof.
   symmetry; apply Zpos_max_1.
 Qed.
 
+(* begin hide *)
+(* Compatibility *)
+Notation Zmax_irreducible_inf := Zmax_irreducible_dec (only parsing).
+Notation Zmax_le_prime_inf := Zmax_le_prime (only parsing).
+(* end hide *)
