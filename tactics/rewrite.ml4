@@ -663,7 +663,7 @@ module Strategies =
       fix (fun s' -> choice (seq (all_subterms s') (try_ s')) s)
 
     let td (s : strategy) : strategy = 
-      fix (fun s' -> choice s (all_subterms s'))
+      fix (fun s' -> choice s (seq (all_subterms s') (try_ s')))
 
     let innermost (s : strategy) : strategy =
       fix (fun ins -> choice (one_subterm ins) s)
@@ -671,11 +671,14 @@ module Strategies =
     let outermost (s : strategy) : strategy =
       fix (fun out -> choice s (one_subterm out))
 
+    let lemmas cs : strategy =
+      List.fold_left (fun tac (l,l2r) ->
+	choice tac (apply_lemma l l2r (false,[])))
+	fail cs
+	
     let hints (db : string) : strategy =
       let rules = Autorewrite.find_base db in
-	List.fold_left (fun tac (b,t,l2r,_) ->
-	  choice tac (apply_lemma (inj_open b) l2r (false,[])))
-	  fail rules
+	lemmas (List.map (fun (b,_,l2r,_) -> (inj_open b, l2r)) rules)
 
 end
 
@@ -815,6 +818,9 @@ let apply_constr_expr c l2r occs = fun env sigma ->
   let c = Constrintern.interp_open_constr sigma env c in
     apply_lemma c l2r occs env sigma
 
+let interp_constr_list env sigma cs =
+  List.map (fun c -> Constrintern.interp_open_constr sigma env c, true) cs
+
 open Pcoq
 
 let (wit_strategy, globwit_strategy, rawwit_strategy) =
@@ -849,6 +855,7 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
   | [ "(" rewstrategy(h) ")" ] -> [ h ]
   | [ "choice" rewstrategy(h) rewstrategy(h') ] -> [ Strategies.choice h h' ]
   | [ "hints" preident(h) ] -> [ Strategies.hints h ]
+  | [ "terms" constr_list(h) ] -> [ fun env sigma -> Strategies.lemmas (interp_constr_list env sigma h) env sigma ]
 END
 
 TACTIC EXTEND class_rewrite
