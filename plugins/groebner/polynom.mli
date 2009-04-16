@@ -1,111 +1,120 @@
-type coef (*= Entiers.entiers*)
-val coef_of_num : Num.num -> coef
-val num_of_coef : coef -> Num.num
-val eq_coef : coef -> coef -> bool
-val lt_coef : coef -> coef -> bool
-val le_coef : coef -> coef -> bool
-val abs_coef : coef -> coef
-val plus_coef : coef -> coef -> coef
-val mult_coef : coef -> coef -> coef
-val sub_coef : coef -> coef -> coef
-val opp_coef : coef -> coef
-val div_coef : coef -> coef -> coef
-val mod_coef : coef -> coef -> coef
-val coef0 : coef
-val coef1 : coef
-val string_of_coef : coef -> string
-val int_of_coef : coef -> int
-val hash_coef : coef -> int
-val puis_coef : coef -> int -> coef
-val pgcd : coef -> coef -> coef
-val pgcd2 : coef -> coef -> coef
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
 
-type variable = int
-type poly = Pint of coef | Prec of variable * poly array
+(* Building recursive polynom operations from a type of coefficients *)
 
-val cf : int -> poly
-val cf0 : poly
-val cf1 : poly
-val x : variable -> poly
-val max_var_pol : poly -> variable
-val max_var_pol2 : poly -> variable
-val max_var : poly array -> variable
-val eqP : poly -> poly -> bool
-val norm : poly -> poly
-val deg : variable -> poly -> int
-val deg_total : poly -> int
-val copyP : poly -> poly
-val coef : variable -> int -> poly -> poly
-val plusP : poly -> poly -> poly
-val content : poly -> coef
-val div_int : poly -> coef -> poly
-val vire_contenu : poly -> poly
-val vars : poly -> variable list
-val int_of_Pint : poly -> coef
-val multx : int -> variable -> poly -> poly
-val multP : poly -> poly -> poly
-val deriv : variable -> poly -> poly
-val oppP : poly -> poly
-val moinsP : poly -> poly -> poly
-val puisP : poly -> int -> poly
-val ( @@ ) : poly -> poly -> poly
-val ( -- ) : poly -> poly -> poly
-val ( ^^ ) : poly -> int -> poly
-val coefDom : variable -> poly -> poly
-val coefConst : variable -> poly -> poly
-val remP : variable -> poly -> poly
-val coef_int_tete : poly -> coef
-val normc : poly -> poly
-val is_constantP : poly -> bool
-val is_zero : poly -> bool
-val monome : variable -> int -> poly
-val coef_constant : poly -> coef
-val univ : bool ref
-val string_of_var : int -> string
-val nsP : int ref
-val string_of_Pcut : poly -> string
-val string_of_P : poly -> string
-val printP : poly -> unit
-val print_tpoly : poly array -> unit
-val print_lpoly : poly list -> unit
-val quo_rem_pol : poly -> poly -> variable -> poly * poly
-val div_pol : poly -> poly -> variable -> poly
-val divP : poly -> poly -> poly
-val div_pol_rat : poly -> poly -> bool
-val pseudo_div : poly -> poly -> variable -> poly * poly * int * poly
-val pgcdP : poly -> poly -> poly
-val pgcd_pol : poly -> poly -> variable -> poly
-val content_pol : poly -> variable -> poly
-val pgcd_coef_pol : poly -> poly -> variable -> poly
-val pgcd_pol_rec : poly -> poly -> variable -> poly
-val gcd_sub_res : poly -> poly -> variable -> poly
-val gcd_sub_res_rec : poly -> poly -> poly -> poly -> int -> variable -> poly
-val lazard_power : poly -> poly -> int -> variable -> poly
-val sans_carre : poly -> variable -> poly
-val facteurs : poly -> variable -> poly list
-val facteurs_impairs : poly -> variable -> poly list
-val hcontentP : (string, poly) Hashtbl.t
-val prcontentP : unit -> unit
-val contentP : poly * variable -> poly
-val hashP : poly -> int
-module Hashpol : Hashtbl.S with type key=poly
-val memoP :
-  string -> 'a Hashpol.t -> (poly -> 'a) -> poly -> 'a
-val hfactorise : poly list list Hashpol.t
-val prfactorise : unit -> unit
-val factorise : poly -> poly list list
-val facteurs2 : poly -> poly list
-val pol_de_factorisation : poly list list -> poly
-val set_of_array_facteurs : poly list array -> poly list
-val factorise_tableauP2 :
-  poly array ->
-  poly list array -> poly array * (poly * int list) array
-val factorise_tableauP :
-  poly array -> poly array * (poly * int list) array
-val is_positif : poly -> bool
-val is_negatif : poly -> bool
-val pseudo_euclide :
-  poly list -> poly -> poly -> variable ->
-  poly * poly * int * poly * poly * (poly * int) list * (poly * int) list
-val implique_non_nul : poly list -> poly -> bool
-val ajoute_non_nul : poly -> poly list -> poly list
+module type Coef = sig
+  type t
+  val equal : t -> t -> bool
+  val lt : t -> t -> bool
+  val le : t -> t -> bool
+  val abs : t -> t
+  val plus : t -> t -> t
+  val mult : t -> t -> t
+  val sub : t -> t -> t
+  val opp : t -> t
+  val div : t -> t -> t
+  val modulo : t -> t -> t
+  val puis : t -> int -> t
+  val pgcd : t -> t -> t
+
+  val hash : t -> int
+  val of_num : Num.num -> t
+  val to_string : t -> string
+end
+
+module type S = sig
+  type coef
+  type variable = int
+  type t = Pint of coef | Prec of variable * t array
+
+  val of_num : Num.num -> t
+  val x : variable -> t
+  val monome : variable -> int -> t
+  val is_constantP : t -> bool
+  val is_zero : t -> bool
+
+  val max_var_pol : t -> variable
+  val max_var_pol2 : t -> variable
+  val max_var : t array -> variable
+  val equal : t -> t -> bool
+  val norm : t -> t
+  val deg : variable -> t -> int
+  val deg_total : t -> int
+  val copyP : t -> t
+  val coef : variable -> int -> t -> t
+
+  val plusP : t -> t -> t
+  val content : t -> coef
+  val div_int : t -> coef -> t
+  val vire_contenu : t -> t
+  val vars : t -> variable list
+  val int_of_Pint : t -> coef
+  val multx : int -> variable -> t -> t
+  val multP : t -> t -> t
+  val deriv : variable -> t -> t
+  val oppP : t -> t
+  val moinsP : t -> t -> t
+  val puisP : t -> int -> t
+  val ( @@ ) : t -> t -> t
+  val ( -- ) : t -> t -> t
+  val ( ^^ ) : t -> int -> t
+  val coefDom : variable -> t -> t
+  val coefConst : variable -> t -> t
+  val remP : variable -> t -> t
+  val coef_int_tete : t -> coef
+  val normc : t -> t
+  val coef_constant : t -> coef
+  val univ : bool ref
+  val string_of_var : int -> string
+  val nsP : int ref
+  val to_string : t -> string
+  val printP : t -> unit
+  val print_tpoly : t array -> unit
+  val print_lpoly : t list -> unit
+  val quo_rem_pol : t -> t -> variable -> t * t
+  val div_pol : t -> t -> variable -> t
+  val divP : t -> t -> t
+  val div_pol_rat : t -> t -> bool
+  val pseudo_div : t -> t -> variable -> t * t * int * t
+  val pgcdP : t -> t -> t
+  val pgcd_pol : t -> t -> variable -> t
+  val content_pol : t -> variable -> t
+  val pgcd_coef_pol : t -> t -> variable -> t
+  val pgcd_pol_rec : t -> t -> variable -> t
+  val gcd_sub_res : t -> t -> variable -> t
+  val gcd_sub_res_rec : t -> t -> t -> t -> int -> variable -> t
+  val lazard_power : t -> t -> int -> variable -> t
+  val sans_carre : t -> variable -> t
+  val facteurs : t -> variable -> t list
+  val facteurs_impairs : t -> variable -> t list
+  val hcontentP : (string, t) Hashtbl.t
+  val prcontentP : unit -> unit
+  val contentP : t * variable -> t
+  val hash : t -> int
+  module Hashpol : Hashtbl.S with type key=t
+  val memoP : string -> 'a Hashpol.t -> (t -> 'a) -> t -> 'a
+  val hfactorise : t list list Hashpol.t
+  val prfactorise : unit -> unit
+  val factorise : t -> t list list
+  val facteurs2 : t -> t list
+  val pol_de_factorisation : t list list -> t
+  val set_of_array_facteurs : t list array -> t list
+  val factorise_tableauP2 :
+    t array -> t list array -> t array * (t * int list) array
+  val factorise_tableauP : t array -> t array * (t * int list) array
+  val is_positif : t -> bool
+  val is_negatif : t -> bool
+  val pseudo_euclide :
+    t list -> t -> t -> variable ->
+    t * t * int * t * t * (t * int) list * (t * int) list
+  val implique_non_nul : t list -> t -> bool
+  val ajoute_non_nul : t -> t list -> t list
+end
+
+module Make (C:Coef) : S with type coef = C.t

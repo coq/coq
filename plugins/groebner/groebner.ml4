@@ -36,7 +36,10 @@ open Entries
 open Num
 open Unix
 open Utile
-open Ideal
+
+(***********************************************************************
+  1. Opérations sur les coefficients.
+*)
 
 let num_0 = Int 0
 and num_1 = Int 1
@@ -47,6 +50,94 @@ let numdom r =
   let r' = Ratio.normalize_ratio (ratio_of_num r) in
   num_of_big_int(Ratio.numerator_ratio r'),
   num_of_big_int(Ratio.denominator_ratio r')
+
+module BigInt = struct
+  open Big_int
+
+  type t = big_int
+  let of_int = big_int_of_int
+  let coef0 = of_int 0
+  let coef1 = of_int 1
+  let of_num = Num.big_int_of_num
+  let to_num = Num.num_of_big_int
+  let equal = eq_big_int
+  let lt = lt_big_int
+  let le = le_big_int
+  let abs = abs_big_int
+  let plus =add_big_int
+  let mult = mult_big_int
+  let sub = sub_big_int
+  let opp = minus_big_int
+  let div = div_big_int
+  let modulo = mod_big_int
+  let to_string = string_of_big_int
+  let to_int x = int_of_big_int x
+  let hash x =
+    try (int_of_big_int x)
+    with _-> 1
+  let puis = power_big_int_positive_int 
+
+  (* a et b positifs, résultat positif *)
+  let rec pgcd a b = 
+    if equal b coef0 
+    then a
+    else if lt a b then pgcd b a else pgcd b (modulo a b)
+
+
+  (* signe du pgcd = signe(a)*signe(b) si non nuls. *)
+  let pgcd2 a b = 
+    if equal a coef0 then b
+    else if equal b coef0 then a
+    else let c = pgcd (abs a) (abs b) in
+    if ((lt coef0 a)&&(lt b coef0))
+      ||((lt coef0 b)&&(lt a coef0))
+    then opp c else c
+end
+
+(*
+module Ent = struct
+  type t = Entiers.entiers
+  let of_int = Entiers.ent_of_int
+  let of_num x = Entiers.ent_of_string(Num.string_of_num x)
+  let to_num x = Num.num_of_string (Entiers.string_of_ent x)
+  let equal = Entiers.eq_ent
+  let lt = Entiers.lt_ent
+  let le = Entiers.le_ent
+  let abs = Entiers.abs_ent
+  let plus =Entiers.add_ent
+  let mult = Entiers.mult_ent
+  let sub = Entiers.moins_ent
+  let opp = Entiers.opp_ent
+  let div = Entiers.div_ent
+  let modulo = Entiers.mod_ent
+  let coef0 = Entiers.ent0
+  let coef1 = Entiers.ent1
+  let to_string = Entiers.string_of_ent
+  let to_int x = Entiers.int_of_ent x 
+  let hash x =Entiers.hash_ent x
+  let signe = Entiers.signe_ent
+
+  let rec puis p n = match n with
+      0 -> coef1
+    |_ -> (mult p (puis p (n-1)))
+
+  (* a et b positifs, résultat positif *)
+  let rec pgcd a b = 
+    if equal b coef0 
+    then a
+    else if lt a b then pgcd b a else pgcd b (modulo a b)
+
+
+  (* signe du pgcd = signe(a)*signe(b) si non nuls. *)
+  let pgcd2 a b = 
+    if equal a coef0 then b
+    else if equal b coef0 then a
+    else let c = pgcd (abs a) (abs b) in
+    if ((lt coef0 a)&&(lt b coef0))
+      ||((lt coef0 b)&&(lt a coef0))
+    then opp c else c
+end
+*)
 
 (* ------------------------------------------------------------------------- *)
 (*  term??                                                                   *)
@@ -59,10 +150,24 @@ type term =
   | Const of Num.num
   | Var of vname
   | Opp of term
-  | Add of (term * term)
-  | Sub of (term * term)
-  | Mul of (term * term)
-  | Pow of (term * int)
+  | Add of term * term
+  | Sub of term * term
+  | Mul of term * term
+  | Pow of term * int
+
+let const n =
+  if eq_num n num_0 then Zero else Const n
+let pow(p,i) = if i=1 then p else Pow(p,i)
+let add = function
+    (Zero,q) -> q
+  | (p,Zero) -> p
+  | (p,q) -> Add(p,q)
+let mul = function
+    (Zero,_) -> Zero
+  | (_,Zero) -> Zero
+  | (p,Const n) when eq_num n num_1 -> p
+  | (Const n,q) when eq_num n num_1 -> q
+  | (p,q) -> Mul(p,q)
 
 let unconstr = mkRel 1
 
@@ -201,6 +306,17 @@ let string_of_term p =
     | Pow (t1,n) ->  (aux t1)^"^"^(string_of_int n)
   in aux p
 
+
+(***********************************************************************
+   Coefficients: polynomes recursifs
+ *)
+
+module Coef = BigInt
+(*module Coef = Ent*)
+module Poly = Polynom.Make(Coef)
+module PIdeal = Ideal.Make(Poly)
+open PIdeal
+
 (* terme vers polynome creux *)
 (* les variables d'indice <=np sont dans les coeff *)
 
@@ -212,11 +328,11 @@ let term_pol_sparse np t=
     | Const r ->
 	if r = num_0
 	then zeroP
-	else polconst d (Polynom.Pint (Polynom.coef_of_num r))
+	else polconst d (Poly.Pint (Coef.of_num r))
     | Var v ->
 	let v = int_of_string v in
 	if v <= np
-	then polconst d (Polynom.x v)
+	then polconst d (Poly.x v)
 	else gen d v
     | Opp t1 ->  oppP (aux t1)
     | Add (t1,t2) -> plusP d (aux t1) (aux t2)
@@ -230,16 +346,17 @@ let term_pol_sparse np t=
 
 (* polynome recusrsif vers terme *)
 
+
 let polrec_to_term p =
   let rec aux p =
   match p with
-   |Polynom.Pint n -> Const (Polynom.num_of_coef n)
-   |Polynom.Prec (v,coefs) ->
+   |Poly.Pint n -> const (Coef.to_num n)
+   |Poly.Prec (v,coefs) ->
      let res = ref Zero in
      Array.iteri
       (fun i c ->
-	 res:=Add(!res, Mul(aux c,
-			    Pow (Var (string_of_int v),
+	 res:=add(!res, mul(aux c,
+			    pow (Var (string_of_int v),
 				 i))))
       coefs;
      !res
@@ -248,52 +365,50 @@ let polrec_to_term p =
 (* on approche la forme de Horner utilisee par la tactique ring. *)
 
 let pol_sparse_to_term n2 p =
+  let p = PIdeal.repr p in
   let rec aux p =
     match p with
-    |[] ->  Const (num_of_string "0")
-    |(a,m)::p1 ->
-	let n = (Array.length m)-1 in
-	let (i0,e0) =
-	  (List.fold_left
-	     (fun (r,d) (a,m) ->
-	       let i0= ref 0 in
-	       for k=1 to n do
-		 if m.(k)>0
-		 then i0:=k
-	       done;
-	       if !i0 = 0
-	       then (r,d)
-	       else if !i0 > r
-	       then (!i0, m.(!i0))
-	       else if !i0 = r && m.(!i0)<d
-	       then (!i0, m.(!i0))
-	       else (r,d))
-	     (0,0)
-	     p) in
-	if i0=0
-	then
-	  let mp = ref (polrec_to_term a) in
-          if p1=[]
-	  then !mp
-	  else Add(!mp,aux p1)
-	else (
-	  let p1=ref [] in
-	  let p2=ref [] in
-	  List.iter
-	    (fun (a,m) ->
-	      if m.(i0)>=e0
-	      then (m.(i0)<-m.(i0)-e0;
-		    p1:=(a,m)::(!p1))
-	      else p2:=(a,m)::(!p2))
-	    p;
-	  let vm =
-	    if e0=1
-	    then Var (string_of_int (i0))
-	    else Pow (Var (string_of_int (i0)),e0) in
-	  Add(Mul(vm, aux (List.rev (!p1))), aux (List.rev (!p2))))
-  in let pp = aux p in
-
-  pp
+      [] -> const (num_of_string "0")
+    | (a,m)::p1 ->
+      let n = (Array.length m)-1 in
+      let (i0,e0) =
+	List.fold_left (fun (r,d) (a,m) ->
+	      let i0= ref 0 in
+	      for k=1 to n do
+		if m.(k)>0
+		then i0:=k
+	      done;
+	      if !i0 = 0
+	      then (r,d)
+	      else if !i0 > r
+	      then (!i0, m.(!i0))
+	      else if !i0 = r && m.(!i0)<d
+	      then (!i0, m.(!i0))
+	      else (r,d))
+	  (0,0)
+	  p in
+      if i0=0
+      then
+	let mp = ref (polrec_to_term a) in
+        if p1=[]
+	then !mp
+	else add(!mp,aux p1)
+      else (
+	let p1=ref [] in
+	let p2=ref [] in
+	List.iter
+	  (fun (a,m) ->
+	     if m.(i0)>=e0
+	     then (m.(i0)<-m.(i0)-e0;
+		   p1:=(a,m)::(!p1))
+	     else p2:=(a,m)::(!p2))
+	  p;
+	let vm =
+	  if e0=1
+	  then Var (string_of_int (i0))
+	  else pow (Var (string_of_int (i0)),e0) in
+	add(mul(vm, aux (List.rev (!p1))), aux (List.rev (!p2))))
+  in aux p
 
 
 let rec remove_list_tail l i =
@@ -360,12 +475,10 @@ let remove_zeros zero lci =
 let theoremedeszeros lpol p =
   let t1 = Unix.gettimeofday() in
   let m = !nvars in
-  let (c,lp0,p,lci,lc) = in_ideal m lpol p in
+  let (lp0,p,cert) = in_ideal m lpol p in
   let lpc = List.rev !poldepcontent in
   info ("temps: "^Format.sprintf "@[%10.3f@]s\n" (Unix.gettimeofday ()-.t1));
-  if lc<>[]
-  then (c,lp0,p,lci,lc,1,lpc)
-  else (c,[],zeroP,[],[],0,[])
+  (cert,lp0,p,lpc)
 
 
 let theoremedeszeros_termes lp =
@@ -383,33 +496,46 @@ let theoremedeszeros_termes lp =
       | [] -> assert false
       | p::lp1 ->
 	  let lpol = List.rev lp1 in
-	  let (c,lp0,p,lci,lq,d,lct)=  theoremedeszeros lpol p in
-
-	  let lci1 = List.rev lci in
-	  match remove_zeros (fun x -> x=zeroP) (lq::lci1) with
+	  let (cert,lp0,p,_lct) = theoremedeszeros lpol p in
+	  let lc = cert.last_comb::List.rev cert.gb_comb in
+	  match remove_zeros (fun x -> x=zeroP) lc with
 	  | [] -> assert false 
 	  | (lq::lci) ->
 	      (* lci commence par les nouveaux polynomes *)
 	      let m= !nvars in
+	      let c = pol_sparse_to_term m (polconst m cert.coef) in
+	      let r = Pow(Zero,cert.power) in
 	      let lci = List.rev lci in
-	      let c = pol_sparse_to_term m [c, Array.create (m+1) 0] in
-	      let lp0 = List.map (pol_sparse_to_term m) lp0 in
-	      let p = (Pow ((pol_sparse_to_term m p),d)) in
-	      let lci = List.map (fun lc -> List.map (pol_sparse_to_term m) lc) lci in
+	      let lci = List.map (List.map (pol_sparse_to_term m)) lci in
 	      let lq = List.map (pol_sparse_to_term m) lq in
 	      info ("nombre de parametres: "^string_of_int nparam^"\n");
 	      info "terme calcule\n";
-	      (c,lp0,p,lci,lq)
+	      (c,r,lci,lq)
       )
   |_ -> assert false
 
 
-
+(* version avec hash-consing du certificat:
+let groebner lpol =
+  Hashtbl.clear Dansideal.hmon;
+  Hashtbl.clear Dansideal.coefpoldep;
+  Hashtbl.clear Dansideal.sugartbl;
+  Hashtbl.clear Polynomesrec.hcontentP;
+  init_constants ();
+  let lp= parse_request lpol in
+  let (_lp0,_p,c,r,_lci,_lq as rthz) = theoremedeszeros_termes lp in
+  let certif = certificat_vers_polynome_creux rthz in 
+  let certif = hash_certif certif in
+  let certif = certif_term certif in
+  let c = mkt_term c in
+  info "constr calcule\n";
+  (c, certif)
+*)
 
 let groebner lpol =
   let lp= parse_request lpol in
-  let (c,lp0,p,lci,lq) = theoremedeszeros_termes lp in
-  let res = [p::lp0;c::lq]@lci in
+  let (c,r,lci,lq) = theoremedeszeros_termes lp in
+  let res = [c::r::lq]@lci in
   let res = List.map (fun lx -> List.map mkt_term lx) res in
   let res =
     List.fold_right
@@ -426,24 +552,20 @@ let groebner lpol =
   info "terme calcule\n";
   res
 
-(*
-open Util
-open Term
-open Tactics
-open Coqlib
-open Utile
-open Groebner
-*)
-
-let groebner_compute t gl =
-  let lpol = groebner t in
+let return_term t =
   let a =
-    mkApp(gen_constant "CC" ["Init";"Logic"] "refl_equal",[|tllp ();lpol|]) in
-  generalize [a] gl
+    mkApp(gen_constant "CC" ["Init";"Logic"] "refl_equal",[|tllp ();t|]) in
+  generalize [a]
+
+let groebner_compute t =
+  let lpol =
+    try groebner t
+    with Ideal.NotInIdeal ->
+      error "groebner cannot solve this problem" in
+  return_term lpol
 
 TACTIC EXTEND groebner_compute
-| [ "groebner_compute"  constr(lt) ] ->
-    [ groebner_compute lt ]
+| [ "groebner_compute"  constr(lt) ] -> [ groebner_compute lt ]
 END
 
 

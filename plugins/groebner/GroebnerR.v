@@ -33,8 +33,8 @@ Require Import Setoid.
 Require Import BinPos.
 Require Import BinList.
 Require Import Znumtheory.
-Require Import Ring_polynom Ring_tac InitialRing.
 Require Import RealField Rdefinitions Rfunctions RIneq DiscrR.
+Require Import Ring_polynom Ring_tac InitialRing.
 
 Declare ML Module "groebner_plugin".
 
@@ -48,16 +48,6 @@ Qed.
 Lemma psos_r1: forall x y, x = y -> x - y = 0.
 intros x y H; rewrite H; ring.
 Qed.
-
-Ltac equalities_to_goal := 
-  match goal with 
-|  H: (@eq R ?x 0) |- _ =>
-        try generalize H; clear H
-|  H: (@eq R 0 ?x) |- _ =>
-        try generalize (sym_equal H); clear H
-|  H: (@eq R ?x ?y) |- _ =>
-        try generalize (psos_r1 _ _ H); clear H
- end.
 
 Lemma groebnerR_not1: forall x y:R, x<>y -> exists z:R, z*(x-y)-1=0.
 intros.
@@ -80,12 +70,26 @@ field.
 auto.
 Qed.
 
+
+Ltac equalities_to_goal := 
+  lazymatch goal with 
+  |  H: (@eq R ?x 0) |- _ => try revert H
+  |  H: (@eq R 0 ?x) |- _ =>
+          try generalize (sym_equal H); clear H
+  |  H: (@eq R ?x ?y) |- _ =>
+          try generalize (psos_r1 _ _ H); clear H
+   end.
+
 Lemma groebnerR_not2: 1<>0.
 auto with *.
 Qed.
 
 Lemma groebnerR_diff: forall x y:R, x<>y -> x-y<>0.
-Admitted.
+intros.
+intro; apply H.
+replace x with (x-y+y) by ring.
+rewrite H0; ring.
+Qed.
 
 (* Removes x<>0 from hypothesis *)
 Ltac groebnerR_not_hyp:=
@@ -99,11 +103,11 @@ Ltac groebnerR_not_hyp:=
    |_ => generalize (@groebnerR_diff _ _ H); clear H; intro
   end
  end.
-
+ 
 Ltac groebnerR_not_goal :=
  match goal with
- | |- ?x<>?y => red; intro; apply groebnerR_not2
- | |- False => apply groebnerR_not2
+ | |- ?x<>?y :> R => red; intro; apply groebnerR_not2
+ | |- False       => apply groebnerR_not2
  end.
 
 Ltac groebnerR_begin :=
@@ -234,12 +238,17 @@ Qed.
 
 (* fin du code de Benjamin *)
 
-Lemma groebnerR_l3:forall c p:R, ~c=0 -> c*p=0 -> p=0.
+Lemma groebnerR_l3:forall c p r, ~c=0 -> c*p^r=0 -> p=0.
 intros.
 elim (Rmult_integral _ _ H0);intros.
-absurd (c=0);auto.
- auto.
+ absurd (c=0);auto.
+
+ clear H0; induction r; simpl in *.
+  contradict H1; discrR. 
+
+  elim (Rmult_integral _ _ H1); auto.
 Qed.
+
 
 Ltac generalise_eq_hyps:=
   repeat
@@ -293,7 +302,7 @@ Fixpoint interpret3 t fv {struct t}: R :=
 
 Ltac parametres_en_tete fv lp :=
     match fv with
-     | (@nil _)        => lp
+     | (@nil _)          => lp
      | (@cons _ ?x ?fv1) => 
        let res := AddFvTail x lp in
          parametres_en_tete fv1 res
@@ -301,23 +310,43 @@ Ltac parametres_en_tete fv lp :=
 
 Ltac append1 a l :=
  match l with
- | (@nil _)          => constr:(cons a l)
+ | (@nil _)     => constr:(cons a l)
  | (cons ?x ?l) => let l' := append1 a l in constr:(cons x l')
  end.
 
 Ltac rev l :=
   match l with
-   |(@nil _)          => l
+   |(@nil _)      => l
    | (cons ?x ?l) => let l' := rev l in append1 x l'
   end.
 
-(* Pompe sur Ring *)
-Import Ring_tac.
+
+Ltac groebner_call_n nparam p rr lp kont :=
+  groebner_compute (PEc nparam :: PEpow p rr :: lp);
+  match goal with
+  | |- (?c::PEpow _ ?r::?lq0)::?lci0 = _ -> _ =>
+    intros _;
+    set (lci:=lci0);
+    set (lq:=lq0);
+    kont c rr lq lci
+  end.
+
+Ltac groebner_call nparam p lp kont :=
+  let rec try_n n :=
+    lazymatch n with
+    | 6%N => fail
+    | _ =>
+(*        idtac "Trying power: " n;*)
+        groebner_call_n nparam p n lp kont ||
+        let n' := eval compute in (Nsucc n) in try_n n'
+    end in
+  try_n 1%N. 
+
 
 Ltac groebnerR_gen lparam lvar n RNG lH _rl :=
   get_Pre RNG ();
-  let mkFV := get_RingFV RNG in
-  let mkPol := get_RingMeta RNG in
+  let mkFV := Ring_tac.get_RingFV RNG in
+  let mkPol := Ring_tac.get_RingMeta RNG in
   generalise_eq_hyps;
   let t := Get_goal in
   let lpol := lpol_goal t in
@@ -342,26 +371,16 @@ Ltac groebnerR_gen lparam lvar n RNG lH _rl :=
     (@nil (PExpr Z))
     lpol in
   let lpol := eval compute in (List.rev lpol) in
-  let lpol := constr:(PEc nparam :: lpol) in
   (*idtac lpol;*)
-  groebner_compute lpol;
-  let OnResult kont :=
-    match goal with
-    | |- (?p ::_)::(?c::?lq0)::?lci0 = _ -> _ =>
-       intros _;
-       set (lci:=lci0);
-       set (lq:=lq0);
-       kont p c lq lci
-    end in
   let SplitPolyList kont :=
     match lpol with
-    | _::?p2::?lp2 => kont p2 lp2
+    | ?p2::?lp2 => kont p2 lp2
     end in
-  OnResult ltac:(fun p c lq lci =>
-    SplitPolyList ltac:(fun p2 lp2 =>
-      set (p21:=p2) ;
-      set (lp21:=lp2);
-      set (q := PEmul c p21);
+  SplitPolyList ltac:(fun p lp =>
+    set (p21:=p) ;
+    set (lp21:=lp);
+    groebner_call nparam p lp ltac:(fun c r lq lci =>
+      set (q := PEmul c (PEpow p21 r));
       let Hg := fresh "Hg" in 
       assert (Hg:check lp21 q (lci,lq) = true);
       [ (vm_compute;reflexivity) || idtac "invalid groebner certificate"
@@ -370,7 +389,7 @@ Ltac groebnerR_gen lparam lvar n RNG lH _rl :=
         [ simpl; apply (@check_correct fv lp21 q (lci,lq) Hg); simpl;
           repeat (split;[assumption|idtac]); exact I
         | simpl in Hg2; simpl;
-          apply groebnerR_l3 with (interpret3 c fv);simpl;
+          apply groebnerR_l3 with (interpret3 c fv) (Nnat.nat_of_N r);simpl;
           [ discrR || idtac "could not prove discrimination result"
           | exact Hg2]
         ]
@@ -391,13 +410,67 @@ Ltac groebnerRp lparam := groebnerRpv lparam (@nil R).
 
 (*************** Examples *)
 (*
+Section Examples.
+
+Require Import List Ring_polynom.
+Delimit Scope PE_scope with PE.
+Infix "+" := PEadd : PE_scope.
+Infix "*" := PEmul : PE_scope.
+Infix "-" := PEsub : PE_scope.
+Infix "^" := PEpow : PE_scope.
+Notation "[ n ]" := (@PEc Z n) (at level 0).
+
 Open Scope R_scope.
+
 Goal forall x y,
   x+y=0 -> 
   x*y=0 ->
   x^2=0.
+groebnerR.
+Qed.
+
+Goal forall x, x^2=0 -> x=0.
+groebnerR.
+Qed.
+
+(*
+Notation X  := (PEX Z 3).
+Notation Y  := (PEX Z 2).
+Notation Z_ := (PEX Z 1).
+*)
+Goal forall x y z,
+  x+y+z=0 -> 
+  x*y+x*z+y*z=0->
+  x*y*z=0 -> x^3=0.
 Time groebnerR.
 Qed.
+
+(*
+Notation X  := (PEX Z 4).
+Notation Y  := (PEX Z 3).
+Notation Z_ := (PEX Z 2).
+Notation U  := (PEX Z 1).
+*)
+Goal forall x y z u,
+  x+y+z+u=0 -> 
+  x*y+x*z+x*u+y*z+y*u+z*u=0->
+  x*y*z+x*y*u+x*z*u+y*z*u=0->
+  x*y*z*u=0 -> x^4=0.
+Time groebnerR.
+Qed.
+
+(*
+Notation x_ := (PEX Z 5).
+Notation y_ := (PEX Z 4).
+Notation z_ := (PEX Z 3).
+Notation u_ := (PEX Z 2).
+Notation v_ := (PEX Z 1).
+Notation "x :: y" := (List.cons x y)
+(at level 60, right associativity, format "'[hv' x  ::  '/' y ']'").
+Notation "x :: y" := (List.app x y)
+(at level 60, right associativity, format "x :: y").
+*)
+
 Goal forall x y z u v,
   x+y+z+u+v=0 -> 
   x*y+x*z+x*u+x*v+y*z+y*u+y*v+z*u+z*v+u*v=0->
@@ -406,10 +479,9 @@ Goal forall x y z u v,
   x*y*z*u*v=0 -> x^5=0.
 Time groebnerR.
 Qed.
+
+End Examples.
 *)
-
-
-
 
 
 

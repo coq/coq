@@ -16,7 +16,7 @@ let prt s =
   if !Flags.debug then (print_string (s^"\n");flush(stdout)) else ()
 
 let info s =
-  output_string stderr s; flush stderr
+  Flags.if_verbose prerr_string s
 
 (**********************************************************************
   Listes

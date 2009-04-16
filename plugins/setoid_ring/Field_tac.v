@@ -488,6 +488,10 @@ Ltac reduce_field_expr ope kont FLD fv expr :=
 
 (* Hack to let a Ltac return a term in the context of a primitive tactic *)
 Ltac return_term x := generalize (refl_equal x).
+Ltac get_term :=
+  match goal with 
+  | |- ?x = _ -> _ => x
+  end.
 
 (* Turn an operation on field expressions (FExpr) into a reduction
    on terms (in the field carrier). Because of field_lookup,

@@ -1,5 +1,4 @@
 (************************************************************************)
-
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
 (*   \VV/  **************************************************************)
@@ -13,89 +12,130 @@
 open Utile
 open Util
 
-(***********************************************************************
-  1. Opérations sur les coefficients.
-*)
+module type Coef = sig
+  type t
+  val equal : t -> t -> bool
+  val lt : t -> t -> bool
+  val le : t -> t -> bool
+  val abs : t -> t
+  val plus : t -> t -> t
+  val mult : t -> t -> t
+  val sub : t -> t -> t
+  val opp : t -> t
+  val div : t -> t -> t
+  val modulo : t -> t -> t
+  val puis : t -> int -> t
+  val pgcd : t -> t -> t
 
-open Big_int
+  val hash : t -> int
+  val of_num : Num.num -> t
+  val to_string : t -> string
+end
 
-type coef = big_int
-let coef_of_int = big_int_of_int
-let coef_of_num = Num.big_int_of_num
-let num_of_coef = Num.num_of_big_int
-let eq_coef = eq_big_int
-let lt_coef = lt_big_int
-let le_coef = le_big_int
-let abs_coef = abs_big_int
-let plus_coef =add_big_int
-let mult_coef = mult_big_int
-let sub_coef = sub_big_int
-let opp_coef = minus_big_int
-let div_coef = div_big_int
-let mod_coef = mod_big_int
-let coef0 = coef_of_int 0
-let coef1 = coef_of_int 1
-let string_of_coef = string_of_big_int
-let int_of_coef x = int_of_big_int x
-let hash_coef x =
-  try (int_of_big_int x)
-  with _-> 1
-let puis_coef = power_big_int_positive_int 
+module type S = sig
+  type coef
+  type variable = int
+  type t = Pint of coef | Prec of variable * t array
 
-(*
-type coef = Entiers.entiers
-let coef_of_int = Entiers.ent_of_int
-let coef_of_num x = (* error if x is a ratio *)
-  Entiers.ent_of_string
-    (Big_int.string_of_big_int (Num.big_int_of_num x))
-let num_of_coef x = Num.num_of_string (Entiers.string_of_ent x)
-let eq_coef = Entiers.eq_ent
-let lt_coef = Entiers.lt_ent
-let le_coef = Entiers.le_ent
-let abs_coef = Entiers.abs_ent
-let plus_coef =Entiers.add_ent
-let mult_coef = Entiers.mult_ent
-let sub_coef = Entiers.moins_ent
-let opp_coef = Entiers.opp_ent
-let div_coef = Entiers.div_ent
-let mod_coef = Entiers.mod_ent
-let coef0 = Entiers.ent0
-let coef1 = Entiers.ent1
-let string_of_coef = Entiers.string_of_ent
-let int_of_coef x = Entiers.int_of_ent x 
-let hash_coef x =Entiers.hash_ent x
-let signe_coef = Entiers.signe_ent
+  val of_num : Num.num -> t
+  val x : variable -> t
+  val monome : variable -> int -> t
+  val is_constantP : t -> bool
+  val is_zero : t -> bool
 
-let rec puis_coef p n = match n with
-    0 -> coef1
-  |_ -> (mult_coef p (puis_coef p (n-1)))
-*)
+  val max_var_pol : t -> variable
+  val max_var_pol2 : t -> variable
+  val max_var : t array -> variable
+  val equal : t -> t -> bool
+  val norm : t -> t
+  val deg : variable -> t -> int
+  val deg_total : t -> int
+  val copyP : t -> t
+  val coef : variable -> int -> t -> t
 
-(* a et b positifs, résultat positif *)
-let rec pgcd a b = 
-  if eq_coef b coef0 
-  then a
-  else if lt_coef a b then pgcd b a else pgcd b (mod_coef a b)
-
-
-(* signe du pgcd = signe(a)*signe(b) si non nuls. *)
-let pgcd2 a b = 
-  if eq_coef a coef0 then b
-  else if eq_coef b coef0 then a
-  else let c = pgcd (abs_coef a) (abs_coef b) in
-    if ((lt_coef coef0 a)&&(lt_coef b coef0))
-      ||((lt_coef coef0 b)&&(lt_coef a coef0))
-    then opp_coef c else c
+  val plusP : t -> t -> t
+  val content : t -> coef
+  val div_int : t -> coef -> t
+  val vire_contenu : t -> t
+  val vars : t -> variable list
+  val int_of_Pint : t -> coef
+  val multx : int -> variable -> t -> t
+  val multP : t -> t -> t
+  val deriv : variable -> t -> t
+  val oppP : t -> t
+  val moinsP : t -> t -> t
+  val puisP : t -> int -> t
+  val ( @@ ) : t -> t -> t
+  val ( -- ) : t -> t -> t
+  val ( ^^ ) : t -> int -> t
+  val coefDom : variable -> t -> t
+  val coefConst : variable -> t -> t
+  val remP : variable -> t -> t
+  val coef_int_tete : t -> coef
+  val normc : t -> t
+  val coef_constant : t -> coef
+  val univ : bool ref
+  val string_of_var : int -> string
+  val nsP : int ref
+  val to_string : t -> string
+  val printP : t -> unit
+  val print_tpoly : t array -> unit
+  val print_lpoly : t list -> unit
+  val quo_rem_pol : t -> t -> variable -> t * t
+  val div_pol : t -> t -> variable -> t
+  val divP : t -> t -> t
+  val div_pol_rat : t -> t -> bool
+  val pseudo_div : t -> t -> variable -> t * t * int * t
+  val pgcdP : t -> t -> t
+  val pgcd_pol : t -> t -> variable -> t
+  val content_pol : t -> variable -> t
+  val pgcd_coef_pol : t -> t -> variable -> t
+  val pgcd_pol_rec : t -> t -> variable -> t
+  val gcd_sub_res : t -> t -> variable -> t
+  val gcd_sub_res_rec : t -> t -> t -> t -> int -> variable -> t
+  val lazard_power : t -> t -> int -> variable -> t
+  val sans_carre : t -> variable -> t
+  val facteurs : t -> variable -> t list
+  val facteurs_impairs : t -> variable -> t list
+  val hcontentP : (string, t) Hashtbl.t
+  val prcontentP : unit -> unit
+  val contentP : t * variable -> t
+  val hash : t -> int
+  module Hashpol : Hashtbl.S with type key=t
+  val memoP : string -> 'a Hashpol.t -> (t -> 'a) -> t -> 'a
+  val hfactorise : t list list Hashpol.t
+  val prfactorise : unit -> unit
+  val factorise : t -> t list list
+  val facteurs2 : t -> t list
+  val pol_de_factorisation : t list list -> t
+  val set_of_array_facteurs : t list array -> t list
+  val factorise_tableauP2 :
+    t array -> t list array -> t array * (t * int list) array
+  val factorise_tableauP : t array -> t array * (t * int list) array
+  val is_positif : t -> bool
+  val is_negatif : t -> bool
+  val pseudo_euclide :
+    t list -> t -> t -> variable ->
+    t * t * int * t * t * (t * int) list * (t * int) list
+  val implique_non_nul : t list -> t -> bool
+  val ajoute_non_nul : t -> t list -> t list
+end
 
 (***********************************************************************
   2. Le type des polynômes, operations.
 *)
+module Make (C:Coef) = struct
+
+type coef = C.t
+let coef_of_int i = C.of_num (Num.Int i) 
+let coef0 = coef_of_int 0
+let coef1 = coef_of_int 1
 
 type variable = int
 
-type poly = 
-    Pint of coef                       (* polynome constant *)
-  | Prec of variable * (poly array)    (* coefficients par degre croissant *)
+type t = 
+    Pint of coef                    (* polynome constant *)
+  | Prec of variable * (t array)    (* coefficients par degre croissant *)
 
 (* sauf mention du contraire, les opérations ne concernent que des 
    polynomes normalisés:
@@ -106,12 +146,37 @@ type poly =
 *)
 
 (* Polynômes constant *)
-let cf x = Pint (coef_of_int x)
-let cf0 = (cf 0)
-let cf1 = (cf 1)
+let of_num x = Pint (C.of_num x)
+let cf0 = of_num (Num.Int 0)
+let cf1 = of_num (Num.Int 1)
 	    
 (* la n-ième variable *)
 let x n = Prec (n,[|cf0;cf1|])
+
+(* crée rapidement v^n *)
+let monome v n = 
+  match n with
+      0->Pint coef1;
+    |_->let tmp = Array.create (n+1) (Pint coef0) in
+        tmp.(n)<-(Pint coef1);
+        Prec (v, tmp)
+
+
+(* teste si un polynome est constant *)
+let is_constantP = function
+    Pint _ -> true
+  | Prec _ -> false
+
+
+(* conversion d'un poly cst en entier*)
+let int_of_Pint = function 
+    Pint x -> x
+  | _ -> failwith "non"
+
+
+(* teste si un poly est identiquement nul *)
+let is_zero p =
+  match p with Pint n -> if C.equal n coef0 then true else false |_-> false
 
 (* variable max *)
 let max_var_pol p = 
@@ -134,13 +199,13 @@ let rec max_var l = Array.fold_right (fun p m -> max (max_var_pol2 p) m) l 0
 (* Egalité de deux polynômes 
    On ne peut pas utiliser = car elle ne marche pas sur les Big_int.
 *)
-let rec eqP p q =
+let rec equal p q =
   match (p,q) with 
-      (Pint a,Pint b) -> eq_coef a b
+      (Pint a,Pint b) -> C.equal a b
     |(Prec(x,p1),Prec(y,q1)) ->
        if x<>y then false
        else if (Array.length p1)<>(Array.length q1) then false
-       else (try (Array.iteri (fun i a -> if not (eqP a q1.(i))
+       else (try (Array.iteri (fun i a -> if not (equal a q1.(i))
 			       then failwith "raté")
 		    p1;
 		  true)
@@ -157,7 +222,7 @@ let rec norm p = match p with
   |Prec (x,a)->
      let d = (Array.length a -1) in
      let n = ref d in 
-       while !n>0 && (eqP a.(!n) (Pint coef0)) do
+       while !n>0 && (equal a.(!n) (Pint coef0)) do
 	 n:=!n-1;
        done;
        if !n<0 then Pint coef0
@@ -201,7 +266,7 @@ let coef v i p =
 let rec plusP p q =
   let res =
     (match (p,q) with
-	 (Pint a,Pint b) -> Pint (plus_coef a b)
+	 (Pint a,Pint b) -> Pint (C.plus a b)
        |(Pint a, Prec (y,q1)) -> let q2=Array.map copyP q1 in
            q2.(0)<- plusP p q1.(0);
            Prec (y,q2)
@@ -228,33 +293,27 @@ let rec plusP p q =
 (* contenu entier positif *)
 let rec content p =
   match p with
-      Pint a -> abs_coef a
+      Pint a -> C.abs a
     | Prec (x ,p1) ->
-       Array.fold_left pgcd coef0 (Array.map content p1)
+       Array.fold_left C.pgcd coef0 (Array.map content p1)
 
 
 (* divise tous les coefficients de p par l'entier a*)
 let rec div_int p a=
   match p with
-      Pint b -> Pint (div_coef b a)
+      Pint b -> Pint (C.div b a)
     | Prec(x,p1) -> Prec(x,Array.map (fun x -> div_int x a) p1)
 
 (* divise p par son contenu entier positif. *)
 let vire_contenu p =
   let c = content p in
-    if eq_coef c coef0 then p else div_int p c
+    if C.equal c coef0 then p else div_int p c
 
 
 (* liste triee des variables impliquees dans un poly *)
 let rec vars=function
     Pint _->[]
   | Prec (x,l)->(List.flatten ([x]::(List.map vars (Array.to_list l))))
-
-
-(* conversion d'un poly cst en entier*)
-let int_of_Pint=function 
-    (Pint x)->x
-  |_->failwith "non"
 
 
 (* multiplie p par v^n, v >= max_var p *)
@@ -274,14 +333,14 @@ let rec multx n v p =
 (* produit de 2 polynomes *)
 let rec multP p q =
   match (p,q) with
-      (Pint a,Pint b) -> Pint (mult_coef a b)
+      (Pint a,Pint b) -> Pint (C.mult a b)
     |(Pint a, Prec (y,q1)) ->
-       if eq_coef a coef0 then Pint coef0
+       if C.equal a coef0 then Pint coef0
        else let q2 = Array.map (fun z-> multP p z) q1 in
          Prec (y,q2)
            
     |(Prec (x,p1), Pint b) ->
-       if eq_coef b coef0 then Pint coef0
+       if C.equal b coef0 then Pint coef0
        else let p2 = Array.map (fun z-> multP z q) p1 in
          Prec (x,p2)
     |(Prec (x,p1), Prec(y,q1)) ->
@@ -300,7 +359,7 @@ let rec multP p q =
 let rec deriv v p =
   match p with 
       Pint a -> Pint coef0
-    |Prec(x,p1) when x=v ->
+    | Prec(x,p1) when x=v ->
        let d = Array.length p1 -1 in
          if d=1 then p1.(1)
          else
@@ -309,13 +368,13 @@ let rec deriv v p =
 		p2.(i)<- multP (Pint (coef_of_int (i+1))) p1.(i+1);
               done;
               Prec (x,p2))
-    |Prec(x,p1)-> Pint coef0
+    | Prec(x,p1)-> Pint coef0
 
 
 (* opposé de p *)
 let rec oppP p =
   match p with 
-      Pint a -> Pint (opp_coef a)
+      Pint a -> Pint (C.opp a)
     |Prec(x,p1) -> Prec(x,Array.map oppP p1)
 
 
@@ -361,26 +420,7 @@ let rec coef_int_tete p =
 let normc p =
   let p = vire_contenu p in
   let a = coef_int_tete p in
-    if le_coef coef0 a then p else oppP p
-
-
-(* teste si un polynome est constant *)
-let is_constantP p = match p with
-    Pint _ -> true
-  |Prec (_,_) -> false
-
-
-(* teste si un poly est identiquement nul *)
-let is_zero p =
-  match p with Pint n -> if eq_coef n coef0 then true else false |_-> false
-
-(* crée rapidement v^n *)
-let monome v n = 
-  match n with
-      0->Pint coef1;
-    |_->let tmp = Array.create (n+1) (Pint coef0) in
-        tmp.(n)<-(Pint coef1);
-        Prec (v, tmp)
+    if C.le coef0 a then p else oppP p
 
 
 (*coef constant d'un polynome normalise*)
@@ -415,9 +455,9 @@ let rec string_of_Pcut p =
   else 
   match p with 
   |Pint a-> nsP:=(!nsP)-1;
-      if le_coef coef0 a
-      then string_of_coef a
-      else "("^(string_of_coef a)^")"
+      if C.le coef0 a
+      then C.to_string a
+      else "("^(C.to_string a)^")"
   |Prec (x,t)->
       let v=string_of_var x
       and s=ref ""
@@ -462,16 +502,16 @@ let rec string_of_Pcut p =
 		   (s:="0"));
     !s
       
-let string_of_P p =
+let to_string p =
   nsP:=20;
   string_of_Pcut p 
 
-let printP p = Format.printf "@[%s@]" (string_of_P p)
+let printP p = Format.printf "@[%s@]" (to_string p)
 
 
 let print_tpoly lp =
   let s = ref "\n{ " in
-    Array.iter (fun p -> s:=(!s)^(string_of_P p)^"\n") lp;
+    Array.iter (fun p -> s:=(!s)^(to_string p)^"\n") lp;
     prt0 ((!s)^"}")
 
 
@@ -488,8 +528,8 @@ let rec quo_rem_pol p q x =
   if x=0
   then (match (p,q) with 
           |(Pint a, Pint b) ->
-	     if eq_coef (mod_coef a b) coef0 
-             then (Pint (div_coef a b), cf 0)
+	     if C.equal (C.modulo a b) coef0 
+             then (Pint (C.div a b), cf0)
              else failwith "div_pol1"
 	  |_ -> assert false)
   else 
@@ -499,7 +539,7 @@ let rec quo_rem_pol p q x =
     let r = ref p in
     let s = ref cf0 in
     let continue =ref true in
-      while (!continue) && (not (eqP !r cf0)) do
+      while (!continue) && (not (equal !r cf0)) do
 	let n = deg x !r in
 	  if n<m
 	  then continue:=false
@@ -517,12 +557,12 @@ let rec quo_rem_pol p q x =
 (* echoue si q ne divise pas p, rend le quotient sinon *)
 and div_pol p q x =
   let (s,r) = quo_rem_pol p q x in
-    if eqP r cf0
+    if equal r cf0
     then s
     else  failwith ("div_pol:\n"
-		   ^"p:"^(string_of_P p)^"\n"
-		   ^"q:"^(string_of_P q)^"\n"
-		   ^"r:"^(string_of_P r)^"\n"
+		   ^"p:"^(to_string p)^"\n"
+		   ^"q:"^(to_string q)^"\n"
+		   ^"r:"^(to_string r)^"\n"
 		   ^"x:"^(string_of_int x)^"\n"
 		   )
 
@@ -611,11 +651,11 @@ and pgcd_coef_pol c p x =
   
 and pgcd_pol_rec p q x =
  match (p,q) with
-	(Pint a,Pint b) -> Pint (pgcd (abs_coef a) (abs_coef b))
+	(Pint a,Pint b) -> Pint (C.pgcd (C.abs a) (C.abs b))
       |_ ->
-	  if eqP p cf0
+	  if equal p cf0
 	  then q
-	  else if eqP q cf0
+	  else if equal q cf0
 	  then p
 	  else if (deg x q) = 0
 	  then pgcd_coef_pol q p x
@@ -634,46 +674,6 @@ and pgcd_pol_rec p q x =
 	    res
 	   )
 
-(* version avec memo*)
-(*
-and htblpgcd = Hashtbl.create 1000 
-
-and pgcd_pol_rec p q x =
-  try
-    (let c = Hashtbl.find htblpgcd (p,q,x) in
-    (*info "*";*)
-    c)
-  with _ ->
-    (let c =  
-      (match (p,q) with
-	(Pint a,Pint b) -> Pint (pgcd (abs_coef a) (abs_coef b))
-      |_ ->
-	  if eqP p cf0
-	  then q
-	  else if eqP q cf0
-	  then p
-	  else if (deg x q) = 0
-	  then pgcd_coef_pol q p x
-	  else if (deg x p) = 0
-	  then pgcd_coef_pol p q x
-	  else (
-	    let a = content_pol p x in
-	    let b = content_pol q x in
-	    let c = pgcd_pol_rec a b (x-1) in
-	    pr (string_of_int x);
-	    let p1 = div_pol p c x in
-	    let q1 = div_pol q c x in
-	    let r = gcd_sub_res p1 q1 x in
-	    let cr = content_pol r x in
-	    let res = c @@ (div_pol r cr x) in
-	    res
-	   )
-      )
-    in
-    (*info "-";*)
-    Hashtbl.add htblpgcd (p,q,x) c;
-    c)
-*)
 (* Sous-résultants:
 
    ai*Ai = Qi*Ai+1 + bi*Ai+2
@@ -692,7 +692,7 @@ and pgcd_pol_rec p q x =
 
 *)
 and gcd_sub_res p q x =
-  if eqP q cf0
+  if equal q cf0
   then p
   else 
     let d = deg x p in
@@ -706,7 +706,7 @@ and gcd_sub_res p q x =
 	  gcd_sub_res_rec q r (c'^^delta) c' d' x
 	    
 and gcd_sub_res_rec p q s c d x =
-  if eqP q cf0 
+  if equal q cf0 
   then p
   else (
     let d' = deg x q in
@@ -768,40 +768,34 @@ let facteurs_impairs p x =
 (* décomposition sans carrés en toutes les variables *)
 
 
-let hcontentP = Hashtbl.create 51
+let hcontentP = (Hashtbl.create 51 : (string,t) Hashtbl.t)
 
 let prcontentP () =
   Hashtbl.iter (fun s c ->
-                  prn (s^" -> "^(string_of_P c)))
+                  prn (s^" -> "^(to_string c)))
     hcontentP
 
 
 let contentP =
-  memos "c" hcontentP (fun (p,x) -> ((string_of_P p)^":"^(string_of_int x)))
+  memos "c" hcontentP (fun (p,x) -> ((to_string p)^":"^(string_of_int x)))
     (fun (p,x) -> content_pol p x)
 
 
 (* Tables de hash et polynômes, mémo *)
 
-(* dans le mli on écrit:
-   module Hashpol:Hashtbl.S with type t = poly
-*)
-
 (* fonction de hachage des polynômes *)
-let hashP p =
-  let rec hP p =
-    match p with
-	Pint a -> (hash_coef a)
-      |Prec (v,p) ->
-         (Array.fold_right (fun q h -> h+(hP q)) p 0)
-  in (* Hashtbl.hash *) (hP p) 
+let rec hash = function
+    Pint a -> (C.hash a)
+  | Prec (v,p) ->
+      Array.fold_right (fun q h -> h + hash q) p 0
 
 
 module Hashpol = Hashtbl.Make(
   struct
+    type poly = t
     type t = poly
-    let equal = eqP
-    let hash = hashP
+    let equal = equal
+    let hash = hash
   end)
 
 
@@ -817,7 +811,7 @@ let hfactorise = Hashpol.create 51
 
 let prfactorise () =
   Hashpol.iter (fun p c ->
-                  prn ((string_of_P p)^" -> ");
+                  prn ((to_string p)^" -> ");
 		  print_lpoly (List.flatten c))
     hfactorise
 
@@ -888,7 +882,7 @@ let factorise_tableauP2 f l1 =
 	(* puis on décompose les polynômes de f avec ces facteurs *)
 	pr "-";
 	let res = factorise_tableau (fun a b -> div_pol a b x)
-                    (fun p -> eqP p cf0)
+                    (fun p -> equal p cf0)
                     cf0
                     f l1 in
 	  pr ">";
@@ -908,14 +902,14 @@ let rec is_positif p =
 
   let res =
     match p with 
-	Pint a -> le_coef coef0 a
+	Pint a -> C.le coef0 a
       |Prec(x,p1) -> 
          (array_for_all is_positif p1)
-	 && (try (Array.iteri (fun i c -> if (i mod 2)<>0 && not (eqP c cf0)
+	 && (try (Array.iteri (fun i c -> if (i mod 2)<>0 && not (equal c cf0)
                                then failwith "pas pair")
 		    p1;
                   true)
-             with _ -> false)
+             with Failure _ -> false)
   in
     res
 
@@ -936,11 +930,11 @@ let pseudo_euclide coef_non_nuls p q x =
     *)
     (* vérification de la pseudo-division:
        let verif = ((c^^d)@@p)--(plusP (s@@q) r) in
-       if not (eqP verif cf0)
-       then (prn ("p:"^(string_of_P p));
-       prn ("q:"^(string_of_P q));
-       prn ("c:"^(string_of_P c));
-       prn ("r:"^(string_of_P r));
+       if not (equal verif cf0)
+       then (prn ("p:"^(to_string p));
+       prn ("q:"^(to_string q));
+       prn ("c:"^(to_string c));
+       prn ("r:"^(to_string r));
        prn ("d:"^(string_of_int d));
        failwith "erreur dans la pseudo-division");
     *)
@@ -951,7 +945,7 @@ let pseudo_euclide coef_non_nuls p q x =
       let d = if d mod 2 = 1 then d+1 else d in
     
     (* on encore  c^d * p = s*q + r, mais d pair *)
-    if eqP r cf0
+    if equal r cf0
     then ((*pr "reste nul"; *) (r,c,d,s,cf1,[],[]))
     else (
       let r1 = vire_contenu r in
@@ -967,7 +961,7 @@ let pseudo_euclide coef_non_nuls p q x =
 			 (try (while true do
  				 let rd = div_pol !r f x in
 				   (* verification de la division 
-				      if not (eqP cf0 ((!r)--(f@@rd)))
+				      if not (equal cf0 ((!r)--(f@@rd)))
 				      then failwith "erreur dans la division";
 				   *)
 	   			   k:=(!k)+1;
@@ -1003,7 +997,7 @@ let pseudo_euclide coef_non_nuls p q x =
             !lf;
 	  (*
             pr ((* "------reste de même signe: "
-	    ^(string_of_P c)
+	    ^(to_string c)
 	    ^" variable: "^(string_of_int x)
 	    ^" c:"^(string_of_int (deg_total c))
 	    ^" d:"^(string_of_int d)
@@ -1026,7 +1020,7 @@ let pseudo_euclide coef_non_nuls p q x =
    divise un des polynômes de lp (dans Q[x1...xn]) *)
 
 let implique_non_nul lp p =
-  if eqP p cf0 then false
+  if equal p cf0 then false
   else(
     pr "[";
     let lf = facteurs2 p in 
@@ -1050,7 +1044,8 @@ let ajoute_non_nul p lp =
   then(
     let p = normc p in
     let lf = facteurs2 p in
-    let r = set_of_list_eq eqP (lp@lf@[p]) in
+    let r = set_of_list_eq equal (lp@lf@[p]) in
       r)
   else lp
 
+end
