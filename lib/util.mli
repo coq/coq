@@ -99,6 +99,7 @@ val lowercase_first_char_utf8 : string -> string
 
 (*s Lists. *)
 
+val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
 val list_add_set : 'a -> 'a list -> 'a list
 val list_eq_set : 'a list -> 'a list -> bool
 val list_intersect : 'a list -> 'a list -> 'a list
@@ -196,6 +197,7 @@ val list_union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 
 (*s Arrays. *)
 
+val array_compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
 val array_exists : ('a -> bool) -> 'a array -> bool
 val array_for_all : ('a -> bool) -> 'a array -> bool
 val array_for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool

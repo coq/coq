@@ -490,6 +490,16 @@ let lowercase_first_char_utf8 s =
 
 (* Lists *)
 
+let rec list_compare cmp l1 l2 =
+  match l1,l2 with
+      [], [] -> 0
+    | _::_, [] -> 1
+    | [], _::_ -> -1
+    | x1::l1, x2::l2 ->
+	(match cmp x1 x2 with
+	   | 0 -> list_compare cmp l1 l2
+	   | c -> c)
+
 let list_intersect l1 l2 = 
   List.filter (fun x -> List.mem x l2) l1
 
@@ -933,6 +943,17 @@ let rec list_cartesians_filter op init ll =
 let rec list_drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> hd :: list_drop_last tl
 
 (* Arrays *)
+
+let array_compare item_cmp v1 v2 =
+  let c = compare (Array.length v1) (Array.length v2) in
+  if c<>0 then c else
+    let rec cmp = function
+	-1 -> 0
+      | i ->
+	  let c' = item_cmp v1.(i) v2.(i) in
+	  if c'<>0 then c' 
+	  else cmp (i-1) in
+    cmp (Array.length v1 - 1)
 
 let array_exists f v = 
   let rec exrec = function
