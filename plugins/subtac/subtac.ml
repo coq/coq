@@ -54,8 +54,8 @@ let solve_tccs_in_type env id isevars evm c typ =
     let stmt_id = Nameops.add_suffix id "_stmt" in
     let obls, c', t' = eterm_obligations env stmt_id !isevars evm 0 ~status:Expand c typ in
       match Subtac_obligations.add_definition stmt_id c' typ obls with
-      Subtac_obligations.Defined cst -> constant_value (Global.env()) 
-	(match cst with ConstRef kn -> kn | _ -> assert false)
+      | Subtac_obligations.Defined cst -> constant_value (Global.env()) 
+	  (match cst with ConstRef kn -> kn | _ -> assert false)
       | _ -> 
 	  errorlabstrm "start_proof" 
 	    (str "The statement obligations could not be resolved automatically, " ++ spc () ++
@@ -127,7 +127,6 @@ let check_fresh (loc,id) =
 let subtac (loc, command) =
   check_required_library ["Coq";"Init";"Datatypes"];
   check_required_library ["Coq";"Init";"Specif"];
-  check_required_library ["Coq";"Program";"Tactics"];
   let env = Global.env () in
   let isevars = ref (create_evar_defs Evd.empty) in
   try

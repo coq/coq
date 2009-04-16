@@ -42,18 +42,18 @@ open Evd
 
 (** Typeclass-based generalized rewriting. *)
 
-let check_imported_library d =
+let check_required_library d =
   let d' = List.map id_of_string d in
   let dir = make_dirpath (List.rev d') in
   if not (Library.library_is_loaded dir) then
-    error ("Library "^(list_last d)^" has to be imported first.")
+    error ("Library "^(list_last d)^" has to be required first.")
       
 let classes_dirpath =
   make_dirpath (List.map id_of_string ["Classes";"Coq"])
   
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else check_imported_library ["Coq";"Setoids";"Setoid"]
+  else check_required_library ["Coq";"Setoids";"Setoid"]
 
 let morphism_class = 
   lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))))
@@ -155,9 +155,6 @@ let is_applied_setoid_relation t =
       
 let _ = 
   Equality.register_is_applied_setoid_relation is_applied_setoid_relation
-
-exception Found of (constr * constr * (types * types) list * constr * constr array *
-		       (constr * (constr * constr * constr * constr)) option array)
 
 let split_head = function
     hd :: tl -> hd, tl
@@ -1306,7 +1303,7 @@ let try_loaded f gl =
 
 let not_declared env ty rel =
   tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++ 
-		str ty ++ str" relation. Maybe you need to import the Setoid library")
+		str ty ++ str" relation. Maybe you need to require the Setoid library")
 
 let relation_of_constr env c = 
   match kind_of_term c with

@@ -18,7 +18,7 @@
 Require Export Coq.Classes.Init.
 Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
-Require Export Coq.Relations.Relation_Definitions.
+Require Import Coq.Relations.Relation_Definitions.
 
 (** We allow to unfold the [relation] definition while doing morphism search. *)
 
