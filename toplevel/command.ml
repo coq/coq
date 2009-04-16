@@ -1010,16 +1010,18 @@ let build_combined_scheme name schemes =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
       match kind_of_term last with
-	| App (ind, args) -> ctx, destInd ind, Array.length args
+	| App (ind, args) -> 
+	    let ind = destInd ind in
+	    let (_,spec) = Inductive.lookup_mind_specif env ind in
+	      ctx, ind, spec.mind_nrealargs
 	| _ -> ctx, destInd last, 0
   in
   let defs =  
     List.map (fun x -> 
 		let refe = Ident x in
 		let qualid = qualid_of_reference refe in
-		let cst = try 
-                    Nametab.locate_constant (snd qualid) 
-                with Not_found -> error ((string_of_qualid (snd qualid))^" is not declared.")
+		let cst = try Nametab.locate_constant (snd qualid) 
+                  with Not_found -> error ((string_of_qualid (snd qualid))^" is not declared.")
                 in
 		let ty = Typeops.type_of_constant env cst in
 		  qualid, cst, ty)
