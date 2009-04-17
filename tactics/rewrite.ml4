@@ -287,14 +287,14 @@ let convertible env evd x y =
 let allowK = true
 
 let refresh_hypinfo env sigma hypinfo = 
-  if !hypinfo.abs = None then
-    let {l2r=l2r; c = c;cl=cl} = !hypinfo in
+  if hypinfo.abs = None then
+    let {l2r=l2r; c=c;cl=cl} = hypinfo in
       match c with 
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	    hypinfo := decompose_applied_relation env ( cl.evd) c l2r;
-	| _ -> ()
-  else ()
+	    decompose_applied_relation env cl.evd c l2r;
+	| _ -> hypinfo
+  else hypinfo
 
 let unify_eqn env sigma hypinfo t = 
   if isEvar t then None
@@ -329,7 +329,7 @@ let unify_eqn env sigma hypinfo t =
 	      and ty2 = Typing.mtype_of env'.env env'.evd c2
 	      in
 		if convertible env env'.evd ty1 ty2 then (
-		  if occur_meta prf then refresh_hypinfo env sigma hypinfo;
+		  if occur_meta prf then hypinfo := refresh_hypinfo env sigma !hypinfo;
 		  env', prf, c1, c2, car, rel)
 		else raise Reduction.NotConvertible
     in
@@ -463,12 +463,15 @@ let apply_constraint env sigma car rel cstr res =
   | None -> res
   | Some r -> resolve_subrelation env sigma car rel r res
 
+let eq_env x y = x == y
+
 let apply_rule hypinfo loccs : strategy =
   let (nowhere_except_in,occs) = loccs in
   let is_occ occ = 
     if nowhere_except_in then List.mem occ occs else not (List.mem occ occs) in
   let occ = ref 0 in
     fun env sigma t ty cstr evars ->
+      if not (eq_env !hypinfo.cl.env env) then hypinfo := refresh_hypinfo env sigma !hypinfo;
       let unif = unify_eqn env sigma hypinfo t in
 	if unif <> None then incr occ;
 	match unif with

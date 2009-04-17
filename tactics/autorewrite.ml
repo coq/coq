@@ -43,14 +43,15 @@ let subst_hint subst hint =
 
 module HintIdent = 
 struct
-  type t = rew_rule
+  type t = int * rew_rule
   
-  let compare t t' =
-    Pervasives.compare t.rew_lemma t'.rew_lemma
+  let compare (i,t) (i',t') =
+    Pervasives.compare i i'
+(*     Pervasives.compare t.rew_lemma t'.rew_lemma *)
 
-  let subst = subst_hint
+  let subst s (i,t) = (i,subst_hint s t)
 
-  let constr_of t = t.rew_pat
+  let constr_of (i,t) = t.rew_pat
 end
 
 module HintOpt =
@@ -84,29 +85,28 @@ let find_base bas =
      (str ("Rewriting base "^(bas)^" does not exist."))
 
 let find_rewrites bas = 
-  HintDN.find_all (find_base bas)
+  List.rev_map snd (HintDN.find_all (find_base bas))
 
 let find_matches bas pat =
   let base = find_base bas in
   let res = HintDN.search_pattern base pat in
-    List.map (fun (rew, esubst, subst) -> rew) res
+    List.map (fun ((_,rew), esubst, subst) -> rew) res
 
 let print_rewrite_hintdb bas =
-  let hints = find_base bas in
-    ppnl (str "Database " ++ str bas ++ (Pp.cut ()) ++
-	     prlist_with_sep Pp.cut
-	     (fun h ->
-	       str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
-		 Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
-		 str " then use tactic " ++ 
-		 Pptactic.pr_glob_tactic (Global.env()) h.rew_tac)
-	     (HintDN.find_all hints))
-      
+  ppnl (str "Database " ++ str bas ++ (Pp.cut ()) ++
+	   prlist_with_sep Pp.cut
+	   (fun h ->
+	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
+	       Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
+	       str " then use tactic " ++ 
+	       Pptactic.pr_glob_tactic (Global.env()) h.rew_tac)
+	   (find_rewrites bas))
+    
 type raw_rew_rule = loc * constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =
-  let lrul = HintDN.find_all (find_base bas) in
+  let lrul = find_rewrites bas in
   let lrul = List.map (fun h -> (h.rew_lemma,h.rew_l2r,Tacinterp.eval_tactic h.rew_tac)) lrul in
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
@@ -208,10 +208,12 @@ let auto_multi_rewrite_with tac_main lbas cl gl =
 	    Util.errorlabstrm "autorewrite" 
 	      (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
-
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
-  rewtab:=Stringmap.add rbase lrl !rewtab
+  let base = try find_base rbase with _ -> HintDN.empty in
+  let max = try fst (Util.list_last (HintDN.find_all base)) with _ -> 0 in
+  let lrl = HintDN.map (fun (i,h) -> (i + max, h)) lrl in
+    rewtab:=Stringmap.add rbase (HintDN.union lrl base) !rewtab
 
 let export_hintrewrite x = Some x
 
@@ -295,14 +297,16 @@ let find_applied_relation metas loc env sigma c left2right =
 	
 (* To add rewriting rules to a base *)
 let add_rew_rules base lrul =
+  let counter = ref 0 in
   let lrul =
-   List.fold_left
-     (fun dn (loc,c,b,t) ->
-       let info = find_applied_relation false loc (Global.env ()) Evd.empty c b in
-       let pat = if b then info.hyp_left else info.hyp_right in
-       let rul = { rew_lemma = c; rew_type = info.hyp_ty;
-		   rew_pat = pat; rew_l2r = b;
-		   rew_tac = Tacinterp.glob_tactic t}
-       in HintDN.add pat rul dn) 
-     (try find_base base with _ -> HintDN.empty) lrul
+    List.fold_left
+      (fun dn (loc,c,b,t) ->
+	let info = find_applied_relation false loc (Global.env ()) Evd.empty c b in
+	let pat = if b then info.hyp_left else info.hyp_right in
+	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
+		    rew_pat = pat; rew_l2r = b;
+		    rew_tac = Tacinterp.glob_tactic t}
+	in incr counter;
+	  HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
+    

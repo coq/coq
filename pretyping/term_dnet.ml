@@ -367,6 +367,8 @@ struct
     possibly_under app_pat (search_pat pat (pat_of_constr pat)) dn init
 
   let find_all dn = Idset.elements (TDnet.find_all dn)
+
+  let map f dn = TDnet.map f (fun x -> x) dn
 end
     
 module type S =
@@ -385,4 +387,5 @@ sig
   val search_head_concl : t -> constr -> result list
   val search_eq_concl : t -> constr -> constr -> result list
   val find_all : t -> ident list
+  val map : (ident -> ident) -> t -> t
 end

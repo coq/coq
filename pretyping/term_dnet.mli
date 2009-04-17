@@ -102,6 +102,8 @@ sig
 
   (* [find_all dn] returns all idents contained in dn *)
   val find_all : t -> ident list
+
+  val map : (ident -> ident) -> t -> t
 end
 
 module Make :
