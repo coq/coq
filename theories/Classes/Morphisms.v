@@ -1,4 +1,4 @@
-(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms"); compile-command: "make -C ../.. TIME='time -p'" -*- *)
+(* -*- coq-prog-name: "~/research/coq/trunk/bin/coqtop.byte"; coq-prog-args: ("-emacs-U" "-top" "Coq.Classes.Morphisms"); compile-command: "make -C ../.. -j3 TIME='time -p'" -*- *)
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, * CNRS-Ecole Polytechnique-INRIA Futurs-Universite Paris Sud *)
@@ -55,18 +55,24 @@ Definition respectful {A B : Type}
 (** Notations reminiscent of the old syntax for declaring morphisms. *)
 
 Delimit Scope signature_scope with signature.
+
 Arguments Scope Morphism [type_scope signature_scope].
-
-Notation " R ++> R' " := (@respectful _ _ (R%signature) (R'%signature)) 
-  (right associativity, at level 55) : signature_scope.
-
-Notation " R ==> R' " := (@respectful _ _ (R%signature) (R'%signature))
-  (right associativity, at level 55) : signature_scope.
-
-Notation " R --> R' " := (@respectful _ _ (inverse (R%signature)) (R'%signature))
-  (right associativity, at level 55) : signature_scope.
-
 Arguments Scope respectful [type_scope type_scope signature_scope signature_scope].
+
+Module MorphismNotations.
+
+  Notation " R ++> R' " := (@respectful _ _ (R%signature) (R'%signature)) 
+    (right associativity, at level 55) : signature_scope.
+  
+  Notation " R ==> R' " := (@respectful _ _ (R%signature) (R'%signature))
+    (right associativity, at level 55) : signature_scope.
+  
+  Notation " R --> R' " := (@respectful _ _ (inverse (R%signature)) (R'%signature))
+    (right associativity, at level 55) : signature_scope.
+
+End MorphismNotations.
+
+Export MorphismNotations.
 
 Open Local Scope signature_scope.
 
