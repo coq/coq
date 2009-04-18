@@ -14,13 +14,13 @@
 
 (* $Id$ *)
 
-Require Export Coq.Program.Basics.
+Require Import Coq.Program.Basics.
 Require Import Coq.Program.Tactics.
 
 Require Import Coq.Classes.Init.
 Require Import Relation_Definitions.
-Require Import Coq.Classes.RelationClasses.
-Require Export Coq.Classes.Morphisms.
+Require Export Coq.Classes.RelationClasses.
+Require Import Coq.Classes.Morphisms.
 
 Set Implicit Arguments.
 Unset Strict Implicit.

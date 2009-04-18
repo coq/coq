@@ -17,7 +17,7 @@
 *)
 
 Require Import DecidableTypeEx.
-Require Export FSetInterface. 
+Require Export FSetInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -424,14 +424,14 @@ Add Relation t Subset
  transitivity proved by Subset_trans
  as SubsetSetoid.
 
-Instance In_s_m : Morphism (E.eq ==> Subset ++> impl) In | 1.
+Instance In_s_m : Morphisms.Morphism (E.eq ==> Subset ++> Basics.impl) In | 1.
 Proof.
   simpl_relation. eauto with set.
 Qed.
 
-Add Morphism Empty with signature Subset --> impl as Empty_s_m.
+Add Morphism Empty with signature Subset --> Basics.impl as Empty_s_m.
 Proof.
-unfold Subset, Empty, impl; firstorder.
+unfold Subset, Empty, Basics.impl; firstorder.
 Qed.
 
 Add Morphism add with signature E.eq ==> Subset ++> Subset as add_s_m.

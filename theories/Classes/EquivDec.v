@@ -145,3 +145,8 @@ Program Instance list_eqdec `(eqa : EqDec A eq) : ! EqDec (list A) eq :=
     end }.
 
   Solve Obligations using unfold equiv, complement in * ; program_simpl ; intuition (discriminate || eauto).
+
+
+  Next Obligation. destruct x ; destruct y ; intuition eauto. Defined.
+
+  Solve Obligations using unfold equiv, complement in * ; program_simpl ; intuition (discriminate || eauto).
