@@ -424,8 +424,8 @@ Proof. firstorder. Qed.
 Lemma inverse2 `(subrelation A R R') : subrelation R (inverse (inverse R')).
 Proof. firstorder. Qed.
 
-Hint Extern 1 (subrelation (flip (flip _)) _) => eapply @inverse1 : typeclass_instances.
-Hint Extern 1 (subrelation _ (flip (flip _))) => eapply @inverse2 : typeclass_instances.
+Hint Extern 1 (subrelation (flip _) _) => eapply @inverse1 : typeclass_instances.
+Hint Extern 1 (subrelation _ (flip _)) => eapply @inverse2 : typeclass_instances.
 
 (** Once we have normalized, we will apply this instance to simplify the problem. *)
 

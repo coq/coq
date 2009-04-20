@@ -1,4 +1,4 @@
-Require Import Setoid.
+Require Import Setoid Program.Basics.
 
  Parameter P : nat -> Prop.
  Parameter R : nat -> nat -> Prop.
