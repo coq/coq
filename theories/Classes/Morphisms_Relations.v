@@ -18,11 +18,11 @@ Require Import Coq.Program.Program.
 
 (** Morphisms for relations *)
 
-Instance relation_conjunction_morphism : Morphism (relation_equivalence (A:=A) ==>
+Instance relation_conjunction_morphism : Proper (relation_equivalence (A:=A) ==>
   relation_equivalence ==> relation_equivalence) relation_conjunction.
   Proof. firstorder. Qed.
 
-Instance relation_disjunction_morphism : Morphism (relation_equivalence (A:=A) ==>
+Instance relation_disjunction_morphism : Proper (relation_equivalence (A:=A) ==>
   relation_equivalence ==> relation_equivalence) relation_disjunction.
   Proof. firstorder. Qed.
 
@@ -31,22 +31,22 @@ Instance relation_disjunction_morphism : Morphism (relation_equivalence (A:=A) =
 Require Import List.
 
 Lemma predicate_equivalence_pointwise (l : list Type) :
-  Morphism (@predicate_equivalence l ==> pointwise_lifting iff l) id.
+  Proper (@predicate_equivalence l ==> pointwise_lifting iff l) id.
 Proof. do 2 red. unfold predicate_equivalence. auto. Qed.
 
 Lemma predicate_implication_pointwise (l : list Type) :
-  Morphism (@predicate_implication l ==> pointwise_lifting impl l) id.
+  Proper (@predicate_implication l ==> pointwise_lifting impl l) id.
 Proof. do 2 red. unfold predicate_implication. auto. Qed.
 
 (** The instanciation at relation allows to rewrite applications of relations [R x y] to [R' x y] *)
 (*    when [R] and [R'] are in [relation_equivalence]. *)
 
 Instance relation_equivalence_pointwise :
-  Morphism (relation_equivalence ==> pointwise_relation A (pointwise_relation A iff)) id.
+  Proper (relation_equivalence ==> pointwise_relation A (pointwise_relation A iff)) id.
 Proof. intro. apply (predicate_equivalence_pointwise (cons A (cons A nil))). Qed.
 
 Instance subrelation_pointwise :
-  Morphism (subrelation ==> pointwise_relation A (pointwise_relation A impl)) id.
+  Proper (subrelation ==> pointwise_relation A (pointwise_relation A impl)) id.
 Proof. intro. apply (predicate_implication_pointwise (cons A (cons A nil))). Qed.
 
 

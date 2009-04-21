@@ -1034,8 +1034,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   (** This is more convenient than a [compat_op eqke ...].
       In fact, every [compat_op], [compat_bool], etc, should
-      become a [Morphism] someday. *)
-  Hypothesis Comp : Morphism (E.eq==>Leibniz==>eqA==>eqA) f.
+      become a [Proper] someday. *)
+  Hypothesis Comp : Proper (E.eq==>Leibniz==>eqA==>eqA) f.
 
   Lemma fold_init :
    forall m i i', eqA i i' -> eqA (fold f m i) (fold f m i').
@@ -1272,7 +1272,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Section Specs.
   Variable f : key -> elt -> bool.
-  Hypothesis Hf : Morphism (E.eq==>Leibniz==>Leibniz) f.
+  Hypothesis Hf : Proper (E.eq==>Leibniz==>Leibniz) f.
 
   Lemma filter_iff : forall m k e,
    MapsTo k e (filter f m) <-> MapsTo k e m /\ f k e = true.
@@ -1365,7 +1365,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Section Partition.
   Variable f : key -> elt -> bool.
-  Hypothesis Hf : Morphism (E.eq==>Leibniz==>Leibniz) f.
+  Hypothesis Hf : Proper (E.eq==>Leibniz==>Leibniz) f.
 
   Lemma partition_iff_1 : forall m m1 k e,
    m1 = fst (partition f m) ->
@@ -1494,7 +1494,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Lemma Partition_fold :
    forall (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)(f:key->elt->A->A),
-   Morphism (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Proper (E.eq==>Leibniz==>eqA==>eqA) f ->
    transpose_neqkey eqA f ->
    forall m m1 m2 i,
    Partition m m1 m2 ->
@@ -1557,7 +1557,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    Equal m1 (fst (partition f m)) /\ Equal m2 (snd (partition f m)).
   Proof.
   intros m m1 m2 Hm f.
-  assert (Hf : Morphism (E.eq==>Leibniz==>Leibniz) f).
+  assert (Hf : Proper (E.eq==>Leibniz==>Leibniz) f).
    intros k k' Hk e e' _; unfold f; rewrite Hk; auto.
   set (m1':= fst (partition f m)).
   set (m2':= snd (partition f m)).
@@ -2150,7 +2150,7 @@ Module OrdProperties (M:S).
 
   Lemma fold_Equal : forall m1 m2 (A:Type)(eqA:A->A->Prop)(st:Equivalence  eqA)
    (f:key->elt->A->A)(i:A),
-   Morphism (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Proper (E.eq==>Leibniz==>eqA==>eqA) f ->
    Equal m1 m2 ->
    eqA (fold f m1 i) (fold f m2 i).
   Proof.
@@ -2164,7 +2164,7 @@ Module OrdProperties (M:S).
 
   Lemma fold_Add_Above : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
    (f:key->elt->A->A)(i:A),
-   Morphism (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Proper (E.eq==>Leibniz==>eqA==>eqA) f ->
    Above x m1 -> Add x e m1 m2 ->
    eqA (fold f m2 i) (f x e (fold f m1 i)).
   Proof.
@@ -2181,7 +2181,7 @@ Module OrdProperties (M:S).
 
   Lemma fold_Add_Below : forall m1 m2 x e (A:Type)(eqA:A->A->Prop)(st:Equivalence eqA)
    (f:key->elt->A->A)(i:A),
-   Morphism (E.eq==>Leibniz==>eqA==>eqA) f ->
+   Proper (E.eq==>Leibniz==>eqA==>eqA) f ->
    Below x m1 -> Add x e m1 m2 ->
    eqA (fold f m2 i) (fold f m1 (f x e i)).
   Proof.

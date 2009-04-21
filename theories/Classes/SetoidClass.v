@@ -119,21 +119,11 @@ Ltac setoidify := repeat setoidify_tac.
 
 (** Every setoid relation gives rise to a morphism, in fact every partial setoid does. *)
 
-Program Instance setoid_morphism `(sa : Setoid A) : Morphism (equiv ++> equiv ++> iff) equiv :=
-  respect.
+Program Instance setoid_morphism `(sa : Setoid A) : Proper (equiv ++> equiv ++> iff) equiv :=
+  proper.
 
-Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Morphism (equiv ++> iff) (equiv x) :=
-  respect.
-
-Ltac morphism_tac := try red ; unfold arrow ; intros ; program_simpl ; try tauto.
-
-Ltac obligation_tactic ::= morphism_tac.
-
-(** These are morphisms used to rewrite at the top level of a proof, 
-   using [iff_impl_id_morphism] if the proof is in [Prop] and
-   [eq_arrow_id_morphism] if it is in Type. *)
-
-Program Instance iff_impl_id_morphism : Morphism (iff ++> impl) id.
+Program Instance setoid_partial_app_morphism `(sa : Setoid A) (x : A) : Proper (equiv ++> iff) (equiv x) :=
+  proper.
 
 (** Partial setoids don't require reflexivity so we can build a partial setoid on the function space. *)
 

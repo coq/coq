@@ -19,7 +19,7 @@ Require Import Coq.Classes.Morphisms Coq.Classes.Morphisms_Prop.
 Require Export Coq.Classes.RelationClasses Coq.Relations.Relation_Definitions.
 Require Import Coq.Classes.Equivalence Coq.Program.Basics.
 
-Export MorphismNotations.
+Export ProperNotations.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -165,9 +165,9 @@ Ltac red_subst_eq_morphism concl :=
     | _ => idtac
   end.
 
-Ltac destruct_morphism :=
+Ltac destruct_proper :=
   match goal with
-    | [ |- @Morphism ?A ?R ?m ] => red
+    | [ |- @Proper ?A ?R ?m ] => red
   end.
 
 Ltac reverse_arrows x :=
@@ -179,7 +179,7 @@ Ltac reverse_arrows x :=
 
 Ltac default_add_morphism_tactic :=
   unfold flip ; intros ;
-  (try destruct_morphism) ;
+  (try destruct_proper) ;
   match goal with
     | [ |- (?x ==> ?y) _ _ ] => red_subst_eq_morphism (x ==> y) ; reverse_arrows (x ==> y)
   end.

@@ -10,7 +10,7 @@
 
 Require Export Coq.Classes.SetoidTactics.
 
-Export Morphisms.MorphismNotations.
+Export Morphisms.ProperNotations.
 
 (** For backward compatibility *)
 

@@ -6,10 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Morphism instances for propositional connectives.
+(* [Proper] instances for propositional connectives.
  
    Author: Matthieu Sozeau
-   Institution: LRI, CNRS UMR 8623 - UniversitÃcopyright Paris Sud
+   Institution: LRI, CNRS UMR 8623 - Université Paris Sud
    91405 Orsay, France *)
 
 Require Import Coq.Classes.Morphisms.
@@ -21,34 +21,34 @@ Require Import Coq.Program.Tactics.
 (** Logical negation. *)
 
 Program Instance not_impl_morphism :
-  Morphism (impl --> impl) not.
+  Proper (impl --> impl) not.
 
 Program Instance not_iff_morphism : 
-  Morphism (iff ++> iff) not.
+  Proper (iff ++> iff) not.
 
 (** Logical conjunction. *)
 
 Program Instance and_impl_morphism :
-  Morphism (impl ==> impl ==> impl) and.
+  Proper (impl ==> impl ==> impl) and.
 
 Program Instance and_iff_morphism : 
-  Morphism (iff ==> iff ==> iff) and.
+  Proper (iff ==> iff ==> iff) and.
 
 (** Logical disjunction. *)
 
 Program Instance or_impl_morphism : 
-  Morphism (impl ==> impl ==> impl) or.
+  Proper (impl ==> impl ==> impl) or.
 
 Program Instance or_iff_morphism : 
-  Morphism (iff ==> iff ==> iff) or.
+  Proper (iff ==> iff ==> iff) or.
 
 (** Logical implication [impl] is a morphism for logical equivalence. *)
 
-Program Instance iff_iff_iff_impl_morphism : Morphism (iff ==> iff ==> iff) impl.
+Program Instance iff_iff_iff_impl_morphism : Proper (iff ==> iff ==> iff) impl.
 
 (** Morphisms for quantifiers *)
 
-Program Instance ex_iff_morphism {A : Type} : Morphism (pointwise_relation A iff ==> iff) (@ex A).
+Program Instance ex_iff_morphism {A : Type} : Proper (pointwise_relation A iff ==> iff) (@ex A).
 
   Next Obligation.
   Proof.
@@ -62,7 +62,7 @@ Program Instance ex_iff_morphism {A : Type} : Morphism (pointwise_relation A iff
   Qed.
 
 Program Instance ex_impl_morphism {A : Type} :
-  Morphism (pointwise_relation A impl ==> impl) (@ex A).
+  Proper (pointwise_relation A impl ==> impl) (@ex A).
 
   Next Obligation.
   Proof.
@@ -71,7 +71,7 @@ Program Instance ex_impl_morphism {A : Type} :
   Qed.
 
 Program Instance ex_inverse_impl_morphism {A : Type} : 
-  Morphism (pointwise_relation A (inverse impl) ==> inverse impl) (@ex A).
+  Proper (pointwise_relation A (inverse impl) ==> inverse impl) (@ex A).
 
   Next Obligation.
   Proof.
@@ -80,7 +80,7 @@ Program Instance ex_inverse_impl_morphism {A : Type} :
   Qed.
 
 Program Instance all_iff_morphism {A : Type} : 
-  Morphism (pointwise_relation A iff ==> iff) (@all A).
+  Proper (pointwise_relation A iff ==> iff) (@all A).
 
   Next Obligation.
   Proof.
@@ -89,7 +89,7 @@ Program Instance all_iff_morphism {A : Type} :
   Qed.
 
 Program Instance all_impl_morphism {A : Type} : 
-  Morphism (pointwise_relation A impl ==> impl) (@all A).
+  Proper (pointwise_relation A impl ==> impl) (@all A).
   
   Next Obligation.
   Proof.
@@ -98,7 +98,7 @@ Program Instance all_impl_morphism {A : Type} :
   Qed.
 
 Program Instance all_inverse_impl_morphism {A : Type} : 
-  Morphism (pointwise_relation A (inverse impl) ==> inverse impl) (@all A).
+  Proper (pointwise_relation A (inverse impl) ==> inverse impl) (@all A).
   
   Next Obligation.
   Proof.

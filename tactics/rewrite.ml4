@@ -55,13 +55,13 @@ let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
   else check_required_library ["Coq";"Setoids";"Setoid"]
 
-let morphism_class = 
-  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Morphism"))))
+let proper_class = 
+  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Proper"))))
 
-let morphism_proxy_class = 
-  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.MorphismProxy"))))
+let proper_proxy_class = 
+  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.ProperProxy"))))
 
-let respect_proj = lazy (mkConst (Option.get (snd (List.hd (Lazy.force morphism_class).cl_projs))))
+let proper_proj = lazy (mkConst (Option.get (snd (List.hd (Lazy.force proper_class).cl_projs))))
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
@@ -122,7 +122,7 @@ let coq_relationT = lazy (gen_constant ["Classes";"Relations"] "relationT")
 let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalence_Reflexive")
 
 let setoid_equiv = lazy (gen_constant ["Classes"; "SetoidClass"] "equiv")
-let setoid_morphism = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_morphism")
+let setoid_proper = lazy (gen_constant ["Classes"; "SetoidClass"] "setoid_proper")
 let setoid_refl_proj = lazy (gen_constant ["Classes"; "SetoidClass"] "Equivalence_Reflexive")
 
 let setoid_relation = lazy (gen_constant ["Classes"; "SetoidTactics"] "SetoidRelation")
@@ -136,9 +136,9 @@ let arrow_morphism a b =
 let setoid_refl pars x = 
   applistc (Lazy.force setoid_refl_proj) (pars @ [x])
       
-let morphism_type = lazy (constr_of_global (Lazy.force morphism_class).cl_impl)
+let proper_type = lazy (constr_of_global (Lazy.force proper_class).cl_impl)
 
-let morphism_proxy_type = lazy (constr_of_global (Lazy.force morphism_proxy_class).cl_impl)
+let proper_proxy_type = lazy (constr_of_global (Lazy.force proper_proxy_class).cl_impl)
 
 let is_applied_setoid_relation t =
   match kind_of_term t with
@@ -200,9 +200,9 @@ let build_signature isevars env m (cstrs : 'a option list) (finalcstr : 'a Lazy.
 			      t, rel, [t, Some rel])
   in aux env m cstrs
 
-let morphism_proof env evars carrier relation x =
+let proper_proof env evars carrier relation x =
   let goal =
-    mkApp (Lazy.force morphism_proxy_type, [| carrier ; relation; x |])
+    mkApp (Lazy.force proper_proxy_type, [| carrier ; relation; x |])
   in Evarutil.e_new_evar evars env goal
 
 let find_class_proof proof_type proof_method env evars carrier relation =
@@ -421,7 +421,7 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
     let cstrs = List.map (function None -> None | Some r -> Some (r.rew_car, r.rew_rel)) (Array.to_list morphobjs') in
     let appmtype', signature, sigargs = build_signature evars env appmtype cstrs cstr (fun (a,r) -> r) in
     let cl_args = [| appmtype' ; signature ; appm |] in
-    let app = mkApp (Lazy.force morphism_type, cl_args) in
+    let app = mkApp (Lazy.force proper_type, cl_args) in
     let morph = Evarutil.e_new_evar evars env app in
       morph, morph, sigargs, appm, morphobjs, morphobjs'
   in 
@@ -433,7 +433,7 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
 	  | Some relation ->
 	      (match y with
 	      | None ->
-		  let proof = morphism_proof env evars carrier relation x in
+		  let proof = proper_proof env evars carrier relation x in
 		    [ proof ; x ; x ] @ acc, sigargs, x :: typeargs'
 	      | Some r -> 
 		  [ r.rew_prf; r.rew_to; x ] @ acc, sigargs, r.rew_to :: typeargs')
@@ -617,7 +617,7 @@ module Strategies =
 	  | Some r -> evars, r
 	in
 	let evars, proof =
-	  let mty = mkApp (Lazy.force morphism_proxy_type, [| ty ; rel; t |]) in
+	  let mty = mkApp (Lazy.force proper_proxy_type, [| ty ; rel; t |]) in
 	    Evarutil.new_evar evars env mty
 	in
 	  Some (Some { rew_car = ty; rew_rel = rel; rew_from = t; rew_to = t; 
@@ -728,64 +728,58 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
   let eq = apply_strategy strat env sigma concl (Some (Lazy.lazy_from_val cstr)) evars in
     match eq with
     | Some (Some (p, (_, _, oldt, newt))) -> 
-	(try 
-	  evars := Typeclasses.resolve_typeclasses env ~split:false ~fail:true !evars;
-	  let p = Evarutil.nf_isevar !evars p in
-	  let newt = Evarutil.nf_isevar !evars newt in
-	  let undef = Evd.undefined_evars !evars in
-	  let abs = Option.map (fun (x, y) -> Evarutil.nf_isevar !evars x,
-	    Evarutil.nf_isevar !evars y) abs in
-	  let rewtac = 
-	    match is_hyp with
-	    | Some id -> 
-		let term = 
-		  match abs with
-		  | None -> p
+	(try
+	    evars := Typeclasses.resolve_typeclasses env ~split:false ~fail:true !evars;
+	    let p = Evarutil.nf_isevar !evars p in
+	    let newt = Evarutil.nf_isevar !evars newt in
+	    let undef = Evd.undefined_evars !evars in
+	    let abs = Option.map (fun (x, y) -> Evarutil.nf_isevar !evars x,
+	      Evarutil.nf_isevar !evars y) abs in
+	    let rewtac = 
+	      match is_hyp with
+	      | Some id -> 
+		  let term = 
+		    match abs with
+		    | None -> p
+		    | Some (t, ty) -> 
+			mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
+		  in
+		    cut_replacing id newt 
+		      (fun x -> Tacmach.refine_no_check (mkApp (term, [| mkVar id |])))
+	      | None -> 
+		  (match abs with
+		  | None -> 
+		      let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
+			tclTHENLAST
+			  (Tacmach.internal_cut_no_check false name newt)
+			  (tclTHEN (Tactics.revert [name]) (Tacmach.refine_no_check p))
 		  | Some (t, ty) -> 
-		      mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
-		in
-		  cut_replacing id newt 
-		    (fun x -> Tacmach.refine_no_check (mkApp (term, [| mkVar id |])))
-	    | None -> 
-		(match abs with
-		| None -> 
-		    let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
-		      tclTHENLAST
-			(Tacmach.internal_cut_no_check false name newt)
-			(tclTHEN (Tactics.revert [name]) (Tacmach.refine_no_check p))
-		| Some (t, ty) -> 
-		    Tacmach.refine_no_check
-		      (mkApp (mkLambda (Name (id_of_string "newt"), newt,
-				       mkLambda (Name (id_of_string "lemma"), ty,
-						mkApp (p, [| mkRel 2 |]))),
-			     [| mkMeta goal_meta; t |])))
-	  in
-	  let evartac =
-	    let evd =  undef in
-	      if not (evd = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma evd)
+		      Tacmach.refine_no_check
+			(mkApp (mkLambda (Name (id_of_string "newt"), newt,
+					 mkLambda (Name (id_of_string "lemma"), ty,
+						  mkApp (p, [| mkRel 2 |]))),
+			       [| mkMeta goal_meta; t |])))
+	    in
+	    let evartac =
+	      if not (undef = Evd.empty) then Refiner.tclEVARS (Evd.merge sigma undef)
 	      else tclIDTAC
-	  in tclTHENLIST [evartac; rewtac] gl
+	    in tclTHENLIST [evartac; rewtac] gl
 	  with 
 	  | Stdpp.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
 	  | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints." 
 			  ++ fnl () ++ Himsg.explain_typeclass_error env e) gl)
-	  (* 	      | Not_found -> *)
-	  (* 		  tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints.") gl) *)
     | Some None -> 
 	tclFAIL 0 (str"setoid rewrite failed: no progress made") gl
-    | None -> 
-(* 	let {l2r=l2r; c1=x; c2=y} = !hypinfo in *)
-(* 	  raise (Pretype_errors.PretypeError  *)
-(* 		    (pf_env gl,  *)
-(* 		    Pretype_errors.NoOccurrenceFound ((if l2r then x else y), is_hyp))) *)
-	tclFAIL 0 (str"setoid rewrite failed") gl
-
+    | None -> raise Not_found
+	
 let cl_rewrite_clause_strat strat clause gl =
   init_setoid ();
   let meta = Evarutil.new_meta() in
   let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in
-    cl_rewrite_clause_aux strat meta clause gl
+    try cl_rewrite_clause_aux strat meta clause gl
+    with Not_found ->
+      tclFAIL 0 (str"setoid rewrite failed: strategy failed") gl
 
 let cl_rewrite_clause l left2right occs clause gl =
   cl_rewrite_clause_strat (rewrite_with l left2right occs) clause gl
@@ -1065,18 +1059,18 @@ let cHole = CHole (dummy_loc, None)
 open Entries
 open Libnames
 
-let respect_projection r ty =
+let proper_projection r ty =
   let ctx, inst = decompose_prod_assum ty in
   let mor, args = destApp inst in
   let instarg = mkApp (r, rel_vect 0 (List.length ctx)) in
-  let app = mkApp (Lazy.force respect_proj, 
+  let app = mkApp (Lazy.force proper_proj, 
 		  Array.append args [| instarg |]) in
     it_mkLambda_or_LetIn app ctx
       
 let declare_projection n instance_id r =
   let ty = Global.type_of_global r in
   let c = constr_of_global r in
-  let term = respect_projection c ty in
+  let term = proper_projection c ty in
   let typ = Typing.type_of (Global.env ()) Evd.empty term in
   let ctx, typ = decompose_prod_assum typ in
   let typ =
@@ -1129,7 +1123,7 @@ let build_morphism_signature m =
     evars
   in
   let morph = 
-    mkApp (Lazy.force morphism_type, [| t; sig_; m |])
+    mkApp (Lazy.force proper_type, [| t; sig_; m |])
   in
   let evd = 
     Typeclasses.resolve_typeclasses ~fail:true ~onlyargs:false env !isevars in
@@ -1144,10 +1138,10 @@ let default_morphism sign m =
     build_signature isevars env t (fst sign) (snd sign) (fun (ty, rel) -> rel)
   in
   let morph =
-    mkApp (Lazy.force morphism_type, [| t; sign; m |])
+    mkApp (Lazy.force proper_type, [| t; sign; m |])
   in
   let mor = resolve_one_typeclass env !isevars morph in
-    mor, respect_projection mor morph
+    mor, proper_projection mor morph
     	  
 let add_setoid binders a aeq t n =
   init_setoid ();
@@ -1163,13 +1157,13 @@ let add_setoid binders a aeq t n =
 
 let add_morphism_infer m n =
   init_setoid ();
-  let instance_id = add_suffix n "_Morphism" in
+  let instance_id = add_suffix n "_Proper" in
   let instance = build_morphism_signature m in
     if Lib.is_modtype () then 
       let cst = Declare.declare_internal_constant instance_id
 	(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
-	add_instance (Typeclasses.new_instance (Lazy.force morphism_class) None false cst);
+	add_instance (Typeclasses.new_instance (Lazy.force proper_class) None false cst);
 	declare_projection n instance_id (ConstRef cst)
     else
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
@@ -1179,7 +1173,7 @@ let add_morphism_infer m n =
 	      (fun _ -> function
 		  Libnames.ConstRef cst -> 
 		    add_instance (Typeclasses.new_instance 
-				     (Lazy.force morphism_class) None false cst);
+				     (Lazy.force proper_class) None false cst);
 		    declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false);
 	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
@@ -1187,11 +1181,11 @@ let add_morphism_infer m n =
 
 let add_morphism binders m s n =
   init_setoid ();
-  let instance_id = add_suffix n "_Morphism" in
+  let instance_id = add_suffix n "_Proper" in
   let instance = 
     ((dummy_loc,Name instance_id), Explicit,
     CAppExpl (dummy_loc, 
-	     (None, Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Classes.Morphisms.Morphism")), 
+	     (None, Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper")), 
 	     [cHole; s; m]))
   in	  
   let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
@@ -1278,12 +1272,17 @@ let apply_lemma gl (evm,c) cl l2r occs =
   let app = apply_rule hypinfo occs in
   let rec aux () = 
     Strategies.choice app (subterm true general_rewrite_flags (fun env -> aux () env))
-  in !hypinfo.abs, aux ()
+  in !hypinfo, aux ()
 	
 let general_s_rewrite cl l2r occs c ~new_goals gl =
   let meta = Evarutil.new_meta() in
-  let abs, strat = apply_lemma gl c cl l2r occs in
-    cl_rewrite_clause_aux ~abs strat meta cl gl
+  let hypinfo, strat = apply_lemma gl c cl l2r occs in
+    try cl_rewrite_clause_aux ~abs:hypinfo.abs strat meta cl gl
+    with Not_found ->
+      let {l2r=l2r; c1=x; c2=y} = hypinfo in
+	raise (Pretype_errors.PretypeError
+		  (pf_env gl,
+		  Pretype_errors.NoOccurrenceFound ((if l2r then x else y), cl)))
 
 let general_s_rewrite_clause x =
   init_setoid ();
@@ -1384,4 +1383,23 @@ END
 
 TACTIC EXTEND setoid_transitivity
 [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
+END
+
+let implify id gl =
+  let (_, b, ctype) = pf_get_hyp gl id in
+  let binders,concl = decompose_prod_assum ctype in
+  let ctype' = 
+    match binders with
+    | (_, None, ty as hd) :: tl when not (dependent (mkRel 1) concl) -> 
+	let env = Environ.push_rel_context tl (pf_env gl) in
+	let sigma = project gl in
+	let tyhd = Typing.type_of env sigma ty 
+	and tyconcl = Typing.type_of (Environ.push_rel hd env) sigma concl in
+	let app = mkApp (arrow_morphism tyhd (subst1 mkProp tyconcl), [| ty; (subst1 mkProp concl) |]) in
+	  it_mkProd_or_LetIn app tl
+    | _ -> ctype
+  in convert_hyp_no_check (id, b, ctype') gl
+
+TACTIC EXTEND implify
+[ "implify" hyp(n) ] -> [ implify n ]
 END

@@ -424,7 +424,7 @@ Add Relation t Subset
  transitivity proved by Subset_trans
  as SubsetSetoid.
 
-Instance In_s_m : Morphisms.Morphism (E.eq ==> Subset ++> Basics.impl) In | 1.
+Instance In_s_m : Morphisms.Proper (E.eq ==> Subset ++> Basics.impl) In | 1.
 Proof.
   simpl_relation. eauto with set.
 Qed.
