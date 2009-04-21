@@ -27,7 +27,14 @@ open Esubst
  *          in normal form and neutral (i.e. not a lambda, a construct or a
  *          (co)fix, because they may produce redexes by applying them,
  *          or putting them in a case)
- *  LAM(x,a,b,S) is the term [S]([x:a]b). the bindings is propagated
+ *  STACK(k,v,stk) represents an irreductible value [v] in the stack [stk].
+ *          [k] is a delayed shift to be applied to both the value and
+ *          the stack.
+ *  CBN(t,S) is the term [S]t. It is used to delay evaluation. For
+ *          instance products are evaluated only when actually needed
+ *          (CBN strategy).
+ *  LAM(n,a,b,S) is the term [S]([x:a]b) where [a] is a list of bindings and
+ *          [n] is the length of [a]. the environment [S] is propagated
  *          only when the abstraction is applied, and then we use the rule
  *                  ([S]([x:a]b) c) --> [S.c]b
  *          This corresponds to the usual strategy of weak reduction
@@ -36,19 +43,36 @@ open Esubst
  *          weak reduction.
  *  CONSTR(c,args) is the constructor [c] applied to [args].
  *
- * Note that any term has not an equivalent in cbv_value: for example,
- * a product (x:A)B must be in normal form because only VAL may
- * represent it, and the argument of VAL is always in normal
- * form. This remark precludes coding a head reduction with these
- * functions. Anyway, does it make sense to head reduce with a
- * call-by-value strategy ?
  *)
 type cbv_value =
   | VAL of int * constr
+  | STACK of int * cbv_value * cbv_stack
+  | CBN of constr * cbv_value subs
   | LAM of int * (name * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
   | CONSTR of constructor * cbv_value array
+
+(* type of terms with a hole. This hole can appear only under App or Case.
+ *   TOP means the term is considered without context
+ *   APP(v,stk) means the term is applied to v, and then the context stk
+ *      (v.0 is the first argument).
+ *      this corresponds to the application stack of the KAM.
+ *      The members of l are values: we evaluate arguments before
+        calling the function.
+ *   CASE(t,br,pat,S,stk) means the term is in a case (which is himself in stk
+ *      t is the type of the case and br are the branches, all of them under
+ *      the subs S, pat is information on the patterns of the Case
+ *      (Weak reduction: we propagate the sub only when the selected branch
+ *      is determined)
+ *
+ * Important remark: the APPs should be collapsed:
+ *    (APP (l,(APP ...))) forbidden
+ *)
+and cbv_stack =
+  | TOP
+  | APP of cbv_value array * cbv_stack
+  | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
 
 (* les vars pourraient etre des constr,
    cela permet de retarder les lift: utile ?? *) 
@@ -57,7 +81,9 @@ type cbv_value =
  * in a larger context. e.g.  [%k (S.t)](k+1) --> [^k]t  (t is shifted of k)
  *)
 let rec shift_value n = function
-  | VAL (k,v) -> VAL ((k+n),v)
+  | VAL (k,t) -> VAL (k+n,t)
+  | STACK(k,v,stk) -> STACK(k+n,v,stk)
+  | CBN (t,s) -> CBN(t,subs_shft(n,s))
   | LAM (nlams,ctxt,b,s) -> LAM (nlams,ctxt,b,subs_shft (n,s))
   | FIXP (fix,s,args) ->
       FIXP (fix,subs_shft (n,s), Array.map (shift_value n) args)
@@ -67,6 +93,13 @@ let rec shift_value n = function
       CONSTR (c, Array.map (shift_value n) args)
 let shift_value n v =
   if n = 0 then v else shift_value n v
+
+let rec shift_stack n = function
+    TOP -> TOP
+  | APP(v,stk) -> APP(Array.map (shift_value n) v, shift_stack n stk)
+  | CASE(c,b,i,s,stk) -> CASE(c,b,i,subs_shft(n,s), shift_stack n stk)
+let shift_stack n stk =
+  if n = 0 then stk else shift_stack n stk
 
 (* Contracts a fixpoint: given a fixpoint and a bindings,
  * returns the corresponding fixpoint body, and the bindings in which
@@ -89,29 +122,6 @@ let make_constr_ref n = function
   | VarKey id -> mkVar id
   | ConstKey cst -> mkConst cst
 
-
-(* type of terms with a hole. This hole can appear only under App or Case.
- *   TOP means the term is considered without context
- *   APP(v,stk) means the term is applied to v, and then the context stk
- *      (v.0 is the first argument).
- *      this corresponds to the application stack of the KAM.
- *      The members of l are values: we evaluate arguments before
-        calling the function.
- *   CASE(t,br,pat,S,stk) means the term is in a case (which is himself in stk
- *      t is the type of the case and br are the branches, all of them under
- *      the subs S, pat is information on the patterns of the Case
- *      (Weak reduction: we propagate the sub only when the selected branch
- *      is determined)
- *
- * Important remark: the APPs should be collapsed:
- *    (APP (l,(APP ...))) forbidden
- *)
-
-type cbv_stack =
-  | TOP
-  | APP of cbv_value array * cbv_stack
-  | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
-
 (* Adds an application list. Collapse APPs! *)
 let stack_app appl stack =
   if Array.length appl = 0 then stack else
@@ -119,6 +129,20 @@ let stack_app appl stack =
     | APP(args,stk) -> APP(Array.append appl args,stk)
     | _             -> APP(appl, stack)
 
+let rec stack_concat stk1 stk2 =
+  match stk1 with
+      TOP -> stk2
+    | APP(v,stk1') -> APP(v,stack_concat stk1' stk2)
+    | CASE(c,b,i,s,stk1') -> CASE(c,b,i,s,stack_concat stk1' stk2)
+
+(* merge stacks when there is no shifts in between *)
+let mkSTACK = function
+    v, TOP -> v
+  | STACK(0,v0,stk0), stk -> STACK(0,v0,stack_concat stk0 stk)
+  | v,stk -> STACK(0,v,stk)
+
+
+(* Change: zeta reduction cannot be avoided in CBV *)
 
 open RedFlags
 
@@ -128,7 +152,8 @@ let red_set_ref flags = function
   | ConstKey sp -> red_set flags (fCONST sp)
 
 (* Transfer application lists from a value to the stack
- * useful because fixpoints may be totally applied in several times
+ * useful because fixpoints may be totally applied in several times.
+ * On the other hand, irreductible atoms absorb the full stack.
  *)
 let strip_appl head stack =
   match head with
@@ -196,27 +221,17 @@ let rec norm_head info env t stack =
 
   | Const sp -> norm_head_ref 0 info env stack (ConstKey sp)
 
-  | LetIn (x, b, t, c) ->
+  | LetIn (_, b, _, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
       (* allow bindings but leave let's in place *)
-      let zeta = red_set (info_flags info) fZETA in
-      let env' =
-	if zeta 
-          (* New rule: for Cbv, Delta does not apply to locally bound variables
-          or red_set (info_flags info) fDELTA
-          *)
-        then 
-	  subs_cons ([|cbv_stack_term info TOP env b|],env)
-	else
-	  subs_lift env in
-      if zeta then
+      if red_set (info_flags info) fZETA then
+        (* New rule: for Cbv, Delta does not apply to locally bound variables
+           or red_set (info_flags info) fDELTA
+         *)
+	let env' = subs_cons ([|cbv_stack_term info TOP env b|],env) in
         norm_head info env' c stack
       else
-	let normt =
-	  mkLetIn (x, cbv_norm_term info env b,
-		   cbv_norm_term info env t,
-		   cbv_norm_term info env' c) in
-	(VAL(0,normt), stack) (* Considérer une coupure commutative ? *)
+	(CBN(t,env), stack) (* Considérer une coupure commutative ? *)
 
   | Evar ev ->
       (match evar_value info ev with
@@ -233,17 +248,14 @@ let rec norm_head info env t stack =
 
   (* neutral cases *)
   | (Sort _ | Meta _ | Ind _) -> (VAL(0, t), stack)
-  | Prod (x,t,c) -> 
-      (VAL(0, mkProd (x, cbv_norm_term info env t,
-		      cbv_norm_term info (subs_lift env) c)),
-	     stack)
+  | Prod _ -> (CBN(t,env), stack)
 
 and norm_head_ref k info env stack normt =
   if red_set_ref (info_flags info) normt then
     match ref_value_cache info normt with
       | Some body -> strip_appl (shift_value k body) stack
-      | None -> (VAL(0,make_constr_ref k normt), stack)
-  else (VAL(0,make_constr_ref k normt), stack)
+      | None -> (VAL(0,make_constr_ref k normt),stack)
+  else (VAL(0,make_constr_ref k normt),stack)
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
  * env, with context stack, i.e. ([env]t stack).  First computes weak
@@ -268,19 +280,19 @@ and cbv_stack_term info stack env t =
           LAM(nlams-nargs,ctxt', b, subs_cons(args,env))
 
     (* a Fix applied enough -> IOTA *)
-    | (FIXP(fix,env,_), stk)
+    | (FIXP(fix,env,[||]), stk)
         when fixp_reducible (info_flags info) fix stk ->
         let (envf,redfix) = contract_fixp env fix in
         cbv_stack_term info stk envf redfix
 
     (* constructor guard satisfied or Cofix in a Case -> IOTA *)
-    | (COFIXP(cofix,env,_), stk)
+    | (COFIXP(cofix,env,[||]), stk)
         when cofixp_reducible (info_flags info) cofix stk->
         let (envf,redfix) = contract_cofixp env cofix in
         cbv_stack_term info stk envf redfix
 
     (* constructor in a Case -> IOTA *)
-    | (CONSTR((sp,n),_), APP(args,CASE(_,br,ci,env,stk)))
+    | (CONSTR((sp,n),[||]), APP(args,CASE(_,br,ci,env,stk)))
             when red_set (info_flags info) fIOTA ->
 	let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
@@ -292,23 +304,19 @@ and cbv_stack_term info stack env t =
                     cbv_stack_term info stk env br.(n-1)
 
     (* may be reduced later by application *)  
-    | (head, TOP) -> head
-    | (FIXP(fix,env,_), APP(appl,TOP)) -> FIXP(fix,env,appl) 
-    | (COFIXP(cofix,env,_), APP(appl,TOP)) -> COFIXP(cofix,env,appl) 
-    | (CONSTR(c,_), APP(appl,TOP)) -> CONSTR(c,appl)
-
-    (* absurd cases (ill-typed) *)
-    | (LAM _, CASE _) -> assert false
+    | (FIXP(fix,env,[||]), APP(appl,TOP)) -> FIXP(fix,env,appl) 
+    | (COFIXP(cofix,env,[||]), APP(appl,TOP)) -> COFIXP(cofix,env,appl) 
+    | (CONSTR(c,[||]), APP(appl,TOP)) -> CONSTR(c,appl)
 
     (* definitely a value *)
-    | (head,stk) -> VAL(0,apply_stack info (cbv_norm_value info head) stk)
+    | (head,stk) -> mkSTACK(head, stk)
 
 
 (* When we are sure t will never produce a redex with its stack, we
  * normalize (even under binders) the applied terms and we build the
  * final term
  *)
-and apply_stack info t = function
+let rec apply_stack info t = function
   | TOP -> t
   | APP (args,st) ->
       apply_stack info (mkApp(t,Array.map (cbv_norm_value info) args)) st
@@ -318,7 +326,6 @@ and apply_stack info t = function
 		    Array.map (cbv_norm_term info env) br))
         st
 
-
 (* performs the reduction on a constr, and returns a constr *)
 and cbv_norm_term info env t =
   (* reduction under binders *)
@@ -326,7 +333,13 @@ and cbv_norm_term info env t =
 
 (* reduction of a cbv_value to a constr *)
 and cbv_norm_value info = function (* reduction under binders *)
-  | VAL (n,v) -> lift n v
+  | VAL (n,t) -> lift n t
+  | STACK (0,v,stk) ->
+      apply_stack info (cbv_norm_value info v) stk
+  | STACK (n,v,stk) ->
+      lift n (apply_stack info (cbv_norm_value info v) stk)
+  | CBN(t,env) ->
+      map_constr_with_binders subs_lift (cbv_norm_term info) env t
   | LAM (n,ctxt,b,env) ->
       let nctxt =
         list_map_i (fun i (x,ty) ->
@@ -353,7 +366,6 @@ and cbv_norm_value info = function (* reduction under binders *)
 (* with profiling *)
 let cbv_norm infos constr =
   with_stats (lazy (cbv_norm_term infos (ESID 0) constr))
-
 
 type cbv_infos = cbv_value infos
 
