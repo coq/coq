@@ -5,7 +5,6 @@ Nbtermdn
 Tacticals
 Hipattern
 Tactics
-Evar_tactics
 Hiddentac
 Elim
 Dhyp
@@ -16,6 +15,7 @@ Contradiction
 Inv
 Leminv
 Tacinterp
+Evar_tactics
 Autorewrite
 Decl_interp
 Decl_proof_instr

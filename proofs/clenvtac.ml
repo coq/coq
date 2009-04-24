@@ -25,7 +25,6 @@ open Logic
 open Reduction
 open Reductionops
 open Tacmach
-open Evar_refiner
 open Rawterm
 open Pattern
 open Tacexpr

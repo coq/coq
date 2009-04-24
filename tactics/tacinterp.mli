@@ -44,6 +44,9 @@ and interp_sign =
     debug : debug_info;
     trace : ltac_trace }
 
+val extract_ltac_vars : interp_sign -> Evd.evar_defs -> Environ.env -> 
+  Pretyping.var_map * Pretyping.unbound_ltac_var_map
+
 (* Transforms an id into a constr if possible *)
 val constr_of_id : Environ.env -> identifier -> constr
 

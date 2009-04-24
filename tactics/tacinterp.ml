@@ -1401,6 +1401,14 @@ let retype_list sigma env lst =
     try (x,Retyping.get_judgment_of env sigma csr)::a with
     | Anomaly _ -> a) lst []
 
+let extract_ltac_vars_data ist sigma env =
+  let (ltacvars,_ as vars) = constr_list ist env in
+  vars, retype_list sigma env ltacvars
+
+let extract_ltac_vars ist sigma env =
+  let (_,unbndltacvars),typs = extract_ltac_vars_data ist sigma env in
+  typs,unbndltacvars
+
 let implicit_tactic = ref None
 
 let declare_implicit_tactic tac = implicit_tactic := Some tac
@@ -1446,8 +1454,8 @@ let solve_remaining_evars env initial_sigma evd c =
   proc_rec (Evarutil.nf_isevar !evdref c)
 
 let interp_gen kind ist sigma env (c,ce) =
-  let (ltacvars,unbndltacvars as vars) = constr_list ist env in
-  let typs = retype_list sigma env ltacvars in
+  let (ltacvars,unbndltacvars as vars),typs =
+    extract_ltac_vars_data ist sigma env in
   let c = match ce with
   | None -> c
     (* If at toplevel (ce<>None), the error can be due to an incorrect

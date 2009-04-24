@@ -29,7 +29,7 @@ let evar_list evc c =
   in 
     evrec [] c
 
-let instantiate n rawc ido gl = 
+let instantiate n (ist,rawc) ido gl = 
   let sigma = gl.sigma in
   let evl = 
     match ido with
@@ -49,31 +49,19 @@ let instantiate n rawc ido gl =
 		      (_,Some body,_) -> evar_list sigma body
 		    | _ -> error "Not a defined hypothesis.") in
     if List.length evl < n then
-      error "not enough uninstantiated existential variables";
+      error "Not enough uninstantiated existential variables.";
     if n <= 0 then error "Incorrect existential variable index.";
-    let ev,_ =  destEvar (List.nth evl (n-1)) in
-    let evd' = w_refine ev rawc (create_goal_evar_defs sigma) in
+    let evk,_ = destEvar (List.nth evl (n-1)) in
+    let evi = Evd.find sigma evk in
+    let ltac_vars = Tacinterp.extract_ltac_vars ist sigma (Evd.evar_env evi) in
+    let sigma' = w_refine (evk,evi) (ltac_vars,rawc) sigma in
       tclTHEN
-        (tclEVARS ( evd'))
+        (tclEVARS sigma')
         tclNORMEVAR
         gl
 	
-(*
-let pfic gls c =
-  let evc = gls.sigma in 
-  Constrintern.interp_constr evc (Global.env_of_context gls.it.evar_hyps) c
-
-let instantiate_tac = function
-  | [Integer n; Command com] ->
-      (fun gl -> instantiate n (pfic gl com) gl)
-  | [Integer n; Constr c] ->
-      (fun gl -> instantiate n c gl)
-  | _ -> invalid_arg "Instantiate called with bad arguments"
-*)
-
 let let_evar name typ gls =
-  let evd = Evd.create_goal_evar_defs gls.sigma in
-  let evd',evar = Evarutil.new_evar evd (pf_env gls) typ in
-  Refiner.tclTHEN (Refiner.tclEVARS ( evd'))
+  let sigma',evar = Evarutil.new_evar gls.sigma (pf_env gls) typ in
+  Refiner.tclTHEN (Refiner.tclEVARS sigma')
     (Tactics.letin_tac None name evar None nowhere) gls
  

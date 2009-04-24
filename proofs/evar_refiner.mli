@@ -14,11 +14,14 @@ open Term
 open Environ
 open Evd
 open Refiner
+open Pretyping
+open Rawterm
 (*i*)
 
 (* Refinement of existential variables. *)
 
-val w_refine : evar -> Rawterm.rawconstr  -> evar_defs -> evar_defs
+val w_refine : evar * evar_info -> 
+  (var_map * unbound_ltac_var_map) * rawconstr -> evar_defs -> evar_defs
 
 val instantiate_pf_com :
   int -> Topconstr.constr_expr -> pftreestate -> pftreestate
