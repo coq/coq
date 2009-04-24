@@ -26,4 +26,9 @@ val unfreeze : state -> unit
 
 val with_heavy_rollback : ('a -> 'b) -> 'a -> 'b
 
+(*s [with_state_protection f x] applies [f] to [x] and restores the
+  state of the whole system as it was before the evaluation of f *)
+
+val with_state_protection : ('a -> 'b) -> 'a -> 'b
+
 

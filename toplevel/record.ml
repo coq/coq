@@ -392,7 +392,7 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
   (* Now, younger decl in params and fields is on top *)
   let sc = interp_and_check_sort s in
   let implpars, params, implfs, fields = 
-    States.with_heavy_rollback (fun () ->
+    States.with_state_protection (fun () ->
       typecheck_params_and_fields idstruc sc ps notations fs) () in
   let sign = structure_signature (fields@params) in
     match kind with	  

@@ -1170,9 +1170,6 @@ let forward_general_multi_rewrite =
 let register_general_multi_rewrite f =
   forward_general_multi_rewrite := f
 
-let clear_last = onLastHyp (fun c -> (clear [destVar c]))
-let case_last  = onLastHyp simplest_case
-
 let error_unexpected_extra_pattern loc nb pat =
   let s1,s2,s3 = match pat with
   | IntroIdentifier _ -> "name", (plural nb " introduction pattern"), "no"
@@ -1183,8 +1180,8 @@ let error_unexpected_extra_pattern loc nb pat =
        str (if nb = 1 then "was" else "were") ++
       strbrk " expected in the branch).")
 
-let intro_or_and_pattern loc b ll l' tac =
-  onLastHyp (fun c gl ->
+let intro_or_and_pattern loc b ll l' tac id gl =
+    let c = mkVar id in
     let ind,_ = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     let nv = mis_constr_nargs ind in
     let bracketed = b or not (l'=[]) in
@@ -1198,10 +1195,10 @@ let intro_or_and_pattern loc b ll l' tac =
     let ll = fix_empty_or_and_pattern (Array.length nv) ll in
     check_or_and_pattern_size loc ll (Array.length nv);
     tclTHENLASTn
-      (tclTHEN case_last clear_last)
+      (tclTHEN (simplest_case c) (clear [id]))
       (array_map2 (fun n l -> tac ((adjust_names_length n n l)@l'))
 	nv (Array.of_list ll))
-      gl)
+      gl
 
 let rewrite_hyp l2r id gl =
   let rew_on l2r =
@@ -1266,8 +1263,9 @@ let rec intros_patterns b avoid thin destopt = function
   | (loc, IntroOrAndPattern ll) :: l' ->
       tclTHEN
         introf
-        (intro_or_and_pattern loc b ll l'
-	  (intros_patterns b avoid thin destopt))
+        (onLastHypId
+	  (intro_or_and_pattern loc b ll l'
+	    (intros_patterns b avoid thin destopt)))
   | (loc, IntroRewrite l2r) :: l ->
       tclTHEN 
         (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l)) no_move true)
@@ -1301,8 +1299,10 @@ let prepare_intros s ipat gl = match ipat with
   | IntroRewrite l2r -> 
       let id = make_id s gl in
       id, !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allHypsAndConcl
-  | IntroOrAndPattern ll -> make_id s gl, 
-      intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
+  | IntroOrAndPattern ll -> make_id s gl,
+      onLastHypId
+	(intro_or_and_pattern loc true ll [] 
+	  (intros_patterns true [] [] no_move))
 
 let ipat_of_name = function
   | Anonymous -> None
@@ -1333,6 +1333,7 @@ let as_tac id ipat = match ipat with
       !forward_general_multi_rewrite l2r false (inj_open (mkVar id),NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
       intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
+        id
   | Some (loc,
       (IntroIdentifier _ | IntroAnonymous | IntroFresh _ | IntroWildcard)) ->
       user_err_loc (loc,"", str "Disjunctive/conjunctive pattern expected")
