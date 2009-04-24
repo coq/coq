@@ -97,7 +97,7 @@ sig
     rawconstr -> unsafe_type_judgment
 
   val pretype_gen :
-    evar_defs ref -> env -> 
+    bool -> bool -> evar_defs ref -> env ->
     var_map * (identifier * identifier option) list ->
     typing_constraint -> rawconstr -> constr
 

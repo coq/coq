@@ -157,7 +157,7 @@ sig
     rawconstr -> unsafe_type_judgment
 
   val pretype_gen :
-    evar_defs ref -> env ->
+    bool -> bool -> evar_defs ref -> env ->
     var_map * (identifier * identifier option) list ->
     typing_constraint -> rawconstr -> constr
 
@@ -487,7 +487,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		 | Some p ->
 		     let env_p = push_rels psign env in
 		     let pj = pretype_type empty_valcon env_p evdref lvar p in
-		     let ccl = nf_isevar !evdref pj.utj_val in
+		     let ccl = nf_evar !evdref pj.utj_val in
 		     let psign = make_arity_signature env true indf in (* with names *)
 		     let p = it_mkLambda_or_LetIn ccl psign in
 		     let inst = 
@@ -507,7 +507,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		     let tycon = lift_tycon cs.cs_nargs tycon in
 		     let fj = pretype tycon env_f evdref lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
-		     let ccl = nf_isevar !evdref fj.uj_type in
+		     let ccl = nf_evar !evdref fj.uj_type in
 		     let ccl =
 		       if noccur_between 1 cs.cs_nargs ccl then
 			 lift (- cs.cs_nargs) ccl 
@@ -605,7 +605,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	    | CastConv (k,t) ->
 		let tj = pretype_type empty_valcon env evdref lvar t in
  		let cj = pretype empty_tycon env evdref lvar c in
-		let cty = nf_isevar !evdref cj.uj_type and tval = nf_isevar !evdref tj.utj_val in
+		let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
 		let cj = match k with
 		  | VMcast when not (occur_existential cty || occur_existential tval) ->
 		      ignore (Reduction.vm_conv Reduction.CUMUL env cty tval); cj
@@ -656,22 +656,22 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  error_unexpected_type_loc
                     (loc_of_rawconstr c) env ( !evdref) tj.utj_val v
 
-  let pretype_gen_aux evdref env lvar kind c =
+  let pretype_gen fail_evar resolve_classes evdref env lvar kind c =
     let c' = match kind with
       | OfType exptyp ->
 	  let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
-	    (pretype tycon env evdref lvar c).uj_val
+	  (pretype tycon env evdref lvar c).uj_val
       | IsType ->
 	  (pretype_type empty_valcon env evdref lvar c).utj_val in
-    let evd,_ = consider_remaining_unif_problems env !evdref in
-      evdref := evd; 
-      nf_isevar !evdref c'
-	
-  let pretype_gen evdref env lvar kind c =
-    let c = pretype_gen_aux evdref env lvar kind c in
-      evdref := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:false env !evdref;
-      nf_isevar !evdref c
-	
+    evdref := fst (consider_remaining_unif_problems env !evdref);
+    if resolve_classes then
+      evdref := 
+        Typeclasses.resolve_typeclasses ~onlyargs:(not fail_evar)
+	  ~fail:fail_evar env !evdref;
+    let c = nf_evar !evdref c' in
+    if fail_evar then check_evars env Evd.empty !evdref c;
+    c
+
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage
      retourne aussi le nouveau sigma...
@@ -681,59 +681,43 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     let evdref = ref (create_evar_defs sigma) in
     let j = pretype empty_tycon env evdref ([],[]) c in
     let evd,_ = consider_remaining_unif_problems env !evdref in
-    let j = j_nf_evar ( evd) j in
     let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env evd in
-    let j = j_nf_evar ( evd) j in
+    let j = j_nf_evar evd j in
     check_evars env sigma evd (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
     j
 
   let understand_judgment_tcc evdref env c =
     let j = pretype empty_tycon env evdref ([],[]) c in
-    let sigma =  !evdref in
-    let j = j_nf_evar sigma j in
-    j
+    j_nf_evar !evdref j
 
   (* Raw calls to the unsafe inference machine: boolean says if we must
      fail on unresolved evars; the unsafe_judgment list allows us to
      extend env with some bindings *)
 
-  let ise_pretype_gen fail_evar sigma env lvar kind c =
+  let ise_pretype_gen fail_evar resolve_classes sigma env lvar kind c =
     let evdref = ref (Evd.create_evar_defs sigma) in
-    let c = pretype_gen_aux evdref env lvar kind c in
-      if fail_evar then 
-	let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env !evdref in
-	let c = Evarutil.nf_isevar evd c in
-	  check_evars env Evd.empty evd c;
-	  evd, c
-      else !evdref, c
+    let c = pretype_gen fail_evar resolve_classes evdref env lvar kind c in
+    !evdref, c
 
   (** Entry points of the high-level type synthesis algorithm *)
 
   let understand_gen kind sigma env c =
-    snd (ise_pretype_gen true sigma env ([],[]) kind c)
+    snd (ise_pretype_gen true true sigma env ([],[]) kind c)
 
   let understand sigma env ?expected_type:exptyp c =
-    snd (ise_pretype_gen true sigma env ([],[]) (OfType exptyp) c)
+    snd (ise_pretype_gen true true sigma env ([],[]) (OfType exptyp) c)
 
   let understand_type sigma env c =
-    snd (ise_pretype_gen true sigma env ([],[]) IsType c)
+    snd (ise_pretype_gen true true sigma env ([],[]) IsType c)
 
   let understand_ltac sigma env lvar kind c =
-    ise_pretype_gen false sigma env lvar kind c
-      
-  let understand_tcc_evars evdref env kind c =
-    pretype_gen evdref env ([],[]) kind c
-      
+    ise_pretype_gen false false sigma env lvar kind c
+
   let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
-    let evd, t =
-      let evdref = ref (Evd.create_evar_defs sigma) in
-      let c = 
-	if resolve_classes then
-	  pretype_gen evdref env ([],[]) (OfType exptyp) c 
-	else
-	  pretype_gen_aux evdref env ([],[]) (OfType exptyp) c
-      in !evdref, c
-    in  evd, t
+    ise_pretype_gen false resolve_classes sigma env ([],[]) (OfType exptyp) c
+
+  let understand_tcc_evars evdref env kind c =
+    pretype_gen false true evdref env ([],[]) kind c
 end
-  
+
 module Default : S = Pretyping_F(Coercion.Default)

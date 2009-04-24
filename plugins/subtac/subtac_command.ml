@@ -58,7 +58,7 @@ let interp_gen kind isevars env
                ?(impls=([],[])) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars ( !isevars) env c in
-  let c' = SPretyping.pretype_gen isevars env ([],[]) kind c' in
+  let c' = SPretyping.understand_tcc_evars isevars env kind c' in
     evar_nf isevars c'
 
 let interp_constr isevars env c =
@@ -76,7 +76,7 @@ let interp_casted_constr_evars isevars env ?(impls=([],[])) c typ =
 let interp_open_constr isevars env c =
     msgnl (str "Pretyping " ++ my_print_constr_expr c);
   let c = Constrintern.intern_constr ( !isevars) env c in
-  let c' = SPretyping.pretype_gen isevars env ([], []) (OfType None) c in
+  let c' = SPretyping.understand_tcc_evars isevars env (OfType None) c in
     evar_nf isevars c'
 
 let interp_constr_judgment isevars env c =
@@ -96,7 +96,7 @@ let locate_if_isevar loc na = function
 
 let interp_binder sigma env na t =
   let t = Constrintern.intern_gen true ( !sigma) env t in
-    SPretyping.pretype_gen sigma env ([], []) IsType (locate_if_isevar (loc_of_rawconstr t) na t)
+    SPretyping.understand_tcc_evars sigma env IsType (locate_if_isevar (loc_of_rawconstr t) na t)
 
 let interp_context_evars evdref env params = 
   let bl = Constrintern.intern_context false ( !evdref) env params in
