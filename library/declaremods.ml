@@ -1062,12 +1062,9 @@ let rec update_include (sub,mbids,msid,objs) =
     | (id,obj)::tail ->
 	if object_tag obj = "INCLUDE" then
 	  let ((me,is_mod),substobjs,substituted) = out_include obj in
-	    if not (is_mod) then
-	      let substobjs' = update_include substobjs in
-                (id, in_include ((me,true),substobjs',substituted))::
-		  (replace_include tail)
-	    else
-		  (id,obj)::(replace_include tail)
+	  let substobjs' = update_include substobjs in
+            (id, in_include ((me,true),substobjs',substituted))::
+	      (replace_include tail)
 	else
 	  (id,obj)::(replace_include tail)
   in
