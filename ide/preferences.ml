@@ -135,8 +135,8 @@ let (current:pref ref) =
 (*    text_font = Pango.Font.from_string "sans 12";*)
     text_font = Pango.Font.from_string "Monospace 10";
 
-    doc_url = "http://coq.inria.fr/doc/";
-    library_url = "http://coq.inria.fr/library/";
+    doc_url = Coq_config.wwwrefman;
+    library_url = Coq_config.wwwstdlib;
     
     show_toolbar = true;
     contextual_menus_on_goal = true;

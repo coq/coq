@@ -45,4 +45,8 @@ val browser : string
 (** default web browser to use, may be overriden by environment
     variable COQREMOTEBROWSER *)
 
+val wwwcoq : string
+val wwwrefman : string
+val wwwstdlib : string
+
 val has_natdynlink : bool

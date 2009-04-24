@@ -3237,7 +3237,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 					    ~callback:
 					    (fun () -> 
 					       let av = Option.get ((get_current_view ()).analyzed_view) in 
-						 browse av#insert_message (!current.doc_url ^ "main.html")) in
+						 browse av#insert_message (!current.doc_url)) in
 					  let _ = help_factory#add_item "Browse Coq _Library" 
 					    ~callback:
 					    (fun () -> 
@@ -3518,8 +3518,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 							    let about_full_string =
 							      "\nCoq is developed by the Coq Development Team\
        \n(INRIA - CNRS - University Paris 11 and partners)\
-       \nWeb site: http://coq.inria.fr\
-       \nFeature wish or bug report: http://logical.saclay.inria.fr/coq-bugs\
+       \nWeb site: " ^ Coq_config.wwwcoq ^
+       "\nFeature wish or bug report: http://logical.saclay.inria.fr/coq-bugs\
        \n\
        \nCredits for CoqIDE, the Integrated Development Environment for Coq:\
        \n\

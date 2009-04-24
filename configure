@@ -133,6 +133,7 @@ reals=all
 arch_spec=no
 coqide_spec=no
 browser_spec=no
+wwwcoq_spec=no
 with_geoproof=false
 with_doc=all
 with_doc_spec=no
@@ -216,6 +217,9 @@ while : ; do
     -browser|--browser) browser_spec=yes
 		      BROWSER=$2
 		      shift;;
+    -coqwebsite|--coqwebsite) wwwcoq_spec=yes
+                      WWWCOQ=$2
+                      shift;;
     -with-doc|--with-doc) with_doc_spec=yes
 		      case "$2" in
 			  yes|all) with_doc=all;;
@@ -356,6 +360,10 @@ if [ "$browser_spec" = "no" ]; then
         win32) BROWSER='C:\PROGRA~1\INTERN~1\IEXPLORE %s' ;;
         *) BROWSER='firefox -remote "OpenURL(%s,new-tab)" || firefox %s &' ;;
     esac
+fi
+
+if [ "$wwwcoq_spec" = "no" ]; then
+    WWWCOQ="http://www.lix.polytechnique.fr/coq/"
 fi
 
 #########################################
@@ -853,6 +861,7 @@ echo "  Documentation                     : None"
 fi
 echo "  CoqIde                            : $COQIDE"
 echo "  Web browser                       : $BROWSER"
+echo "  Coq web site                      : $WWWCOQ"
 echo ""
 
 echo "  Paths for true installation:"
@@ -944,6 +953,9 @@ let state_magic_number = $STATEMAGIC
 let exec_extension = "$EXE"
 let with_geoproof = ref $with_geoproof
 let browser = "$ESCBROWSER"
+let wwwcoq = "$WWWCOQ"
+let wwwrefman = wwwcoq ^ "distrib/" ^ version ^ "/refman/"
+let wwwstdlib = wwwcoq ^ "distrib/" ^ version ^ "/stdlib/"
 
 END_OF_COQ_CONFIG
 
