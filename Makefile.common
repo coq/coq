@@ -210,12 +210,11 @@ TACTICS:=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
   tactics/nbtermdn.cmo tactics/tacticals.cmo \
   tactics/hipattern.cmo tactics/tactics.cmo \
-  tactics/evar_tactics.cmo \
   tactics/hiddentac.cmo tactics/elim.cmo \
   tactics/dhyp.cmo tactics/auto.cmo \
   toplevel/ind_tables.cmo tactics/equality.cmo \
   tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
-  tactics/tacinterp.cmo tactics/autorewrite.cmo \
+  tactics/tacinterp.cmo tactics/autorewrite.cmo tactics/evar_tactics.cmo \
   tactics/decl_interp.cmo tactics/decl_proof_instr.cmo
 
 TOPLEVEL:=\

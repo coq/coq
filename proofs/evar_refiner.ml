@@ -15,6 +15,7 @@ open Evd
 open Sign
 open Proof_trees
 open Refiner
+open Pretyping
 
 (******************************************)
 (* Instantiation of existential variables *)
@@ -22,21 +23,21 @@ open Refiner
 
 (* w_tactic pour instantiate *) 
 
-let w_refine evk rawc evd =
+let w_refine evk (ltac_vars,rawc) evd =
   if Evd.is_defined (evars_of evd) evk then 
     error "Instantiate called on already-defined evar";
   let e_info = Evd.find (evars_of evd) evk in
   let env = Evd.evar_env e_info in
-  let sigma,typed_c =
-    try Pretyping.Default.understand_tcc ~resolve_classes:false
-      (evars_of evd) env ~expected_type:e_info.evar_concl rawc
+  let evd',typed_c =
+    try Pretyping.Default.understand_ltac 
+      (evars_of evd) env ltac_vars (OfType (Some e_info.evar_concl)) rawc
     with _ ->
       let loc = Rawterm.loc_of_rawconstr rawc in
       user_err_loc 
         (loc,"",Pp.str ("Instance is not well-typed in the environment of " ^
 			string_of_existential evk))
   in
-    evar_define evk typed_c (evars_reset_evd sigma evd)
+    evar_define evk typed_c (evars_reset_evd (evars_of evd') evd)
 
 (* vernac command Existential *)
 
@@ -55,5 +56,5 @@ let instantiate_pf_com n com pfts =
   let env = Evd.evar_env evi in
   let rawc = Constrintern.intern_constr sigma env com in 
   let evd = create_goal_evar_defs sigma in
-  let evd' = w_refine evk rawc evd in
+  let evd' = w_refine evk (([],[]),rawc) evd in
     change_constraints_pftreestate (evars_of evd') pfts

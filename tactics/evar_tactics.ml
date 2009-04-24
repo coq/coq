@@ -29,7 +29,7 @@ let evar_list evc c =
   in 
     evrec [] c
 
-let instantiate n rawc ido gl = 
+let instantiate n (ist,rawc) ido gl = 
   let sigma = gl.sigma in
   let evl = 
     match ido with
@@ -52,7 +52,9 @@ let instantiate n rawc ido gl =
       error "not enough uninstantiated existential variables";
     if n <= 0 then error "Incorrect existential variable index.";
     let ev,_ =  destEvar (List.nth evl (n-1)) in
-    let evd' = w_refine ev rawc (create_goal_evar_defs sigma) in
+    let env = Evd.evar_env (Evd.find sigma ev) in
+    let ltac_vars = Tacinterp.extract_ltac_vars ist sigma env in
+    let evd' = w_refine ev (ltac_vars,rawc) (create_goal_evar_defs sigma) in
       tclTHEN
         (tclEVARS (evars_of evd'))
         tclNORMEVAR

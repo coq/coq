@@ -1675,7 +1675,7 @@ let typeclass_app_constrexpr t ?(bindings=NoBindings) gl =
   let bindings = Tacinterp.interp_bindings my_ist gl bl in
     typeclass_app (Evd.evars_of !evars) gl ~bindings:bindings j.uj_val j.uj_type
 
-let typeclass_app_raw t gl =
+let typeclass_app_raw (_,t) gl =
   let env = pf_env gl in
   let evars = ref (create_evar_defs (project gl)) in
   let j = Pretyping.Default.understand_judgment_tcc evars env t in

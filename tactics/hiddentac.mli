@@ -62,8 +62,6 @@ val h_generalize_gen  : (constr with_occurrences * name) list -> tactic
 val h_generalize_dep  : constr -> tactic 
 val h_let_tac         : letin_flag -> name -> constr -> 
                         Tacticals.clause -> tactic
-val h_instantiate     : int -> Rawterm.rawconstr ->
-  (identifier * hyp_location_flag, unit) location -> tactic
 
 (* Derived basic tactics *)
 

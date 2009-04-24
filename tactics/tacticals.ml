@@ -26,7 +26,6 @@ open Clenvtac
 open Rawterm
 open Pattern
 open Matching
-open Evar_refiner
 open Genarg
 open Tacexpr
 
