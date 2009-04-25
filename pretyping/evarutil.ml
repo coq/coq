@@ -673,7 +673,11 @@ let invert_arg_from_subst env k sigma subst_in_env c_in_env_extended_with_k_bind
 
 let invert_arg env k sigma (evk,args_in_env) c_in_env_extended_with_k_binders =
   let subst_in_env = make_projectable_subst sigma (Evd.find sigma evk) args_in_env in
-  invert_arg_from_subst env k sigma subst_in_env c_in_env_extended_with_k_binders
+  let res = invert_arg_from_subst env k sigma subst_in_env c_in_env_extended_with_k_binders in
+  match res with
+  | Invertible (UniqueProjection (c,_)) when occur_evar evk c -> CannotInvert
+  | _ -> res
+
 
 let effective_projections =
   map_succeed (function Invertible c -> c | _ -> failwith"")

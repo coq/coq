@@ -14,6 +14,9 @@
 #directory "tactics";;
 #directory "translate";;
 
+#directory "+camlp4";; (* lazy solution: add both of camlp4/5 so that *)
+#directory "+camlp5";; (* Gramext is found in top_printers.ml *)
+
 #use "top_printers.ml";;
 #use "vm_printers.ml";;
 
@@ -112,6 +115,9 @@ open Proof_type
 open Redexpr
 open Refiner
 open Tacmach
+open Decl_proof_instr
+open Tactic_debug
+open Decl_mode
 
 open Auto
 open Autorewrite
