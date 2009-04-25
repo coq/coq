@@ -437,7 +437,6 @@ module Constr =
     let global = make_gen_entry uconstr rawwit_ref "global"
     let sort = make_gen_entry uconstr rawwit_sort "sort"
     let pattern = Gram.Entry.create "constr:pattern"
-    let annot = Gram.Entry.create "constr:annot"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
     let binder = Gram.Entry.create "constr:binder"
@@ -694,8 +693,6 @@ let compute_entry allow_create adjust forpat = function
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
   | ETPattern -> weaken_entry Constr.pattern, None, false
-  | ETOther ("constr","annot") -> 
-      weaken_entry Constr.annot, None, false
   | ETConstrList _ -> error "List of entries cannot be registered."
   | ETOther (u,n) ->
       let u = get_univ u in

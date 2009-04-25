@@ -159,7 +159,6 @@ module Constr :
     val global : reference Gram.Entry.e
     val sort : rawsort Gram.Entry.e
     val pattern : cases_pattern_expr Gram.Entry.e
-    val annot : constr_expr Gram.Entry.e
     val constr_pattern : constr_expr Gram.Entry.e
     val lconstr_pattern : constr_expr Gram.Entry.e
     val binder : (name located list * binder_kind * constr_expr) Gram.Entry.e

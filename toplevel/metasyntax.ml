@@ -377,7 +377,6 @@ let precedence_of_entry_type from = function
       n, let (lp,rp) = prec_assoc a in if b=Left then lp else rp
   | ETConstr (NumLevel n,InternalProd) -> n, Prec n
   | ETConstr (NextLevel,_) -> from, L
-  | ETOther ("constr","annot") -> 10, Prec 10
   | _ -> 0, E (* ?? *)
 
 (* Some breaking examples *)

@@ -1,2 +1,4 @@
 2 3
      : PAIR
+forall (A : Set) (le : A -> A -> Prop) (x y : A), le x y \/ le y x
+     : Prop

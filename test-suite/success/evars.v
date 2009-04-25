@@ -198,7 +198,6 @@ Goal forall x : nat, F1 x -> G1 x.
 refine (fun x H => proj2 (_ x H) _).
 Abort.
 
-
 (* An example from y-not that was failing in 8.2rc1 *)
 
 Fixpoint filter (A:nat->Set) (l:list (sigT A)) : list (sigT A) := 
@@ -207,7 +206,14 @@ Fixpoint filter (A:nat->Set) (l:list (sigT A)) : list (sigT A) :=
   | (existT k v)::l' => (existT _ k v):: (filter A l')
   end.
 
-(* Remark: the following example does not succeed any longer in 8.2 because,
+(* Bug #2000: used to raise Out of memory in 8.2 while it should fail by
+   lack of information on the conclusion of the type of j *)
+
+Goal True.
+set (p:=fun j => j (or_intror _ (fun a:True => j (or_introl _ a)))) || idtac.
+Abort.
+
+(* remark: the following example does not succeed any longer in 8.2 because,
    the algorithm is more general and does exclude a solution that it should
    exclude for typing reason. Handling of types and backtracking is still to
    be done
