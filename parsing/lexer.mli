@@ -23,7 +23,6 @@ exception Error of error
 val add_token : string * string -> unit
 val is_keyword : string -> bool
 
-val func : char Stream.t -> (string * string) Stream.t * (int -> loc)
 val location_function : int -> loc
 
 (* for coqdoc *)
@@ -33,10 +32,6 @@ val restore_location_table : location_table -> unit
 
 val check_ident : string -> unit
 val check_keyword : string -> unit
-
-val tparse : string * string -> ((string * string) Stream.t -> string) option
-
-val token_text : string * string -> string
 
 type frozen_t
 val freeze : unit -> frozen_t
@@ -50,3 +45,7 @@ val restore_com_state: com_state -> unit
 val set_xml_output_comment : (string -> unit) -> unit
 
 val terminal : string -> string * string
+
+(* The lexer of Coq *)
+
+val lexer : Compat.lexer

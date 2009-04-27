@@ -46,6 +46,7 @@ open Inductiveops
 open Syntax_def
 open Pretyping
 open Pretyping.Default
+open Extrawit
 open Pcoq
 
 let safe_msgnl s =
@@ -1659,6 +1660,10 @@ let interp_message ist l =
      are raised now and not at printing time *)
   prlist (fun x -> spc () ++ x) (List.map (interp_message_token ist) l)
 
+let intro_pattern_list_of_Vlist loc env = function
+  | VList l -> List.map (fun a -> loc,coerce_to_intro_pattern env a) l
+  | _ -> raise Not_found
+
 let rec interp_intro_pattern ist gl = function
   | loc, IntroOrAndPattern l ->
       loc, IntroOrAndPattern (interp_or_and_intro_pattern ist gl l)
@@ -1670,7 +1675,14 @@ let rec interp_intro_pattern ist gl = function
       as x -> x
 
 and interp_or_and_intro_pattern ist gl =
-  List.map (List.map (interp_intro_pattern ist gl))
+  List.map (interp_intro_pattern_list_as_list ist gl)
+
+and interp_intro_pattern_list_as_list ist gl = function
+  | [loc,IntroIdentifier id] as l ->
+      (try intro_pattern_list_of_Vlist loc (pf_env gl) (List.assoc id ist.lfun)
+       with Not_found | CannotCoerceTo _ ->
+	List.map (interp_intro_pattern ist gl) l)
+  | l -> List.map (interp_intro_pattern ist gl) l
 
 let interp_in_hyp_as ist gl (id,ipat) =
   (interp_hyp ist gl id,Option.map (interp_intro_pattern ist gl) ipat)
@@ -2216,7 +2228,7 @@ and interp_tactic ist tac gl =
 and interp_atomic ist gl = function
   (* Basic tactics *)
   | TacIntroPattern l ->
-      h_intro_patterns (List.map (interp_intro_pattern ist gl) l)
+      h_intro_patterns (interp_intro_pattern_list_as_list ist gl l)
   | TacIntrosUntil hyp ->
       h_intros_until (interp_quantified_hypothesis ist hyp)
   | TacIntroMove (ido,hto) ->
@@ -2374,9 +2386,8 @@ and interp_atomic ist gl = function
 	VIntroPattern 
 	  (snd (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x)))
     | IdentArgType b ->
-        VIntroPattern 
-	  (IntroIdentifier
-              (interp_fresh_ident ist gl (out_gen (globwit_ident_gen b) x)))
+	value_of_ident (interp_fresh_ident ist gl
+	  (out_gen (globwit_ident_gen b) x))
     | VarArgType ->
         mk_hyp_value ist gl (out_gen globwit_var x)
     | RefArgType -> 
@@ -2405,6 +2416,10 @@ and interp_atomic ist gl = function
     | List0ArgType IntOrVarArgType -> 
         let wit = wit_list0 globwit_int_or_var in
         VList (List.map (mk_int_or_var_value ist) (out_gen wit x))
+    | List0ArgType (IdentArgType b) -> 
+        let wit = wit_list0 (globwit_ident_gen b) in
+	let mk_ident x = value_of_ident (interp_fresh_ident ist gl x) in
+        VList (List.map mk_ident (out_gen wit x))
     | List1ArgType ConstrArgType -> 
         let wit = wit_list1 globwit_constr in
         VList (List.map (mk_constr_value ist gl) (out_gen wit x))
@@ -2417,6 +2432,10 @@ and interp_atomic ist gl = function
     | List1ArgType IntOrVarArgType -> 
         let wit = wit_list1 globwit_int_or_var in
         VList (List.map (mk_int_or_var_value ist) (out_gen wit x))
+    | List1ArgType (IdentArgType b) -> 
+        let wit = wit_list1 (globwit_ident_gen b) in
+	let mk_ident x = value_of_ident (interp_fresh_ident ist gl x) in
+        VList (List.map mk_ident (out_gen wit x))
     | StringArgType | BoolArgType
     | QuantHypArgType | RedExprArgType 
     | OpenConstrArgType _ | ConstrWithBindingsArgType 
@@ -2840,7 +2859,7 @@ let make_absolute_name ident repl =
   try 
     let id, kn = 
       if repl then None, Nametab.locate_tactic (snd (qualid_of_reference ident))
-      else let id = Pcoq.coerce_global_to_id ident in
+      else let id = coerce_reference_to_id ident in
 	     Some id, Lib.make_kn id 
     in
       if Gmap.mem kn !mactab then

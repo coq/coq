@@ -16,13 +16,13 @@ open Pp
 open Util
 open Names
 open Topconstr
+open Extend
 open Vernacexpr
 open Pcoq
 open Decl_mode
 open Tactic
 open Decl_kinds
 open Genarg
-open Extend
 open Ppextend
 open Goptions
 
@@ -471,17 +471,17 @@ GEXTEND Gram
       | IDENT "Canonical"; IDENT "Structure"; qid = global ->
 	  VernacCanonical qid
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
-          let s = coerce_global_to_id qid in
+          let s = coerce_reference_to_id qid in
 	  VernacDefinition 
 	    ((Global,false,CanonicalStructure),(dummy_loc,s),d,
 	     (fun _ -> Recordops.declare_canonical_structure))
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
-          let s = coerce_global_to_id qid in
+          let s = coerce_reference_to_id qid in
 	  VernacDefinition ((use_locality_exp (),false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
-           let s = coerce_global_to_id qid in
+           let s = coerce_reference_to_id qid in
 	  VernacDefinition ((enforce_locality_exp (),false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
@@ -851,15 +851,16 @@ GEXTEND Gram
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> ETName | IDENT "global" -> ETReference
-      | IDENT "bigint" -> ETBigint
+      | IDENT "bigint" -> ETBigint 
     ] ]
   ;
   opt_scope:
     [ [ "_" -> None | sc = IDENT -> Some sc ] ]
   ;
   production_item:
-    [ [ s = ne_string -> VTerm s
-      | nt = IDENT; po = OPT [ "("; p = ident; ")" -> p ] -> 
-	  VNonTerm (loc,nt,po) ] ]
+    [ [ s = ne_string -> TacTerm s
+      | nt = IDENT; 
+        po = OPT [ "("; p = ident; sep = [ -> "" | ","; sep = STRING -> sep ]; 
+                   ")" -> (p,sep) ] -> TacNonTerm (loc,nt,po) ] ]
   ;
 END

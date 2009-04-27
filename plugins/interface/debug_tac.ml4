@@ -9,6 +9,7 @@ open Util;;
 open Proof_type;;
 open Tacexpr;;
 open Genarg;;
+open Extrawit;;
 
 let pr_glob_tactic = Pptactic.pr_glob_tactic (Global.env())
 
@@ -239,9 +240,9 @@ and checked_then: report_holder -> glob_tactic_expr -> glob_tactic_expr -> tacti
    by the list of integers given as extra arguments.
  *)
 
-let rawwit_main_tactic = Pcoq.rawwit_tactic Pcoq.tactic_main_level
-let globwit_main_tactic = Pcoq.globwit_tactic Pcoq.tactic_main_level
-let wit_main_tactic = Pcoq.wit_tactic Pcoq.tactic_main_level
+let rawwit_main_tactic = rawwit_tactic tactic_main_level
+let globwit_main_tactic = globwit_tactic tactic_main_level
+let wit_main_tactic = wit_tactic tactic_main_level
 
 
 let on_then = function [t1;t2;l] ->

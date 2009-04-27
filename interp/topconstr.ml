@@ -890,6 +890,12 @@ let rec prod_constr_expr c = function
       List.fold_right (fun x b -> mkProdC([x],bk,t,b)) idl
       (prod_constr_expr c bl)
 
+let coerce_reference_to_id = function
+  | Ident (_,id) -> id
+  | Qualid (loc,_) ->
+      user_err_loc (loc, "coerce_reference_to_id",
+        str "This expression should be a simple identifier.")
+
 let coerce_to_id = function
   | CRef (Ident (loc,id)) -> (loc,id)
   | a -> user_err_loc
@@ -902,6 +908,7 @@ let coerce_to_name = function
   | a -> user_err_loc
         (constr_loc a,"coerce_to_name",
          str "This expression should be a name.")
+
 
 (* Used in correctness and interface *)
 

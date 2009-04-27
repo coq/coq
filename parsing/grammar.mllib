@@ -64,10 +64,12 @@ Tacexpr
 Lexer
 Extend
 Vernacexpr
+Extrawit
 Pcoq
 Q_util
 Q_coqast 
 
+Egrammar
 Argextend
 Tacextend
 Vernacextend

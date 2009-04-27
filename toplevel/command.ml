@@ -939,7 +939,7 @@ in
                        | InSet  -> "_rec_nodep"
                        | InType -> "_rect_nodep")
                 ) in
-            let newid = (string_of_id (Pcoq.coerce_global_to_id y))^suffix in
+            let newid = (string_of_id (coerce_reference_to_id y))^suffix in
             let newref = (dummy_loc,id_of_string newid) in
           ((newref,x,y,z)::l1),l2
       | EqualityScheme  x -> l1,(x::l2)

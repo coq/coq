@@ -15,20 +15,21 @@ open Genarg
 open Q_util
 open Q_coqast
 open Argextend
-
-type grammar_tactic_production_expr =
-  | TacTerm of string
-  | TacNonTerm of Util.loc * Genarg.argument_type * MLast.expr * string option
+open Pcoq
+open Extrawit
+open Egrammar
 
 let rec make_patt = function
   | [] -> <:patt< [] >>
-  | TacNonTerm(loc',_,_,Some p)::l ->
+  | GramNonTerminal(loc',_,_,Some p)::l ->
+      let p = Names.string_of_id p in
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
 let rec make_when loc = function
   | [] -> <:expr< True >>
-  | TacNonTerm(loc',t,_,Some p)::l ->
+  | GramNonTerminal(loc',t,_,Some p)::l ->
+      let p = Names.string_of_id p in
       let l = make_when loc l in
       let loc = join_loc loc' loc in
       let t = mlexpr_of_argtype loc' t in
@@ -37,14 +38,15 @@ let rec make_when loc = function
 
 let rec make_let e = function
   | [] -> e
-  | TacNonTerm(loc,t,_,Some p)::l ->
+  | GramNonTerminal(loc,t,_,Some p)::l ->
+      let p = Names.string_of_id p in
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
       let v = 
         (* Special case for tactics which must be stored in algebraic
            form to avoid marshalling closures and to be reprinted *)
-        if Pcoq.is_tactic_genarg t then
+        if is_tactic_genarg t then
           <:expr< ($v$, Tacinterp.eval_tactic $v$) >>
         else v in
       <:expr< let $lid:p$ = $v$ in $e$ >>
@@ -57,7 +59,7 @@ let add_clause s (pt,e) l =
 
 let rec extract_signature = function
   | [] -> []
-  | TacNonTerm (_,t,_,_) :: l -> t :: extract_signature l
+  | GramNonTerminal (_,t,_,_) :: l -> t :: extract_signature l
   | _::l -> extract_signature l
 
 let check_unicity s l =
@@ -75,13 +77,15 @@ let make_clauses s l =
 
 let rec make_args = function
   | [] -> <:expr< [] >>
-  | TacNonTerm(loc,t,_,Some p)::l ->
+  | GramNonTerminal(loc,t,_,Some p)::l ->
+      let p = Names.string_of_id p in
       <:expr< [ Genarg.in_gen $make_wit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
 
 let rec make_eval_tactic e = function
   | [] -> e
-  | TacNonTerm(loc,tag,_,Some p)::l when Pcoq.is_tactic_genarg tag ->
+  | GramNonTerminal(loc,tag,_,Some p)::l when is_tactic_genarg tag ->
+      let p = Names.string_of_id p in
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_eval_tactic e l in
         (* Special case for tactics which must be stored in algebraic
@@ -91,26 +95,27 @@ let rec make_eval_tactic e = function
 
 let rec make_fun e = function
   | [] -> e
-  | TacNonTerm(loc,_,_,Some p)::l -> 
+  | GramNonTerminal(loc,_,_,Some p)::l -> 
+      let p = Names.string_of_id p in
       <:expr< fun $lid:p$ -> $make_fun e l$ >>
   | _::l -> make_fun e l
 
-let mlexpr_of_grammar_production = function
-  | TacTerm s ->
-      <:expr< Egrammar.TacTerm $mlexpr_of_string s$ >>
-  | TacNonTerm (loc,nt,g,sopt) ->
-      <:expr< Egrammar.TacNonTerm $default_loc$ ($g$,$mlexpr_of_argtype loc nt$) $mlexpr_of_option mlexpr_of_string sopt$ >>
+let mlexpr_terminals_of_grammar_tactic_prod_item_expr = function
+  | GramTerminal s -> <:expr< Some $mlexpr_of_string s$ >>
+  | GramNonTerminal (loc,nt,_,sopt) -> <:expr< None >>
 
-let mlexpr_terminals_of_grammar_production = function
-  | TacTerm s -> <:expr< Some $mlexpr_of_string s$ >>
-  | TacNonTerm (loc,nt,g,sopt) -> <:expr< None >>
+let make_prod_item = function
+  | GramTerminal s -> <:expr< Egrammar.GramTerminal $str:s$ >>
+  | GramNonTerminal (loc,nt,g,sopt) ->
+      <:expr< Egrammar.GramNonTerminal $default_loc$ $mlexpr_of_argtype loc nt$
+      $mlexpr_of_prod_entry_key g$ $mlexpr_of_option mlexpr_of_ident sopt$ >>
 
 let mlexpr_of_clause =
-  mlexpr_of_list (fun (a,b) -> mlexpr_of_list mlexpr_of_grammar_production a)
+  mlexpr_of_list (fun (a,b) -> mlexpr_of_list make_prod_item a)
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
-  | TacNonTerm(loc',t,_,Some p)::l ->
+  | GramNonTerminal(loc',t,_,Some p)::l ->
       let l = make_tags loc l in
       let loc = join_loc loc' loc in
       let t = mlexpr_of_argtype loc' t in
@@ -120,7 +125,7 @@ let rec make_tags loc = function
 let make_one_printing_rule se (pt,e) =
   let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
-  let prods = mlexpr_of_list mlexpr_terminals_of_grammar_production pt in
+  let prods = mlexpr_of_list mlexpr_terminals_of_grammar_tactic_prod_item_expr pt in
   <:expr< ($se$, $make_tags loc pt$, ($level$, $prods$)) >>
 
 let make_printing_rule se = mlexpr_of_list (make_one_printing_rule se)
@@ -133,10 +138,10 @@ let rec contains_epsilon = function
   | ExtraArgType("hintbases") -> true
   | _ -> false
 let is_atomic = function
-  | TacTerm s :: l when 
+  | GramTerminal s :: l when 
       List.for_all (function
-          TacTerm _ -> false
-	| TacNonTerm(_,t,_,_) -> contains_epsilon t) l
+          GramTerminal _ -> false
+	| GramNonTerminal(_,t,_,_) -> contains_epsilon t) l
 	-> [s]
   | _ -> []
 
@@ -162,6 +167,7 @@ let declare_tactic loc s cl =
   <:str_item<
     declare
       open Pcoq;
+      open Extrawit;
       declare $list:hidden$ end;
       try
         let _=Tacinterp.add_tactic $se$ (fun [ $list:make_clauses s cl$ ]) in
@@ -189,7 +195,7 @@ EXTEND
   tacrule:
     [ [ "["; l = LIST1 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
         -> 
-	  if match List.hd l with TacNonTerm _ -> true | _ -> false then
+	  if match List.hd l with GramNonTerminal _ -> true | _ -> false then
 	    (* En attendant la syntaxe de tacticielles *)
 	    failwith "Tactic syntax must start with an identifier";
 	  (l,e)
@@ -197,14 +203,14 @@ EXTEND
   ;
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = Q_util.interp_entry_name loc e "" in
-        TacNonTerm (loc, t, g, Some s)
+        let t, g = interp_entry_name None e "" in
+        GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let t, g = Q_util.interp_entry_name loc e sep in
-        TacNonTerm (loc, t, g, Some s)
+        let t, g = interp_entry_name None e sep in
+        GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
 	if s = "" then Util.user_err_loc (loc,"",Pp.str "Empty terminal.");
-        TacTerm s
+        GramTerminal s
     ] ]
   ;
   END

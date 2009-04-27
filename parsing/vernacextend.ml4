@@ -15,28 +15,14 @@ open Genarg
 open Q_util
 open Q_coqast
 open Argextend
-
-type grammar_tactic_production_expr =
-  | VernacTerm of string
-  | VernacNonTerm of Util.loc * Genarg.argument_type * MLast.expr * string option
-let rec make_patt = function
-  | [] -> <:patt< [] >>
-  | VernacNonTerm(_,_,_,Some p)::l ->
-      <:patt< [ $lid:p$ :: $make_patt l$ ] >>
-  | _::l -> make_patt l
-
-let rec make_when loc = function
-  | [] -> <:expr< True >>
-  | VernacNonTerm(loc',t,_,Some p)::l ->
-      let l = make_when loc l in
-      let loc = join_loc loc' loc in
-      let t = mlexpr_of_argtype loc' t in
-      <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
-  | _::l -> make_when loc l
+open Tacextend
+open Pcoq
+open Egrammar
 
 let rec make_let e = function
   | [] -> e
-  | VernacNonTerm(loc,t,_,Some p)::l ->
+  | GramNonTerminal(loc,t,_,Some p)::l ->
+      let p = Names.string_of_id p in
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
@@ -46,11 +32,6 @@ let add_clause s (_,pt,e) l =
   let p = make_patt pt in
   let w = Some (make_when (MLast.loc_of_expr e) pt) in
   (p, w, make_let e pt)::l
-
-let rec extract_signature = function
-  | [] -> []
-  | VernacNonTerm (_,t,_,_) :: l -> t :: extract_signature l
-  | _::l -> extract_signature l
 
 let check_unicity s l =
   let l' = List.map (fun (_,l,_) -> extract_signature l) l in
@@ -65,22 +46,9 @@ let make_clauses s l =
     (<:patt< _ >>,None,<:expr< failwith "Vernac extension: cannot occur" >>) in
   List.fold_right (add_clause s) l [default]
 
-let rec make_fun e = function
-  | [] -> e
-  | VernacNonTerm(loc,_,_,Some p)::l -> 
-      <:expr< fun $lid:p$ -> $make_fun e l$ >>
-  | _::l -> make_fun e l
-
-let mlexpr_of_grammar_production = function
-  | VernacTerm s ->
-      <:expr< Egrammar.TacTerm $mlexpr_of_string s$ >>
-  | VernacNonTerm (loc,nt,g,sopt) ->
-      <:expr< Egrammar.TacNonTerm $default_loc$ ($g$,$mlexpr_of_argtype loc nt$) $mlexpr_of_option mlexpr_of_string sopt$ >>
-
 let mlexpr_of_clause =
   mlexpr_of_list
-    (fun (a,b,c) -> 
-      mlexpr_of_list mlexpr_of_grammar_production (VernacTerm a::b))
+    (fun (a,b,c) -> mlexpr_of_list make_prod_item (GramTerminal a::b))
 
 let declare_command loc s cl =
   let gl = mlexpr_of_clause cl in
@@ -88,6 +56,7 @@ let declare_command loc s cl =
   <:str_item<
     declare
       open Pcoq;
+      open Extrawit;
       try Vernacinterp.vinterp_add $mlexpr_of_string s$ (fun [ $list:icl$ ])
       with e -> Pp.pp (Cerrors.explain_exn e);
       Egrammar.extend_vernac_command_grammar $mlexpr_of_string s$ $gl$;
@@ -113,13 +82,13 @@ EXTEND
   ;
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = Q_util.interp_entry_name loc e "" in
-        VernacNonTerm (loc, t, g, Some s)
+        let t, g = interp_entry_name None e "" in
+        GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let t, g = Q_util.interp_entry_name loc e sep in
-        VernacNonTerm (loc, t, g, Some s)
+        let t, g = interp_entry_name None e sep in
+        GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
-        VernacTerm s
+        GramTerminal s
     ] ]
   ;
   END

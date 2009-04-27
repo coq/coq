@@ -200,6 +200,7 @@ val mkLambdaC : name located list * binder_kind * constr_expr * constr_expr -> c
 val mkLetInC : name located * constr_expr * constr_expr -> constr_expr
 val mkProdC : name located list * binder_kind * constr_expr * constr_expr -> constr_expr
 
+val coerce_reference_to_id : reference -> identifier
 val coerce_to_id : constr_expr -> identifier located
 val coerce_to_name : constr_expr -> name located
 

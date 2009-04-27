@@ -171,9 +171,17 @@ type inductive_expr =
 
 type module_binder = bool option * lident list * module_type_ast
 
-type grammar_production =
-  | VTerm of string
-  | VNonTerm of loc * string * Names.identifier option
+type grammar_tactic_prod_item_expr =
+  | TacTerm of string
+  | TacNonTerm of loc * string * (Names.identifier * string) option
+
+type syntax_modifier =
+  | SetItemLevel of string list * production_level
+  | SetLevel of int
+  | SetAssoc of Gramext.g_assoc
+  | SetEntryType of string * simple_constr_prod_entry_key
+  | SetOnlyParsing
+  | SetFormat of string located
 
 type proof_end =
   | Admitted
@@ -191,7 +199,7 @@ type vernac_expr =
   | VernacTimeout of int * vernac_expr
 
   (* Syntax *) 
-  | VernacTacticNotation of int * grammar_production list * raw_tactic_expr
+  | VernacTacticNotation of int * grammar_tactic_prod_item_expr list * raw_tactic_expr
   | VernacSyntaxExtension of locality_flag * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
   | VernacDelimiters of scope_name * lstring

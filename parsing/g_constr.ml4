@@ -80,9 +80,6 @@ let mk_fix(loc,kw,id,dcls) =
 let mk_single_fix (loc,kw,dcl) =
   let (id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
 
-let binder_constr =
-  create_constr_entry (get_univ "constr") "binder_constr"
-
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
 let lpar_id_coloneq =

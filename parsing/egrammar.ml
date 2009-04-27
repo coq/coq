@@ -12,6 +12,7 @@ open Pp
 open Util
 open Pcoq
 open Extend
+open Ppextend
 open Topconstr
 open Genarg
 open Libnames
@@ -55,10 +56,9 @@ let cases_pattern_expr_of_name (loc,na) = match na with
   | Anonymous -> CPatAtom (loc,None)
   | Name id -> CPatAtom (loc,Some (Ident (loc,id)))
 
-type prod_item =
-  | Term of Token.pattern
-  | NonTerm of constr_production_entry * 
-      (Names.identifier * constr_production_entry) option
+type grammar_constr_prod_item =
+  | GramConstrTerminal of Token.pattern
+  | GramConstrNonTerminal of constr_prod_entry_key * identifier option
 
 type 'a action_env = 'a list * 'a list list
 
@@ -111,10 +111,10 @@ let make_cases_pattern_action
   make ([],[]) (List.rev pil)
 
 let make_constr_prod_item univ assoc from forpat = function
-  | Term tok -> (Gramext.Stoken tok, None)
-  | NonTerm (nt, ovar) ->
-      let eobj = symbol_of_production assoc from forpat nt in
-      (eobj, ovar)
+  | GramConstrTerminal tok -> (Gramext.Stoken tok, None)
+  | GramConstrNonTerminal (nt, ovar) ->
+      let eobj = symbol_of_constr_prod_entry_key assoc from forpat nt in
+      (eobj, Option.map (fun x -> (x,nt)) ovar)
 
 let prepare_empty_levels entry (pos,p4assoc,name,reinit) =
   grammar_extend entry pos reinit [(name, p4assoc, [])]
@@ -139,11 +139,11 @@ let extend_constr (entry,level) (n,assoc) mkact forpat pt =
 let extend_constr_notation (n,assoc,ntn,rule) =
   (* Add the notation in constr *)
   let mkact loc env = CNotation (loc,ntn,env) in
-  let e = get_constr_entry false (ETConstr (n,())) in
+  let e = interp_constr_entry_key false (ETConstr (n,())) in
   extend_constr e (ETConstr(n,()),assoc) (make_constr_action mkact) false rule;
   (* Add the notation in cases_pattern *)
   let mkact loc env = CPatNotation (loc,ntn,env) in
-  let e = get_constr_entry true (ETConstr (n,())) in
+  let e = interp_constr_entry_key true (ETConstr (n,())) in
   extend_constr e (ETConstr (n,()),assoc) (make_cases_pattern_action mkact)
     true rule
 
@@ -169,22 +169,19 @@ let make_rule univ f g pt =
 (**********************************************************************)
 (** Grammar extensions declared at ML level                           *) 
 
-type grammar_tactic_production =
-  | TacTerm of string
-  | TacNonTerm of
-      loc * (Gram.te Gramext.g_symbol * argument_type) * string option
+type grammar_prod_item =
+  | GramTerminal of string
+  | GramNonTerminal of
+      loc * argument_type * Gram.te prod_entry_key * identifier option
 
 let make_prod_item = function
-  | TacTerm s -> (Gramext.Stoken (Lexer.terminal s), None)
-  | TacNonTerm (_,(nont,t), po) -> (nont, Option.map (fun p -> (p,t)) po)
+  | GramTerminal s -> (Gramext.Stoken (Lexer.terminal s), None)
+  | GramNonTerminal (_,t,e,po) ->
+      (symbol_of_prod_entry_key e, Option.map (fun p -> (p,t)) po)
 
 (* Tactic grammar extensions *)
 
-let tac_exts = ref []
-let get_extend_tactic_grammars () = !tac_exts
-
 let extend_tactic_grammar s gl =
-  tac_exts := (s,gl) :: !tac_exts;
   let univ = get_univ "tactic" in
   let mkact loc l = Tacexpr.TacExtend (loc,s,List.map snd l) in
   let rules = List.map (make_rule univ mkact make_prod_item) gl in
@@ -205,52 +202,6 @@ let extend_vernac_command_grammar s gl =
 (**********************************************************************)
 (** Grammar declaration for Tactic Notation (Coq level)               *) 
 
-(* Interpretation of the grammar entry names *)
-
-let find_index s t =
-  let t,n = repr_ident (id_of_string t) in
-  if s <> t or n = None then raise Not_found;
-  Option.get n
-
-let rec interp_entry_name up_level s =
-  let l = String.length s in
-  if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name up_level (String.sub s 3 (l-8)) in
-    List1ArgType t, Gramext.Slist1 g
-  else if l > 5 & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name up_level (String.sub s 0 (l-5)) in
-    List0ArgType t, Gramext.Slist0 g
-  else if l > 4 & String.sub s (l-4) 4 = "_opt" then
-    let t, g = interp_entry_name up_level (String.sub s 0 (l-4)) in
-    OptArgType t, Gramext.Sopt g
-  else
-    let s = if s = "hyp" then "var" else s in
-    try 
-      let i = find_index "tactic" s in
-      ExtraArgType s, 
-      if up_level<>5 && i=up_level then Gramext.Sself else
-      if up_level<>5 && i=up_level-1 then Gramext.Snext else
-      Gramext.Snterml(Pcoq.Gram.Entry.obj Tactic.tactic_expr,string_of_int i)
-    with Not_found ->
-    let e = 
-      (* Qualified entries are no longer in use *)
-      try get_entry (get_univ "tactic") s
-      with _ -> 
-      try get_entry (get_univ "prim") s
-      with _ ->
-      try get_entry (get_univ "constr") s
-      with _ -> error ("Unknown entry "^s^".")
-    in
-    let o = object_of_typed_entry e in
-    let t = type_of_typed_entry e in
-    t,Gramext.Snterm (Pcoq.Gram.Entry.obj o)
-
-let make_vprod_item n = function
-  | VTerm s -> (Gramext.Stoken (Lexer.terminal s), None)
-  | VNonTerm (loc, nt, po) ->
-      let (etyp, e) = interp_entry_name n nt in
-      e, Option.map (fun p -> (p,etyp)) po
-
 let get_tactic_entry n =
   if n = 0 then
     weaken_entry Tactic.simple_tactic, None
@@ -263,24 +214,23 @@ let get_tactic_entry n =
 
 (* Declaration of the tactic grammar rule *)
 
-let head_is_ident = function VTerm _::_ -> true | _ -> false
+let head_is_ident = function GramTerminal _::_ -> true | _ -> false
 
 let add_tactic_entry (key,lev,prods,tac) =
   let univ = get_univ "tactic" in
   let entry, pos = get_tactic_entry lev in
-  let mkprod = make_vprod_item lev in
   let rules = 
     if lev = 0 then begin
       if not (head_is_ident prods) then
 	error "Notation for simple tactic must start with an identifier.";
       let mkact s tac loc l =
 	(TacAlias(loc,s,l,tac):raw_atomic_tactic_expr) in
-      make_rule univ (mkact key tac) mkprod prods
+      make_rule univ (mkact key tac) make_prod_item prods
     end
     else
       let mkact s tac loc l = 
 	(TacAtom(loc,TacAlias(loc,s,l,tac)):raw_tactic_expr) in
-      make_rule univ (mkact key tac) mkprod prods in
+      make_rule univ (mkact key tac) make_prod_item prods in
   synchronize_level_positions ();
   grammar_extend entry pos None [(None, None, List.rev [rules])]
 
@@ -288,13 +238,13 @@ let add_tactic_entry (key,lev,prods,tac) =
 (** State of the grammar extensions                                   *)
 
 type notation_grammar = 
-    int * Gramext.g_assoc option * notation * prod_item list
+    int * Gramext.g_assoc option * notation * grammar_constr_prod_item list
 
 type all_grammar_command =
-  | Notation of Notation.level * notation_grammar
+  | Notation of (precedence * tolerability list) * notation_grammar
   | TacticGrammar of
-      (string * int * grammar_production list * 
-        (Names.dir_path * Tacexpr.glob_tactic_expr))
+      (string * int * grammar_prod_item list *
+         (dir_path * Tacexpr.glob_tactic_expr))
 
 let (grammar_state : all_grammar_command list ref) = ref []
 
@@ -303,14 +253,6 @@ let extend_grammar gram =
   | Notation (_,a) -> extend_constr_notation a
   | TacticGrammar g -> add_tactic_entry g);
   grammar_state := gram :: !grammar_state
-
-let reset_extend_grammars_v8 () =
-  let te = List.rev !tac_exts in
-  let tv = List.rev !vernac_exts in
-  tac_exts := [];
-  vernac_exts := [];
-  List.iter (fun (s,gl) -> print_string ("Resinstalling "^s); flush stdout; extend_tactic_grammar s gl) te;
-  List.iter (fun (s,gl) -> extend_vernac_command_grammar s gl) tv
 
 let recover_notation_grammar ntn prec =
   let l = map_succeed (function

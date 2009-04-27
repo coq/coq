@@ -112,6 +112,7 @@ Tactic_debug
 Decl_mode
 Ppconstr
 Extend
+Extrawit
 Pcoq
 Printer
 Pptactic

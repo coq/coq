@@ -694,7 +694,7 @@ let xlate_with_names = function
     None -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
   | Some fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
 
-let rawwit_main_tactic = Pcoq.rawwit_tactic Pcoq.tactic_main_level
+let rawwit_main_tactic = Extrawit.rawwit_tactic Extrawit.tactic_main_level
 
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
   function
@@ -1342,9 +1342,9 @@ and coerce_genarg_to_TARG x =
       	(CT_coerce_FORMULA_to_SCOMMENT_CONTENT(xlate_formula
 					 (snd (out_gen
 					    (rawwit_open_constr_gen b) x))))
-  | ExtraArgType s as y when Pcoq.is_tactic_genarg y ->
-      let n = Option.get (Pcoq.tactic_genarg_level s) in
-      let t = xlate_tactic (out_gen (Pcoq.rawwit_tactic n) x) in
+  | ExtraArgType s as y when Extrawit.is_tactic_genarg y ->
+      let n = Option.get (Extrawit.tactic_genarg_level s) in
+      let t = xlate_tactic (out_gen (Extrawit.rawwit_tactic n) x) in
       CT_coerce_TACTIC_COM_to_TARG t
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
   | BindingsArgType -> xlate_error "TODO: generic with bindings"
@@ -1437,9 +1437,9 @@ let coerce_genarg_to_VARG x =
       (CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula (out_gen rawwit_constr x)))
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
-  | ExtraArgType s as y when Pcoq.is_tactic_genarg y ->
-      let n = Option.get (Pcoq.tactic_genarg_level s) in
-      let t = xlate_tactic (out_gen (Pcoq.rawwit_tactic n) x) in
+  | ExtraArgType s as y when Extrawit.is_tactic_genarg y ->
+      let n = Option.get (Extrawit.tactic_genarg_level s) in
+      let t = xlate_tactic (out_gen (Extrawit.rawwit_tactic n) x) in
       CT_coerce_TACTIC_OPT_to_VARG (CT_coerce_TACTIC_COM_to_TACTIC_OPT t)
   | OpenConstrArgType _ -> xlate_error "TODO: generic open constr"
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
@@ -1576,24 +1576,24 @@ let xlate_level = function
   | Extend.NextLevel -> CT_next_level;;
 
 let xlate_syntax_modifier = function
-    Extend.SetItemLevel((s::sl), level) ->
+    SetItemLevel((s::sl), level) ->
       CT_set_item_level
 	(CT_id_ne_list(CT_ident s, List.map (fun s -> CT_ident s) sl),
 	 xlate_level level)
-  | Extend.SetItemLevel([], _) -> assert false
-  | Extend.SetLevel level -> CT_set_level (CT_int level)
-  | Extend.SetAssoc Gramext.LeftA -> CT_lefta
-  | Extend.SetAssoc Gramext.RightA -> CT_righta
-  | Extend.SetAssoc Gramext.NonA -> CT_nona
-  | Extend.SetEntryType(x,typ) ->
+  | SetItemLevel([], _) -> assert false
+  | SetLevel level -> CT_set_level (CT_int level)
+  | SetAssoc Gramext.LeftA -> CT_lefta
+  | SetAssoc Gramext.RightA -> CT_righta
+  | SetAssoc Gramext.NonA -> CT_nona
+  | SetEntryType(x,typ) ->
       CT_entry_type(CT_ident x,
 		 match typ with
 		     Extend.ETName -> CT_ident "ident"
 		   | Extend.ETReference -> CT_ident "global"
 		   | Extend.ETBigint -> CT_ident "bigint"
 		   | _ -> xlate_error "syntax_type not parsed")
-  | Extend.SetOnlyParsing -> CT_only_parsing
-  | Extend.SetFormat(_,s) -> CT_format(CT_string s);;
+  | SetOnlyParsing -> CT_only_parsing
+  | SetFormat(_,s) -> CT_format(CT_string s);;
 
 
 let rec xlate_module_type = function

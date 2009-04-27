@@ -73,7 +73,7 @@ let pr_raw_tactic tac = pr_raw_tactic (Global.env()) tac
 
 let rec extract_signature = function
   | [] -> []
-  | Egrammar.TacNonTerm (_,(_,t),_) :: l -> t :: extract_signature l
+  | Egrammar.GramNonTerminal (_,t,_,_) :: l -> t :: extract_signature l
   | _::l -> extract_signature l
 
 let rec match_vernac_rule tys = function
@@ -119,9 +119,11 @@ let strip_meta id =
   else id
 
 let pr_production_item = function
-  | VNonTerm (loc,nt,Some p) -> str nt ++ str"(" ++ pr_id (strip_meta p) ++ str")"
-  | VNonTerm (loc,nt,None) -> str nt
-  | VTerm s -> qs s
+  | TacNonTerm (loc,nt,Some (p,sep)) ->
+      let pp_sep = if sep <> "" then str "," ++ quote (str sep) else mt () in
+      str nt ++ str"(" ++ pr_id (strip_meta p) ++ pp_sep ++ str")"
+  | TacNonTerm (loc,nt,None) -> str nt
+  | TacTerm s -> qs s
 
 let pr_comment pr_c = function
   | CommentConstr c -> pr_c c
@@ -811,7 +813,7 @@ let rec pr_vernac = function
 	++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
 	let idl = List.map Option.get (List.filter (fun x -> not (x=None)) idl)in
         pr_raw_tactic_env 
-	  (idl @ List.map coerce_global_to_id 
+	  (idl @ List.map coerce_reference_to_id 
 	    (List.map (fun (x, _, _) -> x) (List.filter (fun (_, redef, _) -> not redef) l)))
 	  (Global.env())
 	  body in
@@ -945,15 +947,15 @@ and pr_extend s cl =
     let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
     let start,rl,cl =
       match rl with
-      | Egrammar.TacTerm s :: rl -> str s, rl, cl
-      | Egrammar.TacNonTerm _ :: rl -> pr_arg (List.hd cl), rl, List.tl cl 
+      | Egrammar.GramTerminal s :: rl -> str s, rl, cl
+      | Egrammar.GramNonTerminal _ :: rl -> pr_arg (List.hd cl), rl, List.tl cl 
       | [] -> anomaly "Empty entry" in
     let (pp,_) =
       List.fold_left
         (fun (strm,args) pi ->
           let pp,args = match pi with
-          | Egrammar.TacNonTerm _ -> (pr_arg (List.hd args), List.tl args)
-          | Egrammar.TacTerm s -> (str s, args) in
+          | Egrammar.GramNonTerminal _ -> (pr_arg (List.hd args), List.tl args)
+          | Egrammar.GramTerminal s -> (str s, args) in
           (strm ++ spc() ++ pp), args)
         (start,cl) rl in
     hov 1 pp

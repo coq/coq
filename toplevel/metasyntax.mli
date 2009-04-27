@@ -24,7 +24,7 @@ val add_token_obj : string -> unit
 (* Adding a tactic notation in the environment *)
 
 val add_tactic_notation : 
-  int * grammar_production list * raw_tactic_expr -> unit
+  int * grammar_tactic_prod_item_expr list * raw_tactic_expr -> unit
 
 (* Adding a (constr) notation in the environment*)
 

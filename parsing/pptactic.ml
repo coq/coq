@@ -555,12 +555,6 @@ let pr_autoarg_usingTDB = function
   | true -> spc () ++ str "using tdb"
   | false -> mt ()
 
-let rec pr_tacarg_using_rule pr_gen = function
-  | Egrammar.TacTerm s :: l, al -> spc () ++ str s ++ pr_tacarg_using_rule pr_gen (l,al)
-  | Egrammar.TacNonTerm _ :: l, a :: al -> pr_gen a ++ pr_tacarg_using_rule pr_gen (l,al)
-  | [], [] -> mt ()
-  | _ -> failwith "Inconsistent arguments of extended tactic"
-
 let pr_then () = str ";"
 
 let ltop = (5,E)
@@ -1086,7 +1080,7 @@ let _ = Tactic_debug.set_match_rule_printer
   (fun rl ->
     pr_match_rule false (pr_glob_tactic (Global.env())) pr_constr_pattern rl)
 
-open Pcoq
+open Extrawit
 
 let pr_tac_polymorphic n _ _ prtac = prtac (n,E)
 

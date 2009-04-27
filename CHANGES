@@ -18,6 +18,10 @@ Tactics
 - Tactic "tauto" now proves classical tautologies as soon as classical logic
   (i.e. library Classical_Prop or Classical) is loaded.
 
+Tactic Language
+
+- Support for parsing non-empty lists with separators in tactic notations.
+
 Vernacular commands
 
 - New command "Timeout <n> <command>." interprets a command and a timeout

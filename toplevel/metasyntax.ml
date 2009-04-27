@@ -28,7 +28,7 @@ open Notation
 (**********************************************************************)
 (* Tokens                                                             *)
 
-let cache_token (_,s) = Compat.using Pcoq.lexer ("", s)
+let cache_token (_,s) = add_token ("", s)
 
 let (inToken, outToken) =
   declare_object {(default_object "TOKEN") with
@@ -43,15 +43,20 @@ let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 (**********************************************************************)
 (* Tactic Notation                                                    *)
 
-let make_terminal_status = function
-  | VTerm s -> Some s
-  | VNonTerm _ -> None
+let interp_prod_item lev = function
+  | TacTerm s -> GramTerminal s
+  | TacNonTerm (loc, nt, po) ->
+      let sep = match po with Some (_,sep) -> sep | _ -> "" in
+      let (etyp, e) = interp_entry_name (Some lev) nt sep in
+      GramNonTerminal (loc, etyp, e, Option.map fst po)
 
-let rec make_tags lev = function
-  | VTerm s :: l -> make_tags lev l
-  | VNonTerm (loc, nt, po) :: l ->
-      let (etyp, _) = Egrammar.interp_entry_name lev nt in
-      etyp :: make_tags lev l
+let make_terminal_status = function
+  | GramTerminal s -> Some s
+  | GramNonTerminal _ -> None
+
+let rec make_tags = function
+  | GramTerminal s :: l -> make_tags l
+  | GramNonTerminal (loc, etyp, _, po) :: l -> etyp :: make_tags l
   | [] -> []
 
 let cache_tactic_notation (_,(pa,pp)) =
@@ -73,11 +78,11 @@ let (inTacticGrammar, outTacticGrammar) =
        export_function = (fun x -> Some x)}
 
 let cons_production_parameter l = function
-  | VTerm _ -> l
-  | VNonTerm (_,_,ido) -> Option.List.cons ido l
+  | GramTerminal _ -> l
+  | GramNonTerminal (_,_,_,ido) -> Option.List.cons ido l
 
 let rec tactic_notation_key = function
-  | VTerm id :: _ -> id
+  | GramTerminal id :: _ -> id
   | _ :: l -> tactic_notation_key l
   | [] -> "terminal_free_notation"
 
@@ -86,7 +91,8 @@ let rec next_key_away key t =
   else key
 
 let add_tactic_notation (n,prods,e) =
-  let tags = make_tags n prods in
+  let prods = List.map (interp_prod_item n) prods in
+  let tags = make_tags prods in
   let key = next_key_away (tactic_notation_key prods) tags in
   let pprule = (key,tags,(n,List.map make_terminal_status prods)) in
   let ids = List.fold_left cons_production_parameter [] prods in
@@ -570,19 +576,19 @@ let is_not_small_constr = function
   | _ -> false
 
 let rec define_keywords_aux = function
-    NonTerm(_,Some(_,e)) as n1 :: Term("IDENT",k) :: l
+    GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal("IDENT",k) :: l
       when is_not_small_constr e ->
       message ("Defining '"^k^"' as keyword");
       Lexer.add_token("",k);
-      n1 :: Term("",k) :: define_keywords_aux l
+      n1 :: GramConstrTerminal("",k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
   | [] -> []
 
 let define_keywords = function
-    Term("IDENT",k)::l ->
+    GramConstrTerminal("IDENT",k)::l ->
       message ("Defining '"^k^"' as keyword");
       Lexer.add_token("",k);
-      Term("",k) :: define_keywords_aux l
+      GramConstrTerminal("",k) :: define_keywords_aux l
   | l -> define_keywords_aux l
 
 let make_production etyps symbols =
@@ -591,9 +597,9 @@ let make_production etyps symbols =
       (fun t l -> match t with
         | NonTerminal m ->
 	    let typ = List.assoc m etyps in
-	    NonTerm (typ, Some (m,typ)) :: l
+	    GramConstrNonTerminal (typ, Some m) :: l
         | Terminal s ->
-	    Term (terminal s) :: l
+	    GramConstrTerminal (terminal s) :: l
         | Break _ ->
             l
         | SProdList (x,sl) ->
@@ -606,7 +612,7 @@ let make_production etyps symbols =
               | _ ->
                   error "Component of recursive patterns in notation must be constr." in
             let typ = ETConstrList (y,sl) in
-            NonTerm (typ, Some (x,typ)) :: l)
+            GramConstrNonTerminal (typ, Some x) :: l)
       symbols [] in
   define_keywords prod
 

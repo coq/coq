@@ -23,7 +23,6 @@ let join_loc loc1 loc2 =
  else Stdpp.encl_loc loc1 loc2
 type token = string*string
 type lexer = token Token.glexer
-let using l x = l.Token.tok_using x
 end
 ELSE IFDEF OCAML308 THEN
 module M = struct
@@ -43,7 +42,6 @@ let join_loc loc1 loc2 =
  else (fst loc1, snd loc2) 
 type token = Token.t
 type lexer = Token.lexer
-let using l x = l.Token.using x
 end
 ELSE 
 module M = struct
@@ -56,7 +54,6 @@ let join_loc loc1 loc2 =
  else (fst loc1, snd loc2)
 type token = Token.t
 type lexer = Token.lexer
-let using l x = l.Token.using x
 end
 END
 END
@@ -68,4 +65,3 @@ let unloc = M.unloc
 let join_loc = M.join_loc
 type token = M.token
 type lexer = M.lexer
-let using = M.using

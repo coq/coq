@@ -2,6 +2,10 @@
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
 
+** Cleaning in parsing extensions (commit )
+
+Many moves and renamings, one new file (Extrawit, that contains wit_tactic).
+
 ** Cleaning in tactical.mli
 
 tclLAST_HYP -> onLastHyp

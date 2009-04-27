@@ -400,12 +400,10 @@ let _ =
     e -> Pp.pp (Cerrors.explain_exn e)
 let _ =
   extend_vernac_command_grammar "PrintConstr"
-    [[TacTerm "PrintConstr";
-      TacNonTerm
-        (dummy_loc,
-         (Gramext.Snterm (Pcoq.Gram.Entry.obj Constr.constr),
-          ConstrArgType),
-         Some "c")]]
+    [[GramTerminal "PrintConstr";
+      GramNonTerminal
+        (dummy_loc,ConstrArgType,Extend.Aentry ("constr","constr"),
+	 Some (Names.id_of_string "c"))]]
 
 let _ =
   try
@@ -419,12 +417,10 @@ let _ =
     e -> Pp.pp (Cerrors.explain_exn e)
 let _ =
   extend_vernac_command_grammar "PrintPureConstr"
-    [[TacTerm "PrintPureConstr";
-      TacNonTerm
-        (dummy_loc,
-         (Gramext.Snterm (Pcoq.Gram.Entry.obj Constr.constr),
-          ConstrArgType),
-         Some "c")]]
+    [[GramTerminal "PrintPureConstr";
+      GramNonTerminal
+        (dummy_loc,ConstrArgType,Extend.Aentry ("constr","constr"),
+	 Some (Names.id_of_string "c"))]]
 
 (* Setting printer of unbound global reference *)
 open Names

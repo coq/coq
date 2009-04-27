@@ -19,54 +19,27 @@ open Rawterm
 open Topconstr
 open Genarg
 open Tacexpr
+open Extrawit
 open Ppextend
 
-(* The lexer of Coq *)
-
-(* Note: removing a token.
-   We do nothing because [remove_token] is called only when removing a grammar
-   rule with [Grammar.delete_rule]. The latter command is called only when
-   unfreezing the state of the grammar entries (see GRAMMAR summary, file
-   env/metasyntax.ml). Therefore, instead of removing tokens one by one,
-   we unfreeze the state of the lexer. This restores the behaviour of the
-   lexer. B.B. *)
+(* The parser of Coq *)
 
 IFDEF CAMLP5 THEN 
-
-let lexer = {
-  Token.tok_func = Lexer.func;
-  Token.tok_using = Lexer.add_token;
-  Token.tok_removing = (fun _ -> ());
-  Token.tok_match = Token.default_match;
-  (* Token.parse = Lexer.tparse; *)
-  Token.tok_comm = None;
-  Token.tok_text = Lexer.token_text }
 
 module L =
   struct
     type te = string * string
-    let lexer = lexer
+    let lexer = Lexer.lexer
   end
-
-(* The parser of Coq *)
 
 module G = Grammar.GMake(L)
 
 ELSE 
 
-let lexer = {
-  Token.func = Lexer.func;
-  Token.using = Lexer.add_token;
-  Token.removing = (fun _ -> ());
-  Token.tparse = Lexer.tparse;
-  Token.text = Lexer.token_text }
-
 module L =
   struct
-    let lexer = lexer
+    let lexer = Lexer.lexer
   end
-
-(* The parser of Coq *)
 
 module G = Grammar.Make(L)
 
@@ -134,12 +107,17 @@ end
 
 open Gramtypes
 
+type camlp4_rule =
+    Compat.token Gramext.g_symbol list * Gramext.g_action
+
+type camlp4_entry_rules =
+    (* first two parameters are name and assoc iff a level is created *)
+    string option * Gramext.g_assoc option * camlp4_rule list
+
 type ext_kind =
   | ByGrammar of
-      grammar_object G.Entry.e * Gramext.position option *
-      (string option * Gramext.g_assoc option *
-       (Compat.token Gramext.g_symbol list * Gramext.g_action) list) list *
-        Gramext.g_assoc option
+      grammar_object G.Entry.e * Gramext.position option * 
+      camlp4_entry_rules list * Gramext.g_assoc option
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
 
 let camlp4_state = ref []
@@ -212,14 +190,14 @@ let map_entry f en =
 let parse_string f x =
   let strm = Stream.of_string x in Gram.Entry.parse f (Gram.parsable strm)
 
-type gram_universe = (string, typed_entry) Hashtbl.t
+type gram_universe = string * (string, typed_entry) Hashtbl.t
 
 let trace = ref false
 
-(* The univ_tab is not part of the state. It contains all the grammar that
+(* The univ_tab is not part of the state. It contains all the grammars that
    exist or have existed before in the session. *)
 
-let univ_tab = (Hashtbl.create 7 : (string, string * gram_universe) Hashtbl.t)
+let univ_tab = (Hashtbl.create 7 : (string, gram_universe) Hashtbl.t)
 
 let create_univ s =
   let u = s, Hashtbl.create 29 in Hashtbl.add univ_tab s u; u
@@ -229,48 +207,26 @@ let uconstr = create_univ "constr"
 let utactic = create_univ "tactic"
 let uvernac = create_univ "vernac"
 
-let create_univ_if_new s =
-  (* compatibilite *)
-  let s = if s = "command" then (warning "'command' grammar universe is obsolete; use name 'constr' instead"; "constr") else s in
+let get_univ s = 
   try
     Hashtbl.find univ_tab s
-  with Not_found -> 
-    if !trace then begin 
-      Printf.eprintf "[Creating univ %s]\n" s; flush stderr; () 
-    end;
-    let u = s, Hashtbl.create 29 in Hashtbl.add univ_tab s u; u
+  with Not_found ->
+    anomaly ("Unknown grammar universe: "^s)
 
-let get_univ = create_univ_if_new
+let get_entry (u, utab) s = Hashtbl.find utab s 
 
-let get_entry (u, utab) s =
-  try
-    Hashtbl.find utab s 
-  with Not_found -> 
+let get_entry_type (u, utab) s =
+  try 
+    type_of_typed_entry (get_entry (u, utab) s)
+  with Not_found ->
     errorlabstrm "Pcoq.get_entry"
       (str "Unknown grammar entry " ++ str u ++ str ":" ++ str s ++ str ".")
 
 let new_entry etyp (u, utab) s =
+  if !trace then (Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr);
   let ename = u ^ ":" ^ s in
   let e = in_typed_entry etyp (Gram.Entry.create ename) in
   Hashtbl.add utab s e; e
-
-let entry_type (u, utab) s =
-  try
-    let e = Hashtbl.find utab s in
-    Some (type_of_typed_entry e)
-  with Not_found -> None
-
-let get_entry_type (u,n) =  type_of_typed_entry (get_entry (get_univ u) n)
-
-let create_entry_if_new (u, utab) s etyp =
-  try
-    if type_of_typed_entry (Hashtbl.find utab s) <> etyp then
-      failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type")
-  with Not_found ->
-    if !trace then begin
-      Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr; ()
-    end;
-    let _ = new_entry etyp (u, utab) s in ()
 
 let create_entry (u, utab) s etyp =
   try
@@ -279,105 +235,13 @@ let create_entry (u, utab) s etyp =
       failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
     e
   with Not_found ->
-    if !trace then begin
-      Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr; ()
-    end;
     new_entry etyp (u, utab) s
 
-let create_constr_entry u s =
-  outGramObj rawwit_constr (create_entry u s ConstrArgType)
+let create_constr_entry s =
+  outGramObj rawwit_constr (create_entry uconstr s ConstrArgType)
 
-let create_generic_entry s wit = 
-  let (u,utab) = utactic in
-  let etyp = unquote wit in
-  try
-    let e = Hashtbl.find utab s in
-    if type_of_typed_entry e <> etyp then
-      failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
-    outGramObj wit e
-  with Not_found ->
-    if !trace then begin
-      Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr; ()
-    end;
-  let e = Gram.Entry.create s in
-  Hashtbl.add utab s (inGramObj wit e); e
-
-let get_generic_entry s =
-  let (u,utab) = utactic in
-  try
-    object_of_typed_entry (Hashtbl.find utab s)
-  with Not_found -> 
-    error ("Unknown grammar entry "^u^":"^s^".")
-
-let get_generic_entry_type (u,utab) s =
-  try type_of_typed_entry (Hashtbl.find utab s)
-  with Not_found -> 
-    error ("Unknown grammar entry "^u^":"^s^".")
-
-let force_entry_type (u, utab) s etyp =
-  try
-    let entry = Hashtbl.find utab s in
-    let extyp = type_of_typed_entry entry in
-    if etyp = extyp then 
-      entry
-    else begin
-      prerr_endline
-        ("Grammar entry " ^ u ^ ":" ^ s ^
-         " redefined with another type;\n older entry hidden.");
-      Hashtbl.remove utab s;
-      new_entry etyp (u, utab) s
-    end
-  with Not_found -> 
-    new_entry etyp (u, utab) s
-
-(* Tactics as arguments *)
-
-let tactic_main_level = 5
-
-let (wit_tactic0,globwit_tactic0,rawwit_tactic0) = create_arg "tactic0"
-let (wit_tactic1,globwit_tactic1,rawwit_tactic1) = create_arg "tactic1"
-let (wit_tactic2,globwit_tactic2,rawwit_tactic2) = create_arg "tactic2"
-let (wit_tactic3,globwit_tactic3,rawwit_tactic3) = create_arg "tactic3"
-let (wit_tactic4,globwit_tactic4,rawwit_tactic4) = create_arg "tactic4"
-let (wit_tactic5,globwit_tactic5,rawwit_tactic5) = create_arg "tactic5"
-
-let wit_tactic = function
-  | 0 -> wit_tactic0
-  | 1 -> wit_tactic1
-  | 2 -> wit_tactic2
-  | 3 -> wit_tactic3
-  | 4 -> wit_tactic4
-  | 5 -> wit_tactic5
-  | n -> anomaly ("Unavailable tactic level: "^string_of_int n)
-
-let globwit_tactic = function
-  | 0 -> globwit_tactic0
-  | 1 -> globwit_tactic1
-  | 2 -> globwit_tactic2
-  | 3 -> globwit_tactic3
-  | 4 -> globwit_tactic4
-  | 5 -> globwit_tactic5
-  | n -> anomaly ("Unavailable tactic level: "^string_of_int n)
-
-let rawwit_tactic = function
-  | 0 -> rawwit_tactic0
-  | 1 -> rawwit_tactic1
-  | 2 -> rawwit_tactic2
-  | 3 -> rawwit_tactic3
-  | 4 -> rawwit_tactic4
-  | 5 -> rawwit_tactic5
-  | n -> anomaly ("Unavailable tactic level: "^string_of_int n)
-
-let tactic_genarg_level s =
-  if String.length s = 7 && String.sub s 0 6 = "tactic" then
-    let c = s.[6] in if '5' >= c && c >= '0' then Some (Char.code c - 48)
-    else None
-  else None
-
-let is_tactic_genarg = function
-| ExtraArgType s -> tactic_genarg_level s <> None
-| _ -> false
-
+let create_generic_entry s wit =
+  outGramObj wit (create_entry utactic s (unquote wit))
 
 (* [make_gen_entry] builds entries extensible by giving its name (a string) *)
 (* For entries extensible only via the ML name, Gram.Entry.create is enough *)
@@ -386,7 +250,7 @@ let make_gen_entry (u,univ) rawwit s =
   let e = Gram.Entry.create (u ^ ":" ^ s) in
   Hashtbl.add univ s (inGramObj rawwit e); e
 
-(* Grammar entries *)
+(* Initial grammar entries *)
 
 module Prim =
   struct
@@ -421,7 +285,6 @@ module Prim =
 
   end
 
-
 module Constr =
   struct
     let gec_constr = make_gen_entry uconstr rawwit_constr
@@ -432,7 +295,7 @@ module Constr =
     let operconstr = gec_constr "operconstr"
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
-    let binder_constr = create_constr_entry uconstr "binder_constr"
+    let binder_constr = create_constr_entry "binder_constr"
     let ident = make_gen_entry uconstr rawwit_ident "ident"
     let global = make_gen_entry uconstr rawwit_ref "global"
     let sort = make_gen_entry uconstr rawwit_sort "sort"
@@ -489,8 +352,6 @@ module Tactic =
 
   end
 
-
-
 module Vernac_ =
   struct
     let gec_vernac s = Gram.Entry.create ("vernac:" ^ s)
@@ -500,24 +361,22 @@ module Vernac_ =
     let gallina_ext = gec_vernac "gallina_ext"
     let command = gec_vernac "command"
     let syntax = gec_vernac "syntax_command"
-    let vernac = gec_vernac "Vernac_.vernac"
-
-    (* MMode *)
-
+    let vernac = gec_vernac "Vernac.vernac"
     let proof_instr = Gram.Entry.create "proofmode:instr"
 
-    (* /MMode *)
-
     let vernac_eoi = eoi_entry vernac
+
+    (* Main vernac entry *)
+    let main_entry = Gram.Entry.create "vernac"
+    GEXTEND Gram
+    main_entry:
+      [ [ a = vernac -> Some (loc,a) | EOI -> None ] ]
+    ;
+    END
+
   end
 
-let main_entry = Gram.Entry.create "vernac"
-
-GEXTEND Gram
-  main_entry:
-    [ [ a = Vernac_.vernac -> Some (loc,a) | EOI -> None ] ]
-  ;
-END
+let main_entry = Vernac_.main_entry
 
 (**********************************************************************)
 (* This determines (depending on the associativity of the current
@@ -643,6 +502,9 @@ let find_position forpat assoc level =
 let synchronize_level_positions () =
   let _ = find_position true None None in ()
 
+(**********************************************************************)
+(* Binding constr entry keys to entries                               *)
+
 (* Camlp4 levels do not treat NonA: use RightA with a NEXT on the left *)
 let camlp4_assoc = function
   | Some Gramext.NonA | Some Gramext.RightA -> Gramext.RightA 
@@ -698,11 +560,11 @@ let compute_entry allow_create adjust forpat = function
       let u = get_univ u in
       let e =
         try get_entry u n
-        with e when allow_create -> create_entry u n ConstrArgType in
+        with Not_found when allow_create -> create_entry u n ConstrArgType in
       object_of_typed_entry e, None, true
 
 (* This computes the name of the level where to add a new rule *)
-let get_constr_entry forpat = function
+let interp_constr_entry_key forpat = function
   | ETConstr(200,()) when not forpat ->
       weaken_entry Constr.binder_constr, None
   | e ->
@@ -711,8 +573,11 @@ let get_constr_entry forpat = function
 
 (* This computes the name to give to a production knowing the name and
    associativity of the level where it must be added *)
-let get_constr_production_entry ass from forpat en =
+let interp_constr_prod_entry_key ass from forpat en =
   compute_entry false (adjust_level ass from) forpat en
+
+(**********************************************************************)
+(* Binding constr entry keys to symbols                               *)
 
 let is_self from e =
   match from, e with
@@ -730,7 +595,7 @@ let is_binder_level from e =
       ETConstr(NumLevel 200,(BorderProd(Right,_)|InternalProd)) -> true
     | _ -> false
 
-let rec symbol_of_production assoc from forpat typ =
+let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
   if is_binder_level from typ then
     if forpat then
       Gramext.Snterml (Gram.Entry.obj Constr.pattern,"200")
@@ -741,28 +606,87 @@ let rec symbol_of_production assoc from forpat typ =
   else
     match typ with
     | ETConstrList (typ',[]) ->
-        Gramext.Slist1 (symbol_of_production assoc from forpat (ETConstr typ'))
+        Gramext.Slist1 (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
     | ETConstrList (typ',tkl) ->
         Gramext.Slist1sep
-          (symbol_of_production assoc from forpat (ETConstr typ'),
+          (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'),
            Gramext.srules
              [List.map (fun x -> Gramext.Stoken x) tkl,
               List.fold_right (fun _ v -> Gramext.action (fun _ -> v)) tkl
                 (Gramext.action (fun loc -> ()))])
     | _ ->
-    match get_constr_production_entry assoc from forpat typ with
+    match interp_constr_prod_entry_key assoc from forpat typ with
       | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
       | (eobj,Some None,_) -> Gramext.Snext
       | (eobj,Some (Some (lev,cur)),_) -> 
           Gramext.Snterml (Gram.Entry.obj eobj,constr_level lev)
 
-(*****************************)
-(* Coercions between entries *)
+(**********************************************************************)
+(* Binding general entry keys to symbol                               *)
 
-let coerce_reference_to_id = function
-  | Ident (_,id) -> id
-  | Qualid (loc,_) ->
-      user_err_loc (loc, "coerce_reference_to_id",
-        str "This expression should be a simple identifier.")
+let rec symbol_of_prod_entry_key = function
+  | Alist1 s -> Gramext.Slist1 (symbol_of_prod_entry_key s)
+  | Alist1sep (s,sep) ->
+      Gramext.Slist1sep (symbol_of_prod_entry_key s, Gramext.Stoken ("",sep))
+  | Alist0 s -> Gramext.Slist0 (symbol_of_prod_entry_key s)
+  | Alist0sep (s,sep) ->
+      Gramext.Slist0sep (symbol_of_prod_entry_key s, Gramext.Stoken ("",sep))
+  | Aopt s -> Gramext.Sopt (symbol_of_prod_entry_key s)
+  | Amodifiers s ->
+       Gramext.srules
+        [([], Gramext.action(fun _loc -> []));
+         ([Gramext.Stoken ("", "(");
+           Gramext.Slist1sep ((symbol_of_prod_entry_key s), Gramext.Stoken ("", ","));
+           Gramext.Stoken ("", ")")],
+	   Gramext.action (fun _ l _ _loc -> l))]
+  | Aself -> Gramext.Sself
+  | Anext -> Gramext.Snext
+  | Atactic 5 -> Gramext.Snterm (Gram.Entry.obj Tactic.binder_tactic)
+  | Atactic n ->
+      Gramext.Snterml (Gram.Entry.obj Tactic.tactic_expr, string_of_int n)
+  | Agram s -> Gramext.Snterm s
+  | Aentry (u,s) ->
+      Gramext.Snterm (Gram.Entry.obj
+	(object_of_typed_entry (get_entry (get_univ u) s)))
 
-let coerce_global_to_id = coerce_reference_to_id
+(**********************************************************************)
+(* Interpret entry names of the form "ne_constr_list" as entry keys   *)
+
+let rec interp_entry_name up_level s sep =
+  let l = String.length s in
+  if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
+    let t, g = interp_entry_name up_level (String.sub s 3 (l-8)) "" in
+    List1ArgType t, Alist1 g
+  else if l > 12 & String.sub s 0 3 = "ne_" &
+                   String.sub s (l-9) 9 = "_list_sep" then
+    let t, g = interp_entry_name up_level (String.sub s 3 (l-12)) "" in
+    List1ArgType t, Alist1sep (g,sep)
+  else if l > 5 & String.sub s (l-5) 5 = "_list" then
+    let t, g = interp_entry_name up_level (String.sub s 0 (l-5)) "" in
+    List0ArgType t, Alist0 g
+  else if l > 9 & String.sub s (l-9) 9 = "_list_sep" then
+    let t, g = interp_entry_name up_level (String.sub s 0 (l-9)) "" in
+    List0ArgType t, Alist0sep (g,sep)
+  else if l > 4 & String.sub s (l-4) 4 = "_opt" then
+    let t, g = interp_entry_name up_level (String.sub s 0 (l-4)) "" in
+    OptArgType t, Aopt g
+  else if l > 5 & String.sub s (l-5) 5 = "_mods" then
+    let t, g = interp_entry_name up_level (String.sub s 0 (l-1)) "" in
+    List0ArgType t, Amodifiers g
+  else
+    let s = if s = "hyp" then "var" else s in
+    let t, se =
+      match Extrawit.tactic_genarg_level s with
+	| Some n when Some n = up_level & up_level <> Some 5 -> None, Aself
+	| Some n when Some (n+1) = up_level & up_level <> Some 5 -> None, Anext
+	| Some n -> None, Atactic n
+	| None ->
+      try Some (get_entry uprim s), Aentry ("prim",s) with Not_found ->
+      try Some (get_entry uconstr s), Aentry ("constr",s) with Not_found ->
+      try Some (get_entry utactic s), Aentry ("tactic",s) with Not_found ->
+      None, Aentry ("",s) in
+    let t =
+      match t with
+	| Some t -> type_of_typed_entry t
+	| None -> ExtraArgType s in
+    t, se

@@ -13,6 +13,7 @@
 open Genarg
 open Q_util
 open Q_coqast
+open Egrammar
 
 let join_loc = Util.join_loc
 let loc = Util.dummy_loc
@@ -96,18 +97,24 @@ let rec make_wit loc = function
 let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< Gramext.action (fun loc -> ($act$ : 'a)) >>
-    | None :: tl -> <:expr< Gramext.action (fun _ -> $make tl$) >>
-    | Some (p, t) :: tl ->
+    | GramNonTerminal (_,t,_,Some p) :: tl ->
+	let p = Names.string_of_id p in
 	<:expr<
           Gramext.action 
             (fun $lid:p$ ->
                let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
-        >> in
+        >>
+    | (GramTerminal _ | GramNonTerminal (_,_,_,None)) :: tl ->
+	<:expr< Gramext.action (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
+let make_prod_item = function
+  | GramTerminal s -> <:expr< (Gramext.Stoken (Lexer.terminal $str:s$)) >>
+  | GramNonTerminal (_,_,g,_) ->
+      <:expr< Pcoq.symbol_of_prod_entry_key $mlexpr_of_prod_entry_key g$ >>
+
 let make_rule loc (prods,act) =
-  let (symbs,pil) = List.split prods in
-  <:expr< ($mlexpr_of_list (fun x -> x) symbs$,$make_act loc act pil$) >>
+  <:expr< ($mlexpr_of_list make_prod_item prods$,$make_act loc act prods$) >>
 
 let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
   let rawtyp, rawpr = match rawtyppr with
@@ -144,6 +151,8 @@ let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   <:str_item<
     declare
+      open Pcoq;
+      open Extrawit;
       value ($lid:"wit_"^s$, $lid:"globwit_"^s$, $lid:"rawwit_"^s$) =
         Genarg.create_arg $se$;
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$;
@@ -174,6 +183,8 @@ let declare_vernac_argument loc s pr cl =
     | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
   <:str_item<
     declare
+      open Pcoq;
+      open Extrawit;
       value (($lid:"wit_"^s$:Genarg.abstract_argument_type unit Genarg.tlevel),
              ($lid:"globwit_"^s$:Genarg.abstract_argument_type unit Genarg.glevel),
               $lid:"rawwit_"^s$) = Genarg.create_arg $se$;
@@ -227,7 +238,7 @@ EXTEND
       [ e = argtype; LIDENT "list" -> List0ArgType e
       | e = argtype; LIDENT "option" -> OptArgType e ]
     | "0"
-      [ e = LIDENT -> fst (interp_entry_name loc e "")
+      [ e = LIDENT -> fst (interp_entry_name None e "")
       | "("; e = argtype; ")" -> e ] ]
   ;
   argrule:
@@ -235,13 +246,15 @@ EXTEND
   ;
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
-        let t, g = interp_entry_name loc e "" in (g, Some (s,t))
+        let t, g = interp_entry_name None e "" in
+	GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
-        let t, g = interp_entry_name loc e sep in (g, Some (s,t))
+        let t, g = interp_entry_name None e sep in
+	GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
-	    Compat.using Pcoq.lexer ("", s);
-        (<:expr< (Gramext.Stoken (Lexer.terminal $str:s$)) >>, None)
+	    Lexer.add_token ("", s);
+          GramTerminal s
     ] ]
   ;
   END

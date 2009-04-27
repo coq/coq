@@ -6,12 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i $Id$ i*)
-
-
-(*i camlp4use: "pr_o.cmo" i*) 
+(*i camlp4use: "pr_o.cmo pa_macro.cmo" i*) 
 (* Add pr_o.cmo to circumvent a useless-warning bug when preprocessed with
  * ast-based camlp4 *)
+
+(*i $Id$ i*)
 
 open Pp
 open Util
@@ -512,14 +511,36 @@ let token_text = function
   | (con, "") -> con
   | (con, prm) -> con ^ " \"" ^ prm ^ "\"" 
 
-let tparse (p_con, p_prm) =
-  None
-  (*i was
-  if p_prm = "" then
-    (parser [< '(con, prm) when con = p_con >] -> prm)
-  else
-    (parser [< '(con, prm) when con = p_con && prm = p_prm >] -> prm)
-  i*)
+(* The lexer of Coq *)
+
+(* Note: removing a token.
+   We do nothing because [remove_token] is called only when removing a grammar
+   rule with [Grammar.delete_rule]. The latter command is called only when
+   unfreezing the state of the grammar entries (see GRAMMAR summary, file
+   env/metasyntax.ml). Therefore, instead of removing tokens one by one,
+   we unfreeze the state of the lexer. This restores the behaviour of the
+   lexer. B.B. *)
+
+IFDEF CAMLP5 THEN 
+
+let lexer = {
+  Token.tok_func = func;
+  Token.tok_using = add_token;
+  Token.tok_removing = (fun _ -> ());
+  Token.tok_match = default_match;
+  Token.tok_comm = None;
+  Token.tok_text = token_text }
+
+ELSE 
+
+let lexer = {
+  Token.func = func;
+  Token.using = add_token;
+  Token.removing = (fun _ -> ());
+  Token.tparse = (fun _ -> None);
+  Token.text = token_text }
+
+END
 
 (* Terminal symbols interpretation *)
 
